@@ -92,4 +92,51 @@ test.describe("터치 타깃 계약 (pointer: coarse)", () => {
       expect(h, `${id} 높이`).toBeGreaterThanOrEqual(MIN);
     }
   });
+
+  /**
+   * 관문 표면도 같은 계약을 진다 (2026-07-28).
+   *
+   * `/download` GNB 는 **이 감사 중에 태어난 표면**인데 터치 계약 없이 태어났다
+   * (실측: EN/KO 32×32 · 로고 116×24 · 링크 20/28/16px). 새 표면 체크리스트에
+   * coarse 승격이 빠져 있다는 신호라, 등록부를 여기까지 넓힌다.
+   */
+  test("관문(/download)의 모든 컨트롤이 44px 히트 영역을 갖는다", async ({ page }) => {
+    await page.goto("/ko/download/?guides=off");
+    await expect(page.getByTestId("download-gnb")).toBeVisible();
+
+    const short = await page.evaluate((min) => {
+      const hit = (el: Element) => {
+        const r = el.getBoundingClientRect();
+        const a = getComputedStyle(el, "::after");
+        if (a.content && a.content !== "none" && a.position === "absolute") {
+          return {
+            w: Math.max(r.width, parseFloat(a.width) || 0),
+            h: Math.max(r.height, parseFloat(a.height) || 0),
+          };
+        }
+        return { w: r.width, h: r.height };
+      };
+      return Array.from(document.querySelectorAll("button:not([disabled]), a[href]"))
+        .filter((el) => {
+          const r = el.getBoundingClientRect();
+          const cs = getComputedStyle(el);
+          return (
+            r.width > 0 &&
+            r.height > 0 &&
+            cs.visibility !== "hidden" &&
+            !el.closest(".sr-only")
+          );
+        })
+        .map((el) => ({
+          id:
+            el.getAttribute("data-testid") ||
+            (el.textContent || "").trim().slice(0, 24) ||
+            el.tagName,
+          ...hit(el),
+        }))
+        .filter((b) => b.w < min || b.h < min);
+    }, MIN);
+
+    expect(short, `44px 미만 히트 영역: ${JSON.stringify(short)}`).toEqual([]);
+  });
 });

@@ -67,6 +67,17 @@ export interface PhysicsStepInput {
    */
   reducedMotion: boolean;
   /**
+   * 앰비언트 휴면 계수 [0,1] (2026-07-28 카운슬 「작업대」 P0).
+   *
+   * 상시 혜성의 위상 전진 속도에 곱한다. 1 = 각성(종전과 동일), 0 = 잠듦.
+   * 램프 구간(1→0)이 있어야 입자가 궤도 중간에서 **멎지** 않고 흐르다 서서히
+   * 선다 — 정지한 입자는 "고장났나" 로 읽힌다.
+   *
+   * 생략하면 1(각성) — 이 파라미터를 모르는 기존 호출부/테스트는 종전 동작
+   * 그대로다.
+   */
+  ambientFactor?: number;
+  /**
    * WCAG 2.2 §2.3.3 — the camera snap above is a **vestibular** mitigation, and
    * the standard exempts motion the user themselves initiates (scrolling,
    * panning, pinching). Wheel/drag/pinch are the hand's extension: snapping them
@@ -168,6 +179,7 @@ export function stepTopologyPhysics(input: PhysicsStepInput): PhysicsStepResult 
     panelEmphasisNodeId,
     isDragging,
     reducedMotion,
+    ambientFactor,
     userDrivenCamera = false,
     freezeCamera,
     emphasisById,
@@ -337,6 +349,9 @@ export function stepTopologyPhysics(input: PhysicsStepInput): PhysicsStepResult 
   // 무관하게 흐르되, 포커스 서브그래프에 물린 엣지는 "전류가 더 흐른다"고
   // 가속(edgePulseSpeedEgo, `resolveEdgePulseSpeed`, lead spec §2). reduced-motion
   // 이면 updateParticles 가 전진을 건너뛰어(정지) 유휴 게이트가 성립한다.
+  // 앰비언트 휴면(2026-07-28) — 사람이 손을 놓고 한참 지나면 이 계수가 0 으로
+  // 램프해 혜성이 흐르다 선다. 각성 중에는 1 이라 종전과 1픽셀도 다르지 않다.
+  const ambient = ambientFactor ?? 1;
   updateParticles(
     world.edges,
     dt,
@@ -344,7 +359,10 @@ export function stepTopologyPhysics(input: PhysicsStepInput): PhysicsStepResult 
     (edge) => {
       const touchesFocused =
         focusedNodeId !== null && (edge.sourceId === focusedNodeId || edge.targetId === focusedNodeId);
-      return resolveEdgePulseSpeed(touchesFocused, focusedNodeId, tokens.edgePulseSpeed, tokens.edgePulseSpeedEgo);
+      return (
+        resolveEdgePulseSpeed(touchesFocused, focusedNodeId, tokens.edgePulseSpeed, tokens.edgePulseSpeedEgo) *
+        ambient
+      );
     },
     (edge) => egoContainsComets.has(edgePairKey(edge.sourceId, edge.targetId)),
   );

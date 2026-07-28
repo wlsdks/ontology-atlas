@@ -1,6 +1,9 @@
 import { describe, expect, it } from "vitest";
 
 import {
+  clearTopologyV2TokensCache,
+  getTopologyV2Tokens,
+  refreshIndexDependentTokens,
   resolveTopologyV2Tokens,
   TOPOLOGY_V2_TOKEN_COUNT,
   TopologyV2TokenError,
@@ -125,6 +128,7 @@ const FIXTURE_VALUES: Record<string, string> = {
   "--topology-v2-radius-magnitude-k": "0.45",
   "--topology-v2-dust-parallax-min": "0.15",
   "--topology-v2-dust-parallax-max": "0.45",
+  "--topology-v2-canvas-bg-parallax": "0.82",
 
   "--topology-v2-safe-inset-left": "344",
   "--topology-v2-safe-inset-right": "120",
@@ -222,5 +226,44 @@ describe("resolveTopologyV2Tokens", () => {
   it("throws when a numeric token is present but non-numeric (drift guard)", () => {
     const reader = fixtureReader({ "--topology-v2-radius-project": "not-a-number" });
     expect(() => resolveTopologyV2Tokens(reader)).toThrow(TopologyV2TokenError);
+  });
+});
+
+describe("refreshIndexDependentTokens — 표적 갱신", () => {
+  /**
+   * 왜 이 함수가 생겼나 (2026-07-28 성능 트레이스):
+   * `HomePage` 가 INDEX 상태 전환마다 캐시를 **통째로** 버렸는데, 노드를
+   * 선택하면 그 상태가 바뀐다. 그래서 클릭 1회마다 다음 프레임이
+   * `getPropertyValue` 115회를 돌아 스타일 재계산을 강제했다(ForcedReflow
+   * 1위, 58ms). 실제로 `data-topology-index` 에 의존하는 토큰은 하나뿐이다.
+   */
+  it("캐시가 없으면 아무것도 하지 않는다 (다음 읽기가 최신을 가져간다)", () => {
+    clearTopologyV2TokensCache();
+    expect(() => refreshIndexDependentTokens(document.documentElement)).not.toThrow();
+  });
+
+  it("갱신 대상 토큰만 다시 읽고 나머지 캐시는 보존한다", () => {
+    clearTopologyV2TokensCache();
+    const root = document.documentElement;
+    for (const [name, value] of Object.entries(FIXTURE_VALUES)) {
+      root.style.setProperty(name, value);
+    }
+    const before = getTopologyV2Tokens(root);
+    expect(before.safeInsetLeft).toBe(344);
+
+    // INDEX 가 접히면 이 토큰만 바뀐다(globals.css 의
+    // `html[data-topology-index="collapsed"]` 블록).
+    root.style.setProperty("--topology-v2-safe-inset-left", "78");
+    // 다른 토큰도 바꿔 두고 **안 따라오는지** 확인한다 — 표적 갱신이니까.
+    root.style.setProperty("--topology-v2-label-max-width", "999");
+
+    refreshIndexDependentTokens(root);
+    const after = getTopologyV2Tokens(root);
+
+    expect(after.safeInsetLeft).toBe(78);
+    expect(after.labelMaxWidth).toBe(168);
+
+    for (const name of Object.keys(FIXTURE_VALUES)) root.style.removeProperty(name);
+    clearTopologyV2TokensCache();
   });
 });

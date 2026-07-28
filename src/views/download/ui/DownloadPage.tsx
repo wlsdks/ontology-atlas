@@ -95,7 +95,8 @@ export function DownloadPage() {
         <div className="mx-auto flex h-[var(--chrome-tile-size)] w-full max-w-[var(--page-max)] flex-wrap items-center gap-3">
           <Link
             href="/"
-            className="inline-flex items-center gap-2 transition-colors hover:text-[color:var(--color-text-primary)]"
+            // coarse 포인터에서 히트만 44px 로 — 시각 높이 무변경 (2026-07-28).
+            className="touch-hit-expand inline-flex items-center gap-2 transition-colors hover:text-[color:var(--color-text-primary)]"
           >
             <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-chip border border-[color:var(--color-border-soft)] bg-[color:var(--color-elevated)] text-[color:var(--color-indigo-accent)]">
               <Orbit size={12} />
@@ -116,7 +117,7 @@ export function DownloadPage() {
           <span className="ml-auto flex items-center gap-3">
             <Link
               href="/"
-              className="inline-flex items-center gap-1.5 text-body leading-body text-[color:var(--color-text-tertiary)] transition-colors hover:text-[color:var(--color-text-primary)]"
+              className="touch-hit-expand inline-flex items-center gap-1.5 text-body leading-body text-[color:var(--color-text-tertiary)] transition-colors hover:text-[color:var(--color-text-primary)]"
             >
               <ArrowLeft size={14} aria-hidden />
               {t('back')}
@@ -176,7 +177,7 @@ export function DownloadPage() {
                   href={GITHUB_REPOSITORY_URL}
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="inline-flex items-center gap-1.5 transition-colors hover:text-[color:var(--color-text-tertiary)]"
+                  className="touch-hit-expand inline-flex items-center gap-1.5 transition-colors hover:text-[color:var(--color-text-tertiary)]"
                 >
                   <ExternalLink size={12} aria-hidden />
                   {t('sourceCta')}
@@ -831,7 +832,7 @@ function ElsewherePanel({ published }: { published: boolean }) {
           href={WINDOWS_STATUS.trackingUrl}
           target="_blank"
           rel="noopener noreferrer"
-          className="inline-flex h-7 shrink-0 items-center gap-1.5 rounded-chip border border-[color:var(--color-border-soft)] px-2.5 text-label leading-label text-[color:var(--color-text-secondary)] transition-colors hover:border-[color:var(--color-border-strong)] hover:text-[color:var(--color-text-primary)]"
+          className="touch-hit-expand inline-flex h-7 shrink-0 items-center gap-1.5 rounded-chip border border-[color:var(--color-border-soft)] px-2.5 text-label leading-label text-[color:var(--color-text-secondary)] transition-colors hover:border-[color:var(--color-border-strong)] hover:text-[color:var(--color-text-primary)]"
         >
           <ExternalLink size={12} aria-hidden />
           {t('windowsTrackCta')}

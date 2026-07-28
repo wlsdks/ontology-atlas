@@ -54,11 +54,17 @@ export function useRowDisclosure(open: boolean): {
   }, [open, mounted]);
 
   useEffect(() => {
+    // 직전 값 기록은 **박스 유무보다 먼저** 한다. 닫혀 있는 동안은 박스가
+    // 언마운트라, 이 갱신이 아래 guard 뒤에 있으면 `previous` 가 영원히 `null`
+    // 로 남는다 — 그러면 사용자가 연 것(닫힘 → 열림)까지 "최초 마운트" 로
+    // 오판해 애니메이션이 죽는다. 2026-07-28 에 실제로 그렇게 회귀했고
+    // `use-row-disclosure.test.tsx` 의 "닫힘 → 열림" 케이스가 잡았다.
+    const previous = previousOpenRef.current;
+    previousOpenRef.current = open;
+
     const box = boxRef.current;
     if (!box) return undefined;
     const content = contentRef.current;
-    const previous = previousOpenRef.current;
-    previousOpenRef.current = open;
     const isTransition = previous !== null && previous !== open;
 
     if (!open) {
@@ -73,10 +79,27 @@ export function useRowDisclosure(open: boolean): {
     }
 
     if (!content) return undefined;
-    if (isTransition) {
-      box.style.height = '0px';
-      forceReflow(box);
+
+    if (!isTransition) {
+      // **마운트는 전이가 아니다** — 위 주석대로 이미 열린 행이 스스로 펼쳐지는
+      // 연출은 하지 않는다. 그러면 여기서 높이를 잴 이유도 없다: `auto` 로 두면
+      // 내용이 알아서 자리를 차지하고 잘림도 없다.
+      //
+      // 재면 무엇이 나빠지나 (2026-07-28 트레이스 실측): `offsetHeight` 는
+      // 스타일 쓰기 **직후의 레이아웃 읽기**라 강제 리플로우다. 데이터시트에는
+      // 이런 행이 여럿이고 각자 자기 effect 에서 이 짓을 하므로 레이아웃
+      // 스래싱이 된다 — 노드 클릭 1회의 강제 리플로우 **62ms 중 61ms** 가
+      // 이 훅이었다(Chrome ForcedReflow 인사이트, 최상위 원인).
+      //
+      // ResizeObserver 도 여기서는 달지 않는다. 그건 px 로 **못박은** 높이가
+      // 내용 변화에 잘리는 것을 막으려고 있는 것인데, `auto` 는 애초에 안
+      // 잘린다. 첫 토글(= 진짜 전이)이 그때 재고 그때 관찰을 시작한다.
+      box.style.height = 'auto';
+      return undefined;
     }
+
+    box.style.height = '0px';
+    forceReflow(box);
     box.style.height = `${content.offsetHeight}px`;
 
     if (typeof ResizeObserver === 'undefined') return undefined;

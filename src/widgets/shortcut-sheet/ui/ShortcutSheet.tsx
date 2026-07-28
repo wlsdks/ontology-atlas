@@ -271,7 +271,7 @@ export function ShortcutSheet({ open, onClose }: Props) {
         initial: { opacity: 0, y: 12, scale: 0.985 },
         animate: { opacity: 1, y: 0, scale: 1 },
         exit: { opacity: 0, y: 12, scale: 0.985 },
-        transition: MOTION.medium,
+        transition: MOTION.base,
       };
 
   return (
@@ -282,7 +282,7 @@ export function ShortcutSheet({ open, onClose }: Props) {
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
           exit={{ opacity: 0 }}
-          transition={reducedMotion ? OVERLAY_SPRING_REDUCED : MOTION.fast}
+          transition={reducedMotion ? OVERLAY_SPRING_REDUCED : MOTION.base}
           data-shortcut-sheet-responsive-contract="mobile-sheet-sm-floating"
           data-shortcut-sheet-floating-width-token="--topology-shortcut-sheet-floating-width"
           data-shortcut-sheet-radius-token="--topology-shortcut-sheet-radius"

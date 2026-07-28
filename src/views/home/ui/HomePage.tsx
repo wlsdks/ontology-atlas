@@ -222,7 +222,7 @@ import {
   buildV2ConnectionGroups,
   buildV2EvidenceRows,
   formatV2HandoffText,
-  clearTopologyV2TokensCache,
+  refreshIndexDependentTokens,
 } from "@/widgets/topology-map-v2";
 import { AppSettingsMenu } from "@/widgets/app-settings-menu";
 import { buildTopologyV2Graph } from "../lib/topology-v2-adapter";
@@ -1828,7 +1828,12 @@ export function HomePage() {
   useEffect(() => {
     const root = document.documentElement;
     root.dataset.topologyIndex = renderedIndexState;
-    clearTopologyV2TokensCache();
+    // **전면 무효화를 쓰지 않는다** (2026-07-28 성능 트레이스). 이 effect 는
+    // 노드를 선택할 때도 돈다 — INDEX 가 레일로 강등되기 때문이다. 캐시를
+    // 통째로 버리면 다음 프레임이 `getPropertyValue` 115회로 스타일 재계산을
+    // 강제해 클릭마다 58ms 를 태운다. `data-topology-index` 가 실제로 바꾸는
+    // 토큰은 `--topology-v2-safe-inset-left` 하나뿐이라 그것만 갱신한다.
+    refreshIndexDependentTokens(root);
     let cancelled = false;
     // 동기 setState 회피(cascading-render 경고) — microtask 로 defer.
     window.queueMicrotask(() => {

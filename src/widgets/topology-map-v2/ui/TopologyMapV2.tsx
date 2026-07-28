@@ -346,6 +346,15 @@ export function TopologyMapV2(props: TopologyMapV2Props) {
         data-testid="topology-map-v2-canvas"
         role={canvasLabel ? "img" : undefined}
         aria-label={canvasLabel}
+        // `cursor-grab` 이 **기본 상태**인 이유 (2026-07-28 카운슬 「상호작용」):
+        // 이 캔버스의 1차 행동은 팬이다. 포인터 핸들러가 노드/엣지 위에서
+        // `pointer` 로, 미는 동안 `grabbing` 으로 인라인 덮어쓴다.
+        //
+        // **클래스여야 한다 — 인라인 style 이면 안 된다.** 드래그가 끝나며
+        // `style.cursor = ""` 로 되돌릴 때 인라인 기본값은 그 자체가 지워져
+        // `auto` 로 떨어진다(실측). 클래스로 두면 인라인이 걷힌 자리에서
+        // 캐스케이드가 `grab` 을 되돌려 준다 — 되돌림이 저절로 옳아진다.
+        className="cursor-grab"
         style={{ display: "block", width: "100%", height: "100%", touchAction: "none" }}
         onPointerDown={handlePointerDown}
         onPointerMove={handlePointerMove}

@@ -66,6 +66,9 @@ function touchEvent(pointerId: number, x: number, y: number): ReactPointerEvent<
     currentTarget: {
       setPointerCapture: vi.fn(),
       getBoundingClientRect: () => ({ left: 0, top: 0 }),
+      // 실제 캔버스엔 항상 있는 것 — 커서 어포던스 배정(2026-07-28)이 호버
+      // 블록 밖으로 나오면서 이 경로도 지나간다.
+      style: {} as CSSStyleDeclaration,
     },
   } as unknown as ReactPointerEvent<HTMLCanvasElement>;
 }
@@ -80,6 +83,9 @@ function mouseEvent(x: number, y: number): ReactPointerEvent<HTMLCanvasElement> 
     currentTarget: {
       setPointerCapture: vi.fn(),
       getBoundingClientRect: () => ({ left: 0, top: 0 }),
+      // 실제 캔버스엔 항상 있는 것 — 커서 어포던스 배정(2026-07-28)이 호버
+      // 블록 밖으로 나오면서 이 경로도 지나간다.
+      style: {} as CSSStyleDeclaration,
     },
   } as unknown as ReactPointerEvent<HTMLCanvasElement>;
 }

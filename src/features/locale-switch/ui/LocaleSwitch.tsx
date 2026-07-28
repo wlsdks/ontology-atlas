@@ -89,7 +89,9 @@ export function LocaleSwitch({ onSwitchStart }: LocaleSwitchProps = {}) {
             aria-pressed={active}
             aria-label={`${label} ${t(nameKey)}`}
             className={
-              'flex h-8 min-w-8 items-center justify-center rounded-chip px-2 font-medium transition-colors ' +
+              // coarse 포인터에서 히트만 44px — 시각 크기(32px)는 그대로다.
+              // 이 토글은 관문(/download) 상단 GNB 에도 서므로 터치 계약을 탄다.
+              'touch-hit-expand flex h-8 min-w-8 items-center justify-center rounded-chip px-2 font-medium transition-colors ' +
               (active
                 ? 'bg-[color:var(--color-panel)] text-[color:var(--color-text-primary)]'
                 : 'text-[color:var(--color-text-tertiary)] hover:text-[color:var(--color-text-secondary)]')

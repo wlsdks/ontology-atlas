@@ -9,12 +9,20 @@
  * `topology-pointer-handlers.ts` (this file only owns the refs they close over).
  */
 
-import { useCallback, useEffect, useRef, type RefObject } from "react";
+import {
+  useCallback,
+  useEffect,
+  useMemo,
+  useRef,
+  type PointerEvent as ReactPointerEvent,
+  type RefObject,
+} from "react";
 
 import type { CameraAxes, CameraTarget } from "../engine/camera";
 import { cameraTransitionDurationMs, easeCameraKeyframe, type CameraKeyframe, type CameraTween } from "../model/camera-easing";
 import { stepTugAxis, tugFactorForHop, tugFalloffForDistance } from "../interaction/drag-tug";
 import { isCameraUnsettled, isCanvasActive, shouldSkipFrame } from "../model/idle-gate";
+import { ambientSleepFactor, isAmbientAsleep } from "../model/ambient-sleep";
 import { classifyZoomTier, DEFAULT_TIER_REVEAL, type TierRevealConfig, type ZoomTier } from "../model/tier-visibility";
 import { relaxNodeSeparation, type SeparationNode } from "../model/separation";
 import { createForceSimulation, type ForceSimulation } from "../model/force-layout";
@@ -607,6 +615,17 @@ export function useTopologyLoop(args: UseTopologyLoopArgs): UseTopologyLoopResul
   const hasContainsEdgesRef = useRef(false);
   /** A2 — 마지막 활동 시각. 활동 플래그가 참인 프레임마다 갱신. */
   const lastActiveMsRef = useRef(0);
+  /**
+   * 앰비언트 휴면 — 마지막 **사용자 입력** 시각. `lastActiveMsRef` 와 다른
+   * 것이 요점이다: 저쪽은 "앰비언트 모션이 도는 중"에도 매 프레임 갱신되므로
+   * 영원히 최신이라, 그 값으로는 "사람이 손을 놓았는가"를 절대 알 수 없다.
+   * 이 ref 는 포인터·휠만 갱신한다 (2026-07-28 카운슬 「작업대」 P0).
+   */
+  // 렌더 중 `performance.now()` 는 불순 호출이라 lint 가 막는다(react-hooks/refs).
+  // 0 으로 두는 것이 의미상으로도 맞다 — `performance.now()` 의 원점이 곧 네비게이션
+  // 시각이므로, "입력이 0시에 있었다" 는 "페이지를 연 뒤로 아직 안 만졌다" 와 같다.
+  // 그 상태로 30초가 지나면 잠드는 것이 의도한 동작이다.
+  const lastInputMsRef = useRef(0);
   /** A2 — 직전 프레임 카메라 값 (움직임 감지용). */
   const prevCameraSampleRef = useRef<{ x: number; y: number; s: number } | null>(null);
   /** W6 agent visibility — mirrors `agentFocusNodeId` prop into a ref for the rAF closure, same pattern as `focusedSlugRef`. */
@@ -1413,6 +1432,23 @@ export function useTopologyLoop(args: UseTopologyLoopArgs): UseTopologyLoopResul
           Math.abs(cam.y.value - prev.y) > 0.01 ||
           Math.abs(cam.scale.value - prev.s) > 0.0001;
         prevCameraSampleRef.current = { x: cam.x.value, y: cam.y.value, s: cam.scale.value };
+
+        /**
+         * 앰비언트 휴면 계수 (2026-07-28 카운슬 「작업대」 P0 처방).
+         *
+         * 상시 혜성과 fresh 브리드는 **끄지 않는다** — 혜성은 depends 엣지의
+         * 방향을 나르는 유일한 채널이라 끄면 타입 있는 사실이 사라진다(카운슬
+         * 판별식: "그 모션을 끄면 정보를 잃는가?" — 잃는다). 대신 사람이 손을
+         * 놓고 한참 지나면 속도를 0 으로 램프해 재운다.
+         *
+         * 계수는 혜성 속도에 곱해지고(램프 = 흐르다 서서히 멎음), 0 에 닿는
+         * 순간 위 두 활동 플래그가 내려가 `isCanvasActive` 가 자연히 닫힌다.
+         * 어떤 입력이든 `noteInput()` 이 `lastInputMs` 를 밀어 다음 프레임에
+         * 계수가 1 로 복귀한다 — wake 배선이 필요 없는 idle-gate 설계 그대로.
+         */
+        const ambientFactor = ambientSleepFactor(now, lastInputMsRef.current);
+        const ambientAsleep = isAmbientAsleep(ambientFactor);
+
         const active = isCanvasActive({
           pointerActive: pointerMachineRef.current.phase !== "idle",
           // 드래그 grab/release 가 heat 를 충전하는 동안(또는 노드가 pin 된
@@ -1426,7 +1462,10 @@ export function useTopologyLoop(args: UseTopologyLoopArgs): UseTopologyLoopResul
           // 지시 "상시성"). 호버 펄스가 활성이어도 깨워 둔다. 문서 hidden 시엔
           // rAF 자체가 브라우저에 의해 정지돼 배터리를 지킨다.
           egoTailAnimating:
-            (!reducedMotionRef.current && hasDependsEdgesRef.current && tokens.edgePulseSpeed > 0) ||
+            (!reducedMotionRef.current &&
+              !ambientAsleep &&
+              hasDependsEdgesRef.current &&
+              tokens.edgePulseSpeed > 0) ||
             // Design Guardian 처방 E — 포커스 중 인시던트 contains 코멧도 상시
             // 흐름이라 유휴 게이트가 얼면 안 된다(depends 와 같은 idle-gate 결).
             (!reducedMotionRef.current && focusedSlugRef.current !== null && hasContainsEdgesRef.current) ||
@@ -1441,7 +1480,10 @@ export function useTopologyLoop(args: UseTopologyLoopArgs): UseTopologyLoopResul
           // 렌즈 on/off 전이 — 마지막으로 그린 상태와 다르면 한 프레임 깨워
           // 새 상태를 그린다(스포트라이트 램프 정착과 같은 계약).
           trailLensSettling: (trailLensPropRef.current?.current ?? false) !== drawnTrailLensRef.current,
-          breathing: !reducedMotionRef.current && world.nodes.some((n) => n.fresh),
+          // 앰비언트 휴면 — fresh 브리드는 에이전트가 매일 볼트를 고치는 이
+          // 제품의 **정상 상태**에서 거의 항상 참이라(카운슬 실측), 이 플래그가
+          // 유휴 게이트를 영구히 열어 두는 두 원인 중 하나였다.
+          breathing: !reducedMotionRef.current && !ambientAsleep && world.nodes.some((n) => n.fresh),
           cameraMoving,
           // 선택 해제 페이드: 라이브 포커스는 없는데 retained colorFocus 가 아직
           // 남아 있으면(선택 링·배경 dim 의 색 타깃) focus 램프가 0 으로 감쇠할
@@ -1831,6 +1873,10 @@ export function useTopologyLoop(args: UseTopologyLoopArgs): UseTopologyLoopResul
         cameraAngularFrequency: cameraAngularFreqRef.current ?? tokens.cameraSpringAngFreqTransition,
         dt,
         now,
+        // 앰비언트 휴면 — 혜성 속도에 곱해지는 계수(각성 1 → 잠듦 0).
+        // 유휴 게이트 판정부와 다른 스코프라 여기서 다시 구한다. 순수 산술
+        // 함수라 비용이 없고, 같은 `now`/`lastInputMs` 면 같은 값이다.
+        ambientFactor: ambientSleepFactor(now, lastInputMsRef.current),
         focusedNodeId,
         pairFocusActive: selectedEdgeRef.current !== null,
         hoveredNodeId,
@@ -2547,5 +2593,41 @@ export function useTopologyLoop(args: UseTopologyLoopArgs): UseTopologyLoopResul
     return () => btn.removeEventListener("click", listener);
   }, [realmEnterButtonRef]);
 
-  return { canvasRef, containerRef, ...handlers };
+  /**
+   * 앰비언트 휴면의 각성 신호 — 포인터/휠 입력이 들어온 시각을 남긴다.
+   *
+   * 반환 핸들러를 얇게 감싸는 이유: 입력 지점이 `createTopologyPointerHandlers`
+   * 안에 흩어져 있어 거기마다 심으면 새 핸들러가 늘 때 조용히 빠진다(#65 계열).
+   * **경계는 하나** — 이 훅이 밖으로 내주는 표면이다.
+   */
+  const noteInput = useCallback(() => {
+    lastInputMsRef.current = performance.now();
+    // 잠들어 있었다면 이 프레임부터 다시 그려야 한다. `idle-gate` 는 매 프레임
+    // refs 를 재평가하므로 활동 시각만 밀어 주면 복귀가 보장된다.
+    lastActiveMsRef.current = lastInputMsRef.current;
+  }, []);
+
+  const wrappedHandlers = useMemo(
+    () => ({
+      handlePointerDown: (e: ReactPointerEvent<HTMLCanvasElement>) => {
+        noteInput();
+        handlers.handlePointerDown(e);
+      },
+      handlePointerMove: (e: ReactPointerEvent<HTMLCanvasElement>) => {
+        noteInput();
+        handlers.handlePointerMove(e);
+      },
+      handlePointerUp: (e?: ReactPointerEvent<HTMLCanvasElement>) => {
+        noteInput();
+        handlers.handlePointerUp(e);
+      },
+      handleWheel: (e: WheelEvent) => {
+        noteInput();
+        handlers.handleWheel(e);
+      },
+    }),
+    [handlers, noteInput],
+  );
+
+  return { canvasRef, containerRef, ...handlers, ...wrappedHandlers };
 }
