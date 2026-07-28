@@ -71,6 +71,13 @@ jobs:
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
 
+      # `mcp/` 는 pnpm 워크스페이스 멤버가 아니라 자체 `node_modules` 를 쓴다
+      # (npm 에 따로 내보내던 패키지의 잔재). 루트 install 이 그걸 안 깔아서
+      # 사람 머신에서만 있고 러너에는 없다 — `v1.0.0-rc.2` 가 사이드카를 굽다가
+      # `@modelcontextprotocol/sdk` 를 못 찾고 멈췄다. 의존은 정확 핀 하나뿐이다.
+      - name: Install bundled MCP server dependencies
+        run: pnpm --dir mcp install
+
       - name: Desktop readiness
         run: pnpm desktop:check
 
