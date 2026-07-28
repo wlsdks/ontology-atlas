@@ -107,3 +107,8 @@ output/
 # stage-macos-release-assets.mjs 를 돌려보면 여기 생긴다.
 release-upload/
 release-assets/
+
+# CLI 테스트가 `agent-setup` 을 실제로 돌리며 체크아웃 안에 떨어뜨리는 산출물.
+# 임시 볼트의 절대 경로가 들어 있어 커밋되면 **그 머신의 경로가 저장소에
+# 박힌다** — 실제로 한 번 그렇게 들어갔다(2026-07-29).
+cli/.mcp.json.example
