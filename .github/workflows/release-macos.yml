@@ -75,8 +75,14 @@ jobs:
       # (npm 에 따로 내보내던 패키지의 잔재). 루트 install 이 그걸 안 깔아서
       # 사람 머신에서만 있고 러너에는 없다 — `v1.0.0-rc.2` 가 사이드카를 굽다가
       # `@modelcontextprotocol/sdk` 를 못 찾고 멈췄다. 의존은 정확 핀 하나뿐이다.
+      #
+      # `--frozen-lockfile` 인 이유: 이 폴더의 `package-lock.json` 은 **npm 것**
+      # 이고 pnpm 은 읽지 않는다. 락파일 없이 돌리면 러너가 매 릴리스마다 레지
+      # 스트리에서 새로 푼다 — 즉 커밋 하나 없이 사이드카의 의존 트리가 바뀔 수
+      # 있고, 그 바이너리가 그대로 앱에 실린다. `mcp/pnpm-lock.yaml` 을 커밋해
+      # 두고 얼려서, 무엇이 실렸는지 diff 로 답할 수 있게 한다.
       - name: Install bundled MCP server dependencies
-        run: pnpm --dir mcp install
+        run: pnpm --dir mcp install --frozen-lockfile
 
       - name: Desktop readiness
         run: pnpm desktop:check

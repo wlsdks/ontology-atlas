@@ -669,9 +669,20 @@ if (
  *
  * 공증 티켓은 붙었는데 감쌀 서명이 없었다. 공증 **뒤에** 서명하면 스테이플이
  * 무효가 되므로 자리도 하나뿐이다.
+ *
+ * **업데이터 아카이브 재포장(`desktop:repack-updater`)도 자리가 하나다 — 앱
+ * 서명 바로 뒤.** `tauri build` 는 `.app.tar.gz` 를 `.app` 과 함께 내는데, 이
+ * 저장소는 코드서명을 그 뒤에 따로 한다. 그래서 아카이브가 담는 것은 **서명 전의
+ * 앱**이고, 갱신받은 사용자만 "손상되었습니다" 를 만난다(DMG 로 받은 사용자는
+ * 멀쩡하다). 실측 2026-07-28, 깨끗한 체크아웃:
+ *
+ *   tar xzf "Ontology Atlas.app.tar.gz" && codesign --verify --deep --strict …
+ *     → code has no resources but signature indicates they must be present
+ *
+ * 서명 뒤에 다시 담고 다시 minisign 서명하면 `valid on disk` 가 된다.
  */
 const RELEASE_ARTIFACT_PIPELINE =
-  "pnpm desktop:release-secrets && pnpm build && pnpm desktop:smoke && pnpm desktop:build:app && pnpm desktop:sign && node scripts/package-macos-dmg.mjs && pnpm desktop:sign:dmg && pnpm desktop:notarize && pnpm desktop:verify-release-dmg && pnpm desktop:verify-install";
+  "pnpm desktop:release-secrets && pnpm build && pnpm desktop:smoke && pnpm desktop:build:app && pnpm desktop:sign && pnpm desktop:repack-updater && node scripts/package-macos-dmg.mjs && pnpm desktop:sign:dmg && pnpm desktop:notarize && pnpm desktop:verify-release-dmg && pnpm desktop:verify-install";
 
 if (pkg.scripts?.["desktop:release-artifact"] === RELEASE_ARTIFACT_PIPELINE) {
   pass("desktop release artifact command signs the app, packages, signs the DMG container, notarizes, and verifies the direct-download DMG");

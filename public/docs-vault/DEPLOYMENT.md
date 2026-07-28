@@ -81,6 +81,56 @@ npx serve out
 # visit http://localhost:3000
 ```
 
+## macOS release — rehearse before you tag
+
+```bash
+pnpm desktop:release-rehearsal --list   # what would run, and what cannot run here
+pnpm desktop:release-rehearsal          # walk the runner's steps on this machine
+```
+
+**Run this before every `v*` tag push.** It walks the `build-macos` job of
+`.github/workflows/release-macos.yml` **in file order** on your machine, so a
+step that would stop the runner stops you first — for free.
+
+Why it exists: `v1.0.0-rc.2` was tagged four times and stopped at the build job
+four times. Each fix moved the failure exactly one square forward (readiness
+gate → bridge tests → sidecar tool → sidecar dependencies). All four passed
+locally, because a developer's machine already has everything the runner
+lacks — and **no other workflow runs these gates**, so the first time they are
+exercised is after a tag exists.
+
+The rehearsal reads the workflow instead of copying its step list, so a new
+step is picked up automatically. Steps it cannot run are printed as `SKIP`
+**with the reason**, never passed over silently:
+
+| Cannot run locally | Why | Where it is first proved |
+| --- | --- | --- |
+| `Verify release source commit` | needs the tag's `GITHUB_SHA` to equal the live `main` head | the tag push itself |
+| `Decide signing path` / `Import Apple Developer ID certificate` | Apple Developer ID secrets | the runner |
+| `Build signed and notarized release artifact` | `codesign` with a real identity + `notarytool` | the runner |
+| `Stage Draft macOS Release` / `Publish macOS Release` jobs | a real draft release and the `release` environment gate | the tag run |
+
+In place of the signed build the rehearsal runs
+`desktop:release-artifact:unsigned` end to end — build, route smoke, app
+bundle, ad-hoc signing, updater-archive repack, DMG, checksum, and the
+mounted-DMG install smoke. The two paths differ only in signing and
+notarization.
+
+If you have no `TAURI_SIGNING_PRIVATE_KEY` in your environment the rehearsal
+mints a **throwaway** updater key so the repack step can run. That proves the
+archive is rebuilt and signed; it does not prove it was signed with *our* key —
+only the tag run can.
+
+### Tagging rules the rehearsal cannot enforce
+
+- **Tag the current `main` head.** `desktop:release-source` compares the tag's
+  commit against the *live* default-branch head.
+- **Merge nothing to `main` until the release finishes.** A merge moves the head
+  and that same gate turns red on a release that was already valid when tagged.
+- **A rerun needs a clean release slot.** `desktop:release-slot` fails closed if
+  a release (including a draft) already exists for the tag, so delete the draft
+  from a failed attempt before pushing the tag again.
+
 ## What's NOT needed
 
 - No `.env` file

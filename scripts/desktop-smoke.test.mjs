@@ -9,10 +9,14 @@ import {
   DESKTOP_SMOKE_ROOT_ENTRY,
   DESKTOP_SMOKE_ROUTES,
   DESKTOP_SMOKE_ROUTE_CHUNK_TEXT,
-  DESKTOP_SMOKE_ROUTE_TEXT,
+  DESKTOP_SMOKE_ROUTE_TEXT_KEYS,
   DESKTOP_SMOKE_ROUTE_TITLES,
   evaluateDesktopSmoke,
+  resolveRouteText,
 } from "./desktop-smoke.mjs";
+
+/** 카탈로그에서 편 실제 기대 문구 — 픽스처도 게이트와 같은 출처를 쓴다. */
+const ROUTE_TEXT = resolveRouteText();
 
 function makeOutDir() {
   return fs.mkdtempSync(path.join(os.tmpdir(), "atlas-desktop-smoke-"));
@@ -58,7 +62,7 @@ function makeCurrentOut() {
     for (const route of DESKTOP_SMOKE_ROUTES) {
       writeRoute(outDir, locale, route, {
         title: DESKTOP_SMOKE_ROUTE_TITLES[`${locale}:${route}`],
-        text: DESKTOP_SMOKE_ROUTE_TEXT[`${locale}:${route}`] ?? [],
+        text: ROUTE_TEXT[`${locale}:${route}`] ?? [],
         chunk: DESKTOP_SMOKE_ROUTE_CHUNK_TEXT[route] ?? [],
       });
     }
@@ -103,29 +107,56 @@ test("desktop smoke titles follow current metadata and do not revive retired sur
   );
 });
 
-test("desktop smoke download copy follows the shipped install path", () => {
-  assert.deepEqual(DESKTOP_SMOKE_ROUTE_TEXT["en:/download"], [
-    "Install once. Work from your local vault.",
-    "Pick your vault folder",
-    "Connect your AI assistant",
-    "MCP server auto-registration",
-  ]);
-  assert.deepEqual(DESKTOP_SMOKE_ROUTE_TEXT["ko:/download"], [
-    "한 번 설치하고, 내 로컬 vault 에서 작업하세요.",
-    "vault 폴더 선택",
-    "AI 어시스턴트 연결하기",
-    "MCP 서버 자동등록",
-  ]);
-  assert.deepEqual(Object.keys(DESKTOP_SMOKE_ROUTE_TEXT).sort(), [
-    "en:/download",
-    "ko:/download",
-  ]);
+/**
+ * 이 테스트는 예전에 **상수가 자기 리터럴과 같은지**만 봤다. 그래서 #730 이
+ * 다운로드 화면의 문장을 걷어냈을 때도 249개 테스트가 전부 초록이었고, 결함은
+ * `pnpm build` 뒤에 `desktop:smoke` 를 실제로 돌리는 유일한 곳 — **태그를 찍은
+ * 뒤의 릴리스 빌드** — 에서만 드러났다. 자기 자신을 확인하는 게이트는 게이트가
+ * 아니다.
+ *
+ * 이제 문장이 아니라 **키**를 못박고, 그 키가 살아 있는 카탈로그에서 실제로
+ * 풀리는지 본다. 문구가 바뀌면 게이트가 같이 따라오고, 키가 사라지면 여기서
+ * 즉시 빨개진다.
+ */
+test("desktop smoke download copy is read from the live message catalog", () => {
+  assert.deepEqual(Object.keys(DESKTOP_SMOKE_ROUTE_TEXT_KEYS), ["/download"]);
+
+  const resolved = resolveRouteText();
+  assert.deepEqual(Object.keys(resolved).sort(), ["en:/download", "ko:/download"]);
+
+  for (const locale of DESKTOP_SMOKE_LOCALES) {
+    const fragments = resolved[`${locale}:/download`];
+    assert.equal(fragments.length, DESKTOP_SMOKE_ROUTE_TEXT_KEYS["/download"].length);
+    for (const fragment of fragments) {
+      assert.equal(typeof fragment, "string");
+      assert.ok(fragment.length > 0, `${locale} download copy fragment is empty`);
+      // ICU 플레이스홀더가 든 문구는 렌더 결과가 원문과 달라 정적 HTML 에서 못 찾는다.
+      assert.doesNotMatch(fragment, /[{}]/, `${locale} "${fragment}" carries an ICU placeholder`);
+    }
+  }
+
+  // 두 어권이 같은 문장을 내면 한쪽 카탈로그가 번역되지 않은 것이다.
+  assert.notDeepEqual(resolved["en:/download"], resolved["ko:/download"]);
+});
+
+test("desktop smoke copy contract refuses a message key the catalog dropped", () => {
+  assert.throws(
+    () => resolveRouteText({ keysByRoute: { "/download": ["download.factStripRetired"] } }),
+    /no longer exists/,
+  );
+});
+
+test("desktop smoke copy contract refuses a message with an ICU placeholder", () => {
+  assert.throws(
+    () => resolveRouteText({ keysByRoute: { "/download": ["download.macosPublishedBadge"] } }),
+    /ICU placeholder/,
+  );
 });
 
 test("desktop smoke chunks prove current route meaning", () => {
   assert.deepEqual(DESKTOP_SMOKE_ROUTE_CHUNK_TEXT, {
     "/download": [
-      "download-fact-strip",
+      "download-trust",
       "download-platform-macos",
       "download-platform-windows",
     ],
@@ -245,7 +276,10 @@ test("desktop smoke detects drift in the current download handoff", () => {
   const outDir = makeCurrentOut();
   const routePath = routeIndexPath("ko", "/download");
   const html = fs.readFileSync(path.join(outDir, routePath), "utf8");
-  write(outDir, routePath, html.replace("AI 어시스턴트 연결하기", ""));
+  // 지우는 문장도 카탈로그에서 가져온다 — 리터럴을 박으면 이 프로브 자체가
+  // 다음 리메이크에서 조용히 무의미해진다(그게 #730 이후 실제로 벌어진 일이다).
+  const [firstFragment] = ROUTE_TEXT["ko:/download"];
+  write(outDir, routePath, html.replace(firstFragment, ""));
 
   const report = evaluateDesktopSmoke({
     outDir,
