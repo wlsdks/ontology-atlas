@@ -3478,7 +3478,10 @@ html[data-gateway-stage] {
    * 잘리지 않을 만큼만 올린다.
    */
   --topology-v2-camera-scale-max: 6;
-  --topology-v2-overview-entry-ratio: 1.85;
+  /* 1.85 는 과했다 — 소유자: *"이제는 너무큰데? 화면에 안맞고"*. 살짝만
+     넘치게 둔다(프레임 밖으로 나가는 것이 "이 지도는 화면보다 크다" 신호이므로
+     1.0 으로 되돌리지는 않는다). */
+  --topology-v2-overview-entry-ratio: 1.15;
 
   /*
    * 판이 무대 왼쪽을 덮으므로 그만큼을 인셋으로 예약한다 — 위젯의 패널 인지

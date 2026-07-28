@@ -218,25 +218,17 @@ describe('DownloadPage', () => {
     });
   });
 
-  // Most visitors do not know which chip their Mac has. Naming both
-  // architectures without telling them how to find out leaves them stuck in
-  // front of two buttons — the page's job fails right there.
-  it('tells a visitor how to find out which Mac they have', () => {
-    publishRelease();
-    renderDownloadPage();
-
-    expect(screen.getByText(/Not sure which Mac you have\?/i)).toBeInTheDocument();
-    expect(screen.getByText(/About This Mac/i)).toBeInTheDocument();
-    expect(screen.getByText(/Apple M1, M2, M3 or M4/i)).toBeInTheDocument();
-  });
 
   it('tells Windows visitors where they stand instead of omitting the platform', () => {
     renderDownloadPage();
 
     const windowsCard = screen.getByTestId('download-platform-windows');
-    expect(windowsCard).toHaveTextContent('Windows');
-    expect(windowsCard).toHaveTextContent(/In preparation/i);
-    expect(windowsCard).toHaveTextContent(/signed installer/i);
+    expect(windowsCard).toHaveTextContent(/Windows/);
+    expect(windowsCard).toHaveTextContent(/not out yet/i);
+    // 같은 기준(서명·설치 검증)을 통과할 때 올린다는 약속은 유지하되, 판
+    // 안으로 올라오면서 한 줄로 줄었다 — 받는 자리에서 필요한 것은 "지금은
+    // 못 받는다" 와 "언젠가 되긴 하나" 둘뿐이다.
+    expect(windowsCard).toHaveTextContent(/same bar/i);
     expect(screen.getByRole('link', { name: /Follow progress/i })).toBeInTheDocument();
   });
 
@@ -367,15 +359,17 @@ describe('DownloadPage', () => {
 
     const heading = screen.getByRole('heading', { level: 1 });
     const primaryCta = screen.getByTestId('download-primary-cta');
-    const twoUsers = screen.getByTestId('download-two-users');
     const windows = screen.getByTestId('download-platform-windows');
+    const install = screen.getByTestId('download-install');
     const trust = screen.getByTestId('download-trust');
 
     for (const [earlier, later] of [
       [heading, primaryCta],
-      [primaryCta, twoUsers],
-      [twoUsers, windows],
-      [windows, trust],
+      // 플랫폼 상태는 **받는 자리**에 있다 — 스크롤을 내려야 자기가 못 받는다는
+      // 걸 아는 것은 늦다(소유자 판정 2026-07-29).
+      [primaryCta, windows],
+      [windows, install],
+      [install, trust],
     ] as const) {
       expect(
         earlier.compareDocumentPosition(later) & Node.DOCUMENT_POSITION_FOLLOWING,
@@ -419,29 +413,6 @@ describe('DownloadPage', () => {
       // 지시에서 틀린다.
       expect(trust).toHaveTextContent(`shasum -a 256 ontology-atlas_${publishedVersion}_aarch64.dmg`);
       expect(trust).not.toHaveTextContent(`ontology-atlas_${RELEASE_VERSION}_aarch64.dmg`);
-    });
-
-    it('says a release candidate is a release candidate instead of hiding it', () => {
-      mocks.release = { ...mocks.release, published: true, prerelease: true };
-      publishRelease();
-      mocks.release = { ...mocks.release, prerelease: true };
-      renderDownloadPage();
-
-      expect(screen.getByTestId('download-channel-note')).toHaveTextContent(
-        /release candidate/i,
-      );
-      // 숨기지도, 정식인 척하지도 않는다 — 파일은 그대로 받을 수 있다.
-      expect(screen.getByTestId('download-primary-cta')).toHaveAttribute(
-        'href',
-        expect.stringContaining('.dmg'),
-      );
-    });
-
-    it('carries no channel note when the release is the real thing', () => {
-      publishRelease();
-      renderDownloadPage();
-
-      expect(screen.queryByTestId('download-channel-note')).not.toBeInTheDocument();
     });
   });
 

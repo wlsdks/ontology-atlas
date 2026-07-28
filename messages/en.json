@@ -633,7 +633,8 @@
     "stageClusterHint": "Press a numbered chip to unfold the concepts collapsed inside it.",
     "portraitHint": "Drag to move it",
     "step3BodyShort": "Copy one line from settings into Claude Code, Codex or Cursor, and those tools read and write the same folder you do.",
-    "trustLine": "Signed and notarized by Apple · SHA-256 published per file · nothing sent to a server"
+    "trustLine": "Signed and notarized by Apple · SHA-256 published per file · nothing sent to a server",
+    "platformStatus": "Windows and Linux are not out yet — they ship when they clear the same bar."
   },
   "kinds": {
     "project": "Project",

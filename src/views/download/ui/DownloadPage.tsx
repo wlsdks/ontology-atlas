@@ -16,19 +16,12 @@ import { useCopyFeedback } from '@/shared/lib/use-copy-feedback';
 import { buttonVariants } from '@/shared/ui';
 import { LocaleSwitch } from '@/features/locale-switch';
 import { MacosDownloadLink } from '@/features/macos-download-link';
-import {
-  CLI_COMMAND_COUNT,
-  MCP_TOOL_COUNT,
-  RELEASE_MIN_MACOS,
-  RELEASE_VERSION,
-  buildDmgName,
-} from '../lib/release-facts';
+import { RELEASE_MIN_MACOS, RELEASE_VERSION, buildDmgName } from '../lib/release-facts';
 import {
   ARCH_ORDER,
   MACOS_RELEASE,
   WINDOWS_STATUS,
   formatAssetSize,
-  isMacosPrerelease,
   isMacosReleasePublished,
   macosAssetFor,
   macosPublishedDate,
@@ -95,9 +88,7 @@ export function DownloadPage() {
         <div className="px-[max(1.5rem,env(safe-area-inset-left))] pr-[max(1.5rem,env(safe-area-inset-right))] pb-[max(var(--page-bottom-breath),env(safe-area-inset-bottom))] md:px-10">
           <div className="mx-auto w-full max-w-[var(--page-max)]">
             <div className="mx-auto w-full max-w-[var(--page-col-utility)]">
-              <TwoUsers />
               <InstallTrack />
-              <ElsewhereRows />
 
               <footer className="mt-[var(--section-gap)] border-t border-[color:var(--color-divider)] pt-4 text-label leading-label text-[color:var(--color-text-quaternary)]">
                 <VerifyDetails published={published} primaryAsset={primaryAsset} />
@@ -263,7 +254,7 @@ function PortraitStage({
           다른 숫자가 나온다. */}
       <p
         data-testid="download-portrait-caption"
-        className="relative shrink-0 px-[max(1.5rem,env(safe-area-inset-left))] pr-[max(1.5rem,env(safe-area-inset-right))] pt-3 pb-4 md:px-10 lg:order-last lg:pt-0"
+        className="pointer-events-none relative shrink-0 px-[max(1.5rem,env(safe-area-inset-left))] pr-[max(1.5rem,env(safe-area-inset-right))] pt-3 pb-4 md:px-10 lg:order-last lg:pt-0"
       >
         <span className="mx-auto flex w-full max-w-[var(--page-max)] flex-wrap items-baseline gap-x-3 gap-y-1 font-mono text-caption leading-caption text-[color:var(--color-text-quaternary)]">
           <span className="uppercase tracking-[0.18em]">docs/ontology</span>
@@ -294,7 +285,21 @@ function PortraitStage({
           <span className="min-w-0 break-keep">{t('portraitScope')}</span>
         </span>
       </p>
-      <div className="relative flex min-w-0 flex-1 items-center px-[max(1.5rem,env(safe-area-inset-left))] pr-[max(1.5rem,env(safe-area-inset-right))] py-10 md:px-10 lg:py-12">
+      {/*
+       * ⚠️ `pointer-events-none` 이 **이 무대의 드래그를 살리는 유일한 줄**이다.
+       *
+       * 이 래퍼는 판을 컬럼 안에 앉히려고 둔 투명 상자인데, 무대 **전폭**을
+       * 덮는다. 배경이 없어 눈에는 안 보이지만 포인터는 전부 여기서 멈춘다 —
+       * 실측(2026-07-29, `elementFromPoint`): 무대의 55% · 70% · 85% 지점 전부
+       * 캔버스가 아니라 이 div 가 잡혔다. 소유자가 *"클릭해서 움직이는것도
+       * 안되고 그냥 화면에 고정된 상태"* 라고 한 것이 정확히 이것이고,
+       * **드래그는 처음부터 한 번도 가능한 적이 없었다.**
+       *
+       * 내가 앞서 "드래그 작동 확인" 이라고 보고한 것은 캔버스 엘리먼트에
+       * 이벤트를 **직접 디스패치**해 핸들러만 확인한 것이었다 — 히트 테스트를
+       * 건너뛰었으므로 통과할 수밖에 없었다. 사람이 쓰는 경로를 안 잰 검증이다.
+       */}
+      <div className="pointer-events-none relative flex min-w-0 flex-1 items-center px-[max(1.5rem,env(safe-area-inset-left))] pr-[max(1.5rem,env(safe-area-inset-right))] py-10 md:px-10 lg:py-12">
         <div className="mx-auto w-full max-w-[var(--page-max)]">
           <DownloadPlate published={published} primaryAsset={primaryAsset} />
         </div>
@@ -324,7 +329,7 @@ function DownloadPlate({
   return (
     <div
       data-testid="download-plate"
-      className="w-full max-w-[30rem] rounded-panel border border-[color:var(--color-border-soft)] bg-[color:var(--color-panel)] p-6 shadow-[var(--shadow-elevation-2)] md:p-7"
+      className="pointer-events-auto w-full max-w-[30rem] rounded-panel border border-[color:var(--color-border-soft)] bg-[color:var(--color-panel)] p-6 shadow-[var(--shadow-elevation-2)] md:p-7"
     >
       <p className="font-mono text-caption uppercase leading-caption tracking-[0.18em] text-[color:var(--color-text-quaternary)]">
         {t('eyebrow')}
@@ -387,8 +392,7 @@ function PublishedActions({
 
       <ReleaseFactLine />
       <TrustChips />
-      <ArchHelp />
-      <ChannelNote />
+      <PlatformStatus />
       <PlateFooterLinks />
     </div>
   );
@@ -484,6 +488,7 @@ function PendingActions() {
         <Dot />
         <span>DMG</span>
       </p>
+      <PlatformStatus />
     </div>
   );
 }
@@ -578,192 +583,6 @@ function TrustChips() {
       />
       <span className="min-w-0">{t('trustLine')}</span>
     </p>
-  );
-}
-
-/**
- * 정식이 아니라 **후보**라는 사실.
- *
- * 이 줄이 없으면 페이지는 둘 중 하나를 한다 — 후보를 정식처럼 내걸거나(거짓),
- * 서명된 파일이 있는데도 "아직 없습니다" 라고 하거나(구 동작, 역시 거짓).
- * 셋째 길은 그냥 말하는 것이다. 어조가 경고가 아니라 사실이라 amber 를 쓰지
- * 않는다 — 헌장의 amber 는 허브 · 레일 마크 · kind 톤 셋뿐이고 「후보 빌드」는
- * 그중 어느 것도 아니다.
- */
-function ChannelNote() {
-  const t = useTranslations('download');
-  if (!isMacosPrerelease()) return null;
-
-  return (
-    <p
-      data-testid="download-channel-note"
-      className="mt-3 max-w-[var(--measure-prose)] break-keep border-l-2 border-[color:var(--color-border-strong)] pl-3 text-label leading-label text-[color:var(--color-text-tertiary)]"
-    >
-      <span className="text-[color:var(--color-text-secondary)]">{t('channelPrereleaseTitle')}</span>{' '}
-      {t('channelPrereleaseBody')}
-    </p>
-  );
-}
-
-/**
- * 대부분의 방문자는 자기 맥이 Apple Silicon 인지 Intel 인지 모른다. 여기서
- * 막히면 페이지가 실패한 것이다.
- *
- * **브라우저가 대신 골라 줄 수는 없다.** `navigator.platform` 은 Apple Silicon
- * 에서도 `MacIntel` 을 돌려주고, deprecated 이며, Rosetta 아래서는 더 섞인다.
- * 조사한 레퍼런스 중 맥 아키텍처를 자동 판별하는 곳이 **한 곳도 없다** —
- * OrbStack · Cursor · Zed 전부 두 갈래 병렬이다. 추측해서 한쪽만 내밀면
- * 틀렸을 때 사용자가 열리지 않는 앱을 받고 이유를 모른다.
- *
- * 접이식인 이유: 이미 아는 사람(다수)에게 3행 문단은 매번 지나쳐야 하는 벽이고,
- * 모르는 사람에게는 한 번의 클릭이다. 요약 줄이 질문 형태라 닫혀 있을 때도
- * 여는 값이 읽힌다.
- */
-function ArchHelp() {
-  const t = useTranslations('download');
-
-  return (
-    <details data-testid="download-arch-help" className="group mt-3 min-w-0">
-      <summary className="touch-hit-expand inline-flex cursor-pointer list-none items-center gap-1.5 text-label leading-label text-[color:var(--color-text-tertiary)] transition-colors hover:text-[color:var(--color-text-primary)] [&::-webkit-details-marker]:hidden">
-        <ChevronRight
-          size={13}
-          aria-hidden
-          className="shrink-0 transition-transform group-open:rotate-90"
-        />
-        {t('archHelpTitle')}
-      </summary>
-      <p className="mt-1.5 max-w-[var(--measure-prose)] break-keep pl-[1.15rem] text-label leading-label text-[color:var(--color-text-tertiary)]">
-        {t('archHelpBody')}
-      </p>
-    </details>
-  );
-}
-
-// ─── 파는 자리 ───────────────────────────────────────────────────────────────
-
-/**
- * 이 제품의 한 줄 정체성 — *agent-native, human-sovereign* — 을 화면으로
- * 만든 자리.
- *
- * ⚠️ **이 절의 이전 주석은 "이 주장은 레퍼런스 어디에도 없다" 고 적었는데,
- * 그건 반증됐다** (해자석 실측 2026-07-28): Basic Memory(★3,531 · AGPL)가
- * *"For you, your AI tools, and your team"* 을 랜딩 헤드라인으로 이미 인쇄해
- * 두고 있다. 별 700배 차이다. 틀린 경쟁 주장이 코드에 남으면 다음 사람이
- * 그대로 믿으므로 정정한다.
- *
- * 그래서 이 절이 실제로 파는 것은 "사람+에이전트" 서사 자체가 아니라 그 아래
- * 항목들이다 — **타입 있는 종류 위계 + 영향 범위 질의**(`find_path` ·
- * `blast_radius` · `find_backlinks`)와 **앱이 MCP 서버를 자기 번들에 품는
- * 것**. 산문 규약(AGENTS.md)은 "이걸 고치면 어디가 흔들리나" 를 물어볼 수
- * 없고, 자유 관계 노트는 역량 모델이 아니다. 복리가 붙는 자산은 그쪽이다.
- *
- * 두 열의 무게는 같다 — 한쪽을 부속으로 그리면 그 순간 "사람용 도구에 AI 붙임"
- * 또는 "AI 도구인데 사람도 봄" 이 되어 주장이 무너진다. 아래 합류 줄이
- * 그 둘을 다시 한 폴더로 묶는다.
- */
-function TwoUsers() {
-  const t = useTranslations('download');
-
-  return (
-    <section
-      data-testid="download-two-users"
-      className="pt-[var(--section-gap)]"
-    >
-      <h2 className="max-w-[var(--measure-prose)] break-keep text-display leading-display font-[var(--font-weight-signature)] tracking-[var(--tracking-display)] text-[color:var(--color-text-primary)]">
-        {t('pitchTitle')}
-      </h2>
-      <p className="mt-3 max-w-[var(--measure-prose)] break-keep text-body-lg leading-body-lg text-[color:var(--color-text-secondary)]">
-        {t('pitchBody')}
-      </p>
-
-      {/*
-       * **두 줄기가 한 폴더로 합류하는 그림** (소유자 판정 2026-07-28:
-       * *"하단 설명도 별로임.. 좀 디자인있게 만들수는 없나"*).
-       *
-       * 이 절의 논지가 "사람과 에이전트가 **같은** 폴더를 본다" 인데, 두 열을
-       * 나란히만 놓으면 그림이 말하는 건 "둘이 따로 있다" 다 — 레이아웃이
-       * 문장과 반대로 말하고 있었다. 그래서 두 열을 1px 괘선으로 아래로
-       * 내려 합류점 하나에 묶는다. **상자도 이미지도 없다** — 이 페이지의
-       * 위계는 여백과 괘선이 지고, 그 규율 안에서 도해를 만든다.
-       *
-       * `<md` 에서는 세로로 쌓이므로 합류 기하가 성립하지 않는다 — 그때는
-       * 괘선을 지우고 문장만 남긴다(거짓 도해 금지).
-       */}
-      <div className="mt-7 grid grid-cols-1 gap-x-12 gap-y-8 md:grid-cols-2">
-        <AudienceColumn
-          eyebrow={t('humanEyebrow')}
-          body={t('humanBody')}
-          facts={[t('humanFact1'), t('humanFact2')]}
-        />
-        <AudienceColumn
-          eyebrow={t('agentEyebrow')}
-          body={t('agentBody')}
-          facts={[
-            t('agentFact1', { tools: MCP_TOOL_COUNT }),
-            t('agentFact2', { commands: CLI_COMMAND_COUNT }),
-          ]}
-        />
-      </div>
-
-      {/*
-       * 합류 — 두 열을 가로지르는 괘선 **위에** 문장이 앉는다.
-       *
-       * 첫 시안은 두 열에서 가닥을 내려 가운데서 만나게 그렸는데, 실물에서
-       * 떠도는 괄호로 읽혔다(선이 얇고 짧아 의도가 안 보였다). 도해는 읽히지
-       * 않으면 도해가 아니라 얼룩이다. 그래서 형태를 바꾼다 — 전폭 괘선 하나에
-       * 문장을 얹어 "위의 둘이 여기서 하나가 된다" 를 한 눈에 말한다.
-       * 상자도 이미지도 없고, 쓰는 것은 1px 괘선과 여백뿐이다.
-       */}
-      <div className="relative mt-10">
-        <span
-          aria-hidden
-          className="absolute inset-x-0 top-1/2 h-px bg-[color:var(--color-divider)]"
-        />
-        <p className="relative mx-auto w-fit max-w-[var(--measure-prose)] break-keep bg-[color:var(--color-canvas)] px-5 text-center text-body-lg leading-body-lg text-[color:var(--color-text-secondary)]">
-          {t('twoUsersJoin')}
-        </p>
-      </div>
-
-    </section>
-  );
-}
-
-function AudienceColumn({
-  eyebrow,
-  body,
-  facts,
-}: {
-  eyebrow: string;
-  body: string;
-  facts: readonly string[];
-}) {
-  return (
-    <div className="min-w-0">
-      <p className="font-mono text-caption uppercase leading-caption tracking-[0.18em] text-[color:var(--color-text-quaternary)]">
-        {eyebrow}
-      </p>
-      {/* 제목은 h2 가 이미 "사람도 읽고, 에이전트도 읽습니다" 라고 했으므로
-          여기서 같은 말을 반복하지 않는다 — eyebrow 가 주체를 말하고 본문이
-          바로 내용으로 간다. */}
-      <p className="mt-2 break-keep text-body-lg leading-body-lg text-[color:var(--color-text-primary)]">
-        {body}
-      </p>
-      <ul className="mt-3">
-        {facts.map((fact) => (
-          <li
-            key={fact}
-            className="flex min-w-0 items-baseline gap-2.5 border-t border-[color:var(--color-divider)] py-2 text-label leading-label text-[color:var(--color-text-secondary)]"
-          >
-            <Check
-              size={12}
-              aria-hidden
-              className="shrink-0 translate-y-0.5 text-[color:var(--color-indigo-accent)]"
-            />
-            <span className="min-w-0 break-keep">{fact}</span>
-          </li>
-        ))}
-      </ul>
-    </div>
   );
 }
 
@@ -999,37 +818,31 @@ function ChecksumRow({ arch }: { arch: DesktopArch }) {
 // ─── 다른 환경 ───────────────────────────────────────────────────────────────
 
 /**
- * Windows 방문자는 침묵당하지 않는다. 다만 macOS 와 같은 무게를 주면 "두
- * 플랫폼이 대등하게 있다" 로 읽히므로 한 행으로 낮춘다.
+ * 플랫폼 상태 — **판 안**이다 (소유자 판정 2026-07-29: *"이거는 하단이 아니라
+ * 상단 다운로드 하는데 적어놔야지.. 그래야 바로 알"*).
+ *
+ * 예전에는 접힘 아래 별도 행이었다. 그런데 이 사실이 필요한 순간은 **버튼을
+ * 보는 순간**이다 — 윈도우 사용자가 스크롤을 내려야 자기가 못 받는다는 걸
+ * 아는 것은 늦다. 받는 자리에서 바로 말한다.
  */
-function ElsewhereRows() {
+function PlatformStatus() {
   const t = useTranslations('download');
 
   return (
-    <section className="mt-[var(--section-gap)] border-t border-[color:var(--color-divider)] pt-[var(--section-gap)]">
-      <div
-        data-testid="download-platform-windows"
-        className="flex min-w-0 flex-wrap items-baseline gap-x-3 gap-y-1.5"
+    <p
+      data-testid="download-platform-windows"
+      className="mt-2.5 flex min-w-0 flex-wrap items-baseline gap-x-2 gap-y-1 text-label leading-label text-[color:var(--color-text-quaternary)]"
+    >
+      <span className="break-keep">{t('platformStatus')}</span>
+      <a
+        href={WINDOWS_STATUS.trackingUrl}
+        target="_blank"
+        rel="noopener noreferrer"
+        className="touch-hit-expand inline-flex items-center gap-1 transition-colors hover:text-[color:var(--color-text-secondary)]"
       >
-        <h2 className="text-body leading-body font-semibold text-[color:var(--color-text-primary)]">
-          {t('windowsHeading')}
-        </h2>
-        <span className="rounded-chip border border-[color:var(--color-border-soft)] px-2 py-0.5 font-mono text-caption uppercase leading-caption tracking-[0.12em] text-[color:var(--color-text-quaternary)]">
-          {t('windowsPendingBadge')}
-        </span>
-        <p className="min-w-0 flex-1 break-keep text-label leading-label text-[color:var(--color-text-tertiary)]">
-          {t('windowsPendingBody')}
-        </p>
-        <a
-          href={WINDOWS_STATUS.trackingUrl}
-          target="_blank"
-          rel="noopener noreferrer"
-          className="touch-hit-expand inline-flex h-7 shrink-0 items-center gap-1.5 rounded-chip border border-[color:var(--color-border-soft)] px-2.5 text-label leading-label text-[color:var(--color-text-secondary)] transition-colors hover:border-[color:var(--color-border-strong)] hover:text-[color:var(--color-text-primary)]"
-        >
-          <ExternalLink size={12} aria-hidden />
-          {t('windowsTrackCta')}
-        </a>
-      </div>
-    </section>
+        <ExternalLink size={11} aria-hidden />
+        {t('windowsTrackCta')}
+      </a>
+    </p>
   );
 }
