@@ -2312,6 +2312,7 @@ export function HomePage() {
         contextMenuOpen: contextMenuNode !== null,
         tourOpen: tour.open,
         createNodeOpen,
+        bootstrapOpen,
         searchOpen: ontologySearchOpen,
         fullDetailOpen,
         selectedRelationActive,
@@ -2342,6 +2343,9 @@ export function HomePage() {
           break;
         case "close-create-node":
           closeCreateNode();
+          break;
+        case "close-bootstrap":
+          setBootstrapOpen(false);
           break;
         case "close-full-detail":
           setFullDetailSlug(null);

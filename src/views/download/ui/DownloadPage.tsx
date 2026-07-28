@@ -1,6 +1,7 @@
 'use client';
 
 import { ArrowLeft, Check, Clipboard, Download, ExternalLink, Orbit, ShieldCheck } from 'lucide-react';
+import { resolveDisplayReleaseTag } from "../lib/pending-release-tag";
 import { useTranslations } from 'next-intl';
 import { Link } from '@/i18n/navigation';
 import { cn } from '@/shared/lib/cn';
@@ -210,6 +211,12 @@ function MacosDecision({
   published: boolean;
   primaryAsset: ReturnType<typeof macosAssetFor>;
 }) {
+  // 제목과 본문이 **같은 값**을 쓴다 — 갈라지던 자리다(`lib/pending-release-tag`).
+  const displayTag = resolveDisplayReleaseTag({
+    published,
+    publishedTag: MACOS_RELEASE.tag,
+    releaseVersion: RELEASE_VERSION,
+  });
   const t = useTranslations('download');
 
   return (
@@ -235,7 +242,7 @@ function MacosDecision({
           {t('factFormatLabel')} DMG
         </span>
         <span className={`ml-auto text-label leading-label ${numeralClass}`}>
-          {published ? t('macosPublishedBadge', { tag: MACOS_RELEASE.tag }) : `v${RELEASE_VERSION}`}
+          {published ? t('macosPublishedBadge', { tag: displayTag }) : displayTag}
         </span>
       </div>
 
@@ -249,7 +256,7 @@ function MacosDecision({
           data-testid="download-macos-pending"
           className="mt-3 break-keep text-body leading-body text-[color:var(--color-text-secondary)]"
         >
-          {t('macosPendingBody', { tag: MACOS_RELEASE.tag })}
+          {t('macosPendingBody', { tag: displayTag })}
         </p>
       )}
     </section>
