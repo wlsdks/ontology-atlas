@@ -120,8 +120,8 @@ export function ProjectCard({
           preview
             ? undefined
             : {
-                opacity: { ...MOTION.slow, delay: index * STAGGER },
-                y: { ...MOTION.slow, delay: index * STAGGER },
+                opacity: { ...MOTION.base, delay: index * STAGGER },
+                y: { ...MOTION.base, delay: index * STAGGER },
               }
         }
         className={cn(
@@ -190,8 +190,8 @@ export function ProjectCard({
         preview
           ? undefined
           : {
-              opacity: { ...MOTION.slow, delay: index * STAGGER },
-              y: { ...MOTION.slow, delay: index * STAGGER },
+              opacity: { ...MOTION.base, delay: index * STAGGER },
+              y: { ...MOTION.base, delay: index * STAGGER },
             }
       }
       className={cn(

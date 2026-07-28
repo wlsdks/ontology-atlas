@@ -201,6 +201,24 @@ const arbitrarySizeSelectors = [
     message:
       '타입 램프 토큰을 arbitrary length 로 우회 참조 금지 (template literal). 램프 유틸리티를 직접 쓴다.',
   },
+  // framer-motion 리터럴 (2026-07-28 디자인 카운슬 「체계」).
+  //
+  // 기존 duration 룰은 Tailwind 클래스 문자열(`duration-<숫자>`)만 본다. framer 의
+  // `transition={{ duration: 0.28 }}` 은 **어떤 게이트의 사정거리에도 없었고**,
+  // 그래서 JS 쪽 모션 상수가 CSS 램프와 갈라진 채(0.28·0.42) 22건 중 15건이 램프
+  // 밖으로 렌더되고 있었다. 값이 게이트가 안 보는 곳에 살면 반드시 갈라진다.
+  {
+    selector:
+      'JSXAttribute[name.name="transition"] ObjectExpression > Property[key.name="duration"] > Literal',
+    message:
+      'framer transition duration 리터럴 금지 — `@/shared/motion` 의 램프 거울(MOTION.fast/base/settle)을 import 한다. 램프 밖 값이 필요하면 먼저 CSS 램프에 등재하고 거울 계약 테스트를 넓힌다.',
+  },
+  {
+    selector:
+      'JSXAttribute[name.name="transition"] ObjectExpression > Property[key.name="ease"] > :matches(ArrayExpression, Literal)',
+    message:
+      'framer transition ease 리터럴 금지 — `MOTION_EASE`(= --motion-ease 의 값 복사)를 쓴다. 램프 duration 을 받는 원소는 이징도 같은 패밀리로 간다.',
+  },
 ];
 
 // 마이그레이션 완료(치환 끝 · error 봉쇄) 디렉토리.

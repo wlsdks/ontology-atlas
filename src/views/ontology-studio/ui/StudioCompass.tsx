@@ -1,6 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
+import { MOTION, MOTION_EASE } from "@/shared/motion";
 import {
   ArrowLeft,
   Check,
@@ -639,7 +640,14 @@ export function StudioCompass(props: StudioCompassProps) {
       el.setAttribute("data-flip-animating", "true");
       const anim = el.animate(
         [{ transform: `translate(${dx}px, ${dy}px)` }, { transform: "translate(0, 0)" }],
-        { duration: 240, easing: "cubic-bezier(0.25, 0.1, 0.25, 1)", fill: "both" },
+        {
+          // WAAPI 도 CSS var() 를 못 읽는다 — 램프 거울에서 가져와 값이 갈라지지
+          // 않게 한다(2026-07-28). 240ms = `--motion-settle`("확정"), 이징은
+          // `--motion-ease` 패밀리.
+          duration: MOTION.settle.duration * 1000,
+          easing: `cubic-bezier(${MOTION_EASE.join(", ")})`,
+          fill: "both",
+        },
       );
       anim.onfinish = () => {
         el.style.transform = "";

@@ -1,6 +1,7 @@
 'use client';
 
 import { Fragment, useEffect, useMemo, useRef, useState } from 'react';
+import { MOTION } from "@/shared/motion";
 import { Link } from '@/i18n/navigation';
 import { useLocale, useTranslations } from 'next-intl';
 import { motion } from 'framer-motion';
@@ -490,7 +491,7 @@ export function DocsVaultUnifiedPalette({
       initial={{ opacity: 0 }}
       animate={{ opacity: 1 }}
       exit={{ opacity: 0 }}
-      transition={{ duration: 0.12 }}
+      transition={MOTION.fast}
       className="fixed inset-0 z-50 flex items-start justify-center bg-[color:var(--color-scrim-a50)] p-4 pt-[12vh]"
       onClick={onClose}
     >
@@ -499,7 +500,8 @@ export function DocsVaultUnifiedPalette({
         initial={{ opacity: 0, y: -8, scale: 0.98 }}
         animate={{ opacity: 1, y: 0, scale: 1 }}
         exit={{ opacity: 0, y: -8, scale: 0.98 }}
-        transition={{ duration: 0.14, ease: [0.22, 1, 0.36, 1] }}
+        // 0.14 + 무명 이징 곡선 → 램프의 "이동" 단으로 (2026-07-28).
+        transition={MOTION.base}
         onClick={(e) => e.stopPropagation()}
         role="dialog"
         aria-modal="true"

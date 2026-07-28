@@ -83,7 +83,7 @@ function ProjectDetailShell({ children }: { children: ReactNode }) {
         <motion.div
           initial={{ opacity: 0, y: 10 }}
           animate={{ opacity: 1, y: 0 }}
-          transition={MOTION.slow}
+          transition={MOTION.base}
           className="mx-auto w-full max-w-[var(--page-max)]"
         >
           {children}

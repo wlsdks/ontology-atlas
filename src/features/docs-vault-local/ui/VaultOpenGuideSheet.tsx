@@ -72,7 +72,7 @@ export function VaultOpenGuideSheet({
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
           exit={{ opacity: 0 }}
-          transition={MOTION.fast}
+          transition={MOTION.base}
           className="pointer-events-auto fixed inset-0 z-50 flex items-center justify-center bg-[color:var(--color-backdrop-medium)] p-4 sm:p-6"
           onClick={onClose}
           data-testid="vault-guide-scrim"
@@ -83,7 +83,7 @@ export function VaultOpenGuideSheet({
             initial={{ opacity: 0, y: 12, scale: 0.985 }}
             animate={{ opacity: 1, y: 0, scale: 1 }}
             exit={{ opacity: 0, y: 12, scale: 0.985 }}
-            transition={MOTION.medium}
+            transition={MOTION.base}
             onClick={(event) => event.stopPropagation()}
             role="dialog"
             aria-modal="true"

@@ -10,7 +10,7 @@ import {
   useDragControls,
   useReducedMotion,
 } from "framer-motion";
-import { MOTION, SPRING } from "@/shared/motion";
+import { MOTION, OVERLAY_SPRING } from "@/shared/motion";
 import { ArrowUpRight, BookOpen, ChevronDown, X } from "lucide-react";
 import { cn } from "@/shared/lib/cn";
 import { buildDocsVaultHref, findRelatedDocs } from "@/entities/docs-vault";
@@ -360,7 +360,11 @@ export function ProjectDrawer({
           initial={{ x: "100%", opacity: 0 }}
           animate={{ x: 0, opacity: 1, y: 0 }}
           exit={{ x: "100%", opacity: 0 }}
-          transition={SPRING.sheet}
+          // 임계감쇠 오버레이 스프링으로 이관 (2026-07-28). 구 `SPRING.sheet`
+          // (stiffness 280 / damping 30)는 약감쇠라 오버슈트가 있었고, 소비처가
+          // 여기 하나뿐인 **미등록 예외**였다 — 등록도 게이트도 없이 이 표면만
+          // 튕겼다. 절제가 정체성인 앱에서 오버슈트는 명시 승인 사항이다.
+          transition={OVERLAY_SPRING}
           drag="y"
           dragControls={dragControls}
           dragListener={false}
@@ -426,13 +430,13 @@ export function ProjectDrawer({
               initial={{ opacity: 0, x: 18, y: 6 }}
               animate={{ opacity: 1, x: 0, y: 0 }}
               exit={{ opacity: 0, x: -14, y: -4 }}
-              transition={MOTION.medium}
+              transition={MOTION.base}
               className="flex-1 px-4 py-4 md:px-6 md:py-6"
             >
               <motion.section
                 initial={{ opacity: 0, y: 8 }}
                 animate={{ opacity: 1, y: 0 }}
-                transition={MOTION.medium}
+                transition={MOTION.base}
                 // eslint-disable-next-line no-restricted-syntax -- 드로어 히어로 카드(20px)는 overlay sheet 반경으로 panel(12px) 램프 밖 의도적 예외.
                 className="overflow-hidden rounded-[20px] border border-[color:var(--color-divider)] bg-[linear-gradient(180deg,var(--color-overlay-1)_0%,transparent_100%)]"
               >
@@ -590,7 +594,7 @@ export function ProjectDrawer({
                 <motion.section
                   initial={{ opacity: 0, y: 8 }}
                   animate={{ opacity: 1, y: 0 }}
-                  transition={{ ...MOTION.medium, delay: 0.03 }}
+                  transition={{ ...MOTION.base, delay: 0.03 }}
                   className="mt-5 md:mt-6"
                 >
                   <div className="flex items-center justify-between gap-4">
@@ -679,12 +683,17 @@ export function ProjectDrawer({
                               선택/드래그 물리와 무관한 순수 텍스트 교체라
                               모드별 문구를 즉시 실감할 수 있어야 한다. */}
                           <AnimatePresence mode="wait" initial={false}>
+                            {/* 감속에서도 시간을 준다 (2026-07-28). 이건
+                                **불투명도 전용** 텍스트 교체라 전정계를 건드리는
+                                이동 축이 아예 없다 — 끄면 "문구가 바뀌었다" 는
+                                정보만 사라지고 얻는 게 없다(같은 날 투어 카드에서
+                                고친 것과 같은 형태). */}
                             <motion.span
                               key={impactModeHelpKey}
                               initial={{ opacity: 0 }}
                               animate={{ opacity: 1 }}
                               exit={{ opacity: 0 }}
-                              transition={reducedMotion ? { duration: 0 } : MOTION.instant}
+                              transition={MOTION.fast}
                             >
                               {t(impactModeHelpKey)}
                             </motion.span>

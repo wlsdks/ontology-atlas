@@ -51,7 +51,7 @@ export function GestureHint({ disabled = false }: { disabled?: boolean }) {
           initial={{ opacity: 0, y: 12 }}
           animate={{ opacity: 1, y: 0 }}
           exit={{ opacity: 0, y: 12 }}
-          transition={MOTION.medium}
+          transition={MOTION.base}
           // eslint-disable-next-line no-restricted-syntax -- 모바일 제스처 힌트 시트(18px)는 overlay sheet 반경으로 panel(12px) 램프 밖 의도적 예외.
           className="pointer-events-auto fixed left-1/2 top-[calc(max(0.85rem,env(safe-area-inset-top))+4rem)] z-30 flex w-[min(320px,calc(100vw-2rem))] -translate-x-1/2 items-start gap-3 rounded-[18px] border border-[color:var(--color-divider)] bg-[color:var(--color-panel)] px-3.5 py-3 shadow-[0_16px_40px_var(--color-shadow-a25)] md:hidden"
           role="status"

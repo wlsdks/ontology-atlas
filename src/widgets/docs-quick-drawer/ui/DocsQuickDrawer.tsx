@@ -497,7 +497,7 @@ export function DocsQuickDrawer({
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
           exit={{ opacity: 0 }}
-          transition={MOTION.fast}
+          transition={MOTION.base}
           className="pointer-events-auto fixed inset-0 z-40 bg-[color:var(--color-backdrop-medium)]"
           onClick={onClose}
         >
@@ -509,7 +509,7 @@ export function DocsQuickDrawer({
             initial={{ x: "100%" }}
             animate={{ x: 0 }}
             exit={{ x: "100%" }}
-            transition={MOTION.medium}
+            transition={MOTION.base}
             drag="x"
             dragConstraints={{ left: 0, right: 0 }}
             dragElastic={{ left: 0, right: 0.4 }}
