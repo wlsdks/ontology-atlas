@@ -27,7 +27,6 @@ const CLI_ENTRY = path.resolve(
 
 /** ANSI 색을 벗겨 순수 글자만 본다 — 판정은 색이 아니라 명령이다. */
 function stripAnsi(text) {
-  // eslint-disable-next-line no-control-regex
   return text.replace(/\[[0-9;]*m/g, '');
 }
 

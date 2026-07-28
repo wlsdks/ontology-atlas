@@ -86,3 +86,45 @@ test.describe("공방 내비게이션 — 주소가 실제로 움직인다", () 
     await expect(page).toHaveURL(/\/topology\/?$/);
   });
 });
+
+/**
+ * 공방 크롬의 **스케일 고정 계약** — `design.md` 「스케일 고정 계약」의 공방 몫.
+ *
+ * 2026-07-28 실측으로 드러난 것: 이 표면 유일의 filled 컨트롤인 주 저장
+ * 버튼이 `text-caption`(9.5px) 이었다. 크롬 라벨 계약은 `text-label`(11px)
+ * 이고, caption 은 진행 캡션·타임스탬프의 것이다. 같은 줄의 컨트롤 높이도
+ * 30 과 32 로 갈려 있었다.
+ *
+ * lint 가 못 잡는다: `text-caption` 은 램프 안의 **정당한 스텝**이라 값
+ * 규칙을 무결점 통과한다. 틀린 것은 값이 아니라 **쓰임**이고, 쓰임은 렌더된
+ * 원소를 봐야 안다.
+ */
+test("공방 크롬이 스케일 계약을 지킨다 — 라벨 11px · 컨트롤 높이 한 등급", async ({
+  page,
+}) => {
+  await open(
+    page,
+    `/ko/ontology/studio/?guides=off&node=${encodeURIComponent("capability:order-create")}`,
+  );
+
+  const measured = await page.evaluate(() => {
+    const read = (id: string) => {
+      const el = document.querySelector<HTMLElement>(`[data-testid="${id}"]`);
+      if (!el) return null;
+      return {
+        fontSize: getComputedStyle(el).fontSize,
+        height: Math.round(el.getBoundingClientRect().height),
+      };
+    };
+    return { save: read("studio-save"), exit: read("studio-exit") };
+  });
+
+  expect(measured.save, "저장 버튼을 못 찾았다").not.toBeNull();
+  expect(measured.exit, "그만하기 버튼을 못 찾았다").not.toBeNull();
+
+  // 크롬 라벨은 11px 한 값이다.
+  expect(measured.save!.fontSize).toBe("11px");
+  expect(measured.exit!.fontSize).toBe("11px");
+  // 같은 줄의 컨트롤은 한 높이 등급을 쓴다.
+  expect(measured.save!.height).toBe(measured.exit!.height);
+});

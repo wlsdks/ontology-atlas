@@ -887,7 +887,7 @@ export function StudioCompass(props: StudioCompassProps) {
             ref={headingRef}
             tabIndex={-1}
             data-testid="studio-stage-heading"
-            className="font-semibold text-[color:var(--color-text-secondary)] outline-none"
+            className="text-body font-semibold text-[color:var(--color-text-secondary)] outline-none"
           >
             {focal.name || "—"}
           </h1>
@@ -951,7 +951,7 @@ export function StudioCompass(props: StudioCompassProps) {
             // 나가도 초안은 남고, 돌아오면 그대로다.
             onClick={onExit}
             data-testid="studio-exit"
-            className="flex h-[30px] items-center gap-1.5 rounded-lg border border-[color:var(--color-border-soft)] px-3 text-caption text-[color:var(--color-text-tertiary)] transition-colors hover:text-[color:var(--color-text-secondary)]"
+            className="flex h-8 items-center gap-1.5 rounded-lg border border-[color:var(--color-border-soft)] px-3 text-label text-[color:var(--color-text-tertiary)] transition-colors hover:text-[color:var(--color-text-secondary)]"
           >
             <span className="text-[color:var(--color-text-quaternary)]">✕</span> {labels.exit}
           </button>
@@ -968,7 +968,7 @@ export function StudioCompass(props: StudioCompassProps) {
         }}
       >
         {/* flow cue — top-left wayfinding */}
-        <div className="absolute left-12 top-8 z-[4] flex items-center gap-3" data-testid="studio-flow-cue">
+        <div className="absolute left-5 top-8 z-[4] flex items-center gap-3" data-testid="studio-flow-cue">
           <MiniRose bearings={bearings} />
           <div className="flex flex-col gap-1">
             <span className="text-label uppercase tracking-[0.05em] text-[color:var(--color-text-quaternary)]">
@@ -1293,7 +1293,7 @@ export function StudioCompass(props: StudioCompassProps) {
             data-testid="studio-save"
             disabled={props.canSave === false}
             onClick={runSave}
-            className="flex h-8 items-center gap-2 rounded-lg bg-[color:var(--color-indigo-brand)] px-4 text-caption font-semibold text-white transition-colors hover:bg-[color:var(--color-indigo-hover)] disabled:opacity-40"
+            className="flex h-8 items-center gap-2 rounded-lg bg-[color:var(--color-indigo-brand)] px-4 text-label font-semibold text-white transition-colors hover:bg-[color:var(--color-indigo-hover)] disabled:opacity-40"
           >
             {mode === "create" ? <Check size={15} aria-hidden /> : null}
             {labels.save}
