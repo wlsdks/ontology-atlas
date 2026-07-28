@@ -16,6 +16,7 @@ import {
 } from "lucide-react";
 import { cn } from "@/shared/lib/cn";
 import { candidateMatches } from "../lib/match-candidate";
+import { studioBoardScale } from "../lib/board-scale";
 import { usePrefersReducedMotion } from "@/shared/lib/use-prefers-reduced-motion";
 import { Select } from "@/shared/ui";
 import type {
@@ -830,6 +831,26 @@ export function StudioCompass(props: StudioCompassProps) {
   const effectiveSummary = saveAllowed ? (props.summary ?? null) : null;
   const previewAvailable = saveAllowed && Boolean(props.deltaPreview?.hasDelta);
 
+  /**
+   * 무대 콘텐츠 폭을 재서 보드를 클램프한다 — 왜 축소인지, 대가가 무엇인지는
+   * `lib/board-scale.ts`. 여기서는 **재는 일만** 한다.
+   *
+   * 초기값 0 은 "아직 안 쟀다" 다 — `studioBoardScale` 이 그때 1 을 돌려주므로
+   * 첫 프레임이 축소로 깜빡이지 않는다.
+   */
+  const [stageWidth, setStageWidth] = useState(0);
+  useEffect(() => {
+    const el = stageRef.current;
+    if (!el) return;
+    const observer = new ResizeObserver((entries) => {
+      const box = entries[0]?.contentRect;
+      if (box) setStageWidth(box.width);
+    });
+    observer.observe(el);
+    return () => observer.disconnect();
+  }, []);
+  const boardScale = studioBoardScale(stageWidth);
+
   return (
     <main
       ref={stageRef}
@@ -1006,10 +1027,15 @@ export function StudioCompass(props: StudioCompassProps) {
             top/bottom stage margins balance in either fill-state (#7). */}
         <div
           className="absolute left-1/2 top-1/2"
+          data-board-scale={boardScale}
           style={{
             width: BOARD.w,
             height: BOARD.h,
-            transform: `translate(-50%, calc(-50% + ${contentOffsetY}px))`,
+            // 축소는 **좌표계를 건드리지 않는다** — 배치·히트테스트 계산은
+            // 전부 보드 px 그대로 두고, 브라우저가 그 위에 배율만 얹는다.
+            // 세로 오프셋은 배율을 곱한다: `translate` 는 부모 좌표계라
+            // 안 곱하면 축소된 콘텐츠가 그만큼 어긋난 자리에 앉는다.
+            transform: `translate(-50%, calc(-50% + ${contentOffsetY * boardScale}px)) scale(${boardScale})`,
           }}
         >
           {/* struts overlay */}
