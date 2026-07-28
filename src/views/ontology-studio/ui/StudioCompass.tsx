@@ -839,30 +839,38 @@ export function StudioCompass(props: StudioCompassProps) {
    * 첫 프레임이 축소로 깜빡이지 않는다.
    */
   const [stageWidth, setStageWidth] = useState(0);
-  // **첫 페인트 전에 잰다.** `useEffect` + ResizeObserver 만 쓰면 첫 프레임이
-  // 클램프 없이 그려졌다가 스냅한다 — 고치려던 잘림이 한 프레임 깜빡임으로
-  // 바뀔 뿐이다(CI 실측: 관측 콜백 전에 판정하면 배율이 아직 1). 레이아웃
-  // 이펙트로 한 번 재고, 이후 변화만 관측에 맡긴다.
-  useLayoutEffect(() => {
-    const el = stageRef.current;
+  /**
+   * 무대 폭 관측 — **콜백 ref 로 붙인다**.
+   *
+   * 종전에는 `useLayoutEffect(..., [])` 안에서 `stageRef.current` 를 읽고
+   * 없으면 조용히 빠져나왔다. 그 한 번을 놓치면 deps 가 비어 있어 **다시
+   * 시도하지 않는다** — 그러면 폭이 0 으로 남고, `studioBoardScale(0)` 은
+   * 1 이라 클램프가 아예 안 걸린다. CI 실측에서 정확히 그 모양이 나왔다
+   * (1024 에서 넘침 110px = 배율 1 · 무대 960 · 보드 1180).
+   *
+   * 콜백 ref 는 **노드가 붙는 그 순간** 불리므로 순서 문제가 원리적으로
+   * 없다. 붙을 때 바로 재고(첫 페인트 전), 그 다음부터는 관측에 맡긴다.
+   */
+  const observerRef = useRef<ResizeObserver | null>(null);
+  const attachStage = useCallback((el: HTMLElement | null) => {
+    stageRef.current = el;
+    observerRef.current?.disconnect();
+    observerRef.current = null;
     if (!el) return;
     setStageWidth(el.getBoundingClientRect().width);
-  }, []);
-  useEffect(() => {
-    const el = stageRef.current;
-    if (!el) return;
     const observer = new ResizeObserver((entries) => {
       const box = entries[0]?.contentRect;
       if (box) setStageWidth(box.width);
     });
     observer.observe(el);
-    return () => observer.disconnect();
+    observerRef.current = observer;
   }, []);
+  useEffect(() => () => observerRef.current?.disconnect(), []);
   const boardScale = studioBoardScale(stageWidth);
 
   return (
     <main
-      ref={stageRef}
+      ref={attachStage}
       id="main"
       className="relative grid h-[100dvh] min-h-0 grid-rows-[52px_1fr_64px] overflow-hidden bg-[color:var(--color-canvas)]"
       data-testid="studio-compass-stage"

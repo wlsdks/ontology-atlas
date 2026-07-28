@@ -173,16 +173,24 @@ for (const width of [1024, 1040, 1180, 1264, 1440]) {
     const stage = page.getByTestId("studio-compass-stage");
     await expect(stage).toBeVisible();
 
-    const overflow = await stage.evaluate((el) => {
-      const board = [...el.querySelectorAll<HTMLElement>("[data-board-scale]")][0];
-      if (!board) return null;
-      const s = el.getBoundingClientRect();
-      const b = board.getBoundingClientRect();
-      return { left: s.left - b.left, right: b.right - s.right };
-    });
+    const readOverflow = () =>
+      stage.evaluate((el) => {
+        const board = [...el.querySelectorAll<HTMLElement>("[data-board-scale]")][0];
+        if (!board) return null;
+        const s = el.getBoundingClientRect();
+        const b = board.getBoundingClientRect();
+        return { left: s.left - b.left, right: b.right - s.right };
+      });
 
-    expect(overflow, "보드를 못 찾았다 — 셀렉터가 썩었으면 이 게이트는 무효다").not.toBeNull();
-    expect(overflow!.left).toBeLessThanOrEqual(0);
-    expect(overflow!.right).toBeLessThanOrEqual(0);
+    expect(await readOverflow(), "보드를 못 찾았다 — 셀렉터가 썩었으면 이 게이트는 무효다").not.toBeNull();
+
+    // 폴링하는 이유: 판정 대상은 "**언젠가** 클램프된다" 가 아니라 "클램프된
+    // 상태로 **머문다**" 이고, 느린 러너에서 첫 프레임을 재면 그건 클램프가
+    // 아니라 스케줄링을 재는 것이 된다. 영영 안 걸리면 여기서 시간 초과로
+    // 터진다 — 실제로 CI 가 그 모양(넘침 110px = 배율 1)으로 결함을 잡았다.
+    await expect
+      .poll(async () => (await readOverflow())!.left, { timeout: 5_000 })
+      .toBeLessThanOrEqual(0);
+    expect((await readOverflow())!.right).toBeLessThanOrEqual(0);
   });
 }
