@@ -122,7 +122,8 @@
       "start": "· 여기서 시작해요",
       "half": "· 반쯤 왔어요",
       "almost": "· 거의 다 됐어요",
-      "done": "· 다 채웠어요"
+      "done": "· 다 채웠어요",
+      "first": "· 하나 채웠어요"
     },
     "domainMembership": "이미 ‘{domain}’ 소속이에요",
     "framePrompt": "‘{name}’의 의미를 주변 노드와 이어 완성해요",
@@ -1165,7 +1166,7 @@
         "recentlyChangedMore": "외 {count}개는 아래 목록에 있어요",
         "recentlyChangedWindowHint": "최근 7일 안에 수정된 문서입니다.",
         "newDocButtonLabel": "새 문서",
-        "newDocDisabledHint": "내 폴더를 열면 새 문서를 만들 수 있어요"
+        "newDocDisabledHint": "새 문서를 만들려면 내 폴더를 여세요 — 눌러서 폴더 고르기"
       },
       "empty": {
         "eyebrow": "문서 {count}개",
@@ -1587,7 +1588,8 @@
       "vaultPillSwapAriaLabel": "문서 폴더 전환",
       "vaultPillSampleLabel": "내장 샘플 (이 도구 자신의 문서)",
       "docListCollapse": "문서 목록 접기",
-      "docListExpand": "문서 목록 펼치기"
+      "docListExpand": "문서 목록 펼치기",
+      "vaultChipLocalPending": "폴더 미선택"
     },
     "tabs": {
       "stripAriaLabel": "열린 문서",

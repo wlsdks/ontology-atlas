@@ -230,11 +230,28 @@ describe("DocsSidebarBody — [D-4] 새 문서 진입점", () => {
     expect(onCreateNewDoc).toHaveBeenCalledTimes(1);
   });
 
-  it("renders the new-doc button disabled (not hidden) in read-only sample mode", () => {
-    renderSidebar([], { canCreateNewDoc: false });
+  /**
+   * 읽기 전용 샘플에서도 **누를 수 있다** (2026-07-28 소유자 실사용 제보).
+   *
+   * 종전 계약은 "비활성 + 툴팁 힌트" 였고 이 테스트가 그것을 지켰다. 그런데
+   * 40% 불투명도 아이콘의 **호버 전용** 설명은 도달하지 않았다 — 소유자에게
+   * 그 화면은 "새 문서 기능이 없다" 로 읽혔고, 키보드 사용자는 `disabled`
+   * 때문에 Tab 순서에서 아예 빠져 존재조차 알 수 없었다.
+   *
+   * 헌장의 강등 문법은 "왜 안 되는지 + **어디로 가면 되는지**" 다. 그래서
+   * 이제 누르면 그것을 가능하게 하는 곳(내 폴더 열기)으로 간다. 라벨이 그
+   * 사실을 미리 말하므로 놀라지 않는다.
+   */
+  it("keeps the new-doc button reachable in read-only sample mode — it routes to what unblocks it", () => {
+    const { onCreateNewDoc } = renderSidebar([], { canCreateNewDoc: false });
     const button = screen.getByTestId("docs-sidebar-new-doc");
     expect(button).toBeInTheDocument();
-    expect(button).toBeDisabled();
+    // 죽은 어포던스가 아니다 — 눌리고, 키보드 Tab 순서에도 남는다.
+    expect(button).toBeEnabled();
+    fireEvent.click(button);
+    expect(onCreateNewDoc).toHaveBeenCalledTimes(1);
+    // 라벨이 왜/어디로를 미리 말한다.
+    expect(button.getAttribute("aria-label")).toMatch(/폴더/);
   });
 });
 

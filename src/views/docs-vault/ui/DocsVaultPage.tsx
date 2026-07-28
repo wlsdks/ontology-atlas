@@ -84,6 +84,7 @@ import {
   buildDocsVaultHref,
   buildNewNodeDoc,
   buildOntologyDeeplinkForDoc,
+  buildTopologyDeeplinkForDoc,
   deriveOntologyFromVault,
   type VaultManifest,
 } from '@/entities/docs-vault';
@@ -140,6 +141,7 @@ import { DocsVaultAuditModal } from "./parts/DocsVaultAuditModal";
 import { DocsVaultTabStrip } from "./parts/DocsVaultTabStrip";
 import { NewDocKindDialog, type NewDocKind } from "./parts/NewDocKindDialog";
 import { useOpenDocTabs } from "../lib/use-open-doc-tabs";
+import { resolveVaultChipIdentity } from "../lib/vault-chip-identity";
 import {
   DOGFOOD_VAULT_PATH,
   DOGFOOD_VAULT_PATH_CANDIDATES,
@@ -574,6 +576,13 @@ function DocsVaultContent() {
     source === 'local' &&
     localVault.status === 'loaded' &&
     Boolean(localVault.manifest);
+
+  const vaultChipIdentity = resolveVaultChipIdentity({
+    source,
+    isLocalSourceLoaded,
+    localFolderName: localVault.handle?.name ?? null,
+  });
+
 
   // 현재 활성 매니페스트 — source 에 따라 분기. 로컬은 loaded 이전엔 null.
   // static 폴백은 사용자가 고른 샘플(도그푸드 / 예시 쇼핑몰)을 따른다 —
@@ -1592,6 +1601,14 @@ function DocsVaultContent() {
   // "에이전트 파일" 그룹 — 전체 manifest 기준(컬렉션 필터와 무관). vault 가
   // repo 루트를 포함할 때만 non-null (hook 내부 게이트), 읽기 전용 감지.
   const agentFiles = useAgentFilesModel(manifest, localVault.fileHandles);
+  const handleVaultPillSwap = useCallback(() => {
+    if (source !== 'local' && isDesktopRuntime) {
+      handleSourceChange('local');
+      return;
+    }
+    void openLocalVault();
+  }, [source, isDesktopRuntime, handleSourceChange, openLocalVault]);
+
   const sidebarBody = (
     <DocsSidebarBody
       pinnedSlugs={collectionPinnedSlugs}
@@ -1607,7 +1624,14 @@ function DocsVaultContent() {
       onCollectionChange={handleCollectionChange}
       onTogglePin={handleTogglePin}
       onTagSelect={setActiveTag}
-      onCreateNewDoc={handleOpenNewDocDialog}
+      // 막힌 어포던스를 **살아 있는 길**로 바꾼다 (2026-07-28 소유자 제보:
+      // "새 문서 작성은 왜 없지?"). 종전에는 읽기 전용 샘플에서 `+` 가
+      // 40% 불투명도로 비활성이고 이유는 **호버해야만** 나왔다 — 정보는
+      // 있었지만 도달하지 않았고, 화면은 "그 기능이 없다" 로 읽혔다.
+      //
+      // 헌장의 강등 문법은 "왜 안 되는지 + **어디로 가면 되는지**" 다.
+      // 그래서 이제 누르면 그것을 가능하게 하는 곳(내 폴더 열기)으로 간다.
+      onCreateNewDoc={canEditCurrent ? handleOpenNewDocDialog : handleVaultPillSwap}
       canCreateNewDoc={canEditCurrent}
       sort={treeSort}
       group={treeGroup}
@@ -1637,13 +1661,6 @@ function DocsVaultContent() {
   // 폴더 재선택(openLocalVault)을, 데스크톱의 샘플→로컬 전환은 source 전환을
   // 직접 호출한다. 최근 vault·닫기·새로고침·권한 복구 등 나머지 관리 동작은
   // 설정 메뉴(AppSettingsMenu)의 vault 탭으로 이동했다.
-  const handleVaultPillSwap = useCallback(() => {
-    if (source !== 'local' && isDesktopRuntime) {
-      handleSourceChange('local');
-      return;
-    }
-    void openLocalVault();
-  }, [source, isDesktopRuntime, handleSourceChange, openLocalVault]);
 
   return (
     <div className="flex h-full w-full">
@@ -1737,13 +1754,17 @@ function DocsVaultContent() {
             onClick={toggleDocListCollapsed}
             className="hidden lg:inline-flex"
           />
+          {/* 칩은 **고른 소스**를 말한다 — 폴더 미선택 로컬을 샘플로 그리면
+              화면이 "내 폴더에 31개가 있다" 고 거짓말한다(`lib/vault-chip-identity`). */}
           <DocsVaultVaultChip
             label={
-              isLocalSourceLoaded && localVault.handle
-                ? localVault.handle.name
-                : t('advanced.sourceServer')
+              vaultChipIdentity.kind === 'local'
+                ? vaultChipIdentity.label
+                : vaultChipIdentity.kind === 'local-pending'
+                  ? t('header.vaultChipLocalPending')
+                  : t('advanced.sourceServer')
             }
-            docCount={manifest.docs.length}
+            docCount={vaultChipIdentity.showDocCount ? manifest.docs.length : null}
             folderCount={vaultTopLevelFolderCount}
             path={vaultPillPath}
             isLocalSourceLoaded={isLocalSourceLoaded}
@@ -1941,7 +1962,17 @@ function DocsVaultContent() {
           status={localVault.status}
           recentVaults={localVault.recentVaults}
           onOpen={() => void openLocalVault()}
-          onOpenDogfoodPath={handleOpenDogfoodVault}
+          // 브라우저가 원리적으로 못 하는 일은 **액션을 그리지 않는다**.
+          // 이 카드는 `createTauriVaultHandle` 로 저장소의 절대 경로를 여는데
+          // 웹에는 그 런타임이 없다. 종전에는 웹에서도 그려졌고, 누르면
+          // `Tauri vault runtime is not available.` 예외만 던진 뒤 **화면이
+          // 글자 하나 안 바뀌었다**(2026-07-28 실측: 클릭 전후 본문 길이 동일).
+          // 죽은 CTA 이고 `surfaces.md` 가 이름으로 금지한 것이다.
+          //
+          // 강등 카드를 새로 짓지 않는 이유: 이 카드 옆에 웹에서 되는 길
+          // (폴더 열기 · 샘플 보기)이 나란히 있다. 못 하는 일을 설명하는
+          // 것보다 되는 일을 남기는 것이 낫다(웹 BYOK 와 같은 선례).
+          onOpenDogfoodPath={isDesktopRuntime ? handleOpenDogfoodVault : undefined}
           onOpenRecent={(record) => void localVault.openRecent(record)}
           onOpenSample={() => handleSourceChange('server')}
           showDogfoodHint={showDogfoodHint}
@@ -2212,8 +2243,15 @@ function DocsVaultContent() {
                       {t('backlinksStrip.empty')}
                     </p>
                   )}
+                  {/* 직접 간다 — `/ontology/?node=` 는 지도로 가는 **얇은
+                      리다이렉트**(구 허브는 은퇴했다)라 한 홉이 낭비된다.
+                      `?p=` 포커스 링크가 같은 곳에 바로 도착한다. */}
                   <Link
-                    href={buildOntologyDeeplinkForDoc(selectedDoc) ?? '/ontology/'}
+                    href={
+                      buildTopologyDeeplinkForDoc(selectedDoc) ??
+                      buildOntologyDeeplinkForDoc(selectedDoc) ??
+                      '/topology/'
+                    }
                     className="flex-none text-body text-[color:var(--color-text-tertiary)] transition-colors hover:text-[color:var(--color-text-primary)]"
                   >
                     {t('backlinksStrip.openInOntology')}
