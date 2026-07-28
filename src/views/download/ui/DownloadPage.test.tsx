@@ -298,11 +298,6 @@ describe('DownloadPage', () => {
 
   // Installing is not the end of the journey. Saying the app updates itself
   // is what makes this page a one-time visit rather than a recurring chore.
-  it('says the installed app updates itself', () => {
-    renderDownloadPage();
-
-    expect(screen.getByText(/one button updates it/i)).toBeInTheDocument();
-  });
 
   // ─── 배경은 증거다 (2026-07-28 백지 재설계) ────────────────────────────────
   //

@@ -85,12 +85,16 @@ export function DownloadPage() {
       <main id="main" className="min-w-0 flex-1 bg-[color:var(--color-canvas)]">
         <PortraitStage published={published} primaryAsset={primaryAsset} />
 
-        <div className="px-[max(1.5rem,env(safe-area-inset-left))] pr-[max(1.5rem,env(safe-area-inset-right))] pb-[max(var(--page-bottom-breath),env(safe-area-inset-bottom))] md:px-10">
+        {/* 관문의 절 리듬은 워크벤치(`--section-gap` 28px)가 아니다 — 조사한
+            레퍼런스(Things 실측 60~80px · Apple 의 "여백이 콘텐츠")가 이 종류의
+            표면에서 쓰는 값은 그 두 배 이상이다. 스크롤이 아니라 호흡으로 절을
+            가른다. */}
+        <div className="px-[max(1.5rem,env(safe-area-inset-left))] pr-[max(1.5rem,env(safe-area-inset-right))] pt-16 pb-[max(var(--page-bottom-breath),env(safe-area-inset-bottom))] md:px-10">
           <div className="mx-auto w-full max-w-[var(--page-max)]">
             <div className="mx-auto w-full max-w-[var(--page-col-utility)]">
               <InstallTrack />
 
-              <footer className="mt-[var(--section-gap)] border-t border-[color:var(--color-divider)] pt-4 text-label leading-label text-[color:var(--color-text-quaternary)]">
+              <footer className="mt-16 border-t border-[color:var(--color-divider)] pt-5 text-label leading-label text-[color:var(--color-text-quaternary)]">
                 <VerifyDetails published={published} primaryAsset={primaryAsset} />
                 {/* ⚠️ 이 줄은 **웹사이트**의 주장이라 판 안 「서버 전송 0」 칩
                     (=앱의 주장)과 주체가 다르다. 위계석이 중복으로 지목했지만,
@@ -216,7 +220,7 @@ function PortraitStage({
   return (
     <section
       data-testid="download-stage"
-      className="relative isolate flex w-full flex-col overflow-hidden border-b border-[color:var(--color-divider)] lg:min-h-[42rem]"
+      className="relative isolate flex w-full flex-col overflow-hidden border-b border-[color:var(--color-divider)] lg:min-h-[min(46rem,88vh)]"
     >
       {/*
        * 지도의 자리가 폭에 따라 **바뀐다** (위계석 P6, 2026-07-28 실측).
@@ -329,7 +333,7 @@ function DownloadPlate({
   return (
     <div
       data-testid="download-plate"
-      className="pointer-events-auto w-full max-w-[30rem] rounded-panel border border-[color:var(--color-border-soft)] bg-[color:var(--color-panel)] p-6 shadow-[var(--shadow-elevation-2)] md:p-7"
+      className="pointer-events-auto w-full max-w-[30rem] rounded-panel border border-[color:var(--color-border-soft)] bg-[color:var(--color-panel)] p-7 shadow-[var(--shadow-elevation-2)] md:p-9"
     >
       <p className="font-mono text-caption uppercase leading-caption tracking-[0.18em] text-[color:var(--color-text-quaternary)]">
         {t('eyebrow')}
@@ -339,7 +343,7 @@ function DownloadPlate({
       <h1 className="mt-2 whitespace-pre-line text-display leading-display-tight font-[var(--font-weight-signature)] tracking-[var(--tracking-display)] text-[color:var(--color-text-primary)] md:text-hero md:leading-hero md:tracking-[var(--tracking-hero)]">
         {t('stageTitle')}
       </h1>
-      <p className="mt-3 break-keep text-body leading-body text-[color:var(--color-text-secondary)]">
+      <p className="mt-4 max-w-[34ch] break-keep text-body leading-body text-[color:var(--color-text-tertiary)]">
         {t('stageLead')}
       </p>
 
@@ -593,53 +597,48 @@ function TrustChips() {
  * 셋(= 동시에 고르는 선택지처럼 읽힌다)이 아니라 왼쪽 괘선 하나를 공유하는
  * 세로 흐름으로 그린다.
  */
+/**
+ * 설치 3단계 — **가로 한 줄**이다 (소유자 판정 2026-07-29: 하단이 여전히 폼처럼
+ * 읽힌다).
+ *
+ * 예전에는 세로 스택 3행 × 각 2행 본문 + 제목 + 갱신 각주 = 308px 였다. 그
+ * 치수는 "읽어야 하는 절차서" 의 것인데, 이 세 줄이 실제로 하는 일은 **받기
+ * 전에 "설치가 복잡하지 않다" 를 안심시키는 것**뿐이다. 안심은 길이로 주는
+ * 것이 아니라 짧음으로 준다 — 세 단계가 한 눈에 들어오면 그 자체가 "간단하다"
+ * 는 논증이다.
+ *
+ * 그래서 각 단계는 **한 줄**로 줄었고 셋이 나란히 선다. 제목(`설치하면 이렇게
+ * 씁니다`)도 뺐다 — 01/02/03 이 이미 순서를 말하고, 이 자리에 제목이 필요할
+ * 만큼 다른 것과 헷갈릴 여지가 없다.
+ */
 function InstallTrack() {
   const t = useTranslations('download');
 
+  const steps = [
+    { i: '01', label: t('step1Title') },
+    { i: '02', label: t('step2Title') },
+    { i: '03', label: t('step3Title') },
+  ];
+
   return (
     <section
-      aria-labelledby="download-install-heading"
       data-testid="download-install"
-      className="pt-[var(--section-gap)]"
+      aria-label={t('installTitle')}
+      className="border-t border-[color:var(--color-divider)] pt-10"
     >
-      <h2
-        id="download-install-heading"
-        className="text-title leading-title font-semibold text-[color:var(--color-text-primary)]"
-      >
-        {t('installTitle')}
-      </h2>
-
-      <ol className="mt-4 border-l border-[color:var(--color-divider)]">
-        <InstallStep index="01" title={t('step1Title')} body={t('step1Body')} />
-        <InstallStep index="02" title={t('step2Title')} body={t('step2Body')} />
-        <InstallStep index="03" title={t('step3Title')} body={t('step3BodyShort')} />
+      <ol className="grid grid-cols-1 gap-x-10 gap-y-3 sm:grid-cols-3">
+        {steps.map((step) => (
+          <li key={step.i} className="flex min-w-0 items-baseline gap-3">
+            <span className="shrink-0 font-mono text-label leading-label text-[color:var(--engraved-numeral-face)] [text-shadow:var(--engraved-numeral-text-shadow)]">
+              {step.i}
+            </span>
+            <span className="min-w-0 break-keep text-label leading-label text-[color:var(--color-text-secondary)]">
+              {step.label}
+            </span>
+          </li>
+        ))}
       </ol>
-
-      {/* 설치한 사람에게 이 페이지는 마지막 방문이어야 한다. */}
-      <p className="mt-4 break-keep text-label leading-label text-[color:var(--color-text-quaternary)]">
-        {t('updateNote')}
-      </p>
     </section>
-  );
-}
-
-function InstallStep({ index, title, body }: { index: string; title: string; body: string }) {
-  return (
-    <li className="flex min-w-0 gap-4 pb-5 pl-5 last:pb-0">
-      <span className="shrink-0 font-mono text-label leading-body tracking-[0.1em] text-[color:var(--engraved-numeral-face)] [text-shadow:var(--engraved-numeral-text-shadow)]">
-        {index}
-      </span>
-      <div className="min-w-0">
-        <h3 className="text-body leading-body font-semibold text-[color:var(--color-text-primary)]">
-          {title}
-        </h3>
-        {/* 두 줄 자리를 예약한다 — 반복 세트의 치수는 설계 결정이지 글자 수의
-            부산물이 아니다. */}
-        <p className="mt-1 min-h-[calc(var(--leading-label)*2)] max-w-[var(--measure-prose)] break-keep text-label leading-label text-[color:var(--color-text-tertiary)]">
-          {body}
-        </p>
-      </div>
-    </li>
   );
 }
 
@@ -706,7 +705,21 @@ function VerifyDetails({
             {t('trustVerifyCommand', { file: verifyFileName })}
           </p>
         </TrustFact>
-        <TrustFact label={t('proofPrivacy')} body={t('trustPrivacyNote')} last />
+        <TrustFact label={t('proofPrivacy')} body={t('trustPrivacyNote')} />
+        {/*
+         * 아키텍처 안내는 **판에서 내려왔지만 사라지지 않았다** (소유자 판정
+         * 2026-07-29: 판이 조잡하다 / 게이트 `validate-messages.test.mjs`: 둘을
+         * 이름만 대고 끝내면 사용자가 두 버튼 앞에서 막힌다).
+         *
+         * 브라우저는 맥 아키텍처를 판별할 수 없다 — `navigator.platform` 은
+         * Apple Silicon 에서도 `MacIntel` 을 돌려주고, 조사한 레퍼런스 12곳 중
+         * 자동 판별하는 곳이 0이다. 그래서 이 문장이 **막힌 사람을 푸는 유일한
+         * 장치**이고, 지우면 Intel 사용자가 열리지 않는 앱을 받는다.
+         *
+         * 판의 조잡함과 이 사실의 존재는 양자택일이 아니다 — 자리를 옮기면
+         * 둘 다 만족한다. 결정하는 사람은 안 읽고, 막힌 사람은 찾아온다.
+         */}
+        <TrustFact label={t('archHelpTitle')} body={t('archHelpBody')} last />
 
         <p className="mt-3 break-keep text-label leading-label text-[color:var(--color-text-quaternary)]">
           {published
