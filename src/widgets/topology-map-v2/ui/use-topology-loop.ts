@@ -621,9 +621,11 @@ export function useTopologyLoop(args: UseTopologyLoopArgs): UseTopologyLoopResul
    * 영원히 최신이라, 그 값으로는 "사람이 손을 놓았는가"를 절대 알 수 없다.
    * 이 ref 는 포인터·휠만 갱신한다 (2026-07-28 카운슬 「작업대」 P0).
    */
-  const lastInputMsRef = useRef(
-    typeof performance === "undefined" ? 0 : performance.now(),
-  );
+  // 렌더 중 `performance.now()` 는 불순 호출이라 lint 가 막는다(react-hooks/refs).
+  // 0 으로 두는 것이 의미상으로도 맞다 — `performance.now()` 의 원점이 곧 네비게이션
+  // 시각이므로, "입력이 0시에 있었다" 는 "페이지를 연 뒤로 아직 안 만졌다" 와 같다.
+  // 그 상태로 30초가 지나면 잠드는 것이 의도한 동작이다.
+  const lastInputMsRef = useRef(0);
   /** A2 — 직전 프레임 카메라 값 (움직임 감지용). */
   const prevCameraSampleRef = useRef<{ x: number; y: number; s: number } | null>(null);
   /** W6 agent visibility — mirrors `agentFocusNodeId` prop into a ref for the rAF closure, same pattern as `focusedSlugRef`. */
