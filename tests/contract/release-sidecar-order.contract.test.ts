@@ -63,6 +63,21 @@ describe("release workflow — 사이드카 순서 (v1.0.0-rc.2 회귀)", () => 
     expect(bunAt).toBeLessThan(workflow.indexOf(SIDECAR_STEP));
   });
 
+  /**
+   * `mcp/` 는 pnpm 워크스페이스 멤버가 아니라 자체 `node_modules` 를 쓴다 —
+   * 루트 `pnpm install` 이 그걸 안 깐다. 사람 머신에는 예전에 한 번 깔아 둔
+   * 것이 남아 있어 로컬 컴파일이 통과하고, 러너에서만 `@modelcontextprotocol/sdk`
+   * 를 못 찾는다.
+   *
+   * 도구(bun)와 순서를 다 잠근 뒤에도 **컴파일 대상의 의존**이 비어 있으면
+   * 같은 자리에서 멈춘다. 세 조건을 다 잠가야 이 단계가 실제로 통과한다.
+   */
+  it("bundled MCP 의존 설치가 사이드카 빌드보다 앞선다", () => {
+    const depsAt = workflow.indexOf("pnpm --dir mcp install");
+    expect(depsAt, "번들 MCP 서버 의존 설치 단계가 없다").toBeGreaterThan(-1);
+    expect(depsAt).toBeLessThan(workflow.indexOf(SIDECAR_STEP));
+  });
+
   it("사이드카 빌드가 cargo 를 돌리는 모든 단계보다 앞선다", () => {
     const sidecarAt = workflow.indexOf(SIDECAR_STEP);
     expect(sidecarAt).toBeGreaterThan(-1);
