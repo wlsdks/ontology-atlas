@@ -130,6 +130,9 @@ import {
 } from "./parts/DocFrontmatterBlock";
 import { DocsSidebarBody } from "./parts/DocsSidebarBody";
 import { useAgentFilesModel } from "../lib/use-agent-files";
+import { useSkillParity } from "../lib/use-skill-parity";
+import { buildSkillParityHandoff } from "../lib/skill-parity-handoff";
+import type { SkillParityRow } from "../lib/skill-parity";
 import { DocReadingOutlineRail } from "./parts/DocReadingOutlineRail";
 import { BackToTopButton } from "./parts/BackToTopButton";
 import { SampleNotice } from "./parts/SampleNotice";
@@ -177,6 +180,7 @@ function DocsVaultContent() {
   const t = useTranslations('docsVault');
   const locale = useLocale();
   const siteT = useTranslations('metadata');
+  const tSkillParity = useTranslations('skillParity');
   const searchParams = useSearchParams();
   const querySlug = searchParams?.get('slug') ?? null;
   const queryView = parseView(searchParams?.get('view'));
@@ -1601,6 +1605,29 @@ function DocsVaultContent() {
   // "에이전트 파일" 그룹 — 전체 manifest 기준(컬렉션 필터와 무관). vault 가
   // repo 루트를 포함할 때만 non-null (hook 내부 게이트), 읽기 전용 감지.
   const agentFiles = useAgentFilesModel(manifest, localVault.fileHandles);
+  /**
+   * 스킬 사본 일치 — **절대 경로가 있을 때만.** `localVaultRootPath` 는 웹에서
+   * 핸들 이름으로 대체되므로 그걸 쓰면 웹에서 존재하지 않는 경로로 브리지를
+   * 부르게 된다. 여기서는 진짜 절대 경로만 받는다.
+   */
+  const skillParityRoot =
+    isDesktopRuntime && localVault.handle
+      ? getTauriVaultRootPath(localVault.handle) ?? null
+      : null;
+  const skillParity = useSkillParity(skillParityRoot);
+  const handleCopySkillParityHandoff = useCallback(
+    (rows: SkillParityRow[]) => {
+      if (!skillParityRoot) return;
+      const text = buildSkillParityHandoff(rows, skillParityRoot);
+      if (!text) return;
+      void navigator.clipboard
+        .writeText(text)
+        .then(() => toast.show(tSkillParity("copied"), "success"))
+        // 침묵은 성공처럼 읽힌다 — 실패도 말한다(#759 에서 배운 것).
+        .catch(() => toast.show(tSkillParity("copyFailed"), "error"));
+    },
+    [toast, tSkillParity, skillParityRoot],
+  );
   const handleVaultPillSwap = useCallback(() => {
     if (source !== 'local' && isDesktopRuntime) {
       handleSourceChange('local');
@@ -1638,6 +1665,8 @@ function DocsVaultContent() {
       onSortChange={handleTreeSortChange}
       onGroupChange={handleTreeGroupChange}
       agentFiles={agentFiles}
+      skillParity={skillParity}
+      onCopySkillParityHandoff={handleCopySkillParityHandoff}
     />
   );
 
