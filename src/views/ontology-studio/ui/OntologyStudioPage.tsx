@@ -163,9 +163,27 @@ export function OntologyStudioPage() {
     [nodes],
   );
 
+  /**
+   * 진행 캡션 — 네 방위 중 몇 개를 채웠나.
+   *
+   * 2026-07-28 QA: `filled >= 1` 이 곧바로 "반쯤 왔어요" 였다. **1/4(25%)과
+   * 2/4(50%)가 같은 문장**을 썼다는 뜻이다. 하나 채운 사람에게 "반쯤" 이라
+   * 말하면 그건 격려가 아니라 **틀린 사실**이고, 두 번째를 채웠을 때 캡션이
+   * 안 바뀌므로 **진전이 안 보인다** — 이 표면의 중독은 파티클이 아니라
+   * "다음 할 일 → 즉시 반영 → 진전 누적" 의 루프에서 온다는 헌장과 정면으로
+   * 어긋난다.
+   */
   const flowHint = useCallback(
     (filled: number) =>
-      filled >= 4 ? t("flowHint.done") : filled >= 3 ? t("flowHint.almost") : filled >= 1 ? t("flowHint.half") : t("flowHint.start"),
+      filled >= 4
+        ? t("flowHint.done")
+        : filled >= 3
+          ? t("flowHint.almost")
+          : filled >= 2
+            ? t("flowHint.half")
+            : filled >= 1
+              ? t("flowHint.first")
+              : t("flowHint.start"),
     [t],
   );
 

@@ -23,7 +23,6 @@ import {
   Menu,
   Package,
   PanelLeft,
-  PanelRight,
   Pencil,
   Plus,
   Printer,
@@ -85,6 +84,7 @@ import {
   buildDocsVaultHref,
   buildNewNodeDoc,
   buildOntologyDeeplinkForDoc,
+  buildTopologyDeeplinkForDoc,
   deriveOntologyFromVault,
   type VaultManifest,
 } from '@/entities/docs-vault';
@@ -130,7 +130,6 @@ import {
 } from "./parts/DocFrontmatterBlock";
 import { DocsSidebarBody } from "./parts/DocsSidebarBody";
 import { useAgentFilesModel } from "../lib/use-agent-files";
-import { DocsVaultDocOutlinePanel } from "./parts/DocsVaultDocOutlinePanel";
 import { DocReadingOutlineRail } from "./parts/DocReadingOutlineRail";
 import { BackToTopButton } from "./parts/BackToTopButton";
 import { SampleNotice } from "./parts/SampleNotice";
@@ -142,6 +141,7 @@ import { DocsVaultAuditModal } from "./parts/DocsVaultAuditModal";
 import { DocsVaultTabStrip } from "./parts/DocsVaultTabStrip";
 import { NewDocKindDialog, type NewDocKind } from "./parts/NewDocKindDialog";
 import { useOpenDocTabs } from "../lib/use-open-doc-tabs";
+import { resolveVaultChipIdentity } from "../lib/vault-chip-identity";
 import {
   DOGFOOD_VAULT_PATH,
   DOGFOOD_VAULT_PATH_CANDIDATES,
@@ -298,7 +298,6 @@ function DocsVaultContent() {
     // 이지만 ESLint 가 destructured method 의 stability 추적 못 해 명시.
   }, [isDesktopRuntime, querySource, setAdvancedOpen]);
   const [sourceTreeOpen, setSourceTreeOpen] = useState(false);
-  const [docInspectorOpen, setDocInspectorOpen] = useState(false);
   // 문서 목록 aside 접힘 — design-prescription.md ③-4: 접힘은 width 0(레일
   // 삭제), localStorage persist(작업공간 취향, 세션·새로고침 넘어 유지).
   const [docListCollapsed, setDocListCollapsedState] = useState(false);
@@ -469,21 +468,37 @@ function DocsVaultContent() {
   const closeContract = useCallback(() => setContractOpen(false), []);
 
   // URL 복사 feedback — 최근에 복사된 slug 를 잠깐 기억하고 2초 뒤 reset.
-  const [copiedSlug, setCopiedSlug] = useState<string | null>(null);
-  const copyResetRef = useRef<ReturnType<typeof setTimeout> | null>(null);
-  const handleCopyUrl = useCallback(async (slug: string) => {
-    if (typeof window === 'undefined') return;
-    const url = new URL(window.location.href);
-    url.searchParams.set('slug', slug);
-    try {
-      await navigator.clipboard.writeText(url.toString());
-      setCopiedSlug(slug);
-      if (copyResetRef.current) clearTimeout(copyResetRef.current);
-      copyResetRef.current = setTimeout(() => setCopiedSlug(null), 2000);
-    } catch {
-      /* clipboard 권한 없음 — silent. */
-    }
-  }, []);
+  /**
+   * 복사 확인은 **토스트가 진다** (2026-07-28).
+   *
+   * 종전에는 문서 정보 인스펙터의 체크 아이콘이 유일한 피드백이었다. 그
+   * 패널을 걷어내면서 ⌘K 팔레트의 「링크 복사」가 **아무 반응 없는 명령**이
+   * 될 뻔했다 — 표면을 지울 때 그 표면에만 살던 피드백이 함께 사라지는 것이
+   * 축소의 가장 흔한 사고다.
+   *
+   * 이 화면이 이미 쓰는 토스트 문법(`handleCopyAgentVerifyPrompt`)을 그대로
+   * 따른다 — 실패도 말한다. 클립보드 권한은 조용히 거절될 수 있고, 그때
+   * 침묵하면 사용자는 복사됐다고 믿는다.
+   */
+  const handleCopyUrl = useCallback(
+    async (slug: string) => {
+      if (typeof window === 'undefined') return;
+      const url = new URL(window.location.href);
+      url.searchParams.set('slug', slug);
+      let copied = false;
+      try {
+        await navigator.clipboard.writeText(url.toString());
+        copied = true;
+      } catch {
+        copied = false;
+      }
+      toast.show(
+        copied ? t('linkCopied') : t('linkCopyFailed'),
+        copied ? 'success' : 'error',
+      );
+    },
+    [t, toast],
+  );
   const handleCopyAgentVerifyPrompt = useCallback(async () => {
     const copied = await copyText(ONTOLOGY_STARTER_AGENT_VERIFY_PROMPT);
     toast.show(
@@ -491,12 +506,6 @@ function DocsVaultContent() {
       copied ? 'success' : 'error',
     );
   }, [t, toast]);
-  useEffect(
-    () => () => {
-      if (copyResetRef.current) clearTimeout(copyResetRef.current);
-    },
-    [],
-  );
 
   // 스크롤 스파이 — 본문 스크롤 따라 outline 의 active heading 추적.
   const { articleScrollRef, activeHeadingSlug, setActiveHeadingSlug } =
@@ -567,6 +576,13 @@ function DocsVaultContent() {
     source === 'local' &&
     localVault.status === 'loaded' &&
     Boolean(localVault.manifest);
+
+  const vaultChipIdentity = resolveVaultChipIdentity({
+    source,
+    isLocalSourceLoaded,
+    localFolderName: localVault.handle?.name ?? null,
+  });
+
 
   // 현재 활성 매니페스트 — source 에 따라 분기. 로컬은 loaded 이전엔 null.
   // static 폴백은 사용자가 고른 샘플(도그푸드 / 예시 쇼핑몰)을 따른다 —
@@ -641,7 +657,6 @@ function DocsVaultContent() {
     scheduleStateSync(() => setEditing(false));
   }, [selectedSlug]);
   useEffect(() => {
-    scheduleStateSync(() => setDocInspectorOpen(false));
   }, [selectedSlug]);
 
   const handleDeleteCurrent = useCallback(async () => {
@@ -1385,10 +1400,6 @@ function DocsVaultContent() {
       };
     });
   }, [selectedDoc]);
-  const activeOutlineHeading =
-    outlineHeadings.find((h) => h.slug === activeHeadingSlug) ??
-    outlineHeadings[0] ??
-    null;
   // 긴 문서(heading ≥ 임계)에서만 좌측 빈 띠에 상시 목차 레일 — 짧은 문서에서는
   // 노이즈가 되므로 표시하지 않는다 (po-pass.md §4 상태 계약).
   const showOutlineRail = shouldShowOutlineRail(outlineHeadings.length);
@@ -1590,6 +1601,14 @@ function DocsVaultContent() {
   // "에이전트 파일" 그룹 — 전체 manifest 기준(컬렉션 필터와 무관). vault 가
   // repo 루트를 포함할 때만 non-null (hook 내부 게이트), 읽기 전용 감지.
   const agentFiles = useAgentFilesModel(manifest, localVault.fileHandles);
+  const handleVaultPillSwap = useCallback(() => {
+    if (source !== 'local' && isDesktopRuntime) {
+      handleSourceChange('local');
+      return;
+    }
+    void openLocalVault();
+  }, [source, isDesktopRuntime, handleSourceChange, openLocalVault]);
+
   const sidebarBody = (
     <DocsSidebarBody
       pinnedSlugs={collectionPinnedSlugs}
@@ -1605,7 +1624,14 @@ function DocsVaultContent() {
       onCollectionChange={handleCollectionChange}
       onTogglePin={handleTogglePin}
       onTagSelect={setActiveTag}
-      onCreateNewDoc={handleOpenNewDocDialog}
+      // 막힌 어포던스를 **살아 있는 길**로 바꾼다 (2026-07-28 소유자 제보:
+      // "새 문서 작성은 왜 없지?"). 종전에는 읽기 전용 샘플에서 `+` 가
+      // 40% 불투명도로 비활성이고 이유는 **호버해야만** 나왔다 — 정보는
+      // 있었지만 도달하지 않았고, 화면은 "그 기능이 없다" 로 읽혔다.
+      //
+      // 헌장의 강등 문법은 "왜 안 되는지 + **어디로 가면 되는지**" 다.
+      // 그래서 이제 누르면 그것을 가능하게 하는 곳(내 폴더 열기)으로 간다.
+      onCreateNewDoc={canEditCurrent ? handleOpenNewDocDialog : handleVaultPillSwap}
       canCreateNewDoc={canEditCurrent}
       sort={treeSort}
       group={treeGroup}
@@ -1635,13 +1661,6 @@ function DocsVaultContent() {
   // 폴더 재선택(openLocalVault)을, 데스크톱의 샘플→로컬 전환은 source 전환을
   // 직접 호출한다. 최근 vault·닫기·새로고침·권한 복구 등 나머지 관리 동작은
   // 설정 메뉴(AppSettingsMenu)의 vault 탭으로 이동했다.
-  const handleVaultPillSwap = useCallback(() => {
-    if (source !== 'local' && isDesktopRuntime) {
-      handleSourceChange('local');
-      return;
-    }
-    void openLocalVault();
-  }, [source, isDesktopRuntime, handleSourceChange, openLocalVault]);
 
   return (
     <div className="flex h-full w-full">
@@ -1735,13 +1754,17 @@ function DocsVaultContent() {
             onClick={toggleDocListCollapsed}
             className="hidden lg:inline-flex"
           />
+          {/* 칩은 **고른 소스**를 말한다 — 폴더 미선택 로컬을 샘플로 그리면
+              화면이 "내 폴더에 31개가 있다" 고 거짓말한다(`lib/vault-chip-identity`). */}
           <DocsVaultVaultChip
             label={
-              isLocalSourceLoaded && localVault.handle
-                ? localVault.handle.name
-                : t('advanced.sourceServer')
+              vaultChipIdentity.kind === 'local'
+                ? vaultChipIdentity.label
+                : vaultChipIdentity.kind === 'local-pending'
+                  ? t('header.vaultChipLocalPending')
+                  : t('advanced.sourceServer')
             }
-            docCount={manifest.docs.length}
+            docCount={vaultChipIdentity.showDocCount ? manifest.docs.length : null}
             folderCount={vaultTopLevelFolderCount}
             path={vaultPillPath}
             isLocalSourceLoaded={isLocalSourceLoaded}
@@ -1871,21 +1894,6 @@ function DocsVaultContent() {
             aria-controls="docs-source-contract"
             onClick={() => (contractOpen ? closeContract() : openContract())}
           />
-          {selectedDoc && !editing && !showDesktopWelcome ? (
-            <DocsHeaderTile
-              icon={<PanelRight size={16} aria-hidden />}
-              title={t('header.inspectorTooltip')}
-              active={docInspectorOpen}
-              aria-expanded={docInspectorOpen}
-              aria-label={
-                docInspectorOpen
-                  ? t('header.closeInspectorAriaLabel')
-                  : t('header.openInspectorAriaLabel')
-              }
-              onClick={() => setDocInspectorOpen((open) => !open)}
-              className="hidden lg:inline-flex"
-            />
-          ) : null}
           {/* B2 병합 — 문서함 헤더의 vault 도구 드롭다운(VaultToolsMenu)은 설정
               메뉴로 흡수됐다. AI agent 설정·수리·복사 패킷·검증 게이트는 이제
               AppSettingsMenu 의 vault / mcpAgents 탭이 소유한다. 헤더에는 그
@@ -1954,7 +1962,17 @@ function DocsVaultContent() {
           status={localVault.status}
           recentVaults={localVault.recentVaults}
           onOpen={() => void openLocalVault()}
-          onOpenDogfoodPath={handleOpenDogfoodVault}
+          // 브라우저가 원리적으로 못 하는 일은 **액션을 그리지 않는다**.
+          // 이 카드는 `createTauriVaultHandle` 로 저장소의 절대 경로를 여는데
+          // 웹에는 그 런타임이 없다. 종전에는 웹에서도 그려졌고, 누르면
+          // `Tauri vault runtime is not available.` 예외만 던진 뒤 **화면이
+          // 글자 하나 안 바뀌었다**(2026-07-28 실측: 클릭 전후 본문 길이 동일).
+          // 죽은 CTA 이고 `surfaces.md` 가 이름으로 금지한 것이다.
+          //
+          // 강등 카드를 새로 짓지 않는 이유: 이 카드 옆에 웹에서 되는 길
+          // (폴더 열기 · 샘플 보기)이 나란히 있다. 못 하는 일을 설명하는
+          // 것보다 되는 일을 남기는 것이 낫다(웹 BYOK 와 같은 선례).
+          onOpenDogfoodPath={isDesktopRuntime ? handleOpenDogfoodVault : undefined}
           onOpenRecent={(record) => void localVault.openRecent(record)}
           onOpenSample={() => handleSourceChange('server')}
           showDogfoodHint={showDogfoodHint}
@@ -2111,11 +2129,11 @@ function DocsVaultContent() {
                     max-w-760 은 아래 overflow-auto 컨테이너 안에서 그대로
                     mx-auto — 레일 때문에 줄지 않는다. */}
                 <div className="relative flex min-h-0 min-w-0 flex-1 flex-col">
-                  {/* 인스펙터가 열리면 레일은 demote — 같은 목차를 두 표면에
-                      이중 노출하지 않고(인스펙터 안 목차가 fallback), 인스펙터
-                      220px 만큼 좁아진 빈 띠에서 레일이 본문 텍스트와 겹치는
-                      1440–1700px 충돌 창도 함께 제거한다. */}
-                  {!editing && showOutlineRail && !docInspectorOpen ? (
+                  {/* 목차는 이 레일 하나가 소유한다. 종전에는 문서 정보
+                      인스펙터가 같은 목차를 한 벌 더 들고 있어서, 열리면 레일을
+                      demote 하는 규칙이 필요했다 — 2026-07-28 에 그 패널을
+                      걷어내면서 이중 노출 자체가 사라졌다. */}
+                  {!editing && showOutlineRail ? (
                     <DocReadingOutlineRail
                       headings={outlineHeadings}
                       activeHeadingSlug={activeHeadingSlug}
@@ -2202,23 +2220,6 @@ function DocsVaultContent() {
                 {/* 우측 사이드: heading outline + 공유 + 파일 관리. 기본은 닫아
                     본문을 우선하고, 필요할 때만 헤더의 인스펙터 버튼으로 연다.
                     backlinks 는 여기 없음 — pane 하단 스트립이 단일 소스. */}
-                {!editing && docInspectorOpen ? (
-                  <DocsVaultDocOutlinePanel
-                    selectedDoc={selectedDoc}
-                    pinnedSet={pinnedSet}
-                    copiedSlug={copiedSlug}
-                    canEditCurrent={canEditCurrent}
-                    outlineHeadings={outlineHeadings}
-                    activeOutlineHeading={activeOutlineHeading}
-                    activeHeadingSlug={activeHeadingSlug}
-                    onTogglePin={handleTogglePin}
-                    onStartEditing={() => setEditing(true)}
-                    onClose={() => setDocInspectorOpen(false)}
-                    onCopyUrl={handleCopyUrl}
-                    onDeleteCurrent={handleDeleteCurrent}
-                    onHeadingClick={handleHeadingNavigate}
-                  />
-                ) : null}
               </div>
 
               {/* 하단 backlinks 스트립 — pane 전체 폭에 앵커, 항상 보임
@@ -2242,8 +2243,15 @@ function DocsVaultContent() {
                       {t('backlinksStrip.empty')}
                     </p>
                   )}
+                  {/* 직접 간다 — `/ontology/?node=` 는 지도로 가는 **얇은
+                      리다이렉트**(구 허브는 은퇴했다)라 한 홉이 낭비된다.
+                      `?p=` 포커스 링크가 같은 곳에 바로 도착한다. */}
                   <Link
-                    href={buildOntologyDeeplinkForDoc(selectedDoc) ?? '/ontology/'}
+                    href={
+                      buildTopologyDeeplinkForDoc(selectedDoc) ??
+                      buildOntologyDeeplinkForDoc(selectedDoc) ??
+                      '/topology/'
+                    }
                     className="flex-none text-body text-[color:var(--color-text-tertiary)] transition-colors hover:text-[color:var(--color-text-primary)]"
                   >
                     {t('backlinksStrip.openInOntology')}

@@ -122,7 +122,8 @@
       "start": "· start here",
       "half": "· halfway there",
       "almost": "· almost done",
-      "done": "· all filled"
+      "done": "· all filled",
+      "first": "· one filled in"
     },
     "domainMembership": "Already in ‘{domain}’",
     "framePrompt": "Complete what {name} is by linking it to nearby nodes",
@@ -1165,7 +1166,7 @@
         "recentlyChangedMore": "+{count} more in the list below",
         "recentlyChangedWindowHint": "Docs edited in the last 7 days.",
         "newDocButtonLabel": "New document",
-        "newDocDisabledHint": "Open your folder to create new documents"
+        "newDocDisabledHint": "Open your folder to create documents — click to pick one"
       },
       "empty": {
         "eyebrow": "{count} documents",
@@ -1573,9 +1574,6 @@
       "paletteTooltip": "Search · commands · tags (⌘K)",
       "paletteAriaLabel": "Open palette (search · commands · tags)",
       "inspector": "Document info",
-      "inspectorTooltip": "Show outline · share · references",
-      "openInspectorAriaLabel": "Open document info",
-      "closeInspectorAriaLabel": "Close document info",
       "sourceAriaLabel": "Workspace source",
       "vaultToolsTooltip": "Workspace tools",
       "vaultToolsAriaLabel": "Open workspace tools menu",
@@ -1590,7 +1588,8 @@
       "vaultPillSwapAriaLabel": "Switch document folder",
       "vaultPillSampleLabel": "Built-in sample (this tool's own documents)",
       "docListCollapse": "Collapse document list",
-      "docListExpand": "Expand document list"
+      "docListExpand": "Expand document list",
+      "vaultChipLocalPending": "No folder yet"
     },
     "tabs": {
       "stripAriaLabel": "Open documents",
@@ -1947,7 +1946,9 @@
       "similarNodeWarning": "A similar node already exists — {title}",
       "similarNodeOpen": "Open that node",
       "similarNodeCreateAnyway": "Create new anyway"
-    }
+    },
+    "linkCopied": "Copied the document link",
+    "linkCopyFailed": "Could not copy the document link"
   },
   "topology": {
     "documentTitle": "Relief",

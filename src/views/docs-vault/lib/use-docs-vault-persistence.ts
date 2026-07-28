@@ -55,9 +55,21 @@ export function useDocsVaultPersistence({
   source,
   localVault,
 }: UseDocsVaultPersistenceArgs): UseDocsVaultPersistenceResult {
+  /**
+   * 이 볼트의 저장소 namespace.
+   *
+   * **폴더를 아직 안 고른 로컬도 `server` 가 아니다** (2026-07-28 소유자 실사용
+   * 제보). 종전에는 `source === 'local'` 이어도 handle 이 없으면 `'server'` 로
+   * 떨어졌다. 그래서 샘플에서 문서를 열어 둔 채 로컬로 전환하면 — 폴더를 고르기
+   * 전 상태 — **샘플의 열린 탭이 로컬 화면에 그대로 남았다**. 사용자는 소스를
+   * 바꿨는데 이전 소스의 문서가 상단에 붙어 있는 것을 본다.
+   *
+   * 사용자가 고른 소스가 namespace 를 정한다. 폴더 미선택은 "샘플" 이 아니라
+   * **"아직 폴더가 없는 로컬"** 이라는 별개 상태다.
+   */
   const recentKey = useMemo<VaultRecentKey>(() => {
-    if (source === 'local' && localVault.handle) {
-      return `local:${localVault.handle.name}`;
+    if (source === 'local') {
+      return localVault.handle ? `local:${localVault.handle.name}` : 'local:';
     }
     return 'server';
   }, [source, localVault.handle]);

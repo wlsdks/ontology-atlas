@@ -1,5 +1,5 @@
 import { useLocale, useTranslations } from "next-intl";
-import { FileText, GitBranch, Network } from "lucide-react";
+import { FileText, Network } from "lucide-react";
 import {
   buildOntologyDeeplinkForDoc,
   buildTopologyDeeplinkForDoc,
@@ -64,16 +64,18 @@ export function DocMetaBar({ doc }: { doc: VaultDoc }) {
           </span>
         </div>
         <div className="flex min-w-0 flex-wrap items-center gap-1.5">
-          {ontologyHref ? (
-            <Link
-              href={ontologyHref}
-              title={t("ontologyKindTitle", { kind: kindValue })}
-              className={actionLinkClass}
-            >
-              <GitBranch className="h-3.5 w-3.5 shrink-0" aria-hidden="true" />
-              <span>{t("ontologyKindLabel", { kind: kindValue })}</span>
-            </Link>
-          ) : null}
+          {/*
+            지도로 가는 입구는 **하나**다 (2026-07-28).
+
+            종전에는 「의미 지도」(`/ontology/?node=`)와 「지형도」
+            (`/topology/?p=`)가 나란히 있었다. 그런데 `/ontology` 는 지도로
+            가는 **얇은 리다이렉트**라(AGENTS.md — 구 허브는 은퇴했다) 두 링크가
+            같은 화면에 도착한다. 파라미터만 다른 두 입구는 선택지가 아니라
+            망설임이다.
+
+            직접 가는 쪽(`/topology` 포커스)만 남긴다 — 리다이렉트 한 홉이
+            줄고, 화면이 사용자에게 묻는 것이 하나 줄어든다.
+          */}
           {topologyHref ? (
             <Link
               href={topologyHref}

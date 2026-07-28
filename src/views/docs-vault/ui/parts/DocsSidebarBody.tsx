@@ -336,7 +336,11 @@ export function DocsSidebarBody({
               role="menu"
               aria-label={t("orderMenuLabel")}
               data-testid="docs-sidebar-order-menu"
-              className="absolute left-0 top-[calc(100%+6px)] z-50 w-48 rounded-[var(--chrome-radius-inner)] border border-[color:var(--color-border-soft)] bg-[color:var(--color-elevated)] p-2 shadow-[var(--chrome-shadow)]"
+              // 오른쪽 모서리에 앵커한다 — 이 버튼은 사이드바 오른쪽 끝에
+              // 붙어 있어서 `left-0` 으로 열면 192px 메뉴가 사이드바 밖으로
+              // 나간다(실측: 73px 넘침, 소유자 제보 2026-07-28). 컨테이너
+              // 가장자리 근처의 메뉴는 그 가장자리를 기준으로 자란다.
+              className="absolute right-0 top-[calc(100%+6px)] z-50 w-48 rounded-[var(--chrome-radius-inner)] border border-[color:var(--color-border-soft)] bg-[color:var(--color-elevated)] p-2 shadow-[var(--chrome-shadow)]"
             >
               <p className="px-1.5 pb-1 font-mono text-caption uppercase tracking-[0.16em] text-[color:var(--color-text-quaternary)]">
                 {t("orderSortHeader")}
@@ -374,12 +378,20 @@ export function DocsSidebarBody({
         <span className="flex-1" />
         {/* [D-4] "새 문서" 진입점 — 샘플(읽기 전용) 모드에서도 버튼 + 툴팁으로
             기능 존재를 알린다(지도와 같은 kind-first 다이얼로그). */}
+        {/*
+          읽기 전용 샘플에서도 **누를 수 있다**. 종전에는 비활성 + 호버 툴팁
+          이었는데, 40% 불투명도 아이콘의 호버 전용 설명은 도달하지 않았다 —
+          소유자 실사용에서 "새 문서 작성은 왜 없지?" 로 읽혔다.
+
+          이제 누르면 그것을 가능하게 하는 곳(내 폴더 열기)으로 간다. 라벨이
+          그 사실을 미리 말하므로 놀라지 않는다 — 헌장의 강등 문법("왜 안
+          되는지 + 어디로 가면 되는지")을 버튼 하나에 적용한 것이다.
+        */}
         <RailIconButton
           testId="docs-sidebar-new-doc"
           icon={<Plus size={15} aria-hidden />}
           label={canCreateNewDoc ? t("newDocButtonLabel") : t("newDocDisabledHint")}
           active={false}
-          disabled={!canCreateNewDoc}
           onClick={onCreateNewDoc}
         />
       </div>
