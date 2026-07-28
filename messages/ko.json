@@ -110,7 +110,8 @@
       "createTitle": "새 노드 만들기",
       "createDesc": "이름과 관계를 조립해 새 노드를 기록해요.",
       "exit": "그만하기",
-      "dialogAria": "공방을 어떻게 시작할지 고르기"
+      "dialogAria": "공방을 어떻게 시작할지 고르기",
+      "practice": "처음이신가요? 하나 같이 만들어 봅니다"
     },
     "exit": "그만하기",
     "returnToReview": "인사이트 검토로 돌아가기",
@@ -297,6 +298,27 @@
       "cancel": "취소",
       "closeAria": "닫기",
       "saved": "‘{name}’ 문서를 만들고 {count}가지를 기록했어요."
+    },
+    "practice": {
+      "step": {
+        "name": "만들 개념의 이름을 지어 보세요. 팀에서 실제로 쓰는 말이면 가장 좋습니다.",
+        "relate": "이 개념이 무엇과 이어지는지 한 군데만 골라 보세요. 네 방향 중 아무 곳이나 좋습니다.",
+        "save": "다 됐습니다. 저장하면 폴더 안에 마크다운 파일 하나가 생깁니다.",
+        "done": "저장했습니다."
+      },
+      "progress": "{current} / {total}",
+      "progressAria": "실습 진행",
+      "quit": "실습 그만두기",
+      "cleanupTitle": "해 보셨습니다",
+      "cleanupSummary": "「{name}」 을(를) 만들었습니다. 흉내가 아니라 진짜 파일이라, 지금 폴더 안에 들어 있습니다.",
+      "cleanupQuestion": "연습이었다면 지금 지울 수 있습니다. 남겨 두면 그대로 볼트의 개념이 됩니다.",
+      "delete": "지우기",
+      "keep": "남겨 두기",
+      "detachNote": "관계만 뗌",
+      "removed": "「{name}」 을(를) 지웠습니다.",
+      "removeFailed": "지우지 못했습니다 — {message}",
+      "agentHint": "이걸 매번 손으로 안 하셔도 됩니다. Claude Code · Codex · Cursor 를 연결하거나 API 키를 넣으면, 같은 파일을 에이전트가 대신 씁니다.",
+      "agentAction": "AI 연결하기"
     }
   },
   "liveActivity": {

@@ -53,8 +53,12 @@ export function nextStudioUrl(
  * (`guides`)가 그것이다. 나머지(`node`·`mode`·`edit`·`from`·`rel`·`name`)는
  * **그 이동이 정하는 값**이라 넘겨받지 않는다 — 안 지우면 이전 화면의 편집
  * 요청이 새 노드에 그대로 붙는다.
+ *
+ * `practice` 도 맥락이다. 실습은 저장 **후** 새 노드로 이동한 자리에서
+ * 마무리(「지울까요?」)를 물으므로, 그 이동에서 떨어져 나가면 실습이 저장
+ * 직후 증발하고 사용자는 방금 만든 파일을 치울 기회를 잃는다.
  */
-const CARRIED_PARAM_KEYS = ["via", "review", "guides"] as const;
+const CARRIED_PARAM_KEYS = ["via", "review", "guides", "practice"] as const;
 
 export function carryStudioContext(
   current: URLSearchParams,

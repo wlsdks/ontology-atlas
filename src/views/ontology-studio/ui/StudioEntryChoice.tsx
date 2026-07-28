@@ -21,6 +21,8 @@ export interface StudioEntryChoiceLabels {
   enhanceRecommend: string | null;
   createTitle: string;
   createDesc: string;
+  /** 실습 진입 한 줄 — 두 카드 아래 평문 링크. */
+  practice: string;
   exit: string;
   dialogAria: string;
 }
@@ -29,11 +31,18 @@ export function StudioEntryChoice({
   labels,
   onEnhance,
   onCreate,
+  onPractice,
   onExit,
 }: {
   labels: StudioEntryChoiceLabels;
   onEnhance: () => void;
   onCreate: () => void;
+  /**
+   * 실습 시작 — 세 번째 **카드**가 아니라 한 줄이다. 카드로 만들면 세 갈래가
+   * 대등해 보여서 "매번 셋 중 고르는 화면" 이 되는데, 실습은 평생 한 번 쓰는
+   * 문이다. 격자의 리듬(2열)도 지킨다.
+   */
+  onPractice: () => void;
   onExit: () => void;
 }) {
   const enhanceRef = useRef<HTMLButtonElement | null>(null);
@@ -92,10 +101,20 @@ export function StudioEntryChoice({
 
       <button
         type="button"
+        data-testid="studio-entry-practice"
+        onClick={onPractice}
+        className="studio-stage-in mt-5 rounded-lg px-3 py-1.5 text-caption text-[color:var(--color-text-tertiary)] underline underline-offset-4 transition-colors hover:text-[color:var(--color-text-primary)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--color-indigo-a46)]"
+        style={{ ["--studio-stagger" as string]: "120ms" }}
+      >
+        {labels.practice}
+      </button>
+
+      <button
+        type="button"
         data-testid="studio-entry-exit"
         onClick={onExit}
-        className="studio-stage-in mt-6 rounded-lg px-3 py-1.5 text-label text-[color:var(--color-text-quaternary)] transition-colors hover:text-[color:var(--color-text-secondary)]"
-        style={{ ["--studio-stagger" as string]: "120ms" }}
+        className="studio-stage-in mt-3 rounded-lg px-3 py-1.5 text-label text-[color:var(--color-text-quaternary)] transition-colors hover:text-[color:var(--color-text-secondary)]"
+        style={{ ["--studio-stagger" as string]: "160ms" }}
       >
         {labels.exit}
       </button>

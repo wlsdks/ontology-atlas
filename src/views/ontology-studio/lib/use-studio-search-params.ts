@@ -47,14 +47,22 @@ export function useStudioSearchParams(): URLSearchParams {
 /**
  * 공방 안에서의 이동 — 경로는 그대로, 쿼리만 바꾼다.
  *
- * 맥락 파라미터(`via`·`review`·`guides`)는 자동으로 따라온다. 나머지는
- * 호출자가 준 값이 전부다 — 안 지우면 이전 화면의 편집 요청이 새 노드에
- * 그대로 붙는다.
+ * 맥락 파라미터(`via`·`review`·`guides`·`practice`)는 자동으로 따라온다.
+ * 나머지는 호출자가 준 값이 전부다 — 안 지우면 이전 화면의 편집 요청이 새
+ * 노드에 그대로 붙는다.
+ *
+ * `drop` 은 **맥락을 끝내는** 유일한 문. 맥락 파라미터는 정의상 따라오므로,
+ * 그 맥락이 실제로 끝났을 때(실습 마무리 등) 명시적으로 떼어 낼 자리가 없으면
+ * 영영 따라다닌다 — 그러면 다음 저장이 또 실습으로 읽힌다.
  */
-export function useStudioNavigate(): (next: URLSearchParams) => void {
-  return useCallback((next: URLSearchParams) => {
+export function useStudioNavigate(): (
+  next: URLSearchParams,
+  options?: { drop?: readonly string[] },
+) => void {
+  return useCallback((next: URLSearchParams, options?: { drop?: readonly string[] }) => {
     const current = new URLSearchParams(window.location.search);
     const merged = carryStudioContext(current, next);
+    for (const key of options?.drop ?? []) merged.delete(key);
     const url = nextStudioUrl(
       window.location.pathname,
       window.location.search,
