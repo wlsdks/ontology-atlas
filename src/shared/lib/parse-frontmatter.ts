@@ -107,9 +107,7 @@ function peekIndentedKind(
 }
 
 function parseInlineList(raw: string): string[] {
-  return raw
-    .slice(1, -1)
-    .split(',')
+  return splitTopLevel(raw.slice(1, -1), ',')
     .map((s) => unquote(s.trim()))
     .filter(Boolean);
 }
@@ -118,9 +116,7 @@ function parseInlineObject(raw: string): Record<string, ParsedScalar> {
   const inner = raw.slice(1, -1).trim();
   if (!inner) return {};
   const out: Record<string, ParsedScalar> = {};
-  // 단순 split — value 안 콤마/콜론은 지원하지 않는다 (충분히 자주 쓰는
-  // x:1, y:2 같은 케이스만 인식).
-  for (const part of inner.split(',')) {
+  for (const part of splitTopLevel(inner, ',')) {
     const cIdx = part.indexOf(':');
     if (cIdx === -1) continue;
     const k = part.slice(0, cIdx).trim();
@@ -140,7 +136,56 @@ function parseScalar(value: string): ParsedScalar {
 }
 
 function unquote(value: string): string {
+  const trimmed = value.trim();
+  // 감싼 따옴표를 벗길 때만 **언이스케이프도 함께** 한다. serializer 가
+  // `"` 를 이스케이프해 쓰는데 여기서 되돌리지 않으면, 저장할 때마다
+  // 백슬래시가 한 겹씩 더 붙는다(실측 3회 왕복: 1개 → 2개 → 4개).
+  // 인용부호 없는 값은 이스케이프 문법이 아니라 원문이므로 건드리지 않는다.
+  const quote = trimmed.length >= 2 ? trimmed[0] : '';
+  if ((quote === '"' || quote === "'") && trimmed[trimmed.length - 1] === quote) {
+    return trimmed.slice(1, -1).replace(new RegExp(`\\\\(${quote}|\\\\)`, 'g'), '$1');
+  }
   return value.replace(/^["']|["']$/g, '');
+}
+
+/**
+ * 따옴표를 아는 구분자 분리 (2026-07-28 실측 수정).
+ *
+ * 종전에는 인라인 리스트/객체를 무조건 콤마로 쪼갰고, 주석이 그 한계를
+ * "지원하지 않는다" 고 적어 두고 있었다. 그런데 값 안의 콤마는 **조용히
+ * 데이터를 자른다** — `labels: { ko: "지도, 검색" }` 의 뒷조각이 사라진다.
+ * 따옴표 안의 구분자는 데이터이지 구분자가 아니다.
+ */
+function splitTopLevel(input: string, separator: string): string[] {
+  const parts: string[] = [];
+  let current = '';
+  let quote: string | null = null;
+  for (let i = 0; i < input.length; i += 1) {
+    const ch = input[i];
+    if (quote) {
+      if (ch === '\\' && i + 1 < input.length) {
+        current += ch + input[i + 1];
+        i += 1;
+        continue;
+      }
+      if (ch === quote) quote = null;
+      current += ch;
+      continue;
+    }
+    if (ch === '"' || ch === "'") {
+      quote = ch;
+      current += ch;
+      continue;
+    }
+    if (ch === separator) {
+      parts.push(current);
+      current = '';
+      continue;
+    }
+    current += ch;
+  }
+  parts.push(current);
+  return parts;
 }
 
 export function firstHeading(body: string): string | null {

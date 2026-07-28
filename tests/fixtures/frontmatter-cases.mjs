@@ -156,4 +156,30 @@ export const CASES = [
     input: "\uFEFF---\r\nkind: domain\r\ntitle: D\r\n---\r\n본문",
     expected: { frontmatter: { kind: "domain", title: "D" }, body: "본문" },
   },
+  // ── 인용·구분자 (2026-07-28 코드 품질 리뷰 실측) ──────────────────────────
+  //
+  // serializer 는 `"` 를 `\"` 로 이스케이프하는데 파서는 언이스케이프를 안
+  // 했다. 그래서 `patch_concept` 가 프론트매터를 재직렬화할 때마다 백슬래시가
+  // **배가**된다 — 저장 반복 = 오염 증식(실측 3회: 1개 → 2개 → 4개).
+  //
+  // 인라인 리스트/객체는 무조건 `split(',')` 라 값 안의 콤마에서 쪼개졌다.
+  // `labels: { ko: "지도, 검색" }` 의 뒷조각이 조용히 사라진다.
+  {
+    name: "따옴표 안의 이스케이프된 따옴표 — 원문으로 되돌린다",
+    input: '---\nkind: capability\ntitle: "say \\"hello\\""\n---\n',
+    expected: { frontmatter: { kind: "capability", title: 'say "hello"' }, body: "" },
+  },
+  {
+    name: "인라인 리스트 — 따옴표 안의 콤마로 쪼개지 않는다",
+    input: '---\nkind: capability\ntags: ["a, b", c]\n---\n',
+    expected: { frontmatter: { kind: "capability", tags: ["a, b", "c"] }, body: "" },
+  },
+  {
+    name: "인라인 객체 — 따옴표 안의 콤마로 쪼개지 않는다",
+    input: '---\nkind: capability\nlabels: { ko: "지도, 검색", en: Map }\n---\n',
+    expected: {
+      frontmatter: { kind: "capability", labels: { ko: "지도, 검색", en: "Map" } },
+      body: "",
+    },
+  },
 ];

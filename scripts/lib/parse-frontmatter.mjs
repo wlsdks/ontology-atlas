@@ -74,9 +74,7 @@ export function parseFrontmatter(input) {
       continue;
     }
     if (value.startsWith("[") && value.endsWith("]")) {
-      frontmatter[key] = value
-        .slice(1, -1)
-        .split(",")
+      frontmatter[key] = splitTopLevel(value.slice(1, -1), ",")
         .map((s) => unquote(s.trim()))
         .filter(Boolean);
       continue;
@@ -85,7 +83,7 @@ export function parseFrontmatter(input) {
       const inner = value.slice(1, -1).trim();
       const obj = {};
       if (inner) {
-        for (const part of inner.split(",")) {
+        for (const part of splitTopLevel(inner, ",")) {
           const cIdx = part.indexOf(":");
           if (cIdx === -1) continue;
           const k = part.slice(0, cIdx).trim();
@@ -119,5 +117,52 @@ function parseScalar(value) {
 }
 
 function unquote(value) {
+  const trimmed = value.trim();
+  // 감싼 따옴표를 벗길 때만 **언이스케이프도 함께** 한다. serializer 가
+  // `"` 를 이스케이프해 쓰는데 여기서 되돌리지 않으면, 저장할 때마다
+  // 백슬래시가 한 겹씩 더 붙는다(실측 3회 왕복: 1개 → 2개 → 4개).
+  // 인용부호 없는 값은 이스케이프 문법이 아니라 원문이므로 건드리지 않는다.
+  const quote = trimmed.length >= 2 ? trimmed[0] : "";
+  if ((quote === '"' || quote === "'") && trimmed[trimmed.length - 1] === quote) {
+    return trimmed.slice(1, -1).replace(new RegExp(`\\\\(${quote}|\\\\)`, "g"), "$1");
+  }
   return value.replace(/^["']|["']$/g, "");
 }
+
+// 따옴표를 아는 구분자 분리 (2026-07-28 실측 수정).
+//
+// 종전에는 인라인 리스트/객체를 무조건 콤마로 쪼갰다. 값 안의 콤마에서
+// 쪼개져 `labels: { ko: "지도, 검색" }` 의 뒷조각이 조용히 사라졌다.
+// 따옴표 안의 구분자는 데이터이지 구분자가 아니다.
+function splitTopLevel(input, separator) {
+  const parts = [];
+  let current = "";
+  let quote = null;
+  for (let i = 0; i < input.length; i += 1) {
+    const ch = input[i];
+    if (quote) {
+      if (ch === "\\" && i + 1 < input.length) {
+        current += ch + input[i + 1];
+        i += 1;
+        continue;
+      }
+      if (ch === quote) quote = null;
+      current += ch;
+      continue;
+    }
+    if (ch === '"' || ch === "'") {
+      quote = ch;
+      current += ch;
+      continue;
+    }
+    if (ch === separator) {
+      parts.push(current);
+      current = "";
+      continue;
+    }
+    current += ch;
+  }
+  parts.push(current);
+  return parts;
+}
+
