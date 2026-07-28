@@ -11,6 +11,7 @@
 // 실행 형태는 도움말 첫 단락이 말한다.
 
 import { COLORS } from './lib/colors.mjs';
+import { cliInvocation } from './lib/self-invocation.mjs';
 import {
   mkdirSync,
   existsSync,
@@ -29,6 +30,10 @@ import { closestAllowedValue, formatUnknownFlagError } from './lib/cli-args.mjs'
 import { readMcpPackageMetadata } from './lib/mcp-metadata.mjs';
 import { runBootstrap } from './commands/bootstrap.mjs';
 import { stampInitCompleted } from './lib/telemetry.mjs';
+
+// 화면에 찍는 **실행용** 명령의 접두사. 이 파일이 안내하는 명령은 붙여 넣으면
+// 실제로 돌아야 한다 — 자세한 규율은 `lib/self-invocation.mjs`.
+const CLI = cliInvocation();
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const TEMPLATE_ROOT = resolve(__dirname, '..', 'templates', 'vault');
@@ -486,16 +491,14 @@ async function runInit(targetArg, opts = {}) {
     serverCommand.command,
     ...serverCommand.args,
   ].map(shellQuote).join(' ');
-  const analyzeCommand = ['ontology-atlas', 'analyze', '.', '--vault', cwdVaultArg]
-    .map(shellQuote)
+  // CLI 자기 호출은 이미 실행 가능한 형태라 다시 따옴표로 감싸지 않는다 —
+  // 감싸면 `node /path` 전체가 한 토큰이 되어 실행이 깨진다.
+  const analyzeCommand = [CLI, ...['analyze', '.', '--vault', cwdVaultArg].map(shellQuote)]
     .join(' ');
   const bootstrapCommand = [
-    'ontology-atlas',
-    'bootstrap',
-    '.',
-    '--vault',
-    cwdVaultArg,
-  ].map(shellQuote).join(' ');
+    CLI,
+    ...['bootstrap', '.', '--vault', cwdVaultArg].map(shellQuote),
+  ].join(' ');
 
   // Slice 0 magic-moment instrumentation (PRODUCT-PLAN-2026-07.md §4/§9) —
   // local-only baseline for "vault worth asking" (see lib/telemetry.mjs).
@@ -513,9 +516,9 @@ ${COLORS.bold}Next steps:${COLORS.reset}
 
   ${COLORS.dim}1.${COLORS.reset} ${COLORS.bold}Explore the vault from the terminal:${COLORS.reset}
        ${COLORS.cyan}cd ${target}${COLORS.reset}
-       ${COLORS.cyan}ontology-atlas list${COLORS.reset}                        ${COLORS.dim}# 5 starter nodes${COLORS.reset}
-       ${COLORS.cyan}ontology-atlas validate${COLORS.reset}                    ${COLORS.dim}# frontmatter integrity${COLORS.reset}
-       ${COLORS.cyan}ontology-atlas mcp-verify${COLORS.reset}                  ${COLORS.dim}# server + ${MCP_TOOL_COUNT}-tool MCP + graph smoke${COLORS.reset}
+       ${COLORS.cyan}${CLI} list${COLORS.reset}                        ${COLORS.dim}# 5 starter nodes${COLORS.reset}
+       ${COLORS.cyan}${CLI} validate${COLORS.reset}                    ${COLORS.dim}# frontmatter integrity${COLORS.reset}
+       ${COLORS.cyan}${CLI} mcp-verify${COLORS.reset}                  ${COLORS.dim}# server + ${MCP_TOOL_COUNT}-tool MCP + graph smoke${COLORS.reset}
 
   ${COLORS.dim}2.${COLORS.reset} ${COLORS.bold}Bootstrap from your codebase${COLORS.reset} (recommended — agent-less, 1 line):
        ${COLORS.cyan}${analyzeCommand}${COLORS.reset}     ${COLORS.dim}# preview candidates only${COLORS.reset}
@@ -525,8 +528,8 @@ ${COLORS.bold}Next steps:${COLORS.reset}
        ${COLORS.dim}weak imports.${COLORS.reset}
 
   ${COLORS.dim}3.${COLORS.reset} ${COLORS.bold}Or add your first node by hand:${COLORS.reset}
-       ${COLORS.cyan}ontology-atlas add capability auth/token-issue --title="Token issue" --domain=auth${COLORS.reset}
-       ${COLORS.cyan}ontology-atlas find token${COLORS.reset}                  ${COLORS.dim}# verify it shows up${COLORS.reset}
+       ${COLORS.cyan}${CLI} add capability auth/token-issue --title="Token issue" --domain=auth${COLORS.reset}
+       ${COLORS.cyan}${CLI} find token${COLORS.reset}                  ${COLORS.dim}# verify it shows up${COLORS.reset}
 
   ${COLORS.dim}4.${COLORS.reset} ${COLORS.bold}Edit project.md${COLORS.reset} — set your project's real name + description.
        Then add domains / capabilities / elements as you discover them.
@@ -588,7 +591,7 @@ async function runQuickStart({ target, cwdVaultArg }) {
 ${COLORS.green}${COLORS.bold}quick start done${COLORS.reset} — vault scaffolded + bootstrapped from your repo.
 
 ${COLORS.bold}Next:${COLORS.reset}
-  ${COLORS.dim}1.${COLORS.reset} Open the vault        ${COLORS.cyan}cd ${target} && ontology-atlas list${COLORS.reset}
+  ${COLORS.dim}1.${COLORS.reset} Open the vault        ${COLORS.cyan}cd ${target} && ${CLI} list${COLORS.reset}
   ${COLORS.dim}2.${COLORS.reset} MCP already wired      restart Claude Code / Cursor / Codex from this folder
   ${COLORS.dim}3.${COLORS.reset} Try asking your agent  e.g. "what does the auth capability depend on?"
 `);
