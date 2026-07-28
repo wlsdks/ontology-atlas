@@ -59,6 +59,15 @@ jobs:
       - name: Setup Rust
         uses: dtolnay/rust-toolchain@stable
 
+      # MCP 사이드카를 단일 바이너리로 굽는 컴파일러다(`bun build --compile`).
+      # 러너에 기본 설치돼 있지 않아 `v1.0.0-rc.2` 가 여기서 멈췄다 — 번들링을
+      # 들여올 때(#732) 이 설치 단계가 같이 안 들어왔다. 툴체인 설치는 위쪽에
+      # 모아 둔다.
+      - name: Setup Bun
+        uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: latest
+
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
 
