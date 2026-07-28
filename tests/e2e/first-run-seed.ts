@@ -1,6 +1,5 @@
 import type { Page } from "@playwright/test";
-import { DESTINATION_TOURS } from "../../src/features/guided-tour/model/tour-steps";
-import { destinationTourStatusKey } from "../../src/features/guided-tour/model/tour-storage";
+import { FIRST_RUN_SEEN_ENTRIES } from "../../src/features/guided-tour/model/first-run-seen";
 
 /**
  * "첫 방문 자동 표면을 이미 본 사용자" 로 세션을 시작한다.
@@ -11,21 +10,15 @@ import { destinationTourStatusKey } from "../../src/features/guided-tour/model/t
  * 클릭을 삼켜 느린 러너에서만 터지는 타임아웃이 된다(2026-07-26 CI 실측:
  * 문서 목록 펼치기 버튼이 문서함 안내에 가려 60초 타임아웃).
  *
- * 키 목록을 스펙마다 손으로 적으면 목적지가 늘 때 조용히 썩으므로
- * `DESTINATION_TOURS` 에서 직접 파생한다 — 안내를 추가하면 시드도 같이 는다.
+ * 키 목록은 `features/guided-tour/model/first-run-seen.ts` 가 단일 출처다 —
+ * 그쪽이 `DESTINATION_TOURS` 에서 직접 파생하므로 안내를 추가하면 시드도 같이
+ * 는다. 같은 목록에 URL 진입점(`?guides=off`)도 달려 있어, Playwright 가 아닌
+ * 감사 도구(chrome-devtools · 앱 내장 브라우저)도 같은 상태를 만들 수 있다.
  *
  * 안내 자체의 회귀는 `guided-tour.spec.ts`(수동 진입)와
  * `responsive-overflow-audit.spec.ts`(자동 진입 시 오버레이 배타)가 검증한다.
  */
-export const FIRST_RUN_SEEN_ENTRIES: readonly (readonly [string, string])[] = [
-  // 폴더-우선 안내 시트 — 이 키만 '1' 을 읽는다.
-  ["vault-open-guide:auto:v1", "1"],
-  // 지도의 8단계 여정.
-  ["guided-tour:v1", "done"],
-  ...Object.keys(DESTINATION_TOURS).map(
-    (id) => [destinationTourStatusKey(id), "done"] as const,
-  ),
-];
+export { FIRST_RUN_SEEN_ENTRIES };
 
 export async function seedFirstRunSeen(page: Page): Promise<void> {
   await page.addInitScript((entries: readonly (readonly [string, string])[]) => {

@@ -38,6 +38,23 @@ description: Audit a finished front-end change against the design system by meas
 `networkidle` 을 기본값으로 쓰지 않는다 — hydration 이 무거운 화면에서는 준비되기
 전에 찍힌다. 특정 요소의 존재를 기다려라.
 
+### 첫 방문 안내를 끈다 — `?guides=off` (2026-07-28)
+
+지도와 다섯 목적지(문서함·공방·인사이트·프로젝트·기록)는 **첫 방문에 스크림 +
+카드로 화면을 덮는다.** 재려는 대상을 그대로 가리므로, 끄지 않으면 감사가
+성립하지 않는다.
+
+```
+http://localhost:3000/ko/topology/?guides=off      ← 모든 첫 방문 안내를 "봤음" 으로
+http://localhost:3000/ko/topology/?guides=reset    ← 되돌리기(안내 자체를 검수할 때)
+```
+
+**손으로 닫지 마라.** 닫는 동작 자체가 화면을 바꾸고 포커스를 옮긴다 — 모션
+감사에서는 그 프레임이 정확히 재려던 프레임이다. 키 목록은
+`features/guided-tour/model/first-run-seen.ts` 단일 출처이고 `DESTINATION_TOURS`
+에서 파생되므로 안내가 늘어도 같이 는다. Playwright 는 같은 목록을 쓰는
+`seedFirstRunSeen(page)` 를 그대로 쓴다.
+
 ## 1. 겹침 — rect 교집합
 
 같은 스태킹 문맥에서 독립이라고 믿는 요소들의 rect 를 전수로 잡아 **쌍별 교집합
