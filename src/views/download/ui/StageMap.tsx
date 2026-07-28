@@ -51,6 +51,27 @@ export function StageMap() {
   const [expanded, setExpanded] = useState<ReadonlySet<string>>(() => new Set());
 
   /**
+   * 첫 지도 연출 토큰 — **엔진이 이미 가진 안무를 관문에서 깨우는 것**이다
+   * (모션석 판정 2026-07-29).
+   *
+   * `use-topology-loop.ts` 의 P3d(E1) 연출은 전 노드를 project 노드 홈에
+   * 모았다가 호밍 스프링(임계감쇠, reduced-motion 스냅 내장)으로 제자리에
+   * 정착시킨다. 신규 모션 계약이 0인 기존 기제인데, 여기서 `revealToken={1}`
+   * 을 **상수로** 넘기고 있어서 한 번도 발화한 적이 없었다 — 엔진의 비교
+   * 기준(`lastRevealTokenRef`)이 0 으로 시작하므로 첫 마운트가 그 증가를
+   * 그대로 삼킨다. 그 결과 p(t) 실측에서 캔버스가 **1프레임 하드컷**으로
+   * 완성된 지도를 내놓았다(첫 유효 프레임 diff 5042/5044).
+   *
+   * 이 페이지의 유일한 판매 논증이 "이건 그림이 아니라 살아 있는 엔진" 인데
+   * 도착하는 순간이 죽은 그림이면 그 논증이 첫 프레임에서 무너진다. 정착이
+   * 보이는 것이 곧 물리의 증명이다.
+   *
+   * rAF 한 틱을 기다리는 이유: 월드·루프가 준비된 **뒤에** 0→1 전이가 보여야
+   * 한다. 같은 프레임에 올리면 마운트가 다시 삼킨다.
+   */
+  const [revealToken, setRevealToken] = useState(0);
+
+  /**
    * 관문 토큰 스코프를 켠다 — `app/globals.css` 의 `html[data-gateway-stage]`.
    *
    * 왜 루트 속성인가: 캔버스 토큰 리더는 `document.documentElement` 의
@@ -89,6 +110,13 @@ export function StageMap() {
     };
   }, []);
 
+  useEffect(() => {
+    if (!scoped) return;
+    // rAF 콜백이라 effect 본문의 동기 setState 가 아니다 — 억제 불필요.
+    const id = requestAnimationFrame(() => setRevealToken(1));
+    return () => cancelAnimationFrame(id);
+  }, [scoped]);
+
   const toggleCluster = useCallback((parentId: string) => {
     setExpanded((prev) => {
       const next = new Set(prev);
@@ -115,7 +143,7 @@ export function StageMap() {
         // 관문에는 "지도 맞추기" 버튼이 없으므로 토큰은 마운트 1회로 고정한다.
         fitViewToken={1}
         relayoutToken={1}
-        revealToken={1}
+        revealToken={revealToken}
         onSelect={setSelected}
         onPaneClick={() => setSelected(null)}
         expandedParents={expanded}
