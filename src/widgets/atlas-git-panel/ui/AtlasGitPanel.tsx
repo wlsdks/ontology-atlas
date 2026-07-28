@@ -1,6 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useState, useSyncExternalStore } from "react";
+import { stepRowMotionClass, stepRowUsesStagger } from "../lib/step-row-motion";
 import { useTranslations } from "next-intl";
 // `History as HistoryIcon` — 사용성 검수 P0 (2026-07-23): 특정 HMR/번들 상태에서
 // bare `History` 식별자가 전역 DOM History 생성자로 해석돼 `<History>` JSX 가
@@ -1370,11 +1371,14 @@ function StepList({
   history,
   expandedHash,
   setExpandedHash,
+  settledHash,
 }: {
   t: Translator;
   history: GitCommitInfo[];
   expandedHash: string | null;
   setExpandedHash: (v: string | null) => void;
+  /** 방금 남긴 커밋의 해시 — 그 한 줄만 확정 램프로 정착시킨다. */
+  settledHash?: string | null;
 }) {
   if (history.length === 0) {
     return (
@@ -1406,7 +1410,13 @@ function StepList({
         const trail = summary.overflow > 0 ? t("moreSlugs", { count: summary.overflow }) : "";
         const expanded = expandedHash === commit.hash;
         return (
-          <li key={commit.hash} className="git-fade-in" style={staggerStyle(index)}>
+          <li
+            key={commit.hash}
+            // 방금 남긴 줄만 확정 서명을 받는다 — 이미 있던 역사가 다시
+            // 태어나면 "무엇이 방금 일어났나" 라는 정보가 흐려진다.
+            className={stepRowMotionClass(commit.hash, settledHash)}
+            style={stepRowUsesStagger(commit.hash, settledHash) ? staggerStyle(index) : undefined}
+          >
             <button
               type="button"
               data-testid="atlas-git-history-item"
@@ -1702,6 +1712,18 @@ function DesktopBody({
   remoteNotice: string | null;
   onSetRemote: () => void;
 }) {
+  /**
+   * 방금 남긴 커밋의 해시 — 지난 걸음 목록에서 **그 한 줄만** 확정 램프로
+   * 정착시킨다(`--motion-settle`). 이 표면 최대의 확정인데 종전에는 결과 한
+   * 줄만 120ms 페이드로 왔고, "썼다" 는 알겠는데 **어디에 박혔는지**를
+   * 아무것도 안 보여줬다.
+   *
+   * 나머지 행은 손대지 않는다 — 이미 있던 역사가 다시 태어나면 "무엇이 방금
+   * 일어났나" 라는 정보가 흐려진다. key 가 커밋 해시라 기존 행의 DOM 은
+   * 재사용되고 애니메이션도 재생되지 않는다.
+   */
+  const settledHash = snapshotResult?.commitHash ?? null;
+
   if (stage === "loading") {
     return (
       <SetupFrame t={t} step={null} state="loading">
@@ -1877,6 +1899,7 @@ function DesktopBody({
               history={history}
               expandedHash={expandedHash}
               setExpandedHash={setExpandedHash}
+              settledHash={settledHash}
             />
           </div>
           {dock}
@@ -1986,6 +2009,7 @@ function DesktopBody({
                   history={history}
                   expandedHash={expandedHash}
                   setExpandedHash={setExpandedHash}
+                  settledHash={settledHash}
                 />
               </div>
             )}

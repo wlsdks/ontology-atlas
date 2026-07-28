@@ -910,6 +910,50 @@
     animation-delay: calc(var(--git-row-index, 0) * var(--git-row-stagger));
   }
 
+  /* ── 커밋 확정의 서명 (2026-07-28 모션 감사 「기록」 자리) ─────────────────
+     이 표면 최대의 확정인데 `--motion-settle` 사용이 **0회**였다. 남기기를
+     누르면 다섯 표면이 동시에 하드 스왑하고 결과 한 줄만 120ms 페이드로
+     온다 — "썼다" 는 알겠는데 **"어디에 박혔는지"** 를 아무것도 안 보여준다.
+
+     그래서 방금 생긴 **그 한 줄만** 확정 램프로 정착시킨다. 이미 있던 역사가
+     다시 태어나면 안 되므로 나머지 행은 손대지 않는다(그 행들은 DOM 이
+     재사용돼 애니메이션이 재생되지 않는다 — key 가 커밋 해시다).
+
+     이동축은 2px 이내다. 확정의 서명은 **불투명도와 색**이 진다 — 왼쪽
+     경계선이 인디고로 섰다가 제자리 색으로 가라앉는 것이 "방금 사실이 됐다"
+     는 진술이고, 그건 끄면 잃는 정보다(어느 줄이 방금 것인지).
+
+     glow/파티클 없음 — 게임 예외는 2026-07-24 에 폐기됐고 여기도 예외가
+     아니다. 중독은 파티클이 아니라 루프에서 온다. */
+  .git-commit-settle {
+    animation: gitCommitSettle var(--motion-settle) var(--motion-ease) both;
+  }
+
+  /** 감속 동등물 — 이동축 제거, 불투명도·색은 유지(정보를 뺏지 않는다). */
+  @keyframes gitCommitSettleReduced {
+    from {
+      opacity: 0;
+      border-left-color: var(--color-indigo-brand);
+    }
+    to {
+      opacity: 1;
+      border-left-color: transparent;
+    }
+  }
+
+  @keyframes gitCommitSettle {
+    from {
+      opacity: 0;
+      transform: translateY(-2px);
+      border-left-color: var(--color-indigo-brand);
+    }
+    to {
+      opacity: 1;
+      transform: translateY(0);
+      border-left-color: transparent;
+    }
+  }
+
 
   /* ── 목록 행 펼침/접힘 (2026-07-26, [AI 연결] 벤더 행) ────────────────────
      **나가는 길이 들어온 길과 같아야 한다.** 접힘 모션 없이 툭 사라지면
@@ -3070,6 +3114,16 @@
        계단은 "순서" 를 말하는 장치지 인과를 말하는 장치가 아니라서, 감속
        사용자에게는 목록이 한 번에 도착하는 편이 낫다. */
     .git-fade-in {
+      animation-duration: var(--motion-fast) !important;
+      animation-delay: 0ms !important;
+    }
+
+    /* 확정 서명은 **남긴다** — 어느 줄이 방금 것인지는 정보이고, 감속
+       사용자에게서 정보를 빼앗는 것이 감속의 뜻이 아니다. 전정 자극을 주는
+       것은 이동축이므로 그것만 없애고 불투명도·색은 그대로 둔다. 시간은
+       확인 램프로 내린다. */
+    .git-commit-settle {
+      animation-name: gitCommitSettleReduced !important;
       animation-duration: var(--motion-fast) !important;
       animation-delay: 0ms !important;
     }
