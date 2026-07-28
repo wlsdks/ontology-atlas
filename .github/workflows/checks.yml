@@ -116,6 +116,16 @@ jobs:
       #
       # 통합 테스트(`integration.test.mjs`)만 뺀다. 그 하나가 162초이고
       # (단위 416건은 합쳐 1.2초) 실서버를 띄운다 — 별도 스텝의 몫이다.
+      # MCP 는 워크스페이스 멤버가 아니라(루트에 `pnpm-workspace.yaml` 이 없다)
+      # 루트 설치가 `mcp/node_modules` 를 안 만든다. 순수 단위 케이스는 그래도
+      # 돌지만, 실제 서버를 띄우는 케이스가 `@modelcontextprotocol/sdk` 를 못
+      # 찾아 죽는다 — 로컬에서는 예전에 설치해 둔 게 있어서 통과했고, CI 에서
+      # 처음 드러났다(스위트를 물린 첫날). 릴리스 워크플로가 이미 쓰는 것과
+      # 같은 한 줄이다.
+      - name: Install MCP dependencies
+        if: always()
+        run: pnpm --dir mcp install --frozen-lockfile
+
       - name: MCP unit tests
         if: always()
         run: pnpm test:mcp:unit
