@@ -207,7 +207,7 @@ export function BlockImportModule() {
               aria-modal="true"
               aria-label={t("dialogAria")}
               data-testid="block-import-dialog"
-              className="flex max-h-[calc(100vh-3rem)] w-full max-w-[440px] flex-col overflow-hidden rounded-xl border border-[color:var(--color-divider)] bg-[color:var(--color-panel)] shadow-2xl"
+              className="flex max-h-[calc(100vh-3rem)] w-full max-w-[440px] flex-col overflow-hidden rounded-xl border border-[color:var(--color-divider)] bg-[color:var(--color-panel)] shadow-[var(--shadow-elevation-3)]"
             >
               <header className="flex shrink-0 items-start justify-between gap-3 border-b border-[color:var(--color-border-soft)] px-5 py-4">
                 <div className="min-w-0">

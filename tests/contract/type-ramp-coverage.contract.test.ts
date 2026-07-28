@@ -36,7 +36,11 @@ import { codexMigratedGlobs } from "../../eslint.config.mjs";
  * - 부채가 0이 된 디렉토리는 `codexMigratedGlobs` 로 승격하라고 실패로 알린다.
  */
 
-/** ESLint `arbitrarySizeSelectors` 와 같은 판정. 한 쪽만 고치면 드리프트다. */
+/** ESLint `arbitrarySizeSelectors` 와 같은 판정을 **손으로 복제한 것**이다.
+ * 한 쪽만 고치면 드리프트고, 실제로 드리프트했다 — 2026-07-28 실측에서 12
+ * 패밀리 중 7종만 여기 있었다. 복제본은 반드시 갈라지므로 근본 해법은
+ * 원본에서 파생시키는 것이다. 그 리팩터 전까지는 **패밀리를 추가할 때 양쪽을
+ * 같이 고친다**. */
 const ARBITRARY_SIZE = [
   /text-\[[0-9.]+px\]/g,
   /rounded-\[[0-9.]+px\]/g,
@@ -45,6 +49,17 @@ const ARBITRARY_SIZE = [
   /(?:^|[^-\w])duration-\d+/g,
   /leading-\[[0-9.]+\]/g,
   /text-\[length:var\(--text-/g,
+  // 2026-07-28 — 이 목록이 ESLint 셀렉터와 **갈라져 있었다**. 주석은 "같은
+  // 판정" 이라 적어 놨는데 12 패밀리 중 7종만 복제돼 있었고, 나머지 5종은
+  // lint 가 안 보는 14개 디렉토리에서 아무 게이트도 없이 자랄 수 있었다.
+  // 그게 정확히 이 래칫이 막으라고 만들어진 침묵이다.
+  //
+  // 근본 해법은 셀렉터를 원본에서 **파생**시키는 것이다(복제본은 반드시
+  // 갈라진다). 그 리팩터가 오기 전까지, 목록을 맞춰 두고 개수를 잰다.
+  /animate-\[[^\]]*_[0-9.]+m?s/g,
+  /duration-\[[0-9.]+m?s\]/g,
+  /shadow-\[0_0_(?!0[_\]])[^\]]*var\(--color-(?!shadow-)/g,
+  /(?:^|[^-\w])shadow-(?:2xs|xs|sm|md|lg|xl|2xl)(?![-\w])/g,
 ];
 
 /**

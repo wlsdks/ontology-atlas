@@ -348,7 +348,7 @@ function SearchPaletteDialog({
         aria-labelledby="search-palette-title"
         aria-describedby="search-palette-help"
         // eslint-disable-next-line no-restricted-syntax -- 검색 팔레트 floating 카드(22px)는 overlay sheet 반경으로 panel(12px) 램프 밖 의도적 예외.
-        className="relative flex h-full w-full flex-col overflow-hidden border border-[color:var(--color-divider)] bg-[color:var(--color-panel)] shadow-2xl md:h-auto md:max-w-xl md:rounded-[22px]"
+        className="relative flex h-full w-full flex-col overflow-hidden border border-[color:var(--color-divider)] bg-[color:var(--color-panel)] shadow-[var(--shadow-elevation-3)] md:h-auto md:max-w-xl md:rounded-[22px]"
       >
         <div className="flex items-center gap-3 border-b border-[color:var(--color-overlay-2)] px-4 py-3">
           <Search size={16} className="shrink-0 text-[color:var(--color-text-tertiary)]" />

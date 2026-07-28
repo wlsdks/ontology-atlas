@@ -166,6 +166,38 @@ const arbitrarySizeSelectors = [
     message:
       '모션 duration 하드코딩 금지 — 애니메이션 단축 문법 안의 시간 (template literal). --motion-* 토큰을 var() 로.',
   },
+  // 2026-07-28 duration 의 **대괄호형** — `duration-<숫자>` 룰은 유틸리티의
+  // 숫자 접미사만 본다. `duration-[180ms]` 는 대괄호 안이라 그 정규식 밖이고,
+  // 램프 우회 룰(램프 토큰을 arbitrary length 로 참조)에도 안 걸린다. 전수
+  // 측정 1건(문서함 사이드바 폭 전이)을 치환하고 켰다 — 위반 0, 총계 불변.
+  // 토큰 참조형(`duration-[var(--motion-base)]`)은 숫자로 시작하지 않아
+  // 이 정규식에 안 걸린다.
+  {
+    selector: 'Literal[value=/duration-\\[[0-9.]+m?s\\]/]',
+    message:
+      '모션 duration 하드코딩 금지 — 대괄호 안의 시간도 램프를 탄다. --motion-fast/base/settle 을 var() 로 참조한다.',
+  },
+  {
+    selector: 'TemplateElement[value.raw=/duration-\\[[0-9.]+m?s\\]/]',
+    message:
+      '모션 duration 하드코딩 금지 — 대괄호 안의 시간 (template literal). --motion-* 토큰을 var() 로.',
+  },
+  // 2026-07-28 Tailwind **명명 그림자** — 고도 사다리(`--shadow-elevation-1/2/3`)
+  // 를 정의해 놓고 룰이 arbitrary value 만 봐서, `shadow-2xl` 같은 프레임워크
+  // 기본값이 사다리 밖에서 살아 있었다. 전수 측정 6건이 전부 시트/다이얼로그
+  // (= dialog 단)여서 한 PR 로 치환 가능했고, 치환 후 위반 0 · 총계 불변.
+  // `shadow-none` 은 "그림자 없음" 이라는 정당한 선언이라 목록에서 뺀다.
+  // ⚠️ 메시지에 리터럴 유틸리티 문법 금지 — Tailwind v4 스캐너가 이 파일을 훑는다.
+  {
+    selector: 'Literal[value=/(?:^|[^-\\w])shadow-(?:2xs|xs|sm|md|lg|xl|2xl)(?![-\\w])/]',
+    message:
+      '고도 사다리 이탈 — Tailwind 기본 그림자 대신 --shadow-elevation-1/2/3 (coach-mark < popover < dialog) 을 shadow 유틸리티 안에서 var() 로 참조한다.',
+  },
+  {
+    selector: 'TemplateElement[value.raw=/(?:^|[^-\\w])shadow-(?:2xs|xs|sm|md|lg|xl|2xl)(?![-\\w])/]',
+    message:
+      '고도 사다리 이탈 (template literal) — --shadow-elevation-* 토큰을 var() 로 참조한다.',
+  },
   // 2026-07-28 색 있는 헤일로 — `design.md` 가 「glow-like boxShadow `0 0 ...` ring」
   // 을 이름으로 금지해 놨는데, 그림자 룰이 `var(` 있는 값을 통째로 면제해서
   // 하단 탭바의 활성 표시가 `0 0 12px` 인디고 헤일로를 달고 살아 있었다.
