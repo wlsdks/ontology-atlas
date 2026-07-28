@@ -50,6 +50,19 @@ describe("release workflow — 사이드카 순서 (v1.0.0-rc.2 회귀)", () => 
     expect(workflow).toContain(SIDECAR_STEP);
   });
 
+  /**
+   * 사이드카를 굽는 컴파일러(`bun build --compile`)가 러너에 기본으로 있지
+   * 않다. 번들링을 들여올 때(#732) 설치 단계가 같이 안 들어와서
+   * `v1.0.0-rc.2` 가 여기서 한 번 더 멈췄다 — 순서를 고친 **직후**에.
+   *
+   * 순서만 잠그면 "먼저 부르지만 부를 도구가 없는" 상태를 못 잡는다.
+   */
+  it("bun 설치가 사이드카 빌드보다 앞선다", () => {
+    const bunAt = workflow.indexOf("oven-sh/setup-bun");
+    expect(bunAt, "사이드카를 굽는 bun 설치 단계가 없다").toBeGreaterThan(-1);
+    expect(bunAt).toBeLessThan(workflow.indexOf(SIDECAR_STEP));
+  });
+
   it("사이드카 빌드가 cargo 를 돌리는 모든 단계보다 앞선다", () => {
     const sidecarAt = workflow.indexOf(SIDECAR_STEP);
     expect(sidecarAt).toBeGreaterThan(-1);
