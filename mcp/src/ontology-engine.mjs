@@ -2649,11 +2649,24 @@ export function createOntologyEngine(artifact, options = {}) {
     const limit = normalizeLimit(options.limit, 20);
     const maxDepth = normalizeDepth(options.maxHops ?? options.depth, 8);
     const typeSet = normalizeTypes(options.types ?? ['dependencies'], options.typeName || 'types');
+    const searchBudget = normalizeSearchBudget(options.searchBudget);
     const cycleMap = new Map();
     const sortedNodes = [...nodes].sort((a, b) => a.slug.localeCompare(b.slug));
+    // 이 DFS 는 경로 열거라 지수다. 종전의 유일한 조기 종료는 `cycleMap.size >
+    // limit` — **사이클이 발견될 때만** 작동했다. 그래서 사이클이 없는
+    // 그래프, 즉 사용자가 "건강한지 확인하려고" 이걸 부르는 바로 그 경우가
+    // 경로 공간 전체를 소진한다(실측: 60노드 · 444엣지 · 사이클 0 → 10.9초.
+    // MCP 는 단일 스레드 stdio 라 그 시간 동안 에이전트 표면 전체가 멈춘다).
+    //
+    // `allPaths` 가 같은 폭발 특성에 대해 이미 예산 + `truncatedByBudget` +
+    // evidence 계약을 갖고 있다. 그 문법을 그대로 이식한다 — 두 번째 기제를
+    // 만들지 않는다. **조용한 절단은 이 저장소가 금지한 것**이라, 예산에
+    // 걸리면 `exhaustive: false` 로 말한다.
+    let expandedStates = 0;
+    let truncatedByBudget = false;
 
     for (const node of sortedNodes) {
-      if (cycleMap.size > limit) break;
+      if (cycleMap.size > limit || truncatedByBudget) break;
       findCyclesFrom(node.slug, node.slug, [node.slug], [], new Set([node.slug]));
     }
 
@@ -2661,17 +2674,49 @@ export function createOntologyEngine(artifact, options = {}) {
       (a, b) => a.length - b.length || a.nodes.join('\0').localeCompare(b.nodes.join('\0')),
     );
 
+    const complete = !truncatedByBudget && rows.length <= limit;
     return {
       operation: 'cycles',
       relationTypes: [...typeSet].sort(),
       maxDepth,
+      searchBudget,
+      expandedStates,
+      exhaustive: !truncatedByBudget,
+      truncatedByBudget,
       totalCycles: rows.length,
-      limited: rows.length > limit,
+      // 예산에 걸렸으면 "0개" 는 "없다" 가 아니라 "못 다 봤다" 다. 이 필드가
+      // 없으면 사이클 0 을 사이클 없음으로 읽는다.
+      totalCyclesExact: !truncatedByBudget,
+      limited: rows.length > limit || truncatedByBudget,
       cycles: rows.slice(0, limit),
+      evidence: {
+        status: complete ? 'complete' : 'partial',
+        reason: truncatedByBudget ? 'search_budget' : rows.length > limit ? 'limit' : 'complete',
+        nextStep: complete ? 'use' : 'narrow',
+        recommendation: complete
+          ? 'Safe to treat totalCycles as complete for the requested bounds — zero means acyclic within maxDepth.'
+          : truncatedByBudget
+            ? 'Search budget hit before the graph was exhausted; zero cycles here does NOT mean acyclic. Reduce maxHops, narrow types, or raise searchBudget.'
+            : 'totalCycles is exact, but the list is truncated by limit; raise limit to see the rest.',
+        saferQuery: complete
+          ? undefined
+          : {
+              operation: 'cycles',
+              maxHops: maxDepth > 2 ? maxDepth - 2 : maxDepth,
+              limit: Math.min(limit, 10),
+              searchBudget: Math.min(searchBudget, 1000),
+              types: [...typeSet].sort(),
+            },
+      },
     };
 
     function findCyclesFrom(start, current, path, edgePath, visited) {
-      if (path.length > maxDepth || cycleMap.size > limit) return;
+      if (path.length > maxDepth || cycleMap.size > limit || truncatedByBudget) return;
+      if (expandedStates >= searchBudget) {
+        truncatedByBudget = true;
+        return;
+      }
+      expandedStates += 1;
 
       for (const edge of outgoing.get(current) || []) {
         if (!edge.resolved || !typeAllowed(edge.via, typeSet)) continue;

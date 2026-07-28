@@ -2607,7 +2607,7 @@ const TOOLS = [
           minimum: 1,
           maximum: 50000,
           description:
-            'all_paths and query_plan(all_paths) only: maximum DFS states to expand before returning partial bounded paths. Defaults to 5000.',
+            'all_paths, query_plan(all_paths), and cycles: maximum DFS states to expand before returning partial results. Defaults to 5000. For cycles this is the only bound that fires on an ACYCLIC graph — when truncatedByBudget is true, zero cycles does NOT mean acyclic (check totalCyclesExact).',
         },
         includeExternal: {
           type: 'boolean',

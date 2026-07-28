@@ -3088,6 +3088,72 @@ describe('queryCompiledOntology', () => {
     assert.equal(filtered.connections.rows[0].examples[0].relationType, 'depends_on');
   });
 
+  /**
+   * `cycles` 는 **사이클이 없을 때 가장 오래 돈다** — 그 역설이 이 게이트의 이유다.
+   *
+   * 이 DFS 는 경로 열거라 지수인데, 종전의 유일한 조기 종료는 `cycleMap.size >
+   * limit` 즉 **사이클이 발견될 때만** 작동했다. 사용자가 "건강한지 확인하려고"
+   * 부르는 바로 그 경우(사이클 0)가 경로 공간을 전부 소진한다. 실측: 60노드 ·
+   * 444엣지 · 사이클 0 → **10.9초**. MCP 는 단일 스레드 stdio 라 그동안 에이전트
+   * 표면 전체가 멈춘다. 예산 이식 후 같은 그래프가 1ms.
+   *
+   * 그리고 **예산에 걸린 "0개" 는 "없다" 가 아니다.** 그 구분을 응답이 말하지
+   * 않으면 에이전트가 무사이클로 오독한다 — 그래서 `totalCyclesExact` 를 함께 잰다.
+   */
+  it('bounds the acyclic worst case and says so instead of truncating silently', () => {
+    const docs = [];
+    const size = 40;
+    const degree = 8;
+    for (let i = 0; i < size; i += 1) {
+      const targets = [];
+      for (let k = 1; k <= degree; k += 1) {
+        if (i + k < size) targets.push(`capabilities/n${i + k}`);
+      }
+      docs.push(
+        doc(`capabilities/n${i}`, {
+          kind: 'capability',
+          title: `N${i}`,
+          ...(targets.length ? { depends_on: targets } : {}),
+        }),
+      );
+    }
+    const artifact = compileOntology(docs);
+
+    const started = Date.now();
+    const result = queryCompiledOntology(artifact, { operation: 'cycles' });
+    const elapsed = Date.now() - started;
+
+    // 시간은 기계마다 다르므로 **횟수**로 잠근다 — 예산이 실제로 상한이라는 것만
+    // 본다(`architecture.md` 의 "게이트는 ms 가 아니라 횟수로 잠근다").
+    assert.ok(
+      result.expandedStates <= result.searchBudget,
+      `expandedStates ${result.expandedStates} exceeded budget ${result.searchBudget}`,
+    );
+    assert.equal(result.totalCycles, 0);
+    // 예산에 걸렸다면 0 을 "없다" 로 말하지 않는다.
+    if (result.truncatedByBudget) {
+      assert.equal(result.totalCyclesExact, false);
+      assert.equal(result.exhaustive, false);
+      assert.equal(result.evidence.status, 'partial');
+      assert.match(result.evidence.recommendation, /does NOT mean acyclic/);
+      assert.ok(result.evidence.saferQuery);
+    }
+    // 느슨한 상한 하나 — 예산이 사라지면 여기서 초 단위로 터진다.
+    assert.ok(elapsed < 5000, `cycles took ${elapsed}ms on an acyclic graph`);
+  });
+
+  it('reports an exhausted small graph as complete — zero really means acyclic', () => {
+    const artifact = compileOntology([
+      doc('capabilities/a', { kind: 'capability', title: 'A', depends_on: ['capabilities/b'] }),
+      doc('capabilities/b', { kind: 'capability', title: 'B' }),
+    ]);
+    const result = queryCompiledOntology(artifact, { operation: 'cycles' });
+    assert.equal(result.totalCycles, 0);
+    assert.equal(result.exhaustive, true);
+    assert.equal(result.totalCyclesExact, true);
+    assert.equal(result.evidence.status, 'complete');
+  });
+
   it('detects directed dependency cycles deterministically', () => {
     const cyclic = compileOntology(
       [
