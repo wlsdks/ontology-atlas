@@ -355,7 +355,7 @@ export function LiveActivityBadge({
         id={popoverId}
         role="dialog"
         aria-label={labels.summaryTitle}
-        className="absolute right-0 top-9 z-50 w-64 rounded-lg border border-[color:var(--color-border-soft)] bg-[color:var(--color-panel)] p-3 text-left shadow-[0_18px_48px_var(--color-shadow-a42)]"
+        className="absolute right-0 top-9 z-50 w-64 rounded-lg border border-[color:var(--color-border-soft)] bg-[color:var(--color-panel)] p-3 text-left shadow-[var(--shadow-elevation-1)]"
       >
         <div className="flex items-start justify-between gap-3">
           <p className="font-mono text-[9px] uppercase tracking-[0.12em] text-[color:var(--color-indigo-accent)]">

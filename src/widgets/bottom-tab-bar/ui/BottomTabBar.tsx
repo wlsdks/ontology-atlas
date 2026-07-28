@@ -82,7 +82,7 @@ export function BottomTabBar() {
       data-tabbar-surface-token="--topology-bottom-tab-surface"
       data-tabbar-border-token="--topology-bottom-tab-border"
       aria-label={t('primaryAriaLabel')}
-      className="pointer-events-auto fixed inset-x-0 bottom-0 z-40 flex items-stretch justify-around border-t border-[color:var(--topology-bottom-tab-border)] bg-[color:var(--topology-bottom-tab-surface)] pb-[env(safe-area-inset-bottom)] shadow-[0_-16px_36px_var(--color-shadow-a35)] lg:hidden"
+      className="pointer-events-auto fixed inset-x-0 bottom-0 z-40 flex items-stretch justify-around border-t border-[color:var(--topology-bottom-tab-border)] bg-[color:var(--topology-bottom-tab-surface)] pb-[env(safe-area-inset-bottom)] shadow-[var(--shadow-elevation-dock-bottom)] lg:hidden"
     >
       {TABS.map((tab) => {
         const Icon = tab.icon;

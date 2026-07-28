@@ -256,7 +256,7 @@ export function GlobalSearch({
           <Command
             label={t('commandLabel')}
             shouldFilter={false}
-            className="flex h-[calc(100dvh-var(--topology-mobile-bottom-tab-reserve))] w-full flex-col overflow-hidden border border-[color:var(--color-overlay-3)] bg-[color:var(--color-panel)] shadow-[0_20px_56px_var(--color-shadow-a50)] md:h-auto md:max-w-[var(--topology-search-sheet-floating-width)] md:rounded-[var(--topology-search-sheet-radius)]"
+            className="flex h-[calc(100dvh-var(--topology-mobile-bottom-tab-reserve))] w-full flex-col overflow-hidden border border-[color:var(--color-overlay-3)] bg-[color:var(--color-panel)] shadow-[var(--shadow-elevation-2)] md:h-auto md:max-w-[var(--topology-search-sheet-floating-width)] md:rounded-[var(--topology-search-sheet-radius)]"
             onClick={(event) => event.stopPropagation()}
           >
         <div className="flex items-center gap-2 border-b border-[color:var(--color-divider)] px-4 py-3">

@@ -73,15 +73,30 @@ const arbitrarySizeSelectors = [
   // 스캐너가 이 파일의 문자열도 훑기 때문에, 예시로 적은 클래스명이 실제
   // 클래스로 생성된다 — 2026-07-26 에 예시 하나가 `--tw-shadow: var(--...)`
   // 라는 파싱 불가 CSS 를 만들어 프로덕션 빌드를 깨뜨렸다(Playwright 전체 실패).
+  // 2026-07-28 재수렴 — **`var(` 만 보던 면제를 기하 허용목록으로 좁힌다.**
+  //
+  // 종전 룰은 값 안에 `var(` 가 있으면 통과시켰다. 그 면제는 정상 토큰 사용을
+  // 살리려던 것인데(초안이 90여 건을 오탐했다) 부작용이 컸다: **색만 토큰이고
+  // 기하는 자유**인 상태가 되어, 사다리가 3단으로 수렴시켰다던 손 튜닝이
+  // 23종으로 재확산했다. 그 안에 광원 역전 2건(하단 탭바 y 음수 · 우측 패널
+  // y=0)과 계층 역전 1건(blur 90 > dialog 80)이 있었다.
+  //
+  // 그래서 "토큰을 썼는가" 가 아니라 **"어느 토큰을 썼는가"** 를 본다. 허용은
+  // 사다리(elevation-*/dock-*) · 눌림(control-press) · 표면별 전용 토큰
+  // (topology/chrome/git) · inset 헤어라인(광원이 아니라 재질). 23건을 먼저
+  // 수렴시키고 켰으므로 켜는 순간 위반 0 · lint 총계 불변.
+  // ⚠️ 메시지에 리터럴 유틸리티 문법 금지 — Tailwind v4 스캐너가 이 파일을 훑는다.
   {
-    selector: 'Literal[value=/shadow-\\[(?:(?!var\\()[^\\]])*\\]/]',
+    selector:
+      'Literal[value=/shadow-\\[(?![^\\]]*(?:var\\(--shadow-elevation-|var\\(--shadow-control-press|var\\(--topology|var\\(--chrome|var\\(--git|inset))[^\\]]+\\]/]',
     message:
-      'Geometry Codex — shadow 하드코딩 금지. --shadow-elevation-1/2/3 (coach-mark < popover < dialog) 또는 --topology-*-shadow 토큰을 shadow 유틸리티 안에서 var() 로 참조한다.',
+      '고도 사다리 이탈 — 그림자의 **기하**도 토큰이 정한다. --shadow-elevation-1/2/3 (coach-mark < popover < dialog), 가장자리 도킹은 -dock-bottom/-dock-side, 눌린 컨트롤은 --shadow-control-press 를 쓴다. 색만 토큰이고 기하는 손으로 쓰는 것이 사다리를 무너뜨린 방식이다.',
   },
   {
-    selector: 'TemplateElement[value.raw=/shadow-\\[(?:(?!var\\()[^\\]])*\\]/]',
+    selector:
+      'TemplateElement[value.raw=/shadow-\\[(?![^\\]]*(?:var\\(--shadow-elevation-|var\\(--shadow-control-press|var\\(--topology|var\\(--chrome|var\\(--git|inset))[^\\]]+\\]/]',
     message:
-      'Geometry Codex — shadow 하드코딩 금지 (template literal). --shadow-elevation-* 토큰을 shadow 유틸리티 안에서 var() 로 참조한다.',
+      '고도 사다리 이탈 (template literal) — --shadow-elevation-* / -dock-* / --shadow-control-press 를 쓴다.',
   },
   // 2026-07-26 hex — **현재 위반 0건인 예방 게이트다.** 전수 측정 결과 Tailwind
   // arbitrary value 안에 hex 를 박은 곳은 src/app 전체에 하나도 없었고, 남은

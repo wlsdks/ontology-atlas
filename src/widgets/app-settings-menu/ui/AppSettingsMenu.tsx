@@ -528,7 +528,7 @@ export function AppSettingsMenu({
           aria-modal="true"
           aria-labelledby={titleId}
           tabIndex={-1}
-          className={`${settingsExiting ? 'app-settings-panel-out' : 'app-settings-panel-in'} flex max-h-[calc(100dvh-1.5rem)] w-full max-w-[34rem] flex-col overflow-hidden rounded-xl border border-[color:var(--color-border-soft)] bg-[color:var(--color-panel)] text-body shadow-[0_28px_90px_var(--color-shadow-a58)] sm:max-h-[min(46rem,calc(100dvh-3rem))]`}
+          className={`${settingsExiting ? 'app-settings-panel-out' : 'app-settings-panel-in'} flex max-h-[calc(100dvh-1.5rem)] w-full max-w-[34rem] flex-col overflow-hidden rounded-xl border border-[color:var(--color-border-soft)] bg-[color:var(--color-panel)] text-body shadow-[var(--shadow-elevation-3)] sm:max-h-[min(46rem,calc(100dvh-3rem))]`}
           data-testid="app-settings-popover"
         >
           <div className="flex shrink-0 items-center justify-between gap-3 border-b border-[color:var(--color-border-soft)] px-4 py-3">

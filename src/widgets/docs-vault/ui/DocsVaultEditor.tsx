@@ -777,7 +777,7 @@ export function DocsVaultEditor({
             className="absolute inset-0 resize-none bg-[color:var(--color-surface-deep-a40)] px-6 py-6 font-mono text-body leading-prose text-[color:rgba(220,226,240,0.92)] outline-none md:px-10"
           />
           {autocomplete && acMatches.length > 0 ? (
-            <div className="pointer-events-auto absolute bottom-3 left-3 z-10 w-[320px] overflow-hidden rounded-md border border-[color:var(--color-indigo-line-a32)] bg-[color:var(--color-surface-deep-a98)] shadow-[0_10px_30px_var(--color-shadow-a50)]">
+            <div className="pointer-events-auto absolute bottom-3 left-3 z-10 w-[320px] overflow-hidden rounded-md border border-[color:var(--color-indigo-line-a32)] bg-[color:var(--color-surface-deep-a98)] shadow-[var(--shadow-elevation-2)]">
               <div className="border-b border-[color:var(--color-overlay-2)] px-2 py-1 font-mono text-caption uppercase tracking-[0.14em] text-[color:var(--color-text-quaternary)]">
                 {t('wikilinkLabel', { query: autocomplete.query })}
               </div>

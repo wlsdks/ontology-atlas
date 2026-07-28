@@ -139,7 +139,7 @@ export function VaultStartChecklist({
         role="status"
         aria-label={t("title")}
         aria-live="polite"
-        className="pointer-events-auto w-[min(420px,calc(100vw-2rem))] rounded-lg border border-[color:var(--color-divider)] bg-[color:var(--color-panel)] px-5 py-5 shadow-[0_10px_28px_var(--color-shadow-a25)]"
+        className="pointer-events-auto w-[min(420px,calc(100vw-2rem))] rounded-lg border border-[color:var(--color-divider)] bg-[color:var(--color-panel)] px-5 py-5 shadow-[var(--shadow-elevation-1)]"
       >
         <p className="font-mono text-caption uppercase tracking-[0.18em] text-[color:var(--color-text-quaternary)]">
           {t("kicker", { done: doneCount, total: steps.length })}
