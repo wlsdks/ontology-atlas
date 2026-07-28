@@ -83,6 +83,22 @@ jobs:
       # 정확히 이 게이트가 막으라고 만들어진 부패다. 그래서 조건을 하나 넓혀
       # **shipped code 가 바뀌면(runtime) 무조건** 돌고, main 푸시에서는
       # 분류기가 비교 베이스를 못 찾아도 항상 돈다.
+      # 정적 export 에서만 재현되는 층 — dev 로는 못 잡는다.
+      #
+      # 2026-07-28 실측: 공방의 같은-라우트 이동(산책 · 생성 전환)이 프로덕션
+      # 빌드에서만 죽어 있었다. 경로가 같고 쿼리만 다른 `router.push` 는 라우팅
+      # 단위가 아니라 no-op 이 되는데, dev 는 같은 코드로 둘 다 성공한다 —
+      # **dev 는 그 결함에 대해 진단력이 0** 이다. 나머지 스위트가 전부 dev 를
+      # 상대하므로, 이 스텝이 없으면 그 부류의 회귀는 영원히 초록으로 통과한다.
+      - name: Static export e2e (studio navigation)
+        if: >-
+          steps.classify.outputs.runtime == 'true'
+          || steps.classify.outputs.browser == 'true'
+          || github.event_name != 'pull_request'
+        run: pnpm test:e2e:static
+        env:
+          CI: true
+
       - name: Web surface smoke
         if: >-
           steps.classify.outputs.runtime == 'true'

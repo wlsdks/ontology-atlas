@@ -82,6 +82,7 @@
     "test:cli:lib": "node --test cli/src/lib/*.test.mjs",
     "test:cli:commands": "node --test cli/src/commands/*.test.mjs",
     "test:cli:mcp-call": "node --test cli/src/lib/mcp-call.test.mjs",
+    "test:e2e:static": "pnpm build && PLAYWRIGHT_STATIC=1 pnpm exec playwright test tests/e2e/studio-navigation.spec.ts",
     "test:contracts": "vitest run tests/contract",
     "integration:cli": "node --test cli/src/integration.test.mjs",
     "integration:cli:entry": "node scripts/run-focused-node-test.mjs --test-name-pattern \"^(metadata|command inventory|subcommand --help|help|top-level command typos|init)\" cli/src/integration.test.mjs",

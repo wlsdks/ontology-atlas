@@ -161,14 +161,21 @@ describe("공방 — 이름만 있는 개념을 문서로 만들고 저장", () 
     expect(markdown).toContain("broader: [capabilities/knowledge-graph]");
   });
 
+  /**
+   * 주소를 **주소로** 검사한다. 종전에는 `router.push` 목이 무엇으로 불렸는지를
+   * 봤는데, 공방의 같은-라우트 이동은 2026-07-28 부터 `history.pushState` 로
+   * 간다(정적 export 에서 `router.push` 가 같은 경로 + 다른 쿼리로는 아무 일도
+   * 안 하기 때문 — `lib/studio-route-params.ts`). 기제가 바뀌어도 이 테스트가
+   * 지키려던 사실은 그대로다: **저장 뒤 주소에 옛 별칭이 남지 않는다.**
+   */
   it("저장 뒤 새로 만들어진 실제 id 로 이동한다 — 옛 별칭을 주소에 남기지 않는다", async () => {
     await saveWithConsent();
-    await waitFor(() => expect(mocks.push).toHaveBeenCalled());
-    const href = mocks.push.mock.calls.at(-1)?.[0] as string;
-    expect(href).toBe(
-      `/ontology/studio?node=${encodeURIComponent("element:derive-ontology-from-vault.ts")}`,
+    await waitFor(() =>
+      expect(window.location.search).toContain(
+        encodeURIComponent("element:derive-ontology-from-vault.ts"),
+      ),
     );
-    expect(href).not.toContain(ALIAS_ID);
+    expect(window.location.search).not.toContain(ALIAS_ID);
   });
 
   it("주소가 바뀌기 전 한 프레임 동안 '못 찾겠다' 를 보여주지 않는다", async () => {
