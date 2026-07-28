@@ -170,4 +170,34 @@ describe("GuidedTourOverlay", () => {
     act(() => screen.getByTestId("test-start").click());
     expect(screen.getByTestId("guided-tour-scrim").className).toContain("motion-reduce:transition-none");
   });
+
+  /**
+   * 모달리티의 **되돌리기** 축 — 위 "traps Tab" 은 카드 안에서의 감김을 재고,
+   * 이건 이미 **밖에 나가 있는** 포커스가 되돌아오는지를 잰다.
+   *
+   * 왜 따로 필요한가: 스크림은 포인터를 막지만 프로그램적 `focus()` 는 못 막는다
+   * (어떤 트랩도 못 막고, 막을 필요도 없다). 그래서 라우트 이동·자동 포커스·
+   * 브라우저 복원 같은 경로로 포커스가 투어 밖에 앉아 있을 수 있고, 그 상태에서
+   * Tab 이 바깥을 계속 걸으면 포인터로는 도달 못 하는 컨트롤을 키보드로만
+   * 활성화할 수 있게 된다. 감김만 검사하면 이 경로는 통과한다.
+   */
+  it("포커스가 이미 투어 밖에 있어도 Tab 이 투어 안으로 되돌린다", () => {
+    render(<Harness />);
+    act(() => screen.getByTestId("test-start").click());
+
+    const outside = screen.getByTestId("test-start");
+    act(() => outside.focus());
+    expect(document.activeElement).toBe(outside);
+
+    act(() =>
+      window.dispatchEvent(
+        new KeyboardEvent("keydown", { key: "Tab", bubbles: true, cancelable: true }),
+      ),
+    );
+
+    // 트랩의 범위는 카드가 아니라 **오버레이**다 (GuidedTourOverlay 가 소유).
+    expect(
+      screen.getByTestId("guided-tour-overlay").contains(document.activeElement),
+    ).toBe(true);
+  });
 });

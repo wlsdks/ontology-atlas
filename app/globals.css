@@ -1149,6 +1149,29 @@
     transform-origin: center;
   }
 
+  /*
+   * 가이드 투어 카드의 단계 등장 (2026-07-28 — 인라인 arbitrary animate 에서 승격).
+   *
+   * **클래스로 올린 이유는 감속 동등물이다.** 인라인
+   * `animate-[panelCrossfadeIn_…]` 은 아래 reduced-motion 등록부가 **가리킬 이름이
+   * 없어서**, 전역 kill 규칙(모든 animation 0.01ms)에 걸린 채 아무 동등물도
+   * 못 받았다 — 감속 사용자에게 단계 전환이 통째로 하드컷이었다. 등록부는
+   * 셀렉터 목록이고, 목록이 곧 사정거리다.
+   *
+   * 키프레임은 **불투명도 전용**(`panelCrossfadeIn`)이라 감속에서 끌 이유가
+   * 없다. 전정계를 건드리는 축은 이동인데 이 표면에는 이동이 없다 — 끄면
+   * "무엇이 바뀌었나" 라는 정보만 사라지고 얻는 게 없다(#737 토스트와 같은
+   * 형태: 벤더가 정보 축을 끄고 이동 축은 남겼던 그 실패).
+   *
+   * 카드가 단계마다 `key` 로 remount 되므로 이 등장은 매 단계 한 번 돈다.
+   * 위치 보간은 여기 없다 — 캔버스 노드 앵커 단계가 매 프레임 rect 를 추종해
+   * 카메라 스프링에 끌리기 때문(2026-07-24 판정, 그때 검토 후 기각).
+   */
+  .guided-tour-card-in {
+    animation: panelCrossfadeIn var(--topology-tour-transition-ms)
+      var(--topology-motion-ease-out) both;
+  }
+
   /* rank2 — DOM 오버레이 3종(GlobalSearch·SearchPalette·NewDocKindDialog)의
      단일 진입 문법. opacity 0→1 + translateY(--overlay-enter-translate)→0
      만 — scale 진입은 없다(hover:scale-* 금지선 혼동 방지, 진입/퇴장 대칭을
@@ -3037,6 +3060,20 @@
     .overlay-spring-scrim[data-state='open'],
     .overlay-spring-scrim[data-state='closed'] {
       animation-duration: var(--topology-motion-panel-duration) !important;
+    }
+
+    /*
+     * 가이드 투어 카드 (2026-07-28) — 첫 방문에 화면을 덮는 표면인데 등록부
+     * 밖에 있었다. 인라인 arbitrary animate 라 **가리킬 이름이 없었고**, 그래서
+     * 감속 사용자에게는 단계 전환이 통째로 하드컷이었다(스크림·카드·링 셋 다).
+     *
+     * 키프레임이 불투명도 전용이므로 시간을 **돌려준다** — 없애야 할 축(이동)이
+     * 이 표면에는 없고, 끄면 "무엇이 바뀌었나" 라는 정보만 사라진다.
+     * 컷아웃 링의 `transition-[top,left,width,height]` 는 계속 잘린다 — 그건
+     * 진짜 이동 축이라 감속에서 없애는 것이 맞다.
+     */
+    .guided-tour-card-in {
+      animation-duration: var(--topology-tour-transition-ms) !important;
     }
 
     /*
