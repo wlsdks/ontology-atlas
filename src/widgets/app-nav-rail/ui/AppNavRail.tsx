@@ -6,6 +6,7 @@ import {
   useLayoutEffect,
   useRef,
   useState,
+  useSyncExternalStore,
 } from "react";
 import type {
   ComponentType,
@@ -17,6 +18,7 @@ import { useTranslations } from "next-intl";
 import {
   Activity,
   BarChart3,
+  Download,
   BookOpen,
   FolderKanban,
   Gem,
@@ -35,6 +37,13 @@ import {
   rememberRouteFocusIntent,
 } from "@/shared/ui/route-focus-manager";
 import { resolveActiveNavRailItem, type AppNavRailItemId } from "../lib/resolve-active-item";
+import { shouldShowGetAppTile } from "../lib/show-get-app-tile";
+import { isTauriVaultRuntime } from "@/shared/lib/tauri-vault-fs";
+
+/** 런타임은 로드 뒤 바뀌지 않는다 — 구독은 형식상 필요할 뿐이라 no-op 이다. */
+const subscribeToRuntime = () => () => {};
+/** 서버(프리렌더)에서는 창이 없어 **모른다**. `false`(=웹)로 단정하지 않는다. */
+const getServerRuntimeSnapshot = (): boolean | null => null;
 import type { NavRailContextHrefs } from "../model/shell-slot-context";
 
 export interface AppNavRailProps {
@@ -127,6 +136,23 @@ export function AppNavRail({
   const t = useTranslations("navRail");
   const tLive = useTranslations("liveActivity");
   const pathname = usePathname() ?? "/";
+  /**
+   * 「앱 받기」 — **웹에서만** 그리는 유일한 다운로드 유도. 판정 근거와 왜
+   * 마운트 뒤인지는 `../lib/show-get-app-tile`.
+   */
+  // `useSyncExternalStore` 로 읽는 이유: 서버 스냅샷을 **`null`(아직 모름)** 로
+  // 둘 수 있어서, 프리렌더 HTML 이 "웹" 이라고 단정하지 않는다. 그래야 앱이
+  // 그 HTML 을 싣고 하이드레이션에서 타일을 걷는 깜빡임이 없다.
+  const desktopRuntime = useSyncExternalStore(
+    subscribeToRuntime,
+    isTauriVaultRuntime,
+    getServerRuntimeSnapshot,
+  );
+  const showGetApp = shouldShowGetAppTile({
+    mounted: desktopRuntime !== null,
+    isDesktopApp: desktopRuntime === true,
+  });
+
   const activeId = resolveActiveNavRailItem(pathname);
 
   /**
@@ -424,6 +450,30 @@ export function AppNavRail({
             />
           ) : null}
         </button>
+        {/*
+          웹에만 있는 한 자리. 표면마다 배너를 심는 대신 크롬에 하나를 두는
+          이유는 `../lib/show-get-app-tile` 에 적었다 — 레일 유틸리티 티어는
+          모든 목적지에서 같은 자리라, 한 원소가 이미 "다양한 곳" 이다.
+
+          목적지는 `/download` 다. 방문자의 OS 를 여기서 추측하지 않는다 —
+          그 화면이 macOS 파일과 "Windows 준비 중" 을 이미 정직하게 가른다.
+          레일에서 OS 를 판정하면 틀렸을 때 **막다른 CTA** 가 되는데, 그건
+          이 저장소가 이름으로 금지한 것이다.
+        */}
+        {showGetApp ? (
+          <Link
+            href="/download/"
+            title={t("getAppTitle")}
+            aria-label={t("getApp")}
+            data-testid="app-nav-rail-get-app"
+            className="group relative flex h-[var(--app-nav-rail-tile-height)] w-[var(--app-nav-rail-tile-width)] items-center justify-center rounded-card text-[color:var(--color-text-tertiary)] transition-[color,background-color,transform] hover:bg-[color:var(--color-overlay-2)] hover:text-[color:var(--color-text-primary)] active:translate-y-px active:bg-[color:var(--color-overlay-3)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--color-indigo-a46)] focus-visible:ring-inset"
+          >
+            <Download
+              aria-hidden
+              className="h-[var(--app-nav-rail-utility-icon-size)] w-[var(--app-nav-rail-utility-icon-size)]"
+            />
+          </Link>
+        ) : null}
         {settingsSlot}
       </div>
     </aside>

@@ -51,9 +51,13 @@ describe("AppShell — 레일 하단 유틸 티어 (#65)", () => {
     );
 
     const tier = screen.getByTestId("app-nav-rail-utility-tier");
+    // 지키는 사실은 "셸이 기본 슬롯을 공급한다" 이지 자식 **개수**가 아니다.
+    // 종전에는 `children.length === 2` 로 셌는데, 그건 티어에 웹 전용 원소가
+    // 하나 붙는 것만으로 깨지는 대리 지표였다(2026-07-28 「앱 받기」 추가).
+    // 개수 대신 **구성원**을 본다.
     expect(screen.getByTestId("app-nav-rail-agent-status")).toBeInTheDocument();
-    // 활동 · 설정(<details> 트리거) 두 자식.
-    expect(tier.children.length).toBe(2);
+    expect(tier).toContainElement(screen.getByTestId("app-nav-rail-agent-status"));
+    expect(tier.querySelector("details"), "설정 트리거가 없다").not.toBeNull();
   });
 
   it("기록은 유틸 타일이 아니라 목적지다 (2026-07-25 승격 — 입구 하나)", () => {

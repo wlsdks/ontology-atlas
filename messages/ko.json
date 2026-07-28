@@ -96,7 +96,9 @@
     "studio": "공방",
     "insights": "인사이트",
     "projects": "프로젝트",
-    "git": "기록"
+    "git": "기록",
+    "getApp": "앱 받기",
+    "getAppTitle": "맥 앱을 받으면 폴더를 기억하고, 인터넷 없이 열고, 기록과 AI 연결까지 다룹니다 — 윈도우는 준비 중이에요"
   },
   "ontologyStudio": {
     "searchPlaceholder": "무대에 올릴 노드…",
