@@ -635,6 +635,10 @@ export function createTopologyPointerHandlers(refs: PointerHandlerRefs): Topolog
         return;
       }
 
+      // 미는 동안은 `grabbing` — 노드 드래그(위 분기)와 같은 응답이라 "지금
+      // 내 손에 뭔가 잡혀 있다" 가 두 경우에 같은 글자로 읽힌다.
+      e.currentTarget.style.cursor = "grabbing";
+
       const anchor = next.downPoint ?? point;
       const worldDX = (point.x - anchor.x) / cameraRef.current.scale.value;
       const worldDY = (point.y - anchor.y) / cameraRef.current.scale.value;
@@ -665,8 +669,16 @@ export function createTopologyPointerHandlers(refs: PointerHandlerRefs): Topolog
     // P3c — 노드 미히트 지점의 엣지 근접 = 호버 마이크로카드. 식별이 바뀔
     // 때만 발화 (같은 엣지 위 이동은 재발화 없음 — 카드 안정). 노드 위에
     // 오르면 엣지 호버는 즉시 해제 (노드가 우선).
+    // 엣지 히트는 커서 판정에도 쓰이므로 아래 호버 블록 **밖**에서 구한다 —
+    // 커서 어포던스가 엣지-호버 배선(`hoveredEdgeRef && onHoverEdge`)의 존재
+    // 여부에 얹혀 있으면, 그 배선이 없는 소비처에서 커서가 아예 안 정해진다
+    // (2026-07-28: 실제로 그 가드 안에 있었다).
+    const edgeHit =
+      hitNodeId === null && hoveredEdgeRef && onHoverEdge
+        ? hitTestEdges(buildEdgeCandidates(), point.x, point.y, 6)
+        : null;
+
     if (hoveredEdgeRef && onHoverEdge) {
-      const edgeHit = hitNodeId === null ? hitTestEdges(buildEdgeCandidates(), point.x, point.y, 6) : null;
       const prev = hoveredEdgeRef.current;
       const sameEdge =
         edgeHit !== null &&
@@ -686,16 +698,28 @@ export function createTopologyPointerHandlers(refs: PointerHandlerRefs): Topolog
         hoveredEdgeRef.current = payload;
         onHoverEdge(payload, payload ? { x: e.clientX, y: e.clientY } : null);
       }
-      // 커서 어포던스 — "잡을 수 있으면 읽을 수 있다". rank4 — 드래그 가능한
-      // 노드 위에서는 "grab"(집을 수 있다), 엣지는 "pointer"(클릭). 모든 가시
-      // 노드는 sim 에 있어 pin-drag 가능하므로 노드 호버 = grab.
-      const draggableHit = hitNodeId !== null && (simRef.current?.hasNode(hitNodeId) ?? false);
-      e.currentTarget.style.cursor = draggableHit
-        ? "grab"
-        : edgeHit !== null || hitNodeId !== null
-          ? "pointer"
-          : "";
     }
+
+    // 커서 어포던스 — **각 표면은 자기 1차 행동을 보여준다** (2026-07-28
+    // 디자인 카운슬 「상호작용」 처방 + 실측 정정).
+    //
+    // 종전: 노드 = `grab`, 엣지 = `pointer`, **배경 = 아무것도 없음**.
+    // 노드의 `grab` 은 거짓이 아니었다(진짜로 pin-drag 된다). 진짜 결함은
+    // 배경이었다 — 배경은 **팬 가능한데 어포던스를 하나도 안 줬다**(실측:
+    // 배경 호버 커서 `auto`). 그래서 "이 지도를 밀 수 있다" 를 아무도 알려
+    // 주지 않았고, 정작 못 미는 노드 위에서만 "집으라" 는 손이 떴다.
+    //
+    // 이제 1차 행동으로 가른다:
+    // - 노드·엣지·칩 → `pointer` (누르면 열린다 — 힌트 바가 말하는 그 행동)
+    // - 배경 → `grab` (밀면 지도가 따라온다), 미는 동안 `grabbing`
+    // 노드 드래그는 여전히 되고 `grabbing` 으로 응답한다 — 강화 기능이라
+    // 어포던스를 1차 자리에서 양보한다(드래그로 발견되는 것이 허용되는
+    // 부류라는 것이 카운슬 판정).
+    //
+    // 이 배정이 위 호버 블록 **밖**인 것도 계약이다 — 안에 있으면 엣지-호버
+    // 배선이 없는 소비처에서 커서가 아예 안 정해진다.
+    e.currentTarget.style.cursor =
+      hitNodeId !== null || edgeHit !== null ? "pointer" : "grab";
 
     // 밀도 게이트 — 클러스터 칩 호버: 커서 pointer + 보더 강조 미러(노드
     // 미히트 지점만; 노드가 우선). 노드 클릭=ego 포커스 계약은 불변이고 칩은
@@ -764,6 +788,13 @@ export function createTopologyPointerHandlers(refs: PointerHandlerRefs): Topolog
     const wasDragging = pointerMachineRef.current.phase === "dragging";
     const { next, commitClick } = transitionPointerState(pointerMachineRef.current, { type: "pointerup" }, tokens.hysteresisPx);
     pointerMachineRef.current = next;
+
+    // 손을 놓았으면 쥔 모양도 놓는다 (2026-07-28). 종전엔 **노드 드래그
+    // 분기에서만** 복원해서, 배경을 밀고 놓은 뒤 마우스를 그대로 두면 커서가
+    // `grabbing` 인 채 남았다 — 놓았는데 화면은 아직 쥐고 있다고 말한다.
+    // `""` 로 지우면 캔버스의 기본값 `grab` 으로 떨어지고(팬 가능이라는 참인
+    // 신호), 다음 pointermove 가 노드 위면 `pointer` 로 덮는다.
+    if (canvasRef?.current) canvasRef.current.style.cursor = "";
 
     // Node pin-drag release: unpin and give the graph a settle burst so it
     // (and the dropped node) relaxes around the drop, Obsidian-style. No
