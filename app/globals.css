@@ -20,7 +20,6 @@
   --color-canvas: #08090a;
   --color-panel: #0f1011;
   --color-elevated: #191a1b;
-  --color-secondary-surface: #28282c;
 
   /* 텍스트 */
   --color-text-primary: #f7f8f8;
@@ -66,13 +65,11 @@
   --color-indigo-a26: rgba(94, 106, 210, 0.26);
   --color-indigo-a28: rgba(94, 106, 210, 0.28);
   --color-indigo-a32: rgba(94, 106, 210, 0.32);
-  --color-indigo-a36: rgba(94, 106, 210, 0.36);
   --color-indigo-a38: rgba(94, 106, 210, 0.38);
   --color-indigo-a40: rgba(94, 106, 210, 0.4);
   --color-indigo-a42: rgba(94, 106, 210, 0.42);
   --color-indigo-a46: rgba(94, 106, 210, 0.46);
   /* border/hover:border 전용. */
-  --color-indigo-border-a46: rgba(94, 106, 210, 0.46);
   /* focus-visible:ring 전용 utility. */
   --color-indigo-ring-a46: rgba(94, 106, 210, 0.46);
   --color-indigo-a50: rgba(94, 106, 210, 0.5);
@@ -88,19 +85,14 @@
   --color-danger-a08: rgba(229, 72, 77, 0.08);
   --color-danger-a10: rgba(229, 72, 77, 0.1);
   --color-danger-a32: rgba(229, 72, 77, 0.32);
-  --color-danger-a46: rgba(229, 72, 77, 0.46);
   --color-danger-a50: rgba(229, 72, 77, 0.5);
   --color-danger-text: rgba(236, 116, 116, 0.92);
 
   /* "경로 충돌" 같은 muted amber 경고 서피스 — 신호 amber(below)와는 다른
      hue 로, 인스펙터의 기존 conflict 상태에 이미 쓰이던 값. */
-  --color-amber-muted-a10: rgba(197, 122, 43, 0.1);
-  --color-amber-muted-a12: rgba(197, 122, 43, 0.12);
   --color-amber-muted-a18: rgba(197, 122, 43, 0.18);
   --color-amber-muted-a34: rgba(197, 122, 43, 0.34);
-  --color-amber-muted-a42: rgba(197, 122, 43, 0.42);
   --color-amber-muted-a62: rgba(197, 122, 43, 0.62);
-  --color-amber-muted-a90: rgba(197, 122, 43, 0.9);
 
   /* forbidden.md 가 문서화한 "경고 amber rgba(255,179,71,*)" — 배열 항목
      "방금 추가됨" 1.2s 펄스 전용. */
@@ -116,16 +108,13 @@
    * 위 A2 스케일에 없는 opacity/hue 만 추가한다 — 시각 결과 무변, 참조만
    * CSS 변수로 치환.
    */
-  --color-indigo-a07: rgba(94, 106, 210, 0.07);
   --color-indigo-a13: rgba(94, 106, 210, 0.13);
   --color-indigo-a20: rgba(94, 106, 210, 0.2);
   --color-indigo-a24: rgba(94, 106, 210, 0.24);
   --color-indigo-a30: rgba(94, 106, 210, 0.3);
   --color-indigo-a34: rgba(94, 106, 210, 0.34);
-  --color-indigo-a52: rgba(94, 106, 210, 0.52);
   --color-indigo-a60: rgba(94, 106, 210, 0.6);
   /* pale indigo text — text-strong(0.95) 형제, 배치 보기 라디오 점 전용. */
-  --color-indigo-text-dot: rgba(159, 170, 235, 0.9);
 
   /*
    * 시안(mockup) `--indigo-line` 계열(139,151,255) — 위 A2 인디고 스케일
@@ -157,18 +146,12 @@
 
   /* 모바일 fallback "검증 열기" pill — 인디고 단일 채색 원칙의 기존 예외
      (green pill, A4 이전부터 존재). 오늘 렌더링 그대로 토큰화만 한다. */
-  --color-green-a08: rgba(73, 190, 146, 0.08);
-  --color-green-a28: rgba(73, 190, 146, 0.28);
-  --color-green-a44: rgba(73, 190, 146, 0.44);
-  --color-green-text: rgba(190, 245, 222, 0.92);
 
-  --color-overlay-a03: rgba(255, 255, 255, 0.03);
 
   /* overlay-recessed(0.16) 형제 — 같은 "밝히는 대신 어둡히는" recessed
      surface, 다른 opacity. */
   --color-overlay-recessed-a12: rgba(0, 0, 0, 0.12);
   --color-overlay-recessed-a14: rgba(0, 0, 0, 0.14);
-  --color-overlay-recessed-a20: rgba(0, 0, 0, 0.2);
 
   /* 팝오버/다이얼로그 드롭 섀도 알파 — box-shadow 값 안에 삽입. */
   --color-shadow-a22: rgba(0, 0, 0, 0.22);
@@ -227,12 +210,9 @@
 
   /* 모달/시트 배경 scrim. */
   --color-scrim-a54: rgba(0, 0, 0, 0.54);
-  --color-scrim-a56: rgba(0, 0, 0, 0.56);
 
   /* 캔버스 좌상단 저장 개념 앵커 레일 — --color-panel(#0f1011 = 15,16,17)
      위에 얹는 반투명 플로팅 표면 (Sigma 툴팁과 같은 원칙으로 짙게 유지). */
-  --color-panel-overlay-a88: rgba(15, 16, 17, 0.88);
-  --color-panel-overlay-a94: rgba(15, 16, 17, 0.94);
 
   /*
    * semantic tokens — surface 위 밝은 톤 가장자리/오버레이.
@@ -255,7 +235,6 @@
   --color-tap-highlight: rgba(255, 255, 255, 0.04);
 
   /* 카드 elevation — 다크에선 토큰 대비만으로 충분해 none. */
-  --shadow-card: none;
 
   /*
    * 다크 톤 surface — modal backdrop / sticky nav 배경 / 강한 패널 처럼
@@ -272,7 +251,6 @@
   --font-weight-signature: 510;
 
   /* Letter-spacing 스케일 */
-  --tracking-hero: -0.022em;
   --tracking-display: -0.022em;
   --tracking-section: -0.020em;
   --tracking-card: -0.015em;
@@ -395,15 +373,12 @@
   --color-success-a06: rgba(50, 185, 125, 0.06);
   --color-success-a07: rgba(50, 185, 125, 0.07);
   --color-success-a035: rgba(50, 185, 125, 0.035);
-  --color-success-a045: rgba(50, 185, 125, 0.045);
   --color-success-a055: rgba(50, 185, 125, 0.055);
   --color-success-a10: rgba(50, 185, 125, 0.1);
   --color-success-a11: rgba(50, 185, 125, 0.11);
   --color-success-a12: rgba(50, 185, 125, 0.12);
   --color-success-a18: rgba(50, 185, 125, 0.18);
   --color-success-a20: rgba(50, 185, 125, 0.2);
-  --color-success-a24: rgba(50, 185, 125, 0.24);
-  --color-success-a26: rgba(50, 185, 125, 0.26);
   --color-success-a28: rgba(50, 185, 125, 0.28);
   --color-success-a35: rgba(50, 185, 125, 0.35);
   --color-success-a40: rgba(50, 185, 125, 0.4);
@@ -425,15 +400,10 @@
   --color-amber-source-a10: rgba(244, 183, 49, 0.1);
   --color-amber-source-a11: rgba(244, 183, 49, 0.11);
   --color-amber-source-a12: rgba(244, 183, 49, 0.12);
-  --color-amber-source-a13: rgba(244, 183, 49, 0.13);
   --color-amber-source-a14: rgba(244, 183, 49, 0.14);
-  --color-amber-source-a18: rgba(244, 183, 49, 0.18);
-  --color-amber-source-a24: rgba(244, 183, 49, 0.24);
   --color-amber-source-a25: rgba(244, 183, 49, 0.25);
-  --color-amber-source-a32: rgba(244, 183, 49, 0.32);
   --color-amber-source-a34: rgba(244, 183, 49, 0.34);
   --color-amber-source-a35: rgba(244, 183, 49, 0.35);
-  --color-amber-source-a40: rgba(244, 183, 49, 0.4);
   --color-amber-source-a42: rgba(244, 183, 49, 0.42);
   --color-amber-source-a45: rgba(244, 183, 49, 0.45);
   --color-amber-source-a50: rgba(244, 183, 49, 0.5);
@@ -447,7 +417,6 @@
   /* amber-signal(255,179,71, forbidden.md 문서화) 알파 사다리 확장 —
      기존 a16/a60 형제. */
   --color-amber-signal-a07: rgba(255, 179, 71, 0.07);
-  --color-amber-signal-a24: rgba(255, 179, 71, 0.24);
   --color-amber-signal-a28: rgba(255, 179, 71, 0.28);
   --color-amber-signal-a30: rgba(255, 179, 71, 0.3);
 
@@ -461,7 +430,6 @@
   --color-amber-docs-a08: rgba(234, 198, 138, 0.08);
   --color-amber-docs-a10: rgba(234, 198, 138, 0.1);
   --color-amber-docs-a12: rgba(234, 198, 138, 0.12);
-  --color-amber-docs-a14: rgba(234, 198, 138, 0.14);
   --color-amber-docs-a16: rgba(234, 198, 138, 0.16);
   --color-amber-docs-a18: rgba(234, 198, 138, 0.18);
   --color-amber-docs-a22: rgba(234, 198, 138, 0.22);
@@ -469,17 +437,13 @@
   --color-amber-docs-a28: rgba(234, 198, 138, 0.28);
   --color-amber-docs-a34: rgba(234, 198, 138, 0.34);
   --color-amber-docs-a35: rgba(234, 198, 138, 0.35);
-  --color-amber-docs-a40: rgba(234, 198, 138, 0.4);
   --color-amber-docs-a42: rgba(234, 198, 138, 0.42);
   --color-amber-docs-a45: rgba(234, 198, 138, 0.45);
-  --color-amber-docs-a46: rgba(234, 198, 138, 0.46);
   --color-amber-docs-a50: rgba(234, 198, 138, 0.5);
   --color-amber-docs-a54: rgba(234, 198, 138, 0.54);
-  --color-amber-docs-a60: rgba(234, 198, 138, 0.6);
   --color-amber-docs-a65: rgba(234, 198, 138, 0.65);
   --color-amber-docs-a82: rgba(234, 198, 138, 0.82);
   --color-amber-docs-a85: rgba(234, 198, 138, 0.85);
-  --color-amber-docs-a90: rgba(234, 198, 138, 0.9);
   --color-amber-docs-a92: rgba(234, 198, 138, 0.92);
   --color-amber-docs-a94: rgba(234, 198, 138, 0.94);
   --color-amber-docs-a95: rgba(234, 198, 138, 0.95);
@@ -503,24 +467,17 @@
   --color-surface-deep-a20: rgba(12, 14, 20, 0.2);
   --color-surface-deep-a40: rgba(12, 14, 20, 0.4);
   --color-surface-deep-a80: rgba(12, 14, 20, 0.8);
-  --color-surface-deep-a85: rgba(12, 14, 20, 0.85);
   --color-surface-deep-a98: rgba(12, 14, 20, 0.98);
-  --color-surface-deep-a100: rgba(12, 14, 20, 1);
 
   /* 드롭 섀도 알파 — 기존 a22/a42/a46 형제. 8스텝 캐논 스케일로 신규
      리터럴을 스냅(지각 불가) — Guardian verdict §⑥. */
-  --color-shadow-a08: rgba(0, 0, 0, 0.08);
   --color-shadow-a12: rgba(0, 0, 0, 0.12);
   --color-shadow-a16: rgba(0, 0, 0, 0.16);
-  --color-shadow-a25: rgba(0, 0, 0, 0.25);
   --color-shadow-a35: rgba(0, 0, 0, 0.35);
-  --color-shadow-a45: rgba(0, 0, 0, 0.45);
   --color-shadow-a50: rgba(0, 0, 0, 0.5);
-  --color-shadow-a58: rgba(0, 0, 0, 0.58);
 
   /* overlay-recessed(어둡히는 inset surface) 알파 확장 — 기존
      base(0.16)/a12/a14/a20 형제. */
-  --color-overlay-recessed-a08: rgba(0, 0, 0, 0.08);
   --color-overlay-recessed-a45: rgba(0, 0, 0, 0.45);
 
   /* 모달/시트 배경 scrim — 기존 a54/a56 형제. */
@@ -532,11 +489,6 @@
      그대로 유지, check-no-raw-color.mjs allowlist 로 등록). 아래는
      `rgba(var(--kind-tone-domain), 0.11)` 형태로 CSS/JSX 에서 쓸 수 있는
      r,g,b 미러 — tone.ts 와 항상 동기 유지. */
-  --kind-tone-project: 126, 134, 216;
-  --kind-tone-domain: 74, 177, 196;
-  --kind-tone-capability: 211, 159, 73;
-  --kind-tone-element: 105, 177, 121;
-  --kind-tone-unknown: 196, 92, 92;
 
   /*
    * ── Geometry & Type Codex (R5, 2026-07) ─────────────────────────────
@@ -664,8 +616,10 @@
 
   /* Codex 인덱스 — 기하/모션 토큰은 이 파일 하단에 이미 정의됨:
      · --chrome-tile-size (36px) 크롬 타일 정사각
-     · --topology-motion-* / --topology-*-duration 모션 패밀리(180ms 크롬,
-       200~420ms 카메라, damping/response spring 패밀리)
+     · --topology-motion-panel-duration / -ease-out 크롬 전이(180ms) ·
+       --topology-motion-camera / -drag-settle 캔버스 전용(420/720ms) ·
+       damping/response spring 패밀리
+       (구 --topology-motion-*-duration 별칭 4개는 소비처 0으로 2026-07-29 삭제)
      전체 규격 표는 docs/DESIGN-SYSTEM.md "Geometry & Type Codex". */
 }
 
@@ -1400,7 +1354,6 @@
     --color-overlay-3: rgba(255, 255, 255, 0.10);
     --color-divider: rgba(255, 255, 255, 0.08);
     --color-tap-highlight: rgba(255, 255, 255, 0.04);
-    --shadow-card: none;
 
     /* 빌더 v2 (A2) 알파 스케일 — 위 @theme 블록과 동일한 Tailwind v4 emit
        회귀를 겪으므로 여기서도 다크 디폴트를 명시. */
@@ -1415,12 +1368,10 @@
     --color-indigo-a26: rgba(94, 106, 210, 0.26);
     --color-indigo-a28: rgba(94, 106, 210, 0.28);
     --color-indigo-a32: rgba(94, 106, 210, 0.32);
-    --color-indigo-a36: rgba(94, 106, 210, 0.36);
     --color-indigo-a38: rgba(94, 106, 210, 0.38);
     --color-indigo-a40: rgba(94, 106, 210, 0.4);
     --color-indigo-a42: rgba(94, 106, 210, 0.42);
     --color-indigo-a46: rgba(94, 106, 210, 0.46);
-    --color-indigo-border-a46: rgba(94, 106, 210, 0.46);
     --color-indigo-ring-a46: rgba(94, 106, 210, 0.46);
     --color-indigo-a50: rgba(94, 106, 210, 0.5);
     --color-indigo-a55: rgba(94, 106, 210, 0.55);
@@ -1432,31 +1383,23 @@
     --color-danger-a08: rgba(229, 72, 77, 0.08);
     --color-danger-a10: rgba(229, 72, 77, 0.1);
     --color-danger-a32: rgba(229, 72, 77, 0.32);
-    --color-danger-a46: rgba(229, 72, 77, 0.46);
     --color-danger-a50: rgba(229, 72, 77, 0.5);
     --color-danger-text: rgba(236, 116, 116, 0.92);
-    --color-amber-muted-a10: rgba(197, 122, 43, 0.1);
-    --color-amber-muted-a12: rgba(197, 122, 43, 0.12);
     --color-amber-muted-a18: rgba(197, 122, 43, 0.18);
     --color-amber-muted-a34: rgba(197, 122, 43, 0.34);
-    --color-amber-muted-a42: rgba(197, 122, 43, 0.42);
     --color-amber-muted-a62: rgba(197, 122, 43, 0.62);
-    --color-amber-muted-a90: rgba(197, 122, 43, 0.9);
     --color-amber-signal-a16: rgba(255, 179, 71, 0.16);
     --color-amber-signal-a60: rgba(255, 179, 71, 0.6);
     --color-overlay-recessed: rgba(0, 0, 0, 0.16);
 
     /* 빌더 A4 알파 스케일 — 위 @theme 블록과 동일한 Tailwind v4 emit
        회귀를 겪으므로 여기서도 다크 디폴트를 명시. */
-    --color-indigo-a07: rgba(94, 106, 210, 0.07);
     --color-indigo-a13: rgba(94, 106, 210, 0.13);
     --color-indigo-a20: rgba(94, 106, 210, 0.2);
     --color-indigo-a24: rgba(94, 106, 210, 0.24);
     --color-indigo-a30: rgba(94, 106, 210, 0.3);
     --color-indigo-a34: rgba(94, 106, 210, 0.34);
-    --color-indigo-a52: rgba(94, 106, 210, 0.52);
     --color-indigo-a60: rgba(94, 106, 210, 0.6);
-    --color-indigo-text-dot: rgba(159, 170, 235, 0.9);
     --color-indigo-line-a06: rgba(139, 151, 255, 0.06);
     --color-indigo-line-a13: rgba(139, 151, 255, 0.13);
     --color-indigo-line-a14: rgba(139, 151, 255, 0.14);
@@ -1475,14 +1418,8 @@
     --color-danger-text-strong: rgba(236, 116, 116, 0.95);
     --color-amber-source-a07: rgba(244, 183, 49, 0.07);
     --color-amber-source-a30: rgba(244, 183, 49, 0.3);
-    --color-green-a08: rgba(73, 190, 146, 0.08);
-    --color-green-a28: rgba(73, 190, 146, 0.28);
-    --color-green-a44: rgba(73, 190, 146, 0.44);
-    --color-green-text: rgba(190, 245, 222, 0.92);
-    --color-overlay-a03: rgba(255, 255, 255, 0.03);
     --color-overlay-recessed-a12: rgba(0, 0, 0, 0.12);
     --color-overlay-recessed-a14: rgba(0, 0, 0, 0.14);
-    --color-overlay-recessed-a20: rgba(0, 0, 0, 0.2);
     --color-shadow-a22: rgba(0, 0, 0, 0.22);
     --color-shadow-a42: rgba(0, 0, 0, 0.42);
     --color-shadow-a46: rgba(0, 0, 0, 0.46);
@@ -1492,9 +1429,6 @@
     --shadow-elevation-2: 0 24px 72px var(--color-shadow-a42);
     --shadow-elevation-3: 0 24px 80px var(--color-shadow-a46);
     --color-scrim-a54: rgba(0, 0, 0, 0.54);
-    --color-scrim-a56: rgba(0, 0, 0, 0.56);
-    --color-panel-overlay-a88: rgba(15, 16, 17, 0.88);
-    --color-panel-overlay-a94: rgba(15, 16, 17, 0.94);
 
     /* Phase 2 색 완전 토큰화 (2026-07-20) — 위 @theme 블록과 동일한
        Tailwind v4 alpha emit 회귀를 겪으므로 여기서도 다크 디폴트를
@@ -1502,15 +1436,12 @@
     --color-success-a06: rgba(50, 185, 125, 0.06);
     --color-success-a07: rgba(50, 185, 125, 0.07);
     --color-success-a035: rgba(50, 185, 125, 0.035);
-    --color-success-a045: rgba(50, 185, 125, 0.045);
     --color-success-a055: rgba(50, 185, 125, 0.055);
     --color-success-a10: rgba(50, 185, 125, 0.1);
     --color-success-a11: rgba(50, 185, 125, 0.11);
     --color-success-a12: rgba(50, 185, 125, 0.12);
     --color-success-a18: rgba(50, 185, 125, 0.18);
     --color-success-a20: rgba(50, 185, 125, 0.2);
-    --color-success-a24: rgba(50, 185, 125, 0.24);
-    --color-success-a26: rgba(50, 185, 125, 0.26);
     --color-success-a28: rgba(50, 185, 125, 0.28);
     --color-success-a35: rgba(50, 185, 125, 0.35);
     --color-success-a40: rgba(50, 185, 125, 0.4);
@@ -1526,15 +1457,10 @@
     --color-amber-source-a10: rgba(244, 183, 49, 0.1);
     --color-amber-source-a11: rgba(244, 183, 49, 0.11);
     --color-amber-source-a12: rgba(244, 183, 49, 0.12);
-    --color-amber-source-a13: rgba(244, 183, 49, 0.13);
     --color-amber-source-a14: rgba(244, 183, 49, 0.14);
-    --color-amber-source-a18: rgba(244, 183, 49, 0.18);
-    --color-amber-source-a24: rgba(244, 183, 49, 0.24);
     --color-amber-source-a25: rgba(244, 183, 49, 0.25);
-    --color-amber-source-a32: rgba(244, 183, 49, 0.32);
     --color-amber-source-a34: rgba(244, 183, 49, 0.34);
     --color-amber-source-a35: rgba(244, 183, 49, 0.35);
-    --color-amber-source-a40: rgba(244, 183, 49, 0.4);
     --color-amber-source-a42: rgba(244, 183, 49, 0.42);
     --color-amber-source-a45: rgba(244, 183, 49, 0.45);
     --color-amber-source-a50: rgba(244, 183, 49, 0.5);
@@ -1543,7 +1469,6 @@
     --color-amber-source-text-a85: rgba(239, 200, 150, 0.85);
     --color-amber-source-text-a95: rgba(239, 200, 150, 0.95);
     --color-amber-signal-a07: rgba(255, 179, 71, 0.07);
-    --color-amber-signal-a24: rgba(255, 179, 71, 0.24);
     --color-amber-signal-a28: rgba(255, 179, 71, 0.28);
     --color-amber-signal-a30: rgba(255, 179, 71, 0.3);
     /* @provisional — QUARANTINE, docs/DESIGN-SYSTEM.md 헌장 미등재.
@@ -1551,7 +1476,6 @@
     --color-amber-docs-a08: rgba(234, 198, 138, 0.08);
     --color-amber-docs-a10: rgba(234, 198, 138, 0.1);
     --color-amber-docs-a12: rgba(234, 198, 138, 0.12);
-    --color-amber-docs-a14: rgba(234, 198, 138, 0.14);
     --color-amber-docs-a16: rgba(234, 198, 138, 0.16);
     --color-amber-docs-a18: rgba(234, 198, 138, 0.18);
     --color-amber-docs-a22: rgba(234, 198, 138, 0.22);
@@ -1559,17 +1483,13 @@
     --color-amber-docs-a28: rgba(234, 198, 138, 0.28);
     --color-amber-docs-a34: rgba(234, 198, 138, 0.34);
     --color-amber-docs-a35: rgba(234, 198, 138, 0.35);
-    --color-amber-docs-a40: rgba(234, 198, 138, 0.4);
     --color-amber-docs-a42: rgba(234, 198, 138, 0.42);
     --color-amber-docs-a45: rgba(234, 198, 138, 0.45);
-    --color-amber-docs-a46: rgba(234, 198, 138, 0.46);
     --color-amber-docs-a50: rgba(234, 198, 138, 0.5);
     --color-amber-docs-a54: rgba(234, 198, 138, 0.54);
-    --color-amber-docs-a60: rgba(234, 198, 138, 0.6);
     --color-amber-docs-a65: rgba(234, 198, 138, 0.65);
     --color-amber-docs-a82: rgba(234, 198, 138, 0.82);
     --color-amber-docs-a85: rgba(234, 198, 138, 0.85);
-    --color-amber-docs-a90: rgba(234, 198, 138, 0.9);
     --color-amber-docs-a92: rgba(234, 198, 138, 0.92);
     --color-amber-docs-a94: rgba(234, 198, 138, 0.94);
     --color-amber-docs-a95: rgba(234, 198, 138, 0.95);
@@ -1585,26 +1505,14 @@
     --color-surface-deep-a20: rgba(12, 14, 20, 0.2);
     --color-surface-deep-a40: rgba(12, 14, 20, 0.4);
     --color-surface-deep-a80: rgba(12, 14, 20, 0.8);
-    --color-surface-deep-a85: rgba(12, 14, 20, 0.85);
     --color-surface-deep-a98: rgba(12, 14, 20, 0.98);
-    --color-surface-deep-a100: rgba(12, 14, 20, 1);
-    --color-shadow-a08: rgba(0, 0, 0, 0.08);
     --color-shadow-a12: rgba(0, 0, 0, 0.12);
     --color-shadow-a16: rgba(0, 0, 0, 0.16);
-    --color-shadow-a25: rgba(0, 0, 0, 0.25);
     --color-shadow-a35: rgba(0, 0, 0, 0.35);
-    --color-shadow-a45: rgba(0, 0, 0, 0.45);
     --color-shadow-a50: rgba(0, 0, 0, 0.5);
-    --color-shadow-a58: rgba(0, 0, 0, 0.58);
-    --color-overlay-recessed-a08: rgba(0, 0, 0, 0.08);
     --color-overlay-recessed-a45: rgba(0, 0, 0, 0.45);
     --color-scrim-a50: rgba(0, 0, 0, 0.5);
     --color-scrim-a58: rgba(0, 0, 0, 0.58);
-    --kind-tone-project: 126, 134, 216;
-    --kind-tone-domain: 74, 177, 196;
-    --kind-tone-capability: 211, 159, 73;
-    --kind-tone-element: 105, 177, 121;
-    --kind-tone-unknown: 196, 92, 92;
 
     /* RATIO-SYSTEM §3 탭 패턴 — active 탭의 2px 인디고 underline 두께.
        page-level ratio 토큰 본체(--page-max 등)는 위 :root 블록이 단일 출처. */
@@ -1616,20 +1524,6 @@
        (retire-sigma-topology) 이후 consumer 0 — topology-map-v2 는 자체
        --topology-v2-edge-* 패밀리를 쓴다. */
     --topology-card-border-selected: rgba(139, 151, 255, 0.8);
-    --topology-card-selected-quiet-border: rgba(139, 151, 255, 0.42);
-    --topology-card-selected-quiet-wash: rgba(139, 151, 255, 0.055);
-    --topology-card-count-surface: rgba(255, 255, 255, 0.045);
-    --topology-card-count-border: rgba(255, 255, 255, 0.085);
-    --topology-card-count-text: var(--color-text-secondary);
-    --topology-path-endpoint-surface: rgba(139, 151, 255, 0.16);
-    --topology-path-endpoint-border: rgba(139, 151, 255, 0.42);
-    --topology-path-endpoint-text: var(--color-indigo-accent);
-    --topology-health-repair-primary-surface: var(--color-overlay-3);
-    --topology-health-repair-primary-border: var(--color-border-strong);
-    --topology-health-repair-primary-hover-surface: var(--color-overlay-2);
-    --topology-health-repair-secondary-surface: transparent;
-    --topology-health-repair-secondary-border: transparent;
-    --topology-health-repair-secondary-hover-surface: var(--color-overlay-1);
     --topology-relation-summary-surface: rgba(139, 151, 255, 0.18);
     --topology-relation-summary-border: rgba(139, 151, 255, 0.42);
     --topology-relation-summary-text: rgba(222, 225, 255, 0.94);
@@ -1654,17 +1548,9 @@
     /* R+ 기획자 감사 ①: 1.1~1.6px × 실효알파 ~0.25 는 다크 캔버스에서
        비가시 — 카드가 "허공에 뜬 라벨" 로 읽혔다. 소속/신뢰 구조가 지도의
        존재 이유이므로 잉크를 한 단계 상향 (3:1 대비 목표). */
-    --topology-relation-stroke-strong: rgba(139, 151, 255, 0.82);
     /* R+ 디자인 가디언 verdict a5: cyan(72,184,203) 은 인디고 외 제2 채색
        시스템이었다(헌장 위반 — "카테고리 구분은 색이 아닌 보더 스타일"). 같은
        인디고 잉크로 통일하고 dash 로 spine(실선/strong)과 구분한다. */
-    --topology-relation-stroke-weak: rgba(217, 161, 65, 0.62);
-    --topology-relation-evidence-chip-surface: rgba(255, 255, 255, 0.055);
-    --topology-relation-evidence-chip-border: rgba(255, 255, 255, 0.10);
-    --topology-relation-evidence-chip-text: var(--color-text-secondary);
-    --topology-edge-tooltip-surface: rgba(12, 14, 20, 0.96);
-    --topology-edge-tooltip-border: rgba(139, 151, 255, 0.26);
-    --topology-edge-tooltip-shadow: 0 10px 24px rgba(0, 0, 0, 0.36);
 
     /*
      * Relief/Topology layout + motion tokens.
@@ -1672,7 +1558,6 @@
      * WebView markers should reference the token name when a surface depends on
      * 14-inch fullscreen geometry or click/focus interaction feel.
      */
-    --topology-panel-selected-rail-width: clamp(248px, 18vw, 286px);
     --topology-panel-overview-rail-width: clamp(
       calc(320px / var(--topology-ui-scale-factor)),
       calc(21vw / var(--topology-ui-scale-factor)),
@@ -1682,7 +1567,6 @@
       var(--topology-panel-overview-rail-width),
       calc(100vw - var(--topology-panel-phone-utility-rail-reserve))
     );
-    --topology-panel-overview-reserved-width: clamp(380px, calc(38vw - 170px), 420px);
     --topology-ui-scale-factor: 1;
     /*
      * App nav rail (`AppNavRail.tsx`, 좌측 64px 상시 chrome) 스케일 —
@@ -1736,54 +1620,23 @@
       var(--topology-panel-path-rail-width),
       calc(100vw - var(--topology-panel-phone-utility-rail-reserve))
     );
-    --topology-panel-focus-rail-width: clamp(250px, 13vw, 270px);
-    --topology-panel-focus-rail-padding: 10px;
-    --topology-panel-standard-width: clamp(460px, 31vw, 560px);
-    --topology-panel-standard-reserved-width: clamp(440px, calc(44vw - 190px), 560px);
-    --topology-panel-compact-width: clamp(380px, calc(50vw - 270px), 560px);
-    --topology-panel-compact-reserved-width: min(
-      clamp(360px, calc(50vw - 290px), 540px),
-      calc(100vw - 520px)
-    );
-    --topology-path-endpoint-card-max-width: min(26rem, calc(100vw - 1rem));
     /* [삭제, 2026-07-18] 구 TopologyMapCanvas(px 문자열) fit 안전영역 4토큰 —
        TopologyMapCanvas.tsx 자체가 #344 이후 삭제되어 consumer 0. v2 등가물은
        아래 §2.5 --topology-v2-safe-inset-* (단위 없는 숫자, canvas 2D 소비). */
     --topology-panel-support-surface: rgba(15, 16, 17, 0.99);
     --topology-panel-read-layer-z-index: 30;
-    --topology-selected-relation-card-width: clamp(256px, 17vw, 352px);
     --topology-selected-relation-card-max-height: min(328px, calc(100dvh - 7rem));
-    --topology-selected-relation-card-inset: clamp(16px, 2vw, 32px);
-    --topology-selected-relation-card-top: 104px;
     --topology-selected-relation-action-min-width: 86px;
     --topology-selected-relation-copy-payload-min-height: 42px;
     --topology-selected-relation-route-step-min-width: 48px;
     --topology-selected-relation-card-surface: rgba(13, 15, 21, 0.98);
     --topology-selected-relation-card-border: rgba(139, 151, 255, 0.28);
     --topology-selected-relation-card-shadow: 0 12px 26px rgba(0, 0, 0, 0.38);
-    --topology-selected-relation-next-action-surface: rgba(139, 151, 255, 0.075);
-    --topology-selected-relation-next-action-border: rgba(139, 151, 255, 0.20);
-    --topology-selected-relation-accent-text: rgba(139, 151, 255, 0.92);
-    --topology-selected-relation-accent-muted: rgba(139, 151, 255, 0.84);
-    --topology-selected-relation-focus-ring: rgba(94, 106, 210, 0.50);
-    --topology-selected-relation-copy-primary-shadow: 0 0 0 1px rgba(139, 151, 255, 0.16), 0 6px 18px rgba(0, 0, 0, 0.20);
-    --topology-selected-relation-copy-secondary-surface: rgba(255, 255, 255, 0.035);
     --topology-selected-relation-kicker-font-size: 9px;
     --topology-selected-relation-chip-font-size: 9px;
     --topology-selected-relation-route-label-font-size: 8px;
     --topology-selected-relation-route-value-font-size: 10px;
     --topology-selected-relation-payload-font-size: 10px;
-    --topology-analysis-mode-rail-surface: var(--color-overlay-1);
-    --topology-analysis-mode-active-surface: var(--color-overlay-2);
-    --topology-analysis-mode-active-border: rgba(139, 151, 255, 0.24);
-    --topology-analysis-mode-active-text: var(--color-text-primary);
-    --topology-analysis-mode-idle-text: var(--color-text-tertiary);
-    --topology-analysis-mode-hover-surface: var(--color-overlay-2);
-    --topology-analysis-mode-focus-ring: rgba(139, 151, 255, 0.42);
-    --topology-analysis-panel-prompt-text: rgba(222, 225, 255, 0.68);
-    --topology-analysis-panel-metric-label-text: rgba(222, 225, 255, 0.44);
-    --topology-analysis-panel-metric-value-text: rgba(222, 225, 255, 0.72);
-    --topology-analysis-panel-notice-text: rgba(222, 225, 255, 0.56);
     --topology-command-spine-padding: clamp(8px, 0.56vw, 10px);
     --topology-command-spine-gap: clamp(6px, 0.48vw, 8px);
     --topology-command-spine-surface: linear-gradient(
@@ -1795,153 +1648,27 @@
     --topology-command-spine-border: rgba(139, 151, 255, 0.16);
     --topology-command-primary-surface: rgba(139, 151, 255, 0.105);
     --topology-command-primary-border: rgba(139, 151, 255, 0.24);
-    --topology-command-secondary-surface: rgba(255, 255, 255, 0.024);
-    --topology-command-secondary-border: rgba(255, 255, 255, 0.07);
-    --topology-command-secondary-hover-border: rgba(139, 151, 255, 0.28);
-    --topology-command-step-surface: rgba(0, 0, 0, 0.12);
-    --topology-command-step-border: rgba(255, 255, 255, 0.055);
     --topology-command-primary-min-height: clamp(40px, 2.6vw, 44px);
-    --topology-overview-signal-grid-surface: rgba(255, 255, 255, 0.025);
-    --topology-overview-signal-grid-border: rgba(255, 255, 255, 0.065);
-    --topology-overview-panel-compact-gap: 8px;
-    --topology-overview-panel-phone-max-height: min(500px, calc(100dvh - 18.5rem));
-    --topology-health-panel-phone-max-height: min(520px, calc(100dvh - 16rem));
-    --topology-health-panel-scroll-end-reserve: 12px;
-    --topology-overview-signal-grid-compact-padding: 8px;
-    --topology-overview-signal-grid-compact-gap: 6px;
     --topology-overview-proof-summary-lines: 1;
-    --topology-overview-signal-neutral-surface: rgba(255, 255, 255, 0.028);
-    --topology-overview-signal-neutral-border: rgba(255, 255, 255, 0.065);
-    --topology-overview-signal-indigo-surface: rgba(139, 151, 255, 0.065);
-    --topology-overview-signal-indigo-border: rgba(139, 151, 255, 0.24);
-    --topology-overview-signal-cyan-surface: rgba(94, 234, 212, 0.045);
-    --topology-overview-signal-cyan-border: rgba(94, 234, 212, 0.22);
-    --topology-overview-notice-surface: rgba(255, 255, 255, 0.02);
-    --topology-overview-notice-border: rgba(255, 255, 255, 0.055);
-    --topology-overview-notice-compact-padding-y: 6px;
-    --topology-overview-handoff-divider: rgba(255, 255, 255, 0.07);
-    --topology-overview-handoff-primary-surface: rgba(139, 151, 255, 0.08);
-    --topology-overview-handoff-primary-border: rgba(139, 151, 255, 0.22);
-    --topology-overview-handoff-secondary-surface: rgba(255, 255, 255, 0.025);
-    --topology-overview-handoff-secondary-border: rgba(255, 255, 255, 0.055);
-    --topology-overview-handoff-compact-padding-top: 4px;
-    --topology-overview-handoff-primary-min-height: 34px;
-    --topology-overview-handoff-summary-min-height: 28px;
-    --topology-overview-quality-surface: rgba(94, 234, 212, 0.032);
-    --topology-overview-quality-border: rgba(94, 234, 212, 0.18);
-    --topology-overview-quality-meter-surface: rgba(255, 255, 255, 0.045);
-    --topology-overview-quality-meter-border: rgba(255, 255, 255, 0.08);
-    --topology-overview-quality-strong-meter: rgba(94, 234, 212, 0.84);
-    --topology-overview-quality-weak-meter: rgba(217, 161, 65, 0.74);
-    --topology-overview-proof-cell-divider: rgba(255, 255, 255, 0.055);
-    --topology-overview-proof-strong-text: rgba(94, 234, 212, 0.92);
-    --topology-overview-proof-supported-text: rgba(139, 151, 255, 0.92);
-    --topology-overview-proof-warning-text: rgba(217, 161, 65, 0.92);
-    --topology-overview-proof-review-text: rgba(226, 105, 105, 0.92);
-    --topology-overview-readiness-surface: rgba(139, 151, 255, 0.065);
-    --topology-overview-readiness-border: rgba(139, 151, 255, 0.24);
-    --topology-overview-readiness-meter-surface: rgba(255, 255, 255, 0.045);
-    --topology-overview-readiness-meter-border: rgba(255, 255, 255, 0.08);
-    --topology-overview-readiness-ready-meter: var(--color-indigo-a58);
-    --topology-overview-readiness-preflight-meter: rgba(217, 161, 65, 0.72);
-    --topology-overview-readiness-review-meter: var(--color-status-danger);
     --topology-path-handoff-surface: rgba(139, 151, 255, 0.045);
     --topology-path-handoff-border: rgba(139, 151, 255, 0.16);
-    --topology-path-handoff-text: rgba(222, 225, 255, 0.54);
-    --topology-path-handoff-label-text: rgba(222, 225, 255, 0.42);
     --topology-path-handoff-action-min-height: 20px;
     --topology-path-handoff-action-radius: 4px;
-    --topology-path-panel-compact-gap: 8px;
-    --topology-path-route-compact-min-height: 32px;
-    --topology-path-handoff-compact-padding-y: 4px;
-    --topology-path-primary-evidence-min-height: 28px;
-    --topology-path-proof-summary-min-height: 32px;
-    --topology-path-candidate-visibility-surface: rgba(139, 151, 255, 0.06);
-    --topology-path-candidate-visibility-border: rgba(139, 151, 255, 0.18);
-    --topology-path-primary-evidence-surface: rgba(139, 151, 255, 0.09);
-    --topology-path-primary-evidence-border: rgba(139, 151, 255, 0.24);
-    --topology-path-primary-evidence-text: rgba(222, 225, 255, 0.74);
-    --topology-path-primary-evidence-hover-surface: rgba(139, 151, 255, 0.13);
-    --topology-path-primary-evidence-hover-border: rgba(139, 151, 255, 0.38);
-    --topology-path-primary-evidence-hover-text: var(--color-text-primary);
-    --topology-path-handoff-mcp-surface: rgba(139, 151, 255, 0.075);
-    --topology-path-handoff-mcp-border: rgba(139, 151, 255, 0.22);
-    --topology-path-handoff-mcp-text: rgba(139, 151, 255, 0.92);
-    --topology-path-handoff-cli-surface: rgba(255, 255, 255, 0.035);
-    --topology-path-handoff-cli-border: rgba(255, 255, 255, 0.10);
-    --topology-path-handoff-cli-text: rgba(222, 225, 255, 0.52);
     --topology-path-route-surface: rgba(255, 255, 255, 0.024);
     --topology-path-route-border: rgba(139, 151, 255, 0.14);
     --topology-path-route-chip-surface: rgba(139, 151, 255, 0.07);
     --topology-path-route-chip-border: rgba(139, 151, 255, 0.18);
-    --topology-path-route-chip-text: rgba(222, 225, 255, 0.70);
-    --topology-path-route-arrow-text: rgba(222, 225, 255, 0.36);
-    --topology-path-route-source-min-width: 3.75rem;
-    --topology-path-route-target-min-width: 9.75rem;
-    --topology-path-route-source-surface: rgba(85, 205, 221, 0.075);
-    --topology-path-route-source-border: rgba(85, 205, 221, 0.22);
-    --topology-path-route-source-text: rgba(201, 250, 255, 0.76);
-    --topology-path-route-target-surface: rgba(139, 151, 255, 0.105);
-    --topology-path-route-target-border: rgba(139, 151, 255, 0.30);
-    --topology-path-route-target-text: rgba(231, 233, 255, 0.88);
-    --topology-path-route-endpoint-marker-surface: rgba(139, 151, 255, 0.16);
-    --topology-path-route-endpoint-marker-border: rgba(139, 151, 255, 0.30);
-    --topology-path-route-endpoint-marker-text: rgba(231, 233, 255, 0.86);
-    --topology-path-proof-kicker-text: rgba(222, 225, 255, 0.42);
-    --topology-path-proof-desc-text: rgba(222, 225, 255, 0.54);
-    --topology-path-proof-action-text: rgba(222, 225, 255, 0.56);
-    --topology-path-proof-action-hover-text: var(--color-text-primary);
-    --topology-path-proof-summary-surface: rgba(255, 255, 255, 0.018);
-    --topology-path-proof-summary-border: rgba(255, 255, 255, 0.07);
-    --topology-path-proof-summary-text: rgba(222, 225, 255, 0.46);
-    --topology-path-proof-summary-hover-surface: rgba(139, 151, 255, 0.055);
-    --topology-path-proof-summary-hover-border: rgba(139, 151, 255, 0.18);
-    --topology-path-proof-summary-hover-text: rgba(222, 225, 255, 0.68);
-    --topology-path-check-summary-text: rgba(222, 225, 255, 0.44);
-    --topology-path-check-summary-hover-text: rgba(222, 225, 255, 0.66);
-    --topology-path-proof-step-surface: rgba(255, 255, 255, 0.018);
-    --topology-path-proof-step-border: rgba(255, 255, 255, 0.07);
-    --topology-path-proof-ready-surface: rgba(92, 214, 138, 0.08);
-    --topology-path-proof-ready-border: rgba(92, 214, 138, 0.28);
-    --topology-path-proof-ready-text: var(--color-text-secondary);
-    --topology-path-proof-required-surface: var(--color-canvas);
-    --topology-path-proof-required-border: var(--color-border-soft);
-    --topology-path-proof-required-text: var(--color-text-tertiary);
-    --topology-path-proof-after-write-surface: rgba(212, 160, 72, 0.08);
-    --topology-path-proof-after-write-border: rgba(212, 160, 72, 0.28);
-    --topology-path-proof-after-write-text: var(--color-text-secondary);
-    --topology-path-prompt-half: min(27vw, 340px);
-    --topology-path-prompt-panel-width: clamp(460px, 31vw, 560px);
-    --topology-path-prompt-left: clamp(
-      calc(var(--topology-path-prompt-half) + 24px),
-      calc(
-        32px + var(--topology-path-prompt-panel-width) + 24px +
-          var(--topology-path-prompt-half)
-      ),
-      calc(100vw - var(--topology-path-prompt-half) - 24px)
-    );
     --topology-floating-control-surface: rgba(15, 16, 17, 0.92);
     --topology-floating-control-border: rgba(255, 255, 255, 0.07);
-    --topology-floating-control-shadow: 0 12px 28px rgba(0, 0, 0, 0.24);
-    --topology-floating-control-hover-surface: rgba(255, 255, 255, 0.045);
-    --topology-floating-control-icon: rgba(210, 214, 228, 0.68);
-    --topology-floating-control-icon-hover: rgba(244, 245, 247, 0.92);
     /* minimap header/border/shadow/active-border/active-shadow/grid-glow 및
        relation-legend max-width/border/shadow 는 구 SigmaTopology
        미니맵(#344 삭제)의 잔재라 제거됨 — surface/width/inset/minimap-gap/
        bottom 만 tests/e2e 가 여전히 검증하는 살아있는 부분집합. */
-    --topology-minimap-surface: rgba(10, 12, 15, 0.94);
-    --topology-relation-legend-width: clamp(252px, 18vw, 304px);
     --topology-relation-legend-inset: 24px;
     /* 우하단 판독계 스택의 하단 전용 인셋 — 기본은 좌우와 동일하지만 <lg
        (BottomTabBar 구간)에선 예약고 위로 올라간다(소유자 실보고 2026-07-23,
        태블릿 하단 겹침 — readout 이 탭바 뒤로 가려짐). */
     --topology-relation-legend-bottom-inset: var(--topology-relation-legend-inset);
-    --topology-relation-legend-minimap-gap: 12px;
-    --topology-relation-legend-bottom: calc(
-      24px + 183px + var(--topology-relation-legend-minimap-gap)
-    );
-    --topology-relation-legend-surface: var(--topology-minimap-surface);
     --topology-map-dim-anchor-opacity: 0.26;
     --topology-map-dim-context-opacity: 0.08;
     --topology-floating-control-phone-bottom: calc(
@@ -1976,15 +1703,10 @@
        커진다" 는 규격처럼 보이는데 실제로는 아무 픽셀도 만들지 않았다.
        `--pad-card`/`--pad-panel` 선례와 같다: 아무도 안 쓰는 토큰은 규격이
        아니라 오정보다. */
-    --topology-chrome-badge-size: 26px;
-    --topology-chrome-badge-size-compact: 22px;
     --topology-chrome-icon-size: 12px;
-    --topology-chrome-icon-size-sm: 11px;
     --topology-chrome-gap: clamp(5px, 0.4vw, 6px);
-    --topology-chrome-radius: 999px;
     --topology-chrome-title-size: 12px;
     --topology-chrome-eyebrow-size: 9px;
-    --topology-chrome-shadow: 0 6px 18px rgba(0, 0, 0, 0.2);
     --topology-utility-lane-height: var(--topology-chrome-control-height);
     --topology-utility-lane-gap: var(--topology-chrome-gap);
     --topology-utility-lane-compact-width: var(--topology-chrome-control-height);
@@ -2035,9 +1757,7 @@
      * 컴포저 폭 단일 진실원. sm 420 · md 560 · lg 720. 실제 적용 시엔
      * `min(var(--dialog-w-md), calc(100vw - 2rem))` 로 좁은 뷰포트를 감싼다.
      */
-    --dialog-w-sm: 420px;
     --dialog-w-md: 560px;
-    --dialog-w-lg: 720px;
     /* 44 → 36 (소유자 3차 보고 2026-07-23: zoom 제거 후에도 "딱봐도 크다")
        — 크롬 밀도 자체를 프로 툴바 급(32~36)으로. 단일 토큰이므로 전 크롬
        필/타일/상태 칩/플로팅 스택이 함께 내려간다. */
@@ -2049,7 +1769,6 @@
     --chrome-border: var(--color-border-soft);
     --chrome-shadow: 0 6px 20px rgba(0, 0, 0, 0.35);
     --chrome-inset: 24px;
-    --chrome-engrave: 0 1px 0 rgba(0, 0, 0, 0.65);
     /* ChromeTile/ChromeChip 의 `active`(선택/진행중) 표시 — 인디고 하나만
        쓰는 단일 채색 원칙 그대로, 알파만 다르다. */
     --chrome-active-surface: rgba(94, 106, 210, 0.12);
@@ -2084,11 +1803,9 @@
     --kind-glyph-stroke-project: #57575f;
     --kind-glyph-stroke-domain: #48484f;
     --kind-glyph-stroke-capability: #3c3c44;
-    --kind-glyph-stroke-element: #34343b;
     --kind-glyph-fill-project: #1c1c22;
     --kind-glyph-fill-domain: #191920;
     --kind-glyph-fill-capability: #17171d;
-    --kind-glyph-fill-element: #15151a;
     --kind-glyph-edge-contains: #4a4a54;
     --kind-glyph-edge-relates: #5c5c72;
     --topology-blocking-backdrop-surface: rgba(0, 0, 0, 0.72);
@@ -2137,10 +1854,6 @@
     --topology-mobile-bottom-tab-reserve: calc(
       var(--topology-bottom-tab-min-height) + env(safe-area-inset-bottom)
     );
-    --topology-analysis-panel-compact-scroll-end-reserve: calc(
-      var(--topology-mobile-bottom-tab-reserve) + 12px
-    );
-    --topology-analysis-panel-path-collapsed-scroll-end-reserve: 12px;
     --topology-shortcuts-help-phone-top: 188px;
     --topology-shortcuts-help-focus-phone-top: 208px;
     /* 우측 세로 레일 3타일(전체보기/가이드 투어/단축키) 리듬 — 가이드 투어
@@ -2187,11 +1900,8 @@
     /* 지도의 DOM 표면(포커스 링·패널)은 앱 공통 램프의 "이동" 스텝을 그대로
        쓴다 — 같은 180ms 를 손잡이 두 개로 갈라 두면 언젠가 한쪽만 돌아간다.
        카메라(420)·드래그 안착(720)은 캔버스 물리라 DOM 램프와 독립. */
-    --topology-motion-focus-duration: var(--motion-base);
     --topology-motion-panel-duration: var(--motion-base);
     --topology-motion-camera-duration: 420ms;
-    --topology-motion-drag-settle-duration: 720ms;
-    --topology-motion-ease-standard: cubic-bezier(0.2, 0, 0.2, 1);
     --topology-motion-ease-out: cubic-bezier(0.16, 1, 0.3, 1);
 
     /* 볼트 에이전트 패널 — 지도 오른쪽에 자리를 내주는 세로 도크.
@@ -2269,8 +1979,6 @@
        숫자가 인라인 매직넘버로 남아 있던 자리를 토큰으로 승격해 grep 계약을
        남긴다(값 자체는 위 임계감쇠 스프링으로 대체되어 더 이상 모션에 쓰이지
        않음). */
-    --overlay-palette-width: 320px;
-    --overlay-item-height: 28px;
     /* 오버레이 close 버튼 기본 32px — coarse-pointer 는 아래 기존
        `@media (pointer: coarse)` 블록에서 --touch-target-min(44px) 으로
        승격(다른 크롬 control 과 같은 단일 출처 패턴). */
@@ -2733,7 +2441,6 @@
     --topology-v2-panel-radius: 12px;
     --topology-v2-panel-row-radius: 5px;
     --topology-v2-panel-pad: 14px;
-    --topology-v2-panel-gap: 14px;
     --topology-v2-panel-surface: #17171c;
     --topology-v2-panel-border: #2a2a30;
     --topology-v2-panel-divider: #23232a;
