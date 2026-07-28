@@ -3212,6 +3212,11 @@
         },
         {
           "depth": 2,
+          "text": "2026-07-28 — 릴리스가 태그마다 한 칸씩 배우던 것을 끝낸다 (사전 리허설)",
+          "slug": "2026-07-28-릴리스가-태그마다-한-칸씩-배우던-것을-끝낸다-사전-리허설"
+        },
+        {
+          "depth": 2,
           "text": "2026-07-28 — README 를 설치된 앱의 실제 화면으로 다시 쓴다",
           "slug": "2026-07-28-readme-를-설치된-앱의-실제-화면으로-다시-쓴다"
         },
@@ -5256,8 +5261,8 @@
           "slug": "2026-07-26-첫-만남은-쇼핑몰부터"
         }
       ],
-      "excerpt": "Major change history. Code commit messages answer why; this file answers when / which surface changed. Focused on user-visible changes, not PR-level granularity. Newest at the top. Entries stay date-based; the app version reached v1.0.0 on 2026-07-27, so a release tag now carries the semver promise instead. 지금까지 README",
-      "wordCount": 57512,
+      "excerpt": "Major change history. Code commit messages answer why; this file answers when / which surface changed. Focused on user-visible changes, not PR-level granularity. Newest at the top. Entries stay date-based; the app version reached v1.0.0 on 2026-07-27, so a release tag now carries the semver promise instead. v1.0.0-rc.2",
+      "wordCount": 57827,
       "updatedAt": "2026-07-28",
       "linksOut": [
         "CASE-STUDY-AGENTS-MD-DRIFT",
@@ -5386,6 +5391,16 @@
         },
         {
           "depth": 2,
+          "text": "macOS release — rehearse before you tag",
+          "slug": "macos-release-rehearse-before-you-tag"
+        },
+        {
+          "depth": 3,
+          "text": "Tagging rules the rehearsal cannot enforce",
+          "slug": "tagging-rules-the-rehearsal-cannot-enforce"
+        },
+        {
+          "depth": 2,
           "text": "What's NOT needed",
           "slug": "whats-not-needed"
         },
@@ -5396,8 +5411,8 @@
         }
       ],
       "excerpt": "2026-05 update — Round 10 removed all backend dependencies. The OSS now builds to a pure static site (output: 'export'), deployable to any static host (GitHub Pages, Vercel, Netlify, S3 + CloudFront, …). The canonical host is GitHub Pages; the old Firebase-specific guide is archived in docs/archive/DEPLOY-FIREBASE.md f",
-      "wordCount": 494,
-      "updatedAt": "2026-07-27",
+      "wordCount": 940,
+      "updatedAt": "2026-07-28",
       "linksOut": [
         "archive/DEPLOY-FIREBASE"
       ]

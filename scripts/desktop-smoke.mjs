@@ -41,21 +41,68 @@ export const DESKTOP_SMOKE_ROUTE_TITLES = {
  * Server-rendered copy is required only where it is itself the static product
  * surface. Client workbenches are covered by route-specific component markers
  * below instead of brittle historical prose.
+ *
+ * 문구를 **여기 적어 두지 않는다 — 메시지 카탈로그에서 읽는다.**
+ *
+ * 예전에는 네 문장을 이 파일에 그대로 박아 뒀다. 그러다 #730 이 다운로드
+ * 화면을 다시 만들면서 그 문장들을 걷어냈고, 이 게이트는 **어제의 문장**을
+ * 요구한 채로 남았다. `scripts/desktop-smoke.test.mjs` 는 상수가 자기
+ * 리터럴과 같은지만 봤으므로 249개 테스트가 전부 초록인 채였고, 결함은
+ * `pnpm build` 뒤에 `desktop:smoke` 를 실제로 돌리는 곳 —
+ * 즉 **태그를 찍은 뒤의 릴리스 빌드** — 에서만 드러났다.
+ * (`desktop:check` 가 같은 이유로 v1.0.0-rc.2 1차 시도를 막았다. #743.)
+ *
+ * 키만 못박으면 그 종류의 부패가 불가능해진다. 문구가 바뀌면 카탈로그와 함께
+ * 바뀌고, 키가 사라지면 아래 `resolveRouteText` 가 즉시 멈춘다. 게이트가
+ * 지켜야 하는 것은 "어제의 문장" 이 아니라 **"오늘의 화면이 실제로 정적
+ * 출력에 들어갔는가"** 다.
  */
-export const DESKTOP_SMOKE_ROUTE_TEXT = {
-  "en:/download": [
-    "Install once. Work from your local vault.",
-    "Pick your vault folder",
-    "Connect your AI assistant",
-    "MCP server auto-registration",
-  ],
-  "ko:/download": [
-    "한 번 설치하고, 내 로컬 vault 에서 작업하세요.",
-    "vault 폴더 선택",
-    "AI 어시스턴트 연결하기",
-    "MCP 서버 자동등록",
-  ],
+export const DESKTOP_SMOKE_ROUTE_TEXT_KEYS = {
+  "/download": ["download.title", "download.trustHeading", "download.archHelpTitle", "download.webCta"],
 };
+
+function messageAtPath(messages, dottedKey) {
+  return dottedKey
+    .split(".")
+    .reduce((node, part) => (node && typeof node === "object" ? node[part] : undefined), messages);
+}
+
+/**
+ * 카탈로그를 읽어 `"<locale>:<route>"` → 기대 문구 배열로 편다.
+ *
+ * ICU 플레이스홀더(`{tag}`)가 든 문구는 렌더 결과가 원문과 다르므로 키로
+ * 고르지 않는다 — 고르면 여기서 멈춘다.
+ */
+export function resolveRouteText({
+  root = process.cwd(),
+  locales = DESKTOP_SMOKE_LOCALES,
+  keysByRoute = DESKTOP_SMOKE_ROUTE_TEXT_KEYS,
+} = {}) {
+  const resolved = {};
+  for (const locale of locales) {
+    const catalogPath = path.join(root, "messages", `${locale}.json`);
+    const messages = JSON.parse(fs.readFileSync(catalogPath, "utf8"));
+    for (const [route, keys] of Object.entries(keysByRoute)) {
+      resolved[`${locale}:${route}`] = keys.map((key) => {
+        const value = messageAtPath(messages, key);
+        if (typeof value !== "string" || value.length === 0) {
+          throw new Error(
+            `desktop smoke copy contract points at ${locale} message "${key}", which no longer exists. ` +
+              "Point DESKTOP_SMOKE_ROUTE_TEXT_KEYS at a message the route still renders.",
+          );
+        }
+        if (/[{}]/.test(value)) {
+          throw new Error(
+            `desktop smoke copy contract picked ${locale} message "${key}", which carries an ICU placeholder ` +
+              `(${value}). The rendered HTML never contains the raw string — pick a placeholder-free message.`,
+          );
+        }
+        return value;
+      });
+    }
+  }
+  return resolved;
+}
 
 /**
  * Stable source markers that state what each packaged route means today.
@@ -65,8 +112,13 @@ export const DESKTOP_SMOKE_ROUTE_TEXT = {
  * of a retired browse, builder, or query-cockpit chunk.
  */
 export const DESKTOP_SMOKE_ROUTE_CHUNK_TEXT = {
+  // 구 fact-strip 마커는 #730 의 리메이크에서 사라졌다. 그 자리에 오늘 실제로
+  // 렌더되는 신뢰 섹션 마커를 둔다 — 마커는 "이 라우트가 오늘 무엇인가" 를
+  // 말해야지, 어제 무엇이었는지를 말하면 안 된다. (은퇴한 마커 이름을 여기
+  // 적지 않는다: 계약 테스트가 이 파일을 문자열로 읽으므로, 설명으로 적어도
+  // "아직 남아 있다" 로 잡힌다 — 문자열 게이트는 자기 문서까지 읽는다.)
   "/download": [
-    "download-fact-strip",
+    "download-trust",
     "download-platform-macos",
     "download-platform-windows",
   ],
@@ -140,9 +192,10 @@ export function evaluateDesktopSmoke({
   routes = DESKTOP_SMOKE_ROUTES,
   docs = DESKTOP_SMOKE_DOCS,
   routeTitles = DESKTOP_SMOKE_ROUTE_TITLES,
-  routeText = DESKTOP_SMOKE_ROUTE_TEXT,
+  routeText,
   routeChunkText = {},
 } = {}) {
+  const expectedRouteText = routeText ?? resolveRouteText();
   const checks = [];
   const addCheck = (id, label, ok, details = "") => {
     checks.push({ id, label, ok, details });
@@ -179,7 +232,8 @@ export function evaluateDesktopSmoke({
         );
       }
 
-      const expectedText = routeText[`${locale}:${route}`] ?? routeText[route];
+      const expectedText =
+        expectedRouteText[`${locale}:${route}`] ?? expectedRouteText[route];
       if (expectedText) {
         addCheck(
           `route-text:${locale}:${route}`,
