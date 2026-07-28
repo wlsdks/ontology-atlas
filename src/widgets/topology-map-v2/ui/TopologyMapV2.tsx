@@ -242,10 +242,23 @@ export interface TopologyMapV2Props {
    * 스크롤하는 문서 안에 밴드로 박히는 표면만 `"page-scroll"` 을 넘긴다.
    */
   wheelIntent?: "zoom" | "page-scroll";
+  /**
+   * 앰비언트 모션이 잠들기까지의 무입력 시간. 생략 시 워크벤치 기본
+   * (`AMBIENT_SLEEP_DELAY_MS`, 30초 — 사람이 지도를 **오래 열어 두고** 판단하는
+   * 표면의 값).
+   *
+   * 관문처럼 세션 자체가 그보다 짧을 수 있는 표면은 짧게 넘긴다. 실측
+   * (2026-07-28 모션석): `/download` 방문자는 **구조적으로 휴면에 도달할 수
+   * 없었다** — 캔버스가 뷰포트의 62% 라 CTA 로 마우스를 옮기는 동작만으로도
+   * `pointermove` 가 30초 시계를 리셋했다. 그런데 이 표면에는 그 연소가 사는
+   * 것이 없다(각성 상태 캔버스 변화량 초당 0.056% — 혜성이 지각되지 않는다).
+   * 포스터에 워크벤치 요금을 내던 셈이다.
+   */
+  ambientSleepDelayMs?: number;
 }
 
 export function TopologyMapV2(props: TopologyMapV2Props) {
-  const { nodes, edges, focus, minimal, emphasizedNeighborSlug, fitViewToken, relayoutToken, revealToken, onSelectEdge, onSelect, onPaneClick, onVisibleCountChange, onGraphStatsChange, onZoomTierChange, onContextMenuNode, agentFocusNodeId, spotlightIds = null, onHoverEdge, selectedEdge = null, expandedParents, onToggleCluster, onHoverCluster, clusterHint, realmRootId = null, onEnterRealm, realmEnterLabel, realmEnterTooltip, realmCaption = null, canvasLabel, visitedTrail, trailLensActiveRef, trailHoverNodeIdRef, tierReveal, tourAnchorNodeId = null, tourAnchorRef, overlayOpen = false, glyphSet = "geometric", canvasBackground = "dot", wheelIntent = "zoom" } = props;
+  const { nodes, edges, focus, minimal, emphasizedNeighborSlug, fitViewToken, relayoutToken, revealToken, onSelectEdge, onSelect, onPaneClick, onVisibleCountChange, onGraphStatsChange, onZoomTierChange, onContextMenuNode, agentFocusNodeId, spotlightIds = null, onHoverEdge, selectedEdge = null, expandedParents, onToggleCluster, onHoverCluster, clusterHint, realmRootId = null, onEnterRealm, realmEnterLabel, realmEnterTooltip, realmCaption = null, canvasLabel, visitedTrail, trailLensActiveRef, trailHoverNodeIdRef, tierReveal, tourAnchorNodeId = null, tourAnchorRef, overlayOpen = false, glyphSet = "geometric", canvasBackground = "dot", wheelIntent = "zoom", ambientSleepDelayMs } = props;
 
   const realmEnterButtonRef = useRef<HTMLButtonElement | null>(null);
 
@@ -303,6 +316,7 @@ export function TopologyMapV2(props: TopologyMapV2Props) {
       nodes,
       edges,
       wheelIntent,
+      ambientSleepDelayMs,
       focusedSlug: focus.selectedSlug,
       emphasizedNeighborSlug,
       fitViewToken,
@@ -351,8 +365,25 @@ export function TopologyMapV2(props: TopologyMapV2Props) {
       <canvas
         ref={canvasRef}
         data-testid="topology-map-v2-canvas"
-        role={canvasLabel ? "img" : undefined}
+        /**
+         * **끌 수 있는 것은 그림이 아니다** (2026-07-28 모션석 P3).
+         *
+         * 예전에는 `role="img"` 로 AT 에 "정지 이미지" 라고 선언하면서 라벨로는
+         * "끌어서 움직여 볼 수 있어요" 라고 말했다 — 접근성 트리 안에 어포던스
+         * 모순이 그대로 박혀 있었다. `tabIndex` 도 없어 키보드 사용자에게는
+         * 신호가 **0개**였다.
+         *
+         * `role="application"` 이 아니라 `group` 인 이유: `application` 은 AT 의
+         * 기본 키 처리를 통째로 뺏는데 이 캔버스는 자체 키보드 순회를 제공하지
+         * 않는다(대체 경로는 INDEX 패널·데이터시트). 뺏고 안 주는 것이 가장
+         * 나쁘다. `group` + 라벨 + 포커스 가능은 "여기 뭔가 있고 만질 수 있다"
+         * 까지만 정직하게 말한다.
+         *
+         * 포커스 링은 **정지 프레임의 어포던스이기도 하다** — 모션 예산 0이다.
+         */
+        role={canvasLabel ? "group" : undefined}
         aria-label={canvasLabel}
+        tabIndex={canvasLabel ? 0 : undefined}
         // `cursor-grab` 이 **기본 상태**인 이유 (2026-07-28 카운슬 「상호작용」):
         // 이 캔버스의 1차 행동은 팬이다. 포인터 핸들러가 노드/엣지 위에서
         // `pointer` 로, 미는 동안 `grabbing` 으로 인라인 덮어쓴다.
@@ -361,7 +392,7 @@ export function TopologyMapV2(props: TopologyMapV2Props) {
         // `style.cursor = ""` 로 되돌릴 때 인라인 기본값은 그 자체가 지워져
         // `auto` 로 떨어진다(실측). 클래스로 두면 인라인이 걷힌 자리에서
         // 캐스케이드가 `grab` 을 되돌려 준다 — 되돌림이 저절로 옳아진다.
-        className="cursor-grab"
+        className="cursor-grab outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--color-indigo-accent)] focus-visible:ring-offset-2 focus-visible:ring-offset-[color:var(--color-canvas)]"
         style={{
           display: "block",
           width: "100%",

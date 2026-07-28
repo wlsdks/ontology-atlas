@@ -225,17 +225,32 @@ function PortraitStage({
   return (
     <section
       data-testid="download-stage"
-      className="relative isolate flex min-h-[38rem] w-full flex-col overflow-hidden border-b border-[color:var(--color-divider)] lg:min-h-[42rem]"
+      className="relative isolate flex w-full flex-col overflow-hidden border-b border-[color:var(--color-divider)] lg:min-h-[42rem]"
     >
-      <StageMap />
-
-      <div className="relative flex min-w-0 flex-1 items-center px-[max(1.5rem,env(safe-area-inset-left))] pr-[max(1.5rem,env(safe-area-inset-right))] py-12 md:px-10">
-        <div className="mx-auto w-full max-w-[var(--page-max)]">
-          <DownloadPlate published={published} primaryAsset={primaryAsset} />
-        </div>
+      {/*
+       * 지도의 자리가 폭에 따라 **바뀐다** (위계석 P6, 2026-07-28 실측).
+       *
+       * `lg+` — 무대 전체를 덮는 배경. 판이 그 위에 뜬다.
+       * `<lg` — 판 **위**의 띠. 배경으로 두면 판이 무대의 68.7% 를 덮어서
+       *   화면에 남는 지도가 오른쪽 끝에 반쯤 잘린 클러스터 칩 하나뿐이었다.
+       *   그 위에서 리드가 "뒤에 보이는 지도는…" 이라고 말했다 — **없는 것을
+       *   가리키는 헤드라인은 죽은 CTA 와 같은 등급의 결함**이다.
+       *
+       * 리드 문구도 같이 고쳤다: "뒤에 보이는" 을 뺐다. 방위를 말하면 두 배치
+       * 중 하나에서 반드시 틀리므로, 어느 쪽에서도 참인 "이 지도는" 으로 쓴다.
+       */}
+      <div className="relative h-[17rem] w-full shrink-0 border-b border-[color:var(--color-divider)] lg:absolute lg:inset-0 lg:h-auto lg:border-b-0">
+        <StageMap />
       </div>
 
-      {/* 지도의 자기 캡션 — 무대 바닥. 배경이 무엇인지 말하지 않으면 그건
+      {/* 지도의 자기 캡션 — **지도 바로 뒤**에 온다.
+
+          ⚠️ DOM 순서가 지도 다음인 이유: `<lg` 에서 지도는 흐름 안의 띠이고
+          판이 그 아래 오는데, 캡션을 무대 맨 끝에 두면 지도를 설명하는 줄이
+          판을 건너뛰어 **600px 아래 고아**가 된다(실측 390px). 데스크톱에서는
+          지도가 절대 배치(흐름 밖)라 흐름은 판 하나뿐이므로, `lg:order-last`
+          로 캡션을 판 아래 바닥에 돌려놓는다 — 두 폭 모두에서 캡션이 자기가
+          설명하는 것 옆에 붙는다. 배경이 무엇인지 말하지 않으면 그건
           증거가 아니라 벽지다.
 
           ⚠️ **정상 흐름**이다(absolute 아님). 절대 배치로 바닥에 붙였더니
@@ -248,7 +263,7 @@ function PortraitStage({
           다른 숫자가 나온다. */}
       <p
         data-testid="download-portrait-caption"
-        className="relative shrink-0 px-[max(1.5rem,env(safe-area-inset-left))] pr-[max(1.5rem,env(safe-area-inset-right))] pb-4 md:px-10"
+        className="relative shrink-0 px-[max(1.5rem,env(safe-area-inset-left))] pr-[max(1.5rem,env(safe-area-inset-right))] pt-3 pb-4 md:px-10 lg:order-last lg:pt-0"
       >
         <span className="mx-auto flex w-full max-w-[var(--page-max)] flex-wrap items-baseline gap-x-3 gap-y-1 font-mono text-caption leading-caption text-[color:var(--color-text-quaternary)]">
           <span className="uppercase tracking-[0.18em]">docs/ontology</span>
@@ -263,7 +278,10 @@ function PortraitStage({
             })}
           </span>
           <span aria-hidden>·</span>
-          {/* 「만질 수 있음」의 **보이는** 지시자 (2026-07-28 모션석 처방).
+          {/* 「만질 수 있음」의 **보이는** 지시자 (2026-07-28 모션석 처방 +
+              소유자 재보고 *"드래그도 되고 그랬으면 좋겠는데"* — 캡션의
+              흐린 절로는 여전히 안 읽혔다. 그래서 다른 절보다 한 단 밝게
+              두고 문구도 명령형으로 짧게 만든다).
               그전까지 촉각 신호 셋이 전부 정지 프레임에서 안 보였다 —
               `cursor: grab` 은 포인터가 이미 거기 있어야 발동하고,
               `aria-label` 은 스크린리더 전용이고, 클러스터 힌트는 sr-only 다.
@@ -276,6 +294,12 @@ function PortraitStage({
           <span className="min-w-0 break-keep">{t('portraitScope')}</span>
         </span>
       </p>
+      <div className="relative flex min-w-0 flex-1 items-center px-[max(1.5rem,env(safe-area-inset-left))] pr-[max(1.5rem,env(safe-area-inset-right))] py-10 md:px-10 lg:py-12">
+        <div className="mx-auto w-full max-w-[var(--page-max)]">
+          <DownloadPlate published={published} primaryAsset={primaryAsset} />
+        </div>
+      </div>
+
     </section>
   );
 }
@@ -365,18 +389,6 @@ function PublishedActions({
       <TrustChips />
       <ArchHelp />
       <ChannelNote />
-      {/* **되돌릴 수 있음** (2026-07-28 해자석 처방). 페이지는 "어디로도
-          전송되지 않습니다"(유출)를 네 번 말하면서 "지워도 잃는 게 없습니다"
-          (고착)를 한 번도 안 했다. 무명 저장소의 바이너리를 디스크에 들이는
-          사람이 실제로 계산하는 건 유출이 아니라 **"이거 망하면 내 데이터
-          어떻게 되나"** 이고, 로컬-퍼스트 제품이 그 질문에 답할 수 있다는 것
-          자체가 SaaS 경쟁자 전체에 대한 비대칭이다. 배지 0개, 문장 1개. */}
-      <p
-        data-testid="download-exit-cost"
-        className="mt-3 max-w-[var(--measure-prose)] break-keep text-label leading-label text-[color:var(--color-text-tertiary)]"
-      >
-        {t('exitCost')}
-      </p>
       <PlateFooterLinks />
     </div>
   );
@@ -555,20 +567,17 @@ function TrustChips() {
   const t = useTranslations('download');
 
   return (
-    <ul
+    <p
       data-testid="download-trust-chips"
-      className="mt-3 flex min-w-0 flex-wrap items-center gap-1.5"
+      className="mt-2.5 flex min-w-0 items-baseline gap-2 break-keep text-label leading-label text-[color:var(--color-text-tertiary)]"
     >
-      {[t('chipSigned'), t('chipChecksum'), t('chipPrivacy')].map((label) => (
-        <li
-          key={label}
-          className="inline-flex items-center gap-1.5 rounded-chip border border-[color:var(--color-border-soft)] bg-[color:var(--color-elevated)] px-2.5 py-1 text-label leading-label text-[color:var(--color-text-secondary)]"
-        >
-          <Check size={12} aria-hidden className="text-[color:var(--color-indigo-accent)]" />
-          {label}
-        </li>
-      ))}
-    </ul>
+      <Check
+        size={12}
+        aria-hidden
+        className="mt-1 shrink-0 text-[color:var(--color-indigo-accent)]"
+      />
+      <span className="min-w-0">{t('trustLine')}</span>
+    </p>
   );
 }
 
@@ -667,16 +676,27 @@ function TwoUsers() {
         {t('pitchBody')}
       </p>
 
-      <div className="mt-7 grid grid-cols-1 gap-x-10 gap-y-6 md:grid-cols-2">
+      {/*
+       * **두 줄기가 한 폴더로 합류하는 그림** (소유자 판정 2026-07-28:
+       * *"하단 설명도 별로임.. 좀 디자인있게 만들수는 없나"*).
+       *
+       * 이 절의 논지가 "사람과 에이전트가 **같은** 폴더를 본다" 인데, 두 열을
+       * 나란히만 놓으면 그림이 말하는 건 "둘이 따로 있다" 다 — 레이아웃이
+       * 문장과 반대로 말하고 있었다. 그래서 두 열을 1px 괘선으로 아래로
+       * 내려 합류점 하나에 묶는다. **상자도 이미지도 없다** — 이 페이지의
+       * 위계는 여백과 괘선이 지고, 그 규율 안에서 도해를 만든다.
+       *
+       * `<md` 에서는 세로로 쌓이므로 합류 기하가 성립하지 않는다 — 그때는
+       * 괘선을 지우고 문장만 남긴다(거짓 도해 금지).
+       */}
+      <div className="mt-7 grid grid-cols-1 gap-x-12 gap-y-8 md:grid-cols-2">
         <AudienceColumn
           eyebrow={t('humanEyebrow')}
-          title={t('humanTitle')}
           body={t('humanBody')}
           facts={[t('humanFact1'), t('humanFact2')]}
         />
         <AudienceColumn
           eyebrow={t('agentEyebrow')}
-          title={t('agentTitle')}
           body={t('agentBody')}
           facts={[
             t('agentFact1', { tools: MCP_TOOL_COUNT }),
@@ -685,21 +705,35 @@ function TwoUsers() {
         />
       </div>
 
-      <p className="mt-6 max-w-[var(--measure-prose)] break-keep border-l-2 border-[color:var(--color-indigo-a50)] pl-3 text-body leading-body text-[color:var(--color-text-secondary)]">
-        {t('twoUsersJoin')}
-      </p>
+      {/*
+       * 합류 — 두 열을 가로지르는 괘선 **위에** 문장이 앉는다.
+       *
+       * 첫 시안은 두 열에서 가닥을 내려 가운데서 만나게 그렸는데, 실물에서
+       * 떠도는 괄호로 읽혔다(선이 얇고 짧아 의도가 안 보였다). 도해는 읽히지
+       * 않으면 도해가 아니라 얼룩이다. 그래서 형태를 바꾼다 — 전폭 괘선 하나에
+       * 문장을 얹어 "위의 둘이 여기서 하나가 된다" 를 한 눈에 말한다.
+       * 상자도 이미지도 없고, 쓰는 것은 1px 괘선과 여백뿐이다.
+       */}
+      <div className="relative mt-10">
+        <span
+          aria-hidden
+          className="absolute inset-x-0 top-1/2 h-px bg-[color:var(--color-divider)]"
+        />
+        <p className="relative mx-auto w-fit max-w-[var(--measure-prose)] break-keep bg-[color:var(--color-canvas)] px-5 text-center text-body-lg leading-body-lg text-[color:var(--color-text-secondary)]">
+          {t('twoUsersJoin')}
+        </p>
+      </div>
+
     </section>
   );
 }
 
 function AudienceColumn({
   eyebrow,
-  title,
   body,
   facts,
 }: {
   eyebrow: string;
-  title: string;
   body: string;
   facts: readonly string[];
 }) {
@@ -708,10 +742,10 @@ function AudienceColumn({
       <p className="font-mono text-caption uppercase leading-caption tracking-[0.18em] text-[color:var(--color-text-quaternary)]">
         {eyebrow}
       </p>
-      <h3 className="mt-1.5 text-body-lg leading-body-lg font-semibold text-[color:var(--color-text-primary)]">
-        {title}
-      </h3>
-      <p className="mt-1.5 break-keep text-body leading-body text-[color:var(--color-text-tertiary)]">
+      {/* 제목은 h2 가 이미 "사람도 읽고, 에이전트도 읽습니다" 라고 했으므로
+          여기서 같은 말을 반복하지 않는다 — eyebrow 가 주체를 말하고 본문이
+          바로 내용으로 간다. */}
+      <p className="mt-2 break-keep text-body-lg leading-body-lg text-[color:var(--color-text-primary)]">
         {body}
       </p>
       <ul className="mt-3">

@@ -3465,8 +3465,20 @@ html[data-gateway-stage] {
   --topology-v2-label-element: #9a9aa4;
 
   /* 카메라 — 관문은 "만져 보는" 자리라 워크벤치보다 가까이 붙는다. */
-  --topology-v2-camera-scale-max: 4.6;
-  --topology-v2-overview-entry-ratio: 1;
+  /*
+   * 상한이 아니라 **진입 배율**이 구속 조건이다 (실측 정정 2026-07-28).
+   * `computeOverviewFitScale` 은 `min(가용폭/월드폭, 가용높이/월드높이)` 라,
+   * 96 노드가 퍼진 월드에서는 그 값 자체가 작아서 상한(2.6)이 애초에 안
+   * 걸린다 — 상한만 올리면 아무 일도 안 일어난다(상한 4.6·7.2 둘 다 실측
+   * 458×429 로 동일했다).
+   *
+   * 그래서 **꽉 맞춤을 넘어 확대**한다. 진입 배율이 1을 넘으면 그래프가
+   * 프레임 밖으로 넘치는데, 그게 모션석이 처방한 무모션 어포던스다 —
+   * "그림은 전체를 보여 주고 창은 파편을 보여 준다". 상한은 이 배율이
+   * 잘리지 않을 만큼만 올린다.
+   */
+  --topology-v2-camera-scale-max: 6;
+  --topology-v2-overview-entry-ratio: 1.85;
 
   /*
    * 판이 무대 왼쪽을 덮으므로 그만큼을 인셋으로 예약한다 — 위젯의 패널 인지
@@ -3481,8 +3493,10 @@ html[data-gateway-stage] {
 
 @media (min-width: 64rem) {
   html[data-gateway-stage] {
-    /* 판 좌측 여백(40) + 판 폭(480) + 숨 쉴 틈(48). 판 폭은
-       `DownloadPage.tsx` 의 `max-w-[30rem]` 과 짝이라 함께 바뀐다. */
-    --topology-v2-safe-inset-left: 568;
+    /* 판 좌측 여백(40) + 판 폭(480) + 숨 쉴 틈(24). 판 폭은
+       `DownloadPage.tsx` 의 `max-w-[30rem]` 과 짝이라 함께 바뀐다. 틈을
+       48→24 로 줄인 것은 소유자 판정("아직도 작게 느껴지고") — 지도가 판
+       오른쪽 영역을 더 꽉 채운다. */
+    --topology-v2-safe-inset-left: 544;
   }
 }

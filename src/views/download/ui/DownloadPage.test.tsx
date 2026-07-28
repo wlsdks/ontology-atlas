@@ -145,7 +145,7 @@ describe('DownloadPage', () => {
 
       const web = screen.getByTestId('download-web-cta');
       expect(web).toHaveAttribute('href', '/');
-      expect(web).toHaveTextContent(/Open the map in your browser/i);
+      expect(web).toHaveTextContent(/Try it in the browser/i);
       // The filled variant is the page's single attention winner.
       expect(web.className).toMatch(/--color-indigo-brand/);
       expect(releases.className).not.toMatch(/--color-indigo-brand/);
@@ -308,7 +308,7 @@ describe('DownloadPage', () => {
   it('says the installed app updates itself', () => {
     renderDownloadPage();
 
-    expect(screen.getByText(/updates itself with one button/i)).toBeInTheDocument();
+    expect(screen.getByText(/one button updates it/i)).toBeInTheDocument();
   });
 
   // ─── 배경은 증거다 (2026-07-28 백지 재설계) ────────────────────────────────
