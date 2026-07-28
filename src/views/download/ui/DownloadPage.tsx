@@ -38,6 +38,8 @@ import { DOGFOOD_CENSUS } from '../model/dogfood-census.generated';
 import { StageMap } from './StageMap';
 
 const GITHUB_REPOSITORY_URL = 'https://github.com/wlsdks/ontology-atlas';
+/** 링크 텍스트는 주소 그대로 — 오픈소스에서 이 문자열은 라벨이 아니라 신원이다. */
+const GITHUB_REPOSITORY_LABEL = 'github.com/wlsdks/ontology-atlas';
 
 /**
  * `/download` — **지도가 곧 페이지다** (2026-07-28 소유자 확정, 백지 재설계).
@@ -343,6 +345,48 @@ function PublishedActions({
       <TrustChips />
       <ArchHelp />
       <ChannelNote />
+      <PlateFooterLinks />
+    </div>
+  );
+}
+
+/**
+ * 판의 바닥 줄 — **받기 다음에 갈 수 있는 두 곳** (소유자 지시 2026-07-28:
+ * *"다운로드, 웹 이동 하단에 깃허브 주소 이런 느낌으로 가자"*).
+ *
+ * 위의 버튼과 무게를 나눈다: 받는 것이 이 판의 일이고, 이 줄은 **안 받기로 한
+ * 사람의 출구**다. 그래서 버튼이 아니라 글자다.
+ *
+ * 저장소 주소를 URL 그대로 쓰는 이유: 오픈소스에서 그 문자열은 링크가 아니라
+ * **신원**이다. "소스 코드 보기" 라는 라벨은 어디로 가는지 감추지만
+ * `github.com/wlsdks/ontology-atlas` 는 누가 만들었고 무엇을 볼 수 있는지를
+ * 클릭 전에 말한다.
+ */
+function PlateFooterLinks() {
+  const t = useTranslations('download');
+
+  return (
+    <div className="mt-4 flex min-w-0 flex-wrap items-center gap-x-3 gap-y-2 border-t border-[color:var(--color-divider)] pt-3.5">
+      <Link
+        href="/"
+        data-testid="download-web-cta"
+        className="touch-hit-expand inline-flex items-center text-label leading-label text-[color:var(--color-indigo-accent)] transition-colors hover:text-[color:var(--color-text-primary)]"
+      >
+        {t('webCta')}
+      </Link>
+      <span aria-hidden className="text-label text-[color:var(--color-text-quaternary)]">
+        ·
+      </span>
+      <a
+        href={GITHUB_REPOSITORY_URL}
+        target="_blank"
+        rel="noopener noreferrer"
+        data-testid="download-repo-link"
+        className="touch-hit-expand inline-flex min-w-0 items-center gap-1.5 font-mono text-label leading-label text-[color:var(--color-text-tertiary)] transition-colors hover:text-[color:var(--color-text-primary)]"
+      >
+        <ExternalLink size={12} aria-hidden className="shrink-0" />
+        <span className="truncate">{GITHUB_REPOSITORY_LABEL}</span>
+      </a>
     </div>
   );
 }
