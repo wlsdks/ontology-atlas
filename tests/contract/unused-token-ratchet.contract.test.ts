@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { readFileSync } from "node:fs";
+import { existsSync, readFileSync } from "node:fs";
 import { execFileSync } from "node:child_process";
 
 /**
@@ -66,7 +66,11 @@ function repoFiles(): string[] {
     .filter(Boolean)
     .filter((f) => /\.(ts|tsx|js|jsx|mjs|cjs|css|rs|html)$/.test(f))
     .filter((f) => f !== "app/globals.css")
-    .filter((f) => !GENERATED_MIRRORS.some((dir) => f.startsWith(dir)));
+    .filter((f) => !GENERATED_MIRRORS.some((dir) => f.startsWith(dir)))
+    // `git ls-files` 는 **인덱스**를 답한다 — 삭제했지만 아직 커밋 안 한 파일이
+    // 여기 남는다. 없는 파일을 읽으려다 게이트가 죽으면, 리팩터링 중간 상태에서
+    // 이 테스트는 토큰이 아니라 **자기 자신** 때문에 빨개진다.
+    .filter((f) => existsSync(f));
 }
 
 /**

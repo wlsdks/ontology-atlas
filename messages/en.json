@@ -3152,5 +3152,15 @@
     "retry": {
       "title": "Try again"
     }
+  },
+  "skillParity": {
+    "header": "Skill copies",
+    "copyHandoff": "Copy a note for your agent",
+    "copied": "Copied — paste it to your agent.",
+    "copyFailed": "Could not copy.",
+    "chip": "read-only",
+    "valueDisagreeing": "{total} skills · {count} out of sync",
+    "valueAgreed": "{total} skills · all agree",
+    "body": "Compares the .claude/skills and .agents/skills copies file by file. It never writes anything."
   }
 }

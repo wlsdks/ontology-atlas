@@ -302,6 +302,34 @@ export async function ensureDefaultVaultParentDir(): Promise<string | null> {
   return invoke<string>('ensure_default_vault_parent_dir');
 }
 
+/**
+ * rootPath 아래 임의 상대 경로의 항목을 나열한다 (파일 + 디렉터리).
+ *
+ * `listTauriDirectoryNames` 와 달리 **파일을 버리지 않고 깊이도 자유**다.
+ * manifest walker 가 dot 디렉터리를 걸러 `.claude/skills` 같은 트리를 영영 못
+ * 보므로, 그런 트리를 따로 읽어야 하는 곳이 쓴다. 없는 경로는 Rust 가 에러를
+ * 내므로 호출부가 잡는다 — 대부분의 볼트에 `.claude/` 는 없고 그건 결함이 아니다.
+ */
+export async function listTauriVaultEntries(
+  rootPath: string,
+  relativePath: string,
+): Promise<Array<{ name: string; kind: 'file' | 'directory' }>> {
+  const invoke = getInvoke();
+  if (!invoke) return [];
+  return invoke<TauriVaultEntry[]>('list_vault_directory', { rootPath, relativePath });
+}
+
+/** rootPath 아래 상대 경로의 텍스트 파일을 읽는다. 다리가 없으면 `null`. */
+export async function readTauriVaultText(
+  rootPath: string,
+  relativePath: string,
+): Promise<string | null> {
+  const invoke = getInvoke();
+  if (!invoke) return null;
+  const file = await invoke<TauriTextFile>('read_vault_text_file', { rootPath, relativePath });
+  return file.text;
+}
+
 /** rootPath 바로 아래 하위 디렉터리 이름만 나열 (파일은 제외). */
 export async function listTauriDirectoryNames(rootPath: string): Promise<string[]> {
   const invoke = getInvoke();
