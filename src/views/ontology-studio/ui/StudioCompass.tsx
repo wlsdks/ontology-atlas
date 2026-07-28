@@ -1,6 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
+import { FILL_ARRIVAL_WINDOW_MS, fillArrivalOffset } from "../lib/fill-arrival";
 import { MOTION, MOTION_EASE } from "@/shared/motion";
 import {
   ArrowLeft,
@@ -740,8 +741,24 @@ export function StudioCompass(props: StudioCompassProps) {
     setOpenRelation((cur) => (cur === relation ? null : relation));
     setQuery("");
   };
+  /**
+   * 방금 채운 방위 — 그 자리에 태어나는 위성만 도착 안무를 받는다.
+   *
+   * 무대에 이미 있던 위성이 함께 움직이면 "무엇이 방금 생겼나" 가 흐려진다
+   * (기록 표면에서 배운 것과 같은 규율 — 이미 있던 역사는 다시 태어나지
+   * 않는다). 애니메이션이 끝나면 표시를 걷어, 이후의 재렌더가 같은 위성을
+   * 다시 도착시키지 않게 한다.
+   */
+  const [justFilled, setJustFilled] = useState<StudioRelation | null>(null);
+  useEffect(() => {
+    if (!justFilled) return;
+    const timer = window.setTimeout(() => setJustFilled(null), FILL_ARRIVAL_WINDOW_MS);
+    return () => window.clearTimeout(timer);
+  }, [justFilled]);
+
   const pick = (candidate: CreateCandidate) => {
     if (!openRelation) return;
+    setJustFilled(openRelation);
     onFill(openRelation, candidate);
     setOpenRelation(null);
     setQuery("");
@@ -1150,6 +1167,7 @@ export function StudioCompass(props: StudioCompassProps) {
                   : undefined
               }
               pendingNeighborIds={props.pendingNeighborIds}
+              justFilledRelation={justFilled}
             />
           ))}
 
@@ -1666,6 +1684,7 @@ function LaneRender({
   onCloseFold,
   onEditNeighbor,
   pendingNeighborIds,
+  justFilledRelation,
 }: {
   view: CompassBearingView;
   layout: LaneLayout;
@@ -1679,6 +1698,15 @@ function LaneRender({
   onOpenNode?: (id: string) => void;
   /** Report this lane's bearing as hover/focus-active (연관 강조 pair light-up). */
   onHoverBearing?: (bearing: StudioBearing | null) => void;
+  /**
+   * 방금 채운 관계 — 그 방위에 태어나는 위성만 도착 안무를 받는다(`fill-arrival`).
+   * 무대에 이미 있던 위성이 함께 움직이면 "무엇이 방금 생겼나" 가 흐려진다.
+   *
+   * 방위가 아니라 **관계**로 받는 이유: 레인이 이미 자기 관계를 알고 있어서
+   * 역방향 매핑(관계 → 방위)을 새로 만들 필요가 없다. 같은 대응을 두 곳에
+   * 적으면 한쪽만 바뀌는 날이 온다.
+   */
+  justFilledRelation?: StudioRelation | null;
   /** Satellite id eligible for the one-shot arrival highlight (null → none). */
   arrivalId?: string | null;
   /** Whether the arrival highlight is still lit (drives the color-only fade). */
@@ -1723,6 +1751,8 @@ function LaneRender({
       {/* satellites — body click loads that node; the quiet "···" edits the
           relation in place (Slice 1); a staged change shows a "저장 대기" chip. */}
       {layout.sats.map(({ sat, x, y }) => {
+        // 이 레인이 방금 채워진 그 레인인가 — 관계로 판정한다.
+        const justFilled = justFilledRelation != null && justFilledRelation === view.relation;
         const onClick = satNav(sat.id);
         const Tag = onClick ? "button" : "div";
         const pending = pendingNeighborIds?.has(sat.id) ?? false;
@@ -1732,8 +1762,18 @@ function LaneRender({
             key={sat.id}
             ref={registerSat ? (el) => registerSat(sat.id, el) : undefined}
             data-flip-sat={sat.id}
-            className="group absolute z-[2]"
-            style={{ left: x, top: y, width: SAT.w, height: SAT.h }}
+            // 방금 채운 방위에 태어나는 위성만 소켓이 있던 쪽에서 걸어온다.
+            // 무대에 이미 있던 위성은 손대지 않는다 — 함께 움직이면 "무엇이
+            // 방금 생겼나" 가 흐려진다.
+            className={cn("group absolute z-[2]", justFilled && "studio-fill-arrive")}
+            data-testid={justFilled ? "studio-fill-arrival" : undefined}
+            style={{
+              left: x,
+              top: y,
+              width: SAT.w,
+              height: SAT.h,
+              ...(justFilled ? fillArrivalOffset(view.bearing) : {}),
+            }}
             {...hoverProps}
           >
             <Tag
