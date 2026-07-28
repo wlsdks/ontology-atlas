@@ -321,7 +321,12 @@ export function AppNavRail({
             data-testid="app-nav-rail-active-indicator"
             data-placed={indicator ? "true" : "false"}
             className={cn(
-              "pointer-events-none absolute left-1/2 z-0 -translate-x-1/2 rounded-card bg-[color:var(--color-indigo-a14)] shadow-[inset_0_0_0_1px_var(--color-indigo-line-a22)]",
+              // 가로 중앙 정렬은 **인라인 transform 하나가** 한다. Tailwind v4 의
+              // 이동 유틸리티는 `transform` 이 아니라 **`translate` 표준 속성**을
+              // 쓰기 때문에, 클래스로 `-translate-x-1/2` 를 주고 인라인으로
+              // `transform: translate(-50%, …)` 을 주면 **둘 다 적용돼 두 번**
+              // 밀린다(실측: 타일보다 19px 왼쪽 → 레일 밖으로 잘림).
+              "pointer-events-none absolute left-1/2 z-0 rounded-card bg-[color:var(--color-indigo-a14)] shadow-[inset_0_0_0_1px_var(--color-indigo-line-a22)]",
               // 첫 배치는 전이가 아니다 — 처음 그려질 때 0 에서 미끄러져
               // 들어오면 "이동" 이 아니라 "등장" 이 되고, 사용자가 부르지
               // 않은 모션이 된다(`use-row-disclosure` 가 배운 것과 같다).
