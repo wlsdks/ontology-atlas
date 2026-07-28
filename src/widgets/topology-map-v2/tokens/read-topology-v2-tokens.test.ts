@@ -91,6 +91,9 @@ const FIXTURE_VALUES: Record<string, string> = {
   "--topology-v2-camera-max-zoom-ratio": "3.2",
   "--topology-v2-camera-min-zoom-ratio": "0.5",
   "--topology-v2-camera-focus-pan-margin": "180",
+  // 목줄의 기본값은 **0(꺼짐)** 이다 — 워크벤치의 팬 봉투가 종전 그대로라는
+  // 계약이 이 한 줄이다. 켜는 곳은 관문 스코프(`html[data-gateway-stage]`) 하나.
+  "--topology-v2-camera-pan-leash": "0",
   "--topology-v2-altitude-far-high-ratio": "0.92",
   "--topology-v2-altitude-far-low-ratio": "0.62",
   "--topology-v2-overview-entry-ratio": "0.95",

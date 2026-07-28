@@ -577,7 +577,7 @@
     "eyebrow": "macOS app · open source",
     "downloadSectionLabel": "Download",
     "sourceCta": "View source code",
-    "primaryCtaPublished": "Download for Apple Silicon · {size}",
+    "primaryCtaPublished": "Download for Apple Silicon",
     "primaryCtaPending": "Open the GitHub releases page",
     "archIntelCta": "Download for Intel",
     "checksumCopy": "Copy",

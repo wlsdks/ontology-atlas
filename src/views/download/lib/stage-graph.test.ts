@@ -58,6 +58,40 @@ describe('buildStageGraph', () => {
     for (const n of nodes) expect(Number.isFinite(n.descendantCount)).toBe(true);
   });
 
+  /**
+   * 각인 숫자는 **경로 합이 아니라 고유 노드 수**다.
+   *
+   * 실측 회귀(2026-07-29): 허브가 `379` 를 각인한 채로 바로 옆 캡션이
+   * `96 개념` 이라고 적고 있었다. 자체 재귀가 다중 부모를 지나는 containment
+   * **경로마다** 자손을 다시 세서 4배 부풀린 것이다. 배경과 캡션이 같은
+   * 출처를 쓴다는 것이 이 페이지의 정직성 계약이므로 그 계약을 여기서 고정한다.
+   */
+  it('다중 부모를 지나도 자손을 한 번만 센다 (경로 합 금지)', () => {
+    const { nodes } = buildStageGraph(
+      [
+        node('p', 'project'),
+        node('d1', 'domain'),
+        node('d2', 'domain'),
+        node('shared', 'capability'),
+        node('leaf', 'element'),
+      ],
+      [
+        edge('p', 'd1', 'contains'),
+        edge('p', 'd2', 'contains'),
+        // 같은 capability 가 두 도메인에 담긴다 — 경로는 둘, 노드는 하나.
+        edge('d1', 'shared', 'contains'),
+        edge('d2', 'shared', 'contains'),
+        edge('shared', 'leaf', 'contains'),
+      ],
+    );
+    const countById = new Map(nodes.map((n) => [n.id, n.descendantCount]));
+    // capability 1 + element 1 = 2. 경로 합이면 4 가 된다.
+    expect(countById.get('p')).toBe(2);
+    expect(countById.get('d1')).toBe(2);
+    expect(countById.get('shared')).toBe(1);
+    expect(countById.get('leaf')).toBe(0);
+  });
+
   it('관문에 근거가 없는 사실은 꾸며내지 않는다', () => {
     const { nodes, edges } = buildStageGraph(
       [node('a', 'domain'), node('b', 'element')],

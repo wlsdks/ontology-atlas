@@ -4,7 +4,22 @@ import { useCallback, useEffect, useMemo, useState } from 'react';
 import { useTranslations } from 'next-intl';
 import { useDogfoodInsight } from '@/features/vault-ontology';
 import { TopologyMapV2, clearTopologyV2TokensCache } from '@/widgets/topology-map-v2';
-import { buildStageGraph } from '../lib/stage-graph';
+import { buildStageGraph, type StageGraph } from '../lib/stage-graph';
+
+/**
+ * 무대가 그리는 그래프 — **캡션과 지도가 같은 객체를 본다**.
+ *
+ * 예전엔 지도가 이 파생 그래프를 그리는 동안 캡션은 빌드 스크립트가 센
+ * frontmatter 파일 수(`DOGFOOD_CENSUS`, 96)를 적었다. 같은 화면에 두 정의가
+ * 있었고, 실측하면 지도의 노드는 **287** 이었다 — 캡션이 3배 작게 말한 것이다.
+ * 캡션은 자기가 설명하는 그림을 세야 한다.
+ *
+ * `useDogfoodInsight` 는 로케일별 메모 캐시라 두 곳에서 불러도 파생은 1회다.
+ */
+export function useStageGraph(): StageGraph {
+  const insight = useDogfoodInsight();
+  return useMemo(() => buildStageGraph(insight.nodes, insight.edges), [insight]);
+}
 
 /**
  * 무대의 지도 — **진짜 엔진이다** (2026-07-28 소유자 지시:
@@ -29,15 +44,17 @@ import { buildStageGraph } from '../lib/stage-graph';
  *
  * ## 데이터
  *
+ * 그래프는 위 `useStageGraph()` 가 만들어 **캡션과 공유**한다 — 캡션이 세는
+ * 숫자와 여기 그려지는 점이 같은 객체여야 이 페이지의 정직성 계약이 성립한다.
+ *
  * `useDogfoodInsight()` 로 **출처를 고정**한다. `useOntologyInsight()` 는 세션의
  * 선택(로컬 볼트 · 스토어프론트 샘플)을 따라가는데, 그러면 캡션이 "이 저장소의
  * docs/ontology · 96 개념" 이라고 적어 둔 채 스토어프론트 7 노드를 그리는 일이
  * 생긴다(실측 2026-07-28, 첫 엔진 마운트). 무대가 주장하는 것과 그리는 것은
  * 같은 볼트여야 한다.
  */
-export function StageMap() {
+export function StageMap({ graph }: { graph: StageGraph }) {
   const t = useTranslations('download');
-  const insight = useDogfoodInsight();
   const [selected, setSelected] = useState<string | null>(null);
   /**
    * 접힌 자식 무리를 펼친 부모들. **이 상태가 없으면 클러스터 칩(`+17`)이
@@ -125,11 +142,6 @@ export function StageMap() {
       return next;
     });
   }, []);
-
-  const graph = useMemo(
-    () => buildStageGraph(insight.nodes, insight.edges),
-    [insight],
-  );
 
   // 스코프가 켜지기 전에는 지도를 그리지 않는다 (위 주석의 순서 계약).
   if (!scoped || graph.nodes.length === 0) return null;

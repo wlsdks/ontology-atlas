@@ -1,4 +1,4 @@
-import { fireEvent, render, screen, waitFor } from '@testing-library/react';
+import { fireEvent, render, renderHook, screen, waitFor } from '@testing-library/react';
 import { NextIntlClientProvider } from 'next-intl';
 import type { ReactNode } from 'react';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
@@ -8,6 +8,7 @@ import { shouldHideBottomTabBar } from '@/widgets/bottom-tab-bar';
 import { RELEASE_VERSION } from '../lib/release-facts';
 import { DOGFOOD_CENSUS } from '../model/dogfood-census.generated';
 import { DownloadPage } from './DownloadPage';
+import { useStageGraph } from './StageMap';
 
 vi.mock('@/features/locale-switch', () => ({
   LocaleSwitch: () => <div data-testid="locale-switch" />,
@@ -87,12 +88,14 @@ function publishRelease() {
   };
 }
 
+const IntlWrapper = ({ children }: { children: ReactNode }) => (
+  <NextIntlClientProvider locale="en" messages={enMessages}>
+    {children}
+  </NextIntlClientProvider>
+);
+
 function renderDownloadPage() {
-  return render(
-    <NextIntlClientProvider locale="en" messages={enMessages}>
-      <DownloadPage />
-    </NextIntlClientProvider>,
-  );
+  return render(<IntlWrapper>{<DownloadPage />}</IntlWrapper>);
 }
 
 describe('DownloadPage', () => {
@@ -174,7 +177,10 @@ describe('DownloadPage', () => {
         'href',
         `https://github.com/wlsdks/ontology-atlas/releases/download/v${RELEASE_VERSION}/ontology-atlas_${RELEASE_VERSION}_aarch64.dmg`,
       );
-      expect(appleSilicon).toHaveTextContent(/Download for Apple Silicon · 12\.4 MB/i);
+      // 크기는 이제 라벨 문자열이 아니라 **별도 스팬**이다 — Intel 버튼과 같은
+      // 문법이고, `<sm` 에서 그 스팬만 빠져 가로 오버플로가 사라진다(평결 ④).
+      expect(appleSilicon).toHaveTextContent(/Download for Apple Silicon/i);
+      expect(appleSilicon).toHaveTextContent(/12\.4 MB/);
       expect(screen.getByTestId('download-macos-x64')).toHaveAttribute(
         'href',
         `https://github.com/wlsdks/ontology-atlas/releases/download/v${RELEASE_VERSION}/ontology-atlas_${RELEASE_VERSION}_x64.dmg`,
@@ -305,12 +311,22 @@ describe('DownloadPage', () => {
   // 실제 폴더예요"). 그 문장이 참이려면 뒤에 그려진 것이 진짜 vault 여야 하고,
   // 그래서 배경은 지울 수 있는 장식이 아니라 계약이다. 구 미니어처(노드 8개
   // 도식)를 대체하면서 그 정직성 계약도 함께 옮겨 왔다.
+  // 2026-07-29 평결 ① — 캡션은 **자기가 설명하는 그림**을 센다. 구 판본은
+  // 빌드 스크립트의 frontmatter 파일 수(`DOGFOOD_CENSUS.concepts` = 96)를
+  // 적으면서 그 옆에 파생 그래프(287 노드)를 그렸다. 한 화면에 정의가 둘이면
+  // 어느 쪽도 못 믿는다 — 허브 각인 `379` vs 캡션 `96` 이 그 증상이었다.
   it('draws the real vault behind the plate, with the same numbers the caption claims', () => {
     renderDownloadPage();
 
     const caption = screen.getByTestId('download-portrait-caption');
-    expect(caption).toHaveTextContent(`${DOGFOOD_CENSUS.concepts} concepts`);
-    expect(caption).toHaveTextContent(`${DOGFOOD_CENSUS.relations} relations`);
+    const { result } = renderHook(() => useStageGraph(), { wrapper: IntlWrapper });
+    const graph = result.current;
+    expect(graph.nodes.length).toBeGreaterThan(0);
+    expect(caption).toHaveTextContent(`${graph.nodes.length} concepts`);
+    expect(caption).toHaveTextContent(`${graph.edges.length} relations`);
+    // 파생 그래프는 frontmatter 파일 수와 **다르다**. 그 차이를 여기 고정해
+    // 두지 않으면 다음 사람이 "같으니 캡션을 되돌려도 된다" 고 읽는다.
+    expect(graph.nodes.length).not.toBe(DOGFOOD_CENSUS.concepts);
 
     // [download-honesty] 이 숫자에는 범위 라벨이 붙어야 한다 — 앱에서 자기
     // 폴더를 열면 다른 정의(런타임 파생 그래프)로 다른 숫자가 나오고, 라벨이

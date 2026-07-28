@@ -87,8 +87,10 @@ export function DesktopVaultWelcome({
             <p className="font-mono text-caption uppercase tracking-[0.16em] text-[color:var(--color-text-quaternary)]">
               {t("desktopWelcome.eyebrow")}
             </p>
-            {/* eslint-disable-next-line no-restricted-syntax -- md 반응형 히어로 강조(34px)는 램프 상단(hero 30px)을 넘는 의도적 예외. base 는 text-hero. */}
-            <h2 className="max-w-2xl text-hero font-semibold leading-tight text-[color:var(--color-text-primary)] md:text-[34px]">
+            {/* 34px 은 이제 램프 스텝이다 (`--text-hero-lg`, 2026-07-29 승격) —
+                구 `md:text-[34px]` + eslint-disable 예외는 소비처가 둘이 되면서
+                이름을 얻었다. `leading-tight` 는 명시 짝이라 두 크기 모두를 덮는다. */}
+            <h2 className="max-w-2xl text-hero font-semibold leading-tight text-[color:var(--color-text-primary)] md:text-hero-lg">
               {showDogfoodHint
                 ? t("desktopWelcome.dogfoodTitle")
                 : t("desktopWelcome.title")}

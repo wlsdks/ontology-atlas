@@ -136,6 +136,15 @@ export interface TopologyV2Tokens {
   /** `--topology-v2-camera-min-zoom-ratio` — the viewport-relative floor `computeEffectiveCameraScaleMin` derives the real zoom-out bound from. */
   cameraMinZoomRatio: number;
   cameraFocusPanMargin: number;
+  /**
+   * `--topology-v2-camera-pan-leash` — 초점이 없을 때 카메라가 **핏에서** 벗어날
+   * 수 있는 월드 반경. `0`(기본) = 목줄 없음 = 종전 봉투(월드 bbox ± 320).
+   *
+   * 「지도 맞추기」 크롬이 없는 표면(관문 `/download`)이 이 값을 켠다 — 되돌릴
+   * 길이 없는 화면에서 되돌릴 수 없는 팬을 허용하면 무대가 빈 채로 남는다.
+   * 판정 로직: `topology-camera-math.ts#computeUnfocusedPanBounds`.
+   */
+  cameraPanLeash: number;
   altitudeFarHighRatio: number;
   altitudeFarLowRatio: number;
   overviewEntryRatio: number;
@@ -311,6 +320,7 @@ const TOKEN_SPECS: readonly TokenSpec[] = [
   { key: "cameraMaxZoomRatio", cssVar: "--topology-v2-camera-max-zoom-ratio", kind: "number" },
   { key: "cameraMinZoomRatio", cssVar: "--topology-v2-camera-min-zoom-ratio", kind: "number" },
   { key: "cameraFocusPanMargin", cssVar: "--topology-v2-camera-focus-pan-margin", kind: "number" },
+  { key: "cameraPanLeash", cssVar: "--topology-v2-camera-pan-leash", kind: "number" },
   { key: "altitudeFarHighRatio", cssVar: "--topology-v2-altitude-far-high-ratio", kind: "number" },
   { key: "altitudeFarLowRatio", cssVar: "--topology-v2-altitude-far-low-ratio", kind: "number" },
   { key: "overviewEntryRatio", cssVar: "--topology-v2-overview-entry-ratio", kind: "number" },

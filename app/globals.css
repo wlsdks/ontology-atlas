@@ -285,13 +285,12 @@
    * 본문+레일) — 다른 페이지도 점진 채택.
    */
   --page-max: 1600px;
-  /* 유틸리티 컬럼 — 페이지가 "고르는 화면" 이 아니라 "한 가지를 판단하는
-     화면" 일 때 쓰는 좁은 중앙 컬럼. `--page-max` 안쪽에 다시 한 번 중앙
-     정렬한다. 1600 전폭에 결정 하나를 늘어놓으면 눈이 좌우로 40cm 를
-     오가야 하고, 그때 위계는 폭이 아니라 우연이 정한다. 첫 소비자는
-     `/download`(설치 판단 한 가지). RATIO-SYSTEM 이 예약해 둔 이름이며,
-     그 전까지는 그 파일 안에 JS 상수로 복제돼 있었다. */
-  --page-col-utility: 960px;
+  /* `--page-col-utility`(960px) 는 **삭제됐다** (2026-07-29 카운슬 평결 ③).
+     유일한 소비자가 `/download` 하나였는데, 그 페이지에서 이 토큰이 실제로
+     한 일은 두 번째 중앙 컬럼을 만들어 **바닥 절을 판과 어긋나게** 하는
+     것이었다(실측 1920: 판 x=160 · 바닥 x=480). 관문의 그리드는 한 벌이고
+     왼쪽 홈통 하나에서 시작한다. 아무도 안 쓰는 토큰은 규격이 아니라
+     오정보다(`design.md`). */
   --section-gap: 28px;
   --card-gap: 20px;
   --card-pad: 16px;
@@ -564,6 +563,14 @@
   --text-title: 16px; /* 패널/카드 제목 (짝: tracking-title) */
   --text-display: 23px; /* 페이지 헤드라인 (짝: tracking-display) */
   --text-hero: 30px; /* 히어로 헤드라인 (짝: tracking-hero) */
+  /* 관문 헤드라인 — 램프 상단의 한 단 위. 지도가 전면을 덮는 표면에서 30px 은
+     배경과 다투고, 34px 이면 리드(12.5px) 대비 2.72 로 레퍼런스 히어로 밴드
+     (2.5–3.0) 안에 든다. tracking 은 `--tracking-hero`(−0.022em) 를 공유한다 —
+     같은 광학 구간이라 새 짝을 만들지 않는다.
+     승격 이유: 저장소가 이미 이 크기를 두 번 원했다 —
+     `DesktopVaultWelcome` 이 `md:text-[34px]` + eslint-disable 로 램프를
+     비껴가고 있었다. 두 번째 소비처가 생기는 순간이 값을 이름으로 올릴 때다. */
+  --text-hero-lg: 34px; /* 관문 헤드라인 (짝: tracking-hero) */
 
   /* Type ramp letter-spacing 짝 — text-<step> 과 1:1. tracking-<step>
      유틸리티로 쓴다. --tracking-display/hero 는 위 "Letter-spacing 스케일"
@@ -600,6 +607,9 @@
   --leading-title: 24px; /* 짝: text-title 16px — 패널/카드 제목 */
   --leading-display: 28px; /* 짝: text-display 23px — 페이지 헤드라인 */
   --leading-hero: 34px; /* 짝: text-hero 30px — 히어로 헤드라인 */
+  /* 짝: text-hero-lg 34px — 관문 헤드라인. 램프 상단으로 갈수록 비율이 조여지는
+     기존 추세를 잇는다(28/23=1.217 → 34/30=1.133 → 38/34=1.118). 2px 그리드. */
+  --leading-hero-lg: 38px;
 
   /* 자유 스텝 2개 — 무단위인 이유: 이 둘은 램프 밖 크기(clamp 히어로,
      마크다운 내부의 중첩 크기)에도 얹히는 스텝이라 px 로 고정하면 크기마다
@@ -637,6 +647,7 @@
      결합이 없으면 램프 상단 두 단만 짝이 없는 예외가 되고, 예외 없음이
      규격의 값어치다. */
   --text-hero--line-height: var(--leading-hero);
+  --text-hero-lg--line-height: var(--leading-hero-lg);
 
   /* Radius ramp — 3단. Tailwind v4 `--radius-*` 네임스페이스가 rounded-<step>
      를 생성한다. 이 밖(sub-chip 헤어라인 1~4px, overlay sheet/card 18~28px)은
@@ -2575,6 +2586,11 @@
        180×1.9≈342px < 안전영역 반높이(354px) 라 대상이 화면 밖으로 안 나간다.
        줌인 상태에서만 적용(fit view/포커스 해제 시엔 전체 bounds). */
     --topology-v2-camera-focus-pan-margin: 180;
+    /* 초점 없을 때의 팬 목줄 (world unit). 0 = 목줄 없음 = 종전 봉투(월드 bbox
+       ± 320). 워크벤치는 「지도 맞추기」로 언제든 되돌릴 수 있으므로 0 이다.
+       관문(`html[data-gateway-stage]`)만 켠다 — 되돌릴 크롬이 없는 표면에서
+       되돌릴 수 없는 팬은 결함이다. 판정: `computeUnfocusedPanBounds`. */
+    --topology-v2-camera-pan-leash: 0;
     --topology-v2-altitude-far-high-ratio: 0.92;
     --topology-v2-altitude-far-low-ratio: 0.62;
     /* Overview entry scale = tight-fit × this ratio. Kept above the far-high
@@ -3492,6 +3508,20 @@ html[data-gateway-stage] {
    */
   --topology-v2-safe-inset-left: 0;
   --topology-v2-safe-inset-right: 0;
+
+  /*
+   * 팬 목줄 — 관문에는 「지도 맞추기」가 없다 (2026-07-29 카운슬 평결 ②).
+   *
+   * 실측: 왼쪽으로 한 번 세게 끌면 그래프가 판·말기둥 컬럼 뒤로 통째로 밀려
+   * 무대가 비었고(0..520 밴드 잉크 +12.6%), 12초 뒤에도 감쇠가 0 이었다.
+   * 워크벤치라면 크롬 버튼으로 돌아오지만 여기엔 그 버튼이 없다 — 되돌릴 길
+   * 없는 화면에서 되돌릴 수 없는 조작을 허용한 것이 결함이다.
+   *
+   * 220 world unit × 진입 배율 1.15 ≈ 화면 253px. "밀리는 느낌" 은 그대로
+   * 남기면서(끌어서 움직여 보세요) 예약 컬럼(0..520)에는 도달할 수 없다.
+   * 볼트 크기와 무관하다 — 기준점이 bbox 가 아니라 **핏 자체**다.
+   */
+  --topology-v2-camera-pan-leash: 220;
 }
 
 @media (min-width: 64rem) {

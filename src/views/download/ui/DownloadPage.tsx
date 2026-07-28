@@ -27,12 +27,31 @@ import {
   macosPublishedDate,
   type DesktopArch,
 } from '../lib/release-state';
-import { DOGFOOD_CENSUS } from '../model/dogfood-census.generated';
-import { StageMap } from './StageMap';
+import { StageMap, useStageGraph } from './StageMap';
 
 const GITHUB_REPOSITORY_URL = 'https://github.com/wlsdks/ontology-atlas';
 /** 링크 텍스트는 주소 그대로 — 오픈소스에서 이 문자열은 라벨이 아니라 신원이다. */
 const GITHUB_REPOSITORY_LABEL = 'github.com/wlsdks/ontology-atlas';
+
+/**
+ * **이 페이지의 그리드는 한 벌이다** (2026-07-29 카운슬 평결 ③).
+ *
+ * 홈통 하나(24px / md+ 40px)에서 시작해 `--page-max` 에서 멈춘다. `mx-auto` 는
+ * 없다 — 무대의 판이 왼쪽에 붙는 설계인데 바깥 래퍼만 재중앙정렬하면 폭마다
+ * 다른 x 가 나온다(실측 2026-07-29: 1920 에서 판 x=160·판 오른끝 640 인데
+ * 카메라가 예약한 인셋은 544 라 **+96 어긋남**, 2560 에서 **+416**. 게다가
+ * 바닥 절은 `--page-col-utility` 로 또 한 번 중앙정렬돼 x=480 — 판 160 과
+ * 아무것도 정렬되지 않았다).
+ *
+ * 이제 GNB 로고 · 헤드라인 · 판 · 캡션 · 바닥 띠가 **모든 폭에서 같은 x** 에
+ * 선다. 게이트: `tests/e2e/download-gateway-grid.spec.ts`.
+ */
+const PAGE_GUTTER =
+  'px-[max(1.5rem,env(safe-area-inset-left))] pr-[max(1.5rem,env(safe-area-inset-right))] md:px-10';
+/** 홈통 안쪽의 단 하나뿐인 컬럼 — 왼쪽 고정, `--page-max` 에서 정지. */
+const PAGE_COLUMN = 'w-full max-w-[var(--page-max)]';
+/** 무대의 말 기둥과 판이 공유하는 폭. 카메라 인셋(544 = 40 + 480 + 24)의 짝. */
+const STAGE_COLUMN = 'w-full max-w-[30rem]';
 
 /**
  * `/download` — **지도가 곧 페이지다** (2026-07-28 소유자 확정, 백지 재설계).
@@ -82,48 +101,47 @@ export function DownloadPage() {
     <div className="flex min-h-full w-full flex-col">
       <GatewayNav />
 
-      <main id="main" className="min-w-0 flex-1 bg-[color:var(--color-canvas)]">
+      <main id="main" className="flex min-w-0 flex-1 flex-col bg-[color:var(--color-canvas)]">
         <PortraitStage published={published} primaryAsset={primaryAsset} />
 
-        {/* 관문의 절 리듬은 워크벤치(`--section-gap` 28px)가 아니다 — 조사한
-            레퍼런스(Things 실측 60~80px · Apple 의 "여백이 콘텐츠")가 이 종류의
-            표면에서 쓰는 값은 그 두 배 이상이다. 스크롤이 아니라 호흡으로 절을
-            가른다. */}
-        <div className="px-[max(1.5rem,env(safe-area-inset-left))] pr-[max(1.5rem,env(safe-area-inset-right))] pt-16 pb-[max(var(--page-bottom-breath),env(safe-area-inset-bottom))] md:px-10">
-          <div className="mx-auto w-full max-w-[var(--page-max)]">
-            <div className="mx-auto w-full max-w-[var(--page-col-utility)]">
-              <InstallTrack />
+        {/*
+         * **바닥 띠** — 절이 아니라 한 벌의 꼬리다 (2026-07-29 평결 ③).
+         *
+         * 예전엔 설치 3단이 자기 괘선(`border-t pt-10`)과 64px 여백을 가진
+         * **절**이었고, 그 아래 푸터가 또 괘선을 그었다. 관문 한 장에 절이 셋
+         * (무대·설치·검증)이면 위계가 아니라 목록이다. 무대의 아래 보더가 이미
+         * "여기서부터는 부록" 을 말하므로 설치 줄은 자기 괘선을 반납한다 —
+         * 남는 괘선은 푸터의 것 하나다.
+         */}
+        <div
+          className={cn(
+            PAGE_GUTTER,
+            'shrink-0 pt-6 pb-[max(var(--page-bottom-breath),env(safe-area-inset-bottom))]',
+          )}
+        >
+          <div className={PAGE_COLUMN}>
+            <InstallTrack />
 
-              <footer className="mt-16 border-t border-[color:var(--color-divider)] pt-5 text-label leading-label text-[color:var(--color-text-quaternary)]">
-                <VerifyDetails published={published} primaryAsset={primaryAsset} />
-                {/* ⚠️ 이 줄은 **웹사이트**의 주장이라 판 안 「서버 전송 0」 칩
-                    (=앱의 주장)과 주체가 다르다. 위계석이 중복으로 지목했지만,
-                    2026-07-27 에 한 번 정정된 이력이 있는 문장이다(그때는 "이
-                    사이트는 폴더를 열지 못한다" 는 **거짓 능력 주장**을 걷어냈다).
-                    중복이던 뒷절 — 웹/앱 갈래 설명, Windows 행이 이미 하는 말 —
-                    만 잘라내고 주장 자체는 남긴다. */}
-                <p className="mt-3 max-w-[var(--measure-prose)] break-keep">
-                  {t('releaseGateNote')}
-                </p>
-                <div className="mt-2 flex flex-wrap items-center gap-x-4 gap-y-2">
-                  <span className="font-mono uppercase tracking-[0.14em]">
-                    {tFooter('license')}
-                  </span>
-                  <span aria-hidden>·</span>
-                  <a
-                    href={GITHUB_REPOSITORY_URL}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="touch-hit-expand inline-flex items-center gap-1.5 transition-colors hover:text-[color:var(--color-text-tertiary)]"
-                  >
-                    <ExternalLink size={12} aria-hidden />
-                    {t('sourceCta')}
-                  </a>
-                  <span aria-hidden>·</span>
-                  <span className="font-mono">{tFooter('stack')}</span>
-                </div>
-              </footer>
-            </div>
+            <footer className="mt-5 border-t border-[color:var(--color-divider)] pt-4 text-label leading-label text-[color:var(--color-text-quaternary)]">
+              <VerifyDetails published={published} primaryAsset={primaryAsset} />
+              <div className="mt-3 flex flex-wrap items-center gap-x-4 gap-y-2">
+                <span className="font-mono uppercase tracking-[0.14em]">
+                  {tFooter('license')}
+                </span>
+                <span aria-hidden>·</span>
+                <a
+                  href={GITHUB_REPOSITORY_URL}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="touch-hit-expand inline-flex items-center gap-1.5 transition-colors hover:text-[color:var(--color-text-tertiary)]"
+                >
+                  <ExternalLink size={12} aria-hidden />
+                  {t('sourceCta')}
+                </a>
+                <span aria-hidden>·</span>
+                <span className="font-mono">{tFooter('stack')}</span>
+              </div>
+            </footer>
           </div>
         </div>
       </main>
@@ -154,13 +172,21 @@ function GatewayNav() {
   return (
     <nav
       data-testid="download-gnb"
-      className="sticky top-0 z-30 w-full shrink-0 border-b border-[color:var(--color-divider)] bg-[color:var(--color-canvas)] px-[max(1.5rem,env(safe-area-inset-left))] pr-[max(1.5rem,env(safe-area-inset-right))] md:px-10"
+      className={cn(
+        PAGE_GUTTER,
+        'sticky top-0 z-30 w-full shrink-0 border-b border-[color:var(--color-divider)] bg-[color:var(--color-canvas)]',
+      )}
     >
       {/* `flex-wrap` 을 뺀 이유: 좁은 폭에서 줄바꿈이 일어나면 관문의 얼굴이
           97px 짜리 두 줄이 되어 무대를 먹는다(실측 390px). 대신 접히는 것은
           **빵부스러기**다 — 이 라우트가 어디인지는 좁은 화면에서도 제목이
           말하고, 로고와 돌아가기는 어느 폭에서도 남아야 한다. */}
-      <div className="mx-auto flex min-h-14 w-full max-w-[var(--page-max)] items-center gap-3 py-2.5 md:min-h-16 md:py-3">
+      <div
+        className={cn(
+          PAGE_COLUMN,
+          'flex min-h-14 items-center gap-3 py-2.5 md:min-h-16 md:py-3',
+        )}
+      >
         <Link
           href="/"
           className="touch-hit-expand inline-flex items-center gap-2 transition-colors hover:text-[color:var(--color-text-primary)]"
@@ -204,8 +230,17 @@ function GatewayNav() {
  * 가리지 않고 그대로 보여야 배경이 증거 노릇을 한다. 가운데 정렬이면 판이
  * 그래프의 중심(project 노드)을 정확히 덮어 버린다.
  *
- * 높이는 `min-h` 로만 잡는다. 내용이 그보다 커지면(좁은 폭·긴 번역문) 무대가
- * 늘어나야지 판이 잘리면 안 된다.
+ * ## 높이 — 고정 바닥이 아니라 남는 자리 전부
+ *
+ * 구 `lg:min-h-[min(46rem,88vh)]` 는 두 상수(736px · 88%)를 곱해 놓고 실제
+ * 창 높이와는 무관하게 굴었다. 그래서 1512×850(실제로 가장 흔한 창)에서
+ * 무대 736 + GNB 65 + 바닥 절 320 = 1121 로 **270px 이 접혔고**, 그 접힌
+ * 부분이 하필 "설치 3단" 이었다.
+ *
+ * 이제는 셸이 준 높이에서 GNB 와 바닥 띠를 뺀 나머지를 무대가 **전부** 갖는다
+ * (`lg:flex-1`). 바닥(`lg:min-h-[34rem]`)만 남겨 아주 낮은 창에서 무대가
+ * 찌그러지지 않게 한다. 내용이 그보다 커지면(좁은 폭·긴 번역문) 무대가 늘어나야지
+ * 판이 잘리면 안 된다.
  */
 function PortraitStage({
   published,
@@ -215,12 +250,12 @@ function PortraitStage({
   primaryAsset: ReturnType<typeof macosAssetFor>;
 }) {
   const t = useTranslations('download');
-  const census = DOGFOOD_CENSUS;
+  const graph = useStageGraph();
 
   return (
     <section
       data-testid="download-stage"
-      className="relative isolate flex w-full flex-col overflow-hidden border-b border-[color:var(--color-divider)] lg:min-h-[min(46rem,88vh)]"
+      className="relative isolate flex w-full flex-col overflow-hidden border-b border-[color:var(--color-divider)] lg:min-h-[34rem] lg:flex-1"
     >
       {/*
        * 지도의 자리가 폭에 따라 **바뀐다** (위계석 P6, 2026-07-28 실측).
@@ -235,7 +270,7 @@ function PortraitStage({
        * 중 하나에서 반드시 틀리므로, 어느 쪽에서도 참인 "이 지도는" 으로 쓴다.
        */}
       <div className="relative h-[17rem] w-full shrink-0 border-b border-[color:var(--color-divider)] lg:absolute lg:inset-0 lg:h-auto lg:border-b-0">
-        <StageMap />
+        <StageMap graph={graph} />
       </div>
 
       {/* 지도의 자기 캡션 — **지도 바로 뒤**에 온다.
@@ -253,14 +288,26 @@ function PortraitStage({
           겹침은 결함이고, 폭마다 판 높이가 달라지는 표면에서 절대 배치는
           그 결함을 폭의 함수로 만든다. 흐름에 두면 어느 폭에서도 겹칠 수 없다.
 
-          [download-honesty] 이 숫자는 이 저장소 `docs/ontology` 의 frontmatter
-          노드 합이다. 앱에서 자기 폴더를 열면 다른 정의(런타임 파생 그래프)로
-          다른 숫자가 나온다. */}
+          [download-honesty] 이 숫자는 **바로 옆에 그려진 그래프 자신**이다
+          (2026-07-29 평결 ①). 예전엔 빌드 스크립트가 센 frontmatter 파일 수(96)를
+          적었는데, 지도가 그리는 것은 그 파일들에서 **파생된** 그래프(287 노드)라
+          한 화면에 정의가 둘이었다. 허브 각인이 `379` 를 말하고 그 옆 캡션이
+          `96` 을 말하던 4배 모순의 뿌리가 이것이다 — 재귀 버그는 그 위에 얹힌
+          두 번째 층이었을 뿐이다. 앱에서 자기 폴더를 열면 자기 그래프의 숫자가
+          같은 규칙으로 나온다(그래서 뒷절이 "내 숫자가 보여요" 다). */}
       <p
         data-testid="download-portrait-caption"
-        className="pointer-events-none relative shrink-0 px-[max(1.5rem,env(safe-area-inset-left))] pr-[max(1.5rem,env(safe-area-inset-right))] pt-3 pb-4 md:px-10 lg:order-last lg:pt-0"
+        className={cn(
+          PAGE_GUTTER,
+          'pointer-events-none relative shrink-0 pt-3 pb-4 lg:order-last lg:pt-0',
+        )}
       >
-        <span className="mx-auto flex w-full max-w-[var(--page-max)] flex-wrap items-baseline gap-x-3 gap-y-1 font-mono text-caption leading-caption text-[color:var(--color-text-quaternary)]">
+        <span
+          className={cn(
+            PAGE_COLUMN,
+            'flex flex-wrap items-baseline gap-x-3 gap-y-1 font-mono text-caption leading-caption text-[color:var(--color-text-quaternary)]',
+          )}
+        >
           <span className="uppercase tracking-[0.18em]">docs/ontology</span>
           <span aria-hidden>·</span>
           <span
@@ -268,8 +315,8 @@ function PortraitStage({
             className="text-[color:var(--engraved-numeral-face)] [text-shadow:var(--engraved-numeral-text-shadow)]"
           >
             {t('portraitCensus', {
-              concepts: census.concepts,
-              relations: census.relations,
+              concepts: graph.nodes.length,
+              relations: graph.edges.length,
             })}
           </span>
           <span aria-hidden>·</span>
@@ -303,13 +350,65 @@ function PortraitStage({
        * 이벤트를 **직접 디스패치**해 핸들러만 확인한 것이었다 — 히트 테스트를
        * 건너뛰었으므로 통과할 수밖에 없었다. 사람이 쓰는 경로를 안 잰 검증이다.
        */}
-      <div className="pointer-events-none relative flex min-w-0 flex-1 items-center px-[max(1.5rem,env(safe-area-inset-left))] pr-[max(1.5rem,env(safe-area-inset-right))] py-10 md:px-10 lg:py-12">
-        <div className="mx-auto w-full max-w-[var(--page-max)]">
-          <DownloadPlate published={published} primaryAsset={primaryAsset} />
+      <div
+        className={cn(
+          PAGE_GUTTER,
+          // `lg` 에서 여백을 더 주지 않는다: 무대가 `flex-1` 이라 넉넉한 창에서는
+          // 컬럼이 어차피 수직 중앙에 앉고, 패딩이 실제로 무는 것은 **짧은 창**
+          // 뿐이다 — 거기서 이 40px 두 겹이 곧 스크롤이다(실측 1512×850: py-12
+          // 이면 5px 초과).
+          'pointer-events-none relative flex min-w-0 flex-1 items-center py-10',
+        )}
+      >
+        <div className={PAGE_COLUMN}>
+          {/* 말 기둥과 판은 **같은 컬럼**이다 — 둘의 왼쪽 모서리도 오른쪽
+              모서리도 같은 선에 선다(40 / 520). 그 520 이 곧 카메라가 예약한
+              인셋 544 의 짝이다. `pointer-events-auto` 는 이 컬럼에만 — 바깥
+              래퍼가 무대 전폭을 덮는 투명 상자라 그대로 두면 드래그를 삼킨다
+              (2026-07-29 실측 전과: `elementFromPoint` 로만 잡히는 결함). */}
+          <div className={cn(STAGE_COLUMN, 'pointer-events-auto')}>
+            <StageWordmark />
+            <DownloadPlate published={published} primaryAsset={primaryAsset} />
+          </div>
         </div>
       </div>
-
     </section>
+  );
+}
+
+/**
+ * **말 기둥** — 판 밖, 지도 위 (2026-07-29 카운슬 평결 ③).
+ *
+ * 예전엔 헤드라인·리드가 다운로드 판 **안**에 살았다. 그러면 카드 하나가 두
+ * 가지 일을 한다: 제품을 파는 일과 파일을 건네는 일. 둘의 무게가 같아지면
+ * 카드는 "무엇을 결정하는 자리인지" 를 말하지 못하고, 실제로 그 판은 530px 로
+ * 자라 무대의 72% 를 덮었다.
+ *
+ * 이제 파는 말은 캔버스 위에 직접 서고, 판은 거래만 담는다. 헤드라인이
+ * **배경을 가리킬 수 있는 것**도 이 배치라야 참이다 — 카드 안에서 배경을
+ * 가리키면 그건 카드 이야기지 화면 이야기가 아니다.
+ *
+ * 말 기둥의 리듬은 8 / 16 / 32 다: eyebrow→H1 은 한 덩어리라 가장 가깝고,
+ * H1→리드는 한 호흡, 리드→판은 **말에서 거래로 넘어가는 유일한 경계**라 그
+ * 두 배다.
+ */
+function StageWordmark() {
+  const t = useTranslations('download');
+
+  return (
+    <div className="min-w-0">
+      <p className="font-mono text-caption uppercase leading-caption tracking-[0.18em] text-[color:var(--color-text-quaternary)]">
+        {t('eyebrow')}
+      </p>
+      {/* 헤드라인이 **배경을 가리킨다** — 이 문장이 성립하려면 뒤에 실제 지도가
+          있어야 하고, 그래서 배경은 지울 수 없는 구성 요소가 된다. */}
+      <h1 className="mt-2 whitespace-pre-line text-display leading-display-tight font-[var(--font-weight-signature)] tracking-[var(--tracking-display)] text-[color:var(--color-text-primary)] md:text-hero-lg md:leading-hero-lg md:tracking-[var(--tracking-hero)]">
+        {t('stageTitle')}
+      </h1>
+      <p className="mt-4 break-keep text-body leading-body text-[color:var(--color-text-tertiary)]">
+        {t('stageLead')}
+      </p>
+    </div>
   );
 }
 
@@ -320,6 +419,9 @@ function PortraitStage({
  * 것이다 — 뒤에 선과 점이 지나가는 위에 반투명을 얹으면 본문 대비가 픽셀마다
  * 달라져서 어느 값으로도 WCAG 를 보장할 수 없다. 불투명 패널 + 상승 그림자로
  * 띄운다.
+ *
+ * 이제 담는 것은 **거래 다섯 줄**뿐이다: CTA 쌍 · 사실줄 · 신뢰 · 플랫폼 ·
+ * 괘선+출구. 파는 말은 위 `StageWordmark` 가 가졌다.
  */
 function DownloadPlate({
   published,
@@ -328,32 +430,18 @@ function DownloadPlate({
   published: boolean;
   primaryAsset: ReturnType<typeof macosAssetFor>;
 }) {
-  const t = useTranslations('download');
-
   return (
     <div
       data-testid="download-plate"
-      className="pointer-events-auto w-full max-w-[30rem] rounded-panel border border-[color:var(--color-border-soft)] bg-[color:var(--color-panel)] p-7 shadow-[var(--shadow-elevation-2)] md:p-9"
+      // `<sm` 의 `p-4` 는 취향이 아니라 산술이다 — 320px 에서 판 실질 폭이
+      // 곧 CTA 가 들어갈 자리이고, `p-6` 이면 영어 라벨이 22px 넘친다(실측).
+      className="mt-8 min-w-0 rounded-panel border border-[color:var(--color-border-soft)] bg-[color:var(--color-panel)] p-4 shadow-[var(--shadow-elevation-2)] sm:p-6 md:p-7"
     >
-      <p className="font-mono text-caption uppercase leading-caption tracking-[0.18em] text-[color:var(--color-text-quaternary)]">
-        {t('eyebrow')}
-      </p>
-      {/* 헤드라인이 **배경을 가리킨다** — 이 문장이 성립하려면 뒤에 실제 지도가
-          있어야 하고, 그래서 배경은 지울 수 없는 구성 요소가 된다. */}
-      <h1 className="mt-2 whitespace-pre-line text-display leading-display-tight font-[var(--font-weight-signature)] tracking-[var(--tracking-display)] text-[color:var(--color-text-primary)] md:text-hero md:leading-hero md:tracking-[var(--tracking-hero)]">
-        {t('stageTitle')}
-      </h1>
-      <p className="mt-4 max-w-[34ch] break-keep text-body leading-body text-[color:var(--color-text-tertiary)]">
-        {t('stageLead')}
-      </p>
-
-      <div className="mt-6 min-w-0">
-        {published && primaryAsset ? (
-          <PublishedActions primaryAsset={primaryAsset} />
-        ) : (
-          <PendingActions />
-        )}
-      </div>
+      {published && primaryAsset ? (
+        <PublishedActions primaryAsset={primaryAsset} />
+      ) : (
+        <PendingActions />
+      )}
     </div>
   );
 }
@@ -372,10 +460,11 @@ function PublishedActions({
         <a
           href={primaryAsset.downloadUrl}
           data-testid="download-primary-cta"
-          className={cn(buttonVariants({ size: 'lg' }), 'rounded-chip')}
+          className={cn(buttonVariants({ size: 'lg' }), 'rounded-chip px-4 sm:px-6')}
         >
           <Download size={16} aria-hidden />
-          {t('primaryCtaPublished', { size: formatAssetSize(primaryAsset.sizeBytes) })}
+          {t('primaryCtaPublished')}
+          <AssetSize bytes={primaryAsset.sizeBytes} onFill />
         </a>
         {/* 채운 인디고는 화면당 하나 — Intel 은 막히면 안 되므로 같은 자리에
             두되 무게만 낮춘다. */}
@@ -383,13 +472,11 @@ function PublishedActions({
           <a
             href={intel.downloadUrl}
             data-testid="download-macos-x64"
-            className={cn(buttonVariants({ variant: 'ghost', size: 'lg' }), 'rounded-chip')}
+            className={cn(buttonVariants({ variant: 'ghost', size: 'lg' }), 'rounded-chip px-4 sm:px-6')}
           >
             <Download size={15} aria-hidden />
             {t('archIntelCta')}
-            <span className="font-mono text-label leading-label text-[color:var(--engraved-numeral-face)] [text-shadow:var(--engraved-numeral-text-shadow)]">
-              {formatAssetSize(intel.sizeBytes)}
-            </span>
+            <AssetSize bytes={intel.sizeBytes} />
           </a>
         ) : null}
       </div>
@@ -399,6 +486,46 @@ function PublishedActions({
       <PlatformStatus />
       <PlateFooterLinks />
     </div>
+  );
+}
+
+/**
+ * 버튼에 붙는 파일 크기 — **`<sm` 에서는 안 붙는다** (2026-07-29 평결 ④).
+ *
+ * `buttonVariants` 는 `whitespace-nowrap` 이라 라벨이 길면 버튼이 컨테이너를
+ * 뚫는다. 실측(320px): 주 CTA 콘텐츠 폭 261px vs 판 실질 폭 216px → 가로
+ * 오버플로. 무대가 `overflow-hidden` 이라 스크롤바도 안 생기고 **그냥 잘렸다**.
+ *
+ * 잘라낸 것이 크기인 이유: 320px 폰에서는 macOS DMG 를 설치할 수 없다. 크기는
+ * **설치를 결정하는 사람의 사실**이고 그 사람은 데스크톱에 있다. 접이식의
+ * 체크섬 행이 파일 이름을 여전히 전부 부른다.
+ *
+ * 두 버튼이 같은 문법을 쓰게 된 것은 덤이다 — 예전엔 주 CTA 만 `· {size}` 를
+ * **번역 문자열 안에** 넣고 Intel 은 별도 스팬으로 그려서, 같은 줄의 두 버튼이
+ * 같은 사실을 다른 서체·다른 구두점으로 말했다.
+ *
+ * ⚠️ **음각 숫자는 무채색 표면 위의 문법이다** (`--engraved-numeral-face`
+ * #8c8c94 + 아래로 1px `#08080a` 하이라이트 — 어두운 패널에 눌러 새긴 효과).
+ * 채운 인디고(#5e6ad2) 위에 그대로 얹으면 대비가 **1.41:1** 로 무너진다
+ * (실측 2026-07-29 — 첫 시안이 정확히 이 실수를 했다). 채운 버튼 위에서는
+ * 버튼 자신의 전경색을 쓴다: 같은 문장의 일부라 색이 갈릴 이유도 없다.
+ */
+function AssetSize({ bytes, onFill = false }: { bytes: number; onFill?: boolean }) {
+  return (
+    <span
+      className={cn(
+        'hidden font-mono text-label leading-label sm:inline',
+        // 채운 버튼 위에서는 **약화도 하지 않는다**. `opacity-80` 을 얹어 봤더니
+        // 합성 대비가 3.45:1 로 떨어졌다(11px 텍스트, 실측 2026-07-29) — 라벨
+        // 자신이 4.42:1 인 표면이라 여기서 한 단만 낮춰도 바로 밑으로 뚫린다.
+        // 크기와 라벨을 가르는 것은 이미 mono 페이스와 간격이 한다.
+        onFill
+          ? 'text-[color:var(--color-text-primary)]'
+          : 'text-[color:var(--engraved-numeral-face)] [text-shadow:var(--engraved-numeral-text-shadow)]',
+      )}
+    >
+      {formatAssetSize(bytes)}
+    </span>
   );
 }
 
@@ -458,13 +585,13 @@ function PendingActions() {
         <Link
           href="/"
           data-testid="download-web-cta"
-          className={cn(buttonVariants({ size: 'lg' }), 'rounded-chip')}
+          className={cn(buttonVariants({ size: 'lg' }), 'rounded-chip px-4 sm:px-6')}
         >
           {t('webCta')}
         </Link>
         <MacosDownloadLink
           data-testid="download-primary-cta"
-          className={cn(buttonVariants({ variant: 'ghost', size: 'lg' }), 'rounded-chip')}
+          className={cn(buttonVariants({ variant: 'ghost', size: 'lg' }), 'rounded-chip px-4 sm:px-6')}
         >
           <ExternalLink size={16} aria-hidden />
           {t('primaryCtaPending')}
@@ -590,16 +717,10 @@ function TrustChips() {
   );
 }
 
-// ─── 설치 트랙 ───────────────────────────────────────────────────────────────
+// ─── 설치 3단 — 바닥 띠의 한 줄 ────────────────────────────────────────────────
 
 /**
- * 상자가 아니라 **트랙**이다. 세 단계는 순서가 있는 한 벌이므로, 나란한 카드
- * 셋(= 동시에 고르는 선택지처럼 읽힌다)이 아니라 왼쪽 괘선 하나를 공유하는
- * 세로 흐름으로 그린다.
- */
-/**
- * 설치 3단계 — **가로 한 줄**이다 (소유자 판정 2026-07-29: 하단이 여전히 폼처럼
- * 읽힌다).
+ * 설치 3단계 — **가로 한 줄**이고, 이제 **절이 아니다** (2026-07-29 평결 ③).
  *
  * 예전에는 세로 스택 3행 × 각 2행 본문 + 제목 + 갱신 각주 = 308px 였다. 그
  * 치수는 "읽어야 하는 절차서" 의 것인데, 이 세 줄이 실제로 하는 일은 **받기
@@ -607,9 +728,10 @@ function TrustChips() {
  * 것이 아니라 짧음으로 준다 — 세 단계가 한 눈에 들어오면 그 자체가 "간단하다"
  * 는 논증이다.
  *
- * 그래서 각 단계는 **한 줄**로 줄었고 셋이 나란히 선다. 제목(`설치하면 이렇게
- * 씁니다`)도 뺐다 — 01/02/03 이 이미 순서를 말하고, 이 자리에 제목이 필요할
- * 만큼 다른 것과 헷갈릴 여지가 없다.
+ * 이번 패스에서 마지막으로 남은 절 표식(자기 괘선 + 64px 여백)까지 반납했다.
+ * 관문 한 장에 대등한 괘선이 셋이면 그건 위계가 아니라 목록이고, 무대의 아래
+ * 보더가 이미 "여기부터는 부록" 을 말한다. 내용 세 줄은 그대로 산다 — 줄인
+ * 것은 **지위**지 사실이 아니다.
  */
 function InstallTrack() {
   const t = useTranslations('download');
@@ -621,12 +743,8 @@ function InstallTrack() {
   ];
 
   return (
-    <section
-      data-testid="download-install"
-      aria-label={t('installTitle')}
-      className="border-t border-[color:var(--color-divider)] pt-10"
-    >
-      <ol className="grid grid-cols-1 gap-x-10 gap-y-3 sm:grid-cols-3">
+    <section data-testid="download-install" aria-label={t('installTitle')}>
+      <ol className="grid grid-cols-1 gap-x-10 gap-y-2 sm:grid-cols-3">
         {steps.map((step) => (
           <li key={step.i} className="flex min-w-0 items-baseline gap-3">
             <span className="shrink-0 font-mono text-label leading-label text-[color:var(--engraved-numeral-face)] [text-shadow:var(--engraved-numeral-text-shadow)]">
@@ -706,6 +824,18 @@ function VerifyDetails({
           </p>
         </TrustFact>
         <TrustFact label={t('proofPrivacy')} body={t('trustPrivacyNote')} />
+        {/*
+         * ⚠️ 이 줄은 **웹사이트**의 주장이라 판 안 「서버 전송 0」 칩(=앱의
+         * 주장)과 주체가 다르다. 위계석이 중복으로 지목했지만 2026-07-27 에 한
+         * 번 정정된 이력이 있는 문장이고(그때는 "이 사이트는 폴더를 열지 못한다"
+         * 는 **거짓 능력 주장**을 걷어냈다), 주체 구분은 원장대로 존중한다.
+         *
+         * 바뀐 것은 자리다: 푸터의 **자유 문단**이었을 때는 이 페이지에서
+         * 유일하게 아무 행 구조도 안 가진 산문이라 바닥에 떠 있었다. 같은 주장을
+         * 하는 이웃 행 바로 밑으로 옮기면 "앱은 / 이 사이트는" 이 나란히 읽혀
+         * 주체 구분이 오히려 선명해진다.
+         */}
+        <TrustFact label={t('releaseGateNote')} />
         {/*
          * 아키텍처 안내는 **판에서 내려왔지만 사라지지 않았다** (소유자 판정
          * 2026-07-29: 판이 조잡하다 / 게이트 `validate-messages.test.mjs`: 둘을

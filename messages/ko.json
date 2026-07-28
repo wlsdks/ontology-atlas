@@ -577,7 +577,7 @@
     "eyebrow": "macOS 앱 · 오픈소스",
     "downloadSectionLabel": "다운로드",
     "sourceCta": "소스 코드 보기",
-    "primaryCtaPublished": "Apple Silicon용 받기 · {size}",
+    "primaryCtaPublished": "Apple Silicon용 받기",
     "primaryCtaPending": "GitHub 릴리스 페이지 열기",
     "archIntelCta": "Intel용 받기",
     "checksumCopy": "복사",

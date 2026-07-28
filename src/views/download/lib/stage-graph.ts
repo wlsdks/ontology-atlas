@@ -1,9 +1,14 @@
 import type { KnowledgeGraphEdge, KnowledgeGraphNode } from '@/entities/knowledge-graph';
-import { isContainmentRelation } from '@/shared/lib/ontology-tree';
+import {
+  computeDomainCensusRows,
+  domainCensusById,
+  isContainmentRelation,
+} from '@/shared/lib/ontology-tree';
 import type { TopologyV2Edge, TopologyV2Node } from '@/widgets/topology-map-v2';
 
-const RENDERABLE_KINDS = new Set(['project', 'domain', 'capability', 'element']);
-type RenderableKind = 'project' | 'domain' | 'capability' | 'element';
+const RENDERABLE_KIND_LIST = ['project', 'domain', 'capability', 'element'] as const;
+const RENDERABLE_KINDS = new Set<string>(RENDERABLE_KIND_LIST);
+type RenderableKind = (typeof RENDERABLE_KIND_LIST)[number];
 
 /**
  * `/download` 무대에 **진짜 지도 엔진**을 태우기 위한 어댑터.
@@ -22,6 +27,16 @@ type RenderableKind = 'project' | 'domain' | 'capability' | 'element';
  * 이 무대에 의미가 없는 것(`recentlyUpdated` · `stale` · `ownerKey` ·
  * `relationQuality`)은 **꾸며내지 않고 중립값**으로 둔다 — 관문에는 "최근 변경"
  * 기준선도, 볼트 mtime 도 없어서 어떤 값을 넣든 거짓이기 때문이다.
+ *
+ * ⚠️ **위 사유는 뷰 레이어 함수에만 적용된다.** 구 판본은 이 사유를 넓게 읽어
+ * 자손 수까지 자체 재귀로 다시 구현했고, 그 재귀가 **고유 노드가 아니라
+ * 컨테인먼트 경로 합**을 세는 바람에 허브 각인이 `379` 로 그려졌다 — 바로 그
+ * 옆 캡션이 `96 개념` 이라고 적은 화면에서 **4배 모순**이다(도메인 배지도 최대
+ * 2.9배 부풀었다: views 129/실제 46 · onboarding-ux 119/15). 배경이 캡션과 같은
+ * 출처를 쓴다는 것이 이 페이지가 거는 정직성 계약인데, 그 계약을 배경 자신이
+ * 깨고 있었다. 자손 수의 단일 진실원 `computeDomainCensusRows` 는
+ * `shared/lib` 에 있어 **크로스임포트 문제가 처음부터 없었다** — INDEX 트리 ·
+ * `/projects` · 홈 어댑터가 이미 전부 그것을 쓴다(도해석 지적 2026-07-29).
  *
  * ## 좌표를 안 만드는 이유
  *
@@ -46,39 +61,29 @@ export function buildStageGraph(
     (edge) => edge.from !== edge.to && includedIds.has(edge.from) && includedIds.has(edge.to),
   );
 
-  const childrenOf = new Map<string, string[]>();
   const fullDegree = new Map<string, number>();
   const incoming = new Map<string, number>();
   for (const edge of includedEdges) {
     fullDegree.set(edge.from, (fullDegree.get(edge.from) ?? 0) + 1);
     fullDegree.set(edge.to, (fullDegree.get(edge.to) ?? 0) + 1);
     incoming.set(edge.to, (incoming.get(edge.to) ?? 0) + 1);
-    if (!isContainmentRelation(edge.type)) continue;
-    const bucket = childrenOf.get(edge.from);
-    if (bucket) bucket.push(edge.to);
-    else childrenOf.set(edge.from, [edge.to]);
   }
 
   /**
-   * 하위 자손 수 — 노드 크기와 각인 숫자의 출처. 순환이 있는 볼트에서도
-   * 멈추도록 방문 집합을 들고 돈다(사이클은 실제로 존재한다 —
-   * `query_ontology({operation:"cycles"})` 가 세는 그것).
+   * 하위 자손 수 — 노드 크기와 각인 숫자의 출처. 표면마다 다시 세지 않는다:
+   * containment 를 parent→child 로 정규화한 뒤 **노드별 유일 집계**로 BFS 하는
+   * 공유 census 하나가 INDEX 트리 · `/projects` · 홈 지도 · 이 무대의 진실원이다.
+   * 사이클 안전(visited)도 그쪽이 이미 가진다.
+   *
+   * 기본 대상은 domain/project 지만 여기서는 **그리는 네 kind 전부**를 넘긴다 —
+   * 각인 숫자는 project/domain 에만 그려지지만(`topology-frame-draw.ts`),
+   * `size`(시각 규모 · 라벨 우선순위)는 capability 도 쓰기 때문이다. `?? 0`
+   * 으로 뭉개면 capability 의 규모 채널이 통째로 죽는다.
    */
-  const descendantCount = new Map<string, number>();
-  const countDescendants = (id: string, seen: Set<string>): number => {
-    const cached = descendantCount.get(id);
-    if (cached !== undefined) return cached;
-    if (seen.has(id)) return 0;
-    seen.add(id);
-    let total = 0;
-    for (const child of childrenOf.get(id) ?? []) {
-      total += 1 + countDescendants(child, seen);
-    }
-    seen.delete(id);
-    descendantCount.set(id, total);
-    return total;
-  };
-  for (const node of included) countDescendants(node.id, new Set());
+  const censusById = domainCensusById(
+    computeDomainCensusRows(nodes, edges, RENDERABLE_KIND_LIST),
+  );
+  const descendantCountOf = (id: string) => censusById.get(id)?.total ?? 0;
 
   /**
    * 허브는 **정확히 하나**다 — 헌장의 앰버 링이 단일 노드 강조이기 때문이다.
@@ -110,7 +115,7 @@ export function buildStageGraph(
       // 그리면 잘리고 지저분하다.
       label: node.display ?? node.title,
       kind: node.kind as RenderableKind,
-      size: descendantCount.get(node.id) ?? 0,
+      size: descendantCountOf(node.id),
       x: 0,
       y: 0,
       isHub: node.id === hubId,
@@ -118,7 +123,7 @@ export function buildStageGraph(
       recentlyUpdated: false,
       stale: false,
       fullDegree: fullDegree.get(node.id) ?? 0,
-      descendantCount: descendantCount.get(node.id) ?? 0,
+      descendantCount: descendantCountOf(node.id),
     })),
     edges: includedEdges.map((edge) => ({
       source: edge.from,

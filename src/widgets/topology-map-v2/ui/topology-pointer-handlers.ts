@@ -22,7 +22,7 @@
 
 import type { MouseEvent as ReactMouseEvent, PointerEvent as ReactPointerEvent } from "react";
 
-import { clampPointToPanBounds, computePanBounds, type CameraAxes, type CameraTarget } from "../engine/camera";
+import { clampPointToPanBounds, type CameraAxes, type CameraTarget } from "../engine/camera";
 import type { CameraTween } from "../model/camera-easing";
 import { projectFlickLanding, sampleReleaseVelocity } from "../engine/momentum";
 import { EGO_NEIGHBOR_CHIP_ID, parseClusterMoreChipId, scheduleRipple } from "../model/focus-state";
@@ -42,7 +42,7 @@ import {
   type PointerMachineState,
 } from "../interaction/pointer-state-machine";
 import { computeWheelZoomFactor, normalizeWheelDeltaY, shouldIgnoreWheelGlide } from "../interaction/wheel";
-import { computeEffectiveCameraScaleMax, computeEffectiveCameraScaleMin, hitTestWorld, screenToWorld, worldToScreen } from "./topology-camera-math";
+import { computeEffectiveCameraScaleMax, computeEffectiveCameraScaleMin, computeUnfocusedPanBounds, hitTestWorld, screenToWorld, worldToScreen } from "./topology-camera-math";
 import { readTopologyV2TokensOrNull } from "./topology-read-tokens";
 import { radiusForKind, type TopologyWorld } from "./topology-world";
 
@@ -937,7 +937,13 @@ export function createTopologyPointerHandlers(refs: PointerHandlerRefs): Topolog
         const overviewEntryScale = overviewScaleRef.current * tokens.overviewEntryRatio;
         const zoomRatio = computeZoomRatio(cameraRef.current.scale.value, overviewEntryScale);
         const boundsSource = isSpineOnlyZoom(zoomRatio, tierRevealRef?.current ?? DEFAULT_TIER_REVEAL) ? world.spineBounds : world.bounds;
-        clampedLanding = clampPointToPanBounds(px.landingTarget, py.landingTarget, computePanBounds(boundsSource));
+        // 목줄이 켜진 표면(관문)에서는 착지 지점도 같은 봉투를 쓴다 — 안 그러면
+        // 플릭이 목줄 밖에 착지한 뒤 스프링이 다시 끌어와 두 번 움직인다.
+        clampedLanding = clampPointToPanBounds(
+          px.landingTarget,
+          py.landingTarget,
+          computeUnfocusedPanBounds(boundsSource, cameraRef.current.scale.value, tokens),
+        );
       }
       cameraTargetRef.current = { tx: clampedLanding.x, ty: clampedLanding.y, tscale: cameraTargetRef.current.tscale };
       if (userDrivenCameraRef) userDrivenCameraRef.current = true;

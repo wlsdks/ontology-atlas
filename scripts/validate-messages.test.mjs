@@ -58,7 +58,25 @@ describe('i18n message catalog', () => {
 
     // Two states, both honest: a real download once published, an honest link
     // to the releases page before that.
-    assert.match(en.download.primaryCtaPublished, /\{size\}/);
+    // 2026-07-29 — 크기는 **번역 문자열을 떠났다**(카운슬 평결 ④). 라벨이
+    // `· {size}` 를 달고 있으면 `whitespace-nowrap` 버튼이 320px 에서 판을
+    // 뚫는데(실측 en: 22px 초과), 보간이 문자열 안에 있으면 그 절만 반응형으로
+    // 뺄 수가 없다. 이제 `AssetSize` 스팬이 그린다 — Intel 버튼이 원래 쓰던
+    // 문법이라 두 버튼이 같아지는 것은 덤이다.
+    //
+    // 이 게이트가 지키던 것은 "카탈로그가 릴리스 사실의 두 번째 사본을 갖지
+    // 않는다" 였고, 그 규율은 **더 강해졌다**: 라벨은 이제 아키텍처만 부른다.
+    // 크기가 실제로 그려지는지는 `DownloadPage.test.tsx` 가 생성 모듈의 값
+    // (`12.4 MB`)으로 검증한다.
+    assert.match(en.download.primaryCtaPublished, /Apple Silicon/);
+    assert.match(ko.download.primaryCtaPublished, /Apple Silicon/);
+    for (const [locale, value] of [
+      ['en', en.download.primaryCtaPublished],
+      ['ko', ko.download.primaryCtaPublished],
+    ]) {
+      assert.doesNotMatch(value, /\{size\}/, `${locale}: 크기는 스팬이 그린다`);
+      assert.doesNotMatch(value, /\bMB\b|\bGB\b/, `${locale}: 크기 리터럴 금지`);
+    }
     assert.match(en.download.primaryCtaPending, /releases page/i);
     assert.match(ko.download.primaryCtaPending, /릴리스 페이지/);
     assert.equal(en.download.sourceCta, 'View source code');
