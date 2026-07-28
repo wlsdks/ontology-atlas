@@ -506,7 +506,7 @@ export function DocsVaultUnifiedPalette({
         role="dialog"
         aria-modal="true"
         aria-label={t('dialogAriaLabel')}
-        className="w-full max-w-[560px] overflow-hidden rounded-lg border border-[color:var(--color-divider)] bg-[color:var(--color-surface-deep-a98)] shadow-[0_20px_60px_var(--color-shadow-a35)]"
+        className="w-full max-w-[560px] overflow-hidden rounded-lg border border-[color:var(--color-divider)] bg-[color:var(--color-surface-deep-a98)] shadow-[var(--shadow-elevation-2)]"
       >
         <div className="flex items-center gap-2 border-b border-[color:var(--color-overlay-2)] px-3 py-2">
           <Search

@@ -22,12 +22,17 @@ const buttonVariants = cva(
   {
     variants: {
       variant: {
+        // ⚠️ primary 의 키 그림자는 **인디고 착색**이다(`--color-indigo-a22/a20`).
+        // 2026-07-28 재수렴에서 기하는 맞췄지만 색은 그대로 뒀다 — 앱에서 가장
+        // 눈에 띄는 컨트롤의 색을 무채색으로 바꾸는 것은 취향 판단이라 소유자
+        // 몫이다. 착색 그림자는 광원이 둘이라는 뜻이므로, 정리하기로 하면
+        // `--shadow-control-press` 로 흡수하면 된다.
         primary:
           'bg-[color:var(--color-indigo-brand)] text-[color:var(--color-text-primary)] shadow-[inset_0_1px_0_var(--color-border-strong),0_10px_24px_var(--color-indigo-a22)] hover:border-[color:var(--color-indigo-pale-a28)] hover:bg-[color:var(--color-indigo-hover)] active:shadow-[inset_0_1px_0_var(--color-divider),0_6px_14px_var(--color-indigo-a20)]',
         ghost:
-          'bg-transparent text-[color:var(--color-text-primary)] hover:border-[color:var(--color-border-soft)] hover:bg-[color:var(--color-overlay-2)] active:bg-[color:var(--color-border-soft)] active:shadow-[0_4px_10px_var(--color-shadow-a08)]',
+          'bg-transparent text-[color:var(--color-text-primary)] hover:border-[color:var(--color-border-soft)] hover:bg-[color:var(--color-overlay-2)] active:bg-[color:var(--color-border-soft)] active:shadow-[var(--shadow-control-press)]',
         outline:
-          'border-[color:var(--color-overlay-3)] bg-[color:var(--color-overlay-1)] text-[color:var(--color-text-primary)] shadow-[inset_0_1px_0_var(--color-overlay-2)] hover:border-[color:var(--color-border-strong)] hover:bg-[color:var(--color-overlay-2)] active:bg-[color:var(--color-overlay-2)] active:shadow-[inset_0_1px_0_var(--color-overlay-2),0_5px_12px_var(--color-shadow-a12)]',
+          'border-[color:var(--color-overlay-3)] bg-[color:var(--color-overlay-1)] text-[color:var(--color-text-primary)] shadow-[inset_0_1px_0_var(--color-overlay-2)] hover:border-[color:var(--color-border-strong)] hover:bg-[color:var(--color-overlay-2)] active:bg-[color:var(--color-overlay-2)] active:shadow-[inset_0_1px_0_var(--color-overlay-2),var(--shadow-control-press)]',
       },
       size: {
         sm: 'h-8 px-3.5',

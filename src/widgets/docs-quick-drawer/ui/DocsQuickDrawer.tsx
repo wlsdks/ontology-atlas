@@ -522,7 +522,7 @@ export function DocsQuickDrawer({
               }
             }}
             onClick={(e) => e.stopPropagation()}
-            className="fixed right-0 top-0 flex h-full w-full max-w-[380px] flex-col overflow-hidden border-l border-[color:var(--color-divider)] bg-[color:var(--color-panel)] shadow-[0_0_48px_var(--color-shadow-a42)] touch-pan-y"
+            className="fixed right-0 top-0 flex h-full w-full max-w-[380px] flex-col overflow-hidden border-l border-[color:var(--color-divider)] bg-[color:var(--color-panel)] shadow-[var(--shadow-elevation-dock-side)] touch-pan-y"
           >
             <header className="shrink-0 border-b border-[color:var(--color-border-soft)] px-5 py-4">
               <div className="flex items-start justify-between gap-3">

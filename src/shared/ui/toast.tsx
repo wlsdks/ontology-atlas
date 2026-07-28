@@ -63,7 +63,7 @@ export function ToastProvider({ children }: { children: ReactNode }) {
             // 동등물을 주는 규칙이 이 클래스에 걸린다 (`app/globals.css`
             // "토스트(sonner) 모션" 절, 2026-07-28 프레임 실측).
             toast:
-              'app-toast rounded-full border bg-[color:var(--color-panel)] px-3.5 py-2 text-body text-[color:var(--color-text-primary)] shadow-[0_10px_28px_var(--color-shadow-a42)]',
+              'app-toast rounded-full border bg-[color:var(--color-panel)] px-3.5 py-2 text-body text-[color:var(--color-text-primary)] shadow-[var(--shadow-elevation-1)]',
             success:
               'border-[color:var(--color-success-a35)] text-[color:var(--color-text-primary)]',
             info: 'border-[color:var(--color-indigo-line-a35)] text-[color:var(--color-text-primary)]',

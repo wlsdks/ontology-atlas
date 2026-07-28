@@ -146,12 +146,32 @@ download(`/download`).
 - 소개 섹션 evidence 미니어처 census 숫자의 진실원:
   `src/views/download/model/dogfood-census.generated.ts` —
   `scripts/build-docs-vault.mjs` 가 dogfood vault frontmatter 에서 생성.
-- `--shadow-elevation-1/2/3` — 떠 있는 표면 드롭 섀도 3단 사다리
-  (coach-mark < popover < dialog). 값은 alpha 토큰(`--color-shadow-a35/a42/a46`)
-  합성. 이전엔 ontology-edit 전반이 `0_24px_72px`·`0_24px_80px`·`0_22px_54px`·
-  `0_18px_44px`·`0_18px_40px`·`0_10px_32px`·`0_6px_16px` 같은 손 튜닝 섀도를
-  8종 흩뿌렸다 — 계층별 대표값으로 수렴(빌더 2라운드 감사 #9). JSX 에 새
-  drop-shadow 를 손으로 적지 말고 이 3단을 상속한다. 전역 나머지 표면 마이그레이션은 후속 큐.
+- **그림자 사다리 — 3단 + 도킹 2단 + 눌림 1단** (2026-07-28 재수렴 완료)
+
+  | 토큰 | 역할 | 값 |
+  |---|---|---|
+  | `--shadow-elevation-1` | coach-mark — 캔버스 힌트 · 툴바 · 인라인 · 카드 호버 · 토스트 | `0 18px 40px` |
+  | `--shadow-elevation-2` | popover — 앵커된 패널 · 팔레트 | `0 24px 72px` |
+  | `--shadow-elevation-3` | dialog — 스크림 동반 중앙 모달 | `0 24px 80px` |
+  | `--shadow-elevation-dock-bottom` | 화면 **하단**에 붙은 표면(탭바) | `0 -12px 32px` |
+  | `--shadow-elevation-dock-side` | 화면 **측면**에 붙은 표면(서랍 · 사이드 패널) | `-20px 0 48px` |
+  | `--shadow-control-press` | 눌린 컨트롤 — 떠 있는 정도가 아니라 다른 역할 | `0 5px 12px` |
+
+  **도킹 단이 왜 예외가 아니라 층인가**: 위 3단은 전부 아래로 떨어지는
+  그림자(y 양수)다. 화면 가장자리에 붙은 표면은 그 그림자가 화면 밖으로
+  나가 가시 단서가 0 이라 그 전제가 성립하지 않는다. 그래서 손으로 두 번
+  만들어졌고 **값이 서로 달랐다**(`0 -16px 36px` vs `-24px 0 60px`, 게다가
+  오프셋 없는 `0 0 24px`·`0 0 48px` 변종까지). 등재되지 않은 6번째 층이었다.
+  두 방향은 같은 blur·같은 알파를 쓴다 — 축만 다르고 층은 하나다.
+
+  **재확산의 역사**: 이 사다리는 한 번 8종을 3단으로 수렴시켰다가 **23종으로
+  다시 흩어졌다**. lint 가 값 안에 `var(` 가 있으면 통과시켜서 *색만 토큰이고
+  기하는 자유*인 상태가 됐기 때문이다. 그 안에 광원 역전 2건과 계층 역전
+  1건(blur 90 > dialog 80)이 있었다. 이제 게이트는 `var(` 유무가 아니라
+  **어느 토큰인가**(기하 허용목록)를 본다 — 23 → 0.
+
+  JSX 에 새 drop-shadow 를 손으로 적지 않는다. 새 역할이 정말 필요하면
+  **토큰 신설 PR 을 먼저** 낸다.
 
 **Surface class 별 do / don't**:
 
