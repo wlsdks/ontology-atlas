@@ -37,7 +37,7 @@ import {
   rememberRouteFocusIntent,
 } from "@/shared/ui/route-focus-manager";
 import { resolveActiveNavRailItem, type AppNavRailItemId } from "../lib/resolve-active-item";
-import { shouldShowGetAppTile } from "../lib/show-get-app-tile";
+import { shouldShowGetAppTile } from "@/shared/lib/show-get-app-tile";
 import { isTauriVaultRuntime } from "@/shared/lib/tauri-vault-fs";
 
 /** 런타임은 로드 뒤 바뀌지 않는다 — 구독은 형식상 필요할 뿐이라 no-op 이다. */

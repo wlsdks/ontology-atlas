@@ -61,3 +61,49 @@ test("타일이 실제로 다운로드 화면으로 데려간다 — 죽은 CTA 
   // 소유자가 "윈도우는 준비중이라고 적어놔주고" 라고 지시한 그 자리다.
   await expect(page.getByText("Windows").first()).toBeVisible();
 });
+
+
+/**
+ * `<lg` — 레일이 숨는 폭에서는 **하단 탭바의 다섯 번째 자리**가 그 일을 한다.
+ *
+ * 실측(2026-07-28)으로 드러난 구멍: 레일이 `lg:flex` 라 390·768 에서 보이는
+ * `/download` 링크가 **0개**였다. 모바일·태블릿 웹 방문자는 다운로드로 갈
+ * 길이 아예 없었다. 소유자 결정으로 탭바 자리를 하나 내줬다.
+ *
+ * 다섯 번째를 더하면 나머지 넷이 좁아진다 — 그래서 **터치 타깃과 넘침을
+ * 같이 잰다**. 유틸리티라고 작게 만들면 그게 그 폭에서 가장 누르기 어려운
+ * 항목이 되고, 그건 이 저장소의 터치 계약(44px) 위반이다.
+ */
+const NARROW_WIDTHS = [360, 390, 768];
+
+for (const width of NARROW_WIDTHS) {
+  test(`${width}px 웹 — 탭바 다섯 번째 자리가 다운로드로 데려간다`, async ({ page }) => {
+    await seedFirstRunSeen(page);
+    await page.setViewportSize({ width, height: 844 });
+    await page.goto("/ko/topology/?guides=off", { waitUntil: "networkidle" });
+
+    const tab = page.getByTestId("bottom-tab-get-app");
+    await expect(tab, "이 폭에서 다운로드로 갈 길이 없다").toBeVisible({ timeout: 15_000 });
+    await expect(tab).toHaveAttribute("href", /\/download\/$/);
+
+    const geometry = await page.evaluate(() => {
+      const bar = document.querySelector<HTMLElement>('[data-tabbar="primary"]');
+      if (!bar) return null;
+      const items = [...bar.children].map((el) => el.getBoundingClientRect());
+      return {
+        count: items.length,
+        minWidth: Math.min(...items.map((r) => r.width)),
+        minHeight: Math.min(...items.map((r) => r.height)),
+        overflows: bar.scrollWidth > bar.clientWidth + 1,
+      };
+    });
+
+    expect(geometry, "탭바를 못 찾았다").not.toBeNull();
+    expect(geometry!.count).toBe(5);
+    // 넘치면 다섯 번째가 화면 밖으로 밀린다 — 있는데 못 누르는 상태.
+    expect(geometry!.overflows, "탭바가 가로로 넘친다").toBe(false);
+    // 44px 터치 계약 — 자리를 하나 더 내주고도 지켜져야 한다.
+    expect(geometry!.minWidth).toBeGreaterThanOrEqual(44);
+    expect(geometry!.minHeight).toBeGreaterThanOrEqual(44);
+  });
+}

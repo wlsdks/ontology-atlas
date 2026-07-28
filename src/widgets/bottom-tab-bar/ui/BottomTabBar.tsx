@@ -1,11 +1,19 @@
 'use client';
 
 import { Link, usePathname } from '@/i18n/navigation';
+import { useSyncExternalStore } from 'react';
 import { useTranslations } from 'next-intl';
-import { BarChart3, BookOpen, FolderKanban, Map as MapIcon } from 'lucide-react';
+import { BarChart3, BookOpen, Download, FolderKanban, Map as MapIcon } from 'lucide-react';
 import { useLocalVault } from '@/features/docs-vault-local';
 import { resolveActiveNavDestination, type AppNavDestinationId } from '@/shared/lib/nav-destination';
 import { shouldHideBottomTabBar } from '../lib/is-tab-active';
+import { shouldShowGetAppTile } from '@/shared/lib/show-get-app-tile';
+import { isTauriVaultRuntime } from '@/shared/lib/tauri-vault-fs';
+
+/** 런타임은 로드 뒤 바뀌지 않는다 — 구독은 형식상 필요할 뿐이라 no-op. */
+const subscribeToRuntime = () => () => {};
+/** 서버(프리렌더)에서는 창이 없어 **모른다**. `false`(=웹)로 단정하지 않는다. */
+const getServerRuntimeSnapshot = (): boolean | null => null;
 
 interface TabItem {
   id: AppNavDestinationId;
@@ -34,11 +42,37 @@ export function BottomTabBar() {
   const tRail = useTranslations('navRail');
   const vault = useLocalVault();
 
+  /**
+   * 「앱 받기」 — `<lg` 웹의 유일한 다운로드 경로.
+   *
+   * 실측(2026-07-28): 레일이 `lg:flex` 라 390·768 에서 보이는 `/download` 링크가
+   * **0개**였다. 모바일·태블릿 웹 방문자는 다운로드로 갈 길이 아예 없었다.
+   * 소유자 결정으로 탭바의 다섯 번째 자리를 내준다.
+   *
+   * 목적지가 아니라 **유틸리티**라 `TABS` 배열 밖에 둔다 — 활성 판정
+   * (`resolveActiveNavDestination`)은 손대지 않는다. `/download` 는 탭바를
+   * 숨기는 라우트라(`shouldHideBottomTabBar`) 이 항목이 활성이 되는 상태는
+   * 애초에 존재하지 않는다.
+   *
+   * **훅은 조기 반환 위**에 둔다 — 탭바는 라우트에 따라 `null` 을 돌려주므로,
+   * 아래에 두면 렌더마다 훅 순서가 달라진다.
+   */
+  const desktopRuntime = useSyncExternalStore(
+    subscribeToRuntime,
+    isTauriVaultRuntime,
+    getServerRuntimeSnapshot,
+  );
+  const showGetApp = shouldShowGetAppTile({
+    mounted: desktopRuntime !== null,
+    isDesktopApp: desktopRuntime === true,
+  });
+
   if (shouldHideBottomTabBar(pathname, vault.status === 'loaded')) {
     return null;
   }
 
   const activeId = resolveActiveNavDestination(pathname);
+
 
   return (
     <nav
@@ -91,6 +125,31 @@ export function BottomTabBar() {
           </Link>
         );
       })}
+
+      {/*
+        다섯 번째 자리 — 목적지가 아니라 **웹 전용 유틸리티**다. `TABS` 배열
+        밖에 두어 활성 판정을 손대지 않는다. 라벨과 아이콘은 레일의 같은
+        타일과 한 문법을 쓴다 — 폭이 달라도 사용자가 배우는 것은 하나다.
+
+        터치 타깃은 형제 탭과 같은 클래스를 그대로 받는다(`--topology-bottom-tab-
+        min-height` + coarse 포인터 계약) — 유틸리티라고 작게 만들면 그게
+        `<lg` 에서 가장 누르기 어려운 항목이 된다.
+      */}
+      {showGetApp ? (
+        <Link
+          href="/download/"
+          title={tRail('getAppTitle')}
+          data-testid="bottom-tab-get-app"
+          className="relative flex min-h-[var(--topology-bottom-tab-min-height)] flex-1 flex-col items-center justify-center gap-0.5 text-[color:var(--color-text-quaternary)] transition-colors active:bg-[color:var(--color-overlay-1)] active:text-[color:var(--color-text-secondary)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--color-indigo-a50)] focus-visible:ring-inset"
+        >
+          <span className="inline-flex h-6 w-6 items-center justify-center rounded-lg border border-transparent transition-colors">
+            <Download size={17} aria-hidden />
+          </span>
+          <span className="text-caption font-[var(--font-weight-signature)] leading-none">
+            {tRail('getApp')}
+          </span>
+        </Link>
+      ) : null}
     </nav>
   );
 }
