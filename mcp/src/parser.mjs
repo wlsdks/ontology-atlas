@@ -8,7 +8,22 @@
 //   key:\n  - item1\n  - item2          (block list)
 //   key:\n  child: 1\n  other: 2        (block object)
 
-export function parseFrontmatter(raw) {
+export function parseFrontmatter(input) {
+  // 줄바꿈·인코딩 정규화 — **읽기 경로에서만** (2026-07-28 실측).
+  //
+  // CRLF: 줄을 `\n` 으로 쪼개면 각 줄 끝에 `\r` 이 남는데, 블록 리스트
+  // 정규식의 `.` 는 `\r` 을 안 먹고 `$` 는 문자열 끝만 본다 → 매치 실패 →
+  // 리스트가 빈 배열. 스칼라는 `.trim()` 이 구제해서 살아남으므로, 증상이
+  // **"노드는 보이는데 관계만 전부 사라진다"** 는 형태로 나타난다. 경고 0.
+  //
+  // BOM: `raw.startsWith('---')` 가 `\uFEFF---` 에서 false → frontmatter 블록
+  // 전체가 본문으로 넘어가고 `kind:` 가 사라진다. 즉 **그 문서가 그래프에서
+  // 노드 자체로 사라진다**.
+  //
+  // 둘 다 `surfaces.md` 가 명시 지원한다고 적은 인구(Windows Chromium)의
+  // 기본 편집기가 만드는 것이다. 4-way 계약 테스트는 네 파서의 *일치*만
+  // 보장하는데 **넷이 똑같이 틀려서** 통과하고 있었다.
+  const raw = input.replace(/^\uFEFF/, '').replace(/\r\n/g, '\n');
   if (!raw.startsWith('---')) return { frontmatter: {}, body: raw };
   const end = raw.indexOf('\n---', 3);
   if (end === -1) return { frontmatter: {}, body: raw };

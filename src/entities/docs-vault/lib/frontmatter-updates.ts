@@ -1,3 +1,9 @@
+import {
+  normalizeVaultSource,
+  readVaultSourceShape,
+  restoreVaultSourceShape,
+} from '@/shared/lib/parse-frontmatter';
+
 /**
  * frontmatter 키/값 패치 — 원문의 나머지(본문·주석·키 순서)를 보존한 채
  * 지정한 키만 갈아끼운다.
@@ -18,9 +24,15 @@ export type FrontmatterUpdateValue =
   | null;
 
 export function applyFrontmatterUpdates(
-  raw: string,
+  source: string,
   updates: Record<string, FrontmatterUpdateValue>,
 ): string {
+  // BOM/CRLF 원본도 같은 규칙으로 읽고, 저장할 때 원래 모양으로 되돌린다
+  // (`replaceVaultBody` 와 같은 계약). CRLF 를 정규화하지 않으면 키 줄 끝에
+  // `\r` 이 남아 `key in updates` 매칭이 빗나가고, 갱신 대신 **같은 키가 하나
+  // 더 붙는다**. BOM 이면 frontmatter 블록 자체를 못 찾아 전부 새로 쓴다.
+  const shape = readVaultSourceShape(source);
+  const raw = normalizeVaultSource(source);
   let fmLines: string[] = [];
   let body = raw;
   if (raw.startsWith('---')) {
@@ -77,9 +89,12 @@ export function applyFrontmatterUpdates(
   }
   // frontmatter 비어있으면 섹션 자체 생략
   if (nextLines.every((l) => l.trim() === '')) {
-    return body;
+    return restoreVaultSourceShape(body, shape);
   }
-  return `---\n${nextLines.join('\n')}\n---\n\n${body}`;
+  return restoreVaultSourceShape(
+    `---\n${nextLines.join('\n')}\n---\n\n${body}`,
+    shape,
+  );
 }
 
 function serializeFrontmatterValue(

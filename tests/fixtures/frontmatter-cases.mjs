@@ -116,4 +116,44 @@ export const CASES = [
       body: "본문",
     },
   },
+  // ── 줄바꿈·인코딩 (2026-07-28 코드 품질 리뷰 실측) ────────────────────────
+  //
+  // 이 매트릭스에 CRLF·BOM 케이스가 **0건**이었다. 4-way 계약은 네 파서의
+  // *일치*를 보장하지만 **넷이 똑같이 틀리면 통과한다** — 그리고 실제로
+  // 똑같이 틀려 있었다.
+  //
+  // 왜 치명적인가: `surfaces.md` 가 명시 지원한다고 적은 인구가 "Windows
+  // Chromium 의 차선 워크벤치" 이고, Windows 편집기가 만드는 것이 정확히
+  // CRLF 다. PowerShell `Out-File` 기본값은 UTF-8 **BOM** 이다.
+  {
+    // 스칼라는 `.trim()` 이 구제해서 살아남고 블록 리스트만 죽는다 — 그래서
+    // 증상이 "노드는 보이는데 관계만 전부 사라진다" 는 형태로 나타난다.
+    // 아무 경고도 없다.
+    name: "CRLF — 블록 리스트가 살아남는다",
+    input: "---\r\nkind: capability\r\ntitle: T\r\nrelates:\r\n  - a\r\n  - b\r\n---\r\n본문",
+    expected: {
+      frontmatter: { kind: "capability", title: "T", relates: ["a", "b"] },
+      body: "본문",
+    },
+  },
+  {
+    name: "CRLF — 중첩 객체 맵이 살아남는다",
+    input: "---\r\nkind: capability\r\nlabels:\r\n  ko: 지도\r\n  en: Map\r\n---\r\n",
+    expected: {
+      frontmatter: { kind: "capability", labels: { ko: "지도", en: "Map" } },
+      body: "",
+    },
+  },
+  {
+    // BOM 은 `---` 판정을 통째로 빗나가게 해서 **그 문서가 그래프에서 노드
+    // 자체로 사라진다**. `kind:` 가 없는 문서로 보이기 때문이다.
+    name: "BOM — frontmatter 블록이 증발하지 않는다",
+    input: "\uFEFF---\nkind: capability\ntitle: T\n---\n본문",
+    expected: { frontmatter: { kind: "capability", title: "T" }, body: "본문" },
+  },
+  {
+    name: "BOM + CRLF — 둘이 겹쳐도 읽는다",
+    input: "\uFEFF---\r\nkind: domain\r\ntitle: D\r\n---\r\n본문",
+    expected: { frontmatter: { kind: "domain", title: "D" }, body: "본문" },
+  },
 ];

@@ -14,7 +14,22 @@ export interface ParsedFrontmatter {
 
 type ParsedScalar = string | number | boolean;
 
-export function parseFrontmatter(raw: string): ParsedFrontmatter {
+export function parseFrontmatter(input: string): ParsedFrontmatter {
+  // 줄바꿈·인코딩 정규화 — **읽기 경로에서만** (2026-07-28 실측).
+  //
+  // CRLF: 줄을 `\n` 으로 쪼개면 각 줄 끝에 `\r` 이 남는데, 블록 리스트
+  // 정규식의 `.` 는 `\r` 을 안 먹고 `$` 는 문자열 끝만 본다 → 매치 실패 →
+  // 리스트가 빈 배열. 스칼라는 `.trim()` 이 구제해서 살아남으므로, 증상이
+  // **"노드는 보이는데 관계만 전부 사라진다"** 는 형태로 나타난다. 경고 0.
+  //
+  // BOM: `raw.startsWith('---')` 가 `\uFEFF---` 에서 false → frontmatter 블록
+  // 전체가 본문으로 넘어가고 `kind:` 가 사라진다. 즉 **그 문서가 그래프에서
+  // 노드 자체로 사라진다**.
+  //
+  // 둘 다 `surfaces.md` 가 명시 지원한다고 적은 인구(Windows Chromium)의
+  // 기본 편집기가 만드는 것이다. 4-way 계약 테스트는 네 파서의 *일치*만
+  // 보장하는데 **넷이 똑같이 틀려서** 통과하고 있었다.
+  const raw = input.replace(/^\uFEFF/, '').replace(/\r\n/g, '\n');
   if (!raw.startsWith('---')) return { frontmatter: {}, body: raw };
   const end = raw.indexOf('\n---', 3);
   if (end === -1) return { frontmatter: {}, body: raw };
@@ -298,3 +313,35 @@ export function extractOutLinksWithContext(
   return { slugs: [...slugs], contexts };
 }
 
+/**
+ * 파일이 원래 쓰던 **줄바꿈과 BOM** — 읽을 때 정규화하고 쓸 때 되돌리기 위한 값.
+ *
+ * 파서는 CRLF·BOM 을 정규화해서 읽는다(그래야 관계가 안 사라진다). 그런데
+ * **쓰는 쪽이 정규화된 모양 그대로 저장하면 남의 파일의 줄바꿈을 말없이
+ * 바꾸는 것**이 된다 — git diff 가 파일 전체로 뜨고, 그건 이 제품이 하지
+ * 않기로 한 종류의 일이다. 그래서 모양을 기억했다가 되돌린다.
+ */
+export interface VaultSourceShape {
+  bom: string;
+  eol: "\n" | "\r\n";
+}
+
+export function readVaultSourceShape(raw: string): VaultSourceShape {
+  return {
+    bom: raw.startsWith("\uFEFF") ? "\uFEFF" : "",
+    // 하나라도 CRLF 면 그 파일은 CRLF 파일이다 — 섞여 있으면 다수가 아니라
+    // 존재로 판정한다(Windows 편집기가 이어서 쓰면 CRLF 로 붙기 때문).
+    eol: raw.includes("\r\n") ? "\r\n" : "\n",
+  };
+}
+
+/** 읽기용 정규화 — BOM 제거 + LF 통일. 파서가 진입부에서 하는 것과 같다. */
+export function normalizeVaultSource(raw: string): string {
+  return raw.replace(/^\uFEFF/, "").replace(/\r\n/g, "\n");
+}
+
+/** 쓰기용 복원 — 원래 파일이 쓰던 모양으로 되돌린다. */
+export function restoreVaultSourceShape(text: string, shape: VaultSourceShape): string {
+  const withEol = shape.eol === "\r\n" ? text.replace(/\n/g, "\r\n") : text;
+  return `${shape.bom}${withEol}`;
+}
