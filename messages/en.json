@@ -619,16 +619,32 @@
     "windowsTrackCta": "Follow progress",
     "releaseNotesLink": "Read the release notes",
     "releaseGateNote": "This website sends nothing to a server. In Chrome and Edge you can pick a folder here and read and edit it; remembering that folder, plus history and AI connections, is what the installed app adds.",
-    "intro": {
-      "instrument": {
-        "eyebrow": "What the app draws",
-        "svgLabel": "Miniature map of this project's own markdown folder — {concepts} concepts and {relations} relations.",
-        "conceptsUnit": "concepts",
-        "relationsUnit": "relations",
-        "scopeNote": "Counts this repo's own docs/ontology vault, not the folder you'll load in the app — expect a different number there.",
-        "caption": "This is the map the site is drawing right now: real numbers read from real markdown at build time, not mockup data."
-      }
-    }
+    "factMinOsSuffix": " or later",
+    "chipSigned": "Signed & notarized",
+    "chipChecksum": "SHA-256 published",
+    "chipPrivacy": "Sends nothing",
+    "channelPrereleaseTitle": "This is a release candidate.",
+    "channelPrereleaseBody": "It comes before the final v1.0.0. It cleared the same signing and notarization path a stable build does, but it has not been widely used yet.",
+    "stageTitle": "This is what your markdown folder looks like",
+    "stageLead": "The map behind this panel is not a mockup — it is this repository's own folder. The app wires that map straight to yours, offline, remembering the folder you had open.",
+    "portraitCensus": "{concepts} concepts · {relations} relations",
+    "portraitScope": "That is this repository's docs/ontology folder. Open your own in the app and you see your own numbers.",
+    "stageMapLabel": "A map drawn from this repository's markdown folder. Drag to move it around. To read it as a list, use the INDEX panel on the map screen.",
+    "pitchTitle": "You grep for the code. Where do you grep for why?",
+    "pitchBody": "What depends on what, why this folder exists, what breaks if you change it — none of that is in the source. Atlas keeps that meaning in one markdown folder: on your own disk, in plain text, in a shape git can read.",
+    "twoUsersTitle": "One folder, two kinds of reader",
+    "humanEyebrow": "People",
+    "humanTitle": "Plain text you can read and edit",
+    "humanBody": "Nodes and relations are markdown frontmatter. No separate database, no locked format, no login.",
+    "humanFact1": "See it on the map, edit it in the docs pane, review it in a git diff",
+    "humanFact2": "Files stay on your disk and are never transmitted anywhere",
+    "agentEyebrow": "Agents",
+    "agentTitle": "The same files, read and written directly",
+    "agentBody": "Claude Code, Codex and Cursor connect over MCP and update the same folder. Installing the app installs that surface too.",
+    "agentFact1": "{tools} MCP tools — look up concepts, trace paths, check blast radius, write",
+    "agentFact2": "{commands} terminal commands — compile, validate, snapshot, hand off",
+    "twoUsersJoin": "So what a person fixes, an agent reads a moment later; and what an agent writes, a person judges in a git diff. That is why the map does not go stale.",
+    "stageClusterHint": "Press a numbered chip to unfold the concepts collapsed inside it."
   },
   "kinds": {
     "project": "Project",

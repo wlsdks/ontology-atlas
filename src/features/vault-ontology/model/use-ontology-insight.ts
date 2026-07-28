@@ -179,6 +179,22 @@ function sampleInsight(
  *   /storefront 둘 중 어느 샘플을 보여줄지 고른다 — local 모드에서는 이
  *   선택이 아예 읽히지 않는다(사용자 vault 가 항상 우선).
  */
+/**
+ * 이 저장소 자신의 볼트(`docs/ontology`) 인사이트 — **출처가 고정**이다.
+ *
+ * `useOntologyInsight` 는 사용자가 고른 것(로컬 볼트 · 스토어프론트 샘플)을
+ * 돌려주는 것이 맞다. 하지만 `/download` 관문의 무대는 캡션으로 "이 저장소의
+ * docs/ontology · 96 개념" 이라고 **주장**한다 — 그 문장이 참이려면 그리는
+ * 그래프도 그것이어야 한다. 세션의 샘플 선택을 따라가면 스토어프론트(7 노드)를
+ * 그려 놓고 96 개념이라고 적는 일이 벌어진다(실측 2026-07-28).
+ *
+ * 같은 캐시(`sampleInsight`)를 쓰므로 파생 비용은 추가되지 않는다.
+ */
+export function useDogfoodInsight(): KnowledgeProjectInsight {
+  const locale = useLocale();
+  return useMemo(() => sampleInsight('dogfood', locale).insight, [locale]);
+}
+
 export function useOntologyInsight(): {
   insight: KnowledgeProjectInsight | null;
   error: Error | null;

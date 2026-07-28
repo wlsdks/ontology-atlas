@@ -6,6 +6,7 @@ import enMessages from '../../../../messages/en.json';
 import { GITHUB_RELEASES_URL } from '@/features/macos-download-link';
 import { shouldHideBottomTabBar } from '@/widgets/bottom-tab-bar';
 import { RELEASE_VERSION } from '../lib/release-facts';
+import { DOGFOOD_CENSUS } from '../model/dogfood-census.generated';
 import { DownloadPage } from './DownloadPage';
 
 vi.mock('@/features/locale-switch', () => ({
@@ -37,6 +38,7 @@ vi.mock('@/i18n/navigation', () => ({
 const mocks = vi.hoisted(() => ({
   release: {
     published: false,
+    prerelease: false,
     tag: 'v1.0.0',
     publishedAt: null as string | null,
     releaseUrl: 'https://github.com/wlsdks/ontology-atlas/releases',
@@ -62,6 +64,7 @@ const X64_SHA = 'b'.repeat(64);
 function publishRelease() {
   mocks.release = {
     published: true,
+    prerelease: false,
     tag: `v${RELEASE_VERSION}`,
     publishedAt: '2026-07-27T00:00:00Z',
     releaseUrl: `https://github.com/wlsdks/ontology-atlas/releases/tag/v${RELEASE_VERSION}`,
@@ -96,7 +99,12 @@ describe('DownloadPage', () => {
   beforeEach(() => {
     mocks.release = {
       published: false,
-      tag: 'v1.0.0',
+      prerelease: false,
+      // 미게시일 때 이 태그는 **일부러 낡은 값**이다 — `--unpublished` 로
+      // 마지막에 리셋할 때 적힌 것이지 다음에 나올 버전이 아니다. 구
+      // 픽스처는 이걸 항상 `v${RELEASE_VERSION}` 로 두어서 페이지가 두 출처를
+      // 섞어 쓰는 것을 볼 수 없었다.
+      tag: 'v0.9.0-stale',
       publishedAt: null,
       releaseUrl: 'https://github.com/wlsdks/ontology-atlas/releases',
       assets: [],
@@ -113,7 +121,7 @@ describe('DownloadPage', () => {
       renderDownloadPage();
 
       expect(screen.getByTestId('download-macos-pending')).toHaveTextContent(
-        /v1\.0\.0 has not been published yet/i,
+        new RegExp(`v${RELEASE_VERSION.replace(/\./g, '\\.')} has not been published yet`, 'i'),
       );
       // A size and a checksum are per-release facts. With no release there is
       // no honest value for either, so neither row exists at all.
@@ -303,16 +311,33 @@ describe('DownloadPage', () => {
     expect(screen.getByText(/updates itself with one button/i)).toBeInTheDocument();
   });
 
-  it('renders the census miniature with real dogfood data and its scope label', () => {
+  // ─── 배경은 증거다 (2026-07-28 백지 재설계) ────────────────────────────────
+  //
+  // 이 페이지의 헤드라인은 배경을 **가리킨다**("뒤에 보이는 지도는 …이 저장소의
+  // 실제 폴더예요"). 그 문장이 참이려면 뒤에 그려진 것이 진짜 vault 여야 하고,
+  // 그래서 배경은 지울 수 있는 장식이 아니라 계약이다. 구 미니어처(노드 8개
+  // 도식)를 대체하면서 그 정직성 계약도 함께 옮겨 왔다.
+  it('draws the real vault behind the plate, with the same numbers the caption claims', () => {
     renderDownloadPage();
 
-    expect(screen.getByRole('img', { name: /Miniature map/i })).toBeInTheDocument();
-    // [download-honesty] the census card's concepts/relations counts need a
-    // scope label so they aren't mistaken for the count shown once a user
-    // loads their own vault in the app (different definition, different number).
-    expect(screen.getByText(/Counts this repo's own docs\/ontology vault/i)).toBeInTheDocument();
-    // The intro used to cite a domain that was never registered.
-    expect(screen.queryByText(/ontology-atlas\.dev/i)).not.toBeInTheDocument();
+    const caption = screen.getByTestId('download-portrait-caption');
+    expect(caption).toHaveTextContent(`${DOGFOOD_CENSUS.concepts} concepts`);
+    expect(caption).toHaveTextContent(`${DOGFOOD_CENSUS.relations} relations`);
+
+    // [download-honesty] 이 숫자에는 범위 라벨이 붙어야 한다 — 앱에서 자기
+    // 폴더를 열면 다른 정의(런타임 파생 그래프)로 다른 숫자가 나오고, 라벨이
+    // 없으면 같은 사용자가 두 숫자를 보고 신뢰를 잃는다.
+    expect(caption).toHaveTextContent(/docs\/ontology folder/i);
+    expect(caption).toHaveTextContent(/your own numbers/i);
+  });
+
+  // 무대 지도는 **진짜 엔진**이다(2026-07-28 소유자 지시). 배경이 장식이 아니라는
+  // 것을 지키는 구조적 장치는 이제 "출처가 캡션과 같은 볼트로 고정돼 있다" 는 것 —
+  // `useDogfoodInsight` 는 세션의 샘플 선택을 따라가지 않는다.
+  it('mounts the real map engine behind the plate', () => {
+    renderDownloadPage();
+
+    expect(screen.getByTestId('download-stage-map')).toBeInTheDocument();
   });
 
   // The retired LandingPage hero was absorbed here in 2026-07 and became a
@@ -328,24 +353,103 @@ describe('DownloadPage', () => {
     expect(screen.queryByText(/One folder, three views/i)).not.toBeInTheDocument();
   });
 
-  it('puts the install decision above everything that explains it', () => {
+  // 2026-07-28 소유자 판정("이 페이지는 서비스를 홍보해야지") 이후의 순서:
+  // 파일 → 파는 말 → 두 사용자 → 설치 → 다른 환경 → (푸터) 검증.
+  // 검증이 **맨 아래 접힌 채로** 있는 것이 이 순서의 요점이라, 그 위치를 고정한다.
+  it('puts the file first and the verification footnote last', () => {
     publishRelease();
     renderDownloadPage();
 
     const heading = screen.getByRole('heading', { level: 1 });
     const primaryCta = screen.getByTestId('download-primary-cta');
-    const trust = screen.getByTestId('download-trust');
+    const pitch = screen.getByTestId('download-pitch');
+    const twoUsers = screen.getByTestId('download-two-users');
     const windows = screen.getByTestId('download-platform-windows');
+    const trust = screen.getByTestId('download-trust');
 
     for (const [earlier, later] of [
       [heading, primaryCta],
-      [primaryCta, trust],
-      [trust, windows],
+      [primaryCta, pitch],
+      [pitch, twoUsers],
+      [twoUsers, windows],
+      [windows, trust],
     ] as const) {
       expect(
         earlier.compareDocumentPosition(later) & Node.DOCUMENT_POSITION_FOLLOWING,
       ).toBeTruthy();
     }
+  });
+
+  // ─── 한 화면 = 한 버전 (2026-07-28 회귀) ──────────────────────────────────
+  //
+  // 배포된 사이트가 실제로 이랬다: 카드 오른쪽 배지에 `v1.0.0-rc.3`
+  // (package.json), 같은 카드 본문에 "v1.0.0-rc.2 는 아직 게시 전입니다"
+  // (생성 모듈의 낡은 태그), 그리고 검증 절에는
+  // `shasum -a 256 …rc.3_aarch64.dmg` — 체크섬 목록은 rc.2 파일을 세워 둔 채로.
+  //
+  // 구 픽스처가 릴리스 태그를 **항상** `v${RELEASE_VERSION}` 으로 두어서 두
+  // 출처가 갈라지는 순간을 재현할 수 없었다. 갈라진 상태를 픽스처로 만든다.
+  describe('when the published release is not the version under development', () => {
+    it('verifies the file it actually published, not the one being built', () => {
+      const publishedVersion = '1.0.0-rc.2';
+      expect(publishedVersion).not.toBe(RELEASE_VERSION);
+
+      mocks.release = {
+        published: true,
+        prerelease: true,
+        tag: `v${publishedVersion}`,
+        publishedAt: '2026-07-28T01:44:03Z',
+        releaseUrl: `https://github.com/wlsdks/ontology-atlas/releases/tag/v${publishedVersion}`,
+        assets: (['aarch64', 'x64'] as const).map((arch) => ({
+          arch,
+          fileName: `ontology-atlas_${publishedVersion}_${arch}.dmg`,
+          sizeBytes: 13_002_342,
+          sha256: arch === 'aarch64' ? AARCH64_SHA : X64_SHA,
+          downloadUrl: `https://github.com/wlsdks/ontology-atlas/releases/download/v${publishedVersion}/ontology-atlas_${publishedVersion}_${arch}.dmg`,
+        })),
+      };
+      renderDownloadPage();
+
+      const trust = screen.getByTestId('download-trust');
+      // 따라 하면 실제로 되는 명령이어야 한다. 개발 중 버전의 파일명을 부르면
+      // `No such file` 이 뜨고, 신뢰를 벌겠다는 절이 유일하게 실행 가능한
+      // 지시에서 틀린다.
+      expect(trust).toHaveTextContent(`shasum -a 256 ontology-atlas_${publishedVersion}_aarch64.dmg`);
+      expect(trust).not.toHaveTextContent(`ontology-atlas_${RELEASE_VERSION}_aarch64.dmg`);
+    });
+
+    it('says a release candidate is a release candidate instead of hiding it', () => {
+      mocks.release = { ...mocks.release, published: true, prerelease: true };
+      publishRelease();
+      mocks.release = { ...mocks.release, prerelease: true };
+      renderDownloadPage();
+
+      expect(screen.getByTestId('download-channel-note')).toHaveTextContent(
+        /release candidate/i,
+      );
+      // 숨기지도, 정식인 척하지도 않는다 — 파일은 그대로 받을 수 있다.
+      expect(screen.getByTestId('download-primary-cta')).toHaveAttribute(
+        'href',
+        expect.stringContaining('.dmg'),
+      );
+    });
+
+    it('carries no channel note when the release is the real thing', () => {
+      publishRelease();
+      renderDownloadPage();
+
+      expect(screen.queryByTestId('download-channel-note')).not.toBeInTheDocument();
+    });
+  });
+
+  it('names exactly one version while no build is out', () => {
+    renderDownloadPage();
+
+    const pending = screen.getByTestId('download-macos-pending');
+    // 아직 안 나온 것을 말하는 진실원은 개발 중 버전 하나다. 생성 모듈의
+    // 낡은 태그가 본문에 새면 한 상자가 두 버전을 말한다.
+    expect(pending).toHaveTextContent(`v${RELEASE_VERSION}`);
+    expect(pending).not.toHaveTextContent('v0.9.0-stale');
   });
 
   // The page reserves no bottom-tab-bar height because this route has no tab

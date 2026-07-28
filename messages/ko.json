@@ -619,16 +619,32 @@
     "windowsTrackCta": "진행 상황 보기",
     "releaseNotesLink": "릴리스 노트 보기",
     "releaseGateNote": "이 웹 사이트는 아무것도 서버로 보내지 않습니다. Chrome·Edge 에서는 여기서 폴더를 골라 읽고 고칠 수 있고, 그 폴더를 기억해 두는 일과 기록·AI 연결은 설치한 앱이 합니다.",
-    "intro": {
-      "instrument": {
-        "eyebrow": "앱이 그리는 것",
-        "svgLabel": "이 프로젝트 자신의 마크다운 폴더를 그린 지도 미니어처 — 개념 {concepts}개, 관계 {relations}개.",
-        "conceptsUnit": "개념",
-        "relationsUnit": "관계",
-        "scopeNote": "이 저장소의 docs/ontology 폴더 기준 숫자입니다 — 앱에서 내 폴더를 열면 다른 숫자가 보여요.",
-        "caption": "이 사이트가 지금 그리고 있는 지도입니다. 목업이 아니라 빌드 시점의 실제 마크다운에서 나온 숫자예요."
-      }
-    }
+    "factMinOsSuffix": " 이상",
+    "chipSigned": "Apple 서명·공증",
+    "chipChecksum": "SHA-256 공개",
+    "chipPrivacy": "서버 전송 0",
+    "channelPrereleaseTitle": "릴리스 후보입니다.",
+    "channelPrereleaseBody": "정식 v1.0.0 이전 빌드예요. 서명·공증은 정식과 같은 경로를 통과했지만, 아직 넓게 쓰이지는 않았습니다.",
+    "stageTitle": "내 마크다운 폴더가, 이렇게 보입니다",
+    "stageLead": "뒤에 보이는 지도는 목업이 아니라 이 저장소의 실제 폴더예요. 앱은 그 지도를 내 폴더에 직접 연결합니다 — 인터넷 없이, 열어 둔 폴더를 기억한 채로.",
+    "portraitCensus": "{concepts} 개념 · {relations} 관계",
+    "portraitScope": "이 저장소의 docs/ontology 폴더입니다. 앱에서 내 폴더를 열면 내 숫자가 보여요.",
+    "stageMapLabel": "이 저장소의 마크다운 폴더로 그린 지도입니다. 끌어서 움직여 볼 수 있어요. 목록으로 읽으려면 지도 화면의 INDEX 패널을 쓰세요.",
+    "pitchTitle": "코드는 grep 으로 찾습니다. 왜 그런지는 어디서 찾나요?",
+    "pitchBody": "무엇이 무엇에 기대고, 이 폴더가 왜 있고, 이걸 고치면 어디가 흔들리는지 — 그건 코드에 안 적혀 있어요. Atlas 는 그 의미를 마크다운 폴더 하나에 둡니다. 내 디스크에, 평문으로, git 이 볼 수 있는 형태로.",
+    "twoUsersTitle": "한 폴더를 둘이 읽고 씁니다",
+    "humanEyebrow": "사람",
+    "humanTitle": "읽고 고칠 수 있는 평문",
+    "humanBody": "노드도 관계도 마크다운 frontmatter 예요. 별도 DB 도, 잠긴 포맷도, 로그인도 없습니다.",
+    "humanFact1": "지도에서 보고, 문서함에서 고치고, git diff 로 검토합니다",
+    "humanFact2": "파일은 내 디스크에만 있고 어디로도 전송되지 않습니다",
+    "agentEyebrow": "에이전트",
+    "agentTitle": "같은 파일을 직접 읽고 씁니다",
+    "agentBody": "Claude Code · Codex · Cursor 가 MCP 로 붙어 같은 폴더를 갱신해요. 앱을 설치하면 그 표면도 같이 설치됩니다.",
+    "agentFact1": "MCP 도구 {tools}개 — 개념 조회 · 경로 추적 · 영향 범위 · 쓰기",
+    "agentFact2": "터미널 명령 {commands}개 — 컴파일 · 검증 · 스냅샷 · 인계",
+    "twoUsersJoin": "그래서 사람이 고친 것을 에이전트가 다음 순간에 읽고, 에이전트가 적어 둔 것을 사람이 git diff 로 심판합니다. 지도가 낡지 않는 이유예요.",
+    "stageClusterHint": "숫자 칩을 누르면 그 안에 접혀 있는 개념들이 펼쳐집니다."
   },
   "kinds": {
     "project": "프로젝트",
