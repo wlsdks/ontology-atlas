@@ -1813,7 +1813,12 @@
      * down one notch (title 13→12) while the engraved census stays legible (9px).
      */
     --topology-chrome-control-height: clamp(32px, 2vw, 36px);
-    --topology-chrome-control-height-compact: clamp(30px, 1.9vw, 34px);
+    /* `--topology-chrome-control-height-compact` 는 2026-07-28 에 삭제했다 —
+       정의 1곳, 참조 0곳이었다. 게다가 coarse 포인터 블록이 그 죽은 토큰을
+       44px 로 **승격까지** 하고 있어서, 읽으면 "터치에서 컴팩트 컨트롤이
+       커진다" 는 규격처럼 보이는데 실제로는 아무 픽셀도 만들지 않았다.
+       `--pad-card`/`--pad-panel` 선례와 같다: 아무도 안 쓰는 토큰은 규격이
+       아니라 오정보다. */
     --topology-chrome-badge-size: 26px;
     --topology-chrome-badge-size-compact: 22px;
     --topology-chrome-icon-size: 12px;
@@ -2711,7 +2716,24 @@
         var(--touch-target-min)
       );
       --topology-chrome-control-height: var(--touch-target-min);
-      --topology-chrome-control-height-compact: var(--touch-target-min);
+      /*
+       * (구 `--topology-chrome-control-height-compact` 승격은 여기 있었다 —
+       * 참조가 0곳인 죽은 토큰이라 정의와 함께 2026-07-28 에 삭제.)
+       *
+       * 크롬 타일/칩 — 2026-07-28 감사가 잡은 **승격의 사각지대**.
+       *
+       * 위 `--topology-chrome-control-height` 는 여기서 44px 로 잘 올라가는데,
+       * 실제로 상단 크롬을 그리는 공유 프리미티브 두 개(`ChromeTile`
+       * `ChromeChip`)는 그 토큰을 안 읽고 `--chrome-tile-size` 를 읽는다
+       * (src 사용처 17곳 대 1곳). 그래서 승격이 **빈 방에 떨어지고** 있었다 —
+       * coarse 포인터에서 「자동 정렬」·「검색」·「내 데이터로 전환」·「기록」·
+       * 「지도 전체 맞추기」·「투어 시작」이 전부 36px 로 남았다(실측).
+       *
+       * 스케일 고정 계약(design.md)의 "크롬 필/타일 36px" 은 **fine 포인터**
+       * 규격이고, 이 블록은 coarse 에서만 올린다 — 위
+       * `--app-nav-rail-tile-height` 와 같은 `max()` 형식이라 새 규격이 아니다.
+       */
+      --chrome-tile-size: max(36px, var(--touch-target-min));
       --topology-shortcut-sheet-close-size: var(--touch-target-min);
       /* rank2/18 — DOM 오버레이 3종 close 버튼(SearchPalette 등)도 같은
          44px 승격. GlobalSearch 는 이미 --topology-search-sheet-close-size
@@ -2726,6 +2748,34 @@
          누르게 된다 — 폭이 아니라 포인터가 정한다(design.md 터치 계약). */
       --git-row-h: var(--touch-target-min);
       --git-step-h: max(44px, var(--touch-target-min));
+    }
+
+    /*
+     * 인라인 텍스트 컨트롤의 히트 영역 — 토큰으로 못 고치는 나머지 (2026-07-28).
+     *
+     * 위 승격은 전부 **높이 토큰을 읽는** 컨트롤에만 닿는다. 텍스트 링크처럼
+     * 생긴 버튼(첫 실행 패널의 「새 문서 폴더 만들기」·「여기서 둘러볼게요」·
+     * 「쉬운 말로 보기 켜기」·「개발자라면」)은 높이 토큰이 없고 글자 높이가 곧
+     * 박스라, coarse 에서 16~18px 로 남아 있었다 — 44px 계약의 36~41%이고
+     * 하필 낯선 사람이 가장 먼저 만나는 표면이다.
+     *
+     * 박스를 키우면 그 줄의 레이아웃이 통째로 바뀌므로, **보이는 상자는 그대로
+     * 두고 히트 영역만** 의사요소로 넓힌다. `pointer: coarse` 안에만 있으므로
+     * 마우스 사용자의 밀도는 1px 도 안 바뀐다.
+     */
+    .touch-hit-expand {
+      position: relative;
+    }
+
+    .touch-hit-expand::after {
+      content: "";
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      translate: -50% -50%;
+      width: max(100%, var(--touch-target-min));
+      height: max(100%, var(--touch-target-min));
+      /* 넓힌 것은 손가락용이지 눈용이 아니다 — 보이는 것은 아무것도 없다. */
     }
   }
 

@@ -262,7 +262,7 @@ export function FirstRunStarterModule({
               setSampleSource(source);
               setCollapsed(true);
             }}
-            className={`min-w-0 truncate rounded-[var(--chrome-radius-inner)] px-2 py-1 text-label transition-colors ${
+            className={`touch-hit-expand min-w-0 truncate rounded-[var(--chrome-radius-inner)] px-2 py-1 text-label transition-colors ${
               sampleSource === source
                 ? "bg-[color:var(--color-indigo-a16)] text-[color:var(--topology-v2-panel-text-primary)]"
                 : "text-[color:var(--topology-v2-panel-text-tertiary)] hover:text-[color:var(--topology-v2-panel-text-primary)]"
@@ -299,7 +299,7 @@ export function FirstRunStarterModule({
           onClick={() => setGuideOpen(true)}
           disabled={busy}
           data-testid="first-run-starter-open"
-          className="relative flex h-10 w-full items-center justify-center gap-2 rounded-lg border border-[color:var(--color-indigo-line-a45)] bg-[color:var(--color-indigo-brand)] text-body font-semibold text-white shadow-[inset_0_1px_0_var(--color-overlay-3)] transition-colors hover:bg-[color:var(--color-indigo-accent)] disabled:opacity-60"
+          className="touch-hit-expand relative flex h-10 w-full items-center justify-center gap-2 rounded-lg border border-[color:var(--color-indigo-line-a45)] bg-[color:var(--color-indigo-brand)] text-body font-semibold text-white shadow-[inset_0_1px_0_var(--color-overlay-3)] transition-colors hover:bg-[color:var(--color-indigo-accent)] disabled:opacity-60"
         >
           <FolderOpen size={14} aria-hidden />
           {busy && !scaffolding ? t("openBusy") : t("openLabel")}
@@ -317,7 +317,7 @@ export function FirstRunStarterModule({
           type="button"
           data-testid="first-run-tour-cta"
           onClick={onStartTour}
-          className="mt-2 inline-flex h-8 w-full items-center justify-center gap-1.5 rounded-lg border border-[color:var(--topology-v2-panel-divider)] text-body text-[color:var(--topology-v2-panel-text-secondary)] transition-colors hover:border-[color:var(--color-indigo-line-a35)] hover:text-[color:var(--topology-v2-panel-text-primary)]"
+          className="touch-hit-expand mt-2 inline-flex h-8 w-full items-center justify-center gap-1.5 rounded-lg border border-[color:var(--topology-v2-panel-divider)] text-body text-[color:var(--topology-v2-panel-text-secondary)] transition-colors hover:border-[color:var(--color-indigo-line-a35)] hover:text-[color:var(--topology-v2-panel-text-primary)]"
         >
           {t("tourCta")}
         </button>
@@ -332,7 +332,7 @@ export function FirstRunStarterModule({
             onClick={() => setGuideOpen(true)}
             disabled={busy}
             data-testid="first-run-starter-create"
-            className="border-b border-transparent pb-px text-[color:var(--topology-v2-panel-text-tertiary)] transition-colors hover:border-[color:var(--topology-v2-panel-divider)] hover:text-[color:var(--topology-v2-panel-text-secondary)]"
+            className="touch-hit-expand border-b border-transparent pb-px text-[color:var(--topology-v2-panel-text-tertiary)] transition-colors hover:border-[color:var(--topology-v2-panel-divider)] hover:text-[color:var(--topology-v2-panel-text-secondary)]"
           >
             {scaffolding ? t("createBusy") : t("createLabel")}
           </button>
@@ -341,7 +341,7 @@ export function FirstRunStarterModule({
           type="button"
           onClick={dismiss}
           data-testid="first-run-starter-dismiss"
-          className="border-b border-transparent pb-px text-[color:var(--topology-v2-panel-text-tertiary)] transition-colors hover:border-[color:var(--topology-v2-panel-divider)] hover:text-[color:var(--topology-v2-panel-text-secondary)]"
+          className="touch-hit-expand border-b border-transparent pb-px text-[color:var(--topology-v2-panel-text-tertiary)] transition-colors hover:border-[color:var(--topology-v2-panel-divider)] hover:text-[color:var(--topology-v2-panel-text-secondary)]"
         >
           {t("dismissLabel")}
         </button>
@@ -357,7 +357,7 @@ export function FirstRunStarterModule({
             type="button"
             data-testid="first-run-plain-toggle"
             onClick={onEnablePlainMode}
-            className="mt-1 text-label text-[color:var(--color-indigo-accent)] underline-offset-2 transition-colors hover:underline"
+            className="touch-hit-expand mt-1 text-label text-[color:var(--color-indigo-accent)] underline-offset-2 transition-colors hover:underline"
           >
             {t("plainModeCta")}
           </button>
@@ -417,7 +417,7 @@ export function FirstRunStarterModule({
           aria-expanded={cliOpen}
           aria-controls="first-run-starter-cli-bridge"
           data-testid="first-run-starter-cli-toggle"
-          className="flex items-center gap-1 text-label text-[color:var(--topology-v2-panel-text-quaternary)] transition-colors hover:text-[color:var(--topology-v2-panel-text-secondary)]"
+          className="touch-hit-expand flex items-center gap-1 text-label text-[color:var(--topology-v2-panel-text-quaternary)] transition-colors hover:text-[color:var(--topology-v2-panel-text-secondary)]"
         >
           <ChevronRight
             size={11}
