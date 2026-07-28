@@ -94,10 +94,31 @@ export interface CameraStepInput {
  * back toward `panBounds` (prototype: 14%/frame pull, 15% velocity bleed).
  */
 const SCALE_CRITICAL_DAMPING = 1.0;
-/** Prototype `updateCamera()` pan-bounds branch — pulls 14% of the way back toward the bound each frame. */
-const PAN_BOUNDS_PULL_FACTOR = 0.14;
-/** Prototype `updateCamera()` pan-bounds branch — bleeds 15% of the out-of-bounds axis's velocity each frame it stays clamped. */
-const PAN_BOUNDS_VELOCITY_RETENTION = 0.85;
+/**
+ * 러버밴드 복귀는 **시간에 비례한다** (2026-07-28 코드 리뷰 수정).
+ *
+ * 프로토타입은 프레임당 14% 당기고 속도를 15% 흘렸다 — 60Hz 를 전제한 값이라
+ * **화면 주사율에 따라 감각이 갈린다**: 120Hz(ProMotion)에서는 같은 시간에 두
+ * 배 당겨져 뻣뻣하고, 30fps 로 떨어지면 절반만 당겨져 늘어진다. 발산은 아니고
+ * 감각의 문제지만, 이 저장소의 다른 모든 시각 램프는 이미 `1-exp(-dt/τ)` 형이라
+ * 여기만 프레임 종속이었다(`NODE_DRAG_HEAT_MS` 를 프레임 수 → ms 로 고친 것과
+ * 같은 부류).
+ *
+ * τ 는 **60Hz 에서 옛 값과 정확히 같아지도록** 역산했다 — 그 주사율의 감각을
+ * 기준으로 삼고 나머지 주사율을 거기에 맞춘다.
+ * τ 를 소수로 적어 두지 않고 **옛 값에서 역산**한다 — 손으로 반올림한 상수는
+ * 60Hz 에서조차 옛 감각과 미세하게 어긋나고(실측: 5자리에서 불일치), 그
+ * 어긋남이 어디서 왔는지 다음 사람이 못 읽는다.
+ */
+const REFERENCE_FRAME_SECONDS = 1 / 60;
+/** 프로토타입 `updateCamera()` — 60Hz 기준 프레임당 14% 복귀. */
+const PAN_BOUNDS_PULL_PER_REFERENCE_FRAME = 0.14;
+/** 프로토타입 `updateCamera()` — 60Hz 기준 프레임당 속도 15% 감쇠. */
+const PAN_BOUNDS_VELOCITY_RETENTION_PER_REFERENCE_FRAME = 0.85;
+const PAN_BOUNDS_PULL_TAU_SECONDS =
+  -REFERENCE_FRAME_SECONDS / Math.log(1 - PAN_BOUNDS_PULL_PER_REFERENCE_FRAME);
+const PAN_BOUNDS_VELOCITY_TAU_SECONDS =
+  -REFERENCE_FRAME_SECONDS / Math.log(PAN_BOUNDS_VELOCITY_RETENTION_PER_REFERENCE_FRAME);
 
 /**
  * Prototype `panBounds = bbox(allNodes, 320)` (`docs/prototypes/topology-
@@ -138,12 +159,19 @@ export function clampPointToPanBounds(
   };
 }
 
-function clampAxisToPanBounds(axis: SpringAxisState, min: number, max: number): SpringAxisState {
+function clampAxisToPanBounds(
+  axis: SpringAxisState,
+  min: number,
+  max: number,
+  dt: number,
+): SpringAxisState {
   if (axis.value >= min && axis.value <= max) return axis;
   const target = Math.min(max, Math.max(min, axis.value));
+  const pull = 1 - Math.exp(-dt / PAN_BOUNDS_PULL_TAU_SECONDS);
+  const retention = Math.exp(-dt / PAN_BOUNDS_VELOCITY_TAU_SECONDS);
   return {
-    value: axis.value + (target - axis.value) * PAN_BOUNDS_PULL_FACTOR,
-    velocity: axis.velocity * PAN_BOUNDS_VELOCITY_RETENTION,
+    value: axis.value + (target - axis.value) * pull,
+    velocity: axis.velocity * retention,
   };
 }
 
@@ -164,8 +192,8 @@ export function stepCamera(input: CameraStepInput): CameraAxes {
   };
 
   if (panBounds && !isDragging) {
-    x = clampAxisToPanBounds(x, panBounds.minX, panBounds.maxX);
-    y = clampAxisToPanBounds(y, panBounds.minY, panBounds.maxY);
+    x = clampAxisToPanBounds(x, panBounds.minX, panBounds.maxX, dt);
+    y = clampAxisToPanBounds(y, panBounds.minY, panBounds.maxY, dt);
   }
 
   return { x, y, scale };

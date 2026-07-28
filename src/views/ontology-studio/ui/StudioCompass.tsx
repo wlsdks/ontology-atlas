@@ -16,6 +16,7 @@ import {
 } from "lucide-react";
 import { cn } from "@/shared/lib/cn";
 import { candidateMatches } from "../lib/match-candidate";
+import { studioBoardScale } from "../lib/board-scale";
 import { usePrefersReducedMotion } from "@/shared/lib/use-prefers-reduced-motion";
 import { Select } from "@/shared/ui";
 import type {
@@ -830,9 +831,46 @@ export function StudioCompass(props: StudioCompassProps) {
   const effectiveSummary = saveAllowed ? (props.summary ?? null) : null;
   const previewAvailable = saveAllowed && Boolean(props.deltaPreview?.hasDelta);
 
+  /**
+   * 무대 콘텐츠 폭을 재서 보드를 클램프한다 — 왜 축소인지, 대가가 무엇인지는
+   * `lib/board-scale.ts`. 여기서는 **재는 일만** 한다.
+   *
+   * 초기값 0 은 "아직 안 쟀다" 다 — `studioBoardScale` 이 그때 1 을 돌려주므로
+   * 첫 프레임이 축소로 깜빡이지 않는다.
+   */
+  const [stageWidth, setStageWidth] = useState(0);
+  /**
+   * 무대 폭 관측 — **콜백 ref 로 붙인다**.
+   *
+   * 종전에는 `useLayoutEffect(..., [])` 안에서 `stageRef.current` 를 읽고
+   * 없으면 조용히 빠져나왔다. 그 한 번을 놓치면 deps 가 비어 있어 **다시
+   * 시도하지 않는다** — 그러면 폭이 0 으로 남고, `studioBoardScale(0)` 은
+   * 1 이라 클램프가 아예 안 걸린다. CI 실측에서 정확히 그 모양이 나왔다
+   * (1024 에서 넘침 110px = 배율 1 · 무대 960 · 보드 1180).
+   *
+   * 콜백 ref 는 **노드가 붙는 그 순간** 불리므로 순서 문제가 원리적으로
+   * 없다. 붙을 때 바로 재고(첫 페인트 전), 그 다음부터는 관측에 맡긴다.
+   */
+  const observerRef = useRef<ResizeObserver | null>(null);
+  const attachStage = useCallback((el: HTMLElement | null) => {
+    stageRef.current = el;
+    observerRef.current?.disconnect();
+    observerRef.current = null;
+    if (!el) return;
+    setStageWidth(el.getBoundingClientRect().width);
+    const observer = new ResizeObserver((entries) => {
+      const box = entries[0]?.contentRect;
+      if (box) setStageWidth(box.width);
+    });
+    observer.observe(el);
+    observerRef.current = observer;
+  }, []);
+  useEffect(() => () => observerRef.current?.disconnect(), []);
+  const boardScale = studioBoardScale(stageWidth);
+
   return (
     <main
-      ref={stageRef}
+      ref={attachStage}
       id="main"
       className="relative grid h-[100dvh] min-h-0 grid-rows-[52px_1fr_64px] overflow-hidden bg-[color:var(--color-canvas)]"
       data-testid="studio-compass-stage"
@@ -866,7 +904,7 @@ export function StudioCompass(props: StudioCompassProps) {
             ref={headingRef}
             tabIndex={-1}
             data-testid="studio-stage-heading"
-            className="font-semibold text-[color:var(--color-text-secondary)] outline-none"
+            className="text-body font-semibold text-[color:var(--color-text-secondary)] outline-none"
           >
             {focal.name || "—"}
           </h1>
@@ -930,7 +968,7 @@ export function StudioCompass(props: StudioCompassProps) {
             // 나가도 초안은 남고, 돌아오면 그대로다.
             onClick={onExit}
             data-testid="studio-exit"
-            className="flex h-[30px] items-center gap-1.5 rounded-lg border border-[color:var(--color-border-soft)] px-3 text-caption text-[color:var(--color-text-tertiary)] transition-colors hover:text-[color:var(--color-text-secondary)]"
+            className="flex h-8 items-center gap-1.5 rounded-lg border border-[color:var(--color-border-soft)] px-3 text-label text-[color:var(--color-text-tertiary)] transition-colors hover:text-[color:var(--color-text-secondary)]"
           >
             <span className="text-[color:var(--color-text-quaternary)]">✕</span> {labels.exit}
           </button>
@@ -947,7 +985,7 @@ export function StudioCompass(props: StudioCompassProps) {
         }}
       >
         {/* flow cue — top-left wayfinding */}
-        <div className="absolute left-12 top-8 z-[4] flex items-center gap-3" data-testid="studio-flow-cue">
+        <div className="absolute left-5 top-8 z-[4] flex items-center gap-3" data-testid="studio-flow-cue">
           <MiniRose bearings={bearings} />
           <div className="flex flex-col gap-1">
             <span className="text-label uppercase tracking-[0.05em] text-[color:var(--color-text-quaternary)]">
@@ -1006,10 +1044,15 @@ export function StudioCompass(props: StudioCompassProps) {
             top/bottom stage margins balance in either fill-state (#7). */}
         <div
           className="absolute left-1/2 top-1/2"
+          data-board-scale={boardScale}
           style={{
             width: BOARD.w,
             height: BOARD.h,
-            transform: `translate(-50%, calc(-50% + ${contentOffsetY}px))`,
+            // 축소는 **좌표계를 건드리지 않는다** — 배치·히트테스트 계산은
+            // 전부 보드 px 그대로 두고, 브라우저가 그 위에 배율만 얹는다.
+            // 세로 오프셋은 배율을 곱한다: `translate` 는 부모 좌표계라
+            // 안 곱하면 축소된 콘텐츠가 그만큼 어긋난 자리에 앉는다.
+            transform: `translate(-50%, calc(-50% + ${contentOffsetY * boardScale}px)) scale(${boardScale})`,
           }}
         >
           {/* struts overlay */}
@@ -1267,7 +1310,7 @@ export function StudioCompass(props: StudioCompassProps) {
             data-testid="studio-save"
             disabled={props.canSave === false}
             onClick={runSave}
-            className="flex h-8 items-center gap-2 rounded-lg bg-[color:var(--color-indigo-brand)] px-4 text-caption font-semibold text-white transition-colors hover:bg-[color:var(--color-indigo-hover)] disabled:opacity-40"
+            className="flex h-8 items-center gap-2 rounded-lg bg-[color:var(--color-indigo-brand)] px-4 text-label font-semibold text-white transition-colors hover:bg-[color:var(--color-indigo-hover)] disabled:opacity-40"
           >
             {mode === "create" ? <Check size={15} aria-hidden /> : null}
             {labels.save}

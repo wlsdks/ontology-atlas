@@ -14,7 +14,22 @@ export interface ParsedFrontmatter {
 
 type ParsedScalar = string | number | boolean;
 
-export function parseFrontmatter(raw: string): ParsedFrontmatter {
+export function parseFrontmatter(input: string): ParsedFrontmatter {
+  // 줄바꿈·인코딩 정규화 — **읽기 경로에서만** (2026-07-28 실측).
+  //
+  // CRLF: 줄을 `\n` 으로 쪼개면 각 줄 끝에 `\r` 이 남는데, 블록 리스트
+  // 정규식의 `.` 는 `\r` 을 안 먹고 `$` 는 문자열 끝만 본다 → 매치 실패 →
+  // 리스트가 빈 배열. 스칼라는 `.trim()` 이 구제해서 살아남으므로, 증상이
+  // **"노드는 보이는데 관계만 전부 사라진다"** 는 형태로 나타난다. 경고 0.
+  //
+  // BOM: `raw.startsWith('---')` 가 `\uFEFF---` 에서 false → frontmatter 블록
+  // 전체가 본문으로 넘어가고 `kind:` 가 사라진다. 즉 **그 문서가 그래프에서
+  // 노드 자체로 사라진다**.
+  //
+  // 둘 다 `surfaces.md` 가 명시 지원한다고 적은 인구(Windows Chromium)의
+  // 기본 편집기가 만드는 것이다. 4-way 계약 테스트는 네 파서의 *일치*만
+  // 보장하는데 **넷이 똑같이 틀려서** 통과하고 있었다.
+  const raw = input.replace(/^\uFEFF/, '').replace(/\r\n/g, '\n');
   if (!raw.startsWith('---')) return { frontmatter: {}, body: raw };
   const end = raw.indexOf('\n---', 3);
   if (end === -1) return { frontmatter: {}, body: raw };
@@ -92,9 +107,7 @@ function peekIndentedKind(
 }
 
 function parseInlineList(raw: string): string[] {
-  return raw
-    .slice(1, -1)
-    .split(',')
+  return splitTopLevel(raw.slice(1, -1), ',')
     .map((s) => unquote(s.trim()))
     .filter(Boolean);
 }
@@ -103,9 +116,7 @@ function parseInlineObject(raw: string): Record<string, ParsedScalar> {
   const inner = raw.slice(1, -1).trim();
   if (!inner) return {};
   const out: Record<string, ParsedScalar> = {};
-  // 단순 split — value 안 콤마/콜론은 지원하지 않는다 (충분히 자주 쓰는
-  // x:1, y:2 같은 케이스만 인식).
-  for (const part of inner.split(',')) {
+  for (const part of splitTopLevel(inner, ',')) {
     const cIdx = part.indexOf(':');
     if (cIdx === -1) continue;
     const k = part.slice(0, cIdx).trim();
@@ -125,7 +136,56 @@ function parseScalar(value: string): ParsedScalar {
 }
 
 function unquote(value: string): string {
+  const trimmed = value.trim();
+  // 감싼 따옴표를 벗길 때만 **언이스케이프도 함께** 한다. serializer 가
+  // `"` 를 이스케이프해 쓰는데 여기서 되돌리지 않으면, 저장할 때마다
+  // 백슬래시가 한 겹씩 더 붙는다(실측 3회 왕복: 1개 → 2개 → 4개).
+  // 인용부호 없는 값은 이스케이프 문법이 아니라 원문이므로 건드리지 않는다.
+  const quote = trimmed.length >= 2 ? trimmed[0] : '';
+  if ((quote === '"' || quote === "'") && trimmed[trimmed.length - 1] === quote) {
+    return trimmed.slice(1, -1).replace(new RegExp(`\\\\(${quote}|\\\\)`, 'g'), '$1');
+  }
   return value.replace(/^["']|["']$/g, '');
+}
+
+/**
+ * 따옴표를 아는 구분자 분리 (2026-07-28 실측 수정).
+ *
+ * 종전에는 인라인 리스트/객체를 무조건 콤마로 쪼갰고, 주석이 그 한계를
+ * "지원하지 않는다" 고 적어 두고 있었다. 그런데 값 안의 콤마는 **조용히
+ * 데이터를 자른다** — `labels: { ko: "지도, 검색" }` 의 뒷조각이 사라진다.
+ * 따옴표 안의 구분자는 데이터이지 구분자가 아니다.
+ */
+function splitTopLevel(input: string, separator: string): string[] {
+  const parts: string[] = [];
+  let current = '';
+  let quote: string | null = null;
+  for (let i = 0; i < input.length; i += 1) {
+    const ch = input[i];
+    if (quote) {
+      if (ch === '\\' && i + 1 < input.length) {
+        current += ch + input[i + 1];
+        i += 1;
+        continue;
+      }
+      if (ch === quote) quote = null;
+      current += ch;
+      continue;
+    }
+    if (ch === '"' || ch === "'") {
+      quote = ch;
+      current += ch;
+      continue;
+    }
+    if (ch === separator) {
+      parts.push(current);
+      current = '';
+      continue;
+    }
+    current += ch;
+  }
+  parts.push(current);
+  return parts;
 }
 
 export function firstHeading(body: string): string | null {
@@ -298,3 +358,35 @@ export function extractOutLinksWithContext(
   return { slugs: [...slugs], contexts };
 }
 
+/**
+ * 파일이 원래 쓰던 **줄바꿈과 BOM** — 읽을 때 정규화하고 쓸 때 되돌리기 위한 값.
+ *
+ * 파서는 CRLF·BOM 을 정규화해서 읽는다(그래야 관계가 안 사라진다). 그런데
+ * **쓰는 쪽이 정규화된 모양 그대로 저장하면 남의 파일의 줄바꿈을 말없이
+ * 바꾸는 것**이 된다 — git diff 가 파일 전체로 뜨고, 그건 이 제품이 하지
+ * 않기로 한 종류의 일이다. 그래서 모양을 기억했다가 되돌린다.
+ */
+export interface VaultSourceShape {
+  bom: string;
+  eol: "\n" | "\r\n";
+}
+
+export function readVaultSourceShape(raw: string): VaultSourceShape {
+  return {
+    bom: raw.startsWith("\uFEFF") ? "\uFEFF" : "",
+    // 하나라도 CRLF 면 그 파일은 CRLF 파일이다 — 섞여 있으면 다수가 아니라
+    // 존재로 판정한다(Windows 편집기가 이어서 쓰면 CRLF 로 붙기 때문).
+    eol: raw.includes("\r\n") ? "\r\n" : "\n",
+  };
+}
+
+/** 읽기용 정규화 — BOM 제거 + LF 통일. 파서가 진입부에서 하는 것과 같다. */
+export function normalizeVaultSource(raw: string): string {
+  return raw.replace(/^\uFEFF/, "").replace(/\r\n/g, "\n");
+}
+
+/** 쓰기용 복원 — 원래 파일이 쓰던 모양으로 되돌린다. */
+export function restoreVaultSourceShape(text: string, shape: VaultSourceShape): string {
+  const withEol = shape.eol === "\r\n" ? text.replace(/\n/g, "\r\n") : text;
+  return `${shape.bom}${withEol}`;
+}

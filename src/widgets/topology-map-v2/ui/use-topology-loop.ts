@@ -19,6 +19,7 @@ import {
 } from "react";
 
 import type { CameraAxes, CameraTarget } from "../engine/camera";
+import { MAX_FRAME_DELTA_SECONDS } from "../engine/spring";
 import { cameraTransitionDurationMs, easeCameraKeyframe, type CameraKeyframe, type CameraTween } from "../model/camera-easing";
 import { stepTugAxis, tugFactorForHop, tugFalloffForDistance } from "../interaction/drag-tug";
 import { isCameraUnsettled, isCanvasActive, shouldSkipFrame } from "../model/idle-gate";
@@ -1409,7 +1410,10 @@ export function useTopologyLoop(args: UseTopologyLoopArgs): UseTopologyLoopResul
         return;
       }
 
-      const dt = lastFrameTimeRef.current === 0 ? 0 : Math.min((now - lastFrameTimeRef.current) / 1000, 0.05);
+      const dt =
+        lastFrameTimeRef.current === 0
+          ? 0
+          : Math.min((now - lastFrameTimeRef.current) / 1000, MAX_FRAME_DELTA_SECONDS);
       lastFrameTimeRef.current = now;
 
       // --- A2 유휴 게이트: 활동 플래그를 refs 에서 재평가. 전부 꺼진 채

@@ -47,6 +47,13 @@ import { readFileSync, readdirSync, statSync, existsSync } from 'node:fs';
 import { join, basename, relative } from 'node:path';
 import { validateMeaningProposalAgainstAnalysis } from './meaning-evaluation.mjs';
 
+/**
+ * FSD 모드가 **실제로 훑는** 폴더. 판정 목록과 스캔 목록이 같아야 한다 —
+ * 갈라지면 "이 저장소는 FSD 다" 라고 부르면서 아무것도 안 읽는 상태가 생긴다
+ * (2026-07-28 실측: `src/shared/` 하나로 그 상태에 빠졌다).
+ */
+const FSD_SCAN_ROOTS = ['features', 'entities', 'widgets', 'views'];
+
 const DEFAULT_IGNORE = new Set([
   'node_modules',
   '.git',
@@ -138,14 +145,26 @@ export function analyzeRepoStructure(rootPath, options = {}) {
   }
 
   // framework heuristic — *features/* 만 있어도 fsd 로 (ontology-atlas 자체
-  // 같이 lean FSD). 둘 이상 marker 면 strong fsd.
+  // 같이 lean FSD).
+  //
+  // **판정은 훑을 수 있는 폴더로만 한다** (2026-07-28 도그푸딩 실측 수정).
+  // 종전 marker 목록에는 `shared` 가 있었는데, 그 이름은 아무 TS/Node
+  // 프로젝트에나 흔하다. `src/shared/` 하나만 있어도 fsd 로 판정됐고, 그러면
+  // 아래 FSD 경로가 `features/entities/widgets/views` 만 훑으므로 그중 아무것도
+  // 없는 저장소는 **capabilities 0 · elements 0** 을 조용히 반환했다 — 응답
+  // 어디에도 "framework 판정 때문에 0" 이라는 말이 없이. 같은 호출 안의
+  // `inferImports` 는 같은 저장소에서 기능 폴더를 정확히 뽑아내므로, 두 도구가
+  // 같은 저장소를 두고 서로 다른 말을 하고 있었다.
+  //
+  // 규율: **판정이 읽을 것을 바꾸지 못하면 그 판정을 하지 않는다.** fsd 로
+  // 부르는 유일한 결과가 "훑을 폴더가 없다" 면 그 이름은 억제 말고는 하는
+  // 일이 없다.
   let framework = 'generic';
-  const fsdMarkers = ['features', 'entities', 'widgets', 'shared', 'views'];
   if (srcDir) {
     const subs = readdirSync(srcDir).filter((s) =>
       statSync(join(srcDir, s)).isDirectory(),
     );
-    const fsdHits = subs.filter((s) => fsdMarkers.includes(s)).length;
+    const fsdHits = subs.filter((s) => FSD_SCAN_ROOTS.includes(s)).length;
     if (fsdHits >= 1) framework = 'fsd';
   }
   if (existsSync(join(rootPath, 'next.config.js')) || existsSync(join(rootPath, 'next.config.ts'))) {
@@ -157,10 +176,7 @@ export function analyzeRepoStructure(rootPath, options = {}) {
 
   if (srcDir) {
     // FSD pattern — features/ 가 capability 의 main 영역
-    const fsdRoots =
-      framework === 'fsd'
-        ? ['features', 'entities', 'widgets', 'views']
-        : null;
+    const fsdRoots = framework === 'fsd' ? FSD_SCAN_ROOTS : null;
 
     if (fsdRoots) {
       for (const r of fsdRoots) {

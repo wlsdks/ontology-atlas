@@ -115,7 +115,14 @@ export function AgentClientButtons({
         <div
           role="status"
           data-testid="agent-server-unavailable"
-          className="rounded-md border border-[color:var(--color-status-warning-a36)] bg-[color:var(--color-status-warning-a10)] px-3 py-2.5"
+          // 경고 톤의 알파 사다리는 `--color-amber-source-*` 다(rgb 가
+          // `--color-status-warning` 과 같은 244,183,49). 종전에는 존재하지
+          // 않는 `--color-status-warning-a36/a10` 을 불렀고, **없는 토큰을
+          // 부르는 `var()` 는 문법상 완전히 정상**이라 어떤 게이트도 안
+          // 걸렸다 — 그 동안 이 경고 카드는 테두리가 본문색, 배경이 투명인
+          // 평범한 카드로 렌더됐다(2026-07-28 실측). `text-large` 사고와
+          // 같은 계열: 존재하지 않는 것은 리터럴을 남기지 않는다.
+          className="rounded-md border border-[color:var(--color-amber-source-a35)] bg-[color:var(--color-amber-source-a10)] px-3 py-2.5"
         >
           <div className="flex items-start gap-2">
             <CircleAlert

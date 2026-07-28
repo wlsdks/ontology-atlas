@@ -1,8 +1,8 @@
 #!/usr/bin/env node
 import assert from 'node:assert/strict';
-import { spawnSync } from 'node:child_process';
-import { existsSync, mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
-import { dirname, join } from 'node:path';
+import { execSync, spawnSync } from 'node:child_process';
+import { existsSync, mkdirSync, mkdtempSync, readFileSync, readdirSync, rmSync, writeFileSync } from 'node:fs';
+import { basename, dirname, join } from 'node:path';
 import { tmpdir } from 'node:os';
 import { describe, it } from 'node:test';
 
@@ -189,9 +189,16 @@ describe('package contract helpers', () => {
       `${focusedNode} --test-name-pattern "maintenance" cli/src/integration.test.mjs`,
     );
     assert.equal(pkg.scripts?.['cli:mcp-verify'], 'node cli/src/index.mjs mcp-verify');
-    assert.match(pkg.scripts?.['test:mcp:unit'] ?? '', /mcp\/src\/analyze\.test\.mjs/);
-    assert.match(pkg.scripts?.['test:mcp:unit'] ?? '', /mcp\/src\/vault\.test\.mjs/);
-    assert.match(pkg.scripts?.['test:mcp:unit'] ?? '', /mcp\/src\/json-rpc-lines\.test\.mjs/);
+    // `test:mcp:unit` 은 **글롭으로 찾는다** — 이름을 세 개 박아 두던 종전
+    // 단언은 손으로 적힌 21개 목록을 지켰고, 그 목록이 디스크의 27개와
+    // 갈라져 있었다(2026-07-28 실측: 6개가 빠져 있었고 그중 하나는 실패
+    // 중이었다). 목록이 곧 사정거리인데 목록을 손으로 관리하면 사정거리도
+    // 손으로 줄어든다.
+    //
+    // 그래서 지키는 사실을 바꾼다: "이 세 파일이 목록에 있나" 가 아니라
+    // **"디스크의 모든 단위 테스트가 이 명령에 잡히나"** 다.
+    assert.match(pkg.scripts?.['test:mcp:unit'] ?? '', /mcp\/src\/\*\.test\.mjs/);
+    assert.match(pkg.scripts?.['test:mcp:unit'] ?? '', /integration\.test\.mjs/);
     assert.equal(pkg.scripts?.['integration:mcp'], 'node --test mcp/src/integration.test.mjs');
     assert.equal(
       pkg.scripts?.['integration:mcp:surface'],
@@ -626,6 +633,34 @@ describe('package contract helpers', () => {
       { filteredScripts: { './mcp': mcpPkg.scripts } },
     );
     assertPnpmScriptsExist(Object.values(pkg.scripts).join('\n'), pkg.scripts);
+  });
+
+  /**
+   * 발견이 **실제로 전부를 덮는지** 잰다 — 스크립트 문자열이 글롭처럼 생긴
+   * 것과 그 글롭이 디스크의 모든 파일을 잡는 것은 다른 주장이다.
+   *
+   * 이 검사가 없었다면 `test:mcp:unit` 이 21개를 적어 두고 27개 중 6개를
+   * 조용히 빼는 상태가 그대로 통과했다(그중 `verify-script.test.mjs` 는
+   * 실제로 실패 중이었고, 어느 워크플로도 MCP 를 안 돌려서 아무도 못 봤다).
+   */
+  it('MCP unit script reaches every unit test file on disk', () => {
+    const pkg = JSON.parse(readFileSync('package.json', 'utf-8'));
+    const command = pkg.scripts?.['test:mcp:unit'] ?? '';
+    const discovered = execSync(command.replace(/^node --test /, 'echo '), {
+      encoding: 'utf-8',
+    })
+      .trim()
+      .split(/\s+/)
+      .filter(Boolean)
+      .map((file) => basename(file))
+      .sort();
+
+    const onDisk = readdirSync('mcp/src')
+      .filter((file) => file.endsWith('.test.mjs'))
+      .filter((file) => file !== 'integration.test.mjs')
+      .sort();
+
+    assert.deepEqual(discovered, onDisk);
   });
 
   it('keeps the installed Korean composer blocking proof paired with screenshot evidence', () => {

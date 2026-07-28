@@ -37,7 +37,16 @@ export default defineConfig({
   webServer: {
     // R11 #24 — predev hook (docs-vault build) 까지 같이 도는 pnpm 진입점.
     // CI 에서 cold-start 부터 검증, 로컬에선 이미 띄운 dev 서버 재사용.
-    command: `pnpm dev -p ${webServerPort}`,
+    //
+    // `PLAYWRIGHT_STATIC=1` 이면 **빌드된 정적 export 를 서빙**한다. dev 에는
+    // 없는 층을 재는 스펙이 있기 때문이다 — 2026-07-28 실측: 공방의 같은-라우트
+    // 이동이 프로덕션 export 에서만 죽었고(경로가 같고 쿼리만 다른 push 는
+    // 라우팅 단위가 아니라 no-op), dev 는 슬래시 유무·기제와 무관하게 둘 다
+    // 성공해 **그 결함에 대해 진단력이 0** 이었다. dev 에서만 도는 게이트는
+    // 그 부류의 회귀를 영원히 통과시킨다.
+    command: process.env.PLAYWRIGHT_STATIC
+      ? `node scripts/serve-static-export.mjs --port=${webServerPort}`
+      : `pnpm dev -p ${webServerPort}`,
     url: webServerOrigin,
     reuseExistingServer: !process.env.CI,
     timeout: 120_000,

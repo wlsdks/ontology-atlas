@@ -148,3 +148,49 @@ test("1024px 부터는 공방이 그대로 열린다 — 강등은 폭 축이지
   await page.goto("/ko/ontology/studio/");
   await expect(page.getByTestId("studio-too-narrow")).toHaveCount(0);
 });
+
+/**
+ * 나침 무대의 보드가 화면 밖으로 잘리지 않는다 — **폭 축의 실측 게이트**.
+ *
+ * 2026-07-28 실측: 보드는 고정 1180px 인데 무대 폭이 그보다 좁으면 좌우가
+ * 대칭으로 잘렸다(1024 에서 한쪽 110px, 설치 앱의 최소 폭 1040 에서 102px).
+ * 사라진 것은 여백이 아니라 기능이었다 — 왼쪽 소켓 라벨의 앞 글자와 오른쪽
+ * 위성의 「···」 편집 버튼 **전체**.
+ *
+ * 강등 경계를 올리는 대신 축소를 고른 이유가 이 목록의 1040 이다: 설치 앱의
+ * `minWidth` 가 1040 이라, 경계를 올리면 앱이 자기 최소 크기에서 강등 화면을
+ * 본다. 그 뷰포트를 여기 케이스로 박아 두어 다음 사람이 같은 유혹에 빠지면
+ * 여기서 걸리게 한다.
+ *
+ * 판정은 **rect 로** 한다. "잘려 보이나" 는 사람이 못 재고, 잘림은 정확히
+ * 좌우 넘침 px 이다.
+ */
+for (const width of [1024, 1040, 1180, 1264, 1440]) {
+  test(`${width}px 공방 — 보드가 무대 밖으로 넘치지 않는다`, async ({ page }) => {
+    await page.setViewportSize({ width, height: 900 });
+    await page.goto("/ko/ontology/studio/?guides=off&node=capability%3Aorder-create");
+
+    const stage = page.getByTestId("studio-compass-stage");
+    await expect(stage).toBeVisible();
+
+    const readOverflow = () =>
+      stage.evaluate((el) => {
+        const board = [...el.querySelectorAll<HTMLElement>("[data-board-scale]")][0];
+        if (!board) return null;
+        const s = el.getBoundingClientRect();
+        const b = board.getBoundingClientRect();
+        return { left: s.left - b.left, right: b.right - s.right };
+      });
+
+    expect(await readOverflow(), "보드를 못 찾았다 — 셀렉터가 썩었으면 이 게이트는 무효다").not.toBeNull();
+
+    // 폴링하는 이유: 판정 대상은 "**언젠가** 클램프된다" 가 아니라 "클램프된
+    // 상태로 **머문다**" 이고, 느린 러너에서 첫 프레임을 재면 그건 클램프가
+    // 아니라 스케줄링을 재는 것이 된다. 영영 안 걸리면 여기서 시간 초과로
+    // 터진다 — 실제로 CI 가 그 모양(넘침 110px = 배율 1)으로 결함을 잡았다.
+    await expect
+      .poll(async () => (await readOverflow())!.left, { timeout: 5_000 })
+      .toBeLessThanOrEqual(0);
+    expect((await readOverflow())!.right).toBeLessThanOrEqual(0);
+  });
+}

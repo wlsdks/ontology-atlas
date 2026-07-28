@@ -2,6 +2,7 @@
 // for an existing vault without scaffolding starter markdown.
 
 import { COLORS } from '../lib/colors.mjs';
+import { cliInvocation } from '../lib/self-invocation.mjs';
 import {
   chmodSync,
   existsSync,
@@ -24,6 +25,10 @@ import {
 } from '../lib/cli-args.mjs';
 import { resolveVaultRoot } from '../lib/resolve-vault.mjs';
 import { buildPreCommitHookContent } from '../lib/pre-commit-hook.mjs';
+
+// 「next checks」는 붙여 넣어 실행하라는 블록이다 — 실행 가능한 자기 호출로만
+// 찍는다(`../lib/self-invocation.mjs`).
+const CLI = cliInvocation();
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const PKG_ROOT = resolve(__dirname, '..', '..');
@@ -221,11 +226,11 @@ function buildAgentSetup(parsed) {
     summary,
     files,
     commands: {
-      setupState: `ontology-atlas agent-setup ${shellQuote(vaultRoot)} --root ${shellQuote(codebaseRoot)} --json`,
-      setupRepair: `ontology-atlas agent-setup ${shellQuote(vaultRoot)} --root ${shellQuote(codebaseRoot)} --write`,
+      setupState: `${CLI} agent-setup ${shellQuote(vaultRoot)} --root ${shellQuote(codebaseRoot)} --json`,
+      setupRepair: `${CLI} agent-setup ${shellQuote(vaultRoot)} --root ${shellQuote(codebaseRoot)} --write`,
       restartGuidance: `Restart Claude Code, Cursor, or Codex from ${shellQuote(codebaseRoot)} after repair.`,
-      verify: `ontology-atlas mcp-verify ${shellQuote(vaultRoot)} --timeout-ms 15000`,
-      setupGate: `ontology-atlas agent-brief ${shellQuote(vaultRoot)} --verify-fallbacks --json --fallback-timeout-ms 15000 --fallback-slow-ms 5000 --fallback-concurrency 4`,
+      verify: `${CLI} mcp-verify ${shellQuote(vaultRoot)} --timeout-ms 15000`,
+      setupGate: `${CLI} agent-brief ${shellQuote(vaultRoot)} --verify-fallbacks --json --fallback-timeout-ms 15000 --fallback-slow-ms 5000 --fallback-concurrency 4`,
       graphRunbook: buildGraphRunbookCommands(vaultRoot),
       codexGlobal: [
         'codex',
@@ -519,7 +524,7 @@ function codexConfigForVault(serverCommand, omotVault, repoRootArg) {
 
 function buildGraphRunbookCommands(vaultRoot) {
   return GRAPH_RUNBOOK_STEPS.map((step) =>
-    ['ontology-atlas', step.args[0], shellQuote(vaultRoot), ...step.args.slice(1)]
+    [CLI, step.args[0], shellQuote(vaultRoot), ...step.args.slice(1)]
       .join(' '),
   );
 }

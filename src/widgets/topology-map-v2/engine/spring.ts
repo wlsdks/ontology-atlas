@@ -29,6 +29,28 @@
  * any implementation) so the test is the spec, not a regression snapshot.
  */
 
+/**
+ * 프레임 델타의 상한(초) — 탭을 백그라운드에 두다 돌아왔을 때의 dt 폭증을
+ * 막는다. rAF 루프(`ui/use-topology-loop.ts`)가 이 값으로 자른다.
+ *
+ * **이 값은 스프링의 안정 조건과 한 쌍이다.** semi-implicit Euler 는
+ * `ω·dt` 가 커지면 발산하고, 실측 경계는 **1.0** 이다(ω·dt=0.75 수렴,
+ * 1.00 발산 — `spring.test.ts` 가 이 경계를 케이스로 들고 있다). 발산은
+ * 곧 NaN 이고, NaN 카메라는 모든 투영으로 전파돼 캔버스 전체가 죽는다.
+ *
+ * 그래서 상수를 여기 두고 계약 테스트가 **토큰의 최대 ω × 이 값**을 잰다.
+ * 둘이 다른 파일에 흩어져 있으면 한쪽만 올리는 순간 조용히 경계를 넘는다.
+ */
+export const MAX_FRAME_DELTA_SECONDS = 0.05;
+
+/**
+ * `ω·dt` 안정 경계 — 이 값 이상이면 발산한다(실측).
+ *
+ * 계약 테스트가 여유를 재는 기준이다. 숫자를 여기 한 번만 적어 두고
+ * 테스트가 참조한다 — 두 곳에 적으면 갈라진다.
+ */
+export const SPRING_STABILITY_LIMIT = 1.0;
+
 export interface SpringAxisState {
   /** Current value — world x/y, or camera scale (unit-agnostic). */
   value: number;

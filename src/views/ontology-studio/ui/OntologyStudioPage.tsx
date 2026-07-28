@@ -1,7 +1,6 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { useSearchParams } from "next/navigation";
 import { useLocale, useTranslations } from "next-intl";
 import { useRouter } from "@/i18n/navigation";
 import {
@@ -54,6 +53,10 @@ import {
   resolveStudioWriteTarget,
   type StudioWriteTarget,
 } from "../lib/resolve-write-target";
+import {
+  useStudioNavigate,
+  useStudioSearchParams,
+} from "../lib/use-studio-search-params";
 import { buildMaterializeDraft, planStudioCommit } from "../lib/plan-studio-commit";
 import { buildPickerDiscovery } from "../lib/build-picker-discovery";
 import { buildDeltaPreview } from "../lib/build-delta-preview";
@@ -84,8 +87,6 @@ import { StudioMaterializeDialog, type StudioMaterializeLabels } from "./StudioM
  * bearing-grouping data model.
  */
 
-const STUDIO_BASE = "/ontology/studio";
-const CREATE_HREF = `${STUDIO_BASE}?mode=create`;
 
 const CREATE_KINDS: CreateNodeKind[] = ["project", "domain", "capability", "element"];
 
@@ -112,7 +113,8 @@ export function OntologyStudioPage() {
   const locale = useLocale();
   // C12③ — the secondary display-name locale is the OTHER of the two app locales.
   const secondaryLocale = locale === "en" ? "ko" : "en";
-  const searchParams = useSearchParams();
+  const searchParams = useStudioSearchParams();
+  const navigateStudio = useStudioNavigate();
   const router = useRouter();
   const { insight } = useOntologyInsight();
   const mode = useDataSourceMode();
@@ -144,25 +146,6 @@ export function OntologyStudioPage() {
   const insightsReviewId = insightsReturnTab
     ? searchParams.get(ONTOLOGY_DEEPLINK_REVIEW_KEY)
     : null;
-  const preserveReviewContext = useCallback(
-    (href: string) => {
-      if (!insightsReturnTab) return href;
-      const next = new URL(href, "http://ontology-atlas.local");
-      next.searchParams.set(
-        ONTOLOGY_DEEPLINK_VIA_KEY,
-        `insights:${insightsReturnTab}`,
-      );
-      if (insightsReviewId) {
-        next.searchParams.set(
-          ONTOLOGY_DEEPLINK_REVIEW_KEY,
-          insightsReviewId,
-        );
-      }
-      return `${next.pathname}${next.search}`;
-    },
-    [insightsReturnTab, insightsReviewId],
-  );
-
   const nodes = useMemo(() => insight?.nodes ?? [], [insight]);
   const edges = useMemo(() => insight?.edges ?? [], [insight]);
   const writable = mode === "local" && localVault.status === "loaded";
@@ -309,8 +292,8 @@ export function OntologyStudioPage() {
   );
 
   const enterCreate = useCallback(
-    () => router.push(preserveReviewContext(CREATE_HREF)),
-    [router, preserveReviewContext],
+    () => navigateStudio(new URLSearchParams({ mode: "create" })),
+    [navigateStudio],
   );
   const exit = useCallback(
     () =>
@@ -320,18 +303,13 @@ export function OntologyStudioPage() {
               insightsReturnTab,
               insightsReviewId,
             )
-          : "/topology",
+          : "/topology/",
       ),
     [router, insightsReturnTab, insightsReviewId],
   );
   const openNode = useCallback(
-    (id: string) =>
-      router.push(
-        preserveReviewContext(
-          `${STUDIO_BASE}?node=${encodeURIComponent(id)}`,
-        ),
-      ),
-    [router, preserveReviewContext],
+    (id: string) => navigateStudio(new URLSearchParams({ node: id })),
+    [navigateStudio],
   );
 
   // Candidate picker for a relation — allowed kinds (per bearing × focal kind,
@@ -1281,7 +1259,7 @@ export function OntologyStudioPage() {
           rel: ctx.relation,
         });
         if (ctx.query.trim()) params.set("name", ctx.query.trim());
-        router.push(preserveReviewContext(`${STUDIO_BASE}?${params.toString()}`));
+        navigateStudio(params);
       }}
       searchNodes={candidates}
       onOpenNode={openNode}

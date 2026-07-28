@@ -419,6 +419,31 @@ export function createTopologyPointerHandlers(refs: PointerHandlerRefs): Topolog
   };
 
 
+  /**
+   * 후보 캐시 — **같은 입력이면 다시 만들지 않는다** (2026-07-28 코드 리뷰 수정).
+   *
+   * 이 함수는 노드 전량 필터(O(N)) + 엣지 전량 투영(O(E), 엣지마다 좌표 변환
+   * 세 번 + Map 조회 두 번) + 배열 전량 할당을 한다. 그런데 호출 지점이
+   * **노드에 안 걸린 지점의 모든 `pointermove`** 다 — 최대 ~125Hz. 배경 위에서
+   * 마우스를 움직이는 것만으로 프레임마다 그래프 전체를 훑고 새 배열을 만든다.
+   * 97노드 도그푸드에선 안 보이지만 이 엔진의 설계 목표는 2~3k 노드다.
+   *
+   * 그런데 그 프레임들의 입력은 **대부분 같다** — 카메라가 멈춰 있으면 후보도
+   * 그대로다. 그래서 입력이 하나라도 달라질 때만 다시 만든다. 팬·줌 중에는
+   * 카메라 값이 매 프레임 달라지므로 자연히 매번 재계산되고(그때는 정확성이
+   * 우선), 정지 상태의 호버에서는 첫 프레임 이후 전부 캐시 적중이다.
+   *
+   * 키에 `world` 참조가 들어가므로 그래프가 갈리면 즉시 무효화된다.
+   */
+  let edgeCandidateCache: {
+    key: string;
+    world: unknown;
+    clusteredIds: unknown;
+    realmTierKinds: unknown;
+    tierReveal: unknown;
+    value: EdgeHitCandidate[];
+  } | null = null;
+
   /** P3b/P3c 공용 — 현재 tier 에서 양 끝이 히트 가능한 엣지의 스크린 투영 후보. */
   const buildEdgeCandidates = (): EdgeHitCandidate[] => {
     const world = worldRef.current;
@@ -429,12 +454,38 @@ export function createTopologyPointerHandlers(refs: PointerHandlerRefs): Topolog
     const overviewEntryScale = overviewScaleRef.current * tokens.overviewEntryRatio;
     const zoomRatio = computeZoomRatio(cameraRef.current.scale.value, overviewEntryScale);
     const focusedNodeId = focusedSlugRef.current;
-    const neighborsOfFocused = focusedNodeId ? world.neighborMap.get(focusedNodeId) : undefined;
+    // 캐시 키 — 후보 목록을 정하는 모든 입력. 카메라 세 축이 들어가므로
+    // 팬/줌 중에는 매 프레임 새 키가 되고, 정지 상태에서는 같은 키가 된다.
+    const cacheKey = [
+      cameraRef.current.x.value,
+      cameraRef.current.y.value,
+      cameraRef.current.scale.value,
+      width,
+      height,
+      zoomRatio,
+      focusedNodeId ?? "",
+    ].join("|");
+    // 집합·맵은 **참조로** 비교한다 — 크기만 보면 같은 크기의 다른 내용이
+    // 통과한다(가장 조용한 종류의 캐시 오류다). 이 값들은 새 객체로 교체되지
+    // 제자리에서 고쳐지지 않으므로 참조 비교가 정확하다.
     const clusteredIds = clusteredIdsRef?.current;
     const realmTierKinds = realmTierKindsRef?.current ?? null;
+    const tierReveal = tierRevealRef?.current ?? DEFAULT_TIER_REVEAL;
+    if (
+      edgeCandidateCache &&
+      edgeCandidateCache.world === world &&
+      edgeCandidateCache.key === cacheKey &&
+      edgeCandidateCache.clusteredIds === clusteredIds &&
+      edgeCandidateCache.realmTierKinds === realmTierKinds &&
+      edgeCandidateCache.tierReveal === tierReveal
+    ) {
+      return edgeCandidateCache.value;
+    }
+
+    const neighborsOfFocused = focusedNodeId ? world.neighborMap.get(focusedNodeId) : undefined;
     const hittable = new Set(
       world.nodes
-        .filter((n) => isNodeHittable(n, zoomRatio, focusedNodeId, neighborsOfFocused, tierRevealRef?.current ?? DEFAULT_TIER_REVEAL, clusteredIds, realmTierKinds))
+        .filter((n) => isNodeHittable(n, zoomRatio, focusedNodeId, neighborsOfFocused, tierReveal, clusteredIds, realmTierKinds))
         .map((n) => n.id),
     );
     // 히트테스트 역전 방지(패널3-S3) — 끝 노드 몸통 반경(스크린 px)을
@@ -459,6 +510,7 @@ export function createTopologyPointerHandlers(refs: PointerHandlerRefs): Topolog
         bRadius: bodyRadius(edge.targetId),
       });
     }
+    edgeCandidateCache = { key: cacheKey, world, clusteredIds, realmTierKinds, tierReveal, value: candidates };
     return candidates;
   };
 
