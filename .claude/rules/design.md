@@ -226,13 +226,21 @@ value 안에 박힌 진짜 위반은 0건**이었다. 나머지는 전부 정당
 "모든 hex 금지" 는 **27건의 소음만 만들고 잡을 신호가 0** 이다. arbitrary value
 안으로 좁히면 오늘 0건 · 미래 유입만 차단한다.
 
-### ⚠️ flat config 3-블록 함정
+### ⚠️ flat config 다중 블록 함정
 
-`eslint.config.mjs` 는 `no-restricted-syntax` 를 **세 블록**(전역 · migrated ·
-R6)에서 재정의한다. flat config 는 rule option 배열을 **병합하지 않고 교체**
-하므로, 새 셀렉터를 한 블록에만 넣으면 뒤 블록이 덮어써서 **조용히 무력화**된다.
-셀렉터는 반드시 공유 배열(`arbitrarySizeSelectors`)에 넣어 세 블록이 함께
-스프레드하게 한다.
+`eslint.config.mjs` 는 `no-restricted-syntax` 를 여러 블록에서 재정의한다.
+flat config 는 rule option 배열을 **병합하지 않고 교체**하므로, 새 셀렉터를 한
+블록에만 넣으면 뒤 블록이 덮어써서 **조용히 무력화**된다. 셀렉터는 반드시 공유
+배열(`arbitrarySizeSelectors`)에 넣어 모든 블록이 함께 스프레드하게 한다.
+
+**정정(2026-07-28 실측)**: 이 절은 오래 "세 블록" 이라 적어 왔지만, 램프
+셀렉터를 스프레드하는 블록은 **둘**(`codexMigratedGlobs` error ·
+`codexR6Globs` warn)이다. 세 번째 블록은 `scaleGradientSelectors` 만 전역
+적용한다. 차이가 중요하다 — 그 **두 글롭 밖의 경로에는 램프 룰이 아예 없다**
+(`src/entities/**`, `src/views/{home,ontology-studio,project-detail,git,…}`,
+`src/shared/{lib,config,motion}`, `app/**`). 그건 결함이 아니라 문서화된
+설계이고 래칫(`type-ramp-coverage`)이 붙들지만, "3 블록" 이라는 문구는 다음
+사람에게 **커버리지를 과대평가하게** 만든다.
 
 ### 룰을 켜기 전 반드시 측정한다
 

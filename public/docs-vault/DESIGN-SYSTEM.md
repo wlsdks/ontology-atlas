@@ -87,8 +87,8 @@ Topology inspection, Workshop writing, Insights maintenance, and source docs.
 | **Signal (신호)** | `--topology-v2-indigo`(=`--color-indigo-brand`) · `--topology-v2-indigo-bright` · `--topology-v2-amber-hub` · `--topology-v2-panel-power-on/-off` | 전원/펄스/포커스/허브. 상태 설명 없는 신호색 금지 |
 | **선택·전개 사다리 (Selection ladder)** | `--topology-v2-indigo`(노드 선택, **실선**) · `--topology-v2-edge-selected`(엣지 페어 포커스, pale 인디고) · `--topology-v2-expanded-cohort`(전개 코호트, **탈채도 인디고 파선**) | 세 상태가 **같은 인디고 축** 안에서 채도·값·기하(실선/파선)로만 갈린다 — 새 hue 추가 금지. 전개 코호트 = 클러스터 칩(`+N`)으로 드러난 직속 자식의 소속 링(부모는 채도 있는 인디고 파선 오라로 주인공 유지). 소유자 요청 "확장한거는 선택 파란색과 다르게 구분" 의 헌장 내 답 |
 | **Density · geometry (밀도)** | `--topology-v2-radius-*` · `--topology-v2-layout-ring-*` · `--topology-v2-edge-bow/-blend-*` · `--topology-v2-star-count` · `--topology-v2-dust-area-per-point` · `--topology-v2-safe-inset-*` · `--topology-v2-panel-width/-pad/-gap/-radius/-row-radius` · `--topology-v2-label-max-width` | world-unit 숫자(단위 없음, canvas 소비)와 px(DOM 소비)가 섞여 있다 — 주석의 소비처 표기를 지켜라 |
-| **INDEX 패널 geometry** (B3) | `--topology-index-width`(300px) · `--topology-index-tab-width`(26px) · `--topology-index-inset`(18px) · `--topology-index-top`(76px) | `TopologyIndexPanel`/`TopologyIndexTab` 전용 — px, DOM 전용(canvas 미소비). 표면/보더/그림자/패딩은 새로 만들지 않고 위 `--topology-v2-panel-*` (Surface tier) 재사용. `-top` 은 owner live-QA 결함 수정 — `topology-top-left-chrome-group` (Relief 브랜드 pill) 이 이미 top-32px 대를 쓰므로 INDEX/tab 은 그 아래(`TopologyAnalysisBar` 가 쓰던 동일 clearance)에서 시작 |
-| **Motion** | `--topology-v2-camera-*`(spring/damping/momentum/flick/**-max-zoom-ratio**) · `--topology-v2-altitude-*-ratio` · `--topology-v2-overview-entry-ratio` · `--topology-v2-focus-*` · `--topology-v2-emphasis-*-tau` · `--topology-v2-ripple-stagger-ms` · `--topology-v2-breathe-*` · `--topology-v2-pulse-duration-ms` · `--topology-v2-tip-fade-ms` · `--topology-v2-edge-pulse-speed[-ego]` · `--topology-v2-drag-tug-1hop/-2hop` | 캔버스 유체성 전용. DOM chrome 은 기존 `--topology-motion-*` (180/420/720ms) 사용. `camera-max-zoom-ratio` 는 뷰포트-상대 실효 줌 상한(C1 A1), `drag-tug-1hop/-2hop` 은 노드 드래그 시 이웃 전파 계수(C1 B1). 다이브줌 fix: `camera-spring-angfreq` 가 `-interactive`(12, 휠 줌 스케일축+팬, 크리스프 0.40s)/`-transition`(4.7, 포커스 다이브·해제·재배치·fit-view, 시네마틱 1.0s)로 분리 — 이전 단일값(2.941)은 휠 줌마저 다이브만큼 느리게 느껴지게 했다. `focus-bbox-margin` 은 이제 곱셈 비율(1.15, 이전엔 고정 70px) — 다이브가 ego bbox 전체를 필요 이상으로 깊게 확대하던 문제(owner: 과확대·라벨 충돌)를 고쳤다 |
+| **INDEX 패널 geometry** (B3) | `--topology-index-width`(300px) · `--topology-index-tab-width`(26px) · `--topology-index-inset`(= `--chrome-inset`, 24px) · `--topology-index-top`(84px) | `TopologyIndexPanel`/`TopologyIndexTab` 전용 — px, DOM 전용(canvas 미소비). 표면/보더/그림자/패딩은 새로 만들지 않고 위 `--topology-v2-panel-*` (Surface tier) 재사용. `-top` 은 owner live-QA 결함 수정 — `topology-top-left-chrome-group` (Relief 브랜드 pill) 이 이미 top-32px 대를 쓰므로 INDEX/tab 은 그 아래(`TopologyAnalysisBar` 가 쓰던 동일 clearance)에서 시작 |
+| **Motion** | `--topology-v2-camera-*`(spring/damping/momentum/flick/**-max-zoom-ratio**) · `--topology-v2-altitude-*-ratio` · `--topology-v2-overview-entry-ratio` · `--topology-v2-focus-*` · `--topology-v2-emphasis-*-tau` · `--topology-v2-ripple-stagger-ms` · `--topology-v2-breathe-*` · `--topology-v2-pulse-duration-ms` · `--topology-v2-tip-fade-ms` · `--topology-v2-edge-pulse-speed[-ego]` · `--topology-v2-drag-tug-1hop/-2hop` | 캔버스 유체성 전용. DOM chrome 은 기존 `--topology-motion-*` (180/420/720ms) 사용. `camera-max-zoom-ratio` 는 뷰포트-상대 실효 줌 상한(C1 A1), `drag-tug-1hop/-2hop` 은 노드 드래그 시 이웃 전파 계수(C1 B1). 다이브줌 fix: `camera-spring-angfreq` 가 `-interactive`(15, 휠 줌 스케일축+팬, 크리스프)/`-transition`(4.7, 포커스 다이브·해제·재배치·fit-view, 시네마틱 1.0s)로 분리 — 이전 단일값(2.941)은 휠 줌마저 다이브만큼 느리게 느껴지게 했다. `focus-bbox-margin` 은 이제 곱셈 비율(1.15, 이전엔 고정 70px) — 다이브가 ego bbox 전체를 필요 이상으로 깊게 확대하던 문제(owner: 과확대·라벨 충돌)를 고쳤다 |
 | **Chrome density (전역)** | `--topology-chrome-control-height[-compact]` · `--topology-chrome-badge-size[-compact]` · `--topology-chrome-icon-size[-sm]` · `--topology-chrome-gap/-radius/-title-size/-eyebrow-size/-shadow` (+ `--topology-utility-lane-*` alias) | 계기 밀도의 단일 기준. 새 페이지의 데스크톱 컨트롤 클러스터는 이 값을 상속 — 터치 크기 인플레이션 재도입 금지 |
 
 **스코프 주의**:
@@ -2119,7 +2119,7 @@ Tailwind v4 `--radius-*` 네임스페이스가 `rounded-<step>` 를 생성한다
 
 | 박스 | 높이 | radius | 패딩 | 타이포 단 |
 |---|---|---|---|---|
-| 크롬 타일 (ChromeTile) | `--chrome-tile-size` 44px | `--chrome-radius` 10px | `--chrome-inset` 정렬 | 아이콘 16px |
+| 크롬 타일 (ChromeTile) | `--chrome-tile-size` 36px | `--chrome-radius` 10px | `--chrome-inset` 정렬 | 아이콘 16px |
 | 상태 칩 (`CHROME_STATUS_CHIP_CLASS`) | 44px (타일과 동일) | `--chrome-radius` 10px | `px-3.5` | body / label |
 | 패널 (INDEX · 데이터시트) | 콘텐츠 | `--topology-v2-panel-radius` 12px (= `rounded-panel`) | `--topology-v2-panel-pad` | title 헤더 · body 행 |
 | 팝오버 (ego popover) | 콘텐츠 | `rounded-panel` | `--card-pad` | title + body/label |
@@ -2197,7 +2197,7 @@ Topology chrome (브랜드 pill · 상단 HUD lane · INDEX 패널 · 이후 좌
 
 ### 타일 / 칩 / 필 / 패널 4계층
 
-- **타일 (ChromeTile)** — 44px 정사각(`--chrome-tile-size`) 아이콘 버튼. 목적지
+- **타일 (ChromeTile)** — 36px 정사각(`--chrome-tile-size`) 아이콘 버튼. 목적지
   1개 = 타일 1개 (전체 보기, 문서함, 빌더 등). `href` 를 주면 링크, 없으면 버튼.
 - **칩 (ChromeChip)** — 44px 높이 라벨 버튼. 아이콘(14px) + 텍스트 + 선택적
   `kbd` 캡. 자동 정렬 · 검색 · 작업공간처럼 라벨이 의미의 일부인 컨트롤.
@@ -2215,7 +2215,7 @@ Topology chrome (브랜드 pill · 상단 HUD lane · INDEX 패널 · 이후 좌
 
 | 규격 | 토큰 | 값 | 대상 |
 |---|---|---|---|
-| 크롬 타일 높이 | `--chrome-tile-size` | 44px | ChromeTile · ChromeChip · 상태 칩(영역·복귀·경로) — **단일 규격** |
+| 크롬 타일 높이 | `--chrome-tile-size` | 36px | ChromeTile · ChromeChip · 상태 칩(영역·복귀·경로) — **단일 규격** |
 | 타일/칩/필 radius | `--chrome-radius` | 10px | 위 모든 크롬 표면 |
 | inner radius | `--chrome-radius-inner` | 7px | 타일 안에 중첩되는 소형 컨트롤 |
 | 키캡 radius | (kbd) | 4px | `<kbd>` 단축키 캡 |
@@ -2270,7 +2270,7 @@ Topology chrome (브랜드 pill · 상단 HUD lane · INDEX 패널 · 이후 좌
 
 ### 토큰
 
-- `--chrome-tile-size: 44px` · `--chrome-radius: 10px` · `--chrome-radius-inner: 7px`
+- `--chrome-tile-size: 36px` · `--chrome-radius: 10px` · `--chrome-radius-inner: 7px`
 - `--chrome-icon: 16px` (ChromeTile 아이콘) — ChromeChip 아이콘은 14px(칩 자체
   클래스가 강제, 별도 토큰 없음 — 칩은 타일보다 조밀한 밀도라 이 폭이 시안
   실측값).

@@ -2012,7 +2012,7 @@ function DocsVaultContent() {
           // 를 함께 차단한다 (React 19 boolean inert).
           inert={docListCollapsed}
           style={{ width: docListCollapsed ? 0 : 'var(--docs-list-width)' }}
-          className={`hidden flex-none flex-col overflow-hidden bg-[color:var(--color-panel)] transition-[width] duration-[180ms] ease-out lg:flex ${
+          className={`hidden flex-none flex-col overflow-hidden bg-[color:var(--color-panel)] transition-[width] duration-[var(--motion-base)] ease-[var(--motion-ease)] lg:flex ${
             docListCollapsed ? '' : 'border-r border-[color:var(--color-border-soft)]'
           }`}
         >

@@ -182,7 +182,14 @@
        1 = coach-mark / 캔버스에 붙는 임시 힌트·툴바·레일·인라인 인계
        2 = popover  / 헤더 앵커 팝오버·관계 컴포저 (앵커된 패널)
        3 = dialog   / 중앙 모달·확인 다이얼로그 (scrim 동반 최상단)
-     값은 기존 8종 중 계층별 대표값을 골라 alpha 토큰과 합성. */
+     값은 기존 8종 중 계층별 대표값을 골라 alpha 토큰과 합성.
+
+     ⚠️ **이 수렴은 다시 흩어졌다** (2026-07-28 실측: 손 튜닝 기하 **35종**).
+     그림자 lint 가 `var(` 있는 값을 통째로 면제해서 **색만 토큰이고 기하는
+     자유**인 상태가 됐기 때문이다. 즉 위 문단은 지금 상태의 서술이 아니라
+     **의도의 서술**이다. 재수렴은 별도 패스의 일이고(광원 역전 2건·계층
+     역전 1건·색 있는 키 그림자 2건이 그 안에 있다), 그때까지 이 주석이
+     현실을 대신 말하지 않도록 여기 적어 둔다. */
   --shadow-elevation-1: 0 18px 40px var(--color-shadow-a35);
   --shadow-elevation-2: 0 24px 72px var(--color-shadow-a42);
   --shadow-elevation-3: 0 24px 80px var(--color-shadow-a46);
@@ -625,7 +632,7 @@
      `--topology-v2-panel-pad` 가 단일 출처다. (2026-07-26) */
 
   /* Codex 인덱스 — 기하/모션 토큰은 이 파일 하단에 이미 정의됨:
-     · --chrome-tile-size (44px) 크롬 타일 정사각
+     · --chrome-tile-size (36px) 크롬 타일 정사각
      · --topology-motion-* / --topology-*-duration 모션 패밀리(180ms 크롬,
        200~420ms 카메라, damping/response spring 패밀리)
      전체 규격 표는 docs/DESIGN-SYSTEM.md "Geometry & Type Codex". */
@@ -2067,7 +2074,10 @@
        이 토큰도 `--motion-base` 참조로 봉합할 수 있지만 아직 안 했다 — 봉합과
        짝을 이루는 이징 동반 규칙이 투어 스크림/컷아웃 3곳의 커브까지 함께
        바꾸게 되어, 값 무변경이 아니라 별도 프레임 증거가 필요한 변경이 된다. */
-    --topology-tour-transition-ms: 180ms;
+    /* 같은 180ms 를 손잡이 두 개로 갈라 두면 언젠가 한쪽만 돌아간다 —
+       바로 위에서 focus/panel 을 그 이유로 이미 접었는데 투어만 남아 있었다.
+       램프를 직접 가리킨다(값 동일, 렌더 무변). */
+    --topology-tour-transition-ms: var(--motion-base);
     --topology-blocking-map-opacity: 0.24;
     --topology-blocking-map-filter: saturate(0.58);
     --topology-blocking-composer-top: clamp(7.5rem, 12vh, 9.5rem);
@@ -2327,8 +2337,12 @@
        draw calls. It borrows this section's kind fill/stroke tokens for its
        glyph and needs one extra: a hairline top-inset highlight ("machined
        edge") the canvas-2D sheen has no DOM equivalent for. Dark-only, same
-       precedent as `--topology-v2-node-sheen-*` above. */
-    --topology-v2-builder-node-sheen: inset 0 1px 0 rgba(255, 255, 255, 0.05);
+       precedent as `--topology-v2-node-sheen-*` above.
+
+       ⚠️ 2026-07-28 — 이 토큰(`--topology-v2-builder-node-sheen`)은 **삭제됐다**.
+       사용 0회였고, 그 소비처였던 xyflow ERD 빌더는 2026-07-24 에 은퇴했다.
+       이름("광택")이 남아 있는 동안 다음 사람이 그것을 glow 허가로 읽을 수
+       있었다 — 아무도 안 쓰는 토큰은 규격이 아니라 오정보다. */
     /* canvas-emphasis 슬라이스 (소유자: "중앙(프로젝트 노드)이 뭔가 다르게
        빛나야") — 발광 대신 재질(design.md "발광 대신 재질"). 프로젝트 헥사곤
        전용 이중 헤어라인 + 핀틱 색. 외곽 스트로크 자체는 --topology-v2-amber-hub
