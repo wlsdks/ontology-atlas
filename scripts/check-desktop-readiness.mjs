@@ -806,7 +806,10 @@ if (
   featuresDoc.includes("lets you open your own local vault folder from the browser") &&
   productDirectionDoc.includes("Ontology Atlas") &&
   productDirectionDoc.includes("The Tauri bundle product name") &&
-  productDirectionDoc.includes("CLI · installed macOS app") &&
+  // 2026-07-28: npm 채널 폐기(#736)로 이 문장이 "설치 앱이 MCP 서버를 싣는다"
+  // 까지 말하게 바뀌었다. 옛 나열 순서를 요구하던 리터럴을 새 문장으로 옮긴다 —
+  // 게이트가 지키려는 것(설치 앱 + CLI 가 일상 표면)은 그대로다.
+  productDirectionDoc.includes("installed macOS app (carrying the MCP server) + CLI as the daily workbench") &&
   productDirectionDoc.includes("hosted website is the product introduction and download entry point") &&
   desktopDoc.includes("Ontology Atlas") &&
   desktopDoc.includes("current release") &&
@@ -835,8 +838,11 @@ if (
   developmentChecksDoc.includes("Firebase SDK, Firebase Admin, and Firebase CLI dependencies") &&
   developmentChecksDoc.includes("separate Hosting deploy toolchain") &&
   demoStoryboardDoc.includes("설치된 Ontology Atlas macOS 앱") &&
-  redditPostsDoc.includes("macOS desktop app that wraps the same Next.js static") &&
-  redditPostsDoc.includes("hosted website is only the product intro and download entry point")
+  // 2026-07-28: #736 이 npm 전제를 걷으며 이 문단을 다시 썼다. 앱이 같은 `.md`
+  // 를 네이티브 브리지로 읽고 쓴다는 사실과, 웹은 소개·다운로드 입구라는 역할
+  // 분담이 요구 사항이다 — 그걸 말하는 새 문장으로 옮긴다.
+  redditPostsDoc.includes("reads/writes the same `.md` files through a local native") &&
+  redditPostsDoc.includes("hosted website is the product intro and download")
 ) {
   pass("workflow, troubleshooting, publish, and launch docs route writable vault work through the desktop app");
 } else {
