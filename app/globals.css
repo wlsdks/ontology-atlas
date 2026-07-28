@@ -707,6 +707,47 @@
 
   /* 2) 피커 열림 원점 스케일 — 소켓(앵커)에서 자라난다. transform-origin 은
      소비처가 --studio-picker-origin 으로 소켓의 로컬 좌표를 주입. */
+  /* ── 채움 확정의 안무 (2026-07-28, 소유자 "세팅할때마다 뭔가 움직이면서") ──
+     실측: 채움의 절정(제안 선택 → 위성 등장)에서 **아무것도 이동하지
+     않았다**. 피커·소켓이 0프레임에 사라지고 완성된 위성이 0프레임에
+     나타난다. "내가 방금 구조 한 조각을 지었다" 는 감각은 재료가 자리로
+     *가는* 것을 볼 때 생기는데, 그 프레임이 없었다.
+
+     그래서 새 위성은 **자기 소켓이 있던 방향에서 걸어 들어온다**. 방위마다
+     들어오는 축이 다르므로(위/아래/좌/우) 어느 소켓이 이 위성이 됐는지를
+     이동이 말한다 — 끄면 그 대응을 잃으므로 정보다.
+
+     확정 램프(240ms)를 쓰는 이유: 이건 호버 확인이 아니라 **일이 끝났다는
+     서명**이다. 하루 몇 번의 사건이라 빈도 예산도 맞는다.
+
+     이동은 12px 이내, transform·opacity 뿐. glow·파티클·rarity 없음 —
+     게임 예외는 2026-07-24 에 폐기됐고 공방도 예외가 아니다. */
+  .studio-fill-arrive {
+    animation: studioFillArrive var(--motion-settle) var(--motion-ease) both;
+  }
+
+  @keyframes studioFillArrive {
+    from {
+      opacity: 0;
+      transform: translate(var(--studio-fill-from-x, 0), var(--studio-fill-from-y, 0));
+    }
+    to {
+      opacity: 1;
+      transform: translate(0, 0);
+    }
+  }
+
+  /** 감속 동등물 — 이동축 제거, 불투명도만. 대응 정보는 방위별 소켓이
+      비워지는 것으로도 읽히므로 여기서 이동을 빼도 길을 잃지 않는다. */
+  @keyframes studioFillArriveReduced {
+    from {
+      opacity: 0;
+    }
+    to {
+      opacity: 1;
+    }
+  }
+
   @keyframes studioPickerPop {
     from {
       opacity: 0;
@@ -908,6 +949,50 @@
   .git-fade-in {
     animation: panelCrossfadeIn var(--motion-fast) var(--motion-ease) both;
     animation-delay: calc(var(--git-row-index, 0) * var(--git-row-stagger));
+  }
+
+  /* ── 커밋 확정의 서명 (2026-07-28 모션 감사 「기록」 자리) ─────────────────
+     이 표면 최대의 확정인데 `--motion-settle` 사용이 **0회**였다. 남기기를
+     누르면 다섯 표면이 동시에 하드 스왑하고 결과 한 줄만 120ms 페이드로
+     온다 — "썼다" 는 알겠는데 **"어디에 박혔는지"** 를 아무것도 안 보여준다.
+
+     그래서 방금 생긴 **그 한 줄만** 확정 램프로 정착시킨다. 이미 있던 역사가
+     다시 태어나면 안 되므로 나머지 행은 손대지 않는다(그 행들은 DOM 이
+     재사용돼 애니메이션이 재생되지 않는다 — key 가 커밋 해시다).
+
+     이동축은 2px 이내다. 확정의 서명은 **불투명도와 색**이 진다 — 왼쪽
+     경계선이 인디고로 섰다가 제자리 색으로 가라앉는 것이 "방금 사실이 됐다"
+     는 진술이고, 그건 끄면 잃는 정보다(어느 줄이 방금 것인지).
+
+     glow/파티클 없음 — 게임 예외는 2026-07-24 에 폐기됐고 여기도 예외가
+     아니다. 중독은 파티클이 아니라 루프에서 온다. */
+  .git-commit-settle {
+    animation: gitCommitSettle var(--motion-settle) var(--motion-ease) both;
+  }
+
+  /** 감속 동등물 — 이동축 제거, 불투명도·색은 유지(정보를 뺏지 않는다). */
+  @keyframes gitCommitSettleReduced {
+    from {
+      opacity: 0;
+      border-left-color: var(--color-indigo-brand);
+    }
+    to {
+      opacity: 1;
+      border-left-color: transparent;
+    }
+  }
+
+  @keyframes gitCommitSettle {
+    from {
+      opacity: 0;
+      transform: translateY(-2px);
+      border-left-color: var(--color-indigo-brand);
+    }
+    to {
+      opacity: 1;
+      transform: translateY(0);
+      border-left-color: transparent;
+    }
   }
 
 
@@ -3072,6 +3157,21 @@
     .git-fade-in {
       animation-duration: var(--motion-fast) !important;
       animation-delay: 0ms !important;
+    }
+
+    /* 확정 서명은 **남긴다** — 어느 줄이 방금 것인지는 정보이고, 감속
+       사용자에게서 정보를 빼앗는 것이 감속의 뜻이 아니다. 전정 자극을 주는
+       것은 이동축이므로 그것만 없애고 불투명도·색은 그대로 둔다. 시간은
+       확인 램프로 내린다. */
+    .git-commit-settle {
+      animation-name: gitCommitSettleReduced !important;
+      animation-duration: var(--motion-fast) !important;
+      animation-delay: 0ms !important;
+    }
+
+    .studio-fill-arrive {
+      animation-name: studioFillArriveReduced !important;
+      animation-duration: var(--motion-fast) !important;
     }
 
     .app-settings-scrim-in,
