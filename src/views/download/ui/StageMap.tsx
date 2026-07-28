@@ -1,9 +1,9 @@
 'use client';
 
-import { useCallback, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import { useTranslations } from 'next-intl';
 import { useDogfoodInsight } from '@/features/vault-ontology';
-import { TopologyMapV2 } from '@/widgets/topology-map-v2';
+import { TopologyMapV2, clearTopologyV2TokensCache } from '@/widgets/topology-map-v2';
 import { buildStageGraph } from '../lib/stage-graph';
 
 /**
@@ -50,6 +50,45 @@ export function StageMap() {
    */
   const [expanded, setExpanded] = useState<ReadonlySet<string>>(() => new Set());
 
+  /**
+   * 관문 토큰 스코프를 켠다 — `app/globals.css` 의 `html[data-gateway-stage]`.
+   *
+   * 왜 루트 속성인가: 캔버스 토큰 리더는 `document.documentElement` 의
+   * computed style 을 **1회 읽고 전역 캐시**한다. 그래서 이 컴포넌트의
+   * 컨테이너에 클래스를 걸면 색은 CSS 로 상속돼 바뀌는 것처럼 보이지만
+   * 카메라 상한 같은 **숫자 토큰은 리더를 통해서만 전달**되므로 아무 일도
+   * 일어나지 않는다(실측 2026-07-28: 잉크만 밝아지고 지도 크기는 1픽셀도
+   * 안 변했다). 저장소 선례가 `html[data-topology-index="collapsed"]` 로
+   * 같은 구조를 이미 쓴다.
+   *
+   * 언마운트에서 반드시 되돌린다 — 안 그러면 클라이언트 내비게이션으로
+   * `/topology` 에 갔을 때 워크벤치가 관문의 카메라 상한을 물려받는다.
+   *
+   * ⚠️ **지도를 이 effect **뒤에** 마운트해야 한다.** React 는 자식 effect 를
+   * 부모보다 먼저 돌리므로, 지도를 같은 렌더에 그리면 **속성이 걸리기 전에**
+   * 토큰을 읽고 전역 캐시에 굳힌다 — 캐시를 지운 뒤엔 다시 읽을 계기가 없다.
+   * 실측(2026-07-28): 잉크 색은 CSS 상속으로 밝아졌는데 카메라 상한만 옛
+   * 값이라 지도 크기가 두 번 연속 1픽셀도 안 변했다. `scoped` 게이트가
+   * 그 순서를 강제한다.
+   */
+  const [scoped, setScoped] = useState(false);
+  useEffect(() => {
+    const root = document.documentElement;
+    root.setAttribute('data-gateway-stage', '');
+    clearTopologyV2TokensCache();
+    // 이 setState 가 곧 **순서 계약**이다. 지도를 같은 렌더에 그리면 React 가
+    // 자식 effect 를 먼저 돌려 **속성이 걸리기 전에** 토큰을 읽고 전역 캐시에
+    // 굳힌다(실측 2026-07-28: 카메라 상한만 옛 값이라 지도가 두 번 연속
+    // 1픽셀도 안 커졌다). 렌더를 한 번 더 도는 비용으로 그 경합을 없앤다 —
+    // 대안은 렌더 중 DOM 을 만지는 것뿐이라 더 나쁘다.
+    // eslint-disable-next-line react-hooks/set-state-in-effect
+    setScoped(true);
+    return () => {
+      root.removeAttribute('data-gateway-stage');
+      clearTopologyV2TokensCache();
+    };
+  }, []);
+
   const toggleCluster = useCallback((parentId: string) => {
     setExpanded((prev) => {
       const next = new Set(prev);
@@ -64,10 +103,11 @@ export function StageMap() {
     [insight],
   );
 
-  if (graph.nodes.length === 0) return null;
+  // 스코프가 켜지기 전에는 지도를 그리지 않는다 (위 주석의 순서 계약).
+  if (!scoped || graph.nodes.length === 0) return null;
 
   return (
-    <div className="absolute inset-0" data-testid="download-stage-map">
+    <div className="download-stage-map absolute inset-0" data-testid="download-stage-map">
       <TopologyMapV2
         nodes={graph.nodes}
         edges={graph.edges}
@@ -82,6 +122,9 @@ export function StageMap() {
         onToggleCluster={toggleCluster}
         clusterHint={t('stageClusterHint')}
         canvasLabel={t('stageMapLabel')}
+        // 관문은 스크롤하는 문서다 — 휠과 세로 스와이프는 페이지 것이고,
+        // 줌은 명시적 핀치에만. 드래그 팬과 클릭은 그대로 지도 것이다.
+        wheelIntent="page-scroll"
       />
     </div>
   );

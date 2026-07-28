@@ -70,6 +70,23 @@ interface Ref<T> {
 }
 
 export interface PointerHandlerRefs {
+  /**
+   * 휠이 누구 것인가 — **표면마다 다르다** (2026-07-28 모션석 실측).
+   *
+   * `'zoom'`(기본, 워크벤치): 지도가 화면 전체이고 스크롤할 페이지가 없으므로
+   * 휠은 전부 줌이고 `preventDefault` 로 페이지 유출을 막는 것이 맞다.
+   *
+   * `'page-scroll'`(관문): 지도가 **스크롤하는 문서 안의 밴드**다. 같은 줄이
+   * 여기서는 트랩으로 뒤집힌다 — 실측: `/download` 의 캔버스가 뷰포트의
+   * **62.1%** 인데 휠을 무조건 삼켜서, 랜딩에 착지한 방문자가 가장 먼저 하는
+   * 행동(스크롤)이 아무것도 안 하고 지도만 줌됐다. 접힘 아래에 판매 논증이
+   * 전부 있는데 거기 도달할 수 없었다. 이 모드에서 평 휠은 페이지에 양보하고,
+   * 줌은 **명시적 핀치**(`ctrlKey` wheel)에만 반응한다.
+   *
+   * 한 표면을 위한 결정이 그 전제가 성립하지 않는 표면으로 새어 나간 형태라,
+   * 상수가 아니라 계약으로 올린다.
+   */
+  wheelIntent?: "zoom" | "page-scroll";
   worldRef: Ref<TopologyWorld | null>;
   cameraRef: Ref<CameraAxes>;
   cameraTargetRef: Ref<CameraTarget>;
@@ -279,6 +296,7 @@ export interface TopologyPointerHandlers {
 /** Builds the five pointer/wheel handlers, closing over the hook's refs (cheap — plain closures, no hook rules to satisfy). */
 export function createTopologyPointerHandlers(refs: PointerHandlerRefs): TopologyPointerHandlers {
   const {
+    wheelIntent = "zoom",
     worldRef,
     cameraRef,
     cameraTargetRef,
@@ -1033,6 +1051,9 @@ export function createTopologyPointerHandlers(refs: PointerHandlerRefs): Topolog
   };
 
   const handleWheel = (e: WheelEvent) => {
+    // 관문 계약 — 평 휠은 페이지 것이다. 여기서 `preventDefault` 를 하지
+    // **않는** 것이 요점이라, 어떤 가드보다 먼저 빠져나간다.
+    if (wheelIntent === "page-scroll" && !e.ctrlKey) return;
     e.preventDefault();
     const tokens = readTopologyV2TokensOrNull();
     if (!tokens) return;

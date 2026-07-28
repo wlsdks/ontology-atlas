@@ -327,8 +327,13 @@ describe('DownloadPage', () => {
     // [download-honesty] 이 숫자에는 범위 라벨이 붙어야 한다 — 앱에서 자기
     // 폴더를 열면 다른 정의(런타임 파생 그래프)로 다른 숫자가 나오고, 라벨이
     // 없으면 같은 사용자가 두 숫자를 보고 신뢰를 잃는다.
-    expect(caption).toHaveTextContent(/docs\/ontology folder/i);
+    expect(caption).toHaveTextContent(/docs\/ontology/i);
     expect(caption).toHaveTextContent(/your own numbers/i);
+
+    // 만질 수 있다는 **보이는** 신호. 정지 프레임의 유일한 어포던스라
+    // (커서는 호버 게이트, aria-label 은 AT 전용) 사라지면 지도가 다시
+    // "고정된 그림" 으로 읽힌다 — 소유자가 실제로 그렇게 보고했다.
+    expect(caption).toHaveTextContent(/drag to move/i);
   });
 
   // 무대 지도는 **진짜 엔진**이다(2026-07-28 소유자 지시). 배경이 장식이 아니라는
@@ -362,15 +367,13 @@ describe('DownloadPage', () => {
 
     const heading = screen.getByRole('heading', { level: 1 });
     const primaryCta = screen.getByTestId('download-primary-cta');
-    const pitch = screen.getByTestId('download-pitch');
     const twoUsers = screen.getByTestId('download-two-users');
     const windows = screen.getByTestId('download-platform-windows');
     const trust = screen.getByTestId('download-trust');
 
     for (const [earlier, later] of [
       [heading, primaryCta],
-      [primaryCta, pitch],
-      [pitch, twoUsers],
+      [primaryCta, twoUsers],
       [twoUsers, windows],
       [windows, trust],
     ] as const) {

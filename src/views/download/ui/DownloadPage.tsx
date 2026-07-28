@@ -57,8 +57,9 @@ const GITHUB_REPOSITORY_LABEL = 'github.com/wlsdks/ontology-atlas';
  * 것으로는 **구분이 생기지 않는다**.
  *
  * 그래서 뼈대를 바꿨다: **제품이 배경이고 다운로드가 그 위에 뜬다.** 뒤에
- * 깔린 것은 목업도 일러스트도 아니라 이 저장소 vault 의 실제 그래프
- * (`VaultPortrait` — 96 개념 · 빌드 시점 결정적 좌표)다. 그래서 히어로의
+ * 깔린 것은 목업도 일러스트도 아니라 이 저장소 vault 를 **실제 지도 엔진**
+ * (`StageMap` → `TopologyMapV2`)으로 그린 것이다 — `/` 가 쓰는 그 엔진이라
+ * 끌면 밀리고 노드를 누르면 초점이 잡힌다. 그래서 히어로의
  * 헤드라인이 배경을 **가리킬 수 있고**, "설치 없이 먼저 보기" 가 링크가 아니라
  * 지금 보고 있는 화면이 된다.
  *
@@ -72,8 +73,10 @@ const GITHUB_REPOSITORY_LABEL = 'github.com/wlsdks/ontology-atlas';
  *
  * 위계는 여백 · 1px 괘선 · 타입 스케일이 만든다. 카드 보더는 위계를 못 정했다는
  * 자백이고, 같은 무게의 상자 나열이 앞선 두 판을 평범하게 만든 원인이다.
- * 이 페이지에서 보더를 가진 표면은 **다운로드 판 하나뿐**이며, 그건 지도 위에
- * 떠 있어야 해서 불투명 판이 필요하기 때문이다(반투명은 헌장 금지).
+ * **카드/패널급 컨테이너** 보더는 다운로드 판 하나뿐이며, 그건 지도 위에 떠
+ * 있어야 해서 불투명 판이 필요하기 때문이다(반투명은 헌장 금지). 칩·구분선·
+ * 코드박스 같은 컴팩트 마크는 별개다 — 구 주석이 "보더 전면 금지" 로 읽혀
+ * 실제 구현(신뢰 칩·체크섬 행·검증 코드박스)과 어긋났다(체계석 지적).
  */
 export function DownloadPage() {
   const t = useTranslations('download');
@@ -92,14 +95,21 @@ export function DownloadPage() {
         <div className="px-[max(1.5rem,env(safe-area-inset-left))] pr-[max(1.5rem,env(safe-area-inset-right))] pb-[max(var(--page-bottom-breath),env(safe-area-inset-bottom))] md:px-10">
           <div className="mx-auto w-full max-w-[var(--page-max)]">
             <div className="mx-auto w-full max-w-[var(--page-col-utility)]">
-              <Pitch />
               <TwoUsers />
               <InstallTrack />
               <ElsewhereRows />
 
               <footer className="mt-[var(--section-gap)] border-t border-[color:var(--color-divider)] pt-4 text-label leading-label text-[color:var(--color-text-quaternary)]">
                 <VerifyDetails published={published} primaryAsset={primaryAsset} />
-                <p className="mt-3 max-w-[var(--measure-prose)] break-keep">{t('releaseGateNote')}</p>
+                {/* ⚠️ 이 줄은 **웹사이트**의 주장이라 판 안 「서버 전송 0」 칩
+                    (=앱의 주장)과 주체가 다르다. 위계석이 중복으로 지목했지만,
+                    2026-07-27 에 한 번 정정된 이력이 있는 문장이다(그때는 "이
+                    사이트는 폴더를 열지 못한다" 는 **거짓 능력 주장**을 걷어냈다).
+                    중복이던 뒷절 — 웹/앱 갈래 설명, Windows 행이 이미 하는 말 —
+                    만 잘라내고 주장 자체는 남긴다. */}
+                <p className="mt-3 max-w-[var(--measure-prose)] break-keep">
+                  {t('releaseGateNote')}
+                </p>
                 <div className="mt-2 flex flex-wrap items-center gap-x-4 gap-y-2">
                   <span className="font-mono uppercase tracking-[0.14em]">
                     {tFooter('license')}
@@ -253,6 +263,16 @@ function PortraitStage({
             })}
           </span>
           <span aria-hidden>·</span>
+          {/* 「만질 수 있음」의 **보이는** 지시자 (2026-07-28 모션석 처방).
+              그전까지 촉각 신호 셋이 전부 정지 프레임에서 안 보였다 —
+              `cursor: grab` 은 포인터가 이미 거기 있어야 발동하고,
+              `aria-label` 은 스크린리더 전용이고, 클러스터 힌트는 sr-only 다.
+              왼쪽 판을 보고 있는 방문자는 영영 모른다. 새 크롬을 만들지 않고
+              이미 있는 캡션 줄에 절을 하나 더한다(화살표·아이콘 없음). */}
+          <span className="min-w-0 break-keep text-[color:var(--color-text-tertiary)]">
+            {t('portraitHint')}
+          </span>
+          <span aria-hidden>·</span>
           <span className="min-w-0 break-keep">{t('portraitScope')}</span>
         </span>
       </p>
@@ -280,14 +300,14 @@ function DownloadPlate({
   return (
     <div
       data-testid="download-plate"
-      className="w-full max-w-[36rem] rounded-panel border border-[color:var(--color-border-soft)] bg-[color:var(--color-panel)] p-6 shadow-[var(--shadow-elevation-2)] md:p-7"
+      className="w-full max-w-[30rem] rounded-panel border border-[color:var(--color-border-soft)] bg-[color:var(--color-panel)] p-6 shadow-[var(--shadow-elevation-2)] md:p-7"
     >
       <p className="font-mono text-caption uppercase leading-caption tracking-[0.18em] text-[color:var(--color-text-quaternary)]">
         {t('eyebrow')}
       </p>
       {/* 헤드라인이 **배경을 가리킨다** — 이 문장이 성립하려면 뒤에 실제 지도가
           있어야 하고, 그래서 배경은 지울 수 없는 구성 요소가 된다. */}
-      <h1 className="mt-2 text-display leading-display-tight font-[var(--font-weight-signature)] tracking-[var(--tracking-display)] text-[color:var(--color-text-primary)]">
+      <h1 className="mt-2 whitespace-pre-line text-display leading-display-tight font-[var(--font-weight-signature)] tracking-[var(--tracking-display)] text-[color:var(--color-text-primary)] md:text-hero md:leading-hero md:tracking-[var(--tracking-hero)]">
         {t('stageTitle')}
       </h1>
       <p className="mt-3 break-keep text-body leading-body text-[color:var(--color-text-secondary)]">
@@ -345,6 +365,18 @@ function PublishedActions({
       <TrustChips />
       <ArchHelp />
       <ChannelNote />
+      {/* **되돌릴 수 있음** (2026-07-28 해자석 처방). 페이지는 "어디로도
+          전송되지 않습니다"(유출)를 네 번 말하면서 "지워도 잃는 게 없습니다"
+          (고착)를 한 번도 안 했다. 무명 저장소의 바이너리를 디스크에 들이는
+          사람이 실제로 계산하는 건 유출이 아니라 **"이거 망하면 내 데이터
+          어떻게 되나"** 이고, 로컬-퍼스트 제품이 그 질문에 답할 수 있다는 것
+          자체가 SaaS 경쟁자 전체에 대한 비대칭이다. 배지 0개, 문장 1개. */}
+      <p
+        data-testid="download-exit-cost"
+        className="mt-3 max-w-[var(--measure-prose)] break-keep text-label leading-label text-[color:var(--color-text-tertiary)]"
+      >
+        {t('exitCost')}
+      </p>
       <PlateFooterLinks />
     </div>
   );
@@ -601,39 +633,20 @@ function ArchHelp() {
 // ─── 파는 자리 ───────────────────────────────────────────────────────────────
 
 /**
- * **이 페이지는 서비스를 판다** (소유자 판정 2026-07-28: *"이런 내용 설명이
- * 다운로드에 왜 필요해.. 이 페이지는 서비스를 홍보해야지?"*).
- *
- * 직전 판은 접힘 아래가 「설치 3단계」 + 「받아도 되는 이유」(서명·공증·체크섬·
- * `shasum` 명령)였다. 그건 **이미 사기로 마음먹은 사람을 위한 설치 안내서**의
- * 목차이지, 아직 이 물건이 뭔지도 모르는 사람에게 할 말이 아니다. 방문자가
- * 다운로드 페이지에서 세 번째로 읽는 문장이 `stapler validate 통과` 이면
- * 그 페이지는 자기가 무엇을 파는지 말한 적이 없는 것이다.
- *
- * 검증 사실은 **삭제하지 않았다** — 주장은 판 안의 칩 3개가, 증명은 푸터의
- * 접이식이 진다. 지우면 이 제품이 남보다 더 주는 것(레퍼런스 8곳 중 체크섬을
- * 내는 곳 0)을 스스로 버리는 것이고, 벽으로 세우면 파는 자리를 잡아먹는다.
- */
-function Pitch() {
-  const t = useTranslations('download');
-
-  return (
-    <section data-testid="download-pitch" className="pt-[var(--section-gap)]">
-      <h2 className="max-w-[var(--measure-prose)] break-keep text-display leading-display font-[var(--font-weight-signature)] tracking-[var(--tracking-display)] text-[color:var(--color-text-primary)]">
-        {t('pitchTitle')}
-      </h2>
-      <p className="mt-3 max-w-[var(--measure-prose)] break-keep text-body-lg leading-body-lg text-[color:var(--color-text-secondary)]">
-        {t('pitchBody')}
-      </p>
-    </section>
-  );
-}
-
-/**
  * 이 제품의 한 줄 정체성 — *agent-native, human-sovereign* — 을 화면으로
- * 만든 자리. 같은 폴더 하나를 사람과 에이전트가 **동시에 1급으로** 읽고 쓴다는
- * 주장은 조사한 레퍼런스 어디에도 없고, 그래서 여기가 이 페이지에서 유일하게
- * 남이 베낄 수 없는 문단이다.
+ * 만든 자리.
+ *
+ * ⚠️ **이 절의 이전 주석은 "이 주장은 레퍼런스 어디에도 없다" 고 적었는데,
+ * 그건 반증됐다** (해자석 실측 2026-07-28): Basic Memory(★3,531 · AGPL)가
+ * *"For you, your AI tools, and your team"* 을 랜딩 헤드라인으로 이미 인쇄해
+ * 두고 있다. 별 700배 차이다. 틀린 경쟁 주장이 코드에 남으면 다음 사람이
+ * 그대로 믿으므로 정정한다.
+ *
+ * 그래서 이 절이 실제로 파는 것은 "사람+에이전트" 서사 자체가 아니라 그 아래
+ * 항목들이다 — **타입 있는 종류 위계 + 영향 범위 질의**(`find_path` ·
+ * `blast_radius` · `find_backlinks`)와 **앱이 MCP 서버를 자기 번들에 품는
+ * 것**. 산문 규약(AGENTS.md)은 "이걸 고치면 어디가 흔들리나" 를 물어볼 수
+ * 없고, 자유 관계 노트는 역량 모델이 아니다. 복리가 붙는 자산은 그쪽이다.
  *
  * 두 열의 무게는 같다 — 한쪽을 부속으로 그리면 그 순간 "사람용 도구에 AI 붙임"
  * 또는 "AI 도구인데 사람도 봄" 이 되어 주장이 무너진다. 아래 합류 줄이
@@ -645,13 +658,16 @@ function TwoUsers() {
   return (
     <section
       data-testid="download-two-users"
-      className="mt-[var(--section-gap)] border-t border-[color:var(--color-divider)] pt-[var(--section-gap)]"
+      className="pt-[var(--section-gap)]"
     >
-      <h2 className="text-title leading-title font-semibold text-[color:var(--color-text-primary)]">
-        {t('twoUsersTitle')}
+      <h2 className="max-w-[var(--measure-prose)] break-keep text-display leading-display font-[var(--font-weight-signature)] tracking-[var(--tracking-display)] text-[color:var(--color-text-primary)]">
+        {t('pitchTitle')}
       </h2>
+      <p className="mt-3 max-w-[var(--measure-prose)] break-keep text-body-lg leading-body-lg text-[color:var(--color-text-secondary)]">
+        {t('pitchBody')}
+      </p>
 
-      <div className="mt-5 grid grid-cols-1 gap-x-10 gap-y-6 md:grid-cols-2">
+      <div className="mt-7 grid grid-cols-1 gap-x-10 gap-y-6 md:grid-cols-2">
         <AudienceColumn
           eyebrow={t('humanEyebrow')}
           title={t('humanTitle')}
@@ -743,11 +759,7 @@ function InstallTrack() {
       <ol className="mt-4 border-l border-[color:var(--color-divider)]">
         <InstallStep index="01" title={t('step1Title')} body={t('step1Body')} />
         <InstallStep index="02" title={t('step2Title')} body={t('step2Body')} />
-        <InstallStep
-          index="03"
-          title={t('step3Title')}
-          body={t('step3Body', { tools: MCP_TOOL_COUNT, commands: CLI_COMMAND_COUNT })}
-        />
+        <InstallStep index="03" title={t('step3Title')} body={t('step3BodyShort')} />
       </ol>
 
       {/* 설치한 사람에게 이 페이지는 마지막 방문이어야 한다. */}

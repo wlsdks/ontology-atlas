@@ -41,7 +41,9 @@ export function buildStageGraph(
   const included = nodes.filter((node) => RENDERABLE_KINDS.has(node.kind));
   const includedIds = new Set(included.map((node) => node.id));
   const includedEdges = edges.filter(
-    (edge) => includedIds.has(edge.from) && includedIds.has(edge.to),
+    // 자기참조 엣지는 제외 — 이 볼트에는 사이클이 실존하고(`cycles` 질의가
+    // 세는 그것), 자기 자신을 가리키는 엣지는 렌더에서 0 길이 선이 된다.
+    (edge) => edge.from !== edge.to && includedIds.has(edge.from) && includedIds.has(edge.to),
   );
 
   const childrenOf = new Map<string, string[]>();
@@ -83,9 +85,18 @@ export function buildStageGraph(
    * 동점은 id 오름차순으로 깨서 빌드마다 같은 노드가 뽑히게 한다.
    */
   let hubId: string | null = null;
-  let hubIncoming = -1;
+  let hubIncoming = 0;
   for (const node of included) {
     const count = incoming.get(node.id) ?? 0;
+    /**
+     * ⚠️ `incoming === 0` 은 건너뛴다. 시작값이 `-1` 이면 **아무도 참조되지
+     * 않은 그래프**(고립 노드만 있는 볼트)에서도 배열 첫 노드가 허브로 뽑혀
+     * 앰버 링이 근거 없이 켜진다. 헌장은 "허브는 정확히 하나" 이면서 동시에
+     * "허브가 없을 수 있다" — 없는데 그리는 것은 데이터에 없는 사실을
+     * 그리는 것이다. 홈의 어댑터가 같은 가드를 갖고 있고, 이쪽에 없어서
+     * 두 곳이 같은 불변식을 다르게 구현하고 있었다 (체계석 지적 2026-07-28).
+     */
+    if (count === 0) continue;
     if (count > hubIncoming || (count === hubIncoming && hubId !== null && node.id < hubId)) {
       hubId = node.id;
       hubIncoming = count;

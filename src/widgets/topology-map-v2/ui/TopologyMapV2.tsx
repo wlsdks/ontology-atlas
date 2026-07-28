@@ -236,10 +236,16 @@ export interface TopologyMapV2Props {
    * `useCanvasBackground()` 로 읽어 내려보낸다. 생략 시 `"dot"`.
    */
   canvasBackground?: CanvasBackground;
+  /**
+   * 휠과 세로 스와이프가 누구 것인가 — `topology-pointer-handlers.ts` 의
+   * `wheelIntent` 문서 참고. 워크벤치는 생략(= `"zoom"`, 현행 무변경),
+   * 스크롤하는 문서 안에 밴드로 박히는 표면만 `"page-scroll"` 을 넘긴다.
+   */
+  wheelIntent?: "zoom" | "page-scroll";
 }
 
 export function TopologyMapV2(props: TopologyMapV2Props) {
-  const { nodes, edges, focus, minimal, emphasizedNeighborSlug, fitViewToken, relayoutToken, revealToken, onSelectEdge, onSelect, onPaneClick, onVisibleCountChange, onGraphStatsChange, onZoomTierChange, onContextMenuNode, agentFocusNodeId, spotlightIds = null, onHoverEdge, selectedEdge = null, expandedParents, onToggleCluster, onHoverCluster, clusterHint, realmRootId = null, onEnterRealm, realmEnterLabel, realmEnterTooltip, realmCaption = null, canvasLabel, visitedTrail, trailLensActiveRef, trailHoverNodeIdRef, tierReveal, tourAnchorNodeId = null, tourAnchorRef, overlayOpen = false, glyphSet = "geometric", canvasBackground = "dot" } = props;
+  const { nodes, edges, focus, minimal, emphasizedNeighborSlug, fitViewToken, relayoutToken, revealToken, onSelectEdge, onSelect, onPaneClick, onVisibleCountChange, onGraphStatsChange, onZoomTierChange, onContextMenuNode, agentFocusNodeId, spotlightIds = null, onHoverEdge, selectedEdge = null, expandedParents, onToggleCluster, onHoverCluster, clusterHint, realmRootId = null, onEnterRealm, realmEnterLabel, realmEnterTooltip, realmCaption = null, canvasLabel, visitedTrail, trailLensActiveRef, trailHoverNodeIdRef, tierReveal, tourAnchorNodeId = null, tourAnchorRef, overlayOpen = false, glyphSet = "geometric", canvasBackground = "dot", wheelIntent = "zoom" } = props;
 
   const realmEnterButtonRef = useRef<HTMLButtonElement | null>(null);
 
@@ -296,6 +302,7 @@ export function TopologyMapV2(props: TopologyMapV2Props) {
     useTopologyLoop({
       nodes,
       edges,
+      wheelIntent,
       focusedSlug: focus.selectedSlug,
       emphasizedNeighborSlug,
       fitViewToken,
@@ -355,7 +362,15 @@ export function TopologyMapV2(props: TopologyMapV2Props) {
         // `auto` 로 떨어진다(실측). 클래스로 두면 인라인이 걷힌 자리에서
         // 캐스케이드가 `grab` 을 되돌려 준다 — 되돌림이 저절로 옳아진다.
         className="cursor-grab"
-        style={{ display: "block", width: "100%", height: "100%", touchAction: "none" }}
+        style={{
+          display: "block",
+          width: "100%",
+          height: "100%",
+          // `none` 은 세로 스와이프까지 삼킨다 — 스크롤하는 문서 안의 밴드에서는
+          // 폰에서 페이지가 아예 안 움직인다. `pan-y` 면 세로는 페이지가,
+          // 가로 드래그는 지도가 가져간다.
+          touchAction: wheelIntent === "page-scroll" ? "pan-y" : "none",
+        }}
         onPointerDown={handlePointerDown}
         onPointerMove={handlePointerMove}
         onPointerUp={handlePointerUp}

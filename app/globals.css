@@ -3428,3 +3428,61 @@ body[data-no-tabbar] [data-tabbar="primary"] {
 }
 
 
+
+/* ─── 관문 무대의 지도 (`/download`) ────────────────────────────────────────
+ *
+ * 워크벤치의 지도는 **패널 아래 깔려 물러나는** 배경이다. 그 팔레트와 카메라
+ * 상한이 그대로 관문에 오면 지도가 주인공인데 조연의 규격을 입는다.
+ * 실측(2026-07-28, 위계석 판정):
+ *
+ * - 지도 잉크의 **82.4%가 대비 1.5:1 미만**, 평균 1.49:1. 페이지가 자기
+ *   논증으로 내건 표면("뒤에 보이는 지도는 목업이 아니라 실제 폴더")의 대부분이
+ *   사실상 안 보였다. 소유자가 "고정처럼 보인다" 고 한 것은 어포던스 이전에
+ *   **밝기** 문제다 — 그 정도로 흐린 것은 만질 물건으로 안 읽힌다.
+ * - 무대 높이를 671→999px 로 늘려도 지도 잉크 bbox 가 **1픽셀도 안 커졌다**
+ *   (436×408 고정). `--topology-v2-camera-scale-max`(2.6) 상한에 못 박혀 있어서,
+ *   자리를 더 줘도 소용이 없었다. 소유자의 "조금 더 커도 될듯" 은 취향 주문이
+ *   아니라 **카메라 하드캡 보고**였다.
+ *
+ * 그래서 관문에 있는 동안만 값을 올린다. **새 hue 도 새 토큰 계열도 없다** —
+ * 기존 무채색 사다리 안에서 한 단씩 올리는 것뿐이라 헌장(무채색 + 단일 인디고)은
+ * 그대로다.
+ *
+ * ⚠️ **루트 속성인 이유**: 캔버스 토큰 리더(`getTopologyV2Tokens`)는
+ * `document.documentElement` 의 computed style 을 1회 읽고 전역 캐시한다 —
+ * 컨테이너에 건 클래스는 **닿지 않는다**(실측: 클래스 스코프로 걸었더니 잉크
+ * 색만 바뀌고 카메라 상한은 그대로여서 지도 크기가 1픽셀도 안 변했다).
+ * 같은 이유로 이미 존재하는 선례가 `html[data-topology-index="collapsed"]` 다.
+ * `StageMap` 이 마운트/언마운트에서 속성을 걸고 풀며 캐시를 무효화한다.
+ */
+html[data-gateway-stage] {
+  /* 잉크 — 캔버스(#08080b) 위 3:1 이상으로 올린다. 라벨은 4.5:1 목표. */
+  --topology-v2-edge-contains: #626270;
+  --topology-v2-edge-contains-l0: #757583;
+  --topology-v2-edge-contains-l2: #55555f;
+  --topology-v2-edge-depends: #6f6f8c;
+  --topology-v2-label-capability: #aeaeb8;
+  --topology-v2-label-element: #9a9aa4;
+
+  /* 카메라 — 관문은 "만져 보는" 자리라 워크벤치보다 가까이 붙는다. */
+  --topology-v2-camera-scale-max: 4.6;
+  --topology-v2-overview-entry-ratio: 1;
+
+  /*
+   * 판이 무대 왼쪽을 덮으므로 그만큼을 인셋으로 예약한다 — 위젯의 패널 인지
+   * 핏(`computeOverviewCameraTarget`)이 **정확히 이 문제를 위해** 만들어져
+   * 있다("the left third of the graph hid behind the ReaderLens panel").
+   * 예약하면 그래프가 판 오른쪽 영역의 중심에 앉고, 실측 32.7% 였던 우측
+   * 공백이 사라진다. 단위 없는 수 — 토큰 리더가 `parseFloat` 로 읽는다.
+   */
+  --topology-v2-safe-inset-left: 0;
+  --topology-v2-safe-inset-right: 0;
+}
+
+@media (min-width: 64rem) {
+  html[data-gateway-stage] {
+    /* 판 좌측 여백(40) + 판 폭(480) + 숨 쉴 틈(48). 판 폭은
+       `DownloadPage.tsx` 의 `max-w-[30rem]` 과 짝이라 함께 바뀐다. */
+    --topology-v2-safe-inset-left: 568;
+  }
+}
