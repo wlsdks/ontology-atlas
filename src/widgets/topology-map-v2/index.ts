@@ -51,4 +51,7 @@ export type { TopologyV2RenderableKind } from '@/shared/ui/topology-v2-kind-glyp
  * so the map's camera fit must be forced to re-read the token instead of
  * trusting its mount-time cache (B3 허브가 곧 지도 — HomePage wiring).
  */
-export { clearTopologyV2TokensCache } from './tokens/read-topology-v2-tokens';
+export {
+  clearTopologyV2TokensCache,
+  refreshIndexDependentTokens,
+} from './tokens/read-topology-v2-tokens';

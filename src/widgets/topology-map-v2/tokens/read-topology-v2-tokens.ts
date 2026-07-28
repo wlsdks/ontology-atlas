@@ -429,3 +429,48 @@ export function getTopologyV2Tokens(element?: Element): TopologyV2Tokens {
 export function clearTopologyV2TokensCache(): void {
   cached = null;
 }
+
+/**
+ * `html[data-topology-index]` 가 실제로 바꾸는 토큰들 — **이 목록이 곧 계약**이다.
+ *
+ * `app/globals.css` 의 `html[data-topology-index="collapsed"]` 블록이 재정의하는
+ * 것만 넣는다. 그 블록에 토큰을 하나 더 쓰면 여기도 한 줄 늘려야 하고, 안 늘리면
+ * 그 값만 낡은 채 남는다(전면 무효화보다 조용한 실패라 주석으로 못박아 둔다).
+ */
+const INDEX_DEPENDENT_TOKEN_KEYS = ["safeInsetLeft"] as const;
+
+/**
+ * INDEX 상태(`data-topology-index`) 전환 뒤 **바뀔 수 있는 토큰만** 다시 읽는다.
+ *
+ * ## 왜 전면 무효화를 쓰면 안 되나 (2026-07-28 성능 트레이스)
+ *
+ * `HomePage` 는 INDEX 상태가 바뀔 때마다 `clearTopologyV2TokensCache()` 를 불렀고,
+ * **노드를 선택하면 그 상태가 바뀐다.** 그래서 노드 클릭 1회마다 다음 프레임이
+ * `getComputedStyle` 한 번에 `getPropertyValue` **115회**를 돌았고, 그것이
+ * 스타일 재계산을 강제해 **58ms** 를 태웠다(Chrome ForcedReflow 인사이트 1위,
+ * 앞선 `useRowDisclosure` 수리 후 드러난 다음 원인).
+ *
+ * 그런데 그 속성에 실제로 의존하는 토큰은 **하나**다 —
+ * `--topology-v2-safe-inset-left`. 하나를 갱신하려고 115개를 버리고 있었다.
+ *
+ * 캐시가 아직 없으면 아무것도 하지 않는다 — 다음 읽기가 어차피 최신을 가져간다.
+ */
+export function refreshIndexDependentTokens(element?: Element): void {
+  if (!cached) return;
+  if (typeof document === "undefined") return;
+  const styles = getComputedStyle(element ?? document.documentElement);
+  const patch: Record<string, string | number> = {};
+  for (const key of INDEX_DEPENDENT_TOKEN_KEYS) {
+    const spec = TOKEN_SPECS.find((s) => s.key === key);
+    if (!spec) continue;
+    const raw = styles.getPropertyValue(spec.cssVar).trim();
+    if (raw === "") continue;
+    if (spec.kind === "number") {
+      const parsed = Number(raw);
+      if (!Number.isNaN(parsed)) patch[spec.key] = parsed;
+    } else {
+      patch[spec.key] = raw;
+    }
+  }
+  cached = { ...cached, ...patch } as TopologyV2Tokens;
+}
