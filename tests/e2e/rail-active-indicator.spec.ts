@@ -47,6 +47,11 @@ async function readIndicator(page: Page) {
       count: document.querySelectorAll('[data-testid="app-nav-rail-active-indicator"]').length,
       offsetY: Math.round(i.top - t.top),
       offsetHeight: Math.round(i.height - t.height),
+      // **가로축도 잰다.** 이 게이트는 처음에 Y 와 높이만 봤고, 그래서 지표가
+      // 타일보다 19px 왼쪽으로 밀려 레일 밖으로 잘려 나가는 것을 통과시켰다
+      // (소유자 실사용 제보 2026-07-28). 겹침은 네 변 전부의 문제다.
+      offsetX: Math.round(i.left - t.left),
+      offsetWidth: Math.round(i.width - t.width),
       duration: style.transitionDuration,
       easing: style.transitionTimingFunction,
     };
@@ -63,6 +68,8 @@ test.describe("레일 활성 표시 — 같은 것이 옮겨간다", () => {
     expect(start!.count, "지표가 여럿이면 '옮겨간다' 는 주장이 거짓이다").toBe(1);
     expect(start!.offsetY).toBe(0);
     expect(start!.offsetHeight).toBe(0);
+    expect(start!.offsetX).toBe(0);
+    expect(start!.offsetWidth).toBe(0);
 
     for (const destination of DESTINATIONS) {
       await page.getByTestId(`app-nav-rail-item-${destination.id}`).click();
@@ -76,6 +83,8 @@ test.describe("레일 활성 표시 — 같은 것이 옮겨간다", () => {
       const settled = await readIndicator(page);
       expect(settled!.count, `${destination.id}: 지표가 늘었다`).toBe(1);
       expect(settled!.offsetHeight, `${destination.id}: 높이가 타일과 다르다`).toBe(0);
+      expect(settled!.offsetX, `${destination.id}: 가로로 밀렸다`).toBe(0);
+      expect(settled!.offsetWidth, `${destination.id}: 폭이 타일과 다르다`).toBe(0);
     }
   });
 
