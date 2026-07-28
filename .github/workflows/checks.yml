@@ -104,6 +104,18 @@ jobs:
         if: always()
         run: pnpm package:check
 
+      # 데스크톱 게이트의 단위 스위트다. 지금까지 **릴리스 워크플로에만** 걸려
+      # 있어서, 여기서 잡혔어야 할 결함이 전부 "태그를 찍은 뒤"에 처음 드러났다
+      # — `v1.0.0-rc.2` 가 네 번 찍혀 네 번 다 빌드 잡에서 멈춘 이유다. 30초짜리
+      # 스위트를 태그 뒤로 미룰 이유가 없다.
+      #
+      # 전체 리허설(`pnpm desktop:release-rehearsal`)은 앱 컴파일이 들어 있어
+      # 사람이 태그 전에 로컬에서 돌린다. 여기서는 컴파일 없이 확인 가능한 것만
+      # 본다.
+      - name: Desktop checker tests
+        if: always()
+        run: pnpm test:desktop:check
+
       # 생성 매니페스트 게이트 둘. 지금까지 어느 PR 검증에도 물려 있지 않았다 —
       # `docs-vault:check` 는 macOS 릴리스 경로에만, `test:docs-vault` 는 아무
       # 곳에도 없었다. 그래서 `docs/**` 를 고치고 재생성을 잊은 PR 도, 생성이
