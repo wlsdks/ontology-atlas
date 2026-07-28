@@ -11,6 +11,12 @@
       "ontologyStudio": "온톨로지 공방",
       "ontologyInsights": "그래프 인사이트",
       "projectNew": "새 프로젝트"
+    },
+    "descriptions": {
+      "home": "코드는 남고 맥락은 사라집니다. Ontology Atlas 는 프로젝트의 맥락 — 무엇이 무엇에 기대는지, 왜 이렇게 만들었는지 — 을 마크다운 폴더 하나에 담습니다. 사람이 읽는 글이자 AI 에이전트가 MCP 로 읽고 쓰는 구조. 로컬 우선, 백엔드 없음, 오픈소스.",
+      "download": "macOS 앱 무료 다운로드. 내 디스크의 마크다운 폴더를 열어 프로젝트 지도로 보고, Claude Code · Codex · Cursor 를 MCP 로 연결합니다. Apple 서명·공증 완료, 서버 전송 없음, MIT 오픈소스.",
+      "topology": "프로젝트의 도메인 · 역량 · 구성요소와 그 의존 관계를 한 화면의 지도로 봅니다. 마크다운 frontmatter 가 곧 그래프이고, 파일은 내 디스크에만 있습니다.",
+      "docs": "마크다운 폴더를 그대로 읽고 고치는 문서함. frontmatter 를 고치면 지도가 따라 바뀝니다."
     }
   },
   "notFound": {

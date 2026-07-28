@@ -34,6 +34,25 @@ export const metadata: Metadata = {
   description: 'AI-native codebase ontology workbench. Humans and AI agents author the same vault. Markdown frontmatter is the graph.',
   keywords: ['Ontology Atlas', 'ontology-atlas', 'ontology', 'knowledge graph', 'markdown', 'frontmatter', 'AI agent', 'MCP', 'topology'],
   authors: [{ name: 'ontology-atlas contributors' }],
+  /**
+   * 검색 콘솔 소유권 확인 — **값은 환경변수로 받는다.**
+   *
+   * GitHub Pages 프로젝트 사이트(`user.github.io/repo/`)는 DNS 확인을 쓸 수
+   * 없다(그 도메인이 우리 것이 아니다). 그래서 남는 방법은 둘이고, 이 메타
+   * 태그가 그중 파일을 저장소에 커밋하지 않아도 되는 쪽이다.
+   *
+   * 코드는 **비밀이 아니지만 이 저장소의 사실도 아니다** — 포크한 사람의
+   * 사이트에 우리 확인 코드가 박혀 나가면 그쪽 콘솔 등록이 막힌다. 그래서
+   * 하드코딩하지 않고 빌드 환경에서 주입한다. 미설정이면 태그 자체가 안 나간다.
+   */
+  verification: {
+    ...(process.env.NEXT_PUBLIC_GOOGLE_SITE_VERIFICATION
+      ? { google: process.env.NEXT_PUBLIC_GOOGLE_SITE_VERIFICATION }
+      : {}),
+    ...(process.env.NEXT_PUBLIC_BING_SITE_VERIFICATION
+      ? { other: { 'msvalidate.01': process.env.NEXT_PUBLIC_BING_SITE_VERIFICATION } }
+      : {}),
+  },
   openGraph: {
     type: 'website',
     locale: 'en_US',
