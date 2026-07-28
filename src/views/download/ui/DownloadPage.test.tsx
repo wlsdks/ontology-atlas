@@ -109,12 +109,27 @@ describe('DownloadPage', () => {
   });
 
   describe('before a release is published', () => {
-    it('says the build is not out yet instead of rendering placeholder facts', () => {
+    /**
+     * 미게시 상태의 태그는 **지금 저장소의 버전**에서 나온다.
+     *
+     * 2026-07-28 실측: 한 화면에 `v1.0.0-rc.3`(제목)과 `v1.0.0-rc.2 는 아직
+     * 게시 전입니다`(본문)가 동시에 떠 있었다. 제목은 게시 여부로 갈라
+     * `RELEASE_VERSION` 을 쓰는데 본문은 **게시 여부와 무관하게** 생성 파일의
+     * `tag` 를 썼고, 그 파일은 릴리스가 실제로 나갈 때만 갱신되므로 버전을
+     * 올린 뒤 아직 안 내보낸 구간에서 한 세대 전 태그가 남는다.
+     *
+     * 그래서 이 테스트는 **픽스처의 태그(`v1.0.0`)를 기대하지 않는다** — 그걸
+     * 기대하는 것이 곧 옛 결함을 계약으로 굳히는 일이었다.
+     */
+    it('names the current repo version — not the stale generated tag — while unpublished', () => {
       renderDownloadPage();
 
-      expect(screen.getByTestId('download-macos-pending')).toHaveTextContent(
-        /v1\.0\.0 has not been published yet/i,
+      const pending = screen.getByTestId('download-macos-pending');
+      expect(pending).toHaveTextContent(
+        new RegExp(`v${RELEASE_VERSION.replace(/\./g, '\\.')} has not been published yet`, 'i'),
       );
+      // 픽스처의 생성 태그는 미게시 상태에서 화면에 나오지 않는다.
+      expect(pending).not.toHaveTextContent(/v1\.0\.0 has not been/i);
       // A size and a checksum are per-release facts. With no release there is
       // no honest value for either, so neither row exists at all.
       expect(screen.queryByTestId('download-checksum-aarch64')).not.toBeInTheDocument();

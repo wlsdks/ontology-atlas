@@ -56,6 +56,19 @@ export interface TopologyEscLadderInput {
    *  closes itself on Escape while it holds focus; this covers the case
    *  where focus has moved outside it while it's still blocking the page). */
   createNodeOpen: boolean;
+  /**
+   * 「내 문서로 지도 만들기」 부트스트랩 패널(`ontology-bootstrap-panel`).
+   *
+   * 이 사다리에 **칸이 아예 없어서** Escape 가 아무 일도 하지 않았다
+   * (2026-07-28 볼트 연결 재현: 패널을 열고 Esc 를 눌러도 `aria-modal` 이
+   * 그대로 남는다). 앱은 자기 단축키 시트에 "Esc — 열린 표면을 한 단계씩
+   * 닫습니다" 라고 적어 두고 있고 다른 모든 다이얼로그는 그렇게 동작하므로,
+   * 이 하나만 안 닫히는 것은 **앱이 키를 무시하는 것**으로 읽힌다.
+   *
+   * `aria-modal` 블로킹 표면이라 아래 칸들보다 먼저 답해야 한다 — 덮여 있는
+   * 것을 두고 그 아래 선택을 푸는 것은 사용자가 부른 일이 아니다.
+   */
+  bootstrapOpen: boolean;
   /** Global search / ontology palette open (`MountedGlobalSearch` → Radix
    *  `Dialog`, which already closes itself on Escape). If this is true the
    *  ladder must return "none" and let the palette's own handler own the
@@ -92,6 +105,7 @@ export type TopologyEscLadderAction =
   | "close-context-menu"
   | "close-tour"
   | "close-create-node"
+  | "close-bootstrap"
   | "close-full-detail"
   | "close-relation-lens"
   | "close-node-popover"
@@ -121,6 +135,7 @@ export function resolveTopologyEscLadderAction(
   if (input.contextMenuOpen) return "close-context-menu";
   if (input.tourOpen) return "close-tour";
   if (input.createNodeOpen) return "close-create-node";
+  if (input.bootstrapOpen) return "close-bootstrap";
   // The palette (Radix Dialog) already closes itself on Escape — returning
   // "none" here means the window ladder does nothing this keypress, so only
   // the palette closes. Without this tier, the ladder would fall through to

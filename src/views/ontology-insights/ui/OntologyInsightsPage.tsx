@@ -242,6 +242,8 @@ export function OntologyInsightsPage() {
   const nodes = insight?.nodes ?? EMPTY_NODES;
   const edges = insight?.edges ?? EMPTY_EDGES;
   const totalNodes = nodes.length;
+  /** 탭 본문이 그려지는가 — 빈 상태로 갈리면 배지도 숫자를 말하지 않는다. */
+  const hasConcepts = (insight?.nodes.length ?? 0) > 0;
   const totalEdges = edges.length;
 
   const kindDist = useMemo(() => computeKindDistribution(nodes), [nodes]);
@@ -907,12 +909,22 @@ export function OntologyInsightsPage() {
               // 예전엔 do-next 통계 신호만 세고 CLI-parity 신호(분리된 섬 ·
               // 누락된 연결)를 빠뜨려, 수리 큐가 1건을 보여주는데 배지는 0
               // 이라고 말하는 모순이 났다.
-              count: INSIGHTS_TAB_BADGE[key]({
-                verdictTotal: insightsVerdict.total,
-                totalNodes,
-                totalEdges,
-                crossDomainEdges: domainCoupling.crossDomainEdgeCount,
-              }),
+              // 개념이 0이면 이 페이지는 탭 본문 대신 빈 상태를 그린다. 그때
+              // 배지가 숫자를 말하면 **화면이 자기 자신과 모순**된다 —
+              // 2026-07-28 볼트 연결 재현: 「할 일 14」 배지 아래 본문은
+              // "아직 온톨로지 개념이 없습니다" 였다. 위 주석이 기록한
+              // 과거 사고(큐 1건인데 배지 0)의 정확한 반대 방향이다.
+              //
+              // 배지는 "그 탭이 답하는 질문의 규모" 인데, 답할 탭 본문이
+              // 아예 안 그려지면 그 규모는 0 이다.
+              count: hasConcepts
+                ? INSIGHTS_TAB_BADGE[key]({
+                    verdictTotal: insightsVerdict.total,
+                    totalNodes,
+                    totalEdges,
+                    crossDomainEdges: domainCoupling.crossDomainEdgeCount,
+                  })
+                : 0,
               // 라벨 없는 숫자가 무엇을 세는지 — hover/보조기술에만 뜨는 한 마디.
               countTitle: key === "freshness" ? undefined : t(`tabCountTitle.${key}`),
             }))}
