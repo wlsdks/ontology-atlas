@@ -1,5 +1,12 @@
 "use client";
 
+import {
+  useCallback,
+  useEffect,
+  useLayoutEffect,
+  useRef,
+  useState,
+} from "react";
 import type {
   ComponentType,
   MouseEvent as ReactMouseEvent,
@@ -121,6 +128,63 @@ export function AppNavRail({
   const tLive = useTranslations("liveActivity");
   const pathname = usePathname() ?? "/";
   const activeId = resolveActiveNavRailItem(pathname);
+
+  /**
+   * 활성 지표의 자리 — 활성 타일을 **재서** 정한다.
+   *
+   * 인덱스 × 행 높이로 계산하지 않는다: 행 높이는 레일 스케일 토큰과 라벨
+   * 줄 수에 딸려 있어서, 상수로 적어 두면 토큰이 바뀌는 날 조용히 어긋난다.
+   * 그때 화면은 "지표가 타일에서 살짝 빗나간" 모양이 되는데, 그건 사람이
+   * 눈으로는 잘 못 집는 종류다.
+   *
+   * 붙이기는 **콜백 ref** 로 한다 — 노드가 붙는 순간 불리므로 순서 문제가
+   * 원리적으로 없다(2026-07-28 공방 클램프가 `[]` deps 로 이 함정에 빠졌다).
+   */
+  const [indicator, setIndicator] = useState<{ top: number; height: number } | null>(null);
+  const [indicatorReady, setIndicatorReady] = useState(false);
+  const listRef = useRef<HTMLUListElement | null>(null);
+  const listObserverRef = useRef<ResizeObserver | null>(null);
+
+  const measureIndicator = useCallback(() => {
+    const list = listRef.current;
+    if (!list) return;
+    const activeTile = list.querySelector<HTMLElement>('[data-active="true"] > span');
+    if (!activeTile) {
+      setIndicator(null);
+      return;
+    }
+    const listBox = list.getBoundingClientRect();
+    const tileBox = activeTile.getBoundingClientRect();
+    setIndicator({ top: tileBox.top - listBox.top, height: tileBox.height });
+  }, []);
+
+  const attachDestinationList = useCallback(
+    (el: HTMLUListElement | null) => {
+      listRef.current = el;
+      listObserverRef.current?.disconnect();
+      listObserverRef.current = null;
+      if (!el) return;
+      measureIndicator();
+      const observer = new ResizeObserver(() => measureIndicator());
+      observer.observe(el);
+      listObserverRef.current = observer;
+    },
+    [measureIndicator],
+  );
+
+  useEffect(() => () => listObserverRef.current?.disconnect(), []);
+
+  // 활성 목적지가 바뀌면 다시 잰다. 첫 배치 이후에만 전이를 켠다 —
+  // 처음 그려질 때 미끄러져 들어오면 이동이 아니라 등장이 된다.
+  useLayoutEffect(() => {
+    measureIndicator();
+  }, [activeId, measureIndicator]);
+
+  useEffect(() => {
+    if (!indicator || indicatorReady) return;
+    const raf = requestAnimationFrame(() => setIndicatorReady(true));
+    return () => cancelAnimationFrame(raf);
+  }, [indicator, indicatorReady]);
   const vault = useLocalVault();
   const agentStatus = vault.agentActivityStatus;
   const heartbeat = agentStatus?.heartbeat ?? null;
@@ -211,7 +275,44 @@ export function AppNavRail({
       </Link>
 
       <nav aria-label={t("ariaLabel")} className="flex w-full flex-1 flex-col gap-0.5">
-        <ul className="flex w-full flex-col gap-0.5">
+        <ul ref={attachDestinationList} className="relative flex w-full flex-col gap-0.5">
+          {/*
+            활성 표시는 **하나의 원소가 옮겨 다닌다** (2026-07-28 모션 감사).
+
+            종전에는 두 타일이 각자 색을 죽이고 켰다 — 게슈탈트 공통 운명상
+            사라졌다 나타나는 두 표시는 "두 개의 것" 으로, 이동하는 한 표시는
+            "**같은 것이 옮겨갔다**" 로 지각된다. 레일의 세로 순서는 이 앱의
+            유일한 공간 모델이고, 지표의 이동 방향·거리는 그 모델 위에서
+            "어디서 와서 어디로 갔는지" 를 나르는 **정보**다 — 끄면 그 정보를
+            잃으므로 장식이 아니다.
+
+            콘텐츠는 한 톨도 움직이지 않는다(라우트 전환은 fast 크로스페이드
+            뿐). 그래서 주목 예산은 사용자가 부른 목적물이 가져가고, 크롬은
+            한 점만 따라간다.
+          */}
+          <span
+            aria-hidden
+            data-testid="app-nav-rail-active-indicator"
+            data-placed={indicator ? "true" : "false"}
+            className={cn(
+              "pointer-events-none absolute left-1/2 z-0 -translate-x-1/2 rounded-card bg-[color:var(--color-indigo-a14)] shadow-[inset_0_0_0_1px_var(--color-indigo-line-a22)]",
+              // 첫 배치는 전이가 아니다 — 처음 그려질 때 0 에서 미끄러져
+              // 들어오면 "이동" 이 아니라 "등장" 이 되고, 사용자가 부르지
+              // 않은 모션이 된다(`use-row-disclosure` 가 배운 것과 같다).
+              indicatorReady && "transition-[transform,height] duration-[var(--motion-base)] ease-[var(--motion-ease)] motion-reduce:transition-none",
+            )}
+            style={
+              indicator
+                ? {
+                    width: "var(--app-nav-rail-tile-width)",
+                    height: indicator.height,
+                    top: 0,
+                    transform: `translate(-50%, ${indicator.top}px)`,
+                    opacity: 1,
+                  }
+                : { opacity: 0, height: 0, top: 0 }
+            }
+          />
           {destinations.map(({ id, href, label, Icon, badgeCount }) => {
             const isActive = activeId === id;
             const surfacePath = href.split(/[?#]/, 1)[0] || "/";
@@ -229,8 +330,11 @@ export function AppNavRail({
                   <span
                     className={cn(
                       "relative flex h-[var(--app-nav-rail-tile-height)] w-[var(--app-nav-rail-tile-width)] items-center justify-center rounded-card transition-colors",
+                      // 활성 서피스는 이 타일이 그리지 않는다 — 위의 단일
+                      // 지표가 옮겨 와서 깔린다. 여기 남는 것은 **색**뿐이고,
+                      // 색은 이동이 아니라 확인이라 fast 램프(기본)를 탄다.
                       isActive
-                        ? "bg-[color:var(--color-indigo-a14)] text-[color:var(--color-indigo-accent)] shadow-[inset_0_0_0_1px_var(--color-indigo-line-a22)]"
+                        ? "z-[1] text-[color:var(--color-indigo-accent)]"
                         : "text-[color:var(--color-text-tertiary)] group-hover:bg-[color:var(--color-overlay-2)] group-hover:text-[color:var(--color-text-primary)]",
                     )}
                   >
