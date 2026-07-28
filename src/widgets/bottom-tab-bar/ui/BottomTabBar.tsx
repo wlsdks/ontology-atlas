@@ -68,7 +68,12 @@ export function BottomTabBar() {
             {active ? (
               <span
                 aria-hidden
-                className="absolute top-1 h-0.5 w-6 rounded-full bg-[color:var(--color-indigo-line-a90)] shadow-[0_0_12px_var(--color-indigo-a42)]"
+                // 글로우 없음 — 인디고 선 자체가 트랙 위에서 3:1 을 넘는다.
+                // 종전의 `0 0 12px` 인디고 헤일로는 헌장이 이름으로 금지한
+                // 「glow-like boxShadow 0 0 ring」이었는데, 값 안에 `var(` 가
+                // 있어서 그림자 lint 의 사정거리 밖에 있었다(같은 PR 에서 룰을
+                // 좁혀 색 있는 헤일로만 잡게 했다).
+                className="absolute top-1 h-0.5 w-6 rounded-full bg-[color:var(--color-indigo-line-a90)]"
                 data-active-indicator="true"
               />
             ) : null}

@@ -76,6 +76,7 @@ import {
   filterDocsByCollection,
   resolveDocsVaultSlugAlias,
   resolveDocsVaultCollection,
+  resolveInitialDocsCollection,
   shouldDeferDocsVaultDefaultSelection,
   shouldShowSampleWelcomeNote,
   type DocsVaultCollection,
@@ -1172,6 +1173,23 @@ function DocsVaultContent() {
     () => recentSlugs.filter((slug) => collectionDocSlugs.has(slug)),
     [collectionDocSlugs, recentSlugs],
   );
+
+  // 첫 화면이 **자기가 가진 것을 보여준다** (2026-07-28 실측 결함 — 볼트 필은
+  // "문서 31개" 라 말하는데 목록은 0건이었다). 컬렉션 기본값은 문서가 오기
+  // 전에 정해지므로, 문서가 처음 도착한 프레임에서 한 번만 재해석한다.
+  //
+  // **한 번만**인 것이 계약이다 — 매번 돌면 사용자가 일부러 고른 0건 컬렉션을
+  // 화면이 되돌려 버린다(칩이 건수를 보여주므로 그 클릭은 의도적이다).
+  const initialCollectionResolvedRef = useRef(false);
+  useEffect(() => {
+    if (initialCollectionResolvedRef.current) return;
+    if (manifest.docs.length === 0) return;
+    initialCollectionResolvedRef.current = true;
+    const resolved = resolveInitialDocsCollection(manifest.docs);
+    if (resolved !== docCollection) {
+      scheduleStateSync(() => setDocCollection(resolved));
+    }
+  }, [docCollection, manifest.docs]);
 
   useEffect(() => {
     if (!selectedDoc) return;

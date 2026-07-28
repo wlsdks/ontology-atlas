@@ -148,6 +148,45 @@ const arbitrarySizeSelectors = [
     message:
       '모션 duration 하드코딩 금지. 기본(--motion-fast, 확인)이면 duration 클래스를 생략하고, 표면 이동은 --motion-base, 확정은 --motion-settle 을 duration 유틸리티 안에서 var() 로 참조한다.',
   },
+  // 2026-07-28 — duration 룰의 **사정거리 구멍**. 위 셀렉터는 duration 유틸리티만
+  // 보는데, 키프레임을 쓰는 표면은 duration 을 애니메이션 단축 문법 안에 싣는다:
+  // 거기 박힌 ms 는 어떤 게이트에도 안 걸렸다. 전수 측정 결과 3건(150/180/220ms)
+  // 이 살아 있었고 그중 220 은 램프에 아예 없는 값이었다. 3건을 먼저 치환하고
+  // 룰을 켰으므로 켜는 순간 위반 0 · lint 총계 불변.
+  //
+  // 토큰 참조형(`var(--motion-base)`)은 숫자로 시작하지 않아 이 정규식에 안 걸린다.
+  // ⚠️ 메시지에 리터럴 유틸리티 문법 금지 — Tailwind v4 스캐너가 이 파일을 훑는다.
+  {
+    selector: 'Literal[value=/animate-\\[[^\\]]*_[0-9.]+m?s/]',
+    message:
+      '모션 duration 하드코딩 금지 — 애니메이션 단축 문법 안의 시간도 램프를 탄다. --motion-fast/base/settle 와 --motion-ease 를 var() 로 참조한다.',
+  },
+  {
+    selector: 'TemplateElement[value.raw=/animate-\\[[^\\]]*_[0-9.]+m?s/]',
+    message:
+      '모션 duration 하드코딩 금지 — 애니메이션 단축 문법 안의 시간 (template literal). --motion-* 토큰을 var() 로.',
+  },
+  // 2026-07-28 색 있는 헤일로 — `design.md` 가 「glow-like boxShadow `0 0 ...` ring」
+  // 을 이름으로 금지해 놨는데, 그림자 룰이 `var(` 있는 값을 통째로 면제해서
+  // 하단 탭바의 활성 표시가 `0 0 12px` 인디고 헤일로를 달고 살아 있었다.
+  // **면제가 정당했던 이유가 여기서는 반대로 작동한다** — 정상 토큰 참조를
+  // 살리려던 예외가 토큰으로 쓴 글로우까지 살려 줬다.
+  //
+  // 판별은 색으로 한다: 무채색 그림자 토큰(`--color-shadow-*`)의 `0 0` 확산은
+  // 측면 서랍 같은 큰 표면의 정당한 앰비언트 그림자다(측정: 2건, 둘 다 서랍).
+  // 그 외 색 토큰의 `0 0` 은 마크 둘레의 헤일로 — 금지 대상이다(측정: 1건, 치환
+  // 완료). 좁힌 뒤 위반 0 · lint 총계 불변.
+  // ⚠️ 메시지에 리터럴 유틸리티 문법 금지 — Tailwind v4 스캐너가 이 파일을 훑는다.
+  {
+    selector: 'Literal[value=/shadow-\\[0_0_(?!0[_\\]])[^\\]]*var\\(--color-(?!shadow-)/]',
+    message:
+      '디자인 헌장 — 마크 둘레의 색 있는 헤일로 금지 (glow ring). 대비가 부족하면 헤일로가 아니라 선/면의 값을 올린다. 무채색 그림자 토큰의 확산 그림자는 예외.',
+  },
+  {
+    selector: 'TemplateElement[value.raw=/shadow-\\[0_0_(?!0[_\\]])[^\\]]*var\\(--color-(?!shadow-)/]',
+    message:
+      '디자인 헌장 — 마크 둘레의 색 있는 헤일로 금지 (template literal). 무채색 그림자 토큰의 확산 그림자는 예외.',
+  },
   {
     selector: 'TemplateElement[value.raw=/(?:^|[^-\\w])duration-\\d/]',
     message:
