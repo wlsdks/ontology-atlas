@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
+import { useCopyFeedback } from "@/shared/lib/use-copy-feedback";
 import { AnimatePresence, motion } from "framer-motion";
 import { useTranslations } from "next-intl";
 import { Cable, Check, ChevronDown, Copy, X } from "lucide-react";
@@ -69,7 +70,9 @@ export interface AgentConnectSheetProps {
 
 function CopyBlock({ label, value, testId }: { label: string; value: string; testId: string }) {
   const t = useTranslations("agentConnect");
-  const [copied, setCopied] = useState(false);
+  // 복사 결과는 **성공도 실패도** 말한다 (2026-07-28 QA). 클립보드 권한은
+  // 조용히 거절될 수 있고, 그때 침묵하면 사용자는 복사됐다고 믿는다.
+  const { state: copyState, copy: copyValue } = useCopyFeedback(1600);
   return (
     <div className="flex flex-col gap-1.5">
       <div className="flex items-center justify-between gap-2">
@@ -80,15 +83,12 @@ function CopyBlock({ label, value, testId }: { label: string; value: string; tes
           type="button"
           data-testid={testId}
           onClick={async () => {
-            if (await copyText(value)) {
-              setCopied(true);
-              window.setTimeout(() => setCopied(false), 1600);
-            }
+            await copyValue(value);
           }}
           className="inline-flex items-center gap-1 rounded border border-[color:var(--color-border-soft)] px-1.5 py-0.5 text-caption text-[color:var(--color-text-tertiary)] transition-colors hover:border-[color:var(--color-indigo-a46)] hover:text-[color:var(--color-text-primary)]"
         >
-          {copied ? <Check size={10} aria-hidden /> : <Copy size={10} aria-hidden />}
-          {copied ? t("copied") : t("copy")}
+          {copyState === "copied" ? <Check size={10} aria-hidden /> : <Copy size={10} aria-hidden />}
+          {copyState === "copied" ? t("copied") : copyState === "failed" ? t("copyFailed") : t("copy")}
         </button>
       </div>
       <pre className="max-h-36 overflow-auto rounded-md border border-[color:var(--color-border-soft)] bg-[color:var(--color-overlay-1)] px-3 py-2 font-mono text-label leading-relaxed text-[color:var(--color-text-secondary)]">
@@ -147,7 +147,7 @@ export function AgentConnectSheet({
 }: AgentConnectSheetProps) {
   const t = useTranslations("agentConnect");
   const dialogRef = useRef<HTMLElement | null>(null);
-  const [handoffCopied, setHandoffCopied] = useState(false);
+  const { state: handoffCopyState, copy: copyHandoff } = useCopyFeedback(1600);
   const [advancedOpen, setAdvancedOpen] = useState(false);
   useBodyScrollLock(open);
 
@@ -347,15 +347,20 @@ export function AgentConnectSheet({
                     type="button"
                     data-testid="agent-connect-copy-handoff"
                     onClick={async () => {
-                      if (await copyText(handoffText)) {
-                        setHandoffCopied(true);
-                        window.setTimeout(() => setHandoffCopied(false), 1600);
-                      }
+                      await copyHandoff(handoffText);
                     }}
                     className="inline-flex h-8 w-fit items-center gap-1.5 rounded-md border border-[color:var(--color-border-soft)] px-3 text-label text-[color:var(--color-text-tertiary)] transition-colors hover:border-[color:var(--color-indigo-a46)] hover:text-[color:var(--color-text-primary)]"
                   >
-                    {handoffCopied ? <Check size={11} aria-hidden /> : <Copy size={11} aria-hidden />}
-                    {handoffCopied ? t("handoffCopied") : t("copyHandoff")}
+                    {handoffCopyState === "copied" ? (
+                      <Check size={11} aria-hidden />
+                    ) : (
+                      <Copy size={11} aria-hidden />
+                    )}
+                    {handoffCopyState === "copied"
+                      ? t("handoffCopied")
+                      : handoffCopyState === "failed"
+                        ? t("copyFailed")
+                        : t("copyHandoff")}
                   </button>
                 </section>
               ) : null}
