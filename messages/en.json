@@ -110,7 +110,8 @@
       "createTitle": "Create a new node",
       "createDesc": "Assemble a name and relations to record a brand-new node.",
       "exit": "Never mind",
-      "dialogAria": "Choose how to start in the workshop"
+      "dialogAria": "Choose how to start in the workshop",
+      "practice": "First time? Let's make one together"
     },
     "exit": "Stop",
     "returnToReview": "Back to insight review",
@@ -297,6 +298,27 @@
       "cancel": "Cancel",
       "closeAria": "Close",
       "saved": "Created ‘{name}’ and recorded {count} change(s)."
+    },
+    "practice": {
+      "step": {
+        "name": "Name the concept you want to make. A word your team actually says works best.",
+        "relate": "Pick one thing this connects to. Any of the four directions is fine.",
+        "save": "That's enough. Saving writes one markdown file into your folder.",
+        "done": "Saved."
+      },
+      "progress": "{current} / {total}",
+      "progressAria": "Practice progress",
+      "quit": "Stop the practice",
+      "cleanupTitle": "You just did it",
+      "cleanupSummary": "You made “{name}”. It is a real file, not a mock-up — it is sitting in your folder right now.",
+      "cleanupQuestion": "If that was practice, you can remove it now. Keep it and it simply becomes a concept in your vault.",
+      "delete": "Remove it",
+      "keep": "Keep it",
+      "detachNote": "reference only",
+      "removed": "Removed “{name}”.",
+      "removeFailed": "Could not remove it — {message}",
+      "agentHint": "You don't have to do this by hand every time. Connect Claude Code, Codex or Cursor — or add an API key — and an agent writes the same files for you.",
+      "agentAction": "Connect an AI"
     }
   },
   "liveActivity": {

@@ -16,6 +16,13 @@ import { useLocalVault } from "@/features/docs-vault-local";
 import { useOntologyKindLabel } from "@/entities/ontology-class";
 import { findSimilarNodeByTitle, type SimilarNodeCandidate } from "@/shared/lib/similar-node-title";
 import { LG_BREAKPOINT_PX, useViewportBelow } from "@/shared/lib/use-viewport-below";
+import { requestSettingsView } from "@/shared/lib/settings-view-intent";
+import { useAgentDockDefaultOpen } from "@/shared/lib/use-agent-dock-default";
+import { isLlmChatBridgeAvailable } from "@/shared/lib/tauri-llm";
+import { getTauriVaultRootPath } from "@/shared/lib/tauri-vault-fs";
+import type { ScreenContextSnapshot } from "@/features/vault-agent";
+import { VaultAgentPanel } from "@/widgets/vault-agent-panel";
+import { STUDIO_AGENT_DOCK_MIN_VIEWPORT_PX } from "../lib/studio-agent-dock";
 import { EmptyState, useToast } from "@/shared/ui";
 import {
   buildStudioItem,
@@ -65,6 +72,12 @@ import {
   resolveStudioFocalId,
 } from "../lib/resolve-studio-focal";
 import { studioHasDeepLinkIntent } from "../lib/entry-choice";
+import {
+  planPracticeCleanup,
+  practiceStep,
+  practiceStepIndex,
+  type PracticeArtifact,
+} from "../lib/studio-practice-guide";
 import { allowedKindsFor } from "../lib/allowed-kinds";
 import { candidateMatches } from "../lib/match-candidate";
 import {
@@ -75,6 +88,8 @@ import {
 } from "../lib/studio-draft-store";
 import { StudioCompass, type CompassBearingView, type StudioCompassLabels } from "./StudioCompass";
 import { StudioEntryChoice } from "./StudioEntryChoice";
+import { StudioPracticeCleanup } from "./StudioPracticeCleanup";
+import { StudioPracticeRail } from "./StudioPracticeRail";
 import { StudioTooNarrow } from "./StudioTooNarrow";
 import { StudioMaterializeDialog, type StudioMaterializeLabels } from "./StudioMaterializeDialog";
 
@@ -108,7 +123,15 @@ function normalize(s: string): string {
   return s.trim().toLowerCase().replace(/\s+/g, " ");
 }
 
-export function OntologyStudioPage() {
+function StudioStage({
+  practiceSaved,
+  onPracticeSaved,
+}: {
+  /** 실습 저장이 이미 끝났나 — 안내 띠를 접고 마무리에 자리를 넘긴다. */
+  practiceSaved: boolean;
+  /** 쓰기가 성공한 **그 순간** 되돌리기 표를 바깥으로 올린다. */
+  onPracticeSaved: (artifact: PracticeArtifact) => void;
+}) {
   const t = useTranslations("ontologyStudio");
   const locale = useLocale();
   // C12③ — the secondary display-name locale is the OTHER of the two app locales.
@@ -126,6 +149,8 @@ export function OntologyStudioPage() {
   const narrowViewport = useViewportBelow(LG_BREAKPOINT_PX);
 
   const isCreate = searchParams.get("mode") === "create";
+  // 실습 모드 — 생성 무대 위에 안내 띠를 얹고, 저장 뒤 「지울까요?」로 닫는다.
+  const isPractice = searchParams.get("practice") === "1";
   const requestedNode = searchParams.get("node");
   // #1 — the entry choice moment shows ONLY on a bare `/ontology/studio` open.
   // Any deep-link intent (mode/node/from/edit, or an insights review return)
@@ -311,6 +336,15 @@ export function OntologyStudioPage() {
 
   const enterCreate = useCallback(
     () => navigateStudio(new URLSearchParams({ mode: "create" })),
+    [navigateStudio],
+  );
+  /**
+   * 실습 시작 — 생성 모드와 **같은 무대**로 들어간다. 별도의 실습 화면을 만들지
+   * 않는 것이 요점이다: 연습용 화면에서 배운 조작은 진짜 화면에서 한 번 더
+   * 배워야 하고, 그러면 실습이 아니라 예고편이 된다.
+   */
+  const enterPractice = useCallback(
+    () => navigateStudio(new URLSearchParams({ mode: "create", practice: "1" })),
     [navigateStudio],
   );
   const exit = useCallback(
@@ -685,6 +719,27 @@ export function OntologyStudioPage() {
             [key]: Array.from(new Set([...existing, newRef])),
           });
         }
+        // 실습이면 방금 디스크에 앉은 것들의 **되돌리기 표**를 여기서 만든다.
+        // 나중에 재구성하려 하면 이미 상태가 흘러가 버려서(초안 리셋 · 이동)
+        // "무엇을 지우는지" 를 정확히 말할 수 없다.
+        if (isPractice) {
+          onPracticeSaved({
+            slug,
+            title: title.trim(),
+            createdOriginSlug:
+              createContext && newRef && originTarget?.status === "missing" && originKindChoice
+                ? originTarget.slug
+                : null,
+            touchedOrigin:
+              createContext && newRef && originTarget?.status === "existing"
+                ? {
+                    slug: originTarget.slug,
+                    frontmatterKey: BEARING_FRONTMATTER_KEY[createContext.relation],
+                    ref: newRef,
+                  }
+                : null,
+          });
+        }
         toast.show(t("create.appliedDirect", { title: title.trim() }), "success");
         // 새로 만든 문서의 노드 id 도 실체화와 같은 함수로 정한다 — 두 경로가
         // 각자 계산하면 project 처럼 id 규칙이 다른 종류에서 갈라진다.
@@ -736,13 +791,23 @@ export function OntologyStudioPage() {
     } catch {
       toast.show(t("create.copyFailed"), "info");
     }
-  }, [title, createSlugCollision, writable, draft, localVault, toast, t, kind, openNode, createContext, nodes, edges, askDocConsent]);
+  }, [title, createSlugCollision, writable, draft, localVault, toast, t, kind, openNode, createContext, nodes, edges, askDocConsent, isPractice, onPracticeSaved]);
+
+
 
   // ② 2026-07-28 — 폭 강등. 이 화면은 데스크톱 레일 전용으로 설계됐는데
   // (`BottomTabBar` 가 공방 탭을 뺀 이유, #707) 라우트에는 가드가 없어서
   // 딥링크 세 갈래가 <lg 로 그대로 떨어졌다. 여기서 한 번 정직하게 말한다.
   // 모든 훅 뒤·모든 분기 앞이라 어떤 진입(create/enhance/딥링크)이든 같은 답을
   // 받는다 — 조건을 갈래마다 두면 하나가 빠져도 아무도 모른다(#65 계열 drift).
+  // 안내 문장은 **지금 초안의 실제 상태**에서 나온다 — 카운터가 아니다.
+  // 그래서 사용자가 순서를 어겨도(관계 먼저, 이름 나중) 안내가 따라간다.
+  const practiceRailStep = practiceStep({
+    title,
+    relationCount: relations.length,
+    saved: practiceSaved,
+  });
+
   if (narrowViewport) return <StudioTooNarrow />;
 
   if (isCreate) {
@@ -895,6 +960,23 @@ export function OntologyStudioPage() {
         onOpenSimilar={openSimilarNode}
         onDismissSimilar={() => setSimilarDismissed(true)}
       />
+      {isPractice && !practiceSaved ? (
+        <div className="pointer-events-none fixed inset-x-0 top-3 z-40 px-6">
+          <StudioPracticeRail
+            step={practiceRailStep}
+            labels={{
+              instruction: t(`practice.step.${practiceRailStep}`),
+              progress: t("practice.progress", {
+                current: practiceStepIndex(practiceRailStep),
+                total: 4,
+              }),
+              quit: t("practice.quit"),
+              progressAria: t("practice.progressAria"),
+            }}
+            onQuit={() => navigateStudio(new URLSearchParams({ mode: "create" }), { drop: ["practice"] })}
+          />
+        </div>
+      ) : null}
       {docConsent ? (
         <StudioMaterializeDialog
           target={docConsent.target}
@@ -923,6 +1005,7 @@ export function OntologyStudioPage() {
             : null,
           createTitle: t("entryChoice.createTitle"),
           createDesc: t("entryChoice.createDesc"),
+          practice: t("entryChoice.practice"),
           exit: t("entryChoice.exit"),
           dialogAria: t("entryChoice.dialogAria"),
         }}
@@ -931,6 +1014,7 @@ export function OntologyStudioPage() {
           setChoiceDismissed(true);
         }}
         onCreate={enterCreate}
+        onPractice={enterPractice}
         onExit={exit}
       />
     );
@@ -951,7 +1035,7 @@ export function OntologyStudioPage() {
         >
           {t("materialize.opening")}
         </p>
-      </main>
+        </main>
     );
   }
   // 요청한 개념이 없으면 다른 개념을 대신 열지 않는다 — 죽은 딥링크는
@@ -1297,5 +1381,170 @@ export function OntologyStudioPage() {
       />
     ) : null}
     </>
+  );
+}
+
+/**
+ * `/ontology/studio` 의 바깥 껍질 — **실습 마무리의 유일한 자리.**
+ *
+ * 왜 껍질이 필요한가: 무대(`StudioStage`)는 진입 선택 · 폭 강등 · 실체화 대기 ·
+ * 죽은 딥링크 · 빈 볼트 · 생성 · 강화로 **여덟 갈래의 이른 return** 을 가진다.
+ * 실습 저장은 `openNode` 로 이동을 일으키므로 착지 분기가 그때그때 다르고,
+ * 마무리 대화상자를 분기마다 심으면 **하나가 빠져도 아무도 모른다** — 실제로
+ * 처음 구현에서 빈 볼트 분기가 빠져 저장 직후 「지울까요?」가 증발했다.
+ *
+ * 그래서 조건부 렌더 위가 아니라 **밖**에 둔다. 분기 수가 몇이든 이 자리는 하나다.
+ */
+export function OntologyStudioPage() {
+  const t = useTranslations("ontologyStudio");
+  const toast = useToast();
+  const localVault = useLocalVault();
+  const navigateStudio = useStudioNavigate();
+  const [practiceArtifact, setPracticeArtifact] = useState<PracticeArtifact | null>(null);
+  const [practiceBusy, setPracticeBusy] = useState(false);
+
+  // ── 오른쪽 에이전트 도크 ──────────────────────────────────────────────
+  const locale = useLocale();
+  const { insight } = useOntologyInsight();
+  const dockDefaultOpen = useAgentDockDefaultOpen();
+  const dockTooNarrow = useViewportBelow(STUDIO_AGENT_DOCK_MIN_VIEWPORT_PX);
+  // 다리가 없으면(웹) 도크 자체를 안 그린다 — 원리적으로 불가한 능력에
+  // 잠긴 표면을 상주시키지 않는다(`surfaces.md`).
+  const dockUsable = isLlmChatBridgeAvailable() && !dockTooNarrow;
+  const [dockOpenState, setDockOpenState] = useState(false);
+  const dockTouchedRef = useRef(false);
+  useEffect(() => {
+    if (dockDefaultOpen !== true || dockTouchedRef.current) return;
+    setDockOpenState(true);
+  }, [dockDefaultOpen]);
+  const dockOpen = dockUsable && dockOpenState;
+  const closeDock = useCallback(() => {
+    dockTouchedRef.current = true;
+    setDockOpenState(false);
+  }, []);
+
+  const vaultPath = localVault.handle ? getTauriVaultRootPath(localVault.handle) ?? null : null;
+  /**
+   * 공방이 에이전트에게 건네는 화면 맥락 — **지금 무대 위의 개념**이 전부다.
+   * 지도의 스냅샷과 필드는 같고 값의 출처만 다르다(렌즈·가시 노드 수는 공방에
+   * 없는 개념이라 비운다). 없는 사실을 지어내지 않는 것이 이 스냅샷의 계약이다.
+   */
+  const focalNode = useMemo(() => {
+    const id = new URLSearchParams(
+      typeof window === "undefined" ? "" : window.location.search,
+    ).get("node");
+    return id ? insight?.nodes.find((n) => n.id === id) ?? null : null;
+  }, [insight]);
+  const screenContext = useMemo<ScreenContextSnapshot>(
+    () => ({
+      focusedSlug: focalNode?.agentSlug ?? null,
+      focusedTitle: focalNode?.title ?? null,
+      focusedKind: focalNode?.kind ?? null,
+      lenses: [],
+      projectTitle: null,
+      visibleNodeCount: insight?.nodes.length ?? 0,
+    }),
+    [focalNode, insight],
+  );
+
+  /**
+   * 실습 정리 — **진짜 삭제**다. 새 노드를 지우고, 이 실습이 함께 실체화한
+   * 출발 문서가 있으면 그것도 지우고, 원래 있던 출발 문서에 덧붙인 참조는
+   * 그 문서를 남긴 채 그것만 뗀다. 새 노드만 지우면 출발 노드에 깨진 참조가
+   * 남아 실습이 볼트를 더럽히고 끝난다.
+   */
+  const runPracticeCleanup = useCallback(async () => {
+    if (!practiceArtifact) return;
+    const plan = planPracticeCleanup(practiceArtifact);
+    setPracticeBusy(true);
+    try {
+      if (plan.detach) {
+        const doc = localVault.manifest?.docs.find((d) => d.slug === plan.detach!.slug);
+        const existing = doc ? asStringArray(doc.frontmatter[plan.detach.frontmatterKey]) : [];
+        const next = existing.filter((ref) => ref !== plan.detach!.ref);
+        await localVault.updateFrontmatter(plan.detach.slug, {
+          // 마지막 참조였으면 키 자체를 없앤다 — 빈 배열이 남으면 "관계를
+          // 지웠는데 흔적이 남았다" 로 읽힌다.
+          [plan.detach.frontmatterKey]: next.length > 0 ? next : null,
+        });
+      }
+      for (const slug of plan.deleteSlugs) {
+        await localVault.deleteDoc(slug);
+      }
+      setPracticeArtifact(null);
+      toast.show(t("practice.removed", { name: practiceArtifact.title }), "success");
+      // 실습이 끝났으니 실습 표시도 주소에서 뺀다 — 안 빼면 다음 저장이 또
+      // 실습으로 읽힌다.
+      navigateStudio(new URLSearchParams({ mode: "create" }), { drop: ["practice"] });
+    } catch (err) {
+      toast.show(
+        t("practice.removeFailed", { message: err instanceof Error ? err.message : String(err) }),
+        "error",
+      );
+    } finally {
+      setPracticeBusy(false);
+    }
+  }, [practiceArtifact, localVault, toast, t, navigateStudio]);
+
+  /**
+   * 남겨 두기 — 연습이 곧 볼트의 첫 노드가 된다. 아무것도 되돌리지 않고
+   * 실습 표시만 뗀다(안 떼면 다음 저장이 또 실습으로 읽힌다).
+   */
+  const keepPractice = useCallback(() => {
+    setPracticeArtifact(null);
+    navigateStudio(new URLSearchParams(window.location.search), { drop: ["practice"] });
+  }, [navigateStudio]);
+
+  return (
+    <div className="flex h-[100dvh] w-full overflow-hidden">
+      <div className="relative min-w-0 flex-1">
+        <StudioStage
+          practiceSaved={practiceArtifact !== null}
+          onPracticeSaved={setPracticeArtifact}
+        />
+      </div>
+      {/* 오른쪽 에이전트 도크 — 지도와 **같은 위젯, 같은 자리**. 공방에서만
+          폭 조건이 하나 더 붙는 이유는 `lib/studio-agent-dock.ts` 에 있다:
+          도크가 가져가는 폭이 무대를 자기 최소 폭 아래로 누르면, 폭 강등은
+          뷰포트만 보므로 발화하지 않은 채 깨진 기하로 들어간다. */}
+      {dockUsable ? (
+        <VaultAgentPanel
+          open={dockOpen}
+          onClose={closeDock}
+          vaultPath={vaultPath}
+          insight={insight}
+          manifest={localVault.manifest}
+          screenContext={screenContext}
+          vaultIsGit={false}
+          canWrite={localVault.status === "loaded" && Boolean(localVault.handle)}
+          // 공방에는 지도가 없다 — 개념 칩을 누르면 **그 개념의 무대**로 간다.
+          // 같은 화면 안에서 답하는 것이 다른 표면으로 튕기는 것보다 낫다.
+          onFocusNode={(slug) => navigateStudio(new URLSearchParams({ node: slug }))}
+          downloadHref={`/${locale}/download/`}
+        />
+      ) : null}
+      {practiceArtifact ? (
+        <StudioPracticeCleanup
+          plan={planPracticeCleanup(practiceArtifact)}
+          busy={practiceBusy}
+          labels={{
+            title: t("practice.cleanupTitle"),
+            summary: t("practice.cleanupSummary", { name: practiceArtifact.title }),
+            question: t("practice.cleanupQuestion"),
+            deleteLabel: t("practice.delete"),
+            keepLabel: t("practice.keep"),
+            detachNote: t("practice.detachNote"),
+            agentHint: t("practice.agentHint"),
+            agentAction: t("practice.agentAction"),
+            dialogAria: t("practice.cleanupTitle"),
+          }}
+          onDelete={() => void runPracticeCleanup()}
+          onKeep={keepPractice}
+          // 설정 시트의 「AI 연결」 자리를 연다 — 웹에서는 그 자리가 정직하게
+          // 강등되며 갈 곳(/download/)을 준다. 표면별로 문을 두 개 만들지 않는다.
+          onAgentAction={() => requestSettingsView("ai")}
+        />
+      ) : null}
+    </div>
   );
 }
