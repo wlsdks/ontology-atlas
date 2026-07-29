@@ -148,7 +148,11 @@ test("desktop smoke copy contract refuses a message key the catalog dropped", ()
 
 test("desktop smoke copy contract refuses a message with an ICU placeholder", () => {
   assert.throws(
-    () => resolveRouteText({ keysByRoute: { "/download": ["download.macosPublishedBadge"] } }),
+    // 살아 있으면서 플레이스홀더를 가진 키여야 한다 — 사라진 키를 쓰면 이
+    // 프로브가 "ICU 거부" 대신 "키 없음" 으로 던져서, **검사하려던 것과 다른
+    // 것을 검사하게 된다**(2026-07-29: `macosPublishedBadge` 가 관문 재설계에서
+    // 사라지며 실제로 그렇게 됐다).
+    () => resolveRouteText({ keysByRoute: { "/download": ["download.trustVerifyCommand"] } }),
     /ICU placeholder/,
   );
 });

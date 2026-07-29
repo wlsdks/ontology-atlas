@@ -646,7 +646,14 @@ function PendingActions() {
         })}
       </p>
 
-      <p className="mt-2.5 flex flex-wrap items-baseline gap-x-2 gap-y-1 text-label leading-label text-[color:var(--color-text-quaternary)]">
+      {/* macOS 쪽 설치 가능성의 앵커 — Windows 는 `PlatformStatus` 가 진다.
+          두 플랫폼이 **각자 이름을 갖는다**는 계약의 시험 대상이라
+          (`tests/e2e/ontology-ui.spec.ts`), 게시/미게시 두 분기 모두 단다.
+          동시에 그려지지 않으므로 중복 매치는 없다. */}
+      <p
+        data-testid="download-platform-macos"
+        className="mt-2.5 flex flex-wrap items-baseline gap-x-2 gap-y-1 text-label leading-label text-[color:var(--color-text-quaternary)]"
+      >
         <span>
           {RELEASE_MIN_MACOS}
           {t('factMinOsSuffix')}
@@ -668,9 +675,12 @@ function ReleaseFactLine() {
   const format = useFormatter();
   const publishedAt = macosPublishedDate();
 
+  // 미게시 분기와 **같은 앵커**를 쓴다 — 두 분기가 서로 다른 이름을 가지면
+  // 릴리스 당일에 시험이 깨진다(두 분기는 동시에 그려지지 않으므로 중복
+  // 매치도 없다). 구 `download-release-facts` 는 소비자가 0이라 여기서 정리했다.
   return (
     <p
-      data-testid="download-release-facts"
+      data-testid="download-platform-macos"
       className="mt-2.5 flex flex-wrap items-baseline gap-x-2 gap-y-1 text-label leading-label text-[color:var(--color-text-quaternary)]"
     >
       <span>

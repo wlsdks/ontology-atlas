@@ -76,6 +76,16 @@ async function measure(page: import("@playwright/test").Page): Promise<Measured>
         const cs = getComputedStyle(child);
         if (cs.position === "fixed" || cs.display === "none" || cs.visibility === "hidden") continue;
         if ((child.className ?? "").toString().includes("sr-only")) continue;
+        /**
+         * ⚠️ **닫힌 `<details>` 의 내용은 박스는 있는데 잉크가 아니다.**
+         *
+         * 최신 Chromium 은 닫힌 disclosure 를 `display: none` 이 아니라
+         * `content-visibility: hidden` 으로 감춘다(전개 애니메이션 때문에 바뀐
+         * 동작). 위 세 조건은 전부 통과하는데 화면에는 없다 — 실측 2026-07-29:
+         * `/download` 의 접힌 「받아도 되는 이유」가 561px 짜리 유령 잉크가 되어
+         * 하단 여백을 -505px 로 만들었다. `checkVisibility()` 가 표준 판별이다.
+         */
+        if (typeof child.checkVisibility === "function" && !child.checkVisibility()) continue;
         const r = child.getBoundingClientRect();
         if (child.children.length === 0 && r.height > 2 && r.width > 2 && r.bottom > inkBottom) {
           inkBottom = r.bottom;

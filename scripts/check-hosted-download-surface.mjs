@@ -159,7 +159,29 @@ function assertOkPage(page, path) {
   }
 }
 
+/**
+ * ⚠️ **A missing message key must fail loudly, not pass quietly.**
+ *
+ * `String.prototype.includes(undefined)` coerces its argument to the literal
+ * `"undefined"`. So when a copy key was renamed away, this check did not just
+ * stop guarding that string — it started guarding the *word* `undefined`, which
+ * the page's own template happily renders in the same spot. The needle and the
+ * haystack were both wrong in the same way, so they matched, and the guard
+ * reported success (measured 2026-07-29: the Windows-platform assertion had
+ * silently disarmed itself after `windowsHeading` / `windowsPendingBadge` were
+ * replaced by `platformStatus` / `windowsTrackCta`).
+ *
+ * A guard that cannot tell "the page lost this text" from "nobody told me what
+ * text to look for" is worse than no guard — it is a green light nobody earned.
+ */
 function assertIncludes(text, label, needles) {
+  const unusable = needles.filter((needle) => typeof needle !== "string" || needle.length === 0);
+  if (unusable.length > 0) {
+    throw new Error(
+      `${label} check is misconfigured: ${unusable.length} expected string(s) resolved to nothing ` +
+        `(a renamed or deleted message key). Point the check at the current keys.`,
+    );
+  }
   const missing = needles.filter((needle) => !text.includes(needle));
   if (missing.length > 0) {
     throw new Error(`${label} is missing expected text: ${missing.join(", ")}`);
@@ -197,12 +219,18 @@ export async function evaluateHostedSurface({ baseUrl, timeoutMs = DEFAULT_TIMEO
 
   const downloadCopy = koMessages.download ?? {};
   assertIncludes(downloadText, downloadPath, [
-    downloadCopy.title,
+    // ⚠️ Needles must survive `renderedText()`, which collapses every run of
+    // whitespace to one space. A string carrying `\n` (the headline does) can
+    // never match after that, so the headline is deliberately NOT a needle —
+    // the eyebrow names the platform and the product in one unbroken line.
+    downloadCopy.eyebrow,
     downloadCopy.sourceCta,
     // Both platforms are named, so a Windows visitor is never left guessing.
-    downloadCopy.macosHeading,
-    downloadCopy.windowsHeading,
-    downloadCopy.windowsPendingBadge,
+    // The keys changed with the 2026-07-29 gateway redesign — the *contract*
+    // ("a Windows visitor is told where they stand, and where to follow it")
+    // is unchanged, so the check follows the copy rather than the key names.
+    downloadCopy.platformStatus,
+    downloadCopy.windowsTrackCta,
     downloadCopy.releaseGateNote,
   ]);
   assertIncludes(download.body, downloadPath, [releasesUrl]);
