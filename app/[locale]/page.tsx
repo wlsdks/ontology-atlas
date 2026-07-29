@@ -1,8 +1,9 @@
 import { Suspense } from "react";
 import type { Metadata } from "next";
 import { RootEntryPage } from '@/views/root-entry';
-import { absoluteUrl } from "@/shared/config";
+import { buildPageMetadata } from "@/shared/lib/page-metadata";
 import { routing } from "@/i18n/routing";
+import { getTranslations } from "next-intl/server";
 import { MapEntryFallback } from "@/shared/ui/map-entry-fallback";
 
 // 각 locale page 의 canonical 은 *자기 자신 URL* 이어야 hreflang group 이
@@ -19,11 +20,13 @@ export async function generateMetadata({
   const safeLocale = (routing.locales as readonly string[]).includes(locale)
     ? locale
     : routing.defaultLocale;
-  return {
-    alternates: {
-      canonical: absoluteUrl(`/${safeLocale}/`),
-    },
-  };
+  const t = await getTranslations({ locale: safeLocale, namespace: 'metadata' });
+  return buildPageMetadata({
+    locale: safeLocale,
+    path: '',
+    title: t('siteName'),
+    description: t('descriptions.home'),
+  });
 }
 
 // 정적 export 에서 이 라우트의 HTML 본문은 Suspense fallback 이 전부다. 루트는
