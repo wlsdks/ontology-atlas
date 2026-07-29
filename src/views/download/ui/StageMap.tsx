@@ -3,7 +3,11 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { useTranslations } from 'next-intl';
 import { useDogfoodInsight } from '@/features/vault-ontology';
-import { TopologyMapV2, clearTopologyV2TokensCache } from '@/widgets/topology-map-v2';
+import {
+  TopologyMapV2,
+  clearTopologyV2TokensCache,
+  refreshIndexDependentTokens,
+} from '@/widgets/topology-map-v2';
 import { buildStageGraph, type StageGraph } from '../lib/stage-graph';
 import { computeGatewaySafeInset } from '../lib/gateway-grid';
 
@@ -125,17 +129,26 @@ export function StageMap({ graph }: { graph: StageGraph }) {
      * 계산이 CSS `calc()` 가 아니라 여기 있는 이유는
      * `../lib/gateway-grid.ts` 의 독블록에 있다.
      */
-    const read = (name: string) =>
-      Number.parseFloat(getComputedStyle(root).getPropertyValue(name));
-    const gutter = read('--gateway-gutter');
-    const plateWidth = read('--gateway-plate-width');
-    const plateGap = read('--gateway-plate-gap');
-    if (Number.isFinite(gutter) && Number.isFinite(plateWidth) && Number.isFinite(plateGap)) {
-      root.style.setProperty(
-        '--gateway-safe-inset-left-computed',
-        String(computeGatewaySafeInset({ gutter, plateWidth, plateGap }))
-      );
-    }
+    const readAtoms = () => {
+      const styles = getComputedStyle(root);
+      const read = (name: string) => Number.parseFloat(styles.getPropertyValue(name));
+      // 첫 항은 홈통이 아니라 **원점**이다 — `--gateway-origin` 은 `@property`
+      // 로 `<length>` 등록돼 있어 계산값이 `160px` 처럼 쓰인 길이로 굳는다.
+      // 그래서 `parseFloat` 가 화면이 실제로 쓰는 x 와 **같은 수**를 준다.
+      return {
+        origin: read('--gateway-origin'),
+        plateWidth: read('--gateway-plate-width'),
+        plateGap: read('--gateway-plate-gap'),
+      };
+    };
+    const writeSafeInset = (): string | null => {
+      const atoms = readAtoms();
+      if (!Object.values(atoms).every(Number.isFinite)) return null;
+      const next = String(computeGatewaySafeInset(atoms));
+      root.style.setProperty('--gateway-safe-inset-left-computed', next);
+      return next;
+    };
+    let written = writeSafeInset();
 
     clearTopologyV2TokensCache();
     // 이 setState 가 곧 **순서 계약**이다. 지도를 같은 렌더에 그리면 React 가
@@ -145,7 +158,47 @@ export function StageMap({ graph }: { graph: StageGraph }) {
     // 대안은 렌더 중 DOM 을 만지는 것뿐이라 더 나쁘다.
     // eslint-disable-next-line react-hooks/set-state-in-effect
     setScoped(true);
+
+    /**
+     * **리사이즈에 구독한다** — 원점이 뷰포트의 함수가 된 순간 필수다
+     * (2026-07-29 평결이 명시한 재발 경로).
+     *
+     * 마운트 1회 파생으로 두면 창을 넓히는 순간 예약폭이 **낡는다**: 판은
+     * CSS 가 계산한 새 원점으로 옮겨 가는데 카메라는 옛 수를 계속 피한다.
+     * 그게 아침 사고(1920 +96 · 2560 +416)와 같은 형태이고, 원점 승격이
+     * 없애려던 바로 그 어긋남이다.
+     *
+     * ## 왜 전면 무효화가 아니라 부분 갱신인가
+     *
+     * `clearTopologyV2TokensCache()` 는 다음 읽기에 `getPropertyValue` 115회를
+     * 강제해 스타일 재계산 58ms 를 태운다(2026-07-28 트레이스). 창을 끄는
+     * 동안에는 그 사건이 초당 수십 번이다. `data-gateway-stage` 가 실제로
+     * 바꾸는 토큰은 `--topology-v2-safe-inset-left` 하나뿐이라
+     * `refreshIndexDependentTokens` 가 정확히 그것만 갈아 끼운다 —
+     * `HomePage` 가 INDEX 전환에서 쓰는 것과 같은 기제다.
+     *
+     * ## rAF 코얼레싱 + 변화 없으면 아무것도 안 한다
+     *
+     * 리사이즈는 프레임당 여러 번 올 수 있고, 원점은 **이산적으로만** 바뀌는
+     * 구간이 넓다(홈통이 이기는 1536~1728). 값이 그대로면 읽기도 갱신도
+     * 건너뛴다.
+     */
+    let frame = 0;
+    const onResize = () => {
+      if (frame) return;
+      frame = requestAnimationFrame(() => {
+        frame = 0;
+        const next = writeSafeInset();
+        if (next === null || next === written) return;
+        written = next;
+        refreshIndexDependentTokens(root);
+      });
+    };
+    window.addEventListener('resize', onResize);
+
     return () => {
+      window.removeEventListener('resize', onResize);
+      if (frame) cancelAnimationFrame(frame);
       root.removeAttribute('data-gateway-stage');
       root.style.removeProperty('--gateway-safe-inset-left-computed');
       clearTopologyV2TokensCache();
