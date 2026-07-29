@@ -127,7 +127,21 @@ export function DocsVaultAuditModal({
       icon: HardDrive,
       label: t("sourceContract.filesLabel"),
       value: sourceLabel,
-      body: t("sourceContract.filesBody"),
+      // **침묵하는 절단은 "전부 봤다" 로 읽힌다.** 순회가 상한에 걸렸거나
+      // 캐시 디렉터리를 건너뛰었으면, 사용자가 문서 수를 읽는 **그 자리**에서
+      // 함께 말한다 — 다른 화면에 적어 두면 이 숫자를 믿는 사람은 못 본다.
+      body: [
+        t("sourceContract.filesBody"),
+        manifest.walkTruncated ? t("sourceContract.filesTruncated") : "",
+        manifest.prunedDirs?.length
+          ? t("sourceContract.filesPruned", {
+              count: manifest.prunedDirs.length,
+              names: manifest.prunedDirs.slice(0, 3).join(" · "),
+            })
+          : "",
+      ]
+        .filter(Boolean)
+        .join(" "),
       chip: t("sourceContract.filesChip"),
       href: "/docs/",
       cta: t("sourceContract.filesCta"),

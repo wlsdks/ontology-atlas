@@ -46,6 +46,15 @@ export interface VaultBacklinkEntry {
 export interface VaultManifest {
   version: string;
   generatedAt: string;
+  /**
+   * 순회가 상한에 걸려 **일부만 봤는가.** 침묵하는 절단은 "전부 봤다" 로
+   * 읽히므로 매니페스트가 이 사실을 들고 다닌다 — 화면이 "문서 N개" 라고
+   * 말할 때 그 N 이 전부인지 아닌지를 같은 자리에서 알 수 있어야 한다.
+   * 빌드타임 매니페스트에는 없는 개념이라 optional.
+   */
+  walkTruncated?: boolean;
+  /** 캐시/의존성으로 판정해 통째로 건너뛴 디렉터리 — 왜 빠졌는지의 근거. */
+  prunedDirs?: string[];
   docs: VaultDoc[];
   backlinksDetail: Record<string, VaultBacklinkEntry[]>;
   tags: Record<string, string[]>;
