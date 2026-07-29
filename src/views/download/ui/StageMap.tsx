@@ -5,6 +5,7 @@ import { useTranslations } from 'next-intl';
 import { useDogfoodInsight } from '@/features/vault-ontology';
 import { TopologyMapV2, clearTopologyV2TokensCache } from '@/widgets/topology-map-v2';
 import { buildStageGraph, type StageGraph } from '../lib/stage-graph';
+import { computeGatewaySafeInset } from '../lib/gateway-grid';
 
 /**
  * 무대가 그리는 그래프 — **캡션과 지도가 같은 객체를 본다**.
@@ -113,6 +114,29 @@ export function StageMap({ graph }: { graph: StageGraph }) {
   useEffect(() => {
     const root = document.documentElement;
     root.setAttribute('data-gateway-stage', '');
+
+    /**
+     * 카메라 예약폭을 **원자값에서 파생**해 써 넣는다.
+     *
+     * 속성을 건 **직후**에 읽어야 한다 — 원자값(`--gateway-*`)이 그 속성
+     * 스코프 안에 살기 때문이다. 그리고 토큰 캐시를 지우기 **전**에 써야
+     * 아래 `clearTopologyV2TokensCache()` 이후의 첫 읽기가 파생값을 본다.
+     *
+     * 계산이 CSS `calc()` 가 아니라 여기 있는 이유는
+     * `../lib/gateway-grid.ts` 의 독블록에 있다.
+     */
+    const read = (name: string) =>
+      Number.parseFloat(getComputedStyle(root).getPropertyValue(name));
+    const gutter = read('--gateway-gutter');
+    const plateWidth = read('--gateway-plate-width');
+    const plateGap = read('--gateway-plate-gap');
+    if (Number.isFinite(gutter) && Number.isFinite(plateWidth) && Number.isFinite(plateGap)) {
+      root.style.setProperty(
+        '--gateway-safe-inset-left-computed',
+        String(computeGatewaySafeInset({ gutter, plateWidth, plateGap }))
+      );
+    }
+
     clearTopologyV2TokensCache();
     // 이 setState 가 곧 **순서 계약**이다. 지도를 같은 렌더에 그리면 React 가
     // 자식 effect 를 먼저 돌려 **속성이 걸리기 전에** 토큰을 읽고 전역 캐시에
@@ -123,6 +147,7 @@ export function StageMap({ graph }: { graph: StageGraph }) {
     setScoped(true);
     return () => {
       root.removeAttribute('data-gateway-stage');
+      root.style.removeProperty('--gateway-safe-inset-left-computed');
       clearTopologyV2TokensCache();
     };
   }, []);

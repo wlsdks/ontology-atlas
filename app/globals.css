@@ -271,6 +271,24 @@
    * 본문+레일) — 다른 페이지도 점진 채택.
    */
   --page-max: 1600px;
+
+  /*
+   * 관문(`/download`) 그리드의 **원자값 셋**. 이 셋만 손으로 정하고, 지도
+   * 카메라가 좌측에 예약할 폭은 셋에서 파생된다
+   * (`src/views/download/lib/gateway-grid.ts`). 값을 바꿀 땐 여기만 바꾼다.
+   *
+   * **`:root` 에 사는 이유**: 홈통은 페이지가 그려지는 첫 프레임부터 필요한데,
+   * 관문 스코프(`html[data-gateway-stage]`)는 지도가 마운트돼야 켜진다. 거기
+   * 두면 마운트 전후로 홈통이 튄다. `--page-max` 와 같은 성격의 페이지 구성
+   * 기하라 같은 자리에 사는 것이 맞다.
+   *
+   * **무단위인 이유**: 카메라 토큰 리더가 `parseFloat` 로 읽는 계약이다
+   * (`src/widgets/topology-map-v2/tokens/read-topology-v2-tokens.ts`).
+   * px 를 붙이면 조용히 NaN 이 된다. CSS 쪽 소비자는 `calc(var(…) * 1px)`.
+   */
+  --gateway-gutter: 40;
+  --gateway-plate-width: 480;
+  --gateway-plate-gap: 24;
   /* `--page-col-utility`(960px) 는 **삭제됐다** (2026-07-29 카운슬 평결 ③).
      유일한 소비자가 `/download` 하나였는데, 그 페이지에서 이 토큰이 실제로
      한 일은 두 번째 중앙 컬럼을 만들어 **바닥 절을 판과 어긋나게** 하는
@@ -3237,10 +3255,22 @@ html[data-gateway-stage] {
 
 @media (min-width: 64rem) {
   html[data-gateway-stage] {
-    /* 판 좌측 여백(40) + 판 폭(480) + 숨 쉴 틈(24). 판 폭은
-       `DownloadPage.tsx` 의 `max-w-[30rem]` 과 짝이라 함께 바뀐다. 틈을
-       48→24 로 줄인 것은 소유자 판정("아직도 작게 느껴지고") — 지도가 판
-       오른쪽 영역을 더 꽉 채운다. */
-    --topology-v2-safe-inset-left: 544;
+    /*
+     * ⚠️ **이 값은 더 이상 여기서 더하지 않는다.**
+     *
+     * 예전엔 `544` 리터럴이었고 그 산수(홈통 40 + 판 폭 480 + 틈 24)는 주석에만
+     * 있었다. 세 항이 각자 다른 파일에 살아서(홈통·판 폭은 `DownloadPage.tsx`
+     * 의 Tailwind 클래스, 틈은 아무 데도 값으로 없었다) 하나만 바꾸면 나머지가
+     * 조용히 어긋났다 — 2026-07-29 평결 ③ 이 고친 사고의 근본 원인과 같은 패턴.
+     *
+     * 이제 세 원자값이 아래 `:root` 티어에 이름으로 살고, 덧셈은
+     * `src/views/download/lib/gateway-grid.ts` 한 함수에만 있다.
+     * `StageMap.tsx` 의 마운트 effect 가 원자값을 읽어 합을 여기 써 넣는다.
+     *
+     * 파생이 깨지면 이 var 가 비어 카메라가 예약을 못 한다 —
+     * `tests/e2e/download-gateway-grid.spec.ts` 가 유한값 여부를 직접 단언해서
+     * "왜 지도가 판을 덮지" 대신 "파생이 안 돌았다"로 읽히게 한다.
+     */
+    --topology-v2-safe-inset-left: var(--gateway-safe-inset-left-computed, 544);
   }
 }
