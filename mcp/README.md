@@ -13,12 +13,27 @@ recompiling the same graph over and over.
 
 ## SDK and protocol baseline
 
-As of 2026-07-23, this package intentionally targets
-`@modelcontextprotocol/sdk@1.29.0`, the latest stable v1 release published on
-npm. The official v2 split packages are currently beta; upstream still
-recommends v1.x for production until v2 and the updated specification are
-stable. Keep the dependency exact, not a broad range, so release builds do not
-drift across SDK behavior during install.
+As of 2026-07-29, this package targets the **v2 SDK** —
+`@modelcontextprotocol/server@2.0.0` (+ `@modelcontextprotocol/core`). Upstream
+split the monolithic `@modelcontextprotocol/sdk` into `core` / `server` / `node`
+on 2026-07-27 alongside the `2026-07-28` specification, and v2 is now the stable
+release line. v1 moved to a long-lived `v1.x` branch receiving bug and security
+fixes for at least six months.
+
+**The wire protocol did not move.** v2 ships the *same* supported-version list as
+v1 — measured:
+`["2025-11-25","2025-06-18","2025-03-26","2024-11-05","2024-10-07"]`,
+`LATEST = 2025-11-25`. The `2026-07-28` spec's `server/discover` and stateless
+envelope exist only in v2's type definitions, not in its negotiation constants.
+So this migration buys **the vessel, not the cargo**: when the SDK does implement
+`2026-07-28`, the move is a version bump instead of a package rewrite.
+
+**Old clients still connect** — verified by driving a v2 server over stdio with a
+`2024-11-05` `initialize`: it negotiates that version and answers `tools/list`
+and `tools/call` normally. Claude Code and Codex are unaffected.
+
+Keep the dependency exact, not a broad range, so release builds do not drift
+across SDK behavior during install.
 
 This server currently exposes a local stdio MCP surface, not a local HTTP
 server. That keeps it outside the SDK DNS-rebinding advisory scope for

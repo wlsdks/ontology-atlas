@@ -41,7 +41,9 @@ describe("번들 MCP 의존은 재현 가능해야 한다", () => {
   it("얼릴 대상인 pnpm 락파일이 저장소에 있다", () => {
     const lockfile = readFileSync(join(root, "mcp/pnpm-lock.yaml"), "utf8");
     expect(lockfile).toContain("lockfileVersion");
-    expect(lockfile).toContain("@modelcontextprotocol/sdk");
+    // 2026-07-29: v1 단일 패키지 → v2 분할 패키지로 이관. 앱 사이드카가 실제로
+    // 컴파일해 넣는 것이 이 이름이므로, 락파일이 그것을 얼리고 있는지 본다.
+    expect(lockfile).toContain("@modelcontextprotocol/server");
   });
 
   /**
@@ -50,6 +52,15 @@ describe("번들 MCP 의존은 재현 가능해야 한다", () => {
    * (2026-07-28): `overrides` 만 있던 동안 npm 은 `@hono/node-server@2.0.11`
    * (#543 이 신뢰 경계 강화로 고정한 값)을, `pnpm --dir mcp install` 은
    * `1.19.17` 을 깔았다. 앱에 실리는 사이드카는 후자로 컴파일된다.
+   *
+   * ⚠️ **2026-07-29 현재 override 는 0개다** — v2 SDK 로 옮기면서 그 핀이
+   * 겨누던 `@hono/node-server` 가 의존 트리에서 사라졌다(v2 의 의존은
+   * `core`·`server`·`zod` 셋뿐). 아무도 안 쓰는 핀은 규격이 아니라 오정보라
+   * 지웠다.
+   *
+   * 그래서 아래 두 시험은 지금 **빈 집합끼리 비교**한다. 무의미해 보이지만
+   * 그대로 둔다 — override 가 다시 생기는 순간 스스로 무장한다. 지우면 그때
+   * 아무도 안 본다.
    */
   it("npm 과 pnpm 이 같은 override 를 본다", () => {
     const mcpPkg = JSON.parse(readFileSync(join(root, "mcp/package.json"), "utf8")) as {

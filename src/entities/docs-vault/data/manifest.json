@@ -8235,9 +8235,9 @@
           "slug": "mcp-server-32-tools"
         }
       ],
-      "excerpt": "@modelcontextprotocol/sdk 안정판 1.x 기반 stdio JSON-RPC 서버. 32 도구 노출 (read 19 + write 13). 런타임은 Node 24 계열만 지원한다: · 도구 · 동작 · connectioninfo · active vault/repo root와 해석 출처, 서버 버전, read-only 여부, 실제 광고 중인 tool count/name/hash를 반환해 잘못된 폴더와 stale client toolset을 막는 첫 호출 proof. 명시적 OATLASREPOROOT가 없으면 active vault의 Git top-lev",
-      "wordCount": 13589,
-      "updatedAt": "2026-07-27",
+      "excerpt": "@modelcontextprotocol/server v2 기반 stdio JSON-RPC 서버. 32 도구 노출 (read 19 + write 13). 런타임은 Node 24 계열만 지원한다: · 도구 · 동작 · connectioninfo · active vault/repo root와 해석 출처, 서버 버전, read-only 여부, 실제 광고 중인 tool count/name/hash를 반환해 잘못된 폴더와 stale client toolset을 막는 첫 호출 proof. 명시적 OATLASREPOROOT가 없으면 active vault의 Git top-level",
+      "wordCount": 13588,
+      "updatedAt": "2026-07-29",
       "linksOut": []
     },
     {
@@ -9844,12 +9844,12 @@
     {
       "slug": "ontology/elements/mcp-sdk",
       "path": "docs/ontology/elements/mcp-sdk.md",
-      "title": "@modelcontextprotocol/sdk",
+      "title": "@modelcontextprotocol/server",
       "tags": [],
       "frontmatter": {
         "slug": "elements/mcp-sdk",
         "kind": "element",
-        "title": "@modelcontextprotocol/sdk",
+        "title": "@modelcontextprotocol/server",
         "domain": "ai-agent-partner",
         "path": "mcp/package.json",
         "relates": [
@@ -9859,13 +9859,28 @@
       "headings": [
         {
           "depth": 1,
-          "text": "@modelcontextprotocol/sdk",
-          "slug": "modelcontextprotocolsdk"
+          "text": "@modelcontextprotocol/server",
+          "slug": "modelcontextprotocolserver"
+        },
+        {
+          "depth": 2,
+          "text": "The wire protocol did not move with the package",
+          "slug": "the-wire-protocol-did-not-move-with-the-package"
+        },
+        {
+          "depth": 2,
+          "text": "What the code uses",
+          "slug": "what-the-code-uses"
+        },
+        {
+          "depth": 2,
+          "text": "Old clients still connect",
+          "slug": "old-clients-still-connect"
         }
       ],
-      "excerpt": "Official MCP TypeScript/JS SDK. As of 2026-06-12 this project pins @modelcontextprotocol/sdk to 1.29.0, the latest stable v1 release. The upstream v2 SDK/spec work is still pre-alpha, so production builds stay on v1.x until that branch stabilizes. mcp/src/index.js uses Server, StdioServerTransport, CallToolRequestSchem",
-      "wordCount": 96,
-      "updatedAt": "2026-07-21",
+      "excerpt": "Official MCP TypeScript SDK. As of 2026-07-29 this project pins the v2 line — @modelcontextprotocol/server@2.0.0 with @modelcontextprotocol/core@2.0.0. Upstream split the monolithic @modelcontextprotocol/sdk into core / server / node on 2026-07-27, alongside the 2026-07-28 specification, and v2 became the stable releas",
+      "wordCount": 306,
+      "updatedAt": "2026-07-29",
       "linksOut": []
     },
     {
@@ -15532,7 +15547,7 @@
                 "path": "ontology/elements/mcp-sdk",
                 "type": "doc",
                 "slug": "ontology/elements/mcp-sdk",
-                "title": "@modelcontextprotocol/sdk"
+                "title": "@modelcontextprotocol/server"
               },
               {
                 "name": "ontology-atlas-quality-bar",
