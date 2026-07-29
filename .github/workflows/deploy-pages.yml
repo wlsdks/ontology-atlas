@@ -1,8 +1,16 @@
 # GitHub Pages — the sole web host for the static export, served at the
 # /ontology-atlas subpath. Firebase Hosting was removed (2026-07); Pages has no
 # daily transfer hard-cap, so the read-only demo stays up under traffic spikes.
-# Triggers on push to main, on GitHub Release publication (so the download
-# landing refreshes when a macOS release ships), and on manual dispatch.
+# Triggers on push to main, on GitHub Release publication, and on manual
+# dispatch.
+#
+# ⚠️ `release: published` 는 **사람이 UI 로 게시할 때만** 발화한다. 기본
+# `GITHUB_TOKEN` 이 일으킨 이벤트는 새 실행을 만들지 않으므로(GitHub 재귀 방지),
+# `release-macos.yml` 이 게시하는 정상 경로에서는 이 트리거가 돌지 않는다.
+# 그 경로는 publish job 이 스스로 `gh workflow run deploy-pages.yml` 로 깨운다.
+# 그리고 이 워크플로는 `pnpm build` 만 한다 — `/download` 의 크기·SHA-256 은
+# 커밋된 `macos-release.generated.ts` 에서 오고, 그 갱신도 publish job 의 일이다.
+# (2026-07-29 실측: rc.3 게시 직후 페이지가 rc.2 를 계속 광고했다.)
 name: Deploy GitHub Pages
 
 on:

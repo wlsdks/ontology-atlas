@@ -311,9 +311,19 @@ jobs:
     needs: stage-macos
     timeout-minutes: 10
     environment: release
+    permissions:
+      # contents: 릴리스 게시 + 생성된 릴리스 사실 커밋
+      # actions:  Pages 배포를 명시적으로 깨우기 (아래 마지막 스텝의 이유 참조)
+      contents: write
+      actions: write
     steps:
+      # fetch-depth: 0 — 생성 매니페스트의 결정성 계약이 전체 히스토리를
+      # 요구하고(`generated-vault-determinism.contract.test.ts`), 아래 main
+      # 갱신도 얕은 클론에서는 안전하게 못 한다.
       - name: Checkout
         uses: actions/checkout@v6
+        with:
+          fetch-depth: 0
 
       - name: Setup Node.js
         uses: actions/setup-node@v6
@@ -354,6 +364,56 @@ jobs:
 
       - name: Verify public download assets
         run: pnpm desktop:verify-download -- --tag="${GITHUB_REF_NAME}" --require-updater
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+
+      # 2026-07-29 — rc.3 를 내고 나서야 드러난 구멍. `/download` 의 크기·SHA-256·
+      # 링크는 **커밋된 생성 파일**(`macos-release.generated.ts`)에서 오고, 그
+      # 파일을 만드는 `download:release-facts` 를 **어떤 워크플로도 부르지
+      # 않았다.** 그래서 릴리스가 나가도 다운로드 페이지는 이전 판을 계속
+      # 광고했다 — rc.3 게시 직후 실측으로 rc.2 가 그대로 떠 있었다.
+      #
+      # `deploy-pages` 의 `release: published` 트리거로는 못 고친다. 두 겹으로
+      # 안 된다: ① 그 워크플로는 `pnpm build` 만 하고 사실 파일을 다시 만들지
+      # 않는다 ② 기본 `GITHUB_TOKEN` 이 일으킨 이벤트는 새 실행을 만들지
+      # 않는다(재귀 방지).
+      - name: Refresh /download release facts on main
+        run: |
+          # **main 위에서 만들고 main 으로 보낸다.** 이 잡은 태그를 체크아웃한
+          # 상태인데, 승인 게이트 때문에 게시는 빌드보다 한참 뒤일 수 있고 그
+          # 사이 main 은 움직인다. 태그 커밋에서 `HEAD:main` 으로 밀면 그
+          # 커밋들을 되감는다 — 릴리스가 남의 작업을 지우는 셈이다.
+          git fetch --no-tags origin main
+          git switch -C release-facts-update origin/main
+          if [[ "${GITHUB_REF_NAME}" == *-* ]]; then
+            # RC 는 프리릴리스라 스크립트가 기본으로 거부한다. 정식 빌드가
+            # 나올 때까지 이 구간의 사용자가 받을 수 있는 최신은 RC 뿐이므로
+            # 명시적으로 허용한다(정식 태그에는 이 플래그가 붙지 않는다).
+            pnpm download:release-facts -- --tag="${GITHUB_REF_NAME}" --allow-prerelease
+          else
+            pnpm download:release-facts -- --tag="${GITHUB_REF_NAME}"
+          fi
+          if git diff --quiet -- src/views/download/model/macos-release.generated.ts; then
+            echo "release facts already current — nothing to commit"
+            exit 0
+          fi
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add src/views/download/model/macos-release.generated.ts
+          git commit -m "chore: /download 릴리스 사실을 ${GITHUB_REF_NAME} 로 갱신 [skip ci]"
+          # fast-forward 만 허용한다 — 그 사이 main 이 또 움직였으면 조용히
+          # 덮지 않고 여기서 실패한다.
+          git push origin HEAD:main
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+
+      # 위 push 는 **워크플로를 깨우지 않는다** — 기본 토큰이 일으킨 push 는
+      # 재귀 방지에 걸린다. `workflow_dispatch` 는 그 규칙의 명시적 예외라
+      # 시크릿을 하나도 늘리지 않고 배포를 깨울 수 있다. 인과가 이 파일 안에
+      # 보이는 것도 이 방식의 값이다 — "릴리스가 나가면 페이지가 따라온다" 를
+      # 다른 파일의 트리거에 맡기지 않는다.
+      - name: Deploy the refreshed download page
+        run: gh workflow run deploy-pages.yml --ref main
         env:
           GITHUB_TOKEN: ${{ github.token }}
 
