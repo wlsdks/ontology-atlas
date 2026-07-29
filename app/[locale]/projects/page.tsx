@@ -2,7 +2,7 @@ import { Suspense } from "react";
 import type { Metadata } from "next";
 import { getTranslations } from "next-intl/server";
 import { ProjectSelectorPage } from "@/views/project-selector";
-import { absoluteUrl } from "@/shared/config";
+import { buildPageMetadata } from "@/shared/lib/page-metadata";
 import { RouteLoadingFallback } from "@/shared/ui";
 
 export async function generateMetadata({
@@ -12,13 +12,12 @@ export async function generateMetadata({
 }): Promise<Metadata> {
   const { locale } = await params;
   const t = await getTranslations({ locale, namespace: "metadata" });
-  return {
+  return buildPageMetadata({
+    locale,
+    path: 'projects',
     title: t("pages.projects"),
-    description: '토폴로지 지도에 포함된 프로젝트와 허브 목록.',
-    alternates: {
-      canonical: absoluteUrl('/projects/'),
-    },
-  };
+    description: t('descriptions.projects'),
+  });
 }
 
 export default function ProjectsRoute() {

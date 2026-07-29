@@ -3,6 +3,7 @@ import type { Metadata } from 'next';
 import { getTranslations } from 'next-intl/server';
 import { DocsVaultPage } from '@/views/docs-vault';
 import { RouteLoadingFallback } from '@/shared/ui';
+import { buildPageMetadata } from '@/shared/lib/page-metadata';
 
 export async function generateMetadata({
   params,
@@ -11,7 +12,12 @@ export async function generateMetadata({
 }): Promise<Metadata> {
   const { locale } = await params;
   const t = await getTranslations({ locale, namespace: 'metadata' });
-  return { title: t('pages.docs') };
+  return buildPageMetadata({
+    locale,
+    path: 'docs',
+    title: t('pages.docs'),
+    description: t('descriptions.docs'),
+  });
 }
 
 export default function Page() {

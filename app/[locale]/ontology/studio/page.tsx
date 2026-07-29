@@ -3,6 +3,7 @@ import type { Metadata } from "next";
 import { getTranslations } from "next-intl/server";
 import { OntologyStudioPage } from "@/views/ontology-studio";
 import { RouteLoadingFallback } from "@/shared/ui";
+import { buildPageMetadata } from "@/shared/lib/page-metadata";
 
 export async function generateMetadata({
   params,
@@ -11,7 +12,12 @@ export async function generateMetadata({
 }): Promise<Metadata> {
   const { locale } = await params;
   const t = await getTranslations({ locale, namespace: "metadata" });
-  return { title: t("pages.ontologyStudio") };
+  return buildPageMetadata({
+    locale,
+    path: 'ontology/studio',
+    title: t("pages.ontologyStudio"),
+    description: t('descriptions.ontologyStudio'),
+  });
 }
 
 /**

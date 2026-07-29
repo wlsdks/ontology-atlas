@@ -8,6 +8,7 @@ import {
 } from '@/entities/docs-vault';
 import { ProjectDetailPage } from '@/views/project-detail';
 import { absoluteUrl } from '@/shared/config';
+import { buildPageMetadata } from '@/shared/lib/page-metadata';
 import { RouteLoadingFallback } from '@/shared/ui';
 
 const staticVaultManifest = staticVaultManifestRaw as VaultManifest;
@@ -37,7 +38,7 @@ export async function generateMetadata({
 }: {
   params: Promise<{ locale: string; slug: string }>;
 }): Promise<Metadata> {
-  const { slug } = await params;
+  const { locale, slug } = await params;
   const projects = deriveProjectsFromVault(staticVaultManifest);
   const project = projects.find((p) => p.slug === slug);
 
@@ -49,10 +50,18 @@ export async function generateMetadata({
 
   const title = project.name;
   const description = project.description || `${project.name} — ontology-atlas`;
-  // Next.js 16 + output:'export' 환경에서 metadataBase 기반 상대경로가 실제
-  // 빌드 HTML 에 canonical / og:url 로 emit 되지 않는 회귀가 있음 — 절대
-  // URL 로 명시해 회피. 루트 layout 의 metadataBase 와 같은 SITE_URL 사용.
-  const canonicalUrl = absoluteUrl(`/project/${slug}/`);
+  // ⚠️ **canonical 에 로케일이 빠지면 존재하지 않는 URL 을 가리킨다.**
+  // 예전 `absoluteUrl('/project/<slug>/')` 는 `/ko/` · `/en/` 접두어가 없어
+  // 실제로 404 인 주소를 정본으로 선언했다(2026-07-29 실측: `/projects/` ·
+  // `/topology/` 도 같은 결함, 둘 다 404). 검색엔진에 "이 페이지의 정본은
+  // 없는 페이지"라고 말하는 셈이라 색인에서 통째로 빠진다.
+  // `buildPageMetadata` 가 로케일 + hreflang + x-default 를 한 곳에서 조립한다.
+  const base = buildPageMetadata({
+    locale,
+    path: `project/${slug}`,
+    title,
+    description,
+  });
 
   // 태그·스택·카테고리 등을 keywords 로 묶어 SEO 신호 강화. 중복 제거.
   const keywords = Array.from(
@@ -70,28 +79,20 @@ export async function generateMetadata({
   );
 
   return {
-    title,
-    description,
+    ...base,
     keywords,
-    alternates: {
-      // canonical URL 명시 — 검색엔진 중복 SERP 방지. 지침서 T-01.
-      canonical: canonicalUrl,
-    },
     openGraph: {
+      ...base.openGraph,
       siteName: 'ontology-atlas',
-      title,
-      description,
+      // 프로젝트 상세는 사이트 소개가 아니라 한 대상에 대한 글이다.
       type: 'article',
-      url: canonicalUrl,
       // og:image 는 동일 디렉터리의 opengraph-image.tsx 가 빌드 타임에 slug 별
       // 1200×630 PNG 를 생성해 자동 주입. 여기서 images 를 override 하면
       // 파일 기반 컨벤션 결과가 무시되므로 생략.
     },
     twitter: {
-      card: 'summary_large_image',
-      title,
-      description,
-      // twitter:image 역시 파일 기반 convention (twitter-image.tsx 또는
+      ...base.twitter,
+      // twitter:image 는 파일 기반 convention (twitter-image.tsx 또는
       // opengraph-image.tsx fallback) 가 주입. 생략.
     },
   };
@@ -119,7 +120,9 @@ export default async function Page({
     '@type': 'CreativeWork',
     name: project.name,
     description: project.description || `${project.name} — ontology-atlas`,
-    url: absoluteUrl(`/project/${slug}/`),
+    // 메타의 canonical 과 **같은 주소**여야 한다 — 구조화 데이터가 다른
+    // 주소를 말하면 검색엔진이 둘 중 무엇을 믿을지 우리가 정하지 못한다.
+    url: absoluteUrl(`/${locale}/project/${slug}/`),
     inLanguage,
     author: {
       '@type': 'Organization',
@@ -150,13 +153,13 @@ export default async function Page({
         '@type': 'ListItem',
         position: 1,
         name: '홈',
-        item: absoluteUrl('/'),
+        item: absoluteUrl(`/${locale}/`),
       },
       {
         '@type': 'ListItem',
         position: 2,
         name: '프로젝트',
-        item: absoluteUrl('/projects/'),
+        item: absoluteUrl(`/${locale}/projects/`),
       },
       {
         '@type': 'ListItem',

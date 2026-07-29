@@ -2,7 +2,7 @@ import { Suspense } from "react";
 import type { Metadata } from "next";
 import { getTranslations } from "next-intl/server";
 import { HomePage } from "@/views/home";
-import { absoluteUrl } from "@/shared/config";
+import { buildPageMetadata } from "@/shared/lib/page-metadata";
 import { MapEntryFallback } from "@/shared/ui/map-entry-fallback";
 
 /**
@@ -21,12 +21,12 @@ export async function generateMetadata({
 }): Promise<Metadata> {
   const { locale } = await params;
   const t = await getTranslations({ locale, namespace: "metadata" });
-  return {
+  return buildPageMetadata({
+    locale,
+    path: 'topology',
     title: t("pages.topology"),
-    alternates: {
-      canonical: absoluteUrl("/topology/"),
-    },
-  };
+    description: t('descriptions.topology'),
+  });
 }
 
 export default async function Page({
