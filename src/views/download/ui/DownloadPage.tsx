@@ -11,8 +11,9 @@ import {
 } from 'lucide-react';
 import { useFormatter, useTranslations } from 'next-intl';
 import { resolveDisplayReleaseTag } from '../lib/pending-release-tag';
-import { Link } from '@/i18n/navigation';
+import { Link, usePathname } from '@/i18n/navigation';
 import { cn } from '@/shared/lib/cn';
+import { stripLocalePrefix } from '@/shared/lib/nav-destination';
 import { useCopyFeedback } from '@/shared/lib/use-copy-feedback';
 import { GithubMark, buttonVariants } from '@/shared/ui';
 import { LocaleSwitch } from '@/features/locale-switch';
@@ -221,6 +222,16 @@ export function DownloadPage() {
  */
 function GatewayNav() {
   const t = useTranslations('download');
+  /**
+   * 이 표면은 **두 주소에 산다** — `/`(웹 방문자의 얼굴)와 `/download`(설치를
+   * 부르는 딥링크). 같은 화면이지만 크롬의 두 조각이 달라진다.
+   *
+   * `/` 에서는 ① 빵부스러기의 「다운로드」 마디를 지우고(그 주소가 아니다)
+   * ② 「지도로 돌아가기」를 지운다 — 여기로 온 사람은 지도에서 온 게 아니고,
+   * 지도로 가는 길은 판 안의 「설치 없이 브라우저에서 써보기」가 이미 낸다.
+   * 같은 일을 하는 링크를 크롬과 판에 둘 다 두면 둘 중 하나가 죽은 약속이 된다.
+   */
+  const atRoot = stripLocalePrefix(usePathname() ?? '/') === '/';
 
   return (
     <nav
@@ -251,15 +262,19 @@ function GatewayNav() {
             Ontology Atlas
           </span>
         </Link>
-        <span aria-hidden className="hidden text-body text-[color:var(--color-text-quaternary)] sm:inline">
-          /
-        </span>
-        <span
-          aria-current="page"
-          className="hidden text-body leading-body text-[color:var(--color-text-tertiary)] sm:inline"
-        >
-          {t('downloadSectionLabel')}
-        </span>
+        {atRoot ? null : (
+          <>
+            <span aria-hidden className="hidden text-body text-[color:var(--color-text-quaternary)] sm:inline">
+              /
+            </span>
+            <span
+              aria-current="page"
+              className="hidden text-body leading-body text-[color:var(--color-text-tertiary)] sm:inline"
+            >
+              {t('downloadSectionLabel')}
+            </span>
+          </>
+        )}
         {/* 이 그룹의 **오른끝**이 곧 원점의 거울이다 — `vw − 원점` 에서 멈춰야
             상단 바가 아래 밴드와 같은 프레임 안에 산다. 소유자 지적
             *"공백이 길고 왜이러지?"* 가 정확히 이 끝과 화면 끝 사이였다
@@ -278,14 +293,16 @@ function GatewayNav() {
            * `tests/contract/map-destination-route.contract.test.ts` 가 라벨과
            * 목적지를 함께 본다.
            */}
-          <Link
-            href="/topology"
-            data-testid="download-back-to-map"
-            className="touch-hit-expand inline-flex items-center gap-1.5 whitespace-nowrap text-body leading-body text-[color:var(--color-text-tertiary)] transition-colors hover:text-[color:var(--color-text-primary)]"
-          >
-            <ArrowLeft size={14} aria-hidden />
-            {t('back')}
-          </Link>
+          {atRoot ? null : (
+            <Link
+              href="/topology"
+              data-testid="download-back-to-map"
+              className="touch-hit-expand inline-flex items-center gap-1.5 whitespace-nowrap text-body leading-body text-[color:var(--color-text-tertiary)] transition-colors hover:text-[color:var(--color-text-primary)]"
+            >
+              <ArrowLeft size={14} aria-hidden />
+              {t('back')}
+            </Link>
+          )}
           <LocaleSwitch />
         </span>
       </div>

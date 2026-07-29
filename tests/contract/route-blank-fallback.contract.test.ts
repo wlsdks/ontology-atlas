@@ -40,19 +40,34 @@ const SCAN_DIRS = [join(process.cwd(), "app"), join(process.cwd(), "src")];
  * 승인된 공용 fallback 은 둘뿐이고, 둘의 일이 다르다.
  *
  * - `RouteLoadingFallback` — 기본값. "이 화면은 아직 오는 중" 한 문장만 쓴다.
- * - `MapEntryFallback` — 지도 진입 라우트(`/`, `/topology`) 전용. 이 두 곳은
- *   HTML 본문이 fallback 이 전부라서 자막만 두면 페이지 내용이 자막이 된다.
+ * - `MapEntryFallback` — 지도 진입 라우트(`/topology`) 전용.
+ * - `GatewayEntryFallback` — 루트 `/` 전용.
  *
- * 이 배열이 짧게 유지되는 것이 계약이다. 세 번째를 추가하려면 그 화면만의
+ * **세 번째가 생긴 이유**(2026-07-30): `/` 가 지도에서 관문(얼굴)으로 바뀌었다
+ * (원장: 「root-first-open」 뒤집기 구현). 두 자리는 "HTML 본문이 fallback 이
+ * 전부" 라는 성질을 공유하지만 **말해야 할 내용이 다르다** — 하나는 지도를,
+ * 하나는 제품의 얼굴을 설명한다. 하나로 합치면 대표 주소의 링크 미리보기가
+ * 실제로 열리는 화면과 다른 말을 한다.
+ *
+ * 이 배열이 짧게 유지되는 것이 계약이다. 네 번째를 추가하려면 그 화면만의
  * 자리표시자가 왜 필요한지가 먼저 서야 한다.
  */
-const APPROVED_FALLBACKS = ["RouteLoadingFallback", "MapEntryFallback"] as const;
+const APPROVED_FALLBACKS = [
+  "RouteLoadingFallback",
+  "MapEntryFallback",
+  "GatewayEntryFallback",
+] as const;
 
-/** 지도 진입 라우트 — fallback 이 곧 페이지 내용인 두 자리. */
-const MAP_ENTRY_ROUTES = [
-  join(process.cwd(), "app/[locale]/page.tsx"),
-  join(process.cwd(), "app/[locale]/topology/page.tsx"),
-];
+/**
+ * fallback 이 곧 페이지 내용인 자리 — [라우트, 그 자리가 써야 할 fallback].
+ *
+ * **짝이 중요하다.** 전에는 "둘 다 `MapEntryFallback`" 이었는데, `/` 가 얼굴이
+ * 된 뒤에도 그 검사가 통과하면 게이트가 정확히 틀린 것을 지키게 된다.
+ */
+const CONTENT_FALLBACK_ROUTES = [
+  [join(process.cwd(), "app/[locale]/page.tsx"), "GatewayEntryFallback"],
+  [join(process.cwd(), "app/[locale]/topology/page.tsx"), "MapEntryFallback"],
+] as const;
 
 function collectTsxFiles(dir: string, out: string[] = []): string[] {
   for (const entry of readdirSync(dir)) {
@@ -104,10 +119,25 @@ describe("라우트 진입 빈 화면 게이트", () => {
     }
   });
 
-  it("지도 진입 라우트는 내용을 담는 fallback 을 쓴다", () => {
-    for (const route of MAP_ENTRY_ROUTES) {
-      expect(readFileSync(route, "utf-8")).toContain("MapEntryFallback");
+  it("내용이 곧 fallback 인 라우트는 각자 자기 자리의 fallback 을 쓴다", () => {
+    for (const [route, expected] of CONTENT_FALLBACK_ROUTES) {
+      const source = readFileSync(route, "utf-8");
+      expect(source, `${route} 가 ${expected} 를 안 쓴다`).toContain(expected);
+      // 짝이 아닌 쪽을 쓰면 그 주소가 다른 화면을 설명하게 된다.
+      const other = expected === "MapEntryFallback" ? "GatewayEntryFallback" : "MapEntryFallback";
+      expect(source, `${route} 가 ${other} 를 쓴다 — 그 주소의 화면이 아니다`).not.toContain(other);
     }
+  });
+
+  it("관문 fallback 도 로딩 자막이 아니라 제품 문장을 싣는다", () => {
+    const source = readFileSync(
+      join(process.cwd(), "src/shared/ui/gateway-entry-fallback.tsx"),
+      "utf-8",
+    );
+    // 얼굴이 말해야 하는 것: 무엇인지(헤드라인) + 갈 수 있는 두 곳.
+    expect(source).toContain("stageTitle");
+    expect(source).toContain("download/");
+    expect(source).toContain("topology/");
   });
 
   it("그 fallback 은 로딩 자막이 아니라 제품 문장을 싣는다", () => {

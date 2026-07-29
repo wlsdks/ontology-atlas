@@ -5,6 +5,7 @@ import { Bot, HardDrive, Network } from "lucide-react";
 import { useTranslations } from "next-intl";
 import { useLocalVault } from "@/features/docs-vault-local";
 import { isDesktopShell } from "@/shared/lib/desktop-shell";
+import { GatewayLandingPage } from "@/views/download";
 import { HomePage } from "@/views/home";
 import { FirstRunPage } from "@/views/first-run";
 
@@ -56,7 +57,10 @@ export function RootEntryPage() {
     // FirstRun 이 한 프레임 스치는 것을 막는다.
     return vault.restoreAttempted ? <FirstRunPage /> : <DesktopVaultRedirect />;
   }
-  return <HomePage />;
+  // 웹 방문자 — 아직 아무 폴더도 안 열었다. **이 사람에게 `/` 는 얼굴이다.**
+  // 셸의 관문 판정(`isGatewaySurface`)과 같은 조건이라 크롬과 내용이 어긋나지
+  // 않는다. 볼트를 열면 위 `vault.manifest` 분기로 넘어가 지도로 바뀐다.
+  return <GatewayLandingPage />;
 }
 
 function DesktopVaultRedirect() {

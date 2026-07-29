@@ -129,11 +129,42 @@ const SEED_VAULT: Record<string, string> = {
   ].join("\n"),
 };
 
-// ── ① 관문 — 볼트 없이도 첫 화면이 쓸 만하다 ────────────────────────────────
+// ── ① 관문 — 얼굴과 지도가 각자의 주소에서 살아 있다 ──────────────────────
 
+/**
+ * **이 절은 2026-07-30 에 주소가 갈렸다.**
+ *
+ * 전에는 `/` 하나가 "볼트 없이 연 첫 화면이 실제 지도로 뜬다" 를 지켰다. 소유자
+ * 서명(2026-07-29, 원장: 「root-first-open」 뒤집기)으로 `/` 는 웹 방문자의
+ * **얼굴**이 되고 지도는 `/topology` 로 갔다.
+ *
+ * 그래서 검사를 **지운 게 아니라 옮겼다.** 지도가 0 아닌 숫자로 살아 있다는
+ * 보증은 그대로 있고, 다만 그것을 묻는 주소가 `/topology` 다. 옮기지 않고
+ * 지웠다면 이 전환이 관문의 눈을 하나 뽑는 일이 됐을 것이다.
+ */
 test.describe("웹 스모크 ① 관문", () => {
-  test("볼트 없이 연 첫 화면이 실제 지도 + 읽을 수 있는 숫자로 뜬다", async ({ page }) => {
+  test("`/` 가 얼굴로 뜬다 — 무엇인지 말하고, 받는 길과 보는 길을 함께 준다", async ({
+    page,
+  }) => {
     await gotoSettled(page, "/ko/");
+
+    // 관문 크롬이다 — 워크벤치 레일이 아니라 얼굴의 상단 바.
+    await expect(page.getByTestId("download-gnb")).toBeVisible({ timeout: 15_000 });
+
+    // 방문자가 할 수 있는 두 가지가 살아 있다: 받기, 그리고 설치 없이 보기.
+    await expect(page.getByTestId("download-hero-actions")).toBeVisible();
+    const toMap = page.getByTestId("download-web-cta");
+    await expect(toMap).toBeVisible();
+    // **`/` 로 되돌아오는 고리가 아니어야 한다** — 그러면 「보러 가기」가 죽은
+    // 약속이 된다. 전환 전에는 두 주소가 같은 화면이라 이 결함이 안 보였다.
+    await expect(toMap).toHaveAttribute("href", /\/topology\/?$/);
+
+    // 얼굴에는 「다운로드」 빵부스러기 마디가 없다 — 여기는 그 주소가 아니다.
+    await expect(page.getByTestId("download-back-to-map")).toHaveCount(0);
+  });
+
+  test("`/topology` 가 실제 지도 + 읽을 수 있는 숫자로 뜬다", async ({ page }) => {
+    await gotoSettled(page, "/ko/topology/");
 
     // 지도가 실제 크기를 가진 캔버스로 존재한다.
     const canvas = page.getByTestId("topology-map-v2-canvas");
@@ -168,7 +199,8 @@ test.describe("웹 스모크 ① 관문", () => {
 test.describe("웹 스모크 ② 차선 워크벤치", () => {
   test("폴더를 고르면 웹이 그 폴더를 실제로 읽어 지도로 바꾼다", async ({ page }) => {
     await stubDirectoryPicker(page, SEED_VAULT);
-    await gotoSettled(page, "/ko/");
+    // 워크벤치를 검사하므로 지도 주소로 간다 — `/` 는 2026-07-30 부터 관문(얼굴)이다.
+    await gotoSettled(page, "/ko/topology/");
 
     await page.getByTestId("first-run-starter-open").click();
     await expect(page.getByTestId("vault-guide-sheet")).toBeVisible();
@@ -197,7 +229,8 @@ test.describe("웹 스모크 ② 차선 워크벤치", () => {
         /* non-configurable — 아래 단언이 알아서 실패한다 */
       }
     });
-    await gotoSettled(page, "/ko/");
+    // 워크벤치를 검사하므로 지도 주소로 간다 — `/` 는 2026-07-30 부터 관문(얼굴)이다.
+    await gotoSettled(page, "/ko/topology/");
 
     const notice = page.getByTestId("first-run-starter-unsupported");
     await expect(notice).toBeVisible({ timeout: 15_000 });
@@ -325,7 +358,8 @@ test.describe("웹 스모크 ③ 정직한 강등", () => {
   });
 
   test("설정의 AI 연결이 브라우저에서 키를 받지 않는 이유를 말한다", async ({ page }) => {
-    await gotoSettled(page, "/ko/");
+    // 워크벤치를 검사하므로 지도 주소로 간다 — `/` 는 2026-07-30 부터 관문(얼굴)이다.
+    await gotoSettled(page, "/ko/topology/");
 
     // 설정 트리거는 레일과 지도 크롬 두 곳에 있다 — 레일 쪽 하나로 좁힌다.
     await page
