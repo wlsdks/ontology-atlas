@@ -28,6 +28,9 @@ export const RASTER_PLAN = [
   ['icon-1024', 'full', 1024], ['icon-512', 'full', 512], ['icon-256', 'full', 256],
   ['icon-128', 'full', 128], ['icon-64', 'nodash', 64], ['icon-48', 'compact', 48],
   ['icon-32', 'compact', 32], ['icon-16', 'micro', 16],
+  // @2x 짝 — 레티나는 **같은 그림을 두 배 해상도로** 그리는 것이지 다른 그림이
+  // 아니다. icon_16x16@2x 에 축약형을 넣으면 같은 논리 크기에서 그림이 바뀐다.
+  ['micro-32', 'micro', 32], ['compact-64', 'compact', 64],
   ['tile-310', 'nodash', 310], ['tile-284', 'nodash', 284], ['tile-150', 'nodash', 150],
   ['tile-142', 'nodash', 142], ['tile-107', 'nodash', 107], ['tile-89', 'nodash', 89],
   ['tile-71', 'nodash', 71], ['tile-50', 'compact', 50], ['tile-44', 'compact', 44],

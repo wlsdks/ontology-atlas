@@ -89,24 +89,40 @@ export function markSvg(detail, opts = {}) {
 }
 
 /**
- * 앱 아이콘 — 1024 캔버스 위 824 스쿼클(모서리 186) + 마크 81%.
+ * 마크가 실제로 칠하는 잉크의 세로 길이(512 좌표계) — 바깥 육각형 + 획 절반.
  *
- * 마크가 판을 81% 채우는 것이 사양이다. 1차 구현은 64%였고 Dock 에서 "좀 작다"
- * 는 실보고를 받았다 — 아이콘의 여백은 취향이 아니라 OS 격자에 대한 비율이다.
+ * **뷰박스가 아니라 이것이 마크의 크기다.** 512 뷰박스 안에서 잉크는 세로 418
+ * 밖에 안 되고(육각형이 세로로 400, 획이 ±9), 나머지 94 는 빈 여백이다. 그래서
+ * 뷰박스를 판의 81% 로 맞추면 눈에 보이는 마크는 **65.8%** 가 된다 — 정확히
+ * 그것이 1차 구현이 "좀 작다" 는 실보고를 받은 이유다.
+ *
+ * 잉크 높이는 detail 마다 다르다(축약형·미형은 획이 굵다). 높이를 기준으로
+ * 재면 사다리 전체에서 **보이는 크기가 같게** 유지된다.
+ */
+const INK_HEIGHT = { full: 400 + 18, compact: 400 + 36, micro: 400 + 44 };
+
+/** 잉크 세로가 판에서 차지하는 비율 — 카운슬 집행 사양. */
+const MARK_RATIO = 0.81;
+
+/**
+ * 앱 아이콘 — 1024 캔버스 위 824 스쿼클(모서리 186) + **잉크 기준** 마크 81%.
+ *
+ * 아이콘의 여백은 취향이 아니라 OS 격자에 대한 비율이다. 세로가 긴 육각형이라
+ * 기준은 세로다 — 가로로 재면 세로가 판을 넘는다.
  */
 export function appIconSvg({ detail = 'full', withDash = true } = {}) {
   const SIZE = 1024;
   const PLATE = 824;
   const PLATE_XY = (SIZE - PLATE) / 2;
-  const MARK = 664;
-  const MARK_XY = (SIZE - MARK) / 2;
-  const scale = MARK / V;
+  const scale = (PLATE * MARK_RATIO) / INK_HEIGHT[detail];
+  // 잉크 중심은 뷰박스 중심(256,256)과 같다 — 캔버스 중심으로 보낸다.
+  const t = SIZE / 2 - (V / 2) * scale;
   return (
     `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ${SIZE} ${SIZE}" role="img" aria-label="Ontology Atlas">` +
     `<defs><linearGradient id="plate" gradientUnits="userSpaceOnUse" x1="0" y1="${PLATE_XY}" x2="0" y2="${PLATE_XY + PLATE}">` +
     `<stop offset="0" stop-color="#15182C"/><stop offset="1" stop-color="#06081A"/></linearGradient></defs>` +
     `<rect x="${PLATE_XY}" y="${PLATE_XY}" width="${PLATE}" height="${PLATE}" rx="186" ry="186" fill="url(#plate)"/>` +
-    `<g transform="translate(${MARK_XY} ${MARK_XY}) scale(${scale})">${markBody(detail, { withDash })}</g>` +
+    `<g transform="translate(${t.toFixed(3)} ${t.toFixed(3)}) scale(${scale.toFixed(6)})">${markBody(detail, { withDash })}</g>` +
     '</svg>\n'
   );
 }
