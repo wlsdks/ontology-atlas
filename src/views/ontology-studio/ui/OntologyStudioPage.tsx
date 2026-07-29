@@ -126,13 +126,20 @@ function normalize(s: string): string {
 function StudioStage({
   practiceSaved,
   onPracticeSaved,
+  agentDock,
 }: {
   /** 실습 저장이 이미 끝났나 — 안내 띠를 접고 마무리에 자리를 넘긴다. */
   practiceSaved: boolean;
   /** 쓰기가 성공한 **그 순간** 되돌리기 표를 바깥으로 올린다. */
   onPracticeSaved: (artifact: PracticeArtifact) => void;
+  /**
+   * 오른쪽 도크의 여닫기 — 껍질이 소유한 상태를 무대 헤더의 버튼과 잇는다.
+   * `null` 이면 도크가 설 수 없는 자리라 버튼도 그리지 않는다.
+   */
+  agentDock: { open: boolean; toggle: () => void } | null;
 }) {
   const t = useTranslations("ontologyStudio");
+  const tAgentPanel = useTranslations("vaultAgentPanel");
   const locale = useLocale();
   // C12③ — the secondary display-name locale is the OTHER of the two app locales.
   const secondaryLocale = locale === "en" ? "ko" : "en";
@@ -219,6 +226,8 @@ function StudioStage({
   const labels: StudioCompassLabels = useMemo(
     () => ({
       searchPlaceholder: t("searchPlaceholder"),
+      // 지도 칩과 **같은 키** — 이름이 바뀌면 두 표면이 함께 바뀐다.
+      agentDock: tAgentPanel("title"),
       exit: insightsReturnTab ? t("returnToReview") : t("exit"),
       moreRelations: t("moreRelations"),
       flowEyebrow: t("flowEyebrow"),
@@ -307,7 +316,7 @@ function StudioStage({
       previewLegendMoved: t("preview.legendMoved"),
       previewLegendRemoved: t("preview.legendRemoved"),
     }),
-    [t, isCreate, flowHint, insightsReturnTab],
+    [t, tAgentPanel, isCreate, flowHint, insightsReturnTab],
   );
 
   // Plain-language record summary vocab — one bag serving both ko + en and both
@@ -918,6 +927,8 @@ function StudioStage({
         }
         onSave={applyCreate}
         onExit={exit}
+        agentDockOpen={agentDock?.open}
+        onToggleAgentDock={agentDock?.toggle}
         searchNodes={candidates}
         onOpenNode={openNode}
         moreRelationsSoon={t("moreRelationsSoon")}
@@ -1348,6 +1359,8 @@ function StudioStage({
       canSave={changes.length > 0}
       onSave={commit}
       onExit={exit}
+      agentDockOpen={agentDock?.open}
+      onToggleAgentDock={agentDock?.toggle}
       onCreateNew={(ctx) => {
         // C2 — carry the socket's relation + typed query into CREATE so the new
         // node lands with the A --relation--> new link + a name prefill.
@@ -1421,6 +1434,15 @@ export function OntologyStudioPage() {
   const closeDock = useCallback(() => {
     dockTouchedRef.current = true;
     setDockOpenState(false);
+  }, []);
+  /**
+   * 무대 헤더의 문. **닫은 뒤 다시 열 수 있어야** 도크가 함정이 아니다 —
+   * 이 문이 없던 동안 공방에서 한 번 닫으면 그 세션에서 되돌릴 방법이 없었다
+   * (2026-07-29 설치 앱 실측).
+   */
+  const toggleDock = useCallback(() => {
+    dockTouchedRef.current = true;
+    setDockOpenState((open) => !open);
   }, []);
 
   const vaultPath = localVault.handle ? getTauriVaultRootPath(localVault.handle) ?? null : null;
@@ -1501,6 +1523,7 @@ export function OntologyStudioPage() {
         <StudioStage
           practiceSaved={practiceArtifact !== null}
           onPracticeSaved={setPracticeArtifact}
+          agentDock={dockUsable ? { open: dockOpen, toggle: toggleDock } : null}
         />
       </div>
       {/* 오른쪽 에이전트 도크 — 지도와 **같은 위젯, 같은 자리**. 공방에서만

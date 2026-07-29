@@ -9,6 +9,7 @@ import {
   ChevronDown,
   Eye,
   FilePen,
+  MessageCircle,
   MoreHorizontal,
   Plus,
   Search,
@@ -90,6 +91,8 @@ export interface CompassKindOption {
 export interface StudioCompassLabels {
   searchPlaceholder: string;
   exit: string;
+  /** 오른쪽 에이전트 도크 토글의 이름 — 지도 칩과 **같은 i18n 키**를 읽는다. */
+  agentDock: string;
   moreRelations: string;
   flowEyebrow: string;
   /** (filled, total) → e.g. "4방향 중 2 채움 · 반쯤 왔어요". */
@@ -234,6 +237,12 @@ export interface StudioCompassProps {
   onFill: (relation: StudioRelation, candidate: CreateCandidate) => void;
   onSave: () => void;
   onExit: () => void;
+  /**
+   * 오른쪽 에이전트 도크 여닫기. **없으면 버튼을 그리지 않는다** — 웹이나
+   * 좁은 폭처럼 도크가 설 수 없는 자리에 열리지 않는 문을 두지 않는다.
+   */
+  agentDockOpen?: boolean;
+  onToggleAgentDock?: () => void;
   /**
    * Picker "찾는 게 없어요 · 새로 만들기" bridge — opt-in, enhance mode routes to
    * create. C2: the picker passes the socket's relation + typed query so CREATE
@@ -547,6 +556,8 @@ export function StudioCompass(props: StudioCompassProps) {
     onFill,
     onSave,
     onExit,
+    agentDockOpen,
+    onToggleAgentDock,
   } = props;
 
   const [openRelation, setOpenRelation] = useState<StudioRelation | null>(null);
@@ -977,6 +988,29 @@ export function StudioCompass(props: StudioCompassProps) {
             >
               <FilePen size={13} aria-hidden className="text-[color:var(--color-text-quaternary)]" />
               {labels.draftsOpen(drafts.length)}
+            </button>
+          ) : null}
+          {/* 「에이전트」 — 지도의 유틸 레인 칩과 **같은 일, 같은 이름, 같은
+              아이콘**이다(`vaultAgentPanel.title` 단일 키). 공방에 이 문이
+              없으면 도크를 한 번 닫은 사람은 그 세션에서 다시 열 방법이 없다
+              — 2026-07-29 설치 앱 실측에서 나온 함정. 여기 규격은 지도의
+              ChromeChip 이 아니라 **이 헤더의 버튼 규격**을 따른다(같은 줄에
+              선 「그만하기」와 높이·모서리·테두리를 맞춘다). */}
+          {onToggleAgentDock ? (
+            <button
+              type="button"
+              onClick={onToggleAgentDock}
+              aria-pressed={agentDockOpen}
+              data-testid="studio-agent-dock-toggle"
+              className={cn(
+                "flex h-8 items-center gap-1.5 rounded-lg border px-3 text-label transition-colors",
+                agentDockOpen
+                  ? "border-[color:var(--color-indigo-line-a45)] bg-[color:var(--color-indigo-a12)] text-[color:var(--color-indigo-accent)]"
+                  : "border-[color:var(--color-border-soft)] text-[color:var(--color-text-tertiary)] hover:border-[color:var(--color-border-strong)] hover:text-[color:var(--color-text-secondary)]",
+              )}
+            >
+              <MessageCircle size={13} aria-hidden />
+              {labels.agentDock}
             </button>
           ) : null}
           <button
