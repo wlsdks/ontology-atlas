@@ -541,7 +541,18 @@ export function AppSettingsMenu({
           aria-modal="true"
           aria-labelledby={titleId}
           tabIndex={-1}
-          className={`${settingsExiting ? 'app-settings-panel-out' : 'app-settings-panel-in'} flex max-h-[calc(100dvh-1.5rem)] w-full max-w-[52rem] flex-col overflow-hidden rounded-xl border border-[color:var(--color-border-soft)] bg-[color:var(--color-panel)] text-body shadow-[var(--shadow-elevation-3)] sm:max-h-[min(46rem,calc(100dvh-3rem))]`}
+          /*
+           * **고정 크기다** (소유자 확정 2026-07-29: *"가로 세로 적당한 크기여야하고
+           * 고정 사이즈여야함"*). 종전엔 높이가 내용 길이를 따라가서, 절을 바꿀 때마다
+           * 창이 늘었다 줄었다 했다 — 발자국 절에서는 납작한 가로 띠가, 작업 공간
+           * 절에서는 세로로 긴 창이 됐다. 설정 창은 **머무는 자리**라 그 흔들림이
+           * 그대로 "정돈 안 됨"으로 읽힌다.
+           *
+           * 760×560 은 앱 최소 창(1040×720) 안에 여백을 두고 들어가는 크기이고,
+           * 좁은 화면에서는 뷰포트에 맞춰 줄어든다(그때만 크기가 변한다). 내용이
+           * 넘치면 **오른쪽 칸이 스크롤**하지, 창이 자라지 않는다.
+           */
+          className={`${settingsExiting ? 'app-settings-panel-out' : 'app-settings-panel-in'} flex h-[560px] max-h-[calc(100dvh-1.5rem)] w-[760px] focus:outline-none max-w-[calc(100vw-1.5rem)] flex-col overflow-hidden rounded-xl border border-[color:var(--color-border-soft)] bg-[color:var(--color-panel)] text-body shadow-[var(--shadow-elevation-3)]`}
           data-testid="app-settings-popover"
         >
           <div className="flex shrink-0 items-center justify-between gap-3 border-b border-[color:var(--color-border-soft)] px-4 py-3">
@@ -653,7 +664,7 @@ export function AppSettingsMenu({
               <nav
                 aria-label={t('title')}
                 data-testid="app-settings-nav"
-                className="flex w-40 shrink-0 flex-col gap-0.5 overflow-y-auto border-r border-[color:var(--color-border-soft)] p-2"
+                className="flex w-[180px] shrink-0 flex-col gap-0.5 overflow-y-auto border-r border-[color:var(--color-border-soft)] p-2"
               >
                 {SETTINGS_SECTIONS.map((item) => {
                   const active = item === section;
@@ -677,11 +688,13 @@ export function AppSettingsMenu({
               </nav>
 
               <div
-                className="grid min-h-0 min-w-0 flex-1 content-start gap-4 overflow-y-auto p-4"
+                // 20px 여백은 macOS 설정 창 레이아웃 가이드의 값이다.
+                className="grid min-h-0 min-w-0 flex-1 content-start gap-4 overflow-y-auto p-5"
                 data-testid={`app-settings-pane-${section}`}
               >
                 {section === 'screen' ? (
-                  <SettingsGroup label={t('section.screen')}>
+                  // 절 제목을 다시 쓰지 않는다 — 왼쪽 목록이 이미 이 칸의 이름이다.
+                  <SettingsGroup>
                 <SettingsRow
                   label={t('languageTitle')}
                   control={
@@ -760,11 +773,9 @@ export function AppSettingsMenu({
                 ) : section === 'background' ? (
                   <CanvasBackgroundPicker />
                 ) : section === 'footprint' ? (
-                  <div className="px-3 py-2.5">
-                    <FootprintSettings />
-                  </div>
+                  <FootprintSettings />
                 ) : section === 'workspace' ? (
-                  <SettingsGroup label={t('section.workspace')}>
+                  <SettingsGroup>
                 {showVaultManagement ? (
                   <SettingsRow
                     testId="app-settings-workspace-folder"
@@ -944,7 +955,7 @@ export function AppSettingsMenu({
                   </SettingsGroup>
                 ) : (
                   <>
-                    <SettingsGroup label={t('section.agent')}>
+                    <SettingsGroup>
                 <button
                   ref={agentDrillInRef}
                   type="button"
@@ -1018,13 +1029,20 @@ export function AppSettingsMenu({
 }
 
 /** 그룹 헤더 + 행 컨테이너 — Toss 식 "그룹 헤더 + 즉시 조작 행" 문법의 뼈대. */
-function SettingsGroup({ label, children }: { label: string; children: ReactNode }) {
+/**
+ * 한 무리의 설정 행. `label` 은 **선택**이다 — LNB 가 이미 그 칸의 이름을 말하는
+ * 자리에서는 제목을 다시 쓰지 않는다(같은 단어가 왼쪽과 오른쪽에 나란히 서면
+ * 둘 중 하나는 잉크 낭비다). 한 칸에 무리가 둘 이상일 때만 이름을 준다.
+ */
+function SettingsGroup({ label, children }: { label?: string; children: ReactNode }) {
   return (
     <section aria-label={label}>
-      <h3 className="px-1 font-mono text-caption uppercase tracking-[0.14em] text-[color:var(--color-text-quaternary)]">
-        {label}
-      </h3>
-      <div className="mt-1.5 divide-y divide-[color:var(--color-divider)] overflow-hidden rounded-lg border border-[color:var(--color-border-soft)] bg-[color:var(--color-overlay-1)]">
+      {label ? (
+        <h3 className="px-1 font-mono text-caption uppercase tracking-[0.14em] text-[color:var(--color-text-quaternary)]">
+          {label}
+        </h3>
+      ) : null}
+      <div className={`${label ? 'mt-1.5 ' : ''}divide-y divide-[color:var(--color-divider)] overflow-hidden rounded-lg border border-[color:var(--color-border-soft)] bg-[color:var(--color-overlay-1)]`}>
         {children}
       </div>
     </section>

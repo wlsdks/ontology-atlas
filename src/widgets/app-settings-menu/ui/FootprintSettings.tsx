@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect, useRef, useState } from 'react';
+import { ChevronDown } from 'lucide-react';
 import { useTranslations } from 'next-intl';
 
 import { cn } from '@/shared/lib/cn';
@@ -33,9 +34,14 @@ import { drawEdgeFootprints, drawNodeFootprint } from '@/shared/lib/footprint-gl
 
 const PRESET_ORDER: readonly FootprintPresetName[] = ['subtle', 'default', 'bold'];
 
-/** 미리보기 캔버스의 CSS 크기 — 노드 둘 + 그 사이 선 하나가 들어가는 최소 폭. */
-const PREVIEW_W = 260;
-const PREVIEW_H = 92;
+/**
+ * 미리보기 높이(px) — **고정**이다. 폭은 칸을 채운다.
+ *
+ * 종전엔 폭까지 260px 로 고정해서 넓은 칸 안에 작은 상자가 떠 있었다(소유자:
+ * *"너무 못생겼잖아"*). 미리보기는 이 절의 주인공이라 칸을 채워야 하고, 높이는
+ * 절을 바꿔도 창이 흔들리지 않게 고정이어야 한다.
+ */
+const PREVIEW_H = 176;
 
 function FootprintPreview({ pref }: { pref: FootprintPreference }) {
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
@@ -43,6 +49,8 @@ function FootprintPreview({ pref }: { pref: FootprintPreference }) {
   useEffect(() => {
     const canvas = canvasRef.current;
     if (!canvas) return;
+    // 폭은 레이아웃이 정하므로 렌더 시점에 실제 폭을 재서 백킹 크기를 맞춘다.
+    const PREVIEW_W = Math.max(240, Math.round(canvas.getBoundingClientRect().width));
     const dpr = Math.min(window.devicePixelRatio || 1, 2);
     canvas.width = PREVIEW_W * dpr;
     canvas.height = PREVIEW_H * dpr;
@@ -64,9 +72,10 @@ function FootprintPreview({ pref }: { pref: FootprintPreference }) {
     ctx.fillRect(0, 0, PREVIEW_W, PREVIEW_H);
 
     // 노드 둘 + 관계선 하나 — 지도에서 발자국이 앉는 두 자리를 다 보여준다.
-    const a = { x: 46, y: PREVIEW_H / 2 };
-    const b = { x: PREVIEW_W - 46, y: PREVIEW_H / 2 };
-    const r = 13;
+    const r = 15;
+    const inset = 76;
+    const a = { x: inset, y: PREVIEW_H / 2 };
+    const b = { x: PREVIEW_W - inset, y: PREVIEW_H / 2 };
     ctx.strokeStyle = read('--topology-v2-edge-dim', 'rgba(255,255,255,0.11)');
     ctx.lineWidth = 1;
     ctx.beginPath();
@@ -75,7 +84,7 @@ function FootprintPreview({ pref }: { pref: FootprintPreference }) {
     ctx.stroke();
     for (const p of [a, b]) {
       ctx.beginPath();
-      ctx.roundRect(p.x - r, p.y - r, r * 2, r * 2, 4);
+      ctx.roundRect(p.x - r, p.y - r, r * 2, r * 2, 5);
       ctx.fillStyle = '#191920';
       ctx.fill();
       ctx.strokeStyle = '#48484f';
@@ -93,8 +102,8 @@ function FootprintPreview({ pref }: { pref: FootprintPreference }) {
       ref={canvasRef}
       data-testid="app-settings-footprint-preview"
       aria-hidden="true"
-      style={{ width: PREVIEW_W, height: PREVIEW_H }}
-      className="w-full rounded-lg border border-[color:var(--color-border-soft)]"
+      style={{ height: PREVIEW_H }}
+      className="w-full rounded-lg border border-[color:var(--color-border-soft)] bg-[color:var(--topology-v2-canvas-bg-near)]"
     />
   );
 }
@@ -114,6 +123,12 @@ function Slider({
   onChange: (v: number) => void;
   testId: string;
 }) {
+  /*
+   * 트랙을 직접 칠한다. `accent-color` 만 쓰면 **채워지지 않은 쪽이 브라우저
+   * 기본 밝은 회색**이라, 다크 패널 위에서 슬라이더가 라벨보다 밝아진다
+   * (소유자: *"너무 못생겼잖아"*). 채운 만큼만 인디고, 나머지는 표면 토큰.
+   */
+  const filled = ((value - range.min) / (range.max - range.min)) * 100;
   return (
     <label className="flex items-center gap-3 px-1 py-1.5">
       <span className="w-24 shrink-0 text-label text-[color:var(--color-text-secondary)]">{label}</span>
@@ -125,7 +140,10 @@ function Slider({
         step={range.step}
         value={value}
         onChange={(e) => onChange(Number(e.target.value))}
-        className="min-w-0 flex-1 accent-[color:var(--color-indigo-accent)]"
+        style={{
+          background: `linear-gradient(to right, var(--color-indigo-accent) ${filled}%, var(--color-overlay-3) ${filled}%)`,
+        }}
+        className="h-1 min-w-0 flex-1 cursor-pointer appearance-none rounded-full focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--color-indigo-a46)] [&::-webkit-slider-thumb]:h-3.5 [&::-webkit-slider-thumb]:w-3.5 [&::-webkit-slider-thumb]:appearance-none [&::-webkit-slider-thumb]:rounded-full [&::-webkit-slider-thumb]:bg-[color:var(--color-indigo-accent)]"
       />
       <span className="w-12 shrink-0 text-right font-mono text-caption text-[color:var(--color-text-tertiary)]">
         {format(value)}
@@ -189,7 +207,16 @@ export function FootprintSettings() {
       </p>
       <FootprintPreview pref={pref} />
 
-      <div role="radiogroup" aria-label={t('presetLabel')} className="grid grid-cols-3 gap-2">
+      {/*
+        프리셋은 **한 줄 세그먼트**다. 종전엔 칸 폭을 3등분한 큰 버튼이라 세 개가
+        패널을 지배했는데, 이건 "세기 하나 고르기" 라는 작은 결정이다. 컨트롤의
+        시각 무게는 결정의 무게를 따라야 한다.
+      */}
+      <div
+        role="radiogroup"
+        aria-label={t('presetLabel')}
+        className="inline-flex justify-self-start rounded-chip border border-[color:var(--color-border-soft)] p-0.5"
+      >
         {PRESET_ORDER.map((name) => {
           // "지금 이 프리셋인가" 는 프리셋이 정하는 값들만 비교한다 — 색·배치처럼
           // 프리셋이 건드리지 않는 값이 달라도 프리셋은 여전히 그 프리셋이다.
@@ -206,10 +233,10 @@ export function FootprintSettings() {
               data-testid={`app-settings-footprint-preset-${name}`}
               onClick={() => writeFootprint(applyFootprintPreset(pref, name))}
               className={cn(
-                'rounded-lg border px-2 py-2 text-caption transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--color-indigo-a46)]',
+                'rounded-chip px-3.5 py-1.5 text-label transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--color-indigo-a46)]',
                 active
-                  ? 'border-[color:var(--color-indigo-accent)] bg-[color:var(--color-indigo-line-a13)] text-[color:var(--color-indigo-accent)]'
-                  : 'border-[color:var(--color-border-soft)] text-[color:var(--color-text-tertiary)] hover:border-[color:var(--color-border-strong)]',
+                  ? 'bg-[color:var(--color-indigo-line-a13)] text-[color:var(--color-indigo-accent)]'
+                  : 'text-[color:var(--color-text-tertiary)] hover:text-[color:var(--color-text-primary)]',
               )}
             >
               {t(`preset.${name}`)}
@@ -223,8 +250,13 @@ export function FootprintSettings() {
         data-testid="app-settings-footprint-detail-toggle"
         aria-expanded={detailOpen}
         onClick={() => setDetailOpen((open) => !open)}
-        className="justify-self-start rounded-chip px-1 py-1 text-label text-[color:var(--color-text-tertiary)] transition-colors hover:text-[color:var(--color-text-primary)]"
+        className="flex items-center gap-1.5 justify-self-start rounded-chip border border-[color:var(--color-border-soft)] px-2.5 py-1.5 text-label text-[color:var(--color-text-secondary)] transition-colors hover:border-[color:var(--color-border-strong)] hover:text-[color:var(--color-text-primary)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--color-indigo-a46)]"
       >
+        <ChevronDown
+          size={13}
+          aria-hidden
+          className={detailOpen ? 'rotate-180 transition-transform' : 'transition-transform'}
+        />
         {detailOpen ? t('detailHide') : t('detailShow')}
       </button>
 

@@ -495,6 +495,32 @@ describe('AppSettingsMenu appearance pickers (#20/#21)', () => {
     fireEvent.click(screen.getByTestId(`app-settings-nav-${section}`));
   };
 
+  /**
+   * 소유자 확정: *"가로 세로 적당한 크기여야하고 고정 사이즈여야함"*.
+   *
+   * 종전엔 높이가 내용을 따라가서 절을 바꿀 때마다 창이 늘었다 줄었다 했다.
+   * jsdom 은 레이아웃을 계산하지 않으므로 rect 로는 못 재고, **크기를 정하는
+   * 클래스가 절과 무관하게 같은지**로 잠근다 — 이 성질이 깨지는 방식은
+   * "어느 절에서만 다른 클래스가 붙는다" 뿐이라 그걸 정확히 겨눈다.
+   */
+  it('창 크기는 절을 바꿔도 고정이다', () => {
+    openSheet();
+    const panel = screen.getByTestId('app-settings-popover');
+    const sizeClasses = () =>
+      panel.className
+        .split(/\s+/)
+        .filter((c) => /^h-\[|^w-\[|^max-h-\[|^max-w-\[/.test(c))
+        .sort()
+        .join(' ');
+    const baseline = sizeClasses();
+    expect(baseline, '고정 높이가 없다 — 내용이 창 크기를 정하고 있다').toMatch(/h-\[\d+px\]/);
+    expect(baseline, '고정 폭이 없다').toMatch(/w-\[\d+px\]/);
+    for (const item of ['background', 'footprint', 'workspace', 'agent']) {
+      fireEvent.click(screen.getByTestId(`app-settings-nav-${item}`));
+      expect(sizeClasses(), `${item} 절에서 창 크기가 바뀐다`).toBe(baseline);
+    }
+  });
+
   it('LNB 다섯 절을 모두 싣는다', () => {
     openSheet();
     for (const item of ['screen', 'background', 'footprint', 'workspace', 'agent']) {
