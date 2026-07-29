@@ -250,12 +250,6 @@ function PortraitStage({
   published: boolean;
   primaryAsset: ReturnType<typeof macosAssetFor>;
 }) {
-  // 제목과 본문이 **같은 값**을 쓴다 — 갈라지던 자리다(`lib/pending-release-tag`).
-  const displayTag = resolveDisplayReleaseTag({
-    published,
-    publishedTag: MACOS_RELEASE.tag,
-    releaseVersion: RELEASE_VERSION,
-  });
   const t = useTranslations('download');
   const graph = useStageGraph();
 
