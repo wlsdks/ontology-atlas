@@ -45,7 +45,7 @@ const VaultAgentPanel = dynamic(
 import { useDocumentTitle } from "@/shared/lib/use-document-title";
 import { useLocalStorageBoolean } from "@/shared/lib/use-local-storage-boolean";
 import { useAudiencePlain } from "@/shared/lib/audience-preference";
-import { useCanvasBackground, useGlyphSet } from "@/shared/lib/appearance-preferences";
+import { useCanvasBackground, useFootprint, useGlyphSet } from "@/shared/lib/appearance-preferences";
 
 const CREATE_NODE_DIALOG_TITLE_ID = "topology-create-node-dialog-title";
 // Bare `?p=` miss grace window — see the deeplinkMissNotifiedRef effect
@@ -322,6 +322,7 @@ export function HomePage() {
   // 아이콘 세트를 앱 전역 스토어에서 읽어 지도 캔버스에 내려보낸다. DOM 글리프는
   // 같은 스토어를 스스로 구독하므로 두 표면이 lockstep 으로 스왑된다.
   const canvasBackground = useCanvasBackground();
+  const footprint = useFootprint();
   const glyphSet = useGlyphSet();
   // 슬라이스 C — 지도 표면의 관계 어휘 레지스터. 비개발(plain) 모드는
   // 데이터시트와 같은 plain 레지스터로 통일.
@@ -4076,6 +4077,7 @@ export function HomePage() {
                     // 글리프는 스스로 같은 스토어를 읽어 lockstep 스왑된다.
                     glyphSet={glyphSet}
                     canvasBackground={canvasBackground}
+                    footprint={footprint}
                   />
                 ) : null}
                 {topologyRenderState.renderCanvas ? (

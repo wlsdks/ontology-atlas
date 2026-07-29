@@ -33,13 +33,14 @@ import type { NodeDragState } from "./topology-pointer-handlers";
 import { buildGridPattern } from "../render/grid";
 import { createAnimatedBackground, type AnimatedBackground, type AnimatedBackgroundAttractor } from "../render/animated-background";
 import { buildDustPoints, buildRealmCosmosPoints, computeStarDustCount, type DustPoint } from "../render/starfield";
-import type { CanvasBackground, GlyphSet } from "@/shared/lib/appearance-preferences";
+import type { CanvasBackground, FootprintPreference, GlyphSet } from "@/shared/lib/appearance-preferences";
 import { computeClusterFitTarget, computeFocusCameraTarget, computeOverviewCameraTarget, computeOverviewFitScale, hasAnyNodeOnScreen, worldToScreen } from "./topology-camera-math";
 import { drawTopologyFrame } from "./topology-frame-draw";
 import { computeTopologyClusterState } from "./topology-cluster-state";
 import type { ClusterChip } from "../model/density-gate";
 import { clusterMoreChipId, EGO_NEIGHBOR_CHIP_ID, EGO_NEIGHBOR_LIMIT, parseClusterMoreChipId, rankEgoNeighborsByDOI, scheduleRipple, selectiveEgoNeighbors, stepEmphasis, stepFocusRamp, type EgoNeighborRankEntry } from "../model/focus-state";
-import { buildFootprintRanks } from "../model/footprint-ring";
+import { buildFootprintSteps, buildWalkedEdgeKeys } from "../model/footprint-steps";
+import type { FootprintInk } from "../render/footprint-glyph";
 import {
   INITIAL_REALM_TRANSITION_STATE,
   REALM_EXIT_FLIP_MS,
@@ -279,6 +280,8 @@ export interface UseTopologyLoopArgs {
    * 배경이고 앰비언트 휴면을 그대로 탄다. 생략 시 `"dot"`.
    */
   canvasBackground?: CanvasBackground;
+  /** 발자국 표현 설정. 생략/`null` 이면 발자국을 그리지 않는다. */
+  footprint?: FootprintPreference | null;
   /** 휠/세로 스와이프 소유권 — `topology-pointer-handlers.ts` 의 `wheelIntent` 참고. */
   wheelIntent?: "zoom" | "page-scroll";
   /** 앰비언트 휴면 지연 — `TopologyMapV2` 의 `ambientSleepDelayMs` 참고. */
@@ -296,7 +299,7 @@ export type UseTopologyLoopResult = TopologyPointerHandlers & {
 };
 
 export function useTopologyLoop(args: UseTopologyLoopArgs): UseTopologyLoopResult {
-  const { nodes, edges, focusedSlug, emphasizedNeighborSlug = null, fitViewToken, relayoutToken, revealToken = 0, onSelectEdge, onHoverEdge, onSelect, onPaneClick, onVisibleCountChange, onGraphStatsChange, onZoomTierChange, onContextMenuNode, agentFocusNodeId = null, spotlightIds = null, selectedEdge = null, expandedParents = EMPTY_EXPANDED_SET, onToggleCluster, onHoverCluster, realmRootId = null, onEnterRealm, realmEnterButtonRef, realmCaption = null, visitedTrail = EMPTY_TRAIL, trailLensActiveRef, trailHoverNodeIdRef, tierReveal = DEFAULT_TIER_REVEAL, tourAnchorNodeId = null, tourAnchorRef, glyphSet = "geometric", canvasBackground = "dot", wheelIntent = "zoom", ambientSleepDelayMs } = args;
+  const { nodes, edges, focusedSlug, emphasizedNeighborSlug = null, fitViewToken, relayoutToken, revealToken = 0, onSelectEdge, onHoverEdge, onSelect, onPaneClick, onVisibleCountChange, onGraphStatsChange, onZoomTierChange, onContextMenuNode, agentFocusNodeId = null, spotlightIds = null, selectedEdge = null, expandedParents = EMPTY_EXPANDED_SET, onToggleCluster, onHoverCluster, realmRootId = null, onEnterRealm, realmEnterButtonRef, realmCaption = null, visitedTrail = EMPTY_TRAIL, trailLensActiveRef, trailHoverNodeIdRef, tierReveal = DEFAULT_TIER_REVEAL, tourAnchorNodeId = null, tourAnchorRef, glyphSet = "geometric", canvasBackground = "dot", footprint = null, wheelIntent = "zoom", ambientSleepDelayMs } = args;
 
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
   const containerRef = useRef<HTMLDivElement | null>(null);
@@ -333,6 +336,10 @@ export function useTopologyLoop(args: UseTopologyLoopArgs): UseTopologyLoopResul
   // (tierReveal 선례). 설정 변경 시 아래 effect 가 갱신한다.
   const glyphStyleRef = useRef<"fill" | "line">(glyphSet === "line" ? "line" : "fill");
   const canvasBackgroundRef = useRef<CanvasBackground>(canvasBackground);
+  /** 발자국 설정 + 잉크 — 매 프레임 읽으므로 ref 미러(캔버스 배경과 같은 패턴). */
+  const footprintPrefRef = useRef<FootprintPreference | null>(footprint ?? null);
+  const footprintInkRef = useRef<FootprintInk>([232, 196, 122]);
+  const footprintStepColorRef = useRef<string>("#e8c47a");
   /**
    * 앰비언트 휴면 지연 — 프레임 루프가 매 프레임 읽으므로 값이 아니라 ref 다
    * (이 파일이 `canvasBackground` 등에 이미 쓰는 패턴). 값으로 닫으면 루프
@@ -751,6 +758,29 @@ export function useTopologyLoop(args: UseTopologyLoopArgs): UseTopologyLoopResul
       animatedBgRef.current = null;
     };
   }, [canvasBackground]);
+
+  /**
+   * 발자국 설정 + 잉크 — 색 2택을 토큰에서 읽어 RGB 로 푼다. 캔버스는 CSS 변수를
+   * 못 읽으므로 여기서 한 번 푼다(설정이 바뀔 때만, 프레임마다가 아니다).
+   */
+  useEffect(() => {
+    footprintPrefRef.current = footprint;
+    if (!footprint) return;
+    const rootStyle = getComputedStyle(document.documentElement);
+    const hex = rootStyle
+      .getPropertyValue(footprint.tone === "indigo" ? "--color-indigo-accent" : "--color-footprint-trail")
+      .trim();
+    const parsed = /^#?([0-9a-f]{6})$/i.exec(hex);
+    if (parsed) {
+      const n = parseInt(parsed[1], 16);
+      footprintInkRef.current = [(n >> 16) & 255, (n >> 8) & 255, n & 255];
+      footprintStepColorRef.current = hex.startsWith("#") ? hex : `#${parsed[1]}`;
+    } else {
+      // 토큰이 없거나 rgba() 형태 — 기본 앰버로 폴백한다(발자국이 사라지는 것보다 낫다).
+      footprintInkRef.current = footprint.tone === "indigo" ? [113, 112, 255] : [232, 196, 122];
+      footprintStepColorRef.current = footprint.tone === "indigo" ? "#7170ff" : "#e8c47a";
+    }
+  }, [footprint]);
 
   /**
    * 커서 위치 추적 — 움직이는 배경만 쓴다. 큰 포인터 핸들러 팩토리를 건드리지
@@ -2465,7 +2495,10 @@ export function useTopologyLoop(args: UseTopologyLoopArgs): UseTopologyLoopResul
 
       // 발자국 트레일 — 이번 프레임의 방문 노드별 최근성 rank(현재 포커스 노드는
       // 선택 링이 이미 있으므로 제외). 배열이 짧아(≤30) 매 프레임 계산 비용 무시.
-      const footprintRanksById = buildFootprintRanks(visitedTrailRef.current, focusedNodeId);
+      // 노드별 방문 순번(1부터). 현재 포커스 노드는 선택 링이 이미 그 자리를
+      // 가지므로 뺀다 — 이중 표기 방지 + 위계(선택 > 발자국) 보존.
+      const footprintStepsById = buildFootprintSteps(visitedTrailRef.current);
+      if (focusedNodeId !== null) footprintStepsById.delete(focusedNodeId);
 
       // 스포트라이트 on/off 지수 램프 — focusDimTau 재사용(신규 easing 0).
       // reduced-motion 은 즉착(정적 대비만으로 정보 성립 — 협의회 §④).
@@ -2550,7 +2583,11 @@ export function useTopologyLoop(args: UseTopologyLoopArgs): UseTopologyLoopResul
         realmOutsideReturnAlphaById,
         // S8 결함 6 — 영역 활성 시에만 우주 도트를 넘긴다(결계로 클립).
         realmCosmosPoints: realmWarding ? cosmosPointsRef.current : null,
-        footprintRanksById,
+        footprintStepsById,
+        footprintPref: footprintPrefRef.current,
+        walkedEdgeKeys: buildWalkedEdgeKeys(visitedTrailRef.current),
+        footprintInk: footprintInkRef.current,
+        footprintStepColor: footprintStepColorRef.current,
         // 렌즈 keep-set — 팝오버가 열려 있을 때만 넘긴다(닫히면 null = 회귀 0).
         trailLensIds: trailLensActive ? visitedTrailSetRef.current : null,
         spotlightIds: spotlightIdsRef.current,

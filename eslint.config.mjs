@@ -31,6 +31,19 @@ const scaleGradientSelectors = [
       "TemplateElement[value.raw=/from-(purple|fuchsia|pink)-\\d+.*to-(pink|fuchsia|purple)-\\d+/]",
     message: '디자인 헌장 §11 — 보라핑크 그라디언트 금지 (template literal).',
   },
+  {
+    // canvas 2D 의 글로우 — `ctx.shadowBlur = n`. 헌장(forbidden.md)은
+    // glow/neon/헤일로를 앱 전역에서 금지하고, 예외는 **발자국 트레일 번짐
+    // 1건**(정적 · opt-in · 기본 0 · 상한 6px)뿐이다. 그 한 건은
+    // `render/footprint-glyph.ts` 에만 살고, 이 셀렉터가 그 사실을 강제한다.
+    //
+    // 왜 룰이 필요한가: 캔버스 글로우는 **클래스 문자열이 아니라 API 호출**이라
+    // 기존 값 룰(shadow-[…] 기하 허용목록)의 시야 밖이다. 새 캔버스 표면이
+    // shadowBlur 를 한 줄 쓰면 아무 게이트도 안 걸리고 조용히 들어온다.
+    selector: 'MemberExpression[property.name="shadowBlur"]',
+    message:
+      'canvas 글로우 금지 (forbidden.md). 유일한 예외는 발자국 트레일 번짐이고 render/footprint-glyph.ts 안에서만 산다.',
+  },
 ];
 
 // ── Geometry & Type Codex (R5) 봉쇄 ─────────────────────────────────
@@ -609,6 +622,25 @@ const eslintConfig = defineConfig([
       'no-restricted-syntax': [
         'warn',
         ...scaleGradientSelectors,
+        ...arbitrarySizeSelectors,
+      ],
+    },
+  },
+  // 헌장 예외 1건 — 발자국 트레일 번짐(정적 · opt-in · 기본 0 · 상한 6px).
+  //
+  // ⚠️ **이 블록은 위 두 램프 블록보다 반드시 뒤에 온다.** flat config 는 rule
+  // option 배열을 병합하지 않고 교체하므로, 앞에 두면 `codexR6Globs`(이 파일을
+  // 포함한다)가 shadowBlur 셀렉터를 되살려 예외가 무력화된다 — 실측으로
+  // 경고 1건이 늘어 발견했다.
+  //
+  // 예외를 **파일 하나로 좁혀** 두면 두 번째 소비처가 생기는 순간 lint 가 먼저
+  // 말한다. 예외가 관례로 번지는 것이 이 배치가 막는 부패다.
+  {
+    files: ['src/widgets/topology-map-v2/render/footprint-glyph.ts'],
+    rules: {
+      'no-restricted-syntax': [
+        'warn',
+        ...scaleGradientSelectors.filter((rule) => !rule.selector.includes('shadowBlur')),
         ...arbitrarySizeSelectors,
       ],
     },

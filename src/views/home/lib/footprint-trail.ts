@@ -41,24 +41,6 @@ export function appendFootprintVisit(
 }
 
 /**
- * 노드별 **방문 순번 목록** — `["a","b","a"]` → `{a:[1,3], b:[2]}`. 1부터 센다
- * (화면에 보이는 수라 0-based 는 오독을 만든다). 순수 함수.
- *
- * 순번은 트레일 배열 안의 위치이므로, 상한(30)에 걸려 앞이 잘리면 남은 걸음이
- * 1 부터 다시 매겨진다 — "지금 보이는 길에서 몇 번째"가 사용자가 답할 수 있는
- * 유일한 질문이다(잘려 나간 걸음의 번호를 유지하면 1 이 없는 목록이 된다).
- */
-export function buildFootprintSteps(trail: readonly string[]): Map<string, number[]> {
-  const steps = new Map<string, number[]>();
-  trail.forEach((id, i) => {
-    const list = steps.get(id);
-    if (list) list.push(i + 1);
-    else steps.set(id, [i + 1]);
-  });
-  return steps;
-}
-
-/**
  * 인계 패킷·타임라인용 **접힌 트레일** — 같은 노드의 마지막 방문만 남긴다(오래된
  * → 최근 순서 보존). 에이전트에게 같은 `get_concept` 을 세 번 주는 것은 정보가
  * 아니라 소음이고, 사람이 읽는 타임라인도 마찬가지다.

@@ -98,10 +98,10 @@ describe("폐기된 캔버스 배경 값의 계승", () => {
  */
 describe("발자국 설정 정규화", () => {
   it("범위 밖 숫자는 잘라 넣는다", () => {
-    const out = resolveFootprint({ size: 999, opacity: -3, perEdge: 0 });
+    const out = resolveFootprint({ size: 999, opacity: -3, bloom: 40 });
     expect(out.size).toBe(FOOTPRINT_RANGES.size.max);
     expect(out.opacity).toBe(FOOTPRINT_RANGES.opacity.min);
-    expect(out.perEdge).toBe(FOOTPRINT_RANGES.perEdge.min);
+    expect(out.bloom).toBe(FOOTPRINT_RANGES.bloom.max);
   });
 
   it("NaN·문자열·누락은 기본값으로 대체한다", () => {

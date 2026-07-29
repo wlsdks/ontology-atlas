@@ -4,7 +4,7 @@ import { useEffect, useRef, type RefObject } from "react";
 import { Orbit } from "lucide-react";
 import { useTopologyLoop } from "./use-topology-loop";
 import type { TierRevealConfig } from "../model/tier-visibility";
-import type { CanvasBackground, GlyphSet } from "@/shared/lib/appearance-preferences";
+import type { CanvasBackground, FootprintPreference, GlyphSet } from "@/shared/lib/appearance-preferences";
 
 /**
  * `TopologyMapV2` — the product's single current canvas-2D topology renderer.
@@ -236,6 +236,8 @@ export interface TopologyMapV2Props {
    * `useCanvasBackground()` 로 읽어 내려보낸다. 생략 시 `"dot"`.
    */
   canvasBackground?: CanvasBackground;
+  /** 발자국 표현 설정 — `useFootprint()` 로 읽어 내려보낸다. 생략 시 발자국 없음. */
+  footprint?: FootprintPreference | null;
   /**
    * 휠과 세로 스와이프가 누구 것인가 — `topology-pointer-handlers.ts` 의
    * `wheelIntent` 문서 참고. 워크벤치는 생략(= `"zoom"`, 현행 무변경),
@@ -258,7 +260,7 @@ export interface TopologyMapV2Props {
 }
 
 export function TopologyMapV2(props: TopologyMapV2Props) {
-  const { nodes, edges, focus, minimal, emphasizedNeighborSlug, fitViewToken, relayoutToken, revealToken, onSelectEdge, onSelect, onPaneClick, onVisibleCountChange, onGraphStatsChange, onZoomTierChange, onContextMenuNode, agentFocusNodeId, spotlightIds = null, onHoverEdge, selectedEdge = null, expandedParents, onToggleCluster, onHoverCluster, clusterHint, realmRootId = null, onEnterRealm, realmEnterLabel, realmEnterTooltip, realmCaption = null, canvasLabel, visitedTrail, trailLensActiveRef, trailHoverNodeIdRef, tierReveal, tourAnchorNodeId = null, tourAnchorRef, overlayOpen = false, glyphSet = "geometric", canvasBackground = "dot", wheelIntent = "zoom", ambientSleepDelayMs } = props;
+  const { nodes, edges, focus, minimal, emphasizedNeighborSlug, fitViewToken, relayoutToken, revealToken, onSelectEdge, onSelect, onPaneClick, onVisibleCountChange, onGraphStatsChange, onZoomTierChange, onContextMenuNode, agentFocusNodeId, spotlightIds = null, onHoverEdge, selectedEdge = null, expandedParents, onToggleCluster, onHoverCluster, clusterHint, realmRootId = null, onEnterRealm, realmEnterLabel, realmEnterTooltip, realmCaption = null, canvasLabel, visitedTrail, trailLensActiveRef, trailHoverNodeIdRef, tierReveal, tourAnchorNodeId = null, tourAnchorRef, overlayOpen = false, glyphSet = "geometric", canvasBackground = "dot", footprint = null, wheelIntent = "zoom", ambientSleepDelayMs } = props;
 
   const realmEnterButtonRef = useRef<HTMLButtonElement | null>(null);
 
@@ -348,6 +350,7 @@ export function TopologyMapV2(props: TopologyMapV2Props) {
       tourAnchorRef,
       glyphSet,
       canvasBackground,
+      footprint,
     });
 
   return (

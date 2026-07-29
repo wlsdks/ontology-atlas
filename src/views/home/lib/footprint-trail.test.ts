@@ -2,7 +2,6 @@ import { describe, expect, it } from "vitest";
 
 import {
   appendFootprintVisit,
-  buildFootprintSteps,
   collapseFootprintTrail,
   FOOTPRINT_TRAIL_MAX,
   formatFootprintTrailAgentPacket,
@@ -44,19 +43,6 @@ describe("appendFootprintVisit", () => {
     const input = ["a", "b"];
     appendFootprintVisit(input, "c");
     expect(input).toEqual(["a", "b"]);
-  });
-});
-
-describe("buildFootprintSteps", () => {
-  it("재방문 노드는 순번을 여러 개 갖는다(1부터)", () => {
-    const steps = buildFootprintSteps(["a", "b", "a", "c", "a"]);
-    expect(steps.get("a")).toEqual([1, 3, 5]);
-    expect(steps.get("b")).toEqual([2]);
-    expect(steps.get("c")).toEqual([4]);
-  });
-
-  it("빈 트레일은 빈 맵", () => {
-    expect(buildFootprintSteps([]).size).toBe(0);
   });
 });
 

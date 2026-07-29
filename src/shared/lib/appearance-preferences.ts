@@ -143,65 +143,112 @@ export function useGlyphSet(): GlyphSet {
 export type FootprintPlacement = "right" | "both";
 
 /**
+ * 발자국 색 2택 — 자유 컬러피커가 아니다.
+ *
+ * 이 지도에서 노랑은 **이미 뜻이 있다**("여기가 중심" — 허브 앰버 `#d4b478`).
+ * 발자국을 같은 비트로 칠하면 "이건 중심이다"와 "여기 걸었다"가 한 색이 된다.
+ * 그래서 노랑은 쓰되 **같은 계열의 다른 값**(`--color-footprint-trail`)으로 가른다.
+ */
+export type FootprintTone = "amber" | "indigo";
+
+/**
+ * 선 위 자국의 밀도 — 숫자 슬라이더가 아니다.
+ *
+ * 개수는 선 길이를 균등 분할한 **장식**인데, 숫자로 노출하면 "이 길을 4번
+ * 지났다"는 **데이터**로 읽힌다. 화면이 하지 않은 약속을 컨트롤이 대신 하는
+ * 셈이라, 2단(성기게/촘촘히)으로만 연다.
+ */
+export type FootprintEdgeDensity = "sparse" | "dense";
+
+/** 밀도 2단 → 선 하나에 찍히는 자국 수. */
+export const FOOTPRINT_EDGE_COUNT: Readonly<Record<FootprintEdgeDensity, number>> = {
+  sparse: 2,
+  dense: 5,
+};
+
+/**
+ * 선 위 자국의 크기 배율 — **설정이 아니라 상수**다. 자유롭게 열면 자국 크기와
+ * 곱해져 간선 자국이 가장 작은 노드(지름 34px)보다 커지는 상태가 만들어진다.
+ */
+export const FOOTPRINT_EDGE_SCALE = 0.9;
+
+/**
  * 발자국 표현 설정 — 소유자가 직접 만지는 값들(2026-07-29 지시).
  *
  * **모양은 설정이 아니다.** 신발 자국(양발)로 고정한다 — 모양까지 고르게 하면
  * 사용자마다 다른 그림을 보게 되고, 그러면 "이 표시가 무슨 뜻인가"를 화면이 더
  * 이상 말할 수 없다. 고를 수 있는 것은 **같은 뜻을 얼마나 세게 말하느냐**뿐이다.
  *
- * 이름은 전부 값이 아니라 **보이는 것**으로 짓는다("알파" 대신 "진하기",
- * "선에서" 대신 "선에서 떨어진 거리") — 설정 화면은 코드 리뷰가 아니다.
+ * 소유자가 부른 11값은 8개로 줄었다(카운슬 2026-07-29). 줄인 셋은 전부
+ * "값은 있는데 결정이 없던" 것들이다 — 선 자국 크기(고정), 선에서 띄우는 거리
+ * (노드와 한 문장으로 통합), 선 자국 수(밀도 2단으로 대체).
+ *
+ * 이름은 전부 값이 아니라 **보이는 것**으로 짓는다("알파" 대신 "진하기") —
+ * 설정 화면은 코드 리뷰가 아니다.
  */
 export interface FootprintPreference {
-  /** 발자국 크기(px) — 한 발의 긴 축 길이. */
+  /** 자국 크기(px) — 한 발의 긴 축 길이. */
   size: number;
-  /** 테두리 굵기(px). */
-  strokeWidth: number;
-  /** 안을 채울지 — 끄면 라인아트. */
+  /** 채움 방식 — 끄면 윤곽선(라인아트). */
   filled: boolean;
-  /** 노드에서 떨어진 거리(px). */
-  nodeGap: number;
+  /** 테두리 굵기(px). **윤곽선일 때만 화면에 영향이 있다**(채움이면 죽은 값). */
+  strokeWidth: number;
+  /** 노드·선에서 자국을 띄우는 거리(px). 둘이 한 값인 이유는 사용자에게 한 문장이라서다. */
+  gap: number;
   /** 진하기 0..1. */
   opacity: number;
-  /** 번짐(px) — 0 이 기본. 헌장상 글로우는 금지라 기본은 항상 0이다. */
+  /** 색 2택. */
+  tone: FootprintTone;
+  /** 번짐(px) — 0 이 기본. 헌장 예외 1건(정적 헤일로)이라 상한이 낮다. */
   bloom: number;
-  /** 선 위에도 발자국을 남길지. */
+  /** 선 위에도 자국을 남길지. */
   onEdges: boolean;
-  /** 선 하나에 남기는 발자국 수. */
-  perEdge: number;
+  /** 선 위 자국 밀도. */
+  edgeDensity: FootprintEdgeDensity;
   /** 선 기준 놓는 자리. */
   placement: FootprintPlacement;
-  /** 선에서 떨어진 거리(px). */
-  edgeGap: number;
-  /** 선 위 발자국 크기 배율 — 노드 옆 발자국 대비. */
-  edgeScale: number;
 }
 
 export const DEFAULT_FOOTPRINT: FootprintPreference = {
   size: 13,
-  strokeWidth: 1.5,
   filled: true,
-  nodeGap: 8,
+  strokeWidth: 1.5,
+  gap: 8,
   opacity: 0.7,
+  tone: "amber",
   bloom: 0,
   onEdges: true,
-  perEdge: 4,
+  edgeDensity: "dense",
   placement: "right",
-  edgeGap: 10,
-  edgeScale: 1,
 };
 
-/** 각 값의 허용 범위 — 슬라이더 min/max 와 저장값 clamp 의 단일 출처. */
+/**
+ * 각 값의 허용 범위 — 슬라이더 min/max 와 저장값 clamp 의 단일 출처.
+ *
+ * 하한이 넉넉하지 않다: `size` 6px 에서는 신발 자국의 앞꿈치/뒤꿈치가 뭉개져
+ * **모양이라는 채널이 죽고**, `opacity` 0.1 은 캔버스 위 유효 대비가 3:1 에
+ * 한참 못 미친다(도해 실측). 사용자가 고를 수 있는 범위는 **여전히 읽히는
+ * 범위**여야 한다 — 안 보이게 만들 자유는 설정이 아니라 결함이다.
+ */
 export const FOOTPRINT_RANGES = {
-  size: { min: 6, max: 26, step: 1 },
-  strokeWidth: { min: 0.5, max: 3, step: 0.1 },
-  nodeGap: { min: 0, max: 28, step: 1 },
-  opacity: { min: 0.1, max: 1, step: 0.05 },
-  bloom: { min: 0, max: 12, step: 1 },
-  perEdge: { min: 1, max: 8, step: 1 },
-  edgeGap: { min: 2, max: 26, step: 1 },
-  edgeScale: { min: 0.5, max: 1.6, step: 0.05 },
+  size: { min: 9, max: 26, step: 1 },
+  strokeWidth: { min: 0.5, max: 1.8, step: 0.1 },
+  gap: { min: 0, max: 28, step: 1 },
+  opacity: { min: 0.5, max: 1, step: 0.05 },
+  bloom: { min: 0, max: 6, step: 1 },
 } as const satisfies Record<string, { min: number; max: number; step: number }>;
+
+/**
+ * 프리셋 3 — 첫 화면에 보이는 것. 11개(지금 8개) 슬라이더를 첫 화면에 쏟으면
+ * 고르려는 사람이 아니라 컨트롤이 주목을 가져간다. 세부는 「직접 맞추기」 뒤에 있다.
+ */
+export const FOOTPRINT_PRESETS = {
+  subtle: { size: 10, opacity: 0.5, bloom: 0, edgeDensity: "sparse" },
+  default: { size: 13, opacity: 0.7, bloom: 0, edgeDensity: "dense" },
+  bold: { size: 17, opacity: 0.95, bloom: 3, edgeDensity: "dense" },
+} as const satisfies Record<string, Partial<FootprintPreference>>;
+
+export type FootprintPresetName = keyof typeof FOOTPRINT_PRESETS;
 
 const clamp = (v: number, min: number, max: number): number => Math.min(max, Math.max(min, v));
 
@@ -220,17 +267,27 @@ export function resolveFootprint(raw: unknown): FootprintPreference {
   };
   return {
     size: num("size"),
-    strokeWidth: num("strokeWidth"),
     filled: typeof src.filled === "boolean" ? src.filled : DEFAULT_FOOTPRINT.filled,
-    nodeGap: num("nodeGap"),
+    strokeWidth: num("strokeWidth"),
+    gap: num("gap"),
     opacity: num("opacity"),
+    tone: src.tone === "indigo" || src.tone === "amber" ? src.tone : DEFAULT_FOOTPRINT.tone,
     bloom: num("bloom"),
     onEdges: typeof src.onEdges === "boolean" ? src.onEdges : DEFAULT_FOOTPRINT.onEdges,
-    perEdge: num("perEdge"),
+    edgeDensity:
+      src.edgeDensity === "sparse" || src.edgeDensity === "dense"
+        ? src.edgeDensity
+        : DEFAULT_FOOTPRINT.edgeDensity,
     placement: src.placement === "both" || src.placement === "right" ? src.placement : DEFAULT_FOOTPRINT.placement,
-    edgeGap: num("edgeGap"),
-    edgeScale: num("edgeScale"),
   };
+}
+
+/** 프리셋을 현재 설정 위에 얹는다 — 프리셋이 정하지 않은 값(색·배치 등)은 보존한다. */
+export function applyFootprintPreset(
+  current: FootprintPreference,
+  preset: FootprintPresetName,
+): FootprintPreference {
+  return resolveFootprint({ ...current, ...FOOTPRINT_PRESETS[preset] });
 }
 
 export function readFootprint(): FootprintPreference {

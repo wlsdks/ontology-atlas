@@ -28,7 +28,11 @@
  * 있는데, 거기에 선을 따라가는 자국을 찍으면 "선 = 관계"라는 계약이 깨진다.
  */
 
-import type { FootprintPreference } from "@/shared/lib/appearance-preferences";
+import {
+  FOOTPRINT_EDGE_COUNT,
+  FOOTPRINT_EDGE_SCALE,
+  type FootprintPreference,
+} from "@/shared/lib/appearance-preferences";
 
 /** 발자국 잉크(RGB 3원소) — 호출부가 토큰에서 읽어 넘긴다. */
 export type FootprintInk = readonly [number, number, number];
@@ -130,7 +134,7 @@ export function drawNodeFootprint(
   nodeRadius: number,
   alpha: number,
 ): void {
-  const at = footprintAnchor(x, y, nodeRadius, paint.pref.nodeGap);
+  const at = footprintAnchor(x, y, nodeRadius, paint.pref.gap);
   withFootprintInk(paint, alpha, () => {
     paint.ctx.translate(at.x, at.y);
     drawSoles(paint.ctx, paint.pref, paint.pref.size);
@@ -139,15 +143,20 @@ export function drawNodeFootprint(
 
 /**
  * 방문 순번의 표시 문자열. 재방문 노드는 순번이 여럿이라 그대로 이으면 라벨을
- * 덮는다 — 3개를 넘으면 **처음·…·마지막**으로 줄인다.
+ * 덮는다 — 3개를 넘으면 **처음·…·마지막 + 총 횟수**로 줄인다.
+ *
+ * 총 횟수를 병기하는 이유: `1·…·9` 만 쓰면 그 사이에 몇 번 들렀는지가 **사라진다**.
+ * 그런데 "여기 자주 돌아왔다"는 것이 이 표기가 나르려던 사실 자체다 — 축약이
+ * 정보를 줄이는 것은 괜찮지만 **없애면** 축약이 아니라 손실이다.
  *
  * 순수 함수(테스트 대상). 첫 방문과 마지막 방문을 남기는 것은 "언제 처음 왔고
  * 언제 마지막에 왔나"가 중간 방문보다 답할 가치가 큰 질문이기 때문이다.
  */
-export function formatStepNumbers(steps: readonly number[]): string {
+export function formatStepNumbers(steps: readonly number[], totalLabel = "총 %d회"): string {
   if (steps.length === 0) return "";
   if (steps.length <= 3) return steps.join("·");
-  return `${steps[0]}·…·${steps[steps.length - 1]}`;
+  const total = totalLabel.replace("%d", String(steps.length));
+  return `${steps[0]}·…·${steps[steps.length - 1]} (${total})`;
 }
 
 /** 노드 옆 순번 — 발자국 자국 바로 위. */
@@ -163,7 +172,7 @@ export function drawFootprintSteps(
   const label = formatStepNumbers(steps);
   if (label === "") return;
   const { ctx, pref } = paint;
-  const at = footprintAnchor(x, y, nodeRadius, pref.nodeGap);
+  const at = footprintAnchor(x, y, nodeRadius, pref.gap);
   ctx.save();
   ctx.globalAlpha = alpha;
   ctx.fillStyle = color;
@@ -186,6 +195,7 @@ export function edgeFootprintPlacements(
   by: number,
   pref: FootprintPreference,
 ): { x: number; y: number; angle: number; mirror: boolean; fade: number }[] {
+  const count = FOOTPRINT_EDGE_COUNT[pref.edgeDensity];
   const angle = Math.atan2(by - ay, bx - ax);
   const nx = Math.cos(angle + Math.PI / 2);
   const ny = Math.sin(angle + Math.PI / 2);
@@ -196,18 +206,18 @@ export function edgeFootprintPlacements(
   if (usable <= 0) return [];
 
   const out: { x: number; y: number; angle: number; mirror: boolean; fade: number }[] = [];
-  for (let i = 0; i < pref.perEdge; i += 1) {
-    const t = (pad + (usable * (i + 0.5)) / pref.perEdge) / len;
+  for (let i = 0; i < count; i += 1) {
+    const t = (pad + (usable * (i + 0.5)) / count) / len;
     const alt = i % 2 === 0 ? 1 : -1;
     // 한쪽(right): 선의 오른쪽 한 줄. 양쪽(both): 선을 사이에 두고 좌우 번갈아.
-    const d = pref.placement === "both" ? alt * pref.edgeGap : pref.edgeGap;
+    const d = pref.placement === "both" ? alt * pref.gap : pref.gap;
     out.push({
       x: ax + (bx - ax) * t + nx * d,
       y: ay + (by - ay) * t + ny * d,
       angle: angle + Math.PI / 2,
       mirror: alt < 0,
       // 앞쪽 자국이 진하다 — 최근성이 아니라 "어느 쪽에서 왔나"라는 방향감.
-      fade: 0.5 + 0.5 * (1 - i / Math.max(1, pref.perEdge - 1)),
+      fade: 0.5 + 0.5 * (1 - i / Math.max(1, count - 1)),
     });
   }
   return out;
@@ -227,7 +237,7 @@ export function drawEdgeFootprints(
     withFootprintInk(paint, alpha * spot.fade, () => {
       ctx.translate(spot.x, spot.y);
       ctx.rotate(spot.angle);
-      drawSoles(ctx, pref, pref.size * pref.edgeScale, spot.mirror);
+      drawSoles(ctx, pref, pref.size * FOOTPRINT_EDGE_SCALE, spot.mirror);
     });
   }
 }

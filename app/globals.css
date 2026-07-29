@@ -2182,6 +2182,12 @@
     --topology-v2-indigo: var(--color-indigo-brand);
     --topology-v2-indigo-bright: #8890e0;
     --topology-v2-amber-hub: #d4b478;
+    /* 발자국 트레일(걸어온 길) — amber 네 번째 갈래(design.md "Three ambers" 절
+       참고). 허브 앰버 #d4b478 와 **같은 비트를 쓰지 않는다**: 이 지도에서
+       노랑은 이미 "여기가 중심"이라는 뜻이라, 같은 값이면 "중심"과 "걸었다"가
+       한 색이 된다. 명도·채도를 갈라 계열은 같되 값이 다르다. 렌즈(팝오버
+       열림) 한정 표기라 상시 앰버 확장이 아니다. */
+    --color-footprint-trail: #e8c47a;
     --topology-v2-numeral-shadow: #08080a;
     --topology-v2-numeral-face: #8c8c94;
     /* 노드 금속 광택(sheen): 세로 그라디언트 상단 틴트 + 혼합비.
