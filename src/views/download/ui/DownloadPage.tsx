@@ -14,7 +14,7 @@ import { resolveDisplayReleaseTag } from '../lib/pending-release-tag';
 import { Link } from '@/i18n/navigation';
 import { cn } from '@/shared/lib/cn';
 import { useCopyFeedback } from '@/shared/lib/use-copy-feedback';
-import { buttonVariants } from '@/shared/ui';
+import { GithubMark, buttonVariants } from '@/shared/ui';
 import { LocaleSwitch } from '@/features/locale-switch';
 import { MacosDownloadLink } from '@/features/macos-download-link';
 import { RELEASE_MIN_MACOS, RELEASE_VERSION, buildDmgName } from '../lib/release-facts';
@@ -31,8 +31,6 @@ import {
 import { StageMap, useStageGraph } from './StageMap';
 
 const GITHUB_REPOSITORY_URL = 'https://github.com/wlsdks/ontology-atlas';
-/** 링크 텍스트는 주소 그대로 — 오픈소스에서 이 문자열은 라벨이 아니라 신원이다. */
-const GITHUB_REPOSITORY_LABEL = 'github.com/wlsdks/ontology-atlas';
 
 /**
  * **이 페이지의 그리드는 한 벌이다** (2026-07-29 카운슬 평결 ③).
@@ -143,7 +141,6 @@ const STAGE_COLUMN = 'w-full max-w-[calc(var(--gateway-plate-width)*1px)]';
  * 실제 구현(신뢰 칩·체크섬 행·검증 코드박스)과 어긋났다(체계석 지적).
  */
 export function DownloadPage() {
-  const t = useTranslations('download');
   const tFooter = useTranslations('footer');
   const published = isMacosReleasePublished();
   // Apple Silicon 이 기본 제안 — 2020년 말 이후 팔린 맥은 거의 전부 그쪽이다.
@@ -174,22 +171,26 @@ export function DownloadPage() {
           <div className={PAGE_COLUMN}>
             <InstallTrack />
 
+            {/*
+             * 콜로폰 — 라이선스와 스택**만** 산다 (2026-07-29 소유자 요청 →
+             * 카운슬 처방).
+             *
+             * 예전엔 여기 「소스 코드 보기」 링크가 11px 로 앉아 있었고, 판
+             * 안에도 같은 저장소를 가리키는 mono 주소가 따로 있었다. **한
+             * 페이지에 같은 목적지가 둘**이면 둘 다 각주가 된다 — 오픈소스
+             * 제품에서 「코드를 본다」는 신뢰를 버는 행동인데 그 행동이 어느
+             * 쪽에서도 눌러 볼 만한 것으로 안 보였다.
+             *
+             * 그래서 **더하지 않고 옮겼다**: 저장소로 가는 길은 판 안의
+             * 고스트 버튼 하나로 승격하고(`PlateExitRow`), 이 줄은 중복을
+             * 반납한다. 콜로폰이 짧아진 만큼 라이선스가 더 잘 읽힌다.
+             */}
             <footer className="mt-5 border-t border-[color:var(--color-divider)] pt-4 text-label leading-label text-[color:var(--color-text-quaternary)]">
               <VerifyDetails published={published} primaryAsset={primaryAsset} />
               <div className="mt-3 flex flex-wrap items-center gap-x-4 gap-y-2">
                 <span className="font-mono uppercase tracking-[0.14em]">
                   {tFooter('license')}
                 </span>
-                <span aria-hidden>·</span>
-                <a
-                  href={GITHUB_REPOSITORY_URL}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="touch-hit-expand inline-flex items-center gap-1.5 transition-colors hover:text-[color:var(--color-text-tertiary)]"
-                >
-                  <ExternalLink size={12} aria-hidden />
-                  {t('sourceCta')}
-                </a>
                 <span aria-hidden>·</span>
                 <span className="font-mono">{tFooter('stack')}</span>
               </div>
@@ -267,8 +268,19 @@ function GatewayNav() {
           data-testid="download-gnb-actions"
           className="ml-auto flex shrink-0 items-center gap-3"
         >
+          {/*
+           * ⚠️ **`/` 가 아니라 `/topology` 다.** 라벨이 「지도로 돌아가기」라고
+           * 말하는데 `/` 는 2026-07-29 소유자 결정으로 **마케팅 페이지**가 된다
+           * (원장: 「root-first-open」 뒤집기). 그때 `/` 로 보내면 사용자는 지도가
+           * 아니라 방금 떠난 소개 화면으로 되돌아온다.
+           *
+           * 전환 전에는 두 주소가 같은 화면이라 이 결함이 보이지 않았다 — 그래서
+           * `tests/contract/map-destination-route.contract.test.ts` 가 라벨과
+           * 목적지를 함께 본다.
+           */}
           <Link
-            href="/"
+            href="/topology"
+            data-testid="download-back-to-map"
             className="touch-hit-expand inline-flex items-center gap-1.5 whitespace-nowrap text-body leading-body text-[color:var(--color-text-tertiary)] transition-colors hover:text-[color:var(--color-text-primary)]"
           >
             <ArrowLeft size={14} aria-hidden />
@@ -502,6 +514,12 @@ function DownloadPlate({
       ) : (
         <PendingActions />
       )}
+      {/* 출구 줄은 **두 분기가 공유한다** — 게시 여부와 무관하게 "안 받기로 한
+          사람" 은 언제나 있고, 저장소는 언제나 열려 있다. 예전엔 이 줄이
+          `PublishedActions` 안에만 있어서 미게시 상태에서는 페이지 전체에
+          저장소로 가는 컨트롤이 하나도 없었다(콜로폰의 11px 링크 하나 제외 —
+          그리고 그 링크는 이번에 반납했다). */}
+      <PlateExitRow published={published} />
     </div>
   );
 }
@@ -544,7 +562,6 @@ function PublishedActions({
       <ReleaseFactLine />
       <TrustChips />
       <PlatformStatus />
-      <PlateFooterLinks />
     </div>
   );
 }
@@ -590,42 +607,95 @@ function AssetSize({ bytes, onFill = false }: { bytes: number; onFill?: boolean 
 }
 
 /**
- * 판의 바닥 줄 — **받기 다음에 갈 수 있는 두 곳** (소유자 지시 2026-07-28:
- * *"다운로드, 웹 이동 하단에 깃허브 주소 이런 느낌으로 가자"*).
+ * 판의 바닥 줄 — **받기 다음에 갈 수 있는 곳** (소유자 지시 2026-07-28:
+ * *"다운로드, 웹 이동 하단에 깃허브 주소 이런 느낌으로 가자"* → 2026-07-29:
+ * *"다운로드 페이지에는 예쁘게 GITHUB 페이지 이동 버튼도 있어야할듯?"*).
  *
- * 위의 버튼과 무게를 나눈다: 받는 것이 이 판의 일이고, 이 줄은 **안 받기로 한
- * 사람의 출구**다. 그래서 버튼이 아니라 글자다.
+ * ## 저장소가 각주에서 컨트롤로 (2026-07-29)
  *
- * 저장소 주소를 URL 그대로 쓰는 이유: 오픈소스에서 그 문자열은 링크가 아니라
- * **신원**이다. "소스 코드 보기" 라는 라벨은 어디로 가는지 감추지만
- * `github.com/wlsdks/ontology-atlas` 는 누가 만들었고 무엇을 볼 수 있는지를
- * 클릭 전에 말한다.
+ * 그전까지 저장소는 **두 곳에 각주로** 있었다: 이 줄의 11px mono 주소, 그리고
+ * 페이지 콜로폰의 11px 「소스 코드 보기」. 오픈소스 제품에서 *코드를 본다* 는
+ * 신뢰를 버는 행동인데, 같은 목적지가 둘로 쪼개져 양쪽 다 눌러 볼 만한 것으로
+ * 읽히지 않았다. 그래서 **더하지 않고 옮겼다** — 콜로폰 링크를 반납하고, 남은
+ * 하나를 이 자리에서 고스트 버튼으로 세운다.
+ *
+ * ## 왜 고스트가 아니라 **아웃라인** 인가 (2026-07-29 2차 보강)
+ *
+ * 첫 판은 `variant: 'ghost'` 로 세웠는데, ghost 는 **정의상 면이 없다** —
+ * 실측하면 `border 1px solid rgba(0,0,0,0)` · `background rgba(0,0,0,0)` 이라
+ * 화면에서는 그냥 텍스트 링크다. 소유자가 요청한 것은 「예쁘게 GITHUB 페이지
+ * **이동 버튼**」이었고, 버튼으로 안 읽히면 그 요청은 안 들어간 것이다. 게다가
+ * 바로 옆에 진짜 텍스트 링크(「브라우저에서 써보기」)가 나란히 서 있어서, 면
+ * 없는 컨트롤 둘이 서로 위계를 못 만들고 있었다.
+ *
+ * `outline` 은 이 램프에 이미 있는 「판 위 2차 액션」의 자리다 — 면
+ * (`--color-overlay-1`) + 테두리(`--color-overlay-3`) + inset 헤어라인으로
+ * 눌러지는 것임을 말하되, 채운 인디고는 여전히 화면에 **하나**뿐이라 주목
+ * 승자(받기)는 안 흔들린다(`design.md`: 채색은 인디고 하나). 높이도 받기
+ * 버튼(h-11)보다 한 단 낮은 h-8 그대로다.
+ *
+ * ## 아이콘이 `↗` 가 아니라 **GitHub 마크** 인 이유
+ *
+ * `↗`(lucide `external-link`)는 "밖으로 나간다" 까지만 말한다. 옥토캣은
+ * **"여기가 GitHub 이다"** 를 말한다 — 오픈소스 제품에서 이 컨트롤의 존재
+ * 이유가 정확히 그 목적지이므로, 목적지를 못 말하는 아이콘은 이 자리에서
+ * 정보를 절반만 나른다. 목적지 특정 마크는 일반 화살표보다 **강한** 클릭 전
+ * 경고이기도 하다(`design.md` 의 선행 `↗` 규칙이 지키려던 것을 더 크게 지킨다).
+ * 헌장 판정과 `lucide-react` 에 브랜드 아이콘이 없는 사정은
+ * `@/shared/ui/github-mark` 주석이 갖는다.
+ *
+ * **★ 배지는 달지 않는다.** 별 수는 숫자가 클 때만 신뢰이고, 작을 때는 반대
+ * 증거다. 이 판에서 신뢰를 지는 것은 서명·공증·체크섬이지 남의 카운터가 아니다.
+ *
+ * ## 잃은 것 — URL 문자열
+ *
+ * 예전 주석은 `github.com/wlsdks/ontology-atlas` 를 라벨 대신 쓰는 이유를
+ * *신원* 으로 변호했고 그건 링크였을 때 맞는 말이었다. 컨트롤이 되면 사정이
+ * 다르다: ① 320px 판(실질 216px)에서 URL 라벨은 버튼을 뚫는다 ② en/ko 어느
+ * 쪽에서도 같은 줄에 서지 못해 로케일마다 판 높이가 갈린다 ③ 목적지 경고는
+ * 선행 `↗` 가 이미 진다. 신원은 클릭 한 번 뒤 주소창이 말한다.
  */
-function PlateFooterLinks() {
+function PlateExitRow({ published }: { published: boolean }) {
   const t = useTranslations('download');
 
   return (
     <div className="mt-5 flex min-w-0 flex-wrap items-center gap-x-3 gap-y-2 border-t border-[color:var(--color-divider)] pt-3.5">
-      <Link
-        href="/"
-        data-testid="download-web-cta"
-        className="touch-hit-expand inline-flex items-center text-label leading-label text-[color:var(--color-indigo-accent)] transition-colors hover:text-[color:var(--color-text-primary)]"
-      >
-        {t('webCta')}
-      </Link>
-      <span aria-hidden className="text-label text-[color:var(--color-text-quaternary)]">
-        ·
-      </span>
       <a
         href={GITHUB_REPOSITORY_URL}
         target="_blank"
         rel="noopener noreferrer"
         data-testid="download-repo-link"
-        className="touch-hit-expand inline-flex min-w-0 items-center gap-1.5 font-mono text-label leading-label text-[color:var(--color-text-tertiary)] transition-colors hover:text-[color:var(--color-text-primary)]"
+        // 좌우 패딩은 **위 두 버튼과 같은 값**이다(`px-4 sm:px-6`). 판 안의
+        // 왼쪽 정렬선은 원래 둘뿐이었다 — 상자 모서리 189, 버튼 아이콘 214.
+        // `size: 'sm'` 의 기본 패딩(14px)을 그대로 쓰면 아이콘이 204 에 서서
+        // **세 번째 정렬선**이 생긴다(실측 2026-07-29). 높이만 한 단 낮추고
+        // (h-8 vs h-11) 세로 아이콘 열은 판 전체가 공유한다.
+        //
+        // `touch-hit-expand` 는 그 낮춘 높이의 대가다 — 시각 32px 은 유지하되
+        // coarse 포인터에서 히트만 `--touch-target-min`(44px)으로 넓힌다
+        // (`design.md` 터치 계약). 받기 버튼들은 h-11 이라 이미 44 다.
+        className={cn(
+          buttonVariants({ variant: 'outline', size: 'sm' }),
+          'touch-hit-expand min-w-0 rounded-chip px-4 sm:px-6',
+        )}
       >
-        <ExternalLink size={12} aria-hidden className="shrink-0" />
-        <span className="truncate">{GITHUB_REPOSITORY_LABEL}</span>
+        {/* 14px 인 이유(원본은 16)는 마크 쪽 주석 — 이 자리에 있던 lucide
+            아이콘과 **광학적으로 같은 폭**을 차지해야 214 아이콘 열이 유지된다. */}
+        <GithubMark className="shrink-0" />
+        {t('sourceCta')}
       </a>
+      {/* 미게시 분기에서는 「브라우저에서 써보기」가 이미 판의 **주** CTA 다
+          (`PendingActions`). 같은 목적지를 한 판에 두 번 두면 그건 출구가
+          아니라 중복이므로, 그때는 이 줄이 저장소 하나만 든다. */}
+      {published ? (
+        <Link
+          href="/topology"
+          data-testid="download-web-cta"
+          className="touch-hit-expand inline-flex items-center text-label leading-label text-[color:var(--color-indigo-accent)] transition-colors hover:text-[color:var(--color-text-primary)]"
+        >
+          {t('webCta')}
+        </Link>
+      ) : null}
     </div>
   );
 }
@@ -643,7 +713,7 @@ function PendingActions() {
     <div data-testid="download-hero-actions" className="min-w-0">
       <div className="flex min-w-0 flex-wrap items-center gap-2.5">
         <Link
-          href="/"
+          href="/topology"
           data-testid="download-web-cta"
           className={cn(buttonVariants({ size: 'lg' }), 'rounded-chip px-4 sm:px-6')}
         >
