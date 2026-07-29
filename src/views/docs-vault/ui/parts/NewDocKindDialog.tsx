@@ -4,7 +4,7 @@ import { useEffect, useRef } from "react";
 import { motion, useReducedMotion } from "framer-motion";
 import { useTranslations } from "next-intl";
 import { useOntologyKindLabel } from "@/entities/ontology-class";
-import { OVERLAY_SPRING, OVERLAY_SPRING_REDUCED } from "@/shared/motion";
+import { OVERLAY_SPRING, OVERLAY_SPRING_REDUCED, SCRIM_FADE, SCRIM_FADE_REDUCED } from "@/shared/motion";
 import { TopologyV2KindGlyph } from "@/shared/ui";
 
 /**
@@ -86,7 +86,7 @@ export function NewDocKindDialog({
       initial={{ opacity: 0 }}
       animate={{ opacity: 1 }}
       exit={{ opacity: 0 }}
-      transition={{ duration: reducedMotion ? 0.12 : 0.18 }}
+      transition={reducedMotion ? SCRIM_FADE_REDUCED : SCRIM_FADE}
       data-overlay-spring="true"
       className="fixed inset-0 z-40 flex items-center justify-center px-4"
       onClick={(event) => {

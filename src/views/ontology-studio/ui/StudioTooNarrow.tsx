@@ -31,12 +31,15 @@ export function StudioTooNarrow() {
   return (
     <main
       id="main"
+      tabIndex={-1}
       data-testid="studio-too-narrow"
       data-surface-role="degraded-surface"
       className="flex min-h-[100dvh] w-full items-center justify-center bg-[color:var(--color-canvas)] p-6 max-lg:pb-[calc(var(--topology-mobile-bottom-tab-reserve)+24px)]"
     >
       <EmptyState
         className="w-full max-w-lg"
+        // 이 카드가 이 라우트의 본문 전부다 — 제목이 없으면 heading 0개 화면이 된다.
+        titleAs="h1"
         title={t("title")}
         description={
           <>

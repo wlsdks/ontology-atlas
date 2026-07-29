@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState, type ReactNode } from "react";
+import { Fragment, useEffect, useState, type ReactNode } from "react";
 import { ChevronRight, FolderOpen } from "lucide-react";
 import { useTranslations } from "next-intl";
 import { Link } from "@/i18n/navigation";
@@ -381,13 +381,47 @@ export function FirstRunStarterModule({
         >
           {glossary("title")}
         </p>
-        <dl data-testid="first-run-starter-glossary" className="space-y-1">
+        {/**
+         * **용어 칸의 폭은 설계 결정이지 단어 길이의 부산물이 아니다**
+         * (2026-07-29 도그푸딩, 영어 화면 실측).
+         *
+         * 초안은 `flex flex-wrap` 이라 정의가 용어 **바로 뒤**에 붙었다. 한국어는
+         * 용어가 2~3자로 고르니 `=` 가 우연히 줄맞춤돼 보였지만, 영어에서는
+         * 용어 길이가 제각각(Domain 38px · Capability 50px · Element 41px)이라
+         * `=` 가 173.9 / 186 / … 로 흩어졌고, **세 번째 줄은 정의가 통째로 다음
+         * 줄로 떨어져** 용어 칸 왼쪽 끝에서 다시 시작했다:
+         *
+         *     Element =
+         *     A piece of code or a doc that implements it
+         *
+         * 두 줄은 `용어 = 정의` 로 읽히는데 한 줄만 다른 문법이 된다.
+         *
+         * 2열 그리드로 바꾼다 — 용어 열은 가장 긴 용어에 맞춰 한 번 정해지고
+         * (`auto`), 정의 열이 나머지를 받는다. 정의가 길어 두 줄이 돼도 용어
+         * 열 안에 머무르지 않고 자기 열에서만 접힌다. 어느 언어에서도 `=` 가
+         * 한 줄에 선다.
+         */}
+        {/**
+         * 열 정의를 **인라인 스타일로 쓴다.** `grid-cols-[auto_auto_1fr]` 로
+         * 먼저 썼더니 Tailwind 가 그 유틸리티를 **생성하지 않았고**, 클래스는
+         * 문자열로 남은 채 `grid-template-columns` 가 `none` 이 돼서 세 칸이
+         * 한 열로 쌓였다 — 화면은 조용히 더 나빠졌는데 타입·lint·계약 테스트가
+         * 전부 통과했다. `design.md` 가 타입 램프에서 적어 둔 *"미정의 스텝은
+         * 침묵한다 — 존재하지 않는 것은 리터럴도 남기지 않으므로 하드코딩
+         * 검사의 시야 밖"* 이 유틸리티 계열만 바꿔 그대로 재현된 것이다.
+         *
+         * 인라인 값은 존재하지 않을 수가 없다. `minmax(0, 1fr)` 는 정의 열이
+         * 긴 문장 때문에 자기 최소 폭 아래로 안 줄어드는 것을 막는다(grid 의
+         * 기본 `min-width: auto` 가 오버플로를 만든다).
+         */}
+        <dl
+          data-testid="first-run-starter-glossary"
+          style={{ gridTemplateColumns: "auto auto minmax(0, 1fr)" }}
+          className="grid gap-x-1.5 gap-y-1 text-label leading-label"
+        >
           {GLOSSARY_TERMS.map((term) => (
-            <div
-              key={term}
-              className="flex flex-wrap items-baseline gap-x-1.5 text-label leading-label"
-            >
-              <dt className="shrink-0 font-medium text-[color:var(--topology-v2-panel-text-secondary)]">
+            <Fragment key={term}>
+              <dt className="font-medium text-[color:var(--topology-v2-panel-text-secondary)]">
                 {glossary(`${term}Term`)}
               </dt>
               <span
@@ -399,7 +433,7 @@ export function FirstRunStarterModule({
               <dd className="text-[color:var(--topology-v2-panel-text-tertiary)]">
                 {glossary(`${term}Definition`)}
               </dd>
-            </div>
+            </Fragment>
           ))}
         </dl>
       </div>

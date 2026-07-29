@@ -264,7 +264,7 @@
     "create": {
       "framePrompt": "Decide what the new node is, then link it to nearby nodes",
       "namePlaceholder": "New node name — e.g. Payment cancel",
-      "secondaryName": "한국어 이름 (선택)",
+      "secondaryName": "Korean name (optional)",
       "originNote": "Will link as ‘{name}’ ’s ‘{bearing}’",
       "domainNone": "No domain",
       "definitionPlaceholder": "One line on what this node does — definition & boundary prevent duplicates.",
@@ -313,7 +313,8 @@
         "name": "Name the concept you want to make. A word your team actually says works best.",
         "relate": "Pick one thing this connects to. Any of the four directions is fine.",
         "save": "That's enough. Saving writes one markdown file into your folder.",
-        "done": "Saved."
+        "done": "Saved.",
+        "saveCopy": "That's enough. This folder is read-only, so “Copy the command” hands it to your agent instead."
       },
       "progress": "{current} / {total}",
       "progressAria": "Practice progress",
@@ -327,8 +328,13 @@
       "removed": "Removed “{name}”.",
       "removeFailed": "Could not remove it — {message}",
       "agentHint": "You don't have to do this by hand every time. Connect Claude Code, Codex or Cursor — or add an API key — and an agent writes the same files for you.",
-      "agentAction": "Connect an AI"
-    }
+      "agentAction": "Connect an AI",
+      "copiedTitle": "Handed the command over",
+      "copiedSummary": "This folder is read-only, so nothing was written. Instead, the command that creates “{name}” is on your clipboard.",
+      "copiedQuestion": "Paste it to your agent and the file appears then. To make one yourself, pick your own folder first.",
+      "copiedDone": "Got it"
+    },
+    "saveCopy": "Copy the command"
   },
   "liveActivity": {
     "live": "Live",
@@ -453,7 +459,7 @@
     "cliBridgeCopyAriaLabel": "Copy the bootstrap command to paste in your terminal",
     "sampleSourceAria": "Choose a sample to explore",
     "sampleSourceDogfood": "This app's code",
-    "sampleSourceStorefront": "Example — online store",
+    "sampleSourceStorefront": "Example store",
     "nodeHint": {
       "action": "Tap a node on the map",
       "reason": "all of it comes from real documents"
@@ -1471,7 +1477,8 @@
       "factStripGloss": "The areas this project covers, and how many features and components live inside each.",
       "domainOverlapNote": "Bars can sum higher than the counts above — concepts in several domains are counted once per domain.",
       "emptyStateTitle": "No projects yet",
-      "emptyStateDesc": "Create a project document (frontmatter `kind: project`) in your folder and it appears here."
+      "emptyStateDesc": "Create a project document (frontmatter `kind: project`) in your folder and it appears here.",
+      "cliPlaceholderHint": "Set this once in your terminal: export ATLAS=\"path to your ontology-atlas source folder\" — there is no npm package."
     },
     "detail": {
       "topBarBackToWorkspaceAria": "Back to the map",
@@ -2051,7 +2058,7 @@
       "unavailableBody": "Connect a local workspace before creating concepts from the topology map.",
       "unavailableAction": "Open workspace",
       "primaryNamePlaceholder": "Concept name (English)",
-      "secondaryNamePlaceholder": "한국어 이름 (optional)",
+      "secondaryNamePlaceholder": "Korean name (optional)",
       "localeNamesHint": "The field above is the name for your current screen language (English). Add the Korean name so Korean screens read it too.",
       "primaryLocaleRequired": "Add the English name to save — your screen is English, so leaving it blank shows the raw title on the map and lists."
     },
@@ -2998,7 +3005,8 @@
     "remoteToggle": "Register an address",
     "remoteToggleClose": "Close the address field",
     "stepSelectHint": "Press to see this step's exact values",
-    "webCopyFailed": "Copy failed — the browser blocked the clipboard"
+    "webCopyFailed": "Copy failed — the browser blocked the clipboard",
+    "cliPlaceholderHint": "Set this once in your terminal: export ATLAS=\"path to your ontology-atlas source folder\" — there is no npm package."
   },
   "agentFiles": {
     "header": "Agent files",
@@ -3102,7 +3110,8 @@
       "expandHint": "What changes",
       "createFile": "Create {path}",
       "modifyFile": "Edit {path}",
-      "addRelation": "Link {from} → {to} ({type})"
+      "addRelation": "Link {from} → {to} ({type})",
+      "applying": "Applying…"
     },
     "notice": {
       "roundCap": "That is as far as I will go — wrapping up.",

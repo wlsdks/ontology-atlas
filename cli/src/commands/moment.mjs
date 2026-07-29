@@ -17,6 +17,7 @@ import { COLORS } from '../lib/colors.mjs';
 import { resolveVaultRoot } from '../lib/resolve-vault.mjs';
 import { momentSummary, stampMomentIfFirst } from '../lib/telemetry.mjs';
 import { formatUnknownFlagError, resolveExclusiveVaultArg } from '../lib/cli-args.mjs';
+import { cliInvocation } from '../lib/self-invocation.mjs';
 
 const ALLOWED_FLAGS = ['--vault', '--json', '--mark'];
 
@@ -52,8 +53,8 @@ function render(summary) {
   if (!summary.hasBaseline) {
     process.stdout.write(
       `${COLORS.yellow}no init/absorb baseline yet${COLORS.reset} — run ` +
-        `${COLORS.cyan}ontology-atlas init --quick-start${COLORS.reset} or ` +
-        `${COLORS.cyan}ontology-atlas absorb <file> --write${COLORS.reset} first.\n`,
+        `${COLORS.cyan}${cliInvocation()} init --quick-start${COLORS.reset} or ` +
+        `${COLORS.cyan}${cliInvocation()} absorb <file> --write${COLORS.reset} first.\n`,
     );
     return;
   }
@@ -68,8 +69,8 @@ function render(summary) {
   if (!summary.moment) {
     process.stdout.write(
       `\n${COLORS.yellow}moment not reached yet${COLORS.reset} — run ` +
-        `${COLORS.cyan}ontology-atlas agent-brief${COLORS.reset} once your agent answers citing a vault\n` +
-        `node, or ${COLORS.cyan}ontology-atlas moment --mark${COLORS.reset} by hand if your agent calls the\n` +
+        `${COLORS.cyan}${cliInvocation()} agent-brief${COLORS.reset} once your agent answers citing a vault\n` +
+        `node, or ${COLORS.cyan}${cliInvocation()} moment --mark${COLORS.reset} by hand if your agent calls the\n` +
         `MCP tools directly (agent_brief/get_concept are read-only and are not auto-stamped).\n`,
     );
     return;

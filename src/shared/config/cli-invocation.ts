@@ -55,12 +55,21 @@ export const ATLAS_CHECKOUT_PLACEHOLDER = "$ATLAS";
 export const ATLAS_CLI = `node ${ATLAS_CHECKOUT_PLACEHOLDER}/cli/src/index.mjs`;
 
 /**
- * `$ATLAS` 를 어떻게 채우는지 한 번 말해 주는 문장. 명령을 여러 줄 내보내는 표면은
- * 이걸 머리말로 함께 실어야 한다 — 자리 표시가 보이기만 하고 무엇을 채울지
- * 모르면 정직할 뿐 쓸모가 없다.
+ * `$ATLAS` 를 어떻게 채우는지 말해 주는 문장 — **에이전트에게 건네는 텍스트 전용.**
+ *
+ * 자리 표시가 보이기만 하고 무엇을 채울지 모르면 정직할 뿐 쓸모가 없으므로,
+ * 명령을 내보내는 표면은 반드시 이 안내를 함께 실어야 한다. 다만 **사람이
+ * 읽는 화면은 이 상수를 쓰지 않는다** — i18n 메시지(`cliPlaceholderHint`)를
+ * 쓴다.
+ *
+ * 왜 갈랐나(2026-07-29): 여기 한국어 상수가 하나 더 있었고 화면에서는 아무도
+ * 안 썼다. `shared/config` 의 하드코딩 한국어 문장은 next-intl 을 우회하므로,
+ * 언젠가 누가 편하다고 렌더하는 순간 **영어 사용자에게 한국어가 나간다.**
+ * 렌더될 곳이 없는 사용자 문구는 규격이 아니라 함정이라 지웠다.
+ *
+ * 이 영문 상수는 남는다 — 에이전트 프롬프트로 들어가는 텍스트라 화면 언어와
+ * 무관하게 항상 영어인 것이 맞다.
  */
-export const ATLAS_CLI_HINT = `먼저 한 번: export ATLAS=<ontology-atlas 소스 체크아웃 경로>  (npm 패키지는 없습니다)`;
-
 export const ATLAS_CLI_HINT_EN =
   "Set this once: export ATLAS=<path to your ontology-atlas source checkout>  (there is no npm package)";
 

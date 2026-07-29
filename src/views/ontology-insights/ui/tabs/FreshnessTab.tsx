@@ -6,6 +6,7 @@ import { formatDate } from "@/shared/lib/format-date";
 import { EvidenceOnlyBadge, TopologyV2KindGlyph } from "@/shared/ui";
 import { RecentNodeRow } from "@/widgets/recent-node-row";
 import type { DomainFreshnessRow, RecentUpdateRow } from "../../lib/freshness";
+import { InsightsSectionTitle } from "../parts/InsightsSectionTitle";
 
 const LEVEL_BACKGROUND: Record<0 | 1 | 2 | 3, string> = {
   0: "var(--color-overlay-1)",
@@ -91,9 +92,9 @@ export function FreshnessTab({
         className="flex min-h-0 min-w-0 flex-col rounded-panel border border-[color:var(--color-border-soft)] bg-[color:var(--color-panel)] p-[var(--card-pad)]"
       >
         <div className="flex items-baseline gap-2">
-          <span className="text-body-lg font-medium tracking-[-0.01em] text-[color:var(--color-text-primary)]">
+          <InsightsSectionTitle level={2} className="text-body-lg font-medium tracking-[-0.01em] text-[color:var(--color-text-primary)]">
             {labels.domainFreshnessTitle}
-          </span>
+          </InsightsSectionTitle>
           <span className="ml-auto font-mono text-label text-[color:var(--color-text-quaternary)]">{labels.windowCaption}</span>
         </div>
         {domainRows.length === 0 ? (
@@ -183,9 +184,9 @@ export function FreshnessTab({
         className="flex min-h-0 min-w-0 flex-col rounded-panel border border-[color:var(--color-border-soft)] bg-[color:var(--color-panel)] p-[var(--card-pad)]"
       >
         <div className="flex items-baseline gap-2">
-          <span className="text-body-lg font-medium tracking-[-0.01em] text-[color:var(--color-text-primary)]">
+          <InsightsSectionTitle level={2} className="text-body-lg font-medium tracking-[-0.01em] text-[color:var(--color-text-primary)]">
             {labels.recentUpdatesTitle}
-          </span>
+          </InsightsSectionTitle>
         </div>
         <div className="mt-2 flex flex-1 flex-col">
           {recent.length === 0 ? (

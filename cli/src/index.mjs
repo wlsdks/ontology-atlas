@@ -577,9 +577,13 @@ async function runQuickStart({ target, cwdVaultArg }) {
         `${foundGuides.length > 1 ? 'them' : 'it'} into the vault (never automatic — your call):\n`,
     );
     for (const guide of foundGuides) {
-      const absorbCommand = ['ontology-atlas', 'absorb', guide, '--vault', cwdVaultArg]
-        .map(shellQuote)
-        .join(' ');
+      // 붙여넣어 실행하라고 청록색으로 찍는 줄 — `cliInvocation()` 을 통과해야
+      // 한다(`self-invocation.mjs` 의 규율). 바로 아래 「Next」 줄은 이미 CLI 를
+      // 쓰고 있었는데 이 줄만 죽은 이름이었다.
+      const absorbCommand = [
+        CLI,
+        ...['absorb', guide, '--vault', cwdVaultArg].map(shellQuote),
+      ].join(' ');
       stdout.write(`       ${COLORS.cyan}${absorbCommand}${COLORS.reset}\n`);
     }
     stdout.write(

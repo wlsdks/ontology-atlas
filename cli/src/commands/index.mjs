@@ -18,6 +18,7 @@ import {
   resolveSingleRootPathArg,
 } from '../lib/cli-args.mjs';
 import { runBootstrap } from './bootstrap.mjs';
+import { cliInvocation } from '../lib/self-invocation.mjs';
 
 const MAX_DEPTH_CAP = 10;
 const MAX_FILES_CAP = 50000;
@@ -344,7 +345,7 @@ function printPlan(payload) {
       `            report business/product domain + capability first; use code rows as implementation evidence\n\n` +
       evidenceBlock +
       reviewBlock +
-      `${COLORS.dim}side effect 0 — run ${COLORS.reset}${COLORS.bold}ontology-atlas index ${payload.rootPath} --vault ${payload.vaultRoot} --apply${COLORS.reset}${COLORS.dim} to land candidates.${COLORS.reset}\n`,
+      `${COLORS.dim}side effect 0 — run ${COLORS.reset}${COLORS.bold}${cliInvocation()} index ${payload.rootPath} --vault ${payload.vaultRoot} --apply${COLORS.reset}${COLORS.dim} to land candidates.${COLORS.reset}\n`,
   );
 }
 

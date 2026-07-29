@@ -16,7 +16,16 @@
 const SETTINGS_VIEW_INTENT_EVENT = 'ontology-atlas:settings-view-intent';
 
 /** 열어 달라고 지목할 수 있는 자리. 설정 시트의 드릴인 뷰 이름과 같다. */
-export type SettingsViewIntent = 'ai';
+/**
+ * 열어 달라고 지목할 수 있는 자리. 설정 시트의 드릴인 뷰 이름과 같다.
+ *
+ * `'agent'` 는 2026-07-29 에 더했다 — 실습 마무리의 문장이 "Claude Code ·
+ * Codex · Cursor 를 **연결**하거나 API 키를 넣으면" 이라고 **두 가지**를
+ * 약속하는데, 열리는 방은 BYOK(`ai`) 하나뿐이었다. 시트에는 `agent` 뷰가
+ * 실재하는데 이 타입이 그것을 부를 수 없어서, 약속한 방 중 하나로 가는 문이
+ * 아예 없었다(카운슬 「핸드오프」).
+ */
+export type SettingsViewIntent = 'ai' | 'agent';
 
 interface SettingsViewIntentDetail {
   view: SettingsViewIntent;

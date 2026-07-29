@@ -79,26 +79,27 @@ anything:
 > available before proposing changes.
 
 From an Ontology Atlas source checkout, the same first-contact check runs
-through the CLI. Point `$ATLAS` at the checkout once, then:
+through the CLI. Point `$ATLAS` at the checkout **folder** once — the same meaning every
+other Atlas surface uses — then:
 
 ```bash
-ATLAS=<ontology-atlas checkout>/cli/src/index.mjs
+export ATLAS=<path to your ontology-atlas source checkout>
 
-node $ATLAS validate .
-node $ATLAS workspace-brief .
-node $ATLAS agent-brief . --prompt
-node $ATLAS agent-brief . --graph-db-pack
-node $ATLAS agent-brief . --verify-fallbacks
-node $ATLAS cycles . --max-hops 8
-node $ATLAS growth . --limit 20
-node $ATLAS maintenance . --limit 20
-node $ATLAS mcp-verify . --timeout-ms 15000
+node $ATLAS/cli/src/index.mjs validate .
+node $ATLAS/cli/src/index.mjs workspace-brief .
+node $ATLAS/cli/src/index.mjs agent-brief . --prompt
+node $ATLAS/cli/src/index.mjs agent-brief . --graph-db-pack
+node $ATLAS/cli/src/index.mjs agent-brief . --verify-fallbacks
+node $ATLAS/cli/src/index.mjs cycles . --max-hops 8
+node $ATLAS/cli/src/index.mjs growth . --limit 20
+node $ATLAS/cli/src/index.mjs maintenance . --limit 20
+node $ATLAS/cli/src/index.mjs mcp-verify . --timeout-ms 15000
 ```
 
 For automation that wants a small JSON report instead of human terminal output:
 
 ```bash
-node $ATLAS agent-brief . --verify-fallbacks --json --fallback-timeout-ms 15000 --fallback-slow-ms 5000 --fallback-concurrency 4
+node $ATLAS/cli/src/index.mjs agent-brief . --verify-fallbacks --json --fallback-timeout-ms 15000 --fallback-slow-ms 5000 --fallback-concurrency 4
 ```
 
 For an agent opened at your codebase root instead of this vault folder, replace

@@ -105,7 +105,7 @@ export function ProjectSelectorPage() {
   return (
     <div className="flex min-h-full w-full">
       {/* 레일은 perf/persistent-shell 이후 layout(AppShell) 상주. */}
-      <main id="main" className="min-w-0 flex-1 bg-[color:var(--color-canvas)] max-lg:pb-[calc(var(--topology-mobile-bottom-tab-reserve)+24px)]">
+      <main id="main" tabIndex={-1} className="min-w-0 flex-1 bg-[color:var(--color-canvas)] max-lg:pb-[calc(var(--topology-mobile-bottom-tab-reserve)+24px)]">
         <div className="flex items-center justify-end gap-2 px-4 pt-3 md:px-6">
           <LiveActivityIndicator agentActivityStatus={vault.agentActivityStatus} />
           {/* #15 — 설정은 lg+ 에선 나브레일 하단 톱니. 레일이 숨는 <lg 에서만
@@ -271,6 +271,14 @@ export function ProjectSelectorPage() {
                 {t("nextSlotAgentCaption")}
               </span>
             </div>
+            {/* CLI 줄이 `$ATLAS` 로 시작한다 — 채우는 법을 같은 자리에서
+                말한다(`cli-invocation.ts` 의 계약). */}
+            <p
+              data-testid="project-selector-cli-placeholder-hint"
+              className="mt-2 text-label leading-relaxed text-[color:var(--color-text-quaternary)]"
+            >
+              {t("cliPlaceholderHint")}
+            </p>
           </div>
         </section>
         </div>

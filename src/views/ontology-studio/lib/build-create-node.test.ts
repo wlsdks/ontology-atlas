@@ -75,7 +75,10 @@ describe("C2 — CREATE-from-socket origin relation in ONE MCP packet", () => {
       relation: "contains",
     });
     const lines = packet.split("\n");
-    expect(lines[0]).toMatch(/^add_concept\(/);
+    // 첫 줄은 **어느 볼트에 쓰는지**다 — 이 문자열은 다른 창의 에이전트 세션에
+    // 붙여넣어지고, 그 세션이 이 볼트에 물려 있다는 보장이 없다.
+    expect(lines[0]).toMatch(/^#/);
+    expect(lines[1]).toMatch(/^add_concept\(/);
     // the origin line records the A→new edge (A contains the new node).
     expect(packet).toContain(
       'add_relation(from: "capabilities/order-cancel", to: "capabilities/결제-취소", type: "contains")',
@@ -200,7 +203,11 @@ describe("buildMcpPacket", () => {
         ],
       }),
     );
-    expect(packet).toContain('add_concept(slug: "capabilities/결제-취소", kind: "capability", title: "결제 취소", domain: "payments", definition: "결제 후');
+    // `definition`·`broader` 는 **`add_concept` 이 받지 않는다** — 실어 보내면
+    // 서버가 `unknown_argument` 로 반려한다. 프론트매터로 가는 값이라
+    // `patch_concept` 한 줄이 뒤따른다(2026-07-29, MCP 실행 검증).
+    expect(packet).toContain('add_concept(slug: "capabilities/결제-취소", kind: "capability", title: "결제 취소", domain: "payments")');
+    expect(packet).toContain('patch_concept(slug: "capabilities/결제-취소", frontmatter: { definition: "결제 후');
     expect(packet).toContain('add_relation(from: "capabilities/결제-취소", to: "capabilities/order-cancel", type: "depends_on")');
     // is-a lands as a `broader:` frontmatter array on the new node itself (MCP
     // has no is_a edge type) — NOT an add_relation edge.
@@ -229,7 +236,7 @@ describe("buildRemovePacket", () => {
       'remove_relation(from: "capabilities/focal", to: "elements/parser", type: "depends_on", confirm: true)',
     );
     expect(buildRemovePacket("capabilities/focal", "relates", "capabilities/topology")).toBe(
-      'remove_relation(from: "capabilities/focal", to: "capabilities/topology", type: "related_to", confirm: true)',
+      'remove_relation(from: "capabilities/focal", to: "capabilities/topology", type: "relates", confirm: true)',
     );
   });
 
@@ -245,7 +252,7 @@ describe("buildRemovePacket", () => {
 describe("buildEditPacket", () => {
   it("non-is_a → non-is_a is one atomic replace_relation", () => {
     expect(buildEditPacket("capabilities/focal", "relates", "dependsOn", "capabilities/topology")).toBe(
-      'replace_relation(from: "capabilities/focal", oldTo: "capabilities/topology", oldType: "related_to", newTo: "capabilities/topology", newType: "depends_on", confirm: true)',
+      'replace_relation(from: "capabilities/focal", oldTo: "capabilities/topology", oldType: "relates", newTo: "capabilities/topology", newType: "depends_on", confirm: true)',
     );
   });
 

@@ -2,7 +2,7 @@
 
 import { useEffect, useRef } from "react";
 import type { useTranslations } from "next-intl";
-import { AnimatePresence, motion } from "framer-motion";
+import { AnimatePresence, motion, useReducedMotion } from "framer-motion";
 import { Bot, Check, Clipboard, GitCompareArrows, HardDrive, Network, X } from "lucide-react";
 import { MOTION } from "@/shared/motion";
 import { Link } from "@/i18n/navigation";
@@ -117,6 +117,10 @@ export function DocsVaultAuditModal({
     };
   }, [open]);
 
+  // 이 모달은 framer 인라인이라 전역 reduced-motion kill 레이어의 사정거리
+  // 밖이다. 여기서 직접 분기한다.
+  const reducedMotion = useReducedMotion();
+
   const sourceLabel = isLocalSourceLoaded
     ? t("sourceContract.filesLocalValue", { count: manifest.docs.length })
     : t("sourceContract.filesSampleValue", { count: manifest.docs.length });
@@ -206,15 +210,21 @@ export function DocsVaultAuditModal({
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
           exit={{ opacity: 0 }}
-          transition={MOTION.base}
+          // 나가는 것은 들어오는 것보다 빠르다 — 실측에서 입·퇴장이 등속이었다.
+          transition={reducedMotion ? MOTION.fast : MOTION.base}
           className="fixed inset-0 z-50 flex justify-center px-4"
           style={{ paddingTop: "max(96px, 18vh)" }}
           onClick={(event) => {
             if (event.target === event.currentTarget) onClose();
           }}
         >
+          {/* 스크림은 **클릭을 받지 않는다.** 받으면 바깥 클릭 판정
+              (`event.target === event.currentTarget`)이 영원히 거짓이 되어 —
+              실제 타깃이 이 자식이므로 — 바깥 클릭 닫기가 죽은 어포던스가 된다
+              (2026-07-29 실측: 모달이 안 닫혔다). 시각만 담당하고 사건은 부모가
+              받는다. */}
           <div
-            className="fixed inset-0 -z-10 bg-[color:var(--docs-scrim)]"
+            className="pointer-events-none fixed inset-0 -z-10 bg-[color:var(--docs-scrim)]"
             aria-hidden
           />
           <div
@@ -225,7 +235,7 @@ export function DocsVaultAuditModal({
             aria-labelledby="docs-audit-modal-title"
             aria-describedby="docs-audit-modal-subtitle"
             style={{ width: "var(--docs-audit-modal-width)" }}
-            className="h-fit max-h-[calc(100vh-2*max(96px,18vh))] max-w-full overflow-auto rounded-[var(--chrome-radius)] border border-[color:var(--color-border-soft)] bg-[color:var(--color-elevated)] shadow-[var(--chrome-shadow)]"
+            className="h-fit max-h-[calc(100dvh-2*max(96px,18vh))] max-w-full overflow-auto rounded-[var(--chrome-radius)] border border-[color:var(--color-border-soft)] bg-[color:var(--color-elevated)] shadow-[var(--chrome-shadow)]"
           >
             <div className="flex items-start gap-3 px-4 py-3.5">
               <span className="flex h-7 w-7 flex-none items-center justify-center rounded-[var(--chrome-radius-inner)] bg-[color:var(--chrome-active-surface)] text-[color:var(--color-indigo-pale-a90)]">
@@ -359,6 +369,12 @@ export function DocsVaultAuditModal({
                           key={row.name}
                           data-testid={`docs-audit-skill-parity-${row.name}`}
                           data-verdict={row.verdict}
+                          // `--color-amber-source-*` 는 **경고 사다리**다 —
+                          // globals.css 가 `amber-source(244,183,49 ==
+                          // --color-status-warning)` 라고 명시한다. 격리 토큰은
+                          // 이름이 다른 `--color-amber-docs-*` 쪽이다.
+                          // (카운슬 「위계」가 둘을 혼동해 교체를 처방했고,
+                          // 「체계」가 바로잡았다. 게이트도 없는 토큰을 잡았다.)
                           className="rounded-sm border border-[color:var(--color-amber-source-a35)] bg-[color:var(--color-amber-source-a12)] px-1.5 py-0.5 font-mono text-caption text-[color:var(--color-amber-source-a90)]"
                         >
                           {row.name}

@@ -5,6 +5,7 @@ import { InsightsHeroCensus, type InsightsHeroCensusLabels } from "../parts/Insi
 import { InsightsBar } from "../parts/InsightsBar";
 import type { CensusHealthSummary } from "../../lib/census-health";
 import type { DomainCapacityRow } from "../../lib/domain-capacity";
+import { InsightsSectionTitle } from "../parts/InsightsSectionTitle";
 
 export interface OverviewTabLabels extends InsightsHeroCensusLabels {
   kindCensusTitle: string;
@@ -151,7 +152,7 @@ export function OverviewTab({
 function CardHead({ label, count }: { label: string; count: number }) {
   return (
     <div className="flex items-baseline gap-2.5">
-      <span className="text-body-lg font-medium tracking-[-0.01em] text-[color:var(--color-text-primary)]">{label}</span>
+      <InsightsSectionTitle level={2} className="text-body-lg font-medium tracking-[-0.01em] text-[color:var(--color-text-primary)]">{label}</InsightsSectionTitle>
       <span className="ml-auto font-mono text-body tabular-nums text-[color:var(--topology-v2-numeral-face)]">
         {count}
       </span>

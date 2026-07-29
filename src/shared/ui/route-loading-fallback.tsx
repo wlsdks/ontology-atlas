@@ -31,6 +31,7 @@ export function RouteLoadingFallback() {
   return (
     <main
       id="main"
+      tabIndex={-1}
       data-route-loading="true"
       data-testid="route-loading-fallback"
       aria-busy="true"

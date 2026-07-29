@@ -57,7 +57,12 @@ export const RELATION_FRONTMATTER_KEY: Record<CreateRelationType, string> = {
 export const RELATION_EDGE_TYPE: Record<Exclude<CreateRelationType, "isA">, string> = {
   contains: "contains",
   dependsOn: "depends_on",
-  relates: "related_to",
+  // 2026-07-29 — `related_to` 는 **서버가 모르는 방언이었다.** MCP 의
+  // `WRITE_RELATION_TYPE_VALUES` 에 그 값이 없어, 나침반 LEFT(비슷한 것)로
+  // 만든 패킷은 `invalid_arguments` 로 전량 반려됐다. 읽기 전용 볼트에서는
+  // 이 패킷이 **유일한 쓰기 경로**라 그 방위가 통째로 죽어 있던 셈이다.
+  // 디자인 카운슬 「핸드오프」가 실제 서버를 띄워 실행으로 잡았다.
+  relates: "relates",
 };
 
 /** A pickable existing node — the frontmatter-writable `ref` is precomputed. */
@@ -262,7 +267,7 @@ export interface CreateOrigin {
 export function buildMcpPacket(
   draft: CreateDraft,
   origin?: CreateOrigin,
-  opts: { slug?: string } = {},
+  opts: { slug?: string; vaultPath?: string | null } = {},
 ): string {
   const title = draft.title.trim();
   const slug = opts.slug ?? buildCreateNodeSlug({ kind: draft.kind, title }) ?? `${draft.kind}s/new-node`;
@@ -280,17 +285,26 @@ export function buildMcpPacket(
   const domain = canonicalizeDomainRef(draft.domainValue);
   if (domain && kindExpectsDomain(draft.kind)) conceptArgs.push(`domain: ${q(domain)}`);
   const definition = draft.definition.trim();
-  if (definition) conceptArgs.push(`definition: ${q(definition)}`);
 
   const deduped = dedupeRelations(draft.relations);
   // is-a lands as a `broader:` frontmatter array on the new node itself (MCP has
   // no is_a edge type). Non-is_a relations are add_relation edges.
   const broaderRefs = deduped.filter((r) => r.type === "isA").map((r) => r.candidate.ref);
-  if (broaderRefs.length > 0) {
-    conceptArgs.push(`broader: [${broaderRefs.map((r) => q(r)).join(", ")}]`);
-  }
 
   const lines: string[] = [`add_concept(${conceptArgs.join(", ")})`];
+  // `definition` 과 `broader` 는 **`add_concept` 이 받지 않는 인자다** — 실어
+  // 보내면 서버가 `unknown_argument` 로 반려한다(카운슬 「핸드오프」가 실제
+  // 서버를 띄워 확인). 프론트매터로 가는 값이므로 `patch_concept` 한 줄이
+  // 뒤따라야 한다. 사용자가 쓴 정의가 여기서 새면, 그 문장은 화면에만 있고
+  // 볼트에는 없다.
+  const frontmatterArgs: string[] = [];
+  if (definition) frontmatterArgs.push(`definition: ${q(definition)}`);
+  if (broaderRefs.length > 0) {
+    frontmatterArgs.push(`broader: [${broaderRefs.map((r) => q(r)).join(", ")}]`);
+  }
+  if (frontmatterArgs.length > 0) {
+    lines.push(`patch_concept(slug: ${q(slug)}, frontmatter: { ${frontmatterArgs.join(", ")} })`);
+  }
   for (const rel of deduped) {
     if (rel.type === "isA") continue;
     lines.push(
@@ -315,7 +329,14 @@ export function buildMcpPacket(
       );
     }
   }
-  return lines.join("\n");
+  // **어느 볼트에 쓰는지 먼저 말한다.** 이 문자열은 다른 창의 에이전트
+  // 세션에 붙여넣어지는데, 그 세션이 이 볼트에 물려 있다는 보장이 없다 —
+  // 없으면 엉뚱한 볼트에 쓴다. 도크의 인계 카드가 이미 `cd` 로 같은 일을
+  // 한다(카운슬 「핸드오프」).
+  const header = opts.vaultPath
+    ? `# vault: ${opts.vaultPath}`
+    : "# 이 볼트에 물린 Atlas MCP 세션에서 실행하세요";
+  return [header, ...lines].join("\n");
 }
 
 /**

@@ -70,6 +70,7 @@ function DesktopVaultRedirect() {
   return (
     <main
       id="main"
+      tabIndex={-1}
       aria-busy="true"
       className="flex min-h-full items-center justify-center bg-[color:var(--color-canvas)] px-6 py-10"
     >

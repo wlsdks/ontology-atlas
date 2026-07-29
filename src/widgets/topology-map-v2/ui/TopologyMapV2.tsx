@@ -417,6 +417,21 @@ export function TopologyMapV2(props: TopologyMapV2Props) {
           type="button"
           data-testid="topology-realm-enter-button"
           aria-label={realmEnterLabel}
+          /**
+           * **보이지 않는 동안은 탭 정지가 아니다** (2026-07-29 키보드 실측).
+           *
+           * 이 버튼은 매 프레임 `opacity`/`pointerEvents` 로만 나타났다 사라지는데
+           * (레이아웃 유지가 목적), `opacity: 0` 은 **포커스 가능성을 끄지 않는다.**
+           * 그래서 지도에서 Tab 26번째가 여기 멈췄다: 링은 alpha 0 으로 그려져
+           * 화면 어디에도 안 보이고, Enter 를 눌러도 아무 일이 없다(클릭 판정은
+           * 캔버스의 히트 테스트에 있다). 키보드 사용자에게는 **포커스가 사라진
+           * 한 칸**이다.
+           *
+           * `pointer-events: none` 과 짝을 맞춰 탭 순서에서도 빼고, 스크린리더
+           * 에서도 감춘다. 보일 때는 둘 다 되돌아온다.
+           */
+          tabIndex={-1}
+          aria-hidden
           // rank6 — 항상 flex 로 레이아웃하고 opacity/pointer-events(loop 이
           // 매 프레임 갱신)로만 나타나고 사라진다. display 하드 토글의 "툭"
           // 대신 opacity 전이로 페이드 — 카메라 추종은 유지.

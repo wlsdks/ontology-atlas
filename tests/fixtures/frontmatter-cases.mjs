@@ -182,4 +182,75 @@ export const CASES = [
       body: "",
     },
   },
+  // ── YAML 이 허용하는데 우리 파서가 못 읽던 두 형식 (2026-07-29 도그푸딩) ──
+  //
+  // 이 매트릭스의 블록 리스트 케이스는 전부 **2칸 들여쓰기**였다. 그런데 YAML
+  // 은 키 아래 시퀀스에 들여쓰기를 요구하지 않는다 — `- ` 를 0칸으로 쓰는 것이
+  // PyYAML·js-yaml·gray-matter·Obsidian·GitHub 모두에서 정상이다. 우리 파서는
+  // `/^\s+-\s+/` 라 **공백 하나 이상**을 요구했고, 그래서 그 형식의 관계가
+  // 통째로 빈 문자열이 됐다. 증상은 CRLF 때와 같다: **노드는 보이는데 관계만
+  // 전부 사라지고 경고 0.**
+  //
+  // 블록 스칼라(`|`, `>`)는 더 나빴다. 지시자가 값으로 저장되고(`"|"`), 이어지는
+  // 들여쓴 본문 줄들이 **최상위 키로 재해석**됐다 — 파서가 키를 `.trim()` 하기
+  // 때문이다. 그래서 설명문 안의 `kind: element` 한 줄이 그 노드의 **종류를
+  // 바꿔 버렸다.** 문서가 자기 설명으로 자기 타입을 덮어쓰는 것이다.
+  //
+  // 넷이 똑같이 틀리면 4-way 계약은 통과한다 — 이 매트릭스가 진실원이라
+  // 여기에 케이스를 넣는 것이 곧 네 파서 모두에 대한 요구다.
+  {
+    name: "블록 리스트 — 0칸 들여쓰기도 YAML 이다",
+    input: "---\nkind: capability\ndepends_on:\n- alpha\n- beta\n---\n",
+    expected: {
+      frontmatter: { kind: "capability", depends_on: ["alpha", "beta"] },
+      body: "",
+    },
+  },
+  {
+    name: "블록 리스트 — 0칸과 2칸이 같은 결과를 낸다",
+    input: "---\nkind: capability\ntags:\n-  a\n-  b\n---\n",
+    expected: { frontmatter: { kind: "capability", tags: ["a", "b"] }, body: "" },
+  },
+  {
+    name: "블록 스칼라 `|` — 본문이 값이 되고, 그 안의 콜론이 키가 되지 않는다",
+    input:
+      "---\nkind: capability\ndefinition: |\n  토큰을 발급한다.\n  kind: element\n---\n본문",
+    expected: {
+      frontmatter: {
+        kind: "capability",
+        definition: "토큰을 발급한다.\nkind: element",
+      },
+      body: "본문",
+    },
+  },
+  {
+    name: "블록 스칼라 `>` — 접힌 스칼라도 값으로 삼킨다",
+    input: "---\nkind: domain\nsummary: >\n  한 줄\n  다음 줄\n---\n",
+    expected: {
+      frontmatter: { kind: "domain", summary: "한 줄 다음 줄" },
+      body: "",
+    },
+  },
+  {
+    name: "블록 스칼라 뒤의 최상위 키는 계속 최상위 키다",
+    input:
+      "---\nkind: capability\ndefinition: |\n  설명\ndomain: auth\n---\n",
+    expected: {
+      frontmatter: { kind: "capability", definition: "설명", domain: "auth" },
+      body: "",
+    },
+  },
+  {
+    name: "블록 스칼라 왕복 — 직렬화한 것을 다시 읽으면 같다",
+    input:
+      "---\nkind: capability\ndefinition: |-\n  첫 줄\n  Note: 둘째 줄\ndepends_on: [a, b]\n---\n",
+    expected: {
+      frontmatter: {
+        kind: "capability",
+        definition: "첫 줄\nNote: 둘째 줄",
+        depends_on: ["a", "b"],
+      },
+      body: "",
+    },
+  },
 ];

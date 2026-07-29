@@ -25,6 +25,8 @@ export interface AgentProposalLabels {
   title: (count: number) => string;
   volume: (args: { files: number; added: number; removed: number }) => string;
   apply: (count: number) => string;
+  /** 쓰기가 도는 동안의 라벨 — 화면이 "지금 무슨 일이 일어나는가" 를 말한다. */
+  applying: string;
   cancel: string;
   copy: string;
   copied: string;
@@ -77,7 +79,17 @@ export function AgentProposalCard({
     ),
   );
 
-  const settled = proposal.status !== 'pending';
+  /**
+   * 쓰기가 **도는 중** — 아직 끝나지 않았다. 초안에서 이 상태를 `settled` 에
+   * 넣었더니 종료 문구 분기의 fallback 으로 떨어져 화면이 **"취소됨"** 이라고
+   * 말했다. 쓰는 중인데 취소됐다고 하는 것은 잠그지 않은 것보다 나쁘다.
+   *
+   * 그래서 둘을 가른다: 동작 줄은 그대로 두되(사용자가 무엇을 눌렀는지 자리가
+   * 유지된다) 두 버튼을 함께 잠그고 라벨만 "적용 중…" 으로 바꾼다 — 마무리
+   * 대화상자의 `busy` 와 같은 문법이다.
+   */
+  const busy = proposal.status === 'applying';
+  const settled = proposal.status !== 'pending' && !busy;
 
   return (
     <section
@@ -111,7 +123,7 @@ export function AgentProposalCard({
           <ChangeRow
             key={change.id}
             change={change}
-            disabled={settled}
+            disabled={settled || busy}
             expandedByDefault={expandedByDefault}
             expandHint={labels.expandHint}
             onToggle={(next) => onToggleChange(change.id, next)}
@@ -166,8 +178,9 @@ export function AgentProposalCard({
           <button
             type="button"
             data-testid="agent-proposal-cancel"
+            disabled={busy}
             onClick={onCancel}
-            className="h-8 rounded-chip border border-[color:var(--color-border-soft)] px-3 text-label tracking-label text-[color:var(--color-text-secondary)] transition-colors hover:border-[color:var(--color-border-strong)] hover:text-[color:var(--color-text-primary)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--color-indigo-accent)]"
+            className="h-8 rounded-chip border border-[color:var(--color-border-soft)] px-3 text-label tracking-label text-[color:var(--color-text-secondary)] transition-colors hover:border-[color:var(--color-border-strong)] hover:text-[color:var(--color-text-primary)] disabled:opacity-40 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--color-indigo-accent)]"
           >
             {labels.cancel}
           </button>
@@ -175,11 +188,11 @@ export function AgentProposalCard({
             <button
               type="button"
               data-testid="agent-proposal-apply"
-              disabled={selected.length === 0}
+              disabled={busy || selected.length === 0}
               onClick={onApply}
               className="h-8 rounded-chip bg-[color:var(--color-indigo-brand)] px-3 text-label font-semibold tracking-label text-white transition-colors hover:bg-[color:var(--color-indigo-hover)] disabled:opacity-40 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--color-indigo-accent)]"
             >
-              {labels.apply(selected.length)}
+              {proposal.status === 'applying' ? labels.applying : labels.apply(selected.length)}
             </button>
           ) : (
             <button

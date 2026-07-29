@@ -6,7 +6,7 @@ import { useTranslations } from 'next-intl';
 import { AnimatePresence, motion, useReducedMotion } from 'framer-motion';
 import { BookOpen, Search, X } from 'lucide-react';
 import { cn } from '@/shared/lib/cn';
-import { OVERLAY_SPRING, OVERLAY_SPRING_REDUCED } from '@/shared/motion';
+import { OVERLAY_SPRING, OVERLAY_SPRING_REDUCED, SCRIM_FADE, SCRIM_FADE_REDUCED } from "@/shared/motion";
 import { useBodyScrollLock } from '@/shared/lib/use-body-scroll-lock';
 import type { Project } from '@/entities/project';
 import { useTaxonomy } from '@/features/taxonomy';
@@ -316,7 +316,7 @@ function SearchPaletteDialog({
       exit={{ opacity: 0 }}
       // rank2 — 스크림은 --topology-motion-panel-duration(180ms)과 값을
       // 맞춘 opacity 크로스페이드. reduced-motion 은 120ms(OVERLAY_SPRING_REDUCED).
-      transition={{ duration: reducedMotion ? 0.12 : 0.18 }}
+      transition={reducedMotion ? SCRIM_FADE_REDUCED : SCRIM_FADE}
       data-interactive-overlay="true"
       data-overlay-spring="true"
       className="fixed inset-0 z-50 flex items-stretch justify-center md:items-start md:px-[max(1rem,env(safe-area-inset-left))] md:pt-[max(4rem,env(safe-area-inset-top))] md:pr-[max(1rem,env(safe-area-inset-right))]"

@@ -23,6 +23,7 @@ import { getTauriVaultRootPath } from "@/shared/lib/tauri-vault-fs";
 import type { ScreenContextSnapshot } from "@/features/vault-agent";
 import { VaultAgentPanel } from "@/widgets/vault-agent-panel";
 import { STUDIO_AGENT_DOCK_MIN_VIEWPORT_PX } from "../lib/studio-agent-dock";
+import { josa } from "@/shared/lib/ko-josa";
 import { EmptyState, useToast } from "@/shared/ui";
 import {
   buildStudioItem,
@@ -80,6 +81,7 @@ import {
 } from "../lib/studio-practice-guide";
 import { allowedKindsFor } from "../lib/allowed-kinds";
 import { candidateMatches } from "../lib/match-candidate";
+import { clearCreateDraft, readCreateDraft, saveCreateDraft } from "../lib/create-draft-store";
 import {
   clearStudioDraft,
   readStudioDraft,
@@ -104,6 +106,13 @@ import { StudioMaterializeDialog, type StudioMaterializeLabels } from "./StudioM
 
 
 const CREATE_KINDS: CreateNodeKind[] = ["project", "domain", "capability", "element"];
+
+/**
+ * 저장이 **서명을 마치는** 시간 — 수렴 칩의 확정 모션(`--motion-settle` 240ms)
+ * 이 끝나고 결과물이 한 프레임이라도 보이는 데 필요한 창. 마무리 질문은 그
+ * 뒤에 온다. 총 지연은 Doherty 임계(400ms) 안이다.
+ */
+const PRACTICE_SIGNATURE_MS = 260;
 
 const RELATIONS: StudioRelation[] = ["isA", "dependsOn", "contains", "relates"];
 const BEARING_OF: Record<StudioRelation, StudioBearing> = {
@@ -237,7 +246,12 @@ function StudioStage({
       guideBadge: t("guideBadge"),
       bottomProgress: (filled, total) =>
         `${t("bottomProgress", { filled, total })} ${filled >= total ? t("bottomDone") : t("bottomRemain", { remain: total - filled })}`,
-      save: t("save"),
+      // **라벨이 행동과 같아야 한다.** 읽기 전용 볼트에서 이 버튼이 하는 일은
+      // 저장이 아니라 클립보드 복사다. 실체화 다이얼로그는 이미
+      // `confirmWrite`/`confirmCopy` 로 갈라 놓았는데 이 버튼만 안 갈랐고,
+      // 그래서 복사 실패가 「저장」 버튼의 실패로 보고됐다(카운슬 「위계」·
+      // 「핸드오프」 공통 지적).
+      save: writable ? t("save") : t("saveCopy"),
       saveHint: t("saveHint"),
       foldMore: () => t("foldMore"),
       foldTitle: (label, total) => t("foldTitle", { label, total }),
@@ -316,7 +330,7 @@ function StudioStage({
       previewLegendMoved: t("preview.legendMoved"),
       previewLegendRemoved: t("preview.legendRemoved"),
     }),
-    [t, tAgentPanel, isCreate, flowHint, insightsReturnTab],
+    [t, tAgentPanel, isCreate, flowHint, insightsReturnTab, writable],
   );
 
   // Plain-language record summary vocab — one bag serving both ko + en and both
@@ -457,14 +471,23 @@ function StudioStage({
   );
 
   // ─────────────────────────────── CREATE state ──────────────────────────
-  const [kind, setKind] = useState<CreateNodeKind>("capability");
-  const [title, setTitle] = useState("");
-  const [domainValue, setDomainValue] = useState<string | null>(null);
-  const [definition, setDefinition] = useState("");
-  const [relations, setRelations] = useState<PendingRelation[]>([]);
+  /**
+   * 생성 초안은 세션에 보관된다 — 나갔다 돌아와도 그대로다(`create-draft-store`).
+   * 딥링크로 들어온 맥락(`createContext`)이 있으면 아래 render-time 시드가
+   * 이기므로, 여기서는 보관본을 초기값으로만 쓴다.
+   */
+  // lazy initializer 로 **첫 렌더에 한 번만** 읽는다 — ref 를 렌더 중에 읽으면
+  // lint 가 막고(정당하다: 렌더는 순수해야 한다), 매 렌더 읽으면 세션 저장소를
+  // 계속 두드린다.
+  const [restored] = useState(readCreateDraft);
+  const [kind, setKind] = useState<CreateNodeKind>(restored?.kind ?? "capability");
+  const [title, setTitle] = useState(restored?.title ?? "");
+  const [domainValue, setDomainValue] = useState<string | null>(restored?.domainValue ?? null);
+  const [definition, setDefinition] = useState(restored?.definition ?? "");
+  const [relations, setRelations] = useState<PendingRelation[]>(restored?.relations ?? []);
   const [similarDismissed, setSimilarDismissed] = useState(false);
   // C12③ — optional other-locale display name (primary name is the current locale).
-  const [secondaryName, setSecondaryName] = useState("");
+  const [secondaryName, setSecondaryName] = useState(restored?.secondaryName ?? "");
 
   // C2 — CREATE opened from a socket carries the origin (A --relation--> new) and
   // a name prefill via ?from & ?rel & ?name. Resolve A tolerantly; malformed /
@@ -494,6 +517,14 @@ function StudioStage({
   // "reset state during render when input changes" pattern — same as the enhance
   // focal reset below). kind is pre-filtered to the bearing's allowed target kinds.
   const [prevCreateCtxKey, setPrevCreateCtxKey] = useState<string | null>(null);
+  // **나가는 순간을 잡지 않는다.** 「그만하기」·레일 이동·창 닫기·새로고침 —
+  // 나가는 길은 여럿이고 하나를 빼먹으면 그 길로만 초안이 사라진다. 대신 값이
+  // 바뀔 때마다 보관하면 어느 길로 나가든 지켜진다.
+  useEffect(() => {
+    if (!isCreate) return;
+    saveCreateDraft({ title, kind, domainValue, definition, secondaryName, relations });
+  }, [isCreate, title, kind, domainValue, definition, secondaryName, relations]);
+
   const createCtxKey = createContext
     ? `${createContext.originId}|${createContext.relation}|${createContext.name}`
     : null;
@@ -733,6 +764,7 @@ function StudioStage({
         // "무엇을 지우는지" 를 정확히 말할 수 없다.
         if (isPractice) {
           onPracticeSaved({
+            outcome: "written",
             slug,
             title: title.trim(),
             createdOriginSlug:
@@ -749,7 +781,15 @@ function StudioStage({
                 : null,
           });
         }
-        toast.show(t("create.appliedDirect", { title: title.trim() }), "success");
+        // 만든 뒤에는 보관본을 비운다 — 안 비우면 다음 방문에 **이미 만든
+        // 노드**가 미완성 초안인 척 되살아난다.
+        clearCreateDraft();
+        // 실습에서는 토스트를 내지 않는다 — 마무리 대화상자가 **같은 사실을
+        // 파일명까지 붙여** 이미 말한다. 같은 초에 성공 신호 둘은 중복 잉크이고,
+        // 절정의 주목을 나눠 갖는다(카운슬 「모션」).
+        if (!isPractice) {
+          toast.show(t("create.appliedDirect", { title: title.trim() }), "success");
+        }
         // 새로 만든 문서의 노드 id 도 실체화와 같은 함수로 정한다 — 두 경로가
         // 각자 계산하면 project 처럼 id 규칙이 다른 종류에서 갈라진다.
         openNode(resolveMaterializedNodeId(slug, kind, nodes));
@@ -792,11 +832,31 @@ function StudioStage({
           broaderRefsAfter,
         };
       }
-      const packet = [buildMcpPacket(draft, origin), originConceptLine]
+      // 데스크톱이면 실제 절대 경로가, 웹이면 프레이밍 문장이 머리에 붙는다.
+      const vaultPath = localVault.handle
+        ? getTauriVaultRootPath(localVault.handle) ?? null
+        : null;
+      const packet = [buildMcpPacket(draft, origin, { vaultPath }), originConceptLine]
         .filter((line): line is string => Boolean(line))
         .join("\n");
       await navigator.clipboard.writeText(packet);
       toast.show(t("create.copiedAgent"), "success");
+      clearCreateDraft();
+      // **읽기 전용에서도 실습은 끝난다.** 초안에서 이 갈래를 빼먹어, 볼트를
+      // 아직 안 고른 사람(웹 관문의 첫 방문자 — 정확히 이 실습의 대상)은
+      // 안내 띠가 "저장하면 폴더 안에 마크다운 파일 하나가 생깁니다" 에
+      // 영구히 멈췄다. 그 문장은 그 사람에게 **거짓**이었고, 마무리 대화상자는
+      // 오지 않았다. 디자인 카운슬 두 자리가 서로 못 본 채 같은 결함을
+      // 1순위로 짚었다(2026-07-29).
+      if (isPractice) {
+        onPracticeSaved({
+          outcome: "copied",
+          slug: buildCreateNodeSlug({ kind, title: title.trim() }) ?? title.trim(),
+          title: title.trim(),
+          createdOriginSlug: null,
+          touchedOrigin: null,
+        });
+      }
     } catch {
       toast.show(t("create.copyFailed"), "info");
     }
@@ -927,6 +987,30 @@ function StudioStage({
         }
         onSave={applyCreate}
         onExit={exit}
+        banner={
+          isPractice && !practiceSaved ? (
+            <StudioPracticeRail
+              step={practiceRailStep}
+              labels={{
+                // 읽기 전용에서는 "저장하면 파일이 생깁니다" 가 **거짓**이다.
+                // 그 사람에게 저장은 파일이 아니라 명령을 만든다.
+                instruction:
+                  practiceRailStep === "save" && !writable
+                    ? t("practice.step.saveCopy")
+                    : t(`practice.step.${practiceRailStep}`),
+                progress: t("practice.progress", {
+                  current: practiceStepIndex(practiceRailStep),
+                  total: 4,
+                }),
+                quit: t("practice.quit"),
+                progressAria: t("practice.progressAria"),
+              }}
+              onQuit={() =>
+                navigateStudio(new URLSearchParams({ mode: "create" }), { drop: ["practice"] })
+              }
+            />
+          ) : null
+        }
         agentDockOpen={agentDock?.open}
         onToggleAgentDock={agentDock?.toggle}
         searchNodes={candidates}
@@ -971,23 +1055,6 @@ function StudioStage({
         onOpenSimilar={openSimilarNode}
         onDismissSimilar={() => setSimilarDismissed(true)}
       />
-      {isPractice && !practiceSaved ? (
-        <div className="pointer-events-none fixed inset-x-0 top-3 z-40 px-6">
-          <StudioPracticeRail
-            step={practiceRailStep}
-            labels={{
-              instruction: t(`practice.step.${practiceRailStep}`),
-              progress: t("practice.progress", {
-                current: practiceStepIndex(practiceRailStep),
-                total: 4,
-              }),
-              quit: t("practice.quit"),
-              progressAria: t("practice.progressAria"),
-            }}
-            onQuit={() => navigateStudio(new URLSearchParams({ mode: "create" }), { drop: ["practice"] })}
-          />
-        </div>
-      ) : null}
       {docConsent ? (
         <StudioMaterializeDialog
           target={docConsent.target}
@@ -1038,6 +1105,7 @@ function StudioStage({
     return (
       <main
         id="main"
+      tabIndex={-1}
         className="flex h-[100dvh] items-center justify-center bg-[color:var(--color-canvas)] p-6"
       >
         <p
@@ -1051,10 +1119,12 @@ function StudioStage({
   }
   // 요청한 개념이 없으면 다른 개념을 대신 열지 않는다 — 죽은 딥링크는
   // 프로젝트 상세와 같은 문법으로 정직하게 말하고 갈 곳을 준다.
+  const notFoundName = requestedNode?.trim() ?? "";
   if (requestedNodeMissing) {
     return (
       <main
         id="main"
+      tabIndex={-1}
         className="flex h-[100dvh] items-center justify-center bg-[color:var(--color-canvas)] p-6"
       >
         <EmptyState
@@ -1062,8 +1132,9 @@ function StudioStage({
           // 한 문장이 1000px 을 넘어가 읽기가 끊긴다(같은 표면의 짧은 빈 상태
           // 는 문장이 짧아 드러나지 않던 문제).
           className="w-full max-w-lg"
+          titleAs="h1"
           title={t("notFound.title")}
-          description={t("notFound.body", { name: requestedNode?.trim() ?? "" })}
+          description={t("notFound.body", { name: notFoundName, josa: josa(notFoundName, "object") })}
           tone="solid"
           align="center"
           action={
@@ -1092,9 +1163,11 @@ function StudioStage({
     return (
       <main
         id="main"
+      tabIndex={-1}
         className="flex h-[100dvh] items-center justify-center bg-[color:var(--color-canvas)] p-6"
       >
         <EmptyState
+          titleAs="h1"
           title={t("empty.title")}
           description={t("empty.body")}
           tone="solid"
@@ -1415,6 +1488,58 @@ export function OntologyStudioPage() {
   const navigateStudio = useStudioNavigate();
   const [practiceArtifact, setPracticeArtifact] = useState<PracticeArtifact | null>(null);
   const [practiceBusy, setPracticeBusy] = useState(false);
+  /**
+   * 마무리를 **저장이 서명을 마친 뒤에** 묻는다.
+   *
+   * 프레임 실측(카운슬 「모션」, 2026-07-29): 저장 클릭 67ms 뒤에 네 가지가
+   * 동시에 떨어졌다 — 무대 재중심(1프레임 하드컷) · 띠 언마운트 · 마무리
+   * 스크림 · 다이얼로그 스프링. 결과물(완성된 노드가 무대에 선 상태)은 **가시
+   * 0프레임**이었고, 확정 서명(수렴 칩 240ms)은 재생 40% 지점에서 **산 채로
+   * 묻혔다.**
+   *
+   * 사용자가 부른 것은 "썼다" 인데 모션 예산 전부를 **다른 질문**("지울까요?")
+   * 이 가져간 셈이다. 헌장의 판정식① 그대로다.
+   *
+   * 그래서 한 박자 늦춘다 — 이건 인과 스태거라 헌장이 허용한다(원인: 저장이
+   * 끝났다 → 결과: 정리를 묻는다). **기다림을 강요하지는 않는다**: 그 사이
+   * 아무 입력이나 오면 즉시 띄운다.
+   */
+  /**
+   * 마무리를 **저장이 서명을 마친 뒤에** 묻는다.
+   *
+   * 프레임 실측(카운슬 「모션」, 2026-07-29): 저장 클릭 67ms 뒤에 네 가지가
+   * 동시에 떨어졌다 — 무대 재중심(1프레임 하드컷) · 띠 언마운트 · 마무리
+   * 스크림 · 다이얼로그 스프링. 결과물(완성된 노드가 무대에 선 상태)은 **가시
+   * 0프레임**이었고, 확정 서명(수렴 칩 240ms)은 재생 40% 지점에서 **묻혔다.**
+   * 사용자가 부른 것은 "썼다" 인데 모션 예산 전부를 **다른 질문**이 가져간 셈
+   * 이다 — 헌장 판정식① 그대로다.
+   *
+   * 한 박자 늦추는 것은 인과 스태거라 헌장이 허용한다(원인: 저장이 끝났다 →
+   * 결과: 정리를 묻는다). **기다림을 강요하지는 않는다** — 그 사이 아무 입력이나
+   * 오면 즉시 띄운다.
+   *
+   * 타이머를 이펙트가 아니라 **아티팩트를 세우는 쪽**에서 건다. 이펙트 본문에서
+   * 곧바로 setState 하면 연쇄 렌더가 되고, 그건 이 저장소 lint 가 이미 잡는
+   * 실수다.
+   */
+  const [cleanupReady, setCleanupReady] = useState(false);
+  const signatureTimerRef = useRef<number | null>(null);
+  const recordPracticeArtifact = useCallback((artifact: PracticeArtifact) => {
+    setCleanupReady(false);
+    setPracticeArtifact(artifact);
+    const reveal = () => {
+      if (signatureTimerRef.current !== null) {
+        window.clearTimeout(signatureTimerRef.current);
+        signatureTimerRef.current = null;
+      }
+      window.removeEventListener("keydown", reveal);
+      window.removeEventListener("pointerdown", reveal);
+      setCleanupReady(true);
+    };
+    signatureTimerRef.current = window.setTimeout(reveal, PRACTICE_SIGNATURE_MS);
+    window.addEventListener("keydown", reveal);
+    window.addEventListener("pointerdown", reveal);
+  }, []);
 
   // ── 오른쪽 에이전트 도크 ──────────────────────────────────────────────
   const locale = useLocale();
@@ -1494,7 +1619,7 @@ export function OntologyStudioPage() {
         await localVault.deleteDoc(slug);
       }
       setPracticeArtifact(null);
-      toast.show(t("practice.removed", { name: practiceArtifact.title }), "success");
+      toast.show(t("practice.removed", { name: practiceArtifact.title, josa: josa(practiceArtifact.title, "object") }), "success");
       // 실습이 끝났으니 실습 표시도 주소에서 뺀다 — 안 빼면 다음 저장이 또
       // 실습으로 읽힌다.
       navigateStudio(new URLSearchParams({ mode: "create" }), { drop: ["practice"] });
@@ -1522,7 +1647,7 @@ export function OntologyStudioPage() {
       <div className="relative min-w-0 flex-1">
         <StudioStage
           practiceSaved={practiceArtifact !== null}
-          onPracticeSaved={setPracticeArtifact}
+          onPracticeSaved={recordPracticeArtifact}
           agentDock={dockUsable ? { open: dockOpen, toggle: toggleDock } : null}
         />
       </div>
@@ -1546,16 +1671,31 @@ export function OntologyStudioPage() {
           downloadHref={`/${locale}/download/`}
         />
       ) : null}
-      {practiceArtifact ? (
+      {practiceArtifact && cleanupReady ? (
         <StudioPracticeCleanup
+          outcome={practiceArtifact.outcome}
           plan={planPracticeCleanup(practiceArtifact)}
           busy={practiceBusy}
           labels={{
-            title: t("practice.cleanupTitle"),
-            summary: t("practice.cleanupSummary", { name: practiceArtifact.title }),
-            question: t("practice.cleanupQuestion"),
+            // 넘기기만 한 실습은 **다른 사실**을 말해야 한다 — 파일이 안 생겼고
+            // 지울 것도 없다. 같은 문장을 쓰면 화면이 없는 파일을 약속한다.
+            title:
+              practiceArtifact.outcome === "written"
+                ? t("practice.cleanupTitle")
+                : t("practice.copiedTitle"),
+            summary:
+              practiceArtifact.outcome === "written"
+                ? t("practice.cleanupSummary", { name: practiceArtifact.title, josa: josa(practiceArtifact.title, "object") })
+                : t("practice.copiedSummary", { name: practiceArtifact.title, josa: josa(practiceArtifact.title, "object") }),
+            question:
+              practiceArtifact.outcome === "written"
+                ? t("practice.cleanupQuestion")
+                : t("practice.copiedQuestion"),
             deleteLabel: t("practice.delete"),
-            keepLabel: t("practice.keep"),
+            keepLabel:
+              practiceArtifact.outcome === "written"
+                ? t("practice.keep")
+                : t("practice.copiedDone"),
             detachNote: t("practice.detachNote"),
             agentHint: t("practice.agentHint"),
             agentAction: t("practice.agentAction"),
@@ -1563,9 +1703,17 @@ export function OntologyStudioPage() {
           }}
           onDelete={() => void runPracticeCleanup()}
           onKeep={keepPractice}
-          // 설정 시트의 「AI 연결」 자리를 연다 — 웹에서는 그 자리가 정직하게
-          // 강등되며 갈 곳(/download/)을 준다. 표면별로 문을 두 개 만들지 않는다.
-          onAgentAction={() => requestSettingsView("ai")}
+          // **먼저 닫고 나서 연다.** 설정 시트는 z-40 인데 이 마무리 백드롭은
+          // z-[60] 이고 Tab 트랩이 capture 단계라, 그냥 열면 시트가 이 모달
+          // **뒤에서** 열리고 포커스도 계속 회수된다 — 이 버튼이 그려지는
+          // 유일한 자리에서 문이 잠긴 셈이었다(카운슬 「핸드오프」 실측).
+          // 모달 위 모달은 modality 계약 위반이니 순차가 답이다.
+          onAgentAction={() => {
+            keepPractice();
+            // 문장이 먼저 약속하는 것은 **에이전트 연결**이다. API 키는 그
+            // 다음이고, 같은 시트 안에서 한 걸음이다.
+            requestSettingsView("agent");
+          }}
         />
       ) : null}
     </div>

@@ -866,6 +866,7 @@ export function OntologyInsightsPage() {
         </div>
         <main
           id="main"
+      tabIndex={-1}
           data-insights-surface="maintenance-board"
           data-insights-question-model="one-tab-one-question"
           className="mx-auto w-full max-w-[var(--page-max)] px-6 py-8 max-lg:pb-[calc(var(--topology-mobile-bottom-tab-reserve)+24px)] md:px-10"

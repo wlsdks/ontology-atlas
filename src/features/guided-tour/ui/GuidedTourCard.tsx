@@ -129,7 +129,12 @@ export function GuidedTourCard({
           onClick={onActivateAnchor}
           disabled={!onActivateAnchor || hasSelection}
           data-testid="guided-tour-activate-target"
-          className="flex h-8 items-center justify-center rounded-[var(--chrome-radius-inner)] border border-dashed border-[color:var(--chrome-border)] text-center text-body text-[color:var(--color-text-tertiary)]"
+          /* `justify-center`/`text-center` 는 폭이 있어야 뜻이 생긴다. 카드가
+             flex 컨테이너가 아니라 이 버튼은 shrink-to-fit 이었고, 그래서 두
+             중앙 정렬 선언이 **한 번도 적용된 적이 없었다** — 왼쪽에 붙은 채로
+             "가운데" 라고 적혀 있던 것이다(2026-07-29 실측). 같은 줄에 선
+             「이전」과 왼쪽 끝을 맞추려면 폭을 채우는 쪽이 맞다. */
+          className="flex h-8 w-full items-center justify-center rounded-[var(--chrome-radius-inner)] border border-dashed border-[color:var(--chrome-border)] text-center text-body text-[color:var(--color-text-tertiary)]"
         >
           <span data-testid={hasSelection ? "guided-tour-success" : "guided-tour-waiting"}>
             {hasSelection ? t("clickSuccessLabel") : t("waitingForClickLabel")}
@@ -137,6 +142,20 @@ export function GuidedTourCard({
         </button>
       ) : null}
 
+      {/**
+       * **「이전」은 어느 단계에서도 사라지지 않는다** (2026-07-29 도그푸딩).
+       *
+       * 초안은 back/next 줄 전체를 `!isInteractive` 로 감쌌다. 그래서 4/7
+       * (「직접 눌러보세요」)과 마지막 분기 단계에서 **「이전」이 통째로
+       * 없어졌다** — 다섯 단계 동안 왼쪽 아래에 있던 컨트롤이 여섯 번째에
+       * 말없이 사라진다. 사용자는 그때 투어가 되돌아갈 수 있는 것인지 아닌지를
+       * 다시 배워야 한다.
+       *
+       * 앞으로 가는 방법은 단계마다 다른 게 맞다(다음 · 직접 눌러보기 · 분기
+       * 선택). **뒤로 가는 방법이 달라질 이유는 없다.** 그래서 「이전」을
+       * 세 갈래 밖으로 꺼내 항상 같은 자리에 세우고, 앞으로 가는 컨트롤만
+       * 단계가 고른다.
+       */}
       {isBranchStep ? (
         <div className="mt-1 flex flex-col gap-2">
           <button
@@ -161,17 +180,21 @@ export function GuidedTourCard({
             </button>
           ) : null}
         </div>
-      ) : !isInteractive ? (
-        <div className="mt-1 flex items-center justify-between gap-2">
-          <button
-            type="button"
-            onClick={back}
-            disabled={isFirst}
-            data-testid="guided-tour-back"
-            className="h-8 rounded-[var(--chrome-radius-inner)] px-3 text-body text-[color:var(--color-text-tertiary)] transition-colors hover:text-[color:var(--color-text-primary)] disabled:opacity-40"
-          >
-            {t("prevLabel")}
-          </button>
+      ) : null}
+
+      <div className="mt-1 flex items-center justify-between gap-2">
+        <button
+          type="button"
+          onClick={back}
+          disabled={isFirst}
+          data-testid="guided-tour-back"
+          className="h-8 rounded-[var(--chrome-radius-inner)] px-3 text-body text-[color:var(--color-text-tertiary)] transition-colors hover:text-[color:var(--color-text-primary)] disabled:opacity-40"
+        >
+          {t("prevLabel")}
+        </button>
+        {/* 앞으로 가는 컨트롤만 단계가 고른다 — 대화형 단계는 앵커 클릭이,
+            분기 단계는 위의 두 선택지가 그 일을 이미 한다. */}
+        {!isInteractive && !isBranchStep ? (
           <button
             type="button"
             onClick={isFinalStep ? finishAsDone : advance}
@@ -180,8 +203,8 @@ export function GuidedTourCard({
           >
             {isFinalStep ? t("finishLabel") : t("nextLabel")}
           </button>
-        </div>
-      ) : null}
+        ) : null}
+      </div>
     </div>
   );
 }

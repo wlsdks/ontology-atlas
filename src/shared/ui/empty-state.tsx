@@ -7,6 +7,20 @@ interface EmptyStateProps {
    * 넣어도 된다 (페이지 본문 통째 비어 한 문장만 띄울 때 흔한 패턴).
    */
   title: ReactNode;
+  /**
+   * 제목을 낼 태그. 기본은 `p` — 목록/섹션 안의 빈 상태는 문서 구획이 아니다.
+   *
+   * **페이지 본문 전체가 이 카드 하나인 자리는 `h1` 로 부른다** (2026-07-29
+   * 도그푸딩 실측). 좁은 폭에서 공방이 정직 강등 카드로 바뀌면 그 라우트의
+   * heading 요소가 **0개**가 됐다 — 스크린리더 사용자에게는 이 페이지가
+   * 무엇인지, 왜 공방이 안 열렸는지 말해 주는 제목이 아예 없는 화면이다.
+   * 강등 카드의 계약이 「왜 + 어디로」인데, 그 「왜」를 못 읽으면 계약이
+   * 지켜진 게 아니다.
+   *
+   * 태그만 바뀌고 **보이는 것은 그대로다** — Tailwind preflight 가 heading 의
+   * 크기·굵기를 `inherit` 로 리셋하므로 아래 클래스가 계속 결정한다.
+   */
+  titleAs?: 'p' | 'h1' | 'h2';
   /** 부연 설명, 다음 행동 안내. ReactNode 라 안에 Link 등을 넣을 수 있다. */
   description?: ReactNode;
   /**
@@ -67,6 +81,7 @@ function DefaultSkeleton({ align }: { align: 'left' | 'center' }) {
  */
 export function EmptyState({
   title,
+  titleAs = 'p',
   description,
   icon,
   skeleton,
@@ -85,8 +100,9 @@ export function EmptyState({
   const centerPadOverride = align === 'center' ? 'px-6 py-10' : null;
   const isCenter = align === 'center';
 
+  const TitleTag = titleAs;
   const titleEl = (
-    <p
+    <TitleTag
       className={cn(
         'font-[var(--font-weight-signature)] text-[color:var(--color-text-primary)]',
         size === 'compact' ? 'text-sm' : 'text-title',
@@ -95,7 +111,7 @@ export function EmptyState({
       )}
     >
       {title}
-    </p>
+    </TitleTag>
   );
 
   const descriptionEl = description ? (

@@ -358,8 +358,26 @@ function withActionTip(tip: string | undefined, trigger: ReactElement): ReactEle
 // eslint-disable-next-line no-restricted-syntax -- 고정 높이 타일 안 10px 2행 라벨: 램프 짝은 타일을 6px 키운다
 const ACTION_TILE_LEADING = "leading-[1.1]";
 
+/**
+ * **한국어는 아무 글자에서나 끊긴다 — 끊길 자리를 정해 준다** (2026-07-29
+ * 설치 앱 실측).
+ *
+ * 이 스트립은 웹에서 다섯 칸이라 라벨이 한 줄에 들어갔다. 앱에서는 LLM 다리가
+ * 있어 「말로 시키기」가 붙어 **여섯 칸**이 되고, 칸이 좁아지자 라벨 셋이
+ * 단어 가운데서 잘렸다: 「AI 요약 복 / 사」 · 「말로 시키 / 기」 ·
+ * 「이것만 보 / 기」. 브라우저의 기본 줄바꿈은 CJK 를 음절 단위로 끊기 때문에,
+ * 폭만 좁아지면 어느 라벨이든 이렇게 된다.
+ *
+ * `keep-all` 은 공백에서만 끊게 한다 — 「AI 요약 / 복사」 처럼 두 줄이 되더라도
+ * 단어는 살아 있다. 타일 높이는 `items-stretch` 가 이미 균일화하므로 줄 수가
+ * 늘어도 치수는 안 흔들린다.
+ *
+ * **웹 검증만으로는 못 잡는 종류다** — 다섯 칸에서는 재현되지 않는다.
+ * 데스크톱 능력이 칸을 하나 더 만들 때 이 스트립이 좁아진다는 사실이
+ * `surfaces.md` 가 말하는 "설치 앱 실측만 인정" 의 실제 사례다.
+ */
 const ACTION_TILE_CLASS =
-  `flex flex-1 flex-col items-center justify-start gap-1.5 rounded-[var(--topology-v2-panel-row-radius)] px-1 py-1.5 text-center text-[10px] font-medium ${ACTION_TILE_LEADING} text-[color:var(--topology-v2-panel-text-tertiary)] transition-colors hover:bg-[color:var(--topology-v2-panel-row-hover)] hover:text-[color:var(--topology-v2-panel-text-secondary)] active:bg-[color:var(--topology-v2-panel-row-active)]`;
+  `flex flex-1 flex-col items-center justify-start gap-1.5 rounded-[var(--topology-v2-panel-row-radius)] px-1 py-1.5 text-center text-[10px] font-medium ${ACTION_TILE_LEADING} [word-break:keep-all] text-[color:var(--topology-v2-panel-text-tertiary)] transition-colors hover:bg-[color:var(--topology-v2-panel-row-hover)] hover:text-[color:var(--topology-v2-panel-text-secondary)] active:bg-[color:var(--topology-v2-panel-row-active)]`;
 
 /**
  * 관계 그룹 헤더의 방향 글리프 — 승인된 시안(mockup-panel-detail)의 SVG 를

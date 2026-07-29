@@ -27,6 +27,7 @@ export async function MapEntryFallback({ locale }: { locale: string }) {
   return (
     <main
       id="main"
+      tabIndex={-1}
       data-route-loading="true"
       data-testid="map-entry-fallback"
       aria-busy="true"

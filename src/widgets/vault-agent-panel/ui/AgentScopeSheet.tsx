@@ -47,8 +47,7 @@ export function AgentScopeSheet({
   return (
     <div
       data-testid="agent-scope-sheet"
-      role="dialog"
-      aria-modal="true"
+      role="group"
       aria-label={labels.title}
       className="flex flex-col gap-3 rounded-card border border-[color:var(--color-border-strong)] bg-[color:var(--color-elevated)] p-3"
     >

@@ -80,7 +80,7 @@ export function DesktopVaultWelcome({
   ] as const;
 
   return (
-    <main id="main" className="flex min-h-0 flex-1 overflow-auto bg-[color:var(--color-canvas)]">
+    <main id="main" tabIndex={-1} className="flex min-h-0 flex-1 overflow-auto bg-[color:var(--color-canvas)]">
       {/*
         `my-auto` — 남는 공간이 있을 때만 세로 가운데로 온다 (2026-07-28 소유자
         실사용 제보: "화면 상단에 이렇게 나오면 이상하지? 중앙에 예쁘게").

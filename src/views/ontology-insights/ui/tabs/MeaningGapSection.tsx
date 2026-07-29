@@ -14,6 +14,7 @@ import {
   type QueueRowAbilities,
   type QueueRowActionLabels,
 } from "../parts/QueueRowActions";
+import { InsightsSectionTitle } from "../parts/InsightsSectionTitle";
 
 /**
  * **한 문장으로 끝나는 할 일을 그 자리에서 끝내는 섹션** (비개발자 쓰기의 첫 칸).
@@ -201,9 +202,9 @@ export function MeaningGapSection({
     >
       <div className="flex flex-col gap-1 border-b border-[color:var(--color-divider)] pb-2">
         <div className="flex items-baseline gap-2">
-          <span className="text-body font-medium text-[color:var(--color-text-primary)]">
+          <InsightsSectionTitle level={3} className="text-body font-medium text-[color:var(--color-text-primary)]">
             {labels.sectionTitle}
-          </span>
+          </InsightsSectionTitle>
           <span className="font-mono text-label tabular-nums text-[color:var(--topology-v2-numeral-face)]">
             {totalCount}
           </span>

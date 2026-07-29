@@ -259,6 +259,11 @@ export function useVaultAgent(args: UseVaultAgentArgs) {
 
   const apply = useCallback(async () => {
     if (!proposal || proposal.status !== 'pending') return;
+    // **먼저 잠그고 나서 쓴다.** `await` 앞에 상태를 옮기지 않으면 그 사이가
+    // 통째로 재진입 창이 된다 — 더블클릭 한 번에 볼트 쓰기가 둘이었다.
+    setProposal((current) =>
+      current && current.status === 'pending' ? { ...current, status: 'applying' } : current,
+    );
     const outcome = await applyProposal(
       proposal,
       {

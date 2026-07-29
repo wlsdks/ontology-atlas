@@ -7,6 +7,7 @@ import { cn } from "@/shared/lib/cn";
 import { EmptyState, EvidenceOnlyBadge, TopologyV2KindGlyph } from "@/shared/ui";
 import type { ImpactRankingRow } from "../../lib/impact-ranking";
 import { InsightsBar } from "../parts/InsightsBar";
+import { InsightsSectionTitle } from "../parts/InsightsSectionTitle";
 
 export interface ImpactRankingLabels {
   title: string;
@@ -99,9 +100,9 @@ export function ImpactRankingCard({
       )}
     >
       <div className="flex flex-wrap items-baseline gap-x-3 gap-y-1">
-        <span className="text-body-lg font-medium tracking-[-0.01em] text-[color:var(--color-text-primary)]">
+        <InsightsSectionTitle level={2} className="text-body-lg font-medium tracking-[-0.01em] text-[color:var(--color-text-primary)]">
           {labels.title}
-        </span>
+        </InsightsSectionTitle>
         {/* 두 세그먼트가 무슨 뜻인지 머리에서 한 번만 말한다 — 행마다
             반복하면 잉크만 늘고 읽히지 않는다. */}
         <span className="ml-auto flex items-center gap-3 text-label text-[color:var(--color-text-quaternary)]">

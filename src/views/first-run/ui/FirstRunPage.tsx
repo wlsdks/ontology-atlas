@@ -93,6 +93,7 @@ export function FirstRunPage() {
   return (
     <main
       id="main"
+      tabIndex={-1}
       className="flex min-h-full items-center justify-center bg-[color:var(--color-canvas)] px-6 py-10"
     >
       <section className="grid w-full max-w-[440px] gap-6">
