@@ -332,6 +332,9 @@ test.describe("웹 스모크 ③ 정직한 강등", () => {
       .getByTestId("app-nav-rail-utility-tier")
       .getByTestId("app-settings-trigger")
       .click();
+    // 설정은 2026-07-29 에 LNB 2단이 됐다 — AI 연결은 「AI 에이전트」 절 안에 있다.
+    // 이 한 줄이 늘어난 것이 LNB 전환의 유일한 웹-표면 비용이다.
+    await page.getByTestId("app-settings-nav-agent").click();
     await page.getByTestId("app-settings-ai-drillin").click();
 
     const card = page.getByTestId("ai-connection-web-degraded");

@@ -63,7 +63,7 @@ function FootprintPreview({ pref }: { pref: FootprintPreference }) {
       const raw = root.getPropertyValue(name).trim();
       return raw === '' ? fallback : raw;
     };
-    const hex = read(pref.tone === 'indigo' ? '--color-indigo-accent' : '--color-footprint-trail', '#e8c47a');
+    const hex = read(pref.tone === 'indigo' ? '--color-footprint-trail-indigo' : '--color-footprint-trail', '#e8c47a');
     const parsed = /^#?([0-9a-f]{6})$/i.exec(hex);
     const n = parsed ? parseInt(parsed[1], 16) : 0xe8c47a;
     const ink = [(n >> 16) & 255, (n >> 8) & 255, n & 255] as const;

@@ -774,7 +774,7 @@ export function useTopologyLoop(args: UseTopologyLoopArgs): UseTopologyLoopResul
     if (!footprint) return;
     const rootStyle = getComputedStyle(document.documentElement);
     const hex = rootStyle
-      .getPropertyValue(footprint.tone === "indigo" ? "--color-indigo-accent" : "--color-footprint-trail")
+      .getPropertyValue(footprint.tone === "indigo" ? "--color-footprint-trail-indigo" : "--color-footprint-trail")
       .trim();
     const parsed = /^#?([0-9a-f]{6})$/i.exec(hex);
     if (parsed) {
@@ -783,8 +783,8 @@ export function useTopologyLoop(args: UseTopologyLoopArgs): UseTopologyLoopResul
       footprintStepColorRef.current = hex.startsWith("#") ? hex : `#${parsed[1]}`;
     } else {
       // 토큰이 없거나 rgba() 형태 — 기본 앰버로 폴백한다(발자국이 사라지는 것보다 낫다).
-      footprintInkRef.current = footprint.tone === "indigo" ? [113, 112, 255] : [232, 196, 122];
-      footprintStepColorRef.current = footprint.tone === "indigo" ? "#7170ff" : "#e8c47a";
+      footprintInkRef.current = footprint.tone === "indigo" ? [200, 210, 255] : [232, 196, 122];
+      footprintStepColorRef.current = footprint.tone === "indigo" ? "#c8d2ff" : "#e8c47a";
     }
   }, [footprint]);
 

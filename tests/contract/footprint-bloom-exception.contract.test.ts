@@ -35,6 +35,25 @@ import {
 const repoRoot = join(import.meta.dirname, "..", "..");
 const read = (rel: string): string => readFileSync(join(repoRoot, rel), "utf8");
 
+const hexRgb = (hex: string): [number, number, number] => [
+  parseInt(hex.slice(1, 3), 16),
+  parseInt(hex.slice(3, 5), 16),
+  parseInt(hex.slice(5, 7), 16),
+];
+
+/** WCAG 상대 휘도 → 대비비. 비-텍스트 기준선은 3:1 (WCAG 1.4.11). */
+function contrastRatio(a: readonly number[], b: readonly number[]): number {
+  const lum = (rgb: readonly number[]): number => {
+    const f = (v: number): number => {
+      const c = v / 255;
+      return c <= 0.03928 ? c / 12.92 : ((c + 0.055) / 1.055) ** 2.4;
+    };
+    return 0.2126 * f(rgb[0]) + 0.7152 * f(rgb[1]) + 0.0722 * f(rgb[2]);
+  };
+  const [hi, lo] = [lum(a), lum(b)].sort((x, y) => y - x);
+  return (hi + 0.05) / (lo + 0.05);
+}
+
 describe("발자국 번짐 — 헌장 예외의 사정거리", () => {
   it("기본값은 0 이다 — 아무도 켜지 않으면 글로우는 존재하지 않는다", () => {
     expect(DEFAULT_FOOTPRINT.bloom).toBe(0);
@@ -63,6 +82,31 @@ describe("발자국 번짐 — 헌장 예외의 사정거리", () => {
   it("헌장 두 문서에 예외가 등재돼 있다 — 코드에만 있으면 다음 사람이 지운다", () => {
     expect(read(".claude/rules/forbidden.md")).toMatch(/발자국 트레일 번짐/);
     expect(read(".claude/rules/design.md")).toMatch(/발자국 트레일/);
+  });
+
+  /**
+   * 사용자가 고를 수 있는 **어떤 조합에서도** 발자국이 읽혀야 한다.
+   *
+   * 실측으로 잡힌 결함(2026-07-29): 인디고 톤이 `--color-indigo-accent`(#7170ff)
+   * 였을 때 최저 진하기(0.5)에서 캔버스 대비 **2.08:1** 이었다 — 3:1 미달.
+   * 「인디고 + 은은하게」는 고를 수 있는 조합이므로, 그건 취향이 아니라 **고를
+   * 수 있는 결함**이다. 안 보이게 만들 자유는 설정이 아니다.
+   *
+   * 값 하나만 고치면 다시 깨지는 종류라 값으로 잠근다. WCAG 1.4.11 비-텍스트
+   * 대비 3:1 기준.
+   */
+  it("두 톤 모두 최저 진하기에서 3:1 을 넘는다", () => {
+    const css = read("app/globals.css");
+    const bg = hexRgb(/--topology-v2-canvas-bg-near:\s*(#[0-9a-fA-F]{6})/.exec(css)![1]);
+    const tones = {
+      amber: /--color-footprint-trail:\s*(#[0-9a-fA-F]{6})/.exec(css)![1],
+      indigo: /--color-footprint-trail-indigo:\s*(#[0-9a-fA-F]{6})/.exec(css)![1],
+    };
+    for (const [name, hexValue] of Object.entries(tones)) {
+      const over = hexRgb(hexValue).map((c, i) => c * FOOTPRINT_RANGES.opacity.min + bg[i] * (1 - FOOTPRINT_RANGES.opacity.min));
+      const contrast = contrastRatio(over as [number, number, number], bg);
+      expect(contrast, `${name} 톤이 최저 진하기에서 ${contrast.toFixed(2)}:1 — 안 보이는 발자국을 고를 수 있다`).toBeGreaterThanOrEqual(3);
+    }
   });
 
   /**
