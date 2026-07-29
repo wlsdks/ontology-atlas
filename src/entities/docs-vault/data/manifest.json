@@ -7432,7 +7432,7 @@
       ],
       "excerpt": "Reddit responds best to honest, problem-first framing. Each subreddit has its own norms; copy below tuned per audience. Title: ontology-atlas — frontmatter as a codebase ontology, AI agents read it via MCP Body (400~500 words, Reddit allows long-form better than HN): my-project/ ├── project.md ├── domains/ │ ├── auth.m",
       "wordCount": 1059,
-      "updatedAt": "2026-07-28",
+      "updatedAt": "2026-07-30",
       "linksOut": []
     },
     {

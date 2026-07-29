@@ -24,7 +24,7 @@
 </p>
 
 <p align="center">
-  <a href="https://wlsdks.github.io/ontology-atlas/"><strong>Live demo</strong></a>
+  <a href="https://wlsdks.github.io/ontology-atlas/en/topology/"><strong>Live demo</strong></a>
   ·
   <a href="#the-journey"><strong>The journey</strong></a>
   ·
@@ -161,6 +161,15 @@ serves two readers at once: a visual hierarchy for a person, and a typed
 relation list — `contains`, `used by`, `leans on` — for an agent, with **Copy
 handoff** right there, because the next reader is often not a human.
 
+**Footprints** mark the concepts you opened, numbered in the order you walked
+them, so a long session leaves a path you can retrace instead of a map you have
+to re-derive. Shape, size, spacing and opacity are yours — **Settings ▸
+Footprints** — and the map background is a separate choice of three
+(**Settings ▸ Map background**: dots, a proximity constellation, or layered
+depth dots). Settings opens as a dock on the right rather than a modal, so the
+map stays live while you turn the dial: you see the change on the graph you are
+actually reading, not after closing a window.
+
 <p align="center">
   <img alt="Screen recording of the macOS app: clicking a domain in the INDEX panel expands its capabilities, the camera moves to that part of the map, and the domain datasheet slides in from the right" src="docs/assets/readme/atlas-map-focus.gif" width="800" />
 </p>
@@ -244,6 +253,12 @@ coverage from how the documents link to each other.
 **32 MCP tools — 19 read, 13 write** — over stdio JSON-RPC, for Claude Code,
 Cursor, Codex, and any MCP client. The point is not the tool count; it is that
 the answers are *typed*, so an agent can act on them.
+
+The server runs on the **MCP SDK v2** (`@modelcontextprotocol/server` 2.0). That
+migration is deliberately invisible to you: a contract test still handshakes at
+the oldest supported protocol version (`2024-11-05`) and asserts that an older
+client can still list and call tools, so moving to v2 did not quietly drop
+anyone's editor.
 
 Here is a real question — *what breaks if I change this?* — answered against the
 same example vault the screenshots use:
@@ -353,7 +368,7 @@ that artifact matters, which capability it serves, and what to verify before
 changing it. It replaces none of them — it tells the agent which structural
 question is worth asking.
 
-## Six work surfaces, one vault
+## Seven surfaces, one vault
 
 The journey above moves through them in order. Every surface reads and writes the
 same `.md` files — the interface changes, the authority does not. The MCP server
@@ -361,7 +376,8 @@ is listed here on purpose: to this product an agent is a surface, not an add-on.
 
 | Surface | What it is for |
 |---|---|
-| **Map** (`/`, `/topology`) | Overview-first topology, semantic zoom, typed relation inspection, focus and path modes, impact, agent handoff |
+| **Front door** (`/`, `/download`) | What this is, and the two ways in — install the app, or open the map in the browser. Only shown to a visitor who has not opened a folder yet; once you have a vault, `/` is the map |
+| **Map** (`/topology`) | Overview-first topology, semantic zoom, typed relation inspection, focus and path modes, impact, agent handoff |
 | **Docs** (`/docs`) | Read and edit the Markdown source, frontmatter evidence, backlinks, search |
 | **Workshop** (`/ontology/studio`) | Complete one node's meaning against four fixed relation bearings, behind a visible write-confirm boundary |
 | **Insights** (`/ontology/insights`) | The maintenance board — what to do next, composition, connections, boundaries, freshness |
@@ -371,9 +387,11 @@ is listed here on purpose: to this product an agent is a surface, not an add-on.
 
 Those routes are the same in all three places they can be opened: the installed
 macOS app, the CLI's sibling web build, and the hosted site. The
-[live demo](https://wlsdks.github.io/ontology-atlas/) opens with this
-repository's own vault and needs no install; point it at your own Markdown
-folder in the browser and the same map switches to your data.
+[live demo](https://wlsdks.github.io/ontology-atlas/en/topology/) opens with this repository's own vault and needs no
+install; point it at your own Markdown folder in the browser and the same map
+switches to your data. (The site's front page, [`/`](https://wlsdks.github.io/ontology-atlas/), is the download
+face — the map lives at `/topology`, and that is the address to share when you
+want someone to *see* the graph rather than install it.)
 
 | | |
 |---|---|
@@ -471,6 +489,7 @@ pnpm vault:validate       # frontmatter integrity
 | [MCP guide](mcp/README.md) | Registration and all 32 tool contracts |
 | [CLI reference](cli/README.md) | All 52 commands with examples |
 | [Decisions](docs/DECISIONS.md) | What was decided, what lost the argument, and what would overturn it |
+| [Brand](docs/BRAND.md) | What the mark means, and which asset to use where |
 | [Security](SECURITY.md) | Threat model, release-credential protection, reporting |
 
 ## Contributing
@@ -507,7 +526,8 @@ git diff 로 판단합니다. 백엔드·로그인·텔레메트리가 없고 va
   [GitHub Releases](https://github.com/wlsdks/ontology-atlas/releases)에서
   확인하세요.** 비어 있거나 릴리스 후보만 있으면 소스 체크아웃으로 씁니다.
   이 README 의 화면들은 첫 서명 릴리스 이전에 로컬 빌드 앱에서 찍었습니다.
-- [라이브 데모](https://wlsdks.github.io/ontology-atlas/)에서 이 저장소 자신의
-  온톨로지(98 노드)를 설치 없이 볼 수 있습니다.
+- [라이브 데모](https://wlsdks.github.io/ontology-atlas/ko/topology/)에서 이 저장소 자신의 온톨로지(98 노드)를 설치 없이 볼
+  수 있습니다. 사이트 첫 페이지([`/`](https://wlsdks.github.io/ontology-atlas/))는 소개·다운로드 얼굴이고, 지도는
+  `/topology` 에 있습니다.
 - 연결은 [MCP 가이드](mcp/README.md), 전체 명령은 [CLI 가이드](cli/README.md),
   기여는 [CONTRIBUTING.md](CONTRIBUTING.md) — 한국어 이슈와 PR 을 환영합니다.

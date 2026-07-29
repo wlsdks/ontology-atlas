@@ -191,4 +191,58 @@ describe('current-surface launch docs', () => {
     expect(workflow).toContain(`${MCP_TOOL_METADATA?.writeCount} write tools`);
     expect(workflow).toContain(`${census.total} nodes`);
   });
+
+  /**
+   * **"설치 없이 지도를 본다" 고 말하는 링크는 지도 주소를 가리켜야 한다.**
+   *
+   * 2026-07-30 에 사이트 루트가 지도에서 **다운로드 얼굴**로 바뀌었다(원장:
+   * 「root-first-open」 뒤집기 구현). 그 순간 런치 자산과 README 의 「Hosted demo
+   * — no install」 링크 세 개가 전부 **설치를 권하는 화면으로 되돌아오는 고리**가
+   * 됐다. 앱 안에서는 `map-destination-route.contract` 가 같은 부패를 막지만,
+   * 그 게이트는 소스 코드만 본다 — 산문 속 절대 URL 은 시야 밖이었다.
+   *
+   * 판정은 라벨과 목적지를 함께 본다. 사이트 루트를 **가리키는 것 자체**는 결함이
+   * 아니다(배포 문서·첫 페이지 언급은 그대로 루트가 맞다). 결함은 *"데모"* 나
+   * *"설치 없이"* 라고 말해 놓고 루트로 보내는 줄이다.
+   */
+  it('demo links promise the map, so they point at the map', async () => {
+    const SITE = 'https://wlsdks.github.io/ontology-atlas/';
+    const PROMISE = /demo|데모|no install|설치 없이|지도를 본|see the graph/i;
+    /** 로케일 경로 없이 사이트 루트에서 끝나는 URL. */
+    const bareRoot = (text: string) =>
+      new RegExp(`${SITE.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}(?![a-z]{2}/)`).test(text);
+    const findings: string[] = [];
+
+    for (const relPath of ['README.md', ...DOGFOOD_COUNT_DOCS.slice(1)]) {
+      const text = await readFile(path.join(ROOT, relPath), 'utf8');
+
+      /**
+       * **마크다운 링크는 라벨로 판정한다.** 사이트 루트를 가리키는 것 자체는
+       * 결함이 아니다 — README 는 *"첫 페이지(`/`)는 다운로드 얼굴이다"* 라고
+       * 정확히 설명하면서 루트를 가리키고, 그건 참인 문장이다. 결함은 라벨이
+       * **지도/데모를 약속**하면서 루트로 보내는 것이다.
+       */
+      for (const [, label, url] of text.matchAll(/\[([^\]]*)\]\(([^)]+)\)/g)) {
+        if (bareRoot(url) && PROMISE.test(label)) {
+          findings.push(`${relPath}: 링크 라벨 "${label}" 이 지도를 약속하는데 사이트 루트로 보낸다`);
+        }
+      }
+
+      /**
+       * 맨 URL 은 라벨이 없으므로 **앞줄**이 라벨 역할을 한다. 런치 포스트는
+       * 「… no install:」 다음 줄에 URL 만 놓는 형식이라, 줄 단위로만 보면 이
+       * 게이트가 조용히 통과한다 — 실제로 첫 판이 그렇게 통과했다.
+       */
+      const lines = text.split(/\r?\n/);
+      for (const [i, line] of lines.entries()) {
+        const trimmed = line.trim();
+        if (!bareRoot(trimmed) || !/^https?:\/\/\S+$/.test(trimmed)) continue;
+        if (PROMISE.test(`${lines[i - 1] ?? ''} ${trimmed}`)) {
+          findings.push(`${relPath}:${i + 1} 맨 URL 이 데모를 약속하며 사이트 루트로 보낸다`);
+        }
+      }
+    }
+
+    expect(findings).toEqual([]);
+  });
 });
