@@ -937,6 +937,15 @@
     animation: panelCrossfadeIn var(--motion-fast) var(--motion-ease) both;
   }
 
+  /* 실습 안내 띠의 문장 교체 — **같은 띠가 다음 문장이 된다.**
+     프레임 실측(2026-07-29): 이 자리가 화면에서 잉크 변화가 가장 큰데(diff
+     21.1) 전이가 없어 **98.6% 하드컷**이었고, 이징을 받는 건 진행 점(6px)
+     뿐이었다. 같은 키프레임·같은 토큰을 쓴다 — 새 어휘 0. `key` 교체로
+     앞으로 재생되므로 reverse 되감기 함정에 걸리지 않는다. */
+  .practice-step-crossfade {
+    animation: panelCrossfadeIn var(--motion-fast) var(--motion-ease) both;
+  }
+
   /* ── 설정 패널 전환 (Phase 3 C14, 2026-07-25) ────────────────────────────
      설정 시트는 lazy chunk 가 아니라 scrim·패널이 같은 createPortal 커밋에서
      함께 마운트된다. 다만 진입 애니메이션이 없어 scrim 배경만 먼저 칠해지고
@@ -2758,6 +2767,13 @@
          44px 승격. GlobalSearch 는 이미 --topology-search-sheet-close-size
          를 쓰고 있어 해당 토큰이 같은 media 블록에서 이미 커버됨. */
       --overlay-close-size: var(--touch-target-min);
+      /*
+       * 2026-07-29 — 같은 종류의 사각지대 하나 더. 문서함 헤더 타일은
+       * `--chrome-tile-size` 가 아니라 자기 토큰을 읽어서, 위 승격이 이
+       * 트리거들에 닿지 않았다(실측 34×34). 문서함은 `<lg` 에서도 열리므로
+       * 태블릿·분할창의 실제 인구가 있다.
+       */
+      --docs-header-tile-size: max(34px, var(--touch-target-min));
       /* 기록 목적지의 연결 셋업 동작(앱 받기 · 폴더 고르기 · 기록 시작하기).
          이 페이지가 하는 유일한 일이 그 버튼이라, 터치에서 36px 로 남으면
          페이지 전체가 목적을 잃는다. */

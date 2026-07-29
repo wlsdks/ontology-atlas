@@ -54,10 +54,21 @@ vi.mock("@/features/vault-ontology", () => ({
   useOntologyInsight: () => ({ insight: { nodes: [], edges: [] } }),
 }));
 
+const vaultState = { writable: true };
+
+// jsdom 에 클립보드가 없다. 읽기 전용 경로는 **복사가 성공해야** 실습이 끝나므로
+// (실패는 토스트로 말하고 실습을 열어 둔다 — 안 한 일을 했다고 하지 않는다)
+// 여기서 붙여 준다.
+Object.defineProperty(navigator, "clipboard", {
+  configurable: true,
+  value: { writeText: vi.fn(async () => undefined) },
+});
+
 vi.mock("@/features/docs-vault-local", () => ({
   useLocalVault: () => ({
-    status: "loaded",
-    handle: {},
+    // 공방의 `writable` 판정은 mode + status 를 본다 — 핸들이 아니다.
+    status: vaultState.writable ? "loaded" : "idle",
+    handle: vaultState.writable ? {} : null,
     manifest: { docs: [] },
     createDoc: mocks.createDoc,
     deleteDoc: mocks.deleteDoc,
@@ -156,5 +167,32 @@ describe("공방 실습", () => {
     window.history.replaceState({}, "", "/ko/ontology/studio/?mode=create");
     render(<OntologyStudioPage />);
     expect(screen.queryByTestId("studio-practice-rail")).not.toBeInTheDocument();
+  });
+
+  /**
+   * **읽기 전용에서도 실습은 끝난다.** 볼트를 아직 안 고른 사람이 이 실습의
+   * 대상인데, 초안은 그 갈래에서 마무리를 아예 안 띄웠다 — 안내 띠가
+   * "저장하면 폴더 안에 파일이 생깁니다" 에 멈췄고 **그 문장은 그 사람에게
+   * 거짓**이었다. 카운슬 두 자리가 서로 못 본 채 같은 결함을 1순위로 짚었다.
+   */
+  it("finishes the practice on a read-only vault — and promises no file it did not write", async () => {
+    vaultState.writable = false;
+    try {
+      render(<OntologyStudioPage />);
+      fireEvent.change(screen.getByTestId("studio-create-name"), {
+        target: { value: "결제 승인" },
+      });
+      await waitFor(() => expect(screen.getByTestId("studio-save")).toBeEnabled());
+      fireEvent.click(screen.getByTestId("studio-save"));
+
+      const cleanup = await screen.findByTestId("studio-practice-cleanup");
+      expect(cleanup).toBeInTheDocument();
+      // 디스크에 아무것도 안 앉았으므로 **지울 것을 약속하지 않는다.**
+      expect(screen.queryAllByTestId("studio-practice-delete-row")).toHaveLength(0);
+      expect(screen.queryByTestId("studio-practice-delete")).not.toBeInTheDocument();
+      expect(mocks.createDoc).not.toHaveBeenCalled();
+    } finally {
+      vaultState.writable = true;
+    }
   });
 });

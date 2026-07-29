@@ -78,3 +78,22 @@ export const OVERLAY_SPRING = { type: "spring", duration: 0.3, bounce: 0 } as co
  * topology-v2 스코프라 여기서 var() 직접 참조 금지 — 값만 맞춘다).
  */
 export const OVERLAY_SPRING_REDUCED = { duration: 0.12, ease: "linear" } as const;
+
+/**
+ * 모달 스크림의 페이드 — **오버레이가 뒤를 가리는 그 전이 하나.**
+ *
+ * 왜 상수인가: 이 값이 네 곳에 `transition={{ duration: reducedMotion ? 0.12 :
+ * 0.18 }}` 리터럴로 복제돼 있었다. 값 자체는 램프 위였지만 **`motion-token-mirror`
+ * 계약의 사정거리 밖**이라 게이트가 없었고, 이징은 framer 기본이라 "duration 을
+ * 받는 원소는 이징도 같은 패밀리" 규율의 반쪽만 지켜졌다.
+ *
+ * 2026-07-28 에 JS 측 duration 이 CSS 램프 밖으로 두 단(0.28·0.42) 흘러간 사고와
+ * **성립 조건이 같다** — 리터럴이 복제되면 언젠가 하나만 바뀐다. 상수로 올리면
+ * 그 계약이 자동으로 이 값을 덮는다.
+ *
+ * 스크림은 표면이 자리를 바꾸는 일(**이동**)이라 `base` 다.
+ */
+export const SCRIM_FADE = MOTION.base;
+
+/** reduced-motion 등가물 — 오버레이 규율과 같은 120ms 선형. */
+export const SCRIM_FADE_REDUCED = OVERLAY_SPRING_REDUCED;

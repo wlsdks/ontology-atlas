@@ -46,6 +46,7 @@ describe("practiceStep", () => {
 
 describe("planPracticeCleanup", () => {
   const base: PracticeArtifact = {
+    outcome: "written",
     slug: "capabilities/practice-node",
     title: "연습 노드",
     createdOriginSlug: null,
@@ -105,6 +106,17 @@ describe("planPracticeCleanup", () => {
       }),
     ).toEqual({
       deleteSlugs: ["capabilities/practice-node", "domains/practice-origin"],
+      detach: null,
+    });
+  });
+
+  /**
+   * **넘기기만 한 실습은 지울 것이 없다.** 디스크에 아무것도 안 앉았는데
+   * "이것을 지웁니다" 라고 하면 있지도 않은 파일을 약속하는 셈이다.
+   */
+  it("has nothing to take back when the practice only handed a command over", () => {
+    expect(planPracticeCleanup({ ...base, outcome: "copied" })).toEqual({
+      deleteSlugs: [],
       detach: null,
     });
   });

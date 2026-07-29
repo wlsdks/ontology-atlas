@@ -3,7 +3,7 @@
 import { useEffect, useRef, useState } from "react";
 import { motion, useReducedMotion } from "framer-motion";
 import { FileText, X } from "lucide-react";
-import { OVERLAY_SPRING, OVERLAY_SPRING_REDUCED } from "@/shared/motion";
+import { OVERLAY_SPRING, OVERLAY_SPRING_REDUCED, SCRIM_FADE, SCRIM_FADE_REDUCED } from "@/shared/motion";
 import type { CreateNodeKind } from "../lib/build-create-node";
 import type { StudioWriteTarget } from "../lib/resolve-write-target";
 
@@ -121,7 +121,7 @@ export function StudioMaterializeDialog({
       aria-label={labels.title}
       initial={{ opacity: 0 }}
       animate={{ opacity: 1 }}
-      transition={{ duration: reducedMotion ? 0.12 : 0.18 }}
+      transition={reducedMotion ? SCRIM_FADE_REDUCED : SCRIM_FADE}
       className="fixed inset-0 z-[60] flex items-center justify-center bg-[color:var(--overlay-scrim)] px-6"
       onClick={onCancel}
     >

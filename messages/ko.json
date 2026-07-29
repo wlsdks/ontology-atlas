@@ -313,7 +313,8 @@
         "name": "만들 개념의 이름을 지어 보세요. 팀에서 실제로 쓰는 말이면 가장 좋습니다.",
         "relate": "이 개념이 무엇과 이어지는지 한 군데만 골라 보세요. 네 방향 중 아무 곳이나 좋습니다.",
         "save": "다 됐습니다. 저장하면 폴더 안에 마크다운 파일 하나가 생깁니다.",
-        "done": "저장했습니다."
+        "done": "저장했습니다.",
+        "saveCopy": "다 됐습니다. 이 폴더는 읽기 전용이라, 저장을 누르면 에이전트에게 넘길 명령이 복사됩니다."
       },
       "progress": "{current} / {total}",
       "progressAria": "실습 진행",
@@ -327,7 +328,11 @@
       "removed": "「{name}」 을(를) 지웠습니다.",
       "removeFailed": "지우지 못했습니다 — {message}",
       "agentHint": "이걸 매번 손으로 안 하셔도 됩니다. Claude Code · Codex · Cursor 를 연결하거나 API 키를 넣으면, 같은 파일을 에이전트가 대신 씁니다.",
-      "agentAction": "AI 연결하기"
+      "agentAction": "AI 연결하기",
+      "copiedTitle": "명령을 넘겼습니다",
+      "copiedSummary": "이 폴더는 읽기 전용이라 파일을 만들지 않았어요. 대신 「{name}」 을(를) 만드는 명령을 복사해 뒀습니다.",
+      "copiedQuestion": "에이전트에게 붙여넣으면 그때 파일이 생깁니다. 직접 만들어 보려면 내 폴더를 먼저 고르세요.",
+      "copiedDone": "알겠어요"
     }
   },
   "liveActivity": {

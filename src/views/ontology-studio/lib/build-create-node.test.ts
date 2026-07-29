@@ -229,7 +229,7 @@ describe("buildRemovePacket", () => {
       'remove_relation(from: "capabilities/focal", to: "elements/parser", type: "depends_on", confirm: true)',
     );
     expect(buildRemovePacket("capabilities/focal", "relates", "capabilities/topology")).toBe(
-      'remove_relation(from: "capabilities/focal", to: "capabilities/topology", type: "related_to", confirm: true)',
+      'remove_relation(from: "capabilities/focal", to: "capabilities/topology", type: "relates", confirm: true)',
     );
   });
 
@@ -245,7 +245,7 @@ describe("buildRemovePacket", () => {
 describe("buildEditPacket", () => {
   it("non-is_a → non-is_a is one atomic replace_relation", () => {
     expect(buildEditPacket("capabilities/focal", "relates", "dependsOn", "capabilities/topology")).toBe(
-      'replace_relation(from: "capabilities/focal", oldTo: "capabilities/topology", oldType: "related_to", newTo: "capabilities/topology", newType: "depends_on", confirm: true)',
+      'replace_relation(from: "capabilities/focal", oldTo: "capabilities/topology", oldType: "relates", newTo: "capabilities/topology", newType: "depends_on", confirm: true)',
     );
   });
 

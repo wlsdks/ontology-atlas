@@ -77,7 +77,17 @@ export function practiceStepIndex(step: PracticeStep): number {
  * — 실습이 볼트를 더럽히고 끝나는 셈이라 실습의 약속을 정면으로 깬다.
  */
 export interface PracticeArtifact {
-  /** 실습이 만든 노드 문서의 slug. */
+  /**
+   * 이 실습이 **디스크에 쓴 것인가, 명령을 넘긴 것인가.**
+   *
+   * 볼트를 아직 안 고른 사람(첫 방문의 다수)은 읽기 전용이라 저장이 파일을
+   * 만들지 않고 에이전트에게 넘길 명령을 복사한다. 그 경우에도 실습은 **끝나야**
+   * 한다 — 초안에서 이 갈래를 빼먹어 읽기 전용 사용자는 안내 띠가 3/4
+   * (「저장하면 폴더 안에 마크다운 파일 하나가 생깁니다」)에 영구히 멈췄고,
+   * **그 문장은 그 사람에게 거짓이었다.** 거짓말하는 안내는 없는 안내보다 나쁘다.
+   */
+  outcome: "written" | "copied";
+  /** 실습이 만든(또는 만들 것을 명령으로 넘긴) 노드 문서의 slug. */
   slug: string;
   /** 화면에 보여 줄 이름. */
   title: string;
@@ -106,6 +116,9 @@ export interface PracticeCleanupPlan {
 }
 
 export function planPracticeCleanup(artifact: PracticeArtifact): PracticeCleanupPlan {
+  // 넘기기만 한 실습은 **지울 것이 없다.** 디스크에 아무것도 안 앉았으므로
+  // "이것을 지웁니다" 는 있지도 않은 파일을 약속하는 셈이 된다.
+  if (artifact.outcome === "copied") return { deleteSlugs: [], detach: null };
   const deleteSlugs = [artifact.slug];
   if (artifact.createdOriginSlug) deleteSlugs.push(artifact.createdOriginSlug);
   return {

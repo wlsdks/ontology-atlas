@@ -313,7 +313,8 @@
         "name": "Name the concept you want to make. A word your team actually says works best.",
         "relate": "Pick one thing this connects to. Any of the four directions is fine.",
         "save": "That's enough. Saving writes one markdown file into your folder.",
-        "done": "Saved."
+        "done": "Saved.",
+        "saveCopy": "That's enough. This folder is read-only, so saving copies the command for your agent instead."
       },
       "progress": "{current} / {total}",
       "progressAria": "Practice progress",
@@ -327,7 +328,11 @@
       "removed": "Removed “{name}”.",
       "removeFailed": "Could not remove it — {message}",
       "agentHint": "You don't have to do this by hand every time. Connect Claude Code, Codex or Cursor — or add an API key — and an agent writes the same files for you.",
-      "agentAction": "Connect an AI"
+      "agentAction": "Connect an AI",
+      "copiedTitle": "Handed the command over",
+      "copiedSummary": "This folder is read-only, so nothing was written. Instead, the command that creates “{name}” is on your clipboard.",
+      "copiedQuestion": "Paste it to your agent and the file appears then. To make one yourself, pick your own folder first.",
+      "copiedDone": "Got it"
     }
   },
   "liveActivity": {

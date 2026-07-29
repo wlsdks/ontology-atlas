@@ -3,7 +3,7 @@
 import { useEffect, useRef } from "react";
 import { motion, useReducedMotion } from "framer-motion";
 import { FileText, Sparkles } from "lucide-react";
-import { OVERLAY_SPRING, OVERLAY_SPRING_REDUCED } from "@/shared/motion";
+import { OVERLAY_SPRING, OVERLAY_SPRING_REDUCED, SCRIM_FADE, SCRIM_FADE_REDUCED } from "@/shared/motion";
 import type { PracticeCleanupPlan } from "../lib/studio-practice-guide";
 
 /**
@@ -49,6 +49,7 @@ export interface StudioPracticeCleanupLabels {
 }
 
 export function StudioPracticeCleanup({
+  outcome,
   plan,
   labels,
   busy,
@@ -56,6 +57,14 @@ export function StudioPracticeCleanup({
   onKeep,
   onAgentAction,
 }: {
+  /**
+   * 이 실습이 **디스크에 썼는가, 명령을 넘겼는가.** 읽기 전용 볼트에서는
+   * 저장이 파일을 만들지 않고 에이전트에게 넘길 명령을 복사한다. 그때도
+   * 실습은 끝나야 하지만, **되돌릴 것이 없으므로 다른 말을 해야 한다** —
+   * 지울 파일 목록도 「지우기」 버튼도 없다. 있지도 않은 파일을 지우겠다고
+   * 하면 그게 거짓말이다.
+   */
+  outcome: "written" | "copied";
   plan: PracticeCleanupPlan;
   labels: StudioPracticeCleanupLabels;
   /** 삭제가 진행 중이면 두 버튼 모두 잠근다 — 두 번 눌러 두 번 지우지 않는다. */
@@ -83,6 +92,10 @@ export function StudioPracticeCleanup({
     const onKey = (e: KeyboardEvent) => {
       if (e.key === "Escape") {
         e.stopPropagation();
+        // 삭제가 도는 중이면 Esc 는 아무것도 안 한다. 닫아도 삭제는 계속되므로,
+        // 「남겨 두기」의 뜻과 실제 결과가 어긋난다 — 버튼은 이미 `busy` 로
+        // 잠가 두고 키보드만 열어 두면 그 잠금이 반쪽이다.
+        if (busy) return;
         // Esc = 남겨 두기. 취소가 파괴 쪽으로 떨어지면 안 된다.
         onKeep();
         return;
@@ -111,7 +124,7 @@ export function StudioPracticeCleanup({
     };
     window.addEventListener("keydown", onKey, true);
     return () => window.removeEventListener("keydown", onKey, true);
-  }, [onKeep]);
+  }, [onKeep, busy]);
 
   return (
     <motion.div
@@ -122,7 +135,7 @@ export function StudioPracticeCleanup({
       aria-label={labels.dialogAria}
       initial={{ opacity: 0 }}
       animate={{ opacity: 1 }}
-      transition={{ duration: reducedMotion ? 0.12 : 0.18 }}
+      transition={reducedMotion ? SCRIM_FADE_REDUCED : SCRIM_FADE}
       className="fixed inset-0 z-[60] flex items-center justify-center bg-[color:var(--overlay-scrim)] px-6"
     >
       <motion.div
@@ -145,6 +158,7 @@ export function StudioPracticeCleanup({
 
           {/* 무엇이 사라지는지 파일 이름으로 말한다 — "정리합니다" 같은
               동사만으로는 사용자가 무엇을 승인하는지 알 수 없다. */}
+          {outcome === "written" ? (
           <ul className="flex flex-col gap-1.5">
             {plan.deleteSlugs.map((slug) => (
               <li
@@ -179,6 +193,7 @@ export function StudioPracticeCleanup({
               </li>
             ) : null}
           </ul>
+          ) : null}
 
           <p className="text-body tracking-body leading-body text-[color:var(--color-text-secondary)] [word-break:keep-all]">
             {labels.question}
@@ -186,22 +201,24 @@ export function StudioPracticeCleanup({
         </div>
 
         <div className="flex gap-2 border-t border-[color:var(--color-divider)] px-5 py-3">
+          {outcome === "written" ? (
           <button
             type="button"
             data-testid="studio-practice-delete"
             disabled={busy}
             onClick={onDelete}
-            className="flex h-9 flex-1 items-center justify-center rounded-chip border border-[color:var(--color-border-strong)] text-body tracking-body text-[color:var(--color-text-secondary)] transition-colors hover:bg-[color:var(--color-overlay-1)] hover:text-[color:var(--color-text-primary)] disabled:opacity-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--color-indigo-a46)] focus-visible:ring-inset"
+            className="flex h-8 min-h-[var(--overlay-close-size)] flex-1 items-center justify-center rounded-chip border border-[color:var(--color-border-strong)] text-body tracking-body text-[color:var(--color-text-secondary)] transition-colors hover:bg-[color:var(--color-overlay-1)] hover:text-[color:var(--color-text-primary)] disabled:opacity-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--color-indigo-a46)] focus-visible:ring-inset"
           >
             {labels.deleteLabel}
           </button>
+          ) : null}
           <button
             ref={keepRef}
             type="button"
             data-testid="studio-practice-keep"
             disabled={busy}
             onClick={onKeep}
-            className="flex h-9 flex-1 items-center justify-center rounded-chip border border-[color:var(--color-indigo-line-a45)] bg-[color:var(--color-indigo-a16)] text-body tracking-body font-semibold text-[color:var(--color-indigo-text-soft)] transition-colors hover:bg-[color:var(--color-indigo-a24)] disabled:opacity-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--color-indigo-a46)] focus-visible:ring-inset"
+            className="flex h-8 min-h-[var(--overlay-close-size)] flex-1 items-center justify-center rounded-chip border border-[color:var(--color-indigo-line-a45)] bg-[color:var(--color-indigo-a16)] text-body tracking-body font-semibold text-[color:var(--color-indigo-text-soft)] transition-colors hover:bg-[color:var(--color-indigo-a24)] disabled:opacity-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--color-indigo-a46)] focus-visible:ring-inset"
           >
             {labels.keepLabel}
           </button>
@@ -210,7 +227,7 @@ export function StudioPracticeCleanup({
         {/* 해 본 직후에만 성립하는 문장. 첫 화면에 있으면 광고문이다. */}
         <div className="flex items-start gap-2 border-t border-[color:var(--color-divider)] bg-[color:var(--color-panel)] px-5 py-3">
           <Sparkles size={14} aria-hidden className="mt-0.5 flex-none text-[color:var(--color-text-tertiary)]" />
-          <p className="min-w-0 flex-1 text-caption leading-caption text-[color:var(--color-text-tertiary)] [word-break:keep-all]">
+          <p className="min-w-0 flex-1 text-body leading-body text-[color:var(--color-text-tertiary)] [word-break:keep-all]">
             {labels.agentHint}
             {onAgentAction && labels.agentAction ? (
               <>

@@ -30,6 +30,9 @@ import type { CreateCandidate, CreateNodeKind } from "../lib/build-create-node";
 import type { PickerDiscovery, PickerSuggestionReason } from "../lib/build-picker-discovery";
 import type { DeltaPreviewLayout, DeltaSatellite, DeltaSatelliteState } from "../lib/build-delta-preview";
 
+/** 무대 등장의 두 번째 박자 — 잎(레인)이 카드보다 반 박자 늦게 정착한다. */
+const STAGE_LANE_DELAY_MS = 40;
+
 /**
  * 나침 무대 (Compass Stage) — the ontology WRITE surface. One focal node sits
  * center-stage; the four relation types are nailed to fixed compass bearings
@@ -237,6 +240,11 @@ export interface StudioCompassProps {
   onFill: (relation: StudioRelation, candidate: CreateCandidate) => void;
   onSave: () => void;
   onExit: () => void;
+  /**
+   * 헤더 바로 아래, 무대 위에 놓이는 띠 — 지금은 실습 안내가 쓴다. 흐름
+   * 안이라 헤더 요소와 겹칠 수 없다.
+   */
+  banner?: React.ReactNode;
   /**
    * 오른쪽 에이전트 도크 여닫기. **없으면 버튼을 그리지 않는다** — 웹이나
    * 좁은 폭처럼 도크가 설 수 없는 자리에 열리지 않는 문을 두지 않는다.
@@ -556,6 +564,7 @@ export function StudioCompass(props: StudioCompassProps) {
     onFill,
     onSave,
     onExit,
+    banner,
     agentDockOpen,
     onToggleAgentDock,
   } = props;
@@ -1056,7 +1065,23 @@ export function StudioCompass(props: StudioCompassProps) {
           </div>
         </div>
 
-        {/* one calm frame prompt — top center */}
+        {/* 무대 상단 중앙 — 평소엔 한 줄 프레임 문구가, 실습 중엔 안내 띠가
+            **같은 자리를** 쓴다.
+
+            초안에서는 띠를 `fixed` 로 뷰포트 상단에 얹었다. 실측 결과 헤더와
+            **640×40px 겹쳤고**, 1024~1382px 에서는 헤더 검색창을 실제로 클릭
+            차단했다(elementFromPoint 로 확인). 소유자도 "이상하게 겹쳐져 있다"
+            고 제보했다.
+
+            자리를 여기로 옮기면 셋이 한 번에 풀린다: ① 크롬과 겹칠 수 없다
+            ② 무대 폭 기준이라 도크를 여닫아도 따라온다 ③ **같은 종류의 문장
+            둘이 동시에 말하던 것**(프레임 문구 + 띠)이 사라진다 — 안내가
+            둘이면 안내가 없는 것이다. */}
+        {banner ? (
+          <div className="absolute left-1/2 top-4 z-[4] w-full max-w-[640px] -translate-x-1/2 px-4">
+            {banner}
+          </div>
+        ) : (
         <div className="absolute left-1/2 top-4 z-[4] flex -translate-x-1/2 flex-col items-center gap-1 text-center">
           {/* #6 — was `text-callout` (unregistered ramp step → root 16px). Pin to
               the nearest real step so it stays the calm largest label, no drift. */}
@@ -1073,6 +1098,7 @@ export function StudioCompass(props: StudioCompassProps) {
             </div>
           ) : null}
         </div>
+        )}
 
         {/* rare relations — top right. Not built yet: honest disabled "곧 제공"
             rather than a dead affordance (house rule: no dead click targets). */}
@@ -1169,14 +1195,20 @@ export function StudioCompass(props: StudioCompassProps) {
           />
 
           {/* lanes — staggered entrance: card is 0ms, each lane +40ms after. */}
-          {layouts.map(({ view, layout }, laneIndex) => (
+          {/* **두 박자다 — 네 박자가 아니다.** 초안은 레인마다 40ms 씩 밀어
+              40/80/120/160 이었는데, 마지막 레인이 같은 입력의 120ms 창 **밖**
+              이라 두 사건으로 읽혔다(헌장: 한 입력 = 한 사건). 대칭 4방위
+              사이의 직렬 계단은 인과가 아니라 순서 장식이다 — 시차를 0으로
+              해도 사라지는 설명은 "카드 먼저, 잎 나중" 하나뿐이라 그 한 박자만
+              남긴다. (카운슬 「모션」 코드 실측, 2026-07-29) */}
+          {layouts.map(({ view, layout }) => (
             <LaneRender
               key={view.bearing}
               view={view}
               layout={layout}
               labels={labels}
               kindLabelFor={kindLabelFor}
-              stageDelayMs={reduceMotion ? 0 : 40 * (laneIndex + 1)}
+              stageDelayMs={reduceMotion ? 0 : STAGE_LANE_DELAY_MS}
               registerSat={registerSat}
               onOpen={() => openPicker(view.relation)}
               onOpenNode={props.onOpenNode ? guardedOpen : undefined}

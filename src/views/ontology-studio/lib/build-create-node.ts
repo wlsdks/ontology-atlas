@@ -57,7 +57,12 @@ export const RELATION_FRONTMATTER_KEY: Record<CreateRelationType, string> = {
 export const RELATION_EDGE_TYPE: Record<Exclude<CreateRelationType, "isA">, string> = {
   contains: "contains",
   dependsOn: "depends_on",
-  relates: "related_to",
+  // 2026-07-29 — `related_to` 는 **서버가 모르는 방언이었다.** MCP 의
+  // `WRITE_RELATION_TYPE_VALUES` 에 그 값이 없어, 나침반 LEFT(비슷한 것)로
+  // 만든 패킷은 `invalid_arguments` 로 전량 반려됐다. 읽기 전용 볼트에서는
+  // 이 패킷이 **유일한 쓰기 경로**라 그 방위가 통째로 죽어 있던 셈이다.
+  // 디자인 카운슬 「핸드오프」가 실제 서버를 띄워 실행으로 잡았다.
+  relates: "relates",
 };
 
 /** A pickable existing node — the frontmatter-writable `ref` is precomputed. */

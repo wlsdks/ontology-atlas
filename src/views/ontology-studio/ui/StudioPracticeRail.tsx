@@ -70,7 +70,22 @@ export function StudioPracticeRail({
           />
         ))}
       </span>
-      <p className="min-w-0 flex-1 text-caption leading-caption text-[color:var(--color-text-secondary)] [word-break:keep-all]">
+      {/* **가르치는 문장은 본문 무게다.** 초안에서 `text-caption`(9.5px —
+          램프 주석의 역할은 "마이크로 라벨·범례·타임스탬프")을 썼더니, 배우는
+          사람이 읽어야 할 주 지시문이 화면에서 가장 작은 글자가 됐다. 카운슬
+          두 자리가 서로 못 본 채 같은 지점을 짚었다(2026-07-29). */}
+      {/* **같은 띠가 다음 문장이 된다.** 프레임 실측: 이 자리가 화면에서 잉크
+          변화가 가장 큰데(diff 21.1) 전이가 **없어서 98.6% 하드컷**이었고,
+          이징을 받는 건 잉크가 가장 작은 진행 점(6px)뿐이었다 — 값 lint 는
+          무결점 통과하면서 화면에선 1프레임인 그 유형이다.
+
+          `key` 를 단계에 묶어 **앞으로 재생**시킨다(퇴장을 reverse 로 되감으면
+          같은 원소에서 재생되지 않는다는 계약). 새 어휘를 만들지 않고 도크의
+          상태 교체와 같은 문법을 쓴다 — "같은 박스가 다른 상태가 된다". */}
+      <p
+        key={step}
+        className="practice-step-crossfade min-w-0 flex-1 text-body leading-body text-[color:var(--color-text-secondary)] [word-break:keep-all]"
+      >
         {labels.instruction}
       </p>
       <span className="flex-none text-label text-[color:var(--color-text-quaternary)] tabular-nums">
@@ -80,7 +95,7 @@ export function StudioPracticeRail({
         type="button"
         data-testid="studio-practice-quit"
         onClick={onQuit}
-        className="flex-none rounded-chip px-2 py-1 text-label text-[color:var(--color-text-tertiary)] transition-colors hover:bg-[color:var(--color-overlay-1)] hover:text-[color:var(--color-text-secondary)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--color-indigo-a46)]"
+        className="flex-none touch-hit-expand rounded-chip px-2 py-1 text-label text-[color:var(--color-text-tertiary)] transition-colors hover:bg-[color:var(--color-overlay-1)] hover:text-[color:var(--color-text-secondary)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--color-indigo-a46)]"
       >
         {labels.quit}
       </button>
