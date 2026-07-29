@@ -145,7 +145,7 @@ describe('OntologyStarterCta', () => {
       <OntologyStarterCta
         docCount={3}
         onScaffold={vi.fn()}
-        vaultPath="/Users/jinan/Team Vault/docs/ontology"
+        vaultPath="/Users/dana/Team Vault/docs/ontology"
       />,
     );
 
@@ -153,18 +153,18 @@ describe('OntologyStarterCta', () => {
 
     await waitFor(() => expect(copyTextMock).toHaveBeenCalledTimes(1));
     expect(copyTextMock).toHaveBeenCalledWith(
-      buildOntologyStarterCliVerifyCommands('/Users/jinan/Team Vault/docs/ontology'),
+      buildOntologyStarterCliVerifyCommands('/Users/dana/Team Vault/docs/ontology'),
     );
     expect(copyTextMock).toHaveBeenCalledWith(
       expect.stringContaining(
-        "node $ATLAS/cli/src/index.mjs validate '/Users/jinan/Team Vault/docs/ontology'",
+        "node $ATLAS/cli/src/index.mjs validate '/Users/dana/Team Vault/docs/ontology'",
       ),
     );
   });
 
   it('vault 절대경로에 작은따옴표가 있어도 JSON gate 명령을 shell-safe 하게 만든다', () => {
-    expect(buildOntologyStarterJsonGateCommand("/Users/jinan/Client's Vault")).toContain(
-      "node $ATLAS/cli/src/index.mjs agent-brief '/Users/jinan/Client'\\''s Vault' --verify-fallbacks --json",
+    expect(buildOntologyStarterJsonGateCommand("/Users/dana/Client's Vault")).toContain(
+      "node $ATLAS/cli/src/index.mjs agent-brief '/Users/dana/Client'\\''s Vault' --verify-fallbacks --json",
     );
   });
 });

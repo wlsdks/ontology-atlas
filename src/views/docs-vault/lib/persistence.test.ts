@@ -229,7 +229,7 @@ describe("capability-gated local vault source", () => {
         source: "local",
         localVaultStatus: "loaded",
         currentRootPath: "/private/tmp/ontology-atlas-editor-smoke",
-        dogfoodRootPath: "/Users/jinan/side-project/ontology-atlas/docs/ontology",
+        dogfoodRootPath: "/Users/dana/side-project/ontology-atlas/docs/ontology",
       }),
     ).toBe(true);
     expect(
@@ -238,8 +238,8 @@ describe("capability-gated local vault source", () => {
         isDesktopRuntime: true,
         source: "local",
         localVaultStatus: "loaded",
-        currentRootPath: "/Users/jinan/side-project/ontology-atlas/docs/ontology",
-        dogfoodRootPath: "/Users/jinan/side-project/ontology-atlas/docs/ontology",
+        currentRootPath: "/Users/dana/side-project/ontology-atlas/docs/ontology",
+        dogfoodRootPath: "/Users/dana/side-project/ontology-atlas/docs/ontology",
       }),
     ).toBe(false);
     expect(
@@ -249,7 +249,7 @@ describe("capability-gated local vault source", () => {
         source: "local",
         localVaultStatus: "idle",
         currentRootPath: null,
-        dogfoodRootPath: "/Users/jinan/side-project/ontology-atlas/docs/ontology",
+        dogfoodRootPath: "/Users/dana/side-project/ontology-atlas/docs/ontology",
       }),
     ).toBe(false);
     expect(
@@ -259,7 +259,7 @@ describe("capability-gated local vault source", () => {
         source: "local",
         localVaultStatus: "loaded",
         currentRootPath: "/private/tmp/ontology-atlas-editor-smoke",
-        dogfoodRootPath: "/Users/jinan/side-project/ontology-atlas/docs/ontology",
+        dogfoodRootPath: "/Users/dana/side-project/ontology-atlas/docs/ontology",
       }),
     ).toBe(false);
   });
@@ -271,11 +271,11 @@ describe("capability-gated local vault source", () => {
         isDesktopRuntime: true,
         source: "local",
         localVaultStatus: "loaded",
-        currentRootPath: "/Users/jinan/side-project/oh-my-ontology/docs/ontology",
-        dogfoodRootPath: "/Users/jinan/side-project/ontology-atlas/docs/ontology",
+        currentRootPath: "/Users/dana/side-project/oh-my-ontology/docs/ontology",
+        dogfoodRootPath: "/Users/dana/side-project/ontology-atlas/docs/ontology",
         dogfoodRootPaths: [
-          "/Users/jinan/side-project/ontology-atlas/docs/ontology",
-          "/Users/jinan/side-project/oh-my-ontology/docs/ontology",
+          "/Users/dana/side-project/ontology-atlas/docs/ontology",
+          "/Users/dana/side-project/oh-my-ontology/docs/ontology",
         ],
       }),
     ).toBe(false);

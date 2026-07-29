@@ -91,7 +91,30 @@ export function useDialogFocusTrap<T extends HTMLElement>({
       if (!restoreFocus) return;
       const previous = previousFocusRef.current;
       previousFocusRef.current = null;
-      if (previous?.isConnected) previous.focus({ preventScroll: true });
+      if (previous?.isConnected) {
+        previous.focus({ preventScroll: true });
+        return;
+      }
+      /**
+       * **여는 컨트롤이 사라졌어도 `body` 로 떨어뜨리지 않는다**
+       * (2026-07-29 키보드 실측).
+       *
+       * 단축키 시트를 여는 버튼은 시트가 켜지면 **언마운트된다** — 시트가
+       * 세우는 `topologyBlockingOverlayActive` 가 그 버튼의 렌더 조건을
+       * 끄기 때문이다. 그래서 닫을 때 돌려줄 원소가 이미 없고, 포커스가
+       * `body` 로 갔다. 그 다음 Tab 은 문서 처음(건너뛰기 링크)부터
+       * 다시 시작한다 — 실측으로 원래 자리에서 29 정거장 뒤였다.
+       *
+       * 같은 시트를 **살아남는 원소**(자동 정렬 타일)에서 `?` 로 열면
+       * 복원이 정상이었다. 즉 이건 트랩의 결함이 아니라 "돌아갈 곳이
+       * 사라지는 경우"의 미처리다.
+       *
+       * `<main>` 은 건너뛰기 링크 수정으로 이미 포커스를 받을 수 있다.
+       * 페이지 처음이 아니라 **본문 시작**으로 돌려주면, 사라진 트리거
+       * 근처에서 다시 시작할 수 있다.
+       */
+      const main = document.querySelector<HTMLElement>("main#main");
+      if (main) main.focus({ preventScroll: true });
     };
   }, [initialFocus, open, restoreFocus]);
 

@@ -23,7 +23,32 @@ export function compileOntology(docs, options = {}) {
   const nodeMap = new Map();
   const aliasEntries = new Map();
 
-  for (const doc of docs) {
+  /**
+   * **`kind:` 없는 `.md` 는 노드가 아니다** (2026-07-29 실측).
+   *
+   * `AGENTS.md` 가 계약을 이렇게 적는다: *"each `.md` with a frontmatter
+   * `kind:` is an ontology node"*. `list`·`validate`·웹 런타임
+   * (`deriveDocNode` 는 kind 가 비면 `null` 을 낸다)은 그 계약을 지켰는데,
+   * 컴파일러만 모든 `.md` 를 노드로 받았다. 그래서 볼트에 평범한 메모 한 장만
+   * 있어도:
+   *
+   *   list 97 · compile 98 · overview 98      ← 같은 볼트, 다른 숫자
+   *   compile --summary: nodeCount 4, byKind { domain: 1 }   ← 한 산출물 안에서 모순
+   *
+   * 게다가 kind 없는 노드가 `overview`/`hubs` 의 결과 계약(비어 있지 않은
+   * `kind` 요구)에 걸려 **명령 전체가 exit 2** 로 죽었다 — 파일 이름도 안
+   * 알려주는 내부 문자열과 함께, 방금 `validate` 가 통과시킨 볼트에서.
+   *
+   * 문서·검증기·웹이 이미 한쪽에 서 있으므로 컴파일러를 그쪽으로 옮긴다.
+   * 세는 범위가 달라지는 것이 아니라, **원래 계약이던 범위로 돌아간다.**
+   */
+  const graphDocs = docs.filter((doc) => {
+    const kind = doc?.frontmatter?.kind;
+    return typeof kind === 'string' && kind.trim() !== '';
+  });
+  const skippedNonNodeCount = docs.length - graphDocs.length;
+
+  for (const doc of graphDocs) {
     nodeMap.set(doc.slug, doc);
     addAlias(aliasEntries, doc.slug, doc.slug);
     const tail = doc.slug.split('/').pop();
@@ -58,7 +83,7 @@ export function compileOntology(docs, options = {}) {
   const edges = [];
   const edgeKeys = new Set();
   const canonicalizationActions = [];
-  for (const doc of docs) {
+  for (const doc of graphDocs) {
     const frontmatterPatch = {};
     const keys = [];
     for (const key of GRAPH_ARRAY_KEYS) {
@@ -115,7 +140,7 @@ export function compileOntology(docs, options = {}) {
     `${a.from}:${a.via}:${a.to}:${a.ref}`.localeCompare(`${b.from}:${b.via}:${b.to}:${b.ref}`),
   );
 
-  const nodes = [...docs]
+  const nodes = [...graphDocs]
     .map((doc) => ({
       slug: doc.slug,
       kind: doc.frontmatter?.kind,
@@ -190,6 +215,10 @@ export function compileOntology(docs, options = {}) {
       graphHash,
       maxMtime,
       nodeCount,
+    skippedNonNodeCount,
+      // 노드가 아닌 `.md`(kind 없음) 몇 장을 지나쳤는지 — 조용히 건너뛰지
+      // 않는다. 볼트에 평범한 메모가 섞이는 건 정상이라 issue 는 아니다.
+      skippedNonNodeCount,
       edgeCount,
       resolvedEdgeCount,
       externalEdgeCount,

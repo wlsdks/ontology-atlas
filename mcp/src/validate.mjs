@@ -49,6 +49,9 @@ export const VAULT_ISSUE_CODE_VALUES = Object.freeze([
   'missing-expected-field',
   'non-canonical-graph-array',
   'dangling-graph-reference',
+  // 두 문서가 같은 canonical slug 를 주장하는 상태 (2026-07-29 실측).
+  // 파일 단위 검사로는 원리적으로 못 잡는다 — 한 파일만 보면 완벽히 정상이다.
+  'duplicate-slug',
 ]);
 
 export const KNOWN_VAULT_KINDS = [

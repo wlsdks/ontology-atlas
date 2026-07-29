@@ -56,7 +56,7 @@ vi.mock('@/entities/docs-vault', () => docsVault);
 import { useLocalVaultInternal } from './use-local-vault';
 
 function desktopRecord(): LocalFsHandleRecord {
-  const rootPath = '/Users/jinan/side-project/ontology-atlas/docs/ontology';
+  const rootPath = '/Users/dana/side-project/ontology-atlas/docs/ontology';
   return {
     id: 'current',
     handle: { kind: 'directory', name: 'ontology', rootPath } as unknown as FileSystemDirectoryHandle,

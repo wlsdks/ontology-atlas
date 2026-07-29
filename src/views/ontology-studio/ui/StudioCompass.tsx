@@ -870,17 +870,23 @@ export function StudioCompass(props: StudioCompassProps) {
   // 관계 편집 카드 · 미리보기 · 작업중 패널엔 Esc 가 있는데 피커는 없어서, 검색
   // 입력에 포커스가 들어간 뒤 키보드만으로 빠져나올 방법이 없었다. 닫힌 뒤
   // 포커스는 소켓 트리거에 남는다(앵커 비-모달 문법).
+  //
+  // **`closePicker` 를 통과해야 그 약속이 지켜진다** (2026-07-29 키보드 실측).
+  // 이 핸들러가 `setOpenRelation(null)` 을 직접 불러서, 바로 위 주석이 약속한
+  // 포커스 반환이 Esc 경로에서만 일어나지 않았다 — `document.activeElement` 가
+  // `body` 로 떨어졌고, 그 다음 Tab 은 문서 처음(건너뛰기 링크)부터 다시
+  // 시작했다. 타이핑하던 검색어도 함께 사라지므로 손실이 두 겹이다.
   useEffect(() => {
     if (!openRelation) return;
     const onKey = (event: KeyboardEvent) => {
       if (event.key !== "Escape" || event.defaultPrevented) return;
       event.preventDefault();
-      setOpenRelation(null);
+      closePicker();
       setQuery("");
     };
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
-  }, [openRelation]);
+  }, [openRelation, closePicker]);
 
   const saveAllowed = props.canSave !== false;
   const effectiveSummary = saveAllowed ? (props.summary ?? null) : null;

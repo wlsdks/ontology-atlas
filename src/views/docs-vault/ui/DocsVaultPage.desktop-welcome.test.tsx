@@ -2,6 +2,7 @@ import { fireEvent, render, screen, waitFor } from "@testing-library/react";
 import type { ReactNode } from "react";
 import { describe, expect, it, vi } from "vitest";
 import { DesktopVaultWelcome } from "./parts/DesktopVaultWelcome";
+import { DOGFOOD_VAULT_PATH } from "../lib/dogfood-vault-path";
 
 vi.mock("@/i18n/navigation", () => ({
   Link: ({
@@ -27,7 +28,7 @@ const messages: Record<string, string> = {
   "desktopWelcome.title": "로컬 온톨로지 저장소를 열거나 만드세요",
   "desktopWelcome.body": "마크다운 폴더 하나를 온톨로지 저장소로 선택하세요.",
   "desktopWelcome.dogfoodTitle": "이 repo의 docs/ontology를 온톨로지 저장소로 여세요",
-  "desktopWelcome.dogfoodBody": "폴더 선택기에서 /Users/jinan/side-project/ontology-atlas/docs/ontology 를 선택합니다.",
+  "desktopWelcome.dogfoodBody": "폴더 선택기에서 /Users/dana/side-project/ontology-atlas/docs/ontology 를 선택합니다.",
   "desktopWelcome.copyDogfoodPath": "경로 복사",
   "desktopWelcome.copyDogfoodPathCopied": "복사됨",
   "desktopWelcome.copyDogfoodPathFailed": "복사 실패",
@@ -87,7 +88,13 @@ function renderWelcome(showDogfoodHint: boolean) {
 }
 
 describe("DesktopVaultWelcome dogfood handoff", () => {
-  it("copies the exact docs/ontology path from the dogfood welcome", async () => {
+  /**
+   * 복사되는 값은 **이 빌드에 설정된 경로**여야 한다 — 종전엔 유지보수자의
+   * 홈 경로가 소스 상수였고 이 테스트도 그 문자열을 기대값으로 적었다.
+   * 이제 값은 `NEXT_PUBLIC_DOGFOOD_VAULT_PATHS` 에서 오므로, 테스트도 경로
+   * 문자열이 아니라 **같은 출처를 쓰는지**를 잰다(공개 빌드에서는 빈 문자열).
+   */
+  it("copies exactly the configured dogfood path", async () => {
     const writeText = vi.fn().mockResolvedValue(undefined);
     Object.assign(navigator, {
       clipboard: { writeText },
@@ -98,9 +105,7 @@ describe("DesktopVaultWelcome dogfood handoff", () => {
     fireEvent.click(screen.getByRole("button", { name: "경로 복사" }));
 
     await waitFor(() => {
-      expect(writeText).toHaveBeenCalledWith(
-        "/Users/jinan/side-project/ontology-atlas/docs/ontology",
-      );
+      expect(writeText).toHaveBeenCalledWith(DOGFOOD_VAULT_PATH);
     });
     await waitFor(() => {
       expect(screen.getByRole("button", { name: "경로 복사 · 복사됨" })).toBeInTheDocument();

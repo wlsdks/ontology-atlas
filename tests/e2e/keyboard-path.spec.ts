@@ -1,4 +1,5 @@
 import { test, expect } from "@playwright/test";
+import { seedFirstRunSeen } from "./first-run-seed";
 
 /**
  * 키보드 경로 계약 — **합성 이벤트로는 잴 수 없는 층**.
@@ -80,5 +81,84 @@ test.describe("키보드 경로 (신뢰 이벤트)", () => {
     await expect(page.getByTestId("topology-node-popover-positioner")).toHaveCount(0, {
       timeout: 5000,
     });
+  });
+});
+
+/**
+ * **포커스는 `<body>` 로 떨어지지 않는다.**
+ *
+ * 2026-07-29 키보드 실측이 잡은 두 자리. 둘 다 "닫으면 body 로 간다" 는 같은
+ * 증상인데 원인이 반대편에 있었다.
+ *
+ * - **공방 소켓 피커**: 전역 Escape 핸들러가 `setOpenRelation(null)` 을 직접
+ *   불러 포커스 반환 코드를 건너뛰었다. 그 위 주석은 "포커스는 소켓 트리거에
+ *   남는다" 고 약속하고 있었다. 타이핑하던 검색어까지 함께 사라져 손실이 두
+ *   겹이다.
+ * - **단축키 시트**: 여는 버튼이 시트가 켜지는 순간 언마운트돼서, 트랩이
+ *   포커스를 캡처할 때 이미 `document.activeElement === body` 였다.
+ *   `body.isConnected` 는 언제나 참이라 복원 분기는 성공한 것처럼 보이면서
+ *   **포커스를 body 에 다시 꽂았다.** 겉보기 증상과 원인이 반대편에 있어서,
+ *   닫는 쪽만 고치는 시도는 전부 빗나갔다.
+ *
+ * 되돌아갈 곳이 사라졌으면 **본문 시작**(`<main>`)으로 보낸다 — 페이지 처음부터
+ * 다시 걷는 것보다 낫다. 살아남은 트리거가 있으면 그쪽이 언제나 이긴다.
+ */
+test.describe("포커스 반환", () => {
+  test("공방 피커를 Escape 로 닫으면 연 소켓으로 돌아온다", async ({ page }) => {
+    await seedFirstRunSeen(page);
+    await page.setViewportSize({ width: 1440, height: 900 });
+    await page.goto("/ko/ontology/studio/?node=capability%3Aorder-create&guides=off", {
+      waitUntil: "domcontentloaded",
+    });
+
+    const socket = page.getByTestId("studio-socket-up");
+    await expect(socket).toBeVisible({ timeout: 30_000 });
+    await socket.focus();
+    await page.keyboard.press("Enter");
+    await expect(page.getByTestId("studio-picker")).toBeVisible();
+    await page.keyboard.type("결제");
+    await page.keyboard.press("Escape");
+
+    await expect
+      .poll(() => page.evaluate(() => document.activeElement?.getAttribute("data-testid")))
+      .toBe("studio-socket-up");
+  });
+
+  test("단축키 시트를 닫으면 body 가 아니라 본문으로 간다", async ({ page }) => {
+    await seedFirstRunSeen(page);
+    await page.setViewportSize({ width: 1440, height: 900 });
+    await page.goto("/ko/topology/?guides=off", { waitUntil: "domcontentloaded" });
+
+    const opener = page.getByTestId("topology-shortcuts-help-button");
+    await expect(opener).toBeVisible({ timeout: 30_000 });
+    await opener.focus();
+    await page.keyboard.press("Enter");
+    await expect(page.getByTestId("shortcut-sheet-close")).toBeVisible();
+    await page.keyboard.press("Escape");
+
+    await expect
+      .poll(() => page.evaluate(() => document.activeElement?.tagName))
+      .not.toBe("BODY");
+  });
+
+  /**
+   * **살아남는 트리거는 여전히 이긴다** — fallback 이 정상 복원을 덮어쓰면
+   * 고친 게 아니라 바꾼 것이다.
+   */
+  test("살아남은 트리거에서 열면 그 트리거로 정확히 돌아온다", async ({ page }) => {
+    await seedFirstRunSeen(page);
+    await page.setViewportSize({ width: 1440, height: 900 });
+    await page.goto("/ko/topology/?guides=off", { waitUntil: "domcontentloaded" });
+
+    const survivor = page.getByTestId("topology-auto-arrange");
+    await expect(survivor).toBeVisible({ timeout: 30_000 });
+    await survivor.focus();
+    await page.keyboard.press("?");
+    await expect(page.getByTestId("shortcut-sheet-close")).toBeVisible();
+    await page.keyboard.press("Escape");
+
+    await expect
+      .poll(() => page.evaluate(() => document.activeElement?.getAttribute("data-testid")))
+      .toBe("topology-auto-arrange");
   });
 });

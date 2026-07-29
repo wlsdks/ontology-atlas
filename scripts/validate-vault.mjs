@@ -257,10 +257,22 @@ export async function main({ argv = process.argv, cwd = process.cwd() } = {}) {
   for (const file of files) {
     const raw = await readFile(file, "utf8");
     const { frontmatter } = parseFrontmatter(raw);
-    const slug = path.relative(vaultDir, file).replace(/\\/g, "/").replace(/\.md$/, "");
+    // NFC — `pathToSlug` 와 같은 식별자 규칙.
+    const slug = path
+      .relative(vaultDir, file)
+      .replace(/\\/g, "/")
+      .replace(/\.md$/, "")
+      .normalize("NFC");
     entries.push({ file, slug, frontmatter });
     const report = validate(raw);
     reportByFile.set(file, report);
+  }
+
+  for (const { file, issue } of findDuplicateSlugIssues(entries)) {
+    const report = reportByFile.get(file);
+    if (!report) continue;
+    report.issues.push(issue);
+    report.ok = !report.issues.some((i) => i.severity === 'error');
   }
 
   for (const { file, issue } of findDanglingGraphReferenceIssues(entries)) {
@@ -315,6 +327,53 @@ function collectGraphRefs(frontmatter) {
   return refs;
 }
 
+/**
+ * 두 문서가 같은 canonical slug 를 주장하는 상태 (2026-07-29 실측).
+ *
+ * **파일 단위 검사로는 원리적으로 못 잡는다** — 한 파일만 보면 완벽히
+ * 정상이기 때문이다. 그래서 dangling 검사와 같은 자리(볼트 전수 패스)에 산다.
+ *
+ * 어떻게 생기나: `patch_concept` 이 `frontmatter.slug` 를 다른 노드가 이미
+ * 가진 값으로 덮어써도 막지 않는다(`add_concept` 은 막고 `rename_concept` 은
+ * `overwrite:true` 를 요구하는데 이 경로만 열려 있다). 그러면 두 파일이 같은
+ * 이름을 주장하고, 그 이름을 가리키는 모든 관계가 **어느 쪽을 뜻하는지 알 수
+ * 없게** 된다 — 컴파일러는 `ambiguous-alias` 로 보는데 `validate` 는 조용했다.
+ *
+ * error 로 올린다. dangling 은 "아직 안 만든 것" 일 수 있어 warning 이지만,
+ * 중복 slug 는 **이미 있는 두 문서 사이의 모순**이라 그래프가 성립하지 않는다.
+ */
+function findDuplicateSlugIssues(entries) {
+  const byDeclared = new Map();
+  for (const entry of entries) {
+    const declared = entry.frontmatter?.slug;
+    const value = typeof declared === 'string' ? declared.trim() : '';
+    if (!value) continue;
+    if (!byDeclared.has(value)) byDeclared.set(value, []);
+    byDeclared.get(value).push(entry);
+  }
+  const issues = [];
+  for (const [declared, group] of byDeclared) {
+    if (group.length < 2) continue;
+    const others = group.map((entry) => entry.slug);
+    for (const entry of group) {
+      const rest = others.filter((slug) => slug !== entry.slug);
+      issues.push({
+        file: entry.file,
+        slug: entry.slug,
+        issue: {
+          code: 'duplicate-slug',
+          severity: 'error',
+          message:
+            `\`slug: ${declared}\` 를 다른 문서도 주장합니다 (${rest.join(', ')}). ` +
+            `같은 이름을 가리키는 관계가 어느 쪽을 뜻하는지 정할 수 없습니다 — ` +
+            `한쪽의 slug 를 바꾸거나 rename_concept 으로 합치세요.`,
+        },
+      });
+    }
+  }
+  return issues;
+}
+
 function findDanglingGraphReferenceIssues(entries) {
   const slugs = new Set(entries.map((entry) => entry.slug));
   const tailToFull = new Map();
@@ -331,8 +390,10 @@ function findDanglingGraphReferenceIssues(entries) {
       frontmatterSlugToFull.set(fmSlug, entry.slug);
     }
   }
-  const resolveRef = (ref) => {
-    if (typeof ref !== "string") return null;
+  const resolveRef = (rawRef) => {
+    if (typeof rawRef !== "string") return null;
+    // 참조도 NFC 로 맞춘다 — 슬러그는 `pathToSlug` 가 이미 NFC 다.
+    const ref = rawRef.normalize("NFC");
     if (slugs.has(ref)) return ref;
     if (frontmatterSlugToFull.has(ref)) return frontmatterSlugToFull.get(ref);
     if (tailToFull.has(ref)) return tailToFull.get(ref);
