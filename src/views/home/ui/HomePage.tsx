@@ -283,6 +283,7 @@ import {
   useGuidedTourAutoStartReady,
   useRegisterGuideReplay,
   watchGuidedTourAutoStartCancel,
+  readGuideAutoStart,
   type TourAnchor,
 } from "@/features/guided-tour";
 import { resolveTourAnchorNodeId } from "../lib/resolve-tour-anchor-node";
@@ -2257,6 +2258,9 @@ export function HomePage() {
   }, [openGuidedTour]);
   useEffect(() => {
     if (autoTourFiredRef.current || !tourAutoStartReady) return undefined;
+    if (!readGuideAutoStart()) return undefined;
+    // 「화면 안내」를 끈 사람에게는 어디서도 저절로 뜨지 않는다. 나침반 타일과
+    // 설정 › 다시 보기는 그대로 열리므로, 안내가 사라지는 게 아니라 부를 때만 온다.
     if (readGuidedTourStatus() !== null) return undefined;
     // 첫 시도는 900ms 뒤 — 레이아웃/카메라 정착 뒤에 열어 1단계 카드가
     // 안정된 화면 위에 뜬다. Design Guardian (2026-07-24) stacked-transient

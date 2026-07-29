@@ -209,7 +209,6 @@
   --shadow-control-press: 0 5px 12px var(--color-shadow-a12);
 
   /* 모달/시트 배경 scrim. */
-  --color-scrim-a54: rgba(0, 0, 0, 0.54);
 
   /* 캔버스 좌상단 저장 개념 앵커 레일 — --color-panel(#0f1011 = 15,16,17)
      위에 얹는 반투명 플로팅 표면 (Sigma 툴팁과 같은 원칙으로 짙게 유지). */
@@ -1560,8 +1559,7 @@
     --shadow-elevation-1: 0 18px 40px var(--color-shadow-a35);
     --shadow-elevation-2: 0 24px 72px var(--color-shadow-a42);
     --shadow-elevation-3: 0 24px 80px var(--color-shadow-a46);
-    --color-scrim-a54: rgba(0, 0, 0, 0.54);
-
+  
     /* Phase 2 색 완전 토큰화 (2026-07-20) — 위 @theme 블록과 동일한
        Tailwind v4 alpha emit 회귀를 겪으므로 여기서도 다크 디폴트를
        명시. 값/주석은 위 @theme 정의를 참고. */
@@ -2340,8 +2338,6 @@
     --canvas-bg-ink-max: 0.08;
     /* 입자 잉크 RGB — 알파는 코드가 상한 안에서 정하므로 여기엔 없다. */
     --canvas-bg-particle-rgb: 150, 165, 220;
-    /* 트레일 감쇠에 쓰는 바탕색 RGB — --topology-v2-canvas-bg-near 와 같은 값. */
-    --canvas-bg-canvas-rgb: 10, 10, 13;
 
     /* 2.3 지오메트리 (world unit — canvas 2D 가 getComputedStyle 로 소비) */
     /* canvas-emphasis 슬라이스: 25→30 — 주변 도메인 칩(17) 대비 시각 무게가

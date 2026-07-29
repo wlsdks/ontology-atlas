@@ -57,9 +57,8 @@
       "canvasBgCaption": "Pick the map's background texture — it always stays fainter than nodes and links",
       "canvasBg": {
         "dot": "Dots (default)",
-        "flow": "Flow field",
         "web": "Constellation",
-        "gravity": "Gravity field"
+        "depth": "Depth dots"
       },
       "glyphSetLabel": "Node icons",
       "glyphSetCaption": "Pick the node icon style — the shapes (kinds) never change",
@@ -138,7 +137,11 @@
       "sectionGroup": {
         "look": "Appearance",
         "connect": "Connections"
-      }
+      },
+      "guideAutoStartLabel": "Show guides automatically",
+      "guideAutoStartCaption": "Opens a guide the first time you visit each screen — turn off and it only opens from Replay or the map compass",
+      "guideAutoStartOn": "On",
+      "guideAutoStartOff": "Off"
     },
     "primaryAriaLabel": "Primary menu",
     "notificationsAriaLabel": "Notifications"
@@ -449,7 +452,7 @@
   "mapEntry": {
     "headline": "The shared meaning layer for people and their AI agents.",
     "lede": "Turn the Markdown already living in your repository into a queryable model of product domains, capabilities, implementation evidence, dependencies, and impact — then grow it together through MCP, CLI, and a visual workbench.",
-    "demoNote": "This screen is the live map. It is drawing Ontology Atlas describing itself — 97 nodes of domains, capabilities, and elements read straight from Markdown frontmatter.",
+    "demoNote": "This screen is the live map. It is drawing Ontology Atlas describing itself — 98 nodes of domains, capabilities, and elements read straight from Markdown frontmatter.",
     "mapComing": "Loading the map…"
   },
   "footer": {

@@ -19,15 +19,26 @@ import { useCallback, useSyncExternalStore } from "react";
 /**
  * 지도 바닥 4종 — 도트(정적 기본) + 움직이는 셋.
  *
- * 구 `"constellation"`(정적 성좌) · `"contour"`(등고선)는 2026-07-29 소유자
- * 확정으로 **폐기**됐다. 등고선은 이 그래프에 없는 높이를 암시했고, 정적 성좌는
- * 도트가 이미 하는 일을 더 비싸게 반복했다. 배경 대체 근거는
- * `render/animated-background.ts` 의 헤더.
+ * ## 셋만 남은 이유 (카운슬 2026-07-29 + 소유자 확정)
+ *
+ * 후보 열한 개가 전량 기각된 뒤 실측으로 원인이 나왔다: 잉크 **양**이 아니라
+ * **형태**였다. 기각된 것들은 전부 선이거나 닫힌 도형 — 노드·관계선과 같은
+ * 문법이라 "누가 주인공인가"를 다퉜다. 도트가 살아남은 이유는 정확히 **데이터인
+ * 척을 안 해서**다. 그리고 상시 입자는 프레임당 바뀌는 픽셀의 78%가 정보를
+ * 나르지 않았다.
+ *
+ * - `dot` — 정적 청사진 격자. 좌표계가 있다는 것만 말한다.
+ * - `web` — 근접 성좌. 유일하게 살아남은 움직이는 배경(소유자 확정).
+ * - `depth` — 깊이 도트. 같은 도트를 세 층으로 두고 **카메라에만** 반응한다.
+ *   자율 운동이 0이라 유휴 연소가 구조적으로 불가능하다.
+ *
+ * 폐기: `constellation`(정적 성좌) · `contour`(등고선) · `flow`(흐름장) ·
+ * `gravity`(중력장).
  */
-export type CanvasBackground = "dot" | "flow" | "web" | "gravity";
+export type CanvasBackground = "dot" | "web" | "depth";
 export type GlyphSet = "geometric" | "line";
 
-export const CANVAS_BACKGROUNDS: readonly CanvasBackground[] = ["dot", "flow", "web", "gravity"];
+export const CANVAS_BACKGROUNDS: readonly CanvasBackground[] = ["dot", "web", "depth"];
 export const GLYPH_SETS: readonly GlyphSet[] = ["geometric", "line"];
 
 /**
@@ -38,6 +49,10 @@ export const GLYPH_SETS: readonly GlyphSet[] = ["geometric", "line"];
 const RETIRED_CANVAS_BACKGROUNDS: Readonly<Record<string, CanvasBackground>> = {
   constellation: "web",
   contour: "dot",
+  // 2026-07-29 카운슬 + 소유자 확정 — 흐름장·중력장 폐기. 둘 다 움직임을 고른
+  // 사람이므로 살아남은 움직이는 배경(근접 성좌)으로 데려간다.
+  flow: "web",
+  gravity: "web",
 };
 
 export const DEFAULT_CANVAS_BACKGROUND: CanvasBackground = "dot";

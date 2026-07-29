@@ -51,7 +51,7 @@ nothing published to a registry you have to trust.
 If you'd rather stay in a terminal, a source checkout gives you the same
 CLI and MCP server directly.
 
-Hosted demo (read-only, our own dogfood vault — 97 nodes, no install):
+Hosted demo (read-only, our own dogfood vault — 98 nodes, no install):
 https://wlsdks.github.io/ontology-atlas/
 
 What I'd love feedback on:

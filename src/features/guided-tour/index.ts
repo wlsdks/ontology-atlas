@@ -34,6 +34,13 @@ export {
 export { canAutoStartGuidedTour } from "./model/auto-start-guard";
 export { watchGuidedTourAutoStartCancel } from "./model/auto-start-interaction";
 export {
+  DEFAULT_GUIDE_AUTO_START,
+  readGuideAutoStart,
+  resolveGuideAutoStart,
+  useGuideAutoStart,
+  writeGuideAutoStart,
+} from "./model/guide-auto-start";
+export {
   resolveAnchorRect,
   computeCardPlacement,
   type AnchorBox,

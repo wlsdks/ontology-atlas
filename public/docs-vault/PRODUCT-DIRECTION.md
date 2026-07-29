@@ -588,7 +588,7 @@ When an agent enters the codebase, it sees this on the first page and picks up t
 2. ✅ 32 tools (read 19 + write 13): connection/root/toolset proof, vault-scoped Git status/history and local snapshots, persisted Workshop context (`builder_context` compatibility operation), list/get/find/query/compile/validate/analyze/index reads, batch concept/relation writes, narrow relation removal/replacement, concept patch/reclassification, and dry-run-first rename/merge/delete/absorb writes.
 3. ✅ CLI command (`ontology-atlas`) — `node <checkout>/cli/src/index.mjs init <folder>` scaffolds the vault from a source checkout. The installed app `/docs` "Create starter seed" button is the no-terminal alternative. (npm publishing retired 2026-07-27; there is no `npx` channel.)
 4. ⏸ Auto-generated AGENTS.md — DEFERRED (manual updates + dogfood vault cover this)
-5. ✅ `docs/ontology/` dogfood vault — 97 nodes describing our own mental model, including agent-practice notes as document nodes
+5. ✅ `docs/ontology/` dogfood vault — 98 nodes describing our own mental model, including agent-practice notes as document nodes
 
 ### Agent practitioner concerns map
 

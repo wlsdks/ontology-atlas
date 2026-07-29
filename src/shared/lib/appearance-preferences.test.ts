@@ -54,10 +54,10 @@ describe("appearance-preferences", () => {
   it("useCanvasBackground re-renders live when the preference is written", () => {
     const { result } = renderHook(() => useCanvasBackground());
     expect(result.current).toBe("dot");
-    act(() => writeCanvasBackground("flow"));
-    expect(result.current).toBe("flow");
-    act(() => writeCanvasBackground("gravity"));
-    expect(result.current).toBe("gravity");
+    act(() => writeCanvasBackground("web"));
+    expect(result.current).toBe("web");
+    act(() => writeCanvasBackground("depth"));
+    expect(result.current).toBe("depth");
   });
 
   it("useGlyphSet re-renders live when the preference is written (gateway switch proof)", () => {
@@ -77,6 +77,9 @@ describe("폐기된 캔버스 배경 값의 계승", () => {
   it.each([
     ["constellation", "web"],
     ["contour", "dot"],
+    // 2026-07-29 — 움직임을 고른 사람이므로 살아남은 움직이는 배경으로 데려간다.
+    ["flow", "web"],
+    ["gravity", "web"],
   ] as const)("%s → %s", (retired, heir) => {
     expect(resolveCanvasBackground(retired)).toBe(heir);
   });

@@ -30,8 +30,8 @@ import { createForceSimulation, type ForceSimulation } from "../model/force-layo
 import { INITIAL_POINTER_MACHINE_STATE, type PointerMachineState } from "../interaction/pointer-state-machine";
 import { initHomeSpring, isHomeSpringConverged, stepHomeSpring, type HomeSpringState } from "../model/relayout-home";
 import type { NodeDragState } from "./topology-pointer-handlers";
-import { buildGridPattern } from "../render/grid";
-import { createAnimatedBackground, type AnimatedBackground, type AnimatedBackgroundAttractor } from "../render/animated-background";
+import { DEPTH_DOT_LAYERS, buildDepthDotPattern, buildGridPattern } from "../render/grid";
+import { createAnimatedBackground, type AnimatedBackground } from "../render/animated-background";
 import { buildDustPoints, buildRealmCosmosPoints, computeStarDustCount, type DustPoint } from "../render/starfield";
 import type { CanvasBackground, FootprintPreference, GlyphSet } from "@/shared/lib/appearance-preferences";
 import { computeClusterFitTarget, computeFocusCameraTarget, computeOverviewCameraTarget, computeOverviewFitScale, hasAnyNodeOnScreen, worldToScreen } from "./topology-camera-math";
@@ -290,8 +290,6 @@ export interface UseTopologyLoopArgs {
 
 const EMPTY_EXPANDED_SET: ReadonlySet<string> = new Set();
 const EMPTY_TRAIL: readonly string[] = [];
-/** 중력장이 아닐 때 넘기는 빈 인력원 배열 — 매 프레임 `[]` 리터럴을 만들지 않는다. */
-const EMPTY_ATTRACTORS: readonly AnimatedBackgroundAttractor[] = [];
 
 export type UseTopologyLoopResult = TopologyPointerHandlers & {
   canvasRef: RefObject<HTMLCanvasElement | null>;
@@ -330,8 +328,9 @@ export function useTopologyLoop(args: UseTopologyLoopArgs): UseTopologyLoopResul
   const animatedBgRef = useRef<AnimatedBackground | null>(null);
   /** 커서 스크린 좌표(캔버스 기준). 캔버스 밖이면 null — 배경이 조용해진다. */
   const bgPointerRef = useRef<{ x: number; y: number } | null>(null);
-  /** 중력장 전용 인력원 버퍼 — 프레임마다 배열을 새로 만들지 않으려고 재사용한다. */
-  const bgAttractorsRef = useRef<AnimatedBackgroundAttractor[]>([]);
+  /** 깊이 도트 세 층의 패턴(정적, 마운트/리사이즈 1회 빌드). */
+  const depthDotPatternsRef = useRef<(CanvasPattern | null)[]>([]);
+  const depthDotCanvasRef = useRef<HTMLCanvasElement[]>([]);
   // Phase 5 #20/#21 — 개인화 설정 prop 을 매 프레임 읽을 수 있게 ref 미러
   // (tierReveal 선례). 설정 변경 시 아래 effect 가 갱신한다.
   const glyphStyleRef = useRef<"fill" | "line">(glyphSet === "line" ? "line" : "fill");
@@ -744,7 +743,7 @@ export function useTopologyLoop(args: UseTopologyLoopArgs): UseTopologyLoopResul
   useEffect(() => {
     canvasBackgroundRef.current = canvasBackground;
     animatedBgRef.current?.dispose();
-    if (canvasBackground === "dot") {
+    if (canvasBackground !== "web") {
       animatedBgRef.current = null;
       return;
     }
@@ -754,10 +753,9 @@ export function useTopologyLoop(args: UseTopologyLoopArgs): UseTopologyLoopResul
       return raw === "" ? fallback : raw;
     };
     const inkMax = Number(read("--canvas-bg-ink-max", "0.08"));
-    animatedBgRef.current = createAnimatedBackground(canvasBackground, {
+    animatedBgRef.current = createAnimatedBackground("web", {
       inkMax: Number.isFinite(inkMax) ? inkMax : 0.08,
       particleRgb: read("--canvas-bg-particle-rgb", "150, 165, 220"),
-      canvasRgb: read("--canvas-bg-canvas-rgb", "10, 10, 13"),
     });
     return () => {
       animatedBgRef.current?.dispose();
@@ -1082,6 +1080,17 @@ export function useTopologyLoop(args: UseTopologyLoopArgs): UseTopologyLoopResul
           majorColor: tokens.gridMajor,
           baseColor: tokens.canvasBgNear,
         });
+      }
+      // 깊이 도트 세 층 — 정적 타일이라 뷰포트 재빌드 때 한 번만 만든다.
+      if (depthDotCanvasRef.current.length === 0) {
+        depthDotCanvasRef.current = DEPTH_DOT_LAYERS.map(() => document.createElement("canvas"));
+      }
+      {
+        const rootStyle = getComputedStyle(document.documentElement);
+        const rgb = rootStyle.getPropertyValue("--canvas-bg-particle-rgb").trim() || "150, 165, 220";
+        depthDotPatternsRef.current = DEPTH_DOT_LAYERS.map((layer, i) =>
+          buildDepthDotPattern(depthDotCanvasRef.current[i], layer, `rgba(${rgb}, ${0.055 * layer.alphaScale})`),
+        );
       }
       dustPointsRef.current = buildDustPoints(width, height, computeStarDustCount(width, height, tokens.dustAreaPerPoint), tokens.dustParallaxMin, tokens.dustParallaxMax);
       // S8 결함 6 — 우주 도트는 dust 의 2배 밀도(레이어 2장). dust 와 같은
@@ -2543,17 +2552,6 @@ export function useTopologyLoop(args: UseTopologyLoopArgs): UseTopologyLoopResul
         const bg = animatedBgRef.current;
         if (bg) {
           const origin = worldToScreen(camera, width, height, 0, 0);
-          if (bg.variant === "gravity") {
-            // 중력장만 노드 위치를 읽는다. 배열은 재사용하고 길이만 맞춘다.
-            const wells = bgAttractorsRef.current;
-            wells.length = 0;
-            for (const node of world.nodes) {
-              const p = worldToScreen(camera, width, height, node.x, node.y);
-              if (p.x < -200 || p.x > width + 200 || p.y < -200 || p.y > height + 200) continue;
-              wells.push({ x: p.x, y: p.y, m: node.kind === "project" || node.kind === "domain" ? 2.6 : 1 });
-              if (wells.length >= 48) break;
-            }
-          }
           bg.step({
             width,
             height,
@@ -2563,7 +2561,6 @@ export function useTopologyLoop(args: UseTopologyLoopArgs): UseTopologyLoopResul
             ambientFactor: ambientSleepFactor(now, lastInputMsRef.current, ambientSleepDelayRef.current),
             pointerX: bgPointerRef.current?.x ?? null,
             pointerY: bgPointerRef.current?.y ?? null,
-            attractors: bg.variant === "gravity" ? bgAttractorsRef.current : EMPTY_ATTRACTORS,
             dtMs: dt * 1000,
             reducedMotion: reducedMotionRef.current,
           });
@@ -2630,6 +2627,7 @@ export function useTopologyLoop(args: UseTopologyLoopArgs): UseTopologyLoopResul
         paintAnimatedBackground: animatedBgRef.current
           ? (target, w, h) => animatedBgRef.current?.paint(target, w, h)
           : null,
+        depthDotPatterns: canvasBackgroundRef.current === "depth" ? depthDotPatternsRef.current : undefined,
       });
       // 이번 프레임이 어떤 렌즈 상태를 그렸는지 기록 — 유휴 게이트가 다음
       // 프레임에 "바뀌었나"를 이 값으로 판정한다.

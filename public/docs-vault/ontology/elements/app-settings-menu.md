@@ -6,55 +6,72 @@ domain: onboarding-ux
 relates: [elements/app-nav-rail, elements/locale-switch]
 ---
 
+# App Settings Menu
+
 `src/widgets/app-settings-menu/ui/AppSettingsMenu.tsx` is the app-wide settings
-surface. The retired five-tab workbench was simplified in 2026-07 into one
-centered, single-column sheet with three readable groups:
+surface. It has changed shape twice: the five-tab workbench collapsed into one
+centered sheet (2026-07), and that sheet moved to a **right-anchored, non-modal
+dock with an LNB** (2026-07-29).
 
-- Screen — language plus page-injected view mode and INDEX defaults.
-- Workspace — current vault state, open/change action, and the full Library link.
-- AI agent — one connection summary row leading to a focused setup/verification
-  drill-in.
+## Why a dock, not a modal
 
-The same sheet is entered from responsive equivalents rather than duplicated
-settings products: `rail-tile` on the persistent large-screen nav rail,
-`chrome-tile` in compact topology chrome, and `header-pill` on page headers.
-Each trigger uses the same dialog, vault routing, copy, and AI-agent contracts.
-The hosted-vs-installed workspace branch remains explicit: hosted browser users
-go to `/download/`, while the installed app opens `/docs/?intent=local`.
+Two of its sections — background and footprint — promise that a change lands on
+the map immediately. A centered modal covered the very thing it was changing, so
+the user could not see the result while turning the dial. The dock is anchored
+to the right edge at a fixed 760×560, the overlay layer is
+`pointer-events-none`, and there is no scrim: the map stays live and draggable
+while the dock is open.
 
-The dialog is centered inside a token-backed scrim, bounded to the viewport, and
-owns its internal vertical scroll. Opening moves focus into the panel. Close,
-backdrop, and Escape return focus to the exact trigger; the AI drill-in consumes
-the first Escape to return to the root sheet. Command-K closes without returning
-focus so the command palette can take ownership.
+Consequence: **backdrop click does not close it.** A dock is a surface you stay
+in; Escape and the close control are the exits.
 
-The panel uses the shared `useDialogFocusTrap` contract. Forward Tab wraps from
-the final AI-agent drill-in to Close; reverse Tab wraps from Close to the final
-control. `role="dialog"` and `aria-modal="true"` expose the same blocking
-boundary to assistive-technology virtual navigation. The hook owns initial
-focus and containment only. `AppSettingsMenu` keeps ownership of close-time
-focus restoration so Command-K can still yield focus to the palette instead of
-having modal cleanup steal it back.
+## LNB — two groups, five sections
 
-Locale navigation remounts the localized shell and intentionally closes the
-sheet. Before that transition, the menu records a short-lived focus intent with
-the target locale and exact responsive trigger variant. The matching
-`rail-tile`, `chrome-tile`, or `header-pill` in the new locale consumes the
-intent and receives focus while remaining closed. This avoids dropping keyboard
-users on the new document root or focusing the wrong hidden responsive entry.
-Stale intents expire after 10 seconds.
+- **Look** — screen (language, view mode, INDEX defaults) · background · footprint
+- **Connect** — workspace (vault state, open/change, Library) · AI agent
 
-`src/widgets/app-settings-menu/ui/AppSettingsMenu.test.tsx` guards the
-single-sheet hierarchy, hosted/installed vault route, controlled-open behavior,
-Escape ladder, locale focus return, and exact responsive trigger match. The
-installed macOS proof covers KO → EN → KO and confirms the focused AX element is
-the translated closed settings summary after each transition.
+The hosted-vs-installed workspace branch stays explicit: hosted browser users go
+to `/download/`, the installed app opens `/docs/?intent=local`.
 
-The AI-agent drill-in is linked to `capabilities/agent-config-onboarding`: it
-shows actual config readiness, repair actions, copyable proof packets, MCP/CLI
-fallbacks, and verification gates only after the user asks for that detail.
-Entering the drill-in focuses its translated Back control after the root row is
-replaced. Back or the first Escape restores the exact AI-agent root row; a
-second Escape closes the modal and returns to the responsive settings trigger.
-This makes the root/detail hierarchy keyboard-readable instead of relying on
-the focus trap to recover from a removed active element.
+## Non-modal costs three couplings
+
+Dropping modality is not a styling change — three contracts move with it, and
+all three were live defects until wired:
+
+1. **No `aria-modal`.** The outside is operable; telling assistive technology to
+   ignore it would be false.
+2. **No Tab trap** — `useDialogFocusTrap({ trapTab: false })`. Trapping focus
+   while the outside stays clickable locks out *only* keyboard users. See
+   `elements/accessible-dialog-focus-contract`.
+3. **Guide auto-start guard** reads `data-surface-role="settings-dock"` instead
+   of `aria-modal`, or first-run guidance would open on top of the dock.
+
+The hook still owns initial focus; the widget keeps close-time focus
+restoration so Command-K can hand focus to the palette instead of having
+cleanup steal it back.
+
+## Entry points and locale handoff
+
+One surface, three responsive triggers — `rail-tile` (large-screen nav rail),
+`chrome-tile` (compact topology chrome), `header-pill` (page headers) — sharing
+one dialog, vault routing, copy, and AI-agent contract. Locale navigation
+remounts the localized shell and closes the dock; a short-lived focus intent
+carries the target locale and the exact trigger variant so the matching trigger
+in the new locale receives focus while staying closed. Stale intents expire
+after 10 seconds.
+
+## AI-agent drill-in
+
+Linked to `capabilities/agent-config-onboarding`: actual config readiness,
+repair actions, copyable proof packets, MCP/CLI fallbacks, and verification
+gates, shown only after the user asks for that detail. Entering focuses the
+translated Back control; Back or the first Escape restores the AI-agent root
+row, a second Escape closes the dock.
+
+## Gates
+
+`AppSettingsMenu.test.tsx` guards the LNB hierarchy, the **inverted** modality
+contract (no `aria-modal`, overlay `pointer-events-none`, panel
+`pointer-events-auto`, no scrim token), hosted/installed vault route,
+controlled-open behavior, the Escape ladder, locale focus return, and exact
+responsive trigger match.
