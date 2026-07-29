@@ -47,8 +47,19 @@ const GITHUB_REPOSITORY_LABEL = 'github.com/wlsdks/ontology-atlas';
  * 이제 GNB 로고 · 헤드라인 · 판 · 캡션 · 바닥 띠가 **모든 폭에서 같은 x** 에
  * 선다. 게이트: `tests/e2e/download-gateway-grid.spec.ts`.
  */
+/**
+ * ⚠️ **md+ 홈통은 리터럴이 아니라 토큰이다** (2026-07-29 「체계」 처방).
+ *
+ * 예전엔 `md:px-10` 이었고, 그 40 은 `app/globals.css` 의 카메라 예약폭
+ * `544 = 40 + 480 + 24` 안에도 손으로 들어가 있었다. 두 곳이 각자 진실원이라
+ * 한쪽만 고치면 판과 지도가 조용히 어긋난다.
+ *
+ * 이제 `--gateway-gutter`(무단위) 하나가 두 소비자를 먹인다 — 여기서는
+ * `calc(… * 1px)` 로 길이가 되고, 카메라 쪽에서는 `parseFloat` 로 숫자가
+ * 된다. 폭별 스텝은 그 토큰에만 붙으므로 이 문자열은 다시 안 바뀐다.
+ */
 const PAGE_GUTTER =
-  'px-[max(1.5rem,env(safe-area-inset-left))] pr-[max(1.5rem,env(safe-area-inset-right))] md:px-10';
+  'px-[max(1.5rem,env(safe-area-inset-left))] pr-[max(1.5rem,env(safe-area-inset-right))] md:px-[calc(var(--gateway-gutter)*1px)]';
 /** 홈통 안쪽의 단 하나뿐인 컬럼 — 왼쪽 고정, `--page-max` 에서 정지. */
 const PAGE_COLUMN = 'w-full max-w-[var(--page-max)]';
 /** 무대의 말 기둥과 판이 공유하는 폭. 카메라 인셋(544 = 40 + 480 + 24)의 짝. */
