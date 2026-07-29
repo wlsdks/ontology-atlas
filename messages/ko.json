@@ -459,7 +459,7 @@
     "cliBridgeCopyAriaLabel": "터미널에서 붙여넣을 부트스트랩 명령 복사",
     "sampleSourceAria": "둘러볼 샘플 선택",
     "sampleSourceDogfood": "이 앱의 코드",
-    "sampleSourceStorefront": "예시 — 온라인 쇼핑몰",
+    "sampleSourceStorefront": "쇼핑몰 예시",
     "nodeHint": {
       "action": "지도의 노드를 눌러보세요",
       "reason": "전부 진짜 문서에서 나왔어요"
