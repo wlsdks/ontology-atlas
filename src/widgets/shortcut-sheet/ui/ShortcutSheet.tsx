@@ -209,7 +209,23 @@ export function ShortcutSheet({ open, onClose }: Props) {
   // Tab 이 바깥으로 빠져나가지 않게 순환. 닫힐 때 이전 활성 요소 복원.
   useEffect(() => {
     if (!open) return;
-    previousFocusRef.current = document.activeElement as HTMLElement | null;
+    /**
+     * **`<body>` 를 복원 대상으로 기록하지 않는다** (2026-07-29 실측).
+     *
+     * 이 시트를 여는 버튼은 시트가 켜지는 순간 언마운트된다 — 시트가 세우는
+     * `topologyBlockingOverlayActive` 가 그 버튼의 렌더 조건을 끄기 때문이다.
+     * 그래서 이 효과가 도는 시점에는 이미 `document.activeElement === body`
+     * 이고, 종전 코드는 그걸 "이전 포커스" 로 기록했다.
+     *
+     * `body.isConnected` 는 언제나 `true` 라 복원 분기는 성공한 것처럼 보이고,
+     * 실제로는 **포커스를 body 에 다시 꽂는다.** 프로브 로그가 그대로 말해
+     * 줬다: `[SHEET-CLEANUP] true BODY`. 겉보기 증상("닫으면 body 로 간다")과
+     * 원인("열 때 이미 body 였다")이 반대편에 있어서, 닫는 쪽만 고치는 시도는
+     * 전부 빗나갔다.
+     */
+    const active = document.activeElement;
+    previousFocusRef.current =
+      active instanceof HTMLElement && active !== document.body ? active : null;
     const dialog = dialogRef.current;
     if (!dialog) return;
     const focusables = dialog.querySelectorAll<HTMLElement>(
@@ -243,7 +259,40 @@ export function ShortcutSheet({ open, onClose }: Props) {
     window.addEventListener("keydown", trapHandler);
     return () => {
       window.removeEventListener("keydown", trapHandler);
-      previousFocusRef.current?.focus();
+      /**
+       * **여는 컨트롤이 사라졌어도 `body` 로 떨어뜨리지 않는다**
+       * (2026-07-29 키보드 실측).
+       *
+       * 이 시트를 여는 버튼은 시트가 켜지면 **언마운트된다** — 시트가 세우는
+       * `topologyBlockingOverlayActive` 가 그 버튼의 렌더 조건을 끄기
+       * 때문이다. 그래서 닫을 때 돌려줄 원소가 이미 없고 포커스가 `body` 로
+       * 갔다. 그 다음 Tab 은 문서 처음(건너뛰기 링크)부터 다시 시작한다 —
+       * 실측으로 원래 자리에서 29 정거장 뒤였다.
+       *
+       * 같은 시트를 **살아남는 원소**(자동 정렬 타일)에서 `?` 로 열면 복원이
+       * 정상이었다. 즉 트랩의 결함이 아니라 "돌아갈 곳이 사라지는 경우" 의
+       * 미처리다. `<main>` 은 건너뛰기 링크 수정으로 이미 포커스를 받으므로,
+       * 페이지 처음이 아니라 **본문 시작**으로 돌려준다.
+       */
+      const previous = previousFocusRef.current;
+      if (previous?.isConnected) {
+        previous.focus();
+      } else {
+        // 돌아갈 컨트롤이 없으면 **본문 시작**으로. `<main>` 은 건너뛰기 링크
+        // 수정으로 이미 포커스를 받는다 — 페이지 처음부터 다시 걷는 것보다 낫다.
+        document.querySelector<HTMLElement>("main#main")?.focus({ preventScroll: true });
+      }
+      /**
+       * 한 프레임 뒤 재확인 — 복원한 원소가 곧바로 언마운트되는 경쟁이 남아
+       * 있다(실측 타임라인: 0ms BUTTON · 50ms BUTTON · **150ms BODY**).
+       * 닫는 시점만 보는 복원은 그걸 못 이긴다.
+       */
+      requestAnimationFrame(() => {
+        requestAnimationFrame(() => {
+          if (document.activeElement && document.activeElement !== document.body) return;
+          document.querySelector<HTMLElement>("main#main")?.focus({ preventScroll: true });
+        });
+      });
     };
   }, [open]);
 
