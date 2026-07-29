@@ -1,7 +1,7 @@
 # Ontology Atlas
 
 <p align="center">
-  <img src="public/brand-icon-512.png" alt="Ontology Atlas" width="104" />
+  <img src="public/brand/lockup@2x.png" alt="Ontology Atlas — Map your codebase knowledge." width="360" />
 </p>
 
 <p align="center">
@@ -508,6 +508,6 @@ git diff 로 판단합니다. 백엔드·로그인·텔레메트리가 없고 va
   확인하세요.** 비어 있거나 릴리스 후보만 있으면 소스 체크아웃으로 씁니다.
   이 README 의 화면들은 첫 서명 릴리스 이전에 로컬 빌드 앱에서 찍었습니다.
 - [라이브 데모](https://wlsdks.github.io/ontology-atlas/)에서 이 저장소 자신의
-  온톨로지(97 노드)를 설치 없이 볼 수 있습니다.
+  온톨로지(98 노드)를 설치 없이 볼 수 있습니다.
 - 연결은 [MCP 가이드](mcp/README.md), 전체 명령은 [CLI 가이드](cli/README.md),
   기여는 [CONTRIBUTING.md](CONTRIBUTING.md) — 한국어 이슈와 PR 을 환영합니다.

@@ -116,6 +116,21 @@ describe('current-surface launch docs', () => {
       if (!new RegExp(`\\b${nodeCount} nodes\\b|${nodeCount} 노드`).test(text)) {
         findings.push(`${relPath}: expected ${nodeCount} dogfood nodes`);
       }
+      /**
+       * **맞는 수가 있는 것만으로는 부족하다** — 틀린 수가 *함께* 있어도 위
+       * 검사는 통과한다. 실제로 README 가 영문 절에 98, 한국어 절에 97 을 동시에
+       * 들고 그 상태로 초록이었다(2026-07-30).
+       *
+       * 코드 펜스 안은 면제한다. 거기 있는 `10 노드` 는 질의 결과 예시라
+       * 도그푸드 볼트를 세는 문장이 아니다 — 죽은 npm 명령 게이트가 인용과
+       * 지시를 자리로 가르는 것과 같은 원리다.
+       */
+      const prose = text.replace(/```[\s\S]*?```/g, '');
+      for (const [, found] of prose.matchAll(/(\d+) (?:nodes\b|노드)/g)) {
+        if (Number(found) !== nodeCount) {
+          findings.push(`${relPath}: 낡은 노드 수 ${found} (현재 ${nodeCount})`);
+        }
+      }
     }
 
     expect(findings).toEqual([]);

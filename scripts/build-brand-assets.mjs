@@ -52,6 +52,9 @@ export const STROKES = {
   microOuter: 64,
 };
 
+/** 단색 브랜드 컬러 — 브랜드 시트 명기값. 컴포넌트의 `BRAND_MARK_SOLID` 와 같다. */
+export const BRAND_SOLID = '#5E6AD2';
+
 export const GRADIENT_FROM = '#787EF6';
 export const GRADIENT_TO = '#3E4BDF';
 
@@ -152,6 +155,125 @@ export function appIconSvg({ detail = 'full', withDash = true } = {}) {
   );
 }
 
+/**
+ * 단색(모노크롬) 아이콘 — 라이트/다크.
+ *
+ * 인쇄·워터마크·한 색만 쓸 수 있는 자리를 위한 것이다. 그라디언트를 빼면
+ * **획이 유일한 정보 채널**이 되므로 사다리는 전체형을 쓰고, 판과 마크는 서로
+ * 뒤집는다. 브랜드 인디고는 여기서 쓰지 않는다 — 단색의 요점이 색을 안 쓰는
+ * 것이라, 인디고를 남기면 그건 단색이 아니라 그냥 다른 색 버전이다.
+ */
+export function monoIconSvg(tone = 'light') {
+  const plate = tone === 'light' ? '#FFFFFF' : '#0A0B14';
+  const ink = tone === 'light' ? '#0A0B14' : '#FFFFFF';
+  const SIZE = 1024;
+  const PLATE = 824;
+  const XY = (SIZE - PLATE) / 2;
+  const scale = (PLATE * MARK_RATIO) / INK_HEIGHT.full;
+  const t = SIZE / 2 - (V / 2) * scale;
+  return (
+    `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ${SIZE} ${SIZE}" role="img" aria-label="Ontology Atlas">` +
+    `<rect x="${XY}" y="${XY}" width="${PLATE}" height="${PLATE}" rx="186" ry="186" fill="${plate}"/>` +
+    `<g transform="translate(${t.toFixed(3)} ${t.toFixed(3)}) scale(${scale.toFixed(6)})">` +
+    markBody('full', { paint: ink }) +
+    '</g></svg>\n'
+  );
+}
+
+/**
+ * 가로형 로고(lockup) — 마크 + 워드마크 + 태그라인.
+ *
+ * ## 비율은 마크의 **잉크**에서 나온다
+ *
+ * 마크의 잉크 높이를 1 로 두고 워드마크·태그라인·간격을 거기 맞춘다. 뷰박스에
+ * 맞추면 마크만 작아 보인다 — 아이콘에서 겪은 것과 같은 함정이다.
+ *
+ * ## 텍스트를 패스로 굽지 않는 이유
+ *
+ * 글자를 아웃라인으로 바꾸려면 폰트 파서 의존성이 필요한데(`forbidden.md` —
+ * 새 dependency 는 이유를 대야 한다), 이 자산 하나를 위해 들일 값이 아니다.
+ * 대신 **둘 다 낸다**: 이 SVG 는 살아 있는 텍스트라 어디서나 열리고 편집되며,
+ * 픽셀이 정확해야 하는 자리에는 브라우저가 진짜 폰트로 구운 PNG 를 쓴다.
+ * 어느 쪽을 쓰는지는 `docs/BRAND.md` 가 정한다.
+ */
+export function lockupSvg({ tone = 'brand', tagline = true } = {}) {
+  const ink =
+    tone === 'light' ? '#0A0B14' : tone === 'dark' ? '#FFFFFF' : 'url(#atlasMark)';
+  const wordFill = tone === 'brand' ? '#F2F3F8' : ink;
+  const taglineFill = tone === 'brand' ? BRAND_SOLID : ink;
+
+  // 잉크 높이 1 단위 = 96px. 비율은 **시트 픽셀 실측**이다 — 마크:워드마크 폰트
+  // ≈ 2.9:1, 마크↔글자 간격 0.25. 초안이 2.4:1 로 읽고 워드마크를 29%, 간격을
+  // 50% 키워 놨었다(fable 대조 검증 2026-07-30).
+  const INK = 96;
+  const scale = INK / INK_HEIGHT.full;
+  const markW = (346.4 + STROKES.outer) * scale;
+  const gap = INK * 0.25;
+  const wordSize = INK * 0.33;
+  const tagSize = INK * 0.185;
+  const textX = markW + gap;
+  const W = Math.round(textX + wordSize * 12);
+  const H = Math.round(INK * (tagline ? 1.12 : 1));
+  // 마크 잉크의 세로 중심을 로크업 중심에 맞춘다.
+  const mt = H / 2 - (V / 2) * scale;
+  const ml = -(82.8 - STROKES.outer / 2) * scale;
+  const baseline = tagline ? H * 0.52 : H * 0.66;
+
+  return (
+    `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ${W} ${H}" role="img" aria-label="Ontology Atlas — Map your codebase knowledge.">` +
+    `<g transform="translate(${ml.toFixed(2)} ${mt.toFixed(2)}) scale(${scale.toFixed(6)})">` +
+    markBody('full', tone === 'brand' ? {} : { paint: ink }) +
+    '</g>' +
+    `<text x="${textX.toFixed(1)}" y="${baseline.toFixed(1)}" fill="${wordFill}" ` +
+    `font-family="${FONT_STACK}" font-size="${wordSize.toFixed(1)}" font-weight="600" ` +
+    `letter-spacing="-0.02em">Ontology Atlas</text>` +
+    (tagline
+      ? `<text x="${textX.toFixed(1)}" y="${(baseline + tagSize * 1.72).toFixed(1)}" fill="${taglineFill}" ` +
+        `font-family="${FONT_STACK}" font-size="${tagSize.toFixed(1)}" font-weight="450">` +
+        `Map your codebase knowledge.</text>`
+      : '') +
+    '</svg>\n'
+  );
+}
+
+/**
+ * OG 카드 — 링크 미리보기가 그리는 유일한 그림.
+ *
+ * 크기는 **`app/layout.tsx` 가 선언한 1200×630 그대로**다. 전에는 선언이
+ * 1200×630 인데 파일이 1536×1024 여서 비율이 어긋나 있었다(1.905 vs 1.5) —
+ * 크롤러가 레터박스를 넣거나 잘라낸다.
+ *
+ * 마크와 글자는 로크업과 같은 비율 체계를 쓰되, 이 카드는 **읽히는 거리가
+ * 멀어서**(타임라인 썸네일) 태그라인을 한 단 키우고 마크를 크게 잡는다.
+ */
+export function ogImageSvg() {
+  const W = 1200;
+  const H = 630;
+  const INK = 176;
+  const scale = INK / INK_HEIGHT.full;
+  const markW = (346.4 + STROKES.outer) * scale;
+  const cx = W / 2;
+  const wordSize = 82;
+  const tagSize = 34;
+  const markTop = H * 0.24;
+  const mt = markTop - (56 - STROKES.outer / 2) * scale;
+  const ml = cx - markW / 2 - (82.8 - STROKES.outer / 2) * scale;
+  return (
+    `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ${W} ${H}" role="img" aria-label="Ontology Atlas — Map your codebase knowledge.">` +
+    `<rect width="${W}" height="${H}" fill="#08090A"/>` +
+    `<g transform="translate(${ml.toFixed(2)} ${mt.toFixed(2)}) scale(${scale.toFixed(6)})">${markBody('full')}</g>` +
+    `<text x="${cx}" y="${(markTop + INK + 108).toFixed(0)}" text-anchor="middle" fill="#F2F3F8" ` +
+    `font-family="${FONT_STACK}" font-size="${wordSize}" font-weight="600" letter-spacing="-0.02em">Ontology Atlas</text>` +
+    `<text x="${cx}" y="${(markTop + INK + 108 + tagSize * 1.85).toFixed(0)}" text-anchor="middle" fill="${BRAND_SOLID}" ` +
+    `font-family="${FONT_STACK}" font-size="${tagSize}" font-weight="450">Map your codebase knowledge.</text>` +
+    '</svg>\n'
+  );
+}
+
+/** 앱이 쓰는 폰트와 같은 스택 — Pretendard 가 없는 환경은 시스템 산세리프로 내린다. */
+const FONT_STACK =
+  "Pretendard Variable, Pretendard, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif";
+
 const write = (path, body) => {
   mkdirSync(dirname(path), { recursive: true });
   writeFileSync(path, body);
@@ -161,11 +283,19 @@ const write = (path, body) => {
 if (import.meta.url === `file://${process.argv[1]}`) {
   const made = [
     write('public/brand-mark.svg', markSvg('full')),
-    write('app/icon.svg', markSvg('micro', { paint: '#7F8BEA' })),
+    write('app/icon.svg', markSvg('micro', { paint: BRAND_SOLID })),
     write('.qa-scratch/brand/app-icon.svg', appIconSvg()),
     write('.qa-scratch/brand/app-icon-nodash.svg', appIconSvg({ withDash: false })),
     write('.qa-scratch/brand/compact.svg', appIconSvg({ detail: 'compact' })),
     write('.qa-scratch/brand/micro.svg', appIconSvg({ detail: 'micro' })),
+    write('public/brand/mark.svg', markSvg('full')),
+    write('public/brand/mark-mono.svg', markSvg('full', { paint: 'currentColor' })),
+    write('public/brand/icon-mono-light.svg', monoIconSvg('light')),
+    write('public/brand/icon-mono-dark.svg', monoIconSvg('dark')),
+    write('public/brand/lockup.svg', lockupSvg()),
+    write('public/brand/lockup-light.svg', lockupSvg({ tone: 'light' })),
+    write('public/brand/lockup-dark.svg', lockupSvg({ tone: 'dark' })),
+    write('public/brand/lockup-compact.svg', lockupSvg({ tagline: false })),
   ];
   for (const p of made) console.log('wrote', p);
 }
