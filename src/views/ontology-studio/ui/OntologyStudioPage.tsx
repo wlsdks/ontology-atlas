@@ -245,7 +245,12 @@ function StudioStage({
       guideBadge: t("guideBadge"),
       bottomProgress: (filled, total) =>
         `${t("bottomProgress", { filled, total })} ${filled >= total ? t("bottomDone") : t("bottomRemain", { remain: total - filled })}`,
-      save: t("save"),
+      // **라벨이 행동과 같아야 한다.** 읽기 전용 볼트에서 이 버튼이 하는 일은
+      // 저장이 아니라 클립보드 복사다. 실체화 다이얼로그는 이미
+      // `confirmWrite`/`confirmCopy` 로 갈라 놓았는데 이 버튼만 안 갈랐고,
+      // 그래서 복사 실패가 「저장」 버튼의 실패로 보고됐다(카운슬 「위계」·
+      // 「핸드오프」 공통 지적).
+      save: writable ? t("save") : t("saveCopy"),
       saveHint: t("saveHint"),
       foldMore: () => t("foldMore"),
       foldTitle: (label, total) => t("foldTitle", { label, total }),
@@ -324,7 +329,7 @@ function StudioStage({
       previewLegendMoved: t("preview.legendMoved"),
       previewLegendRemoved: t("preview.legendRemoved"),
     }),
-    [t, tAgentPanel, isCreate, flowHint, insightsReturnTab],
+    [t, tAgentPanel, isCreate, flowHint, insightsReturnTab, writable],
   );
 
   // Plain-language record summary vocab — one bag serving both ko + en and both
@@ -826,7 +831,11 @@ function StudioStage({
           broaderRefsAfter,
         };
       }
-      const packet = [buildMcpPacket(draft, origin), originConceptLine]
+      // 데스크톱이면 실제 절대 경로가, 웹이면 프레이밍 문장이 머리에 붙는다.
+      const vaultPath = localVault.handle
+        ? getTauriVaultRootPath(localVault.handle) ?? null
+        : null;
+      const packet = [buildMcpPacket(draft, origin, { vaultPath }), originConceptLine]
         .filter((line): line is string => Boolean(line))
         .join("\n");
       await navigator.clipboard.writeText(packet);
@@ -1694,7 +1703,9 @@ export function OntologyStudioPage() {
           // 모달 위 모달은 modality 계약 위반이니 순차가 답이다.
           onAgentAction={() => {
             keepPractice();
-            requestSettingsView("ai");
+            // 문장이 먼저 약속하는 것은 **에이전트 연결**이다. API 키는 그
+            // 다음이고, 같은 시트 안에서 한 걸음이다.
+            requestSettingsView("agent");
           }}
         />
       ) : null}

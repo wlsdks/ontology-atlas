@@ -325,6 +325,18 @@ export const codexMigratedGlobs = [
   // 표면이 램프 이탈 59건(장부 최대 항목)을 들고 있었다. 재구성으로 0이 됐고,
   // 승격했으니 이제 error 로 막힌다.
   'src/views/download/**/*.{ts,tsx}',
+  // 2026-07-29 — 공방의 **신규** 파일만 파일 단위로 등재한다. 디렉토리 승격은
+  // 아직 못 한다: `src/views/ontology-studio` 에는 `StudioCompass` 유산인
+  // arbitrary radius 45건(11종 값)이 남아 있어 켜면 warning 총계가 150 →
+  // ~195 로 baseline 을 넘긴다 — 그건 강제가 아니라 소음이고 기존 신호까지
+  // 덮는다(`design.md` "룰을 켜기 전 반드시 측정한다").
+  //
+  // 이 네 파일은 위반 0이라 등재 비용이 0이고, **미래 유입만** 차단한다.
+  // 유산 치환 후 디렉토리 전체를 승격하는 것이 순서다.
+  'src/views/ontology-studio/ui/StudioPracticeRail.tsx',
+  'src/views/ontology-studio/ui/StudioPracticeCleanup.tsx',
+  'src/views/ontology-studio/ui/StudioMaterializeDialog.tsx',
+  'src/views/ontology-studio/ui/StudioEntryChoice.tsx',
   'src/views/ontology-insights/**/*.{ts,tsx}',
   'src/views/project-selector/**/*.{ts,tsx}',
   'src/views/ontology-edit/**/*.{ts,tsx}',

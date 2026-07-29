@@ -147,9 +147,15 @@ const EntryCard = ({
     data-testid={testId}
     onClick={onClick}
     style={{ ["--studio-stagger" as string]: `${staggerMs}ms` }}
+    // 16px 은 radius 램프(6/9/12) 밖이다. 이 두 카드는 무대 전체를 차지하는
+    // 진입 결정 표면이라 패널 단(12)보다 한 단 더 부드러운 값을 쓰고 있고,
+    // 소유자가 그 화면을 보고 승인했다. 값을 조용히 12로 스냅하면 승인된
+    // 화면이 바뀌므로, 램프에 `--radius-surface`(16) 를 등재할지는 다음
+    // 디자인 패스에서 정한다 — 그때까지 이 예외를 **보이게** 남긴다.
+    // eslint-disable-next-line no-restricted-syntax -- 램프 밖 16px, 등재 대기
     className="studio-stage-in group flex flex-col items-start gap-3 rounded-[16px] border border-[color:var(--color-border-soft)] bg-[color:var(--color-elevated)] px-5 py-6 text-left transition-colors hover:border-[color:var(--color-indigo-a46)] hover:bg-[color:var(--color-indigo-a06)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--color-indigo-a46)] focus-visible:ring-inset"
   >
-    <span className="grid h-12 w-12 place-items-center rounded-[12px] border border-[color:var(--color-border-soft)] bg-[color:var(--color-overlay-1)] text-[color:var(--color-text-tertiary)] transition-colors group-hover:border-[color:var(--color-indigo-a46)] group-hover:text-[color:var(--color-indigo-text-soft)]">
+    <span className="grid h-12 w-12 place-items-center rounded-panel border border-[color:var(--color-border-soft)] bg-[color:var(--color-overlay-1)] text-[color:var(--color-text-tertiary)] transition-colors group-hover:border-[color:var(--color-indigo-a46)] group-hover:text-[color:var(--color-indigo-text-soft)]">
       {illustration}
     </span>
     <span className="flex flex-col gap-1">
@@ -163,7 +169,7 @@ const EntryCard = ({
     {footnote ? (
       <span
         data-testid={`${testId}-recommend`}
-        className="mt-auto inline-flex max-w-full items-center gap-1.5 truncate rounded-[6px] bg-[color:var(--color-overlay-1)] px-2 py-1 text-label text-[color:var(--color-text-secondary)]"
+        className="mt-auto inline-flex max-w-full items-center gap-1.5 truncate rounded-chip bg-[color:var(--color-overlay-1)] px-2 py-1 text-label text-[color:var(--color-text-secondary)]"
       >
         <span aria-hidden className="h-1 w-1 flex-none rounded-full bg-[color:var(--color-indigo-brand)]" />
         <span className="truncate">{footnote}</span>

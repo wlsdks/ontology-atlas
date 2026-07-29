@@ -333,7 +333,8 @@
       "copiedSummary": "This folder is read-only, so nothing was written. Instead, the command that creates “{name}” is on your clipboard.",
       "copiedQuestion": "Paste it to your agent and the file appears then. To make one yourself, pick your own folder first.",
       "copiedDone": "Got it"
-    }
+    },
+    "saveCopy": "Copy the command"
   },
   "liveActivity": {
     "live": "Live",

@@ -754,7 +754,25 @@ export function StudioCompass(props: StudioCompassProps) {
   // 목록이 열린 채 소켓 피커가 그 위에 그대로 쌓여, 아래 목록이 반쯤 가린
   // 상태로 둘 다 살아 있었다(opus5 검수 스크린샷). 피커를 열 때 접힘 목록·
   // 관계 편집 카드·작업중 패널을 함께 닫는다.
+  /**
+   * 피커를 연 트리거 — **닫으면 여기로 포커스가 돌아온다.**
+   *
+   * 피커는 검색 입력으로 `autoFocus` 를 가져가므로, 닫힐 때 반환 의무가 생긴다.
+   * 초안에서는 Esc 로 닫으면 포커스가 `body` 로 증발했고(실측), 키보드 사용자는
+   * 그 순간 무대에서의 자기 위치를 통째로 잃었다 — Tab 이 문서 처음부터 다시
+   * 시작한다(카운슬 「상호작용」).
+   */
+  const pickerTriggerRef = useRef<HTMLElement | null>(null);
+  const closePicker = useCallback(() => {
+    setOpenRelation(null);
+    const trigger = pickerTriggerRef.current;
+    pickerTriggerRef.current = null;
+    if (trigger?.isConnected) trigger.focus({ preventScroll: true });
+  }, []);
   const openPicker = (relation: StudioRelation) => {
+    // 지금 포커스를 가진 원소가 이 피커를 연 트리거다.
+    const active = document.activeElement;
+    pickerTriggerRef.current = active instanceof HTMLElement ? active : null;
     setOpenFold(null);
     setOpenEdit(null);
     setDraftsOpen(false);
@@ -1044,7 +1062,14 @@ export function StudioCompass(props: StudioCompassProps) {
           backgroundPosition: "14px 12px",
         }}
       >
-        {/* flow cue — top-left wayfinding */}
+        {/* flow cue — top-left wayfinding.
+
+            실습 중에는 **접는다.** 같은 뷰포트에 `N/4` 꼴 숫자가 셋이었다 —
+            여기(완성도 · 소켓 수), 하단 바(채운 수), 그리고 실습 띠(단계 수).
+            같은 모양의 숫자가 **서로 다른 척도**를 세고 있어서, 사용자가 어느
+            것을 따라야 하는지 화면이 말하지 않았다. 실습은 자기 띠 하나로만
+            말한다(카운슬 「위계」, 2026-07-29). */}
+        {banner ? null : (
         <div className="absolute left-5 top-8 z-[4] flex items-center gap-3" data-testid="studio-flow-cue">
           <MiniRose bearings={bearings} />
           <div className="flex flex-col gap-1">
@@ -1064,6 +1089,7 @@ export function StudioCompass(props: StudioCompassProps) {
             ) : null}
           </div>
         </div>
+        )}
 
         {/* 무대 상단 중앙 — 평소엔 한 줄 프레임 문구가, 실습 중엔 안내 띠가
             **같은 자리를** 쓴다.
@@ -1256,7 +1282,7 @@ export function StudioCompass(props: StudioCompassProps) {
               query={query}
               onQuery={setQuery}
               onPick={pick}
-              onClose={() => setOpenRelation(null)}
+              onClose={closePicker}
               onCreateNew={props.onCreateNew}
             />
           ) : null}
