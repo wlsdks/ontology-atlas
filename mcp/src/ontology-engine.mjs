@@ -2720,7 +2720,19 @@ export function createOntologyEngine(artifact, options = {}) {
 
       for (const edge of outgoing.get(current) || []) {
         if (!edge.resolved || !typeAllowed(edge.via, typeSet)) continue;
-        if (edge.to === start && path.length > 1) {
+        // **자기 자신을 가리키는 엣지도 순환이다** (2026-07-29 실측).
+        //
+        // `path.length > 1` 가드는 길이 1 순환(self-loop)을 통째로 배제했다.
+        // 그래서 `cycles` 는 `totalCycles: 0` 에 `exhaustive: true` 까지 붙여
+        // *"zero means acyclic within maxDepth"* 라고 단언하는데, 같은 그래프
+        // 에서 `topological_order` 는 `acyclic: false` 를 냈고 `health` 는
+        // 그 둘을 **한 응답 안에** 나란히 실었다(`dependencyCycles: 0` +
+        // `dependencyOrderAcyclic: false`).
+        //
+        // `add_relation` 은 self-edge 를 정상으로 받으므로 만들기도 쉽다.
+        // 길이 2 순환은 잡히고 길이 1 만 빠지던 것이라, 사용자 입장에서는
+        // "왜 이것만 안 잡히지" 를 알 방법이 없었다.
+        if (edge.to === start && (path.length > 1 || edge.to === current)) {
           const cycle = normalizeCycle(path, [...edgePath, edge]);
           if (!cycleMap.has(cycle.key) && cycleMap.size <= limit) {
             cycleMap.set(cycle.key, {

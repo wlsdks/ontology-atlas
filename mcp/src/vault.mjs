@@ -31,7 +31,17 @@ export class VaultConflictError extends Error {
     super(
       `Vault conflict — "${slug}" was modified externally between read and write. ` +
         `expectedMtime=${expectedMtime} currentMtime=${currentMtime}. ` +
-        `Re-read the doc and try again, or pass force:true to overwrite.`,
+        // **없는 복구법을 알려주지 않는다** (2026-07-29 실측).
+        //
+        // 종전 문구는 `force:true` 로 덮어쓰라고 했는데, 이 오류를 내는 여덟
+        // 개 쓰기 도구 중 **일곱은 `force` 를 아예 선언하지 않는다** — 그대로
+        // 시도하면 `unknown_argument` 다. 유일하게 `force` 를 받는
+        // `delete_concept` 조차 그 뜻은 "백링크가 있어도 지운다" 이지 "mtime 을
+        // 무시한다" 가 아니라, 역시 `vault_conflict` 로 되돌아온다.
+        //
+        // 즉 여덟 도구 전부에서 **안내된 복구 경로가 죽어 있었다.** 에이전트는
+        // 그 말을 그대로 믿고 한 번 더 실패한다. 실제로 되는 길만 적는다.
+        `Re-read the doc with get_concept to get the current expected_mtime, then retry the write.`,
     );
     this.name = 'VaultConflictError';
     this.code = 'VAULT_CONFLICT';

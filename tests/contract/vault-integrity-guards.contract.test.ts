@@ -180,3 +180,60 @@ describe("읽지 못한 파일", () => {
     }
   });
 });
+
+/**
+ * **노드 수는 어느 명령에서 물어도 같다.**
+ *
+ * `AGENTS.md` 의 계약: *"each `.md` with a frontmatter `kind:` is an ontology
+ * node"*. `list`·`validate`·웹 런타임(`deriveDocNode` 는 kind 가 비면 `null`)
+ * 은 그 계약을 지켰는데 **컴파일러만 모든 `.md` 를 노드로 받았다.** 볼트에
+ * 평범한 메모 한 장만 있어도 `list 97 · compile 98` 이 됐고, 한 산출물 안에서
+ * `nodeCount 4` 인데 `byKind` 합이 1 인 모순이 나왔다.
+ *
+ * 더 나쁜 것: kind 없는 노드가 `overview`/`hubs` 의 결과 계약(비어 있지 않은
+ * `kind` 요구)에 걸려 **명령 전체가 exit 2** 로 죽었다 — 파일 이름도 안 알려
+ * 주는 내부 문자열과 함께, 방금 `validate` 가 통과시킨 볼트에서.
+ *
+ * 기존 `graph-truth-parity` 계약이 이걸 못 잡은 이유는 그 테스트의 로더가
+ * **미리 걸러서** 먹였기 때문이다(`if (!frontmatter?.kind) continue;`).
+ * 프로덕션 로더는 안 거른다. 그래서 여기서는 **거르지 않은 볼트를 CLI 에
+ * 그대로** 준다.
+ */
+describe("노드 수 일치 — kind 없는 .md", () => {
+  function mixedVault(): string {
+    const root = vault();
+    writeFileSync(join(root, "real.md"), "---\nkind: domain\ntitle: Real\n---\nx\n");
+    writeFileSync(join(root, "note.md"), "# 그냥 메모\n");
+    writeFileSync(join(root, "readme-ish.md"), "설명만 있는 파일\n");
+    return root;
+  }
+
+  it("list 와 compile 이 같은 수를 센다", () => {
+    const root = mixedVault();
+    const list = run(["list", root, "--json"]);
+    const compiled = run(["compile", root, "--summary", "--json"]);
+    const listed = (JSON.parse(list.out) as { total?: number }).total;
+    const summary = JSON.parse(compiled.out) as {
+      nodeCount?: number;
+      skippedNonNodeCount?: number;
+      byKind?: Record<string, number>;
+    };
+    expect(summary.nodeCount, `list=${listed} compile=${summary.nodeCount}`).toBe(listed);
+    // 한 산출물 안에서도 모순이 없어야 한다.
+    const byKindTotal = Object.values(summary.byKind ?? {}).reduce((a, b) => a + b, 0);
+    expect(byKindTotal).toBe(summary.nodeCount);
+  });
+
+  it("지나친 파일 수를 조용히 삼키지 않는다", () => {
+    const root = mixedVault();
+    const { out } = run(["compile", root, "--summary", "--json"]);
+    expect((JSON.parse(out) as { skippedNonNodeCount?: number }).skippedNonNodeCount).toBe(2);
+  });
+
+  it("overview 가 kind 없는 파일 때문에 죽지 않는다", () => {
+    const root = mixedVault();
+    const { out, code } = run(["overview", root]);
+    expect(code, `overview 는 평범한 메모가 섞인 볼트에서 살아야 한다:\n${out}`).toBe(0);
+    expect(out).not.toContain("invalid hub shape");
+  });
+});
