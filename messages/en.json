@@ -3107,7 +3107,8 @@
       "expandHint": "What changes",
       "createFile": "Create {path}",
       "modifyFile": "Edit {path}",
-      "addRelation": "Link {from} → {to} ({type})"
+      "addRelation": "Link {from} → {to} ({type})",
+      "applying": "Applying…"
     },
     "notice": {
       "roundCap": "That is as far as I will go — wrapping up.",

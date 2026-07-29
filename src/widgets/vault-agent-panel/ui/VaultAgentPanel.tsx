@@ -482,6 +482,7 @@ export function VaultAgentPanel({
                     volume: ({ files, added, removed }) =>
                       t('proposal.volume', { files, added, removed }),
                     apply: (count) => t('proposal.apply', { count }),
+                    applying: t('proposal.applying'),
                     cancel: t('proposal.cancel'),
                     copy: t('proposal.copy'),
                     copied: t('proposal.copied'),

@@ -58,6 +58,16 @@ export interface ProposalChange {
 
 export type ProposalStatus =
   | 'pending'
+  /**
+   * 쓰기가 **도는 중**. 초안에는 이 값이 없어서 `await` 동안 상태가 `pending`
+   * 으로 남았고, 「적용」을 두 번 누르면 **볼트 쓰기가 두 번 동시에** 들어갔다.
+   * 취소도 그 사이 눌렸다. 화면에도 "적용 중" 이라는 구별이 0이었다
+   * (디자인 카운슬 「상호작용」 반려 사유, 2026-07-29).
+   *
+   * 이 값이 있으면 재진입 가드와 버튼 잠금이 **같은 사실**을 본다 — 마무리
+   * 대화상자의 `busy` 와 같은 문법이다.
+   */
+  | 'applying'
   | 'applied'
   | 'cancelled'
   | 'conflict'

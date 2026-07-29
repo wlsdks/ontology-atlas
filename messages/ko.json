@@ -3107,7 +3107,8 @@
       "expandHint": "바뀌는 내용",
       "createFile": "만들기 {path}",
       "modifyFile": "고치기 {path}",
-      "addRelation": "{from} → {to} 연결 ({type})"
+      "addRelation": "{from} → {to} 연결 ({type})",
+      "applying": "적용 중…"
     },
     "notice": {
       "roundCap": "여기까지 하고 정리할게요.",

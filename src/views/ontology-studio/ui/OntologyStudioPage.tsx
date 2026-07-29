@@ -80,6 +80,7 @@ import {
 } from "../lib/studio-practice-guide";
 import { allowedKindsFor } from "../lib/allowed-kinds";
 import { candidateMatches } from "../lib/match-candidate";
+import { clearCreateDraft, readCreateDraft, saveCreateDraft } from "../lib/create-draft-store";
 import {
   clearStudioDraft,
   readStudioDraft,
@@ -464,14 +465,23 @@ function StudioStage({
   );
 
   // ─────────────────────────────── CREATE state ──────────────────────────
-  const [kind, setKind] = useState<CreateNodeKind>("capability");
-  const [title, setTitle] = useState("");
-  const [domainValue, setDomainValue] = useState<string | null>(null);
-  const [definition, setDefinition] = useState("");
-  const [relations, setRelations] = useState<PendingRelation[]>([]);
+  /**
+   * 생성 초안은 세션에 보관된다 — 나갔다 돌아와도 그대로다(`create-draft-store`).
+   * 딥링크로 들어온 맥락(`createContext`)이 있으면 아래 render-time 시드가
+   * 이기므로, 여기서는 보관본을 초기값으로만 쓴다.
+   */
+  // lazy initializer 로 **첫 렌더에 한 번만** 읽는다 — ref 를 렌더 중에 읽으면
+  // lint 가 막고(정당하다: 렌더는 순수해야 한다), 매 렌더 읽으면 세션 저장소를
+  // 계속 두드린다.
+  const [restored] = useState(readCreateDraft);
+  const [kind, setKind] = useState<CreateNodeKind>(restored?.kind ?? "capability");
+  const [title, setTitle] = useState(restored?.title ?? "");
+  const [domainValue, setDomainValue] = useState<string | null>(restored?.domainValue ?? null);
+  const [definition, setDefinition] = useState(restored?.definition ?? "");
+  const [relations, setRelations] = useState<PendingRelation[]>(restored?.relations ?? []);
   const [similarDismissed, setSimilarDismissed] = useState(false);
   // C12③ — optional other-locale display name (primary name is the current locale).
-  const [secondaryName, setSecondaryName] = useState("");
+  const [secondaryName, setSecondaryName] = useState(restored?.secondaryName ?? "");
 
   // C2 — CREATE opened from a socket carries the origin (A --relation--> new) and
   // a name prefill via ?from & ?rel & ?name. Resolve A tolerantly; malformed /
@@ -501,6 +511,14 @@ function StudioStage({
   // "reset state during render when input changes" pattern — same as the enhance
   // focal reset below). kind is pre-filtered to the bearing's allowed target kinds.
   const [prevCreateCtxKey, setPrevCreateCtxKey] = useState<string | null>(null);
+  // **나가는 순간을 잡지 않는다.** 「그만하기」·레일 이동·창 닫기·새로고침 —
+  // 나가는 길은 여럿이고 하나를 빼먹으면 그 길로만 초안이 사라진다. 대신 값이
+  // 바뀔 때마다 보관하면 어느 길로 나가든 지켜진다.
+  useEffect(() => {
+    if (!isCreate) return;
+    saveCreateDraft({ title, kind, domainValue, definition, secondaryName, relations });
+  }, [isCreate, title, kind, domainValue, definition, secondaryName, relations]);
+
   const createCtxKey = createContext
     ? `${createContext.originId}|${createContext.relation}|${createContext.name}`
     : null;
@@ -757,6 +775,9 @@ function StudioStage({
                 : null,
           });
         }
+        // 만든 뒤에는 보관본을 비운다 — 안 비우면 다음 방문에 **이미 만든
+        // 노드**가 미완성 초안인 척 되살아난다.
+        clearCreateDraft();
         // 실습에서는 토스트를 내지 않는다 — 마무리 대화상자가 **같은 사실을
         // 파일명까지 붙여** 이미 말한다. 같은 초에 성공 신호 둘은 중복 잉크이고,
         // 절정의 주목을 나눠 갖는다(카운슬 「모션」).
@@ -810,6 +831,7 @@ function StudioStage({
         .join("\n");
       await navigator.clipboard.writeText(packet);
       toast.show(t("create.copiedAgent"), "success");
+      clearCreateDraft();
       // **읽기 전용에서도 실습은 끝난다.** 초안에서 이 갈래를 빼먹어, 볼트를
       // 아직 안 고른 사람(웹 관문의 첫 방문자 — 정확히 이 실습의 대상)은
       // 안내 띠가 "저장하면 폴더 안에 마크다운 파일 하나가 생깁니다" 에
