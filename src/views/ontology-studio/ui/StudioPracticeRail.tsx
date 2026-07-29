@@ -57,7 +57,14 @@ export function StudioPracticeRail({
       className="pointer-events-auto mx-auto flex w-full max-w-[640px] items-center gap-3 rounded-panel border border-[color:var(--color-indigo-a46)] bg-[color:var(--color-indigo-a06)] px-4 py-2.5"
     >
       <span
-        aria-label={labels.progressAria}
+        /**
+         * **숫자는 점이 이미 말하고 있었다.** 초안은 같은 띠 안에 점 네 개와
+         * 「2 / 4」를 나란히 뒀는데, 그 아래 바닥 바에는 **다른 척도의 4**
+         * (「4개 중 0개 채웠어요 · 4군데 남음」 — 소켓 수)가 있었다. 같은 모양의
+         * 숫자 둘이 서로 다른 것을 세면 화면은 어느 쪽을 따라야 하는지 말하지
+         * 않는다. 눈에는 점만 남기고, 숫자는 스크린리더가 가져간다.
+         */
+        aria-label={`${labels.progressAria} ${labels.progress}`}
         role="img"
         className="flex flex-none items-center gap-1.5"
       >
@@ -82,15 +89,20 @@ export function StudioPracticeRail({
           `key` 를 단계에 묶어 **앞으로 재생**시킨다(퇴장을 reverse 로 되감으면
           같은 원소에서 재생되지 않는다는 계약). 새 어휘를 만들지 않고 도크의
           상태 교체와 같은 문법을 쓴다 — "같은 박스가 다른 상태가 된다". */}
+      {/* **띠의 높이는 문장 길이가 정하지 않는다.** 실측(2026-07-29): 1단계
+          46px → 2단계 62px 로, 사용자가 읽고 있는 바로 그 띠가 진행할 때마다
+          16px 씩 자랐다 — `design.md` 「치수 규칙성」이 금지하는, 컨테이너
+          치수가 내용물의 부산물이 되는 형태다.
+
+          예약을 px 가 아니라 **줄 수(`2lh`)로 적는다.** px 로 적으면 타입
+          램프나 행간이 바뀔 때 그 숫자가 조용히 어긋나지만, "두 줄" 은 램프가
+          바뀌어도 두 줄이다. 가장 긴 단계 문장이 640px 폭에서 두 줄이다. */}
       <p
         key={step}
-        className="practice-step-crossfade min-w-0 flex-1 text-body leading-body text-[color:var(--color-text-secondary)] [word-break:keep-all]"
+        className="practice-step-crossfade flex min-h-[2lh] min-w-0 flex-1 items-center text-body leading-body text-[color:var(--color-text-secondary)] [word-break:keep-all]"
       >
         {labels.instruction}
       </p>
-      <span className="flex-none text-label text-[color:var(--color-text-quaternary)] tabular-nums">
-        {labels.progress}
-      </span>
       <button
         type="button"
         data-testid="studio-practice-quit"

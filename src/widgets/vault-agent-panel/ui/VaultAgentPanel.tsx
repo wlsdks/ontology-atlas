@@ -28,6 +28,7 @@ import { AgentProposalCard } from './AgentProposalCard';
 import { AgentPromptText } from './AgentPromptDisclosure';
 import { AgentScopeSheet } from './AgentScopeSheet';
 import { AgentTranscript } from './AgentTranscript';
+import { josa } from '@/shared/lib/ko-josa';
 
 /**
  * 에이전트 패널 — 지도 오른쪽에 자리를 내주는 세로 도크.
@@ -453,7 +454,7 @@ export function VaultAgentPanel({
                   nextStepTitle: t('nextStep.title'),
                   retryTitle: t('retry.title'),
                   you: t('you'),
-                  lookingAt: (title) => t('screenContext.lookingAt', { title }),
+                  lookingAt: (title) => t('screenContext.lookingAt', { title, josa: josa(title, 'object') }),
                   wholeMap: t('screenContext.wholeMap'),
                   unsupported: t('unsupported'),
                   charsLabel: (chars) => t('charsLabel', { chars }),

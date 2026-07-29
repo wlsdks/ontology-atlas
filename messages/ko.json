@@ -249,7 +249,7 @@
     },
     "notFound": {
       "title": "이 개념을 지금 폴더에서 찾을 수 없어요",
-      "body": "주소가 가리키는 «{name}» 을(를) 지금 열려 있는 폴더에서 찾지 못했어요. 다른 폴더의 링크이거나, 문서가 옮겨졌거나 이름이 바뀌었을 수 있어요.",
+      "body": "주소가 가리키는 «{name}»{josa} 지금 열려 있는 폴더에서 찾지 못했어요. 다른 폴더의 링크이거나, 문서가 옮겨졌거나 이름이 바뀌었을 수 있어요.",
       "openMap": "지도 열기",
       "create": "새 노드 만들기"
     },
@@ -314,23 +314,23 @@
         "relate": "이 개념이 무엇과 이어지는지 한 군데만 골라 보세요. 네 방향 중 아무 곳이나 좋습니다.",
         "save": "다 됐습니다. 저장하면 폴더 안에 마크다운 파일 하나가 생깁니다.",
         "done": "저장했습니다.",
-        "saveCopy": "다 됐습니다. 이 폴더는 읽기 전용이라, 저장을 누르면 에이전트에게 넘길 명령이 복사됩니다."
+        "saveCopy": "다 됐습니다. 이 폴더는 읽기 전용이라, 「명령 복사하기」를 누르면 에이전트에게 넘길 명령이 복사됩니다."
       },
       "progress": "{current} / {total}",
       "progressAria": "실습 진행",
       "quit": "실습 그만두기",
       "cleanupTitle": "해 보셨습니다",
-      "cleanupSummary": "「{name}」 을(를) 만들었습니다. 흉내가 아니라 진짜 파일이라, 지금 폴더 안에 들어 있습니다.",
+      "cleanupSummary": "「{name}」{josa} 만들었습니다. 흉내가 아니라 진짜 파일이라, 지금 폴더 안에 들어 있습니다.",
       "cleanupQuestion": "연습이었다면 지금 지울 수 있습니다. 남겨 두면 그대로 볼트의 개념이 됩니다.",
       "delete": "지우기",
       "keep": "남겨 두기",
       "detachNote": "관계만 뗌",
-      "removed": "「{name}」 을(를) 지웠습니다.",
+      "removed": "「{name}」{josa} 지웠습니다.",
       "removeFailed": "지우지 못했습니다 — {message}",
       "agentHint": "이걸 매번 손으로 안 하셔도 됩니다. Claude Code · Codex · Cursor 를 연결하거나 API 키를 넣으면, 같은 파일을 에이전트가 대신 씁니다.",
       "agentAction": "AI 연결하기",
       "copiedTitle": "명령을 넘겼습니다",
-      "copiedSummary": "이 폴더는 읽기 전용이라 파일을 만들지 않았어요. 대신 「{name}」 을(를) 만드는 명령을 복사해 뒀습니다.",
+      "copiedSummary": "이 폴더는 읽기 전용이라 파일을 만들지 않았어요. 대신 「{name}」{josa} 만드는 명령을 복사해 뒀습니다.",
       "copiedQuestion": "에이전트에게 붙여넣으면 그때 파일이 생깁니다. 직접 만들어 보려면 내 폴더를 먼저 고르세요.",
       "copiedDone": "알겠어요"
     },
@@ -3073,7 +3073,7 @@
       "gemini": "Gemini"
     },
     "screenContext": {
-      "lookingAt": "화면: {title} 을(를) 보는 중",
+      "lookingAt": "화면: {title}{josa} 보는 중",
       "wholeMap": "화면: 지도 전체를 보는 중"
     },
     "scope": {

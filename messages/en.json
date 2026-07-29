@@ -314,7 +314,7 @@
         "relate": "Pick one thing this connects to. Any of the four directions is fine.",
         "save": "That's enough. Saving writes one markdown file into your folder.",
         "done": "Saved.",
-        "saveCopy": "That's enough. This folder is read-only, so saving copies the command for your agent instead."
+        "saveCopy": "That's enough. This folder is read-only, so “Copy the command” hands it to your agent instead."
       },
       "progress": "{current} / {total}",
       "progressAria": "Practice progress",

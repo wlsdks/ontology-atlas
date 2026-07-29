@@ -1675,12 +1675,26 @@ function CenterCard(
       ) : null}
 
       {mode === "create" ? (
+        /**
+         * **글자를 받는 것은 글자를 받게 생겨야 한다** (2026-07-29 도그푸딩).
+         *
+         * 초안의 정의 칸은 테두리 0 · 배경 투명 · 패딩 0 이었고, 글자 크기는
+         * 바로 위 도메인 셀렉트와 **똑같은 9.5px** 였다. 그래서 화면에는
+         * [테두리 있는 필드] 아래 [회색 잔글씨] 로 읽혔다 — 사용자가 클릭할
+         * 이유가 없는 캡션이다. 실제로 그 자리는 카드 하단 60px 를 차지하는
+         * 빈 상자로 보였다.
+         *
+         * 이름 칸도 테두리가 없지만 그건 **주인공**이라 큰 글자 + 캐럿 +
+         * 예시 문장으로 스스로 입력임을 말한다. 정의 칸엔 그 신호가 없었다.
+         * 새 문법을 만들지 않고 셀렉트와 **같은 필드 문법**(border-soft ·
+         * overlay-1 · rounded-card · px-3)을 그대로 쓴다.
+         */
         <textarea
           data-testid="studio-create-definition"
           value={focal.definition}
           onChange={(e) => props.onCreateDefinition?.(e.target.value)}
           placeholder={props.labels.createDefinitionPlaceholder}
-          className="mt-3 min-h-[60px] w-full flex-1 resize-none bg-transparent text-caption leading-caption text-[color:var(--color-text-tertiary)] outline-none [word-break:keep-all] placeholder:text-[color:var(--color-text-quaternary)]"
+          className="mt-3 min-h-[60px] w-full flex-1 resize-none rounded-card border border-[color:var(--color-border-soft)] bg-[color:var(--color-overlay-1)] px-3 py-2 text-caption leading-caption text-[color:var(--color-text-secondary)] outline-none transition-colors [word-break:keep-all] placeholder:text-[color:var(--color-text-quaternary)] hover:border-[color:var(--color-border-strong)] focus-visible:border-[color:var(--color-indigo-a46)] focus-visible:ring-2 focus-visible:ring-[color:var(--color-indigo-a24)]"
         />
       ) : definition ? (
         <div className="relative mt-3">
@@ -2322,10 +2336,10 @@ function laneHeadPos(view: CompassBearingView, layout: LaneLayout): React.CSSPro
  * the center card and always stays inside the board (#6):
  *   up   → right gutter, top-aligned to the socket
  *   down → right gutter, bottom-anchored
- *   left → below the left socket (stays left of the card)
- *   right→ below the right socket (stays right of the card)
+ *   left → top-aligned to the left socket (stays left of the card)
+ *   right→ top-aligned to the right socket (stays right of the card)
  */
-function placePicker(
+export function placePicker(
   bearing: StudioBearing,
   socket: { x: number; y: number; w: number; h: number },
   cardLeft: number,
@@ -2344,9 +2358,21 @@ function placePicker(
     const maxHeight = Math.min(CAP, BOARD.h - 2 * PAD);
     return { left: rightGutter, top: Math.max(PAD, BOARD.h - PAD - maxHeight), maxHeight };
   }
-  // left / right — drop below the socket, kept on the socket's side of the card.
-  const top = socket.y + socket.h + GAP;
-  const maxHeight = Math.min(CAP, BOARD.h - PAD - top);
+  // left / right — kept on the socket's side of the card, top-aligned to the
+  // socket and clamped into the board.
+  //
+  // **왜 "소켓 아래로 떨어뜨리기" 를 그만뒀나 (2026-07-29 도그푸딩 실측).**
+  // 좌우 소켓은 무대 세로 중앙에 앉는다. 그 아래로만 열면 패널이 쓸 수 있는
+  // 높이는 판의 절반뿐이고, 크롬(머리말+검색+새로 만들기)이 126px 를 먼저
+  // 가져간 뒤 **목록에 96px 가 남았다 — 여덟 줄 중 2.67줄.** 고르라고 연 표면
+  // 에서 고를 것이 화면의 43% 밖에 없고, 바로 위 260px 는 비어 있었다.
+  //
+  // 소켓을 덮는 것은 새 문법이 아니다 — `up`/`down` 방위는 처음부터 그렇게
+  // 열렸다(둘 다 판 전체 높이를 쓴다). 좌우만 다른 규칙을 쓰고 있었고, 그
+  // 대가를 목록이 냈다. 덮어도 맥락이 안 끊기는 이유는 패널 머리말이 어느
+  // 소켓인지("이 노드가 기대는 것은?")를 다시 말하기 때문이다.
+  const maxHeight = Math.min(CAP, BOARD.h - 2 * PAD);
+  const top = clampY(socket.y, maxHeight);
   const left =
     bearing === "left"
       ? Math.min(Math.max(socket.x, PAD), Math.max(PAD, cardLeft - GAP - W))
@@ -2401,7 +2427,10 @@ function InlinePicker({
   const W = 300;
   const { left, top, maxHeight } = placePicker(bearing, socket, cardLeft, cardRight);
   // Reserve chrome (header + search + create footer) so the list scrolls within.
-  const listMax = Math.max(96, maxHeight - 156);
+  // 실측값이다 — 머리말 41 + 검색 47 + 「새로 만들기」 38 = 126. 초안의 156 은
+  // 어림값이라 패널이 허용 높이보다 30px 짧게 열렸고, 그 30px 를 목록이 냈다.
+  const PICKER_CHROME = 126;
+  const listMax = Math.max(96, maxHeight - PICKER_CHROME);
 
   // ── Slice 3 — discovery (추천 + 둘러보기) while the search box is empty ──
   // Computed once per socket-open (this component is keyed by relation, so it
@@ -2423,6 +2452,10 @@ function InlinePicker({
   // sits just below the socket, so the transform-origin is the top edge at the
   // socket's horizontal center (clamped inside the picker box).
   const originX = Math.max(0, Math.min(W, socket.x + socket.w / 2 - left));
+  // 패널이 판 안으로 클램프되면 소켓보다 위에서 시작할 수 있다. 그때 성장
+  // 원점을 패널 꼭대기(0)에 두면 **누른 곳이 아닌 데서** 열려서 인과가
+  // 끊긴다 — 원점도 소켓을 따라간다.
+  const originY = Math.max(0, Math.min(maxHeight, socket.y + socket.h / 2 - top));
   return (
     <div
       data-testid="studio-picker"
@@ -2435,7 +2468,7 @@ function InlinePicker({
           width: W,
           maxHeight,
           boxShadow: "0 12px 34px rgba(0,0,0,.5)",
-          "--studio-picker-origin": `${originX}px 0`,
+          "--studio-picker-origin": `${originX}px ${originY}px`,
         } as React.CSSProperties
       }
     >

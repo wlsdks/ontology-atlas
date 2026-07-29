@@ -23,6 +23,7 @@ import { getTauriVaultRootPath } from "@/shared/lib/tauri-vault-fs";
 import type { ScreenContextSnapshot } from "@/features/vault-agent";
 import { VaultAgentPanel } from "@/widgets/vault-agent-panel";
 import { STUDIO_AGENT_DOCK_MIN_VIEWPORT_PX } from "../lib/studio-agent-dock";
+import { josa } from "@/shared/lib/ko-josa";
 import { EmptyState, useToast } from "@/shared/ui";
 import {
   buildStudioItem,
@@ -1117,6 +1118,7 @@ function StudioStage({
   }
   // 요청한 개념이 없으면 다른 개념을 대신 열지 않는다 — 죽은 딥링크는
   // 프로젝트 상세와 같은 문법으로 정직하게 말하고 갈 곳을 준다.
+  const notFoundName = requestedNode?.trim() ?? "";
   if (requestedNodeMissing) {
     return (
       <main
@@ -1129,7 +1131,7 @@ function StudioStage({
           // 는 문장이 짧아 드러나지 않던 문제).
           className="w-full max-w-lg"
           title={t("notFound.title")}
-          description={t("notFound.body", { name: requestedNode?.trim() ?? "" })}
+          description={t("notFound.body", { name: notFoundName, josa: josa(notFoundName, "object") })}
           tone="solid"
           align="center"
           action={
@@ -1612,7 +1614,7 @@ export function OntologyStudioPage() {
         await localVault.deleteDoc(slug);
       }
       setPracticeArtifact(null);
-      toast.show(t("practice.removed", { name: practiceArtifact.title }), "success");
+      toast.show(t("practice.removed", { name: practiceArtifact.title, josa: josa(practiceArtifact.title, "object") }), "success");
       // 실습이 끝났으니 실습 표시도 주소에서 뺀다 — 안 빼면 다음 저장이 또
       // 실습으로 읽힌다.
       navigateStudio(new URLSearchParams({ mode: "create" }), { drop: ["practice"] });
@@ -1678,8 +1680,8 @@ export function OntologyStudioPage() {
                 : t("practice.copiedTitle"),
             summary:
               practiceArtifact.outcome === "written"
-                ? t("practice.cleanupSummary", { name: practiceArtifact.title })
-                : t("practice.copiedSummary", { name: practiceArtifact.title }),
+                ? t("practice.cleanupSummary", { name: practiceArtifact.title, josa: josa(practiceArtifact.title, "object") })
+                : t("practice.copiedSummary", { name: practiceArtifact.title, josa: josa(practiceArtifact.title, "object") }),
             question:
               practiceArtifact.outcome === "written"
                 ? t("practice.cleanupQuestion")
