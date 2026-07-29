@@ -49,6 +49,15 @@ jobs:
         run: pnpm build
         env:
           NEXT_PUBLIC_BASE_PATH: /ontology-atlas
+          # 검색 콘솔 소유권 확인 코드 — 저장소 Variables 에서 받는다
+          # (Settings → Secrets and variables → Actions → Variables).
+          #
+          # 비밀이 아니라 **공개 태그로 나가는 값**이라 Secrets 가 아니라
+          # Variables 가 맞다. 다만 이 저장소의 사실도 아니어서 하드코딩하지
+          # 않는다 — 포크한 사람의 사이트에 우리 코드가 박히면 그쪽 콘솔
+          # 등록이 막힌다. 미설정이면 `app/layout.tsx` 가 태그 자체를 안 낸다.
+          NEXT_PUBLIC_GOOGLE_SITE_VERIFICATION: ${{ vars.GOOGLE_SITE_VERIFICATION }}
+          NEXT_PUBLIC_BING_SITE_VERIFICATION: ${{ vars.BING_SITE_VERIFICATION }}
       - name: Adapt static PWA manifest to base path
         run: |
           test -f out/manifest.webmanifest

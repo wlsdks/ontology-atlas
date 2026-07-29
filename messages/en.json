@@ -11,6 +11,12 @@
       "ontologyStudio": "Ontology Workshop",
       "ontologyInsights": "Graph Insights",
       "projectNew": "New project"
+    },
+    "descriptions": {
+      "home": "Code survives; context does not. Ontology Atlas keeps your project's context — what depends on what, and why it was built this way — in one markdown folder. Prose you read, structure your AI agents read and write over MCP. Local-first, no backend, open source.",
+      "download": "Free macOS app. Open a markdown folder on your own disk as a project map, and connect Claude Code, Codex or Cursor over MCP. Signed and notarized by Apple, nothing sent to a server, MIT licensed.",
+      "topology": "See your project's domains, capabilities, elements and their dependencies as one map. Markdown frontmatter is the graph, and the files stay on your own disk.",
+      "docs": "Read and edit the markdown folder directly. Change the frontmatter and the map follows."
     }
   },
   "notFound": {
