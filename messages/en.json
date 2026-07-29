@@ -264,7 +264,7 @@
     "create": {
       "framePrompt": "Decide what the new node is, then link it to nearby nodes",
       "namePlaceholder": "New node name — e.g. Payment cancel",
-      "secondaryName": "한국어 이름 (선택)",
+      "secondaryName": "Korean name (optional)",
       "originNote": "Will link as ‘{name}’ ’s ‘{bearing}’",
       "domainNone": "No domain",
       "definitionPlaceholder": "One line on what this node does — definition & boundary prevent duplicates.",
@@ -459,7 +459,7 @@
     "cliBridgeCopyAriaLabel": "Copy the bootstrap command to paste in your terminal",
     "sampleSourceAria": "Choose a sample to explore",
     "sampleSourceDogfood": "This app's code",
-    "sampleSourceStorefront": "Example — online store",
+    "sampleSourceStorefront": "Example store",
     "nodeHint": {
       "action": "Tap a node on the map",
       "reason": "all of it comes from real documents"
@@ -2058,7 +2058,7 @@
       "unavailableBody": "Connect a local workspace before creating concepts from the topology map.",
       "unavailableAction": "Open workspace",
       "primaryNamePlaceholder": "Concept name (English)",
-      "secondaryNamePlaceholder": "한국어 이름 (optional)",
+      "secondaryNamePlaceholder": "Korean name (optional)",
       "localeNamesHint": "The field above is the name for your current screen language (English). Add the Korean name so Korean screens read it too.",
       "primaryLocaleRequired": "Add the English name to save — your screen is English, so leaving it blank shows the raw title on the map and lists."
     },

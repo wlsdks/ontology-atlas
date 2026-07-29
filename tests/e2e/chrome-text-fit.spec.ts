@@ -100,3 +100,99 @@ test.describe("크롬 텍스트 맞춤 — 앱이 쓴 문자열은 잘리지 않
     }
   }
 });
+
+/**
+ * **첫 실행 카드 — 방문자가 보는 첫 화면 전체가 앱이 쓴 문자열이다.**
+ *
+ * 2026-07-29 도그푸딩이 잡은 결함(영어 화면):
+ *
+ * - 샘플 토글의 「Example — online store」가 115.1px 인데 칸이 98px 이라
+ *   「Example — online…」으로 잘렸다. 한국어(「예시 — 온라인 쇼핑몰」)는
+ *   들어가서 조용히 통과했다.
+ * - 용어 사전이 `flex-wrap` 이라 「Element」 줄만 정의가 다음 줄로 떨어져
+ *   `용어 = 정의` 문법이 그 줄에서만 깨졌다.
+ *
+ * 둘 다 **기존 오버플로 스윕을 통과했다** — 뷰포트 밖으로 나간 것이 없기
+ * 때문이다. `truncate` 는 시킨 일을 했고 `flex-wrap` 도 시킨 일을 했다.
+ * 상자를 넘었는가와 상자 안에서 읽히는가는 다른 질문이고, 이 스펙이 뒤쪽을
+ * 맡는다.
+ *
+ * vault 를 만들지 않는다 — 카드는 폴더를 고르기 **전에만** 사는 표면이라,
+ * 위 블록(vault 생성 후 푸터)과 상태가 배타적이다.
+ */
+const FIRST_RUN_VIEWPORTS = [
+  { label: "1512", w: 1512, h: 950 },
+  { label: "1024", w: 1024, h: 800 },
+];
+
+test.describe("크롬 텍스트 맞춤 — 첫 실행 카드", () => {
+  for (const locale of LOCALES) {
+    for (const vp of FIRST_RUN_VIEWPORTS) {
+      test(`첫 실행 카드 (${locale} · ${vp.label}px)`, async ({ page }) => {
+        await page.setViewportSize({ width: vp.w, height: vp.h });
+        await page.goto(`/${locale}/topology/?guides=off`, { waitUntil: "domcontentloaded" });
+
+        const card = page.getByTestId("first-run-starter");
+        await expect(card).toBeVisible({ timeout: 30_000 });
+        // 용어 사전까지 그려진 뒤에 잰다 — 카드는 census 가 붙기 전에 먼저 뜬다.
+        await expect(page.getByTestId("first-run-starter-glossary")).toBeVisible();
+
+        const clipped = await page.evaluate(() => {
+          const root = document.querySelector('[data-testid="first-run-starter"]');
+          if (!root) return [{ text: "first-run-starter not found", scrollWidth: 1, clientWidth: 0 }];
+          const out: { text: string; scrollWidth: number; clientWidth: number }[] = [];
+          const visit = (el: Element) => {
+            const text = (el.textContent ?? "").trim();
+            if (text && el.children.length === 0 && el.scrollWidth > el.clientWidth) {
+              out.push({ text, scrollWidth: el.scrollWidth, clientWidth: el.clientWidth });
+            }
+            for (const child of Array.from(el.children)) visit(child);
+          };
+          visit(root);
+          return out;
+        });
+
+        expect(
+          clipped,
+          `첫 실행 카드가 자기 문자열을 자른다 — 이 카드는 전부 앱이 쓴 문구다:\n` +
+            clipped.map((c) => `  "${c.text}" ${c.scrollWidth}px → ${c.clientWidth}px`).join("\n"),
+        ).toEqual([]);
+
+        /**
+         * **용어 사전은 어느 언어에서도 `용어 = 정의` 한 줄로 읽힌다.**
+         * 세 줄의 `=` 가 같은 x 에 서고, 정의도 같은 x 에서 시작해야 한다 —
+         * 한 줄만 다르면 그 줄은 다른 문법이 된다.
+         */
+        const columns = await page.evaluate(() => {
+          const dl = document.querySelector('[data-testid="first-run-starter-glossary"]')!;
+          const rects = (sel: string) =>
+            Array.from(dl.querySelectorAll(sel)).map((e) => {
+              const b = e.getBoundingClientRect();
+              return { x: Math.round(b.x), y: Math.round(b.y) };
+            });
+          return { terms: rects("dt"), equals: rects("span"), defs: rects("dd") };
+        });
+
+        // 열: 세 줄의 용어 / `=` / 정의가 각각 같은 x 에 선다.
+        expect(new Set(columns.terms.map((r) => r.x)).size, `용어 열: ${JSON.stringify(columns.terms)}`).toBe(1);
+        expect(new Set(columns.equals.map((r) => r.x)).size, `= 열: ${JSON.stringify(columns.equals)}`).toBe(1);
+        expect(new Set(columns.defs.map((r) => r.x)).size, `정의 열: ${JSON.stringify(columns.defs)}`).toBe(1);
+
+        /**
+         * **행도 함께 재야 한다.** 열 검사만 두면 세 칸이 **한 열로 쌓인**
+         * 상태도 통과한다 — 그때도 모든 x 가 같기 때문이다. 실제로 그렇게
+         * 됐다: Tailwind 가 `grid-cols-[auto_auto_1fr]` 을 생성하지 않아
+         * 화면은 단일 열 스택이 됐는데 이 검사가 초록으로 통과했다.
+         * 계약은 "정렬돼 있다" 가 아니라 **"`용어 = 정의` 가 한 줄"** 이다.
+         */
+        for (let i = 0; i < columns.terms.length; i += 1) {
+          const row = [columns.terms[i], columns.equals[i], columns.defs[i]];
+          expect(
+            new Set(row.map((r) => r.y)).size,
+            `${i}번째 줄이 한 줄에 안 선다: ${JSON.stringify(row)}`,
+          ).toBe(1);
+        }
+      });
+    }
+  }
+});
