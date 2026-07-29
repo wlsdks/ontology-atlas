@@ -2333,14 +2333,28 @@ export function useTopologyLoop(args: UseTopologyLoopArgs): UseTopologyLoopResul
             const by = s.y + off * Math.sin(-Math.PI / 4);
             btn.style.transform = `translate(-50%, -50%) translate(${bx}px, ${by}px)`;
           }
+          // **탭 정지도 함께 켜고 끈다** (2026-07-29 키보드 실측).
+          //
+          // `opacity: 0` 은 포커스 가능성을 끄지 않는다. 그래서 이 버튼이 안
+          // 보이는 동안에도 Tab 순서에 남아 있었고, 지도에서 26번째 Tab 이
+          // 여기 멈췄다 — 링은 alpha 0 이라 화면 어디에도 안 보이고 Enter 도
+          // 안 먹는다(클릭 판정은 캔버스 히트 테스트에 있다). 키보드 사용자
+          // 에게는 **포커스가 사라진 한 칸**이었다.
+          //
+          // `pointerEvents` 를 끄는 바로 이 자리가 짝이다. 여기서 안 끄면
+          // JSX 의 초기값만으로는 프레임마다 바뀌는 가시성을 따라갈 수 없다.
           if (eligible) {
             realmEnterTargetRef.current = fid;
             btn.style.opacity = "1";
             btn.style.pointerEvents = "auto";
+            btn.tabIndex = 0;
+            btn.removeAttribute("aria-hidden");
           } else {
             realmEnterTargetRef.current = null;
             btn.style.opacity = "0";
             btn.style.pointerEvents = "none";
+            btn.tabIndex = -1;
+            btn.setAttribute("aria-hidden", "true");
           }
         }
       }

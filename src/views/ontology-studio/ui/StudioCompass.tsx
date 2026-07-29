@@ -927,6 +927,7 @@ export function StudioCompass(props: StudioCompassProps) {
     <main
       ref={attachStage}
       id="main"
+      tabIndex={-1}
       className="relative grid h-[100dvh] min-h-0 grid-rows-[52px_1fr_64px] overflow-hidden bg-[color:var(--color-canvas)]"
       data-testid="studio-compass-stage"
     >

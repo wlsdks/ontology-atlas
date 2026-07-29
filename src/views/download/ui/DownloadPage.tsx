@@ -153,7 +153,7 @@ export function DownloadPage() {
     <div className="flex min-h-full w-full flex-col">
       <GatewayNav />
 
-      <main id="main" className="flex min-w-0 flex-1 flex-col bg-[color:var(--color-canvas)]">
+      <main id="main" tabIndex={-1} className="flex min-w-0 flex-1 flex-col bg-[color:var(--color-canvas)]">
         <PortraitStage published={published} primaryAsset={primaryAsset} />
 
         {/*

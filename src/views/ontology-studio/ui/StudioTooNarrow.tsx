@@ -31,6 +31,7 @@ export function StudioTooNarrow() {
   return (
     <main
       id="main"
+      tabIndex={-1}
       data-testid="studio-too-narrow"
       data-surface-role="degraded-surface"
       className="flex min-h-[100dvh] w-full items-center justify-center bg-[color:var(--color-canvas)] p-6 max-lg:pb-[calc(var(--topology-mobile-bottom-tab-reserve)+24px)]"

@@ -2070,6 +2070,7 @@ function DocsVaultContent() {
         {/* 본문 + 우측 사이드 */}
         <main
           id="main"
+      tabIndex={-1}
           className="flex min-w-0 flex-1 flex-col overflow-hidden"
           /**
            * 설치 앱 실측용 마커 — `dot 디렉터리를 실제로 읽었는가`.

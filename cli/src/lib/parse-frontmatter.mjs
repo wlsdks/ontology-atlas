@@ -40,13 +40,23 @@ export function parseFrontmatter(input) {
     const key = line.slice(0, idx).trim();
     const value = line.slice(idx + 1).trim();
     if (!key) continue;
+    // **블록 스칼라를 값 판정보다 먼저 본다.** `definition: |` 의 값은 빈
+    // 문자열이 아니라 `"|"` 라, 빈 값 분기 안에 두면 절대 도달하지 않는다.
+    const scalarIndicator = /^[|>][-+]?$/.exec(value);
+    if (scalarIndicator) {
+      const read = readBlockScalar(lines, i + 1, scalarIndicator[0]);
+      frontmatter[key] = read.value;
+      i = read.next - 1;
+      continue;
+    }
     if (value === "") {
+
       const lookahead = peekIndentedKind(lines, i + 1);
       if (lookahead === "list") {
         const items = [];
         let j = i + 1;
         while (j < lines.length) {
-          const dashMatch = lines[j].match(/^\s+-\s+(.+)$/);
+          const dashMatch = lines[j].match(/^\s*-\s+(.+)$/);
           if (!dashMatch) break;
           items.push(unquote(dashMatch[1].trim()));
           j += 1;
@@ -103,7 +113,7 @@ export function parseFrontmatter(input) {
 function peekIndentedKind(lines, start) {
   if (start >= lines.length) return null;
   const next = lines[start];
-  if (/^\s+-\s+/.test(next)) return "list";
+  if (/^\s*-\s+/.test(next)) return "list";
   if (/^\s+[^\s:][^:]*:\s*\S?/.test(next)) return "object";
   return null;
 }
@@ -176,6 +186,10 @@ export function serializeFrontmatter(fm) {
   const lines = [];
   for (const [key, value] of Object.entries(fm)) {
     if (value === null || value === undefined) continue;
+    if (typeof value === "string" && value.includes("\n")) {
+      lines.push(serializeMultiline(key, value));
+      continue;
+    }
     lines.push(`${key}: ${serializeValue(value)}`);
   }
   return lines.join("\n");
@@ -225,4 +239,74 @@ export function buildMarkdown({ frontmatter, body = "" }) {
   const fmBlock = serializeFrontmatter(frontmatter);
   const cleanBody = body ? body.replace(/^\n+/, "") : "";
   return `---\n${fmBlock}\n---\n\n${cleanBody}`;
+}
+
+/**
+ * 블록 스칼라(`|`, `>` 와 그 chomping 변형)를 값으로 삼킨다.
+ *
+ * **왜 필요한가 (2026-07-29 도그푸딩 실측).** 이걸 모르면 지시자가 값으로
+ * 저장되고(`definition: "|"`), 이어지는 들여쓴 본문 줄들이 최상위 루프로
+ * 흘러간다. 그 루프는 키를 `.trim()` 하므로 들여쓰기가 지워지고, 설명문 안의
+ * `kind: element` 같은 한 줄이 **그 노드의 종류를 덮어썼다.** 문서가 자기
+ * 설명으로 자기 타입을 바꾸는 것이다. 경고는 0이었다.
+ */
+function readBlockScalar(lines, start, indicator) {
+  const fold = indicator.startsWith('>');
+  const chomp = indicator.includes('-') ? 'strip' : indicator.includes('+') ? 'keep' : 'clip';
+  const collected = [];
+  let j = start;
+  let baseIndent = null;
+  while (j < lines.length) {
+    const line = lines[j];
+    if (line.trim() === '') {
+      collected.push('');
+      j += 1;
+      continue;
+    }
+    const indent = line.length - line.replace(/^\s+/, '').length;
+    if (indent === 0) break;
+    if (baseIndent === null) baseIndent = indent;
+    if (indent < baseIndent) break;
+    collected.push(line.slice(baseIndent));
+    j += 1;
+  }
+  while (collected.length > 0 && collected[collected.length - 1] === '') collected.pop();
+  let text;
+  if (fold) {
+    // 접힌 스칼라: 빈 줄은 줄바꿈, 이어지는 줄은 공백 하나로 합친다.
+    text = collected
+      .reduce((acc, cur) => {
+        if (cur === '') return acc.concat('');
+        const last = acc[acc.length - 1];
+        if (acc.length === 0 || last === '') return acc.concat(cur);
+        acc[acc.length - 1] = `${last} ${cur}`;
+        return acc;
+      }, [])
+      .join('\n');
+  } else {
+    text = collected.join('\n');
+  }
+  if (chomp === 'keep') text += '\n';
+  return { value: text, next: j };
+}
+
+/**
+ * 여러 줄 문자열은 **블록 스칼라로 쓴다** (2026-07-29 도그푸딩).
+ *
+ * 파서가 `|`/`>` 를 읽을 수 있게 고치자마자, 쓰기 쪽이 그걸 못 쓴다는 것이
+ * 드러났다: 여러 줄 값을 큰따옴표 하나로 감싸면서 **줄바꿈을 그대로** 흘려
+ * 보냈다. 우리 파서는 줄 단위로 읽으므로 둘째 줄부터는 최상위 키가 된다 —
+ * 실측: `definition` 이 첫 줄만 남고 `Note:` 라는 없는 키가 생겼다.
+ *
+ * 즉 **자기가 쓴 파일을 자기가 못 읽는** 상태였다. `import` 가 사용자의 md 를
+ * 볼트로 옮기는 유일한 경로라 그 손실은 영구적이다.
+ */
+function serializeMultiline(key, text) {
+  const body = text
+    .split('\n')
+    .map((line) => (line === '' ? '' : `  ${line}`))
+    .join('\n');
+  // `|-` (strip) — 마지막 줄바꿈을 더하지 않는다. 파서의 기본 clip 과 짝이
+  // 맞아 왕복해도 값이 자라지 않는다.
+  return `${key}: |-\n${body}`;
 }

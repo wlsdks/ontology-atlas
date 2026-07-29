@@ -62,6 +62,7 @@ export function StudioEntryChoice({
   return (
     <main
       id="main"
+      tabIndex={-1}
       data-testid="studio-entry-choice"
       role="dialog"
       aria-modal="true"

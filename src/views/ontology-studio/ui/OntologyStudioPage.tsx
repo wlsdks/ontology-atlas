@@ -1105,6 +1105,7 @@ function StudioStage({
     return (
       <main
         id="main"
+      tabIndex={-1}
         className="flex h-[100dvh] items-center justify-center bg-[color:var(--color-canvas)] p-6"
       >
         <p
@@ -1123,6 +1124,7 @@ function StudioStage({
     return (
       <main
         id="main"
+      tabIndex={-1}
         className="flex h-[100dvh] items-center justify-center bg-[color:var(--color-canvas)] p-6"
       >
         <EmptyState
@@ -1161,6 +1163,7 @@ function StudioStage({
     return (
       <main
         id="main"
+      tabIndex={-1}
         className="flex h-[100dvh] items-center justify-center bg-[color:var(--color-canvas)] p-6"
       >
         <EmptyState

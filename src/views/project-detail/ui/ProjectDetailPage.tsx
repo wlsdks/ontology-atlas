@@ -79,7 +79,7 @@ function ProjectDetailShell({ children }: { children: ReactNode }) {
           콘텐츠 끝이 탭바 top(967)과 1px 차로 맞닿았다(768×1024 실측 968.1).
           변형 순서에 기대지 않는 결정론적 구성으로 교체 (빌더 main 과 동일
           처방, 겹침 소탕 2026-07-23). */}
-      <main id="main" className="topology-ui-scale min-w-0 flex-1 bg-[color:var(--color-canvas)] px-[max(1.5rem,env(safe-area-inset-left))] pt-[max(1.5rem,env(safe-area-inset-top))] pr-[max(1.5rem,env(safe-area-inset-right))] pb-[calc(var(--topology-mobile-bottom-tab-reserve)+24px)] md:px-10 md:pt-14 lg:pb-[max(3.5rem,env(safe-area-inset-bottom))] xl:px-12">
+      <main id="main" tabIndex={-1} className="topology-ui-scale min-w-0 flex-1 bg-[color:var(--color-canvas)] px-[max(1.5rem,env(safe-area-inset-left))] pt-[max(1.5rem,env(safe-area-inset-top))] pr-[max(1.5rem,env(safe-area-inset-right))] pb-[calc(var(--topology-mobile-bottom-tab-reserve)+24px)] md:px-10 md:pt-14 lg:pb-[max(3.5rem,env(safe-area-inset-bottom))] xl:px-12">
         <motion.div
           initial={{ opacity: 0, y: 10 }}
           animate={{ opacity: 1, y: 0 }}

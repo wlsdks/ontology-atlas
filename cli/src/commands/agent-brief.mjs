@@ -11,6 +11,7 @@ import { formatUnknownFlagError, parsePositiveIntegerFlag, parseVaultFlag, resol
 import { DIAGNOSIS_OPTION_FLAGS, parseDiagnosisOption } from '../lib/diagnosis-options.mjs';
 import { diagnosisStatusColor } from '../lib/diagnosis-colors.mjs';
 import { stampMomentIfFirst } from '../lib/telemetry.mjs';
+import { cliInvocation } from '../lib/self-invocation.mjs';
 
 const CLI_ENTRYPOINT = fileURLToPath(new URL('../index.mjs', import.meta.url));
 const ALLOWED_FLAGS = ['--vault', '--json', '--prompt', '--graph-db-pack', '--verify-fallbacks', '--exit-zero', '--fallback-timeout-ms', '--fallback-slow-ms', '--fallback-concurrency', ...DIAGNOSIS_OPTION_FLAGS];
@@ -345,18 +346,34 @@ function stripAnsi(value) {
   return String(value).replace(/\x1b\[[0-?]*[ -/]*[@-~]/g, '');
 }
 
+/**
+ * 폴백 명령 한 줄에서 **하위 명령 이후**만 뽑는다.
+ *
+ * 2026-07-29: 이 팩이 찍는 명령이 `ontology-atlas …` 였다. 그 이름은 어디에도
+ * 설치되지 않아서(레지스트리 발행 폐기, `docs/DECISIONS.md` 2026-07-27) 19줄
+ * 전부 복사하면 `command not found` 였다 — 헤더는 "Run these commands" 라고
+ * 적혀 있는데도. `cliInvocation()` 으로 바꾸면서 이 파서도 새 형태를 받아야
+ * 한다: `node <abs>/cli/src/index.mjs <sub> …`.
+ *
+ * 옛 형태도 계속 받는다 — 사용자가 예전 출력을 붙여넣을 수 있고, 여기서
+ * 거절하면 `--verify-fallbacks` 가 자기 팩을 못 읽는다.
+ */
 function parseFallbackCommand(command) {
   const tokens = splitShellWords(command);
   if (tokens.length === 0) return { error: 'empty fallback command' };
-  if (tokens[0] !== 'ontology-atlas') return { error: `expected ontology-atlas command, got ${tokens[0]}` };
-  return { args: tokens.slice(1) };
+  if (tokens[0] === 'ontology-atlas') return { args: tokens.slice(1) };
+  // `node <entry> <sub> …` — entry 는 절대 경로일 수도, 상대 경로일 수도 있다.
+  if (tokens[0] === 'node' && tokens.length >= 2 && /index\.mjs$/.test(tokens[1])) {
+    return { args: tokens.slice(2) };
+  }
+  return { error: `expected an ontology-atlas CLI command, got ${tokens[0]}` };
 }
 
 function formatGraphDbCliPack(result, vaultRoot) {
   const graphDbQueryPack = Array.isArray(result?.graphDbQueryPack) ? result.graphDbQueryPack : [];
   const commands = [];
   const seen = new Set();
-  const selfCheckCommand = graphDbWithFlags(`ontology-atlas agent-brief ${graphDbShellQuote(vaultRoot)}`, [
+  const selfCheckCommand = graphDbWithFlags(`${cliInvocation()} agent-brief ${graphDbShellQuote(vaultRoot)}`, [
     '--verify-fallbacks',
     '--json',
     '--fallback-timeout-ms 15000',
@@ -424,7 +441,7 @@ function graphDbToolCallCliCommand(call) {
     if (args.targetOperation === 'match_nodes') return graphDbMatchNodesCliCommand(args, { plan: true });
     if (args.targetOperation === 'match_edges') return graphDbMatchEdgesCliCommand(args, { plan: true });
     if (args.targetOperation === 'centrality') {
-      return graphDbWithFlags('ontology-atlas hubs [vault]', [
+      return graphDbWithFlags(`${cliInvocation()} hubs [vault]`, [
         '--plan',
         graphDbPositiveFlag('--limit', args.limit),
         graphDbCsvFlag('--types', args.types),
@@ -436,22 +453,22 @@ function graphDbToolCallCliCommand(call) {
     return null;
   }
   if (args.operation === 'facets') {
-    return graphDbWithFlags('ontology-atlas facets [vault]', [graphDbPositiveFlag('--limit', args.limit)]);
+    return graphDbWithFlags(`${cliInvocation()} facets [vault]`, [graphDbPositiveFlag('--limit', args.limit)]);
   }
   if (args.operation === 'schema') {
-    return graphDbWithFlags('ontology-atlas schema [vault]', [graphDbPositiveFlag('--limit', args.limit)]);
+    return graphDbWithFlags(`${cliInvocation()} schema [vault]`, [graphDbPositiveFlag('--limit', args.limit)]);
   }
   if (args.operation === 'match_nodes') return graphDbMatchNodesCliCommand(args);
   if (args.operation === 'match_edges') return graphDbMatchEdgesCliCommand(args);
   if (args.operation === 'domain_matrix') {
-    return graphDbWithFlags('ontology-atlas domain-matrix [vault]', [
+    return graphDbWithFlags(`${cliInvocation()} domain-matrix [vault]`, [
       graphDbStringFlag('--project', args.project),
       graphDbPositiveFlag('--limit', args.limit),
       graphDbCsvFlag('--types', args.types),
     ]);
   }
   if (args.operation === 'centrality') {
-    return graphDbWithFlags('ontology-atlas hubs [vault]', [
+    return graphDbWithFlags(`${cliInvocation()} hubs [vault]`, [
       graphDbPositiveFlag('--limit', args.limit),
       graphDbCsvFlag('--types', args.types),
     ]);
@@ -460,7 +477,7 @@ function graphDbToolCallCliCommand(call) {
   if (args.operation === 'explain_relation') {
     const from = graphDbStringArg(args.from, '<from-slug>');
     const to = graphDbStringArg(args.to, '<to-slug>');
-    return graphDbWithFlags(`ontology-atlas explain ${graphDbShellQuote(from)} ${graphDbShellQuote(to)} [vault]`, [
+    return graphDbWithFlags(`${cliInvocation()} explain ${graphDbShellQuote(from)} ${graphDbShellQuote(to)} [vault]`, [
       graphDbStringFlag('--direction', args.direction),
       graphDbNonNegativeFlag('--max-hops', args.maxHops),
       graphDbCsvFlag('--types', args.types),
@@ -473,7 +490,7 @@ function graphDbToolCallCliCommand(call) {
 function graphDbAllPathsCliCommand(args, options = {}) {
   const from = graphDbStringArg(args.from, '<from-slug>');
   const to = graphDbStringArg(args.to, '<to-slug>');
-  return graphDbWithFlags(`ontology-atlas all-paths ${graphDbShellQuote(from)} ${graphDbShellQuote(to)} [vault]`, [
+  return graphDbWithFlags(`${cliInvocation()} all-paths ${graphDbShellQuote(from)} ${graphDbShellQuote(to)} [vault]`, [
     options.plan ? '--plan' : null,
     options.plan ? '--force' : null,
     graphDbNonNegativeFlag('--max-hops', args.maxHops),
@@ -484,7 +501,7 @@ function graphDbAllPathsCliCommand(args, options = {}) {
 }
 
 function graphDbMatchNodesCliCommand(args, options = {}) {
-  return graphDbWithFlags('ontology-atlas match-nodes [vault]', [
+  return graphDbWithFlags(`${cliInvocation()} match-nodes [vault]`, [
     options.plan ? '--plan' : null,
     graphDbStringFlag('--kind', args.kind),
     graphDbStringFlag('--domain', args.domain),
@@ -501,7 +518,7 @@ function graphDbMatchNodesCliCommand(args, options = {}) {
 }
 
 function graphDbMatchEdgesCliCommand(args, options = {}) {
-  return graphDbWithFlags('ontology-atlas match-edges [vault]', [
+  return graphDbWithFlags(`${cliInvocation()} match-edges [vault]`, [
     options.plan ? '--plan' : null,
     graphDbStringFlag('--from', args.from),
     graphDbStringFlag('--to', args.to),

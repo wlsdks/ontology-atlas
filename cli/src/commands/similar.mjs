@@ -134,10 +134,26 @@ function parseArgs(args) {
   }
   const kindError = validateKindValue('--kind', flags.kind, VAULT_KINDS);
   if (kindError) return { error: kindError };
-  const vaultResult = resolveTrailingVaultArg({ vault: flags.vault, positional, vaultIndex: 1 });
+  // **`--slug` 를 주면 첫 위치 인자는 제목이 아니라 vault 다** (2026-07-29 실측).
+  //
+  // usage 는 두 형태를 나란히 문서화한다: `similar "<title>" [vault]` 와
+  // `similar --slug X`. 그런데 둘을 합치면(`similar --slug X /path/to/vault`)
+  // `vaultIndex: 1` 이 무조건 `positional[0]` 을 제목으로 먹어서, **vault 경로가
+  // 유사도 질의어가 되고 vault 는 cwd 로 떨어졌다.** 사용자는 자기가 지정한
+  // 폴더가 아니라 **다른 볼트**의 답을 받는다.
+  //
+  // 하필 이 명령의 일이 중복 회피(`/ontology-extract` 짝)라, 그 실패는
+  // "비슷한 게 없으니 새로 만들어도 된다" 는 **거짓 안심**으로 나타난다 —
+  // 볼트가 자라며 가장 크게 다치는 실패 모드다.
+  const titleFromPositional = flags.slug ? null : positional[0] || null;
+  const vaultResult = resolveTrailingVaultArg({
+    vault: flags.vault,
+    positional,
+    vaultIndex: flags.slug ? 0 : 1,
+  });
   if (vaultResult.error) return vaultResult;
   return {
-    title: positional[0] || null,
+    title: titleFromPositional,
     slug: flags.slug,
     vault: vaultResult.vault,
     json: flags.json,
