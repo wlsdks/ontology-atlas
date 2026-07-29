@@ -62,7 +62,10 @@ export function backgroundParallaxOrigin(
  * 움직여 상대 운동이 사라진다(= 종전 동작). 0 으로 두면 배경이 화면에 용접돼
  * 오히려 내용 대비 상대 운동이 **생긴다** — 없애려던 것을 만드는 셈이다.
  *
- * 성좌가 아닌 배경(도트 격자·등고선)은 지면이므로 언제나 1.0 이다.
+ * 근접 성좌가 아닌 배경은 지면이므로 언제나 1.0 이다 — 도트 격자는 물론이고
+ * 흐름장·중력장도 그렇다. 그 둘은 **잔상이 누적된 버퍼**를 카메라 델타만큼
+ * 옮겨 시차를 만드는데, 계수를 1 미만으로 주면 이미 그려진 잔상과 새로 그리는
+ * 입자가 서로 다른 속도로 흘러 화면이 두 겹으로 미끄러진다.
  */
 export function resolveBackgroundOrigin(
   gridOrigin: { x: number; y: number },
@@ -83,7 +86,7 @@ export function resolveBackgroundParallax(
   token: number,
   reducedMotion: boolean,
 ): number {
-  if (variant !== "constellation") return 1;
+  if (variant !== "web") return 1;
   if (reducedMotion) return 1;
   if (!Number.isFinite(token)) return 1;
   // 1 을 넘으면 배경이 내용보다 빨라져 "가까운 층" 으로 읽힌다 — 성좌의 의미와

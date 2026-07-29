@@ -1,4 +1,4 @@
-import { act, fireEvent, render, screen, waitFor } from '@testing-library/react';
+import { act, fireEvent, render, screen, waitFor, within } from '@testing-library/react';
 import type { MouseEventHandler, ReactNode } from 'react';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { requestSettingsView } from '@/shared/lib/settings-view-intent';
@@ -111,9 +111,14 @@ vi.mock('next-intl', () => ({
   useLocale: () => mocks.locale,
 }));
 
-function openSheet(ui?: ReactNode) {
+/**
+ * 시트를 연다. 2026-07-29 에 설정이 **LNB 2단**이 되면서, 화면 절이 아닌 내용은
+ * 왼쪽 목록을 눌러야 나온다 — 그래서 절을 인자로 받는다. 기본값은 첫 화면(화면 절).
+ */
+function openSheet(ui?: ReactNode, section?: 'screen' | 'background' | 'footprint' | 'workspace' | 'agent') {
   render(ui ?? <AppSettingsMenu mode="static" />);
   fireEvent.click(screen.getByTestId('app-settings-trigger'));
+  if (section && section !== 'screen') fireEvent.click(screen.getByTestId(`app-settings-nav-${section}`));
 }
 
 /**
@@ -130,7 +135,7 @@ describe('AppSettingsMenu desktop acquisition boundary', () => {
   });
 
   it('routes the hosted browser vault action to the app download page', () => {
-    openSheet();
+    openSheet(undefined, 'workspace');
     expect(
       screen.getByRole('link', { name: /nav\.settingsMenu\.vaultTitle/i }),
     ).toHaveAttribute('href', '/download/?focus=main');
@@ -138,21 +143,21 @@ describe('AppSettingsMenu desktop acquisition boundary', () => {
 
   it('keeps the installed desktop app vault action on the native local picker path', () => {
     mocks.isDesktopRuntime = true;
-    openSheet();
+    openSheet(undefined, 'workspace');
     expect(
       screen.getByRole('link', { name: /nav\.settingsMenu\.vaultTitle/i }),
     ).toHaveAttribute('href', '/docs/?intent=local&focus=main');
   });
 
   it('sends an already-loaded local vault straight back to /docs', () => {
-    openSheet(<AppSettingsMenu mode="local" />);
+    openSheet(<AppSettingsMenu mode="local" />, 'workspace');
     expect(
       screen.getByRole('link', { name: /nav\.settingsMenu\.vaultTitle/i }),
     ).toHaveAttribute('href', '/docs/?focus=main');
   });
 
   it('records the destination reading-start intent before activating the vault link', () => {
-    openSheet(<AppSettingsMenu mode="local" />);
+    openSheet(<AppSettingsMenu mode="local" />, 'workspace');
     fireEvent.click(
       screen.getByRole('link', { name: /nav\.settingsMenu\.vaultTitle/i }),
     );
@@ -198,7 +203,7 @@ describe('AppSettingsMenu single-sheet recomposition', () => {
   });
 
   it('shows the workspace folder row with a direct open action when no vault is loaded', () => {
-    openSheet();
+    openSheet(undefined, 'workspace');
     expect(screen.getByTestId('app-settings-workspace-folder')).toBeInTheDocument();
     expect(
       screen.getByText('nav.settingsMenu.workspaceFolderEmpty'),
@@ -209,7 +214,7 @@ describe('AppSettingsMenu single-sheet recomposition', () => {
   });
 
   it('keeps MCP proof long-form OFF the root sheet and behind the agent drill-in', () => {
-    openSheet();
+    openSheet(undefined, 'agent');
     expect(screen.queryByText('nav.settingsMenu.mcpProofTitle')).not.toBeInTheDocument();
     fireEvent.click(screen.getByTestId('app-settings-agent-drillin'));
     expect(screen.getByTestId('app-settings-agent-view')).toBeInTheDocument();
@@ -226,7 +231,7 @@ describe('AppSettingsMenu single-sheet recomposition', () => {
   });
 
   it('summarizes agent state as a single row value while no vault is loaded', () => {
-    openSheet();
+    openSheet(undefined, 'agent');
     expect(screen.getByTestId('app-settings-agent-summary')).toHaveTextContent(
       'nav.settingsMenu.agentStatusNoVault',
     );
@@ -237,7 +242,7 @@ describe('AppSettingsMenu single-sheet recomposition', () => {
    * 없음)에서는 키 입력 필드를 만들지 않고 이유를 설명한다.
    */
   it('opens the AI connection subview from a single root row', () => {
-    openSheet();
+    openSheet(undefined, 'agent');
     expect(screen.getByTestId('app-settings-ai-summary')).toHaveTextContent(
       'settings.ai.chipDesktopOnly',
     );
@@ -283,21 +288,21 @@ describe('AppSettingsMenu single-sheet recomposition', () => {
   });
 
   it('renders the honest desktop-only card instead of a key field in the browser', () => {
-    openSheet();
+    openSheet(undefined, 'agent');
     fireEvent.click(screen.getByTestId('app-settings-ai-drillin'));
     expect(screen.getByTestId('ai-connection-web-degraded')).toBeInTheDocument();
     expect(screen.queryByTestId('ai-key-input-anthropic')).toBeNull();
   });
 
   it('Escape from the AI subview returns to the root sheet, not to the map', () => {
-    openSheet();
+    openSheet(undefined, 'agent');
     fireEvent.click(screen.getByTestId('app-settings-ai-drillin'));
     fireEvent.keyDown(screen.getByTestId('app-settings-ai-view'), { key: 'Escape' });
     expect(screen.getByTestId('app-settings-body')).toBeInTheDocument();
   });
 
   it('keeps forward and reverse Tab inside the modal settings sheet', async () => {
-    openSheet();
+    openSheet(undefined, 'agent');
     const panel = screen.getByTestId('app-settings-popover');
     const close = screen.getByLabelText('nav.settingsMenu.closeLabel');
     // 시트의 마지막 초점 대상 — [AI 연결] 행이 추가되며 여기로 옮겨졌다(#80).
@@ -448,6 +453,8 @@ describe('AppSettingsMenu controlled open (P3 결함⑥)', () => {
   it('Escape inside the agent drill-in restores the root row before closing', async () => {
     const onOpenChange = vi.fn();
     render(<AppSettingsMenu mode="static" open onOpenChange={onOpenChange} />);
+    // 에이전트 드릴인은 이제 LNB 의 「AI 에이전트」 절 안에 있다.
+    fireEvent.click(screen.getByTestId('app-settings-nav-agent'));
     const drillIn = screen.getByTestId('app-settings-agent-drillin');
     fireEvent.click(drillIn);
     await waitFor(() => {
@@ -478,29 +485,133 @@ describe('AppSettingsMenu appearance pickers (#20/#21)', () => {
     window.localStorage.clear();
   });
 
-  it('renders the canvas-background 3-choice and node-icon 2-choice pickers', () => {
+  /**
+   * 설정은 2026-07-29 에 **LNB 2단**이 됐다(소유자 재지시). 절이 다섯이라 드릴인은
+   * 값 몇 개를 비교하며 고르는 일에 맞지 않았다 — 매번 뒤로 나갔다 다시 들어가야
+   * 했다. 이 헬퍼가 왼쪽 목록을 누르므로, 배선이 끊기면 아래 테스트가 먼저 터진다.
+   */
+  const openSection = (section: string) => {
     openSheet();
+    fireEvent.click(screen.getByTestId(`app-settings-nav-${section}`));
+  };
+
+  /**
+   * 소유자 확정: *"가로 세로 적당한 크기여야하고 고정 사이즈여야함"*.
+   *
+   * 종전엔 높이가 내용을 따라가서 절을 바꿀 때마다 창이 늘었다 줄었다 했다.
+   * jsdom 은 레이아웃을 계산하지 않으므로 rect 로는 못 재고, **크기를 정하는
+   * 클래스가 절과 무관하게 같은지**로 잠근다 — 이 성질이 깨지는 방식은
+   * "어느 절에서만 다른 클래스가 붙는다" 뿐이라 그걸 정확히 겨눈다.
+   */
+  it('창 크기는 절을 바꿔도 고정이다', () => {
+    openSheet();
+    const panel = screen.getByTestId('app-settings-popover');
+    const sizeClasses = () =>
+      panel.className
+        .split(/\s+/)
+        .filter((c) => /^h-\[|^w-\[|^max-h-\[|^max-w-\[/.test(c))
+        .sort()
+        .join(' ');
+    const baseline = sizeClasses();
+    expect(baseline, '고정 높이가 없다 — 내용이 창 크기를 정하고 있다').toMatch(/h-\[\d+px\]/);
+    expect(baseline, '고정 폭이 없다').toMatch(/w-\[\d+px\]/);
+    for (const item of ['background', 'footprint', 'workspace', 'agent']) {
+      fireEvent.click(screen.getByTestId(`app-settings-nav-${item}`));
+      expect(sizeClasses(), `${item} 절에서 창 크기가 바뀐다`).toBe(baseline);
+    }
+  });
+
+  /**
+   * LNB 는 **묶음**을 가진다. 다섯 항목이 왜 그 순서인지를 말하는 것이 묶음의
+   * 일이고, 그게 없으면 목록이 그냥 다섯 줄이다.
+   */
+  it('LNB 는 두 묶음으로 나뉘고 3·2 로 갈린다', () => {
+    openSheet();
+    const nav = screen.getByTestId('app-settings-nav');
+    // 문구가 아니라 **구조**로 잠근다 — 라벨을 다듬을 때마다 깨지면 안 된다.
+    const groups = [...nav.children];
+    expect(groups.length, '묶음이 둘이 아니다').toBe(2);
+    expect(groups.map((g) => g.querySelectorAll('button').length)).toEqual([3, 2]);
+    for (const g of groups) {
+      expect(g.querySelector('p'), '묶음에 제목이 없다 — 그러면 그냥 다섯 줄이다').not.toBeNull();
+    }
+  });
+
+  /**
+   * 아이콘은 훑기 채널이다. 하나라도 빠지면 그 항목만 글자로 찾아야 해서,
+   * 있으나 마나 한 채널이 된다 — 그래서 "다섯 다"가 계약이다.
+   */
+  it('LNB 항목마다 아이콘이 하나씩 있다', () => {
+    openSheet();
+    for (const item of ['screen', 'background', 'footprint', 'workspace', 'agent']) {
+      const svgs = screen.getByTestId(`app-settings-nav-${item}`).querySelectorAll('svg');
+      expect(svgs.length, `${item} 항목에 아이콘이 없다`).toBe(1);
+    }
+  });
+
+  it('LNB 다섯 절을 모두 싣는다', () => {
+    openSheet();
+    for (const item of ['screen', 'background', 'footprint', 'workspace', 'agent']) {
+      expect(screen.getByTestId(`app-settings-nav-${item}`)).toBeInTheDocument();
+    }
+  });
+
+  it('첫 화면은 화면 절이고, 다른 절 내용은 아직 없다', () => {
+    openSheet();
+    expect(screen.getByTestId('app-settings-pane-screen')).toBeInTheDocument();
+    expect(screen.queryByTestId('app-settings-canvas-background')).toBeNull();
+    expect(screen.queryByTestId('app-settings-footprint')).toBeNull();
+  });
+
+  it('배경 절이 4택을 싣는다', () => {
+    openSection('background');
     expect(screen.getByTestId('app-settings-canvas-background')).toBeInTheDocument();
-    expect(screen.getByTestId('app-settings-canvas-bg-dot')).toBeInTheDocument();
-    expect(screen.getByTestId('app-settings-canvas-bg-constellation')).toBeInTheDocument();
-    expect(screen.getByTestId('app-settings-canvas-bg-contour')).toBeInTheDocument();
+    for (const variant of ['dot', 'flow', 'web', 'gravity']) {
+      expect(screen.getByTestId(`app-settings-canvas-bg-${variant}`)).toBeInTheDocument();
+    }
+  });
+
+  /** 아이콘 세트는 지도 밖에도 적용되므로 화면 절에 남는다 — 배경 절로 딸려가면 안 된다. */
+  it('노드 아이콘은 화면 절에 있다', () => {
+    openSheet();
     expect(screen.getByTestId('app-settings-glyph-set')).toBeInTheDocument();
-    expect(screen.getByTestId('app-settings-glyph-set-geometric')).toBeInTheDocument();
-    expect(screen.getByTestId('app-settings-glyph-set-line')).toBeInTheDocument();
   });
 
   it('defaults to dot / geometric selected', () => {
-    openSheet();
+    openSection('background');
     expect(screen.getByTestId('app-settings-canvas-bg-dot')).toHaveAttribute('aria-checked', 'true');
+    fireEvent.click(screen.getByTestId('app-settings-nav-screen'));
     expect(screen.getByTestId('app-settings-glyph-set-geometric')).toHaveAttribute('aria-checked', 'true');
   });
 
   it('persists a canvas-background choice and reflects it in aria-checked', () => {
-    openSheet();
-    fireEvent.click(screen.getByTestId('app-settings-canvas-bg-constellation'));
-    expect(screen.getByTestId('app-settings-canvas-bg-constellation')).toHaveAttribute('aria-checked', 'true');
+    openSection('background');
+    fireEvent.click(screen.getByTestId('app-settings-canvas-bg-flow'));
+    expect(screen.getByTestId('app-settings-canvas-bg-flow')).toHaveAttribute('aria-checked', 'true');
     expect(screen.getByTestId('app-settings-canvas-bg-dot')).toHaveAttribute('aria-checked', 'false');
-    expect(window.localStorage.getItem('ontology-atlas:canvas-background:v1')).toBe('constellation');
+    expect(window.localStorage.getItem('ontology-atlas:canvas-background:v1')).toBe('flow');
+  });
+
+  it('발자국 절은 프리셋이 먼저고 슬라이더는 접혀 있다', () => {
+    openSection('footprint');
+    expect(screen.getByTestId('app-settings-footprint')).toBeInTheDocument();
+    expect(screen.getByTestId('app-settings-footprint-preset-default')).toBeInTheDocument();
+    expect(screen.queryByTestId('app-settings-footprint-size')).toBeNull();
+    fireEvent.click(screen.getByTestId('app-settings-footprint-detail-toggle'));
+    expect(screen.getByTestId('app-settings-footprint-size')).toBeInTheDocument();
+  });
+
+  /**
+   * 테두리 굵기는 **윤곽선일 때만** 화면에 영향이 있다. 채움 상태에서 노출하면
+   * "만져도 안 바뀌는 컨트롤"이 되고, 그건 컨트롤이 거짓말을 하는 것이다.
+   */
+  it('hides the outline weight slider while the print is filled', () => {
+    openSection('footprint');
+    fireEvent.click(screen.getByTestId('app-settings-footprint-detail-toggle'));
+    expect(screen.queryByTestId('app-settings-footprint-stroke')).toBeNull();
+    const fillOptions = within(screen.getByTestId('app-settings-footprint-fill')).getAllByRole('radio');
+    fireEvent.click(fillOptions[1]);
+    expect(screen.getByTestId('app-settings-footprint-stroke')).toBeInTheDocument();
   });
 
   it('persists a node-icon set choice and reflects it in aria-checked', () => {
@@ -538,7 +649,7 @@ describe('AppSettingsMenu — vault 절대 경로 (#72)', () => {
     mocks.vaultStatus = 'loaded';
     mocks.vaultHandleName = 'my-vault';
     mocks.vaultRootPath = '/Users/me/Team Vault/docs/ontology';
-    openSheet();
+    openSheet(undefined, 'workspace');
 
     const row = screen.getByTestId('app-settings-vault-path');
     expect(row).toHaveTextContent('/Users/me/Team Vault/docs/ontology');

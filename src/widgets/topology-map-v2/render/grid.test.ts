@@ -1,4 +1,4 @@
-import { describe, expect, it } from "vitest";
+import { describe, expect, it, vi } from "vitest";
 
 import { computeVignetteAlpha, draw, lerpColorHex, GRID_TILE_PX, wrapToTile } from "./grid";
 
@@ -35,8 +35,6 @@ const BG_TOKENS = {
 };
 
 const GRID_PATTERN = { tag: "grid" } as unknown as CanvasPattern;
-const CONSTELLATION_PATTERN = { tag: "constellation" } as unknown as CanvasPattern;
-const CONTOUR_PATTERN = { tag: "contour" } as unknown as CanvasPattern;
 
 describe("render/grid draw() — background variant routing (#20)", () => {
   const base = {
@@ -44,32 +42,41 @@ describe("render/grid draw() — background variant routing (#20)", () => {
     viewportHeight: 600,
     farT: 0,
     gridPattern: GRID_PATTERN,
-    constellationPattern: CONSTELLATION_PATTERN,
-    contourPattern: CONTOUR_PATTERN,
     originX: 0,
     originY: 0,
   };
 
-  it("dot (default) paints the blueprint grid pattern, not the alt patterns", () => {
+  it("dot (default) paints the blueprint grid pattern and never calls the animated layer", () => {
     const { ctx, fillStyles } = makeRecordingCtx();
-    draw(ctx, { ...base, variant: "dot" }, BG_TOKENS);
+    const paintAnimated = vi.fn();
+    draw(ctx, { ...base, variant: "dot", paintAnimated }, BG_TOKENS);
     expect(fillStyles).toContain(GRID_PATTERN);
-    expect(fillStyles).not.toContain(CONSTELLATION_PATTERN);
-    expect(fillStyles).not.toContain(CONTOUR_PATTERN);
+    expect(paintAnimated).not.toHaveBeenCalled();
   });
 
-  it("constellation paints the constellation pattern and never the grid", () => {
-    const { ctx, fillStyles } = makeRecordingCtx();
-    draw(ctx, { ...base, variant: "constellation" }, BG_TOKENS);
-    expect(fillStyles).toContain(CONSTELLATION_PATTERN);
-    expect(fillStyles).not.toContain(GRID_PATTERN);
-  });
+  /**
+   * 움직이는 배경 셋은 **격자를 그리면 안 된다** — 둘이 겹치면 잉크 상한을
+   * 합산으로 넘고, 그 초과는 값 하나만 봐서는 어느 룰에도 안 걸린다.
+   */
+  it.each(["flow", "web", "gravity"] as const)(
+    "%s hands the frame to the animated layer and never paints the grid",
+    (variant) => {
+      const { ctx, fillStyles } = makeRecordingCtx();
+      const paintAnimated = vi.fn();
+      draw(ctx, { ...base, variant, paintAnimated }, BG_TOKENS);
+      expect(paintAnimated).toHaveBeenCalledWith(ctx, 800, 600);
+      expect(fillStyles).not.toContain(GRID_PATTERN);
+    },
+  );
 
-  it("contour paints the contour pattern and never the grid", () => {
+  /**
+   * 엔진이 아직 안 만들어진 첫 프레임(설정 변경 직후) — 콜백이 null 이면
+   * 격자로 폴백해야 한다. 아무것도 안 그리면 그 프레임이 **검은 화면**이 된다.
+   */
+  it("falls back to the grid when the animated layer is not ready yet", () => {
     const { ctx, fillStyles } = makeRecordingCtx();
-    draw(ctx, { ...base, variant: "contour" }, BG_TOKENS);
-    expect(fillStyles).toContain(CONTOUR_PATTERN);
-    expect(fillStyles).not.toContain(GRID_PATTERN);
+    draw(ctx, { ...base, variant: "flow", paintAnimated: null }, BG_TOKENS);
+    expect(fillStyles).toContain(GRID_PATTERN);
   });
 
   it("omitting variant defaults to the dot/grid layer (regression-free)", () => {

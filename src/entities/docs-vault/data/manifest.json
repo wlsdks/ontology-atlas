@@ -5303,6 +5303,36 @@
         },
         {
           "depth": 2,
+          "text": "2026-07-29 — 발자국 커스터마이즈: 소유자 뒤집기 수용 — 탭 문법 대신 「지도」 드릴인 서브뷰, 노랑은 허브와 분리된 전용 토큰, 발광은 헌장 예외 신설(정적·상한 6px·기본 0), 11값은 노출 8컨트롤로",
+          "slug": "2026-07-29-발자국-커스터마이즈-소유자-뒤집기-수용-탭-문법-대신-지도-드릴인-서브뷰-노랑은-허브와-분리된-전용-토큰-발광은-헌장-예외-신설정적상한-6px기본-0-11값은-노출-8컨트롤로"
+        },
+        {
+          "depth": 2,
+          "text": "2026-07-29 — 걸어온 길 재판정: rank 가 아니라 step — 숫자는 새 배지가 아니라 이미 있는 숫자 슬롯으로, 발자국은 선 옆 레인으로",
+          "slug": "2026-07-29-걸어온-길-재판정-rank-가-아니라-step-숫자는-새-배지가-아니라-이미-있는-숫자-슬롯으로-발자국은-선-옆-레인으로"
+        },
+        {
+          "depth": 2,
+          "text": "2026-07-29 — 걸어온 길: 링을 지우고 발자국 글리프로 — 「빛나게」의 번역은 imprint, not glow",
+          "slug": "2026-07-29-걸어온-길-링을-지우고-발자국-글리프로-빛나게의-번역은-imprint-not-glow"
+        },
+        {
+          "depth": 2,
+          "text": "2026-07-29 — 첫 페이지 시연 영상 시나리오: 2클립 2탭 · 무컷 · 루프 없음 · 무음",
+          "slug": "2026-07-29-첫-페이지-시연-영상-시나리오-2클립-2탭-무컷-루프-없음-무음"
+        },
+        {
+          "depth": 2,
+          "text": "2026-07-29 (밤, 소유자 서명) — 시연 영상은 첫 페이지로 간다 (카운슬 평결과 다르게)",
+          "slug": "2026-07-29-밤-소유자-서명-시연-영상은-첫-페이지로-간다-카운슬-평결과-다르게"
+        },
+        {
+          "depth": 2,
+          "text": "2026-07-29 — 관문 시연: 「하단 전체 투어」를 「복도의 무컷 한 테이크」로 번역한다 + GitHub 버튼은 별건 위생",
+          "slug": "2026-07-29-관문-시연-하단-전체-투어를-복도의-무컷-한-테이크로-번역한다-github-버튼은-별건-위생"
+        },
+        {
+          "depth": 2,
           "text": "2026-07-29 (밤) — 관문 정렬 원점: 「한 벌」 원칙은 유지, 「왼쪽 고정」 조항만 대칭 파생 원점으로 — 평결 ③ 2차 좁힘",
           "slug": "2026-07-29-밤-관문-정렬-원점-한-벌-원칙은-유지-왼쪽-고정-조항만-대칭-파생-원점으로-평결-2차-좁힘"
         },
@@ -5413,7 +5443,7 @@
         }
       ],
       "excerpt": "이 파일은 결정과 그때 진 반대 의견을 남긴다. docs/CHANGELOG.md 는 무엇이 언제 바뀌었나를 답하고, 이 파일은 왜 그렇게 정했고, 무엇을 걸었나를 답한다. 최신이 위. 기록은 덧붙이기만 한다 — 지난 기록을 고치지 않는다. 판단이 바뀌었으면 새 기록을 쓰고 옛 기록을 뒤집힘 으로 표시한다. 틀린 기록도 자산이다. 1. 소집 전에 읽는다. 카운슬을 열기 전(그리고 단독 PO 패스를 쓰기 전) 같은 표면 · 같은 질문에 대한 선행 결정이 있는지 먼저 본다. 있으면 새 패스는 그것을 ① 여전히 유효하다고 인용하거나 ② 명시적으로 뒤집는다. 조용히 다시 결정",
-      "wordCount": 8539,
+      "wordCount": 14177,
       "updatedAt": "2026-07-29",
       "linksOut": []
     },
@@ -8220,9 +8250,9 @@
           "slug": "mcp-server-32-tools"
         }
       ],
-      "excerpt": "@modelcontextprotocol/sdk 안정판 1.x 기반 stdio JSON-RPC 서버. 32 도구 노출 (read 19 + write 13). 런타임은 Node 24 계열만 지원한다: · 도구 · 동작 · connectioninfo · active vault/repo root와 해석 출처, 서버 버전, read-only 여부, 실제 광고 중인 tool count/name/hash를 반환해 잘못된 폴더와 stale client toolset을 막는 첫 호출 proof. 명시적 OATLASREPOROOT가 없으면 active vault의 Git top-lev",
-      "wordCount": 13589,
-      "updatedAt": "2026-07-27",
+      "excerpt": "@modelcontextprotocol/server v2 기반 stdio JSON-RPC 서버. 32 도구 노출 (read 19 + write 13). 런타임은 Node 24 계열만 지원한다: · 도구 · 동작 · connectioninfo · active vault/repo root와 해석 출처, 서버 버전, read-only 여부, 실제 광고 중인 tool count/name/hash를 반환해 잘못된 폴더와 stale client toolset을 막는 첫 호출 proof. 명시적 OATLASREPOROOT가 없으면 active vault의 Git top-level",
+      "wordCount": 13588,
+      "updatedAt": "2026-07-29",
       "linksOut": []
     },
     {
@@ -9829,12 +9859,12 @@
     {
       "slug": "ontology/elements/mcp-sdk",
       "path": "docs/ontology/elements/mcp-sdk.md",
-      "title": "@modelcontextprotocol/sdk",
+      "title": "@modelcontextprotocol/server",
       "tags": [],
       "frontmatter": {
         "slug": "elements/mcp-sdk",
         "kind": "element",
-        "title": "@modelcontextprotocol/sdk",
+        "title": "@modelcontextprotocol/server",
         "domain": "ai-agent-partner",
         "path": "mcp/package.json",
         "relates": [
@@ -9844,13 +9874,28 @@
       "headings": [
         {
           "depth": 1,
-          "text": "@modelcontextprotocol/sdk",
-          "slug": "modelcontextprotocolsdk"
+          "text": "@modelcontextprotocol/server",
+          "slug": "modelcontextprotocolserver"
+        },
+        {
+          "depth": 2,
+          "text": "The wire protocol did not move with the package",
+          "slug": "the-wire-protocol-did-not-move-with-the-package"
+        },
+        {
+          "depth": 2,
+          "text": "What the code uses",
+          "slug": "what-the-code-uses"
+        },
+        {
+          "depth": 2,
+          "text": "Old clients still connect",
+          "slug": "old-clients-still-connect"
         }
       ],
-      "excerpt": "Official MCP TypeScript/JS SDK. As of 2026-06-12 this project pins @modelcontextprotocol/sdk to 1.29.0, the latest stable v1 release. The upstream v2 SDK/spec work is still pre-alpha, so production builds stay on v1.x until that branch stabilizes. mcp/src/index.js uses Server, StdioServerTransport, CallToolRequestSchem",
-      "wordCount": 96,
-      "updatedAt": "2026-07-21",
+      "excerpt": "Official MCP TypeScript SDK. As of 2026-07-29 this project pins the v2 line — @modelcontextprotocol/server@2.0.0 with @modelcontextprotocol/core@2.0.0. Upstream split the monolithic @modelcontextprotocol/sdk into core / server / node on 2026-07-27, alongside the 2026-07-28 specification, and v2 became the stable releas",
+      "wordCount": 306,
+      "updatedAt": "2026-07-29",
       "linksOut": []
     },
     {
@@ -15517,7 +15562,7 @@
                 "path": "ontology/elements/mcp-sdk",
                 "type": "doc",
                 "slug": "ontology/elements/mcp-sdk",
-                "title": "@modelcontextprotocol/sdk"
+                "title": "@modelcontextprotocol/server"
               },
               {
                 "name": "ontology-atlas-quality-bar",

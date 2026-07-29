@@ -57,8 +57,9 @@
       "canvasBgCaption": "Pick the map's background texture — it always stays fainter than nodes and links",
       "canvasBg": {
         "dot": "Dots (default)",
-        "constellation": "Constellation",
-        "contour": "Contour"
+        "flow": "Flow field",
+        "web": "Constellation",
+        "gravity": "Gravity field"
       },
       "glyphSetLabel": "Node icons",
       "glyphSetCaption": "Pick the node icon style — the shapes (kinds) never change",
@@ -93,7 +94,51 @@
       "mcpProofTitle": "MCP first calls",
       "mcpProofBody": "Don't declare the connection from this screen alone — prove it in the agent session. When the server shows up in Codex or Claude, paste this call packet first.",
       "mcpProofCopy": "Copy first-call packet",
-      "mcpProofCopied": "Copied"
+      "mcpProofCopied": "Copied",
+      "footprint": {
+        "caption": "Footprints mark the concepts you opened, numbered in the order you walked them.",
+        "presetLabel": "Strength",
+        "preset": {
+          "subtle": "Subtle",
+          "default": "Default",
+          "bold": "Bold"
+        },
+        "detailShow": "Fine-tune",
+        "detailHide": "Hide fine-tuning",
+        "size": "Print size",
+        "fillLabel": "Fill",
+        "fillSolid": "Solid",
+        "fillOutline": "Outline",
+        "strokeWidth": "Outline weight",
+        "opacity": "Strength",
+        "toneLabel": "Colour",
+        "toneAmber": "Yellow",
+        "toneIndigo": "Indigo",
+        "bloom": "Bleed",
+        "bloomOff": "None",
+        "gap": "Distance",
+        "onEdgesLabel": "Along links",
+        "onEdgesYes": "Mark",
+        "onEdgesNo": "Don't mark",
+        "densityLabel": "Link density",
+        "densitySparse": "Sparse",
+        "densityDense": "Dense",
+        "placementLabel": "Placement",
+        "placementRight": "One side",
+        "placementBoth": "Alternating",
+        "reset": "Reset to defaults"
+      },
+      "section": {
+        "screen": "Display",
+        "background": "Map background",
+        "footprint": "Footprints",
+        "workspace": "Workspace",
+        "agent": "AI agent"
+      },
+      "sectionGroup": {
+        "look": "Appearance",
+        "connect": "Connections"
+      }
     },
     "primaryAriaLabel": "Primary menu",
     "notificationsAriaLabel": "Notifications"

@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 
 import {
   appendFootprintVisit,
+  collapseFootprintTrail,
   FOOTPRINT_TRAIL_MAX,
   formatFootprintTrailAgentPacket,
   graphIdToConceptSlug,
@@ -18,8 +19,16 @@ describe("appendFootprintVisit", () => {
     expect(appendFootprintVisit(["a", "b"], "c")).toEqual(["a", "b", "c"]);
   });
 
-  it("중복 재방문은 순서 갱신(기존 제거 + 맨 끝으로 이동)", () => {
-    expect(appendFootprintVisit(["a", "b", "c"], "a")).toEqual(["b", "c", "a"]);
+  /**
+   * 종전엔 재방문이 기존 위치를 지우고 끝으로 이동했다. 그 구현에서는 노드당
+   * 걸음이 최대 1개라 "숫자 여러 개"가 데이터 층에서 불가능했다.
+   */
+  it("재방문은 지우지 않고 새 걸음으로 쌓인다 — 되돌아온 사실이 경로에 남는다", () => {
+    expect(appendFootprintVisit(["a", "b", "c"], "a")).toEqual(["a", "b", "c", "a"]);
+  });
+
+  it("연속 중복은 걸음이 아니다 — 같은 노드 재클릭으로 순번이 늘지 않는다", () => {
+    expect(appendFootprintVisit(["a", "b"], "b")).toEqual(["a", "b"]);
   });
 
   it("상한 초과 시 가장 오래된 방문을 밀어낸다", () => {
@@ -34,6 +43,16 @@ describe("appendFootprintVisit", () => {
     const input = ["a", "b"];
     appendFootprintVisit(input, "c");
     expect(input).toEqual(["a", "b"]);
+  });
+});
+
+describe("collapseFootprintTrail", () => {
+  it("같은 노드는 마지막 방문만 남기고 순서를 보존한다", () => {
+    expect(collapseFootprintTrail(["a", "b", "a", "c"])).toEqual(["b", "a", "c"]);
+  });
+
+  it("중복이 없으면 그대로", () => {
+    expect(collapseFootprintTrail(["a", "b", "c"])).toEqual(["a", "b", "c"]);
   });
 });
 

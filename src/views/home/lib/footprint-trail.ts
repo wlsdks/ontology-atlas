@@ -13,19 +13,46 @@ import { ATLAS_CLI } from "@/shared/config/cli-invocation";
 export const FOOTPRINT_TRAIL_MAX = 30;
 
 /**
- * 방문을 트레일에 추가한다. 순서 보존 + 중복 재방문은 **순서 갱신**(기존 위치를
- * 제거하고 맨 끝=가장 최근으로 이동). 상한 초과 시 앞(오래된 방문)을 잘라낸다.
- * 불변 — 새 배열을 반환한다.
+ * 방문을 트레일에 추가한다. **재방문은 새 걸음으로 쌓인다** — 같은 노드가 여러 번
+ * 나올 수 있다. 상한 초과 시 앞(오래된 방문)을 잘라낸다. 불변 — 새 배열을 반환.
+ *
+ * ## 왜 중복 제거를 걷어냈나 (소유자 지시 2026-07-29)
+ *
+ * 종전 구현은 재방문 시 기존 위치를 **지우고** 맨 끝으로 옮겼다. 그래서 트레일에
+ * 한 노드는 최대 한 번만 존재했고, 그 결과 *"여러번 왔다갔다 했으면 숫자 여러개
+ * 표시"* 가 **구조적으로 불가능**했다 — 순번을 그리는 코드를 아무리 고쳐도 데이터에
+ * 걸음이 하나뿐이었다.
+ *
+ * 「걸어온 길」은 최근 방문 **집합**이 아니라 **경로**다. A→B→A 를 A,B 로 접으면
+ * 되돌아왔다는 사실 자체가 사라지고, 그건 이 기능이 나르려던 유일한 정보다.
+ *
+ * **연속 중복만** 무시한다 — 같은 노드를 두 번 클릭하거나 포커스가 재확정되는 것은
+ * 걸음이 아니다. 그걸 세면 가만히 있어도 순번이 늘어난다.
  */
 export function appendFootprintVisit(
   trail: readonly string[],
   nodeId: string,
 ): string[] {
-  const next = trail.filter((id) => id !== nodeId);
-  next.push(nodeId);
+  if (trail.length > 0 && trail[trail.length - 1] === nodeId) return [...trail];
+  const next = [...trail, nodeId];
   return next.length > FOOTPRINT_TRAIL_MAX
     ? next.slice(next.length - FOOTPRINT_TRAIL_MAX)
     : next;
+}
+
+/**
+ * 인계 패킷·타임라인용 **접힌 트레일** — 같은 노드의 마지막 방문만 남긴다(오래된
+ * → 최근 순서 보존). 에이전트에게 같은 `get_concept` 을 세 번 주는 것은 정보가
+ * 아니라 소음이고, 사람이 읽는 타임라인도 마찬가지다.
+ *
+ * 지도만 원본 트레일(중복 포함)을 쓴다 — 거기서만 반복이 **그림**이 되기 때문이다.
+ */
+export function collapseFootprintTrail(trail: readonly string[]): string[] {
+  const out: string[] = [];
+  for (let i = 0; i < trail.length; i += 1) {
+    if (trail.lastIndexOf(trail[i]) === i) out.push(trail[i]);
+  }
+  return out;
 }
 
 /**

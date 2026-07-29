@@ -46,12 +46,26 @@
  *   또는 .mcp.json 에 등록 (README 참고).
  */
 
-import { Server } from '@modelcontextprotocol/sdk/server/index.js';
-import { StdioServerTransport } from '@modelcontextprotocol/sdk/server/stdio.js';
-import {
-  CallToolRequestSchema,
-  ListToolsRequestSchema,
-} from '@modelcontextprotocol/sdk/types.js';
+/**
+ * MCP TypeScript SDK **v2** (`@modelcontextprotocol/server`).
+ *
+ * v1 의 단일 패키지 `@modelcontextprotocol/sdk` 는 2026-07-27 에 `core` /
+ * `server` / `node` 로 쪼개졌고, v2 가 정식 안정 라인이다(v1 은 최소 6개월
+ * 버그·보안 수정만 받는 `v1.x` 브랜치로 내려갔다).
+ *
+ * ⚠️ **와이어 프로토콜은 아직 안 올라간다.** 사양 `2026-07-28` 은 나왔지만
+ * v2 의 `SUPPORTED_PROTOCOL_VERSIONS` 는 v1 과 **같다**(실측:
+ * `["2025-11-25","2025-06-18","2025-03-26","2024-11-05","2024-10-07"]`,
+ * `LATEST = 2025-11-25`). 새 사양의 `server/discover`·무상태 방식은 타입
+ * 정의에만 잡혀 있고 협상 상수에는 없다. 이 이관의 값은 **지금 얻는 기능**이
+ * 아니라 **그것이 실릴 그릇으로 옮겨 두는 것**이다.
+ *
+ * **구 클라이언트 호환은 실측으로 확인했다** — v2 서버에 구식 `initialize`
+ * (`protocolVersion: "2024-11-05"`)를 보내면 그 버전으로 협상하고
+ * `tools/list`·`tools/call` 이 정상 응답한다. Claude Code·Codex 는 안 끊긴다.
+ */
+import { Server } from '@modelcontextprotocol/server';
+import { StdioServerTransport } from '@modelcontextprotocol/server/stdio';
 import { basename, relative, resolve, sep } from 'node:path';
 import { createHash } from 'node:crypto';
 
@@ -3913,7 +3927,10 @@ const TOOLS_FOR_LIST = READ_ONLY_MODE
 // guard can reason about every tool name regardless of what tools/list shows.
 const TOOL_BY_NAME = new Map(TOOLS_FOR_LIST_ALL.map((tool) => [tool.name, tool]));
 
-server.setRequestHandler(ListToolsRequestSchema, async () => ({ tools: TOOLS_FOR_LIST }));
+// v2 는 스키마 객체가 아니라 **메서드 문자열**을 받는다. 구 판본이
+// `ListToolsRequestSchema` 를 넘기면 v2 는 "not a spec request method" 로
+// 던진다 — 조용히 무시되지 않고 기동에서 바로 터지므로 안전한 종류의 변경이다.
+server.setRequestHandler('tools/list', async () => ({ tools: TOOLS_FOR_LIST }));
 
 
 // ── B3 활동 로그 — 쓰기 성공 시 로컬 감사 로그 1줄 (best-effort) ─────────
@@ -3978,7 +3995,7 @@ function logWrite(name, args, result) {
 
 // ── 도구 핸들러 ───────────────────────────────────────────────────────────
 
-server.setRequestHandler(CallToolRequestSchema, async (request) => {
+server.setRequestHandler('tools/call', async (request) => {
   const { name } = request.params;
   try {
     // Read-only guard — reject any known write tool even if the caller has a

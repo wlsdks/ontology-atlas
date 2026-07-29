@@ -308,10 +308,20 @@ test.describe("웹 스모크 ③ 정직한 강등", () => {
     await expect(platform).toContainText("아직 없습니다");
 
     // ② 갈 곳이 둘 다 살아 있다: 추적할 곳과, **오늘 당장 되는 것**.
+    //
+    // ⚠️ 2026-07-29 (밤) — 목적지가 `/ko/` 에서 `/ko/topology/` 로 바뀌었다.
+    // 소유자 결정으로 `/` 가 **마케팅 페이지**가 되기 때문이다(원장:
+    // 「root-first-open」 뒤집기). 이 단언의 의도는 *"앱이 없는 OS 의 방문자가
+    // 오늘 당장 되는 곳으로 갈 수 있다"* 이고, 그 곳은 소개 화면이 아니라 **웹
+    // 제품**이다 — `/topology`. 예전엔 두 주소가 같은 화면이라 어느 쪽을 적어도
+    // 통과했고, 그래서 이 값은 의도가 아니라 **우연**을 굳히고 있었다.
+    //
+    // 라벨과 목적지의 짝은 `tests/contract/map-destination-route.contract.test.ts`
+    // 가 소스 레벨에서 따로 지킨다.
     await expect(platform.getByRole("link")).toHaveAttribute("href", /github\.com/);
     const web = page.getByTestId("download-web-cta");
     await expect(web).toBeVisible();
-    await expect(web).toHaveAttribute("href", /\/ko\/?$/);
+    await expect(web).toHaveAttribute("href", /\/ko\/topology\/?$/);
   });
 
   test("설정의 AI 연결이 브라우저에서 키를 받지 않는 이유를 말한다", async ({ page }) => {
@@ -322,6 +332,9 @@ test.describe("웹 스모크 ③ 정직한 강등", () => {
       .getByTestId("app-nav-rail-utility-tier")
       .getByTestId("app-settings-trigger")
       .click();
+    // 설정은 2026-07-29 에 LNB 2단이 됐다 — AI 연결은 「AI 에이전트」 절 안에 있다.
+    // 이 한 줄이 늘어난 것이 LNB 전환의 유일한 웹-표면 비용이다.
+    await page.getByTestId("app-settings-nav-agent").click();
     await page.getByTestId("app-settings-ai-drillin").click();
 
     const card = page.getByTestId("ai-connection-web-degraded");

@@ -26,38 +26,79 @@ import { TopologyV2KindGlyph } from '@/shared/ui/topology-v2-kind-glyph';
 
 const PREVIEW_KINDS = ['project', 'domain', 'capability', 'element'] as const;
 
-/** 배경 미리보기 — 실제 배경 색 토큰을 쓴 정적 미니어처(도트=grid 라인, 성좌=별점, 등고선=곡선). */
+/**
+ * 배경 미리보기 — 실제 배경 잉크 토큰으로 그린 정적 미니어처.
+ *
+ * **움직이지 않는다.** 셋은 움직이는 배경이지만 스와치는 정지 그림이다:
+ * 설정 시트에 네 개의 파티클 루프가 동시에 돌면 고르려는 사람이 아니라
+ * 스와치가 주목을 가져간다. 미리보기는 "어떤 결인지"만 말하고, 움직임은
+ * 고른 다음 지도에서 본다.
+ */
 function CanvasBgSwatch({ variant }: { variant: CanvasBackground }) {
+  const ink = 'rgba(var(--canvas-bg-particle-rgb), 0.5)';
+  const inkFaint = 'rgba(var(--canvas-bg-particle-rgb), 0.24)';
   return (
+    /*
+     * viewBox 가 **카드 실제 비율**(240×56)이다. 작은 뷰박스를 늘리면 무늬가 통째로
+     * 확대돼 텍스처가 아니라 조각으로 읽힌다(실측: 48×30 을 256px 폭에 채우면 5.3배).
+     * 밀도는 보이는 크기에 맞춰 여기서 직접 정한다.
+     */
     <svg
-      viewBox="0 0 48 30"
-      className="h-[30px] w-full rounded-chip"
+      viewBox="0 0 240 56"
+      preserveAspectRatio="xMidYMid slice"
+      className="h-[56px] w-full rounded-chip"
       aria-hidden="true"
       data-canvas-bg-swatch={variant}
     >
-      <rect x="0" y="0" width="48" height="30" fill="var(--topology-v2-canvas-bg-near)" />
+      <rect x="0" y="0" width="240" height="56" fill="var(--topology-v2-canvas-bg-near)" />
       {variant === 'dot' ? (
         <g stroke="var(--topology-v2-grid-major)" strokeWidth="1">
-          <line x1="12" y1="0" x2="12" y2="30" />
-          <line x1="24" y1="0" x2="24" y2="30" />
-          <line x1="36" y1="0" x2="36" y2="30" />
-          <line x1="0" y1="10" x2="48" y2="10" />
-          <line x1="0" y1="20" x2="48" y2="20" />
+          {[20, 40, 60, 80, 100, 120, 140, 160, 180, 200, 220].map((x) => (
+            <line key={x} x1={x} y1="0" x2={x} y2="56" />
+          ))}
+          {[14, 28, 42].map((y) => (
+            <line key={y} x1="0" y1={y} x2="240" y2={y} />
+          ))}
         </g>
-      ) : variant === 'constellation' ? (
+      ) : variant === 'flow' ? (
+        <g stroke={ink} strokeWidth="1" fill="none" strokeLinecap="round">
+          <path d="M-4 14 C40 4 80 22 122 13 S204 6 244 16" />
+          <path d="M-4 28 C44 18 84 38 126 28 S208 21 244 30" />
+          <path d="M-4 42 C40 33 82 51 124 42 S206 35 244 44" />
+          <path d="M-4 21 C46 12 86 30 128 21" stroke={inkFaint} />
+          <path d="M-4 35 C42 26 84 44 126 35" stroke={inkFaint} />
+          <path d="M-4 49 C46 40 88 57 130 48" stroke={inkFaint} />
+        </g>
+      ) : variant === 'web' ? (
         <g>
-          <circle cx="9" cy="8" r="1.3" fill="var(--canvas-bg-constellation-bright)" />
-          <circle cx="22" cy="20" r="0.9" fill="var(--canvas-bg-constellation-dim)" />
-          <circle cx="33" cy="7" r="0.9" fill="var(--canvas-bg-constellation-dim)" />
-          <circle cx="40" cy="22" r="1.3" fill="var(--canvas-bg-constellation-bright)" />
-          <circle cx="16" cy="14" r="0.9" fill="var(--canvas-bg-constellation-dim)" />
-          <circle cx="28" cy="11" r="1.3" fill="var(--canvas-bg-constellation-bright)" />
+          {/* `fill="none"` 없이는 열린 폴리라인이 기본 검정으로 **채워져** 삼각형이 된다. */}
+          <g stroke={inkFaint} strokeWidth="0.8" fill="none">
+            <path d="M18 16 L52 34 L88 12 L124 30 L160 14 L196 32 L228 18" />
+            <path d="M52 34 L60 50 M124 30 L136 48 M196 32 L204 47" />
+            <path d="M18 16 L88 12 M88 12 L160 14" />
+          </g>
+          <g fill={ink}>
+            {[
+              [18, 16], [52, 34], [88, 12], [124, 30], [160, 14], [196, 32], [228, 18],
+              [60, 50], [136, 48], [204, 47],
+            ].map(([cx, cy]) => (
+              <circle key={`${cx}-${cy}`} cx={cx} cy={cy} r="1.6" />
+            ))}
+          </g>
         </g>
       ) : (
-        <g stroke="var(--canvas-bg-contour)" strokeWidth="1" fill="none">
-          <path d="M0 8 Q12 3 24 8 T48 8" />
-          <path d="M0 16 Q12 11 24 16 T48 16" />
-          <path d="M0 24 Q12 19 24 24 T48 24" />
+        <g fill="none" strokeLinecap="round">
+          <g stroke={ink} strokeWidth="1">
+            <path d="M84 50 A34 34 0 0 1 120 6" />
+            <path d="M156 8 A34 34 0 0 1 132 50" />
+            <path d="M30 44 A26 26 0 0 1 44 10" />
+            <path d="M210 12 A26 26 0 0 1 200 46" />
+          </g>
+          <g stroke={inkFaint} strokeWidth="0.8">
+            <path d="M66 54 A50 50 0 0 1 116 -2" />
+            <path d="M170 0 A50 50 0 0 1 148 54" />
+          </g>
+          <circle cx="120" cy="28" r="2.4" fill={ink} stroke="none" />
         </g>
       )}
     </svg>
@@ -68,12 +109,17 @@ export function CanvasBackgroundPicker() {
   const t = useTranslations('nav.settingsMenu');
   const value = useCanvasBackground();
   return (
-    <div className="px-3 py-2.5" data-testid="app-settings-canvas-background">
+    /*
+     * 자기 여백을 갖지 않는다 — 이 피커는 LNB 의 「지도 배경」 칸을 통째로 쓰므로
+     * 여백은 칸이 소유한다. 둘 다 여백을 가지면 절마다 왼쪽 시작선이 달라진다
+     * (실측: 다른 절 20px, 여기만 32px).
+     */
+    <div data-testid="app-settings-canvas-background">
       <p className="text-label text-[color:var(--color-text-secondary)]">{t('canvasBgLabel')}</p>
       <p className="mt-0.5 break-keep text-caption leading-4 text-[color:var(--color-text-quaternary)]">
         {t('canvasBgCaption')}
       </p>
-      <div role="radiogroup" aria-label={t('canvasBgLabel')} className="mt-2 grid grid-cols-3 gap-2">
+      <div role="radiogroup" aria-label={t('canvasBgLabel')} className="mt-3 grid grid-cols-2 gap-2.5">
         {CANVAS_BACKGROUNDS.map((variant) => {
           const active = variant === value;
           return (
