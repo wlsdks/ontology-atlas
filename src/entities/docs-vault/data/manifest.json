@@ -2553,9 +2553,9 @@
           "slug": "잔여-게이트-다음-라운드"
         }
       ],
-      "excerpt": "작업 순번 만. user 가 \"T?? 진행해\" 하면 그것만 분해해서 실행. 완료된 항목은 ✅ 표시 후 별도 batch 정리 시 일괄 삭제. 갱신 (2026-05-26): macOS app distribution track 반영. local-first 4 surface (macOS app · CLI · MCP · Website), dogfood 97 노드, CLI 52 commands, MCP 32 tools, compiler/query/health/agent-brief/workspace-brief/bootstrap/import-inference 루프 기준으로 재정렬.",
+      "excerpt": "작업 순번 만. user 가 \"T?? 진행해\" 하면 그것만 분해해서 실행. 완료된 항목은 ✅ 표시 후 별도 batch 정리 시 일괄 삭제. 갱신 (2026-05-26): macOS app distribution track 반영. local-first 4 surface (macOS app · CLI · MCP · Website), dogfood 98 노드, CLI 52 commands, MCP 32 tools, compiler/query/health/agent-brief/workspace-brief/bootstrap/import-inference 루프 기준으로 재정렬.",
       "wordCount": 1666,
-      "updatedAt": "2026-07-27",
+      "updatedAt": "2026-07-30",
       "linksOut": []
     },
     {
@@ -7160,7 +7160,7 @@
       ],
       "excerpt": "README 첫 화면에 박을 30초 GIF / mp4 의 스토리보드. claim → proof 5 컷 시퀀스. 각 컷 ~6초. screen: 좌측 vscode (또는 Obsidian) 가 domains/auth.md 를 열어 frontmatter 보임. 우측 Claude Code terminal 에서 ontology-atlas 도구 호출 결과 표시. action: 사람이 markdown 의 capabilities: 키에 capabilities/login 추가 → 저장. AI 가 같은 vault 의 capabilities/login.md 를 addconcept 로 생성",
       "wordCount": 469,
-      "updatedAt": "2026-07-28",
+      "updatedAt": "2026-07-29",
       "linksOut": []
     },
     {
@@ -7198,7 +7198,7 @@
       ],
       "excerpt": "Submission type: Show HN Category: open source / dev tool (80 chars exactly — under HN's 80 char limit. If too long, fallback: Show HN: ontology-atlas – frontmatter is the graph; AI agents read it via MCP) https://github.com/wlsdks/ontology-atlas (Word count: ~380. HN expects substantive Show HN posts, not one-liners; ",
       "wordCount": 645,
-      "updatedAt": "2026-07-28",
+      "updatedAt": "2026-07-29",
       "linksOut": []
     },
     {
@@ -9563,6 +9563,7 @@
           "topology-ontology-inspection"
         ],
         "elements": [
+          "elements/brand-mark-asset-pipeline",
           "elements/business-ontology-lens",
           "elements/dev-route-smoke",
           "elements/ontology-atlas-quality-bar",
@@ -9603,7 +9604,10 @@
           "documents/views-domain-boundary-audit",
           "domains/onboarding-ux",
           "domains/ontology-core"
-        ]
+        ],
+        "relation_notes": {
+          "elements/brand-mark-asset-pipeline": "views 도메인의 모든 표면이 레일 로고·파비콘으로 이 마크를 쓰고, OS 아이콘까지 같은 좌표에서 파생된다"
+        }
       },
       "headings": [
         {
@@ -9619,7 +9623,7 @@
       ],
       "excerpt": "같은 ontology 그래프의 세 작업 출구. 토폴로지 (canvas-2D topology-map-v2 spatial network — /, /topology)는 읽고 탐색하고, 공방 (나침 무대 /ontology/studio)은 관계 소켓으로 의미를 완성해 실제 frontmatter 를 쓰며, 인사이트 (/ontology/insights)는 다섯 질문으로 정비 우선순위를 읽고 agent handoff를 만든다. /ontology 는 Topology INDEX로, 구 xyflow ERD Builder /ontology/edit 는 공방으로 리다이렉트한다. 검색은 ⌘K",
       "wordCount": 140,
-      "updatedAt": "2026-07-27",
+      "updatedAt": "2026-07-29",
       "linksOut": []
     },
     {
@@ -9641,11 +9645,21 @@
           "depth": 1,
           "text": "Accessible Dialog Focus Contract",
           "slug": "accessible-dialog-focus-contract"
+        },
+        {
+          "depth": 2,
+          "text": "비모달 표면은 초점을 가두지 않는다",
+          "slug": "비모달-표면은-초점을-가두지-않는다"
+        },
+        {
+          "depth": 2,
+          "text": "소비자",
+          "slug": "소비자"
         }
       ],
-      "excerpt": "src/shared/lib/use-dialog-focus-trap.ts — 첫 실행 과정의 모달 표면이 공유하는 키보드·포커스 계약. 열릴 때 대화상자 또는 지정한 최초 제어로 포커스를 옮긴다. Tab과 Shift+Tab 순환을 모달 내부의 조작 가능한 항목에 가둔다. 닫힐 때 모달을 연 제어로 포커스를 복원한다. 허용된 표면은 Escape로 닫을 수 있다. 현재 소비자는 VaultOpenGuideSheet와 GuidedTourOverlay다. 가이드 투어의 지도 상호작용 단계는 카드 내부의 실제 버튼을 제공하며, 이 버튼을 키보드로 활성화하면 강조 노드를 선택하고 ",
-      "wordCount": 86,
-      "updatedAt": "2026-07-25",
+      "excerpt": "src/shared/lib/use-dialog-focus-trap.ts — 겹쳐 뜨는 표면이 공유하는 키보드·포커스 계약. 열릴 때 대화상자 또는 지정한 최초 제어로 포커스를 옮긴다. 닫힐 때 그 표면을 연 제어로 포커스를 복원한다. 허용된 표면은 Escape로 닫을 수 있다. Tab 순환 가둠은 모달일 때만이다 (trapTab, 기본 참). trapTab: false 는 2026-07-29 설정 도크에서 생겼다. 도크는 오른쪽에 붙어 scrim 없이 뜨고 바깥의 지도가 살아 있다 — 값을 바꾸면서 그 결과를 봐야 하는 표면이기 때문이다. 바깥이 살아 있는데 초점만 ",
+      "wordCount": 179,
+      "updatedAt": "2026-07-29",
       "linksOut": []
     },
     {
@@ -9697,10 +9711,92 @@
           "elements/locale-switch"
         ]
       },
-      "headings": [],
-      "excerpt": "src/widgets/app-settings-menu/ui/AppSettingsMenu.tsx is the app-wide settings surface. The retired five-tab workbench was simplified in 2026-07 into one centered, single-column sheet with three readable groups: Screen — language plus page-injected view mode and INDEX defaults. Workspace — current vault state, open/chan",
-      "wordCount": 455,
-      "updatedAt": "2026-07-25",
+      "headings": [
+        {
+          "depth": 1,
+          "text": "App Settings Menu",
+          "slug": "app-settings-menu"
+        },
+        {
+          "depth": 2,
+          "text": "Why a dock, not a modal",
+          "slug": "why-a-dock-not-a-modal"
+        },
+        {
+          "depth": 2,
+          "text": "LNB — two groups, five sections",
+          "slug": "lnb-two-groups-five-sections"
+        },
+        {
+          "depth": 2,
+          "text": "Non-modal costs three couplings",
+          "slug": "non-modal-costs-three-couplings"
+        },
+        {
+          "depth": 2,
+          "text": "Entry points and locale handoff",
+          "slug": "entry-points-and-locale-handoff"
+        },
+        {
+          "depth": 2,
+          "text": "AI-agent drill-in",
+          "slug": "ai-agent-drill-in"
+        },
+        {
+          "depth": 2,
+          "text": "Gates",
+          "slug": "gates"
+        }
+      ],
+      "excerpt": "src/widgets/app-settings-menu/ui/AppSettingsMenu.tsx is the app-wide settings surface. It has changed shape twice: the five-tab workbench collapsed into one centered sheet (2026-07), and that sheet moved to a right-anchored, non-modal dock with an LNB (2026-07-29). Two of its sections — background and footprint — promi",
+      "wordCount": 460,
+      "updatedAt": "2026-07-29",
+      "linksOut": []
+    },
+    {
+      "slug": "ontology/elements/brand-mark-asset-pipeline",
+      "path": "docs/ontology/elements/brand-mark-asset-pipeline.md",
+      "title": "Brand Mark Asset Pipeline",
+      "tags": [],
+      "frontmatter": {
+        "slug": "elements/brand-mark-asset-pipeline",
+        "kind": "element",
+        "title": "Brand Mark Asset Pipeline",
+        "display_ko": "브랜드 마크 자산 파이프라인",
+        "display_en": "Brand Mark Asset Pipeline",
+        "domain": "views",
+        "path": "src/shared/ui/brand-mark.tsx"
+      },
+      "headings": [
+        {
+          "depth": 1,
+          "text": "Brand Mark Asset Pipeline",
+          "slug": "brand-mark-asset-pipeline"
+        },
+        {
+          "depth": 2,
+          "text": "크기 사다리 — 작을수록 층을 지우고, 남긴 층은 굵기를 다시 잡는다",
+          "slug": "크기-사다리-작을수록-층을-지우고-남긴-층은-굵기를-다시-잡는다"
+        },
+        {
+          "depth": 2,
+          "text": "마크의 크기는 뷰박스가 아니라 잉크다",
+          "slug": "마크의-크기는-뷰박스가-아니라-잉크다"
+        },
+        {
+          "depth": 2,
+          "text": "게이트",
+          "slug": "게이트"
+        },
+        {
+          "depth": 2,
+          "text": "헌장 경계",
+          "slug": "헌장-경계"
+        }
+      ],
+      "excerpt": "브랜드 마크(\"겹 육각형\")가 화면과 OS 양쪽에 나가는 경로. 좌표 진실원은 src/shared/ui/brand-mark.tsx 하나이고, 나머지는 세 스크립트가 찍어낸다. · 단계 · 파일 · 산출 · SVG 생성 · scripts/build-brand-assets.mjs · public/brand-mark.svg · app/icon.svg · 앱 아이콘 SVG 4종 · 래스터 · scripts/build-brand-raster.mjs · PNG 21종 (브라우저 캔버스를 빌린다 — 이미지 의존성을 새로 들이지 않기 위해) · 설치 · scripts/install",
+      "wordCount": 298,
+      "updatedAt": "2026-07-29",
       "linksOut": []
     },
     {
@@ -10625,7 +10721,7 @@
       ],
       "excerpt": "이 디렉토리는 이 프로젝트 자신의 ontology 다. dogfooding — 이 서비스를 만드는 데 필요한 mental model 을 이 서비스의 데이터 형식 (frontmatter md) 으로 표현. 여기서 ontology 는 단순한 그래프 그림이 아니라 프로젝트가 무엇으로 이루어져 있고, 각 개념이 왜 연결되는지에 대한 실행 가능한 의미 모델이다. project, domain, capability, element 노드와 contains, dependson, relates, describes 같은 관계를 markdown frontmatter 로 저장하고, CLI/",
       "wordCount": 438,
-      "updatedAt": "2026-07-27",
+      "updatedAt": "2026-07-29",
       "linksOut": []
     },
     {
@@ -11175,7 +11271,7 @@
       ],
       "excerpt": "[v10 정체성 공식, 2026-07-18] — agent-native, human-sovereign. \"에이전트를 위한 시스템\"이 아니라 \"에이전트가 1급 사용자인, 사람과 에이전트의 공유 의미 계층\"이다. 에이전트는 신선도를 유지하는 엔진이자 최대 소비자(MCP/CLI), 사람은 의미의 최종 결정권자(평문 마크다운 · git diff · 내 디스크가 진실원). agent-memory 카테고리(기계 전용 벡터/자동추출 — 자동화 규모전에서 패배)와 위키 카테고리(사람 전용 — 즉시 부패) 둘 다와 구분되는 위치. 마케팅 훅은 에이전트 통증으로 열고, 본질은 공유 계",
       "wordCount": 5115,
-      "updatedAt": "2026-07-28",
+      "updatedAt": "2026-07-29",
       "linksOut": [
         "AGENT-MEMORY-POSITIONING"
       ]
@@ -13581,6 +13677,11 @@
         "linkText": "domains/views"
       },
       {
+        "fromSlug": "ontology/elements/brand-mark-asset-pipeline",
+        "context": "frontmatter · **[views]**",
+        "linkText": "views"
+      },
+      {
         "fromSlug": "ontology/elements/business-ontology-lens",
         "context": "frontmatter · **[views]**",
         "linkText": "views"
@@ -14729,6 +14830,13 @@
         "linkText": "topology-analysis-modes"
       }
     ],
+    "ontology/elements/brand-mark-asset-pipeline": [
+      {
+        "fromSlug": "ontology/domains/views",
+        "context": "frontmatter · **[elements/brand-mark-asset-pipeline]**",
+        "linkText": "elements/brand-mark-asset-pipeline"
+      }
+    ],
     "ontology/elements/dev-route-smoke": [
       {
         "fromSlug": "ontology/domains/views",
@@ -15527,6 +15635,13 @@
                 "type": "doc",
                 "slug": "ontology/elements/app-settings-menu",
                 "title": "App Settings Menu"
+              },
+              {
+                "name": "brand-mark-asset-pipeline",
+                "path": "ontology/elements/brand-mark-asset-pipeline",
+                "type": "doc",
+                "slug": "ontology/elements/brand-mark-asset-pipeline",
+                "title": "Brand Mark Asset Pipeline"
               },
               {
                 "name": "business-ontology-lens",

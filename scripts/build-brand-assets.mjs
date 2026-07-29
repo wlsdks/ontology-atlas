@@ -19,7 +19,7 @@ const OUTER = 'M 256 56 L 429.2 156 L 429.2 356 L 256 456 L 82.8 356 L 82.8 156 
 const DASHED = 'M 256 100 L 391.1 178 L 391.1 334 L 256 412 L 120.9 334 L 120.9 178 Z';
 const MID = 'M 256 144 L 353 200 L 353 312 L 256 368 L 159 312 L 159 200 Z';
 const CORE = 'M 256 208 L 297.6 232 L 297.6 280 L 256 304 L 214.4 280 L 214.4 232 Z';
-const MICRO_CORE = 'M 256 168 L 332.2 212 L 332.2 300 L 256 344 L 179.8 300 L 179.8 212 Z';
+const MICRO_CORE = 'M 256 152 L 346.1 204 L 346.1 308 L 256 360 L 165.9 308 L 165.9 204 Z';
 const SPOKES = [
   [256, 56, 256, 144],
   [429.2, 356, 353, 312],
@@ -30,6 +30,27 @@ const NODES = [
   [353, 312],
   [159, 312],
 ];
+
+/**
+ * 획 두께 — `src/shared/ui/brand-mark.tsx` 의 `BRAND_STROKES` 와 **같아야 한다**.
+ *
+ * .mjs 는 .tsx 를 import 할 수 없어 값을 복제한다. 복제본은 반드시 어긋나므로
+ * `tests/contract/brand-asset-parity.contract.test.ts` 가 두 쪽이 그린 SVG 를
+ * 실제로 비교해 잠근다 — 값 비교가 아니라 **출력 비교**라, 값을 맞춰 놓고 다른
+ * 데를 고치는 경우도 걸린다.
+ */
+export const STROKES = {
+  outer: 18,
+  dashed: 6,
+  mid: 13,
+  core: 19,
+  spoke: 13,
+  node: 23,
+  compactOuter: 34,
+  compactMid: 24,
+  compactNode: 34,
+  microOuter: 64,
+};
 
 export const GRADIENT_FROM = '#787EF6';
 export const GRADIENT_TO = '#3E4BDF';
@@ -52,7 +73,7 @@ export function markBody(detail, { paint, withDash = true } = {}) {
   if (detail === 'micro') {
     return (
       defs +
-      `<path d="${OUTER}" fill="none" stroke="${stroke}" stroke-width="44" stroke-linejoin="round"/>` +
+      `<path d="${OUTER}" fill="none" stroke="${stroke}" stroke-width="${STROKES.microOuter}" stroke-linejoin="round"/>` +
       `<path d="${MICRO_CORE}" fill="${stroke}"/>`
     );
   }
@@ -60,21 +81,21 @@ export function markBody(detail, { paint, withDash = true } = {}) {
   const isFull = detail === 'full';
   let out = defs;
   out += `<g fill="none" stroke="${stroke}" stroke-linejoin="round" stroke-linecap="round">`;
-  out += `<path d="${OUTER}" stroke-width="${isFull ? 18 : 36}"/>`;
+  out += `<path d="${OUTER}" stroke-width="${isFull ? STROKES.outer : STROKES.compactOuter}"/>`;
   if (isFull && withDash) {
-    out += `<path d="${DASHED}" stroke-width="6" stroke-dasharray="0.1 16" stroke-opacity="0.62"/>`;
+    out += `<path d="${DASHED}" stroke-width="${STROKES.dashed}" stroke-dasharray="0.1 16" stroke-opacity="0.62"/>`;
   }
-  out += `<path d="${MID}" stroke-width="${isFull ? 13 : 28}"/>`;
+  out += `<path d="${MID}" stroke-width="${isFull ? STROKES.mid : STROKES.compactMid}"/>`;
   if (isFull) {
-    out += `<path d="${CORE}" stroke-width="19"/>`;
+    out += `<path d="${CORE}" stroke-width="${STROKES.core}"/>`;
     for (const [x1, y1, x2, y2] of SPOKES) {
-      out += `<line x1="${x1}" y1="${y1}" x2="${x2}" y2="${y2}" stroke-width="13"/>`;
+      out += `<line x1="${x1}" y1="${y1}" x2="${x2}" y2="${y2}" stroke-width="${STROKES.spoke}"/>`;
     }
   }
   out += '</g>';
   out += `<g fill="${stroke}">`;
   for (const [cx, cy] of NODES) {
-    out += `<circle cx="${cx}" cy="${cy}" r="${isFull ? 23 : 42}"/>`;
+    out += `<circle cx="${cx}" cy="${cy}" r="${isFull ? STROKES.node : STROKES.compactNode}"/>`;
   }
   out += '</g>';
   return out;
@@ -99,7 +120,11 @@ export function markSvg(detail, opts = {}) {
  * 잉크 높이는 detail 마다 다르다(축약형·미형은 획이 굵다). 높이를 기준으로
  * 재면 사다리 전체에서 **보이는 크기가 같게** 유지된다.
  */
-const INK_HEIGHT = { full: 400 + 18, compact: 400 + 36, micro: 400 + 44 };
+const INK_HEIGHT = {
+  full: 400 + STROKES.outer,
+  compact: 400 + STROKES.compactOuter,
+  micro: 400 + STROKES.microOuter,
+};
 
 /** 잉크 세로가 판에서 차지하는 비율 — 카운슬 집행 사양. */
 const MARK_RATIO = 0.81;

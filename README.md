@@ -377,7 +377,7 @@ folder in the browser and the same map switches to your data.
 
 | | |
 |---|---|
-| **Dogfooding** | This product describes itself: **97 nodes** — capabilities 38, elements 48, domains 6, document 3, project 1, vault-readme 1 — living in [`docs/ontology/`](docs/ontology/). The map also draws the source paths those files cite as evidence, which is why the app's census reads higher than the file count. |
+| **Dogfooding** | This product describes itself: **98 nodes** — capabilities 38, elements 49, domains 6, document 3, project 1, vault-readme 1 — living in [`docs/ontology/`](docs/ontology/). The map also draws the source paths those files cite as evidence, which is why the app's census reads higher than the file count. |
 
 A test fails if those counts drift from the folder. Numbers in this README are
 checked against the vault, not maintained by hand.

@@ -27,6 +27,9 @@ import type { SVGProps } from 'react';
  *
  * 축약형의 노드는 중간 육각형 **꼭짓점 위에 박혀** 있다 — 떠 있는 점 3개는
  * 흔한 분자 아이콘이 되고, 그게 폐기된 1차 축약형의 실패였다.
+ *
+ * 층을 지우는 것만으로는 부족하다 — 남긴 층의 **굵기도 그 크기에서 다시
+ * 정해야 한다**(`BRAND_STROKES` 주석).
  */
 
 /** 512 좌표계 — 모든 자산이 이 뷰박스를 공유한다. */
@@ -43,8 +46,8 @@ const DASHED_HEX = 'M 256 100 L 391.1 178 L 391.1 334 L 256 412 L 120.9 334 L 12
 const MID_HEX = 'M 256 144 L 353 200 L 353 312 L 256 368 L 159 312 L 159 200 Z';
 /** 핵 — R=48. 이 마크에서 가장 굵은 선이다. */
 const CORE_HEX = 'M 256 208 L 297.6 232 L 297.6 280 L 256 304 L 214.4 280 L 214.4 232 Z';
-/** 미형 전용 — 윤곽 대신 속을 채우는 핵. R=88. */
-const MICRO_CORE = 'M 256 168 L 332.2 212 L 332.2 300 L 256 344 L 179.8 300 L 179.8 212 Z';
+/** 미형 전용 — 윤곽 대신 속을 채우는 핵. R=104. */
+const MICRO_CORE = 'M 256 152 L 346.1 204 L 346.1 308 L 256 360 L 165.9 308 L 165.9 204 Z';
 
 /** 스포크 = 바깥 꼭짓점 → 중간 꼭짓점. 굵기는 중간 육각형과 같은 계조(13). */
 const SPOKES: ReadonlyArray<readonly [number, number, number, number]> = [
@@ -60,7 +63,20 @@ export const BRAND_MARK_NODES: ReadonlyArray<readonly [number, number]> = [
   [159, 312],
 ];
 
-/** 획 두께 — 원본 실측. 균일화 금지(위 주석). */
+/**
+ * 획 두께 — `full` 은 원본 실측이라 **균일화 금지**(위 주석).
+ *
+ * `compact`/`micro` 는 다른 규율을 따른다. 이것들은 원본에 없는 파생형이고, 값을
+ * 정하는 것은 취향이 아니라 **렌더 크기에서의 device px** 다. 잉크 사이 간격이
+ * 1px 아래로 내려가면 배경이 안 보여 겹이 하나로 뭉치고, 획이 1px 아래로
+ * 내려가면 안티에일리어싱이 회색 죽으로 만든다. 둘 다 "작아서 안 보인다" 가
+ * 아니라 **잴 수 있는 값**이라 계약 테스트가 바닥을 잠근다
+ * (`tests/contract/brand-asset-parity.contract.test.ts`).
+ *
+ * 1차 값(미형 44 · 축약 36/28/42)이 실측에서 각각 획 1.03px, 노드↔바깥 간격
+ * 1.34px 이었다 — 그래서 16px 은 뭉친 얼룩, 32px 은 아래쪽이 부은 육각형으로
+ * 읽혔다.
+ */
 export const BRAND_STROKES = {
   outer: 18,
   dashed: 6,
@@ -68,10 +84,22 @@ export const BRAND_STROKES = {
   core: 19,
   spoke: 13,
   node: 23,
-  compactOuter: 36,
-  compactMid: 28,
-  compactNode: 42,
-  microOuter: 44,
+  compactOuter: 34,
+  compactMid: 24,
+  compactNode: 34,
+  microOuter: 64,
+} as const;
+
+/**
+ * 육각형 층의 외접 반지름(512 좌표계) — 위 경로 문자열이 그리는 값과 같다.
+ * 간격 계산이 이 값을 필요로 하므로 노출한다.
+ */
+export const BRAND_RADII = {
+  outer: 200,
+  dashed: 156,
+  mid: 112,
+  core: 48,
+  microCore: 104,
 } as const;
 
 /** 점선 층 — 짧은 대시가 아니라 **원형 점**이다(원본은 촘촘한 점). */
