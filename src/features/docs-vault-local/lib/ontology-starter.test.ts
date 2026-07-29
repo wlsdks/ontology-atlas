@@ -125,15 +125,15 @@ describe("ONTOLOGY_STARTER_FILES", () => {
     // 오를 길이 없다 — 구 "If the CLI is installed" 는 도달 불가 조건절이었다.
     // 살아있는 두 경로 중 터미널 쪽인 소스 체크아웃 호출로 안내한다.
     expect(readme).toContain("From an Ontology Atlas source checkout");
-    expect(readme).toContain("ATLAS=<ontology-atlas checkout>/cli/src/index.mjs");
-    expect(readme).toContain("node $ATLAS validate .");
-    expect(readme).toContain("node $ATLAS agent-brief . --graph-db-pack");
-    expect(readme).toContain("node $ATLAS agent-brief . --verify-fallbacks");
-    expect(readme).toContain("node $ATLAS cycles . --max-hops 8");
-    expect(readme).toContain("node $ATLAS growth . --limit 20");
-    expect(readme).toContain("node $ATLAS maintenance . --limit 20");
-    expect(readme).toContain("node $ATLAS agent-brief . --verify-fallbacks --json --fallback-timeout-ms 15000 --fallback-slow-ms 5000 --fallback-concurrency 4");
-    expect(readme).toContain("node $ATLAS mcp-verify . --timeout-ms 15000");
+    expect(readme).toContain("export ATLAS=<path to your ontology-atlas source checkout>");
+    expect(readme).toContain("node $ATLAS/cli/src/index.mjs validate .");
+    expect(readme).toContain("node $ATLAS/cli/src/index.mjs agent-brief . --graph-db-pack");
+    expect(readme).toContain("node $ATLAS/cli/src/index.mjs agent-brief . --verify-fallbacks");
+    expect(readme).toContain("node $ATLAS/cli/src/index.mjs cycles . --max-hops 8");
+    expect(readme).toContain("node $ATLAS/cli/src/index.mjs growth . --limit 20");
+    expect(readme).toContain("node $ATLAS/cli/src/index.mjs maintenance . --limit 20");
+    expect(readme).toContain("node $ATLAS/cli/src/index.mjs agent-brief . --verify-fallbacks --json --fallback-timeout-ms 15000 --fallback-slow-ms 5000 --fallback-concurrency 4");
+    expect(readme).toContain("node $ATLAS/cli/src/index.mjs mcp-verify . --timeout-ms 15000");
     expect(readme).toMatch(/before it edits\s+anything/);
   });
 });

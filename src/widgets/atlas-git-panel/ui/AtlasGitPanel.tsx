@@ -803,6 +803,26 @@ function WebSetup({
                 : t("webCopyCommand")}
           </button>
         </div>
+        {/**
+         * **자리 표시는 채우는 법과 함께 나온다** (2026-07-29 도그푸딩).
+         *
+         * 이 명령은 `$ATLAS` 로 시작한다. 그게 무엇인지 말해 주는 문장은
+         * `cli-invocation.ts` 에 이미 있었고, 그 파일 주석이 스스로 *"명령을
+         * 내보내는 표면은 이걸 함께 실어야 한다 — 자리 표시가 보이기만 하고
+         * 무엇을 채울지 모르면 정직할 뿐 쓸모가 없다"* 라고 적어 두었는데,
+         * **사람이 이 명령을 읽는 유일한 화면에는 안 실려 있었다.** 복사해
+         * 붙여넣으면 셸이 빈 변수로 풀어 `node /cli/src/index.mjs` 를 돌린다.
+         *
+         * 툴팁(`title`)으로는 안 된다 — 터치에서 도달할 수 없고 마우스
+         * 사용자도 버튼 위에 머물러야 본다. 명령을 읽는 자리에 보이는 글자로
+         * 쓴다.
+         */}
+        <p
+          data-testid="atlas-git-cli-placeholder-hint"
+          className="text-label leading-relaxed text-[color:var(--color-text-quaternary)]"
+        >
+          {t("cliPlaceholderHint")}
+        </p>
       </div>
     </SetupFrame>
   );

@@ -48,6 +48,12 @@ import { ATLAS_CLI } from '@/shared/config/cli-invocation';
 function buildAgentVerifyCliCommand(vaultPath?: string | null): string {
   const target = vaultPath ? shellQuoteForPacket(vaultPath) : '.';
   return [
+    // **복사되는 것은 명령 여러 줄이다 — 첫 줄이 `$ATLAS` 를 정의해야 한다.**
+    // 이 블록은 그대로 터미널에 붙여넣으라고 만든 것인데, 아홉 줄 전부가
+    // `$ATLAS` 로 시작하면서 그 변수를 아무도 채워 주지 않았다. 붙여넣으면
+    // 셸이 빈 값으로 풀어 `node /cli/src/index.mjs` 를 아홉 번 돌린다
+    // (2026-07-29 도그푸딩). 주석 한 줄이면 붙여넣기 한 번으로 끝난다.
+    `# export ATLAS=<path to your ontology-atlas source checkout>`,
     `${ATLAS_CLI} validate ${target}`,
     `${ATLAS_CLI} workspace-brief ${target}`,
     `${ATLAS_CLI} agent-brief ${target} --prompt`,

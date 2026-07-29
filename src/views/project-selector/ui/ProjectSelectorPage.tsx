@@ -271,6 +271,14 @@ export function ProjectSelectorPage() {
                 {t("nextSlotAgentCaption")}
               </span>
             </div>
+            {/* CLI 줄이 `$ATLAS` 로 시작한다 — 채우는 법을 같은 자리에서
+                말한다(`cli-invocation.ts` 의 계약). */}
+            <p
+              data-testid="project-selector-cli-placeholder-hint"
+              className="mt-2 text-label leading-relaxed text-[color:var(--color-text-quaternary)]"
+            >
+              {t("cliPlaceholderHint")}
+            </p>
           </div>
         </section>
         </div>

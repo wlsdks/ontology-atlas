@@ -95,26 +95,27 @@ anything:
 > available before proposing changes.
 
 From an Ontology Atlas source checkout, the same first-contact check runs
-through the CLI. Point \`$ATLAS\` at the checkout once, then:
+through the CLI. Point \`$ATLAS\` at the checkout **folder** once — the same meaning every
+other Atlas surface uses — then:
 
 \`\`\`bash
-ATLAS=<ontology-atlas checkout>/cli/src/index.mjs
+export ATLAS=<path to your ontology-atlas source checkout>
 
-node $ATLAS validate .
-node $ATLAS workspace-brief .
-node $ATLAS agent-brief . --prompt
-node $ATLAS agent-brief . --graph-db-pack
-node $ATLAS agent-brief . --verify-fallbacks
-node $ATLAS cycles . --max-hops 8
-node $ATLAS growth . --limit 20
-node $ATLAS maintenance . --limit 20
-node $ATLAS mcp-verify . --timeout-ms 15000
+${ATLAS_CLI} validate .
+${ATLAS_CLI} workspace-brief .
+${ATLAS_CLI} agent-brief . --prompt
+${ATLAS_CLI} agent-brief . --graph-db-pack
+${ATLAS_CLI} agent-brief . --verify-fallbacks
+${ATLAS_CLI} cycles . --max-hops 8
+${ATLAS_CLI} growth . --limit 20
+${ATLAS_CLI} maintenance . --limit 20
+${ATLAS_CLI} mcp-verify . --timeout-ms 15000
 \`\`\`
 
 For automation that wants a small JSON report instead of human terminal output:
 
 \`\`\`bash
-node $ATLAS agent-brief . --verify-fallbacks --json --fallback-timeout-ms 15000 --fallback-slow-ms 5000 --fallback-concurrency 4
+${ATLAS_CLI} agent-brief . --verify-fallbacks --json --fallback-timeout-ms 15000 --fallback-slow-ms 5000 --fallback-concurrency 4
 \`\`\`
 
 For an agent opened at your codebase root instead of this vault folder, replace
@@ -366,26 +367,27 @@ node <ontology-atlas 체크아웃>/cli/src/index.mjs agent-setup <이 문서함 
 > 준비됐는지 변경을 제안하기 전에 알려 줘.
 
 Ontology Atlas 소스 체크아웃이 있다면 같은 첫 접속 점검을 CLI 로도 할 수
-있습니다. \`$ATLAS\` 를 체크아웃에 한 번 맞춰 두고:
+있습니다. \`$ATLAS\` 를 체크아웃 **폴더**에 한 번 맞춰 두고 — Atlas 의 다른 화면이 쓰는
+뜻과 같습니다 — 이렇게 씁니다:
 
 \`\`\`bash
-ATLAS=<ontology-atlas 체크아웃>/cli/src/index.mjs
+export ATLAS=<ontology-atlas 소스 체크아웃 경로>
 
-node $ATLAS validate .
-node $ATLAS workspace-brief .
-node $ATLAS agent-brief . --prompt
-node $ATLAS agent-brief . --graph-db-pack
-node $ATLAS agent-brief . --verify-fallbacks
-node $ATLAS cycles . --max-hops 8
-node $ATLAS growth . --limit 20
-node $ATLAS maintenance . --limit 20
-node $ATLAS mcp-verify . --timeout-ms 15000
+${ATLAS_CLI} validate .
+${ATLAS_CLI} workspace-brief .
+${ATLAS_CLI} agent-brief . --prompt
+${ATLAS_CLI} agent-brief . --graph-db-pack
+${ATLAS_CLI} agent-brief . --verify-fallbacks
+${ATLAS_CLI} cycles . --max-hops 8
+${ATLAS_CLI} growth . --limit 20
+${ATLAS_CLI} maintenance . --limit 20
+${ATLAS_CLI} mcp-verify . --timeout-ms 15000
 \`\`\`
 
 사람이 읽는 터미널 출력 대신 작은 JSON 보고서가 필요한 자동화라면:
 
 \`\`\`bash
-node $ATLAS agent-brief . --verify-fallbacks --json --fallback-timeout-ms 15000 --fallback-slow-ms 5000 --fallback-concurrency 4
+${ATLAS_CLI} agent-brief . --verify-fallbacks --json --fallback-timeout-ms 15000 --fallback-slow-ms 5000 --fallback-concurrency 4
 \`\`\`
 
 에이전트를 이 문서함이 아니라 코드베이스 루트에서 열었다면 \`.\` 대신 문서함

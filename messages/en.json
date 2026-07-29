@@ -1477,7 +1477,8 @@
       "factStripGloss": "The areas this project covers, and how many features and components live inside each.",
       "domainOverlapNote": "Bars can sum higher than the counts above — concepts in several domains are counted once per domain.",
       "emptyStateTitle": "No projects yet",
-      "emptyStateDesc": "Create a project document (frontmatter `kind: project`) in your folder and it appears here."
+      "emptyStateDesc": "Create a project document (frontmatter `kind: project`) in your folder and it appears here.",
+      "cliPlaceholderHint": "Set this once in your terminal: export ATLAS=\"path to your ontology-atlas source folder\" — there is no npm package."
     },
     "detail": {
       "topBarBackToWorkspaceAria": "Back to the map",
@@ -3004,7 +3005,8 @@
     "remoteToggle": "Register an address",
     "remoteToggleClose": "Close the address field",
     "stepSelectHint": "Press to see this step's exact values",
-    "webCopyFailed": "Copy failed — the browser blocked the clipboard"
+    "webCopyFailed": "Copy failed — the browser blocked the clipboard",
+    "cliPlaceholderHint": "Set this once in your terminal: export ATLAS=\"path to your ontology-atlas source folder\" — there is no npm package."
   },
   "agentFiles": {
     "header": "Agent files",

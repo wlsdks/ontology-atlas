@@ -1477,7 +1477,8 @@
       "factStripGloss": "이 프로젝트가 다루는 영역과 그 안의 기능·구성요소 개수예요",
       "domainOverlapNote": "도메인마다 겹쳐 세므로 막대 합이 위 개수보다 클 수 있어요 — 여러 도메인에 속한 개념 때문이에요.",
       "emptyStateTitle": "프로젝트가 없습니다",
-      "emptyStateDesc": "폴더에 프로젝트 문서(frontmatter `kind: project`)를 만들면 여기 나타납니다."
+      "emptyStateDesc": "폴더에 프로젝트 문서(frontmatter `kind: project`)를 만들면 여기 나타납니다.",
+      "cliPlaceholderHint": "먼저 한 번만: 터미널에서 export ATLAS=\"ontology-atlas 소스 폴더 경로\" — npm 패키지는 없어요."
     },
     "detail": {
       "topBarBackToWorkspaceAria": "지도로 돌아가기",
@@ -3004,7 +3005,8 @@
     "remoteToggle": "보낼 곳 등록하기",
     "remoteToggleClose": "주소 입력 닫기",
     "stepSelectHint": "누르면 이 걸음의 자세한 값을 볼 수 있어요",
-    "webCopyFailed": "복사 실패 — 브라우저가 클립보드를 막았어요"
+    "webCopyFailed": "복사 실패 — 브라우저가 클립보드를 막았어요",
+    "cliPlaceholderHint": "먼저 한 번만: 터미널에서 export ATLAS=\"ontology-atlas 소스 폴더 경로\" — npm 패키지는 없어요."
   },
   "agentFiles": {
     "header": "에이전트 파일",
