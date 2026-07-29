@@ -6019,8 +6019,11 @@ function findDanglingGraphReferenceIssues(docs) {
       frontmatterSlugToFull.set(fmSlug, doc.slug);
     }
   }
-  const resolveRef = (ref) => {
-    if (typeof ref !== 'string') return null;
+  const resolveRef = (rawRef) => {
+    if (typeof rawRef !== 'string') return null;
+    // 참조도 NFC 로 맞춘다 — 슬러그는 `pathToSlug` 가 이미 NFC 다. 한쪽만
+    // 정규화하면 글자가 같은데 안 맞는 상태가 그대로 남는다.
+    const ref = rawRef.normalize('NFC');
     if (slugs.has(ref)) return ref;
     if (frontmatterSlugToFull.has(ref)) return frontmatterSlugToFull.get(ref);
     if (tailToFull.has(ref)) return tailToFull.get(ref);
@@ -6048,9 +6051,55 @@ function findDanglingGraphReferenceIssues(docs) {
   return issues;
 }
 
+/**
+ * 두 문서가 같은 canonical slug 를 주장하는 상태 (2026-07-29 실측).
+ *
+ * **파일 단위 검사로는 원리적으로 못 잡는다** — 한 파일만 보면 정상이다.
+ * `patch_concept` 이 `frontmatter.slug` 를 다른 노드가 이미 쓰는 값으로
+ * 덮어써도 막지 않아서(add_concept 은 막고 rename_concept 은 overwrite 를
+ * 요구하는데 이 경로만 열려 있었다) 생기고, 그러면 그 이름을 가리키는 모든
+ * 관계가 어느 쪽을 뜻하는지 정할 수 없다. 컴파일러는 `ambiguous-alias` 로
+ * 보는데 `validate_vault` 는 조용히 clean 을 반환했다.
+ */
+function findDuplicateSlugIssues(docs) {
+  const byDeclared = new Map();
+  for (const doc of docs ?? []) {
+    const declared = doc?.frontmatter?.slug;
+    const value = typeof declared === 'string' ? declared.trim() : '';
+    if (!value) continue;
+    if (!byDeclared.has(value)) byDeclared.set(value, []);
+    byDeclared.get(value).push(doc);
+  }
+  const issues = [];
+  for (const [declared, group] of byDeclared) {
+    if (group.length < 2) continue;
+    const all = group.map((doc) => doc.slug);
+    for (const doc of group) {
+      const rest = all.filter((slug) => slug !== doc.slug);
+      issues.push({
+        slug: doc.slug,
+        issue: {
+          code: 'duplicate-slug',
+          severity: 'error',
+          message:
+            `\`slug: ${declared}\` is also claimed by ${rest.join(', ')}. ` +
+            `Relations naming it cannot resolve to one node — change one slug or merge with rename_concept.`,
+        },
+      });
+    }
+  }
+  return issues;
+}
+
 function groupDanglingIssuesBySlug(docs) {
   const bySlug = new Map();
   for (const { slug, issue } of findDanglingGraphReferenceIssues(docs)) {
+    if (!bySlug.has(slug)) bySlug.set(slug, []);
+    bySlug.get(slug).push(issue);
+  }
+  // 중복 slug 도 같은 볼트 전수 패스에 태운다 — 둘 다 "한 파일만 보면 정상"인
+  // 종류라 이 자리가 유일하게 볼 수 있는 곳이다.
+  for (const { slug, issue } of findDuplicateSlugIssues(docs)) {
     if (!bySlug.has(slug)) bySlug.set(slug, []);
     bySlug.get(slug).push(issue);
   }

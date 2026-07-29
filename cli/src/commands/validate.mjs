@@ -64,6 +64,12 @@ export const KNOWN_CODES = [
     scope: 'vault',
     description: 'graph reference 가 vault 의 어떤 node 로도 resolve 되지 않음.',
   },
+  {
+    code: 'duplicate-slug',
+    severity: 'error',
+    scope: 'vault',
+    description: '두 문서가 같은 canonical slug 를 주장 — 관계가 어느 쪽인지 정할 수 없음.',
+  },
 ];
 
 /**
@@ -119,18 +125,40 @@ export function runValidate(args) {
   let errorFiles = 0;
   let warningFiles = 0;
 
+  const unreadable = [];
   for (const file of files) {
     let raw;
     try {
       raw = readFileSync(file, 'utf-8');
-    } catch {
+    } catch (error) {
+      // **못 읽은 파일을 "스캔했다" 고 세지 않는다** (2026-07-29 실측).
+      //
+      // 종전엔 조용히 `continue` 하면서 `scanned` 에는 계속 포함시켰다. 권한이
+      // 없는 `.md` 하나가 있으면 `6 파일 스캔 — issue 0. vault clean ✓` 라고
+      // 답하고, 같은 볼트에서 `compile` 은 EACCES 로 exit 2 했다. **열어 보지도
+      // 못한 파일을 깨끗하다고 보증**한 것이다.
+      unreadable.push({
+        file,
+        message: error instanceof Error ? error.message : String(error),
+      });
       continue;
     }
-    const slug = relative(vaultPath, file).replace(/\\/g, '/').replace(/\.md$/, '');
+    // NFC — `pathToSlug` 와 같은 식별자 규칙(자세한 이유는 그쪽 주석).
+    const slug = relative(vaultPath, file)
+      .replace(/\\/g, '/')
+      .replace(/\.md$/, '')
+      .normalize('NFC');
     const { frontmatter } = parseFrontmatter(raw);
     entries.push({ file, slug, frontmatter });
     const report = validateVaultDocument(raw);
     reportByFile.set(file, report);
+  }
+
+  for (const { file, issue } of findDuplicateSlugIssues(entries)) {
+    const report = reportByFile.get(file);
+    if (!report) continue;
+    report.issues.push(issue);
+    report.ok = !report.issues.some((i) => i.severity === 'error');
   }
 
   for (const { file, issue } of findDanglingGraphReferenceIssues(entries)) {
@@ -167,7 +195,13 @@ export function runValidate(args) {
     process.stdout.write(
       JSON.stringify(
         {
-          scanned: files.length,
+          // 열어 본 파일만 "스캔" 이다. 못 읽은 것은 따로 센다 — 그래야
+          // `scanned` 가 보증의 범위와 일치한다.
+          scanned: files.length - unreadable.length,
+          unreadable: unreadable.map((u) => ({
+            file: relative(vaultPath, u.file).replace(/\\/g, '/'),
+            message: u.message,
+          })),
           problems: reports.map(({ file, report }) => ({
             file,
             issues: report.issues.map((i) => ({
@@ -192,11 +226,22 @@ export function runValidate(args) {
     return decideExit(errorFiles, warningFiles, strict, failOn, groups);
   }
 
+  // 못 읽은 파일은 **clean 선언 전에** 말한다. 이 줄이 없으면 "vault clean ✓"
+  // 가 열어 보지도 못한 파일까지 보증하는 문장이 된다.
+  if (unreadable.length > 0) {
+    console.log(
+      `\n${COLORS.yellow}[validate] 읽지 못한 파일 ${unreadable.length}건 — 아래는 검사 범위 밖입니다.${COLORS.reset}`,
+    );
+    for (const { file, message } of unreadable) {
+      console.log(`  ${COLORS.yellow}?${COLORS.reset} ${relative(vaultPath, file).replace(/\\/g, '/')} — ${message}`);
+    }
+  }
+
   if (reports.length === 0) {
     console.log(
-      `${COLORS.green}[validate] ${files.length} 파일 스캔 — issue 0. vault clean ✓${COLORS.reset}`,
+      `${COLORS.green}[validate] ${files.length - unreadable.length} 파일 스캔 — issue 0. vault clean ✓${COLORS.reset}`,
     );
-    return 0;
+    return unreadable.length > 0 ? 1 : 0;
   }
 
   // strict 모드 안내는 마지막 summary 줄에서 처리.
@@ -376,6 +421,53 @@ function collectGraphRefs(frontmatter) {
   return refs;
 }
 
+/**
+ * 두 문서가 같은 canonical slug 를 주장하는 상태 (2026-07-29 실측).
+ *
+ * **파일 단위 검사로는 원리적으로 못 잡는다** — 한 파일만 보면 완벽히
+ * 정상이기 때문이다. 그래서 dangling 검사와 같은 자리(볼트 전수 패스)에 산다.
+ *
+ * 어떻게 생기나: `patch_concept` 이 `frontmatter.slug` 를 다른 노드가 이미
+ * 가진 값으로 덮어써도 막지 않는다(`add_concept` 은 막고 `rename_concept` 은
+ * `overwrite:true` 를 요구하는데 이 경로만 열려 있다). 그러면 두 파일이 같은
+ * 이름을 주장하고, 그 이름을 가리키는 모든 관계가 **어느 쪽을 뜻하는지 알 수
+ * 없게** 된다 — 컴파일러는 `ambiguous-alias` 로 보는데 `validate` 는 조용했다.
+ *
+ * error 로 올린다. dangling 은 "아직 안 만든 것" 일 수 있어 warning 이지만,
+ * 중복 slug 는 **이미 있는 두 문서 사이의 모순**이라 그래프가 성립하지 않는다.
+ */
+function findDuplicateSlugIssues(entries) {
+  const byDeclared = new Map();
+  for (const entry of entries) {
+    const declared = entry.frontmatter?.slug;
+    const value = typeof declared === 'string' ? declared.trim() : '';
+    if (!value) continue;
+    if (!byDeclared.has(value)) byDeclared.set(value, []);
+    byDeclared.get(value).push(entry);
+  }
+  const issues = [];
+  for (const [declared, group] of byDeclared) {
+    if (group.length < 2) continue;
+    const others = group.map((entry) => entry.slug);
+    for (const entry of group) {
+      const rest = others.filter((slug) => slug !== entry.slug);
+      issues.push({
+        file: entry.file,
+        slug: entry.slug,
+        issue: {
+          code: 'duplicate-slug',
+          severity: 'error',
+          message:
+            `\`slug: ${declared}\` 를 다른 문서도 주장합니다 (${rest.join(', ')}). ` +
+            `같은 이름을 가리키는 관계가 어느 쪽을 뜻하는지 정할 수 없습니다 — ` +
+            `한쪽의 slug 를 바꾸거나 rename_concept 으로 합치세요.`,
+        },
+      });
+    }
+  }
+  return issues;
+}
+
 function findDanglingGraphReferenceIssues(entries) {
   const slugs = new Set(entries.map((entry) => entry.slug));
   const tailToFull = new Map();
@@ -392,8 +484,11 @@ function findDanglingGraphReferenceIssues(entries) {
       frontmatterSlugToFull.set(fmSlug, entry.slug);
     }
   }
-  const resolveRef = (ref) => {
-    if (typeof ref !== 'string') return null;
+  const resolveRef = (rawRef) => {
+    if (typeof rawRef !== 'string') return null;
+    // 참조도 NFC 로 맞춘다 — 슬러그는 `pathToSlug` 가 이미 NFC 다. 한쪽만
+    // 정규화하면 글자가 같은데 안 맞는 상태가 그대로 남는다.
+    const ref = rawRef.normalize('NFC');
     if (slugs.has(ref)) return ref;
     if (frontmatterSlugToFull.has(ref)) return frontmatterSlugToFull.get(ref);
     if (tailToFull.has(ref)) return tailToFull.get(ref);

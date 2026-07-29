@@ -1,4 +1,4 @@
-import { writeFileSync, mkdirSync, existsSync, readFileSync } from 'node:fs';
+import { writeFileSync, mkdirSync, existsSync, readFileSync, realpathSync } from 'node:fs';
 import { dirname, resolve, sep } from 'node:path';
 import { buildMarkdown, parseFrontmatter } from './parse-frontmatter.mjs';
 
@@ -23,7 +23,39 @@ export function slugToPath(rootPath, slug) {
   ) {
     throw new Error(`slug points outside the vault root: "${slug}"`);
   }
+  // 문자열 검사만으로는 심볼릭 링크를 못 막는다 — `mcp/src/vault.mjs` 와 같은
+  // 계약. 실측(2026-07-29): vault 안 `escape.md` 가 밖을 가리키면 문자열은
+  // 완벽히 root 안인데 `writeFileSync` 가 링크를 따라 **밖에 썼고**, 성공 줄은
+  // vault 안 경로를 보고했다.
+  assertRealPathInside(candidate, normalizedRoot, slug);
   return candidate;
+}
+
+/** 링크 해소 후에도 vault 안인지. 아직 없는 경로는 가장 가까운 존재 조상 기준. */
+function assertRealPathInside(candidate, normalizedRoot, slug) {
+  let realRoot;
+  try {
+    realRoot = realpathSync(normalizedRoot);
+  } catch {
+    return;
+  }
+  let probe = candidate;
+  for (;;) {
+    try {
+      const real = realpathSync(probe);
+      if (real !== realRoot && !real.startsWith(realRoot + sep)) {
+        throw new Error(
+          `slug resolves outside the vault root through a symlink: "${slug}"`,
+        );
+      }
+      return;
+    } catch (error) {
+      if (error instanceof Error && error.message.startsWith('slug resolves outside')) throw error;
+      const parent = dirname(probe);
+      if (parent === probe) return;
+      probe = parent;
+    }
+  }
 }
 
 /**

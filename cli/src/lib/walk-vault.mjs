@@ -37,5 +37,12 @@ export function walkMd(rootPath) {
 }
 
 export function pathToSlug(rootPath, filePath) {
-  return relative(rootPath, filePath).replace(/\\/g, '/').replace(/\.md$/, '');
+  // NFC 정규화 — macOS 가 넘겨주는 NFD 한글 파일명과 사용자가 타이핑한 NFC
+  // 참조가 글자는 같고 바이트가 달라서, 종전엔 그 노드로 오는 엣지가 전부
+  // dangling 이 됐다(`mcp/src/vault.mjs` 의 같은 함수에 상세). 식별자만
+  // 정규화하고 디스크 경로는 그대로 둔다.
+  return relative(rootPath, filePath)
+    .replace(/\\/g, '/')
+    .replace(/\.md$/, '')
+    .normalize('NFC');
 }

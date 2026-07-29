@@ -7,6 +7,7 @@ import {
   writeFileSync,
   mkdirSync,
   existsSync,
+  realpathSync,
   statSync,
   unlinkSync,
 } from 'node:fs';
@@ -308,9 +309,29 @@ export function walkMd(rootPath) {
 /**
  * file path → vault-relative slug (`projects/foo.md` → `projects/foo`).
  */
+/**
+ * 파일 경로 → vault-relative slug.
+ *
+ * **NFC 로 정규화한다** (2026-07-29 실측). macOS 는 파일 이름의 한글을 NFD
+ * (자모 분해)로 넘겨주는 경로가 흔한데(HFS+ 복사본, 압축 해제, 비-macOS
+ * 툴체인이 만든 zip), 사용자가 프론트매터에 타이핑하는 값은 NFC 다. 두
+ * 문자열은 **글자가 완전히 같은데 바이트가 다르다.**
+ *
+ * 그래서 종전에는 이런 일이 났다:
+ *
+ *   validate: `한글` 가 vault 의 어떤 node 로도 resolve 되지 않습니다
+ *   list:     domain  한글  NFD file        ← 바로 다음 줄에 그 노드가 있다
+ *
+ * 컴파일러도 같이 실패해서 그 노드로 들어오는 엣지가 `resolved: false` 로
+ * 떨어졌다 — **한글 이름 노드가 관계를 잃는다**, 이 제품의 주 플랫폼에서.
+ * 눈으로는 구별할 수 없으니 사용자가 고칠 수도 없다.
+ *
+ * 정규화는 **식별자에만** 한다. 디스크 경로는 손대지 않는다 — 파일은 NFD
+ * 그대로 있고 그걸로 읽는다.
+ */
 export function pathToSlug(rootPath, filePath) {
   const rel = relative(rootPath, filePath).replace(/\\/g, '/');
-  return rel.replace(/\.md$/, '');
+  return rel.replace(/\.md$/, '').normalize('NFC');
 }
 
 /**
@@ -340,7 +361,56 @@ export function slugToPath(rootPath, slug) {
   ) {
     throw new Error(`slug points outside the vault root: "${slug}"`);
   }
+  // **문자열 검사만으로는 심볼릭 링크를 못 막는다** (2026-07-29 실측).
+  //
+  // 위 검사는 slug 를 `resolve()` 한 **경로 문자열**이 root 안에 있는지만 본다.
+  // 그런데 vault 안의 `escape.md` 가 vault 밖 파일을 가리키는 링크면, 문자열은
+  // 완벽히 root 안이고 `writeFileSync` 는 링크를 따라 **밖에 쓴다.** 실측:
+  // `relate escape real --vault /tmp/sym/vault` 가 `/tmp/sym/outside.md` 를
+  // 고치고는 `wrote /tmp/sym/vault/escape.md` 라고 보고했다 — 사용자는 자기
+  // 편집을 그 경로에서 찾을 수 없다.
+  //
+  // 이 함수의 주석이 스스로 *"AI agent / prompt injection 으로 악의적인 slug 가
+  // vault root 바깥의 파일을 가리키지 못하도록"* 이라고 적어 둔 바로 그 위협이,
+  // slug 가 아니라 **파일시스템 쪽에서** 열려 있었다.
+  //
+  // 존재하는 경로만 realpath 한다 — 새 파일 생성(아직 없는 경로)은 정상이고,
+  // 그 부모 디렉터리는 아래에서 함께 확인한다.
+  assertRealPathInside(candidate, normalizedRoot, slug);
   return candidate;
+}
+
+/**
+ * 실제 경로(심볼릭 링크 해소 후)가 여전히 vault 안인지. 파일이 아직 없으면
+ * 가장 가까운 **존재하는 조상**을 기준으로 본다 — 링크된 디렉터리 안에 새
+ * 파일을 만드는 경로도 같은 탈출이기 때문이다.
+ */
+function assertRealPathInside(candidate, normalizedRoot, slug) {
+  let realRoot;
+  try {
+    realRoot = realpathSync(normalizedRoot);
+  } catch {
+    // root 자체를 해소할 수 없으면 문자열 검사까지가 우리가 할 수 있는 전부다.
+    return;
+  }
+  let probe = candidate;
+  for (;;) {
+    try {
+      const real = realpathSync(probe);
+      if (real !== realRoot && !real.startsWith(realRoot + sep)) {
+        throw new Error(
+          `slug resolves outside the vault root through a symlink: "${slug}"`,
+        );
+      }
+      return;
+    } catch (error) {
+      if (error instanceof Error && error.message.startsWith('slug resolves outside')) throw error;
+      const parent = dirname(probe);
+      // 루트까지 올라갔는데도 존재하는 조상이 없다 — 더 볼 것이 없다.
+      if (parent === probe) return;
+      probe = parent;
+    }
+  }
 }
 
 /**
