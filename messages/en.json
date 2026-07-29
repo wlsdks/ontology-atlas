@@ -1750,7 +1750,9 @@
       "agentCopyGateSuccess": "Workspace graph check copied.",
       "copyFailed": "Copy failed",
       "modalSubtitle": "See this vault's files, graph, and AI check gate at a glance",
-      "closeTitle": "Close (Esc)"
+      "closeTitle": "Close (Esc)",
+      "filesTruncated": "The folder was too large to read fully — pick a narrower document folder.",
+      "filesPruned": "Skipped {count} build/dependency folder(s) ({names})."
     },
     "advanced": {
       "sourceServer": "Sample",

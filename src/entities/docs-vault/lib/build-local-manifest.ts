@@ -88,34 +88,107 @@ interface WalkEntry {
 
 const IMAGE_EXT = /\.(png|jpe?g|gif|webp|svg|avif|bmp)$/i;
 
+/**
+ * 순회의 경계 — **볼트는 문서 폴더지 임의의 디렉터리가 아니다.**
+ *
+ * 2026-07-29 실측: 설치 앱에서 볼트로 **저장소 루트**를 고르면 WebView 가
+ * 죽었다("This page couldn't load"). 순회가 무제한이라 `src-tauri/target`
+ * 까지 내려가 디렉터리 984개 · 마크다운 965개(9.4MB)를 IPC 로 실어 나른다 —
+ * 정상 볼트(23 · 97)의 16배다.
+ *
+ * 이게 아픈 이유는 **스킬 사본 판정처럼 볼트가 저장소 루트여야 의미 있는
+ * 기능이 있고, 그 조합이 정확히 그 사용자의 첫 시도**라는 점이다.
+ */
+
+/**
+ * 이름만으로 확실한 것. `node_modules` 안에 사용자의 온톨로지가 있을 확률은
+ * 0이고, 이름이 겹칠 일도 없다. **목록을 늘리지 않는다** — `build`·`dist`·
+ * `out` 같은 이름은 문서 폴더에도 정당하게 존재할 수 있어서, 이름으로 자르면
+ * 남의 문서를 조용히 버린다.
+ */
+const PRUNE_BY_NAME = new Set(['node_modules']);
+
+/**
+ * 캐시 디렉터리의 **공개 규약** — 디렉터리가 스스로 "나는 캐시다" 라고 선언한다
+ * (bford.info/cachedir, Cargo·Bazel 등이 따른다). 이름 목록과 달리 관리할
+ * 것이 없고 오탐이 원리적으로 없다: 사용자가 자기 문서 폴더에 이 파일을 넣을
+ * 이유가 없다.
+ */
+const CACHE_DIR_TAG = 'CACHEDIR.TAG';
+
+/** 정상 볼트의 20배 남짓. 넘으면 자르고 **자른 사실을 말한다**. */
+export const VAULT_WALK_MAX_ENTRIES = 4000;
+/** 문서 폴더의 현실적 상한. 넘는 깊이는 대개 남의 트리에 들어간 것이다. */
+export const VAULT_WALK_MAX_DEPTH = 12;
+
+export interface WalkResult {
+  entries: WalkEntry[];
+  /**
+   * 상한에 걸려 **일부만 봤는가.** 침묵하는 절단은 "전부 봤다" 로 읽히므로
+   * 호출부까지 올려 보낸다 — 이 저장소가 게이트에서 반복해 배운 규율이다.
+   */
+  truncated: boolean;
+  /** 캐시/의존성으로 판정해 통째로 건너뛴 디렉터리의 상대 경로. */
+  prunedDirs: string[];
+}
+
+async function walkInto(
+  root: FileSystemDirectoryHandle,
+  prefix: string,
+  depth: number,
+  acc: WalkResult,
+): Promise<void> {
+  if (acc.truncated) return;
+  if (depth > VAULT_WALK_MAX_DEPTH) {
+    acc.truncated = true;
+    return;
+  }
+
+  // 목록을 **먼저 모은다.** 캐시 표식은 이 목록 안에 이미 들어 있으므로
+  // `getFileHandle` 로 따로 물어볼 이유가 없다 — 그렇게 하면 디렉터리마다
+  // IPC 왕복이 하나씩 늘고, 그건 지금 고치고 있는 비용과 같은 종류다.
+  const children: Array<[string, FileSystemHandle]> = [];
+  for await (const entry of root.entries()) children.push(entry);
+
+  if (children.some(([name]) => name === CACHE_DIR_TAG)) {
+    acc.prunedDirs.push(prefix || '.');
+    return;
+  }
+
+  for (const [name, handle] of children) {
+    if (acc.entries.length >= VAULT_WALK_MAX_ENTRIES) {
+      acc.truncated = true;
+      return;
+    }
+    if (name.startsWith('.')) continue;
+    const relative = prefix ? `${prefix}/${name}` : name;
+    if (handle.kind === 'directory') {
+      if (PRUNE_BY_NAME.has(name)) {
+        acc.prunedDirs.push(relative);
+        continue;
+      }
+      await walkInto(handle as FileSystemDirectoryHandle, relative, depth + 1, acc);
+    } else if (name.endsWith('.md')) {
+      acc.entries.push({ handle: handle as FileSystemFileHandle, relativePath: relative, kind: 'md' });
+    } else if (IMAGE_EXT.test(name)) {
+      acc.entries.push({ handle: handle as FileSystemFileHandle, relativePath: relative, kind: 'image' });
+    }
+  }
+}
+
+export async function walkVault(root: FileSystemDirectoryHandle): Promise<WalkResult> {
+  const acc: WalkResult = { entries: [], truncated: false, prunedDirs: [] };
+  await walkInto(root, '', 0, acc);
+  return acc;
+}
+
 async function walk(
   root: FileSystemDirectoryHandle,
   prefix = '',
 ): Promise<WalkEntry[]> {
-  const out: WalkEntry[] = [];
-  for await (const [name, handle] of root.entries()) {
-    if (name.startsWith('.')) continue;
-    if (handle.kind === 'directory') {
-      const nested = await walk(
-        handle as FileSystemDirectoryHandle,
-        prefix ? `${prefix}/${name}` : name,
-      );
-      out.push(...nested);
-    } else if (name.endsWith('.md')) {
-      out.push({
-        handle: handle as FileSystemFileHandle,
-        relativePath: prefix ? `${prefix}/${name}` : name,
-        kind: 'md',
-      });
-    } else if (IMAGE_EXT.test(name)) {
-      out.push({
-        handle: handle as FileSystemFileHandle,
-        relativePath: prefix ? `${prefix}/${name}` : name,
-        kind: 'image',
-      });
-    }
-  }
-  return out;
+  const acc: WalkResult = { entries: [], truncated: false, prunedDirs: [] };
+  await walkInto(root, prefix, 0, acc);
+  return acc.entries;
 }
 
 function insertIntoTree(root: VaultTreeNode, slug: string, title: string) {
@@ -273,6 +346,7 @@ function buildMdEntry(
 function aggregateBuild(
   entries: BuiltVaultEntry[],
   rootName: string,
+  walkInfo?: { truncated: boolean; prunedDirs: string[] },
 ): LocalVaultBuild {
   const docs: VaultDoc[] = [];
   const fileHandles = new Map<string, FileSystemFileHandle>();
@@ -366,6 +440,10 @@ function aggregateBuild(
   const manifest: VaultManifest = {
     version: '2026-04-23',
     generatedAt: new Date().toISOString(),
+    // 상한에 걸리지 않았으면 필드 자체를 두지 않는다 — `false`/`[]` 를 늘 실으면
+    // 매니페스트를 비교하는 코드(증분 빌드 · 스냅샷)에 의미 없는 차이가 생긴다.
+    ...(walkInfo?.truncated ? { walkTruncated: true } : {}),
+    ...(walkInfo?.prunedDirs.length ? { prunedDirs: walkInfo.prunedDirs } : {}),
     docs,
     backlinksDetail,
     tags,
@@ -382,8 +460,15 @@ function aggregateBuild(
 /** 디렉터리를 walk 하며 모든 .md 본문을 읽어 BuiltVaultEntry[] 로. (전체 I/O) */
 async function collectEntries(
   root: FileSystemDirectoryHandle,
+  /** 순회의 경계 사실을 매니페스트까지 실어 나르는 자리 — 침묵하지 않기 위해. */
+  walkInfo?: { truncated: boolean; prunedDirs: string[] },
 ): Promise<BuiltVaultEntry[]> {
-  const files = await walk(root);
+  const walked = await walkVault(root);
+  if (walkInfo) {
+    walkInfo.truncated = walked.truncated;
+    walkInfo.prunedDirs = walked.prunedDirs;
+  }
+  const files = walked.entries;
   const entries: BuiltVaultEntry[] = [];
   for (const entry of files) {
     const file = await entry.handle.getFile();
@@ -409,8 +494,9 @@ async function collectEntries(
 export async function buildLocalManifestWithEntries(
   root: FileSystemDirectoryHandle,
 ): Promise<{ build: LocalVaultBuild; entries: BuiltVaultEntry[] }> {
-  const entries = await collectEntries(root);
-  return { build: aggregateBuild(entries, root.name), entries };
+  const walkInfo = { truncated: false, prunedDirs: [] as string[] };
+  const entries = await collectEntries(root, walkInfo);
+  return { build: aggregateBuild(entries, root.name, walkInfo), entries };
 }
 
 /**
@@ -420,7 +506,9 @@ export async function buildLocalManifestWithEntries(
 export async function buildLocalManifest(
   root: FileSystemDirectoryHandle,
 ): Promise<LocalVaultBuild> {
-  return aggregateBuild(await collectEntries(root), root.name);
+  const walkInfo = { truncated: false, prunedDirs: [] as string[] };
+  const entries = await collectEntries(root, walkInfo);
+  return aggregateBuild(entries, root.name, walkInfo);
 }
 
 /**

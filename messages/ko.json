@@ -1750,7 +1750,9 @@
       "agentCopyGateSuccess": "문서함 그래프 점검을 복사했습니다.",
       "copyFailed": "복사 실패",
       "modalSubtitle": "이 vault 의 파일 · 그래프 · AI 검증 게이트를 한눈에 확인",
-      "closeTitle": "닫기 (Esc)"
+      "closeTitle": "닫기 (Esc)",
+      "filesTruncated": "폴더가 너무 커서 일부만 읽었습니다 — 문서 폴더를 더 좁게 골라 주세요.",
+      "filesPruned": "빌드·의존성 폴더 {count}개는 건너뛰었습니다({names})."
     },
     "advanced": {
       "sourceServer": "샘플",
