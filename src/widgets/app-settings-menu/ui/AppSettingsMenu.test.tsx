@@ -563,10 +563,10 @@ describe('AppSettingsMenu appearance pickers (#20/#21)', () => {
     expect(screen.queryByTestId('app-settings-footprint')).toBeNull();
   });
 
-  it('배경 절이 4택을 싣는다', () => {
+  it('배경 절이 3택을 싣는다', () => {
     openSection('background');
     expect(screen.getByTestId('app-settings-canvas-background')).toBeInTheDocument();
-    for (const variant of ['dot', 'flow', 'web', 'gravity']) {
+    for (const variant of ['dot', 'web', 'depth']) {
       expect(screen.getByTestId(`app-settings-canvas-bg-${variant}`)).toBeInTheDocument();
     }
   });
@@ -586,10 +586,10 @@ describe('AppSettingsMenu appearance pickers (#20/#21)', () => {
 
   it('persists a canvas-background choice and reflects it in aria-checked', () => {
     openSection('background');
-    fireEvent.click(screen.getByTestId('app-settings-canvas-bg-flow'));
-    expect(screen.getByTestId('app-settings-canvas-bg-flow')).toHaveAttribute('aria-checked', 'true');
+    fireEvent.click(screen.getByTestId('app-settings-canvas-bg-web'));
+    expect(screen.getByTestId('app-settings-canvas-bg-web')).toHaveAttribute('aria-checked', 'true');
     expect(screen.getByTestId('app-settings-canvas-bg-dot')).toHaveAttribute('aria-checked', 'false');
-    expect(window.localStorage.getItem('ontology-atlas:canvas-background:v1')).toBe('flow');
+    expect(window.localStorage.getItem('ontology-atlas:canvas-background:v1')).toBe('web');
   });
 
   it('발자국 절은 프리셋이 먼저고 슬라이더는 접혀 있다', () => {

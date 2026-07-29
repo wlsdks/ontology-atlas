@@ -58,7 +58,7 @@ describe("render/grid draw() — background variant routing (#20)", () => {
    * 움직이는 배경 셋은 **격자를 그리면 안 된다** — 둘이 겹치면 잉크 상한을
    * 합산으로 넘고, 그 초과는 값 하나만 봐서는 어느 룰에도 안 걸린다.
    */
-  it.each(["flow", "web", "gravity"] as const)(
+  it.each(["web"] as const)(
     "%s hands the frame to the animated layer and never paints the grid",
     (variant) => {
       const { ctx, fillStyles } = makeRecordingCtx();
@@ -75,7 +75,7 @@ describe("render/grid draw() — background variant routing (#20)", () => {
    */
   it("falls back to the grid when the animated layer is not ready yet", () => {
     const { ctx, fillStyles } = makeRecordingCtx();
-    draw(ctx, { ...base, variant: "flow", paintAnimated: null }, BG_TOKENS);
+    draw(ctx, { ...base, variant: "web", paintAnimated: null }, BG_TOKENS);
     expect(fillStyles).toContain(GRID_PATTERN);
   });
 

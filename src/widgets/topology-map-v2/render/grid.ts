@@ -110,7 +110,55 @@ export function computeVignetteAlpha(baseAlpha: number, farAlpha: number, farT: 
  * 입자 배경(`render/animated-background.ts`). 구 정적 타일 2종(성좌·등고선)은
  * 2026-07-29 소유자 확정으로 폐기됐다.
  */
-export type CanvasBackgroundVariant = "dot" | "flow" | "web" | "gravity";
+export type CanvasBackgroundVariant = "dot" | "web" | "depth";
+
+/**
+ * 깊이 도트의 세 층 — 시차 계수 · 점 간격(px) · 점 반지름 · 알파 배수.
+ *
+ * ## 왜 이 형태인가 (카운슬 2026-07-29)
+ *
+ * 기각된 후보 열한 개는 전부 선이거나 닫힌 도형이라 노드·관계선과 **같은
+ * 문법**을 썼고, 그래서 배경이 아니라 "또 다른 데이터"로 읽혔다. 도트만
+ * 살아남은 이유는 데이터인 척을 안 해서다. 그래서 세 번째 배경은 **새 원시형을
+ * 들이지 않는다** — 이미 승인된 점을 세 층으로 둘 뿐이다.
+ *
+ * ## 움직임이 사용자 손에서만 나온다
+ *
+ * 층마다 시차 계수가 달라 **카메라가 움직일 때만** 서로 어긋나고, 카메라가
+ * 서면 완전히 정지한다. 자율 운동이 0이라 유휴 연소가 구조적으로 불가능하다 —
+ * 2026-07-28 「작업대」의 P0 를 배선이 아니라 **형태**로 만족시킨다. WCAG 2.2
+ * §2.3.3 의 사용자-개시 예외 안이기도 하다.
+ *
+ * 계수가 1 을 넘지 않는 이유: 1 을 넘으면 배경이 내용보다 빨라 "가까운 층"으로
+ * 읽히는데, 그건 깊이의 반대다.
+ */
+export const DEPTH_DOT_LAYERS = [
+  { parallax: 0.55, spacing: 132, radius: 0.9, alphaScale: 0.55 },
+  { parallax: 0.78, spacing: 84, radius: 1.1, alphaScale: 0.8 },
+  { parallax: 1, spacing: 52, radius: 1.3, alphaScale: 1 },
+] as const;
+
+/**
+ * 한 깊이 층의 타일 패턴 — 점 하나가 든 정사각 타일을 반복한다.
+ * 정적이라 마운트/리사이즈 때 한 번만 만든다(blueprint grid 와 같은 문법).
+ */
+export function buildDepthDotPattern(
+  offscreenCanvas: HTMLCanvasElement,
+  layer: { spacing: number; radius: number },
+  color: string,
+): CanvasPattern | null {
+  const size = layer.spacing;
+  offscreenCanvas.width = size;
+  offscreenCanvas.height = size;
+  const ctx = offscreenCanvas.getContext("2d");
+  if (!ctx) return null;
+  ctx.clearRect(0, 0, size, size);
+  ctx.fillStyle = color;
+  ctx.beginPath();
+  ctx.arc(size / 2, size / 2, layer.radius, 0, Math.PI * 2);
+  ctx.fill();
+  return ctx.createPattern(offscreenCanvas, "repeat");
+}
 
 export interface BackgroundDrawState {
   viewportWidth: number;
@@ -119,6 +167,11 @@ export interface BackgroundDrawState {
   /** 어느 배경을 그릴지 — 생략 시 도트(blueprint grid). */
   variant?: CanvasBackgroundVariant;
   gridPattern: CanvasPattern | null;
+  /**
+   * 깊이 도트의 세 층 패턴 + 각 층의 이미 시차가 적용된 원점.
+   * `variant === "depth"` 일 때만 소비한다.
+   */
+  depthLayers?: readonly { pattern: CanvasPattern | null; originX: number; originY: number; spacing: number }[];
   /**
    * 움직이는 배경의 이번 프레임 버퍼를 얹는 콜백(도트가 아닐 때만 호출).
    *
@@ -165,7 +218,19 @@ export function draw(ctx: CanvasRenderingContext2D, state: BackgroundDrawState, 
   ctx.fillStyle = bgBase;
   ctx.fillRect(0, 0, w, h);
 
-  if (variant !== "dot" && state.paintAnimated) {
+  if (variant === "depth" && state.depthLayers) {
+    // 층마다 자기 시차 원점으로 채운다 — 카메라가 서면 세 층이 함께 선다.
+    for (const layer of state.depthLayers) {
+      if (!layer.pattern) continue;
+      const ox = wrapToTile(layer.originX, layer.spacing);
+      const oy = wrapToTile(layer.originY, layer.spacing);
+      ctx.save();
+      ctx.fillStyle = layer.pattern;
+      ctx.translate(ox - layer.spacing, oy - layer.spacing);
+      ctx.fillRect(0, 0, w + layer.spacing * 2, h + layer.spacing * 2);
+      ctx.restore();
+    }
+  } else if (variant !== "dot" && state.paintAnimated) {
     // 움직이는 배경 — 잉크 상한은 버퍼를 그릴 때 이미 지켜졌다. farT 페이드를
     // 걸지 않는 것은 정적 성좌와 같은 이유다(고도와 무관한 상수 잉크).
     state.paintAnimated(ctx, w, h);

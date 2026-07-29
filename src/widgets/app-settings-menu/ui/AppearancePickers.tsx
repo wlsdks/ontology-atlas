@@ -60,15 +60,6 @@ function CanvasBgSwatch({ variant }: { variant: CanvasBackground }) {
             <line key={y} x1="0" y1={y} x2="240" y2={y} />
           ))}
         </g>
-      ) : variant === 'flow' ? (
-        <g stroke={ink} strokeWidth="1" fill="none" strokeLinecap="round">
-          <path d="M-4 14 C40 4 80 22 122 13 S204 6 244 16" />
-          <path d="M-4 28 C44 18 84 38 126 28 S208 21 244 30" />
-          <path d="M-4 42 C40 33 82 51 124 42 S206 35 244 44" />
-          <path d="M-4 21 C46 12 86 30 128 21" stroke={inkFaint} />
-          <path d="M-4 35 C42 26 84 44 126 35" stroke={inkFaint} />
-          <path d="M-4 49 C46 40 88 57 130 48" stroke={inkFaint} />
-        </g>
       ) : variant === 'web' ? (
         <g>
           {/* `fill="none"` 없이는 열린 폴리라인이 기본 검정으로 **채워져** 삼각형이 된다. */}
@@ -87,18 +78,27 @@ function CanvasBgSwatch({ variant }: { variant: CanvasBackground }) {
           </g>
         </g>
       ) : (
-        <g fill="none" strokeLinecap="round">
-          <g stroke={ink} strokeWidth="1">
-            <path d="M84 50 A34 34 0 0 1 120 6" />
-            <path d="M156 8 A34 34 0 0 1 132 50" />
-            <path d="M30 44 A26 26 0 0 1 44 10" />
-            <path d="M210 12 A26 26 0 0 1 200 46" />
-          </g>
-          <g stroke={inkFaint} strokeWidth="0.8">
-            <path d="M66 54 A50 50 0 0 1 116 -2" />
-            <path d="M170 0 A50 50 0 0 1 148 54" />
-          </g>
-          <circle cx="120" cy="28" r="2.4" fill={ink} stroke="none" />
+        /* 깊이 도트 — 같은 점을 세 층으로. 층마다 크기·밝기가 달라 정지 화면에서도
+           깊이가 읽히고, 지도를 움직이면 층이 서로 어긋난다. */
+        <g fill={ink}>
+          {[
+            { r: 0.9, o: 0.5, step: 33, offset: 8 },
+            { r: 1.2, o: 0.78, step: 21, offset: 5 },
+            { r: 1.6, o: 1, step: 13, offset: 3 },
+          ].map((layer, li) => (
+            <g key={li} opacity={layer.o}>
+              {Array.from({ length: Math.ceil(240 / layer.step) }).flatMap((_, xi) =>
+                Array.from({ length: Math.ceil(56 / layer.step) }).map((__, yi) => (
+                  <circle
+                    key={`${xi}-${yi}`}
+                    cx={layer.offset + xi * layer.step}
+                    cy={layer.offset + yi * layer.step}
+                    r={layer.r}
+                  />
+                )),
+              )}
+            </g>
+          ))}
         </g>
       )}
     </svg>

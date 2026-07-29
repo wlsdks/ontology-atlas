@@ -8,7 +8,7 @@
 import type { CameraAxes } from "../engine/camera";
 import { rankEgoNeighborsByDOI, resolveEdgeEgoStateWithPair, resolveNodeEgoStateWithPair, resolveTrailLensNodeEgoState, type EdgeEgoState, type EdgePairFocus, type NodeEgoState } from "../model/focus-state";
 import { resolveFreshnessVisual } from "../model/freshness";
-import { resolveBackgroundOrigin } from "../model/background-parallax";
+import { backgroundParallaxOrigin, resolveBackgroundOrigin } from "../model/background-parallax";
 import { computeSelectionPulse, type SelectionPulseVisual } from "../model/selection-pulse";
 import {
   drawEdgeFootprints,
@@ -29,7 +29,7 @@ import {
   selectTopKLabels,
   type LabelRankEntry,
 } from "../model/label-lod";
-import { draw as gridDraw, lerpColorHex, type CanvasBackgroundVariant } from "../render/grid";
+import { DEPTH_DOT_LAYERS, draw as gridDraw, lerpColorHex, type CanvasBackgroundVariant } from "../render/grid";
 import {
   ACTIVITY_MARK_GAP,
   ACTIVITY_MARK_RADIUS,
@@ -492,6 +492,8 @@ export interface FrameDrawParams {
   backgroundVariant?: CanvasBackgroundVariant;
   /** 움직이는 배경 버퍼를 얹는 콜백(도트가 아닐 때만 소비) — `render/grid.ts` 참고. */
   paintAnimatedBackground?: ((ctx: CanvasRenderingContext2D, width: number, height: number) => void) | null;
+  /** 깊이 도트 세 층의 패턴(`variant === "depth"` 일 때만 소비). 원점은 여기서 계산한다. */
+  depthDotPatterns?: readonly (CanvasPattern | null)[];
 }
 
 /** The full per-frame paint, in the prototype's `render()` order (§13): background -> dust -> edges (contains, depends) -> nodes (+ bright-star spikes) -> labels. */
@@ -550,6 +552,7 @@ export function drawTopologyFrame(params: FrameDrawParams): void {
     glyphStyle = "fill",
     backgroundVariant = "dot",
     paintAnimatedBackground = null,
+    depthDotPatterns,
   } = params;
 
   // 스포트라이트 침강 배수 — 렌즈 ON + 램프 진행 중 + 포커스/엣지선택 비활성
@@ -611,6 +614,15 @@ export function drawTopologyFrame(params: FrameDrawParams): void {
       variant: backgroundVariant,
       gridPattern,
       paintAnimated: paintAnimatedBackground,
+      // 층별 시차 원점은 배경 원점이 아니라 **격자 원점**에서 각자 계산한다 —
+      // 배경 원점은 이미 한 번 시차가 걸려 있어 두 번 걸면 층이 뭉친다.
+      depthLayers: depthDotPatterns
+        ? DEPTH_DOT_LAYERS.map((layer, i) => {
+            const o = backgroundParallaxOrigin(gridOrigin, { width: viewportWidth, height: viewportHeight },
+              reducedMotion ? 1 : layer.parallax);
+            return { pattern: depthDotPatterns[i] ?? null, originX: o.x, originY: o.y, spacing: layer.spacing };
+          })
+        : undefined,
       originX: bgOrigin.x,
       originY: bgOrigin.y,
     },
