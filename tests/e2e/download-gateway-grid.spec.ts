@@ -31,8 +31,19 @@ import { seedFirstRunSeen } from "./first-run-seed";
  * 4. 판 안의 어떤 컨트롤도 판의 안쪽 폭을 넘지 않는다(ko/en 둘 다).
  */
 
-/** 홈통 계약: `<md` 24px · `md+` 40px. */
-const EXPECTED_GUTTER = (width: number) => (width >= 768 ? 40 : 24);
+/**
+ * ⚠️ **홈통 값을 여기 베끼지 않는다** (2026-07-29 「체계」 처방).
+ *
+ * 예전엔 `width >= 768 ? 40 : 24` 였다. 그러면 이 파일이 **두 번째 진실원**이
+ * 된다 — 시험이 검증하는 것이 "렌더된 x 가 토큰이 말하는 값과 같은가" 가
+ * 아니라 "렌더된 x 가 내가 여기 베껴 둔 숫자와 같은가" 가 되고, 토큰을
+ * 바꾸면 시험이 **제품이 아니라 자기 복사본을 지키느라** 빨개진다.
+ *
+ * 이제 `--gateway-gutter` 를 라이브로 읽는다. `<md` 는 그 토큰이 아니라
+ * `max(1.5rem, safe-area)` 가 정하므로 24 가 남는다 — 이건 값이 아니라
+ * **다른 규칙이 지배하는 구간**이라는 사실의 표현이다.
+ */
+const SMALL_GUTTER = 24;
 
 const WIDTHS = [
   { width: 1512, height: 982 },
@@ -40,6 +51,9 @@ const WIDTHS = [
   { width: 1920, height: 1080 },
   { width: 2560, height: 1440 },
   { width: 1440, height: 900 },
+  // 홈통 스텝 경계 — 이 두 폭이 없으면 1536~2399 구간이 한 번도 안 실린다.
+  { width: 1536, height: 960 },
+  { width: 2400, height: 1350 },
 ];
 
 /** 스크롤 0 을 약속하는 폭 — 14인치 실창과 풀스크린, 그리고 그 위. */
@@ -75,6 +89,19 @@ async function measure(page: import("@playwright/test").Page) {
         footer: bx("main footer > div"),
       },
       plateRight: plateRect ? Math.round(plateRect.right) : null,
+      // 관문 그리드의 원자값 — `app/globals.css` 의 `:root`. 시험은 값을
+      // 베끼지 않고 이 셋을 읽어 파생이 실제로 돌았는지 확인한다.
+      gutterToken: Number(
+        getComputedStyle(document.documentElement).getPropertyValue("--gateway-gutter").trim(),
+      ),
+      plateWidthToken: Number(
+        getComputedStyle(document.documentElement)
+          .getPropertyValue("--gateway-plate-width")
+          .trim(),
+      ),
+      plateGapToken: Number(
+        getComputedStyle(document.documentElement).getPropertyValue("--gateway-plate-gap").trim(),
+      ),
       safeInsetLeft: Number(
         getComputedStyle(document.documentElement)
           .getPropertyValue("--topology-v2-safe-inset-left")
@@ -97,17 +124,33 @@ test.describe("관문 다운로드의 그리드", () => {
       await expect(page.getByTestId("download-plate")).toBeVisible({ timeout: 15_000 });
 
       const m = await measure(page);
-      const gutter = EXPECTED_GUTTER(viewport.width);
+      const gutter = viewport.width >= 768 ? m.gutterToken : SMALL_GUTTER;
 
       for (const [name, x] of Object.entries(m.xs)) {
         expect(x, `${name} 의 x 를 못 읽었다`).not.toBeNull();
         expect(x, `${name} 이 홈통(${gutter}) 밖에 있다`).toBe(gutter);
       }
 
+      /**
+       * **파생이 실제로 돌았는가.**
+       *
+       * 예약폭은 이제 리터럴이 아니라 원자값 셋의 합이다
+       * (`src/views/download/lib/gateway-grid.ts`, `StageMap` 마운트 effect).
+       * 그 effect 가 삭제되거나 깨지면 CSS 폴백(544)이 살아남아 **그럴듯한
+       * 값**이 나오므로, 합을 직접 확인하지 않으면 아무도 모른다.
+       */
+      expect(Number.isFinite(m.safeInsetLeft), "예약폭이 숫자가 아니다 — 파생이 안 돌았다").toBe(
+        true,
+      );
+      expect(m.safeInsetLeft, "예약폭이 원자값의 합이 아니다").toBe(
+        m.gutterToken + m.plateWidthToken + m.plateGapToken,
+      );
+
       // 판이 카메라가 예약한 영역 안에 있어야 그래프가 판 뒤로 안 파고든다.
-      // 갭(24)까지 포함해 인셋 이하 — 구 판본은 1920 에서 640 > 544 였다.
+      // 틈도 토큰에서 읽는다 — 구 판본은 `+ 24` 리터럴이라 틈을 바꾸면
+      // 시험이 옛 값을 지키느라 빨개졌다.
       expect(m.plateRight, "판 오른끝을 못 읽었다").not.toBeNull();
-      expect(m.plateRight! + 24).toBeLessThanOrEqual(m.safeInsetLeft);
+      expect(m.plateRight! + m.plateGapToken).toBeLessThanOrEqual(m.safeInsetLeft);
 
       expect(m.overflowX, "가로 오버플로").toBe(0);
     });
