@@ -277,6 +277,9 @@ export function AppSettingsMenu({
     // closePanel owns the return target so ⌘K can intentionally yield focus
     // to the command palette without the modal cleanup stealing it back.
     restoreFocus: false,
+    // 도크는 비모달이다 — 지도를 보며 값을 맞추는 표면이라 지도로 Tab 해 나갈
+    // 수 있어야 한다. 초점을 가두면 키보드 사용자만 그 지도에 못 간다.
+    trapTab: false,
   });
   const titleId = useId();
   const isDesktopRuntime = isTauriVaultRuntime();
@@ -547,27 +550,33 @@ export function AppSettingsMenu({
         ? createPortal(
       <div
         ref={overlayRef}
-        // portal(body 직속) — 트리거가 어느 크롬 컨테이너(나브레일·상단
-        // 유틸 레인·페이지 헤더)에 앉아 있어도 그 컨테이너의 stacking
-        // context 에 z-40 오버레이가 갇히지 않는다(<lg 크롬 레인에서 INDEX
-        // 패널이 시트 위에 그려지던 결함의 구조적 처방). 조건부 렌더라 구
-        // `hidden`+`group-open:flex` display 묶기(overflow-sweep 회귀 방지)도
-        // 필요 없어졌다. scrim: 모달은 지도/페이지를 dim + block 해야
-        // 한다(design.md modality 계약) — `--color-scrim-a54` 단일 토큰.
-        className={`${settingsExiting ? 'app-settings-scrim-out pointer-events-none' : 'app-settings-scrim-in'} fixed inset-0 z-40 flex items-center justify-center overflow-hidden bg-[color:var(--color-scrim-a54)] p-3 sm:p-6`}
+        /*
+         * **우측 도크 — 모달이 아니다** (카운슬 처방 2026-07-29, 소유자 지시).
+         *
+         * 종전엔 화면 가운데 모달 + scrim 이었다. 그런데 이 시트의 「지도 배경」·
+         * 「발자국」 절은 *"바꾸면 지도가 즉시 반영된다"* 가 계약인데, 정작 그
+         * 지도를 자기가 가렸다 — 설정을 만지는 동안 결과를 볼 수 없었다.
+         *
+         * 그래서 오른쪽 가장자리에 붙이고 scrim 을 없앤다. 바깥은
+         * `pointer-events-none` 이라 지도가 **그대로 살아 있다** — 도크를 열어
+         * 둔 채 지도를 끌어 보며 값을 맞출 수 있다. 바깥 클릭으로 닫히지도
+         * 않는다(도크는 머무는 표면이다). 닫는 길은 Esc 와 닫기 버튼.
+         *
+         * portal(body 직속)은 그대로 — 트리거가 어느 크롬 컨테이너에 앉아
+         * 있어도 그 stacking context 에 갇히지 않는다.
+         */
+        className={`${settingsExiting ? 'app-settings-scrim-out' : 'app-settings-scrim-in'} pointer-events-none fixed inset-y-0 right-0 z-40 flex items-center overflow-hidden p-3 sm:p-6`}
         aria-hidden={settingsExiting || undefined}
         inert={settingsExiting || undefined}
         data-testid="app-settings-overlay"
-        onMouseDown={(event) => {
-          if (event.target !== event.currentTarget) return;
-          closePanel();
-        }}
       >
         <div
           ref={panelRef}
           role="dialog"
-          aria-modal="true"
+          // `aria-modal` 을 걸지 않는다 — 바깥이 살아 있는데 "나머지는 없는
+          // 셈 치라"고 보조기술에 말하면 그건 거짓이다.
           aria-labelledby={titleId}
+          data-surface-role="settings-dock"
           tabIndex={-1}
           /*
            * **고정 크기다** (소유자 확정 2026-07-29: *"가로 세로 적당한 크기여야하고
@@ -580,7 +589,7 @@ export function AppSettingsMenu({
            * 좁은 화면에서는 뷰포트에 맞춰 줄어든다(그때만 크기가 변한다). 내용이
            * 넘치면 **오른쪽 칸이 스크롤**하지, 창이 자라지 않는다.
            */
-          className={`${settingsExiting ? 'app-settings-panel-out' : 'app-settings-panel-in'} flex h-[560px] max-h-[calc(100dvh-1.5rem)] w-[760px] focus:outline-none max-w-[calc(100vw-1.5rem)] flex-col overflow-hidden rounded-xl border border-[color:var(--color-border-soft)] bg-[color:var(--color-panel)] text-body shadow-[var(--shadow-elevation-3)]`}
+          className={`${settingsExiting ? 'app-settings-panel-out' : 'app-settings-panel-in'} pointer-events-auto flex h-[560px] max-h-[calc(100dvh-1.5rem)] w-[760px] focus:outline-none max-w-[calc(100vw-1.5rem)] flex-col overflow-hidden rounded-xl border border-[color:var(--color-border-soft)] bg-[color:var(--color-panel)] text-body shadow-[var(--shadow-elevation-3)]`}
           data-testid="app-settings-popover"
         >
           <div className="flex shrink-0 items-center justify-between gap-3 border-b border-[color:var(--color-border-soft)] px-4 py-3">

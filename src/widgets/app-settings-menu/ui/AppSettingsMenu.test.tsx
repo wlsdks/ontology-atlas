@@ -301,23 +301,56 @@ describe('AppSettingsMenu single-sheet recomposition', () => {
     expect(screen.getByTestId('app-settings-body')).toBeInTheDocument();
   });
 
-  it('keeps forward and reverse Tab inside the modal settings sheet', async () => {
+  /**
+   * 설정은 2026-07-29 에 **우측 도크(비모달)** 가 됐다. 「지도 배경」·「발자국」
+   * 절은 *"바꾸면 지도가 즉시 반영된다"* 가 계약인데 중앙 모달이 정확히 그
+   * 지도를 가렸기 때문이다.
+   *
+   * 그래서 종전의 "Tab 을 시트 안에 가둔다" 는 계약이 **뒤집혔다**. 바깥이 살아
+   * 있는데 초점만 가두면 키보드 사용자만 그 바깥에 못 간다 — WAI-ARIA 도
+   * non-modal dialog 는 초점을 가두지 않는다고 못박는다. 이 테스트는 뒤집힌
+   * 쪽을 잠근다.
+   */
+  it('도크는 비모달이다 — aria-modal 을 걸지 않고 Tab 을 가두지 않는다', async () => {
     openSheet(undefined, 'agent');
     const panel = screen.getByTestId('app-settings-popover');
-    const close = screen.getByLabelText('nav.settingsMenu.closeLabel');
-    // 시트의 마지막 초점 대상 — [AI 연결] 행이 추가되며 여기로 옮겨졌다(#80).
     const last = screen.getByTestId('app-settings-ai-drillin');
 
     await waitFor(() => expect(panel).toHaveFocus());
-    expect(panel).toHaveAttribute('aria-modal', 'true');
+    // 바깥이 살아 있는데 "나머지는 없는 셈 치라"고 말하면 그건 거짓이다.
+    expect(panel).not.toHaveAttribute('aria-modal');
+    expect(panel).toHaveAttribute('role', 'dialog');
 
+    // 마지막 항목에서 Tab — 트랩이 있었다면 닫기 버튼으로 되감겼을 자리다.
     last.focus();
     fireEvent.keyDown(window, { key: 'Tab' });
-    expect(close).toHaveFocus();
-
-    close.focus();
-    fireEvent.keyDown(window, { key: 'Tab', shiftKey: true });
     expect(last).toHaveFocus();
+  });
+
+  /**
+   * 도크가 바깥을 살려 두는 것이 이 변경의 **목적**이다. 오버레이가 포인터를
+   * 먹으면 지도를 못 만지므로, 그 한 가지가 깨지면 도크는 이름만 도크다.
+   */
+  it('바깥은 살아 있다 — 오버레이가 포인터를 먹지 않는다', () => {
+    openSheet();
+    const overlay = screen.getByTestId('app-settings-overlay');
+    const panel = screen.getByTestId('app-settings-popover');
+    expect(overlay.className).toContain('pointer-events-none');
+    expect(panel.className).toContain('pointer-events-auto');
+    // scrim 이 남아 있으면 지도가 여전히 어두워진다.
+    expect(overlay.className).not.toContain('scrim-a54');
+  });
+
+  /**
+   * 가이드 자동 시작 가드는 `aria-modal` 로 "다른 표면과 대화 중"을 판정했다.
+   * 도크가 그 속성을 잃었으므로 마커로 이어 두지 않으면 설정 위로 안내가 뜬다.
+   */
+  it('도크에 안내 가드용 마커가 있다', () => {
+    openSheet();
+    expect(screen.getByTestId('app-settings-popover')).toHaveAttribute(
+      'data-surface-role',
+      'settings-dock',
+    );
   });
 
   it('returns focus to the equivalent settings trigger after a locale navigation remount', async () => {

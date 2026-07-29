@@ -19,6 +19,12 @@
     + `tests/contract/footprint-bloom-exception.contract.test.ts`(기본 0 · 상한 6 ·
     소비처 1개 · 문서 등재).
 - 움직이는 그라디언트 배경 · 오로라
+  - **경계 (2026-07-29)**: 이 금지의 사정거리는 **렌더되는 앱 표면**이다.
+    브랜드 자산(OS 아이콘 · 파비콘 · og/마케팅 이미지)은 앱 DOM 밖이라 그라디언트를
+    쓸 수 있다 — 단 **인디고 단일 hue 램프(`#787EF6` → `#3E4BDF`)만** 허용하고,
+    새 hue 나 다색 그라디언트는 브랜드 자산에서도 금지다. 앱 **안**에 그려지는
+    마크(`BrandMark`)는 `currentColor` 단색이라 이 예외가 필요 없다.
+    좌표·색의 단일 출처는 `src/shared/ui/brand-mark.tsx`.
 - scale 기반 hover (`hover:scale-*`)
 - 둘 이상의 채색 시스템 (인디고 외 새 brand color 추가)
 - 라벨 끝의 장식 화살표 (`열기 →`, 라벨 뒤 `ArrowRight`/`ArrowUpRight` 아이콘)

@@ -10,6 +10,15 @@ interface UseDialogFocusTrapOptions {
   onEscape?: () => void;
   initialFocus?: "container" | "first" | "none";
   restoreFocus?: boolean;
+  /**
+   * Tab/Shift+Tab 을 이 표면 안에 가둘 것인가. 기본 `true`(모달).
+   *
+   * **비모달 표면은 반드시 `false`** — 바깥이 살아 있는데 초점만 가두면
+   * 키보드 사용자만 그 바깥에 못 간다. WAI-ARIA 도 non-modal dialog 는 초점을
+   * 가두지 않는다고 못박는다. 설정 도크가 이 경우다: 지도를 보며 값을 맞추는
+   * 표면이라 지도로 Tab 해 나갈 수 있어야 한다.
+   */
+  trapTab?: boolean;
 }
 
 /**
@@ -24,6 +33,7 @@ export function useDialogFocusTrap<T extends HTMLElement>({
   onEscape,
   initialFocus = "container",
   restoreFocus = true,
+  trapTab = true,
 }: UseDialogFocusTrapOptions): RefObject<T | null> {
   const containerRef = useRef<T | null>(null);
   const previousFocusRef = useRef<HTMLElement | null>(null);
@@ -61,7 +71,7 @@ export function useDialogFocusTrap<T extends HTMLElement>({
         onEscapeRef.current();
         return;
       }
-      if (event.key !== "Tab") return;
+      if (event.key !== "Tab" || !trapTab) return;
 
       const items = focusables();
       const first = items[0];
@@ -116,7 +126,7 @@ export function useDialogFocusTrap<T extends HTMLElement>({
       const main = document.querySelector<HTMLElement>("main#main");
       if (main) main.focus({ preventScroll: true });
     };
-  }, [initialFocus, open, restoreFocus]);
+  }, [initialFocus, open, restoreFocus, trapTab]);
 
   return containerRef;
 }

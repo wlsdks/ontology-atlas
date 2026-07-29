@@ -33,6 +33,13 @@ export function canAutoStartGuidedTour(doc: Document = document): boolean {
   if (doc.querySelector('[data-surface-role="blocking-edit-surface"]') !== null) {
     return false;
   }
+  // 2026-07-29 — 설정이 **우측 도크(비모달)** 가 되면서 `aria-modal` 을 잃었다.
+  // 그런데 "지금 다른 표면과 대화 중"이라는 사실은 그대로다 — 모달이 아니게
+  // 됐다고 그 위에 안내를 쏘아도 되는 것은 아니다. 이 가드의 판정 기준은
+  // modality 가 아니라 **사용자의 주의가 어디 있는가** 이므로 마커로 잇는다.
+  if (doc.querySelector('[data-surface-role="settings-dock"]') !== null) {
+    return false;
+  }
   // 2026-07-28 ② — 정직 강등 카드가 서 있는 화면(예: <lg 의 공방)에는 소개할
   // 표면 자체가 없다. "여기가 공방이에요" 를 "공방은 여기서 못 열려요" 위에
   // 띄우면 안내가 아니라 거짓말이 된다. 기록을 남기지 않으므로 조건이 맞는

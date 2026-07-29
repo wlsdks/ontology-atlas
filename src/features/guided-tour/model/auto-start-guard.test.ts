@@ -74,3 +74,24 @@ describe("canAutoStartGuidedTour (stacked-transient guard)", () => {
     expect(canAutoStartGuidedTour(document)).toBe(false);
   });
 });
+
+/**
+ * 설정 도크는 비모달이라 `aria-modal` 이 없다. 그런데 "사용자가 지금 다른
+ * 표면과 대화 중"이라는 사실은 그대로다 — 이 가드의 기준은 modality 가 아니라
+ * **주의가 어디 있는가** 이므로, 속성을 잃은 자리를 마커가 이어야 한다.
+ */
+describe("설정 도크 위에는 안내를 쏘지 않는다", () => {
+  it("settings-dock 마커가 서 있으면 자동 시작이 막힌다", () => {
+    vi.spyOn(document, "hasFocus").mockReturnValue(true);
+    document.body.innerHTML =
+      '<div role="dialog" data-surface-role="settings-dock">설정</div>';
+    expect(canAutoStartGuidedTour(document)).toBe(false);
+  });
+
+  it("도크가 닫히면 다시 열린다 — 영구 차단이 아니다", () => {
+    // 이 가드는 문서 포커스도 본다(백그라운드 탭에 안내를 쏘지 않기 위해).
+    vi.spyOn(document, "hasFocus").mockReturnValue(true);
+    document.body.innerHTML = "";
+    expect(canAutoStartGuidedTour(document)).toBe(true);
+  });
+});
