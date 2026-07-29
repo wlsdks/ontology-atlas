@@ -15,7 +15,7 @@ import {
   drawFootprintSteps,
   drawNodeFootprint,
   type FootprintInk,
-} from "../render/footprint-glyph";
+} from "@/shared/lib/footprint-glyph";
 import type { FootprintPreference } from "@/shared/lib/appearance-preferences";
 import { depthParallaxOffsetFor, ZERO_PARALLAX } from "../model/realm-depth-parallax";
 import { realmDepthClarityAlpha, realmDepthClarityScale } from "../model/realm-transition";

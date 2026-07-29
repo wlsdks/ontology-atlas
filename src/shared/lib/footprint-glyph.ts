@@ -1,9 +1,13 @@
 /**
  * 발자국 글리프 — 「걸어온 길」의 시각 표기.
  *
+ * `shared` 에 있는 이유: 지도 캔버스와 **설정 미리보기**가 같은 그림을 그려야
+ * 한다. 미리보기가 별도 구현이면 둘이 조용히 갈라지고, 그러면 미리보기가
+ * 미리보기가 아니게 된다.
+ *
  * ## 왜 링이 아니라 발자국인가 (소유자 확정 2026-07-29)
  *
- * 종전 표기는 방문 노드에 얹는 **동심 헤어라인 링**이었다(`model/footprint-ring.ts`).
+ * 종전 표기는 방문 노드에 얹는 **동심 헤어라인 링**이었다(`widgets/topology-map-v2` 의 구 `model/footprint-ring.ts`).
  * 그 표기의 구조적 한계는 링이 노드 테두리와 **같은 문법**이라는 것이다 — 선택
  * 링·확장 오라·결계가 이미 원이라, 발자국 링은 넷째 원이 되어 "이건 무슨 원인가"를
  * 사용자가 매번 다시 배워야 했다. 소유자: *"걸어왔던 길 노드들에 순서가 뜨고"* ·
@@ -32,7 +36,7 @@ import {
   FOOTPRINT_EDGE_COUNT,
   FOOTPRINT_EDGE_SCALE,
   type FootprintPreference,
-} from "@/shared/lib/appearance-preferences";
+} from "./appearance-preferences";
 
 /** 발자국 잉크(RGB 3원소) — 호출부가 토큰에서 읽어 넘긴다. */
 export type FootprintInk = readonly [number, number, number];

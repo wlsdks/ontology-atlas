@@ -40,7 +40,7 @@ import { computeTopologyClusterState } from "./topology-cluster-state";
 import type { ClusterChip } from "../model/density-gate";
 import { clusterMoreChipId, EGO_NEIGHBOR_CHIP_ID, EGO_NEIGHBOR_LIMIT, parseClusterMoreChipId, rankEgoNeighborsByDOI, scheduleRipple, selectiveEgoNeighbors, stepEmphasis, stepFocusRamp, type EgoNeighborRankEntry } from "../model/focus-state";
 import { buildFootprintSteps, buildWalkedEdgeKeys } from "../model/footprint-steps";
-import type { FootprintInk } from "../render/footprint-glyph";
+import type { FootprintInk } from "@/shared/lib/footprint-glyph";
 import {
   INITIAL_REALM_TRANSITION_STATE,
   REALM_EXIT_FLIP_MS,

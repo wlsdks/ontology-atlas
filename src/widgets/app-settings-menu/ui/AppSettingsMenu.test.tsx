@@ -1,4 +1,4 @@
-import { act, fireEvent, render, screen, waitFor } from '@testing-library/react';
+import { act, fireEvent, render, screen, waitFor, within } from '@testing-library/react';
 import type { MouseEventHandler, ReactNode } from 'react';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { requestSettingsView } from '@/shared/lib/settings-view-intent';
@@ -478,29 +478,73 @@ describe('AppSettingsMenu appearance pickers (#20/#21)', () => {
     window.localStorage.clear();
   });
 
-  it('renders the canvas-background 3-choice and node-icon 2-choice pickers', () => {
+  /**
+   * 배경 피커는 2026-07-29 에 루트에서 「지도」 서브뷰로 내려갔다 — 발자국 8값이
+   * 같은 자리에 들어오면서 [화면] 그룹이 시트를 삼켰기 때문이다. 이 헬퍼가
+   * 드릴인 경로를 밟으므로, 경로가 끊기면 아래 테스트들이 먼저 터진다.
+   */
+  const openMapSubview = () => {
     openSheet();
+    fireEvent.click(screen.getByTestId('app-settings-map-appearance-open'));
+  };
+
+  it('opens the map subview and renders the canvas-background 4-choice', () => {
+    openMapSubview();
+    expect(screen.getByTestId('app-settings-map-view')).toBeInTheDocument();
     expect(screen.getByTestId('app-settings-canvas-background')).toBeInTheDocument();
-    expect(screen.getByTestId('app-settings-canvas-bg-dot')).toBeInTheDocument();
-    expect(screen.getByTestId('app-settings-canvas-bg-constellation')).toBeInTheDocument();
-    expect(screen.getByTestId('app-settings-canvas-bg-contour')).toBeInTheDocument();
+    for (const variant of ['dot', 'flow', 'web', 'gravity']) {
+      expect(screen.getByTestId(`app-settings-canvas-bg-${variant}`)).toBeInTheDocument();
+    }
+  });
+
+  /** 아이콘 세트는 지도 밖에도 적용되므로 루트에 남는다 — 서브뷰로 딸려가면 안 된다. */
+  it('keeps the node-icon picker at the root, not inside the map subview', () => {
+    openSheet();
     expect(screen.getByTestId('app-settings-glyph-set')).toBeInTheDocument();
-    expect(screen.getByTestId('app-settings-glyph-set-geometric')).toBeInTheDocument();
-    expect(screen.getByTestId('app-settings-glyph-set-line')).toBeInTheDocument();
+    expect(screen.queryByTestId('app-settings-canvas-background')).toBeNull();
   });
 
   it('defaults to dot / geometric selected', () => {
-    openSheet();
+    openMapSubview();
     expect(screen.getByTestId('app-settings-canvas-bg-dot')).toHaveAttribute('aria-checked', 'true');
+    fireEvent.click(screen.getByTestId('app-settings-agent-back'));
     expect(screen.getByTestId('app-settings-glyph-set-geometric')).toHaveAttribute('aria-checked', 'true');
   });
 
   it('persists a canvas-background choice and reflects it in aria-checked', () => {
-    openSheet();
-    fireEvent.click(screen.getByTestId('app-settings-canvas-bg-constellation'));
-    expect(screen.getByTestId('app-settings-canvas-bg-constellation')).toHaveAttribute('aria-checked', 'true');
+    openMapSubview();
+    fireEvent.click(screen.getByTestId('app-settings-canvas-bg-flow'));
+    expect(screen.getByTestId('app-settings-canvas-bg-flow')).toHaveAttribute('aria-checked', 'true');
     expect(screen.getByTestId('app-settings-canvas-bg-dot')).toHaveAttribute('aria-checked', 'false');
-    expect(window.localStorage.getItem('ontology-atlas:canvas-background:v1')).toBe('constellation');
+    expect(window.localStorage.getItem('ontology-atlas:canvas-background:v1')).toBe('flow');
+  });
+
+  it('shows the footprint section behind the second segment', () => {
+    openMapSubview();
+    expect(screen.queryByTestId('app-settings-footprint')).toBeNull();
+    fireEvent.click(screen.getByTestId('app-settings-map-section-footprint'));
+    expect(screen.getByTestId('app-settings-footprint')).toBeInTheDocument();
+    // 첫 화면은 프리셋 3개 — 슬라이더는 「직접 맞추기」 뒤에 있다.
+    expect(screen.getByTestId('app-settings-footprint-preset-default')).toBeInTheDocument();
+    expect(screen.queryByTestId('app-settings-footprint-size')).toBeNull();
+    fireEvent.click(screen.getByTestId('app-settings-footprint-detail-toggle'));
+    expect(screen.getByTestId('app-settings-footprint-size')).toBeInTheDocument();
+  });
+
+  /**
+   * 테두리 굵기는 **윤곽선일 때만** 화면에 영향이 있다. 채움 상태에서 노출하면
+   * "만져도 안 바뀌는 컨트롤"이 되고, 그건 컨트롤이 거짓말을 하는 것이다.
+   */
+  it('hides the outline weight slider while the print is filled', () => {
+    openMapSubview();
+    fireEvent.click(screen.getByTestId('app-settings-map-section-footprint'));
+    fireEvent.click(screen.getByTestId('app-settings-footprint-detail-toggle'));
+    expect(screen.queryByTestId('app-settings-footprint-stroke')).toBeNull();
+    // 라벨 문구가 아니라 **자리**로 고른다 — 테스트가 로케일 문자열에 묶이면
+    // 문구를 다듬을 때마다 무관한 테스트가 깨진다.
+    const fillOptions = within(screen.getByTestId('app-settings-footprint-fill')).getAllByRole('radio');
+    fireEvent.click(fillOptions[1]);
+    expect(screen.getByTestId('app-settings-footprint-stroke')).toBeInTheDocument();
   });
 
   it('persists a node-icon set choice and reflects it in aria-checked', () => {

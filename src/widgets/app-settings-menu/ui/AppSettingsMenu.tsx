@@ -36,6 +36,7 @@ import {
 } from '@/shared/ui/route-focus-manager';
 import { VaultAgentSetupPanel } from './VaultAgentSetupPanel';
 import { CanvasBackgroundPicker, GlyphSetPicker } from './AppearancePickers';
+import { FootprintSettings } from './FootprintSettings';
 import { AiConnectionPanel } from './AiConnectionPanel';
 import { AI_PROVIDER_LABEL_KEY } from '../model/ai-providers';
 import { useAiConnection } from '../model/use-ai-connection';
@@ -67,7 +68,7 @@ import { useAiConnection } from '../model/use-ai-connection';
  * stopPropagation 으로 지도 Esc 래더에 새지 않는다.
  */
 
-type SettingsView = 'root' | 'agent' | 'ai';
+type SettingsView = 'root' | 'agent' | 'ai' | 'map';
 type SettingsTriggerVariant = 'header-pill' | 'rail-tile' | 'chrome-tile';
 
 const SETTINGS_LOCALE_FOCUS_KEY = 'ontology-atlas:settings-locale-focus';
@@ -213,6 +214,8 @@ export function AppSettingsMenu({
     [isControlled, onOpenChange],
   );
   const [view, setView] = useState<SettingsView>('root');
+  /** 「지도」 서브뷰 안에서 무엇을 고르는 중인가. 시트를 닫아도 유지된다(세션 한정). */
+  const [mapSection, setMapSection] = useState<'background' | 'footprint'>('background');
   /**
    * 하위면 이동의 **방향**. 계층이 깊어지면 오른쪽에서 들어오고 돌아오면
    * 왼쪽에서 들어온다 — 그 방향이 곧 "어디로 갔는지" 다. 예전에는 push 도
@@ -559,7 +562,9 @@ export function AppSettingsMenu({
                   ? t('agentTitle')
                   : view === 'ai'
                     ? tAi('title')
-                    : t('title')}
+                    : view === 'map'
+                      ? t('mapTitle')
+                      : t('title')}
               </h2>
             </div>
             <button
@@ -618,6 +623,49 @@ export function AppSettingsMenu({
                   </div>
                 </>
               )}
+            </div>
+          ) : view === 'map' ? (
+            <div
+              key="map"
+              className={`grid min-h-0 flex-1 content-start gap-4 overflow-y-auto p-4 ${viewEnterClass}`}
+              data-testid="app-settings-map-view"
+            >
+              {/*
+                세그먼트 2개 — 「배경」과 「발자국」. 둘은 같은 표면(지도 바닥과
+                그 위 흔적)을 다루지만 서로 독립이라, 한 화면에 세로로 이으면
+                긴 스크롤 하나가 된다. 세그먼트는 "지금 무엇을 고르는 중인가"를
+                스크롤 위치가 아니라 상태로 말한다.
+              */}
+              {/* `SegmentSwitch` 는 boolean 전용이라 여기선 못 쓴다 — 값이
+                  boolean 이 아니라 절 이름이다. 두 값짜리 radiogroup 을 그대로 쓴다. */}
+              <div
+                role="radiogroup"
+                aria-label={t('mapTitle')}
+                data-testid="app-settings-map-section"
+                className="flex gap-1.5"
+              >
+                {(['background', 'footprint'] as const).map((section) => {
+                  const active = section === mapSection;
+                  return (
+                    <button
+                      key={section}
+                      type="button"
+                      role="radio"
+                      aria-checked={active}
+                      data-testid={`app-settings-map-section-${section}`}
+                      onClick={() => setMapSection(section)}
+                      className={`rounded-chip border px-3 py-1.5 text-label transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--color-indigo-a46)] ${
+                        active
+                          ? 'border-[color:var(--color-indigo-accent)] bg-[color:var(--color-indigo-line-a13)] text-[color:var(--color-indigo-accent)]'
+                          : 'border-[color:var(--color-border-soft)] text-[color:var(--color-text-tertiary)] hover:border-[color:var(--color-border-strong)]'
+                      }`}
+                    >
+                      {section === 'background' ? t('mapSectionBackground') : t('mapSectionFootprint')}
+                    </button>
+                  );
+                })}
+              </div>
+              {mapSection === 'background' ? <CanvasBackgroundPicker /> : <FootprintSettings />}
             </div>
           ) : view === 'ai' ? (
             <div
@@ -684,10 +732,27 @@ export function AppSettingsMenu({
                     />
                   </>
                 ) : null}
-                {/* Phase 5 #20/#21 — 앱 전역 개인화(캔버스 배경·노드 아이콘).
-                    지도가 없는 페이지에서도 아이콘 세트는 INDEX/공방/상세 글리프에
-                    적용되고, 배경은 지도 표면에 적용된다. */}
-                <CanvasBackgroundPicker />
+                {/* 지도 모양 — 배경 4택 + 발자국 8값. 값이 많아 루트에 펼치면 이
+                    그룹이 시트를 삼킨다. 2026-07-24 에 5탭 모달을 죽이고 드릴인으로
+                    바꾼 전례를 따라, 새 탭 문법이 아니라 기존 서브뷰로 민다. */}
+                <SettingsRow
+                  testId="app-settings-map-appearance"
+                  label={t('mapTitle')}
+                  caption={t('mapCaption')}
+                  control={
+                    <button
+                      type="button"
+                      data-testid="app-settings-map-appearance-open"
+                      onClick={() => openSubview('map')}
+                      className="flex h-8 items-center gap-1 rounded-chip border border-[color:var(--color-border-soft)] bg-[color:var(--color-elevated)] px-2.5 text-label font-medium text-[color:var(--color-text-secondary)] transition-colors hover:bg-[color:var(--color-overlay-2)] hover:text-[color:var(--color-text-primary)]"
+                    >
+                      {t('mapOpen')}
+                      <ChevronRight size={13} aria-hidden />
+                    </button>
+                  }
+                />
+                {/* 아이콘 세트는 지도 밖(INDEX·공방·상세 글리프)에도 적용되므로
+                    지도 서브뷰가 아니라 여기 남는다. */}
                 <GlyphSetPicker />
                 {/* 화면 안내 다시 보기 (2026-07-26) — 안내는 목적지마다 한 번만
                     자동으로 뜨므로 되돌아올 길이 필요하다. 화면마다 도움말

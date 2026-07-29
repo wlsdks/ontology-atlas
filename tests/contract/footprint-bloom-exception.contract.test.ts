@@ -57,7 +57,7 @@ describe("발자국 번짐 — 헌장 예외의 사정거리", () => {
   it("shadowBlur 소비처는 발자국 렌더러 하나뿐이다", () => {
     const eslintConfig = read("eslint.config.mjs");
     expect(eslintConfig).toContain('MemberExpression[property.name="shadowBlur"]');
-    expect(eslintConfig).toContain("src/widgets/topology-map-v2/render/footprint-glyph.ts");
+    expect(eslintConfig).toContain("src/shared/lib/footprint-glyph.ts");
   });
 
   it("헌장 두 문서에 예외가 등재돼 있다 — 코드에만 있으면 다음 사람이 지운다", () => {

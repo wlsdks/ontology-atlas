@@ -35,14 +35,14 @@ const scaleGradientSelectors = [
     // canvas 2D 의 글로우 — `ctx.shadowBlur = n`. 헌장(forbidden.md)은
     // glow/neon/헤일로를 앱 전역에서 금지하고, 예외는 **발자국 트레일 번짐
     // 1건**(정적 · opt-in · 기본 0 · 상한 6px)뿐이다. 그 한 건은
-    // `render/footprint-glyph.ts` 에만 살고, 이 셀렉터가 그 사실을 강제한다.
+    // `shared/lib/footprint-glyph.ts` 에만 살고, 이 셀렉터가 그 사실을 강제한다.
     //
     // 왜 룰이 필요한가: 캔버스 글로우는 **클래스 문자열이 아니라 API 호출**이라
     // 기존 값 룰(shadow-[…] 기하 허용목록)의 시야 밖이다. 새 캔버스 표면이
     // shadowBlur 를 한 줄 쓰면 아무 게이트도 안 걸리고 조용히 들어온다.
     selector: 'MemberExpression[property.name="shadowBlur"]',
     message:
-      'canvas 글로우 금지 (forbidden.md). 유일한 예외는 발자국 트레일 번짐이고 render/footprint-glyph.ts 안에서만 산다.',
+      'canvas 글로우 금지 (forbidden.md). 유일한 예외는 발자국 트레일 번짐이고 shared/lib/footprint-glyph.ts 안에서만 산다.',
   },
 ];
 
@@ -636,7 +636,7 @@ const eslintConfig = defineConfig([
   // 예외를 **파일 하나로 좁혀** 두면 두 번째 소비처가 생기는 순간 lint 가 먼저
   // 말한다. 예외가 관례로 번지는 것이 이 배치가 막는 부패다.
   {
-    files: ['src/widgets/topology-map-v2/render/footprint-glyph.ts'],
+    files: ['src/shared/lib/footprint-glyph.ts'],
     rules: {
       'no-restricted-syntax': [
         'warn',

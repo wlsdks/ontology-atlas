@@ -8,7 +8,7 @@
 - glassmorphism (`backdrop-blur-*`)
 - glow pulse · neon · halo animation
   - **명문 예외 1건 (2026-07-29): 발자국 트레일 번짐.** canvas 2D 의
-    `ctx.shadowBlur` 로만 존재하고 `src/widgets/topology-map-v2/render/footprint-glyph.ts`
+    `ctx.shadowBlur` 로만 존재하고 `src/shared/lib/footprint-glyph.ts`
     **한 파일 안에서만** 산다. 조건: **정적**(pulse/animation 금지) · **opt-in**
     (설정에서 사용자가 켠다) · **기본 0**(아무도 켜지 않으면 존재하지 않는다) ·
     **상한 6px**(그 위는 자국 본체보다 헤일로가 커져 금지된 그 글로우가 된다).
