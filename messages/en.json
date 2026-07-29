@@ -134,6 +134,10 @@
         "footprint": "Footprints",
         "workspace": "Workspace",
         "agent": "AI agent"
+      },
+      "sectionGroup": {
+        "look": "Appearance",
+        "connect": "Connections"
       }
     },
     "primaryAriaLabel": "Primary menu",

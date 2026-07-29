@@ -5,11 +5,15 @@ import { createPortal } from 'react-dom';
 import { usePanelPresence } from '@/shared/lib/use-presence';
 import type { MouseEvent as ReactMouseEvent, ReactNode } from 'react';
 import {
+  Bot,
   ChevronLeft,
   ChevronRight,
   Copy,
   Check,
+  Footprints,
   HardDrive,
+  Layers,
+  Monitor,
   Settings,
   X,
 } from 'lucide-react';
@@ -71,14 +75,37 @@ import { useAiConnection } from '../model/use-ai-connection';
 type SettingsView = 'root' | 'agent' | 'ai';
 
 /**
- * LNB 항목 — 왼쪽 목록의 순서가 곧 이 배열이다.
+ * LNB 항목 — 왼쪽 목록의 순서와 묶음이 곧 이 배열이다.
  *
- * 「배경」·「발자국」이 「화면」 밑이 아니라 **같은 단**에 있는 이유: 값이 각각
+ * 「지도 배경」·「발자국」이 「화면」 밑이 아니라 **같은 단**에 있는 이유: 값이 각각
  * 4개·8개라 화면 절에 접어 넣으면 그 절이 나머지를 삼킨다. LNB 는 절을 늘리는
  * 비용이 거의 없다는 것이 드릴인 대비 장점이고, 그래서 늘렸다.
+ *
+ * ## 왜 묶음과 아이콘이 있나 (실측 2026-07-29)
+ *
+ * 아이콘 없는 글자만의 목록은 항목 폭 163px 에 글자가 **19~51px** 뿐이었다 —
+ * 가로의 70%가 비고, 세로도 505px 중 329px(65%)이 빈 칸이었다. 그 공백은 여백이
+ * 아니라 **정보가 없는 것**이다.
+ *
+ * 아이콘은 장식이 아니라 **훑기 채널**이다(반복해 여는 목록에서 글자를 읽기 전에
+ * 자리를 기억하게 한다). 묶음 제목은 다섯 항목이 왜 그 순서인지를 말한다 —
+ * 앞 셋은 보이는 것, 뒤 둘은 이 앱이 무엇과 이어져 있는가다.
  */
-const SETTINGS_SECTIONS = ['screen', 'background', 'footprint', 'workspace', 'agent'] as const;
-type SettingsSection = (typeof SETTINGS_SECTIONS)[number];
+const SETTINGS_GROUPS = [
+  { key: 'look', items: ['screen', 'background', 'footprint'] },
+  { key: 'connect', items: ['workspace', 'agent'] },
+] as const;
+
+type SettingsSection = (typeof SETTINGS_GROUPS)[number]['items'][number];
+
+/** 절 → 아이콘. 아이콘은 항목당 하나씩 고정이라 이 표가 단일 출처다. */
+const SECTION_ICON: Record<SettingsSection, typeof Monitor> = {
+  screen: Monitor,
+  background: Layers,
+  footprint: Footprints,
+  workspace: HardDrive,
+  agent: Bot,
+};
 type SettingsTriggerVariant = 'header-pill' | 'rail-tile' | 'chrome-tile';
 
 const SETTINGS_LOCALE_FOCUS_KEY = 'ontology-atlas:settings-locale-focus';
@@ -666,25 +693,34 @@ export function AppSettingsMenu({
                 data-testid="app-settings-nav"
                 className="flex w-[180px] shrink-0 flex-col gap-0.5 overflow-y-auto border-r border-[color:var(--color-border-soft)] p-2"
               >
-                {SETTINGS_SECTIONS.map((item) => {
-                  const active = item === section;
-                  return (
-                    <button
-                      key={item}
-                      type="button"
-                      data-testid={`app-settings-nav-${item}`}
-                      aria-current={active ? 'page' : undefined}
-                      onClick={() => setSection(item)}
-                      className={`rounded-lg px-2.5 py-2 text-left text-label transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--color-indigo-a46)] ${
-                        active
-                          ? 'bg-[color:var(--color-indigo-line-a13)] text-[color:var(--color-indigo-accent)]'
-                          : 'text-[color:var(--color-text-tertiary)] hover:bg-[color:var(--color-overlay-2)] hover:text-[color:var(--color-text-primary)]'
-                      }`}
-                    >
-                      {t(`section.${item}`)}
-                    </button>
-                  );
-                })}
+                {SETTINGS_GROUPS.map((group) => (
+                  <div key={group.key} className="mb-3 last:mb-0">
+                    <p className="px-2.5 pb-1 font-mono text-caption uppercase tracking-[0.14em] text-[color:var(--color-text-quaternary)]">
+                      {t(`sectionGroup.${group.key}`)}
+                    </p>
+                    {group.items.map((item) => {
+                      const active = item === section;
+                      const Icon = SECTION_ICON[item];
+                      return (
+                        <button
+                          key={item}
+                          type="button"
+                          data-testid={`app-settings-nav-${item}`}
+                          aria-current={active ? 'page' : undefined}
+                          onClick={() => setSection(item)}
+                          className={`flex w-full items-center gap-2 rounded-lg px-2.5 py-1.5 text-left text-label transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--color-indigo-a46)] ${
+                            active
+                              ? 'bg-[color:var(--color-indigo-line-a13)] text-[color:var(--color-indigo-accent)]'
+                              : 'text-[color:var(--color-text-tertiary)] hover:bg-[color:var(--color-overlay-2)] hover:text-[color:var(--color-text-primary)]'
+                          }`}
+                        >
+                          <Icon size={14} aria-hidden className="shrink-0" />
+                          {t(`section.${item}`)}
+                        </button>
+                      );
+                    })}
+                  </div>
+                ))}
               </nav>
 
               <div

@@ -134,6 +134,10 @@
         "footprint": "발자국",
         "workspace": "작업 공간",
         "agent": "AI 에이전트"
+      },
+      "sectionGroup": {
+        "look": "보이는 것",
+        "connect": "이어진 것"
       }
     },
     "primaryAriaLabel": "주요 메뉴",

@@ -521,6 +521,34 @@ describe('AppSettingsMenu appearance pickers (#20/#21)', () => {
     }
   });
 
+  /**
+   * LNB 는 **묶음**을 가진다. 다섯 항목이 왜 그 순서인지를 말하는 것이 묶음의
+   * 일이고, 그게 없으면 목록이 그냥 다섯 줄이다.
+   */
+  it('LNB 는 두 묶음으로 나뉘고 3·2 로 갈린다', () => {
+    openSheet();
+    const nav = screen.getByTestId('app-settings-nav');
+    // 문구가 아니라 **구조**로 잠근다 — 라벨을 다듬을 때마다 깨지면 안 된다.
+    const groups = [...nav.children];
+    expect(groups.length, '묶음이 둘이 아니다').toBe(2);
+    expect(groups.map((g) => g.querySelectorAll('button').length)).toEqual([3, 2]);
+    for (const g of groups) {
+      expect(g.querySelector('p'), '묶음에 제목이 없다 — 그러면 그냥 다섯 줄이다').not.toBeNull();
+    }
+  });
+
+  /**
+   * 아이콘은 훑기 채널이다. 하나라도 빠지면 그 항목만 글자로 찾아야 해서,
+   * 있으나 마나 한 채널이 된다 — 그래서 "다섯 다"가 계약이다.
+   */
+  it('LNB 항목마다 아이콘이 하나씩 있다', () => {
+    openSheet();
+    for (const item of ['screen', 'background', 'footprint', 'workspace', 'agent']) {
+      const svgs = screen.getByTestId(`app-settings-nav-${item}`).querySelectorAll('svg');
+      expect(svgs.length, `${item} 항목에 아이콘이 없다`).toBe(1);
+    }
+  });
+
   it('LNB 다섯 절을 모두 싣는다', () => {
     openSheet();
     for (const item of ['screen', 'background', 'footprint', 'workspace', 'agent']) {
