@@ -61,4 +61,16 @@ describe("canAutoStartGuidedTour (stacked-transient guard)", () => {
     document.body.innerHTML = '<div data-interactive-overlay="true"></div>';
     expect(canAutoStartGuidedTour(document)).toBe(true);
   });
+
+  /**
+   * **하고 있는 사람에게 설명하지 않는다.** 2026-07-29 설치 앱 실측: 공방
+   * 실습을 시작하자 900ms 뒤 첫 방문 투어가 그 위에 떠 실습의 1단계
+   * ("이름을 지어 보세요")를 물리적으로 막았다. 실습 띠는 모달이 아니라
+   * 비차단 띠라 modality 조건 어디에도 안 걸렸다.
+   */
+  it("does not explain a surface the user is already working through", () => {
+    document.body.innerHTML =
+      '<div data-testid="studio-practice-rail" data-surface-role="hands-on-guide"></div>';
+    expect(canAutoStartGuidedTour(document)).toBe(false);
+  });
 });

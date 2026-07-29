@@ -47,6 +47,13 @@ export function StudioPracticeRail({
     <div
       data-testid="studio-practice-rail"
       data-step={step}
+      /**
+       * 손이 이미 움직이고 있다는 선언 — 첫 방문 투어가 이 위에 겹쳐 뜨지
+       * 않게 한다(`auto-start-guard`). 실습 띠는 모달이 아니라 비차단 띠라
+       * modality 마커로는 잡히지 않고, 실제로 설치 앱에서 투어가 실습의
+       * 1단계를 덮었다(2026-07-29 실측).
+       */
+      data-surface-role="hands-on-guide"
       className="pointer-events-auto mx-auto flex w-full max-w-[640px] items-center gap-3 rounded-panel border border-[color:var(--color-indigo-a46)] bg-[color:var(--color-indigo-a06)] px-4 py-2.5"
     >
       <span

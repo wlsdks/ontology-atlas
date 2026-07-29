@@ -3527,6 +3527,35 @@ pub fn run() {
                                   // 위해 하지 않는다.
                                   skillTreeProbe:
                                     document.querySelector("[data-skill-parity]")?.getAttribute("data-skill-parity") || "",
+                                  // 공방 실습 · 에이전트 도크 실측 (2026-07-29).
+                                  // 둘 다 **제품이 이미 갖고 있는** 속성/테스트
+                                  // 아이디를 읽을 뿐이라 하네스 쪽 변경만이다 —
+                                  // `bodyText` 가 240자로 잘려 화면 아래쪽 상태를
+                                  // 못 보는 사각지대를 이 두 줄이 덮는다.
+                                  studioPracticeStep:
+                                    document.querySelector("[data-testid=\"studio-practice-rail\"]")?.getAttribute("data-step") || "",
+                                  studioPracticeCleanupOpen:
+                                    Boolean(document.querySelector("[data-testid=\"studio-practice-cleanup\"]")),
+                                  agentDockPresent:
+                                    Boolean(document.querySelector("[data-testid=\"vault-agent-panel\"]")),
+                                  // 바깥에서 클릭하려면 좌표가 필요하다 — WebView 안의
+                                  // 위치는 바깥 자동화가 알 방법이 없다. CSS 픽셀이라
+                                  // 창 원점 기준으로 환산해 쓴다.
+                                  clickTargets: (() => {
+                                    const out = {};
+                                    for (const id of ["studio-save", "studio-practice-delete", "studio-practice-keep", "studio-create-name"]) {
+                                      const el = document.querySelector(`[data-testid="${id}"]`);
+                                      if (!el) continue;
+                                      const r = el.getBoundingClientRect();
+                                      if (r.width === 0 && r.height === 0) continue;
+                                      out[id] = [Math.round(r.x + r.width / 2), Math.round(r.y + r.height / 2)];
+                                    }
+                                    return out;
+                                  })(),
+                                  agentDockWidth:
+                                    Math.round(
+                                      document.querySelector("[data-testid=\"vault-agent-panel\"]")?.getBoundingClientRect().width || 0
+                                    ),
                                   ontologyNav: links.some((link) => link.href.includes("/ontology") || /온톨로지|Ontology/.test(link.text)),
                                   sourceVaultNav: links.some((link) => link.href.includes("/docs") || /저장소|문서함|Source Vault|Documents/.test(link.text)),
                                   agentBriefCopy: buttons.some((text) => /브리핑 복사|Copy brief/.test(text)) && /agent_brief/.test(bodyText),
