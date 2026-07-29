@@ -55,6 +55,33 @@ describe("InsightsSectionTitle", () => {
     expect(el.className).toContain("font-medium");
   });
 
+  /**
+   * **제목은 눌리지 않는다** (2026-07-29 좁은 폭 실측 회귀 가드).
+   *
+   * 834px 에서 「수리 큐」가 이름 가운데서 접혀 「수리 / 큐」가 됐다. 제목이
+   * 든 flex 행에서 옆의 수치 칩 묶음이 `min-w-0` 없이 폭을 다 가져가는 바람에
+   * 제목 칸이 30px 로 눌린 것이다. 바로 옆 카드는 같은 상황에서 멀쩡했다 —
+   * **같은 역할의 두 제목이 서로 다른 규칙 아래 있었다.**
+   *
+   * 호출부마다 고치면 세 번째 카드에서 다시 난다. 규칙을 역할에 붙였고,
+   * 이 검사가 그걸 붙들어 둔다. 눌려야 하는 쪽은 언제나 옆의 수치·칩이다.
+   */
+  it("flex 행에서 제목이 먼저 눌리지 않는다 — shrink-0 을 싣는다", () => {
+    render(<InsightsSectionTitle level={2}>수리 큐</InsightsSectionTitle>);
+    expect(screen.getByRole("heading", { level: 2 }).className).toContain("shrink-0");
+  });
+
+  it("호출부 클래스와 함께 실려도 shrink-0 이 살아남는다", () => {
+    render(
+      <InsightsSectionTitle level={3} className="text-body font-medium">
+        여러 곳에서 참조돼요
+      </InsightsSectionTitle>,
+    );
+    const el = screen.getByRole("heading", { level: 3 });
+    expect(el.className).toContain("shrink-0");
+    expect(el.className).toContain("text-body");
+  });
+
   it("data-* 같은 속성을 통과시킨다", () => {
     render(
       <InsightsSectionTitle level={3} data-testid="probe">

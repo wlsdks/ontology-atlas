@@ -183,6 +183,7 @@ function ProjectDetailState({
       */}
       <div className="mx-auto mt-16 w-full max-w-lg">
         <EmptyState
+          titleAs="h1"
           tone="solid"
           align="center"
           icon={<FolderSearch size={16} aria-hidden />}

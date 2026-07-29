@@ -1132,7 +1132,10 @@ export function DoNextTab({
               <InsightsSectionTitle level={2} className="text-body-lg font-medium tracking-[-0.01em] text-[color:var(--color-text-primary)]">
                 {labels.repairQueueTitle}
               </InsightsSectionTitle>
-              <span className="ml-auto flex flex-wrap items-baseline gap-x-3 gap-y-0.5 font-mono text-label tabular-nums text-[color:var(--topology-v2-numeral-face)]">
+              {/* `min-w-0` — 옆의 「에이전트 준비도」 카드가 이미 쓰던 규칙을
+                  맞춘다. 이게 없으면 칩 묶음이 자기 콘텐츠 폭을 고집해 제목
+                  칸을 눌렀고, 834px 에서 「수리 큐」가 두 줄로 접혔다. */}
+              <span className="ml-auto flex min-w-0 flex-wrap items-baseline gap-x-3 gap-y-0.5 font-mono text-label tabular-nums text-[color:var(--topology-v2-numeral-face)]">
                 <span
                   className={
                     healthQueue.staleCount === 0 ? "text-[color:var(--color-text-quaternary)]" : undefined

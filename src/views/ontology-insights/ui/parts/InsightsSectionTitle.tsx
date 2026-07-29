@@ -2,6 +2,8 @@
 
 import type { ReactNode } from "react";
 
+import { cn } from "@/shared/lib/cn";
+
 /**
  * 인사이트 보드의 **구획 제목** — 눈에 보이던 위계를 문서 구조로도 만든다.
  *
@@ -25,6 +27,17 @@ import type { ReactNode } from "react";
  *
  * 시각 변화는 없다 — Tailwind preflight 가 heading 의 font-size/weight 를
  * `inherit` 로 리셋하고, 크기·굵기는 여기 명시된 클래스가 그대로 정한다.
+ *
+ * ## 왜 `shrink-0` 이 기본인가 (2026-07-29 좁은 폭 실측)
+ *
+ * 834px 에서 「수리 큐」가 **이름 가운데서 접혀** 「수리 / 큐」로 두 줄이 됐다.
+ * 제목이 든 flex 행에서 옆의 수치 칩 묶음이 `min-w-0` 없이 273px 를 가져가는
+ * 바람에 제목 칸이 30px 로 눌린 것이다. 바로 옆 카드(「에이전트 준비도」)는
+ * 같은 상황에서 멀쩡했다 — 그쪽 칩 묶음에만 `min-w-0` 이 있어서다.
+ *
+ * **같은 역할의 두 제목이 서로 다른 규칙 아래 있었다.** 호출부마다 고치면
+ * 세 번째 카드에서 다시 난다. 제목은 접히라고 있는 것이 아니므로 규칙을
+ * 역할에 붙인다 — 눌려야 하는 쪽은 언제나 옆의 수치·칩이다.
  */
 export function InsightsSectionTitle({
   level,
@@ -39,7 +52,7 @@ export function InsightsSectionTitle({
 } & Omit<React.HTMLAttributes<HTMLHeadingElement>, "className" | "children">) {
   const Tag = level === 2 ? "h2" : "h3";
   return (
-    <Tag className={className} {...rest}>
+    <Tag className={cn("shrink-0", className)} {...rest}>
       {children}
     </Tag>
   );

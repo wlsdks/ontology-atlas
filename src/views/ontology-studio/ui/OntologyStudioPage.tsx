@@ -1130,6 +1130,7 @@ function StudioStage({
           // 한 문장이 1000px 을 넘어가 읽기가 끊긴다(같은 표면의 짧은 빈 상태
           // 는 문장이 짧아 드러나지 않던 문제).
           className="w-full max-w-lg"
+          titleAs="h1"
           title={t("notFound.title")}
           description={t("notFound.body", { name: notFoundName, josa: josa(notFoundName, "object") })}
           tone="solid"
@@ -1163,6 +1164,7 @@ function StudioStage({
         className="flex h-[100dvh] items-center justify-center bg-[color:var(--color-canvas)] p-6"
       >
         <EmptyState
+          titleAs="h1"
           title={t("empty.title")}
           description={t("empty.body")}
           tone="solid"
