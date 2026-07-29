@@ -8,6 +8,7 @@ import { buildDeltaPreview, type DeltaPreviewLayout } from "../lib/build-delta-p
 
 const labels: StudioCompassLabels = {
   searchPlaceholder: "search",
+  agentDock: "에이전트",
   exit: "stop",
   moreRelations: "more",
   flowEyebrow: "completeness",
@@ -124,6 +125,7 @@ const CANDIDATE: CreateCandidate = {
 function renderEnhance(
   onFill = vi.fn(),
   initialFocus?: "heading" | "create-name",
+  dock?: { agentDockOpen?: boolean; onToggleAgentDock?: () => void },
 ) {
   const bearings: CompassBearingView[] = [
     bearing("isA", "up", { recommended: true }),
@@ -149,6 +151,7 @@ function renderEnhance(
       onSave={vi.fn()}
       onExit={vi.fn()}
       initialFocus={initialFocus}
+      {...dock}
     />,
   );
   return onFill;
@@ -1552,5 +1555,34 @@ describe("StudioCompass — 소켓 피커 Esc 계약", () => {
     const onFill = renderPickerOpen();
     fireEvent.keyDown(window, { key: "Escape" });
     expect(onFill).not.toHaveBeenCalled();
+  });
+
+  /**
+   * **닫을 수 있으면 다시 열 수 있어야 한다.** 2026-07-29 설치 앱 실측: 공방에
+   * 도크는 붙었는데 여는 문이 없어서, 한 번 닫으면 그 세션에서 되돌릴 방법이
+   * 없었다 — 축소가 아니라 함정이다.
+   */
+  it("gives the dock a door that can reopen it", () => {
+    const toggle = vi.fn();
+    renderEnhance(vi.fn(), undefined, { agentDockOpen: false, onToggleAgentDock: toggle });
+
+    const button = screen.getByTestId("studio-agent-dock-toggle");
+    expect(button).toHaveAttribute("aria-pressed", "false");
+    fireEvent.click(button);
+    expect(toggle).toHaveBeenCalledTimes(1);
+  });
+
+  it("marks the door pressed while the dock stands open", () => {
+    renderEnhance(vi.fn(), undefined, { agentDockOpen: true, onToggleAgentDock: vi.fn() });
+    expect(screen.getByTestId("studio-agent-dock-toggle")).toHaveAttribute("aria-pressed", "true");
+  });
+
+  /**
+   * **설 수 없는 자리에는 문을 그리지 않는다** — 웹이나 좁은 폭에서 열리지 않을
+   * 버튼은 강등이 아니라 죽은 어포던스다.
+   */
+  it("draws no door where the dock cannot stand", () => {
+    renderEnhance();
+    expect(screen.queryByTestId("studio-agent-dock-toggle")).not.toBeInTheDocument();
   });
 });
