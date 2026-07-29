@@ -3515,6 +3515,18 @@ pub fn run() {
                                     window.localStorage.getItem("ontology-atlas:verify-fixture-vault") || "",
                                   verificationFixtureVaultError:
                                     window.__ontologyAtlasVerifyFixtureVaultError || "",
+                                  // 스킬 사본 판정의 **데스크톱 능력 실측** (2026-07-29).
+                                  // manifest walker 가 dot 디렉터리를 걸러 `.claude/skills`
+                                  // 는 웹에서 원리적으로 안 보이는데, 데스크톱 브리지는
+                                  // 볼 수 있는가. 브라우저 증명이 증명이 아닌 자리라
+                                  // 설치 앱에서만 참이 되는 값이다.
+                                  //
+                                  // 앱이 쓰고 하네스가 읽는다 — 이 저장소의 다른 마커
+                                  // 수십 개와 같은 방식이다. `window.__TAURI__` 를
+                                  // 전역 노출시키는 설정 변경(제품 표면)을 검증 하나를
+                                  // 위해 하지 않는다.
+                                  skillTreeProbe:
+                                    document.querySelector("[data-skill-parity]")?.getAttribute("data-skill-parity") || "",
                                   ontologyNav: links.some((link) => link.href.includes("/ontology") || /온톨로지|Ontology/.test(link.text)),
                                   sourceVaultNav: links.some((link) => link.href.includes("/docs") || /저장소|문서함|Source Vault|Documents/.test(link.text)),
                                   agentBriefCopy: buttons.some((text) => /브리핑 복사|Copy brief/.test(text)) && /agent_brief/.test(bodyText),

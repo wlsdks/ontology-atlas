@@ -2068,7 +2068,23 @@ function DocsVaultContent() {
         </aside>
 
         {/* 본문 + 우측 사이드 */}
-        <main id="main" className="flex min-w-0 flex-1 flex-col overflow-hidden">
+        <main
+          id="main"
+          className="flex min-w-0 flex-1 flex-col overflow-hidden"
+          /**
+           * 설치 앱 실측용 마커 — `dot 디렉터리를 실제로 읽었는가`.
+           *
+           * 이 판정은 **데스크톱 능력**이라 브라우저 증명이 증명이 아니다
+           * (`surfaces.md`). 그런데 판정을 보여 주는 자리는 「문서함 점검」 모달
+           * 안이라 닫혀 있으면 DOM 에 없다 — 그래서 상시 존재하는 이 원소가
+           * 요약을 싣는다. `-` 는 "이 표면에 그 능력이 없음"(웹)이고,
+           * `0/0` 은 "능력은 있는데 스킬 트리가 없는 볼트"다. 둘은 다른 사실이라
+           * 같은 값으로 뭉개지 않는다.
+           */
+          data-skill-parity={
+            skillParity ? `${skillParity.rows.length}/${skillParity.disagreeing}` : "-"
+          }
+        >
           {selectedDoc ? (
             <div className="flex min-h-0 flex-1 flex-col">
               {/* 샘플 진입 안내 — Toss D1 정리(2026-07): 딥링크 없이 샘플
