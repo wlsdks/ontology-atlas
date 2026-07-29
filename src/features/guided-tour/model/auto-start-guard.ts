@@ -40,5 +40,16 @@ export function canAutoStartGuidedTour(doc: Document = document): boolean {
   if (doc.querySelector('[data-surface-role="degraded-surface"]') !== null) {
     return false;
   }
+  // 2026-07-29 설치 앱 실측 — **하고 있는 사람에게 설명하지 않는다.**
+  // 공방 실습(`?practice=1`)을 시작하자 900ms 뒤 첫 방문 투어가 그 위에 떴고,
+  // 실습의 1단계("이름을 지어 보세요")를 물리적으로 막았다. 실습 띠는 모달이
+  // 아니라 비차단 띠라 위의 어떤 조건에도 안 걸렸다.
+  //
+  // 두 안내가 같은 순간에 서로 다른 "지금 이걸 하세요" 를 말하면, 사용자는
+  // 둘 다 못 한다. 손이 이미 움직이고 있는 실습이 소개보다 우선한다 — 소개는
+  // 실습을 그만두면 다음 방문에 그대로 기다린다(기록을 남기지 않으므로).
+  if (doc.querySelector('[data-surface-role="hands-on-guide"]') !== null) {
+    return false;
+  }
   return doc.hasFocus();
 }
