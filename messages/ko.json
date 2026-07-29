@@ -57,8 +57,9 @@
       "canvasBgCaption": "지도 배경 무늬를 골라요 — 배경은 언제나 노드·연결보다 옅어요",
       "canvasBg": {
         "dot": "도트(기본)",
-        "constellation": "성좌",
-        "contour": "등고선"
+        "flow": "흐름장",
+        "web": "근접 성좌",
+        "gravity": "중력장"
       },
       "glyphSetLabel": "노드 아이콘",
       "glyphSetCaption": "노드 아이콘 그림체를 골라요 — 모양(종류)은 그대로예요",

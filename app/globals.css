@@ -2309,17 +2309,18 @@
     --topology-v2-vignette-base-alpha: 0.32;
     --topology-v2-vignette-far-alpha: 0.18;
 
-    /* 캔버스 배경 세트 (Phase 5 #20, docs/DESIGN-OVERHAUL-2026-07-25.md) —
-       도트(기본, 위 blueprint grid)·성좌·등고선. 전부 정적·저대비·다크 단일.
+    /* 캔버스 배경 세트 — 도트(기본, 위 blueprint grid) + 움직이는 셋(흐름장·
+       근접 성좌·중력장, render/animated-background.ts). 구 정적 타일 2종
+       (성좌·등고선)은 2026-07-29 소유자 확정으로 폐기.
        배경은 언제나 데이터에 진다(Tufte): 아래 잉크 상한 토큰을 절대 넘지
-       않는다(no bg may exceed --canvas-bg-ink-max; 실사용은 0.04~0.06).
-       움직이는 그라디언트/오로라/글로우 금지 — 정적 잉크만. */
+       않는다(no bg may exceed --canvas-bg-ink-max; 커서 근처에서만 상한까지).
+       움직이는 그라디언트/오로라/글로우는 여전히 금지 — 셋 다 1px 선/점의
+       알파 합성이라 그 축에 해당하지 않는다. */
     --canvas-bg-ink-max: 0.08;
-    /* 성좌: 1~2px 점, 밝기 2단계, 고정 시드(세션/기기 불변), 저밀도. */
-    --canvas-bg-constellation-dim: rgba(236, 236, 240, 0.03);
-    --canvas-bg-constellation-bright: rgba(236, 236, 240, 0.055);
-    /* 등고선(atlas 정체성): 저대비 곡선 — 노드/엣지 잉크보다 훨씬 옅게. */
-    --canvas-bg-contour: rgba(120, 128, 160, 0.05);
+    /* 입자 잉크 RGB — 알파는 코드가 상한 안에서 정하므로 여기엔 없다. */
+    --canvas-bg-particle-rgb: 150, 165, 220;
+    /* 트레일 감쇠에 쓰는 바탕색 RGB — --topology-v2-canvas-bg-near 와 같은 값. */
+    --canvas-bg-canvas-rgb: 10, 10, 13;
 
     /* 2.3 지오메트리 (world unit — canvas 2D 가 getComputedStyle 로 소비) */
     /* canvas-emphasis 슬라이스: 25→30 — 주변 도메인 칩(17) 대비 시각 무게가

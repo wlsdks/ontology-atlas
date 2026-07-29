@@ -255,6 +255,7 @@ import { TopologyRealmChip } from "./TopologyRealmChip";
 import { TopologyTrailChip, type TopologyPastWalkRow } from "./TopologyTrailChip";
 import {
   appendFootprintVisit,
+  collapseFootprintTrail,
   formatFootprintTrailAgentPacket,
   type FootprintTrailEntry,
 } from "../lib/footprint-trail";
@@ -1336,9 +1337,14 @@ export function HomePage() {
     () => new Map(topologyV2Graph.nodes.map((n) => [n.id, n])),
     [topologyV2Graph],
   );
+  /**
+   * 타임라인·인계 패킷이 읽는 **접힌** 트레일 — 같은 노드의 마지막 방문만.
+   * 원본(`footprintTrail`)은 되돌아온 걸음까지 담고 있어 지도의 순번을 만들지만,
+   * 에이전트에게 같은 `get_concept` 을 세 번 주는 것은 정보가 아니라 소음이다.
+   */
   const footprintTrailEntries = useMemo<FootprintTrailEntry[]>(() => {
     const entries: FootprintTrailEntry[] = [];
-    for (const id of footprintTrail) {
+    for (const id of collapseFootprintTrail(footprintTrail)) {
       const node = footprintNodeLookup.get(id);
       if (!node) continue;
       // 인계 패킷에 박히는 이름은 캔버스 노드 id 가 아니라 볼트가 아는 이름.
@@ -1355,10 +1361,15 @@ export function HomePage() {
     }
     return entries;
   }, [footprintTrail, footprintNodeLookup, ontologyInsight]);
-  // 지도로 내리는 방문 id 목록 — 정제된 entries 와 같은 집합(삭제 노드 제외).
+  /**
+   * 지도로 내리는 방문 id 목록 — 삭제 노드만 걸러낸 **원본** 순서다(접지 않는다).
+   * 지도만 반복 걸음을 필요로 한다: 순번(`buildFootprintSteps`)이 거기서 나오고,
+   * 최근성 rank 는 어차피 마지막 등장으로 접힌다. 접힌 목록을 내려보내면
+   * "3번 왔다"가 화면에서 다시 사라진다.
+   */
   const footprintVisitedIds = useMemo(
-    () => footprintTrailEntries.map((entry) => entry.id),
-    [footprintTrailEntries],
+    () => footprintTrail.filter((id) => footprintNodeLookup.has(id)),
+    [footprintTrail, footprintNodeLookup],
   );
   const [footprintPacketCopied, setFootprintPacketCopied] = useState(false);
   const copyFootprintPacket = useCallback(async () => {

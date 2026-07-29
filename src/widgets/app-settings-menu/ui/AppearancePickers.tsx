@@ -26,8 +26,17 @@ import { TopologyV2KindGlyph } from '@/shared/ui/topology-v2-kind-glyph';
 
 const PREVIEW_KINDS = ['project', 'domain', 'capability', 'element'] as const;
 
-/** 배경 미리보기 — 실제 배경 색 토큰을 쓴 정적 미니어처(도트=grid 라인, 성좌=별점, 등고선=곡선). */
+/**
+ * 배경 미리보기 — 실제 배경 잉크 토큰으로 그린 정적 미니어처.
+ *
+ * **움직이지 않는다.** 셋은 움직이는 배경이지만 스와치는 정지 그림이다:
+ * 설정 시트에 네 개의 파티클 루프가 동시에 돌면 고르려는 사람이 아니라
+ * 스와치가 주목을 가져간다. 미리보기는 "어떤 결인지"만 말하고, 움직임은
+ * 고른 다음 지도에서 본다.
+ */
 function CanvasBgSwatch({ variant }: { variant: CanvasBackground }) {
+  const ink = 'rgba(var(--canvas-bg-particle-rgb), 0.55)';
+  const inkFaint = 'rgba(var(--canvas-bg-particle-rgb), 0.28)';
   return (
     <svg
       viewBox="0 0 48 30"
@@ -44,20 +53,43 @@ function CanvasBgSwatch({ variant }: { variant: CanvasBackground }) {
           <line x1="0" y1="10" x2="48" y2="10" />
           <line x1="0" y1="20" x2="48" y2="20" />
         </g>
-      ) : variant === 'constellation' ? (
+      ) : variant === 'flow' ? (
+        <g stroke={ink} strokeWidth="1" fill="none" strokeLinecap="round">
+          <path d="M2 7 Q14 3 26 8 T46 6" />
+          <path d="M2 15 Q14 11 26 16 T46 14" />
+          <path d="M2 23 Q14 19 26 24 T46 22" />
+          <path d="M6 11 Q18 7 30 12" stroke={inkFaint} />
+          <path d="M6 19 Q18 15 30 20" stroke={inkFaint} />
+        </g>
+      ) : variant === 'web' ? (
         <g>
-          <circle cx="9" cy="8" r="1.3" fill="var(--canvas-bg-constellation-bright)" />
-          <circle cx="22" cy="20" r="0.9" fill="var(--canvas-bg-constellation-dim)" />
-          <circle cx="33" cy="7" r="0.9" fill="var(--canvas-bg-constellation-dim)" />
-          <circle cx="40" cy="22" r="1.3" fill="var(--canvas-bg-constellation-bright)" />
-          <circle cx="16" cy="14" r="0.9" fill="var(--canvas-bg-constellation-dim)" />
-          <circle cx="28" cy="11" r="1.3" fill="var(--canvas-bg-constellation-bright)" />
+          <g stroke={inkFaint} strokeWidth="0.8">
+            <line x1="9" y1="8" x2="22" y2="19" />
+            <line x1="22" y1="19" x2="33" y2="8" />
+            <line x1="33" y1="8" x2="40" y2="21" />
+            <line x1="9" y1="8" x2="17" y2="14" />
+            <line x1="17" y1="14" x2="28" y2="11" />
+          </g>
+          <g fill={ink}>
+            <circle cx="9" cy="8" r="1.4" />
+            <circle cx="22" cy="19" r="1.1" />
+            <circle cx="33" cy="8" r="1.1" />
+            <circle cx="40" cy="21" r="1.4" />
+            <circle cx="17" cy="14" r="1" />
+            <circle cx="28" cy="11" r="1.2" />
+          </g>
         </g>
       ) : (
-        <g stroke="var(--canvas-bg-contour)" strokeWidth="1" fill="none">
-          <path d="M0 8 Q12 3 24 8 T48 8" />
-          <path d="M0 16 Q12 11 24 16 T48 16" />
-          <path d="M0 24 Q12 19 24 24 T48 24" />
+        <g fill="none" strokeLinecap="round">
+          <g stroke={ink} strokeWidth="1">
+            <path d="M8 22 A14 14 0 0 1 24 6" />
+            <path d="M40 9 A14 14 0 0 1 27 24" />
+          </g>
+          <g stroke={inkFaint} strokeWidth="0.8">
+            <path d="M4 15 A20 20 0 0 1 24 2" />
+            <path d="M44 16 A20 20 0 0 1 25 28" />
+          </g>
+          <circle cx="24" cy="15" r="1.6" fill={ink} stroke="none" />
         </g>
       )}
     </svg>
@@ -73,7 +105,7 @@ export function CanvasBackgroundPicker() {
       <p className="mt-0.5 break-keep text-caption leading-4 text-[color:var(--color-text-quaternary)]">
         {t('canvasBgCaption')}
       </p>
-      <div role="radiogroup" aria-label={t('canvasBgLabel')} className="mt-2 grid grid-cols-3 gap-2">
+      <div role="radiogroup" aria-label={t('canvasBgLabel')} className="mt-2 grid grid-cols-2 gap-2">
         {CANVAS_BACKGROUNDS.map((variant) => {
           const active = variant === value;
           return (

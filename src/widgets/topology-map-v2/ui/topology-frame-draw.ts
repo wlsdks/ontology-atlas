@@ -467,10 +467,8 @@ export interface FrameDrawParams {
    * grid)·성좌·등고선. 생략 시 `"dot"`(회귀 0).
    */
   backgroundVariant?: CanvasBackgroundVariant;
-  /** 성좌 배경 타일(variant==="constellation" 일 때만 소비). */
-  constellationPattern?: CanvasPattern | null;
-  /** 등고선 배경 타일(variant==="contour" 일 때만 소비). */
-  contourPattern?: CanvasPattern | null;
+  /** 움직이는 배경 버퍼를 얹는 콜백(도트가 아닐 때만 소비) — `render/grid.ts` 참고. */
+  paintAnimatedBackground?: ((ctx: CanvasRenderingContext2D, width: number, height: number) => void) | null;
 }
 
 /** The full per-frame paint, in the prototype's `render()` order (§13): background -> dust -> edges (contains, depends) -> nodes (+ bright-star spikes) -> labels. */
@@ -522,8 +520,7 @@ export function drawTopologyFrame(params: FrameDrawParams): void {
     tierReveal = DEFAULT_TIER_REVEAL,
     glyphStyle = "fill",
     backgroundVariant = "dot",
-    constellationPattern = null,
-    contourPattern = null,
+    paintAnimatedBackground = null,
   } = params;
 
   // 스포트라이트 침강 배수 — 렌즈 ON + 램프 진행 중 + 포커스/엣지선택 비활성
@@ -582,8 +579,7 @@ export function drawTopologyFrame(params: FrameDrawParams): void {
       farT,
       variant: backgroundVariant,
       gridPattern,
-      constellationPattern,
-      contourPattern,
+      paintAnimated: paintAnimatedBackground,
       originX: bgOrigin.x,
       originY: bgOrigin.y,
     },

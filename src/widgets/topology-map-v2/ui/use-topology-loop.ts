@@ -31,7 +31,7 @@ import { INITIAL_POINTER_MACHINE_STATE, type PointerMachineState } from "../inte
 import { initHomeSpring, isHomeSpringConverged, stepHomeSpring, type HomeSpringState } from "../model/relayout-home";
 import type { NodeDragState } from "./topology-pointer-handlers";
 import { buildGridPattern } from "../render/grid";
-import { buildConstellationPattern, buildContourPattern, readCanvasBgTokens } from "../render/background-patterns";
+import { createAnimatedBackground, type AnimatedBackground, type AnimatedBackgroundAttractor } from "../render/animated-background";
 import { buildDustPoints, buildRealmCosmosPoints, computeStarDustCount, type DustPoint } from "../render/starfield";
 import type { CanvasBackground, GlyphSet } from "@/shared/lib/appearance-preferences";
 import { computeClusterFitTarget, computeFocusCameraTarget, computeOverviewCameraTarget, computeOverviewFitScale, hasAnyNodeOnScreen, worldToScreen } from "./topology-camera-math";
@@ -274,8 +274,9 @@ export interface UseTopologyLoopArgs {
    */
   glyphSet?: GlyphSet;
   /**
-   * 캔버스 배경 세트 (Phase 5 #20) — `"dot"`(기본, blueprint grid) / `"constellation"`
-   * (성좌) / `"contour"`(등고선). 생략 시 `"dot"`.
+   * 캔버스 배경 세트 — `"dot"`(기본, 정적 blueprint grid) / `"flow"`(흐름장) /
+   * `"web"`(근접 성좌) / `"gravity"`(중력장). 뒤 셋은 커서에 반응하는 입자
+   * 배경이고 앰비언트 휴면을 그대로 탄다. 생략 시 `"dot"`.
    */
   canvasBackground?: CanvasBackground;
   /** 휠/세로 스와이프 소유권 — `topology-pointer-handlers.ts` 의 `wheelIntent` 참고. */
@@ -286,6 +287,8 @@ export interface UseTopologyLoopArgs {
 
 const EMPTY_EXPANDED_SET: ReadonlySet<string> = new Set();
 const EMPTY_TRAIL: readonly string[] = [];
+/** 중력장이 아닐 때 넘기는 빈 인력원 배열 — 매 프레임 `[]` 리터럴을 만들지 않는다. */
+const EMPTY_ATTRACTORS: readonly AnimatedBackgroundAttractor[] = [];
 
 export type UseTopologyLoopResult = TopologyPointerHandlers & {
   canvasRef: RefObject<HTMLCanvasElement | null>;
@@ -298,9 +301,6 @@ export function useTopologyLoop(args: UseTopologyLoopArgs): UseTopologyLoopResul
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
   const containerRef = useRef<HTMLDivElement | null>(null);
   const gridCanvasRef = useRef<HTMLCanvasElement | null>(null);
-  /** 성좌/등고선 배경 타일용 오프스크린 캔버스(패턴 1회 빌드). */
-  const constellationCanvasRef = useRef<HTMLCanvasElement | null>(null);
-  const contourCanvasRef = useRef<HTMLCanvasElement | null>(null);
 
   const viewportRef = useRef({ width: 0, height: 0, dpr: 1 });
   /**
@@ -319,8 +319,16 @@ export function useTopologyLoop(args: UseTopologyLoopArgs): UseTopologyLoopResul
   /** S8 결함 6 — 영역 활성 중 결계 안 우주 도트(뷰포트당 1회 빌드, resize 갱신). */
   const cosmosPointsRef = useRef<DustPoint[]>([]);
   const gridPatternRef = useRef<CanvasPattern | null>(null);
-  const constellationPatternRef = useRef<CanvasPattern | null>(null);
-  const contourPatternRef = useRef<CanvasPattern | null>(null);
+  /**
+   * 움직이는 배경(흐름장/근접 성좌/중력장)의 입자 상태 + 오프스크린 버퍼.
+   * 변형이 바뀌면 통째로 새로 만든다 — 입자 의미가 변형마다 달라 재사용이
+   * 오히려 첫 몇 초를 이상하게 만든다.
+   */
+  const animatedBgRef = useRef<AnimatedBackground | null>(null);
+  /** 커서 스크린 좌표(캔버스 기준). 캔버스 밖이면 null — 배경이 조용해진다. */
+  const bgPointerRef = useRef<{ x: number; y: number } | null>(null);
+  /** 중력장 전용 인력원 버퍼 — 프레임마다 배열을 새로 만들지 않으려고 재사용한다. */
+  const bgAttractorsRef = useRef<AnimatedBackgroundAttractor[]>([]);
   // Phase 5 #20/#21 — 개인화 설정 prop 을 매 프레임 읽을 수 있게 ref 미러
   // (tierReveal 선례). 설정 변경 시 아래 effect 가 갱신한다.
   const glyphStyleRef = useRef<"fill" | "line">(glyphSet === "line" ? "line" : "fill");
@@ -716,10 +724,57 @@ export function useTopologyLoop(args: UseTopologyLoopArgs): UseTopologyLoopResul
   useEffect(() => {
     glyphStyleRef.current = glyphSet === "line" ? "line" : "fill";
   }, [glyphSet]);
-  // Phase 5 #20 — 캔버스 배경 변경 시 다음 프레임부터 새 배경(패턴은 이미 빌드됨).
+  /**
+   * 캔버스 배경 변경 — 도트면 입자 엔진을 **버리고**, 아니면 그 변형으로 새로
+   * 만든다. 도트에서 엔진을 살려 두면 보이지도 않는 버퍼를 매 프레임 굴린다.
+   */
   useEffect(() => {
     canvasBackgroundRef.current = canvasBackground;
+    animatedBgRef.current?.dispose();
+    if (canvasBackground === "dot") {
+      animatedBgRef.current = null;
+      return;
+    }
+    const rootStyle = getComputedStyle(document.documentElement);
+    const read = (name: string, fallback: string): string => {
+      const raw = rootStyle.getPropertyValue(name).trim();
+      return raw === "" ? fallback : raw;
+    };
+    const inkMax = Number(read("--canvas-bg-ink-max", "0.08"));
+    animatedBgRef.current = createAnimatedBackground(canvasBackground, {
+      inkMax: Number.isFinite(inkMax) ? inkMax : 0.08,
+      particleRgb: read("--canvas-bg-particle-rgb", "150, 165, 220"),
+      canvasRgb: read("--canvas-bg-canvas-rgb", "10, 10, 13"),
+    });
+    return () => {
+      animatedBgRef.current?.dispose();
+      animatedBgRef.current = null;
+    };
   }, [canvasBackground]);
+
+  /**
+   * 커서 위치 추적 — 움직이는 배경만 쓴다. 큰 포인터 핸들러 팩토리를 건드리지
+   * 않고 네이티브 리스너로 좌표만 받는다(그쪽은 히트 테스트·드래그·핀치를
+   * 소유하고 있어, 배경 좌표 하나 때문에 그 계약에 손대는 것은 값이 비싸다).
+   * `passive` 라 스크롤/줌 성능에 영향이 없다.
+   */
+  useEffect(() => {
+    const canvas = canvasRef.current;
+    if (!canvas) return;
+    const onMove = (e: PointerEvent) => {
+      const rect = canvas.getBoundingClientRect();
+      bgPointerRef.current = { x: e.clientX - rect.left, y: e.clientY - rect.top };
+    };
+    const onLeave = () => {
+      bgPointerRef.current = null;
+    };
+    canvas.addEventListener("pointermove", onMove, { passive: true });
+    canvas.addEventListener("pointerleave", onLeave, { passive: true });
+    return () => {
+      canvas.removeEventListener("pointermove", onMove);
+      canvas.removeEventListener("pointerleave", onLeave);
+    };
+  }, []);
 
   // 앰비언트 휴면 지연 — 표면마다 다르다(관문은 짧다). 자기 의존성으로 둔다.
   useEffect(() => {
@@ -991,17 +1046,6 @@ export function useTopologyLoop(args: UseTopologyLoopArgs): UseTopologyLoopResul
           majorColor: tokens.gridMajor,
           baseColor: tokens.canvasBgNear,
         });
-      }
-      // Phase 5 #20 — 성좌/등고선 배경 타일은 뷰포트 크기와 무관(고정 타일)이라
-      // 1회만 빌드한다. `--canvas-bg-*` 토큰은 blueprint grid 와 별개 패밀리라
-      // strict topology-v2 리더가 아닌 자체 리더(미선언 시 문서화된 기본값)로 읽는다.
-      if (!constellationCanvasRef.current) constellationCanvasRef.current = document.createElement("canvas");
-      if (!contourCanvasRef.current) contourCanvasRef.current = document.createElement("canvas");
-      if (!constellationPatternRef.current || !contourPatternRef.current) {
-        const rootStyle = getComputedStyle(document.documentElement);
-        const bgTokens = readCanvasBgTokens((name) => rootStyle.getPropertyValue(name));
-        constellationPatternRef.current = buildConstellationPattern(constellationCanvasRef.current, bgTokens);
-        contourPatternRef.current = buildContourPattern(contourCanvasRef.current, bgTokens);
       }
       dustPointsRef.current = buildDustPoints(width, height, computeStarDustCount(width, height, tokens.dustAreaPerPoint), tokens.dustParallaxMin, tokens.dustParallaxMax);
       // S8 결함 6 — 우주 도트는 dust 의 2배 밀도(레이어 2장). dust 와 같은
@@ -2429,6 +2473,40 @@ export function useTopologyLoop(args: UseTopologyLoopArgs): UseTopologyLoopResul
         ? (spotlightIdsRef.current !== null ? 1 : 0)
         : stepFocusRamp(spotlightRampRef.current, spotlightIdsRef.current !== null, dt, tokens.focusDimTau);
 
+      // 움직이는 배경 한 스텝 — 그리기 **전에** 자기 버퍼를 갱신한다.
+      // `ambientFactor` 를 그대로 넘기므로 손을 놓으면 감속해 멎고, 0 이 되면
+      // 이 호출은 조기 반환한다(유휴 래스터 비용 0).
+      {
+        const bg = animatedBgRef.current;
+        if (bg) {
+          const origin = worldToScreen(camera, width, height, 0, 0);
+          if (bg.variant === "gravity") {
+            // 중력장만 노드 위치를 읽는다. 배열은 재사용하고 길이만 맞춘다.
+            const wells = bgAttractorsRef.current;
+            wells.length = 0;
+            for (const node of world.nodes) {
+              const p = worldToScreen(camera, width, height, node.x, node.y);
+              if (p.x < -200 || p.x > width + 200 || p.y < -200 || p.y > height + 200) continue;
+              wells.push({ x: p.x, y: p.y, m: node.kind === "project" || node.kind === "domain" ? 2.6 : 1 });
+              if (wells.length >= 48) break;
+            }
+          }
+          bg.step({
+            width,
+            height,
+            dpr,
+            originX: origin.x,
+            originY: origin.y,
+            ambientFactor: ambientSleepFactor(now, lastInputMsRef.current, ambientSleepDelayRef.current),
+            pointerX: bgPointerRef.current?.x ?? null,
+            pointerY: bgPointerRef.current?.y ?? null,
+            attractors: bg.variant === "gravity" ? bgAttractorsRef.current : EMPTY_ATTRACTORS,
+            dtMs: dt * 1000,
+            reducedMotion: reducedMotionRef.current,
+          });
+        }
+      }
+
       ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
       ctx.clearRect(0, 0, width, height);
       drawTopologyFrame({
@@ -2480,8 +2558,9 @@ export function useTopologyLoop(args: UseTopologyLoopArgs): UseTopologyLoopResul
         tierReveal: tierRevealRef.current,
         glyphStyle: glyphStyleRef.current,
         backgroundVariant: canvasBackgroundRef.current,
-        constellationPattern: constellationPatternRef.current,
-        contourPattern: contourPatternRef.current,
+        paintAnimatedBackground: animatedBgRef.current
+          ? (target, w, h) => animatedBgRef.current?.paint(target, w, h)
+          : null,
       });
       // 이번 프레임이 어떤 렌즈 상태를 그렸는지 기록 — 유휴 게이트가 다음
       // 프레임에 "바뀌었나"를 이 값으로 판정한다.
