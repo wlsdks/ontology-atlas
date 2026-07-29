@@ -89,6 +89,19 @@ Launches the packaged macOS .app executable, waits long enough to catch early
 startup crashes, then terminates it. This is an unsigned local runtime smoke;
 release artifacts still need pnpm desktop:verify-release-dmg.
 
+⚠️  --require-webview-route 는 **주소만** 보장한다. 화면은 아닐 수 있다.
+    앱은 실제 내비게이션이 아니라 history.replaceState + popstate 로 주소를
+    갈아끼운다(볼트 픽스처를 심은 IndexedDB 상태를 지키려고 — 근거는
+    src-tauri/src/lib.rs 의 build_webview_verify_route_script 주석).
+    그래서 **소프트 내비게이션을 스스로 듣는 표면**(지도 · 공방)만 실제로
+    화면이 바뀌고, 그 밖의 평범한 Next 라우트는 주소만 바뀐 채 루트(지도)가
+    남는다.
+    2026-07-29 실측: /ko/download/ 를 요구했더니 주소는 통과하는데 화면은
+    지도였다 — 그걸 앱 결함으로 두 번 오진했다.
+    → 라우트 도달을 정말 확인하려면 그 화면에만 있는 문자열을
+      --require-webview-content 로 **함께** 걸어라. URL 일치는 도달의 증거가
+      아니다.
+
 Options:
   --kill-existing   Terminate already-running copies of this app bundle executable before launch,
                     including installed .app copies with the same executable name.
