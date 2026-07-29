@@ -138,7 +138,11 @@
       "sectionGroup": {
         "look": "Appearance",
         "connect": "Connections"
-      }
+      },
+      "guideAutoStartLabel": "Show guides automatically",
+      "guideAutoStartCaption": "Opens a guide the first time you visit each screen — turn off and it only opens from Replay or the map compass",
+      "guideAutoStartOn": "On",
+      "guideAutoStartOff": "Off"
     },
     "primaryAriaLabel": "Primary menu",
     "notificationsAriaLabel": "Notifications"

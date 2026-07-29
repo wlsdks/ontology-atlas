@@ -21,7 +21,7 @@ import { useLocale, useTranslations } from 'next-intl';
 import { Link, useRouter } from '@/i18n/navigation';
 import { LocaleSwitch } from '@/features/locale-switch';
 import { useAgentServer, useLocalVault } from '@/features/docs-vault-local';
-import { useGuideReplay } from '@/features/guided-tour';
+import { useGuideAutoStart, useGuideReplay, writeGuideAutoStart } from '@/features/guided-tour';
 import {
   getTauriVaultRootPath,
   isTauriVaultRuntime,
@@ -240,6 +240,7 @@ export function AppSettingsMenu({
   // 지금 화면이 등록한 "안내 다시 열기" — 등록이 없는 화면에서는 행 자체가
   // 없다(빈 행/비활성 버튼을 남기지 않는다).
   const replayGuide = useGuideReplay();
+  const guideAutoStart = useGuideAutoStart();
   const [internalOpen, setInternalOpen] = useState(false);
   const isControlled = openProp !== undefined;
   const open = isControlled ? openProp : internalOpen;
@@ -785,6 +786,28 @@ export function AppSettingsMenu({
                     모든 화면에 이미 있는 이 메뉴 한 곳으로 모은다. 안내를 열기
                     전에 이 팝오버를 먼저 닫는다 — 안내 카드가 설정 위에 겹치면
                     transient 스택 금지 계약 위반이다. */}
+                {/*
+                  자동 표시 스위치 — 안내 자체를 지우지 않는다. 끄면 저절로 안 뜰
+                  뿐이고, 아래 「다시 보기」와 지도의 나침반 타일로는 그대로 열린다.
+                  소유자: *"처음만 나오면 되거든? 아니면 클릭했을때나"*.
+                */}
+                <SettingsRow
+                  testId="app-settings-guide-auto-start"
+                  label={t('guideAutoStartLabel')}
+                  caption={t('guideAutoStartCaption')}
+                  control={
+                    <SegmentSwitch
+                      ariaLabel={t('guideAutoStartLabel')}
+                      testId="app-settings-guide-auto-start-switch"
+                      value={guideAutoStart}
+                      onChange={writeGuideAutoStart}
+                      options={[
+                        { value: true, label: t('guideAutoStartOn') },
+                        { value: false, label: t('guideAutoStartOff') },
+                      ]}
+                    />
+                  }
+                />
                 {replayGuide ? (
                   <SettingsRow
                     testId="app-settings-replay-guide"

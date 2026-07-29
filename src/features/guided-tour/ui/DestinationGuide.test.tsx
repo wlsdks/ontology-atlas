@@ -7,6 +7,8 @@ import { destinationTourStatusKey } from "../model/tour-storage";
 import { DestinationGuide } from "./DestinationGuide";
 
 const DOCS_KEY = destinationTourStatusKey("docs");
+/** 전역 자동 표시 스위치 — 한 테스트가 끄면 다음 테스트까지 꺼진 채로 넘어간다. */
+const AUTO_START_KEY = "ontology-atlas:guide-auto-start:v1";
 
 function renderGuide(destination: "docs" | null = "docs") {
   return render(
@@ -35,6 +37,7 @@ beforeEach(() => {
   // jsdom 기본값은 포커스 없음이라 명시적으로 세운다.
   vi.spyOn(document, "hasFocus").mockReturnValue(true);
   window.localStorage.removeItem(DOCS_KEY);
+  window.localStorage.removeItem(AUTO_START_KEY);
   vi.useFakeTimers({ shouldAdvanceTime: true });
 });
 
@@ -42,6 +45,7 @@ afterEach(() => {
   vi.restoreAllMocks();
   vi.useRealTimers();
   window.localStorage.removeItem(DOCS_KEY);
+  window.localStorage.removeItem(AUTO_START_KEY);
 });
 
 describe("DestinationGuide", () => {
@@ -168,5 +172,42 @@ describe("DestinationGuide", () => {
     });
     expect(screen.queryByTestId("guided-tour-card")).toBeNull();
     expect(screen.queryByTestId("replay")).toBeNull();
+  });
+});
+
+/**
+ * 스위치의 진짜 계약 — **끄면 자동만 멎고, 부르면 여전히 온다.**
+ *
+ * 이 둘을 한 테스트에 묶는 이유: 반쪽만 지키면 각각 다른 결함이 된다. 자동이
+ * 안 멎으면 스위치가 거짓말이고, 부를 때도 안 오면 스위치가 아니라 **삭제**다.
+ * 소유자가 요청한 것은 후자가 아니다("아니면 클릭했을때나").
+ */
+describe("화면 안내 자동 표시 스위치", () => {
+  it("끄면 목적지 안내가 저절로 뜨지 않는다", async () => {
+    window.localStorage.setItem(AUTO_START_KEY, "0");
+    renderGuide();
+    await act(async () => {
+      vi.advanceTimersByTime(6000);
+    });
+    expect(screen.queryByRole("heading", { level: 2 })).toBeNull();
+  });
+
+  it("켜져 있으면 저절로 뜬다 — 스위치가 실제로 그 발화를 막고 있다는 증거", async () => {
+    renderGuide();
+    await act(async () => {
+      vi.advanceTimersByTime(6000);
+    });
+    expect(screen.getByRole("heading", { level: 2 })).toBeInTheDocument();
+  });
+
+  it("꺼져 있어도 「다시 보기」로는 열린다 — 스위치는 삭제가 아니다", async () => {
+    window.localStorage.setItem(AUTO_START_KEY, "0");
+    renderGuide();
+    await act(async () => {
+      vi.advanceTimersByTime(6000);
+    });
+    expect(screen.queryByRole("heading", { level: 2 })).toBeNull();
+    fireEvent.click(screen.getByTestId("replay"));
+    expect(screen.getByRole("heading", { level: 2 })).toBeInTheDocument();
   });
 });
