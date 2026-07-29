@@ -14,6 +14,7 @@ import {
   drawEdgeFootprints,
   drawFootprintSteps,
   drawNodeFootprint,
+  footprintScaleFor,
   type FootprintInk,
 } from "@/shared/lib/footprint-glyph";
 import type { FootprintPreference } from "@/shared/lib/appearance-preferences";
@@ -436,6 +437,12 @@ export interface FrameDrawParams {
   /** 순번 글자색 — 자국 잉크보다 한 단 밝다(작은 글자라 대비가 더 필요). */
   footprintStepColor?: string;
   /**
+   * 가장 최근 걸음의 노드 id + 그 걸음의 등장 진행 [0,1]. 이 노드의 자국만
+   * 램프를 받고 나머지는 1(정착)이다 — 한 입력이 낳은 사건은 하나다.
+   */
+  footprintNewestId?: string | null;
+  footprintAppear?: number;
+  /**
    * 걸어온 길 렌즈 — 트레일 팝오버가 열려 있는 동안 **그 동안만** non-null.
    * 방문 노드 집합(현재 포커스 포함)을 ego keep-set 대신 쓴다: 방문 노드는
    * 값(색·라벨)을 지키고 나머지 노드·클러스터 칩·라벨·**엣지 전부(ego 강조
@@ -534,6 +541,8 @@ export function drawTopologyFrame(params: FrameDrawParams): void {
     walkedEdgeKeys = null,
     footprintInk = [232, 196, 122],
     footprintStepColor = "#e8c47a",
+    footprintNewestId = null,
+    footprintAppear = 1,
     trailLensIds = null,
     spotlightIds,
     spotlightRamp,
@@ -575,6 +584,8 @@ export function drawTopologyFrame(params: FrameDrawParams): void {
   // Where world (0,0) currently lands on screen — the blueprint grid rides
   // this so the background belongs to the world, not the display (B3).
   const gridOrigin = worldToScreen(camera, viewportWidth, viewportHeight, 0, 0);
+  // 발자국 크기 계수 — 줌아웃에서 자국이 그래프를 덮지 않게 함께 줄인다.
+  const footprintScale = footprintScaleFor(camera.scale.value);
   // B5 — 라벨 줌 스케일 (프레임당 1회, 전 라벨 공용).
   const labelScale = labelZoomScale(camera.scale.value);
 
@@ -847,7 +858,7 @@ export function drawTopologyFrame(params: FrameDrawParams): void {
         walkedEdgeKeys.has(edge.sourceId < edge.targetId ? `${edge.sourceId} ${edge.targetId}` : `${edge.targetId} ${edge.sourceId}`)
       ) {
         drawEdgeFootprints(
-          { ctx, pref: footprintPref, ink: footprintInk },
+          { ctx, pref: footprintPref, ink: footprintInk, scale: footprintScale },
           a.x,
           a.y,
           b.x,
@@ -1118,7 +1129,14 @@ export function drawTopologyFrame(params: FrameDrawParams): void {
     const footprintSteps = footprintStepsById.get(node.id);
     if (footprintSteps !== undefined && footprintPref !== null) {
       const layerAlpha = tierAlpha * realmClarityAlpha * backgroundDim * appearRevealAlpha;
-      const paint = { ctx, pref: footprintPref, ink: footprintInk };
+      const paint = {
+        ctx,
+        pref: footprintPref,
+        ink: footprintInk,
+        scale: footprintScale,
+        // 램프는 **방금 생긴 걸음**에만. 나머지는 이미 거기 있던 것이라 정착 상태다.
+        appear: node.id === footprintNewestId ? footprintAppear : 1,
+      };
       drawNodeFootprint(paint, screen.x, screen.y, screenRadius, layerAlpha * footprintPref.opacity);
       drawFootprintSteps(
         paint,

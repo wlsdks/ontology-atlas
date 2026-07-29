@@ -1,7 +1,14 @@
 import { describe, expect, it } from "vitest";
 
 import { DEFAULT_FOOTPRINT, FOOTPRINT_EDGE_SCALE } from "./appearance-preferences";
-import { edgeFootprintPlacements, formatStepNumbers } from "./footprint-glyph";
+import {
+  FOOTPRINT_SCALE_RANGE,
+  edgeFootprintPlacements,
+  footprintAnchor,
+  footprintPairRadius,
+  footprintScaleFor,
+  formatStepNumbers,
+} from "./footprint-glyph";
 
 /**
  * 선 옆 자국의 성질은 **좌표로만** 검증된다 — 캔버스 없이 잠글 수 있고, 그림을
@@ -70,5 +77,72 @@ describe("formatStepNumbers", () => {
 
   it("빈 목록은 빈 문자열", () => {
     expect(formatStepNumbers([])).toBe("");
+  });
+});
+
+/**
+ * 자국이 노드 원판을 파고들던 결함(설치 앱 실측, 소유자: *"겹쳐지는건 없게
+ * 하고싶은데"*). 원인은 `gap` 이 자국 **중심**까지의 거리였다는 것 — 겹침은
+ * 중심이 아니라 가장자리 조건이다.
+ */
+describe("footprintAnchor — 노드와 겹치지 않는다", () => {
+  it.each([
+    [13, 8, 13],
+    [26, 8, 13],
+    [17, 0, 26],
+    [40, 0, 9],
+  ])("노드 반지름 %d · 여백 %d · 자국 %d", (nodeRadius, gap, size) => {
+    const at = footprintAnchor(0, 0, nodeRadius, gap, size);
+    const centerDistance = Math.hypot(at.x, at.y);
+    const clearance = centerDistance - nodeRadius - footprintPairRadius(size);
+    expect(clearance, `노드를 파고들었다 (여유 ${clearance.toFixed(2)}px)`).toBeGreaterThanOrEqual(gap - 1e-6);
+  });
+
+  it("라벨을 피해 우상단 사분면에 앉는다", () => {
+    const at = footprintAnchor(100, 100, 13, 8, 13);
+    expect(at.x).toBeGreaterThan(100);
+    expect(at.y).toBeLessThan(100);
+  });
+});
+
+/**
+ * 줌아웃에서 겹침이 가장 심하다 — 노드·관계선이 화면에 몰리는데 자국만 고정
+ * 픽셀이면 자국이 그래프를 덮는다. 소유자가 허용한 완화책이 크기 축소다.
+ */
+describe("footprintScaleFor", () => {
+  it("배율 1 에서는 원래 크기다", () => {
+    expect(footprintScaleFor(1)).toBeCloseTo(1, 6);
+  });
+
+  it("축소할수록 자국도 작아진다 — 단조 증가", () => {
+    const samples = [0.05, 0.2, 0.5, 1, 2].map(footprintScaleFor);
+    for (let i = 1; i < samples.length; i += 1) {
+      expect(samples[i]).toBeGreaterThanOrEqual(samples[i - 1]);
+    }
+  });
+
+  it("하한에서 멈춘다 — 한 점이 되면 '여기 걸었다'를 못 말한다", () => {
+    expect(footprintScaleFor(0.0001)).toBe(FOOTPRINT_SCALE_RANGE.min);
+    expect(footprintScaleFor(9999)).toBe(FOOTPRINT_SCALE_RANGE.max);
+  });
+
+  it("망가진 배율에도 자국을 없애지 않는다", () => {
+    for (const bad of [0, -1, Number.NaN, Number.POSITIVE_INFINITY]) {
+      expect(footprintScaleFor(bad)).toBeGreaterThan(0);
+    }
+  });
+});
+
+/** 배율은 선 옆 자국의 간격·크기·양끝 여백에 **함께** 걸려야 한다. */
+describe("배율이 선 옆 자국에도 걸린다", () => {
+  it("축소하면 자국이 선에 더 가까이 붙되 여전히 겹치지 않는다", () => {
+    const pref = { ...DEFAULT_FOOTPRINT, gap: 0 };
+    for (const scale of [0.55, 0.8, 1]) {
+      const size = pref.size * scale;
+      const half = size * FOOTPRINT_EDGE_SCALE * 0.26 + pref.strokeWidth / 2;
+      for (const spot of edgeFootprintPlacements(0, 0, 900, 0, pref, scale)) {
+        expect(Math.abs(spot.y)).toBeGreaterThanOrEqual(half - 1e-9);
+      }
+    }
   });
 });

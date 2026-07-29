@@ -45,6 +45,42 @@ export interface FootprintPaintContext {
   ctx: CanvasRenderingContext2D;
   pref: FootprintPreference;
   ink: FootprintInk;
+  /**
+   * 카메라 배율에서 온 크기 계수 — 축소하면 자국도 함께 작아진다.
+   *
+   * 소유자 확정: *"겹쳐지는건 없게 하고싶은데? 노드가 멀어지면 발자국도 조금
+   * 작아져도 괜찮으니"*. 겹침이 가장 심한 곳은 **줌 아웃**이다 — 노드와 관계선이
+   * 화면에 몰리는데 자국만 고정 픽셀 크기면 자국이 그래프를 덮는다. 자국을
+   * 배율에 매달면 그 상황에서 자국이 먼저 물러난다.
+   *
+   * 생략 시 1(종전 동작).
+   */
+  scale?: number;
+  /**
+   * 방금 찍힌 자국의 등장 진행 [0,1]. 1 이면 정착.
+   *
+   * **루프가 아니라 도착이다.** 상시 애니메이션은 헌장이 금지하는 장식 모션이고
+   * 앰비언트 휴면도 무력화한다. 이 값은 걸음이 하나 **생긴 그 순간**에만 0→1 로
+   * 올라가고 끝난다 — 사용자가 방금 한 일에 화면이 답하는 것이지, 배경이 혼자
+   * 움직이는 것이 아니다.
+   */
+  appear?: number;
+}
+
+/** 배율 계수의 허용 범위 — 너무 작으면 모양 채널이 죽고, 너무 크면 그래프를 덮는다. */
+export const FOOTPRINT_SCALE_RANGE = { min: 0.55, max: 1.1 } as const;
+
+/**
+ * 카메라 배율 → 자국 크기 계수. 순수 함수(테스트 대상).
+ *
+ * 1.0 배율에서 1.0 이고, 축소할수록 함께 줄되 하한에서 멈춘다. 완전 비례로
+ * 두지 않는 것은 깊이 줌아웃했을 때 자국이 **한 점**이 되어 "여기 걸었다"를
+ * 아예 못 말하게 되기 때문이다.
+ */
+export function footprintScaleFor(cameraScale: number): number {
+  if (!Number.isFinite(cameraScale) || cameraScale <= 0) return 1;
+  const t = Math.sqrt(cameraScale);
+  return Math.min(FOOTPRINT_SCALE_RANGE.max, Math.max(FOOTPRINT_SCALE_RANGE.min, t));
 }
 
 /**
@@ -119,15 +155,31 @@ function withFootprintInk(
   ctx.restore();
 }
 
-/** 노드 옆 발자국이 앉는 자리 — 노드 우상단, 라벨(아래)과 겹치지 않는 사분면. */
+/**
+ * 양발 자국이 차지하는 반지름(px) — 두 발이 어긋나 놓이므로 대각으로 잰다.
+ * `PAIR_OFFSET` 의 최대 이탈(0.3)에 한 발의 반높이(0.6)를 더한 값이다.
+ */
+export function footprintPairRadius(size: number): number {
+  return size * 0.9;
+}
+
+/**
+ * 노드 옆 발자국이 앉는 자리 — 노드 우상단, 라벨(아래)과 겹치지 않는 사분면.
+ *
+ * ⚠️ 거리에 **자국 반지름을 포함**한다. 그러지 않으면 `gap` 은 자국 *중심*까지의
+ * 거리라, 자국이 노드 원판을 파고든다(설치 앱 실측 — 소유자: *"겹쳐지는건
+ * 없게 하고싶은데"*). 겹침은 중심이 아니라 가장자리 조건이다.
+ */
 export function footprintAnchor(
   x: number,
   y: number,
   nodeRadius: number,
   gap: number,
+  size: number,
 ): { x: number; y: number } {
-  const off = nodeRadius + gap;
-  return { x: x + off * 0.72, y: y - off * 0.72 };
+  // 대각(45°)으로 놓으므로 축별 성분은 1/√2. 중심 거리 = 노드 반지름 + 여백 + 자국 반지름.
+  const off = (nodeRadius + gap + footprintPairRadius(size)) * Math.SQRT1_2;
+  return { x: x + off, y: y - off };
 }
 
 /** 노드 옆에 양발 자국 하나를 찍는다. */
@@ -138,10 +190,16 @@ export function drawNodeFootprint(
   nodeRadius: number,
   alpha: number,
 ): void {
-  const at = footprintAnchor(x, y, nodeRadius, paint.pref.gap);
-  withFootprintInk(paint, alpha, () => {
-    paint.ctx.translate(at.x, at.y);
-    drawSoles(paint.ctx, paint.pref, paint.pref.size);
+  const k = paint.scale ?? 1;
+  const size = paint.pref.size * k;
+  const at = footprintAnchor(x, y, nodeRadius, paint.pref.gap * k, size);
+  // 등장은 **자리로** 표현한다 — 발이 노드 쪽에서 바깥으로 내딛듯 짧게 밀려난다.
+  // 크기를 키우며 등장시키면 "커지는 표시"가 되어 상시 애니메이션처럼 읽힌다.
+  const appear = paint.appear ?? 1;
+  const slide = (1 - appear) * size * 0.45;
+  withFootprintInk(paint, alpha * appear, () => {
+    paint.ctx.translate(at.x - slide * Math.SQRT1_2, at.y + slide * Math.SQRT1_2);
+    drawSoles(paint.ctx, paint.pref, size);
   });
 }
 
@@ -176,14 +234,17 @@ export function drawFootprintSteps(
   const label = formatStepNumbers(steps);
   if (label === "") return;
   const { ctx, pref } = paint;
-  const at = footprintAnchor(x, y, nodeRadius, pref.gap);
+  const k = paint.scale ?? 1;
+  const size = pref.size * k;
+  const at = footprintAnchor(x, y, nodeRadius, pref.gap * k, size);
   ctx.save();
-  ctx.globalAlpha = alpha;
+  ctx.globalAlpha = alpha * (paint.appear ?? 1);
   ctx.fillStyle = color;
-  ctx.font = "650 11px ui-monospace, SFMono-Regular, monospace";
+  // 숫자는 배율을 그대로 따르지 않는다 — 11px 아래로 내려가면 못 읽는다.
+  ctx.font = `650 ${Math.max(10, Math.round(11 * Math.max(k, 0.85)))}px ui-monospace, SFMono-Regular, monospace`;
   ctx.textAlign = "left";
   ctx.textBaseline = "middle";
-  ctx.fillText(label, at.x + pref.size * 0.9, at.y - pref.size * 0.9);
+  ctx.fillText(label, at.x + footprintPairRadius(size) * 0.75, at.y - footprintPairRadius(size) * 0.75);
   ctx.restore();
 }
 
@@ -198,14 +259,17 @@ export function edgeFootprintPlacements(
   bx: number,
   by: number,
   pref: FootprintPreference,
+  scale = 1,
 ): { x: number; y: number; angle: number; mirror: boolean; fade: number }[] {
+  const size = pref.size * scale;
+  const gap = pref.gap * scale;
   const count = FOOTPRINT_EDGE_COUNT[pref.edgeDensity];
   const angle = Math.atan2(by - ay, bx - ax);
   const nx = Math.cos(angle + Math.PI / 2);
   const ny = Math.sin(angle + Math.PI / 2);
   const len = Math.hypot(bx - ax, by - ay);
   // 양끝을 비운다 — 노드에 붙은 자국은 노드 장식으로 오독된다.
-  const pad = pref.size * 1.6;
+  const pad = size * 1.6;
   const usable = len - pad * 2;
   if (usable <= 0) return [];
 
@@ -219,8 +283,8 @@ export function edgeFootprintPlacements(
    * 반폭은 앞꿈치 타원의 x 반지름(`size * 0.26`)에 크기 배율과 테두리 굵기 절반을
    * 더해 잡는다 — 크기를 키워도 겹침이 다시 생기지 않게 자국 크기에 따라 함께 큰다.
    */
-  const glyphHalfWidth = pref.size * FOOTPRINT_EDGE_SCALE * 0.26 + pref.strokeWidth / 2;
-  const offset = pref.gap + glyphHalfWidth;
+  const glyphHalfWidth = size * FOOTPRINT_EDGE_SCALE * 0.26 + pref.strokeWidth / 2;
+  const offset = gap + glyphHalfWidth;
 
   const out: { x: number; y: number; angle: number; mirror: boolean; fade: number }[] = [];
   for (let i = 0; i < count; i += 1) {
@@ -250,11 +314,12 @@ export function drawEdgeFootprints(
   alpha: number,
 ): void {
   const { ctx, pref } = paint;
-  for (const spot of edgeFootprintPlacements(ax, ay, bx, by, pref)) {
+  const k = paint.scale ?? 1;
+  for (const spot of edgeFootprintPlacements(ax, ay, bx, by, pref, k)) {
     withFootprintInk(paint, alpha * spot.fade, () => {
       ctx.translate(spot.x, spot.y);
       ctx.rotate(spot.angle);
-      drawSoles(ctx, pref, pref.size * FOOTPRINT_EDGE_SCALE, spot.mirror);
+      drawSoles(ctx, pref, pref.size * k * FOOTPRINT_EDGE_SCALE, spot.mirror);
     });
   }
 }

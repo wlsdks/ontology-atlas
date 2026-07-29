@@ -131,6 +131,33 @@ const gradAt = (h: number, x: number, y: number): number => {
   return (h & 4 ? -u : u) + (h & 8 ? -v : v);
 };
 
+/**
+ * 화면이 담아야 할 노이즈 셀 수 — **1 이면 큰 덩어리 하나가 통째로 보인다.**
+ *
+ * 처음 주파수(0.0022)는 845px 높이에 셀 1.7개만 얹혀서, 그 하나의 발산선이
+ * 화면을 가로지르는 **가로 띠**로 읽혔다(소유자 실보고: *"하얗게 중앙에 가로로
+ * 선이 생긴것같다"*). 실측: 경계 위 평균 9.19 → 아래 7.17. 도트 배경에서는
+ * 같은 자리에 계단이 없어 배경 고유 결함으로 확정됐다.
+ *
+ * 셀을 여러 개 담으면 큰 흐름 하나가 아니라 **여러 소용돌이**가 되고, 어느 한
+ * 발산선도 화면을 가로지르지 못한다.
+ */
+const FLOW_CELLS_ACROSS = 4.5;
+
+/** 기준 변(px) — 이 길이에 위 셀 수가 담기도록 주파수를 잡는다. */
+const FLOW_REFERENCE_SPAN = 900;
+
+/** 흐름장 노이즈 주파수. */
+const FLOW_FREQ = FLOW_CELLS_ACROSS / FLOW_REFERENCE_SPAN;
+
+/**
+ * 2옥타브 값 노이즈 — 큰 흐름 위에 절반 진폭의 잔결을 얹는다. 한 옥타브만
+ * 쓰면 어느 배율에서든 같은 크기의 덩어리만 보여 "장 하나"로 읽힌다.
+ */
+function fieldNoise2(x: number, y: number): number {
+  return fieldNoise(x, y) + fieldNoise(x * 2.17, y * 2.17) * 0.5;
+}
+
 /** 2D 값 노이즈 [-0.5, 0.5]. 순수 함수 — 같은 (x,y) 는 항상 같은 값(테스트 대상). */
 export function fieldNoise(x: number, y: number): number {
   const xi = Math.floor(x) & 255;
@@ -243,17 +270,33 @@ export function createAnimatedBackground(
     ctx.fillRect(0, 0, bw, bh);
   };
 
-  /** 카메라 델타만큼 버퍼와 입자를 함께 옮긴다 — 배경이 월드에 붙는다. */
-  const shift = (ctx: CanvasRenderingContext2D, dx: number, dy: number): void => {
+  /**
+   * 카메라 델타 반영 — **씨앗만** 옮긴다. 트레일 버퍼도 입자도 옮기지 않는다.
+   *
+   * ## 왜 버퍼 이동을 걷어냈나 (설치 앱 실측 2026-07-29)
+   *
+   * 처음엔 버퍼를 카메라 델타만큼 블릿해 시차를 만들었다. 그런데 카메라가 크게
+   * 움직이면(핏 애니메이션·줌) 한 프레임에 버퍼의 절반이 밀려 나가고 **빈 영역이
+   * 하드한 가로선**으로 남는다 — 소유자가 본 *"하얗게 중앙에 가로로 선"* 의 정체다.
+   * 입자가 다시 채우기까지 초 단위가 걸리는데, 그동안 화면에는 있지도 않은 경계가
+   * 그려진다.
+   *
+   * 그래서 흐름장·중력장은 **화면에 붙인다**. 2026-07-20 「B3」이 청사진 격자에서
+   * 잡은 "모니터에 용접" 결함이 여기엔 적용되지 않는다 — 그 결함이 보였던 이유는
+   * 격자가 **규칙적 격자**여서 눈이 기준점을 잡을 수 있었기 때문이고, 난수 흐름
+   * 텍스처에는 따라갈 지형지물이 없다. 즉 시차가 나를 정보가 애초에 없다. 반면
+   * 빈 영역의 하드 경계는 **없는 정보를 만든다.** 하나는 못 보는 것이고 하나는
+   * 잘못 보는 것이라, 후자를 없애는 쪽이 옳다.
+   *
+   * 중력장은 이것과 무관하게 이미 월드를 따른다 — 벡터장을 **노드 스크린 좌표**가
+   * 정하므로 카메라가 움직이면 장도 함께 움직인다.
+   *
+   * 근접 성좌만 씨앗을 옮긴다. 그쪽은 점과 선이라 **지형지물이 있고**(눈이 개별
+   * 점을 따라간다), 매 프레임 지우고 다시 그리므로 빌 영역 자체가 없다.
+   */
+  const shift = (dx: number, dy: number): void => {
+    if (variant !== "web") return;
     if (dx === 0 && dy === 0) return;
-    ctx.save();
-    ctx.globalCompositeOperation = "copy";
-    ctx.drawImage(buffer, dx, dy, bw, bh);
-    ctx.restore();
-    for (const p of particles) {
-      p.x += dx;
-      p.y += dy;
-    }
     for (const s of seeds) {
       s.x += dx;
       s.y += dy;
@@ -272,7 +315,10 @@ export function createAnimatedBackground(
     ctx.lineWidth = 1;
     for (const p of particles) {
       const k = cursorFalloff(p.x, p.y, a.pointerX, a.pointerY);
-      let ang = fieldNoise(p.x * 0.0022, p.y * 0.0022 + time * 0.06) * Math.PI * 4;
+      // 시간은 **대각선**으로 흘린다. y 축으로만 밀면 장 전체가 세로로 표류해
+      // 입자가 특정 높이에 쌓이고, 그게 다시 가로줄이 된다.
+      let ang =
+        fieldNoise2(p.x * FLOW_FREQ + time * 0.035, p.y * FLOW_FREQ + time * 0.045) * Math.PI * 4;
       if (k > 0) {
         // 커서를 **감싸고 돈다**(향하지 않는다) — 빨려 들어가면 커서가 블랙홀로
         // 읽혀 지도의 주인공(노드)과 주목을 다툰다.
@@ -310,7 +356,7 @@ export function createAnimatedBackground(
       }
       // 인력에 **수직** = 공전 방향. 노드로 빨려 들어가면 노드가 가려진다.
       let ang = Math.atan2(ay, ax) + Math.PI / 2;
-      ang += fieldNoise(p.x * 0.0016, p.y * 0.0016 + time * 0.04) * 1.4;
+      ang += fieldNoise2(p.x * FLOW_FREQ * 0.8 + time * 0.03, p.y * FLOW_FREQ * 0.8 + time * 0.035) * 1.4;
       const k = cursorFalloff(p.x, p.y, a.pointerX, a.pointerY);
       if (k > 0) {
         ang = ang * (1 - k) + (Math.atan2(p.y - (a.pointerY ?? 0), p.x - (a.pointerX ?? 0)) + Math.PI / 2) * k;
@@ -385,7 +431,7 @@ export function createAnimatedBackground(
       const dy = prevOriginY === null ? 0 : a.originY - prevOriginY;
       prevOriginX = a.originX;
       prevOriginY = a.originY;
-      shift(ctx, dx, dy);
+      shift(dx, dy);
 
       if (a.reducedMotion) {
         // 정착 텍스처를 한 번만 만들고 그 뒤로는 멈춘다 — 움직임 0, 화면은 남는다.

@@ -95,11 +95,6 @@
       "mcpProofBody": "Don't declare the connection from this screen alone — prove it in the agent session. When the server shows up in Codex or Claude, paste this call packet first.",
       "mcpProofCopy": "Copy first-call packet",
       "mcpProofCopied": "Copied",
-      "mapTitle": "Map appearance",
-      "mapCaption": "Choose the map background and how your path is marked",
-      "mapOpen": "Choose",
-      "mapSectionBackground": "Background",
-      "mapSectionFootprint": "Footprints",
       "footprint": {
         "caption": "Footprints mark the concepts you opened, numbered in the order you walked them.",
         "presetLabel": "Strength",
@@ -132,6 +127,13 @@
         "placementRight": "One side",
         "placementBoth": "Alternating",
         "reset": "Reset to defaults"
+      },
+      "section": {
+        "screen": "Display",
+        "background": "Map background",
+        "footprint": "Footprints",
+        "workspace": "Workspace",
+        "agent": "AI agent"
       }
     },
     "primaryAriaLabel": "Primary menu",

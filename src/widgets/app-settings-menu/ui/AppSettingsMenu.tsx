@@ -68,7 +68,17 @@ import { useAiConnection } from '../model/use-ai-connection';
  * stopPropagation 으로 지도 Esc 래더에 새지 않는다.
  */
 
-type SettingsView = 'root' | 'agent' | 'ai' | 'map';
+type SettingsView = 'root' | 'agent' | 'ai';
+
+/**
+ * LNB 항목 — 왼쪽 목록의 순서가 곧 이 배열이다.
+ *
+ * 「배경」·「발자국」이 「화면」 밑이 아니라 **같은 단**에 있는 이유: 값이 각각
+ * 4개·8개라 화면 절에 접어 넣으면 그 절이 나머지를 삼킨다. LNB 는 절을 늘리는
+ * 비용이 거의 없다는 것이 드릴인 대비 장점이고, 그래서 늘렸다.
+ */
+const SETTINGS_SECTIONS = ['screen', 'background', 'footprint', 'workspace', 'agent'] as const;
+type SettingsSection = (typeof SETTINGS_SECTIONS)[number];
 type SettingsTriggerVariant = 'header-pill' | 'rail-tile' | 'chrome-tile';
 
 const SETTINGS_LOCALE_FOCUS_KEY = 'ontology-atlas:settings-locale-focus';
@@ -214,8 +224,8 @@ export function AppSettingsMenu({
     [isControlled, onOpenChange],
   );
   const [view, setView] = useState<SettingsView>('root');
-  /** 「지도」 서브뷰 안에서 무엇을 고르는 중인가. 시트를 닫아도 유지된다(세션 한정). */
-  const [mapSection, setMapSection] = useState<'background' | 'footprint'>('background');
+  /** 지금 보고 있는 LNB 절. 시트를 닫아도 유지된다(세션 한정) — 다시 열면 하던 자리다. */
+  const [section, setSection] = useState<SettingsSection>('screen');
   /**
    * 하위면 이동의 **방향**. 계층이 깊어지면 오른쪽에서 들어오고 돌아오면
    * 왼쪽에서 들어온다 — 그 방향이 곧 "어디로 갔는지" 다. 예전에는 push 도
@@ -531,7 +541,7 @@ export function AppSettingsMenu({
           aria-modal="true"
           aria-labelledby={titleId}
           tabIndex={-1}
-          className={`${settingsExiting ? 'app-settings-panel-out' : 'app-settings-panel-in'} flex max-h-[calc(100dvh-1.5rem)] w-full max-w-[34rem] flex-col overflow-hidden rounded-xl border border-[color:var(--color-border-soft)] bg-[color:var(--color-panel)] text-body shadow-[var(--shadow-elevation-3)] sm:max-h-[min(46rem,calc(100dvh-3rem))]`}
+          className={`${settingsExiting ? 'app-settings-panel-out' : 'app-settings-panel-in'} flex max-h-[calc(100dvh-1.5rem)] w-full max-w-[52rem] flex-col overflow-hidden rounded-xl border border-[color:var(--color-border-soft)] bg-[color:var(--color-panel)] text-body shadow-[var(--shadow-elevation-3)] sm:max-h-[min(46rem,calc(100dvh-3rem))]`}
           data-testid="app-settings-popover"
         >
           <div className="flex shrink-0 items-center justify-between gap-3 border-b border-[color:var(--color-border-soft)] px-4 py-3">
@@ -558,13 +568,7 @@ export function AppSettingsMenu({
                 id={titleId}
                 className="truncate text-body-lg font-[var(--font-weight-signature)] text-[color:var(--color-text-primary)]"
               >
-                {view === 'agent'
-                  ? t('agentTitle')
-                  : view === 'ai'
-                    ? tAi('title')
-                    : view === 'map'
-                      ? t('mapTitle')
-                      : t('title')}
+                {view === 'agent' ? t('agentTitle') : view === 'ai' ? tAi('title') : t('title')}
               </h2>
             </div>
             <button
@@ -624,49 +628,6 @@ export function AppSettingsMenu({
                 </>
               )}
             </div>
-          ) : view === 'map' ? (
-            <div
-              key="map"
-              className={`grid min-h-0 flex-1 content-start gap-4 overflow-y-auto p-4 ${viewEnterClass}`}
-              data-testid="app-settings-map-view"
-            >
-              {/*
-                세그먼트 2개 — 「배경」과 「발자국」. 둘은 같은 표면(지도 바닥과
-                그 위 흔적)을 다루지만 서로 독립이라, 한 화면에 세로로 이으면
-                긴 스크롤 하나가 된다. 세그먼트는 "지금 무엇을 고르는 중인가"를
-                스크롤 위치가 아니라 상태로 말한다.
-              */}
-              {/* `SegmentSwitch` 는 boolean 전용이라 여기선 못 쓴다 — 값이
-                  boolean 이 아니라 절 이름이다. 두 값짜리 radiogroup 을 그대로 쓴다. */}
-              <div
-                role="radiogroup"
-                aria-label={t('mapTitle')}
-                data-testid="app-settings-map-section"
-                className="flex gap-1.5"
-              >
-                {(['background', 'footprint'] as const).map((section) => {
-                  const active = section === mapSection;
-                  return (
-                    <button
-                      key={section}
-                      type="button"
-                      role="radio"
-                      aria-checked={active}
-                      data-testid={`app-settings-map-section-${section}`}
-                      onClick={() => setMapSection(section)}
-                      className={`rounded-chip border px-3 py-1.5 text-label transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--color-indigo-a46)] ${
-                        active
-                          ? 'border-[color:var(--color-indigo-accent)] bg-[color:var(--color-indigo-line-a13)] text-[color:var(--color-indigo-accent)]'
-                          : 'border-[color:var(--color-border-soft)] text-[color:var(--color-text-tertiary)] hover:border-[color:var(--color-border-strong)]'
-                      }`}
-                    >
-                      {section === 'background' ? t('mapSectionBackground') : t('mapSectionFootprint')}
-                    </button>
-                  );
-                })}
-              </div>
-              {mapSection === 'background' ? <CanvasBackgroundPicker /> : <FootprintSettings />}
-            </div>
           ) : view === 'ai' ? (
             <div
               key="ai"
@@ -681,12 +642,46 @@ export function AppSettingsMenu({
               />
             </div>
           ) : (
-            <div
-              key="root"
-              className={`grid min-h-0 flex-1 content-start gap-4 overflow-y-auto p-4 ${viewEnterClass}`}
-              data-testid="app-settings-body"
-            >
-              <SettingsGroup label={t('groupScreen')}>
+            /*
+             * LNB 2단 — 왼쪽 목록, 오른쪽 내용. 소유자 지시(2026-07-29, 재확인):
+             * *"다른 서비스 보면 LNB가 있는 팝업창 형태로 많이 구성하잖아.. 우리도
+             * 그렇게 해달라고"*. 앞선 드릴인 안(카운슬 권고)은 뒤집혔다 — 절이
+             * 다섯이라 드릴인은 매번 뒤로 나갔다 다시 들어가야 하고, 그건 값 몇
+             * 개를 비교하며 고르는 일에 맞지 않는다.
+             */
+            <div key="root" className={`flex min-h-0 flex-1 ${viewEnterClass}`} data-testid="app-settings-body">
+              <nav
+                aria-label={t('title')}
+                data-testid="app-settings-nav"
+                className="flex w-40 shrink-0 flex-col gap-0.5 overflow-y-auto border-r border-[color:var(--color-border-soft)] p-2"
+              >
+                {SETTINGS_SECTIONS.map((item) => {
+                  const active = item === section;
+                  return (
+                    <button
+                      key={item}
+                      type="button"
+                      data-testid={`app-settings-nav-${item}`}
+                      aria-current={active ? 'page' : undefined}
+                      onClick={() => setSection(item)}
+                      className={`rounded-lg px-2.5 py-2 text-left text-label transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--color-indigo-a46)] ${
+                        active
+                          ? 'bg-[color:var(--color-indigo-line-a13)] text-[color:var(--color-indigo-accent)]'
+                          : 'text-[color:var(--color-text-tertiary)] hover:bg-[color:var(--color-overlay-2)] hover:text-[color:var(--color-text-primary)]'
+                      }`}
+                    >
+                      {t(`section.${item}`)}
+                    </button>
+                  );
+                })}
+              </nav>
+
+              <div
+                className="grid min-h-0 min-w-0 flex-1 content-start gap-4 overflow-y-auto p-4"
+                data-testid={`app-settings-pane-${section}`}
+              >
+                {section === 'screen' ? (
+                  <SettingsGroup label={t('section.screen')}>
                 <SettingsRow
                   label={t('languageTitle')}
                   control={
@@ -732,25 +727,6 @@ export function AppSettingsMenu({
                     />
                   </>
                 ) : null}
-                {/* 지도 모양 — 배경 4택 + 발자국 8값. 값이 많아 루트에 펼치면 이
-                    그룹이 시트를 삼킨다. 2026-07-24 에 5탭 모달을 죽이고 드릴인으로
-                    바꾼 전례를 따라, 새 탭 문법이 아니라 기존 서브뷰로 민다. */}
-                <SettingsRow
-                  testId="app-settings-map-appearance"
-                  label={t('mapTitle')}
-                  caption={t('mapCaption')}
-                  control={
-                    <button
-                      type="button"
-                      data-testid="app-settings-map-appearance-open"
-                      onClick={() => openSubview('map')}
-                      className="flex h-8 items-center gap-1 rounded-chip border border-[color:var(--color-border-soft)] bg-[color:var(--color-elevated)] px-2.5 text-label font-medium text-[color:var(--color-text-secondary)] transition-colors hover:bg-[color:var(--color-overlay-2)] hover:text-[color:var(--color-text-primary)]"
-                    >
-                      {t('mapOpen')}
-                      <ChevronRight size={13} aria-hidden />
-                    </button>
-                  }
-                />
                 {/* 아이콘 세트는 지도 밖(INDEX·공방·상세 글리프)에도 적용되므로
                     지도 서브뷰가 아니라 여기 남는다. */}
                 <GlyphSetPicker />
@@ -780,9 +756,15 @@ export function AppSettingsMenu({
                     }
                   />
                 ) : null}
-              </SettingsGroup>
-
-              <SettingsGroup label={t('groupWorkspace')}>
+                  </SettingsGroup>
+                ) : section === 'background' ? (
+                  <CanvasBackgroundPicker />
+                ) : section === 'footprint' ? (
+                  <div className="px-3 py-2.5">
+                    <FootprintSettings />
+                  </div>
+                ) : section === 'workspace' ? (
+                  <SettingsGroup label={t('section.workspace')}>
                 {showVaultManagement ? (
                   <SettingsRow
                     testId="app-settings-workspace-folder"
@@ -959,9 +941,10 @@ export function AppSettingsMenu({
                     <ChevronRight size={13} aria-hidden className="text-[color:var(--color-text-quaternary)]" />
                   </span>
                 </Link>
-              </SettingsGroup>
-
-              <SettingsGroup label={t('groupAgent')}>
+                  </SettingsGroup>
+                ) : (
+                  <>
+                    <SettingsGroup label={t('section.agent')}>
                 <button
                   ref={agentDrillInRef}
                   type="button"
@@ -992,9 +975,8 @@ export function AppSettingsMenu({
                     <ChevronRight size={13} aria-hidden className="text-[color:var(--color-text-quaternary)]" />
                   </span>
                 </button>
-              </SettingsGroup>
-
-              <SettingsGroup label={tAi('title')}>
+                    </SettingsGroup>
+                    <SettingsGroup label={tAi('title')}>
                 <button
                   ref={aiDrillInRef}
                   type="button"
@@ -1020,7 +1002,10 @@ export function AppSettingsMenu({
                     <ChevronRight size={13} aria-hidden className="text-[color:var(--color-text-quaternary)]" />
                   </span>
                 </button>
-              </SettingsGroup>
+                    </SettingsGroup>
+                  </>
+                )}
+              </div>
             </div>
           )}
         </div>

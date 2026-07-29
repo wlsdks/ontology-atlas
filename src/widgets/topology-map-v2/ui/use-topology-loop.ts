@@ -341,6 +341,12 @@ export function useTopologyLoop(args: UseTopologyLoopArgs): UseTopologyLoopResul
   const footprintInkRef = useRef<FootprintInk>([232, 196, 122]);
   const footprintStepColorRef = useRef<string>("#e8c47a");
   /**
+   * 걸음이 하나 늘어난 순간 — 그 자국만 짧게 도착 모션을 받는다.
+   * 길이만 본다(내용 비교 불필요): 트레일은 뒤에만 자란다.
+   */
+  const footprintTrailLenRef = useRef(0);
+  const footprintAppearAtRef = useRef(0);
+  /**
    * 앰비언트 휴면 지연 — 프레임 루프가 매 프레임 읽으므로 값이 아니라 ref 다
    * (이 파일이 `canvasBackground` 등에 이미 쓰는 패턴). 값으로 닫으면 루프
    * effect 의 의존성이 되어 프롭이 바뀔 때마다 rAF 루프가 통째로 재시작한다.
@@ -2500,6 +2506,16 @@ export function useTopologyLoop(args: UseTopologyLoopArgs): UseTopologyLoopResul
       const footprintStepsById = buildFootprintSteps(visitedTrailRef.current);
       if (focusedNodeId !== null) footprintStepsById.delete(focusedNodeId);
 
+      // 걸음이 늘었으면 도착 모션 시작 시각을 찍는다. 줄었으면(지우기) 램프도 버린다.
+      const trailLen = visitedTrailRef.current.length;
+      if (trailLen > footprintTrailLenRef.current) footprintAppearAtRef.current = now;
+      footprintTrailLenRef.current = trailLen;
+      const footprintNewestId = trailLen > 0 ? visitedTrailRef.current[trailLen - 1] : null;
+      // 이동 램프(`--motion-base` 180ms)와 같은 단 — 표면이 자리를 잡는 일이다.
+      const footprintAppear = reducedMotionRef.current
+        ? 1
+        : Math.min(1, Math.max(0, (now - footprintAppearAtRef.current) / 180));
+
       // 스포트라이트 on/off 지수 램프 — focusDimTau 재사용(신규 easing 0).
       // reduced-motion 은 즉착(정적 대비만으로 정보 성립 — 협의회 §④).
       spotlightRampRef.current = reducedMotionRef.current
@@ -2588,6 +2604,8 @@ export function useTopologyLoop(args: UseTopologyLoopArgs): UseTopologyLoopResul
         walkedEdgeKeys: buildWalkedEdgeKeys(visitedTrailRef.current),
         footprintInk: footprintInkRef.current,
         footprintStepColor: footprintStepColorRef.current,
+        footprintNewestId,
+        footprintAppear,
         // 렌즈 keep-set — 팝오버가 열려 있을 때만 넘긴다(닫히면 null = 회귀 0).
         trailLensIds: trailLensActive ? visitedTrailSetRef.current : null,
         spotlightIds: spotlightIdsRef.current,

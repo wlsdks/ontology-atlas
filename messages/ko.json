@@ -95,11 +95,6 @@
       "mcpProofBody": "연결 여부는 이 화면만으로 단정하지 않고 에이전트 세션에서 증명합니다. Codex나 Claude에 서버가 보이면 이 호출 패킷을 먼저 붙여넣으세요.",
       "mcpProofCopy": "첫 호출 패킷 복사",
       "mcpProofCopied": "복사됨",
-      "mapTitle": "지도 모양",
-      "mapCaption": "지도 배경과 걸어온 길 표시를 고릅니다",
-      "mapOpen": "고르기",
-      "mapSectionBackground": "배경",
-      "mapSectionFootprint": "발자국",
       "footprint": {
         "caption": "지도에서 눌러 본 개념에 남는 발자국이에요. 걸어온 순서가 숫자로 붙어요.",
         "presetLabel": "세기",
@@ -132,6 +127,13 @@
         "placementRight": "한쪽",
         "placementBoth": "양쪽 번갈아",
         "reset": "기본값으로 되돌리기"
+      },
+      "section": {
+        "screen": "화면",
+        "background": "지도 배경",
+        "footprint": "발자국",
+        "workspace": "작업 공간",
+        "agent": "AI 에이전트"
       }
     },
     "primaryAriaLabel": "주요 메뉴",
