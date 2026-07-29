@@ -8,9 +8,19 @@ describe('release-state', () => {
     expect(ARCH_ORDER).toEqual(['aarch64', 'x64']);
   });
 
-  it('formats byte sizes as mebibytes with one decimal', () => {
-    expect(formatAssetSize(12 * 1024 * 1024)).toBe('12.0 MB');
-    expect(formatAssetSize(13_002_342)).toBe('12.4 MB');
+  /**
+   * **Decimal MB — what the reader's own machine says.**
+   *
+   * This used to divide by 1024² and still label it "MB", so the page
+   * promised 39.5 MB for a file macOS Finder reports as 41.4 MB. The unit and
+   * the divisor disagreed; the divisor moved, because the label is what the
+   * reader compares against their Finder window.
+   */
+  it('formats byte sizes as decimal MB with one decimal', () => {
+    expect(formatAssetSize(12_000_000)).toBe('12.0 MB');
+    expect(formatAssetSize(13_002_342)).toBe('13.0 MB');
+    // The real shipped asset — the number a visitor checks against Finder.
+    expect(formatAssetSize(41_435_263)).toBe('41.4 MB');
   });
 
   it('renders no size at all rather than a misleading zero', () => {

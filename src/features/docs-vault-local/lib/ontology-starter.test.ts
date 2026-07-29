@@ -164,11 +164,11 @@ describe("buildMcpConfigJson", () => {
 
   it("설치 앱이 알고 있는 vault 절대경로를 OATLAS_VAULT 에 바로 넣을 수 있다", () => {
     const parsed = JSON.parse(
-      buildMcpConfigJson("team-vault", "/Users/jinan/Team Vault/docs/ontology"),
+      buildMcpConfigJson("team-vault", "/Users/dana/Team Vault/docs/ontology"),
     );
 
     expect(parsed.mcpServers["ontology-atlas"].env.OATLAS_VAULT).toBe(
-      "/Users/jinan/Team Vault/docs/ontology",
+      "/Users/dana/Team Vault/docs/ontology",
     );
   });
 
@@ -223,11 +223,11 @@ describe("buildCodexConfigToml", () => {
   it("Codex codebase-root MCP config template 은 알려진 vault 절대경로를 바로 넣을 수 있다", () => {
     const toml = buildCodexConfigTomlTemplate(
       "team-vault",
-      "/Users/jinan/Team Vault/docs/ontology",
+      "/Users/dana/Team Vault/docs/ontology",
     );
 
     expect(toml).toContain(
-      'OATLAS_VAULT = "/Users/jinan/Team Vault/docs/ontology"',
+      'OATLAS_VAULT = "/Users/dana/Team Vault/docs/ontology"',
     );
     expect(toml).not.toContain("<absolute path to your team-vault folder>");
   });
@@ -254,11 +254,11 @@ describe("buildCodexMcpAddCommandTemplate", () => {
   it("Codex CLI one-line MCP 등록 명령은 알려진 vault 절대경로를 shell-safe 하게 넣는다", () => {
     const command = buildCodexMcpAddCommandTemplate(
       "team-vault",
-      "/Users/jinan/Team Vault/docs/ontology",
+      "/Users/dana/Team Vault/docs/ontology",
     );
 
     expect(command).toContain(
-      "OATLAS_VAULT='/Users/jinan/Team Vault/docs/ontology'",
+      "OATLAS_VAULT='/Users/dana/Team Vault/docs/ontology'",
     );
     expect(command).not.toContain("<absolute path to your team-vault folder>");
   });

@@ -11,7 +11,7 @@ describe('vault-local agent config validation', () => {
         'ontology-atlas': {
           command: 'npx',
           args: ['-y', 'ontology-atlas-mcp'],
-          env: { OATLAS_VAULT: '/Users/jinan/other-vault' },
+          env: { OATLAS_VAULT: '/Users/dana/other-vault' },
         },
       },
     });
@@ -51,7 +51,7 @@ describe('vault-local agent config validation', () => {
       'args = ["-y", "ontology-atlas-mcp"]',
       '',
       '[mcp_servers.ontology-atlas.env]',
-      'OATLAS_VAULT = "/Users/jinan/other-vault"',
+      'OATLAS_VAULT = "/Users/dana/other-vault"',
       '',
     ].join('\n');
 

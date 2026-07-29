@@ -377,7 +377,7 @@ describe("LiveActivityBadge", () => {
             state: "editing",
             focus: {
               summary:
-                "Running shell command: sed -n '1,180p' /Users/jinan/.codex/plugins/cache/openai-bundled/computer-use/1.0.809/skills/computer-use/SKILL.md",
+                "Running shell command: sed -n '1,180p' /Users/dana/.codex/plugins/cache/openai-bundled/computer-use/1.0.809/skills/computer-use/SKILL.md",
               ontologySlug: "capabilities/agent-live-activity-contract",
               files: ["cli/src/commands/agent-activity.mjs"],
             },

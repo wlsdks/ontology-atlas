@@ -148,6 +148,7 @@ import { resolveVaultChipIdentity } from "../lib/vault-chip-identity";
 import {
   DOGFOOD_VAULT_PATH,
   DOGFOOD_VAULT_PATH_CANDIDATES,
+  hasDogfoodVaultPath,
   resolveDogfoodVaultPath,
 } from "../lib/dogfood-vault-path";
 import {
@@ -344,7 +345,10 @@ function DocsVaultContent() {
   });
 
   useEffect(() => {
+    // 경로가 설정 안 된 빌드(공개 배포)에서는 아무 일도 하지 않는다 —
+    // 없는 경로를 여는 시늉보다 조용한 편이 정직하다.
     if (
+      hasDogfoodVaultPath() &&
       shouldSwitchToDogfoodVault({
         dogfood: queryDogfood,
         isDesktopRuntime,
@@ -570,7 +574,7 @@ function DocsVaultContent() {
     localVaultStatus,
     hasLocalManifest: Boolean(localVault.manifest),
   });
-  const showDogfoodHint = shouldShowDogfoodVaultHint({
+  const showDogfoodHint = hasDogfoodVaultPath() && shouldShowDogfoodVaultHint({
     dogfood: queryDogfood,
     isDesktopRuntime,
     source,

@@ -73,13 +73,23 @@ export function macosAssetFor(arch: DesktopArch): MacosReleaseAsset | null {
 }
 
 /**
- * Bytes → the size a download dialog would show. Mebibytes with one decimal:
- * enough to answer "will this take a moment or a while", not so precise it
- * reads as a checksum.
+ * Bytes → the size a download dialog would show, with one decimal: enough to
+ * answer "will this take a moment or a while", not so precise it reads as a
+ * checksum.
+ *
+ * **Decimal MB, because that is what the reader's own machine will say**
+ * (measured 2026-07-29). The page divided by 1024² — mebibytes — but labelled
+ * the result "MB". macOS Finder and Safari's download list both use decimal
+ * MB, so the page promised 39.5 MB and the file landed as 41.4 MB. A ~5%
+ * gap is small, but it is the very first number this product asks a stranger
+ * to trust, on the page whose whole job is "install this".
+ *
+ * Either the unit or the divisor had to move. The divisor moved, because the
+ * label is what the reader compares against their Finder window.
  */
 export function formatAssetSize(sizeBytes: number): string {
   if (!Number.isFinite(sizeBytes) || sizeBytes <= 0) return '';
-  return `${(sizeBytes / (1024 * 1024)).toFixed(1)} MB`;
+  return `${(sizeBytes / 1_000_000).toFixed(1)} MB`;
 }
 
 export { MACOS_RELEASE };

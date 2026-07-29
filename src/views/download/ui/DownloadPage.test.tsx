@@ -195,7 +195,8 @@ describe('DownloadPage', () => {
       // 크기는 이제 라벨 문자열이 아니라 **별도 스팬**이다 — Intel 버튼과 같은
       // 문법이고, `<sm` 에서 그 스팬만 빠져 가로 오버플로가 사라진다(평결 ④).
       expect(appleSilicon).toHaveTextContent(/Download for Apple Silicon/i);
-      expect(appleSilicon).toHaveTextContent(/12\.4 MB/);
+      // 13,002,342 B → 13.0 MB (십진). Finder 가 말하는 것과 같은 단위다.
+      expect(appleSilicon).toHaveTextContent(/13\.0 MB/);
       expect(screen.getByTestId('download-macos-x64')).toHaveAttribute(
         'href',
         `https://github.com/wlsdks/ontology-atlas/releases/download/v${RELEASE_VERSION}/ontology-atlas_${RELEASE_VERSION}_x64.dmg`,

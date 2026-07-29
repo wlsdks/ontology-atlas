@@ -199,7 +199,7 @@ describe('local-fs-handle store', () => {
     await putLocalFsHandle({
       id: CURRENT_LOCAL_FS_HANDLE_ID,
       handle: fakeHandle('Desktop Vault'),
-      desktopRootPath: '/Users/jinan/vaults/desktop',
+      desktopRootPath: '/Users/dana/vaults/desktop',
       name: 'Desktop Vault',
       createdAt: 1,
       lastAccessedAt: 1,
@@ -223,7 +223,7 @@ describe('local-fs-handle store', () => {
     await putLocalFsHandle({
       id: CURRENT_LOCAL_FS_HANDLE_ID,
       handle: fakeHandle('Desktop Vault'),
-      desktopRootPath: '/Users/jinan/vaults/desktop',
+      desktopRootPath: '/Users/dana/vaults/desktop',
       name: 'Desktop Vault',
       createdAt: 1,
       lastAccessedAt: 1,

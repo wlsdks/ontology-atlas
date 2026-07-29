@@ -252,14 +252,14 @@ describe('VaultAgentSetupPanel', () => {
     renderPanel({
       handle: {
         name: 'ontology',
-        rootPath: '/Users/jinan/side-project/ontology-atlas/docs/ontology',
+        rootPath: '/Users/dana/side-project/ontology-atlas/docs/ontology',
       } as unknown as FileSystemDirectoryHandle,
     });
 
     expect(
       screen.getByLabelText('MCP verify 명령 미리보기'),
     ).toHaveTextContent(
-      "node $ATLAS/cli/src/index.mjs mcp-verify '/Users/jinan/side-project/ontology-atlas/docs/ontology' --timeout-ms 15000",
+      "node $ATLAS/cli/src/index.mjs mcp-verify '/Users/dana/side-project/ontology-atlas/docs/ontology' --timeout-ms 15000",
     );
   });
 
@@ -646,7 +646,7 @@ describe('VaultAgentSetupPanel', () => {
     renderPanel({
       handle: {
         name: 'team-vault',
-        rootPath: '/Users/jinan/Team Vault/docs/ontology',
+        rootPath: '/Users/dana/Team Vault/docs/ontology',
       } as unknown as FileSystemDirectoryHandle,
       agentConfigStatus: {
         mcpJson: true,
@@ -664,21 +664,21 @@ describe('VaultAgentSetupPanel', () => {
       ),
     );
     expect(copyTextMock).toHaveBeenCalledWith(
-      expect.stringContaining('Ontology vault: /Users/jinan/Team Vault/docs/ontology'),
+      expect.stringContaining('Ontology vault: /Users/dana/Team Vault/docs/ontology'),
     );
     expect(copyTextMock).toHaveBeenCalledWith(
       expect.stringContaining(
-        "node $ATLAS/cli/src/index.mjs agent-setup '/Users/jinan/Team Vault/docs/ontology' --root '<absolute path to your codebase root>' --json",
+        "node $ATLAS/cli/src/index.mjs agent-setup '/Users/dana/Team Vault/docs/ontology' --root '<absolute path to your codebase root>' --json",
       ),
     );
     expect(copyTextMock).toHaveBeenCalledWith(
       expect.stringContaining(
-        "node $ATLAS/cli/src/index.mjs agent-setup '/Users/jinan/Team Vault/docs/ontology' --root '<absolute path to your codebase root>' --write",
+        "node $ATLAS/cli/src/index.mjs agent-setup '/Users/dana/Team Vault/docs/ontology' --root '<absolute path to your codebase root>' --write",
       ),
     );
     expect(copyTextMock).toHaveBeenCalledWith(
       expect.stringContaining(
-        "node $ATLAS/cli/src/index.mjs mcp-verify '/Users/jinan/Team Vault/docs/ontology' --timeout-ms 15000",
+        "node $ATLAS/cli/src/index.mjs mcp-verify '/Users/dana/Team Vault/docs/ontology' --timeout-ms 15000",
       ),
     );
     expect(copyTextMock).toHaveBeenCalledWith(
@@ -717,7 +717,7 @@ describe('VaultAgentSetupPanel', () => {
     renderPanel({
       handle: {
         name: 'team-vault',
-        rootPath: '/Users/jinan/Team Vault/docs/ontology',
+        rootPath: '/Users/dana/Team Vault/docs/ontology',
       } as unknown as FileSystemDirectoryHandle,
       agentConfigStatus: {
         mcpJson: true,
@@ -732,7 +732,7 @@ describe('VaultAgentSetupPanel', () => {
 
     await waitFor(() => expect(copyTextMock).toHaveBeenCalledTimes(1));
     expect(copyTextMock).toHaveBeenCalledWith(
-      "node $ATLAS/cli/src/index.mjs agent-setup '/Users/jinan/Team Vault/docs/ontology' --root '<absolute path to your codebase root>' --write",
+      "node $ATLAS/cli/src/index.mjs agent-setup '/Users/dana/Team Vault/docs/ontology' --root '<absolute path to your codebase root>' --write",
     );
   });
 
@@ -767,7 +767,7 @@ describe('VaultAgentSetupPanel', () => {
     renderPanel({
       handle: {
         name: 'team-vault',
-        rootPath: '/Users/jinan/Team Vault/docs/ontology',
+        rootPath: '/Users/dana/Team Vault/docs/ontology',
       } as unknown as FileSystemDirectoryHandle,
       agentConfigStatus: {
         mcpJson: true,
@@ -782,7 +782,7 @@ describe('VaultAgentSetupPanel', () => {
 
     await waitFor(() => expect(copyTextMock).toHaveBeenCalledTimes(1));
     expect(copyTextMock).toHaveBeenCalledWith(
-      "node $ATLAS/cli/src/index.mjs agent-setup '/Users/jinan/Team Vault/docs/ontology' --root '<absolute path to your codebase root>' --json",
+      "node $ATLAS/cli/src/index.mjs agent-setup '/Users/dana/Team Vault/docs/ontology' --root '<absolute path to your codebase root>' --json",
     );
   });
 
@@ -846,7 +846,7 @@ describe('VaultAgentSetupPanel', () => {
     renderPanel({
       handle: {
         name: 'team-vault',
-        rootPath: '/Users/jinan/Team Vault/docs/ontology',
+        rootPath: '/Users/dana/Team Vault/docs/ontology',
       } as unknown as FileSystemDirectoryHandle,
       agentConfigStatus: {
         mcpJson: true,
@@ -862,17 +862,17 @@ describe('VaultAgentSetupPanel', () => {
     await waitFor(() => expect(copyTextMock).toHaveBeenCalledTimes(1));
     expect(copyTextMock).toHaveBeenCalledWith(
       expect.stringContaining(
-        "node $ATLAS/cli/src/index.mjs validate '/Users/jinan/Team Vault/docs/ontology'",
+        "node $ATLAS/cli/src/index.mjs validate '/Users/dana/Team Vault/docs/ontology'",
       ),
     );
     expect(copyTextMock).toHaveBeenCalledWith(
       expect.stringContaining(
-        "node $ATLAS/cli/src/index.mjs hubs '/Users/jinan/Team Vault/docs/ontology' --plan --limit 10 --types depends_on,relates",
+        "node $ATLAS/cli/src/index.mjs hubs '/Users/dana/Team Vault/docs/ontology' --plan --limit 10 --types depends_on,relates",
       ),
     );
     expect(copyTextMock).toHaveBeenCalledWith(
       expect.stringContaining(
-        "node $ATLAS/cli/src/index.mjs mcp-verify '/Users/jinan/Team Vault/docs/ontology' --timeout-ms 15000",
+        "node $ATLAS/cli/src/index.mjs mcp-verify '/Users/dana/Team Vault/docs/ontology' --timeout-ms 15000",
       ),
     );
   });
@@ -988,7 +988,7 @@ describe('VaultAgentSetupPanel', () => {
     renderPanel({
       handle: {
         name: 'team-vault',
-        rootPath: '/Users/jinan/Team Vault/docs/ontology',
+        rootPath: '/Users/dana/Team Vault/docs/ontology',
       } as unknown as FileSystemDirectoryHandle,
       agentConfigStatus: {
         mcpJson: true,
@@ -1004,22 +1004,22 @@ describe('VaultAgentSetupPanel', () => {
     await waitFor(() => expect(copyTextMock).toHaveBeenCalledTimes(1));
     expect(copyTextMock).toHaveBeenCalledWith(
       expect.stringContaining(
-        "node $ATLAS/cli/src/index.mjs agent-setup '/Users/jinan/Team Vault/docs/ontology' --root '<absolute path to your codebase root>' --json",
+        "node $ATLAS/cli/src/index.mjs agent-setup '/Users/dana/Team Vault/docs/ontology' --root '<absolute path to your codebase root>' --json",
       ),
     );
     expect(copyTextMock).toHaveBeenCalledWith(
       expect.stringContaining(
-        "If setup state reports missing configs: node $ATLAS/cli/src/index.mjs agent-setup '/Users/jinan/Team Vault/docs/ontology' --root '<absolute path to your codebase root>' --write",
+        "If setup state reports missing configs: node $ATLAS/cli/src/index.mjs agent-setup '/Users/dana/Team Vault/docs/ontology' --root '<absolute path to your codebase root>' --write",
       ),
     );
     expect(copyTextMock).toHaveBeenCalledWith(
       expect.stringContaining(
-        "node $ATLAS/cli/src/index.mjs mcp-verify '/Users/jinan/Team Vault/docs/ontology' --timeout-ms 15000",
+        "node $ATLAS/cli/src/index.mjs mcp-verify '/Users/dana/Team Vault/docs/ontology' --timeout-ms 15000",
       ),
     );
     expect(copyTextMock).toHaveBeenCalledWith(
       expect.stringContaining(
-        "node $ATLAS/cli/src/index.mjs agent-brief '/Users/jinan/Team Vault/docs/ontology' --graph-db-pack",
+        "node $ATLAS/cli/src/index.mjs agent-brief '/Users/dana/Team Vault/docs/ontology' --graph-db-pack",
       ),
     );
     expect(copyTextMock).toHaveBeenCalledWith(
@@ -1032,7 +1032,7 @@ describe('VaultAgentSetupPanel', () => {
     renderPanel({
       handle: {
         name: 'team-vault',
-        rootPath: '/Users/jinan/Team Vault/docs/ontology',
+        rootPath: '/Users/dana/Team Vault/docs/ontology',
       } as unknown as FileSystemDirectoryHandle,
       agentConfigStatus: {
         mcpJson: true,
@@ -1048,12 +1048,12 @@ describe('VaultAgentSetupPanel', () => {
 
     await waitFor(() => expect(copyTextMock).toHaveBeenCalledTimes(1));
     expect(copyTextMock).toHaveBeenCalledWith(
-      "node $ATLAS/cli/src/index.mjs agent-brief '/Users/jinan/Team Vault/docs/ontology' --verify-fallbacks --json --fallback-timeout-ms 15000 --fallback-slow-ms 5000 --fallback-concurrency 4",
+      "node $ATLAS/cli/src/index.mjs agent-brief '/Users/dana/Team Vault/docs/ontology' --verify-fallbacks --json --fallback-timeout-ms 15000 --fallback-slow-ms 5000 --fallback-concurrency 4",
     );
     expect(screen.getByText('자동화 gate')).toBeInTheDocument();
     expect(
       screen.getByText(
-        "node $ATLAS/cli/src/index.mjs agent-brief '/Users/jinan/Team Vault/docs/ontology' --verify-fallbacks --json --fallback-timeout-ms 15000 --fallback-slow-ms 5000 --fallback-concurrency 4",
+        "node $ATLAS/cli/src/index.mjs agent-brief '/Users/dana/Team Vault/docs/ontology' --verify-fallbacks --json --fallback-timeout-ms 15000 --fallback-slow-ms 5000 --fallback-concurrency 4",
       ),
     ).toBeInTheDocument();
     expect(
