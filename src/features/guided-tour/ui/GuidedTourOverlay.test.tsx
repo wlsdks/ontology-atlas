@@ -200,4 +200,58 @@ describe("GuidedTourOverlay", () => {
       screen.getByTestId("guided-tour-overlay").contains(document.activeElement),
     ).toBe(true);
   });
+  /**
+   * **「이전」은 단계에 따라 사라지지 않는다** (2026-07-29 도그푸딩 회귀 가드).
+   *
+   * 초안은 back/next 줄 전체를 `!isInteractive` 로 감쌌다. 그래서 다섯 단계
+   * 동안 왼쪽 아래에 있던 「이전」이 4/7 「직접 눌러보세요」에서 **말없이
+   * 사라졌다** — 사용자는 그 자리에서 투어가 되돌아갈 수 있는 것인지를 다시
+   * 배워야 한다. 앞으로 가는 방법은 단계마다 달라도 되지만(다음 · 직접 눌러보기
+   * · 분기 선택) **뒤로 가는 방법이 달라질 이유는 없다.**
+   *
+   * 이 검사는 `next` 로 못 넘어가는 단계까지 걸어 들어가므로, 대화형 단계의
+   * 전진 경로(앵커 활성화)가 죽으면 여기서 함께 터진다.
+   */
+  it("모든 단계에서 「이전」이 자리를 지킨다 — 대화형 단계 포함", () => {
+    const onActivateAnchor = vi.fn();
+    const { rerender } = render(<Harness onActivateAnchor={onActivateAnchor} />);
+    act(() => screen.getByTestId("test-start").click());
+
+    let guard = 0;
+    const seen: string[] = [];
+    for (;;) {
+      if (guard++ > 20) throw new Error("투어가 끝나지 않는다 — 무한 루프 가드");
+      const overlay = screen.queryByTestId("guided-tour-overlay");
+      if (!overlay) break;
+      const stepId = overlay.getAttribute("data-tour-step") ?? "?";
+      seen.push(stepId);
+
+      // 첫 단계만 비활성이고, 그 뒤로는 어느 단계에서도 존재해야 한다.
+      const back = screen.queryByTestId("guided-tour-back");
+      expect(back, `단계 "${stepId}" 에 「이전」이 없다`).toBeInTheDocument();
+
+      const next = screen.queryByTestId("guided-tour-next");
+      if (next) {
+        act(() => next.click());
+        continue;
+      }
+      const action = screen.queryByTestId("guided-tour-activate-target");
+      if (action) {
+        // 앵커를 눌러 선택이 생긴 상태로 다시 그린다 — 실제 사용자의 경로.
+        rerender(<Harness hasSelection onActivateAnchor={onActivateAnchor} />);
+        const advanced = screen.queryByTestId("guided-tour-next");
+        if (advanced) {
+          act(() => advanced.click());
+          rerender(<Harness onActivateAnchor={onActivateAnchor} />);
+          continue;
+        }
+      }
+      break;
+    }
+
+    // 탐지기가 조용히 무력화되는 것을 막는 프로브 — 대화형 단계까지 실제로
+    // 걸어 들어갔는지 확인한다. 첫 단계에서 멈췄다면 위 단언은 1회만 돌고
+    // 통과했을 것이다.
+    expect(seen.length, `걸은 단계: ${seen.join(" → ")}`).toBeGreaterThanOrEqual(4);
+  });
 });
