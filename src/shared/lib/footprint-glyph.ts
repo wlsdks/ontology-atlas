@@ -209,12 +209,25 @@ export function edgeFootprintPlacements(
   const usable = len - pad * 2;
   if (usable <= 0) return [];
 
+  /**
+   * 자국이 선에서 실제로 비켜 앉으려면 **띄우는 거리에 자국 반폭을 더해야** 한다.
+   * 그냥 `gap` 만 쓰면 자국의 중심이 그만큼 떨어질 뿐이라, 폭이 그보다 넓으면
+   * 선이 자국 한가운데를 관통한다 — 설치 앱 실측에서 정확히 그랬다(gap 8px,
+   * 자국 반폭 약 3px 이상). 소유자 요구는 *"선에 겹치게 말고"* 이고, 그건
+   * 중심 거리가 아니라 **가장자리** 조건이다.
+   *
+   * 반폭은 앞꿈치 타원의 x 반지름(`size * 0.26`)에 크기 배율과 테두리 굵기 절반을
+   * 더해 잡는다 — 크기를 키워도 겹침이 다시 생기지 않게 자국 크기에 따라 함께 큰다.
+   */
+  const glyphHalfWidth = pref.size * FOOTPRINT_EDGE_SCALE * 0.26 + pref.strokeWidth / 2;
+  const offset = pref.gap + glyphHalfWidth;
+
   const out: { x: number; y: number; angle: number; mirror: boolean; fade: number }[] = [];
   for (let i = 0; i < count; i += 1) {
     const t = (pad + (usable * (i + 0.5)) / count) / len;
     const alt = i % 2 === 0 ? 1 : -1;
     // 한쪽(right): 선의 오른쪽 한 줄. 양쪽(both): 선을 사이에 두고 좌우 번갈아.
-    const d = pref.placement === "both" ? alt * pref.gap : pref.gap;
+    const d = pref.placement === "both" ? alt * offset : offset;
     out.push({
       x: ax + (bx - ax) * t + nx * d,
       y: ay + (by - ay) * t + ny * d,
