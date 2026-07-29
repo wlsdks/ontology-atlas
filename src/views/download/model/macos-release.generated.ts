@@ -20,6 +20,12 @@ export interface MacosReleaseAsset {
 
 export interface MacosRelease {
   readonly published: boolean;
+  /**
+   * 이 릴리스가 정식이 아니라 **후보**인가. 페이지는 이걸 숨기지 않고 말한다 —
+   * 서명·공증은 정식과 같은 경로를 통과했지만 아직 넓게 쓰이지 않은 빌드라는
+   * 사실은, 받는 사람이 받기 전에 알아야 하는 것이다.
+   */
+  readonly prerelease: boolean;
   readonly tag: string;
   readonly publishedAt: string | null;
   readonly releaseUrl: string;
@@ -27,9 +33,25 @@ export interface MacosRelease {
 }
 
 export const MACOS_RELEASE: MacosRelease = {
-  published: false,
+  published: true,
+  prerelease: true,
   tag: 'v1.0.0-rc.2',
-  publishedAt: null,
-  releaseUrl: 'https://github.com/wlsdks/ontology-atlas/releases',
-  assets: [],
+  publishedAt: '2026-07-28T01:44:03Z',
+  releaseUrl: 'https://github.com/wlsdks/ontology-atlas/releases/tag/v1.0.0-rc.2',
+  assets: [
+    {
+      arch: 'aarch64',
+      fileName: 'ontology-atlas_1.0.0-rc.2_aarch64.dmg',
+      sizeBytes: 41273430,
+      sha256: '8459b2c691b95006a86602242296adf37ed94143bb8442ba84c0ea1ed8eda329',
+      downloadUrl: 'https://github.com/wlsdks/ontology-atlas/releases/download/v1.0.0-rc.2/ontology-atlas_1.0.0-rc.2_aarch64.dmg',
+    },
+    {
+      arch: 'x64',
+      fileName: 'ontology-atlas_1.0.0-rc.2_x64.dmg',
+      sizeBytes: 45289401,
+      sha256: 'cb7df52c47b4585b34ac2778bc7d0b414ab431e3445f8aafc153210678f91762',
+      downloadUrl: 'https://github.com/wlsdks/ontology-atlas/releases/download/v1.0.0-rc.2/ontology-atlas_1.0.0-rc.2_x64.dmg',
+    },
+  ],
 };

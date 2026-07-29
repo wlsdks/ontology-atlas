@@ -143,6 +143,12 @@ export interface MacosReleaseAsset {
 
 export interface MacosRelease {
   readonly published: boolean;
+  /**
+   * 이 릴리스가 정식이 아니라 **후보**인가. 페이지는 이걸 숨기지 않고 말한다 —
+   * 서명·공증은 정식과 같은 경로를 통과했지만 아직 넓게 쓰이지 않은 빌드라는
+   * 사실은, 받는 사람이 받기 전에 알아야 하는 것이다.
+   */
+  readonly prerelease: boolean;
   readonly tag: string;
   readonly publishedAt: string | null;
   readonly releaseUrl: string;
@@ -151,6 +157,7 @@ export interface MacosRelease {
 
 export const MACOS_RELEASE: MacosRelease = {
   published: ${release.published},
+  prerelease: ${release.prerelease === true},
   tag: '${release.tag}',
   publishedAt: ${release.publishedAt === null ? "null" : `'${release.publishedAt}'`},
   releaseUrl: '${release.releaseUrl}',
@@ -176,7 +183,7 @@ function writeModule(release) {
   }
 }
 
-const { tag: tagArg, unpublished, allowDraft } = parseArgs(process.argv.slice(2));
+const { tag: tagArg, unpublished, allowDraft, allowPrerelease } = parseArgs(process.argv.slice(2));
 const tag = tagArg || defaultTag();
 
 if (!/^v/.test(tag)) {
@@ -186,6 +193,7 @@ if (!/^v/.test(tag)) {
 if (unpublished) {
   writeModule({
     published: false,
+    prerelease: false,
     tag,
     publishedAt: null,
     releaseUrl: RELEASES_URL,
@@ -257,6 +265,7 @@ if (assets.length === 0) {
 
 writeModule({
   published: true,
+  prerelease: release.prerelease === true,
   tag,
   publishedAt: release.published_at ?? null,
   releaseUrl: release.html_url ?? RELEASES_URL,

@@ -289,11 +289,29 @@ test.describe("웹 스모크 ③ 정직한 강등", () => {
     // 으로 이 화면은 "폴더를 직접 여는 일은 설치한 앱만 할 수 있습니다" 라고
     // 썼는데, 바로 위 스모크 ② 가 그게 거짓임을 증명했다. 앱이 없는 OS 의
     // 방문자를 빈손으로 돌려보내지 않는 것이 웹의 2번 일이다.
+    //
+    // ⚠️ 2026-07-29 — 이 스펙은 **이미 빨간 채로 방치돼 있었다**(카운슬 평결
+    // 적용 중 발견). 겨냥하던 문장 두 개가 모두 사라진 뒤였다: "Chrome·Edge"
+    // 는 어느 로케일 카탈로그에도 없고, "서명된 설치 파일"(`windowsPolicy`)은
+    // 정책 산문이라 접이식 안으로 내려가 **기본 상태에서 안 보인다**.
+    //
+    // 문자열을 되살리는 대신 **주장을 다시 쓴다**. 지켜야 할 것은 특정 문구가
+    // 아니라 "앱이 없는 OS 의 방문자가 빈손으로 돌아가지 않는다" 이고, 그
+    // 답은 이제 **펼치지 않아도 보이는 자리**(판 안)에 있다.
     await gotoSettled(page, "/ko/download/");
 
-    const windowsSection = page.getByText("서명된 설치 파일").first();
-    await expect(windowsSection).toBeVisible({ timeout: 15_000 });
-    await expect(windowsSection).toContainText("Chrome·Edge");
+    // ① 자기가 못 받는다는 사실을 **받는 자리에서** 안다 — 스크롤을 내려야
+    //    알게 되는 것은 늦다.
+    const platform = page.getByTestId("download-platform-windows");
+    await expect(platform).toBeVisible({ timeout: 15_000 });
+    await expect(platform).toContainText("Windows");
+    await expect(platform).toContainText("아직 없습니다");
+
+    // ② 갈 곳이 둘 다 살아 있다: 추적할 곳과, **오늘 당장 되는 것**.
+    await expect(platform.getByRole("link")).toHaveAttribute("href", /github\.com/);
+    const web = page.getByTestId("download-web-cta");
+    await expect(web).toBeVisible();
+    await expect(web).toHaveAttribute("href", /\/ko\/?$/);
   });
 
   test("설정의 AI 연결이 브라우저에서 키를 받지 않는 이유를 말한다", async ({ page }) => {

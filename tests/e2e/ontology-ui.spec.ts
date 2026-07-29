@@ -127,8 +127,32 @@ test.describe("ontology view UI", () => {
           node = node.parentElement;
         }
         scroller.scrollTop = scroller.scrollHeight;
+        /**
+         * ⚠️ **박스가 있다고 잉크가 아니다.**
+         *
+         * 닫힌 `<details>` 의 내용은 최신 Chromium 에서 `display: none` 이
+         * 아니라 **`content-visibility: hidden`** 으로 처리된다(전개 애니메이션을
+         * 가능하게 하려고 바뀐 동작). 그래서 칠해지지도 않고 히트 테스트도 안
+         * 되는데 **레이아웃 박스는 그대로 남는다** — 높이만 보고 세면 화면에
+         * 없는 561px 짜리 유령이 "마지막 잉크"가 된다(실측 2026-07-29:
+         * `/download` 의 「받아도 되는 이유」 접힘이 여백 -505px 를 만들었다).
+         *
+         * `checkVisibility()` 가 이 구분의 표준 답이다. 이 검사의 이름이
+         * *잉크* 인 이상, 판정 기준도 칠해지는가여야 한다.
+         */
         const lastInk = [...main.querySelectorAll("*")]
-          .filter((element) => element.getBoundingClientRect().height > 0)
+          .filter((element) => {
+            // ② **잎만 본다.** 컨테이너의 하단 패딩은 여백이지 내용이 아니다 —
+            // 형제 스펙(`scroll-end-gap.spec.ts`)이 이미 같은 규칙을 쓴다. 이걸
+            // 안 하면 바깥 래퍼의 `pb-…` 가 그대로 "마지막 잉크" 가 되어, 여백을
+            // 정확히 그 여백만큼 **없다고** 보고한다(실측 2026-07-29: 실제 글자는
+            // 760 에서 끝나는데 래퍼 박스가 800 이라 gap 0 으로 읽혔다).
+            if (element.children.length > 0) return false;
+            const rect = element.getBoundingClientRect();
+            if (rect.height <= 2 || rect.width <= 2) return false;
+            // ① 칠해지는가 — 위 주석 참고.
+            return typeof element.checkVisibility === "function" ? element.checkVisibility() : true;
+          })
           .reduce((max, element) => Math.max(max, element.getBoundingClientRect().bottom), 0);
         return {
           gap: Math.round(scroller.getBoundingClientRect().bottom - lastInk),

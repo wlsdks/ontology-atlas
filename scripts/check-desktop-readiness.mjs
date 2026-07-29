@@ -576,8 +576,11 @@ if (
   // 게이트가 조용히 빨간불이 된다(실제로 그랬다 — Pages 배포 5회 연속
   // deploy 성공 + verify 실패). 진실원은 출고되는 메시지 카탈로그다.
   hostedDownloadSurfaceScript.includes('readFileSync(path.join(REPO_ROOT, "messages", "ko.json")') &&
-  hostedDownloadSurfaceScript.includes("downloadCopy.windowsHeading") &&
-  hostedDownloadSurfaceScript.includes("downloadCopy.windowsPendingBadge") &&
+  // 키 이름은 2026-07-29 관문 재설계에서 바뀌었다(`windowsHeading` /
+  // `windowsPendingBadge` → `platformStatus` / `windowsTrackCta`). 지키는
+  // **계약**은 그대로다: Windows 방문자가 자기 위치와 따라갈 곳을 함께 받는다.
+  hostedDownloadSurfaceScript.includes("downloadCopy.platformStatus") &&
+  hostedDownloadSurfaceScript.includes("downloadCopy.windowsTrackCta") &&
   hostedDownloadSurfaceScript.includes("releases/latest") &&
   hostedDownloadSurfaceScript.includes("assertIncludes(download.body, downloadPath") &&
   hostedDownloadSurfaceScript.includes("deploy-pages.yml") &&
@@ -932,10 +935,17 @@ if (
   !enMessages.download?.releaseStatusTitle &&
   !koMessages.download?.releaseStatusTitle &&
   // Windows 는 침묵하지 않는다 — 빠진 게 아니라 아직 안 나왔다고 말한다.
-  /In preparation/i.test(enMessages.download?.windowsPendingBadge ?? "") &&
-  /signed installer/.test(enMessages.download?.windowsPendingBody ?? "") &&
-  /준비 중/.test(koMessages.download?.windowsPendingBadge ?? "") &&
-  /서명된 설치 파일/.test(koMessages.download?.windowsPendingBody ?? "") &&
+  //
+  // 2026-07-29 개정: 관문 재설계가 「준비 중」배지 + 카드를 한 줄 상태
+  // (`platformStatus`)와 추적 링크(`windowsTrackCta`), 그리고 기준을 밝히는
+  // 정책 문장(`windowsPolicy`)으로 바꿨다. 배지라는 **형태**가 아니라 셋이
+  // 함께 만드는 **계약**을 검사한다 — 위치 · 갈 곳 · 왜 아직인지.
+  /Windows/.test(enMessages.download?.platformStatus ?? "") &&
+  /Windows/.test(koMessages.download?.platformStatus ?? "") &&
+  (enMessages.download?.windowsTrackCta ?? "").length > 0 &&
+  (koMessages.download?.windowsTrackCta ?? "").length > 0 &&
+  /signed installer/.test(enMessages.download?.windowsPolicy ?? "") &&
+  /서명된 설치 파일/.test(koMessages.download?.windowsPolicy ?? "") &&
   // 서명 상태는 **지금 참인 것**으로 적는다 — 미래형("게이트가 요구합니다")도,
   // 아직 사실이 아닌 과거형도 금지다.
   //

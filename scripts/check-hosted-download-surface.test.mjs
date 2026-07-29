@@ -52,12 +52,11 @@ const koDownloadCopy = JSON.parse(
 
 const alignedDownload = `<!doctype html>
 <main>
-  <h1>${koDownloadCopy.title}</h1>
+  <p>${koDownloadCopy.eyebrow}</p>
   <a href="https://github.com/wlsdks/ontology-atlas/releases">${koDownloadCopy.primaryCtaPending}</a>
   <a href="https://github.com/wlsdks/ontology-atlas">${koDownloadCopy.sourceCta}</a>
-  <h2>${koDownloadCopy.macosHeading}</h2>
-  <h2>${koDownloadCopy.windowsHeading}</h2>
-  <span>${koDownloadCopy.windowsPendingBadge}</span>
+  <p>${koDownloadCopy.platformStatus}</p>
+  <a href="https://github.com/wlsdks/ontology-atlas/issues">${koDownloadCopy.windowsTrackCta}</a>
   <p>${koDownloadCopy.releaseGateNote}</p>
 </main>`;
 
@@ -145,9 +144,17 @@ test("hosted download surface check rejects a download page that drops the Windo
   const server = await startServer({
     "/ko/": { body: alignedLanding },
     "/ko/download/": {
+      // ⚠️ 문자열을 여기 베끼지 않는다. 예전엔 `.replace("<h2>Windows</h2>", "")`
+      // 였는데, 그 리터럴은 `messages/ko.json` 의 값이라 **문구를 고치는 순간
+      // 아무것도 못 지운다.** 그러면 픽스처가 멀쩡한 채로 남아 검사는 통과하고,
+      // 시험은 "떨어뜨렸는데 안 잡힌다" 며 빨개진다 — 실제로 2026-07-29 에
+      // 정확히 그렇게 됐다. 이제 메시지에서 읽어 지운다.
       body: alignedDownload
-        .replace("<h2>Windows</h2>", "")
-        .replace("<span>준비 중</span>", ""),
+        .replace(`<p>${koDownloadCopy.platformStatus}</p>`, "")
+        .replace(
+          `<a href="https://github.com/wlsdks/ontology-atlas/issues">${koDownloadCopy.windowsTrackCta}</a>`,
+          "",
+        ),
     },
   });
   try {
@@ -157,6 +164,41 @@ test("hosted download surface check rejects a download page that drops the Windo
         timeoutMs: 5000,
       }),
       /Windows/,
+    );
+  } finally {
+    await server.close();
+  }
+});
+
+/**
+ * **탐지기가 스스로 무장 해제하지 않는지 본다** (2026-07-29 실측 사고).
+ *
+ * 검사 목록이 `messages/ko.json` 의 값으로 만들어지는데, 키가 리네임되면 그
+ * 자리가 `undefined` 가 된다. 그런데 `String.includes(undefined)` 는 인자를
+ * 리터럴 `"undefined"` 로 강제 변환하고, 페이지 템플릿도 같은 자리에
+ * `undefined` 를 렌더한다 — **바늘과 짚더미가 같은 방식으로 틀려서 서로
+ * 맞아떨어진다.** 검사는 초록으로 통과했고, Windows 안내가 사라져도 아무도
+ * 몰랐을 것이다.
+ *
+ * 이 시험은 그 상태를 인위적으로 만든다. 통과하면(=거부하지 않으면) 탐지기가
+ * 다시 무장 해제된 것이다.
+ */
+test("hosted download surface check rejects a renamed-away copy key instead of silently passing", async () => {
+  const server = await startServer({
+    "/ko/": { body: alignedLanding },
+    // 검사가 요구하는 문구가 사라지고, 그 자리에 템플릿이 남긴 `undefined` 만
+    // 있는 페이지 — 키를 지운 다음 배포하면 정확히 이 모양이 된다.
+    "/ko/download/": {
+      body: alignedDownload.replace(
+        `<p>${koDownloadCopy.platformStatus}</p>`,
+        "<p>undefined</p>",
+      ),
+    },
+  });
+  try {
+    await assert.rejects(
+      evaluateHostedSurface({ baseUrl: server.baseUrl, timeoutMs: 5000 }),
+      /platformStatus|missing expected text|misconfigured|Windows/,
     );
   } finally {
     await server.close();

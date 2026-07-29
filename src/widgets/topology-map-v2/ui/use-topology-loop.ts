@@ -278,6 +278,10 @@ export interface UseTopologyLoopArgs {
    * (성좌) / `"contour"`(등고선). 생략 시 `"dot"`.
    */
   canvasBackground?: CanvasBackground;
+  /** 휠/세로 스와이프 소유권 — `topology-pointer-handlers.ts` 의 `wheelIntent` 참고. */
+  wheelIntent?: "zoom" | "page-scroll";
+  /** 앰비언트 휴면 지연 — `TopologyMapV2` 의 `ambientSleepDelayMs` 참고. */
+  ambientSleepDelayMs?: number;
 }
 
 const EMPTY_EXPANDED_SET: ReadonlySet<string> = new Set();
@@ -289,7 +293,7 @@ export type UseTopologyLoopResult = TopologyPointerHandlers & {
 };
 
 export function useTopologyLoop(args: UseTopologyLoopArgs): UseTopologyLoopResult {
-  const { nodes, edges, focusedSlug, emphasizedNeighborSlug = null, fitViewToken, relayoutToken, revealToken = 0, onSelectEdge, onHoverEdge, onSelect, onPaneClick, onVisibleCountChange, onGraphStatsChange, onZoomTierChange, onContextMenuNode, agentFocusNodeId = null, spotlightIds = null, selectedEdge = null, expandedParents = EMPTY_EXPANDED_SET, onToggleCluster, onHoverCluster, realmRootId = null, onEnterRealm, realmEnterButtonRef, realmCaption = null, visitedTrail = EMPTY_TRAIL, trailLensActiveRef, trailHoverNodeIdRef, tierReveal = DEFAULT_TIER_REVEAL, tourAnchorNodeId = null, tourAnchorRef, glyphSet = "geometric", canvasBackground = "dot" } = args;
+  const { nodes, edges, focusedSlug, emphasizedNeighborSlug = null, fitViewToken, relayoutToken, revealToken = 0, onSelectEdge, onHoverEdge, onSelect, onPaneClick, onVisibleCountChange, onGraphStatsChange, onZoomTierChange, onContextMenuNode, agentFocusNodeId = null, spotlightIds = null, selectedEdge = null, expandedParents = EMPTY_EXPANDED_SET, onToggleCluster, onHoverCluster, realmRootId = null, onEnterRealm, realmEnterButtonRef, realmCaption = null, visitedTrail = EMPTY_TRAIL, trailLensActiveRef, trailHoverNodeIdRef, tierReveal = DEFAULT_TIER_REVEAL, tourAnchorNodeId = null, tourAnchorRef, glyphSet = "geometric", canvasBackground = "dot", wheelIntent = "zoom", ambientSleepDelayMs } = args;
 
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
   const containerRef = useRef<HTMLDivElement | null>(null);
@@ -321,6 +325,12 @@ export function useTopologyLoop(args: UseTopologyLoopArgs): UseTopologyLoopResul
   // (tierReveal 선례). 설정 변경 시 아래 effect 가 갱신한다.
   const glyphStyleRef = useRef<"fill" | "line">(glyphSet === "line" ? "line" : "fill");
   const canvasBackgroundRef = useRef<CanvasBackground>(canvasBackground);
+  /**
+   * 앰비언트 휴면 지연 — 프레임 루프가 매 프레임 읽으므로 값이 아니라 ref 다
+   * (이 파일이 `canvasBackground` 등에 이미 쓰는 패턴). 값으로 닫으면 루프
+   * effect 의 의존성이 되어 프롭이 바뀔 때마다 rAF 루프가 통째로 재시작한다.
+   */
+  const ambientSleepDelayRef = useRef<number | undefined>(ambientSleepDelayMs);
 
   // Live force simulation (`model/force-layout.ts`) — seeded off the concentric
   // layout, ticked while warm (`heatRef > 0`) or while a node is pinned.
@@ -710,6 +720,11 @@ export function useTopologyLoop(args: UseTopologyLoopArgs): UseTopologyLoopResul
   useEffect(() => {
     canvasBackgroundRef.current = canvasBackground;
   }, [canvasBackground]);
+
+  // 앰비언트 휴면 지연 — 표면마다 다르다(관문은 짧다). 자기 의존성으로 둔다.
+  useEffect(() => {
+    ambientSleepDelayRef.current = ambientSleepDelayMs;
+  }, [ambientSleepDelayMs]);
 
   useEffect(() => {
     tierRevealRef.current = tierReveal;
@@ -1450,7 +1465,7 @@ export function useTopologyLoop(args: UseTopologyLoopArgs): UseTopologyLoopResul
          * 어떤 입력이든 `noteInput()` 이 `lastInputMs` 를 밀어 다음 프레임에
          * 계수가 1 로 복귀한다 — wake 배선이 필요 없는 idle-gate 설계 그대로.
          */
-        const ambientFactor = ambientSleepFactor(now, lastInputMsRef.current);
+        const ambientFactor = ambientSleepFactor(now, lastInputMsRef.current, ambientSleepDelayRef.current);
         const ambientAsleep = isAmbientAsleep(ambientFactor);
 
         const active = isCanvasActive({
@@ -1885,7 +1900,7 @@ export function useTopologyLoop(args: UseTopologyLoopArgs): UseTopologyLoopResul
         // 앰비언트 휴면 — 혜성 속도에 곱해지는 계수(각성 1 → 잠듦 0).
         // 유휴 게이트 판정부와 다른 스코프라 여기서 다시 구한다. 순수 산술
         // 함수라 비용이 없고, 같은 `now`/`lastInputMs` 면 같은 값이다.
-        ambientFactor: ambientSleepFactor(now, lastInputMsRef.current),
+        ambientFactor: ambientSleepFactor(now, lastInputMsRef.current, ambientSleepDelayRef.current),
         focusedNodeId,
         pairFocusActive: selectedEdgeRef.current !== null,
         hoveredNodeId,
@@ -2509,6 +2524,7 @@ export function useTopologyLoop(args: UseTopologyLoopArgs): UseTopologyLoopResul
   // a render-time read; the lint rule can't see into the imported function body.
   /* eslint-disable react-hooks/refs */
   const handlers = createTopologyPointerHandlers({
+    wheelIntent,
     worldRef,
     cameraRef,
     cameraTargetRef,

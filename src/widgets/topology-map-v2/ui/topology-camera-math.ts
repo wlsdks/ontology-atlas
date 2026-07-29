@@ -13,7 +13,7 @@
  * in the convention the engine layer expects.
  */
 
-import type { CameraAxes, CameraTarget } from "../engine/camera";
+import { computePanBounds, type CameraAxes, type CameraTarget, type PanBounds } from "../engine/camera";
 import { LABEL_OFFSET } from "../render/labels";
 import type { TopologyV2Tokens } from "../tokens/read-topology-v2-tokens";
 import { computeClusterDiscBounds, computeEgoBounds, radiusForKind, type TopologyWorld } from "./topology-world";
@@ -230,6 +230,44 @@ export function computeOverviewCameraTarget(
     ty: centerY - (insets.top - insets.bottom) / (2 * tscale),
     tscale,
   };
+}
+
+/**
+ * 초점이 없을 때의 팬 봉투 — **목줄(leash)이 있으면 핏 주변, 없으면 종전대로
+ * 월드 bbox + 여유**.
+ *
+ * ## 왜 목줄이 필요했나 (2026-07-29 관문 실측)
+ *
+ * `/download` 무대의 지도는 관문의 유일한 판매 논증인데, 왼쪽으로 한 번 세게
+ * 끌면 그래프가 예약 컬럼 뒤로 통째로 밀려 **무대가 비어 버렸다**(0..520 밴드의
+ * 잉크 +12.6%, 12초 뒤에도 그대로 — 감쇠 0). 워크벤치라면 「지도 맞추기」로
+ * 되돌리지만 관문에는 그 크롬이 없다. **되돌릴 길이 없는 화면에서 되돌릴 수
+ * 없는 조작을 허용한 것**이 결함이다.
+ *
+ * 종전 봉투(월드 bbox ± 320)는 그래프가 클수록 넓어져서, 어떤 값으로도 "예약
+ * 컬럼 밖" 을 보장하지 못한다. 목줄은 대신 **핏 자체를 기준점**으로 잡는다 —
+ * 핏은 이미 safe inset 을 반영하므로(위 `computeOverviewCameraTarget`),
+ * 목줄 반경만큼이 곧 화면에서의 이동 한계가 되고 볼트 크기와 무관해진다.
+ * 초점 팬 클램프(`cameraFocusPanMargin`)가 쓰는 것과 **같은 모양**이라 새
+ * 기제를 만들지 않는다.
+ *
+ * `leash <= 0` 이면 종전 동작 그대로 — 워크벤치는 토큰 기본값 0 으로 1픽셀도
+ * 안 바뀐다.
+ */
+export function computeUnfocusedPanBounds(
+  bounds: { minX: number; minY: number; maxX: number; maxY: number },
+  cameraScale: number,
+  tokens: SafeInsetTokens & { cameraPanLeash?: number },
+): PanBounds {
+  const leash = tokens.cameraPanLeash ?? 0;
+  if (!(leash > 0) || !(cameraScale > 0)) return computePanBounds(bounds);
+  const insets = readSafeInsets(tokens);
+  const anchorX = (bounds.minX + bounds.maxX) / 2 - (insets.left - insets.right) / (2 * cameraScale);
+  const anchorY = (bounds.minY + bounds.maxY) / 2 - (insets.top - insets.bottom) / (2 * cameraScale);
+  return computePanBounds(
+    { minX: anchorX, minY: anchorY, maxX: anchorX, maxY: anchorY },
+    leash,
+  );
 }
 
 /**

@@ -58,7 +58,16 @@ export const DESKTOP_SMOKE_ROUTE_TITLES = {
  * 출력에 들어갔는가"** 다.
  */
 export const DESKTOP_SMOKE_ROUTE_TEXT_KEYS = {
-  "/download": ["download.title", "download.trustHeading", "download.archHelpTitle", "download.webCta"],
+  // `download.title` 은 2026-07-29 관문 재설계에서 사라졌다 — 히어로가
+  // `eyebrow` + `stageTitle` 두 줄로 갈렸고, 후자는 줄바꿈을 품어 렌더 텍스트와
+  // 원문이 다르므로 키로 고르지 않는다(위 독블록의 ICU 규칙과 같은 이유).
+  // `eyebrow` 는 한 줄이고 플랫폼과 제품 성격을 함께 말해서 이 자리에 맞다.
+  "/download": [
+    "download.eyebrow",
+    "download.trustHeading",
+    "download.archHelpTitle",
+    "download.webCta",
+  ],
 };
 
 function messageAtPath(messages, dottedKey) {

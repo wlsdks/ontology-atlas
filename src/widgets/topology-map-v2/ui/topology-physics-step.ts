@@ -14,7 +14,11 @@ import { isNodeEmphasisActive, resolveEdgePulseSpeed, stepEmphasis, stepFocusRam
 import { edgePairKey, selectEgoContainsComets, updateParticles } from "../render/edge-fireflies";
 import { computeZoomRatio, DEFAULT_TIER_REVEAL, isSpineOnlyZoom, type TierRevealConfig } from "../model/tier-visibility";
 import type { TopologyV2Tokens } from "../tokens/read-topology-v2-tokens";
-import { computeEffectiveCameraScaleMax, computeEffectiveCameraScaleMin } from "./topology-camera-math";
+import {
+  computeEffectiveCameraScaleMax,
+  computeEffectiveCameraScaleMin,
+  computeUnfocusedPanBounds,
+} from "./topology-camera-math";
 import type { TopologyWorld } from "./topology-world";
 
 /** No focus → no ego contains comets. Reused so the no-focus path allocates nothing. */
@@ -223,8 +227,10 @@ export function stepTopologyPhysics(input: PhysicsStepInput): PhysicsStepResult 
         { minX: focusNode.x, minY: focusNode.y, maxX: focusNode.x, maxY: focusNode.y },
         tokens.cameraFocusPanMargin,
       )
-    : computePanBounds(
+    : computeUnfocusedPanBounds(
         isSpineOnlyZoom(preStepZoomRatio, tierReveal) ? world.spineBounds : world.bounds,
+        camera.scale.value,
+        tokens,
       );
 
   // C1 A1: the camera's real zoom-in ceiling is now ratio-based (viewport-

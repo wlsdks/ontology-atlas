@@ -14,7 +14,16 @@ import { extendTailwindMerge } from 'tailwind-merge';
  * `app/globals.css` 의 `--text-*` 램프와 반드시 동기 — 스텝을 추가하면
  * 여기도 추가할 것 (계약 테스트: cn.test.ts).
  */
-const TYPE_RAMP_STEPS = ['caption', 'label', 'body', 'body-lg', 'title', 'display', 'hero'] as const;
+const TYPE_RAMP_STEPS = [
+  'caption',
+  'label',
+  'body',
+  'body-lg',
+  'title',
+  'display',
+  'hero',
+  'hero-lg',
+] as const;
 
 /**
  * 행간 램프 스텝 — 타입 램프와 같은 규율이 그대로 적용된다.
@@ -37,6 +46,7 @@ const LEADING_RAMP_STEPS = [
   'title',
   'display',
   'hero',
+  'hero-lg',
   'display-tight',
   'prose',
 ] as const;

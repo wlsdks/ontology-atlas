@@ -88,7 +88,7 @@ Topology inspection, Workshop writing, Insights maintenance, and source docs.
 | **선택·전개 사다리 (Selection ladder)** | `--topology-v2-indigo`(노드 선택, **실선**) · `--topology-v2-edge-selected`(엣지 페어 포커스, pale 인디고) · `--topology-v2-expanded-cohort`(전개 코호트, **탈채도 인디고 파선**) | 세 상태가 **같은 인디고 축** 안에서 채도·값·기하(실선/파선)로만 갈린다 — 새 hue 추가 금지. 전개 코호트 = 클러스터 칩(`+N`)으로 드러난 직속 자식의 소속 링(부모는 채도 있는 인디고 파선 오라로 주인공 유지). 소유자 요청 "확장한거는 선택 파란색과 다르게 구분" 의 헌장 내 답 |
 | **Density · geometry (밀도)** | `--topology-v2-radius-*` · `--topology-v2-layout-ring-*` · `--topology-v2-edge-bow/-blend-*` · `--topology-v2-star-count` · `--topology-v2-dust-area-per-point` · `--topology-v2-safe-inset-*` · `--topology-v2-panel-width/-pad/-gap/-radius/-row-radius` · `--topology-v2-label-max-width` | world-unit 숫자(단위 없음, canvas 소비)와 px(DOM 소비)가 섞여 있다 — 주석의 소비처 표기를 지켜라 |
 | **INDEX 패널 geometry** (B3) | `--topology-index-width`(300px) · `--topology-index-tab-width`(26px) · `--topology-index-inset`(= `--chrome-inset`, 24px) · `--topology-index-top`(84px) | `TopologyIndexPanel`/`TopologyIndexTab` 전용 — px, DOM 전용(canvas 미소비). 표면/보더/그림자/패딩은 새로 만들지 않고 위 `--topology-v2-panel-*` (Surface tier) 재사용. `-top` 은 owner live-QA 결함 수정 — `topology-top-left-chrome-group` (Relief 브랜드 pill) 이 이미 top-32px 대를 쓰므로 INDEX/tab 은 그 아래(`TopologyAnalysisBar` 가 쓰던 동일 clearance)에서 시작 |
-| **Motion** | `--topology-v2-camera-*`(spring/damping/momentum/flick/**-max-zoom-ratio**) · `--topology-v2-altitude-*-ratio` · `--topology-v2-overview-entry-ratio` · `--topology-v2-focus-*` · `--topology-v2-emphasis-*-tau` · `--topology-v2-ripple-stagger-ms` · `--topology-v2-breathe-*` · `--topology-v2-pulse-duration-ms` · `--topology-v2-tip-fade-ms` · `--topology-v2-edge-pulse-speed[-ego]` · `--topology-v2-drag-tug-1hop/-2hop` | 캔버스 유체성 전용. DOM chrome 은 기존 `--topology-motion-*` (180/420/720ms) 사용. `camera-max-zoom-ratio` 는 뷰포트-상대 실효 줌 상한(C1 A1), `drag-tug-1hop/-2hop` 은 노드 드래그 시 이웃 전파 계수(C1 B1). 다이브줌 fix: `camera-spring-angfreq` 가 `-interactive`(15, 휠 줌 스케일축+팬, 크리스프)/`-transition`(4.7, 포커스 다이브·해제·재배치·fit-view, 시네마틱 1.0s)로 분리 — 이전 단일값(2.941)은 휠 줌마저 다이브만큼 느리게 느껴지게 했다. `focus-bbox-margin` 은 이제 곱셈 비율(1.15, 이전엔 고정 70px) — 다이브가 ego bbox 전체를 필요 이상으로 깊게 확대하던 문제(owner: 과확대·라벨 충돌)를 고쳤다 |
+| **Motion** | `--topology-v2-camera-*`(spring/damping/momentum/flick/**-max-zoom-ratio**) · `--topology-v2-altitude-*-ratio` · `--topology-v2-overview-entry-ratio` · `--topology-v2-focus-*` · `--topology-v2-emphasis-*-tau` · `--topology-v2-ripple-stagger-ms` · `--topology-v2-breathe-*` · `--topology-v2-pulse-duration-ms` · `--topology-v2-tip-fade-ms` · `--topology-v2-edge-pulse-speed[-ego]` · `--topology-v2-drag-tug-1hop/-2hop` | 캔버스 유체성 전용. DOM chrome 은 기존 `--topology-motion-*` (180/420/720ms) 사용. `camera-max-zoom-ratio` 는 뷰포트-상대 실효 줌 상한(C1 A1), `drag-tug-1hop/-2hop` 은 노드 드래그 시 이웃 전파 계수(C1 B1). 다이브줌 fix: `camera-spring-angfreq` 가 `-interactive`(15, 휠 줌 스케일축+팬, 크리스프)/`-transition`(4.7, 포커스 다이브·해제·재배치·fit-view, 시네마틱 1.0s)로 분리 — 이전 단일값(2.941)은 휠 줌마저 다이브만큼 느리게 느껴지게 했다. `focus-bbox-margin` 은 이제 곱셈 비율(1.15, 이전엔 고정 70px) — 다이브가 ego bbox 전체를 필요 이상으로 깊게 확대하던 문제(owner: 과확대·라벨 충돌)를 고쳤다. **`camera-pan-leash`**(2026-07-29)는 초점이 없을 때 카메라가 **핏에서** 벗어날 수 있는 월드 반경 — `0`(기본) = 꺼짐 = 종전 봉투(월드 bbox ± 320). 「지도 맞추기」 크롬이 없는 표면만 켠다(관문 `/download` = 220): 되돌릴 길 없는 화면에서 되돌릴 수 없는 팬을 허용하면 무대가 빈 채로 남는다(실측 2026-07-29: 왼쪽 한 번 세게 끌면 예약 컬럼 밴드의 잉크 +12.6%, 12초 뒤에도 감쇠 0 → 목줄 후 −0.09%). 기준점이 bbox 가 아니라 **핏 자체**라 볼트 크기와 무관하다 — `computeUnfocusedPanBounds` |
 | **Chrome density (전역)** | `--topology-chrome-control-height[-compact]` · `--topology-chrome-badge-size[-compact]` · `--topology-chrome-icon-size[-sm]` · `--topology-chrome-gap/-radius/-title-size/-eyebrow-size/-shadow` (+ `--topology-utility-lane-*` alias) | 계기 밀도의 단일 기준. 새 페이지의 데스크톱 컨트롤 클러스터는 이 값을 상속 — 터치 크기 인플레이션 재도입 금지 |
 
 **스코프 주의**:
@@ -1929,6 +1929,7 @@ tracking 으로 응집).
 | title | `--text-title` (`text-title`) | 16 | `-0.01em` (`tracking-title`) | 패널/카드 제목 |
 | display | `--text-display` (`text-display`) | 23 | `-0.022em` (`tracking-display`) | 페이지 헤드라인 |
 | hero | `--text-hero` (`text-hero`) | 30 | `-0.022em` (`tracking-hero`) | 히어로 헤드라인 |
+| hero-lg | `--text-hero-lg` (`text-hero-lg`) | 34 | `-0.022em` (`tracking-hero` 공유) | **관문 헤드라인** — 지도가 전면을 덮는 표면 |
 
 **최근접 수렴 규칙**(치환 시): 각 리터럴 px 를 가장 가까운 단으로 스냅한다
 (±1px 은 램프로 흡수). 단 사이 정확히 중간(예: 15px)은 상위 단으로, 램프 밖
@@ -1974,6 +1975,7 @@ Tailwind v4 `--leading-*` 네임스페이스가 `leading-<step>` 유틸리티를
 | title | `--leading-title` (`leading-title`) | 24px | title 16 | 1.50 | 패널/카드 제목 |
 | display | `--leading-display` (`leading-display`) | 28px | display 23 | 1.22 | 페이지 헤드라인(줄바꿈 가능) |
 | hero | `--leading-hero` (`leading-hero`) | 34px | hero 30 | 1.13 | 히어로 헤드라인(줄바꿈 가능) |
+| hero-lg | `--leading-hero-lg` (`leading-hero-lg`) | 38px | hero-lg 34 | 1.12 | 관문 헤드라인(최대 2행) |
 | display-tight | `--leading-display-tight` (`leading-display-tight`) | 1.06 | 자유 | — | **이름·수치처럼 한 덩어리로 읽히는 자리** — 히어로/섹션 제목, 카드 이름, 대형 수치. **최대 2행** |
 | prose | `--leading-prose` (`leading-prose`) | 1.7 | 자유 | — | **사용자가 쓴 글** — 마크다운 뷰어/에디터, 상세 본문, pre. 읽기 폭 장문의 상한 |
 
@@ -2046,6 +2048,18 @@ Tailwind v4 `--leading-*` 네임스페이스가 `leading-<step>` 유틸리티를
 `--pad-panel` 전례(아무도 안 쓰는 토큰은 오정보)와 다르다. 저건 아무도 안 쓰는
 값이었고, 이건 `text-hero` 유틸리티가 **싣고 있는** 값이다.
 
+**`--leading-hero-lg`(38px)도 같은 지위다** (2026-07-29 신설). 오늘 유일한
+소비자인 `/download` 헤드라인이 `md:leading-hero-lg` 를 명시로 달고 있지만,
+`--text-hero-lg--line-height` 결합이 있어야 램프 상단이 예외 없이 닫힌다.
+
+**hero-lg 는 왜 34px 인가.** 지도가 전면을 덮는 표면에서 30px 헤드라인은
+배경과 무게를 다툰다. 34px 이면 리드(`text-body` 12.5)와의 비가 **2.72** 로
+레퍼런스 히어로 밴드(2.5–3.0) 안에 든다. 행간 38px 은 램프 상단으로 갈수록
+비율이 조여지는 추세를 잇는다(1.217 → 1.133 → **1.118**). tracking 은
+`--tracking-hero`(−0.022em)를 공유한다 — 같은 광학 구간이라 새 짝을 만들지
+않는다. 승격 트리거는 **두 번째 소비처**였다: `DesktopVaultWelcome` 이 이미
+`md:text-[34px]` + eslint-disable 로 램프를 비껴가고 있었다.
+
 #### 조건부 크기 함정 — companion 결합이 만든 새 실패 모드
 
 결합 이후 **글자 크기만 조건부로 갈아끼우면 짝이 어긋난다.** arbitrary 크기
@@ -2057,7 +2071,7 @@ Tailwind v4 `--leading-*` 네임스페이스가 `leading-<step>` 유틸리티를
 | 자리 | 판정 |
 |---|---|
 | `/git` 헤드라인 — `text-title` + `sm:text-[length:var(--text-display)]` | ⚠️ **어긋남.** 23px 글자에 title 짝 24px 행간(1.04) — 저장소 최대 이탈. `sm:text-display` 로 정정 |
-| 데스크톱 환영 히어로 — `text-hero` + `leading-tight` + `md:text-[34px]` | 안전. **명시 leading 이 두 크기 모두를 덮는다** |
+| 데스크톱 환영 히어로 — `text-hero` + `leading-tight` + `md:text-hero-lg` | 안전. **명시 leading 이 두 크기 모두를 덮는다**. (2026-07-29: 구 `md:text-[34px]` + eslint-disable 는 34px 이 램프 스텝으로 승격되면서 사라졌다 — 소비처가 둘이 되는 순간이 값을 이름으로 올릴 때다) |
 
 **판별법**: 한 원소에 램프 크기 스텝과 조건부 arbitrary 크기가 함께 있으면,
 명시 `leading-*` 이 있는지 본다. 없으면 결함이다. 고치는 길은 둘 —
@@ -2092,21 +2106,27 @@ Tailwind v4 `--radius-*` 네임스페이스가 `rounded-<step>` 를 생성한다
 > 표면은 인라인 `rounded-[Npx]` 가 아니라 컴포넌트를 경유하므로 두 체계는
 > 충돌하지 않는다 — 크롬 박스는 크롬 사다리, 나머지는 이 램프.
 
-### 페이지 컬럼 — `--page-max` 와 `--page-col-utility`
+### 페이지 컬럼 — `--page-max` 하나
 
 | 대상 | 토큰 | px |
 |---|---|---|
 | 페이지 컨테이너 | `--page-max` | 1600 |
-| 유틸리티 컬럼 | `--page-col-utility` | 960 |
 
-`--page-max` 는 1920 기준 좌우 거터 160 을 남기는 페이지 폭이다. 그 **안쪽에서
-한 번 더** 좁히는 것이 유틸리티 컬럼 — 화면이 "여럿을 고르는 곳" 이 아니라
-**한 가지를 판단하는 곳** 일 때 쓴다. 1600 전폭에 결정 하나를 늘어놓으면 눈이
-좌우로 오가고, 그때 위계는 폭이 아니라 우연이 정한다.
+`--page-max` 는 1920 기준 좌우 거터 160 을 남기는 페이지 폭이다.
 
-첫 소비자는 `/download`(설치 판단 한 가지). RATIO-SYSTEM 이 이름을 예약해 뒀지만
-토큰이 없어서, 그 전까지는 페이지 파일 안에 `const UTILITY_COL_WIDTH = 960` 으로
-복제돼 있었다 — **토큰 없는 규격은 그 파일 밖에서 존재하지 않는다.**
+**`--page-col-utility`(960px) 는 삭제됐다** (2026-07-29 디자인 카운슬 평결 ③).
+"한 가지를 판단하는 화면은 안쪽에서 한 번 더 좁힌다" 는 규격 자체가 틀린
+것은 아니었지만, **유일한 소비자에서 정확히 반대 결과를 냈다.** `/download`
+는 다운로드 판을 무대 **왼쪽에 붙이는** 표면인데, 바닥 절만 이 토큰으로 다시
+중앙정렬되면서 같은 페이지 안에 정렬 기준이 둘이 됐다 — 실측(1920): 판 x=160 ·
+바닥 x=480. 어느 원소도 다른 원소와 정렬되지 않았다.
+
+교훈 두 줄:
+
+- **중앙 컬럼은 왼쪽 정렬 표면과 섞이지 않는다.** 한 페이지에 `mx-auto` 컬럼과
+  좌측 고정 컬럼이 공존하면 둘의 x 는 뷰포트 폭의 함수로 갈린다.
+- **아무도 안 쓰는 토큰은 규격이 아니라 오정보다.** 소비자가 0이 된 순간
+  지운다(`--pad-card`/`--pad-panel` 과 같은 처분).
 
 ### Padding — 램프를 두지 않는다 (2026-07-26 정리)
 

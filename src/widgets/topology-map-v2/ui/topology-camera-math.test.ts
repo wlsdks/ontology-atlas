@@ -8,6 +8,7 @@ import {
   computeFocusCameraTarget,
   computeOverviewCameraTarget,
   computeOverviewFitScale,
+  computeUnfocusedPanBounds,
   fitWorldTarget,
   worldToScreen,
 } from "./topology-camera-math";
@@ -354,5 +355,59 @@ describe("computeFocusCameraTarget — fit-to-ego dive (dive-framing fix)", () =
     // 제한 없으면 fling 이웃이 bbox 를 부풀려 overview 로 clamp(대조).
     const unbounded = computeFocusCameraTarget(world, baseTokens, 1200, 800, "f", overviewEntryScale);
     expect(unbounded!.tscale).toBeCloseTo(overviewEntryScale, 6);
+  });
+});
+
+/**
+ * 팬 목줄 — **「지도 맞추기」가 없는 표면**의 안전망 (2026-07-29 카운슬 평결 ②).
+ *
+ * 관문(`/download`)에서 왼쪽으로 한 번 세게 끌면 그래프가 예약 컬럼(판 + 헤드라인)
+ * 뒤로 통째로 밀려 무대가 비었고, 12초 뒤에도 감쇠가 0 이었다. 워크벤치라면
+ * 크롬 버튼으로 돌아오지만 관문에는 그 버튼이 없다 — 되돌릴 길 없는 화면에서
+ * 되돌릴 수 없는 조작을 허용한 것이 결함이다.
+ */
+describe("computeUnfocusedPanBounds — 팬 목줄", () => {
+  const bounds = { minX: -400, minY: -300, maxX: 400, maxY: 300 };
+
+  it("목줄이 꺼져 있으면 종전 봉투 그대로 (월드 bbox ± 320)", () => {
+    // 워크벤치의 기본값은 0 이다 — 이 변경이 `/topology` 를 1픽셀도 안 건드린다는
+    // 주장이 여기서 고정된다.
+    const off = computeUnfocusedPanBounds(bounds, 1, { cameraPanLeash: 0, safeInsetLeft: 350 });
+    expect(off).toEqual({ minX: -720, minY: -620, maxX: 720, maxY: 620 });
+    // 토큰을 아예 안 넘겨도 같다(순수 카메라-수학 테스트 계약).
+    expect(computeUnfocusedPanBounds(bounds, 1, {})).toEqual(off);
+  });
+
+  it("목줄이 켜지면 봉투가 **핏 기준점** ± 목줄로 좁아진다", () => {
+    // 기준점은 오버뷰 핏과 같은 식이다: 중심 − (left−right)/(2·scale).
+    // bbox 가 아니라 핏이 기준이라 봉투 크기가 볼트 크기와 무관해진다.
+    const leashed = computeUnfocusedPanBounds(bounds, 2, {
+      cameraPanLeash: 220,
+      safeInsetLeft: 544,
+      safeInsetRight: 0,
+    });
+    const anchorX = 0 - (544 - 0) / (2 * 2); // = -136
+    expect(leashed).toEqual({
+      minX: anchorX - 220,
+      maxX: anchorX + 220,
+      minY: -220,
+      maxY: 220,
+    });
+  });
+
+  it("볼트가 세 배로 커져도 봉투는 그대로다 — 종전 봉투는 같이 커졌다", () => {
+    const tokens = { cameraPanLeash: 220, safeInsetLeft: 544 };
+    const small = computeUnfocusedPanBounds(bounds, 1, tokens);
+    const huge = computeUnfocusedPanBounds(
+      { minX: -1200, minY: -900, maxX: 1200, maxY: 900 },
+      1,
+      tokens,
+    );
+    expect(huge).toEqual(small);
+    // 목줄이 없으면 이 둘은 다르다 — 그것이 종전 봉투가 "예약 컬럼 밖" 을
+    // 어떤 값으로도 보장하지 못한 이유다.
+    expect(computeUnfocusedPanBounds({ minX: -1200, minY: -900, maxX: 1200, maxY: 900 }, 1, {})).not.toEqual(
+      computeUnfocusedPanBounds(bounds, 1, {}),
+    );
   });
 });
