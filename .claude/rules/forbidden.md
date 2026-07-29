@@ -7,6 +7,17 @@
 - 보라 → 핑크 그라디언트
 - glassmorphism (`backdrop-blur-*`)
 - glow pulse · neon · halo animation
+  - **명문 예외 1건 (2026-07-29): 발자국 트레일 번짐.** canvas 2D 의
+    `ctx.shadowBlur` 로만 존재하고 `src/shared/lib/footprint-glyph.ts`
+    **한 파일 안에서만** 산다. 조건: **정적**(pulse/animation 금지) · **opt-in**
+    (설정에서 사용자가 켠다) · **기본 0**(아무도 켜지 않으면 존재하지 않는다) ·
+    **상한 6px**(그 위는 자국 본체보다 헤일로가 커져 금지된 그 글로우가 된다).
+    소유자 지시 *"노란색으로 빛나게"* 를 헌장 안에서 여는 최소 형태이고,
+    "기본값이 0이니 준수" 라는 **우회는 명시적으로 기각**됐다 — 금지 패턴을 설정
+    뒤에 숨겨 파는 것은 준수가 아니라서, 이렇게 정직하게 등재했다.
+    게이트 둘: `eslint.config.mjs` 의 `shadowBlur` 셀렉터(예외 파일 1개만 면제)
+    + `tests/contract/footprint-bloom-exception.contract.test.ts`(기본 0 · 상한 6 ·
+    소비처 1개 · 문서 등재).
 - 움직이는 그라디언트 배경 · 오로라
 - scale 기반 hover (`hover:scale-*`)
 - 둘 이상의 채색 시스템 (인디고 외 새 brand color 추가)

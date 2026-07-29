@@ -44,7 +44,7 @@ describe("backgroundParallaxOrigin", () => {
 
 describe("resolveBackgroundParallax", () => {
   it("성좌에서만 시차를 건다 — 도트 격자·등고선은 지면이라 1.0", () => {
-    expect(resolveBackgroundParallax("constellation", 0.82, false)).toBe(0.82);
+    expect(resolveBackgroundParallax("web", 0.82, false)).toBe(0.82);
     expect(resolveBackgroundParallax("dot", 0.82, false)).toBe(1);
     expect(resolveBackgroundParallax("contour", 0.82, false)).toBe(1);
     expect(resolveBackgroundParallax(undefined, 0.82, false)).toBe(1);
@@ -56,28 +56,28 @@ describe("resolveBackgroundParallax", () => {
    * 용접돼 내용 대비 상대 운동이 오히려 생긴다 — 없애려던 것을 만드는 셈.
    */
   it("prefers-reduced-motion 에서는 1.0 (상대 운동 제거)", () => {
-    expect(resolveBackgroundParallax("constellation", 0.82, true)).toBe(1);
-    expect(resolveBackgroundParallax("constellation", 0.1, true)).toBe(1);
+    expect(resolveBackgroundParallax("web", 0.82, true)).toBe(1);
+    expect(resolveBackgroundParallax("web", 0.1, true)).toBe(1);
   });
 
   it("1 초과는 1 로 잘린다 — 배경이 내용보다 빠르면 '가까운 층'으로 읽혀 의미가 뒤집힌다", () => {
-    expect(resolveBackgroundParallax("constellation", 1.4, false)).toBe(1);
+    expect(resolveBackgroundParallax("web", 1.4, false)).toBe(1);
   });
 
   it("음수는 0 으로 잘린다 — 반대 방향으로 흐르면 멀미를 만든다", () => {
-    expect(resolveBackgroundParallax("constellation", -0.3, false)).toBe(0);
+    expect(resolveBackgroundParallax("web", -0.3, false)).toBe(0);
   });
 
   it("토큰이 없거나 NaN 이면 1(종전 동작)로 폴백한다", () => {
-    expect(resolveBackgroundParallax("constellation", Number.NaN, false)).toBe(1);
+    expect(resolveBackgroundParallax("web", Number.NaN, false)).toBe(1);
   });
 });
 
 describe("resolveBackgroundOrigin — 결정 전체를 한 함수로", () => {
   // 호출부(topology-frame-draw)가 두 함수를 손으로 엮으면 그 조립이 미검증
   // 표면이 된다. 하나로 묶어 두면 남는 위험은 "결과를 넘기는가" 한 줄뿐이다.
-  it("성좌 + 각성 = 시차가 걸린 원점", () => {
-    const out = resolveBackgroundOrigin({ x: 300, y: 300 }, VP, "constellation", 0.82, false);
+  it("근접 성좌 + 각성 = 시차가 걸린 원점", () => {
+    const out = resolveBackgroundOrigin({ x: 300, y: 300 }, VP, "web", 0.82, false);
     expect(out.x).toBeCloseTo(CENTER.x + (300 - CENTER.x) * 0.82, 6);
     expect(out.y).toBeCloseTo(CENTER.y + (300 - CENTER.y) * 0.82, 6);
   });
@@ -89,6 +89,6 @@ describe("resolveBackgroundOrigin — 결정 전체를 한 함수로", () => {
 
   it("감속 사용자는 성좌여도 원점 그대로 (층간 상대 운동 제거)", () => {
     const origin = { x: 300, y: 300 };
-    expect(resolveBackgroundOrigin(origin, VP, "constellation", 0.82, true)).toEqual(origin);
+    expect(resolveBackgroundOrigin(origin, VP, "web", 0.82, true)).toEqual(origin);
   });
 });

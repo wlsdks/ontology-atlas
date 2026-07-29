@@ -251,3 +251,81 @@ describe('Design council wiring', () => {
     }
   });
 });
+
+/**
+ * 평문 요약 규율을 실은 파일들 — 두 스킬의 양쪽 사본과, 기록을 쓰는 chief.
+ * 목록이 곧 사정거리다: 새 카운슬을 만들면 여기 한 줄을 더한다.
+ */
+const PLAIN_SUMMARY_FILES = [
+  SKILL_PATH,
+  SKILL_MIRROR_PATH,
+  '.claude/agents/chief.md',
+] as const;
+
+/**
+ * 카운슬 산출물은 **평문 요약으로 시작한다.**
+ *
+ * 이 저장소가 실측으로 배운 것(2026-07-29): 평결 블록을 그대로 소유자에게
+ * 전달했더니 되물었다 — *"뭔 서명?"*. 카운슬 어휘(자리 이름 · 루브릭 · 반증
+ * 조건 · 서명)는 다음 에이전트와 원장을 위한 것이지 결과를 받는 사람을 위한
+ * 것이 아니다. 읽는 쪽이 사전을 먼저 배워야 하는 보고는 보고가 아니다.
+ *
+ * 이 테스트가 없으면 그 규율은 산문으로만 남고, 이 저장소가 반복해 배운 대로
+ * **문서에만 있는 규격은 지켜지지 않는다.**
+ */
+describe('카운슬 산출물은 평문 요약으로 시작한다', () => {
+  /** 세 줄은 협상 대상이 아니다 — 하나라도 빠지면 소유자가 물어봐야 한다. */
+  const REQUIRED_LINES = ['정한 것', '네 말과 다르게 한 것', '네가 할 일'];
+
+  /**
+   * 평문 절 안에서 쓰지 않는 말. **아래 평결 블록에서는 정확히 이 단어들이어야
+   * 하므로** 금지는 절 단위이지 문서 단위가 아니다.
+   */
+  const BANNED_SAMPLE = ['루브릭', '반증 조건', '서명', 'appetite'];
+
+  /**
+   * ⚠️ 판정 대상은 **템플릿 코드 펜스 안**이다. 파일 전체에서 문구를 찾으면,
+   * 같은 말이 설명 산문에도 있어서 **템플릿에서 지워도 통과한다** — 이 게이트를
+   * 처음 쓸 때 실제로 그렇게 새어나갔다(프로브로 발견). 문서 어딘가에 단어가
+   * 있다는 것과 산출물 형식이 그 줄을 요구한다는 것은 다른 주장이다.
+   */
+  const templateOf = (path: string): string => {
+    const text = read(path);
+    const anchor = text.indexOf('먼저 — 세 줄');
+    expect(anchor, `${path} must carry the plain-summary template`).toBeGreaterThan(-1);
+    // 앵커는 펜스 **안**에 있다(`### 먼저 — 세 줄` 이 템플릿의 첫 줄이므로).
+    // 앞으로 뒤져 여는 펜스를, 뒤로 뒤져 닫는 펜스를 찾는다 — 앵커 뒤에서만
+    // 찾으면 닫는 펜스를 여는 펜스로 오인해 빈 문자열을 검사하게 된다.
+    const open = text.lastIndexOf('```', anchor);
+    const close = text.indexOf('```', anchor);
+    expect(open, `${path}의 평문 템플릿 여는 펜스가 없다`).toBeGreaterThan(-1);
+    expect(close, `${path}의 평문 템플릿 펜스가 닫히지 않았다`).toBeGreaterThan(anchor);
+    return text.slice(open, close);
+  };
+
+  it.each(PLAIN_SUMMARY_FILES)('%s 의 템플릿이 세 줄을 모두 요구한다', (path) => {
+    const template = templateOf(path);
+    for (const line of REQUIRED_LINES) {
+      expect(template, `${path} 템플릿에 "${line}" 줄이 없다`).toContain(line);
+    }
+  });
+
+  it.each(PLAIN_SUMMARY_FILES)('%s 가 평문 요약 절을 싣는다', (path) => {
+    const text = read(path);
+    expect(text, `${path} must open its output with a plain-language summary`).toContain(
+      '사람에게 — 평문 요약',
+    );
+    expect(text).toContain('먼저 — 세 줄');
+    for (const banned of BANNED_SAMPLE) {
+      expect(text, `${path} must ban "${banned}" from the plain section`).toContain(banned);
+    }
+  });
+
+  /**
+   * 요청보다 좁히거나 넓혔으면 그 줄이 **반드시** 있다. 그 줄 없는 축소는
+   * 축소가 아니라 조용한 무시이고, 소유자가 나중에 화면에서 발견하게 된다.
+   */
+  it.each(PLAIN_SUMMARY_FILES)('%s 가 "다르게 한 것" 줄을 생략 불가로 못박는다', (path) => {
+    expect(read(path).replace(/\s+/g, ' ')).toMatch(/생략할 수 없다/);
+  });
+});

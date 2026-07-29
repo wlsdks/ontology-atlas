@@ -10,7 +10,14 @@ import { rankEgoNeighborsByDOI, resolveEdgeEgoStateWithPair, resolveNodeEgoState
 import { resolveFreshnessVisual } from "../model/freshness";
 import { resolveBackgroundOrigin } from "../model/background-parallax";
 import { computeSelectionPulse, type SelectionPulseVisual } from "../model/selection-pulse";
-import { footprintRingStyle, FOOTPRINT_RING_OFFSET } from "../model/footprint-ring";
+import {
+  drawEdgeFootprints,
+  drawFootprintSteps,
+  drawNodeFootprint,
+  footprintScaleFor,
+  type FootprintInk,
+} from "@/shared/lib/footprint-glyph";
+import type { FootprintPreference } from "@/shared/lib/appearance-preferences";
 import { depthParallaxOffsetFor, ZERO_PARALLAX } from "../model/realm-depth-parallax";
 import { realmDepthClarityAlpha, realmDepthClarityScale } from "../model/realm-transition";
 import { classifyZoomTier, DEFAULT_TIER_REVEAL, edgeTierAlpha, effectiveNodeAlpha, nodeTierAlpha, type TierRevealConfig } from "../model/tier-visibility";
@@ -412,13 +419,29 @@ export interface FrameDrawParams {
    */
   realmOutsideReturnAlphaById: ReadonlyMap<string, number> | null;
   /**
-   * 발자국 트레일 (fable 설계) — 세션 동안 방문(ego 포커스)한 노드의 최근성
-   * rank(0 = 가장 최근). `model/footprint-ring.ts#buildFootprintRanks` 가 만든다.
-   * 각 방문 노드에 옅은 pale 인디고 헤어라인 링을 최근성으로 감쇠해 얹는다
-   * (정적 표기). 현재 포커스 노드는 이미 제외돼 있어 선택 링과 이중이 안 된다.
+   * 발자국 — 노드별 **방문 순번 목록**(1부터). 재방문 노드는 여러 개를 갖는다.
+   * `views/home/lib/footprint-trail.ts#buildFootprintSteps` 가 만든다.
+   * 현재 포커스 노드는 호출부가 제외해 선택 링과 이중이 안 된다.
    * 빈 map = 발자국 없음(회귀 0).
    */
-  footprintRanksById: ReadonlyMap<string, number>;
+  footprintStepsById: ReadonlyMap<string, readonly number[]>;
+  /** 발자국 표현 설정. null 이면 아무것도 그리지 않는다. */
+  footprintPref?: FootprintPreference | null;
+  /**
+   * 연달아 방문한 노드 쌍의 키 집합(`model/footprint-steps.ts#buildWalkedEdgeKeys`).
+   * 이 중 실재하는 관계선에만 선 옆 자국이 얹힌다. null = 선 자국 없음.
+   */
+  walkedEdgeKeys?: ReadonlySet<string> | null;
+  /** 발자국 잉크 RGB — 호출부가 `--color-footprint-trail` 또는 인디고 토큰에서 읽는다. */
+  footprintInk?: FootprintInk;
+  /** 순번 글자색 — 자국 잉크보다 한 단 밝다(작은 글자라 대비가 더 필요). */
+  footprintStepColor?: string;
+  /**
+   * 가장 최근 걸음의 노드 id + 그 걸음의 등장 진행 [0,1]. 이 노드의 자국만
+   * 램프를 받고 나머지는 1(정착)이다 — 한 입력이 낳은 사건은 하나다.
+   */
+  footprintNewestId?: string | null;
+  footprintAppear?: number;
   /**
    * 걸어온 길 렌즈 — 트레일 팝오버가 열려 있는 동안 **그 동안만** non-null.
    * 방문 노드 집합(현재 포커스 포함)을 ego keep-set 대신 쓴다: 방문 노드는
@@ -467,10 +490,8 @@ export interface FrameDrawParams {
    * grid)·성좌·등고선. 생략 시 `"dot"`(회귀 0).
    */
   backgroundVariant?: CanvasBackgroundVariant;
-  /** 성좌 배경 타일(variant==="constellation" 일 때만 소비). */
-  constellationPattern?: CanvasPattern | null;
-  /** 등고선 배경 타일(variant==="contour" 일 때만 소비). */
-  contourPattern?: CanvasPattern | null;
+  /** 움직이는 배경 버퍼를 얹는 콜백(도트가 아닐 때만 소비) — `render/grid.ts` 참고. */
+  paintAnimatedBackground?: ((ctx: CanvasRenderingContext2D, width: number, height: number) => void) | null;
 }
 
 /** The full per-frame paint, in the prototype's `render()` order (§13): background -> dust -> edges (contains, depends) -> nodes (+ bright-star spikes) -> labels. */
@@ -515,15 +536,20 @@ export function drawTopologyFrame(params: FrameDrawParams): void {
     realmDustParallax,
     realmOutsideReturnAlphaById,
     realmCosmosPoints,
-    footprintRanksById,
+    footprintStepsById,
+    footprintPref = null,
+    walkedEdgeKeys = null,
+    footprintInk = [232, 196, 122],
+    footprintStepColor = "#e8c47a",
+    footprintNewestId = null,
+    footprintAppear = 1,
     trailLensIds = null,
     spotlightIds,
     spotlightRamp,
     tierReveal = DEFAULT_TIER_REVEAL,
     glyphStyle = "fill",
     backgroundVariant = "dot",
-    constellationPattern = null,
-    contourPattern = null,
+    paintAnimatedBackground = null,
   } = params;
 
   // 스포트라이트 침강 배수 — 렌즈 ON + 램프 진행 중 + 포커스/엣지선택 비활성
@@ -558,6 +584,8 @@ export function drawTopologyFrame(params: FrameDrawParams): void {
   // Where world (0,0) currently lands on screen — the blueprint grid rides
   // this so the background belongs to the world, not the display (B3).
   const gridOrigin = worldToScreen(camera, viewportWidth, viewportHeight, 0, 0);
+  // 발자국 크기 계수 — 줌아웃에서 자국이 그래프를 덮지 않게 함께 줄인다.
+  const footprintScale = footprintScaleFor(camera.scale.value);
   // B5 — 라벨 줌 스케일 (프레임당 1회, 전 라벨 공용).
   const labelScale = labelZoomScale(camera.scale.value);
 
@@ -582,8 +610,7 @@ export function drawTopologyFrame(params: FrameDrawParams): void {
       farT,
       variant: backgroundVariant,
       gridPattern,
-      constellationPattern,
-      contourPattern,
+      paintAnimated: paintAnimatedBackground,
       originX: bgOrigin.x,
       originY: bgOrigin.y,
     },
@@ -815,6 +842,30 @@ export function drawTopologyFrame(params: FrameDrawParams): void {
           edgeSelected: tokens.edgeSelected,
         },
       );
+      /**
+       * 선 옆 발자국 — 이 관계선을 **연달아 밟았을 때만**. 선 위가 아니라
+       * 법선 방향으로 비켜 찍는다: 관계선은 타입 있는 사실(포함/의존)을 나르는
+       * 채널이라, 그 위에 마크를 얹으면 두 사실이 한 잉크를 다툰다.
+       *
+       * 후보(연속 방문 쌍) 중 **실재하는 엣지**에만 얹히는 것이 여기서 보장된다 —
+       * 이 루프는 `world.edges` 를 돌기 때문이다. 관계 없는 두 노드를 연달아
+       * 방문했다면 그 쌍은 여기 오지 않는다.
+       */
+      if (
+        footprintPref !== null &&
+        footprintPref.onEdges &&
+        walkedEdgeKeys !== null &&
+        walkedEdgeKeys.has(edge.sourceId < edge.targetId ? `${edge.sourceId} ${edge.targetId}` : `${edge.targetId} ${edge.sourceId}`)
+      ) {
+        drawEdgeFootprints(
+          { ctx, pref: footprintPref, ink: footprintInk, scale: footprintScale },
+          a.x,
+          a.y,
+          b.x,
+          b.y,
+          edgeAlpha * footprintPref.opacity,
+        );
+      }
       // R6 상시 혜성 — 코멧 꼬리 자체는 `tracesDraw`가 `edge.t`를 읽어
       // 엣지 커브와 함께 그린다(포커스 무관, dim 제외). 이 프레임 패스는 더
       // 이상 별도 반딧불 점을 얹지 않는다(구 S10 포커스-게이트형 삭제).
@@ -1066,29 +1117,36 @@ export function drawTopologyFrame(params: FrameDrawParams): void {
       });
     }
 
-    // 발자국 트레일 링 (fable 설계) — 방문했던 노드에 옅은 pale 인디고 헤어라인
-    // 링(정적). 최근성 rank 로 감쇠(가장 최근이 진하고 두껍게)해 "걸어온 순서"가
-    // 색으로 읽히게 한다. 색은 edge-selected(pale 인디고) 재사용 — 새 hue/glow
-    // 금지. 노드 티어·dim·영역 선명도 알파를 함께 곱해 ego dim/전환에도 자연히
-    // 물러난다. 위계는 선택 링(실선)·확장 오라(파선)·결계보다 항상 낮다.
-    const footprintRank = footprintRanksById.get(node.id);
-    if (footprintRank !== undefined) {
-      const ringStyle = footprintRingStyle(footprintRank);
-      ctx.save();
-      ctx.globalAlpha = tierAlpha * realmClarityAlpha * backgroundDim * appearRevealAlpha * ringStyle.alpha;
-      ctx.strokeStyle = tokens.edgeSelected;
-      ctx.lineWidth = ringStyle.lineWidth;
-      ctx.beginPath();
-      // 노드 모양 추종 — 사각 계열(domain/capability)은 둥근 사각 링, 나머지는 원.
-      // 원형 링이 사각 노드를 두르면 "동그라미+네모" 이형 겹침으로 읽힌다 (소유자 실보고).
-      if (node.kind === "domain" || node.kind === "capability") {
-        const half = screenRadius + FOOTPRINT_RING_OFFSET;
-        ctx.roundRect(screen.x - half, screen.y - half, half * 2, half * 2, Math.max(3, half * 0.28));
-      } else {
-        ctx.arc(screen.x, screen.y, screenRadius + FOOTPRINT_RING_OFFSET, 0, Math.PI * 2);
-      }
-      ctx.stroke();
-      ctx.restore();
+    /**
+     * 발자국 — 방문했던 노드 우상단에 신발 자국(양발) + 방문 순번.
+     *
+     * 종전은 동심 헤어라인 링이었다. 링은 선택 링·확장 오라·결계와 **같은
+     * 원 문법**이라 넷째 원이 되어 "이건 무슨 원인가"를 매번 다시 배워야 했고,
+     * 순서와 방향을 나를 수 없었다. 자국은 그 문법 밖이라 충돌이 없다.
+     *
+     * 노드 티어·dim·영역 선명도 알파를 함께 곱해 ego dim/전환에 자연히 물러난다.
+     */
+    const footprintSteps = footprintStepsById.get(node.id);
+    if (footprintSteps !== undefined && footprintPref !== null) {
+      const layerAlpha = tierAlpha * realmClarityAlpha * backgroundDim * appearRevealAlpha;
+      const paint = {
+        ctx,
+        pref: footprintPref,
+        ink: footprintInk,
+        scale: footprintScale,
+        // 램프는 **방금 생긴 걸음**에만. 나머지는 이미 거기 있던 것이라 정착 상태다.
+        appear: node.id === footprintNewestId ? footprintAppear : 1,
+      };
+      drawNodeFootprint(paint, screen.x, screen.y, screenRadius, layerAlpha * footprintPref.opacity);
+      drawFootprintSteps(
+        paint,
+        screen.x,
+        screen.y,
+        screenRadius,
+        layerAlpha,
+        footprintSteps,
+        footprintStepColor,
+      );
       ctx.globalAlpha = 1;
     }
 

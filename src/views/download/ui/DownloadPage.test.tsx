@@ -162,7 +162,13 @@ describe('DownloadPage', () => {
       expect(releases).toHaveTextContent(/Open the GitHub releases page/i);
 
       const web = screen.getByTestId('download-web-cta');
-      expect(web).toHaveAttribute('href', '/');
+      // ⚠️ `/` 가 아니라 `/topology` 다 (2026-07-29 밤). 소유자 결정으로 `/` 가
+      // **마케팅 페이지**가 되므로, 「브라우저에서 써보기」가 `/` 로 가면 소개
+      // 화면으로 되돌아오는 고리가 된다. 이 단언의 의도는 *"앱 없이도 오늘
+      // 당장 되는 곳으로 보낸다"* 이고 그 곳은 웹 제품 — `/topology` 다.
+      // 두 주소가 같은 화면이던 시절엔 어느 쪽을 적어도 통과해서, 이 값은
+      // 의도가 아니라 우연을 굳히고 있었다.
+      expect(web).toHaveAttribute('href', '/topology');
       expect(web).toHaveTextContent(/Try it in the browser/i);
       // The filled variant is the page's single attention winner.
       expect(web.className).toMatch(/--color-indigo-brand/);

@@ -57,8 +57,9 @@
       "canvasBgCaption": "지도 배경 무늬를 골라요 — 배경은 언제나 노드·연결보다 옅어요",
       "canvasBg": {
         "dot": "도트(기본)",
-        "constellation": "성좌",
-        "contour": "등고선"
+        "flow": "흐름장",
+        "web": "근접 성좌",
+        "gravity": "중력장"
       },
       "glyphSetLabel": "노드 아이콘",
       "glyphSetCaption": "노드 아이콘 그림체를 골라요 — 모양(종류)은 그대로예요",
@@ -93,7 +94,51 @@
       "mcpProofTitle": "MCP 첫 호출",
       "mcpProofBody": "연결 여부는 이 화면만으로 단정하지 않고 에이전트 세션에서 증명합니다. Codex나 Claude에 서버가 보이면 이 호출 패킷을 먼저 붙여넣으세요.",
       "mcpProofCopy": "첫 호출 패킷 복사",
-      "mcpProofCopied": "복사됨"
+      "mcpProofCopied": "복사됨",
+      "footprint": {
+        "caption": "지도에서 눌러 본 개념에 남는 발자국이에요. 걸어온 순서가 숫자로 붙어요.",
+        "presetLabel": "세기",
+        "preset": {
+          "subtle": "은은하게",
+          "default": "기본",
+          "bold": "또렷하게"
+        },
+        "detailShow": "직접 맞추기",
+        "detailHide": "직접 맞추기 접기",
+        "size": "자국 크기",
+        "fillLabel": "채움 방식",
+        "fillSolid": "채움",
+        "fillOutline": "윤곽선",
+        "strokeWidth": "테두리 굵기",
+        "opacity": "진하기",
+        "toneLabel": "색",
+        "toneAmber": "노랑",
+        "toneIndigo": "인디고",
+        "bloom": "번짐",
+        "bloomOff": "없음",
+        "gap": "띄우는 거리",
+        "onEdgesLabel": "선 위에도",
+        "onEdgesYes": "남기기",
+        "onEdgesNo": "안 남기기",
+        "densityLabel": "선 자국 밀도",
+        "densitySparse": "성기게",
+        "densityDense": "촘촘히",
+        "placementLabel": "자국 위치",
+        "placementRight": "한쪽",
+        "placementBoth": "양쪽 번갈아",
+        "reset": "기본값으로 되돌리기"
+      },
+      "section": {
+        "screen": "화면",
+        "background": "지도 배경",
+        "footprint": "발자국",
+        "workspace": "작업 공간",
+        "agent": "AI 에이전트"
+      },
+      "sectionGroup": {
+        "look": "보이는 것",
+        "connect": "이어진 것"
+      }
     },
     "primaryAriaLabel": "주요 메뉴",
     "notificationsAriaLabel": "작업 알림"

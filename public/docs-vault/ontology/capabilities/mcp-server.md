@@ -11,7 +11,7 @@ elements: [cli/src/commands/validate.mjs, cli/src/integration.test.mjs, mcp/scri
 
 # MCP Server (32 tools)
 
-`@modelcontextprotocol/sdk` 안정판 1.x 기반 stdio JSON-RPC 서버. 32 도구 노출
+`@modelcontextprotocol/server` v2 기반 stdio JSON-RPC 서버. 32 도구 노출
 (read 19 + write 13). 런타임은 Node 24 계열만 지원한다:
 
 | 도구 | 동작 |
