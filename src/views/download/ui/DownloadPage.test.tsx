@@ -499,20 +499,28 @@ describe('DownloadPage', () => {
       expect(screen.getByTestId('download-gnb')).not.toHaveTextContent(/다운로드|Download/);
     });
 
-    it('/ 에서는 「지도로 돌아가기」를 지운다 — 지도에서 온 사람이 아니다', () => {
-      mocks.pathname = '/';
+    /**
+     * ⚠️ 「지도로 돌아가기」는 **두 주소 모두에서 사라졌다** (2026-07-31, 소유자:
+     * *"이건 홍보 페이지라 메인 화면에서만 이동 가능하게"*).
+     *
+     * 예전엔 `/` 에서만 지우고 `/download` 에는 남겼다 — 딥링크로 도착한 사람이
+     * 돌아갈 길이라는 논리였다. 그 논리가 약했다: 관문은 **설치 전** 방문자가
+     * 읽는 자리라 아직 볼트도 없는 사람에게 워크벤치를 권하게 되고, 볼트가 있는
+     * 사람은 애초에 `/` 에서 지도로 간다(`isGatewaySurface()`).
+     *
+     * 지도로 가는 길은 판 안의 「설치 없이 브라우저에서 써보기」 하나가 낸다 —
+     * 같은 일을 하는 링크를 크롬과 판에 둘 다 두면 하나는 죽은 약속이 된다.
+     */
+    it.each(['/', '/download'])('%s 크롬에 「지도로 돌아가기」가 없다', (pathname) => {
+      mocks.pathname = pathname;
       renderDownloadPage();
-      // 지도로 가는 길은 판 안의 「설치 없이 브라우저에서 써보기」가 이미 낸다.
-      // 같은 일을 하는 링크를 크롬과 판에 둘 다 두면 하나가 죽은 약속이 된다.
       expect(screen.queryByTestId('download-back-to-map')).toBeNull();
-      expect(screen.getByTestId('download-web-cta')).toHaveAttribute('href', '/topology');
     });
 
-    it('/download 에서는 「지도로 돌아가기」가 살아 있고 지도를 가리킨다', () => {
-      mocks.pathname = '/download';
+    it('지도로 가는 유일한 길은 판 안의 웹 CTA 이고 /topology 를 가리킨다', () => {
+      mocks.pathname = '/';
       renderDownloadPage();
-      // `/` 가 아니다 — 전환 후 `/` 는 방금 떠난 소개 화면이다.
-      expect(screen.getByTestId('download-back-to-map')).toHaveAttribute('href', '/topology');
+      expect(screen.getByTestId('download-web-cta')).toHaveAttribute('href', '/topology');
     });
   });
 });
