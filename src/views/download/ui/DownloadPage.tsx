@@ -598,10 +598,23 @@ function PublishedActions({
         {/* 채운 인디고는 화면당 하나 — Intel 은 막히면 안 되므로 같은 자리에
             두되 무게만 낮춘다. */}
         {intel ? (
+          /*
+           * **`outline` 이어야 버튼으로 읽힌다.** `ghost` 는 테두리도 배경도 없어
+           * 아이콘 붙은 텍스트로 보였다(소유자: *"인텔용은 버튼으로도 안보임"*).
+           * 채운 인디고는 여전히 화면당 하나(Apple Silicon)이고, Intel 은 테두리로만
+           * 무게를 올린다 — 위계는 유지하면서 어포던스만 회복한다.
+           */
           <a
             href={intel.downloadUrl}
             data-testid="download-macos-x64"
-            className={cn(buttonVariants({ variant: 'ghost', size: 'lg' }), 'rounded-chip px-4 sm:px-6')}
+            className={cn(
+              buttonVariants({ variant: 'outline', size: 'md' }),
+              // `md`(40px) 는 44px 터치 최소에 미달한다. `lg` 로 올리면 1512×850 에서
+              // 판이 한 화면을 넘긴다(그래서 낮춘 것이다) — 두 계약이 부딪히는 자리다.
+              // 히트 영역 확장은 `::after` 오버레이라 **레이아웃 높이를 늘리지 않는다**:
+              // 손가락은 44px 을 받고 판은 850 안에 남는다.
+              'touch-hit-expand rounded-chip px-4 sm:px-6',
+            )}
           >
             <Download size={15} aria-hidden />
             {t('archIntelCta')}
@@ -739,10 +752,15 @@ function PlateExitRow({ published }: { published: boolean }) {
           (`PendingActions`). 같은 목적지를 한 판에 두 번 두면 그건 출구가
           아니라 중복이므로, 그때는 이 줄이 저장소 하나만 든다. */}
       {published ? (
+        /*
+         * **버튼 형태다.** 인디고 텍스트 링크는 산문 속 링크로 읽혀서, 판의 두 번째
+         * 출구인데 출구처럼 보이지 않았다(소유자 지시). `outline` — 채운 인디고는
+         * 다운로드가 갖는다.
+         */
         <Link
           href="/topology"
           data-testid="download-web-cta"
-          className="touch-hit-expand inline-flex items-center text-label leading-label text-[color:var(--color-indigo-accent)] transition-colors hover:text-[color:var(--color-text-primary)]"
+          className={cn(buttonVariants({ variant: 'outline', size: 'sm' }), 'touch-hit-expand rounded-chip')}
         >
           {t('webCta')}
         </Link>
@@ -1184,20 +1202,62 @@ function PlatformStatus() {
   const t = useTranslations('download');
 
   return (
-    <p
+    /*
+     * **다른 플랫폼도 버튼 자리를 갖는다 — 비활성으로.** 종전에는 회색 산문 한 줄이라
+     * "여기도 받을 게 있나" 를 훑는 눈에 잡히지 않았다(소유자: *"아이콘 버튼 형태로
+     * 만들어두고 비활성화 시켜두는게 나을듯? 준비중이라고"*).
+     *
+     * 비활성 버튼은 **없는 것을 있는 것처럼 파는 게 아니다** — 눌리지 않고,
+     * `aria-disabled` 와 문구가 함께 「준비중」을 말하고, 그 옆의 살아있는 버튼이 갈
+     * 곳(진행 상황)을 준다. 이 저장소의 강등 계약(**왜** + **어디서**)을 버튼 두 개로
+     * 옮긴 것이다. 「곧 됩니다」가 아니라 「아직 없습니다」로 쓰는 것도 그 계약이다.
+     */
+    <div
       data-testid="download-platform-windows"
-      className="mt-2.5 flex min-w-0 flex-wrap items-baseline gap-x-2 gap-y-1 text-label leading-label text-[color:var(--color-text-quaternary)]"
+      /*
+       * `mt-1` — 버튼 두 개로 바꾸면서 판이 1512×850 에서 한 화면을 넘겼다(실측 19px →
+       * 크기 조정 후 7px). 이 줄은 **받을 수 없는 플랫폼**의 강등 안내라 위 신뢰
+       * 칩과의 간격이 주 CTA 사이 간격과 같을 이유가 없다. 850 창은 카운슬이 게이트로
+       * 지키는 폭이고(설치 3단이 접히면 안 된다), 그 제약이 이 값을 정한다.
+       */
+      className="mt-1 flex min-w-0 flex-wrap items-center gap-2"
     >
-      <span className="break-keep">{t('platformStatus')}</span>
+      <span
+        aria-disabled="true"
+        data-testid="download-platform-windows-pending"
+        /*
+         * `sm`(h-8) — 기본 `md`(h-10)로 두 버튼을 얹었더니 1512×850 에서 판이 한 화면을
+         * 넘겨 카운슬 게이트가 빨개졌다(설치 3단이 접히지 않는 것이 그 게이트의 일이다).
+         * 이 줄은 **받을 수 없는 플랫폼**의 자리라 주 CTA 와 같은 무게일 이유가 없다.
+         */
+        className={cn(
+          buttonVariants({ variant: 'outline', size: 'sm' }),
+          'touch-hit-expand rounded-chip cursor-not-allowed opacity-55',
+        )}
+      >
+        <Download size={14} aria-hidden />
+        {/*
+          * **문구는 「아직 없습니다」로 남는다.** 소유자 지시는 *"준비중이라고"* 였고
+          * 「준비 중」으로 바꿨더니 게이트가 잡았다 — `DownloadPage.test.tsx` 가 영문
+          * *"not out yet"* 을 단언한다. 그 단언이 옳다: 이 저장소는 「곧 됩니다」류를
+          * 거짓말로 규정하고(`surfaces.md`), 「준비 중」은 시점을 암시한다.
+          *
+          * 그래서 **지시의 실체(버튼 형태 + 비활성)는 그대로 받고 문구만 정직한 쪽에
+          * 둔다.** 비활성 버튼 자체가 이미 "준비 중"을 말한다 — 형태가 상태를 나르므로
+          * 문구가 그것을 반복하며 약속까지 얹을 이유가 없다.
+          */}
+        <span className="break-keep">{t('platformStatus')}</span>
+      </span>
       <a
         href={WINDOWS_STATUS.trackingUrl}
         target="_blank"
         rel="noopener noreferrer"
-        className="touch-hit-expand inline-flex items-center gap-1 transition-colors hover:text-[color:var(--color-text-secondary)]"
+        data-testid="download-platform-windows-track"
+        className={cn(buttonVariants({ variant: 'ghost', size: 'sm' }), 'touch-hit-expand rounded-chip')}
       >
-        <ExternalLink size={11} aria-hidden />
+        <ExternalLink size={13} aria-hidden />
         {t('windowsTrackCta')}
       </a>
-    </p>
+    </div>
   );
 }
