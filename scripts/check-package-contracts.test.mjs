@@ -117,11 +117,28 @@ function runNodeScript(args) {
 }
 
 describe('package contract helpers', () => {
-  it('keeps the root README honest about the six work surfaces plus MCP', () => {
+  /**
+   * **절 제목을 앵커로 쓴다는 것을 이 검사가 두 번 잊었다.** 제목이 바뀌면
+   * `split` 이 `undefined` 를 주고 `?? ''` 가 그것을 빈 문자열로 삼켜, 검사는
+   * "이 절에 Map 이 없다" 로 실패한다 — 진짜 원인(제목이 바뀌었다)이 메시지에
+   * 안 나온다. 그래서 아래에 **절을 찾았는지부터** 단정한다.
+   *
+   * 표면 수가 늘어난 이유: 2026-07-30 에 `/` 가 얼굴이 되면서 「Front door」가
+   * 생기고 지도는 `/topology` 로 갔다(원장: 「root-first-open」 뒤집기 구현).
+   */
+  it('keeps the root README honest about the surfaces plus MCP', () => {
     const readme = readFileSync('README.md', 'utf-8');
-    const section = readme.split('## Six work surfaces, one vault')[1]?.split('## Agent Workflow')[0] ?? '';
+    const heading = '## Seven surfaces, one vault';
+    assert.ok(
+      readme.includes(heading),
+      `README 에 "${heading}" 절이 없다 — 제목을 바꿨으면 이 검사의 앵커도 바꿔라`,
+    );
+    const section = readme.split(heading)[1].split('## Agent Workflow')[0];
 
-    assert.match(section, /\*\*Map\*\*/);
+    // 얼굴과 지도가 **각자의 주소**로 적혀 있어야 한다. 한 줄에 뭉치면 라우트가
+    // 갈렸다는 사실이 README 에서 사라진다.
+    assert.match(section, /\*\*Front door\*\*/);
+    assert.match(section, /\*\*Map\*\* \(`\/topology`\)/);
     assert.match(section, /`\/docs`/);
     // `/ontology/edit` (구 xyflow 빌더)는 2026-07-24 은퇴 — 공방이 조립/연결/
     // 미리보기/쓰기를 모두 덮으면서 얇은 리다이렉트만 남았다. README 가 은퇴한
@@ -138,6 +155,7 @@ describe('package contract helpers', () => {
     assert.doesNotMatch(readme, /## Three views plus MCP, one vault/);
     assert.doesNotMatch(readme, /## Four surfaces, one vault/);
     assert.doesNotMatch(readme, /## Five surfaces, one vault/);
+    assert.doesNotMatch(readme, /## Six work surfaces, one vault/);
   });
 
   it('keeps filtered integration scripts discoverable from development checks docs', () => {

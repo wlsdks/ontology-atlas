@@ -279,7 +279,6 @@ export function AppSettingsMenu({
     restoreFocus: false,
     // 도크는 비모달이다 — 지도를 보며 값을 맞추는 표면이라 지도로 Tab 해 나갈
     // 수 있어야 한다. 초점을 가두면 키보드 사용자만 그 지도에 못 간다.
-    trapTab: false,
   });
   const titleId = useId();
   const isDesktopRuntime = isTauriVaultRuntime();
@@ -537,7 +536,7 @@ export function AppSettingsMenu({
           }
         />
         {triggerVariant === 'header-pill' ? (
-          <span className="hidden font-mono text-caption uppercase tracking-[0.08em] sm:inline">
+          <span className="hidden font-mono text-label uppercase tracking-[0.08em] sm:inline">
             {t('settingsLabel')}
           </span>
         ) : null}
@@ -557,15 +556,33 @@ export function AppSettingsMenu({
          * 「발자국」 절은 *"바꾸면 지도가 즉시 반영된다"* 가 계약인데, 정작 그
          * 지도를 자기가 가렸다 — 설정을 만지는 동안 결과를 볼 수 없었다.
          *
-         * 그래서 오른쪽 가장자리에 붙이고 scrim 을 없앤다. 바깥은
-         * `pointer-events-none` 이라 지도가 **그대로 살아 있다** — 도크를 열어
-         * 둔 채 지도를 끌어 보며 값을 맞출 수 있다. 바깥 클릭으로 닫히지도
-         * 않는다(도크는 머무는 표면이다). 닫는 길은 Esc 와 닫기 버튼.
+         * ## 자리와 성질이 세 번 바뀌었다 — 여기가 종점이다
+         *
+         * ① 가운데 모달(원래) → ② 우측 비모달 도크 → ③ 가운데 비모달 →
+         * ④ **가운데 모달 + 딤**(소유자 2026-07-30, Claude 데스크톱 설정 참조).
+         *
+         * ②로 간 이유는 *"설정 창이 지도 가리는거"* 였다 — 「지도 배경」·「발자국」
+         * 절이 *"바꾸면 지도가 즉시 반영된다"* 를 약속하는데 정작 그 지도를 자기가
+         * 가렸다. 그래서 scrim 을 없애 지도를 살려 뒀다.
+         *
+         * **그 이유가 사라졌다.** 두 절은 이미 **패널 안에 실시간 미리보기**를
+         * 갖고 있다 — `FootprintSettings` 의 `FootprintPreview` 는 지도와 **같은
+         * 렌더러**로 그리고, 배경 스와치는 실제 `--canvas-bg-*` 토큰으로 그린다.
+         * 즉 값을 만지는 동안 결과를 보는 문제는 **지도가 아니라 미리보기가**
+         * 풀고 있었고, 도크는 이미 풀린 문제를 위해 위치를 희생하고 있었다.
+         *
+         * 그래서 딤을 되살린다. 겹침이 사라지므로 INDEX 를 접는 곁가지 결합도
+         * 필요 없다(한 번 넣었다가 되돌렸다 — 딤이 하는 일을 두 번 하는 배선이었다).
+         *
+         * ⚠️ **딤이 있으면 `aria-modal` 이 참이 된다.** ②③ 동안 그 속성을 걸지
+         * 않은 것은 규율이 아니라 **사실**이었다 — 바깥이 살아 있는데 없는 셈
+         * 치라고 말하면 거짓이다. 지금은 실제로 차단하므로 다시 건다. 초점 트랩도
+         * 같은 이유로 복귀한다.
          *
          * portal(body 직속)은 그대로 — 트리거가 어느 크롬 컨테이너에 앉아
          * 있어도 그 stacking context 에 갇히지 않는다.
          */
-        className={`${settingsExiting ? 'app-settings-scrim-out' : 'app-settings-scrim-in'} pointer-events-none fixed inset-y-0 right-0 z-40 flex items-center overflow-hidden p-3 sm:p-6`}
+        className={`${settingsExiting ? 'app-settings-scrim-out' : 'app-settings-scrim-in'} fixed inset-0 z-40 flex items-center justify-center overflow-hidden bg-[color:var(--color-backdrop-medium)] p-3 sm:p-6`}
         aria-hidden={settingsExiting || undefined}
         inert={settingsExiting || undefined}
         data-testid="app-settings-overlay"
@@ -573,8 +590,10 @@ export function AppSettingsMenu({
         <div
           ref={panelRef}
           role="dialog"
-          // `aria-modal` 을 걸지 않는다 — 바깥이 살아 있는데 "나머지는 없는
-          // 셈 치라"고 보조기술에 말하면 그건 거짓이다.
+          // 뒤를 딤으로 덮어 실제로 차단하므로 `aria-modal` 은 **참이다**.
+          // 비모달 도크였던 동안에는 이걸 걸지 않았다 — 그때는 바깥이 살아
+          // 있었고, 살아 있는데 "없는 셈 치라"고 말하면 거짓이었다.
+          aria-modal="true"
           aria-labelledby={titleId}
           data-surface-role="settings-dock"
           tabIndex={-1}
@@ -589,7 +608,7 @@ export function AppSettingsMenu({
            * 좁은 화면에서는 뷰포트에 맞춰 줄어든다(그때만 크기가 변한다). 내용이
            * 넘치면 **오른쪽 칸이 스크롤**하지, 창이 자라지 않는다.
            */
-          className={`${settingsExiting ? 'app-settings-panel-out' : 'app-settings-panel-in'} pointer-events-auto flex h-[560px] max-h-[calc(100dvh-1.5rem)] w-[760px] focus:outline-none max-w-[calc(100vw-1.5rem)] flex-col overflow-hidden rounded-xl border border-[color:var(--color-border-soft)] bg-[color:var(--color-panel)] text-body shadow-[var(--shadow-elevation-3)]`}
+          className={`${settingsExiting ? 'app-settings-panel-out' : 'app-settings-panel-in'} flex h-[640px] max-h-[calc(100dvh-1.5rem)] w-[880px] focus:outline-none max-w-[calc(100vw-1.5rem)] flex-col overflow-hidden rounded-xl border border-[color:var(--color-border-soft)] bg-[color:var(--color-panel)] text-body shadow-[var(--shadow-elevation-3)]`}
           data-testid="app-settings-popover"
         >
           <div className="flex shrink-0 items-center justify-between gap-3 border-b border-[color:var(--color-border-soft)] px-4 py-3">
@@ -646,24 +665,24 @@ export function AppSettingsMenu({
               ) : (
                 <>
                   <div className="rounded-lg border border-[color:var(--color-border-soft)] bg-[color:var(--color-overlay-1)] px-3 py-2.5">
-                    <p className="text-label font-medium text-[color:var(--color-text-secondary)]">
+                    <p className="text-body font-medium text-[color:var(--color-text-secondary)]">
                       {t('agentStatusNoVault')}
                     </p>
-                    <p className="mt-1 break-keep text-caption leading-4 text-[color:var(--color-text-tertiary)]">
+                    <p className="mt-1 break-keep text-label leading-4 text-[color:var(--color-text-tertiary)]">
                       {t('agentNoVaultHint')}
                     </p>
                   </div>
                   <div className="rounded-lg border border-[color:var(--color-border-soft)] bg-[color:var(--color-overlay-1)] px-3 py-2.5">
-                    <p className="text-label font-medium text-[color:var(--color-text-secondary)]">
+                    <p className="text-body font-medium text-[color:var(--color-text-secondary)]">
                       {t('mcpProofTitle')}
                     </p>
-                    <p className="mt-1 break-keep text-caption leading-4 text-[color:var(--color-text-tertiary)]">
+                    <p className="mt-1 break-keep text-label leading-4 text-[color:var(--color-text-tertiary)]">
                       {t('mcpProofBody')}
                     </p>
                     <button
                       type="button"
                       onClick={() => void copy(MCP_FIRST_CALLS_PACKET)}
-                      className="mt-2 inline-flex h-8 w-full items-center justify-center gap-1.5 rounded-md border border-[color:var(--color-indigo-line-a32)] px-2 font-mono text-caption text-[color:var(--color-indigo-accent)] transition-colors hover:border-[color:var(--color-indigo-line-a45)] hover:bg-[color:var(--color-indigo-line-a13)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--color-indigo-a46)] focus-visible:ring-inset"
+                      className="mt-2 inline-flex h-8 w-full items-center justify-center gap-1.5 rounded-md border border-[color:var(--color-indigo-line-a32)] px-2 font-mono text-label text-[color:var(--color-indigo-accent)] transition-colors hover:border-[color:var(--color-indigo-line-a45)] hover:bg-[color:var(--color-indigo-line-a13)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--color-indigo-a46)] focus-visible:ring-inset"
                     >
                       {copyState === 'copied' ? (
                         <Check size={12} aria-hidden />
@@ -705,7 +724,7 @@ export function AppSettingsMenu({
               >
                 {SETTINGS_GROUPS.map((group) => (
                   <div key={group.key} className="mb-3 last:mb-0">
-                    <p className="px-2.5 pb-1 font-mono text-caption uppercase tracking-[0.14em] text-[color:var(--color-text-quaternary)]">
+                    <p className="px-2.5 pb-1 font-mono text-label uppercase tracking-[0.14em] text-[color:var(--color-text-quaternary)]">
                       {t(`sectionGroup.${group.key}`)}
                     </p>
                     {group.items.map((item) => {
@@ -718,7 +737,7 @@ export function AppSettingsMenu({
                           data-testid={`app-settings-nav-${item}`}
                           aria-current={active ? 'page' : undefined}
                           onClick={() => setSection(item)}
-                          className={`flex w-full items-center gap-2 rounded-lg px-2.5 py-1.5 text-left text-label transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--color-indigo-a46)] ${
+                          className={`flex w-full items-center gap-2 rounded-lg px-2.5 py-1.5 text-left text-body transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--color-indigo-a46)] ${
                             active
                               ? 'bg-[color:var(--color-indigo-line-a13)] text-[color:var(--color-indigo-accent)]'
                               : 'text-[color:var(--color-text-tertiary)] hover:bg-[color:var(--color-overlay-2)] hover:text-[color:var(--color-text-primary)]'
@@ -830,7 +849,7 @@ export function AppSettingsMenu({
                           closePanel(false);
                           replayGuide();
                         }}
-                        className="flex h-8 items-center rounded-chip border border-[color:var(--color-border-soft)] bg-[color:var(--color-elevated)] px-2.5 text-label font-medium text-[color:var(--color-text-secondary)] transition-colors hover:bg-[color:var(--color-overlay-2)] hover:text-[color:var(--color-text-primary)]"
+                        className="flex h-8 items-center rounded-chip border border-[color:var(--color-border-soft)] bg-[color:var(--color-elevated)] px-2.5 text-body font-medium text-[color:var(--color-text-secondary)] transition-colors hover:bg-[color:var(--color-overlay-2)] hover:text-[color:var(--color-text-primary)]"
                       >
                         {t('replayGuideAction')}
                       </button>
@@ -876,7 +895,7 @@ export function AppSettingsMenu({
                       <>
                         <span
                           className={cn(
-                            'max-w-[10rem] truncate text-label',
+                            'max-w-[10rem] truncate text-body',
                             isLocalVaultLoaded
                               ? 'text-[color:var(--color-text-primary)]'
                               : 'text-[color:var(--color-text-quaternary)]',
@@ -892,7 +911,7 @@ export function AppSettingsMenu({
                           <button
                             type="button"
                             onClick={() => localVault.requestPermission()}
-                            className="inline-flex h-8 shrink-0 items-center rounded-md border border-[color:var(--color-amber-source-a35)] px-2.5 text-label text-[color:var(--color-status-warning)] transition-colors hover:bg-[color:var(--color-amber-source-a12)]"
+                            className="inline-flex h-8 shrink-0 items-center rounded-md border border-[color:var(--color-amber-source-a35)] px-2.5 text-body text-[color:var(--color-status-warning)] transition-colors hover:bg-[color:var(--color-amber-source-a12)]"
                           >
                             {t('workspaceFolderPermissionAction')}
                           </button>
@@ -902,7 +921,7 @@ export function AppSettingsMenu({
                             onClick={() => void localVault.open()}
                             disabled={vaultBusy}
                             data-testid="app-settings-open-folder"
-                            className="inline-flex h-8 shrink-0 items-center rounded-md border border-[color:var(--color-indigo-line-a32)] px-2.5 text-label text-[color:var(--color-indigo-accent)] transition-colors hover:border-[color:var(--color-indigo-line-a45)] hover:bg-[color:var(--color-indigo-line-a13)] disabled:opacity-60"
+                            className="inline-flex h-8 shrink-0 items-center rounded-md border border-[color:var(--color-indigo-line-a32)] px-2.5 text-body text-[color:var(--color-indigo-accent)] transition-colors hover:border-[color:var(--color-indigo-line-a45)] hover:bg-[color:var(--color-indigo-line-a13)] disabled:opacity-60"
                           >
                             {vaultBusy
                               ? t('workspaceFolderOpening')
@@ -935,7 +954,7 @@ export function AppSettingsMenu({
                           data-testid="app-settings-copy-vault-path"
                           onClick={() => void copy(vaultRootPath)}
                           aria-label={tPicker('copyPathAriaLabel', { path: vaultRootPath })}
-                          className="inline-flex h-8 shrink-0 items-center rounded-md border border-[color:var(--color-border-soft)] px-2.5 text-label text-[color:var(--color-text-tertiary)] transition-colors hover:border-[color:var(--color-border-strong)] hover:text-[color:var(--color-text-secondary)]"
+                          className="inline-flex h-8 shrink-0 items-center rounded-md border border-[color:var(--color-border-soft)] px-2.5 text-body text-[color:var(--color-text-tertiary)] transition-colors hover:border-[color:var(--color-border-strong)] hover:text-[color:var(--color-text-secondary)]"
                         >
                           {copyState === 'copied'
                             ? tPicker('copyPathCopied')
@@ -948,7 +967,7 @@ export function AppSettingsMenu({
                           data-testid="app-settings-reveal-vault-path"
                           onClick={() => void openTauriVaultInFinder(vaultRootPath)}
                           aria-label={tPicker('revealPathAriaLabel', { path: vaultRootPath })}
-                          className="inline-flex h-8 shrink-0 items-center rounded-md border border-[color:var(--color-indigo-line-a32)] px-2.5 text-label text-[color:var(--color-indigo-accent)] transition-colors hover:border-[color:var(--color-indigo-line-a45)] hover:bg-[color:var(--color-indigo-line-a13)]"
+                          className="inline-flex h-8 shrink-0 items-center rounded-md border border-[color:var(--color-indigo-line-a32)] px-2.5 text-body text-[color:var(--color-indigo-accent)] transition-colors hover:border-[color:var(--color-indigo-line-a45)] hover:bg-[color:var(--color-indigo-line-a13)]"
                         >
                           {tPicker('revealPathLabel')}
                         </button>
@@ -981,11 +1000,11 @@ export function AppSettingsMenu({
                             className="shrink-0 text-[color:var(--color-indigo-accent)]"
                           />
                           <span className="min-w-0">
-                            <span className="block truncate text-label text-[color:var(--color-text-secondary)]">
+                            <span className="block truncate text-body text-[color:var(--color-text-secondary)]">
                               {record.name}
                             </span>
                             {record.desktopRootPath ? (
-                              <span className="block truncate font-mono text-caption text-[color:var(--color-text-quaternary)]">
+                              <span className="block truncate font-mono text-label text-[color:var(--color-text-quaternary)]">
                                 {record.desktopRootPath}
                               </span>
                             ) : null}
@@ -1008,14 +1027,14 @@ export function AppSettingsMenu({
                   className="flex min-h-12 items-center justify-between gap-3 px-3 py-2 transition-colors hover:bg-[color:var(--color-overlay-2)]"
                 >
                   <span className="min-w-0">
-                    <span className="block text-label text-[color:var(--color-text-secondary)]">
+                    <span className="block text-body text-[color:var(--color-text-secondary)]">
                       {t('vaultTitle')}
                     </span>
-                    <span className="mt-0.5 block break-keep text-caption leading-4 text-[color:var(--color-text-quaternary)]">
+                    <span className="mt-0.5 block break-keep text-label leading-4 text-[color:var(--color-text-quaternary)]">
                       {vaultBody}
                     </span>
                   </span>
-                  <span className="flex shrink-0 items-center gap-1 text-label text-[color:var(--color-indigo-accent)]">
+                  <span className="flex shrink-0 items-center gap-1 text-body text-[color:var(--color-indigo-accent)]">
                     {vaultCta}
                     <ChevronRight size={13} aria-hidden className="text-[color:var(--color-text-quaternary)]" />
                   </span>
@@ -1032,17 +1051,17 @@ export function AppSettingsMenu({
                   className="flex min-h-12 w-full items-center justify-between gap-3 px-3 py-2 text-left transition-colors hover:bg-[color:var(--color-overlay-2)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--color-indigo-a46)] focus-visible:ring-inset"
                 >
                   <span className="min-w-0">
-                    <span className="block text-label text-[color:var(--color-text-secondary)]">
+                    <span className="block text-body text-[color:var(--color-text-secondary)]">
                       {t('agentTitle')}
                     </span>
-                    <span className="mt-0.5 block break-keep text-caption leading-4 text-[color:var(--color-text-quaternary)]">
+                    <span className="mt-0.5 block break-keep text-label leading-4 text-[color:var(--color-text-quaternary)]">
                       {t('agentBody')}
                     </span>
                   </span>
                   <span className="flex shrink-0 items-center gap-1">
                     <span
                       className={cn(
-                        'text-label',
+                        'text-body',
                         agentSummaryNeedsAttention
                           ? 'text-[color:var(--color-status-warning)]'
                           : 'text-[color:var(--color-text-tertiary)]',
@@ -1064,16 +1083,16 @@ export function AppSettingsMenu({
                   className="flex min-h-12 w-full items-center justify-between gap-3 px-3 py-2 text-left transition-colors hover:bg-[color:var(--color-overlay-2)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--color-indigo-a46)] focus-visible:ring-inset"
                 >
                   <span className="min-w-0">
-                    <span className="block text-label text-[color:var(--color-text-secondary)]">
+                    <span className="block text-body text-[color:var(--color-text-secondary)]">
                       {tAi('rowLabel')}
                     </span>
-                    <span className="mt-0.5 block break-keep text-caption leading-4 text-[color:var(--color-text-quaternary)]">
+                    <span className="mt-0.5 block break-keep text-label leading-4 text-[color:var(--color-text-quaternary)]">
                       {tAi('rowBody')}
                     </span>
                   </span>
                   <span className="flex shrink-0 items-center gap-1">
                     <span
-                      className="text-label text-[color:var(--color-text-tertiary)]"
+                      className="text-body text-[color:var(--color-text-tertiary)]"
                       data-testid="app-settings-ai-summary"
                     >
                       {aiSummary}
@@ -1106,7 +1125,7 @@ function SettingsGroup({ label, children }: { label?: string; children: ReactNod
   return (
     <section aria-label={label}>
       {label ? (
-        <h3 className="px-1 font-mono text-caption uppercase tracking-[0.14em] text-[color:var(--color-text-quaternary)]">
+        <h3 className="px-1 font-mono text-label uppercase tracking-[0.14em] text-[color:var(--color-text-quaternary)]">
           {label}
         </h3>
       ) : null}
@@ -1137,11 +1156,11 @@ function SettingsRow({
       data-testid={testId}
     >
       <div className="min-w-0">
-        <p className="text-label text-[color:var(--color-text-secondary)]">{label}</p>
+        <p className="text-body text-[color:var(--color-text-secondary)]">{label}</p>
         {caption ? (
           <p
             className={cn(
-              'mt-0.5 break-keep text-caption leading-4',
+              'mt-0.5 break-keep text-label leading-4',
               captionTone === 'danger'
                 ? 'text-[color:var(--color-status-danger)]'
                 : captionTone === 'warning'
@@ -1177,7 +1196,7 @@ function SegmentSwitch({
       role="group"
       aria-label={ariaLabel}
       data-testid={testId}
-      className="inline-flex items-center gap-px rounded-md border border-[color:var(--color-border-soft)] bg-[color:var(--color-elevated)] p-px text-label"
+      className="inline-flex items-center gap-px rounded-md border border-[color:var(--color-border-soft)] bg-[color:var(--color-elevated)] p-px text-body"
     >
       {options.map((option) => {
         const active = option.value === value;

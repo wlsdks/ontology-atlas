@@ -111,7 +111,15 @@ dialog never says "온톨로지" (map-building framing for non-experts).
   heartbeat-file connection state, Claude Code/.mcp.json + Codex + generic
   registration snippets (desktop autofills the path), config-file writer on
   desktop, and an agent-brief preview that speaks the user's own domain
-  names.
+  names. **Scope segment** — *this folder* (the app writes `.mcp.json` /
+  `.codex/config.toml` / `.cursor/mcp.json` / `.agents/mcp_config.json`
+  inside the vault, so a `git diff` shows it) or *this whole computer*
+  (the app writes nothing outside the vault; it hands you a ready command
+  or settings block with the absolute vault path already filled in, and
+  says plainly that a home-folder change will not appear in `git diff`).
+  Claude Code's global path is a `claude mcp add --scope user` command
+  because `~/.claude.json` is a file Claude Code rewrites at runtime.
+  Default is *this folder*; your pick is remembered.
 - **Hierarchy ink ladder** — containment edges carry depth (L0 project
   spine → L2 leaf) as width×value (never hue); pass-through edges (both
   endpoints off-screen) get demoted ink; `depends` bows are

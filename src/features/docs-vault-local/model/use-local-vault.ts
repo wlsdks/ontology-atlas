@@ -1,5 +1,6 @@
 'use client';
 
+import { type AgentClientId, filesForClient } from '../lib/agent-clients';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { parseAgentActivityLog, type AgentActivityEntry } from '@/shared/lib/agent-activity-log';
 import {
@@ -383,25 +384,40 @@ async function resolveBundledLaunch(): Promise<McpServerLaunch | null> {
   }
 }
 
+/**
+ * 웹(FSA) 경로의 설정 쓰기 — **요청한 파일만.**
+ *
+ * 종전에는 `.mcp.json` · `.mcp.json.example` · `.codex/config.toml` 셋을 무조건
+ * 썼다. 「Claude Code에 연결」이 Codex 설정까지 쓰는 결함이 Tauri 경로에만 있는 게
+ * 아니라 여기에도 있었다. `wanted` 가 없으면(스타터 볼트 스캐폴드처럼 라벨이
+ * 「연결」이 아닌 자리) 종전대로 전부 쓴다 — 그 동작은 라벨이 다르므로 결함이 아니다.
+ */
 async function writeAgentConfigFiles(
   handle: FileSystemDirectoryHandle,
   launch: McpServerLaunch,
+  wanted?: readonly string[],
 ): Promise<{ created: number; skipped: number }> {
+  const want = (fileName: string) => !wanted || wanted.includes(fileName);
   let created = 0;
   let skipped = 0;
   const count = (result: 'created' | 'skipped') => {
     if (result === 'created') created += 1;
     else skipped += 1;
   };
-  count(await writeRootFileIfMissing(handle, '.mcp.json', buildVaultMcpConfigJson(launch)));
-  count(
-    await writeRootFileIfMissing(
-      handle,
-      '.mcp.json.example',
-      buildMcpConfigJson(handle.name, null, launch),
-    ),
-  );
+  if (want('.mcp.json')) {
+    count(await writeRootFileIfMissing(handle, '.mcp.json', buildVaultMcpConfigJson(launch)));
+  }
+  if (want('.mcp.json.example')) {
+    count(
+      await writeRootFileIfMissing(
+        handle,
+        '.mcp.json.example',
+        buildMcpConfigJson(handle.name, null, launch),
+      ),
+    );
+  }
   try {
+    if (!want('.codex/config.toml')) return { created, skipped };
     const codexDir = await handle.getDirectoryHandle('.codex', {
       create: true,
     });
@@ -1185,7 +1201,14 @@ export function useLocalVaultInternal() {
     requireWritePermission,
   ]);
 
-  const ensureAgentConfigs = useCallback(async () => {
+  /**
+   * 「연결」 버튼이 부르는 쓰기 — **도구를 받아 그 파일만** 넘긴다.
+   *
+   * `client` 를 안 넘기면(스타터 볼트 스캐폴드) 종전대로 전부 쓴다. 그 자리의
+   * 라벨은 「연결」이 아니라 「새 폴더로 시작」이라, 설정 한 벌을 깔아 주는 것이
+   * 그 라벨이 약속한 일이다 — 같은 함수의 두 쓰임이지 같은 계약이 아니다.
+   */
+  const ensureAgentConfigs = useCallback(async (client?: AgentClientId) => {
     if (!state.handle) {
       throw new Error('Vault is not open');
     }
@@ -1197,7 +1220,11 @@ export function useLocalVaultInternal() {
         'The bundled MCP server is not available here — open this vault in the installed app.',
       );
     }
-    const result = await writeAgentConfigFiles(vaultHandle, launch);
+    const result = await writeAgentConfigFiles(
+      vaultHandle,
+      launch,
+      client ? filesForClient(client) : undefined,
+    );
     await load(vaultHandle);
     return result;
   }, [state.handle, load, requireWritePermission]);

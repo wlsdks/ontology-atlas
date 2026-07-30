@@ -3161,6 +3161,119 @@
       "linksOut": []
     },
     {
+      "slug": "BRAND",
+      "path": "docs/BRAND.md",
+      "title": "Brand — Ontology Atlas",
+      "tags": [],
+      "frontmatter": {},
+      "headings": [
+        {
+          "depth": 1,
+          "text": "Brand — Ontology Atlas",
+          "slug": "brand-ontology-atlas"
+        },
+        {
+          "depth": 2,
+          "text": "한 문장",
+          "slug": "한-문장"
+        },
+        {
+          "depth": 2,
+          "text": "요소별 의미",
+          "slug": "요소별-의미"
+        },
+        {
+          "depth": 3,
+          "text": "중앙 육각형 — 핵심 개념",
+          "slug": "중앙-육각형-핵심-개념"
+        },
+        {
+          "depth": 3,
+          "text": "세 개의 원형 노드 — 주요 개념과 접점",
+          "slug": "세-개의-원형-노드-주요-개념과-접점"
+        },
+        {
+          "depth": 3,
+          "text": "노드를 잇는 선 — 타입이 있는 관계",
+          "slug": "노드를-잇는-선-타입이-있는-관계"
+        },
+        {
+          "depth": 3,
+          "text": "중첩된 육각형 — 지식의 계층",
+          "slug": "중첩된-육각형-지식의-계층"
+        },
+        {
+          "depth": 3,
+          "text": "점선 레이어 — 아직 보이지 않는 지도",
+          "slug": "점선-레이어-아직-보이지-않는-지도"
+        },
+        {
+          "depth": 3,
+          "text": "바깥 육각형 — 코드베이스의 경계",
+          "slug": "바깥-육각형-코드베이스의-경계"
+        },
+        {
+          "depth": 3,
+          "text": "육각형이라는 형태 — 구조와 확장성",
+          "slug": "육각형이라는-형태-구조와-확장성"
+        },
+        {
+          "depth": 2,
+          "text": "색",
+          "slug": "색"
+        },
+        {
+          "depth": 2,
+          "text": "크기 사다리 — 작을수록 층을 지운다",
+          "slug": "크기-사다리-작을수록-층을-지운다"
+        },
+        {
+          "depth": 2,
+          "text": "자산 목록 — 무엇을 언제 쓰나",
+          "slug": "자산-목록-무엇을-언제-쓰나"
+        },
+        {
+          "depth": 3,
+          "text": "마크 단독",
+          "slug": "마크-단독"
+        },
+        {
+          "depth": 3,
+          "text": "가로형 로고 (lockup)",
+          "slug": "가로형-로고-lockup"
+        },
+        {
+          "depth": 3,
+          "text": "앱/OS",
+          "slug": "앱os"
+        },
+        {
+          "depth": 3,
+          "text": "SVG 와 PNG 중 무엇을 쓰나",
+          "slug": "svg-와-png-중-무엇을-쓰나"
+        },
+        {
+          "depth": 2,
+          "text": "만드는 법 — 세 단계, 사람이 한 번 돌린다",
+          "slug": "만드는-법-세-단계-사람이-한-번-돌린다"
+        },
+        {
+          "depth": 2,
+          "text": "하지 말 것",
+          "slug": "하지-말-것"
+        },
+        {
+          "depth": 2,
+          "text": "게이트",
+          "slug": "게이트"
+        }
+      ],
+      "excerpt": "마크의 뜻과 자산의 사용 규칙. 좌표의 진실원은 src/shared/ui/brand-mark.tsx 이고, 이 문서는 그것이 무엇을 말하는지와 어디에 쓰는지를 정한다. 중앙의 개념에서 출발해 관계와 계층을 따라 전체 코드베이스를 이해하도록 돕는 지식 지도. 영문 태그라인 — Map your codebase knowledge. 국문 — 코드베이스의 지식을 연결하고, 구조를 탐색하는 지도. 이 마크는 장식이 아니라 제품의 데이터 모델을 그린 그림이다. 겹의 순서가 element → capability → domain → project 와 같다. 프로젝트를 이해하기 위한 ",
+      "wordCount": 1089,
+      "updatedAt": "2026-07-30",
+      "linksOut": []
+    },
+    {
       "slug": "CASE-STUDY-AGENTS-MD-DRIFT",
       "path": "docs/CASE-STUDY-AGENTS-MD-DRIFT.md",
       "title": "Case Study: Avoiding AGENTS.md / CLAUDE.md Drift",
@@ -5303,6 +5416,56 @@
         },
         {
           "depth": 2,
+          "text": "2026-07-30 — 전역 스코프는 **선택지로 넣고 기본값은 뒤집지 않는다**; 볼트 밖은 앱이 쓰지 않고 그 도구가 쓴다",
+          "slug": "2026-07-30-전역-스코프는-선택지로-넣고-기본값은-뒤집지-않는다-볼트-밖은-앱이-쓰지-않고-그-도구가-쓴다"
+        },
+        {
+          "depth": 2,
+          "text": "2026-07-30 — 시연 촬영: 소유자가 **커서 규율을 오버라이드**한다 (자동화 허용) + 게이트 두 조항 갱신",
+          "slug": "2026-07-30-시연-촬영-소유자가-커서-규율을-오버라이드한다-자동화-허용-게이트-두-조항-갱신"
+        },
+        {
+          "depth": 3,
+          "text": "무엇을 뒤집는가",
+          "slug": "무엇을-뒤집는가"
+        },
+        {
+          "depth": 3,
+          "text": "셋업 게이트 두 조항이 갱신됐다",
+          "slug": "셋업-게이트-두-조항이-갱신됐다"
+        },
+        {
+          "depth": 3,
+          "text": "테이크 1 실측 (클립 B)",
+          "slug": "테이크-1-실측-클립-b"
+        },
+        {
+          "depth": 2,
+          "text": "2026-07-30 — 「root-first-open」 뒤집기 **구현**: `/` 는 웹 방문자의 얼굴, 지도는 `/topology`",
+          "slug": "2026-07-30-root-first-open-뒤집기-구현-는-웹-방문자의-얼굴-지도는-topology"
+        },
+        {
+          "depth": 3,
+          "text": "소유자의 관측이 결함 하나를 같이 짚었다",
+          "slug": "소유자의-관측이-결함-하나를-같이-짚었다"
+        },
+        {
+          "depth": 3,
+          "text": "`/` 를 통째로 관문으로 만들지 않았다",
+          "slug": "를-통째로-관문으로-만들지-않았다"
+        },
+        {
+          "depth": 3,
+          "text": "같은 화면, 두 주소",
+          "slug": "같은-화면-두-주소"
+        },
+        {
+          "depth": 3,
+          "text": "웹 스모크는 지운 게 아니라 옮겼다",
+          "slug": "웹-스모크는-지운-게-아니라-옮겼다"
+        },
+        {
+          "depth": 2,
           "text": "2026-07-29 — 브랜드 마크: 시트의 「겹 육각형」 채택 — 기하는 정규화·획 위계는 원본대로(중간 얇게·핵 두껍게), 크기 3단(전체형/축약형/미형), 브랜드 자산 그라디언트는 헌장 사정거리 밖(인디고 단일 hue 램프 한정)",
           "slug": "2026-07-29-브랜드-마크-시트의-겹-육각형-채택-기하는-정규화획-위계는-원본대로중간-얇게핵-두껍게-크기-3단전체형축약형미형-브랜드-자산-그라디언트는-헌장-사정거리-밖인디고-단일-hue-램프-한정"
         },
@@ -5463,7 +5626,7 @@
         }
       ],
       "excerpt": "이 파일은 결정과 그때 진 반대 의견을 남긴다. docs/CHANGELOG.md 는 무엇이 언제 바뀌었나를 답하고, 이 파일은 왜 그렇게 정했고, 무엇을 걸었나를 답한다. 최신이 위. 기록은 덧붙이기만 한다 — 지난 기록을 고치지 않는다. 판단이 바뀌었으면 새 기록을 쓰고 옛 기록을 뒤집힘 으로 표시한다. 틀린 기록도 자산이다. 1. 소집 전에 읽는다. 카운슬을 열기 전(그리고 단독 PO 패스를 쓰기 전) 같은 표면 · 같은 질문에 대한 선행 결정이 있는지 먼저 본다. 있으면 새 패스는 그것을 ① 여전히 유효하다고 인용하거나 ② 명시적으로 뒤집는다. 조용히 다시 결정",
-      "wordCount": 16115,
+      "wordCount": 17599,
       "updatedAt": "2026-07-30",
       "linksOut": []
     },
@@ -6991,8 +7154,8 @@
         }
       ],
       "excerpt": "Complete inventory of features users can actually use right now. Last updated: 2026-07-27 (현재 route와 installed-app 계약 재검증 — /ontology은 /topology?index=expanded, /ontology/edit은 /ontology/studio 호환 redirect이며, Insights는 할 일·구성·연결·경계·신선도 5개 질문 탭의 maintenance board다. desktop static smoke와 installed-app verifier/Computer U",
-      "wordCount": 16109,
-      "updatedAt": "2026-07-28",
+      "wordCount": 16204,
+      "updatedAt": "2026-07-30",
       "linksOut": [
         "slug",
         "project:slug",
@@ -7294,7 +7457,7 @@
       ],
       "excerpt": "Reddit responds best to honest, problem-first framing. Each subreddit has its own norms; copy below tuned per audience. Title: ontology-atlas — frontmatter as a codebase ontology, AI agents read it via MCP Body (400~500 words, Reddit allows long-form better than HN): my-project/ ├── project.md ├── domains/ │ ├── auth.m",
       "wordCount": 1059,
-      "updatedAt": "2026-07-28",
+      "updatedAt": "2026-07-30",
       "linksOut": []
     },
     {
@@ -16108,6 +16271,13 @@
         "type": "doc",
         "slug": "BACKLOG",
         "title": "Backlog — ontology-atlas"
+      },
+      {
+        "name": "BRAND",
+        "path": "BRAND",
+        "type": "doc",
+        "slug": "BRAND",
+        "title": "Brand — Ontology Atlas"
       },
       {
         "name": "CASE-STUDY-AGENTS-MD-DRIFT",

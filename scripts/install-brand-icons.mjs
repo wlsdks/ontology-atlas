@@ -78,6 +78,17 @@ const COPY_PLAN = [
   ['src-tauri/icons/Square30x30Logo.png', 'tile-30'],
   ['src-tauri/icons/StoreLogo.png', 'tile-50'],
   ['app/apple-icon.png', 'apple-180'],
+  // 아래 셋은 **구 로고("A" 노드 그림)가 그대로 살아 있던 자리**다. og 카드는
+  // 링크 미리보기가 그리는 유일한 그림이라, 공유될 때마다 폐기된 브랜드가 나갔다.
+  ['public/og-image.png', 'og-image'],
+  ['public/brand-icon-512.png', 'icon-512'],
+  ['public/logo.png', 'icon-1024'],
+  ['public/brand/icon-mono-light.png', 'icon-mono-light'],
+  ['public/brand/icon-mono-dark.png', 'icon-mono-dark'],
+  ['public/brand/lockup.png', 'lockup'],
+  ['public/brand/lockup@2x.png', 'lockup@2x'],
+  ['public/brand/lockup-light@2x.png', 'lockup-light@2x'],
+  ['public/brand/lockup-dark@2x.png', 'lockup-dark@2x'],
 ];
 
 /**

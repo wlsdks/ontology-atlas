@@ -696,7 +696,11 @@
     "platformStatus": "Windows and Linux are not out yet",
     "windowsPolicy": "Windows and Linux ship when they clear the same bar macOS did — a signed installer and an install check.",
     "archHelpTitle": "Not sure which Mac you have?",
-    "archHelpBody": "Open the Apple menu in the top-left corner and choose About This Mac. If \"Chip\" says Apple M1, M2, M3 or M4, you have Apple Silicon; if \"Processor\" says Intel, you have Intel. Any Mac bought after late 2020 is almost certainly Apple Silicon."
+    "archHelpBody": "Open the Apple menu in the top-left corner and choose About This Mac. If \"Chip\" says Apple M1, M2, M3 or M4, you have Apple Silicon; if \"Processor\" says Intel, you have Intel. Any Mac bought after late 2020 is almost certainly Apple Silicon.",
+    "demoHeading": "A map you keep with an AI agent",
+    "demoTabAgentEdits": "The AI edits — the map follows",
+    "demoTabOneButton": "Connecting is one button",
+    "demoPlay": "Play"
   },
   "kinds": {
     "project": "Project",
@@ -2884,7 +2888,22 @@
     "connectRetry": "Try again",
     "connectDesktopOnly": "This only works in the installed app.",
     "serverUnavailableGetApp": "Get the app",
-    "copyFailed": "Copy failed — the clipboard was blocked"
+    "copyFailed": "Copy failed — the clipboard was blocked",
+    "connectAntigravity": "Connect to Antigravity",
+    "antigravityDone": "Created .agents/mcp_config.json",
+    "copyAntigravityConfig": "Copy the Antigravity config",
+    "cursorDone": "Created .cursor/mcp.json",
+    "scopeLabel": "Where it applies",
+    "scopeProject": "This folder",
+    "scopeGlobal": "This whole computer",
+    "step1DescGlobal": "Set it up once and every project on this computer can read this folder with you.",
+    "scopeGlobalIntro": "Each tool keeps its own global settings file, and each tool writes that file itself. Copy the line below — the path to this folder is already filled in.",
+    "scopeGlobalRunHint": "Run this in a terminal. The tool writes its own settings file, so nothing of yours gets overwritten.",
+    "scopeGlobalPasteHint": "Add this to {path}. If the file already has other servers, keep them and add this block.",
+    "scopeGlobalCopyCommand": "Copy command",
+    "scopeGlobalCopySnippet": "Copy settings",
+    "scopeGlobalCopied": "Copied",
+    "scopeGlobalLossNote": "These files live in your home folder, not in this vault — so a git diff will not show the change. To undo it, remove the ontology-atlas entry from the file above. Still nothing leaves this machine."
   },
   "appUpdate": {
     "availableTitle": "Version {version} is available",

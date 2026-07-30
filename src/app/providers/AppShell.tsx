@@ -21,7 +21,9 @@ import {
   applyGuideOverride,
 } from "@/features/guided-tour";
 import { UpdateToast, useAppUpdate } from "@/features/app-update";
-import { isGatewayRoute, resolveActiveNavDestination } from "@/shared/lib/nav-destination";
+import { useLocalVault } from "@/features/docs-vault-local";
+import { isDesktopShell } from "@/shared/lib/desktop-shell";
+import { isGatewaySurface, resolveActiveNavDestination } from "@/shared/lib/nav-destination";
 import { RouteFocusManager } from "@/shared/ui/route-focus-manager";
 
 /**
@@ -171,6 +173,7 @@ function AppNavRailSlot() {
   const router = useRouter();
   const pathname = usePathname() ?? "/";
   const dataSourceMode = useDataSourceMode();
+  const vault = useLocalVault();
 
   // 관문 라우트는 워크벤치 크롬(좌측 레일)을 쓰지 않는다 (2026-07-28 소유자
   // 확정). `hidden` prop 은 언마운트가 아니라 `lg:hidden` 이라
@@ -180,7 +183,14 @@ function AppNavRailSlot() {
   // ① 첫 프레임에 레일이 그려졌다 사라지는 깜빡임이 생기고 ② 다음에 만드는
   // 관문 표면이 그 호출을 빠뜨린다(공방이 유틸 슬롯 등록을 빠뜨렸던 #65
   // 계열). 경로 판정은 렌더 중에 끝난다.
-  const gateway = isGatewayRoute(pathname);
+  // `/` 는 **웹 방문자에게만** 관문(얼굴)이다 — 볼트를 연 사람과 설치된 앱에는
+  // 그대로 작업 진입점이라, 판정에 방문자 맥락이 든다. 단일 출처는
+  // `isGatewaySurface`(같은 함수를 `RootEntryPage` 도 쓴다).
+  const gateway = isGatewaySurface(pathname, {
+    hasVault: Boolean(vault.manifest),
+    desktop: isDesktopShell(),
+    vaultKnown: vault.restoreAttempted,
+  });
 
   // P4-② 분기(TopologyIndexPanel 푸터와 동일 계약) — 연결됨: 활동
   // 다이제스트(인사이트)로. 미연결/stale: 연결 시트를 여는 전역 의도를 세운다.

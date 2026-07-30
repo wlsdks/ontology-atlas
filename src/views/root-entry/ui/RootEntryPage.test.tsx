@@ -41,17 +41,58 @@ vi.mock('@/views/home', () => ({
   HomePage: () => <div data-testid="topology-hub">topology hub</div>,
 }));
 
+vi.mock('@/views/download', () => ({
+  GatewayLandingPage: () => <div data-testid="gateway-landing">gateway landing</div>,
+}));
+
 describe('RootEntryPage', () => {
   beforeEach(() => {
     mocks.isDesktopShell = false;
     mocks.vaultState = { handle: null, manifest: null, restoreAttempted: true };
   });
 
-  it('renders the topology hub directly on the hosted web root when no vault is loaded (B3 — map is the first screen, no landing detour)', () => {
+  /**
+   * 2026-07-30 — 「root-first-open」 뒤집기 구현. 이 테스트는 **뒤집힌 쪽**을
+   * 잠근다: 아직 아무 폴더도 안 연 웹 방문자에게 `/` 는 지도가 아니라 얼굴이다.
+   * 지도는 `/topology` 가 갖는다.
+   */
+  it('보여줄 볼트가 없는 웹 방문자에게 루트는 얼굴이다 — 지도가 아니라', () => {
+    render(<RootEntryPage />);
+
+    expect(screen.getByTestId('gateway-landing')).toBeInTheDocument();
+    expect(screen.queryByTestId('topology-hub')).not.toBeInTheDocument();
+    expect(screen.queryByTestId('first-run')).not.toBeInTheDocument();
+  });
+
+  /**
+   * **뒤집기의 나머지 절반은 그대로다.** 볼트를 연 사람은 방문자가 아니라
+   * 작업자라, 루트가 그 사람에게 홍보를 보여주면 안 된다. 이 분기가 무너지면
+   * 설치·자기 볼트를 가진 사람이 매번 다운로드 안내를 본다.
+   */
+  it('볼트를 연 웹 사용자에게는 루트가 그대로 지도다', () => {
+    mocks.vaultState = {
+      handle: {} as never,
+      manifest: {} as never,
+      restoreAttempted: true,
+    };
+
     render(<RootEntryPage />);
 
     expect(screen.getByTestId('topology-hub')).toBeInTheDocument();
-    expect(screen.queryByTestId('first-run')).not.toBeInTheDocument();
+    expect(screen.queryByTestId('gateway-landing')).not.toBeInTheDocument();
+  });
+
+  /**
+   * 설치된 앱은 자기를 이미 설치한 사람에게 "다운로드하세요" 를 보여주면 안 된다 —
+   * root-first-open 의 이 절반은 뒤집히지 않았다.
+   */
+  it('설치된 앱의 루트에는 얼굴이 뜨지 않는다', () => {
+    mocks.isDesktopShell = true;
+
+    render(<RootEntryPage />);
+
+    expect(screen.queryByTestId('gateway-landing')).not.toBeInTheDocument();
+    expect(screen.getByTestId('first-run')).toBeInTheDocument();
   });
 
   it('keeps landing copy out of the server-rendered root shell', () => {

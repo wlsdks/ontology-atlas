@@ -5,6 +5,7 @@ import { useTranslations } from 'next-intl';
 import { Check, CircleAlert, FileText, Loader2 } from 'lucide-react';
 
 import type { McpServerLaunch } from '@/shared/config';
+import { type AgentClientId, filesForClient } from '../lib/agent-clients';
 import {
   planAgentConfig,
   verifyMcpServer,
@@ -38,9 +39,22 @@ export interface AgentConnectActionProps {
   launch: McpServerLaunch | null;
   /** 쓰기가 끝난 뒤 vault 상태를 다시 읽게 하는 훅 (설정 배지 갱신). */
   onWritten?: (() => void | Promise<void>) | null;
+  /**
+   * **어느 도구를 연결하는가.** 이 값이 쓰는 파일을 정한다
+   * (`lib/agent-clients.ts`).
+   *
+   * 2026-07-30 까지 이 prop 이 없었고, 그래서 `plan.targets` 전체를 순회했다 —
+   * 「Claude Code에 연결」 한 번이 `.mcp.json` · `.mcp.json.example` ·
+   * `.codex/config.toml` 셋을 썼다. 라벨이 거짓말하는 결함이고, 안 쓰는 도구의
+   * 파일이 사용자 git diff 에 뜬다.
+   *
+   * 기본값을 두지 않는다 — 기본값이 있으면 다음에 이 컴포넌트를 쓰는 사람이
+   * 도구를 안 넘겨도 조용히 동작하고, 그게 이 결함이 생긴 방식이다.
+   */
+  clientId: AgentClientId;
 }
 
-export function AgentConnectAction({ vaultPath, launch, onWritten }: AgentConnectActionProps) {
+export function AgentConnectAction({ vaultPath, launch, onWritten, clientId }: AgentConnectActionProps) {
   const t = useTranslations('agentConnect');
   const [phase, setPhase] = useState<Phase>('idle');
   const [plan, setPlan] = useState<AgentConfigPlan | null>(null);
@@ -72,17 +86,25 @@ export function AgentConnectAction({ vaultPath, launch, onWritten }: AgentConnec
     setError(null);
     try {
       const vaultRelative = vaultPathRelativeToConfigRoot(plan.configRoot, plan.vaultPath);
+      /**
+       * **이 도구가 선언한 파일만** 쓴다. `plan.targets` 는 앱이 쓸 수 **있는**
+       * 것의 목록이고 이 클릭이 쓸 것의 목록이 아니다 — 그 둘을 같은 것으로 읽은
+       * 것이 이 결함의 정체였다.
+       */
+      const wanted = new Set(filesForClient(clientId));
       await writeAgentConfig(
         vaultPath,
-        plan.targets.map((target) => ({
-          fileName: target.fileName,
-          contents: agentConfigContents({
+        plan.targets
+          .filter((target) => wanted.has(target.fileName))
+          .map((target) => ({
             fileName: target.fileName,
-            launch,
-            vaultRelative,
-            vaultAbsolute: plan.vaultPath,
-          }),
-        })),
+            contents: agentConfigContents({
+              fileName: target.fileName,
+              launch,
+              vaultRelative,
+              vaultAbsolute: plan.vaultPath,
+            }),
+          })),
       );
       await onWritten?.();
       setPhase('verifying');
@@ -94,7 +116,7 @@ export function AgentConnectAction({ vaultPath, launch, onWritten }: AgentConnec
       setError(cause instanceof Error ? cause.message : String(cause));
       setPhase('failed');
     }
-  }, [vaultPath, launch, plan, onWritten]);
+  }, [vaultPath, launch, plan, onWritten, clientId]);
 
   if (!vaultPath || !launch) return null;
 
@@ -130,7 +152,15 @@ export function AgentConnectAction({ vaultPath, launch, onWritten }: AgentConnec
               : t('connectPlanVaultFolder', { path: plan.configRoot })}
           </p>
           <ul className="mt-1.5 flex flex-col gap-1">
-            {plan.targets.map((target) => (
+            {/*
+              * **미리보기는 쓸 것만 그린다.** 오늘 아침 `confirmWrite` 만 필터하고
+              * 이 목록은 그대로 뒀더니, 화면이 5개를 약속하고 1개를 썼다 —
+              * 「See what will be written」이라는 이름이 곧 거짓이 된다.
+              * 원래 결함(라벨이 거짓말한다)의 다른 반쪽이었다.
+              */}
+            {plan.targets
+              .filter((target) => filesForClient(clientId).includes(target.fileName))
+              .map((target) => (
               <li
                 key={target.fileName}
                 className="flex items-baseline justify-between gap-2 font-mono text-caption text-[color:var(--color-text-tertiary)]"

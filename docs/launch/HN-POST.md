@@ -52,7 +52,7 @@ If you'd rather stay in a terminal, a source checkout gives you the same
 CLI and MCP server directly.
 
 Hosted demo (read-only, our own dogfood vault — 98 nodes, no install):
-https://wlsdks.github.io/ontology-atlas/
+https://wlsdks.github.io/ontology-atlas/en/topology/
 
 What I'd love feedback on:
 

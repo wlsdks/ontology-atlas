@@ -1,7 +1,7 @@
 # Ontology Atlas
 
 <p align="center">
-  <img src="public/brand-icon-512.png" alt="Ontology Atlas" width="104" />
+  <img src="public/brand/lockup@2x.png" alt="Ontology Atlas — Map your codebase knowledge." width="360" />
 </p>
 
 <p align="center">
@@ -24,7 +24,7 @@
 </p>
 
 <p align="center">
-  <a href="https://wlsdks.github.io/ontology-atlas/"><strong>Live demo</strong></a>
+  <a href="https://wlsdks.github.io/ontology-atlas/en/topology/"><strong>Live demo</strong></a>
   ·
   <a href="#the-journey"><strong>The journey</strong></a>
   ·
@@ -161,6 +161,21 @@ serves two readers at once: a visual hierarchy for a person, and a typed
 relation list — `contains`, `used by`, `leans on` — for an agent, with **Copy
 handoff** right there, because the next reader is often not a human.
 
+**Footprints** mark the concepts you opened, numbered in the order you walked
+them, so a long session leaves a path you can retrace instead of a map you have
+to re-derive.
+
+![The Footprints section of Settings in the macOS app: a live preview strip drawing shoe-print marks between two node squares along a relation line, presets named Subtle, Default and Bold, and an expanded fine-tuning list with Print size 13px, Fill solid or outline, Strength 70 percent, Colour yellow or indigo, Bleed none, Distance 8px, and whether to mark along links](docs/assets/readme/settings-footprints.png)
+
+Shape, size, spacing and opacity are yours, and the strip above the controls is
+not a picture of the feature — it is **the same renderer the map uses**, drawing
+your current values as you change them. The map background is a separate choice
+of three (dots, a proximity constellation, or layered depth dots), previewed the
+same way from the real canvas tokens.
+
+That preview is why Settings can be a plain centred dialog: you do not need to
+see the map behind it, because the thing you are adjusting is drawn right there.
+
 <p align="center">
   <img alt="Screen recording of the macOS app: clicking a domain in the INDEX panel expands its capabilities, the camera moves to that part of the map, and the domain datasheet slides in from the right" src="docs/assets/readme/atlas-map-focus.gif" width="800" />
 </p>
@@ -186,7 +201,7 @@ Nothing lands until you confirm. That boundary is visible on purpose.
 
 ### 5. Review the change, then record it
 
-![The History screen in the macOS app: Not saved yet, 1 added and 1 edited, a changed concept list naming capabilities/return-intake, a diff showing the dependencies line gaining capabilities/shipment-tracking, a Save 2 button, and a note that only documents inside this folder are recorded](docs/assets/readme/history-review.png)
+![The History screen in the macOS app: Not saved yet, 1 edited, a changed concept list naming capabilities/return-intake with a plus one minus one count, a diff whose dependencies line gains capabilities/shipment-tracking, a Save 1 button, and a note that only documents inside this folder are recorded and files outside it are left alone](docs/assets/readme/history-review.png)
 
 Whatever wrote — you, the Workshop, the CLI, or an agent over MCP — lands here
 first as a diff you read before it becomes history. The change above was written
@@ -206,6 +221,8 @@ nearby schema patterns
   3 · capability --dependencies--> capability (count 7)
   1 · capability --domain--> domain (count 13)
   1 · domain --capabilities--> capability (count 13)
+  1 · capability --elements--> element (count 11)
+  1 · capability --relates--> domain (count 4)
 
 dry-run would write dependencies on capabilities/return-intake → capabilities/shipment-tracking (no file changed)
 ```
@@ -219,7 +236,7 @@ touched, and the screen says so.
 
 ### 6. Keep it healthy
 
-![The Graph insights maintenance board in the macOS app: header reading 31 Concepts, 62 Relations, 6 Domains, tabs for Do next, Inventory, Connections, Boundaries and Freshness, an Agent readiness bar split into ready, preflight and review, a repair queue counting missing links and hub candidates, a What the agent did entry showing the relation a command just wrote, and a Copy next action handoff button](docs/assets/readme/graph-insights.png)
+![The Graph insights maintenance board in the macOS app: header reading 31 Concepts, 62 Relations, 6 Domains, tabs for Do next, Inventory, Connections, Boundaries and Freshness, an Agent readiness bar split into ready, preflight and review, a repair queue counting missing links and hub candidates, a fix-these-now list of two decisions that need no code, and a Copy next action handoff button](docs/assets/readme/graph-insights.png)
 
 Insights turns graph health into a work queue: what is disconnected, what is
 stale, what is missing evidence, which repair to make next. **Agent readiness**
@@ -227,8 +244,9 @@ splits every relation into what an agent can trust immediately, what needs a
 quick check, and what a person should decide.
 
 **What the agent did** reads `.ontology-atlas/activity.jsonl` from inside your
-vault — plain text, in the folder, part of the same diff. The entry on that
-screen is the relation the command in step 5 wrote. Nothing was collected
+vault — plain text, in the folder, part of the same diff. The example vault has
+no agent history yet, so that panel is empty here; connect an agent and its
+writes show up in the same place, from the same file. Nothing is collected
 anywhere else to produce it.
 
 ### 7. See the shape of the whole project
@@ -244,6 +262,12 @@ coverage from how the documents link to each other.
 **32 MCP tools — 19 read, 13 write** — over stdio JSON-RPC, for Claude Code,
 Cursor, Codex, and any MCP client. The point is not the tool count; it is that
 the answers are *typed*, so an agent can act on them.
+
+The server runs on the **MCP SDK v2** (`@modelcontextprotocol/server` 2.0). That
+migration is deliberately invisible to you: a contract test still handshakes at
+the oldest supported protocol version (`2024-11-05`) and asserts that an older
+client can still list and call tools, so moving to v2 did not quietly drop
+anyone's editor.
 
 Here is a real question — *what breaks if I change this?* — answered against the
 same example vault the screenshots use:
@@ -353,7 +377,7 @@ that artifact matters, which capability it serves, and what to verify before
 changing it. It replaces none of them — it tells the agent which structural
 question is worth asking.
 
-## Six work surfaces, one vault
+## Seven surfaces, one vault
 
 The journey above moves through them in order. Every surface reads and writes the
 same `.md` files — the interface changes, the authority does not. The MCP server
@@ -361,7 +385,8 @@ is listed here on purpose: to this product an agent is a surface, not an add-on.
 
 | Surface | What it is for |
 |---|---|
-| **Map** (`/`, `/topology`) | Overview-first topology, semantic zoom, typed relation inspection, focus and path modes, impact, agent handoff |
+| **Front door** (`/`, `/download`) | What this is, and the two ways in — install the app, or open the map in the browser. Only shown to a visitor who has not opened a folder yet; once you have a vault, `/` is the map |
+| **Map** (`/topology`) | Overview-first topology, semantic zoom, typed relation inspection, focus and path modes, impact, agent handoff |
 | **Docs** (`/docs`) | Read and edit the Markdown source, frontmatter evidence, backlinks, search |
 | **Workshop** (`/ontology/studio`) | Complete one node's meaning against four fixed relation bearings, behind a visible write-confirm boundary |
 | **Insights** (`/ontology/insights`) | The maintenance board — what to do next, composition, connections, boundaries, freshness |
@@ -371,9 +396,11 @@ is listed here on purpose: to this product an agent is a surface, not an add-on.
 
 Those routes are the same in all three places they can be opened: the installed
 macOS app, the CLI's sibling web build, and the hosted site. The
-[live demo](https://wlsdks.github.io/ontology-atlas/) opens with this
-repository's own vault and needs no install; point it at your own Markdown
-folder in the browser and the same map switches to your data.
+[live demo](https://wlsdks.github.io/ontology-atlas/en/topology/) opens with this repository's own vault and needs no
+install; point it at your own Markdown folder in the browser and the same map
+switches to your data. (The site's front page, [`/`](https://wlsdks.github.io/ontology-atlas/), is the download
+face — the map lives at `/topology`, and that is the address to share when you
+want someone to *see* the graph rather than install it.)
 
 | | |
 |---|---|
@@ -471,6 +498,7 @@ pnpm vault:validate       # frontmatter integrity
 | [MCP guide](mcp/README.md) | Registration and all 32 tool contracts |
 | [CLI reference](cli/README.md) | All 52 commands with examples |
 | [Decisions](docs/DECISIONS.md) | What was decided, what lost the argument, and what would overturn it |
+| [Brand](docs/BRAND.md) | What the mark means, and which asset to use where |
 | [Security](SECURITY.md) | Threat model, release-credential protection, reporting |
 
 ## Contributing
@@ -507,7 +535,8 @@ git diff 로 판단합니다. 백엔드·로그인·텔레메트리가 없고 va
   [GitHub Releases](https://github.com/wlsdks/ontology-atlas/releases)에서
   확인하세요.** 비어 있거나 릴리스 후보만 있으면 소스 체크아웃으로 씁니다.
   이 README 의 화면들은 첫 서명 릴리스 이전에 로컬 빌드 앱에서 찍었습니다.
-- [라이브 데모](https://wlsdks.github.io/ontology-atlas/)에서 이 저장소 자신의
-  온톨로지(97 노드)를 설치 없이 볼 수 있습니다.
+- [라이브 데모](https://wlsdks.github.io/ontology-atlas/ko/topology/)에서 이 저장소 자신의 온톨로지(98 노드)를 설치 없이 볼
+  수 있습니다. 사이트 첫 페이지([`/`](https://wlsdks.github.io/ontology-atlas/))는 소개·다운로드 얼굴이고, 지도는
+  `/topology` 에 있습니다.
 - 연결은 [MCP 가이드](mcp/README.md), 전체 명령은 [CLI 가이드](cli/README.md),
   기여는 [CONTRIBUTING.md](CONTRIBUTING.md) — 한국어 이슈와 PR 을 환영합니다.

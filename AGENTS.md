@@ -147,10 +147,15 @@ scripts/                   vault tooling (R11) + perf baseline (R11) + dogfood w
 ## Routes
 
 ```
-/                          topology hub always (map + INDEX + datasheet) — with no vault selected it renders
-                           this project's own dogfood sample plus a first-run starter in the INDEX panel
-                           (root-first-open 2026-07 — no separate marketing landing page)
-/topology                  same topology hub, explicit entry point (canvas-2D map/graph engine)
+/                          **who is asking decides** (2026-07-30, 「root-first-open」 뒤집기 구현).
+                           Web visitor with no vault → the gateway face (headline · download · "open it in
+                           the browser"), the same view `/download` renders. Web user with a vault, and the
+                           installed app → unchanged (map / first-run). The installed app must never show
+                           "download this app" to someone already running it — that half of root-first-open
+                           still stands. Single source: `isGatewaySurface()` in `shared/lib/nav-destination`.
+/topology                  the map — canvas-2D topology hub (map + INDEX + datasheet). This is now the
+                           map's own address; links that say "map" must point here, not at `/`
+                           (gate: `tests/contract/map-destination-route.contract.test.ts`)
 /projects                  project list (vault frontmatter `kind: project` docs)
 /project/[slug]            project detail (inline edit when vault is loaded)
 /project/[slug]/edit       full project editor
@@ -177,7 +182,8 @@ scripts/                   vault tooling (R11) + perf baseline (R11) + dogfood w
                            addictiveness comes from the loop, not bling. is_a is a real `broader`
                            (SKOS) relation added across derive/schema/validator.
 /ontology/insights         graph insights (kind census · hubs · relation breakdown)
-/download                  macOS desktop app download (DMG)
+/download                  the same gateway view as `/`, as an explicit deep link. Keeps the
+                           breadcrumb and the back-to-map link that `/` drops
 ```
 
 > Round 10 (2026-05) permanently removed: `/login`, `/signup`, `/account`, `/reset-password`, `/settings/*`, and earlier rounds had already removed `/admin/*`, `/review/*`, `/diagnostics/*`, `/knowledge/*`. Cloud entity API, Firestore subscribers, manual node/edge cloud modals, screenshot uploader (Firebase Storage) are all gone. Future cloud collab features will be re-designed when sponsorship / collaboration requests come.

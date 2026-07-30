@@ -696,7 +696,11 @@
     "platformStatus": "Windows · Linux 는 아직 없습니다",
     "windowsPolicy": "Windows · Linux 는 macOS 와 같은 기준 — 서명된 설치 파일과 설치 검증 — 을 통과할 때 올립니다.",
     "archHelpTitle": "내 맥이 어느 쪽인지 모르겠다면",
-    "archHelpBody": "화면 왼쪽 위 애플 메뉴 → 「이 Mac에 관하여」를 엽니다. 「칩」에 Apple M1·M2·M3·M4 가 보이면 Apple Silicon, 「프로세서」에 Intel 이 보이면 Intel 이에요. 2020년 말 이후에 산 맥이면 거의 모두 Apple Silicon 입니다."
+    "archHelpBody": "화면 왼쪽 위 애플 메뉴 → 「이 Mac에 관하여」를 엽니다. 「칩」에 Apple M1·M2·M3·M4 가 보이면 Apple Silicon, 「프로세서」에 Intel 이 보이면 Intel 이에요. 2020년 말 이후에 산 맥이면 거의 모두 Apple Silicon 입니다.",
+    "demoHeading": "AI 에이전트와 함께 쓰는 지도",
+    "demoTabAgentEdits": "AI가 고치면 지도가 따라 바뀐다",
+    "demoTabOneButton": "연결은 버튼 하나",
+    "demoPlay": "재생"
   },
   "kinds": {
     "project": "프로젝트",
@@ -2884,7 +2888,22 @@
     "connectRetry": "다시 시도",
     "connectDesktopOnly": "이 동작은 설치한 앱에서만 됩니다.",
     "serverUnavailableGetApp": "앱 받기",
-    "copyFailed": "복사 실패 — 클립보드가 막혔어요"
+    "copyFailed": "복사 실패 — 클립보드가 막혔어요",
+    "connectAntigravity": "Antigravity에 연결",
+    "antigravityDone": ".agents/mcp_config.json 을 만들었어요",
+    "copyAntigravityConfig": "Antigravity 설정 복사",
+    "cursorDone": ".cursor/mcp.json 을 만들었어요",
+    "scopeLabel": "적용 범위",
+    "scopeProject": "이 폴더",
+    "scopeGlobal": "이 컴퓨터 전체",
+    "step1DescGlobal": "한 번 설정하면 이 컴퓨터의 모든 프로젝트에서 이 폴더를 함께 읽어요.",
+    "scopeGlobalIntro": "전역 설정 파일은 도구마다 따로 있고, 그 파일은 그 도구가 직접 씁니다. 아래 한 줄을 복사하세요 — 이 폴더 경로가 이미 채워져 있어요.",
+    "scopeGlobalRunHint": "터미널에 붙여 실행하세요. 그 도구가 자기 설정 파일을 직접 쓰기 때문에 기존 설정이 지워지지 않아요.",
+    "scopeGlobalPasteHint": "{path} 에 이 블록을 추가하세요. 다른 서버가 이미 있으면 지우지 말고 나란히 두면 됩니다.",
+    "scopeGlobalCopyCommand": "명령 복사",
+    "scopeGlobalCopySnippet": "설정 복사",
+    "scopeGlobalCopied": "복사했어요",
+    "scopeGlobalLossNote": "이 파일들은 볼트가 아니라 홈 폴더에 있어서 git diff 에는 안 남아요. 되돌리려면 위 파일에서 ontology-atlas 항목을 지우면 됩니다. 밖으로 나가는 것은 여전히 없어요."
   },
   "appUpdate": {
     "availableTitle": "{version} 버전이 나왔어요",

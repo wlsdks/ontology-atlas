@@ -43,6 +43,17 @@ export {
   type AgentClientConfigState,
 } from './ui/AgentClientButtons';
 export { AgentConnectAction, type AgentConnectActionProps } from './ui/AgentConnectAction';
+export { AgentGlobalScopePanel, type AgentGlobalScopePanelProps } from './ui/AgentGlobalScopePanel';
+export {
+  globalScopeInstruction,
+  type GlobalScopeInstruction,
+  type GlobalScopeKind,
+} from './lib/agent-global-scope';
+export {
+  useAgentConfigScope,
+  setAgentConfigScope,
+  type AgentConfigScope,
+} from './lib/agent-scope-preference';
 export {
   buildOntologyStarterAgentVerifyPrompt,
   buildOntologyStarterCliVerifyCommands,
@@ -72,3 +83,4 @@ export {
   VaultOpenGuideSheet,
   type VaultOpenGuideSheetProps,
 } from './ui/VaultOpenGuideSheet';
+export { type AgentClientId, AGENT_CLIENTS, filesForClient } from './lib/agent-clients';

@@ -15,6 +15,7 @@ vi.mock('@/features/locale-switch', () => ({
 }));
 
 vi.mock('@/i18n/navigation', () => ({
+  usePathname: () => mocks.pathname,
   Link: ({
     href,
     children,
@@ -37,6 +38,12 @@ vi.mock('@/i18n/navigation', () => ({
 // it is the state that used to leak placeholder facts and internal pipeline
 // status.
 const mocks = vi.hoisted(() => ({
+  /**
+   * 이 표면은 **두 주소에 산다** — `/`(웹 방문자의 얼굴)과 `/download`(설치
+   * 딥링크). 크롬의 두 조각(빵부스러기 마디 · 「지도로 돌아가기」)이 주소에
+   * 따라 달라지므로 테스트가 주소를 갈아끼울 수 있어야 한다.
+   */
+  pathname: '/download',
   release: {
     published: false,
     prerelease: false,
@@ -467,5 +474,45 @@ describe('DownloadPage', () => {
   it('stays the one route without a bottom tab bar, which is why it reserves no height for one', () => {
     expect(shouldHideBottomTabBar('/download', false)).toBe(true);
     expect(shouldHideBottomTabBar('/ko/download/', false)).toBe(true);
+  });
+
+  /**
+   * ## 같은 화면, 두 주소
+   *
+   * 2026-07-29 소유자 서명으로 `/` 는 웹 방문자의 **얼굴**이 됐고(원장:
+   * 「root-first-open」 뒤집기), 그 얼굴이 이 뷰다. `/download` 는 설치를 부르는
+   * 딥링크로 남는다.
+   *
+   * 크롬의 두 조각이 주소에 따라 달라져야 한다. 둘 다 **죽은 약속**을 막는
+   * 장치라 값이 아니라 의미로 잠근다.
+   */
+  describe('두 주소에 사는 한 화면', () => {
+    it('/download 에서는 빵부스러기가 여기가 어디인지 말한다', () => {
+      mocks.pathname = '/download';
+      renderDownloadPage();
+      expect(screen.getByTestId('download-gnb')).toHaveTextContent(/다운로드|Download/);
+    });
+
+    it('/ 에서는 「다운로드」 마디를 지운다 — 그 주소가 아니다', () => {
+      mocks.pathname = '/';
+      renderDownloadPage();
+      expect(screen.getByTestId('download-gnb')).not.toHaveTextContent(/다운로드|Download/);
+    });
+
+    it('/ 에서는 「지도로 돌아가기」를 지운다 — 지도에서 온 사람이 아니다', () => {
+      mocks.pathname = '/';
+      renderDownloadPage();
+      // 지도로 가는 길은 판 안의 「설치 없이 브라우저에서 써보기」가 이미 낸다.
+      // 같은 일을 하는 링크를 크롬과 판에 둘 다 두면 하나가 죽은 약속이 된다.
+      expect(screen.queryByTestId('download-back-to-map')).toBeNull();
+      expect(screen.getByTestId('download-web-cta')).toHaveAttribute('href', '/topology');
+    });
+
+    it('/download 에서는 「지도로 돌아가기」가 살아 있고 지도를 가리킨다', () => {
+      mocks.pathname = '/download';
+      renderDownloadPage();
+      // `/` 가 아니다 — 전환 후 `/` 는 방금 떠난 소개 화면이다.
+      expect(screen.getByTestId('download-back-to-map')).toHaveAttribute('href', '/topology');
+    });
   });
 });

@@ -49,12 +49,50 @@ export function resolveActiveNavDestination(pathname: string): AppNavDestination
  * 레일 유틸 슬롯 등록을 빠뜨려 그 화면만 하단 아이콘이 1개였던 전례). 경로
  * 하나로 셸이 정한다.
  *
- * 2026-07-28 소유자 확정. 오늘은 `/download` 하나다 — 목록이 늘면 여기 한 줄.
+ * 2026-07-28 소유자 확정.
  */
 export function isGatewayRoute(pathname: string): boolean {
   return stripLocalePrefix(pathname || "/").startsWith("/download");
 }
 
-function stripLocalePrefix(pathname: string): string {
+/** `isGatewaySurface` 가 경로 밖에서 필요로 하는 것 — 방문자가 누구인가. */
+export interface GatewayContext {
+  /** 사용자 볼트가 열려 있는가(= 이 사람은 방문자가 아니라 작업자다). */
+  hasVault: boolean;
+  /** 설치된 데스크톱 앱 안인가. */
+  desktop: boolean;
+  /**
+   * 볼트 상태를 아직 모르는 첫 프레임인가(정적 export 는 서버에서 모른다).
+   *
+   * 모를 때 `/` 는 **관문 쪽으로 기운다**. 반대로 기울면 방문자의 첫 프레임에
+   * 레일이 그려졌다 사라지고, 그건 이 파일이 애초에 막으려던 깜빡임이다.
+   * 볼트를 가진 재방문자는 경로 기억이 마지막 작업 화면으로 데려가므로 `/` 를
+   * 거의 거치지 않는다 — 그래서 이 기울기의 비용을 무는 쪽이 더 적다.
+   */
+  vaultKnown: boolean;
+}
+
+/**
+ * 이 표면이 지금 **관문인가** — 경로만으로는 못 정한다.
+ *
+ * `/` 는 2026-07-30 부터 **웹 방문자에게만** 얼굴(홍보)이고, 볼트를 연 사람과
+ * 설치된 앱에게는 그대로 작업 진입점이다. 그래서 판정에 방문자 맥락이 든다.
+ *
+ * **왜 `/` 를 통째로 관문으로 만들지 않았나.** 그러면 설치된 앱이 자기를 쓰는
+ * 사람에게 "다운로드하세요" 를 보여준다 — 2026-07 「root-first-open」 이
+ * 없애려던 바로 그 모순이고, 그 결정을 뒤집으면서도 이 부분은 유효하다.
+ * 뒤집힌 것은 "지도가 곧 첫 화면" 이지 "설치한 사람에게 설치를 권한다" 가
+ * 아니다.
+ */
+export function isGatewaySurface(pathname: string, ctx: GatewayContext): boolean {
+  const path = stripLocalePrefix(pathname || "/");
+  if (path.startsWith("/download")) return true;
+  if (path !== "/") return false;
+  if (ctx.desktop) return false;
+  return ctx.vaultKnown ? !ctx.hasVault : true;
+}
+
+/** `/ko/foo` → `/foo`. 라우트 판정이 로케일 프리픽스에 걸려 넘어지지 않게 한다. */
+export function stripLocalePrefix(pathname: string): string {
   return pathname.replace(/^\/(?:en|ko)(?=\/|$)/, "") || "/";
 }

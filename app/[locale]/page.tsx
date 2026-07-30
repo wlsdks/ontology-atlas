@@ -4,7 +4,7 @@ import { RootEntryPage } from '@/views/root-entry';
 import { buildPageMetadata } from "@/shared/lib/page-metadata";
 import { routing } from "@/i18n/routing";
 import { getTranslations } from "next-intl/server";
-import { MapEntryFallback } from "@/shared/ui/map-entry-fallback";
+import { GatewayEntryFallback } from "@/shared/ui/gateway-entry-fallback";
 
 // 각 locale page 의 canonical 은 *자기 자신 URL* 이어야 hreflang group 이
 // 정확히 동작. 이전엔 모든 locale 이 `/` 로 통일됐는데, 그러면 `/en/` 과
@@ -25,13 +25,16 @@ export async function generateMetadata({
     locale: safeLocale,
     path: '',
     title: t('siteName'),
-    description: t('descriptions.home'),
+    description: t('descriptions.download'),
   });
 }
 
 // 정적 export 에서 이 라우트의 HTML 본문은 Suspense fallback 이 전부다. 루트는
-// 이 제품의 첫 주소이므로 그 자리를 로딩 자막이 아니라 실제 첫 화면이 갖는다 —
-// 근거는 `MapEntryFallback` 주석.
+// 이 제품의 첫 주소이므로 그 자리를 로딩 자막이 아니라 실제 첫 화면이 갖는다.
+//
+// 2026-07-29 서명으로 `/` 의 첫 화면이 지도에서 **관문**으로 바뀌었으므로
+// fallback 도 함께 옮겼다 — 안 옮기면 대표 주소의 링크 미리보기가 실제로
+// 열리는 화면과 다른 말을 한다. 지도 설명은 그 말이 맞는 `/topology` 에 남는다.
 export default async function Page({
   params,
 }: {
@@ -39,7 +42,7 @@ export default async function Page({
 }) {
   const { locale } = await params;
   return (
-    <Suspense fallback={<MapEntryFallback locale={locale} />}>
+    <Suspense fallback={<GatewayEntryFallback locale={locale} />}>
       <RootEntryPage />
     </Suspense>
   );

@@ -4611,8 +4611,16 @@ export function HomePage() {
           snippets={agentConnect.snippets}
           domainTitles={agentConnect.domainTitles}
           handoffText={indexAgentHandoffBriefText}
+          /*
+           * **도구를 그대로 넘긴다.** 종전엔 `() => void vault.ensureAgentConfigs()`
+           * 로 인자를 삼켰다 — 그래서 「Claude Code에 연결」이 Codex 설정까지 썼다.
+           * 타입은 통과했고(인자를 안 쓰는 함수는 인자를 받는 자리에 들어간다) 화면만
+           * 거짓말했다. 여기가 그 사슬의 마지막 고리였다.
+           */
           onWriteConfigs={
-            isTauriVaultRuntime() && vault.manifest ? () => void vault.ensureAgentConfigs() : null
+            isTauriVaultRuntime() && vault.manifest
+              ? (client) => void vault.ensureAgentConfigs(client)
+              : null
           }
           mcpJsonState={
             !vault.agentConfigStatus?.mcpJson
