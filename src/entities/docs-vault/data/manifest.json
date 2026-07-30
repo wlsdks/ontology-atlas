@@ -3325,6 +3325,11 @@
         },
         {
           "depth": 2,
+          "text": "2026-07-30 — 관문 지도가 커지고 카드 쪽으로 붙는다",
+          "slug": "2026-07-30-관문-지도가-커지고-카드-쪽으로-붙는다"
+        },
+        {
+          "depth": 2,
           "text": "2026-07-30 — 관문에 읽을거리 둘: `/guide` · `/changelog`",
           "slug": "2026-07-30-관문에-읽을거리-둘-guide-changelog"
         },
@@ -5394,8 +5399,8 @@
           "slug": "2026-07-26-첫-만남은-쇼핑몰부터"
         }
       ],
-      "excerpt": "Major change history. Code commit messages answer why; this file answers when / which surface changed. Focused on user-visible changes, not PR-level granularity. Newest at the top. Entries stay date-based; the app version reached v1.0.0 on 2026-07-27, so a release tag now carries the semver promise instead. 받기 전에 읽을 것이",
-      "wordCount": 59457,
+      "excerpt": "Major change history. Code commit messages answer why; this file answers when / which surface changed. Focused on user-visible changes, not PR-level granularity. Newest at the top. Entries stay date-based; the app version reached v1.0.0 on 2026-07-27, so a release tag now carries the semver promise instead. 박스와 노드 사이가 ",
+      "wordCount": 59592,
       "updatedAt": "2026-07-30",
       "linksOut": [
         "CASE-STUDY-AGENTS-MD-DRIFT",
