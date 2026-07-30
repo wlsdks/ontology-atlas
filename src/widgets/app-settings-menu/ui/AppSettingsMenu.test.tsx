@@ -252,7 +252,7 @@ describe('AppSettingsMenu single-sheet recomposition', () => {
   });
 
   /**
-   * 지도 오른쪽 도크의 「설정에서 키 등록」이 타는 경로 — 시트가 **닫힌 상태에서**
+   * 설정 창의 「설정에서 키 등록」이 타는 경로 — 시트가 **닫힌 상태에서**
    * 요청을 받아 곧바로 [AI 연결] 서브뷰로 열린다. 사용자에게 톱니 위치를 말로
    * 알려주는 대신 문을 주기 위한 유일한 연결선이다.
    *
@@ -302,50 +302,56 @@ describe('AppSettingsMenu single-sheet recomposition', () => {
   });
 
   /**
-   * 설정은 2026-07-29 에 **우측 도크(비모달)** 가 됐다. 「지도 배경」·「발자국」
-   * 절은 *"바꾸면 지도가 즉시 반영된다"* 가 계약인데 중앙 모달이 정확히 그
-   * 지도를 가렸기 때문이다.
+   * ## 이 표면은 자리와 성질이 네 번 바뀌었다 — 테스트는 **현행**을 잠근다
    *
-   * 그래서 종전의 "Tab 을 시트 안에 가둔다" 는 계약이 **뒤집혔다**. 바깥이 살아
-   * 있는데 초점만 가두면 키보드 사용자만 그 바깥에 못 간다 — WAI-ARIA 도
-   * non-modal dialog 는 초점을 가두지 않는다고 못박는다. 이 테스트는 뒤집힌
-   * 쪽을 잠근다.
+   * ① 가운데 모달 → ② 우측 비모달 도크 → ③ 가운데 비모달 →
+   * ④ **가운데 모달 + 딤**(소유자 2026-07-30, Claude 데스크톱 설정 참조).
+   *
+   * ②로 간 이유는 *"설정 창이 지도 가리는거"* 였다 — 「지도 배경」·「발자국」 절이
+   * *"바꾸면 지도가 즉시 반영된다"* 를 약속하는데 정작 그 지도를 가렸다.
+   *
+   * **④에서 그 이유가 사라졌다.** 두 절은 이미 **패널 안에 실시간 미리보기**를
+   * 갖고 있다(`FootprintPreview` 는 지도와 같은 렌더러, 배경 스와치는 실제
+   * `--canvas-bg-*` 토큰). 값을 만지며 결과를 보는 문제는 지도가 아니라
+   * 미리보기가 풀고 있었고, 도크는 이미 풀린 문제를 위해 자리를 희생했다.
+   *
+   * 그래서 아래 검사가 지키는 것은 **딤이 실제로 존재하고, 그 사실과
+   * `aria-modal` 이 일치한다**는 것이다. 이 일치가 이 표면에서 반복해 틀렸던
+   * 지점이다 — 비모달 시절에 `aria-modal` 을 걸면 거짓이고, 모달인데 안 걸면
+   * 보조기술이 차단 사실을 모른다.
    */
-  it('도크는 비모달이다 — aria-modal 을 걸지 않고 Tab 을 가두지 않는다', async () => {
+  it('딤이 있고, 그 사실과 aria-modal 이 일치한다', () => {
+    openSheet();
+    const overlay = screen.getByTestId('app-settings-overlay');
+    const panel = screen.getByTestId('app-settings-popover');
+
+    // 뒤가 실제로 어두워진다 — 그래서 차단 주장이 참이 된다.
+    expect(overlay.className).toContain('backdrop-medium');
+    // 딤이 포인터를 받아야 바깥이 실제로 막힌다. `pointer-events-none` 이면
+    // 화면만 어둡고 클릭은 통과해, 보이는 것과 되는 것이 어긋난다.
+    expect(overlay.className).not.toContain('pointer-events-none');
+    expect(panel).toHaveAttribute('aria-modal', 'true');
+    expect(panel).toHaveAttribute('role', 'dialog');
+  });
+
+  /** 모달이면 초점도 안에 머문다 — 딤 뒤로 Tab 이 빠져나가면 차단이 반쪽이다. */
+  it('모달이므로 Tab 이 창 안에 머문다', async () => {
     openSheet(undefined, 'agent');
     const panel = screen.getByTestId('app-settings-popover');
     const last = screen.getByTestId('app-settings-ai-drillin');
 
     await waitFor(() => expect(panel).toHaveFocus());
-    // 바깥이 살아 있는데 "나머지는 없는 셈 치라"고 말하면 그건 거짓이다.
-    expect(panel).not.toHaveAttribute('aria-modal');
-    expect(panel).toHaveAttribute('role', 'dialog');
-
-    // 마지막 항목에서 Tab — 트랩이 있었다면 닫기 버튼으로 되감겼을 자리다.
     last.focus();
     fireEvent.keyDown(window, { key: 'Tab' });
-    expect(last).toHaveFocus();
-  });
-
-  /**
-   * 도크가 바깥을 살려 두는 것이 이 변경의 **목적**이다. 오버레이가 포인터를
-   * 먹으면 지도를 못 만지므로, 그 한 가지가 깨지면 도크는 이름만 도크다.
-   */
-  it('바깥은 살아 있다 — 오버레이가 포인터를 먹지 않는다', () => {
-    openSheet();
-    const overlay = screen.getByTestId('app-settings-overlay');
-    const panel = screen.getByTestId('app-settings-popover');
-    expect(overlay.className).toContain('pointer-events-none');
-    expect(panel.className).toContain('pointer-events-auto');
-    // scrim 이 남아 있으면 지도가 여전히 어두워진다.
-    expect(overlay.className).not.toContain('scrim-a54');
+    // 트랩이 살아 있으면 마지막 항목에 머물지 않고 앞으로 되감긴다.
+    expect(last).not.toHaveFocus();
   });
 
   /**
    * 가이드 자동 시작 가드는 `aria-modal` 로 "다른 표면과 대화 중"을 판정했다.
-   * 도크가 그 속성을 잃었으므로 마커로 이어 두지 않으면 설정 위로 안내가 뜬다.
+   * 설정 창이 그 속성을 잃었으므로 마커로 이어 두지 않으면 설정 위로 안내가 뜬다.
    */
-  it('도크에 안내 가드용 마커가 있다', () => {
+  it('설정 창에 안내 가드용 마커가 있다', () => {
     openSheet();
     expect(screen.getByTestId('app-settings-popover')).toHaveAttribute(
       'data-surface-role',

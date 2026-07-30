@@ -163,12 +163,18 @@ handoff** right there, because the next reader is often not a human.
 
 **Footprints** mark the concepts you opened, numbered in the order you walked
 them, so a long session leaves a path you can retrace instead of a map you have
-to re-derive. Shape, size, spacing and opacity are yours — **Settings ▸
-Footprints** — and the map background is a separate choice of three
-(**Settings ▸ Map background**: dots, a proximity constellation, or layered
-depth dots). Settings opens as a dock on the right rather than a modal, so the
-map stays live while you turn the dial: you see the change on the graph you are
-actually reading, not after closing a window.
+to re-derive.
+
+![The Footprints section of Settings in the macOS app: a live preview strip drawing shoe-print marks between two node squares along a relation line, presets named Subtle, Default and Bold, and an expanded fine-tuning list with Print size 13px, Fill solid or outline, Strength 70 percent, Colour yellow or indigo, Bleed none, Distance 8px, and whether to mark along links](docs/assets/readme/settings-footprints.png)
+
+Shape, size, spacing and opacity are yours, and the strip above the controls is
+not a picture of the feature — it is **the same renderer the map uses**, drawing
+your current values as you change them. The map background is a separate choice
+of three (dots, a proximity constellation, or layered depth dots), previewed the
+same way from the real canvas tokens.
+
+That preview is why Settings can be a plain centred dialog: you do not need to
+see the map behind it, because the thing you are adjusting is drawn right there.
 
 <p align="center">
   <img alt="Screen recording of the macOS app: clicking a domain in the INDEX panel expands its capabilities, the camera moves to that part of the map, and the domain datasheet slides in from the right" src="docs/assets/readme/atlas-map-focus.gif" width="800" />
@@ -195,7 +201,7 @@ Nothing lands until you confirm. That boundary is visible on purpose.
 
 ### 5. Review the change, then record it
 
-![The History screen in the macOS app: Not saved yet, 1 added and 1 edited, a changed concept list naming capabilities/return-intake, a diff showing the dependencies line gaining capabilities/shipment-tracking, a Save 2 button, and a note that only documents inside this folder are recorded](docs/assets/readme/history-review.png)
+![The History screen in the macOS app: Not saved yet, 1 edited, a changed concept list naming capabilities/return-intake with a plus one minus one count, a diff whose dependencies line gains capabilities/shipment-tracking, a Save 1 button, and a note that only documents inside this folder are recorded and files outside it are left alone](docs/assets/readme/history-review.png)
 
 Whatever wrote — you, the Workshop, the CLI, or an agent over MCP — lands here
 first as a diff you read before it becomes history. The change above was written
@@ -215,6 +221,8 @@ nearby schema patterns
   3 · capability --dependencies--> capability (count 7)
   1 · capability --domain--> domain (count 13)
   1 · domain --capabilities--> capability (count 13)
+  1 · capability --elements--> element (count 11)
+  1 · capability --relates--> domain (count 4)
 
 dry-run would write dependencies on capabilities/return-intake → capabilities/shipment-tracking (no file changed)
 ```
@@ -228,7 +236,7 @@ touched, and the screen says so.
 
 ### 6. Keep it healthy
 
-![The Graph insights maintenance board in the macOS app: header reading 31 Concepts, 62 Relations, 6 Domains, tabs for Do next, Inventory, Connections, Boundaries and Freshness, an Agent readiness bar split into ready, preflight and review, a repair queue counting missing links and hub candidates, a What the agent did entry showing the relation a command just wrote, and a Copy next action handoff button](docs/assets/readme/graph-insights.png)
+![The Graph insights maintenance board in the macOS app: header reading 31 Concepts, 62 Relations, 6 Domains, tabs for Do next, Inventory, Connections, Boundaries and Freshness, an Agent readiness bar split into ready, preflight and review, a repair queue counting missing links and hub candidates, a fix-these-now list of two decisions that need no code, and a Copy next action handoff button](docs/assets/readme/graph-insights.png)
 
 Insights turns graph health into a work queue: what is disconnected, what is
 stale, what is missing evidence, which repair to make next. **Agent readiness**
@@ -236,8 +244,9 @@ splits every relation into what an agent can trust immediately, what needs a
 quick check, and what a person should decide.
 
 **What the agent did** reads `.ontology-atlas/activity.jsonl` from inside your
-vault — plain text, in the folder, part of the same diff. The entry on that
-screen is the relation the command in step 5 wrote. Nothing was collected
+vault — plain text, in the folder, part of the same diff. The example vault has
+no agent history yet, so that panel is empty here; connect an agent and its
+writes show up in the same place, from the same file. Nothing is collected
 anywhere else to produce it.
 
 ### 7. See the shape of the whole project
