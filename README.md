@@ -1,7 +1,10 @@
 # Ontology Atlas
 
 <p align="center">
-  <img src="public/brand/lockup@2x.png" alt="Ontology Atlas — Map your codebase knowledge." width="360" />
+  <picture>
+    <source media="(prefers-color-scheme: dark)" srcset="public/brand/lockup-dark@2x.png" />
+    <img src="public/brand/lockup-light@2x.png" alt="Ontology Atlas — Map your codebase knowledge." width="360" />
+  </picture>
 </p>
 
 <p align="center">
@@ -515,28 +518,3 @@ people and AI agents alike.
 ## License
 
 [MIT](LICENSE)
-
----
-
-## 한국어
-
-Ontology Atlas 는 사람과 AI 에이전트가 함께 키우는, 저장소 안의 의미 계층입니다.
-Markdown frontmatter 가 곧 그래프이고, 그 위에서 영향 반경·도달성·순환·경로 같은
-실제 그래프 질의가 돕니다. 에이전트는 MCP 32개 도구로 읽고 쓰며, 사람은 평범한
-git diff 로 판단합니다. 백엔드·로그인·텔레메트리가 없고 vault 폴더가 유일한
-저장소입니다.
-
-- **다운로드 한 번이 두 표면을 설치합니다.** macOS 앱이 컴파일된 MCP 서버를 자기
-  번들에 싣고, 버튼 하나가 에이전트 설정을 **쓰기 전에 보여준 뒤** 써 주고 그
-  자리에서 연결까지 확인합니다.
-- **npm 발행 계획은 폐기됐습니다** (2026-07-27). 소스 체크아웃에서 CLI 와 MCP
-  서버를 바로 실행합니다.
-- **받을 수 있는 빌드가 있는지는
-  [GitHub Releases](https://github.com/wlsdks/ontology-atlas/releases)에서
-  확인하세요.** 비어 있거나 릴리스 후보만 있으면 소스 체크아웃으로 씁니다.
-  이 README 의 화면들은 첫 서명 릴리스 이전에 로컬 빌드 앱에서 찍었습니다.
-- [라이브 데모](https://wlsdks.github.io/ontology-atlas/ko/topology/)에서 이 저장소 자신의 온톨로지(98 노드)를 설치 없이 볼
-  수 있습니다. 사이트 첫 페이지([`/`](https://wlsdks.github.io/ontology-atlas/))는 소개·다운로드 얼굴이고, 지도는
-  `/topology` 에 있습니다.
-- 연결은 [MCP 가이드](mcp/README.md), 전체 명령은 [CLI 가이드](cli/README.md),
-  기여는 [CONTRIBUTING.md](CONTRIBUTING.md) — 한국어 이슈와 PR 을 환영합니다.
