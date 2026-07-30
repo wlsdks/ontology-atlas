@@ -3255,6 +3255,7 @@
       "trust": "On trust"
     },
     "guideNavLabel": "Guide contents",
-    "onThisGuide": "Guide"
+    "onThisGuide": "Guide",
+    "entryNavLabel": "Entries"
   }
 }

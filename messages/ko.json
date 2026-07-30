@@ -3255,6 +3255,7 @@
       "trust": "신뢰에 관하여"
     },
     "guideNavLabel": "가이드 차례",
-    "onThisGuide": "가이드"
+    "onThisGuide": "가이드",
+    "entryNavLabel": "변경 항목"
   }
 }

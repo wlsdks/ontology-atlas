@@ -9,7 +9,13 @@ import { cn } from '@/shared/lib/cn';
 import { PAGE_COLUMN, PAGE_GUTTER } from '@/shared/lib/gateway-frame';
 import { GITHUB_REPO_URL } from '@/shared/config/social-links';
 import { GithubMark } from '@/shared/ui';
-import { readVaultDoc, trimToRecentSections } from '../lib/vault-doc';
+import {
+  extractEntries,
+  normalizeHeadingKey,
+  readVaultDoc,
+  trimToRecentSections,
+  type DocEntry,
+} from '../lib/vault-doc';
 import { GUIDE_PAGES } from '../model/guide-pages';
 import { Link } from '@/i18n/navigation';
 
@@ -67,6 +73,14 @@ export interface GatewayDocPageProps {
   sidebar?: boolean;
   /** 차례에서 지금 어느 장인지 — `sidebar` 가 true 일 때만 쓴다. */
   activeSegment?: string;
+  /**
+   * 왼쪽에 **이 문서의 `## ` 항목 목록**을 그릴지 (변경 내역용).
+   *
+   * 가이드의 `sidebar` 와 다른 물건이다: 저쪽은 **여러 문서**의 차례이고 이쪽은
+   * **한 문서 안**의 항목이라 링크가 라우트가 아니라 앵커다. 둘을 한 플래그로
+   * 묶으면 "차례" 라는 말이 두 가지를 가리키게 된다.
+   */
+  entryNav?: boolean;
 }
 
 export function GatewayDocPage({
@@ -77,6 +91,7 @@ export function GatewayDocPage({
   sourcePath,
   sidebar = false,
   activeSegment,
+  entryNav = false,
 }: GatewayDocPageProps) {
   const t = useTranslations('gatewayNav');
 
@@ -92,6 +107,25 @@ export function GatewayDocPage({
       ? trimToRecentSections(withoutH1, recentSectionLimit)
       : { body: withoutH1, omittedSections: 0 };
   }, [slug, recentSectionLimit]);
+
+  /**
+   * 항목 목록과 본문 제목의 id 는 **같은 함수**가 낸다 — 두 곳이 각자 만들면
+   * 규칙이 조금만 달라도 앵커가 조용히 아무 데도 안 간다.
+   */
+  const entries = useMemo(() => (entryNav ? extractEntries(body) : []), [entryNav, body]);
+  const headingIds = useMemo(() => {
+    const map = new Map<string, string>();
+    for (const entry of entries) {
+      const key = normalizeHeadingKey(entry.heading);
+      if (!map.has(key)) map.set(key, entry.id);
+    }
+    return map;
+  }, [entries]);
+
+  const components = useMemo(
+    () => (entryNav ? proseComponentsWithAnchors(headingIds) : PROSE_COMPONENTS),
+    [entryNav, headingIds],
+  );
 
   return (
     <div className="flex min-h-full w-full flex-col bg-[color:var(--color-canvas)]">
@@ -130,11 +164,14 @@ export function GatewayDocPage({
            */}
           <div
             className={cn(
-              sidebar ? 'lg:grid lg:grid-cols-[15rem_minmax(0,1fr)] lg:gap-12' : 'flex flex-col items-center',
+              sidebar || entryNav
+                ? 'lg:grid lg:grid-cols-[15rem_minmax(0,1fr)_15rem] lg:gap-12'
+                : 'flex flex-col items-center',
             )}
           >
             {sidebar ? <GuideSidebar activeSegment={activeSegment} /> : null}
-            <div className={cn('flex min-w-0 flex-col', sidebar ? 'items-start' : 'items-center')}>
+            {entryNav ? <EntrySidebar entries={entries} /> : null}
+            <div className="flex min-w-0 flex-col items-center">
           <header className="w-full max-w-[var(--measure-prose)]">
             <h1
               data-testid="gateway-doc-title"
@@ -163,7 +200,7 @@ export function GatewayDocPage({
             data-testid="gateway-doc-body"
             className="mt-10 w-full max-w-[var(--measure-prose)]"
           >
-            <ReactMarkdown remarkPlugins={[remarkGfm]} components={PROSE_COMPONENTS}>
+            <ReactMarkdown remarkPlugins={[remarkGfm]} components={components}>
               {body}
             </ReactMarkdown>
           </article>
@@ -192,6 +229,24 @@ export function GatewayDocPage({
             </aside>
           ) : null}
             </div>
+            {/*
+             * **오른쪽의 빈 열** — 사이드바와 같은 폭(15rem).
+             *
+             * 이게 없으면 본문 열이 사이드바 오른쪽 전부를 차지하고, 그 안에서
+             * 가운데 정렬해도 **화면 기준으로는 오른쪽으로 밀린다**. 반대로
+             * 왼쪽 정렬하면 소유자가 두 번 짚은 그 쏠림이 된다(1894 실측:
+             * 본문 480–1150, 오른쪽 744px 이 빔).
+             *
+             * 같은 폭의 자리를 오른쪽에도 예약하면 가운데 열이 페이지 컬럼의
+             * 정중앙에 서고, 페이지 컬럼 자체가 `mx-auto` 라 결과적으로 **화면
+             * 정중앙**이 된다. 사이드바는 그 글의 왼쪽 여백에 떠 있는 모양이
+             * 되는데, 차례의 일이 길잡이지 본문과 폭을 겨루는 것이 아니라
+             * 그쪽이 맞다.
+             *
+             * `aria-hidden` 도 `role` 도 주지 않는다 — 내용이 없는 그리드 칸이라
+             * 접근성 트리에 애초에 아무것도 안 올린다.
+             */}
+            {sidebar || entryNav ? <div className="hidden lg:block" /> : null}
           </div>
         </div>
       </main>
@@ -384,4 +439,94 @@ function GuideSidebar({ activeSegment }: { activeSegment?: string }) {
       </div>
     </nav>
   );
+}
+
+/**
+ * 변경 내역의 왼쪽 항목 목록 — 날짜가 앞에 서고 제목이 따라온다.
+ *
+ * ## 왜 라우트가 아니라 앵커인가
+ *
+ * 가이드는 여섯 장이 각자 다른 글이라 주소가 따로 있는 게 맞다. 변경 내역은
+ * **한 흐름**이라 위아래로 이어 읽는 것이 정상이고, 항목마다 주소를 파면
+ * "그 다음에 뭐가 있었지" 를 보려고 매번 페이지를 새로 여는 꼴이 된다.
+ * 목록은 **건너뛰기**를 위한 것이지 분할을 위한 것이 아니다.
+ *
+ * ## 왜 링크가 `<a href="#…">` 인가
+ *
+ * 앵커는 브라우저가 이미 잘한다 — 뒤로가기가 되돌리고, 주소를 복사하면 그 항목을
+ * 가리키고, JS 없이도 동작한다. 스크롤을 손으로 옮기면 이 셋을 전부 다시 만들어야
+ * 한다.
+ */
+function EntrySidebar({ entries }: { entries: DocEntry[] }) {
+  const t = useTranslations('gatewayNav');
+  if (entries.length === 0) return null;
+  return (
+    <nav aria-label={t('entryNavLabel')} data-testid="entry-sidebar" className="hidden lg:block">
+      <div className="sticky top-24 max-h-[calc(100svh-9rem)] overflow-y-auto pr-1">
+        <p className="mb-3 px-2.5 text-label leading-label font-medium tracking-wide text-[color:var(--color-text-quaternary)] uppercase">
+          {t('entryNavLabel')}
+        </p>
+        <ul className="flex flex-col gap-0.5">
+          {entries.map((entry) => (
+            <li key={entry.id}>
+              <a
+                href={`#${entry.id}`}
+                data-testid={`entry-nav-${entry.id}`}
+                className="block rounded-chip px-2.5 py-1.5 transition-colors hover:bg-[color:var(--color-elevated)]"
+              >
+                {entry.date ? (
+                  <span className="block font-mono text-label leading-label text-[color:var(--color-text-quaternary)]">
+                    {entry.date}
+                  </span>
+                ) : null}
+                {/*
+                 * 제목은 두 줄에서 자른다 — 이 저장소의 변경 내역 제목은 한 문장에
+                 * 가깝게 길어서, 안 자르면 항목 하나가 목록의 절반을 먹는다.
+                 * 전체 문장은 눌러서 도착한 자리에 있다.
+                 */}
+                <span className="line-clamp-2 text-body leading-body text-[color:var(--color-text-tertiary)]">
+                  {entry.title}
+                </span>
+              </a>
+            </li>
+          ))}
+        </ul>
+      </div>
+    </nav>
+  );
+}
+
+/**
+ * 산문 컴포넌트 맵 + **`h2` 에 앵커 id**.
+ *
+ * 목록이 가리킬 자리를 본문이 갖고 있어야 한다. id 는 목록과 같은 함수가 낸
+ * 것을 그대로 받는다 — 여기서 다시 계산하면 그 순간 두 번째 진실원이 된다.
+ *
+ * `scroll-mt` 는 sticky 크롬(상단 바) 높이만큼 — 없으면 앵커로 도착한 제목이
+ * 바 뒤에 숨어 "안 움직였나" 로 읽힌다.
+ */
+function proseComponentsWithAnchors(headingIds: Map<string, string>): Components {
+  return {
+    ...PROSE_COMPONENTS,
+    h2: ({ children, ...rest }) => (
+      <h2
+        id={headingIds.get(normalizeHeadingKey(flattenText(children)))}
+        className="mt-12 mb-3 scroll-mt-24 text-title leading-title font-semibold text-[color:var(--color-text-primary)]"
+        {...rest}
+      >
+        {children}
+      </h2>
+    ),
+  };
+}
+
+/** ReactMarkdown 이 넘기는 children 에서 순수 텍스트만 이어 붙인다 (id 매칭용). */
+function flattenText(node: React.ReactNode): string {
+  if (typeof node === 'string') return node;
+  if (typeof node === 'number') return String(node);
+  if (Array.isArray(node)) return node.map(flattenText).join('');
+  if (node && typeof node === 'object' && 'props' in node) {
+    return flattenText((node as { props?: { children?: React.ReactNode } }).props?.children);
+  }
+  return '';
 }

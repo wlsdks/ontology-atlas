@@ -3325,8 +3325,8 @@
         },
         {
           "depth": 2,
-          "text": "2026-07-31 — 읽는 페이지가 가운데로 오고, 가이드가 여섯 장이 된다",
-          "slug": "2026-07-31-읽는-페이지가-가운데로-오고-가이드가-여섯-장이-된다"
+          "text": "2026-07-31 — 읽는 페이지가 화면 가운데로 오고, 가이드와 변경 내역에 차례가 생겼다",
+          "slug": "2026-07-31-읽는-페이지가-화면-가운데로-오고-가이드와-변경-내역에-차례가-생겼다"
         },
         {
           "depth": 2,
@@ -5410,7 +5410,7 @@
         }
       ],
       "excerpt": "Major change history. Code commit messages answer why; this file answers when / which surface changed. Focused on user-visible changes, not PR-level granularity. Newest at the top. Entries stay date-based; the app version reached v1.0.0 on 2026-07-27, so a release tag now carries the semver promise instead. 산문이 한쪽에 쏠려 ",
-      "wordCount": 59893,
+      "wordCount": 59977,
       "updatedAt": "2026-07-31",
       "linksOut": [
         "CASE-STUDY-AGENTS-MD-DRIFT",
