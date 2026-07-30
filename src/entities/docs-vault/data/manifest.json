@@ -3325,6 +3325,11 @@
         },
         {
           "depth": 2,
+          "text": "2026-07-30 — `v1.0.0-rc.4`: `/` 가 얼굴이 되고, 「연결」이 자기 도구만 쓰고, 「적용 범위」가 생겼다",
+          "slug": "2026-07-30-v100-rc4-가-얼굴이-되고-연결이-자기-도구만-쓰고-적용-범위가-생겼다"
+        },
+        {
+          "depth": 2,
           "text": "2026-07-29 — `/download` 카운슬 평결 적용: 캡션이 그림을 세고 · 그리드가 한 벌이 되고 · 지도에 목줄이 생겼다",
           "slug": "2026-07-29-download-카운슬-평결-적용-캡션이-그림을-세고-그리드가-한-벌이-되고-지도에-목줄이-생겼다"
         },
@@ -5384,9 +5389,9 @@
           "slug": "2026-07-26-첫-만남은-쇼핑몰부터"
         }
       ],
-      "excerpt": "Major change history. Code commit messages answer why; this file answers when / which surface changed. Focused on user-visible changes, not PR-level granularity. Newest at the top. Entries stay date-based; the app version reached v1.0.0 on 2026-07-27, so a release tag now carries the semver promise instead. 디자인 카운슬 2라운",
-      "wordCount": 58660,
-      "updatedAt": "2026-07-29",
+      "excerpt": "Major change history. Code commit messages answer why; this file answers when / which surface changed. Focused on user-visible changes, not PR-level granularity. Newest at the top. Entries stay date-based; the app version reached v1.0.0 on 2026-07-27, so a release tag now carries the semver promise instead. / 는 묻는 사람이 ",
+      "wordCount": 58997,
+      "updatedAt": "2026-07-30",
       "linksOut": [
         "CASE-STUDY-AGENTS-MD-DRIFT",
         "slug"
