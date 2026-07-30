@@ -6,6 +6,7 @@ import {
   parseFrontmatter,
   type LinkContext,
 } from '@/shared/lib/parse-frontmatter';
+import { nativeVaultFingerprint } from '@/shared/lib/tauri-vault-fs';
 import type {
   VaultBacklinkEntry,
   VaultDoc,
@@ -257,6 +258,26 @@ function fingerprintFromEntries(
 export async function computeLocalVaultFingerprint(
   root: FileSystemDirectoryHandle,
 ): Promise<string> {
+  /*
+   * **앱에서는 네이티브 한 번으로 끝낸다** (2026-07-31).
+   *
+   * 아래 웹 경로는 파일마다 `getFile()` 을 부르는데, Tauri 에서 그건
+   * `read_vault_text_file` IPC 왕복이고 그 명령은 **본문 전체 + mtime** 을
+   * 돌려준다. 쓰이는 것은 숫자 하나인데 볼트 전체가 다리를 건넜다 — 이
+   * 저장소 자신을 볼트로 열면 `docs/` 가 261 파일 · 17.7MB 이고, 이 함수는
+   * 창에 포커스가 돌아올 때마다 돈다.
+   *
+   * `vault_fingerprint` 는 Rust 가 훑어 **경로와 mtime 만** 한 번에 준다.
+   * 웹에는 이런 일괄 API 가 없어 `null` 이 오고, 그러면 아래 경로로 떨어진다 —
+   * `surfaces.md` 의 브리지 관례(없으면 `null`, 화면/동작은 정직하게 강등)
+   * 그대로다.
+   */
+  const nativeRoot = (root as { rootPath?: unknown }).rootPath;
+  if (typeof nativeRoot === 'string' && nativeRoot) {
+    const native = await nativeVaultFingerprint(nativeRoot);
+    if (native) return fingerprintFromEntries(native.entries);
+  }
+
   const files = await walk(root);
   const stamps = await Promise.all(
     files.map(async (entry) => {

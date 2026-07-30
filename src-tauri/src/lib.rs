@@ -688,6 +688,137 @@ fn list_vault_directory(
     Ok(out)
 }
 
+/// 볼트 지문 한 항목 — 경로와 mtime **만**. 본문은 담지 않는다.
+#[derive(serde::Serialize)]
+#[serde(rename_all = "camelCase")]
+struct VaultStamp {
+    relative_path: String,
+    /// `TauriTextFile::last_modified` 와 같은 표현 — 이 볼트에서 mtime 의 타입은 하나다.
+    last_modified: u128,
+}
+
+/// `vault_fingerprint` 의 결과. 절단·가지치기를 **숨기지 않고** 함께 돌려준다.
+#[derive(serde::Serialize)]
+#[serde(rename_all = "camelCase")]
+struct VaultFingerprint {
+    entries: Vec<VaultStamp>,
+    truncated: bool,
+    pruned_dirs: Vec<String>,
+}
+
+/// TS `VAULT_WALK_MAX_DEPTH` 와 **같은 값이어야 한다** (계약 테스트가 본다).
+const VAULT_WALK_MAX_DEPTH: usize = 12;
+/// TS `VAULT_WALK_MAX_ENTRIES` 와 같은 값.
+const VAULT_WALK_MAX_ENTRIES: usize = 4000;
+/// TS `PRUNE_BY_NAME` 과 같은 목록.
+const VAULT_PRUNE_DIR_NAMES: &[&str] = &["node_modules"];
+/// TS `CACHE_DIR_TAG` 와 같은 값.
+const VAULT_CACHE_DIR_TAG: &str = "CACHEDIR.TAG";
+/// TS `IMAGE_EXT` 와 같은 확장자 집합(소문자 비교).
+const VAULT_IMAGE_EXTS: &[&str] = &["png", "jpg", "jpeg", "gif", "webp", "svg", "avif", "bmp"];
+
+fn vault_entry_is_tracked(name: &str) -> bool {
+    if name.ends_with(".md") {
+        return true;
+    }
+    match name.rsplit_once('.') {
+        Some((_, ext)) => VAULT_IMAGE_EXTS.contains(&ext.to_ascii_lowercase().as_str()),
+        None => false,
+    }
+}
+
+fn walk_vault_stamps(
+    dir: &Path,
+    prefix: &str,
+    depth: usize,
+    acc: &mut VaultFingerprint,
+) -> Result<(), String> {
+    if acc.truncated {
+        return Ok(());
+    }
+    if depth > VAULT_WALK_MAX_DEPTH {
+        acc.truncated = true;
+        return Ok(());
+    }
+
+    // 목록을 먼저 모은다 — 캐시 표식 판정이 이 목록 안에서 끝난다.
+    let mut children: Vec<(String, bool)> = Vec::new();
+    for entry in fs::read_dir(dir).map_err(|err| err.to_string())? {
+        let entry = entry.map_err(|err| err.to_string())?;
+        let file_type = entry.file_type().map_err(|err| err.to_string())?;
+        if !file_type.is_dir() && !file_type.is_file() {
+            continue;
+        }
+        children.push((
+            entry.file_name().to_string_lossy().to_string(),
+            file_type.is_dir(),
+        ));
+    }
+
+    if children.iter().any(|(name, _)| name == VAULT_CACHE_DIR_TAG) {
+        acc.pruned_dirs
+            .push(if prefix.is_empty() { ".".into() } else { prefix.into() });
+        return Ok(());
+    }
+
+    for (name, is_dir) in children {
+        if acc.entries.len() >= VAULT_WALK_MAX_ENTRIES {
+            acc.truncated = true;
+            return Ok(());
+        }
+        if name.starts_with('.') {
+            continue;
+        }
+        let relative = if prefix.is_empty() {
+            name.clone()
+        } else {
+            format!("{prefix}/{name}")
+        };
+        if is_dir {
+            if VAULT_PRUNE_DIR_NAMES.contains(&name.as_str()) {
+                acc.pruned_dirs.push(relative);
+                continue;
+            }
+            walk_vault_stamps(&dir.join(&name), &relative, depth + 1, acc)?;
+        } else if vault_entry_is_tracked(&name) {
+            let last_modified = metadata_mtime_ms(&dir.join(&name))?;
+            acc.entries.push(VaultStamp {
+                relative_path: relative,
+                last_modified,
+            });
+        }
+    }
+    Ok(())
+}
+
+/// 볼트를 훑어 **경로와 mtime 만** 돌려준다.
+///
+/// ## 왜 이 명령이 필요한가 (2026-07-31)
+///
+/// 지문 계산이 `read_vault_text_file` 을 파일마다 불렀다 — 그 명령은 **본문
+/// 전체 + mtime** 을 돌려주므로, 쓰이는 것이 숫자 하나인데 볼트 전체가 IPC 를
+/// 건너왔다. 이 저장소 자신을 볼트로 열면 `docs/` 가 **261 파일 · 17.7MB** 이고,
+/// 그 경로는 창에 포커스가 돌아올 때마다 돈다.
+///
+/// 왕복도 파일마다 하나씩이었다(디렉터리마다 `list_vault_directory` 하나 추가).
+/// 이제 **한 번**이고, 페이로드는 경로+숫자뿐이다.
+///
+/// ⚠️ **walk 규칙은 TS 쪽과 한 글자도 달라선 안 된다.** 다르면 지문이 달라지고,
+/// 앱은 "바뀐 게 없는데 매번 재빌드" 하거나 "바뀌었는데 안 알아챈다". 상수는 위에
+/// 모아 두었고 `tests/contract/vault-walk-rules.contract.test.ts` 가 두 소스를
+/// 맞대어 본다.
+#[tauri::command]
+fn vault_fingerprint(root_path: String) -> Result<VaultFingerprint, String> {
+    let root = resolve_existing_inside(&root_path, "")?;
+    let mut acc = VaultFingerprint {
+        entries: Vec::new(),
+        truncated: false,
+        pruned_dirs: Vec::new(),
+    };
+    walk_vault_stamps(&root, "", 0, &mut acc)?;
+    Ok(acc)
+}
+
 #[tauri::command]
 fn read_vault_text_file(root_path: String, relative_path: String) -> Result<TauriTextFile, String> {
     let path = resolve_existing_inside(&root_path, &relative_path)?;
@@ -6356,6 +6487,7 @@ pub fn run() {
         .invoke_handler(tauri::generate_handler![
             pick_vault_directory,
             list_vault_directory,
+            vault_fingerprint,
             read_vault_text_file,
             read_vault_binary_file,
             write_vault_text_file,
