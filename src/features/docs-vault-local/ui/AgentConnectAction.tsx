@@ -152,7 +152,15 @@ export function AgentConnectAction({ vaultPath, launch, onWritten, clientId }: A
               : t('connectPlanVaultFolder', { path: plan.configRoot })}
           </p>
           <ul className="mt-1.5 flex flex-col gap-1">
-            {plan.targets.map((target) => (
+            {/*
+              * **미리보기는 쓸 것만 그린다.** 오늘 아침 `confirmWrite` 만 필터하고
+              * 이 목록은 그대로 뒀더니, 화면이 5개를 약속하고 1개를 썼다 —
+              * 「See what will be written」이라는 이름이 곧 거짓이 된다.
+              * 원래 결함(라벨이 거짓말한다)의 다른 반쪽이었다.
+              */}
+            {plan.targets
+              .filter((target) => filesForClient(clientId).includes(target.fileName))
+              .map((target) => (
               <li
                 key={target.fileName}
                 className="flex items-baseline justify-between gap-2 font-mono text-caption text-[color:var(--color-text-tertiary)]"

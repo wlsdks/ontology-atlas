@@ -121,4 +121,28 @@ describe('에이전트 연결 — 파일 계약', () => {
       expect(client.docsUrl, `${client.id} 의 문서 URL 이 https 가 아니다`).toMatch(/^https:\/\//);
     }
   });
+
+  /**
+   * **미리보기와 쓰기가 같은 목록을 봐야 한다.**
+   *
+   * 이 결함은 **두 번 반쪽으로** 나타났다. 처음엔 쓰기가 전부 순회했고, 그것을
+   * 고친 뒤에도 **미리보기가 전부 그렸다** — 화면이 5개를 약속하고 1개를 쓰는
+   * 상태로, 「See what will be written」이라는 이름 자체가 거짓이었다.
+   *
+   * 그래서 게이트가 **두 자리가 같은 필터를 쓰는지**를 소스에서 본다. 같은 함수를
+   * 두 번 부르는 것이 계약이고, 한쪽만 부르면 그 순간 화면과 디스크가 갈라진다.
+   */
+  it('미리보기와 쓰기가 같은 필터를 쓴다', () => {
+    const source = readFileSync(
+      join(ROOT, 'src/features/docs-vault-local/ui/AgentConnectAction.tsx'),
+      'utf8',
+    );
+    const uses = source.match(/filesForClient\(clientId\)/g) ?? [];
+    expect(
+      uses.length,
+      '`filesForClient(clientId)` 가 두 번(미리보기·쓰기) 쓰이지 않는다 — 한쪽이 전부를 본다',
+    ).toBeGreaterThanOrEqual(2);
+    // 필터 없는 전체 순회가 남아 있으면 그쪽이 진실이 된다.
+    expect(source).not.toMatch(/plan\.targets\.map\(/);
+  });
 });
