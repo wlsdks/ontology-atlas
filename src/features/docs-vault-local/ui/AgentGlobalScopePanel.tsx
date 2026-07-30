@@ -33,6 +33,16 @@ export interface AgentGlobalScopePanelProps {
 
 export function AgentGlobalScopePanel({ vaultPath, launch }: AgentGlobalScopePanelProps) {
   const t = useTranslations('agentConnect');
+  /**
+   * **한 번에 한 도구.** 넷을 동시에 펼쳤더니 실측(1512×917)에서 이 패널만 977px 이
+   * 돼 시트(836px)를 넘겼다 — 단계 ① 하나가 시트 전체를 먹고 ②(재시작)·③(확인)이
+   * 스크롤 밖으로 밀렸다. 3단계라고 말하는 화면에서 2·3단계가 없는 것처럼 됐다.
+   *
+   * 사용자는 자기 도구 **하나**만 쓴다. 그래서 프로젝트 스코프와 같은 구조로
+   * 맞췄다 — 도구를 고르고, 고른 것만 본다. 부수 효과로 높이 편차(154px)도
+   * 사라진다: 반복 세트가 아니라 슬롯 하나가 되기 때문이다.
+   */
+  const [selected, setSelected] = useState<AgentClientId>(AGENT_CLIENTS[0].id);
   const [copied, setCopied] = useState<AgentClientId | null>(null);
 
   const copy = useCallback(async (client: AgentClientId, text: string) => {
@@ -41,57 +51,84 @@ export function AgentGlobalScopePanel({ vaultPath, launch }: AgentGlobalScopePan
 
   if (!vaultPath || !launch) return null;
 
+  const client = AGENT_CLIENTS.find((entry) => entry.id === selected) ?? AGENT_CLIENTS[0];
+  const instruction = globalScopeInstruction(client.id, { launch, vaultAbsolute: vaultPath });
+  const isCopied = copied === client.id;
+
   return (
     <div className="flex flex-col gap-2" data-testid="agent-global-scope">
       <p className="text-label leading-relaxed text-[color:var(--color-text-tertiary)]">
         {t('scopeGlobalIntro')}
       </p>
 
-      <ul className="flex flex-col gap-2">
-        {AGENT_CLIENTS.map((client) => {
-          const instruction = globalScopeInstruction(client.id, { launch, vaultAbsolute: vaultPath });
-          const isCopied = copied === client.id;
-          return (
-            <li
-              key={client.id}
-              data-testid={`agent-global-scope-${client.id}`}
-              className="rounded-md border border-[color:var(--color-border-soft)] bg-[color:var(--color-overlay-1)] px-3 py-2.5"
-            >
-              <div className="flex items-baseline justify-between gap-2">
-                <p className="text-body font-medium text-[color:var(--color-text-primary)]">{client.name}</p>
-                <p className="shrink-0 font-mono text-caption text-[color:var(--color-text-quaternary)]">
-                  {instruction.path}
-                </p>
-              </div>
-              <p className="mt-1 text-caption leading-relaxed text-[color:var(--color-text-tertiary)]">
-                {instruction.kind === 'command'
-                  ? t('scopeGlobalRunHint')
-                  : t('scopeGlobalPasteHint', { path: instruction.path })}
-              </p>
-              <pre className="mt-1.5 overflow-x-auto rounded border border-[color:var(--color-divider)] bg-[color:var(--color-canvas)] px-2 py-1.5 font-mono text-caption leading-relaxed text-[color:var(--color-text-secondary)]">
-                {instruction.text.trimEnd()}
-              </pre>
-              <button
-                type="button"
-                onClick={() => void copy(client.id, instruction.text)}
-                data-testid={`agent-global-scope-copy-${client.id}`}
-                className="mt-1.5 inline-flex items-center gap-1.5 rounded border border-[color:var(--color-border-soft)] px-2 py-1 text-label font-medium text-[color:var(--color-text-secondary)] transition-colors hover:border-[color:var(--color-border-strong)] hover:text-[color:var(--color-text-primary)]"
-              >
-                {isCopied ? (
-                  <Check size={12} aria-hidden className="text-[color:var(--color-status-success)]" />
-                ) : (
-                  <Copy size={12} aria-hidden />
-                )}
-                {isCopied
-                  ? t('scopeGlobalCopied')
-                  : instruction.kind === 'command'
-                    ? t('scopeGlobalCopyCommand')
-                    : t('scopeGlobalCopySnippet')}
-              </button>
-            </li>
-          );
-        })}
-      </ul>
+      {/* 도구 고르기 — 프로젝트 스코프의 도구별 버튼과 같은 구조. */}
+      <div
+        role="tablist"
+        aria-label={t('scopeGlobalToolLabel')}
+        data-testid="agent-global-scope-tools"
+        className="flex flex-wrap gap-1"
+      >
+        {AGENT_CLIENTS.map((entry) => (
+          <button
+            key={entry.id}
+            type="button"
+            role="tab"
+            aria-selected={entry.id === client.id}
+            onClick={() => setSelected(entry.id)}
+            data-testid={`agent-global-scope-tool-${entry.id}`}
+            className={`rounded-md border px-2.5 py-1 text-label font-medium transition-colors ${
+              entry.id === client.id
+                ? 'border-[color:var(--color-indigo-a46)] bg-[color:var(--color-indigo-a16)] text-[color:var(--color-text-primary)]'
+                : 'border-[color:var(--color-border-soft)] text-[color:var(--color-text-tertiary)] hover:text-[color:var(--color-text-primary)]'
+            }`}
+          >
+            {entry.name}
+          </button>
+        ))}
+      </div>
+
+      <div
+        data-testid={`agent-global-scope-${client.id}`}
+        className="rounded-md border border-[color:var(--color-border-soft)] bg-[color:var(--color-overlay-1)] px-3 py-2.5"
+      >
+        <p className="font-mono text-caption text-[color:var(--color-text-quaternary)]">
+          {instruction.path}
+        </p>
+        <p className="mt-1 text-caption leading-relaxed text-[color:var(--color-text-tertiary)]">
+          {instruction.kind === 'command'
+            ? t('scopeGlobalRunHint')
+            : t('scopeGlobalPasteHint', { path: instruction.path })}
+        </p>
+        {/*
+          * **줄바꿈으로 전체를 보인다.** `overflow-x: auto` 로 뒀더니 넷 다 잘렸고
+          * (실측), 잘린 자리가 정확히 **볼트 절대 경로**였다 — 이 패널의 값이
+          * "경로가 이미 채워져 있다" 인데 그 값이 화면에서 안 보였다. 복사 버튼은
+          * 전체를 복사하지만, 사용자는 화면에서 확인할 수 없는 것을 믿지 않는다.
+          */}
+        <pre
+          data-testid={`agent-global-scope-body-${client.id}`}
+          className="mt-1.5 whitespace-pre-wrap break-all rounded border border-[color:var(--color-divider)] bg-[color:var(--color-canvas)] px-2 py-1.5 font-mono text-caption leading-relaxed text-[color:var(--color-text-secondary)]"
+        >
+          {instruction.text.trimEnd()}
+        </pre>
+        <button
+          type="button"
+          onClick={() => void copy(client.id, instruction.text)}
+          data-testid={`agent-global-scope-copy-${client.id}`}
+          className="mt-1.5 inline-flex items-center gap-1.5 rounded border border-[color:var(--color-border-soft)] px-2 py-1 text-label font-medium text-[color:var(--color-text-secondary)] transition-colors hover:border-[color:var(--color-border-strong)] hover:text-[color:var(--color-text-primary)]"
+        >
+          {isCopied ? (
+            <Check size={12} aria-hidden className="text-[color:var(--color-status-success)]" />
+          ) : (
+            <Copy size={12} aria-hidden />
+          )}
+          {isCopied
+            ? t('scopeGlobalCopied')
+            : instruction.kind === 'command'
+              ? t('scopeGlobalCopyCommand')
+              : t('scopeGlobalCopySnippet')}
+        </button>
+      </div>
 
       {/*
         * **상실 문장.** 프로젝트 스코프의 `connectPlanAuditNote` 와 짝이다 — 한쪽은
