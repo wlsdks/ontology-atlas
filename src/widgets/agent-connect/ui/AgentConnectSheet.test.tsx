@@ -159,6 +159,7 @@ describe("AgentConnectSheet scope segment", () => {
           status={{ kind: "none" }}
           snippets={{
             mcpJson: '{"mcpServers":{}}',
+            replacementMcpJson: '{"mcpServers":{"ontology-atlas":{"env":{"OATLAS_VAULT":"."}}}}',
             codexCommand: "codex mcp add ontology-atlas",
             codexConfig: "[mcp_servers.ontology-atlas]",
             needsManualPath: false,
