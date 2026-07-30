@@ -201,7 +201,11 @@ function GatewayNavLink({
       data-testid={`gateway-nav-${href.slice(1)}`}
       aria-current={active ? 'page' : undefined}
       className={cn(
-        'inline-flex h-8 items-center whitespace-nowrap rounded-chip border px-2.5',
+        // ⚠️ `touch-hit-expand` 는 **칩이 되면서 더 필요해졌다.** 맨 글자였을
+        // 때부터 달려 있던 것을 칩으로 바꾸며 떨어뜨렸고, 터치 계약이 32px 높이를
+        // 잡았다(coarse 포인터 44px). 보이는 상자는 그대로 두고 히트 영역만
+        // 의사요소로 넓히므로 이 줄의 레이아웃은 1px 도 안 바뀐다.
+        'touch-hit-expand inline-flex h-8 items-center whitespace-nowrap rounded-chip border px-2.5',
         'text-body leading-body transition-colors',
         // ⚠️ **쉴 때부터 테두리를 준다.** 처음엔 비활성을 `border-transparent`
         // 로 두고 호버에서만 칩이 나타나게 했는데, 그러면 소유자가 짚은 상태
