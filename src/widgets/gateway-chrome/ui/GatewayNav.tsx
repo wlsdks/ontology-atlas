@@ -124,13 +124,18 @@ export function GatewayNav() {
               <XMark size={14} aria-hidden />
             </a>
           ) : (
+            /* ⚠️ **`opacity-50` 을 뺀 것이 이 자리의 수정이다** (2026-07-30).
+               그전엔 quaternary(4.76:1)에 투명도 0.5 가 겹쳐 실효 대비가 WCAG
+               비텍스트 기준(1.4.11, 3:1) 아래로 내려갔다 — 소유자 관측
+               *"잘 안보이고"*. 비활성은 **흐림이 아니라 형태**로 말한다:
+               테두리 없음 + `cursor-not-allowed` + `aria-disabled` + 툴팁. */
             <span
               data-testid="gateway-x-placeholder"
               aria-disabled="true"
               title={tNav('xPending')}
-              className="inline-flex cursor-not-allowed items-center text-[color:var(--color-text-quaternary)] opacity-50"
+              className="inline-flex h-8 cursor-not-allowed items-center rounded-chip px-2 text-[color:var(--color-text-quaternary)]"
             >
-              <XMark size={14} aria-hidden />
+              <XMark size={15} aria-hidden />
               <span className="sr-only">{tNav('xPending')}</span>
             </span>
           )}
@@ -162,6 +167,25 @@ export function GatewayNav() {
   );
 }
 
+/**
+ * 관문 크롬의 읽을거리 링크 — **칩으로 그린다**.
+ *
+ * ## 왜 맨 글자가 아닌가 (2026-07-30, 소유자: *"버튼도 아니고 잘 안보이고"*)
+ *
+ * 대비는 원래도 문제가 아니었다 — 실측 **6.13:1** 로 본문 기준을 넉넉히 넘는다.
+ * 문제는 **같은 줄의 이웃**이었다: EN/KO 로케일 전환은 32×32 칩인데 이 둘만
+ * 맨 글자(32×20 · 46×20, 배경도 테두리도 없음)라, 나란히 놓이면 하나는 컨트롤로
+ * 다른 하나는 라벨로 읽힌다. **어포던스는 절대값이 아니라 이웃과의 관계다.**
+ *
+ * 그래서 색을 올리는 대신 **형태를 맞췄다**. 배경 + 테두리 + 같은 높이를 주면
+ * 셋이 한 종류의 물건으로 읽힌다.
+ *
+ * ## 활성 상태는 색이 아니라 면으로 구분한다
+ *
+ * 현재 페이지는 채워진 면(`--color-elevated`)을 갖고, 나머지는 비어 있다가
+ * 호버에서 그 면을 얻는다. 무채색 안에서 「지금 여기」를 말하는 방법이라
+ * 새 색을 열지 않는다(`design.md` — 채색은 인디고 하나).
+ */
 function GatewayNavLink({
   href,
   active,
@@ -177,10 +201,15 @@ function GatewayNavLink({
       data-testid={`gateway-nav-${href.slice(1)}`}
       aria-current={active ? 'page' : undefined}
       className={cn(
-        'touch-hit-expand whitespace-nowrap text-body leading-body transition-colors',
+        'inline-flex h-8 items-center whitespace-nowrap rounded-chip border px-2.5',
+        'text-body leading-body transition-colors',
+        // ⚠️ **쉴 때부터 테두리를 준다.** 처음엔 비활성을 `border-transparent`
+        // 로 두고 호버에서만 칩이 나타나게 했는데, 그러면 소유자가 짚은 상태
+        // (*"버튼도 아니고"*)가 **평상시 화면에서 그대로**다 — 호버는 이미
+        // 컨트롤이라고 믿은 사람만 발견한다. 어포던스는 손이 오기 전에 있어야 한다.
         active
-          ? 'text-[color:var(--color-text-primary)]'
-          : 'text-[color:var(--color-text-tertiary)] hover:text-[color:var(--color-text-primary)]',
+          ? 'border-[color:var(--color-border-strong)] bg-[color:var(--color-elevated)] text-[color:var(--color-text-primary)]'
+          : 'border-[color:var(--color-border-strong)] text-[color:var(--color-text-secondary)] hover:bg-[color:var(--color-elevated)] hover:text-[color:var(--color-text-primary)]',
       )}
     >
       {children}
