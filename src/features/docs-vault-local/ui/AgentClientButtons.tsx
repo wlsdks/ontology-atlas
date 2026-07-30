@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { Fragment, useState } from "react";
 import { useTranslations } from "next-intl";
 import { ArrowUpRight, Check, CircleAlert, Copy, Loader2, Terminal } from "lucide-react";
 import { Link } from "@/i18n/navigation";
@@ -21,7 +21,7 @@ import { useToast } from "@/shared/ui";
  * 동일 레이어 cross-import 없이 가져다 쓴다.
  */
 
-import type { AgentClientId } from "../lib/agent-clients";
+import { AGENT_CLIENTS, type AgentClientId } from "../lib/agent-clients";
 
 type ClientId = "claudeCode" | "cursor" | "antigravity" | "codex";
 
@@ -34,6 +34,14 @@ type ClientId = "claudeCode" | "cursor" | "antigravity" | "codex";
  */
 const CLIENT_TO_ID: Record<ClientId, AgentClientId> = {
   claudeCode: "claude-code",
+  cursor: "cursor",
+  antigravity: "antigravity",
+  codex: "codex",
+};
+
+/** 역방향 — 렌더 순서를 `AGENT_CLIENTS` 에서 파생할 때 쓰는 번역. */
+const ID_TO_CLIENT: Record<AgentClientId, ClientId> = {
+  "claude-code": "claudeCode",
   cursor: "cursor",
   antigravity: "antigravity",
   codex: "codex",
@@ -184,10 +192,19 @@ export function AgentClientButtons({
     );
   }
 
-  return (
-    <div className="flex flex-col gap-2" data-testid="agent-client-buttons">
-      {/* ① Claude Code — 최상단·최강. Tauri: .mcp.json 자동 생성. 웹: 복사. */}
-      {mcpJsonIsReady ? (
+  /**
+   * 도구별 렌더 조각 — **순서는 여기 없다.** 어제(2026-07-30 전역 스코프 탭)와
+   * 같은 시트 안에서 이 버튼 열은 Claude Code → Cursor → Antigravity → Codex 로
+   * 하드코딩돼 있었고, 전역 스코프 탭은 `AGENT_CLIENTS`(Claude Code → Codex →
+   * Cursor → Antigravity)를 그대로 썼다 — 한 시트 안에서 같은 목록이 두 순서를
+   * 가졌다(「하나의 목록, 두 진실」 부류). 렌더 순서를 그 배열에서 파생시켜
+   * 다시 갈라질 자리를 없앤다. 게이트:
+   * `AgentClientButtons.test.tsx` "render order follows AGENT_CLIENTS".
+   */
+  const clientRenderers: Record<ClientId, () => React.ReactNode> = {
+    // Claude Code — 주 CTA. Tauri: .mcp.json 자동 생성. 웹: 복사.
+    claudeCode: () =>
+      mcpJsonIsReady ? (
         <ClientStatus
           testId="agent-client-claude-code"
           label={t("claudeCodeReady")}
@@ -228,15 +245,14 @@ export function AgentClientButtons({
           copiedLabel={t("copyClaudeCodeConfigDone")}
           onClick={() => void copyAndConfirm("claudeCode", mcpJsonSnippet)}
         />
-      )}
+      ),
 
-      {/*
-        * ② Cursor — **설치 앱에서는 파일을 쓴다.** 2026-07-30 조사로 `.cursor/mcp.json`
-        * 프로젝트 스코프가 확인됐고, 딥링크는 착지 파일이 공식 문서에 명시되지 않았다.
-        * 어디에 무엇이 생기는지 모르는 편의보다, 볼트 안 한 파일이 예측 가능하다.
-        * 웹에서는 파일을 못 쓰니 딥링크가 남는다.
-        */}
-      {onWriteConfigs ? (
+    // Cursor — **설치 앱에서는 파일을 쓴다.** 2026-07-30 조사로 `.cursor/mcp.json`
+    // 프로젝트 스코프가 확인됐고, 딥링크는 착지 파일이 공식 문서에 명시되지 않았다.
+    // 어디에 무엇이 생기는지 모르는 편의보다, 볼트 안 한 파일이 예측 가능하다.
+    // 웹에서는 파일을 못 쓰니 딥링크가 남는다.
+    cursor: () =>
+      onWriteConfigs ? (
         <ClientButton
           testId="agent-client-cursor"
           icon={<Terminal size={13} aria-hidden />}
@@ -262,17 +278,16 @@ export function AgentClientButtons({
           copiedLabel={t("copyConfigDone")}
           onClick={() => void copyAndConfirm("cursor", mcpJsonSnippet)}
         />
-      )}
+      ),
 
-      {/*
-        * ③ Antigravity — 워크스페이스 `.agents/mcp_config.json`, stdio 명시, 키가
-        * `mcpServers` 라 기존 라이터로 그냥 떨어진다(2026-07-30 조사).
-        *
-        * **VS Code 가 이 자리에서 빠졌다.** `.vscode/mcp.json` 을 지원하지만 키가
-        * `mcpServers` 가 아니라 `servers` 라서 라이터를 하나 더 요구하는데, 그 값이
-        * 겹침 대비 비쌌다. 스니펫은 고급 접기의 「다른 툴」 표에 남는다.
-        */}
-      {onWriteConfigs ? (
+    // Antigravity — 워크스페이스 `.agents/mcp_config.json`, stdio 명시, 키가
+    // `mcpServers` 라 기존 라이터로 그냥 떨어진다(2026-07-30 조사).
+    //
+    // **VS Code 가 이 자리에서 빠졌다.** `.vscode/mcp.json` 을 지원하지만 키가
+    // `mcpServers` 가 아니라 `servers` 라서 라이터를 하나 더 요구하는데, 그 값이
+    // 겹침 대비 비쌌다. 스니펫은 고급 접기의 「다른 툴」 표에 남는다.
+    antigravity: () =>
+      onWriteConfigs ? (
         <ClientButton
           testId="agent-client-antigravity"
           icon={<Terminal size={13} aria-hidden />}
@@ -291,10 +306,11 @@ export function AgentClientButtons({
           copiedLabel={t("copyConfigDone")}
           onClick={() => void copyAndConfirm("antigravity", mcpJsonSnippet)}
         />
-      )}
+      ),
 
-      {/* ④ Codex — Tauri: config 자동 생성. 웹: 한 줄 명령 복사 */}
-      {codexConfigIsReady ? (
+    // Codex — Tauri: config 자동 생성. 웹: 한 줄 명령 복사.
+    codex: () =>
+      codexConfigIsReady ? (
         <ClientStatus
           testId="agent-client-codex"
           label={t("codexReady")}
@@ -332,7 +348,14 @@ export function AgentClientButtons({
           copiedLabel={t("copyCodexCommandDone")}
           onClick={() => void copyAndConfirm("codex", codexCommand)}
         />
-      )}
+      ),
+  };
+
+  return (
+    <div className="flex flex-col gap-2" data-testid="agent-client-buttons">
+      {AGENT_CLIENTS.map((client) => (
+        <Fragment key={client.id}>{clientRenderers[ID_TO_CLIENT[client.id]]()}</Fragment>
+      ))}
 
       {needsManualPath ? (
         <p className="text-caption leading-relaxed text-[color:var(--color-text-quaternary)]">
