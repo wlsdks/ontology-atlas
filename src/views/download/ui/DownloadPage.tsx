@@ -329,7 +329,7 @@ function PortraitStage({
         // 값을 조건부로 갈아끼우되 **둘 다 램프 밖 기하값**이라 짝이 어긋날
         // 짝(행간 같은)이 없다 — `design.md` 의 조건부 크기 주의는 타입 램프의
         // 이야기이고, 여기는 레이아웃 바닥이다.
-        scrolls ? 'lg:min-h-[40rem]' : 'lg:min-h-[34rem]',
+        scrolls ? 'lg:min-h-[44rem]' : 'lg:min-h-[34rem]',
       )}
     >
       {/*
