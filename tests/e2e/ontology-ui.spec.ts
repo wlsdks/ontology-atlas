@@ -33,14 +33,30 @@ test.describe("ontology view UI", () => {
     await useDogfoodSample(page);
   });
 
-  test("desktop: root renders the topology map directly (no marketing landing detour)", async ({ page }) => {
-    // root-first-open (2026-07) — `/` used to render a marketing LandingPage
-    // when no vault was selected; it now renders the map (HomePage) itself,
-    // same as `/topology`. The LandingPage hero copy moved to `/download`.
+  /**
+   * **이 검사는 2026-07-30 에 주소가 갈렸다.**
+   *
+   * 원래 문장은 *"root renders the topology map directly (no marketing landing
+   * detour)"* — 2026-07 root-first-open 결정을 그대로 인코딩했다. 소유자 서명으로
+   * 그 결정이 뒤집혀 `/` 는 웹 방문자의 얼굴이 됐고 지도는 `/topology` 로 갔다.
+   *
+   * **검사를 지우지 않고 둘로 옮겼다.** 지도가 곧장 뜬다는 보증은 그대로 있고,
+   * 묻는 주소만 바뀐다. 지웠다면 이 전환이 보증 하나를 없앤 일이 됐을 것이다.
+   */
+  test("desktop: /topology renders the map directly (no detour)", async ({ page }) => {
+    await page.setViewportSize({ width: 1280, height: 800 });
+    await page.goto("/en/topology/");
+    await expect(page.getByTestId("topology-index-panel")).toBeVisible();
+    // 옛 마케팅 랜딩의 히어로 문구는 어느 주소에도 남아 있지 않다.
+    await expect(page.getByText("Codebase ontology that grows with AI")).toHaveCount(0);
+  });
+
+  test("desktop: root renders the gateway face, not the workbench", async ({ page }) => {
     await page.setViewportSize({ width: 1280, height: 800 });
     await page.goto("/en/");
-    await expect(page.getByTestId("topology-index-panel")).toBeVisible();
-    await expect(page.getByText("Codebase ontology that grows with AI")).toHaveCount(0);
+    // 얼굴의 상단 바가 뜨고, 워크벤치의 INDEX 는 없다.
+    await expect(page.getByTestId("download-gnb")).toBeVisible();
+    await expect(page.getByTestId("topology-index-panel")).toHaveCount(0);
   });
 
   test("desktop: /download states installability before it explains the product", async ({ page }) => {

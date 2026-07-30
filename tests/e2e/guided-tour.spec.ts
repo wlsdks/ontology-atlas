@@ -26,7 +26,8 @@ test.describe("guided tour click-through (dev branch, 1440x900)", () => {
   test.use({ viewport: { width: 1440, height: 900 } });
 
   test("all 8 steps render a resolvable anchor + card", async ({ page }, testInfo) => {
-    await gotoAndSettle(page, "/en/");
+    // 투어는 지도 위에서 돈다 — `/` 는 2026-07-30 부터 관문(얼굴)이다.
+    await gotoAndSettle(page, "/en/topology/");
 
     const tourButton = page.getByTestId("topology-tour-button");
     await expect(tourButton).toBeVisible({ timeout: 15_000 });
@@ -105,7 +106,8 @@ test.describe("guided tour click-through (dev branch, 1440x900)", () => {
   // worldToScreen 실좌표이므로 "프로브 중심 = 항상 클릭 통과" 를 계약으로
   // 고정한다.
   test("step 4: probe center is click-passable and advances the tour", async ({ page }) => {
-    await gotoAndSettle(page, "/en/");
+    // 투어는 지도 위에서 돈다 — `/` 는 2026-07-30 부터 관문(얼굴)이다.
+    await gotoAndSettle(page, "/en/topology/");
 
     const tourButton = page.getByTestId("topology-tour-button");
     await expect(tourButton).toBeVisible({ timeout: 15_000 });
