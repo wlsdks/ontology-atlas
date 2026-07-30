@@ -262,6 +262,9 @@ test.describe("관문 다운로드의 그리드", () => {
     const mounted = await measure(page);
     assertGrid(mounted, "1440 (마운트)");
 
+    // 폭 목록이 원점을 한 번이라도 실제로 움직였는지 — 아래 참조.
+    let sawOriginChange = false;
+
     for (const width of [2560, 1920, 1440]) {
       await page.setViewportSize({ width, height: 900 });
       // 파생은 rAF 로 코얼레싱된다 — 두 프레임을 기다린 뒤 잰다.
@@ -273,14 +276,34 @@ test.describe("관문 다운로드의 그리드", () => {
       );
       const m = await measure(page);
       assertGrid(m, `${width} (리사이즈)`);
-      // 마운트 값이 그대로 남아 있으면 구독이 없는 것이다 — 넓힌 뒤에는
-      // 예약폭이 반드시 달라져야 한다.
-      if (width !== 1440) {
-        expect(m.safeInsetLeft, `${width}: 예약폭이 마운트 값에 묶여 있다`).not.toBe(
-          mounted.safeInsetLeft,
-        );
+      // 마운트 값이 그대로 남아 있으면 구독이 없는 것이다 — 단, 그렇게 말할 수
+      // 있는 것은 **원점이 실제로 달라진 폭**에서뿐이다.
+      //
+      // ⚠️ 예전엔 `width !== 1440` 이면 무조건 달라지라고 했다. 그건 "1920 의
+      // 원점은 1440 보다 크다" 는 **홈통 크기에 대한 가정**을 시험이 들고 있는
+      // 것이고, 이 파일이 맨 위에서 금지한 「원점 값 베끼기」와 같은 실수다.
+      // 원점은 `max(홈통, (vw − page-max)/2)` 라 홈통이 커지면 앞항이 이겨
+      // 넓혀도 그대로일 수 있다 — 홈통 200 에서 1440·1920 이 둘 다 200 이다.
+      // 그때 "달라져야 한다"고 우기면 시험이 제품이 아니라 옛 가정을 지킨다.
+      //
+      // 조건을 라이브 원점에 걸면 의도("원점이 움직였으면 예약폭도 움직였어야
+      // 한다")는 그대로고, 홈통을 어떻게 바꿔도 이 시험은 계속 참을 잰다.
+      if (m.originToken !== mounted.originToken) {
+        sawOriginChange = true;
+        expect(
+          m.safeInsetLeft,
+          `${width}: 원점은 ${mounted.originToken} → ${m.originToken} 로 움직였는데 예약폭이 마운트 값에 묶여 있다`,
+        ).not.toBe(mounted.safeInsetLeft);
       }
     }
+
+    // 위 조건부가 **조용히 무의미해지는** 것을 막는다. 홈통이 더 커져서 폭
+    // 목록 전체가 원점을 못 움직이게 되면 이 시험은 아무것도 안 재면서 초록이
+    // 된다 — 그건 통과가 아니라 시야 상실이다. 그때는 폭 목록을 넓혀라.
+    expect(
+      sawOriginChange,
+      "폭 목록이 원점을 한 번도 바꾸지 못했다 — 이 시험은 지금 아무것도 지키지 않는다",
+    ).toBe(true);
   });
 
   for (const viewport of NO_SCROLL_VIEWPORTS) {
