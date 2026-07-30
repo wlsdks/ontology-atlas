@@ -178,7 +178,7 @@ export function DownloadPage() {
       <GatewayNav />
 
       <main id="main" tabIndex={-1} className="flex min-w-0 flex-1 flex-col bg-[color:var(--color-canvas)]">
-        <PortraitStage published={published} primaryAsset={primaryAsset} />
+        <PortraitStage published={published} primaryAsset={primaryAsset} scrolls={showDemo} />
 
         {showDemo ? (
           <div className={cn(PAGE_GUTTER, 'w-full')}>
@@ -270,16 +270,53 @@ export function DownloadPage() {
  * 부분이 하필 "설치 3단" 이었다.
  *
  * 이제는 셸이 준 높이에서 GNB 와 바닥 띠를 뺀 나머지를 무대가 **전부** 갖는다
- * (`lg:flex-1`). 바닥(`lg:min-h-[34rem]`)만 남겨 아주 낮은 창에서 무대가
- * 찌그러지지 않게 한다. 내용이 그보다 커지면(좁은 폭·긴 번역문) 무대가 늘어나야지
- * 판이 잘리면 안 된다.
+ * (`lg:flex-1`). 바닥만 남겨 아주 낮은 창에서 무대가 찌그러지지 않게 한다.
+ * 내용이 그보다 커지면(좁은 폭·긴 번역문) 무대가 늘어나야지 판이 잘리면 안 된다.
+ *
+ * ## 바닥 34rem → 40rem (2026-07-30) — **이 값이 노드 크기를 정한다**
+ *
+ * 소유자: *"박스랑 노드 사이에 빈 공간이 많잖아? 노드를 한 10%만 키우고 대신
+ * 세로를 약간 늘리면"*. 진단이 맞았다 — 지도 레인은 그래프보다 **가로로 길어서
+ * 높이가 병목**이고(1512 에서 잉크 비율 1.13 vs 레인 비율 1.41), 무대가 높아지면
+ * 카메라가 그만큼 크게 프레이밍한다.
+ *
+ * `/` 와 `/download` 가 같은 폭인데 지도 크기가 34% 달랐던 것이 그 증거다 —
+ * `/` 는 시연 절이 세로를 나눠 갖느라 무대가 짧았다(561 vs 676).
+ *
+ * 1512 실측:
+ *
+ * | 바닥 | 캔버스 | 잉크 폭 | 증가 | 시연 절 시작 y |
+ * |---|---|---|---|---|
+ * | 34rem | 561 | 390 | — | 667 |
+ * | 37rem | 591 | 426 | +9.2% | 697 |
+ * | **40rem** | **639** | **482** | **+23.6%** | **745** |
+ *
+ * 소유자가 40rem 을 골랐다. **대가는 시연 절이 78px 밀리는 것**이고, 그건
+ * #786 이 문서화한 의도와 같은 방향이다(첫 화면은 헤드라인·다운로드가 갖고,
+ * 스크롤하면 영상이 온다).
+ *
+ * ⚠️ **DOM 으로 높이만 바꿔서 재면 안 된다.** 카메라는 마운트 때 한 번
+ * 프레이밍하고 컨테이너 높이 변화에는 다시 맞추지 않는다 — 실측 중 잉크가
+ * 1px 도 안 커져서 2026-07-28 원장의 「스케일 상한」과 같은 증상으로 보였지만,
+ * 상한(6)에는 닿지도 않았고 원인이 달랐다. 값을 바꿨으면 **새로고침하고** 재라.
  */
 function PortraitStage({
   published,
   primaryAsset,
+  scrolls,
 }: {
   published: boolean;
   primaryAsset: ReturnType<typeof macosAssetFor>;
+  /**
+   * 이 페이지가 **스크롤되는 페이지인가**(= 아래에 시연 절이 있는가).
+   *
+   * 바닥 높이를 가르는 유일한 조건이다. 두 주소의 일이 다르기 때문이다:
+   * `/download` 는 링크로 도착해 설치만 하려는 사람의 **한 화면** 페이지라
+   * 무대가 설치 3단에 자리를 양보해야 하고(1512×850 에서 40rem 바닥이면
+   * 그 3단이 접힌다 — 게이트가 실측으로 잡았다), `/` 는 어차피 아래로
+   * 이어지는 페이지라 무대가 높아도 잃는 것이 없다.
+   */
+  scrolls: boolean;
 }) {
   const t = useTranslations('download');
   const graph = useStageGraph();
@@ -287,7 +324,13 @@ function PortraitStage({
   return (
     <section
       data-testid="download-stage"
-      className="relative isolate flex w-full flex-col overflow-hidden border-b border-[color:var(--color-divider)] lg:min-h-[34rem] lg:flex-1"
+      className={cn(
+        'relative isolate flex w-full flex-col overflow-hidden border-b border-[color:var(--color-divider)] lg:flex-1',
+        // 값을 조건부로 갈아끼우되 **둘 다 램프 밖 기하값**이라 짝이 어긋날
+        // 짝(행간 같은)이 없다 — `design.md` 의 조건부 크기 주의는 타입 램프의
+        // 이야기이고, 여기는 레이아웃 바닥이다.
+        scrolls ? 'lg:min-h-[40rem]' : 'lg:min-h-[34rem]',
+      )}
     >
       {/*
        * 지도의 자리가 폭에 따라 **바뀐다** (위계석 P6, 2026-07-28 실측).
