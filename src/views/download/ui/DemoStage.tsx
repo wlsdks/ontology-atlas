@@ -174,7 +174,13 @@ function DemoPanel({
     const video = videoRef.current;
     if (!video) return;
     const raf = requestAnimationFrame(() => {
-      void video.play().then(() => setStarted(true)).catch(() => setStarted(false));
+      // `play()` 가 Promise 를 안 돌려줄 수 있다 — jsdom 이 그렇고(처리되지 않은
+      // 예외로 새어 CI 를 빨갛게 만들었다), 구형 브라우저도 그랬다. 옵셔널 체이닝이
+      // 없으면 그 환경에서 `.then` 이 undefined 접근이 된다.
+      void video
+        .play()
+        ?.then(() => setStarted(true))
+        .catch(() => setStarted(false));
     });
     return () => cancelAnimationFrame(raf);
   }, [hidden, reduced, clip.autoplay]);
@@ -189,7 +195,7 @@ function DemoPanel({
   }, [cues]);
 
   const play = useCallback(() => {
-    void videoRef.current?.play().then(() => setStarted(true));
+    void videoRef.current?.play()?.then(() => setStarted(true));
   }, []);
 
   const firstLine = cues[0]?.text ?? '';
