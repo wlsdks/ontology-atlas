@@ -607,7 +607,14 @@ function PublishedActions({
           <a
             href={intel.downloadUrl}
             data-testid="download-macos-x64"
-            className={cn(buttonVariants({ variant: 'outline', size: 'md' }), 'rounded-chip px-4 sm:px-6')}
+            className={cn(
+              buttonVariants({ variant: 'outline', size: 'md' }),
+              // `md`(40px) 는 44px 터치 최소에 미달한다. `lg` 로 올리면 1512×850 에서
+              // 판이 한 화면을 넘긴다(그래서 낮춘 것이다) — 두 계약이 부딪히는 자리다.
+              // 히트 영역 확장은 `::after` 오버레이라 **레이아웃 높이를 늘리지 않는다**:
+              // 손가락은 44px 을 받고 판은 850 안에 남는다.
+              'touch-hit-expand rounded-chip px-4 sm:px-6',
+            )}
           >
             <Download size={15} aria-hidden />
             {t('archIntelCta')}
@@ -753,7 +760,7 @@ function PlateExitRow({ published }: { published: boolean }) {
         <Link
           href="/topology"
           data-testid="download-web-cta"
-          className={cn(buttonVariants({ variant: 'outline', size: 'sm' }), 'rounded-chip')}
+          className={cn(buttonVariants({ variant: 'outline', size: 'sm' }), 'touch-hit-expand rounded-chip')}
         >
           {t('webCta')}
         </Link>
@@ -1225,7 +1232,7 @@ function PlatformStatus() {
          */
         className={cn(
           buttonVariants({ variant: 'outline', size: 'sm' }),
-          'rounded-chip cursor-not-allowed opacity-55',
+          'touch-hit-expand rounded-chip cursor-not-allowed opacity-55',
         )}
       >
         <Download size={14} aria-hidden />
@@ -1246,7 +1253,7 @@ function PlatformStatus() {
         target="_blank"
         rel="noopener noreferrer"
         data-testid="download-platform-windows-track"
-        className={cn(buttonVariants({ variant: 'ghost', size: 'sm' }), 'rounded-chip')}
+        className={cn(buttonVariants({ variant: 'ghost', size: 'sm' }), 'touch-hit-expand rounded-chip')}
       >
         <ExternalLink size={13} aria-hidden />
         {t('windowsTrackCta')}
