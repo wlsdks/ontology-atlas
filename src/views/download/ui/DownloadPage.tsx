@@ -152,7 +152,21 @@ export function DownloadPage() {
    * 자산이 없으면 `DemoStage` 가 스스로 `null` 을 반환한다 — 재생할 것 없는
    * 플레이어를 관문 첫인상 자리에 두지 않기 위해 그 판정이 데이터에 있다.
    */
-  const showDemo = stripLocalePrefix(usePathname() ?? '/') === '/';
+  /**
+   * **시연 절은 두 주소 모두에 있다** (2026-07-30 확정).
+   *
+   * 종전에는 `/` 에서만 그렸다 — 원장 「시연 영상은 첫 페이지로 간다」(2026-07-29)를
+   * 그대로 옮긴 것이고, 그때는 `/` 가 아직 관문이 아니었다.
+   *
+   * 지금은 두 주소가 **같은 얼굴**이고 `/download` 는 그 얼굴의 **공유용 딥링크**다.
+   * 그러니 첫 페이지에만 영상을 두면 **링크를 받은 사람이 덜한 페이지를 본다** —
+   * 공유가 딥링크의 존재 이유인데 그 경로가 열등해진다. 소유자 확인:
+   * *"다운로드 페이지에서는 홍보 영상도 넣을거고 하단에?"*
+   *
+   * 두 주소의 차이는 **빵부스러기와 지도 복귀 링크**뿐이다(아래 `isDeepLink`
+   * 분기). 내용물의 차이가 아니다.
+   */
+  const showDemo = true;
   const published = isMacosReleasePublished();
   // Apple Silicon 이 기본 제안 — 2020년 말 이후 팔린 맥은 거의 전부 그쪽이다.
   const primaryAsset = published ? macosAssetFor('aarch64') : null;

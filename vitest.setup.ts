@@ -19,3 +19,35 @@ if (!(globalThis as { ResizeObserver?: unknown }).ResizeObserver) {
   }
   (globalThis as { ResizeObserver?: unknown }).ResizeObserver = ResizeObserverStub;
 }
+
+/**
+ * `window.matchMedia` — **jsdom 에 없는 브라우저 API**. 위 ResizeObserver 스텁과
+ * 같은 부류의 환경 심이다.
+ *
+ * ## 왜 공용 setup 에 두나
+ *
+ * 실패 모드가 **엉뚱한 자리에서 터진다.** `/download` 의 시연 절이 켜지자
+ * `DownloadPage.test.tsx` 의 **무관한 테스트 둘**(「다운로드 마디를 지운다」·
+ * 「지도로 돌아가기를 지운다」)이 빨개졌다 — 그 절이 `prefers-reduced-motion` 을
+ * 읽는 자식을 렌더하기 때문이다. 테스트마다 스텁을 복제하면 다음 사람이 같은
+ * 벽에 다시 부딪히고, 그때도 원인이 자기 변경처럼 보인다.
+ *
+ * **제품에는 위험이 없다.** 소비처는 `useSyncExternalStore` 의 서버 스냅샷을
+ * `() => false` 로 주므로 프리렌더는 이 경로를 지나지 않고, 실제 브라우저는
+ * `matchMedia` 를 예외 없이 가진다. 구멍은 jsdom 하나다.
+ *
+ * 기본값은 **"줄이지 않음"** — 애니메이션을 켠 쪽이 검증 대상이라 그쪽이 기본이다.
+ * 감소 모션을 검사하려면 그 테스트가 이 스텁을 덮어쓴다(기존 두 자리가 이미 그렇다).
+ */
+if (typeof window !== 'undefined' && typeof window.matchMedia !== 'function') {
+  window.matchMedia = ((query: string) => ({
+    matches: false,
+    media: query,
+    onchange: null,
+    addEventListener: () => {},
+    removeEventListener: () => {},
+    addListener: () => {},
+    removeListener: () => {},
+    dispatchEvent: () => false,
+  })) as unknown as typeof window.matchMedia;
+}
