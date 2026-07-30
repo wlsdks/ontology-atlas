@@ -3325,6 +3325,11 @@
         },
         {
           "depth": 2,
+          "text": "2026-07-30 — 관문에 읽을거리 둘: `/guide` · `/changelog`",
+          "slug": "2026-07-30-관문에-읽을거리-둘-guide-changelog"
+        },
+        {
+          "depth": 2,
           "text": "2026-07-30 — `v1.0.0-rc.4`: `/` 가 얼굴이 되고, 시연 클립 둘이 실리고, 「연결」이 자기 도구만 쓴다",
           "slug": "2026-07-30-v100-rc4-가-얼굴이-되고-시연-클립-둘이-실리고-연결이-자기-도구만-쓴다"
         },
@@ -5389,8 +5394,8 @@
           "slug": "2026-07-26-첫-만남은-쇼핑몰부터"
         }
       ],
-      "excerpt": "Major change history. Code commit messages answer why; this file answers when / which surface changed. Focused on user-visible changes, not PR-level granularity. Newest at the top. Entries stay date-based; the app version reached v1.0.0 on 2026-07-27, so a release tag now carries the semver promise instead. / 는 묻는 사람이 ",
-      "wordCount": 59241,
+      "excerpt": "Major change history. Code commit messages answer why; this file answers when / which surface changed. Focused on user-visible changes, not PR-level granularity. Newest at the top. Entries stay date-based; the app version reached v1.0.0 on 2026-07-27, so a release tag now carries the semver promise instead. 받기 전에 읽을 것이",
+      "wordCount": 59457,
       "updatedAt": "2026-07-30",
       "linksOut": [
         "CASE-STUDY-AGENTS-MD-DRIFT",
@@ -5418,6 +5423,11 @@
           "depth": 2,
           "text": "기록 형식",
           "slug": "기록-형식"
+        },
+        {
+          "depth": 2,
+          "text": "2026-07-30 — 관문에 읽을거리 둘을 낸다: `/guide` · `/changelog` — 손으로 쓴 마케팅 페이지가 아니라 **볼트 문서를 그린다**",
+          "slug": "2026-07-30-관문에-읽을거리-둘을-낸다-guide-changelog-손으로-쓴-마케팅-페이지가-아니라-볼트-문서를-그린다"
         },
         {
           "depth": 2,
@@ -5641,7 +5651,7 @@
         }
       ],
       "excerpt": "이 파일은 결정과 그때 진 반대 의견을 남긴다. docs/CHANGELOG.md 는 무엇이 언제 바뀌었나를 답하고, 이 파일은 왜 그렇게 정했고, 무엇을 걸었나를 답한다. 최신이 위. 기록은 덧붙이기만 한다 — 지난 기록을 고치지 않는다. 판단이 바뀌었으면 새 기록을 쓰고 옛 기록을 뒤집힘 으로 표시한다. 틀린 기록도 자산이다. 1. 소집 전에 읽는다. 카운슬을 열기 전(그리고 단독 PO 패스를 쓰기 전) 같은 표면 · 같은 질문에 대한 선행 결정이 있는지 먼저 본다. 있으면 새 패스는 그것을 ① 여전히 유효하다고 인용하거나 ② 명시적으로 뒤집는다. 조용히 다시 결정",
-      "wordCount": 18229,
+      "wordCount": 18586,
       "updatedAt": "2026-07-30",
       "linksOut": []
     },
@@ -7228,6 +7238,69 @@
       "excerpt": "이 문서는 제품을 느낌이 아니라 공개·인용 가능한 학술/표준/craft 레퍼런스에 묶어 둔다. \"온톨로지가 뭔지도 모르면서 만드는\" 것을 막기 위한 근거 모음 — 무엇이 이미 있고, 우리가 그 위에서 우리만의 것을 어디서 어떻게 다르게 만드는지. 인용 규율: 여기 실린 레퍼런스는 전부 공개 논문 / W3C 표준 / 공개 서적 / 공개 블로그이며, 2026-06-01 자동 리서치 워크플로(6 facet × research→adversarial fact-check)에서 각 출처의 제목·저자·URL 을 독립 웹 확인(25/25 verified) 한 것만 실었다. 링크/인용",
       "wordCount": 2653,
       "updatedAt": "2026-07-27",
+      "linksOut": []
+    },
+    {
+      "slug": "GUIDE",
+      "path": "docs/GUIDE.md",
+      "title": "가이드",
+      "tags": [],
+      "frontmatter": {},
+      "headings": [
+        {
+          "depth": 1,
+          "text": "가이드",
+          "slug": "가이드"
+        },
+        {
+          "depth": 2,
+          "text": "1. 이게 무엇인가",
+          "slug": "1-이게-무엇인가"
+        },
+        {
+          "depth": 2,
+          "text": "2. 첫 5분",
+          "slug": "2-첫-5분"
+        },
+        {
+          "depth": 3,
+          "text": "설치 없이 먼저 보기",
+          "slug": "설치-없이-먼저-보기"
+        },
+        {
+          "depth": 3,
+          "text": "앱으로 쓰기",
+          "slug": "앱으로-쓰기"
+        },
+        {
+          "depth": 2,
+          "text": "3. 볼트의 구조",
+          "slug": "3-볼트의-구조"
+        },
+        {
+          "depth": 2,
+          "text": "4. AI 에이전트 연결하기",
+          "slug": "4-ai-에이전트-연결하기"
+        },
+        {
+          "depth": 2,
+          "text": "5. 어디에 두는가",
+          "slug": "5-어디에-두는가"
+        },
+        {
+          "depth": 2,
+          "text": "6. 신뢰에 관하여",
+          "slug": "6-신뢰에-관하여"
+        },
+        {
+          "depth": 2,
+          "text": "7. 다음으로",
+          "slug": "7-다음으로"
+        }
+      ],
+      "excerpt": "Ontology Atlas 를 처음 여는 사람을 위한 안내입니다. 읽는 순서대로 따라오면 폴더 하나가 지도가 되고, 그 지도를 AI 에이전트가 읽게 됩니다. 이 문서 자체가 Atlas 볼트 안의 마크다운 한 장입니다. 지금 보고 계신 화면은 그 파일을 그린 것이고, 같은 파일을 앱에서 열 수도 에이전트가 MCP 로 읽을 수도 있습니다. 제품이 자기 형식으로 자기를 설명하는 셈입니다. 코드는 남고 맥락은 사라집니다. 왜 이렇게 만들었는지, 여길 건드리면 어디가 흔들리는지 — 그 지식은 보통 사람 머릿속과 흘러간 대화 속에 있습니다. grep 은 코드를 찾아주지만 왜 는",
+      "wordCount": 731,
+      "updatedAt": "2026-07-30",
       "linksOut": []
     },
     {
@@ -16363,6 +16436,13 @@
         "type": "doc",
         "slug": "FOUNDATIONS",
         "title": "FOUNDATIONS — what grounds ontology-atlas"
+      },
+      {
+        "name": "GUIDE",
+        "path": "GUIDE",
+        "type": "doc",
+        "slug": "GUIDE",
+        "title": "가이드"
       },
       {
         "name": "INTERACTION-DESIGN",

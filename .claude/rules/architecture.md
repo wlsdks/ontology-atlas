@@ -47,7 +47,9 @@ src/
   2026-07-24 폐기, 앱 전역 헌장 준수, `design.md` 참고),
   `/ontology/insights/`, `/projects/`, `/project/[slug]/`,
   `/project/[slug]/edit/`, `/project/new/`, `/project/fallback/`, `/download/`
-  (macOS 데스크톱 앱 배포). `/ontology/edit/` (구 xyflow ERD 빌더) 는
+  (macOS 데스크톱 앱 배포), `/guide/` · `/changelog/` (관문의 읽을거리 —
+  볼트 안 `docs/GUIDE.md` · `docs/CHANGELOG.md` 를 그린다. `docs` 가 아니라
+  `guide` 인 이유는 `/docs` 가 이미 문서함이기 때문 — 2026-07-30 원장). `/ontology/edit/` (구 xyflow ERD 빌더) 는
   2026-07-24 은퇴 — 공방이 조립/연결/미리보기/쓰기를 모두 덮으면서
   얇은 클라이언트 리다이렉트(→ `/ontology/studio`, `?node=` 딥링크 전달)만
   남았다. R10 (auth + cloud surface 영구 제거) 이후 외 namespace (`/login`,

@@ -37,6 +37,7 @@ export { ChromeChip, CHROME_STATUS_CHIP_CLASS, type ChromeChipProps } from './ch
 export { BrandMark, type BrandMarkProps } from './brand-mark';
 export { HexMark, type HexMarkProps } from './hex-mark';
 export { GithubMark, type GithubMarkProps } from './github-mark';
+export { XMark, type XMarkProps } from './x-mark';
 export { CompactCopyButton, type CompactCopyButtonProps } from './compact-copy-button';
 export { SimilarNodeWarning, type SimilarNodeWarningProps } from './similar-node-warning';
 export {

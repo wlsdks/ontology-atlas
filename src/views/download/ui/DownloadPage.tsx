@@ -1,23 +1,22 @@
 'use client';
 
 import {
-  ArrowLeft,
   Check,
   ChevronRight,
   Clipboard,
   Download,
   ExternalLink,
-  Orbit,
 } from 'lucide-react';
 import { useFormatter, useTranslations } from 'next-intl';
 import { resolveDisplayReleaseTag } from '../lib/pending-release-tag';
 import { Link, usePathname } from '@/i18n/navigation';
 import { cn } from '@/shared/lib/cn';
 import { stripLocalePrefix } from '@/shared/lib/nav-destination';
+import { PAGE_COLUMN, PAGE_GUTTER } from '@/shared/lib/gateway-frame';
+import { GatewayNav } from '@/widgets/gateway-chrome';
 import { DemoStage } from './DemoStage';
 import { useCopyFeedback } from '@/shared/lib/use-copy-feedback';
 import { GithubMark, buttonVariants } from '@/shared/ui';
-import { LocaleSwitch } from '@/features/locale-switch';
 import { MacosDownloadLink } from '@/features/macos-download-link';
 import { RELEASE_MIN_MACOS, RELEASE_VERSION, buildDmgName } from '../lib/release-facts';
 import {
@@ -85,8 +84,9 @@ const GITHUB_REPOSITORY_URL = 'https://github.com/wlsdks/ontology-atlas';
  * `<length>` 등록 덕에 계산값이 `160px` 로 굳는다). **`px-` 라 좌우 둘 다**
  * 원점을 받고, 그것이 좌우 대칭의 전부다.
  */
-const PAGE_GUTTER =
-  'px-[max(1.5rem,env(safe-area-inset-left))] pr-[max(1.5rem,env(safe-area-inset-right))] md:px-[var(--gateway-origin)]';
+// PAGE_GUTTER / PAGE_COLUMN 은 2026-07-30 에 `shared/lib/gateway-frame` 으로
+// 내려갔다 — `/guide` · `/changelog` 가 같은 프레임을 쓰게 되면서 뷰끼리
+// import 하는 모양이 됐기 때문이다. 값의 근거는 그 파일의 독블록에 있다.
 /**
  * 원점 안쪽의 단 하나뿐인 컬럼 — 왼쪽 고정, `--page-max` 에서 정지.
  *
@@ -94,7 +94,7 @@ const PAGE_GUTTER =
  * 남는 폭이 정확히 1600 이라 컬럼이 꽉 차고, 오른쪽 여백도 자동으로 같아진다.
  * `mx-auto` 가 필요 없는 이유가 이것이다.
  */
-const PAGE_COLUMN = 'w-full max-w-[var(--page-max)]';
+
 /**
  * 무대의 말 기둥과 판이 공유하는 폭.
  *
@@ -178,7 +178,7 @@ export function DownloadPage() {
       <GatewayNav />
 
       <main id="main" tabIndex={-1} className="flex min-w-0 flex-1 flex-col bg-[color:var(--color-canvas)]">
-        <PortraitStage published={published} primaryAsset={primaryAsset} />
+        <PortraitStage published={published} primaryAsset={primaryAsset} scrolls={showDemo} />
 
         {showDemo ? (
           <div className={cn(PAGE_GUTTER, 'w-full')}>
@@ -254,96 +254,6 @@ export function DownloadPage() {
  * 그래서 스케일 고정 계약(`design.md`)을 어기는 것이 아니라 **다른 계약을
  * 적용하는 것**이다 — 크롬 필/타일 36px 규격은 여기 해당 없음.
  */
-function GatewayNav() {
-  const t = useTranslations('download');
-  /**
-   * 이 표면은 **두 주소에 산다** — `/`(웹 방문자의 얼굴)와 `/download`(설치를
-   * 부르는 딥링크). 같은 화면이지만 크롬의 두 조각이 달라진다.
-   *
-   * `/` 에서는 ① 빵부스러기의 「다운로드」 마디를 지우고(그 주소가 아니다)
-   * ② 「지도로 돌아가기」를 지운다 — 여기로 온 사람은 지도에서 온 게 아니고,
-   * 지도로 가는 길은 판 안의 「설치 없이 브라우저에서 써보기」가 이미 낸다.
-   * 같은 일을 하는 링크를 크롬과 판에 둘 다 두면 둘 중 하나가 죽은 약속이 된다.
-   */
-  const atRoot = stripLocalePrefix(usePathname() ?? '/') === '/';
-
-  return (
-    <nav
-      data-testid="download-gnb"
-      className={cn(
-        PAGE_GUTTER,
-        'sticky top-0 z-30 w-full shrink-0 border-b border-[color:var(--color-divider)] bg-[color:var(--color-canvas)]',
-      )}
-    >
-      {/* `flex-wrap` 을 뺀 이유: 좁은 폭에서 줄바꿈이 일어나면 관문의 얼굴이
-          97px 짜리 두 줄이 되어 무대를 먹는다(실측 390px). 대신 접히는 것은
-          **빵부스러기**다 — 이 라우트가 어디인지는 좁은 화면에서도 제목이
-          말하고, 로고와 돌아가기는 어느 폭에서도 남아야 한다. */}
-      <div
-        className={cn(
-          PAGE_COLUMN,
-          'flex min-h-14 items-center gap-3 py-2.5 md:min-h-16 md:py-3',
-        )}
-      >
-        <Link
-          href="/"
-          className="touch-hit-expand inline-flex items-center gap-2 transition-colors hover:text-[color:var(--color-text-primary)]"
-        >
-          <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-chip border border-[color:var(--color-border-soft)] bg-[color:var(--color-elevated)] text-[color:var(--color-indigo-accent)]">
-            <Orbit size={12} />
-          </span>
-          <span className="text-body leading-body font-[var(--font-weight-signature)] text-[color:var(--color-text-secondary)]">
-            Ontology Atlas
-          </span>
-        </Link>
-        {atRoot ? null : (
-          <>
-            <span aria-hidden className="hidden text-body text-[color:var(--color-text-quaternary)] sm:inline">
-              /
-            </span>
-            <span
-              aria-current="page"
-              className="hidden text-body leading-body text-[color:var(--color-text-tertiary)] sm:inline"
-            >
-              {t('downloadSectionLabel')}
-            </span>
-          </>
-        )}
-        {/* 이 그룹의 **오른끝**이 곧 원점의 거울이다 — `vw − 원점` 에서 멈춰야
-            상단 바가 아래 밴드와 같은 프레임 안에 산다. 소유자 지적
-            *"공백이 길고 왜이러지?"* 가 정확히 이 끝과 화면 끝 사이였다
-            (실측 1920: 256px · 2560: 864px). 게이트가 이 testid 로 잰다. */}
-        <span
-          data-testid="download-gnb-actions"
-          className="ml-auto flex shrink-0 items-center gap-3"
-        >
-          {/*
-           * ⚠️ **`/` 가 아니라 `/topology` 다.** 라벨이 「지도로 돌아가기」라고
-           * 말하는데 `/` 는 2026-07-29 소유자 결정으로 **마케팅 페이지**가 된다
-           * (원장: 「root-first-open」 뒤집기). 그때 `/` 로 보내면 사용자는 지도가
-           * 아니라 방금 떠난 소개 화면으로 되돌아온다.
-           *
-           * 전환 전에는 두 주소가 같은 화면이라 이 결함이 보이지 않았다 — 그래서
-           * `tests/contract/map-destination-route.contract.test.ts` 가 라벨과
-           * 목적지를 함께 본다.
-           */}
-          {atRoot ? null : (
-            <Link
-              href="/topology"
-              data-testid="download-back-to-map"
-              className="touch-hit-expand inline-flex items-center gap-1.5 whitespace-nowrap text-body leading-body text-[color:var(--color-text-tertiary)] transition-colors hover:text-[color:var(--color-text-primary)]"
-            >
-              <ArrowLeft size={14} aria-hidden />
-              {t('back')}
-            </Link>
-          )}
-          <LocaleSwitch />
-        </span>
-      </div>
-    </nav>
-  );
-}
-
 // ─── 무대 — 지도 위의 다운로드 ───────────────────────────────────────────────
 
 /**
@@ -360,16 +270,53 @@ function GatewayNav() {
  * 부분이 하필 "설치 3단" 이었다.
  *
  * 이제는 셸이 준 높이에서 GNB 와 바닥 띠를 뺀 나머지를 무대가 **전부** 갖는다
- * (`lg:flex-1`). 바닥(`lg:min-h-[34rem]`)만 남겨 아주 낮은 창에서 무대가
- * 찌그러지지 않게 한다. 내용이 그보다 커지면(좁은 폭·긴 번역문) 무대가 늘어나야지
- * 판이 잘리면 안 된다.
+ * (`lg:flex-1`). 바닥만 남겨 아주 낮은 창에서 무대가 찌그러지지 않게 한다.
+ * 내용이 그보다 커지면(좁은 폭·긴 번역문) 무대가 늘어나야지 판이 잘리면 안 된다.
+ *
+ * ## 바닥 34rem → 40rem (2026-07-30) — **이 값이 노드 크기를 정한다**
+ *
+ * 소유자: *"박스랑 노드 사이에 빈 공간이 많잖아? 노드를 한 10%만 키우고 대신
+ * 세로를 약간 늘리면"*. 진단이 맞았다 — 지도 레인은 그래프보다 **가로로 길어서
+ * 높이가 병목**이고(1512 에서 잉크 비율 1.13 vs 레인 비율 1.41), 무대가 높아지면
+ * 카메라가 그만큼 크게 프레이밍한다.
+ *
+ * `/` 와 `/download` 가 같은 폭인데 지도 크기가 34% 달랐던 것이 그 증거다 —
+ * `/` 는 시연 절이 세로를 나눠 갖느라 무대가 짧았다(561 vs 676).
+ *
+ * 1512 실측:
+ *
+ * | 바닥 | 캔버스 | 잉크 폭 | 증가 | 시연 절 시작 y |
+ * |---|---|---|---|---|
+ * | 34rem | 561 | 390 | — | 667 |
+ * | 37rem | 591 | 426 | +9.2% | 697 |
+ * | **40rem** | **639** | **482** | **+23.6%** | **745** |
+ *
+ * 소유자가 40rem 을 골랐다. **대가는 시연 절이 78px 밀리는 것**이고, 그건
+ * #786 이 문서화한 의도와 같은 방향이다(첫 화면은 헤드라인·다운로드가 갖고,
+ * 스크롤하면 영상이 온다).
+ *
+ * ⚠️ **DOM 으로 높이만 바꿔서 재면 안 된다.** 카메라는 마운트 때 한 번
+ * 프레이밍하고 컨테이너 높이 변화에는 다시 맞추지 않는다 — 실측 중 잉크가
+ * 1px 도 안 커져서 2026-07-28 원장의 「스케일 상한」과 같은 증상으로 보였지만,
+ * 상한(6)에는 닿지도 않았고 원인이 달랐다. 값을 바꿨으면 **새로고침하고** 재라.
  */
 function PortraitStage({
   published,
   primaryAsset,
+  scrolls,
 }: {
   published: boolean;
   primaryAsset: ReturnType<typeof macosAssetFor>;
+  /**
+   * 이 페이지가 **스크롤되는 페이지인가**(= 아래에 시연 절이 있는가).
+   *
+   * 바닥 높이를 가르는 유일한 조건이다. 두 주소의 일이 다르기 때문이다:
+   * `/download` 는 링크로 도착해 설치만 하려는 사람의 **한 화면** 페이지라
+   * 무대가 설치 3단에 자리를 양보해야 하고(1512×850 에서 40rem 바닥이면
+   * 그 3단이 접힌다 — 게이트가 실측으로 잡았다), `/` 는 어차피 아래로
+   * 이어지는 페이지라 무대가 높아도 잃는 것이 없다.
+   */
+  scrolls: boolean;
 }) {
   const t = useTranslations('download');
   const graph = useStageGraph();
@@ -377,7 +324,13 @@ function PortraitStage({
   return (
     <section
       data-testid="download-stage"
-      className="relative isolate flex w-full flex-col overflow-hidden border-b border-[color:var(--color-divider)] lg:min-h-[34rem] lg:flex-1"
+      className={cn(
+        'relative isolate flex w-full flex-col overflow-hidden border-b border-[color:var(--color-divider)] lg:flex-1',
+        // 값을 조건부로 갈아끼우되 **둘 다 램프 밖 기하값**이라 짝이 어긋날
+        // 짝(행간 같은)이 없다 — `design.md` 의 조건부 크기 주의는 타입 램프의
+        // 이야기이고, 여기는 레이아웃 바닥이다.
+        scrolls ? 'lg:min-h-[40rem]' : 'lg:min-h-[34rem]',
+      )}
     >
       {/*
        * 지도의 자리가 폭에 따라 **바뀐다** (위계석 P6, 2026-07-28 실측).

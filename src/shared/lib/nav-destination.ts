@@ -36,6 +36,20 @@ export function resolveActiveNavDestination(pathname: string): AppNavDestination
 }
 
 /**
+ * 관문 표면의 라우트 목록 — **경로만으로 관문이 확정되는 것들**.
+ *
+ * `/` 는 여기 없다. 그 주소는 경로가 아니라 **방문자가 누구인가**로 정해지므로
+ * `isGatewaySurface` 가 따로 판정한다.
+ *
+ * ⚠️ **관문 표면을 새로 만들면 여기 한 줄을 더한다.** 안 더하면 그 화면만
+ * 워크벤치 레일을 쓴다 — 2026-07-30 에 `/guide` · `/changelog` 를 만들면서
+ * 실제로 한 번 겪었다(첫 렌더에 레일 6개 목적지가 그대로 떴다). 목록이 아니라
+ * `startsWith("/download")` 한 줄이던 시절의 실패 모드이고, 목록으로 올려
+ * 다음 사람이 여기를 보게 만든다.
+ */
+const GATEWAY_ROUTE_PREFIXES = ["/download", "/guide", "/changelog"] as const;
+
+/**
  * 관문 라우트인가 — **워크벤치 크롬(좌측 레일)을 쓰지 않는 표면**.
  *
  * `surfaces.md` 가 웹의 1번 일을 **관문**(설치 없이 열어보는 자리, 링크 공유)
@@ -52,7 +66,8 @@ export function resolveActiveNavDestination(pathname: string): AppNavDestination
  * 2026-07-28 소유자 확정.
  */
 export function isGatewayRoute(pathname: string): boolean {
-  return stripLocalePrefix(pathname || "/").startsWith("/download");
+  const path = stripLocalePrefix(pathname || "/");
+  return GATEWAY_ROUTE_PREFIXES.some((prefix) => path.startsWith(prefix));
 }
 
 /** `isGatewaySurface` 가 경로 밖에서 필요로 하는 것 — 방문자가 누구인가. */
@@ -86,7 +101,7 @@ export interface GatewayContext {
  */
 export function isGatewaySurface(pathname: string, ctx: GatewayContext): boolean {
   const path = stripLocalePrefix(pathname || "/");
-  if (path.startsWith("/download")) return true;
+  if (GATEWAY_ROUTE_PREFIXES.some((prefix) => path.startsWith(prefix))) return true;
   if (path !== "/") return false;
   if (ctx.desktop) return false;
   return ctx.vaultKnown ? !ctx.hasVault : true;
