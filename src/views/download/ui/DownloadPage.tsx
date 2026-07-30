@@ -14,6 +14,7 @@ import { resolveDisplayReleaseTag } from '../lib/pending-release-tag';
 import { Link, usePathname } from '@/i18n/navigation';
 import { cn } from '@/shared/lib/cn';
 import { stripLocalePrefix } from '@/shared/lib/nav-destination';
+import { DemoStage } from './DemoStage';
 import { useCopyFeedback } from '@/shared/lib/use-copy-feedback';
 import { GithubMark, buttonVariants } from '@/shared/ui';
 import { LocaleSwitch } from '@/features/locale-switch';
@@ -143,6 +144,15 @@ const STAGE_COLUMN = 'w-full max-w-[calc(var(--gateway-plate-width)*1px)]';
  */
 export function DownloadPage() {
   const tFooter = useTranslations('footer');
+  /**
+   * **시연 절은 `/` 에만 붙는다.** 원장 2026-07-29 밤: 소유자가 카운슬 평결
+   * (다운로드 페이지 복도)과 다르게 **첫 페이지**로 서명했다. 이 뷰가 두 주소에
+   * 살기 때문에(`/` 얼굴 · `/download` 딥링크) 경로로 갈라야 그 서명이 지켜진다.
+   *
+   * 자산이 없으면 `DemoStage` 가 스스로 `null` 을 반환한다 — 재생할 것 없는
+   * 플레이어를 관문 첫인상 자리에 두지 않기 위해 그 판정이 데이터에 있다.
+   */
+  const showDemo = stripLocalePrefix(usePathname() ?? '/') === '/';
   const published = isMacosReleasePublished();
   // Apple Silicon 이 기본 제안 — 2020년 말 이후 팔린 맥은 거의 전부 그쪽이다.
   const primaryAsset = published ? macosAssetFor('aarch64') : null;
@@ -153,6 +163,14 @@ export function DownloadPage() {
 
       <main id="main" tabIndex={-1} className="flex min-w-0 flex-1 flex-col bg-[color:var(--color-canvas)]">
         <PortraitStage published={published} primaryAsset={primaryAsset} />
+
+        {showDemo ? (
+          <div className={cn(PAGE_GUTTER, 'w-full')}>
+            <div className={cn(PAGE_COLUMN, 'py-8 md:py-10')}>
+              <DemoStage />
+            </div>
+          </div>
+        ) : null}
 
         {/*
          * **바닥 띠** — 절이 아니라 한 벌의 꼬리다 (2026-07-29 평결 ③).

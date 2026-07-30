@@ -696,7 +696,11 @@
     "platformStatus": "Windows · Linux 는 아직 없습니다",
     "windowsPolicy": "Windows · Linux 는 macOS 와 같은 기준 — 서명된 설치 파일과 설치 검증 — 을 통과할 때 올립니다.",
     "archHelpTitle": "내 맥이 어느 쪽인지 모르겠다면",
-    "archHelpBody": "화면 왼쪽 위 애플 메뉴 → 「이 Mac에 관하여」를 엽니다. 「칩」에 Apple M1·M2·M3·M4 가 보이면 Apple Silicon, 「프로세서」에 Intel 이 보이면 Intel 이에요. 2020년 말 이후에 산 맥이면 거의 모두 Apple Silicon 입니다."
+    "archHelpBody": "화면 왼쪽 위 애플 메뉴 → 「이 Mac에 관하여」를 엽니다. 「칩」에 Apple M1·M2·M3·M4 가 보이면 Apple Silicon, 「프로세서」에 Intel 이 보이면 Intel 이에요. 2020년 말 이후에 산 맥이면 거의 모두 Apple Silicon 입니다.",
+    "demoHeading": "AI 에이전트와 함께 쓰는 지도",
+    "demoTabAgentEdits": "AI가 고치면 지도가 따라 바뀐다",
+    "demoTabOneButton": "연결은 버튼 하나",
+    "demoPlay": "재생"
   },
   "kinds": {
     "project": "프로젝트",

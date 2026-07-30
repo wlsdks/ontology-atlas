@@ -696,7 +696,11 @@
     "platformStatus": "Windows and Linux are not out yet",
     "windowsPolicy": "Windows and Linux ship when they clear the same bar macOS did — a signed installer and an install check.",
     "archHelpTitle": "Not sure which Mac you have?",
-    "archHelpBody": "Open the Apple menu in the top-left corner and choose About This Mac. If \"Chip\" says Apple M1, M2, M3 or M4, you have Apple Silicon; if \"Processor\" says Intel, you have Intel. Any Mac bought after late 2020 is almost certainly Apple Silicon."
+    "archHelpBody": "Open the Apple menu in the top-left corner and choose About This Mac. If \"Chip\" says Apple M1, M2, M3 or M4, you have Apple Silicon; if \"Processor\" says Intel, you have Intel. Any Mac bought after late 2020 is almost certainly Apple Silicon.",
+    "demoHeading": "A map you keep with an AI agent",
+    "demoTabAgentEdits": "The AI edits — the map follows",
+    "demoTabOneButton": "Connecting is one button",
+    "demoPlay": "Play"
   },
   "kinds": {
     "project": "Project",
