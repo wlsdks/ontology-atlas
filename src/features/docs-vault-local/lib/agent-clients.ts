@@ -42,8 +42,14 @@ export type AgentClientId = 'claude-code' | 'codex' | 'cursor' | 'antigravity';
 
 export interface AgentClient {
   id: AgentClientId;
-  /** i18n 키 — 사람이 부르는 이름. */
+  /** i18n 키 — 그 도구의 버튼 라벨(파일명·방식이 함께 든 문장). */
   labelKey: string;
+  /**
+   * 도구의 **브랜드 이름**. i18n 키가 아닌 이유: 고유명사는 번역하지 않는다
+   * ("Claude Code" 는 어느 언어에서도 "Claude Code" 다). 로케일 파일에 넣으면
+   * 두 파일이 같은 문자열을 들고 드리프트할 자리만 생긴다.
+   */
+  name: string;
   /**
    * 이 도구를 연결하면 **쓰는 파일**. 볼트(또는 리포 루트) 기준 상대 경로.
    *
@@ -62,24 +68,28 @@ export interface AgentClient {
 export const AGENT_CLIENTS: readonly AgentClient[] = [
   {
     id: 'claude-code',
+    name: 'Claude Code',
     labelKey: 'claudeCode',
     files: ['.mcp.json'],
     docsUrl: 'https://docs.claude.com/en/docs/claude-code/mcp',
   },
   {
     id: 'codex',
+    name: 'Codex',
     labelKey: 'codex',
     files: ['.codex/config.toml'],
     docsUrl: 'https://developers.openai.com/codex/mcp',
   },
   {
     id: 'cursor',
+    name: 'Cursor',
     labelKey: 'cursor',
     files: ['.cursor/mcp.json'],
     docsUrl: 'https://docs.cursor.com/context/model-context-protocol',
   },
   {
     id: 'antigravity',
+    name: 'Antigravity',
     labelKey: 'antigravity',
     files: ['.agents/mcp_config.json'],
     docsUrl: 'https://antigravity.google/docs/mcp',

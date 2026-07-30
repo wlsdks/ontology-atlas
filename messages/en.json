@@ -2892,7 +2892,18 @@
     "connectAntigravity": "Connect to Antigravity",
     "antigravityDone": "Created .agents/mcp_config.json",
     "copyAntigravityConfig": "Copy the Antigravity config",
-    "cursorDone": "Created .cursor/mcp.json"
+    "cursorDone": "Created .cursor/mcp.json",
+    "scopeLabel": "Where it applies",
+    "scopeProject": "This folder",
+    "scopeGlobal": "This whole computer",
+    "step1DescGlobal": "Set it up once and every project on this computer can read this folder with you.",
+    "scopeGlobalIntro": "Each tool keeps its own global settings file, and each tool writes that file itself. Copy the line below — the path to this folder is already filled in.",
+    "scopeGlobalRunHint": "Run this in a terminal. The tool writes its own settings file, so nothing of yours gets overwritten.",
+    "scopeGlobalPasteHint": "Add this to {path}. If the file already has other servers, keep them and add this block.",
+    "scopeGlobalCopyCommand": "Copy command",
+    "scopeGlobalCopySnippet": "Copy settings",
+    "scopeGlobalCopied": "Copied",
+    "scopeGlobalLossNote": "These files live in your home folder, not in this vault — so a git diff will not show the change. To undo it, remove the ontology-atlas entry from the file above. Still nothing leaves this machine."
   },
   "appUpdate": {
     "availableTitle": "Version {version} is available",

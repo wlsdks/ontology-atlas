@@ -139,3 +139,68 @@ describe("AgentConnectSheet focus contract", () => {
     ).not.toBeInTheDocument();
   });
 });
+
+/**
+ * **적용 범위 세그먼트** — 소유자 관측(*"대부분 … 전역으로 할텐데"*)을 받은 갈래.
+ *
+ * 왜 이 자리에 컴포넌트 테스트가 필요한가: 전역 스코프는 `serverAvailability.launch`
+ * 와 볼트 절대 경로가 **둘 다** 있을 때만 그려진다 — 즉 **설치 앱 전용 표면**이다.
+ * 웹 스모크로는 한 번도 지나가지 않으므로, 실물 없이 얻을 수 있는 가장 강한 증명이
+ * 이것이다. 계약(경계·문구·기본값)은 `tests/contract/agent-global-scope.contract.test.ts`
+ * 가 따로 잡는다.
+ */
+describe("AgentConnectSheet scope segment", () => {
+  function renderWithVault() {
+    render(
+      <NextIntlClientProvider locale="en" messages={enMessages}>
+        <AgentConnectSheet
+          open
+          onClose={vi.fn()}
+          status={{ kind: "none" }}
+          snippets={{
+            mcpJson: '{"mcpServers":{}}',
+            codexCommand: "codex mcp add ontology-atlas",
+            codexConfig: "[mcp_servers.ontology-atlas]",
+            needsManualPath: false,
+            cursorDeeplink: null,
+            vscodeDeeplink: null,
+          }}
+          domainTitles={["Product"]}
+          handoffText="Continue the ontology task."
+          serverAvailability={bundledServer}
+          vaultPath="/Users/someone/vault"
+        />
+      </NextIntlClientProvider>,
+    );
+  }
+
+  it("starts on this folder and swaps the step body when the computer-wide scope is picked", () => {
+    window.localStorage.clear();
+    renderWithVault();
+
+    // 기본값은 프로젝트 — 되돌릴 수 있는 쪽이 기본이다.
+    expect(screen.getByTestId("agent-scope-project")).toHaveAttribute("aria-checked", "true");
+    expect(screen.getByTestId("agent-connect-action")).toBeInTheDocument();
+    expect(screen.queryByTestId("agent-global-scope")).not.toBeInTheDocument();
+
+    fireEvent.click(screen.getByTestId("agent-scope-global"));
+
+    // 갈래는 **교체**다 — 두 방법이 동시에 보이면 어느 쪽이 실제인지 사용자가 판단해야 한다.
+    expect(screen.getByTestId("agent-global-scope")).toBeInTheDocument();
+    expect(screen.queryByTestId("agent-connect-action")).not.toBeInTheDocument();
+
+    // 상실 문장이 그 자리에 있어야 한다 — 홈 폴더는 git diff 에 안 남는다.
+    expect(screen.getByTestId("agent-global-scope-loss")).toBeInTheDocument();
+
+    // 네 도구 전부 + Claude Code 는 그 도구의 명령으로.
+    for (const id of ["claude-code", "codex", "cursor", "antigravity"]) {
+      expect(screen.getByTestId(`agent-global-scope-${id}`)).toBeInTheDocument();
+    }
+    expect(screen.getByTestId("agent-global-scope-claude-code")).toHaveTextContent(
+      "claude mcp add --scope user",
+    );
+    // 볼트 절대 경로가 이미 박혀 있다 — 사용자가 조립하지 않는다.
+    expect(screen.getByTestId("agent-global-scope-codex")).toHaveTextContent("/Users/someone/vault");
+    window.localStorage.clear();
+  });
+});

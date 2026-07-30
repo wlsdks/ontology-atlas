@@ -13,7 +13,11 @@ import {
   type AgentClientId,
   AgentClientButtons,
   AgentConnectAction,
+  AgentGlobalScopePanel,
   type AgentClientConfigState,
+  type AgentConfigScope,
+  setAgentConfigScope,
+  useAgentConfigScope,
 } from "@/features/docs-vault-local";
 
 /**
@@ -163,17 +167,17 @@ export function AgentConnectSheet({
   const dialogRef = useRef<HTMLElement | null>(null);
   const { state: handoffCopyState, copy: copyHandoff } = useCopyFeedback(1600);
   const [advancedOpen, setAdvancedOpen] = useState(false);
+  const scope = useAgentConfigScope();
   useBodyScrollLock(open);
 
   // 고급 접기의 다른-툴 표. 대부분의 MCP 클라이언트가 같은 표준 stdio
   // triple(command/args/env)을 쓰고, 다른 건 설정 파일 *위치* 뿐이다.
   const otherTools: ReadonlyArray<{ tool: string; locations: readonly string[]; note: string }> = [
     { tool: "Claude Code", locations: [".mcp.json"], note: t("otherToolsProjectRoot") },
-    {
-      tool: "Cursor",
-      locations: [".cursor/mcp.json", "~/.cursor/mcp.json"],
-      note: t("otherToolsCursorScopes"),
-    },
+    // `~/.cursor/mcp.json`(전역)은 여기서 뺐다 — 이제 「적용 범위: 이 컴퓨터 전체」가
+    // 그 경로를 **완성된 스니펫과 함께** 준다. 표에 경로만 한 번 더 적으면 사용자는
+    // 두 자리 중 어느 쪽이 실제 방법인지 판단해야 한다.
+    { tool: "Cursor", locations: [".cursor/mcp.json"], note: t("otherToolsCursorScopes") },
     { tool: "Codex", locations: [".codex/config.toml", "codex mcp add"], note: t("otherToolsCodexNote") },
     { tool: "Claude Desktop", locations: ["설정 → Developer"], note: t("otherToolsClaudeDesktopNote") },
   ];
@@ -298,8 +302,51 @@ export function AgentConnectSheet({
               <StepRow
                 n={1}
                 title={t("step1Title")}
-                desc={serverAvailability.launch ? t("step1Desc") : undefined}
+                desc={
+                  serverAvailability.launch
+                    ? scope === "global"
+                      ? t("step1DescGlobal")
+                      : t("step1Desc")
+                    : undefined
+                }
               >
+                {/*
+                  * **적용 범위 — 새 표면이 아니라 이 단계의 갈래 하나.**
+                  * 소유자 관측(*"대부분 … 전역으로 할텐데"*)을 수용하는 자리다. 왜
+                  * 기본이 여전히 프로젝트인지는 `lib/agent-scope-preference.ts` 에 있고,
+                  * 왜 전역을 앱이 대신 쓰지 않는지는 `lib/agent-global-scope.ts` 에 있다.
+                  */}
+                {serverAvailability.launch ? (
+                  <div
+                    role="radiogroup"
+                    aria-label={t("scopeLabel")}
+                    data-testid="agent-scope-segment"
+                    className="inline-flex rounded-md border border-[color:var(--color-border-soft)] bg-[color:var(--color-overlay-1)] p-0.5"
+                  >
+                    {(["project", "global"] as const).map((option: AgentConfigScope) => (
+                      <button
+                        key={option}
+                        type="button"
+                        role="radio"
+                        aria-checked={scope === option}
+                        onClick={() => setAgentConfigScope(option)}
+                        data-testid={`agent-scope-${option}`}
+                        className={`rounded px-2.5 py-1 text-label font-medium transition-colors ${
+                          scope === option
+                            ? "bg-[color:var(--color-indigo-a26)] text-[color:var(--color-text-primary)]"
+                            : "text-[color:var(--color-text-tertiary)] hover:text-[color:var(--color-text-primary)]"
+                        }`}
+                      >
+                        {option === "project" ? t("scopeProject") : t("scopeGlobal")}
+                      </button>
+                    ))}
+                  </div>
+                ) : null}
+
+                {scope === "global" ? (
+                  <AgentGlobalScopePanel vaultPath={vaultPath} launch={serverAvailability.launch} />
+                ) : (
+                <>
                 <AgentConnectAction
                   // 이 자리의 주 동작은 Claude Code 다 — 쓰는 파일은 `.mcp.json` 하나.
                   clientId="claude-code"
@@ -322,6 +369,8 @@ export function AgentConnectSheet({
                   codexConfigState={codexConfigState}
                   needsManualPath={snippets.needsManualPath}
                 />
+                </>
+                )}
               </StepRow>
 
               {serverAvailability.launch ? (
