@@ -2888,7 +2888,11 @@
     "connectRetry": "Try again",
     "connectDesktopOnly": "This only works in the installed app.",
     "serverUnavailableGetApp": "Get the app",
-    "copyFailed": "Copy failed — the clipboard was blocked"
+    "copyFailed": "Copy failed — the clipboard was blocked",
+    "connectAntigravity": "Connect to Antigravity",
+    "antigravityDone": "Created .agents/mcp_config.json",
+    "copyAntigravityConfig": "Copy the Antigravity config",
+    "cursorDone": "Created .cursor/mcp.json"
   },
   "appUpdate": {
     "availableTitle": "Version {version} is available",

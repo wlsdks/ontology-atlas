@@ -32,7 +32,27 @@ use crate::git::find_repo_root;
 const MCP_BINARY_NAME: &str = "ontology-atlas-mcp";
 
 /// 앱이 사용자 디스크에 쓸 수 있는 파일 — 이 목록 밖은 거절한다.
-const ALLOWED_CONFIG_FILES: [&str; 3] = [".mcp.json", ".mcp.json.example", ".codex/config.toml"];
+///
+/// **이 목록은 「쓸 수 있는 것」이고 「한 번에 쓰는 것」이 아니다.** 2026-07-30 까지
+/// 호출부가 이 목록 전체를 순회해서, 「Claude Code에 연결」 한 번이 Codex 설정까지
+/// 썼다. 라벨이 거짓말하는 결함이었고 안 쓰는 도구의 파일이 사용자 git diff 에
+/// 떴다 — *"모든 변경이 읽을 수 있는 diff"* 라는 이 제품의 주장에 반한다.
+///
+/// 이제 어느 파일을 쓸지는 **호출부가 도구별로 고른다**
+/// (`src/features/docs-vault-local/lib/agent-clients.ts`). 여기는 보안 경계로 남는다:
+/// 목록 밖 경로는 무엇이 요청해도 거절한다.
+///
+/// `.cursor/mcp.json` 과 `.agents/mcp_config.json` 은 2026-07-30 조사로 추가됐다 —
+/// 둘 다 프로젝트 스코프 + `mcpServers` 키라 기존 라이터로 그냥 떨어진다.
+/// `.vscode/mcp.json` 은 키가 `servers` 라서 라이터를 하나 더 요구하고, 그 값이
+/// 겹침 대비 비싸서 뺐다. 근거: `.qa-scratch/mcp-client-research-2026-07-30.md`.
+const ALLOWED_CONFIG_FILES: [&str; 5] = [
+    ".mcp.json",
+    ".mcp.json.example",
+    ".codex/config.toml",
+    ".cursor/mcp.json",
+    ".agents/mcp_config.json",
+];
 
 /// 자가 검증 한 판의 예산. 첫 스폰은 macOS 가 서명을 훑느라 느릴 수 있다.
 const VERIFY_TIMEOUT: Duration = Duration::from_secs(25);
@@ -146,7 +166,10 @@ fn canonical_dir(raw: &str) -> Result<PathBuf, String> {
     let canonical = fs::canonicalize(&path)
         .map_err(|e| err_str(format!("could not resolve {}: {e}", path.display())))?;
     if !canonical.is_dir() {
-        return Err(err_str(format!("{} is not a directory", canonical.display())));
+        return Err(err_str(format!(
+            "{} is not a directory",
+            canonical.display()
+        )));
     }
     Ok(canonical)
 }

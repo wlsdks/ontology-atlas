@@ -72,3 +72,4 @@ export {
   VaultOpenGuideSheet,
   type VaultOpenGuideSheetProps,
 } from './ui/VaultOpenGuideSheet';
+export { type AgentClientId, AGENT_CLIENTS, filesForClient } from './lib/agent-clients';

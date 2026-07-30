@@ -10,6 +10,7 @@ import { useBodyScrollLock } from "@/shared/lib/use-body-scroll-lock";
 import { copyText } from "@/shared/lib/copy-text";
 import type { AgentServerAvailability } from "@/shared/config";
 import {
+  type AgentClientId,
   AgentClientButtons,
   AgentConnectAction,
   type AgentClientConfigState,
@@ -61,7 +62,8 @@ export interface AgentConnectSheetProps {
   /** 기존 인계 페이로드 (INDEX 인계 메뉴와 동일 텍스트). */
   handoffText: string;
   /** 데스크톱 + 쓰기 가능 vault 일 때 — `.mcp.json` 등 설정 파일 자동 생성. */
-  onWriteConfigs?: (() => void) | null;
+  /** 설정 쓰기 — 도구 id 를 나른다. 삼키면 라벨이 거짓이 된다. */
+  onWriteConfigs?: ((client: AgentClientId) => void) | null;
   /** 이미 `.mcp.json` 이 존재하는지 (설치 앱) — 버튼 확인 문구 우선. */
   mcpJsonReady?: boolean;
   mcpJsonState?: AgentClientConfigState;
@@ -299,15 +301,18 @@ export function AgentConnectSheet({
                 desc={serverAvailability.launch ? t("step1Desc") : undefined}
               >
                 <AgentConnectAction
+                  // 이 자리의 주 동작은 Claude Code 다 — 쓰는 파일은 `.mcp.json` 하나.
+                  clientId="claude-code"
                   vaultPath={vaultPath}
                   launch={serverAvailability.launch}
-                  onWritten={onWriteConfigs}
+                  /* `onWritten` 은 쓰기 뒤 상태를 다시 읽는 훅이라 도구를 모른다 —
+                     도구는 이미 이 컴포넌트의 `clientId` 가 안다. 감싸서 넘긴다. */
+                  onWritten={onWriteConfigs ? () => onWriteConfigs('claude-code') : null}
                 />
                 <AgentClientButtons
                   serverAvailability={serverAvailability}
                   onWriteConfigs={onWriteConfigs}
                   cursorDeeplink={snippets.cursorDeeplink}
-                  vscodeDeeplink={snippets.vscodeDeeplink}
                   mcpJsonSnippet={snippets.mcpJson}
                   replacementMcpJsonSnippet={snippets.replacementMcpJson}
                   codexCommand={snippets.codexCommand}

@@ -2888,7 +2888,11 @@
     "connectRetry": "다시 시도",
     "connectDesktopOnly": "이 동작은 설치한 앱에서만 됩니다.",
     "serverUnavailableGetApp": "앱 받기",
-    "copyFailed": "복사 실패 — 클립보드가 막혔어요"
+    "copyFailed": "복사 실패 — 클립보드가 막혔어요",
+    "connectAntigravity": "Antigravity에 연결",
+    "antigravityDone": ".agents/mcp_config.json 을 만들었어요",
+    "copyAntigravityConfig": "Antigravity 설정 복사",
+    "cursorDone": ".cursor/mcp.json 을 만들었어요"
   },
   "appUpdate": {
     "availableTitle": "{version} 버전이 나왔어요",

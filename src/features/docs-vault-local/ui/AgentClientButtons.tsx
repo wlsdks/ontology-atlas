@@ -21,7 +21,23 @@ import { useToast } from "@/shared/ui";
  * 동일 레이어 cross-import 없이 가져다 쓴다.
  */
 
-type ClientId = "claudeCode" | "cursor" | "vscode" | "codex";
+import type { AgentClientId } from "../lib/agent-clients";
+
+type ClientId = "claudeCode" | "cursor" | "antigravity" | "codex";
+
+/**
+ * 이 컴포넌트의 내부 id → 파일 계약의 도구 id.
+ *
+ * 두 이름 체계가 있는 것은 역사다(이쪽은 camelCase 라벨 키, 저쪽은 kebab 슬러그).
+ * 합치는 것이 옳지만 그건 별개 정리라, 지금은 **한 곳에서만** 번역해 둔다 —
+ * 여러 곳에서 손으로 번역하면 그중 하나가 틀린다.
+ */
+const CLIENT_TO_ID: Record<ClientId, AgentClientId> = {
+  claudeCode: "claude-code",
+  cursor: "cursor",
+  antigravity: "antigravity",
+  codex: "codex",
+};
 type Feedback = "idle" | "busy" | "done" | "copied" | "failed";
 export type AgentClientConfigState = "missing" | "invalid" | "ready";
 
@@ -32,11 +48,18 @@ export interface AgentClientButtonsProps {
    */
   serverAvailability: AgentServerAvailability;
   /** Tauri 전용 — `.mcp.json`·`.codex/config.toml` 등을 vault 폴더에 생성. 웹은 null. */
-  onWriteConfigs: (() => void | Promise<void>) | null;
+  /**
+   * 설정 쓰기 — **어느 도구인지 함께 넘긴다.**
+   *
+   * 종전에는 인자가 없어서 구현이 "쓸 수 있는 것 전부"를 썼다. 그래서 어느 버튼을
+   * 눌러도 같은 결과였고, 라벨이 도구를 말하는데 동작은 도구를 몰랐다. 인자를
+   * 받는 것 자체가 그 결함의 재발을 막는다 — 구현이 도구를 무시하려면 이제
+   * **일부러** 무시해야 한다.
+   */
+  onWriteConfigs: ((client: AgentClientId) => void | Promise<void>) | null;
   /** Cursor 딥링크(절대 경로 있을 때). 없으면 복사 강등. */
   cursorDeeplink: string | null;
   /** VS Code 딥링크. 없으면 복사 강등. */
-  vscodeDeeplink: string | null;
   /** 복사 강등용 `.mcp.json` 본문. */
   mcpJsonSnippet: string;
   /** invalid vault-local `.mcp.json` 교체용 본문. 보통 OATLAS_VAULT=. */
@@ -59,7 +82,6 @@ export function AgentClientButtons({
   serverAvailability,
   onWriteConfigs,
   cursorDeeplink,
-  vscodeDeeplink,
   mcpJsonSnippet,
   replacementMcpJsonSnippet,
   codexCommand,
@@ -74,7 +96,7 @@ export function AgentClientButtons({
   const [feedback, setFeedback] = useState<Record<ClientId, Feedback>>({
     claudeCode: "idle",
     cursor: "idle",
-    vscode: "idle",
+    antigravity: "idle",
     codex: "idle",
   });
   const resolvedMcpJsonState =
@@ -91,7 +113,7 @@ export function AgentClientButtons({
     if (!onWriteConfigs) return;
     setState(id, "busy");
     try {
-      await onWriteConfigs();
+      await onWriteConfigs(CLIENT_TO_ID[id]);
       setState(id, "done");
     } catch {
       setState(id, "failed");
@@ -208,8 +230,23 @@ export function AgentClientButtons({
         />
       )}
 
-      {/* ② Cursor — 딥링크(있으면) 없으면 복사 강등 */}
-      {cursorDeeplink ? (
+      {/*
+        * ② Cursor — **설치 앱에서는 파일을 쓴다.** 2026-07-30 조사로 `.cursor/mcp.json`
+        * 프로젝트 스코프가 확인됐고, 딥링크는 착지 파일이 공식 문서에 명시되지 않았다.
+        * 어디에 무엇이 생기는지 모르는 편의보다, 볼트 안 한 파일이 예측 가능하다.
+        * 웹에서는 파일을 못 쓰니 딥링크가 남는다.
+        */}
+      {onWriteConfigs ? (
+        <ClientButton
+          testId="agent-client-cursor"
+          icon={<Terminal size={13} aria-hidden />}
+          label={t("connectCursor")}
+          feedback={feedback.cursor}
+          doneLabel={t("cursorDone")}
+          busyLabel={t("connecting")}
+          onClick={() => void writeAndConfirm("cursor")}
+        />
+      ) : cursorDeeplink ? (
         <ClientLink
           testId="agent-client-cursor"
           icon={<ArrowUpRight size={13} aria-hidden />}
@@ -227,22 +264,32 @@ export function AgentClientButtons({
         />
       )}
 
-      {/* ③ VS Code — 딥링크(있으면) 없으면 복사 강등 */}
-      {vscodeDeeplink ? (
-        <ClientLink
-          testId="agent-client-vscode"
-          icon={<ArrowUpRight size={13} aria-hidden />}
-          label={t("connectVsCode")}
-          href={vscodeDeeplink}
+      {/*
+        * ③ Antigravity — 워크스페이스 `.agents/mcp_config.json`, stdio 명시, 키가
+        * `mcpServers` 라 기존 라이터로 그냥 떨어진다(2026-07-30 조사).
+        *
+        * **VS Code 가 이 자리에서 빠졌다.** `.vscode/mcp.json` 을 지원하지만 키가
+        * `mcpServers` 가 아니라 `servers` 라서 라이터를 하나 더 요구하는데, 그 값이
+        * 겹침 대비 비쌌다. 스니펫은 고급 접기의 「다른 툴」 표에 남는다.
+        */}
+      {onWriteConfigs ? (
+        <ClientButton
+          testId="agent-client-antigravity"
+          icon={<Terminal size={13} aria-hidden />}
+          label={t("connectAntigravity")}
+          feedback={feedback.antigravity}
+          doneLabel={t("antigravityDone")}
+          busyLabel={t("connecting")}
+          onClick={() => void writeAndConfirm("antigravity")}
         />
       ) : (
         <ClientButton
-          testId="agent-client-vscode"
+          testId="agent-client-antigravity"
           icon={<Copy size={13} aria-hidden />}
-          label={t("copyVsCodeConfig")}
-          feedback={feedback.vscode}
+          label={t("copyAntigravityConfig")}
+          feedback={feedback.antigravity}
           copiedLabel={t("copyConfigDone")}
-          onClick={() => void copyAndConfirm("vscode", mcpJsonSnippet)}
+          onClick={() => void copyAndConfirm("antigravity", mcpJsonSnippet)}
         />
       )}
 

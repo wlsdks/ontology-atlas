@@ -26,6 +26,7 @@ import {
 } from '@/features/docs-vault-local';
 import { formatAgentPostChangeSyncPacket } from '@/shared/lib/ontology-tree';
 import type { VaultManifest } from '@/entities/docs-vault';
+import type { AgentClientId } from '@/features/docs-vault-local';
 import { copyText } from '@/shared/lib/copy-text';
 import { getTauriVaultRootPath } from '@/shared/lib/tauri-vault-fs';
 import type { LocalFsHandleRecord } from '@/entities/local-fs-handle';
@@ -260,7 +261,14 @@ export interface VaultAgentSetupLocalVault {
     mcpExampleValid?: boolean;
   } | null;
   recentVaults: LocalFsHandleRecord[];
-  ensureAgentConfigs: () => Promise<{ created: number; skipped: number }>;
+  /**
+   * 설정 쓰기 — **도구를 받는다.** 이 인터페이스가 인자 없는 서명을 재선언하고
+   * 있어서, 훅 쪽을 고쳐도 여기서 다시 삼켜졌다. 서명을 복제한 자리가 계약을
+   * 되돌리는 전형이다.
+   */
+  ensureAgentConfigs: (
+    client?: AgentClientId,
+  ) => Promise<{ created: number; skipped: number }>;
 }
 
 /** 번호 배지 + 제목 + 설명 + 내용 — 설정 패널 첫 화면 3단계 통일 문법. */
@@ -357,13 +365,13 @@ export function VaultAgentSetupPanel({
   const vaultNameForConfig = localVault.handle?.name ?? 'vault';
   // 딥링크는 절대 경로가 있어야 성립(설치 앱). 웹은 null → 복사 강등.
   const cursorDeeplink = buildCursorMcpDeeplink(vaultRootPath, serverAvailability.launch);
-  const vscodeDeeplink = buildVsCodeMcpDeeplink(vaultRootPath, serverAvailability.launch);
 
-  async function handleEnsureAgentConfigs() {
+  /** 도구를 받아 그 파일만 쓴다 — 안 넘기면 종전대로 한 벌 전부(스캐폴드 자리). */
+  async function handleEnsureAgentConfigs(client?: AgentClientId) {
     setAgentSetupError(null);
     setAgentSetupBusy(true);
     try {
-      await localVault.ensureAgentConfigs();
+      await localVault.ensureAgentConfigs(client);
     } catch (err) {
       setAgentSetupError(
         err instanceof Error ? err.message : t('agentSetup.errorFallback'),
@@ -818,13 +826,14 @@ export function VaultAgentSetupPanel({
             >
               <AgentClientButtons
                 serverAvailability={serverAvailability}
+                /* 도구를 그대로 넘긴다 — `() => void handleEnsureAgentConfigs()` 는
+                   인자를 삼켜서, 어느 버튼을 눌러도 같은 파일들이 나갔다. */
                 onWriteConfigs={
                   publicPackagesReady && canEditCurrent
-                    ? () => void handleEnsureAgentConfigs()
+                    ? (client) => void handleEnsureAgentConfigs(client)
                     : null
                 }
                 cursorDeeplink={cursorDeeplink}
-                vscodeDeeplink={vscodeDeeplink}
                 mcpJsonSnippet={buildMcpConfigJson(vaultNameForConfig, vaultRootPath)}
                 replacementMcpJsonSnippet={buildMcpConfigJson(
                   vaultNameForConfig,
