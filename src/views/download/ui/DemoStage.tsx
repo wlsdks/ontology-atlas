@@ -204,7 +204,17 @@ function DemoPanel({
          닿으면 키보드 사용자만 유령 컨트롤을 만난다. */
       inert={hidden || undefined}
       data-testid={`demo-panel-${clip.id}`}
-      className="mt-4 min-w-0"
+      /*
+       * **영상 폭에 상한을 둔다.** 촬영본이 창 캡처(1512×917 · 1.65:1)라 페이지
+       * 열 폭을 그대로 쓰면 1512 뷰포트에서 **868px 높이**를 먹어 관문의 첫 화면이
+       * 영상 하나로 찬다(실측). 상한을 두면 543px 로 내려와 헤드라인·다운로드·
+       * 시연이 한 화면 안에서 위계를 갖는다.
+       *
+       * 값은 Tailwind 기본 스케일의 정규 스텝(`max-w-4xl` = 56rem)이다 — 소비처가
+       * 하나뿐인데 새 토큰을 만들면 "어디가 규격인지" 가 흐려진다(관문 크롬 높이를
+       * 기본 spacing 램프로 둔 것과 같은 판단).
+       */
+      className="mx-auto mt-4 min-w-0 max-w-4xl"
     >
       <div className="relative min-w-0 overflow-hidden rounded-xl border border-[color:var(--color-border-soft)] bg-[color:var(--color-canvas)]">
         {/*
