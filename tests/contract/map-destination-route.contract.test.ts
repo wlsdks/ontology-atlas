@@ -1,4 +1,4 @@
-import { readFileSync } from "node:fs";
+import { readdirSync, readFileSync } from "node:fs";
 import { join } from "node:path";
 import { describe, expect, it } from "vitest";
 
@@ -52,8 +52,40 @@ const MAP_DESTINED = [
   { testid: "download-back-to-map", why: "「지도로 돌아가기」 — GNB 의 되돌아가기" },
 ] as const;
 
-function readSource(relative: string): string {
-  return readFileSync(join(process.cwd(), relative), "utf8");
+/**
+ * 관문 크롬의 소스를 **파일 위치에 의존하지 않고** 모은다.
+ *
+ * ⚠️ 예전엔 `src/views/download/ui/DownloadPage.tsx` 한 파일만 읽었다. 2026-07-30
+ * 에 GNB 가 `widgets/gateway-chrome` 로 내려가자(`/guide`·`/changelog` 가 같은
+ * 크롬을 쓰게 되면서) **그 파일에서 testid 가 사라져 게이트가 눈이 멀었다** —
+ * 다행히 "못 찾았다" 단언이 있어 초록으로 새지 않고 빨갛게 터졌다. 그 단언이
+ * 없었으면 조용히 통과했을 것이다.
+ *
+ * 교훈은 게이트의 **조준을 경로에 묶지 않는 것**이다. 컨트롤은 리팩터링으로
+ * 움직이지만 testid 는 신원이라 안 움직인다. 그래서 `src/` 를 훑어 마커를 가진
+ * 파일만 모은다 — 다음에 또 옮겨도 게이트는 따라간다.
+ */
+function collectSources(): string {
+  const roots = [join(process.cwd(), "src")];
+  const chunks: string[] = [];
+  let scanned = 0;
+  while (roots.length) {
+    const dir = roots.pop()!;
+    for (const entry of readdirSync(dir, { withFileTypes: true })) {
+      const full = join(dir, entry.name);
+      if (entry.isDirectory()) {
+        if (entry.name === "node_modules") continue;
+        roots.push(full);
+      } else if (/\.tsx?$/.test(entry.name) && !/\.test\.tsx?$/.test(entry.name)) {
+        scanned += 1;
+        const text = readFileSync(full, "utf8");
+        if (text.includes("data-testid=")) chunks.push(text);
+      }
+    }
+  }
+  // 파서가 죽으면 "위반 0" 이 아니라 여기서 먼저 터진다.
+  if (scanned < 200) throw new Error(`소스 스캔이 ${scanned}개에서 멈췄다 — 순회가 깨졌다`);
+  return chunks.join("\n");
 }
 
 /**
@@ -77,7 +109,7 @@ function hrefForTestid(source: string, testid: string): string[] {
 }
 
 describe("지도를 약속하는 링크의 목적지", () => {
-  const source = readSource("src/views/download/ui/DownloadPage.tsx");
+  const source = collectSources();
 
   for (const { testid, why } of MAP_DESTINED) {
     it(`${testid} 는 ${MAP_ROUTE} 로 간다 — ${why}`, () => {

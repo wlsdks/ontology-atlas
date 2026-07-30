@@ -184,6 +184,11 @@ scripts/                   vault tooling (R11) + perf baseline (R11) + dogfood w
 /ontology/insights         graph insights (kind census · hubs · relation breakdown)
 /download                  the same gateway view as `/`, as an explicit deep link. Keeps the
                            breadcrumb and the back-to-map link that `/` drops
+/guide                     the project guide — renders `docs/GUIDE.md` **from the vault**, not a
+                           hand-written marketing copy. Named `guide` (not `docs`) because
+                           `/docs` is already the vault workbench (2026-07-30 ledger)
+/changelog                 renders `docs/CHANGELOG.md` from the vault, most recent 12 sections
+                           only; the screen says how many it folded and links the full file
 ```
 
 > Round 10 (2026-05) permanently removed: `/login`, `/signup`, `/account`, `/reset-password`, `/settings/*`, and earlier rounds had already removed `/admin/*`, `/review/*`, `/diagnostics/*`, `/knowledge/*`. Cloud entity API, Firestore subscribers, manual node/edge cloud modals, screenshot uploader (Firebase Storage) are all gone. Future cloud collab features will be re-designed when sponsorship / collaboration requests come.

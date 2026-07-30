@@ -10,7 +10,9 @@
       "ontology": "Ontology",
       "ontologyStudio": "Ontology Workshop",
       "ontologyInsights": "Graph Insights",
-      "projectNew": "New project"
+      "projectNew": "New project",
+      "guide": "Guide",
+      "changelog": "Changelog"
     },
     "descriptions": {
       "home": "Code survives; context does not. Ontology Atlas keeps your project's context — what depends on what, and why it was built this way — in one markdown folder. Prose you read, structure your AI agents read and write over MCP. Local-first, no backend, open source.",
@@ -19,7 +21,9 @@
       "docs": "Read and edit the markdown folder directly. Change the frontmatter and the map follows.",
       "projects": "Every project and hub on this map, with the domains and capabilities each one is made of.",
       "ontologyStudio": "Put one node at the center and fill its four bearings — broader, contains, depends on, relates to. What you fill is written straight into markdown frontmatter.",
-      "ontologyInsights": "Node census by kind, the hubs with the most connections, and the nodes still attached to nothing. Where to look before you grow the map."
+      "ontologyInsights": "Node census by kind, the hubs with the most connections, and the nodes still attached to nothing. Where to look before you grow the map.",
+      "guide": "Getting started with Ontology Atlas — turn a markdown folder into a map, and connect Claude Code, Codex, or Cursor over MCP.",
+      "changelog": "Ontology Atlas changelog — user-visible changes, newest first."
     }
   },
   "notFound": {
@@ -3230,5 +3234,17 @@
     "valueDisagreeing": "{total} skills · {count} out of sync",
     "valueAgreed": "{total} skills · all agree",
     "body": "Compares the .claude/skills and .agents/skills copies file by file. It never writes anything."
+  },
+  "gatewayNav": {
+    "guide": "Guide",
+    "changelog": "Changelog",
+    "xLabel": "Follow on X",
+    "xPending": "The X account is not connected yet",
+    "guideTitle": "Guide",
+    "changelogTitle": "Changelog",
+    "changelogLead": "What changed, and when. Newest first.",
+    "guideLead": "From one folder to a map your AI agent can read.",
+    "truncatedNote": "{count} older entries are folded away — the gateway shows only the recent ones.",
+    "readFullSource": "Read the full file on GitHub"
   }
 }

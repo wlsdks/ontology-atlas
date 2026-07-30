@@ -1,23 +1,22 @@
 'use client';
 
 import {
-  ArrowLeft,
   Check,
   ChevronRight,
   Clipboard,
   Download,
   ExternalLink,
-  Orbit,
 } from 'lucide-react';
 import { useFormatter, useTranslations } from 'next-intl';
 import { resolveDisplayReleaseTag } from '../lib/pending-release-tag';
 import { Link, usePathname } from '@/i18n/navigation';
 import { cn } from '@/shared/lib/cn';
 import { stripLocalePrefix } from '@/shared/lib/nav-destination';
+import { PAGE_COLUMN, PAGE_GUTTER } from '@/shared/lib/gateway-frame';
+import { GatewayNav } from '@/widgets/gateway-chrome';
 import { DemoStage } from './DemoStage';
 import { useCopyFeedback } from '@/shared/lib/use-copy-feedback';
 import { GithubMark, buttonVariants } from '@/shared/ui';
-import { LocaleSwitch } from '@/features/locale-switch';
 import { MacosDownloadLink } from '@/features/macos-download-link';
 import { RELEASE_MIN_MACOS, RELEASE_VERSION, buildDmgName } from '../lib/release-facts';
 import {
@@ -85,8 +84,9 @@ const GITHUB_REPOSITORY_URL = 'https://github.com/wlsdks/ontology-atlas';
  * `<length>` 등록 덕에 계산값이 `160px` 로 굳는다). **`px-` 라 좌우 둘 다**
  * 원점을 받고, 그것이 좌우 대칭의 전부다.
  */
-const PAGE_GUTTER =
-  'px-[max(1.5rem,env(safe-area-inset-left))] pr-[max(1.5rem,env(safe-area-inset-right))] md:px-[var(--gateway-origin)]';
+// PAGE_GUTTER / PAGE_COLUMN 은 2026-07-30 에 `shared/lib/gateway-frame` 으로
+// 내려갔다 — `/guide` · `/changelog` 가 같은 프레임을 쓰게 되면서 뷰끼리
+// import 하는 모양이 됐기 때문이다. 값의 근거는 그 파일의 독블록에 있다.
 /**
  * 원점 안쪽의 단 하나뿐인 컬럼 — 왼쪽 고정, `--page-max` 에서 정지.
  *
@@ -94,7 +94,7 @@ const PAGE_GUTTER =
  * 남는 폭이 정확히 1600 이라 컬럼이 꽉 차고, 오른쪽 여백도 자동으로 같아진다.
  * `mx-auto` 가 필요 없는 이유가 이것이다.
  */
-const PAGE_COLUMN = 'w-full max-w-[var(--page-max)]';
+
 /**
  * 무대의 말 기둥과 판이 공유하는 폭.
  *
@@ -254,96 +254,6 @@ export function DownloadPage() {
  * 그래서 스케일 고정 계약(`design.md`)을 어기는 것이 아니라 **다른 계약을
  * 적용하는 것**이다 — 크롬 필/타일 36px 규격은 여기 해당 없음.
  */
-function GatewayNav() {
-  const t = useTranslations('download');
-  /**
-   * 이 표면은 **두 주소에 산다** — `/`(웹 방문자의 얼굴)와 `/download`(설치를
-   * 부르는 딥링크). 같은 화면이지만 크롬의 두 조각이 달라진다.
-   *
-   * `/` 에서는 ① 빵부스러기의 「다운로드」 마디를 지우고(그 주소가 아니다)
-   * ② 「지도로 돌아가기」를 지운다 — 여기로 온 사람은 지도에서 온 게 아니고,
-   * 지도로 가는 길은 판 안의 「설치 없이 브라우저에서 써보기」가 이미 낸다.
-   * 같은 일을 하는 링크를 크롬과 판에 둘 다 두면 둘 중 하나가 죽은 약속이 된다.
-   */
-  const atRoot = stripLocalePrefix(usePathname() ?? '/') === '/';
-
-  return (
-    <nav
-      data-testid="download-gnb"
-      className={cn(
-        PAGE_GUTTER,
-        'sticky top-0 z-30 w-full shrink-0 border-b border-[color:var(--color-divider)] bg-[color:var(--color-canvas)]',
-      )}
-    >
-      {/* `flex-wrap` 을 뺀 이유: 좁은 폭에서 줄바꿈이 일어나면 관문의 얼굴이
-          97px 짜리 두 줄이 되어 무대를 먹는다(실측 390px). 대신 접히는 것은
-          **빵부스러기**다 — 이 라우트가 어디인지는 좁은 화면에서도 제목이
-          말하고, 로고와 돌아가기는 어느 폭에서도 남아야 한다. */}
-      <div
-        className={cn(
-          PAGE_COLUMN,
-          'flex min-h-14 items-center gap-3 py-2.5 md:min-h-16 md:py-3',
-        )}
-      >
-        <Link
-          href="/"
-          className="touch-hit-expand inline-flex items-center gap-2 transition-colors hover:text-[color:var(--color-text-primary)]"
-        >
-          <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-chip border border-[color:var(--color-border-soft)] bg-[color:var(--color-elevated)] text-[color:var(--color-indigo-accent)]">
-            <Orbit size={12} />
-          </span>
-          <span className="text-body leading-body font-[var(--font-weight-signature)] text-[color:var(--color-text-secondary)]">
-            Ontology Atlas
-          </span>
-        </Link>
-        {atRoot ? null : (
-          <>
-            <span aria-hidden className="hidden text-body text-[color:var(--color-text-quaternary)] sm:inline">
-              /
-            </span>
-            <span
-              aria-current="page"
-              className="hidden text-body leading-body text-[color:var(--color-text-tertiary)] sm:inline"
-            >
-              {t('downloadSectionLabel')}
-            </span>
-          </>
-        )}
-        {/* 이 그룹의 **오른끝**이 곧 원점의 거울이다 — `vw − 원점` 에서 멈춰야
-            상단 바가 아래 밴드와 같은 프레임 안에 산다. 소유자 지적
-            *"공백이 길고 왜이러지?"* 가 정확히 이 끝과 화면 끝 사이였다
-            (실측 1920: 256px · 2560: 864px). 게이트가 이 testid 로 잰다. */}
-        <span
-          data-testid="download-gnb-actions"
-          className="ml-auto flex shrink-0 items-center gap-3"
-        >
-          {/*
-           * ⚠️ **`/` 가 아니라 `/topology` 다.** 라벨이 「지도로 돌아가기」라고
-           * 말하는데 `/` 는 2026-07-29 소유자 결정으로 **마케팅 페이지**가 된다
-           * (원장: 「root-first-open」 뒤집기). 그때 `/` 로 보내면 사용자는 지도가
-           * 아니라 방금 떠난 소개 화면으로 되돌아온다.
-           *
-           * 전환 전에는 두 주소가 같은 화면이라 이 결함이 보이지 않았다 — 그래서
-           * `tests/contract/map-destination-route.contract.test.ts` 가 라벨과
-           * 목적지를 함께 본다.
-           */}
-          {atRoot ? null : (
-            <Link
-              href="/topology"
-              data-testid="download-back-to-map"
-              className="touch-hit-expand inline-flex items-center gap-1.5 whitespace-nowrap text-body leading-body text-[color:var(--color-text-tertiary)] transition-colors hover:text-[color:var(--color-text-primary)]"
-            >
-              <ArrowLeft size={14} aria-hidden />
-              {t('back')}
-            </Link>
-          )}
-          <LocaleSwitch />
-        </span>
-      </div>
-    </nav>
-  );
-}
-
 // ─── 무대 — 지도 위의 다운로드 ───────────────────────────────────────────────
 
 /**

@@ -10,7 +10,9 @@
       "ontology": "온톨로지",
       "ontologyStudio": "온톨로지 공방",
       "ontologyInsights": "그래프 인사이트",
-      "projectNew": "새 프로젝트"
+      "projectNew": "새 프로젝트",
+      "guide": "가이드",
+      "changelog": "변경 내역"
     },
     "descriptions": {
       "home": "코드는 남고 맥락은 사라집니다. Ontology Atlas 는 프로젝트의 맥락 — 무엇이 무엇에 기대는지, 왜 이렇게 만들었는지 — 을 마크다운 폴더 하나에 담습니다. 사람이 읽는 글이자 AI 에이전트가 MCP 로 읽고 쓰는 구조. 로컬 우선, 백엔드 없음, 오픈소스.",
@@ -19,7 +21,9 @@
       "docs": "마크다운 폴더를 그대로 읽고 고치는 문서함. frontmatter 를 고치면 지도가 따라 바뀝니다.",
       "projects": "이 지도에 담긴 프로젝트와 허브 목록. 각 프로젝트가 어떤 도메인과 역량으로 이뤄져 있는지 한 줄씩 확인합니다.",
       "ontologyStudio": "노드 하나를 가운데 놓고 상위개념 · 담는것 · 기대는곳 · 비슷한것 네 방위로 관계를 채웁니다. 채우면 마크다운 frontmatter 에 그대로 기록됩니다.",
-      "ontologyInsights": "종류별 노드 분포, 연결이 많은 허브, 아직 아무데도 안 붙은 노드를 한 화면에서 봅니다. 지도를 넓히기 전에 어디가 비었는지 확인하는 자리."
+      "ontologyInsights": "종류별 노드 분포, 연결이 많은 허브, 아직 아무데도 안 붙은 노드를 한 화면에서 봅니다. 지도를 넓히기 전에 어디가 비었는지 확인하는 자리.",
+      "guide": "Ontology Atlas 시작 가이드 — 마크다운 폴더를 지도로 만들고, Claude Code · Codex · Cursor 를 MCP 로 연결하는 법.",
+      "changelog": "Ontology Atlas 변경 내역 — 사용자에게 보이는 변화만 날짜순으로."
     }
   },
   "notFound": {
@@ -3230,5 +3234,17 @@
     "valueDisagreeing": "스킬 {total}개 · {count}개 어긋남",
     "valueAgreed": "스킬 {total}개 · 모두 일치",
     "body": ".claude/skills 와 .agents/skills 사본을 파일 단위로 비교합니다. 아무것도 고쳐 쓰지 않아요."
+  },
+  "gatewayNav": {
+    "guide": "가이드",
+    "changelog": "변경 내역",
+    "xLabel": "X 에서 보기",
+    "xPending": "X 계정은 아직 연결되지 않았습니다",
+    "guideTitle": "가이드",
+    "changelogTitle": "변경 내역",
+    "changelogLead": "무엇이 언제 바뀌었는지. 최신이 위입니다.",
+    "guideLead": "폴더 하나가 지도가 되고, 그 지도를 AI 에이전트가 읽기까지.",
+    "truncatedNote": "이전 항목 {count}개는 여기서 접었습니다. 관문은 최근 것만 보여줍니다.",
+    "readFullSource": "저장소에서 전문 읽기"
   }
 }
