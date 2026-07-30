@@ -193,13 +193,23 @@ describe("AgentConnectSheet scope segment", () => {
     // 상실 문장이 그 자리에 있어야 한다 — 홈 폴더는 git diff 에 안 남는다.
     expect(screen.getByTestId("agent-global-scope-loss")).toBeInTheDocument();
 
-    // 네 도구 전부 + Claude Code 는 그 도구의 명령으로.
+    /*
+     * **한 번에 한 도구.** 넷을 동시에 펼치던 첫 판은 실측에서 이 패널만 977px 이
+     * 돼 시트(836px)를 넘겼고, 단계 ②③ 이 스크롤 밖으로 밀렸다. 그래서 탭은 넷,
+     * 렌더는 하나가 계약이다 — 그 "하나" 를 여기서 단언한다.
+     */
     for (const id of ["claude-code", "codex", "cursor", "antigravity"]) {
-      expect(screen.getByTestId(`agent-global-scope-${id}`)).toBeInTheDocument();
+      expect(screen.getByTestId(`agent-global-scope-tool-${id}`)).toBeInTheDocument();
     }
     expect(screen.getByTestId("agent-global-scope-claude-code")).toHaveTextContent(
       "claude mcp add --scope user",
     );
+    expect(screen.queryByTestId("agent-global-scope-codex")).not.toBeInTheDocument();
+
+    // 도구를 바꾸면 그 도구의 것만 남는다.
+    fireEvent.click(screen.getByTestId("agent-global-scope-tool-codex"));
+    expect(screen.getByTestId("agent-global-scope-codex")).toBeInTheDocument();
+    expect(screen.queryByTestId("agent-global-scope-claude-code")).not.toBeInTheDocument();
     // 볼트 절대 경로가 이미 박혀 있다 — 사용자가 조립하지 않는다.
     expect(screen.getByTestId("agent-global-scope-codex")).toHaveTextContent("/Users/someone/vault");
     window.localStorage.clear();
