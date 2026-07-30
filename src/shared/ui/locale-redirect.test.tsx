@@ -48,16 +48,28 @@ describe('LocaleRedirect — 디자인 토큰 가드', () => {
     expect(html).toContain('var(--color-indigo-accent)');
   });
 
-  it('같은 locale 의 마지막 작업 surface 로 복귀한다', () => {
+  /**
+   * **뒤집힌 계약 (2026-07-30).** 종전에는 같은 locale 의 마지막 작업 surface 로
+   * 복원했다. 지금은 **언어만 판정**한다.
+   *
+   * 이 테스트가 뒤집힌 이유는 코드가 아니라 `/` 의 일이 바뀐 것이다 — 이 주소는
+   * 이제 관문(홍보 겸 다운로드 얼굴)이고, 관문은 **누가 오든 같은 얼굴**이어야
+   * 한다. 복원이 남아 있으면 소유자조차 자기 첫인상을 볼 수 없다(실제로 그 값을
+   * 치렀다: 설계대로 도는 코드를 결함으로 보고하게 됐다).
+   *
+   * 옛 계약을 지우지 않고 **뒤집어 남긴다** — 다음 사람이 "복원이 편하겠다"고
+   * 생각했을 때 왜 없는지 여기서 읽는다.
+   */
+  it('마지막 작업 surface 를 기억해도 관문으로 보낸다', () => {
     window.localStorage.setItem('ontology-atlas:locale', 'en');
     window.localStorage.setItem(ROUTE_MEMORY_KEY, '/en/topology/');
 
     render(<LocaleRedirect />);
 
-    expect(window.location.replace).toHaveBeenCalledWith('/en/topology/');
+    expect(window.location.replace).toHaveBeenCalledWith('/en/');
   });
 
-  it('다른 locale 의 마지막 route 는 루트 locale redirect 로 되돌린다', () => {
+  it('다른 locale 의 기억도 그 사람의 언어 관문으로 보낸다', () => {
     window.localStorage.setItem('ontology-atlas:locale', 'en');
     window.localStorage.setItem(ROUTE_MEMORY_KEY, '/ko/topology/');
 

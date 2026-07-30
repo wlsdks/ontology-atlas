@@ -27,6 +27,8 @@
 </p>
 
 <p align="center">
+  <a href="https://wlsdks.github.io/ontology-atlas/"><strong>Download for macOS</strong></a>
+  ·
   <a href="https://wlsdks.github.io/ontology-atlas/en/topology/"><strong>Live demo</strong></a>
   ·
   <a href="#the-journey"><strong>The journey</strong></a>
