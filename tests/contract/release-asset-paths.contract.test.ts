@@ -82,7 +82,7 @@ function fakeBundle(root: string, version: string, arch: string): string {
   return bundleDir;
 }
 
-const VERSION = "1.0.0-rc.3";
+const VERSION = "1.0.0-rc.4";
 const TAG = `v${VERSION}`;
 const REPO = "wlsdks/ontology-atlas";
 const scratch = mkdtempSync(join(tmpdir(), "oa-release-paths-"));
