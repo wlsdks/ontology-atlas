@@ -198,6 +198,8 @@ test('Narrative / language-guide / sentence README H2s skipped from domains', ()
         '## Three views plus MCP, one vault', // sentence (comma)
         '## 한국어 가이드', // language guide
         '## English Guide', // language guide
+        '## 한국어', // bare language-name header — translated-README section
+        '## English', // bare language-name header — translated-README section
         '## Providers and local path', // operational setup section
         '## Provider Management', // real domain — kept
         '## Providers and local marketplace', // real domain — kept
