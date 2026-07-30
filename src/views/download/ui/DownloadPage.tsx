@@ -766,7 +766,7 @@ function PlateExitRow({ published }: { published: boolean }) {
         <Link
           href="/topology"
           data-testid="download-web-cta"
-          className={cn(buttonVariants({ variant: 'outline', size: 'md' }), 'touch-hit-expand rounded-chip')}
+          className={cn(buttonVariants({ variant: 'outline', size: 'sm' }), 'touch-hit-expand rounded-chip')}
         >
           {t('webCta')}
         </Link>
@@ -929,7 +929,7 @@ function TrustChips() {
   return (
     <p
       data-testid="download-trust-chips"
-      className="mt-5 flex min-w-0 items-baseline gap-2 break-keep text-label leading-label text-[color:var(--color-text-tertiary)]"
+      className="mt-3.5 flex min-w-0 items-baseline gap-2 break-keep text-label leading-label text-[color:var(--color-text-tertiary)]"
     >
       <Check
         size={12}
