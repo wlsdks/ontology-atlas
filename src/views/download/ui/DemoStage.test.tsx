@@ -66,10 +66,10 @@ describe('DemoStage', () => {
   });
 
   it('두 클립이면 탭 둘, 기본 탭은 클립 A 다', () => {
-    render(wrap(<DemoStage available={['agent-edits', 'one-button']} />));
+    render(wrap(<DemoStage available={['one-folder', 'one-button']} />));
     const tabs = screen.getAllByRole('tab');
     expect(tabs).toHaveLength(2);
-    expect(screen.getByTestId('demo-tab-agent-edits')).toHaveAttribute('aria-selected', 'true');
+    expect(screen.getByTestId('demo-tab-one-folder')).toHaveAttribute('aria-selected', 'true');
     expect(screen.getByTestId('demo-tab-one-button')).toHaveAttribute('aria-selected', 'false');
   });
 
@@ -78,20 +78,20 @@ describe('DemoStage', () => {
    * 막힌다. 루프도 명시적으로 없다 — 루프는 헤더/무드용이고 서사는 1회 재생이다.
    */
   it('무음이고 루프가 없고 미리 받지 않는다', () => {
-    render(wrap(<DemoStage available={['agent-edits']} />));
-    const video = screen.getByTestId('demo-video-agent-edits') as HTMLVideoElement;
+    render(wrap(<DemoStage available={['one-folder']} />));
+    const video = screen.getByTestId('demo-video-one-folder') as HTMLVideoElement;
     expect(video.muted).toBe(true);
     expect(video.hasAttribute('loop')).toBe(false);
     expect(video.getAttribute('preload')).toBe('none');
     expect(video.hasAttribute('playsinline')).toBe(true);
-    expect(video.getAttribute('poster')).toContain('agent-edits-poster.png');
+    expect(video.getAttribute('poster')).toContain('one-folder-poster.png');
   });
 
   /** AV1(webm) 이 먼저, MP4 가 최종 보루 — Safari 의 AV1 지원이 기계마다 갈린다. */
   it('webm 을 먼저 제안하고 mp4 를 보루로 둔다', () => {
-    render(wrap(<DemoStage available={['agent-edits']} />));
+    render(wrap(<DemoStage available={['one-folder']} />));
     const sources = [
-      ...screen.getByTestId('demo-video-agent-edits').querySelectorAll('source'),
+      ...screen.getByTestId('demo-video-one-folder').querySelectorAll('source'),
     ].map((el) => el.getAttribute('type'));
     expect(sources).toEqual(['video/webm', 'video/mp4']);
   });
@@ -101,8 +101,8 @@ describe('DemoStage', () => {
    * 라는 주장이 깨진다 — 관객이 본 것은 자른 조각이다.
    */
   it('탭을 떠나면 멈추고 되감는다', async () => {
-    render(wrap(<DemoStage available={['agent-edits', 'one-button']} />));
-    const video = screen.getByTestId('demo-video-agent-edits') as HTMLVideoElement;
+    render(wrap(<DemoStage available={['one-folder', 'one-button']} />));
+    const video = screen.getByTestId('demo-video-one-folder') as HTMLVideoElement;
     video.currentTime = 7;
 
     fireEvent.click(screen.getByTestId('demo-tab-one-button'));
@@ -113,9 +113,9 @@ describe('DemoStage', () => {
 
   /** 나가는 프레임은 상호작용을 받지 않는다 — 안 보이는 재생 버튼에 Tab 이 닿으면 유령이다. */
   it('숨은 패널은 inert 다', () => {
-    render(wrap(<DemoStage available={['agent-edits', 'one-button']} />));
+    render(wrap(<DemoStage available={['one-folder', 'one-button']} />));
     expect(screen.getByTestId('demo-panel-one-button')).toHaveAttribute('inert');
-    expect(screen.getByTestId('demo-panel-agent-edits')).not.toHaveAttribute('inert');
+    expect(screen.getByTestId('demo-panel-one-folder')).not.toHaveAttribute('inert');
   });
 
   /** 자동재생이 아닌 클립은 사람이 시작한다 — 포스터 + 재생 버튼(원장 클립 B). */
@@ -136,21 +136,21 @@ describe('DemoStage', () => {
       removeEventListener: vi.fn(),
     })) as unknown as typeof window.matchMedia;
 
-    render(wrap(<DemoStage available={['agent-edits']} />));
+    render(wrap(<DemoStage available={['one-folder']} />));
 
     await waitFor(() =>
-      expect(screen.getByTestId('demo-caption-agent-edits')).toHaveTextContent(
+      expect(screen.getByTestId('demo-caption-one-folder')).toHaveTextContent(
         'You hand this folder to an AI agent',
       ),
     );
     // 자동재생 클립인데도 사람이 시작하도록 재생 버튼이 선다.
-    expect(screen.getByTestId('demo-play-agent-edits')).toBeInTheDocument();
+    expect(screen.getByTestId('demo-play-one-folder')).toBeInTheDocument();
   });
 
   /** 등록부는 촬영 전에도 **무엇을 찍어야 하는가**를 들고 있어야 한다. */
   it('등록부가 시나리오의 두 클립을 선언한다', () => {
-    expect(DEMO_CLIPS.map((clip) => clip.id)).toEqual(['agent-edits', 'one-button']);
-    expect(DEMO_CLIPS.find((c) => c.id === 'agent-edits')?.autoplay).toBe(true);
+    expect(DEMO_CLIPS.map((clip) => clip.id)).toEqual(['one-folder', 'one-button']);
+    expect(DEMO_CLIPS.find((c) => c.id === 'one-folder')?.autoplay).toBe(true);
     expect(DEMO_CLIPS.find((c) => c.id === 'one-button')?.autoplay).toBe(false);
     // 선언은 둘이지만 붙은 자산은 별개다 — 그 분리가 죽은 UI 를 막는다.
     expect(availableDemoClips([]).length).toBe(0);

@@ -698,9 +698,9 @@
     "archHelpTitle": "Not sure which Mac you have?",
     "archHelpBody": "Open the Apple menu in the top-left corner and choose About This Mac. If \"Chip\" says Apple M1, M2, M3 or M4, you have Apple Silicon; if \"Processor\" says Intel, you have Intel. Any Mac bought after late 2020 is almost certainly Apple Silicon.",
     "demoHeading": "A map you keep with an AI agent",
-    "demoTabAgentEdits": "The AI edits — the map follows",
     "demoTabOneButton": "Connecting is one button",
-    "demoPlay": "Play"
+    "demoPlay": "Play",
+    "demoTabOneFolder": "One folder, six surfaces"
   },
   "kinds": {
     "project": "Project",

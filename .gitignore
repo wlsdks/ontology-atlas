@@ -78,6 +78,10 @@ references/
 !src-tauri/icons/**
 !docs/prototypes/shots/
 !docs/prototypes/shots/**
+# 시연 클립 포스터 — 영상 첫 프레임이라 저장소가 들고 있어야 한다. 전역 `*.png`
+# 무시는 Playwright 덤프를 막으려는 것이고 배포 자산을 막으려는 것이 아니다
+# (위 브랜드 자산들과 같은 부류의 예외).
+!public/demo/*.png
 
 # Testing
 coverage/

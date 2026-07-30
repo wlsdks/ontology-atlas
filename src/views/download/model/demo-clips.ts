@@ -11,6 +11,15 @@
  * 됩니다는 강등이 아니라 거짓말」이라고 못박은 것과 같은 결함이다
  * (`.claude/rules/surfaces.md`).
  *
+ * ## 클립 A 의 이름이 바뀐 이유 (2026-07-30)
+ *
+ * 종전 id/라벨은 `agent-edits` · *"AI가 고치면 지도가 따라 바뀐다"* 였다. 소유자가
+ * 클립 A 를 **기능 소개 투어**로 재정의하면서(*"클로드 코드에 연결된것까지 보여줄
+ * 필요는 없어"*) 그 라벨이 **거짓**이 됐다 — 촬영본에 AI 가 고치는 장면이 없다.
+ * 위 규율("라벨은 클립이 끝났을 때 관객이 갖게 될 문장")을 그대로 적용해
+ * `one-folder` · *"폴더 하나가 여섯 화면으로 열린다"* 로 바꿨다. **찍은 것과 다른
+ * 문장을 붙이는 것이 이 등록부가 막으려던 결함이다.**
+ *
  * 그래서 자산의 존재 여부가 **데이터 한 곳**에서 결정된다. 파일이 붙기 전에는
  * `AVAILABLE` 이 비어 있고 절 자체가 렌더되지 않는다. 촬영본이 들어오면 아래
  * 배열에 한 줄을 더하는 것으로 켜진다 — 컴포넌트는 건드리지 않는다.
@@ -24,7 +33,7 @@
 
 /** 한 클립의 계약. 전달 규격(원장 「촬영 후 게이트」)이 타입에 박혀 있다. */
 export interface DemoClip {
-  id: 'agent-edits' | 'one-button';
+  id: 'one-folder' | 'one-button';
   /** i18n 키 — 탭 라벨. 클립이 끝났을 때 관객이 갖게 될 문장. */
   tabKey: string;
   /** 자동재생 여부. 클립 A 만 무음 자동재생, B 는 포스터 + 재생 버튼. */
@@ -40,8 +49,8 @@ export interface DemoClip {
  * 「무엇을 찍어야 하는가」가 코드에 남고, 촬영 후 게이트가 대조할 대상이 생긴다.
  */
 export const DEMO_CLIPS: readonly DemoClip[] = [
-  { id: 'agent-edits', tabKey: 'demoTabAgentEdits', autoplay: true, seconds: 21, basename: 'agent-edits' },
-  { id: 'one-button', tabKey: 'demoTabOneButton', autoplay: false, seconds: 11, basename: 'one-button' },
+  { id: 'one-folder', tabKey: 'demoTabOneFolder', autoplay: true, seconds: 24, basename: 'one-folder' },
+  { id: 'one-button', tabKey: 'demoTabOneButton', autoplay: false, seconds: 14, basename: 'one-button' },
 ];
 
 /**
@@ -53,7 +62,7 @@ export const DEMO_CLIPS: readonly DemoClip[] = [
  * 것이 이 배열의 요점이다(파일 존재만으로 켜면, 반쯤 올라간 자산이 첫인상 자리에
  * 그대로 나간다).
  */
-export const AVAILABLE_DEMO_CLIP_IDS: readonly DemoClip['id'][] = [];
+export const AVAILABLE_DEMO_CLIP_IDS: readonly DemoClip['id'][] = ['one-folder', 'one-button'];
 
 /** 렌더할 클립 — 선언과 자산이 모두 있는 것만. */
 export function availableDemoClips(
