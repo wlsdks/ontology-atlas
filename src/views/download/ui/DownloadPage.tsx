@@ -608,11 +608,17 @@ function PublishedActions({
             href={intel.downloadUrl}
             data-testid="download-macos-x64"
             className={cn(
-              buttonVariants({ variant: 'outline', size: 'md' }),
-              // `md`(40px) 는 44px 터치 최소에 미달한다. `lg` 로 올리면 1512×850 에서
-              // 판이 한 화면을 넘긴다(그래서 낮춘 것이다) — 두 계약이 부딪히는 자리다.
-              // 히트 영역 확장은 `::after` 오버레이라 **레이아웃 높이를 늘리지 않는다**:
-              // 손가락은 44px 을 받고 판은 850 안에 남는다.
+              buttonVariants({ variant: 'outline', size: 'lg' }),
+              /*
+               * `lg` — 판 폭이 520 이 되면서 이 버튼이 주 CTA 와 **같은 줄**에 선다.
+               * 같은 선택의 두 갈래이므로 높이도 같아야 한다.
+               *
+               * 종전에 `md`(40px)로 낮췄던 것은 1512×850 한 화면 게이트 때문이었고
+               * 위계 판단이 아니었다 — **게이트가 디자인을 정하는 상태**였다. 한 행이
+               * 접히며 50px 이 돌아왔으므로 그 대차를 되돌린다. 44px 터치 최소도
+               * `lg` 자체로 만족되지만 `touch-hit-expand` 는 남긴다(무해하고,
+               * 다음에 크기가 또 흔들려도 손가락 계약은 안 깨진다).
+               */
               'touch-hit-expand rounded-chip px-4 sm:px-6',
             )}
           >
@@ -923,7 +929,7 @@ function TrustChips() {
   return (
     <p
       data-testid="download-trust-chips"
-      className="mt-5 flex min-w-0 items-baseline gap-2 break-keep text-label leading-label text-[color:var(--color-text-tertiary)]"
+      className="mt-2 flex min-w-0 items-baseline gap-2 break-keep text-label leading-label text-[color:var(--color-text-tertiary)]"
     >
       <Check
         size={12}
@@ -1220,7 +1226,7 @@ function PlatformStatus() {
        * 칩과의 간격이 주 CTA 사이 간격과 같을 이유가 없다. 850 창은 카운슬이 게이트로
        * 지키는 폭이고(설치 3단이 접히면 안 된다), 그 제약이 이 값을 정한다.
        */
-      className="mt-1 flex min-w-0 flex-wrap items-center gap-2"
+      className="mt-2 flex min-w-0 flex-wrap items-center gap-2"
     >
       <span
         aria-disabled="true"
