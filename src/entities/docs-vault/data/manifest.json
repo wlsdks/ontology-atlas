@@ -1,6 +1,6 @@
 {
   "version": "2026-04-23",
-  "generatedAt": "2026-07-30",
+  "generatedAt": "2026-07-31",
   "docs": [
     {
       "slug": "AGENT-GRAPH-WORKFLOW",
@@ -3325,6 +3325,11 @@
         },
         {
           "depth": 2,
+          "text": "2026-07-31 — 읽는 페이지가 가운데로 오고, 가이드가 여섯 장이 된다",
+          "slug": "2026-07-31-읽는-페이지가-가운데로-오고-가이드가-여섯-장이-된다"
+        },
+        {
+          "depth": 2,
           "text": "2026-07-30 — 관문 크롬의 읽을거리가 버튼으로 읽히고, 지도가 한 단 더 커진다",
           "slug": "2026-07-30-관문-크롬의-읽을거리가-버튼으로-읽히고-지도가-한-단-더-커진다"
         },
@@ -5404,9 +5409,9 @@
           "slug": "2026-07-26-첫-만남은-쇼핑몰부터"
         }
       ],
-      "excerpt": "Major change history. Code commit messages answer why; this file answers when / which surface changed. Focused on user-visible changes, not PR-level granularity. Newest at the top. Entries stay date-based; the app version reached v1.0.0 on 2026-07-27, so a release tag now carries the semver promise instead. 대비는 문제가 아니었",
-      "wordCount": 59733,
-      "updatedAt": "2026-07-30",
+      "excerpt": "Major change history. Code commit messages answer why; this file answers when / which surface changed. Focused on user-visible changes, not PR-level granularity. Newest at the top. Entries stay date-based; the app version reached v1.0.0 on 2026-07-27, so a release tag now carries the semver promise instead. 산문이 한쪽에 쏠려 ",
+      "wordCount": 59893,
+      "updatedAt": "2026-07-31",
       "linksOut": [
         "CASE-STUDY-AGENTS-MD-DRIFT",
         "slug"
@@ -7251,66 +7256,226 @@
       "linksOut": []
     },
     {
-      "slug": "GUIDE",
-      "path": "docs/GUIDE.md",
-      "title": "가이드",
+      "slug": "guide/cli",
+      "path": "docs/guide/cli.md",
+      "title": "CLI",
       "tags": [],
       "frontmatter": {},
       "headings": [
         {
           "depth": 1,
-          "text": "가이드",
-          "slug": "가이드"
+          "text": "CLI",
+          "slug": "cli"
         },
         {
           "depth": 2,
-          "text": "1. 이게 무엇인가",
-          "slug": "1-이게-무엇인가"
+          "text": "자주 쓰는 것",
+          "slug": "자주-쓰는-것"
         },
         {
           "depth": 2,
-          "text": "2. 첫 5분",
-          "slug": "2-첫-5분"
+          "text": "커밋 전에",
+          "slug": "커밋-전에"
         },
         {
-          "depth": 3,
+          "depth": 2,
+          "text": "에이전트에게 넘기기",
+          "slug": "에이전트에게-넘기기"
+        }
+      ],
+      "excerpt": "개발자의 일상 진입점입니다. 소스 체크아웃에서 실행합니다. 레지스트리에 발행된 패키지가 아니라서 npx 로는 실행되지 않습니다. 살아있는 경로는 앱 번들(에이전트 연결 버튼이 절대 경로로 설정을 써 줍니다)과 소스 체크아웃 둘뿐입니다. · 하고 싶은 일 · 명령 · 빈 저장소에 볼트 만들기 · init · 내 .md 를 볼트로 들이기 · import <path... · frontmatter 무결성 검사 · validate · 그래프로 컴파일 · compile · 이름 바꾸기(백링크 포함) · rename <old <new · 누가 이걸 쓰나 · backlinks <s",
+      "wordCount": 190,
+      "updatedAt": "2026-07-31",
+      "linksOut": []
+    },
+    {
+      "slug": "guide/connect-agent",
+      "path": "docs/guide/connect-agent.md",
+      "title": "AI 에이전트 연결하기",
+      "tags": [],
+      "frontmatter": {},
+      "headings": [
+        {
+          "depth": 1,
+          "text": "AI 에이전트 연결하기",
+          "slug": "ai-에이전트-연결하기"
+        },
+        {
+          "depth": 2,
+          "text": "적용 범위 — 이 폴더 / 이 컴퓨터 전체",
+          "slug": "적용-범위-이-폴더-이-컴퓨터-전체"
+        },
+        {
+          "depth": 2,
+          "text": "연결되면 무엇이 달라지나",
+          "slug": "연결되면-무엇이-달라지나"
+        },
+        {
+          "depth": 2,
+          "text": "사람이 심판입니다",
+          "slug": "사람이-심판입니다"
+        }
+      ],
+      "excerpt": "앱의 「에이전트 연결」 버튼 한 번이면 됩니다. 지금 쓰는 도구를 고르면 그 도구의 설정 파일에 볼트의 실제 절대 경로가 박힌 한 줄을 써 줍니다. 지원 도구: Claude Code · Codex · Cursor · Antigravity 「이 폴더」는 저장소 안 설정 파일에 씁니다 — git diff 에 남고 팀이 같이 씁니다. 「이 컴퓨터 전체」는 홈 폴더의 설정인데, 앱이 직접 쓰지 않습니다. 그 파일은 도구가 런타임에 갱신하는 상태 저장소라 제3자가 쓰면 조용한 데이터 손실이 됩니다. 대신 볼트 절대 경로가 이미 박힌 명령 한 줄을 드리고, 그 도구가 자기 것을",
+      "wordCount": 207,
+      "updatedAt": "2026-07-31",
+      "linksOut": []
+    },
+    {
+      "slug": "guide/first-five-minutes",
+      "path": "docs/guide/first-five-minutes.md",
+      "title": "첫 5분",
+      "tags": [],
+      "frontmatter": {},
+      "headings": [
+        {
+          "depth": 1,
+          "text": "첫 5분",
+          "slug": "첫-5분"
+        },
+        {
+          "depth": 2,
           "text": "설치 없이 먼저 보기",
           "slug": "설치-없이-먼저-보기"
         },
         {
-          "depth": 3,
+          "depth": 2,
           "text": "앱으로 쓰기",
           "slug": "앱으로-쓰기"
         },
         {
           "depth": 2,
-          "text": "3. 볼트의 구조",
-          "slug": "3-볼트의-구조"
-        },
-        {
-          "depth": 2,
-          "text": "4. AI 에이전트 연결하기",
-          "slug": "4-ai-에이전트-연결하기"
-        },
-        {
-          "depth": 2,
-          "text": "5. 어디에 두는가",
-          "slug": "5-어디에-두는가"
-        },
-        {
-          "depth": 2,
-          "text": "6. 신뢰에 관하여",
-          "slug": "6-신뢰에-관하여"
-        },
-        {
-          "depth": 2,
-          "text": "7. 다음으로",
-          "slug": "7-다음으로"
+          "text": "처음 열면 무엇이 보이나",
+          "slug": "처음-열면-무엇이-보이나"
         }
       ],
-      "excerpt": "Ontology Atlas 를 처음 여는 사람을 위한 안내입니다. 읽는 순서대로 따라오면 폴더 하나가 지도가 되고, 그 지도를 AI 에이전트가 읽게 됩니다. 이 문서 자체가 Atlas 볼트 안의 마크다운 한 장입니다. 지금 보고 계신 화면은 그 파일을 그린 것이고, 같은 파일을 앱에서 열 수도 에이전트가 MCP 로 읽을 수도 있습니다. 제품이 자기 형식으로 자기를 설명하는 셈입니다. 코드는 남고 맥락은 사라집니다. 왜 이렇게 만들었는지, 여길 건드리면 어디가 흔들리는지 — 그 지식은 보통 사람 머릿속과 흘러간 대화 속에 있습니다. grep 은 코드를 찾아주지만 왜 는",
-      "wordCount": 731,
-      "updatedAt": "2026-07-30",
+      "excerpt": "브라우저에서 바로 열 수 있습니다. 마크다운 폴더를 고르면 그 자리에서 지도가 됩니다. 폴더는 브라우저 밖으로 나가지 않습니다. 파일 시스템 접근이 필요해서 Chrome · Edge · Safari 18.2+ · Opera 에서 동작합니다. Firefox 는 아직 이 API 가 없어 폴더를 열지 못합니다. macOS 앱이 볼트의 본거지입니다. 브라우저가 원리적으로 할 수 없는 일들이 앱에만 있습니다. · 능력 · 앱 · 웹 · 볼트 절대 경로 · ✓ · 핸들만 (경로 없음) · git 기록·스냅샷 · ✓ · 불가 · API 키 보관 · OS 키체인 · 원리적 불가 ·",
+      "wordCount": 179,
+      "updatedAt": "2026-07-31",
+      "linksOut": []
+    },
+    {
+      "slug": "guide/trust",
+      "path": "docs/guide/trust.md",
+      "title": "신뢰에 관하여",
+      "tags": [],
+      "frontmatter": {},
+      "headings": [
+        {
+          "depth": 1,
+          "text": "신뢰에 관하여",
+          "slug": "신뢰에-관하여"
+        },
+        {
+          "depth": 2,
+          "text": "로컬이 전부입니다",
+          "slug": "로컬이-전부입니다"
+        },
+        {
+          "depth": 2,
+          "text": "평문 마크다운입니다",
+          "slug": "평문-마크다운입니다"
+        },
+        {
+          "depth": 2,
+          "text": "자동으로 훑지 않습니다",
+          "slug": "자동으로-훑지-않습니다"
+        },
+        {
+          "depth": 2,
+          "text": "LLM 연결은 선택입니다",
+          "slug": "llm-연결은-선택입니다"
+        },
+        {
+          "depth": 2,
+          "text": "서명·공증",
+          "slug": "서명공증"
+        },
+        {
+          "depth": 2,
+          "text": "오픈소스",
+          "slug": "오픈소스"
+        }
+      ],
+      "excerpt": "무명 저장소의 바이너리를 자기 컴퓨터에 들이는 일입니다. 그래서 무엇을 하지 않는지부터 적습니다. 볼트는 여러분 디스크에만 있습니다. 조용히 전송되는 것은 없습니다. 계정도, 서버도, 요금제 뒤에 갇힌 기능도 없습니다. 앱을 지워도 폴더는 그대로 남습니다. 잠기는 것이 없습니다. 이건 마케팅 문구가 아니라 구조적 사실입니다 — 저장 형식이 마크다운이라 잠글 방법이 없습니다. 여러분이 고른 폴더만 읽습니다. .env 같은 dotfile 과 .git/ 은 인덱싱에서 제외합니다. 디스크의 다른 곳은 보지 않습니다. 켜지 않으면 어떤 모델도 호출되지 않습니다. 켜면 무엇이 ",
+      "wordCount": 145,
+      "updatedAt": "2026-07-31",
+      "linksOut": []
+    },
+    {
+      "slug": "guide/vault-structure",
+      "path": "docs/guide/vault-structure.md",
+      "title": "볼트의 구조",
+      "tags": [],
+      "frontmatter": {},
+      "headings": [
+        {
+          "depth": 1,
+          "text": "볼트의 구조",
+          "slug": "볼트의-구조"
+        },
+        {
+          "depth": 2,
+          "text": "kind — 그 파일이 무엇인지",
+          "slug": "kind-그-파일이-무엇인지"
+        },
+        {
+          "depth": 2,
+          "text": "관계",
+          "slug": "관계"
+        },
+        {
+          "depth": 2,
+          "text": "이름을 두 언어로",
+          "slug": "이름을-두-언어로"
+        },
+        {
+          "depth": 2,
+          "text": "어디에 두는가",
+          "slug": "어디에-두는가"
+        },
+        {
+          "depth": 2,
+          "text": "진실원은 파일입니다",
+          "slug": "진실원은-파일입니다"
+        }
+      ],
+      "excerpt": "볼트는 그냥 마크다운 폴더입니다. 특별한 것은 각 파일 맨 위의 frontmatter 뿐입니다. kind 가 그 파일이 무엇인지 정합니다. 위에서 아래로 갈수록 구체적입니다. · kind · 뜻 · 예 · project · 최상위 산출물 · auth-platform · domain · 기능 묶음 · auth, billing · capability · 하나의 일관된 행동 · token-issue · element · 구체적인 조각 (파일·라이브러리·스키마) · jwt-signer.ts · document · 그래프에 매인 설명 문서 · 이 가이드 · 관계는 contai",
+      "wordCount": 267,
+      "updatedAt": "2026-07-31",
+      "linksOut": []
+    },
+    {
+      "slug": "guide/what-is-atlas",
+      "path": "docs/guide/what-is-atlas.md",
+      "title": "이게 무엇인가",
+      "tags": [],
+      "frontmatter": {},
+      "headings": [
+        {
+          "depth": 1,
+          "text": "이게 무엇인가",
+          "slug": "이게-무엇인가"
+        },
+        {
+          "depth": 2,
+          "text": "읽는 사람이 둘입니다",
+          "slug": "읽는-사람이-둘입니다"
+        },
+        {
+          "depth": 2,
+          "text": "언제 쓰나",
+          "slug": "언제-쓰나"
+        },
+        {
+          "depth": 2,
+          "text": "언제 안 쓰나",
+          "slug": "언제-안-쓰나"
+        }
+      ],
+      "excerpt": "코드는 남고 맥락은 사라집니다. 왜 이렇게 만들었는지, 여길 건드리면 어디가 흔들리는지 — 그 지식은 보통 사람 머릿속과 흘러간 대화 속에 있습니다. grep 은 코드를 찾아주지만 왜 는 찾아주지 못합니다. Ontology Atlas 는 그 의미 층을 마크다운 폴더 하나에 붙잡아 둡니다. 파일의 frontmatter 가 곧 노드이고 관계입니다. 별도 데이터베이스도, 로그인도, 서버도 없습니다. 사람 — 지도를 보고 판단합니다. 기획자·마케터·의사결정자·개발자가 같은 그림을 봅니다. AI 에이전트 — 같은 파일을 MCP 로 읽고 씁니다. 작업 시작점, 도메인 맥락, 구",
+      "wordCount": 215,
+      "updatedAt": "2026-07-31",
       "linksOut": []
     },
     {
@@ -15440,6 +15605,55 @@
         ]
       },
       {
+        "name": "guide",
+        "path": "guide",
+        "type": "dir",
+        "children": [
+          {
+            "name": "cli",
+            "path": "guide/cli",
+            "type": "doc",
+            "slug": "guide/cli",
+            "title": "CLI"
+          },
+          {
+            "name": "connect-agent",
+            "path": "guide/connect-agent",
+            "type": "doc",
+            "slug": "guide/connect-agent",
+            "title": "AI 에이전트 연결하기"
+          },
+          {
+            "name": "first-five-minutes",
+            "path": "guide/first-five-minutes",
+            "type": "doc",
+            "slug": "guide/first-five-minutes",
+            "title": "첫 5분"
+          },
+          {
+            "name": "trust",
+            "path": "guide/trust",
+            "type": "doc",
+            "slug": "guide/trust",
+            "title": "신뢰에 관하여"
+          },
+          {
+            "name": "vault-structure",
+            "path": "guide/vault-structure",
+            "type": "doc",
+            "slug": "guide/vault-structure",
+            "title": "볼트의 구조"
+          },
+          {
+            "name": "what-is-atlas",
+            "path": "guide/what-is-atlas",
+            "type": "doc",
+            "slug": "guide/what-is-atlas",
+            "title": "이게 무엇인가"
+          }
+        ]
+      },
+      {
         "name": "launch",
         "path": "launch",
         "type": "dir",
@@ -16446,13 +16660,6 @@
         "type": "doc",
         "slug": "FOUNDATIONS",
         "title": "FOUNDATIONS — what grounds ontology-atlas"
-      },
-      {
-        "name": "GUIDE",
-        "path": "GUIDE",
-        "type": "doc",
-        "slug": "GUIDE",
-        "title": "가이드"
       },
       {
         "name": "INTERACTION-DESIGN",

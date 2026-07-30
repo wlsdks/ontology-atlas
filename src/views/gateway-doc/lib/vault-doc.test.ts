@@ -9,8 +9,10 @@ import { readVaultDoc, trimToRecentSections } from './vault-doc';
  * 갈라졌다는 사실은 아무도 모른다.
  */
 describe('관문 읽을거리는 볼트 문서를 읽는다', () => {
-  it('가이드와 변경 내역이 볼트에 실제로 있다', () => {
-    expect(readVaultDoc('GUIDE')).toBeTruthy();
+  it('가이드 첫 장과 변경 내역이 볼트에 실제로 있다', () => {
+    // 가이드는 2026-07-31 에 한 장(`GUIDE`)에서 여섯 장(`guide/*`)으로 갈렸다.
+    // 전체 목록의 검증은 `tests/contract/gateway-routes.contract.test.ts` 가 진다.
+    expect(readVaultDoc('guide/what-is-atlas')).toBeTruthy();
     expect(readVaultDoc('CHANGELOG')).toBeTruthy();
   });
 
@@ -19,11 +21,11 @@ describe('관문 읽을거리는 볼트 문서를 읽는다', () => {
   });
 
   it('가이드가 실제 안내문이다 — 자리표시자가 아니다', () => {
-    const guide = readVaultDoc('GUIDE') ?? '';
+    const guide = readVaultDoc('guide/what-is-atlas') ?? '';
     // 이 저장소가 죽은 채널로 등재한 명령이 안내문에 살아 있으면 안 된다
     // (`surfaces.md` 「배포 채널은 둘뿐이다」).
     expect(guide).not.toMatch(/npx\s+ontology-atlas/);
-    expect(guide.length).toBeGreaterThan(1_500);
+    expect(guide.length).toBeGreaterThan(700);
   });
 });
 

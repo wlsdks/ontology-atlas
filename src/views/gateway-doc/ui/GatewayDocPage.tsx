@@ -10,6 +10,8 @@ import { PAGE_COLUMN, PAGE_GUTTER } from '@/shared/lib/gateway-frame';
 import { GITHUB_REPO_URL } from '@/shared/config/social-links';
 import { GithubMark } from '@/shared/ui';
 import { readVaultDoc, trimToRecentSections } from '../lib/vault-doc';
+import { GUIDE_PAGES } from '../model/guide-pages';
+import { Link } from '@/i18n/navigation';
 
 /**
  * 관문의 **읽을거리 한 장** — `/guide` 와 `/changelog` 가 같은 이 뷰를 쓴다.
@@ -40,8 +42,13 @@ export interface GatewayDocPageProps {
   slug: string;
   /** 화면 제목. 볼트 문서의 `# H1` 대신 이걸 쓴다(번역되어야 하므로). */
   title: string;
-  /** 제목 아래 한 줄. */
-  lead: string;
+  /**
+   * 제목 아래 한 줄. **없으면 안 그린다.**
+   *
+   * 가이드의 부제는 가이드 **전체**를 소개하는 문장이라 매 장에 되풀이하면
+   * 각 장의 제목과 경쟁하는 잉크가 된다 — 차례의 첫 장에서만 준다.
+   */
+  lead?: string;
   /**
    * `## ` 절을 몇 개까지 그릴지. 안 주면 전문.
    *
@@ -51,6 +58,15 @@ export interface GatewayDocPageProps {
   recentSectionLimit?: number;
   /** 원문 파일의 저장소 내 경로 — 잘렸을 때 "나머지는 여기" 로 쓴다. */
   sourcePath: string;
+  /**
+   * 왼쪽 차례를 그릴지 — 가이드처럼 **여러 장이 한 벌**인 문서만 true.
+   *
+   * 변경 내역은 한 장짜리라 차례가 없다. 항목이 하나뿐인 목록은 길잡이가 아니라
+   * 잉크다.
+   */
+  sidebar?: boolean;
+  /** 차례에서 지금 어느 장인지 — `sidebar` 가 true 일 때만 쓴다. */
+  activeSegment?: string;
 }
 
 export function GatewayDocPage({
@@ -59,6 +75,8 @@ export function GatewayDocPage({
   lead,
   recentSectionLimit,
   sourcePath,
+  sidebar = false,
+  activeSegment,
 }: GatewayDocPageProps) {
   const t = useTranslations('gatewayNav');
 
@@ -79,23 +97,71 @@ export function GatewayDocPage({
     <div className="flex min-h-full w-full flex-col bg-[color:var(--color-canvas)]">
       <GatewayNav />
 
+      {/*
+       * **읽는 페이지는 산문 기둥을 가운데 세운다** (2026-07-31, 소유자:
+       * *"왼쪽에 다 몰려있고"*).
+       *
+       * ⚠️ 처음엔 관문의 「모든 원소가 같은 x」(2026-07-29 평결 ③)를 그대로
+       * 적용해 원점(200)에 왼쪽 정렬했다. **그 규칙을 사정거리 밖에 쓴 것이다.**
+       * 그 평결이 존재하는 이유는 랜딩의 **오른쪽에 지도가 있고** 판이 그 앞을
+       * 가리면 안 되기 때문인데, 이 페이지의 오른쪽에는 아무것도 없다. 규칙만
+       * 남고 이유가 사라진 자리에서 같은 규칙은 1920 기준 **1053px 을 비운
+       * 한쪽 쏠린 페이지**를 만든다.
+       *
+       * ⚠️⚠️ `mx-auto` 는 한때 **기각된 패턴**이다(평결 ③ 재확인). 그때의 기각
+       * 사유는 "중앙정렬이 나빠서" 가 아니라 **원점이 둘이 되기 때문**이었다 —
+       * 래퍼는 뷰포트를 보고 중앙에 서는데 지도 카메라의 예약폭은 토큰을 보고
+       * 서서, 넓은 화면에서 둘이 어긋났다. **이 페이지에는 카메라가 없다.**
+       * 경쟁할 두 번째 소비자가 없으므로 그 사유가 성립하지 않는다. 다음
+       * 감사자가 `mx-auto` 만 보고 "부활했다" 고 읽지 않도록 여기 적어 둔다.
+       *
+       * 크롬(상단 바)은 그대로 원점을 쓴다 — 그건 모든 관문 표면이 공유하는
+       * 프레임이고, 로고가 페이지마다 다른 x 에 서면 그게 더 나쁘다.
+       */}
       <main className={cn(PAGE_GUTTER, 'w-full flex-1 pt-10 pb-20 md:pt-16')}>
-        <div className={PAGE_COLUMN}>
-          <header className="max-w-[var(--measure-prose)]">
+        <div className={cn(PAGE_COLUMN, 'mx-auto')}>
+          {/*
+           * 차례가 있을 때만 두 열이 된다. 없으면 한 열을 가운데 세운다.
+           *
+           * ⚠️ 차례는 `lg` 미만에서 **접는다**. 좁은 폭에서 사이드바를 남기면
+           * 산문 기둥이 목록에게 폭을 빼앗겨, 정작 읽으러 온 것이 못 읽을 폭이
+           * 된다. 접힌 자리는 크롬의 「가이드」 칩이 대신한다 — 목록이 없어도
+           * 가이드로 돌아올 길은 남는다.
+           */}
+          <div
+            className={cn(
+              sidebar ? 'lg:grid lg:grid-cols-[15rem_minmax(0,1fr)] lg:gap-12' : 'flex flex-col items-center',
+            )}
+          >
+            {sidebar ? <GuideSidebar activeSegment={activeSegment} /> : null}
+            <div className={cn('flex min-w-0 flex-col', sidebar ? 'items-start' : 'items-center')}>
+          <header className="w-full max-w-[var(--measure-prose)]">
             <h1
               data-testid="gateway-doc-title"
-              className="text-display leading-display-tight font-semibold text-[color:var(--color-text-primary)]"
+              /*
+               * 램프 최상단(`--text-hero-lg` 34px)을 쓴다 — 관문 헤드라인과 같은
+               * 단이다. 이 페이지들도 관문 표면이고 이 줄이 그 페이지의 헤드라인이라
+               * 같은 자리에 서는 것이 맞다. 새 스텝은 만들지 않았다(램프 밖 크기는
+               * `cn.ts` 의 `TYPE_RAMP_STEPS` 등록 없이는 조용히 드롭된다).
+               *
+               * 행간은 그 크기의 **짝**(`--leading-hero-lg` 38px). 앞서 쓰던
+               * `leading-display-tight`(1.06)는 이름·수치용이라 23px 에 24.4px 를
+               * 물려 페이지 제목으로는 답답했다.
+               */
+              className="text-hero-lg leading-hero-lg font-semibold text-[color:var(--color-text-primary)]"
             >
               {title}
             </h1>
-            <p className="mt-3 text-body-lg leading-prose text-[color:var(--color-text-tertiary)]">
-              {lead}
-            </p>
+            {lead ? (
+              <p className="mt-3 text-body-lg leading-prose text-[color:var(--color-text-tertiary)]">
+                {lead}
+              </p>
+            ) : null}
           </header>
 
           <article
             data-testid="gateway-doc-body"
-            className="mt-10 max-w-[var(--measure-prose)]"
+            className="mt-10 w-full max-w-[var(--measure-prose)]"
           >
             <ReactMarkdown remarkPlugins={[remarkGfm]} components={PROSE_COMPONENTS}>
               {body}
@@ -109,7 +175,7 @@ export function GatewayDocPage({
           {omittedSections > 0 ? (
             <aside
               data-testid="gateway-doc-truncated"
-              className="mt-12 max-w-[var(--measure-prose)] rounded-panel border border-[color:var(--color-border-soft)] bg-[color:var(--color-panel)] p-4"
+              className="mt-12 w-full max-w-[var(--measure-prose)] rounded-panel border border-[color:var(--color-border-soft)] bg-[color:var(--color-panel)] p-4"
             >
               <p className="text-body leading-body text-[color:var(--color-text-tertiary)]">
                 {t('truncatedNote', { count: omittedSections })}
@@ -125,6 +191,8 @@ export function GatewayDocPage({
               </a>
             </aside>
           ) : null}
+            </div>
+          </div>
         </div>
       </main>
     </div>
@@ -264,3 +332,56 @@ const PROSE_COMPONENTS: Components = {
     );
   },
 };
+
+/**
+ * 가이드의 왼쪽 차례.
+ *
+ * ## 왜 `sticky` 인가
+ *
+ * 가이드는 스크롤하며 읽는 글인데, 차례가 같이 스크롤돼 사라지면 "다음 장으로"
+ * 가려는 사람이 위로 되돌아가야 한다. 목록의 일이 **길잡이**라면 길이 보이는
+ * 동안 계속 보여야 한다.
+ *
+ * ## 현재 장은 색이 아니라 면으로
+ *
+ * 크롬의 읽을거리 칩과 같은 문법이다 — 채워진 면 + 강한 텍스트. 무채색 안에서
+ * 「지금 여기」를 말하는 방법이라 새 색을 열지 않는다.
+ */
+function GuideSidebar({ activeSegment }: { activeSegment?: string }) {
+  const t = useTranslations('gatewayNav');
+  return (
+    <nav
+      aria-label={t('guideNavLabel')}
+      data-testid="guide-sidebar"
+      className="hidden lg:block"
+    >
+      <div className="sticky top-24">
+        <p className="mb-3 px-2.5 text-label leading-label font-medium tracking-wide text-[color:var(--color-text-quaternary)] uppercase">
+          {t('onThisGuide')}
+        </p>
+        <ul className="flex flex-col gap-0.5">
+          {GUIDE_PAGES.map((page) => {
+            const active = page.segment === activeSegment;
+            return (
+              <li key={page.segment}>
+                <Link
+                  href={`/guide/${page.segment}`}
+                  aria-current={active ? 'page' : undefined}
+                  data-testid={`guide-nav-${page.segment}`}
+                  className={cn(
+                    'block rounded-chip px-2.5 py-1.5 text-body leading-body transition-colors',
+                    active
+                      ? 'bg-[color:var(--color-elevated)] text-[color:var(--color-text-primary)]'
+                      : 'text-[color:var(--color-text-tertiary)] hover:bg-[color:var(--color-elevated)] hover:text-[color:var(--color-text-primary)]',
+                  )}
+                >
+                  {t(`guidePages.${page.titleKey}`)}
+                </Link>
+              </li>
+            );
+          })}
+        </ul>
+      </div>
+    </nav>
+  );
+}

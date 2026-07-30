@@ -73,6 +73,48 @@ describe('관문 라우트 등록', () => {
  * 핸들이 빈 채로 `<a href>` 가 되는 순간 웹 스모크 ③ 이 막는 「죽은 CTA」가
  * 된다. 상수 하나가 그 분기를 소유하므로 여기서 그 상수의 계약만 지킨다.
  */
+/**
+ * 가이드는 **여러 장이 한 벌**이라 목록·라우트·본문 셋이 어긋나기 쉽다.
+ *
+ * `GUIDE_PAGES` 가 단일 진실원인데, 그 목록이 가리키는 볼트 문서나 번역 키가
+ * 없으면 화면에 **빈 페이지나 키 이름**이 그대로 나온다. 셋 다 실행 없이는
+ * 안 보이는 실패라 여기서 맞대어 본다.
+ */
+describe('가이드 차례', () => {
+  it('차례의 모든 장이 볼트에 실제 본문을 갖는다', async () => {
+    const { GUIDE_PAGES } = await import('@/views/gateway-doc');
+    const { readVaultDoc } = await import('@/views/gateway-doc');
+    for (const page of GUIDE_PAGES) {
+      const body = readVaultDoc(page.slug);
+      expect(body, `${page.slug} 의 본문이 볼트에 없다`).toBeTruthy();
+      expect((body ?? '').length, `${page.slug} 가 사실상 비어 있다`).toBeGreaterThan(200);
+    }
+  });
+
+  it('차례의 모든 장이 두 로케일 모두에 이름을 갖는다', async () => {
+    const { GUIDE_PAGES } = await import('@/views/gateway-doc');
+    for (const locale of ['ko', 'en'] as const) {
+      const messages = JSON.parse(
+        readFileSync(resolve(repoRoot, `messages/${locale}.json`), 'utf8'),
+      );
+      const titles = messages.gatewayNav?.guidePages ?? {};
+      for (const page of GUIDE_PAGES) {
+        expect(
+          titles[page.titleKey],
+          `${locale}.json 에 gatewayNav.guidePages.${page.titleKey} 가 없다 — 화면에 키 이름이 그대로 나온다`,
+        ).toBeTruthy();
+      }
+    }
+  });
+
+  it('URL 마디와 볼트 슬러그가 어긋나지 않는다', async () => {
+    const { GUIDE_PAGES } = await import('@/views/gateway-doc');
+    for (const page of GUIDE_PAGES) {
+      expect(page.slug, `${page.segment} 의 슬러그 규칙이 깨졌다`).toBe(`guide/${page.segment}`);
+    }
+  });
+});
+
 describe('X 링크 자리', () => {
   const source = readFileSync(
     resolve(repoRoot, 'src/shared/config/social-links.ts'),
