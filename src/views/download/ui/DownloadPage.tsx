@@ -929,7 +929,7 @@ function TrustChips() {
   return (
     <p
       data-testid="download-trust-chips"
-      className="mt-3.5 flex min-w-0 items-baseline gap-2 break-keep text-label leading-label text-[color:var(--color-text-tertiary)]"
+      className="mt-2 flex min-w-0 items-baseline gap-2 break-keep text-label leading-label text-[color:var(--color-text-tertiary)]"
     >
       <Check
         size={12}
@@ -1226,7 +1226,7 @@ function PlatformStatus() {
        * 칩과의 간격이 주 CTA 사이 간격과 같을 이유가 없다. 850 창은 카운슬이 게이트로
        * 지키는 폭이고(설치 3단이 접히면 안 된다), 그 제약이 이 값을 정한다.
        */
-      className="mt-2.5 flex min-w-0 flex-wrap items-center gap-2"
+      className="mt-2 flex min-w-0 flex-wrap items-center gap-2"
     >
       <span
         aria-disabled="true"
