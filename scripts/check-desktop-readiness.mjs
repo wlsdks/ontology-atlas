@@ -88,6 +88,21 @@ const redditPostsDoc = readText("docs/launch/REDDIT-POSTS.md");
 const desktopOntologyDoc = readText("docs/ontology/capabilities/desktop-app-distribution.md");
 const onboardingOntologyDoc = readText("docs/ontology/domains/onboarding-ux.md");
 const downloadPage = readText("src/views/download/ui/DownloadPage.tsx");
+/**
+ * 관문 상단 크롬 — 브랜드 이름이 실제로 그려지는 자리.
+ *
+ * ⚠️ 2026-07-30 이전에는 이 문자열이 `DownloadPage.tsx` 안에 있어서 아래 브랜드
+ * 게이트가 그 파일 하나만 봐도 됐다. GNB 가 네 관문 주소(`/` · `/download` ·
+ * `/guide` · `/changelog`)를 공유하게 되면서 `widgets/gateway-chrome` 으로
+ * 내려갔고, 그 순간 게이트가 **화면에는 멀쩡히 있는 브랜드를 못 찾아** 빨개졌다.
+ * 결함이 아니라 조준이 파일 경로에 묶여 있던 것이다 — 같은 날 지도 목적지
+ * 게이트도 똑같은 이유로 터졌다(`map-destination-route.contract.test.ts`).
+ *
+ * 그래서 **둘을 합쳐서** 본다. 브랜드가 판에 있든 크롬에 있든, 방문자가 보는
+ * 화면에 있으면 통과다.
+ */
+const gatewayChrome = readText("src/widgets/gateway-chrome/ui/GatewayNav.tsx");
+const gatewaySurfaceSource = `${downloadPage}\n${gatewayChrome}`;
 const downloadRoute = readText("app/[locale]/download/page.tsx");
 const macosDownloadLink = readText("src/features/macos-download-link/ui/MacosDownloadLink.tsx");
 const bottomTabBar = readText("src/widgets/bottom-tab-bar/ui/BottomTabBar.tsx");
@@ -1732,7 +1747,7 @@ if (
   webManifest.short_name === "Ontology Atlas" &&
   enMessages.metadata.siteName === "Ontology Atlas" &&
   koMessages.metadata.siteName === "Ontology Atlas" &&
-  downloadPage.includes("Ontology Atlas")
+  gatewaySurfaceSource.includes("Ontology Atlas")
 ) {
   pass("user-facing web and app metadata use Ontology Atlas while preserving ontology-atlas as the project alias");
 } else {
