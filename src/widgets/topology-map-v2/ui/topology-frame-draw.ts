@@ -18,6 +18,7 @@ import {
   type FootprintInk,
 } from "@/shared/lib/footprint-glyph";
 import type { FootprintPreference } from "@/shared/lib/appearance-preferences";
+import { isDirectionalRelation } from "@/shared/lib/ontology-tree/relations";
 import { depthParallaxOffsetFor, ZERO_PARALLAX } from "../model/realm-depth-parallax";
 import { realmDepthClarityAlpha, realmDepthClarityScale } from "../model/realm-transition";
 import { classifyZoomTier, DEFAULT_TIER_REVEAL, edgeTierAlpha, effectiveNodeAlpha, nodeTierAlpha, type TierRevealConfig } from "../model/tier-visibility";
@@ -834,6 +835,9 @@ export function drawTopologyFrame(params: FrameDrawParams): void {
           b,
           control,
           relationType: kind,
+          // 2치 `kind` 는 "containment 가 아닌 것 전부" 를 depends 로 묶는다.
+          // 방향 테이퍼를 그려도 되는지는 **원 관계 타입**이 정한다.
+          directional: isDirectionalRelation(edge.relationType),
           egoState: edgeEgoState,
           selected: isSelectedEdge && !trailLensActive,
           farT,

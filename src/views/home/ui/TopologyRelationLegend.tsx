@@ -57,8 +57,27 @@ export function TopologyRelationLegend({
         {relationVocabulary("contains", register)}
       </span>
       <span className="flex items-center gap-2">
-        {/* depends 엣지는 파선으로 그려진다 — 범례도 파선 스와치로 실제
-            렌더를 그대로 반영(같은 인디고 relation ink, hue 무변). */}
+        {/* 방향 있는 관계 — 파선 + **테이퍼**(source 굵 → target 얇). 스와치도
+            같은 문법으로 좌→우 가늘어진다. */}
+        <span
+          aria-hidden
+          className="h-[3px] w-8 shrink-0"
+          style={{
+            backgroundImage:
+              "repeating-linear-gradient(90deg, var(--topology-relation-spine-halo) 0 4px, transparent 4px 7px)",
+            clipPath: "polygon(0 0, 100% 33%, 100% 67%, 0 100%)",
+          }}
+        />
+        {/* 어휘 사전 canonical 키는 `depends_on` — 렌더 축약형 "depends" 를
+            넘기면 미지 타입 raw fallback 으로 ko 에서 "DEPENDS" 가 노출됐다
+            (소유자 스크린샷 실발견 2026-07-23). */}
+        {relationVocabulary("depends_on", register)}
+      </span>
+      <span className="flex items-center gap-2">
+        {/* 대칭 관계 — 파선 + **균일 굵기**. 양끝이 대등하다는 사실이
+            "테이퍼가 없다" 로 인코딩된다. 이 항목이 없던 동안 범례는 모든
+            파선을 "의존" 이라 불렀는데, 실제 볼트에서는 그 파선의 70%가
+            방향 없는 `related_to` 였다(2026-07-31 dogfood 실측 62/89). */}
         <span
           aria-hidden
           className="h-[2px] w-8 shrink-0 rounded-full"
@@ -67,10 +86,7 @@ export function TopologyRelationLegend({
               "repeating-linear-gradient(90deg, var(--topology-relation-spine-halo) 0 4px, transparent 4px 7px)",
           }}
         />
-        {/* 어휘 사전 canonical 키는 `depends_on` — 렌더 축약형 "depends" 를
-            넘기면 미지 타입 raw fallback 으로 ko 에서 "DEPENDS" 가 노출됐다
-            (소유자 스크린샷 실발견 2026-07-23). */}
-        {relationVocabulary("depends_on", register)}
+        {relationVocabulary("related_to", register)}
       </span>
     </div>
   );
