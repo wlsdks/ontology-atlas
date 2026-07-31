@@ -6215,6 +6215,11 @@
         },
         {
           "depth": 3,
+          "text": "지도 잉크 사다리 — 깊이 축 하나, 그 밖 둘 (2026-07-31)",
+          "slug": "지도-잉크-사다리-깊이-축-하나-그-밖-둘-2026-07-31"
+        },
+        {
+          "depth": 3,
           "text": "Relief/Topology layout tokens",
           "slug": "relieftopology-layout-tokens"
         },
@@ -6520,8 +6525,8 @@
         }
       ],
       "excerpt": "This document is maintained based on Section 3 of the design spec. For the original Linear specification, see design-references/DESIGN-linear.md. v2 (2026-07): topology-map-v2 에서 출하된 B2+ \"Circuit × Constellation\" 시각 언어가 페이지 롤아웃(랜딩 → docs/ontology 허브 → projects/insights → download)의 규범이 되었다 — 아래 v2 — \"Circuit × Constell",
-      "wordCount": 19900,
-      "updatedAt": "2026-07-29",
+      "wordCount": 20302,
+      "updatedAt": "2026-07-31",
       "linksOut": [
         "design-references/DESIGN-linear",
         "TOPOLOGY-V2-DESIGN",
