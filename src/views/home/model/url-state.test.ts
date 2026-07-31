@@ -12,6 +12,8 @@ import {
   selectTopologyNodeRouteState,
   selectTopologyPathRouteState,
   toggleExpandedParent,
+  parseExpandedParentsParam,
+  MAX_EXPANDED_PARENTS,
 } from "./url-state";
 
 describe("parseHomeRouteState", () => {
@@ -768,5 +770,67 @@ describe("deriveDeeplinkAncestorExpansion", () => {
     const result = deriveDeeplinkAncestorExpansion("a", cyclic, []);
     // b and c are real ancestors; the walk stops before re-adding a (the target).
     expect(result).toEqual(["b", "c"]);
+  });
+});
+
+/**
+ * **펼침에는 전체 상한이 있다.**
+ *
+ * 부모 **하나**의 자식 수는 이미 제한돼 있었다(배치 24 + `+N 더보기`). 그런데
+ * **펼친 부모의 수**에 제한이 없어서 `?open=` 에 쌓이는 만큼 화면 위 노드가
+ * 곱해졌다 — 소유자 실측(2026-07-31): 부모 5개를 펼치자 노드 약 150개에
+ * **이름표가 2개** 남았다.
+ *
+ * 재는 것 셋: ① 상한을 넘으면 가장 오래된 것이 닫힌다 ② 접기는 언제나 된다
+ * ③ 딥링크도 같은 상한을 받는다(링크로 우회하면 받은 사람이 더 나쁜 화면을
+ * 본다).
+ */
+describe("펼침 부모 상한", () => {
+  it("상한 안에서는 그냥 쌓인다", () => {
+    let open: string[] = [];
+    open = toggleExpandedParent(open, "a");
+    open = toggleExpandedParent(open, "b");
+    expect(open).toEqual(["a", "b"]);
+  });
+
+  it("**상한을 넘으면 가장 오래 펼쳐 둔 것이 닫힌다** — 클릭이 무시되지 않는다", () => {
+    let open: string[] = [];
+    for (const id of ["a", "b", "c", "d"]) open = toggleExpandedParent(open, id);
+    expect(open).toHaveLength(MAX_EXPANDED_PARENTS);
+    expect(open).toEqual(["b", "c", "d"]);
+    // 누른 것은 **반드시** 열려 있어야 한다 — 이게 "무시하지 않는다"의 정의다.
+    expect(open).toContain("d");
+    expect(open).not.toContain("a");
+  });
+
+  it("계속 눌러도 상한을 넘지 않는다", () => {
+    let open: string[] = [];
+    for (let i = 0; i < 20; i += 1) open = toggleExpandedParent(open, `p${i}`);
+    expect(open).toHaveLength(MAX_EXPANDED_PARENTS);
+    expect(open).toContain("p19");
+  });
+
+  it("접기는 상한과 무관하게 언제나 된다", () => {
+    let open = ["a", "b", "c"];
+    open = toggleExpandedParent(open, "b");
+    expect(open).toEqual(["a", "c"]);
+  });
+
+  it("이미 열린 것을 다시 눌러도 다른 것이 닫히지 않는다", () => {
+    // 토글이 "닫기"로 해석되므로 축출이 일어날 자리가 없다.
+    const open = toggleExpandedParent(["a", "b", "c"], "a");
+    expect(open).toEqual(["b", "c"]);
+  });
+
+  it("딥링크도 같은 상한을 받는다 — 링크로 우회할 수 없다", () => {
+    const parsed = parseExpandedParentsParam("a,b,c,d,e");
+    expect(parsed).toHaveLength(MAX_EXPANDED_PARENTS);
+    // 뒤쪽을 남긴다 — 나중에 적힌 것이 더 최근 의도다(토글의 축출과 같은 방향).
+    expect(parsed).toEqual(["c", "d", "e"]);
+  });
+
+  it("딥링크의 중복 제거가 상한보다 먼저 일어난다", () => {
+    // "a,a,a,b" 는 실질 2개다 — 중복 때문에 멀쩡한 항목이 잘리면 안 된다.
+    expect(parseExpandedParentsParam("a,a,a,b")).toEqual(["a", "b"]);
   });
 });

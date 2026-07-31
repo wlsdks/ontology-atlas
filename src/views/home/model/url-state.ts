@@ -193,17 +193,53 @@ export function parseExpandedParentsParam(raw: string | null): string[] {
     seen.add(slug);
     result.push(slug);
   }
-  return result;
+  // 딥링크도 같은 상한을 받는다 — 안 그러면 링크 하나로 상한을 우회해, 받은
+  // 사람이 보낸 사람보다 나쁜 화면을 본다. **뒤쪽을 남긴다**(토글의 LRU 축출과
+  // 같은 방향: 나중에 적힌 것이 더 최근 의도다).
+  return result.length > MAX_EXPANDED_PARENTS
+    ? result.slice(result.length - MAX_EXPANDED_PARENTS)
+    : result;
 }
 
 /**
  * 밀도 게이트 — 확장 부모 목록에서 한 부모를 토글한 새 목록을 낸다(순수).
  * HomePage 의 칩 클릭 핸들러가 이걸로 `expandedParents` 를 갱신해 URL 왕복한다.
  */
+/**
+ * 동시에 펼쳐 둘 수 있는 부모의 상한.
+ *
+ * **왜 상한이 필요한가** — 부모 **하나**의 자식 수는 이미 제한돼 있다(배치
+ * 24개 + `+N 더보기`). 그런데 **펼친 부모의 수**에는 아무 제한이 없어서,
+ * `?open=` 에 부모가 쌓이는 만큼 화면 위 노드가 곱해졌다. 소유자 실측
+ * (2026-07-31 스크린샷): 부모 5개를 펼치자 노드 약 150개에 **이름표가 2개**
+ * 남았다 — 나머지는 정체를 알 수 없는 동일한 사각형이었다. 지도의 유일한
+ * 임무가 "무엇이 어디 있나"인데 그 답을 못 주는 상태다.
+ *
+ * 제한이 **부모 수**인 이유: 밀도의 곱셈 인자가 거기 있다. 배치 크기를 더
+ * 줄이면 부모 하나를 보는 경험이 나빠지는데, 정작 화면을 무너뜨린 건 부모
+ * 하나가 아니라 **여러 부모의 합**이었다.
+ *
+ * 3 인 이유는 픽셀이 아니라 사람이다 — 비교는 보통 둘(이것 vs 저것)이고,
+ * 거기에 "내가 어디서 왔나" 하나가 붙는다. 넷째부터는 비교가 아니라 누적이다.
+ * 값을 바꾸려면 이 문단의 근거를 같이 바꾼다.
+ */
+export const MAX_EXPANDED_PARENTS = 3;
+
+/**
+ * 클러스터 펼침 토글 — 접기는 언제나 되고, 펼치기는 상한을 넘으면 **가장
+ * 오래 펼쳐 둔 것을 닫는다**(LRU).
+ *
+ * 넘칠 때 클릭을 **무시하지 않는 것**이 요점이다. 누른 것이 아무 일도 안
+ * 하면 사용자는 고장으로 읽고, 왜 안 되는지 설명할 자리도 없다. 가장 오래된
+ * 것이 닫히는 건 작업대가 좁을 때 사람이 실제로 하는 일과 같아서 배우기 쉽다.
+ */
 export function toggleExpandedParent(current: readonly string[], parentId: string): string[] {
-  return current.includes(parentId)
-    ? current.filter((id) => id !== parentId)
-    : [...current, parentId];
+  if (current.includes(parentId)) {
+    return current.filter((id) => id !== parentId);
+  }
+  const next = [...current, parentId];
+  // 앞에서부터 버린다 — 배열 순서가 곧 펼친 순서다(append-only 로 쌓였으므로).
+  return next.length > MAX_EXPANDED_PARENTS ? next.slice(next.length - MAX_EXPANDED_PARENTS) : next;
 }
 
 /**
