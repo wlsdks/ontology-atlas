@@ -45,6 +45,22 @@ async function loadActivityLogModule() {
  *   tool 은 `cli:add` 처럼 CLI 쓰기임을 구분할 수 있게 접두한다.
  *   agent 필드는 heartbeat 파일에서 복사(없으면 null) — MCP logWrite 와 동일.
  */
+/**
+ * heartbeat 파일의 에이전트 이름을 best-effort 로 읽는다 (없으면 null).
+ *
+ * `created_by` 스탬프(2026-08-01 원장 — CLI 도 MCP 와 같은 문)가 MCP 의
+ * `agentProvenance()` 와 **같은 신원 출처**를 쓰기 위한 helper — 새 신원
+ * 체계를 만들지 않는다는 2026-07-31 결정 그대로다.
+ */
+export async function readHeartbeatAgentName(vaultRoot) {
+  try {
+    const { readHeartbeatAgent } = await loadActivityLogModule();
+    return readHeartbeatAgent(vaultRoot);
+  } catch {
+    return null;
+  }
+}
+
 export async function recordCliWrite(vaultRoot, { tool, target, summary, why = null }) {
   try {
     const { appendActivityEntry, buildActivityEntry, readHeartbeatAgent } =

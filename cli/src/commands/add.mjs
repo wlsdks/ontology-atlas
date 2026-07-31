@@ -7,12 +7,16 @@ import {
   defaultBody,
   folderForKind,
   missingExpectedFields,
+  agentCreatedBy,
+  CREATED_BY_KEY,
+  CREATED_BY_HUMAN,
+  CREATED_BY_AGENT_PREFIX,
 } from '../lib/schema.mjs';
 import { formatAllowedValueError } from '../lib/suggestions.mjs';
 import { formatUnknownFlagError, parseRawRequiredFlagValue, parseVaultFlag } from '../lib/cli-args.mjs';
-import { recordCliWrite } from '../lib/activity-log.mjs';
+import { readHeartbeatAgentName, recordCliWrite } from '../lib/activity-log.mjs';
 
-const ALLOWED_FLAGS = ['--vault', '--title', '--domain', '--body', '--auto-prefix', '--raw-slug', '--no-auto-prefix'];
+const ALLOWED_FLAGS = ['--vault', '--title', '--domain', '--body', '--auto-prefix', '--raw-slug', '--no-auto-prefix', '--created-by'];
 
 
 /**
@@ -45,10 +49,18 @@ export async function runAdd(args) {
       ? `${folder}${rawSlug}`
       : rawSlug;
 
+  // 저작 출처 (2026-08-01 원장 — 「CLI 도 MCP 와 같은 문」). MCP add_concept
+  // 은 호출 경로가 에이전트임을 증명해 `agent:<heartbeat|unknown>` 을 찍는데
+  // CLI add 는 아무것도 안 찍었다 — 에이전트가 편한 문(CLI)을 고르면 출처
+  // 없는 노드가 나오는 구멍. 두 문을 같게 만든다: 기본값은 MCP 와 동일하게
+  // heartbeat 신원 기반 `agent:*`, 사람이 직접 칠 때는 `--created-by human`.
+  const createdBy =
+    opts.createdBy ?? agentCreatedBy(await readHeartbeatAgentName(vaultPath));
+
   // R14 — schema 가 kind 별 양식 (project: domains/capabilities/elements 빈
   // 배열, capability: elements 빈 배열) 자동 채움. AI agent 의 add_concept
   // 과 동일 결과 → 두 진입점이 항상 같은 frontmatter 모양 만든다.
-  const fm = buildFrontmatter({ slug, kind, title, domain });
+  const fm = buildFrontmatter({ slug, kind, title, domain, [CREATED_BY_KEY]: createdBy });
 
   try {
     const filePath = writeDoc(vaultPath, slug, {
@@ -74,17 +86,10 @@ export async function runAdd(args) {
         `${COLORS.yellow}warn${COLORS.reset}  expected field "${key}" missing for kind "${kind}" — add it later with --domain or by editing the file.\n`,
       );
     }
-    // R15 (post-Paravel dogfood) — element + path-style slug + auto-prefix
-    // 시 4단계 nested. 의도일 수도 있어 error 아닌 advisory hint.
-    // 두 패턴 (flat / path-style) 모두 valid — mcp/README "Element slug —
-    // two valid patterns" 참조.
-    if (kind === 'element' && autoPrefix && rawSlug.includes('/')) {
-      process.stderr.write(
-        `${COLORS.cyan}hint${COLORS.reset}  element slug "${rawSlug}" is path-style → nested at "${slug}.md" (4 levels). ` +
-          `If the path is intended (concrete code module), keep it. ` +
-          `For a flat element (library / abstract concept), use --raw-slug or a non-path slug.\n`,
-      );
-    }
+    // [폐기 2026-08-01] 구 R15 「element slug 두 패턴(flat / path-style)」
+    // 안내는 여기 있었다 — 경로형 슬러그는 이제 writeDoc 의 flatSlugIssue
+    // 게이트가 hard error 로 거부한다 (docs/DECISIONS.md 「슬러그는 평평한
+    // 식별자다」).
     return 0;
   } catch (err) {
     process.stderr.write(
@@ -110,6 +115,8 @@ function parseArgs(args) {
     else if (a.startsWith('--domain=')) flags.domain = parseRawRequiredFlagValue('--domain', a.slice('--domain='.length), { rejectSingleDash: true });
     else if (a === '--body') flags.body = parseRawRequiredFlagValue('--body', args[++i]);
     else if (a.startsWith('--body=')) flags.body = parseRawRequiredFlagValue('--body', a.slice('--body='.length));
+    else if (a === '--created-by') flags.createdBy = parseRawRequiredFlagValue('--created-by', args[++i], { rejectSingleDash: true });
+    else if (a.startsWith('--created-by=')) flags.createdBy = parseRawRequiredFlagValue('--created-by', a.slice('--created-by='.length), { rejectSingleDash: true });
     else if (a === '--auto-prefix') flags.autoPrefix = true;
     else if (a === '--raw-slug' || a === '--no-auto-prefix') flags.autoPrefix = false;
     else if (a.startsWith('-')) {
@@ -142,6 +149,12 @@ function parseArgs(args) {
     const domainError = validateCleanString(flags.domain, '--domain');
     if (domainError) return { error: domainError };
   }
+  let createdBy;
+  if (flags.createdBy !== undefined) {
+    const normalized = normalizeCreatedByFlag(flags.createdBy);
+    if (normalized instanceof Error) return { error: normalized.message };
+    createdBy = normalized;
+  }
   return {
     kind,
     slug,
@@ -150,7 +163,26 @@ function parseArgs(args) {
     body: flags.body,
     vault: flags.vault || '.',
     autoPrefix: flags.autoPrefix,
+    createdBy,
   };
+}
+
+/**
+ * `--created-by` 값 규약 — schema 의 `human` | `agent:<name>` 둘뿐이다.
+ * `agent` 단독은 이름 모름의 정직한 표기(`agent:unknown`)로 정규화.
+ */
+function normalizeCreatedByFlag(raw) {
+  const value = raw.trim();
+  if (value === CREATED_BY_HUMAN) return CREATED_BY_HUMAN;
+  if (value === 'agent') return agentCreatedBy('');
+  if (value.startsWith(CREATED_BY_AGENT_PREFIX)) {
+    const name = value.slice(CREATED_BY_AGENT_PREFIX.length).trim();
+    if (name) return `${CREATED_BY_AGENT_PREFIX}${name}`;
+    return agentCreatedBy('');
+  }
+  return new Error(
+    `--created-by must be "${CREATED_BY_HUMAN}" or "${CREATED_BY_AGENT_PREFIX}<name>" (got "${raw}")`,
+  );
 }
 
 function validateCleanString(value, name) {
@@ -169,10 +201,12 @@ function validateCleanString(value, name) {
 function printAddUsage(stream = process.stderr) {
   stream.write(
     `\n${COLORS.bold}Usage:${COLORS.reset}\n` +
-      `  ontology-atlas add <kind> <slug> --title="..." [--domain X] [--body "..."] [--vault path] [--raw-slug]\n` +
+      `  ontology-atlas add <kind> <slug> --title="..." [--domain X] [--body "..."] [--vault path] [--raw-slug] [--created-by human|agent:<name>]\n` +
       `\n${COLORS.bold}kind:${COLORS.reset} ${VAULT_KINDS.join(' / ')}\n` +
       `\n${COLORS.bold}slug layout:${COLORS.reset} kind→folder prefix is default (capability foo → capabilities/foo). Use --raw-slug to opt out.\n` +
+      `${COLORS.bold}slug shape:${COLORS.reset} flat under the kind folder — a slug names a role, never a file path (put the path in path:).\n` +
+      `${COLORS.bold}created_by:${COLORS.reset} defaults to agent:<heartbeat|unknown> (same stamp as MCP add_concept). A person adding by hand passes --created-by human.\n` +
       `\nExample:\n` +
-      `  ontology-atlas add capability auth/token-issue --title="Token issue" --domain=auth\n`,
+      `  ontology-atlas add capability token-issue --title="Token issue" --domain=domains/auth\n`,
   );
 }
