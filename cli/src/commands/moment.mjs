@@ -1,5 +1,5 @@
 // `ontology-atlas moment [vault]` — Slice 0 magic-moment instrumentation
-// readout (docs/PRODUCT-PLAN-2026-07.md §4/§9 북극성: "흡수/init 직후
+// readout (docs/plans/PRODUCT-PLAN-2026-07.md §4/§9 북극성: "흡수/init 직후
 // 에이전트가 vault 노드를 인용하며 답하는 첫 순간" ≤5분 도달).
 //
 // Reads `.ontology-atlas/telemetry.local.json` (written by `init`, `absorb

@@ -1,7 +1,7 @@
 import { useCallback, useSyncExternalStore } from "react";
 
 /**
- * 개인화 환경설정 (Phase 5, `docs/DESIGN-OVERHAUL-2026-07-25.md` #20/#21) —
+ * 개인화 환경설정 (Phase 5, `docs/plans/DESIGN-OVERHAUL-2026-07-25.md` #20/#21) —
  * 지도 캔버스 배경 3종과 노드 아이콘 세트 2종을 로컬에 저장하고, 모든 표면이
  * 같은 값을 실시간으로 읽는 단일 진실원.
  *

@@ -8,6 +8,19 @@
           {
             "type": "command",
             "command": ".claude/hooks/block-npm-publish.sh"
+          },
+          {
+            "type": "command",
+            "command": ".claude/hooks/block-unsafe-git.sh"
+          }
+        ]
+      },
+      {
+        "matcher": "Edit|Write|MultiEdit|NotebookEdit",
+        "hooks": [
+          {
+            "type": "command",
+            "command": ".claude/hooks/block-generated-edit.sh"
           }
         ]
       }

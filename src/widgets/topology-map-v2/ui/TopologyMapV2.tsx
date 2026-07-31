@@ -57,7 +57,7 @@ export interface TopologyV2Focus {
 }
 
 /**
- * Adapter contract (`docs/TOPOLOGY-V2-PHASE0.md` §4.2, confirmed unchanged
+ * Adapter contract (`docs/plans/TOPOLOGY-V2-PHASE0.md` §4.2, confirmed unchanged
  * by `docs/TOPOLOGY-V2-DESIGN.md` §5.3 — v2 only replaces rendering, not
  * the upstream state/callback contract).
  */

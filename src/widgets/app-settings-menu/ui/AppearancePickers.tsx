@@ -15,7 +15,7 @@ import {
 import { TopologyV2KindGlyph } from '@/shared/ui/topology-v2-kind-glyph';
 
 /**
- * 개인화 피커 (Phase 5 #20/#21, `docs/DESIGN-OVERHAUL-2026-07-25.md`) — 설정
+ * 개인화 피커 (Phase 5 #20/#21, `docs/plans/DESIGN-OVERHAUL-2026-07-25.md`) — 설정
  * 시트 [화면] 그룹의 캔버스 배경(3택)·노드 아이콘(2택) 선택 행.
  *
  * 미리보기는 스크린샷이 아니라 실시간 미니 스와치다: 배경은 실제 `--canvas-bg-*`/

@@ -1,5 +1,5 @@
 // Slice 0 — the "absorption tool" (단일 스파인). See
-// docs/PRODUCT-PLAN-2026-07.md §4 (타겟 — "CLAUDE.md는 대체가 아니라 흡수"),
+// docs/plans/PRODUCT-PLAN-2026-07.md §4 (타겟 — "CLAUDE.md는 대체가 아니라 흡수"),
 // §7 (신뢰 아키텍처 — 인젝션 Tier 1), §9 (로드맵 — Slice 0).
 //
 // Converts a CLAUDE.md/AGENTS.md-style markdown file into typed vault nodes

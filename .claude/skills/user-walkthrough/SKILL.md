@@ -63,7 +63,7 @@ description: Walk one complete user journey end to end against the running build
 서사("민지, 32세, 좌절감을 느낀다")는 만들지 않는다 — 판정을 바꾸지 않으면서
 지어낸 것처럼 읽힌다.
 
-기본 프로필 (`docs/PRODUCT-PLAN-2026-07.md` 의 대상):
+기본 프로필 (`docs/plans/PRODUCT-PLAN-2026-07.md` 의 대상):
 
 ```
 아는 것: Claude Code 를 매일 쓴다. CLAUDE.md 를 직접 관리한다. 마크다운과 git 은

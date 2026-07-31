@@ -6,8 +6,8 @@
 
 관련 문서:
 - `.claude/rules/local-first.md` — 헌장 (이 문서가 따른다)
-- `docs/DATA-MODEL.md` — Firestore 컬렉션 스키마
-- `docs/ONTOLOGY-MODEL-V2-DRAFT.md` — V1.x ontology 모델 진화 (sync 정책과 호환되어야)
+- `docs/archive/DATA-MODEL.md` — Firestore 컬렉션 스키마
+- `docs/archive/ONTOLOGY-MODEL-V2-DRAFT.md` — V1.x ontology 모델 진화 (sync 정책과 호환되어야)
 
 ---
 

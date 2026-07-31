@@ -487,7 +487,7 @@ Do not bundle all review findings into one redesign PR.
 ## 13. Copy-ready prompt A — ask Fable for an independent opinion
 
 ```text
-먼저 AGENTS.md와 docs/VISUAL-DESIGN-REVIEW-BRIEF-2026-07.md를 끝까지 읽어라.
+먼저 AGENTS.md와 docs/audits/VISUAL-DESIGN-REVIEW-BRIEF-2026-07.md를 끝까지 읽어라.
 필요한 경우 아래 canonical 문서도 직접 확인해라.
 
 - docs/PRODUCT-OWNER-OPERATING-SYSTEM.md
@@ -523,7 +523,7 @@ Do not bundle all review findings into one redesign PR.
 Use this only after reviewing Prompt A's output and choosing one slice.
 
 ```text
-AGENTS.md와 docs/VISUAL-DESIGN-REVIEW-BRIEF-2026-07.md를 다시 읽어라.
+AGENTS.md와 docs/audits/VISUAL-DESIGN-REVIEW-BRIEF-2026-07.md를 다시 읽어라.
 이번에 승인된 디자인 슬라이스는 아래 한 가지다.
 
 [여기에 승인한 슬라이스와 사용자 순간을 붙여넣기]

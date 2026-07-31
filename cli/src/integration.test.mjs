@@ -265,7 +265,7 @@ await test('init — generated MCP config points at a runnable local server in s
   }
 });
 
-// ── init --quick-start (Slice 0 — docs/PRODUCT-PLAN-2026-07.md §9) ──────
+// ── init --quick-start (Slice 0 — docs/plans/PRODUCT-PLAN-2026-07.md §9) ──────
 //
 // One command = scaffold (no prompts, already the default) + bootstrap from
 // the repo (reuses the existing analyze/infer-imports pipeline, no

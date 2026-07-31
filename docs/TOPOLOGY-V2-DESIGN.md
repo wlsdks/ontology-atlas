@@ -8,7 +8,7 @@
 > `docs/FEATURES.md`, and current source for maintenance.
 >
 > 입력: `docs/prototypes/topology-b2plus.html`(승인된 B2+ "Circuit × Constellation"
-> 프로토타입) · `docs/TOPOLOGY-V2-PHASE0.md`(실측 병목 + 어댑터 계약 초안) ·
+> 프로토타입) · `docs/plans/TOPOLOGY-V2-PHASE0.md`(실측 병목 + 어댑터 계약 초안) ·
 > `docs/archive/SIGMA-PLAYBOOK.md`(Sigma v3 내장 기능 계약 — 조사됐으나 v2는
 > Sigma 미채택, archived) · `docs/INTERACTION-DESIGN.md`
 > (유체 인터페이스 원칙) · `.claude/rules/design.md` · `docs/PRODUCT-DESIGN-OPERATING-SYSTEM.md`
