@@ -147,6 +147,54 @@ export function useGlyphSet(): GlyphSet {
   return useSyncExternalStore(subscribe, getSnapshot, getServerSnapshot);
 }
 
+/* ── 프레임 계기 ─────────────────────────────────────────────────────────── */
+
+/**
+ * 지도 위에 프레임 계기를 띄울까.
+ *
+ * ## 왜 설정에 있고 기본이 꺼짐인가
+ *
+ * 이건 **진단 도구**지 제품 크롬이 아니다. 지도를 읽으러 온 사람에게 숫자가
+ * 상시로 떠 있으면 그건 정보가 아니라 소음이고, 이 앱의 주목 예산은 지도가
+ * 가져야 한다. 그래서 발자국과 같은 자리(설정 →「지도」)에 옵트인으로 둔다.
+ *
+ * ## 왜 만드는가 — 「내 환경에선 안 느린데요」를 끝내려고
+ *
+ * 2026-07-31 소유자가 노드 드래그 렉을 보고했는데 재현 환경(Playwright
+ * Chromium)에서는 프레임 작업이 2.1ms 였다. 녹화 영상의 프레임 타임스탬프로는
+ * 150ms 정지가 실재했다 — **같은 코드가 환경에 따라 다르게 아팠다.** 그때
+ * 필요한 것은 개발자의 재현이 아니라 **아픈 그 자리에서 나오는 숫자**다.
+ * 화면에 숫자가 없으면 성능 논의는 매번 «느낌 vs 다른 사람의 벤치마크» 가 된다.
+ */
+const FRAME_METER_KEY = "atlas.appearance.frameMeter";
+
+export const DEFAULT_FRAME_METER = false;
+
+export function readFrameMeter(): boolean {
+  if (typeof window === "undefined") return DEFAULT_FRAME_METER;
+  try {
+    return window.localStorage.getItem(FRAME_METER_KEY) === "on";
+  } catch {
+    return DEFAULT_FRAME_METER;
+  }
+}
+
+export function writeFrameMeter(value: boolean): void {
+  if (typeof window === "undefined") return;
+  try {
+    window.localStorage.setItem(FRAME_METER_KEY, value ? "on" : "off");
+  } catch {
+    // 위와 동일 — 저장이 막혀도 이벤트로 현재 세션은 갱신된다.
+  }
+  notifyPreferenceChange();
+}
+
+export function useFrameMeter(): boolean {
+  const getSnapshot = useCallback(() => readFrameMeter(), []);
+  const getServerSnapshot = useCallback(() => DEFAULT_FRAME_METER, []);
+  return useSyncExternalStore(subscribe, getSnapshot, getServerSnapshot);
+}
+
 /* ── 발자국 (걸어온 길) ──────────────────────────────────────────────────── */
 
 /**

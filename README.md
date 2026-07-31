@@ -578,6 +578,20 @@ pnpm vault:validate       # frontmatter integrity
 `pnpm checks:changed` picks the smallest sufficient subset for what you touched;
 [CONTRIBUTING.md](CONTRIBUTING.md) explains when to escalate to the full set.
 
+Map interaction cost is not covered by those gates — the canvas has no DOM, so a
+run that silently pans the background instead of dragging a node reports "fast"
+and is wrong. Measure it with the deterministic harness, which proves it grabbed
+a real node before quoting a number:
+
+```bash
+pnpm build && npx serve out -l 4173
+node scripts/perf-node-drag.mjs
+```
+
+The observation surface it drives (`?e2e=1` → `window.__atlasMap`) and the
+measurement discipline are documented in
+[docs/MAP-TESTABILITY.md](docs/MAP-TESTABILITY.md).
+
 ## Documentation
 
 | Document | Start here when you need… |

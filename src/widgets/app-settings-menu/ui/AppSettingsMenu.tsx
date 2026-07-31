@@ -41,6 +41,7 @@ import {
 import { VaultAgentSetupPanel } from './VaultAgentSetupPanel';
 import { CanvasBackgroundPicker, GlyphSetPicker } from './AppearancePickers';
 import { FootprintSettings } from './FootprintSettings';
+import { useFrameMeter, writeFrameMeter } from '@/shared/lib/appearance-preferences';
 import { AiConnectionPanel } from './AiConnectionPanel';
 import { AI_PROVIDER_LABEL_KEY } from '../model/ai-providers';
 import { useAiConnection } from '../model/use-ai-connection';
@@ -241,6 +242,7 @@ export function AppSettingsMenu({
   // 없다(빈 행/비활성 버튼을 남기지 않는다).
   const replayGuide = useGuideReplay();
   const guideAutoStart = useGuideAutoStart();
+  const frameMeter = useFrameMeter();
   const [internalOpen, setInternalOpen] = useState(false);
   const isControlled = openProp !== undefined;
   const open = isControlled ? openProp : internalOpen;
@@ -858,7 +860,33 @@ export function AppSettingsMenu({
                 ) : null}
                   </SettingsGroup>
                 ) : section === 'background' ? (
+                  <>
                   <CanvasBackgroundPicker />
+                  {/* 프레임 계기 — 지도가 실제로 몇 프레임을 내주는지 우하단 계기
+                      스택에 띄운다. **기본은 꺼짐**이고, 꺼져 있으면 측정 루프도
+                      돌지 않는다(성능을 갉아먹는 성능계는 거짓말쟁이다).
+                      이 자리인 이유: 「지도」 칸이 캔버스가 어떻게 그려지는지를
+                      모아 둔 곳이고, 계기는 그 캔버스 위에 뜬다. */}
+                  <SettingsGroup>
+                    <SettingsRow
+                      testId="app-settings-frame-meter"
+                      label={t('frameMeterLabel')}
+                      caption={t('frameMeterCaption')}
+                      control={
+                        <SegmentSwitch
+                          ariaLabel={t('frameMeterLabel')}
+                          value={frameMeter}
+                          onChange={writeFrameMeter}
+                          options={[
+                            { value: false, label: t('frameMeterOff') },
+                            { value: true, label: t('frameMeterOn') },
+                          ]}
+                          testId="app-settings-frame-meter-switch"
+                        />
+                      }
+                    />
+                  </SettingsGroup>
+                  </>
                 ) : section === 'footprint' ? (
                   <FootprintSettings />
                 ) : section === 'workspace' ? (

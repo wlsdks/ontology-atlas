@@ -6008,6 +6008,16 @@
         },
         {
           "depth": 2,
+          "text": "2026-07-31 — 드래그 140ms 의 처방: 후보 ② 「제한을 진짜로」 채택 — 단 진범의 78%는 FA2 가 아니라 separation 이었고, Barnes-Hut 은 이미 켜져 있었다",
+          "slug": "2026-07-31-드래그-140ms-의-처방-후보-제한을-진짜로-채택-단-진범의-78는-fa2-가-아니라-separation-이었고-barnes-hut-은-이미-켜져-있었다"
+        },
+        {
+          "depth": 2,
+          "text": "2026-07-31 — 3D 는 「분할 장치」로도 반려 — 밀집의 뿌리는 펼침 무게이트 + 군중의 서열 채널 0개",
+          "slug": "2026-07-31-3d-는-분할-장치로도-반려-밀집의-뿌리는-펼침-무게이트-군중의-서열-채널-0개"
+        },
+        {
+          "depth": 2,
           "text": "2026-07-31 — 지시문은 **다 싣지 않고 필요할 때 싣는다**: AGENTS.md 32KiB 아래 · rules 73KB→13.6KB 조건부 · 강행 규칙은 훅으로",
           "slug": "2026-07-31-지시문은-다-싣지-않고-필요할-때-싣는다-agentsmd-32kib-아래-rules-73kb136kb-조건부-강행-규칙은-훅으로"
         },
@@ -6243,7 +6253,7 @@
         }
       ],
       "excerpt": "이 파일은 결정과 그때 진 반대 의견을 남긴다. docs/CHANGELOG.md 는 무엇이 언제 바뀌었나를 답하고, 이 파일은 왜 그렇게 정했고, 무엇을 걸었나를 답한다. 최신이 위. 기록은 덧붙이기만 한다 — 지난 기록을 고치지 않는다. 판단이 바뀌었으면 새 기록을 쓰고 옛 기록을 뒤집힘 으로 표시한다. 틀린 기록도 자산이다. 1. 소집 전에 읽는다. 카운슬을 열기 전(그리고 단독 PO 패스를 쓰기 전) 같은 표면 · 같은 질문에 대한 선행 결정이 있는지 먼저 본다. 있으면 새 패스는 그것을 ① 여전히 유효하다고 인용하거나 ② 명시적으로 뒤집는다. 조용히 다시 결정",
-      "wordCount": 19758,
+      "wordCount": 21498,
       "updatedAt": "2026-07-31",
       "linksOut": []
     },
@@ -8354,6 +8364,89 @@
       "excerpt": "X 의 언어는 짧고 시각적. 5–7 트윗 짜리 thread 가 sweet spot. 각 트윗 280 chars 안. 1 트윗 = 1 idea. yaml kind: capability domain: domains/auth dependson: [capabilities/signup] Post the thread in one go (drafts feature) Pin tweet 1 to profile Quote-tweet your HN submission link in a separate post a few hours later Tag relevant accounts onl",
       "wordCount": 454,
       "updatedAt": "2026-07-28",
+      "linksOut": []
+    },
+    {
+      "slug": "MAP-TESTABILITY",
+      "path": "docs/MAP-TESTABILITY.md",
+      "title": "지도를 밖에서 검사하기 — `window.__atlasMap`",
+      "tags": [],
+      "frontmatter": {},
+      "headings": [
+        {
+          "depth": 1,
+          "text": "지도를 밖에서 검사하기 — `window.__atlasMap`",
+          "slug": "지도를-밖에서-검사하기-window__atlasmap"
+        },
+        {
+          "depth": 2,
+          "text": "왜 이 파일이 있는가",
+          "slug": "왜-이-파일이-있는가"
+        },
+        {
+          "depth": 2,
+          "text": "켜는 법",
+          "slug": "켜는-법"
+        },
+        {
+          "depth": 2,
+          "text": "창구",
+          "slug": "창구"
+        },
+        {
+          "depth": 3,
+          "text": "`nodes()` — 무엇이 어디에 있고, 무엇을 끌 수 있나",
+          "slug": "nodes-무엇이-어디에-있고-무엇을-끌-수-있나"
+        },
+        {
+          "depth": 3,
+          "text": "`interaction()` — 지금 끄는 것이 노드인가 배경인가",
+          "slug": "interaction-지금-끄는-것이-노드인가-배경인가"
+        },
+        {
+          "depth": 3,
+          "text": "`backing()` — 캔버스 백킹 크기",
+          "slug": "backing-캔버스-백킹-크기"
+        },
+        {
+          "depth": 3,
+          "text": "`camera()` — 지도가 어디를 보고 있나",
+          "slug": "camera-지도가-어디를-보고-있나"
+        },
+        {
+          "depth": 3,
+          "text": "`selection()` — 무엇이 골라져 있나",
+          "slug": "selection-무엇이-골라져-있나"
+        },
+        {
+          "depth": 3,
+          "text": "`chips()` — 칩의 **주장**과 **실제**",
+          "slug": "chips-칩의-주장과-실제"
+        },
+        {
+          "depth": 2,
+          "text": "쓰는 법",
+          "slug": "쓰는-법"
+        },
+        {
+          "depth": 2,
+          "text": "측정 규율 넷",
+          "slug": "측정-규율-넷"
+        },
+        {
+          "depth": 2,
+          "text": "화면 계기",
+          "slug": "화면-계기"
+        },
+        {
+          "depth": 2,
+          "text": "마지막 관문",
+          "slug": "마지막-관문"
+        }
+      ],
+      "excerpt": "한 줄: 밖에서 구분할 수 없는 상태는 밖에서 검사할 수 없다. 지도는 캔버스 하나라 DOM 이 없다 — 상태를 명시적으로 내보내지 않으면 자동화는 화면을 «보는 척» 하면서 엉뚱한 것을 잰다. 2026-07-31, 소유자가 노드 드래그 렉을 보고했다. 나는 여섯 번 연속으로 \"제 환경에선 안 느린데요\" 라고 답했다. 매번 배경을 밀고 있었다. 원인은 코드가 아니라 관측 가능성이었다: · 밖에서 본 것 · 실제로 갈리는 것 · 커서 grabbing · 노드 드래그 또는 배경 팬 — 같은 글자 · 커서 pointer · 호버 히트일 뿐, 잡히는지와 무관 · 프레임 60",
+      "wordCount": 638,
+      "updatedAt": "2026-07-31",
       "linksOut": []
     },
     {
@@ -12859,8 +12952,8 @@
         }
       ],
       "excerpt": "이 폴더는 Ontology Atlas 를 만드는 사람들이 쓰는 기술 문서 모음입니다. 제품이 무엇인지 알고 싶어서 들어오셨다면 이 목록이 아니라 지도 화면을 먼저 보세요 — 제품이 어떤 영역으로 나뉘고 각 영역에 무엇이 들어 있는지 그림 한 장으로 보여 줍니다. 아래 표는 \"어떤 주제를 어느 문서에서 찾는가\" 를 정리한 색인입니다. This folder is the working documentation for people building Ontology Atlas. If you came here to learn what the product is, open the ",
-      "wordCount": 927,
-      "updatedAt": "2026-07-27",
+      "wordCount": 955,
+      "updatedAt": "2026-07-31",
       "linksOut": [
         "../README",
         "PRODUCT-OWNER-OPERATING-SYSTEM",
@@ -12875,6 +12968,7 @@
         "../mcp/README",
         "../cli/README",
         "DESIGN-SYSTEM",
+        "MAP-TESTABILITY",
         "DEPLOYMENT",
         "CHANGELOG",
         "BACKLOG"
@@ -13382,7 +13476,7 @@
       },
       {
         "fromSlug": "README",
-        "context": "./cli/README.md) | CLI commands, graph workflows, installed-package checks | Canonical developer terminal interface | | **[`DESIGN-SYSTEM.md`]** | Visual language, tokens, forbidden patterns | Canonical UI style guide | | [`DEPLOYMENT.md`](DEPLOYMENT.md) | Static",
+        "context": "./cli/README.md) | CLI commands, graph workflows, installed-package checks | Canonical developer terminal interface | | **[`DESIGN-SYSTEM.md`]** | Visual language, tokens, forbidden patterns | Canonical UI style guide | | [`MAP-TESTABILITY.md`](MAP-TESTABILITY.md)",
         "linkText": "`DESIGN-SYSTEM.md`"
       }
     ],
@@ -13394,7 +13488,7 @@
       },
       {
         "fromSlug": "README",
-        "context": "| | [`DESIGN-SYSTEM.md`](DESIGN-SYSTEM.md) | Visual language, tokens, forbidden patterns | Canonical UI style guide | | **[`DEPLOYMENT.md`]** | Static export deployment | Current, small | | [`CHANGELOG.md`](CHANGELOG.md) | Chronological user-visible changes | H",
+        "context": "and the measurement discipline that a 2026-07-31 six-false-negative incident produced | Canonical map test surface | | **[`DEPLOYMENT.md`]** | Static export deployment | Current, small | | [`CHANGELOG.md`](CHANGELOG.md) | Chronological user-visible changes | H",
         "linkText": "`DEPLOYMENT.md`"
       }
     ],
@@ -13406,7 +13500,7 @@
       },
       {
         "fromSlug": "README",
-        "context": "atterns | Canonical UI style guide | | [`DEPLOYMENT.md`](DEPLOYMENT.md) | Static export deployment | Current, small | | **[`CHANGELOG.md`]** | Chronological user-visible changes | Historical ledger | | [`BACKLOG.md`](BACKLOG.md) | Working queue and deferred qu",
+        "context": "duced | Canonical map test surface | | [`DEPLOYMENT.md`](DEPLOYMENT.md) | Static export deployment | Current, small | | **[`CHANGELOG.md`]** | Chronological user-visible changes | Historical ledger | | [`BACKLOG.md`](BACKLOG.md) | Working queue and deferred qu",
         "linkText": "`CHANGELOG.md`"
       }
     ],
@@ -13549,6 +13643,13 @@
         "fromSlug": "README",
         "context": "EADME.md`](../mcp/README.md) | MCP registration, 32 tools, tool contracts, verification | Canonical agent interface | | **[`../cli/README.md`]** | CLI commands, graph workflows, installed-package checks | Canonical developer terminal interface | | [`DESIGN-SYSTEM.",
         "linkText": "`../cli/README.md`"
+      }
+    ],
+    "MAP-TESTABILITY": [
+      {
+        "fromSlug": "README",
+        "context": "| | [`DESIGN-SYSTEM.md`](DESIGN-SYSTEM.md) | Visual language, tokens, forbidden patterns | Canonical UI style guide | | **[`MAP-TESTABILITY.md`]** | Observing the canvas map from outside (`?e2e=1` → `window.__atlasMap`), and the measurement discipline that a 2026-07",
+        "linkText": "`MAP-TESTABILITY.md`"
       }
     ],
     "BACKLOG": [
@@ -16903,6 +17004,13 @@
         "type": "doc",
         "slug": "INTERACTION-DESIGN",
         "title": "INTERACTION DESIGN — 유체적 인터페이스 원칙의 적용 (2026-07-17)"
+      },
+      {
+        "name": "MAP-TESTABILITY",
+        "path": "MAP-TESTABILITY",
+        "type": "doc",
+        "slug": "MAP-TESTABILITY",
+        "title": "지도를 밖에서 검사하기 — `window.__atlasMap`"
       },
       {
         "name": "ONTOLOGY-ATLAS-SPEC",

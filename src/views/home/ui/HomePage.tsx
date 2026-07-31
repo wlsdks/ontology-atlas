@@ -270,6 +270,7 @@ import { createVaultFilePastTrailStore, type PastTrailStore } from "../lib/past-
 import { verifyHandlePermission } from "@/entities/local-fs-handle";
 import { TopologyInsightsReturnChip } from "./TopologyInsightsReturnChip";
 import { TopologyRelationLegend } from "./TopologyRelationLegend";
+import { FrameMeter } from "@/shared/ui/frame-meter";
 import { TopologyReviewLink } from "./TopologyReviewLink";
 import { TopologyChangeAnnouncement } from "./TopologyChangeAnnouncement";
 import { TopologyNoMatchesState } from "./TopologyNoMatchesState";
@@ -4283,6 +4284,12 @@ export function HomePage() {
                   // 항상 거짓을 말했다. plain 문구로 치환.
                   audiencePlain={audiencePlain}
                 />
+                {/* 프레임 계기 — 기본 꺼짐, 설정 →「지도」에서 켠다.
+                    새 구석을 만들지 않고 **이미 계기 판독이 사는 스택**의 마지막
+                    줄로 들어간다. 같은 성격의 읽을거리를 다른 자리에 두면 눈이
+                    한 번 더 훑어야 하고, 그게 이 저장소가 경계하는 「과업이 더
+                    명확해지지 않는 새 크롬」이다. */}
+                <FrameMeter />
               </div>
 
               {/* 샘플 모드 첫 방문 1회성 지도 힌트 — 하단 중앙, pointer-events-none

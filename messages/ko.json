@@ -145,7 +145,11 @@
       "guideAutoStartLabel": "화면 안내 자동 표시",
       "guideAutoStartCaption": "처음 여는 화면마다 안내를 저절로 띄워요 — 끄면 아래 「다시 보기」나 지도의 나침반으로만 열려요",
       "guideAutoStartOn": "켬",
-      "guideAutoStartOff": "끔"
+      "guideAutoStartOff": "끔",
+      "frameMeterLabel": "프레임 계기",
+      "frameMeterCaption": "지도가 초당 몇 프레임을 내주는지와 가장 크게 끊긴 간격을 띄웁니다. 기본은 꺼짐이고, 꺼져 있으면 측정도 하지 않습니다.",
+      "frameMeterOn": "켬",
+      "frameMeterOff": "끔"
     },
     "primaryAriaLabel": "주요 메뉴",
     "notificationsAriaLabel": "작업 알림"
