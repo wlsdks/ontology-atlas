@@ -31,6 +31,7 @@ export const GUIDE_PAGES: readonly GuidePage[] = [
   { slug: 'guide/what-is-atlas', segment: 'what-is-atlas', titleKey: 'whatIsAtlas' },
   { slug: 'guide/first-five-minutes', segment: 'first-five-minutes', titleKey: 'firstFiveMinutes' },
   { slug: 'guide/vault-structure', segment: 'vault-structure', titleKey: 'vaultStructure' },
+  { slug: 'guide/relations', segment: 'relations', titleKey: 'relations' },
   { slug: 'guide/connect-agent', segment: 'connect-agent', titleKey: 'connectAgent' },
   { slug: 'guide/cli', segment: 'cli', titleKey: 'cli' },
   { slug: 'guide/trust', segment: 'trust', titleKey: 'trust' },
