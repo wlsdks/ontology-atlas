@@ -2230,10 +2230,10 @@
     --topology-v2-node-fill-domain: #191920;
     --topology-v2-node-fill-capability: #17171d;
     --topology-v2-node-fill-element: #15151a;
-    --topology-v2-node-stroke-project: #57575f;
-    --topology-v2-node-stroke-domain: #48484f;
-    --topology-v2-node-stroke-capability: #3c3c44;
-    --topology-v2-node-stroke-element: #34343b;
+    --topology-v2-node-stroke-project: #797984;
+    --topology-v2-node-stroke-domain: #6e6e79;
+    --topology-v2-node-stroke-capability: #646471;
+    --topology-v2-node-stroke-element: #60606d;
     --topology-v2-node-fill-dim: #1a1a1e;
     --topology-v2-node-stroke-dim: #2b2b2f;
     /* 최근 변경 스포트라이트 rest 알파 (협의회 설계 2026-07-23). product
@@ -2322,14 +2322,14 @@
        밝던 역전을 바로잡는다. contains 는 그래프의 골격이라 호버 없이
        overview 에서 읽혀야 하고(1.32 → 1.83:1), depends 는 영향범위 추론의
        최고가치 관계라 contains 보다 분명히 위여야 한다(1.78 → 2.42:1). */
-    --topology-v2-edge-contains: #3a3a42;
+    --topology-v2-edge-contains: #646472;
     /* P3a 잉크 사다리 — containment 깊이는 hue 가 아니라 명도×굵기로 (순서
        데이터의 올바른 채널, Bertin). L0(project 뼈대)는 더 진하게, L2
        (역량-요소 잔가지)는 살짝 물러나되 B1 이전 값(1.32:1)보다는 진하게 —
        위계를 세우면서 가독 회복을 되돌리지 않는다. L1 은 기존
        --topology-v2-edge-contains 그대로. */
-    --topology-v2-edge-contains-l0: #45454e;
-    --topology-v2-edge-contains-l2: #333339;
+    --topology-v2-edge-contains-l0: #6e6e7d;
+    --topology-v2-edge-contains-l2: #60606c;
     /* B2 잔여 (Guardian 사후검증) — 두 끝점이 모두 화면 밖인 관통 엣지는
        어떤 관계도 "보여주지" 못하면서 딥줌 화면을 실타래로 만든다. 컬링은
        기하학적으로 불가(곡선이 실제로 화면을 지나감) — 대신 잉크를 강등해
@@ -2379,7 +2379,7 @@
      * 용접돼 오히려 내용 대비 상대 운동이 생긴다.
      */
     --topology-v2-canvas-bg-parallax: 0.82;
-    --topology-v2-edge-depends: #4c4c63;
+    --topology-v2-edge-depends: #666685;
     --topology-v2-edge-dim: #1e1e22;
     --topology-v2-hull-stroke: #3a3a42;
     /* canvas-emphasis 슬라이스: 프로젝트 라벨은 Layer-0 컨테이너 앰버 정체성을
@@ -3386,11 +3386,16 @@ body[data-no-tabbar] [data-tabbar="primary"] {
  * `StageMap` 이 마운트/언마운트에서 속성을 걸고 풀며 캐시를 무효화한다.
  */
 html[data-gateway-stage] {
-  /* 잉크 — 캔버스(#08080b) 위 3:1 이상으로 올린다. 라벨은 4.5:1 목표. */
-  --topology-v2-edge-contains: #626270;
-  --topology-v2-edge-contains-l0: #757583;
-  --topology-v2-edge-contains-l2: #55555f;
-  --topology-v2-edge-depends: #6f6f8c;
+  /*
+   * 엣지 잉크 오버라이드는 **제거됐다**(2026-07-31). 이 블록이 생긴 이유는
+   * 워크벤치 기본 엣지가 1.6~2.4:1 로 관문 미리보기에서 안 보였기 때문인데,
+   * 그 기본값 자체를 3:1 위로 올리면서 여기 값이 오히려 **더 낮아졌다**
+   * (구 `-l2: #55555f` = 2.71:1 < 새 기본 `#60606c` = 3.21:1). 남겨 두면
+   * 관문만 강등된다. 이제 관문은 워크벤치 잉크를 그대로 상속한다.
+   *
+   * 라벨은 관문이 여전히 한 단 밝다 — 지도가 "만져 보는" 자리라 이름이
+   * 먼저 읽혀야 한다.
+   */
   --topology-v2-label-capability: #aeaeb8;
   --topology-v2-label-element: #9a9aa4;
 
