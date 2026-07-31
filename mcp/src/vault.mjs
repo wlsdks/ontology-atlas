@@ -18,6 +18,7 @@ import { NODE_ELIGIBILITY_GATE } from './schema.mjs';
 import {
   bulkProvenanceMessage,
   danglingGraphReferenceMessage,
+  denseParentActionMessage,
   looksLikeEvidencePath,
   looksLikePath,
   pathShapedReferenceMessage,
@@ -580,6 +581,14 @@ const GATE = {
   createdUnderParent: new Map(),
   /** parent ref → the sibling count we last spoke about. */
   noticedBulk: new Map(),
+  /**
+   * parent slug → child refs this session's writes ADDED to its graph arrays.
+   *
+   * The other provenance map watches children declaring a parent; this one
+   * watches a parent's own list growing, which is the direction the 92 actually
+   * came from (`patch_concept` on `elements:`, never a child announcing itself).
+   */
+  parentGrewBy: new Map(),
   /** Lazy slug index — { rootPath, names: Set<string> }. */
   index: null,
 };
@@ -590,6 +599,7 @@ export function resetNodeEligibilityGate() {
   GATE.noticed.clear();
   GATE.createdUnderParent.clear();
   GATE.noticedBulk.clear();
+  GATE.parentGrewBy.clear();
   GATE.index = null;
 }
 
@@ -676,8 +686,75 @@ function shouldNotice(ledger, key, count, { threshold, multiple }) {
   return false;
 }
 
-const { NOTICE_THRESHOLD, NOTICE_REPEAT_MULTIPLE, BULK_PROVENANCE_SIBLING_TRIGGER, REFERENCE_SAMPLE_LIMIT } =
-  NODE_ELIGIBILITY_GATE;
+const {
+  NOTICE_THRESHOLD,
+  NOTICE_REPEAT_MULTIPLE,
+  BULK_PROVENANCE_SIBLING_TRIGGER,
+  REFERENCE_SAMPLE_LIMIT,
+  BOOTSTRAP_FANOUT_TRIGGER,
+  MIN_PARENTS_FOR_LIVE_PERCENTILE,
+  DENSE_PARENT_RESOLUTION_FLOOR,
+} = NODE_ELIGIBILITY_GATE;
+
+/**
+ * Which containment array makes a node a parent, per kind.
+ *
+ * Only two entries, and the absence of `project → domain` is deliberate: a vault
+ * has a handful of projects at most, so any percentile over that sample is
+ * describing nothing, and a constant invented for it would be the guess the
+ * amendment's research exists to avoid.
+ */
+const DENSE_PARENT_RELATIONS = Object.freeze({
+  domain: Object.freeze({ key: 'capabilities', childKind: 'capability', bootstrap: 'domain_to_capability' }),
+  capability: Object.freeze({ key: 'elements', childKind: 'element', bootstrap: 'capability_to_element' }),
+});
+
+/** Nearest-rank p90 — no interpolation, so the answer is always an observed count. */
+function percentile90(values) {
+  const sorted = [...values].sort((a, b) => a - b);
+  return sorted[Math.max(0, Math.ceil(0.9 * sorted.length) - 1)];
+}
+
+/**
+ * What counts as "wide" for this kind of parent, and where that number came from.
+ *
+ * The vault's own p90 wins as soon as there are enough parents of the kind for a
+ * percentile to describe anything real; below that the researched starting range
+ * stands in. Reporting the basis alongside the number is not decoration — a
+ * bootstrap constant printed as "your vault's p90" would dress a shipped default
+ * as a measurement of the reader's own data.
+ *
+ * Costs a full vault scan, so it is computed only after the caller has already
+ * decided this parent is worth a sentence.
+ */
+function siblingFanoutTrigger(rootPath, parentKind) {
+  const relation = DENSE_PARENT_RELATIONS[parentKind];
+  const counts = [];
+  for (const doc of loadVaultDocs(rootPath)) {
+    if (doc.frontmatter?.kind !== parentKind) continue;
+    const refs = doc.frontmatter[relation.key];
+    counts.push(
+      Array.isArray(refs) ? refs.filter((ref) => gateResolves(rootPath, ref)).length : 0,
+    );
+  }
+  if (counts.length < MIN_PARENTS_FOR_LIVE_PERCENTILE) {
+    return { trigger: BOOTSTRAP_FANOUT_TRIGGER[relation.bootstrap], basis: 'bootstrap' };
+  }
+  return { trigger: percentile90(counts), basis: 'vault-p90' };
+}
+
+/**
+ * Did a machine fill this parent during this session?
+ *
+ * Two shapes of the same fact, because children arrive from both directions:
+ * `createdUnderParent` sees a batch of children each declaring `domain:`, while
+ * `parentGrewBy` sees one parent's own array growing through repeated writes —
+ * which is the direction the measured 92 actually came from.
+ */
+function machineFilledParent(slug) {
+  if (GATE.noticedBulk.has(slug)) return true;
+  return (GATE.parentGrewBy.get(slug)?.size ?? 0) >= BULK_PROVENANCE_SIBLING_TRIGGER;
+}
 
 function pushRefFinding(slug, code, key, refs, message) {
   const noticeKey = `${slug}\0${code}\0${key}`;
@@ -736,8 +813,14 @@ function runNodeEligibilityGate(rootPath, slug, frontmatter, { created = false }
   //    exempt; the path shape only chooses which repair the message names first.
   const evidenceByKey = new Map();
   const danglingByKey = new Map();
+  let totalRefs = 0;
+  let resolvedRefs = 0;
   for (const { key, ref } of collectNeighborRefs({ frontmatter })) {
-    if (gateResolves(rootPath, ref)) continue;
+    totalRefs += 1;
+    if (gateResolves(rootPath, ref)) {
+      resolvedRefs += 1;
+      continue;
+    }
     const bucket = looksLikeEvidencePath(ref) ? evidenceByKey : danglingByKey;
     if (!bucket.has(key)) bucket.set(key, []);
     bucket.get(key).push(ref);
@@ -749,7 +832,58 @@ function runNodeEligibilityGate(rootPath, slug, frontmatter, { created = false }
     pushRefFinding(slug, 'dangling-graph-reference', key, refs, danglingGraphReferenceMessage);
   }
 
-  // ③ Bulk provenance. Not a size limit — a statement about *who* made these and
+  // ③ Dense parent. The one check with a number attached, so it is also the one
+  //    that could quietly become the fan-out cap the council threw out. Two
+  //    guards keep it from doing that.
+  //
+  //    First, it only ever fires when something ELSE is already wrong: the
+  //    parent's references are mostly broken, or a machine filled it in this
+  //    session. A wide parent whose children all resolve and were added by hand
+  //    is never mentioned — schema.org's `CreativeWork` has 67 direct subtypes
+  //    and is not sick, and this vault's own `topology-kind-legibility` (7
+  //    elements, all resolving) must stay silent. That precondition runs BEFORE
+  //    the percentile so the healthy case never even pays for the scan.
+  //
+  //    Second, unresolved strings are not counted as children. Counting them
+  //    would make the very defect this gate exists to name look like healthy
+  //    growth.
+  const relation = DENSE_PARENT_RELATIONS[frontmatter.kind];
+  if (relation) {
+    const childRefs = Array.isArray(frontmatter[relation.key]) ? frontmatter[relation.key] : [];
+    const resolvedChildren = childRefs.filter((ref) => gateResolves(rootPath, ref));
+    const resolutionRate = totalRefs === 0 ? 1 : resolvedRefs / totalRefs;
+    const brokenParent = resolutionRate < DENSE_PARENT_RESOLUTION_FLOOR;
+    const machineFilled = machineFilledParent(slug);
+    if (resolvedChildren.length > 0 && (brokenParent || machineFilled)) {
+      const { trigger, basis } = siblingFanoutTrigger(rootPath, frontmatter.kind);
+      if (shouldNotice(GATE.noticed, `${slug}\0dense-parent\0${relation.key}`, resolvedChildren.length, {
+        threshold: trigger + 1, // "above the trigger", not "at" it
+        multiple: NOTICE_REPEAT_MULTIPLE,
+      })) {
+        GATE.findings.push({
+          code: 'dense-parent',
+          slug,
+          key: relation.key,
+          refs: resolvedChildren,
+          count: resolvedChildren.length,
+          trigger,
+          basis,
+          message: denseParentActionMessage({
+            parentSlug: slug,
+            count: resolvedChildren.length,
+            childKind: relation.childKind,
+            trigger,
+            basis,
+            evidence: brokenParent
+              ? `only ${Math.round(resolutionRate * 100)}% of this node's graph references resolve to real nodes`
+              : 'a single session filled this parent, so its children share a provenance rather than a reason',
+          }),
+        });
+      }
+    }
+  }
+
+  // ④ Bulk provenance. Not a size limit — a statement about *who* made these and
   //    *when*. Only the write path can know that, which is the entire argument
   //    for putting this check here rather than in the compiled maintenance plan.
   if (!created) return;
@@ -786,11 +920,35 @@ function runNodeEligibilityGate(rootPath, slug, frontmatter, { created = false }
  * `mcp/src/write-path-gate.test.mjs` fails if a door starts writing bytes
  * somewhere else.
  */
-function commitDoc(rootPath, slug, filePath, frontmatter, body, { created = false } = {}) {
+function commitDoc(rootPath, slug, filePath, frontmatter, body, { created = false, previousFrontmatter } = {}) {
   writeFileSync(filePath, buildMarkdown({ frontmatter, body }), 'utf-8');
   if (created) noteGateWrite(rootPath, slug);
+  noteParentGrowth(slug, previousFrontmatter, frontmatter);
   runNodeEligibilityGate(rootPath, slug, frontmatter, { created });
   return filePath;
+}
+
+/**
+ * Record which child refs THIS write added to a parent's graph arrays.
+ *
+ * Provenance the vault cannot reconstruct afterwards: on disk, a child added by
+ * a person over a week and one appended by a loop look identical. The diff is
+ * only visible in the moment of writing, which is the same argument that put the
+ * whole gate here rather than in the compiled plan.
+ */
+function noteParentGrowth(slug, previousFrontmatter, nextFrontmatter) {
+  if (!previousFrontmatter) return;
+  for (const key of GRAPH_ARRAY_KEYS) {
+    const next = nextFrontmatter?.[key];
+    if (!Array.isArray(next)) continue;
+    const before = new Set(Array.isArray(previousFrontmatter[key]) ? previousFrontmatter[key] : []);
+    for (const ref of next) {
+      if (typeof ref !== 'string' || before.has(ref)) continue;
+      const added = GATE.parentGrewBy.get(slug) ?? new Set();
+      added.add(ref);
+      GATE.parentGrewBy.set(slug, added);
+    }
+  }
 }
 
 /**
@@ -857,7 +1015,7 @@ export function patchFrontmatter(rootPath, slug, patch, options = {}) {
       next[key] = normalizeFrontmatterValue(key, value);
     }
   }
-  return commitDoc(rootPath, slug, filePath, next, body);
+  return commitDoc(rootPath, slug, filePath, next, body, { previousFrontmatter: frontmatter });
 }
 
 /**
@@ -888,7 +1046,7 @@ export function updateDoc(rootPath, slug, { frontmatter: patch, body, expectedMt
     throw new Error('body must be a string.');
   }
   const nextBody = body === undefined ? oldBody : body;
-  return commitDoc(rootPath, slug, filePath, nextFm, nextBody);
+  return commitDoc(rootPath, slug, filePath, nextFm, nextBody, { previousFrontmatter: frontmatter });
 }
 
 /**

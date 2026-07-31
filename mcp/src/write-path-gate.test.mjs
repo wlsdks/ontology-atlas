@@ -146,6 +146,103 @@ describe('node-eligibility gate — the three write doors inherit one gate', () 
     assert.equal(drainNodeEligibilityFindings().length, 1);
   });
 
+  /**
+   * The two calibration cases the amendment named. They are the whole reason the
+   * dense-parent check has a precondition at all: without one it fires on both,
+   * and a check that flags the vault's single healthy wide parent is a check the
+   * reader learns to ignore.
+   */
+  describe('dense parent — the two calibration cases', () => {
+    function seedElements(count, { resolved }) {
+      const refs = [];
+      for (let i = 0; i < count; i += 1) {
+        if (resolved) {
+          writeFileSync(
+            join(root, 'elements', `e${i}.md`),
+            `---\nslug: elements/e${i}\nkind: element\ntitle: E${i}\ndomain: domains/cli\n---\n`,
+          );
+          refs.push(`elements/e${i}`);
+        } else {
+          refs.push(`cli/src/commands/cmd${i}.mjs`);
+        }
+      }
+      return refs;
+    }
+
+    it('topology-kind-legibility shape stays silent — 7 children, all resolving, no batch', () => {
+      mkdirSync(join(root, 'elements'), { recursive: true });
+      const refs = seedElements(7, { resolved: true });
+      resetNodeEligibilityGate();
+      writeDoc(root, 'capabilities/legibility', {
+        frontmatter: {
+          slug: 'capabilities/legibility',
+          kind: 'capability',
+          title: 'Topology Kind Legibility',
+          domain: 'domains/cli',
+          elements: refs,
+        },
+        body: '',
+      });
+      const findings = drainNodeEligibilityFindings();
+      assert.deepEqual(findings.filter((f) => f.code === 'dense-parent'), []);
+      // …and nothing else either: every reference resolves.
+      assert.deepEqual(findings, []);
+    });
+
+    it('cli-developer-entry shape is caught — but as evidence, not as width', () => {
+      mkdirSync(join(root, 'elements'), { recursive: true });
+      const real = seedElements(1, { resolved: true });
+      resetNodeEligibilityGate();
+      updateDoc(root, 'capabilities/entry', {
+        frontmatter: { elements: [...real, ...seedElements(91, { resolved: false })] },
+      });
+      const findings = drainNodeEligibilityFindings();
+      // The gate must not stay quiet about this node — that is the whole point.
+      const paths = findings.filter((f) => f.code === 'path-shaped-reference');
+      assert.equal(paths.length, 1);
+      assert.equal(paths[0].count, 91);
+
+      // But dense-parent specifically must NOT fire, and that is not a miss: it
+      // counts only children that resolve, and this node has one. Counting the 91
+      // would call the defect "healthy growth" and would also mean the node stops
+      // looking dense the moment it is repaired — the metric would be measuring
+      // the bug. Width is not what is wrong here; category is.
+      assert.deepEqual(findings.filter((f) => f.code === 'dense-parent'), []);
+    });
+
+    it('a machine-filled parent fires even when every child resolves', () => {
+      mkdirSync(join(root, 'elements'), { recursive: true });
+      const refs = seedElements(9, { resolved: true });
+      resetNodeEligibilityGate();
+      // Grown one write at a time, as `add_relation` does — the shape that made
+      // the 92, and the only way the vault can know a machine did it.
+      for (let i = 1; i <= refs.length; i += 1) {
+        patchFrontmatter(root, 'capabilities/entry', { elements: refs.slice(0, i) });
+      }
+      const dense = drainNodeEligibilityFindings().filter((f) => f.code === 'dense-parent');
+      // Spoken once, at the crossing (7 = trigger 6 + 1), then quiet — the same
+      // first-crossing-then-multiples rule the other three checks follow.
+      assert.equal(dense.length, 1);
+      assert.equal(dense[0].count, 7);
+      assert.equal(dense[0].basis, 'bootstrap');
+      assert.equal(dense[0].trigger, 6);
+      assert.match(dense[0].message, /trigger, not a limit/);
+      assert.doesNotMatch(dense[0].message, /keep under/i);
+    });
+
+    it('the same nine children added by hand, not in one session, stay silent', () => {
+      mkdirSync(join(root, 'elements'), { recursive: true });
+      const refs = seedElements(9, { resolved: true });
+      resetNodeEligibilityGate();
+      patchFrontmatter(root, 'capabilities/entry', { elements: refs });
+      // One write adding nine is still one batch, so drop the provenance record
+      // to model "these were already on disk when the session opened".
+      resetNodeEligibilityGate();
+      patchFrontmatter(root, 'capabilities/entry', { elements: refs });
+      assert.deepEqual(drainNodeEligibilityFindings(), []);
+    });
+  });
+
   it('bulk provenance fires when one machine batch fills one parent', () => {
     for (let i = 0; i < 5; i += 1) {
       writeDoc(root, `elements/bulk-${i}`, {

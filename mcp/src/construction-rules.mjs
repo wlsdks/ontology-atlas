@@ -101,17 +101,19 @@ export const CONSTRUCTION_RULES_EN = `## Construction rules — read before add_
    (list_kinds / query_ontology({operation:'facets'})). IF the count is well above
    that median, this is a TRIGGER for step 3 — NOT a limit. It never blocks a write.
 3. When triggered, answer before writing:
-   a. Do 3+ existing children share a name/path prefix or the same one-word role?
-   b. Can you write ONE non-circular sentence why the new child is NOT interchangeable
+   a. Can you write ONE non-circular sentence why the new child is NOT interchangeable
       with an existing sibling? If you cannot, patch_concept the existing sibling's
-      body instead of creating a new node.
-   c. Is the candidate title a file/import path rather than a concept name? A path is
+      body instead of creating a new node. THIS IS THE TEST — the other two are hints.
+   b. Is the candidate title a file/import path rather than a concept name? A path is
       EVIDENCE of a concept, not the concept — do not create one node per file unless
       each file's role differs in a sentence you can actually write.
-4. IF (a) is true for 3+ candidates AND you can name the shared behavior in one
-   sentence: call add_concept ONCE for that behavior, then patch_concept each matching
-   child to reparent it. IF you cannot name the shared behavior: create NOTHING —
-   count alone is not evidence of a problem.
+   c. Do several existing children share a name/path prefix? Glance at them, but do
+      NOT treat this as the condition — prefixed siblings are often legitimate, and
+      broken ones often share no prefix. It only tells you where to look first.
+4. IF (a) fails for 3+ existing children AND you can name the behavior they share in
+   one sentence: call add_concept ONCE for that behavior, then patch_concept each
+   matching child to reparent it. IF you cannot name the shared behavior: create
+   NOTHING — count alone is not evidence of a problem.
 5. This procedure does not block writes. Skipping it still succeeds; \`warnings\` /
    \`postWriteMaintenance\` on the response flags it for cleanup instead.`;
 
@@ -145,11 +147,21 @@ export const CHAT_RULES_DELTA_EN = `Construction rules: same procedure as the MC
  * narrow: a slash, or a known source extension. Broader heuristics ("contains a
  * dot", "is lowercase") would flag legitimate concept names like `next.config`
  * or `jwt-token`, and a warning that cries wolf gets filtered out by the reader.
+ *
+ * **Internal whitespace disqualifies it** (2026-07-31, found by running the gate
+ * over this repo's own vault). The slash clause alone flagged the title *"CLI
+ * Developer Entry (52 commands — … growth/maintenance queue …)"*, which is
+ * English prose that happens to contain a slash. A path token in a graph slot has
+ * no spaces; a concept title almost always does. Without this the very first
+ * real-vault run produced a false positive on a node whose actual defect was
+ * something else entirely — and a check that is wrong on its debut is a check the
+ * reader stops reading.
  */
 export function looksLikePath(title) {
   if (typeof title !== "string") return false;
   const t = title.trim();
   if (t.length === 0) return false;
+  if (/\s/.test(t)) return false;
   if (t.includes("/") || t.includes("\\")) return true;
   return /\.(m?[jt]sx?|py|rb|go|rs|java|kt|swift|c|cc|cpp|h|hpp|css|scss|json|ya?ml|toml|sh)$/i.test(t);
 }
@@ -211,16 +223,43 @@ export function fanoutGrowthMessage({ slug, addedCount, newCount }) {
 }
 
 /**
- * Maintenance-plan action text for a dense parent.
+ * Action text for a dense parent whose references are mostly broken.
  *
  * ⚠️ This proposes a QUESTION, then a tool call — never a ready-made scaffold.
  * An earlier draft handed over "create two sub-capabilities and move half the
  * children", which is precisely the shortest path to passing the metric with
- * empty buckets. The last sentence is load-bearing: without an explicit
- * "leave it alone" branch, the number becomes the goal.
+ * empty buckets. The "leave it alone" branch is load-bearing: without an
+ * explicit exit, the number becomes the goal.
+ *
+ * ## Two things this message deliberately stopped saying (2026-07-31 amendment)
+ *
+ * 1. **"p90=" unconditionally.** The trigger is this vault's own p90 only once
+ *    the vault has enough parents of the kind to compute one; before that it is
+ *    a researched starting range. Printing "p90" over a bootstrap constant would
+ *    dress a shipped default as a measurement of the reader's own data.
+ * 2. **Shared prefix as the gate.** The earlier draft made "do 3+ children share
+ *    a name/path prefix?" the question the reader must answer first. Measured
+ *    against this vault, that signal is wrong in *both* directions:
+ *    `topology-kind-color-*` ×4 share a prefix and are legitimate siblings,
+ *    while the 92 that are actually broken share no prefix at all. It survives
+ *    here as one hint among several, never as a precondition.
+ *
+ * What replaces it is the only test that held up: can you write one non-circular
+ * sentence saying why a child is not interchangeable with its siblings.
+ *
+ * @param {object} args
+ * @param {string} args.parentSlug
+ * @param {number} args.count resolved children — unresolved strings are not children
+ * @param {string} args.childKind
+ * @param {number} args.trigger the number crossed, whatever its basis
+ * @param {'vault-p90'|'bootstrap'} args.basis where `trigger` came from
+ * @param {string} args.evidence why this parent was looked at in the first place
  */
-export function denseParentActionMessage({ parentSlug, count, childKind, p90, domain }) {
-  return `"${parentSlug}" has ${count} direct ${childKind} children, above this vault's typical fan-out (p90=${p90}) for ${childKind} — call get_concept("${parentSlug}") and check whether 3+ children share a name/path prefix. If so, call add_concept({kind:"capability", domain:"${domain}", title:"<name the shared behavior>"}) once, then patch_concept each matching child to point at it. If no shared behavior exists, leave this node as-is — do not fold on count alone.`;
+export function denseParentActionMessage({ parentSlug, count, childKind, trigger, basis, evidence }) {
+  const source = basis === 'vault-p90'
+    ? `this vault's own p90 for ${childKind} parents is ${trigger}`
+    : `the starting range for ${childKind} children is ${trigger} (this vault has too few ${childKind} parents yet for its own percentile to mean anything)`;
+  return `"${parentSlug}" has ${count} ${childKind} children that resolve to real nodes, and ${source}. That number is a trigger, not a limit — nothing here caps how many children a node may have, and a wide parent whose children each earn their place is correct. What made this worth mentioning is ${evidence}. Call get_concept("${parentSlug}") and answer one question per child: can you write a non-circular sentence saying why it is NOT interchangeable with its siblings? For every child where you can, leave it alone. Where you cannot for three or more, name the behavior they share once with add_concept and patch_concept those children to point at it. Shared name prefixes are a hint worth glancing at, not the test — in this vault, prefixed siblings have been legitimate and the broken ones shared no prefix at all.`;
 }
 
 /**

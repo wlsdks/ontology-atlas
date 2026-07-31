@@ -2956,6 +2956,14 @@ export function createOntologyEngine(artifact, options = {}) {
       'path-shaped-title': { kind: 'separate_evidence_from_concept', phase: 'repair', severity: 'warn', score: 0.9 },
       'path-shaped-reference': { kind: 'separate_evidence_from_concept', phase: 'repair', severity: 'warn', score: 0.92 },
       'bulk-provenance': { kind: 'fold_bulk_siblings', phase: 'review', severity: 'info', score: 0.45 },
+      // Shares `fold_bulk_siblings` rather than claiming a ninth kind. The gate
+      // only raises `dense-parent` when the parent's references are mostly broken
+      // or a machine filled it this session, so the row always arrives alongside
+      // one of those facts and asks the identical question: name why these
+      // siblings are not interchangeable, or fold the ones you cannot. A separate
+      // enum value would grow the public contract (README, dogfood vault node,
+      // strict-filter fixtures, contract regex) to say the same sentence twice.
+      'dense-parent': { kind: 'fold_bulk_siblings', phase: 'review', severity: 'info', score: 0.5 },
     };
     const rows = [];
     for (const finding of nodeEligibilityFindings) {

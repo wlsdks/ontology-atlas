@@ -138,6 +138,27 @@ describe("노드 자격 게이트 상수 — mcp & cli 값 정본이 같다", ()
     expect(gateMcp.REFERENCE_SAMPLE_LIMIT).toBe(5);
   });
 
+  // 2026-07-31 정정 레코드 — 근거(po-evidence)의 문헌·실측 조사에서 승격된
+  // 「연구된 시작 범위」. 하드 캡이 아니라 트리거이며, 볼트가 자기 p90 을 낼 만큼
+  // 자라면 그 순간부터 이 값은 물러난다.
+  it("부트스트랩 트리거는 8/6 이고 project→domain 은 없다", () => {
+    expect(gateMcp.BOOTSTRAP_FANOUT_TRIGGER).toEqual({
+      domain_to_capability: 8,
+      capability_to_element: 6,
+    });
+    // 표본이 무의미해서 일부러 비운 자리다. 값이 생겼다면 근거 없이 지어낸 것이다.
+    expect(gateMcp.BOOTSTRAP_FANOUT_TRIGGER).not.toHaveProperty("project_to_domain");
+    expect(gateMcp.MIN_PARENTS_FOR_LIVE_PERCENTILE).toBe(10);
+    // 전부 해소된 넓은 부모(schema.org CreativeWork 형)를 건드리지 않게 하는 문턱.
+    // 이게 없으면 밀집 경고가 정당한 대팬아웃마다 울고, 우는 채널은 걸러진다 —
+    // 그것이 팬아웃 상한이 옆문으로 돌아오는 경로다.
+    expect(gateMcp.DENSE_PARENT_RESOLUTION_FLOOR).toBe(0.7);
+  });
+
+  it("중첩 상수도 얼어 있다 — Object.freeze 는 얕다", () => {
+    expect(Object.isFrozen(gateMcp.BOOTSTRAP_FANOUT_TRIGGER)).toBe(true);
+  });
+
   it("어떤 값도 자식 수 상한이 아니다 — 상한은 카운슬이 모든 형태로 기각했다", () => {
     // 이 테스트가 지키는 것은 숫자가 아니라 *뜻* 이다. 「N 미만으로 유지」류의
     // 이름이 이 블록에 생기면 그건 팬아웃 상한이 이름만 바꿔 돌아온 것이고,

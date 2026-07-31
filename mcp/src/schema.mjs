@@ -100,6 +100,44 @@ export const NODE_ELIGIBILITY_GATE = Object.freeze({
    * A warning that pastes 92 paths is a wall, and a wall is not read.
    */
   REFERENCE_SAMPLE_LIMIT: 5,
+  /**
+   * Cold-start defaults for the dense-parent trigger, used only until this vault
+   * has enough parents of a kind for a live percentile to mean anything.
+   *
+   * NOT a cap — the gate never blocks on count; it asks the writer to name why
+   * siblings are not interchangeable, and "they are, leave it alone" is an
+   * accepted answer. Sources: schema.org `Thing` (11 direct subtypes after
+   * fifteen production years), this vault's non-hub domain median (4), and its
+   * one healthy wide capability (`topology-kind-legibility`, 7 elements all
+   * resolving to real nodes); see `docs/DECISIONS.md` 2026-07-31 amendment.
+   * Recalibrate after the vault regeneration stage — these are a researched
+   * starting range promoted from descriptive statistics, not a measured law.
+   *
+   * `project→domain` is deliberately absent: the sample is too small for any
+   * number to mean anything, and inventing one would be the guess this block
+   * exists to avoid.
+   */
+  BOOTSTRAP_FANOUT_TRIGGER: Object.freeze({
+    domain_to_capability: 8,
+    capability_to_element: 6,
+  }),
+  /**
+   * Below this many parents of a kind, a percentile computed from this vault is
+   * describing noise, so the bootstrap value stands in. At or above it, the
+   * vault's own p90 wins — a mature vault knows its own shape better than any
+   * constant shipped from outside it.
+   */
+  MIN_PARENTS_FOR_LIVE_PERCENTILE: 10,
+  /**
+   * A dense parent is only worth mentioning when its references are mostly
+   * broken. Above this resolution rate the width is load-bearing structure, not
+   * a transcribed directory listing — schema.org's `CreativeWork` carries 67
+   * direct subtypes and is not sick. Without this condition the check would fire
+   * on every legitimately wide parent, and a warning that cries wolf is filtered
+   * out by the reader, which is how the fan-out cap would come back by the side
+   * door.
+   */
+  DENSE_PARENT_RESOLUTION_FLOOR: 0.7,
 });
 
 export const VAULT_KIND_SCHEMA = {
