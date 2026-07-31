@@ -1,66 +1,139 @@
 ---
 slug: README
 kind: vault-readme
-title: ontology-atlas — 자기 ontology vault
-display_ko: 이 폴더 안내
-display_en: About this folder
-describes:
-  - project
+title: My ontology vault
+display_ko: 내 온톨로지 문서함
+display_en: My ontology vault
 ---
 
-# ontology-atlas — 자기 ontology vault
+# My ontology vault
 
-이 디렉토리는 **이 프로젝트 자신의 ontology** 다. dogfooding — 이 서비스를 만드는 데
-필요한 mental model 을 이 서비스의 데이터 형식 (frontmatter md) 으로 표현.
+This folder is **a codebase mental model that humans and AI agents grow
+together**. Every `.md` file is one node (project / domain / capability /
+element / concept), and the frontmatter at the top of each file is the
+graph's keys (slug / kind / depends_on / capabilities / elements / domain).
 
-여기서 ontology 는 단순한 그래프 그림이 아니라 **프로젝트가 무엇으로 이루어져
-있고, 각 개념이 왜 연결되는지에 대한 실행 가능한 의미 모델**이다. `project`,
-`domain`, `capability`, `element` 노드와 `contains`, `depends_on`, `relates`,
-`describes` 같은 관계를 markdown frontmatter 로 저장하고, CLI/MCP/UI 가 같은
-그래프를 읽고 갱신한다.
+In this vault, an ontology is an executable meaning model for a codebase:
+projects, domains, capabilities, elements, and typed relations that explain
+ownership, dependency, evidence, and change impact.
 
-이 vault 가 표현하려는 1차 대상은 **비즈니스 핵심과 구현 근거가 연결된 의미 모델**이다.
-Atlas 는 사업/제품이 무엇을 하려는지, 어떤 capability 가 그 목표를 나르고, 어떤 코드가
-그 의미를 구현하거나 증명하는지 한 그래프에서 보여줘야 한다. 비즈니스 용어는 domain
-language, ownership, capability boundary, decision path, change impact 를 설명할 때
-들어오고, 소스 파일은 그 의미를 실현하거나 증명하는 `element` 로 들어온다. 즉
-`domain` / `capability` 는 "무엇이 핵심이고 왜 존재하는가"를 설명하고, `element` 는
-"어떤 구현이 그 의미를 실제로 운반하는가"를 증명한다.
+## Get started in 5 minutes
 
-## 구조
+1. Open `project.md` and write your project's name and description.
+2. When a new domain comes to mind, add `<slug>.md` under `domains/`:
+   ```markdown
+   ---
+   slug: domains/auth
+   kind: domain
+   title: Authentication
+   capabilities:
+     - capabilities/login
+     - capabilities/signup
+   ---
 
+   Owns user authentication, sessions, and permissions.
+   ```
+3. Same pattern for capability and element — under `capabilities/` and `elements/`.
+4. Register an AI agent (Claude Code, Cursor, …) and it reads/writes the
+   same vault, growing it alongside you.
+5. To see the graph, open the workbench's `/docs` picker and point it at
+   this vault folder.
+
+## AI agent setup
+
+There are two ways to connect an agent to this vault.
+
+**If you have the installed Ontology Atlas app**, open this folder in it and
+press the connect button. The app writes the Claude Code / Cursor / Codex
+config for you: it already knows this folder's real path, and it carries the
+MCP server inside its own bundle. No terminal, no Node, no install step.
+
+**If you don't**, run the agent setup command once from an Ontology Atlas
+source checkout. Both angle-bracket parts are yours to fill in with real
+absolute paths — the checkout you cloned, and this vault folder:
+
+```bash
+node <ontology-atlas checkout>/cli/src/index.mjs agent-setup <this vault folder> --root . --write
 ```
-docs/ontology/
-├── project.md            — root project 노드 (ontology-atlas)
-├── domains/              — 도메인 6개 (vault, ontology-core, views, ai-agent-partner, mode-aware-adapters, onboarding-ux)
-├── capabilities/         — capability 38개 (frontmatter → ontology, project ontology indexing, topology direct edit, changes-only review …)
-├── documents/            — document 3개 (agent practice notes)
-└── elements/             — element 49개 (코드 디렉토리 / UI 모델 / 라이브러리)
+
+It creates missing Claude Code / Cursor / Codex config files without adding
+starter markdown or overwriting existing ones. To merge by hand instead, open
+`.mcp.json.example`, replace the `OATLAS_VAULT` placeholder with the absolute
+path to this vault, then copy that server entry into your agent config. The
+CLI writes `.mcp.json` and `.codex/config.toml` pointing at the checkout's
+`mcp/src/index.js`.
+
+## Verify the agent loop
+
+After restarting the agent, ask it to prove the connection before it edits
+anything:
+
+> Use the ontology-atlas MCP server to run `validate_vault`, then
+> `query_ontology({ "operation": "workspace_brief" })`, then
+> `query_ontology({ "operation": "agent_brief" })`, then
+> `query_ontology({ "operation": "health" })`,
+> `query_ontology({ "operation": "cycles", "maxHops": 8 })`,
+> `query_ontology({ "operation": "growth_plan", "limit": 20 })`, and
+> `query_ontology({ "operation": "maintenance_plan", "limit": 20 })`. Tell me
+> whether this vault is readable, graph-clean enough, and the write tools are
+> available before proposing changes.
+
+From an Ontology Atlas source checkout, the same first-contact check runs
+through the CLI. Point `$ATLAS` at the checkout **folder** once — the same meaning every
+other Atlas surface uses — then:
+
+```bash
+export ATLAS=<path to your ontology-atlas source checkout>
+
+node $ATLAS/cli/src/index.mjs validate .
+node $ATLAS/cli/src/index.mjs workspace-brief .
+node $ATLAS/cli/src/index.mjs agent-brief . --prompt
+node $ATLAS/cli/src/index.mjs agent-brief . --graph-db-pack
+node $ATLAS/cli/src/index.mjs agent-brief . --verify-fallbacks
+node $ATLAS/cli/src/index.mjs cycles . --max-hops 8
+node $ATLAS/cli/src/index.mjs growth . --limit 20
+node $ATLAS/cli/src/index.mjs maintenance . --limit 20
+node $ATLAS/cli/src/index.mjs mcp-verify . --timeout-ms 15000
 ```
 
-총 98 노드 (capability 38 · document 3 · domain 6 · element 49 · project 1 · vault-readme 1).
-정확한 census 는 `ontology-atlas list` 또는 mcp `list_kinds` 호출.
+For automation that wants a small JSON report instead of human terminal output:
 
-## 사용
+```bash
+node $ATLAS/cli/src/index.mjs agent-brief . --verify-fallbacks --json --fallback-timeout-ms 15000 --fallback-slow-ms 5000 --fallback-concurrency 4
+```
 
-### 사람이 읽을 때
-파일을 직접 열거나, `pnpm dev` 후 `/docs/` 에서 vault picker 로 이 디렉토리 선택.
+For an agent opened at your codebase root instead of this vault folder, replace
+`.` with the vault path, for example `./ontology`.
 
-### Claude Code 같은 AI agent 가 읽을 때
-MCP 서버 등록 — `mcp/README.md` 의 `.mcp.json` 예시 참고.
+## Relations (frontmatter keys)
 
-32 도구 (read 19 + write 13):
-- **read** — `connection_info` · `git_status` · `git_history` · `list_concepts` · `get_concept` · `get_concepts` · `find_evidence` · `find_backlinks` · `find_neighbors` · `find_path` · `list_kinds` · `find_orphans` · `query_concepts` · `compile_ontology` · `query_ontology` · `validate_vault` · `analyze_repo_structure` · `infer_imports` · `index_project`
-- **write** — `absorb_document` · `add_concept` · `add_concepts` · `add_relation` · `add_relations` · `remove_relation` · `replace_relation` · `patch_concept` · `reclassify_concept` · `delete_concept` · `rename_concept` · `merge_concepts` · `git_snapshot`
+| Key | What it expresses |
+|---|---|
+| `depends_on: [<slug>, ...]` | This node depends on other nodes |
+| `capabilities: [...]` | Capabilities this domain / project provides |
+| `elements: [...]` | Elements this capability / domain uses |
+| `domain: <slug>` | Parent domain of this capability/element |
+| `relates: [...]` | Loose related-to references |
 
-agent UX: 단일 도구 (`add_concept` / `add_relation` / `get_concept`) 의 description 이 batch 짝 (`add_concepts` / `add_relations` / `get_concepts`) cross-reference. 5+ 노드 land 는 batch 쓰면 K → 1 round-trip.
+## Kinds
 
-## 갱신
+- `project` — Top-level. Usually one per workspace.
+- `domain` — A large area (auth, billing, builder, …).
+- `capability` — A user-visible feature inside a domain (login, signup, …).
+- `element` — A smaller unit a capability uses (jwt-token, otp-store, …).
+- `document` — Evidence node (markdown doc backing other concepts).
 
-- 새 도메인이 생기면 `domains/<slug>.md` 추가
-- 새 capability — `capabilities/<slug>.md`. frontmatter `domain: <domain-slug>`
-- 새 element (코드 모듈) — `elements/<slug>.md`. frontmatter `path: src/...`
+## What an AI agent can do for you
 
-빈 codebase 부트스트랩은 `ontology-atlas bootstrap [repo]` 한 줄로 (analyze 노드 + infer-imports 의 depends_on edges 합본).
+Once you register the `ontology-atlas-mcp` server, the agent gets 32
+tools to read/write this vault:
 
-이 vault 는 **frontmatter 만으로 ontology 표현 가능** 을 보여준다. 본문은 사람이 읽을 때 도움.
+- **read 19**: connection_info / git_status / git_history / list_concepts / get_concept / get_concepts / find_evidence /
+  find_backlinks / find_neighbors / find_path / list_kinds / find_orphans /
+  query_concepts / compile_ontology / query_ontology / validate_vault /
+  analyze_repo_structure / infer_imports / index_project
+- **write 13**: absorb_document / add_concept / add_concepts / add_relation / add_relations /
+  remove_relation / replace_relation / patch_concept / reclassify_concept /
+  delete_concept / rename_concept / merge_concepts / git_snapshot
+
+Details: https://github.com/wlsdks/ontology-atlas/tree/main/mcp

@@ -460,7 +460,7 @@
   "mapEntry": {
     "headline": "The shared meaning layer for people and their AI agents.",
     "lede": "Turn the Markdown already living in your repository into a queryable model of product domains, capabilities, implementation evidence, dependencies, and impact — then grow it together through MCP, CLI, and a visual workbench.",
-    "demoNote": "This screen is the live map. It is drawing Ontology Atlas describing itself — 98 nodes of domains, capabilities, and elements read straight from Markdown frontmatter.",
+    "demoNote": "This screen is the live map. It is drawing Ontology Atlas describing itself — domains, capabilities, and elements read straight from Markdown frontmatter.",
     "mapComing": "Loading the map…"
   },
   "footer": {

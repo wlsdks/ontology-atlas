@@ -17,74 +17,25 @@ export interface DogfoodCensus {
 }
 
 export const DOGFOOD_CENSUS: DogfoodCensus = {
-  "concepts": 97,
-  "relations": 464,
+  "concepts": 4,
+  "relations": 5,
   "kinds": {
     "project": 1,
-    "domain": 6,
-    "capability": 38,
-    "element": 49,
-    "document": 3
+    "domain": 1,
+    "capability": 1,
+    "element": 1,
+    "document": 0
   },
   "domains": [
     {
-      "slug": "ai-agent-partner",
-      "title": "AI Agent Partner"
-    },
-    {
-      "slug": "mode-aware-adapters",
-      "title": "Mode-Aware Adapters"
-    },
-    {
-      "slug": "onboarding-ux",
-      "title": "Onboarding & UX (theme · toast · a11y · mobile · CLI)"
-    },
-    {
-      "slug": "ontology-core",
-      "title": "Ontology Core (TBox · ABox · Evidence)"
-    },
-    {
-      "slug": "vault-local-first",
-      "title": "Vault — Local-First"
-    },
-    {
-      "slug": "views",
-      "title": "Views (Topology · Workshop · Insights)"
+      "slug": "example-domain",
+      "title": "Example domain"
     }
   ],
-  "domainRelates": [
-    [
-      "ai-agent-partner",
-      "ontology-core"
-    ],
-    [
-      "ai-agent-partner",
-      "vault-local-first"
-    ],
-    [
-      "mode-aware-adapters",
-      "ontology-core"
-    ],
-    [
-      "mode-aware-adapters",
-      "vault-local-first"
-    ],
-    [
-      "onboarding-ux",
-      "views"
-    ],
-    [
-      "ontology-core",
-      "vault-local-first"
-    ],
-    [
-      "ontology-core",
-      "views"
-    ]
-  ],
+  "domainRelates": [],
   "hub": {
-    "slug": "mcp-server",
-    "title": "MCP Server (32 tools)",
-    "domain": "ai-agent-partner"
+    "slug": "example-capability",
+    "title": "Example capability",
+    "domain": "example-domain"
   }
 };
