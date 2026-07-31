@@ -154,6 +154,33 @@ function resolveReferencedPaths(root, files) {
   return [...existing].sort();
 }
 
+/**
+ * AGENTS.md 가 Codex 상한에 얼마나 가까운지 **넘기 전에** 말한다.
+ *
+ * 이 검사는 원래 이분법이었다 — 넘으면 실패, 아니면 조용. 그런데 상한을
+ * 넘는 순간의 벌칙이 크다(초과분이 **경고 없이 잘려서** 뒤쪽 절이 Codex 에게
+ * 존재하지 않게 된다). 이분법이면 사람은 그 절벽을 **밟고 나서야** 안다.
+ *
+ * 게다가 여유가 수백 바이트만 남은 상태에서는 정상적인 한 문단 추가가 CI 를
+ * 빨갛게 만든다. 게이트가 정상 작업을 막는 것처럼 보이면 다음 단계는 우회이지
+ * 정리가 아니다. 그래서 판정(넘었나)은 그대로 두고 **거리**만 먼저 알린다.
+ *
+ * 판정을 바꾸지 않는 것이 요점이다 — 반환 shape 과 status 는 그대로라
+ * 웹 미러(`views/docs-vault/lib/agent-files.ts`)와의 동등성 계약이 안 흔들린다.
+ */
+const CODEX_HEADROOM_WARN_RATIO = 0.1;
+
+function renderCodexHeadroom(check) {
+  if (!check || check.agentsMdBytes === null || check.status === 'not-applicable') return;
+  const headroom = check.capBytes - check.agentsMdBytes;
+  if (headroom <= 0) return; // 이미 drift 로 보고된다 — 두 번 말하지 않는다
+  if (headroom > check.capBytes * CODEX_HEADROOM_WARN_RATIO) return;
+  process.stdout.write(
+    `${COLORS.yellow}near cap${COLORS.reset} ${COLORS.dim}AGENTS.md ${check.agentsMdBytes} / ${check.capBytes} bytes` +
+      ` — ${headroom} bytes of headroom before Codex silently truncates${COLORS.reset}\n`,
+  );
+}
+
 function render(result) {
   const summary = result.summary;
   const status = summary.driftCount === 0 ? 'in sync' : 'drift';
@@ -162,7 +189,9 @@ function render(result) {
     `${color}${COLORS.bold}${status}${COLORS.reset} ${COLORS.dim}agent files${COLORS.reset}` +
       ` — ${summary.files} file(s) · ${summary.driftCount} drift finding(s)\n`,
   );
-  process.stdout.write(`${COLORS.dim}root${COLORS.reset} ${result.root}\n\n`);
+  process.stdout.write(`${COLORS.dim}root${COLORS.reset} ${result.root}\n`);
+  renderCodexHeadroom(result.checks?.codexSizeCap);
+  process.stdout.write('\n');
 
   for (const file of result.files) {
     const icon = file.drift.length > 0 ? COLORS.yellow : COLORS.green;

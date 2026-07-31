@@ -223,8 +223,8 @@
         }
       ],
       "excerpt": "2026-07-27 update — the current architecture is a local-first, git-backed meaning layer shared by people and AI coding agents. Round 10 permanently removed all auth + cloud data surfaces; the current route model converges browsing on Topology, writing on Workshop, maintenance on five-question Insights, and keeps old on",
-      "wordCount": 2573,
-      "updatedAt": "2026-07-28",
+      "wordCount": 2684,
+      "updatedAt": "2026-07-31",
       "linksOut": [
         "../AGENTS",
         "PRODUCT-DIRECTION",
@@ -11819,8 +11819,8 @@
         }
       ],
       "excerpt": "[v10 정체성 공식, 2026-07-18] — agent-native, human-sovereign. \"에이전트를 위한 시스템\"이 아니라 \"에이전트가 1급 사용자인, 사람과 에이전트의 공유 의미 계층\"이다. 에이전트는 신선도를 유지하는 엔진이자 최대 소비자(MCP/CLI), 사람은 의미의 최종 결정권자(평문 마크다운 · git diff · 내 디스크가 진실원). agent-memory 카테고리(기계 전용 벡터/자동추출 — 자동화 규모전에서 패배)와 위키 카테고리(사람 전용 — 즉시 부패) 둘 다와 구분되는 위치. 마케팅 훅은 에이전트 통증으로 열고, 본질은 공유 계",
-      "wordCount": 5115,
-      "updatedAt": "2026-07-30",
+      "wordCount": 5117,
+      "updatedAt": "2026-07-31",
       "linksOut": [
         "AGENT-MEMORY-POSITIONING"
       ]

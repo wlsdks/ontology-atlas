@@ -29,6 +29,10 @@ description: Live-verify a UI change across the tablet/laptop/wide breakpoint ma
 
 1. `resize_page` → 대상 URL `navigate_page` (상태 파라미터 포함 —
    `?index=expanded`, `?recent=auto` 등 검증 상태를 URL 로 재현).
+   **`?guides=off` 를 항상 함께 붙인다** (2026-07-28) — 첫 방문 안내가 스크림으로
+   화면을 덮으면 `elementFromPoint` 가 전부 스크림을 받아 겹침·차단 판정이
+   통째로 무의미해진다. 안내 자체의 반응형을 볼 때만 `?guides=reset`.
+   단일 출처: `features/guided-tour/model/first-run-seen.ts`.
 2. **rect 실측** — `evaluate_script` 로:
    - 고정/절대 요소끼리 겹침: 의심 요소들의 `getBoundingClientRect()` 를
      받아 교차 폭을 계산해 수치로 남긴다 ("겹쳐 보임"이 아니라 "18px 침범").
