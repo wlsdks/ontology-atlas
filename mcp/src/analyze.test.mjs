@@ -295,6 +295,42 @@ test('pnpm workspace — operational README sections stay out of domains and wor
   }
 });
 
+test('최상위 독립 패키지(mcp/·cli/ 류)가 요소 후보로 잡힌다 — package.json 이 판별자', () => {
+  // 2026-08-01 실측: analyze 가 src/ FSD 레이어만 걸어 이 저장소의 에이전트
+  // 표면(mcp/, cli/)이 재생성 볼트에서 통째로 빠졌다. 도구의 시야가 곧
+  // 볼트의 사정거리가 되므로, 사정거리 회귀는 여기서 잡는다.
+  const root = withRepo((r) => {
+    writeFileSync(join(r, 'package.json'), JSON.stringify({ name: 'host-app' }));
+    writeFileSync(join(r, 'README.md'), '# Host\n\n## Serving\n');
+    mkdirSync(join(r, 'src/features/serve'), { recursive: true });
+    // 독립 패키지 둘 — 제안돼야 한다.
+    mkdirSync(join(r, 'mcp'), { recursive: true });
+    writeFileSync(join(r, 'mcp', 'package.json'), '{"name":"host-mcp"}\n');
+    mkdirSync(join(r, 'cli'), { recursive: true });
+    writeFileSync(join(r, 'cli', 'package.json'), '{"name":"host-cli"}\n');
+    // package.json 없는 최상위 폴더 — 제안되면 안 된다 (덮는 것이 목적이 아니다).
+    mkdirSync(join(r, 'scripts'), { recursive: true });
+    writeFileSync(join(r, 'scripts', 'run.mjs'), '');
+    mkdirSync(join(r, 'tests'), { recursive: true });
+  });
+  try {
+    const r = analyzeRepoStructure(root);
+    const rootPkgSlugs = r.elements
+      .filter((e) => e.path === 'mcp' || e.path === 'cli')
+      .map((e) => e.slug)
+      .sort();
+    assert.deepEqual(rootPkgSlugs, ['elements/cli', 'elements/mcp']);
+    assert.equal(
+      r.elements.some((e) => e.slug.includes('scripts') || e.slug.includes('tests')),
+      false,
+    );
+    // containment spine 에도 실린다.
+    assert.ok(r.suggestedRelations.some((rel) => rel.to === 'elements/mcp'));
+  } finally {
+    rmSync(root, { recursive: true, force: true });
+  }
+});
+
 test('Ignored folders skip — node_modules / .git / dist', () => {
   const root = withRepo((r) => {
     mkdirSync(join(r, 'src/real'), { recursive: true });

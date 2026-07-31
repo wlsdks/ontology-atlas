@@ -273,6 +273,13 @@ export function analyzeRepoStructure(rootPath, options = {}) {
       skipped,
     }),
   );
+  elements.push(
+    ...detectRootPackages(rootPath, {
+      ignore,
+      domainForName,
+      existingElements: elements,
+    }),
+  );
 
   // Suggested relations form one coherent containment spine. A README-backed
   // domain sits under the project; matched capabilities/elements sit under
@@ -976,6 +983,57 @@ function detectDomainsFromReadme(rootPath) {
     }
   }
   return { domains: [], readmePath: null };
+}
+
+/**
+ * 최상위 독립 패키지 (root 바로 아래 `package.json` 을 가진 디렉토리) 를
+ * 요소 후보로 제안한다 — `mcp/`, `cli/` 같은 sibling 패키지.
+ *
+ * 왜 (2026-08-01 실측): 이 함수가 없던 동안 analyze 는 `src/` FSD 레이어와
+ * `apps/`·`packages/` 워크스페이스만 걸었고, **도구의 시야가 곧 볼트의
+ * 사정거리가 됐다** — 규격 문맥 없는 에이전트가 이 제안만으로 도그푸드
+ * 볼트를 재생성하자 이 저장소의 에이전트 표면(MCP 서버 `mcp/`, CLI `cli/`)
+ * 이 통째로 지도에서 빠졌다. path: 43개 전부가 `src/` 였다. 제안 도구의
+ * 누락은 침묵으로 전파되므로, 사정거리는 코드로 고친다 (문구만 고치면
+ * 다음 사람이 같은 볼트를 만든다).
+ *
+ * `package.json` 이 판별자다 — `scripts/`·`tests/`·`docs/` 처럼 독립 패키지
+ * 가 아닌 최상위 폴더는 제안하지 않는다 (덮는 것이 목적이 아니다).
+ */
+function detectRootPackages(rootPath, { ignore, domainForName, existingElements }) {
+  const out = [];
+  const claimed = new Set(existingElements.map((el) => el.slug));
+  let entries;
+  try {
+    entries = readdirSync(rootPath).sort();
+  } catch {
+    return out;
+  }
+  for (const entry of entries) {
+    if (ignore.has(entry) || entry.startsWith('.')) continue;
+    if (SOURCE_FOLDERS.includes(entry) || WORKSPACE_FOLDERS.includes(entry)) continue;
+    const memberPath = join(rootPath, entry);
+    let isDir;
+    try {
+      isDir = statSync(memberPath).isDirectory();
+    } catch {
+      continue;
+    }
+    if (!isDir) continue;
+    if (!existsSync(join(memberPath, 'package.json'))) continue;
+    // 슬러그는 평평하게 — 이미 잡힌 이름과 겹치면 -package 접미로 가른다.
+    const flatName = claimed.has(`elements/${entry}`) ? `${entry}-package` : entry;
+    const slug = `elements/${flatName}`;
+    claimed.add(slug);
+    out.push({
+      slug,
+      title: humanize(entry),
+      ...(domainForName(entry) ? { domain: domainForName(entry) } : {}),
+      path: entry,
+      evidence: { source: entry },
+    });
+  }
+  return out;
 }
 
 function detectWorkspaceElements(rootPath, { ignore, domainForName, skipped }) {
