@@ -42,6 +42,7 @@ import {
   resolveFlippedLabelBaselineY,
   labelZoomScale,
   measureLabelWidth,
+  measureLabelVerticalMetrics,
   scaledLabelFontSize,
 } from "../render/labels";
 import {
@@ -1639,11 +1640,17 @@ export function drawTopologyFrame(params: FrameDrawParams): void {
       isHovered,
       isHub: node.isHub,
     });
+    // 세로 범위는 **폰트에서 실측**한다 — 종전의 `ascent = fontSize` /
+    // `descent = 2`(상수) 근사는 위로 과잉·아래로 부족이었고, descent 가
+    // 상수인데 fontSize 는 줌에 따라 커져서 **확대할수록 아래가 더 샜다**.
+    // 폰트당 1회 측정 후 캐시(`measureLabelVerticalMetrics`), 실측 불가한
+    // 컨텍스트는 종전 근사로 폴백해 회귀 0.
+    const vertical = measureLabelVerticalMetrics(ctx, node.kind, labelScale);
     const boxAt = (baselineY: number) => ({
       minX: anchorX - width / 2,
       maxX: anchorX + width / 2 + markReserve,
-      minY: baselineY - fontSize,
-      maxY: baselineY + 2,
+      minY: baselineY - vertical.ascent,
+      maxY: baselineY + vertical.descent,
     });
     // E-4 — 아래가 남의 노드 도형으로 막혔으면 **이름을 버리기 전에 위로
     // 뒤집는다**. 억제만 하면 이 슬라이스가 없애려던 "이름 없는 도형"이 다시
