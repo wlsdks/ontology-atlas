@@ -77,6 +77,7 @@ import {
   VaultConflictError,
   collectNeighborRefs,
   deleteDoc,
+  drainNodeEligibilityFindings,
   ensureVaultRoot,
   extractSummaryExcerpt,
   findBacklinks,
@@ -5869,10 +5870,18 @@ function compactPostWriteMaintenance(limit = 5) {
   COMPILED_ONTOLOGY_CACHE.clear();
   const artifact = COMPILED_ONTOLOGY_CACHE.get({ includeIndexes: true });
   const ontologyAtlasIgnorePatterns = loadOntologyAtlasIgnore(VAULT_ROOT);
+  // Node-eligibility gate hand-off (2026-07-31 council). The gate runs inside
+  // `commitDoc`, so it has already fired for every door — add_concept,
+  // patch_concept, add_relation, and the batch variants alike. Draining here,
+  // at the one place a write response is assembled, is what gives batch tools
+  // the "skip per row, summarize once at the end" behaviour for free: each row
+  // writes with `includePostWriteMaintenance: false`, findings accumulate, and
+  // the batch's single closing call collects all of them.
+  const nodeEligibilityFindings = drainNodeEligibilityFindings();
   const result = queryCompiledOntology(artifact, {
     operation: 'maintenance_plan',
     limit,
-  }, { ontologyAtlasIgnorePatterns });
+  }, { ontologyAtlasIgnorePatterns, nodeEligibilityFindings });
   return {
     operation: result.operation,
     sideEffect: result.sideEffect,
