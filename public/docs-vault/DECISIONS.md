@@ -106,7 +106,7 @@
 
 **권고 (chief)** — 지렛대의 PR 순서 채택:
 PR1 `vault.mjs` 자격 게이트+경고 배선(patch/add_relation 구멍 포함)+`schema.mjs` 상수 → PR2 `construction-spec.mjs` 영어 텍스트 정본+SERVER_INSTRUCTIONS·description 파생+계약 테스트(문자열 포함 검사 수준) → PR3 내부 API-key 채팅 시스템 프롬프트 파생 → PR4 볼트 92 파일럿(강등+추출) → PR5 views 재배선 → PR6 synth-vault 실측 재도출+SPEC §6 문서화. 각 구현 PR 의 통과 조건에 결의 캘리브레이션 세션 1회(프론티어+비프론티어 — 준수율 급락 규칙은 코드 방어로 강등). CLI `--help` 는 포인터 한 줄(복제 아닌 참조). AGENTS.md 에는 규칙 복제 안 함(32KiB).
-**서명 (accountable: 소유자)**: 대기 — 특히 ① 92를 「쪼개기」가 아니라 「강등+추출」로 고친다는 것 ② 고정 상한을 두지 않는다는 것이 소유자 원 발화와 다르므로 명시 확인 필요. 결의 미결 질의 1건도 소유자 몫: 경고 발화 빈도(문턱 돌파 1회+배수 vs 매번).
+**서명 (accountable: 소유자)**: 승인 (2026-07-31, 실행 지시로) — ① 92는 「강등+추출」, ② 「고정 상한 없음: 자격 게이트가 본체」 둘 다 소유자가 명시 확인 (*"「12개 상한」은 철회됐다 — 그걸 만들지 마라 … 규격의 본체는 노드 자격 게이트다"*). 미결 질의(경고 발화 빈도)는 소유자 답 없음 → 결의 기본값(문턱 돌파 1회+배수)으로 구현하고 캘리브레이션 세션에서 재검한다.
 
 **기록된 반대** (지킴이 1R, 가장 강함): *"N&M 2~12 는 여전히 유효한 규범이고(OntoQA·OQuaRE 가 branching factor 를 1급 메트릭으로 유지, schema.org Thing 9·GO 3·SNOMED top 19), 대형 온톨로지도 한 부모 밑을 평면으로 넓히지 않는다 — 개수 자체에 경고가 있어야 한다"* — **반증 조건**: 자격 게이트(참조 해소·범주 오류·provenance) 전부 가동된 뒤에도 **실노드로만 이루어진 부모가 20+ 자식으로 자라며 그 목록을 사람도 에이전트도 다루지 못하는 사례**가 관측되면 개수 기반 신호를 재상정한다 — **재검토**: PR4·PR5 완료 후 첫 성장/유지보수 리포트.
 
@@ -115,7 +115,7 @@ PR1 `vault.mjs` 자격 게이트+경고 배선(patch/add_relation 구멍 포함)
 
 **출처 (주요)**: [N&M Ontology 101](https://protege.stanford.edu/publications/ontology_development/ontology101.pdf) · [schema.org CreativeWork](https://schema.org/CreativeWork) · [OntoQA](https://www.semanticscholar.org/paper/e93140d7bc70667f31ebf16387dbd0e86d0fa4eb) · [OQuaRE](https://github.com/tecnomod-um/oquare) · [OOPS! 카탈로그](https://oops.linkeddata.es/catalogue.jsp) · [멱법칙 클래스 관계 arXiv cs/0305037](https://arxiv.org/pdf/cs/0305037) · [Zep entity types](https://help.getzep.com/customizing-graph-structure) · [LlamaIndex SchemaLLMPathExtractor](https://docs.llamaindex.ai/en/stable/examples/property_graph/property_graph_advanced/) · [GraphRAG community detection](https://www.mintlify.com/microsoft/graphrag/concepts/community-detection) · [Palantir ontology best practices](https://www.palantir.com/docs/foundry/ontology/ontology-best-practices) · IFEval-FC(arXiv 2509.18420) · LLM-KG survey(arXiv 2510.20345)
 
-**상태**: 유효 (서명 대기)
+**상태**: 유효 (승인 — 실행 개시, PR1 부터 순서 고정)
 
 ---
 
