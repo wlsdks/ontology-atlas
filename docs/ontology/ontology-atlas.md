@@ -8,6 +8,7 @@ domains: []
 capabilities: []
 elements: []
 contains: [domains/agent-integration, domains/graph-modeling, domains/local-vault-management, domains/onboarding-and-shell, domains/project-portfolio, domains/topology-navigation]
+created_by: human
 ---
 
 ## 정의

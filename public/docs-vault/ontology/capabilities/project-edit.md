@@ -3,7 +3,8 @@ slug: capabilities/project-edit
 kind: capability
 title: Project Full Edit
 domain: domains/project-portfolio
-elements: [elements/src/views/project-editor]
+elements: [elements/project-editor]
+created_by: agent:unknown
 ---
 
 ## 정의

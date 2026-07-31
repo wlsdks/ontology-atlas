@@ -3,7 +3,8 @@ slug: capabilities/taxonomy
 kind: capability
 title: Kind Taxonomy Management
 domain: domains/graph-modeling
-elements: [elements/src/entities/category, elements/src/entities/status]
+elements: [elements/category, elements/status]
+created_by: agent:unknown
 ---
 
 ## 정의

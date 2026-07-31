@@ -4,6 +4,7 @@ kind: capability
 title: Project Quick Edit
 domain: domains/project-portfolio
 elements: []
+created_by: agent:unknown
 ---
 
 ## 정의

@@ -5,7 +5,8 @@ title: Local Vault & Data Source Management
 display_ko: 로컬 볼트 및 데이터소스 관리
 display_en: Local Vault & Data Source Management
 capabilities: [capabilities/data-source-mode, capabilities/docs-vault-local, capabilities/project-data-source, capabilities/vault-sample-source]
-elements: [elements/src/entities/docs-vault, elements/src/entities/local-fs-handle, elements/src/views/docs-vault, elements/src/views/git, elements/src/widgets/atlas-git-panel, elements/src/widgets/docs-vault]
+elements: [elements/atlas-git-panel, elements/docs-vault-entity, elements/docs-vault-view, elements/docs-vault-widget, elements/git, elements/local-fs-handle]
+created_by: human
 ---
 
 ## 정의

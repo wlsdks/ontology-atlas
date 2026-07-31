@@ -4,6 +4,7 @@ kind: capability
 title: Locale Switching
 domain: domains/onboarding-and-shell
 elements: []
+created_by: agent:unknown
 ---
 
 ## 정의

@@ -3,7 +3,8 @@ slug: capabilities/project-data-source
 kind: capability
 title: Active Project Resolution
 domain: domains/local-vault-management
-elements: [elements/src/entities/project]
+elements: [elements/project]
+created_by: agent:unknown
 ---
 
 ## 정의

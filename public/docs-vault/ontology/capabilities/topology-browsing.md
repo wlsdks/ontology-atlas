@@ -3,7 +3,8 @@ slug: capabilities/topology-browsing
 kind: capability
 title: Topology Map Rendering & Search
 domain: domains/topology-navigation
-elements: [elements/src/widgets/global-search, elements/src/widgets/search-palette, elements/src/widgets/topology-controls, elements/src/widgets/topology-index-panel, elements/src/widgets/topology-map-v2]
+elements: [elements/global-search, elements/search-palette, elements/topology-controls, elements/topology-index-panel, elements/topology-map-v2]
+created_by: agent:unknown
 ---
 
 ## 정의

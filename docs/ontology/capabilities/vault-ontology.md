@@ -3,7 +3,8 @@ slug: capabilities/vault-ontology
 kind: capability
 title: Vault Ontology Schema Authoring
 domain: domains/graph-modeling
-elements: [elements/src/entities/knowledge-graph, elements/src/entities/ontology-class]
+elements: [elements/knowledge-graph, elements/ontology-class]
+created_by: human
 ---
 
 ## 정의

@@ -3,7 +3,8 @@ slug: capabilities/ontology-blocks
 kind: capability
 title: Studio Relation Blocks
 domain: domains/graph-modeling
-elements: [elements/src/views/ontology-studio]
+elements: [elements/ontology-studio]
+created_by: agent:unknown
 ---
 
 ## 정의

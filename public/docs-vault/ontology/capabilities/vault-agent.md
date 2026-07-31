@@ -3,7 +3,8 @@ slug: capabilities/vault-agent
 kind: capability
 title: Agent Connect & Vault Access
 domain: domains/agent-integration
-elements: [elements/src/widgets/agent-connect, elements/src/widgets/vault-agent-panel]
+elements: [elements/agent-connect, elements/vault-agent-panel]
+created_by: human
 ---
 
 ## 정의

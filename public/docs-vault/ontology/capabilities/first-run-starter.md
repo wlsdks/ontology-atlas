@@ -3,7 +3,8 @@ slug: capabilities/first-run-starter
 kind: capability
 title: First-Run Starter Vault
 domain: domains/onboarding-and-shell
-elements: [elements/src/views/first-run]
+elements: [elements/first-run]
+created_by: agent:unknown
 ---
 
 ## 정의

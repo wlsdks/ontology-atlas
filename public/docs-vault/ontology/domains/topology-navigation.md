@@ -5,7 +5,8 @@ title: Topology Map Navigation
 display_ko: 토폴로지 지도 탐색
 display_en: Topology Map Navigation
 capabilities: [capabilities/topology-browsing]
-elements: [elements/src/widgets/domain-capacity-bar, elements/src/widgets/full-detail-a1, elements/src/widgets/gesture-hint, elements/src/widgets/global-search, elements/src/widgets/recent-node-row, elements/src/widgets/search-hint, elements/src/widgets/search-palette, elements/src/widgets/shortcut-sheet, elements/src/widgets/topology-controls, elements/src/widgets/topology-index-panel, elements/src/widgets/topology-map-v2]
+elements: [elements/domain-capacity-bar, elements/full-detail-a1, elements/gesture-hint, elements/global-search, elements/recent-node-row, elements/search-hint, elements/search-palette, elements/shortcut-sheet, elements/topology-controls, elements/topology-index-panel, elements/topology-map-v2]
+created_by: human
 ---
 
 ## 정의

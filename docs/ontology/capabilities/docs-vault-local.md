@@ -3,7 +3,8 @@ slug: capabilities/docs-vault-local
 kind: capability
 title: Local Folder Mounting
 domain: domains/local-vault-management
-elements: [elements/src/entities/docs-vault, elements/src/entities/local-fs-handle, elements/src/views/docs-vault, elements/src/widgets/docs-vault]
+elements: [elements/docs-vault-entity, elements/docs-vault-view, elements/docs-vault-widget, elements/local-fs-handle]
+created_by: human
 ---
 
 ## 정의

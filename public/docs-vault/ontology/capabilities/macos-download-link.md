@@ -3,7 +3,8 @@ slug: capabilities/macos-download-link
 kind: capability
 title: macOS Download Decision
 domain: domains/onboarding-and-shell
-elements: [elements/src/views/download]
+elements: [elements/download]
+created_by: agent:unknown
 ---
 
 ## 정의

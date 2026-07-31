@@ -5,7 +5,8 @@ title: Graph Modeling & Ontology Schema
 display_ko: 그래프 모델링 및 온톨로지 스키마
 display_en: Graph Modeling & Ontology Schema
 capabilities: [capabilities/ontology-blocks, capabilities/taxonomy, capabilities/vault-ontology]
-elements: [elements/src/entities/category, elements/src/entities/knowledge-graph, elements/src/entities/ontology-class, elements/src/entities/status, elements/src/views/ontology-edit-redirect, elements/src/views/ontology-insights, elements/src/views/ontology-redirect, elements/src/views/ontology-studio]
+elements: [elements/category, elements/knowledge-graph, elements/ontology-class, elements/ontology-edit-redirect, elements/ontology-insights, elements/ontology-redirect, elements/ontology-studio, elements/status]
+created_by: human
 ---
 
 ## 정의

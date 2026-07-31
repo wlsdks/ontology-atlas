@@ -2518,3 +2518,94 @@ PO OS 는 그 두 행에 0 이 있으면 빌드 불가라고 명시한다.
 **재검토**: 별도 모바일 표면이 로드맵에 오를 때.
 
 **상태**: 유효.
+
+---
+
+## 2026-08-01 — 슬러그는 평평한 식별자다 — R15 「element slug 두 패턴」 폐기, 쓰기 관문이 경로형 슬러그를 거부하고, CLI add 도 저작 스탬프를 찍는다
+
+**소집**: 단독 판정 (소유자 위임 — "판정하고 해결까지", 재생성 볼트 결함 재검) ·
+**트리거**: 규격 문맥 0인 에이전트의 도그푸드 볼트 재생성이 「경로형 `elements[]`
+참조 227 → 0」을 보고했으나, 실측 결과 그 성과는 **옮겨간 것**이었다 — 요소 43개
+전부의 슬러그가 경로(`elements/src/views/home` 류)였고, 참조를 막는 관문은
+있는데 슬러그를 재는 관문은 없었다.
+
+**관측된 피해**: 웹 파생은 슬러그 꼬리(tail)를 노드 정체성으로 쓴다
+(`derive-ontology-from-vault.ts` `deriveDocNode`). basename 이 같은
+`elements/src/{entities,views,widgets}/docs-vault` 3개가 화면에서 1개로 접혀
+컴파일 68 vs 화면 66, 관계 4개 소실. 컴파일러 스스로 `ambiguous-alias` 경고를
+냈다 — 채택 즉시 시스템 자신의 경고를 울리는 관습은 지원되는 관습이 아니다.
+
+**결정 (A — 슬러그는 평평한 식별자다)**:
+
+1. **규격**: 도구가 만드는 노드의 슬러그는 `folderForKind(kind)` + 평평한 이름.
+   위치는 `path:` 가 나른다 — 「경로는 개념의 증거이지 개념이 아니다」(2026-07-31
+   구축 규격)를 정체성에 적용한 것. 근거 셋: ① 꼬리를 정체성/별칭으로 쓰는 표면이
+   셋(웹 파생 · MCP unique-tail 해석 · 딥링크)이고 경로형 슬러그는 그 셋을 모두
+   충돌시킨다 ② 슬러그 속 계층은 `domain:`/`elements:` 그래프의 중복 진실원이다
+   (forbidden.md 의 이중 진실원 금지) ③ 재생성이 증명했듯 약한 모델은 제안문을
+   그대로 따른다 — 고칠 곳은 제안 생성기와 관문이다.
+2. **게이트 (hard error — 같은 변경에서)**: `flatSlugIssue(kind, slug)` 를
+   `mcp/src/schema.mjs` + `cli/src/lib/schema.mjs` 미러에 두고
+   (`FLAT_SLUG_CASES` 계약이 동일성 강제), 쓰기 문 전부에 배선 — MCP `writeDoc`
+   (add_concept/add_concepts/absorb 상속) · `rename_concept` · `reclassify_concept` ·
+   CLI `write-vault.writeDoc`(add/import 상속). 팬아웃 게이트의 「막지 않는다」
+   원칙은 의미 판단용이고 이것은 형태 유효성(중복 슬러그 급)이라 막는다.
+   **사용자 볼트 자체의 중첩(`services/auth/api`)은 소관 밖** — 스키마 폴더로
+   시작하는 슬러그만 잰다. 로컬-퍼스트: 사용자 디스크 구조는 존중.
+3. **유도원 수정** (이 판정에서 가장 값진 발견): 경로형 슬러그는 에이전트의
+   창작이 아니라 **서버 자신의 제안**이었다. ① `analyze_repo_structure` 가
+   `slug: elements/${relative(rootPath, subPath)}` 를 그대로 제안했고 볼트의
+   43개 슬러그는 그 출력과 일치한다 ② `infer_imports` 의 `moduleOf` 가 같은
+   path-style 로 "parity" 를 맞추고 있었다 ③ `mcp/README.md` R15 「Element
+   slug — two valid patterns」이 path-style 을 문서로 축복했고 ④ CLI add 의
+   hint 가 그 문서를 인용했다. 넷 다 수정 — 제안은 평평한 이름 + `path` 필드,
+   basename 충돌 시 레이어 단수형 접미(`docs-vault-entity/-view/-widget`).
+4. **볼트 수리**: 43개 전부 `rename_concept` 경유 평탄화, `pnpm docs-vault:build`
+   재생성. 화면 68 == 컴파일 68, 관계 146 복원, `health` healthy.
+5. **부수 발견 수리**: `redirectBacklinks` 의 tail-suffix 절이 **임의 문자열
+   프론트매터 값**을 다시 쓰고 있었다 — 평탄화 rename 중 다른 노드의
+   `path: src/entities/docs-vault` 가 `…/docs-vault-widget` 으로 오염(pathDrift
+   3건 실측). 참조 슬롯(`domain:` + graph array 키)만 다시 쓰도록 축소 + 회귀
+   테스트.
+
+**함께 결정 (소유자 위임 지시 이행)**:
+
+- **결함을 요구하던 게이트 3건 수술**: `derived-node-document` ·
+  `graph-truth-parity` 계약이 번들 샘플에 *이름뿐인 노드 ≥1 · 중복 후보 고정
+  11건 · 문서 없는 파생 노드 ≥1* 을 요구했다 — 규격을 지킨 볼트가 빨간불이
+  되는 게이트는 결함을 보존한다. 「파생 노드가 존재하면 문서 노드라 부르지
+  않는다」 조건부 + **합성 표본**(ghost 문서 1장)으로 바꿔 거짓말 차단은
+  유지하고 결함 강제는 삭제 (`launch-docs-current` demoNote 수술과 같은 꼴).
+- **`created_by` 두 문 정합 + 백필**: 2026-07-31 원장의 「CLI=미지(생략)」를
+  **개정**한다 — 실측상 에이전트는 편한 문(CLI)을 골라 출처 없는 노드를 냈다.
+  CLI `add` 도 MCP `add_concept` 과 같은 기본값(`agent:<heartbeat|unknown>`)을
+  찍고, 사람은 `--created-by human` 으로 선언한다(heartbeat 신원 재사용, 새
+  체계 0). 재생성 볼트 68개 전부 스탬프: **human 10** = 사람 판단이 성립
+  조건인 노드 — 프로젝트 정의 1(`ontology-atlas`) + 도메인 경계 6 + 방향 약속
+  capability 3(`vault-ontology`=프론트매터가 곧 그래프 ·
+  `docs-vault-local`=로컬-퍼스트 · `vault-agent`=에이전트 네이티브 정체성);
+  **agent:unknown 58** = 코드에서 유도 가능한 전부(재생성 에이전트 저작은
+  사실이나 이름은 heartbeat 부재로 미상 — 모름은 모름으로). 소급 추론 금지
+  (#801)는 기존 볼트 얘기고 새로 만든 볼트는 값이 사실이다(2026-07-31 원장
+  재생성 지시가 이미 명시). 게이트:
+  `tests/contract/dogfood-slug-provenance.contract.test.ts` (평면성 전수 +
+  created_by 전수, 개수는 못 박지 않음).
+
+**기록된 반대 (진 쪽 — B: 슬러그는 경로일 수 있다)**: 슬러그는 이미 볼트 상대
+파일 경로이고(`slugToPath`), 로컬-퍼스트는 사용자 폴더 구조 존중을 약속한다 —
+진짜 버그는 웹 파생의 **꼬리 접기**이며, 정체성을 전체 슬러그로 고치면 중첩된
+사용자 볼트의 basename 충돌(예: `services/auth/api` vs `services/billing/api`)
+까지 해결된다. A 는 이 읽기-경로 결함을 남긴다. — **반증 조건**: 실사용자
+볼트에서 스키마 폴더 밖 중첩 + 꼬리 충돌로 화면 병합이 관측되면 B 의 파생
+수리(전체 슬러그 정체성)가 A 와 무관하게 필요해진다. 그때 이 기록에서 시작한다
+(현재는 `ambiguous-alias` 경고가 그 관측 채널이다).
+
+**적용 규칙**: 헌장 우선(이중 진실원 금지 · 로컬-퍼스트) · 최소 슬라이스(파생
+정체성 재설계 대신 쓰기 관문 + 생성기 수정) · 규격은 같은 변경에서 게이트로.
+
+**서명 (accountable)**: stark (소유자 지시 "판정하고 해결까지 하라. 이슈 없도록")
+
+**재검토**: 다음 볼트 재생성(쇼핑몰 샘플 포함) 때 새 볼트가 평평한 슬러그로
+나오는지 — 유도원 수정의 직접 검증이다.
+
+**상태**: 유효

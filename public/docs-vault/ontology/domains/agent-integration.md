@@ -5,7 +5,8 @@ title: AI Agent Integration
 display_ko: AI 에이전트 연동
 display_en: AI Agent Integration
 capabilities: [capabilities/vault-agent]
-elements: [elements/src/widgets/agent-connect, elements/src/widgets/vault-agent-panel]
+elements: [elements/agent-connect, elements/vault-agent-panel]
+created_by: human
 ---
 
 ## 정의

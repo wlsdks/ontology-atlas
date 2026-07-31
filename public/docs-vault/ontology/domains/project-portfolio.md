@@ -5,7 +5,8 @@ title: Project Portfolio Management
 display_ko: 프로젝트 포트폴리오 관리
 display_en: Project Portfolio Management
 capabilities: [capabilities/project-edit, capabilities/project-quick-edit, capabilities/project-share]
-elements: [elements/src/entities/project, elements/src/views/project-detail, elements/src/views/project-editor, elements/src/views/project-selector, elements/src/widgets/project-drawer]
+elements: [elements/project, elements/project-detail, elements/project-drawer, elements/project-editor, elements/project-selector]
+created_by: human
 ---
 
 ## 정의
