@@ -63,7 +63,7 @@ import type { ClusterChip } from "../model/density-gate";
 import { drawDiffractionSpike, drawRealmCosmos, drawStarDust, type DustPoint } from "../render/starfield";
 import { isEdgeCulled, isNodeCulled, isPassthroughEdge } from "../render/viewport-cull";
 import { draw as tracesDraw } from "../render/traces";
-import { drawPulses, edgePairKey, selectEgoContainsComets, type Pulse } from "../render/edge-fireflies";
+import { drawPulses, edgePairKey, selectAmbientDependsComets, selectEgoContainsComets, type Pulse } from "../render/edge-fireflies";
 import type { TopologyV2Tokens } from "../tokens/read-topology-v2-tokens";
 import { worldToScreen } from "./topology-camera-math";
 
@@ -768,6 +768,25 @@ export function drawTopologyFrame(params: FrameDrawParams): void {
           ),
         );
 
+  // 상시 앰비언트 `depends` 코멧 캡 — 형제 갈래(contains)가 이미 갖는 24 상한을
+  // 빠진 쪽에 적용한다. **#512(소유자의 앰비언트 복원)를 재뒤집는 게 아니다**:
+  // 혜성은 여전히 상시로, 포커스 무관하게, 같은 속도로 흐른다. 다만 element
+  // 티어에서 화면이 depends 로 찰 때 **동시에 흐르는 점 개수에 천장이 없던**
+  // 것을 형제와 같은 결정론 랭킹으로 막는다.
+  //
+  // 입력은 "이 프레임에 실제로 그려질 depends 엣지" 다 — 드로우 루프와 같은
+  // 두 게이트(밀도 게이트 · 티어 알파)를 통과한 것만 캡 슬롯을 차지해야,
+  // 안 보이는 엣지가 슬롯을 물고 보이는 엣지가 코멧을 잃는 일이 없다.
+  const ambientDependsComets = selectAmbientDependsComets(
+    world.edges.filter(
+      (edge) =>
+        edge.kind === "depends" &&
+        !clusteredIds.has(edge.sourceId) &&
+        !clusteredIds.has(edge.targetId) &&
+        edgeTierAlpha(effectiveAlphaById.get(edge.sourceId) ?? 1, effectiveAlphaById.get(edge.targetId) ?? 1) > 0.02,
+    ),
+  );
+
   for (const kind of ["contains", "depends"] as const) {
     for (const edge of world.edges) {
       if (edge.kind !== kind) continue;
@@ -846,6 +865,8 @@ export function drawTopologyFrame(params: FrameDrawParams): void {
           reducedMotion,
           level: edge.level,
           containsCometEligible: kind === "contains" ? egoContainsComets.has(edgePairKey(edge.sourceId, edge.targetId)) : undefined,
+          dependsCometEligible:
+            kind === "depends" ? ambientDependsComets.has(edgePairKey(edge.sourceId, edge.targetId)) : undefined,
         },
         {
           edgeContains: tokens.edgeContains,
@@ -1359,13 +1380,15 @@ export function drawTopologyFrame(params: FrameDrawParams): void {
       ctx,
       chipDrawInput,
       {
-        // rest = 조용한 중립 pill(border=nodeStrokeDomain) — 진짜 노드 선택
-        // 인디고와 경쟁 안 함. `＋`=인디고, 숫자=중립 numeralFace(포커스 중에도
-        // 포커스 노드가 attention winner). hover 에서만 인디고로 깨어난다.
+        // rest = **크롬은 콘텐츠보다 어둡다**(2026-07-31 위계석 실측: 칩 피크
+        // 102.5 대 자식 28.4 = 3.6배 역전). 칩 전용 rest 단은 램프 맨 아래이고
+        // (3.01/3.14:1) 어느 노드 stroke 보다 어둡다. rest 에서 인디고를 쓰지
+        // 않는 것이 핵심 — 인디고는 단일 악센트라 크롬이 상시로 쓰면 사용자가
+        // 부른 목적물과 경쟁한다. hover 에서 인디고로 깨어난다(아래 hover*).
         surface: tokens.nodeFillDim,
-        border: tokens.nodeStrokeDomain,
-        plusInk: tokens.indigo,
-        numeralInk: tokens.numeralFace,
+        border: tokens.clusterChipBorderRest,
+        plusInk: tokens.clusterChipInkRest,
+        numeralInk: tokens.clusterChipInkRest,
         tether: tokens.edgeContains,
         hoverSurface: tokens.nodeFillCapability,
         hoverBorder: tokens.indigo,

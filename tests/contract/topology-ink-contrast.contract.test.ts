@@ -77,6 +77,22 @@ describe("topology ink contrast contract", () => {
     }
   });
 
+  it("크롬(클러스터 칩)은 rest 에서 어떤 노드보다 어둡다", () => {
+    // 위계석 실물 실측(2026-07-31): 칩 피크 휘도 102.5 대 자식 노드 28.4 =
+    // **3.6배 역전**. 지도의 일은 연결과 개념을 보여주는 것인데 요약 버튼이
+    // 가장 밝았다. rest 에서 칩은 램프 맨 아래 단이어야 한다.
+    const chip = ["topology-v2-cluster-chip-border-rest", "topology-v2-cluster-chip-ink-rest"].map(
+      (name) => contrast(readToken(name), CANVAS),
+    );
+    const dimmestNode = contrast(readToken(NODE_LADDER[0]), CANVAS);
+    for (const ratio of chip) {
+      expect(ratio).toBeLessThan(dimmestNode);
+      // 그래도 컨트롤이라 WCAG 1.4.11 하한은 지킨다 — 어둡게 하되 못 찾게
+      // 만들지는 않는다.
+      expect(ratio).toBeGreaterThanOrEqual(MIN_CONTRAST);
+    }
+  });
+
   it("관문 스테이지가 엣지 잉크를 **강등**하지 않는다", () => {
     // 구 `html[data-gateway-stage]` 블록은 워크벤치가 어둡던 시절 엣지를
     // 올려 주는 오버라이드였다. 기본값이 3:1 위로 올라간 뒤로는 그 값들이

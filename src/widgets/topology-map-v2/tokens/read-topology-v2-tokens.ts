@@ -35,6 +35,10 @@ export interface TopologyV2Tokens {
   amberHub: string;
   numeralShadow: string;
   numeralFace: string;
+  /** 클러스터 칩 rest 보더 — 크롬은 콘텐츠보다 어둡다(램프 맨 아래 단). */
+  clusterChipBorderRest: string;
+  /** 클러스터 칩 rest 잉크(`＋`·숫자 공용) — rest 에서는 인디고를 쓰지 않는다. */
+  clusterChipInkRest: string;
   nodeSheenTint: string;
   nodeSheenBlend: number;
   /** Canvas-emphasis slice — project hexagon's inner offset hairline (double-hairline "machined bezel", spec §A1). */
@@ -262,6 +266,8 @@ const TOKEN_SPECS: readonly TokenSpec[] = [
   { key: "amberHub", cssVar: "--topology-v2-amber-hub", kind: "color" },
   { key: "numeralShadow", cssVar: "--topology-v2-numeral-shadow", kind: "color" },
   { key: "numeralFace", cssVar: "--topology-v2-numeral-face", kind: "color" },
+  { key: "clusterChipBorderRest", cssVar: "--topology-v2-cluster-chip-border-rest", kind: "color" },
+  { key: "clusterChipInkRest", cssVar: "--topology-v2-cluster-chip-ink-rest", kind: "color" },
   { key: "nodeSheenTint", cssVar: "--topology-v2-node-sheen-tint", kind: "color" },
   { key: "nodeSheenBlend", cssVar: "--topology-v2-node-sheen-blend", kind: "number" },
   { key: "projectHairlineInner", cssVar: "--topology-v2-project-hairline-inner", kind: "color" },

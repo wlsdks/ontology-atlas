@@ -146,6 +146,13 @@ export interface TraceDrawState {
    * 유지한다. `depends` 엣지는 이 필드를 쓰지 않는다(항상 기존 규칙).
    */
   containsCometEligible?: boolean;
+  /**
+   * 상시 앰비언트 `depends` 코멧의 캡 통과 여부. 형제 갈래(contains)의
+   * `containsCometEligible` 과 같은 문법 — false 면 파티클 없이 본체 파선만
+   * 그린다. 생략 시 `true`(캡 없던 종전 동작)라 호출부가 캡을 안 넘겨도
+   * 회귀하지 않는다.
+   */
+  dependsCometEligible?: boolean;
 }
 
 export interface TraceTokens {
@@ -299,6 +306,9 @@ export function draw(ctx: CanvasRenderingContext2D, state: TraceDrawState, token
     // 위상 전진은 `updateParticles`(reduced-motion 이면 정지)가 소유하므로
     // reduced-motion 사용자에겐 여기서도 미표시 → "아무 것도 안 움직인다" 유지.
     if (state.reducedMotion === true) return;
+    // 캡 미통과 엣지는 파선 본체만 남기고 파티클을 그리지 않는다 — 상시성·
+    // 속도·포커스 무관성은 그대로이고 **동시에 흐르는 점 개수만** 유계가 된다.
+    if (state.dependsCometEligible === false) return;
 
     // comet tail — three shrinking dots trailing the live pulse position,
     // thinning toward hairline dust as altitude rises rather than fading via

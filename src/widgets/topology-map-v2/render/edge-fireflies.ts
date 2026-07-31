@@ -82,7 +82,34 @@ export function selectEgoContainsComets(
   incidentContainsEdges: readonly { sourceId: string; targetId: string }[],
   limit: number = EGO_CONTAINS_COMET_LIMIT,
 ): ReadonlySet<string> {
-  const ranked = [...incidentContainsEdges].sort((a, b) => {
+  return rankCometEdges(incidentContainsEdges, limit);
+}
+
+/**
+ * 같은 캡을 **상시 앰비언트 `depends` 코멧**에도 건다 (2026-07-31).
+ *
+ * `contains` 갈래는 위 처방 E 로 24개 상한을 갖는데 `depends` 갈래에는 상한도
+ * 랭킹도 없었다 — 오늘은 뷰포트 컬링과 티어 게이트가 사실상 상한 노릇을 하지만,
+ * element 티어에서 화면이 `depends` 로 차면 동시에 흐르는 점 개수에 천장이 없다.
+ *
+ * ⚠️ **이건 #512(소유자의 앰비언트 복원)를 재뒤집는 게 아니다.** 혜성은 여전히
+ * 상시로, 포커스와 무관하게, 같은 속도로 흐른다. 형제 갈래에 이미 있는 **승인된
+ * 패턴을 빠진 쪽에 적용**하는 것뿐이다. 구 Guardian A1("코멧을 ego 한정으로")은
+ * 소유자가 명시적으로 되돌렸고 그 결정은 그대로 선다.
+ */
+export function selectAmbientDependsComets(
+  visibleDependsEdges: readonly { sourceId: string; targetId: string }[],
+  limit: number = EGO_CONTAINS_COMET_LIMIT,
+): ReadonlySet<string> {
+  return rankCometEdges(visibleDependsEdges, limit);
+}
+
+/** 결정론 랭킹 — `fireflySeed` 오름차순, 동점은 pair key 사전순(RNG 상태 없음). */
+function rankCometEdges(
+  edges: readonly { sourceId: string; targetId: string }[],
+  limit: number,
+): ReadonlySet<string> {
+  const ranked = [...edges].sort((a, b) => {
     const seedDiff = fireflySeed(a.sourceId, a.targetId) - fireflySeed(b.sourceId, b.targetId);
     if (seedDiff !== 0) return seedDiff;
     const ka = edgePairKey(a.sourceId, a.targetId);
