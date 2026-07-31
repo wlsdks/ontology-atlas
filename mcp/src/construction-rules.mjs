@@ -59,9 +59,24 @@
  *
  * A first draft of this comment claimed the chat panel imports the constant.
  * It cannot. Writing "single source" over a duplicate does not make it one —
- * only the gate does. That gate is
- * `tests/contract/construction-rules.contract.test.ts`, and until it exists this
- * file is a proposal, not a source of truth.
+ * only the gate does.
+ *
+ * ## Status (2026-07-31, PR1 of six)
+ *
+ * The **gate-logic half is now wired**: `mcp/src/vault.mjs` imports
+ * {@link looksLikePath} and the message builders below from this module, and it
+ * runs them inside the one write primitive that `add_concept`, `patch_concept`,
+ * and `add_relation` all pass through. So for the code-defense channel this file
+ * is a real source of truth — `mcp/src/write-path-gate.test.mjs` fails if a door
+ * routes around it, and `tests/contract/vault-schema.contract.test.ts` fails if
+ * the two packages' thresholds drift.
+ *
+ * The **prompt half is not yet wired**: `CONSTRUCTION_RULES_EN`,
+ * `ELEMENT_NAMING_RULE_EN`, `ELEMENT_NAMING_RULE_BATCH_EN`, and
+ * `CHAT_RULES_DELTA_EN` still have no consumer and no contract test. Those are
+ * PR2 (`SERVER_INSTRUCTIONS` / tool descriptions) and PR3 (in-app chat prompt).
+ * Until then, treat the four prompt strings as drafts and the four functions
+ * below as canon.
  */
 
 /**
@@ -77,6 +92,8 @@
  * vault feel hostile and would push agents to work around the tool. The gate
  * reports; the human and the maintenance queue decide.
  */
+import { VAULT_KIND_SCHEMA } from './schema.mjs';
+
 export const CONSTRUCTION_RULES_EN = `## Construction rules — read before add_concept / add_concepts / patch_concept
 
 1. BEFORE adding a child to a parent, call get_concept(parentSlug) and read \`neighbors\`.
@@ -137,6 +154,46 @@ export function looksLikePath(title) {
   return /\.(m?[jt]sx?|py|rb|go|rs|java|kt|swift|c|cc|cpp|h|hpp|css|scss|json|ya?ml|toml|sh)$/i.test(t);
 }
 
+/**
+ * Vault slugs are slash-separated too (`capabilities/auth`), so {@link looksLikePath}
+ * alone cannot separate a file path from a legitimate slug reference — its slash
+ * clause is written for *titles*, where a slash is always wrong.
+ *
+ * The kind folders the schema itself creates are the discriminator: a reference
+ * that starts inside one of them is claiming to be a node, anything else that
+ * still looks like a path is claiming to be a file.
+ */
+const VAULT_FOLDER_SEGMENTS = new Set(
+  Object.values(VAULT_KIND_SCHEMA)
+    .map((schema) => schema.folder)
+    .filter(Boolean)
+    .map((folder) => folder.replace(/\/$/, '')),
+);
+
+/**
+ * Is this graph-array entry evidence (a file) rather than a node reference?
+ *
+ * ⚠️ Read the contract carefully: **this never decides whether something is a
+ * defect.** Reference resolution decides that — the caller only asks this
+ * question about entries that already failed to resolve to any vault node. All
+ * this changes is which of the two repairs the message names first. So the
+ * failure mode of a wrong answer here is a slightly misaimed sentence, not a
+ * false alarm, which is why a heuristic is acceptable at all.
+ *
+ * A vault nested under folders of its own (`services/auth/api.md`) can land on
+ * the evidence branch when its reference is *also* broken. That is a wording
+ * imprecision on an already-broken reference, and both branches tell the reader
+ * to fix the same thing.
+ */
+export function looksLikeEvidencePath(ref) {
+  if (!looksLikePath(ref)) return false;
+  const trimmed = String(ref).trim();
+  if (trimmed.includes('\\')) return true;
+  const segments = trimmed.split('/');
+  if (segments.length === 1) return true; // bare "absorb.mjs" — the extension clause fired
+  return !VAULT_FOLDER_SEGMENTS.has(segments[0]);
+}
+
 /** Warning literal for {@link looksLikePath}. Advisory — never blocks the write. */
 export function pathShapedTitleMessage(title) {
   return `title "${title}" looks like a file path, not a concept name — elements name a role, not a location. If this file plays a distinct role, rename the title to that role and move the path into path:. If it doesn't, patch_concept the parent capability's body instead of adding another file-mirror node.`;
@@ -164,4 +221,59 @@ export function fanoutGrowthMessage({ slug, addedCount, newCount }) {
  */
 export function denseParentActionMessage({ parentSlug, count, childKind, p90, domain }) {
   return `"${parentSlug}" has ${count} direct ${childKind} children, above this vault's typical fan-out (p90=${p90}) for ${childKind} — call get_concept("${parentSlug}") and check whether 3+ children share a name/path prefix. If so, call add_concept({kind:"capability", domain:"${domain}", title:"<name the shared behavior>"}) once, then patch_concept each matching child to point at it. If no shared behavior exists, leave this node as-is — do not fold on count alone.`;
+}
+
+/**
+ * Render a ref list without turning the message into a wall.
+ *
+ * `cli-developer-entry` carried 92 of these. A message that pastes all 92 is not
+ * read by a person and eats an agent's context for no added decision — the count
+ * plus a handful of examples is what the reader acts on.
+ */
+function sampleRefs(refs, limit) {
+  const shown = refs.slice(0, limit).map((ref) => `"${ref}"`).join(', ');
+  const rest = refs.length - Math.min(refs.length, limit);
+  return rest > 0 ? `${shown} and ${rest} more` : shown;
+}
+
+/**
+ * Warning literal for a graph-array entry that resolves to no vault node.
+ *
+ * Two branches, deliberately, and deliberately **without** a ready-made
+ * `proposedAction`. An earlier shape of this signal (`resolve_dangling_reference`
+ * in the compiled maintenance plan) offers only "create the node", and an agent
+ * that follows it literally answers 92 unresolved strings by manufacturing 92
+ * nodes — the metric goes green and the graph is worse. Naming both exits, and
+ * leaving the choice with the caller, is the whole point.
+ */
+export function danglingGraphReferenceMessage({ slug, key, refs, count, sampleLimit }) {
+  return `${count} entry/entries in "${slug}".${key} resolve to no vault node: ${sampleRefs(refs, sampleLimit)}. A relation array is a claim that a node exists; an unresolved string is not a child, it is a name with nothing behind it. Either promote it — add_concept({slug, kind, title}) for the concept it names, then keep the reference — or drop it from ${key}: and record what it points at as evidence on this node instead. Do not leave it in a meaning slot.`;
+}
+
+/**
+ * Warning literal for the 92: a **file path** sitting in a graph-relation array.
+ *
+ * This is the case the vault-wide validator could never report — it exempts
+ * path-shaped `elements:` entries outright (`isPathLikeGraphRef`), and the
+ * compiler routes them to `materialize_external_element`, whose only prescription
+ * is "create a node per file". So the one shape that was 100% of the measured
+ * defect had, between the two of them, no channel that said "this does not
+ * belong here". The write path is where it gets one.
+ */
+export function pathShapedReferenceMessage({ slug, key, refs, count, sampleLimit }) {
+  return `${count} entry/entries in "${slug}".${key} are file paths, not concept names: ${sampleRefs(refs, sampleLimit)}. A path is EVIDENCE for a concept, not the concept — it names where something lives, so it cannot be a child in the graph. For each one, either write the sentence that says what distinct role that file plays and promote it with add_concept({kind:"element", title:"<the role>", path:"<the path>"}), or remove it from ${key}: and keep the path as evidence on "${slug}" (frontmatter path: / the node body). One node per file, mirroring a directory listing, is the failure this check exists to stop.`;
+}
+
+/**
+ * Warning literal for a batch of siblings born under one parent in one run.
+ *
+ * The signal is **provenance, not population** — the council threw out every
+ * count-based cap, including per-kind ones. Five nodes a person added over a week
+ * say nothing at all. Five the same machine batch emitted under one parent say a
+ * directory listing was transcribed into the graph, and only the write path can
+ * tell those two apart. Note the explicit "leave it alone" branch: without it the
+ * trigger becomes a target, which is exactly how a cap gets gamed.
+ */
+export function bulkProvenanceMessage({ parent, count, slugs, sampleLimit }) {
+  return `${count} nodes were created under "${parent}" in this session: ${sampleRefs(slugs, sampleLimit)}. That is a provenance signal, not a size limit — there is no maximum number of children here. Call get_concept("${parent}") and answer one question: can you write a non-circular sentence saying why each of these is NOT interchangeable with its siblings? If yes, this is a legitimately wide parent — leave it exactly as it is. If no, name the shared behavior once with add_concept and patch_concept the siblings that share it to point at that node instead.`;
 }

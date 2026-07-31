@@ -14,6 +14,15 @@ import {
 import { join, relative, dirname, resolve, sep } from 'node:path';
 
 import { parseFrontmatter, buildMarkdown } from './parser.mjs';
+import { NODE_ELIGIBILITY_GATE } from './schema.mjs';
+import {
+  bulkProvenanceMessage,
+  danglingGraphReferenceMessage,
+  looksLikeEvidencePath,
+  looksLikePath,
+  pathShapedReferenceMessage,
+  pathShapedTitleMessage,
+} from './construction-rules.mjs';
 
 /**
  * 외부 변경 감지 (R11 #8). 사람 GUI · 외부 에디터 · 다른 AI MCP 가 같은 .md
@@ -531,6 +540,259 @@ function notFoundSuffix(rootPath, slug) {
   return lines.join(' ');
 }
 
+/* ------------------------------------------------------------------------- *
+ * Node-eligibility gate (2026-07-31 council — `docs/DECISIONS.md`)
+ *
+ * This is the **logic canon** of the ontology construction spec. Values live in
+ * `schema.mjs`, wording in `construction-rules.mjs`, and the judgement lives
+ * here because here is the only place all three write doors meet.
+ *
+ * That last part is the whole reason the gate exists at all. The measured defect
+ * was 92 `elements:` entries on one capability, 92 of which resolved to nothing
+ * — and they did not arrive through `add_concept`, which is where every existing
+ * warning lived. They accumulated through `patch_concept`, and `add_relation` is
+ * a third door again. Guidance aimed at the creation path never met the growth
+ * path. So the gate sits below all three, in `commitDoc`, and no door can opt out
+ * by construction rather than by discipline.
+ *
+ * What it does NOT do:
+ *
+ *   - It never blocks a write. Every finding is advisory, following the
+ *     `missing-expected-field` precedent. A rejection would strand an agent
+ *     mid-batch with half a graph written and no way forward, and agents route
+ *     around tools that punish them.
+ *   - It never enforces a child count. There is no cap here in any form,
+ *     per-kind or otherwise — a number a model can be told to stay under is a
+ *     number it satisfies with two empty buckets named "Group A" and "Group B".
+ * ------------------------------------------------------------------------- */
+
+/**
+ * Session state. Two jobs, both of which need memory the compiled vault cannot
+ * have: *how often we have already spoken* about a node, and *what this machine
+ * created in this run* (provenance — a static scan cannot distinguish five nodes
+ * a person wrote over a week from five one batch emitted).
+ */
+const GATE = {
+  findings: [],
+  /** `slug\0code\0key` → the count we last spoke about. */
+  noticed: new Map(),
+  /** parent ref → slugs created under it during this session. */
+  createdUnderParent: new Map(),
+  /** parent ref → the sibling count we last spoke about. */
+  noticedBulk: new Map(),
+  /** Lazy slug index — { rootPath, names: Set<string> }. */
+  index: null,
+};
+
+/** Test seam, and the reset a long-lived server would need if the vault root moved. */
+export function resetNodeEligibilityGate() {
+  GATE.findings = [];
+  GATE.noticed.clear();
+  GATE.createdUnderParent.clear();
+  GATE.noticedBulk.clear();
+  GATE.index = null;
+}
+
+/**
+ * Take the findings produced since the last drain, and clear them.
+ *
+ * Destructive on purpose: the caller turns them into one `postWriteMaintenance`
+ * payload per tool response, and a finding delivered twice is a finding the
+ * reader starts filtering.
+ */
+export function drainNodeEligibilityFindings() {
+  const findings = GATE.findings;
+  GATE.findings = [];
+  return findings;
+}
+
+/**
+ * Every name the vault answers to: canonical slugs, their tails, and frontmatter
+ * `slug:` aliases — the same three the MCP resolver accepts, so the gate cannot
+ * call "unresolved" something `get_concept` would happily return.
+ */
+function buildGateIndex(rootPath) {
+  const names = new Set();
+  for (const doc of loadVaultDocs(rootPath)) {
+    names.add(doc.slug);
+    const tail = doc.slug.split('/').pop();
+    if (tail) names.add(tail);
+    const fmSlug = doc.frontmatter?.slug;
+    if (typeof fmSlug === 'string' && fmSlug.trim()) names.add(fmSlug.trim());
+  }
+  return { rootPath, names };
+}
+
+function gateIndex(rootPath, { rebuild = false } = {}) {
+  if (rebuild || !GATE.index || GATE.index.rootPath !== rootPath) {
+    GATE.index = buildGateIndex(rootPath);
+  }
+  return GATE.index;
+}
+
+/**
+ * Resolve a reference against the vault, paying for a full scan only when the
+ * cheap answer would be bad news.
+ *
+ * The index is a cache, and a cache can be stale in exactly one direction that
+ * matters: a doc written by a human editor or another agent since we built it
+ * would look missing. So a miss is never trusted — it triggers one rebuild and a
+ * re-check. A clean vault therefore costs one scan per session; a dirty one
+ * costs one scan per warning, which is the write nobody minds paying for.
+ */
+function gateResolves(rootPath, ref) {
+  const name = String(ref).normalize('NFC');
+  if (gateIndex(rootPath).names.has(name)) return true;
+  return gateIndex(rootPath, { rebuild: true }).names.has(name);
+}
+
+/** Keep the cache warm across a batch instead of rebuilding on every row. */
+function noteGateWrite(rootPath, slug) {
+  if (!GATE.index || GATE.index.rootPath !== rootPath) return;
+  GATE.index.names.add(slug);
+  const tail = slug.split('/').pop();
+  if (tail) GATE.index.names.add(tail);
+}
+
+/**
+ * Speak on the first crossing, then only when the count crosses a new multiple.
+ *
+ * The council left the firing frequency open and this is the resolution default:
+ * a channel that repeats itself on every write is the channel
+ * `missing-expected-field` became — technically present, actually invisible.
+ */
+function shouldNotice(ledger, key, count, { threshold, multiple }) {
+  if (count < threshold) return false;
+  const last = ledger.get(key) ?? 0;
+  if (last === 0) {
+    ledger.set(key, count);
+    return true;
+  }
+  if (Math.floor(count / multiple) > Math.floor(last / multiple)) {
+    ledger.set(key, count);
+    return true;
+  }
+  if (count > last) ledger.set(key, count);
+  return false;
+}
+
+const { NOTICE_THRESHOLD, NOTICE_REPEAT_MULTIPLE, BULK_PROVENANCE_SIBLING_TRIGGER, REFERENCE_SAMPLE_LIMIT } =
+  NODE_ELIGIBILITY_GATE;
+
+function pushRefFinding(slug, code, key, refs, message) {
+  const noticeKey = `${slug}\0${code}\0${key}`;
+  if (!shouldNotice(GATE.noticed, noticeKey, refs.length, {
+    threshold: NOTICE_THRESHOLD,
+    multiple: NOTICE_REPEAT_MULTIPLE,
+  })) {
+    return;
+  }
+  GATE.findings.push({
+    code,
+    slug,
+    key,
+    refs,
+    count: refs.length,
+    message: message({ slug, key, refs, count: refs.length, sampleLimit: REFERENCE_SAMPLE_LIMIT }),
+  });
+}
+
+/**
+ * The gate. Runs on the committed frontmatter, after the file is on disk —
+ * observing, never gating, which is what "warn, don't reject" means mechanically.
+ *
+ * @param {string} rootPath
+ * @param {string} slug
+ * @param {Record<string, unknown>} frontmatter
+ * @param {{ created?: boolean }} [options] `created` marks a brand-new node, the
+ *   only case where bulk provenance means anything.
+ */
+function runNodeEligibilityGate(rootPath, slug, frontmatter, { created = false } = {}) {
+  if (!frontmatter || typeof frontmatter !== 'object') return;
+
+  // ① A path in the title slot. An element names a role ("jwt-token"), not a
+  //    location — a title that is a path means the author described evidence.
+  const title = frontmatter.title;
+  if (looksLikePath(title)) {
+    if (shouldNotice(GATE.noticed, `${slug}\0path-shaped-title\0title`, 1, {
+      threshold: NOTICE_THRESHOLD,
+      multiple: NOTICE_REPEAT_MULTIPLE,
+    })) {
+      GATE.findings.push({
+        code: 'path-shaped-title',
+        slug,
+        key: 'title',
+        refs: [String(title)],
+        count: 1,
+        message: pathShapedTitleMessage(String(title)),
+      });
+    }
+  }
+
+  // ② Reference resolution. This is the check the vault-wide validator has and
+  //    the write path did not — and note the validator *exempts* path-shaped
+  //    `elements:` entries outright, which is precisely why 92 of them were
+  //    invisible to `validate_vault` while sitting in the graph. Here nothing is
+  //    exempt; the path shape only chooses which repair the message names first.
+  const evidenceByKey = new Map();
+  const danglingByKey = new Map();
+  for (const { key, ref } of collectNeighborRefs({ frontmatter })) {
+    if (gateResolves(rootPath, ref)) continue;
+    const bucket = looksLikeEvidencePath(ref) ? evidenceByKey : danglingByKey;
+    if (!bucket.has(key)) bucket.set(key, []);
+    bucket.get(key).push(ref);
+  }
+  for (const [key, refs] of evidenceByKey) {
+    pushRefFinding(slug, 'path-shaped-reference', key, refs, pathShapedReferenceMessage);
+  }
+  for (const [key, refs] of danglingByKey) {
+    pushRefFinding(slug, 'dangling-graph-reference', key, refs, danglingGraphReferenceMessage);
+  }
+
+  // ③ Bulk provenance. Not a size limit — a statement about *who* made these and
+  //    *when*. Only the write path can know that, which is the entire argument
+  //    for putting this check here rather than in the compiled maintenance plan.
+  if (!created) return;
+  const parent = typeof frontmatter.domain === 'string' ? frontmatter.domain.trim() : '';
+  if (!parent) return;
+  const siblings = GATE.createdUnderParent.get(parent) ?? [];
+  if (!siblings.includes(slug)) siblings.push(slug);
+  GATE.createdUnderParent.set(parent, siblings);
+  if (shouldNotice(GATE.noticedBulk, parent, siblings.length, {
+    threshold: BULK_PROVENANCE_SIBLING_TRIGGER,
+    multiple: BULK_PROVENANCE_SIBLING_TRIGGER,
+  })) {
+    GATE.findings.push({
+      code: 'bulk-provenance',
+      slug,
+      parent,
+      count: siblings.length,
+      refs: siblings.slice(),
+      message: bulkProvenanceMessage({
+        parent,
+        count: siblings.length,
+        slugs: siblings,
+        sampleLimit: REFERENCE_SAMPLE_LIMIT,
+      }),
+    });
+  }
+}
+
+/**
+ * **The single write point.** `writeDoc`, `patchFrontmatter`, and `updateDoc`
+ * all serialize here — so `add_concept`, `add_relation`, and `patch_concept`
+ * inherit the gate whether or not their author remembered it existed.
+ *
+ * `mcp/src/write-path-gate.test.mjs` fails if a door starts writing bytes
+ * somewhere else.
+ */
+function commitDoc(rootPath, slug, filePath, frontmatter, body, { created = false } = {}) {
+  writeFileSync(filePath, buildMarkdown({ frontmatter, body }), 'utf-8');
+  if (created) noteGateWrite(rootPath, slug);
+  runNodeEligibilityGate(rootPath, slug, frontmatter, { created });
+  return filePath;
+}
+
 /**
  * 새 doc 작성. 디렉토리 자동 생성. 기존 파일 있으면 throw (덮어쓰기 의도라면
  * 호출자가 명시적으로).
@@ -547,9 +809,7 @@ export function writeDoc(rootPath, slug, { frontmatter, body = '' }) {
     throw new Error('body must be a string.');
   }
   mkdirSync(dirname(filePath), { recursive: true });
-  const md = buildMarkdown({ frontmatter, body });
-  writeFileSync(filePath, md, 'utf-8');
-  return filePath;
+  return commitDoc(rootPath, slug, filePath, frontmatter, body, { created: true });
 }
 
 /**
@@ -597,9 +857,7 @@ export function patchFrontmatter(rootPath, slug, patch, options = {}) {
       next[key] = normalizeFrontmatterValue(key, value);
     }
   }
-  const md = buildMarkdown({ frontmatter: next, body });
-  writeFileSync(filePath, md, 'utf-8');
-  return filePath;
+  return commitDoc(rootPath, slug, filePath, next, body);
 }
 
 /**
@@ -630,9 +888,7 @@ export function updateDoc(rootPath, slug, { frontmatter: patch, body, expectedMt
     throw new Error('body must be a string.');
   }
   const nextBody = body === undefined ? oldBody : body;
-  const md = buildMarkdown({ frontmatter: nextFm, body: nextBody });
-  writeFileSync(filePath, md, 'utf-8');
-  return filePath;
+  return commitDoc(rootPath, slug, filePath, nextFm, nextBody);
 }
 
 /**
