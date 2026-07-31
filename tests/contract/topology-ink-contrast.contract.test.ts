@@ -23,12 +23,24 @@ const CSS = readFileSync(resolve(process.cwd(), "app/globals.css"), "utf8");
 /** WCAG 1.4.11 — 비텍스트 UI 요소의 대비 하한. */
 const MIN_CONTRAST = 3;
 
-function readToken(name: string): string {
+/** 원시 선언(hex 또는 `var(...)`)을 그대로 읽는다. */
+function readRaw(name: string): string {
   // `:root` 블록의 정의만 읽는다 — 뒤따르는 스코프 오버라이드(`html[...]`)는
   // 별도 판정 대상이라 여기서 섞으면 어느 값을 잰 건지 흐려진다.
-  const match = CSS.match(new RegExp(`--${name}:\\s*(#[0-9a-fA-F]{6})\\s*;`));
+  const match = CSS.match(new RegExp(`--${name}:\\s*([^;]+);`));
   if (!match) throw new Error(`토큰을 못 찾음: --${name}`);
-  return match[1];
+  return match[1].trim();
+}
+
+/** 별칭(`var(--other)`)을 한 단계씩 따라가 최종 hex 를 얻는다. */
+function readToken(name: string, depth = 0): string {
+  if (depth > 4) throw new Error(`별칭이 너무 깊음: --${name}`);
+  const raw = readRaw(name);
+  const alias = raw.match(/^var\(\s*--([\w-]+)\s*\)$/);
+  if (alias) return readToken(alias[1], depth + 1);
+  const hex = raw.match(/^(#[0-9a-fA-F]{6})$/);
+  if (!hex) throw new Error(`hex 도 별칭도 아님: --${name} = ${raw}`);
+  return hex[1];
 }
 
 function relativeLuminance(hex: string): number {
@@ -91,6 +103,35 @@ describe("topology ink contrast contract", () => {
       // 만들지는 않는다.
       expect(ratio).toBeGreaterThanOrEqual(MIN_CONTRAST);
     }
+  });
+
+  it("노드 stroke 와 containment 엣지가 **같은 깊이 축**을 참조한다", () => {
+    // 체계석 판정(2026-07-31): 둘은 같은 트리 깊이를 두 번 그리는 것이다.
+    // 따로 적었더니 세 짝이 대비 0.02 이내로 **우연히** 수렴했는데, 그건
+    // 운이지 계약이 아니다 — 한쪽만 고치면 아무 경고 없이 갈라진다.
+    // 그래서 값이 아니라 **별칭 관계**를 고정한다. 두 곳에 값이 존재하지
+    // 않으면 드리프트를 잡을 룰 자체가 필요 없다(Carbon).
+    const AXIS_PAIRS = [
+      ["topology-v2-node-stroke-element", "topology-v2-edge-contains-l2", "leaf"],
+      ["topology-v2-node-stroke-capability", "topology-v2-edge-contains", "mid"],
+      ["topology-v2-node-stroke-domain", "topology-v2-edge-contains-l0", "top"],
+    ] as const;
+    for (const [nodeToken, edgeToken, step] of AXIS_PAIRS) {
+      const expected = `var(--topology-v2-ink-depth-${step})`;
+      expect(readRaw(nodeToken), nodeToken).toBe(expected);
+      expect(readRaw(edgeToken), edgeToken).toBe(expected);
+    }
+  });
+
+  it("`depends` 는 축 밖이되 가장 밝은 마크를 넘지 않는다", () => {
+    // 위계가 아니라 관계 **범주**라 사다리의 한 단이 아니다(파선 + 인디고
+    // 틴트로 구분). 그래서 "엣지 ≤ 노드 × 0.8" 같은 사다리 간 상한은 걸지
+    // 않는다 — 두 사다리가 경쟁한다는 전제가 틀렸기 때문이다. 구속은 둘:
+    // WCAG 하한, 그리고 어떤 개체보다 큰 소리를 내지 않는다.
+    const depends = contrast(readToken("topology-v2-edge-depends"), CANVAS);
+    const loudestMark = contrast(readToken("topology-v2-node-stroke-project"), CANVAS);
+    expect(depends).toBeGreaterThanOrEqual(MIN_CONTRAST);
+    expect(depends).toBeLessThan(loudestMark);
   });
 
   it("관문 스테이지가 엣지 잉크를 **강등**하지 않는다", () => {
