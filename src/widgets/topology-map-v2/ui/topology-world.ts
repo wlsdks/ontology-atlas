@@ -7,6 +7,7 @@
  * once" invariant (`model/layout.ts`'s own contract).
  */
 
+import { computeDensityGate, type DensityGateParentGeometry } from "../model/density-gate";
 import { computeConcentricLayout, type LayoutGraphNode, type LayoutRings } from "../model/layout";
 import { computeBowControlPoint, computeDependsBowControlPoint } from "../render/traces";
 import { fireflySeed } from "../render/edge-fireflies";
@@ -294,6 +295,42 @@ export function computeClusterDiscBounds(
   return { minX, minY, maxX, maxY };
 }
 
+/**
+ * 완화(de-pileup) 대상 = **밀도 게이트가 접지 않는 노드**.
+ *
+ * `computeDensityGate` 의 `clusteredIds` 는 기하가 필요 없다 — 부모별 자식
+ * 수와 임계만 본다. 그래서 배치 **전에** 계산할 수 있고, 그 결과로 "이 볼트에서
+ * 절대 안 그려지는 노드" 를 미리 안다. 칩 앵커만 기하를 요구하는데 그건 배치
+ * 뒤에 `computeTopologyClusterState` 가 따로 만든다(순환 없음).
+ *
+ * 여기서는 `expandedParents` 를 빈 집합으로 본다 — 월드는 그래프가 바뀔 때만
+ * 지어지고 펼침 상태를 모른다. 펼침으로 드러나는 자식은 씨앗 좌표를 갖고 있어
+ * 좌표 구멍이 생기지 않는다.
+ */
+function computeRelaxScope(layoutInput: readonly LayoutGraphNode[]): ReadonlySet<string> {
+  const childrenByParent = new Map<string, string[]>();
+  for (const n of layoutInput) {
+    if (n.parentId === null) continue;
+    const siblings = childrenByParent.get(n.parentId);
+    if (siblings) siblings.push(n.id);
+    else childrenByParent.set(n.parentId, [n.id]);
+  }
+  const kindById = new Map(layoutInput.map((n) => [n.id, n.kind as string]));
+  const { clusteredIds } = computeDensityGate({
+    childrenByParent,
+    expandedParents: EMPTY_EXPANDED_PARENTS,
+    // 칩 앵커는 여기서 안 쓴다 — `clusteredIds` 만 필요하고 그건 기하 무관.
+    parentGeometry: EMPTY_PARENT_GEOMETRY,
+    kindOf: (id) => kindById.get(id),
+  });
+  const scope = new Set<string>();
+  for (const n of layoutInput) if (!clusteredIds.has(n.id)) scope.add(n.id);
+  return scope;
+}
+
+const EMPTY_EXPANDED_PARENTS: ReadonlySet<string> = new Set();
+const EMPTY_PARENT_GEOMETRY: ReadonlyMap<string, DensityGateParentGeometry> = new Map();
+
 export function buildTopologyWorld(
   nodes: readonly TopologyV2Node[],
   edges: readonly TopologyV2Edge[],
@@ -314,6 +351,16 @@ export function buildTopologyWorld(
     capability: tokens.layoutRingCapability,
     element: tokens.layoutRingElement,
   };
+  // 완화 범위 = **이 볼트에서 그려질 수 있는 노드**. 밀도 게이트가 접는
+  // 서브트리(자식 12개 초과 부모 아래)는 칩 뒤에 숨어 한 번도 그려지지
+  // 않으므로, 그것들의 겹침을 푸는 데 시간을 쓰지 않는다. 씨앗 좌표는
+  // 여전히 전부 계산되므로 티어가 열리거나 칩을 펼칠 때 좌표 구멍이 없다.
+  //
+  // `expandedParents` 는 일부러 넘기지 않는다 — 월드는 그래프가 바뀔 때만
+  // 다시 지어지고(`use-topology-loop.ts` 의 `useEffect`), 펼침마다 재구축하면
+  // 등장 램프와 스프링이 초기화돼 화면이 튄다. 펼친 자식은 씨앗 자리에
+  // 나타나고, 국소 재완화는 후속 슬라이스가 맡는다.
+  const relaxScope = computeRelaxScope(layoutInput);
   // Feed the real §2.3 node radii into the deterministic de-pileup so its
   // collision min-distance matches what actually gets drawn.
   const pointById = new Map(
@@ -324,6 +371,7 @@ export function buildTopologyWorld(
         capability: tokens.radiusCapability,
         element: tokens.radiusElement,
       },
+      relaxScope,
     }).map((p) => [p.id, p]),
   );
 
