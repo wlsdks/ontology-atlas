@@ -92,14 +92,19 @@
  * vault feel hostile and would push agents to work around the tool. The gate
  * reports; the human and the maintenance queue decide.
  */
-import { VAULT_KIND_SCHEMA } from './schema.mjs';
+import { NODE_ELIGIBILITY_GATE, VAULT_KIND_SCHEMA } from './schema.mjs';
 
 export const CONSTRUCTION_RULES_EN = `## Construction rules — read before add_concept / add_concepts / patch_concept
 
 1. BEFORE adding a child to a parent, call get_concept(parentSlug) and read \`neighbors\`.
-2. Compare the parent's direct-child count to this vault's median for that kind
-   (list_kinds / query_ontology({operation:'facets'})). IF the count is well above
-   that median, this is a TRIGGER for step 3 — NOT a limit. It never blocks a write.
+2. Count the parent's children that RESOLVE to real vault nodes — an entry that
+   resolves to nothing is evidence, not a child, and does not count. Compare that
+   against this vault's own distribution (list_kinds /
+   query_ontology({operation:'facets'})). Until the vault has enough parents of
+   that kind to have a distribution, use this starting range: about ${NODE_ELIGIBILITY_GATE.BOOTSTRAP_FANOUT_TRIGGER.domain_to_capability} capabilities
+   under a domain, about ${NODE_ELIGIBILITY_GATE.BOOTSTRAP_FANOUT_TRIGGER.capability_to_element} elements under a capability. Crossing that is a
+   TRIGGER for step 3 — NOT a limit. There is no maximum number of children,
+   crossing it is not a defect, and it never blocks a write.
 3. When triggered, answer before writing:
    a. Can you write ONE non-circular sentence why the new child is NOT interchangeable
       with an existing sibling? If you cannot, patch_concept the existing sibling's
