@@ -67,13 +67,20 @@ export interface ForceSimulation {
   /**
    * Current `{x, y}` per node id — a fresh Map each call.
    *
-   * ⚠️ NOT cheap at scale: the sim holds EVERY node regardless of semantic-zoom
-   * capping, so this allocates an N-entry Map per tick (3000 at `?synth=3000`)
-   * even when a restricted tick moved ~30 of them. Known waste, measured but
-   * not yet fixed — see `docs/MAP-TESTABILITY.md` for how to re-measure before
-   * changing it.
+   * `only` narrows the map to those ids. The sim holds EVERY node regardless of
+   * semantic-zoom capping, so the unrestricted call allocates an N-entry Map
+   * plus N position objects per tick (3000 at `?synth=3000`) even when a
+   * restricted tick moved ~30 of them — pass the same set you passed `tick`
+   * and the caller's write-back shrinks with it. Ids the sim doesn't hold are
+   * skipped, so an over-wide `only` is safe.
+   *
+   * ⚠️ The omitted ids are omitted from the RESULT, and the caller's write-back
+   * therefore no longer overwrites their world coordinates. That is only sound
+   * while nothing else relies on this call to reset a per-frame displacement —
+   * see `use-topology-loop.ts`'s neighbor tug, which does, and is why the set
+   * passed there is wider than the tick's own restriction.
    */
-  positions(): Map<string, ForcePosition>;
+  positions(only?: ReadonlySet<string> | null): Map<string, ForcePosition>;
   /** Pins a node to a world coordinate (grabbed for drag) — held fixed across ticks until `clearPin`. */
   pin(id: string, x: number, y: number): void;
   /** Updates the active pin's coordinate (drag move) — 1:1, no easing. */
@@ -197,15 +204,21 @@ export function createForceSimulation(
       }
       restamp();
     },
-    positions() {
+    positions(only?: ReadonlySet<string> | null) {
       const map = new Map<string, ForcePosition>();
-      graph.forEachNode((id, attrs) => {
-        const x = attrs.x as number;
-        const y = attrs.y as number;
-        // Guard against a rare FA2 NaN blow-up — callers keep the last good
-        // position rather than teleporting a node to nowhere.
+      // Guard against a rare FA2 NaN blow-up — callers keep the last good
+      // position rather than teleporting a node to nowhere.
+      const put = (id: string, x: number, y: number) => {
         if (Number.isFinite(x) && Number.isFinite(y)) map.set(id, { x, y });
-      });
+      };
+      if (only) {
+        for (const id of only) {
+          if (!graph.hasNode(id)) continue;
+          put(id, graph.getNodeAttribute(id, "x") as number, graph.getNodeAttribute(id, "y") as number);
+        }
+      } else {
+        graph.forEachNode((id, attrs) => put(id, attrs.x as number, attrs.y as number));
+      }
       return map;
     },
     pin(id: string, x: number, y: number) {

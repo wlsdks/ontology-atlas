@@ -252,6 +252,7 @@ describe("computeFocusCameraTarget — fit-to-ego dive (dive-framing fix)", () =
       nodes: [...nodeById.values()],
       nodeById,
       edges: [],
+      edgeIndexByNode: new Map(),
       neighborMap,
       childrenByParent: new Map(),
       clusterMetaByParent: new Map(),
