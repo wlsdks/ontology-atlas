@@ -1571,7 +1571,11 @@ const agentDesignGateChecks = [
     "AGENTS mandatory design gate",
     agentsDoc.includes("docs/PRODUCT-DESIGN-OPERATING-SYSTEM.md") &&
       /design gate/i.test(agentsDoc) &&
-      /after the PO pass/i.test(agentsDoc),
+      // 마크다운 강조를 지우고 본다 — AGENTS.md 는 `Runs *after* the PO pass` 라고
+      // 쓴다. 종전 정규식은 연속 문자열을 요구해 **별표 하나에 깨졌다**(2026-07-31
+      // CI). 불변식(디자인 게이트가 PO 다음에 온다)은 지켜지고 있었고 검사기만
+      // 취약했다 — 산문의 서식까지 고정하면 게이트가 문서를 인질로 잡는다.
+      /after\s+the PO pass/i.test(agentsDoc.replace(/[*_`]/g, "")),
   ],
   [
     "design council",
