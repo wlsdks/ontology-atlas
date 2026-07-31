@@ -2226,6 +2226,11 @@ export function useTopologyLoop(args: UseTopologyLoopArgs): UseTopologyLoopResul
         reducedMotion: reducedMotionRef.current,
         userDrivenCamera: userDrivenCameraRef.current,
         freezeCamera,
+        // **직전 프레임의** 접힘 집합이다 — 이번 프레임 것은 아래 클러스터
+        // 단계에서야 정해진다. 램프는 시간 위의 값이라 한 프레임 지연이 곧
+        // 정상 동작이고(펼친 노드는 다음 프레임부터 0 에서 램프 인, 접힌
+        // 노드는 한 프레임 더 램프), 순서를 뒤집어 얻을 것이 없다.
+        clusteredIds: clusteredIdsRef.current,
         emphasisById: emphasisRef.current,
         rippleStartById: rippleStartRef.current,
         egoRevealById: egoRevealRef.current,

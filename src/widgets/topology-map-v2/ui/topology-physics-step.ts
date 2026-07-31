@@ -110,6 +110,24 @@ export interface PhysicsStepInput {
    * co-occur.
    */
   freezeCamera?: boolean;
+  /**
+   * 밀도 게이트로 접혀 **그려지지 않는** 노드들 (칩 하나로 대체된 서브트리).
+   *
+   * 주면 아래 램프 넷을 이들에게서 돌리지 않는다 — 화면에 없는 노드의 강조·
+   * ego 공개·포커스 dim·등장 램프는 아무 데도 나타나지 않는다. 실측(synth=3000)
+   * 은 3000 중 **2820개(94%)가 접혀 있고**, 그 94% 에 프레임당 맵 연산 약
+   * 24,000 회가 나가고 있었다 — 드래그가 아닌 평상시에도 상시로.
+   *
+   * ⚠️ **건너뛰면서 값을 남기면 안 된다.** 남은 값은 그 노드가 칩에서 펼쳐지는
+   * 순간 «과거의 상태» 로 되살아나, 포커스 중에 펼친 노드가 dim 으로 **스냅**한다.
+   * 그래서 건너뛸 때 해당 항목을 지운다 — 소비처가 전부 `?? 0`(강조·ego·포커스)
+   * / `?? 1`(등장) 기본값을 갖고 있어, 지운 항목은 «처음부터 램프 인» 이라는
+   * 이미 있는 계약으로 되돌아간다.
+   *
+   * 생략하면 전 노드가 대상 — 이 인자를 모르는 기존 호출부/테스트는 종전 동작
+   * 그대로다.
+   */
+  clusteredIds?: ReadonlySet<string> | null;
   /** Mutated in place — the hook owns this map's lifetime across frames. */
   emphasisById: Map<string, number>;
   rippleStartById: ReadonlyMap<string, number>;
@@ -186,6 +204,7 @@ export function stepTopologyPhysics(input: PhysicsStepInput): PhysicsStepResult 
     ambientFactor,
     userDrivenCamera = false,
     freezeCamera,
+    clusteredIds = null,
     emphasisById,
     rippleStartById,
     egoRevealById,
@@ -283,6 +302,15 @@ export function stepTopologyPhysics(input: PhysicsStepInput): PhysicsStepResult 
   // the same normal↔dim color ramp (owner headline motion).
   const focusActive = focusedNodeId !== null || pairFocusActive;
   for (const node of world.nodes) {
+    if (clusteredIds?.has(node.id)) {
+      // 접혀서 화면에 없다 — 램프를 태우지 않고, **남은 값도 지운다**.
+      // 남기면 이 노드가 칩에서 펼쳐질 때 과거 상태로 되살아나 스냅한다.
+      emphasisById.delete(node.id);
+      egoRevealById.delete(node.id);
+      focusRampById.delete(node.id);
+      appearById.delete(node.id);
+      continue;
+    }
     const isHoverEgoMember =
       !!activeEgoId && (node.id === activeEgoId || world.neighborMap.get(activeEgoId)?.has(node.id) === true);
     const isInActiveEgoSet = isNodeEmphasisActive(node.id, focusedNodeId, isHoverEgoMember, panelEmphasisNodeId);
