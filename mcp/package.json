@@ -27,6 +27,7 @@
     "src/schema.mjs",
     "src/validate.mjs",
     "src/vault.mjs",
+    "src/construction-rules.mjs",
     "src/absorb.mjs",
     "src/activity-log.mjs",
     "src/analyze.mjs",
