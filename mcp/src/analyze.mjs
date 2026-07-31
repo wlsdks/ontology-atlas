@@ -23,7 +23,8 @@
 //     project?: { slug, title },
 //     domains: [{ slug, title, evidence: { source, line? } }],
 //     capabilities: [{ slug, title, evidence: { source } }],
-//     elements: [{ slug, title, evidence: { source } }],
+//     elements: [{ slug, title, path, evidence: { source } }],
+//       — slug 는 평평한 role 이름 (경로는 path/evidence 로만; 2026-08-01 판정)
 //     meaningGate: {
 //       policy: 'business-first',
 //       sourceStructureRole: 'implementation-evidence',
@@ -179,6 +180,14 @@ export function analyzeRepoStructure(rootPath, options = {}) {
     const fsdRoots = framework === 'fsd' ? FSD_SCAN_ROOTS : null;
 
     if (fsdRoots) {
+      // 슬러그는 평평한 식별자다 (2026-08-01 판정 — docs/DECISIONS.md).
+      // 종전에는 `elements/${relative(rootPath, subPath)}` 를 제안해 규격
+      // 문맥 없는 에이전트가 경로형 슬러그 43개를 **그대로** 볼트에 실었다
+      // — 이 생성기가 재생성 볼트 결함의 1차 유도원이었다. 이제 이름(role)은
+      // 슬러그에, 위치는 `path` 에 싣고, basename 이 레이어를 넘어 겹치면
+      // (`entities/docs-vault` vs `views/docs-vault`) 레이어 단수형 접미로
+      // 결정론적으로 갈라 tail 충돌을 생성 시점에 없앤다.
+      const elementCandidates = [];
       for (const r of fsdRoots) {
         const dir = join(srcDir, r);
         if (!existsSync(dir)) continue;
@@ -192,31 +201,35 @@ export function analyzeRepoStructure(rootPath, options = {}) {
           // FSD semantics: features are user-facing capability candidates;
           // entities/widgets/views are implementation evidence, not business
           // capabilities merely because they have a directory.
-          const isCapabilityish = r === 'features';
-          const slug = isCapabilityish
-            ? `capabilities/${sub}`
-            : `elements/${relative(rootPath, subPath)}`;
-          const evidence = {
-            source: relative(rootPath, subPath),
-          };
-          if (isCapabilityish) {
+          if (r === 'features') {
             capabilities.push({
-              slug,
+              slug: `capabilities/${sub}`,
               title: humanize(sub),
               ...(domainForName(sub)
                 ? { domain: domainForName(sub) }
                 : {}),
-              evidence,
+              evidence: { source: relative(rootPath, subPath) },
             });
           } else {
-            elements.push({
-              slug,
-              title: humanize(sub),
-              ...(domainForName(sub) ? { domain: domainForName(sub) } : {}),
-              evidence,
-            });
+            elementCandidates.push({ layer: r, sub, subPath });
           }
         }
+      }
+      const nameCount = new Map();
+      for (const cand of elementCandidates) {
+        nameCount.set(cand.sub, (nameCount.get(cand.sub) ?? 0) + 1);
+      }
+      for (const { layer, sub, subPath } of elementCandidates) {
+        const collides = (nameCount.get(sub) ?? 0) > 1;
+        const layerSingular = layer.replace(/ies$/, 'y').replace(/s$/, '');
+        const name = collides ? `${sub}-${layerSingular}` : sub;
+        elements.push({
+          slug: `elements/${name}`,
+          title: collides ? `${humanize(sub)} (${layerSingular})` : humanize(sub),
+          ...(domainForName(sub) ? { domain: domainForName(sub) } : {}),
+          path: relative(rootPath, subPath),
+          evidence: { source: relative(rootPath, subPath) },
+        });
       }
     } else {
       // generic — src/ 의 깊이 1 폴더 만
@@ -235,14 +248,15 @@ export function analyzeRepoStructure(rootPath, options = {}) {
             : {}),
           evidence: { source: relative(rootPath, subPath) },
         });
-        // index 파일이 있으면 element 추가
+        // index 파일이 있으면 element 추가 — 슬러그는 role 이름, 위치는 path 로.
         for (const entry of ELEMENT_ENTRY_FILES) {
           const ep = join(subPath, entry);
           if (existsSync(ep)) {
             elements.push({
-              slug: `elements/${relative(rootPath, ep)}`,
+              slug: `elements/${sub}-entry`,
               title: `${humanize(sub)} entry`,
               ...(domainForName(sub) ? { domain: domainForName(sub) } : {}),
+              path: relative(rootPath, ep),
               evidence: { source: relative(rootPath, ep) },
             });
             break;
@@ -986,10 +1000,16 @@ function detectWorkspaceElements(rootPath, { ignore, domainForName, skipped }) {
       if (!statSync(memberPath).isDirectory()) continue;
       if (!existsSync(join(memberPath, 'package.json'))) continue;
       const source = relative(rootPath, memberPath);
+      // 슬러그는 평평하게 — workspace 멤버 이름이 곧 role 이름. apps/foo 와
+      // packages/foo 가 겹치면 폴더 접두로 갈라 tail 충돌을 피한다.
+      const flatName = elements.some((el) => el.slug === `elements/${entry}`)
+        ? `${folder}-${entry}`
+        : entry;
       elements.push({
-        slug: `elements/${source}`,
+        slug: `elements/${flatName}`,
         title: humanize(entry),
         ...(domainForName(entry) ? { domain: domainForName(entry) } : {}),
+        path: source,
         evidence: { source },
       });
     }

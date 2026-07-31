@@ -40,10 +40,13 @@ test('FSD repo — features/ → capabilities, entities/widgets/views → implem
       [...r.capabilities.map((c) => c.slug)].sort(),
       ['capabilities/auth', 'capabilities/billing'],
     );
+    // 슬러그는 평평한 role 이름 — 위치는 path/evidence 가 나른다 (2026-08-01 판정).
     assert.deepEqual(
       [...r.elements.map((e) => e.slug)].sort(),
-      ['elements/src/entities/user', 'elements/src/views/home', 'elements/src/widgets/header'],
+      ['elements/header', 'elements/home', 'elements/user'],
     );
+    const userEl = r.elements.find((e) => e.slug === 'elements/user');
+    assert.equal(userEl.path, 'src/entities/user');
     assert.deepEqual(
       r.domains.map((d) => d.slug),
       ['domains/authentication', 'domains/billing'],
@@ -70,9 +73,10 @@ test('Generic repo — src/ depth-1 folders → capabilities', () => {
       r.capabilities.map((c) => c.slug).sort(),
       ['capabilities/api', 'capabilities/db'],
     );
-    // index.ts → element
-    const apiEl = r.elements.find((e) => e.slug.endsWith('api/index.ts'));
+    // index.ts → element — 슬러그는 평평하게, 파일 위치는 path 로.
+    const apiEl = r.elements.find((e) => e.slug === 'elements/api-entry');
     assert.ok(apiEl, 'api index.ts → element 후보');
+    assert.equal(apiEl.path, 'src/api/index.ts');
   } finally {
     rmSync(root, { recursive: true, force: true });
   }
@@ -262,14 +266,19 @@ test('pnpm workspace — operational README sections stay out of domains and wor
     const r = analyzeRepoStructure(root);
     assert.equal(r.framework, 'generic');
     assert.deepEqual(r.domains, []);
+    // workspace 멤버 이름이 곧 슬러그 — 위치는 path/evidence 로 (2026-08-01 판정).
     assert.deepEqual(
       r.elements.map((element) => element.slug),
       [
-        'elements/apps/api',
-        'elements/apps/web',
-        'elements/packages/attunement',
-        'elements/packages/shared',
+        'elements/api',
+        'elements/web',
+        'elements/attunement',
+        'elements/shared',
       ],
+    );
+    assert.deepEqual(
+      r.elements.map((element) => element.path),
+      ['apps/api', 'apps/web', 'packages/attunement', 'packages/shared'],
     );
     assert.deepEqual(
       r.suggestedRelations.map((relation) => relation.to),
@@ -279,7 +288,7 @@ test('pnpm workspace — operational README sections stay out of domains and wor
       analyzeRepoStructure(root, { ignore: ['packages'] }).elements.map(
         (element) => element.slug,
       ),
-      ['elements/apps/api', 'elements/apps/web'],
+      ['elements/api', 'elements/web'],
     );
   } finally {
     rmSync(root, { recursive: true, force: true });
@@ -375,7 +384,7 @@ test('A sole README domain is the deterministic parent for otherwise unmatched c
     assert.deepEqual(r.suggestedRelations, [
       { from: 'bootstrap-app', to: 'domains/accounts', type: 'contains' },
       { from: 'domains/accounts', to: 'capabilities/auth', type: 'contains' },
-      { from: 'domains/accounts', to: 'elements/src/entities/session', type: 'contains' },
+      { from: 'domains/accounts', to: 'elements/session', type: 'contains' },
     ]);
   } finally {
     rmSync(root, { recursive: true, force: true });
@@ -400,7 +409,7 @@ test('Business containment spine — fuzzy domain match connects project → dom
       { from: 'claims', to: 'domains/claim-review', type: 'contains' },
       { from: 'domains/evidence-intake', to: 'capabilities/capture-evidence', type: 'contains' },
       { from: 'domains/claim-review', to: 'capabilities/review-claims', type: 'contains' },
-      { from: 'domains/claim-review', to: 'elements/src/entities/claim', type: 'contains' },
+      { from: 'domains/claim-review', to: 'elements/claim', type: 'contains' },
     ]);
   } finally {
     rmSync(root, { recursive: true, force: true });
@@ -430,7 +439,7 @@ test('Meaning gate separates shared ontology, business proposals, and implementa
       ['capabilities/checkout', 'capabilities/theme-toggle'],
     );
     assert.deepEqual(r.meaningGate.implementationEvidence.elements, [
-      'elements/src/widgets/header',
+      'elements/header',
     ]);
     assert.deepEqual(r.meaningGate.implementationEvidence.reviewRequiredCapabilities, [
       {

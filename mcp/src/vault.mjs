@@ -14,7 +14,7 @@ import {
 import { join, relative, dirname, resolve, sep } from 'node:path';
 
 import { parseFrontmatter, buildMarkdown } from './parser.mjs';
-import { NODE_ELIGIBILITY_GATE } from './schema.mjs';
+import { NODE_ELIGIBILITY_GATE, flatSlugIssue } from './schema.mjs';
 import {
   bulkProvenanceMessage,
   danglingGraphReferenceMessage,
@@ -966,6 +966,10 @@ export function writeDoc(rootPath, slug, { frontmatter, body = '' }) {
   if (typeof body !== 'string') {
     throw new Error('body must be a string.');
   }
+  // 슬러그 평면성 — 새 정체성이 태어나는 유일한 문에서 잰다. 형태 유효성이라
+  // hard error (팬아웃 게이트의 「막지 않는다」 원칙은 의미 판단에만 적용).
+  const slugIssue = flatSlugIssue(frontmatter?.kind, slug);
+  if (slugIssue) throw new Error(slugIssue);
   mkdirSync(dirname(filePath), { recursive: true });
   return commitDoc(rootPath, slug, filePath, frontmatter, body, { created: true });
 }

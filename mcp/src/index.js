@@ -153,6 +153,7 @@ import {
   localeLabelCodes,
   agentCreatedBy,
   CREATED_BY_KEY,
+  flatSlugIssue,
 } from './schema.mjs';
 import {
   closestAllowedValue,
@@ -1503,7 +1504,9 @@ const TOOLS = [
     inputSchema: {
       type: 'object',
       properties: {
-        slug: nonBlankStringSchema('Vault-relative slug (omit the .md extension).'),
+        slug: nonBlankStringSchema(
+          'Vault-relative slug (omit the .md extension), flat under the kind folder — e.g. "elements/jwt-token", "capabilities/token-issue". A slug is the node\'s name, never a code path: "elements/src/views/home" is rejected (put the file location in path: instead).',
+        ),
         kind: {
           ...NON_BLANK_STRING_SCHEMA,
           enum: ['project', 'domain', 'capability', 'element', 'document'],
@@ -6535,6 +6538,11 @@ function renameConcept({ oldSlug, newSlug, confirm = false, overwrite = false, e
   const targetPath = slugToPath(VAULT_ROOT, newSlug);
   const sourceDoc = readDoc(VAULT_ROOT, sourcePath);
 
+  // 슬러그 평면성 — rename 은 writeDoc 을 거치지 않고 직접 쓰므로 여기서도
+  // 같은 게이트를 잰다 (경로형 정체성이 rename 으로 되살아나는 문 봉쇄).
+  const renameSlugIssue = flatSlugIssue(sourceDoc.frontmatter?.kind, newSlug);
+  if (renameSlugIssue) throw new Error(renameSlugIssue);
+
   // R11 closeout — source mtime conflict guard. read 직후 expected 와 비교.
   if (typeof expected_mtime === 'number' && sourceDoc.mtime !== expected_mtime) {
     throw new VaultConflictError(oldSlug, expected_mtime, sourceDoc.mtime);
@@ -6624,6 +6632,9 @@ function reclassifyConcept({ slug, newKind, newSlug, domain, body, confirm = fal
   const sourceDoc = readDoc(VAULT_ROOT, sourcePath);
   if (typeof expected_mtime === 'number' && sourceDoc.mtime !== expected_mtime) throw new VaultConflictError(canonicalOld, expected_mtime, sourceDoc.mtime);
   const oldKind = sourceDoc.frontmatter.kind;
+  // 슬러그 평면성 — reclassify 도 직접 쓰는 문이라 새 (kind, slug) 쌍을 잰다.
+  const reclassifySlugIssue = flatSlugIssue(newKind, canonicalNew);
+  if (reclassifySlugIssue) throw new Error(reclassifySlugIssue);
   const title = sourceDoc.frontmatter.title || canonicalNew.split('/').pop();
   let nextBody = sourceDoc.body;
   let bodyAction = 'preserved';

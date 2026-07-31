@@ -261,4 +261,31 @@ describe('node-eligibility gate — the three write doors inherit one gate', () 
     assert.equal(bulk[0].parent, 'domains/cli');
     assert.equal(bulk[0].count, 5);
   });
+
+  // 슬러그 평면성 (2026-08-01 판정) — 새 정체성이 태어나는 단일 문(writeDoc)
+  // 이 경로형 슬러그를 hard error 로 거부한다. 팬아웃 게이트와 달리 형태
+  // 유효성이라 막는다 — 재생성 볼트에서 43개 경로형 슬러그가 이 문으로
+  // 들어와 화면 노드 접힘(68→66)을 만든 실측이 근거다.
+  it('writeDoc rejects a path-style slug under the kind folder', () => {
+    assert.throws(
+      () =>
+        writeDoc(root, 'elements/src/views/home', {
+          frontmatter: {
+            slug: 'elements/src/views/home',
+            kind: 'element',
+            title: 'Home',
+          },
+          body: '',
+        }),
+      /nests a path under elements\//,
+    );
+  });
+
+  it('writeDoc leaves foreign vault nesting alone (schema folder 밖)', () => {
+    // 사용자 볼트 자체의 폴더 관습 — 로컬-퍼스트 계약상 게이트 소관이 아니다.
+    writeDoc(root, 'services/auth-api', {
+      frontmatter: { slug: 'services/auth-api', kind: 'element', title: 'Auth API' },
+      body: '',
+    });
+  });
 });

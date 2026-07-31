@@ -712,16 +712,31 @@ readers. The in-app composer enforces the same rule for humans: the field for
 the current screen language is required, and the other language is offered
 right beside it.
 
-### Element slug — two valid patterns
+### Element slug — flat only (R15's "two valid patterns" is retired)
 
-`kind: element` allows two natural slug styles, each with different ergonomics:
+A slug is the node's **name**, flat under its kind folder: `elements/<role-name>`
+(`elements/jwt-token`, `elements/topology-map-v2`). The file's location lives in
+`path:`, never in the slug. Path-style slugs (`elements/src/features/auth`) are
+**rejected at every write door** (`add_concept` / `add_concepts` /
+`rename_concept` / `reclassify_concept` / CLI `add`) by `flatSlugIssue()` in
+`schema.mjs`.
 
-| Pattern | Example slug | When to use |
-|---|---|---|
-| **flat** | `mcp-sdk`, `file-system-access-api` | The element is an *external library* / *abstract concept* that doesn't sit at a single path |
-| **path-style** | `src/features/auth`, `scripts/build-vault.mjs` | The element is a concrete code module / file inside the codebase. Auto-prefix produces `elements/src/features/auth.md` (4 levels) — deeper but the path is self-documenting |
+Why the R15 stance ("pick flat or path-style per what the element is") was
+overturned (2026-08-01, `docs/DECISIONS.md` 「슬러그는 평평한 식별자다」): node
+identity is resolved by the slug *tail* on three surfaces — the web derivation,
+the unique-tail slug lookup this server documents for `get_concept`, and deep
+links. Path-style slugs collide the moment two files share a basename, and the
+graph silently merges distinct nodes. Measured on the regenerated dogfood vault:
+`elements/src/{entities,views,widgets}/docs-vault` rendered as **one** node and
+four relations disappeared from the screen. "The path is self-documenting" is
+what `path:` is for — a path is evidence of a concept, not the concept (the same
+sentence the 2026-07-31 construction rules apply to titles and `elements:`
+references).
 
-Both pass `vault:validate`. With `--auto-prefix` (CLI default since R15), path-style slugs nest under `elements/` exactly like flat slugs do — pick the style that matches what the element *is*, not what the file system prefers. Use `--raw-slug` to opt out of the `elements/` prefix entirely.
+A vault's **own** folder nesting outside the schema kind folders
+(`services/auth/api.md` in an imported vault) is not this gate's business —
+local-first means the user's disk layout is respected; real tail collisions
+there surface as the compiler's `ambiguous-alias` warning.
 
 The same schema is mirrored at `cli/src/lib/schema.mjs`. A contract test
 (`tests/contract/vault-schema.contract.test.ts`) keeps the two in lock-step;

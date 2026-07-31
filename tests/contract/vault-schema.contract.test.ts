@@ -3,6 +3,7 @@ import {
   BUILD_FM_CASES,
   MISSING_FIELDS_CASES,
   FOLDER_CASES,
+  FLAT_SLUG_CASES,
 } from "../fixtures/vault-schema-cases.mjs";
 import {
   buildFrontmatter as buildMcp,
@@ -10,6 +11,7 @@ import {
   folderForKind as folderMcp,
   normalizeLocaleLabels as localeMcp,
   NODE_ELIGIBILITY_GATE as gateMcp,
+  flatSlugIssue as flatSlugMcp,
   VAULT_KIND_SCHEMA,
 } from "../../mcp/src/schema.mjs";
 import {
@@ -18,6 +20,7 @@ import {
   folderForKind as folderCli,
   normalizeLocaleLabels as localeCli,
   NODE_ELIGIBILITY_GATE as gateCli,
+  flatSlugIssue as flatSlugCli,
 } from "../../cli/src/lib/schema.mjs";
 import { KIND_EXPECTED_EXTRAS } from "@/shared/lib/validate-vault-document";
 import { PRODUCT_DISCIPLINE } from "@/features/vault-agent/model/system-prompt";
@@ -70,6 +73,25 @@ describe("vault kind schema contract — mcp & cli agree", () => {
       });
       it(`${c.kind} (cli)`, () => {
         expect(folderCli(c.kind)).toBe(c.expected);
+      });
+    }
+  });
+
+  describe("flatSlugIssue — 슬러그는 평평한 식별자다 (2026-08-01 판정)", () => {
+    // 두 패키지가 같은 판정을 내려야 add_concept 과 CLI add 가 같은 문이 된다.
+    for (const c of FLAT_SLUG_CASES) {
+      it(`${c.name} (mcp)`, () => {
+        const issue = flatSlugMcp(c.kind, c.slug);
+        if (c.expected === null) expect(issue).toBeNull();
+        else expect(issue).toBeTruthy();
+      });
+      it(`${c.name} (cli)`, () => {
+        const issue = flatSlugCli(c.kind, c.slug);
+        if (c.expected === null) expect(issue).toBeNull();
+        else expect(issue).toBeTruthy();
+      });
+      it(`${c.name} (mcp == cli)`, () => {
+        expect(flatSlugMcp(c.kind, c.slug)).toBe(flatSlugCli(c.kind, c.slug));
       });
     }
   });

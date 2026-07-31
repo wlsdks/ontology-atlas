@@ -332,6 +332,44 @@ export function buildFrontmatter({ slug, kind, title, ...extras }) {
 }
 
 /**
+ * 슬러그 평면성 게이트 (2026-08-01 판정 「슬러그는 평평한 식별자다」 —
+ * `docs/DECISIONS.md`). R15 의 「element slug 두 패턴(flat / path-style)」은
+ * 이 판정으로 폐기됐다: 경로형 슬러그는 파일 basename 이 겹치는 순간
+ * 꼬리(tail) 별칭이 충돌하고, 웹 파생 · unique-tail 해석 · 딥링크 세 표면이
+ * 서로 다른 노드를 하나로 접는다. 실측(재생성 볼트, 2026-08-01):
+ * `elements/src/{entities,views,widgets}/docs-vault` 3개가 화면에서 1개로
+ * 합쳐져 관계 4개가 소리 없이 사라졌다 — 컴파일 68 vs 화면 66.
+ *
+ * 규칙은 **스키마 폴더 안에서만** 잰다: `folderForKind(kind)` 로 시작하는
+ * 슬러그는 그 뒤가 평평해야 한다(`elements/<name>`, 내부 `/` 금지). 스키마
+ * 폴더 밖의 중첩(`services/auth/api` — 사용자 볼트 자체의 폴더 관습)은 이
+ * 게이트의 소관이 아니다: 로컬-퍼스트 계약상 사용자 디스크 구조는 존중하고,
+ * 실제 꼬리 충돌은 컴파일러의 `ambiguous-alias` 경고가 잡는다.
+ *
+ * 위치 정보는 슬러그가 아니라 `path:` 가 나른다 — 「경로는 개념의 증거이지
+ * 개념이 아니다」라는 2026-07-31 구축 규격의 같은 문장을 정체성(슬러그)에
+ * 적용한 것이다. 이 함수는 쓰기 관문(add / rename / reclassify)에서 hard
+ * error 로 쓰인다: 팬아웃 게이트와 달리 이것은 의미 판단이 아니라 형태
+ * 유효성이고(중복 슬러그 · unknown kind 와 같은 급), 생성 시점 수리는 슬러그
+ * 하나를 고르는 비용이지만 사후 수리는 rename 연쇄 비용이기 때문이다.
+ */
+export function flatSlugIssue(kind, slug) {
+  if (typeof kind !== 'string' || typeof slug !== 'string') return null;
+  const folder = VAULT_KIND_SCHEMA[kind]?.folder;
+  if (!folder) return null;
+  if (!slug.startsWith(folder)) return null;
+  const rest = slug.slice(folder.length);
+  if (!rest.includes('/') && !rest.includes('\\')) return null;
+  const tail = rest.split(/[\\/]/).filter(Boolean).pop() ?? rest;
+  return (
+    `slug "${slug}" nests a path under ${folder} — a slug is the node's NAME, not a location. ` +
+    `Node identity is resolved by the slug tail on three surfaces (web derivation, unique-tail lookup, deep links), ` +
+    `so path-style slugs silently merge distinct nodes the moment two files share a basename. ` +
+    `Use a flat slug under the kind folder (e.g. "${folder}${tail}") and record the file location in path: instead.`
+  );
+}
+
+/**
  * Body 보조 — 호출자가 명시적으로 body 안 줬을 때 schema 의 kind 별 ‘starter
  * markdown’ 채워서 사용자가 첫 .md 만으로도 어떤 게 들어가야 하는지 감을 잡게.
  */
