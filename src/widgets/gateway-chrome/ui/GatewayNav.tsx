@@ -1,6 +1,6 @@
 'use client';
 
-import { ArrowLeft, Orbit } from 'lucide-react';
+import { Orbit } from 'lucide-react';
 import { useTranslations } from 'next-intl';
 import { Link, usePathname } from '@/i18n/navigation';
 import { LocaleSwitch } from '@/features/locale-switch';
@@ -141,25 +141,18 @@ export function GatewayNav() {
           )}
 
           {/*
-           * ⚠️ **`/` 가 아니라 `/topology` 다.** 라벨이 「지도로 돌아가기」라고
-           * 말하는데 `/` 는 2026-07-29 소유자 결정으로 **마케팅 페이지**가 된다
-           * (원장: 「root-first-open」 뒤집기). 그때 `/` 로 보내면 사용자는 지도가
-           * 아니라 방금 떠난 소개 화면으로 되돌아온다.
+           * ⚠️ **「지도로 돌아가기」는 없다** (2026-07-31, 소유자: *"이건 홍보
+           * 페이지라 메인 화면에서만 이동 가능하게"*).
            *
-           * 전환 전에는 두 주소가 같은 화면이라 이 결함이 보이지 않았다 — 그래서
-           * `tests/contract/map-destination-route.contract.test.ts` 가 라벨과
-           * 목적지를 함께 본다.
+           * 관문은 설치 전 방문자가 읽는 자리다. 워크벤치로 가는 길을 크롬에
+           * 두면 아직 볼트도 없는 사람에게 작업 표면을 권하게 되고, 볼트가 있는
+           * 사람은 애초에 `/` 에서 지도로 간다(`isGatewaySurface()`). 어느 쪽에도
+           * 쓰이지 않는 링크였다.
+           *
+           * 지도로 가는 길은 판 안의 「설치 없이 브라우저에서 써보기」가 낸다 —
+           * 그 하나가 남아 `map-destination-route.contract.test.ts` 의 감시를
+           * 계속 받는다.
            */}
-          {atRoot ? null : (
-            <Link
-              href="/topology"
-              data-testid="download-back-to-map"
-              className="touch-hit-expand inline-flex items-center gap-1.5 whitespace-nowrap text-body leading-body text-[color:var(--color-text-tertiary)] transition-colors hover:text-[color:var(--color-text-primary)]"
-            >
-              <ArrowLeft size={14} aria-hidden />
-              {t('back')}
-            </Link>
-          )}
           <LocaleSwitch />
         </span>
       </div>

@@ -77,3 +77,88 @@ export function trimToRecentSections(markdown: string, limit: number): TrimmedDo
     omittedSections: boundaries.length - limit,
   };
 }
+
+
+export interface DocEntry {
+  /** 앵커 id — 사이드바 링크와 본문 제목이 공유한다. */
+  id: string;
+  /** `## ` 뒤의 원문 전체. 사이드바 라벨 매칭에 쓴다. */
+  heading: string;
+  /** 앞머리의 `YYYY-MM-DD` — 없으면 `null`. */
+  date: string | null;
+  /** 날짜와 구분자를 뗀 나머지. 없으면 heading 그대로. */
+  title: string;
+}
+
+/**
+ * `## ` 절을 **차례 항목**으로 뽑는다 (변경 내역 사이드바용).
+ *
+ * ## 왜 id 를 여기서 만드나
+ *
+ * 사이드바 링크와 본문 제목이 **같은 문자열**을 써야 앵커가 걸린다. 두 곳이 각자
+ * 만들면 규칙이 조금만 달라도(공백 처리, 대소문자) 링크가 조용히 아무 데도 안
+ * 간다 — 눌러 보기 전에는 안 보이는 실패다. 그래서 한 함수가 목록과 id 를 같이
+ * 낸다.
+ *
+ * ## 중복 제목
+ *
+ * 같은 날 여러 항목이 있으면 제목이 겹칠 수 있다. 뒤에 `-2`, `-3` 을 붙여 **항상
+ * 유일**하게 만든다 — 겹치면 브라우저가 첫 번째로만 가고, 그건 목록이 거짓말을
+ * 하는 것이다.
+ */
+export function extractEntries(markdown: string): DocEntry[] {
+  const lines = markdown.split('\n');
+  const out: DocEntry[] = [];
+  const used = new Map<string, number>();
+  let inFence = false;
+
+  for (const line of lines) {
+    if (/^\s*(\`\`\`|~~~)/.test(line)) {
+      inFence = !inFence;
+      continue;
+    }
+    if (inFence) continue;
+    const match = /^## (?!#)(.+)$/.exec(line);
+    if (!match) continue;
+
+    const heading = match[1]!.trim();
+    const dateMatch = /^(\d{4}-\d{2}-\d{2})\s*[—–-]?\s*(.*)$/.exec(heading);
+    const date = dateMatch ? dateMatch[1]! : null;
+    const title = dateMatch && dateMatch[2] ? dateMatch[2]! : heading;
+
+    const base = slugifyHeading(heading);
+    const seen = used.get(base) ?? 0;
+    used.set(base, seen + 1);
+    out.push({ id: seen === 0 ? base : `${base}-${seen + 1}`, heading, date, title });
+  }
+  return out;
+}
+
+/**
+ * 제목의 **매칭 키** — 원문(마크다운)과 렌더된 텍스트가 같은 문자열이 되게 한다.
+ *
+ * ⚠️ 실측 결함(2026-07-31): 목록은 원문 `## 관문에 읽을거리 둘: \`/guide\`` 를
+ * 키로 쓰고, 본문 `h2` 는 **렌더된** `관문에 읽을거리 둘: /guide` 로 조회했다.
+ * 백틱·굵게 같은 인라인 마크다운이 든 제목 **3개의 앵커가 조용히 끊겼다** —
+ * 눌러 보기 전에는 안 보이는 실패다.
+ *
+ * 그래서 양쪽 다 이 함수를 통과시킨다: 인라인 마커를 걷고 공백을 하나로 만든다.
+ */
+export function normalizeHeadingKey(heading: string): string {
+  return heading
+    .replace(/[`*_~]/g, '')
+    .replace(/\[([^\]]*)\]\([^)]*\)/g, '$1')
+    .replace(/\s+/g, ' ')
+    .trim();
+}
+
+/** 마크다운 제목 → 앵커 id. 한글을 지우지 않는다 — 지우면 대부분의 제목이 빈 문자열이 된다. */
+export function slugifyHeading(heading: string): string {
+  return (
+    heading
+      .toLowerCase()
+      .replace(/[`*_~\[\]()]/g, '')
+      .replace(/[^\p{Letter}\p{Number}]+/gu, '-')
+      .replace(/^-+|-+$/g, '') || 'entry'
+  );
+}

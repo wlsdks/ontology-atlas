@@ -3245,6 +3245,17 @@
     "changelogLead": "무엇이 언제 바뀌었는지. 최신이 위입니다.",
     "guideLead": "폴더 하나가 지도가 되고, 그 지도를 AI 에이전트가 읽기까지.",
     "truncatedNote": "이전 항목 {count}개는 여기서 접었습니다. 관문은 최근 것만 보여줍니다.",
-    "readFullSource": "저장소에서 전문 읽기"
+    "readFullSource": "저장소에서 전문 읽기",
+    "guidePages": {
+      "whatIsAtlas": "이게 무엇인가",
+      "firstFiveMinutes": "첫 5분",
+      "vaultStructure": "볼트의 구조",
+      "connectAgent": "AI 에이전트 연결하기",
+      "cli": "CLI",
+      "trust": "신뢰에 관하여"
+    },
+    "guideNavLabel": "가이드 차례",
+    "onThisGuide": "가이드",
+    "entryNavLabel": "변경 항목"
   }
 }

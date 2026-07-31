@@ -41,6 +41,7 @@ export default async function Page({ params }: { params: Promise<{ locale: strin
       title={t('changelogTitle')}
       lead={t('changelogLead')}
       recentSectionLimit={RECENT_SECTIONS}
+      entryNav
       sourcePath="docs/CHANGELOG.md"
     />
   );

@@ -3245,6 +3245,17 @@
     "changelogLead": "What changed, and when. Newest first.",
     "guideLead": "From one folder to a map your AI agent can read.",
     "truncatedNote": "{count} older entries are folded away — the gateway shows only the recent ones.",
-    "readFullSource": "Read the full file on GitHub"
+    "readFullSource": "Read the full file on GitHub",
+    "guidePages": {
+      "whatIsAtlas": "What is Atlas?",
+      "firstFiveMinutes": "First five minutes",
+      "vaultStructure": "Vault structure",
+      "connectAgent": "Connect an AI agent",
+      "cli": "CLI",
+      "trust": "On trust"
+    },
+    "guideNavLabel": "Guide contents",
+    "onThisGuide": "Guide",
+    "entryNavLabel": "Entries"
   }
 }
