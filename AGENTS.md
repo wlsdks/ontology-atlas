@@ -57,120 +57,77 @@ Markdown frontmatter is the graph. The git repo is the source of truth. No backe
 ## Quick start
 
 ```bash
-pnpm install
-pnpm dev                          # http://localhost:3000 — pick a markdown folder and you're in
-pnpm test:run                     # vitest unit suite
-pnpm test:contracts               # focused cross-package contract suite
-pnpm exec tsc --noEmit
-pnpm lint
-pnpm build                        # static export → out/
-pnpm vault:validate               # frontmatter integrity (R11 — runs in CI too)
-pnpm test:vault:validate          # focused validator CLI argument contract
-pnpm vault:audit                  # capability/element path drift guard (R12)
-pnpm test:vault:audit             # focused vault audit CLI argument contract
-pnpm vault:migrate --list         # see registered schema migrations (R11)
-
-pnpm mcp:build-binary             # compile the MCP server into the app bundle payload (bun)
-
-# AI agent (Claude Code) auto-registers via this repo's `.mcp.json` — `mcp/README.md` has details.
+pnpm install && pnpm dev          # localhost:3000 — pick a markdown folder and you're in
+pnpm checks:changed               # start here: the focused checks for what you touched
 ```
 
-No `.env`, no auth provider, no backend setup needed. Round 10 (2026-05) permanently removed the optional Firebase / Firestore / Auth surface — the OSS is now pure local-first.
+**There is no setup step.** No `.env`, no auth provider, no backend, no seed data —
+if a task seems to need one, the design is wrong (Round 10 removed the optional
+Firebase/Auth surface permanently). `package.json` scripts carry the rest; the ones
+worth knowing by name are `vault:validate` (frontmatter integrity, also in CI),
+`agents:check` (this file's byte budget + agent-file drift), and `mcp:build-binary`
+(compiles the MCP server into the app bundle).
 
 ## Tech stack
 
-- **Framework** Next.js 16 · App Router · `output: 'export'`
-- **Language** TypeScript 5
-- **Style** Tailwind CSS 4 (`@theme` CSS-based tokens)
-- **i18n** next-intl 4.11 with `/[locale]/` URL prefix (en / ko)
-- **Visualization** Custom canvas-2D engine (`topology-map-v2`) for `/`, `/topology` · Graphology ForceAtlas2 (physics) · `/ontology/studio` (공방 / Compass Stage) is the write surface — the old xyflow ERD builder at `/ontology/edit` was RETIRED 2026-07-24 (the workshop covers assemble/connect/preview/write; `@xyflow/react` dependency removed). Sigma.js 는 folder-topology 미니맵 삭제(2026-07 P5)와 함께 의존성까지 제거
-- **Local-first** File System Access API + IndexedDB (vault handle persistence)
-- **AI agent** `@modelcontextprotocol/sdk` (stdin/stdout JSON-RPC server, `mcp/` package)
-- **State** in-memory + IndexedDB (vault handle) · React local state · URL state
-- **Architecture** Feature-Sliced Design (ESLint boundaries enforce import direction)
-- **Test** Vitest + Testing Library + jsdom · Playwright (E2E)
-- **Lint** ESLint 9 flat config
-- **Package** pnpm
+Versions live in `package.json` — read it rather than a copy here. What you can't
+read off the manifest:
+
+- **`output: 'export'`** — static export, so no server runtime, no API routes, no
+  server actions. Every "just add an endpoint" idea is out of bounds.
+- **The graph renderer is ours** — a custom canvas-2D engine (`topology-map-v2`),
+  not a graph library. Graphology supplies ForceAtlas2 physics only. **xyflow and
+  Sigma.js were removed** along with the surfaces that used them; re-adding a graph
+  rendering dependency needs a decision record, not a preference.
+- **State has no store** — in-memory + React local state + URL state, with IndexedDB
+  holding only the vault handle. The vault's markdown is the single source of truth.
+- **`/ontology/studio` is the write surface.** The old ERD builder at `/ontology/edit`
+  is a redirect.
 
 ## Folder map
 
-```
-app/                       Next.js routes (thin wrappers)
-src/                       FSD layers
-  ├── app/                 providers · initialization
-  ├── views/               page-level components
-  ├── widgets/             composite UI
-  ├── features/            interaction units
-  ├── entities/            business entities
-  └── shared/              UI · lib · config primitives
-mcp/                       MCP server (the AI agent's surface) — 32 tools. Compiled into the
-                           macOS app bundle by `pnpm mcp:build-binary`; not published to npm
-cli/                       CLI binary (developer's daily entry point), run from a source
-                           checkout (`node cli/src/index.mjs`); not published to npm.
-                           `--help` lists the commands — don't keep a copy here that drifts
-docs/                      long-form docs
-docs/ontology/             this project's own ontology vault (dogfood)
-                           `.ontology-atlasignore` (gitignore-style) suppresses external
-                           element ref noise in growth_plan / maintenance_plan
-tests/                     Vitest unit + Playwright E2E
-  └── contract/            cross-package contract tests (parser 4-way, validator 3-way)
-scripts/                   vault tooling (R11) + perf baseline (R11) + dogfood walk (R12)
-                           build-docs-vault · validate-vault · migrate-vault
-                           dogfood-mcp-walk · perf-vault · perf-graph
-.claude/rules/             granular working rules (auto-loaded)
-```
+`src/` is Feature-Sliced Design: `app` (providers) · `views` (pages) · `widgets`
+(composite UI) · `features` (interaction units) · `entities` · `shared`.
+**Import direction is `app → views → widgets → features → entities → shared`** and
+ESLint blocks the reverse. `app/` at the repo root is Next.js routing — thin wrappers only.
 
-**Import direction**: `app → views → widgets → features → entities → shared`. ESLint blocks the reverse.
+What the tree doesn't tell you:
+
+- **`mcp/` and `cli/` are not published to npm** and never will be — the app bundle
+  carries the MCP server (`pnpm mcp:build-binary`), and the CLI runs from a source
+  checkout. `npx ontology-atlas …` is a 404, not a future feature.
+- **`docs/ontology/` is this project's own vault** (we dogfood). `.ontology-atlasignore`
+  suppresses external element-ref noise in growth/maintenance plans.
+- **`tests/contract/` holds cross-package contracts** — the same fixture run through
+  `src/`, `mcp/`, and `scripts/` parsers so they can't drift apart.
+- **`.claude/rules/` is mostly *not* auto-loaded** — three rules are resident and five
+  load only when you read matching files (`CLAUDE.md` has the table).
 
 ## Routes
 
-```
-/                          **who is asking decides** (2026-07-30, 「root-first-open」 뒤집기 구현).
-                           Web visitor with no vault → the gateway face (headline · download · "open it in
-                           the browser"), the same view `/download` renders. Web user with a vault, and the
-                           installed app → unchanged (map / first-run). The installed app must never show
-                           "download this app" to someone already running it — that half of root-first-open
-                           still stands. Single source: `isGatewaySurface()` in `shared/lib/nav-destination`.
-/topology                  the map — canvas-2D topology hub (map + INDEX + datasheet). This is now the
-                           map's own address; links that say "map" must point here, not at `/`
-                           (gate: `tests/contract/map-destination-route.contract.test.ts`)
-/projects                  project list (vault frontmatter `kind: project` docs)
-/project/[slug]            project detail (inline edit when vault is loaded)
-/project/[slug]/edit       full project editor
-/project/new               new project form
-/docs                      vault picker / editor / unified palette
-/ontology                  thin redirect → /topology?index=expanded (B3 허브가 곧 지도 — the old tree/ego hub is retired)
-/ontology/edit             RETIRED (2026-07-24) — the xyflow ERD builder was removed once the
-                           workshop covered assemble/connect/preview/write. Now a thin client
-                           redirect to /ontology/studio (forwarding any ?node= deep-link) so
-                           old bookmarks/agent-handoff links land in the workshop, not a 404.
-/ontology/studio           공방 (Compass Stage) — the vault write surface. Relation types sit at
-                           fixed compass bearings (UP=is_a · DOWN=contains · RIGHT=depends ·
-                           LEFT=relates); empty ones are dashed sockets that write a real
-                           frontmatter relation when filled. `?node=` opens an existing node,
-                           `?mode=create` the empty form. Restrained like the rest of the app —
-                           the old game-token exception was retired 2026-07-24
-                           (`.claude/rules/design.md`)
-/ontology/insights         graph insights (kind census · hubs · relation breakdown)
-/git                       local vault git history / snapshot workbench (desktop-only destination)
-/download                  the same gateway view as `/`, as an explicit deep link. Keeps the
-                           breadcrumb and the back-to-map link that `/` drops
-/guide · /guide/[segment]  the project guide — chapters rendering `docs/guide/*.md` vault docs.
-                           Named `guide` (not `docs`) because `/docs` is already the vault
-                           workbench. Order/slugs live once in
-                           `views/gateway-doc/model/guide-pages.ts`
-/changelog                 renders `docs/CHANGELOG.md` from the vault, most recent 12 sections
-                           only; the screen says how many it folded and links the full file
-/project/fallback          fallback page for missing slugs
-```
+Seventeen routes, all `[locale]` prefixed by next-intl; in-app links use
+`@/i18n/navigation`. The annotated list is `docs/ARCHITECTURE.md` — read it there
+rather than from a copy that drifts (it did: three copies existed and all three
+disagreed with the filesystem, 2026-07-31).
 
-Adding or removing a route requires a `docs/DECISIONS.md` entry in the same
-change — `pnpm decisions:check` enforces it. Revived namespaces are forbidden:
-`/login`, `/signup`, `/account`, `/reset-password`, `/settings/*`, `/admin/*`,
-`/review/*`, `/diagnostics/*`, `/knowledge/*` were all permanently removed (see
-`.claude/rules/forbidden.md` for why).
+What you can't derive from `app/[locale]/`:
 
-All routes are `[locale]` prefixed by next-intl; in-app links use `@/i18n/navigation`.
+- **`/` is decided by who is asking** (2026-07-30). A web visitor with no vault gets
+  the gateway face — the same view `/download` renders. A web user with a vault, and
+  the installed app, get the map / first-run unchanged. **The installed app must never
+  offer "download this app" to someone already running it.** Single source:
+  `isGatewaySurface()` in `shared/lib/nav-destination`.
+- **`/topology` is the map's address, not `/`.** Any link that says "map" points there
+  (gate: `tests/contract/map-destination-route.contract.test.ts`).
+- **`/ontology` and `/ontology/edit` are redirects**, kept so old bookmarks and
+  agent-handoff links land somewhere real instead of a 404.
+- **`/ontology/studio` is the write surface** — relation types at fixed compass
+  bearings (UP=is_a · DOWN=contains · RIGHT=depends · LEFT=relates), empty ones dashed
+  sockets that write a real frontmatter relation when filled.
+- **Adding or removing a route needs a `docs/DECISIONS.md` entry in the same change** —
+  `pnpm decisions:check` enforces it. Retired namespaces (`/login`, `/signup`,
+  `/account`, `/reset-password`, `/settings/*`, `/admin/*`, `/review/*`,
+  `/diagnostics/*`, `/knowledge/*`) stay retired; `.claude/rules/forbidden.md` says why.
 
 ## Working principles
 
@@ -280,6 +237,12 @@ mechanism this budget assumes.)
 - Ask the ontology only focused questions (`get_concept`, `find_path`, `query_ontology` with narrow operations). Avoid full `list_concepts` dumps unless the task genuinely needs the whole vault.
 - Verify focused-first. Start with `pnpm checks:changed` (or `pnpm checks:changed -- <path...>`) and direct sibling/unit/contract checks for touched paths. Escalate to full `pnpm test:run`, `pnpm lint`, `pnpm build`, broad Playwright, or desktop packaging only when shared contracts, routing, config, release surfaces, or user-facing workflows changed, or when focused checks leave a concrete risk uncovered.
 - Summarize large command output before carrying it forward. Preserve decisions, failing lines, metrics, and file paths; drop progress bars, repeated logs, and boilerplate.
+- **Don't delegate what you can finish in a handful of tool calls, and don't spawn a
+  subagent to double-check your own work.** A subagent earns its cost by *isolating
+  context* — it burns tokens privately and hands back a short answer. Re-verification
+  is not that. The councils are the deliberate exception, and their point is
+  **independence** (the party that wants to build must not sign the gate), not extra
+  verification passes.
 - Use memory as an index, not a transcript: search the registry, open only the one or two relevant notes, and verify drift-prone facts live.
 - Do not run or add hooks that inject long dynamic context. SessionStart hooks must stay concise; PreToolUse hooks should block risky actions only, not record routine activity.
 - Mention residual uncertainty instead of loading more context reflexively.
