@@ -243,5 +243,49 @@ test("findBacklinks 는 ambiguous tail 을 exact target backlink 로 오인하�
   rmSync(root, { recursive: true, force: true });
 });
 
+test("path: 증거 문자열은 참조가 아니다 — tail-suffix 절이 건드리지 않는다", () => {
+  // 실측 회귀 (2026-08-01, 도그푸드 볼트 평탄화): `elements/src/widgets/
+  // docs-vault` → `elements/docs-vault-widget` rename 이 **다른 노드의**
+  // `path: src/entities/docs-vault` 를 `…/docs-vault-widget` 으로 고쳐
+  // 존재하지 않는 파일을 가리키게 했다. 참조 슬롯(domain + graph arrays)만
+  // 다시 쓰고 증거 슬롯(path 등 임의 문자열 키)은 보존해야 한다.
+  const root = makeVault();
+  writeMd(root, "elements/docs-vault", "---\nkind: element\ntitle: DV\n---\n");
+  writeMd(
+    root,
+    "elements/other",
+    "---\nkind: element\ntitle: Other\npath: src/entities/docs-vault\n---\n",
+  );
+  writeMd(
+    root,
+    "capabilities/cap",
+    "---\nkind: capability\nelements: [elements/docs-vault]\n---\n",
+  );
+
+  redirectBacklinks(root, "elements/docs-vault", "elements/docs-vault-widget", {
+    dryRun: false,
+  });
+
+  // 참조는 따라간다.
+  assert.match(readMd(root, "capabilities/cap"), /elements\/docs-vault-widget/);
+  // 증거는 남는다.
+  assert.match(readMd(root, "elements/other"), /path: src\/entities\/docs-vault\n/);
+  rmSync(root, { recursive: true, force: true });
+});
+
+test("domain: 단일 문자열 참조는 여전히 따라간다", () => {
+  const root = makeVault();
+  writeMd(root, "domains/auth", "---\nkind: domain\ntitle: Auth\n---\n");
+  writeMd(
+    root,
+    "capabilities/login",
+    "---\nkind: capability\ndomain: domains/auth\n---\n",
+  );
+
+  redirectBacklinks(root, "domains/auth", "domains/identity", { dryRun: false });
+  assert.match(readMd(root, "capabilities/login"), /domain: domains\/identity/);
+  rmSync(root, { recursive: true, force: true });
+});
+
 console.log(`\nredirectBacklinks: ${passed} passed, ${failed} failed`);
 if (failed > 0) process.exit(1);

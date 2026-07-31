@@ -1446,7 +1446,14 @@ export function redirectBacklinks(rootPath, targetSlug, nextSlug, options = {}) 
           fmChanged = true;
         }
       } else if (typeof value === 'string') {
-        const r = rewriteArrayItem(value);
+        // 그래프 참조 슬롯만 다시 쓴다 (`domain:` + GRAPH_ARRAY_KEYS 계열).
+        // `path:` 같은 증거 문자열은 참조가 아니다 — 실측(2026-08-01, 도그푸드
+        // 볼트 평탄화): `elements/src/widgets/docs-vault` → `elements/
+        // docs-vault-widget` rename 의 tail-suffix 절이 **다른 노드의**
+        // `path: src/entities/docs-vault` 까지 `…/docs-vault-widget` 으로
+        // 고쳐 존재하지 않는 파일을 가리키게 했다(pathDrift 3건).
+        const isRefSlot = key === 'domain' || GRAPH_ARRAY_KEY_SET.has(key);
+        const r = isRefSlot ? rewriteArrayItem(value) : { changed: false };
         if (r.changed) {
           nextFm[key] = r.value;
           beforeKeys.push({ key, before: value });
