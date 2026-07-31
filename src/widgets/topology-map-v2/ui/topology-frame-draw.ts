@@ -1029,10 +1029,23 @@ export function drawTopologyFrame(params: FrameDrawParams): void {
     // 대체한다(이중 페이드 방지) + 미세 appearScale 을 이 값으로 몬다. 배치
     // 자식이 아니면 기존 그룹/월드-등장 경로(회귀 0).
     const batchAppear = batchAppearById?.get(node.id);
+    // 다섯째 티어 관통 채널도 **그룹 페이드를 대체한다** — `batchAppear` 와 같은
+    // 이유다. 이 노드의 `tierAlpha` 는 이미 `effectiveAlphaById` 를 거쳐 나오고,
+    // 그 값에 칩-펼침 램프가 들어 있다(`chipExpandReveal`). 여기서 그룹 페이드를
+    // 또 곱하면 알파가 **두 지수의 곱**이 되어, 칩이 "펼쳐졌다"고 말한 뒤로도
+    // 자식이 한참 오는 중이다(실측: 칩 90% 391ms vs 자식 621ms — 230ms 차,
+    // `design.md` 의 120ms "한 입력 = 한 사건" 임계 초과).
+    //
+    // 위 `batchAppear` 주석이 "이중 페이드 방지"라고 이미 적어 둔 그 가드인데,
+    // 이 채널이 나중에 붙느라 안 들어갔다. 두 램프가 같은 `clusterRevealTau` 를
+    // 쓰므로, 대체해도 페이드는 사라지지 않고 **한 번만** 일어난다.
+    const chipExpandReveal = expandRevealById?.get(node.id);
     const revealMul =
       batchAppear !== undefined
         ? Math.min(1, Math.max(0, batchAppear))
-        : Math.min(1, Math.max(0, nearestExpandedRevealMul(node.id)));
+        : chipExpandReveal !== undefined
+          ? 1
+          : Math.min(1, Math.max(0, nearestExpandedRevealMul(node.id)));
     const scaleDriver = batchAppear !== undefined ? Math.min(1, Math.max(0, batchAppear)) : appear;
     const appearScale = 0.6 + 0.4 * scaleDriver;
     const appearRevealAlpha = appear * revealMul;

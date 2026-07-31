@@ -594,8 +594,20 @@ export function useTopologyLoop(args: UseTopologyLoopArgs): UseTopologyLoopResul
   /**
    * 다섯째 티어 관통 채널 — **칩 펼침으로 드러난 자식**의 0..1 램프.
    * 앞의 넷(엣지 선택 · 발자국 · ego · 스포트라이트)과 같은 문법이다.
-   * `egoRevealRiseTau`/`egoRevealDecayTau` 를 재사용한다 — 같은 성격의
-   * "콘텐츠가 장면 위로 떠오른다" 이므로 새 토큰을 만들지 않는다.
+   *
+   * **`clusterRevealTau` 를 쓴다 — 칩 자신의 형태 전환과 같은 값이다.**
+   * 처음엔 `egoRevealRiseTau`(0.22)를 빌려 썼는데, 그건 *다른 사건*(ego
+   * 클릭)의 리듬이었다. 이 채널을 낳는 입력은 칩 클릭이고, 그 입력의 리듬은
+   * 이미 `clusterRevealTau`(0.17)로 정해져 있다 — 칩의 pill/badge 페이드가
+   * 그 값을 쓴다. `design.md` 의 **"한 입력 = 한 사건"** 이 요구하는 것이
+   * 정확히 이 일치다.
+   *
+   * ⚠️ 그리고 이 채널은 드로우에서 **그룹 페이드를 대체한다**
+   * (`topology-frame-draw.ts` 의 `revealMul`). 둘 다 걸면 알파가 두 지수의
+   * **곱**이 되어, 칩이 "펼쳐졌다"고 말한 뒤로도 자식이 한참 오는 중이다
+   * (실측: 칩 90% 도달 391ms vs 자식 621ms — 230ms 차, 120ms 임계 초과).
+   * 같은 파일이 `batchAppear` 에 대해 "이중 페이드 방지"라고 적어 둔 가드에
+   * 이 채널이 나중에 붙느라 안 들어갔던 것이다.
    */
   const expandRevealRef = useRef<Map<string, number>>(new Map());
   /**
@@ -2596,7 +2608,7 @@ export function useTopologyLoop(args: UseTopologyLoopArgs): UseTopologyLoopResul
           const prev = revealMap.get(id) ?? 0;
           const next = reducedMotionRef.current
             ? (target.has(id) ? 1 : 0)
-            : stepEmphasis(prev, target.has(id), true, dt, tokens.egoRevealRiseTau, tokens.egoRevealDecayTau);
+            : stepEmphasis(prev, target.has(id), true, dt, tokens.clusterRevealTau, tokens.clusterRevealTau);
           if (!target.has(id) && next <= 0.02) revealMap.delete(id);
           else revealMap.set(id, next);
         }
