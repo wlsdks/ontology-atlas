@@ -1,6 +1,11 @@
 import { describe, expect, it } from "vitest";
 
-import { computeConcentricLayout, type LayoutGraphNode } from "@/widgets/topology-map-v2/model/layout";
+import {
+  computeConcentricLayout,
+  relaxNewlyVisible,
+  type LayoutGraphNode,
+  type LayoutPoint,
+} from "@/widgets/topology-map-v2/model/layout";
 import { DENSITY_GATE_THRESHOLD } from "@/widgets/topology-map-v2/model/density-gate";
 
 /**
@@ -129,5 +134,123 @@ describe("layout relax scope contract", () => {
       }
     }
     expect(collisions).toBe(0);
+  });
+
+  describe("펼침 시 국소 재완화 (relaxNewlyVisible)", () => {
+    /**
+     * 한 부모의 자식끼리는 phyllotaxis 간격이 이미 충돌을 막지만(실측 겹침 0),
+     * **다른 부모의 부채와는 겹친다** — 3개 펼침 5건 · 6개 18건 · 12개 70건.
+     * 전체 재완화는 비용이 누적되고(24개에서 341ms) **이미 보고 있던 노드가
+     * 움직인다**(최대 15 유닛). 그래서 새로 보이는 것만 국소로 푼다.
+     */
+    /** 두 부모가 서로 가까워 부채가 실제로 겹치는 볼트. */
+    function twoFans(childCount: number): LayoutGraphNode[] {
+      const nodes: LayoutGraphNode[] = [
+        { id: "p", kind: "project", parentId: null },
+        { id: "d0", kind: "domain", parentId: "p" },
+        { id: "c0", kind: "capability", parentId: "d0" },
+        { id: "c1", kind: "capability", parentId: "d0" },
+      ];
+      for (let i = 0; i < childCount; i += 1) {
+        nodes.push({ id: `a${i}`, kind: "element", parentId: "c0" });
+        nodes.push({ id: `b${i}`, kind: "element", parentId: "c1" });
+      }
+      return nodes;
+    }
+
+    const seedAll = (nodes: readonly LayoutGraphNode[]) =>
+      new Map<string, LayoutPoint>(
+        computeConcentricLayout(nodes, RINGS, { radii: RADII, relaxScope: new Set() }).map((p) => [
+          p.id,
+          { ...p },
+        ]),
+      );
+
+    it("bbox 밖의 **먼** 노드는 결과에 영향을 주지 않는다 — 비용이 클릭 수와 무관한 이유", () => {
+      // 이웃(같은 도메인의 형제 부채)은 당연히 영향을 준다 — 그게 이 함수가
+      // 푸는 겹침이다. 여기서 고정하는 것은 **먼 노드는 아예 안 본다** 는 것:
+      // 그래서 이미 펼친 클러스터가 2개든 24개든 클릭당 비용이 같다
+      // (실측 2026-07-31: 클릭당 items 107~134개, 클릭 순서와 무관).
+      const near = twoFans(DENSITY_GATE_THRESHOLD * 3);
+      // 반대편 도메인에 같은 크기의 부채를 하나 더 — 공간적으로 멀다.
+      const withFar: LayoutGraphNode[] = [
+        ...near,
+        { id: "dFar", kind: "domain", parentId: "p" },
+        { id: "cFar", kind: "capability", parentId: "dFar" },
+        ...Array.from({ length: DENSITY_GATE_THRESHOLD * 3 }, (_, i) => ({
+          id: `f${i}`,
+          kind: "element" as const,
+          parentId: "cFar",
+        })),
+      ];
+      const newly = new Set(near.filter((n) => n.parentId === "c0").map((n) => n.id));
+      const placedNear = new Set(near.filter((n) => n.parentId !== "c0").map((n) => n.id));
+      const placedAll = new Set(withFar.filter((n) => n.parentId !== "c0").map((n) => n.id));
+
+      const a = seedAll(withFar);
+      relaxNewlyVisible(a, withFar, newly, placedNear, { radii: RADII });
+      const b = seedAll(withFar);
+      relaxNewlyVisible(b, withFar, newly, placedAll, { radii: RADII });
+
+      for (const id of newly) {
+        expect(
+          Math.hypot(a.get(id)!.x - b.get(id)!.x, a.get(id)!.y - b.get(id)!.y),
+          id,
+        ).toBeLessThan(0.001);
+      }
+    });
+
+    it("이미 놓인 노드는 **한 톨도 움직이지 않는다** — 발밑이 흔들리지 않는다", () => {
+      const nodes = twoFans(DENSITY_GATE_THRESHOLD * 3);
+      const placed = new Set(nodes.filter((n) => n.parentId !== "c0").map((n) => n.id));
+      const newly = new Set(nodes.filter((n) => n.parentId === "c0").map((n) => n.id));
+
+      const before = seedAll(nodes);
+      const after = seedAll(nodes);
+      relaxNewlyVisible(after, nodes, newly, placed, { radii: RADII });
+
+      for (const id of placed) {
+        const a = before.get(id)!;
+        const b = after.get(id)!;
+        expect(Math.hypot(a.x - b.x, a.y - b.y), id).toBeLessThan(0.001);
+      }
+    });
+
+    it("새로 보이는 노드는 이웃과의 겹침이 풀린다", () => {
+      const nodes = twoFans(DENSITY_GATE_THRESHOLD * 3);
+      const placed = new Set(nodes.filter((n) => n.parentId !== "c0").map((n) => n.id));
+      const newly = new Set(nodes.filter((n) => n.parentId === "c0").map((n) => n.id));
+      const kindOf = (id: string) => nodes.find((n) => n.id === id)!.kind;
+      const count = (pts: Map<string, LayoutPoint>) => {
+        let c = 0;
+        for (const id of newly) {
+          for (const other of [...newly, ...placed]) {
+            if (other === id) continue;
+            const a = pts.get(id)!;
+            const b = pts.get(other)!;
+            if (Math.hypot(a.x - b.x, a.y - b.y) < RADII[kindOf(id)] + RADII[kindOf(other)]) c += 1;
+          }
+        }
+        return c;
+      };
+      const pts = seedAll(nodes);
+      const seeded = count(pts);
+      relaxNewlyVisible(pts, nodes, newly, placed, { radii: RADII });
+      const relaxed = count(pts);
+      // 씨앗 상태에 겹침이 실재해야 이 계약이 무언가를 지킨다(빈 진술 방지).
+      expect(seeded).toBeGreaterThan(0);
+      expect(relaxed).toBeLessThan(seeded);
+    });
+
+    it("새로 보이는 것이 없으면 아무 일도 안 한다", () => {
+      const nodes = twoFans(DENSITY_GATE_THRESHOLD * 3);
+      const before = seedAll(nodes);
+      const after = seedAll(nodes);
+      relaxNewlyVisible(after, nodes, new Set(), new Set(nodes.map((n) => n.id)), { radii: RADII });
+      for (const [id, a] of before) {
+        const b = after.get(id)!;
+        expect(Math.hypot(a.x - b.x, a.y - b.y), id).toBeLessThan(0.001);
+      }
+    });
   });
 });

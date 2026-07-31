@@ -36,6 +36,7 @@ import { buildDustPoints, buildRealmCosmosPoints, computeStarDustCount, type Dus
 import type { CanvasBackground, FootprintPreference, GlyphSet } from "@/shared/lib/appearance-preferences";
 import { computeClusterFitTarget, computeFocusCameraTarget, computeOverviewCameraTarget, computeOverviewFitScale, hasAnyNodeOnScreen, worldToScreen } from "./topology-camera-math";
 import { drawTopologyFrame } from "./topology-frame-draw";
+import { relaxNewlyVisible } from "../model/layout";
 import { computeTopologyClusterState } from "./topology-cluster-state";
 import type { ClusterChip } from "../model/density-gate";
 import { clusterMoreChipId, EGO_NEIGHBOR_CHIP_ID, EGO_NEIGHBOR_LIMIT, parseClusterMoreChipId, rankEgoNeighborsByDOI, scheduleRipple, selectiveEgoNeighbors, stepEmphasis, stepFocusRamp, type EgoNeighborRankEntry } from "../model/focus-state";
@@ -2511,6 +2512,65 @@ export function useTopologyLoop(args: UseTopologyLoopArgs): UseTopologyLoopResul
           const next = stepEmphasis(appearMap.get(id) ?? 0, true, true, dt, tokens.egoRevealRiseTau, tokens.egoRevealRiseTau);
           appearMap.set(id, next);
           if (next >= 0.999) startMap.delete(id);
+        }
+      }
+
+      // 펼침으로 **새로 보이게 된** 노드의 국소 재완화 (2026-07-31).
+      //
+      // `relaxScope`(월드 빌드 시점)는 아무것도 펼쳐지지 않은 상태를 기준으로
+      // 잡히므로, 칩을 펼치면 그 자식이 **씨앗 자리** 그대로 등장한다. 한 부모의
+      // 자식끼리는 phyllotaxis 간격이 충돌을 막지만(실측 겹침 0) **다른 부모의
+      // 부채와는 겹친다**(3개 펼침 5건 · 6개 18건 · 12개 70건).
+      //
+      // 전체를 다시 완화하면 비용이 누적되고(24개 펼침 341ms) **이미 보고 있던
+      // 노드가 움직인다**(최대 15 유닛). 그래서 새로 보이는 것만, 그 bbox 이웃만
+      // 넣어 푼다 — 클릭당 items 가 107~134개로 **클릭 수와 무관하게 상수**다.
+      //
+      // 프레임 안에서 도는 이유: 접힘 집합이 프레임마다 계산되므로 여기가
+      // "새로 보이게 됐다"를 아는 유일한 자리다. 펼침 1회당 1회만 돈다.
+      {
+        const prevClustered = clusteredIdsRef.current;
+        const newlyVisible = new Set<string>();
+        for (const id of prevClustered) if (!frameClusteredIds.has(id)) newlyVisible.add(id);
+        if (newlyVisible.size > 0) {
+          const alreadyPlaced = new Set<string>();
+          for (const node of world.nodes) {
+            if (!newlyVisible.has(node.id) && !frameClusteredIds.has(node.id)) {
+              alreadyPlaced.add(node.id);
+            }
+          }
+          // 홈 좌표(정준 배치)를 푼다 — 스프링이 돌아갈 자리가 여기다. 라이브
+          // 좌표(x/y)는 아래에서 같은 델타만큼 옮겨 드래그/물리 상태를 보존한다.
+          const homePoints = new Map(
+            world.nodes.map((n) => [n.id, { id: n.id, x: n.homeX, y: n.homeY }]),
+          );
+          relaxNewlyVisible(
+            homePoints,
+            world.nodes.map((n) => ({ id: n.id, kind: n.kind, parentId: n.parentId })),
+            newlyVisible,
+            alreadyPlaced,
+            {
+              radii: {
+                project: tokens.radiusProject,
+                domain: tokens.radiusDomain,
+                capability: tokens.radiusCapability,
+                element: tokens.radiusElement,
+              },
+            },
+          );
+          for (const node of world.nodes) {
+            if (!newlyVisible.has(node.id)) continue;
+            const next = homePoints.get(node.id);
+            if (!next) continue;
+            const dx = next.x - node.homeX;
+            const dy = next.y - node.homeY;
+            if (dx === 0 && dy === 0) continue;
+            node.homeX = next.x;
+            node.homeY = next.y;
+            node.x += dx;
+            node.y += dy;
+          }
+          recomputeWorldGeometry(world, tokens);
         }
       }
 
