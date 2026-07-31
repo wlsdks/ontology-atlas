@@ -5888,7 +5888,15 @@ function compactPostWriteMaintenance(limit = 5) {
   const result = queryCompiledOntology(artifact, {
     operation: 'maintenance_plan',
     limit,
-  }, { ontologyAtlasIgnorePatterns, nodeEligibilityFindings });
+  }, {
+    ontologyAtlasIgnorePatterns,
+    nodeEligibilityFindings,
+    // The empty-bridge audit needs bodies to tell "created and abandoned" from
+    // "documented but childless" — and without that distinction it would fire on
+    // 20 of this vault's 38 capabilities. The compiled-cache read above already
+    // loads every doc, so this second pass is the same disk we just touched.
+    sourceDocs: loadVaultDocs(VAULT_ROOT),
+  });
   return {
     operation: result.operation,
     sideEffect: result.sideEffect,

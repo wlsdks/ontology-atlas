@@ -115,10 +115,22 @@ export const CONSTRUCTION_RULES_EN = `## Construction rules — read before add_
    c. Do several existing children share a name/path prefix? Glance at them, but do
       NOT treat this as the condition — prefixed siblings are often legitimate, and
       broken ones often share no prefix. It only tells you where to look first.
-4. IF (a) fails for 3+ existing children AND you can name the behavior they share in
-   one sentence: call add_concept ONCE for that behavior, then patch_concept each
-   matching child to reparent it. IF you cannot name the shared behavior: create
-   NOTHING — count alone is not evidence of a problem.
+4. IF (a) fails for 3+ existing children, the fix is a BRIDGE NODE: one node inserted
+   between the parent and those children, named after the behavior they share. Call
+   add_concept ONCE for it, then patch_concept each matching child to point at it.
+   Create a bridge only when all four hold:
+   i.   It names a shared BEHAVIOR. "Group A" / "Part 2" / "Other" divide the pile
+        without adding meaning — those are not bridges, they are empty buckets with
+        a name on them.
+   ii.  You can state that behavior in ONE sentence. If you cannot write the
+        sentence, you have not found the grouping yet.
+   iii. The bridge itself passes (a) against its own siblings — a bridge that is
+        interchangeable with an existing node is a duplicate, not a layer.
+   iv.  You actually reparent the children afterwards. A bridge left empty IS the
+        empty bucket it was meant to prevent, and it does not go unnoticed: a node
+        that groups nothing is reported for retirement.
+   IF you cannot satisfy all four: create NOTHING — count alone is not evidence of
+   a problem.
 5. This procedure does not block writes. Skipping it still succeeds; \`warnings\` /
    \`postWriteMaintenance\` on the response flags it for cleanup instead.`;
 
@@ -264,7 +276,7 @@ export function denseParentActionMessage({ parentSlug, count, childKind, trigger
   const source = basis === 'vault-p90'
     ? `this vault's own p90 for ${childKind} parents is ${trigger}`
     : `the starting range for ${childKind} children is ${trigger} (this vault has too few ${childKind} parents yet for its own percentile to mean anything)`;
-  return `"${parentSlug}" has ${count} ${childKind} children that resolve to real nodes, and ${source}. That number is a trigger, not a limit — nothing here caps how many children a node may have, and a wide parent whose children each earn their place is correct. What made this worth mentioning is ${evidence}. Call get_concept("${parentSlug}") and answer one question per child: can you write a non-circular sentence saying why it is NOT interchangeable with its siblings? For every child where you can, leave it alone. Where you cannot for three or more, name the behavior they share once with add_concept and patch_concept those children to point at it. Shared name prefixes are a hint worth glancing at, not the test — in this vault, prefixed siblings have been legitimate and the broken ones shared no prefix at all.`;
+  return `"${parentSlug}" has ${count} ${childKind} children that resolve to real nodes, and ${source}. That number is a trigger, not a limit — nothing here caps how many children a node may have, and a wide parent whose children each earn their place is correct. What made this worth mentioning is ${evidence}. Call get_concept("${parentSlug}") and answer one question per child: can you write a non-circular sentence saying why it is NOT interchangeable with its siblings? For every child where you can, leave it alone. Where you cannot for three or more, those children want a BRIDGE NODE — one node named after the behavior they share, with them reparented onto it; the construction rules list the four conditions a bridge has to meet, and a bridge you leave empty is reported back to you for retirement. Shared name prefixes are a hint worth glancing at, not the test — in this vault, prefixed siblings have been legitimate and the broken ones shared no prefix at all.`;
 }
 
 /**

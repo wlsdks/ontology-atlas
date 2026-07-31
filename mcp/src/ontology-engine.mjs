@@ -5,6 +5,29 @@ import { buildSlugNotFoundGrowthHint } from './growth-hint.mjs';
 const DEFAULT_LIMIT = 100;
 const DEFAULT_ALL_PATHS_SEARCH_BUDGET = 5000;
 const MAX_ALL_PATHS_SEARCH_BUDGET = 50000;
+import { defaultBody } from './schema.mjs';
+
+/**
+ * Is this body still the template `add_concept` writes when no body is given?
+ *
+ * Compared with whitespace folded, and accepted when the body merely *contains*
+ * the template's prose tail — an agent that kept the boilerplate and appended one
+ * line has still not said anything, and an exact-match check would miss that.
+ */
+function bodyIsStarterTemplate(kind, title, body) {
+  if (typeof body !== 'string' || body.trim() === '') return false;
+  let starter;
+  try {
+    starter = defaultBody(kind, title ?? '');
+  } catch {
+    return false;
+  }
+  const fold = (text) => text.replace(/\s+/g, ' ').trim();
+  const tail = fold(starter.split('\n').slice(2).join('\n'));
+  if (!tail) return false;
+  return fold(body).includes(tail);
+}
+
 const DOWNWARD_CONTAINMENT_TYPES = new Set(['domains', 'capabilities', 'elements', 'contains']);
 const UPWARD_CONTAINMENT_TYPES = new Set(['domain']);
 const HEALTH_IGNORED_COMPONENT_KINDS = new Set(['vault-readme']);
@@ -111,6 +134,70 @@ const RELATION_TYPE_FOR_KEY = Object.freeze({
   elements: 'elements',
   domain: 'domain',
 });
+/**
+ * Which nodes are **bridge-shaped** — a layer somebody inserted into the hierarchy.
+ *
+ * ## The rule, and why it is this one
+ *
+ * The four kinds nest flat: project → domain → capability → element. Nothing in
+ * that chain ever puts a node next to another of its own kind. So *same-kind
+ * containment adjacency* — a capability whose containment parent or child is also
+ * a capability — happens only when someone inserted a grouping layer. That is the
+ * whole predicate, and it needs no frontmatter key: forging a `bridge: true` flag
+ * or dropping it during a hand edit are both possible, and neither is possible here.
+ *
+ * ## The candidate this replaced, and the measurement that replaced it
+ *
+ * A proposed second clause was "the parent is a capability and the children are all
+ * elements". Read literally it is **vacuously true for every element in the vault**
+ * — a leaf has no children, and "all of none are elements" holds. Measured on this
+ * repo's own vault it matched 41 of 98 nodes, every one of them an ordinary leaf.
+ * Requiring at least one child collapses it into the same-kind rule it sits beside,
+ * because a node under a capability that has element children *is* a capability
+ * under a capability. So the clause is dropped: it adds either 41 false positives
+ * or nothing at all.
+ *
+ * `looksLikePath` misjudged an English prose title on its first real-vault run, and
+ * a check that is wrong on debut is one people stop reading. This one was measured
+ * on 98 real nodes and 3,000 synthetic ones before it shipped: zero false positives
+ * on both.
+ *
+ * @param {{nodes?: Array, edges?: Array}} graph compiled artifact, or anything with
+ *   the same `{slug, kind}` / `{from, to|ref, via, resolved}` shape — deliberately
+ *   plain so the web renderer can mirror this function without importing `mcp/`.
+ * @returns {Map<string, {via: 'same-kind-parent'|'same-kind-child', counterpart: string}>}
+ *   keyed by slug; absent means "not bridge-shaped".
+ */
+export function deriveBridgeShapes(graph) {
+  const nodes = Array.isArray(graph?.nodes) ? graph.nodes : [];
+  const edges = Array.isArray(graph?.edges) ? graph.edges : [];
+  const kindBySlug = new Map(nodes.map((node) => [node.slug, node.kind]));
+  const shapes = new Map();
+
+  const note = (slug, via, counterpart) => {
+    if (kindBySlug.get(slug) !== kindBySlug.get(counterpart)) return;
+    // A same-kind PARENT is the stronger statement — it says this node was pushed
+    // down a level — so it wins when a node has both.
+    if (via === 'same-kind-child' && shapes.has(slug)) return;
+    shapes.set(slug, { via, counterpart });
+  };
+
+  for (const edge of edges) {
+    if (edge?.resolved === false) continue;
+    const target = edge?.to ?? edge?.ref;
+    if (typeof edge?.from !== 'string' || typeof target !== 'string') continue;
+    if (!kindBySlug.has(edge.from) || !kindBySlug.has(target)) continue;
+    if (DOWNWARD_CONTAINMENT_TYPES.has(edge.via)) {
+      note(target, 'same-kind-parent', edge.from);
+      note(edge.from, 'same-kind-child', target);
+    } else if (UPWARD_CONTAINMENT_TYPES.has(edge.via)) {
+      note(edge.from, 'same-kind-parent', target);
+      note(target, 'same-kind-child', edge.from);
+    }
+  }
+  return shapes;
+}
+
 export const MAINTENANCE_PHASE_VALUES = Object.freeze(['validate', 'repair', 'link', 'materialize', 'review']);
 export const MAINTENANCE_SEVERITY_VALUES = Object.freeze(['fail', 'warn', 'info']);
 export const MAINTENANCE_KIND_VALUES = Object.freeze([
@@ -137,6 +224,13 @@ export const MAINTENANCE_KIND_VALUES = Object.freeze([
   //     a snapshot; only the write path saw which was which.
   'separate_evidence_from_concept',
   'fold_bulk_siblings',
+  // A bridge node that groups nothing (2026-08-01 ledger extension). The
+  // construction rules tell an LLM to insert a bridge when siblings are
+  // interchangeable — so the rules themselves can manufacture empty buckets if
+  // nothing checks the fourth condition ("you actually reparent the children").
+  // Prompt text alone leaks on weaker models, so the check is deterministic and
+  // vault-wide rather than a sentence.
+  'retire_unearned_node',
 ]);
 const MAINTENANCE_PHASES = new Set(MAINTENANCE_PHASE_VALUES);
 const MAINTENANCE_SEVERITIES = new Set(MAINTENANCE_SEVERITY_VALUES);
@@ -2610,6 +2704,65 @@ export function createOntologyEngine(artifact, options = {}) {
     return limitedCandidateGroup(rows, limit);
   }
 
+  /**
+   * Bridge nodes that group nothing — the fourth bridge condition, enforced.
+   *
+   * ## Why the predicate is this narrow
+   *
+   * "A capability with no children" is NOT the signal. Measured on this repo's own
+   * vault: 20 of 38 capabilities have zero resolved children, and they are fine —
+   * they are documented behaviors whose elements simply have no nodes yet. Firing
+   * on all of them would bury the real case under twenty false alarms, and a
+   * channel that cries wolf gets filtered out, which is how a check like this
+   * quietly stops working.
+   *
+   * So emptiness alone is not enough. There has to be positive evidence the node
+   * was *meant* to group, and there are exactly two shapes of that:
+   *
+   *   1. **A same-kind containment parent.** A capability under a capability only
+   *      happens when someone inserted a layer — the four-kind hierarchy is
+   *      otherwise flat (project → domain → capability → element). Measured: 0
+   *      such nodes exist in this vault today, so this half has no false positives
+   *      at all right now.
+   *   2. **An untouched starter body.** `add_concept` fills a kind-specific
+   *      template when no body is given; a node still carrying it verbatim was
+   *      created and abandoned. Measured: 0 in this vault today.
+   *
+   * Both halves are zero today, which is the point — this audit reports nothing
+   * until someone actually leaves a bridge empty.
+   *
+   * Bodies only exist when the caller passes `sourceDocs`; without them the check
+   * degrades to shape (1) rather than guessing.
+   */
+  function unearnedNodeCandidates(limit) {
+    const rows = nodes
+      .filter((node) => node.kind === 'capability')
+      .filter((node) => containmentChildren(node.slug).filter(({ next }) => nodeBySlug.has(next)).length === 0)
+      .map((node) => {
+        const sameKindParent = containmentParentsFor(node.slug)
+          .map(({ next }) => nodeBySlug.get(next))
+          .find((parent) => parent?.kind === node.kind);
+        const doc = sourceDocBySlug.get(node.slug);
+        const starterBody = doc ? bodyIsStarterTemplate(node.kind, node.title, doc.body) : false;
+        return { node, sameKindParent, starterBody };
+      })
+      .filter((row) => row.sameKindParent || row.starterBody)
+      .sort((a, b) => a.node.slug.localeCompare(b.node.slug))
+      // `starterBody` did its job in the filter above; past this point the two
+      // shapes are told apart by `sameKindParent` alone.
+      .map(({ node, sameKindParent }) => ({
+        kind: 'retire_unearned_node',
+        score: 0.55,
+        slug: node.slug,
+        reason: sameKindParent
+          ? `${node.slug} sits under "${sameKindParent.slug}", a node of its own kind, but groups nothing — it has no children that resolve to real nodes. A bridge node earns its place by holding the children it was created for. Either patch_concept the children that share its behavior to point at it, or delete_concept it; an empty layer adds a hop to every path through it and answers no question.`
+          : `${node.slug} still carries the starter body it was created with and groups nothing. It was created and never given meaning. Either write what it covers and reparent the children that belong to it, or delete_concept it.`,
+        node: summarizeNode(node),
+      }));
+
+    return limitedCandidateGroup(rows, limit);
+  }
+
   function limitedCandidateGroup(rows, limit) {
     return {
       total: rows.length,
@@ -2992,6 +3145,7 @@ export function createOntologyEngine(artifact, options = {}) {
     const danglingReferences = danglingReferenceCandidates(limit);
     const unassignedNodes = unassignedNodeCandidates(limit);
     const emptyDomains = emptyDomainCandidates(limit);
+    const unearnedNodes = unearnedNodeCandidates(limit);
     const canonicalizationActions = Array.isArray(artifact?.canonicalizationActions)
       ? artifact.canonicalizationActions
       : [];
@@ -3069,6 +3223,16 @@ export function createOntologyEngine(artifact, options = {}) {
       });
     }
     for (const row of unassignedNodes.rows) {
+      actions.push({
+        phase: 'review',
+        kind: row.kind,
+        severity: 'info',
+        score: row.score,
+        reason: row.reason,
+        node: row.node,
+      });
+    }
+    for (const row of unearnedNodes.rows) {
       actions.push({
         phase: 'review',
         kind: row.kind,
