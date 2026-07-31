@@ -10,6 +10,7 @@ import { analyzeRepoStructure } from '../mcp/src/analyze.mjs';
 import { inferImports } from '../mcp/src/infer-imports.mjs';
 import { loadOntologyAtlasIgnore } from '../mcp/src/ontology-atlas-ignore.mjs';
 import {
+  buildGraphQuerySmokeArgs,
   expectedToolsListAnnotationSummary,
   tunedHealthScopeOutputSummary,
   tunedWorkspaceBriefScopeOutputSummary,
@@ -1228,22 +1229,31 @@ describe('package contract helpers', () => {
     const ontologyRoot = join(process.cwd(), 'docs', 'ontology');
     const dogfoodDocs = loadVaultDocs(ontologyRoot);
     const census = dogfoodVaultCensusFromDocs(dogfoodDocs);
-    const kindSummary = [
-      `capability:${census.byKind.capabilities}`,
-      `document:${census.byKind.document}`,
-      `domain:${census.byKind.domains}`,
-      `element:${census.byKind.elements}`,
-      `project:${census.byKind.project}`,
-      `vault-readme:${census.byKind['vault-readme']}`,
-    ].join(', ');
-    const projectDoc = dogfoodDocs.find((doc) => doc.slug === 'project');
+    // 구 형상 핀 제거 (2026-08-01): 종전에는 6개 kind 를 고정 나열해
+    // `document:0` 같은 빈 kind 까지 요구했다 — list_kinds 는 실재하는 kind 만
+    // 찍으므로, 게이트도 볼트에서 세어 같은 형식으로 만든다.
+    const kindCounts = new Map();
+    for (const doc of dogfoodDocs) {
+      const docKind = doc.frontmatter.kind;
+      if (!docKind) continue;
+      kindCounts.set(docKind, (kindCounts.get(docKind) ?? 0) + 1);
+    }
+    const kindSummary = [...kindCounts.keys()]
+      .sort()
+      .map((docKind) => `${docKind}:${kindCounts.get(docKind)}`)
+      .join(', ');
+    // 구 형상 핀 제거 (2026-08-01): 프로젝트 노드는 슬러그가 아니라 kind 로
+    // 찾는다 — 재생성 볼트의 프로젝트 파일은 `ontology-atlas.md` 다. verify
+    // 자신도 kind 로 찾으므로 게이트가 같은 규칙을 쓴다.
+    const projectDoc = dogfoodDocs.find((doc) => doc.frontmatter.kind === 'project');
     assert.ok(projectDoc, 'dogfood vault has a project node');
+    const projectSlug = projectDoc.slug;
     const projectOutgoingEdgeCount = collectNeighborRefs(projectDoc).length;
     const projectOutgoingEdgeLabel = projectOutgoingEdgeCount === 1 ? 'edge' : 'edges';
     const compiled = compileOntology(dogfoodDocs, {
       includeIndexes: true,
     });
-    const projectBacklinkCount = findBacklinks(join(process.cwd(), 'docs', 'ontology'), 'project').length;
+    const projectBacklinkCount = findBacklinks(join(process.cwd(), 'docs', 'ontology'), projectSlug).length;
     const projectBacklinkLabel = projectBacklinkCount === 1 ? 'backlink' : 'backlinks';
     const projectEvidenceCount = findEvidenceCount(dogfoodDocs, 'project');
     const projectQueryCount = census.byKind.project;
@@ -1252,7 +1262,22 @@ describe('package contract helpers', () => {
     const indexOutCount = Object.keys(compiled.indexes.out).length;
     const indexInCount = Object.keys(compiled.indexes.in).length;
     const indexEdgeCount = Object.keys(compiled.indexes.edgeById).length;
-    const neighborSmokeSlug = 'src/widgets/bottom-tab-bar';
+    // verify 와 같은 smoke-slug 선택 규칙 (buildGraphQuerySmokeArgs) — 핀이
+    // 아니라 계산이라, 볼트가 자라도 게이트와 README 가 같이 움직인다.
+    const graphSmoke = buildGraphQuerySmokeArgs(
+      {
+        nodes: dogfoodDocs
+          .filter((doc) => doc.frontmatter.kind)
+          .slice(0, 100)
+          .map((doc) => ({ slug: doc.slug, kind: doc.frontmatter.kind })),
+      },
+      {
+        nodes: dogfoodDocs
+          .filter((doc) => doc.frontmatter.kind === 'project')
+          .map((doc) => ({ slug: doc.slug, kind: 'project' })),
+      },
+    );
+    const neighborSmokeSlug = graphSmoke.slug;
     const neighborSmoke = queryCompiledOntology(compiled, {
       operation: 'neighbors',
       slug: neighborSmokeSlug,
@@ -1260,7 +1285,7 @@ describe('package contract helpers', () => {
     const neighborSmokeLine = `${regexEscape(neighborSmokeSlug)} \\(${neighborSmoke.edges.length}/${neighborSmoke.total} edges, limited ${neighborSmoke.limited}\\)`;
     const projectScope = queryCompiledOntology(compiled, {
       operation: 'project_scope',
-      slug: 'project',
+      slug: projectSlug,
     });
     const overview = queryCompiledOntology(compiled, { operation: 'overview', limit: 5 });
     const diagnosisOptions = { ontologyAtlasIgnorePatterns: loadOntologyAtlasIgnore(ontologyRoot) };
@@ -1340,13 +1365,13 @@ describe('package contract helpers', () => {
     assert.match(verifySection, /✓ maintenance cursor — missing afterActionId reported .*phase none; severity none; kind none; executable none; review none/);
     assert.match(verifySection, /✓ maintenance cursor — ready page stable/);
     assert.match(verifySection, /maintenance cursor — (resume skipped \(ready page has no actions\)|resume afterActionId advanced)/);
-    assert.match(verifySection, new RegExp(`✓ get_concept — project \\(${projectOutgoingEdgeCount} outgoing ${projectOutgoingEdgeLabel}\\)`));
+    assert.match(verifySection, new RegExp(`✓ get_concept — ${regexEscape(projectSlug)} \\(${projectOutgoingEdgeCount} outgoing ${projectOutgoingEdgeLabel}\\)`));
     assert.match(verifySection, /✓ get_concepts — 2 ok rows, 1 partial row/);
     assert.match(
       verifySection,
       new RegExp(`✓ find_evidence — ${countLabel(projectEvidenceCount, 'evidence result')} for "project"`),
     );
-    assert.match(verifySection, new RegExp(`✓ find_backlinks — project \\(${projectBacklinkCount} ${projectBacklinkLabel}\\)`));
+    assert.match(verifySection, new RegExp(`✓ find_backlinks — ${regexEscape(projectSlug)} \\(${projectBacklinkCount} ${projectBacklinkLabel}\\)`));
     assert.match(
       verifySection,
       new RegExp(`✓ query_concepts — ${countLabel(projectQueryCount, 'query result')} / ${countLabel(projectQueryCount, 'total query result')}`),
@@ -1370,7 +1395,7 @@ describe('package contract helpers', () => {
       new RegExp(`✓ infer_imports — \\d+ files? scanned, \\d+ module edges? \\(${topModuleEdgeSummary}`),
     );
     assert.match(verifySection, new RegExp(`✓ find_neighbors — ${neighborSmokeLine}`));
-    assert.match(verifySection, new RegExp(`✓ find_path — ${regexEscape(neighborSmokeSlug)} → project \\(2 hops, 2 edges\\)`));
+    assert.match(verifySection, new RegExp(`✓ find_path — ${regexEscape(neighborSmokeSlug)} → ${regexEscape(projectSlug)} \\(2 hops, 2 edges\\)`));
     assert.match(verifySection, /✓ find_orphans — 0 orphans \(root\/sentinel defaults excluded\)/);
     assert.match(verifySection, /✓ project probe — 1 project node/);
     assert.match(verifySection, new RegExp(`✓ list_concepts — vault total ${census.total} nodes`));
@@ -1427,11 +1452,11 @@ describe('package contract helpers', () => {
     assert.match(verifySection, new RegExp(`✓ overview query_plan — aggregate_scan \\(medium, nodes ${compiled.nodeCount}, edges ${compiled.edgeCount}\\)`));
     assert.match(verifySection, new RegExp(`✓ project_map query_plan — aggregate_scan \\(medium, nodes ${compiled.nodeCount}, edges ${compiled.edgeCount}\\)`));
     assert.match(verifySection, new RegExp(`✓ neighbors — ${neighborSmokeLine}`));
-    assert.match(verifySection, new RegExp(`✓ path — ${regexEscape(neighborSmokeSlug)} → project \\(2 hops, 2 edges\\)`));
-    assert.doesNotMatch(verifySection, /✓ path — project → project/);
+    assert.match(verifySection, new RegExp(`✓ path — ${regexEscape(neighborSmokeSlug)} → ${regexEscape(projectSlug)} \\(2 hops, 2 edges\\)`));
+    assert.doesNotMatch(verifySection, new RegExp(`✓ path — ${regexEscape(projectSlug)} → ${regexEscape(projectSlug)}`));
     assert.match(
       verifySection,
-      new RegExp(`✓ project_scope — project \\(${projectScope.summary.nodes} nodes, internalEdges ${projectScope.summary.internalEdges}\\)`),
+      new RegExp(`✓ project_scope — ${regexEscape(projectSlug)} \\(${projectScope.summary.nodes} nodes, internalEdges ${projectScope.summary.internalEdges}\\)`),
     );
     assert.match(
       verifySection,
@@ -2872,14 +2897,31 @@ describe('package contract helpers', () => {
     assert.equal(isCoveredByFiles('templates/vault/project.md', pkg.files), true);
   });
 
-  it('keeps the self-ontology README census aligned with the vault files', () => {
+  it('keeps the self-ontology README honest about census and pointing at real entry points', () => {
+    // [개정 2026-08-01] 종전 게이트는 README 가 census 숫자를 **적도록 강제**
+    // 했다 — AGENTS.md 「no document writes the number... Docs name the command
+    // instead」 규율과 정면 충돌이고, 볼트 리셋 후에는 스타터 템플릿 README 를
+    // 영원히 빨간불로 만들 뿐 아무것도 고치지 못했다. 규율 그대로:
+    // 숫자를 말하면 참이어야 하지만 말할 의무는 없다 — 대신 census 명령을
+    // 적어야 하고, 우리 볼트의 README 는 실재하는 진입점을 가리켜야 한다.
     const readme = readFileSync('docs/ontology/README.md', 'utf-8');
     const census = dogfoodVaultCensus(process.cwd());
 
-    assert.match(readme, new RegExp(`총 ${census.total} 노드`));
-    assert.match(readme, new RegExp(`도메인 ${census.byKind.domains}개`));
-    assert.match(readme, new RegExp(`capability ${census.byKind.capabilities}개`));
-    assert.match(readme, new RegExp(`element ${census.byKind.elements}개`));
+    // 숫자를 말한다면 참이어야 한다 (조건부).
+    const claimed = readme.match(/총 (\d+) 노드/);
+    if (claimed) {
+      assert.equal(Number(claimed[1]), census.total, 'README census claim drifted from the vault');
+    }
+    // census 는 명령으로 답한다.
+    assert.match(readme, /cli\/src\/index\.mjs overview/);
+    // 우리 볼트의 README 다 — 일반 스타터 문구가 아니라 실재하는 진입점.
+    assert.match(readme, /ontology-atlas\.md/);
+    assert.match(readme, /capabilities\/mcp-server/);
+    assert.match(readme, /capabilities\/cli-developer-entry/);
+    // 스타터 토이 예시로 되돌아가지 않는다 (실측: init 템플릿이 그대로 남아
+    // "project.md 를 여세요"(없는 파일)를 안내하고 있었다).
+    assert.doesNotMatch(readme, /My ontology vault/);
+    assert.doesNotMatch(readme, /capabilities\/login/);
   });
 
   it('keeps dogfood CLI capability docs from freezing integration test counts', () => {
