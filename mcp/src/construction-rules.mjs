@@ -142,7 +142,7 @@ export const ELEMENT_NAMING_RULE_BATCH_EN = `Rows whose \`title\` is a bare file
  * BEFORE the tool runs — otherwise the app silently reshapes the user's ontology
  * and logs it where they will never look.
  */
-export const CHAT_RULES_DELTA_EN = `Construction rules: same procedure as the MCP server's Construction rules (single source — do not hand-copy). Difference: you are talking to a person, not returning structured \`warnings\` for another program. When step 4 above would trigger, say so in the chat in the user's screen language *before* calling the tool — do not silently create a grouping node and log it only where the user won't read it.`;
+export const CHAT_RULES_DELTA_EN = `You are talking to a person, not returning structured \`warnings\` to another program. So when step 4 of the construction rules above would have you create a grouping node, say so in the conversation first, in the language the person is writing to you in, and let them answer before you propose the call. A structured warning a person never opens is not a disclosure — silently reshaping someone's ontology and logging it where only a machine looks is the failure this rule exists to prevent.`;
 
 /**
  * Does this title look like a file path rather than a concept name?

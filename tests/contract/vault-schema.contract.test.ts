@@ -10,6 +10,7 @@ import {
   folderForKind as folderMcp,
   normalizeLocaleLabels as localeMcp,
   NODE_ELIGIBILITY_GATE as gateMcp,
+  VAULT_KIND_SCHEMA,
 } from "../../mcp/src/schema.mjs";
 import {
   buildFrontmatter as buildCli,
@@ -19,6 +20,12 @@ import {
   NODE_ELIGIBILITY_GATE as gateCli,
 } from "../../cli/src/lib/schema.mjs";
 import { KIND_EXPECTED_EXTRAS } from "@/shared/lib/validate-vault-document";
+import { PRODUCT_DISCIPLINE } from "@/features/vault-agent/model/system-prompt";
+import {
+  CHAT_RULES_DELTA_EN,
+  CONSTRUCTION_RULES_EN,
+} from "../../mcp/src/construction-rules.mjs";
+import { KNOWN_VAULT_KINDS } from "../../mcp/src/validate.mjs";
 
 /**
  * 2-way + 1 cross-check vault schema contract:
@@ -166,5 +173,55 @@ describe("노드 자격 게이트 상수 — mcp & cli 값 정본이 같다", ()
     for (const key of Object.keys(gateMcp)) {
       expect(key).not.toMatch(/MAX|LIMIT_PER|CAP|CHILDREN/i);
     }
+  });
+});
+
+/**
+ * 구축 규격 텍스트의 3-way — mcp 정본 ↔ 앱 안 채팅 프롬프트.
+ *
+ * 이 파일이 이미 하는 일과 같은 종류라 여기 산다: `src/` 와 `mcp/` 는 별도
+ * 패키지라 cross-import 가 물리적으로 불가능하고, 그래서 스키마가 그랬듯
+ * 텍스트도 리터럴 사본으로만 존재할 수 있다.
+ *
+ * 사본이 둘인데 게이트가 없으면 어긋나는 쪽이 기본값이다 — 그리고 이건 가정이
+ * 아니라 이 파일에서 실제로 일어난 일이다. `system-prompt.ts` 의 헤더가
+ * *"schema.mjs 와 원자적으로 움직여야 한다"* 고 적어 놓고 강제 장치가 없어서
+ * kind 위계가 조용히 갈라져 있었다(project 소유 범위 · `vault-readme` 경고
+ * 누락, 2026-07-31 실측). 주석은 계약이 아니다. 테스트가 계약이다.
+ */
+describe("구축 규격 텍스트 3-way — mcp 정본 ↔ 앱 채팅 프롬프트", () => {
+  it("절차 전문이 바이트 그대로 실려 있다", () => {
+    expect(PRODUCT_DISCIPLINE).toContain(CONSTRUCTION_RULES_EN);
+  });
+
+  it("채팅 전용 차분도 바이트 그대로 실려 있다", () => {
+    expect(PRODUCT_DISCIPLINE).toContain(CHAT_RULES_DELTA_EN);
+  });
+
+  it("차분의 핵심 — 도구를 부르기 전에 사람에게 먼저 말한다", () => {
+    // MCP 는 구조화된 warnings 를 프로그램에 돌려주지만 채팅은 사람에게 말한다.
+    // 이 문장이 빠지면 앱이 사용자 온톨로지를 조용히 재구성하고 사용자가 안 볼
+    // 곳에만 기록하게 된다.
+    expect(CHAT_RULES_DELTA_EN).toContain("say so in the conversation first");
+    expect(PRODUCT_DISCIPLINE).toContain("say so in the conversation first");
+  });
+
+  it("kind 위계가 스키마와 어긋나지 않는다 — 실제로 갈라졌던 두 지점", () => {
+    // project 의 소유 범위는 스키마가 정한다. 프롬프트가 「domains 만」이라고
+    // 말하면 에이전트는 capability/element 직속을 제안하지 않는다.
+    expect(VAULT_KIND_SCHEMA.project.arrayDefaults).toEqual([
+      "domains",
+      "capabilities",
+      "elements",
+    ]);
+    expect(PRODUCT_DISCIPLINE).toContain("Owns domains, capabilities, and elements");
+    // `vault-readme` 는 자동 생성 전용이라 어떤 에이전트도 제안하면 안 된다.
+    // MCP 안내문에는 이 경고가 있었고 채팅 프롬프트에는 없었다.
+    expect(KNOWN_VAULT_KINDS).toContain("vault-readme");
+    expect(PRODUCT_DISCIPLINE).toContain("`vault-readme` is reserved");
+  });
+
+  it("모델이 읽는 프롬프트에 한글이 없다 — 화면 문구와 다른 채널이다", () => {
+    expect(PRODUCT_DISCIPLINE).not.toMatch(/[가-힣]/);
   });
 });
