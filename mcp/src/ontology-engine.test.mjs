@@ -2,7 +2,8 @@ import { describe, it } from 'node:test';
 import { strict as assert } from 'node:assert';
 
 import { compileOntology } from './ontology-compiler.mjs';
-import { queryCompiledOntology } from './ontology-engine.mjs';
+import { deriveBridgeShapes, queryCompiledOntology } from './ontology-engine.mjs';
+import { defaultBody } from './schema.mjs';
 
 function doc(slug, frontmatter = {}, mtime = 1) {
   return {
@@ -3936,5 +3937,165 @@ describe('queryCompiledOntology', () => {
       'capabilities/login',
       'capabilities/session',
     ]);
+  });
+});
+
+/**
+ * `retire_unearned_node` — the fourth bridge condition, enforced (2026-08-01 ledger).
+ *
+ * The construction rules tell an agent to insert a bridge node when siblings are
+ * interchangeable. A rule that says "create a grouping node" can manufacture empty
+ * buckets all by itself, so the condition that says "and then actually move the
+ * children onto it" cannot live only in prose — weaker models drop it.
+ *
+ * The control case is the important one. "Capability with no children" is NOT the
+ * signal: 20 of this repo's own 38 capabilities are childless and healthy. If this
+ * audit fired on those, twenty false alarms would bury the one real row and the
+ * whole channel would get filtered out.
+ */
+describe('maintenance_plan — unearned bridge nodes', () => {
+  function bridgeDocs({ bridgeBody, bridgeParentKey }) {
+    return [
+      doc('domains/d', { kind: 'domain', title: 'D', capabilities: ['capabilities/host'] }),
+      doc('capabilities/host', {
+        kind: 'capability',
+        title: 'Host',
+        domain: 'domains/d',
+        elements: ['elements/e1'],
+        ...bridgeParentKey,
+      }),
+      { ...doc('elements/e1', { kind: 'element', title: 'E1', domain: 'domains/d' }), body: '# E1\nreal prose' },
+      {
+        ...doc('capabilities/bridge', {
+          kind: 'capability',
+          title: 'Group A',
+          domain: 'domains/d',
+          elements: [],
+        }),
+        body: bridgeBody,
+      },
+    ];
+  }
+
+  function unearnedRows(docs) {
+    const graph = compileOntology(docs, { includeIndexes: true });
+    const result = queryCompiledOntology(
+      graph,
+      { operation: 'maintenance_plan', limit: 25 },
+      { sourceDocs: docs },
+    );
+    return result.actions.filter((action) => action.kind === 'retire_unearned_node');
+  }
+
+  it('fires on a bridge under a same-kind parent that holds nothing', () => {
+    const rows = unearnedRows(
+      bridgeDocs({ bridgeBody: '# Group A\nSomeone wrote real prose here.', bridgeParentKey: { contains: ['capabilities/bridge'] } }),
+    );
+    assert.equal(rows.length, 1);
+    assert.equal(rows[0].node.slug, 'capabilities/bridge');
+    assert.match(rows[0].reason, /a node of its own kind, but groups nothing/);
+    // Review action, never executable — handing over a ready-made delete_concept
+    // call is how an advisory row becomes an accident.
+    assert.equal(rows[0].executable, false);
+  });
+
+  it('fires on a childless node still carrying its starter body', () => {
+    const rows = unearnedRows(
+      bridgeDocs({ bridgeBody: defaultBody('capability', 'Group A'), bridgeParentKey: {} }),
+    );
+    assert.equal(rows.length, 1);
+    assert.match(rows[0].reason, /still carries the starter body/);
+  });
+
+  it('stays silent on a documented capability that simply has no children yet', () => {
+    // This is 20 of 38 capabilities in this repo's own vault. It must never fire.
+    const rows = unearnedRows(
+      bridgeDocs({
+        bridgeBody: '# Group A\nThis one is written up properly and simply has no element nodes yet.',
+        bridgeParentKey: {},
+      }),
+    );
+    assert.deepEqual(rows, []);
+  });
+
+  it('stays silent without bodies rather than guessing', () => {
+    // No sourceDocs → the starter-body half cannot be evaluated. It degrades to the
+    // structural shape instead of inventing an answer.
+    const docs = bridgeDocs({ bridgeBody: defaultBody('capability', 'Group A'), bridgeParentKey: {} });
+    const graph = compileOntology(docs, { includeIndexes: true });
+    const result = queryCompiledOntology(graph, { operation: 'maintenance_plan', limit: 25 });
+    assert.deepEqual(result.actions.filter((a) => a.kind === 'retire_unearned_node'), []);
+  });
+});
+
+/**
+ * `deriveBridgeShapes` — telling an inserted layer from an ordinary node, using
+ * only the graph (2026-08-01 ledger: structural derivation, never a frontmatter
+ * flag, because a flag can be forged and can be dropped by a hand edit).
+ *
+ * The measurements that chose this predicate are in the function's own doc
+ * comment; these tests hold the behaviour those numbers were taken from.
+ */
+describe('deriveBridgeShapes', () => {
+  const flat = {
+    nodes: [
+      { slug: 'project', kind: 'project' },
+      { slug: 'domains/d', kind: 'domain' },
+      { slug: 'capabilities/c', kind: 'capability' },
+      { slug: 'elements/e', kind: 'element' },
+    ],
+    edges: [
+      { from: 'project', to: 'domains/d', via: 'domains', resolved: true },
+      { from: 'domains/d', to: 'capabilities/c', via: 'capabilities', resolved: true },
+      { from: 'capabilities/c', to: 'elements/e', via: 'elements', resolved: true },
+    ],
+  };
+
+  it('says nothing about an ordinary flat hierarchy', () => {
+    // project → domain → capability → element never puts a node beside its own
+    // kind, which is exactly why same-kind adjacency can mean "inserted layer".
+    assert.equal(deriveBridgeShapes(flat).size, 0);
+  });
+
+  it('flags both ends of an inserted layer, and names which end each is', () => {
+    const withBridge = {
+      nodes: [...flat.nodes, { slug: 'capabilities/bridge', kind: 'capability' }],
+      edges: [
+        ...flat.edges,
+        { from: 'capabilities/c', to: 'capabilities/bridge', via: 'contains', resolved: true },
+      ],
+    };
+    const shapes = deriveBridgeShapes(withBridge);
+    assert.equal(shapes.get('capabilities/bridge').via, 'same-kind-parent');
+    assert.equal(shapes.get('capabilities/bridge').counterpart, 'capabilities/c');
+    assert.equal(shapes.get('capabilities/c').via, 'same-kind-child');
+  });
+
+  it('reads the inline `domain:` direction too, not just the array keys', () => {
+    const nested = {
+      nodes: [
+        { slug: 'domains/outer', kind: 'domain' },
+        { slug: 'domains/inner', kind: 'domain' },
+      ],
+      edges: [{ from: 'domains/inner', to: 'domains/outer', via: 'domain', resolved: true }],
+    };
+    assert.equal(deriveBridgeShapes(nested).get('domains/inner').via, 'same-kind-parent');
+  });
+
+  it('ignores unresolved references — a string is not a layer', () => {
+    const dangling = {
+      nodes: [{ slug: 'capabilities/c', kind: 'capability' }],
+      edges: [{ from: 'capabilities/c', ref: 'capabilities/ghost', via: 'contains', resolved: false }],
+    };
+    assert.equal(deriveBridgeShapes(dangling).size, 0);
+  });
+
+  it('does not fire on a leaf — the rejected candidate clause did', () => {
+    // The proposed second clause was "parent is a capability and all children are
+    // elements". A leaf has no children, so "all of none" holds and it matched
+    // every element: 28 of 98 nodes in this repo's vault, 1,898 of 3,000 in the
+    // synthetic one. Requiring a child instead collapses it into the rule above.
+    // Either way it contributes nothing, so it is not implemented.
+    assert.equal(deriveBridgeShapes(flat).has('elements/e'), false);
   });
 });

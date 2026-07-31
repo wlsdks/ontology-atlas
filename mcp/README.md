@@ -502,8 +502,8 @@ agent work-queue filters cannot silently return an empty plan. `maintenance_plan
 is limited to `inspect_compile_issue` / `break_dependency_cycle` /
 `canonicalize_graph_arrays` / `resolve_dangling_reference` /
 `add_missing_relation` / `materialize_external_element` / `unassigned_node` /
-`empty_domain` / `separate_evidence_from_concept` / `fold_bulk_siblings` for the
-same reason. The last two come from the write-path node-eligibility gate
+`empty_domain` / `separate_evidence_from_concept` / `fold_bulk_siblings` /
+`retire_unearned_node` for the same reason. The last two come from the write-path node-eligibility gate
 (2026-07-31 council) and only ever appear on a write response: a path sitting in
 a meaning slot, and siblings a single machine batch created under one parent.
 `health` / `workspace_brief` / `agent_brief` relation filters expose the same enum schema for
@@ -818,7 +818,7 @@ A successful run looks like this:
 ✓ absorb_document dry-run — outside-repo temp fixture explicitly opted in, classified (policy + architecture sections), and not written
 ✓ patch_concept conflict guard — stale expected_mtime rejected with vault_conflict
 ✓ strict enums — invalid query operation rejected with closest-value hint
-✓ strict maintenance filters — invalid phase/severity/kind rejected at runtime (phases=validate/repair/link/materialize/review; severities=fail/warn/info; kinds=inspect_compile_issue/break_dependency_cycle/canonicalize_graph_arrays/resolve_dangling_reference/add_missing_relation/materialize_external_element/unassigned_node/empty_domain/separate_evidence_from_concept/fold_bulk_siblings)
+✓ strict maintenance filters — invalid phase/severity/kind rejected at runtime (phases=validate/repair/link/materialize/review; severities=fail/warn/info; kinds=inspect_compile_issue/break_dependency_cycle/canonicalize_graph_arrays/resolve_dangling_reference/add_missing_relation/materialize_external_element/unassigned_node/empty_domain/separate_evidence_from_concept/fold_bulk_siblings/retire_unearned_node)
 ✓ strict relation filters — invalid dependencyTypes rejected with closest-value hint
 ✓ strict find_neighbors filters — invalid relation types rejected before slug resolution with closest-value hint
 ✓ strict find_orphans filters — invalid kind/excludeKinds rejected with closest-value hints

@@ -1513,7 +1513,7 @@ describe('package contract helpers', () => {
     assert.match(verifySection, /`maintenance_plan\.afterActionId="maint_missing"`/);
     assert.match(verifySection, /`cursor\.found=false`/);
     assert.match(verifySection, /Successful verify output prints the\s+accepted `phases` \/ `severities` \/ `kinds` enum lists/);
-    assert.match(readme, /strict maintenance filters — invalid phase\/severity\/kind rejected at runtime \(phases=validate\/repair\/link\/materialize\/review; severities=fail\/warn\/info; kinds=inspect_compile_issue\/break_dependency_cycle\/canonicalize_graph_arrays\/resolve_dangling_reference\/add_missing_relation\/materialize_external_element\/unassigned_node\/empty_domain\/separate_evidence_from_concept\/fold_bulk_siblings\)/);
+    assert.match(readme, /strict maintenance filters — invalid phase\/severity\/kind rejected at runtime \(phases=validate\/repair\/link\/materialize\/review; severities=fail\/warn\/info; kinds=inspect_compile_issue\/break_dependency_cycle\/canonicalize_graph_arrays\/resolve_dangling_reference\/add_missing_relation\/materialize_external_element\/unassigned_node\/empty_domain\/separate_evidence_from_concept\/fold_bulk_siblings\/retire_unearned_node\)/);
     assert.match(verifySection, /project-less vaults skip/);
     assert.match(verifySection, /Empty\s+vault folders fail immediately after the `list_concepts` census/);
     assert.match(verifySection, /green MCP\s+wiring check against the wrong folder/);
