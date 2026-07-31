@@ -3153,9 +3153,9 @@
           "slug": "잔여-게이트-다음-라운드"
         }
       ],
-      "excerpt": "작업 순번 만. user 가 \"T?? 진행해\" 하면 그것만 분해해서 실행. 완료된 항목은 ✅ 표시 후 별도 batch 정리 시 일괄 삭제. 갱신 (2026-05-26): macOS app distribution track 반영. local-first 4 surface (macOS app · CLI · MCP · Website), dogfood 98 노드, CLI 52 commands, MCP 32 tools, compiler/query/health/agent-brief/workspace-brief/bootstrap/import-inference 루프 기준으로 재정렬.",
-      "wordCount": 1666,
-      "updatedAt": "2026-07-30",
+      "excerpt": "작업 순번 만. user 가 \"T?? 진행해\" 하면 그것만 분해해서 실행. 완료된 항목은 ✅ 표시 후 별도 batch 정리 시 일괄 삭제. 갱신 (2026-05-26): macOS app distribution track 반영. local-first 4 surface (macOS app · CLI · MCP · Website), dogfood vault (census: node cli/src/index.mjs overview), CLI 52 commands, MCP 32 tools, compiler/query/health/agent-brief/workspace-bri",
+      "wordCount": 1669,
+      "updatedAt": "2026-07-31",
       "linksOut": []
     },
     {
@@ -6008,6 +6008,11 @@
         },
         {
           "depth": 2,
+          "text": "2026-07-31 — 온톨로지 구축 규격: 「팬아웃 상한」이 아니라 「노드 자격 게이트」 — 92는 자식이 아니라 미해소 문자열이었다. 규격은 값·로직·텍스트 3정본, LLM 텍스트는 영어 단일 정본에서 두 경로(MCP·내부 채팅)로 파생",
+          "slug": "2026-07-31-온톨로지-구축-규격-팬아웃-상한이-아니라-노드-자격-게이트-92는-자식이-아니라-미해소-문자열이었다-규격은-값로직텍스트-3정본-llm-텍스트는-영어-단일-정본에서-두-경로mcp내부-채팅로-파생"
+        },
+        {
+          "depth": 2,
           "text": "2026-07-31 — 드래그 140ms 의 처방: 후보 ② 「제한을 진짜로」 채택 — 단 진범의 78%는 FA2 가 아니라 separation 이었고, Barnes-Hut 은 이미 켜져 있었다",
           "slug": "2026-07-31-드래그-140ms-의-처방-후보-제한을-진짜로-채택-단-진범의-78는-fa2-가-아니라-separation-이었고-barnes-hut-은-이미-켜져-있었다"
         },
@@ -6253,7 +6258,7 @@
         }
       ],
       "excerpt": "이 파일은 결정과 그때 진 반대 의견을 남긴다. docs/CHANGELOG.md 는 무엇이 언제 바뀌었나를 답하고, 이 파일은 왜 그렇게 정했고, 무엇을 걸었나를 답한다. 최신이 위. 기록은 덧붙이기만 한다 — 지난 기록을 고치지 않는다. 판단이 바뀌었으면 새 기록을 쓰고 옛 기록을 뒤집힘 으로 표시한다. 틀린 기록도 자산이다. 1. 소집 전에 읽는다. 카운슬을 열기 전(그리고 단독 PO 패스를 쓰기 전) 같은 표면 · 같은 질문에 대한 선행 결정이 있는지 먼저 본다. 있으면 새 패스는 그것을 ① 여전히 유효하다고 인용하거나 ② 명시적으로 뒤집는다. 조용히 다시 결정",
-      "wordCount": 21498,
+      "wordCount": 22691,
       "updatedAt": "2026-07-31",
       "linksOut": []
     },
@@ -8170,8 +8175,8 @@
         }
       ],
       "excerpt": "README 첫 화면에 박을 30초 GIF / mp4 의 스토리보드. claim → proof 5 컷 시퀀스. 각 컷 ~6초. screen: 좌측 vscode (또는 Obsidian) 가 domains/auth.md 를 열어 frontmatter 보임. 우측 Claude Code terminal 에서 ontology-atlas 도구 호출 결과 표시. action: 사람이 markdown 의 capabilities: 키에 capabilities/login 추가 → 저장. AI 가 같은 vault 의 capabilities/login.md 를 addconcept 로 생성",
-      "wordCount": 469,
-      "updatedAt": "2026-07-30",
+      "wordCount": 467,
+      "updatedAt": "2026-07-31",
       "linksOut": []
     },
     {
@@ -8208,8 +8213,8 @@
         }
       ],
       "excerpt": "Submission type: Show HN Category: open source / dev tool (80 chars exactly — under HN's 80 char limit. If too long, fallback: Show HN: ontology-atlas – frontmatter is the graph; AI agents read it via MCP) https://github.com/wlsdks/ontology-atlas (Word count: ~380. HN expects substantive Show HN posts, not one-liners; ",
-      "wordCount": 645,
-      "updatedAt": "2026-07-30",
+      "wordCount": 642,
+      "updatedAt": "2026-07-31",
       "linksOut": []
     },
     {

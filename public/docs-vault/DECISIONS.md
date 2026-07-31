@@ -42,6 +42,50 @@
 
 ---
 
+## 2026-07-31 — 온톨로지 구축 규격: 「팬아웃 상한」이 아니라 「노드 자격 게이트」 — 92는 자식이 아니라 미해소 문자열이었다. 규격은 값·로직·텍스트 3정본, LLM 텍스트는 영어 단일 정본에서 두 경로(MCP·내부 채팅)로 파생
+
+**소집**: PO 카운슬 5인 전원(근거·결·지킴이·해자·지렛대) — chief 주재, 2라운드 반박 + 최종 산출 3건 · **트리거**: 공개 계약(MCP/CLI/스키마) 변경 + 「무엇이 좋은 온톨로지인가」 방향 결정 + 소유자 직접 요청 (*"하위에 60개씩은 말이 안 된다 — 도구가 기가 막히게 구성하게 해야 하고, 규격이 정해져 코드 방어와 시스템 프롬프트 양쪽에 녹아야 하며, 비프론티어 LLM 에서도 성립해야 한다"*).
+**선행 결정 관계**: 2026-07-31 「3D 분할 장치 반려」의 `DENSITY_GATE_THRESHOLD=12` 는 렌더 기하 상수로 **그대로 유효**하되 이번 결정과 독립 — 12를 「표현·모델의 독립 수렴」이라 부르는 서사는 금지한다(`density-gate.ts` 주석 스스로 라벨 충돌 기하 실측이라 말한다 — 결·해자 일치). chief 가 지목한 긴장 ⓐ/ⓑ는 **둘 다 기각**: 렌더러는 92를 접은 것이 아니라 애초에 그린 적이 없다.
+
+**결정적 실측 (해자, 카운슬 전체가 수용)**: `cli-developer-entry` 의 `elements:` 92건은 자식 노드가 아니라 **볼트에 존재하지 않는 파일 경로 문자열**이다 — 92/92 미해소(볼트 전체 element 노드는 41개). `find_backlinks`·`find_path`·`contains` BFS 어디에도 안 잡히고 지도에 그려진 적도 없다. validator 의 `dangling-graph-reference` 이슈 코드는 **이미 존재**하는데 아무도 안 보고 있었다. 팬아웃 상한은 이 결함을 정의상 0건 잡는다 — 92는 상한 위반이 아니라 **범주 오류**(의미 슬롯에 파일시스템 엔트리)다. 성장 경로도 실측됨(지킴이): 92는 대부분 `patch_concept` 로 자랐는데 경고 파이프라인은 최초 생성(`add_concept`)에만 있다 — `patch_concept`(무경고)·`add_relation`(제3의 쓰기 경로)이 구멍이다.
+
+| 자리 | 판정 | 소유 행/처방 |
+|---|---|---|
+| 근거 | Shape a slice | Problem insight 3 · User moment 3 — 국소 결함(허브 소수)이지 전볼트 결함 아님(중앙값 3 건강); 고정 상한은 근거 약함; inputSchema description 준수율 > 시스템 프롬프트(IFEval-FC), 스키마 강제 100% vs 텍스트 지시 5~10% 실패 |
+| 결 | Shape a slice | Verification 1(구현 전) — 채널은 경고 문자열이 아니라 실행 가능한 액션(`postWriteMaintenance`+다음 도구 호출 지목); 발화는 문턱 돌파 1회+배수만; 영어 프롬프트 실문자열 초안 + Goodhart 방지 문구 + 비프론티어 캘리브레이션 설계 작성 |
+| 지킴이 | Shape a slice (핵심 서브슬라이스는 Build 급) | Ontology value 4 · Agent value 4 — patch_concept/add_relation 경고 구멍 실측; 규격 규칙표(code-block/code-warn/prompt-only 분류); 볼트 수리 최종안(1R 형제 분할안 철회 → evidence 강등+추출 수용); SPEC §6 이슈 코드 추가는 공개 계약 확장 아님 |
+| 해자 | Shape a slice | Differentiation 3 — 92/92 미해소 실측; 「노드 자격 게이트」로 슬라이스 교체; 경쟁 지형(Zep 하드캡=스키마 캡·LlamaIndex strict=type 어휘만·GraphRAG 사후 계층·Palantir 수치 가이드 없음) — 구축 시점 자격 검사는 공백; 프롬프트만이면 하루짜리 복제, 3층이 닫히면 해자 |
+| 지렛대 | Shape a slice | appetite: PR 6개 — 정본 3분할(값=schema.mjs 상수·로직=vault.mjs 쓰기 원시 함수·텍스트=construction-spec.mjs 신설) + 파생 지도·게이트 목록·순서 |
+
+**루브릭 합계**: 18/24 (통과선 18 · 치명적 0: 없음. Verification 1 은 구현 전 상태 — 캘리브레이션 세션이 구현 PR 의 통과 조건으로 명기됨)
+
+**소유자 다섯 질문에 대한 답**:
+1. **근거** — N&M 2001 「2~12」는 오늘 규범 권위가 아니다: 동료심사 없는 tech report 이고, OntoQA 의 fan-outness/IR 은 결함 지표가 아니라 서술 지표, OQuaRE 의 NOCOnto 는 권고 임계값 자체가 없으며, OOPS! 693개 온톨로지 실증 카탈로그에 「직속 자식 과다」 피트폴이 **없다**(있는 건 정반대 P17 과잉 특수화). schema.org 는 `Thing` 직속 ~9와 `CreativeWork` 직속 75가 15년째 공존 — **잘 만든 온톨로지의 팬아웃 분포 자체가 롱테일**(뿌리 좁고 허브 넓음, Wheeldon & Counsell 멱법칙과 동형)이고 우리 볼트(중앙값 3·허브 소수)와 같은 모양이다. **분포는 이상하지 않다. 허브의 내용물이 이상했다.**
+2. **상한** — 두지 않는다. 어느 층에도 고정 개수 상한·kind 별 상한 없음. 강행은 자격 검사(참조 해소·범주 오류·층 배치)이고 전부 **경고+액션**(`missing-expected-field` advisory 선례 유지 — 거부는 grandfather 추적 토끼굴+배치 부분 실패 왕복으로 에이전트 루프를 끊는다). 자동 추출 배치는 개별 경고 skip + 종료 후 1회 요약(기존 패턴).
+3. **도구가 잘 만들게** — 3층 방어, 정본 3분할: ⑴ **로직 정본** `mcp/src/vault.mjs` 쓰기 원시 함수 1곳(add/patch/add_relation 전 경로가 상속) — 그래프 배열 참조가 실노드로 해소되는지 쓰기 순간 검사, 미해소면 두 갈래 액션 제시(①`add_concept` 로 승격 ②evidence 로 강등), path-shaped-title(경로형 제목→"이건 evidence 다") · bulk-provenance(한 기계 배치 출생 형제 N개→접기 제안) 포함 ⑵ **값 정본** `mcp/src/schema.mjs` 상수 블록(CLI 미러는 기존 게이트가 동기) ⑶ **텍스트 정본** `mcp/src/construction-spec.mjs` 신설 — 영어 절차형(IF/THEN) 규칙 문자열 export → `SERVER_INSTRUCTIONS`·`add_concept` description/inputSchema·내부 API-key 에이전트 채팅 시스템 프롬프트 3곳에 **interpolate 파생, 사본 0**. 절차화 불가 규칙(형제 배타성 등 판단형)은 프롬프트에 남기지 않고 도구 계산 신호로 강등 — 비프론티어 대응의 핵심. 숫자는 목표치가 아니라 트리거("keep under N" 형태 금지 — Goodhart). 발화는 문턱 돌파 1회+배수만.
+4. **볼트 수리** — `cli-developer-entry`(92): 형제 capability 5개 분할안 **폐기**(잘못된 참조 92개를 살린 채 지표만 통과시키는 게이밍), 미해소 92건을 evidence 로 강등하고 **진짜 element 개념 8~12개만 추출**(지킴이 최종안). `views`(54): 36개 element 를 capability 경유로 재배선, 정당한 domain 직결 예외는 목록으로 명시 유지. 순서: 92 파일럿 → 결과 검증(validate_vault dangling 0 + get_concept 이 실노드만 반환) → views. 이 수리가 규격의 첫 증명(dogfood).
+5. **합성 볼트** — 분포는 결함이 아니므로 «고쳐진 건강한 볼트»로 바꾸지 않는다. 실측 롱테일 유지(이미 멱법칙 반영), 92급 허브는 스트레스 기준선으로 유지. PR4(볼트 수리) 후 실측 재도출 예약 — 그 전 재피팅은 이중 계산 순환.
+
+**갈린 지점**: 92의 수리법 — 지킴이 1R 「형제 capability 5개 신설+`broader`」 vs 해자 「미해소 참조 강등+진짜 개념 추출」. 해자의 92/92 미해소 실측이 승부를 정리했고(분할은 버킷 게이밍), 지킴이가 반박 라운드에서 수용해 판정을 바꿨다.
+
+**적용한 규칙**: **합집합 금지**(다섯 처방을 합치지 않음 — 해자의 자격 게이트를 슬라이스의 본체로 채택하고 팬아웃 상한은 어느 형태로도 버림) · **최소 슬라이스**(기존 `dangling-graph-reference` 이슈 코드·`postWriteMaintenance` 큐·vault.mjs 단일 배선 지점·근접중복 warning 문장 템플릿 재사용 — 새 응답 스키마 0·새 에러 코드 0) · **헌장 우선**(경고+액션이지 거부 아님, 텔레메트리 0 유지 — 준수 검증은 실세션 트랜스크립트로).
+
+**권고 (chief)** — 지렛대의 PR 순서 채택:
+PR1 `vault.mjs` 자격 게이트+경고 배선(patch/add_relation 구멍 포함)+`schema.mjs` 상수 → PR2 `construction-spec.mjs` 영어 텍스트 정본+SERVER_INSTRUCTIONS·description 파생+계약 테스트(문자열 포함 검사 수준) → PR3 내부 API-key 채팅 시스템 프롬프트 파생 → PR4 볼트 92 파일럿(강등+추출) → PR5 views 재배선 → PR6 synth-vault 실측 재도출+SPEC §6 문서화. 각 구현 PR 의 통과 조건에 결의 캘리브레이션 세션 1회(프론티어+비프론티어 — 준수율 급락 규칙은 코드 방어로 강등). CLI `--help` 는 포인터 한 줄(복제 아닌 참조). AGENTS.md 에는 규칙 복제 안 함(32KiB).
+**서명 (accountable: 소유자)**: 대기 — 특히 ① 92를 「쪼개기」가 아니라 「강등+추출」로 고친다는 것 ② 고정 상한을 두지 않는다는 것이 소유자 원 발화와 다르므로 명시 확인 필요. 결의 미결 질의 1건도 소유자 몫: 경고 발화 빈도(문턱 돌파 1회+배수 vs 매번).
+
+**기록된 반대** (지킴이 1R, 가장 강함): *"N&M 2~12 는 여전히 유효한 규범이고(OntoQA·OQuaRE 가 branching factor 를 1급 메트릭으로 유지, schema.org Thing 9·GO 3·SNOMED top 19), 대형 온톨로지도 한 부모 밑을 평면으로 넓히지 않는다 — 개수 자체에 경고가 있어야 한다"* — **반증 조건**: 자격 게이트(참조 해소·범주 오류·provenance) 전부 가동된 뒤에도 **실노드로만 이루어진 부모가 20+ 자식으로 자라며 그 목록을 사람도 에이전트도 다루지 못하는 사례**가 관측되면 개수 기반 신호를 재상정한다 — **재검토**: PR4·PR5 완료 후 첫 성장/유지보수 리포트.
+
+**슬라이스**: IN — PR1~6(위 순서) · OUT — 고정 팬아웃 상한(모든 층) · kind 별 상한 · 하드 거부 · 전면 볼트 재작성(98→~50 merge 축소 포함 — 파일럿 결과가 답) · `/ontology/studio` 쓰기 경로(독립 코드, 다음 라운드) · AGENTS.md 규칙 복제 · appetite — PR 6개, 각 반나절~1일.
+**제거/강등**: 팬아웃 상한 아이디어 자체 · 지킴이 1R 형제 capability 5개 신설안 · 「12 독립 수렴」 서사(렌더 기하 상수로만 존치).
+
+**출처 (주요)**: [N&M Ontology 101](https://protege.stanford.edu/publications/ontology_development/ontology101.pdf) · [schema.org CreativeWork](https://schema.org/CreativeWork) · [OntoQA](https://www.semanticscholar.org/paper/e93140d7bc70667f31ebf16387dbd0e86d0fa4eb) · [OQuaRE](https://github.com/tecnomod-um/oquare) · [OOPS! 카탈로그](https://oops.linkeddata.es/catalogue.jsp) · [멱법칙 클래스 관계 arXiv cs/0305037](https://arxiv.org/pdf/cs/0305037) · [Zep entity types](https://help.getzep.com/customizing-graph-structure) · [LlamaIndex SchemaLLMPathExtractor](https://docs.llamaindex.ai/en/stable/examples/property_graph/property_graph_advanced/) · [GraphRAG community detection](https://www.mintlify.com/microsoft/graphrag/concepts/community-detection) · [Palantir ontology best practices](https://www.palantir.com/docs/foundry/ontology/ontology-best-practices) · IFEval-FC(arXiv 2509.18420) · LLM-KG survey(arXiv 2510.20345)
+
+**상태**: 유효 (서명 대기)
+
+---
+
+
 ## 2026-07-31 — 드래그 140ms 의 처방: 후보 ② 「제한을 진짜로」 채택 — 단 진범의 78%는 FA2 가 아니라 separation 이었고, Barnes-Hut 은 이미 켜져 있었다
 
 **소집 근거**: 소유자 위임 판정("셋 중 무엇인가") + 최고빈도 표면(노드 드래그)의 확정 결함 —

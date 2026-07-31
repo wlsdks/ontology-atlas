@@ -495,7 +495,7 @@ want someone to *see* the graph rather than install it.)
 
 | | |
 |---|---|
-| **Dogfooding** | This product describes itself: **98 nodes** — capabilities 38, elements 49, domains 6, document 3, project 1, vault-readme 1 — living in [`docs/ontology/`](docs/ontology/). The map also draws the source paths those files cite as evidence, which is why the app's census reads higher than the file count. |
+| **Dogfooding** | This product describes itself — domains, capabilities, and elements living in [`docs/ontology/`](docs/ontology/). Run `node cli/src/index.mjs overview` for the current census; the map's number reads higher than the file count because it also draws the source paths those files cite as evidence. |
 
 A test fails if those counts drift from the folder. Numbers in this README are
 checked against the vault, not maintained by hand.
