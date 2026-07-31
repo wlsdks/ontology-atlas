@@ -12,7 +12,9 @@ paths:
 
 # Design system rules
 
-> Auto-loaded. Single source of truth for tokens / motion / forbidden visual patterns: `@docs/DESIGN-SYSTEM.md`.
+> **조건부 로드** — UI 파일(`src/**/*.tsx` · `app/**/*.css` 등)을 읽을 때 실린다(위 `paths:`).
+> 「절대 금지」층은 상주인 `forbidden.md` 에도 있어 이 파일이 안 실려도 살아 있다.
+> 토큰 / 모션 / 금지 패턴의 단일 진실원: `@docs/DESIGN-SYSTEM.md`.
 
 ## 스케일 고정 계약 (2026-07-24 소유자 확정 — 이탈은 결함)
 

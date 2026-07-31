@@ -17,10 +17,11 @@ tags: [architecture, infra, overview]
 ```
 ┌────────────────────────────────────────────────────────┐
 │ User                                                    │
-│ ├─ /                       topology hub always (map +  │
-│ │                          INDEX + datasheet); no vault│
-│ │                          → dogfood sample + first-run│
-│ ├─ /topology               same hub, explicit entry     │
+│ ├─ /                       who is asking decides —     │
+│ │                          gateway face for a vault-   │
+│ │                          less web visitor, map for   │
+│ │                          the app and vault users     │
+│ ├─ /topology               the map (hub + INDEX + data)│
 │ ├─ /docs                   vault picker + editor       │
 │ ├─ /ontology               thin redirect → /topology   │
 │ ├─ /ontology/edit          compatibility redirect      │
@@ -28,7 +29,9 @@ tags: [architecture, infra, overview]
 │ ├─ /ontology/insights      five-question maintenance   │
 │ ├─ /git                    vault Git workbench         │
 │ ├─ /projects               project list                │
-│ └─ /project/[slug]         project detail              │
+│ ├─ /project/[slug]         project detail              │
+│ ├─ /download               gateway as an explicit link │
+│ └─ /guide · /changelog     gateway reading (vault md)  │
 ├────────────────────────────────────────────────────────┤
 │ App layer                                               │
 │ ├─ Next.js 16 App Router                               │
@@ -244,7 +247,8 @@ This is the "first impression" state — visitors see a real ontology
 /download                  the gateway view as an explicit deep link — keeps the breadcrumb and
                            the back-to-map link that / drops
 /guide                     the project guide, several chapters rendering docs/guide/*.md vault
-                           docs. Order and slugs live once in
+                           docs. Named `guide` and not `docs` because /docs is already the
+                           vault workbench (2026-07-30 ledger). Order and slugs live once in
                            src/views/gateway-doc/model/guide-pages.ts
 /guide/[segment]           one chapter; static params come from that same registry
 /changelog                 renders docs/CHANGELOG.md from the vault, most recent sections only

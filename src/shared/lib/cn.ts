@@ -14,7 +14,7 @@ import { extendTailwindMerge } from 'tailwind-merge';
  * `app/globals.css` 의 `--text-*` 램프와 반드시 동기 — 스텝을 추가하면
  * 여기도 추가할 것 (계약 테스트: cn.test.ts).
  */
-const TYPE_RAMP_STEPS = [
+export const TYPE_RAMP_STEPS = [
   'caption',
   'label',
   'body',
@@ -38,7 +38,7 @@ const TYPE_RAMP_STEPS = [
  * `app/globals.css` 의 `--leading-*` 램프와 반드시 동기 — 스텝을 추가하면
  * 여기도 추가할 것 (계약 테스트: cn.test.ts).
  */
-const LEADING_RAMP_STEPS = [
+export const LEADING_RAMP_STEPS = [
   'caption',
   'label',
   'body',

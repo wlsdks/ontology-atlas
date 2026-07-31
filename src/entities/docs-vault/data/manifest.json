@@ -223,7 +223,7 @@
         }
       ],
       "excerpt": "2026-07-27 update — the current architecture is a local-first, git-backed meaning layer shared by people and AI coding agents. Round 10 permanently removed all auth + cloud data surfaces; the current route model converges browsing on Topology, writing on Workshop, maintenance on five-question Insights, and keeps old on",
-      "wordCount": 2684,
+      "wordCount": 2729,
       "updatedAt": "2026-07-31",
       "linksOut": [
         "../AGENTS",
@@ -6749,8 +6749,8 @@
         },
         {
           "depth": 2,
-          "text": "2. Routes (12 `[locale]`-prefixed routes)",
-          "slug": "2-routes-12-locale-prefixed-routes"
+          "text": "2. Routes",
+          "slug": "2-routes"
         },
         {
           "depth": 3,
@@ -7209,8 +7209,8 @@
         }
       ],
       "excerpt": "Complete inventory of features users can actually use right now. Last updated: 2026-07-27 (현재 route와 installed-app 계약 재검증 — /ontology은 /topology?index=expanded, /ontology/edit은 /ontology/studio 호환 redirect이며, Insights는 할 일·구성·연결·경계·신선도 5개 질문 탭의 maintenance board다. desktop static smoke와 installed-app verifier/Computer U",
-      "wordCount": 16204,
-      "updatedAt": "2026-07-30",
+      "wordCount": 16266,
+      "updatedAt": "2026-07-31",
       "linksOut": [
         "slug",
         "project:slug",

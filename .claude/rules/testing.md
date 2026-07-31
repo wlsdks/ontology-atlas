@@ -12,7 +12,8 @@ paths:
 
 # Testing & verification
 
-> Auto-loaded.
+> **조건부 로드** — 테스트 파일과 테스트 설정을 읽을 때 실린다(위 `paths:`).
+> focused-first 원칙은 `AGENTS.md` 상주 본문에도 한 줄로 있다.
 
 ## 도구
 

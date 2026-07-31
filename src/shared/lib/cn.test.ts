@@ -1,5 +1,33 @@
+import { readFileSync } from 'node:fs';
+import { join } from 'node:path';
+
 import { describe, it, expect } from 'vitest';
-import { cn } from './cn';
+import { cn, LEADING_RAMP_STEPS, TYPE_RAMP_STEPS } from './cn';
+
+/**
+ * `app/globals.css` 에 실제로 선언된 램프 스텝을 읽는다.
+ *
+ * **왜 하드코딩하지 않는가** — 이 파일은 `cn.ts` 주석과 `.claude/rules/design.md`
+ * 가 **이름으로 지목한 가드**다. 그런데 2026-07-31 감사 전까지 스텝 7개를
+ * 손으로 적어 두고 있었고, 그 사이 `hero-lg` 가 램프에 추가됐는데 목록에는 안
+ * 들어갔다 — **가드가 지킨다고 적힌 바로 그 사고(2026-07-23 크롬 16px: 스텝
+ * 추가 후 등록 누락)가 이 파일 안에서 이미 일어나 있었다.**
+ *
+ * 하드코딩 목록은 "검사한 것만 검사한다". 램프에서 파생하면 스텝을 더하는
+ * 순간 자동으로 검사 대상이 되고, 등록을 빠뜨리면 **여기서 먼저 터진다.**
+ * `--text-body--line-height` 류 companion 은 스텝이 아니라 짝이라 제외한다.
+ */
+function rampStepsFromCss(prefix: 'text' | 'leading'): string[] {
+  const css = readFileSync(join(process.cwd(), 'app/globals.css'), 'utf8');
+  const found = new Set<string>();
+  const re = new RegExp(`^\\s*--${prefix}-([a-z0-9-]+):`, 'gm');
+  for (const m of css.matchAll(re)) {
+    const step = m[1];
+    if (step.endsWith('--line-height')) continue;
+    found.add(step);
+  }
+  return [...found].sort();
+}
 
 describe('cn', () => {
   it('joins string classes', () => {
@@ -25,7 +53,22 @@ describe('cn', () => {
  * 조용히 드롭된다 — 크롬 필이 루트 16px 로 렌더되던 근본 원인.
  */
 describe('cn — 타입 램프와 색상 유틸 공존', () => {
-  it.each(['caption', 'label', 'body', 'body-lg', 'title', 'display', 'hero'])(
+  it('**등록 목록이 램프와 일치한다** — 누락은 조용한 크기 드롭이 된다', () => {
+    // 이 한 줄이 이 파일의 존재 이유다. `globals.css` 에 스텝을 더하고
+    // `TYPE_RAMP_STEPS` 등록을 빠뜨리면 tailwind-merge 가 그 스텝을 **색상으로
+    // 오분류**해, 뒤따르는 `text-[color:…]` 와 충돌시켜 크기를 지운다. 화면은
+    // 루트 16px 로 렌더되고 클래스 문자열은 멀쩡해 보인다.
+    expect([...TYPE_RAMP_STEPS].sort()).toEqual(rampStepsFromCss('text'));
+  });
+
+  it('램프를 실제로 읽는다 — 스캔이 비면 통과가 아니라 결함이다', () => {
+    // globals.css 경로가 바뀌거나 정규식이 어긋나면 위 비교가 `[] === []` 로
+    // 조용히 통과할 수 있다. 빈 스캔은 통과가 아니다.
+    expect(rampStepsFromCss('text').length).toBeGreaterThanOrEqual(8);
+    expect(rampStepsFromCss('leading').length).toBeGreaterThanOrEqual(8);
+  });
+
+  it.each([...TYPE_RAMP_STEPS])(
     'text-%s 가 text-[color:...] 뒤에서도 살아남는다',
     (step) => {
       const out = cn(`text-${step}`, 'text-[color:var(--color-text-tertiary)]');
@@ -51,6 +94,13 @@ describe('cn — 타입 램프와 색상 유틸 공존', () => {
  * 이기는 비결정성이 된다. 크기 드롭보다 조용해서 화면을 봐도 원인을 못 찾는다.
  */
 describe('cn — 행간 램프 충돌 병합', () => {
+  it('**등록 목록이 램프와 일치한다** — 누락은 충돌 병합 실패가 된다', () => {
+    // 실패 모드가 크기와 다르다. 미등록 `leading-*` 은 드롭되지 않고 **둘 다
+    // 살아남아** CSS 소스 순서가 승자를 정한다 — 조건부로 덮어쓴 값이 지는
+    // 비결정성이라 크기 드롭보다 조용하다.
+    expect([...LEADING_RAMP_STEPS].sort()).toEqual(rampStepsFromCss('leading'));
+  });
+
   it.each([
     ['leading-body', 'leading-prose'],
     ['leading-caption', 'leading-label'],

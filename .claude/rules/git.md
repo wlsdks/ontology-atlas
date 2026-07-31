@@ -27,6 +27,23 @@
 - 회귀 fix 와 리팩터링은 분리.
 - Docs-first — 스키마 / 라우트 / 운영 모델 변경은 같은 commit 또는 그 이전 commit 에 docs 를 갱신.
 
+### 코드를 이렇게 고치면 이 문서도 같이 고친다
+
+**이 표가 왜 여기(상주) 있고 `documentation.md`(조건부)에 없는가** — 이 표가
+필요한 사람은 **코드를 고치는 사람**이다. `documentation.md` 는 `.md` 를 열
+때만 실리므로, 거기 두면 *이미 문서를 고치기로 한 사람에게만* "문서를 고쳐라"가
+실린다. 정작 짝을 빠뜨릴 사람에게는 안 실린다 (2026-07-31 감사 지적).
+
+| 코드 변경 | 함께 수정해야 할 문서 |
+|---|---|
+| 새 라우트 추가·제거 | `docs/ARCHITECTURE.md`(인벤토리 정본) + `docs/FEATURES.md` + `docs/DECISIONS.md`(`decisions:check` 가 강제) |
+| 새 커맨드 / 스크립트 | `README.md` |
+| 아키텍처 재구성 | `docs/ARCHITECTURE.md` + `AGENTS.md` |
+| 디자인 토큰 추가 | `docs/DESIGN-SYSTEM.md` + `app/globals.css` (램프 스텝이면 `cn.ts` 등록도) |
+| MCP 도구 추가·rename | `mcp/README.md` + `docs/ontology/capabilities/mcp-server.md` + dogfood README |
+| 새 capability / domain / element 노드 | `docs/ontology/<kind>s/<slug>.md` (dogfood) |
+| `.claude/rules/` 로드 조건 변경 | `CLAUDE.md` 표 + `tests/contract/rules-path-scope.contract.test.ts` |
+
 ## PR
 
 - title 은 conventional prefix 로 시작. 본문은 `Summary` + `Test plan` 두 섹션.

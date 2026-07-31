@@ -8,7 +8,8 @@ paths:
 
 # Architecture rules
 
-> Auto-loaded for Claude Code. Other agents pull this from `AGENTS.md` reference.
+> **조건부 로드** — `src/**` · `app/**` · 설정 파일을 읽을 때 실린다(위 `paths:`).
+> Codex 등 자동 로드가 없는 도구는 `AGENTS.md` 가 이 파일을 가리킬 때 직접 읽는다.
 
 ## Feature-Sliced Design layers
 
