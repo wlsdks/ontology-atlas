@@ -195,6 +195,76 @@ export function measureLabelWidth(
 const CHILD_LABEL_REVEAL_MIN = 0.5;
 const CHILD_LABEL_REVEAL_FULL = 0.85;
 
+/**
+ * 라벨 상자의 **세로 범위** — 베이스라인 위/아래로 각각 얼마를 예약하나.
+ *
+ * 종전에는 호출부가 `ascent = fontSize`, `descent = 2`(상수)로 잡았다. 둘 다
+ * 틀렸는데 방향이 반대였다:
+ *
+ * - **ascent 는 과잉**이었다. 라틴 대문자 높이는 대략 0.7em 이라 1.0em 예약은
+ *   위쪽에 안 쓰는 여백을 만든다 — 라벨이 필요 이상으로 서로를 밀어낸다.
+ * - **descent 는 부족**했고, 이쪽이 진짜 결함이다. `2` 는 **상수인데
+ *   `fontSize` 는 줌에 따라 커진다** — 확대할수록 베이스라인 아래 미예약분이
+ *   벌어진다. 한글 받침과 라틴 디센더(g·y·p·j·q)가 그 밖으로 나가는데 억제
+ *   판정은 "안 겹친다"고 말한다.
+ *
+ * `fontBoundingBox*` 는 **문자열이 아니라 폰트의** 메트릭이라 같은 (kind,
+ * 크기)면 항상 같다 — 그래서 폰트당 1회 측정하고 캐시한다. 그리고 상자
+ * 높이가 문자열에 따라 들쭉날쭉해지지 않는다(`design.md` 의 치수 규칙성과
+ * 같은 방향 — 반복 세트의 높이는 내용물의 부산물이 아니다).
+ *
+ * `actualBoundingBox*`(문자열별 ink)를 쓰지 않는 이유도 같다. 그건 "이 글자가
+ * 실제로 차지한 잉크"라 문자열마다 상자가 달라지고, 엔진 간 미세 차이가
+ * 보고돼 있어(web-platform-tests/interop#159) 픽셀 정밀 정렬에는 부적합하다.
+ * 우리에게 필요한 건 **겹침 판정용 여유 상자**다.
+ *
+ * ⚠️ jsdom 과 일부 스텁 컨텍스트는 이 값을 안 준다(0 또는 undefined). 그때는
+ * **종전 근사로 떨어진다** — 회귀 0 이고, 측정할 수 없는 곳에서 조용히 0 높이
+ * 상자를 만들어 라벨이 전부 겹치게 두지 않는다.
+ */
+export interface LabelVerticalMetrics {
+  /** 베이스라인 **위**로 예약할 픽셀. */
+  ascent: number;
+  /** 베이스라인 **아래**로 예약할 픽셀. */
+  descent: number;
+}
+
+const verticalMetricsCache = new Map<string, LabelVerticalMetrics>();
+
+/** 종전 근사 — 실측이 불가능한 컨텍스트의 폴백이자, 회귀 기준선. */
+function approximateVerticalMetrics(fontSize: number): LabelVerticalMetrics {
+  return { ascent: fontSize, descent: 2 };
+}
+
+export function measureLabelVerticalMetrics(
+  ctx: CanvasRenderingContext2D,
+  kind: LabelDrawState["kind"],
+  scale = 1,
+): LabelVerticalMetrics {
+  const fontSize = scaledLabelFontSize(kind, scale);
+  const key = kind + "|" + fontSize;
+  const cached = verticalMetricsCache.get(key);
+  if (cached !== undefined) return cached;
+
+  let metrics = approximateVerticalMetrics(fontSize);
+  try {
+    ctx.font = scaledLabelFont(kind, scale);
+    // 측정 문자열은 아무거나 좋다 — `fontBoundingBox*` 는 폰트 전체의 값이라
+    // 내용에 안 의존한다. 그래도 비어 있지 않은 문자열을 준다(빈 문자열에
+    // 대해 0 을 주는 구현이 있다).
+    const m = ctx.measureText("가Ag");
+    const ascent = m.fontBoundingBoxAscent;
+    const descent = m.fontBoundingBoxDescent;
+    if (typeof ascent === "number" && typeof descent === "number" && ascent > 0 && descent > 0) {
+      metrics = { ascent, descent };
+    }
+  } catch {
+    // 스텁 컨텍스트가 measureText 자체를 안 가진 경우 — 근사 유지.
+  }
+  verticalMetricsCache.set(key, metrics);
+  return metrics;
+}
+
 export interface LabelAlphaInput {
   kind: LabelDrawState["kind"];
   farT: number;

@@ -7,6 +7,10 @@
           {
             "type": "command",
             "command": "bash .codex/hooks/block-npm-publish.sh"
+          },
+          {
+            "type": "command",
+            "command": "bash .codex/hooks/block-unsafe-git.sh"
           }
         ]
       },
@@ -16,6 +20,10 @@
           {
             "type": "command",
             "command": "bash .codex/hooks/block-npm-publish.sh"
+          },
+          {
+            "type": "command",
+            "command": "bash .codex/hooks/block-unsafe-git.sh"
           }
         ]
       },
@@ -25,6 +33,19 @@
           {
             "type": "command",
             "command": "bash .codex/hooks/block-npm-publish.sh"
+          },
+          {
+            "type": "command",
+            "command": "bash .codex/hooks/block-unsafe-git.sh"
+          }
+        ]
+      },
+      {
+        "matcher": "Edit|Write|MultiEdit|NotebookEdit|apply_patch|functions.apply_patch",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "bash .codex/hooks/block-generated-edit.sh"
           }
         ]
       }

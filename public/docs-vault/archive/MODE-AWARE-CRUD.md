@@ -2,7 +2,7 @@
 
 > **Status**: Adopted (Phase 2-3, 2026-05-01).
 > **Why**: Root cause #1 from the planner audit — *no mode-aware hook existed, so every gate looked only at auth role*. Non-logged-in users with an active local vault could not perform mutations.
-> **Spec location**: *Code-layer implementation* of the `.claude/rules/local-first.md` charter and `docs/LOCAL-FIRST-SYNC.md` § "Operational modes".
+> **Spec location**: *Code-layer implementation* of the `.claude/rules/local-first.md` charter and `docs/archive/LOCAL-FIRST-SYNC.md` § "Operational modes".
 
 This document describes a pattern where *which entity accepts mutations follows a different flow depending on the user's source-of-truth mode*. When you add mutations to a new entity, follow this guide to make it mode-aware.
 
@@ -10,7 +10,7 @@ This document describes a pattern where *which entity accepts mutations follows 
 
 ## 1. Operational modes (data source mode)
 
-Of the four modes defined in `docs/LOCAL-FIRST-SYNC.md` §2, this pattern covers:
+Of the four modes defined in `docs/archive/LOCAL-FIRST-SYNC.md` §2, this pattern covers:
 
 | Mode | Source of truth | Mutations allowed? | Auth required? |
 |---|---|---|---|
@@ -159,9 +159,9 @@ As of writing (2026-05-01), the local/cloud e2e scenarios are not yet implemente
 ## 6. Related specs / rules
 
 - `.claude/rules/local-first.md` — the charter
-- `docs/LOCAL-FIRST-SYNC.md` — definition of the four modes + conflict model
-- `docs/OFFLINE-FIRST-UX-FLOW.md` — UI flow guide (5-page gate classification §5)
-- `docs/ONTOLOGY-MODEL-V2-DRAFT.md` — V1.x ontology evolution (V1.4 ActionType also gains a mode-aware capability)
+- `docs/archive/LOCAL-FIRST-SYNC.md` — definition of the four modes + conflict model
+- `docs/archive/OFFLINE-FIRST-UX-FLOW.md` — UI flow guide (5-page gate classification §5)
+- `docs/archive/ONTOLOGY-MODEL-V2-DRAFT.md` — V1.x ontology evolution (V1.4 ActionType also gains a mode-aware capability)
 
 ---
 

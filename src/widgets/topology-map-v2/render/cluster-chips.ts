@@ -107,6 +107,71 @@ export function clusterBadgeRect(
   return { x: cx - w / 2, y: cy - h / 2, w, h };
 }
 
+/**
+ * 배지가 **앉는 자리**의 중심. `clusterBadgeRect` 의 cx/cy 와 같은 식이되
+ * 라벨 폭에 안 기대므로, 라벨을 모르는 자리(알약의 이동 목적지)에서도 쓴다.
+ *
+ * 왜 필요한가 — 접힘 알약은 anchor 에, 펼침 배지는 부모 우상단에 있고 그 둘은
+ * **51~147px 떨어져 있다**(실측). 지금은 그 간극을 알파 크로스페이드로만
+ * 건너서, 하나의 표시가 자리를 옮긴 게 아니라 **여기서 사라지고 저기서
+ * 나타난다.** 눈이 따라갈 선이 없으면 사용자는 둘을 같은 것으로 안 읽는다.
+ * 알약이 이 좌표로 **걸어가면서** 사라지면 크로스페이드가 간극 위가 아니라
+ * 도착점에서 일어난다.
+ */
+export function clusterBadgeCenter(
+  parentScreenX: number,
+  parentScreenY: number,
+  nodeScreenRadius: number,
+  scale: number = 1,
+): { x: number; y: number } {
+  const diag = Math.SQRT1_2;
+  const reach = nodeScreenRadius + BADGE_NODE_CLEARANCE + (CLUSTER_BADGE_HEIGHT * scale) / 2;
+  return { x: parentScreenX + reach * diag, y: parentScreenY - reach * diag };
+}
+
+/**
+ * 접힘 알약이 이 프레임에 그려질 자리 — anchor 에서 배지 자리로 `revealT`
+ * 만큼 이동한 점.
+ *
+ * 방향이 양쪽 다 맞는다: 펼칠 때 `revealT` 는 0→1 이라 알약이 anchor 를 떠나
+ * 배지 자리에 도착하며 사라지고, 접을 때는 1→0 이라 배지 자리에서 출발해
+ * anchor 로 돌아오며 나타난다. 어느 쪽이든 **집으로 가는 하나의 표시**다.
+ *
+ * 부모 좌표가 없으면(디그레이드) 이동하지 않는다 — 목적지를 모르는데 움직이면
+ * 그건 이동이 아니라 표류다.
+ */
+export function clusterChipTravelPoint(input: {
+  screenX: number;
+  screenY: number;
+  parentScreenX?: number;
+  parentScreenY?: number;
+  nodeScreenRadius?: number;
+  revealT?: number;
+  scale?: number;
+}): { x: number; y: number } {
+  const t = input.revealT;
+  if (
+    t === undefined ||
+    t <= 0 ||
+    input.parentScreenX === undefined ||
+    input.parentScreenY === undefined ||
+    input.nodeScreenRadius === undefined
+  ) {
+    return { x: input.screenX, y: input.screenY };
+  }
+  const clamped = Math.min(1, Math.max(0, t));
+  const dest = clusterBadgeCenter(
+    input.parentScreenX,
+    input.parentScreenY,
+    input.nodeScreenRadius,
+    input.scale ?? 1,
+  );
+  return {
+    x: input.screenX + (dest.x - input.screenX) * clamped,
+    y: input.screenY + (dest.y - input.screenY) * clamped,
+  };
+}
+
 export interface ClusterBadgeDrawInput {
   parentScreenX: number;
   parentScreenY: number;
@@ -204,7 +269,10 @@ export function clusterChipOccupancyRect(input: ClusterChipDrawInput): ClusterCh
     );
   }
 
-  return clusterChipRect(input.screenX, input.screenY, clusterChipLabel(input.count, false), scale);
+  // 점유도 이동을 따라간다 — 알약이 걸어가는데 자리만 anchor 에 남으면 라벨
+  // 회피가 **빈 자리를 피하고 실제 잉크는 안 피한다.**
+  const travel = clusterChipTravelPoint(input);
+  return clusterChipRect(travel.x, travel.y, clusterChipLabel(input.count, false), scale);
 }
 
 export interface ClusterChipColors {
@@ -288,42 +356,62 @@ export function drawClusterChip(
 
   // rank7 — 현재 형태(펼침=badge / 접힘=pill)의 알파를 reveal 램프로 페이드인.
   // 미지정이면 1(하위호환). 호출부가 세팅한 baseAlpha(부모 티어 알파)에 곱한다.
-  const formAlpha =
-    input.revealT === undefined
-      ? 1
-      : Math.min(1, Math.max(0, input.expanded ? input.revealT : 1 - input.revealT));
+  //
+  // ⚠️ **램프 중에는 두 형태를 함께 그린다.** 종전에는 `expanded` 로 갈라 한
+  // 형태만 그렸고, 그래서 **어느 방향에서도 크로스페이드가 없었다** — 펼치면
+  // 알약이 1프레임에 사라지고 배지가 자기 램프를 혼자 탔다(프레임 실측
+  // 2026-07-31: 알약 마지막 프레임 α=1.000 → 다음 프레임 부재, 중간 프레임 0개).
+  //
+  // 더 나쁜 것은 그 갈래가 **이동 코드보다 앞에** 있었다는 점이다. 펼침은
+  // 첫 프레임부터 `expanded=true` 라 `clusterChipTravelPoint` 에 **한 번도
+  // 도달하지 못했다** — 이동을 넣어 놓고 펼침에서는 실행조차 안 됐다.
   const baseAlpha = ctx.globalAlpha;
-  if (formAlpha < 0.01) return;
-  ctx.globalAlpha = baseAlpha * formAlpha;
+  const clamp01 = (v: number) => Math.min(1, Math.max(0, v));
+  const badgeAlpha =
+    input.revealT === undefined ? (input.expanded ? 1 : 0) : clamp01(input.revealT);
+  const pillAlpha =
+    input.revealT === undefined ? (input.expanded ? 0 : 1) : clamp01(1 - input.revealT);
+  if (badgeAlpha < 0.01 && pillAlpha < 0.01) return;
 
-  // S10 결함 2 — 펼침 상태는 떠다니는 알약이 아니라 부모 노드 우상단 배지로
-  // 그린다(파선 오라/라벨 겹침 원천 차단). 부모 좌표 + 노드 반지름이 있어야
-  // 배지를 앉힐 수 있다 — 없으면(디그레이드) 그리지 않는다.
-  if (input.expanded) {
-    if (
-      input.parentScreenX !== undefined &&
-      input.parentScreenY !== undefined &&
-      input.nodeScreenRadius !== undefined
-    ) {
-      drawClusterBadge(
-        ctx,
-        {
-          parentScreenX: input.parentScreenX,
-          parentScreenY: input.parentScreenY,
-          nodeScreenRadius: input.nodeScreenRadius,
-          count: input.count,
-          hovered: input.hovered,
-          scale,
-        },
-        colors,
-      );
-    }
-    ctx.globalAlpha = baseAlpha; // rank7 — reveal formAlpha 복원.
-    return;
+  // S10 결함 2 — 펼침 형태는 떠다니는 알약이 아니라 부모 노드 우상단 배지다
+  // (파선 오라/라벨 겹침 원천 차단). 부모 좌표 + 노드 반지름이 있어야 배지를
+  // 앉힐 수 있다 — 없으면(디그레이드) 그리지 않는다.
+  if (
+    badgeAlpha >= 0.01 &&
+    input.parentScreenX !== undefined &&
+    input.parentScreenY !== undefined &&
+    input.nodeScreenRadius !== undefined
+  ) {
+    ctx.globalAlpha = baseAlpha * badgeAlpha;
+    drawClusterBadge(
+      ctx,
+      {
+        parentScreenX: input.parentScreenX,
+        parentScreenY: input.parentScreenY,
+        nodeScreenRadius: input.nodeScreenRadius,
+        count: input.count,
+        hovered: input.hovered,
+        scale,
+      },
+      colors,
+    );
   }
 
-  const label = clusterChipLabel(input.count, input.expanded);
-  const rect = clusterChipRect(input.screenX, input.screenY, label, scale);
+  if (pillAlpha < 0.01) {
+    ctx.globalAlpha = baseAlpha; // rank7 — reveal 알파 복원.
+    return;
+  }
+  ctx.globalAlpha = baseAlpha * pillAlpha;
+
+  // 나가는(또는 들어오는) 알약은 **언제나 접힘 형태**다 — `+N`. `input.expanded`
+  // 를 라벨에 그대로 넘기면 펼침 램프 중의 알약이 `− N` 으로 읽혀, 사라지는
+  // 것과 나타나는 것이 같은 글자를 말하게 된다.
+  const label = clusterChipLabel(input.count, false);
+  // 알약은 사라지는 동안 배지 자리로 **걸어간다**(`clusterChipTravelPoint` 의
+  // 주석 참고). 정착 상태(revealT 0 또는 미지정)에서는 anchor 그대로라 종전
+  // 좌표와 한 픽셀도 다르지 않다.
+  const travel = clusterChipTravelPoint(input);
+  const rect = clusterChipRect(travel.x, travel.y, label, scale);
 
   // hover 이징 — 색만 보간(transition-colors 성격). rest(조용한 중립) →
   // hover(인디고로 깨어남). transform/scale/글로우 없음. hex 토큰 간 RGB lerp.
@@ -344,7 +432,7 @@ export function drawClusterChip(
     ctx.setLineDash([3 * scale, 3 * scale]);
     ctx.beginPath();
     ctx.moveTo(input.parentScreenX, input.parentScreenY);
-    ctx.lineTo(input.screenX, input.screenY);
+    ctx.lineTo(travel.x, travel.y);
     ctx.strokeStyle = colors.tether;
     ctx.lineWidth = 1;
     ctx.stroke();
@@ -377,8 +465,8 @@ export function drawClusterChip(
   const plusW = ctx.measureText(plus).width;
   const numW = ctx.measureText(num).width;
   const caretW = ctx.measureText(caret).width;
-  const ty = input.screenY + 0.5 * scale;
-  let tx = input.screenX - (plusW + numW + caretW) / 2;
+  const ty = travel.y + 0.5 * scale;
+  let tx = travel.x - (plusW + numW + caretW) / 2;
   ctx.fillStyle = plusColor;
   ctx.fillText(plus, tx, ty);
   tx += plusW;

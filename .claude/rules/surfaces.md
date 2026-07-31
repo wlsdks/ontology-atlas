@@ -1,6 +1,16 @@
+---
+paths:
+  - "src/shared/lib/tauri-*.ts"
+  - "src/features/docs-vault-local/**"
+  - "src-tauri/**"
+  - "tests/e2e/**"
+  - "src/shared/config/mcp-server-launch.ts"
+  - ".github/workflows/**"
+---
+
 # 표면 계약 — 웹과 앱
 
-> Auto-loaded. 원장 근거: `docs/DECISIONS.md` 2026-07-27 「웹과 앱은 같은
+> **조건부 로드** — 데스크톱 브리지 · `src-tauri/**` · e2e 를 읽을 때 실린다(위 `paths:`). 원장 근거: `docs/DECISIONS.md` 2026-07-27 「웹과 앱은 같은
 > 화면을 약속하지 않는다」. 구조 설명은 `docs/ARCHITECTURE.md` "Surface
 > contract" 절.
 

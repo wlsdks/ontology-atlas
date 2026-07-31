@@ -36,6 +36,7 @@ import { buildDustPoints, buildRealmCosmosPoints, computeStarDustCount, type Dus
 import type { CanvasBackground, FootprintPreference, GlyphSet } from "@/shared/lib/appearance-preferences";
 import { computeClusterFitTarget, computeFocusCameraTarget, computeOverviewCameraTarget, computeOverviewFitScale, hasAnyNodeOnScreen, worldToScreen } from "./topology-camera-math";
 import { drawTopologyFrame } from "./topology-frame-draw";
+import { relaxNewlyVisible } from "../model/layout";
 import { computeTopologyClusterState } from "./topology-cluster-state";
 import type { ClusterChip } from "../model/density-gate";
 import { clusterMoreChipId, EGO_NEIGHBOR_CHIP_ID, EGO_NEIGHBOR_LIMIT, parseClusterMoreChipId, rankEgoNeighborsByDOI, scheduleRipple, selectiveEgoNeighbors, stepEmphasis, stepFocusRamp, type EgoNeighborRankEntry } from "../model/focus-state";
@@ -108,6 +109,21 @@ const IDLE_GRACE_MS = 1200;
  * 기준이 되는 것은 리사이즈를 나르는 프레임 그 자체다(주사율 무관).
  */
 const VIEWPORT_SETTLE_FRAMES = 2;
+
+/**
+ * 끄는 동안 백킹 해상도 상한 — **드래그의 비용은 계산이 아니라 칠하기다.**
+ *
+ * 2026-07-31 실측(synth=3000, 14" Retina): 드래그 중 전달 프레임이 **13fps**
+ * 인데 우리 JS 는 프레임당 **2.2ms** 로 83ms 중 2.6% 였다. 메인 스레드는 100%
+ * 차 있었지만 그중 스크립트는 0.43s/14.9s — 나머지는 전부 래스터다. 그래서
+ * 같은 장면을 dpr 만 2→1 로 낮춰 재보니 **13fps → 45fps** 였다. 픽셀을 1/4 로
+ * 줄이면 3.3배 빨라진다 = 비용이 픽셀 수에 실려 있다는 직접 증거다.
+ *
+ * 손을 뗀 프레임에 곧바로 원래 해상도로 돌아오므로, **정지 화면의 선명도는
+ * 한 톨도 잃지 않는다.** 흐려지는 것은 어차피 눈이 못 읽는 «움직이는 동안»
+ * 뿐이다. 지도 앱의 표준 기법이고, 여기서는 그 교환이 실측으로 정당화된다.
+ */
+const INTERACTION_DPR_CAP = 1;
 /** World-unit epsilon below which a homing node is considered "arrived" (`relayout-home.ts#isHomeSpringConverged`). */
 const HOME_CONVERGE_EPSILON = 0.5;
 
@@ -311,6 +327,8 @@ export function useTopologyLoop(args: UseTopologyLoopArgs): UseTopologyLoopResul
   const pendingViewportRef = useRef<{ width: number; height: number; dpr: number } | null>(null);
   /** 뷰포트 의존 레이어를 다시 지어야 하는가 (크기 정착 후 1회). */
   const viewportRebuildPendingRef = useRef(false);
+  /** 지금 적용된 백킹 해상도 배율 — 상호작용 시작/종료에서만 바뀐다. */
+  const appliedDprScaleRef = useRef<number | null>(null);
   /** 새 크기가 안 들어온 연속 프레임 수 — `VIEWPORT_SETTLE_FRAMES` 와 비교. */
   const viewportSettleFramesRef = useRef(0);
   const commitViewportSizeRef = useRef<(() => boolean) | null>(null);
@@ -590,6 +608,25 @@ export function useTopologyLoop(args: UseTopologyLoopArgs): UseTopologyLoopResul
    * 만든다. `stepEmphasis`(focus-state) 재사용. reduced-motion 은 즉시 스냅.
    */
   const chipRevealRef = useRef<Map<string, number>>(new Map());
+  /**
+   * 다섯째 티어 관통 채널 — **칩 펼침으로 드러난 자식**의 0..1 램프.
+   * 앞의 넷(엣지 선택 · 발자국 · ego · 스포트라이트)과 같은 문법이다.
+   *
+   * **`clusterRevealTau` 를 쓴다 — 칩 자신의 형태 전환과 같은 값이다.**
+   * 처음엔 `egoRevealRiseTau`(0.22)를 빌려 썼는데, 그건 *다른 사건*(ego
+   * 클릭)의 리듬이었다. 이 채널을 낳는 입력은 칩 클릭이고, 그 입력의 리듬은
+   * 이미 `clusterRevealTau`(0.17)로 정해져 있다 — 칩의 pill/badge 페이드가
+   * 그 값을 쓴다. `design.md` 의 **"한 입력 = 한 사건"** 이 요구하는 것이
+   * 정확히 이 일치다.
+   *
+   * ⚠️ 그리고 이 채널은 드로우에서 **그룹 페이드를 대체한다**
+   * (`topology-frame-draw.ts` 의 `revealMul`). 둘 다 걸면 알파가 두 지수의
+   * **곱**이 되어, 칩이 "펼쳐졌다"고 말한 뒤로도 자식이 한참 오는 중이다
+   * (실측: 칩 90% 도달 391ms vs 자식 621ms — 230ms 차, 120ms 임계 초과).
+   * 같은 파일이 `batchAppear` 에 대해 "이중 페이드 방지"라고 적어 둔 가드에
+   * 이 채널이 나중에 붙느라 안 들어갔던 것이다.
+   */
+  const expandRevealRef = useRef<Map<string, number>>(new Map());
   /**
    * rank8 — 신규 노드 등장 램프(nodeId → 0..1). world 재빌드 시 이전 id 집합과
    * diff 해 **신규** 노드에만 0 을 심고(기존 노드는 1 유지 → 회귀 0), 프레임 루프가
@@ -1053,10 +1090,17 @@ export function useTopologyLoop(args: UseTopologyLoopArgs): UseTopologyLoopResul
       const backingWidth = Math.max(1, Math.round(pending.width * pending.dpr));
       const backingHeight = Math.max(1, Math.round(pending.height * pending.dpr));
       const sizeChanged = canvas.width !== backingWidth || canvas.height !== backingHeight;
+      // **CSS 크기가 그대로면 뷰포트 레이어를 다시 만들지 않는다.**
+      // `rebuildViewportLayers` 가 쓰는 값(별먼지·격자·깊이 도트)은 전부 CSS
+      // 픽셀 기준이라 dpr 이 바뀌어도 그대로 유효하다. 이 구분이 없으면 드래그를
+      // 잡고 놓을 때마다 별먼지를 두 번 다시 만들게 되고, 렉을 고치려던 것이
+      // 새 렉이 된다.
+      const cssSizeChanged =
+        viewportRef.current.width !== pending.width || viewportRef.current.height !== pending.height;
       if (canvas.width !== backingWidth) canvas.width = backingWidth;
       if (canvas.height !== backingHeight) canvas.height = backingHeight;
       viewportRef.current = pending;
-      if (sizeChanged) viewportRebuildPendingRef.current = true;
+      if (cssSizeChanged) viewportRebuildPendingRef.current = true;
       return sizeChanged;
     };
 
@@ -1481,7 +1525,29 @@ export function useTopologyLoop(args: UseTopologyLoopArgs): UseTopologyLoopResul
   useEffect(() => {
     const canvas = canvasRef.current;
     if (!canvas) return;
-    const ctx = canvas.getContext("2d");
+    /**
+     * **`alpha: false` — 이 지도는 자기 뒤를 보여 줄 일이 없다.**
+     *
+     * 명세(WHATWG canvas): alpha 가 false 면 모든 픽셀의 알파 성분이 1.0 으로
+     * 고정되고 바꾸려는 시도는 조용히 무시된다. 그래서 **컴포지터가 캔버스
+     * 뒤 페이지 콘텐츠와의 블렌딩을 통째로 건너뛸 수 있다** — Blink 는
+     * `html_canvas_element.cc` 에서 이 값으로 `cc_layer_->SetContentsOpaque()`
+     * 를 직접 세우고, `cc/layers/layer.h` 는 그것을 "블렌딩을 생략해도 된다는
+     * 최적화 힌트"로 정의한다.
+     *
+     * 이득이 나는 자리가 중요하다 — **JS 프레임 시간이 아니라 컴포지트
+     * 단계**다. 그래서 `performance.mark` 프로파일에는 안 잡히고, 그 사실을
+     * 모르면 "재 봤는데 차이 없다"는 잘못된 결론이 나온다.
+     *
+     * 조건은 우리가 이미 만족한다: 다크 단일이고 매 프레임 배경을 전체
+     * 칠한다. 부작용은 안 그린 영역이 투명이 아니라 **검정**이 되는 것인데,
+     * 전체를 칠하므로 무관하다.
+     *
+     * ⚠️ **주 캔버스에만.** `render/grid.ts` · `render/animated-background.ts`
+     * 의 오프스크린은 이 캔버스 **위에 합성**되므로 알파가 필요하다 — 거기에
+     * 같이 넣으면 배경 타일이 서로를 가린다.
+     */
+    const ctx = canvas.getContext("2d", { alpha: false });
     if (!ctx) return;
 
     let handle = 0;
@@ -1489,6 +1555,29 @@ export function useTopologyLoop(args: UseTopologyLoopArgs): UseTopologyLoopResul
 
     const frame = (now: number) => {
       if (cancelled) return;
+
+      // 끄는 동안에만 백킹 해상도를 낮춘다(`INTERACTION_DPR_CAP`). 전이 시점은
+      // 상호작용의 **시작과 끝 두 번뿐**이라 프레임마다 캔버스를 재할당하지 않는다.
+      {
+        const deviceDpr = typeof window !== "undefined" ? window.devicePixelRatio || 1 : 1;
+        const interacting =
+          pointerMachineRef.current.phase === "dragging" || nodeDragRef.current !== null;
+        const wantScale = interacting ? Math.min(deviceDpr, INTERACTION_DPR_CAP) : deviceDpr;
+        const pending = pendingViewportRef.current;
+        if (pending) {
+          // 리사이즈가 대기 중이면 그 dpr 을 **덮는다.** `measure()` 는 장치
+          // dpr 을 적어 두므로, 끄는 중에 창이 바뀌면 그 한 번으로 전체 해상도가
+          // 되살아나 남은 드래그 내내 느려진다(드문 대신 조용한 실패다).
+          pending.dpr = wantScale;
+          appliedDprScaleRef.current = wantScale;
+        } else if (appliedDprScaleRef.current !== wantScale) {
+          appliedDprScaleRef.current = wantScale;
+          const { width, height } = viewportRef.current;
+          if (width > 0 && height > 0) {
+            pendingViewportRef.current = { width, height, dpr: wantScale };
+          }
+        }
+      }
 
       // 리사이즈 커밋은 **그리기 바로 앞**이다 — ResizeObserver 콜백에서 하면
       // 캔버스를 지운 뒤 그대로 페인트돼 빈 지도가 화면에 나간다(리사이즈
@@ -1700,8 +1789,17 @@ export function useTopologyLoop(args: UseTopologyLoopArgs): UseTopologyLoopResul
         // cluster (itself + 1-hop + 2-hop), so far nodes never drift via FA2
         // either (matching the explicit tug's own falloff below).
         const affected = dragAffectedSetRef.current;
+        // **«움직일 수 있는 것» ∩ «그려지는 것».**
+        // 허브를 끌면 1홉+2홉이 그래프 대부분이라 홉 제한만으로는 안 걸러진다
+        // (실측: 활성 집합만 적용했을 때 137.6 → 137.6ms, 이득 0). 접혀서 화면에
+        // 없는 노드는 힘을 받아 움직여도 아무 데도 안 보이므로 계산 대상이 아니다.
+        const clustered = clusteredIdsRef.current;
         const restrictToIds = affected
-          ? new Set<string>([affected.draggedId, ...affected.oneHop, ...affected.twoHop])
+          ? new Set<string>(
+              [affected.draggedId, ...affected.oneHop, ...affected.twoHop].filter(
+                (id) => !clustered.has(id),
+              ),
+            )
           : null;
         sim.tick(forceIterationsForDt(dt), restrictToIds);
         applyForcePositions(world, sim.positions());
@@ -1757,20 +1855,51 @@ export function useTopologyLoop(args: UseTopologyLoopArgs): UseTopologyLoopResul
         // B7 — 드래그/정착이 만든 겹침을 같은 프레임에서 완화 (호밍 중에는
         // 호출되지 않는 블록이라 첫 지도 연출의 의도적 모임은 보호된다).
         {
-          const sepNodes: SeparationNode[] = world.nodes.map((n) => ({
-            id: n.id,
-            x: n.x,
-            y: n.y,
-            r: radiusForKind(n.kind, tokens) * n.magnitudeScale,
-          }));
+          // **그려지지 않는 노드는 겹칠 수 없다.**
+          //
+          // 밀도 게이트로 접힌 서브트리는 칩 하나로 대체되어 화면에 없다
+          // (실측 synth=3000: 3000개 중 **2820개(94%)가 접혀 있고 화면 안은
+          // 118개**). 안 보이는 것들끼리의 겹침을 푸는 것은 결과가 아무 데도
+          // 나타나지 않는 순수 낭비인데, 쌍 수는 N² 라 그 낭비가 프레임의
+          // 78%(109.3ms)를 먹고 있었다.
+          //
+          // 소유자가 세 번 물은 것이 정확히 이것이다 — *"화면에 보이는 건
+          // 20개인데 왜 3000개를 다 계산하나"*. 데이터로 들고 있는 것과 매
+          // 프레임 계산에 넣는 것은 다른 얘기이고, 여기서 그 둘이 구분 없이
+          // 같았다.
+          const drawnIdx: number[] = [];
+          const sepNodes: SeparationNode[] = [];
+          for (let i = 0; i < world.nodes.length; i += 1) {
+            const n = world.nodes[i];
+            if (clusteredIdsRef.current.has(n.id)) continue;
+            drawnIdx.push(i);
+            sepNodes.push({
+              id: n.id,
+              x: n.x,
+              y: n.y,
+              r: radiusForKind(n.kind, tokens) * n.magnitudeScale,
+            });
+          }
+          // **이번 프레임에 실제로 움직인 것만 검사한다.** 정지-정지 쌍은 지난
+          // 프레임에 이미 안 겹쳤으므로 새로 겹칠 수 없다.
+          //
+          // 힘 시뮬은 이 집합(`dragAffectedSetRef`)을 **이미 받고 있었는데**
+          // 겹침 해소만 안 받아서, 3000노드에서 프레임당 900만 회 거리 계산의
+          // 99.99%가 «둘 다 정지» 였다(2026-07-31 실측 109.3ms, 프레임의 78%).
+          // 집합이 없으면(정착 종료 후 등) 종전대로 전 노드 — 동작 동일.
+          const sepActive = affected
+            ? new Set<string>([affected.draggedId, ...affected.oneHop, ...affected.twoHop])
+            : null;
           relaxNodeSeparation(sepNodes, {
             ratio: tokens.nodeMinSeparationRatio,
             iterations: 2,
             pinnedId: nodeDragRef.current?.nodeId ?? null,
+            activeIds: sepActive,
           });
           for (let i = 0; i < sepNodes.length; i += 1) {
-            world.nodes[i].x = sepNodes[i].x;
-            world.nodes[i].y = sepNodes[i].y;
+            const target = world.nodes[drawnIdx[i]];
+            target.x = sepNodes[i].x;
+            target.y = sepNodes[i].y;
           }
         }
         recomputeWorldGeometry(world, tokens);
@@ -2489,8 +2618,20 @@ export function useTopologyLoop(args: UseTopologyLoopArgs): UseTopologyLoopResul
         }
       }
 
-      // 고팬아웃 배치-공개 — 배치 자식의 등장 램프 스텝. 시작 시각(스태거) 이후
-      // egoRevealRiseTau 로 0→1 수렴(등장은 카메라 착지 리듬과 동일 τ 재사용).
+      // 고팬아웃 배치-공개 — 배치 자식의 등장 램프 스텝.
+      //
+      // **`clusterRevealTau` 를 쓴다 — 칩과 같은 값이다.** 종전엔
+      // `egoRevealRiseTau`(0.22)였는데, 그건 *다른 사건*(ego 클릭)의 리듬이다.
+      // 이 램프를 낳는 입력은 칩 클릭이고, 그 입력의 리듬은 칩의 pill/badge
+      // 페이드가 이미 `clusterRevealTau`(0.17)로 정해 뒀다.
+      //
+      // ⚠️ **이 한 줄이 그 수정의 실제 도달 지점이다.** 앞서 다섯째 관통 채널
+      // (`expandRevealRef`)의 tau 만 바꿨는데, 프레임 실측(design-motion,
+      // 2026-07-31)이 자식은 여전히 τ 226~236ms 로 오른다고 잡았다 — 칩 클릭
+      // 자식은 **전원 이 배치 경로**로 등록되고(`hidden.length===0` 이어도
+      // `visibleOrdered` 전량), `revealMul` 삼항이 `batchAppear` 를 먼저 보므로
+      // 그 채널의 갈래는 칩 클릭에서 한 번도 안 탄다. 표현식을 고쳐도 화면이
+      // 안 바뀌는 이유가 이것이었다.
       // 이번 프레임 배치로 보이지 않는(접히거나 부모가 접힌) 키는 정리한다.
       // reduced-motion 은 즉시 1(스태거 없이 스냅).
       {
@@ -2508,9 +2649,89 @@ export function useTopologyLoop(args: UseTopologyLoopArgs): UseTopologyLoopResul
             continue;
           }
           if (now < (startMap.get(id) ?? 0)) continue; // 스태거 시작 전 — 0 유지.
-          const next = stepEmphasis(appearMap.get(id) ?? 0, true, true, dt, tokens.egoRevealRiseTau, tokens.egoRevealRiseTau);
+          const next = stepEmphasis(appearMap.get(id) ?? 0, true, true, dt, tokens.clusterRevealTau, tokens.clusterRevealTau);
           appearMap.set(id, next);
           if (next >= 0.999) startMap.delete(id);
+        }
+      }
+
+      // 펼침으로 **새로 보이게 된** 노드의 국소 재완화 (2026-07-31).
+      //
+      // `relaxScope`(월드 빌드 시점)는 아무것도 펼쳐지지 않은 상태를 기준으로
+      // 잡히므로, 칩을 펼치면 그 자식이 **씨앗 자리** 그대로 등장한다. 한 부모의
+      // 자식끼리는 phyllotaxis 간격이 충돌을 막지만(실측 겹침 0) **다른 부모의
+      // 부채와는 겹친다**(3개 펼침 5건 · 6개 18건 · 12개 70건).
+      //
+      // 전체를 다시 완화하면 비용이 누적되고(24개 펼침 341ms) **이미 보고 있던
+      // 노드가 움직인다**(최대 15 유닛). 그래서 새로 보이는 것만, 그 bbox 이웃만
+      // 넣어 푼다 — 클릭당 items 가 107~134개로 **클릭 수와 무관하게 상수**다.
+      //
+      // 프레임 안에서 도는 이유: 접힘 집합이 프레임마다 계산되므로 여기가
+      // "새로 보이게 됐다"를 아는 유일한 자리다. 펼침 1회당 1회만 돈다.
+      {
+        const prevClustered = clusteredIdsRef.current;
+        const newlyVisible = new Set<string>();
+        for (const id of prevClustered) if (!frameClusteredIds.has(id)) newlyVisible.add(id);
+        if (newlyVisible.size > 0) {
+          const alreadyPlaced = new Set<string>();
+          for (const node of world.nodes) {
+            if (!newlyVisible.has(node.id) && !frameClusteredIds.has(node.id)) {
+              alreadyPlaced.add(node.id);
+            }
+          }
+          // 홈 좌표(정준 배치)를 푼다 — 스프링이 돌아갈 자리가 여기다. 라이브
+          // 좌표(x/y)는 아래에서 같은 델타만큼 옮겨 드래그/물리 상태를 보존한다.
+          const homePoints = new Map(
+            world.nodes.map((n) => [n.id, { id: n.id, x: n.homeX, y: n.homeY }]),
+          );
+          relaxNewlyVisible(
+            homePoints,
+            world.nodes.map((n) => ({ id: n.id, kind: n.kind, parentId: n.parentId })),
+            newlyVisible,
+            alreadyPlaced,
+            {
+              radii: {
+                project: tokens.radiusProject,
+                domain: tokens.radiusDomain,
+                capability: tokens.radiusCapability,
+                element: tokens.radiusElement,
+              },
+            },
+          );
+          for (const node of world.nodes) {
+            if (!newlyVisible.has(node.id)) continue;
+            const next = homePoints.get(node.id);
+            if (!next) continue;
+            const dx = next.x - node.homeX;
+            const dy = next.y - node.homeY;
+            if (dx === 0 && dy === 0) continue;
+            node.homeX = next.x;
+            node.homeY = next.y;
+            node.x += dx;
+            node.y += dy;
+          }
+          recomputeWorldGeometry(world, tokens);
+        }
+      }
+
+      // 다섯째 채널 램프 스텝 — 펼침으로 드러난(=접힘 집합 밖인) 자식은 1 로,
+      // 다시 접힌 자식은 0 으로 수렴한다. 티어가 이미 열어 준 노드는 이 채널이
+      // 필요 없으므로 대상에서 뺀다(램프 중복 없음).
+      {
+        const revealMap = expandRevealRef.current;
+        const target = new Set<string>();
+        for (const [parentId, childIds] of world.childrenByParent) {
+          if (!effectiveExpanded.has(parentId)) continue;
+          for (const id of childIds) if (!frameClusteredIds.has(id)) target.add(id);
+        }
+        const tracked = new Set<string>([...target, ...revealMap.keys()]);
+        for (const id of tracked) {
+          const prev = revealMap.get(id) ?? 0;
+          const next = reducedMotionRef.current
+            ? (target.has(id) ? 1 : 0)
+            : stepEmphasis(prev, target.has(id), true, dt, tokens.clusterRevealTau, tokens.clusterRevealTau);
+          if (!target.has(id) && next <= 0.02) revealMap.delete(id);
+          else revealMap.set(id, next);
         }
       }
 
@@ -2591,6 +2812,7 @@ export function useTopologyLoop(args: UseTopologyLoopArgs): UseTopologyLoopResul
         focusRampById: focusRampRef.current,
         appearById: appearRef.current,
         chipRevealById: chipRevealRef.current,
+        expandRevealById: expandRevealRef.current,
         batchAppearById: batchAppearRef.current,
         labelPresentById: labelPresentRef.current,
         colorFocusedNodeId: colorFocusRef.current?.focusedNodeId ?? null,
@@ -2657,10 +2879,40 @@ export function useTopologyLoop(args: UseTopologyLoopArgs): UseTopologyLoopResul
       handle = requestAnimationFrame(frame);
     };
 
+    /**
+     * **GPU 가 캔버스를 회수하면 지도가 백지가 된다** — 그리고 아무도 그 사실을
+     * 모른다.
+     *
+     * 가속 캔버스의 백킹 저장소는 브라우저가 회수할 수 있다(GPU 프로세스 크래시,
+     * 드라이버 리셋, 탭 백그라운드에서의 메모리 압박). 그러면 `contextlost` 가
+     * 오고 **그리기가 조용히 무효가 된다** — 예외도, 콘솔 오류도 없다. rAF 루프는
+     * 계속 도는데 화면만 비어 있으므로, 사용자에게는 "지도가 사라졌다"로 보이고
+     * 우리에게는 아무 신호도 안 남는다.
+     *
+     * 명세가 주는 계약은 단순하다: `contextlost` 를 `preventDefault()` 로 막으면
+     * 브라우저가 컨텍스트 복구를 시도하고 `contextrestored` 가 온다. 그때 다음
+     * 프레임이 전부 다시 그리므로, 우리가 할 일은 **막고, 깨우는 것**뿐이다 —
+     * 이 루프는 매 프레임 전체 재그리기라 별도 복원 절차가 필요 없다.
+     * (`developer.chrome.com/blog/canvas2d` — "receive a callback and redraw".)
+     */
+    const onContextLost = (event: Event) => {
+      event.preventDefault(); // 이걸 안 하면 브라우저가 복구를 시도하지 않는다
+    };
+    const onContextRestored = () => {
+      // 유휴 게이트가 프레임을 건너뛰고 있을 수 있다 — 복구 직후를 "활동"으로
+      // 표시해 다음 프레임이 확실히 그려지게 한다.
+      lastActiveMsRef.current = performance.now();
+      viewportRebuildPendingRef.current = true;
+    };
+    canvas.addEventListener("contextlost", onContextLost);
+    canvas.addEventListener("contextrestored", onContextRestored);
+
     handle = requestAnimationFrame(frame);
     return () => {
       cancelled = true;
       cancelAnimationFrame(handle);
+      canvas.removeEventListener("contextlost", onContextLost);
+      canvas.removeEventListener("contextrestored", onContextRestored);
     };
   }, []);
 
@@ -2799,6 +3051,102 @@ export function useTopologyLoop(args: UseTopologyLoopArgs): UseTopologyLoopResul
     }),
     [handlers, noteInput],
   );
+
+  /**
+   * 검사 훅 — `?e2e=1` 일 때만 붙는 자동화용 창구. **제품 API 가 아니다.**
+   *
+   * ## 왜 필요한가 (2026-07-31 사고)
+   *
+   * 노드 드래그 렉을 재현하려다 **여섯 번 연속 배경만 밀었다.** 밖에서 노드를
+   * 조준할 방법이 «캔버스를 훑어 커서가 pointer 인 지점을 찾는 것» 뿐이었는데,
+   * 그건 **호버 히트**일 뿐 **잡히는지**와 다르다 — 잡기는
+   * `sim.hasNode(pressedNodeId)` 를 통과해야 성립하고, 실패하면 조용히 팬으로
+   * 흘러간다. 게다가 노드 드래그와 팬이 커서를 **똑같이 `grabbing`** 으로
+   * 바꾸므로(`topology-pointer-handlers.ts`) 밖에서는 사후 확인조차 불가능했다.
+   * 그래서 매번 "안 느린데요" 라는 오답이 나왔고, 소유자가 화면을 보고
+   * *"너는 노드가 아니라 그냥 배경을 흔들잖아"* 라고 짚어준 뒤에야 끝났다.
+   *
+   * > **밖에서 구분할 수 없는 상태는 밖에서 검사할 수 없다.**
+   *
+   * 그래서 둘을 노출한다: 노드의 **화면 좌표 + 잡히는지**(사전 조준), 그리고
+   * 지금 끌고 있는 것이 **노드인지 배경인지**(사후 확인). 둘 다 refs 를 그때
+   * 읽는 게터라 프레임 비용은 0 이다.
+   */
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    if (!new URLSearchParams(window.location.search).has("e2e")) return;
+    const hook = {
+      /** 화면에 그려진 노드 — 좌표는 **CSS 픽셀**(마우스 좌표계)이다. */
+      nodes: () => {
+        const world = worldRef.current;
+        const camera = cameraRef.current;
+        const { width, height } = viewportRef.current;
+        if (!world || !camera || width <= 0) return [];
+        const sim = simRef.current;
+        const clustered = clusteredIdsRef.current;
+        return world.nodes.map((n) => ({
+          id: n.id,
+          kind: n.kind,
+          label: n.label,
+          // screenToWorld 의 역함수 — 같은 카메라를 쓰므로 어긋날 수 없다.
+          x: (n.x - camera.x.value) * camera.scale.value + width / 2,
+          y: (n.y - camera.y.value) * camera.scale.value + height / 2,
+          /** ★ 이걸 안 봐서 여섯 번 틀렸다 — 시뮬에 없으면 끌어도 팬이 된다. */
+          draggable: sim?.hasNode(n.id) ?? false,
+          /** 접힌 서브트리는 칩으로 대체돼 화면에 없다. */
+          hidden: clustered?.has(n.id) ?? false,
+        }));
+      },
+      /** 지금 무엇을 끌고 있나 — 「노드」와 「배경」이 화면에서 같아 보이므로. */
+      interaction: () => {
+        const drag = nodeDragRef.current;
+        if (drag) return { kind: "node" as const, nodeId: drag.nodeId };
+        if (pointerMachineRef.current.phase === "dragging") return { kind: "pan" as const, nodeId: null };
+        return { kind: "idle" as const, nodeId: null };
+      },
+      /** 캔버스 백킹 크기 — 상호작용 중 해상도 캡이 실제로 걸렸는지 확인용. */
+      backing: () => {
+        const c = canvasRef.current;
+        return c ? { width: c.width, height: c.height, dpr: window.devicePixelRatio } : null;
+      },
+      /** 카메라 — 「지도가 어디를 보고 있나」. 딥링크·다이브·핏뷰 검증용. */
+      camera: () => {
+        const camera = cameraRef.current;
+        const { width, height } = viewportRef.current;
+        if (!camera) return null;
+        return { x: camera.x.value, y: camera.y.value, scale: camera.scale.value, width, height };
+      },
+      /** 지금 무엇이 골라져 있나 — 노드 하나 또는 엣지 한 쌍. */
+      selection: () => ({
+        nodeId: focusedSlugRef.current,
+        edge: selectedEdgeRef.current,
+      }),
+      /**
+       * 밀도 게이트 칩 — **「+24」가 진짜 24개를 드러내는지** 검증하는 자리다.
+       * 칩이 «24개 있다» 고 주장하는데 그리는 것은 1개였던 전례가 있다(티어
+       * 게이트가 칩 전개를 안 봐줬다). 주장(`count`)과 실제(`shownChildren`)를
+       * 나란히 내보내야 그 어긋남이 밖에서 잡힌다.
+       */
+      chips: () => {
+        const world = worldRef.current;
+        const clustered = clusteredIdsRef.current;
+        return clusterChipsRef.current.map((chip) => {
+          const children = world?.childrenByParent.get(chip.parentId) ?? [];
+          return {
+            parentId: chip.parentId,
+            claimedCount: chip.count,
+            expanded: chip.expanded,
+            /** 접히지 않은(=그려질 수 있는) 직속 자식 수. */
+            shownChildren: children.filter((id) => !clustered.has(id)).length,
+          };
+        });
+      },
+    };
+    (window as unknown as { __atlasMap?: typeof hook }).__atlasMap = hook;
+    return () => {
+      delete (window as unknown as { __atlasMap?: typeof hook }).__atlasMap;
+    };
+  }, []);
 
   return { canvasRef, containerRef, ...handlers, ...wrappedHandlers };
 }

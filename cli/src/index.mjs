@@ -558,7 +558,7 @@ ${COLORS.dim}AI agents and humans now share the same vault. Have fun.${COLORS.re
   return 0;
 }
 
-// `init --quick-start` (Slice 0 — docs/PRODUCT-PLAN-2026-07.md §9): one
+// `init --quick-start` (Slice 0 — docs/plans/PRODUCT-PLAN-2026-07.md §9): one
 // command = scaffold (already done by the time this runs, no prompts either
 // way) + bootstrap from the repo (reuses the existing analyze/infer-imports
 // pipeline via `runBootstrap` — no reimplementation) + .mcp.json (already

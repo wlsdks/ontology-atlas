@@ -223,8 +223,8 @@
         }
       ],
       "excerpt": "2026-07-27 update — the current architecture is a local-first, git-backed meaning layer shared by people and AI coding agents. Round 10 permanently removed all auth + cloud data surfaces; the current route model converges browsing on Topology, writing on Workshop, maintenance on five-question Insights, and keeps old on",
-      "wordCount": 2573,
-      "updatedAt": "2026-07-28",
+      "wordCount": 2729,
+      "updatedAt": "2026-07-31",
       "linksOut": [
         "../AGENTS",
         "PRODUCT-DIRECTION",
@@ -1346,7 +1346,7 @@
       ],
       "excerpt": "Status: 부분 구현 + 활성 가이드. mode-aware adapters (PR 5/6) + useOntologyInsight (Q1=(a)) 머지로 Static / Local / Cloud 3 모드는 코드 구현 완료. Hybrid (양방향 sync) 는 v2 협업 단계. 이 문서는 로컬 디스크의 markdown 폴더 와 Firebase (Firestore + Storage) 사이의 데이터 흐름·sync·충돌 정책을 명시한다. .claude/rules/local-first.md 의 \"Notion 처럼 폴더만 선택해도 사용\" 헌장을 데이터 레이어에서 어떻게 구현하",
       "wordCount": 1170,
-      "updatedAt": "2026-05-02",
+      "updatedAt": "2026-07-31",
       "linksOut": []
     },
     {
@@ -1487,7 +1487,7 @@
       ],
       "excerpt": "Status: Adopted (Phase 2-3, 2026-05-01). Why: Root cause 1 from the planner audit — no mode-aware hook existed, so every gate looked only at auth role. Non-logged-in users with an active local vault could not perform mutations. Spec location: Code-layer implementation of the .claude/rules/local-first.md charter and doc",
       "wordCount": 1104,
-      "updatedAt": "2026-05-03",
+      "updatedAt": "2026-07-31",
       "linksOut": []
     },
     {
@@ -1610,7 +1610,7 @@
       ],
       "excerpt": "Status: 활성 가이드 (Q1=(a) 답 + useOntologyInsight 머지 완료, PR 6). 진입점 분기 확정됨 — vault 활성 시 / ontology hub 가 자동 vault 모드, vault 미활성 시 cloud / static fallback. 이 문서는 비로그인 사용자가 첫 화면에서 0 마찰로 사용 시작 하도록 라우트별 진입 동작·권한 게이트·온보딩 단계를 명시한다. .claude/rules/local-first.md 의 헌장 (\"Notion 처럼 폴더만 선택해도 사용\") 을 UI 레이어에서 어떻게 구현하는지 정의. 관련: .claude/r",
       "wordCount": 1576,
-      "updatedAt": "2026-05-02",
+      "updatedAt": "2026-07-31",
       "linksOut": []
     },
     {
@@ -1917,8 +1917,8 @@
         },
         {
           "depth": 3,
-          "text": "운영 모드 (`docs/LOCAL-FIRST-SYNC.md` 와 일치)",
-          "slug": "운영-모드-docslocal-first-syncmd-와-일치"
+          "text": "운영 모드 (`docs/archive/LOCAL-FIRST-SYNC.md` 와 일치)",
+          "slug": "운영-모드-docsarchivelocal-first-syncmd-와-일치"
         },
         {
           "depth": 3,
@@ -1933,7 +1933,7 @@
       ],
       "excerpt": "Status: Q3-Q7 답 확정 (2026-05-02, user 추천 기본 채택). V1.x roadmap 의 mission v2 정합 평가도 같이 마쳤다. 결론: V1.2-V1.4 + V2 는 cloud-first 가정 으로 설계됐는데, mission v2 가 vault-first + functions/ 폐기 (PR 27) 로 전환되며 cloud schema 진화의 기존 의미가 사라졌다. 살아남는 부분만 vault-adaptation 으로 변형 적용; 그 외는 N/A 로 닫는다. Author: 자율 루프 iter12 (2026-05-01) + 이후 update. ",
       "wordCount": 8423,
-      "updatedAt": "2026-05-02",
+      "updatedAt": "2026-07-31",
       "linksOut": [
         "other-doc",
         "doc:payment-spec",
@@ -2051,9 +2051,9 @@
           "slug": "보관-사유-각-파일별"
         }
       ],
-      "excerpt": "이 폴더는 과거 세션에서 만든 long-form 분석 문서 의 보관소다. 현재 mission / contributor 룰의 진실원은 다음 4 개: docs/PRODUCT-DIRECTION.md — mission v2 spec docs/FEATURES.md — 사용자 가시 기능 전수 docs/ARCHITECTURE.md / docs/DATA-MODEL.md / docs/DESIGN-SYSTEM.md / docs/DEPLOYMENT.md — 영역별 룰 docs/CHANGELOG.md — 시간순 변화 archive 안 문서는 역사적 맥락 으로 남겨둘 뿐 contributo",
+      "excerpt": "이 폴더는 과거 세션에서 만든 long-form 분석 문서 의 보관소다. 현재 mission / contributor 룰의 진실원은 다음 4 개: docs/PRODUCT-DIRECTION.md — mission v2 spec docs/FEATURES.md — 사용자 가시 기능 전수 docs/ARCHITECTURE.md / docs/archive/DATA-MODEL.md / docs/DESIGN-SYSTEM.md / docs/DEPLOYMENT.md — 영역별 룰 docs/CHANGELOG.md — 시간순 변화 archive 안 문서는 역사적 맥락 으로 남겨둘 뿐 co",
       "wordCount": 276,
-      "updatedAt": "2026-07-18",
+      "updatedAt": "2026-07-31",
       "linksOut": []
     },
     {
@@ -2386,6 +2386,606 @@
       "linksOut": []
     },
     {
+      "slug": "audits/CASE-STUDY-AGENTS-MD-DRIFT",
+      "path": "docs/audits/CASE-STUDY-AGENTS-MD-DRIFT.md",
+      "title": "Case Study: Avoiding AGENTS.md / CLAUDE.md Drift",
+      "tags": [],
+      "frontmatter": {},
+      "headings": [
+        {
+          "depth": 1,
+          "text": "Case Study: Avoiding AGENTS.md / CLAUDE.md Drift",
+          "slug": "case-study-avoiding-agentsmd-claudemd-drift"
+        },
+        {
+          "depth": 2,
+          "text": "The problem, as the community describes it",
+          "slug": "the-problem-as-the-community-describes-it"
+        },
+        {
+          "depth": 2,
+          "text": "What this repo actually does about it",
+          "slug": "what-this-repo-actually-does-about-it"
+        },
+        {
+          "depth": 2,
+          "text": "The vault extends the same pattern to facts that change",
+          "slug": "the-vault-extends-the-same-pattern-to-facts-that-change"
+        }
+      ],
+      "excerpt": "How this repo keeps its own instruction files in sync, and why the same pattern extends into the vault for facts that change faster than instructions do. Written from this repo's own history, not a hypothetical. Multiple coding-agent instruction files (AGENTS.md, CLAUDE.md, GEMINI.md, .github/copilot-instructions.md, …",
+      "wordCount": 825,
+      "updatedAt": "2026-07-31",
+      "linksOut": [
+        "CLAUDE",
+        ".claude/rules/forbidden",
+        "mcp/README",
+        "AGENTS"
+      ]
+    },
+    {
+      "slug": "audits/ONTOLOGY-RIGOR-AUDIT-2026-07",
+      "path": "docs/audits/ONTOLOGY-RIGOR-AUDIT-2026-07.md",
+      "title": "온톨로지 표현적 적정성 감사 — 전문가 8인 (2026-07-24)",
+      "tags": [],
+      "frontmatter": {},
+      "headings": [
+        {
+          "depth": 1,
+          "text": "온톨로지 표현적 적정성 감사 — 전문가 8인 (2026-07-24)",
+          "slug": "온톨로지-표현적-적정성-감사-전문가-8인-2026-07-24"
+        },
+        {
+          "depth": 2,
+          "text": "심사단 (8 렌즈)",
+          "slug": "심사단-8-렌즈"
+        },
+        {
+          "depth": 2,
+          "text": "총평",
+          "slug": "총평"
+        },
+        {
+          "depth": 2,
+          "text": "✅ 제대로 표현 가능 (9)",
+          "slug": "제대로-표현-가능-9"
+        },
+        {
+          "depth": 2,
+          "text": "❌ 현재 표현 불가 (8) — 대부분 스튜디오 S2가 해결",
+          "slug": "현재-표현-불가-8-대부분-스튜디오-s2가-해결"
+        },
+        {
+          "depth": 2,
+          "text": "⚠️ 건전성 이슈 (모델이 실제로 뭉개거나 통과시키는 것)",
+          "slug": "건전성-이슈-모델이-실제로-뭉개거나-통과시키는-것"
+        },
+        {
+          "depth": 2,
+          "text": "🟢 정당한 단순화 (과잉요구 방지 — 안 해도 됨)",
+          "slug": "정당한-단순화-과잉요구-방지-안-해도-됨"
+        },
+        {
+          "depth": 2,
+          "text": "실행 가능한 공백 10 (→ 스튜디오 S2, 전부 평문 frontmatter·advisory·하위호환)",
+          "slug": "실행-가능한-공백-10-스튜디오-s2-전부-평문-frontmatteradvisory하위호환"
+        },
+        {
+          "depth": 2,
+          "text": "상호운용 (RDF/SKOS export) 판정",
+          "slug": "상호운용-rdfskos-export-판정"
+        },
+        {
+          "depth": 2,
+          "text": "로드맵 (단계·불변 원칙)",
+          "slug": "로드맵-단계불변-원칙"
+        }
+      ],
+      "excerpt": "판정: partial — \"라벨 붙은 그래프를 넘어선, 이름값을 실제로 획득한 경량 온톨로지지만 미완성.\" 이 문서는 온톨로지 전문가 8인 패널이 \"이 시스템이 제대로 된 온톨로지를 표현할 수 있는가\"를 심사한 전체 기록이다. 실행 가능한 공백은 docs/plans/ONTOLOGY-STUDIO-PLAN.md §1(스키마 심화)이 흡수한다. 이 문서는 근거·판정 원본을 durable 하게 보존한다. 형식 온톨로지/지식표현(Gruber) · W3C 시맨틱웹(RDF/OWL/SKOS) · 기술논리(DL)/추론 · 분류학/부분전체론(mereology) · 관계 semantic",
+      "wordCount": 997,
+      "updatedAt": "2026-07-31",
+      "linksOut": []
+    },
+    {
+      "slug": "audits/PRODUCT-UX-AUDIT",
+      "path": "docs/audits/PRODUCT-UX-AUDIT.md",
+      "title": "Ontology Atlas 제품 UX 감사 장부",
+      "tags": [],
+      "frontmatter": {},
+      "headings": [
+        {
+          "depth": 1,
+          "text": "Ontology Atlas 제품 UX 감사 장부",
+          "slug": "ontology-atlas-제품-ux-감사-장부"
+        },
+        {
+          "depth": 2,
+          "text": "감사 방법",
+          "slug": "감사-방법"
+        },
+        {
+          "depth": 2,
+          "text": "현재 시나리오 행렬",
+          "slug": "현재-시나리오-행렬"
+        },
+        {
+          "depth": 2,
+          "text": "이슈 장부",
+          "slug": "이슈-장부"
+        },
+        {
+          "depth": 3,
+          "text": "UX-045 — 활성 문서가 제거된 그래프 표면을 현재 계약처럼 설명",
+          "slug": "ux-045-활성-문서가-제거된-그래프-표면을-현재-계약처럼-설명"
+        },
+        {
+          "depth": 3,
+          "text": "UX-044 — 공개되지 않은 CLI/MCP 패키지를 설치 앱이 즉시 연결 가능하다고 안내",
+          "slug": "ux-044-공개되지-않은-climcp-패키지를-설치-앱이-즉시-연결-가능하다고-안내"
+        },
+        {
+          "depth": 3,
+          "text": "UX-043 — agent persisted-context handoff가 퇴역 Builder URL을 반환",
+          "slug": "ux-043-agent-persisted-context-handoff가-퇴역-builder-url을-반환"
+        },
+        {
+          "depth": 3,
+          "text": "UX-001 — 설치 앱 검증기가 현재 canvas-v2 지도를 구형 앱으로 오판",
+          "slug": "ux-001-설치-앱-검증기가-현재-canvas-v2-지도를-구형-앱으로-오판"
+        },
+        {
+          "depth": 3,
+          "text": "UX-002 — 가이드 투어에서 키보드 포커스가 뒤 화면으로 이탈",
+          "slug": "ux-002-가이드-투어에서-키보드-포커스가-뒤-화면으로-이탈"
+        },
+        {
+          "depth": 3,
+          "text": "UX-003 — 폴더 안내 모달이 포커스를 가두거나 호출 버튼으로 복귀하지 않음",
+          "slug": "ux-003-폴더-안내-모달이-포커스를-가두거나-호출-버튼으로-복귀하지-않음"
+        },
+        {
+          "depth": 3,
+          "text": "UX-004 — 예시 비즈니스 선택 뒤 설명이 다른 데이터셋을 지칭",
+          "slug": "ux-004-예시-비즈니스-선택-뒤-설명이-다른-데이터셋을-지칭"
+        },
+        {
+          "depth": 3,
+          "text": "UX-005 — 권한 대기 상태에서 폴더 선택 취소가 잘못된 `loaded` 상태를 만듦",
+          "slug": "ux-005-권한-대기-상태에서-폴더-선택-취소가-잘못된-loaded-상태를-만듦"
+        },
+        {
+          "depth": 3,
+          "text": "UX-006 — 투어 5/7에서 설명 대상과 시각적 주목 대상이 분리됨",
+          "slug": "ux-006-투어-57에서-설명-대상과-시각적-주목-대상이-분리됨"
+        },
+        {
+          "depth": 3,
+          "text": "UX-007 — 번역 계약 테스트 다섯 건이 현재 메시지와 역방향으로 드리프트",
+          "slug": "ux-007-번역-계약-테스트-다섯-건이-현재-메시지와-역방향으로-드리프트"
+        },
+        {
+          "depth": 3,
+          "text": "UX-008 — 읽기 전용 샘플의 AI 인계가 실제 vault 쓰기 명령을 제안",
+          "slug": "ux-008-읽기-전용-샘플의-ai-인계가-실제-vault-쓰기-명령을-제안"
+        },
+        {
+          "depth": 3,
+          "text": "UX-009 — 공방 인라인 관계 카드의 닫기 제어가 이름과 Escape 계약을 잃음",
+          "slug": "ux-009-공방-인라인-관계-카드의-닫기-제어가-이름과-escape-계약을-잃음"
+        },
+        {
+          "depth": 3,
+          "text": "UX-010 — 재실행 시 열린 탭은 남지만 활성 문서가 README로 돌아감",
+          "slug": "ux-010-재실행-시-열린-탭은-남지만-활성-문서가-readme로-돌아감"
+        },
+        {
+          "depth": 3,
+          "text": "UX-011 — 외부 편집 뒤 저장이 최신 mtime을 기준으로 삼아 변경을 덮어씀",
+          "slug": "ux-011-외부-편집-뒤-저장이-최신-mtime을-기준으로-삼아-변경을-덮어씀"
+        },
+        {
+          "depth": 3,
+          "text": "UX-012 — 노드 상세를 닫으면 키보드 포커스가 사라짐",
+          "slug": "ux-012-노드-상세를-닫으면-키보드-포커스가-사라짐"
+        },
+        {
+          "depth": 3,
+          "text": "UX-013 — 설치 앱에서 임의 로컬 프로젝트의 상세·전체 편집 경로가 열리지 않음",
+          "slug": "ux-013-설치-앱에서-임의-로컬-프로젝트의-상세전체-편집-경로가-열리지-않음"
+        },
+        {
+          "depth": 3,
+          "text": "UX-014 — 경로가 자유로운 project 문서 편집이 원본 대신 복제 파일을 만듦",
+          "slug": "ux-014-경로가-자유로운-project-문서-편집이-원본-대신-복제-파일을-만듦"
+        },
+        {
+          "depth": 3,
+          "text": "UX-015 — vault 재로딩 순간 전체 편집이 샘플 모드로 바뀌어 not-found를 고정함",
+          "slug": "ux-015-vault-재로딩-순간-전체-편집이-샘플-모드로-바뀌어-not-found를-고정함"
+        },
+        {
+          "depth": 3,
+          "text": "UX-016 — 짧은 인라인 편집이 없던 분류·상태를 만들어 전체 편집 저장을 막음",
+          "slug": "ux-016-짧은-인라인-편집이-없던-분류상태를-만들어-전체-편집-저장을-막음"
+        },
+        {
+          "depth": 3,
+          "text": "UX-017 — 새 프로젝트 파일이 graph node 종류 없이 생성됨",
+          "slug": "ux-017-새-프로젝트-파일이-graph-node-종류-없이-생성됨"
+        },
+        {
+          "depth": 3,
+          "text": "UX-018 — 유효한 로컬 온톨로지 딥링크가 선택 성공과 not-found를 동시에 표시",
+          "slug": "ux-018-유효한-로컬-온톨로지-딥링크가-선택-성공과-not-found를-동시에-표시"
+        },
+        {
+          "depth": 3,
+          "text": "UX-019 — CREATE 저장 예고가 새 노드를 0가지로 세고 확정 충돌도 저장을 허용",
+          "slug": "ux-019-create-저장-예고가-새-노드를-0가지로-세고-확정-충돌도-저장을-허용"
+        },
+        {
+          "depth": 3,
+          "text": "UX-020 — 인사이트 탭이 복합 위젯을 선언하고 일반 링크처럼 동작",
+          "slug": "ux-020-인사이트-탭이-복합-위젯을-선언하고-일반-링크처럼-동작"
+        },
+        {
+          "depth": 3,
+          "text": "UX-021 — 다운로드 경로의 첫 화면이 설치 판단 대신 제품 소개를 먼저 요구",
+          "slug": "ux-021-다운로드-경로의-첫-화면이-설치-판단-대신-제품-소개를-먼저-요구"
+        },
+        {
+          "depth": 3,
+          "text": "UX-022 — 언어 전환이 현재 인사이트 과업을 기본 탭으로 초기화",
+          "slug": "ux-022-언어-전환이-현재-인사이트-과업을-기본-탭으로-초기화"
+        },
+        {
+          "depth": 3,
+          "text": "UX-023 — 설치 앱 검증기가 현재 Atlas 셸·canvas-v2 선택 맥락을 오판",
+          "slug": "ux-023-설치-앱-검증기가-현재-atlas-셸canvas-v2-선택-맥락을-오판"
+        },
+        {
+          "depth": 3,
+          "text": "UX-024 — 설정에서 언어를 바꾸면 포커스가 새 문서 루트로 유실됨",
+          "slug": "ux-024-설정에서-언어를-바꾸면-포커스가-새-문서-루트로-유실됨"
+        },
+        {
+          "depth": 3,
+          "text": "UX-025 — 설정 modal의 마지막 Tab이 열린 시트 뒤 HTML 문서로 이탈",
+          "slug": "ux-025-설정-modal의-마지막-tab이-열린-시트-뒤-html-문서로-이탈"
+        },
+        {
+          "depth": 3,
+          "text": "UX-026 — AI 설정 드릴인 진입이 열린 modal의 포커스를 문서 루트로 유실",
+          "slug": "ux-026-ai-설정-드릴인-진입이-열린-modal의-포커스를-문서-루트로-유실"
+        },
+        {
+          "depth": 3,
+          "text": "UX-027 — 설정에서 문서함으로 이동하면 새 화면의 읽기 시작점을 잃음",
+          "slug": "ux-027-설정에서-문서함으로-이동하면-새-화면의-읽기-시작점을-잃음"
+        },
+        {
+          "depth": 3,
+          "text": "UX-028 — 활성 문서 탭을 키보드로 닫으면 포커스가 앱 루트로 유실",
+          "slug": "ux-028-활성-문서-탭을-키보드로-닫으면-포커스가-앱-루트로-유실"
+        },
+        {
+          "depth": 3,
+          "text": "UX-029 — 전역 레일 이동과 공방 surface가 새 과업의 읽기 시작점을 잃음",
+          "slug": "ux-029-전역-레일-이동과-공방-surface가-새-과업의-읽기-시작점을-잃음"
+        },
+        {
+          "depth": 3,
+          "text": "A27 검증 메모 — 하단 탭바 route·safe-area 계약 유지",
+          "slug": "a27-검증-메모-하단-탭바-routesafe-area-계약-유지"
+        },
+        {
+          "depth": 3,
+          "text": "UX-030 — 화면 밖 AI 연결 진입이 시트를 잃고 문서 루트로 포커스를 버림",
+          "slug": "ux-030-화면-밖-ai-연결-진입이-시트를-잃고-문서-루트로-포커스를-버림"
+        },
+        {
+          "depth": 3,
+          "text": "UX-031 — 설치 앱 관계 검증이 사용자의 저장 vault에 의존해 재현성을 잃음",
+          "slug": "ux-031-설치-앱-관계-검증이-사용자의-저장-vault에-의존해-재현성을-잃음"
+        },
+        {
+          "depth": 3,
+          "text": "UX-032 — 설치 앱의 블록 가져오기가 폴더 선택 미지원으로 비활성화됨",
+          "slug": "ux-032-설치-앱의-블록-가져오기가-폴더-선택-미지원으로-비활성화됨"
+        },
+        {
+          "depth": 3,
+          "text": "UX-033 — AI 연결 화면이 현재 32도구 MCP를 24도구라고 안내",
+          "slug": "ux-033-ai-연결-화면이-현재-32도구-mcp를-24도구라고-안내"
+        },
+        {
+          "depth": 3,
+          "text": "UX-034 — invalid MCP 설정 옆 주요 버튼이 이미 완료된 작업처럼 읽힘",
+          "slug": "ux-034-invalid-mcp-설정-옆-주요-버튼이-이미-완료된-작업처럼-읽힘"
+        },
+        {
+          "depth": 3,
+          "text": "UX-035 — 활성 문서와 프로토타입이 CLI 45·48·50명령을 동시에 주장",
+          "slug": "ux-035-활성-문서와-프로토타입이-cli-454850명령을-동시에-주장"
+        },
+        {
+          "depth": 3,
+          "text": "UX-036 — `기능 문서 열기`가 약속한 내장 문서 대신 local README를 엶",
+          "slug": "ux-036-기능-문서-열기가-약속한-내장-문서-대신-local-readme를-엶"
+        },
+        {
+          "depth": 3,
+          "text": "UX-037 — 자동 AX probe가 Computer Use로 읽히는 창을 timeout으로 오판",
+          "slug": "ux-037-자동-ax-probe가-computer-use로-읽히는-창을-timeout으로-오판"
+        },
+        {
+          "depth": 3,
+          "text": "UX-038 — 공방 진입 선택 뒤 키보드 포커스가 작업대로 이어지지 않음",
+          "slug": "ux-038-공방-진입-선택-뒤-키보드-포커스가-작업대로-이어지지-않음"
+        },
+        {
+          "depth": 3,
+          "text": "UX-039 — 수리 큐 총계가 가리키는 나머지 대상을 찾을 수 없음",
+          "slug": "ux-039-수리-큐-총계가-가리키는-나머지-대상을-찾을-수-없음"
+        },
+        {
+          "depth": 3,
+          "text": "UX-040 — 설치 앱 검증기가 폐기된 인사이트 DOM을 요구해 최신 앱을 실패 처리",
+          "slug": "ux-040-설치-앱-검증기가-폐기된-인사이트-dom을-요구해-최신-앱을-실패-처리"
+        },
+        {
+          "depth": 3,
+          "text": "UX-041 — fresh build 뒤에도 desktop smoke가 폐기된 route 계약으로 실패",
+          "slug": "ux-041-fresh-build-뒤에도-desktop-smoke가-폐기된-route-계약으로-실패"
+        },
+        {
+          "depth": 3,
+          "text": "UX-042 — design guard가 초록이어도 퇴역 3탭 인사이트를 보호",
+          "slug": "ux-042-design-guard가-초록이어도-퇴역-3탭-인사이트를-보호"
+        },
+        {
+          "depth": 3,
+          "text": "2026-07-27 반복 측정 기록",
+          "slug": "2026-07-27-반복-측정-기록"
+        },
+        {
+          "depth": 2,
+          "text": "현재 PO·디자인 판정",
+          "slug": "현재-po디자인-판정"
+        }
+      ],
+      "excerpt": "상태: 진행 중. 이 문서는 전면 재디자인 제안서가 아니라, 실제 사용자 시나리오를 설치 앱에서 반복 검증하며 발견·수정·재검증한 계약을 기록한다. 최신 반복 측정: 2026-07-27, 설치 앱 + Codex Computer Use. 원칙: 취향보다 과업 성공, 스크린샷보다 상호작용 증거, 새 기능보다 현재 흐름의 신뢰 회복을 우선한다. 각 항목은 아래 순서로 닫는다. 1. 사용자·과업·시작 상태·이벤트 순서를 고정한다. 2. 설치 앱에서 포인터와 키보드로 재현한다. 3. 스크린샷의 광점·호버·강조를 판정하기 전 포인터를 비정보 영역으로 옮겨 한 장 더 캡처한다. ",
+      "wordCount": 14980,
+      "updatedAt": "2026-07-31",
+      "linksOut": []
+    },
+    {
+      "slug": "audits/README",
+      "path": "docs/audits/README.md",
+      "title": "audits/ — 잰 것의 기록",
+      "tags": [],
+      "frontmatter": {},
+      "headings": [
+        {
+          "depth": 1,
+          "text": "audits/ — 잰 것의 기록",
+          "slug": "audits-잰-것의-기록"
+        }
+      ],
+      "excerpt": "날짜에 묶인 스냅샷만 여기 산다. 각 파일은 그때 무엇을 쟀고 무엇이 나왔는지의 기록이며, 현재 상태를 주장하지 않는다 — 그래서 나중에 사실과 어긋나도 고치지 않는다(고치면 기록이 아니라 위조다). 규범 문서(오늘 지켜야 하는 것)는 docs/ 루트에 있다. 이 구분이 흐려지면 감사 보고서가 규격처럼 읽히고, 다음 사람이 이미 지나간 상태를 현행으로 오인한다. 여기 넣는 것: 감사 · 리뷰 브리프 · 케이스 스터디 · 실측 보고 여기 넣지 않는 것: 오늘 유효한 규칙, 계약, 아키텍처 서술 감사에서 나온 결정은 여기 남기지 말고 docs/DECISIONS.md 원장",
+      "wordCount": 98,
+      "updatedAt": "2026-07-31",
+      "linksOut": []
+    },
+    {
+      "slug": "audits/VISUAL-DESIGN-REVIEW-BRIEF-2026-07",
+      "path": "docs/audits/VISUAL-DESIGN-REVIEW-BRIEF-2026-07.md",
+      "title": "Ontology Atlas — Visual Design Review Brief (2026-07)",
+      "tags": [],
+      "frontmatter": {},
+      "headings": [
+        {
+          "depth": 1,
+          "text": "Ontology Atlas — Visual Design Review Brief (2026-07)",
+          "slug": "ontology-atlas-visual-design-review-brief-2026-07"
+        },
+        {
+          "depth": 2,
+          "text": "1. How to use this document",
+          "slug": "1-how-to-use-this-document"
+        },
+        {
+          "depth": 2,
+          "text": "2. Compact PO framing",
+          "slug": "2-compact-po-framing"
+        },
+        {
+          "depth": 2,
+          "text": "3. Evidence reviewed",
+          "slug": "3-evidence-reviewed"
+        },
+        {
+          "depth": 3,
+          "text": "Current-session captures",
+          "slug": "current-session-captures"
+        },
+        {
+          "depth": 3,
+          "text": "Stable product captures",
+          "slug": "stable-product-captures"
+        },
+        {
+          "depth": 3,
+          "text": "Product surfaces to inspect live",
+          "slug": "product-surfaces-to-inspect-live"
+        },
+        {
+          "depth": 2,
+          "text": "4. Review method and limits",
+          "slug": "4-review-method-and-limits"
+        },
+        {
+          "depth": 2,
+          "text": "5. Consolidated diagnosis",
+          "slug": "5-consolidated-diagnosis"
+        },
+        {
+          "depth": 2,
+          "text": "6. Prioritized findings",
+          "slug": "6-prioritized-findings"
+        },
+        {
+          "depth": 3,
+          "text": "1. Relation direction and type are not reliably readable — Critical",
+          "slug": "1-relation-direction-and-type-are-not-reliably-readable-critical"
+        },
+        {
+          "depth": 3,
+          "text": "2. Graph volume is more prominent than graph insight — Critical",
+          "slug": "2-graph-volume-is-more-prominent-than-graph-insight-critical"
+        },
+        {
+          "depth": 3,
+          "text": "3. The first five seconds do not prove one work outcome — Critical",
+          "slug": "3-the-first-five-seconds-do-not-prove-one-work-outcome-critical"
+        },
+        {
+          "depth": 3,
+          "text": "4. Information that must be read is too dim — High",
+          "slug": "4-information-that-must-be-read-is-too-dim-high"
+        },
+        {
+          "depth": 3,
+          "text": "5. Project root, current selection, hover, and path state compete — High",
+          "slug": "5-project-root-current-selection-hover-and-path-state-compete-high"
+        },
+        {
+          "depth": 3,
+          "text": "6. The focused Topology state currently carries the strongest product proof — High",
+          "slug": "6-the-focused-topology-state-currently-carries-the-strongest-product-proof-high"
+        },
+        {
+          "depth": 3,
+          "text": "7. Local-first and Git-backed trust are implied rather than proved — High",
+          "slug": "7-local-first-and-git-backed-trust-are-implied-rather-than-proved-high"
+        },
+        {
+          "depth": 3,
+          "text": "8. Studio's game metaphor attracts attention but can weaken rigor — High",
+          "slug": "8-studios-game-metaphor-attracts-attention-but-can-weaken-rigor-high"
+        },
+        {
+          "depth": 3,
+          "text": "9. Topology and Studio need one semantic world, not just shared colors — High",
+          "slug": "9-topology-and-studio-need-one-semantic-world-not-just-shared-colors-high"
+        },
+        {
+          "depth": 3,
+          "text": "10. The dark negative space is potentially a premium asset — Preserve",
+          "slug": "10-the-dark-negative-space-is-potentially-a-premium-asset-preserve"
+        },
+        {
+          "depth": 3,
+          "text": "11. The gold central core is the strongest current brand seed — Opportunity",
+          "slug": "11-the-gold-central-core-is-the-strongest-current-brand-seed-opportunity"
+        },
+        {
+          "depth": 3,
+          "text": "12. Product UI and social creative are separate design problems — SNS Critical",
+          "slug": "12-product-ui-and-social-creative-are-separate-design-problems-sns-critical"
+        },
+        {
+          "depth": 2,
+          "text": "7. Material disagreements to preserve",
+          "slug": "7-material-disagreements-to-preserve"
+        },
+        {
+          "depth": 3,
+          "text": "\"The interface is too dark\"",
+          "slug": "the-interface-is-too-dark"
+        },
+        {
+          "depth": 3,
+          "text": "\"The canvas is too empty\"",
+          "slug": "the-canvas-is-too-empty"
+        },
+        {
+          "depth": 3,
+          "text": "\"Studio is the strongest screen\"",
+          "slug": "studio-is-the-strongest-screen"
+        },
+        {
+          "depth": 3,
+          "text": "\"The brand is generic\"",
+          "slug": "the-brand-is-generic"
+        },
+        {
+          "depth": 3,
+          "text": "\"Small text should be larger\"",
+          "slug": "small-text-should-be-larger"
+        },
+        {
+          "depth": 2,
+          "text": "8. Preserve before redesigning",
+          "slug": "8-preserve-before-redesigning"
+        },
+        {
+          "depth": 2,
+          "text": "9. Open questions for Fable",
+          "slug": "9-open-questions-for-fable"
+        },
+        {
+          "depth": 2,
+          "text": "10. Hypotheses worth testing",
+          "slug": "10-hypotheses-worth-testing"
+        },
+        {
+          "depth": 2,
+          "text": "11. Directional score range",
+          "slug": "11-directional-score-range"
+        },
+        {
+          "depth": 2,
+          "text": "12. Recommended agent workflow",
+          "slug": "12-recommended-agent-workflow"
+        },
+        {
+          "depth": 3,
+          "text": "Phase A — independent review",
+          "slug": "phase-a-independent-review"
+        },
+        {
+          "depth": 3,
+          "text": "Phase B — shape one design slice",
+          "slug": "phase-b-shape-one-design-slice"
+        },
+        {
+          "depth": 3,
+          "text": "Phase C — implement and verify",
+          "slug": "phase-c-implement-and-verify"
+        },
+        {
+          "depth": 2,
+          "text": "13. Copy-ready prompt A — ask Fable for an independent opinion",
+          "slug": "13-copy-ready-prompt-a-ask-fable-for-an-independent-opinion"
+        },
+        {
+          "depth": 2,
+          "text": "14. Copy-ready prompt B — implement one approved slice",
+          "slug": "14-copy-ready-prompt-b-implement-one-approved-slice"
+        },
+        {
+          "depth": 2,
+          "text": "15. Current recommendation",
+          "slug": "15-current-recommendation"
+        }
+      ],
+      "excerpt": "Status: exploratory review brief, not an approved redesign specification. Audience: Claude Code Fable, design-review agents, and the product owner. Purpose: preserve the evidence, agreements, disagreements, and open questions from a multi-perspective review so the next agent can challenge the diagnosis before proposing",
+      "wordCount": 3181,
+      "updatedAt": "2026-07-31",
+      "linksOut": []
+    },
+    {
       "slug": "BACKLOG",
       "path": "docs/BACKLOG.md",
       "title": "Backlog — ontology-atlas",
@@ -2553,9 +3153,9 @@
           "slug": "잔여-게이트-다음-라운드"
         }
       ],
-      "excerpt": "작업 순번 만. user 가 \"T?? 진행해\" 하면 그것만 분해해서 실행. 완료된 항목은 ✅ 표시 후 별도 batch 정리 시 일괄 삭제. 갱신 (2026-05-26): macOS app distribution track 반영. local-first 4 surface (macOS app · CLI · MCP · Website), dogfood 98 노드, CLI 52 commands, MCP 32 tools, compiler/query/health/agent-brief/workspace-brief/bootstrap/import-inference 루프 기준으로 재정렬.",
-      "wordCount": 1666,
-      "updatedAt": "2026-07-30",
+      "excerpt": "작업 순번 만. user 가 \"T?? 진행해\" 하면 그것만 분해해서 실행. 완료된 항목은 ✅ 표시 후 별도 batch 정리 시 일괄 삭제. 갱신 (2026-05-26): macOS app distribution track 반영. local-first 4 surface (macOS app · CLI · MCP · Website), dogfood vault (census: node cli/src/index.mjs overview), CLI 52 commands, MCP 32 tools, compiler/query/health/agent-brief/workspace-bri",
+      "wordCount": 1669,
+      "updatedAt": "2026-07-31",
       "linksOut": []
     },
     {
@@ -3274,44 +3874,6 @@
       "linksOut": []
     },
     {
-      "slug": "CASE-STUDY-AGENTS-MD-DRIFT",
-      "path": "docs/CASE-STUDY-AGENTS-MD-DRIFT.md",
-      "title": "Case Study: Avoiding AGENTS.md / CLAUDE.md Drift",
-      "tags": [],
-      "frontmatter": {},
-      "headings": [
-        {
-          "depth": 1,
-          "text": "Case Study: Avoiding AGENTS.md / CLAUDE.md Drift",
-          "slug": "case-study-avoiding-agentsmd-claudemd-drift"
-        },
-        {
-          "depth": 2,
-          "text": "The problem, as the community describes it",
-          "slug": "the-problem-as-the-community-describes-it"
-        },
-        {
-          "depth": 2,
-          "text": "What this repo actually does about it",
-          "slug": "what-this-repo-actually-does-about-it"
-        },
-        {
-          "depth": 2,
-          "text": "The vault extends the same pattern to facts that change",
-          "slug": "the-vault-extends-the-same-pattern-to-facts-that-change"
-        }
-      ],
-      "excerpt": "How this repo keeps its own instruction files in sync, and why the same pattern extends into the vault for facts that change faster than instructions do. Written from this repo's own history, not a hypothetical. Multiple coding-agent instruction files (AGENTS.md, CLAUDE.md, GEMINI.md, .github/copilot-instructions.md, …",
-      "wordCount": 825,
-      "updatedAt": "2026-07-21",
-      "linksOut": [
-        "../CLAUDE",
-        "../.claude/rules/forbidden",
-        "../mcp/README",
-        "../AGENTS"
-      ]
-    },
-    {
       "slug": "CHANGELOG",
       "path": "docs/CHANGELOG.md",
       "title": "CHANGELOG",
@@ -3322,6 +3884,11 @@
           "depth": 1,
           "text": "CHANGELOG",
           "slug": "changelog"
+        },
+        {
+          "depth": 2,
+          "text": "2026-07-31 — 가이드가 「관계는 어떻게 생기나」로 답한다",
+          "slug": "2026-07-31-가이드가-관계는-어떻게-생기나로-답한다"
         },
         {
           "depth": 2,
@@ -5409,8 +5976,8 @@
           "slug": "2026-07-26-첫-만남은-쇼핑몰부터"
         }
       ],
-      "excerpt": "Major change history. Code commit messages answer why; this file answers when / which surface changed. Focused on user-visible changes, not PR-level granularity. Newest at the top. Entries stay date-based; the app version reached v1.0.0 on 2026-07-27, so a release tag now carries the semver promise instead. 산문이 한쪽에 쏠려 ",
-      "wordCount": 59977,
+      "excerpt": "Major change history. Code commit messages answer why; this file answers when / which surface changed. Focused on user-visible changes, not PR-level granularity. Newest at the top. Entries stay date-based; the app version reached v1.0.0 on 2026-07-27, so a release tag now carries the semver promise instead. 지도만 보면 계층이 ",
+      "wordCount": 60215,
       "updatedAt": "2026-07-31",
       "linksOut": [
         "CASE-STUDY-AGENTS-MD-DRIFT",
@@ -5438,6 +6005,26 @@
           "depth": 2,
           "text": "기록 형식",
           "slug": "기록-형식"
+        },
+        {
+          "depth": 2,
+          "text": "2026-07-31 — 온톨로지 구축 규격: 「팬아웃 상한」이 아니라 「노드 자격 게이트」 — 92는 자식이 아니라 미해소 문자열이었다. 규격은 값·로직·텍스트 3정본, LLM 텍스트는 영어 단일 정본에서 두 경로(MCP·내부 채팅)로 파생",
+          "slug": "2026-07-31-온톨로지-구축-규격-팬아웃-상한이-아니라-노드-자격-게이트-92는-자식이-아니라-미해소-문자열이었다-규격은-값로직텍스트-3정본-llm-텍스트는-영어-단일-정본에서-두-경로mcp내부-채팅로-파생"
+        },
+        {
+          "depth": 2,
+          "text": "2026-07-31 — 드래그 140ms 의 처방: 후보 ② 「제한을 진짜로」 채택 — 단 진범의 78%는 FA2 가 아니라 separation 이었고, Barnes-Hut 은 이미 켜져 있었다",
+          "slug": "2026-07-31-드래그-140ms-의-처방-후보-제한을-진짜로-채택-단-진범의-78는-fa2-가-아니라-separation-이었고-barnes-hut-은-이미-켜져-있었다"
+        },
+        {
+          "depth": 2,
+          "text": "2026-07-31 — 3D 는 「분할 장치」로도 반려 — 밀집의 뿌리는 펼침 무게이트 + 군중의 서열 채널 0개",
+          "slug": "2026-07-31-3d-는-분할-장치로도-반려-밀집의-뿌리는-펼침-무게이트-군중의-서열-채널-0개"
+        },
+        {
+          "depth": 2,
+          "text": "2026-07-31 — 지시문은 **다 싣지 않고 필요할 때 싣는다**: AGENTS.md 32KiB 아래 · rules 73KB→13.6KB 조건부 · 강행 규칙은 훅으로",
+          "slug": "2026-07-31-지시문은-다-싣지-않고-필요할-때-싣는다-agentsmd-32kib-아래-rules-73kb136kb-조건부-강행-규칙은-훅으로"
         },
         {
           "depth": 2,
@@ -5671,7 +6258,7 @@
         }
       ],
       "excerpt": "이 파일은 결정과 그때 진 반대 의견을 남긴다. docs/CHANGELOG.md 는 무엇이 언제 바뀌었나를 답하고, 이 파일은 왜 그렇게 정했고, 무엇을 걸었나를 답한다. 최신이 위. 기록은 덧붙이기만 한다 — 지난 기록을 고치지 않는다. 판단이 바뀌었으면 새 기록을 쓰고 옛 기록을 뒤집힘 으로 표시한다. 틀린 기록도 자산이다. 1. 소집 전에 읽는다. 카운슬을 열기 전(그리고 단독 PO 패스를 쓰기 전) 같은 표면 · 같은 질문에 대한 선행 결정이 있는지 먼저 본다. 있으면 새 패스는 그것을 ① 여전히 유효하다고 인용하거나 ② 명시적으로 뒤집는다. 조용히 다시 결정",
-      "wordCount": 18920,
+      "wordCount": 22691,
       "updatedAt": "2026-07-31",
       "linksOut": []
     },
@@ -5743,124 +6330,9 @@
           "slug": "future-cloud-collab"
         }
       ],
-      "excerpt": "2026-05 update — Round 10 removed all backend dependencies. The OSS now builds to a pure static site (output: 'export'), deployable to any static host (GitHub Pages, Vercel, Netlify, S3 + CloudFront, …). The canonical host is GitHub Pages; the old Firebase-specific guide is archived in docs/archive/DEPLOY-FIREBASE.md f",
-      "wordCount": 940,
-      "updatedAt": "2026-07-28",
-      "linksOut": [
-        "archive/DEPLOY-FIREBASE"
-      ]
-    },
-    {
-      "slug": "DESIGN-OVERHAUL-2026-07-25",
-      "path": "docs/DESIGN-OVERHAUL-2026-07-25.md",
-      "title": "디자인 전면 정비 마스터 플랜 (2026-07-25, 소유자 실보고 22건)",
-      "tags": [],
-      "frontmatter": {},
-      "headings": [
-        {
-          "depth": 1,
-          "text": "디자인 전면 정비 마스터 플랜 (2026-07-25, 소유자 실보고 22건)",
-          "slug": "디자인-전면-정비-마스터-플랜-2026-07-25-소유자-실보고-22건"
-        },
-        {
-          "depth": 2,
-          "text": "대원칙 — 디자인 시스템이 본체다 (소유자 강조)",
-          "slug": "대원칙-디자인-시스템이-본체다-소유자-강조"
-        },
-        {
-          "depth": 2,
-          "text": "전체 22건 기록 (소유자 원문 요지 + 화면 증거)",
-          "slug": "전체-22건-기록-소유자-원문-요지-화면-증거"
-        },
-        {
-          "depth": 3,
-          "text": "A. 디자인 시스템 파운데이션 (Phase 1 — 최우선)",
-          "slug": "a-디자인-시스템-파운데이션-phase-1-최우선"
-        },
-        {
-          "depth": 3,
-          "text": "B. 지도(Topology) 정합 (Phase 2)",
-          "slug": "b-지도topology-정합-phase-2"
-        },
-        {
-          "depth": 3,
-          "text": "C. 모션 문법 (Phase 3 — 헌장 안에서)",
-          "slug": "c-모션-문법-phase-3-헌장-안에서"
-        },
-        {
-          "depth": 3,
-          "text": "D. 공방 후속 (Phase 3)",
-          "slug": "d-공방-후속-phase-3"
-        },
-        {
-          "depth": 3,
-          "text": "E. 온보딩/에이전트 (Phase 4)",
-          "slug": "e-온보딩에이전트-phase-4"
-        },
-        {
-          "depth": 3,
-          "text": "F. 프로젝트 탭 (Phase 4)",
-          "slug": "f-프로젝트-탭-phase-4"
-        },
-        {
-          "depth": 3,
-          "text": "G. 개인화 (Phase 5 — 큰 베팅)",
-          "slug": "g-개인화-phase-5-큰-베팅"
-        },
-        {
-          "depth": 3,
-          "text": "H. 인사이트 (Phase 2·4 분산)",
-          "slug": "h-인사이트-phase-24-분산"
-        },
-        {
-          "depth": 2,
-          "text": "Phase 0 판정 결과 (fable, 2026-07-25 — 확정)",
-          "slug": "phase-0-판정-결과-fable-2026-07-25-확정"
-        },
-        {
-          "depth": 2,
-          "text": "Codex 전체 검수 15건 편입 (2026-07-25 — P1 은 디자인 Phase 2~5 보다 선행)",
-          "slug": "codex-전체-검수-15건-편입-2026-07-25-p1-은-디자인-phase-25-보다-선행"
-        },
-        {
-          "depth": 3,
-          "text": "C-A. 신뢰·데이터 정합 배치 (P1)",
-          "slug": "c-a-신뢰데이터-정합-배치-p1"
-        },
-        {
-          "depth": 3,
-          "text": "C-B. 공방 워크플로 갭 배치 (P1+P2)",
-          "slug": "c-b-공방-워크플로-갭-배치-p1p2"
-        },
-        {
-          "depth": 3,
-          "text": "C-C. 검증·CI 신뢰 복구 배치 (P1+P2)",
-          "slug": "c-c-검증ci-신뢰-복구-배치-p1p2"
-        },
-        {
-          "depth": 3,
-          "text": "기존 항목 합류",
-          "slug": "기존-항목-합류"
-        },
-        {
-          "depth": 2,
-          "text": "실행 순서 (의존 순)",
-          "slug": "실행-순서-의존-순"
-        },
-        {
-          "depth": 2,
-          "text": "프로세스",
-          "slug": "프로세스"
-        },
-        {
-          "depth": 2,
-          "text": "헌장 리마인드 (이 정비에서 특히)",
-          "slug": "헌장-리마인드-이-정비에서-특히"
-        }
-      ],
-      "excerpt": "소유자가 실사용 스크린샷과 함께 보고한 22건 + \"디자인 시스템 구축\"이라는 메타 과제를 기록한 단일 진실원 계획 문서. 프로세스: fable 기획 → opus 검수 → sonnet/opus 코딩. 항목마다 상태를 갱신한다 (☐ 대기 · ◐ 진행 · ☑ 완료 · ✗ 반려/보류). 세션이 바뀌어도 이 문서만 읽으면 이어서 작업 가능해야 한다. \"모든 디자인의 토큰화 — 사이즈·모양 다 코드로 구성되어야 한다.\" 22건 중 다수(4·6·8·13·16·17)는 개별 수정이 아니라 시스템 부재의 증상이다. 따라서 Phase 1 에서 캐노니컬 컴포넌트/토큰을 먼저 세우고, ",
-      "wordCount": 2163,
-      "updatedAt": "2026-07-25",
+      "excerpt": "2026-05 update — Round 10 removed all backend dependencies. The OSS now builds to a pure static site (output: 'export'), deployable to any static host (GitHub Pages, Vercel, Netlify, S3 + CloudFront, …). The canonical host is GitHub Pages. The old Firebase-specific guide was deleted along with the dependency — this lin",
+      "wordCount": 964,
+      "updatedAt": "2026-07-31",
       "linksOut": []
     },
     {
@@ -6215,6 +6687,11 @@
         },
         {
           "depth": 3,
+          "text": "지도 잉크 사다리 — 깊이 축 하나, 그 밖 둘 (2026-07-31)",
+          "slug": "지도-잉크-사다리-깊이-축-하나-그-밖-둘-2026-07-31"
+        },
+        {
+          "depth": 3,
           "text": "Relief/Topology layout tokens",
           "slug": "relieftopology-layout-tokens"
         },
@@ -6520,8 +6997,8 @@
         }
       ],
       "excerpt": "This document is maintained based on Section 3 of the design spec. For the original Linear specification, see design-references/DESIGN-linear.md. v2 (2026-07): topology-map-v2 에서 출하된 B2+ \"Circuit × Constellation\" 시각 언어가 페이지 롤아웃(랜딩 → docs/ontology 허브 → projects/insights → download)의 규범이 되었다 — 아래 v2 — \"Circuit × Constell",
-      "wordCount": 19900,
-      "updatedAt": "2026-07-29",
+      "wordCount": 20302,
+      "updatedAt": "2026-07-31",
       "linksOut": [
         "design-references/DESIGN-linear",
         "TOPOLOGY-V2-DESIGN",
@@ -6739,8 +7216,8 @@
         },
         {
           "depth": 2,
-          "text": "2. Routes (12 `[locale]`-prefixed routes)",
-          "slug": "2-routes-12-locale-prefixed-routes"
+          "text": "2. Routes",
+          "slug": "2-routes"
         },
         {
           "depth": 3,
@@ -7199,8 +7676,8 @@
         }
       ],
       "excerpt": "Complete inventory of features users can actually use right now. Last updated: 2026-07-27 (현재 route와 installed-app 계약 재검증 — /ontology은 /topology?index=expanded, /ontology/edit은 /ontology/studio 호환 redirect이며, Insights는 할 일·구성·연결·경계·신선도 5개 질문 탭의 maintenance board다. desktop static smoke와 installed-app verifier/Computer U",
-      "wordCount": 16204,
-      "updatedAt": "2026-07-30",
+      "wordCount": 16266,
+      "updatedAt": "2026-07-31",
       "linksOut": [
         "slug",
         "project:slug",
@@ -7356,6 +7833,114 @@
       ],
       "excerpt": "브라우저에서 바로 열 수 있습니다. 마크다운 폴더를 고르면 그 자리에서 지도가 됩니다. 폴더는 브라우저 밖으로 나가지 않습니다. 파일 시스템 접근이 필요해서 Chrome · Edge · Safari 18.2+ · Opera 에서 동작합니다. Firefox 는 아직 이 API 가 없어 폴더를 열지 못합니다. macOS 앱이 볼트의 본거지입니다. 브라우저가 원리적으로 할 수 없는 일들이 앱에만 있습니다. · 능력 · 앱 · 웹 · 볼트 절대 경로 · ✓ · 핸들만 (경로 없음) · git 기록·스냅샷 · ✓ · 불가 · API 키 보관 · OS 키체인 · 원리적 불가 ·",
       "wordCount": 179,
+      "updatedAt": "2026-07-31",
+      "linksOut": []
+    },
+    {
+      "slug": "guide/relations",
+      "path": "docs/guide/relations.md",
+      "title": "관계는 어떻게 생기나",
+      "tags": [],
+      "frontmatter": {},
+      "headings": [
+        {
+          "depth": 1,
+          "text": "관계는 어떻게 생기나",
+          "slug": "관계는-어떻게-생기나"
+        },
+        {
+          "depth": 2,
+          "text": "1. 도메인끼리 관계, 생깁니다",
+          "slug": "1-도메인끼리-관계-생깁니다"
+        },
+        {
+          "depth": 3,
+          "text": "도메인이 도메인을 직접 가리키는 실제 예",
+          "slug": "도메인이-도메인을-직접-가리키는-실제-예"
+        },
+        {
+          "depth": 2,
+          "text": "2. 트리 위에 얹히는 그래프",
+          "slug": "2-트리-위에-얹히는-그래프"
+        },
+        {
+          "depth": 2,
+          "text": "3. 저장은 DB 가 아니라 마크다운입니다",
+          "slug": "3-저장은-db-가-아니라-마크다운입니다"
+        },
+        {
+          "depth": 3,
+          "text": "관계를 선언하는 쪽",
+          "slug": "관계를-선언하는-쪽"
+        },
+        {
+          "depth": 3,
+          "text": "관계를 받는 쪽",
+          "slug": "관계를-받는-쪽"
+        },
+        {
+          "depth": 3,
+          "text": "관계 키 표",
+          "slug": "관계-키-표"
+        },
+        {
+          "depth": 3,
+          "text": "지도에서 선의 문법",
+          "slug": "지도에서-선의-문법"
+        },
+        {
+          "depth": 3,
+          "text": "진실원은 파일이라 `git diff` 로 보입니다",
+          "slug": "진실원은-파일이라-git-diff-로-보입니다"
+        },
+        {
+          "depth": 2,
+          "text": "4. 미리 설계된 데이터를 조회하는 게 아닙니다",
+          "slug": "4-미리-설계된-데이터를-조회하는-게-아닙니다"
+        },
+        {
+          "depth": 2,
+          "text": "5. 데모 지도에 도메인 간 선이 없던 이유",
+          "slug": "5-데모-지도에-도메인-간-선이-없던-이유"
+        },
+        {
+          "depth": 2,
+          "text": "6. 지도가 수천 개를 어떻게 그리나",
+          "slug": "6-지도가-수천-개를-어떻게-그리나"
+        },
+        {
+          "depth": 3,
+          "text": "동심 링 배치",
+          "slug": "동심-링-배치"
+        },
+        {
+          "depth": 3,
+          "text": "부채꼴이 폭주하면 나선으로",
+          "slug": "부채꼴이-폭주하면-나선으로"
+        },
+        {
+          "depth": 3,
+          "text": "밀도 게이트",
+          "slug": "밀도-게이트"
+        },
+        {
+          "depth": 3,
+          "text": "의미 줌 (semantic zoom)",
+          "slug": "의미-줌-semantic-zoom"
+        },
+        {
+          "depth": 3,
+          "text": "겹침 완화는 보이는 것만",
+          "slug": "겹침-완화는-보이는-것만"
+        },
+        {
+          "depth": 2,
+          "text": "정리",
+          "slug": "정리"
+        }
+      ],
+      "excerpt": "지도를 처음 열면 가운데 허브에서 도메인이 방사형으로 뻗어 나갑니다. 그 모양만 보면 이런 의문이 듭니다. 도메인끼리는 서로 아무 관계도 못 갖나? 이 구조는 미리 설계된 데이터를 조회하는 것뿐인가? 관계는 DB 에 들어 있나, md 에 들어 있나? 세 질문에 차례로 답합니다. 방사형으로 보이는 건 구조(담김) 관계뿐입니다. 그 위에 의미 관계가 따로 얹히고, 그건 계층을 자유롭게 가로지릅니다. 이 저장소는 자기 자신을 볼트로 들고 있어서(docs/ontology/) 실제로 세어 볼 수 있습니다. 관계 종류 분포는 이렇게 나옵니다. · 관계 키 · 적힌 참조 수 · ",
+      "wordCount": 1197,
       "updatedAt": "2026-07-31",
       "linksOut": []
     },
@@ -7590,8 +8175,8 @@
         }
       ],
       "excerpt": "README 첫 화면에 박을 30초 GIF / mp4 의 스토리보드. claim → proof 5 컷 시퀀스. 각 컷 ~6초. screen: 좌측 vscode (또는 Obsidian) 가 domains/auth.md 를 열어 frontmatter 보임. 우측 Claude Code terminal 에서 ontology-atlas 도구 호출 결과 표시. action: 사람이 markdown 의 capabilities: 키에 capabilities/login 추가 → 저장. AI 가 같은 vault 의 capabilities/login.md 를 addconcept 로 생성",
-      "wordCount": 469,
-      "updatedAt": "2026-07-30",
+      "wordCount": 467,
+      "updatedAt": "2026-07-31",
       "linksOut": []
     },
     {
@@ -7628,8 +8213,8 @@
         }
       ],
       "excerpt": "Submission type: Show HN Category: open source / dev tool (80 chars exactly — under HN's 80 char limit. If too long, fallback: Show HN: ontology-atlas – frontmatter is the graph; AI agents read it via MCP) https://github.com/wlsdks/ontology-atlas (Word count: ~380. HN expects substantive Show HN posts, not one-liners; ",
-      "wordCount": 645,
-      "updatedAt": "2026-07-30",
+      "wordCount": 642,
+      "updatedAt": "2026-07-31",
       "linksOut": []
     },
     {
@@ -7787,6 +8372,89 @@
       "linksOut": []
     },
     {
+      "slug": "MAP-TESTABILITY",
+      "path": "docs/MAP-TESTABILITY.md",
+      "title": "지도를 밖에서 검사하기 — `window.__atlasMap`",
+      "tags": [],
+      "frontmatter": {},
+      "headings": [
+        {
+          "depth": 1,
+          "text": "지도를 밖에서 검사하기 — `window.__atlasMap`",
+          "slug": "지도를-밖에서-검사하기-window__atlasmap"
+        },
+        {
+          "depth": 2,
+          "text": "왜 이 파일이 있는가",
+          "slug": "왜-이-파일이-있는가"
+        },
+        {
+          "depth": 2,
+          "text": "켜는 법",
+          "slug": "켜는-법"
+        },
+        {
+          "depth": 2,
+          "text": "창구",
+          "slug": "창구"
+        },
+        {
+          "depth": 3,
+          "text": "`nodes()` — 무엇이 어디에 있고, 무엇을 끌 수 있나",
+          "slug": "nodes-무엇이-어디에-있고-무엇을-끌-수-있나"
+        },
+        {
+          "depth": 3,
+          "text": "`interaction()` — 지금 끄는 것이 노드인가 배경인가",
+          "slug": "interaction-지금-끄는-것이-노드인가-배경인가"
+        },
+        {
+          "depth": 3,
+          "text": "`backing()` — 캔버스 백킹 크기",
+          "slug": "backing-캔버스-백킹-크기"
+        },
+        {
+          "depth": 3,
+          "text": "`camera()` — 지도가 어디를 보고 있나",
+          "slug": "camera-지도가-어디를-보고-있나"
+        },
+        {
+          "depth": 3,
+          "text": "`selection()` — 무엇이 골라져 있나",
+          "slug": "selection-무엇이-골라져-있나"
+        },
+        {
+          "depth": 3,
+          "text": "`chips()` — 칩의 **주장**과 **실제**",
+          "slug": "chips-칩의-주장과-실제"
+        },
+        {
+          "depth": 2,
+          "text": "쓰는 법",
+          "slug": "쓰는-법"
+        },
+        {
+          "depth": 2,
+          "text": "측정 규율 넷",
+          "slug": "측정-규율-넷"
+        },
+        {
+          "depth": 2,
+          "text": "화면 계기",
+          "slug": "화면-계기"
+        },
+        {
+          "depth": 2,
+          "text": "마지막 관문",
+          "slug": "마지막-관문"
+        }
+      ],
+      "excerpt": "한 줄: 밖에서 구분할 수 없는 상태는 밖에서 검사할 수 없다. 지도는 캔버스 하나라 DOM 이 없다 — 상태를 명시적으로 내보내지 않으면 자동화는 화면을 «보는 척» 하면서 엉뚱한 것을 잰다. 2026-07-31, 소유자가 노드 드래그 렉을 보고했다. 나는 여섯 번 연속으로 \"제 환경에선 안 느린데요\" 라고 답했다. 매번 배경을 밀고 있었다. 원인은 코드가 아니라 관측 가능성이었다: · 밖에서 본 것 · 실제로 갈리는 것 · 커서 grabbing · 노드 드래그 또는 배경 팬 — 같은 글자 · 커서 pointer · 호버 히트일 뿐, 잡히는지와 무관 · 프레임 60",
+      "wordCount": 638,
+      "updatedAt": "2026-07-31",
+      "linksOut": []
+    },
+    {
       "slug": "ONTOLOGY-ATLAS-SPEC",
       "path": "docs/ONTOLOGY-ATLAS-SPEC.md",
       "title": "Ontology Atlas Vault Specification v1.0-rc (RFC)",
@@ -7896,153 +8564,7 @@
       ],
       "excerpt": "Status: RFC (Request for Comments). This is a v1.0 release candidate, not a ratified standard — see §0 RFC status and feedback for the review window and how to comment. This document promotes an already-shipped, already-enforced de-facto schema into a formal specification. It does not introduce new frontmatter keys, ne",
       "wordCount": 3871,
-      "updatedAt": "2026-07-17",
-      "linksOut": []
-    },
-    {
-      "slug": "ONTOLOGY-RIGOR-AUDIT-2026-07",
-      "path": "docs/ONTOLOGY-RIGOR-AUDIT-2026-07.md",
-      "title": "온톨로지 표현적 적정성 감사 — 전문가 8인 (2026-07-24)",
-      "tags": [],
-      "frontmatter": {},
-      "headings": [
-        {
-          "depth": 1,
-          "text": "온톨로지 표현적 적정성 감사 — 전문가 8인 (2026-07-24)",
-          "slug": "온톨로지-표현적-적정성-감사-전문가-8인-2026-07-24"
-        },
-        {
-          "depth": 2,
-          "text": "심사단 (8 렌즈)",
-          "slug": "심사단-8-렌즈"
-        },
-        {
-          "depth": 2,
-          "text": "총평",
-          "slug": "총평"
-        },
-        {
-          "depth": 2,
-          "text": "✅ 제대로 표현 가능 (9)",
-          "slug": "제대로-표현-가능-9"
-        },
-        {
-          "depth": 2,
-          "text": "❌ 현재 표현 불가 (8) — 대부분 스튜디오 S2가 해결",
-          "slug": "현재-표현-불가-8-대부분-스튜디오-s2가-해결"
-        },
-        {
-          "depth": 2,
-          "text": "⚠️ 건전성 이슈 (모델이 실제로 뭉개거나 통과시키는 것)",
-          "slug": "건전성-이슈-모델이-실제로-뭉개거나-통과시키는-것"
-        },
-        {
-          "depth": 2,
-          "text": "🟢 정당한 단순화 (과잉요구 방지 — 안 해도 됨)",
-          "slug": "정당한-단순화-과잉요구-방지-안-해도-됨"
-        },
-        {
-          "depth": 2,
-          "text": "실행 가능한 공백 10 (→ 스튜디오 S2, 전부 평문 frontmatter·advisory·하위호환)",
-          "slug": "실행-가능한-공백-10-스튜디오-s2-전부-평문-frontmatteradvisory하위호환"
-        },
-        {
-          "depth": 2,
-          "text": "상호운용 (RDF/SKOS export) 판정",
-          "slug": "상호운용-rdfskos-export-판정"
-        },
-        {
-          "depth": 2,
-          "text": "로드맵 (단계·불변 원칙)",
-          "slug": "로드맵-단계불변-원칙"
-        }
-      ],
-      "excerpt": "판정: partial — \"라벨 붙은 그래프를 넘어선, 이름값을 실제로 획득한 경량 온톨로지지만 미완성.\" 이 문서는 온톨로지 전문가 8인 패널이 \"이 시스템이 제대로 된 온톨로지를 표현할 수 있는가\"를 심사한 전체 기록이다. 실행 가능한 공백은 docs/ONTOLOGY-STUDIO-PLAN.md §1(스키마 심화)이 흡수한다. 이 문서는 근거·판정 원본을 durable 하게 보존한다. 형식 온톨로지/지식표현(Gruber) · W3C 시맨틱웹(RDF/OWL/SKOS) · 기술논리(DL)/추론 · 분류학/부분전체론(mereology) · 관계 semantics/온톨로지",
-      "wordCount": 997,
-      "updatedAt": "2026-07-24",
-      "linksOut": []
-    },
-    {
-      "slug": "ONTOLOGY-STUDIO-PLAN",
-      "path": "docs/ONTOLOGY-STUDIO-PLAN.md",
-      "title": "온톨로지 스튜디오 — 상세 설계 & 실행 플랜 (2026-07-24)",
-      "tags": [],
-      "frontmatter": {},
-      "headings": [
-        {
-          "depth": 1,
-          "text": "온톨로지 스튜디오 — 상세 설계 & 실행 플랜 (2026-07-24)",
-          "slug": "온톨로지-스튜디오-상세-설계-실행-플랜-2026-07-24"
-        },
-        {
-          "depth": 2,
-          "text": "0. 정체성 · 원칙 · IA",
-          "slug": "0-정체성-원칙-ia"
-        },
-        {
-          "depth": 2,
-          "text": "1. 온톨로지 스키마 심화 (S2) — 전문가 10 공백을 평문 frontmatter로",
-          "slug": "1-온톨로지-스키마-심화-s2-전문가-10-공백을-평문-frontmatter로"
-        },
-        {
-          "depth": 3,
-          "text": "1.1 신규 frontmatter 필드 (kind별)",
-          "slug": "11-신규-frontmatter-필드-kind별"
-        },
-        {
-          "depth": 3,
-          "text": "1.2 관계 domain/range 검증 테이블 (gap#3 — 건전성)",
-          "slug": "12-관계-domainrange-검증-테이블-gap3-건전성"
-        },
-        {
-          "depth": 3,
-          "text": "1.3 파생·검증·건전성 (계산만, 데이터 0)",
-          "slug": "13-파생검증건전성-계산만-데이터-0"
-        },
-        {
-          "depth": 3,
-          "text": "1.4 마이그레이션",
-          "slug": "14-마이그레이션"
-        },
-        {
-          "depth": 2,
-          "text": "2. 소켓/보석 시스템 — 편집 UX 심화",
-          "slug": "2-소켓보석-시스템-편집-ux-심화"
-        },
-        {
-          "depth": 2,
-          "text": "3. 변동 원장 (S3) — 변동지점 기억 + 양방향 적용",
-          "slug": "3-변동-원장-s3-변동지점-기억-양방향-적용"
-        },
-        {
-          "depth": 2,
-          "text": "4. 게임 표면 토큰 · 모션 시스템 (헌장 예외)",
-          "slug": "4-게임-표면-토큰-모션-시스템-헌장-예외"
-        },
-        {
-          "depth": 2,
-          "text": "5. 강화 vs 만들기 흐름 (두 모드)",
-          "slug": "5-강화-vs-만들기-흐름-두-모드"
-        },
-        {
-          "depth": 2,
-          "text": "6. 빌더 폐기 (S4)",
-          "slug": "6-빌더-폐기-s4"
-        },
-        {
-          "depth": 2,
-          "text": "7. 슬라이스별 실행 + 검증 계약",
-          "slug": "7-슬라이스별-실행-검증-계약"
-        },
-        {
-          "depth": 2,
-          "text": "8. 교차 매핑 (다른 트랙이 여기로 흡수/병행)",
-          "slug": "8-교차-매핑-다른-트랙이-여기로-흡수병행"
-        }
-      ],
-      "excerpt": "세션에서 소유자와 확정한 방향의 상세 설계 스펙. 로드맵 테이블이 아니라 각 슬라이스의 실제 설계 결정(스키마 의미론·소켓 편집 UX·변동 원장 모델·게임 토큰 시스템·빌더 마이그레이션)까지 담아 구현이 깊이를 잃지 않게 한다. 근거: 온톨로지 전문가 8인 심사(genuineGaps 10) · 디자인 카운슬 · 사용성 8인 · 소유자 확정 시안(node-studio-game.html·node-studio-create.html). 한 줄: 노드를 게임 아이템처럼 강화/구축하는 몰입 저작 표면. 온톨로지 관계·의미 = 소켓에 끼우는 보석. 빈 소켓(isa·정의)이 곧 채",
-      "wordCount": 1348,
-      "updatedAt": "2026-07-24",
+      "updatedAt": "2026-07-31",
       "linksOut": []
     },
     {
@@ -10965,9 +11487,9 @@
         "domain": "views"
       },
       "headings": [],
-      "excerpt": "src/widgets/topology-map-canvas/ — the rebuilt map (Relief) rendering engine (2026-07, docs/TOPOLOGY-MAP-REBUILD.md). Card and connector coordinates are written once; pan/zoom is a single container CSS transform (pure camera math in lib/camera.ts with unit tests), so per-frame DOM synchronization — the jank source of t",
+      "excerpt": "src/widgets/topology-map-canvas/ — the rebuilt map (Relief) rendering engine (2026-07, docs/archive/TOPOLOGY-MAP-REBUILD.md). Card and connector coordinates are written once; pan/zoom is a single container CSS transform (pure camera math in lib/camera.ts with unit tests), so per-frame DOM synchronization — the jank sou",
       "wordCount": 195,
-      "updatedAt": "2026-07-25",
+      "updatedAt": "2026-07-31",
       "linksOut": []
     },
     {
@@ -11295,6 +11817,421 @@
       "excerpt": "Markdown editor used by Source Vault for local .md files. It keeps file writes explicit through the Save button / Cmd+S, blocks silent overwrite on disk conflicts, and stores unsaved edits as a browser-local temporary draft before final disk save. The editor exposes that contract in the UI as separate Auto backup and F",
       "wordCount": 251,
       "updatedAt": "2026-07-25",
+      "linksOut": []
+    },
+    {
+      "slug": "plans/DESIGN-OVERHAUL-2026-07-25",
+      "path": "docs/plans/DESIGN-OVERHAUL-2026-07-25.md",
+      "title": "디자인 전면 정비 마스터 플랜 (2026-07-25, 소유자 실보고 22건)",
+      "tags": [],
+      "frontmatter": {},
+      "headings": [
+        {
+          "depth": 1,
+          "text": "디자인 전면 정비 마스터 플랜 (2026-07-25, 소유자 실보고 22건)",
+          "slug": "디자인-전면-정비-마스터-플랜-2026-07-25-소유자-실보고-22건"
+        },
+        {
+          "depth": 2,
+          "text": "대원칙 — 디자인 시스템이 본체다 (소유자 강조)",
+          "slug": "대원칙-디자인-시스템이-본체다-소유자-강조"
+        },
+        {
+          "depth": 2,
+          "text": "전체 22건 기록 (소유자 원문 요지 + 화면 증거)",
+          "slug": "전체-22건-기록-소유자-원문-요지-화면-증거"
+        },
+        {
+          "depth": 3,
+          "text": "A. 디자인 시스템 파운데이션 (Phase 1 — 최우선)",
+          "slug": "a-디자인-시스템-파운데이션-phase-1-최우선"
+        },
+        {
+          "depth": 3,
+          "text": "B. 지도(Topology) 정합 (Phase 2)",
+          "slug": "b-지도topology-정합-phase-2"
+        },
+        {
+          "depth": 3,
+          "text": "C. 모션 문법 (Phase 3 — 헌장 안에서)",
+          "slug": "c-모션-문법-phase-3-헌장-안에서"
+        },
+        {
+          "depth": 3,
+          "text": "D. 공방 후속 (Phase 3)",
+          "slug": "d-공방-후속-phase-3"
+        },
+        {
+          "depth": 3,
+          "text": "E. 온보딩/에이전트 (Phase 4)",
+          "slug": "e-온보딩에이전트-phase-4"
+        },
+        {
+          "depth": 3,
+          "text": "F. 프로젝트 탭 (Phase 4)",
+          "slug": "f-프로젝트-탭-phase-4"
+        },
+        {
+          "depth": 3,
+          "text": "G. 개인화 (Phase 5 — 큰 베팅)",
+          "slug": "g-개인화-phase-5-큰-베팅"
+        },
+        {
+          "depth": 3,
+          "text": "H. 인사이트 (Phase 2·4 분산)",
+          "slug": "h-인사이트-phase-24-분산"
+        },
+        {
+          "depth": 2,
+          "text": "Phase 0 판정 결과 (fable, 2026-07-25 — 확정)",
+          "slug": "phase-0-판정-결과-fable-2026-07-25-확정"
+        },
+        {
+          "depth": 2,
+          "text": "Codex 전체 검수 15건 편입 (2026-07-25 — P1 은 디자인 Phase 2~5 보다 선행)",
+          "slug": "codex-전체-검수-15건-편입-2026-07-25-p1-은-디자인-phase-25-보다-선행"
+        },
+        {
+          "depth": 3,
+          "text": "C-A. 신뢰·데이터 정합 배치 (P1)",
+          "slug": "c-a-신뢰데이터-정합-배치-p1"
+        },
+        {
+          "depth": 3,
+          "text": "C-B. 공방 워크플로 갭 배치 (P1+P2)",
+          "slug": "c-b-공방-워크플로-갭-배치-p1p2"
+        },
+        {
+          "depth": 3,
+          "text": "C-C. 검증·CI 신뢰 복구 배치 (P1+P2)",
+          "slug": "c-c-검증ci-신뢰-복구-배치-p1p2"
+        },
+        {
+          "depth": 3,
+          "text": "기존 항목 합류",
+          "slug": "기존-항목-합류"
+        },
+        {
+          "depth": 2,
+          "text": "실행 순서 (의존 순)",
+          "slug": "실행-순서-의존-순"
+        },
+        {
+          "depth": 2,
+          "text": "프로세스",
+          "slug": "프로세스"
+        },
+        {
+          "depth": 2,
+          "text": "헌장 리마인드 (이 정비에서 특히)",
+          "slug": "헌장-리마인드-이-정비에서-특히"
+        }
+      ],
+      "excerpt": "소유자가 실사용 스크린샷과 함께 보고한 22건 + \"디자인 시스템 구축\"이라는 메타 과제를 기록한 단일 진실원 계획 문서. 프로세스: fable 기획 → opus 검수 → sonnet/opus 코딩. 항목마다 상태를 갱신한다 (☐ 대기 · ◐ 진행 · ☑ 완료 · ✗ 반려/보류). 세션이 바뀌어도 이 문서만 읽으면 이어서 작업 가능해야 한다. \"모든 디자인의 토큰화 — 사이즈·모양 다 코드로 구성되어야 한다.\" 22건 중 다수(4·6·8·13·16·17)는 개별 수정이 아니라 시스템 부재의 증상이다. 따라서 Phase 1 에서 캐노니컬 컴포넌트/토큰을 먼저 세우고, ",
+      "wordCount": 2163,
+      "updatedAt": "2026-07-31",
+      "linksOut": []
+    },
+    {
+      "slug": "plans/ONTOLOGY-STUDIO-PLAN",
+      "path": "docs/plans/ONTOLOGY-STUDIO-PLAN.md",
+      "title": "온톨로지 스튜디오 — 상세 설계 & 실행 플랜 (2026-07-24)",
+      "tags": [],
+      "frontmatter": {},
+      "headings": [
+        {
+          "depth": 1,
+          "text": "온톨로지 스튜디오 — 상세 설계 & 실행 플랜 (2026-07-24)",
+          "slug": "온톨로지-스튜디오-상세-설계-실행-플랜-2026-07-24"
+        },
+        {
+          "depth": 2,
+          "text": "0. 정체성 · 원칙 · IA",
+          "slug": "0-정체성-원칙-ia"
+        },
+        {
+          "depth": 2,
+          "text": "1. 온톨로지 스키마 심화 (S2) — 전문가 10 공백을 평문 frontmatter로",
+          "slug": "1-온톨로지-스키마-심화-s2-전문가-10-공백을-평문-frontmatter로"
+        },
+        {
+          "depth": 3,
+          "text": "1.1 신규 frontmatter 필드 (kind별)",
+          "slug": "11-신규-frontmatter-필드-kind별"
+        },
+        {
+          "depth": 3,
+          "text": "1.2 관계 domain/range 검증 테이블 (gap#3 — 건전성)",
+          "slug": "12-관계-domainrange-검증-테이블-gap3-건전성"
+        },
+        {
+          "depth": 3,
+          "text": "1.3 파생·검증·건전성 (계산만, 데이터 0)",
+          "slug": "13-파생검증건전성-계산만-데이터-0"
+        },
+        {
+          "depth": 3,
+          "text": "1.4 마이그레이션",
+          "slug": "14-마이그레이션"
+        },
+        {
+          "depth": 2,
+          "text": "2. 소켓/보석 시스템 — 편집 UX 심화",
+          "slug": "2-소켓보석-시스템-편집-ux-심화"
+        },
+        {
+          "depth": 2,
+          "text": "3. 변동 원장 (S3) — 변동지점 기억 + 양방향 적용",
+          "slug": "3-변동-원장-s3-변동지점-기억-양방향-적용"
+        },
+        {
+          "depth": 2,
+          "text": "4. 게임 표면 토큰 · 모션 시스템 (헌장 예외)",
+          "slug": "4-게임-표면-토큰-모션-시스템-헌장-예외"
+        },
+        {
+          "depth": 2,
+          "text": "5. 강화 vs 만들기 흐름 (두 모드)",
+          "slug": "5-강화-vs-만들기-흐름-두-모드"
+        },
+        {
+          "depth": 2,
+          "text": "6. 빌더 폐기 (S4)",
+          "slug": "6-빌더-폐기-s4"
+        },
+        {
+          "depth": 2,
+          "text": "7. 슬라이스별 실행 + 검증 계약",
+          "slug": "7-슬라이스별-실행-검증-계약"
+        },
+        {
+          "depth": 2,
+          "text": "8. 교차 매핑 (다른 트랙이 여기로 흡수/병행)",
+          "slug": "8-교차-매핑-다른-트랙이-여기로-흡수병행"
+        }
+      ],
+      "excerpt": "세션에서 소유자와 확정한 방향의 상세 설계 스펙. 로드맵 테이블이 아니라 각 슬라이스의 실제 설계 결정(스키마 의미론·소켓 편집 UX·변동 원장 모델·게임 토큰 시스템·빌더 마이그레이션)까지 담아 구현이 깊이를 잃지 않게 한다. 근거: 온톨로지 전문가 8인 심사(genuineGaps 10) · 디자인 카운슬 · 사용성 8인 · 소유자 확정 시안(node-studio-game.html·node-studio-create.html). 한 줄: 노드를 게임 아이템처럼 강화/구축하는 몰입 저작 표면. 온톨로지 관계·의미 = 소켓에 끼우는 보석. 빈 소켓(isa·정의)이 곧 채",
+      "wordCount": 1348,
+      "updatedAt": "2026-07-31",
+      "linksOut": []
+    },
+    {
+      "slug": "plans/PRODUCT-PLAN-2026-07",
+      "path": "docs/plans/PRODUCT-PLAN-2026-07.md",
+      "title": "Ontology Atlas — 제품 계획 v9 (확정본, 2026-07-17)",
+      "tags": [],
+      "frontmatter": {},
+      "headings": [
+        {
+          "depth": 1,
+          "text": "Ontology Atlas — 제품 계획 v9 (확정본, 2026-07-17)",
+          "slug": "ontology-atlas-제품-계획-v9-확정본-2026-07-17"
+        },
+        {
+          "depth": 2,
+          "text": "1. 정체성 — 2층 구조",
+          "slug": "1-정체성-2층-구조"
+        },
+        {
+          "depth": 2,
+          "text": "2. 비밀 (우리가 믿는, 남들이 동의하지 않는 진실)",
+          "slug": "2-비밀-우리가-믿는-남들이-동의하지-않는-진실"
+        },
+        {
+          "depth": 2,
+          "text": "3. 문제 (증거 언어, P1~P7)",
+          "slug": "3-문제-증거-언어-p1p7"
+        },
+        {
+          "depth": 2,
+          "text": "4. 타겟",
+          "slug": "4-타겟"
+        },
+        {
+          "depth": 2,
+          "text": "5. 가치 제안과 해자",
+          "slug": "5-가치-제안과-해자"
+        },
+        {
+          "depth": 2,
+          "text": "6. 운영 기판 (기록 → 게이트 → 액션)",
+          "slug": "6-운영-기판-기록-게이트-액션"
+        },
+        {
+          "depth": 2,
+          "text": "7. 신뢰 아키텍처",
+          "slug": "7-신뢰-아키텍처"
+        },
+        {
+          "depth": 2,
+          "text": "8. LLM 통합",
+          "slug": "8-llm-통합"
+        },
+        {
+          "depth": 2,
+          "text": "9. 로드맵 — 코어 트랙 + 네트워크 트랙",
+          "slug": "9-로드맵-코어-트랙-네트워크-트랙"
+        },
+        {
+          "depth": 2,
+          "text": "10. Non-goals",
+          "slug": "10-non-goals"
+        },
+        {
+          "depth": 2,
+          "text": "11. Kill Criteria",
+          "slug": "11-kill-criteria"
+        },
+        {
+          "depth": 2,
+          "text": "12. 알려진 상한과 리스크 (정직 선언)",
+          "slug": "12-알려진-상한과-리스크-정직-선언"
+        },
+        {
+          "depth": 2,
+          "text": "13. 실행 계획 (즉시)",
+          "slug": "13-실행-계획-즉시"
+        },
+        {
+          "depth": 2,
+          "text": "부록 A — 검증 이력 요약",
+          "slug": "부록-a-검증-이력-요약"
+        },
+        {
+          "depth": 2,
+          "text": "부록 B — 보도자료 초안 + 하드 FAQ (working backwards)",
+          "slug": "부록-b-보도자료-초안-하드-faq-working-backwards"
+        },
+        {
+          "depth": 3,
+          "text": "보도자료 (Slice 1 완료 시점 가정, 고객 언어)",
+          "slug": "보도자료-slice-1-완료-시점-가정-고객-언어"
+        },
+        {
+          "depth": 3,
+          "text": "하드 FAQ (one-way door 정책 포함)",
+          "slug": "하드-faq-one-way-door-정책-포함"
+        },
+        {
+          "depth": 2,
+          "text": "부록 C — 구조 긴장 해소 기록",
+          "slug": "부록-c-구조-긴장-해소-기록"
+        },
+        {
+          "depth": 2,
+          "text": "부록 D — Layer 2 보도자료 + cohort profile",
+          "slug": "부록-d-layer-2-보도자료-cohort-profile"
+        },
+        {
+          "depth": 3,
+          "text": "Layer 2 보도자료 (Team Sync 수요 게이트 발화 시점 가정)",
+          "slug": "layer-2-보도자료-team-sync-수요-게이트-발화-시점-가정"
+        },
+        {
+          "depth": 3,
+          "text": "Prototypical cohort profile (모집 기준 — Slice 0 통과 후 1주 내 실측으로 대체)",
+          "slug": "prototypical-cohort-profile-모집-기준-slice-0-통과-후-1주-내-실측으로-대체"
+        }
+      ],
+      "excerpt": "이 문서는 2026-07-17 하루 동안의 집중 재기획의 확정 산출물이다. 검증 이력: 시장·기술 조사 17건 (haiku) · 사용자 페르소나 패널 7인 · CPO 심사 (PO rubric 22/24, Chief PO Level 4) · 사상가 렌즈 패널 10인 × 3라운드 (최종 평균 7.60 — 기획 단계 캘리브레이션 기준 Obsidian/dbt의 7.3을 상회) · 도입 심사 10인 · 충분성 분석 2건. 상세 근거는 세션 기록과 메모리 참조. 결론: 기획 단계 완료. 남은 점수는 구현과 시장 증거에서 나온다. Layer 1 (로컬 코어 — 불변의 신뢰 계약)",
+      "wordCount": 2209,
+      "updatedAt": "2026-07-31",
+      "linksOut": []
+    },
+    {
+      "slug": "plans/README",
+      "path": "docs/plans/README.md",
+      "title": "plans/ — 하려고 했던 것의 기록",
+      "tags": [],
+      "frontmatter": {},
+      "headings": [
+        {
+          "depth": 1,
+          "text": "plans/ — 하려고 했던 것의 기록",
+          "slug": "plans-하려고-했던-것의-기록"
+        }
+      ],
+      "excerpt": "착수 시점의 계획만 여기 산다. 계획은 실행되면서 바뀌고, 바뀐 결과는 코드와 docs/CHANGELOG.md 가 말한다. 그래서 이 파일들은 현재 상태의 진실원이 아니다. ⚠️ 가장 흔한 오독: 계획서에 적힌 폐기된 접근을 현행 선택지로 읽는 것. 계획은 \"이렇게 하려 했다\"이지 \"이렇게 되어 있다\"가 아니다. 여기 넣는 것: 착수 계획 · 단계 정의 · 재구축 로드맵 여기 넣지 않는 것: 오늘 유효한 아키텍처(docs/ARCHITECTURE.md), 기능 목록 (docs/FEATURES.md), 결정 기록(docs/DECISIONS.md)",
+      "wordCount": 73,
+      "updatedAt": "2026-07-31",
+      "linksOut": []
+    },
+    {
+      "slug": "plans/TOPOLOGY-V2-PHASE0",
+      "path": "docs/plans/TOPOLOGY-V2-PHASE0.md",
+      "title": "TOPOLOGY-V2 PHASE 0 — 진단 · 계약 고정 (2026-07-18)",
+      "tags": [],
+      "frontmatter": {},
+      "headings": [
+        {
+          "depth": 1,
+          "text": "TOPOLOGY-V2 PHASE 0 — 진단 · 계약 고정 (2026-07-18)",
+          "slug": "topology-v2-phase-0-진단-계약-고정-2026-07-18"
+        },
+        {
+          "depth": 2,
+          "text": "0. 가장 중요한 발견 — 감사 대상 파일이 이미 죽은 코드다",
+          "slug": "0-가장-중요한-발견-감사-대상-파일이-이미-죽은-코드다"
+        },
+        {
+          "depth": 2,
+          "text": "1. 두 개의 엔진이 공존한다 — 시나리오별로 다른 코드가 실행됐다",
+          "slug": "1-두-개의-엔진이-공존한다-시나리오별로-다른-코드가-실행됐다"
+        },
+        {
+          "depth": 2,
+          "text": "2. 실측 표",
+          "slug": "2-실측-표"
+        },
+        {
+          "depth": 3,
+          "text": "2.1 초기 로드 244ms/374ms task 내부 (그래프 엔진, 440~1110ms 구간, 5,866 샘플)",
+          "slug": "21-초기-로드-244ms374ms-task-내부-그래프-엔진-4401110ms-구간-5866-샘플"
+        },
+        {
+          "depth": 3,
+          "text": "2.2 클릭 194ms task 내부 (그래프 엔진, all-thread 샘플 5,132개 — 메인스레드 + 동시 실행 중인 FA2 물리 워커 포함)",
+          "slug": "22-클릭-194ms-task-내부-그래프-엔진-all-thread-샘플-5132개-메인스레드-동시-실행-중인-fa2-물리-워커-포함"
+        },
+        {
+          "depth": 2,
+          "text": "3. 병목 판정 — 세 가설 vs 실측",
+          "slug": "3-병목-판정-세-가설-vs-실측"
+        },
+        {
+          "depth": 2,
+          "text": "4. 어댑터 계약 초안 (Task B)",
+          "slug": "4-어댑터-계약-초안-task-b"
+        },
+        {
+          "depth": 3,
+          "text": "4.1 현재 데이터 흐름 (codegraph 확인)",
+          "slug": "41-현재-데이터-흐름-codegraph-확인"
+        },
+        {
+          "depth": 3,
+          "text": "4.2 v2 어댑터 인터페이스 (제안)",
+          "slug": "42-v2-어댑터-인터페이스-제안"
+        },
+        {
+          "depth": 2,
+          "text": "5. 방법론 캐비잇",
+          "slug": "5-방법론-캐비잇"
+        },
+        {
+          "depth": 2,
+          "text": "6. WebGL 저알파 결함 — 보너스 체크 (미완)",
+          "slug": "6-webgl-저알파-결함-보너스-체크-미완"
+        },
+        {
+          "depth": 2,
+          "text": "7. Phase 1 진입 조건 체크",
+          "slug": "7-phase-1-진입-조건-체크"
+        }
+      ],
+      "excerpt": "Historical measurement snapshot (superseded, 2026-07-27). The paths, call sites, and “alive” labels below describe the pre-migration baseline used to choose topology-map-v2. Sigma, TopologyMapCanvas, their peer-mode tabs, and the project-detail mini-map were subsequently removed. Preserve the numbers as dated evidence;",
+      "wordCount": 2076,
+      "updatedAt": "2026-07-31",
       "linksOut": []
     },
     {
@@ -11701,8 +12638,8 @@
         }
       ],
       "excerpt": "[v10 정체성 공식, 2026-07-18] — agent-native, human-sovereign. \"에이전트를 위한 시스템\"이 아니라 \"에이전트가 1급 사용자인, 사람과 에이전트의 공유 의미 계층\"이다. 에이전트는 신선도를 유지하는 엔진이자 최대 소비자(MCP/CLI), 사람은 의미의 최종 결정권자(평문 마크다운 · git diff · 내 디스크가 진실원). agent-memory 카테고리(기계 전용 벡터/자동추출 — 자동화 규모전에서 패배)와 위키 카테고리(사람 전용 — 즉시 부패) 둘 다와 구분되는 위치. 마케팅 훅은 에이전트 통증으로 열고, 본질은 공유 계",
-      "wordCount": 5115,
-      "updatedAt": "2026-07-30",
+      "wordCount": 5117,
+      "updatedAt": "2026-07-31",
       "linksOut": [
         "AGENT-MEMORY-POSITIONING"
       ]
@@ -11847,402 +12784,6 @@
       ],
       "excerpt": "Purpose: keep Ontology Atlas from becoming a feature factory. Every feature, design change, graph interaction, MCP tool, CLI command, and macOS workflow must pass this product-owner lens before implementation is treated as valuable. Ontology Atlas does not need a backlog clerk. It needs a product owner that protects th",
       "wordCount": 5412,
-      "updatedAt": "2026-07-27",
-      "linksOut": []
-    },
-    {
-      "slug": "PRODUCT-PLAN-2026-07",
-      "path": "docs/PRODUCT-PLAN-2026-07.md",
-      "title": "Ontology Atlas — 제품 계획 v9 (확정본, 2026-07-17)",
-      "tags": [],
-      "frontmatter": {},
-      "headings": [
-        {
-          "depth": 1,
-          "text": "Ontology Atlas — 제품 계획 v9 (확정본, 2026-07-17)",
-          "slug": "ontology-atlas-제품-계획-v9-확정본-2026-07-17"
-        },
-        {
-          "depth": 2,
-          "text": "1. 정체성 — 2층 구조",
-          "slug": "1-정체성-2층-구조"
-        },
-        {
-          "depth": 2,
-          "text": "2. 비밀 (우리가 믿는, 남들이 동의하지 않는 진실)",
-          "slug": "2-비밀-우리가-믿는-남들이-동의하지-않는-진실"
-        },
-        {
-          "depth": 2,
-          "text": "3. 문제 (증거 언어, P1~P7)",
-          "slug": "3-문제-증거-언어-p1p7"
-        },
-        {
-          "depth": 2,
-          "text": "4. 타겟",
-          "slug": "4-타겟"
-        },
-        {
-          "depth": 2,
-          "text": "5. 가치 제안과 해자",
-          "slug": "5-가치-제안과-해자"
-        },
-        {
-          "depth": 2,
-          "text": "6. 운영 기판 (기록 → 게이트 → 액션)",
-          "slug": "6-운영-기판-기록-게이트-액션"
-        },
-        {
-          "depth": 2,
-          "text": "7. 신뢰 아키텍처",
-          "slug": "7-신뢰-아키텍처"
-        },
-        {
-          "depth": 2,
-          "text": "8. LLM 통합",
-          "slug": "8-llm-통합"
-        },
-        {
-          "depth": 2,
-          "text": "9. 로드맵 — 코어 트랙 + 네트워크 트랙",
-          "slug": "9-로드맵-코어-트랙-네트워크-트랙"
-        },
-        {
-          "depth": 2,
-          "text": "10. Non-goals",
-          "slug": "10-non-goals"
-        },
-        {
-          "depth": 2,
-          "text": "11. Kill Criteria",
-          "slug": "11-kill-criteria"
-        },
-        {
-          "depth": 2,
-          "text": "12. 알려진 상한과 리스크 (정직 선언)",
-          "slug": "12-알려진-상한과-리스크-정직-선언"
-        },
-        {
-          "depth": 2,
-          "text": "13. 실행 계획 (즉시)",
-          "slug": "13-실행-계획-즉시"
-        },
-        {
-          "depth": 2,
-          "text": "부록 A — 검증 이력 요약",
-          "slug": "부록-a-검증-이력-요약"
-        },
-        {
-          "depth": 2,
-          "text": "부록 B — 보도자료 초안 + 하드 FAQ (working backwards)",
-          "slug": "부록-b-보도자료-초안-하드-faq-working-backwards"
-        },
-        {
-          "depth": 3,
-          "text": "보도자료 (Slice 1 완료 시점 가정, 고객 언어)",
-          "slug": "보도자료-slice-1-완료-시점-가정-고객-언어"
-        },
-        {
-          "depth": 3,
-          "text": "하드 FAQ (one-way door 정책 포함)",
-          "slug": "하드-faq-one-way-door-정책-포함"
-        },
-        {
-          "depth": 2,
-          "text": "부록 C — 구조 긴장 해소 기록",
-          "slug": "부록-c-구조-긴장-해소-기록"
-        },
-        {
-          "depth": 2,
-          "text": "부록 D — Layer 2 보도자료 + cohort profile",
-          "slug": "부록-d-layer-2-보도자료-cohort-profile"
-        },
-        {
-          "depth": 3,
-          "text": "Layer 2 보도자료 (Team Sync 수요 게이트 발화 시점 가정)",
-          "slug": "layer-2-보도자료-team-sync-수요-게이트-발화-시점-가정"
-        },
-        {
-          "depth": 3,
-          "text": "Prototypical cohort profile (모집 기준 — Slice 0 통과 후 1주 내 실측으로 대체)",
-          "slug": "prototypical-cohort-profile-모집-기준-slice-0-통과-후-1주-내-실측으로-대체"
-        }
-      ],
-      "excerpt": "이 문서는 2026-07-17 하루 동안의 집중 재기획의 확정 산출물이다. 검증 이력: 시장·기술 조사 17건 (haiku) · 사용자 페르소나 패널 7인 · CPO 심사 (PO rubric 22/24, Chief PO Level 4) · 사상가 렌즈 패널 10인 × 3라운드 (최종 평균 7.60 — 기획 단계 캘리브레이션 기준 Obsidian/dbt의 7.3을 상회) · 도입 심사 10인 · 충분성 분석 2건. 상세 근거는 세션 기록과 메모리 참조. 결론: 기획 단계 완료. 남은 점수는 구현과 시장 증거에서 나온다. Layer 1 (로컬 코어 — 불변의 신뢰 계약)",
-      "wordCount": 2209,
-      "updatedAt": "2026-07-27",
-      "linksOut": []
-    },
-    {
-      "slug": "PRODUCT-UX-AUDIT",
-      "path": "docs/PRODUCT-UX-AUDIT.md",
-      "title": "Ontology Atlas 제품 UX 감사 장부",
-      "tags": [],
-      "frontmatter": {},
-      "headings": [
-        {
-          "depth": 1,
-          "text": "Ontology Atlas 제품 UX 감사 장부",
-          "slug": "ontology-atlas-제품-ux-감사-장부"
-        },
-        {
-          "depth": 2,
-          "text": "감사 방법",
-          "slug": "감사-방법"
-        },
-        {
-          "depth": 2,
-          "text": "현재 시나리오 행렬",
-          "slug": "현재-시나리오-행렬"
-        },
-        {
-          "depth": 2,
-          "text": "이슈 장부",
-          "slug": "이슈-장부"
-        },
-        {
-          "depth": 3,
-          "text": "UX-045 — 활성 문서가 제거된 그래프 표면을 현재 계약처럼 설명",
-          "slug": "ux-045-활성-문서가-제거된-그래프-표면을-현재-계약처럼-설명"
-        },
-        {
-          "depth": 3,
-          "text": "UX-044 — 공개되지 않은 CLI/MCP 패키지를 설치 앱이 즉시 연결 가능하다고 안내",
-          "slug": "ux-044-공개되지-않은-climcp-패키지를-설치-앱이-즉시-연결-가능하다고-안내"
-        },
-        {
-          "depth": 3,
-          "text": "UX-043 — agent persisted-context handoff가 퇴역 Builder URL을 반환",
-          "slug": "ux-043-agent-persisted-context-handoff가-퇴역-builder-url을-반환"
-        },
-        {
-          "depth": 3,
-          "text": "UX-001 — 설치 앱 검증기가 현재 canvas-v2 지도를 구형 앱으로 오판",
-          "slug": "ux-001-설치-앱-검증기가-현재-canvas-v2-지도를-구형-앱으로-오판"
-        },
-        {
-          "depth": 3,
-          "text": "UX-002 — 가이드 투어에서 키보드 포커스가 뒤 화면으로 이탈",
-          "slug": "ux-002-가이드-투어에서-키보드-포커스가-뒤-화면으로-이탈"
-        },
-        {
-          "depth": 3,
-          "text": "UX-003 — 폴더 안내 모달이 포커스를 가두거나 호출 버튼으로 복귀하지 않음",
-          "slug": "ux-003-폴더-안내-모달이-포커스를-가두거나-호출-버튼으로-복귀하지-않음"
-        },
-        {
-          "depth": 3,
-          "text": "UX-004 — 예시 비즈니스 선택 뒤 설명이 다른 데이터셋을 지칭",
-          "slug": "ux-004-예시-비즈니스-선택-뒤-설명이-다른-데이터셋을-지칭"
-        },
-        {
-          "depth": 3,
-          "text": "UX-005 — 권한 대기 상태에서 폴더 선택 취소가 잘못된 `loaded` 상태를 만듦",
-          "slug": "ux-005-권한-대기-상태에서-폴더-선택-취소가-잘못된-loaded-상태를-만듦"
-        },
-        {
-          "depth": 3,
-          "text": "UX-006 — 투어 5/7에서 설명 대상과 시각적 주목 대상이 분리됨",
-          "slug": "ux-006-투어-57에서-설명-대상과-시각적-주목-대상이-분리됨"
-        },
-        {
-          "depth": 3,
-          "text": "UX-007 — 번역 계약 테스트 다섯 건이 현재 메시지와 역방향으로 드리프트",
-          "slug": "ux-007-번역-계약-테스트-다섯-건이-현재-메시지와-역방향으로-드리프트"
-        },
-        {
-          "depth": 3,
-          "text": "UX-008 — 읽기 전용 샘플의 AI 인계가 실제 vault 쓰기 명령을 제안",
-          "slug": "ux-008-읽기-전용-샘플의-ai-인계가-실제-vault-쓰기-명령을-제안"
-        },
-        {
-          "depth": 3,
-          "text": "UX-009 — 공방 인라인 관계 카드의 닫기 제어가 이름과 Escape 계약을 잃음",
-          "slug": "ux-009-공방-인라인-관계-카드의-닫기-제어가-이름과-escape-계약을-잃음"
-        },
-        {
-          "depth": 3,
-          "text": "UX-010 — 재실행 시 열린 탭은 남지만 활성 문서가 README로 돌아감",
-          "slug": "ux-010-재실행-시-열린-탭은-남지만-활성-문서가-readme로-돌아감"
-        },
-        {
-          "depth": 3,
-          "text": "UX-011 — 외부 편집 뒤 저장이 최신 mtime을 기준으로 삼아 변경을 덮어씀",
-          "slug": "ux-011-외부-편집-뒤-저장이-최신-mtime을-기준으로-삼아-변경을-덮어씀"
-        },
-        {
-          "depth": 3,
-          "text": "UX-012 — 노드 상세를 닫으면 키보드 포커스가 사라짐",
-          "slug": "ux-012-노드-상세를-닫으면-키보드-포커스가-사라짐"
-        },
-        {
-          "depth": 3,
-          "text": "UX-013 — 설치 앱에서 임의 로컬 프로젝트의 상세·전체 편집 경로가 열리지 않음",
-          "slug": "ux-013-설치-앱에서-임의-로컬-프로젝트의-상세전체-편집-경로가-열리지-않음"
-        },
-        {
-          "depth": 3,
-          "text": "UX-014 — 경로가 자유로운 project 문서 편집이 원본 대신 복제 파일을 만듦",
-          "slug": "ux-014-경로가-자유로운-project-문서-편집이-원본-대신-복제-파일을-만듦"
-        },
-        {
-          "depth": 3,
-          "text": "UX-015 — vault 재로딩 순간 전체 편집이 샘플 모드로 바뀌어 not-found를 고정함",
-          "slug": "ux-015-vault-재로딩-순간-전체-편집이-샘플-모드로-바뀌어-not-found를-고정함"
-        },
-        {
-          "depth": 3,
-          "text": "UX-016 — 짧은 인라인 편집이 없던 분류·상태를 만들어 전체 편집 저장을 막음",
-          "slug": "ux-016-짧은-인라인-편집이-없던-분류상태를-만들어-전체-편집-저장을-막음"
-        },
-        {
-          "depth": 3,
-          "text": "UX-017 — 새 프로젝트 파일이 graph node 종류 없이 생성됨",
-          "slug": "ux-017-새-프로젝트-파일이-graph-node-종류-없이-생성됨"
-        },
-        {
-          "depth": 3,
-          "text": "UX-018 — 유효한 로컬 온톨로지 딥링크가 선택 성공과 not-found를 동시에 표시",
-          "slug": "ux-018-유효한-로컬-온톨로지-딥링크가-선택-성공과-not-found를-동시에-표시"
-        },
-        {
-          "depth": 3,
-          "text": "UX-019 — CREATE 저장 예고가 새 노드를 0가지로 세고 확정 충돌도 저장을 허용",
-          "slug": "ux-019-create-저장-예고가-새-노드를-0가지로-세고-확정-충돌도-저장을-허용"
-        },
-        {
-          "depth": 3,
-          "text": "UX-020 — 인사이트 탭이 복합 위젯을 선언하고 일반 링크처럼 동작",
-          "slug": "ux-020-인사이트-탭이-복합-위젯을-선언하고-일반-링크처럼-동작"
-        },
-        {
-          "depth": 3,
-          "text": "UX-021 — 다운로드 경로의 첫 화면이 설치 판단 대신 제품 소개를 먼저 요구",
-          "slug": "ux-021-다운로드-경로의-첫-화면이-설치-판단-대신-제품-소개를-먼저-요구"
-        },
-        {
-          "depth": 3,
-          "text": "UX-022 — 언어 전환이 현재 인사이트 과업을 기본 탭으로 초기화",
-          "slug": "ux-022-언어-전환이-현재-인사이트-과업을-기본-탭으로-초기화"
-        },
-        {
-          "depth": 3,
-          "text": "UX-023 — 설치 앱 검증기가 현재 Atlas 셸·canvas-v2 선택 맥락을 오판",
-          "slug": "ux-023-설치-앱-검증기가-현재-atlas-셸canvas-v2-선택-맥락을-오판"
-        },
-        {
-          "depth": 3,
-          "text": "UX-024 — 설정에서 언어를 바꾸면 포커스가 새 문서 루트로 유실됨",
-          "slug": "ux-024-설정에서-언어를-바꾸면-포커스가-새-문서-루트로-유실됨"
-        },
-        {
-          "depth": 3,
-          "text": "UX-025 — 설정 modal의 마지막 Tab이 열린 시트 뒤 HTML 문서로 이탈",
-          "slug": "ux-025-설정-modal의-마지막-tab이-열린-시트-뒤-html-문서로-이탈"
-        },
-        {
-          "depth": 3,
-          "text": "UX-026 — AI 설정 드릴인 진입이 열린 modal의 포커스를 문서 루트로 유실",
-          "slug": "ux-026-ai-설정-드릴인-진입이-열린-modal의-포커스를-문서-루트로-유실"
-        },
-        {
-          "depth": 3,
-          "text": "UX-027 — 설정에서 문서함으로 이동하면 새 화면의 읽기 시작점을 잃음",
-          "slug": "ux-027-설정에서-문서함으로-이동하면-새-화면의-읽기-시작점을-잃음"
-        },
-        {
-          "depth": 3,
-          "text": "UX-028 — 활성 문서 탭을 키보드로 닫으면 포커스가 앱 루트로 유실",
-          "slug": "ux-028-활성-문서-탭을-키보드로-닫으면-포커스가-앱-루트로-유실"
-        },
-        {
-          "depth": 3,
-          "text": "UX-029 — 전역 레일 이동과 공방 surface가 새 과업의 읽기 시작점을 잃음",
-          "slug": "ux-029-전역-레일-이동과-공방-surface가-새-과업의-읽기-시작점을-잃음"
-        },
-        {
-          "depth": 3,
-          "text": "A27 검증 메모 — 하단 탭바 route·safe-area 계약 유지",
-          "slug": "a27-검증-메모-하단-탭바-routesafe-area-계약-유지"
-        },
-        {
-          "depth": 3,
-          "text": "UX-030 — 화면 밖 AI 연결 진입이 시트를 잃고 문서 루트로 포커스를 버림",
-          "slug": "ux-030-화면-밖-ai-연결-진입이-시트를-잃고-문서-루트로-포커스를-버림"
-        },
-        {
-          "depth": 3,
-          "text": "UX-031 — 설치 앱 관계 검증이 사용자의 저장 vault에 의존해 재현성을 잃음",
-          "slug": "ux-031-설치-앱-관계-검증이-사용자의-저장-vault에-의존해-재현성을-잃음"
-        },
-        {
-          "depth": 3,
-          "text": "UX-032 — 설치 앱의 블록 가져오기가 폴더 선택 미지원으로 비활성화됨",
-          "slug": "ux-032-설치-앱의-블록-가져오기가-폴더-선택-미지원으로-비활성화됨"
-        },
-        {
-          "depth": 3,
-          "text": "UX-033 — AI 연결 화면이 현재 32도구 MCP를 24도구라고 안내",
-          "slug": "ux-033-ai-연결-화면이-현재-32도구-mcp를-24도구라고-안내"
-        },
-        {
-          "depth": 3,
-          "text": "UX-034 — invalid MCP 설정 옆 주요 버튼이 이미 완료된 작업처럼 읽힘",
-          "slug": "ux-034-invalid-mcp-설정-옆-주요-버튼이-이미-완료된-작업처럼-읽힘"
-        },
-        {
-          "depth": 3,
-          "text": "UX-035 — 활성 문서와 프로토타입이 CLI 45·48·50명령을 동시에 주장",
-          "slug": "ux-035-활성-문서와-프로토타입이-cli-454850명령을-동시에-주장"
-        },
-        {
-          "depth": 3,
-          "text": "UX-036 — `기능 문서 열기`가 약속한 내장 문서 대신 local README를 엶",
-          "slug": "ux-036-기능-문서-열기가-약속한-내장-문서-대신-local-readme를-엶"
-        },
-        {
-          "depth": 3,
-          "text": "UX-037 — 자동 AX probe가 Computer Use로 읽히는 창을 timeout으로 오판",
-          "slug": "ux-037-자동-ax-probe가-computer-use로-읽히는-창을-timeout으로-오판"
-        },
-        {
-          "depth": 3,
-          "text": "UX-038 — 공방 진입 선택 뒤 키보드 포커스가 작업대로 이어지지 않음",
-          "slug": "ux-038-공방-진입-선택-뒤-키보드-포커스가-작업대로-이어지지-않음"
-        },
-        {
-          "depth": 3,
-          "text": "UX-039 — 수리 큐 총계가 가리키는 나머지 대상을 찾을 수 없음",
-          "slug": "ux-039-수리-큐-총계가-가리키는-나머지-대상을-찾을-수-없음"
-        },
-        {
-          "depth": 3,
-          "text": "UX-040 — 설치 앱 검증기가 폐기된 인사이트 DOM을 요구해 최신 앱을 실패 처리",
-          "slug": "ux-040-설치-앱-검증기가-폐기된-인사이트-dom을-요구해-최신-앱을-실패-처리"
-        },
-        {
-          "depth": 3,
-          "text": "UX-041 — fresh build 뒤에도 desktop smoke가 폐기된 route 계약으로 실패",
-          "slug": "ux-041-fresh-build-뒤에도-desktop-smoke가-폐기된-route-계약으로-실패"
-        },
-        {
-          "depth": 3,
-          "text": "UX-042 — design guard가 초록이어도 퇴역 3탭 인사이트를 보호",
-          "slug": "ux-042-design-guard가-초록이어도-퇴역-3탭-인사이트를-보호"
-        },
-        {
-          "depth": 3,
-          "text": "2026-07-27 반복 측정 기록",
-          "slug": "2026-07-27-반복-측정-기록"
-        },
-        {
-          "depth": 2,
-          "text": "현재 PO·디자인 판정",
-          "slug": "현재-po디자인-판정"
-        }
-      ],
-      "excerpt": "상태: 진행 중. 이 문서는 전면 재디자인 제안서가 아니라, 실제 사용자 시나리오를 설치 앱에서 반복 검증하며 발견·수정·재검증한 계약을 기록한다. 최신 반복 측정: 2026-07-27, 설치 앱 + Codex Computer Use. 원칙: 취향보다 과업 성공, 스크린샷보다 상호작용 증거, 새 기능보다 현재 흐름의 신뢰 회복을 우선한다. 각 항목은 아래 순서로 닫는다. 1. 사용자·과업·시작 상태·이벤트 순서를 고정한다. 2. 설치 앱에서 포인터와 키보드로 재현한다. 3. 스크린샷의 광점·호버·강조를 판정하기 전 포인터를 비정보 영역으로 옮겨 한 장 더 캡처한다. ",
-      "wordCount": 14980,
       "updatedAt": "2026-07-27",
       "linksOut": []
     },
@@ -12416,8 +12957,8 @@
         }
       ],
       "excerpt": "이 폴더는 Ontology Atlas 를 만드는 사람들이 쓰는 기술 문서 모음입니다. 제품이 무엇인지 알고 싶어서 들어오셨다면 이 목록이 아니라 지도 화면을 먼저 보세요 — 제품이 어떤 영역으로 나뉘고 각 영역에 무엇이 들어 있는지 그림 한 장으로 보여 줍니다. 아래 표는 \"어떤 주제를 어느 문서에서 찾는가\" 를 정리한 색인입니다. This folder is the working documentation for people building Ontology Atlas. If you came here to learn what the product is, open the ",
-      "wordCount": 927,
-      "updatedAt": "2026-07-27",
+      "wordCount": 955,
+      "updatedAt": "2026-07-31",
       "linksOut": [
         "../README",
         "PRODUCT-OWNER-OPERATING-SYSTEM",
@@ -12432,6 +12973,7 @@
         "../mcp/README",
         "../cli/README",
         "DESIGN-SYSTEM",
+        "MAP-TESTABILITY",
         "DEPLOYMENT",
         "CHANGELOG",
         "BACKLOG"
@@ -12735,88 +13277,10 @@
       ],
       "excerpt": "Historical implementation record (superseded, 2026-07-27). This document preserves the measurements and decisions that led to topology-map-v2; its descriptions of coexisting DOM/Sigma engines and future migration phases are not current runtime instructions. The shipped contract is one canvas-2D engine. Use docs/TECH-ST",
       "wordCount": 3715,
-      "updatedAt": "2026-07-27",
+      "updatedAt": "2026-07-31",
       "linksOut": [
         "owner-topology-taste"
       ]
-    },
-    {
-      "slug": "TOPOLOGY-V2-PHASE0",
-      "path": "docs/TOPOLOGY-V2-PHASE0.md",
-      "title": "TOPOLOGY-V2 PHASE 0 — 진단 · 계약 고정 (2026-07-18)",
-      "tags": [],
-      "frontmatter": {},
-      "headings": [
-        {
-          "depth": 1,
-          "text": "TOPOLOGY-V2 PHASE 0 — 진단 · 계약 고정 (2026-07-18)",
-          "slug": "topology-v2-phase-0-진단-계약-고정-2026-07-18"
-        },
-        {
-          "depth": 2,
-          "text": "0. 가장 중요한 발견 — 감사 대상 파일이 이미 죽은 코드다",
-          "slug": "0-가장-중요한-발견-감사-대상-파일이-이미-죽은-코드다"
-        },
-        {
-          "depth": 2,
-          "text": "1. 두 개의 엔진이 공존한다 — 시나리오별로 다른 코드가 실행됐다",
-          "slug": "1-두-개의-엔진이-공존한다-시나리오별로-다른-코드가-실행됐다"
-        },
-        {
-          "depth": 2,
-          "text": "2. 실측 표",
-          "slug": "2-실측-표"
-        },
-        {
-          "depth": 3,
-          "text": "2.1 초기 로드 244ms/374ms task 내부 (그래프 엔진, 440~1110ms 구간, 5,866 샘플)",
-          "slug": "21-초기-로드-244ms374ms-task-내부-그래프-엔진-4401110ms-구간-5866-샘플"
-        },
-        {
-          "depth": 3,
-          "text": "2.2 클릭 194ms task 내부 (그래프 엔진, all-thread 샘플 5,132개 — 메인스레드 + 동시 실행 중인 FA2 물리 워커 포함)",
-          "slug": "22-클릭-194ms-task-내부-그래프-엔진-all-thread-샘플-5132개-메인스레드-동시-실행-중인-fa2-물리-워커-포함"
-        },
-        {
-          "depth": 2,
-          "text": "3. 병목 판정 — 세 가설 vs 실측",
-          "slug": "3-병목-판정-세-가설-vs-실측"
-        },
-        {
-          "depth": 2,
-          "text": "4. 어댑터 계약 초안 (Task B)",
-          "slug": "4-어댑터-계약-초안-task-b"
-        },
-        {
-          "depth": 3,
-          "text": "4.1 현재 데이터 흐름 (codegraph 확인)",
-          "slug": "41-현재-데이터-흐름-codegraph-확인"
-        },
-        {
-          "depth": 3,
-          "text": "4.2 v2 어댑터 인터페이스 (제안)",
-          "slug": "42-v2-어댑터-인터페이스-제안"
-        },
-        {
-          "depth": 2,
-          "text": "5. 방법론 캐비잇",
-          "slug": "5-방법론-캐비잇"
-        },
-        {
-          "depth": 2,
-          "text": "6. WebGL 저알파 결함 — 보너스 체크 (미완)",
-          "slug": "6-webgl-저알파-결함-보너스-체크-미완"
-        },
-        {
-          "depth": 2,
-          "text": "7. Phase 1 진입 조건 체크",
-          "slug": "7-phase-1-진입-조건-체크"
-        }
-      ],
-      "excerpt": "Historical measurement snapshot (superseded, 2026-07-27). The paths, call sites, and “alive” labels below describe the pre-migration baseline used to choose topology-map-v2. Sigma, TopologyMapCanvas, their peer-mode tabs, and the project-detail mini-map were subsequently removed. Preserve the numbers as dated evidence;",
-      "wordCount": 2076,
-      "updatedAt": "2026-07-27",
-      "linksOut": []
     },
     {
       "slug": "TROUBLESHOOTING",
@@ -12975,214 +13439,6 @@
       "wordCount": 1251,
       "updatedAt": "2026-07-28",
       "linksOut": []
-    },
-    {
-      "slug": "VISUAL-DESIGN-REVIEW-BRIEF-2026-07",
-      "path": "docs/VISUAL-DESIGN-REVIEW-BRIEF-2026-07.md",
-      "title": "Ontology Atlas — Visual Design Review Brief (2026-07)",
-      "tags": [],
-      "frontmatter": {},
-      "headings": [
-        {
-          "depth": 1,
-          "text": "Ontology Atlas — Visual Design Review Brief (2026-07)",
-          "slug": "ontology-atlas-visual-design-review-brief-2026-07"
-        },
-        {
-          "depth": 2,
-          "text": "1. How to use this document",
-          "slug": "1-how-to-use-this-document"
-        },
-        {
-          "depth": 2,
-          "text": "2. Compact PO framing",
-          "slug": "2-compact-po-framing"
-        },
-        {
-          "depth": 2,
-          "text": "3. Evidence reviewed",
-          "slug": "3-evidence-reviewed"
-        },
-        {
-          "depth": 3,
-          "text": "Current-session captures",
-          "slug": "current-session-captures"
-        },
-        {
-          "depth": 3,
-          "text": "Stable product captures",
-          "slug": "stable-product-captures"
-        },
-        {
-          "depth": 3,
-          "text": "Product surfaces to inspect live",
-          "slug": "product-surfaces-to-inspect-live"
-        },
-        {
-          "depth": 2,
-          "text": "4. Review method and limits",
-          "slug": "4-review-method-and-limits"
-        },
-        {
-          "depth": 2,
-          "text": "5. Consolidated diagnosis",
-          "slug": "5-consolidated-diagnosis"
-        },
-        {
-          "depth": 2,
-          "text": "6. Prioritized findings",
-          "slug": "6-prioritized-findings"
-        },
-        {
-          "depth": 3,
-          "text": "1. Relation direction and type are not reliably readable — Critical",
-          "slug": "1-relation-direction-and-type-are-not-reliably-readable-critical"
-        },
-        {
-          "depth": 3,
-          "text": "2. Graph volume is more prominent than graph insight — Critical",
-          "slug": "2-graph-volume-is-more-prominent-than-graph-insight-critical"
-        },
-        {
-          "depth": 3,
-          "text": "3. The first five seconds do not prove one work outcome — Critical",
-          "slug": "3-the-first-five-seconds-do-not-prove-one-work-outcome-critical"
-        },
-        {
-          "depth": 3,
-          "text": "4. Information that must be read is too dim — High",
-          "slug": "4-information-that-must-be-read-is-too-dim-high"
-        },
-        {
-          "depth": 3,
-          "text": "5. Project root, current selection, hover, and path state compete — High",
-          "slug": "5-project-root-current-selection-hover-and-path-state-compete-high"
-        },
-        {
-          "depth": 3,
-          "text": "6. The focused Topology state currently carries the strongest product proof — High",
-          "slug": "6-the-focused-topology-state-currently-carries-the-strongest-product-proof-high"
-        },
-        {
-          "depth": 3,
-          "text": "7. Local-first and Git-backed trust are implied rather than proved — High",
-          "slug": "7-local-first-and-git-backed-trust-are-implied-rather-than-proved-high"
-        },
-        {
-          "depth": 3,
-          "text": "8. Studio's game metaphor attracts attention but can weaken rigor — High",
-          "slug": "8-studios-game-metaphor-attracts-attention-but-can-weaken-rigor-high"
-        },
-        {
-          "depth": 3,
-          "text": "9. Topology and Studio need one semantic world, not just shared colors — High",
-          "slug": "9-topology-and-studio-need-one-semantic-world-not-just-shared-colors-high"
-        },
-        {
-          "depth": 3,
-          "text": "10. The dark negative space is potentially a premium asset — Preserve",
-          "slug": "10-the-dark-negative-space-is-potentially-a-premium-asset-preserve"
-        },
-        {
-          "depth": 3,
-          "text": "11. The gold central core is the strongest current brand seed — Opportunity",
-          "slug": "11-the-gold-central-core-is-the-strongest-current-brand-seed-opportunity"
-        },
-        {
-          "depth": 3,
-          "text": "12. Product UI and social creative are separate design problems — SNS Critical",
-          "slug": "12-product-ui-and-social-creative-are-separate-design-problems-sns-critical"
-        },
-        {
-          "depth": 2,
-          "text": "7. Material disagreements to preserve",
-          "slug": "7-material-disagreements-to-preserve"
-        },
-        {
-          "depth": 3,
-          "text": "\"The interface is too dark\"",
-          "slug": "the-interface-is-too-dark"
-        },
-        {
-          "depth": 3,
-          "text": "\"The canvas is too empty\"",
-          "slug": "the-canvas-is-too-empty"
-        },
-        {
-          "depth": 3,
-          "text": "\"Studio is the strongest screen\"",
-          "slug": "studio-is-the-strongest-screen"
-        },
-        {
-          "depth": 3,
-          "text": "\"The brand is generic\"",
-          "slug": "the-brand-is-generic"
-        },
-        {
-          "depth": 3,
-          "text": "\"Small text should be larger\"",
-          "slug": "small-text-should-be-larger"
-        },
-        {
-          "depth": 2,
-          "text": "8. Preserve before redesigning",
-          "slug": "8-preserve-before-redesigning"
-        },
-        {
-          "depth": 2,
-          "text": "9. Open questions for Fable",
-          "slug": "9-open-questions-for-fable"
-        },
-        {
-          "depth": 2,
-          "text": "10. Hypotheses worth testing",
-          "slug": "10-hypotheses-worth-testing"
-        },
-        {
-          "depth": 2,
-          "text": "11. Directional score range",
-          "slug": "11-directional-score-range"
-        },
-        {
-          "depth": 2,
-          "text": "12. Recommended agent workflow",
-          "slug": "12-recommended-agent-workflow"
-        },
-        {
-          "depth": 3,
-          "text": "Phase A — independent review",
-          "slug": "phase-a-independent-review"
-        },
-        {
-          "depth": 3,
-          "text": "Phase B — shape one design slice",
-          "slug": "phase-b-shape-one-design-slice"
-        },
-        {
-          "depth": 3,
-          "text": "Phase C — implement and verify",
-          "slug": "phase-c-implement-and-verify"
-        },
-        {
-          "depth": 2,
-          "text": "13. Copy-ready prompt A — ask Fable for an independent opinion",
-          "slug": "13-copy-ready-prompt-a-ask-fable-for-an-independent-opinion"
-        },
-        {
-          "depth": 2,
-          "text": "14. Copy-ready prompt B — implement one approved slice",
-          "slug": "14-copy-ready-prompt-b-implement-one-approved-slice"
-        },
-        {
-          "depth": 2,
-          "text": "15. Current recommendation",
-          "slug": "15-current-recommendation"
-        }
-      ],
-      "excerpt": "Status: exploratory review brief, not an approved redesign specification. Audience: Claude Code Fable, design-review agents, and the product owner. Purpose: preserve the evidence, agreements, disagreements, and open questions from a multi-perspective review so the next agent can challenge the diagnosis before proposing",
-      "wordCount": 3181,
-      "updatedAt": "2026-07-24",
-      "linksOut": []
     }
   ],
   "backlinksDetail": {
@@ -13190,11 +13446,6 @@
       {
         "fromSlug": "ARCHITECTURE",
         "context": "ge config - `app/layout.tsx` — metadata, providers, head - `eslint.config.mjs` — FSD boundary rules Long-form docs: - **[`AGENTS.md`]** — contributor guide (canonical for AI tools) - [`PRODUCT-DIRECTION.md`](./PRODUCT-DIRECTION.md) — mission - [`FEATURES.",
-        "linkText": "`AGENTS.md`"
-      },
-      {
-        "fromSlug": "CASE-STUDY-AGENTS-MD-DRIFT",
-        "context": ". See [`mcp/README.md`](../mcp/README.md) for the tool surface an agent uses to read and write that reference file, and **[`AGENTS.md`]** for how this repo's own agents are told to use it.",
         "linkText": "`AGENTS.md`"
       }
     ],
@@ -13230,7 +13481,7 @@
       },
       {
         "fromSlug": "README",
-        "context": "./cli/README.md) | CLI commands, graph workflows, installed-package checks | Canonical developer terminal interface | | **[`DESIGN-SYSTEM.md`]** | Visual language, tokens, forbidden patterns | Canonical UI style guide | | [`DEPLOYMENT.md`](DEPLOYMENT.md) | Static",
+        "context": "./cli/README.md) | CLI commands, graph workflows, installed-package checks | Canonical developer terminal interface | | **[`DESIGN-SYSTEM.md`]** | Visual language, tokens, forbidden patterns | Canonical UI style guide | | [`MAP-TESTABILITY.md`](MAP-TESTABILITY.md)",
         "linkText": "`DESIGN-SYSTEM.md`"
       }
     ],
@@ -13242,7 +13493,7 @@
       },
       {
         "fromSlug": "README",
-        "context": "| | [`DESIGN-SYSTEM.md`](DESIGN-SYSTEM.md) | Visual language, tokens, forbidden patterns | Canonical UI style guide | | **[`DEPLOYMENT.md`]** | Static export deployment | Current, small | | [`CHANGELOG.md`](CHANGELOG.md) | Chronological user-visible changes | H",
+        "context": "and the measurement discipline that a 2026-07-31 six-false-negative incident produced | Canonical map test surface | | **[`DEPLOYMENT.md`]** | Static export deployment | Current, small | | [`CHANGELOG.md`](CHANGELOG.md) | Chronological user-visible changes | H",
         "linkText": "`DEPLOYMENT.md`"
       }
     ],
@@ -13254,41 +13505,15 @@
       },
       {
         "fromSlug": "README",
-        "context": "atterns | Canonical UI style guide | | [`DEPLOYMENT.md`](DEPLOYMENT.md) | Static export deployment | Current, small | | **[`CHANGELOG.md`]** | Chronological user-visible changes | Historical ledger | | [`BACKLOG.md`](BACKLOG.md) | Working queue and deferred qu",
+        "context": "duced | Canonical map test surface | | [`DEPLOYMENT.md`](DEPLOYMENT.md) | Static export deployment | Current, small | | **[`CHANGELOG.md`]** | Chronological user-visible changes | Historical ledger | | [`BACKLOG.md`](BACKLOG.md) | Working queue and deferred qu",
         "linkText": "`CHANGELOG.md`"
-      }
-    ],
-    "../CLAUDE": [
-      {
-        "fromSlug": "CASE-STUDY-AGENTS-MD-DRIFT",
-        "context": "ings that genuinely don't apply to other tools (skills, hooks, the design-guardian subagent). See the current file: **[`CLAUDE.md`]**. - The sync rule is written down as policy, not left to memory — `AGENTS.md`'s own \"CLAUDE.md / AGENTS.md sync\" secti",
-        "linkText": "`CLAUDE.md`"
-      }
-    ],
-    "../.claude/rules/forbidden": [
-      {
-        "fromSlug": "CASE-STUDY-AGENTS-MD-DRIFT",
-        "context": "eeps this file consistent without a second edit). - Drift between the two is listed as a named forbidden pattern in **[`.claude/rules/forbidden.md`]**, under \"문서\" (documentation): *\"AGENTS.md 와 CLAUDE.md 가 비동기\"* — AGENTS.md and CLAUDE.md being out of sync is treated",
-        "linkText": "`.claude/rules/forbidden.md`"
-      }
-    ],
-    "../mcp/README": [
-      {
-        "fromSlug": "CASE-STUDY-AGENTS-MD-DRIFT",
-        "context": "every session — the same \"consult a reference file instead of restating it\" move, aimed at facts instead of rules. See **[`mcp/README.md`]** for the tool surface an agent uses to read and write that reference file, and [`AGENTS.md`](../AGENTS.md#working-with-t",
-        "linkText": "`mcp/README.md`"
-      },
-      {
-        "fromSlug": "README",
-        "context": "SKTOP-MACOS.md) | macOS desktop app track, readiness gate, first Tauri prototype scope | Current distribution track | | **[`../mcp/README.md`]** | MCP registration, 32 tools, tool contracts, verification | Canonical agent interface | | [`../cli/README.md`](../cli/",
-        "linkText": "`../mcp/README.md`"
       }
     ],
     "CASE-STUDY-AGENTS-MD-DRIFT": [
       {
         "fromSlug": "CHANGELOG",
-        "context": "다리가 없었다. README에 \"codebase map / agent memory / context layer\" 시장 어휘를 잇는 브릿지 문단과 유산 선언 문장(\"이 지도는 당신 디스크의 마크다운\") 추가. 신규 **[`docs/CASE-STUDY-AGENTS-MD-DRIFT.md`]** — AGENTS.md/CLAUDE.md drift 커뮤니티 고통 → 이 저장소가 실제로 쓰는 해법(단일 진실원 + thin wrapper) → context rot 완화책으로서의 vault, 세 단계 케이스 스터디",
-        "linkText": "`docs/CASE-STUDY-AGENTS-MD-DRIFT.md`"
+        "context": "다리가 없었다. README에 \"codebase map / agent memory / context layer\" 시장 어휘를 잇는 브릿지 문단과 유산 선언 문장(\"이 지도는 당신 디스크의 마크다운\") 추가. 신규 **[`docs/audits/CASE-STUDY-AGENTS-MD-DRIFT.md`]** — AGENTS.md/CLAUDE.md drift 커뮤니티 고통 → 이 저장소가 실제로 쓰는 해법(단일 진실원 + thin wrapper) → context rot 완화책으로서의 vault, 세 단계 케이스 스터디",
+        "linkText": "`docs/audits/CASE-STUDY-AGENTS-MD-DRIFT.md`"
       }
     ],
     "slug": [
@@ -13301,13 +13526,6 @@
         "fromSlug": "FEATURES",
         "context": "ve, gold star for pinned - Markdown: GFM tables/lists/blockquotes/code · callout blocks (`> [!tip]` etc.) · wikilinks (`**[slug]**`, `[[slug|label]]`, `[[slug#anchor]]`, `[[project:slug]]`) · heading anchor copy buttons - Local images: relative paths",
         "linkText": "slug"
-      }
-    ],
-    "archive/DEPLOY-FIREBASE": [
-      {
-        "fromSlug": "DEPLOYMENT",
-        "context": "ercel, Netlify, S3 + CloudFront, …). The canonical host is GitHub Pages; the old Firebase-specific guide is archived in **[`docs/archive/DEPLOY-FIREBASE.md`]** for historical reference only. ## Build ```bash pnpm install pnpm build # static export → out/ ``` This pro",
-        "linkText": "`docs/archive/DEPLOY-FIREBASE.md`"
       }
     ],
     "design-references/DESIGN-linear": [
@@ -13418,11 +13636,25 @@
         "linkText": "`DESKTOP-MACOS.md`"
       }
     ],
+    "../mcp/README": [
+      {
+        "fromSlug": "README",
+        "context": "SKTOP-MACOS.md) | macOS desktop app track, readiness gate, first Tauri prototype scope | Current distribution track | | **[`../mcp/README.md`]** | MCP registration, 32 tools, tool contracts, verification | Canonical agent interface | | [`../cli/README.md`](../cli/",
+        "linkText": "`../mcp/README.md`"
+      }
+    ],
     "../cli/README": [
       {
         "fromSlug": "README",
         "context": "EADME.md`](../mcp/README.md) | MCP registration, 32 tools, tool contracts, verification | Canonical agent interface | | **[`../cli/README.md`]** | CLI commands, graph workflows, installed-package checks | Canonical developer terminal interface | | [`DESIGN-SYSTEM.",
         "linkText": "`../cli/README.md`"
+      }
+    ],
+    "MAP-TESTABILITY": [
+      {
+        "fromSlug": "README",
+        "context": "| | [`DESIGN-SYSTEM.md`](DESIGN-SYSTEM.md) | Visual language, tokens, forbidden patterns | Canonical UI style guide | | **[`MAP-TESTABILITY.md`]** | Observing the canvas map from outside (`?e2e=1` → `window.__atlasMap`), and the measurement discipline that a 2026-07",
+        "linkText": "`MAP-TESTABILITY.md`"
       }
     ],
     "BACKLOG": [
@@ -13465,6 +13697,34 @@
         "fromSlug": "archive/ONTOLOGY-MODEL-V2-DRAFT",
         "context": "le: 결제 시스템 parents: [] projects: [checkout] summary: 결제 요청부터 정산까지의 흐름 --- # 결제 시스템 [[doc:payment-spec]] 에 명시된 흐름을 구현. **[capability:tax]** 에 의존. ``` → Firestore: - `knowledgeApprovedNodes/project:checkout` ← frontmatter + summary - `knowledgeApprovedEdges/<",
         "linkText": "capability:tax"
+      }
+    ],
+    "CLAUDE": [
+      {
+        "fromSlug": "audits/CASE-STUDY-AGENTS-MD-DRIFT",
+        "context": "ings that genuinely don't apply to other tools (skills, hooks, the design-guardian subagent). See the current file: **[`CLAUDE.md`]**. - The sync rule is written down as policy, not left to memory — `AGENTS.md`'s own \"CLAUDE.md / AGENTS.md sync\" secti",
+        "linkText": "`CLAUDE.md`"
+      }
+    ],
+    ".claude/rules/forbidden": [
+      {
+        "fromSlug": "audits/CASE-STUDY-AGENTS-MD-DRIFT",
+        "context": "eeps this file consistent without a second edit). - Drift between the two is listed as a named forbidden pattern in **[`.claude/rules/forbidden.md`]**, under \"문서\" (documentation): *\"AGENTS.md 와 CLAUDE.md 가 비동기\"* — AGENTS.md and CLAUDE.md being out of sync is treated",
+        "linkText": "`.claude/rules/forbidden.md`"
+      }
+    ],
+    "mcp/README": [
+      {
+        "fromSlug": "audits/CASE-STUDY-AGENTS-MD-DRIFT",
+        "context": "every session — the same \"consult a reference file instead of restating it\" move, aimed at facts instead of rules. See **[`mcp/README.md`]** for the tool surface an agent uses to read and write that reference file, and [`AGENTS.md`](../AGENTS.md#working-with-t",
+        "linkText": "`mcp/README.md`"
+      }
+    ],
+    "AGENTS": [
+      {
+        "fromSlug": "audits/CASE-STUDY-AGENTS-MD-DRIFT",
+        "context": ". See [`mcp/README.md`](../mcp/README.md) for the tool surface an agent uses to read and write that reference file, and **[`AGENTS.md`]** for how this repo's own agents are told to use it.",
+        "linkText": "`AGENTS.md`"
       }
     ],
     "benchmark/tasks": [
@@ -15533,6 +15793,48 @@
         ]
       },
       {
+        "name": "audits",
+        "path": "audits",
+        "type": "dir",
+        "children": [
+          {
+            "name": "CASE-STUDY-AGENTS-MD-DRIFT",
+            "path": "audits/CASE-STUDY-AGENTS-MD-DRIFT",
+            "type": "doc",
+            "slug": "audits/CASE-STUDY-AGENTS-MD-DRIFT",
+            "title": "Case Study: Avoiding AGENTS.md / CLAUDE.md Drift"
+          },
+          {
+            "name": "ONTOLOGY-RIGOR-AUDIT-2026-07",
+            "path": "audits/ONTOLOGY-RIGOR-AUDIT-2026-07",
+            "type": "doc",
+            "slug": "audits/ONTOLOGY-RIGOR-AUDIT-2026-07",
+            "title": "온톨로지 표현적 적정성 감사 — 전문가 8인 (2026-07-24)"
+          },
+          {
+            "name": "PRODUCT-UX-AUDIT",
+            "path": "audits/PRODUCT-UX-AUDIT",
+            "type": "doc",
+            "slug": "audits/PRODUCT-UX-AUDIT",
+            "title": "Ontology Atlas 제품 UX 감사 장부"
+          },
+          {
+            "name": "README",
+            "path": "audits/README",
+            "type": "doc",
+            "slug": "audits/README",
+            "title": "audits/ — 잰 것의 기록"
+          },
+          {
+            "name": "VISUAL-DESIGN-REVIEW-BRIEF-2026-07",
+            "path": "audits/VISUAL-DESIGN-REVIEW-BRIEF-2026-07",
+            "type": "doc",
+            "slug": "audits/VISUAL-DESIGN-REVIEW-BRIEF-2026-07",
+            "title": "Ontology Atlas — Visual Design Review Brief (2026-07)"
+          }
+        ]
+      },
+      {
         "name": "benchmark",
         "path": "benchmark",
         "type": "dir",
@@ -15634,6 +15936,13 @@
             "type": "doc",
             "slug": "guide/first-five-minutes",
             "title": "첫 5분"
+          },
+          {
+            "name": "relations",
+            "path": "guide/relations",
+            "type": "doc",
+            "slug": "guide/relations",
+            "title": "관계는 어떻게 생기나"
           },
           {
             "name": "trust",
@@ -16541,6 +16850,48 @@
         ]
       },
       {
+        "name": "plans",
+        "path": "plans",
+        "type": "dir",
+        "children": [
+          {
+            "name": "DESIGN-OVERHAUL-2026-07-25",
+            "path": "plans/DESIGN-OVERHAUL-2026-07-25",
+            "type": "doc",
+            "slug": "plans/DESIGN-OVERHAUL-2026-07-25",
+            "title": "디자인 전면 정비 마스터 플랜 (2026-07-25, 소유자 실보고 22건)"
+          },
+          {
+            "name": "ONTOLOGY-STUDIO-PLAN",
+            "path": "plans/ONTOLOGY-STUDIO-PLAN",
+            "type": "doc",
+            "slug": "plans/ONTOLOGY-STUDIO-PLAN",
+            "title": "온톨로지 스튜디오 — 상세 설계 & 실행 플랜 (2026-07-24)"
+          },
+          {
+            "name": "PRODUCT-PLAN-2026-07",
+            "path": "plans/PRODUCT-PLAN-2026-07",
+            "type": "doc",
+            "slug": "plans/PRODUCT-PLAN-2026-07",
+            "title": "Ontology Atlas — 제품 계획 v9 (확정본, 2026-07-17)"
+          },
+          {
+            "name": "README",
+            "path": "plans/README",
+            "type": "doc",
+            "slug": "plans/README",
+            "title": "plans/ — 하려고 했던 것의 기록"
+          },
+          {
+            "name": "TOPOLOGY-V2-PHASE0",
+            "path": "plans/TOPOLOGY-V2-PHASE0",
+            "type": "doc",
+            "slug": "plans/TOPOLOGY-V2-PHASE0",
+            "title": "TOPOLOGY-V2 PHASE 0 — 진단 · 계약 고정 (2026-07-18)"
+          }
+        ]
+      },
+      {
         "name": "prototypes",
         "path": "prototypes",
         "type": "dir",
@@ -16597,13 +16948,6 @@
         "title": "Brand — Ontology Atlas"
       },
       {
-        "name": "CASE-STUDY-AGENTS-MD-DRIFT",
-        "path": "CASE-STUDY-AGENTS-MD-DRIFT",
-        "type": "doc",
-        "slug": "CASE-STUDY-AGENTS-MD-DRIFT",
-        "title": "Case Study: Avoiding AGENTS.md / CLAUDE.md Drift"
-      },
-      {
         "name": "CHANGELOG",
         "path": "CHANGELOG",
         "type": "doc",
@@ -16623,13 +16967,6 @@
         "type": "doc",
         "slug": "DEPLOYMENT",
         "title": "Deployment"
-      },
-      {
-        "name": "DESIGN-OVERHAUL-2026-07-25",
-        "path": "DESIGN-OVERHAUL-2026-07-25",
-        "type": "doc",
-        "slug": "DESIGN-OVERHAUL-2026-07-25",
-        "title": "디자인 전면 정비 마스터 플랜 (2026-07-25, 소유자 실보고 22건)"
       },
       {
         "name": "DESIGN-SYSTEM",
@@ -16674,25 +17011,18 @@
         "title": "INTERACTION DESIGN — 유체적 인터페이스 원칙의 적용 (2026-07-17)"
       },
       {
+        "name": "MAP-TESTABILITY",
+        "path": "MAP-TESTABILITY",
+        "type": "doc",
+        "slug": "MAP-TESTABILITY",
+        "title": "지도를 밖에서 검사하기 — `window.__atlasMap`"
+      },
+      {
         "name": "ONTOLOGY-ATLAS-SPEC",
         "path": "ONTOLOGY-ATLAS-SPEC",
         "type": "doc",
         "slug": "ONTOLOGY-ATLAS-SPEC",
         "title": "Ontology Atlas Vault Specification v1.0-rc (RFC)"
-      },
-      {
-        "name": "ONTOLOGY-RIGOR-AUDIT-2026-07",
-        "path": "ONTOLOGY-RIGOR-AUDIT-2026-07",
-        "type": "doc",
-        "slug": "ONTOLOGY-RIGOR-AUDIT-2026-07",
-        "title": "온톨로지 표현적 적정성 감사 — 전문가 8인 (2026-07-24)"
-      },
-      {
-        "name": "ONTOLOGY-STUDIO-PLAN",
-        "path": "ONTOLOGY-STUDIO-PLAN",
-        "type": "doc",
-        "slug": "ONTOLOGY-STUDIO-PLAN",
-        "title": "온톨로지 스튜디오 — 상세 설계 & 실행 플랜 (2026-07-24)"
       },
       {
         "name": "PRODUCT-DESIGN-OPERATING-SYSTEM",
@@ -16714,20 +17044,6 @@
         "type": "doc",
         "slug": "PRODUCT-OWNER-OPERATING-SYSTEM",
         "title": "PRODUCT OWNER OPERATING SYSTEM"
-      },
-      {
-        "name": "PRODUCT-PLAN-2026-07",
-        "path": "PRODUCT-PLAN-2026-07",
-        "type": "doc",
-        "slug": "PRODUCT-PLAN-2026-07",
-        "title": "Ontology Atlas — 제품 계획 v9 (확정본, 2026-07-17)"
-      },
-      {
-        "name": "PRODUCT-UX-AUDIT",
-        "path": "PRODUCT-UX-AUDIT",
-        "type": "doc",
-        "slug": "PRODUCT-UX-AUDIT",
-        "title": "Ontology Atlas 제품 UX 감사 장부"
       },
       {
         "name": "README",
@@ -16758,25 +17074,11 @@
         "title": "TOPOLOGY-V2 DESIGN — 표현 아키텍처 설계 (Phase 1)"
       },
       {
-        "name": "TOPOLOGY-V2-PHASE0",
-        "path": "TOPOLOGY-V2-PHASE0",
-        "type": "doc",
-        "slug": "TOPOLOGY-V2-PHASE0",
-        "title": "TOPOLOGY-V2 PHASE 0 — 진단 · 계약 고정 (2026-07-18)"
-      },
-      {
         "name": "TROUBLESHOOTING",
         "path": "TROUBLESHOOTING",
         "type": "doc",
         "slug": "TROUBLESHOOTING",
         "title": "Troubleshooting"
-      },
-      {
-        "name": "VISUAL-DESIGN-REVIEW-BRIEF-2026-07",
-        "path": "VISUAL-DESIGN-REVIEW-BRIEF-2026-07",
-        "type": "doc",
-        "slug": "VISUAL-DESIGN-REVIEW-BRIEF-2026-07",
-        "title": "Ontology Atlas — Visual Design Review Brief (2026-07)"
       }
     ]
   }

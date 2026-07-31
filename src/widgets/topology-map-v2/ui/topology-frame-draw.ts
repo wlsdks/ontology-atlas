@@ -18,6 +18,7 @@ import {
   type FootprintInk,
 } from "@/shared/lib/footprint-glyph";
 import type { FootprintPreference } from "@/shared/lib/appearance-preferences";
+import { isDirectionalRelation } from "@/shared/lib/ontology-tree/relations";
 import { depthParallaxOffsetFor, ZERO_PARALLAX } from "../model/realm-depth-parallax";
 import { realmDepthClarityAlpha, realmDepthClarityScale } from "../model/realm-transition";
 import { classifyZoomTier, DEFAULT_TIER_REVEAL, edgeTierAlpha, effectiveNodeAlpha, nodeTierAlpha, type TierRevealConfig } from "../model/tier-visibility";
@@ -41,6 +42,7 @@ import {
   resolveFlippedLabelBaselineY,
   labelZoomScale,
   measureLabelWidth,
+  measureLabelVerticalMetrics,
   scaledLabelFontSize,
 } from "../render/labels";
 import {
@@ -62,7 +64,7 @@ import type { ClusterChip } from "../model/density-gate";
 import { drawDiffractionSpike, drawRealmCosmos, drawStarDust, type DustPoint } from "../render/starfield";
 import { isEdgeCulled, isNodeCulled, isPassthroughEdge } from "../render/viewport-cull";
 import { draw as tracesDraw } from "../render/traces";
-import { drawPulses, edgePairKey, selectEgoContainsComets, type Pulse } from "../render/edge-fireflies";
+import { drawPulses, edgePairKey, selectAmbientDependsComets, selectEgoContainsComets, type Pulse } from "../render/edge-fireflies";
 import type { TopologyV2Tokens } from "../tokens/read-topology-v2-tokens";
 import { worldToScreen } from "./topology-camera-math";
 
@@ -110,6 +112,23 @@ const EMPTY_EGO_CONTAINS_COMETS: ReadonlySet<string> = new Set();
 // site in `drawTopologyFrame` below for why this is safe.
 const tierAlphaByIdReused = new Map<string, number>();
 const effectiveAlphaByIdReused = new Map<string, number>();
+
+/**
+ * **이번 프레임에 실제로 그려진 노드 알파** — 히트테스트의 단일 출처.
+ *
+ * 티어 관통 면제 채널이 드로우에는 넷인데(엣지 선택 · 발자국 렌즈 · ego 포커스 ·
+ * 최근변경 스포트라이트) 히트에는 ego 하나뿐이라, 발자국 렌즈로 떠오른 노드가
+ * **보이는데 안 눌렸다**(2026-07-31 전수 검사). 인자를 하나씩 더 넘기면 다음에
+ * 채널이 늘 때 또 어긋나므로, 드로우가 이미 만드는 이 맵을 그대로 읽게 한다.
+ *
+ * 안전한 이유는 `effectiveAlphaByIdReused` 의 주석과 같다 — `drawTopologyFrame`
+ * 은 단일 rAF 루프에서 **동기적으로만** 돌고, 포인터 이벤트가 그 사이에 끼어들
+ * 수 없다. 히트가 읽는 값은 항상 **완결된 직전 프레임**이고, 그건 오히려 더
+ * 정확하다: 사용자는 **자기가 본 것**을 클릭한다.
+ */
+export function lastDrawnNodeAlphas(): ReadonlyMap<string, number> {
+  return effectiveAlphaByIdReused;
+}
 // 그룹 A — 클러스터 칩 hover 색 이징 앵커. 어느 칩이 언제부터 hover 됐는지
 // 하나만 추적한다(동시 hover 는 1개). rest→hover 색 램프(~150ms)를 이 시작
 // 시각으로 유도한다. reduced-motion 이면 즉시 스냅이라 앵커를 안 쓴다.
@@ -397,6 +416,12 @@ export interface FrameDrawParams {
   /** S4 — 멤버별 깊이 기반 티어 kind 오버라이드 (영역 세계의 티어 = 재배치 깊이). */
   realmTierKinds: ReadonlyMap<string, "project" | "domain" | "capability" | "element"> | null;
   /**
+   * 다섯째 티어 관통 채널 — **칩 펼침으로 드러난 자식**의 0..1 램프.
+   * `use-topology-loop.ts` 가 스텝한다. 앞의 넷과 같은 문법이라 히트 경로는
+   * `effectiveAlphaById` 를 통해 자동으로 따라온다(별도 배선 불필요).
+   */
+  expandRevealById?: ReadonlyMap<string, number> | null;
+  /**
    * S5 — 멤버별 루트 깊이(루트=0). 영역 활성(entering/active) 시 깊이 선명도
    * (알파·스케일 차등)와 시차 밴드 판정에 쓴다. null 이면 깊이 연출 없음(회귀 0).
    */
@@ -533,6 +558,7 @@ export function drawTopologyFrame(params: FrameDrawParams): void {
     hoveredClusterId,
     wardingRing,
     realmTierKinds,
+    expandRevealById,
     realmDepthById,
     realmDepthParallax,
     realmDustParallax,
@@ -711,10 +737,28 @@ export function drawTopologyFrame(params: FrameDrawParams): void {
     // 램프로 떠오른다(끄면 램프 감쇠로 자연 강하).
     const spotlightReveal =
       spotlightLensActive && spotlightIds !== null && spotlightIds.has(node.id) ? spotlightRamp : 0;
+    // **다섯째 티어 관통 채널 — 칩 펼침** (2026-07-31).
+    //
+    // 앞의 넷(엣지 선택 · 발자국 · ego · 스포트라이트)은 티어를 관통하는데 칩
+    // 펼침만 없었다. 칩은 자식을 `clusteredIds`(=안 그림)에서 빼줄 뿐, 그
+    // 다음 관문인 줌 티어 게이트 앞에서는 아무 특권이 없었다.
+    //
+    // 그래서 `+43 더보기` 칩이 "24개가 지금 보인다"고 주장하는데 **1개가
+    // 그려졌다**(모션석 프레임 실측). 개요 배율에서 element 자식은 zoomRatio
+    // 2.5 까지 알파 0 이다 — 칩을 눌러도 2.5 초 동안이 아니라 **줌을 그만큼
+    // 올릴 때까지** 아무것도 안 나온다.
+    //
+    // 사용자가 칩을 눌렀다는 것은 "이걸 보겠다"는 명시적 요청이라 ego 클릭과
+    // 같은 급이다. 새 개념이 아니라 **빠진 다섯 번째**다.
+    const chipExpandReveal = expandRevealById?.get(node.id) ?? 0;
     const baseAlpha = effectiveNodeAlpha(
       tierAlpha,
-      isEgoMember,
-      Math.max(isPairMember || trailKept ? 1 : (egoRevealById.get(node.id) ?? 0), spotlightReveal),
+      isEgoMember || chipExpandReveal > 0,
+      Math.max(
+        isPairMember || trailKept ? 1 : (egoRevealById.get(node.id) ?? 0),
+        spotlightReveal,
+        chipExpandReveal,
+      ),
     );
     // S7 — 영역 퇴장 중 귀환하는 밖 노드는 이 램프로 강등(모션 감사 처방 B). 이
     // 노드로 향하는 엣지는 `edgeTierAlpha`(min 결합)를 통해 같은 프레임에서
@@ -766,6 +810,25 @@ export function drawTopologyFrame(params: FrameDrawParams): void {
             (edge) => edge.kind === "contains" && (edge.sourceId === focusedNodeId || edge.targetId === focusedNodeId),
           ),
         );
+
+  // 상시 앰비언트 `depends` 코멧 캡 — 형제 갈래(contains)가 이미 갖는 24 상한을
+  // 빠진 쪽에 적용한다. **#512(소유자의 앰비언트 복원)를 재뒤집는 게 아니다**:
+  // 혜성은 여전히 상시로, 포커스 무관하게, 같은 속도로 흐른다. 다만 element
+  // 티어에서 화면이 depends 로 찰 때 **동시에 흐르는 점 개수에 천장이 없던**
+  // 것을 형제와 같은 결정론 랭킹으로 막는다.
+  //
+  // 입력은 "이 프레임에 실제로 그려질 depends 엣지" 다 — 드로우 루프와 같은
+  // 두 게이트(밀도 게이트 · 티어 알파)를 통과한 것만 캡 슬롯을 차지해야,
+  // 안 보이는 엣지가 슬롯을 물고 보이는 엣지가 코멧을 잃는 일이 없다.
+  const ambientDependsComets = selectAmbientDependsComets(
+    world.edges.filter(
+      (edge) =>
+        edge.kind === "depends" &&
+        !clusteredIds.has(edge.sourceId) &&
+        !clusteredIds.has(edge.targetId) &&
+        edgeTierAlpha(effectiveAlphaById.get(edge.sourceId) ?? 1, effectiveAlphaById.get(edge.targetId) ?? 1) > 0.02,
+    ),
+  );
 
   for (const kind of ["contains", "depends"] as const) {
     for (const edge of world.edges) {
@@ -834,6 +897,9 @@ export function drawTopologyFrame(params: FrameDrawParams): void {
           b,
           control,
           relationType: kind,
+          // 2치 `kind` 는 "containment 가 아닌 것 전부" 를 depends 로 묶는다.
+          // 방향 테이퍼를 그려도 되는지는 **원 관계 타입**이 정한다.
+          directional: isDirectionalRelation(edge.relationType),
           egoState: edgeEgoState,
           selected: isSelectedEdge && !trailLensActive,
           farT,
@@ -842,6 +908,8 @@ export function drawTopologyFrame(params: FrameDrawParams): void {
           reducedMotion,
           level: edge.level,
           containsCometEligible: kind === "contains" ? egoContainsComets.has(edgePairKey(edge.sourceId, edge.targetId)) : undefined,
+          dependsCometEligible:
+            kind === "depends" ? ambientDependsComets.has(edgePairKey(edge.sourceId, edge.targetId)) : undefined,
         },
         {
           edgeContains: tokens.edgeContains,
@@ -962,10 +1030,23 @@ export function drawTopologyFrame(params: FrameDrawParams): void {
     // 대체한다(이중 페이드 방지) + 미세 appearScale 을 이 값으로 몬다. 배치
     // 자식이 아니면 기존 그룹/월드-등장 경로(회귀 0).
     const batchAppear = batchAppearById?.get(node.id);
+    // 다섯째 티어 관통 채널도 **그룹 페이드를 대체한다** — `batchAppear` 와 같은
+    // 이유다. 이 노드의 `tierAlpha` 는 이미 `effectiveAlphaById` 를 거쳐 나오고,
+    // 그 값에 칩-펼침 램프가 들어 있다(`chipExpandReveal`). 여기서 그룹 페이드를
+    // 또 곱하면 알파가 **두 지수의 곱**이 되어, 칩이 "펼쳐졌다"고 말한 뒤로도
+    // 자식이 한참 오는 중이다(실측: 칩 90% 391ms vs 자식 621ms — 230ms 차,
+    // `design.md` 의 120ms "한 입력 = 한 사건" 임계 초과).
+    //
+    // 위 `batchAppear` 주석이 "이중 페이드 방지"라고 이미 적어 둔 그 가드인데,
+    // 이 채널이 나중에 붙느라 안 들어갔다. 두 램프가 같은 `clusterRevealTau` 를
+    // 쓰므로, 대체해도 페이드는 사라지지 않고 **한 번만** 일어난다.
+    const chipExpandReveal = expandRevealById?.get(node.id);
     const revealMul =
       batchAppear !== undefined
         ? Math.min(1, Math.max(0, batchAppear))
-        : Math.min(1, Math.max(0, nearestExpandedRevealMul(node.id)));
+        : chipExpandReveal !== undefined
+          ? 1
+          : Math.min(1, Math.max(0, nearestExpandedRevealMul(node.id)));
     const scaleDriver = batchAppear !== undefined ? Math.min(1, Math.max(0, batchAppear)) : appear;
     const appearScale = 0.6 + 0.4 * scaleDriver;
     const appearRevealAlpha = appear * revealMul;
@@ -1355,13 +1436,15 @@ export function drawTopologyFrame(params: FrameDrawParams): void {
       ctx,
       chipDrawInput,
       {
-        // rest = 조용한 중립 pill(border=nodeStrokeDomain) — 진짜 노드 선택
-        // 인디고와 경쟁 안 함. `＋`=인디고, 숫자=중립 numeralFace(포커스 중에도
-        // 포커스 노드가 attention winner). hover 에서만 인디고로 깨어난다.
+        // rest = **크롬은 콘텐츠보다 어둡다**(2026-07-31 위계석 실측: 칩 피크
+        // 102.5 대 자식 28.4 = 3.6배 역전). 칩 전용 rest 단은 램프 맨 아래이고
+        // (3.01/3.14:1) 어느 노드 stroke 보다 어둡다. rest 에서 인디고를 쓰지
+        // 않는 것이 핵심 — 인디고는 단일 악센트라 크롬이 상시로 쓰면 사용자가
+        // 부른 목적물과 경쟁한다. hover 에서 인디고로 깨어난다(아래 hover*).
         surface: tokens.nodeFillDim,
-        border: tokens.nodeStrokeDomain,
-        plusInk: tokens.indigo,
-        numeralInk: tokens.numeralFace,
+        border: tokens.clusterChipBorderRest,
+        plusInk: tokens.clusterChipInkRest,
+        numeralInk: tokens.clusterChipInkRest,
         tether: tokens.edgeContains,
         hoverSurface: tokens.nodeFillCapability,
         hoverBorder: tokens.indigo,
@@ -1557,11 +1640,17 @@ export function drawTopologyFrame(params: FrameDrawParams): void {
       isHovered,
       isHub: node.isHub,
     });
+    // 세로 범위는 **폰트에서 실측**한다 — 종전의 `ascent = fontSize` /
+    // `descent = 2`(상수) 근사는 위로 과잉·아래로 부족이었고, descent 가
+    // 상수인데 fontSize 는 줌에 따라 커져서 **확대할수록 아래가 더 샜다**.
+    // 폰트당 1회 측정 후 캐시(`measureLabelVerticalMetrics`), 실측 불가한
+    // 컨텍스트는 종전 근사로 폴백해 회귀 0.
+    const vertical = measureLabelVerticalMetrics(ctx, node.kind, labelScale);
     const boxAt = (baselineY: number) => ({
       minX: anchorX - width / 2,
       maxX: anchorX + width / 2 + markReserve,
-      minY: baselineY - fontSize,
-      maxY: baselineY + 2,
+      minY: baselineY - vertical.ascent,
+      maxY: baselineY + vertical.descent,
     });
     // E-4 — 아래가 남의 노드 도형으로 막혔으면 **이름을 버리기 전에 위로
     // 뒤집는다**. 억제만 하면 이 슬라이스가 없애려던 "이름 없는 도형"이 다시

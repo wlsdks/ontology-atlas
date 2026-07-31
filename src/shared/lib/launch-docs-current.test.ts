@@ -107,15 +107,25 @@ describe('current-surface launch docs', () => {
     expect(findings).toEqual([]);
   });
 
-  it('keeps dogfood node-count claims aligned with the ontology vault', async () => {
+  /**
+   * **수를 요구하지 않는다. 다만 있으면 맞아야 한다.** (2026-07-31 소유자 판정)
+   *
+   * 종전엔 이 문서들이 노드 수를 **적고 있으라고 강제**했다. 그게 정확히 이
+   * 저장소가 스스로 경계하는 썩음을 만들었다 — 노드는 아무나 추가하는데 산문은
+   * 손으로 고쳐야 하니, 게이트는 사람에게 "매번 네 곳을 갱신하라"를 요구하는
+   * 장치가 됐다. 실제로 AGENTS.md 가 정책대로 숫자를 빼자 CI 가 깨졌고, 그때
+   * 틀린 것은 문서가 아니라 게이트였다.
+   *
+   * 요구를 걷어내되 **거짓말 금지는 남긴다** — 문서가 수를 말하기로 했다면 그
+   * 수는 볼트와 같아야 한다. 이게 이 게이트의 진짜 가치이고, 산문이 명령
+   * (`node cli/src/index.mjs overview`)으로 바뀌어도 그대로 유효하다.
+   */
+  it('문서가 노드 수를 말한다면 그 수는 볼트와 같다 (수를 말할 의무는 없다)', async () => {
     const nodeCount = dogfoodVaultCensus(ROOT).total;
     const findings: string[] = [];
 
     for (const relPath of DOGFOOD_COUNT_DOCS) {
       const text = await readFile(path.join(ROOT, relPath), 'utf8');
-      if (!new RegExp(`\\b${nodeCount} nodes\\b|${nodeCount} 노드`).test(text)) {
-        findings.push(`${relPath}: expected ${nodeCount} dogfood nodes`);
-      }
       /**
        * **맞는 수가 있는 것만으로는 부족하다** — 틀린 수가 *함께* 있어도 위
        * 검사는 통과한다. 실제로 README 가 영문 절에 98, 한국어 절에 97 을 동시에
@@ -169,16 +179,10 @@ describe('current-surface launch docs', () => {
     expect(findings).toEqual([]);
   });
 
-  it('keeps the README dogfood kind breakdown aligned with the ontology vault', async () => {
-    const readme = await readFile(path.join(ROOT, 'README.md'), 'utf8');
-    const counts = dogfoodVaultCensus(ROOT).byKind;
-
-    expect(readme).toContain(`capabilities ${counts.capabilities}`);
-    expect(readme).toContain(`domains ${counts.domains}`);
-    expect(readme).toContain(`elements ${counts.elements}`);
-    expect(readme).toContain(`project ${counts.project}`);
-    expect(readme).toContain(`vault-readme ${counts['vault-readme']}`);
-  });
+  // [삭제됨 2026-07-31] README 가 kind 별 내역(capabilities 38 · elements 49 …)을
+  // 적고 있으라는 게이트. 위와 같은 이유 — 여섯 개 숫자를 손으로 동기화시키는
+  // 장치였고, 노드 하나만 추가돼도 무관한 PR 이 README 수정을 요구받았다.
+  // README 는 이제 `node cli/src/index.mjs overview` 를 부른다.
 
   it('keeps the packaged agent workflow aligned with current CLI, MCP, and dogfood facts', async () => {
     expect(MCP_TOOL_METADATA).toBeTruthy();

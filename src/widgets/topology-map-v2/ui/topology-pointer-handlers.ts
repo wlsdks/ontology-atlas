@@ -22,6 +22,7 @@
 
 import type { MouseEvent as ReactMouseEvent, PointerEvent as ReactPointerEvent } from "react";
 
+import { lastDrawnNodeAlphas } from "./topology-frame-draw";
 import { clampPointToPanBounds, type CameraAxes, type CameraTarget } from "../engine/camera";
 import type { CameraTween } from "../model/camera-easing";
 import { projectFlickLanding, sampleReleaseVelocity } from "../engine/momentum";
@@ -421,7 +422,18 @@ export function createTopologyPointerHandlers(refs: PointerHandlerRefs): Topolog
       tokens,
       px,
       py,
-      (node) => isNodeHittable(node, zoomRatio, focusedNodeId, neighborsOfFocused, tierRevealRef?.current ?? DEFAULT_TIER_REVEAL, clusteredIds, realmTierKinds),
+      (node) =>
+        isNodeHittable(
+          node,
+          zoomRatio,
+          focusedNodeId,
+          neighborsOfFocused,
+          tierRevealRef?.current ?? DEFAULT_TIER_REVEAL,
+          clusteredIds,
+          realmTierKinds,
+          // 드로우가 이번 프레임에 쓴 알파 — 관통 채널 전부를 단일 출처로 본다.
+          lastDrawnNodeAlphas(),
+        ),
       renderOffsetForNode,
     );
   };
@@ -503,7 +515,18 @@ export function createTopologyPointerHandlers(refs: PointerHandlerRefs): Topolog
     const neighborsOfFocused = focusedNodeId ? world.neighborMap.get(focusedNodeId) : undefined;
     const hittable = new Set(
       world.nodes
-        .filter((n) => isNodeHittable(n, zoomRatio, focusedNodeId, neighborsOfFocused, tierReveal, clusteredIds, realmTierKinds))
+        .filter((n) =>
+          isNodeHittable(
+            n,
+            zoomRatio,
+            focusedNodeId,
+            neighborsOfFocused,
+            tierReveal,
+            clusteredIds,
+            realmTierKinds,
+            lastDrawnNodeAlphas(),
+          ),
+        )
         .map((n) => n.id),
     );
     // 히트테스트 역전 방지(패널3-S3) — 끝 노드 몸통 반경(스크린 px)을

@@ -382,6 +382,92 @@ that artifact matters, which capability it serves, and what to verify before
 changing it. It replaces none of them — it tells the agent which structural
 question is worth asking.
 
+## How relations are stored
+
+There is no database. No schema migration, no sync button, no server. **A
+relation is one line of frontmatter**, and the graph is derived from those files
+every time they are read — never queried out of a prebuilt store.
+
+That has one consequence worth stating plainly: **the hierarchy is not a
+ceiling.** Containment (`project → domain → capability → element`) is only the
+structural layer. Meaning relations sit on top of it and cross it freely — a
+domain can point straight at another domain, and a capability can depend on one
+several branches away.
+
+Only the side that declares the relation writes anything:
+
+```yaml
+# capabilities/vault-live-updates.md — the declaring side
+---
+slug: capabilities/vault-live-updates
+kind: capability
+domain: vault-local-first
+dependencies:
+  - capabilities/topology-canvas-render   # directed: this leans on that
+relates:
+  - capabilities/mcp-conflict-guard       # symmetric: read these together
+---
+```
+
+```yaml
+# capabilities/topology-canvas-render.md — the receiving side writes nothing
+---
+slug: capabilities/topology-canvas-render
+kind: capability
+domain: views
+---
+```
+
+The target picks the edge up as a backlink. Writing it on both sides is allowed
+— the map folds the round trip into a single line.
+
+Two domains linking directly is ordinary, not a special case. From this
+repository's own vault:
+
+```yaml
+# domains/onboarding-ux.md
+---
+slug: domains/onboarding-ux
+kind: domain
+relates: [domains/views]        # a domain pointing at another domain
+---
+```
+
+| Frontmatter key | Relation | Direction |
+|---|---|---|
+| `capabilities:` · `elements:` · `contains:` | `contains` | directed (parent → child) |
+| `domain:` · `domains:` | `contains` | directed |
+| `dependencies:` | `depends_on` | **directed** |
+| `relates:` | `related_to` | **symmetric — no direction** |
+| `broader:` | `is_a` | directed (SKOS `skos:broader`) |
+| `describes:` | `describes` | directed |
+
+Direction is not decorative: the map draws a width taper on directed edges and a
+uniform stroke on symmetric ones, so `relates` never claims a causality it does
+not have. `src/shared/lib/ontology-tree/relations.ts` is the single source for
+that decision, and `derive-ontology-from-vault.ts` is where frontmatter becomes
+edges.
+
+Because the file *is* the record, adding a relation shows up as a one-line
+`git diff` — including when an agent is the one who added it:
+
+```diff
+- dependencies: [capabilities/topology-canvas-render]
++ dependencies: [capabilities/topology-canvas-render, capabilities/vault-validator]
+```
+
+Count them in any vault with the CLI — `overview` breaks relations down by type,
+`domain-matrix` shows which domains actually touch each other:
+
+```bash
+node $ATLAS/cli/src/index.mjs overview --vault docs/ontology
+node $ATLAS/cli/src/index.mjs domain-matrix --vault docs/ontology
+```
+
+The [guide chapter on relations](docs/guide/relations.md) walks through the same
+model with diagrams, and covers how the map keeps thousands of them legible
+(concentric rings, phyllotaxis packing, density gating, semantic zoom).
+
 ## Seven surfaces, one vault
 
 The journey above moves through them in order. Every surface reads and writes the
@@ -409,7 +495,7 @@ want someone to *see* the graph rather than install it.)
 
 | | |
 |---|---|
-| **Dogfooding** | This product describes itself: **98 nodes** — capabilities 38, elements 49, domains 6, document 3, project 1, vault-readme 1 — living in [`docs/ontology/`](docs/ontology/). The map also draws the source paths those files cite as evidence, which is why the app's census reads higher than the file count. |
+| **Dogfooding** | This product describes itself — domains, capabilities, and elements living in [`docs/ontology/`](docs/ontology/). Run `node cli/src/index.mjs overview` for the current census; the map's number reads higher than the file count because it also draws the source paths those files cite as evidence. |
 
 A test fails if those counts drift from the folder. Numbers in this README are
 checked against the vault, not maintained by hand.
@@ -491,6 +577,20 @@ pnpm vault:validate       # frontmatter integrity
 
 `pnpm checks:changed` picks the smallest sufficient subset for what you touched;
 [CONTRIBUTING.md](CONTRIBUTING.md) explains when to escalate to the full set.
+
+Map interaction cost is not covered by those gates — the canvas has no DOM, so a
+run that silently pans the background instead of dragging a node reports "fast"
+and is wrong. Measure it with the deterministic harness, which proves it grabbed
+a real node before quoting a number:
+
+```bash
+pnpm build && npx serve out -l 4173
+node scripts/perf-node-drag.mjs
+```
+
+The observation surface it drives (`?e2e=1` → `window.__atlasMap`) and the
+measurement discipline are documented in
+[docs/MAP-TESTABILITY.md](docs/MAP-TESTABILITY.md).
 
 ## Documentation
 

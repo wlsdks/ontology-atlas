@@ -4,6 +4,11 @@
 
 ## 디자인
 
+- **토폴로지 노드 클릭 → 풀스크린/풀블리드 상세 모달.** 클릭의 기본값은 ego
+  포커스 + 노드 옆 컴팩트 팝오버이고, 전체 상세는 팝오버 안의 opt-in 이다.
+  (이 한 줄이 여기 있는 이유: 나머지 금지는 값 규칙이라 lint 가 잡는데 이건
+  **상호작용 설계**라 못 잡고, `design.md` 는 UI 파일을 읽을 때만 실려서 —
+  새 표면을 처음부터 쓰는 경로에서는 안 실릴 수 있다. 상주가 필요하다.)
 - 보라 → 핑크 그라디언트
 - glassmorphism (`backdrop-blur-*`)
 - glow pulse · neon · halo animation
@@ -54,7 +59,7 @@ aura/particle/rarity(gold)/shimmer 를 허용했으나, fable 판정 B + 소유�
 
 - 인증 surface 부활 (login / signup / account / password reset) — **Layer 1 (로컬 코어) 에서는 영구 금지.**
 - Firebase / Firestore / Cloud Functions / Storage 의존 재도입 — R10 결정. Layer 1 에는 여전히 영구 금지.
-- **[v9 개정, 2026-07-17]** AGENTS.md 가 예약해 둔 cloud collab 재설계가 Layer 2 (Atlas Network) 로 조기 개시됐다 (`docs/PRODUCT-PLAN-2026-07.md`). Layer 2 의 네트워크 기능 (Spec / Hub / Team Sync 좌표 모델) 은 **신뢰 헌장 준수 시에만** 허용: ① Layer 1 은 영원히 무료·완전·오프라인 ② 조용한 수집 0, 전송은 opt-in + 로컬 감사 로그 ③ 로그인 강제 0 ④ 평문 마크다운 포터빌리티 절대 ⑤ 소급 변경 금지 ⑥ 보안 주장은 구현 공개 + 감사 초청이 있을 때만. 헌장 위반이 필요한 설계는 기능 폐기가 답이다.
+- **[v9 개정, 2026-07-17]** AGENTS.md 가 예약해 둔 cloud collab 재설계가 Layer 2 (Atlas Network) 로 조기 개시됐다 (`docs/plans/PRODUCT-PLAN-2026-07.md`). Layer 2 의 네트워크 기능 (Spec / Hub / Team Sync 좌표 모델) 은 **신뢰 헌장 준수 시에만** 허용: ① Layer 1 은 영원히 무료·완전·오프라인 ② 조용한 수집 0, 전송은 opt-in + 로컬 감사 로그 ③ 로그인 강제 0 ④ 평문 마크다운 포터빌리티 절대 ⑤ 소급 변경 금지 ⑥ 보안 주장은 구현 공개 + 감사 초청이 있을 때만. 헌장 위반이 필요한 설계는 기능 폐기가 답이다.
 - 위 헌장 밖의 백엔드 SDK 신규 도입은 여전히 금지.
 
 ## 코드 / 아키텍처

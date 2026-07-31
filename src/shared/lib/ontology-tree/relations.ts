@@ -73,3 +73,29 @@ const CONTAINMENT_RELATION_TYPES = new Set(["contains", "belongs_to"]);
 export function isContainmentRelation(type: string): boolean {
   return CONTAINMENT_RELATION_TYPES.has(type);
 }
+
+/**
+ * 방향이 **없는**(대칭) 관계 타입 — "비슷한 것" 처럼 양끝이 대등하다.
+ *
+ * `derive-ontology-from-vault.ts` 는 프론트매터 `relates:` 를 `related_to` 로
+ * 내고, MCP/스키마 쪽은 키 이름 `relates` 를 그대로 쓴다. 두 철자를 모두 담아
+ * 어느 경로로 들어와도 같은 판정을 받게 한다.
+ */
+const SYMMETRIC_RELATION_TYPES = new Set(["related_to", "relates"]);
+
+/**
+ * 이 관계에 **방향이 있는가** — 지도가 방향 테이퍼(source 굵 → target 얇)를
+ * 그려도 되는가의 단일 출처.
+ *
+ * 왜 필요한가: 토폴로지 어댑터가 `isContainmentRelation ? "contains" :
+ * "depends"` 로 2치 분류를 하는데, 그 "depends" 에 `related_to`(대칭)까지
+ * 섞여 들어와 **없는 방향을 그리고 있었다**. dogfood 실측(2026-07-31):
+ * containment 밖 관계 89개 중 `related_to` 가 **62개(70%)** — 관계선의
+ * 대다수가 거짓 인과를 주장한 셈이다.
+ *
+ * 기본값은 "방향 있음" 이다 — 모르는 타입은 종전 렌더를 유지해, 새 관계
+ * 타입이 생겨도 조용히 대칭으로 강등되지 않는다.
+ */
+export function isDirectionalRelation(type: string): boolean {
+  return !SYMMETRIC_RELATION_TYPES.has(type);
+}

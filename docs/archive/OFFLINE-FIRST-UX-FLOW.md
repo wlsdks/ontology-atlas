@@ -6,7 +6,7 @@
 
 관련:
 - `.claude/rules/local-first.md` — 헌장 (이 문서가 따른다)
-- `docs/LOCAL-FIRST-SYNC.md` — 4 운영 모드 (Static / Local / Cloud / Hybrid)
+- `docs/archive/LOCAL-FIRST-SYNC.md` — 4 운영 모드 (Static / Local / Cloud / Hybrid)
 - `.claude/rules/auth.md` — Firebase Auth (email/password + Google) 만 허용
 
 ---

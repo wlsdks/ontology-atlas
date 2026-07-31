@@ -1,6 +1,6 @@
 # Deployment
 
-> 2026-05 update — Round 10 removed all backend dependencies. The OSS now builds to a pure static site (`output: 'export'`), deployable to any static host (GitHub Pages, Vercel, Netlify, S3 + CloudFront, …). The canonical host is GitHub Pages; the old Firebase-specific guide is archived in [`docs/archive/DEPLOY-FIREBASE.md`](./archive/DEPLOY-FIREBASE.md) for historical reference only.
+> 2026-05 update — Round 10 removed all backend dependencies. The OSS now builds to a pure static site (`output: 'export'`), deployable to any static host (GitHub Pages, Vercel, Netlify, S3 + CloudFront, …). The canonical host is GitHub Pages. The old Firebase-specific guide was deleted along with the dependency — this line used to link to an archived copy that no longer exists (2026-07-31: the link had been dead, promising a document nobody could open).
 
 ## Build
 

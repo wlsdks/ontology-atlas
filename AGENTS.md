@@ -40,29 +40,12 @@ capability bridges plus honest degradation, never a fork. Full contract,
 including the web smoke gate that keeps the unattended surface alive:
 `.claude/rules/surfaces.md`.
 
-Before product, UX, graph, MCP, CLI, workflow, or macOS-shell changes, apply
-the mandatory PO gate in `docs/PRODUCT-OWNER-OPERATING-SYSTEM.md`. Write the
-compact PO pass before editing files unless the work is a clearly mechanical
-maintenance exception. This repo does not treat shipped output as product
-progress unless the change improves a clear human or AI-agent ontology workflow.
-If an agent cannot name the observed phenomenon, user problem, user moment,
-current alternative, ontology value, agent value, simplification, and
-verification plan, it must stop and do product discovery instead of
-implementing. Solution ideas come after the problem is understood. Requests
-phrased as "add X," "use Y," or "make it prettier" must be translated into the
-target user's observable problem before work starts. End non-trivial product
-passes with a PO verdict: `Do not build`, `Investigate first`, `Shape a slice`,
-or `Build and verify`; use the PO rubric to reject weak problem insight,
-generic differentiation, missing agent value, or verification that does not
-match the shipped surface.
-For UI, visual design, interaction, responsive layout, graph readability, or
-macOS workbench changes, also apply the design gate in
-`docs/PRODUCT-DESIGN-OPERATING-SYSTEM.md` after the PO pass. PO decides whether
-the slice is worth building; the design gate decides whether the surface
-hierarchy, graph semantics, responsive behavior, and agent handoff are good
-enough to ship. Relief/Topology changes must also name the attention layer
-model, 14-inch fullscreen collision rule, state contract, MCP/CLI handoff, and
-installed-app proof before implementation.
+**Two gates stand before implementation** — the PO gate for product/UX/graph/
+MCP/CLI/workflow/macOS-shell changes, then the design gate for anything visual.
+Shipped output is not product progress here unless it improves a real human or
+AI-agent ontology workflow. Both are specified under *Working principles* below;
+don't start a non-trivial change without them.
+
 For direction, see `docs/PRODUCT-DIRECTION.md`. For features users can use right now, see `docs/FEATURES.md`.
 
 The single guiding principle (v3, R11 fire #25):
@@ -74,136 +57,95 @@ Markdown frontmatter is the graph. The git repo is the source of truth. No backe
 ## Quick start
 
 ```bash
-pnpm install
-pnpm dev                          # http://localhost:3000 — pick a markdown folder and you're in
-pnpm test:run                     # vitest unit suite
-pnpm test:contracts               # focused cross-package contract suite
-pnpm exec tsc --noEmit
-pnpm lint
-pnpm build                        # static export → out/
-pnpm vault:validate               # frontmatter integrity (R11 — runs in CI too)
-pnpm test:vault:validate          # focused validator CLI argument contract
-pnpm vault:audit                  # capability/element path drift guard (R12)
-pnpm test:vault:audit             # focused vault audit CLI argument contract
-pnpm vault:migrate --list         # see registered schema migrations (R11)
-
-pnpm mcp:build-binary             # compile the MCP server into the app bundle payload (bun)
-
-# AI agent (Claude Code) auto-registers via this repo's `.mcp.json` — `mcp/README.md` has details.
+pnpm install && pnpm dev          # localhost:3000 — pick a markdown folder and you're in
+pnpm checks:changed               # start here: the focused checks for what you touched
 ```
 
-No `.env`, no auth provider, no backend setup needed. Round 10 (2026-05) permanently removed the optional Firebase / Firestore / Auth surface — the OSS is now pure local-first.
+**There is no setup step.** No `.env`, no auth provider, no backend, no seed data —
+if a task seems to need one, the design is wrong (Round 10 removed the optional
+Firebase/Auth surface permanently). `package.json` scripts carry the rest; the ones
+worth knowing by name are `vault:validate` (frontmatter integrity, also in CI),
+`agents:check` (this file's byte budget + agent-file drift), and `mcp:build-binary`
+(compiles the MCP server into the app bundle).
 
 ## Tech stack
 
-- **Framework** Next.js 16 · App Router · `output: 'export'`
-- **Language** TypeScript 5
-- **Style** Tailwind CSS 4 (`@theme` CSS-based tokens)
-- **i18n** next-intl 4.11 with `/[locale]/` URL prefix (en / ko)
-- **Visualization** Custom canvas-2D engine (`topology-map-v2`) for `/`, `/topology` · Graphology ForceAtlas2 (physics) · `/ontology/studio` (공방 / Compass Stage) is the write surface — the old xyflow ERD builder at `/ontology/edit` was RETIRED 2026-07-24 (the workshop covers assemble/connect/preview/write; `@xyflow/react` dependency removed). Sigma.js 는 folder-topology 미니맵 삭제(2026-07 P5)와 함께 의존성까지 제거
-- **Local-first** File System Access API + IndexedDB (vault handle persistence)
-- **AI agent** `@modelcontextprotocol/sdk` (stdin/stdout JSON-RPC server, `mcp/` package)
-- **State** in-memory + IndexedDB (vault handle) · React local state · URL state
-- **Architecture** Feature-Sliced Design (ESLint boundaries enforce import direction)
-- **Test** Vitest + Testing Library + jsdom · Playwright (E2E)
-- **Lint** ESLint 9 flat config
-- **Package** pnpm
+Versions live in `package.json` — read it rather than a copy here. What you can't
+read off the manifest:
+
+- **`output: 'export'`** — static export, so no server runtime, no API routes, no
+  server actions. Every "just add an endpoint" idea is out of bounds.
+- **The graph renderer is ours** — a custom canvas-2D engine (`topology-map-v2`),
+  not a graph library. Graphology supplies ForceAtlas2 physics only. **xyflow and
+  Sigma.js were removed** along with the surfaces that used them; re-adding a graph
+  rendering dependency needs a decision record, not a preference.
+- **State has no store** — in-memory + React local state + URL state, with IndexedDB
+  holding only the vault handle. The vault's markdown is the single source of truth.
+- **`/ontology/studio` is the write surface.** The old ERD builder at `/ontology/edit`
+  is a redirect.
 
 ## Folder map
 
-```
-app/                       Next.js routes (thin wrappers)
-src/                       FSD layers
-  ├── app/                 providers · initialization
-  ├── views/               page-level components
-  ├── widgets/             composite UI
-  ├── features/            interaction units
-  ├── entities/            business entities
-  └── shared/              UI · lib · config primitives
-mcp/                       MCP server (the AI agent's surface) — 32 tools. Compiled into the
-                           macOS app bundle by `pnpm mcp:build-binary`; not published to npm
-cli/                       CLI binary (developer's daily entry point) — 52 commands, run from a
-                           source checkout (`node cli/src/index.mjs`); not published to npm
-                           init / agent-setup / agent-files / add / import / list / find / validate / mcp-verify / query / compile / export
-                           analyze / infer-imports / bootstrap / preflight / snapshot
-                           backlinks / orphans / path / explain / all-paths / reachability / relation-check / relate / rename / merge / delete
-                           match-nodes / match-edges / domain-matrix / facets / schema / pattern-walk / project-map
-                           overview / hubs / blast-radius / cycles / components / topological-order / health
-                           agent-brief / workspace-brief / growth / maintenance / node / similar
-docs/                      long-form docs
-docs/ontology/             this project's own ontology vault (dogfood — 98 nodes)
-                           `.ontology-atlasignore` (gitignore-style) suppresses external
-                           element ref noise in growth_plan / maintenance_plan
-tests/                     Vitest unit + Playwright E2E
-  └── contract/            cross-package contract tests (parser 4-way, validator 3-way)
-scripts/                   vault tooling (R11) + perf baseline (R11) + dogfood walk (R12)
-                           build-docs-vault · validate-vault · migrate-vault
-                           dogfood-mcp-walk · perf-vault · perf-graph
-.claude/rules/             granular working rules (auto-loaded)
-```
+`src/` is Feature-Sliced Design: `app` (providers) · `views` (pages) · `widgets`
+(composite UI) · `features` (interaction units) · `entities` · `shared`.
+**Import direction is `app → views → widgets → features → entities → shared`** and
+ESLint blocks the reverse. `app/` at the repo root is Next.js routing — thin wrappers only.
 
-**Import direction**: `app → views → widgets → features → entities → shared`. ESLint blocks the reverse.
+What the tree doesn't tell you:
+
+- **`mcp/` and `cli/` are not published to npm** and never will be — the app bundle
+  carries the MCP server (`pnpm mcp:build-binary`), and the CLI runs from a source
+  checkout. `npx ontology-atlas …` is a 404, not a future feature.
+- **`docs/ontology/` is this project's own vault** (we dogfood). `.ontology-atlasignore`
+  suppresses external element-ref noise in growth/maintenance plans.
+- **`tests/contract/` holds cross-package contracts** — the same fixture run through
+  `src/`, `mcp/`, and `scripts/` parsers so they can't drift apart.
+- **`.claude/rules/` is mostly *not* auto-loaded** — three rules are resident and five
+  load only when you read matching files (`CLAUDE.md` has the table).
 
 ## Routes
 
-```
-/                          **who is asking decides** (2026-07-30, 「root-first-open」 뒤집기 구현).
-                           Web visitor with no vault → the gateway face (headline · download · "open it in
-                           the browser"), the same view `/download` renders. Web user with a vault, and the
-                           installed app → unchanged (map / first-run). The installed app must never show
-                           "download this app" to someone already running it — that half of root-first-open
-                           still stands. Single source: `isGatewaySurface()` in `shared/lib/nav-destination`.
-/topology                  the map — canvas-2D topology hub (map + INDEX + datasheet). This is now the
-                           map's own address; links that say "map" must point here, not at `/`
-                           (gate: `tests/contract/map-destination-route.contract.test.ts`)
-/projects                  project list (vault frontmatter `kind: project` docs)
-/project/[slug]            project detail (inline edit when vault is loaded)
-/project/[slug]/edit       full project editor
-/project/new               new project form
-/docs                      vault picker / editor / unified palette
-/ontology                  thin redirect → /topology?index=expanded (B3 허브가 곧 지도 — the old tree/ego hub is retired)
-/ontology/edit             RETIRED (2026-07-24) — the xyflow ERD builder was removed once the
-                           workshop covered assemble/connect/preview/write. Now a thin client
-                           redirect to /ontology/studio (forwarding any ?node= deep-link) so
-                           old bookmarks/agent-handoff links land in the workshop, not a 404.
-/ontology/studio           공방 (Compass Stage) — the vault write surface, restrained
-                           (no game energy; the old `--studio-*` glow/gem exception was RETIRED
-                           2026-07-24 — fable verdict B + owner: "게임처럼 중독되게" was a
-                           metaphor, and loot aesthetics eroded trust in decision material).
-                           One surface, two fill-states, no mode tabs: relation types nailed to
-                           fixed compass bearings (UP=상위개념/is_a · DOWN=담는것/contains ·
-                           RIGHT=기대는곳/depends · LEFT=비슷한것/relates); missing relations are
-                           dashed line-art sockets you fill via an inline anchored picker (near-dup
-                           suggestion + "새로 만들기" bridge) — filling writes a real frontmatter
-                           relation (or an MCP packet in a read-only vault). ENHANCE = a partially
-                           filled existing node (opened via `?node=`); CREATE (`?mode=create`) = the
-                           same surface all-empty (kind/name/domain/definition draft card). Completion
-                           reads from the center card's 4-side border + a plain progress caption;
-                           addictiveness comes from the loop, not bling. is_a is a real `broader`
-                           (SKOS) relation added across derive/schema/validator.
-/ontology/insights         graph insights (kind census · hubs · relation breakdown)
-/download                  the same gateway view as `/`, as an explicit deep link. Keeps the
-                           breadcrumb and the back-to-map link that `/` drops
-/guide                     the project guide — six chapters with a left table of contents,
-                           each rendering a `docs/guide/*.md` vault doc. Named `guide` (not
-                           `docs`) because `/docs` is already the vault workbench. Chapter
-                           order/slugs live once in `views/gateway-doc/model/guide-pages.ts`
-/guide/[segment]           one chapter. Static params come from that same registry
-/changelog                 renders `docs/CHANGELOG.md` from the vault, most recent 12 sections
-                           only; the screen says how many it folded and links the full file
-```
+Seventeen routes, all `[locale]` prefixed by next-intl; in-app links use
+`@/i18n/navigation`. The annotated list is `docs/ARCHITECTURE.md` — read it there
+rather than from a copy that drifts (it did: three copies existed and all three
+disagreed with the filesystem, 2026-07-31).
 
-> Round 10 (2026-05) permanently removed: `/login`, `/signup`, `/account`, `/reset-password`, `/settings/*`, and earlier rounds had already removed `/admin/*`, `/review/*`, `/diagnostics/*`, `/knowledge/*`. Cloud entity API, Firestore subscribers, manual node/edge cloud modals, screenshot uploader (Firebase Storage) are all gone. Future cloud collab features will be re-designed when sponsorship / collaboration requests come.
+What you can't derive from `app/[locale]/`:
 
-All routes are `[locale]` prefixed by next-intl; in-app links use `@/i18n/navigation`.
+- **`/` is decided by who is asking** (2026-07-30). A web visitor with no vault gets
+  the gateway face — the same view `/download` renders. A web user with a vault, and
+  the installed app, get the map / first-run unchanged. **The installed app must never
+  offer "download this app" to someone already running it.** Single source:
+  `isGatewaySurface()` in `shared/lib/nav-destination`.
+- **`/topology` is the map's address, not `/`.** Any link that says "map" points there
+  (gate: `tests/contract/map-destination-route.contract.test.ts`).
+- **`/ontology` and `/ontology/edit` are redirects**, kept so old bookmarks and
+  agent-handoff links land somewhere real instead of a 404.
+- **`/ontology/studio` is the write surface** — relation types at fixed compass
+  bearings (UP=is_a · DOWN=contains · RIGHT=depends · LEFT=relates), empty ones dashed
+  sockets that write a real frontmatter relation when filled.
+- **Adding or removing a route needs a `docs/DECISIONS.md` entry in the same change** —
+  `pnpm decisions:check` enforces it. Retired namespaces (`/login`, `/signup`,
+  `/account`, `/reset-password`, `/settings/*`, `/admin/*`, `/review/*`,
+  `/diagnostics/*`, `/knowledge/*`) stay retired; `.claude/rules/forbidden.md` says why.
 
 ## Working principles
 
 The detailed rules live in `.claude/rules/*.md` and Claude Code auto-loads them. Other tools should reference the same rules from there.
 
 - **Architecture · FSD boundaries** — `@.claude/rules/architecture.md`
-- **Product owner gate** — `@docs/PRODUCT-OWNER-OPERATING-SYSTEM.md` is mandatory before feature, UX, graph, MCP, CLI, workflow, or macOS-shell changes. Start with the observed phenomenon and user problem, then the user moment, current alternative, ontology value, agent value, simplification, and verification plan; write a compact PO pass before implementation; ship outcomes, not output lists. Translate solution-shaped requests into observable problems first, then end with a PO verdict (`Do not build`, `Investigate first`, `Shape a slice`, or `Build and verify`) and use the PO rubric before coding. If the pass starts from a solution instead of evidence, pause and do discovery. Treat this as the project's product-owner authority, not as optional strategy prose.
-- **Product design gate** — `@docs/PRODUCT-DESIGN-OPERATING-SYSTEM.md` is mandatory for UI, visual design, interaction, graph readability, responsive layout, and macOS workbench changes. Use it after the PO pass to name the design council lens, surface hierarchy, graph semantics, responsive contract, agent handoff contract, and installed-app proof. Public references are principle sources only; never copy proprietary assets or styling.
+- **Product owner gate** — `@docs/PRODUCT-OWNER-OPERATING-SYSTEM.md`, mandatory before
+  feature, UX, graph, MCP, CLI, workflow, or macOS-shell changes. It is this project's
+  product authority, not optional strategy prose. Requests shaped as "add X" / "use Y" /
+  "make it prettier" get translated into the target user's observable problem *first*;
+  a pass that starts from a solution means stop and do discovery. The template, the
+  six-row rubric, and the four verdicts live in that file — run `/po-pass` and follow it
+  rather than working from memory.
+- **Product design gate** — `@docs/PRODUCT-DESIGN-OPERATING-SYSTEM.md`, mandatory for UI,
+  visual design, interaction, graph readability, responsive layout, and macOS workbench
+  changes. Runs *after* the PO pass: PO decides whether the slice is worth building, this
+  decides whether it is good enough to ship. Public references are principle sources only —
+  never copy another product's assets or wording.
 - **Solo PO pass** — `@.claude/skills/po-pass/SKILL.md` is the **daily** path and the one
   the founding failure actually took: read the ledger, separate phenomenon from problem
   with three discrimination tests, self-score the six rubric rows quoting their anchors,
@@ -281,55 +223,47 @@ The detailed rules live in `.claude/rules/*.md` and Claude Code auto-loads them.
 
 Use the smallest sufficient context. Prefer precise structural tools and compact summaries over broad file reads or pasted output.
 
-Official OpenAI basis: [Codex AGENTS.md](https://developers.openai.com/codex/guides/agents-md) loads before work and is capped by `project_doc_max_bytes` (32 KiB default); [Codex skills](https://developers.openai.com/codex/skills) use progressive disclosure; [Codex MCP](https://developers.openai.com/codex/mcp) server instructions should keep the first 512 characters self-contained; [Codex hooks](https://developers.openai.com/codex/hooks) run inside the agent lifecycle; [Codex memories](https://developers.openai.com/codex/memories) are useful local recall but not the source of required team rules. OpenAI API guidance also recommends using fewer input/output tokens, doing less serial work, keeping stable prompt content first, and adding dynamic context later to improve [latency](https://developers.openai.com/api/docs/guides/latency-optimization) and [prompt caching](https://developers.openai.com/api/docs/guides/prompt-caching).
+**This file has a hard byte budget.** Codex caps it at `project_doc_max_bytes`
+(32 KiB default) and **silently drops everything past the cap** — no warning,
+mid-sentence. So anything added here pushes something else off the end for one
+of our two named agents. `pnpm agents:check` fails the build when we exceed it;
+keep detail in the file that owns it and leave a pointer here.
+([Codex AGENTS.md](https://developers.openai.com/codex/guides/agents-md) ·
+[skills](https://developers.openai.com/codex/skills) are the progressive-disclosure
+mechanism this budget assumes.)
 
-- Keep stable instructions stable and near the top of prompts/files so model providers can reuse cached prefixes.
+- Keep stable instructions stable and near the top so providers reuse cached prefixes.
 - Start structural repo work with CodeGraph, then open only the exact files or symbols still needed.
 - Ask the ontology only focused questions (`get_concept`, `find_path`, `query_ontology` with narrow operations). Avoid full `list_concepts` dumps unless the task genuinely needs the whole vault.
 - Verify focused-first. Start with `pnpm checks:changed` (or `pnpm checks:changed -- <path...>`) and direct sibling/unit/contract checks for touched paths. Escalate to full `pnpm test:run`, `pnpm lint`, `pnpm build`, broad Playwright, or desktop packaging only when shared contracts, routing, config, release surfaces, or user-facing workflows changed, or when focused checks leave a concrete risk uncovered.
 - Summarize large command output before carrying it forward. Preserve decisions, failing lines, metrics, and file paths; drop progress bars, repeated logs, and boilerplate.
+- **Don't delegate what you can finish in a handful of tool calls, and don't spawn a
+  subagent to double-check your own work.** A subagent earns its cost by *isolating
+  context* — it burns tokens privately and hands back a short answer. Re-verification
+  is not that. The councils are the deliberate exception, and their point is
+  **independence** (the party that wants to build must not sign the gate), not extra
+  verification passes.
 - Use memory as an index, not a transcript: search the registry, open only the one or two relevant notes, and verify drift-prone facts live.
 - Do not run or add hooks that inject long dynamic context. SessionStart hooks must stay concise; PreToolUse hooks should block risky actions only, not record routine activity.
 - Mention residual uncertainty instead of loading more context reflexively.
 
-## Code intelligence — CodeGraph
+## Code intelligence — CodeGraph (only if your client has it)
 
-CodeGraph builds a semantic knowledge graph of codebases for faster, smarter code exploration. This is tool-agnostic — any agent with the `codegraph` MCP server configured should follow it. The local index lives in `.codegraph/` (gitignored — it is a SQLite db + a live daemon socket, never committed).
+If the `codegraph` MCP server is configured for your client, it is **mandatory
+for structural work here**: start feature work, bug fixes, refactors,
+architecture questions, and impact analysis with the matching CodeGraph tool
+rather than reading source files. Answer *directly* from it — it is the
+pre-built index, so re-deriving its answers with a grep/read loop or a
+file-reading sub-agent costs more for the same result. Raw Read/Grep is for
+literal strings, docs, config, and details CodeGraph didn't cover.
 
-### If `.codegraph/` exists in the project
+Which tool for which question is documented by the server's own tool
+descriptions — read those instead of a copy here that drifts. If `.codegraph/`
+is missing, offer to run `codegraph init -i`.
 
-**CodeGraph is mandatory for structural work in this repo.** Before reading source files for feature work, bug fixes, refactors, architecture questions, or impact analysis, use the matching CodeGraph tool first. Native `rg` / file reads are allowed after that for literal strings, docs, config, generated assets, or when CodeGraph explicitly lacks the detail needed.
-
-**Answer directly with CodeGraph — don't delegate exploration to a file-reading sub-agent or a grep/read loop.** CodeGraph *is* the pre-built search index; re-deriving its answers with grep + Read repeats work it already did and costs more for the same result. For "how does X work?", architecture, trace, or where-is-X questions, answer in a handful of CodeGraph calls and stop — typically with **zero file reads**. The returned source is complete and authoritative: treat it as already read and do not re-open those files. Reach for raw Read/Grep only to confirm a specific detail CodeGraph didn't cover.
-
-Mandatory starting points:
-
-- New task / unfamiliar feature area → `codegraph_context`
-- Flow question → `codegraph_trace`
-- Symbol lookup → `codegraph_search`
-- Impact before editing shared code → `codegraph_impact`
-- Directory or file inventory → `codegraph_files`
-- Index freshness / suspected lag → `codegraph_status`
-
-**Tool selection by intent:**
-
-| Tool | Use For |
-|------|---------|
-| `codegraph_context` | Map a task / feature / area first — composes search + node + callers + callees in one call |
-| `codegraph_trace` | "How does X reach Y" — the call path, each hop's body inline (follows dynamic-dispatch hops grep can't) |
-| `codegraph_explore` | Survey several related symbols' source in ONE budget-capped call |
-| `codegraph_search` | Find a symbol by name |
-| `codegraph_callers` / `codegraph_callees` | Walk call flow one hop at a time |
-| `codegraph_impact` | Check what's affected before editing |
-| `codegraph_node` | Get a single symbol's source / signature |
-
-A direct CodeGraph answer is a handful of calls; a grep/read exploration is dozens.
-
-### If `.codegraph/` does NOT exist
-
-At the start of a session, ask the user if they'd like to initialize CodeGraph:
-
-"I notice this project doesn't have CodeGraph initialized. Would you like me to run `codegraph init -i` to build a code knowledge graph?"
+> Not configured for every client. `.codex/config.toml` registers only
+> `ontology-atlas`, so Codex has no CodeGraph and this section does not apply
+> to it.
 
 ## 🚫 npm publish guard
 
@@ -345,22 +279,32 @@ When docs and code disagree, the code wins. For framework / build / routing fact
 
 Long-form docs:
 
-- `@docs/FOUNDATIONS.md` — **what grounds the product**: citable ontology theory (Gruber · Studer/Fensel · W3C RDF/OWL/SKOS), the agent-memory / LLM×KG landscape (MemGPT · Zep · GraphRAG · Pan et al.), code-knowledge-graph precedents (Code Property Graphs · Glean · CodeQL), and the cited design lineage (Rams · Tufte · Linear). All references web-verified. Read before naming / positioning / design decisions.
-- `@docs/PRODUCT-OWNER-OPERATING-SYSTEM.md` — mandatory PO gate for deciding whether feature, UX, graph, MCP, CLI, or workflow work is worth doing, how to shape it, when to simplify, and how to verify the outcome.
-- `@docs/PRODUCT-DESIGN-OPERATING-SYSTEM.md` — mandatory design gate for Relief/Topology surface hierarchy, interaction states, graph semantics, responsive behavior, macOS workbench quality, and MCP/CLI handoff readability.
+- `@docs/FOUNDATIONS.md` — **what grounds the product**: citable ontology theory, the
+  agent-memory / LLM×KG landscape, code-knowledge-graph precedents, and the cited design
+  lineage, all web-verified. Read before naming / positioning / design decisions.
 - `@docs/PRODUCT-DIRECTION.md` — mission direction
 - `@docs/FEATURES.md` — features users can use right now
 - `@docs/ARCHITECTURE.md` · `@docs/DESIGN-SYSTEM.md`
 - `@docs/CHANGELOG.md` — chronological user-visible changes
-- `@mcp/README.md` — AI agent partner (MCP 32 tools — read 19 + write 13) registration + usage
+- `@mcp/README.md` — MCP tool registration + usage (the AI agent's surface)
 - `@docs/archive/` — historical analysis docs (no longer normative)
+
+(The two operating-system gates are listed under *Working principles* above — this
+section does not repeat them.)
 
 ## This project's own ontology
 
 This project describes its own mental model in `docs/ontology/` as frontmatter markdown (dogfooding — we describe ourselves in our own data format).
 
 - Entry points: `docs/ontology/README.md` · `docs/ontology/project.md`
-- 98 nodes (capability 38 · document 3 · domain 6 · element 49 · project 1 · vault-readme 1)
+- Census: `node cli/src/index.mjs overview` — **no document writes the number.**
+  It changes every time anyone adds a node, so a pinned count rots silently (it did:
+  97 → 98 went unnoticed). Docs name the command instead — including `README.md`,
+  `docs/BACKLOG.md`, and the launch docs, which used to state it (2026-07-31: the
+  gate that *forced* them to keep the number was deleted; it was preserving exactly
+  the rot this rule exists to prevent). The one place a count still appears is the
+  copy the **app renders on screen** — that is a claim to a user, so it stays gated
+  by `tests/contract/dogfood-node-count.contract.test.ts` · `launch-docs-current.test.ts`.
 - AI agents query it via the `mcp/` MCP server — registration guide in `mcp/README.md`, example in `.mcp.json.example`
 - When you discover a new domain / capability / element, add it to the same directory (with the MCP `add_concept` tool, or by hand)
 
@@ -378,19 +322,19 @@ The vault is the **shared mental model** between the developer and the AI agent.
 
 A 30-second read at the top of the task often replaces a 10-minute re-discovery in the code.
 
-**Bootstrap an empty vault** (R16). When a user just ran `ontology-atlas init` on a fresh repo and the vault has only the 5 starter nodes, don't make the user hand-author every node. Use the **`/ontology-bootstrap`** skill (`.claude/skills/ontology-bootstrap/SKILL.md` or `.agents/skills/ontology-bootstrap/SKILL.md`):
+**Three ingress paths, three skills.** Each carries its own protocol — read the
+skill rather than a summary here (that is what progressive disclosure is for).
+Both `.claude/skills/<name>/SKILL.md` and `.agents/skills/<name>/SKILL.md` hold
+the same file; `pnpm agents:check` fails if the two copies drift.
 
-- It calls `index_project` for evidence, then calls `analyze_repo_structure` with the complete meaning `proposal`. **Side effect 0** — semantic evidence carries `trust`/`riskFlags`; the round-trip `proposalValidation` checks definitions, citations, risk controls, confidence, domain placement, and competency answers. Require `canWrite:true` before user approval and any write. Vault NOT modified.
-- It separates observed source/import facts from proposed meanings and persisted shared concepts. Every proposed domain/capability needs a definition, includes/excludes boundary, citation, confidence, counterexample check, and competency-question coverage; folders/packages remain element evidence unless product meaning is independently supported.
-- Shows the evidence-backed proposal compactly, lets the user accept / select / refine, then lands only accepted concepts and relations via `add_concepts` / `add_relations`. Single source of truth preserved — only the user (via your subsequent calls) writes to the vault.
-- Companion to `/ontology-sync` (incremental, post-bootstrap) and `/ontology-extract` (prose ingress).
+| Input | Skill | When |
+|---|---|---|
+| Cold start — fresh `init`, only the 5 starter nodes | `/ontology-bootstrap` | Don't make the user hand-author every node. Proposes from evidence, writes nothing until they accept |
+| A code change you just made | `/ontology-sync` | The end-of-task loop below |
+| Prose — meeting note, PR description, RFC | `/ontology-extract` | Duplicate avoidance is the primary value; hallucinated nodes are the failure mode |
 
-**Extract from prose** (R+). When the user shares a meeting note, PR description, RFC draft, or any prose paragraph and asks to "extract ontology from this" or similar, use the **`/ontology-extract`** skill (`.claude/skills/ontology-extract/SKILL.md` or `.agents/skills/ontology-extract/SKILL.md`):
-
-- Cross-checks the prose against the existing vault via `find_evidence` / `similar_nodes` first — duplicate avoidance is the primary value.
-- Proposes a small set of candidate nodes/edges (typically 0–3 per paragraph). Asks the user to pick which to land *before* writing.
-- Only confirmed candidates land via `add_concept` / `add_concepts` / `patch_concept` / `add_relation`. Hallucinated nodes are the failure mode; the prose-source quote in the body is the audit trail.
-- Distinguishes itself from `/ontology-sync` (code change input) and `/ontology-bootstrap` (cold start) — *three ingress paths* (code / code-change / prose) for the same vault.
+All three share one rule: **only confirmed candidates land.** The proposal step
+never writes to the vault.
 
 **Write at the end of a task** (the part that's easy to skip). When a unit of work introduced a new capability / element / domain, or renamed/folded an existing one, mirror the change in the vault:
 

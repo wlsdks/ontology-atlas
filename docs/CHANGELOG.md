@@ -7,6 +7,37 @@
 
 ---
 
+## 2026-07-31 — 가이드가 「관계는 어떻게 생기나」로 답한다
+
+**지도만 보면 계층이 천장처럼 보인다.** 허브에서 도메인이 방사형으로 뻗는 모양
+때문에 "도메인끼리는 관계를 못 갖나", "이건 미리 설계된 데이터를 조회하는 건가",
+"관계는 DB 에 있나 md 에 있나" 라는 질문이 나온다. 셋 다 답이 코드에는 있었지만
+사용자가 읽는 자리에는 없었다.
+
+**가이드에 일곱째 장이 생겼다** — 「관계는 어떻게 생기나」(`/guide/relations`).
+방사형으로 보이는 건 구조(담김)뿐이고 그 위에 의미 관계가 따로 얹혀 계층을
+가로지른다는 것을, 이 저장소 자기 볼트의 실측으로 보인다: 구조 밖 의미 관계 95개
+(`relates` 67 + `dependencies` 28), 도메인 6개 사이의 가로지르는 관계 60개,
+이어진 도메인 쌍 22가지. 도메인이 도메인을 `relates` 로 직접 가리키는 실제
+frontmatter 도 함께 싣는다.
+
+**"DB 가 아니라 md" 를 예시 둘로 보인다.** 관계를 선언하는 쪽과 받는 쪽을 나란히
+놓아 **한쪽만 적으면 된다**는 것과, 관계 추가가 `git diff` 한 줄로 남는다는 것을
+보인다. frontmatter 키 → 그래프 관계 → 방향 유무 대응표와, 그 방향이 지도에서
+선 모양(실선 = 구조 · 파선+테이퍼 = 방향 · 파선+균일 = 대칭)으로 보인다는 것도
+같은 표에 있다.
+
+**합성 볼트의 오해도 여기서 끊는다.** `?synth=` 로 연 지도에 도메인 간 선이 없는
+것은 제품의 한계가 아니라 그 합성기가 `contains` 한 종류만 만들기 때문이다.
+지도의 모양을 판단하기 전에 어느 볼트를 열었는지 먼저 보라고 적었다.
+
+**알고리즘도 같은 장에 그림으로 넣었다** — 동심 링 배치, 부채꼴이 폭주할 때의
+황금각 나선(phyllotaxis), 자식 12개 임계의 밀도 게이트, 줌 배율별 의미 줌, 그리고
+"그려질 노드만 완화한다"(3,000노드에서 완화가 전체 비용의 99.8%). README 에도
+같은 모델을 짧게 적고 이 장으로 잇는다.
+
+---
+
 ## 2026-07-31 — 읽는 페이지가 화면 가운데로 오고, 가이드와 변경 내역에 차례가 생겼다
 
 **산문이 한쪽에 쏠려 있었다.** `/guide` · `/changelog` 를 관문의 「모든 원소가 같은
@@ -2321,7 +2352,7 @@ opus5 검수에서 실측한 P0: 저장 대기 변경 1건이 있는 상태로 �
 
 ## 2026-07-25 — 디자인 전면 정비 Phase 5 (개인화)
 
-계획: `docs/DESIGN-OVERHAUL-2026-07-25.md` "G. 개인화" (#20·#21).
+계획: `docs/plans/DESIGN-OVERHAUL-2026-07-25.md` "G. 개인화" (#20·#21).
 
 - **캔버스 배경 3종 (#20)** — 지도 배경을 설정에서 고른다: **도트**(기본, 현
   blueprint grid — 변경 없음) · **성좌**(고정 시드 별점, 세션/기기 불변) ·
@@ -2338,7 +2369,7 @@ opus5 검수에서 실측한 P0: 저장 대기 변경 1건이 있는 상태로 �
 
 ## 2026-07-25 — 디자인 전면 정비 Phase 4 (온보딩·문서함·프로젝트)
 
-계획: `docs/DESIGN-OVERHAUL-2026-07-25.md` "E. 온보딩/에이전트" · "F. 프로젝트 탭".
+계획: `docs/plans/DESIGN-OVERHAUL-2026-07-25.md` "E. 온보딩/에이전트" · "F. 프로젝트 탭".
 
 - **AI 에이전트 원클릭 연결 (#12·#17·C13)** — 스니펫 복사 우선 방식을 뒤집어
   클라이언트별 버튼 4개(Claude Code·Cursor·VS Code·Codex)로. 지도 시트와
@@ -2361,7 +2392,7 @@ opus5 검수에서 실측한 P0: 저장 대기 변경 1건이 있는 상태로 �
 
 ## 2026-07-25 — 디자인 전면 정비 Phase 3 (공방·모션)
 
-계획: `docs/DESIGN-OVERHAUL-2026-07-25.md` "C. 모션 문법" · "D. 공방 후속" · C14.
+계획: `docs/plans/DESIGN-OVERHAUL-2026-07-25.md` "C. 모션 문법" · "D. 공방 후속" · C14.
 
 - **모션 문법 토큰 (신설)** — 공방·인사이트의 사용성 모션 단일 패밀리
   `--motion-fast(120ms)/base(180ms)/settle(240ms)/ease`. 전부 transform/opacity,
@@ -2383,7 +2414,7 @@ opus5 검수에서 실측한 P0: 저장 대기 변경 1건이 있는 상태로 �
 
 ## 2026-07-25 — 디자인 전면 정비 Phase 2 (지도 정합 5건)
 
-계획: `docs/DESIGN-OVERHAUL-2026-07-25.md` "B. 지도(Topology) 정합" · "H".
+계획: `docs/plans/DESIGN-OVERHAUL-2026-07-25.md` "B. 지도(Topology) 정합" · "H".
 
 - **살아있는 그래프(물리) 토글 제거 (#19)** — 지도 우상단 "그래프" 토글과
   상시 ForceAtlas2 물리 경로를 제거했다. 상시 시뮬은 읽기의 위치 안정성을
@@ -2404,7 +2435,7 @@ opus5 검수에서 실측한 P0: 저장 대기 변경 1건이 있는 상태로 �
 ## 2026-07-25 — codex 검수 C-A 배치 (신뢰·데이터 정합 P1 7건)
 
 전체 검수에서 나온 신뢰·데이터 정합 결함 7건. 계획:
-`docs/DESIGN-OVERHAUL-2026-07-25.md` "Codex 전체 검수" C-A 절.
+`docs/plans/DESIGN-OVERHAUL-2026-07-25.md` "Codex 전체 검수" C-A 절.
 
 - **인사이트 건강도 ↔ CLI 정합 (C1)** — `/ontology/insights` 가
   auto-heal 된 그래프로 "100% 수리할 것 없음" 을 보이면서 `ontology-atlas
@@ -2428,7 +2459,7 @@ opus5 검수에서 실측한 P0: 저장 대기 변경 1건이 있는 상태로 �
 ## 2026-07-25 — 디자인 전면 정비 Phase 1 (디자인 시스템 파운데이션)
 
 22건 정비의 토대가 되는 캐노니컬 컴포넌트·토큰을 세웠다. 계획:
-`docs/DESIGN-OVERHAUL-2026-07-25.md`, 상세: `docs/DESIGN-SYSTEM.md` "컨트롤
+`docs/plans/DESIGN-OVERHAUL-2026-07-25.md`, 상세: `docs/DESIGN-SYSTEM.md` "컨트롤
 인벤토리" 절.
 
 - **캐노니컬 다크 Select (#4)** — `src/shared/ui/select.tsx`. macOS 회색 시스템
@@ -4106,7 +4137,7 @@ reduced-motion 즉착 경로를 그대로 재사용. 초기 로드/샘플에는 
 수요와 실제 카피 사이에 다리가 없었다. README에 "codebase map / agent
 memory / context layer" 시장 어휘를 잇는 브릿지 문단과 유산 선언 문장("이
 지도는 당신 디스크의 마크다운") 추가. 신규
-[`docs/CASE-STUDY-AGENTS-MD-DRIFT.md`](CASE-STUDY-AGENTS-MD-DRIFT.md) —
+[`docs/audits/CASE-STUDY-AGENTS-MD-DRIFT.md`](CASE-STUDY-AGENTS-MD-DRIFT.md) —
 AGENTS.md/CLAUDE.md drift 커뮤니티 고통 → 이 저장소가 실제로 쓰는 해법(단일
 진실원 + thin wrapper) → context rot 완화책으로서의 vault, 세 단계 케이스
 스터디. README에 Karpathy "Obsidian is the IDE; the LLM is the programmer;
@@ -4802,7 +4833,7 @@ RELATIONS) 를 각인한다. 목업 데이터 0.
 - 01/02/03 카드 · OSS 스펙 테이블 · CTA 를 machined 스타일(1px border-soft
   + 컴팩트 radius + 음각 index)로 통일. 다크/라이트 · en/ko 모두 지원.
 
-제품 계획 v9 (`docs/PRODUCT-PLAN-2026-07.md`) 네트워크 트랙 N0 실행 — 이미
+제품 계획 v9 (`docs/plans/PRODUCT-PLAN-2026-07.md`) 네트워크 트랙 N0 실행 — 이미
 구현·검증된 vault frontmatter 스키마를 `docs/ONTOLOGY-ATLAS-SPEC.md` 공개
 명세로 승격했다. 새 필드/규칙 없음, 문서 전용. 5 kind · 관계 타입 ·
 untrusted-content 원칙 · 준수 테스트로 기존 contract test 스위트를 인용한다.
@@ -4813,7 +4844,7 @@ untrusted-content 원칙 · 준수 테스트로 기존 contract test 스위트�
 10인 × 3라운드 · 도입 심사 10인). 캘리브레이션 결과 기획 단계 평가 7.6은
 Obsidian/dbt 의 기획 단계 소급 점수(7.3)를 상회 — 문서 단계 종료 판정.
 
-- **`docs/PRODUCT-PLAN-2026-07.md` 신설** — canonical 제품 계획. 1차 타겟을
+- **`docs/plans/PRODUCT-PLAN-2026-07.md` 신설** — canonical 제품 계획. 1차 타겟을
   "2~10인 팀 테크리드" 단일로 정밀화, 매직 모먼트·kill criteria 13행·해자
   5층·승인 3계층·인젝션 방어 Tier 1~3 정의.
 - **정체성 개정** — R10 "클라우드 영구 제거"를 2층 구조로 개정 (AGENTS.md 의

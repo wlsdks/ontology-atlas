@@ -1,12 +1,14 @@
 import { describe, expect, it } from "vitest";
 
 import {
+  clusterBadgeCenter,
   clusterBadgeLabel,
   clusterBadgeRect,
   clusterChipLabel,
   clusterChipOccupancyRect,
   clusterChipRect,
   clusterChipScale,
+  clusterChipTravelPoint,
   CLUSTER_BADGE_HEIGHT,
   CLUSTER_CHIP_HEIGHT,
 } from "./cluster-chips";
@@ -185,5 +187,97 @@ describe("clusterChipOccupancyRect (S11 라벨 예약)", () => {
     const large = clusterChipOccupancyRect({ ...base, expanded: false, scale: 1.5 })!;
     expect(large.w).toBeCloseTo(small.w * 1.5);
     expect(large.h).toBeCloseTo(small.h * 1.5);
+  });
+});
+
+/**
+ * **칩은 간극을 건너뛰지 않고 걸어간다** — B-3 ①.
+ *
+ * 접힘 알약은 anchor 에, 펼침 배지는 부모 우상단에 있고 그 둘은 실측 51~147px
+ * 떨어져 있다. 종전에는 그 사이를 알파 크로스페이드로만 건넜다 — 하나의 표시가
+ * 자리를 옮긴 게 아니라 **여기서 사라지고 저기서 나타났다.** 눈이 따라갈 선이
+ * 없으면 사용자는 둘을 같은 것으로 안 읽는다.
+ *
+ * 재는 것은 "예쁜가"가 아니라 **도착하는가**다: 전이가 끝나는 지점에서 알약의
+ * 자리와 배지의 자리가 같아야 크로스페이드가 간극 위가 아니라 한 점에서
+ * 일어난다. 프레임 실측은 design-motion 의 `/motion-verify` 몫이고, 여기서는
+ * 그 판정이 성립할 **기하 전제**를 잠근다.
+ */
+describe("clusterChipTravelPoint — 칩이 배지 자리로 걸어간다", () => {
+  const base = {
+    screenX: 100,
+    screenY: 400,
+    parentScreenX: 220,
+    parentScreenY: 300,
+    nodeScreenRadius: 14,
+    scale: 1,
+  };
+
+  it("정착 상태에서는 anchor 에서 한 픽셀도 안 움직인다 — 회귀 0", () => {
+    // revealT 미지정(하위호환)과 0(접힘 정착) 둘 다 종전 좌표 그대로여야 한다.
+    for (const revealT of [undefined, 0]) {
+      const p = clusterChipTravelPoint({ ...base, revealT });
+      expect(p, `revealT=${String(revealT)}`).toEqual({ x: base.screenX, y: base.screenY });
+    }
+  });
+
+  it("전이가 끝나면 배지 자리에 **도착한다** — 크로스페이드가 한 점에서 일어난다", () => {
+    const arrived = clusterChipTravelPoint({ ...base, revealT: 1 });
+    const badge = clusterBadgeCenter(
+      base.parentScreenX,
+      base.parentScreenY,
+      base.nodeScreenRadius,
+      base.scale,
+    );
+    expect(arrived.x).toBeCloseTo(badge.x, 6);
+    expect(arrived.y).toBeCloseTo(badge.y, 6);
+  });
+
+  it("중간에서는 두 점 사이에 있다 — 순간이동이 아니다", () => {
+    const mid = clusterChipTravelPoint({ ...base, revealT: 0.5 });
+    const badge = clusterBadgeCenter(
+      base.parentScreenX,
+      base.parentScreenY,
+      base.nodeScreenRadius,
+      base.scale,
+    );
+    expect(mid.x).toBeCloseTo((base.screenX + badge.x) / 2, 6);
+    expect(mid.y).toBeCloseTo((base.screenY + badge.y) / 2, 6);
+  });
+
+  it("목적지를 모르면 움직이지 않는다 — 표류 금지", () => {
+    // 부모 좌표/반지름이 없으면(디그레이드 경로) 배지도 안 그려진다. 그때
+    // 알약만 어딘가로 흘러가면 그건 이동이 아니라 표류다.
+    for (const missing of [
+      { parentScreenX: undefined },
+      { parentScreenY: undefined },
+      { nodeScreenRadius: undefined },
+    ]) {
+      const p = clusterChipTravelPoint({ ...base, ...missing, revealT: 1 });
+      expect(p).toEqual({ x: base.screenX, y: base.screenY });
+    }
+  });
+
+  it("점유 사각형이 이동을 따라간다 — 빈 자리를 피하지 않는다", () => {
+    // 라벨 회피가 anchor 를 계속 피하면, 걸어간 알약의 실제 잉크 위에 라벨이
+    // 얹힌다. 드로우와 점유가 같은 이동점을 써야 한다.
+    //
+    // ⚠️ 전이 **중간**에서 잰다. `revealT: 1` 은 알약이 완전히 사라진 상태라
+    // 기존 규칙("사라지는 형태는 점유하지 않는다")이 먼저 걸려 null 이 되고,
+    // 그건 옳다 — 안 보이는 칩이 라벨을 밀어내면 유령 여백이다.
+    const revealT = 0.5;
+    const rect = clusterChipOccupancyRect({
+      ...base,
+      count: 7,
+      hovered: false,
+      expanded: false,
+      revealT,
+    });
+    const travel = clusterChipTravelPoint({ ...base, revealT });
+    expect(rect).not.toBeNull();
+    expect(rect!.x + rect!.w / 2).toBeCloseTo(travel.x, 6);
+    expect(rect!.y + rect!.h / 2).toBeCloseTo(travel.y, 6);
+    // anchor 에 머물러 있지 않다는 것이 이 테스트의 요점.
+    expect(rect!.x + rect!.w / 2).not.toBeCloseTo(base.screenX, 1);
   });
 });

@@ -18,7 +18,7 @@ import { readTelemetry, TELEMETRY_RELATIVE_PATH } from '../lib/telemetry.mjs';
 
 // `ontology-atlas absorb` — dry-run default, --write lands the plan,
 // backup + slim-pointer rewrite, injection-suspect exclusion. See
-// docs/PRODUCT-PLAN-2026-07.md §9 Slice 0.
+// docs/plans/PRODUCT-PLAN-2026-07.md §9 Slice 0.
 
 let tmp;
 let vault;

@@ -1,3 +1,11 @@
+---
+paths:
+  - "docs/**/*.md"
+  - "*.md"
+  - "mcp/README.md"
+  - "cli/README.md"
+---
+
 # 문서 유지 규칙
 
 ## 원칙
@@ -22,14 +30,9 @@
 
 ## 코드-문서 쌍
 
-| 코드 변경 | 함께 수정해야 할 문서 |
-|---|---|
-| 새 라우트 추가 | `docs/FEATURES.md` + `docs/ARCHITECTURE.md` |
-| 새 커맨드 / 스크립트 | `README.md` |
-| 아키텍처 재구성 | `docs/ARCHITECTURE.md` + `AGENTS.md` |
-| 디자인 토큰 추가 | `docs/DESIGN-SYSTEM.md` + `app/globals.css` |
-| MCP 도구 추가·rename | `mcp/README.md` + `docs/ontology/capabilities/mcp-server.md` + dogfood README |
-| 새 capability / domain / element 노드 | `docs/ontology/<kind>s/<slug>.md` (dogfood) |
+**표는 `.claude/rules/git.md` 로 옮겼다** — 상주 규칙이라 코드를 고치는 사람에게
+실린다. 이 파일은 `.md` 를 열 때만 실려서, 짝을 빠뜨릴 사람에게는 도달하지
+않았다.
 
 ## 자주 하는 실수
 

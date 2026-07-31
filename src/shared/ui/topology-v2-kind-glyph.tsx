@@ -10,7 +10,7 @@
  * marks must read as shrunk copies of the same node/edge the canvas draws,
  * in both surfaces.
  *
- * 아이콘 세트 (Phase 5 #21, `docs/DESIGN-OVERHAUL-2026-07-25.md`): 이 컴포넌트가
+ * 아이콘 세트 (Phase 5 #21, `docs/plans/DESIGN-OVERHAUL-2026-07-25.md`): 이 컴포넌트가
  * 앱 전역 DOM kind-glyph 의 **단일 게이트웨이**다. `useGlyphSet()` 으로 현재
  * 세트를 읽어 렌더 스타일만 바꾼다 — kind→실루엣 매핑은 세트 간 **불변**
  * (기하=fill+stroke, 라인=stroke-only 얇은 획). 설정에서 세트를 바꾸면 이

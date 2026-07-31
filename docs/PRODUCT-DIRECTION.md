@@ -12,7 +12,7 @@
 > 진입 표면도 2원화: 공개 웹 = 랜딩(획득), 설치형 앱 = 옵시디언식 first-run
 > (볼트 열기, 마케팅 0).
 
-> **[v9, 2026-07-17] 현행 방향은 `docs/PRODUCT-PLAN-2026-07.md` 가 canonical 이다.**
+> **[v9, 2026-07-17] 현행 방향은 `docs/plans/PRODUCT-PLAN-2026-07.md` 가 canonical 이다.**
 > v9 요지: 2층 정체성 (Layer 1 로컬 코어 불변 + Layer 2 Atlas Network — Spec 표준 · Hub · 수요 게이트 뒤 Team Sync) · 1차 타겟을 "2~10인 팀 테크리드" 단일로 정밀화 · v8 의 다중 이해관계자 문구는 "질문자 (게이트 뒤)" 모델로 정정 · 신선도 증명 (drift 감지 + 승인 3계층 + 인젝션 방어) 이 핵심 차별화. 이 파일의 v2~v8 본문은 역사 기록으로 보존한다.
 
 > Written (v2): 2026-05-01
@@ -588,7 +588,7 @@ When an agent enters the codebase, it sees this on the first page and picks up t
 2. ✅ 32 tools (read 19 + write 13): connection/root/toolset proof, vault-scoped Git status/history and local snapshots, persisted Workshop context (`builder_context` compatibility operation), list/get/find/query/compile/validate/analyze/index reads, batch concept/relation writes, narrow relation removal/replacement, concept patch/reclassification, and dry-run-first rename/merge/delete/absorb writes.
 3. ✅ CLI command (`ontology-atlas`) — `node <checkout>/cli/src/index.mjs init <folder>` scaffolds the vault from a source checkout. The installed app `/docs` "Create starter seed" button is the no-terminal alternative. (npm publishing retired 2026-07-27; there is no `npx` channel.)
 4. ⏸ Auto-generated AGENTS.md — DEFERRED (manual updates + dogfood vault cover this)
-5. ✅ `docs/ontology/` dogfood vault — 98 nodes describing our own mental model, including agent-practice notes as document nodes
+5. ✅ `docs/ontology/` dogfood vault — describes our own mental model, including agent-practice notes as document nodes (census: `node cli/src/index.mjs overview`)
 
 ### Agent practitioner concerns map
 

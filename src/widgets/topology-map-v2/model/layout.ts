@@ -80,6 +80,27 @@ export interface LayoutOptions {
    * tests (and a manual escape hatch) set this; production always runs `"grid"`.
    */
   relaxStrategy?: "grid" | "bruteforce";
+  /**
+   * 충돌 완화를 **이 집합 안의 노드에만** 적용한다. 밖의 노드는 씨앗 좌표에
+   * 고정된 채 장애물 역할만 한다(밀되 밀리지 않는다). 생략하면 전부 완화 —
+   * 종전 동작 그대로다.
+   *
+   * **왜 필요한가**: 씨앗 배치(부채꼴 + phyllotaxis)는 싸고 완화가 비싸다 —
+   * 실측(2026-07-31) N=3,000 에서 씨앗 4.3ms 대 전체 2,253ms 로 **완화가
+   * 99.8%** 다. 그런데 그 완화의 대부분은 **화면에 한 번도 그려지지 않는
+   * 노드**를 위한 것이다: 밀도 게이트가 자식 12개 초과 부모를 접어 element
+   * 의 95%가 칩 뒤로 숨는다(N=3,000 → 2,954개 중 2,806개).
+   *
+   * 안 그리는 것을 위해 겹침을 푸는 계산이 **느린 PC 에서 13.5초 프리즈**를
+   * 만들었다(CPU 6배 스로틀 실측). 범위를 「이번에 그려질 것」으로 좁히면
+   * 같은 볼트가 7.5ms 다 — **284배**. 10,000노드에서는 417배이고, 겹침 품질도
+   * 오히려 낫다(오늘 14 → 0): 보이지 않는 노드의 혼잡이 보이는 노드의 자리를
+   * 갉아먹지 않기 때문이다.
+   *
+   * 씨앗 좌표는 **전부** 계산한다 — 티어가 열리거나 칩을 펼칠 때 좌표가
+   * 비어 있지 않아야 줌 공개가 그대로 동작한다.
+   */
+  relaxScope?: ReadonlySet<string>;
 }
 
 const DEFAULT_RADII: LayoutRadii = { project: 25, domain: 17, capability: 11, element: 7 };
@@ -366,10 +387,20 @@ function coincidentSeparation(id: string): { x: number; y: number } {
  * far apart, only local siblings / cross-fan boundaries move — the aligned
  * "circuit" star-chart survives, the dense fans stop piling.
  */
+/**
+ * 충돌 해소가 실제로 만지는 최소 형태 — `x`/`y` 뿐이다. `PlacedPoint`(angle
+ * 포함)와 `LayoutPoint`(id 포함) 둘 다 이 형태를 만족하므로, 최초 배치와
+ * 증분 재완화가 **같은 완화 코드**를 쓴다(두 벌로 갈라지면 드리프트한다).
+ */
+interface MutablePoint {
+  x: number;
+  y: number;
+}
+
 interface RelaxItem {
   id: string;
   kind: LayoutNodeKind;
-  point: PlacedPoint;
+  point: MutablePoint;
   pinned: boolean;
 }
 
@@ -437,9 +468,18 @@ function relaxCollisions(
   const padding = options.relaxPadding ?? DEFAULT_RELAX_PADDING;
   const strategy = options.relaxStrategy ?? "grid";
 
-  const items: RelaxItem[] = nodes
-    .map((n) => ({ id: n.id, kind: n.kind, point: placed.get(n.id), pinned: n.kind === "project" }))
-    .filter((it): it is RelaxItem => it.point !== undefined);
+  const scope = options.relaxScope;
+  // 범위 밖 노드는 **items 에서 아예 뺀다** — 고정 장애물로 남겨 두면 이동은
+  // 막히지만 그리드 재구축과 쌍 열거는 그대로 돌아 비용이 안 준다(실측:
+  // 핀만 걸었을 때 N=3,000 이 2,081ms 로 변동 없음). 범위 밖은 이 볼트에서
+  // 한 번도 그려지지 않으므로 범위 안 노드가 그 위에 겹쳐도 화면에 영향이 없다.
+  const items: RelaxItem[] = [];
+  for (const n of nodes) {
+    if (scope !== undefined && !scope.has(n.id)) continue;
+    const point = placed.get(n.id);
+    if (point === undefined) continue;
+    items.push({ id: n.id, kind: n.kind, point, pinned: n.kind === "project" });
+  }
 
   if (items.length < 2) return;
 
@@ -563,4 +603,88 @@ function relaxGrid(
       }
     }
   }
+}
+
+/**
+ * 펼침으로 **새로 보이게 된 노드**만 국소 완화한다 (2026-07-31).
+ *
+ * `relaxScope` 는 월드를 지을 때 한 번 정해진다 — 그때는 아무것도 펼쳐져 있지
+ * 않으므로, 칩을 펼치면 그 자식들이 **씨앗 자리 그대로** 나타난다. 한 부모의
+ * 자식끼리는 phyllotaxis 간격이 이미 충돌을 막지만(실측: 겹침 0), **다른
+ * 부모의 부채와는 겹친다** — 3개 펼침에서 5건, 6개에서 18건, 12개에서 70건.
+ *
+ * 전체를 다시 완화하면 두 가지가 나빠진다: ① 비용이 누적된다(12개 펼침에서
+ * 141ms, 24개에서 341ms) ② **이미 보고 있던 노드가 움직인다**(최대 15 유닛) —
+ * 사용자 발밑이 흔들린다.
+ *
+ * 그래서 items 를 둘로만 채운다:
+ * - **새로 보이는 노드** — 완화 대상(움직인다)
+ * - **그 bbox 근처의 이미 놓인 노드** — 고정 장애물(안 움직인다)
+ *
+ * 공간 이웃은 클릭 수와 무관하게 **상수**다(실측: 클릭당 107~134 items,
+ * 2번째 클릭이든 12번째든 같다). 부채가 유계(phyllotaxis 디스크)라서 그렇다.
+ *
+ * `points` 를 **제자리에서 수정**한다 — 호출부가 월드 좌표를 그대로 쓰기 때문.
+ */
+export function relaxNewlyVisible(
+  points: Map<string, LayoutPoint>,
+  nodes: readonly LayoutGraphNode[],
+  newlyVisibleIds: ReadonlySet<string>,
+  alreadyPlacedIds: ReadonlySet<string>,
+  options: LayoutOptions = {},
+): void {
+  if (newlyVisibleIds.size === 0) return;
+  const radii = options.radii ?? DEFAULT_RADII;
+  const iterations = options.relaxIterations ?? DEFAULT_RELAX_ITERATIONS;
+  const padding = options.relaxPadding ?? DEFAULT_RELAX_PADDING;
+
+  // 1) 새로 보이는 것들의 bbox — 이 근처만 충돌할 수 있다.
+  let minX = Infinity;
+  let minY = Infinity;
+  let maxX = -Infinity;
+  let maxY = -Infinity;
+  for (const id of newlyVisibleIds) {
+    const p = points.get(id);
+    if (!p) continue;
+    if (p.x < minX) minX = p.x;
+    if (p.x > maxX) maxX = p.x;
+    if (p.y < minY) minY = p.y;
+    if (p.y > maxY) maxY = p.y;
+  }
+  if (!Number.isFinite(minX)) return;
+  // 여백 = 가장 큰 두 반지름 + padding. 이보다 먼 노드는 원리적으로 못 닿는다.
+  const maxRadius = Math.max(radii.project, radii.domain, radii.capability, radii.element);
+  const margin = 2 * maxRadius + padding;
+
+  // 2) items = 새로 보이는 것(자유) + bbox 이웃(고정).
+  const kindById = new Map(nodes.map((n) => [n.id, n.kind]));
+  const items: RelaxItem[] = [];
+  for (const id of newlyVisibleIds) {
+    const point = points.get(id);
+    const kind = kindById.get(id);
+    if (!point || !kind) continue;
+    items.push({ id, kind, point, pinned: false });
+  }
+  for (const id of alreadyPlacedIds) {
+    if (newlyVisibleIds.has(id)) continue;
+    const point = points.get(id);
+    const kind = kindById.get(id);
+    if (!point || !kind) continue;
+    if (
+      point.x < minX - margin ||
+      point.x > maxX + margin ||
+      point.y < minY - margin ||
+      point.y > maxY + margin
+    ) {
+      continue;
+    }
+    items.push({ id, kind, point, pinned: true });
+  }
+
+  if (items.length < 2) return;
+  if (options.relaxStrategy === "bruteforce") {
+    relaxBruteForce(items, radii, padding, iterations);
+    return;
+  }
+  relaxGrid(items, radii, padding, iterations);
 }

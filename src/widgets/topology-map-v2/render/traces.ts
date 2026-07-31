@@ -98,6 +98,16 @@ export interface TraceDrawState {
   b: Point;
   control: Point;
   relationType: "contains" | "depends";
+  /**
+   * 이 관계에 **방향이 있는가**(`shared/lib/ontology-tree/relations#isDirectionalRelation`).
+   * `relationType === "depends"` 는 containment 가 아닌 것 **전부**를 담는
+   * 2치 분류라, 그 안에 대칭 관계(`related_to`)까지 섞여 있다. 방향 테이퍼
+   * (source 굵 → target 얇)는 방향이 실재할 때만 그린다 — 대칭 관계는
+   * **균일 굵기**로, 양끝이 대등하다는 사실을 그대로 인코딩한다.
+   *
+   * 생략 시 `true`(종전 렌더). 모르는 타입이 조용히 대칭으로 강등되지 않는다.
+   */
+  directional?: boolean;
   egoState: "ego" | "dim" | "normal";
   farT: number;
   /** 0..1 progress of the ambient comet-tail / pulse position along the curve, `depends` edges only. */
@@ -136,6 +146,13 @@ export interface TraceDrawState {
    * 유지한다. `depends` 엣지는 이 필드를 쓰지 않는다(항상 기존 규칙).
    */
   containsCometEligible?: boolean;
+  /**
+   * 상시 앰비언트 `depends` 코멧의 캡 통과 여부. 형제 갈래(contains)의
+   * `containsCometEligible` 과 같은 문법 — false 면 파티클 없이 본체 파선만
+   * 그린다. 생략 시 `true`(캡 없던 종전 동작)라 호출부가 캡을 안 넘겨도
+   * 회귀하지 않는다.
+   */
+  dependsCometEligible?: boolean;
 }
 
 export interface TraceTokens {
@@ -233,7 +250,19 @@ export function draw(ctx: CanvasRenderingContext2D, state: TraceDrawState, token
   }
 
   ctx.strokeStyle = stroke;
-  if (isDepends) {
+  // 대칭 관계(`related_to`)는 파선을 쓰되 **테이퍼를 주지 않는다** — 양끝이
+  // 대등하다는 사실을 균일 굵기로 인코딩한다. 굵기는 테이퍼의 **평균**(1.0)을
+  // 쓴다: 시작 굵기(1.4)에 맞추면 화면 잉크가 49% 늘고, 평균이면 총 잉크가
+  // 테이퍼선과 0.02% 차로 같다(2026-07-31 브라우저 렌더 실측).
+  const tapered = isDepends && state.directional !== false;
+  if (isDepends && !tapered) {
+    ctx.beginPath();
+    ctx.setLineDash(DEPENDS_DASH);
+    ctx.moveTo(a.x, a.y);
+    ctx.quadraticCurveTo(control.x, control.y, b.x, b.y);
+    ctx.lineWidth = Math.max(0.35, width);
+    ctx.stroke();
+  } else if (tapered) {
     // 방향 테이퍼: source→target 로 얇아지는 가변폭 폴리라인. dash 연속성은
     // 세그먼트마다 `lineDashOffset` 을 누적 길이로 이어붙여 유지하고, round
     // cap/join 으로 세그먼트 이음매를 매끄럽게 한다(화살촉 없음 — 방향은 굵기).
@@ -277,6 +306,9 @@ export function draw(ctx: CanvasRenderingContext2D, state: TraceDrawState, token
     // 위상 전진은 `updateParticles`(reduced-motion 이면 정지)가 소유하므로
     // reduced-motion 사용자에겐 여기서도 미표시 → "아무 것도 안 움직인다" 유지.
     if (state.reducedMotion === true) return;
+    // 캡 미통과 엣지는 파선 본체만 남기고 파티클을 그리지 않는다 — 상시성·
+    // 속도·포커스 무관성은 그대로이고 **동시에 흐르는 점 개수만** 유계가 된다.
+    if (state.dependsCometEligible === false) return;
 
     // comet tail — three shrinking dots trailing the live pulse position,
     // thinning toward hairline dust as altitude rises rather than fading via

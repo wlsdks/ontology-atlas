@@ -2230,10 +2230,26 @@
     --topology-v2-node-fill-domain: #191920;
     --topology-v2-node-fill-capability: #17171d;
     --topology-v2-node-fill-element: #15151a;
-    --topology-v2-node-stroke-project: #57575f;
-    --topology-v2-node-stroke-domain: #48484f;
-    --topology-v2-node-stroke-capability: #3c3c44;
-    --topology-v2-node-stroke-element: #34343b;
+    /*
+     * 지도 잉크의 **깊이 축** — 단일 진실원 (2026-07-31, 체계석 판정).
+     *
+     * 노드 stroke 와 containment 엣지는 **같은 트리 깊이**를 두 번 그리는
+     * 것이다(요소=leaf=l2 · 역량=mid=contains · 도메인=top=l0). 두 군을 따로
+     * 적었더니 세 짝이 대비 0.02 이내로 우연히 수렴했는데, 그건 운이지 계약이
+     * 아니다 — 다음 사람이 한쪽만 고치면 아무 경고 없이 갈라진다.
+     * ("값이 두 곳에 적히면 이미 드리프트가 시작된 것" — Carbon.)
+     *
+     * 값은 전부 WCAG 1.4.11(비텍스트 3:1) 위다: leaf 3.22 · mid 3.42 · top 3.96.
+     */
+    --topology-v2-ink-depth-leaf: #60606d;
+    --topology-v2-ink-depth-mid: #646471;
+    --topology-v2-ink-depth-top: #6e6e79;
+    /* project 는 깊이 축 위 한 단 — 대응하는 containment 엣지가 없다(프로젝트
+       위에 부모가 없으므로). 그래서 축의 별칭이 아니라 자기 값을 갖는다. */
+    --topology-v2-node-stroke-project: #797984;
+    --topology-v2-node-stroke-domain: var(--topology-v2-ink-depth-top);
+    --topology-v2-node-stroke-capability: var(--topology-v2-ink-depth-mid);
+    --topology-v2-node-stroke-element: var(--topology-v2-ink-depth-leaf);
     --topology-v2-node-fill-dim: #1a1a1e;
     --topology-v2-node-stroke-dim: #2b2b2f;
     /* 최근 변경 스포트라이트 rest 알파 (협의회 설계 2026-07-23). product
@@ -2277,6 +2293,26 @@
     --color-footprint-trail-indigo: #c8d2ff;
     --topology-v2-numeral-shadow: #08080a;
     --topology-v2-numeral-face: #8c8c94;
+    /*
+     * 클러스터 칩 rest 잉크 — **크롬은 콘텐츠보다 어둡다**(2026-07-31).
+     *
+     * 칩은 rest 에서 `nodeStrokeDomain`(3.96:1) 을 보더로, `numeralFace`
+     * (5.83:1) 를 숫자로, `indigo`(4.24:1) 를 `＋` 로 빌려 썼다. 셋 다
+     * **자식 노드 stroke(3.22~3.42:1)보다 밝다.** 위계석 실물 실측:
+     * 칩 피크 휘도 102.5 대 자식 28.4 = **3.6배**. 지도의 일은 연결과
+     * 개념을 보여주는 것인데 요약 버튼이 가장 밝았다.
+     *
+     * 그래서 칩만의 rest 단을 램프 **맨 아래**에 만든다 — WCAG 1.4.11
+     * (UI 컨트롤 3:1)은 지키되 어느 노드보다 어둡다:
+     *   칩 3.01/3.14 < element 3.22 < capability 3.42 < domain 3.96 < project 4.63
+     *
+     * hover/focus 는 종전 인디고 그대로다(`hoverBorder`/`hoverInk`) — 손이
+     * 닿은 것은 밝아져야 하고, 그 순간엔 칩이 실제 목적물이다.
+     * rest 에서 인디고를 빼는 것이 핵심이다: 인디고는 이 앱의 단일 악센트라
+     * 크롬이 상시로 쓰면 사용자가 부른 목적물과 경쟁한다.
+     */
+    --topology-v2-cluster-chip-border-rest: #5c5c65;
+    --topology-v2-cluster-chip-ink-rest: #5f5f65;
     /* 노드 금속 광택(sheen): 세로 그라디언트 상단 틴트 + 혼합비.
        drawNode 가 lerp(fill, tint, blend) 을 상단 stop 으로 써서 machined
        금속 표면을 만든다. far-field(farT>=0.98)/소형(r<=3) 에서는 dissolve. */
@@ -2322,14 +2358,14 @@
        밝던 역전을 바로잡는다. contains 는 그래프의 골격이라 호버 없이
        overview 에서 읽혀야 하고(1.32 → 1.83:1), depends 는 영향범위 추론의
        최고가치 관계라 contains 보다 분명히 위여야 한다(1.78 → 2.42:1). */
-    --topology-v2-edge-contains: #3a3a42;
+    --topology-v2-edge-contains: var(--topology-v2-ink-depth-mid);
     /* P3a 잉크 사다리 — containment 깊이는 hue 가 아니라 명도×굵기로 (순서
        데이터의 올바른 채널, Bertin). L0(project 뼈대)는 더 진하게, L2
        (역량-요소 잔가지)는 살짝 물러나되 B1 이전 값(1.32:1)보다는 진하게 —
        위계를 세우면서 가독 회복을 되돌리지 않는다. L1 은 기존
        --topology-v2-edge-contains 그대로. */
-    --topology-v2-edge-contains-l0: #45454e;
-    --topology-v2-edge-contains-l2: #333339;
+    --topology-v2-edge-contains-l0: var(--topology-v2-ink-depth-top);
+    --topology-v2-edge-contains-l2: var(--topology-v2-ink-depth-leaf);
     /* B2 잔여 (Guardian 사후검증) — 두 끝점이 모두 화면 밖인 관통 엣지는
        어떤 관계도 "보여주지" 못하면서 딥줌 화면을 실타래로 만든다. 컬링은
        기하학적으로 불가(곡선이 실제로 화면을 지나감) — 대신 잉크를 강등해
@@ -2379,7 +2415,19 @@
      * 용접돼 오히려 내용 대비 상대 운동이 생긴다.
      */
     --topology-v2-canvas-bg-parallax: 0.82;
-    --topology-v2-edge-depends: #4c4c63;
+    /*
+     * `depends` 는 **깊이 축 밖**이다 (2026-07-31, 체계석 판정). 위계가 아니라
+     * 관계 **범주**라, 명도 사다리의 한 단이 아니라 별도 채널(파선 + 인디고
+     * 틴트)로 구분된다 — P3a 의 "위계는 명도, 관계 종류는 hue" 와 같은 결.
+     *
+     * 그래서 "엣지는 노드 stroke 의 80% 이하" 같은 사다리 간 상한을 걸지
+     * 않는다. 그 규칙은 두 사다리가 **경쟁한다**고 전제하는데, containment
+     * 엣지는 노드와 같은 축이고(위 별칭) depends 는 아예 다른 축이라 비교
+     * 대상이 아니다. 구속 조건은 둘뿐이다: WCAG 3:1 이상(3.61), 그리고 이
+     * 지도에서 가장 밝은 마크(project stroke 4.63)를 넘지 않는다 — 관계가
+     * 어떤 개체보다 큰 소리를 내지는 않는다.
+     */
+    --topology-v2-edge-depends: #666685;
     --topology-v2-edge-dim: #1e1e22;
     --topology-v2-hull-stroke: #3a3a42;
     /* canvas-emphasis 슬라이스: 프로젝트 라벨은 Layer-0 컨테이너 앰버 정체성을
@@ -3386,11 +3434,16 @@ body[data-no-tabbar] [data-tabbar="primary"] {
  * `StageMap` 이 마운트/언마운트에서 속성을 걸고 풀며 캐시를 무효화한다.
  */
 html[data-gateway-stage] {
-  /* 잉크 — 캔버스(#08080b) 위 3:1 이상으로 올린다. 라벨은 4.5:1 목표. */
-  --topology-v2-edge-contains: #626270;
-  --topology-v2-edge-contains-l0: #757583;
-  --topology-v2-edge-contains-l2: #55555f;
-  --topology-v2-edge-depends: #6f6f8c;
+  /*
+   * 엣지 잉크 오버라이드는 **제거됐다**(2026-07-31). 이 블록이 생긴 이유는
+   * 워크벤치 기본 엣지가 1.6~2.4:1 로 관문 미리보기에서 안 보였기 때문인데,
+   * 그 기본값 자체를 3:1 위로 올리면서 여기 값이 오히려 **더 낮아졌다**
+   * (구 `-l2: #55555f` = 2.71:1 < 새 기본 `#60606c` = 3.21:1). 남겨 두면
+   * 관문만 강등된다. 이제 관문은 워크벤치 잉크를 그대로 상속한다.
+   *
+   * 라벨은 관문이 여전히 한 단 밝다 — 지도가 "만져 보는" 자리라 이름이
+   * 먼저 읽혀야 한다.
+   */
   --topology-v2-label-capability: #aeaeb8;
   --topology-v2-label-element: #9a9aa4;
 

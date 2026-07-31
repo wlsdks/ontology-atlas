@@ -49,6 +49,7 @@ workspace briefs, graph health, handoff packets, or memory update diffs.
 | [`../mcp/README.md`](../mcp/README.md) | MCP registration, 32 tools, tool contracts, verification | Canonical agent interface |
 | [`../cli/README.md`](../cli/README.md) | CLI commands, graph workflows, installed-package checks | Canonical developer terminal interface |
 | [`DESIGN-SYSTEM.md`](DESIGN-SYSTEM.md) | Visual language, tokens, forbidden patterns | Canonical UI style guide |
+| [`MAP-TESTABILITY.md`](MAP-TESTABILITY.md) | Observing the canvas map from outside (`?e2e=1` → `window.__atlasMap`), and the measurement discipline that a 2026-07-31 six-false-negative incident produced | Canonical map test surface |
 | [`DEPLOYMENT.md`](DEPLOYMENT.md) | Static export deployment | Current, small |
 | [`CHANGELOG.md`](CHANGELOG.md) | Chronological user-visible changes | Historical ledger |
 | [`BACKLOG.md`](BACKLOG.md) | Working queue and deferred questions | Operational, may be noisy |

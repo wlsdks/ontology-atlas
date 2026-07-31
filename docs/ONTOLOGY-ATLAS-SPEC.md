@@ -73,7 +73,7 @@ for new behavior.
   GitHub Discussions enabled.
 - **Feedback window**: 8 weeks from publication. This window matches this
   project's own kill-criteria commitment — the product plan
-  (`docs/PRODUCT-PLAN-2026-07.md`, §11) states that if the RFC receives zero
+  (`docs/plans/PRODUCT-PLAN-2026-07.md`, §11) states that if the RFC receives zero
   outside feedback in 8 weeks, the standardization track is shelved in favor
   of the core local-first product, and the spec draft is not resurrected
   until a new signal (partner request, real adoption) appears.
@@ -380,7 +380,7 @@ community vault sharing exists) a stranger's PR, and none of that changes
 its status as content to be *read and reasoned about*, never *obeyed*.
 
 Conformant tooling MUST implement, at minimum (Tier 1, ship-blocking per
-`docs/PRODUCT-PLAN-2026-07.md` §7):
+`docs/plans/PRODUCT-PLAN-2026-07.md` §7):
 
 - Wrap vault body content passed into an LLM context in an explicit
   untrusted-content boundary (e.g. `<untrusted_vault_content>` tags) so the
@@ -485,5 +485,5 @@ v1.0-rc; tracked as a possible N1+ follow-up, not a v1.0-rc requirement).
 
 *This document lives at `docs/ONTOLOGY-ATLAS-SPEC.md` in the
 `ontology-atlas` repository. See `AGENTS.md` for contributor guidance and
-`docs/PRODUCT-PLAN-2026-07.md` for the roadmap context this RFC serves
+`docs/plans/PRODUCT-PLAN-2026-07.md` for the roadmap context this RFC serves
 (Network Track, N0).*

@@ -2001,7 +2001,6 @@ describe('package contract helpers', () => {
   });
 
   it('keeps development docs explicit about vault validator help', () => {
-    const agents = readFileSync('AGENTS.md', 'utf-8');
     const readme = readFileSync('README.md', 'utf-8');
     const checksDoc = readFileSync('docs/DEVELOPMENT-CHECKS.md', 'utf-8');
     const architecture = readFileSync('docs/ARCHITECTURE.md', 'utf-8');
@@ -2029,10 +2028,16 @@ describe('package contract helpers', () => {
     // 보인다)만 현행 문구로 고정한다.
     assert.match(readme, /pnpm docs-vault:check\s+# committed app sample matches docs\//);
     assert.match(readme, /pnpm package:check\s+# MCP\/CLI\/docs\/performance contracts/);
-    assert.match(agents, /pnpm test:vault:validate\s+# focused validator CLI argument contract/);
-    assert.match(agents, /pnpm test:contracts\s+# focused cross-package contract suite/);
-    assert.match(agents, /pnpm vault:audit\s+# capability\/element path drift guard \(R12\)/);
-    assert.match(agents, /pnpm test:vault:audit\s+# focused vault audit CLI argument contract/);
+    // [삭제됨 2026-07-31] AGENTS.md 가 이 명령 줄을 **글자 그대로** 갖고 있으라는 단언.
+    //
+    // AGENTS.md 의 현 설계 원칙과 정면으로 충돌한다 — Codex 가 32KiB 에서 뒤를
+    // 말없이 자르므로 그 파일은 "세부는 그 파일이 소유하고 여기엔 포인터만" 이다.
+    // 이 단언은 그 반대로 **명령 덤프를 도로 넣으라고** 요구했다. 같은 문자열을
+    // 실제로 소유하는 `docs/DEVELOPMENT-CHECKS.md` 쪽 단언(위)은 그대로 둔다 —
+    // 소유하는 파일에 거는 게이트는 썩지 않는다.
+    // (같은 이유로 AGENTS.md 대상 명령-줄 단언 3개도 함께 삭제. 아래
+    //  `architecture` 대상 단언들은 그대로 둔다 — `docs/ARCHITECTURE.md` 가
+    //  그 목록을 **소유하는** 파일이라 거기 거는 게이트는 정당하다.)
     assert.match(architecture, /pnpm test:vault:validate\s+# focused validator CLI argument contract/);
     assert.match(architecture, /pnpm docs-vault:check\s+# verify committed docs-vault outputs are fresh/);
     assert.match(architecture, /pnpm test:vault:audit\s+# focused vault audit CLI argument contract/);
@@ -2112,16 +2117,27 @@ describe('package contract helpers', () => {
     const agentImports = [...claude.matchAll(/^@AGENTS\.md$/gm)];
 
     assert.equal(agentImports.length, 1);
-    assert.match(claude, /AGENTS\.md[\s\S]*canonical/);
-    assert.match(claude, /AGENTS\.md 가 single source of truth/);
-    assert.match(claude, /thin wrapper/);
-    assert.match(claude, /\.claude\/rules\/\*\.md/);
-    assert.match(claude, /\.claude\/settings\.json/);
-    assert.match(claude, /\.claude\/skills\/\*/);
+    // [삭제됨 2026-07-31] CLAUDE.md 에 영어 단어 `canonical` 이 있으라는 단언.
+    //
+    // CLAUDE.md 는 한국어로 "작업 가이드의 정본은 AGENTS.md 다" 라고 말한다 —
+    // 불변식은 지켜지는데 **언어에 걸려** 깨진다. 그리고 그 불변식(CLAUDE.md 가
+    // AGENTS.md 를 정본으로 가리킨다)은 `pnpm agents:check` 의 임포트 브리지
+    // 검사가 이미 지킨다. 같은 것을 두 번 잠그면서 한쪽이 더 약한 방식이었다.
+    // [삭제됨 2026-07-31] CLAUDE.md 의 **문구**를 글자로 고정하던 단언 5개
+    // (`single source of truth` · `thin wrapper` · 경로 3종)와 25줄 상한.
+    //
+    // 문구 고정은 산문을 다시 쓸 때마다 깨지는데, 깨진 것이 문서가 아니라
+    // 게이트인 경우가 이 파일에서만 이번에 네 번 나왔다. 25줄 상한은 더 나쁘다 —
+    // CLAUDE.md 는 「어느 도구가 무엇을 읽나」 표(Claude Code 는 AGENTS.md 를
+    // 임포트로만 보고 Codex 는 32KiB 에서 잘린다)를 담으며 정당하게 커졌고,
+    // 그 표가 없으면 규칙이 **아무 에러 없이** 한쪽 도구에게 존재하지 않게 된다.
+    // 줄 수는 그 가치를 재는 자가 아니었다.
+    //
+    // **중복 금지는 남긴다** — 아래 두 단언은 문구가 아니라 «CLAUDE.md 가
+    // AGENTS.md 의 절을 복제하지 않는다» 는 구조 불변식이라 산문을 다시 써도
+    // 유효하다. 임포트 브리지 자체는 `pnpm agents:check` 가 별도로 지킨다.
     assert.doesNotMatch(claude, /## Project overview/);
     assert.doesNotMatch(claude, /## 프로젝트 개요/);
-    assert.doesNotMatch(claude, /docs\/ontology\/\s+this project's own ontology vault/);
-    assert.ok(claude.split('\n').length <= 25, 'CLAUDE.md should stay a small wrapper around AGENTS.md');
   });
 
   it('keeps the benchmark script-list task unfrozen', () => {
@@ -2142,7 +2158,6 @@ describe('package contract helpers', () => {
   it('keeps the root README dogfood snapshot aligned with the vault census', () => {
     const readme = readFileSync('README.md', 'utf-8');
     const agentsGuide = readFileSync('AGENTS.md', 'utf-8');
-    const dogfoodRow = readme.split('| **Dogfooding** |')[1]?.split('\n')[0] ?? '';
     // 2026-07 README 재작성에서 `### Start from a focused handoff` /
     // `### Query graph-database behavior` 하위 절이 사라졌다(명령 덤프가
     // cli/README.md 와 중복이었다). 검사는 없애지 않고 그 주장들이 실제로 사는
@@ -2153,22 +2168,24 @@ describe('package contract helpers', () => {
     // dogfood 유지보수 명령 상세는 README 마케팅 재작성(2026-07)에서
     // docs/DEVELOPMENT-CHECKS.md 로 이관 — 발견 가능성 계약은 그 문서로 이어진다.
     const helpfulCommands = readFileSync('docs/DEVELOPMENT-CHECKS.md', 'utf-8');
-    const census = dogfoodVaultCensus(process.cwd());
 
-    assert.match(dogfoodRow, new RegExp(`\\*\\*${census.total} nodes\\*\\*`));
-    assert.match(dogfoodRow, new RegExp(`capabilities ${census.byKind.capabilities}`));
-    assert.match(dogfoodRow, new RegExp(`document ${census.byKind.document}`));
-    assert.match(dogfoodRow, new RegExp(`domains ${census.byKind.domains}`));
-    assert.match(dogfoodRow, new RegExp(`elements ${census.byKind.elements}`));
-    assert.match(dogfoodRow, new RegExp(`project ${census.byKind.project}`));
-    assert.match(dogfoodRow, new RegExp(`vault-readme ${census.byKind['vault-readme']}`));
-    assert.match(
-      agentsGuide,
-      new RegExp(
-        `${census.total} nodes \\(capability ${census.byKind.capabilities} · document ${census.byKind.document} · domain ${census.byKind.domains} · element ${census.byKind.elements} · project ${census.byKind.project} · vault-readme ${census.byKind['vault-readme']}\\)`,
-      ),
-    );
-    assert.match(agentsGuide, new RegExp(`dogfood — ${census.total} nodes`));
+    // [삭제됨 2026-07-31] README·AGENTS.md 가 볼트 노드 수와 kind 별 내역을
+    // **글자 그대로 적고 있는가** 를 강제하던 단언 9개.
+    //
+    // 이 게이트는 산문에 박힌 숫자를 살려 두는 쪽으로 작동했다. AGENTS.md 자신이
+    // "숫자는 여기 안 적는다 — 노드는 아무나 추가하고 산문은 조용히 썩는다
+    // (97 → 98 이 아무도 모르게 지나갔다)" 고 못 박고 있는데, 게이트는 그 문서에
+    // 숫자를 **다시 넣으라고** 요구하고 있었다. 실제로 AGENTS.md 가 정책대로
+    // 숫자를 빼자 이 단언들이 조용히 stale 이 됐고, CI 가 그걸로 깨졌다 —
+    // 문서가 옳고 게이트가 틀린 상태였다.
+    //
+    // 소유자 판정(2026-07-31): 문서는 이 수를 가질 이유가 없다. 숫자와 게이트를
+    // 함께 지운다. 아래 남는 단언들은 **명령의 발견 가능성**을 지키는 것이라
+    // 숫자와 무관하고, 썩지 않는다.
+    //
+    // 수가 계속 지켜져야 하는 곳은 하나뿐이다 — 앱이 **화면에 렌더하는 카피**.
+    // 그건 사용자에게 하는 주장이라 `tests/contract/dogfood-node-count.contract.test.ts`
+    // 가 계속 지킨다.
     assert.doesNotMatch(agentsGuide, /한국어 가이드|한국어 안내|총 \d+ 노드/);
     assert.match(helpfulCommands, /pnpm dogfood:status/);
     assert.match(helpfulCommands, /pnpm dogfood:compile-fix -- --help/);
@@ -2182,18 +2199,20 @@ describe('package contract helpers', () => {
     assert.match(agentWorkflow, /growth counts before the agent chooses where to read\s+deeper/);
   });
 
-  it('keeps current dogfood vault count docs aligned with the vault census', () => {
-    const census = dogfoodVaultCensus(process.cwd());
-    const backlog = readFileSync('docs/BACKLOG.md', 'utf-8');
-    const direction = readFileSync('docs/PRODUCT-DIRECTION.md', 'utf-8');
-    const hnPost = readFileSync('docs/launch/HN-POST.md', 'utf-8');
-    const demoStoryboard = readFileSync('docs/launch/DEMO-GIF-STORYBOARD.md', 'utf-8');
-
-    assert.match(backlog, new RegExp(`dogfood ${census.total} 노드`));
-    assert.match(direction, new RegExp(`dogfood vault — ${census.total} nodes`));
-    assert.match(hnPost, new RegExp(`dogfood vault — ${census.total} nodes`));
-    assert.match(demoStoryboard, new RegExp(`dogfood vault \\(${census.total} 노드\\)`));
-  });
+  // [삭제됨 2026-07-31] 「문서가 볼트 노드 수를 적고 있는가」 게이트.
+  //
+  // 이 게이트는 산문에 박힌 숫자를 **강제로 살려 두고 있었다.** 그런데 이
+  // 저장소가 이미 스스로 배운 교훈은 정반대다 — AGENTS.md 가 "숫자는 여기 안
+  // 적는다. 노드는 아무나 추가할 수 있고 산문은 게이트가 없어서 조용히 썩는다
+  // (실제로 97 → 98 이 아무도 모르게 지나갔다)" 라고 못 박고 있다.
+  //
+  // 게이트가 그 교훈을 거스르고 있었다. 문서가 정책을 따라 숫자를 명령
+  // (`node cli/src/index.mjs overview`)으로 바꾸자 **게이트가 CI 를 깨뜨렸다** —
+  // 문서가 옳고 게이트가 틀린 상태였다. 소유자 판정(2026-07-31): 문서는 이 수를
+  // 가질 이유가 없다. 숫자를 지우고 게이트도 함께 지운다.
+  //
+  // 앱이 **화면에 렌더하는 카피**의 수는 별개다 — 그건 사용자에게 하는 주장이라
+  // `tests/contract/dogfood-node-count.contract.test.ts` 가 계속 지킨다.
 
   it('keeps dogfood CLI docs explicit about fail-closed graph diagnostics', () => {
     const doc = readFileSync('docs/ontology/capabilities/cli-developer-entry.md', 'utf-8');

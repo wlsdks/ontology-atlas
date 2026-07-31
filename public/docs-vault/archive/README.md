@@ -5,7 +5,7 @@ contributor 룰의 진실원은 다음 4 개:
 
 - `docs/PRODUCT-DIRECTION.md` — mission v2 spec
 - `docs/FEATURES.md` — 사용자 가시 기능 전수
-- `docs/ARCHITECTURE.md` / `docs/DATA-MODEL.md` / `docs/DESIGN-SYSTEM.md` /
+- `docs/ARCHITECTURE.md` / `docs/archive/DATA-MODEL.md` / `docs/DESIGN-SYSTEM.md` /
   `docs/DEPLOYMENT.md` — 영역별 룰
 - `docs/CHANGELOG.md` — 시간순 변화
 

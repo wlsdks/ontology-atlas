@@ -59,7 +59,7 @@ PR #27 (`functions/` 폐기) + PR #29 (클라이언트 dead httpsCallable) + PR 
 | **단계별 implementor** | §0 → §해당-단계 (§2~§7) → §8.1 의 매핑 표 → §10.x 의 추가 검증 |
 | **마이그레이션 위험 평가자** | §9 (도입 순서 + 위험) → §10.7 (V2 phase A~E) → §11 Q1/Q3 |
 | **AI agent / ActionType 보안** | §5 (V1.4) → §10.5 (보안 8 항목) → §11 Q2 → 별도 ACTION-TYPE-SECURITY spec (작성 예정) |
-| **로컬 사용자** | §8 (Markdown-first 헌장) → §8.1 (frontmatter 매핑 예제) → `docs/LOCAL-FIRST-SYNC.md` |
+| **로컬 사용자** | §8 (Markdown-first 헌장) → §8.1 (frontmatter 매핑 예제) → `docs/archive/LOCAL-FIRST-SYNC.md` |
 | **단순 ontology 학습** | §1 → §12 (Glossary) → 외부 레퍼런스 |
 
 ## 목차
@@ -107,7 +107,7 @@ PR #27 (`functions/` 폐기) + PR #29 (클라이언트 dead httpsCallable) + PR 
 ### 0.3 사용자 신뢰 원칙
 
 11. **사용자 데이터의 *모든* 변경은 audit 가 따라간다** — manual edit / AI 추출 / migration / rollback 모두 audit collection 에 기록. *조용히* 사용자 데이터를 바꾸는 코드 path 를 **만들지 말 것**.
-12. **사용자 디스크는 신성 — 자동 sync 금지** — `.claude/rules/local-first.md` 와 `docs/LOCAL-FIRST-SYNC.md` 헌장. 로컬 → 클라우드 push 는 *항상 사용자 명시 opt-in*. 자동 추출 / 자동 publish / 자동 delete 금지.
+12. **사용자 디스크는 신성 — 자동 sync 금지** — `.claude/rules/local-first.md` 와 `docs/archive/LOCAL-FIRST-SYNC.md` 헌장. 로컬 → 클라우드 push 는 *항상 사용자 명시 opt-in*. 자동 추출 / 자동 publish / 자동 delete 금지.
 13. **AI 출력은 stub 으로만 진입** — V1.4 ActionType 의 `humanReview` 가 default `'always'`. extract / propose / merge 가 *직접* canonical 노드/엣지를 만드는 게 아니라 *항상* 검수 큐의 stub. 사람 승인 후에만 fact.
 
 ### 0.4 운영 원칙
@@ -264,7 +264,7 @@ interface KnowledgeApprovedEdge {
 // Evidence — node/edge 별 별도 doc
 interface KnowledgeEvidence {
   id: string;
-  // ... documentId / chunkId / fragment / locator 등 (구체 schema 는 docs/DATA-MODEL.md)
+  // ... documentId / chunkId / fragment / locator 등 (구체 schema 는 docs/archive/DATA-MODEL.md)
   // V1.3 가 retrievedAt / statedInNodeId / extractionModelId / confidence 추가.
 }
 
@@ -893,7 +893,7 @@ V1.4 (독립적, 다른 스택과 직교)
 - [ ] 서버 (Cloud Functions) 만 쓸 수 있는 collection 은 `allow create/update/delete: if false` 한 다음 admin SDK 로만 write.
 
 **Schema 변경 프로세스 (.claude/rules/firestore-schema.md)**
-- [ ] `docs/DATA-MODEL.md` 에 새 필드 / 컬렉션 명시 (필수/옵션 / 타입 / 설명).
+- [ ] `docs/archive/DATA-MODEL.md` 에 새 필드 / 컬렉션 명시 (필수/옵션 / 타입 / 설명).
 - [ ] `src/entities/*/model/types.ts` 가 같이 갱신.
 - [ ] `src/entities/*/api/*` 의 mapper / fromFirestore / toFirestore 가 같이 갱신 + 단위 test 라운드트립.
 - [ ] `firestore.indexes.json` 에 새 query 가 필요로 하는 복합 인덱스 정의.
@@ -1180,7 +1180,7 @@ sequenceDiagram
 - **Wikilink** — 본문의 `[[other-doc]]` 형식 참조. 우리 manifest builder 가 자동 추출 → `evidenceIds[]` 와 edge 후보로.
 - **`_` prefix 폴더** — schema 정의 위치 (V1.4 후 `_actions/`, V1.5 후 `_relations/`, V2 후 `_classes/` / `_literals/`). 일반 노드와 구분 (§8.1.5).
 
-### 운영 모드 (`docs/LOCAL-FIRST-SYNC.md` 와 일치)
+### 운영 모드 (`docs/archive/LOCAL-FIRST-SYNC.md` 와 일치)
 
 - **Static (모드 A)** — `pnpm build` 의 사전 빌드 manifest 만 사용. Firebase 미사용. 가장 가벼운 진입.
 - **Local (모드 B)** — File System Access API 로 디스크 폴더 → 메모리 manifest. Firebase 미사용.
@@ -1203,12 +1203,12 @@ sequenceDiagram
 
 | 문서 | 영향 받는 시점 |
 |---|---|
-| `docs/DATA-MODEL.md` | 모든 V1.x 단계 — 새 필드 / 컬렉션 정의 |
+| `docs/archive/DATA-MODEL.md` | 모든 V1.x 단계 — 새 필드 / 컬렉션 정의 |
 | `firestore.rules` | V1.x — 모든 새 컬렉션 / 권한 변화 |
 | `firestore.indexes.json` | 새 query 가 복합 인덱스 필요 시 |
 | `docs/CHANGELOG.md` | 모든 V1.x / V2 phase |
-| `docs/LOCAL-FIRST-SYNC.md` | V1.4 ActionType 의 로컬 격리 정책 |
-| `docs/OFFLINE-FIRST-UX-FLOW.md` | V1.4 의 검수 큐 UX 영향 시 |
+| `docs/archive/LOCAL-FIRST-SYNC.md` | V1.4 ActionType 의 로컬 격리 정책 |
+| `docs/archive/OFFLINE-FIRST-UX-FLOW.md` | V1.4 의 검수 큐 UX 영향 시 |
 | `.claude/rules/firestore-schema.md` | 변경 프로세스 갱신 시만 |
 | `src/entities/*/model/types.ts` | 모든 schema 변경 |
 | `src/entities/*/api/*.ts` | mapper / fromFirestore / toFirestore 갱신 |

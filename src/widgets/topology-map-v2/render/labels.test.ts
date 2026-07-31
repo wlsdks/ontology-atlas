@@ -3,6 +3,7 @@ import { describe, expect, it } from "vitest";
 import {
   computeDomainWatermarkAlpha,
   computeLabelAlpha,
+  measureLabelVerticalMetrics,
   resolveLabelBaselineY,
   resolveFlippedLabelBaselineY,
   scaledLabelFontSize,
@@ -171,5 +172,75 @@ describe("resolveLabelBaselineY — 라벨이 자기 도형선에 닿지 않는�
     expect(flipped).toBe(200 - 40 - LABEL_NODE_OUTLINE_ALLOWANCE - LABEL_NODE_CLEARANCE);
     // 아래쪽 자리보다 반드시 위다(뒤집기가 실제로 자리를 바꾼다).
     expect(flipped).toBeLessThan(resolveLabelBaselineY("capability", 200, 40, 1));
+  });
+});
+
+/**
+ * **라벨 상자의 세로 범위는 폰트에서 실측한다.**
+ *
+ * 종전 근사는 `ascent = fontSize` · `descent = 2`(상수)였다. descent 가
+ * **상수인데 fontSize 는 줌에 따라 커져서**, 확대할수록 베이스라인 아래
+ * 미예약분이 벌어졌다 — 한글 받침과 라틴 디센더가 상자 밖으로 나가는데
+ * 억제 판정은 "안 겹친다"고 말한다.
+ *
+ * 재는 것은 두 가지다: ① 실측값이 있으면 그걸 쓴다 ② 없으면 **종전 근사로
+ * 떨어진다**(jsdom·스텁 컨텍스트에서 0 높이 상자를 만들어 라벨이 전부 겹치게
+ * 두지 않는다).
+ */
+describe("measureLabelVerticalMetrics — 세로 범위 실측", () => {
+  const ctxWith = (metrics: Partial<TextMetrics> | null): CanvasRenderingContext2D =>
+    ({
+      font: "",
+      measureText: () => (metrics ?? {}) as TextMetrics,
+    }) as unknown as CanvasRenderingContext2D;
+
+  it("`fontBoundingBox*` 가 있으면 그 값을 쓴다", () => {
+    const ctx = ctxWith({ fontBoundingBoxAscent: 11, fontBoundingBoxDescent: 4 } as TextMetrics);
+    // kind/scale 조합마다 캐시되므로 이 테스트만의 조합을 쓴다.
+    const m = measureLabelVerticalMetrics(ctx, "element", 1.37);
+    expect(m).toEqual({ ascent: 11, descent: 4 });
+  });
+
+  it("**descent 가 상수 2 가 아니다** — 이 결함의 핵심", () => {
+    const ctx = ctxWith({ fontBoundingBoxAscent: 12, fontBoundingBoxDescent: 5 } as TextMetrics);
+    const m = measureLabelVerticalMetrics(ctx, "capability", 1.41);
+    expect(m.descent).toBe(5);
+    expect(m.descent).not.toBe(2);
+  });
+
+  it("실측값이 없으면 종전 근사로 떨어진다 — 회귀 0", () => {
+    // jsdom 은 fontBoundingBox* 를 안 준다. 그때 0 을 쓰면 상자 높이가 0 이 되어
+    // 모든 라벨이 "안 겹친다"가 된다 — 근사가 그 함정을 막는다.
+    const ctx = ctxWith({} as TextMetrics);
+    const m = measureLabelVerticalMetrics(ctx, "domain", 1.43);
+    expect(m.ascent).toBe(scaledLabelFontSize("domain", 1.43));
+    expect(m.descent).toBe(2);
+  });
+
+  it("0 이나 음수는 실측으로 인정하지 않는다", () => {
+    const ctx = ctxWith({ fontBoundingBoxAscent: 0, fontBoundingBoxDescent: 0 } as TextMetrics);
+    const m = measureLabelVerticalMetrics(ctx, "project", 1.47);
+    expect(m.ascent).toBe(scaledLabelFontSize("project", 1.47));
+  });
+
+  it("measureText 가 없는 스텁도 죽지 않는다", () => {
+    const ctx = { font: "" } as unknown as CanvasRenderingContext2D;
+    const m = measureLabelVerticalMetrics(ctx, "element", 1.51);
+    expect(m.descent).toBe(2);
+  });
+
+  it("폰트당 1회만 측정한다 — 프레임마다 재는 비용을 지지 않는다", () => {
+    let calls = 0;
+    const ctx = {
+      font: "",
+      measureText: () => {
+        calls += 1;
+        return { fontBoundingBoxAscent: 10, fontBoundingBoxDescent: 3 } as TextMetrics;
+      },
+    } as unknown as CanvasRenderingContext2D;
+    measureLabelVerticalMetrics(ctx, "element", 1.59);
+    measureLabelVerticalMetrics(ctx, "element", 1.59);
+    measureLabelVerticalMetrics(ctx, "element", 1.59);
+    expect(calls).toBe(1);
   });
 });

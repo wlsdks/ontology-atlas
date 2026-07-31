@@ -71,6 +71,7 @@
     "test:docs-vault": "node --test scripts/build-docs-vault.test.mjs",
     "vault:validate": "node scripts/validate-vault.mjs",
     "decisions:check": "node scripts/check-decision-record.mjs",
+    "agents:check": "node cli/src/index.mjs agent-files",
     "test:vault:validate": "node --test scripts/validate-vault-script.test.mjs",
     "vault:migrate": "node scripts/migrate-vault.mjs",
     "vault:audit": "node scripts/audit-vault-paths.mjs",

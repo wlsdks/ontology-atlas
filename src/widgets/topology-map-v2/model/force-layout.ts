@@ -50,16 +50,29 @@ export interface ForceSimulation {
    * Runs `iterations` FA2 steps, then re-stamps the pinned node (if any).
    * No-op for `iterations <= 0`.
    *
-   * C1 B2 (radius-limited release settle): when `restrictToIds` is given, any
-   * node NOT in that set is restored to its PRE-tick position after `assign()`
-   * runs — i.e. it still participates in FA2's force computation (so the
-   * physics stay coherent) but ends the tick with zero net displacement. This
-   * is what keeps the post-drag settle burst local to the dragged node's own
-   * cluster instead of visibly relaxing the whole graph. Omit (or pass
-   * `undefined`/`null`) for the unrestricted default (every node free to move).
+   * When `restrictToIds` is given, FA2 runs on a SUBGRAPH containing only those
+   * nodes and the edges between them. Nodes outside the set do not participate
+   * in the force computation at all, and edges crossing the boundary exert no
+   * force — this is what keeps a drag local instead of visibly relaxing the
+   * whole graph. Omit (or pass `undefined`/`null`) for the unrestricted default.
+   *
+   * ⚠️ This used to run FA2 over the WHOLE graph and then restore outside
+   * nodes to their pre-tick positions — "restricted" bounded the RESULT, not
+   * the WORK. At 3000 nodes that cost most of a 139.9ms drag frame while
+   * discarding ~94% of what it computed (2026-07-31). If you are reading this
+   * because a boundary node looks under-constrained, the fix is to widen the
+   * set, not to go back to computing everything.
    */
   tick(iterations: number, restrictToIds?: ReadonlySet<string> | null): void;
-  /** Current `{x, y}` per node id — a fresh Map each call (cheap at the semantic-zoom-capped node counts). */
+  /**
+   * Current `{x, y}` per node id — a fresh Map each call.
+   *
+   * ⚠️ NOT cheap at scale: the sim holds EVERY node regardless of semantic-zoom
+   * capping, so this allocates an N-entry Map per tick (3000 at `?synth=3000`)
+   * even when a restricted tick moved ~30 of them. Known waste, measured but
+   * not yet fixed — see `docs/MAP-TESTABILITY.md` for how to re-measure before
+   * changing it.
+   */
   positions(): Map<string, ForcePosition>;
   /** Pins a node to a world coordinate (grabbed for drag) — held fixed across ticks until `clearPin`. */
   pin(id: string, x: number, y: number): void;
@@ -142,18 +155,42 @@ export function createForceSimulation(
     tick(iterations: number, restrictToIds?: ReadonlySet<string> | null) {
       if (iterations <= 0 || graph.order === 0) return;
       if (restrictToIds) {
-        // Snapshot every OUTSIDE node's pre-tick position so it can be
-        // restored after — the tick still runs FA2 over the whole graph (so
-        // in-set nodes feel a coherent force field), just discards the result
-        // for anything outside the affected set.
-        const frozen = new Map<string, { x: number; y: number }>();
-        graph.forEachNode((id, attrs) => {
-          if (!restrictToIds.has(id)) frozen.set(id, { x: attrs.x as number, y: attrs.y as number });
-        });
-        forceAtlas2.assign(graph, { iterations, settings });
-        for (const [id, pos] of frozen) {
-          graph.setNodeAttribute(id, "x", pos.x);
-          graph.setNodeAttribute(id, "y", pos.y);
+        // **제한을 진짜로 건다 — 부분 그래프를 떼어 그 위에서만 돈다.**
+        //
+        // 종전에는 바깥 노드를 스냅샷 → **전체 그래프에 FA2** → 바깥 복원이었다.
+        // 즉 «제한» 이 계산을 줄이지 않고 **결과만 버렸다**. FA2 는 노드 수의
+        // 제곱에 붙으므로 3000노드에서 이 한 줄이 프레임의 상당 부분을 먹었고,
+        // 버리는 데(스냅샷 3000 + 복원 ~2000 setAttribute) 또 비용을 냈다.
+        // 2026-07-31 렉 사고에서 소유자가 세 번 물은 *"보이는 건 20개인데 왜
+        // 3000개를 계산하나"* 가 이 자리를 가리키고 있었다.
+        const sub = new Graph({ type: "undirected", multi: false, allowSelfLoops: false });
+        for (const id of restrictToIds) {
+          if (!graph.hasNode(id)) continue;
+          sub.addNode(id, { x: graph.getNodeAttribute(id, "x"), y: graph.getNodeAttribute(id, "y") });
+        }
+        // 부분 그래프 «안쪽» 엣지만 — 밖으로 나가는 엣지는 상대가 없으므로
+        // 힘도 없다. 즉 **경계 노드는 바깥 이웃 쪽으로의 복원력을 잃는다.**
+        //
+        // 이게 화면에서 안 보이는 이유는 tug 가 아니다(tug 는 드래그 방향
+        // «추종력» 이라 방향이 반대다 — 감사에서 정정된 논거). 실제로 덮는 것은
+        // 셋이다: ① `slowDown: 20` + 짧은 warm 창이라 FA2 유래 변위가 프레임당
+        // 미소하고, ② 가시 증상(끌던 무리가 정지 노드에 얹힘)은 겹침 해소가
+        // 같은 프레임에 잡으며(활성 노드는 «모든» 정지 노드와 검사된다),
+        // ③ 남은 경계 엣지 미세 신장은 릴리즈 정착이 tug 오프셋을 0으로
+        // 되감으며 대부분 소멸한다.
+        for (const id of restrictToIds) {
+          if (!sub.hasNode(id)) continue;
+          graph.forEachNeighbor(id, (other) => {
+            if (!sub.hasNode(other) || sub.hasEdge(id, other)) return;
+            sub.addEdge(id, other);
+          });
+        }
+        if (sub.order > 0) {
+          forceAtlas2.assign(sub, { iterations, settings });
+          sub.forEachNode((id, attrs) => {
+            graph.setNodeAttribute(id, "x", attrs.x as number);
+            graph.setNodeAttribute(id, "y", attrs.y as number);
+          });
         }
       } else {
         forceAtlas2.assign(graph, { iterations, settings });

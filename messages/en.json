@@ -145,7 +145,11 @@
       "guideAutoStartLabel": "Show guides automatically",
       "guideAutoStartCaption": "Opens a guide the first time you visit each screen — turn off and it only opens from Replay or the map compass",
       "guideAutoStartOn": "On",
-      "guideAutoStartOff": "Off"
+      "guideAutoStartOff": "Off",
+      "frameMeterLabel": "Frame meter",
+      "frameMeterCaption": "Shows frames per second and the worst stall on the map. Off by default — nothing is measured while it is off.",
+      "frameMeterOn": "On",
+      "frameMeterOff": "Off"
     },
     "primaryAriaLabel": "Primary menu",
     "notificationsAriaLabel": "Notifications"
@@ -3250,6 +3254,7 @@
       "whatIsAtlas": "What is Atlas?",
       "firstFiveMinutes": "First five minutes",
       "vaultStructure": "Vault structure",
+      "relations": "How relations work",
       "connectAgent": "Connect an AI agent",
       "cli": "CLI",
       "trust": "On trust"

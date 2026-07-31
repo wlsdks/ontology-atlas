@@ -166,8 +166,35 @@ export function isNodeHittable(
    * lockstep 으로 맞춘다 — 그려지면 잡힌다.
    */
   tierKindById?: ReadonlyMap<string, LayoutNodeKind> | null,
+  /**
+   * **드로우가 이번 프레임에 실제로 쓴 알파**(`topology-frame-draw.ts` 의
+   * `effectiveAlphaById`). 넘기면 히트가 이 값을 **단일 출처**로 쓴다.
+   *
+   * 왜 필요한가 (2026-07-31 전수 검사): 티어를 관통하는 면제 채널이 드로우에는
+   * 넷인데(엣지 선택 · 발자국 렌즈 · ego 포커스 · 최근변경 스포트라이트) 히트에는
+   * **ego 하나뿐**이었다. 그래서 발자국 렌즈로 떠오른 노드는 **보이는데 안
+   * 눌린다** — 그런데 드로우 쪽 주석은 *"같은 관통이 히트테스트에도 걸려 지도에서
+   * 바로 다시 클릭할 수 있다"* 고 말한다. 주석이 고치려던 바로 그 경우가 안
+   * 고쳐져 있었다(드로우만 보고 쓰인 주석이다).
+   *
+   * 인자를 하나씩 더 넘기는 방식은 **다음에 채널이 늘 때 또 어긋난다** — 오늘
+   * 이 결함이 생긴 그 방식이다. 드로우가 이미 만들어 두는 맵을 읽으면
+   * 구조적으로 못 어긋난다.
+   *
+   * 생략 시 종전 계산으로 떨어진다(첫 프레임 방어 — 페인트 전에는 맵이 비어
+   * 있고, 그 한 프레임은 오늘 동작과 같다).
+   */
+  effectiveAlphaById?: ReadonlyMap<string, number> | null,
 ): boolean {
   if (clusteredIds?.has(node.id)) return false;
+  const drawn = effectiveAlphaById?.get(node.id);
+  if (drawn !== undefined) {
+    // ⚠️ **바닥은 0.5 다** — 드로우의 0.02 로 갈아타지 말 것. 0.02~0.5 는
+    // "그려지지만 안 잡히는" 의도된 구간이고(거의 투명한 것을 잡게 하면
+    // 오클릭), `computeLabelAlpha` 의 "잡을 수 있으면 읽을 수 있다" 규율과
+    // 짝이다. 계약의 정확한 문구는 「절반 이상 드러났으면 잡힌다」다.
+    return drawn >= HITTABLE_MIN_TIER_ALPHA;
+  }
   const tierKind = tierKindById?.get(node.id) ?? node.kind;
   if (nodeTierAlpha(tierKind, node.isHub, zoomRatio, config) >= HITTABLE_MIN_TIER_ALPHA) return true;
   return focusedNodeId !== null && (node.id === focusedNodeId || (neighborsOfFocused?.has(node.id) ?? false));

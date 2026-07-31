@@ -17,10 +17,11 @@ tags: [architecture, infra, overview]
 ```
 ┌────────────────────────────────────────────────────────┐
 │ User                                                    │
-│ ├─ /                       topology hub always (map +  │
-│ │                          INDEX + datasheet); no vault│
-│ │                          → dogfood sample + first-run│
-│ ├─ /topology               same hub, explicit entry     │
+│ ├─ /                       who is asking decides —     │
+│ │                          gateway face for a vault-   │
+│ │                          less web visitor, map for   │
+│ │                          the app and vault users     │
+│ ├─ /topology               the map (hub + INDEX + data)│
 │ ├─ /docs                   vault picker + editor       │
 │ ├─ /ontology               thin redirect → /topology   │
 │ ├─ /ontology/edit          compatibility redirect      │
@@ -28,7 +29,9 @@ tags: [architecture, infra, overview]
 │ ├─ /ontology/insights      five-question maintenance   │
 │ ├─ /git                    vault Git workbench         │
 │ ├─ /projects               project list                │
-│ └─ /project/[slug]         project detail              │
+│ ├─ /project/[slug]         project detail              │
+│ ├─ /download               gateway as an explicit link │
+│ └─ /guide · /changelog     gateway reading (vault md)  │
 ├────────────────────────────────────────────────────────┤
 │ App layer                                               │
 │ ├─ Next.js 16 App Router                               │
@@ -222,19 +225,33 @@ This is the "first impression" state — visitors see a real ontology
 ## Routes
 
 ```
-/                          topology hub always (map + INDEX + datasheet); no vault → dogfood sample + first-run starter
-/topology                  same hub, explicit entry point (canvas-2D map/graph engine)
+/                          who is asking decides — a web visitor with no vault gets the gateway
+                           face (the same view /download renders); a web user with a vault, and
+                           the installed app, get the map / first-run unchanged. The installed
+                           app must never offer "download this app" to someone already running
+                           it. Single source: isGatewaySurface() in shared/lib/nav-destination
+/topology                  the map — canvas-2D hub (map + INDEX + datasheet). Links that say
+                           "map" point here, not at / (gate:
+                           tests/contract/map-destination-route.contract.test.ts)
 /docs                      vault picker / editor / unified palette
 /ontology                  thin redirect → /topology?index=expanded (old tree/ego hub retired, B3)
 /ontology/edit             compatibility redirect → /ontology/studio (normalizes and forwards ?node=)
 /ontology/studio           Compass Stage write surface (ENHANCE / CREATE)
 /ontology/insights         five-question maintenance board
-/git                       local vault git history / snapshot workbench
+/git                       local vault git history / snapshot workbench (desktop-only destination)
 /projects                  project list (cards)
 /project/[slug]            project detail (inline edit when vault loaded)
 /project/[slug]/edit       full project editor
 /project/new               new project form
 /project/fallback          fallback page for missing slugs
+/download                  the gateway view as an explicit deep link — keeps the breadcrumb and
+                           the back-to-map link that / drops
+/guide                     the project guide, several chapters rendering docs/guide/*.md vault
+                           docs. Named `guide` and not `docs` because /docs is already the
+                           vault workbench (2026-07-30 ledger). Order and slugs live once in
+                           src/views/gateway-doc/model/guide-pages.ts
+/guide/[segment]           one chapter; static params come from that same registry
+/changelog                 renders docs/CHANGELOG.md from the vault, most recent sections only
 ```
 
 All routes are wrapped under `/[locale]/` by next-intl (en, ko).

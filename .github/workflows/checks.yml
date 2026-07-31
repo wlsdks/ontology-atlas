@@ -104,6 +104,24 @@ jobs:
         if: always()
         run: pnpm package:check
 
+      # 에이전트 지시 파일의 드리프트. **CLI 가 이미 exit 1 로 알려주고 있었는데
+      # 어느 워크플로에도 물려 있지 않았다** — 그래서 둘 다 조용히 썩었다
+      # (2026-07-31 발견):
+      #
+      # ① `skill-copy-diverged` ×3 — `.claude/skills` 에만 `?guides=off` 지시가
+      #    들어가고 `.agents/skills` 사본은 못 받았다. 그 상태로 Codex 가 감사
+      #    스킬을 돌리면 첫 방문 스크림에 덮인 화면을 재고, 측정값이 통째로
+      #    무의미해진다. 사본이 둘인데 게이트가 없으면 어긋나는 쪽이 기본값이다.
+      #
+      # ② `agents-md-over-codex-cap` — AGENTS.md 가 Codex 의
+      #    `project_doc_max_bytes`(기본 32,768B)를 넘으면 **경고 없이 잘린다**.
+      #    넘은 채로 두면 뒤쪽 절은 Codex 에게 존재하지 않는데 화면에는 아무
+      #    신호도 없다. 실측 시점엔 39,617B 라 볼트 쓰기 루프와 스키마 표가
+      #    통째로 절단선 뒤에 있었다.
+      - name: Agent instruction files
+        if: always()
+        run: pnpm agents:check
+
       # MCP 서버의 단위 스위트. **어느 워크플로에도 물려 있지 않았다** —
       # `package:check` 가 CLI 쪽(`test:cli:lib`/`test:cli:commands`)은 돌리는데
       # MCP 는 대칭 스텝이 없었다. 그 사이 `verify-script.test.mjs` 1건이 소스
