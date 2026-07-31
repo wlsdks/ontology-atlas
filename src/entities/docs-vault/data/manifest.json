@@ -2415,7 +2415,7 @@
       ],
       "excerpt": "How this repo keeps its own instruction files in sync, and why the same pattern extends into the vault for facts that change faster than instructions do. Written from this repo's own history, not a hypothetical. Multiple coding-agent instruction files (AGENTS.md, CLAUDE.md, GEMINI.md, .github/copilot-instructions.md, …",
       "wordCount": 825,
-      "updatedAt": "2026-07-21",
+      "updatedAt": "2026-07-31",
       "linksOut": [
         "CLAUDE",
         ".claude/rules/forbidden",
@@ -2756,7 +2756,7 @@
       ],
       "excerpt": "상태: 진행 중. 이 문서는 전면 재디자인 제안서가 아니라, 실제 사용자 시나리오를 설치 앱에서 반복 검증하며 발견·수정·재검증한 계약을 기록한다. 최신 반복 측정: 2026-07-27, 설치 앱 + Codex Computer Use. 원칙: 취향보다 과업 성공, 스크린샷보다 상호작용 증거, 새 기능보다 현재 흐름의 신뢰 회복을 우선한다. 각 항목은 아래 순서로 닫는다. 1. 사용자·과업·시작 상태·이벤트 순서를 고정한다. 2. 설치 앱에서 포인터와 키보드로 재현한다. 3. 스크린샷의 광점·호버·강조를 판정하기 전 포인터를 비정보 영역으로 옮겨 한 장 더 캡처한다. ",
       "wordCount": 14980,
-      "updatedAt": "2026-07-27",
+      "updatedAt": "2026-07-31",
       "linksOut": []
     },
     {
@@ -6008,6 +6008,11 @@
         },
         {
           "depth": 2,
+          "text": "2026-07-31 — 지시문은 **다 싣지 않고 필요할 때 싣는다**: AGENTS.md 32KiB 아래 · rules 73KB→13.6KB 조건부 · 강행 규칙은 훅으로",
+          "slug": "2026-07-31-지시문은-다-싣지-않고-필요할-때-싣는다-agentsmd-32kib-아래-rules-73kb136kb-조건부-강행-규칙은-훅으로"
+        },
+        {
+          "depth": 2,
           "text": "2026-07-31 — 가이드를 여섯 장으로 가른다 (`/guide/[segment]`) + 읽는 표면은 화면 가운데에 선다",
           "slug": "2026-07-31-가이드를-여섯-장으로-가른다-guidesegment-읽는-표면은-화면-가운데에-선다"
         },
@@ -6238,7 +6243,7 @@
         }
       ],
       "excerpt": "이 파일은 결정과 그때 진 반대 의견을 남긴다. docs/CHANGELOG.md 는 무엇이 언제 바뀌었나를 답하고, 이 파일은 왜 그렇게 정했고, 무엇을 걸었나를 답한다. 최신이 위. 기록은 덧붙이기만 한다 — 지난 기록을 고치지 않는다. 판단이 바뀌었으면 새 기록을 쓰고 옛 기록을 뒤집힘 으로 표시한다. 틀린 기록도 자산이다. 1. 소집 전에 읽는다. 카운슬을 열기 전(그리고 단독 PO 패스를 쓰기 전) 같은 표면 · 같은 질문에 대한 선행 결정이 있는지 먼저 본다. 있으면 새 패스는 그것을 ① 여전히 유효하다고 인용하거나 ② 명시적으로 뒤집는다. 조용히 다시 결정",
-      "wordCount": 18920,
+      "wordCount": 19758,
       "updatedAt": "2026-07-31",
       "linksOut": []
     },
@@ -11826,7 +11831,7 @@
       ],
       "excerpt": "소유자가 실사용 스크린샷과 함께 보고한 22건 + \"디자인 시스템 구축\"이라는 메타 과제를 기록한 단일 진실원 계획 문서. 프로세스: fable 기획 → opus 검수 → sonnet/opus 코딩. 항목마다 상태를 갱신한다 (☐ 대기 · ◐ 진행 · ☑ 완료 · ✗ 반려/보류). 세션이 바뀌어도 이 문서만 읽으면 이어서 작업 가능해야 한다. \"모든 디자인의 토큰화 — 사이즈·모양 다 코드로 구성되어야 한다.\" 22건 중 다수(4·6·8·13·16·17)는 개별 수정이 아니라 시스템 부재의 증상이다. 따라서 Phase 1 에서 캐노니컬 컴포넌트/토큰을 먼저 세우고, ",
       "wordCount": 2163,
-      "updatedAt": "2026-07-25",
+      "updatedAt": "2026-07-31",
       "linksOut": []
     },
     {
@@ -11909,7 +11914,7 @@
       ],
       "excerpt": "세션에서 소유자와 확정한 방향의 상세 설계 스펙. 로드맵 테이블이 아니라 각 슬라이스의 실제 설계 결정(스키마 의미론·소켓 편집 UX·변동 원장 모델·게임 토큰 시스템·빌더 마이그레이션)까지 담아 구현이 깊이를 잃지 않게 한다. 근거: 온톨로지 전문가 8인 심사(genuineGaps 10) · 디자인 카운슬 · 사용성 8인 · 소유자 확정 시안(node-studio-game.html·node-studio-create.html). 한 줄: 노드를 게임 아이템처럼 강화/구축하는 몰입 저작 표면. 온톨로지 관계·의미 = 소켓에 끼우는 보석. 빈 소켓(isa·정의)이 곧 채",
       "wordCount": 1348,
-      "updatedAt": "2026-07-24",
+      "updatedAt": "2026-07-31",
       "linksOut": []
     },
     {
@@ -12032,7 +12037,7 @@
       ],
       "excerpt": "이 문서는 2026-07-17 하루 동안의 집중 재기획의 확정 산출물이다. 검증 이력: 시장·기술 조사 17건 (haiku) · 사용자 페르소나 패널 7인 · CPO 심사 (PO rubric 22/24, Chief PO Level 4) · 사상가 렌즈 패널 10인 × 3라운드 (최종 평균 7.60 — 기획 단계 캘리브레이션 기준 Obsidian/dbt의 7.3을 상회) · 도입 심사 10인 · 충분성 분석 2건. 상세 근거는 세션 기록과 메모리 참조. 결론: 기획 단계 완료. 남은 점수는 구현과 시장 증거에서 나온다. Layer 1 (로컬 코어 — 불변의 신뢰 계약)",
       "wordCount": 2209,
-      "updatedAt": "2026-07-27",
+      "updatedAt": "2026-07-31",
       "linksOut": []
     },
     {
@@ -12128,7 +12133,7 @@
       ],
       "excerpt": "Historical measurement snapshot (superseded, 2026-07-27). The paths, call sites, and “alive” labels below describe the pre-migration baseline used to choose topology-map-v2. Sigma, TopologyMapCanvas, their peer-mode tabs, and the project-detail mini-map were subsequently removed. Preserve the numbers as dated evidence;",
       "wordCount": 2076,
-      "updatedAt": "2026-07-27",
+      "updatedAt": "2026-07-31",
       "linksOut": []
     },
     {
