@@ -2609,3 +2609,59 @@ PO OS 는 그 두 행에 0 이 있으면 빌드 불가라고 명시한다.
 나오는지 — 유도원 수정의 직접 검증이다.
 
 **상태**: 유효
+
+---
+
+## 2026-08-01 — 도구의 시야가 곧 볼트의 사정거리였다: analyze 가 최상위 패키지를 못 보고, 게이트 8건의 절반은 「결함 요구」가 아니라 「부재 탐지」였다
+
+**소집**: 단독 판정 (같은 날 「슬러그는 평평한 식별자다」의 후속 — 코디네이터
+재검이 세 번째 유도원을 발견) · **트리거**: 재생성 볼트에 `mcp/`·`cli/` 가
+통째로 없었다 — `path:` 43개 전부 `src/`, 에이전트 표면(MCP 32 도구 · CLI 52
+명령)이 제품 자신의 지도에 0. "agent-native, human-sovereign" 정체성의 절반이
+백지였다.
+
+**판정 ① — analyze 의 `src/` 한정은 의도가 아니라 결함이다.**
+`analyze_repo_structure` 는 `src/` FSD 레이어와 `apps/`·`packages/` 워크스페이스
+멤버만 걸었다(`WORKSPACE_FOLDERS = ['apps','packages']`). 이 저장소처럼 root
+바로 아래 독립 패키지(`mcp/`, `cli/` — 각자 `package.json`)를 두는 배치는
+어디에도 잡히지 않았고, **제안 도구의 누락은 침묵으로 전파돼** 규격 문맥 없는
+에이전트의 볼트에서 그대로 구멍이 됐다. 슬러그를 경로로 만들던 그 도구가
+이번엔 사정거리를 정한 것 — 같은 병의 세 번째 사례다. 수리: root 바로 아래
+`package.json` 을 가진 디렉토리를 요소 후보로 제안(`detectRootPackages`,
+판별자는 package.json — `scripts/`·`tests/` 는 독립 패키지가 아니라서 자연
+제외). 게이트: `mcp/src/analyze.test.mjs` 사정거리 회귀 케이스.
+
+**판정 ② — 실패 게이트 8건 재분류** (직전 보고의 「선재 결함 · 별도 판정」
+분류를 뒤집는다 — 절반은 게이트가 옳았다):
+
+| 게이트 | 분류 | 처방 |
+|---|---|---|
+| compile_ontology 옵션 문서 정렬 | **부재 탐지** | `capabilities/mcp-server` 복원으로 통과 |
+| dogfood CLI 문서 fail-closed 정렬 | **부재 탐지** | `capabilities/cli-developer-entry` 복원으로 통과 |
+| dogfood MCP 문서 workspace-brief 정렬 | **부재 탐지** | 〃 (mcp-server) |
+| packed CLI 스모크 정렬 | **부재 탐지** | 〃 (cli-developer-entry 스모크 절) |
+| dogfood CLI capability 카운트 비고정 | **부재 탐지** | 〃 + 근거 파일 목록을 body 로 (구 `elements:` 경로 92개 부활 금지) |
+| dogfood MCP capability 정렬 | **부재 탐지** | 〃 (mcp-server) |
+| MCP verify README census 정렬 | **혼합** — 목적(README 표본 == 재계산 진실)은 유지, 내부 핀은 구 형상 | `slug==='project'` → kind 로 탐색, smoke 슬러그 하드코딩 → verify 자신의 `buildGraphQuerySmokeArgs` 로 계산, 고정 6-kind 나열(`document:0` 요구) → 실재 kind 만. README 표본은 실측 verify 출력으로 재생성 |
+| self-ontology README census | **구 형상 핀 + 규율 위반** | AGENTS.md 「no document writes the number — docs name the command」와 정면 충돌. 개정: 숫자는 조건부(말하면 참이어야), census 명령 표기 필수, 실재 진입점(`ontology-atlas.md` · 두 에이전트 표면) 지시 필수, 스타터 토이 문구 회귀 금지 |
+
+**볼트 채움 — 규격의 두 번째 시험 결과**: `capabilities/mcp-server` ·
+`capabilities/cli-developer-entry` 를 CLI `add`(평평한 슬러그 게이트 + 저작
+스탬프 통과) + `relate`(preflight) 로 land. **maintenance queue 가 도메인
+역링크 2건을 스스로 처방**했고 그대로 실행해 큐 0. 손보정은 둘: 복원 본문
+속 낡은 「`elements/src/...` 제안」 서술 3곳(이날 규격 변경의 결과라 불가피),
+구 `elements:` 경로 배열(27·92개)을 body 근거 절로 강등(경로는 증거이지
+자식이 아니다). `scripts/`·`tests/` 노드는 **안 만든다** — 독립 패키지가
+아니고, 의미는 그들이 게이트하는 capability 의 근거 줄에 이미 산다.
+자기 볼트 README 는 스타터 템플릿에서 우리 프로젝트의 문서로 재작성
+(census 는 숫자 대신 `node cli/src/index.mjs overview`).
+
+**기록된 반대**: 두 capability 문서는 사실상 `cli/README`·`mcp/README` 의 세
+번째 사본이고, 게이트가 pin 하는 문장 수십 개는 볼트 노드의 본문으로는 과하다
+— 볼트 노드는 의미·경계·근거만 갖고 참조 문서는 링크해야 한다는 관점.
+**반증 조건**: 이 두 문서의 정렬 게이트가 향후 3회 이상 「내용은 옳은데 문구
+싱크」로만 깨지면 반대가 옳았던 것 — 그때 게이트를 링크+요약 계약으로 줄이고
+본문을 얇게 한다. **재검토**: 다음 MCP 도구 추가/CLI 명령 추가 시.
+
+**서명 (accountable)**: stark (코디네이터 위임 "이어서 처리하라")
+**상태**: 유효

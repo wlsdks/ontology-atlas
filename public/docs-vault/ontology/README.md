@@ -1,116 +1,77 @@
 ---
 slug: README
 kind: vault-readme
-title: My ontology vault
-display_ko: 내 온톨로지 문서함
-display_en: My ontology vault
-created_by: agent:unknown
+title: Ontology Atlas — its own ontology vault
+display_ko: 아틀라스 자기 볼트
+display_en: Atlas self-ontology vault
+created_by: "agent:unknown"
 ---
 
-# My ontology vault
+# Ontology Atlas — its own ontology vault
 
-This folder is **a codebase mental model that humans and AI agents grow
-together**. Every `.md` file is one node (project / domain / capability /
-element / concept), and the frontmatter at the top of each file is the
-graph's keys (slug / kind / depends_on / capabilities / elements / domain).
+This folder is **Ontology Atlas described in its own data format** (dogfooding).
+Every `.md` file here is one node of the product's meaning model — the same
+`project / domain / capability / element` graph the app draws and the MCP
+server serves to AI agents. If you are an agent reading this: this vault *is*
+the shared mental model between the humans building Atlas and you.
 
-In this vault, an ontology is an executable meaning model for a codebase:
-projects, domains, capabilities, elements, and typed relations that explain
-ownership, dependency, evidence, and change impact.
+## Where to start
 
-## Get started in 5 minutes
+- `ontology-atlas.md` — the `kind: project` root. Everything hangs off it.
+- `domains/` — the six functional areas (agent integration, graph modeling,
+  local vault management, onboarding & shell, project portfolio, topology
+  navigation). Domain boundaries are human judgment — see `created_by:`.
+- `capabilities/` — user-visible features inside those domains, including the
+  two agent surfaces: `capabilities/mcp-server` (32 MCP tools in `mcp/`) and
+  `capabilities/cli-developer-entry` (52 CLI commands in `cli/`).
+- `elements/` — implementation evidence. Each element names a *role* (flat
+  slug); the file location lives in its `path:` frontmatter, never in the slug.
 
-1. Open `project.md` and write your project's name and description.
-2. When a new domain comes to mind, add `<slug>.md` under `domains/`:
-   ```markdown
-   ---
-   slug: domains/auth
-   kind: domain
-   title: Authentication
-   capabilities:
-     - capabilities/login
-     - capabilities/signup
-   ---
-
-   Owns user authentication, sessions, and permissions.
-   ```
-3. Same pattern for capability and element — under `capabilities/` and `elements/`.
-4. Register an AI agent (Claude Code, Cursor, …) and it reads/writes the
-   same vault, growing it alongside you.
-5. To see the graph, open the workbench's `/docs` picker and point it at
-   this vault folder.
-
-## AI agent setup
-
-There are two ways to connect an agent to this vault.
-
-**If you have the installed Ontology Atlas app**, open this folder in it and
-press the connect button. The app writes the Claude Code / Cursor / Codex
-config for you: it already knows this folder's real path, and it carries the
-MCP server inside its own bundle. No terminal, no Node, no install step.
-
-**If you don't**, run the agent setup command once from an Ontology Atlas
-source checkout. Both angle-bracket parts are yours to fill in with real
-absolute paths — the checkout you cloned, and this vault folder:
+**No document writes the census number** — it rots the moment anyone adds a
+node. Ask the vault itself:
 
 ```bash
-node <ontology-atlas checkout>/cli/src/index.mjs agent-setup <this vault folder> --root . --write
+node cli/src/index.mjs overview        # from the repo root
 ```
 
-It creates missing Claude Code / Cursor / Codex config files without adding
-starter markdown or overwriting existing ones. To merge by hand instead, open
-`.mcp.json.example`, replace the `OATLAS_VAULT` placeholder with the absolute
-path to this vault, then copy that server entry into your agent config. The
-CLI writes `.mcp.json` and `.codex/config.toml` pointing at the checkout's
-`mcp/src/index.js`.
+## How this vault is written
+
+- Frontmatter is the graph; git is the review. Plain markdown, no backend.
+- Slugs are flat identifiers under their kind folder (`elements/topology-map-v2`,
+  never `elements/src/widgets/topology-map-v2`) — path-style slugs collide on
+  tail aliases and are rejected at every write door.
+- Every node carries `created_by:` — `human` for nodes that exist only because
+  a person judged them (project definition, domain boundaries, the charter
+  capabilities), `agent:*` for everything derivable from code.
+- Agents write through the MCP server (`add_concept`, `patch_concept`,
+  `rename_concept`, …) or the CLI (`node cli/src/index.mjs add …`); both stamp
+  provenance and run the same construction gates.
 
 ## Verify the agent loop
 
-After restarting the agent, ask it to prove the connection before it edits
-anything:
+After connecting an agent (the installed app's connect button, or
+`agent-setup` from this checkout), ask it to prove the connection before it
+edits anything:
 
 > Use the ontology-atlas MCP server to run `validate_vault`, then
 > `query_ontology({ "operation": "workspace_brief" })`, then
-> `query_ontology({ "operation": "agent_brief" })`, then
-> `query_ontology({ "operation": "health" })`,
-> `query_ontology({ "operation": "cycles", "maxHops": 8 })`,
-> `query_ontology({ "operation": "growth_plan", "limit": 20 })`, and
-> `query_ontology({ "operation": "maintenance_plan", "limit": 20 })`. Tell me
-> whether this vault is readable, graph-clean enough, and the write tools are
-> available before proposing changes.
+> `query_ontology({ "operation": "health" })`. Tell me whether this vault is
+> readable and graph-clean before proposing changes.
 
-From an Ontology Atlas source checkout, the same first-contact check runs
-through the CLI. Point `$ATLAS` at the checkout **folder** once — the same meaning every
-other Atlas surface uses — then:
+The CLI equivalents, from the repo root:
 
 ```bash
-export ATLAS=<path to your ontology-atlas source checkout>
-
-node $ATLAS/cli/src/index.mjs validate .
-node $ATLAS/cli/src/index.mjs workspace-brief .
-node $ATLAS/cli/src/index.mjs agent-brief . --prompt
-node $ATLAS/cli/src/index.mjs agent-brief . --graph-db-pack
-node $ATLAS/cli/src/index.mjs agent-brief . --verify-fallbacks
-node $ATLAS/cli/src/index.mjs cycles . --max-hops 8
-node $ATLAS/cli/src/index.mjs growth . --limit 20
-node $ATLAS/cli/src/index.mjs maintenance . --limit 20
-node $ATLAS/cli/src/index.mjs mcp-verify . --timeout-ms 15000
+node cli/src/index.mjs validate docs/ontology
+node cli/src/index.mjs health
+node cli/src/index.mjs maintenance docs/ontology
+node cli/src/index.mjs mcp-verify docs/ontology --timeout-ms 15000
 ```
-
-For automation that wants a small JSON report instead of human terminal output:
-
-```bash
-node $ATLAS/cli/src/index.mjs agent-brief . --verify-fallbacks --json --fallback-timeout-ms 15000 --fallback-slow-ms 5000 --fallback-concurrency 4
-```
-
-For an agent opened at your codebase root instead of this vault folder, replace
-`.` with the vault path, for example `./ontology`.
 
 ## Relations (frontmatter keys)
 
 | Key | What it expresses |
 |---|---|
-| `depends_on: [<slug>, ...]` | This node depends on other nodes |
+| `depends_on:` / `dependencies:` | This node depends on other nodes |
 | `capabilities: [...]` | Capabilities this domain / project provides |
 | `elements: [...]` | Elements this capability / domain uses |
 | `domain: <slug>` | Parent domain of this capability/element |
@@ -118,23 +79,10 @@ For an agent opened at your codebase root instead of this vault folder, replace
 
 ## Kinds
 
-- `project` — Top-level. Usually one per workspace.
-- `domain` — A large area (auth, billing, builder, …).
-- `capability` — A user-visible feature inside a domain (login, signup, …).
-- `element` — A smaller unit a capability uses (jwt-token, otp-store, …).
-- `document` — Evidence node (markdown doc backing other concepts).
+- `project` — top-level (`ontology-atlas.md`).
+- `domain` — a large functional area.
+- `capability` — a user-visible feature inside a domain.
+- `element` — a smaller unit a capability uses; evidence lives in `path:`.
+- `document` — narrative doc tied to the graph.
 
-## What an AI agent can do for you
-
-Once you register the `ontology-atlas-mcp` server, the agent gets 32
-tools to read/write this vault:
-
-- **read 19**: connection_info / git_status / git_history / list_concepts / get_concept / get_concepts / find_evidence /
-  find_backlinks / find_neighbors / find_path / list_kinds / find_orphans /
-  query_concepts / compile_ontology / query_ontology / validate_vault /
-  analyze_repo_structure / infer_imports / index_project
-- **write 13**: absorb_document / add_concept / add_concepts / add_relation / add_relations /
-  remove_relation / replace_relation / patch_concept / reclassify_concept /
-  delete_concept / rename_concept / merge_concepts / git_snapshot
-
-Details: https://github.com/wlsdks/ontology-atlas/tree/main/mcp
+Full MCP tool reference: https://github.com/wlsdks/ontology-atlas/tree/main/mcp

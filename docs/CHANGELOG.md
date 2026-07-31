@@ -24,8 +24,18 @@ basename 이 같은 노드 셋(`docs-vault` ×3)이 지도에서 하나로 접�
 
 **CLI `add` 가 저작 스탬프를 찍는다.** MCP 와 같은 기본값
 (`created_by: agent:<heartbeat|unknown>`)이고, 사람이 직접 만들 때는
-`--created-by human`. 도그푸드 볼트 68개 노드 전부에 출처가 채워졌다
-(사람 판단이 성립 조건인 10개 = human, 나머지 58개 = agent).
+`--created-by human`. 도그푸드 볼트 전 노드에 출처가 채워졌다
+(사람 판단이 성립 조건인 10개 = human, 나머지 = agent).
+
+**같은 병의 세 번째 사례 — 도구의 시야가 곧 볼트의 사정거리였다.**
+`analyze_repo_structure` 가 `src/` 와 `apps/`·`packages/` 만 걸어, 이
+저장소의 에이전트 표면(`mcp/` 32 도구 · `cli/` 52 명령)이 제품 자신의
+지도에서 통째로 빠져 있었다. 이제 root 바로 아래 `package.json` 을 가진
+독립 패키지도 요소 후보로 제안되고, 도그푸드 볼트에는
+`capabilities/mcp-server` 와 `capabilities/cli-developer-entry` 가
+(경로 92개짜리 `elements:` 배열 없이, 근거는 본문으로) 실렸다. 자기 볼트
+README 도 일반 스타터 템플릿에서 우리 프로젝트의 볼트 문서로 재작성됐다 —
+노드 수는 숫자 대신 `node cli/src/index.mjs overview` 가 답한다.
 
 **지도만 보면 계층이 천장처럼 보인다.** 허브에서 도메인이 방사형으로 뻗는 모양
 때문에 "도메인끼리는 관계를 못 갖나", "이건 미리 설계된 데이터를 조회하는 건가",
