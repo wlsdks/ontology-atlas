@@ -2531,8 +2531,20 @@ export function useTopologyLoop(args: UseTopologyLoopArgs): UseTopologyLoopResul
         }
       }
 
-      // 고팬아웃 배치-공개 — 배치 자식의 등장 램프 스텝. 시작 시각(스태거) 이후
-      // egoRevealRiseTau 로 0→1 수렴(등장은 카메라 착지 리듬과 동일 τ 재사용).
+      // 고팬아웃 배치-공개 — 배치 자식의 등장 램프 스텝.
+      //
+      // **`clusterRevealTau` 를 쓴다 — 칩과 같은 값이다.** 종전엔
+      // `egoRevealRiseTau`(0.22)였는데, 그건 *다른 사건*(ego 클릭)의 리듬이다.
+      // 이 램프를 낳는 입력은 칩 클릭이고, 그 입력의 리듬은 칩의 pill/badge
+      // 페이드가 이미 `clusterRevealTau`(0.17)로 정해 뒀다.
+      //
+      // ⚠️ **이 한 줄이 그 수정의 실제 도달 지점이다.** 앞서 다섯째 관통 채널
+      // (`expandRevealRef`)의 tau 만 바꿨는데, 프레임 실측(design-motion,
+      // 2026-07-31)이 자식은 여전히 τ 226~236ms 로 오른다고 잡았다 — 칩 클릭
+      // 자식은 **전원 이 배치 경로**로 등록되고(`hidden.length===0` 이어도
+      // `visibleOrdered` 전량), `revealMul` 삼항이 `batchAppear` 를 먼저 보므로
+      // 그 채널의 갈래는 칩 클릭에서 한 번도 안 탄다. 표현식을 고쳐도 화면이
+      // 안 바뀌는 이유가 이것이었다.
       // 이번 프레임 배치로 보이지 않는(접히거나 부모가 접힌) 키는 정리한다.
       // reduced-motion 은 즉시 1(스태거 없이 스냅).
       {
@@ -2550,7 +2562,7 @@ export function useTopologyLoop(args: UseTopologyLoopArgs): UseTopologyLoopResul
             continue;
           }
           if (now < (startMap.get(id) ?? 0)) continue; // 스태거 시작 전 — 0 유지.
-          const next = stepEmphasis(appearMap.get(id) ?? 0, true, true, dt, tokens.egoRevealRiseTau, tokens.egoRevealRiseTau);
+          const next = stepEmphasis(appearMap.get(id) ?? 0, true, true, dt, tokens.clusterRevealTau, tokens.clusterRevealTau);
           appearMap.set(id, next);
           if (next >= 0.999) startMap.delete(id);
         }

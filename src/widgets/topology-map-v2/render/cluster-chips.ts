@@ -356,41 +356,57 @@ export function drawClusterChip(
 
   // rank7 — 현재 형태(펼침=badge / 접힘=pill)의 알파를 reveal 램프로 페이드인.
   // 미지정이면 1(하위호환). 호출부가 세팅한 baseAlpha(부모 티어 알파)에 곱한다.
-  const formAlpha =
-    input.revealT === undefined
-      ? 1
-      : Math.min(1, Math.max(0, input.expanded ? input.revealT : 1 - input.revealT));
+  //
+  // ⚠️ **램프 중에는 두 형태를 함께 그린다.** 종전에는 `expanded` 로 갈라 한
+  // 형태만 그렸고, 그래서 **어느 방향에서도 크로스페이드가 없었다** — 펼치면
+  // 알약이 1프레임에 사라지고 배지가 자기 램프를 혼자 탔다(프레임 실측
+  // 2026-07-31: 알약 마지막 프레임 α=1.000 → 다음 프레임 부재, 중간 프레임 0개).
+  //
+  // 더 나쁜 것은 그 갈래가 **이동 코드보다 앞에** 있었다는 점이다. 펼침은
+  // 첫 프레임부터 `expanded=true` 라 `clusterChipTravelPoint` 에 **한 번도
+  // 도달하지 못했다** — 이동을 넣어 놓고 펼침에서는 실행조차 안 됐다.
   const baseAlpha = ctx.globalAlpha;
-  if (formAlpha < 0.01) return;
-  ctx.globalAlpha = baseAlpha * formAlpha;
+  const clamp01 = (v: number) => Math.min(1, Math.max(0, v));
+  const badgeAlpha =
+    input.revealT === undefined ? (input.expanded ? 1 : 0) : clamp01(input.revealT);
+  const pillAlpha =
+    input.revealT === undefined ? (input.expanded ? 0 : 1) : clamp01(1 - input.revealT);
+  if (badgeAlpha < 0.01 && pillAlpha < 0.01) return;
 
-  // S10 결함 2 — 펼침 상태는 떠다니는 알약이 아니라 부모 노드 우상단 배지로
-  // 그린다(파선 오라/라벨 겹침 원천 차단). 부모 좌표 + 노드 반지름이 있어야
-  // 배지를 앉힐 수 있다 — 없으면(디그레이드) 그리지 않는다.
-  if (input.expanded) {
-    if (
-      input.parentScreenX !== undefined &&
-      input.parentScreenY !== undefined &&
-      input.nodeScreenRadius !== undefined
-    ) {
-      drawClusterBadge(
-        ctx,
-        {
-          parentScreenX: input.parentScreenX,
-          parentScreenY: input.parentScreenY,
-          nodeScreenRadius: input.nodeScreenRadius,
-          count: input.count,
-          hovered: input.hovered,
-          scale,
-        },
-        colors,
-      );
-    }
-    ctx.globalAlpha = baseAlpha; // rank7 — reveal formAlpha 복원.
-    return;
+  // S10 결함 2 — 펼침 형태는 떠다니는 알약이 아니라 부모 노드 우상단 배지다
+  // (파선 오라/라벨 겹침 원천 차단). 부모 좌표 + 노드 반지름이 있어야 배지를
+  // 앉힐 수 있다 — 없으면(디그레이드) 그리지 않는다.
+  if (
+    badgeAlpha >= 0.01 &&
+    input.parentScreenX !== undefined &&
+    input.parentScreenY !== undefined &&
+    input.nodeScreenRadius !== undefined
+  ) {
+    ctx.globalAlpha = baseAlpha * badgeAlpha;
+    drawClusterBadge(
+      ctx,
+      {
+        parentScreenX: input.parentScreenX,
+        parentScreenY: input.parentScreenY,
+        nodeScreenRadius: input.nodeScreenRadius,
+        count: input.count,
+        hovered: input.hovered,
+        scale,
+      },
+      colors,
+    );
   }
 
-  const label = clusterChipLabel(input.count, input.expanded);
+  if (pillAlpha < 0.01) {
+    ctx.globalAlpha = baseAlpha; // rank7 — reveal 알파 복원.
+    return;
+  }
+  ctx.globalAlpha = baseAlpha * pillAlpha;
+
+  // 나가는(또는 들어오는) 알약은 **언제나 접힘 형태**다 — `+N`. `input.expanded`
+  // 를 라벨에 그대로 넘기면 펼침 램프 중의 알약이 `− N` 으로 읽혀, 사라지는
+  // 것과 나타나는 것이 같은 글자를 말하게 된다.
+  const label = clusterChipLabel(input.count, false);
   // 알약은 사라지는 동안 배지 자리로 **걸어간다**(`clusterChipTravelPoint` 의
   // 주석 참고). 정착 상태(revealT 0 또는 미지정)에서는 anchor 그대로라 종전
   // 좌표와 한 픽셀도 다르지 않다.

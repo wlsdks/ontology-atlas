@@ -69,6 +69,35 @@ describe("등장 램프는 노드당 하나다", () => {
     }
   });
 
+  it("**칩 클릭이 실제로 타는 경로**(배치-공개)가 칩과 같은 tau 다", () => {
+    // ⚠️ 이 테스트가 이 파일에서 가장 중요하다. 앞의 것들은 `revealMul` 표현식의
+    // **모양**을 잠그는데, 프레임 실측(design-motion, 2026-07-31)이 그 모양이
+    // 맞는 채로 화면은 구 동작이라는 것을 잡았다:
+    //
+    //   `revealMul` 삼항은 `batchAppear` 를 **먼저** 보고, 칩 클릭 자식은
+    //   **전원** 그 배치 경로에 등록된다(`hidden.length===0` 이어도
+    //   `visibleOrdered` 전량). 그래서 다섯째 채널의 갈래는 칩 클릭에서 한 번도
+    //   안 탄다 — 표현식을 고쳐도 화면이 안 바뀐다.
+    //
+    // 그러니 재야 하는 것은 "갈래가 있는가"가 아니라 **"실제로 타는 갈래가 어느
+    // tau 를 쓰는가"** 다. 배치-공개 스텝이 ego 의 tau 로 돌아가면 여기서 터진다.
+    const src = read(LOOP);
+    const anchor = src.indexOf("const appearMap = batchAppearRef.current;");
+    expect(anchor, "배치-공개 스텝을 못 찾았다 — 이름이 바뀌었으면 이 테스트도 갱신한다").toBeGreaterThan(0);
+    // 그 블록 안의 첫 `stepEmphasis` 호출까지만 본다.
+    const block = src.slice(anchor, anchor + 2500);
+    const call = block.slice(block.indexOf("stepEmphasis("));
+    const args = call.slice(0, call.indexOf("\n", call.indexOf("stepEmphasis(")) + 1);
+    expect(
+      args.includes("clusterRevealTau"),
+      "배치-공개 램프가 clusterRevealTau 를 안 쓴다 — 칩과 다른 리듬으로 오른다",
+    ).toBe(true);
+    expect(
+      args.includes("egoRevealRiseTau"),
+      "배치-공개 램프가 ego 클릭의 tau 로 돌아갔다 — 다른 사건의 리듬이다",
+    ).toBe(false);
+  });
+
   it("칩과 그 자식이 **같은 tau** 로 움직인다 — 한 입력, 한 사건", () => {
     // 칩의 pill/badge 페이드와, 그 칩이 드러낸 자식의 램프는 같은 클릭이 낳는다.
     // 서로 다른 tau 를 쓰면 칩이 먼저 끝나고 자식이 뒤따라와 두 사건으로 읽힌다.
