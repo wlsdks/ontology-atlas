@@ -136,6 +136,14 @@ export interface TopologyWorld {
   childrenByParent: ReadonlyMap<string, readonly string[]>;
   /** 밀도 게이트 칩 배치 메타 (자식 있는 부모만, 정적). */
   clusterMetaByParent: ReadonlyMap<string, ClusterParentMeta>;
+  /**
+   * node id → indices into `edges` of every edge touching that node (both
+   * directions). Static: `edges` is never structurally mutated after the build
+   * (only its per-frame geometry / comet phase fields are). Exists so a frame
+   * that moved ~30 nodes can refresh ~60 edges instead of all ~3000
+   * (`recomputeWorldGeometry`'s `movedIds` path).
+   */
+  edgeIndexByNode: ReadonlyMap<string, readonly number[]>;
   /** Top `starCount` nodes by magnitude — get the far-field diffraction-spike overlay. */
   brightStarIds: ReadonlySet<string>;
   /** Bbox of ALL nodes — used for pan clamping and focus-mode context. */
@@ -490,10 +498,24 @@ export function buildTopologyWorld(
   const ranked = [...nodes].sort((x, y) => y.size + y.fullDegree * 18 - (x.size + x.fullDegree * 18));
   const brightStarIds = new Set(ranked.slice(0, Math.max(0, Math.round(tokens.starCount))).map((n) => n.id));
 
+  // 노드 → 자기에게 물린 엣지 인덱스. 빌드 때 한 번 만들어 두면 «움직인 노드의
+  // 엣지만» 갱신하는 프레임 경로가 성립한다 (`recomputeWorldGeometry`).
+  const edgeIndexByNode = new Map<string, number[]>();
+  const indexEdge = (nodeId: string, edgeIndex: number) => {
+    const list = edgeIndexByNode.get(nodeId);
+    if (list) list.push(edgeIndex);
+    else edgeIndexByNode.set(nodeId, [edgeIndex]);
+  };
+  for (let i = 0; i < worldEdges.length; i += 1) {
+    indexEdge(worldEdges[i].sourceId, i);
+    indexEdge(worldEdges[i].targetId, i);
+  }
+
   return {
     nodes: worldNodes,
     nodeById,
     edges: worldEdges,
+    edgeIndexByNode,
     neighborMap,
     childrenByParent,
     clusterMetaByParent,
@@ -509,9 +531,13 @@ export function buildTopologyWorld(
  * `force-layout.ts#positions`) leave the node's last-good coordinate intact.
  */
 export function applyForcePositions(world: TopologyWorld, positions: ReadonlyMap<string, { x: number; y: number }>): void {
-  for (const node of world.nodes) {
-    const p = positions.get(node.id);
-    if (p) {
+  // **주는 쪽을 순회한다.** 종전에는 월드의 전 노드(3000)를 돌며 `positions.get`
+  // 을 했는데, 제한 틱이 실제로 움직인 것은 그중 수십 개다. 맵이 그 수십 개만
+  // 담고 오면(`force-layout.ts#positions(only)`) 이 루프도 그만큼만 돈다.
+  // 의미는 동일하다 — 맵에 없는 노드는 종전에도 좌표가 유지됐다.
+  for (const [id, p] of positions) {
+    const node = world.nodeById.get(id);
+    if (node) {
       node.x = p.x;
       node.y = p.y;
     }
@@ -519,31 +545,95 @@ export function applyForcePositions(world: TopologyWorld, positions: ReadonlyMap
 }
 
 /**
- * Recomputes every edge's endpoints + bow control point and the world bounds
- * from the current (force-updated) node positions. Called each frame while the
- * sim is warm — the "layout precomputed once" invariant only held while
- * positions were static; a living graph refreshes derived geometry per frame.
+ * Refreshes one edge's endpoints + bow control point from its (force-updated)
+ * endpoint nodes.
  */
-export function recomputeWorldGeometry(world: TopologyWorld, tokens: TopologyV2Tokens): void {
+function recomputeEdgeGeometry(world: TopologyWorld, tokens: TopologyV2Tokens, edge: WorldEdge): void {
+  const a = world.nodeById.get(edge.sourceId);
+  const b = world.nodeById.get(edge.targetId);
+  if (!a || !b) return;
+  edge.ax = a.x;
+  edge.ay = a.y;
+  edge.bx = b.x;
+  edge.by = b.y;
+  const control =
+    edge.kind === "depends"
+      ? computeDependsBowControlPoint({ x: a.x, y: a.y }, { x: b.x, y: b.y }, tokens.edgeBowDepends)
+      : computeBowControlPoint(
+          { x: a.x, y: a.y },
+          { x: b.x, y: b.y },
+          tokens.edgeBowContains,
+          tokens.edgeBlendContains,
+        );
+  edge.controlX = control.x;
+  edge.controlY = control.y;
+}
+
+/** 한 노드의 반지름 패딩 박스를 기존 bbox 에 합친다 (넓히기만 — 줄이지 않는다). */
+function growBounds(bounds: Bounds, node: WorldNode, tokens: TopologyV2Tokens): void {
+  const r = radiusForKind(node.kind, tokens);
+  if (node.x - r < bounds.minX) bounds.minX = node.x - r;
+  if (node.x + r > bounds.maxX) bounds.maxX = node.x + r;
+  if (node.y - r < bounds.minY) bounds.minY = node.y - r;
+  if (node.y + r > bounds.maxY) bounds.maxY = node.y + r;
+}
+
+/**
+ * 움직인 노드만 받았을 때의 부분 갱신.
+ *
+ * - **엣지**: 움직인 노드에 물린 것만 (`edgeIndexByNode`). 양끝이 다 움직인
+ *   엣지는 두 번 계산되지만 멱등이라 결과가 같다 — 중복 제거용 Set 을 매
+ *   프레임 새로 만드는 값이 그 중복보다 비싸다.
+ * - **bbox**: 넓히기만 한다. 팬 클램프 입력이라 «조금 넉넉함» 은 안전한
+ *   방향(사용자를 잘라내지 않는다)이고, 정확한 축소는 드래그가 끝나는
+ *   프레임의 전체 재계산이 되돌린다 (`use-topology-loop.ts` 정착 종료 블록).
+ */
+function recomputeMovedGeometry(world: TopologyWorld, tokens: TopologyV2Tokens, movedIds: ReadonlySet<string>): void {
+  for (const id of movedIds) {
+    const indices = world.edgeIndexByNode.get(id);
+    if (indices) {
+      for (const index of indices) recomputeEdgeGeometry(world, tokens, world.edges[index]);
+    }
+    const node = world.nodeById.get(id);
+    if (!node) continue;
+    growBounds(world.bounds, node, tokens);
+    if (isSpineNode(node)) growBounds(world.spineBounds, node, tokens);
+  }
+}
+
+/**
+ * Recomputes edge endpoints + bow control points and the world bounds from the
+ * current (force-updated) node positions. Called each frame while the sim is
+ * warm — the "layout precomputed once" invariant only held while positions were
+ * static; a living graph refreshes derived geometry per frame.
+ *
+ * `movedIds` scopes the pass to the nodes that actually changed this frame.
+ * Omit it (or pass null) for the exact full pass — that is what the homing /
+ * relayout / `relaxNewlyVisible` paths want, since they move everything.
+ *
+ * ⚠️ **A missing id is an immediately visible defect**: the edge keeps last
+ * frame's endpoint and visibly detaches from its node. The caller must derive
+ * the set from the positions it actually wrote, not from the set it *intended*
+ * to move — the drag frame moves nodes through three different writers (force
+ * apply, neighbor tug, overlap relaxation) and the tug alone reaches nodes the
+ * force tick deliberately excluded.
+ */
+export function recomputeWorldGeometry(
+  world: TopologyWorld,
+  tokens: TopologyV2Tokens,
+  movedIds?: ReadonlySet<string> | null,
+): void {
+  if (movedIds) {
+    // 절반 넘게 움직였으면 인덱스 우회가 오히려 손해다 (맵 조회 + 중복 계산).
+    // 그 경계 위는 전체 경로가 싸고, 덤으로 bbox 가 정확히 «줄어들» 기회를 준다.
+    if (movedIds.size * 2 < world.nodes.length) {
+      recomputeMovedGeometry(world, tokens, movedIds);
+      return;
+    }
+  }
+
   for (const edge of world.edges) {
-    const a = world.nodeById.get(edge.sourceId);
-    const b = world.nodeById.get(edge.targetId);
-    if (!a || !b) continue;
-    edge.ax = a.x;
-    edge.ay = a.y;
-    edge.bx = b.x;
-    edge.by = b.y;
-    const control =
-      edge.kind === "depends"
-        ? computeDependsBowControlPoint({ x: a.x, y: a.y }, { x: b.x, y: b.y }, tokens.edgeBowDepends)
-        : computeBowControlPoint(
-            { x: a.x, y: a.y },
-            { x: b.x, y: b.y },
-            tokens.edgeBowContains,
-            tokens.edgeBlendContains,
-          );
-    edge.controlX = control.x;
-    edge.controlY = control.y;
+    recomputeEdgeGeometry(world, tokens, edge);
   }
 
   const full = accumulateBounds(world.nodes, tokens);

@@ -124,6 +124,17 @@ const VIEWPORT_SETTLE_FRAMES = 2;
  * 뿐이다. 지도 앱의 표준 기법이고, 여기서는 그 교환이 실측으로 정당화된다.
  */
 const INTERACTION_DPR_CAP = 1;
+/**
+ * 시뮬 프레임의 파생 갱신을 «움직인 노드» 로 좁히는 희소성 문턱 — 터그 영향권이
+ * 전체의 `1/이 값` 미만일 때만 좁힌 경로를 탄다.
+ *
+ * 문턱이 필요한 이유는 좁히기가 공짜가 아니어서다: 인덱스 조회는 배열 순회보다
+ * 캐시 지역성이 나쁘고, 어느 노드가 움직였는지 실측하려면 좌표 스냅샷도 떠야
+ * 한다. 2026-07-31 구간 실측이 갈림점을 직접 보여줬다 — 영향권 **281/3000(9%)**
+ * 에서 시뮬 블록 2.1 → 1.5ms(이득), **975/3000(33%)** 에서 기하 0.4 → 0.6ms
+ * (손해). 5 는 그 사이에서 손해 쪽에 여유를 두고 고른 값이다.
+ */
+const SCOPED_FRAME_SPARSITY = 5;
 /** World-unit epsilon below which a homing node is considered "arrived" (`relayout-home.ts#isHomeSpringConverged`). */
 const HOME_CONVERGE_EPSILON = 0.5;
 
@@ -385,6 +396,26 @@ export function useTopologyLoop(args: UseTopologyLoopArgs): UseTopologyLoopResul
   const dragStartPosRef = useRef<{ x: number; y: number } | null>(null);
   /** C1 B1 — each tug-affected neighbor's current eased offset (world units), added on top of its natural position. */
   const dragTugOffsetsRef = useRef<Map<string, { x: number; y: number }>>(new Map());
+  /**
+   * 시뮬 프레임 «시작» 좌표 스냅샷 (노드 배열 순서). 프레임 끝에서 이것과
+   * 비교해 **정말 움직인 노드**를 뽑고, 파생 기하 갱신을 거기로 좁힌다
+   * (`recomputeWorldGeometry(world, tokens, movedIds)`).
+   *
+   * 「어느 집합이 움직일 예정인가」로 유추하지 않고 실측하는 이유: 한 프레임의
+   * 좌표를 쓰는 주체가 셋(힘 적용 · 이웃 터그 · 겹침 완화)인데 셋의 사정거리가
+   * 서로 다르다. 유추하면 언젠가 하나를 빠뜨리고, 그 증상은 «엣지가 노드에서
+   * 떨어져 보이는» 가시 결함이다.
+   */
+  const geomPrevXRef = useRef<Float64Array | null>(null);
+  const geomPrevYRef = useRef<Float64Array | null>(null);
+  /**
+   * 직전 프레임에 **겹침 완화가 민** 노드들 중 힘-적용 집합 밖의 것.
+   *
+   * 이 프레임의 `applyForcePositions` 가 이들의 좌표를 sim 값으로 되돌리는 것이
+   * 종전 동작이라, 좁힌 write-back 에도 그 되돌림을 남기려면 대상에 포함해야
+   * 한다. (되돌림 자체의 타당성은 별개 문제다 — 여기서는 동작을 바꾸지 않는다.)
+   */
+  const sepDisplacedIdsRef = useRef<Set<string>>(new Set());
   /** C1 B3 — active auto-arrange homing springs, keyed by node id; empty/absent when no relayout is in flight. */
   const homeSpringsRef = useRef<Map<string, HomeSpringState>>(new Map());
   const homingActiveRef = useRef(false);
@@ -1801,8 +1832,54 @@ export function useTopologyLoop(args: UseTopologyLoopArgs): UseTopologyLoopResul
               ),
             )
           : null;
+        // **좁힌 경로는 «희소할 때만» 이득이다** (2026-07-31 구간 실측).
+        //
+        // 이 프레임에 좌표를 쓰는 주체가 셋인데 그중 이웃 터그는 접힌 노드까지
+        // 포함한 1/2홉 전체를 매 프레임 민다. 그래서 «움직인 노드» 는 감사가
+        // 가정한 ~30 이 아니라 **터그 영향권의 크기**다 — 프로젝트 루트를 끌면
+        // 975/3000(33%)이라 인덱스 우회가 오히려 손해였고(기하 0.4 → 0.6ms),
+        // 도메인을 끌면 281/3000(9%)이라 시뮬 블록이 2.1 → 1.5ms 로 줄었다.
+        //
+        // 그래서 갈림길을 하나 둔다: 희소하면 좁히고, 아니면 **스냅샷조차 뜨지
+        // 않고** 종전 전체 경로 그대로 간다. 이득이 없을 때 비용만 남기지 않는
+        // 것이 이 판정의 목적이다.
+        const nodeCount = world.nodes.length;
+        const scoped =
+          affected !== null &&
+          (affected.oneHop.size + affected.twoHop.size + 1) * SCOPED_FRAME_SPARSITY < nodeCount;
+        let prevX: Float64Array | null = null;
+        let prevY: Float64Array | null = null;
+        if (scoped) {
+          // 프레임 시작 좌표를 떠 둔다 — 프레임 끝에서 «정말 움직인 것» 을 실측해
+          // 파생 기하 갱신을 거기로 좁힌다.
+          if (geomPrevXRef.current?.length !== nodeCount) {
+            geomPrevXRef.current = new Float64Array(nodeCount);
+            geomPrevYRef.current = new Float64Array(nodeCount);
+          }
+          prevX = geomPrevXRef.current!;
+          prevY = geomPrevYRef.current!;
+          for (let i = 0; i < nodeCount; i += 1) {
+            prevX[i] = world.nodes[i].x;
+            prevY[i] = world.nodes[i].y;
+          }
+        }
+
         sim.tick(forceIterationsForDt(dt), restrictToIds);
-        applyForcePositions(world, sim.positions());
+        // **되쓸 대상도 제한한다.** 제한 틱은 부분 그래프 밖 좌표를 건드리지
+        // 않으므로 그 값을 다시 써 넣는 것은 무의미한 3000회 왕복이다. 단
+        // **터그 이웃과 직전 프레임의 겹침-밀림 노드는 포함해야 한다** — 이 되쓰기가
+        // 그들의 프레임 변위를 0 으로 되돌리는 것이 기존 계약이고, 빠뜨리면
+        // 터그 오프셋이 프레임마다 누적돼 이웃이 날아간다.
+        const applyOnly =
+          scoped && affected
+            ? new Set<string>([
+                affected.draggedId,
+                ...affected.oneHop,
+                ...affected.twoHop,
+                ...sepDisplacedIdsRef.current,
+              ])
+            : null;
+        applyForcePositions(world, sim.positions(applyOnly));
 
         // C1 B1 — explicit neighbor tug: the dragged node's own per-frame
         // world-space displacement (Δ since grab) propagates to 1-hop/2-hop
@@ -1896,13 +1973,30 @@ export function useTopologyLoop(args: UseTopologyLoopArgs): UseTopologyLoopResul
             pinnedId: nodeDragRef.current?.nodeId ?? null,
             activeIds: sepActive,
           });
+          // 밀린 노드를 여기서 기록해 둔다 — 다음 프레임의 좁힌 write-back 이
+          // 이들의 «되돌림» 을 빠뜨리지 않게 (위 `applyOnly`).
+          const sepDisplaced = sepDisplacedIdsRef.current;
+          sepDisplaced.clear();
           for (let i = 0; i < sepNodes.length; i += 1) {
             const target = world.nodes[drawnIdx[i]];
+            if (scoped && (target.x !== sepNodes[i].x || target.y !== sepNodes[i].y)) {
+              sepDisplaced.add(target.id);
+            }
             target.x = sepNodes[i].x;
             target.y = sepNodes[i].y;
           }
         }
-        recomputeWorldGeometry(world, tokens);
+        // 이 프레임에 좌표가 실제로 바뀐 노드만 — 셋(힘·터그·겹침) 중 누가 썼든
+        // 결과로 판정하므로 어느 하나를 빠뜨릴 수 없다.
+        let movedIds: Set<string> | null = null;
+        if (prevX && prevY) {
+          movedIds = new Set<string>();
+          for (let i = 0; i < nodeCount; i += 1) {
+            const node = world.nodes[i];
+            if (node.x !== prevX[i] || node.y !== prevY[i]) movedIds.add(node.id);
+          }
+        }
+        recomputeWorldGeometry(world, tokens, movedIds);
         // A4 — heat is a TIME budget (ms), not a frame count, so the release
         // settle lasts `--topology-v2-node-release-settle-ms` on every display.
         if (!pinned && heatRef.current > 0) heatRef.current = Math.max(0, heatRef.current - dt * 1000);
@@ -1911,6 +2005,11 @@ export function useTopologyLoop(args: UseTopologyLoopArgs): UseTopologyLoopResul
           // drop any residual (by-now-decayed-near-0) tug offsets.
           dragAffectedSetRef.current = null;
           dragTugOffsetsRef.current.clear();
+          sepDisplacedIdsRef.current.clear();
+          // 드래그 동안 bbox 는 «넓히기만» 했다(팬 클램프라 넉넉한 쪽이 안전).
+          // 정착이 끝나는 이 한 프레임에서 정확한 값으로 되돌린다 — 안쪽으로
+          // 모인 그래프의 클램프가 드래그 이전보다 헐렁한 채 남지 않게.
+          recomputeWorldGeometry(world, tokens);
         }
       }
 
@@ -2127,6 +2226,11 @@ export function useTopologyLoop(args: UseTopologyLoopArgs): UseTopologyLoopResul
         reducedMotion: reducedMotionRef.current,
         userDrivenCamera: userDrivenCameraRef.current,
         freezeCamera,
+        // **직전 프레임의** 접힘 집합이다 — 이번 프레임 것은 아래 클러스터
+        // 단계에서야 정해진다. 램프는 시간 위의 값이라 한 프레임 지연이 곧
+        // 정상 동작이고(펼친 노드는 다음 프레임부터 0 에서 램프 인, 접힌
+        // 노드는 한 프레임 더 램프), 순서를 뒤집어 얻을 것이 없다.
+        clusteredIds: clusteredIdsRef.current,
         emphasisById: emphasisRef.current,
         rippleStartById: rippleStartRef.current,
         egoRevealById: egoRevealRef.current,

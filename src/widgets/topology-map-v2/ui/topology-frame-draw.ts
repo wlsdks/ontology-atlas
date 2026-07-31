@@ -714,6 +714,13 @@ export function drawTopologyFrame(params: FrameDrawParams): void {
   const tierAlphaById = tierAlphaByIdReused;
   const effectiveAlphaById = effectiveAlphaByIdReused;
   for (const node of world.nodes) {
+    // **접힌 노드는 알파를 가질 이유가 없다** — 칩 하나로 대체돼 이 프레임에
+    // 그려지지 않는다(실측 synth=3000: 3000 중 2820개). 소비처 넷이 전부 이
+    // 조회 «앞에서» 접힘을 이미 거른다: 엣지 루프 둘은 양 끝이 접히면 continue,
+    // 노드/라벨 루프는 첫 줄이 같은 가드, 히트 판정(`isNodeHittable`)은 알파
+    // 맵을 읽기 전에 접힘으로 false 를 낸다. 칩 부모는 정의상 접히지 않으며
+    // 그마저 `?? 1` 기본값을 갖는다.
+    if (clusteredIds.has(node.id)) continue;
     const tierKind = realmTierKinds?.get(node.id) ?? node.kind;
     const tierAlpha = nodeTierAlpha(tierKind, node.isHub, zoomRatio, tierReveal);
     tierAlphaById.set(node.id, tierAlpha);
