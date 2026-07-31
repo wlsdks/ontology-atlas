@@ -1,3 +1,15 @@
+---
+paths:
+  - "**/*.test.ts"
+  - "**/*.test.tsx"
+  - "**/*.test.mjs"
+  - "**/*.spec.ts"
+  - "tests/**"
+  - "vitest.config.ts"
+  - "vitest.setup.ts"
+  - "playwright.config.ts"
+---
+
 # Testing & verification
 
 > Auto-loaded.

@@ -1,3 +1,11 @@
+---
+paths:
+  - "docs/**/*.md"
+  - "*.md"
+  - "mcp/README.md"
+  - "cli/README.md"
+---
+
 # 문서 유지 규칙
 
 ## 원칙

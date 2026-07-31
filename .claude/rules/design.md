@@ -1,3 +1,15 @@
+---
+paths:
+  - "src/**/*.tsx"
+  - "src/**/ui/**"
+  - "src/shared/motion/**"
+  - "src/widgets/topology-map-v2/**"
+  - "app/**/*.css"
+  - "app/**/*.tsx"
+  - "eslint.config.mjs"
+  - "docs/DESIGN-SYSTEM.md"
+---
+
 # Design system rules
 
 > Auto-loaded. Single source of truth for tokens / motion / forbidden visual patterns: `@docs/DESIGN-SYSTEM.md`.

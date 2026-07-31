@@ -1,3 +1,11 @@
+---
+paths:
+  - "src/**"
+  - "app/**"
+  - "next.config.ts"
+  - "eslint.config.mjs"
+---
+
 # Architecture rules
 
 > Auto-loaded for Claude Code. Other agents pull this from `AGENTS.md` reference.

@@ -35,9 +35,25 @@
 
 ## Claude Code 전용
 
-- `.claude/rules/*.md` — 자동 로드되는 세부 규율 8종: `architecture` ·
-  `design` · `documentation` · `forbidden` · `git` · `local-first` ·
-  `surfaces` · `testing`.
+- `.claude/rules/*.md` — 세부 규율 8종. **셋만 상주하고 다섯은 조건부다**
+  (frontmatter `paths:`). 규칙을 지운 게 아니라 필요할 때만 싣는다 — 매 턴
+  73KB 였던 것이 13.6KB 가 됐다.
+
+  | | 규칙 | 언제 실리나 |
+  |---|---|---|
+  | 상주 | `forbidden` · `git` · `local-first` | 항상. **파일을 열기 전에** 내려야 하는 판단이라서다 — `npm publish` 를 실행할지, 백엔드를 도입할지, 어떻게 커밋할지는 아무 파일도 안 읽고 결정된다 |
+  | 조건부 | `design` | `src/**/*.tsx` · `app/**/*.css` 등 UI 파일을 읽을 때 |
+  | 조건부 | `architecture` | `src/**` · `app/**` · `next.config.ts` |
+  | 조건부 | `testing` | `**/*.test.*` · `tests/**` · 테스트 설정 |
+  | 조건부 | `surfaces` | `src/shared/lib/tauri-*.ts` · `src-tauri/**` · `tests/e2e/**` |
+  | 조건부 | `documentation` | `docs/**/*.md` · 루트 `*.md` |
+
+  ⚠️ **아무 파일도 안 맞는 글롭은 조용히 사라진 규칙이다.** 파일도 있고
+  YAML 도 유효하고 에러도 안 나는데 규칙만 존재하지 않게 된다(첫 적용 때
+  `i18n/**` 이 0개였다 — 실 위치는 `src/i18n`). 디렉터리를 옮기면
+  `tests/contract/rules-path-scope.contract.test.ts` 가 먼저 터진다.
+  상주 목록을 늘리려면 그 테스트의 `ALWAYS_LOADED` 에 이유와 함께 적어야
+  한다 — 73KB 로 되돌아가는 길을 무료로 두지 않는다.
 - `.claude/agents/*.md` — 상주 심사진: 팀장(`chief`) · PO 카운슬 5인(`po-*`) ·
   디자인 벤치 8석(`design-*`) · 평결을 코드로 적용하는 `design-guardian`.
   소집될 때만 로드된다.

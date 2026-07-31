@@ -1,3 +1,13 @@
+---
+paths:
+  - "src/shared/lib/tauri-*.ts"
+  - "src/features/docs-vault-local/**"
+  - "src-tauri/**"
+  - "tests/e2e/**"
+  - "src/shared/config/mcp-server-launch.ts"
+  - ".github/workflows/**"
+---
+
 # 표면 계약 — 웹과 앱
 
 > Auto-loaded. 원장 근거: `docs/DECISIONS.md` 2026-07-27 「웹과 앱은 같은
