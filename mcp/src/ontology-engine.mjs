@@ -122,6 +122,21 @@ export const MAINTENANCE_KIND_VALUES = Object.freeze([
   'materialize_external_element',
   'unassigned_node',
   'empty_domain',
+  // Node-eligibility gate, write path only (2026-07-31 council). These two
+  // cannot be derived from a compiled snapshot, which is why they are separate
+  // kinds rather than extra reasons on an existing one:
+  //
+  //   - `separate_evidence_from_concept` — a file path in a meaning slot. The
+  //     vault validator *exempts* path-shaped `elements:` entries, and the
+  //     compiler routes them to `materialize_external_element`, whose only
+  //     prescription is "create one node per file". Between the two, the shape
+  //     that was 100% of the measured defect (92/92 unresolved on one
+  //     capability) had no channel that said "this does not belong here".
+  //   - `fold_bulk_siblings` — provenance, not population. Five nodes a person
+  //     wrote over a week and five one machine batch emitted look identical in
+  //     a snapshot; only the write path saw which was which.
+  'separate_evidence_from_concept',
+  'fold_bulk_siblings',
 ]);
 const MAINTENANCE_PHASES = new Set(MAINTENANCE_PHASE_VALUES);
 const MAINTENANCE_SEVERITIES = new Set(MAINTENANCE_SEVERITY_VALUES);
@@ -287,6 +302,14 @@ export function queryCompiledOntology(artifact, query = {}, options = {}) {
 export function createOntologyEngine(artifact, options = {}) {
   const ontologyAtlasIgnorePatterns = Array.isArray(options.ontologyAtlasIgnorePatterns)
     ? options.ontologyAtlasIgnorePatterns
+    : [];
+  /**
+   * Findings the write-path node-eligibility gate produced since the last drain
+   * (`drainNodeEligibilityFindings` in `mcp/src/vault.mjs`). Empty for every
+   * read-only caller — only a write response has anything to hand over.
+   */
+  const nodeEligibilityFindings = Array.isArray(options.nodeEligibilityFindings)
+    ? options.nodeEligibilityFindings
     : [];
   const nodes = Array.isArray(artifact?.nodes) ? artifact.nodes : [];
   const edges = Array.isArray(artifact?.edges) ? artifact.edges : [];
@@ -2908,6 +2931,56 @@ export function createOntologyEngine(artifact, options = {}) {
     };
   }
 
+  /**
+   * Write-path gate findings → maintenance actions, on the existing channel.
+   *
+   * Three deliberate absences, each of them a rule the council applied:
+   *
+   * 1. **No `resolve_dangling_reference` row here.** The gate classifies plain
+   *    unresolved references — that classification is what tells a path-shaped
+   *    entry apart from a mistyped slug — but `danglingReferenceCandidates()`
+   *    above already reports them from the same post-write vault. Emitting both
+   *    would put the same fact in one payload twice, and a channel that repeats
+   *    itself gets filtered. 합집합 금지.
+   * 2. **No `proposedAction`.** Every row here is a review action. The 92 exist
+   *    because the one prescription on offer was "create the node", and an agent
+   *    that follows a scaffold literally answers 92 unresolved strings by
+   *    manufacturing 92 nodes. The `reason` names both exits in prose and lets
+   *    the caller choose; the same restraint the `didYouMean` branch already
+   *    applies a few functions above.
+   * 3. **No count anywhere in the wording.** `fold_bulk_siblings` reports how
+   *    many siblings one batch made, never how many a parent may have.
+   */
+  function nodeEligibilityActions() {
+    const shape = {
+      'path-shaped-title': { kind: 'separate_evidence_from_concept', phase: 'repair', severity: 'warn', score: 0.9 },
+      'path-shaped-reference': { kind: 'separate_evidence_from_concept', phase: 'repair', severity: 'warn', score: 0.92 },
+      'bulk-provenance': { kind: 'fold_bulk_siblings', phase: 'review', severity: 'info', score: 0.45 },
+      // Shares `fold_bulk_siblings` rather than claiming a ninth kind. The gate
+      // only raises `dense-parent` when the parent's references are mostly broken
+      // or a machine filled it this session, so the row always arrives alongside
+      // one of those facts and asks the identical question: name why these
+      // siblings are not interchangeable, or fold the ones you cannot. A separate
+      // enum value would grow the public contract (README, dogfood vault node,
+      // strict-filter fixtures, contract regex) to say the same sentence twice.
+      'dense-parent': { kind: 'fold_bulk_siblings', phase: 'review', severity: 'info', score: 0.5 },
+    };
+    const rows = [];
+    for (const finding of nodeEligibilityFindings) {
+      const mapped = shape[finding?.code];
+      if (!mapped) continue;
+      rows.push({
+        phase: mapped.phase,
+        kind: mapped.kind,
+        severity: mapped.severity,
+        score: mapped.score,
+        reason: finding.message,
+        node: summarizeNode(nodeBySlug.get(finding.slug)),
+      });
+    }
+    return rows;
+  }
+
   function maintenancePlan(options = {}) {
     const limit = normalizeLimit(options.limit, 25);
     const phaseFilter = normalizeStringSet(options.phases, 'phases', MAINTENANCE_PHASES);
@@ -3014,6 +3087,10 @@ export function createOntologyEngine(artifact, options = {}) {
         reason: row.reason,
         node: row.node,
       });
+    }
+
+    for (const action of nodeEligibilityActions()) {
+      actions.push(action);
     }
 
     actions.sort(compareMaintenanceActions);

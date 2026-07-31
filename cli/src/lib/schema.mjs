@@ -57,6 +57,89 @@ export function agentCreatedBy(agentName) {
   return name ? `${CREATED_BY_AGENT_PREFIX}${name}` : CREATED_BY_AGENT_UNKNOWN;
 }
 
+/**
+ * Node-eligibility gate — the numbers half (2026-07-31 council, `docs/DECISIONS.md`
+ * 「온톨로지 구축 규격」). The gate logic lives in `mcp/src/vault.mjs`, the wording in
+ * `mcp/src/construction-rules.mjs`; only the values live here.
+ *
+ * ⚠️ **None of these is a limit.** The council removed the fan-out cap in every
+ * form, including per-kind caps: a number a model can be told to stay under is a
+ * number it games with empty buckets while the graph gets no better. Each value
+ * below answers "when is it worth *asking* a question", never "how many children
+ * may a node have". Do not phrase anything derived from these as "keep under N".
+ *
+ * They live in the schema module because it is already the two-package value
+ * canon: `cli/src/lib/schema.mjs` carries a literal mirror (the packages have
+ * zero cross-imports by design) and `tests/contract/vault-schema.contract.test.ts`
+ * fails the build when the two drift.
+ */
+export const NODE_ELIGIBILITY_GATE = Object.freeze({
+  /**
+   * A node with this many unresolved graph references is worth one sentence.
+   * One is enough: an entry that resolves to nothing is not a small version of a
+   * child, it is a different category of thing (evidence) sitting in a meaning
+   * slot. There is no "acceptable amount" to tune down to.
+   */
+  NOTICE_THRESHOLD: 1,
+  /**
+   * After the first notice, stay quiet until the count crosses a multiple of
+   * this. Repeating the same sentence on every write is how `missing-expected-field`
+   * became invisible — the reader filters a channel that always talks.
+   */
+  NOTICE_REPEAT_MULTIPLE: 10,
+  /**
+   * Siblings born under one parent inside a single machine batch before the gate
+   * asks whether they name distinct roles. Provenance, not population: five nodes
+   * a person wrote over five days say nothing, five the same batch emitted say
+   * a directory listing was transcribed. A static vault scan cannot tell the two
+   * apart, which is why this check can only exist on the write path.
+   */
+  BULK_PROVENANCE_SIBLING_TRIGGER: 5,
+  /**
+   * How many offending refs a single message names before it says "and N more".
+   * A warning that pastes 92 paths is a wall, and a wall is not read.
+   */
+  REFERENCE_SAMPLE_LIMIT: 5,
+  /**
+   * Cold-start defaults for the dense-parent trigger, used only until this vault
+   * has enough parents of a kind for a live percentile to mean anything.
+   *
+   * NOT a cap — the gate never blocks on count; it asks the writer to name why
+   * siblings are not interchangeable, and "they are, leave it alone" is an
+   * accepted answer. Sources: schema.org `Thing` (11 direct subtypes after
+   * fifteen production years), this vault's non-hub domain median (4), and its
+   * one healthy wide capability (`topology-kind-legibility`, 7 elements all
+   * resolving to real nodes); see `docs/DECISIONS.md` 2026-07-31 amendment.
+   * Recalibrate after the vault regeneration stage — these are a researched
+   * starting range promoted from descriptive statistics, not a measured law.
+   *
+   * `project→domain` is deliberately absent: the sample is too small for any
+   * number to mean anything, and inventing one would be the guess this block
+   * exists to avoid.
+   */
+  BOOTSTRAP_FANOUT_TRIGGER: Object.freeze({
+    domain_to_capability: 8,
+    capability_to_element: 6,
+  }),
+  /**
+   * Below this many parents of a kind, a percentile computed from this vault is
+   * describing noise, so the bootstrap value stands in. At or above it, the
+   * vault's own p90 wins — a mature vault knows its own shape better than any
+   * constant shipped from outside it.
+   */
+  MIN_PARENTS_FOR_LIVE_PERCENTILE: 10,
+  /**
+   * A dense parent is only worth mentioning when its references are mostly
+   * broken. Above this resolution rate the width is load-bearing structure, not
+   * a transcribed directory listing — schema.org's `CreativeWork` carries 67
+   * direct subtypes and is not sick. Without this condition the check would fire
+   * on every legitimately wide parent, and a warning that cries wolf is filtered
+   * out by the reader, which is how the fan-out cap would come back by the side
+   * door.
+   */
+  DENSE_PARENT_RESOLUTION_FLOOR: 0.7,
+});
+
 export const VAULT_KIND_SCHEMA = {
   project: {
     folder: '',

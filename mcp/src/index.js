@@ -77,6 +77,7 @@ import {
   VaultConflictError,
   collectNeighborRefs,
   deleteDoc,
+  drainNodeEligibilityFindings,
   ensureVaultRoot,
   extractSummaryExcerpt,
   findBacklinks,
@@ -96,6 +97,11 @@ import {
   vaultSlugExists,
   writeDoc,
 } from './vault.mjs';
+import {
+  CONSTRUCTION_RULES_EN,
+  ELEMENT_NAMING_RULE_BATCH_EN,
+  ELEMENT_NAMING_RULE_EN,
+} from './construction-rules.mjs';
 import { appendActivityEntry, buildActivityEntry, readHeartbeatAgent } from './activity-log.mjs';
 import { writeFileSync, unlinkSync } from 'node:fs';
 import { dirname } from 'node:path';
@@ -1116,7 +1122,9 @@ Don't retry blindly — parse the suffix and pivot to the suggested tool.
 
 ## What to write back
 
-When code introduces a new capability / element / domain, mirror it in the vault with \`add_concept\` (and \`add_relation\` to wire it). When code is renamed / refactored, use \`rename_concept\` (one atomic call) instead of patch + manual backlink updates. The vault is the *shared* mental model — keeping it in sync is the point.`;
+When code introduces a new capability / element / domain, mirror it in the vault with \`add_concept\` (and \`add_relation\` to wire it). When code is renamed / refactored, use \`rename_concept\` (one atomic call) instead of patch + manual backlink updates. The vault is the *shared* mental model — keeping it in sync is the point.
+
+${CONSTRUCTION_RULES_EN}`;
 
 const server = new Server(
   { name: 'ontology-atlas-mcp', version: SERVER_VERSION },
@@ -1491,7 +1499,7 @@ const TOOLS = [
       'If another node already has the same title, a near-duplicate `warning` is ' +
       'included too — prefer patch_concept on the existing node over forking a duplicate. ' +
       'Successful writes return ' + POST_WRITE_MAINTENANCE_GUIDANCE + ' so agents can immediately see graph cleanup / relation suggestions after the new node lands. ' +
-      '**For bulk creation (e.g. bootstrap flow with 5+ nodes) use `add_concepts({concepts: [...]})` (batch, max 50, partial result) — saves K-1 round-trips.**',
+      '**For bulk creation (e.g. bootstrap flow with 5+ nodes) use `add_concepts({concepts: [...]})` (batch, max 50, partial result) — saves K-1 round-trips.**' + ' ' + ELEMENT_NAMING_RULE_EN,
     inputSchema: {
       type: 'object',
       properties: {
@@ -1553,7 +1561,7 @@ const TOOLS = [
       'still land. A row whose normalized title matches an earlier landed row in the same batch still lands but carries a near-duplicate `warning` — `patch_concept` the earlier node instead of forking the same concept (duplicates are the #1 growing-vault failure mode). '
       + '`concepts[]` order in the response matches the input. Cap = 50 per ' +
       'call (split into multiple batches for larger sets). NO atomic rollback — if you ' +
-      'need all-or-nothing semantics use single `add_concept` calls. Invalid-only batches return no row-level write metadata and no top-level `postWriteMaintenance`. When at least one row changes the vault, the response includes one ' + POST_WRITE_MAINTENANCE_GUIDANCE + ' for the final graph.',
+      'need all-or-nothing semantics use single `add_concept` calls. Invalid-only batches return no row-level write metadata and no top-level `postWriteMaintenance`. When at least one row changes the vault, the response includes one ' + POST_WRITE_MAINTENANCE_GUIDANCE + ' for the final graph.' + ' ' + ELEMENT_NAMING_RULE_BATCH_EN,
     inputSchema: {
       type: 'object',
       properties: {
@@ -5869,10 +5877,18 @@ function compactPostWriteMaintenance(limit = 5) {
   COMPILED_ONTOLOGY_CACHE.clear();
   const artifact = COMPILED_ONTOLOGY_CACHE.get({ includeIndexes: true });
   const ontologyAtlasIgnorePatterns = loadOntologyAtlasIgnore(VAULT_ROOT);
+  // Node-eligibility gate hand-off (2026-07-31 council). The gate runs inside
+  // `commitDoc`, so it has already fired for every door — add_concept,
+  // patch_concept, add_relation, and the batch variants alike. Draining here,
+  // at the one place a write response is assembled, is what gives batch tools
+  // the "skip per row, summarize once at the end" behaviour for free: each row
+  // writes with `includePostWriteMaintenance: false`, findings accumulate, and
+  // the batch's single closing call collects all of them.
+  const nodeEligibilityFindings = drainNodeEligibilityFindings();
   const result = queryCompiledOntology(artifact, {
     operation: 'maintenance_plan',
     limit,
-  }, { ontologyAtlasIgnorePatterns });
+  }, { ontologyAtlasIgnorePatterns, nodeEligibilityFindings });
   return {
     operation: result.operation,
     sideEffect: result.sideEffect,

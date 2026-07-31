@@ -3649,7 +3649,9 @@ export const okShape = {
   },
   strictMaintenancePhaseFilter: strictValueErrorResponse("phases items", ["validate", "repair", "link", "materialize", "review"], "repiar", "repair"),
   strictMaintenanceSeverityFilter: strictValueErrorResponse("severities items", ["fail", "warn", "info"], "fatal", "fail"),
-  strictMaintenanceKindFilter: strictValueErrorResponse("kinds items", ["inspect_compile_issue", "break_dependency_cycle", "canonicalize_graph_arrays", "resolve_dangling_reference", "add_missing_relation", "materialize_external_element", "unassigned_node", "empty_domain"], "add_mising_relation", "add_missing_relation"),
+  // Derived, not transcribed — a hand-copied list here silently stopped matching
+  // the server the day the node-eligibility gate added two kinds (2026-07-31).
+  strictMaintenanceKindFilter: strictValueErrorResponse("kinds items", [...MAINTENANCE_KIND_VALUES], "add_mising_relation", "add_missing_relation"),
   strictRelationFilter: strictValueErrorResponse("dependencyTypes items", ["domains", "domain", "capabilities", "elements", "dependencies", "depends_on", "relates", "contains", "describes"], "depend_on", "depends_on"),
   strictFindNeighborsTypeFilter: strictValueErrorResponse("types items", ["domains", "domain", "capabilities", "elements", "dependencies", "depends_on", "relates", "contains", "describes"], "depend_on", "depends_on"),
   strictFindOrphansKindFilter: strictValueErrorResponse("kind", ["project", "domain", "capability", "element", "document", "vault-readme"], "capabilty", "capability"),
