@@ -43,7 +43,7 @@ import {
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const SERVER_ENTRY = resolve(__dirname, "index.js");
-const EQUALITY_FILTER_KEYS = ["kind", "domain", "slug", "title"];
+const EQUALITY_FILTER_KEYS = ["kind", "domain", "slug", "title", "created_by"];
 
 let passed = 0;
 let failed = 0;
@@ -4543,6 +4543,139 @@ await test("add_concept/add_concepts — implementation path is preserved as evi
     assert.equal(docs[1].frontmatter.path, "src/store.ts");
   } finally {
     rmSync(root, { recursive: true, force: true });
+  }
+});
+
+// ── 저작 출처 `created_by` (2026-07-31 원장) ───────────────────────────────
+//
+// 이 서버를 통과한 쓰기의 행위자는 **에이전트다** — 호출 경로 자체가 그것을
+// 증명하므로 위조할 수 없다. 소급 추론은 금지이고, 부재는 unknown 이다.
+// 순수 계약(값 규약 · 스키마 · 질의 필터)은
+// `tests/contract/created-by-provenance.contract.test.ts` 가 맡고,
+// 여기서는 **실제 서버가 디스크에 무엇을 남기는지**를 잰다.
+
+function writeHeartbeat(root, agent) {
+  mkdirSync(join(root, ".ontology-atlas"), { recursive: true });
+  writeFileSync(
+    join(root, ".ontology-atlas", "agent-activity.json"),
+    JSON.stringify({ agent, state: "editing", updatedAt: new Date().toISOString() }),
+    "utf-8",
+  );
+}
+
+await test("add_concept/add_concepts — created_by 는 활동 로그와 같은 신원으로 찍힌다", async () => {
+  const root = makeVault([]);
+  writeHeartbeat(root, "codex");
+  try {
+    const { responses } = await rpc(root, [
+      ...INIT_REQUESTS,
+      callTool(2, "add_concept", { slug: "capabilities/single", kind: "capability", title: "Single", domain: "auth" }),
+      callTool(3, "add_concepts", {
+        concepts: [{ slug: "capabilities/batch", kind: "capability", title: "Batch", domain: "auth" }],
+      }),
+      callTool(4, "get_concepts", { slugs: ["capabilities/single", "capabilities/batch"] }),
+      // 「사람이 만든 것만 모아보기」의 반대편 — 에이전트가 쓴 것은 사람으로 세지 않는다.
+      callTool(5, "query_concepts", { filter: "created_by=human" }),
+      callTool(6, "query_concepts", { filter: 'created_by="agent:codex"' }),
+    ]);
+    const docs = getCallParsed(responses, 4).concepts;
+    assert.equal(docs[0].frontmatter.created_by, "agent:codex", "single write stamps the heartbeat agent");
+    assert.equal(docs[1].frontmatter.created_by, "agent:codex", "batch write stamps the same identity");
+    assert.equal(getCallParsed(responses, 5).total, 0, "agent writes never count as human");
+    assert.equal(getCallParsed(responses, 6).total, 2, "created_by filter selects the agent's nodes");
+  } finally {
+    rmSync(root, { recursive: true, force: true });
+  }
+});
+
+await test("add_concept/add_concepts — 하트비트가 없으면 이름만 모른다 (사람으로 떨어지지 않는다)", async () => {
+  const root = makeVault([]);
+  try {
+    const { responses } = await rpc(root, [
+      ...INIT_REQUESTS,
+      callTool(2, "add_concept", { slug: "capabilities/nameless", kind: "capability", title: "Nameless", domain: "auth" }),
+      callTool(3, "get_concept", { slug: "capabilities/nameless" }),
+      callTool(4, "query_concepts", { filter: "created_by=human" }),
+    ]);
+    assert.equal(getCallParsed(responses, 3).frontmatter.created_by, "agent:unknown");
+    assert.equal(getCallParsed(responses, 4).total, 0, "an unnamed agent is still not a human");
+  } finally {
+    rmSync(root, { recursive: true, force: true });
+  }
+});
+
+await test("patch_concept — created_by 는 보존되고 덮어쓸 수 없다", async () => {
+  const root = makeVault([
+    {
+      slug: "capabilities/by-hand",
+      content: "---\nslug: capabilities/by-hand\nkind: capability\ntitle: By Hand\ncreated_by: human\n---\n\n# By Hand\n",
+    },
+    {
+      slug: "capabilities/unknown-origin",
+      content: "---\nslug: capabilities/unknown-origin\nkind: capability\ntitle: Unknown Origin\n---\n\n# Unknown Origin\n",
+    },
+  ]);
+  writeHeartbeat(root, "codex");
+  try {
+    const { responses } = await rpc(root, [
+      ...INIT_REQUESTS,
+      // 패치는 저작이 아니다 — 사람이 만든 노드를 에이전트가 다듬어도 출처는 사람 그대로.
+      callTool(2, "patch_concept", { slug: "capabilities/by-hand", frontmatter: { domain: "auth" } }),
+      callTool(3, "get_concept", { slug: "capabilities/by-hand" }),
+      // 출처 없는 노드에는 패치가 출처를 만들어내지 않는다.
+      callTool(4, "patch_concept", { slug: "capabilities/unknown-origin", frontmatter: { domain: "auth" } }),
+      callTool(5, "get_concept", { slug: "capabilities/unknown-origin" }),
+      // 스스로를 사람이라고 주장하는 패치는 반려된다.
+      callTool(6, "patch_concept", { slug: "capabilities/unknown-origin", frontmatter: { created_by: "human" } }),
+    ]);
+    assert.equal(getCallParsed(responses, 3).frontmatter.created_by, "human", "patch preserves an existing stamp");
+    const unknownOrigin = getCallParsed(responses, 5).frontmatter;
+    assert.equal(unknownOrigin.domain, "auth", "the patch itself still lands");
+    assert.equal(
+      Object.hasOwn(unknownOrigin, "created_by"),
+      false,
+      "absence stays absence — patching never invents an origin",
+    );
+    assert.equal(isErrorResponse(responses, 6), true, "created_by cannot be patched");
+    assert.match(
+      responses.find((r) => r.id === 6).result.content[0].text,
+      /created_by cannot be patched/i,
+    );
+  } finally {
+    rmSync(root, { recursive: true, force: true });
+  }
+});
+
+await test("absorb_document — 흡수한 노드도 에이전트 저작으로 찍힌다", async () => {
+  const repoRoot = mkdtempSync(join(tmpdir(), "ontology-atlas-absorb-origin-"));
+  const vault = join(repoRoot, "vault");
+  mkdirSync(vault);
+  writeHeartbeat(vault, "codex");
+  const sourcePath = join(repoRoot, "AGENTS.md");
+  writeFileSync(
+    sourcePath,
+    ["# Agent Guide", "", "## Security Policy", "", "Always review destructive changes before applying them.", ""].join("\n"),
+    "utf-8",
+  );
+  try {
+    const { responses } = await rpc(
+      vault,
+      [
+        ...INIT_REQUESTS,
+        callTool(2, "absorb_document", { filePath: sourcePath, confirm: true }),
+        callTool(3, "query_concepts", { filter: 'created_by="agent:codex"' }),
+        callTool(4, "query_concepts", { filter: "created_by=human" }),
+      ],
+      3000,
+      { OATLAS_REPO_ROOT: repoRoot },
+    );
+    const applied = getCallParsed(responses, 2);
+    assert.equal(applied.ok, true);
+    assert.ok(applied.written.length > 0, "absorb wrote at least one node");
+    assert.equal(getCallParsed(responses, 3).total, applied.written.length, "every absorbed node carries the agent stamp");
+    assert.equal(getCallParsed(responses, 4).total, 0, "absorption is never human authorship");
+  } finally {
+    rmSync(repoRoot, { recursive: true, force: true });
   }
 });
 

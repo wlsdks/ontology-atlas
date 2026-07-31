@@ -29,6 +29,34 @@
 
 export const VAULT_KINDS = ['project', 'domain', 'capability', 'element', 'document'];
 
+/**
+ * 저작 출처 (2026-07-31 원장 — 「사람이 만든 노드 표기」).
+ *
+ * 값 규약은 `human` 또는 `agent:<name>` 둘뿐이다. **스탬프는 쓰기 시점에,
+ * 호출 경로가 증명하는 행위자에게만 찍는다** — 소급 추론(「로그 없음=사람」·
+ * git blame)으로는 출처가 존재하지 않기 때문이다(98노드에 활동 로그 4줄,
+ * git user 는 단일 사람). 그래서:
+ *
+ *   - 이 키는 **선택**이다. `requiredExtras` 에 넣지 않는다.
+ *   - **부재는 결함이 아니라 unknown 이다.** validator 경고를 붙이지 않으며,
+ *     어떤 경로도 부재를 `human` 으로 기본값 처리하지 않는다.
+ */
+export const CREATED_BY_KEY = 'created_by';
+export const CREATED_BY_HUMAN = 'human';
+export const CREATED_BY_AGENT_PREFIX = 'agent:';
+/**
+ * 경로가 「에이전트가 썼다」는 증명하지만 그 **이름**은 증명하지 못할 때
+ * (활동 하트비트 없음 등). 이름을 모른다고 사람 쪽으로 떨어지면 그것이 바로
+ * 이 결정이 금지한 소급 추론이라, 모름은 모름으로 적는다.
+ */
+export const CREATED_BY_AGENT_UNKNOWN = `${CREATED_BY_AGENT_PREFIX}unknown`;
+
+/** 에이전트 이름 → `agent:<name>`. 이름이 없으면 `agent:unknown`. */
+export function agentCreatedBy(agentName) {
+  const name = typeof agentName === 'string' ? agentName.trim() : '';
+  return name ? `${CREATED_BY_AGENT_PREFIX}${name}` : CREATED_BY_AGENT_UNKNOWN;
+}
+
 export const VAULT_KIND_SCHEMA = {
   project: {
     folder: '',
@@ -38,7 +66,7 @@ export const VAULT_KIND_SCHEMA = {
     // 없으면 렌더러가 title 의 " (" 앞부분으로 자동 파생 (`deriveDisplayTitle`,
     // `src/shared/lib/derive-display-title.ts`) — 대부분의 title 은 이 키를
     // 안 써도 된다. 검색/매칭은 항상 title 전체로 계속된다.
-    optional: ['dependencies', 'relates', 'description', 'status', 'display'],
+    optional: ['dependencies', 'relates', 'description', 'status', 'display', CREATED_BY_KEY],
     requiredExtras: [],
     // 사용자 가독성을 위한 권장 키 순서. buildFrontmatter 가 이 순서로
     // 정렬 후 미정의 키 (외부 import 의 custom_field 등) 는 뒤에 append.
@@ -53,6 +81,7 @@ export const VAULT_KIND_SCHEMA = {
       'domains',
       'capabilities',
       'elements',
+      CREATED_BY_KEY,
     ],
     bodyTemplate: (title) =>
       `# ${title}\n\n` +
@@ -65,7 +94,7 @@ export const VAULT_KIND_SCHEMA = {
   domain: {
     folder: 'domains/',
     arrayDefaults: ['capabilities'],
-    optional: ['depends_on', 'relates', 'broader', 'description', 'display'],
+    optional: ['depends_on', 'relates', 'broader', 'description', 'display', CREATED_BY_KEY],
     requiredExtras: [],
     preferredOrder: [
       'slug',
@@ -75,6 +104,7 @@ export const VAULT_KIND_SCHEMA = {
       'description',
       'depends_on',
       'capabilities',
+      CREATED_BY_KEY,
     ],
     bodyTemplate: (title) =>
       `# ${title}\n\n` +
@@ -84,7 +114,7 @@ export const VAULT_KIND_SCHEMA = {
   capability: {
     folder: 'capabilities/',
     arrayDefaults: ['elements'],
-    optional: ['depends_on', 'relates', 'broader', 'description', 'display'],
+    optional: ['depends_on', 'relates', 'broader', 'description', 'display', CREATED_BY_KEY],
     // `domain` 은 트리 위계의 부모 — 비어 있으면 capability 가 orphan 으로
     // 떠다니며 사용자 인사이트에 분포 노이즈를 만든다. validator 가 경고.
     requiredExtras: ['domain'],
@@ -99,6 +129,7 @@ export const VAULT_KIND_SCHEMA = {
       'domain',
       'depends_on',
       'elements',
+      CREATED_BY_KEY,
     ],
     bodyTemplate: (title) =>
       `# ${title}\n\n` +
@@ -107,7 +138,7 @@ export const VAULT_KIND_SCHEMA = {
   element: {
     folder: 'elements/',
     arrayDefaults: [],
-    optional: ['path', 'depends_on', 'relates', 'broader', 'description', 'display'],
+    optional: ['path', 'depends_on', 'relates', 'broader', 'description', 'display', CREATED_BY_KEY],
     // element 는 어느 domain 안의 어느 capability 가 쓰는 단위 — domain 누락 시
     // 트리에서 sink 로 떠다닌다.
     requiredExtras: ['domain'],
@@ -120,6 +151,7 @@ export const VAULT_KIND_SCHEMA = {
       'domain',
       'path',
       'depends_on',
+      CREATED_BY_KEY,
     ],
     bodyTemplate: (title) =>
       `# ${title}\n\n` +
@@ -128,9 +160,9 @@ export const VAULT_KIND_SCHEMA = {
   document: {
     folder: '',
     arrayDefaults: [],
-    optional: ['describes', 'relates', 'display'],
+    optional: ['describes', 'relates', 'display', CREATED_BY_KEY],
     requiredExtras: [],
-    preferredOrder: ['slug', 'kind', 'title', 'display', 'describes', 'relates'],
+    preferredOrder: ['slug', 'kind', 'title', 'display', 'describes', 'relates', CREATED_BY_KEY],
     bodyTemplate: (title) => `# ${title}\n`,
   },
 };

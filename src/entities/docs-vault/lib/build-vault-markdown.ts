@@ -17,6 +17,25 @@ function quoteYamlScalar(v: string): string {
   return /[:#\[\]{}"',&|*!%@`]/.test(v) ? `"${v.replace(/"/g, '\\"')}"` : v;
 }
 
+/**
+ * 저작 출처(`created_by`)의 웹 쪽 상수 — 2026-07-31 원장.
+ * 정본은 `mcp/src/schema.mjs`(미러 `cli/src/lib/schema.mjs`)이고, 세 사본이
+ * 같은 문자열을 쓰는지는 `tests/contract/created-by-provenance.contract.test.ts`
+ * 가 잡는다. 값 규약은 `human` | `agent:<name>` 뿐이고,
+ * **부재는 결함이 아니라 unknown 이다** — 어떤 경로도 부재를 사람으로 채우지
+ * 않는다.
+ */
+export const VAULT_CREATED_BY_KEY = "created_by";
+export const VAULT_CREATED_BY_HUMAN = "human";
+const VAULT_CREATED_BY_AGENT_PREFIX = "agent:";
+export const VAULT_CREATED_BY_AGENT_UNKNOWN = `${VAULT_CREATED_BY_AGENT_PREFIX}unknown`;
+
+/** 에이전트 이름 → `agent:<name>`. 이름을 모르면 `agent:unknown`(사람 아님). */
+export function vaultAgentCreatedBy(agentName: string | null | undefined): string {
+  const name = typeof agentName === "string" ? agentName.trim() : "";
+  return name ? `${VAULT_CREATED_BY_AGENT_PREFIX}${name}` : VAULT_CREATED_BY_AGENT_UNKNOWN;
+}
+
 export function buildVaultMarkdown(args: {
   kind: string;
   title: string;
@@ -30,6 +49,13 @@ export function buildVaultMarkdown(args: {
    * `title` 은 검색/매칭의 단일 진실원이라 그대로 둔다.
    */
   localeLabels?: Record<string, string>;
+  /**
+   * 저작 출처 — 이 문서를 **쓴 경로가 증명하는** 행위자(`human` |
+   * `agent:<name>`)만 넘긴다. 모르면 넘기지 않는다: 키가 없는 것이 unknown 의
+   * 정직한 표현이고, 사람으로 추정해 채우는 것은 2026-07-31 원장이 금지한
+   * 소급 추론이다.
+   */
+  createdBy?: string;
 }): string {
   const lines = ["---"];
   lines.push(`slug: ${args.slug}`);
@@ -45,6 +71,10 @@ export function buildVaultMarkdown(args: {
     if (!trimmed) continue;
     lines.push(`display_${locale}: ${quoteYamlScalar(trimmed)}`);
   }
+  const createdBy = args.createdBy?.trim();
+  // `agent:<name>` 은 콜론을 품는다 — MCP 쪽 writer 가 내는 바이트와 같게
+  // 인용해야 두 표면이 같은 파일을 만든다.
+  if (createdBy) lines.push(`${VAULT_CREATED_BY_KEY}: ${quoteYamlScalar(createdBy)}`);
   lines.push("---");
   lines.push("");
   lines.push(`# ${args.title}`);

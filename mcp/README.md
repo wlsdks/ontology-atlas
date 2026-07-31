@@ -608,18 +608,57 @@ When `add_concept` writes a new `.md`, the frontmatter is normalized by
 Empty arrays are kept (not stripped) so a human can see the slot and fill it
 later.
 
-| kind | required | always emitted | strongly expected |
-|---|---|---|---|
-| `project` | `slug`, `kind`, `title` | `domains: []`, `capabilities: []`, `elements: []` | — |
-| `domain` | `slug`, `kind`, `title` | `capabilities: []` | — |
-| `capability` | `slug`, `kind`, `title` | `elements: []` | `domain` |
-| `element` | `slug`, `kind`, `title` | — | `domain` |
-| `document` | `slug`, `kind`, `title` | — | — |
+| kind | required | always emitted | strongly expected | optional |
+|---|---|---|---|---|
+| `project` | `slug`, `kind`, `title` | `domains: []`, `capabilities: []`, `elements: []` | — | `display`, `display_<locale>`, `description`, `status`, `dependencies`, `relates`, `created_by` |
+| `domain` | `slug`, `kind`, `title` | `capabilities: []` | — | `display`, `display_<locale>`, `description`, `depends_on`, `relates`, `broader`, `created_by` |
+| `capability` | `slug`, `kind`, `title` | `elements: []` | `domain` | same as `domain` |
+| `element` | `slug`, `kind`, `title` | — | `domain` | same as `domain`, plus `path` |
+| `document` | `slug`, `kind`, `title` | — | — | `display`, `display_<locale>`, `describes`, `relates`, `created_by` |
 
 “Strongly expected” fields don’t throw — they come back in the response under
 `warnings`, and the validator (`mcp:validate`) flags them with the
 `missing-expected-field` issue code so users see them in the workbench banner
 without breaking pre-existing vaults.
+
+### `created_by` — who authored the node (2026-07-31)
+
+An **optional** field with exactly two shapes: `human`, or `agent:<name>`
+(the agent name is the one the local activity log already records — the
+`.ontology-atlas/agent-activity.json` heartbeat).
+
+**Absence means unknown. It never means `human`.** Provenance is stamped at
+write time by the path that proves the actor, and nothing derives it after the
+fact — no backfill, no "no log entry ⇒ a person did it", no git blame (the
+committer is a person even when an agent wrote the frontmatter). A node with
+no `created_by` is a node whose origin nobody recorded, and the tools say so by
+saying nothing. There is no validator warning for the missing field, because
+its absence is not a defect.
+
+Where the stamp comes from, per path:
+
+| Path | Stamp |
+|---|---|
+| `add_concept` · `add_concepts` · `absorb_document` | `agent:<heartbeat agent>`, or `agent:unknown` when no heartbeat names it |
+| The web workbench composer (`/ontology/studio`, direct save) | `human` |
+| The in-app agent panel's **Apply** | `agent:<provider>` — the draft's author is the model; a person's approval click is not authorship |
+| `ontology-atlas add` / `import` (CLI) | *nothing* — the CLI cannot prove who is at the keyboard |
+
+`patch_concept` **preserves** an existing `created_by` and refuses to set one:
+editing a node is not authoring it, and a field an agent could rewrite would be
+a claim rather than a fact.
+
+Read it back with `get_concept` (full frontmatter), and select on it with
+`query_concepts` — this is what makes "show me only what a person wrote" a
+single call:
+
+```jsonc
+query_concepts({ filter: "created_by=human" })
+query_concepts({ filter: 'kind=capability AND created_by="agent:codex"' })
+```
+
+Quote any value containing `:` — the filter tokenizer reads bare words without
+colons. Nodes with no stamp match neither side; that is what unknown means.
 
 ### `display` — the optional short-name override (2026-07-23)
 

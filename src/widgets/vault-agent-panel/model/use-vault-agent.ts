@@ -228,6 +228,10 @@ export function useVaultAgent(args: UseVaultAgentArgs) {
           vaultIsGit: args.vaultIsGit,
           locale: args.locale,
           labels: args.proposalLabels,
+          // 이 초안을 쓴 것은 이 제공자의 모델이다 — 화면이 웹이라고 사람이
+          // 쓴 것이 되지 않는다(2026-07-31 원장). 감사 로그가 이미 남기는
+          // 같은 이름을 그대로 넘긴다.
+          agentName: provider,
         });
         if (built) setProposal(built);
       }

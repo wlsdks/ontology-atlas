@@ -39,7 +39,11 @@ import { formatAllowedValueError } from './suggestions.mjs';
 import { GRAPH_ARRAY_KEYS } from './vault.mjs';
 
 const KEY_RE = /^[a-z_][a-z0-9_]*$/i;
-const EQUALITY_KEYS = Object.freeze(['kind', 'domain', 'slug', 'title']);
+// `created_by` — 2026-07-31 원장의 「사람이 만든 것만 모아보기」가 성립하는
+// 자리. 값이 `agent:codex` 처럼 콜론을 품으면 따옴표로 감싼다
+// (`created_by="agent:codex"`) — 토크나이저의 맨몸 낱말에는 콜론이 없다.
+// 스탬프가 없는 노드는 어느 쪽에도 안 걸린다. 그것이 unknown 의 뜻이다.
+const EQUALITY_KEYS = Object.freeze(['kind', 'domain', 'slug', 'title', 'created_by']);
 const HAS_KEY_ALIASES = Object.freeze({
   depends_on: 'dependencies',
 });
