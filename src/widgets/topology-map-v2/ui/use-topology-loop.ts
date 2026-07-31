@@ -1501,7 +1501,29 @@ export function useTopologyLoop(args: UseTopologyLoopArgs): UseTopologyLoopResul
   useEffect(() => {
     const canvas = canvasRef.current;
     if (!canvas) return;
-    const ctx = canvas.getContext("2d");
+    /**
+     * **`alpha: false` — 이 지도는 자기 뒤를 보여 줄 일이 없다.**
+     *
+     * 명세(WHATWG canvas): alpha 가 false 면 모든 픽셀의 알파 성분이 1.0 으로
+     * 고정되고 바꾸려는 시도는 조용히 무시된다. 그래서 **컴포지터가 캔버스
+     * 뒤 페이지 콘텐츠와의 블렌딩을 통째로 건너뛸 수 있다** — Blink 는
+     * `html_canvas_element.cc` 에서 이 값으로 `cc_layer_->SetContentsOpaque()`
+     * 를 직접 세우고, `cc/layers/layer.h` 는 그것을 "블렌딩을 생략해도 된다는
+     * 최적화 힌트"로 정의한다.
+     *
+     * 이득이 나는 자리가 중요하다 — **JS 프레임 시간이 아니라 컴포지트
+     * 단계**다. 그래서 `performance.mark` 프로파일에는 안 잡히고, 그 사실을
+     * 모르면 "재 봤는데 차이 없다"는 잘못된 결론이 나온다.
+     *
+     * 조건은 우리가 이미 만족한다: 다크 단일이고 매 프레임 배경을 전체
+     * 칠한다. 부작용은 안 그린 영역이 투명이 아니라 **검정**이 되는 것인데,
+     * 전체를 칠하므로 무관하다.
+     *
+     * ⚠️ **주 캔버스에만.** `render/grid.ts` · `render/animated-background.ts`
+     * 의 오프스크린은 이 캔버스 **위에 합성**되므로 알파가 필요하다 — 거기에
+     * 같이 넣으면 배경 타일이 서로를 가린다.
+     */
+    const ctx = canvas.getContext("2d", { alpha: false });
     if (!ctx) return;
 
     let handle = 0;
@@ -2758,10 +2780,40 @@ export function useTopologyLoop(args: UseTopologyLoopArgs): UseTopologyLoopResul
       handle = requestAnimationFrame(frame);
     };
 
+    /**
+     * **GPU 가 캔버스를 회수하면 지도가 백지가 된다** — 그리고 아무도 그 사실을
+     * 모른다.
+     *
+     * 가속 캔버스의 백킹 저장소는 브라우저가 회수할 수 있다(GPU 프로세스 크래시,
+     * 드라이버 리셋, 탭 백그라운드에서의 메모리 압박). 그러면 `contextlost` 가
+     * 오고 **그리기가 조용히 무효가 된다** — 예외도, 콘솔 오류도 없다. rAF 루프는
+     * 계속 도는데 화면만 비어 있으므로, 사용자에게는 "지도가 사라졌다"로 보이고
+     * 우리에게는 아무 신호도 안 남는다.
+     *
+     * 명세가 주는 계약은 단순하다: `contextlost` 를 `preventDefault()` 로 막으면
+     * 브라우저가 컨텍스트 복구를 시도하고 `contextrestored` 가 온다. 그때 다음
+     * 프레임이 전부 다시 그리므로, 우리가 할 일은 **막고, 깨우는 것**뿐이다 —
+     * 이 루프는 매 프레임 전체 재그리기라 별도 복원 절차가 필요 없다.
+     * (`developer.chrome.com/blog/canvas2d` — "receive a callback and redraw".)
+     */
+    const onContextLost = (event: Event) => {
+      event.preventDefault(); // 이걸 안 하면 브라우저가 복구를 시도하지 않는다
+    };
+    const onContextRestored = () => {
+      // 유휴 게이트가 프레임을 건너뛰고 있을 수 있다 — 복구 직후를 "활동"으로
+      // 표시해 다음 프레임이 확실히 그려지게 한다.
+      lastActiveMsRef.current = performance.now();
+      viewportRebuildPendingRef.current = true;
+    };
+    canvas.addEventListener("contextlost", onContextLost);
+    canvas.addEventListener("contextrestored", onContextRestored);
+
     handle = requestAnimationFrame(frame);
     return () => {
       cancelled = true;
       cancelAnimationFrame(handle);
+      canvas.removeEventListener("contextlost", onContextLost);
+      canvas.removeEventListener("contextrestored", onContextRestored);
     };
   }, []);
 
