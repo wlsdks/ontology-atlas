@@ -126,6 +126,26 @@ paths:
 - **스케일 성능 순서:** 레이아웃 precompute/캐시 → LOD 라벨
   (`hideLabelsOnMove`/`hideEdgesOnMove`) → 엣지 컬링 유지 → 5k+ 도메인 클러스터링.
 
+## 노드 규격(형태 · 반지름 · 크기 · 각인 숫자) — 정본은 DESIGN-SYSTEM.md (2026-08-01)
+
+> kind→도형(hex/사각/원/via-pad) 매핑, 반지름 사다리, `magnitudeScale`(자식 수
+> 기반 크기), 각인 숫자 표시 조건은 **여기 복제하지 않는다** — 정본은
+> `docs/DESIGN-SYSTEM.md` "노드 규격 (Node Spec)" 절. 복제하면 그 순간부터
+> 드리프트가 시작된다(Carbon — "값이 두 곳에 적히면 이미 드리프트가 시작된
+> 것").
+
+- `render/node-shapes.ts`(캔버스) 와 `shared/ui/topology-v2-kind-glyph.tsx`
+  (DOM)를 열기 전에: kind→실루엣 매핑은 **두 파일이 항상 같아야** 한다 — 한쪽만
+  고치면 `tests/contract/node-kind-shape-parity.contract.test.ts` 가 막는다.
+- **브릿지 노드는 아직 값이 없다.** 데이터 쪽이 1급 개념으로 들이는 중이고
+  시각 표현은 도해석(`design-infoviz`) 판정 대기다 — 이 두 파일에 새 kind나
+  새 시각 값을 **추측으로 넣지 않는다**. 자리는 `docs/DESIGN-SYSTEM.md` "노드
+  규격" §5 가 예약해 뒀다.
+- `app/globals.css` 의 `--topology-v2-radius-*` 값 자체(30/17/11/7)와 반지름
+  비율 상수(`DOMAIN_HALF_EXTENT_RATIO` 등)는 위계를 지키는 디자인 결정이라
+  lint/계약 테스트로 판정 못 한다 — 바꾸려면 지도 45라운드 연구급 재수렴이
+  필요.
+
 ## [강등됨 2026-07-24] 구 온톨로지 스튜디오 게임 예외 — 폐기
 
 `/ontology/studio` 는 한때 노드를 게임 아이템으로 다루며 glow·gradient·aura·

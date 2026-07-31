@@ -113,6 +113,19 @@ document.querySelectorAll('*').forEach(el => {
 [...seen].sort();   // 램프와 대조
 ```
 
+### 3b. 캔버스 노드 규격 — DOM 계측 밖 (2026-08-01)
+
+토폴로지 지도의 노드는 **캔버스 2D**라 위 3번(`getComputedStyle`)이 안 닿는다.
+kind→형태(hex/사각/원/via-pad)·반지름·`magnitudeScale`·각인 숫자를 건드린
+변경이면 계측 도구가 다르다:
+
+- **규격 정본**: `docs/DESIGN-SYSTEM.md` "노드 규격" 절.
+- **게이트**: `node-shapes.test.ts` / `topology-v2-kind-glyph.test.tsx`
+  (각 게이트웨이 자체 일관성) + `tests/contract/node-kind-shape-parity.contract.test.ts`
+  (두 게이트웨이 간 일치) — 셋 다 통과가 "재서 확인"의 캔버스 버전이다.
+- **화면 좌표 실측**: `?e2e=1` 이 붙은 페이지의 `window.__atlasMap.nodes()` —
+  `getComputedStyle` 대신 이 창구가 좌표·`draggable`·kind 를 typed 로 낸다.
+
 ## 4. 스크롤 끝 · 예약고
 
 컨테이너를 끝까지 스크롤한 뒤 마지막 콘텐츠의 `bottom` 과 하단 바의 `top` 을

@@ -6622,6 +6622,36 @@
         },
         {
           "depth": 2,
+          "text": "노드 규격 (Node Spec, 2026-08-01)",
+          "slug": "노드-규격-node-spec-2026-08-01"
+        },
+        {
+          "depth": 3,
+          "text": "1. 형태 — kind 는 색이 아니라 도형",
+          "slug": "1-형태-kind-는-색이-아니라-도형"
+        },
+        {
+          "depth": 3,
+          "text": "2. 반지름 — 고정 사다리",
+          "slug": "2-반지름-고정-사다리"
+        },
+        {
+          "depth": 3,
+          "text": "3. 크기 스케일 — magnitudeScale (자식 수가 크기가 된다)",
+          "slug": "3-크기-스케일-magnitudescale-자식-수가-크기가-된다"
+        },
+        {
+          "depth": 3,
+          "text": "4. 각인 숫자 — 언제, 무엇을 세나",
+          "slug": "4-각인-숫자-언제-무엇을-세나"
+        },
+        {
+          "depth": 3,
+          "text": "5. 브릿지 노드 — 자리 예약, 값 미정 (2026-08)",
+          "slug": "5-브릿지-노드-자리-예약-값-미정-2026-08"
+        },
+        {
+          "depth": 2,
           "text": "Brand mark — \"헥사 별자리\" (candidate A, confirmed 2026-07-18)",
           "slug": "brand-mark-헥사-별자리-candidate-a-confirmed-2026-07-18"
         },
@@ -6634,6 +6664,26 @@
           "depth": 2,
           "text": "Top-tier Quality Bar",
           "slug": "top-tier-quality-bar"
+        },
+        {
+          "depth": 2,
+          "text": "에이전트가 소비하는 층 — 이 문서를 누가 읽는가 (2026-08-01)",
+          "slug": "에이전트가-소비하는-층-이-문서를-누가-읽는가-2026-08-01"
+        },
+        {
+          "depth": 3,
+          "text": "이미 있다 (2026 업계가 \"빠졌다\"고 지적하는 것들)",
+          "slug": "이미-있다-2026-업계가-빠졌다고-지적하는-것들"
+        },
+        {
+          "depth": 3,
+          "text": "새로 채웠다",
+          "slug": "새로-채웠다"
+        },
+        {
+          "depth": 3,
+          "text": "필요 없다고 판단했다 (그리고 왜)",
+          "slug": "필요-없다고-판단했다-그리고-왜"
         },
         {
           "depth": 2,
@@ -7007,8 +7057,8 @@
         }
       ],
       "excerpt": "This document is maintained based on Section 3 of the design spec. For the original Linear specification, see design-references/DESIGN-linear.md. v2 (2026-07): topology-map-v2 에서 출하된 B2+ \"Circuit × Constellation\" 시각 언어가 페이지 롤아웃(랜딩 → docs/ontology 허브 → projects/insights → download)의 규범이 되었다 — 아래 v2 — \"Circuit × Constell",
-      "wordCount": 20302,
-      "updatedAt": "2026-07-31",
+      "wordCount": 22286,
+      "updatedAt": "2026-08-01",
       "linksOut": [
         "design-references/DESIGN-linear",
         "TOPOLOGY-V2-DESIGN",

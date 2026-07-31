@@ -227,8 +227,9 @@ v1 의 [Absolute rules](#absolute-rules-donts) 전부 그대로 유효하다. �
   (`"600 13px -apple-system, 'SF Pro Text', …"` 등 4종). 프로토타입 충실
   복사이지만 앱 본문 서체(Inter Variable)와 불일치 — 의도인지 drift 인지
   후속 결정 필요.
-- `render/node-shapes.ts:201` — 음각 숫자 폰트 `600 ${size}px ui-monospace…`
-  패밀리/웨이트 hardcode.
+- `render/node-shapes.ts` 의 `drawEngraved()` — 음각 숫자 폰트 `600 ${size}px ui-monospace…`
+  패밀리/웨이트 hardcode(심볼 이름 참조, 2026-08-01 정정 — 이전엔 `:201` 행 번호를
+  가리켰는데 코드가 옮겨지면 조용히 틀린 곳을 가리키게 된다).
 - `ui/TopologyV2DetailPanel.tsx` — 색은 전부 `--topology-v2-panel-*` 토큰
   기반이나 **타입 사다리가 미토큰**: `text-[10px]`~`text-[13.5px]` ·
   `tracking-[0.12em]` · `pl-[30px]` · `h-[6px]` 등 arbitrary 값 다수. 구
@@ -264,6 +265,168 @@ v1 의 [Absolute rules](#absolute-rules-donts) 전부 그대로 유효하다. �
   이후 추가된 표면 — instrument 밀도 계약은 §2.6 토큰 블록이 진실원.
 - panel tertiary 텍스트 `#868690` 는 프로토타입 `#77777f` 의 AA 대비 넛지
   (Guardian follow-up #2).
+
+## 노드 규격 (Node Spec, 2026-08-01)
+
+> 토큰 **이름**(`--kind-glyph-*`, `--topology-v2-radius-*`)은 이미 있었다. 이
+> 절이 채우는 건 그 이름이 **무엇을 뜻하는지** — 형태 매핑의 이유, 반지름이 왜
+> 그 값인지, 크기가 왜 자식 수를 따르는지, 숫자가 언제 뜨는지. 소유자 지시
+> (2026-08) "노드 규격이나 정보들도 다 디자인 시스템에 들어가야" 에 대한 답.
+> 코드 참조는 **심볼 이름**으로 한다 — 행 번호는 코드가 한 줄만 옮겨도 조용히
+> 틀린 곳을 가리킨다(바로 위 "부채" 절의 `node-shapes.ts:201` 참조가 그
+> 실패 사례였고, 이 절을 쓰며 심볼 이름으로 고쳤다).
+
+### 1. 형태 — kind 는 색이 아니라 도형
+
+**채널 선택 자체가 규격이다.** 범주(kind)를 구분하는 시각 변수로 색 대신
+형태를 쓴다. 이 저장소가 이미 인용해 온 Jacques Bertin, *Sémiologie
+graphique* (1967) 의 논증대로 **색상(hue)은 순서를 표현하지 못한다**
+(`.claude/agents/design-infoviz.md`). 이 앱은 hue 를 이미 두 가지 다른 뜻에
+예약해 뒀다 — 명도/깊이 사다리로 **위계**(project ⊃ domain ⊃ capability ⊃
+element, 아래 "지도 잉크 사다리" 절)를, 색 자체로 **상태**(신호 톤 3종 +
+전원/펄스)를 나른다. kind 라는 순서 없는 범주 구분에 세 번째 hue 의미를
+얹으면 이미 일하고 있는 두 채널이 오염된다 — 그래서 kind 는 형태로 나른다.
+
+| kind | 형태 | 캔버스 소스 | DOM 소스 |
+|---|---|---|---|
+| `project` | 육각(hex) 플레이트 | `hexPoints()` → `bodyPoints()` (`render/node-shapes.ts`) | `<polygon>` (`shared/ui/topology-v2-kind-glyph.tsx`) |
+| `domain` | 사각 칩 (pin-tick 다리 4개) | `squarePoints()` → `bodyPoints()` | `<rect>` |
+| `capability` | 원 (형태 변형 없음) | `bodyPoints()` → `null`(이미 원) | `<circle>` |
+| `element` | 사각 + 중앙 via-hole(드릴 홀) | `bodyPoints()` 바디 + `draw()` 안 별도 via 아크 | `<rect>` + 중앙 `<circle>` |
+
+**두 게이트웨이가 반드시 같은 매핑을 그린다** — 표에 적는 것만으로는 안
+지켜진다(§"규격은 lint 로 강제된다" 원칙 그대로). 각 파일은 자기 안에서만
+일관성을 검증해 왔다(`node-shapes.test.ts`, `topology-v2-kind-glyph.test.tsx`)
+— 두 파일이 **서로** 같은 매핑인지는 아무 것도 안 보고 있었다. 계약 테스트
+`tests/contract/node-kind-shape-parity.contract.test.ts`(2026-08-01 신설)가 그
+자리를 메운다: 프로브로 한쪽 매핑을 깨뜨려 실패를 확인했다(도메인 실루엣을
+원으로 바꿔 그리게 만들면 즉시 적발).
+
+형태는 `farT`(원거리 진행도)에 따라 원으로 수렴한다 — `FULL_CIRCLE_FAR_T =
+0.985` 를 넘으면 무조건 원. 모서리 반지름은
+`interpolateCornerRadius(minCornerRadius(kind, r), r, farT)` 로
+`minCornerRadius`(kind 별 최소 모서리 비율 — 예: project 는 반지름의 14%)에서
+`r`(완전한 원)까지 보간한다 — 실루엣 스왑이 아니라 연속 모프
+(`docs/TOPOLOGY-V2-DESIGN.md` §3.1).
+
+장식(pin-tick·via-hole·이중 헤어라인)은 실루엣이 아니라 재질 표현이고,
+반지름·`farT` 게이트 아래서만 그려진다(원거리에서 소멸). 임계값은
+`node-shapes.ts` 상단 상수 블록(`DOMAIN_PIN_MIN_HALF_EXTENT` 등)이 단일
+출처다 — 이 문서에 값을 복제하지 않는다(복제는 드리프트의 시작, Carbon).
+
+노드 아이콘 세트(기하/라인, 아래 "개인화" 절 #21)는 이 매핑을 절대 바꾸지
+않는다 — 렌더 **스타일**(`glyphStyleDescriptor`)만 fill+sheen ↔ stroke-only
+로 바뀐다.
+
+### 2. 반지름 — 고정 사다리
+
+| kind | 월드 반지름 | 토큰 |
+|---|---|---|
+| project | 30 | `--topology-v2-radius-project` |
+| domain | 17 | `--topology-v2-radius-domain` |
+| capability | 11 | `--topology-v2-radius-capability` |
+| element | 7 | `--topology-v2-radius-element` |
+
+`radiusForKind()`(`ui/topology-world.ts`)가 단일 조회 지점. 값 자체는 위계를
+엄격한 전순서로 지키는 **디자인 결정**이라 lint/계약 테스트가 판정할 수
+없다 — 바꾸려면 "지도 잉크 사다리" 절이 거친 것과 같은 근거 수준(45라운드
+연구 + 체계석 판정)의 재수렴이 필요하다.
+
+정사각형이 원보다 눈에 커 보이는 문제를 반지름 축소로 보정한다 —
+`DOMAIN_HALF_EXTENT_RATIO = 0.86`(도형 반각 = 원 반지름의 86%), element 는
+92%. 같은 `r` 값이어도 사각형의 코너 면적이 원보다 커서 광학적으로 부풀어
+보이기 때문이다 — 광학 보정이라 램프가 아니라 상수로 남는다(spacing 광학
+보정을 강제하지 않는 것과 같은 이유, §"규격은 lint 로 강제된다" "spacing 은
+강제하지 않는다" 참고).
+
+### 3. 크기 스케일 — magnitudeScale (자식 수가 크기가 된다)
+
+`computeMagnitudeScale(kind, childCount, maxChildCount, k)`
+(`ui/topology-world.ts`)가 단일 출처:
+
+```
+scale = clamp(1, 1.4, 1 + k × (√childCount − 1) / √maxChildCount)
+```
+
+- **domain·capability 만 스케일된다.** project 는 vault 당 보통 1~수 개라
+  상대 크기 비교가 의미 없고, **element 는 정의상 항상 잎(leaf)이라
+  `childCount` 가 늘 0** — 함수가 `kind !== "domain" && kind !== "capability"`
+  를 먼저 걸러 `1`(base)을 즉시 반환한다. "잎은 왜 1.0인가"의 답은 이거다:
+  잎에게는 나를 수 있는 자식 수 자체가 없다.
+- **`childCount ≤ 1` 도 base(1.0)** — 구 로그 압축은 중앙값 미만 노드를
+  base **아래로** 줄여 "작은 노드"라는 잘못된 신호를 만들었다. 지금은 항상
+  base 이상이라 "이 노드가 유난히 크다"만 신호하고 "유난히 작다"는 신호하지
+  않는다.
+- **왜 √ 인가** — 로그보다 완만해 격차를 과하게 누르지 않으면서도 큰 차이는
+  압축한다. 순위 단서("어디가 큰가")를 주는 것이 목적이지 막대그래프처럼
+  비례를 주장하지 않는다(Shneiderman overview-first — 세부 비교는 클릭
+  이후의 몫).
+
+  ⚠️ **2026-08-01 실측 정정**: `app/globals.css` 의
+  `--topology-v2-radius-magnitude-k` 토큰 주석이 이 절을 쓰기 직전까지 "로그
+  압축"이라 적혀 있었다 — 실제 구현(`computeMagnitudeScale`)은 이미 **√
+  (제곱근)** 압축으로 바뀐 뒤였고, 주석만 안 따라왔다. 같은 사실이 두 곳
+  (코드 주석 + 이 문서가 될 뻔한 공백)에 적히면 한쪽만 고쳐지고 다른 쪽은
+  조용히 틀린 채 남는다는 예시라 여기 남긴다. 주석은 이 발견과 함께
+  고쳤다.
+- **1.4 상한** — 원거리(overview)에서도 최대·최소가 같은 kind 사다리 안에
+  머물게 한다(예: 아무리 커도 domain 이 project 보다 커 보이면 위계가
+  뒤집힌다).
+- `k = --topology-v2-radius-magnitude-k`(0.45, `app/globals.css`) — 스케일
+  강도. 이 값을 바꾸면 모든 domain/capability 노드 크기가 재계산되므로 0.45
+  자체는 시안 확정값(임의 조정 전 소유자 승인 필요).
+- **뱃지 숫자(§4)와는 다른 채널이다** — 크기는 `childCount`(직속 자식만),
+  숫자는 `descendantCount`(전체 후손). 같은 화면에서 "크다"와 "숫자가
+  크다"가 다른 답을 줄 수 있다 — 의도된 이중 채널(사전주의 크기 + 판독
+  숫자).
+- 게이트: `ui/topology-world.test.ts` 의 `computeMagnitudeScale` describe
+  블록 — project/element 불변(=1) · 클램프 상하한 · `childCount ≤ 1` 시
+  base · `maxChildCount`/`k = 0` 방어.
+
+### 4. 각인 숫자 — 언제, 무엇을 세나
+
+`drawEngraved()`(`render/node-shapes.ts`)가 1px 다크 섀도 + 밝은 면으로
+"각인"(인쇄가 아니라 눌러 새긴 것처럼) 그린다. 표시 조건은 **셋 다** 만족해야
+한다:
+
+1. **kind 가 project 또는 domain 뿐** — capability/element 는 절대 안 뜬다
+   (`topology-frame-draw.ts` 의 `showCount`).
+2. **화면 반지름이 `ENGRAVED_COUNT_MIN_RADIUS`(13px) 초과** — 원거리에서
+   숫자가 글리프보다 커지는 것을 막는다.
+3. **`farT < 0.9`** — 원거리(성도) 진입 시 소멸.
+
+숫자 값은 `node.count = descendantCount`(전체 후손 수, §3 의 `childCount`
+와 다른 채널) — `ui/topology-world.ts`. project 의 숫자는 amber(허브와 같은
+Layer-0 톤)로, domain 은 중립 톤으로 그린다(`draw()` 안 `numeralTokens`
+분기).
+
+게이트: 표시 조건(kind·반지름·`farT`)은 `node-shapes.ts` 상수 +
+`topology-frame-draw.ts` 의 `showCount` 조건문이 단일 출처. 리터럴 값(13,
+0.9) 자체의 회귀를 잡는 계약 테스트는 **아직 없다** — 부채로 남긴다(후속:
+`ENGRAVED_COUNT_MIN_RADIUS` 를 export 해 스냅샷하는 짧은 단위 테스트).
+
+### 5. 브릿지 노드 — 자리 예약, 값 미정 (2026-08)
+
+데이터 쪽이 **브릿지 노드**(두 프로젝트/도메인을 잇는 관계의 1급 표현)를
+규격에 들이는 중이고, 시각 표현(소유자 요청 "빛나게 / 붉은 테두리")은 이
+헌장 안에서 대안을 찾는 중 — **도해석(`design-infoviz`) 판정 대기**. glow 는
+이미 금지 목록에 있고(`forbidden.md`), 붉은 테두리는 error 신호 톤과 겹쳐
+오독을 만든다. 이 절이 지금 정하는 것은 **자리와 게이트**뿐, 값이 아니다:
+
+- 형태 매핑 표(§1)에 다섯 번째 행이 필요할 수 있다 — 브릿지가 새 `kind`
+  인지, 기존 kind 위의 부가 마커(예: 엣지 자체의 새 강조)인지는 데이터 쪽
+  결정을 따른다.
+- **값이 확정되면 이 절이 아니라 §1~§4 본문에 편입한다** — "브릿지 전용
+  절"로 격리하지 않는다. 격리하면 다음 감사가 "왜 브릿지만 따로 있지"를
+  또 묻는다.
+- 게이트는 **`node-kind-shape-parity` 와 같은 패턴**(캔버스 게이트웨이 + DOM
+  게이트웨이 동시 갱신 + parity 테스트 확장)을 따른다 — 한쪽만 고치고
+  끝내면 지도와 INDEX/공방/팝오버가 갈라진다.
+- 색을 새로 쓴다면(도해석이 승인한다면) 이미 넷으로 갈라진 amber 규율에
+  **다섯 번째**를 더하는 것이다(`.claude/rules/design.md` "amber 는 네
+  갈래" 절 — 허브 · 브랜드 마크 · kind tone · 발자국 트레일). 같은 PR 에서
+  그 절과 아래 "Three ambers, three rules" 표(2026-08-01 기준 3행뿐 —
+  발자국 트레일이 아직 이 표엔 없다, 별도 부채로 등재)를 함께 갱신한다.
 
 ## Brand mark — "헥사 별자리" (candidate A, confirmed 2026-07-18)
 
@@ -374,6 +537,77 @@ Reference anchors for this bar:
 - Toss design-system article: https://toss.tech/article/toss-design-system
 - Toss / Apps-in-Toss Figma UI Kit license: https://developers-apps-in-toss.toss.im/design/prepare/figma-ui-license.html
 - Toss Slash MIT repo: https://github.com/toss/slash
+
+## 에이전트가 소비하는 층 — 이 문서를 누가 읽는가 (2026-08-01)
+
+> 소유자 지시(2026-07-31 기준 최신 실천 조사) — "에이전트를 위한 디자인
+> 시스템"이 이 제품의 정체성(`AGENTS.md` "agent-native, human-sovereign")과
+> 직결된다는 지적. 아래는 웹 조사 결과를 이 저장소의 현재 상태에 **대입한**
+> 격차 분석이다 — 남의 목차를 옮긴 게 아니라, 이미 있는 것 / 없는 것 / 필요
+> 없는 것을 가른 결과다. 출처는 각 항목에 남긴다(공개 발행물만, 자산 모방
+> 없음).
+
+**이 절이 말하는 "에이전트"는 이 저장소를 파일시스템으로 직접 여는 코딩
+에이전트(Claude Code · Codex)다.** Figma MCP·Astryx JSON 매니페스트가 상정하는
+**저장소 밖에서 API 로만 접근하는 에이전트**와 전제가 다르다 — 그 차이가
+아래 각 판단을 가른다.
+
+### 이미 있다 (2026 업계가 "빠졌다"고 지적하는 것들)
+
+| 업계가 지적하는 실패 패턴 | 이 저장소의 답 | 근거 |
+|---|---|---|
+| "문서·토큰·컴포넌트가 서로 다른 말을 해 에이전트가 뭐가 맞는지 못 가른다" | **단일 진실원 원칙 + lint 강제** — 토큰은 `app/globals.css` 한 곳, 이 문서는 값을 복제하지 않고 이름만 인용, `no-restricted-syntax` 가 하드코딩을 기계적으로 막는다 | `.claude/rules/design.md` "규격은 lint 로 강제된다"·Carbon 인용 |
+| "에이전트는 프롬프트가 명시한 것만 가져오고 나머지(spacing·타이포·컬러 램프)는 추측으로 채운다" | **조건부 규칙 자동 로딩** — `src/**/*.tsx` · `app/**/*.css` 를 열면 `.claude/rules/design.md` 가 프롬프트가 요청 안 해도 세션에 자동으로 실린다 | `CLAUDE.md` 규칙 로딩 표, `tests/contract/rules-path-scope.contract.test.ts` |
+| "문서 drift 를 감시되는 실패 모드로 다뤄야 한다" | **계약 테스트가 값이 아니라 관계(별칭·parity)를 감시한다** | `topology-ink-contrast.contract.test.ts`(별칭), `node-kind-shape-parity.contract.test.ts`(§"노드 규격") |
+
+(2026-08-01 조사: [Design Tokens Community Group 표준 안정화](https://www.w3.org/community/design-tokens/2025/10/28/design-tokens-specification-reaches-first-stable-version/) · ["Your Design System Is Not Ready for AI Agents"](https://www.intodesignsystems.com/blog/design-system-not-ready-for-ai-agents) · [DESIGN.md 포맷](https://github.com/google-labs-code/design.md).)
+
+### 새로 채웠다
+
+- **캔버스는 DOM 이 없다 — 에이전트가 "보는" 유일한 창구는 `window.__atlasMap`**
+  (`?e2e=1` 게이트, `ui/use-topology-loop.ts`). 노드 좌표·`draggable`·카메라·
+  선택·클러스터 칩의 "주장 대 실제"를 typed 값으로 낸다. 2026 업계 논의는
+  캔버스/WebGL 자동화를 대개 **화면 픽셀을 보는 컴퓨터 사용 에이전트**로
+  우회하는데, 이 저장소는 소스에 직접 접근하는 에이전트라 스크린샷 왕복 없이
+  **타입드 훅**으로 같은 문제를 더 싸고 결정적으로 푼다 — 2026-07-31 사고
+  (커서를 훑어 배경을 노드로 착각, "안 느린데요" 오답 6연속)의 직접 처방.
+  게이트: `tests/contract/map-testability.contract.test.ts`. 이 훅은 코드
+  주석에만 있어 이 문서 독자에게는 존재하지 않는 것과 같았다 — 이 단락이
+  그 등재다. 노드의 **형태/반지름/크기 규격**(위 "노드 규격" 절)은 이 훅이
+  직접 노출하지 않는다 — 화면 좌표/상호작용 가능 여부만 훅의 몫이고, 형태
+  규격은 kind 로부터 §1~§4 의 정적 계약을 따라 유도한다.
+- **노드 규격의 코드 참조를 심볼 이름으로 바꿨다**(위 절 전체 + "부채" 절의
+  기존 행 번호 참조 1건) — 행 번호는 코드가 이동하면 조용히 틀린 곳을
+  가리킨다.
+
+### 필요 없다고 판단했다 (그리고 왜)
+
+- **W3C DTCG(Design Tokens Community Group) JSON export.** 2025.10 에 첫
+  stable 버전이 나왔고 24개 이상 조직이 후원하며 툴 생태계도 넓다 — 하지만
+  그 표준이 푸는 문제는 **Figma ↔ Style Dictionary ↔ 코드 사이의 왕복**이다.
+  이 저장소엔 그 왕복이 없다(디자인 툴 소스가 없다 — 시안은 정적 HTML,
+  `docs/prototypes/*.html`). DTCG JSON 을 새로 만들면 `app/globals.css` 와
+  값이 **두 곳에 적힌다** — 이 문서가 반복해서 반려해 온 바로 그 패턴이다.
+  소비자가 생기면(예: 실제 Figma 라이브러리 도입) 그때 `globals.css` 로부터
+  **생성**하는 스크립트를 추가한다(손으로 유지되는 두 번째 진실원은 금지,
+  빌드타임 파생은 허용 — `docs-vault:build` 와 같은 패턴).
+- **컴포넌트 JSON 매니페스트(Meta Astryx 류).** 이건 "에이전트가 컴포넌트
+  라이브러리에서 골라 조립"하는 앱-빌더용 패턴이다. 이 제품은 사람+에이전트가
+  같은 저장소의 TSX 를 직접 고쳐 쓰는 단일 애플리케이션이라 "고를 컴포넌트
+  목록"이 아니라 "지킬 규칙"이 필요하다 — 그 역할은 이미 `.claude/rules/
+  design.md` + lint + 계약 테스트가 한다. 매니페스트를 새로 만들면 그 셋과
+  네 번째로 같은 사실을 다르게 말하는 자리가 생긴다.
+- **별도 `DESIGN.md`(Google Labs 포맷) 도입.** 그 포맷이 푸는 문제(기계가
+  읽는 YAML 토큰 + 사람이 읽는 산문 근거를 한 파일에)는 이 저장소가 이미
+  다른 배치로 푼다 — 토큰은 `app/globals.css`(CSS 자체가 이미 기계가 파싱
+  가능한 포맷), 근거는 이 문서(사람이 읽는 프로즈). 셋째 파일을 얹으면
+  "토큰이 정말 이 값인가"를 확인할 곳이 세 곳이 된다. 에이전트가 이미
+  리포를 직접 Read 하므로, 별도 매니페스트가 원격 에이전트에게 주는 이득
+  (조회 비용 절감)이 이 컨텍스트에는 없다.
+- **컴포넌트별 "명시적 안티패턴" 메타데이터 필드.** 업계 사례(Spotify Encore
+  류)는 컴포넌트 수십~수백 개를 가진 **라이브러리**의 문제다. 이 저장소의
+  "안티패턴"은 이미 한곳에 있다 — "Anti-AI Design Criteria" 절(아래) +
+  `forbidden.md`. 컴포넌트마다 흩어 놓으면 그 자체가 새 드리프트 표면이다.
 
 ## Design tokens
 
@@ -492,6 +726,7 @@ a defect if it names the right one:
 | **Hub amber** | `--topology-v2-amber-hub` / `BRAND_MARK_AMBER` `#d4b478` | One hub ring + one Layer-0 container, plus two written exceptions (agent focus ring, `?recent=` spotlight). A third on screen is a defect. |
 | **Brand mark** | the same `#d4b478` in the nav-rail logo | Not an expansion — it is the product's mark, one instance per route, never data. Written down here so audits stop re-filing it. |
 | **Kind tone** | `capability` `rgba(211,159,73,.94)` (amber) · `element` `rgba(124,166,141,.94)` (eucalyptus) | A **data mark**. Allowed only where colour is the sole identity channel — the kind-census strip, map dots, tree chips. Composition bars whose segments are already identified by order + adjacent numerals use the app bar grammar (indigo primary + neutral + 1px seam) instead. Never a surface, rail, or callout. |
+| **Footprint trail** | `--color-footprint-trail` `#e8c47a` (2026-07-29, added) | Deliberately a DIFFERENT value from hub amber, not an extension of it — same family, split value, so "center" (hub) and "walked" (trail) never collapse into one meaning. Opt-in, default 0, `shadowBlur` capped 6px, single consumer (`shared/lib/footprint-glyph.ts`). Gate: `tests/contract/footprint-bloom-exception.contract.test.ts`. See `.claude/rules/design.md` "amber 는 네 갈래" for the full four-way rule. |
 
 **Bar colour is neutral + one indigo.** Indigo marks the primary series only —
 the leading row in a one-value ranking (`DomainCompositionGrid`), the capability
@@ -2541,10 +2776,11 @@ JSX 안에 44px 정사각 버튼이나 라벨 버튼을 인라인 클래스로 �
 
 - **2종 출하**: `geometric`(기본, fill+금속 sheen) · `line`(stroke-only, 살짝
   얇은 획). 후속(백로그): 필드(채움) · 미니멀 점.
-- **불변 규칙(하드)**: **kind→실루엣 매핑은 세트 간 절대 고정** — project=hex ·
-  domain=chip(둥근 사각) · capability=circle · element=via-pad(사각+홀). 세트는
-  **렌더 스타일만** 바꾼다(실루엣 계약은 `topology-v2-kind-glyph.test.tsx` /
-  `node-shapes.test.ts` 가 강제).
+- **불변 규칙(하드)**: **kind→실루엣 매핑은 세트 간 절대 고정** — 매핑 표·
+  근거·게이트는 위 "노드 규격" 절 §1 이 정본(여기 중복하지 않는다). 세트는
+  **렌더 스타일만** 바꾼다(실루엣 자체 일관성은 `topology-v2-kind-glyph.test.tsx` /
+  `node-shapes.test.ts`, 두 게이트웨이 간 parity 는
+  `tests/contract/node-kind-shape-parity.contract.test.ts` 가 강제).
 - **단일 게이트웨이**: 모든 kind-glyph 렌더는 두 게이트 중 하나를 경유한다 —
   DOM `@/shared/ui/topology-v2-kind-glyph`(`useGlyphSet()` 구독; INDEX·공방·
   팝오버·상세·프로젝트 등 앱 전역) + 캔버스 `topology-map-v2/render/node-shapes`
@@ -2556,6 +2792,7 @@ JSX 안에 44px 정사각 버튼이나 라벨 버튼을 인라인 클래스로 �
 
 ## Changelog
 
+- 2026-08-01: "노드 규격" 절 신설(형태·반지름·크기 스케일·각인 숫자를 심볼 이름으로 문서화, 브릿지 노드 자리 예약) + "에이전트가 소비하는 층" 절 신설(2026-07-31 기준 웹 조사 대비 이미 있는 것/새로 채운 것/필요 없다고 판단한 것). 게이트: `tests/contract/node-kind-shape-parity.contract.test.ts` 신설(캔버스·DOM 두 kind-glyph 게이트웨이의 parity, 이전엔 우연히 일치했을 뿐 계약이 아니었다). `--topology-v2-radius-magnitude-k` 주석 정정(로그→√, 구현과 어긋나 있던 드리프트). "Three ambers" 표에 4번째(발자국 트레일) 행 보강. "부채" 절의 행 번호 참조 1건을 심볼 이름으로 정정
 - 2026-07-25: 디자인 전면 정비 Phase 5 (개인화) — 캔버스 배경 3종(도트/성좌/등고선, `--canvas-bg-*` + 잉크 상한 `--canvas-bg-ink-max`)과 노드 아이콘 세트 2종(기하/라인, kind→실루엣 불변·단일 게이트웨이). 설정 [화면] 라이브 미리보기 피커 + localStorage 지속. "개인화" 절 참고
 - 2026-07-25: 디자인 전면 정비 Phase 1 — 캐노니컬 `Select`(다크 Listbox, #4) · `EmptyState` 스켈레톤/아이콘 슬롯 확장(#16) · 컨트롤 높이 토큰 `--control-h-sm/md/lg`(#13) · 다이얼로그 폭 스케일 `--dialog-w-sm/md/lg` 신설. 공방 create 도메인 + 토폴로지 "개념 추가" kind 셀렉트가 캐노니컬 Select 로, 인사이트 depends/허브 빈 영역이 EmptyState 로 이관. "컨트롤 인벤토리" 절 참고
 - 2026-07-21: Geometry & Type Codex (R5) — `text-[Npx]`(29종·1,184건)를 7단 type 램프(`--text-caption`…`--text-hero` + `--tracking-*` 짝)로, arbitrary radius(18종)를 3단(`--radius-chip/card/panel`)으로 수렴. 박스별 규격 표 + 명시 예외 등재. ESLint `no-restricted-syntax` 가 신규 arbitrary 를 차단(마이그레이션 완료 디렉토리 error / R6 동시작업 dir warn). 시각은 ±1px 스냅 수준 유지(리디자인 아님); see "Geometry & Type Codex" 절

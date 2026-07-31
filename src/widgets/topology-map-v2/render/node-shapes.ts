@@ -354,8 +354,18 @@ function drawEngraved(
   ctx.globalAlpha = 1;
 }
 
-/** This kind's polygon points at draw radius `r` — `null` for capability, which is already a plain circle. */
-function bodyPoints(kind: NodeShapeDrawState["kind"], x: number, y: number, r: number): readonly Point[] | null {
+/**
+ * This kind's polygon points at draw radius `r` — `null` for capability, which
+ * is already a plain circle. Exported (in addition to internal use by
+ * `draw()`/`strokeKindOutline()`/`outlinePerimeter()`) so
+ * `tests/contract/node-kind-shape-parity.contract.test.ts` can read the
+ * canvas gateway's kind→silhouette mapping directly instead of re-deriving it
+ * from `draw()`'s side effects — that contract test is the ONLY thing that
+ * checks this mapping agrees with the DOM gateway's
+ * (`shared/ui/topology-v2-kind-glyph.tsx`); each file's own unit tests only
+ * check internal consistency, not parity across the two gateways.
+ */
+export function bodyPoints(kind: NodeShapeDrawState["kind"], x: number, y: number, r: number): readonly Point[] | null {
   if (kind === "project") return hexPoints(x, y, r);
   if (kind === "domain") return squarePoints(x, y, r * DOMAIN_HALF_EXTENT_RATIO);
   if (kind === "element") return squarePoints(x, y, r * 0.92);
