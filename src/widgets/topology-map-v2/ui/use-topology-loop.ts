@@ -592,6 +592,13 @@ export function useTopologyLoop(args: UseTopologyLoopArgs): UseTopologyLoopResul
    */
   const chipRevealRef = useRef<Map<string, number>>(new Map());
   /**
+   * 다섯째 티어 관통 채널 — **칩 펼침으로 드러난 자식**의 0..1 램프.
+   * 앞의 넷(엣지 선택 · 발자국 · ego · 스포트라이트)과 같은 문법이다.
+   * `egoRevealRiseTau`/`egoRevealDecayTau` 를 재사용한다 — 같은 성격의
+   * "콘텐츠가 장면 위로 떠오른다" 이므로 새 토큰을 만들지 않는다.
+   */
+  const expandRevealRef = useRef<Map<string, number>>(new Map());
+  /**
    * rank8 — 신규 노드 등장 램프(nodeId → 0..1). world 재빌드 시 이전 id 집합과
    * diff 해 **신규** 노드에만 0 을 심고(기존 노드는 1 유지 → 회귀 0), 프레임 루프가
    * 1 로 수렴시킨다. `drawTopologyFrame` 이 effRadius(0.6→1 미세 scale)와 globalAlpha
@@ -2574,6 +2581,27 @@ export function useTopologyLoop(args: UseTopologyLoopArgs): UseTopologyLoopResul
         }
       }
 
+      // 다섯째 채널 램프 스텝 — 펼침으로 드러난(=접힘 집합 밖인) 자식은 1 로,
+      // 다시 접힌 자식은 0 으로 수렴한다. 티어가 이미 열어 준 노드는 이 채널이
+      // 필요 없으므로 대상에서 뺀다(램프 중복 없음).
+      {
+        const revealMap = expandRevealRef.current;
+        const target = new Set<string>();
+        for (const [parentId, childIds] of world.childrenByParent) {
+          if (!effectiveExpanded.has(parentId)) continue;
+          for (const id of childIds) if (!frameClusteredIds.has(id)) target.add(id);
+        }
+        const tracked = new Set<string>([...target, ...revealMap.keys()]);
+        for (const id of tracked) {
+          const prev = revealMap.get(id) ?? 0;
+          const next = reducedMotionRef.current
+            ? (target.has(id) ? 1 : 0)
+            : stepEmphasis(prev, target.has(id), true, dt, tokens.egoRevealRiseTau, tokens.egoRevealDecayTau);
+          if (!target.has(id) && next <= 0.02) revealMap.delete(id);
+          else revealMap.set(id, next);
+        }
+      }
+
       clusterChipsRef.current = frameChips;
       // S3 — 이번 프레임의 NOT-DRAWN 집합을 히트테스트가 볼 수 있게 공개(밀도
       // 게이트 접힘 + 선택적 ego 숨김 이웃). 드로우와 히트가 같은 집합을 본다.
@@ -2651,6 +2679,7 @@ export function useTopologyLoop(args: UseTopologyLoopArgs): UseTopologyLoopResul
         focusRampById: focusRampRef.current,
         appearById: appearRef.current,
         chipRevealById: chipRevealRef.current,
+        expandRevealById: expandRevealRef.current,
         batchAppearById: batchAppearRef.current,
         labelPresentById: labelPresentRef.current,
         colorFocusedNodeId: colorFocusRef.current?.focusedNodeId ?? null,
