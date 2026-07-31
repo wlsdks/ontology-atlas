@@ -4,7 +4,7 @@ kind: capability
 title: Project Full Edit
 domain: domains/project-portfolio
 elements: [elements/project-editor]
-created_by: agent:unknown
+created_by: "agent:unknown"
 ---
 
 ## 정의

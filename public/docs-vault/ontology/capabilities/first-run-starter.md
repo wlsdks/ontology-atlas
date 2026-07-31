@@ -4,7 +4,7 @@ kind: capability
 title: First-Run Starter Vault
 domain: domains/onboarding-and-shell
 elements: [elements/first-run]
-created_by: agent:unknown
+created_by: "agent:unknown"
 ---
 
 ## 정의

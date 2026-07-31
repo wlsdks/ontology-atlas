@@ -4,7 +4,7 @@ kind: capability
 title: Kind Taxonomy Management
 domain: domains/graph-modeling
 elements: [elements/category, elements/status]
-created_by: agent:unknown
+created_by: "agent:unknown"
 ---
 
 ## 정의

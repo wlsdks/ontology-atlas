@@ -4,7 +4,7 @@ kind: capability
 title: Studio Relation Blocks
 domain: domains/graph-modeling
 elements: [elements/ontology-studio]
-created_by: agent:unknown
+created_by: "agent:unknown"
 ---
 
 ## 정의

@@ -4,7 +4,7 @@ kind: capability
 title: Guided Tour
 domain: domains/onboarding-and-shell
 elements: []
-created_by: agent:unknown
+created_by: "agent:unknown"
 ---
 
 ## 정의

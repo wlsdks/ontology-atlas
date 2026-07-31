@@ -4,7 +4,7 @@ kind: capability
 title: Data Source Mode Branching
 domain: domains/local-vault-management
 elements: []
-created_by: agent:unknown
+created_by: "agent:unknown"
 ---
 
 ## 정의
