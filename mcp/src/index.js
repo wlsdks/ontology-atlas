@@ -145,6 +145,8 @@ import {
   missingExpectedFields,
   normalizeLocaleLabels,
   localeLabelCodes,
+  agentCreatedBy,
+  CREATED_BY_KEY,
 } from './schema.mjs';
 import {
   closestAllowedValue,
@@ -4780,6 +4782,29 @@ function requireValidFrontmatterPatch(frontmatter) {
     if (value === null || value === undefined) continue;
     requireNonBlankString(value, `frontmatter.${key}`);
   }
+  // 패치는 저작이 아니다 (2026-07-31 원장). `created_by` 는 쓰기 시점에
+  // 경로가 증명한 사실이라 나중에 다시 쓸 수 없다 — 쓸 수 있으면 에이전트가
+  // 자기 노드를 `human` 으로 바꿀 수 있고, 그 순간 이 필드는 사실이 아니라
+  // 주장이 된다. 기존 값은 patch 를 통과하며 그대로 보존된다.
+  if (Object.prototype.hasOwnProperty.call(frontmatter, CREATED_BY_KEY)) {
+    throw new Error(
+      `frontmatter.${CREATED_BY_KEY} cannot be patched — authorship is stamped once, at write time, by the path that proves it. ` +
+        'Patching an existing node is not authorship; leave the field as it is (or absent, which means unknown).',
+    );
+  }
+}
+
+/**
+ * 저작 출처 스탬프 — 이 서버를 통과한 쓰기의 행위자는 **에이전트다**. 그것은
+ * 호출 경로 자체가 증명하므로 위조할 수 없고, 그래서 여기서만 찍는다.
+ *
+ * 이름은 활동 로그(`activity.jsonl`)가 이미 쓰고 있는 그 신원 —
+ * `.ontology-atlas/agent-activity.json` 의 하트비트 — 을 **그대로** 재사용한다.
+ * 새 신원 체계를 만들지 않는다. 하트비트가 없으면 이름만 모르는 것이지
+ * 사람이 쓴 것은 아니므로 `agent:unknown` 이다(2026-07-31 원장).
+ */
+function agentProvenance() {
+  return agentCreatedBy(readHeartbeatAgent(VAULT_ROOT));
 }
 
 function addConcept({ slug, kind, title, domain, capabilities, elements, path, body, labels }, options = {}) {
@@ -4818,6 +4843,8 @@ function addConcept({ slug, kind, title, domain, capabilities, elements, path, b
     elements,
     path,
     ...localeLabels,
+    // 저작 출처 — 이 호출이 MCP 를 통과했다는 사실이 곧 「에이전트가 썼다」다.
+    [CREATED_BY_KEY]: agentProvenance(),
   });
   // 성장하는 vault 의 #1 실패 모드(중복 노드) 안전망 — write *전* 기존 노드를
   // 훑어 같은 title 이 있으면 advisory 경고. write 를 막지 않는다. batch
@@ -6775,6 +6802,8 @@ function absorbDocumentTool({ filePath, confirm = false, allowOutsideRepo = fals
       title: section.targetTitle,
       role: 'policy',
       source: relative(VAULT_ROOT, abs),
+      // 흡수도 이 서버를 통과한 쓰기다 — 같은 스탬프, 같은 신원 출처.
+      [CREATED_BY_KEY]: agentProvenance(),
     });
     const body = `# ${section.targetTitle}\n\n${section.body}\n`;
     const writtenPath = writeDoc(VAULT_ROOT, section.targetSlug, { frontmatter: fm, body });

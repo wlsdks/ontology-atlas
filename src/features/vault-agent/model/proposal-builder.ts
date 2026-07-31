@@ -1,4 +1,8 @@
-import { buildVaultMarkdown, vaultFolderForKind } from '@/entities/docs-vault';
+import {
+  buildVaultMarkdown,
+  vaultFolderForKind,
+  vaultAgentCreatedBy,
+} from '@/entities/docs-vault';
 import {
   applyFrontmatterUpdates,
   type FrontmatterUpdateValue,
@@ -37,6 +41,16 @@ export interface BuildProposalInput {
   /** 화면 언어 — 새 문서의 어권별 이름 칸을 채운다. */
   locale: string;
   labels: ProposalLabels;
+  /**
+   * 이 턴의 초안을 실제로 쓴 행위자의 이름 — 패널이 물린 LLM 제공자
+   * (`anthropic` / `openai` / …), 감사 로그(`llm-audit.jsonl`)가 이미 남기는
+   * 그 신원이다. 새 신원 체계를 만들지 않는다.
+   *
+   * **이 표면은 웹 UI 지만 저작자는 에이전트다** (2026-07-31 원장). 사람의
+   * 「적용」 클릭은 승인이지 저작이 아니므로 `human` 으로 뒤집히지 않는다.
+   * 모르면 이름만 모르는 것이라 `agent:unknown` 으로 떨어진다.
+   */
+  agentName: string | null;
 }
 
 export interface ProposalLabels {
@@ -191,6 +205,7 @@ function buildAddConcept(
         Object.entries(labels).filter(([, value]) => typeof value === 'string'),
       ),
     } as Record<string, string>,
+    createdBy: vaultAgentCreatedBy(input.agentName),
   });
   const withBody = str(args.body)
     ? markdown.replace(/\n{2}[\s\S]*$/, `\n\n${str(args.body)}\n`)

@@ -26,7 +26,11 @@
 
 import { slugify } from "@/shared/lib/slugify";
 import { canonicalizeDomainRef } from "@/shared/lib/canonicalize-domain-ref";
-import { vaultFolderForKind } from "@/entities/docs-vault";
+import {
+  vaultFolderForKind,
+  VAULT_CREATED_BY_KEY,
+  VAULT_CREATED_BY_HUMAN,
+} from "@/entities/docs-vault";
 
 /** The four node kinds a user can assemble in Create mode (project → element). */
 export const CREATE_NODE_KINDS = ["project", "domain", "capability", "element"] as const;
@@ -226,6 +230,12 @@ export function buildCreateNodeDoc(
   for (const [locale, name] of localeLabelEntries(draft)) {
     extra.push(`display_${locale}: ${quoteYamlScalar(name)}`);
   }
+  // 저작 출처 (2026-07-31 원장) — **공방의 직접 저장은 사람이 쓰는 길이다.**
+  // 이 함수를 부르는 경로가 그것을 증명하므로 여기서 `human` 을 적는다.
+  // 위임 경로(`buildMcpPacket`)는 일부러 이 값을 싣지 않는다: 그 패킷을
+  // 실행하는 것은 에이전트고, `add_concept` 가 자기 신원을 스스로 찍는다.
+  // 사람이라고 **말할 수 있게** 만들면 그 필드는 사실이 아니라 주장이 된다.
+  extra.push(`${VAULT_CREATED_BY_KEY}: ${VAULT_CREATED_BY_HUMAN}`);
   const definition = draft.definition.trim();
   if (definition) extra.push(`definition: ${quoteYamlScalar(definition)}`);
   for (const { key, refs } of groupRelationRefs(draft.relations)) {

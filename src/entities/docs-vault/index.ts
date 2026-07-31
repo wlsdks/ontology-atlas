@@ -44,6 +44,10 @@ export {
   buildVaultMarkdown,
   buildNewNodeDoc,
   vaultFolderForKind,
+  VAULT_CREATED_BY_KEY,
+  VAULT_CREATED_BY_HUMAN,
+  VAULT_CREATED_BY_AGENT_UNKNOWN,
+  vaultAgentCreatedBy,
 } from './lib/build-vault-markdown';
 export { deriveOntologyFromVault, slugifyName } from './lib/derive-ontology-from-vault';
 export { deriveProjectsFromVault } from './lib/derive-projects-from-vault';
