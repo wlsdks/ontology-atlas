@@ -17,25 +17,45 @@ export interface DogfoodCensus {
 }
 
 export const DOGFOOD_CENSUS: DogfoodCensus = {
-  "concepts": 4,
-  "relations": 5,
+  "concepts": 67,
+  "relations": 80,
   "kinds": {
     "project": 1,
-    "domain": 1,
-    "capability": 1,
-    "element": 1,
+    "domain": 6,
+    "capability": 17,
+    "element": 43,
     "document": 0
   },
   "domains": [
     {
-      "slug": "example-domain",
-      "title": "Example domain"
+      "slug": "agent-integration",
+      "title": "AI Agent Integration"
+    },
+    {
+      "slug": "graph-modeling",
+      "title": "Graph Modeling & Ontology Schema"
+    },
+    {
+      "slug": "local-vault-management",
+      "title": "Local Vault & Data Source Management"
+    },
+    {
+      "slug": "onboarding-and-shell",
+      "title": "Onboarding, Distribution & App Shell"
+    },
+    {
+      "slug": "project-portfolio",
+      "title": "Project Portfolio Management"
+    },
+    {
+      "slug": "topology-navigation",
+      "title": "Topology Map Navigation"
     }
   ],
   "domainRelates": [],
   "hub": {
-    "slug": "example-capability",
-    "title": "Example capability",
-    "domain": "example-domain"
+    "slug": "app-update",
+    "title": "App Auto-Update",
+    "domain": "onboarding-and-shell"
   }
 };

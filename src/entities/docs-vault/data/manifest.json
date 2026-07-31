@@ -8583,150 +8583,1752 @@
       "linksOut": []
     },
     {
-      "slug": "ontology/capabilities/example-capability",
-      "path": "docs/ontology/capabilities/example-capability.md",
-      "title": "Example capability",
+      "slug": "ontology/capabilities/app-update",
+      "path": "docs/ontology/capabilities/app-update.md",
+      "title": "App Auto-Update",
       "tags": [],
       "frontmatter": {
-        "slug": "capabilities/example-capability",
+        "slug": "capabilities/app-update",
         "kind": "capability",
-        "title": "Example capability",
-        "display_ko": "예시 기능",
-        "display_en": "Example capability",
-        "domain": "domains/example-domain",
-        "elements": [
-          "elements/example-element"
-        ]
+        "title": "App Auto-Update",
+        "domain": "domains/onboarding-and-shell",
+        "elements": []
       },
       "headings": [
         {
-          "depth": 1,
-          "text": "Example capability",
-          "slug": "example-capability"
+          "depth": 2,
+          "text": "정의",
+          "slug": "정의"
         },
         {
           "depth": 2,
-          "text": "How to fill it in",
-          "slug": "how-to-fill-it-in"
+          "text": "근거",
+          "slug": "근거"
+        },
+        {
+          "depth": 2,
+          "text": "확신도",
+          "slug": "확신도"
         }
       ],
-      "excerpt": "A capability is one user-visible feature within a domain (login, signup, checkout, search, relation editing, …). Rename this file to match one of your real capabilities (capabilities/login.md, capabilities/checkout.md) and update the domain: and elements: keys above accordingly. In the body, describe what this capabili",
-      "wordCount": 99,
+      "excerpt": "설치된 macOS 앱의 업데이트를 확인하고 적용하는 능력. src/features/app-update (구현 증거만) low-medium (0.6)",
+      "wordCount": 19,
       "updatedAt": "2026-08-01",
       "linksOut": []
     },
     {
-      "slug": "ontology/domains/example-domain",
-      "path": "docs/ontology/domains/example-domain.md",
-      "title": "Example domain",
+      "slug": "ontology/capabilities/data-source-mode",
+      "path": "docs/ontology/capabilities/data-source-mode.md",
+      "title": "Data Source Mode Branching",
       "tags": [],
       "frontmatter": {
-        "slug": "domains/example-domain",
+        "slug": "capabilities/data-source-mode",
+        "kind": "capability",
+        "title": "Data Source Mode Branching",
+        "domain": "domains/local-vault-management",
+        "elements": []
+      },
+      "headings": [
+        {
+          "depth": 2,
+          "text": "정의",
+          "slug": "정의"
+        },
+        {
+          "depth": 2,
+          "text": "근거",
+          "slug": "근거"
+        },
+        {
+          "depth": 2,
+          "text": "확신도",
+          "slug": "확신도"
+        }
+      ],
+      "excerpt": "폴더가 선택되었는지에 따라 vault-picked 모드와 static/sample 모드 사이에서 앱 동작을 분기하는 능력. src/features/data-source-mode (구현 증거) docs/FEATURES.md — \"Mode branching (data source)\" 절 (주의: risky-citation 경고 — negated/deprecated-state 서술 포함 문서, 재검증 필요) medium-high (0.85) — 단, docs/FEATURES.md 인용분은 최신성 재확인 필요",
+      "wordCount": 49,
+      "updatedAt": "2026-08-01",
+      "linksOut": []
+    },
+    {
+      "slug": "ontology/capabilities/docs-vault-local",
+      "path": "docs/ontology/capabilities/docs-vault-local.md",
+      "title": "Local Folder Mounting",
+      "tags": [],
+      "frontmatter": {
+        "slug": "capabilities/docs-vault-local",
+        "kind": "capability",
+        "title": "Local Folder Mounting",
+        "domain": "domains/local-vault-management",
+        "elements": [
+          "elements/src/entities/docs-vault",
+          "elements/src/entities/local-fs-handle",
+          "elements/src/views/docs-vault",
+          "elements/src/widgets/docs-vault"
+        ]
+      },
+      "headings": [
+        {
+          "depth": 2,
+          "text": "정의",
+          "slug": "정의"
+        },
+        {
+          "depth": 2,
+          "text": "근거",
+          "slug": "근거"
+        },
+        {
+          "depth": 2,
+          "text": "확신도",
+          "slug": "확신도"
+        }
+      ],
+      "excerpt": "File System Access API로 로컬 마크다운 폴더를 선택·마운트해 실시간 데이터소스로 삼는 능력. src/features/docs-vault-local (구현 증거) high (0.9) — local-first 원칙 문서와 정합",
+      "wordCount": 29,
+      "updatedAt": "2026-08-01",
+      "linksOut": []
+    },
+    {
+      "slug": "ontology/capabilities/first-run-starter",
+      "path": "docs/ontology/capabilities/first-run-starter.md",
+      "title": "First-Run Starter Vault",
+      "tags": [],
+      "frontmatter": {
+        "slug": "capabilities/first-run-starter",
+        "kind": "capability",
+        "title": "First-Run Starter Vault",
+        "domain": "domains/onboarding-and-shell",
+        "elements": [
+          "elements/src/views/first-run"
+        ]
+      },
+      "headings": [
+        {
+          "depth": 2,
+          "text": "정의",
+          "slug": "정의"
+        },
+        {
+          "depth": 2,
+          "text": "근거",
+          "slug": "근거"
+        },
+        {
+          "depth": 2,
+          "text": "확신도",
+          "slug": "확신도"
+        }
+      ],
+      "excerpt": "완전히 새로운 사용자를 빈 상태에서 쓸 수 있는 스타터 볼트까지 데려가는 첫 실행 경험. src/features/first-run-starter (구현 증거) medium (0.7)",
+      "wordCount": 26,
+      "updatedAt": "2026-08-01",
+      "linksOut": []
+    },
+    {
+      "slug": "ontology/capabilities/guided-tour",
+      "path": "docs/ontology/capabilities/guided-tour.md",
+      "title": "Guided Tour",
+      "tags": [],
+      "frontmatter": {
+        "slug": "capabilities/guided-tour",
+        "kind": "capability",
+        "title": "Guided Tour",
+        "domain": "domains/onboarding-and-shell",
+        "elements": []
+      },
+      "headings": [
+        {
+          "depth": 2,
+          "text": "정의",
+          "slug": "정의"
+        },
+        {
+          "depth": 2,
+          "text": "근거",
+          "slug": "근거"
+        },
+        {
+          "depth": 2,
+          "text": "확신도",
+          "slug": "확신도"
+        }
+      ],
+      "excerpt": "신규 사용자에게 지도와 핵심 루프를 소개하는 가이드 투어(시연 클립 포함). src/features/guided-tour (구현 증거) git log: \"시연 클립 둘을 관문에 싣는다 (786)\" — 코드/커밋 증거, analyzerepostructure 증거 패킷 밖이라 독립 코드 근거로만 표기 medium (0.75)",
+      "wordCount": 42,
+      "updatedAt": "2026-08-01",
+      "linksOut": []
+    },
+    {
+      "slug": "ontology/capabilities/locale-switch",
+      "path": "docs/ontology/capabilities/locale-switch.md",
+      "title": "Locale Switching",
+      "tags": [],
+      "frontmatter": {
+        "slug": "capabilities/locale-switch",
+        "kind": "capability",
+        "title": "Locale Switching",
+        "domain": "domains/onboarding-and-shell",
+        "elements": []
+      },
+      "headings": [
+        {
+          "depth": 2,
+          "text": "정의",
+          "slug": "정의"
+        },
+        {
+          "depth": 2,
+          "text": "근거",
+          "slug": "근거"
+        },
+        {
+          "depth": 2,
+          "text": "확신도",
+          "slug": "확신도"
+        }
+      ],
+      "excerpt": "next-intl 기반 [locale] 프리픽스 라우팅으로 UI 로케일을 전환하는 능력. src/features/locale-switch (구현 증거) AGENTS.md — Routes (\"Seventeen routes, all [locale] prefixed by next-intl\") medium-high (0.8)",
+      "wordCount": 32,
+      "updatedAt": "2026-08-01",
+      "linksOut": []
+    },
+    {
+      "slug": "ontology/capabilities/macos-download-link",
+      "path": "docs/ontology/capabilities/macos-download-link.md",
+      "title": "macOS Download Decision",
+      "tags": [],
+      "frontmatter": {
+        "slug": "capabilities/macos-download-link",
+        "kind": "capability",
+        "title": "macOS Download Decision",
+        "domain": "domains/onboarding-and-shell",
+        "elements": [
+          "elements/src/views/download"
+        ]
+      },
+      "headings": [
+        {
+          "depth": 2,
+          "text": "정의",
+          "slug": "정의"
+        },
+        {
+          "depth": 2,
+          "text": "근거",
+          "slug": "근거"
+        },
+        {
+          "depth": 2,
+          "text": "확신도",
+          "slug": "확신도"
+        }
+      ],
+      "excerpt": "설치 결정(macOS 앱 다운로드 vs 웹 계속 사용)을 제시하는 능력. src/features/macos-download-link (구현 증거) docs/FEATURES.md — \"/download — the install decision\" (risky-citation 경고 — 재검증 필요) medium-high (0.85)",
+      "wordCount": 35,
+      "updatedAt": "2026-08-01",
+      "linksOut": []
+    },
+    {
+      "slug": "ontology/capabilities/ontology-blocks",
+      "path": "docs/ontology/capabilities/ontology-blocks.md",
+      "title": "Studio Relation Blocks",
+      "tags": [],
+      "frontmatter": {
+        "slug": "capabilities/ontology-blocks",
+        "kind": "capability",
+        "title": "Studio Relation Blocks",
+        "domain": "domains/graph-modeling",
+        "elements": [
+          "elements/src/views/ontology-studio"
+        ]
+      },
+      "headings": [
+        {
+          "depth": 2,
+          "text": "정의",
+          "slug": "정의"
+        },
+        {
+          "depth": 2,
+          "text": "근거",
+          "slug": "근거"
+        },
+        {
+          "depth": 2,
+          "text": "확신도",
+          "slug": "확신도"
+        }
+      ],
+      "excerpt": "Studio의 나침반 방위 관계 블록(UP=isa, DOWN=contains, RIGHT=depends, LEFT=relates) — 채우면 실제 frontmatter 관계를 쓴다. src/features/ontology-blocks (구현 증거) AGENTS.md — Routes (\"/ontology/studio is the write surface — relation types at fixed compass bearings\") high (0.9)",
+      "wordCount": 42,
+      "updatedAt": "2026-08-01",
+      "linksOut": []
+    },
+    {
+      "slug": "ontology/capabilities/project-data-source",
+      "path": "docs/ontology/capabilities/project-data-source.md",
+      "title": "Active Project Resolution",
+      "tags": [],
+      "frontmatter": {
+        "slug": "capabilities/project-data-source",
+        "kind": "capability",
+        "title": "Active Project Resolution",
+        "domain": "domains/local-vault-management",
+        "elements": [
+          "elements/src/entities/project"
+        ]
+      },
+      "headings": [
+        {
+          "depth": 2,
+          "text": "정의",
+          "slug": "정의"
+        },
+        {
+          "depth": 2,
+          "text": "근거",
+          "slug": "근거"
+        },
+        {
+          "depth": 2,
+          "text": "확신도",
+          "slug": "확신도"
+        }
+      ],
+      "excerpt": "선택된 볼트 안에서 현재 활성 프로젝트가 무엇인지 판정하는 능력. src/features/project-data-source (구현 증거만) low-medium (0.6) — 폴더 증거만",
+      "wordCount": 24,
+      "updatedAt": "2026-08-01",
+      "linksOut": []
+    },
+    {
+      "slug": "ontology/capabilities/project-edit",
+      "path": "docs/ontology/capabilities/project-edit.md",
+      "title": "Project Full Edit",
+      "tags": [],
+      "frontmatter": {
+        "slug": "capabilities/project-edit",
+        "kind": "capability",
+        "title": "Project Full Edit",
+        "domain": "domains/project-portfolio",
+        "elements": [
+          "elements/src/views/project-editor"
+        ]
+      },
+      "headings": [
+        {
+          "depth": 2,
+          "text": "정의",
+          "slug": "정의"
+        },
+        {
+          "depth": 2,
+          "text": "근거",
+          "slug": "근거"
+        },
+        {
+          "depth": 2,
+          "text": "확신도",
+          "slug": "확신도"
+        }
+      ],
+      "excerpt": "project 노드의 필드와 컨테인먼트를 전체 편집하는 능력. src/features/project-edit (구현 증거만) low-medium (0.6)",
+      "wordCount": 19,
+      "updatedAt": "2026-08-01",
+      "linksOut": []
+    },
+    {
+      "slug": "ontology/capabilities/project-quick-edit",
+      "path": "docs/ontology/capabilities/project-quick-edit.md",
+      "title": "Project Quick Edit",
+      "tags": [],
+      "frontmatter": {
+        "slug": "capabilities/project-quick-edit",
+        "kind": "capability",
+        "title": "Project Quick Edit",
+        "domain": "domains/project-portfolio",
+        "elements": []
+      },
+      "headings": [
+        {
+          "depth": 2,
+          "text": "정의",
+          "slug": "정의"
+        },
+        {
+          "depth": 2,
+          "text": "근거",
+          "slug": "근거"
+        },
+        {
+          "depth": 2,
+          "text": "확신도",
+          "slug": "확신도"
+        }
+      ],
+      "excerpt": "전체 편집기를 열지 않고 프로젝트를 가볍게 인라인 수정하는 능력. src/features/project-quick-edit (구현 증거만) low-medium (0.6)",
+      "wordCount": 21,
+      "updatedAt": "2026-08-01",
+      "linksOut": []
+    },
+    {
+      "slug": "ontology/capabilities/project-share",
+      "path": "docs/ontology/capabilities/project-share.md",
+      "title": "Project Sharing",
+      "tags": [],
+      "frontmatter": {
+        "slug": "capabilities/project-share",
+        "kind": "capability",
+        "title": "Project Sharing",
+        "domain": "domains/project-portfolio",
+        "elements": []
+      },
+      "headings": [
+        {
+          "depth": 2,
+          "text": "정의",
+          "slug": "정의"
+        },
+        {
+          "depth": 2,
+          "text": "근거",
+          "slug": "근거"
+        },
+        {
+          "depth": 2,
+          "text": "확신도",
+          "slug": "확신도"
+        }
+      ],
+      "excerpt": "프로젝트에 대한 공유 가능한 참조/링크를 만드는 능력. src/features/project-share (구현 증거만) low (0.55)",
+      "wordCount": 19,
+      "updatedAt": "2026-08-01",
+      "linksOut": []
+    },
+    {
+      "slug": "ontology/capabilities/taxonomy",
+      "path": "docs/ontology/capabilities/taxonomy.md",
+      "title": "Kind Taxonomy Management",
+      "tags": [],
+      "frontmatter": {
+        "slug": "capabilities/taxonomy",
+        "kind": "capability",
+        "title": "Kind Taxonomy Management",
+        "domain": "domains/graph-modeling",
+        "elements": [
+          "elements/src/entities/category",
+          "elements/src/entities/status"
+        ]
+      },
+      "headings": [
+        {
+          "depth": 2,
+          "text": "정의",
+          "slug": "정의"
+        },
+        {
+          "depth": 2,
+          "text": "근거",
+          "slug": "근거"
+        },
+        {
+          "depth": 2,
+          "text": "확신도",
+          "slug": "확신도"
+        }
+      ],
+      "excerpt": "project/domain/capability/element/document 라는 고정 kind/category 분류 체계를 관리하는 능력. src/features/taxonomy (구현 증거만 — 업무 서술 직접 인용 없음) low-medium (0.6) — 폴더 증거만, 업무 의미는 추론. 재검토 권장",
+      "wordCount": 34,
+      "updatedAt": "2026-08-01",
+      "linksOut": []
+    },
+    {
+      "slug": "ontology/capabilities/topology-browsing",
+      "path": "docs/ontology/capabilities/topology-browsing.md",
+      "title": "Topology Map Rendering & Search",
+      "tags": [],
+      "frontmatter": {
+        "slug": "capabilities/topology-browsing",
+        "kind": "capability",
+        "title": "Topology Map Rendering & Search",
+        "domain": "domains/topology-navigation",
+        "elements": [
+          "elements/src/widgets/global-search",
+          "elements/src/widgets/search-palette",
+          "elements/src/widgets/topology-controls",
+          "elements/src/widgets/topology-index-panel",
+          "elements/src/widgets/topology-map-v2"
+        ]
+      },
+      "headings": [
+        {
+          "depth": 2,
+          "text": "정의",
+          "slug": "정의"
+        },
+        {
+          "depth": 2,
+          "text": "근거",
+          "slug": "근거"
+        },
+        {
+          "depth": 2,
+          "text": "확신도",
+          "slug": "확신도"
+        }
+      ],
+      "excerpt": "볼트 전체 그래프를 커스텀 canvas-2D 엔진 위에서 렌더링·팬/줌·검색하는 능력. src/features/에 전용 폴더는 없으나 위젯 증거 + 문서 서술로 제안됨(review-required). src/widgets/topology-map-v2, topology-controls, global-search (구현 증거) AGENTS.md — Tech stack (\"The graph renderer is ours — a custom canvas-2D engine (topology-map-v2)\") medium-high (0.85) — capability 후보가 fe",
+      "wordCount": 59,
+      "updatedAt": "2026-08-01",
+      "linksOut": []
+    },
+    {
+      "slug": "ontology/capabilities/vault-agent",
+      "path": "docs/ontology/capabilities/vault-agent.md",
+      "title": "Agent Connect & Vault Access",
+      "tags": [],
+      "frontmatter": {
+        "slug": "capabilities/vault-agent",
+        "kind": "capability",
+        "title": "Agent Connect & Vault Access",
+        "domain": "domains/agent-integration",
+        "elements": [
+          "elements/src/widgets/agent-connect",
+          "elements/src/widgets/vault-agent-panel"
+        ]
+      },
+      "headings": [
+        {
+          "depth": 2,
+          "text": "정의",
+          "slug": "정의"
+        },
+        {
+          "depth": 2,
+          "text": "근거",
+          "slug": "근거"
+        },
+        {
+          "depth": 2,
+          "text": "확신도",
+          "slug": "확신도"
+        }
+      ],
+      "excerpt": "AI 에이전트가 볼트를 발견·인증하고 읽고 쓸 수 있게 하는 앱 내 connect 플로우와 MCP 대면 표면. src/features/vault-agent (구현 증거) README.md — \"one button writes your agent's config and proves the connection\" medium-high (0.85)",
+      "wordCount": 41,
+      "updatedAt": "2026-08-01",
+      "linksOut": []
+    },
+    {
+      "slug": "ontology/capabilities/vault-ontology",
+      "path": "docs/ontology/capabilities/vault-ontology.md",
+      "title": "Vault Ontology Schema Authoring",
+      "tags": [],
+      "frontmatter": {
+        "slug": "capabilities/vault-ontology",
+        "kind": "capability",
+        "title": "Vault Ontology Schema Authoring",
+        "domain": "domains/graph-modeling",
+        "elements": [
+          "elements/src/entities/knowledge-graph",
+          "elements/src/entities/ontology-class"
+        ]
+      },
+      "headings": [
+        {
+          "depth": 2,
+          "text": "정의",
+          "slug": "정의"
+        },
+        {
+          "depth": 2,
+          "text": "근거",
+          "slug": "근거"
+        },
+        {
+          "depth": 2,
+          "text": "확신도",
+          "slug": "확신도"
+        }
+      ],
+      "excerpt": "kind별 frontmatter 형태와 관계 타입 등 온톨로지 스키마를 저작·정규화하는 능력. src/features/vault-ontology (구현 증거) AGENTS.md — Frontmatter shape per kind (R14) medium-high (0.85)",
+      "wordCount": 30,
+      "updatedAt": "2026-08-01",
+      "linksOut": []
+    },
+    {
+      "slug": "ontology/capabilities/vault-sample-source",
+      "path": "docs/ontology/capabilities/vault-sample-source.md",
+      "title": "Sample Vault Demo Source",
+      "tags": [],
+      "frontmatter": {
+        "slug": "capabilities/vault-sample-source",
+        "kind": "capability",
+        "title": "Sample Vault Demo Source",
+        "domain": "domains/local-vault-management",
+        "elements": []
+      },
+      "headings": [
+        {
+          "depth": 2,
+          "text": "정의",
+          "slug": "정의"
+        },
+        {
+          "depth": 2,
+          "text": "근거",
+          "slug": "근거"
+        },
+        {
+          "depth": 2,
+          "text": "확신도",
+          "slug": "확신도"
+        }
+      ],
+      "excerpt": "설치 없이 체험할 수 있게 하는 번들 예시 볼트(데모 모드) 소스. src/features/vault-sample-source (구현 증거) README.md — \"The installed macOS app reading the example vault in files in a folder\" medium-high (0.8)",
+      "wordCount": 39,
+      "updatedAt": "2026-08-01",
+      "linksOut": []
+    },
+    {
+      "slug": "ontology/domains/agent-integration",
+      "path": "docs/ontology/domains/agent-integration.md",
+      "title": "AI Agent Integration",
+      "tags": [],
+      "frontmatter": {
+        "slug": "domains/agent-integration",
         "kind": "domain",
-        "title": "Example domain",
-        "display_ko": "예시 영역",
-        "display_en": "Example domain",
+        "title": "AI Agent Integration",
+        "display_ko": "AI 에이전트 연동",
+        "display_en": "AI Agent Integration",
         "capabilities": [
-          "capabilities/example-capability"
-        ]
-      },
-      "headings": [
-        {
-          "depth": 1,
-          "text": "Example domain",
-          "slug": "example-domain"
-        },
-        {
-          "depth": 2,
-          "text": "How to fill it in",
-          "slug": "how-to-fill-it-in"
-        },
-        {
-          "depth": 2,
-          "text": "Keep it or delete it?",
-          "slug": "keep-it-or-delete-it"
-        }
-      ],
-      "excerpt": "A domain is a large area of your project (subsystems like auth, billing, builder, realtime, search). Rename this file to match one of your real domains (domains/auth.md, domains/billing.md, …) and list the capabilities it owns under capabilities: in the frontmatter above. Use one or two paragraphs of body text to descr",
-      "wordCount": 142,
-      "updatedAt": "2026-08-01",
-      "linksOut": []
-    },
-    {
-      "slug": "ontology/elements/example-element",
-      "path": "docs/ontology/elements/example-element.md",
-      "title": "Example element",
-      "tags": [],
-      "frontmatter": {
-        "slug": "elements/example-element",
-        "kind": "element",
-        "title": "Example element",
-        "display_ko": "예시 구성요소",
-        "display_en": "Example element",
-        "domain": "domains/example-domain"
-      },
-      "headings": [
-        {
-          "depth": 1,
-          "text": "Example element",
-          "slug": "example-element"
-        },
-        {
-          "depth": 2,
-          "text": "How to fill it in",
-          "slug": "how-to-fill-it-in"
-        }
-      ],
-      "excerpt": "An element is a smaller unit a capability uses (jwt-token, otp-store, indexeddb-adapter, sigma-canvas, …). Rename this file to match a real element (elements/jwt-token.md) and set domain: to the right parent. One or two paragraphs in the body covering what / why / which interface. Frontmatter keys: domain: <slug — the ",
-      "wordCount": 95,
-      "updatedAt": "2026-08-01",
-      "linksOut": []
-    },
-    {
-      "slug": "ontology/project",
-      "path": "docs/ontology/project.md",
-      "title": "My project",
-      "tags": [],
-      "frontmatter": {
-        "slug": "project",
-        "kind": "project",
-        "title": "My project",
-        "display_ko": "내 프로젝트",
-        "display_en": "My project",
-        "domains": [
-          "domains/example-domain"
-        ],
-        "capabilities": [
-          "capabilities/example-capability"
+          "capabilities/vault-agent"
         ],
         "elements": [
-          "elements/example-element"
+          "elements/src/widgets/agent-connect",
+          "elements/src/widgets/vault-agent-panel"
         ]
       },
       "headings": [
         {
-          "depth": 1,
-          "text": "My project",
-          "slug": "my-project"
+          "depth": 2,
+          "text": "정의",
+          "slug": "정의"
         },
         {
           "depth": 2,
-          "text": "One-line mission",
-          "slug": "one-line-mission"
+          "text": "근거",
+          "slug": "근거"
         },
         {
           "depth": 2,
-          "text": "How it grows",
-          "slug": "how-it-grows"
+          "text": "포함 / 제외",
+          "slug": "포함-제외"
         },
         {
           "depth": 2,
-          "text": "Next steps",
-          "slug": "next-steps"
+          "text": "확신도",
+          "slug": "확신도"
         }
       ],
-      "excerpt": "Write a one- or two-line summary of your project here — what / for whom / why. The problem this project solves, or the value it creates, in a single sentence. Fill in domains: [...] in the frontmatter and the domain nodes hang off your project tree automatically. Each domain's capabilities and elements follow the same ",
-      "wordCount": 147,
+      "excerpt": "AI 코딩 에이전트(Claude Code, Codex, Cursor)가 사람과 같은 온톨로지 볼트를 읽고 쓸 수 있게 하는 MCP 서버 표면과 앱 내 connect 플로우. README.md — \"Your agent reads and maintains it over MCP... one button writes your agent's config and proves the connection.\" AGENTS.md — \"AI agent (Claude Code, Codex, Cursor) reads/writes the same .md files via the mcp/ MC",
+      "wordCount": 102,
+      "updatedAt": "2026-08-01",
+      "linksOut": []
+    },
+    {
+      "slug": "ontology/domains/graph-modeling",
+      "path": "docs/ontology/domains/graph-modeling.md",
+      "title": "Graph Modeling & Ontology Schema",
+      "tags": [],
+      "frontmatter": {
+        "slug": "domains/graph-modeling",
+        "kind": "domain",
+        "title": "Graph Modeling & Ontology Schema",
+        "display_ko": "그래프 모델링 및 온톨로지 스키마",
+        "display_en": "Graph Modeling & Ontology Schema",
+        "capabilities": [
+          "capabilities/ontology-blocks",
+          "capabilities/taxonomy",
+          "capabilities/vault-ontology"
+        ],
+        "elements": [
+          "elements/src/entities/category",
+          "elements/src/entities/knowledge-graph",
+          "elements/src/entities/ontology-class",
+          "elements/src/entities/status",
+          "elements/src/views/ontology-edit-redirect",
+          "elements/src/views/ontology-insights",
+          "elements/src/views/ontology-redirect",
+          "elements/src/views/ontology-studio"
+        ]
+      },
+      "headings": [
+        {
+          "depth": 2,
+          "text": "정의",
+          "slug": "정의"
+        },
+        {
+          "depth": 2,
+          "text": "근거",
+          "slug": "근거"
+        },
+        {
+          "depth": 2,
+          "text": "포함 / 제외",
+          "slug": "포함-제외"
+        },
+        {
+          "depth": 2,
+          "text": "확신도",
+          "slug": "확신도"
+        }
+      ],
+      "excerpt": "markdown frontmatter가 인코딩하는 타입 kind/relation 모델(project/domain/capability/element, isa/contains/depends/relates)을 정의하고, 이를 결정론적 그래프로 컴파일·쿼리한다. README.md — \"Because the kinds and relation types are a small fixed set, the folder is not just readable — it is computable.\" docs/ARCHITECTURE.md — \"compileontology turns markd",
+      "wordCount": 110,
+      "updatedAt": "2026-08-01",
+      "linksOut": []
+    },
+    {
+      "slug": "ontology/domains/local-vault-management",
+      "path": "docs/ontology/domains/local-vault-management.md",
+      "title": "Local Vault & Data Source Management",
+      "tags": [],
+      "frontmatter": {
+        "slug": "domains/local-vault-management",
+        "kind": "domain",
+        "title": "Local Vault & Data Source Management",
+        "display_ko": "로컬 볼트 및 데이터소스 관리",
+        "display_en": "Local Vault & Data Source Management",
+        "capabilities": [
+          "capabilities/data-source-mode",
+          "capabilities/docs-vault-local",
+          "capabilities/project-data-source",
+          "capabilities/vault-sample-source"
+        ],
+        "elements": [
+          "elements/src/entities/docs-vault",
+          "elements/src/entities/local-fs-handle",
+          "elements/src/views/docs-vault",
+          "elements/src/views/git",
+          "elements/src/widgets/atlas-git-panel",
+          "elements/src/widgets/docs-vault"
+        ]
+      },
+      "headings": [
+        {
+          "depth": 2,
+          "text": "정의",
+          "slug": "정의"
+        },
+        {
+          "depth": 2,
+          "text": "근거",
+          "slug": "근거"
+        },
+        {
+          "depth": 2,
+          "text": "포함 / 제외",
+          "slug": "포함-제외"
+        },
+        {
+          "depth": 2,
+          "text": "확신도",
+          "slug": "확신도"
+        }
+      ],
+      "excerpt": "로컬 디스크의 마크다운 폴더를 고르고(File System Access API), git을 진실원으로 쓰며, 데모용 샘플 볼트를 제공하는 로컬-퍼스트·백엔드 0 데이터소스 계층. README.md — \"A folder of Markdown files. Each file's frontmatter declares what it is... That is the whole database.\" docs/ARCHITECTURE.md — \"There is no backend, no server database, no auth provider. The user's markdown ",
+      "wordCount": 110,
+      "updatedAt": "2026-08-01",
+      "linksOut": []
+    },
+    {
+      "slug": "ontology/domains/onboarding-and-shell",
+      "path": "docs/ontology/domains/onboarding-and-shell.md",
+      "title": "Onboarding, Distribution & App Shell",
+      "tags": [],
+      "frontmatter": {
+        "slug": "domains/onboarding-and-shell",
+        "kind": "domain",
+        "title": "Onboarding, Distribution & App Shell",
+        "display_ko": "온보딩·배포·앱 셸",
+        "display_en": "Onboarding, Distribution & App Shell",
+        "capabilities": [
+          "capabilities/app-update",
+          "capabilities/first-run-starter",
+          "capabilities/guided-tour",
+          "capabilities/locale-switch",
+          "capabilities/macos-download-link"
+        ],
+        "elements": [
+          "elements/src/views/download",
+          "elements/src/views/first-run",
+          "elements/src/views/gateway-doc",
+          "elements/src/views/home",
+          "elements/src/views/root-entry",
+          "elements/src/widgets/app-nav-rail",
+          "elements/src/widgets/app-settings-menu",
+          "elements/src/widgets/bottom-tab-bar",
+          "elements/src/widgets/docs-quick-drawer",
+          "elements/src/widgets/gateway-chrome",
+          "elements/src/widgets/public-quick-actions"
+        ]
+      },
+      "headings": [
+        {
+          "depth": 2,
+          "text": "정의",
+          "slug": "정의"
+        },
+        {
+          "depth": 2,
+          "text": "근거",
+          "slug": "근거"
+        },
+        {
+          "depth": 2,
+          "text": "포함 / 제외",
+          "slug": "포함-제외"
+        },
+        {
+          "depth": 2,
+          "text": "확신도",
+          "slug": "확신도"
+        }
+      ],
+      "excerpt": "공유 링크 → 설치된 앱 → 연결까지의 첫 5분 경로(다운로드 결정, 첫 실행 투어, 로케일, 자동 업데이트)와 그 주위의 상시 내비게이션 셸. README.md — \"One download installs both surfaces. The macOS app carries a compiled MCP server inside its own bundle.\" AGENTS.md — Routes (\"/ is decided by who is asking\", \"Seventeen routes, all [locale] prefixed by next-intl\") 포함: 첫 실행, 가이",
+      "wordCount": 97,
+      "updatedAt": "2026-08-01",
+      "linksOut": []
+    },
+    {
+      "slug": "ontology/domains/project-portfolio",
+      "path": "docs/ontology/domains/project-portfolio.md",
+      "title": "Project Portfolio Management",
+      "tags": [],
+      "frontmatter": {
+        "slug": "domains/project-portfolio",
+        "kind": "domain",
+        "title": "Project Portfolio Management",
+        "display_ko": "프로젝트 포트폴리오 관리",
+        "display_en": "Project Portfolio Management",
+        "capabilities": [
+          "capabilities/project-edit",
+          "capabilities/project-quick-edit",
+          "capabilities/project-share"
+        ],
+        "elements": [
+          "elements/src/entities/project",
+          "elements/src/views/project-detail",
+          "elements/src/views/project-editor",
+          "elements/src/views/project-selector",
+          "elements/src/widgets/project-drawer"
+        ]
+      },
+      "headings": [
+        {
+          "depth": 2,
+          "text": "정의",
+          "slug": "정의"
+        },
+        {
+          "depth": 2,
+          "text": "근거",
+          "slug": "근거"
+        },
+        {
+          "depth": 2,
+          "text": "포함 / 제외",
+          "slug": "포함-제외"
+        },
+        {
+          "depth": 2,
+          "text": "확신도",
+          "slug": "확신도"
+        }
+      ],
+      "excerpt": "하나의 볼트 안에서 여러 project 노드를 목록화·조회·편집·공유하는 관리 영역. AGENTS.md — Project overview (project/domain/capability/element kind 위계, 다중 프로젝트 컨테인먼트) src/features/project-edit, project-quick-edit, project-share (구현 증거) 포함: 프로젝트 상세/편집기/셀렉터, 빠른 편집, 공유 링크 제외: 프로젝트가 담는 도메인/능력 자체의 의미(그건 각자 도메인) medium (0.7) — AGENTS.md 근거는 간접적, 주로 폴더 증거에",
+      "wordCount": 65,
+      "updatedAt": "2026-08-01",
+      "linksOut": []
+    },
+    {
+      "slug": "ontology/domains/topology-navigation",
+      "path": "docs/ontology/domains/topology-navigation.md",
+      "title": "Topology Map Navigation",
+      "tags": [],
+      "frontmatter": {
+        "slug": "domains/topology-navigation",
+        "kind": "domain",
+        "title": "Topology Map Navigation",
+        "display_ko": "토폴로지 지도 탐색",
+        "display_en": "Topology Map Navigation",
+        "capabilities": [
+          "capabilities/topology-browsing"
+        ],
+        "elements": [
+          "elements/src/widgets/domain-capacity-bar",
+          "elements/src/widgets/full-detail-a1",
+          "elements/src/widgets/gesture-hint",
+          "elements/src/widgets/global-search",
+          "elements/src/widgets/recent-node-row",
+          "elements/src/widgets/search-hint",
+          "elements/src/widgets/search-palette",
+          "elements/src/widgets/shortcut-sheet",
+          "elements/src/widgets/topology-controls",
+          "elements/src/widgets/topology-index-panel",
+          "elements/src/widgets/topology-map-v2"
+        ]
+      },
+      "headings": [
+        {
+          "depth": 2,
+          "text": "정의",
+          "slug": "정의"
+        },
+        {
+          "depth": 2,
+          "text": "근거",
+          "slug": "근거"
+        },
+        {
+          "depth": 2,
+          "text": "포함 / 제외",
+          "slug": "포함-제외"
+        },
+        {
+          "depth": 2,
+          "text": "확신도",
+          "slug": "확신도"
+        }
+      ],
+      "excerpt": "canvas-2D 그래프 브라우징 표면(지도·검색·인덱스 패널) — 볼트 전체를 시각적으로 탐색하는 제품의 1차 진입 경로. docs/ARCHITECTURE.md — \"the current route model converges browsing on Topology, writing on Workshop, maintenance on five-question Insights\" (risky-citation 경고 — AGENTS.md와 함께 인용하여 상호 검증) AGENTS.md — Routes (\"/topology is the map's address, not /\") 포함",
+      "wordCount": 84,
+      "updatedAt": "2026-08-01",
+      "linksOut": []
+    },
+    {
+      "slug": "ontology/elements/src/entities/category",
+      "path": "docs/ontology/elements/src/entities/category.md",
+      "title": "Category",
+      "tags": [],
+      "frontmatter": {
+        "slug": "elements/src/entities/category",
+        "kind": "element",
+        "title": "Category",
+        "domain": "domains/graph-modeling",
+        "path": "src/entities/category"
+      },
+      "headings": [],
+      "excerpt": "kind/category 분류 데이터 엔튰티. capabilities/taxonomy 의 구현 증거.",
+      "wordCount": 8,
+      "updatedAt": "2026-08-01",
+      "linksOut": []
+    },
+    {
+      "slug": "ontology/elements/src/entities/docs-vault",
+      "path": "docs/ontology/elements/src/entities/docs-vault.md",
+      "title": "Docs Vault (entity)",
+      "tags": [],
+      "frontmatter": {
+        "slug": "elements/src/entities/docs-vault",
+        "kind": "element",
+        "title": "Docs Vault (entity)",
+        "domain": "domains/local-vault-management",
+        "path": "src/entities/docs-vault"
+      },
+      "headings": [],
+      "excerpt": "볼트 데이터 모델 엔튰티. capabilities/docs-vault-local 의 구현 증거.",
+      "wordCount": 8,
+      "updatedAt": "2026-08-01",
+      "linksOut": []
+    },
+    {
+      "slug": "ontology/elements/src/entities/knowledge-graph",
+      "path": "docs/ontology/elements/src/entities/knowledge-graph.md",
+      "title": "Knowledge Graph",
+      "tags": [],
+      "frontmatter": {
+        "slug": "elements/src/entities/knowledge-graph",
+        "kind": "element",
+        "title": "Knowledge Graph",
+        "domain": "domains/graph-modeling",
+        "path": "src/entities/knowledge-graph"
+      },
+      "headings": [],
+      "excerpt": "그래프 노드/엣지 자료구조 엔티티. capabilities/vault-ontology 의 구현 증거.",
+      "wordCount": 8,
+      "updatedAt": "2026-08-01",
+      "linksOut": []
+    },
+    {
+      "slug": "ontology/elements/src/entities/local-fs-handle",
+      "path": "docs/ontology/elements/src/entities/local-fs-handle.md",
+      "title": "Local Fs Handle",
+      "tags": [],
+      "frontmatter": {
+        "slug": "elements/src/entities/local-fs-handle",
+        "kind": "element",
+        "title": "Local Fs Handle",
+        "domain": "domains/local-vault-management",
+        "path": "src/entities/local-fs-handle"
+      },
+      "headings": [],
+      "excerpt": "File System Access API 핸들 엔티티. capabilities/docs-vault-local 의 구현 증거.",
+      "wordCount": 10,
+      "updatedAt": "2026-08-01",
+      "linksOut": []
+    },
+    {
+      "slug": "ontology/elements/src/entities/ontology-class",
+      "path": "docs/ontology/elements/src/entities/ontology-class.md",
+      "title": "Ontology Class",
+      "tags": [],
+      "frontmatter": {
+        "slug": "elements/src/entities/ontology-class",
+        "kind": "element",
+        "title": "Ontology Class",
+        "domain": "domains/graph-modeling",
+        "path": "src/entities/ontology-class"
+      },
+      "headings": [],
+      "excerpt": "kind별 스키마 클래스 정의 엔티티. capabilities/vault-ontology 의 구현 증거.",
+      "wordCount": 9,
+      "updatedAt": "2026-08-01",
+      "linksOut": []
+    },
+    {
+      "slug": "ontology/elements/src/entities/project",
+      "path": "docs/ontology/elements/src/entities/project.md",
+      "title": "Project (entity)",
+      "tags": [],
+      "frontmatter": {
+        "slug": "elements/src/entities/project",
+        "kind": "element",
+        "title": "Project (entity)",
+        "domain": "domains/project-portfolio",
+        "path": "src/entities/project"
+      },
+      "headings": [],
+      "excerpt": "project 노드 데이터 모델 엔티티. capabilities/project-data-source 의 구현 증거.",
+      "wordCount": 9,
+      "updatedAt": "2026-08-01",
+      "linksOut": []
+    },
+    {
+      "slug": "ontology/elements/src/entities/status",
+      "path": "docs/ontology/elements/src/entities/status.md",
+      "title": "Status",
+      "tags": [],
+      "frontmatter": {
+        "slug": "elements/src/entities/status",
+        "kind": "element",
+        "title": "Status",
+        "domain": "domains/graph-modeling",
+        "path": "src/entities/status"
+      },
+      "headings": [],
+      "excerpt": "노드 상태 값 엔티티. capabilities/taxonomy 의 구현 증거.",
+      "wordCount": 8,
+      "updatedAt": "2026-08-01",
+      "linksOut": []
+    },
+    {
+      "slug": "ontology/elements/src/views/docs-vault",
+      "path": "docs/ontology/elements/src/views/docs-vault.md",
+      "title": "Docs Vault (view)",
+      "tags": [],
+      "frontmatter": {
+        "slug": "elements/src/views/docs-vault",
+        "kind": "element",
+        "title": "Docs Vault (view)",
+        "domain": "domains/local-vault-management",
+        "path": "src/views/docs-vault"
+      },
+      "headings": [],
+      "excerpt": "/docs 페이지. capabilities/docs-vault-local 의 구현 증거.",
+      "wordCount": 6,
+      "updatedAt": "2026-08-01",
+      "linksOut": []
+    },
+    {
+      "slug": "ontology/elements/src/views/download",
+      "path": "docs/ontology/elements/src/views/download.md",
+      "title": "Download",
+      "tags": [],
+      "frontmatter": {
+        "slug": "elements/src/views/download",
+        "kind": "element",
+        "title": "Download",
+        "domain": "domains/onboarding-and-shell",
+        "path": "src/views/download"
+      },
+      "headings": [],
+      "excerpt": "/download 페이지. capabilities/macos-download-link 의 구현 증거.",
+      "wordCount": 6,
+      "updatedAt": "2026-08-01",
+      "linksOut": []
+    },
+    {
+      "slug": "ontology/elements/src/views/first-run",
+      "path": "docs/ontology/elements/src/views/first-run.md",
+      "title": "First Run",
+      "tags": [],
+      "frontmatter": {
+        "slug": "elements/src/views/first-run",
+        "kind": "element",
+        "title": "First Run",
+        "domain": "domains/onboarding-and-shell",
+        "path": "src/views/first-run"
+      },
+      "headings": [],
+      "excerpt": "첫 실행 화면. capabilities/first-run-starter 의 구현 증거.",
+      "wordCount": 7,
+      "updatedAt": "2026-08-01",
+      "linksOut": []
+    },
+    {
+      "slug": "ontology/elements/src/views/gateway-doc",
+      "path": "docs/ontology/elements/src/views/gateway-doc.md",
+      "title": "Gateway Doc",
+      "tags": [],
+      "frontmatter": {
+        "slug": "elements/src/views/gateway-doc",
+        "kind": "element",
+        "title": "Gateway Doc",
+        "domain": "domains/onboarding-and-shell",
+        "path": "src/views/gateway-doc"
+      },
+      "headings": [],
+      "excerpt": "게이트웨이 문서/마케팅 페이지.",
+      "wordCount": 3,
+      "updatedAt": "2026-08-01",
+      "linksOut": []
+    },
+    {
+      "slug": "ontology/elements/src/views/git",
+      "path": "docs/ontology/elements/src/views/git.md",
+      "title": "Git",
+      "tags": [],
+      "frontmatter": {
+        "slug": "elements/src/views/git",
+        "kind": "element",
+        "title": "Git",
+        "domain": "domains/local-vault-management",
+        "path": "src/views/git"
+      },
+      "headings": [],
+      "excerpt": "git 상태/이력 페이지.",
+      "wordCount": 3,
+      "updatedAt": "2026-08-01",
+      "linksOut": []
+    },
+    {
+      "slug": "ontology/elements/src/views/home",
+      "path": "docs/ontology/elements/src/views/home.md",
+      "title": "Home",
+      "tags": [],
+      "frontmatter": {
+        "slug": "elements/src/views/home",
+        "kind": "element",
+        "title": "Home",
+        "domain": "domains/onboarding-and-shell",
+        "path": "src/views/home"
+      },
+      "headings": [],
+      "excerpt": "/ 홈 진입 페이지.",
+      "wordCount": 4,
+      "updatedAt": "2026-08-01",
+      "linksOut": []
+    },
+    {
+      "slug": "ontology/elements/src/views/ontology-edit-redirect",
+      "path": "docs/ontology/elements/src/views/ontology-edit-redirect.md",
+      "title": "Ontology Edit Redirect",
+      "tags": [],
+      "frontmatter": {
+        "slug": "elements/src/views/ontology-edit-redirect",
+        "kind": "element",
+        "title": "Ontology Edit Redirect",
+        "domain": "domains/graph-modeling",
+        "path": "src/views/ontology-edit-redirect"
+      },
+      "headings": [],
+      "excerpt": "/ontology/edit → /ontology/studio 호환 리다이렉트.",
+      "wordCount": 5,
+      "updatedAt": "2026-08-01",
+      "linksOut": []
+    },
+    {
+      "slug": "ontology/elements/src/views/ontology-insights",
+      "path": "docs/ontology/elements/src/views/ontology-insights.md",
+      "title": "Ontology Insights",
+      "tags": [],
+      "frontmatter": {
+        "slug": "elements/src/views/ontology-insights",
+        "kind": "element",
+        "title": "Ontology Insights",
+        "domain": "domains/graph-modeling",
+        "path": "src/views/ontology-insights"
+      },
+      "headings": [],
+      "excerpt": "5질문 유지보수 대시보드. docs/ARCHITECTURE.md: \"maintenance on five-question Insights\".",
+      "wordCount": 8,
+      "updatedAt": "2026-08-01",
+      "linksOut": []
+    },
+    {
+      "slug": "ontology/elements/src/views/ontology-redirect",
+      "path": "docs/ontology/elements/src/views/ontology-redirect.md",
+      "title": "Ontology Redirect",
+      "tags": [],
+      "frontmatter": {
+        "slug": "elements/src/views/ontology-redirect",
+        "kind": "element",
+        "title": "Ontology Redirect",
+        "domain": "domains/graph-modeling",
+        "path": "src/views/ontology-redirect"
+      },
+      "headings": [],
+      "excerpt": "/ontology → /topology?index=expanded 호환 리다이렉트.",
+      "wordCount": 5,
+      "updatedAt": "2026-08-01",
+      "linksOut": []
+    },
+    {
+      "slug": "ontology/elements/src/views/ontology-studio",
+      "path": "docs/ontology/elements/src/views/ontology-studio.md",
+      "title": "Ontology Studio",
+      "tags": [],
+      "frontmatter": {
+        "slug": "elements/src/views/ontology-studio",
+        "kind": "element",
+        "title": "Ontology Studio",
+        "domain": "domains/graph-modeling",
+        "path": "src/views/ontology-studio"
+      },
+      "headings": [],
+      "excerpt": "/ontology/studio 쓰기 표면(공방). capabilities/ontology-blocks 의 구현 증거.",
+      "wordCount": 7,
+      "updatedAt": "2026-08-01",
+      "linksOut": []
+    },
+    {
+      "slug": "ontology/elements/src/views/project-detail",
+      "path": "docs/ontology/elements/src/views/project-detail.md",
+      "title": "Project Detail",
+      "tags": [],
+      "frontmatter": {
+        "slug": "elements/src/views/project-detail",
+        "kind": "element",
+        "title": "Project Detail",
+        "domain": "domains/project-portfolio",
+        "path": "src/views/project-detail"
+      },
+      "headings": [],
+      "excerpt": "프로젝트 상세 페이지.",
+      "wordCount": 3,
+      "updatedAt": "2026-08-01",
+      "linksOut": []
+    },
+    {
+      "slug": "ontology/elements/src/views/project-editor",
+      "path": "docs/ontology/elements/src/views/project-editor.md",
+      "title": "Project Editor",
+      "tags": [],
+      "frontmatter": {
+        "slug": "elements/src/views/project-editor",
+        "kind": "element",
+        "title": "Project Editor",
+        "domain": "domains/project-portfolio",
+        "path": "src/views/project-editor"
+      },
+      "headings": [],
+      "excerpt": "프로젝트 편집 페이지. capabilities/project-edit 의 구현 증거.",
+      "wordCount": 7,
+      "updatedAt": "2026-08-01",
+      "linksOut": []
+    },
+    {
+      "slug": "ontology/elements/src/views/project-selector",
+      "path": "docs/ontology/elements/src/views/project-selector.md",
+      "title": "Project Selector",
+      "tags": [],
+      "frontmatter": {
+        "slug": "elements/src/views/project-selector",
+        "kind": "element",
+        "title": "Project Selector",
+        "domain": "domains/project-portfolio",
+        "path": "src/views/project-selector"
+      },
+      "headings": [],
+      "excerpt": "프로젝트 선택/목록 페이지.",
+      "wordCount": 3,
+      "updatedAt": "2026-08-01",
+      "linksOut": []
+    },
+    {
+      "slug": "ontology/elements/src/views/root-entry",
+      "path": "docs/ontology/elements/src/views/root-entry.md",
+      "title": "Root Entry",
+      "tags": [],
+      "frontmatter": {
+        "slug": "elements/src/views/root-entry",
+        "kind": "element",
+        "title": "Root Entry",
+        "domain": "domains/onboarding-and-shell",
+        "path": "src/views/root-entry"
+      },
+      "headings": [],
+      "excerpt": "/ 스마트 진입(누구인지에 따라 분기) 로직.",
+      "wordCount": 6,
+      "updatedAt": "2026-08-01",
+      "linksOut": []
+    },
+    {
+      "slug": "ontology/elements/src/widgets/agent-connect",
+      "path": "docs/ontology/elements/src/widgets/agent-connect.md",
+      "title": "Agent Connect",
+      "tags": [],
+      "frontmatter": {
+        "slug": "elements/src/widgets/agent-connect",
+        "kind": "element",
+        "title": "Agent Connect",
+        "domain": "domains/agent-integration",
+        "path": "src/widgets/agent-connect"
+      },
+      "headings": [],
+      "excerpt": "앱 내 AI 에이전트 connect 플로우 위젯. capabilities/vault-agent 의 구현 증거.",
+      "wordCount": 11,
+      "updatedAt": "2026-08-01",
+      "linksOut": []
+    },
+    {
+      "slug": "ontology/elements/src/widgets/app-nav-rail",
+      "path": "docs/ontology/elements/src/widgets/app-nav-rail.md",
+      "title": "App Nav Rail",
+      "tags": [],
+      "frontmatter": {
+        "slug": "elements/src/widgets/app-nav-rail",
+        "kind": "element",
+        "title": "App Nav Rail",
+        "domain": "domains/onboarding-and-shell",
+        "path": "src/widgets/app-nav-rail"
+      },
+      "headings": [],
+      "excerpt": "앱 내비게이션 레일 위젯.",
+      "wordCount": 4,
+      "updatedAt": "2026-08-01",
+      "linksOut": []
+    },
+    {
+      "slug": "ontology/elements/src/widgets/app-settings-menu",
+      "path": "docs/ontology/elements/src/widgets/app-settings-menu.md",
+      "title": "App Settings Menu",
+      "tags": [],
+      "frontmatter": {
+        "slug": "elements/src/widgets/app-settings-menu",
+        "kind": "element",
+        "title": "App Settings Menu",
+        "domain": "domains/onboarding-and-shell",
+        "path": "src/widgets/app-settings-menu"
+      },
+      "headings": [],
+      "excerpt": "앱 설정 메뉴 위젯.",
+      "wordCount": 4,
+      "updatedAt": "2026-08-01",
+      "linksOut": []
+    },
+    {
+      "slug": "ontology/elements/src/widgets/atlas-git-panel",
+      "path": "docs/ontology/elements/src/widgets/atlas-git-panel.md",
+      "title": "Atlas Git Panel",
+      "tags": [],
+      "frontmatter": {
+        "slug": "elements/src/widgets/atlas-git-panel",
+        "kind": "element",
+        "title": "Atlas Git Panel",
+        "domain": "domains/local-vault-management",
+        "path": "src/widgets/atlas-git-panel"
+      },
+      "headings": [],
+      "excerpt": "볼트의 git 상태/스냅샷을 보여주는 패널 위젯.",
+      "wordCount": 6,
+      "updatedAt": "2026-08-01",
+      "linksOut": []
+    },
+    {
+      "slug": "ontology/elements/src/widgets/bottom-tab-bar",
+      "path": "docs/ontology/elements/src/widgets/bottom-tab-bar.md",
+      "title": "Bottom Tab Bar",
+      "tags": [],
+      "frontmatter": {
+        "slug": "elements/src/widgets/bottom-tab-bar",
+        "kind": "element",
+        "title": "Bottom Tab Bar",
+        "domain": "domains/onboarding-and-shell",
+        "path": "src/widgets/bottom-tab-bar"
+      },
+      "headings": [],
+      "excerpt": "모바일/웹 하단 탭 네비게이션 위젯.",
+      "wordCount": 5,
+      "updatedAt": "2026-08-01",
+      "linksOut": []
+    },
+    {
+      "slug": "ontology/elements/src/widgets/docs-quick-drawer",
+      "path": "docs/ontology/elements/src/widgets/docs-quick-drawer.md",
+      "title": "Docs Quick Drawer",
+      "tags": [],
+      "frontmatter": {
+        "slug": "elements/src/widgets/docs-quick-drawer",
+        "kind": "element",
+        "title": "Docs Quick Drawer",
+        "domain": "domains/onboarding-and-shell",
+        "path": "src/widgets/docs-quick-drawer"
+      },
+      "headings": [],
+      "excerpt": "문서 빠른 접근 서랑 위젯.",
+      "wordCount": 5,
+      "updatedAt": "2026-08-01",
+      "linksOut": []
+    },
+    {
+      "slug": "ontology/elements/src/widgets/docs-vault",
+      "path": "docs/ontology/elements/src/widgets/docs-vault.md",
+      "title": "Docs Vault (widget)",
+      "tags": [],
+      "frontmatter": {
+        "slug": "elements/src/widgets/docs-vault",
+        "kind": "element",
+        "title": "Docs Vault (widget)",
+        "domain": "domains/local-vault-management",
+        "path": "src/widgets/docs-vault"
+      },
+      "headings": [],
+      "excerpt": "볼트 트리/목록 UI 위젯. capabilities/docs-vault-local 의 구현 증거.",
+      "wordCount": 8,
+      "updatedAt": "2026-08-01",
+      "linksOut": []
+    },
+    {
+      "slug": "ontology/elements/src/widgets/domain-capacity-bar",
+      "path": "docs/ontology/elements/src/widgets/domain-capacity-bar.md",
+      "title": "Domain Capacity Bar",
+      "tags": [],
+      "frontmatter": {
+        "slug": "elements/src/widgets/domain-capacity-bar",
+        "kind": "element",
+        "title": "Domain Capacity Bar",
+        "domain": "domains/topology-navigation",
+        "path": "src/widgets/domain-capacity-bar"
+      },
+      "headings": [],
+      "excerpt": "도메인별 노드 밀도 표시 위젯.",
+      "wordCount": 5,
+      "updatedAt": "2026-08-01",
+      "linksOut": []
+    },
+    {
+      "slug": "ontology/elements/src/widgets/full-detail-a1",
+      "path": "docs/ontology/elements/src/widgets/full-detail-a1.md",
+      "title": "Full Detail A1",
+      "tags": [],
+      "frontmatter": {
+        "slug": "elements/src/widgets/full-detail-a1",
+        "kind": "element",
+        "title": "Full Detail A1",
+        "domain": "domains/topology-navigation",
+        "path": "src/widgets/full-detail-a1"
+      },
+      "headings": [],
+      "excerpt": "노드 전체 상세 opt-in 패널 위젯.",
+      "wordCount": 6,
+      "updatedAt": "2026-08-01",
+      "linksOut": []
+    },
+    {
+      "slug": "ontology/elements/src/widgets/gateway-chrome",
+      "path": "docs/ontology/elements/src/widgets/gateway-chrome.md",
+      "title": "Gateway Chrome",
+      "tags": [],
+      "frontmatter": {
+        "slug": "elements/src/widgets/gateway-chrome",
+        "kind": "element",
+        "title": "Gateway Chrome",
+        "domain": "domains/onboarding-and-shell",
+        "path": "src/widgets/gateway-chrome"
+      },
+      "headings": [],
+      "excerpt": "게이트웨이(미설치 웹 방문자) 상시 크롬 위젯.",
+      "wordCount": 6,
+      "updatedAt": "2026-08-01",
+      "linksOut": []
+    },
+    {
+      "slug": "ontology/elements/src/widgets/gesture-hint",
+      "path": "docs/ontology/elements/src/widgets/gesture-hint.md",
+      "title": "Gesture Hint",
+      "tags": [],
+      "frontmatter": {
+        "slug": "elements/src/widgets/gesture-hint",
+        "kind": "element",
+        "title": "Gesture Hint",
+        "domain": "domains/topology-navigation",
+        "path": "src/widgets/gesture-hint"
+      },
+      "headings": [],
+      "excerpt": "지도 제스처 힌트 오버레이 위젯.",
+      "wordCount": 5,
+      "updatedAt": "2026-08-01",
+      "linksOut": []
+    },
+    {
+      "slug": "ontology/elements/src/widgets/global-search",
+      "path": "docs/ontology/elements/src/widgets/global-search.md",
+      "title": "Global Search",
+      "tags": [],
+      "frontmatter": {
+        "slug": "elements/src/widgets/global-search",
+        "kind": "element",
+        "title": "Global Search",
+        "domain": "domains/topology-navigation",
+        "path": "src/widgets/global-search"
+      },
+      "headings": [],
+      "excerpt": "전역 검색 위젯. capabilities/topology-browsing 의 구현 증거.",
+      "wordCount": 7,
+      "updatedAt": "2026-08-01",
+      "linksOut": []
+    },
+    {
+      "slug": "ontology/elements/src/widgets/project-drawer",
+      "path": "docs/ontology/elements/src/widgets/project-drawer.md",
+      "title": "Project Drawer",
+      "tags": [],
+      "frontmatter": {
+        "slug": "elements/src/widgets/project-drawer",
+        "kind": "element",
+        "title": "Project Drawer",
+        "domain": "domains/project-portfolio",
+        "path": "src/widgets/project-drawer"
+      },
+      "headings": [],
+      "excerpt": "프로젝트 서랑 패널 위젯.",
+      "wordCount": 4,
+      "updatedAt": "2026-08-01",
+      "linksOut": []
+    },
+    {
+      "slug": "ontology/elements/src/widgets/public-quick-actions",
+      "path": "docs/ontology/elements/src/widgets/public-quick-actions.md",
+      "title": "Public Quick Actions",
+      "tags": [],
+      "frontmatter": {
+        "slug": "elements/src/widgets/public-quick-actions",
+        "kind": "element",
+        "title": "Public Quick Actions",
+        "domain": "domains/onboarding-and-shell",
+        "path": "src/widgets/public-quick-actions"
+      },
+      "headings": [],
+      "excerpt": "비로그인 방문자용 빠른 액션 위젯.",
+      "wordCount": 5,
+      "updatedAt": "2026-08-01",
+      "linksOut": []
+    },
+    {
+      "slug": "ontology/elements/src/widgets/recent-node-row",
+      "path": "docs/ontology/elements/src/widgets/recent-node-row.md",
+      "title": "Recent Node Row",
+      "tags": [],
+      "frontmatter": {
+        "slug": "elements/src/widgets/recent-node-row",
+        "kind": "element",
+        "title": "Recent Node Row",
+        "domain": "domains/topology-navigation",
+        "path": "src/widgets/recent-node-row"
+      },
+      "headings": [],
+      "excerpt": "최근 본 노드 목록 행 위젯.",
+      "wordCount": 6,
+      "updatedAt": "2026-08-01",
+      "linksOut": []
+    },
+    {
+      "slug": "ontology/elements/src/widgets/search-hint",
+      "path": "docs/ontology/elements/src/widgets/search-hint.md",
+      "title": "Search Hint",
+      "tags": [],
+      "frontmatter": {
+        "slug": "elements/src/widgets/search-hint",
+        "kind": "element",
+        "title": "Search Hint",
+        "domain": "domains/topology-navigation",
+        "path": "src/widgets/search-hint"
+      },
+      "headings": [],
+      "excerpt": "검색 힌트 오버레이 위젯.",
+      "wordCount": 4,
+      "updatedAt": "2026-08-01",
+      "linksOut": []
+    },
+    {
+      "slug": "ontology/elements/src/widgets/search-palette",
+      "path": "docs/ontology/elements/src/widgets/search-palette.md",
+      "title": "Search Palette",
+      "tags": [],
+      "frontmatter": {
+        "slug": "elements/src/widgets/search-palette",
+        "kind": "element",
+        "title": "Search Palette",
+        "domain": "domains/topology-navigation",
+        "path": "src/widgets/search-palette"
+      },
+      "headings": [],
+      "excerpt": "검색 팔레트(커맨드-K 류) 위젯. capabilities/topology-browsing 의 구현 증거.",
+      "wordCount": 8,
+      "updatedAt": "2026-08-01",
+      "linksOut": []
+    },
+    {
+      "slug": "ontology/elements/src/widgets/shortcut-sheet",
+      "path": "docs/ontology/elements/src/widgets/shortcut-sheet.md",
+      "title": "Shortcut Sheet",
+      "tags": [],
+      "frontmatter": {
+        "slug": "elements/src/widgets/shortcut-sheet",
+        "kind": "element",
+        "title": "Shortcut Sheet",
+        "domain": "domains/topology-navigation",
+        "path": "src/widgets/shortcut-sheet"
+      },
+      "headings": [],
+      "excerpt": "키보드 단축키 안내 시트 위젯.",
+      "wordCount": 5,
+      "updatedAt": "2026-08-01",
+      "linksOut": []
+    },
+    {
+      "slug": "ontology/elements/src/widgets/topology-controls",
+      "path": "docs/ontology/elements/src/widgets/topology-controls.md",
+      "title": "Topology Controls",
+      "tags": [],
+      "frontmatter": {
+        "slug": "elements/src/widgets/topology-controls",
+        "kind": "element",
+        "title": "Topology Controls",
+        "domain": "domains/topology-navigation",
+        "path": "src/widgets/topology-controls"
+      },
+      "headings": [],
+      "excerpt": "지도 패/줌/리셋 컨트롤 위젯. capabilities/topology-browsing 의 구현 증거.",
+      "wordCount": 8,
+      "updatedAt": "2026-08-01",
+      "linksOut": []
+    },
+    {
+      "slug": "ontology/elements/src/widgets/topology-index-panel",
+      "path": "docs/ontology/elements/src/widgets/topology-index-panel.md",
+      "title": "Topology Index Panel",
+      "tags": [],
+      "frontmatter": {
+        "slug": "elements/src/widgets/topology-index-panel",
+        "kind": "element",
+        "title": "Topology Index Panel",
+        "domain": "domains/topology-navigation",
+        "path": "src/widgets/topology-index-panel"
+      },
+      "headings": [],
+      "excerpt": "지도 인덱스(INDEX) 패널 위젯. capabilities/topology-browsing 의 구현 증거.",
+      "wordCount": 8,
+      "updatedAt": "2026-08-01",
+      "linksOut": []
+    },
+    {
+      "slug": "ontology/elements/src/widgets/topology-map-v2",
+      "path": "docs/ontology/elements/src/widgets/topology-map-v2.md",
+      "title": "Topology Map V2",
+      "tags": [],
+      "frontmatter": {
+        "slug": "elements/src/widgets/topology-map-v2",
+        "kind": "element",
+        "title": "Topology Map V2",
+        "domain": "domains/topology-navigation",
+        "path": "src/widgets/topology-map-v2"
+      },
+      "headings": [],
+      "excerpt": "커스텀 canvas-2D 그래프 렌더러 본체. capabilities/topology-browsing 의 핵심 구현 증거. AGENTS.md Tech stack: \"The graph renderer is ours\".",
+      "wordCount": 18,
+      "updatedAt": "2026-08-01",
+      "linksOut": []
+    },
+    {
+      "slug": "ontology/elements/src/widgets/vault-agent-panel",
+      "path": "docs/ontology/elements/src/widgets/vault-agent-panel.md",
+      "title": "Vault Agent Panel",
+      "tags": [],
+      "frontmatter": {
+        "slug": "elements/src/widgets/vault-agent-panel",
+        "kind": "element",
+        "title": "Vault Agent Panel",
+        "domain": "domains/agent-integration",
+        "path": "src/widgets/vault-agent-panel"
+      },
+      "headings": [],
+      "excerpt": "에이전트 연결 상태/로그 패널 위젯. capabilities/vault-agent 의 구현 증거.",
+      "wordCount": 9,
+      "updatedAt": "2026-08-01",
+      "linksOut": []
+    },
+    {
+      "slug": "ontology/ontology-atlas",
+      "path": "docs/ontology/ontology-atlas.md",
+      "title": "Ontology Atlas",
+      "tags": [],
+      "frontmatter": {
+        "slug": "ontology-atlas",
+        "kind": "project",
+        "title": "Ontology Atlas",
+        "display_ko": "온톨로지 아틀라스",
+        "display_en": "Ontology Atlas",
+        "domains": [],
+        "capabilities": [],
+        "elements": [],
+        "contains": [
+          "domains/agent-integration",
+          "domains/graph-modeling",
+          "domains/local-vault-management",
+          "domains/onboarding-and-shell",
+          "domains/project-portfolio",
+          "domains/topology-navigation"
+        ]
+      },
+      "headings": [
+        {
+          "depth": 2,
+          "text": "정의",
+          "slug": "정의"
+        },
+        {
+          "depth": 2,
+          "text": "근거",
+          "slug": "근거"
+        },
+        {
+          "depth": 2,
+          "text": "포함 / 제외",
+          "slug": "포함-제외"
+        },
+        {
+          "depth": 2,
+          "text": "확신도",
+          "slug": "확신도"
+        }
+      ],
+      "excerpt": "로컬 마크다운 볼트의 frontmatter를 타입이 있는 계산 가능 그래프(도메인·능력·구현 증거·의존·영향)로 바꾸는 로컬-퍼스트 온톨로지 워크벤치. 개발자는 CLI/웹으로, AI 코딩 에이전트는 MCP로 같은 파일을 읽고 쓴다. README.md — \"Your AI coding agent forgets your codebase between sessions... turns the Markdown in your repository into a graph of your product\" AGENTS.md — Project overview (\"a local-first o",
+      "wordCount": 110,
       "updatedAt": "2026-08-01",
       "linksOut": []
     },
@@ -10720,45 +12322,830 @@
         "linkText": "`2026-05-04-claude-code.md`"
       }
     ],
-    "ontology/elements/example-element": [
+    "ontology/domains/onboarding-and-shell": [
       {
-        "fromSlug": "ontology/capabilities/example-capability",
-        "context": "frontmatter · **[elements/example-element]**",
-        "linkText": "elements/example-element"
+        "fromSlug": "ontology/capabilities/app-update",
+        "context": "frontmatter · **[domains/onboarding-and-shell]**",
+        "linkText": "domains/onboarding-and-shell"
       },
       {
-        "fromSlug": "ontology/project",
-        "context": "frontmatter · **[elements/example-element]**",
-        "linkText": "elements/example-element"
+        "fromSlug": "ontology/capabilities/first-run-starter",
+        "context": "frontmatter · **[domains/onboarding-and-shell]**",
+        "linkText": "domains/onboarding-and-shell"
+      },
+      {
+        "fromSlug": "ontology/capabilities/guided-tour",
+        "context": "frontmatter · **[domains/onboarding-and-shell]**",
+        "linkText": "domains/onboarding-and-shell"
+      },
+      {
+        "fromSlug": "ontology/capabilities/locale-switch",
+        "context": "frontmatter · **[domains/onboarding-and-shell]**",
+        "linkText": "domains/onboarding-and-shell"
+      },
+      {
+        "fromSlug": "ontology/capabilities/macos-download-link",
+        "context": "frontmatter · **[domains/onboarding-and-shell]**",
+        "linkText": "domains/onboarding-and-shell"
+      },
+      {
+        "fromSlug": "ontology/elements/src/views/download",
+        "context": "frontmatter · **[domains/onboarding-and-shell]**",
+        "linkText": "domains/onboarding-and-shell"
+      },
+      {
+        "fromSlug": "ontology/elements/src/views/first-run",
+        "context": "frontmatter · **[domains/onboarding-and-shell]**",
+        "linkText": "domains/onboarding-and-shell"
+      },
+      {
+        "fromSlug": "ontology/elements/src/views/gateway-doc",
+        "context": "frontmatter · **[domains/onboarding-and-shell]**",
+        "linkText": "domains/onboarding-and-shell"
+      },
+      {
+        "fromSlug": "ontology/elements/src/views/home",
+        "context": "frontmatter · **[domains/onboarding-and-shell]**",
+        "linkText": "domains/onboarding-and-shell"
+      },
+      {
+        "fromSlug": "ontology/elements/src/views/root-entry",
+        "context": "frontmatter · **[domains/onboarding-and-shell]**",
+        "linkText": "domains/onboarding-and-shell"
+      },
+      {
+        "fromSlug": "ontology/elements/src/widgets/app-nav-rail",
+        "context": "frontmatter · **[domains/onboarding-and-shell]**",
+        "linkText": "domains/onboarding-and-shell"
+      },
+      {
+        "fromSlug": "ontology/elements/src/widgets/app-settings-menu",
+        "context": "frontmatter · **[domains/onboarding-and-shell]**",
+        "linkText": "domains/onboarding-and-shell"
+      },
+      {
+        "fromSlug": "ontology/elements/src/widgets/bottom-tab-bar",
+        "context": "frontmatter · **[domains/onboarding-and-shell]**",
+        "linkText": "domains/onboarding-and-shell"
+      },
+      {
+        "fromSlug": "ontology/elements/src/widgets/docs-quick-drawer",
+        "context": "frontmatter · **[domains/onboarding-and-shell]**",
+        "linkText": "domains/onboarding-and-shell"
+      },
+      {
+        "fromSlug": "ontology/elements/src/widgets/gateway-chrome",
+        "context": "frontmatter · **[domains/onboarding-and-shell]**",
+        "linkText": "domains/onboarding-and-shell"
+      },
+      {
+        "fromSlug": "ontology/elements/src/widgets/public-quick-actions",
+        "context": "frontmatter · **[domains/onboarding-and-shell]**",
+        "linkText": "domains/onboarding-and-shell"
+      },
+      {
+        "fromSlug": "ontology/ontology-atlas",
+        "context": "frontmatter · **[domains/onboarding-and-shell]**",
+        "linkText": "domains/onboarding-and-shell"
       }
     ],
-    "ontology/domains/example-domain": [
+    "ontology/domains/local-vault-management": [
       {
-        "fromSlug": "ontology/capabilities/example-capability",
-        "context": "frontmatter · **[domains/example-domain]**",
-        "linkText": "domains/example-domain"
+        "fromSlug": "ontology/capabilities/data-source-mode",
+        "context": "frontmatter · **[domains/local-vault-management]**",
+        "linkText": "domains/local-vault-management"
       },
       {
-        "fromSlug": "ontology/elements/example-element",
-        "context": "frontmatter · **[domains/example-domain]**",
-        "linkText": "domains/example-domain"
+        "fromSlug": "ontology/capabilities/docs-vault-local",
+        "context": "frontmatter · **[domains/local-vault-management]**",
+        "linkText": "domains/local-vault-management"
       },
       {
-        "fromSlug": "ontology/project",
-        "context": "frontmatter · **[domains/example-domain]**",
-        "linkText": "domains/example-domain"
+        "fromSlug": "ontology/capabilities/project-data-source",
+        "context": "frontmatter · **[domains/local-vault-management]**",
+        "linkText": "domains/local-vault-management"
+      },
+      {
+        "fromSlug": "ontology/capabilities/vault-sample-source",
+        "context": "frontmatter · **[domains/local-vault-management]**",
+        "linkText": "domains/local-vault-management"
+      },
+      {
+        "fromSlug": "ontology/elements/src/entities/docs-vault",
+        "context": "frontmatter · **[domains/local-vault-management]**",
+        "linkText": "domains/local-vault-management"
+      },
+      {
+        "fromSlug": "ontology/elements/src/entities/local-fs-handle",
+        "context": "frontmatter · **[domains/local-vault-management]**",
+        "linkText": "domains/local-vault-management"
+      },
+      {
+        "fromSlug": "ontology/elements/src/views/docs-vault",
+        "context": "frontmatter · **[domains/local-vault-management]**",
+        "linkText": "domains/local-vault-management"
+      },
+      {
+        "fromSlug": "ontology/elements/src/views/git",
+        "context": "frontmatter · **[domains/local-vault-management]**",
+        "linkText": "domains/local-vault-management"
+      },
+      {
+        "fromSlug": "ontology/elements/src/widgets/atlas-git-panel",
+        "context": "frontmatter · **[domains/local-vault-management]**",
+        "linkText": "domains/local-vault-management"
+      },
+      {
+        "fromSlug": "ontology/elements/src/widgets/docs-vault",
+        "context": "frontmatter · **[domains/local-vault-management]**",
+        "linkText": "domains/local-vault-management"
+      },
+      {
+        "fromSlug": "ontology/ontology-atlas",
+        "context": "frontmatter · **[domains/local-vault-management]**",
+        "linkText": "domains/local-vault-management"
       }
     ],
-    "ontology/capabilities/example-capability": [
+    "ontology/elements/src/entities/local-fs-handle": [
       {
-        "fromSlug": "ontology/domains/example-domain",
-        "context": "frontmatter · **[capabilities/example-capability]**",
-        "linkText": "capabilities/example-capability"
+        "fromSlug": "ontology/capabilities/docs-vault-local",
+        "context": "frontmatter · **[elements/src/entities/local-fs-handle]**",
+        "linkText": "elements/src/entities/local-fs-handle"
       },
       {
-        "fromSlug": "ontology/project",
-        "context": "frontmatter · **[capabilities/example-capability]**",
-        "linkText": "capabilities/example-capability"
+        "fromSlug": "ontology/domains/local-vault-management",
+        "context": "frontmatter · **[elements/src/entities/local-fs-handle]**",
+        "linkText": "elements/src/entities/local-fs-handle"
+      }
+    ],
+    "ontology/elements/src/views/first-run": [
+      {
+        "fromSlug": "ontology/capabilities/first-run-starter",
+        "context": "frontmatter · **[elements/src/views/first-run]**",
+        "linkText": "elements/src/views/first-run"
+      },
+      {
+        "fromSlug": "ontology/domains/onboarding-and-shell",
+        "context": "frontmatter · **[elements/src/views/first-run]**",
+        "linkText": "elements/src/views/first-run"
+      }
+    ],
+    "ontology/elements/src/views/download": [
+      {
+        "fromSlug": "ontology/capabilities/macos-download-link",
+        "context": "frontmatter · **[elements/src/views/download]**",
+        "linkText": "elements/src/views/download"
+      },
+      {
+        "fromSlug": "ontology/domains/onboarding-and-shell",
+        "context": "frontmatter · **[elements/src/views/download]**",
+        "linkText": "elements/src/views/download"
+      }
+    ],
+    "ontology/elements/src/views/ontology-studio": [
+      {
+        "fromSlug": "ontology/capabilities/ontology-blocks",
+        "context": "frontmatter · **[elements/src/views/ontology-studio]**",
+        "linkText": "elements/src/views/ontology-studio"
+      },
+      {
+        "fromSlug": "ontology/domains/graph-modeling",
+        "context": "frontmatter · **[elements/src/views/ontology-studio]**",
+        "linkText": "elements/src/views/ontology-studio"
+      }
+    ],
+    "ontology/domains/graph-modeling": [
+      {
+        "fromSlug": "ontology/capabilities/ontology-blocks",
+        "context": "frontmatter · **[domains/graph-modeling]**",
+        "linkText": "domains/graph-modeling"
+      },
+      {
+        "fromSlug": "ontology/capabilities/taxonomy",
+        "context": "frontmatter · **[domains/graph-modeling]**",
+        "linkText": "domains/graph-modeling"
+      },
+      {
+        "fromSlug": "ontology/capabilities/vault-ontology",
+        "context": "frontmatter · **[domains/graph-modeling]**",
+        "linkText": "domains/graph-modeling"
+      },
+      {
+        "fromSlug": "ontology/elements/src/entities/category",
+        "context": "frontmatter · **[domains/graph-modeling]**",
+        "linkText": "domains/graph-modeling"
+      },
+      {
+        "fromSlug": "ontology/elements/src/entities/knowledge-graph",
+        "context": "frontmatter · **[domains/graph-modeling]**",
+        "linkText": "domains/graph-modeling"
+      },
+      {
+        "fromSlug": "ontology/elements/src/entities/ontology-class",
+        "context": "frontmatter · **[domains/graph-modeling]**",
+        "linkText": "domains/graph-modeling"
+      },
+      {
+        "fromSlug": "ontology/elements/src/entities/status",
+        "context": "frontmatter · **[domains/graph-modeling]**",
+        "linkText": "domains/graph-modeling"
+      },
+      {
+        "fromSlug": "ontology/elements/src/views/ontology-edit-redirect",
+        "context": "frontmatter · **[domains/graph-modeling]**",
+        "linkText": "domains/graph-modeling"
+      },
+      {
+        "fromSlug": "ontology/elements/src/views/ontology-insights",
+        "context": "frontmatter · **[domains/graph-modeling]**",
+        "linkText": "domains/graph-modeling"
+      },
+      {
+        "fromSlug": "ontology/elements/src/views/ontology-redirect",
+        "context": "frontmatter · **[domains/graph-modeling]**",
+        "linkText": "domains/graph-modeling"
+      },
+      {
+        "fromSlug": "ontology/elements/src/views/ontology-studio",
+        "context": "frontmatter · **[domains/graph-modeling]**",
+        "linkText": "domains/graph-modeling"
+      },
+      {
+        "fromSlug": "ontology/ontology-atlas",
+        "context": "frontmatter · **[domains/graph-modeling]**",
+        "linkText": "domains/graph-modeling"
+      }
+    ],
+    "ontology/elements/src/entities/project": [
+      {
+        "fromSlug": "ontology/capabilities/project-data-source",
+        "context": "frontmatter · **[elements/src/entities/project]**",
+        "linkText": "elements/src/entities/project"
+      },
+      {
+        "fromSlug": "ontology/domains/project-portfolio",
+        "context": "frontmatter · **[elements/src/entities/project]**",
+        "linkText": "elements/src/entities/project"
+      }
+    ],
+    "ontology/elements/src/views/project-editor": [
+      {
+        "fromSlug": "ontology/capabilities/project-edit",
+        "context": "frontmatter · **[elements/src/views/project-editor]**",
+        "linkText": "elements/src/views/project-editor"
+      },
+      {
+        "fromSlug": "ontology/domains/project-portfolio",
+        "context": "frontmatter · **[elements/src/views/project-editor]**",
+        "linkText": "elements/src/views/project-editor"
+      }
+    ],
+    "ontology/domains/project-portfolio": [
+      {
+        "fromSlug": "ontology/capabilities/project-edit",
+        "context": "frontmatter · **[domains/project-portfolio]**",
+        "linkText": "domains/project-portfolio"
+      },
+      {
+        "fromSlug": "ontology/capabilities/project-quick-edit",
+        "context": "frontmatter · **[domains/project-portfolio]**",
+        "linkText": "domains/project-portfolio"
+      },
+      {
+        "fromSlug": "ontology/capabilities/project-share",
+        "context": "frontmatter · **[domains/project-portfolio]**",
+        "linkText": "domains/project-portfolio"
+      },
+      {
+        "fromSlug": "ontology/elements/src/entities/project",
+        "context": "frontmatter · **[domains/project-portfolio]**",
+        "linkText": "domains/project-portfolio"
+      },
+      {
+        "fromSlug": "ontology/elements/src/views/project-detail",
+        "context": "frontmatter · **[domains/project-portfolio]**",
+        "linkText": "domains/project-portfolio"
+      },
+      {
+        "fromSlug": "ontology/elements/src/views/project-editor",
+        "context": "frontmatter · **[domains/project-portfolio]**",
+        "linkText": "domains/project-portfolio"
+      },
+      {
+        "fromSlug": "ontology/elements/src/views/project-selector",
+        "context": "frontmatter · **[domains/project-portfolio]**",
+        "linkText": "domains/project-portfolio"
+      },
+      {
+        "fromSlug": "ontology/elements/src/widgets/project-drawer",
+        "context": "frontmatter · **[domains/project-portfolio]**",
+        "linkText": "domains/project-portfolio"
+      },
+      {
+        "fromSlug": "ontology/ontology-atlas",
+        "context": "frontmatter · **[domains/project-portfolio]**",
+        "linkText": "domains/project-portfolio"
+      }
+    ],
+    "ontology/elements/src/entities/category": [
+      {
+        "fromSlug": "ontology/capabilities/taxonomy",
+        "context": "frontmatter · **[elements/src/entities/category]**",
+        "linkText": "elements/src/entities/category"
+      },
+      {
+        "fromSlug": "ontology/domains/graph-modeling",
+        "context": "frontmatter · **[elements/src/entities/category]**",
+        "linkText": "elements/src/entities/category"
+      }
+    ],
+    "ontology/elements/src/entities/status": [
+      {
+        "fromSlug": "ontology/capabilities/taxonomy",
+        "context": "frontmatter · **[elements/src/entities/status]**",
+        "linkText": "elements/src/entities/status"
+      },
+      {
+        "fromSlug": "ontology/domains/graph-modeling",
+        "context": "frontmatter · **[elements/src/entities/status]**",
+        "linkText": "elements/src/entities/status"
+      }
+    ],
+    "ontology/elements/src/widgets/global-search": [
+      {
+        "fromSlug": "ontology/capabilities/topology-browsing",
+        "context": "frontmatter · **[elements/src/widgets/global-search]**",
+        "linkText": "elements/src/widgets/global-search"
+      },
+      {
+        "fromSlug": "ontology/domains/topology-navigation",
+        "context": "frontmatter · **[elements/src/widgets/global-search]**",
+        "linkText": "elements/src/widgets/global-search"
+      }
+    ],
+    "ontology/elements/src/widgets/search-palette": [
+      {
+        "fromSlug": "ontology/capabilities/topology-browsing",
+        "context": "frontmatter · **[elements/src/widgets/search-palette]**",
+        "linkText": "elements/src/widgets/search-palette"
+      },
+      {
+        "fromSlug": "ontology/domains/topology-navigation",
+        "context": "frontmatter · **[elements/src/widgets/search-palette]**",
+        "linkText": "elements/src/widgets/search-palette"
+      }
+    ],
+    "ontology/elements/src/widgets/topology-controls": [
+      {
+        "fromSlug": "ontology/capabilities/topology-browsing",
+        "context": "frontmatter · **[elements/src/widgets/topology-controls]**",
+        "linkText": "elements/src/widgets/topology-controls"
+      },
+      {
+        "fromSlug": "ontology/domains/topology-navigation",
+        "context": "frontmatter · **[elements/src/widgets/topology-controls]**",
+        "linkText": "elements/src/widgets/topology-controls"
+      }
+    ],
+    "ontology/elements/src/widgets/topology-index-panel": [
+      {
+        "fromSlug": "ontology/capabilities/topology-browsing",
+        "context": "frontmatter · **[elements/src/widgets/topology-index-panel]**",
+        "linkText": "elements/src/widgets/topology-index-panel"
+      },
+      {
+        "fromSlug": "ontology/domains/topology-navigation",
+        "context": "frontmatter · **[elements/src/widgets/topology-index-panel]**",
+        "linkText": "elements/src/widgets/topology-index-panel"
+      }
+    ],
+    "ontology/elements/src/widgets/topology-map-v2": [
+      {
+        "fromSlug": "ontology/capabilities/topology-browsing",
+        "context": "frontmatter · **[elements/src/widgets/topology-map-v2]**",
+        "linkText": "elements/src/widgets/topology-map-v2"
+      },
+      {
+        "fromSlug": "ontology/domains/topology-navigation",
+        "context": "frontmatter · **[elements/src/widgets/topology-map-v2]**",
+        "linkText": "elements/src/widgets/topology-map-v2"
+      }
+    ],
+    "ontology/domains/topology-navigation": [
+      {
+        "fromSlug": "ontology/capabilities/topology-browsing",
+        "context": "frontmatter · **[domains/topology-navigation]**",
+        "linkText": "domains/topology-navigation"
+      },
+      {
+        "fromSlug": "ontology/elements/src/widgets/domain-capacity-bar",
+        "context": "frontmatter · **[domains/topology-navigation]**",
+        "linkText": "domains/topology-navigation"
+      },
+      {
+        "fromSlug": "ontology/elements/src/widgets/full-detail-a1",
+        "context": "frontmatter · **[domains/topology-navigation]**",
+        "linkText": "domains/topology-navigation"
+      },
+      {
+        "fromSlug": "ontology/elements/src/widgets/gesture-hint",
+        "context": "frontmatter · **[domains/topology-navigation]**",
+        "linkText": "domains/topology-navigation"
+      },
+      {
+        "fromSlug": "ontology/elements/src/widgets/global-search",
+        "context": "frontmatter · **[domains/topology-navigation]**",
+        "linkText": "domains/topology-navigation"
+      },
+      {
+        "fromSlug": "ontology/elements/src/widgets/recent-node-row",
+        "context": "frontmatter · **[domains/topology-navigation]**",
+        "linkText": "domains/topology-navigation"
+      },
+      {
+        "fromSlug": "ontology/elements/src/widgets/search-hint",
+        "context": "frontmatter · **[domains/topology-navigation]**",
+        "linkText": "domains/topology-navigation"
+      },
+      {
+        "fromSlug": "ontology/elements/src/widgets/search-palette",
+        "context": "frontmatter · **[domains/topology-navigation]**",
+        "linkText": "domains/topology-navigation"
+      },
+      {
+        "fromSlug": "ontology/elements/src/widgets/shortcut-sheet",
+        "context": "frontmatter · **[domains/topology-navigation]**",
+        "linkText": "domains/topology-navigation"
+      },
+      {
+        "fromSlug": "ontology/elements/src/widgets/topology-controls",
+        "context": "frontmatter · **[domains/topology-navigation]**",
+        "linkText": "domains/topology-navigation"
+      },
+      {
+        "fromSlug": "ontology/elements/src/widgets/topology-index-panel",
+        "context": "frontmatter · **[domains/topology-navigation]**",
+        "linkText": "domains/topology-navigation"
+      },
+      {
+        "fromSlug": "ontology/elements/src/widgets/topology-map-v2",
+        "context": "frontmatter · **[domains/topology-navigation]**",
+        "linkText": "domains/topology-navigation"
+      },
+      {
+        "fromSlug": "ontology/ontology-atlas",
+        "context": "frontmatter · **[domains/topology-navigation]**",
+        "linkText": "domains/topology-navigation"
+      }
+    ],
+    "ontology/elements/src/widgets/agent-connect": [
+      {
+        "fromSlug": "ontology/capabilities/vault-agent",
+        "context": "frontmatter · **[elements/src/widgets/agent-connect]**",
+        "linkText": "elements/src/widgets/agent-connect"
+      },
+      {
+        "fromSlug": "ontology/domains/agent-integration",
+        "context": "frontmatter · **[elements/src/widgets/agent-connect]**",
+        "linkText": "elements/src/widgets/agent-connect"
+      }
+    ],
+    "ontology/elements/src/widgets/vault-agent-panel": [
+      {
+        "fromSlug": "ontology/capabilities/vault-agent",
+        "context": "frontmatter · **[elements/src/widgets/vault-agent-panel]**",
+        "linkText": "elements/src/widgets/vault-agent-panel"
+      },
+      {
+        "fromSlug": "ontology/domains/agent-integration",
+        "context": "frontmatter · **[elements/src/widgets/vault-agent-panel]**",
+        "linkText": "elements/src/widgets/vault-agent-panel"
+      }
+    ],
+    "ontology/domains/agent-integration": [
+      {
+        "fromSlug": "ontology/capabilities/vault-agent",
+        "context": "frontmatter · **[domains/agent-integration]**",
+        "linkText": "domains/agent-integration"
+      },
+      {
+        "fromSlug": "ontology/elements/src/widgets/agent-connect",
+        "context": "frontmatter · **[domains/agent-integration]**",
+        "linkText": "domains/agent-integration"
+      },
+      {
+        "fromSlug": "ontology/elements/src/widgets/vault-agent-panel",
+        "context": "frontmatter · **[domains/agent-integration]**",
+        "linkText": "domains/agent-integration"
+      },
+      {
+        "fromSlug": "ontology/ontology-atlas",
+        "context": "frontmatter · **[domains/agent-integration]**",
+        "linkText": "domains/agent-integration"
+      }
+    ],
+    "ontology/elements/src/entities/knowledge-graph": [
+      {
+        "fromSlug": "ontology/capabilities/vault-ontology",
+        "context": "frontmatter · **[elements/src/entities/knowledge-graph]**",
+        "linkText": "elements/src/entities/knowledge-graph"
+      },
+      {
+        "fromSlug": "ontology/domains/graph-modeling",
+        "context": "frontmatter · **[elements/src/entities/knowledge-graph]**",
+        "linkText": "elements/src/entities/knowledge-graph"
+      }
+    ],
+    "ontology/elements/src/entities/ontology-class": [
+      {
+        "fromSlug": "ontology/capabilities/vault-ontology",
+        "context": "frontmatter · **[elements/src/entities/ontology-class]**",
+        "linkText": "elements/src/entities/ontology-class"
+      },
+      {
+        "fromSlug": "ontology/domains/graph-modeling",
+        "context": "frontmatter · **[elements/src/entities/ontology-class]**",
+        "linkText": "elements/src/entities/ontology-class"
+      }
+    ],
+    "ontology/capabilities/vault-agent": [
+      {
+        "fromSlug": "ontology/domains/agent-integration",
+        "context": "frontmatter · **[capabilities/vault-agent]**",
+        "linkText": "capabilities/vault-agent"
+      }
+    ],
+    "ontology/capabilities/ontology-blocks": [
+      {
+        "fromSlug": "ontology/domains/graph-modeling",
+        "context": "frontmatter · **[capabilities/ontology-blocks]**",
+        "linkText": "capabilities/ontology-blocks"
+      }
+    ],
+    "ontology/capabilities/taxonomy": [
+      {
+        "fromSlug": "ontology/domains/graph-modeling",
+        "context": "frontmatter · **[capabilities/taxonomy]**",
+        "linkText": "capabilities/taxonomy"
+      }
+    ],
+    "ontology/capabilities/vault-ontology": [
+      {
+        "fromSlug": "ontology/domains/graph-modeling",
+        "context": "frontmatter · **[capabilities/vault-ontology]**",
+        "linkText": "capabilities/vault-ontology"
+      }
+    ],
+    "ontology/elements/src/views/ontology-edit-redirect": [
+      {
+        "fromSlug": "ontology/domains/graph-modeling",
+        "context": "frontmatter · **[elements/src/views/ontology-edit-redirect]**",
+        "linkText": "elements/src/views/ontology-edit-redirect"
+      }
+    ],
+    "ontology/elements/src/views/ontology-insights": [
+      {
+        "fromSlug": "ontology/domains/graph-modeling",
+        "context": "frontmatter · **[elements/src/views/ontology-insights]**",
+        "linkText": "elements/src/views/ontology-insights"
+      }
+    ],
+    "ontology/elements/src/views/ontology-redirect": [
+      {
+        "fromSlug": "ontology/domains/graph-modeling",
+        "context": "frontmatter · **[elements/src/views/ontology-redirect]**",
+        "linkText": "elements/src/views/ontology-redirect"
+      }
+    ],
+    "ontology/capabilities/data-source-mode": [
+      {
+        "fromSlug": "ontology/domains/local-vault-management",
+        "context": "frontmatter · **[capabilities/data-source-mode]**",
+        "linkText": "capabilities/data-source-mode"
+      }
+    ],
+    "ontology/capabilities/docs-vault-local": [
+      {
+        "fromSlug": "ontology/domains/local-vault-management",
+        "context": "frontmatter · **[capabilities/docs-vault-local]**",
+        "linkText": "capabilities/docs-vault-local"
+      }
+    ],
+    "ontology/capabilities/project-data-source": [
+      {
+        "fromSlug": "ontology/domains/local-vault-management",
+        "context": "frontmatter · **[capabilities/project-data-source]**",
+        "linkText": "capabilities/project-data-source"
+      }
+    ],
+    "ontology/capabilities/vault-sample-source": [
+      {
+        "fromSlug": "ontology/domains/local-vault-management",
+        "context": "frontmatter · **[capabilities/vault-sample-source]**",
+        "linkText": "capabilities/vault-sample-source"
+      }
+    ],
+    "ontology/elements/src/views/git": [
+      {
+        "fromSlug": "ontology/domains/local-vault-management",
+        "context": "frontmatter · **[elements/src/views/git]**",
+        "linkText": "elements/src/views/git"
+      }
+    ],
+    "ontology/elements/src/widgets/atlas-git-panel": [
+      {
+        "fromSlug": "ontology/domains/local-vault-management",
+        "context": "frontmatter · **[elements/src/widgets/atlas-git-panel]**",
+        "linkText": "elements/src/widgets/atlas-git-panel"
+      }
+    ],
+    "ontology/capabilities/app-update": [
+      {
+        "fromSlug": "ontology/domains/onboarding-and-shell",
+        "context": "frontmatter · **[capabilities/app-update]**",
+        "linkText": "capabilities/app-update"
+      }
+    ],
+    "ontology/capabilities/first-run-starter": [
+      {
+        "fromSlug": "ontology/domains/onboarding-and-shell",
+        "context": "frontmatter · **[capabilities/first-run-starter]**",
+        "linkText": "capabilities/first-run-starter"
+      }
+    ],
+    "ontology/capabilities/guided-tour": [
+      {
+        "fromSlug": "ontology/domains/onboarding-and-shell",
+        "context": "frontmatter · **[capabilities/guided-tour]**",
+        "linkText": "capabilities/guided-tour"
+      }
+    ],
+    "ontology/capabilities/locale-switch": [
+      {
+        "fromSlug": "ontology/domains/onboarding-and-shell",
+        "context": "frontmatter · **[capabilities/locale-switch]**",
+        "linkText": "capabilities/locale-switch"
+      }
+    ],
+    "ontology/capabilities/macos-download-link": [
+      {
+        "fromSlug": "ontology/domains/onboarding-and-shell",
+        "context": "frontmatter · **[capabilities/macos-download-link]**",
+        "linkText": "capabilities/macos-download-link"
+      }
+    ],
+    "ontology/elements/src/views/gateway-doc": [
+      {
+        "fromSlug": "ontology/domains/onboarding-and-shell",
+        "context": "frontmatter · **[elements/src/views/gateway-doc]**",
+        "linkText": "elements/src/views/gateway-doc"
+      }
+    ],
+    "ontology/elements/src/views/home": [
+      {
+        "fromSlug": "ontology/domains/onboarding-and-shell",
+        "context": "frontmatter · **[elements/src/views/home]**",
+        "linkText": "elements/src/views/home"
+      }
+    ],
+    "ontology/elements/src/views/root-entry": [
+      {
+        "fromSlug": "ontology/domains/onboarding-and-shell",
+        "context": "frontmatter · **[elements/src/views/root-entry]**",
+        "linkText": "elements/src/views/root-entry"
+      }
+    ],
+    "ontology/elements/src/widgets/app-nav-rail": [
+      {
+        "fromSlug": "ontology/domains/onboarding-and-shell",
+        "context": "frontmatter · **[elements/src/widgets/app-nav-rail]**",
+        "linkText": "elements/src/widgets/app-nav-rail"
+      }
+    ],
+    "ontology/elements/src/widgets/app-settings-menu": [
+      {
+        "fromSlug": "ontology/domains/onboarding-and-shell",
+        "context": "frontmatter · **[elements/src/widgets/app-settings-menu]**",
+        "linkText": "elements/src/widgets/app-settings-menu"
+      }
+    ],
+    "ontology/elements/src/widgets/bottom-tab-bar": [
+      {
+        "fromSlug": "ontology/domains/onboarding-and-shell",
+        "context": "frontmatter · **[elements/src/widgets/bottom-tab-bar]**",
+        "linkText": "elements/src/widgets/bottom-tab-bar"
+      }
+    ],
+    "ontology/elements/src/widgets/docs-quick-drawer": [
+      {
+        "fromSlug": "ontology/domains/onboarding-and-shell",
+        "context": "frontmatter · **[elements/src/widgets/docs-quick-drawer]**",
+        "linkText": "elements/src/widgets/docs-quick-drawer"
+      }
+    ],
+    "ontology/elements/src/widgets/gateway-chrome": [
+      {
+        "fromSlug": "ontology/domains/onboarding-and-shell",
+        "context": "frontmatter · **[elements/src/widgets/gateway-chrome]**",
+        "linkText": "elements/src/widgets/gateway-chrome"
+      }
+    ],
+    "ontology/elements/src/widgets/public-quick-actions": [
+      {
+        "fromSlug": "ontology/domains/onboarding-and-shell",
+        "context": "frontmatter · **[elements/src/widgets/public-quick-actions]**",
+        "linkText": "elements/src/widgets/public-quick-actions"
+      }
+    ],
+    "ontology/capabilities/project-edit": [
+      {
+        "fromSlug": "ontology/domains/project-portfolio",
+        "context": "frontmatter · **[capabilities/project-edit]**",
+        "linkText": "capabilities/project-edit"
+      }
+    ],
+    "ontology/capabilities/project-quick-edit": [
+      {
+        "fromSlug": "ontology/domains/project-portfolio",
+        "context": "frontmatter · **[capabilities/project-quick-edit]**",
+        "linkText": "capabilities/project-quick-edit"
+      }
+    ],
+    "ontology/capabilities/project-share": [
+      {
+        "fromSlug": "ontology/domains/project-portfolio",
+        "context": "frontmatter · **[capabilities/project-share]**",
+        "linkText": "capabilities/project-share"
+      }
+    ],
+    "ontology/elements/src/views/project-detail": [
+      {
+        "fromSlug": "ontology/domains/project-portfolio",
+        "context": "frontmatter · **[elements/src/views/project-detail]**",
+        "linkText": "elements/src/views/project-detail"
+      }
+    ],
+    "ontology/elements/src/views/project-selector": [
+      {
+        "fromSlug": "ontology/domains/project-portfolio",
+        "context": "frontmatter · **[elements/src/views/project-selector]**",
+        "linkText": "elements/src/views/project-selector"
+      }
+    ],
+    "ontology/elements/src/widgets/project-drawer": [
+      {
+        "fromSlug": "ontology/domains/project-portfolio",
+        "context": "frontmatter · **[elements/src/widgets/project-drawer]**",
+        "linkText": "elements/src/widgets/project-drawer"
+      }
+    ],
+    "ontology/capabilities/topology-browsing": [
+      {
+        "fromSlug": "ontology/domains/topology-navigation",
+        "context": "frontmatter · **[capabilities/topology-browsing]**",
+        "linkText": "capabilities/topology-browsing"
+      }
+    ],
+    "ontology/elements/src/widgets/domain-capacity-bar": [
+      {
+        "fromSlug": "ontology/domains/topology-navigation",
+        "context": "frontmatter · **[elements/src/widgets/domain-capacity-bar]**",
+        "linkText": "elements/src/widgets/domain-capacity-bar"
+      }
+    ],
+    "ontology/elements/src/widgets/full-detail-a1": [
+      {
+        "fromSlug": "ontology/domains/topology-navigation",
+        "context": "frontmatter · **[elements/src/widgets/full-detail-a1]**",
+        "linkText": "elements/src/widgets/full-detail-a1"
+      }
+    ],
+    "ontology/elements/src/widgets/gesture-hint": [
+      {
+        "fromSlug": "ontology/domains/topology-navigation",
+        "context": "frontmatter · **[elements/src/widgets/gesture-hint]**",
+        "linkText": "elements/src/widgets/gesture-hint"
+      }
+    ],
+    "ontology/elements/src/widgets/recent-node-row": [
+      {
+        "fromSlug": "ontology/domains/topology-navigation",
+        "context": "frontmatter · **[elements/src/widgets/recent-node-row]**",
+        "linkText": "elements/src/widgets/recent-node-row"
+      }
+    ],
+    "ontology/elements/src/widgets/search-hint": [
+      {
+        "fromSlug": "ontology/domains/topology-navigation",
+        "context": "frontmatter · **[elements/src/widgets/search-hint]**",
+        "linkText": "elements/src/widgets/search-hint"
+      }
+    ],
+    "ontology/elements/src/widgets/shortcut-sheet": [
+      {
+        "fromSlug": "ontology/domains/topology-navigation",
+        "context": "frontmatter · **[elements/src/widgets/shortcut-sheet]**",
+        "linkText": "elements/src/widgets/shortcut-sheet"
       }
     ]
   },
@@ -11175,11 +13562,123 @@
             "type": "dir",
             "children": [
               {
-                "name": "example-capability",
-                "path": "ontology/capabilities/example-capability",
+                "name": "app-update",
+                "path": "ontology/capabilities/app-update",
                 "type": "doc",
-                "slug": "ontology/capabilities/example-capability",
-                "title": "Example capability"
+                "slug": "ontology/capabilities/app-update",
+                "title": "App Auto-Update"
+              },
+              {
+                "name": "data-source-mode",
+                "path": "ontology/capabilities/data-source-mode",
+                "type": "doc",
+                "slug": "ontology/capabilities/data-source-mode",
+                "title": "Data Source Mode Branching"
+              },
+              {
+                "name": "docs-vault-local",
+                "path": "ontology/capabilities/docs-vault-local",
+                "type": "doc",
+                "slug": "ontology/capabilities/docs-vault-local",
+                "title": "Local Folder Mounting"
+              },
+              {
+                "name": "first-run-starter",
+                "path": "ontology/capabilities/first-run-starter",
+                "type": "doc",
+                "slug": "ontology/capabilities/first-run-starter",
+                "title": "First-Run Starter Vault"
+              },
+              {
+                "name": "guided-tour",
+                "path": "ontology/capabilities/guided-tour",
+                "type": "doc",
+                "slug": "ontology/capabilities/guided-tour",
+                "title": "Guided Tour"
+              },
+              {
+                "name": "locale-switch",
+                "path": "ontology/capabilities/locale-switch",
+                "type": "doc",
+                "slug": "ontology/capabilities/locale-switch",
+                "title": "Locale Switching"
+              },
+              {
+                "name": "macos-download-link",
+                "path": "ontology/capabilities/macos-download-link",
+                "type": "doc",
+                "slug": "ontology/capabilities/macos-download-link",
+                "title": "macOS Download Decision"
+              },
+              {
+                "name": "ontology-blocks",
+                "path": "ontology/capabilities/ontology-blocks",
+                "type": "doc",
+                "slug": "ontology/capabilities/ontology-blocks",
+                "title": "Studio Relation Blocks"
+              },
+              {
+                "name": "project-data-source",
+                "path": "ontology/capabilities/project-data-source",
+                "type": "doc",
+                "slug": "ontology/capabilities/project-data-source",
+                "title": "Active Project Resolution"
+              },
+              {
+                "name": "project-edit",
+                "path": "ontology/capabilities/project-edit",
+                "type": "doc",
+                "slug": "ontology/capabilities/project-edit",
+                "title": "Project Full Edit"
+              },
+              {
+                "name": "project-quick-edit",
+                "path": "ontology/capabilities/project-quick-edit",
+                "type": "doc",
+                "slug": "ontology/capabilities/project-quick-edit",
+                "title": "Project Quick Edit"
+              },
+              {
+                "name": "project-share",
+                "path": "ontology/capabilities/project-share",
+                "type": "doc",
+                "slug": "ontology/capabilities/project-share",
+                "title": "Project Sharing"
+              },
+              {
+                "name": "taxonomy",
+                "path": "ontology/capabilities/taxonomy",
+                "type": "doc",
+                "slug": "ontology/capabilities/taxonomy",
+                "title": "Kind Taxonomy Management"
+              },
+              {
+                "name": "topology-browsing",
+                "path": "ontology/capabilities/topology-browsing",
+                "type": "doc",
+                "slug": "ontology/capabilities/topology-browsing",
+                "title": "Topology Map Rendering & Search"
+              },
+              {
+                "name": "vault-agent",
+                "path": "ontology/capabilities/vault-agent",
+                "type": "doc",
+                "slug": "ontology/capabilities/vault-agent",
+                "title": "Agent Connect & Vault Access"
+              },
+              {
+                "name": "vault-ontology",
+                "path": "ontology/capabilities/vault-ontology",
+                "type": "doc",
+                "slug": "ontology/capabilities/vault-ontology",
+                "title": "Vault Ontology Schema Authoring"
+              },
+              {
+                "name": "vault-sample-source",
+                "path": "ontology/capabilities/vault-sample-source",
+                "type": "doc",
+                "slug": "ontology/capabilities/vault-sample-source",
+                "title": "Sample Vault Demo Source"
               }
             ]
           },
@@ -11189,11 +13688,46 @@
             "type": "dir",
             "children": [
               {
-                "name": "example-domain",
-                "path": "ontology/domains/example-domain",
+                "name": "agent-integration",
+                "path": "ontology/domains/agent-integration",
                 "type": "doc",
-                "slug": "ontology/domains/example-domain",
-                "title": "Example domain"
+                "slug": "ontology/domains/agent-integration",
+                "title": "AI Agent Integration"
+              },
+              {
+                "name": "graph-modeling",
+                "path": "ontology/domains/graph-modeling",
+                "type": "doc",
+                "slug": "ontology/domains/graph-modeling",
+                "title": "Graph Modeling & Ontology Schema"
+              },
+              {
+                "name": "local-vault-management",
+                "path": "ontology/domains/local-vault-management",
+                "type": "doc",
+                "slug": "ontology/domains/local-vault-management",
+                "title": "Local Vault & Data Source Management"
+              },
+              {
+                "name": "onboarding-and-shell",
+                "path": "ontology/domains/onboarding-and-shell",
+                "type": "doc",
+                "slug": "ontology/domains/onboarding-and-shell",
+                "title": "Onboarding, Distribution & App Shell"
+              },
+              {
+                "name": "project-portfolio",
+                "path": "ontology/domains/project-portfolio",
+                "type": "doc",
+                "slug": "ontology/domains/project-portfolio",
+                "title": "Project Portfolio Management"
+              },
+              {
+                "name": "topology-navigation",
+                "path": "ontology/domains/topology-navigation",
+                "type": "doc",
+                "slug": "ontology/domains/topology-navigation",
+                "title": "Topology Map Navigation"
               }
             ]
           },
@@ -11203,20 +13737,342 @@
             "type": "dir",
             "children": [
               {
-                "name": "example-element",
-                "path": "ontology/elements/example-element",
-                "type": "doc",
-                "slug": "ontology/elements/example-element",
-                "title": "Example element"
+                "name": "src",
+                "path": "ontology/elements/src",
+                "type": "dir",
+                "children": [
+                  {
+                    "name": "entities",
+                    "path": "ontology/elements/src/entities",
+                    "type": "dir",
+                    "children": [
+                      {
+                        "name": "category",
+                        "path": "ontology/elements/src/entities/category",
+                        "type": "doc",
+                        "slug": "ontology/elements/src/entities/category",
+                        "title": "Category"
+                      },
+                      {
+                        "name": "docs-vault",
+                        "path": "ontology/elements/src/entities/docs-vault",
+                        "type": "doc",
+                        "slug": "ontology/elements/src/entities/docs-vault",
+                        "title": "Docs Vault (entity)"
+                      },
+                      {
+                        "name": "knowledge-graph",
+                        "path": "ontology/elements/src/entities/knowledge-graph",
+                        "type": "doc",
+                        "slug": "ontology/elements/src/entities/knowledge-graph",
+                        "title": "Knowledge Graph"
+                      },
+                      {
+                        "name": "local-fs-handle",
+                        "path": "ontology/elements/src/entities/local-fs-handle",
+                        "type": "doc",
+                        "slug": "ontology/elements/src/entities/local-fs-handle",
+                        "title": "Local Fs Handle"
+                      },
+                      {
+                        "name": "ontology-class",
+                        "path": "ontology/elements/src/entities/ontology-class",
+                        "type": "doc",
+                        "slug": "ontology/elements/src/entities/ontology-class",
+                        "title": "Ontology Class"
+                      },
+                      {
+                        "name": "project",
+                        "path": "ontology/elements/src/entities/project",
+                        "type": "doc",
+                        "slug": "ontology/elements/src/entities/project",
+                        "title": "Project (entity)"
+                      },
+                      {
+                        "name": "status",
+                        "path": "ontology/elements/src/entities/status",
+                        "type": "doc",
+                        "slug": "ontology/elements/src/entities/status",
+                        "title": "Status"
+                      }
+                    ]
+                  },
+                  {
+                    "name": "views",
+                    "path": "ontology/elements/src/views",
+                    "type": "dir",
+                    "children": [
+                      {
+                        "name": "docs-vault",
+                        "path": "ontology/elements/src/views/docs-vault",
+                        "type": "doc",
+                        "slug": "ontology/elements/src/views/docs-vault",
+                        "title": "Docs Vault (view)"
+                      },
+                      {
+                        "name": "download",
+                        "path": "ontology/elements/src/views/download",
+                        "type": "doc",
+                        "slug": "ontology/elements/src/views/download",
+                        "title": "Download"
+                      },
+                      {
+                        "name": "first-run",
+                        "path": "ontology/elements/src/views/first-run",
+                        "type": "doc",
+                        "slug": "ontology/elements/src/views/first-run",
+                        "title": "First Run"
+                      },
+                      {
+                        "name": "gateway-doc",
+                        "path": "ontology/elements/src/views/gateway-doc",
+                        "type": "doc",
+                        "slug": "ontology/elements/src/views/gateway-doc",
+                        "title": "Gateway Doc"
+                      },
+                      {
+                        "name": "git",
+                        "path": "ontology/elements/src/views/git",
+                        "type": "doc",
+                        "slug": "ontology/elements/src/views/git",
+                        "title": "Git"
+                      },
+                      {
+                        "name": "home",
+                        "path": "ontology/elements/src/views/home",
+                        "type": "doc",
+                        "slug": "ontology/elements/src/views/home",
+                        "title": "Home"
+                      },
+                      {
+                        "name": "ontology-edit-redirect",
+                        "path": "ontology/elements/src/views/ontology-edit-redirect",
+                        "type": "doc",
+                        "slug": "ontology/elements/src/views/ontology-edit-redirect",
+                        "title": "Ontology Edit Redirect"
+                      },
+                      {
+                        "name": "ontology-insights",
+                        "path": "ontology/elements/src/views/ontology-insights",
+                        "type": "doc",
+                        "slug": "ontology/elements/src/views/ontology-insights",
+                        "title": "Ontology Insights"
+                      },
+                      {
+                        "name": "ontology-redirect",
+                        "path": "ontology/elements/src/views/ontology-redirect",
+                        "type": "doc",
+                        "slug": "ontology/elements/src/views/ontology-redirect",
+                        "title": "Ontology Redirect"
+                      },
+                      {
+                        "name": "ontology-studio",
+                        "path": "ontology/elements/src/views/ontology-studio",
+                        "type": "doc",
+                        "slug": "ontology/elements/src/views/ontology-studio",
+                        "title": "Ontology Studio"
+                      },
+                      {
+                        "name": "project-detail",
+                        "path": "ontology/elements/src/views/project-detail",
+                        "type": "doc",
+                        "slug": "ontology/elements/src/views/project-detail",
+                        "title": "Project Detail"
+                      },
+                      {
+                        "name": "project-editor",
+                        "path": "ontology/elements/src/views/project-editor",
+                        "type": "doc",
+                        "slug": "ontology/elements/src/views/project-editor",
+                        "title": "Project Editor"
+                      },
+                      {
+                        "name": "project-selector",
+                        "path": "ontology/elements/src/views/project-selector",
+                        "type": "doc",
+                        "slug": "ontology/elements/src/views/project-selector",
+                        "title": "Project Selector"
+                      },
+                      {
+                        "name": "root-entry",
+                        "path": "ontology/elements/src/views/root-entry",
+                        "type": "doc",
+                        "slug": "ontology/elements/src/views/root-entry",
+                        "title": "Root Entry"
+                      }
+                    ]
+                  },
+                  {
+                    "name": "widgets",
+                    "path": "ontology/elements/src/widgets",
+                    "type": "dir",
+                    "children": [
+                      {
+                        "name": "agent-connect",
+                        "path": "ontology/elements/src/widgets/agent-connect",
+                        "type": "doc",
+                        "slug": "ontology/elements/src/widgets/agent-connect",
+                        "title": "Agent Connect"
+                      },
+                      {
+                        "name": "app-nav-rail",
+                        "path": "ontology/elements/src/widgets/app-nav-rail",
+                        "type": "doc",
+                        "slug": "ontology/elements/src/widgets/app-nav-rail",
+                        "title": "App Nav Rail"
+                      },
+                      {
+                        "name": "app-settings-menu",
+                        "path": "ontology/elements/src/widgets/app-settings-menu",
+                        "type": "doc",
+                        "slug": "ontology/elements/src/widgets/app-settings-menu",
+                        "title": "App Settings Menu"
+                      },
+                      {
+                        "name": "atlas-git-panel",
+                        "path": "ontology/elements/src/widgets/atlas-git-panel",
+                        "type": "doc",
+                        "slug": "ontology/elements/src/widgets/atlas-git-panel",
+                        "title": "Atlas Git Panel"
+                      },
+                      {
+                        "name": "bottom-tab-bar",
+                        "path": "ontology/elements/src/widgets/bottom-tab-bar",
+                        "type": "doc",
+                        "slug": "ontology/elements/src/widgets/bottom-tab-bar",
+                        "title": "Bottom Tab Bar"
+                      },
+                      {
+                        "name": "docs-quick-drawer",
+                        "path": "ontology/elements/src/widgets/docs-quick-drawer",
+                        "type": "doc",
+                        "slug": "ontology/elements/src/widgets/docs-quick-drawer",
+                        "title": "Docs Quick Drawer"
+                      },
+                      {
+                        "name": "docs-vault",
+                        "path": "ontology/elements/src/widgets/docs-vault",
+                        "type": "doc",
+                        "slug": "ontology/elements/src/widgets/docs-vault",
+                        "title": "Docs Vault (widget)"
+                      },
+                      {
+                        "name": "domain-capacity-bar",
+                        "path": "ontology/elements/src/widgets/domain-capacity-bar",
+                        "type": "doc",
+                        "slug": "ontology/elements/src/widgets/domain-capacity-bar",
+                        "title": "Domain Capacity Bar"
+                      },
+                      {
+                        "name": "full-detail-a1",
+                        "path": "ontology/elements/src/widgets/full-detail-a1",
+                        "type": "doc",
+                        "slug": "ontology/elements/src/widgets/full-detail-a1",
+                        "title": "Full Detail A1"
+                      },
+                      {
+                        "name": "gateway-chrome",
+                        "path": "ontology/elements/src/widgets/gateway-chrome",
+                        "type": "doc",
+                        "slug": "ontology/elements/src/widgets/gateway-chrome",
+                        "title": "Gateway Chrome"
+                      },
+                      {
+                        "name": "gesture-hint",
+                        "path": "ontology/elements/src/widgets/gesture-hint",
+                        "type": "doc",
+                        "slug": "ontology/elements/src/widgets/gesture-hint",
+                        "title": "Gesture Hint"
+                      },
+                      {
+                        "name": "global-search",
+                        "path": "ontology/elements/src/widgets/global-search",
+                        "type": "doc",
+                        "slug": "ontology/elements/src/widgets/global-search",
+                        "title": "Global Search"
+                      },
+                      {
+                        "name": "project-drawer",
+                        "path": "ontology/elements/src/widgets/project-drawer",
+                        "type": "doc",
+                        "slug": "ontology/elements/src/widgets/project-drawer",
+                        "title": "Project Drawer"
+                      },
+                      {
+                        "name": "public-quick-actions",
+                        "path": "ontology/elements/src/widgets/public-quick-actions",
+                        "type": "doc",
+                        "slug": "ontology/elements/src/widgets/public-quick-actions",
+                        "title": "Public Quick Actions"
+                      },
+                      {
+                        "name": "recent-node-row",
+                        "path": "ontology/elements/src/widgets/recent-node-row",
+                        "type": "doc",
+                        "slug": "ontology/elements/src/widgets/recent-node-row",
+                        "title": "Recent Node Row"
+                      },
+                      {
+                        "name": "search-hint",
+                        "path": "ontology/elements/src/widgets/search-hint",
+                        "type": "doc",
+                        "slug": "ontology/elements/src/widgets/search-hint",
+                        "title": "Search Hint"
+                      },
+                      {
+                        "name": "search-palette",
+                        "path": "ontology/elements/src/widgets/search-palette",
+                        "type": "doc",
+                        "slug": "ontology/elements/src/widgets/search-palette",
+                        "title": "Search Palette"
+                      },
+                      {
+                        "name": "shortcut-sheet",
+                        "path": "ontology/elements/src/widgets/shortcut-sheet",
+                        "type": "doc",
+                        "slug": "ontology/elements/src/widgets/shortcut-sheet",
+                        "title": "Shortcut Sheet"
+                      },
+                      {
+                        "name": "topology-controls",
+                        "path": "ontology/elements/src/widgets/topology-controls",
+                        "type": "doc",
+                        "slug": "ontology/elements/src/widgets/topology-controls",
+                        "title": "Topology Controls"
+                      },
+                      {
+                        "name": "topology-index-panel",
+                        "path": "ontology/elements/src/widgets/topology-index-panel",
+                        "type": "doc",
+                        "slug": "ontology/elements/src/widgets/topology-index-panel",
+                        "title": "Topology Index Panel"
+                      },
+                      {
+                        "name": "topology-map-v2",
+                        "path": "ontology/elements/src/widgets/topology-map-v2",
+                        "type": "doc",
+                        "slug": "ontology/elements/src/widgets/topology-map-v2",
+                        "title": "Topology Map V2"
+                      },
+                      {
+                        "name": "vault-agent-panel",
+                        "path": "ontology/elements/src/widgets/vault-agent-panel",
+                        "type": "doc",
+                        "slug": "ontology/elements/src/widgets/vault-agent-panel",
+                        "title": "Vault Agent Panel"
+                      }
+                    ]
+                  }
+                ]
               }
             ]
           },
           {
-            "name": "project",
-            "path": "ontology/project",
+            "name": "ontology-atlas",
+            "path": "ontology/ontology-atlas",
             "type": "doc",
-            "slug": "ontology/project",
-            "title": "My project"
+            "slug": "ontology/ontology-atlas",
+            "title": "Ontology Atlas"
           },
           {
             "name": "README",
