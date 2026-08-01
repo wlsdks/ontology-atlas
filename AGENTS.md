@@ -198,6 +198,11 @@ The detailed rules live in `.claude/rules/*.md` and Claude Code auto-loads them.
   overturn it explicitly — quietly re-deciding is what the ledger exists to stop. Check
   whether a prior record's falsifier has since been observed; if it has, the losing side
   won and that is where the next pass starts. Append, never rewrite.
+- **Gate probe** — `@.claude/skills/gate-probe/SKILL.md` runs whenever a check is added or
+  changed. **A gate that only ever passes is indistinguishable from no gate**: measure the
+  violation census before switching a rule on, revert the defect to prove it turns red, and
+  assert the detector is not idling on an empty set. 2026-08 lost a release to a smoke gate
+  whose markers had outlived their components — it had never once checked what it claimed.
 - **Design audit** — `@.claude/skills/design-audit/SKILL.md` runs after a front-end change,
   before calling it done. It **measures** the rendered DOM (rect intersections, dimension
   variance across repeated sets, computed styles vs the ramps) and uses screenshots only as
