@@ -116,8 +116,12 @@ export function ProjectSelectorPage() {
         </div>
         <div className="mx-auto px-5 py-6 md:px-10 md:py-10" style={{ maxWidth: PAGE_MAX_WIDTH }}>
         <nav className="mb-5 flex flex-wrap items-center gap-2.5 text-body text-[color:var(--color-text-tertiary)]">
+          {/* 「← 지도」는 **지도로 간다**. 2026-07-30 에 `/` 가 지도에서 관문으로
+              바뀐 뒤(원장 「root-first-open」 뒤집기) 이 링크만 안 고쳐져서,
+              지도라고 적힌 버튼이 다운로드 화면으로 보내고 있었다. */}
           <Link
-            href="/"
+            href="/topology"
+            data-testid="projects-back-to-map"
             className="text-[color:var(--color-text-secondary)] transition-colors hover:text-[color:var(--color-text-primary)]"
           >
             {t("crumbBack")}

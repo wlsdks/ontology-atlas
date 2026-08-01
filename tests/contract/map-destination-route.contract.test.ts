@@ -159,3 +159,115 @@ describe("지도를 약속하는 링크의 목적지", () => {
     expect(hrefForTestid(probe, "probe-absent")).toEqual([]);
   });
 });
+
+/**
+ * **등록을 기억해야 작동하는 게이트는, 기억 못 한 것에 대해 존재하지 않는다.**
+ *
+ * 위 시험은 `MAP_DESTINED` 허용목록을 돈다. 그건 "이 컨트롤은 지도로 간다" 를
+ * 정확히 지키지만, **목록에 없는 컨트롤은 구조적으로 시야 밖**이다. 그래서
+ * 2026-08-01 실측에서 `/projects` 의 「← 지도」가 `/`(관문)로 가고 있었는데도
+ * 이 파일 전체가 초록이었다 — 그 링크에는 testid 자체가 없었다.
+ *
+ * 이 시험은 조준을 뒤집는다. **누가 등록했는지가 아니라 라벨이 무엇을
+ * 약속하는지**로 찾는다: i18n 값이 「지도」/「Map」 그 자체인 키를 모으고,
+ * 그 키를 렌더하는 링크의 href 를 본다. 새 링크를 만들면서 이 게이트에
+ * 등록하는 것을 잊어도, 라벨이 지도를 약속하는 한 잡힌다.
+ *
+ * 사정거리를 **라벨이 곧 「지도」인 것**으로 좁힌 이유: 「지도에서 보기」처럼
+ * 문장 안에 지도가 든 것까지 넣으면 링크가 아닌 안내 문구까지 걸려 소음이
+ * 된다. 실제로 깨진 부류가 정확히 이 좁은 부류였고, 넓히는 것은 위반이
+ * 관측될 때 하면 된다.
+ */
+const MAP_LABEL = /^[\s←→]*(?:지도|map)[\s←→]*$/i;
+
+/** i18n 값이 「지도」 그 자체인 leaf 키들 — `t("<leaf>")` 가 쓰는 이름이다. */
+function mapLabelKeys(): Set<string> {
+  const keys = new Set<string>();
+  for (const file of ["messages/ko.json", "messages/en.json"]) {
+    const walk = (node: unknown) => {
+      if (!node || typeof node !== "object") return;
+      for (const [key, value] of Object.entries(node as Record<string, unknown>)) {
+        if (typeof value === "string") {
+          if (MAP_LABEL.test(value)) keys.add(key);
+        } else {
+          walk(value);
+        }
+      }
+    };
+    walk(JSON.parse(readFileSync(join(process.cwd(), file), "utf8")));
+  }
+  return keys;
+}
+
+/**
+ * `t("key")` 를 렌더하는 원소가 속한 **가장 가까운 href 보유 여는 태그**의 href.
+ *
+ * 라벨은 `<Link href=…>{t("key")}</Link>` 처럼 자식 자리에 있고, 때로 한 겹 더
+ * 감싸인다(`<span>{t("key")}</span>`). 그래서 뒤로 걸어 올라가며 href 를 가진
+ * 첫 태그를 찾는다. 링크가 아니면(href 없음) 대상이 아니므로 건너뛴다.
+ */
+function hrefForLabelKey(source: string, key: string): string[] {
+  const found: string[] = [];
+  for (const marker of [`t("${key}")`, `t('${key}')`]) {
+    let cursor = source.indexOf(marker);
+    while (cursor !== -1) {
+      let at = cursor;
+      for (let hop = 0; hop < 6; hop += 1) {
+        const open = source.lastIndexOf("<", at);
+        if (open === -1) break;
+        const close = source.indexOf(">", open);
+        const tag = source.slice(open, close === -1 ? source.length : close);
+        // 닫는 태그를 만났다 = 앞선 **형제** 원소를 지나친 것이다. 더 올라가면
+        // 남의 링크 href 를 자기 것으로 주워온다(프로브가 이걸 잡았다).
+        if (tag.startsWith("</")) break;
+        const match = /href=(?:"([^"]*)"|\{`([^`]*)`\}|\{"([^"]*)"\})/.exec(tag);
+        if (match) {
+          found.push(match[1] ?? match[2] ?? match[3] ?? "");
+          break;
+        }
+        at = open - 1;
+      }
+      cursor = source.indexOf(marker, cursor + marker.length);
+    }
+  }
+  return found;
+}
+
+describe("라벨이 「지도」인 링크는 등록 없이도 감시된다", () => {
+  const source = collectSources();
+  const keys = [...mapLabelKeys()].sort();
+
+  it("i18n 에서 지도 라벨 키를 실제로 찾는다 (탐지기 무장 확인)", () => {
+    // 0개면 이 시험 전체가 공회전한다 — 조용한 무력화를 여기서 막는다.
+    expect(keys.length).toBeGreaterThan(0);
+  });
+
+  it("그 라벨을 렌더하는 링크는 전부 지도로 간다", () => {
+    const violations: string[] = [];
+    for (const key of keys) {
+      for (const href of hrefForLabelKey(source, key)) {
+        // 로케일 prefix 는 `@/i18n/navigation` 이 붙이므로 소스에는 없다.
+        if (href.replace(/\/$/, "") !== MAP_ROUTE) {
+          violations.push(`t("${key}") → "${href}"`);
+        }
+      }
+    }
+    expect(
+      violations,
+      `라벨이 「지도」인데 ${MAP_ROUTE} 가 아닌 곳으로 가는 링크가 있다. ` +
+        `\`/\` 는 2026-07-30 부터 관문(마케팅)이라, 지도라고 적어 놓고 그리로 ` +
+        `보내면 사용자는 방금 떠난 화면으로 되돌아온다.`,
+    ).toEqual([]);
+  });
+
+  it("추출기가 감싸인 라벨의 href 도 읽는다 (탐지기 무장 확인)", () => {
+    const probe = `
+      <Link href="/topology"><span>{t("crumbBack")}</span></Link>
+      <Link href="/">{t("someOther")}</Link>
+      <p>{t("crumbBack")}</p>
+    `;
+    expect(hrefForLabelKey(probe, "crumbBack")).toEqual(["/topology"]);
+    expect(hrefForLabelKey(probe, "someOther")).toEqual(["/"]);
+    expect(hrefForLabelKey(probe, "absent")).toEqual([]);
+  });
+});
