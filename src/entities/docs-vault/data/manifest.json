@@ -6025,10 +6025,11 @@
         }
       ],
       "excerpt": "Major change history. Code commit messages answer why; this file answers when / which surface changed. Focused on user-visible changes, not PR-level granularity. Newest at the top. Entries stay date-based; the app version reached v1.0.0 on 2026-07-27, so a release tag now carries the semver promise instead. 낯선 Rust 저장소",
-      "wordCount": 62428,
+      "wordCount": 62514,
       "updatedAt": "2026-08-02",
       "linksOut": [
         "audits/CASE-STUDY-AGENTS-MD-DRIFT",
+        "domains/catalog",
         "slug"
       ]
     },
@@ -9896,8 +9897,8 @@
           "slug": "확신도"
         }
       ],
-      "excerpt": "AI 에이전트가 볼트를 발견·인증하고 읽고 쓸 수 있게 하는 앱 내 connect 플로우와 MCP 대면 표면. 앱 안의 대화형 에이전트는 실제 볼트 도구 근거를 수집한다. 절대 경로와 읽힌 manifest가 함께 있을 때만 활성화하여 화면의 개념, 모델이 읽는 본문, 볼트 안 감사 로그가 한 출처를 가리킨다. 로컬 러너에서는 제한된 읽기 순서와 왕복 시간 상한을 적용하고, 필수 읽기를 생략하면 한 번 교정한 뒤에도 따르지 않은 답은 사용자에게 싣지 않는다. src/features/vault-agent — 제공자 중립 에이전트 루프, 도구 실행, 근거 인용 src-ta",
-      "wordCount": 114,
+      "excerpt": "AI 에이전트가 볼트를 발견·인증하고 읽고 쓸 수 있게 하는 앱 내 connect 플로우와 MCP 대면 표면. 앱 안의 대화형 에이전트는 실제 볼트 도구 근거를 수집한다. 절대 경로와 읽힌 manifest가 함께 있을 때만 활성화하여 화면의 개념, 모델이 읽는 본문, 볼트 안 감사 로그가 한 출처를 가리킨다. 로컬 러너에서는 제한된 읽기 순서와 왕복 시간 상한을 적용한다. 필수 읽기, 상세 payload에 남은 정확한 인용, 한국어 질문의 한국어 응답 중 하나를 생략하면 한 번 교정하고, 두 번째에도 따르지 않은 답은 사용자에게 싣지 않는다. 구조 감사의 마지막 합성",
+      "wordCount": 142,
       "updatedAt": "2026-08-02",
       "linksOut": []
     },
@@ -12919,6 +12920,13 @@
         "fromSlug": "CHANGELOG",
         "context": "다리가 없었다. README에 \"codebase map / agent memory / context layer\" 시장 어휘를 잇는 브릿지 문단과 유산 선언 문장(\"이 지도는 당신 디스크의 마크다운\") 추가. 신규 **[`docs/audits/CASE-STUDY-AGENTS-MD-DRIFT.md`]** — AGENTS.md/CLAUDE.md drift 커뮤니티 고통 → 이 저장소가 실제로 쓰는 해법(단일 진실원 + thin wrapper) → context rot 완화책으로서의 vault, 세 단계 케이스 스터디",
         "linkText": "`docs/audits/CASE-STUDY-AGENTS-MD-DRIFT.md`"
+      }
+    ],
+    "domains/catalog": [
+      {
+        "fromSlug": "CHANGELOG",
+        "context": "표시하지 않는다. storefront 112개념 + Ollama `qwen3:8b` 실측은 `list_kinds` → `list_concepts` → `get_concepts` 뒤 언어 재합성을 거쳐 약 25초에 `**[domains/catalog]**`만 인용하고 “검증 범위로는 브릿지 필요 여부를 판단할 수 없음”이라고 한국어로 답했다. 임의의 숫자 목표와 근거 없는 브릿지 권고는 없었다. 데스크톱 복원 중 절대 경로만 먼저 살아나고 manifest를 읽지",
+        "linkText": "domains/catalog"
       }
     ],
     "slug": [

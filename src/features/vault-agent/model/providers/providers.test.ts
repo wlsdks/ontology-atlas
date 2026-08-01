@@ -246,7 +246,7 @@ describe('벤더 어댑터 — 셋이 같은 모양으로 접힌다', () => {
         {
           role: 'user',
           content:
-            'Tool access is closed. Answer the original question now from only the evidence you verified. Cite exact slugs you read and mark every uninspected area incomplete. Do not describe another plan or tool call.',
+            'Tool access is closed. Answer the original question now, in the same language as the person, from only the evidence you verified. Cite exact slugs you read and mark every uninspected area incomplete. For a structure audit, a census, list, child count, fan-out number, or mix of kinds only selects suspects; none proves a defect, a preferred node count, or a bridge. Never invent or recommend a numeric node target. Recommend a bridge only when the bodies and resolved neighbors you read establish at least three exact sibling slugs that share one behavior, and state that behavior in one sentence. Absence of that evidence proves neither that a bridge is needed nor that it is unnecessary; say only that the verified scope does not establish one. Do not describe another plan or tool call.',
         },
       ],
       reasoning_effort: 'none',
@@ -263,7 +263,8 @@ describe('벤더 어댑터 — 셋이 같은 모양으로 접힌다', () => {
             {
               id: 'o2',
               name: 'get_concepts',
-              content: '{"concepts":[]}',
+              content:
+                '{"concepts":[{"slug":"domains/agent-experience","found":true}]}',
               isError: false,
             },
           ],
@@ -277,7 +278,13 @@ describe('벤더 어댑터 — 셋이 같은 모양으로 접힌다', () => {
     expect(forcedSynthesis.reasoning_effort).toBe('none');
     expect(forcedSynthesis).not.toHaveProperty('tool_choice');
     expect((forcedSynthesis.messages as Array<{ content?: string }>).at(-1)?.content).toContain(
-      'Answer the original question now',
+      'at least three exact sibling slugs',
+    );
+    expect((forcedSynthesis.messages as Array<{ content?: string }>).at(-1)?.content).toContain(
+      'Only these concepts had detailed content delivered: [[domains/agent-experience]]. They were found',
+    );
+    expect((forcedSynthesis.messages as Array<{ content?: string }>).at(-1)?.content).toContain(
+      'Fewer than three detailed concepts survived the evidence cap',
     );
     expect(firstOpenAi).not.toHaveProperty('reasoning_effort');
     expect(firstOpenAi).not.toHaveProperty('tool_choice');
@@ -285,6 +292,121 @@ describe('벤더 어댑터 — 셋이 같은 모양으로 접힌다', () => {
     expect(PROVIDER_ADAPTERS.local.parseResponse(body)).toEqual(
       PROVIDER_ADAPTERS.openai.parseResponse(body),
     );
+  });
+
+  it('주소 갈래는 상세 읽기 뒤 인용·한국어 응답을 각각 한 번만 교정한다', () => {
+    const evidenceTurn = assembly({
+      model: 'qwen3:8b',
+      exchanges: [
+        {
+          assistant: { role: 'assistant', tool_calls: [{ id: 'o0' }] },
+          toolResults: [
+            { id: 'o0', name: 'list_kinds', content: '{}', isError: false },
+          ],
+        },
+        {
+          assistant: { role: 'assistant', tool_calls: [{ id: 'o1' }] },
+          toolResults: [
+            { id: 'o1', name: 'list_concepts', content: '{}', isError: false },
+          ],
+        },
+        {
+          assistant: { role: 'assistant', tool_calls: [{ id: 'o2' }] },
+          toolResults: [
+            {
+              id: 'o2',
+              name: 'get_concepts',
+              content:
+                '{"concepts":[{"slug":"domains/catalog","found":true},{"slug":"domains/order","found":true}]}',
+              isError: false,
+            },
+          ],
+        },
+      ],
+    });
+    const unsupported = PROVIDER_ADAPTERS.local.parseResponse(
+      JSON.stringify({
+        choices: [
+          {
+            message: { role: 'assistant', content: '읽은 개념이 모두 없었습니다.' },
+            finish_reason: 'stop',
+          },
+        ],
+      }),
+    );
+    const retry = PROVIDER_ADAPTERS.local.reviewResponse?.(evidenceTurn, unsupported);
+    expect(retry).toMatchObject({ action: 'retry', expectedTool: 'verified-citation' });
+
+    const retriedTurn = assembly({
+      ...evidenceTurn,
+      exchanges: [
+        ...evidenceTurn.exchanges,
+        {
+          assistant: unsupported.raw,
+          toolResults: [],
+          retry: {
+            expectedTool: 'verified-citation',
+            instruction: retry?.action === 'retry' ? retry.message : '',
+          },
+        },
+      ],
+    });
+    expect(PROVIDER_ADAPTERS.local.reviewResponse?.(retriedTurn, unsupported)).toMatchObject({
+      action: 'fail',
+      expectedTool: 'verified-citation',
+    });
+
+    const wrongLanguage = PROVIDER_ADAPTERS.local.parseResponse(
+      JSON.stringify({
+        choices: [
+          {
+            message: {
+              role: 'assistant',
+              content: 'Only [[domains/catalog]] was inspected.',
+            },
+            finish_reason: 'stop',
+          },
+        ],
+      }),
+    );
+    expect(PROVIDER_ADAPTERS.local.reviewResponse?.(evidenceTurn, wrongLanguage)).toMatchObject({
+      action: 'retry',
+      expectedTool: 'response-language',
+    });
+    const languageRetriedTurn = assembly({
+      ...evidenceTurn,
+      exchanges: [
+        ...evidenceTurn.exchanges,
+        {
+          assistant: wrongLanguage.raw,
+          toolResults: [],
+          retry: {
+            expectedTool: 'response-language',
+            instruction: 'Answer again in Korean.',
+          },
+        },
+      ],
+    });
+    expect(
+      PROVIDER_ADAPTERS.local.reviewResponse?.(languageRetriedTurn, wrongLanguage),
+    ).toMatchObject({ action: 'fail', expectedTool: 'response-language' });
+
+    const cited = PROVIDER_ADAPTERS.local.parseResponse(
+      JSON.stringify({
+        choices: [
+          {
+            message: {
+              role: 'assistant',
+              content: '[[domains/catalog]]과 [[domains/order]]만 확인했습니다.',
+            },
+            finish_reason: 'stop',
+          },
+        ],
+      }),
+    );
+    expect(PROVIDER_ADAPTERS.local.reviewResponse?.(evidenceTurn, cited)).toEqual({
+      action: 'accept',
+    });
   });
 
   it('주소 갈래에는 기본 모델이 없다 — 그 컴퓨터만 아는 사실이라서', () => {
