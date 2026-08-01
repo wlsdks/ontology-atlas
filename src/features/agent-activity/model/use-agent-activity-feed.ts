@@ -4,6 +4,12 @@ import { useCallback, useEffect, useMemo, useRef, useState, useSyncExternalStore
 import { useLocale } from 'next-intl';
 
 import { useLocalVault } from '@/features/docs-vault-local';
+import { useVaultIdentityScope } from '@/features/vault-scope';
+import {
+  forgetLegacyUnscopedReadAt,
+  readReadAt,
+  writeReadAt,
+} from './read-at-storage';
 import { computeVaultHealth } from '@/entities/knowledge-graph/lib/vault-health';
 import {
   AGENT_TASK_VISIBLE_WINDOW_MS,
@@ -62,19 +68,12 @@ const TICK_MS = 30_000;
  * 이 앱에서 진실원은 볼트다. 외부 저장소 구독 문법(`appearance-preferences` 와
  * 같은 계열)을 쓰는 이유: 렌더 중에 localStorage 를 읽으면 프리렌더와 클라이언트가
  * 다른 값을 내 hydration 이 어긋난다.
+ *
+ * **자리 산출(볼트별 키)은 별도 모듈이다** — 훅 안에 두면 되돌려도 아무 시험이
+ * 빨개지지 않는다(`./read-at-storage.ts` 머리말). 여기서는 그 순수 함수를
+ * 구독 문법에 잇기만 한다.
  */
-const READ_AT_KEY = 'atlas.agentActivity.readAt';
 const READ_AT_EVENT = 'ontology-atlas:agent-activity-read';
-
-function readReadAt(): number {
-  if (typeof window === 'undefined') return 0;
-  try {
-    const parsed = Number.parseInt(window.localStorage.getItem(READ_AT_KEY) ?? '', 10);
-    return Number.isFinite(parsed) ? parsed : 0;
-  } catch {
-    return 0;
-  }
-}
 
 function subscribeReadAt(onChange: () => void): () => void {
   if (typeof window === 'undefined') return () => undefined;
@@ -114,8 +113,17 @@ export function useAgentActivityFeed(): AgentActivityFeed {
   const notificationsEnabled = useAgentNotificationsEnabled();
   const mutedKinds = useMutedAgentNotificationKinds();
 
+  const vaultScope = useVaultIdentityScope();
   const [nowMs, setNowMs] = useState(() => Date.now());
-  const readAt = useSyncExternalStore(subscribeReadAt, readReadAt, readAtServerSnapshot);
+  const readReadAtForVault = useCallback(() => readReadAt(vaultScope), [vaultScope]);
+  const readAt = useSyncExternalStore(
+    subscribeReadAt,
+    readReadAtForVault,
+    readAtServerSnapshot,
+  );
+  // 볼트를 모르던 시절의 전역 키를 한 번 치운다 — 아무도 안 읽으므로 무해하지만,
+  // 남겨 두면 다음 사람이 "이건 뭐지" 를 다시 조사하게 된다.
+  useEffect(forgetLegacyUnscopedReadAt, []);
   /** 폴링 중에만 관측되는 사건 — 로그에 안 남으므로 세션 메모리다. */
   const [liveEvents, setLiveEvents] = useState<readonly AgentNotification[]>([]);
 
@@ -246,12 +254,12 @@ export function useAgentActivityFeed(): AgentActivityFeed {
 
   const markAllRead = useCallback(() => {
     try {
-      window.localStorage.setItem(READ_AT_KEY, String(Date.now()));
+      writeReadAt(vaultScope, Date.now());
     } catch {
       // 저장이 막혀도 이벤트로 현재 세션은 읽음이 된다.
     }
     window.dispatchEvent(new CustomEvent(READ_AT_EVENT));
-  }, []);
+  }, [vaultScope]);
 
   return {
     showStatus: statusEnabled && fresh,

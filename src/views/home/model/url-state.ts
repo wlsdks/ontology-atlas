@@ -106,7 +106,15 @@ export interface HomeRouteState {
 /** 스포트라이트 창 — "auto"(적응 사다리) 또는 명시 일수 프리셋. */
 export type RecentSpotlightWindow = "auto" | 1 | 7 | 30;
 
-const HOME_QUERY_KEYS = {
+/**
+ * 지도의 주소 어휘 — **이 객체가 등록부의 정본이다.**
+ *
+ * `tests/contract/scope-registry.contract.test.ts` 가 여기 있는 키 전부에
+ * `global` / `vault-scoped` 태그를 요구한다. 새 키를 더하면 그 시험이 먼저
+ * 터진다 — 태그를 안 붙이면 "볼트가 바뀌면 걷어내야 하나" 라는 질문 자체를
+ * 아무도 안 하게 되고, 그게 「범위를 넘긴 상태」가 태어나는 자리다.
+ */
+export const HOME_QUERY_KEYS = {
   project: "p",
   category: "c",
   hub: "hub",
@@ -126,6 +134,70 @@ const HOME_QUERY_KEYS = {
   review: ONTOLOGY_DEEPLINK_REVIEW_KEY,
   ask: ONTOLOGY_DEEPLINK_ASK_KEY,
 } as const;
+
+/**
+ * **한 볼트 안에서만 뜻이 있는 주소 키** — 값이 그 볼트의 *이름*(노드 슬러그 ·
+ * 프로젝트 슬러그 · 카테고리)이라, 볼트가 바뀌면 그 이름은 아무것도 가리키지
+ * 않는다.
+ *
+ * ## 왜 목록이 따로 필요한가 (2026-08-01 수리)
+ *
+ * 나머지 키(`mode` · `impact` · `pulse` · `index` · `recent` · `create` ·
+ * `via` · `review` · `ask`)는 **고정된 열거값**이라 어느 볼트에서나 같은 뜻이다.
+ * 그래서 볼트가 바뀌어도 살아남는 게 맞다. 이 목록의 키만 다르다 — 살아남으면
+ * **없는 것을 가리킨 채** 남아서 화면이 그것을 사실로 읽는다:
+ *
+ * - `p` — 유령 노드를 선택한 것으로 판정돼 지도가 통째로 흐려졌다(ego 포커스가
+ *   `focusedNodeId !== null` 만 보고 실재를 안 봤다). 덤으로 그 슬러그가 첫
+ *   방문 힌트를 영구 소멸시켰다.
+ * - `pathFrom`/`pathTo` — 이 볼트에 없는 노드 둘을 놓고 화면이 **「경로 없음」**
+ *   이라고 단언했다. 진실은 "둘 다 여기 없다" 인데 화면은 "둘 다 있고 안
+ *   이어져 있다" 고 말한 것이다.
+ * - `hub` — 오늘 소비처가 0이지만 파서가 읽고 URL 왕복에 실린다. 소비처가
+ *   생기는 날 같은 결함이 되는 잠복 함정이라 지금 등재한다.
+ * - `c` · `open` · `realm` — 같은 축(슬러그 값).
+ *
+ * `from`/`to` 는 `pathFrom`/`pathTo` 의 옛 별칭이라 같은 취급이다.
+ */
+export const VAULT_SCOPED_HOME_QUERY_KEYS = [
+  "p",
+  "c",
+  "hub",
+  "pathFrom",
+  "pathTo",
+  "from",
+  "to",
+  "open",
+  "realm",
+] as const;
+
+/**
+ * 볼트 정체성이 바뀌는 **그 순간에** 볼트 전용 주소 상태를 걷어낸다.
+ *
+ * 증상 치료(화면마다 "이 슬러그 실재하나?" 를 방어)와 원인 치료의 차이가 여기
+ * 있다 — 이름이 의미를 잃는 순간에 지우면, 낡은 슬러그가 볼트 경계를 넘어
+ * 살아남지 못해 그 뒤의 모든 거짓 판정이 **구조적으로** 사라진다.
+ *
+ * 경로 모드는 끝점이 둘 다 사라지므로 개요로 되돌린다 — 끝점 없는 「경로」
+ * 모드는 그 자체가 빈 주장이다.
+ *
+ * ⚠️ 첫 마운트에는 부르지 않는다. 그때의 `?p=` 는 잔재가 아니라 **누군가 준
+ * 것**이다(딥링크 · 에이전트 핸드오프 · 북마크). 밖에서 온 링크가 깨진 것은
+ * 조용히 지울 일이 아니라 정직하게 말할 일이다.
+ */
+export function clearVaultScopedRouteState(current: HomeRouteState): HomeRouteState {
+  return {
+    ...current,
+    selectedSlug: null,
+    activeCategory: null,
+    focusedHubSlug: null,
+    pathSourceSlug: null,
+    pathTargetSlug: null,
+    expandedParents: [],
+    realmSlug: null,
+    analysisMode: current.analysisMode === "path" ? "overview" : current.analysisMode,
+  };
+}
 
 const VALID_IMPACT: ProjectImpactMode[] = [
   "none",

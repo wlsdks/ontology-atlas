@@ -14,6 +14,9 @@ import {
   toggleExpandedParent,
   parseExpandedParentsParam,
   MAX_EXPANDED_PARENTS,
+  clearVaultScopedRouteState,
+  VAULT_SCOPED_HOME_QUERY_KEYS,
+  HOME_QUERY_KEYS,
 } from "./url-state";
 
 describe("parseHomeRouteState", () => {
@@ -832,5 +835,94 @@ describe("펼침 부모 상한", () => {
   it("딥링크의 중복 제거가 상한보다 먼저 일어난다", () => {
     // "a,a,a,b" 는 실질 2개다 — 중복 때문에 멀쩡한 항목이 잘리면 안 된다.
     expect(parseExpandedParentsParam("a,a,a,b")).toEqual(["a", "b"]);
+  });
+});
+
+/**
+ * **볼트가 바뀌면 볼트 전용 주소 상태가 살아남지 않는다** — 「범위를 넘긴
+ * 상태」의 원인 치료 (2026-08-01). 이 시험이 잠그는 것은 미관이 아니라, 없는
+ * 노드를 가리킨 주소가 지도를 통째로 흐리고 경로 칩이 거짓을 단언하던 경로다.
+ */
+describe("clearVaultScopedRouteState", () => {
+  /**
+   * ⚠️ 픽스처에 `mode=path` + 끝점 둘을 같이 넣으면 **파서가 이미 `p` 를 null 로
+   * 내린다**(경로 성립 시 선택 해제). 그 상태로 단언하면 정리를 통째로 지워도
+   * 시험이 초록이다 — 실제로 한 번 그랬다(2026-08-01 리버트 프로브). 그래서
+   * 선택 축과 경로 축을 **다른 픽스처로** 나눈다.
+   */
+  const SELECTION_SEARCH =
+    "p=capability:alpha&c=cat&hub=domain:h&open=domain:x,domain:y&realm=domain:r" +
+    "&impact=upstream&pulse=7d&recent=7";
+  const PATH_SEARCH = "mode=path&pathFrom=capability:a&pathTo=domain:b&from=capability:a&to=domain:b";
+
+  it("볼트 이름을 담은 선택 상태를 걷어내고 열거값 키는 지킨다", () => {
+    const current = parseHomeRouteState(new URLSearchParams(SELECTION_SEARCH));
+    expect(current.selectedSlug).toBe("capability:alpha"); // 픽스처가 유효한지 먼저 본다
+
+    const next = clearVaultScopedRouteState(current);
+
+    expect(next.selectedSlug).toBeNull();
+    expect(next.activeCategory).toBeNull();
+    expect(next.focusedHubSlug).toBeNull();
+    expect(next.expandedParents).toEqual([]);
+    expect(next.realmSlug).toBeNull();
+    // 열거값은 어느 볼트에서나 같은 뜻이라 살아남는다.
+    expect(next.impactMode).toBe("upstream");
+    expect(next.pulseMode).toBe("7d");
+    expect(next.recentWindow).toBe(7);
+  });
+
+  it("경로 끝점을 걷어내고 개요로 되돌린다 — 끝점 없는 「경로」 모드는 빈 주장이다", () => {
+    const current = parseHomeRouteState(new URLSearchParams(PATH_SEARCH));
+    expect(current.pathSourceSlug).toBe("capability:a");
+    expect(current.pathTargetSlug).toBe("domain:b");
+
+    const next = clearVaultScopedRouteState(current);
+
+    expect(next.pathSourceSlug).toBeNull();
+    expect(next.pathTargetSlug).toBeNull();
+    expect(next.analysisMode).toBe("overview");
+  });
+
+  it("주소에서도 실제로 사라진다 — 걷어낸 상태를 URL 로 되쓰면 그 키가 없다", () => {
+    for (const search of [SELECTION_SEARCH, PATH_SEARCH]) {
+      const cleared = clearVaultScopedRouteState(
+        parseHomeRouteState(new URLSearchParams(search)),
+      );
+      const params = applyHomeRouteState(new URLSearchParams(search), cleared);
+
+      for (const key of VAULT_SCOPED_HOME_QUERY_KEYS) {
+        expect(params.has(key), `${key} 가 주소에 남았다 (${search})`).toBe(false);
+      }
+    }
+  });
+
+  it("열거값 키는 주소에도 남는다", () => {
+    const cleared = clearVaultScopedRouteState(
+      parseHomeRouteState(new URLSearchParams(SELECTION_SEARCH)),
+    );
+    const params = applyHomeRouteState(new URLSearchParams(SELECTION_SEARCH), cleared);
+    expect(params.get("pulse")).toBe("7d");
+    expect(params.get("impact")).toBe("upstream");
+    expect(params.get("recent")).toBe("7");
+  });
+
+  it("건드리지 않은 모드는 유지된다 (path 가 아니면 그대로)", () => {
+    const current = parseHomeRouteState(new URLSearchParams("mode=health&p=x"));
+    expect(clearVaultScopedRouteState(current).analysisMode).toBe("health");
+  });
+});
+
+/**
+ * 등록부의 두 축이 어긋나지 않게 — 볼트 전용 키는 전부 실재하는 쿼리 키여야
+ * 한다. (전수 등록 여부는 `tests/contract/scope-registry.contract.test.ts` 가
+ * 본다.)
+ */
+describe("VAULT_SCOPED_HOME_QUERY_KEYS", () => {
+  it("모두 실제 쿼리 키다", () => {
+    const known = new Set<string>(Object.values(HOME_QUERY_KEYS));
+    for (const key of VAULT_SCOPED_HOME_QUERY_KEYS) {
+      expect(known.has(key), `${key} 는 HOME_QUERY_KEYS 에 없다`).toBe(true);
+    }
   });
 });

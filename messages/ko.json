@@ -2187,6 +2187,7 @@
       "pathChipUnresolved": "경로: {source} → 대상 선택",
       "pathChipResolved": "{source} → {target} · {hops}홉",
       "pathChipNoPath": "{source} → {target} · 경로 없음",
+      "pathChipMissingEndpoints": "이 볼트에 없는 노드예요 — {slugs}",
       "pathChipClear": "경로 지우기",
       "pathChipCopyPacket": "경로 패킷 복사",
       "pathChipCopyPacketAriaLabel": "에이전트 인계용 경로 패킷 복사",
