@@ -1,5 +1,7 @@
 'use client';
 
+import { useState } from 'react';
+import { ChevronDown } from 'lucide-react';
 import { useTranslations } from 'next-intl';
 
 import {
@@ -43,6 +45,18 @@ export function ExpandSettings() {
   const t = useTranslations('nav.settingsMenu.expand');
   const pref = useExpand();
   const set = (patch: Partial<ExpandPreference>) => writeExpand({ ...pref, ...patch });
+  /**
+   * 세 숫자는 **접혀서 시작한다** (2026-08-02 디자인 감사).
+   *
+   * 여섯 항목이 같은 무게의 상자 셋으로 나란히 서면 이 절은 «고르는 자리» 가
+   * 아니라 **목록**으로 읽힌다(실측: 형제 상자 셋, 보더·radius·간격 12px 전부
+   * 동일 — 무엇이 먼저인지 화면이 말하지 않는다). 결정은 둘이다("무엇을 누르나"
+   * ·"어떻게 놓이나"). 세 숫자는 이미 코드에 있던 상수라 대부분 손대지 않고,
+   * 만지는 사람에게만 필요하다. 바로 아래 이웃인 「발자국」이 같은 문제를 이미
+   * 같은 문법(프리셋 먼저 · 「직접 맞추기」 뒤)으로 풀었으므로 새 문법을
+   * 만들지 않고 그것을 쓴다.
+   */
+  const [detailOpen, setDetailOpen] = useState(false);
 
   const AFFORDANCES: readonly { value: ExpandAffordance; label: string }[] = [
     { value: 'pill', label: t('affordancePill') },
@@ -98,6 +112,22 @@ export function ExpandSettings() {
         </p>
       </div>
 
+      <button
+        type="button"
+        data-testid="app-settings-expand-detail-toggle"
+        aria-expanded={detailOpen}
+        onClick={() => setDetailOpen((open) => !open)}
+        className="flex items-center gap-1.5 justify-self-start rounded-chip border border-[color:var(--color-border-soft)] px-2.5 py-1.5 text-label text-[color:var(--color-text-secondary)] transition-colors hover:border-[color:var(--color-border-strong)] hover:text-[color:var(--color-text-primary)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--color-indigo-a46)]"
+      >
+        <ChevronDown
+          size={13}
+          aria-hidden
+          className={detailOpen ? 'rotate-180 transition-transform' : 'transition-transform'}
+        />
+        {detailOpen ? t('detailHide') : t('detailShow')}
+      </button>
+
+      {detailOpen ? (
       <div className="grid gap-0.5 rounded-lg border border-[color:var(--color-border-soft)] p-2">
         <Slider
           label={t('batchLabel')}
@@ -133,6 +163,7 @@ export function ExpandSettings() {
           {t('maxOpenHint')}
         </p>
       </div>
+      ) : null}
 
       <button
         type="button"

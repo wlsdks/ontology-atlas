@@ -85,6 +85,13 @@ import { isSpineNode, radiusForKind, type TopologyWorld, type WorldNode } from "
  */
 const EXPANDED_AURA_RING_OFFSET = 6;
 const EXPANDED_AURA_DASH: readonly number[] = [3, 3];
+/**
+ * 이름 상자를 좌우로 넓히는 여백(px). 두 이름이 **닿기만 해도** 한 단어로
+ * 읽히는데 AABB 겹침 판정은 닿는 것을 겹침으로 안 센다 — 그 사각지대를 예약
+ * 단계에서 메운다. 값은 시안(`.qa-scratch/proto-expand.html`)의 예약 상자
+ * `측정폭 + 6`(좌우 3)과 같다.
+ */
+const LABEL_SIDE_GAP = 3;
 /** 영역 루트 앵커 링 알파 — 결계(0.5)보다 한 단계 또렷한 실선 헤어라인(중심이 주인공). */
 const REALM_ROOT_ANCHOR_ALPHA = 0.7;
 /** 결계 센서스 각인 — 원 하단 바깥 오프셋(px, 화면 고정)과 잉크 알파. */
@@ -1666,8 +1673,13 @@ export function drawTopologyFrame(params: FrameDrawParams): void {
     // 컨텍스트는 종전 근사로 폴백해 회귀 0.
     const vertical = measureLabelVerticalMetrics(ctx, node.kind, labelScale);
     const boxAt = (baselineY: number) => ({
-      minX: anchorX - width / 2,
-      maxX: anchorX + width / 2 + markReserve,
+      // 좌우로 `LABEL_SIDE_GAP` 만큼 넓혀 예약한다 — **닿는 두 이름은 한
+      // 단어로 읽힌다.** 겹침 판정(`bboxesOverlap`)은 «닿는 것» 을 겹침으로
+      // 안 세므로, 실측에서 「카카오 알림톡」과 「적립금 원장」이 0.7px 간격으로
+      // 나란히 서서 한 문자열처럼 읽혔다(2026-08-02, 부챗살 펼침). 시안이 예약
+      // 상자를 `측정폭 + 6` 으로 잡는 것과 같은 처방이다.
+      minX: anchorX - width / 2 - LABEL_SIDE_GAP,
+      maxX: anchorX + width / 2 + markReserve + LABEL_SIDE_GAP,
       minY: baselineY - vertical.ascent,
       maxY: baselineY + vertical.descent,
     });

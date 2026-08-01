@@ -223,6 +223,48 @@ const BADGE_PAD_X = 6;
  */
 const BADGE_NODE_CLEARANCE = 10;
 
+/* ── 한 노드의 컨트롤은 서로 다른 방위를 쓴다 (2026-08-02 실측 처방) ────────
+ *
+ * 고른 노드에는 컨트롤이 둘 붙는다: 이 파일의 확장 컨트롤과, DOM 으로 떠 있는
+ * 궤도 「이것만 보기」 버튼(`use-topology-loop.ts`). 둘 다 노드 둘레에 앵커되는데
+ * **같은 방위(우상단 45°)를 쓰고 있었다.** 결과는 겹침이 아니라 **차단**이었다 —
+ * 실측(1512×982, 샘플 볼트 「마케팅」, 어깨 배지):
+ *
+ * - 배지 33.6×19 의 **80%(513px²)** 가 28×28 궤도 버튼 밑에 들어갔고,
+ * - `document.elementFromPoint(배지 중심)` 이 궤도 버튼의 `<circle>` 을 돌려줬다
+ *   (= 배지는 **한 번도 눌리지 않는다**. 클릭해도 `?open=` 이 안 바뀐다),
+ * - 화면에 삐져나온 것은 `+17` 의 끝 글자 하나라 **「7」로 읽혔다**(거짓 수).
+ * - 기본값인 「머리 위 막대」도 무사하지 않았다: 판의 우하단 모서리 16.5×4.8px
+ *   (80px², 판 면적의 5%)가 같은 버튼에 물렸다.
+ *
+ * 그래서 방위를 갈랐다 — **막대=북 · 배지=북서 · 궤도 버튼=동**. 크기와 무관하게
+ * 성립하는 규칙이라(아래 계약 테스트가 반지름 7~40 전수로 잡는다) 노드가 커지든
+ * 작아지든 다시 겹치지 않는다. 값을 하나 키워 «이번 화면에서만» 떼어 놓는 미봉과
+ * 다른 점이 그것이다.
+ */
+/** 궤도 버튼(`이것만 보기`)을 노드 반지름 바깥으로 띄우는 거리(스크린 px). */
+export const ORBIT_BUTTON_CLEARANCE = 14;
+/** 궤도 버튼의 지름(px) — DOM 쪽 `h-7 w-7` 과 같은 값. 계약 테스트가 이걸로 잰다. */
+export const ORBIT_BUTTON_SIZE = 28;
+
+/**
+ * 궤도 버튼이 이 프레임에 차지하는 사각형 — DOM 배치(`use-topology-loop.ts`)와
+ * **같은 식**을 쓰는 단일 출처. 두 곳에 적으면 한쪽만 움직여 다시 겹친다.
+ */
+export function orbitButtonRect(
+  parentScreenX: number,
+  parentScreenY: number,
+  nodeScreenRadius: number,
+): ClusterChipRect {
+  const cx = parentScreenX + nodeScreenRadius + ORBIT_BUTTON_CLEARANCE;
+  return {
+    x: cx - ORBIT_BUTTON_SIZE / 2,
+    y: parentScreenY - ORBIT_BUTTON_SIZE / 2,
+    w: ORBIT_BUTTON_SIZE,
+    h: ORBIT_BUTTON_SIZE,
+  };
+}
+
 /**
  * S10 결함 2 (소유자 실보고: 펼침 `−N` 알약이 파선/라벨과 겹침) — 떠다니는
  * 알약을 폐기하고 펼침 배지를 부모 노드 **우상단 모서리**(스크린: x+ 오른쪽,
@@ -243,7 +285,12 @@ export function clusterBadgeRect(
   const h = CLUSTER_BADGE_HEIGHT * scale;
   const diag = Math.SQRT1_2; // cos(45°) = sin(45°)
   const reach = nodeScreenRadius + BADGE_NODE_CLEARANCE + h / 2;
-  const cx = parentScreenX + reach * diag;
+  // **왼쪽** 어깨다 — 오른쪽은 궤도 버튼의 방위다(위 「서로 다른 방위」 절).
+  // 그리고 **오른쪽 끝이 노드 중심을 넘지 않는다**: 작은 노드(반지름 7) + 넓은
+  // 라벨(`+240`) + 줌 1.5 에서 배지가 중심을 1.4px 넘어 궤도 버튼에 다시 닿았다
+  // (계약 테스트가 잡은 잔여 케이스). 넘칠 때는 왼쪽으로 더 나간다 — 방위는
+  // 지키고 폭만 왼쪽으로 자란다.
+  const cx = Math.min(parentScreenX - reach * diag, parentScreenX - w / 2);
   const cy = parentScreenY - reach * diag;
   return { x: cx - w / 2, y: cy - h / 2, w, h };
 }
@@ -267,7 +314,7 @@ export function clusterBadgeCenter(
 ): { x: number; y: number } {
   const diag = Math.SQRT1_2;
   const reach = nodeScreenRadius + BADGE_NODE_CLEARANCE + (CLUSTER_BADGE_HEIGHT * scale) / 2;
-  return { x: parentScreenX + reach * diag, y: parentScreenY - reach * diag };
+  return { x: parentScreenX - reach * diag, y: parentScreenY - reach * diag };
 }
 
 /**

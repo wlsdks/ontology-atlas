@@ -304,6 +304,21 @@ export function parseExpandedParentsParam(
 export const MAX_EXPANDED_PARENTS = DEFAULT_EXPAND.maxOpenParents;
 
 /**
+ * 이미 정해진 목록을 상한에 맞춘다 — **뒤쪽을 남긴다**(`toggleExpandedParent`
+ * 의 LRU 축출과 같은 방향: 나중에 적힌 것이 더 최근 의도다).
+ *
+ * 왜 파싱과 별도인가: `parseHomeRouteState` 는 설정을 모르는 순수 함수라
+ * 기본값 상한만 쓸 수 있다. 그래서 딥링크로 들어온 목록이 **사용자가 내려 둔
+ * 상한을 통과하지 않았다**(실측 2026-08-02: 「동시에 펼쳐 둘 부모」를 1 로 둔
+ * 화면이 링크 하나로 부모 셋을 펼쳤다). 상한을 아는 자리(화면)가 한 번 더
+ * 거른다.
+ */
+export function limitExpandedParents(slugs: readonly string[], max: number): string[] {
+  const cap = Math.max(1, Math.floor(max));
+  return slugs.length > cap ? slugs.slice(slugs.length - cap) : [...slugs];
+}
+
+/**
  * 클러스터 펼침 토글 — 접기는 언제나 되고, 펼치기는 상한을 넘으면 **가장
  * 오래 펼쳐 둔 것을 닫는다**(LRU).
  *

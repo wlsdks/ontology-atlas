@@ -553,11 +553,11 @@ export type ExpandAffordance = "pill" | "bar" | "badge";
 /**
  * 확장 구조 — 펼친 자식을 어떻게 놓나.
  *
- * `disc` 를 뺀 셋은 시안의 3안이고, `disc` 는 **오늘의 배치**다(황금각 phyllotaxis
- * 나선 — `model/layout.ts#placePhyllotaxisDisk`). 시안에는 없는 값을 여기 두는
- * 이유는 하나다: 시안의 셋 중 어느 것도 오늘 그려지는 것이 아니라서, `disc` 가
- * 없으면 이 설정에는 «오늘» 을 고르는 자리가 없다. 기본값이 화면을 바꾸는 것은
- * 어포던스 한 항목뿐이어야 한다(소유자 결정, `docs/DECISIONS.md`).
+ * `disc` 를 뺀 셋은 시안의 3안이고, `disc` 는 **종전의 배치**다(황금각 phyllotaxis
+ * 나선 — `model/layout.ts#placePhyllotaxisDisk`). 기본값은 **부챗살**이다(소유자
+ * 결정 2026-08-02). `disc` 는 그래서 더 중요해졌다 — 종전 화면으로 되돌릴 수
+ * 있는 유일한 값이고, 부챗살의 반증 조건이 관측되면 그리로 돌아간다. **삭제
+ * 금지**(`docs/DECISIONS.md`).
  *
  * - `disc` — 나선 원반. 개수가 늘어도 면적이 √로만 자란다(유계).
  * - `fan` — 바깥쪽으로 부채꼴. 층이 쌓이며 넓어져 형제 도메인과 부딪힐 수 있다.
@@ -594,14 +594,18 @@ export interface ExpandPreference {
 /**
  * 기본값.
  *
- * ⚠️ **`affordance: "bar"` 는 오늘 화면을 의도적으로 바꾼다** (소유자 결정
- * 2026-08-01 — *"기본값은 '머리 위 막대' 어때?"*). 다른 넷은 오늘 그려지는 것과
- * 같은 값이라, 설정을 안 건드린 사람에게 바뀌는 것은 어포던스 하나뿐이다.
- * 사라지는 것과 대신 오는 것, 그리고 되돌릴 조건은 `docs/DECISIONS.md`.
+ * ⚠️ **둘이 오늘 화면을 의도적으로 바꾼다** — `affordance: "bar"`(소유자 결정
+ * 2026-08-01, *"기본값은 '머리 위 막대' 어때?"*)와 `structure: "fan"`(소유자
+ * 결정 2026-08-02). 나머지 세 숫자는 종전 상수 그대로다.
+ *
+ * 부챗살을 기본으로 올리기 전에 **겹침을 실측했다**: 부모 셋 펼침(48자식,
+ * 1512×982)에서 마크 겹침이 26쌍이었고, 호 간격을 26 → 34 로 올리고 마지막
+ * 층을 가운데 정렬하니 **0쌍**이 됐다(이름 있는 마크 비율 31% → 34%, 나선의
+ * 27% 보다 높다). 값과 반증 조건은 `docs/DECISIONS.md` 2026-08-02.
  */
 export const DEFAULT_EXPAND: ExpandPreference = {
   affordance: "bar",
-  structure: "disc",
+  structure: "fan",
   batchSize: 24,
   labelAttempts: 8,
   maxOpenParents: 3,

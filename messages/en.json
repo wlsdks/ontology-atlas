@@ -140,7 +140,7 @@
         "affordanceHint": {
           "pill": "Sits in open space away from the node, joined by a dotted line. The only one of the three that has to find a spot — as space runs out it drifts further away.",
           "bar": "A row of text buttons directly above the selected node. Nothing shows until you select, and it says in numbers how many will open.",
-          "badge": "A small circle docked on the node's upper-right shoulder. It travels with the node so it never has to find a spot; hover tells you what it will do."
+          "badge": "A small circle docked on the node's upper-left shoulder. It travels with the node so it never has to find a spot; hover tells you what it will do."
         },
         "structureLabel": "Child layout",
         "structureDisc": "Spiral disc",
@@ -148,8 +148,8 @@
         "structureRing": "Ring",
         "structureColumn": "Columns",
         "structureHint": {
-          "disc": "What the map draws today. A golden-angle spiral, so the area it takes grows only with the square root of the child count.",
-          "fan": "An arc sweeping outward. It widens as rows stack up and can collide with sibling domains.",
+          "disc": "What the map drew before. A golden-angle spiral, so the area it takes grows only with the square root of the child count.",
+          "fan": "What the map draws today. An arc sweeping outward, so names line up side by side. It widens as rows stack up.",
           "ring": "A ring wrapped around the parent. It uses every direction, so the same count fits in less area.",
           "column": "Children lined up outward. Names sit side by side and read most easily, but the layout gets long."
         },
@@ -159,6 +159,8 @@
         "labelAttemptsHint": "Per parent. The most important ones are tried first, and a name with no room is dropped. So this is not “how many get a name” but “how many are attempted”.",
         "maxOpenLabel": "Parents open at once",
         "maxOpenHint": "Open one more than this and the parent open longest closes. Better than a click that does nothing.",
+        "detailShow": "Adjust numbers",
+        "detailHide": "Hide numbers",
         "reset": "Reset to defaults"
       },
       "section": {

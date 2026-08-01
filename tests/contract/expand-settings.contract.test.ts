@@ -1,3 +1,4 @@
+import { readFileSync } from "node:fs";
 import { describe, expect, it } from "vitest";
 
 import {
@@ -18,6 +19,7 @@ import {
   clusterChipRect,
   clusterControlForm,
   drawClusterChip,
+  orbitButtonRect,
   type ClusterChipColors,
 } from "@/widgets/topology-map-v2/render/cluster-chips";
 import {
@@ -35,6 +37,7 @@ import {
 } from "@/widgets/topology-map-v2/model/layout";
 import {
   MAX_EXPANDED_PARENTS,
+  limitExpandedParents,
   toggleExpandedParent,
   parseExpandedParentsParam,
 } from "@/views/home/model/url-state";
@@ -83,14 +86,26 @@ describe("확장 설정 — 기본값", () => {
   });
 
   /**
-   * 나머지 넷은 **오늘 그려지는 것과 같은 값**이다 — 어포던스 하나만 바뀌고
-   * 다른 것은 안 바뀐다는 것이 이 변경의 사정거리다.
+   * **화면을 바꾸는 기본값은 둘이다** — 어포던스(막대)와 배치(부챗살). 소유자
+   * 결정 2026-08-01·02. 세 숫자는 종전 상수 그대로여야 한다: 그 셋까지 흔들면
+   * 「무엇 때문에 화면이 달라졌나」를 아무도 못 가른다.
    */
-  it("어포던스 말고는 오늘의 값 그대로다", () => {
-    expect(DEFAULT_EXPAND.structure).toBe<ExpandStructure>("disc");
+  it("화면을 바꾸는 기본값은 어포던스와 배치 둘뿐이다", () => {
+    expect(DEFAULT_EXPAND.affordance).toBe("bar");
+    expect(DEFAULT_EXPAND.structure).toBe<ExpandStructure>("fan");
     expect(DEFAULT_EXPAND.batchSize).toBe(EGO_NEIGHBOR_LIMIT);
     expect(DEFAULT_EXPAND.labelAttempts).toBe(DISC_LABEL_TOP_K);
     expect(DEFAULT_EXPAND.maxOpenParents).toBe(MAX_EXPANDED_PARENTS);
+  });
+
+  /**
+   * **`disc` 는 되돌릴 자리라서 남는다.** 부챗살이 기본이 되면서 나선 원반은
+   * 「종전 화면」을 다시 고를 수 있는 유일한 값이 됐다 — 반증 조건이 관측되면
+   * 그리로 돌아간다(`docs/DECISIONS.md` 2026-08-02). 목록에서 사라지면 그
+   * 되돌림이 코드 수정이 된다.
+   */
+  it("종전 배치(나선 원반)는 선택지로 남아 있다", () => {
+    expect(EXPAND_STRUCTURES).toContain<ExpandStructure>("disc");
   });
 
   /**
@@ -160,8 +175,8 @@ describe("펼치기 표시 — 셋이 실제로 갈아끼워진다", () => {
     // 막대는 부모 **바로 위** — 가로 중심이 부모와 같고, 밑변이 노드 머리 위다.
     expect(bar.x + bar.w / 2).toBeCloseTo(PARENT.x, 6);
     expect(bar.y + bar.h).toBeLessThan(PARENT.y - PARENT.radius);
-    // 배지는 우상단 어깨 — 오른쪽이고 위다.
-    expect(badge.x + badge.w / 2).toBeGreaterThan(PARENT.x);
+    // 배지는 **좌상단** 어깨 — 왼쪽이고 위다(우상단은 궤도 버튼의 방위다).
+    expect(badge.x + badge.w / 2).toBeLessThan(PARENT.x);
     expect(badge.y + badge.h / 2).toBeLessThan(PARENT.y);
   });
 
@@ -330,14 +345,30 @@ describe("확장 구조 — 자식 좌표가 실제로 바뀐다", () => {
     );
   });
 
-  /** **회귀 0** — 설정을 안 건드린 사람의 좌표는 오늘과 바이트 동일하다. */
-  it("기본값(나선 원반)은 옵션을 안 넘긴 것과 같다", () => {
+  /**
+   * 옵션을 안 넘긴 호출은 **기본값(부챗살)** 과 같아야 한다 — 안 그러면 설정을
+   * 모르는 호출부(순수 함수 · 시험 · 미래의 소비처)만 다른 지도를 그린다.
+   * 2026-08-02 에 기본값이 `disc` → `fan` 으로 바뀌면서 이 짝도 옮겨졌다.
+   */
+  it("옵션을 안 넘기면 기본값 배치가 나온다", () => {
     const withOption = computeConcentricLayout(nodes, rings, {
-      expandStructure: "disc",
+      expandStructure: DEFAULT_EXPAND.structure,
       relaxIterations: 0,
     });
     const withoutOption = computeConcentricLayout(nodes, rings, { relaxIterations: 0 });
     expect(withOption).toEqual(withoutOption);
+  });
+
+  /**
+   * **되돌릴 수 있는가** — 나선 원반을 고르면 종전 좌표가 그대로 나와야 한다.
+   * 기본값이 부챗살로 옮겨간 뒤 `disc` 의 존재 이유가 정확히 이것이다.
+   */
+  it("나선 원반을 고르면 부챗살과 다른 좌표가 나온다", () => {
+    const disc = computeConcentricLayout(nodes, rings, { expandStructure: "disc", relaxIterations: 0 });
+    const fan = computeConcentricLayout(nodes, rings, { expandStructure: "fan", relaxIterations: 0 });
+    const sig = (pts: ReturnType<typeof computeConcentricLayout>) =>
+      pts.map((p) => `${Math.round(p.x)},${Math.round(p.y)}`).join("|");
+    expect(sig(disc)).not.toBe(sig(fan));
   });
 
   /**
@@ -501,5 +532,86 @@ describe("그려진 것 — 기본값에서 지도에 서는 것은 「머리 �
     expect(heights[1]).toBe(CLUSTER_BAR_HEIGHT);
     expect(heights[2]).toBe(CLUSTER_BADGE_HEIGHT);
     expect(new Set(heights).size, "셋이 같은 것을 그린다").toBe(3);
+  });
+});
+
+/**
+ * 한 노드에 붙는 컨트롤은 **서로 다른 방위**를 쓴다 — 2026-08-02 실측 처방.
+ *
+ * 실측(1512×982, 샘플 볼트 「마케팅」): 어깨 배지의 **80%(513px²)** 가 궤도
+ * 「이것만 보기」 버튼 밑에 들어갔고 `document.elementFromPoint(배지 중심)` 이
+ * 그 버튼을 돌려줬다 — 배지는 한 번도 안 눌렸다. 기본값인 머리 위 막대도
+ * 우하단 모서리 80px² 가 물렸다. 원인은 **둘 다 우상단 45°** 였다는 것 하나다.
+ *
+ * 그래서 이 시험은 «지금 화면에서 안 겹친다» 가 아니라 **어떤 반지름·어떤
+ * 줌에서도 안 겹친다** 를 잠근다. 값 하나를 키워 이번 화면만 떼어 놓는 미봉과
+ * 이 규칙의 차이가 정확히 그것이다.
+ */
+describe("노드 컨트롤 방위 — 막대·배지·궤도 버튼이 자리를 안 다툰다", () => {
+  const overlapArea = (
+    a: { x: number; y: number; w: number; h: number },
+    b: { x: number; y: number; w: number; h: number },
+  ): number => {
+    const w = Math.min(a.x + a.w, b.x + b.w) - Math.max(a.x, b.x);
+    const h = Math.min(a.y + a.h, b.y + b.h) - Math.max(a.y, b.y);
+    return w > 0 && h > 0 ? w * h : 0;
+  };
+
+  it("어떤 노드 크기·줌에서도 겹침이 0 이다", () => {
+    let checked = 0;
+    // 반지름 사다리(요소 7 → 프로젝트 30)에 magnitudeScale(최대 1.4)과 줌을 곱한 폭.
+    for (const radius of [7, 11, 17, 24, 30, 42]) {
+      for (const scale of [0.85, 1, 1.25, 1.5]) {
+        for (const count of [2, 17, 240]) {
+          const orbit = orbitButtonRect(PARENT.x, PARENT.y, radius);
+          const bar = clusterBarRect(PARENT.x, PARENT.y, radius, `+${count}`, scale);
+          const badge = clusterBadgeRect(PARENT.x, PARENT.y, radius, `+${count}`, scale);
+          expect(
+            overlapArea(bar, orbit),
+            `막대×궤도 겹침 (r=${radius} scale=${scale} count=${count})`,
+          ).toBe(0);
+          expect(
+            overlapArea(badge, orbit),
+            `배지×궤도 겹침 (r=${radius} scale=${scale} count=${count})`,
+          ).toBe(0);
+          checked += 1;
+        }
+      }
+    }
+    // 공회전 차단 — 조합을 하나도 못 돌았으면 이 시험은 아무것도 안 본 것이다.
+    expect(checked).toBeGreaterThan(60);
+  });
+
+  /**
+   * 자리 계산이 **한 곳**이어야 이 규칙이 유지된다. 루프가 45° 식을 다시 인라인
+   * 하면 위 시험은 여전히 초록인 채로 화면만 다시 겹친다 — 그래서 소비처가 이
+   * 함수를 부르는지도 함께 본다.
+   */
+  it("궤도 버튼 DOM 배치가 같은 함수를 쓴다", () => {
+    const source = readFileSync("src/widgets/topology-map-v2/ui/use-topology-loop.ts", "utf8");
+    expect(source).toContain("orbitButtonRect(");
+    expect(source, "45° 인라인 계산이 되살아났다").not.toContain("Math.cos(-Math.PI / 4)");
+  });
+});
+
+/**
+ * **딥링크도 사용자의 상한을 받는다** — 2026-08-02 실측 defect.
+ *
+ * `?open=` 파싱은 설정을 모르는 순수 함수라 기본값 3 을 쓴다. 그래서 「동시에
+ * 펼쳐 둘 부모」를 1 로 내려 둔 화면이 링크 하나로 부모 셋을 펼쳤다(실측:
+ * 51노드여야 할 화면이 82노드). 클릭 경로만 상한을 지키면 그건 상한이 아니다.
+ */
+describe("동시에 펼쳐 둘 부모 — 딥링크도 상한을 받는다", () => {
+  it("상한을 넘긴 목록은 뒤쪽만 남는다", () => {
+    expect(limitExpandedParents(["a", "b", "c", "d"], 1)).toEqual(["d"]);
+    expect(limitExpandedParents(["a", "b", "c", "d"], 3)).toEqual(["b", "c", "d"]);
+    expect(limitExpandedParents(["a"], 6)).toEqual(["a"]);
+    // 0·음수·소수는 «아무것도 못 펼침» 이 아니라 최소 1 이다(클릭이 죽지 않게).
+    expect(limitExpandedParents(["a", "b"], 0)).toEqual(["b"]);
+  });
+
+  it("지도 화면이 그 상한을 실제로 건다", () => {
+    const source = readFileSync("src/views/home/ui/HomePage.tsx", "utf8");
+    expect(source).toContain("limitExpandedParents(expandedParentSlugs, expand.maxOpenParents)");
   });
 });

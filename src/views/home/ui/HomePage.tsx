@@ -159,6 +159,7 @@ import {
   selectTopologyPathRouteState,
   resolveTopologyNodeClickRouteState,
   toggleExpandedParent,
+  limitExpandedParents,
   enterRealmRouteState,
   exitRealmRouteState,
   resolveRealmNodeId,
@@ -465,10 +466,15 @@ export function HomePage() {
   const renderProjects = projects;
   // 밀도 게이트 (fable 설계) — URL `?open=` 의 부모 slug 목록을 Set 으로
   // 변환해 지도로 내린다. 문자열 join 을 dep 으로 써 안정적으로 메모.
-  const expandedParentsKey = expandedParentSlugs.join(",");
+  // **딥링크도 사용자의 상한을 받는다** (2026-08-02 실측 defect). `?open=` 파싱은
+  // 순수 함수라 설정을 모르고 기본값 3 을 쓴다 — 그래서 「동시에 펼쳐 둘 부모」를
+  // 1 로 내려 둔 사람이 링크 하나로 셋을 받았다(실측: maxOpen=1 인데 부모 3개가
+  // 펼쳐진 채 82노드). 클릭 경로만 상한을 지키면 그건 상한이 아니다. 뒤쪽을
+  // 남기는 방향은 `toggleExpandedParent` 의 LRU 축출과 같다(나중에 적힌 것이 더
+  // 최근 의도다).
+  const expandedParentsKey = limitExpandedParents(expandedParentSlugs, expand.maxOpenParents).join(",");
   const expandedParentSet = useMemo(
-    () => new Set(expandedParentSlugs),
-    // eslint-disable-next-line react-hooks/exhaustive-deps
+    () => new Set(expandedParentsKey ? expandedParentsKey.split(",") : []),
     [expandedParentsKey],
   );
   // 밀도 게이트 — 클러스터 칩 클릭 → 해당 부모 확장 토글(URL 왕복). 노드

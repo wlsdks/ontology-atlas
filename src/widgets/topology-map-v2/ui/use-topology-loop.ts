@@ -31,6 +31,7 @@ import { INITIAL_POINTER_MACHINE_STATE, type PointerMachineState } from "../inte
 import { initHomeSpring, isHomeSpringConverged, stepHomeSpring, type HomeSpringState } from "../model/relayout-home";
 import type { NodeDragState } from "./topology-pointer-handlers";
 import { DEPTH_DOT_LAYERS, buildDepthDotPattern, buildGridPattern } from "../render/grid";
+import { orbitButtonRect } from "../render/cluster-chips";
 import { createAnimatedBackground, type AnimatedBackground } from "../render/animated-background";
 import { buildDustPoints, buildRealmCosmosPoints, computeStarDustCount, type DustPoint } from "../render/starfield";
 import { DEFAULT_EXPAND } from "@/shared/lib/appearance-preferences";
@@ -2660,8 +2661,16 @@ export function useTopologyLoop(args: UseTopologyLoopArgs): UseTopologyLoopResul
         };
       }
 
-      // --- S4 궤도 "전개" 버튼 위치 — 포커스 노드 링 바깥(우상단 45°)에 앵커,
-      // 매 프레임 카메라 추종. 영역 안이거나 자식 없는 노드면 소멸. ---
+      // --- S4 궤도 "전개" 버튼 위치 — 포커스 노드 링 바깥 **정동(오른쪽)** 에
+      // 앵커, 매 프레임 카메라 추종. 영역 안이거나 자식 없는 노드면 소멸.
+      //
+      // 우상단 45° 였다가 옮겼다(2026-08-02): 확장 컨트롤(어깨 배지)이 **같은
+      // 방위**를 쓰고 있어서, 배지의 80% 가 이 버튼 밑으로 들어가고
+      // `elementFromPoint` 가 이 버튼을 돌려줬다 — 배지는 눌리지 않았고 화면에
+      // 삐져나온 끝 글자 하나가 거짓 수(`+17` → 「7」)로 읽혔다. 기본값인 머리
+      // 위 막대도 우하단 모서리 80px² 가 물렸다. 방위 배분의 단일 출처와 근거는
+      // `render/cluster-chips.ts` 의 「서로 다른 방위」 절이고, 반지름 전수
+      // 겹침 0 은 `expand-settings.contract.test.ts` 가 잠근다. ---
       {
         const btn = realmEnterButtonElRef.current;
         if (btn) {
@@ -2677,9 +2686,10 @@ export function useTopologyLoop(args: UseTopologyLoopArgs): UseTopologyLoopResul
           if (node) {
             const rr = radiusForKind(node.kind, tokens) * node.magnitudeScale * camera.scale.value;
             const s = worldToScreen(camera, width, height, node.x, node.y);
-            const off = rr + 14;
-            const bx = s.x + off * Math.cos(-Math.PI / 4);
-            const by = s.y + off * Math.sin(-Math.PI / 4);
+            // 자리의 단일 출처 — 확장 컨트롤의 사각형 계산이 같은 함수를 본다.
+            const orbit = orbitButtonRect(s.x, s.y, rr);
+            const bx = orbit.x + orbit.w / 2;
+            const by = orbit.y + orbit.h / 2;
             btn.style.transform = `translate(-50%, -50%) translate(${bx}px, ${by}px)`;
           }
           // **탭 정지도 함께 켜고 끈다** (2026-07-29 키보드 실측).

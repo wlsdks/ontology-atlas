@@ -374,8 +374,29 @@ function placePhyllotaxisDisk(
  * 쐐기 폭은 부모의 outward 방향 기준 ±`FAN_SPREAD/2` 로 가둔다.
  */
 const FAN_SPREAD = Math.PI * 0.62;
-const FAN_ROW_GAP = PHYLLOTAXIS_SPACING;
 
+/**
+ * 이웃한 두 자식의 **호 위 간격**(월드). 나선 원반의 26 을 그대로 쓰다가
+ * 올렸다 — 실측(2026-08-02, 1512×982, 부모 셋 펼침 48자식): 부챗살에서 마크가
+ * **26쌍** 겹쳤고 나선·고리는 0쌍이었다. 원인은 값 하나다: 자식 반지름은
+ * `magnitudeScale` 로 최대 1.4배까지 자라(역량 11 → 15.4) 두 개가 나란히
+ * 서려면 30.8 이 필요한데 26 을 줬다. `relaxCollisions` 는 **기본 반지름**만
+ * 보고 밀어서 이 초과분을 못 되돌린다.
+ */
+const FAN_ARC_SPACING = 34;
+/** 층 간 간격 — 같은 이유로 호 간격과 같은 값을 쓴다(층끼리도 나란히 선다). */
+const FAN_ROW_GAP = 34;
+
+/**
+ * 한 층에 자식을 **일정 간격으로, 가운데부터** 앉힌다.
+ *
+ * 종전엔 `k/(take-1) - 0.5` 로 그 층의 자식을 쐐기 **폭 전체**에 늘였다. 층이
+ * 꽉 찼을 때는 같은 답이지만 **마지막 층**에서 갈렸다 — 남은 두 개가 부챗살의
+ * 양 끝으로 날아가 부모에서 가장 먼 두 점에 홀로 섰다(부채가 아니라 부스러기로
+ * 읽히는 자리이고, 형제 도메인에 가장 먼저 닿는 자리이기도 하다). 간격을
+ * 고정하고 가운데 정렬하면 마지막 층이 중심선 옆에 모인다 — 시안이 폭을 재서
+ * 얻던 성질을, 글자를 못 재는 이 모듈에서 낼 수 있는 만큼.
+ */
 function placeExpandedFan(
   parent: PlacedPoint,
   children: readonly LayoutGraphNode[],
@@ -386,12 +407,12 @@ function placeExpandedFan(
   let row = 0;
   while (index < children.length) {
     const r = ringRadius + row * FAN_ROW_GAP;
-    // 이 층의 호 길이가 담을 수 있는 개수 — 적어도 하나는 놓는다(무한 루프 방지).
-    const capacity = Math.max(1, Math.floor((FAN_SPREAD * r) / PHYLLOTAXIS_SPACING));
+    const step = FAN_ARC_SPACING / r; // 라디안 — 이 반지름에서 간격 고정
+    // 이 층이 담을 수 있는 개수 — 적어도 하나는 놓는다(무한 루프 방지).
+    const capacity = Math.max(1, Math.floor(FAN_SPREAD / step) + 1);
     const take = Math.min(capacity, children.length - index);
     for (let k = 0; k < take; k += 1) {
-      const t = take === 1 ? 0 : k / (take - 1) - 0.5;
-      const angle = parent.angle + t * FAN_SPREAD;
+      const angle = parent.angle + (k - (take - 1) / 2) * step;
       placed.set(children[index + k].id, {
         x: parent.x + Math.cos(angle) * r,
         y: parent.y + Math.sin(angle) * r,
@@ -438,7 +459,9 @@ function placeExpandedRing(
  * 열은 부모의 outward 방향으로 나아가고, 각 열은 그 수직 방향으로 늘어선다.
  */
 const COLUMN_LENGTH = 6;
-const COLUMN_GAP = PHYLLOTAXIS_SPACING * 1.6;
+const COLUMN_GAP = FAN_ARC_SPACING * 1.6;
+/** 한 줄 안에서 위아래 간격 — 부챗살과 같은 이유로 26 이 아니라 34 다. */
+const COLUMN_ROW_GAP = FAN_ARC_SPACING;
 
 function placeExpandedColumns(
   parent: PlacedPoint,
@@ -455,7 +478,7 @@ function placeExpandedColumns(
     const column = Math.floor(i / COLUMN_LENGTH);
     const row = i % COLUMN_LENGTH;
     const along = ringRadius + column * COLUMN_GAP;
-    const across = (row - (COLUMN_LENGTH - 1) / 2) * PHYLLOTAXIS_SPACING;
+    const across = (row - (COLUMN_LENGTH - 1) / 2) * COLUMN_ROW_GAP;
     placed.set(child.id, {
       x: parent.x + dirX * along + perpX * across,
       y: parent.y + dirY * along + perpY * across,

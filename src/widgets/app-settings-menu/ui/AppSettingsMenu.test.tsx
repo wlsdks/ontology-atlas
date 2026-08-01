@@ -652,6 +652,17 @@ describe('AppSettingsMenu appearance pickers (#20/#21)', () => {
     for (const value of ['disc', 'fan', 'ring', 'column']) {
       expect(screen.getByTestId(`app-settings-expand-structure-${value}`)).toBeInTheDocument();
     }
+    // 세 숫자는 **접혀서 시작한다**(2026-08-02 디자인 감사) — 여섯 항목이 같은
+    // 무게로 나란히 서면 이 절이 「고르는 자리」가 아니라 목록으로 읽힌다.
+    // 이웃한 「발자국」이 이미 쓰는 문법(「직접 맞추기」)을 그대로 쓴다.
+    for (const id of [
+      'app-settings-expand-batch',
+      'app-settings-expand-label-attempts',
+      'app-settings-expand-max-open',
+    ]) {
+      expect(screen.queryByTestId(id)).toBeNull();
+    }
+    fireEvent.click(screen.getByTestId('app-settings-expand-detail-toggle'));
     for (const id of [
       'app-settings-expand-batch',
       'app-settings-expand-label-attempts',
@@ -679,6 +690,7 @@ describe('AppSettingsMenu appearance pickers (#20/#21)', () => {
    */
   it('슬라이더 범위가 시안 값과 같다', () => {
     openSection('expand');
+    fireEvent.click(screen.getByTestId('app-settings-expand-detail-toggle'));
     const range = (id: string) => {
       const el = screen.getByTestId(id) as HTMLInputElement;
       return [el.min, el.max];
