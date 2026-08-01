@@ -281,10 +281,13 @@ describe('벤더 어댑터 — 셋이 같은 모양으로 접힌다', () => {
       'at least three exact sibling slugs',
     );
     expect((forcedSynthesis.messages as Array<{ content?: string }>).at(-1)?.content).toContain(
-      'Only these concepts had detailed content delivered: [[domains/agent-experience]]. They were found',
+      'Only these concept evidence rows were delivered: [[domains/agent-experience]]. They were found',
     );
     expect((forcedSynthesis.messages as Array<{ content?: string }>).at(-1)?.content).toContain(
-      'Fewer than three detailed concepts survived the evidence cap',
+      'Treat every bodyInfo, neighborsInfo, and frontmatterInfo truncation marker as an evidence boundary',
+    );
+    expect((forcedSynthesis.messages as Array<{ content?: string }>).at(-1)?.content).toContain(
+      'Fewer than three concept evidence rows survived the evidence cap',
     );
     expect(firstOpenAi).not.toHaveProperty('reasoning_effort');
     expect(firstOpenAi).not.toHaveProperty('tool_choice');

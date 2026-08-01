@@ -37,9 +37,9 @@ function synthesisInstruction(exchanges: TurnAssembly['exchanges']): string {
   const receipt = slugs.map((slug) => `[[${slug}]]`).join(', ');
   const siblingBoundary =
     slugs.length < 3
-      ? ' Fewer than three detailed concepts survived the evidence cap, so do not say a bridge is needed or unnecessary; say only that the verified scope does not establish one.'
+      ? ' Fewer than three concept evidence rows survived the evidence cap, so do not say a bridge is needed or unnecessary; say only that the verified scope does not establish one.'
       : '';
-  return `${LOCAL_SYNTHESIS_INSTRUCTION} Only these concepts had detailed content delivered: ${receipt}. They were found; do not say they were missing. Cite at least one of these exact slugs in the answer.${siblingBoundary}`;
+  return `${LOCAL_SYNTHESIS_INSTRUCTION} Only these concept evidence rows were delivered: ${receipt}. They were found; do not say they were missing. Treat every bodyInfo, neighborsInfo, and frontmatterInfo truncation marker as an evidence boundary; never infer omitted content. Cite at least one of these exact slugs in the answer.${siblingBoundary}`;
 }
 
 function hasVerifiedCitation(text: string, slugs: readonly string[]): boolean {

@@ -10,6 +10,7 @@ import type { KnowledgeGraphEdge, KnowledgeGraphNode } from '@/entities/knowledg
 import { createToolExecutor } from './tool-executor';
 import type { VaultReadPort } from './vault-read-port';
 import type { NormalizedToolCall } from './provider-adapter';
+import { AGENT_TOOL_RESULT_CHAR_CAP } from './types';
 
 function node(
   id: string,
@@ -237,6 +238,88 @@ describe('tool-executor — 읽기', () => {
     const result = await execute(call('list_concepts', { summary: true, limit: 400 }));
     expect(result.content).toContain('truncated');
     expect(result.content.length).toBeLessThan(7_000);
+  });
+
+  it('get_concepts 는 상한 안에서 요청한 근거 행을 고르게 남긴다', async () => {
+    const parents = Array.from({ length: 8 }, (_, index) =>
+      node(`domain:d${index}`, {
+        kind: 'domain',
+        agentSlug: `domains/d${index}`,
+        evidenceIds: [`domains/d${index}`],
+      }),
+    );
+    const children = parents.flatMap((_, parentIndex) =>
+      Array.from({ length: 6 }, (_, childIndex) =>
+        node(`capability:d${parentIndex}-c${childIndex}`, {
+          agentSlug: `capabilities/d${parentIndex}-c${childIndex}`,
+          evidenceIds: [`capabilities/d${parentIndex}-c${childIndex}`],
+          hasOwnDocument: false,
+        }),
+      ),
+    );
+    const docs = parents.map((_, index) => ({
+      slug: `domains/d${index}`,
+      path: `domains/d${index}.md`,
+      title: `Domain ${index}`,
+      kind: 'domain',
+      frontmatter: {
+        kind: 'domain',
+        description: `Domain ${index} behavior `.repeat(10),
+        capabilities: Array.from(
+          { length: 6 },
+          (__, childIndex) => `capabilities/d${index}-c${childIndex}`,
+        ),
+      },
+      excerpt: `Domain ${index} owns a distinct customer behavior. `.repeat(8),
+      mtime: index + 1,
+    }));
+    const edges = parents.flatMap((parent, parentIndex) =>
+      Array.from({ length: 6 }, (_, childIndex) =>
+        edge(parent.id, `capability:d${parentIndex}-c${childIndex}`, 'contains'),
+      ),
+    );
+    const execute = createToolExecutor(
+      makePort({
+        nodes: [...parents, ...children],
+        edges,
+        docs,
+        readDocText: vi.fn(async (slug: string) => `${slug} meaning `.repeat(100)),
+      }),
+    );
+
+    const result = await execute(
+      call('get_concepts', {
+        slugs: parents.map((_, index) => `domains/d${index}`),
+        body: 'full',
+      }),
+    );
+    const payload = JSON.parse(result.content) as {
+      concepts: Array<{
+        slug: string;
+        body: string;
+        bodyInfo: { returnedChars: number; truncated: boolean };
+        neighborsInfo: { total: number; returned: number; truncated: boolean };
+      }>;
+      compacted: boolean;
+      omitted: number;
+    };
+
+    expect(result.content.length).toBeLessThanOrEqual(AGENT_TOOL_RESULT_CHAR_CAP);
+    expect(payload).toMatchObject({ compacted: true, omitted: 0 });
+    expect(payload.concepts.map((row) => row.slug)).toEqual(
+      parents.map((_, index) => `domains/d${index}`),
+    );
+    expect(result.readSlugs).toEqual(payload.concepts.map((row) => row.slug));
+    expect(result.vaultChars).toBe(
+      payload.concepts.reduce((sum, row) => sum + row.bodyInfo.returnedChars, 0),
+    );
+    for (const row of payload.concepts) {
+      expect(row.body).toContain('<untrusted_vault_content>');
+      expect(row.bodyInfo.truncated).toBe(true);
+      expect(row.neighborsInfo.total).toBe(6);
+      expect(row.neighborsInfo.returned).toBeGreaterThan(0);
+      expect(row.neighborsInfo.truncated).toBe(true);
+    }
   });
 
   it('find_path 는 이어진 길을 실제 slug 로 돌려준다', async () => {
