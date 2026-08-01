@@ -121,6 +121,21 @@ class TauriFileHandle {
   }
 }
 
+/**
+ * 볼트 지문 — **경로와 mtime 만** 네이티브에서 한 번에 받는다.
+ *
+ * 웹에는 없다(FSA 에 이런 일괄 API 가 없다). `isTauri()` 가 아니면 `null` 을
+ * 돌려주고 호출부가 기존 경로로 떨어진다 — `surfaces.md` 의 브리지 관례
+ * (`getInvoke()` → 아니면 `null` → 화면 정직 강등) 그대로다.
+ */
+export async function nativeVaultFingerprint(
+  rootPath: string,
+): Promise<{ entries: Array<{ relativePath: string; lastModified: number }>; truncated: boolean; prunedDirs: string[] } | null> {
+  const invoke = getInvoke();
+  if (!invoke) return null;
+  return invoke('vault_fingerprint', { rootPath });
+}
+
 class TauriDirectoryHandle {
   readonly kind = 'directory';
   readonly name: string;
