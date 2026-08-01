@@ -149,7 +149,15 @@
       "frameMeterLabel": "Frame meter",
       "frameMeterCaption": "Shows frames per second and the worst stall on the map. Off by default — nothing is measured while it is off.",
       "frameMeterOn": "On",
-      "frameMeterOff": "Off"
+      "frameMeterOff": "Off",
+      "toggleOn": "On",
+      "toggleOff": "Off",
+      "agentStatusLabel": "Show work in progress",
+      "agentStatusCaption": "Shows “Working” and the time of the last write on the map while an agent or a person edits this folder. On by default.",
+      "agentNotificationsLabel": "Notifications",
+      "agentNotificationsCaption": "Announces when a task starts and ends, and when a domain appears or disappears. Single nodes and single relations are not announced — the map already shows them.",
+      "agentNotificationKindsLabel": "What to receive",
+      "agentNotificationKindsCaption": "Muted kinds never reach the bell."
     },
     "primaryAriaLabel": "Primary menu",
     "notificationsAriaLabel": "Notifications"
@@ -3290,5 +3298,31 @@
     "guideNavLabel": "Guide contents",
     "onThisGuide": "Guide",
     "entryNavLabel": "Entries"
+  },
+  "agentActivity": {
+    "writing": "Working",
+    "quietUnknown": "Quiet",
+    "lastWorkedAt": "Last worked {age}",
+    "openOnMap": "Open {name} on the map",
+    "bellAria": "Open notifications",
+    "bellUnreadAria": "Open notifications — {count} new",
+    "inboxTitle": "Notifications",
+    "inboxEmpty": "Nothing to report yet. When an agent or a person edits this folder, it lands here.",
+    "inboxFooter": "Only whole tasks are announced. The line-by-line record lives in activity.jsonl inside the vault, and on the history screen.",
+    "summaryAdded": "{count} added",
+    "summaryEdited": "{count} edited",
+    "summaryRemoved": "{count} removed",
+    "summaryJoin": " · ",
+    "problemUnresolved": "{count} unresolved refs",
+    "problemCycles": "{count} cycles",
+    "bridgeChildren": "took {count} children",
+    "event": {
+      "taskStart": "Task started",
+      "taskEnd": "Task finished",
+      "domainAdded": "Domain added",
+      "domainRemoved": "Domain removed",
+      "bridgeInserted": "Bridge inserted",
+      "vaultProblem": "Vault problem"
+    }
   }
 }

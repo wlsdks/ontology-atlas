@@ -6021,6 +6021,11 @@
         },
         {
           "depth": 2,
+          "text": "2026-08-01 — 「작업이 끝났다」는 조용해짐으로 판정한다: 임계값 5분, 알림은 **작업 단위로만**",
+          "slug": "2026-08-01-작업이-끝났다는-조용해짐으로-판정한다-임계값-5분-알림은-작업-단위로만"
+        },
+        {
+          "depth": 2,
           "text": "2026-08-01 — 쇼핑몰 샘플 재생성 보고: 브릿지 규격은 **구축이 아니라 수리**의 도구다 (실전 첫 검증)",
           "slug": "2026-08-01-쇼핑몰-샘플-재생성-보고-브릿지-규격은-구축이-아니라-수리의-도구다-실전-첫-검증"
         },
@@ -6316,7 +6321,7 @@
         }
       ],
       "excerpt": "이 파일은 결정과 그때 진 반대 의견을 남긴다. docs/CHANGELOG.md 는 무엇이 언제 바뀌었나를 답하고, 이 파일은 왜 그렇게 정했고, 무엇을 걸었나를 답한다. 최신이 위. 기록은 덧붙이기만 한다 — 지난 기록을 고치지 않는다. 판단이 바뀌었으면 새 기록을 쓰고 옛 기록을 뒤집힘 으로 표시한다. 틀린 기록도 자산이다. 1. 소집 전에 읽는다. 카운슬을 열기 전(그리고 단독 PO 패스를 쓰기 전) 같은 표면 · 같은 질문에 대한 선행 결정이 있는지 먼저 본다. 있으면 새 패스는 그것을 ① 여전히 유효하다고 인용하거나 ② 명시적으로 뒤집는다. 조용히 다시 결정",
-      "wordCount": 28455,
+      "wordCount": 28997,
       "updatedAt": "2026-08-01",
       "linksOut": []
     },
@@ -7296,7 +7301,7 @@
         }
       ],
       "excerpt": "Maintainer-only checks live here so the public README stays readable. Use this page when you touch mcp/, cli/, package manifests, release scripts, or the dogfood ontology. Run this before pushing broad docs, package, MCP, or web changes: For user-facing UI changes, add the relevant Playwright route check. · Area · Firs",
-      "wordCount": 7677,
+      "wordCount": 7889,
       "updatedAt": "2026-08-01",
       "linksOut": []
     },

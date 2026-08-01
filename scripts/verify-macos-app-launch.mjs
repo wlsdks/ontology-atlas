@@ -4,6 +4,7 @@ import path from "node:path";
 import fs from "node:fs";
 import { pathToFileURL } from "node:url";
 import { resolveMacosExecutable } from "./lib/macos-release-names.mjs";
+import { AI_SETTINGS_PAYLOAD_TIMEOUT_MS, authorityOfBaseUrl, isSafeAiSettingsBaseUrl, validateAiSettingsAuditTrail } from "./lib/verify-macos/ai-settings-contract.mjs";
 import { appBundleName, names, root } from "./lib/verify-macos/context.mjs";
 import { fail, normalizeWebviewRoute, parseVerifyAppLaunchArgs, printHelp, sleep } from "./lib/verify-macos/cli-args.mjs";
 import { writeWebviewEvidence } from "./lib/verify-macos/evidence-payload.mjs";
@@ -14,6 +15,7 @@ import { printWindowDiagnostics, tryCaptureWindowEvidence, verifyCapturableWindo
 import { webviewVerifyEnvPatch } from "./lib/verify-macos/webview-env.mjs";
 import { verifyAccessibilityText, verifyAccessibilityWindow, verifyFrontmostWindow } from "./lib/verify-macos/window-accessibility.mjs";
 
+export * from "./lib/verify-macos/ai-settings-contract.mjs";
 export * from "./lib/verify-macos/webview-env.mjs";
 export * from "./lib/verify-macos/cli-args.mjs";
 export * from "./lib/verify-macos/process-lock.mjs";
@@ -132,6 +134,41 @@ async function verifyOpenAppLaunch({
 }
 
 
+/**
+ * 화면이 "확인됨" 이라고 말한 다음, **디스크가 같은 말을 하는지** 본다.
+ *
+ * DOM 마커는 호스트를 그리지 않는다(감사 표는 벤더 이름·목적·범위만 보여준다).
+ * 그래서 "요청이 정말 그 주소로 나갔나" 는 볼트 안 평문 기록으로만 증명된다 —
+ * 이 검사가 없으면 화면 문구만으로 통과할 수 있고, 그건 이 규칙이 막으려는
+ * 바로 그 가짜 통과다.
+ */
+function verifyAiSettingsAuditTrail({ vaultPath, since, baseUrl, markers }) {
+  if (!vaultPath) {
+    fail("--verify-ai-settings requires --webview-fixture-vault so the audit trail can be read.");
+  }
+  const auditPath = path.join(vaultPath, ".ontology-atlas", "llm-audit.jsonl");
+  let raw = "";
+  try {
+    raw = fs.readFileSync(auditPath, "utf8");
+  } catch (error) {
+    fail(
+      `--verify-ai-settings could not read the vault audit log at ${auditPath}: ${error?.message ?? error}`,
+    );
+  }
+  const expectedHost = authorityOfBaseUrl(baseUrl);
+  const { error, entry } = validateAiSettingsAuditTrail(raw, {
+    since,
+    expectedHost: expectedHost || null,
+  });
+  if (error) {
+    fail(`AI settings audit trail check failed: ${error} (${auditPath})`);
+  }
+  console.log(
+    `[desktop-app-verify] AI settings: local runner at ${expectedHost} answered with ${markers.aiSettingsVerification?.modelOptionCount ?? 0} model(s); chose ${markers.aiSettingsVerification?.selectedModel ?? "none"}; audit line at=${entry.at} host=${entry.host} outcome=${entry.outcome} http=${entry.httpStatus ?? "none"}`,
+  );
+}
+
+
 async function verifyExecutableLaunch({
   appPath,
   executablePath,
@@ -151,6 +188,8 @@ async function verifyExecutableLaunch({
   verifyTopologyFocusNoop,
   verifyTopologyFocusZoom,
   verifyTopologyFrameProfile,
+  verifyAiSettings,
+  aiSettingsBaseUrl,
   requireWebviewReducedMotion,
   requireAccessibilityText,
   printWindowDiagnostics: shouldPrintWindowDiagnostics,
@@ -163,6 +202,8 @@ async function verifyExecutableLaunch({
   tryWindowScreenshotPath,
   webviewEvidencePath,
 }) {
+  // 감사 줄이 **이 실행의 것**이어야 하므로 launch 이전 시각을 바닥으로 쓴다.
+  const launchedAt = Date.now();
   const child = spawn(executablePath, {
     cwd: path.dirname(executablePath),
     env: requireWebviewContent
@@ -178,6 +219,8 @@ async function verifyExecutableLaunch({
             verifyTopologyFocusNoop,
             verifyTopologyFocusZoom,
             verifyTopologyFrameProfile,
+            verifyAiSettings,
+            aiSettingsBaseUrl,
             webviewWindowSize,
           }),
         }
@@ -239,11 +282,18 @@ async function verifyExecutableLaunch({
       requireTopologyFocusNoop: verifyTopologyFocusNoop,
       requireTopologyFocusZoom: verifyTopologyFocusZoom,
       requireTopologyFrameProfile: verifyTopologyFrameProfile,
+      requireAiSettings: verifyAiSettings,
+      expectedAiSettingsBaseUrl: verifyAiSettings ? aiSettingsBaseUrl : null,
       requireWebviewReducedMotion,
     };
     const { payload, validationError: webviewError } = await waitForWebviewVerifyPayload(
       () => stdout,
       {
+        // AI 설정 흐름은 시트 열기 → 절 이동 → 주소 입력 → 왕복 확인 →
+        // 모델 고르기까지 클릭이 다섯 단계라, 기본 15초 창 안에 마커가 안
+        // 들어온다. 창을 넓히는 것과 판정을 무르게 하는 것은 다르다 —
+        // 판정은 그대로다.
+        ...(verifyAiSettings ? { timeoutMs: AI_SETTINGS_PAYLOAD_TIMEOUT_MS } : {}),
         validatePayload: (candidate) => validateWebviewVerifyPayload(candidate, validationOptions),
       },
     );
@@ -259,6 +309,14 @@ async function verifyExecutableLaunch({
       );
     }
     webviewPayload = payload;
+    if (verifyAiSettings) {
+      verifyAiSettingsAuditTrail({
+        vaultPath: webviewFixtureVaultPath,
+        since: launchedAt,
+        baseUrl: aiSettingsBaseUrl,
+        markers: payload?.markers ?? {},
+      });
+    }
     writeWebviewEvidence(webviewPayload, webviewEvidencePath, {
       visualEvidencePath: tryWindowScreenshotPath ?? windowScreenshotPath,
     });
@@ -357,6 +415,8 @@ async function main() {
     verifyTopologyFocusNoop,
     verifyTopologyFocusZoom,
     verifyTopologyFrameProfile,
+    verifyAiSettings,
+    aiSettingsBaseUrl,
     requireWebviewReducedMotion,
     requireAccessibilityText,
     printWindowDiagnostics,
@@ -465,6 +525,20 @@ async function main() {
   if (webviewWindowSize && openApp) {
     fail("--webview-window-size is only supported for direct executable launch; omit --open-app.");
   }
+  if (verifyAiSettings && openApp) {
+    fail("--verify-ai-settings is only supported for direct executable launch; omit --open-app.");
+  }
+  if (verifyAiSettings && !webviewFixtureVaultPath) {
+    // 볼트가 없으면 [연결 확인] 버튼 자체가 비활성이다 — 기록할 곳이 없으면
+    // 보내지 않는다는 계약이라서다. 그 상태로 돌리면 "못 눌렀다" 가 아니라
+    // "안 눌렀다" 로 읽히는 흐릿한 실패가 되므로 여기서 먼저 끊는다.
+    fail("--verify-ai-settings requires --webview-fixture-vault=PATH (the connection check refuses to send without a vault to log into).");
+  }
+  if (verifyAiSettings && !isSafeAiSettingsBaseUrl(aiSettingsBaseUrl)) {
+    fail(
+      `--ai-settings-base-url must be an http(s) URL without whitespace or quotes; got ${aiSettingsBaseUrl ?? "nothing"}.`,
+    );
+  }
   const normalizedWebviewRoute = requireWebviewRoute
     ? normalizeWebviewRoute(requireWebviewRoute)
     : null;
@@ -570,6 +644,8 @@ async function main() {
         verifyTopologyFocusNoop,
         verifyTopologyFocusZoom,
         verifyTopologyFrameProfile,
+        verifyAiSettings,
+        aiSettingsBaseUrl,
         requireWebviewReducedMotion,
         requireAccessibilityText,
         printWindowDiagnostics,
@@ -602,11 +678,6 @@ async function main() {
     }`,
   );
 }
-
-if (process.argv[1] && import.meta.url === pathToFileURL(process.argv[1]).href) {
-  await main();
-}
-
 
 if (process.argv[1] && import.meta.url === pathToFileURL(process.argv[1]).href) {
   await main();

@@ -90,9 +90,34 @@ export interface AgentWritingActivity {
  * 슬러그지만 전부는 아니다 — 배치 도구는 `(batch)`, `absorb_document` 는
  * 파일 경로를 넣는다(`mcp/src/index.js` 의 `summarizeWrite`). 화면은 이 값으로
  * 노드에 날아가므로, 슬러그가 아닌 것을 슬러그인 척 넘기면 죽은 링크가 된다.
- * 슬러그는 평평한 식별자다(2026-08-01 원장) — 경로 구분자·공백이 있으면 슬러그가 아니다.
+ *
+ * ⚠️ **`/` 는 슬러그가 아니라는 신호가 아니다** (2026-08-01 정정). 처음 이 룰은
+ * "경로 구분자가 있으면 슬러그가 아니다" 였는데, 규격이 정하는 슬러그가 바로
+ * `folderForKind(kind)` + 평평한 이름 — 즉 **`capabilities/checkout` 처럼 `/`
+ * 를 하나 갖는다**(`mcp/src/schema.mjs` `flatSlugIssue`). 실측 로그 98줄 중
+ * 배치가 아닌 target 은 **전부** 그 모양이라, 옛 룰 아래에서는 `lastTarget` 이
+ * 사실상 항상 null 이었다 — 죽은 링크를 막는 대신 **살아 있는 링크를 전부**
+ * 막고 있었다. 원장이 금지한 것은 `elements/src/views/home` 같은 **경로형**
+ * 슬러그이지 종류 폴더가 아니다.
+ *
+ * 그래서 여기서 거르는 것은 「슬러그일 리 없는 모양」 셋뿐이다: 배치 표식
+ * (`(batch)`), 공백/역슬래시, **확장자로 끝나는 파일 경로**(`absorb_document`).
+ * 나머지 한 겹은 화면이 맡는다 — 링크를 걸기 전에 **매니페스트에 그 슬러그가
+ * 실제로 있는지** 확인한다. 정규식은 모양만 알고 존재는 모른다.
  */
-const NON_SLUG_TARGET = /[\s/\\]|^\(|\.(md|markdown)$/i;
+const NON_SLUG_TARGET = /[\s\\]|^\(|\.[A-Za-z0-9]{1,8}$/;
+
+/**
+ * 로그의 `target` → 화면이 링크로 걸어도 되는 슬러그, 아니면 null.
+ *
+ * 「작업 중」 줄과 알림함이 **같은 판정**을 써야 한다 — 한쪽만 `(batch)` 를
+ * 걸러내면 다른 쪽에 죽은 링크가 생긴다. 그래서 판정은 여기 한 곳에 있다.
+ */
+export function toSlugTarget(target: string | null | undefined): string | null {
+  const trimmed = (target ?? "").trim();
+  if (!trimmed) return null;
+  return NON_SLUG_TARGET.test(trimmed) ? null : trimmed;
+}
 
 /**
  * 활동 로그에서 「쓰는 중」을 파생한다. 순수 함수 — 파일도 시계도 안 읽는다
@@ -129,12 +154,11 @@ export function deriveAgentWritingActivity(
 
   if (!latest) return { writing: false, lastAt: null, lastTarget: null, lastTool: null };
 
-  const target = latest.target.trim();
   const tool = latest.tool.trim();
   return {
     writing: nowMs - latestAt <= windowMs,
     lastAt: latestAt,
-    lastTarget: target && !NON_SLUG_TARGET.test(target) ? target : null,
+    lastTarget: toSlugTarget(latest.target),
     lastTool: tool || null,
   };
 }
