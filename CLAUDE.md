@@ -35,7 +35,7 @@
 
 ## Claude Code 전용
 
-- `.claude/rules/*.md` — 세부 규율 8종. **셋만 상주하고 다섯은 조건부다**
+- `.claude/rules/*.md` — 세부 규율 9종. **셋만 상주하고 여섯은 조건부다**
   (frontmatter `paths:`). 규칙을 지운 게 아니라 필요할 때만 싣는다 — 매 턴
   73KB 였던 것이 13.6KB 가 됐다.
 
@@ -47,6 +47,7 @@
   | 조건부 | `testing` | `**/*.test.*` · `tests/**` · 테스트 설정 |
   | 조건부 | `surfaces` | `src/shared/lib/tauri-*.ts` · `src-tauri/**` · `tests/e2e/**` |
   | 조건부 | `documentation` | `docs/**/*.md` · 루트 `*.md` |
+  | 조건부 | `codegraph` | `src/**` · `mcp/**` · `cli/**` 등 코드를 읽을 때. 세션 시작 트리거 요약은 `AGENTS.md` "Code intelligence" 절(상주)에 |
 
   ⚠️ **아무 파일도 안 맞는 글롭은 조용히 사라진 규칙이다.** 파일도 있고
   YAML 도 유효하고 에러도 안 나는데 규칙만 존재하지 않게 된다(첫 적용 때

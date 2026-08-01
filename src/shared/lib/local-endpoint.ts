@@ -113,13 +113,60 @@ export function subscribeLocalEndpointChange(handler: () => void): () => void {
 }
 
 /**
+ * 이름만 보고 **대화를 못 하는 모델**임을 확신할 수 있는가.
+ *
+ * OpenAI 호환 `/v1/models` 에는 그 사실이 없다 — Ollama 네이티브
+ * `/api/tags` 에만 `capabilities` 가 있고, 그것을 보러 가면 [연결 확인] 한
+ * 번이 두 요청이 되어 **감사 줄과 화면이 어긋난다**(한 번 눌렀는데 기록은
+ * 한 줄). 그래서 판정은 이름으로만 하고, **확신할 수 있는 것만** 참이라고
+ * 한다.
+ *
+ * 판정은 두 갈래다. ① 이름에 `embed` 가 들어간 것 —
+ * `embeddinggemma` · `nomic-embed-text` · `mxbai-embed-large` ·
+ * `snowflake-arctic-embed` · `granite-embedding` · `qwen3-embedding` ·
+ * `text-embedding-3-*` 가 여기 걸린다. ② `embed` 라는 낱말 없이 임베딩만
+ * 내놓는 알려진 계열 — `bge-*` · `gte-*` · `e5-*` · `all-minilm` ·
+ * `paraphrase-multilingual`.
+ *
+ * **오탐 위험**: 위 접두사로 시작하면서 대화가 되는 모델이 나오면 그 모델이
+ * 목록 끝으로 밀리고 "임베딩 전용" 이라는 틀린 설명을 단다. 오늘 기준 그런
+ * 모델은 없고, 걸리더라도 **고를 수는 있다**(지우지 않는다). 반대쪽
+ * 미탐(우리가 모르는 임베딩 모델)은 종전과 똑같이 이름만 뜬 채 남는다 —
+ * 회귀가 아니라 개선의 미달이다.
+ */
+export function isEmbeddingOnlyModel(name: string): boolean {
+  // 태그(`:latest`)를 떼고 본다 — `bge-m3:latest` 도 같은 계열이다.
+  const base = (name.split(':')[0] ?? name).trim().toLowerCase();
+  if (base.includes('embed')) return true;
+  return EMBEDDING_ONLY_PREFIXES.some(
+    (prefix) => base === prefix || base.startsWith(`${prefix}-`),
+  );
+}
+
+/** `embed` 라는 낱말 없이 임베딩만 내놓는 계열. 접두사로만 판정한다. */
+const EMBEDDING_ONLY_PREFIXES = [
+  'bge',
+  'gte',
+  'e5',
+  'all-minilm',
+  'paraphrase-multilingual',
+];
+
+/**
  * OpenAI 호환 `/v1/models` 응답 → 모델 이름 목록.
  *
- * 임베딩 전용 모델을 걸러 내지 **않는다**: 호환 목록에는 그 사실이 없고
- * (Ollama 네이티브 `/api/tags` 에만 `capabilities` 가 있다), 이름으로 추측해
- * 지우면 화면이 사용자의 러너에 있는 것을 없는 것처럼 말하게 된다. 고를 수
- * 있는 것을 전부 보여주고, 못 쓰는 모델을 고르면 러너가 준 오류를 그대로
- * 옮긴다 — 우리가 지어낸 필터보다 정직하다.
+ * 임베딩 전용 모델을 **지우지 않는다**: 지우면 화면이 사용자의 러너에 있는
+ * 것을 없는 것처럼 말하게 된다. 대신 **순서**를 알파벳에서 **쓸모**로
+ * 바꾼다 — 알파벳 순서는 `embeddinggemma:latest` 를 1번에 올렸고, 소유자가
+ * 실제로 그것을 골라 「연결됨」으로 저장됐다(2026-08-01 실측: 러너 모델 7개
+ * 중 4개가 임베딩 전용). **첫 질문에서 실패할 상태가 성공이라고 표시되는
+ * 것**이 결함이었지, 목록에 있는 것 자체는 결함이 아니었다.
+ *
+ * 라벨링은 은닉이 아니다 — 화면은 임베딩으로 판정된 행에 "대화는 못 해요"
+ * 를 붙이고(`Select` 의 `description`), 고르는 것은 여전히 사람이 한다.
+ *
+ * 같은 층 안에서는 종전과 같은 알파벳 순서다 — 바뀐 것은 층이 둘이 된 것
+ * 하나뿐이라, 임베딩이 하나도 없는 러너에서는 목록이 종전과 똑같다.
  */
 export function parseOpenAiModelList(body: string): string[] {
   try {
@@ -129,10 +176,18 @@ export function parseOpenAiModelList(body: string): string[] {
     const names = data
       .map((row) => (row as { id?: unknown } | null)?.id)
       .filter((id): id is string => typeof id === 'string' && id.length > 0);
-    return [...new Set(names)].sort((a, b) => a.localeCompare(b));
+    return [...new Set(names)].sort((a, b) => {
+      const rank = Number(isEmbeddingOnlyModel(a)) - Number(isEmbeddingOnlyModel(b));
+      return rank !== 0 ? rank : a.localeCompare(b);
+    });
   } catch {
     return [];
   }
+}
+
+/** 이 목록에서 대화에 쓸 수 있는 것 — 임베딩으로 확신되는 것만 뺀 수. */
+export function countChatCapableModels(models: string[]): number {
+  return models.filter((model) => !isEmbeddingOnlyModel(model)).length;
 }
 
 /**
