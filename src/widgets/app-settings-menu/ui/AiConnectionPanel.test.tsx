@@ -645,6 +645,29 @@ describe('AiConnectionPanel hierarchy', () => {
     }
     expect(screen.getByText('.ontology-atlas/llm-audit.jsonl')).toBeInTheDocument();
   });
+
+  /**
+   * 「연결하면 뭐가 되나」 는 「어떻게 연결하나」 보다 먼저다 — 그 문장이
+   * 목록 아래 각주로 있던 동안, 그 각주는 **이미 출시된 에이전트**를
+   * "준비 중" 이라고 부정하고 있었고 자기를 여기로 보낸 CTA
+   * (`vaultAgentPanel.degraded.noKeyAction`)를 무효화했다.
+   */
+  it('연결이 무엇을 여는지를 벤더 목록보다 먼저 말한다', () => {
+    const { container } = renderPanel(makeConnection());
+    const unlocks = screen.getByTestId('ai-what-it-unlocks');
+    const list = container.querySelector('.bg-\\[color\\:var\\(--color-overlay-1\\)\\]');
+    expect(unlocks).toBeInTheDocument();
+    expect(list).not.toBeNull();
+    // DOM 순서가 읽는 순서다.
+    expect(
+      unlocks.compareDocumentPosition(list as Node) & Node.DOCUMENT_POSITION_FOLLOWING,
+    ).toBeTruthy();
+  });
+
+  it('출시된 기능을 부정하던 각주는 사라졌다', () => {
+    renderPanel(makeConnection());
+    expect(screen.queryByText('settings.ai.emptyConsumer')).toBeNull();
+  });
 });
 
 /**
@@ -738,6 +761,67 @@ describe('AiConnectionPanel — 주소로 연결', () => {
     renderPanel(makeConnection());
     expect(screen.getByText(/settings\.ai\.localScopeRemote/)).toBeInTheDocument();
     expect(screen.queryByText(/settings\.ai\.localScopeLoopback/)).toBeNull();
+  });
+
+  /**
+   * 알파벳 정렬이 `embeddinggemma:latest` 를 1번에 올렸고, 소유자가 실제로
+   * 그것을 골라 「연결됨」으로 저장됐다 — **첫 질문에서 실패할 상태가 성공
+   * 이라고 표시된다.** 지우지 않고(라벨링은 은닉이 아니다) 순서와 설명으로
+   * 고친다.
+   */
+  it('대화 못 하는 모델을 1번에 올리지 않고, 그 사실을 행에 적는다', async () => {
+    mocks.secretVerify.mockResolvedValue(
+      verifyResult({
+        ok: true,
+        httpStatus: 200,
+        body: '{"data":[{"id":"embeddinggemma:latest"},{"id":"qwen3:8b"},{"id":"nomic-embed-text:latest"}]}',
+      }),
+    );
+    renderPanel(makeConnection());
+    fireEvent.click(screen.getByTestId('ai-register-local'));
+    fireEvent.click(screen.getByTestId('ai-verify-local'));
+    await waitFor(() => expect(screen.getByTestId('ai-local-verified')).toBeInTheDocument());
+
+    fireEvent.click(screen.getByTestId('ai-local-model'));
+    const options = screen.getAllByRole('option').map((node) => node.textContent ?? '');
+    // 1번은 대화가 되는 것이다.
+    expect(options[0]).toContain('qwen3:8b');
+    // 임베딩 둘은 사라지지 않는다 — 없다고 말하는 것이 더 큰 거짓말이다.
+    expect(options).toHaveLength(3);
+    // 못 쓰는 행만 두 번째 줄로 그 사실을 적는다.
+    expect(options[1]).toContain('settings.ai.localModelEmbeddingOnly');
+    expect(options[0]).not.toContain('settings.ai.localModelEmbeddingOnly');
+  });
+
+  it('성공 캡션이 「설치된 개수」와 「대화 가능한 개수」를 함께 말한다', async () => {
+    mocks.secretVerify.mockResolvedValue(
+      verifyResult({
+        ok: true,
+        httpStatus: 200,
+        body: '{"data":[{"id":"embeddinggemma:latest"},{"id":"qwen3:8b"},{"id":"nomic-embed-text:latest"}]}',
+      }),
+    );
+    renderPanel(makeConnection());
+    fireEvent.click(screen.getByTestId('ai-register-local'));
+    fireEvent.click(screen.getByTestId('ai-verify-local'));
+    const caption = await screen.findByTestId('ai-local-verified');
+    expect(caption.textContent).toContain('settings.ai.localVerifiedWithEmbedding:3,1');
+  });
+
+  it('임베딩이 하나도 없으면 없는 구분을 만들지 않는다', async () => {
+    mocks.secretVerify.mockResolvedValue(
+      verifyResult({
+        ok: true,
+        httpStatus: 200,
+        body: '{"data":[{"id":"qwen3:8b"},{"id":"gemma4:12b"}]}',
+      }),
+    );
+    renderPanel(makeConnection());
+    fireEvent.click(screen.getByTestId('ai-register-local'));
+    fireEvent.click(screen.getByTestId('ai-verify-local'));
+    const caption = await screen.findByTestId('ai-local-verified');
+    expect(caption.textContent).toContain('settings.ai.localVerified:2');
+    expect(caption.textContent).not.toContain('WithEmbedding');
   });
 
   it('로컬 주소면 나가지 않았다는 사실을 기록으로 말한다', () => {

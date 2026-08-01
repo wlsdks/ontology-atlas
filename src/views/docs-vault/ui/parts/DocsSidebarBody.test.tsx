@@ -4,6 +4,7 @@ import { describe, expect, it, vi } from "vitest";
 import koMessages from "../../../../../messages/ko.json";
 import type { VaultDoc, VaultManifest } from "@/entities/docs-vault";
 import type { DocsTreeGroup, DocsTreeSort } from "@/widgets/docs-vault/lib/tree-order";
+import type { DocsVaultCollection } from "../../lib/docs-vault-collection";
 import type { AgentFilesUiModel } from "../../lib/agent-files";
 import { DocsSidebarBody } from "./DocsSidebarBody";
 
@@ -41,6 +42,8 @@ function renderSidebar(
     sort?: DocsTreeSort;
     group?: DocsTreeGroup;
     tree?: VaultManifest["tree"];
+    collection?: DocsVaultCollection;
+    collectionCounts?: Record<DocsVaultCollection, number>;
   } = {},
 ) {
   const manifest = makeManifest(docs);
@@ -58,8 +61,14 @@ function renderSidebar(
         docsBySlug={new Map(docs.map((d) => [d.slug, d]))}
         activeTag={null}
         manifest={manifest}
-        collection="guides"
-        collectionCounts={{ all: docs.length, guides: docs.length, ontology: 0 }}
+        collection={overrides.collection ?? "guides"}
+        collectionCounts={
+          overrides.collectionCounts ?? {
+            all: docs.length,
+            guides: docs.length,
+            ontology: 0,
+          }
+        }
         visibleDocSlugs={new Set(docs.map((d) => d.slug))}
         onSelect={onSelect}
         onCollectionChange={() => {}}
@@ -174,6 +183,35 @@ describe("DocsSidebarBody — #22 아이콘 행: 검색 토글 + 카운트", () 
     expect(screen.getByTestId("docs-sidebar-collection-ontology")).toBeInTheDocument();
     fireEvent.click(screen.getByTestId("docs-sidebar-collection-ontology"));
     expect(onCollectionChange).toHaveBeenCalledWith("ontology");
+  });
+
+  // 종전 라벨은 `{count}` 를 받아 놓고 버리는 상수 "전체 문서" 였다 — 「지도
+  // 문서」를 골라도 아래는 "전체 문서" 라고 적혀 있었다(설치 앱에서도 재현).
+  it("카운트 줄은 지금 고른 보기의 이름과 개수를 말한다", () => {
+    const docs = [
+      makeDoc("a", "A", new Date().toISOString()),
+      makeDoc("b", "B", new Date().toISOString()),
+      makeDoc("c", "C", new Date().toISOString()),
+    ];
+    renderSidebar(docs, {
+      collection: "ontology",
+      collectionCounts: { all: 3, guides: 1, ontology: 2 },
+    });
+    expect(screen.getByText("지도 문서 2개")).toBeInTheDocument();
+    expect(screen.queryByText("전체 문서")).not.toBeInTheDocument();
+  });
+
+  it("전체 보기에서는 볼트 전체 개수를 말한다", () => {
+    const docs = [
+      makeDoc("a", "A", new Date().toISOString()),
+      makeDoc("b", "B", new Date().toISOString()),
+      makeDoc("c", "C", new Date().toISOString()),
+    ];
+    renderSidebar(docs, {
+      collection: "all",
+      collectionCounts: { all: 3, guides: 1, ontology: 2 },
+    });
+    expect(screen.getByText("전체 문서 3개")).toBeInTheDocument();
   });
 });
 
