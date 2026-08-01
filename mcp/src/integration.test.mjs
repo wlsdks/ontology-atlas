@@ -6685,6 +6685,13 @@ await test("remove_relation — resolves stored frontmatter-slug aliases and the
   }
 });
 
+/**
+ * ⚠️ 이 케이스는 2026-08-01 까지 **경로형 슬러그**(`elements/src/entities/claim`)를
+ * 썼고, #806 이 그 형태를 쓰기 관문에서 거부하기 시작한 뒤로 계속 실패하고
+ * 있었다. 아무도 못 본 이유는 이 파일이 **어느 워크플로에도 안 물려 있어서**다
+ * (`checks.yml` 이 162초를 이유로 빼면서 *"별도 스텝의 몫"* 이라 적었는데 그
+ * 스텝이 만들어진 적이 없다). 슬러그를 평평하게 고쳤다.
+ */
 await test("reclassify_concept — kind/slug/domain/body and backlinks move together", async () => {
   const root = makeVault([
     { slug: "project", content: "---\nkind: project\ntitle: Project\ncontains: [capabilities/claim]\n---\n" },
@@ -6695,14 +6702,14 @@ await test("reclassify_concept — kind/slug/domain/body and backlinks move toge
     const { responses } = await rpc(root, [
       ...INIT_REQUESTS,
       callTool(2, "reclassify_concept", {
-        slug: "capabilities/claim", newSlug: "elements/src/entities/claim",
+        slug: "capabilities/claim", newSlug: "elements/claim-entity",
         newKind: "element", domain: "domains/review",
       }),
       callTool(3, "reclassify_concept", {
-        slug: "capabilities/claim", newSlug: "elements/src/entities/claim",
+        slug: "capabilities/claim", newSlug: "elements/claim-entity",
         newKind: "element", domain: "domains/review", confirm: true,
       }),
-      callTool(4, "get_concept", { slug: "elements/src/entities/claim" }),
+      callTool(4, "get_concept", { slug: "elements/claim-entity" }),
       callTool(5, "get_concept", { slug: "project" }),
     ]);
     assertDestructivePreview(getCallParsed(responses, 2), {
@@ -6715,7 +6722,7 @@ await test("reclassify_concept — kind/slug/domain/body and backlinks move toge
     assert.equal(claim.frontmatter.kind, "element");
     assert.equal(claim.frontmatter.domain, "domains/review");
     assert.match(claim.excerpt, /An \*element\*/i);
-    assert.deepEqual(getCallParsed(responses, 5).frontmatter.contains, ["elements/src/entities/claim"]);
+    assert.deepEqual(getCallParsed(responses, 5).frontmatter.contains, ["elements/claim-entity"]);
   } finally {
     rmSync(root, { recursive: true, force: true });
   }

@@ -96,7 +96,6 @@ export interface StudioCompassLabels {
   exit: string;
   /** 오른쪽 에이전트 도크 토글의 이름 — 지도 칩과 **같은 i18n 키**를 읽는다. */
   agentDock: string;
-  moreRelations: string;
   flowEyebrow: string;
   /** (filled, total) → e.g. "4방향 중 2 채움 · 반쯤 왔어요". */
   flowCount: (filled: number, total: number) => string;
@@ -267,7 +266,6 @@ export interface StudioCompassProps {
   /** Load another node on the stage (top-bar search pick · satellite / fold-row click). */
   onOpenNode?: (id: string) => void;
   /** Honest "곧 제공" label for the not-yet-built rare-relations affordance. */
-  moreRelationsSoon?: string;
 
   // create-only identity editing
   createKinds?: CompassKindOption[];
@@ -1133,22 +1131,25 @@ export function StudioCompass(props: StudioCompassProps) {
         </div>
         )}
 
-        {/* rare relations — top right. Not built yet: honest disabled "곧 제공"
-            rather than a dead affordance (house rule: no dead click targets). */}
-        <button
-          type="button"
-          disabled
-          aria-disabled="true"
-          title={props.moreRelationsSoon}
-          className="absolute right-5 top-3.5 z-[4] flex h-7 cursor-default items-center gap-1.5 rounded-lg border border-[color:var(--color-border-soft)] px-2.5 text-caption text-[color:var(--color-text-quaternary)] opacity-60"
-        >
-          <span className="text-[color:var(--color-text-quaternary)]">＋</span> {labels.moreRelations}
-          {props.moreRelationsSoon ? (
-            <span className="ml-0.5 rounded-[4px] border border-[color:var(--color-border-soft)] px-1 py-px text-label tracking-[0.02em] text-[color:var(--color-text-quaternary)]">
-              {props.moreRelationsSoon}
-            </span>
-          ) : null}
-        </button>
+        {/*
+         * **「＋ 다른 관계 〔곧〕」 버튼은 2026-08-01 에 제거됐다.**
+         *
+         * 영구 비활성 버튼 + 「곧」 배지였고 모든 노드 무대에 상시 떠 있었다.
+         * 옛 주석은 그것을 *"honest disabled rather than a dead affordance"* 라고
+         * 변호했는데, 그 뒤에 확정된 표면 계약이 정확히 반대로 못박았다 —
+         * **「곧 됩니다」는 강등이 아니라 거짓말이다**(`.claude/rules/surfaces.md`).
+         * 날짜도 없고 작업도 없는 약속은 정직한 비활성이 아니라 미래 시제다.
+         *
+         * 사실관계: 스키마의 관계 키는 9개인데(`describes` · `broader` 포함)
+         * 나침 무대는 넷(is_a · contains · depends · relates)만 쓴다. 그러니
+         * "다른 관계가 있다" 는 참이다. 참인 것을 **약속으로** 말한 게 문제였다.
+         *
+         * 왜 강등 카드로 바꾸지 않았나: 강등 카드는 「왜 + 어디서 되는지」를
+         * 말해야 하는데, `describes`/`broader` 를 화면에서 쓸 수 있는 자리가
+         * 오늘 없다(MCP·CLI·손편집뿐이다). 목적지 없는 강등 카드는 죽은 CTA 와
+         * 같은 등급이라, 없는 목적지를 지어내느니 크롬을 비운다. 화면에서 쓸 수
+         * 있게 되는 날 그때 자리를 만든다 — 그것이 「곧」의 정직한 형태다.
+         */}
 
         {/* the fixed-coordinate board — centered on its actual content so the
             top/bottom stage margins balance in either fill-state (#7). */}

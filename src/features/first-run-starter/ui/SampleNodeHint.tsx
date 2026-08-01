@@ -35,7 +35,22 @@ export function SampleNodeHint({ hasSelection, hidden = false }: SampleNodeHintP
   return (
     <div
       data-testid="sample-node-hint"
-      className="pointer-events-none absolute bottom-[calc(var(--topology-relation-legend-inset)+8px)] left-1/2 z-20 hidden -translate-x-1/2 items-center gap-2 whitespace-nowrap rounded-full border border-[color:var(--topology-v2-panel-divider)] bg-[color:var(--color-panel)] px-3.5 py-1.5 text-label text-[color:var(--topology-v2-panel-text-secondary)] shadow-[var(--chrome-shadow)] md:flex"
+      /*
+       * 하단 인셋은 **`…-bottom-inset`** 을 쓴다 — 좌우용 `…-legend-inset` 이
+       * 아니다 (2026-08-01 실측 수리).
+       *
+       * 두 토큰은 기본값이 같아서(24px) 넓은 화면에서는 구분이 안 보인다.
+       * 갈리는 곳은 `<lg` 다: `bottom-inset` 만 탭바 예약고를 더한다. 좌우용을
+       * 쓰고 있었던 탓에 768·834·1023 에서 이 힌트가 30px 중 25px(83%)을
+       * 탭바에 덮였다 — 지도의 **첫 상호작용 지시문**이 태블릿 세로에서
+       * 실질적으로 안 보였다. 렌더는 되고 있었으므로 어떤 가시성 검사도
+       * 이상하다고 말하지 않는다.
+       *
+       * 같은 사고가 이미 두 번 있었고(2026-07-23 INDEX 푸터 · 판독계),
+       * 그때 만든 토큰이 바로 이것이다. 세 번째는 새 값이 아니라 **있는 것을
+       * 안 쓴** 경우다.
+       */
+      className="pointer-events-none absolute bottom-[calc(var(--topology-relation-legend-bottom-inset)+8px)] left-1/2 z-20 hidden -translate-x-1/2 items-center gap-2 whitespace-nowrap rounded-full border border-[color:var(--topology-v2-panel-divider)] bg-[color:var(--color-panel)] px-3.5 py-1.5 text-label text-[color:var(--topology-v2-panel-text-secondary)] shadow-[var(--chrome-shadow)] md:flex"
     >
       <span
         aria-hidden
