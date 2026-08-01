@@ -7970,6 +7970,84 @@
       "linksOut": []
     },
     {
+      "slug": "guide/reading-the-map",
+      "path": "docs/guide/reading-the-map.md",
+      "title": "지도 읽는 법",
+      "tags": [],
+      "frontmatter": {},
+      "headings": [
+        {
+          "depth": 1,
+          "text": "지도 읽는 법",
+          "slug": "지도-읽는-법"
+        },
+        {
+          "depth": 2,
+          "text": "1. 모양이 종류다",
+          "slug": "1-모양이-종류다"
+        },
+        {
+          "depth": 2,
+          "text": "2. 크기는 두 가지가 정한다",
+          "slug": "2-크기는-두-가지가-정한다"
+        },
+        {
+          "depth": 3,
+          "text": "① 종류마다 정해진 크기",
+          "slug": "종류마다-정해진-크기"
+        },
+        {
+          "depth": 3,
+          "text": "② 직속 자식 수",
+          "slug": "직속-자식-수"
+        },
+        {
+          "depth": 2,
+          "text": "3. 노드 위의 숫자",
+          "slug": "3-노드-위의-숫자"
+        },
+        {
+          "depth": 2,
+          "text": "4. 선의 문법",
+          "slug": "4-선의-문법"
+        },
+        {
+          "depth": 2,
+          "text": "5. 줌에 따라 나타나고 사라진다 (의미 줌)",
+          "slug": "5-줌에-따라-나타나고-사라진다-의미-줌"
+        },
+        {
+          "depth": 2,
+          "text": "6. `+N` 칩 — 접혀 있는 자식들",
+          "slug": "6-n-칩-접혀-있는-자식들"
+        },
+        {
+          "depth": 2,
+          "text": "7. 눌러 보기",
+          "slug": "7-눌러-보기"
+        },
+        {
+          "depth": 2,
+          "text": "8. 요약에 적힌 수는 무엇을 세나",
+          "slug": "8-요약에-적힌-수는-무엇을-세나"
+        },
+        {
+          "depth": 2,
+          "text": "9. 주소가 곧 상태다",
+          "slug": "9-주소가-곧-상태다"
+        },
+        {
+          "depth": 2,
+          "text": "정리",
+          "slug": "정리"
+        }
+      ],
+      "excerpt": "폴더를 고르면 점과 선이 나타납니다. 그런데 점들이 거의 다 같은 회색입니다. 이 점은 무엇이고 저 점은 무엇인가? 왜 어떤 건 크고 어떤 건 작은가? 숫자는 왜 어떤 점에만 붙어 있나? 줌을 당겼더니 점이 늘었는데, 아까는 어디 있었나? 지도는 이 질문들에 색이 아니라 모양·크기·위치로 답합니다. 한 번 익히면 그다음부터는 설명 없이 읽힙니다. 노드의 종류(kind)는 도형으로 구분합니다. · 모양 · 종류 · 뜻 · 육각형 판 · project · 최상위 산출물 · 사각 칩 (모서리에 다리 네 개) · domain · 기능 묶음 · 원 · capability · ",
+      "wordCount": 1093,
+      "updatedAt": "2026-08-01",
+      "linksOut": []
+    },
+    {
       "slug": "guide/relations",
       "path": "docs/guide/relations.md",
       "title": "관계는 어떻게 생기나",
@@ -13816,6 +13894,13 @@
             "type": "doc",
             "slug": "guide/first-five-minutes",
             "title": "첫 5분"
+          },
+          {
+            "name": "reading-the-map",
+            "path": "guide/reading-the-map",
+            "type": "doc",
+            "slug": "guide/reading-the-map",
+            "title": "지도 읽는 법"
           },
           {
             "name": "relations",
