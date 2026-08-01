@@ -104,7 +104,7 @@ reject 한다. `tools/list` 도 scalar string 과 string-array item 에 같은
 `canonicalize_graph_arrays` / `resolve_dangling_reference` / `add_missing_relation` /
 `materialize_external_element` / `unassigned_node` / `empty_domain` /
 `separate_evidence_from_concept` / `fold_bulk_siblings` /
-`retire_unearned_node` 만
+`retire_unearned_node` / `capability_without_evidence` 만
 허용해 잘못된 relation / maintenance filter 를 조용히 drop 하지 않는다. match/search 계열 optional scalar filter 도 core 에서
 같은 blank/padded/null-byte contract 로 검증한다.
 `match_nodes.sort` 도 schema enum 과 runtime/core validation 이 같이 움직이며
@@ -412,7 +412,7 @@ post-write compact `postWriteMaintenance` 도 queue bucket 과 executable action
 `inspect_compile_issue` / `break_dependency_cycle` / `canonicalize_graph_arrays` /
 `resolve_dangling_reference` / `add_missing_relation` / `materialize_external_element` /
 `unassigned_node` / `empty_domain` / `separate_evidence_from_concept` /
-`fold_bulk_siblings` / `retire_unearned_node` 으로 검증해
+`fold_bulk_siblings` / `retire_unearned_node` / `capability_without_evidence` 으로 검증해
 agent 작업 큐 filter 오타가 빈 계획으로 조용히 숨지 않게 한다. verify / dogfood
 walk 는 `phases: ["repiar"]`, `severities: ["fatal"]`, `kinds: ["add_mising_relation"]`
 negative call 도 실제 MCP runtime 에 던져 이 계약이

@@ -231,6 +231,14 @@ export const MAINTENANCE_KIND_VALUES = Object.freeze([
   // Prompt text alone leaks on weaker models, so the check is deterministic and
   // vault-wide rather than a sentence.
   'retire_unearned_node',
+  // A capability that never reaches code (2026-08-01 field trial). On a
+  // 50-node vault an agent built from an unfamiliar repository, 8 of 16
+  // capabilities carried an empty `elements:`, and the handoff agent — given
+  // the vault without the source — could only answer "there is no code entry
+  // point" for every one of them. The construction rules ask for evidence and
+  // never blocked its absence, which is correct: blocking would make the vault
+  // hostile. So the absence is not rejected, it is *reported*.
+  'capability_without_evidence',
 ]);
 const MAINTENANCE_PHASES = new Set(MAINTENANCE_PHASE_VALUES);
 const MAINTENANCE_SEVERITIES = new Set(MAINTENANCE_SEVERITY_VALUES);
@@ -2705,6 +2713,50 @@ export function createOntologyEngine(artifact, options = {}) {
   }
 
   /**
+   * Capabilities that never reach code.
+   *
+   * ## Why the predicate is "no `elements:` edge at all", not "no children"
+   *
+   * `retire_unearned_node` below explains why "a capability with no resolved
+   * children" is too loud a signal: capabilities routinely name a behavior whose
+   * elements have no node yet, and a path in `elements:` is evidence even when
+   * no node exists for it. So this check counts BOTH shapes as evidence — a
+   * resolved element node and an unresolved file path — and fires only when
+   * there is neither. That is the exact shape the field trial measured: an
+   * `elements:` key that is empty or missing entirely, so nothing in the vault
+   * says where the behavior lives.
+   *
+   * ## Why this reports instead of blocking
+   *
+   * Construction rule 5: the procedure never blocks a write. Refusing an
+   * evidence-less capability would push agents to work around the tool, and the
+   * honest sequence — name the behavior first, attach the file second — would
+   * become impossible. So this is `review` / `info`: the write succeeds, and the
+   * queue remembers what is still unproven.
+   */
+  function capabilityWithoutEvidenceCandidates(limit) {
+    const hasElementsEdge = new Set(
+      edges.filter((edge) => edge.via === 'elements').map((edge) => edge.from),
+    );
+    const rows = nodes
+      .filter((node) => node.kind === 'capability')
+      .filter((node) => !hasElementsEdge.has(node.slug))
+      .sort((a, b) => a.slug.localeCompare(b.slug))
+      .map((node) => ({
+        kind: 'capability_without_evidence',
+        score: 0.5,
+        slug: node.slug,
+        reason: `"${node.slug}" has no \`elements:\` entry, so nothing in the vault says where this behavior lives in code. An agent handed only this vault can describe the capability and cannot open it. Either add_concept({kind:"element", …}) for the concept the code realizes and reference it, or — if no single element earns a node — put the file path straight into \`elements:\` as evidence. This never blocked the write and does not block one now; it stays here until the capability points at something.`,
+        node: summarizeNode(node),
+      }));
+
+    // `slugs` carries every match, not just the returned page — the write-path
+    // finding for the same node is deduped against it below, and a node that
+    // fell off the page is still the same node.
+    return { ...limitedCandidateGroup(rows, limit), slugs: rows.map((row) => row.slug) };
+  }
+
+  /**
    * Bridge nodes that group nothing — the fourth bridge condition, enforced.
    *
    * ## Why the predicate is this narrow
@@ -3117,6 +3169,11 @@ export function createOntologyEngine(artifact, options = {}) {
       // enum value would grow the public contract (README, dogfood vault node,
       // strict-filter fixtures, contract regex) to say the same sentence twice.
       'dense-parent': { kind: 'fold_bulk_siblings', phase: 'review', severity: 'info', score: 0.5 },
+      // The write-path half of `capability_without_evidence`. The vault-wide half
+      // (below, from the compiled artifact) keeps asking as long as the answer is
+      // missing; this one fires once, at the moment the author still has the file
+      // in hand. Same kind on purpose — it is one question, asked at two times.
+      'capability-without-evidence': { kind: 'capability_without_evidence', phase: 'review', severity: 'info', score: 0.5 },
     };
     const rows = [];
     for (const finding of nodeEligibilityFindings) {
@@ -3146,6 +3203,7 @@ export function createOntologyEngine(artifact, options = {}) {
     const unassignedNodes = unassignedNodeCandidates(limit);
     const emptyDomains = emptyDomainCandidates(limit);
     const unearnedNodes = unearnedNodeCandidates(limit);
+    const capabilitiesWithoutEvidence = capabilityWithoutEvidenceCandidates(limit);
     const canonicalizationActions = Array.isArray(artifact?.canonicalizationActions)
       ? artifact.canonicalizationActions
       : [];
@@ -3252,8 +3310,28 @@ export function createOntologyEngine(artifact, options = {}) {
         node: row.node,
       });
     }
+    for (const row of capabilitiesWithoutEvidence.rows) {
+      actions.push({
+        phase: 'review',
+        kind: row.kind,
+        severity: 'info',
+        score: row.score,
+        reason: row.reason,
+        node: row.node,
+      });
+    }
 
+    // 갓 쓴 노드는 두 경로가 동시에 잡는다 — 쓰기 게이트가 한 번, 볼트 전수
+    // 스캔이 또 한 번. 같은 노드에 같은 질문을 두 줄로 적으면 큐가 자기 소음을
+    // 만든다. 전수 스캔이 이미 말한 것은 여기서 뺀다.
+    const capabilitiesWithoutEvidenceSlugs = new Set(capabilitiesWithoutEvidence.slugs ?? []);
     for (const action of nodeEligibilityActions()) {
+      if (
+        action.kind === 'capability_without_evidence' &&
+        capabilitiesWithoutEvidenceSlugs.has(action.node?.slug)
+      ) {
+        continue;
+      }
       actions.push(action);
     }
 
@@ -3298,6 +3376,7 @@ export function createOntologyEngine(artifact, options = {}) {
         externalElementRefsIgnored: externalElementRefs.ignored ?? 0,
         unassignedNodes: unassignedNodes.total,
         emptyDomains: emptyDomains.total,
+        capabilitiesWithoutEvidence: capabilitiesWithoutEvidence.total,
       },
       filters: {
         executableOnly,

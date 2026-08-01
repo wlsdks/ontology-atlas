@@ -152,6 +152,60 @@ describe('node-eligibility gate — the three write doors inherit one gate', () 
    * and a check that flags the vault's single healthy wide parent is a check the
    * reader learns to ignore.
    */
+  // 2026-08-01 field trial — 볼트만 넘겨받은 에이전트가 16개 능력 중 8개에
+  // 대해 "코드 진입점이 없습니다" 라고 답했다. 규격은 증거를 요구하는데 그
+  // 부재를 아무도 말하지 않았다. **막지 않는다** — 쓰기는 성공하고 신호만 뜬다.
+  describe('capability without evidence — 막지 않고 말한다', () => {
+    it('생성 시점에 `elements:` 가 비면 한 번 말한다 (쓰기는 성공한다)', () => {
+      writeDoc(root, 'capabilities/no-evidence', {
+        frontmatter: {
+          slug: 'capabilities/no-evidence',
+          kind: 'capability',
+          title: 'No Evidence',
+          domain: 'domains/cli',
+        },
+        body: '',
+      });
+      const findings = drainNodeEligibilityFindings();
+      assert.deepEqual(codesFor(findings, 'capabilities/no-evidence'), [
+        'capability-without-evidence',
+      ]);
+      const [finding] = findings.filter((f) => f.slug === 'capabilities/no-evidence');
+      assert.match(finding.message, /never blocked|nothing here blocks/i);
+      assert.match(finding.message, /patch_concept/);
+    });
+
+    it('경로만 있어도 증거다 — 노드가 아니어도 조용하다', () => {
+      writeDoc(root, 'capabilities/path-evidence', {
+        frontmatter: {
+          slug: 'capabilities/path-evidence',
+          kind: 'capability',
+          title: 'Path Evidence',
+          domain: 'domains/cli',
+          elements: ['cli/src/commands/absorb.mjs'],
+        },
+        body: '',
+      });
+      const codes = codesFor(drainNodeEligibilityFindings(), 'capabilities/path-evidence');
+      assert.equal(codes.includes('capability-without-evidence'), false);
+    });
+
+    it('나중 수정에는 다시 말하지 않는다 — 이름 먼저, 파일 나중이 정직한 순서다', () => {
+      writeDoc(root, 'capabilities/later', {
+        frontmatter: {
+          slug: 'capabilities/later',
+          kind: 'capability',
+          title: 'Later',
+          domain: 'domains/cli',
+        },
+        body: '',
+      });
+      drainNodeEligibilityFindings();
+      updateDoc(root, 'capabilities/later', { frontmatter: { title: 'Later, renamed' } });
+      assert.deepEqual(codesFor(drainNodeEligibilityFindings(), 'capabilities/later'), []);
+    });
+  });
+
   describe('dense parent — the two calibration cases', () => {
     function seedElements(count, { resolved }) {
       const refs = [];

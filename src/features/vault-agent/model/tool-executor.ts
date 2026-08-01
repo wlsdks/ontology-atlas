@@ -202,7 +202,7 @@ export function createToolExecutor(port: VaultReadPort) {
     return rows;
   }
 
-  async function readConcept(slugInput: string) {
+  async function readConcept(slugInput: string, bodyMode: 'excerpt' | 'full' = 'full') {
     const node = resolve(slugInput);
     if (!node) {
       return {
@@ -241,7 +241,11 @@ export function createToolExecutor(port: VaultReadPort) {
     }
     const slug = target.ref as string;
     const doc = docBySlug.get(slug);
-    const body = (await port.readDocText(slug)) ?? doc?.excerpt ?? '';
+    const fullBody = (await port.readDocText(slug)) ?? doc?.excerpt ?? '';
+    // 이 표면의 기본값은 **전체 본문**이다 — MCP 와 달리 여기는 사용자 자기
+    // 디스크를 직접 읽고 왕복 비용이 없다. `body: 'excerpt'` 는 훑어보기용
+    // 축약을 명시적으로 요청할 때만. 어느 쪽이든 잘렸는지는 말한다.
+    const body = bodyMode === 'excerpt' ? (doc?.excerpt ?? fullBody) : fullBody;
     return {
       found: true as const,
       slug,
@@ -255,6 +259,12 @@ export function createToolExecutor(port: VaultReadPort) {
         mtime: doc?.mtime,
         frontmatter: doc?.frontmatter,
         body: wrapUntrusted(body),
+        bodyInfo: {
+          mode: bodyMode,
+          totalChars: fullBody.length,
+          returnedChars: body.length,
+          truncated: body.length < fullBody.length,
+        },
         neighbors: neighborsOf(node, 'both').slice(0, 40),
       },
       vaultChars: body.length,
@@ -307,7 +317,7 @@ export function createToolExecutor(port: VaultReadPort) {
       case 'get_concept': {
         const slug = str(args.slug);
         if (!slug) return missingArg('slug');
-        const result = await readConcept(slug);
+        const result = await readConcept(slug, args.body === 'excerpt' ? 'excerpt' : 'full');
         const packed = pack(result.payload);
         return {
           content: packed.content,
@@ -328,8 +338,9 @@ export function createToolExecutor(port: VaultReadPort) {
         const rows = [];
         const readSlugs: string[] = [];
         let vaultChars = 0;
+        const batchBodyMode = args.body === 'excerpt' ? 'excerpt' : 'full';
         for (const slug of slugs.slice(0, 50)) {
-          const result = await readConcept(slug as string);
+          const result = await readConcept(slug as string, batchBodyMode);
           rows.push(result.payload);
           if (result.found && result.slug) readSlugs.push(result.slug);
           vaultChars += result.vaultChars ?? 0;

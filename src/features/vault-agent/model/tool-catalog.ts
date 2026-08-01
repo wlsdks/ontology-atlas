@@ -144,7 +144,7 @@ export const AGENT_READ_TOOLS: readonly AgentToolDefinition[] = [
   {
     name: 'get_concept',
     description:
-      'Read one ontology node: frontmatter, body excerpt, mtime, and its direct neighbors. Call this before proposing any change to a node.',
+      'Read one ontology node: frontmatter, body, mtime, and its direct neighbors. The whole body comes back by default — definition, evidence, confidence, and scope live there. Call this before proposing any change to a node.',
     effect: 'read',
     parameters: {
       type: 'object',
@@ -154,13 +154,20 @@ export const AGENT_READ_TOOLS: readonly AgentToolDefinition[] = [
           description:
             'Vault-relative slug (e.g. capabilities/card-payment), unique tail slug, or frontmatter `slug` alias. Omit the .md extension.',
         },
+        body: {
+          type: 'string',
+          enum: ['excerpt', 'full'],
+          description:
+            "'full' (the default here — this surface reads the user's own disk with no round-trip budget) returns the whole markdown body; 'excerpt' asks for the first prose paragraph only. Either way bodyInfo says whether anything was left out.",
+        },
       },
       required: ['slug'],
     },
   },
   {
     name: 'get_concepts',
-    description: 'Read up to 50 nodes in one call. Cheaper than N get_concept calls.',
+    description:
+      "Read up to 50 nodes in one call (20 with body: 'full'). Cheaper than N get_concept calls.",
     effect: 'read',
     parameters: {
       type: 'object',
@@ -169,7 +176,12 @@ export const AGENT_READ_TOOLS: readonly AgentToolDefinition[] = [
           type: 'array',
           maxItems: 50,
           items: { type: 'string' },
-          description: 'Vault-relative slugs. Max 50 per call.',
+          description: "Vault-relative slugs. Max 50 per call (20 when body is 'full').",
+        },
+        body: {
+          type: 'string',
+          enum: ['excerpt', 'full'],
+          description: "Applies to every row. 'full' (default here) or 'excerpt'.",
         },
       },
       required: ['slugs'],

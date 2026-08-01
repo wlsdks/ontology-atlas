@@ -789,13 +789,23 @@ export function toolsListSchemaFailure(tools) {
   if (getConceptTool.outputSchema?.type !== 'object') {
     return 'get_concept outputSchema root drift';
   }
-  if (!sameArray(getConceptTool.outputSchema?.required, ['slug', 'frontmatter', 'excerpt', 'neighbors', 'outgoingEdges', 'mtime'])) {
+  if (!sameArray(getConceptTool.outputSchema?.required, ['slug', 'frontmatter', 'bodyInfo', 'neighbors', 'outgoingEdges', 'mtime'])) {
     return 'get_concept outputSchema required drift';
+  }
+  // `excerpt` 는 더 이상 필수가 아니다 — `body: 'full'` 이면 본문이 `body` 로
+  // 온다. 대신 **`bodyInfo` 가 필수다**: 무엇을 안 줬는지 말하지 않는 응답이
+  // 이번 실측의 결함이었으므로, 그 필드가 빠지는 것이 곧 회귀다 (2026-08-01).
+  if (!sameArray(getConceptTool.inputSchema?.properties?.body?.enum, ['excerpt', 'full'])) {
+    return 'get_concept inputSchema body mode drift';
+  }
+  const bodyInfoSchema = outputPropertyAt(getConceptTool, ['properties', 'bodyInfo']);
+  if (!sameArray(bodyInfoSchema?.required, ['mode', 'totalChars', 'returnedChars', 'truncated'])) {
+    return 'get_concept outputSchema bodyInfo drift';
   }
   if (getConceptTool.outputSchema?.additionalProperties !== false) {
     return 'get_concept outputSchema root openness drift';
   }
-  for (const propertyName of ['slug', 'excerpt']) {
+  for (const propertyName of ['slug', 'excerpt', 'body']) {
     if (outputPropertyAt(getConceptTool, ['properties', propertyName])?.type !== 'string') {
       return `get_concept outputSchema ${propertyName} drift`;
     }

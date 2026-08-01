@@ -1718,14 +1718,30 @@ describe('verify.mjs first-contact gates', () => {
       },
       {
         name: 'get_concept',
-        inputSchema: { additionalProperties: false, required: ['slug'], properties: {} },
+        inputSchema: {
+          additionalProperties: false,
+          required: ['slug'],
+          properties: { body: { type: 'string', enum: ['excerpt', 'full'] } },
+        },
         outputSchema: {
           type: 'object',
-          required: ['slug', 'frontmatter', 'excerpt', 'neighbors', 'outgoingEdges', 'mtime'],
+          required: ['slug', 'frontmatter', 'bodyInfo', 'neighbors', 'outgoingEdges', 'mtime'],
           properties: {
             slug: { type: 'string' },
             frontmatter: { type: 'object' },
             excerpt: { type: 'string' },
+            body: { type: 'string' },
+            bodyInfo: {
+              type: 'object',
+              required: ['mode', 'totalChars', 'returnedChars', 'truncated'],
+              properties: {
+                mode: { type: 'string', enum: ['excerpt', 'full'] },
+                totalChars: { type: 'integer', minimum: 0 },
+                returnedChars: { type: 'integer', minimum: 0 },
+                truncated: { type: 'boolean' },
+              },
+              additionalProperties: false,
+            },
             neighbors: conceptNeighborsSchema,
             outgoingEdges: outgoingEdgesSchema,
             mtime: { type: 'number', minimum: 0 },

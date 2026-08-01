@@ -142,10 +142,10 @@ function collectDepthOneKeys(body: string): string[] {
 }
 
 describe('에이전트 도구 카탈로그 ↔ MCP 서버 정의', () => {
-  it('추출기 자체가 동작한다 (get_concept 은 slug 하나를 요구한다)', () => {
+  it('추출기 자체가 동작한다 (get_concept 은 slug 를 요구하고 body 를 받는다)', () => {
     // 파서가 조용히 빈 배열을 돌려주면 아래 테스트가 전부 무의미해진다.
     const shape = readMcpToolShape('get_concept');
-    expect(shape.propertyNames).toEqual(['slug']);
+    expect(shape.propertyNames).toEqual(['slug', 'body']);
     expect(shape.required).toEqual(['slug']);
   });
 

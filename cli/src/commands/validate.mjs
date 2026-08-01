@@ -238,8 +238,18 @@ export function runValidate(args) {
   }
 
   if (reports.length === 0) {
+    // **"vault clean ✓" 라고만 말하지 않는다** (2026-08-01 실측).
+    //
+    // 이 명령은 frontmatter 와 그래프 참조만 본다 — `elements:` / `path:` 가
+    // 가리키는 **코드 파일이 실재하는지는 보지 않는다.** 그런데 문구가 그 차이를
+    // 말하지 않아서, 같은 볼트에 `validate` 는 "clean", `health` 는
+    // "needs_attention" 이라고 답했고 어느 쪽이 맞는지 알 방법이 없었다.
+    // 검사 범위를 문장이 말하면 두 답은 모순이 아니라 서로 다른 두 검사가 된다.
     console.log(
-      `${COLORS.green}[validate] ${files.length - unreadable.length} 파일 스캔 — issue 0. vault clean ✓${COLORS.reset}`,
+      `${COLORS.green}[validate] ${files.length - unreadable.length} 파일 스캔 — frontmatter · 그래프 참조 issue 0 ✓${COLORS.reset}`,
+    );
+    console.log(
+      `${COLORS.dim}          코드 경로 대조(elements:/path: 가 실재하는 파일인가)는 이 검사에 없다 — \`ontology-atlas health\` 가 본다.${COLORS.reset}`,
     );
     return unreadable.length > 0 ? 1 : 0;
   }
@@ -341,7 +351,9 @@ function printUsage(stream = process.stderr) {
       `  ontology-atlas validate [vault] [--json] [--strict]\n` +
       `  ontology-atlas validate [vault] [--fail-on code,...]\n` +
       `  ontology-atlas validate --list-codes [--json]\n\n` +
-      `Validate ontology vault frontmatter integrity.\n`,
+      `Validate ontology vault frontmatter integrity — frontmatter shape and graph\n` +
+      `references only. It does NOT check whether elements:/path: point at files that\n` +
+      `exist; \`ontology-atlas health\` runs that source-path check.\n`,
   );
 }
 
