@@ -54,32 +54,41 @@ export interface WindowsRelease {
 export const MACOS_RELEASE: MacosRelease = {
   published: true,
   prerelease: true,
-  tag: 'v1.0.0-rc.4',
-  publishedAt: '2026-07-30T11:03:00Z',
-  releaseUrl: 'https://github.com/wlsdks/ontology-atlas/releases/tag/v1.0.0-rc.4',
+  tag: 'v1.0.0-rc.5',
+  publishedAt: '2026-08-01T11:39:08Z',
+  releaseUrl: 'https://github.com/wlsdks/ontology-atlas/releases/tag/v1.0.0-rc.5',
   assets: [
     {
       arch: 'aarch64',
-      fileName: 'ontology-atlas_1.0.0-rc.4_aarch64.dmg',
-      sizeBytes: 44256332,
-      sha256: '0b9a8df3571610bcb372a42fe1c7ccb3c457e7afbf50abe332c3b0709a0a8c64',
-      downloadUrl: 'https://github.com/wlsdks/ontology-atlas/releases/download/v1.0.0-rc.4/ontology-atlas_1.0.0-rc.4_aarch64.dmg',
+      fileName: 'ontology-atlas_1.0.0-rc.5_aarch64.dmg',
+      sizeBytes: 49570260,
+      sha256: 'a62bedd14cc30e204d1ba2bf1a077d3f96546a726598066da12b9cc63b436011',
+      downloadUrl: 'https://github.com/wlsdks/ontology-atlas/releases/download/v1.0.0-rc.5/ontology-atlas_1.0.0-rc.5_aarch64.dmg',
     },
     {
       arch: 'x64',
-      fileName: 'ontology-atlas_1.0.0-rc.4_x64.dmg',
-      sizeBytes: 47693276,
-      sha256: '65db379cebe877d8bd799692e2aaa1b81e3fc1693dee346cead124ce3db1b7f8',
-      downloadUrl: 'https://github.com/wlsdks/ontology-atlas/releases/download/v1.0.0-rc.4/ontology-atlas_1.0.0-rc.4_x64.dmg',
+      fileName: 'ontology-atlas_1.0.0-rc.5_x64.dmg',
+      sizeBytes: 52960205,
+      sha256: '162668286c86928c0bd0e556905b090c0495ce111b682a955c2ee62344d4eb92',
+      downloadUrl: 'https://github.com/wlsdks/ontology-atlas/releases/download/v1.0.0-rc.5/ontology-atlas_1.0.0-rc.5_x64.dmg',
     },
   ],
 };
 
 export const WINDOWS_RELEASE: WindowsRelease = {
-  published: false,
+  published: true,
   prerelease: true,
-  tag: 'v1.0.0-rc.4',
-  publishedAt: '2026-07-30T11:03:00Z',
-  releaseUrl: 'https://github.com/wlsdks/ontology-atlas/releases/tag/v1.0.0-rc.4',
-  assets: [],
+  tag: 'v1.0.0-rc.5',
+  publishedAt: '2026-08-01T11:39:08Z',
+  releaseUrl: 'https://github.com/wlsdks/ontology-atlas/releases/tag/v1.0.0-rc.5',
+  assets: [
+    {
+      arch: 'x64',
+      fileName: 'ontology-atlas_1.0.0-rc.5_windows_x64-setup.exe',
+      sizeBytes: 44354803,
+      sha256: 'd1035382285987b80ef6ecd8ce750a7f96d864a2696912b99b5a13d037527457',
+      downloadUrl: 'https://github.com/wlsdks/ontology-atlas/releases/download/v1.0.0-rc.5/ontology-atlas_1.0.0-rc.5_windows_x64-setup.exe',
+      signed: false,
+    },
+  ],
 };
