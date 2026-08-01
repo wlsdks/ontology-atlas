@@ -52,6 +52,27 @@ export const SECRET_PROVIDER_HOSTS: Record<SecretProvider, string> = {
   gemini: 'generativelanguage.googleapis.com',
 };
 
+/**
+ * 명명 벤더가 아닌 **네 번째 갈래** — 사용자가 주소를 직접 적는 로컬/오픈소스
+ * 러너(Ollama · LM Studio · llama.cpp server · vLLM …).
+ *
+ * 여기 키는 없다. 키체인 허용목록(`SECRET_PROVIDERS`)에 넣지 않는 이유가 그
+ * 것이다 — 보관할 비밀이 없으므로 `secret_set`/`secret_status`/`secret_clear`
+ * 가 지나갈 자리 자체가 없고, 대신 주소와 모델이 이 브라우저의 localStorage
+ * 에 산다(`local-endpoint.ts`). 진실원은 여전히 러너 자신이다.
+ */
+export const LOCAL_PROVIDER = 'local';
+
+/** Ollama 의 기본 포트. Rust `LOCAL_DEFAULT_BASE_URL` 과 같은 값. */
+export const LOCAL_DEFAULT_BASE_URL = 'http://localhost:11434';
+
+/** 연결할 수 있는 제공자 전부 — 키를 쓰는 셋 + 주소를 쓰는 하나. */
+export type ConnectionProvider = SecretProvider | typeof LOCAL_PROVIDER;
+
+export function isLocalProvider(provider: string): provider is typeof LOCAL_PROVIDER {
+  return provider === LOCAL_PROVIDER;
+}
+
 /** Rust `SecretStatus` (serde camelCase). */
 export interface SecretStatus {
   provider: string;
@@ -77,6 +98,12 @@ export interface LlmVerifyResult {
   durationMs: number;
   /** 이 호출이 남긴 감사 줄의 시각. */
   loggedAt: string;
+  /**
+   * 확인 응답 본문 — **주소 갈래에서 성공했을 때만** 값이 있다. 그 본문이 곧
+   * 설치된 모델 목록이고, 파싱은 `local-endpoint.ts` 가 한다(Rust 는 벤더
+   * 스키마를 모른다). 명명 벤더는 항상 null.
+   */
+  body: string | null;
 }
 
 /** Tauri 보관 IPC 가용 여부 — false 면 웹 강등 경로. */
@@ -145,12 +172,21 @@ export async function secretClear(
  * 필수다: 기록할 곳이 없으면 Rust 가 보내지 않는다(log-before-send).
  */
 export async function secretVerify(
-  provider: SecretProvider,
+  provider: ConnectionProvider,
   vaultPath: string,
+  /**
+   * 주소 갈래에서만 넘긴다. 명명 벤더에 주소를 함께 넘기면 Rust 가 **거절**
+   * 한다 — 통과시키면 키체인의 키가 화면이 약속한 적 없는 호스트로 나간다.
+   */
+  baseUrl?: string,
 ): Promise<LlmVerifyResult | null> {
   const invoke = getInvoke();
   if (!invoke) return null;
-  return invoke<LlmVerifyResult>('secret_verify', { provider, vaultPath });
+  return invoke<LlmVerifyResult>('secret_verify', {
+    provider,
+    vaultPath,
+    baseUrl: baseUrl ?? null,
+  });
 }
 
 /** invoke reject 페이로드 → 사용자 한 줄 (Rust 는 `Err(String)`). */

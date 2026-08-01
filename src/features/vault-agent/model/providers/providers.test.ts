@@ -122,6 +122,26 @@ describe('벤더 어댑터 — 셋이 같은 모양으로 접힌다', () => {
     }
   });
 
+  it('주소 갈래는 OpenAI 호환 문법을 바이트 단위로 공유한다', () => {
+    // 복제하지 않고 위임하는 것이 계약이다 — 한쪽만 고쳐지는 순간 같은 문법을
+    // 두 곳에서 다르게 알게 된다.
+    const turn = assembly({ model: 'qwen3:8b' });
+    expect(PROVIDER_ADAPTERS.local.buildBody(turn)).toBe(
+      PROVIDER_ADAPTERS.openai.buildBody(turn),
+    );
+    const body = fixture('openai-tool');
+    expect(PROVIDER_ADAPTERS.local.parseResponse(body)).toEqual(
+      PROVIDER_ADAPTERS.openai.parseResponse(body),
+    );
+  });
+
+  it('주소 갈래에는 기본 모델이 없다 — 그 컴퓨터만 아는 사실이라서', () => {
+    // 아무 이름이나 기본값으로 박아 두면 첫 왕복이 "model not found" 로 죽고,
+    // 그 이유가 화면 어디에도 없다. 사용자가 목록에서 고를 때까지 이 갈래는
+    // 켜지지 않는다(`isLocalEndpointReady`).
+    expect(PROVIDER_ADAPTERS.local.defaultModel).toBe('');
+  });
+
   it('쓰기 도구도 목록에는 실린다 — 막는 곳은 실행기다', () => {
     expect(findAgentTool('patch_concept')?.effect).toBe('write');
     expect(findAgentTool('get_concept')?.effect).toBe('read');

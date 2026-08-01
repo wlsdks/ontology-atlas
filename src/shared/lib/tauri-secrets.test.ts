@@ -81,6 +81,10 @@ describe('tauri secrets bridge', () => {
     expect(tauriApiMock.invoke).toHaveBeenCalledWith('secret_verify', {
       provider: 'openai',
       vaultPath: '/vault',
+      // 명명 벤더는 주소를 **못 바꾼다** — null 로 명시해 보내는 것이
+      // 계약이다. Rust 는 여기 값이 오면 거절한다(키가 사용자가 적은
+      // 호스트로 나가는 길을 남기지 않는다).
+      baseUrl: null,
     });
   });
 

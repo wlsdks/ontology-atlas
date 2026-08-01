@@ -15,6 +15,8 @@ vi.mock('@/shared/lib/tauri-llm', () => ({
 }));
 
 vi.mock('@/shared/lib/tauri-secrets', () => ({
+  LOCAL_PROVIDER: 'local',
+  LOCAL_DEFAULT_BASE_URL: 'http://localhost:11434',
   SECRET_PROVIDERS: ['anthropic', 'openai', 'gemini'],
   SECRET_PROVIDER_HOSTS: {
     anthropic: 'api.anthropic.com',

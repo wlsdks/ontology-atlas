@@ -67,6 +67,9 @@ describe('tauri-llm 웹 강등', () => {
         vaultChars: 1020,
         tools: [{ name: 'get_concept', target: 'capabilities/payment' }],
       },
+      // 주소 갈래가 아니면 null — 명명 벤더의 대화가 임의 호스트로 갈 수 있는
+      // 자리를 남기지 않는다(Rust 가 값이 오면 거절한다).
+      baseUrl: null,
     });
   });
 

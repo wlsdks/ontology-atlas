@@ -922,6 +922,27 @@ just unmounted).
     consumes it. Gemini authenticates through the `x-goog-api-key` header —
     never the documented `?key=` query form, because a URL is a place that
     gets logged.
+  - **주소로 연결 — 로컬/오픈소스 러너 (2026-08-01).** 명명 벤더 아래 네
+    번째 행은 벤더가 아니라 **문**이다: 러너 주소(기본 `http://localhost:11434`)
+    를 적고 [연결 확인] 을 누르면 그 한 번의 요청이 「살아 있나 · OpenAI 호환
+    인가 · 어떤 모델을 고를 수 있나」 셋을 함께 답하고, 설치된 모델이 목록으로
+    와서 **고르는 것만** 하면 된다(이름을 타이핑하지 않으므로 오타로 실패할
+    자리가 없다). 키는 필요 없다 — 이 갈래는 키체인을 지나가지 않는다.
+    Ollama · LM Studio · llama.cpp server · vLLM 이 같은 문으로 들어온다
+    (엔드포인트는 OpenAI 호환 `/v1/*`; 네이티브 API 를 골랐다면 러너마다
+    어댑터가 하나씩 늘었을 것이다).
+    - **실패는 이유별로 다른 문장을 받는다** — 러너가 꺼져 있음(연결 자체
+      실패) · 그 포트에 다른 프로그램(404) · 설치된 모델 0개가 서로 구별되고,
+      각각 다음에 할 일을 함께 적는다.
+    - **평문 `http` 는 이 컴퓨터(loopback)에서만.** 밖으로 나가려면 `https`
+      이고, 주소에 아이디·비밀번호를 담으면 거절한다(URL 은 기록에 남는
+      자리다).
+    - **전송 범위 문구가 참인 자리에서만 강한 말을 한다.** 루프백이면
+      "이 컴퓨터 밖으로 나가지 않고, 기록에도 목적지가 `localhost:11434` 로
+      남아요 — 그게 나가지 않았다는 증거예요"; 사용자가 https 로 다른 기계를
+      가리키면 그 문장 대신 "이 주소는 이 컴퓨터 밖" 이라고 쓴다.
+    - 웹에서는 이 갈래도 안 된다(브라우저 페이지가 localhost 로 못 간다) —
+      강등 카드가 키 보관과 **따로** 그 이유를 적고 `/download` 로 보낸다.
   - **Every recorded call names its destination host.** The audit line carries
     `host` (e.g. `generativelanguage.googleapis.com`), and the screen states
     that host before you press check — the strongest claim we can prove for a
