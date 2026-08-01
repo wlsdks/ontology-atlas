@@ -2499,13 +2499,18 @@
       "validationTooltip": "{errors, plural, =0 {{warnings} frontmatter warning(s) — run pnpm vault:validate for detail} other {{errors} frontmatter error(s){warnings, plural, =0 {} other {, {warnings} warning(s)}} — some nodes are missing from the graph. Run pnpm vault:validate for detail}}"
     },
     "vaultDiffToaster": {
-      "added": "Added: {slug}",
-      "edited": "Edited: {slug}",
-      "digestAdded": "{count} added",
-      "digestModified": "{count} edited",
+      "added": "Added — {name}",
+      "addedKind": "{kind} added — {name}",
+      "edited": "Edited — {name}",
+      "editedKind": "{kind} edited — {name}",
+      "digestAdded": "{breakdown} added",
+      "digestModified": "{breakdown} edited",
       "digestRemoved": "{count} removed",
-      "digestJoin": " · ",
-      "digestPrefix": "Folder changed — "
+      "digestKindItem": "{kind} {count}",
+      "digestKindOther": "{count} other",
+      "digestKindPlain": "{count}",
+      "digestKindJoin": " · ",
+      "digestJoin": ", "
     },
     "starterCta": {
       "errorFallback": "Failed to create starter",
