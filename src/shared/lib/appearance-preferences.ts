@@ -61,6 +61,7 @@ export const DEFAULT_GLYPH_SET: GlyphSet = "geometric";
 const CANVAS_BACKGROUND_KEY = "ontology-atlas:canvas-background:v1";
 const GLYPH_SET_KEY = "ontology-atlas:glyph-set:v1";
 const FOOTPRINT_KEY = "ontology-atlas:footprint:v1";
+const EXPAND_KEY = "ontology-atlas:expand:v1";
 
 /** 설정 변경 시 같은 탭의 구독자에게 알리는 커스텀 이벤트(cross-tab 은 `storage`). */
 const PREFERENCE_EVENT = "ontology-atlas:appearance-preference-change";
@@ -529,5 +530,161 @@ function footprintSnapshot(): FootprintPreference {
 export function useFootprint(): FootprintPreference {
   const getSnapshot = useCallback(() => footprintSnapshot(), []);
   const getServerSnapshot = useCallback(() => DEFAULT_FOOTPRINT, []);
+  return useSyncExternalStore(subscribe, getSnapshot, getServerSnapshot);
+}
+
+/* ── 확장 (접힌 묶음을 펼치는 방식) ───────────────────────────────────────── */
+
+/**
+ * 펼치기 표시 — 접힌 묶음을 **어디에** 놓고 **무엇으로** 여는가.
+ *
+ * 시안(`.qa-scratch/proto-expand.html`)이 셋을 나란히 재려고 만든 계측 도구였고,
+ * 그 셋을 그대로 제품 설정으로 옮겼다. 각 항목의 설명은 시안의 말을 그대로 쓴다.
+ *
+ * - `pill` — 노드에서 떨어진 빈 자리에 뜨고 점선으로 이어진다. 셋 중 유일하게
+ *   자리를 «찾아야» 해서, 빈 곳이 없어지면 멀어진다.
+ * - `bar` — 고른 노드 바로 위에 글자 버튼이 뜬다. 안 고르면 아무것도 없고, 몇
+ *   개가 열릴지 숫자로 말한다.
+ * - `badge` — 노드 오른쪽 위 어깨에 붙은 작은 원. 노드를 따라다니므로 자리를
+ *   찾을 일이 없고, 무엇을 할지는 호버로 말한다.
+ */
+export type ExpandAffordance = "pill" | "bar" | "badge";
+
+/**
+ * 확장 구조 — 펼친 자식을 어떻게 놓나.
+ *
+ * `disc` 를 뺀 셋은 시안의 3안이고, `disc` 는 **오늘의 배치**다(황금각 phyllotaxis
+ * 나선 — `model/layout.ts#placePhyllotaxisDisk`). 시안에는 없는 값을 여기 두는
+ * 이유는 하나다: 시안의 셋 중 어느 것도 오늘 그려지는 것이 아니라서, `disc` 가
+ * 없으면 이 설정에는 «오늘» 을 고르는 자리가 없다. 기본값이 화면을 바꾸는 것은
+ * 어포던스 한 항목뿐이어야 한다(소유자 결정, `docs/DECISIONS.md`).
+ *
+ * - `disc` — 나선 원반. 개수가 늘어도 면적이 √로만 자란다(유계).
+ * - `fan` — 바깥쪽으로 부채꼴. 층이 쌓이며 넓어져 형제 도메인과 부딪힐 수 있다.
+ * - `ring` — 부모를 감싸는 고리. 사방을 쓰니 같은 개수를 더 좁은 면적에 담는다.
+ * - `column` — 바깥으로 줄 세우기. 이름이 옆으로 나란해 읽기가 가장 쉽다. 대신 길어진다.
+ */
+export type ExpandStructure = "disc" | "fan" | "ring" | "column";
+
+export const EXPAND_AFFORDANCES: readonly ExpandAffordance[] = ["pill", "bar", "badge"];
+export const EXPAND_STRUCTURES: readonly ExpandStructure[] = ["disc", "fan", "ring", "column"];
+
+/**
+ * 확장 설정.
+ *
+ * **세 숫자는 이미 코드 안에 상수로 있던 값이다** — 시안이 그것들을 슬라이더로
+ * 뽑아 놓고 재 본 것이다. 그래서 이 파일이 그 셋의 단일 출처가 되고, 지도 쪽
+ * 상수(`EGO_NEIGHBOR_LIMIT` · `DISC_LABEL_TOP_K` · `MAX_EXPANDED_PARENTS`)가
+ * 여기 기본값을 **가져다 쓴다**. 반대로 두면 같은 값이 두 곳에 적혀 드리프트가
+ * 시작된다(Carbon).
+ */
+export interface ExpandPreference {
+  /** 펼치기 표시. */
+  affordance: ExpandAffordance;
+  /** 펼친 자식의 배치. */
+  structure: ExpandStructure;
+  /** 한 번에 여는 개수. 나머지는 「N개 펼치기」를 다시 누른다. */
+  batchSize: number;
+  /** 이름을 시도할 개수 — 한 부모당. «몇 개가 붙나» 가 아니라 «몇 개까지 시도하나» 다. */
+  labelAttempts: number;
+  /** 동시에 펼쳐 둘 부모 개수. 넘으면 가장 오래 펼쳐 둔 것이 닫힌다(LRU). */
+  maxOpenParents: number;
+}
+
+/**
+ * 기본값.
+ *
+ * ⚠️ **`affordance: "bar"` 는 오늘 화면을 의도적으로 바꾼다** (소유자 결정
+ * 2026-08-01 — *"기본값은 '머리 위 막대' 어때?"*). 다른 넷은 오늘 그려지는 것과
+ * 같은 값이라, 설정을 안 건드린 사람에게 바뀌는 것은 어포던스 하나뿐이다.
+ * 사라지는 것과 대신 오는 것, 그리고 되돌릴 조건은 `docs/DECISIONS.md`.
+ */
+export const DEFAULT_EXPAND: ExpandPreference = {
+  affordance: "bar",
+  structure: "disc",
+  batchSize: 24,
+  labelAttempts: 8,
+  maxOpenParents: 3,
+};
+
+/**
+ * 슬라이더 상·하한 — **시안의 값을 그대로** 옮겼다(임의로 좁히지 않는다).
+ * 시안이 27조합을 실측하며 고른 범위라, 여기서 줄이면 그 실측이 닿지 않은
+ * 화면만 제품에 남는다.
+ */
+export const EXPAND_RANGES = {
+  batchSize: { min: 4, max: 24, step: 1 },
+  labelAttempts: { min: 3, max: 40, step: 1 },
+  maxOpenParents: { min: 1, max: 6, step: 1 },
+} as const satisfies Record<string, { min: number; max: number; step: number }>;
+
+/**
+ * 저장된 JSON → 유효한 설정. 범위 밖 숫자는 잘라 넣고, 모르는 값·없는 키는
+ * 기본값으로 채운다. 순수 함수 — 손으로 편집된 localStorage 가 렌더러에 `NaN`
+ * 을 흘리면 지도의 확장이 통째로 죽는데, 그 실패는 조용하다(발자국이 이미
+ * 배운 교훈).
+ */
+export function resolveExpand(raw: unknown): ExpandPreference {
+  if (typeof raw !== "object" || raw === null) return DEFAULT_EXPAND;
+  const src = raw as Record<string, unknown>;
+  const num = (key: keyof typeof EXPAND_RANGES): number => {
+    const v = src[key];
+    if (typeof v !== "number" || !Number.isFinite(v)) return DEFAULT_EXPAND[key];
+    return Math.round(clamp(v, EXPAND_RANGES[key].min, EXPAND_RANGES[key].max));
+  };
+  return {
+    affordance: (EXPAND_AFFORDANCES as readonly string[]).includes(src.affordance as string)
+      ? (src.affordance as ExpandAffordance)
+      : DEFAULT_EXPAND.affordance,
+    structure: (EXPAND_STRUCTURES as readonly string[]).includes(src.structure as string)
+      ? (src.structure as ExpandStructure)
+      : DEFAULT_EXPAND.structure,
+    batchSize: num("batchSize"),
+    labelAttempts: num("labelAttempts"),
+    maxOpenParents: num("maxOpenParents"),
+  };
+}
+
+export function readExpand(): ExpandPreference {
+  if (typeof window === "undefined") return DEFAULT_EXPAND;
+  try {
+    const saved = window.localStorage.getItem(EXPAND_KEY);
+    return saved === null ? DEFAULT_EXPAND : resolveExpand(JSON.parse(saved));
+  } catch {
+    return DEFAULT_EXPAND;
+  }
+}
+
+export function writeExpand(value: ExpandPreference): void {
+  if (typeof window === "undefined") return;
+  try {
+    window.localStorage.setItem(EXPAND_KEY, JSON.stringify(resolveExpand(value)));
+  } catch {
+    // 위와 동일 — 저장 실패해도 이벤트로 현재 세션은 갱신된다.
+  }
+  notifyPreferenceChange();
+}
+
+/** 발자국과 같은 캐시 문법 — `useSyncExternalStore` 가 스냅샷을 `Object.is` 로 본다. */
+let expandCacheKey: string | null = null;
+let expandCacheValue: ExpandPreference = DEFAULT_EXPAND;
+
+function expandSnapshot(): ExpandPreference {
+  if (typeof window === "undefined") return DEFAULT_EXPAND;
+  let raw: string | null = null;
+  try {
+    raw = window.localStorage.getItem(EXPAND_KEY);
+  } catch {
+    return DEFAULT_EXPAND;
+  }
+  if (raw === expandCacheKey) return expandCacheValue;
+  expandCacheKey = raw;
+  expandCacheValue = readExpand();
+  return expandCacheValue;
+}
+
+export function useExpand(): ExpandPreference {
+  const getSnapshot = useCallback(() => expandSnapshot(), []);
+  const getServerSnapshot = useCallback(() => DEFAULT_EXPAND, []);
   return useSyncExternalStore(subscribe, getSnapshot, getServerSnapshot);
 }

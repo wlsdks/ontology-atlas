@@ -10,6 +10,7 @@ import {
   ChevronRight,
   Copy,
   Check,
+  Expand,
   Footprints,
   HardDrive,
   Layers,
@@ -41,6 +42,7 @@ import {
 import { VaultAgentSetupPanel } from './VaultAgentSetupPanel';
 import { CanvasBackgroundPicker, GlyphSetPicker } from './AppearancePickers';
 import { FootprintSettings } from './FootprintSettings';
+import { ExpandSettings } from './ExpandSettings';
 import { AgentActivitySettings } from './AgentActivitySettings';
 import { SegmentSwitch, SettingsGroup, SettingsRow } from './settings-primitives';
 import { useFrameMeter, writeFrameMeter } from '@/shared/lib/appearance-preferences';
@@ -96,7 +98,11 @@ type SettingsView = 'root' | 'agent' | 'ai';
  * 앞 셋은 보이는 것, 뒤 둘은 이 앱이 무엇과 이어져 있는가다.
  */
 const SETTINGS_GROUPS = [
-  { key: 'look', items: ['screen', 'background', 'footprint'] },
+  // 「확장」이 배경과 발자국 **사이**인 이유(소유자 2026-08-01: *"발자국 위에
+  // 하나 넣어주면 될듯"*): 앞의 둘은 지도가 무엇으로 그려지는가(바닥·글리프)고
+  // 「확장」은 그 위에서 무엇이 열리는가다. 발자국은 다 그린 뒤 남는 흔적이라
+  // 맨 뒤가 맞다.
+  { key: 'look', items: ['screen', 'background', 'expand', 'footprint'] },
   { key: 'connect', items: ['workspace', 'agent'] },
 ] as const;
 
@@ -106,6 +112,10 @@ type SettingsSection = (typeof SETTINGS_GROUPS)[number]['items'][number];
 const SECTION_ICON: Record<SettingsSection, typeof Monitor> = {
   screen: Monitor,
   background: Layers,
+  // 네 방향으로 벌어지는 화살표 — 이 목록에서 유일하게 «바깥으로 퍼지는»
+  // 실루엣이라 사각(Monitor)·겹친 판(Layers)·발자국·드라이브·봇 어느 것과도
+  // 안 섞인다(아이콘은 장식이 아니라 훑기 채널이다, 위 주석).
+  expand: Expand,
   footprint: Footprints,
   workspace: HardDrive,
   agent: Bot,
@@ -898,6 +908,8 @@ export function AppSettingsMenu({
                     />
                   </SettingsGroup>
                   </>
+                ) : section === 'expand' ? (
+                  <ExpandSettings />
                 ) : section === 'footprint' ? (
                   <FootprintSettings />
                 ) : section === 'workspace' ? (

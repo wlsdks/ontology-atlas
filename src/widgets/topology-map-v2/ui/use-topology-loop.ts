@@ -33,7 +33,8 @@ import type { NodeDragState } from "./topology-pointer-handlers";
 import { DEPTH_DOT_LAYERS, buildDepthDotPattern, buildGridPattern } from "../render/grid";
 import { createAnimatedBackground, type AnimatedBackground } from "../render/animated-background";
 import { buildDustPoints, buildRealmCosmosPoints, computeStarDustCount, type DustPoint } from "../render/starfield";
-import type { CanvasBackground, FootprintPreference, GlyphSet } from "@/shared/lib/appearance-preferences";
+import { DEFAULT_EXPAND } from "@/shared/lib/appearance-preferences";
+import type { CanvasBackground, ExpandPreference, FootprintPreference, GlyphSet } from "@/shared/lib/appearance-preferences";
 import { computeClusterFitTarget, computeFocusCameraTarget, computeOverviewCameraTarget, computeOverviewFitScale, hasAnyNodeOnScreen, worldToScreen } from "./topology-camera-math";
 import { drawTopologyFrame } from "./topology-frame-draw";
 import { relaxNewlyVisible } from "../model/layout";
@@ -309,6 +310,11 @@ export interface UseTopologyLoopArgs {
   canvasBackground?: CanvasBackground;
   /** 발자국 표현 설정. 생략/`null` 이면 발자국을 그리지 않는다. */
   footprint?: FootprintPreference | null;
+  /**
+   * 확장 설정 — 펼치기 표시 · 자식 배치 · 한 번에 여는 개수 · 이름을 시도할
+   * 개수 · 동시에 펼쳐 둘 부모 수. 생략 시 `DEFAULT_EXPAND`.
+   */
+  expand?: ExpandPreference;
   /** 휠/세로 스와이프 소유권 — `topology-pointer-handlers.ts` 의 `wheelIntent` 참고. */
   wheelIntent?: "zoom" | "page-scroll";
   /** 앰비언트 휴면 지연 — `TopologyMapV2` 의 `ambientSleepDelayMs` 참고. */
@@ -324,7 +330,7 @@ export type UseTopologyLoopResult = TopologyPointerHandlers & {
 };
 
 export function useTopologyLoop(args: UseTopologyLoopArgs): UseTopologyLoopResult {
-  const { nodes, edges, focusedSlug, emphasizedNeighborSlug = null, fitViewToken, relayoutToken, revealToken = 0, onSelectEdge, onHoverEdge, onSelect, onPaneClick, onVisibleCountChange, onGraphStatsChange, onZoomTierChange, onContextMenuNode, agentFocusNodeId = null, spotlightIds = null, selectedEdge = null, expandedParents = EMPTY_EXPANDED_SET, onToggleCluster, onHoverCluster, realmRootId = null, onEnterRealm, realmEnterButtonRef, realmCaption = null, visitedTrail = EMPTY_TRAIL, trailLensActiveRef, trailHoverNodeIdRef, tierReveal = DEFAULT_TIER_REVEAL, tourAnchorNodeId = null, tourAnchorRef, glyphSet = "geometric", canvasBackground = "dot", footprint = null, wheelIntent = "zoom", ambientSleepDelayMs } = args;
+  const { nodes, edges, focusedSlug, emphasizedNeighborSlug = null, fitViewToken, relayoutToken, revealToken = 0, onSelectEdge, onHoverEdge, onSelect, onPaneClick, onVisibleCountChange, onGraphStatsChange, onZoomTierChange, onContextMenuNode, agentFocusNodeId = null, spotlightIds = null, selectedEdge = null, expandedParents = EMPTY_EXPANDED_SET, onToggleCluster, onHoverCluster, realmRootId = null, onEnterRealm, realmEnterButtonRef, realmCaption = null, visitedTrail = EMPTY_TRAIL, trailLensActiveRef, trailHoverNodeIdRef, tierReveal = DEFAULT_TIER_REVEAL, tourAnchorNodeId = null, tourAnchorRef, glyphSet = "geometric", canvasBackground = "dot", footprint = null, expand = DEFAULT_EXPAND, wheelIntent = "zoom", ambientSleepDelayMs } = args;
 
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
   const containerRef = useRef<HTMLDivElement | null>(null);
@@ -366,6 +372,11 @@ export function useTopologyLoop(args: UseTopologyLoopArgs): UseTopologyLoopResul
   const canvasBackgroundRef = useRef<CanvasBackground>(canvasBackground);
   /** 발자국 설정 + 잉크 — 매 프레임 읽으므로 ref 미러(캔버스 배경과 같은 패턴). */
   const footprintPrefRef = useRef<FootprintPreference | null>(footprint ?? null);
+  /**
+   * 확장 설정 — 프레임 루프가 매 프레임 읽으므로 ref 미러(발자국·배경과 같은
+   * 패턴). 설정이 바뀌면 아래 effect 가 갱신하고 **다음 프레임부터** 반영된다.
+   */
+  const expandPrefRef = useRef<ExpandPreference>(expand);
   const footprintInkRef = useRef<FootprintInk>([232, 196, 122]);
   const footprintStepColorRef = useRef<string>("#e8c47a");
   /**
@@ -804,6 +815,11 @@ export function useTopologyLoop(args: UseTopologyLoopArgs): UseTopologyLoopResul
   useEffect(() => {
     glyphStyleRef.current = glyphSet === "line" ? "line" : "fill";
   }, [glyphSet]);
+  // 확장 설정 변경 — 다음 프레임부터 새 표시/배치/개수. 값만 갈아끼우므로
+  // 월드 재빌드 없이 즉시 반영된다(배치는 아래 레이아웃 effect 가 다시 푼다).
+  useEffect(() => {
+    expandPrefRef.current = expand;
+  }, [expand]);
   /**
    * 캔버스 배경 변경 — 도트면 입자 엔진을 **버리고**, 아니면 그 변형으로 새로
    * 만든다. 도트에서 엔진을 살려 두면 보이지도 않는 버퍼를 매 프레임 굴린다.
@@ -925,8 +941,11 @@ export function useTopologyLoop(args: UseTopologyLoopArgs): UseTopologyLoopResul
     const gatedChildren = (world.childrenByParent.get(newlyExpanded) ?? []).filter(
       (c) => world.nodeById.get(c)?.kind !== "domain",
     );
+    // 배치 크기는 설정(「확장 → 한 번에 여는 개수」)이 정한다 — 프레이밍이
+    // 실제로 그려지는 수와 어긋나면 「담으려던 것」과 「보이는 것」이 갈린다.
+    const batchSize = expandPrefRef.current.batchSize;
     let batchRestrict: Set<string> | null = null;
-    if (gatedChildren.length > EGO_NEIGHBOR_LIMIT) {
+    if (gatedChildren.length > batchSize) {
       const ranked = rankEgoNeighborsByDOI(
         gatedChildren.map((id) => ({
           id,
@@ -937,7 +956,7 @@ export function useTopologyLoop(args: UseTopologyLoopArgs): UseTopologyLoopResul
           relationType: "contains",
         })),
       );
-      batchRestrict = new Set<string>([newlyExpanded, ...ranked.slice(0, EGO_NEIGHBOR_LIMIT)]);
+      batchRestrict = new Set<string>([newlyExpanded, ...ranked.slice(0, batchSize)]);
     }
     const target = computeClusterFitTarget(world, tokens, width, height, newlyExpanded, overviewEntryScale, batchRestrict);
     if (!target) return;
@@ -1035,7 +1054,9 @@ export function useTopologyLoop(args: UseTopologyLoopArgs): UseTopologyLoopResul
       "data-stage-pan-click-cancel-px",
       String(tokens.hysteresisPx),
     );
-    const world = buildTopologyWorld(nodes, edges, tokens);
+    // 확장 구조는 **씨앗 좌표**를 정하므로 월드 빌드의 입력이다 — 아래 dep
+    // 배열에 들어 있어, 설정을 바꾸면 월드가 다시 지어지며 자식이 새 배치로 간다.
+    const world = buildTopologyWorld(nodes, edges, tokens, expand.structure);
     worldRef.current = world;
     // rank8 — 신규 노드 등장 램프 시드. 첫 빌드(이전 집합 없음)는 전부 1(연출
     // 없음, 초기 로드 안무와 충돌 방지). 이후 빌드는 이전에 없던 id 만 0 으로
@@ -1085,7 +1106,7 @@ export function useTopologyLoop(args: UseTopologyLoopArgs): UseTopologyLoopResul
     onGraphStatsChange?.({ nodes: nodes.length, relations: edges.length });
     trySnapInitialCamera(tokens);
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [nodes, edges]);
+  }, [nodes, edges, expand.structure]);
 
   // --- resize (mechanical) + grid pattern/dust (viewport-dependent, built once/on resize) ---
   useEffect(() => {
@@ -2400,7 +2421,7 @@ export function useTopologyLoop(args: UseTopologyLoopArgs): UseTopologyLoopResul
       {
         const focusId = focusedSlugRef.current;
         const neighbors = focusId ? world.neighborMap.get(focusId) : undefined;
-        if (focusId && neighbors && neighbors.size > EGO_NEIGHBOR_LIMIT) {
+        if (focusId && neighbors && neighbors.size > expandPrefRef.current.batchSize) {
           // DOI 관계 위계 — 포커스 노드에 닿는 엣지의 원 relationType(WorldEdge.
           // relationType, contains|depends 2치로 뭉개기 전)을 이웃별로 수집한다.
           // 같은 페어에 엣지가 여럿이면 강한 쪽(contains > depends > relates)을
@@ -2429,7 +2450,11 @@ export function useTopologyLoop(args: UseTopologyLoopArgs): UseTopologyLoopResul
             });
           }
           const ranked = rankEgoNeighborsByDOI(entries);
-          const sel = selectiveEgoNeighbors(ranked, egoRevealBatchesRef.current);
+          const sel = selectiveEgoNeighbors(
+            ranked,
+            egoRevealBatchesRef.current,
+            expandPrefRef.current.batchSize,
+          );
           if (sel.hiddenCount > 0) {
             // 영역 언클러스터 필터가 적용된 frameClusteredIds 를 기반으로 합친다
             // (clusterState 원본을 다시 쓰면 위 realm 보정이 무효화된다).
@@ -2494,7 +2519,9 @@ export function useTopologyLoop(args: UseTopologyLoopArgs): UseTopologyLoopResul
           );
           // shown = 배치수 × 24 (selectiveEgoNeighbors 와 동일 산식, 순서 보존
           // 위해 ranked.slice 직접). 잔여는 접고 `+N 더보기` 칩으로.
-          const shown = Math.max(1, clusterRevealBatchesRef.current.get(parentId) ?? 1) * EGO_NEIGHBOR_LIMIT;
+          const shown =
+            Math.max(1, clusterRevealBatchesRef.current.get(parentId) ?? 1) *
+            expandPrefRef.current.batchSize;
           const visibleOrdered = ranked.slice(0, shown);
           const hidden = ranked.slice(shown);
           for (const id of visibleOrdered) batchAppearVisible.add(id);
@@ -2954,6 +2981,7 @@ export function useTopologyLoop(args: UseTopologyLoopArgs): UseTopologyLoopResul
           ? (target, w, h) => animatedBgRef.current?.paint(target, w, h)
           : null,
         depthDotPatterns: canvasBackgroundRef.current === "depth" ? depthDotPatternsRef.current : undefined,
+        expand: expandPrefRef.current,
       });
       // 이번 프레임이 어떤 렌즈 상태를 그렸는지 기록 — 유휴 게이트가 다음
       // 프레임에 "바뀌었나"를 이 값으로 판정한다.
@@ -3056,6 +3084,7 @@ export function useTopologyLoop(args: UseTopologyLoopArgs): UseTopologyLoopResul
     hoveredEdgeRef,
     selectedEdgeRef,
     clusterChipsRef,
+    expandPrefRef,
     clusteredIdsRef,
     hoveredClusterIdRef,
     realmParallaxRef,

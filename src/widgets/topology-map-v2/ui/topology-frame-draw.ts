@@ -17,13 +17,13 @@ import {
   footprintScaleFor,
   type FootprintInk,
 } from "@/shared/lib/footprint-glyph";
-import type { FootprintPreference } from "@/shared/lib/appearance-preferences";
+import { DEFAULT_EXPAND } from "@/shared/lib/appearance-preferences";
+import type { ExpandPreference, FootprintPreference } from "@/shared/lib/appearance-preferences";
 import { isDirectionalRelation } from "@/shared/lib/ontology-tree/relations";
 import { depthParallaxOffsetFor, ZERO_PARALLAX } from "../model/realm-depth-parallax";
 import { realmDepthClarityAlpha, realmDepthClarityScale } from "../model/realm-transition";
 import { classifyZoomTier, DEFAULT_TIER_REVEAL, edgeTierAlpha, effectiveNodeAlpha, nodeTierAlpha, type TierRevealConfig } from "../model/tier-visibility";
 import {
-  DISC_LABEL_TOP_K,
   LABEL_TOP_K,
   isEgoNeighborLabelExempt,
   selectDiscLabelEligible,
@@ -519,6 +519,12 @@ export interface FrameDrawParams {
   paintAnimatedBackground?: ((ctx: CanvasRenderingContext2D, width: number, height: number) => void) | null;
   /** 깊이 도트 세 층의 패턴(`variant === "depth"` 일 때만 소비). 원점은 여기서 계산한다. */
   depthDotPatterns?: readonly (CanvasPattern | null)[];
+  /**
+   * 확장 설정 — 이 프레임이 쓰는 것은 둘이다: **펼치기 표시**(칩을 알약/막대/
+   * 배지 중 무엇으로 그리나)와 **이름을 시도할 개수**(펼친 원반의 라벨 예산).
+   * 생략 시 `DEFAULT_EXPAND`(설정을 안 건드린 화면과 동일).
+   */
+  expand?: ExpandPreference;
 }
 
 /** The full per-frame paint, in the prototype's `render()` order (§13): background -> dust -> edges (contains, depends) -> nodes (+ bright-star spikes) -> labels. */
@@ -579,6 +585,7 @@ export function drawTopologyFrame(params: FrameDrawParams): void {
     backgroundVariant = "dot",
     paintAnimatedBackground = null,
     depthDotPatterns,
+    expand = DEFAULT_EXPAND,
   } = params;
 
   // 스포트라이트 침강 배수 — 렌즈 ON + 램프 진행 중 + 포커스/엣지선택 비활성
@@ -1426,6 +1433,10 @@ export function drawTopologyFrame(params: FrameDrawParams): void {
       parentScreenX: parentScreen?.x,
       parentScreenY: parentScreen?.y,
       nodeScreenRadius,
+      affordance: expand.affordance,
+      // 「고른 노드 바로 위」 어포던스의 존재 조건. ego 합성 칩(`이웃 +N`)의
+      // 부모는 정의상 고른 노드다 — 그걸 빼면 배치 공개가 통째로 닫힌다.
+      focused: chip.ego === true || focusedNodeId === chip.parentId,
     };
     const occupancy = clusterChipOccupancyRect(chipDrawInput);
     if (occupancy) {
@@ -1522,7 +1533,8 @@ export function drawTopologyFrame(params: FrameDrawParams): void {
         ),
       );
     }
-    return selectDiscLabelEligible(rankedByDisc, DISC_LABEL_TOP_K);
+    // 예산은 설정(「확장 → 이름을 시도할 개수」)이 정한다. 상수는 그 기본값.
+    return selectDiscLabelEligible(rankedByDisc, expand.labelAttempts);
   })();
   // 노드 감사 처방 — 포커스(ego) 도메인 자식 라벨 겹침 LOD. `neighborsOfFocused`
   // 는 EGO_NEIGHBOR_LIMIT(24) 이하면 전원 full 점등되고(선택적 ego 컷은 >24 에서만
@@ -1531,9 +1543,9 @@ export function drawTopologyFrame(params: FrameDrawParams): void {
   // 문제, 여긴 처방이 없었다). 같은 DOI-top-K 컷(`selectDiscLabelEligible`)을
   // 이웃 집합에도 적용 — 상위 degree 이웃만 무조건 라벨, 컷 밖은 일반 greedy
   // 경쟁으로 강등(겹치지 않으면 여전히 뜬다 — "과하지 않게", 라벨 다 지우지
-  // 않음). `DISC_LABEL_TOP_K` 이하 소규모 포커스는 전원 그대로 exempt(회귀 0).
+  // 않음). 「이름을 시도할 개수」 이하 소규모 포커스는 전원 그대로 exempt(회귀 0).
   const egoNeighborLabelEligibleIds: ReadonlySet<string> | null =
-    applyLabelTopK && focusedNodeId !== null && neighborsOfFocused.size > DISC_LABEL_TOP_K
+    applyLabelTopK && focusedNodeId !== null && neighborsOfFocused.size > expand.labelAttempts
       ? selectDiscLabelEligible(
           [
             rankEgoNeighborsByDOI(
@@ -1544,7 +1556,7 @@ export function drawTopologyFrame(params: FrameDrawParams): void {
               })),
             ),
           ],
-          DISC_LABEL_TOP_K,
+          expand.labelAttempts,
         )
       : null;
   const labelRankEntries: LabelRankEntry[] = [];

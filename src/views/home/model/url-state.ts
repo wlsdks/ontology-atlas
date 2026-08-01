@@ -1,3 +1,4 @@
+import { DEFAULT_EXPAND } from "@/shared/lib/appearance-preferences";
 import type { ProjectCategory } from "@/entities/project";
 import type { ProjectImpactMode } from "@/entities/project";
 import {
@@ -183,7 +184,10 @@ export function serializeRecentWindowParam(window: RecentSpotlightWindow | null)
  * 밀도 게이트 — `?open=` 값 파싱: 콤마 분리, 트림, 빈 항목 무시, 중복 제거.
  * 순서는 등장 순서를 보존한다(왕복 안정). 순수 함수라 테스트 가능.
  */
-export function parseExpandedParentsParam(raw: string | null): string[] {
+export function parseExpandedParentsParam(
+  raw: string | null,
+  max: number = MAX_EXPANDED_PARENTS,
+): string[] {
   if (!raw) return [];
   const seen = new Set<string>();
   const result: string[] = [];
@@ -196,9 +200,8 @@ export function parseExpandedParentsParam(raw: string | null): string[] {
   // 딥링크도 같은 상한을 받는다 — 안 그러면 링크 하나로 상한을 우회해, 받은
   // 사람이 보낸 사람보다 나쁜 화면을 본다. **뒤쪽을 남긴다**(토글의 LRU 축출과
   // 같은 방향: 나중에 적힌 것이 더 최근 의도다).
-  return result.length > MAX_EXPANDED_PARENTS
-    ? result.slice(result.length - MAX_EXPANDED_PARENTS)
-    : result;
+  const cap = Math.max(1, Math.floor(max));
+  return result.length > cap ? result.slice(result.length - cap) : result;
 }
 
 /**
@@ -221,9 +224,12 @@ export function parseExpandedParentsParam(raw: string | null): string[] {
  *
  * 3 인 이유는 픽셀이 아니라 사람이다 — 비교는 보통 둘(이것 vs 저것)이고,
  * 거기에 "내가 어디서 왔나" 하나가 붙는다. 넷째부터는 비교가 아니라 누적이다.
- * 값을 바꾸려면 이 문단의 근거를 같이 바꾼다.
+ *
+ * **이제 사용자가 이 값을 옮길 수 있다**(설정 →「확장 → 동시에 펼쳐 둘 부모」,
+ * 1~6). 위 문단은 여전히 **기본값의 근거**이고, 단일 출처는 설정 쪽
+ * (`DEFAULT_EXPAND.maxOpenParents`)이다 — 같은 숫자를 두 곳에 적지 않는다.
  */
-export const MAX_EXPANDED_PARENTS = 3;
+export const MAX_EXPANDED_PARENTS = DEFAULT_EXPAND.maxOpenParents;
 
 /**
  * 클러스터 펼침 토글 — 접기는 언제나 되고, 펼치기는 상한을 넘으면 **가장
@@ -233,13 +239,18 @@ export const MAX_EXPANDED_PARENTS = 3;
  * 하면 사용자는 고장으로 읽고, 왜 안 되는지 설명할 자리도 없다. 가장 오래된
  * 것이 닫히는 건 작업대가 좁을 때 사람이 실제로 하는 일과 같아서 배우기 쉽다.
  */
-export function toggleExpandedParent(current: readonly string[], parentId: string): string[] {
+export function toggleExpandedParent(
+  current: readonly string[],
+  parentId: string,
+  max: number = MAX_EXPANDED_PARENTS,
+): string[] {
   if (current.includes(parentId)) {
     return current.filter((id) => id !== parentId);
   }
   const next = [...current, parentId];
   // 앞에서부터 버린다 — 배열 순서가 곧 펼친 순서다(append-only 로 쌓였으므로).
-  return next.length > MAX_EXPANDED_PARENTS ? next.slice(next.length - MAX_EXPANDED_PARENTS) : next;
+  const cap = Math.max(1, Math.floor(max));
+  return next.length > cap ? next.slice(next.length - cap) : next;
 }
 
 /**

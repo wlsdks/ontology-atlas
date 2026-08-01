@@ -45,7 +45,7 @@ const VaultAgentPanel = dynamic(
 import { useDocumentTitle } from "@/shared/lib/use-document-title";
 import { useLocalStorageBoolean } from "@/shared/lib/use-local-storage-boolean";
 import { useAudiencePlain } from "@/shared/lib/audience-preference";
-import { useCanvasBackground, useFootprint, useGlyphSet } from "@/shared/lib/appearance-preferences";
+import { useCanvasBackground, useExpand, useFootprint, useGlyphSet } from "@/shared/lib/appearance-preferences";
 
 const CREATE_NODE_DIALOG_TITLE_ID = "topology-create-node-dialog-title";
 // Bare `?p=` miss grace window — see the deeplinkMissNotifiedRef effect
@@ -327,6 +327,8 @@ export function HomePage() {
   const canvasBackground = useCanvasBackground();
   const footprint = useFootprint();
   const glyphSet = useGlyphSet();
+  // 확장 설정(펼치기 표시 · 배치 · 세 숫자) — 같은 스토어, 같은 lockstep.
+  const expand = useExpand();
   // 슬라이스 C — 지도 표면의 관계 어휘 레지스터. 비개발(plain) 모드는
   // 데이터시트와 같은 plain 레지스터로 통일.
   const relationRegister: "formal" | "plain" = audiencePlain ? "plain" : "formal";
@@ -466,10 +468,17 @@ export function HomePage() {
     (parentId: string) => {
       setRouteState((current) => ({
         ...current,
-        expandedParents: toggleExpandedParent(current.expandedParents, parentId),
+        // 상한은 설정(「확장 → 동시에 펼쳐 둘 부모」)이 정한다. 넘치면 여기서
+        // 가장 오래 펼쳐 둔 것이 닫힌다 — 클릭이 아무 일도 안 하는 상태를
+        // 만들지 않는다(`toggleExpandedParent` 주석).
+        expandedParents: toggleExpandedParent(
+          current.expandedParents,
+          parentId,
+          expand.maxOpenParents,
+        ),
       }));
     },
-    [setRouteState],
+    [setRouteState, expand.maxOpenParents],
   );
   // S4 "영역 전개" — 궤도 버튼/데이터시트 액션 → 이 노드의 세계로 전환(URL 왕복).
   const handleEnterRealm = useCallback(
@@ -4085,6 +4094,7 @@ export function HomePage() {
                     glyphSet={glyphSet}
                     canvasBackground={canvasBackground}
                     footprint={footprint}
+                    expand={expand}
                   />
                 ) : null}
                 {topologyRenderState.renderCanvas ? (

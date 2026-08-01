@@ -7,6 +7,8 @@
  * once" invariant (`model/layout.ts`'s own contract).
  */
 
+import { DEFAULT_EXPAND } from "@/shared/lib/appearance-preferences";
+import type { ExpandStructure } from "@/shared/lib/appearance-preferences";
 import { computeDensityGate, type DensityGateParentGeometry } from "../model/density-gate";
 import { computeConcentricLayout, type LayoutGraphNode, type LayoutRings } from "../model/layout";
 import { computeBowControlPoint, computeDependsBowControlPoint } from "../render/traces";
@@ -343,6 +345,13 @@ export function buildTopologyWorld(
   nodes: readonly TopologyV2Node[],
   edges: readonly TopologyV2Edge[],
   tokens: TopologyV2Tokens,
+  /**
+   * 임계 초과 부모의 자식 배치(설정 「확장 → 확장 구조」). 생략 시 `"disc"` =
+   * 오늘의 나선 원반이라 좌표가 바이트 동일하다. 값이 바뀌면 월드를 다시
+   * 지어야 한다 — 씨앗 좌표 자체가 달라지기 때문(`use-topology-loop` 의
+   * 월드 빌드 effect dep 에 들어 있다).
+   */
+  expandStructure: ExpandStructure = DEFAULT_EXPAND.structure,
 ): TopologyWorld {
   const containsParentById = new Map<string, string>();
   for (const edge of edges) {
@@ -380,6 +389,7 @@ export function buildTopologyWorld(
         element: tokens.radiusElement,
       },
       relaxScope,
+      expandStructure,
     }).map((p) => [p.id, p]),
   );
 

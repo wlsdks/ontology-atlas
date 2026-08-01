@@ -32,8 +32,9 @@ import type { ForceSimulation } from "../model/force-layout";
 import { computeZoomRatio, DEFAULT_TIER_REVEAL, isNodeHittable, isSpineOnlyZoom, type TierRevealConfig } from "../model/tier-visibility";
 import { computeDragTugSets, type DragTugSets } from "../interaction/drag-tug";
 import { hitTestEdges, type EdgeHitCandidate } from "./topology-edge-hit";
-import { clusterBadgeLabel, clusterBadgeRect, clusterChipLabel, clusterChipRect, clusterChipScale } from "../render/cluster-chips";
+import { clusterBadgeLabel, clusterBadgeRect, clusterBarRect, clusterChipLabel, clusterChipRect, clusterChipScale, clusterControlForm } from "../render/cluster-chips";
 import type { ClusterChip } from "../model/density-gate";
+import type { ExpandPreference } from "@/shared/lib/appearance-preferences";
 import { depthParallaxOffsetFor, type DepthParallaxOffset } from "../model/realm-depth-parallax";
 import { computeGrabOffsetWorld, computePinWorld, type WorldOffset } from "../interaction/node-drag";
 import {
@@ -200,6 +201,11 @@ export interface PointerHandlerRefs {
   /** 밀도 게이트 — 호버 중 클러스터 부모 id 미러(커서 + 보더 강조). */
   hoveredClusterIdRef?: Ref<string | null>;
   /**
+   * 확장 설정 미러 — 히트테스트가 **드로우와 같은 어포던스**로 사각형을 만든다.
+   * 생략 시 `"pill"`(종전 동작).
+   */
+  expandPrefRef?: Ref<ExpandPreference>;
+  /**
    * S5 깊이 시차 — 영역 active 중 rAF 가 채우는 밴드별 렌더 오프셋 + depthById.
    * 히트테스트가 드로우와 **같은** 오프셋을 노드에 적용해 클릭 어긋남을 막는다.
    * null(정지/미영역)이면 오프셋 없음.
@@ -329,6 +335,7 @@ export function createTopologyPointerHandlers(refs: PointerHandlerRefs): Topolog
     clusterChipsRef,
     clusteredIdsRef,
     hoveredClusterIdRef,
+    expandPrefRef,
     realmParallaxRef,
     realmTierKindsRef,
     tierRevealRef,
@@ -357,16 +364,43 @@ export function createTopologyPointerHandlers(refs: PointerHandlerRefs): Topolog
     const tokens = readTopologyV2TokensOrNull();
     // 드로우(`topology-frame-draw.ts`)와 **같은** 줌 스케일을 써 사각형이 어긋나지 않게.
     const scale = clusterChipScale(camera.scale.value);
+    // 히트는 드로우와 **같은 판정 함수**를 본다 — 어포던스가 바뀌면 그려지는
+    // 형태와 눌리는 사각형이 함께 바뀌어야 한다(둘이 갈라지면 「보이는데 안
+    // 눌리는 버튼」이 생긴다).
+    const affordance = expandPrefRef?.current.affordance ?? "pill";
+    const focusedSlug = focusedSlugRef.current;
     for (const chip of chips) {
+      const form = clusterControlForm({
+        affordance,
+        expanded: chip.expanded,
+        // ego 합성 칩(`이웃 +N`)은 부모 노드가 곧 고른 노드다 — 그 칩까지
+        // 「안 고르면 없음」에 걸리면 배치 공개 자체가 닫힌다.
+        focused: chip.ego === true || focusedSlug === chip.parentId,
+      });
+      if (form === "none") continue;
       let rect: ReturnType<typeof clusterChipRect>;
-      if (chip.expanded) {
-        // S10 결함 2 — 펼침은 부모 노드 우상단 배지. 드로우와 **같은**
-        // `clusterBadgeRect`(부모 스크린 좌표 + base 스크린 반지름) 로 사각형 유도.
+      if (form === "badge" || form === "bar") {
+        // S10 결함 2 — 노드에 도킹된 형태. 드로우와 **같은** 사각형 함수로 유도.
         const parentNode = world?.nodeById.get(chip.parentId);
         if (!parentNode || !tokens) continue;
         const parentScreen = worldToScreen(camera, width, height, parentNode.x, parentNode.y);
         const nodeScreenRadius = radiusForKind(parentNode.kind, tokens) * parentNode.magnitudeScale * camera.scale.value;
-        rect = clusterBadgeRect(parentScreen.x, parentScreen.y, nodeScreenRadius, clusterBadgeLabel(chip.count), scale);
+        rect =
+          form === "bar"
+            ? clusterBarRect(
+                parentScreen.x,
+                parentScreen.y,
+                nodeScreenRadius,
+                clusterChipLabel(chip.count, chip.expanded),
+                scale,
+              )
+            : clusterBadgeRect(
+                parentScreen.x,
+                parentScreen.y,
+                nodeScreenRadius,
+                clusterBadgeLabel(chip.count, chip.expanded),
+                scale,
+              );
       } else {
         const screen = worldToScreen(camera, width, height, chip.anchor.x, chip.anchor.y);
         rect = clusterChipRect(screen.x, screen.y, clusterChipLabel(chip.count, chip.expanded), scale);
