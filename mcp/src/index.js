@@ -76,7 +76,9 @@ import {
   GRAPH_ARRAY_KEYS,
   VaultConflictError,
   collectNeighborRefs,
+  FULL_BODY_MAX_CHARS,
   deleteDoc,
+  describeBodyDelivery,
   drainNodeEligibilityFindings,
   ensureVaultRoot,
   extractSummaryExcerpt,
@@ -172,13 +174,27 @@ process.stdout.setMaxListeners(Math.max(process.stdout.getMaxListeners(), STDIO_
 process.stderr.setMaxListeners(Math.max(process.stderr.getMaxListeners(), STDIO_MAX_LISTENERS));
 
 const VAULT_ROOT = resolve(process.env.OATLAS_VAULT || process.cwd());
+const VAULT_GIT_ROOT = discoverGitRepositoryRoot(VAULT_ROOT);
 const DISCOVERED_REPO_ROOT =
-  discoverGitRepositoryRoot(VAULT_ROOT) ??
+  VAULT_GIT_ROOT ??
   discoverGitRepositoryRoot(process.cwd());
 const REPO_ROOT = resolve(
   process.env.OATLAS_REPO_ROOT ||
   DISCOVERED_REPO_ROOT ||
   process.cwd(),
+);
+/**
+ * **이 저장소 루트가 이 볼트의 것이라고 말할 근거가 있는가.**
+ *
+ * 없으면 `REPO_ROOT` 는 추측이다 — 볼트가 git 저장소 안에 있지도 않고 아무도
+ * 알려주지 않았을 때 남는 것은 "서버 프로세스가 서 있던 디렉터리" 뿐이고,
+ * 그것이 그 볼트가 서술하는 코드일 이유는 없다. 이 플래그가 없던 동안
+ * `health` 는 남의 볼트의 코드 경로를 *우리* 저장소에 대고 대조하고
+ * `warn:13` 을 냈다 — 같은 볼트에 `validate` 는 clean 이었다 (2026-08-01 실측).
+ * 근거 없는 대조는 숫자를 내는 대신 **안 봤다고 말한다**.
+ */
+const REPO_ROOT_IS_GROUNDED = Boolean(
+  process.env.OATLAS_REPO_ROOT || VAULT_GIT_ROOT,
 );
 const VAULT_RESOLUTION = process.env.OATLAS_VAULT ? 'OATLAS_VAULT' : 'process.cwd';
 const REPO_RESOLUTION = process.env.OATLAS_REPO_ROOT
@@ -624,6 +640,37 @@ const OUTGOING_EDGE_OUTPUT_SCHEMA = Object.freeze({
 // R+ (과제 ⑧ — Ask-to-Grow) — read tool 이 빈/미해결 결과를 만났을 때만 붙는
 // 성장 신호. 성공 응답에는 절대 등장하지 않는다. `mcp/src/growth-hint.mjs`
 // 가 실제 vault 데이터(census, 근접 slug/title)로만 채운다.
+/**
+ * 본문 전달 방식. `'excerpt'` 는 첫 prose 단락(<=800자), `'full'` 은 markdown
+ * 본문 전체다. 기본이 `'excerpt'` 인 이유는 페이로드이고, `'full'` 이 존재하는
+ * 이유는 **구축 규격이 근거를 본문에 적으라고 시키기 때문**이다 — 쓰라고 해
+ * 놓고 읽을 길을 안 주면 그 절반은 없는 것과 같다.
+ */
+const BODY_DELIVERY_MODES = Object.freeze(['excerpt', 'full']);
+/** `get_concepts({ body: 'full' })` 한 호출의 행 상한. 발췌 모드는 그대로 50. */
+const GET_CONCEPTS_FULL_BODY_MAX = 20;
+
+/**
+ * 본문을 얼마나 실었는지 — 그리고 **무엇을 안 실었는지**.
+ *
+ * 응답에 항상 붙는다. 잘리지 않았으면 `truncated: false` 로 그것을 보증하고,
+ * 잘렸으면 남은 글자 수와 나머지를 받는 호출을 같이 준다. 조용히 자르는 것이
+ * 결함이었다 (2026-08-01 인수인계 시험).
+ */
+const BODY_INFO_OUTPUT_SCHEMA = Object.freeze({
+  type: 'object',
+  properties: {
+    mode: { type: 'string', enum: ['excerpt', 'full'] },
+    totalChars: { type: 'integer', minimum: 0, description: 'Full markdown body length in characters.' },
+    returnedChars: { type: 'integer', minimum: 0, description: 'Characters actually returned in this response.' },
+    truncated: { type: 'boolean', description: 'True when part of the body was not returned.' },
+    omittedChars: { type: 'integer', minimum: 0, description: 'Only present when truncated.' },
+    hint: { type: 'string', description: 'Only present when truncated — the exact call that returns the rest.' },
+  },
+  required: ['mode', 'totalChars', 'returnedChars', 'truncated'],
+  additionalProperties: false,
+});
+
 const GROWTH_HINT_OUTPUT_SCHEMA = Object.freeze({
   type: 'object',
   properties: {
@@ -1289,10 +1336,18 @@ const TOOLS = [
                 minimum: 0,
               },
               summary: { type: 'string' },
+              summaryTruncated: {
+                type: 'boolean',
+                description: 'Only present (and always true) when the body carries more than this summary shows.',
+              },
             },
             required: ['slug', 'kind', 'title', 'mtime'],
             additionalProperties: false,
           },
+        },
+        summaryHint: {
+          type: 'string',
+          description: 'Only present when at least one row carries a partial summary — names the follow-up call that returns the full bodies.',
         },
         vaultWarnings: {
           type: 'object',
@@ -1311,13 +1366,19 @@ const TOOLS = [
   {
     name: 'get_concept',
     description:
-      'Fetch a single node by slug or unique alias — its frontmatter, a body excerpt, direct graph neighbors, outgoingEdges, and mtime. Accepts exact vault-relative slugs, unique tail slugs, or frontmatter `slug` aliases; response slug is canonical. **For K specific slugs in one call use `get_concepts({slugs: [...]})` (max 50) instead of K round-trips.** When the slug doesn\'t resolve, the error\'s `structuredContent.growthHint` carries a did-you-mean near-slug or an add_concept scaffold — read it instead of retrying blind.',
+      'Fetch a single node by slug or unique alias — its frontmatter, its body, direct graph neighbors, outgoingEdges, and mtime. Accepts exact vault-relative slugs, unique tail slugs, or frontmatter `slug` aliases; response slug is canonical. **By default you get `excerpt` — the first prose paragraph only. The node body is where the construction rules put definition, evidence, confidence, and in-scope/out-of-scope, so pass `body: "full"` whenever you are reading a node to answer a question rather than just to identify it.** `bodyInfo` always reports `totalChars` / `returnedChars` / `truncated`, so a partial read is never silent. **For K specific slugs in one call use `get_concepts({slugs: [...]})` (max 50, or 20 with `body: "full"`) instead of K round-trips.** When the slug doesn\'t resolve, the error\'s `structuredContent.growthHint` carries a did-you-mean near-slug or an add_concept scaffold — read it instead of retrying blind.',
     inputSchema: {
       type: 'object',
       properties: {
         slug: nonBlankStringSchema(
           'Vault-relative slug (e.g. projects/auth-platform), unique tail slug, or frontmatter `slug` alias. Omit the .md extension.',
         ),
+        body: {
+          type: 'string',
+          enum: BODY_DELIVERY_MODES,
+          description:
+            '`excerpt` (default) returns the first prose paragraph as `excerpt`. `full` returns the entire markdown body as `body` and omits `excerpt`. Use `full` when the answer depends on what the node actually says — evidence paths, confidence, scope boundaries.',
+        },
       },
       required: ['slug'],
     },
@@ -1331,7 +1392,15 @@ const TOOLS = [
         },
         excerpt: {
           type: 'string',
-          description: 'Short body excerpt.',
+          description: 'First prose paragraph. Present only when `body` is `excerpt` (the default).',
+        },
+        body: {
+          type: 'string',
+          description: 'Entire markdown body. Present only when the caller passed `body: "full"`.',
+        },
+        bodyInfo: {
+          ...BODY_INFO_OUTPUT_SCHEMA,
+          description: 'How much of the body this response carries — always present, so truncation is never silent.',
         },
         neighbors: {
           ...CONCEPT_NEIGHBORS_OUTPUT_SCHEMA,
@@ -1350,14 +1419,16 @@ const TOOLS = [
           items: VAULT_WARNING_OUTPUT_SCHEMA,
         },
       },
-      required: ['slug', 'frontmatter', 'excerpt', 'neighbors', 'outgoingEdges', 'mtime'],
+      // `excerpt` 는 더 이상 필수가 아니다 — `body: "full"` 이면 본문이 `body`
+      // 로 오고 발췌는 아예 실리지 않는다 (같은 글 두 번 보내지 않기).
+      required: ['slug', 'frontmatter', 'bodyInfo', 'neighbors', 'outgoingEdges', 'mtime'],
       additionalProperties: false,
     },
   },
   {
     name: 'get_concepts',
     description:
-      'Fetch *multiple* nodes in one call — same per-row shape as `get_concept` (frontmatter + excerpt + neighbors + mtime + warnings?), but accepts an array of slugs or unique aliases. Use when you have K specific slugs from `list_concepts` / `find_path` / `find_orphans` etc. and need their full details — saves K-1 round-trips. Order of `concepts[]` matches input `slugs[]`; successful rows return canonical `slug`. Missing or invalid slug rows return `{ slug, ok: false, error, errorCode, ...repairFields }` rather than aborting the batch, including missing-node guidance and `growthHint` when available, so later valid slugs still resolve and agents can recover without parsing prose.',
+      'Fetch *multiple* nodes in one call — same per-row shape as `get_concept` (frontmatter + excerpt|body + bodyInfo + neighbors + mtime + warnings?), but accepts an array of slugs or unique aliases. Use when you have K specific slugs from `list_concepts` / `find_path` / `find_orphans` etc. and need their full details — saves K-1 round-trips. `body: "full"` applies to every row (max 20 slugs in that mode) and is how you read the definition / evidence / confidence sections the construction rules ask authors to write. Order of `concepts[]` matches input `slugs[]`; successful rows return canonical `slug`. Missing or invalid slug rows return `{ slug, ok: false, error, errorCode, ...repairFields }` rather than aborting the batch, including missing-node guidance and `growthHint` when available, so later valid slugs still resolve and agents can recover without parsing prose.',
     inputSchema: {
       type: 'object',
       properties: {
@@ -1365,7 +1436,13 @@ const TOOLS = [
           type: 'array',
           maxItems: 50,
           items: NON_BLANK_STRING_SCHEMA,
-          description: 'Vault-relative slugs, unique tail slugs, or frontmatter `slug` aliases (e.g. ["capabilities/x", "elements/y"]). Omit the .md extension. Max 50 per call.',
+          description: 'Vault-relative slugs, unique tail slugs, or frontmatter `slug` aliases (e.g. ["capabilities/x", "elements/y"]). Omit the .md extension. Max 50 per call (max 20 when body is `full`).',
+        },
+        body: {
+          type: 'string',
+          enum: BODY_DELIVERY_MODES,
+          description:
+            'Applies to every row. `excerpt` (default) returns the first prose paragraph per row; `full` returns the entire markdown body per row and caps the batch at 20 slugs.',
         },
       },
       required: ['slugs'],
@@ -1393,8 +1470,13 @@ const TOOLS = [
               },
               excerpt: {
                 type: 'string',
-                description: 'Short body excerpt for successful rows.',
+                description: 'First prose paragraph — successful rows in `excerpt` mode (the default).',
               },
+              body: {
+                type: 'string',
+                description: 'Entire markdown body — successful rows in `full` mode.',
+              },
+              bodyInfo: BODY_INFO_OUTPUT_SCHEMA,
               neighbors: {
                 ...CONCEPT_NEIGHBORS_OUTPUT_SCHEMA,
                 description: 'Direct graph neighbor buckets for successful rows.',
@@ -1473,10 +1555,23 @@ const TOOLS = [
                 description: 'Relevance score (higher = better). matches are sorted by this descending.',
               },
               excerpt: { type: 'string' },
+              excerptTruncated: {
+                type: 'boolean',
+                description: 'Only present (and always true) when the body carries more than this excerpt shows — including, possibly, the text that matched.',
+              },
+              bodyChars: {
+                type: 'integer',
+                minimum: 0,
+                description: 'Only present alongside excerptTruncated — the full body length.',
+              },
             },
             required: ['slug', 'kind', 'title', 'mtime', 'matchedIn', 'score', 'excerpt'],
             additionalProperties: false,
           },
+        },
+        bodyHint: {
+          type: 'string',
+          description: 'Only present when at least one match returned a partial excerpt — names the get_concepts({ body: "full" }) call that returns the rest.',
         },
         growthHint: {
           ...GROWTH_HINT_OUTPUT_SCHEMA,
@@ -2850,6 +2945,11 @@ const TOOLS = [
             'Vault→code path drift: frontmatter source paths missing on disk, resolved against repoRoot.',
           properties: {
             repoRoot: NON_BLANK_STRING_SCHEMA,
+            checked: {
+              type: 'boolean',
+              description:
+                'False when the repository this vault describes could not be determined (vault outside any git repo and no repoRoot given). Then `drifts` is empty because nothing was measured — NOT because nothing drifted.',
+            },
             nodesScanned: { type: 'integer', minimum: 0 },
             pathsChecked: { type: 'integer', minimum: 0 },
             drifts: {
@@ -2873,7 +2973,7 @@ const TOOLS = [
             },
             hint: { type: 'string' },
           },
-          required: ['repoRoot', 'nodesScanned', 'pathsChecked', 'drifts', 'hint'],
+          required: ['repoRoot', 'checked', 'nodesScanned', 'pathsChecked', 'drifts', 'hint'],
           additionalProperties: false,
         },
       },
@@ -4457,10 +4557,21 @@ function listConcepts({ kind, domain, since, summary, limit = 100 }) {
     if (sinceMs !== null && (typeof doc.mtime !== 'number' || doc.mtime <= sinceMs)) return false;
     return true;
   });
-  return {
-    total: filtered.length,
-    vaultRoot: VAULT_ROOT,
-    nodes: filtered.slice(0, limit).map((doc) => ({
+  const summaryTruncatedSlugs = [];
+  const nodes = filtered.slice(0, limit).map((doc) => {
+    // R+ — opt-in summary. agent 가 list 한 호출로 "각 노드 무슨 내용인가?"
+    // 파악 가능. 200자 cap 으로 페이로드 부풀림 방지 (find_evidence 와 동일).
+    // 호출자가 summary:true 명시 안 하면 비활성 (기존 동작 보존).
+    let summaryFields = {};
+    if (summary === true) {
+      const delivery = describeBodyDelivery(doc.body, { maxLen: 200 });
+      if (delivery.info.truncated) summaryTruncatedSlugs.push(doc.slug);
+      summaryFields = {
+        summary: delivery.text,
+        ...(delivery.info.truncated ? { summaryTruncated: true } : {}),
+      };
+    }
+    return {
       slug: doc.slug,
       kind: doc.frontmatter.kind,
       title: doc.frontmatter.title || doc.frontmatter.name || doc.slug,
@@ -4471,13 +4582,20 @@ function listConcepts({ kind, domain, since, summary, limit = 100 }) {
       // 변경됐나" 파악 가능. get_concept 의 mtime field 와 일관 — 같은 의미.
       // sort 가능 + 외부 변경 감지에도 활용.
       mtime: doc.mtime,
-      // R+ — opt-in summary. agent 가 list 한 호출로 "각 노드 무슨 내용인가?"
-      // 파악 가능. 200자 cap 으로 페이로드 부풀림 방지 (find_evidence 와 동일).
-      // 호출자가 summary:true 명시 안 하면 비활성 (기존 동작 보존).
-      ...(summary === true
-        ? { summary: extractSummaryExcerpt(doc.body, 200) }
-        : {}),
-    })),
+      ...summaryFields,
+    };
+  });
+  return {
+    total: filtered.length,
+    vaultRoot: VAULT_ROOT,
+    nodes,
+    // 잘린 요약은 **행에 표시하고 목록에 한 번만 안내한다** — 행마다 안내문을
+    // 붙이면 페이로드만 늘고, 아무 데도 안 붙이면 무엇이 남았는지 몰라 다시
+    // 요청할 수가 없다.
+    summaryHint:
+      summaryTruncatedSlugs.length > 0
+        ? `${summaryTruncatedSlugs.length} row(s) carry a partial summary (summaryTruncated: true). Read those bodies in full with get_concepts({ slugs: [...], body: "full" }).`
+        : undefined,
     vaultWarnings:
       errorCount + warningCount > 0
         ? { errorCount, warningCount }
@@ -4513,8 +4631,17 @@ function docNotFoundError(slug, docs) {
   return err;
 }
 
-function getConcept({ slug }, context = {}) {
+function requireBodyMode(value, name = 'body') {
+  if (value === undefined) return 'excerpt';
+  if (typeof value !== 'string' || !BODY_DELIVERY_MODES.includes(value)) {
+    throw new Error(`${name} must be one of: ${BODY_DELIVERY_MODES.join(', ')}.`);
+  }
+  return value;
+}
+
+function getConcept({ slug, body }, context = {}) {
   requireNonBlankString(slug, 'slug');
+  const bodyMode = requireBodyMode(body);
   const canonicalSlug = resolveExistingVaultSlug(slug, context.docs);
   if (!canonicalSlug) {
     throw docNotFoundError(slug, context.docs);
@@ -4542,10 +4669,26 @@ function getConcept({ slug }, context = {}) {
     to: ref,
     via: key,
   }));
+  // 잘림을 **말한다.** 발췌 모드에서도 원본 길이와 안 준 글자 수를 실어야
+  // 호출자가 "더 있는데 못 봤다" 를 알고 다시 부를 수 있다 — 종전에는 조용히
+  // 잘려서, 볼트만 넘겨받은 에이전트가 "있을 수 있는데 확인 못 했다" 로 답을
+  // 끝냈다.
+  const delivery = describeBodyDelivery(doc.body, {
+    mode: bodyMode,
+    hint:
+      bodyMode === 'full'
+        ? `Body exceeds the ${FULL_BODY_MAX_CHARS}-char single-call cap — read the file directly for the remainder.`
+        : `Only the first prose paragraph was returned. Call get_concept({ slug: "${doc.slug}", body: "full" }) for the whole body (definition / evidence / confidence / in-scope-out-of-scope sections live there).`,
+  });
   return {
     slug: doc.slug,
     frontmatter: doc.frontmatter,
-    excerpt: extractSummaryExcerpt(doc.body),
+    // `full` 에서는 `excerpt` 를 빼고 `body` 만 싣는다 — 같은 글을 두 번
+    // 보내면 "전부 달라" 고 명시한 호출자에게 최대 800자를 중복 과금하는 셈이다.
+    ...(bodyMode === 'full'
+      ? { body: delivery.text }
+      : { excerpt: delivery.text }),
+    bodyInfo: delivery.info,
     neighbors: {
       domains: doc.frontmatter.domains || [],
       domain: doc.frontmatter.domain || null,
@@ -4570,10 +4713,11 @@ function getConcept({ slug }, context = {}) {
 // partial result 받아 핸들링 (예: list_concepts 결과를 재검증 없이 그대로
 // 사용하다 stale slug 한두 개 있어도 배치 전체가 죽지 않음). 50 cap 은
 // payload 폭주 방지 (vault 가 더 큰 경우 청크 분할).
-function getConceptsBatch({ slugs }) {
+function getConceptsBatch({ slugs, body }) {
   if (!Array.isArray(slugs)) {
     throw new Error('slugs must be an array of strings');
   }
+  const bodyMode = requireBodyMode(body);
   if (slugs.length === 0) {
     return { concepts: [] };
   }
@@ -4582,12 +4726,19 @@ function getConceptsBatch({ slugs }) {
       `Too many slugs: ${slugs.length}. Max 50 per call — split into multiple get_concepts batches.`
     );
   }
+  // 전체 본문은 행당 페이로드가 두 자릿수 배로 커진다. 50행 × 전체 본문은 한
+  // 응답으로 보낼 것이 아니라 **나눠 부를 것**이라, 상한을 낮추고 그렇게 말한다.
+  if (bodyMode === 'full' && slugs.length > GET_CONCEPTS_FULL_BODY_MAX) {
+    throw new Error(
+      `Too many slugs for body:"full": ${slugs.length}. Max ${GET_CONCEPTS_FULL_BODY_MAX} per call — split into multiple get_concepts batches, or drop body:"full" to read ${slugs.length} excerpts at once.`
+    );
+  }
   const docs = loadVaultDocs(VAULT_ROOT);
   const danglingIssuesBySlug = groupDanglingIssuesBySlug(docs);
   const concepts = slugs.map((slug) => {
     try {
       requireNonBlankString(slug, 'slug');
-      const result = getConcept({ slug }, { docs, danglingIssuesBySlug });
+      const result = getConcept({ slug, body: bodyMode }, { docs, danglingIssuesBySlug });
       return { ok: true, ...result };
     } catch (err) {
       const msg = err && err.message ? err.message : String(err);
@@ -4627,6 +4778,10 @@ function findEvidence({ title, limit } = {}) {
       body: doc.body,
     });
     if (score <= 0) continue;
+    // 매치의 발췌도 잘린다 — 그리고 find_evidence 는 *본문 안*을 매치할 수
+    // 있으므로, 잘렸다는 사실을 말하지 않으면 "찾았다는 그 문장"이 응답에
+    // 없는 채로 끝난다. 잘렸을 때만 두 필드를 붙인다 (깨끗한 행은 그대로).
+    const evidenceDelivery = describeBodyDelivery(doc.body, { maxLen: 200 });
     matches.push({
       slug: doc.slug,
       kind: doc.frontmatter.kind,
@@ -4641,13 +4796,26 @@ function findEvidence({ title, limit } = {}) {
       // R+ — 매치된 doc 의 prose 한 줄 요약 (max 200 chars). agent 가 매치를
       // 받자마자 "이 doc 이 무슨 내용인가?" 추가 get_concept 없이 파악.
       // get_concept 의 800자 helper 와 같은 prose-aware 추출 + 더 짧은 cap.
-      excerpt: extractSummaryExcerpt(doc.body, 200),
+      excerpt: evidenceDelivery.text,
+      ...(evidenceDelivery.info.truncated
+        ? {
+            excerptTruncated: true,
+            bodyChars: evidenceDelivery.info.totalChars,
+          }
+        : {}),
     });
   }
   // Best match first: score desc, then slug asc for deterministic ties.
   matches.sort((a, b) => b.score - a.score || a.slug.localeCompare(b.slug));
   const limited = typeof limit === 'number' ? matches.slice(0, limit) : matches;
   const result = { query: title, matches: limited };
+  const truncatedSlugs = limited.filter((m) => m.excerptTruncated).map((m) => m.slug);
+  if (truncatedSlugs.length > 0) {
+    result.bodyHint = `${truncatedSlugs.length} of ${limited.length} match(es) returned a partial excerpt — the matched text may sit past it. Read the whole body with get_concepts({ slugs: [${truncatedSlugs
+      .slice(0, 3)
+      .map((s) => `"${s}"`)
+      .join(', ')}${truncatedSlugs.length > 3 ? ', …' : ''}], body: "full" }).`;
+  }
   // R+ (과제 ⑧ — Ask-to-Grow) — 0 hits 는 답 못한 질문. substring 매치는
   // 이미 실패했으니 (score<=0 전부) 토큰 overlap 만으로 근접 타이틀을 찾는다.
   if (matches.length === 0) {
@@ -5725,20 +5893,30 @@ function queryOntologyTool(args = {}) {
 }
 
 function attachVaultValidation(result, args = {}) {
-  const validation = validateVaultTool({ repoRoot: REPO_ROOT });
+  const validation = validateVaultTool({});
+  const pathsChecked = validation.pathDrift?.checked !== false;
   const driftCount = validation.pathDrift?.drifts?.length ?? 0;
   const errorCount = validation.summary.errorFiles;
-  const warningCount = validation.summary.warningFiles + driftCount;
+  const frontmatterWarnings = validation.summary.warningFiles;
+  const warningCount = frontmatterWarnings + driftCount;
+  // **이 검사가 무엇을 봤는지 문장이 말한다.** 종전엔 두 종류의 경고를 한
+  // 숫자로 합쳐 "validator or source-path warning(s)" 라고만 했다. 그래서
+  // `validate` 가 clean 이라고 답한 볼트에 `health` 가 warn:13 을 붙였을 때,
+  // 사용자가 그 13이 frontmatter 인지 코드 경로인지 알 길이 없었다.
+  const scopeTail = pathsChecked
+    ? ` (frontmatter/graph refs ${frontmatterWarnings}, source paths ${driftCount}; repoRoot ${validation.pathDrift?.repoRoot ?? 'unknown'})`
+    : ' (frontmatter/graph refs only — source paths were NOT checked; pass repoRoot / OATLAS_REPO_ROOT to include them)';
   const check = {
     id: 'vault_validation',
     status: errorCount > 0 ? 'fail' : warningCount > 0 ? 'warn' : 'pass',
     count: errorCount + warningCount,
+    pathsChecked,
     message:
       errorCount > 0
-        ? `${errorCount} file(s) have blocking schema/frontmatter errors.`
+        ? `${errorCount} file(s) have blocking schema/frontmatter errors.${scopeTail}`
         : warningCount > 0
-          ? `${warningCount} validator or source-path warning(s) require review.`
-          : 'Vault schema, graph references, and implementation paths validate cleanly.',
+          ? `${warningCount} warning(s) require review.${scopeTail}`
+          : `Vault schema and graph references validate cleanly.${scopeTail}`,
   };
   const needsAttention = check.status !== 'pass';
   const wasHealthy = result.status === 'healthy';
@@ -6028,6 +6206,27 @@ function validateVaultTool({ repoRoot } = {}) {
   // agent already runs validate_vault for at first-contact. The agent fixes via
   // patch_concept (correct the path) or by removing the stale entry.
   const driftRoot = repoRoot ? resolve(repoRoot) : REPO_ROOT;
+  // 근거 없는 저장소 루트에 대고는 **재지 않는다.** 재면 그 볼트와 아무 상관
+  // 없는 디렉터리에 없는 파일이 전부 "drift" 로 잡혀, 멀쩡한 볼트가
+  // `needs_attention` 이 된다. 안 본 것은 0이 아니라 *안 봤다* 이므로
+  // `checked: false` 로 말하고 어떻게 보게 하는지까지 적는다.
+  const driftGrounded = Boolean(repoRoot) || REPO_ROOT_IS_GROUNDED;
+  if (!driftGrounded) {
+    return {
+      scanned: docs.length,
+      problems,
+      summary: { problemFiles: problems.length, errorFiles, warningFiles, byCode },
+      pathDrift: {
+        repoRoot: driftRoot,
+        checked: false,
+        nodesScanned: 0,
+        pathsChecked: 0,
+        drifts: [],
+        hint:
+          'Source paths were NOT checked. This vault is not inside a git repository and no repoRoot was given, so the repository it describes is unknown — anything measured against the process working directory would be noise, not drift. Pass repoRoot to validate_vault (or set OATLAS_REPO_ROOT) to check implementation paths.',
+      },
+    };
+  }
   const drift = detectVaultPathDrift({
     docs,
     repoRoot: driftRoot,
@@ -6061,6 +6260,7 @@ function validateVaultTool({ repoRoot } = {}) {
     },
     pathDrift: {
       repoRoot: drift.repoRoot,
+      checked: true,
       nodesScanned: drift.nodesScanned,
       pathsChecked: drift.pathsChecked,
       drifts,

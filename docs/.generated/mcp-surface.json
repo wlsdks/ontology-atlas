@@ -178,6 +178,7 @@
         "name": "get_concept",
         "mode": "read",
         "arguments": [
+          "body",
           "slug"
         ],
         "required": [
@@ -188,6 +189,7 @@
         "name": "get_concepts",
         "mode": "read",
         "arguments": [
+          "body",
           "slugs"
         ],
         "required": [

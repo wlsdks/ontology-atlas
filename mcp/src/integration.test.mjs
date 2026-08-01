@@ -395,7 +395,9 @@ await test("tools/list — 단일 도구 description 이 batch 짝을 cross-refe
     assert.equal(listConcepts?.outputSchema?.properties?.vaultWarnings?.additionalProperties, false);
     const getConceptTool = findTool("get_concept");
     assert.equal(getConceptTool?.outputSchema?.type, "object");
-    assert.deepEqual(getConceptTool?.outputSchema?.required, ["slug", "frontmatter", "excerpt", "neighbors", "outgoingEdges", "mtime"]);
+    assert.deepEqual(getConceptTool?.outputSchema?.required, ["slug", "frontmatter", "bodyInfo", "neighbors", "outgoingEdges", "mtime"]);
+    assert.deepEqual(getConceptTool?.inputSchema?.properties?.body?.enum, ["excerpt", "full"]);
+    assert.deepEqual(getConceptTool?.outputSchema?.properties?.bodyInfo?.required, ["mode", "totalChars", "returnedChars", "truncated"]);
     assert.equal(getConceptTool?.outputSchema?.additionalProperties, false);
     assert.equal(getConceptTool?.outputSchema?.properties?.frontmatter?.type, "object");
     assert.deepEqual(getConceptTool?.outputSchema?.properties?.neighbors?.required, ["domains", "domain", "capabilities", "elements", "dependencies", "relates", "contains", "describes"]);
@@ -1586,6 +1588,11 @@ await test("tools/list — 단일 도구 description 이 batch 짝을 cross-refe
       findTool("get_concepts")?.inputSchema?.properties?.slugs?.description ?? "",
       /unique tail slugs[\s\S]*frontmatter `slug` aliases[\s\S]*Max 50 per call/i,
       "get_concepts slugs schema documents alias forms and cap",
+    );
+    assert.deepEqual(
+      findTool("get_concepts")?.inputSchema?.properties?.body?.enum,
+      ["excerpt", "full"],
+      "get_concepts exposes the same body delivery modes as get_concept",
     );
     assert.deepEqual(
       {
@@ -2967,16 +2974,17 @@ await test("query_ontology health/workspace_brief — validator findings cannot 
     assert.equal(brief.status, "needs_attention");
     assert.equal(brief.health.validation.summary.warningFiles, 1);
     assert.equal(brief.health.checks.find((check) => check.id === "vault_validation").status, "warn");
-    assert.deepEqual(
-      brief.nextActions.find((action) => action.id === "vault_validation"),
-      {
-        id: "vault_validation",
-        kind: "validate_vault",
-        severity: "warn",
-        count: 1,
-        message: "1 validator or source-path warning(s) require review.",
-      },
-    );
+    // 문구가 **무엇을 봤는지** 말한다 (2026-08-01). 종전엔 두 종류의 경고를
+    // 한 숫자로 합쳐 놓아서, `validate` 가 clean 이라고 답한 볼트에 이 검사가
+    // warn 을 붙였을 때 그 수가 어느 쪽인지 알 방법이 없었다. 이 tmp 볼트는
+    // git 저장소 밖이라 코드 경로는 애초에 재지 않았고, 그 사실도 말한다.
+    const validationAction = brief.nextActions.find((action) => action.id === "vault_validation");
+    assert.equal(validationAction.kind, "validate_vault");
+    assert.equal(validationAction.severity, "warn");
+    assert.equal(validationAction.count, 1);
+    assert.match(validationAction.message, /^1 warning\(s\) require review\./);
+    assert.match(validationAction.message, /source paths were NOT checked/);
+    assert.equal(brief.health.checks.find((check) => check.id === "vault_validation").pathsChecked, false);
     assert.equal(agentBrief.status, "needs_attention");
     assert.equal(agentBrief.readiness.status, "needs_attention");
     assert.equal(agentBrief.readiness.score, 75);
@@ -6708,6 +6716,98 @@ await test("reclassify_concept — kind/slug/domain/body and backlinks move toge
     assert.equal(claim.frontmatter.domain, "domains/review");
     assert.match(claim.excerpt, /An \*element\*/i);
     assert.deepEqual(getCallParsed(responses, 5).frontmatter.contains, ["elements/src/entities/claim"]);
+  } finally {
+    rmSync(root, { recursive: true, force: true });
+  }
+});
+
+// 2026-08-01 — 볼트만 넘겨받은 에이전트가 "본문에 더 있을 수 있는데 확인 못
+// 했다" 로 답을 끝냈다. 구축 규격은 근거를 본문에 적으라고 시키는데 읽기
+// 도구가 첫 단락만 주고, 잘렸다는 말조차 안 했기 때문이다. 이 테스트가 지키는
+// 계약은 두 줄이다 — 전체를 달라면 주고, 안 줬으면 안 줬다고 말한다.
+await test("body delivery — 전체 본문을 받을 수 있고 잘림은 조용하지 않다", async () => {
+  const ruledBody = [
+    "## 정의",
+    "",
+    "워크스페이스 안에서 앱을 만드는 능력.",
+    "",
+    "## 근거",
+    "",
+    "- `app/src/editor/index.ts`",
+    "",
+    "## 확신도",
+    "",
+    "높음 — 경로를 직접 열어 확인했다.",
+  ].join("\n");
+  const root = makeVault([
+    { slug: "project", content: "---\nkind: project\ntitle: Project\n---\n" },
+    {
+      slug: "capabilities/app-authoring",
+      content: `---\nkind: capability\ntitle: App Authoring\ndomain: domains/app\nelements: [elements/editor]\n---\n${ruledBody}\n`,
+    },
+    {
+      slug: "elements/editor",
+      content: "---\nkind: element\ntitle: Editor\ndomain: domains/app\n---\n한 단락짜리 본문.\n",
+    },
+  ]);
+  try {
+    const { responses } = await rpc(root, [
+      ...INIT_REQUESTS,
+      callTool(2, "get_concept", { slug: "capabilities/app-authoring" }),
+      callTool(3, "get_concept", { slug: "capabilities/app-authoring", body: "full" }),
+      callTool(4, "get_concept", { slug: "elements/editor" }),
+      callTool(5, "get_concepts", { slugs: ["capabilities/app-authoring"], body: "full" }),
+      callTool(6, "find_evidence", { title: "App Authoring" }),
+      callTool(7, "list_concepts", { summary: true }),
+      callTool(8, "get_concept", { slug: "elements/editor", body: "outline" }),
+    ]);
+
+    // ① 기본은 그대로 발췌 — 그러나 잘렸다는 사실과 나머지를 받는 호출을 준다.
+    const excerptRead = getCallParsed(responses, 2);
+    assert.equal(excerptRead.excerpt, "워크스페이스 안에서 앱을 만드는 능력.");
+    assert.equal(excerptRead.body, undefined);
+    assert.equal(excerptRead.bodyInfo.mode, "excerpt");
+    assert.equal(excerptRead.bodyInfo.truncated, true);
+    assert.ok(excerptRead.bodyInfo.omittedChars > 0);
+    assert.match(excerptRead.bodyInfo.hint, /body: "full"/);
+
+    // ② full 은 근거·확신도까지 전부 싣고, 같은 글을 excerpt 로 중복 과금하지 않는다.
+    const fullRead = getCallParsed(responses, 3);
+    assert.match(fullRead.body, /## 근거/);
+    assert.match(fullRead.body, /app\/src\/editor\/index\.ts/);
+    assert.match(fullRead.body, /## 확신도/);
+    assert.equal(fullRead.excerpt, undefined);
+    assert.equal(fullRead.bodyInfo.mode, "full");
+    assert.equal(fullRead.bodyInfo.truncated, false);
+    assert.equal(fullRead.bodyInfo.hint, undefined);
+
+    // ③ 다 실은 본문에는 거짓 경고를 붙이지 않는다.
+    const wholeRead = getCallParsed(responses, 4);
+    assert.equal(wholeRead.bodyInfo.truncated, false);
+
+    // ④ 배치도 같은 파라미터를 받는다.
+    const batch = getCallParsed(responses, 5);
+    assert.equal(batch.concepts[0].ok, true);
+    assert.match(batch.concepts[0].body, /## 확신도/);
+    assert.equal(batch.concepts[0].bodyInfo.mode, "full");
+
+    // ⑤ find_evidence 도 잘림을 말하고 후속 호출을 이름으로 준다.
+    const evidence = getCallParsed(responses, 6);
+    const hit = evidence.matches.find((m) => m.slug === "capabilities/app-authoring");
+    assert.equal(hit.excerptTruncated, true);
+    assert.ok(hit.bodyChars > hit.excerpt.length);
+    assert.match(evidence.bodyHint, /body: "full"/);
+
+    // ⑥ list_concepts 의 요약도 마찬가지.
+    const listed = getCallParsed(responses, 7);
+    const row = listed.nodes.find((n) => n.slug === "capabilities/app-authoring");
+    assert.equal(row.summaryTruncated, true);
+    assert.match(listed.summaryHint, /body: "full"/);
+    const shortRow = listed.nodes.find((n) => n.slug === "elements/editor");
+    assert.equal(shortRow.summaryTruncated, undefined);
+
+    // ⑦ 없는 모드는 조용히 발췌로 떨어지지 않고 허용값을 말하며 실패한다.
+    assert.match(getCallText(responses, 8), /excerpt, full/);
   } finally {
     rmSync(root, { recursive: true, force: true });
   }

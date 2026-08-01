@@ -17,6 +17,7 @@ import { parseFrontmatter, buildMarkdown } from './parser.mjs';
 import { NODE_ELIGIBILITY_GATE, flatSlugIssue } from './schema.mjs';
 import {
   bulkProvenanceMessage,
+  capabilityWithoutEvidenceMessage,
   danglingGraphReferenceMessage,
   denseParentActionMessage,
   looksLikeEvidencePath,
@@ -287,6 +288,72 @@ export function extractSummaryExcerpt(body, maxLen = 800) {
   return trimmedBody.length > maxLen
     ? trimmedBody.slice(0, maxLen).trimEnd() + '…'
     : trimmedBody;
+}
+
+/**
+ * `body: 'full'` 이 한 번에 돌려주는 최대 글자 수.
+ *
+ * 왜 상한이 있나 — vault 안의 `.md` 는 사용자 디스크의 아무 파일이고, 붙여넣은
+ * 로그 하나가 수백 KB 일 수 있다. 그런 문서 하나가 에이전트의 컨텍스트를
+ * 통째로 먹는 것을 막는다. 실측한 볼트들의 본문은 1–3 KB 라 이 상한에 닿는
+ * 문서는 사실상 없고, 닿으면 {@link describeBodyDelivery} 가 잘렸다고 말한다.
+ */
+export const FULL_BODY_MAX_CHARS = 40_000;
+
+/**
+ * **본문을 얼마나 돌려줬고 무엇을 안 돌려줬는지**를 같이 실어 보낸다.
+ *
+ * ## 왜 이게 따로 있나 (2026-08-01 실측)
+ *
+ * 볼트만 넘겨받은 에이전트가 이렇게 답했다 — *"MCP `get_concept` 은 본문을
+ * 발췌로만 돌려줍니다. 각 노드 본문에 더 많은 코드 증거가 적혀 있을 수 있는데,
+ * 그 부분은 이번 읽기 범위에서 확인하지 못했습니다."* 구축 규격은 근거·확신도·
+ * 포함/제외를 **본문에 적으라고 시키는데**, 읽기 도구는 첫 단락만 돌려주고
+ * **잘렸다는 말을 하지 않았다.** 무엇이 남았는지 모르면 다시 요청할 수도 없다 —
+ * 그래서 쓴 글의 절반이 도달 불가였다.
+ *
+ * 그래서 이 helper 의 계약은 두 줄이다:
+ *
+ * 1. 잘렸으면 `truncated: true` 와 **안 준 글자 수**를 말한다.
+ * 2. 잘렸을 때만 `hint` 에 **나머지를 받는 정확한 호출**을 적는다. 안 잘렸으면
+ *    `hint` 자체가 없다 — 멀쩡한 응답에 페이로드를 붙이지 않는다.
+ *
+ * @param {string} body 원본 markdown 본문
+ * @param {object} [options]
+ * @param {'excerpt'|'full'} [options.mode] 기본 `'excerpt'`
+ * @param {number} [options.maxLen] excerpt 상한 (기본 800)
+ * @param {string} [options.hint] 잘렸을 때 붙일 후속 호출 안내
+ * @returns {{ text: string, info: { mode: string, totalChars: number, returnedChars: number, truncated: boolean, omittedChars?: number, hint?: string } }}
+ */
+export function describeBodyDelivery(body, options = {}) {
+  const { mode = 'excerpt', maxLen = 800, hint } = options;
+  const source = typeof body === 'string' ? body : '';
+  const totalChars = source.length;
+  let text;
+  if (mode === 'full') {
+    text =
+      totalChars > FULL_BODY_MAX_CHARS
+        ? source.slice(0, FULL_BODY_MAX_CHARS)
+        : source;
+  } else {
+    text = extractSummaryExcerpt(source, maxLen);
+  }
+  // 발췌는 줄을 공백으로 이어 붙이므로 **글자 수 비교로는 판정할 수 없다** —
+  // 줄바꿈 하나 차이로 멀쩡히 다 실은 본문이 "잘렸다" 가 된다. 그래서 공백을
+  // 정규화한 뒤 비교한다: 표·코드블록·둘째 단락을 건너뛴 경우만 잘린 것이고,
+  // 한 단락짜리 본문을 통째로 실었으면 잘리지 않은 것이다.
+  const returnedChars = text.length;
+  const flatten = (value) => value.replace(/\s+/g, ' ').trim();
+  const truncated =
+    mode === 'full'
+      ? totalChars > FULL_BODY_MAX_CHARS
+      : flatten(text) !== flatten(source);
+  const info = { mode, totalChars, returnedChars, truncated };
+  if (truncated) {
+    info.omittedChars = Math.max(0, totalChars - returnedChars);
+    if (hint) info.hint = hint;
+  }
+  return { text, info };
 }
 
 /**
@@ -786,6 +853,27 @@ function pushRefFinding(slug, code, key, refs, message) {
  */
 function runNodeEligibilityGate(rootPath, slug, frontmatter, { created = false } = {}) {
   if (!frontmatter || typeof frontmatter !== 'object') return;
+
+  // ⓪ A capability born with no evidence. Creation only — the honest sequence is
+  //    "name the behavior, attach the file", so a node that lacks evidence on a
+  //    LATER write is not yet wrong and does not deserve a repeated accusation.
+  //    `maintenance_plan` carries the durable version of the question.
+  if (created && frontmatter.kind === 'capability') {
+    const elements = Array.isArray(frontmatter.elements) ? frontmatter.elements : [];
+    const hasEvidence =
+      elements.some((ref) => typeof ref === 'string' && ref.trim() !== '') ||
+      (typeof frontmatter.path === 'string' && frontmatter.path.trim() !== '');
+    if (!hasEvidence) {
+      GATE.findings.push({
+        code: 'capability-without-evidence',
+        slug,
+        key: 'elements',
+        refs: [],
+        count: 1,
+        message: capabilityWithoutEvidenceMessage({ slug }),
+      });
+    }
+  }
 
   // ① A path in the title slot. An element names a role ("jwt-token"), not a
   //    location — a title that is a path means the author described evidence.

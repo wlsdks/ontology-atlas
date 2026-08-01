@@ -5,7 +5,9 @@ import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 
 import {
+  FULL_BODY_MAX_CHARS,
   deleteDoc,
+  describeBodyDelivery,
   detectDuplicateTitle,
   extractSummaryExcerpt,
   findOrphans,
@@ -376,6 +378,75 @@ describe('extractSummaryExcerpt (R+)', () => {
     const body = '![diagram](./graph.png)\n\n---\n\nActual summary after visual lead.';
     const r = extractSummaryExcerpt(body);
     assert.equal(r, 'Actual summary after visual lead.');
+  });
+});
+
+describe('describeBodyDelivery — 잘렸으면 잘렸다고 말한다 (2026-08-01)', () => {
+  // 구축 규격이 시킨 「정의 / 근거 / 확신도 / 포함·제외」가 그대로 담긴 본문.
+  // 발췌는 첫 단락만 가져가므로 나머지 절 전부가 응답 밖에 남는다.
+  const RULED_BODY = [
+    '## 정의',
+    '',
+    '워크스페이스 안에서 앱을 만드는 능력.',
+    '',
+    '## 근거',
+    '',
+    '- `app/src/main.ts`',
+    '- `app/src/editor/index.ts`',
+    '',
+    '## 확신도',
+    '',
+    '높음 — 두 경로를 직접 열어 확인했다.',
+  ].join('\n');
+
+  it('발췌 모드에서도 원본 길이와 안 준 글자 수를 말한다', () => {
+    const { text, info } = describeBodyDelivery(RULED_BODY, { maxLen: 200 });
+    assert.equal(text, '워크스페이스 안에서 앱을 만드는 능력.');
+    assert.equal(info.mode, 'excerpt');
+    assert.equal(info.totalChars, RULED_BODY.length);
+    assert.equal(info.truncated, true);
+    assert.ok(info.omittedChars > 0);
+  });
+
+  it('잘렸을 때만 hint 를 싣는다 — 멀쩡한 응답에 안내문을 붙이지 않는다', () => {
+    const withHint = describeBodyDelivery(RULED_BODY, { hint: 'call X' });
+    assert.equal(withHint.info.hint, 'call X');
+    const whole = describeBodyDelivery('한 단락짜리 본문.', { hint: 'call X' });
+    assert.equal(whole.info.truncated, false);
+    assert.equal(whole.info.hint, undefined);
+    assert.equal(whole.info.omittedChars, undefined);
+  });
+
+  it('줄바꿈만 다른 한 단락은 잘린 것이 아니다 (글자 수 비교의 오탐)', () => {
+    // 발췌는 줄을 공백으로 이어 붙이므로 길이가 원본과 다르다. 그것만으로
+    // "잘렸다" 고 하면 다 실은 본문에 매번 거짓 경고가 붙는다.
+    const body = '\n첫 줄.\n둘째 줄.\n';
+    const { info } = describeBodyDelivery(body);
+    assert.equal(info.truncated, false);
+  });
+
+  it('full 모드는 본문 전체를 그대로 돌려준다', () => {
+    const { text, info } = describeBodyDelivery(RULED_BODY, { mode: 'full' });
+    assert.equal(text, RULED_BODY);
+    assert.equal(info.mode, 'full');
+    assert.equal(info.truncated, false);
+    assert.equal(info.returnedChars, RULED_BODY.length);
+  });
+
+  it('full 모드도 상한을 넘으면 잘렸다고 말한다', () => {
+    const huge = 'x'.repeat(FULL_BODY_MAX_CHARS + 500);
+    const { text, info } = describeBodyDelivery(huge, { mode: 'full', hint: 'read the file' });
+    assert.equal(text.length, FULL_BODY_MAX_CHARS);
+    assert.equal(info.truncated, true);
+    assert.equal(info.omittedChars, 500);
+    assert.equal(info.hint, 'read the file');
+  });
+
+  it('빈 본문 — 잘림 없음', () => {
+    const { text, info } = describeBodyDelivery('');
+    assert.equal(text, '');
+    assert.equal(info.truncated, false);
+    assert.equal(info.totalChars, 0);
   });
 });
 
