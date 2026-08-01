@@ -43,8 +43,11 @@ import type { AiConnectionState } from '../model/use-ai-connection';
  *   그 뒤로 화면이 아는 것은 `last4` 뿐이다(Rust 계약 그대로).
  * - **정직한 웹 강등.** 브리지가 없으면 입력 필드를 렌더하지 않고 "왜 데스크톱
  *   전용인가" 를 그대로 설명한다. 숨기는 것보다 설명하는 것이 신뢰 자산이다.
- * - **정직한 빈 소비자.** 지금 이 키로 할 수 있는 일은 연결 확인뿐이라고
- *   화면에 적는다 — 볼트 질문 기능은 아직 없고, 있는 척하지 않는다.
+ * - **연결이 무엇을 여는지 목록보다 먼저 적는다.** 여기 오는 사람의 첫 질문은
+ *   "연결하면 뭐가 되나" 다. 그 답이 목록 아래 각주로 있던 동안 이 화면은
+ *   **이미 출시된 에이전트를 "준비 중" 이라고 부정**하고 있었다 — 그 문장은
+ *   기능이 없던 시절의 잔재였고, 정직함이 아니라 거짓말이 된 뒤였다. 지금
+ *   문구가 말하는 것은 **오늘 동작하는 것만**이다.
  * - **보안 주장은 코드가 증명하는 범위까지만.** "절대 안전" 류 문구를 쓰지
  *   않는다(신뢰 헌장 ⑥). 명명 벤더에서 우리가 증명할 수 있는 것은 "코드에 박힌
  *   공식 주소로만 간다" 까지다 — 그래서 확인 범위 문구가 그 주소를 이름으로
@@ -178,6 +181,21 @@ export function AiConnectionPanel({
     >
       <TrustHeadline>{t('principle')}</TrustHeadline>
 
+      {/* 목록 **위**에 있는 이유: 여기 온 사람의 첫 질문은 "연결하면 뭐가
+          되나" 이고 "어떻게 연결하나" 는 그다음이다. 이 문장이 목록 아래
+          각주로 있던 동안에는 순서가 뒤집혀 있었고, 게다가 이미 출시된
+          기능을 "준비 중" 이라고 부정하고 있었다 — 에이전트 패널의
+          [설정에서 키 등록] 이 사람을 여기로 보내는데 도착 화면이 자기를
+          보낸 CTA 를 무효화했다. 그래서 문구는 **오늘 되는 것만** 말한다:
+          읽고 답한다(읽기 도구 10종) · 쓰기는 확인 뒤(`scope.consent` 가
+          이미 그 계약이다). 미래 시제는 한 톨도 쓰지 않는다. */}
+      <p
+        data-testid="ai-what-it-unlocks"
+        className="break-keep px-1 text-caption leading-4 text-[color:var(--color-text-secondary)]"
+      >
+        {t('whatItUnlocks')}
+      </p>
+
       {/* 이 패널에서 채워진 테두리 상자를 갖는 유일한 블록 — 조작하는 곳. */}
       <div
         ref={listRef}
@@ -209,12 +227,6 @@ export function AiConnectionPanel({
           onVerified={refreshAudit}
         />
       </div>
-
-      {/* 위 목록에 딸린 캡션 — "키를 넣으면 무슨 일이 되나" 에 대한 정직한
-          답이라 각주(4차 잉크)로 내려두지 않는다. */}
-      <p className="break-keep px-1 text-caption leading-4 text-[color:var(--color-text-tertiary)]">
-        {t('emptyConsumer')}
-      </p>
 
       <SupportingSection title={t('scopeTitle')}>
         <dl className="grid gap-1.5">

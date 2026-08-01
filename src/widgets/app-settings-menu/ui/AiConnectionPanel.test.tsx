@@ -645,6 +645,29 @@ describe('AiConnectionPanel hierarchy', () => {
     }
     expect(screen.getByText('.ontology-atlas/llm-audit.jsonl')).toBeInTheDocument();
   });
+
+  /**
+   * 「연결하면 뭐가 되나」 는 「어떻게 연결하나」 보다 먼저다 — 그 문장이
+   * 목록 아래 각주로 있던 동안, 그 각주는 **이미 출시된 에이전트**를
+   * "준비 중" 이라고 부정하고 있었고 자기를 여기로 보낸 CTA
+   * (`vaultAgentPanel.degraded.noKeyAction`)를 무효화했다.
+   */
+  it('연결이 무엇을 여는지를 벤더 목록보다 먼저 말한다', () => {
+    const { container } = renderPanel(makeConnection());
+    const unlocks = screen.getByTestId('ai-what-it-unlocks');
+    const list = container.querySelector('.bg-\\[color\\:var\\(--color-overlay-1\\)\\]');
+    expect(unlocks).toBeInTheDocument();
+    expect(list).not.toBeNull();
+    // DOM 순서가 읽는 순서다.
+    expect(
+      unlocks.compareDocumentPosition(list as Node) & Node.DOCUMENT_POSITION_FOLLOWING,
+    ).toBeTruthy();
+  });
+
+  it('출시된 기능을 부정하던 각주는 사라졌다', () => {
+    renderPanel(makeConnection());
+    expect(screen.queryByText('settings.ai.emptyConsumer')).toBeNull();
+  });
 });
 
 /**
