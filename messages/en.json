@@ -3307,9 +3307,13 @@
     "guidePages": {
       "whatIsAtlas": "What is Atlas?",
       "firstFiveMinutes": "First five minutes",
+      "readingTheMap": "Reading the map",
       "vaultStructure": "Vault structure",
+      "whatBecomesANode": "What becomes a node",
       "relations": "How relations work",
+      "fromYourRepo": "Start from your repo",
       "connectAgent": "Connect an AI agent",
+      "growingVault": "When the vault grows",
       "cli": "CLI",
       "trust": "On trust"
     },
