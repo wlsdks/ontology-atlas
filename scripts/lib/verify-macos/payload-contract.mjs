@@ -1,4 +1,5 @@
 import { TOPOLOGY_CONNECTOR_LABEL_PASS_BUDGET_MS } from "./evidence-payload.mjs";
+import { validateAiSettingsMarkers } from "./ai-settings-contract.mjs";
 import { compactOntologyHandle, shellQuote } from "./process-lock.mjs";
 import { markerNumber, selectedRelationRouteRailTextLeak, validateRelationLabelFrameGeometryMarkers, validateSelectedRelationCardAttentionLane, validateSelectedRelationCardDensityContract, validateSelectedRelationContextSilhouetteMarkers, validateSelectedRelationEndpointRouteMarkers, validateSelectedRelationEndpointVisibilityMarkers, validateSelectedRelationIdentityMarkers, validateSelectedRelationLabelCompactMarkers, validateTopologyConnectorCacheMarkers, validateTopologyFocusNoopMarkers, validateTopologyZoomLensMarkers } from "./relation-marker-validators.mjs";
 import { validateTopologyFocusCommandSpineContract, validateTopologyFocusRightControlsContract, validateTopologyFocusSearchLaneContract, validateTopologyFocusUtilityLaneContract, validateTopologyNodePopoverScrollFooterContract, validateTopologyNodePopoverTokenContract, validateTopologySelectedCardRelationSummaryContract } from "./topology-panel-contracts.mjs";
@@ -16,6 +17,8 @@ export function validateWebviewVerifyPayload(payload, {
   requireTopologyFocusNoop = false,
   requireTopologyFocusZoom = false,
   requireTopologyFrameProfile = false,
+  requireAiSettings = false,
+  expectedAiSettingsBaseUrl = null,
   requireWebviewReducedMotion = false,
 } = {}) {
   if (!payload || typeof payload !== "object") {
@@ -138,6 +141,14 @@ export function validateWebviewVerifyPayload(payload, {
     if (actualRoute !== expectedRoute && !canvasV2RelationOwnsTransientRoute) {
       return `WebView reported route ${actualRoute}, expected ${expectedRoute}`;
     }
+  }
+  // 라우트 판정 **뒤**에 둔다 — 화면이 엉뚱한 라우트에 있으면 그 사실이 먼저
+  // 보고돼야 한다. 순서를 뒤집으면 "설정 시트를 못 열었다" 가 원인처럼 읽힌다.
+  if (requireAiSettings) {
+    const aiSettingsError = validateAiSettingsMarkers(payload.markers, {
+      expectedBaseUrl: expectedAiSettingsBaseUrl,
+    });
+    if (aiSettingsError) return aiSettingsError;
   }
   const topologySelectedParam = normalizeTopologySelectedParam(
     webviewUrl.searchParams.get("p"),

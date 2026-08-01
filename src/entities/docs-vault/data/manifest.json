@@ -7296,7 +7296,7 @@
         }
       ],
       "excerpt": "Maintainer-only checks live here so the public README stays readable. Use this page when you touch mcp/, cli/, package manifests, release scripts, or the dogfood ontology. Run this before pushing broad docs, package, MCP, or web changes: For user-facing UI changes, add the relevant Playwright route check. · Area · Firs",
-      "wordCount": 7677,
+      "wordCount": 7889,
       "updatedAt": "2026-08-01",
       "linksOut": []
     },

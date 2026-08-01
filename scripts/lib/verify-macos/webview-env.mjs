@@ -18,6 +18,10 @@ export const WEBVIEW_VERIFY_TOPOLOGY_FOCUS_ZOOM_ENV = "ONTOLOGY_ATLAS_VERIFY_TOP
 const WEBVIEW_VERIFY_TOPOLOGY_FRAME_PROFILE_ENV =
   "ONTOLOGY_ATLAS_VERIFY_TOPOLOGY_FRAME_PROFILE";
 
+export const WEBVIEW_VERIFY_AI_SETTINGS_ENV = "ONTOLOGY_ATLAS_VERIFY_AI_SETTINGS";
+
+export const WEBVIEW_VERIFY_AI_BASE_URL_ENV = "ONTOLOGY_ATLAS_VERIFY_AI_BASE_URL";
+
 export const WEBVIEW_VERIFY_WINDOW_SIZE_ENV = "ONTOLOGY_ATLAS_VERIFY_WINDOW_SIZE";
 
 export const RELATION_LABEL_COMPACT_WIDTH_TOLERANCE_PX = 2.5;
@@ -98,6 +102,8 @@ export function webviewVerifyEnvPatch({
   verifyTopologyFocusNoop = false,
   verifyTopologyFocusZoom = false,
   verifyTopologyFrameProfile = false,
+  verifyAiSettings = false,
+  aiSettingsBaseUrl = null,
   webviewWindowSize = null,
 } = {}) {
   return {
@@ -118,6 +124,12 @@ export function webviewVerifyEnvPatch({
     ...(verifyTopologyFocusZoom ? { [WEBVIEW_VERIFY_TOPOLOGY_FOCUS_ZOOM_ENV]: "1" } : {}),
     ...(verifyTopologyFrameProfile
       ? { [WEBVIEW_VERIFY_TOPOLOGY_FRAME_PROFILE_ENV]: "1" }
+      : {}),
+    ...(verifyAiSettings ? { [WEBVIEW_VERIFY_AI_SETTINGS_ENV]: "1" } : {}),
+    // 주소는 **검증기가 정한다**. 앱이 기본값으로 되메우면 "무엇을 실제로 넣고
+    // 눌렀나" 가 두 곳에서 정해져, 필드 값 대조가 대조가 아니게 된다.
+    ...(verifyAiSettings && aiSettingsBaseUrl
+      ? { [WEBVIEW_VERIFY_AI_BASE_URL_ENV]: aiSettingsBaseUrl }
       : {}),
     ...(webviewWindowSize
       ? {

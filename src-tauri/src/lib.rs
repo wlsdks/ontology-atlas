@@ -32,6 +32,8 @@ const WEBVIEW_VERIFY_TOPOLOGY_FOCUS_NOOP_ENV: &str = "ONTOLOGY_ATLAS_VERIFY_TOPO
 const WEBVIEW_VERIFY_TOPOLOGY_FOCUS_ZOOM_ENV: &str = "ONTOLOGY_ATLAS_VERIFY_TOPOLOGY_FOCUS_ZOOM";
 const WEBVIEW_VERIFY_TOPOLOGY_FRAME_PROFILE_ENV: &str =
     "ONTOLOGY_ATLAS_VERIFY_TOPOLOGY_FRAME_PROFILE";
+const WEBVIEW_VERIFY_AI_SETTINGS_ENV: &str = "ONTOLOGY_ATLAS_VERIFY_AI_SETTINGS";
+const WEBVIEW_VERIFY_AI_BASE_URL_ENV: &str = "ONTOLOGY_ATLAS_VERIFY_AI_BASE_URL";
 const WEBVIEW_VERIFY_WINDOW_SIZE_ENV: &str = "ONTOLOGY_ATLAS_VERIFY_WINDOW_SIZE";
 const MAIN_WINDOW_LABEL: &str = "main";
 const WEBVIEW_VERIFY_ROUTE_ATTEMPTS: usize = 20;
@@ -159,6 +161,18 @@ fn is_safe_webview_verify_route(route: &str) -> bool {
             .any(|ch| matches!(ch, ' ' | '"' | '\'' | '<' | '>' | '\\'))
 }
 
+/// 검증기가 [AI 연결]의 주소 칸에 넣을 값 — 리터럴을 깨는 문자는 이스케이프가
+/// 아니라 **거절**로 막는다. 이 값은 검증 빌드에서만 쓰이지만, 검증 경로라고
+/// 해서 주입 가능한 문자열을 WebView 로 흘리지 않는다.
+fn is_safe_verify_base_url(value: &str) -> bool {
+    let url = value.trim();
+    (url.starts_with("http://") || url.starts_with("https://"))
+        && url.len() <= 200
+        && !url
+            .chars()
+            .any(|ch| ch.is_whitespace() || matches!(ch, '"' | '\'' | '`' | '<' | '>' | '\\'))
+}
+
 fn webview_verify_locale_root(route: &str) -> &str {
     if route.starts_with("/ko/") {
         "/ko/"
@@ -274,6 +288,241 @@ fn build_webview_verify_vault_bootstrap_script(root_path: &str) -> String {
 }})()"#,
     )
 }
+
+/// [설정 → AI 연결 → 주소로 연결] 흐름을 WebView 안에서 밟는 검증 스크립트.
+///
+/// 지도 전용 검증기들과 같은 구조다: 상태 기계 하나가 `window` 전역에 결과
+/// 객체를 남기고, 뒤이어 도는 마커 수집 스크립트가 그것을 payload 로 싣는다.
+///
+/// # 두 가지 규율
+///
+/// - **못 찾으면 못 찾았다고 남긴다.** 각 단계는 자기가 무엇을 기다리다 멈췄는지
+///   (`step`/`reason`) 를 남기고, 판정은 Node 쪽 계약이 한다. 스크립트가 스스로
+///   "성공" 을 선언하는 자리는 마지막 한 곳뿐이다.
+/// - **클릭은 토글이다.** [키 등록]·톱니처럼 다시 누르면 닫히는 컨트롤을 폴링
+///   루프에서 매 회 누르면 열고 닫기를 반복한다. 그래서 같은 컨트롤은 쿨다운
+///   안에 한 번만 누른다.
+///
+/// 주소는 `format!` 대신 치환으로 넣는다 — 본문이 중괄호투성이 JS 라 `{{`
+/// 이스케이프가 스크립트를 읽을 수 없게 만든다.
+fn build_webview_verify_ai_settings_script(base_url: &str) -> String {
+    AI_SETTINGS_VERIFY_SCRIPT.replace("__ATLAS_AI_BASE_URL__", &js_string_literal(base_url))
+}
+
+const AI_SETTINGS_VERIFY_SCRIPT: &str = r#"(() => {
+  const baseUrl = __ATLAS_AI_BASE_URL__;
+  const result = {
+    attempted: true,
+    reason: "scheduled",
+    step: "start",
+    baseUrl,
+    bridgeMissing: false,
+    sheetOpen: false,
+    aiViewOpen: false,
+    localRowFound: false,
+    verifyClicked: false,
+    modelListOpened: false,
+    modelOptionCount: 0,
+    models: [],
+    selectedModel: "",
+    connectedText: "",
+    verifiedText: "",
+    failureText: "",
+    attempts: 0
+  };
+  window.__ontologyAtlasAiSettingsVerify = result;
+
+  const MAX_ATTEMPTS = 90;
+  const CLICK_COOLDOWN = 8;
+  const lastClick = {};
+
+  const visible = (el) => {
+    if (!el) return false;
+    const style = getComputedStyle(el);
+    const rect = el.getBoundingClientRect();
+    return style.display !== "none" &&
+      style.visibility !== "hidden" &&
+      Number(style.opacity || "1") > 0.01 &&
+      rect.width > 0 &&
+      rect.height > 0;
+  };
+  const find = (testId) =>
+    Array.from(document.querySelectorAll('[data-testid="' + testId + '"]')).find(visible) || null;
+  const clickOnce = (key, el, attempt) => {
+    const previous = lastClick[key];
+    if (previous !== undefined && attempt - previous < CLICK_COOLDOWN) return false;
+    lastClick[key] = attempt;
+    el.click();
+    return true;
+  };
+  const setInputValue = (input, value) => {
+    const setter = Object.getOwnPropertyDescriptor(
+      window.HTMLInputElement.prototype,
+      "value"
+    );
+    if (setter && setter.set) setter.set.call(input, value);
+    else input.value = value;
+    input.dispatchEvent(new Event("input", { bubbles: true }));
+    input.dispatchEvent(new Event("change", { bubbles: true }));
+  };
+
+  const step = (attempt) => {
+    result.attempts = attempt;
+    const again = (delay) => window.setTimeout(() => step(attempt + 1), delay || 250);
+    if (attempt >= MAX_ATTEMPTS) {
+      result.reason = "gave up at " + result.step + ": " + result.reason;
+      return;
+    }
+
+    const popover = find("app-settings-popover");
+    if (!popover) {
+      result.step = "open-settings-sheet";
+      const trigger = find("app-settings-trigger");
+      if (!trigger) {
+        result.reason = "no visible settings trigger on this route";
+        again();
+        return;
+      }
+      clickOnce("settings-trigger", trigger, attempt);
+      result.reason = "waiting for the settings sheet";
+      again(220);
+      return;
+    }
+    result.sheetOpen = true;
+
+    const aiView = find("app-settings-ai-view");
+    if (!aiView) {
+      result.step = "open-ai-connection-view";
+      const drillIn = find("app-settings-ai-drillin");
+      if (drillIn) {
+        clickOnce("ai-drillin", drillIn, attempt);
+        result.reason = "waiting for the AI connection view";
+        again(220);
+        return;
+      }
+      const navAgent = find("app-settings-nav-agent");
+      if (navAgent) {
+        clickOnce("nav-agent", navAgent, attempt);
+        result.reason = "waiting for the agent settings section";
+        again(220);
+        return;
+      }
+      result.reason = "settings sheet has no AI connection entry";
+      again();
+      return;
+    }
+    result.aiViewOpen = true;
+
+    if (document.querySelector('[data-testid="ai-connection-web-degraded"]')) {
+      result.bridgeMissing = true;
+      result.step = "ai-connection-view";
+      result.reason = "AI connection rendered its web-degraded card";
+      return;
+    }
+
+    const localRow = document.querySelector('[data-testid="ai-provider-local"]');
+    if (!localRow) {
+      result.step = "find-local-provider-row";
+      result.reason = "AI connection view has no local/address row";
+      again();
+      return;
+    }
+    result.localRowFound = true;
+
+    const urlInput = find("ai-local-url");
+    if (!urlInput) {
+      result.step = "expand-local-row";
+      const register = find("ai-register-local");
+      if (!register) {
+        result.reason = "local row has neither a base URL field nor a connect control";
+        again();
+        return;
+      }
+      clickOnce("register-local", register, attempt);
+      result.reason = "waiting for the base URL field";
+      again(220);
+      return;
+    }
+
+    if (!result.verifyClicked) {
+      result.step = "type-base-url";
+      if (urlInput.value !== baseUrl) {
+        setInputValue(urlInput, baseUrl);
+        result.reason = "typed the base URL";
+        again(160);
+        return;
+      }
+      const verifyButton = find("ai-verify-local");
+      if (!verifyButton) {
+        result.reason = "no visible connection check control";
+        again();
+        return;
+      }
+      if (verifyButton.disabled) {
+        result.reason = "connection check is disabled (no vault path?)";
+        again();
+        return;
+      }
+      result.step = "press-connection-check";
+      result.verifyClicked = true;
+      verifyButton.click();
+      result.reason = "waiting for the connection verdict";
+      again(400);
+      return;
+    }
+
+    const failure = find("ai-local-failure");
+    if (failure) {
+      result.step = "connection-verdict";
+      result.failureText = (failure.textContent || "").trim();
+      result.reason = "connection check failed";
+      return;
+    }
+    const verified = find("ai-local-verified");
+    if (!verified) {
+      result.step = "await-connection-verdict";
+      result.reason = "connection check has not answered yet";
+      again(400);
+      return;
+    }
+    result.verifiedText = (verified.textContent || "").trim();
+
+    const modelTrigger = find("ai-local-model");
+    if (!modelTrigger) {
+      result.step = "await-model-list";
+      result.reason = "verdict was ok but no model list appeared";
+      again(300);
+      return;
+    }
+    const listbox = document.querySelector('[data-testid="ai-local-model-listbox"]');
+    if (!listbox) {
+      result.step = "open-model-list";
+      clickOnce("model-trigger", modelTrigger, attempt);
+      result.reason = "waiting for the model list to open";
+      again(220);
+      return;
+    }
+    const options = Array.from(listbox.querySelectorAll('[role="option"]'));
+    result.modelListOpened = true;
+    result.modelOptionCount = options.length;
+    result.models = options.map((option) => (option.textContent || "").trim()).slice(0, 24);
+    if (options.length === 0) {
+      result.step = "pick-model";
+      result.reason = "model list opened with zero options";
+      return;
+    }
+    result.step = "pick-model";
+    result.selectedModel = result.models[0];
+    options[0].click();
+    window.setTimeout(() => {
+      const connected = document.querySelector('[data-testid="ai-local-connected"]');
+      result.connectedText = connected ? (connected.textContent || "").trim() : "";
+      result.reason = connected ? "done" : "model chosen but the connected row never appeared";
+    }, 600);
+  };
+
+  step(0);
+})()"#;
 
 /// 검증용 라우트 이동 — **주소만 갈아끼우고 앱의 클라이언트 라우터가 따라오길
 /// 기대한다.** 실제 내비게이션(`location.assign`)이 아니다.
@@ -809,6 +1058,11 @@ pub fn run() {
                         std::env::var_os(WEBVIEW_VERIFY_TOPOLOGY_FOCUS_ZOOM_ENV).is_some();
                     let verify_topology_frame_profile =
                         std::env::var_os(WEBVIEW_VERIFY_TOPOLOGY_FRAME_PROFILE_ENV).is_some();
+                    let verify_ai_settings =
+                        std::env::var_os(WEBVIEW_VERIFY_AI_SETTINGS_ENV).is_some();
+                    let verify_ai_base_url = std::env::var(WEBVIEW_VERIFY_AI_BASE_URL_ENV)
+                        .ok()
+                        .filter(|url| is_safe_verify_base_url(url));
                     tauri::async_runtime::spawn(async move {
                         if let Some(vault_path) = verify_vault {
                             let bootstrap_script =
@@ -1982,6 +2236,31 @@ pub fn run() {
                             );
                             std::thread::sleep(Duration::from_millis(10500));
                         }
+                        if verify_ai_settings {
+                            match verify_ai_base_url.as_deref() {
+                                Some(base_url) => {
+                                    let _ = verify_window
+                                        .eval(build_webview_verify_ai_settings_script(base_url));
+                                    // 클릭 다섯 단계 + 실제 HTTP 왕복 하나가 이
+                                    // 안에서 끝나야 마커 수집이 최종 상태를 본다.
+                                    std::thread::sleep(Duration::from_millis(12000));
+                                }
+                                None => {
+                                    // 주소가 없거나 안전하지 않으면 **조용히 건너뛰지
+                                    // 않는다** — 그 사실을 마커로 남겨 검증기가
+                                    // 빨갛게 터지게 한다.
+                                    let _ = verify_window.eval(
+                                        r#"(() => {
+                                          window.__ontologyAtlasAiSettingsVerify = {
+                                            attempted: false,
+                                            step: "start",
+                                            reason: "ONTOLOGY_ATLAS_VERIFY_AI_BASE_URL was missing or unsafe"
+                                          };
+                                        })()"#,
+                                    );
+                                }
+                            }
+                        }
                         for _ in 0..WEBVIEW_VERIFY_MARKER_ATTEMPTS {
                             let _ = verify_window.eval_with_callback(
                             r#"(() => {
@@ -2019,6 +2298,23 @@ pub fn run() {
                                 insightsSelectedPanelStyle?.visibility !== "hidden" &&
                                 Number(insightsSelectedPanelStyle?.opacity || "1") > 0.01
                               );
+                              const aiSettingsVerification = window.__ontologyAtlasAiSettingsVerify || null;
+                              const aiSettingsVisible = (el) => {
+                                if (!el) return false;
+                                const style = getComputedStyle(el);
+                                const rect = el.getBoundingClientRect();
+                                return style.display !== "none" &&
+                                  style.visibility !== "hidden" &&
+                                  Number(style.opacity || "1") > 0.01 &&
+                                  rect.width > 0 &&
+                                  rect.height > 0;
+                              };
+                              const aiSettingsPopover = document.querySelector('[data-testid="app-settings-popover"]');
+                              const aiSettingsAiView = document.querySelector('[data-testid="app-settings-ai-view"]');
+                              const aiSettingsUrlInput = document.querySelector('[data-testid="ai-local-url"]');
+                              const aiSettingsVerifiedLine = document.querySelector('[data-testid="ai-local-verified"]');
+                              const aiSettingsFailureLine = document.querySelector('[data-testid="ai-local-failure"]');
+                              const aiSettingsConnectedLine = document.querySelector('[data-testid="ai-local-connected"]');
                               const topologyDragVerification = window.__ontologyAtlasTopologyDragVerify || null;
                               const topologyFrameProfile = window.__ontologyAtlasTopologyFrameProfile || null;
                               const topologyMapEngineEl = document.querySelector("[data-map-engine]");
@@ -3542,6 +3838,16 @@ pub fn run() {
                                 width: innerWidth,
                                 height: innerHeight,
                                 markers: {
+                                  aiSettingsVerification,
+                                  aiSettingsSheetOpen: aiSettingsVisible(aiSettingsPopover),
+                                  aiSettingsAiViewOpen: aiSettingsVisible(aiSettingsAiView),
+                                  aiSettingsBaseUrlValue: aiSettingsUrlInput?.value || "",
+                                  aiSettingsVerifiedVisible: aiSettingsVisible(aiSettingsVerifiedLine),
+                                  aiSettingsFailureText: (aiSettingsFailureLine?.textContent || "").trim(),
+                                  aiSettingsConnectedVisible: aiSettingsVisible(aiSettingsConnectedLine),
+                                  aiSettingsConnectedText: (aiSettingsConnectedLine?.textContent || "").trim(),
+                                  aiSettingsAuditRowCount:
+                                    document.querySelectorAll('[data-testid="ai-audit-row"]').length,
                                   verificationFixtureVault:
                                     window.localStorage.getItem("ontology-atlas:verify-fixture-vault") || "",
                                   verificationFixtureVaultError:
@@ -6144,6 +6450,47 @@ mod tests {
             default_vault_parent_dir("/Users/me"),
             PathBuf::from("/Users/me/Documents/Ontology Atlas")
         );
+    }
+
+    #[test]
+    fn verify_base_url_guard_rejects_literal_breaking_values() {
+        assert!(is_safe_verify_base_url("http://localhost:11434"));
+        assert!(is_safe_verify_base_url("https://runner.internal:8080/v1"));
+        for unsafe_url in [
+            "",
+            "localhost:11434",
+            "http://localhost:11434\"",
+            "http://localhost:11434 && echo",
+            "http://local\\host",
+            "javascript:alert(1)",
+        ] {
+            assert!(!is_safe_verify_base_url(unsafe_url), "{unsafe_url}");
+        }
+    }
+
+    #[test]
+    fn ai_settings_verify_script_carries_the_requested_base_url_and_settings_controls() {
+        let script = build_webview_verify_ai_settings_script("http://127.0.0.1:1234");
+
+        assert!(script.contains("const baseUrl = \"http://127.0.0.1:1234\""));
+        assert!(!script.contains("__ATLAS_AI_BASE_URL__"));
+        assert!(script.contains("window.__ontologyAtlasAiSettingsVerify = result"));
+        for test_id in [
+            "app-settings-trigger",
+            "app-settings-ai-drillin",
+            "app-settings-ai-view",
+            "ai-register-local",
+            "ai-local-url",
+            "ai-verify-local",
+            "ai-local-model-listbox",
+            "ai-local-connected",
+        ] {
+            assert!(script.contains(test_id), "{test_id}");
+        }
+        // 토글 컨트롤을 매 폴링마다 누르면 열고 닫기를 반복한다.
+        assert!(script.contains("CLICK_COOLDOWN"));
+        // 성공을 선언하는 자리는 마지막 한 곳뿐이다.
+        assert_eq!(script.matches("\"done\"").count(), 1);
     }
 
     #[test]

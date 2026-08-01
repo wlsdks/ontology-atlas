@@ -1,5 +1,6 @@
 import path from "node:path";
 import { appBundleName } from "./context.mjs";
+import { AI_SETTINGS_DEFAULT_BASE_URL } from "./ai-settings-contract.mjs";
 
 export function parseVerifyAppLaunchArgs(argv, {
   defaultAppPath,
@@ -22,6 +23,7 @@ export function parseVerifyAppLaunchArgs(argv, {
   const webviewFixtureVaultValue = webviewFixtureVaultArg
     ? webviewFixtureVaultArg.slice("--webview-fixture-vault=".length).trim() || null
     : null;
+  const aiSettingsBaseUrlArg = argv.find((arg) => arg.startsWith("--ai-settings-base-url="));
   const requireAccessibilityText = argv
     .filter((arg) => arg.startsWith("--require-accessibility-text="))
     .map((arg) => arg.slice("--require-accessibility-text=".length).trim())
@@ -52,6 +54,12 @@ export function parseVerifyAppLaunchArgs(argv, {
     verifyTopologyFocusNoop: argv.includes("--verify-topology-focus-noop"),
     verifyTopologyFocusZoom: argv.includes("--verify-topology-focus-zoom"),
     verifyTopologyFrameProfile: argv.includes("--verify-topology-frame-profile"),
+    verifyAiSettings: argv.includes("--verify-ai-settings"),
+    // 기본값을 여기서 채운다 — 앱이 아니라 검증기가 주소를 정해야 "필드에 이
+    // 값이 들어갔다" 는 대조가 성립한다.
+    aiSettingsBaseUrl: aiSettingsBaseUrlArg
+      ? aiSettingsBaseUrlArg.slice("--ai-settings-base-url=".length).trim() || null
+      : AI_SETTINGS_DEFAULT_BASE_URL,
     requireWebviewReducedMotion: argv.includes("--require-webview-reduced-motion"),
     requireOwnerName: ownerNameArg
       ? ownerNameArg.slice("--require-owner-name=".length)
@@ -83,7 +91,7 @@ export function parseVerifyAppLaunchArgs(argv, {
 
 
 export function printHelp() {
-  console.log(`Usage: pnpm desktop:verify-app [path/to/${appBundleName}] [--hold-ms=5000] [--kill-existing] [--leave-running] [--open-app] [--require-window] [--require-capturable-window] [--window-screenshot=/tmp/atlas-window.png] [--try-window-screenshot=/tmp/atlas-window.png] [--webview-evidence=/tmp/atlas-webview.json] [--require-accessibility-window] [--require-frontmost] [--require-accessibility-text="개념 지도"] [--require-webview-content] [--require-webview-route=/en/topology/] [--webview-fixture-vault=docs/ontology] [--require-webview-reduced-motion] [--verify-topology-drag] [--verify-topology-selected-relation] [--verify-topology-node-popover] [--verify-topology-create-node] [--verify-topology-focus-noop] [--verify-topology-frame-profile] [--print-window-diagnostics] [--require-owner-name="Ontology Atlas"] [--min-window-size=1040x720] [--min-webview-size=1400x860] [--max-webview-size=1100x800] [--webview-window-size=1100x800]
+  console.log(`Usage: pnpm desktop:verify-app [path/to/${appBundleName}] [--hold-ms=5000] [--kill-existing] [--leave-running] [--open-app] [--require-window] [--require-capturable-window] [--window-screenshot=/tmp/atlas-window.png] [--try-window-screenshot=/tmp/atlas-window.png] [--webview-evidence=/tmp/atlas-webview.json] [--require-accessibility-window] [--require-frontmost] [--require-accessibility-text="개념 지도"] [--require-webview-content] [--require-webview-route=/en/topology/] [--webview-fixture-vault=docs/ontology] [--require-webview-reduced-motion] [--verify-topology-drag] [--verify-topology-selected-relation] [--verify-topology-node-popover] [--verify-topology-create-node] [--verify-topology-focus-noop] [--verify-topology-frame-profile] [--verify-ai-settings] [--ai-settings-base-url=http://localhost:11434] [--print-window-diagnostics] [--require-owner-name="Ontology Atlas"] [--min-window-size=1040x720] [--min-webview-size=1400x860] [--max-webview-size=1100x800] [--webview-window-size=1100x800]
 
 Launches the packaged macOS .app executable, waits long enough to catch early
 startup crashes, then terminates it. This is an unsigned local runtime smoke;
@@ -119,6 +127,16 @@ Options:
                     On a selected /topology route, trigger zoom-in and require focus rail compaction proof.
   --verify-topology-frame-profile
                     On a /topology route, run a synthetic zoom/pan/hover/card-drag pass and capture rAF frame timings into the WebView evidence markers.
+  --verify-ai-settings
+                    Direct executable launch only. Open the settings sheet, walk into AI connection,
+                    choose the local/address branch, type the base URL, press the connection check,
+                    and require a live model list plus a chosen model. Needs --webview-fixture-vault
+                    because the check refuses to send anything it cannot log inside a vault; the
+                    verifier also reads that vault's .ontology-atlas/llm-audit.jsonl and requires a
+                    fresh local verify entry pointed at the same host. A local runner that is not
+                    running fails loudly with the on-screen failure sentence.
+  --ai-settings-base-url=URL
+                    Base URL typed into the local/address field (default http://localhost:11434).
   --require-window  Require an on-screen macOS window owned by the launched app process.
   --require-capturable-window
                     Require at least one matching CoreGraphics window to produce a local screenshot
