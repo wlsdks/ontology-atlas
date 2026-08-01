@@ -1,5 +1,6 @@
 'use client';
 
+import { useCallback } from 'react';
 import { useTranslations } from 'next-intl';
 
 // vault-readme: scaffold 한 vault root 의 README.md 가 갖는 sentinel kind.
@@ -25,11 +26,13 @@ function isKnown(kind: string): kind is KnownKind {
  * tree chips, ego graph, search results, builder palette, inspector,
  * insights breakdown. The pure `getOntologyKindLabel` is kept for vault
  * data / non-i18n contexts (tests, build scripts).
+ *
+ * The returned function is **referentially stable** for a given locale — some
+ * callers put it in a `useEffect` dependency array (`VaultDiffToaster`, which
+ * labels vault-change toasts). A fresh closure per render would re-run those
+ * effects on every render.
  */
 export function useOntologyKindLabel() {
   const t = useTranslations('kinds');
-  return (kind: string): string => {
-    if (isKnown(kind)) return t(kind);
-    return kind;
-  };
+  return useCallback((kind: string): string => (isKnown(kind) ? t(kind) : kind), [t]);
 }

@@ -2499,9 +2499,18 @@
       "validationTooltip": "{errors, plural, =0 {frontmatter 경고 {warnings} 건 — pnpm vault:validate 로 상세} other {frontmatter 오류 {errors} 건{warnings, plural, =0 {} other {, 경고 {warnings} 건}} — 일부 노드가 graph 에서 빠졌습니다. pnpm vault:validate 로 상세}}"
     },
     "vaultDiffToaster": {
-      "added": "추가됨: {slug}",
-      "edited": "편집됨: {slug}",
-      "overflow": "+{count}개 더"
+      "added": "추가 — {name}",
+      "addedKind": "{kind} 추가 — {name}",
+      "edited": "편집 — {name}",
+      "editedKind": "{kind} 편집 — {name}",
+      "digestAdded": "{breakdown} 추가",
+      "digestModified": "{breakdown} 편집",
+      "digestRemoved": "{count}개 삭제",
+      "digestKindItem": "{kind} {count}",
+      "digestKindOther": "그 외 {count}",
+      "digestKindPlain": "{count}개",
+      "digestKindJoin": " · ",
+      "digestJoin": ", "
     },
     "starterCta": {
       "errorFallback": "시작 시드 만들기 실패",
