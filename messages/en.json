@@ -2187,6 +2187,7 @@
       "pathChipUnresolved": "Path: {source} → choose a target",
       "pathChipResolved": "{source} → {target} · {hops, plural, one {# hop} other {# hops}}",
       "pathChipNoPath": "{source} → {target} · no path found",
+      "pathChipMissingEndpoints": "Not in this vault — {slugs}",
       "pathChipClear": "Clear path",
       "pathChipCopyPacket": "Copy path packet",
       "pathChipCopyPacketAriaLabel": "Copy path packet for agent handoff",
