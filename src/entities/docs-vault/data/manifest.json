@@ -3890,6 +3890,11 @@
         },
         {
           "depth": 2,
+          "text": "2026-08-01 — 채팅 에이전트가 로컬 러너에 붙는다 (Ollama · LM Studio · llama.cpp)",
+          "slug": "2026-08-01-채팅-에이전트가-로컬-러너에-붙는다-ollama-lm-studio-llamacpp"
+        },
+        {
+          "depth": 2,
           "text": "2026-08-01 — 문서 검사를 산문 핀에서 생성-후-diff 로 바꿨다",
           "slug": "2026-08-01-문서-검사를-산문-핀에서-생성-후-diff-로-바꿨다"
         },
@@ -5985,7 +5990,7 @@
         }
       ],
       "excerpt": "Major change history. Code commit messages answer why; this file answers when / which surface changed. Focused on user-visible changes, not PR-level granularity. Newest at the top. Entries stay date-based; the app version reached v1.0.0 on 2026-07-27, so a release tag now carries the semver promise instead. 볼트를 안 연 사람이",
-      "wordCount": 60912,
+      "wordCount": 61129,
       "updatedAt": "2026-08-01",
       "linksOut": [
         "audits/CASE-STUDY-AGENTS-MD-DRIFT",
@@ -6018,6 +6023,11 @@
           "depth": 2,
           "text": "2026-08-01 — 쇼핑몰 샘플 재생성 보고: 브릿지 규격은 **구축이 아니라 수리**의 도구다 (실전 첫 검증)",
           "slug": "2026-08-01-쇼핑몰-샘플-재생성-보고-브릿지-규격은-구축이-아니라-수리의-도구다-실전-첫-검증"
+        },
+        {
+          "depth": 2,
+          "text": "2026-08-01 — 네 번째 연결은 벤더가 아니라 **문**이다: 키 없는 「주소로 연결」 갈래를 열어 Ollama·LM Studio·llama.cpp 를 한 자리로 흡수한다",
+          "slug": "2026-08-01-네-번째-연결은-벤더가-아니라-문이다-키-없는-주소로-연결-갈래를-열어-ollamalm-studiollamacpp-를-한-자리로-흡수한다"
         },
         {
           "depth": 2,
@@ -6306,7 +6316,7 @@
         }
       ],
       "excerpt": "이 파일은 결정과 그때 진 반대 의견을 남긴다. docs/CHANGELOG.md 는 무엇이 언제 바뀌었나를 답하고, 이 파일은 왜 그렇게 정했고, 무엇을 걸었나를 답한다. 최신이 위. 기록은 덧붙이기만 한다 — 지난 기록을 고치지 않는다. 판단이 바뀌었으면 새 기록을 쓰고 옛 기록을 뒤집힘 으로 표시한다. 틀린 기록도 자산이다. 1. 소집 전에 읽는다. 카운슬을 열기 전(그리고 단독 PO 패스를 쓰기 전) 같은 표면 · 같은 질문에 대한 선행 결정이 있는지 먼저 본다. 있으면 새 패스는 그것을 ① 여전히 유효하다고 인용하거나 ② 명시적으로 뒤집는다. 조용히 다시 결정",
-      "wordCount": 27983,
+      "wordCount": 28455,
       "updatedAt": "2026-08-01",
       "linksOut": []
     },
@@ -7779,8 +7789,8 @@
         }
       ],
       "excerpt": "Complete inventory of features users can actually use right now. Last updated: 2026-07-27 (현재 route와 installed-app 계약 재검증 — /ontology은 /topology?index=expanded, /ontology/edit은 /ontology/studio 호환 redirect이며, Insights는 할 일·구성·연결·경계·신선도 5개 질문 탭의 maintenance board다. desktop static smoke와 installed-app verifier/Computer U",
-      "wordCount": 16266,
-      "updatedAt": "2026-07-31",
+      "wordCount": 16470,
+      "updatedAt": "2026-08-01",
       "linksOut": [
         "slug",
         "project:slug",
