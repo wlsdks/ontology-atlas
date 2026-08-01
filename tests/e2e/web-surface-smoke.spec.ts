@@ -274,10 +274,18 @@ const DEGRADED_SURFACES = [
     destination: "atlas-git-web-get-app",
   },
   {
-    name: "에이전트 연결 — 브라우저는 열어 둔 폴더의 실제 경로를 모른다",
+    // ⚠️ **이 행이 주장하는 것은 「연결 불가」가 아니라 「자동 저장 불가」다**
+    // (2026-08-01). 종전 문구는 「이 화면에서는 연결할 수 없어요」였고 그건
+    // 거짓이었다 — MCP 는 Atlas 가 아니라 폴더에 붙고, 에이전트가 자기 세션에서
+    // 서버를 띄운다. 웹 사용자도 연결된다. 브라우저가 못 하는 것은 절대 경로를
+    // 몰라서 **설정 파일을 대신 저장해 주는 것** 하나다. 강등 카드가 능력의
+    // 범위를 실제보다 좁게 말하는 것도 정직 위반이라, 이 정규식은 그 좁은
+    // 주장(자동 저장)을 겨냥한다. 그 자리에서 끝나는 길이 살아 있는지는 아래
+    // 별도 스펙이 본다.
+    name: "에이전트 연결 — 브라우저는 폴더의 절대 경로를 몰라 설정을 대신 저장하지 못한다",
     url: "/ko/topology/?agentConnect=1",
     card: "agent-server-unavailable",
-    reason: /브라우저는[\s\S]*실제 위치를 알 수 없어서/,
+    reason: /브라우저는[\s\S]*설정 파일을 대신 저장하지 못합니다/,
     destination: "agent-connect-web-get-app",
   },
 ] as const;
@@ -296,6 +304,50 @@ test.describe("웹 스모크 ③ 정직한 강등", () => {
       await expect(destination).toHaveAttribute("href", /\/download\//);
     });
   }
+
+  /**
+   * **강등의 반대편** — 이유와 갈 곳만 있고 *여기서 되는 것*이 없으면, 그건
+   * 정직하지만 막다른 길이다. 종전 이 카드의 유일한 대안은 긴 문서 링크였고,
+   * 연결하려던 사람은 시트를 잃고 문서 한가운데에 놓였다(소유자 실보고).
+   *
+   * 브라우저가 모르는 값(절대 경로)을 **아는 사람에게 물어** 그 자리에서
+   * 실행 가능한 설정을 만든다. 이 스펙이 지키는 것은 입력칸의 존재가 아니라
+   * **덜 채운 설정은 손에 쥐어 주지 않는다**는 계약이다.
+   */
+  test("에이전트 연결 — 웹에서도 그 자리에서 붙는 설정을 만든다", async ({ page }) => {
+    await gotoSettled(page, "/ko/topology/?agentConnect=1");
+
+    const panel = page.getByTestId("web-manual-connect");
+    await expect(panel).toBeVisible({ timeout: 15_000 });
+
+    // 채우기 전에도 무엇을 해야 하는지 보인다 — 빈 화면에 입력칸만 두지 않는다.
+    const body = page.getByTestId("web-manual-connect-config-body");
+    await expect(body).toContainText("mcpServers");
+    // 자리표시자가 든 설정은 붙지 않으므로 복사가 잠겨 있다.
+    await expect(page.getByTestId("web-manual-connect-copy-config")).toBeDisabled();
+
+    // 확인한 적 없는 것을 확인했다고 말하지 않는다.
+    await expect(page.getByTestId("web-manual-connect-shape-only")).toContainText(
+      "확인할 수 없어요",
+    );
+
+    // 홈 물결은 설정 파일에서 펼쳐지지 않는다 — 잡고, 왜인지 말한다.
+    await page.getByTestId("web-manual-connect-vault-input").fill("~/notes");
+    await expect(page.getByTestId("web-manual-connect-vault-input-issue")).toBeVisible();
+
+    // 두 절대 경로가 들어오면 자리표시자 없는 설정이 나오고 복사가 열린다.
+    await page.getByTestId("web-manual-connect-vault-input").fill("/Users/me/notes");
+    await page
+      .getByTestId("web-manual-connect-checkout-input")
+      .fill("/Users/me/ontology-atlas");
+    await expect(body).toContainText('"OATLAS_VAULT": "/Users/me/notes"');
+    await expect(body).toContainText("/Users/me/ontology-atlas/mcp/src/index.js");
+    await expect(page.getByTestId("web-manual-connect-copy-config")).toBeEnabled();
+    await expect(page.getByTestId("web-manual-connect-copy-cli")).toBeEnabled();
+
+    // 문서 링크는 남되 **주 경로가 아니다** — 시트를 떠나지 않고 끝난다.
+    await expect(page.getByTestId("agent-connect-sheet")).toBeVisible();
+  });
 
   /**
    * 스킬 사본 판정은 **웹에 없는 것이 정상**이다 — manifest walker 가 dot
