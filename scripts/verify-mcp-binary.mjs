@@ -97,8 +97,9 @@ export async function verifyMcpBinary({ binaryPath, vaultPath, expectedMinTools 
 }
 
 function flagValue(argv, name) {
-  const inline = argv.find((arg) => arg.startsWith(`--${name}=`));
-  return inline?.slice(`${name}=`.length);
+  const prefix = `--${name}=`;
+  const inline = argv.find((arg) => arg.startsWith(prefix));
+  return inline?.slice(prefix.length);
 }
 
 async function main() {
