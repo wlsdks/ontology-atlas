@@ -1163,7 +1163,7 @@ mod tests {
         // secrets.rs 의 소스-리플렉션 계약과 같은 규율: 이 파일의 커맨드는
         // 키를 담을 수 없는 타입만 반환한다. 새 커맨드가 늘어도 반환 타입이
         // 이 허용 목록 밖이면 여기서 걸린다.
-        let source = include_str!("llm.rs");
+        let source = include_str!("llm.rs").replace("\r\n", "\n");
         let commands: Vec<usize> = source
             .match_indices("\n#[tauri::command]\npub fn ")
             .map(|(idx, _)| idx)
