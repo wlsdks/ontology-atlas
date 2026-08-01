@@ -8,13 +8,26 @@ import {
   secretErrorMessage,
   secretSet,
   secretVerify,
+  LOCAL_PROVIDER,
   SECRET_PROVIDERS,
   SECRET_PROVIDER_HOSTS,
+  type ConnectionProvider,
   type SecretProvider,
   type SecretStatus,
 } from '@/shared/lib/tauri-secrets';
+import {
+  clearLocalEndpoint,
+  hostOfBaseUrl,
+  isLocalEndpointReady,
+  readLocalEndpoint,
+  readLocalVerdict,
+  writeLocalEndpoint,
+  type LocalEndpointSettings,
+  type LocalVerifyReason,
+} from '@/shared/lib/local-endpoint';
 import type { LlmAuditEntry } from '@/shared/lib/llm-audit-log';
 import { openTauriVaultInFinder } from '@/shared/lib/tauri-vault-fs';
+import { Select } from '@/shared/ui/select';
 import { useToast } from '@/shared/ui/toast';
 import { cn } from '@/shared/lib/cn';
 import { useRowDisclosure } from '@/shared/lib/use-row-disclosure';
@@ -82,7 +95,7 @@ export function AiConnectionPanel({
     connection;
   // 한 번에 하나만 펼친다 — 어느 키를 넣는 중인지가 화면에 하나뿐이어야
   // 붙여넣기 직전의 안전 문구가 그 키에 대한 말로 읽힌다.
-  const [expanded, setExpanded] = useState<SecretProvider | null>(null);
+  const [expanded, setExpanded] = useState<ConnectionProvider | null>(null);
   const listRef = useRef<HTMLDivElement | null>(null);
 
   /**
@@ -94,7 +107,7 @@ export function AiConnectionPanel({
    * Esc 사다리의 다음 칸(서브뷰 → 루트)까지 죽는다 — 다이얼로그 밖으로 나간
    * 포커스에서는 시트의 keydown 이 더 이상 오지 않는다.
    */
-  const cancelDraft = (provider: SecretProvider) => {
+  const cancelDraft = (provider: ConnectionProvider) => {
     setExpanded(null);
     window.setTimeout(() => {
       listRef.current
@@ -124,6 +137,16 @@ export function AiConnectionPanel({
           </p>
           <p className="mt-1 break-keep text-caption leading-4 text-[color:var(--color-text-tertiary)]">
             {t('webDegradedBody')}
+          </p>
+          {/* 키 없는 갈래(주소로 연결)가 생긴 뒤로, 위 문단만 두면 강등이
+              절반만 정직해진다 — "키가 문제라면 키가 필요 없는 Ollama 는
+              되겠지" 로 읽히기 때문이다. 왜 그것도 안 되는지와 어디로 가면
+              되는지를 같은 카드 안에서 말한다. */}
+          <p
+            className="mt-1.5 break-keep text-caption leading-4 text-[color:var(--color-text-tertiary)]"
+            data-testid="ai-connection-web-degraded-local"
+          >
+            {t('webDegradedLocalBody')}
           </p>
           <Link
             href={downloadHref}
@@ -173,6 +196,18 @@ export function AiConnectionPanel({
             onVerified={refreshAudit}
           />
         ))}
+        {/* 네 번째 행 — 키가 아니라 **주소**를 적는 갈래. 같은 상자 안에 두는
+            이유: 사람이 이 화면에 오는 이유("내 모델을 붙인다")가 같고, 별도
+            상자를 하나 더 세우면 이 패널의 시선 승자가 둘이 되어 위계가
+            무너진다(§ 이 화면의 시각 위계). */}
+        <LocalEndpointCard
+          vaultRootPath={vaultRootPath}
+          expanded={expanded === LOCAL_PROVIDER}
+          onExpand={() => setExpanded(LOCAL_PROVIDER)}
+          onCancel={() => cancelDraft(LOCAL_PROVIDER)}
+          onCollapse={() => setExpanded(null)}
+          onVerified={refreshAudit}
+        />
       </div>
 
       {/* 위 목록에 딸린 캡션 — "키를 넣으면 무슨 일이 되나" 에 대한 정직한
@@ -478,6 +513,324 @@ function ProviderCard({
       </div>
     </div>
   );
+}
+
+type LocalVerifyState =
+  | { kind: 'idle' }
+  | { kind: 'checking' }
+  | { kind: 'done'; reason: LocalVerifyReason; models: string[]; detail: string };
+
+/**
+ * 네 번째 행 — **키가 아니라 주소를 적는 갈래** (Ollama · LM Studio ·
+ * llama.cpp server · vLLM …).
+ *
+ * 위 세 행과 해부구조가 같다(헤더 밴드 + 상세 영역). 다른 것은 상세 영역에
+ * 무엇이 들어가느냐뿐이다: 붙여넣는 키 대신 **주소 한 칸과 모델 하나**.
+ *
+ * ## 왜 모델을 손으로 타이핑하게 두지 않는가
+ *
+ * 러너의 모델 이름은 `qwen3:8b` 처럼 태그가 붙어 있어서 사람이 옮겨 적으면
+ * 틀린다. 그리고 틀렸을 때 러너가 주는 답은 404 한 줄이라, 화면에는 "실패"
+ * 밖에 안 남는다. 그래서 [연결 확인] 한 번이 목록까지 받아 오고, 고르는
+ * 것은 목록에서만 한다 — 존재하지 않는 이름을 고를 방법 자체를 없앤다.
+ *
+ * ## 실패는 이유별로 다른 문장을 받는다
+ *
+ * 꺼져 있음 · 포트 다름 · 모델 없음이 구별되지 않으면 사용자는 셋 중 무엇을
+ * 해야 하는지 모른다. 판정은 `readLocalVerdict` 한 곳에서 하고(상태 코드와
+ * curl 종료 코드를 Rust 가 이미 갈라 놨다), 여기서는 그 판정에 문장을
+ * 붙이기만 한다.
+ */
+function LocalEndpointCard({
+  vaultRootPath,
+  expanded,
+  onExpand,
+  onCancel,
+  onCollapse,
+  onVerified,
+}: {
+  vaultRootPath: string | null;
+  expanded: boolean;
+  onExpand: () => void;
+  onCancel: () => void;
+  onCollapse: () => void;
+  onVerified: () => void;
+}) {
+  const t = useTranslations('settings.ai');
+  const toast = useToast();
+  const [settings, setSettings] = useState<LocalEndpointSettings>(() => readLocalEndpoint());
+  const [draftUrl, setDraftUrl] = useState(() => readLocalEndpoint().baseUrl);
+  const [verify, setVerify] = useState<LocalVerifyState>({ kind: 'idle' });
+
+  const label = t(AI_PROVIDER_LABEL_KEY[LOCAL_PROVIDER]);
+  const connected = isLocalEndpointReady(settings);
+  const detailOpen = connected || expanded;
+  const {
+    mounted: detailMounted,
+    boxRef: detailBoxRef,
+    contentRef: detailContentRef,
+  } = useRowDisclosure(detailOpen);
+
+  /** 확인에 성공한 뒤 고를 수 있는 모델들. 저장하지 않는다 — 진실원은 러너다. */
+  const models = verify.kind === 'done' ? verify.models : [];
+
+  const handleVerify = async () => {
+    if (!vaultRootPath || verify.kind === 'checking') return;
+    setVerify({ kind: 'checking' });
+    try {
+      const result = await secretVerify(LOCAL_PROVIDER, vaultRootPath, draftUrl.trim());
+      if (!result) return;
+      const verdict = readLocalVerdict(result);
+      setVerify({ kind: 'done', ...verdict });
+      if (verdict.reason === 'ok') {
+        // 주소는 응답한 그 순간 저장한다 — 모델을 아직 못 골랐어도 다음에
+        // 다시 타이핑하게 만들지 않는다. 대화가 켜지는 조건은 여전히
+        // "모델까지 골랐을 때" 다(`isLocalEndpointReady`).
+        const model = verdict.models.includes(settings.model) ? settings.model : '';
+        const next = { baseUrl: draftUrl.trim(), model };
+        setSettings(next);
+        writeLocalEndpoint(next);
+      }
+    } catch (err) {
+      setVerify({
+        kind: 'done',
+        reason: 'failed',
+        models: [],
+        detail: secretErrorMessage(err),
+      });
+    } finally {
+      // 성공이든 실패든 이 호출은 기록됐다 — 기록을 바로 보여준다.
+      onVerified();
+    }
+  };
+
+  const handlePickModel = (model: string) => {
+    const next = { baseUrl: settings.baseUrl || draftUrl.trim(), model };
+    setSettings(next);
+    writeLocalEndpoint(next);
+    if (model) {
+      toast.show(t('localSaved'));
+      onCollapse();
+    }
+  };
+
+  const handleDisconnect = () => {
+    clearLocalEndpoint();
+    const cleared = readLocalEndpoint();
+    setSettings(cleared);
+    setDraftUrl(cleared.baseUrl);
+    setVerify({ kind: 'idle' });
+    toast.show(t('localDisconnected'));
+  };
+
+  const host = hostOfBaseUrl(settings.baseUrl || draftUrl);
+
+  return (
+    <div data-testid="ai-provider-local">
+      <div className="flex h-[var(--control-row-h)] items-center justify-between gap-3 px-3">
+        <p className="text-body text-[color:var(--color-text-primary)]">{label}</p>
+        {connected ? (
+          <span
+            key={settings.model}
+            data-testid="ai-local-connected"
+            className="ai-row-swap flex min-w-0 items-baseline gap-1.5 text-caption text-[color:var(--color-text-tertiary)]"
+          >
+            {t('localConnected')}
+            <span className="truncate font-mono">{settings.model}</span>
+          </span>
+        ) : (
+          <button
+            type="button"
+            data-testid="ai-register-local"
+            onClick={expanded ? onCancel : onExpand}
+            aria-expanded={expanded}
+            className={cn(
+              'inline-flex h-8 shrink-0 items-center rounded-md border px-2.5 text-label transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--color-indigo-a46)] focus-visible:ring-inset',
+              expanded
+                ? 'border-[color:var(--color-indigo-line-a32)] bg-[color:var(--color-indigo-line-a13)] text-[color:var(--color-indigo-accent)]'
+                : 'border-[color:var(--color-border-soft)] text-[color:var(--color-text-tertiary)] hover:border-[color:var(--color-indigo-line-a32)] hover:text-[color:var(--color-indigo-accent)]',
+            )}
+          >
+            {t('localConnect')}
+          </button>
+        )}
+      </div>
+
+      <div
+        ref={detailBoxRef}
+        className="ai-row-disclosure"
+        data-state={detailOpen ? 'open' : 'closed'}
+        data-testid="ai-detail-local"
+        inert={!detailOpen}
+      >
+        {detailMounted ? (
+          <div ref={detailContentRef} className="ai-row-disclosure-body grid gap-2 px-3 pb-2.5">
+            <div className="flex items-center gap-2">
+              <input
+                type="text"
+                inputMode="url"
+                autoComplete="off"
+                spellCheck={false}
+                value={draftUrl}
+                aria-label={t('localBaseUrlLabel')}
+                placeholder={t('localBaseUrlPlaceholder')}
+                data-testid="ai-local-url"
+                onChange={(event) => setDraftUrl(event.target.value)}
+                onKeyDown={(event) => {
+                  if (event.key === 'Enter') void handleVerify();
+                }}
+                className="h-8 min-w-0 flex-1 rounded-md border border-[color:var(--color-border-soft)] bg-[color:var(--color-elevated)] px-2 font-mono text-caption text-[color:var(--color-text-primary)] transition-colors placeholder:font-sans placeholder:text-[color:var(--color-text-quaternary)] focus-visible:border-[color:var(--color-indigo-line-a45)] focus-visible:outline-none"
+              />
+              {!connected ? (
+                <button
+                  type="button"
+                  data-testid="ai-cancel-local"
+                  onClick={onCancel}
+                  className="inline-flex h-8 shrink-0 items-center rounded-md border border-[color:var(--color-border-soft)] px-2.5 text-label text-[color:var(--color-text-tertiary)] transition-colors hover:border-[color:var(--color-border-strong)] hover:text-[color:var(--color-text-secondary)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--color-indigo-a46)] focus-visible:ring-inset"
+                >
+                  {t('cancel')}
+                </button>
+              ) : null}
+              <button
+                type="button"
+                data-testid="ai-verify-local"
+                onClick={() => void handleVerify()}
+                disabled={verify.kind === 'checking' || !vaultRootPath || !draftUrl.trim()}
+                className="inline-flex h-8 shrink-0 items-center rounded-md border border-[color:var(--color-indigo-line-a32)] px-2.5 text-label text-[color:var(--color-indigo-accent)] transition-colors hover:border-[color:var(--color-indigo-line-a45)] hover:bg-[color:var(--color-indigo-line-a13)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--color-indigo-a46)] focus-visible:ring-inset disabled:opacity-60"
+              >
+                {verify.kind === 'checking' ? t('verifying') : t('verify')}
+              </button>
+            </div>
+
+            {/* 모델 칸은 **고를 것이 생겼을 때만** 나타난다. 빈 셀렉트를 미리
+                그려 두면 "여기서 고르라" 는 지시가 고를 수 없는 상태에 걸린다. */}
+            {models.length > 0 ? (
+              <div className="flex items-center gap-2" data-testid="ai-local-model-row">
+                <Select
+                  size="md"
+                  value={settings.model}
+                  onChange={handlePickModel}
+                  options={models.map((model) => ({ value: model, label: model }))}
+                  placeholder={t('localModelPlaceholder')}
+                  ariaLabel={t('localModelLabel')}
+                  className="min-w-0 flex-1"
+                  data-testid="ai-local-model"
+                />
+                {connected ? (
+                  <button
+                    type="button"
+                    data-testid="ai-local-disconnect"
+                    onClick={handleDisconnect}
+                    className="inline-flex h-8 shrink-0 items-center rounded-md border border-[color:var(--color-border-soft)] px-2.5 text-label text-[color:var(--color-text-tertiary)] transition-colors hover:border-[color:var(--color-border-strong)] hover:text-[color:var(--color-text-secondary)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--color-indigo-a46)] focus-visible:ring-inset"
+                  >
+                    {t('localDisconnect')}
+                  </button>
+                ) : null}
+              </div>
+            ) : connected ? (
+              <div className="flex items-center gap-2">
+                <span className="min-w-0 flex-1 truncate font-mono text-caption text-[color:var(--color-text-tertiary)]">
+                  {settings.model}
+                </span>
+                <button
+                  type="button"
+                  data-testid="ai-local-disconnect"
+                  onClick={handleDisconnect}
+                  className="inline-flex h-8 shrink-0 items-center rounded-md border border-[color:var(--color-border-soft)] px-2.5 text-label text-[color:var(--color-text-tertiary)] transition-colors hover:border-[color:var(--color-border-strong)] hover:text-[color:var(--color-text-secondary)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--color-indigo-a46)] focus-visible:ring-inset"
+                >
+                  {t('localDisconnect')}
+                </button>
+              </div>
+            ) : null}
+
+            <LocalCaption
+              verify={verify}
+              connected={connected}
+              host={host}
+              vaultKnown={vaultRootPath !== null}
+            />
+          </div>
+        ) : null}
+      </div>
+    </div>
+  );
+}
+
+/**
+ * 이 행의 한 줄 — 상태마다 **다음에 할 일이 다르므로** 문장도 다르다.
+ *
+ * 로컬 갈래의 전송 범위 문구가 여기 산다. 루프백일 때와 아닐 때가 갈리는
+ * 이유: "이 컴퓨터 밖으로 나가지 않아요" 는 `localhost` 에서만 참이고,
+ * 사용자가 https 로 다른 기계를 가리킬 수도 있다(그것도 허용한다). 참이
+ * 아닌 자리에 그 문장을 쓰면 이 제품의 신뢰 서사 자체가 거짓말이 된다.
+ */
+function LocalCaption({
+  verify,
+  connected,
+  host,
+  vaultKnown,
+}: {
+  verify: LocalVerifyState;
+  connected: boolean;
+  host: string;
+  vaultKnown: boolean;
+}) {
+  const t = useTranslations('settings.ai');
+
+  if (!vaultKnown) {
+    return (
+      <p className="break-keep text-caption leading-4 text-[color:var(--color-text-quaternary)]">
+        {t('verifyNeedsVault')}
+      </p>
+    );
+  }
+  if (verify.kind === 'done' && verify.reason !== 'ok') {
+    const message =
+      verify.reason === 'unreachable'
+        ? t('localFailUnreachable', { host })
+        : verify.reason === 'not-compatible'
+          ? t('localFailNotCompatible', { host })
+          : verify.reason === 'no-models'
+            ? t('localFailNoModels')
+            : t('verifyFailed', { message: verify.detail });
+    return (
+      <p
+        data-testid="ai-local-failure"
+        className="flex items-start gap-1.5 break-keep text-caption leading-4 text-[color:var(--color-status-danger)]"
+      >
+        <StatusDot tone="danger" />
+        {message}
+      </p>
+    );
+  }
+  if (verify.kind === 'done' && verify.reason === 'ok') {
+    return (
+      <p
+        data-testid="ai-local-verified"
+        className="flex items-center gap-1.5 text-caption text-[color:var(--color-status-success)]"
+      >
+        <StatusDot tone="success" />
+        {t('localVerified', { count: verify.models.length })}
+      </p>
+    );
+  }
+  return (
+    <p className="break-keep text-caption leading-4 text-[color:var(--color-text-quaternary)]">
+      {connected
+        ? isLoopbackHost(host)
+          ? t('localScopeLoopback', { host })
+          : t('localScopeRemote', { host })
+        : t('localHint')}
+    </p>
+  );
+}
+
+/** 이 기계 자신인가 — Rust `is_loopback_authority` 와 같은 판정. */
+function isLoopbackHost(authority: string): boolean {
+  const host = authority.startsWith('[')
+    ? (authority.slice(1).split(']')[0] ?? '')
+    : (authority.split(':')[0] ?? '');
+  return host === 'localhost' || host === '::1' || host.startsWith('127.');
 }
 
 /**

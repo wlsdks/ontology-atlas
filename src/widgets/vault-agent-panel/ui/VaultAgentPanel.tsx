@@ -8,16 +8,24 @@ import type { VaultManifest } from '@/entities/docs-vault';
 import type { KnowledgeProjectInsight } from '@/entities/knowledge-graph';
 import { buildFirstWords, type ScreenContextSnapshot } from '@/features/vault-agent';
 import { useVaultConceptFacts } from '@/features/vault-ontology';
+import {
+  hostOfBaseUrl,
+  isLocalEndpointReady,
+  readLocalEndpoint,
+  subscribeLocalEndpointChange,
+  type LocalEndpointSettings,
+} from '@/shared/lib/local-endpoint';
 import { LLM_AUDIT_LOG_RELATIVE_PATH } from '@/shared/lib/llm-audit-log';
 import { requestSettingsView } from '@/shared/lib/settings-view-intent';
 import { gitHistory, isGitBridgeAvailable } from '@/shared/lib/tauri-git';
 import { isLlmChatBridgeAvailable } from '@/shared/lib/tauri-llm';
 import {
   SECRET_PROVIDER_HOSTS,
+  LOCAL_PROVIDER,
   SECRET_PROVIDERS,
   secretStatus,
   subscribeSecretChange,
-  type SecretProvider,
+  type ConnectionProvider,
 } from '@/shared/lib/tauri-secrets';
 
 import { useVaultAgent } from '../model/use-vault-agent';
@@ -104,7 +112,12 @@ export function VaultAgentPanel({
    * 순서)로 첫 번째를 쓴다 — 모델 피커도 벤더 피커도 만들지 않는다.
    * 전체 키는 어떤 경로로도 오지 않으므로 여기서 아는 것은 "있다" 뿐이다.
    */
-  const [provider, setProvider] = useState<SecretProvider | null>(null);
+  const [provider, setProvider] = useState<ConnectionProvider | null>(null);
+  /**
+   * 「주소로 연결」 갈래의 설정 — 주소와 고른 모델. 키체인이 아니라
+   * localStorage 에 살고(비밀이 아니다), 설정 시트에서 바뀌면 신호가 온다.
+   */
+  const [localEndpoint, setLocalEndpoint] = useState<LocalEndpointSettings | null>(null);
   /**
    * 키를 넣고 **돌아오는 길**. 설정 시트에서 키가 저장되면 그 순간 신호가 오고
    * 여기서 다시 조회한다 — 새로고침을 요구하지 않는다(요구하면 결함이다).
@@ -114,12 +127,34 @@ export function VaultAgentPanel({
   const [secretNonce, setSecretNonce] = useState(0);
   useEffect(() => {
     if (!open || !bridgeAvailable) return undefined;
-    return subscribeSecretChange(() => setSecretNonce((value) => value + 1));
+    const bump = () => setSecretNonce((value) => value + 1);
+    const offSecret = subscribeSecretChange(bump);
+    const offLocal = subscribeLocalEndpointChange(bump);
+    return () => {
+      offSecret();
+      offLocal();
+    };
   }, [open, bridgeAvailable]);
   useEffect(() => {
     if (!open || !bridgeAvailable) return;
     let cancelled = false;
     void (async () => {
+      /**
+       * **주소 갈래가 먼저다.** 순서를 이렇게 둔 이유: 이 갈래는 주소를 적고
+       * 연결을 확인하고 목록에서 모델까지 고른 사람만 도달하는 상태라(키를
+       * 붙여넣는 것보다 한 단계 더 명시적이다), 그걸 해 두고도 옛 키가 계속
+       * 쓰이면 사용자가 방금 한 일이 아무 일도 아니게 된다. 어느 쪽이 살아
+       * 있는지는 패널 푸터가 제공자 이름과 호스트로 계속 말한다.
+       */
+      const local = readLocalEndpoint();
+      if (isLocalEndpointReady(local)) {
+        if (!cancelled) {
+          setLocalEndpoint(local);
+          setProvider(LOCAL_PROVIDER);
+        }
+        return;
+      }
+      if (!cancelled) setLocalEndpoint(null);
       for (const candidate of SECRET_PROVIDERS) {
         const status = await secretStatus(candidate);
         if (cancelled) return;
@@ -148,8 +183,21 @@ export function VaultAgentPanel({
     [screenContext, recentChanges],
   );
 
+  /**
+   * 이 대화가 실제로 가는 곳. 명명 벤더는 코드에 박힌 공식 호스트이고, 주소
+   * 갈래는 사용자가 적은 주소의 호스트다 — 감사 줄에 남는 값과 **같은 문법**
+   * 이라 화면과 기록이 같은 것을 말한다.
+   */
+  const providerHost =
+    provider === LOCAL_PROVIDER
+      ? hostOfBaseUrl(localEndpoint?.baseUrl ?? '')
+      : provider
+        ? SECRET_PROVIDER_HOSTS[provider]
+        : '';
+
   const agent = useVaultAgent({
     provider,
+    localEndpoint,
     vaultPath,
     insight,
     manifest,
@@ -419,7 +467,7 @@ export function VaultAgentPanel({
               <div aria-hidden="true" className="min-h-0 shrink grow" />
               <AgentScopeSheet
               provider={t(`provider.${provider}`)}
-              host={SECRET_PROVIDER_HOSTS[provider]}
+              host={providerHost}
               auditPath={LLM_AUDIT_LOG_RELATIVE_PATH}
               labels={{
                 title: t('scope.title'),

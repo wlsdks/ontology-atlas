@@ -21,7 +21,7 @@ import {
 import { applyProposal, proposalToClipboardPacket } from '@/features/vault-agent/model/proposal-applier';
 import { buildProposal } from '@/features/vault-agent/model/proposal-builder';
 import { llmChat, llmChatErrorMessage } from '@/shared/lib/tauri-llm';
-import type { SecretProvider } from '@/shared/lib/tauri-secrets';
+import type { ConnectionProvider } from '@/shared/lib/tauri-secrets';
 
 /**
  * 패널의 상태 — 턴 목록, 진행 중 요청, pending 제안 하나.
@@ -55,7 +55,12 @@ export interface VaultAgentNotices {
 }
 
 export interface UseVaultAgentArgs {
-  provider: SecretProvider | null;
+  provider: ConnectionProvider | null;
+  /**
+   * 「주소로 연결」 갈래에서만 값이 있다 — 사용자가 적은 러너 주소와 목록에서
+   * 고른 모델. 명명 벤더에서는 둘 다 null 이고, 그때 모델은 어댑터의 기본값이다.
+   */
+  localEndpoint: { baseUrl: string; model: string } | null;
   vaultPath: string | null;
   insight: KnowledgeProjectInsight | null;
   manifest: VaultManifest | null;
@@ -186,7 +191,10 @@ export function useVaultAgent(args: UseVaultAgentArgs) {
           adapter,
           tools: AGENT_TOOLS,
           system: systemPrompt,
-          model: adapter.defaultModel,
+          // 주소 갈래에는 기본 모델이 없다 — 그 컴퓨터에 무엇이 설치돼
+          // 있는지는 그 컴퓨터만 알기 때문이다. 사용자가 설정에서 고른 이름이
+          // 여기로 온다.
+          model: args.localEndpoint?.model || adapter.defaultModel,
           notices: args.notices,
           execute,
           async send({ body, scope, question, model }) {
@@ -197,6 +205,7 @@ export function useVaultAgent(args: UseVaultAgentArgs) {
               question,
               body,
               scope,
+              baseUrl: args.localEndpoint?.baseUrl ?? null,
             });
             if (!echo) throw new Error('데스크톱 앱에서만 보낼 수 있어요.');
             return echo;

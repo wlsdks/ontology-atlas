@@ -2799,7 +2799,25 @@
       "auditOutcomeUnknown": "Outcome not recorded",
       "webDegradedTitle": "API key storage is desktop-only.",
       "webDegradedBody": "A key in browser storage can leak with a single XSS, and the header for calling the API directly from a browser is the vendor's own warning (…-dangerous-direct-browser-access). So the web build doesn't offer it. The desktop app keeps your key in the macOS Keychain, and no screen can read it back.",
-      "webDegradedCta": "Get the macOS app"
+      "webDegradedCta": "Get the macOS app",
+      "providerLocal": "Local runner",
+      "localConnect": "Connect by address",
+      "localConnected": "Connected",
+      "localHint": "Connect by address to a runner on this computer — Ollama, LM Studio, llama.cpp server. No API key needed.",
+      "localBaseUrlLabel": "Runner address",
+      "localBaseUrlPlaceholder": "http://localhost:11434",
+      "localModelLabel": "Model",
+      "localModelPlaceholder": "Pick a model",
+      "localVerified": "Connected · {count} model(s) installed — pick one below",
+      "localSaved": "This runner will answer now",
+      "localDisconnect": "Disconnect",
+      "localDisconnected": "Disconnected the local runner",
+      "localFailUnreachable": "No answer from {host}. The runner is off, or the port is different — start it (ollama serve) or fix the address above.",
+      "localFailNotCompatible": "{host} answers, but it is not an OpenAI-compatible API (404). Another program may hold that port, or the runner is too old to expose it — check the port and the runner version.",
+      "localFailNoModels": "Connected, but no models are installed. Pull one (ollama pull qwen3:8b) and check again.",
+      "localScopeLoopback": "Sends: your question + the vault excerpts you picked → {host}. It never leaves this computer, and the log records {host} as the destination — that record is the proof.",
+      "localScopeRemote": "Sends: your question + the vault excerpts you picked → {host}. That address is off this computer, so the log records {host} as the destination.",
+      "webDegradedLocalBody": "Connecting by address to a runner on this computer (Ollama, LM Studio) does not work in the browser either: a web page cannot reach localhost unless the runner explicitly allows that origin, and for the same reason this app ships no LLM send path on the web. In the desktop app you only type the runner's address — no key — and the log records localhost as the destination."
     }
   },
   "copyProjectLink": {
@@ -3155,7 +3173,8 @@
     "provider": {
       "anthropic": "Anthropic",
       "openai": "OpenAI",
-      "gemini": "Gemini"
+      "gemini": "Gemini",
+      "local": "Local runner"
     },
     "screenContext": {
       "lookingAt": "On screen: looking at {title}",

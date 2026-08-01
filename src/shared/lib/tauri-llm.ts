@@ -76,6 +76,12 @@ export async function llmChat(args: {
   /** 벤더 형식 그대로의 JSON 본문. */
   body: string;
   scope: LlmChatScope;
+  /**
+   * 「주소로 연결」 갈래에서만 넘긴다. 명명 벤더에 함께 넘기면 Rust 가
+   * 거절한다 — 키체인의 키가 화면이 약속한 적 없는 호스트로 나가는 길을
+   * 남기지 않는다.
+   */
+  baseUrl?: string | null;
 }): Promise<LlmChatEcho | null> {
   const invoke = getInvoke();
   if (!invoke) return null;
@@ -86,6 +92,7 @@ export async function llmChat(args: {
     question: args.question,
     body: args.body,
     scope: args.scope,
+    baseUrl: args.baseUrl ?? null,
   });
 }
 

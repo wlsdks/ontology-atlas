@@ -95,6 +95,12 @@ describe('AiConnectionPanel web degradation', () => {
     // 접힌 행조차 없다 — 브라우저에는 키를 받을 자리 자체가 없다.
     expect(screen.queryByTestId('ai-register-anthropic')).toBeNull();
     expect(screen.queryByTestId('ai-verify-anthropic')).toBeNull();
+    // 키가 필요 없는 갈래(주소로 연결)도 마찬가지다 — 그리고 **왜 그것도
+    // 안 되는지**를 따로 적는다. 안 적으면 강등이 절반만 정직해진다:
+    // "키가 문제라면 키가 필요 없는 Ollama 는 되겠지" 로 읽히기 때문이다.
+    expect(screen.queryByTestId('ai-register-local')).toBeNull();
+    expect(screen.queryByTestId('ai-local-url')).toBeNull();
+    expect(screen.getByTestId('ai-connection-web-degraded-local')).toBeInTheDocument();
   });
 
   it('points the web user at the installed app instead of a dead end', () => {
@@ -638,5 +644,108 @@ describe('AiConnectionPanel hierarchy', () => {
       expect(screen.getAllByText(key).length).toBeGreaterThan(0);
     }
     expect(screen.getByText('.ontology-atlas/llm-audit.jsonl')).toBeInTheDocument();
+  });
+});
+
+/**
+ * 네 번째 행 — 키가 아니라 **주소**를 적는 갈래.
+ *
+ * 여기서 지키려는 것은 셋이다: ① 실패가 이유별로 다른 문장을 받는다(꺼져
+ * 있음 · 포트 다름 · 모델 없음), ② 모델은 손으로 타이핑하지 않고 목록에서
+ * 고른다, ③ 전송 범위 문구가 루프백일 때만 "이 컴퓨터 밖으로 안 나간다" 고
+ * 말한다.
+ */
+describe('AiConnectionPanel — 주소로 연결', () => {
+  function verifyResult(overrides: Record<string, unknown>) {
+    return {
+      provider: 'local',
+      ok: false,
+      denied: false,
+      httpStatus: null,
+      message: null,
+      durationMs: 8,
+      loggedAt: '2026-08-01T00:00:00.000Z',
+      body: null,
+      ...overrides,
+    };
+  }
+
+  beforeEach(() => {
+    window.localStorage.clear();
+  });
+
+  it('명명 벤더 셋과 같은 상자 안에 네 번째 행으로 산다', () => {
+    // 상자를 하나 더 세우면 이 패널의 시선 승자가 둘이 되어 위계가 무너진다.
+    const { container } = renderPanel(makeConnection());
+    const filled = container.querySelectorAll('.bg-\\[color\\:var\\(--color-overlay-1\\)\\]');
+    expect(filled).toHaveLength(1);
+    expect(filled[0]).toContainElement(screen.getByTestId('ai-register-local'));
+  });
+
+  it('주소를 넣고 확인하면 설치된 모델을 목록으로 고르게 된다', async () => {
+    mocks.secretVerify.mockResolvedValue(
+      verifyResult({
+        ok: true,
+        httpStatus: 200,
+        body: '{"data":[{"id":"qwen3:8b"},{"id":"gemma4:12b"}]}',
+      }),
+    );
+    renderPanel(makeConnection());
+    fireEvent.click(screen.getByTestId('ai-register-local'));
+    fireEvent.click(screen.getByTestId('ai-verify-local'));
+
+    await waitFor(() => expect(screen.getByTestId('ai-local-verified')).toBeInTheDocument());
+    // 주소는 **주소 갈래로만** 넘어간다 — 키체인 벤더에 주소가 실리면 Rust 가
+    // 거절하는 것과 같은 계약이 화면 쪽에서도 지켜져야 한다.
+    expect(mocks.secretVerify).toHaveBeenCalledWith('local', '/vault', 'http://localhost:11434');
+    // 모델 칸은 고를 것이 생겼을 때만 나타난다.
+    expect(screen.getByTestId('ai-local-model-row')).toBeInTheDocument();
+
+    fireEvent.click(screen.getByTestId('ai-local-model'));
+    fireEvent.click(screen.getByText('qwen3:8b'));
+    await waitFor(() => expect(screen.getByTestId('ai-local-connected')).toBeInTheDocument());
+    // 고른 결과가 이 브라우저에 남아, 지도 오른쪽 도크가 새로고침 없이 살아난다.
+    expect(window.localStorage.getItem('ontology-atlas:local-endpoint')).toContain('qwen3:8b');
+  });
+
+  it('러너가 꺼져 있는 것과 포트가 다른 것과 모델이 없는 것을 다르게 말한다', async () => {
+    const seen = new Set<string>();
+    for (const [result, marker] of [
+      [verifyResult({ httpStatus: null, message: 'x' }), 'localFailUnreachable'],
+      [verifyResult({ httpStatus: 404 }), 'localFailNotCompatible'],
+      [verifyResult({ ok: true, httpStatus: 200, body: '{"data":[]}' }), 'localFailNoModels'],
+    ] as const) {
+      mocks.secretVerify.mockResolvedValue(result);
+      const view = renderPanel(makeConnection());
+      fireEvent.click(screen.getByTestId('ai-register-local'));
+      fireEvent.click(screen.getByTestId('ai-verify-local'));
+      const line = await screen.findByTestId('ai-local-failure');
+      expect(line.textContent).toContain(marker);
+      seen.add(marker);
+      view.unmount();
+    }
+    // 셋이 서로 다른 문장이어야 사용자가 다음에 무엇을 할지 안다.
+    expect(seen.size).toBe(3);
+  });
+
+  it('"이 컴퓨터 밖으로 안 나간다" 는 루프백일 때만 말한다', async () => {
+    // 사용자가 https 로 다른 기계를 가리킬 수도 있다(허용한다). 참이 아닌
+    // 자리에 그 문장을 쓰면 이 제품의 신뢰 서사 자체가 거짓말이 된다.
+    window.localStorage.setItem(
+      'ontology-atlas:local-endpoint',
+      JSON.stringify({ baseUrl: 'https://box.example.com:8080', model: 'qwen3:8b' }),
+    );
+    renderPanel(makeConnection());
+    expect(screen.getByText(/settings\.ai\.localScopeRemote/)).toBeInTheDocument();
+    expect(screen.queryByText(/settings\.ai\.localScopeLoopback/)).toBeNull();
+  });
+
+  it('로컬 주소면 나가지 않았다는 사실을 기록으로 말한다', () => {
+    window.localStorage.setItem(
+      'ontology-atlas:local-endpoint',
+      JSON.stringify({ baseUrl: 'http://localhost:11434', model: 'qwen3:8b' }),
+    );
+    renderPanel(makeConnection());
+    expect(screen.getByText(/settings\.ai\.localScopeLoopback:localhost:11434/)).toBeInTheDocument();
   });
 });
