@@ -20,12 +20,23 @@ function withOnlyTool(turn: TurnAssembly, toolName: string): TurnAssembly {
   };
 }
 
+function completedReadRounds(exchanges: TurnAssembly['exchanges']): number {
+  return exchanges.filter((exchange) =>
+    exchange.toolResults.some((result) => !result.isError),
+  ).length;
+}
+
 function forcedReadTool(turn: TurnAssembly): string | null {
-  if (turn.exchanges.length === 0) return firstReadTool(turn.screenContextBlock);
+  const completed = completedReadRounds(turn.exchanges);
+  if (completed === 0) return firstReadTool(turn.screenContextBlock);
   if (hasFocusedConcept(turn.screenContextBlock)) return null;
-  if (turn.exchanges.length === 1) return 'list_concepts';
-  if (turn.exchanges.length === 2) return 'get_concepts';
+  if (completed === 1) return 'list_concepts';
+  if (completed === 2) return 'get_concepts';
   return null;
+}
+
+function requiredReadInstruction(toolName: string): string {
+  return `The required evidence read did not happen. Call ${toolName} now. Do not answer or describe a plan.`;
 }
 
 /**
@@ -74,7 +85,7 @@ export const localAdapter: ProviderAdapter = {
 
   buildBody(turn: TurnAssembly): string {
     const shouldSynthesize =
-      turn.tools.length === 0 || turn.exchanges.length >= LOCAL_TOOL_ROUND_CAP;
+      turn.tools.length === 0 || completedReadRounds(turn.exchanges) >= LOCAL_TOOL_ROUND_CAP;
     const forcedToolName = shouldSynthesize ? null : forcedReadTool(turn);
     const effectiveTurn = shouldSynthesize
       ? { ...turn, tools: [] }
@@ -98,6 +109,29 @@ export const localAdapter: ProviderAdapter = {
       body.reasoning_effort = 'none';
     }
     return JSON.stringify(body);
+  },
+
+  reviewResponse(turn, response) {
+    const expectedTool = forcedReadTool(turn);
+    if (!expectedTool) return { action: 'accept' };
+    if (response.toolCalls.some((call) => call.name === expectedTool)) {
+      return { action: 'accept' };
+    }
+    const alreadyRetried = turn.exchanges.some(
+      (exchange) => exchange.retry?.expectedTool === expectedTool,
+    );
+    if (alreadyRetried) {
+      return {
+        action: 'fail',
+        expectedTool,
+        message: `The local model skipped the required ${expectedTool} evidence read twice. The answer was not accepted.`,
+      };
+    }
+    return {
+      action: 'retry',
+      expectedTool,
+      message: requiredReadInstruction(expectedTool),
+    };
   },
 
   parseResponse(body: string): NormalizedResponse {

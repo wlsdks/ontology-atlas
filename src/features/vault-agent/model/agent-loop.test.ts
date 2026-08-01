@@ -5,7 +5,9 @@ import type { LlmChatEcho } from '@/shared/lib/tauri-llm';
 
 import { runTurn, startTurn, type AgentLoopDeps } from './agent-loop';
 import { anthropicAdapter } from './providers/anthropic';
+import { localAdapter } from './providers/local';
 import { EMPTY_SCREEN_CONTEXT } from './screen-context';
+import { AGENT_TOOLS } from './tool-catalog';
 import type { ToolExecution } from './tool-executor';
 import { AGENT_ROUND_CAP } from './types';
 
@@ -50,6 +52,36 @@ const TOOL_CALL = {
   stop_reason: 'tool_use',
 };
 
+const OPENAI_TEXT_ONLY = {
+  choices: [
+    {
+      message: { role: 'assistant', content: '먼저 구조를 살펴보겠습니다.' },
+      finish_reason: 'stop',
+    },
+  ],
+};
+
+function openAiTool(name: string, args: Record<string, unknown> = {}) {
+  return {
+    choices: [
+      {
+        message: {
+          role: 'assistant',
+          content: '',
+          tool_calls: [
+            {
+              id: `call_${name}`,
+              type: 'function',
+              function: { name, arguments: JSON.stringify(args) },
+            },
+          ],
+        },
+        finish_reason: 'tool_calls',
+      },
+    ],
+  };
+}
+
 function okExecution(overrides: Partial<ToolExecution> = {}): ToolExecution {
   return {
     content: '{"slug":"capabilities/payment"}',
@@ -88,6 +120,77 @@ describe('startTurn — 누른 프레임에 반응한다', () => {
 });
 
 describe('runTurn', () => {
+  it('로컬 모델이 필수 읽기를 생략하면 한 번 교정한 뒤 명시적으로 실패한다', async () => {
+    const send = vi.fn<Send>(async () => echo(OPENAI_TEXT_ONLY));
+    const d = deps({
+      adapter: localAdapter,
+      send,
+      tools: AGENT_TOOLS,
+      model: 'qwen3:8b',
+    });
+
+    const result = await runTurn(
+      d,
+      startTurn({ text: '구조를 감사해줘', screenContext: EMPTY_SCREEN_CONTEXT }),
+      { signal: new AbortController().signal },
+    );
+
+    expect(send).toHaveBeenCalledTimes(2);
+    const retryBody = JSON.parse(send.mock.calls[1]![0].body) as {
+      messages: Array<{ role: string; content?: string }>;
+    };
+    expect(retryBody.messages.at(-1)).toEqual({
+      role: 'user',
+      content:
+        'The required evidence read did not happen. Call list_kinds now. Do not answer or describe a plan.',
+    });
+    expect(result.turn.status).toBe('failed');
+    expect(result.turn.events.some((event) => event.kind === 'assistant')).toBe(false);
+    expect(result.turn.events.at(-1)).toMatchObject({
+      code: 'failed',
+      text: expect.stringContaining('skipped the required list_kinds evidence read twice'),
+    });
+  });
+
+  it('로컬 모델이 교정 뒤 필수 읽기를 수행하면 다음 근거 단계로 진행한다', async () => {
+    const responses = [
+      OPENAI_TEXT_ONLY,
+      openAiTool('list_kinds'),
+      openAiTool('list_concepts', { kind: 'domain', summary: true }),
+      openAiTool('get_concepts', { slugs: ['domains/agent-experience'], body: 'excerpt' }),
+      {
+        choices: [
+          {
+            message: { role: 'assistant', content: '[[domains/agent-experience]]만 확인했습니다.' },
+            finish_reason: 'stop',
+          },
+        ],
+      },
+    ];
+    const send = vi.fn<Send>(async () => echo(responses.shift()));
+    const execute = vi.fn(async (call) =>
+      okExecution({
+        target: call.name,
+        summary: `읽음: ${call.name}`,
+        readSlugs: call.name === 'get_concepts' ? ['domains/agent-experience'] : [],
+      }),
+    );
+
+    const result = await runTurn(
+      deps({ adapter: localAdapter, send, execute, tools: AGENT_TOOLS, model: 'qwen3:8b' }),
+      startTurn({ text: '구조를 감사해줘', screenContext: EMPTY_SCREEN_CONTEXT }),
+      { signal: new AbortController().signal },
+    );
+
+    expect(result.turn.status).toBe('done');
+    expect(send).toHaveBeenCalledTimes(5);
+    expect(execute.mock.calls.map(([call]) => call.name)).toEqual([
+      'list_kinds',
+      'list_concepts',
+      'get_concepts',
+    ]);
+  });
+
   it('도구가 없으면 왕복 1회로 끝난다', async () => {
     const d = deps();
     const result = await runTurn(d, startTurn({ text: '뭐가 이상해?', screenContext: EMPTY_SCREEN_CONTEXT }), {

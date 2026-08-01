@@ -167,14 +167,15 @@ export async function runTurn(
       return { turn: snapshot(), readSlugs, writeIntents };
     }
 
-    const payload = deps.adapter.buildBody({
+    const assembly = {
       model: deps.model,
       system: deps.system,
       userText: question,
       screenContextBlock,
       exchanges,
       tools: deps.tools,
-    });
+    };
+    const payload = deps.adapter.buildBody(assembly);
 
     let echo: LlmChatEcho;
     try {
@@ -224,6 +225,26 @@ export async function runTurn(
           : parsed.stop === 'refusal'
             ? deps.notices.providerRefused
             : deps.notices.failed,
+      });
+      emit();
+      return { turn: snapshot(), readSlugs, writeIntents };
+    }
+
+    const review = deps.adapter.reviewResponse?.(assembly, parsed) ?? { action: 'accept' as const };
+    if (review.action === 'retry') {
+      exchanges.push({
+        assistant: parsed.raw,
+        toolResults: [],
+        retry: { expectedTool: review.expectedTool, instruction: review.message },
+      });
+      continue;
+    }
+    if (review.action === 'fail') {
+      status = 'failed';
+      events.push({
+        kind: 'notice',
+        code: 'failed',
+        text: `${deps.notices.failed} (${review.message})`,
       });
       emit();
       return { turn: snapshot(), readSlugs, writeIntents };

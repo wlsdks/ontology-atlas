@@ -169,8 +169,15 @@ describe('벤더 어댑터 — 셋이 같은 모양으로 접힌다', () => {
       model: 'qwen3:8b',
       exchanges: [
         {
-          assistant: { role: 'assistant', tool_calls: [] },
-          toolResults: [],
+          assistant: { role: 'assistant', tool_calls: [{ id: 'o0' }] },
+          toolResults: [
+            {
+              id: 'o0',
+              name: 'list_kinds',
+              content: '{"total":70}',
+              isError: false,
+            },
+          ],
         },
       ],
     });
@@ -199,8 +206,15 @@ describe('벤더 어댑터 — 셋이 같은 모양으로 접힌다', () => {
       exchanges: [
         ...evidenceTurn.exchanges,
         {
-          assistant: { role: 'assistant', tool_calls: [] },
-          toolResults: [],
+          assistant: { role: 'assistant', tool_calls: [{ id: 'o1' }] },
+          toolResults: [
+            {
+              id: 'o1',
+              name: 'list_concepts',
+              content: '{"nodes":[]}',
+              isError: false,
+            },
+          ],
         },
       ],
     });
@@ -240,7 +254,21 @@ describe('벤더 어댑터 — 셋이 같은 모양으로 접힌다', () => {
 
     const thirdEvidenceTurn = assembly({
       model: 'qwen3:8b',
-      exchanges: Array.from({ length: 3 }, () => evidenceTurn.exchanges[0]!),
+      exchanges: [
+        evidenceTurn.exchanges[0]!,
+        detailTurn.exchanges[1]!,
+        {
+          assistant: { role: 'assistant', tool_calls: [{ id: 'o2' }] },
+          toolResults: [
+            {
+              id: 'o2',
+              name: 'get_concepts',
+              content: '{"concepts":[]}',
+              isError: false,
+            },
+          ],
+        },
+      ],
     });
     const forcedSynthesis = JSON.parse(
       PROVIDER_ADAPTERS.local.buildBody(thirdEvidenceTurn),
@@ -264,6 +292,45 @@ describe('벤더 어댑터 — 셋이 같은 모양으로 접힌다', () => {
     // 그 이유가 화면 어디에도 없다. 사용자가 목록에서 고를 때까지 이 갈래는
     // 켜지지 않는다(`isLocalEndpointReady`).
     expect(PROVIDER_ADAPTERS.local.defaultModel).toBe('');
+  });
+
+  it('주소 갈래는 필수 읽기 생략을 정상 답으로 받지 않는다', () => {
+    const turn = assembly({ model: 'qwen3:8b' });
+    const response = PROVIDER_ADAPTERS.local.parseResponse(
+      JSON.stringify({
+        choices: [
+          {
+            message: { role: 'assistant', content: '먼저 조사하겠습니다.' },
+            finish_reason: 'stop',
+          },
+        ],
+      }),
+    );
+    const retry = PROVIDER_ADAPTERS.local.reviewResponse?.(turn, response);
+    expect(retry).toMatchObject({ action: 'retry', expectedTool: 'list_kinds' });
+
+    const retriedTurn = assembly({
+      model: 'qwen3:8b',
+      exchanges: [
+        {
+          assistant: response.raw,
+          toolResults: [],
+          retry: {
+            expectedTool: 'list_kinds',
+            instruction: retry?.action === 'retry' ? retry.message : '',
+          },
+        },
+      ],
+    });
+    const retriedBody = JSON.parse(
+      PROVIDER_ADAPTERS.local.buildBody(retriedTurn),
+    ) as { tool_choice: { function: { name: string } }; tools: unknown[] };
+    expect(retriedBody.tool_choice.function.name).toBe('list_kinds');
+    expect(retriedBody.tools).toHaveLength(1);
+    expect(PROVIDER_ADAPTERS.local.reviewResponse?.(retriedTurn, response)).toMatchObject({
+      action: 'fail',
+      expectedTool: 'list_kinds',
+    });
   });
 
   it('쓰기 도구도 목록에는 실린다 — 막는 곳은 실행기다', () => {

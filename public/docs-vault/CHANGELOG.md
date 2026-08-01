@@ -40,8 +40,10 @@ localhost 러너의 한 왕복은 60초로 제한하고, 원격 제공자의 180
 `NetworkCache`와 `CacheStorage`만 지운다. 볼트 핸들과 설정이 든
 IndexedDB·LocalStorage는 보존한다. qwen3:8b 실측은 새 순서의
 `list_kinds`(5.824초)와 capability 목록(2.484초)까지 따랐지만 세 번째
-`get_concepts`를 생략했다. 앱은 이를 근거 없는 답으로 강등했으며, 작은 로컬
-모델의 필수 본문 읽기 완주는 후속 품질 게이트로 남는다.
+`get_concepts`를 생략했다. 이제 필수 읽기 대신 답이나 계획을 내면 같은 도구를
+한 번만 다시 요구하고, 두 번째에도 생략하면 그 답을 화면에 싣지 않고 턴을
+명시적으로 실패시킨다. 실제 `qwen3:8b` 재검증에서는 `list_kinds` →
+`list_concepts` → `get_concepts`를 모두 수행한 뒤에만 제한된 결론을 냈다.
 
 ---
 

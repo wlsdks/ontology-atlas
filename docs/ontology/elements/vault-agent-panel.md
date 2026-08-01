@@ -7,4 +7,4 @@ path: src/widgets/vault-agent-panel
 created_by: "agent:unknown"
 ---
 
-에이전트 연결 상태와 실제 도구 읽기, 감사 기록, timeout 및 근거 없는 답 강등을 보여주는 패널 위젯. capabilities/vault-agent의 사람 판정 표면이며, 구현은 src/widgets/vault-agent-panel과 src/features/vault-agent/model에 걸친다.
+에이전트 연결 상태와 실제 도구 읽기, 감사 기록, timeout 및 필수 읽기 실패를 보여주는 패널 위젯. 근거 읽기를 생략한 로컬 모델에는 한 번 교정하고, 두 번째에도 생략하면 답을 표시하지 않는다. capabilities/vault-agent의 사람 판정 표면이며, 구현은 src/widgets/vault-agent-panel과 src/features/vault-agent/model에 걸친다.

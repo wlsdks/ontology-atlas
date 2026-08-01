@@ -61,7 +61,7 @@
  * It cannot. Writing "single source" over a duplicate does not make it one —
  * only the gate does.
  *
- * ## Status (2026-07-31, PR1 of six)
+ * ## Status (2026-08-02)
  *
  * The **gate-logic half is now wired**: `mcp/src/vault.mjs` imports
  * {@link looksLikePath} and the message builders below from this module, and it
@@ -71,12 +71,12 @@
  * routes around it, and `tests/contract/vault-schema.contract.test.ts` fails if
  * the two packages' thresholds drift.
  *
- * The **prompt half is not yet wired**: `CONSTRUCTION_RULES_EN`,
- * `ELEMENT_NAMING_RULE_EN`, `ELEMENT_NAMING_RULE_BATCH_EN`, and
- * `CHAT_RULES_DELTA_EN` still have no consumer and no contract test. Those are
- * PR2 (`SERVER_INSTRUCTIONS` / tool descriptions) and PR3 (in-app chat prompt).
- * Until then, treat the four prompt strings as drafts and the four functions
- * below as canon.
+ * The **prompt half is wired too**: `CONSTRUCTION_RULES_EN` is interpolated into
+ * `SERVER_INSTRUCTIONS`; the naming rules are appended to the single/batch tool
+ * descriptions; and the in-app chat carries the construction rules plus
+ * `CHAT_RULES_DELTA_EN`. `construction-rules.contract.test.ts` proves the MCP
+ * import path, while `vault-schema.contract.test.ts` proves the app's necessary
+ * literal copy stays byte-aligned with this canon.
  */
 
 /**

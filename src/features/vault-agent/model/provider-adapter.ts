@@ -26,6 +26,12 @@ export interface WireExchange {
    */
   assistant: unknown;
   toolResults: ToolResultPayload[];
+  /**
+   * A provider ignored a required tool call. The next request preserves that
+   * assistant turn, then sends one deterministic correction instead of silently
+   * accepting an evidence-free answer.
+   */
+  retry?: { expectedTool: string; instruction: string };
 }
 
 export interface TurnAssembly {
@@ -60,12 +66,18 @@ export interface NormalizedResponse {
   errorMessage?: string;
 }
 
+export type ProviderResponseReview =
+  | { action: 'accept' }
+  | { action: 'retry' | 'fail'; expectedTool: string; message: string };
+
 export interface ProviderAdapter {
   readonly provider: string;
   /** 이 벤더의 기본 모델. */
   readonly defaultModel: string;
   buildBody(turn: TurnAssembly): string;
   parseResponse(body: string): NormalizedResponse;
+  /** Optional provider-specific enforcement after parsing, before accepting text. */
+  reviewResponse?(turn: TurnAssembly, response: NormalizedResponse): ProviderResponseReview;
 }
 
 /**
