@@ -25,6 +25,32 @@ describe("release-facts", () => {
     expect(RELEASE_VERSION).toBe(tauriConf.version);
   });
 
+  /**
+   * **네 번째 자리** — `src-tauri/Cargo.toml` (2026-08-01 추가).
+   *
+   * 이 시험은 오래 셋만 봤고(`RELEASE_VERSION` · `package.json` ·
+   * `tauri.conf.json`), Cargo 는 `pnpm desktop:check` 에서만 검사됐다. 그
+   * 비대칭의 값은 rc.5 버전 올림에서 그대로 나왔다: 유닛 스위트 5,502건이
+   * 전부 초록인 채로 릴리스 리허설이 **첫 단계에서** 멈췄다
+   * (`cargo=1.0.0-rc.4`).
+   *
+   * 늦게 잡히는 것이 문제다 — 리허설은 앱 컴파일이 들어 있어 사람이 태그
+   * 직전에 돌리는 무거운 관문이고, 거기서 처음 알게 되면 왕복이 한 번 는다.
+   * 같은 사실을 0.5초에 알 수 있으면 0.5초에 안다.
+   *
+   * TOML 파서를 들이지 않는다 — 이 파일이 필요한 것은 최상위 `version` 한
+   * 줄이고, 그걸 위해 의존성을 더하면 게이트가 자기 비용을 넘어선다.
+   */
+  it("matches the version declared in src-tauri/Cargo.toml", () => {
+    const cargo = readFileSync(join(process.cwd(), "src-tauri/Cargo.toml"), "utf8");
+    // `[package]` 절의 첫 `version = "…"` — 의존성 절의 version 과 섞이지 않게
+    // 파일 앞머리에서만 찾는다.
+    const packageSection = cargo.split(/^\[/m)[1] ?? cargo;
+    const match = /^version\s*=\s*"([^"]+)"/m.exec(packageSection);
+    expect(match?.[1], "src-tauri/Cargo.toml 의 [package] version 을 못 읽었다").toBeDefined();
+    expect(RELEASE_VERSION).toBe(match?.[1]);
+  });
+
   it("matches the minimum macOS version declared in src-tauri/tauri.conf.json", () => {
     const tauriConf = readJson("src-tauri/tauri.conf.json") as {
       bundle?: { macOS?: { minimumSystemVersion?: string } };
