@@ -1,9 +1,5 @@
 import type { MetadataRoute } from 'next';
-import {
-  deriveProjectsFromVault,
-  vaultManifest as staticVaultManifestRaw,
-  type VaultManifest,
-} from '@/entities/docs-vault';
+import { deriveBundledProjects } from '@/entities/docs-vault';
 import { SITE_URL } from '@/shared/config';
 import { routing } from '@/i18n/routing';
 
@@ -28,9 +24,19 @@ const STATIC_ROUTES = [
 ];
 
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
-  // 빌드 타임 dogfood vault manifest 의 `kind: project` doc 만으로 sitemap
-  // 합성. local-first 라 외부 fetch 없이 정적 export 가능.
-  const projects = deriveProjectsFromVault(staticVaultManifestRaw as VaultManifest);
+  /**
+   * 사이트맵의 프로젝트 목록은 **라우트 생성과 같은 출처**여야 한다 —
+   * `bundledProjectSlugs()` 가 만드는 주소 전집과 정확히 같은 집합.
+   *
+   * 종전엔 dogfood 매니페스트만 봤다. 그래서 `/project/storefront/` 의 404 를
+   * 고치면서 라우트 생성만 전집으로 바꿨을 때, **빌드에는 있는데 사이트맵에는
+   * 없는** 주소가 생겼다(2026-08-01 실측: `public-routes-coherence` 가
+   * `en: HTML 은 있지만 sitemap 누락된 슬러그: storefront` 로 잡았다). 앱
+   * 곳곳이 홍보하는 유일한 데모가 크롤러에게는 여전히 존재하지 않았다.
+   *
+   * 값이 두 곳에서 파생되면 반쪽 수리가 통과한다. 하나로 합친다.
+   */
+  const projects = deriveBundledProjects();
   const now = new Date();
 
   const entries: MetadataRoute.Sitemap = [];
