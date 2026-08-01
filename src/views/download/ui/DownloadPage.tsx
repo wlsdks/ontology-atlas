@@ -201,7 +201,7 @@ export function DownloadPage() {
         <div
           className={cn(
             PAGE_GUTTER,
-            'shrink-0 pt-5 pb-[max(var(--page-bottom-breath),env(safe-area-inset-bottom))] [@media(min-width:64rem)_and_(max-height:56.25rem)]:pt-3 [@media(min-width:64rem)_and_(max-height:56.25rem)]:pb-3',
+            'shrink-0 pt-5 pb-[max(var(--page-bottom-breath),env(safe-area-inset-bottom))] [@media(min-width:64rem)_and_(max-height:56.25rem)]:pt-3 [@media(min-width:64rem)_and_(max-height:56.25rem)]:pb-6',
           )}
         >
           <div className={PAGE_COLUMN}>

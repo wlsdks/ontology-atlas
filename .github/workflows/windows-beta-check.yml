@@ -72,7 +72,7 @@ jobs:
           working-directory: src-tauri
 
       - name: Windows release contract tests
-        run: node --test scripts/lib/mcp-binary.test.mjs scripts/stage-windows-release-assets.test.mjs
+        run: node --test scripts/lib/mcp-binary.test.mjs scripts/stage-windows-release-assets.test.mjs scripts/verify-mcp-binary.test.mjs
 
       - name: Desktop readiness
         run: pnpm desktop:check

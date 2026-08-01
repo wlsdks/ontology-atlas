@@ -103,8 +103,8 @@ function flagValue(argv, name) {
 
 async function main() {
   const argv = process.argv.slice(2);
-  const binaryPath = flagValue(argv, '--binary');
-  const vaultPath = flagValue(argv, '--vault') ?? path.join(process.cwd(), 'docs', 'ontology');
+  const binaryPath = flagValue(argv, 'binary');
+  const vaultPath = flagValue(argv, 'vault') ?? path.join(process.cwd(), 'docs', 'ontology');
   if (!binaryPath) {
     console.error('Usage: node scripts/verify-mcp-binary.mjs --binary=<path> [--vault=<path>]');
     process.exit(1);
