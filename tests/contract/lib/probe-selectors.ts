@@ -28,9 +28,40 @@ export function collectProbeSelectors(rustSource: string): string[] {
  * 지워진 셀렉터 이름이 산문으로 남아 있고, 그걸 "살아 있다" 로 세면 이 게이트가
  * 무력해진다.
  */
+/**
+ * **런타임에 조립되는 testid** — 소스에 리터럴로 없지만 살아 있다.
+ *
+ * 이 게이트는 소스 텍스트에 그 문자열이 있는지로 「살아 있음」을 판정한다. 그런데
+ * 일부 프리미티브는 부모가 받은 testid 에 접미사를 붙여 자식에 단다 — 예:
+ * `src/shared/ui/select.tsx` 가 `data-testid={`${dataTestid}-listbox`}` 로 목록을
+ * 표시한다. 그러면 `ai-local-model-listbox` 는 **DOM 에는 있고 소스에는 없다.**
+ *
+ * 그 셀렉터를 `KNOWN_STALE_OPTIONAL` 에 넣는 것은 틀린 처방이다 — 그 목록은
+ * 「죽은 UI 를 가리키는 **선택적** 증거」용인데, 이건 살아 있고 프로브가 없으면
+ * hard-fail 한다. 목록에 넣으면 진짜 죽었을 때도 조용히 통과한다.
+ *
+ * 그래서 접미사를 벗겨 **밑동이 실재하는지**로 판정한다. 밑동이 사라지면 여전히
+ * 잡힌다 — 게이트가 약해지지 않는다. 새 접미사를 더할 때는 그것을 조립하는
+ * 프리미티브 파일을 주석에 적어라.
+ */
+const COMPOSED_SUFFIXES = [
+  // src/shared/ui/select.tsx — 열린 목록에 `-listbox` 를 붙인다.
+  "-listbox",
+] as const;
+
 export function findDeadSelectors(selectors: readonly string[], cwd: string): string[] {
   const haystack = readSourceText(cwd);
-  return selectors.filter((id) => !haystack.includes(id));
+  const alive = (id: string): boolean => {
+    if (haystack.includes(id)) return true;
+    for (const suffix of COMPOSED_SUFFIXES) {
+      if (!id.endsWith(suffix)) continue;
+      const base = id.slice(0, -suffix.length);
+      // 밑동이 실재해야만 살아 있다고 본다 — 접미사만으로 면제하지 않는다.
+      if (base && haystack.includes(base)) return true;
+    }
+    return false;
+  };
+  return selectors.filter((id) => !alive(id));
 }
 
 const SOURCE_ROOTS = ["src", "app"] as const;
