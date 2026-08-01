@@ -201,7 +201,7 @@ export function DownloadPage() {
         <div
           className={cn(
             PAGE_GUTTER,
-            'shrink-0 pt-6 pb-[max(var(--page-bottom-breath),env(safe-area-inset-bottom))]',
+            'shrink-0 pt-5 pb-[max(var(--page-bottom-breath),env(safe-area-inset-bottom))] [@media(min-width:64rem)_and_(max-height:56.25rem)]:pt-3 [@media(min-width:64rem)_and_(max-height:56.25rem)]:pb-3',
           )}
         >
           <div className={PAGE_COLUMN}>
@@ -221,7 +221,7 @@ export function DownloadPage() {
              * 고스트 버튼 하나로 승격하고(`PlateExitRow`), 이 줄은 중복을
              * 반납한다. 콜로폰이 짧아진 만큼 라이선스가 더 잘 읽힌다.
              */}
-            <footer className="mt-5 border-t border-[color:var(--color-divider)] pt-4 text-label leading-label text-[color:var(--color-text-quaternary)]">
+            <footer className="mt-4 border-t border-[color:var(--color-divider)] pt-4 text-label leading-label text-[color:var(--color-text-quaternary)] [@media(min-width:64rem)_and_(max-height:56.25rem)]:mt-3 [@media(min-width:64rem)_and_(max-height:56.25rem)]:pt-3">
               <VerifyDetails published={published} primaryAsset={primaryAsset} />
               <div className="mt-3 flex flex-wrap items-center gap-x-4 gap-y-2">
                 <span className="font-mono uppercase tracking-[0.14em]">
@@ -433,7 +433,7 @@ function PortraitStage({
           // 컬럼이 어차피 수직 중앙에 앉고, 패딩이 실제로 무는 것은 **짧은 창**
           // 뿐이다 — 거기서 이 40px 두 겹이 곧 스크롤이다(실측 1512×850: py-12
           // 이면 5px 초과).
-          'pointer-events-none relative flex min-w-0 flex-1 items-center py-10',
+          'pointer-events-none relative flex min-w-0 flex-1 items-center py-10 [@media(min-width:64rem)_and_(max-height:56.25rem)]:py-3',
         )}
       >
         <div className={PAGE_COLUMN}>
@@ -512,7 +512,7 @@ function DownloadPlate({
       data-testid="download-plate"
       // `<sm` 의 `p-4` 는 취향이 아니라 산술이다 — 320px 에서 판 실질 폭이
       // 곧 CTA 가 들어갈 자리이고, `p-6` 이면 영어 라벨이 22px 넘친다(실측).
-      className="mt-8 min-w-0 rounded-panel border border-[color:var(--color-border-soft)] bg-[color:var(--color-panel)] p-4 shadow-[var(--shadow-elevation-2)] sm:p-6 md:p-7"
+      className="mt-8 min-w-0 rounded-panel border border-[color:var(--color-border-soft)] bg-[color:var(--color-panel)] p-4 shadow-[var(--shadow-elevation-2)] sm:p-6 md:p-7 [@media(min-width:64rem)_and_(max-height:56.25rem)]:mt-4 [@media(min-width:64rem)_and_(max-height:56.25rem)]:py-4"
     >
       {published && primaryAsset ? (
         <PublishedActions primaryAsset={primaryAsset} />
@@ -686,7 +686,7 @@ function PlateExitRow({ published }: { published: boolean }) {
   return (
     <div
       data-testid="download-exit-row"
-      className="mt-5 grid min-w-0 grid-cols-1 gap-2.5 border-t border-[color:var(--color-divider)] pt-3.5 sm:grid-cols-[1.08fr_0.92fr]"
+      className="mt-5 grid min-w-0 grid-cols-1 gap-2.5 border-t border-[color:var(--color-divider)] pt-3.5 sm:grid-cols-[1.08fr_0.92fr] [@media(min-width:64rem)_and_(max-height:56.25rem)]:mt-3 [@media(min-width:64rem)_and_(max-height:56.25rem)]:pt-2.5"
     >
       <a
         href={GITHUB_REPOSITORY_URL}
@@ -1171,7 +1171,7 @@ function PlatformStatus() {
     return (
       <section
         data-testid="download-platform-windows"
-        className="mt-5 min-w-0 border-t border-[color:var(--color-divider)] pt-5"
+        className="mt-5 min-w-0 border-t border-[color:var(--color-divider)] pt-5 [@media(min-width:64rem)_and_(max-height:56.25rem)]:mt-3 [@media(min-width:64rem)_and_(max-height:56.25rem)]:pt-3"
         aria-labelledby="download-windows-title"
       >
         <PlatformHeading
@@ -1183,7 +1183,7 @@ function PlatformStatus() {
           id={warningId}
           role="note"
           data-testid="download-windows-unsigned-warning"
-          className="mt-3 break-words rounded-card border border-[color:var(--color-amber-source-a25)] bg-[color:var(--color-amber-source-a08)] px-3.5 py-3 text-body leading-body text-[color:var(--color-amber-source-text-a95)]"
+          className="mt-3 break-words rounded-card border border-[color:var(--color-amber-source-a25)] bg-[color:var(--color-amber-source-a08)] px-3.5 py-3 text-body leading-body text-[color:var(--color-amber-source-text-a95)] [@media(min-width:64rem)_and_(max-height:56.25rem)]:py-2"
         >
           {t('windowsUnsignedWarning')}
         </p>
@@ -1225,7 +1225,7 @@ function PlatformStatus() {
        * 칩과의 간격이 주 CTA 사이 간격과 같을 이유가 없다. 850 창은 카운슬이 게이트로
        * 지키는 폭이고(설치 3단이 접히면 안 된다), 그 제약이 이 값을 정한다.
        */
-      className="mt-5 min-w-0 border-t border-[color:var(--color-divider)] pt-5"
+      className="mt-5 min-w-0 border-t border-[color:var(--color-divider)] pt-5 [@media(min-width:64rem)_and_(max-height:56.25rem)]:mt-3 [@media(min-width:64rem)_and_(max-height:56.25rem)]:pt-3"
     >
       <PlatformHeading title={t('windowsPlatformTitle')} status={t('windowsPendingBadge')} />
       <div className="mt-2 flex min-w-0 flex-wrap items-center gap-2">

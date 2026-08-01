@@ -322,15 +322,15 @@ jobs:
           if ($install.ExitCode -ne 0) { throw "NSIS silent install failed with exit $($install.ExitCode)." }
 
           $candidates = @(
-            "$env:LOCALAPPDATA\Ontology Atlas\Ontology Atlas.exe",
-            "$env:LOCALAPPDATA\Programs\Ontology Atlas\Ontology Atlas.exe"
+            "$env:LOCALAPPDATA\Ontology Atlas\ontology-atlas.exe",
+            "$env:LOCALAPPDATA\Programs\Ontology Atlas\ontology-atlas.exe"
           )
           $app = $candidates | Where-Object { Test-Path $_ } | Select-Object -First 1
           if (-not $app) {
-            $app = Get-ChildItem $env:LOCALAPPDATA -Filter 'Ontology Atlas.exe' -File -Recurse -ErrorAction SilentlyContinue |
+            $app = Get-ChildItem $env:LOCALAPPDATA -Filter 'ontology-atlas.exe' -File -Recurse -ErrorAction SilentlyContinue |
               Select-Object -First 1 -ExpandProperty FullName
           }
-          if (-not $app) { throw "The installer completed but Ontology Atlas.exe was not found." }
+          if (-not $app) { throw "The installer completed but ontology-atlas.exe was not found." }
 
           $sidecar = Join-Path (Split-Path $app) 'ontology-atlas-mcp.exe'
           if (-not (Test-Path $sidecar)) { throw "The installed app is missing ontology-atlas-mcp.exe." }

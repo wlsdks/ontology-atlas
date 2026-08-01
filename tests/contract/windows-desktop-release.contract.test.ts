@@ -18,6 +18,8 @@ describe('Windows desktop beta release contract', () => {
     expect(workflow).toContain('Get-AuthenticodeSignature');
     expect(workflow).toContain('MpCmdRun.exe');
     expect(workflow).toContain("-ArgumentList '/S'");
+    expect(workflow).toContain("-Filter 'ontology-atlas.exe'");
+    expect(workflow).not.toContain("-Filter 'Ontology Atlas.exe'");
     expect(workflow).toContain('verify-mcp-binary.mjs');
     expect(workflow).toContain('ontology-atlas-windows-x64');
     expect(workflow).toContain('(Get-Content package.json | ConvertFrom-Json).version');
