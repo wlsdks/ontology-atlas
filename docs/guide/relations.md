@@ -20,20 +20,20 @@
 node cli/src/index.mjs overview --vault docs/ontology
 ```
 
-관계 종류 분포는 이렇게 나옵니다.
+관계 종류 분포가 이렇게 나옵니다 — **여기 수를 옮겨 적지 않습니다.** 볼트는
+누가 노드를 더할 때마다 자라서, 문서에 적힌 순간부터 낡기 시작합니다. 직접
+돌려서 자기 볼트의 수를 보십시오.
 
-| 관계 키 | 적힌 참조 수 | 무엇인가 |
-|---|---|---|
-| `elements` | 314 | 구조 — 이 개념을 실현하는 코드 |
-| `domain` | 87 | 구조 — 이 개념이 속한 도메인 |
-| `relates` | 67 | **의미** — 비슷하거나 함께 읽어야 하는 것 |
-| `capabilities` | 40 | 구조 — 이 도메인이 담는 역량 |
-| `dependencies` | 28 | **의미** — 기대고 있는 것 |
-| `describes` | 10 | 문서가 가리키는 대상 |
-| `domains` | 6 | 구조 — 프로젝트가 담는 도메인 |
+관계 키는 둘로 나뉩니다.
 
-구조 밖의 의미 관계가 **95개**(`relates` 67 + `dependencies` 28)입니다. 즉 이
-볼트는 트리가 아니라 이미 **그래프**입니다.
+| 관계 키 | 무엇인가 |
+|---|---|
+| `elements` · `capabilities` · `domains` · `domain` | **구조** — 무엇이 무엇을 담는가 |
+| `relates` · `dependencies` | **의미** — 비슷한 것, 기대고 있는 것 |
+| `describes` | 문서가 가리키는 대상 |
+
+구조만 있으면 트리이고, **의미 관계가 하나라도 붙는 순간 그래프**가 됩니다.
+그 둘은 계층을 가로지를 수 있기 때문입니다.
 
 도메인 사이만 따로 보려면:
 
@@ -41,33 +41,30 @@ node cli/src/index.mjs overview --vault docs/ontology
 node cli/src/index.mjs domain-matrix --vault docs/ontology
 ```
 
-도메인 6개 사이에 **도메인을 가로지르는 관계 60개**가 있고, 서로 이어진
-도메인 쌍이 **22가지**입니다. 도메인끼리 못 잇는 게 아니라, 이 볼트에서는
-이미 대부분이 이어져 있습니다.
+어느 도메인 쌍이 서로 이어져 있는지 표로 나옵니다.
 
-### 도메인이 도메인을 직접 가리키는 실제 예
+### 도메인이 도메인을 직접 가리키는 법
 
-`docs/ontology/domains/onboarding-ux.md` 의 frontmatter 마지막 줄입니다.
+도메인 문서의 frontmatter 에 상대 도메인의 슬러그를 그냥 적습니다.
 
 ```markdown
 ---
-slug: domains/onboarding-ux
+slug: domains/onboarding-and-shell
 kind: domain
-title: Onboarding & UX
-capabilities: [agent-config-onboarding, cli-developer-entry, ...]
-relates: [domains/views]
+title: "Onboarding, Distribution & App Shell"
+relates: [domains/topology-navigation]
 ---
 ```
 
-그리고 `docs/ontology/domains/views.md` 쪽에서도 마주 봅니다.
+반대쪽에서도 마주 볼 수 있습니다. `relates` 는 방향이 없어서 한쪽만 적어도
+같은 한 줄이고, 양쪽에 적어도 지도는 왕복을 한 줄로 접습니다.
 
 ```markdown
 ---
-slug: domains/views
+slug: domains/topology-navigation
 kind: domain
 relates:
-  - domains/onboarding-ux    # 도메인 → 도메인
-  - domains/ontology-core
+  - domains/onboarding-and-shell    # 도메인 → 도메인
 ---
 ```
 
@@ -103,14 +100,14 @@ element           element
 
 ### 관계를 선언하는 쪽
 
-`docs/ontology/capabilities/vault-live-updates.md`:
+역량 문서 하나를 예로 들면 이렇게 생겼습니다.
 
 ```markdown
 ---
 slug: capabilities/vault-live-updates
 kind: capability
 title: Vault live updates
-domain: vault-local-first
+domain: domains/local-vault-management
 dependencies:
   - capabilities/topology-canvas-render   # 기댄다 (방향)
 relates:
