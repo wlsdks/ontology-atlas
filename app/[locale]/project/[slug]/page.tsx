@@ -1,17 +1,11 @@
 import { Suspense } from 'react';
 import type { Metadata } from 'next';
 import { notFound } from 'next/navigation';
-import {
-  deriveProjectsFromVault,
-  vaultManifest as staticVaultManifestRaw,
-  type VaultManifest,
-} from '@/entities/docs-vault';
+import { bundledProjectSlugs, deriveBundledProjects } from '@/entities/docs-vault';
 import { ProjectDetailPage } from '@/views/project-detail';
 import { absoluteUrl } from '@/shared/config';
 import { buildPageMetadata } from '@/shared/lib/page-metadata';
 import { RouteLoadingFallback } from '@/shared/ui';
-
-const staticVaultManifest = staticVaultManifestRaw as VaultManifest;
 
 interface Params {
   slug: string;
@@ -22,12 +16,15 @@ interface Params {
  *
  * R10b (cloud surface 영구 제거) 이후 — vault 매니페스트의 `kind: project`
  * doc 만으로 정적 페이지 빌드. 사용자별 cloud 프로젝트 fetch 단계 사라짐.
- * 비어 있으면 fallback 1개 (빌드 실패 방지).
+ *
+ * ⚠️ **번들된 샘플 전부**에서 뽑는다(2026-08-01). dogfood 매니페스트만 보던
+ * 시절 `/ko/project/storefront/` 가 404 였다 — 앱 곳곳이 홍보하는 유일한
+ * 데모가 자기 정본 주소를 못 가졌다. 전집 산정의 단일 출처는
+ * `bundledProjectSlugs()`, 게이트는
+ * `tests/contract/bundled-project-routes.contract.test.ts`.
  */
 export async function generateStaticParams(): Promise<Params[]> {
-  const vaultProjects = deriveProjectsFromVault(staticVaultManifest);
-  if (vaultProjects.length === 0) return [{ slug: 'iam' }];
-  return vaultProjects.map((p) => ({ slug: p.slug }));
+  return bundledProjectSlugs().map((slug) => ({ slug }));
 }
 
 /**
@@ -39,7 +36,7 @@ export async function generateMetadata({
   params: Promise<{ locale: string; slug: string }>;
 }): Promise<Metadata> {
   const { locale, slug } = await params;
-  const projects = deriveProjectsFromVault(staticVaultManifest);
+  const projects = deriveBundledProjects();
   const project = projects.find((p) => p.slug === slug);
 
   if (!project) {
@@ -104,7 +101,7 @@ export default async function Page({
   params: Promise<{ locale: string; slug: string }>;
 }) {
   const { locale, slug } = await params;
-  const projects = deriveProjectsFromVault(staticVaultManifest);
+  const projects = deriveBundledProjects();
   const project = projects.find((p) => p.slug === slug);
 
   if (!project) {

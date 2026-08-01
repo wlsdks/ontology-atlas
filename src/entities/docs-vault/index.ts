@@ -51,6 +51,7 @@ export {
 } from './lib/build-vault-markdown';
 export { deriveOntologyFromVault, slugifyName } from './lib/derive-ontology-from-vault';
 export { deriveProjectsFromVault } from './lib/derive-projects-from-vault';
+export { deriveBundledProjects, bundledProjectSlugs } from './lib/bundled-projects';
 export {
   computeProjectSlug,
   isProjectVaultDoc,
