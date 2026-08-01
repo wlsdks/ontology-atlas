@@ -712,16 +712,31 @@ readers. The in-app composer enforces the same rule for humans: the field for
 the current screen language is required, and the other language is offered
 right beside it.
 
-### Element slug — two valid patterns
+### Element slug — flat only (R15's "two valid patterns" is retired)
 
-`kind: element` allows two natural slug styles, each with different ergonomics:
+A slug is the node's **name**, flat under its kind folder: `elements/<role-name>`
+(`elements/jwt-token`, `elements/topology-map-v2`). The file's location lives in
+`path:`, never in the slug. Path-style slugs (`elements/src/features/auth`) are
+**rejected at every write door** (`add_concept` / `add_concepts` /
+`rename_concept` / `reclassify_concept` / CLI `add`) by `flatSlugIssue()` in
+`schema.mjs`.
 
-| Pattern | Example slug | When to use |
-|---|---|---|
-| **flat** | `mcp-sdk`, `file-system-access-api` | The element is an *external library* / *abstract concept* that doesn't sit at a single path |
-| **path-style** | `src/features/auth`, `scripts/build-vault.mjs` | The element is a concrete code module / file inside the codebase. Auto-prefix produces `elements/src/features/auth.md` (4 levels) — deeper but the path is self-documenting |
+Why the R15 stance ("pick flat or path-style per what the element is") was
+overturned (2026-08-01, `docs/DECISIONS.md` 「슬러그는 평평한 식별자다」): node
+identity is resolved by the slug *tail* on three surfaces — the web derivation,
+the unique-tail slug lookup this server documents for `get_concept`, and deep
+links. Path-style slugs collide the moment two files share a basename, and the
+graph silently merges distinct nodes. Measured on the regenerated dogfood vault:
+`elements/src/{entities,views,widgets}/docs-vault` rendered as **one** node and
+four relations disappeared from the screen. "The path is self-documenting" is
+what `path:` is for — a path is evidence of a concept, not the concept (the same
+sentence the 2026-07-31 construction rules apply to titles and `elements:`
+references).
 
-Both pass `vault:validate`. With `--auto-prefix` (CLI default since R15), path-style slugs nest under `elements/` exactly like flat slugs do — pick the style that matches what the element *is*, not what the file system prefers. Use `--raw-slug` to opt out of the `elements/` prefix entirely.
+A vault's **own** folder nesting outside the schema kind folders
+(`services/auth/api.md` in an imported vault) is not this gate's business —
+local-first means the user's disk layout is respected; real tail collisions
+there surface as the compiler's `ambiguous-alias` warning.
 
 The same schema is mirrored at `cli/src/lib/schema.mjs`. A contract test
 (`tests/contract/vault-schema.contract.test.ts`) keeps the two in lock-step;
@@ -794,7 +809,12 @@ current returned page, including the action id, executable flag, `phase`, `kind`
 and `severity`.
 This help path does not start the MCP server.
 
-A successful run looks like this:
+A successful run looks like this. **The transcript states no vault-derived
+counts, slugs, or graph hashes** — those change the moment anyone adds a node,
+so a number printed here would be wrong by the next commit and nobody would
+notice. `<N>` / `<slug>` mark the places your own run fills in; the numbers that
+*are* written out (tool inventory, batch caps, smoke coverage) are fixed by the
+verifier itself and change only when the tool contract changes.
 
 ```
 
@@ -829,46 +849,46 @@ A successful run looks like this:
 ✓ strict graph filters — invalid match_nodes.kind/sort, match_edges.type, and recommend_relations.kind rejected with narrowed diagnostics
 ✓ strict graph edge kind filters — invalid match_edges.fromKind/toKind rejected with closest-value hints
 ✓ maintenance cursor — missing afterActionId reported (afterActionId not found in filtered maintenance actions; phase none; severity none; kind none; executable none; review none)
-✓ maintenance cursor — ready page stable (3 remaining actions; phase materialize:3; severity info:3; kind materialize_external_element:3; executable maint_a99608d6:materialize/materialize_external_element:info->add_concept; review none)
-✓ maintenance cursor — resume afterActionId advanced (maint_a99608d6; 2 remaining actions; phase materialize:2; severity info:2; kind materialize_external_element:2; executable maint_a6ef4471:materialize/materialize_external_element:info->add_concept; review none)
-✓ list_concepts — vault total 98 nodes (vaultRoot /path/to/docs/ontology)
-✓ get_concept — project (6 outgoing edges)
+✓ maintenance cursor — ready page stable (<N> remaining actions; phase none; severity none; kind none; executable none; review none)
+· maintenance cursor — resume skipped (ready page has no actions)
+✓ list_concepts — vault total <N> nodes (vaultRoot /path/to/docs/ontology)
+✓ get_concept — <project slug> (<N> outgoing edges)
 ✓ get_concepts — 2 ok rows, 1 partial row
-✓ find_evidence — 47 evidence results for "project"
-✓ find_backlinks — project (2 backlinks)
-✓ query_concepts — 1 query result / 1 total query result
-✓ query_concepts limited — 1 query result / 97 total query results (limited true)
-✓ analyze_repo_structure — fsd (5 domain candidates, 16 capability candidates, 43 element candidates)
-✓ infer_imports — 1181 files scanned, 772 module edges (elements/src/views/home->elements/src/entities/knowledge-graph x32 (static:31/dynamic:1), elements/src/views/ontology-insights->elements/src/entities/knowledge-graph x29 (static:29), +770 more)
-✓ index_project — 64 concept candidates, 772 import relations, validation 0 problem files
-✓ find_neighbors — src/widgets/bottom-tab-bar (4/4 edges, limited false)
-✓ find_path — src/widgets/bottom-tab-bar → project (2 hops, 2 edges)
+✓ find_evidence — <N> evidence results for "project"
+✓ find_backlinks — <project slug> (<N> backlinks)
+✓ query_concepts — <N> query results / <N> total query results
+✓ query_concepts limited — 1 query result / <N> total query results (limited true)
+✓ analyze_repo_structure — <framework> (<N> domain candidates, <N> capability candidates, <N> element candidates)
+✓ infer_imports — <N> files scanned, <N> module edges (<from>-><to> x<N> (static:<N>/dynamic:<N>), …, +<N> more)
+✓ index_project — <N> concept candidates, <N> import relations, validation 0 problem files
+✓ find_neighbors — <smoke slug> (<N>/<N> edges, limited false)
+✓ find_path — <smoke slug> → <project slug> (<N> hops, <N> edges)
 ✓ find_orphans — 0 orphans (root/sentinel defaults excluded)
-✓ list_kinds — 98 nodes (capability:38, document:3, domain:6, element:49, project:1, vault-readme:1)
-✓ validate_vault — 98 files, 0 problem files
+✓ list_kinds — <N> nodes (capability:<N>, domain:<N>, element:<N>, project:<N>, vault-readme:<N>)
+✓ validate_vault — <N> files, 0 problem files
 ✓ project probe — 1 project node
-✓ workspace_brief — healthy (98 nodes, 1 next action, 6 health checks, growth actions:3 external:3 ignoredExternal:224)
-· workspace_brief non-blocking advisory nextActions — materialize_external_elements:info:3 - Materialize frequently referenced external files as element nodes when they should be first-class.
+✓ workspace_brief — healthy (<N> nodes, <N> next actions, <N> health checks, growth actions:<N> external:<N> ignoredExternal:<N>)
 ✓ agent_brief — healthy (ready 100/100, 3 entrypoints, 5 first calls, 6 graph DB pack items, 4 playbooks, 3 write guardrails, 3 result contracts)
-✓ workspace_brief_tuned — healthy (98 nodes, 2 next actions, 6 health checks, growth actions:3 external:3 ignoredExternal:224; dependencyTypes=dependencies; componentTypes=domains/domain/capabilities/dependencies; nodeLimit=3)
-· workspace_brief_tuned non-blocking advisory nextActions — components/health_check:info:4 - The scoped ontology graph has disconnected actionable islands., materialize_external_elements:info:3 - Materialize frequently referenced external files as element nodes when they should be first-class.
-✓ health — healthy (issues:0, unresolved:0, cycles:0, 6 checks: compile_issues:pass:0, unresolved_edges:pass:0, dependency_cycles:pass:0, relation_recommendations:pass:0, components:pass:1, +1 more)
-✓ health_tuned — healthy (issues:0, unresolved:0, cycles:0, 6 checks: compile_issues:pass:0, unresolved_edges:pass:0, dependency_cycles:pass:0, relation_recommendations:pass:0, components:info:4, +1 more; dependencyTypes=dependencies; componentTypes=domains/domain/capabilities/dependencies)
-· health_tuned non-blocking advisory checks — components:info:4 - The scoped ontology graph has disconnected actionable islands.
-✓ compile_ontology — graph f8a112a9da29 (98 nodes, 552 edges, issues 0)
-✓ compile_ontology page — 1/98 nodes, 1/552 edges
-✓ compile_ontology indexes — out 98, in 97, edgeById 552, aliases 195, edges 325/227/0
-✓ overview — graph f8a112a9da29 (98 nodes, 552 edges, hubs 5)
-✓ overview query_plan — aggregate_scan (medium, nodes 98, edges 552)
-✓ project_map query_plan — aggregate_scan (medium, nodes 98, edges 552)
-✓ neighbors — src/widgets/bottom-tab-bar (4/4 edges, limited false)
-✓ path — src/widgets/bottom-tab-bar → project (2 hops, 2 edges)
-✓ all_paths — src/widgets/bottom-tab-bar → project (5/15 paths, budget 1000, expanded 1000, exhaustive false, evidence partial)
-✓ project_scope — project (94 nodes, internalEdges 308)
-✓ read census consistency — 98 nodes across list_kinds/list_concepts/compile_ontology/overview, 6 kinds
-✓ structuredContent — direct 16/16, write 5/5 (batch row-isolation 2/2, batch no-write metadata 2/2, destructive dry-run 3/3), maintenance 3/3, graph 13/13
+✓ workspace_brief_tuned — healthy (<N> nodes, <N> next actions, <N> health checks, growth actions:<N> external:<N> ignoredExternal:<N>; dependencyTypes=dependencies; componentTypes=domains/domain/capabilities/dependencies; nodeLimit=3)
+· workspace_brief_tuned non-blocking advisory nextActions — components/health_check:info:<N> - The scoped ontology graph has disconnected actionable islands.
+✓ health — healthy (issues:0, unresolved:0, cycles:0, <N> checks: compile_issues:pass:0, unresolved_edges:pass:0, dependency_cycles:pass:0, relation_recommendations:pass:0, components:pass:<N>, +<N> more)
+✓ health_tuned — healthy (issues:0, unresolved:0, cycles:0, <N> checks: compile_issues:pass:0, unresolved_edges:pass:0, dependency_cycles:pass:0, relation_recommendations:pass:0, components:info:<N>, +<N> more; dependencyTypes=dependencies; componentTypes=domains/domain/capabilities/dependencies)
+· health_tuned non-blocking advisory checks — components:info:<N> - The scoped ontology graph has disconnected actionable islands.
+✓ compile_ontology — graph <graph hash> (<N> nodes, <N> edges, issues 0)
+✓ compile_ontology page — 1/<N> nodes, 1/<N> edges
+✓ compile_ontology indexes — out <N>, in <N>, edgeById <N>, aliases <N>, edges <N>/<N>/<N>
+✓ overview — graph <graph hash> (<N> nodes, <N> edges, hubs <N>)
+✓ overview query_plan — aggregate_scan (medium, nodes <N>, edges <N>)
+✓ project_map query_plan — aggregate_scan (medium, nodes <N>, edges <N>)
+✓ neighbors — <smoke slug> (<N>/<N> edges, limited false)
+✓ path — <smoke slug> → <project slug> (<N> hops, <N> edges)
+✓ all_paths — <smoke slug> → <project slug> (<N>/<N> paths, budget 1000, expanded <N>, exhaustive true, evidence partial)
+✓ project_scope — <project slug> (<N> nodes, internalEdges <N>)
+✓ read census consistency — <N> nodes across list_kinds/list_concepts/compile_ontology/overview, <N> kinds
+✓ structuredContent — direct 16/16, write 5/5 (batch row-isolation 2/2, batch no-write metadata 2/2, destructive dry-run 3/3), maintenance 2/2 (resume skipped: no actions), graph 13/13
 
 All passed — register .mcp.json with your MCP client and restart to use the 32 tools.
+
 ```
 
 On failure, it tells you which step blocked progress and prints a diagnostic message. The

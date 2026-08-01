@@ -401,7 +401,7 @@ Only the side that declares the relation writes anything:
 ---
 slug: capabilities/vault-live-updates
 kind: capability
-domain: vault-local-first
+domain: domains/local-vault-management
 dependencies:
   - capabilities/topology-canvas-render   # directed: this leans on that
 relates:
@@ -421,15 +421,15 @@ domain: views
 The target picks the edge up as a backlink. Writing it on both sides is allowed
 — the map folds the round trip into a single line.
 
-Two domains linking directly is ordinary, not a special case. From this
-repository's own vault:
+Two domains linking directly is ordinary, not a special case — write the other
+domain's slug and you are done:
 
 ```yaml
-# domains/onboarding-ux.md
+# domains/onboarding-and-shell.md
 ---
-slug: domains/onboarding-ux
+slug: domains/onboarding-and-shell
 kind: domain
-relates: [domains/views]        # a domain pointing at another domain
+relates: [domains/topology-navigation]   # a domain pointing at another domain
 ---
 ```
 

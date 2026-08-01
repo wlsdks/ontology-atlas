@@ -289,14 +289,14 @@ test('module-level edge collapse (workspace packages — analyzer element slug p
     const r = inferImports(root);
     assert.deepEqual(r.moduleEdges, [
       {
-        from: 'elements/apps/api',
-        to: 'elements/packages/shared',
+        from: 'elements/api',
+        to: 'elements/shared',
         count: 1,
         kindCounts: { static: 1 },
       },
       {
-        from: 'elements/packages/memory',
-        to: 'elements/packages/shared',
+        from: 'elements/memory',
+        to: 'elements/shared',
         count: 1,
         kindCounts: { static: 1 },
       },
@@ -362,7 +362,7 @@ test('module-level edge collapse (single-file layered repo classifies support la
       r.moduleEdges.some(
         (x) =>
           x.from === 'capabilities/check-in' &&
-          x.to === 'elements/src/domain/habit',
+          x.to === 'elements/habit',
       ),
       `expected feature → domain-model element edge, got: ${JSON.stringify(r.moduleEdges)}`,
     );
@@ -370,7 +370,7 @@ test('module-level edge collapse (single-file layered repo classifies support la
       r.moduleEdges.some(
         (x) =>
           x.from === 'capabilities/check-in' &&
-          x.to === 'elements/src/storage/json-store',
+          x.to === 'elements/json-store',
       ),
       `expected feature → storage element edge, got: ${JSON.stringify(r.moduleEdges)}`,
     );
@@ -390,7 +390,8 @@ test('module-level edge collapse (single-file layered repo classifies support la
 });
 
 test('module-level edge collapse (FSD widgets/ — element folder slug, analyze 와 일관)', () => {
-  // widgets/X · views/X 는 elements/src/... path-style 로 유지한다.
+  // widgets/X · views/X 는 평평한 elements/<name> 슬러그 — 2026-08-01 판정,
+  // analyze 와 같은 규칙 (basename 이 레이어를 넘어 겹칠 때만 레이어 접미).
   const root = withRepo((r) => {
     mkdirSync(join(r, 'src/widgets/header'), { recursive: true });
     mkdirSync(join(r, 'src/widgets/footer'), { recursive: true });
@@ -403,9 +404,9 @@ test('module-level edge collapse (FSD widgets/ — element folder slug, analyze 
   try {
     const r = inferImports(root);
     const e = r.moduleEdges.find(
-      (x) => x.from === 'elements/src/widgets/header' && x.to === 'elements/src/widgets/footer',
+      (x) => x.from === 'elements/header' && x.to === 'elements/footer',
     );
-    assert.ok(e, `expected module edge elements/src/widgets/header → elements/src/widgets/footer, got: ${JSON.stringify(r.moduleEdges)}`);
+    assert.ok(e, `expected module edge elements/header → elements/footer, got: ${JSON.stringify(r.moduleEdges)}`);
   } finally {
     rmSync(root, { recursive: true, force: true });
   }

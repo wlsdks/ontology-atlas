@@ -242,14 +242,28 @@ describe("화면이 복사해 주는 MCP 호출의 인자 (인사이트)", () =>
 
 describe("이름만 적힌 개념을 물으면 엔진이 정직하게 답한다", () => {
   it("'없음' 이 아니라 '누가 어떤 키로 적었는지' 를 돌려준다", () => {
-    const ref = [...referencedOnlyRefs].sort()[0];
-    expect(ref).toBeTruthy();
-    const engine = createOntologyEngine(compiled) as {
+    // [수술 2026-08-01] 종전에는 dogfood 에 미해석 참조가 **실재해야**
+    // (`expect(ref).toBeTruthy()`) 이 계약이 돌았다 — 결함을 요구하는
+    // 게이트는 결함을 보존한다. 엔진의 정직성은 합성 표본으로 항상 검증한다.
+    const syntheticCompiled = compileOntology([
+      {
+        slug: "capabilities/ghost-parent",
+        frontmatter: {
+          kind: "capability",
+          title: "Ghost parent",
+          elements: ["elements/ghost-node"],
+        },
+        mtime: 1,
+      },
+    ]) as typeof compiled;
+    const ref = syntheticCompiled.edges.find((edge) => !edge.resolved)?.ref;
+    expect(ref).toBe("elements/ghost-node");
+    const engine = createOntologyEngine(syntheticCompiled) as {
       nodeProfile: (slug: string) => unknown;
     };
     let thrown: (Error & { referencedBy?: Array<{ slug: string; via: string }> }) | null = null;
     try {
-      engine.nodeProfile(ref);
+      engine.nodeProfile(ref!);
     } catch (err) {
       thrown = err as Error & { referencedBy?: Array<{ slug: string; via: string }> };
     }

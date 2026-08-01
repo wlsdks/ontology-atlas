@@ -6,28 +6,20 @@ import { basename, dirname, join } from 'node:path';
 import { tmpdir } from 'node:os';
 import { describe, it } from 'node:test';
 
-import { analyzeRepoStructure } from '../mcp/src/analyze.mjs';
-import { inferImports } from '../mcp/src/infer-imports.mjs';
-import { loadOntologyAtlasIgnore } from '../mcp/src/ontology-atlas-ignore.mjs';
 import {
   expectedToolsListAnnotationSummary,
   tunedHealthScopeOutputSummary,
   tunedWorkspaceBriefScopeOutputSummary,
-  VERIFY_TUNED_HEALTH_ARGS,
-  VERIFY_TUNED_WORKSPACE_BRIEF_NODE_LIMIT,
 } from '../mcp/scripts/verify.mjs';
 import {
   MAINTENANCE_KIND_VALUES,
   MAINTENANCE_PHASE_VALUES,
   MAINTENANCE_SEVERITY_VALUES,
-  queryCompiledOntology,
   RELATION_TYPE_VALUES,
   WRITE_RELATION_TYPE_VALUES,
 } from '../mcp/src/ontology-engine.mjs';
 import { RELATION_TYPE_VALUES as CLI_RELATION_TYPE_VALUES } from '../cli/src/lib/relation-types.mjs';
-import { compileOntology } from '../mcp/src/ontology-compiler.mjs';
 import { SERVER_VERSION } from '../mcp/src/server-version.mjs';
-import { collectNeighborRefs, findBacklinks, loadVaultDocs } from '../mcp/src/vault.mjs';
 import { CLI_COMMAND_COUNT } from "../cli/src/lib/cli-commands.mjs";
 import {
   checkPackage,
@@ -39,7 +31,6 @@ import {
   parseScriptFileRefs,
 } from './check-package-contracts.mjs';
 import { assertPnpmScriptsExist } from './lib/pnpm-script-refs.mjs';
-import { dogfoodVaultCensus, dogfoodVaultCensusFromDocs } from './lib/vault-census.mjs';
 
 function withPackage(pkg, files, fn) {
   const root = mkdtempSync(join(tmpdir(), 'ontology-atlas-package-contract-'));
@@ -64,49 +55,8 @@ function normalizedMarkdownIncludes(markdown, expected) {
   return markdown.replace(/\s+/g, ' ').includes(expected);
 }
 
-function countLabel(count, noun) {
-  return `${count} ${noun}${count === 1 ? '' : 's'}`;
-}
-
 function regexEscape(value) {
   return String(value).replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
-}
-
-// Mirrors mcp/src/index.js findEvidence()'s scoreEvidence() inclusion rule
-// (mcp/src/evidence-rank.mjs): title / frontmatter capabilities+elements /
-// body substring match. Deliberately does NOT match on slug — scoreEvidence
-// never checks the slug, so including it here over-counts relative to the
-// live find_evidence tool (this drifted the README-alignment assertion by
-// one doc whose slug, but not title/frontmatter/body, contained the query).
-function findEvidenceCount(docs, query) {
-  const needle = query.toLowerCase();
-  return docs.filter((doc) => {
-    const docTitle = String(doc.frontmatter.title || doc.frontmatter.name || '').toLowerCase();
-    const inFrontmatter =
-      docTitle.includes(needle) ||
-      String(doc.frontmatter.capabilities || '').toLowerCase().includes(needle) ||
-      String(doc.frontmatter.elements || '').toLowerCase().includes(needle);
-    return inFrontmatter || doc.body.toLowerCase().includes(needle);
-  }).length;
-}
-
-function importKindSummary(kindCounts) {
-  const ordered = ['static', 'dynamic', 'require', 'reexport', 'side'];
-  const known = ordered
-    .filter((kind) => Number.isInteger(kindCounts?.[kind]) && kindCounts[kind] > 0)
-    .map((kind) => `${kind}:${kindCounts[kind]}`);
-  const extra = Object.entries(kindCounts ?? {})
-    .filter(([kind, count]) => !ordered.includes(kind) && Number.isInteger(count) && count > 0)
-    .sort(([a], [b]) => a.localeCompare(b))
-    .map(([kind, count]) => `${kind}:${count}`);
-  return [...known, ...extra].join('/');
-}
-
-function healthCheckSummary(checks, limit = 5) {
-  const entries = checks.map((check) => `${check.id}:${check.status}:${check.count}`);
-  const shown = entries.slice(0, limit);
-  const suffix = entries.length > shown.length ? `, \\+${entries.length - shown.length} more` : '';
-  return `${shown.join(', ')}${suffix}`;
 }
 
 function runNodeScript(args) {
@@ -1222,72 +1172,31 @@ describe('package contract helpers', () => {
     assert.match(section, /File setup\/import failures are reported separately as\s+`setupFailures=N`/);
   });
 
+  /**
+   * **이 게이트는 볼트를 세지 않는다.** (2026-08-01 소유자 지시)
+   *
+   * 종전 판은 `mcp/README.md` 의 verify 트랜스크립트가 **실행 결과를 통째로
+   * 박고 있으라고 강제**했다 — 노드 수, kind 센서스, 파일 수, 그래프 해시,
+   * 이웃 슬러그, 모듈 엣지 수까지. 볼트를 건드릴 때마다 사람이 README 를 다시
+   * 만들어야 했고, 그건 이론이 아니라 실제로 청구된 비용이다:
+   * `docs/superpowers/specs/2026-05-30-…-charter.md` iter 39–40 이 이 게이트
+   * 하나 때문에 두 iteration 을 태웠고(`564 files / 453 module edges` →
+   * `569 / 454`), 그때도 결함은 0건이었다. 볼트를 규격대로 재생성하자 같은
+   * 청구서가 한꺼번에 도착했다.
+   *
+   * 그래서 판정 기준을 바꿨다 — **계산으로 만든 단언은 전부 걷고, 리터럴
+   * 단언만 남긴다.** 계산 단언은 «볼트 = README» 를 요구하므로 볼트가 자라면
+   * 사람이 README 를 고쳐야 한다. 리터럴 단언은 «README 가 무엇을 설명하는가»
+   * 를 볼 뿐이라, 도구가 바뀔 때만 함께 바뀐다.
+   *
+   * 잃은 것: README 트랜스크립트의 수가 실제 볼트와 일치하는지 CI 가 더 이상
+   * 확인하지 않는다. 그 대신 트랜스크립트에서 **수 자체를 걷어냈다** —
+   * `<N>` / `<slug>` 자리표시자다. 그러니 아래 단언들은 그 자리표시자를 pin
+   * 하고, 이게 「누가 실행 결과를 다시 붙여 넣었는가」를 잡는 새 방벽이다.
+   */
   it('keeps the MCP verify README aligned with first-contact census gates', () => {
     const readme = readFileSync('mcp/README.md', 'utf-8');
     const verifySection = readme.split('### One-line verify CLI')[1]?.split('### Manual verification')[0] ?? '';
-    const ontologyRoot = join(process.cwd(), 'docs', 'ontology');
-    const dogfoodDocs = loadVaultDocs(ontologyRoot);
-    const census = dogfoodVaultCensusFromDocs(dogfoodDocs);
-    const kindSummary = [
-      `capability:${census.byKind.capabilities}`,
-      `document:${census.byKind.document}`,
-      `domain:${census.byKind.domains}`,
-      `element:${census.byKind.elements}`,
-      `project:${census.byKind.project}`,
-      `vault-readme:${census.byKind['vault-readme']}`,
-    ].join(', ');
-    const projectDoc = dogfoodDocs.find((doc) => doc.slug === 'project');
-    assert.ok(projectDoc, 'dogfood vault has a project node');
-    const projectOutgoingEdgeCount = collectNeighborRefs(projectDoc).length;
-    const projectOutgoingEdgeLabel = projectOutgoingEdgeCount === 1 ? 'edge' : 'edges';
-    const compiled = compileOntology(dogfoodDocs, {
-      includeIndexes: true,
-    });
-    const projectBacklinkCount = findBacklinks(join(process.cwd(), 'docs', 'ontology'), 'project').length;
-    const projectBacklinkLabel = projectBacklinkCount === 1 ? 'backlink' : 'backlinks';
-    const projectEvidenceCount = findEvidenceCount(dogfoodDocs, 'project');
-    const projectQueryCount = census.byKind.project;
-    const limitedQueryTotal = census.total - 1;
-    const graphHashPrefix = compiled.graphHash.slice(0, 12);
-    const indexOutCount = Object.keys(compiled.indexes.out).length;
-    const indexInCount = Object.keys(compiled.indexes.in).length;
-    const indexEdgeCount = Object.keys(compiled.indexes.edgeById).length;
-    const neighborSmokeSlug = 'src/widgets/bottom-tab-bar';
-    const neighborSmoke = queryCompiledOntology(compiled, {
-      operation: 'neighbors',
-      slug: neighborSmokeSlug,
-    });
-    const neighborSmokeLine = `${regexEscape(neighborSmokeSlug)} \\(${neighborSmoke.edges.length}/${neighborSmoke.total} edges, limited ${neighborSmoke.limited}\\)`;
-    const projectScope = queryCompiledOntology(compiled, {
-      operation: 'project_scope',
-      slug: 'project',
-    });
-    const overview = queryCompiledOntology(compiled, { operation: 'overview', limit: 5 });
-    const diagnosisOptions = { ontologyAtlasIgnorePatterns: loadOntologyAtlasIgnore(ontologyRoot) };
-    const workspaceBrief = queryCompiledOntology(compiled, { operation: 'workspace_brief' }, diagnosisOptions);
-    const tunedWorkspaceBrief = queryCompiledOntology(compiled, {
-      operation: 'workspace_brief',
-      limit: 3,
-      ...VERIFY_TUNED_HEALTH_ARGS,
-      nodeLimit: VERIFY_TUNED_WORKSPACE_BRIEF_NODE_LIMIT,
-    }, diagnosisOptions);
-    const health = queryCompiledOntology(compiled, { operation: 'health' }, diagnosisOptions);
-    const tunedHealth = queryCompiledOntology(compiled, {
-      operation: 'health',
-      ...VERIFY_TUNED_HEALTH_ARGS,
-    }, diagnosisOptions);
-    // The MCP wrapper appends whole-vault validation to the graph-engine
-    // diagnosis. Model that installed-surface check when verifying the README
-    // sample instead of comparing it with the lower-level core result alone.
-    const validatorPassCheck = { id: 'vault_validation', status: 'pass', count: 0 };
-    workspaceBrief.health.checks.push(validatorPassCheck);
-    tunedWorkspaceBrief.health.checks.push(validatorPassCheck);
-    health.checks.push(validatorPassCheck);
-    tunedHealth.checks.push(validatorPassCheck);
-    const analyzedRepo = analyzeRepoStructure(process.cwd(), { maxDepth: 2 });
-    const inferredImports = inferImports(process.cwd());
-    const topModuleEdge = inferredImports.moduleEdges[0];
-    const topModuleEdgeSummary = `${topModuleEdge.from}->${topModuleEdge.to} x${topModuleEdge.count} \\(${importKindSummary(topModuleEdge.kindCounts)}\\)`;
 
     assert.match(verifySection, /npm run verify -- \.\.\/docs\/ontology/);
     assert.match(verifySection, /npm run verify -- --vault \.\.\/docs\/ontology/);
@@ -1340,102 +1249,58 @@ describe('package contract helpers', () => {
     assert.match(verifySection, /✓ maintenance cursor — missing afterActionId reported .*phase none; severity none; kind none; executable none; review none/);
     assert.match(verifySection, /✓ maintenance cursor — ready page stable/);
     assert.match(verifySection, /maintenance cursor — (resume skipped \(ready page has no actions\)|resume afterActionId advanced)/);
-    assert.match(verifySection, new RegExp(`✓ get_concept — project \\(${projectOutgoingEdgeCount} outgoing ${projectOutgoingEdgeLabel}\\)`));
+    // ─── 트랜스크립트: 어떤 줄이 나오는가만 본다 ────────────────────────────
+    //
+    // 아래는 전부 **리터럴**이다. 자리표시자(`<N>` / `<slug>`)를 함께 pin 하는
+    // 것이 요점 — 누군가 실제 실행 결과를 다시 붙여 넣으면(= 다음 커밋에
+    // 낡을 수를 문서에 심으면) 그 줄이 자리표시자를 잃고 여기서 걸린다.
+    // 진짜 숫자가 남아 있는 줄은 도구가 정하는 수뿐이다(배치 캡, 스모크 커버리지,
+    // 도구 인벤토리).
+    assert.match(verifySection, /✓ get_concept — <project slug> \(<N> outgoing edges\)/);
     assert.match(verifySection, /✓ get_concepts — 2 ok rows, 1 partial row/);
+    assert.match(verifySection, /✓ find_evidence — <N> evidence results for "project"/);
+    assert.match(verifySection, /✓ find_backlinks — <project slug> \(<N> backlinks\)/);
+    assert.match(verifySection, /✓ query_concepts — <N> query results \/ <N> total query results/);
+    assert.match(verifySection, /✓ query_concepts limited — 1 query result \/ <N> total query results \(limited true\)/);
     assert.match(
       verifySection,
-      new RegExp(`✓ find_evidence — ${countLabel(projectEvidenceCount, 'evidence result')} for "project"`),
+      /✓ analyze_repo_structure — <framework> \(<N> domain candidates, <N> capability candidates, <N> element candidates\)/,
     );
-    assert.match(verifySection, new RegExp(`✓ find_backlinks — project \\(${projectBacklinkCount} ${projectBacklinkLabel}\\)`));
-    assert.match(
-      verifySection,
-      new RegExp(`✓ query_concepts — ${countLabel(projectQueryCount, 'query result')} / ${countLabel(projectQueryCount, 'total query result')}`),
-    );
-    assert.match(
-      verifySection,
-      new RegExp(`✓ query_concepts limited — ${countLabel(1, 'query result')} / ${countLabel(limitedQueryTotal, 'total query result')} \\(limited true\\)`),
-    );
-    assert.match(
-      verifySection,
-      new RegExp(
-        `✓ analyze_repo_structure — ${analyzedRepo.framework} \\(${countLabel(analyzedRepo.domains.length, 'domain candidate')}, ${countLabel(analyzedRepo.capabilities.length, 'capability candidate')}, ${countLabel(analyzedRepo.elements.length, 'element candidate')}\\)`,
-      ),
-    );
-    assert.match(
-      verifySection,
-      // infer_imports "files scanned" 와 "module edges" 둘 다 exact-pin 하지
-      // 않는다: 2026-07 스윕에서 모듈 엣지 수가 기능 PR 마다 바뀌어 하루 세
-      // 번 README 재생성을 강요했다 (496→498→499) — 부수 지표다. 의미 있는
-      // 계약은 top-edge 요약(실제 최상위 의존 경로)이라 그것만 유지한다.
-      new RegExp(`✓ infer_imports — \\d+ files? scanned, \\d+ module edges? \\(${topModuleEdgeSummary}`),
-    );
-    assert.match(verifySection, new RegExp(`✓ find_neighbors — ${neighborSmokeLine}`));
-    assert.match(verifySection, new RegExp(`✓ find_path — ${regexEscape(neighborSmokeSlug)} → project \\(2 hops, 2 edges\\)`));
+    assert.match(verifySection, /✓ infer_imports — <N> files scanned, <N> module edges/);
+    assert.match(verifySection, /✓ find_neighbors — <smoke slug> \(<N>\/<N> edges, limited false\)/);
+    assert.match(verifySection, /✓ find_path — <smoke slug> → <project slug> \(<N> hops, <N> edges\)/);
     assert.match(verifySection, /✓ find_orphans — 0 orphans \(root\/sentinel defaults excluded\)/);
     assert.match(verifySection, /✓ project probe — 1 project node/);
-    assert.match(verifySection, new RegExp(`✓ list_concepts — vault total ${census.total} nodes`));
-    assert.match(verifySection, new RegExp(`✓ list_kinds — ${census.total} nodes \\(${kindSummary}\\)`));
-    assert.match(verifySection, new RegExp(`✓ validate_vault — ${census.files} files, 0 problem files`));
+    assert.match(verifySection, /✓ list_concepts — vault total <N> nodes/);
+    assert.match(verifySection, /✓ list_kinds — <N> nodes \(/);
+    assert.match(verifySection, /✓ validate_vault — <N> files, 0 problem files/);
+    assert.match(verifySection, /✓ workspace_brief — healthy \(<N> nodes, <N> next actions, <N> health checks, growth actions:<N> external:<N> ignoredExternal:<N>\)/);
+    assert.match(verifySection, /✓ workspace_brief_tuned — healthy \(<N> nodes, <N> next actions, <N> health checks/);
+    // 튜닝된 브리프/진단의 **스코프 요약**은 볼트가 아니라 verify 의 인자에서
+    // 나온다 — 여기서만 계산을 남긴다. 볼트가 자라도 안 바뀐다.
+    assert.match(verifySection, new RegExp(regexEscape(tunedWorkspaceBriefScopeOutputSummary())));
+    assert.match(verifySection, /workspace_brief_tuned non-blocking advisory nextActions — components\/health_check:info:<N> - /);
+    assert.match(verifySection, /✓ health — healthy \(issues:0, unresolved:0, cycles:0, <N> checks: compile_issues:pass:0/);
+    assert.match(verifySection, /✓ health_tuned — healthy \(issues:0, unresolved:0, cycles:0, <N> checks: compile_issues:pass:0/);
+    assert.match(verifySection, new RegExp(regexEscape(tunedHealthScopeOutputSummary())));
+    assert.match(verifySection, /✓ compile_ontology — graph <graph hash> \(<N> nodes, <N> edges, issues 0\)/);
+    assert.match(verifySection, /✓ compile_ontology page — 1\/<N> nodes, 1\/<N> edges/);
     assert.match(
       verifySection,
-      new RegExp(
-        `✓ workspace_brief — ${workspaceBrief.status} \\(${census.total} nodes, ${countLabel(workspaceBrief.nextActions.length, 'next action')}, ${countLabel(workspaceBrief.health.checks.length, 'health check')}, growth actions:${workspaceBrief.growth.totalActions} external:${workspaceBrief.growth.externalElementRefs} ignoredExternal:${workspaceBrief.growth.externalElementRefsIgnored}\\)`,
-      ),
+      /✓ compile_ontology indexes — out <N>, in <N>, edgeById <N>, aliases <N>, edges <N>\/<N>\/<N>/,
     );
+    assert.match(verifySection, /✓ overview — graph <graph hash> \(<N> nodes, <N> edges, hubs <N>\)/);
+    assert.match(verifySection, /✓ overview query_plan — aggregate_scan \(medium, nodes <N>, edges <N>\)/);
+    assert.match(verifySection, /✓ project_map query_plan — aggregate_scan \(medium, nodes <N>, edges <N>\)/);
+    assert.match(verifySection, /✓ neighbors — <smoke slug> \(<N>\/<N> edges, limited false\)/);
+    assert.match(verifySection, /✓ path — <smoke slug> → <project slug> \(<N> hops, <N> edges\)/);
+    // path 스모크는 프로젝트 노드에서 자기 자신으로 가는 퇴화 경로가 아니다 —
+    // 출발이 `<smoke slug>` 라는 것을 트랜스크립트가 말한다.
+    assert.doesNotMatch(verifySection, /✓ path — <project slug> → <project slug>/);
+    assert.match(verifySection, /✓ project_scope — <project slug> \(<N> nodes, internalEdges <N>\)/);
     assert.match(
       verifySection,
-      new RegExp(
-        `✓ workspace_brief_tuned — ${tunedWorkspaceBrief.status} \\(${census.total} nodes, ${countLabel(tunedWorkspaceBrief.nextActions.length, 'next action')}, ${countLabel(tunedWorkspaceBrief.health.checks.length, 'health check')}, growth actions:${tunedWorkspaceBrief.growth.totalActions} external:${tunedWorkspaceBrief.growth.externalElementRefs} ignoredExternal:${tunedWorkspaceBrief.growth.externalElementRefsIgnored}; ${regexEscape(tunedWorkspaceBriefScopeOutputSummary())}\\)`,
-      ),
-    );
-    const tunedBriefAction = tunedWorkspaceBrief.nextActions[0];
-    if (tunedBriefAction) {
-      const tunedBriefActionLabel =
-        tunedBriefAction.id && tunedBriefAction.kind && tunedBriefAction.id !== tunedBriefAction.kind
-          ? `${tunedBriefAction.id}/${tunedBriefAction.kind}`
-          : tunedBriefAction.id || tunedBriefAction.kind;
-      assert.match(
-        verifySection,
-        new RegExp(
-          `workspace_brief_tuned non-blocking advisory nextActions — ${tunedBriefActionLabel}:${tunedBriefAction.severity}:${tunedBriefAction.count} - ${regexEscape(tunedBriefAction.message)}`,
-        ),
-      );
-    } else {
-      assert.doesNotMatch(verifySection, /workspace_brief_tuned non-blocking advisory nextActions/);
-    }
-    assert.match(
-      verifySection,
-      new RegExp(
-        `✓ health — ${health.status} \\(issues:${health.summary.issues}, unresolved:${health.summary.unresolvedEdges}, cycles:${health.summary.dependencyCycles}, ${countLabel(health.checks.length, 'check')}: ${healthCheckSummary(health.checks)}\\)`,
-      ),
-    );
-    assert.match(
-      verifySection,
-      new RegExp(
-        `✓ health_tuned — ${tunedHealth.status} \\(issues:${tunedHealth.summary.issues}, unresolved:${tunedHealth.summary.unresolvedEdges}, cycles:${tunedHealth.summary.dependencyCycles}, ${countLabel(tunedHealth.checks.length, 'check')}: ${healthCheckSummary(tunedHealth.checks)}; ${regexEscape(tunedHealthScopeOutputSummary())}\\)`,
-      ),
-    );
-    assert.match(verifySection, new RegExp(`✓ compile_ontology — graph ${graphHashPrefix} \\(${compiled.nodeCount} nodes, ${compiled.edgeCount} edges, issues ${compiled.issueCount}\\)`));
-    assert.match(verifySection, new RegExp(`✓ compile_ontology page — 1/${compiled.nodeCount} nodes, 1/${compiled.edgeCount} edges`));
-    assert.match(
-      verifySection,
-      new RegExp(
-        `✓ compile_ontology indexes — out ${indexOutCount}, in ${indexInCount}, edgeById ${indexEdgeCount}, aliases ${compiled.aliasCount}, edges ${compiled.resolvedEdgeCount}/${compiled.externalEdgeCount}/${compiled.unresolvedEdgeCount}`,
-      ),
-    );
-    assert.match(verifySection, new RegExp(`✓ overview — graph ${graphHashPrefix} \\(${compiled.nodeCount} nodes, ${compiled.edgeCount} edges, hubs ${overview.hubs.length}\\)`));
-    assert.match(verifySection, new RegExp(`✓ overview query_plan — aggregate_scan \\(medium, nodes ${compiled.nodeCount}, edges ${compiled.edgeCount}\\)`));
-    assert.match(verifySection, new RegExp(`✓ project_map query_plan — aggregate_scan \\(medium, nodes ${compiled.nodeCount}, edges ${compiled.edgeCount}\\)`));
-    assert.match(verifySection, new RegExp(`✓ neighbors — ${neighborSmokeLine}`));
-    assert.match(verifySection, new RegExp(`✓ path — ${regexEscape(neighborSmokeSlug)} → project \\(2 hops, 2 edges\\)`));
-    assert.doesNotMatch(verifySection, /✓ path — project → project/);
-    assert.match(
-      verifySection,
-      new RegExp(`✓ project_scope — project \\(${projectScope.summary.nodes} nodes, internalEdges ${projectScope.summary.internalEdges}\\)`),
-    );
-    assert.match(
-      verifySection,
-      new RegExp(`✓ read census consistency — ${compiled.nodeCount} nodes across list_kinds/list_concepts/compile_ontology/overview, ${Object.keys(compiled.byKind).length} kinds`),
+      /✓ read census consistency — <N> nodes across list_kinds\/list_concepts\/compile_ontology\/overview, <N> kinds/,
     );
     assert.match(verifySection, /✓ destructive dry-runs — rename_concept · merge_concepts · delete_concept previewReady\/canConfirm contract without write-maintenance/);
     assert.match(
@@ -2184,8 +2049,10 @@ describe('package contract helpers', () => {
     // 숫자와 무관하고, 썩지 않는다.
     //
     // 수가 계속 지켜져야 하는 곳은 하나뿐이다 — 앱이 **화면에 렌더하는 카피**.
-    // 그건 사용자에게 하는 주장이라 `tests/contract/dogfood-node-count.contract.test.ts`
-    // 가 계속 지킨다.
+    // 그건 사용자에게 하는 주장이라서다. 다만 그 자리도 «수를 세는 게이트» 가
+    // 아니라 **런타임 동일성 단언**이 지킨다 (`DownloadPage.test.tsx`: 캡션의
+    // 수 == 그 캡션이 설명하는 그래프의 수, 둘 다 한 훅에서 나온다). 볼트를
+    // 세던 계약 테스트는 2026-08-01 에 삭제됐다 — `docs/DECISIONS.md`.
     assert.doesNotMatch(agentsGuide, /한국어 가이드|한국어 안내|총 \d+ 노드/);
     assert.match(helpfulCommands, /pnpm dogfood:status/);
     assert.match(helpfulCommands, /pnpm dogfood:compile-fix -- --help/);
@@ -2211,8 +2078,11 @@ describe('package contract helpers', () => {
   // 문서가 옳고 게이트가 틀린 상태였다. 소유자 판정(2026-07-31): 문서는 이 수를
   // 가질 이유가 없다. 숫자를 지우고 게이트도 함께 지운다.
   //
-  // 앱이 **화면에 렌더하는 카피**의 수는 별개다 — 그건 사용자에게 하는 주장이라
-  // `tests/contract/dogfood-node-count.contract.test.ts` 가 계속 지킨다.
+  // 앱이 **화면에 렌더하는 카피**의 수는 별개다 — 그건 사용자에게 하는 주장이다.
+  // [갱신 2026-08-01] 그 자리를 지키던 `dogfood-node-count.contract.test.ts` 도
+  // 삭제됐다. 카피의 정직성은 이제 **런타임 동일성**이 진다 — `DownloadPage.test.tsx`
+  // 가 「캡션의 수 == 그 캡션이 설명하는 그래프의 수」를 요구하고, 둘 다 같은
+  // 훅에서 나오므로 아무도 손으로 맞출 것이 없다. 배경: `docs/DECISIONS.md`.
 
   it('keeps dogfood CLI docs explicit about fail-closed graph diagnostics', () => {
     const doc = readFileSync('docs/ontology/capabilities/cli-developer-entry.md', 'utf-8');
@@ -2872,14 +2742,30 @@ describe('package contract helpers', () => {
     assert.equal(isCoveredByFiles('templates/vault/project.md', pkg.files), true);
   });
 
-  it('keeps the self-ontology README census aligned with the vault files', () => {
+  it('keeps the self-ontology README honest about census and pointing at real entry points', () => {
+    // [개정 2026-08-01] 종전 게이트는 README 가 census 숫자를 **적도록 강제**
+    // 했다 — AGENTS.md 「no document writes the number... Docs name the command
+    // instead」 규율과 정면 충돌이고, 볼트 리셋 후에는 스타터 템플릿 README 를
+    // 영원히 빨간불로 만들 뿐 아무것도 고치지 못했다. 규율 그대로:
+    // 숫자를 말하면 참이어야 하지만 말할 의무는 없다 — 대신 census 명령을
+    // 적어야 하고, 우리 볼트의 README 는 실재하는 진입점을 가리켜야 한다.
     const readme = readFileSync('docs/ontology/README.md', 'utf-8');
-    const census = dogfoodVaultCensus(process.cwd());
 
-    assert.match(readme, new RegExp(`총 ${census.total} 노드`));
-    assert.match(readme, new RegExp(`도메인 ${census.byKind.domains}개`));
-    assert.match(readme, new RegExp(`capability ${census.byKind.capabilities}개`));
-    assert.match(readme, new RegExp(`element ${census.byKind.elements}개`));
+    // [개정 2026-08-01, 소유자 지시] **CI 는 노드 수를 세지 않는다.** 조건부라
+    // 유지 비용이 0 이어도, 세는 게이트가 있으면 다음 사람이 문서에 수를 적는
+    // 것을 «지원되는 관습» 으로 읽는다. 그래서 세는 코드 자체를 걷었다 —
+    // 남은 것은 수와 무관한 두 가지: census 는 명령으로 답하는가, 그리고 이
+    // README 가 우리 볼트의 것인가.
+    assert.match(readme, /cli\/src\/index\.mjs overview/);
+    assert.match(readme, /cli\/src\/index\.mjs overview/);
+    // 우리 볼트의 README 다 — 일반 스타터 문구가 아니라 실재하는 진입점.
+    assert.match(readme, /ontology-atlas\.md/);
+    assert.match(readme, /capabilities\/mcp-server/);
+    assert.match(readme, /capabilities\/cli-developer-entry/);
+    // 스타터 토이 예시로 되돌아가지 않는다 (실측: init 템플릿이 그대로 남아
+    // "project.md 를 여세요"(없는 파일)를 안내하고 있었다).
+    assert.doesNotMatch(readme, /My ontology vault/);
+    assert.doesNotMatch(readme, /capabilities\/login/);
   });
 
   it('keeps dogfood CLI capability docs from freezing integration test counts', () => {

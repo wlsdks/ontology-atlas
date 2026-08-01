@@ -23,7 +23,8 @@
 //     project?: { slug, title },
 //     domains: [{ slug, title, evidence: { source, line? } }],
 //     capabilities: [{ slug, title, evidence: { source } }],
-//     elements: [{ slug, title, evidence: { source } }],
+//     elements: [{ slug, title, path, evidence: { source } }],
+//       — slug 는 평평한 role 이름 (경로는 path/evidence 로만; 2026-08-01 판정)
 //     meaningGate: {
 //       policy: 'business-first',
 //       sourceStructureRole: 'implementation-evidence',
@@ -179,6 +180,14 @@ export function analyzeRepoStructure(rootPath, options = {}) {
     const fsdRoots = framework === 'fsd' ? FSD_SCAN_ROOTS : null;
 
     if (fsdRoots) {
+      // 슬러그는 평평한 식별자다 (2026-08-01 판정 — docs/DECISIONS.md).
+      // 종전에는 `elements/${relative(rootPath, subPath)}` 를 제안해 규격
+      // 문맥 없는 에이전트가 경로형 슬러그 43개를 **그대로** 볼트에 실었다
+      // — 이 생성기가 재생성 볼트 결함의 1차 유도원이었다. 이제 이름(role)은
+      // 슬러그에, 위치는 `path` 에 싣고, basename 이 레이어를 넘어 겹치면
+      // (`entities/docs-vault` vs `views/docs-vault`) 레이어 단수형 접미로
+      // 결정론적으로 갈라 tail 충돌을 생성 시점에 없앤다.
+      const elementCandidates = [];
       for (const r of fsdRoots) {
         const dir = join(srcDir, r);
         if (!existsSync(dir)) continue;
@@ -192,31 +201,35 @@ export function analyzeRepoStructure(rootPath, options = {}) {
           // FSD semantics: features are user-facing capability candidates;
           // entities/widgets/views are implementation evidence, not business
           // capabilities merely because they have a directory.
-          const isCapabilityish = r === 'features';
-          const slug = isCapabilityish
-            ? `capabilities/${sub}`
-            : `elements/${relative(rootPath, subPath)}`;
-          const evidence = {
-            source: relative(rootPath, subPath),
-          };
-          if (isCapabilityish) {
+          if (r === 'features') {
             capabilities.push({
-              slug,
+              slug: `capabilities/${sub}`,
               title: humanize(sub),
               ...(domainForName(sub)
                 ? { domain: domainForName(sub) }
                 : {}),
-              evidence,
+              evidence: { source: relative(rootPath, subPath) },
             });
           } else {
-            elements.push({
-              slug,
-              title: humanize(sub),
-              ...(domainForName(sub) ? { domain: domainForName(sub) } : {}),
-              evidence,
-            });
+            elementCandidates.push({ layer: r, sub, subPath });
           }
         }
+      }
+      const nameCount = new Map();
+      for (const cand of elementCandidates) {
+        nameCount.set(cand.sub, (nameCount.get(cand.sub) ?? 0) + 1);
+      }
+      for (const { layer, sub, subPath } of elementCandidates) {
+        const collides = (nameCount.get(sub) ?? 0) > 1;
+        const layerSingular = layer.replace(/ies$/, 'y').replace(/s$/, '');
+        const name = collides ? `${sub}-${layerSingular}` : sub;
+        elements.push({
+          slug: `elements/${name}`,
+          title: collides ? `${humanize(sub)} (${layerSingular})` : humanize(sub),
+          ...(domainForName(sub) ? { domain: domainForName(sub) } : {}),
+          path: relative(rootPath, subPath),
+          evidence: { source: relative(rootPath, subPath) },
+        });
       }
     } else {
       // generic — src/ 의 깊이 1 폴더 만
@@ -235,14 +248,15 @@ export function analyzeRepoStructure(rootPath, options = {}) {
             : {}),
           evidence: { source: relative(rootPath, subPath) },
         });
-        // index 파일이 있으면 element 추가
+        // index 파일이 있으면 element 추가 — 슬러그는 role 이름, 위치는 path 로.
         for (const entry of ELEMENT_ENTRY_FILES) {
           const ep = join(subPath, entry);
           if (existsSync(ep)) {
             elements.push({
-              slug: `elements/${relative(rootPath, ep)}`,
+              slug: `elements/${sub}-entry`,
               title: `${humanize(sub)} entry`,
               ...(domainForName(sub) ? { domain: domainForName(sub) } : {}),
+              path: relative(rootPath, ep),
               evidence: { source: relative(rootPath, ep) },
             });
             break;
@@ -257,6 +271,13 @@ export function analyzeRepoStructure(rootPath, options = {}) {
       ignore,
       domainForName,
       skipped,
+    }),
+  );
+  elements.push(
+    ...detectRootPackages(rootPath, {
+      ignore,
+      domainForName,
+      existingElements: elements,
     }),
   );
 
@@ -964,6 +985,57 @@ function detectDomainsFromReadme(rootPath) {
   return { domains: [], readmePath: null };
 }
 
+/**
+ * 최상위 독립 패키지 (root 바로 아래 `package.json` 을 가진 디렉토리) 를
+ * 요소 후보로 제안한다 — `mcp/`, `cli/` 같은 sibling 패키지.
+ *
+ * 왜 (2026-08-01 실측): 이 함수가 없던 동안 analyze 는 `src/` FSD 레이어와
+ * `apps/`·`packages/` 워크스페이스만 걸었고, **도구의 시야가 곧 볼트의
+ * 사정거리가 됐다** — 규격 문맥 없는 에이전트가 이 제안만으로 도그푸드
+ * 볼트를 재생성하자 이 저장소의 에이전트 표면(MCP 서버 `mcp/`, CLI `cli/`)
+ * 이 통째로 지도에서 빠졌다. path: 43개 전부가 `src/` 였다. 제안 도구의
+ * 누락은 침묵으로 전파되므로, 사정거리는 코드로 고친다 (문구만 고치면
+ * 다음 사람이 같은 볼트를 만든다).
+ *
+ * `package.json` 이 판별자다 — `scripts/`·`tests/`·`docs/` 처럼 독립 패키지
+ * 가 아닌 최상위 폴더는 제안하지 않는다 (덮는 것이 목적이 아니다).
+ */
+function detectRootPackages(rootPath, { ignore, domainForName, existingElements }) {
+  const out = [];
+  const claimed = new Set(existingElements.map((el) => el.slug));
+  let entries;
+  try {
+    entries = readdirSync(rootPath).sort();
+  } catch {
+    return out;
+  }
+  for (const entry of entries) {
+    if (ignore.has(entry) || entry.startsWith('.')) continue;
+    if (SOURCE_FOLDERS.includes(entry) || WORKSPACE_FOLDERS.includes(entry)) continue;
+    const memberPath = join(rootPath, entry);
+    let isDir;
+    try {
+      isDir = statSync(memberPath).isDirectory();
+    } catch {
+      continue;
+    }
+    if (!isDir) continue;
+    if (!existsSync(join(memberPath, 'package.json'))) continue;
+    // 슬러그는 평평하게 — 이미 잡힌 이름과 겹치면 -package 접미로 가른다.
+    const flatName = claimed.has(`elements/${entry}`) ? `${entry}-package` : entry;
+    const slug = `elements/${flatName}`;
+    claimed.add(slug);
+    out.push({
+      slug,
+      title: humanize(entry),
+      ...(domainForName(entry) ? { domain: domainForName(entry) } : {}),
+      path: entry,
+      evidence: { source: entry },
+    });
+  }
+  return out;
+}
+
 function detectWorkspaceElements(rootPath, { ignore, domainForName, skipped }) {
   const elements = [];
   for (const folder of WORKSPACE_FOLDERS) {
@@ -986,10 +1058,16 @@ function detectWorkspaceElements(rootPath, { ignore, domainForName, skipped }) {
       if (!statSync(memberPath).isDirectory()) continue;
       if (!existsSync(join(memberPath, 'package.json'))) continue;
       const source = relative(rootPath, memberPath);
+      // 슬러그는 평평하게 — workspace 멤버 이름이 곧 role 이름. apps/foo 와
+      // packages/foo 가 겹치면 폴더 접두로 갈라 tail 충돌을 피한다.
+      const flatName = elements.some((el) => el.slug === `elements/${entry}`)
+        ? `${folder}-${entry}`
+        : entry;
       elements.push({
-        slug: `elements/${source}`,
+        slug: `elements/${flatName}`,
         title: humanize(entry),
         ...(domainForName(entry) ? { domain: domainForName(entry) } : {}),
+        path: source,
         evidence: { source },
       });
     }

@@ -297,14 +297,14 @@ section does not repeat them.)
 This project describes its own mental model in `docs/ontology/` as frontmatter markdown (dogfooding — we describe ourselves in our own data format).
 
 - Entry points: `docs/ontology/README.md` · `docs/ontology/project.md`
-- Census: `node cli/src/index.mjs overview` — **no document writes the number.**
-  It changes every time anyone adds a node, so a pinned count rots silently (it did:
-  97 → 98 went unnoticed). Docs name the command instead — including `README.md`,
-  `docs/BACKLOG.md`, and the launch docs, which used to state it (2026-07-31: the
-  gate that *forced* them to keep the number was deleted; it was preserving exactly
-  the rot this rule exists to prevent). The one place a count still appears is the
-  copy the **app renders on screen** — that is a claim to a user, so it stays gated
-  by `tests/contract/dogfood-node-count.contract.test.ts` · `launch-docs-current.test.ts`.
+- Census: `node cli/src/index.mjs overview` — **no document writes the number, and
+  CI does not count nodes** (2026-08-01, owner call — `docs/DECISIONS.md`). A pinned
+  count rots silently (it did: 97 → 98 went unnoticed), and every gate that *checked*
+  such a count made a person re-derive it by hand after any vault edit. Both the
+  numbers and the gates are gone; docs name the command instead. What is still gated
+  is the copy the **app renders on screen** — but by a runtime assertion, not a pinned
+  number: `DownloadPage.test.tsx` requires the caption to equal the graph it draws,
+  and both come from one hook, so nobody maintains it.
 - AI agents query it via the `mcp/` MCP server — registration guide in `mcp/README.md`, example in `.mcp.json.example`
 - When you discover a new domain / capability / element, add it to the same directory (with the MCP `add_concept` tool, or by hand)
 

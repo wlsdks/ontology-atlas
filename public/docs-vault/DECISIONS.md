@@ -42,6 +42,48 @@
 
 ---
 
+## 2026-08-01 — CI 는 볼트 노드 수를 세지 않는다 — 손으로 맞춰야 유지되는 수 게이트를 전부 걷고, 런타임에 계산되는 단언만 남긴다
+
+**소집**: 단독 패스 (소유자 직접 지시) · **트리거**: 소유자 — *"아예 CI점검에서 이런거 있으면 제거해 노드수 측정이라거나"* / *"이건 매번 바뀐다고"* / *"게이트중에 이런 불필요한건 다 제거해줘.. 맨날 너무 오래걸려 쓸데없는것때문에"*
+**선행 결정 관계**: 2026-07-31 「dogfood 볼트 전면 재생성」의 직접적 청구서다. 볼트를 0에서 다시 짓자 노드 수·kind 센서스·파일명·슬러그를 핀한 게이트가 한꺼번에 빨개졌고, **틀린 것은 볼트가 아니라 게이트였다.**
+
+**결정**: CI 는 도그푸드 볼트의 노드/관계/파일 수를 **측정하지 않는다.** 수를 알고 싶은 사람은 명령을 돌린다(`node cli/src/index.mjs overview`).
+
+**판별 기준 (이 선으로 잘랐다)**
+
+| | 성격 | 처분 |
+|---|---|---|
+| 사람이 **손으로 숫자를 맞춰 줘야** 유지되는 단언 — 볼트에 노드 하나만 더해도 빨개진다 | 잡일 장치 | **걷는다** |
+| **런타임에 같은 출처에서 그 자리에서 계산**되는 단언 — 아무도 손댈 일이 없다 | 정합성 | 남긴다 |
+| 숫자와 무관한 계약 (라우트·토큰·파서 드리프트·공개 MCP/CLI 인벤토리) | 계약 | 손대지 않는다 |
+
+**걷어낸 것과 각각 잃은 것**
+
+- `tests/contract/dogfood-node-count.contract.test.ts` (삭제) — 화면 카피(`mapEntry.demoNote`)가 낡은 노드 수를 말하면 잡던 게이트. **잃은 것**: 그 문장에 틀린 수가 들어가도 CI 가 침묵한다.
+- `src/shared/lib/launch-docs-current.test.ts` 의 「문서가 노드 수를 말한다면 볼트와 같다」 + `STALE_PATTERNS` 의 노드/관계 수 3항목. **잃은 것**: README·런치 문서의 낡은 노드 수를 CI 가 더는 잡지 않는다. (남긴 항목은 **공개 계약의 수**인 MCP 도구 인벤토리와, 오히려 동결을 *막는* 테스트 수 금지 규칙이다.)
+- `scripts/check-package-contracts.test.mjs` 의 verify README 게이트에서 **계산으로 만든 단언 전부** — 노드 수·kind 센서스·파일 수·그래프 해시·프로젝트/이웃 슬러그·모듈 엣지 요약. **잃은 것**: `mcp/README.md` 트랜스크립트의 수가 실제 볼트와 일치하는지 확인하지 않는다. 대신 트랜스크립트에서 **수를 걷어내고**(`<N>` / `<slug>`) 그 자리표시자를 리터럴로 pin 했다 — 누가 실행 결과를 다시 붙여 넣으면 걸린다. 이 게이트가 실제로 태운 비용은 기록에 남아 있다(자기개선 원장 iter 39–40: 결함 0건, 두 iteration 소모, `564 files / 453 edges` → `569 / 454`).
+- `scripts/check-package-contracts.test.mjs` 의 self-ontology README census 계산 블록. **잃은 것**: README 가 「총 N 노드」를 적으면 참인지 보던 조건부 검사. 남은 것은 「census 는 명령으로 답하는가」와 「이게 우리 볼트의 README 인가」.
+- `src/views/download/ui/DownloadPage.test.tsx` 의 `expect(graph.nodes.length).not.toBe(DOGFOOD_CENSUS.concepts)`. 이건 수 측정이 아니라 **결함을 요구하는 게이트**였다 — 두 수가 달랐던 이유는 옛 볼트에 「파일 없이 이름만 불린」 파생 노드가 있었기 때문이고, 규격대로 재생성한 지금은 모든 노드가 자기 문서를 가져 정당하게 같아질 수 있다. 남겨 두면 그 결함을 되살려야 초록이 된다.
+- `scripts/check-desktop-readiness.mjs` 의 「두 볼트 문서의 정확한 문장」 핀 (`capabilities/desktop-app-distribution.md` · `domains/onboarding-ux.md` — 둘 다 재생성으로 사라짐). **처방**: 파일명도 문장도 고정하지 않고 **볼트 전체에서 「데스크톱 앱 설치 결정」 개념의 존재**를 본다. 게이트 자신이 적어 둔 지시(*"Point this gate at the surface that replaced it, or drop the check"*)를 따랐다. **잃은 것**: 특정 문장의 보존을 강제하지 않으므로, 개념은 있는데 프레이밍이 흐려지는 경우는 못 잡는다.
+- `scripts/desktop-smoke.mjs` 의 볼트 표본을 `ontology/README.md` 로 교체. 이건 「번들에 볼트가 실렸는가」라 목적이 정당하고, **재생성에도 살아남는 파일**로 조준만 옮겼다. 잃은 것 없음.
+
+**남긴 것과 근거**
+
+- **다운로드 페이지의 캡션 == 그 캡션이 설명하는 그래프** (`DownloadPage.test.tsx`). 두 수가 `useStageGraph()` 한 훅에서 나오므로 유지 비용이 0 이고, "지도가 자기 자신을 정확히 센다"는 이 제품의 주장 자체다.
+- **공개 계약의 수** — CLI 명령 수, MCP 도구 수와 read/write 분할. 의도적으로 바꿀 때만 바뀌므로 문서가 따라오는 것이 맞다.
+- **웹 스모크의 「파싱된 노드 수 == 화면 수」** (`.claude/rules/surfaces.md`). 같은 실행 안에서 두 값을 비교하는 정합성 항등식이다.
+- 라우트·토큰·파서 드리프트 계약은 애초에 이 지시의 대상이 아니다.
+
+**기록된 반대**: *"수가 틀린 카피는 신뢰 비용이다."* 이 저장소는 실제로 그 비용을 냈다 — README 가 영문 절 98, 한국어 절 97 을 동시에 들고 초록이던 날이 있었고(2026-07-30), 화면 카피가 97 인데 볼트가 98 이던 날도 있었다. 게이트를 걷으면 그 상태가 다시 가능해진다.
+**반증 조건**: **틀린 수가 사용자에게 노출된 사례가 관측되면** 이 반대가 옳았던 것이다 — 화면 카피·README·런치 자산 중 어디든, 실제 볼트와 다른 노드/관계 수가 발견되면 재상정한다. 그때의 복구는 옛 게이트의 부활이 아니라 **그 문장을 런타임 계산으로 옮기는 것**이 먼저다(다운로드 캡션이 이미 그 형태다).
+**재검토**: 위 관측이 나타나는 즉시. 기한 없음.
+
+**적용한 규칙**: **제거 요구** — 게이트를 지울 때 무엇을 잃는지 항목별로 적는다("불필요해 보여서"는 이유가 아니다) · **헌장 우선** — 「문서는 노드 수를 적지 않는다」는 이미 `AGENTS.md` 의 규율이었고, 게이트들이 그 규율을 거스르고 있었다.
+
+**상태**: 유효
+
+---
+
 ## 2026-07-31 — 사람이 만든 노드 표기: 소급 출처는 존재하지 않는다 — 쓰기 시점 `created_by` 스탬프가 첫 슬라이스, 새 표면 0, 화면 라벨은 저작이 아니라 작업 상태로
 
 **소집**: PO 카운슬 5인 전원(근거·결·지킴이·해자·지렛대) — chief 주재, 2라운드 · **트리거**: 공개 계약(frontmatter 스키마 + MCP 응답) 변경 + 소유자 직접 요청 (*"사람이 직접 온톨로지 만드는 건 별도로 화면에 표기해 줄 수 있어? … 사람이 만든 것만 모아보기 … 별도 LNB 탭이 좋으려나? 아니면 캔버스 상단 버튼?"*)
@@ -2518,3 +2560,150 @@ PO OS 는 그 두 행에 0 이 있으면 빌드 불가라고 명시한다.
 **재검토**: 별도 모바일 표면이 로드맵에 오를 때.
 
 **상태**: 유효.
+
+---
+
+## 2026-08-01 — 슬러그는 평평한 식별자다 — R15 「element slug 두 패턴」 폐기, 쓰기 관문이 경로형 슬러그를 거부하고, CLI add 도 저작 스탬프를 찍는다
+
+**소집**: 단독 판정 (소유자 위임 — "판정하고 해결까지", 재생성 볼트 결함 재검) ·
+**트리거**: 규격 문맥 0인 에이전트의 도그푸드 볼트 재생성이 「경로형 `elements[]`
+참조 227 → 0」을 보고했으나, 실측 결과 그 성과는 **옮겨간 것**이었다 — 요소 43개
+전부의 슬러그가 경로(`elements/src/views/home` 류)였고, 참조를 막는 관문은
+있는데 슬러그를 재는 관문은 없었다.
+
+**관측된 피해**: 웹 파생은 슬러그 꼬리(tail)를 노드 정체성으로 쓴다
+(`derive-ontology-from-vault.ts` `deriveDocNode`). basename 이 같은
+`elements/src/{entities,views,widgets}/docs-vault` 3개가 화면에서 1개로 접혀
+컴파일 68 vs 화면 66, 관계 4개 소실. 컴파일러 스스로 `ambiguous-alias` 경고를
+냈다 — 채택 즉시 시스템 자신의 경고를 울리는 관습은 지원되는 관습이 아니다.
+
+**결정 (A — 슬러그는 평평한 식별자다)**:
+
+1. **규격**: 도구가 만드는 노드의 슬러그는 `folderForKind(kind)` + 평평한 이름.
+   위치는 `path:` 가 나른다 — 「경로는 개념의 증거이지 개념이 아니다」(2026-07-31
+   구축 규격)를 정체성에 적용한 것. 근거 셋: ① 꼬리를 정체성/별칭으로 쓰는 표면이
+   셋(웹 파생 · MCP unique-tail 해석 · 딥링크)이고 경로형 슬러그는 그 셋을 모두
+   충돌시킨다 ② 슬러그 속 계층은 `domain:`/`elements:` 그래프의 중복 진실원이다
+   (forbidden.md 의 이중 진실원 금지) ③ 재생성이 증명했듯 약한 모델은 제안문을
+   그대로 따른다 — 고칠 곳은 제안 생성기와 관문이다.
+2. **게이트 (hard error — 같은 변경에서)**: `flatSlugIssue(kind, slug)` 를
+   `mcp/src/schema.mjs` + `cli/src/lib/schema.mjs` 미러에 두고
+   (`FLAT_SLUG_CASES` 계약이 동일성 강제), 쓰기 문 전부에 배선 — MCP `writeDoc`
+   (add_concept/add_concepts/absorb 상속) · `rename_concept` · `reclassify_concept` ·
+   CLI `write-vault.writeDoc`(add/import 상속). 팬아웃 게이트의 「막지 않는다」
+   원칙은 의미 판단용이고 이것은 형태 유효성(중복 슬러그 급)이라 막는다.
+   **사용자 볼트 자체의 중첩(`services/auth/api`)은 소관 밖** — 스키마 폴더로
+   시작하는 슬러그만 잰다. 로컬-퍼스트: 사용자 디스크 구조는 존중.
+3. **유도원 수정** (이 판정에서 가장 값진 발견): 경로형 슬러그는 에이전트의
+   창작이 아니라 **서버 자신의 제안**이었다. ① `analyze_repo_structure` 가
+   `slug: elements/${relative(rootPath, subPath)}` 를 그대로 제안했고 볼트의
+   43개 슬러그는 그 출력과 일치한다 ② `infer_imports` 의 `moduleOf` 가 같은
+   path-style 로 "parity" 를 맞추고 있었다 ③ `mcp/README.md` R15 「Element
+   slug — two valid patterns」이 path-style 을 문서로 축복했고 ④ CLI add 의
+   hint 가 그 문서를 인용했다. 넷 다 수정 — 제안은 평평한 이름 + `path` 필드,
+   basename 충돌 시 레이어 단수형 접미(`docs-vault-entity/-view/-widget`).
+4. **볼트 수리**: 43개 전부 `rename_concept` 경유 평탄화, `pnpm docs-vault:build`
+   재생성. 화면 68 == 컴파일 68, 관계 146 복원, `health` healthy.
+5. **부수 발견 수리**: `redirectBacklinks` 의 tail-suffix 절이 **임의 문자열
+   프론트매터 값**을 다시 쓰고 있었다 — 평탄화 rename 중 다른 노드의
+   `path: src/entities/docs-vault` 가 `…/docs-vault-widget` 으로 오염(pathDrift
+   3건 실측). 참조 슬롯(`domain:` + graph array 키)만 다시 쓰도록 축소 + 회귀
+   테스트.
+
+**함께 결정 (소유자 위임 지시 이행)**:
+
+- **결함을 요구하던 게이트 3건 수술**: `derived-node-document` ·
+  `graph-truth-parity` 계약이 번들 샘플에 *이름뿐인 노드 ≥1 · 중복 후보 고정
+  11건 · 문서 없는 파생 노드 ≥1* 을 요구했다 — 규격을 지킨 볼트가 빨간불이
+  되는 게이트는 결함을 보존한다. 「파생 노드가 존재하면 문서 노드라 부르지
+  않는다」 조건부 + **합성 표본**(ghost 문서 1장)으로 바꿔 거짓말 차단은
+  유지하고 결함 강제는 삭제 (`launch-docs-current` demoNote 수술과 같은 꼴).
+- **`created_by` 두 문 정합 + 백필**: 2026-07-31 원장의 「CLI=미지(생략)」를
+  **개정**한다 — 실측상 에이전트는 편한 문(CLI)을 골라 출처 없는 노드를 냈다.
+  CLI `add` 도 MCP `add_concept` 과 같은 기본값(`agent:<heartbeat|unknown>`)을
+  찍고, 사람은 `--created-by human` 으로 선언한다(heartbeat 신원 재사용, 새
+  체계 0). 재생성 볼트 68개 전부 스탬프: **human 10** = 사람 판단이 성립
+  조건인 노드 — 프로젝트 정의 1(`ontology-atlas`) + 도메인 경계 6 + 방향 약속
+  capability 3(`vault-ontology`=프론트매터가 곧 그래프 ·
+  `docs-vault-local`=로컬-퍼스트 · `vault-agent`=에이전트 네이티브 정체성);
+  **agent:unknown 58** = 코드에서 유도 가능한 전부(재생성 에이전트 저작은
+  사실이나 이름은 heartbeat 부재로 미상 — 모름은 모름으로). 소급 추론 금지
+  (#801)는 기존 볼트 얘기고 새로 만든 볼트는 값이 사실이다(2026-07-31 원장
+  재생성 지시가 이미 명시). 게이트:
+  `tests/contract/dogfood-slug-provenance.contract.test.ts` (평면성 전수 +
+  created_by 전수, 개수는 못 박지 않음).
+
+**기록된 반대 (진 쪽 — B: 슬러그는 경로일 수 있다)**: 슬러그는 이미 볼트 상대
+파일 경로이고(`slugToPath`), 로컬-퍼스트는 사용자 폴더 구조 존중을 약속한다 —
+진짜 버그는 웹 파생의 **꼬리 접기**이며, 정체성을 전체 슬러그로 고치면 중첩된
+사용자 볼트의 basename 충돌(예: `services/auth/api` vs `services/billing/api`)
+까지 해결된다. A 는 이 읽기-경로 결함을 남긴다. — **반증 조건**: 실사용자
+볼트에서 스키마 폴더 밖 중첩 + 꼬리 충돌로 화면 병합이 관측되면 B 의 파생
+수리(전체 슬러그 정체성)가 A 와 무관하게 필요해진다. 그때 이 기록에서 시작한다
+(현재는 `ambiguous-alias` 경고가 그 관측 채널이다).
+
+**적용 규칙**: 헌장 우선(이중 진실원 금지 · 로컬-퍼스트) · 최소 슬라이스(파생
+정체성 재설계 대신 쓰기 관문 + 생성기 수정) · 규격은 같은 변경에서 게이트로.
+
+**서명 (accountable)**: stark (소유자 지시 "판정하고 해결까지 하라. 이슈 없도록")
+
+**재검토**: 다음 볼트 재생성(쇼핑몰 샘플 포함) 때 새 볼트가 평평한 슬러그로
+나오는지 — 유도원 수정의 직접 검증이다.
+
+**상태**: 유효
+
+---
+
+## 2026-08-01 — 도구의 시야가 곧 볼트의 사정거리였다: analyze 가 최상위 패키지를 못 보고, 게이트 8건의 절반은 「결함 요구」가 아니라 「부재 탐지」였다
+
+**소집**: 단독 판정 (같은 날 「슬러그는 평평한 식별자다」의 후속 — 코디네이터
+재검이 세 번째 유도원을 발견) · **트리거**: 재생성 볼트에 `mcp/`·`cli/` 가
+통째로 없었다 — `path:` 43개 전부 `src/`, 에이전트 표면(MCP 32 도구 · CLI 52
+명령)이 제품 자신의 지도에 0. "agent-native, human-sovereign" 정체성의 절반이
+백지였다.
+
+**판정 ① — analyze 의 `src/` 한정은 의도가 아니라 결함이다.**
+`analyze_repo_structure` 는 `src/` FSD 레이어와 `apps/`·`packages/` 워크스페이스
+멤버만 걸었다(`WORKSPACE_FOLDERS = ['apps','packages']`). 이 저장소처럼 root
+바로 아래 독립 패키지(`mcp/`, `cli/` — 각자 `package.json`)를 두는 배치는
+어디에도 잡히지 않았고, **제안 도구의 누락은 침묵으로 전파돼** 규격 문맥 없는
+에이전트의 볼트에서 그대로 구멍이 됐다. 슬러그를 경로로 만들던 그 도구가
+이번엔 사정거리를 정한 것 — 같은 병의 세 번째 사례다. 수리: root 바로 아래
+`package.json` 을 가진 디렉토리를 요소 후보로 제안(`detectRootPackages`,
+판별자는 package.json — `scripts/`·`tests/` 는 독립 패키지가 아니라서 자연
+제외). 게이트: `mcp/src/analyze.test.mjs` 사정거리 회귀 케이스.
+
+**판정 ② — 실패 게이트 8건 재분류** (직전 보고의 「선재 결함 · 별도 판정」
+분류를 뒤집는다 — 절반은 게이트가 옳았다):
+
+| 게이트 | 분류 | 처방 |
+|---|---|---|
+| compile_ontology 옵션 문서 정렬 | **부재 탐지** | `capabilities/mcp-server` 복원으로 통과 |
+| dogfood CLI 문서 fail-closed 정렬 | **부재 탐지** | `capabilities/cli-developer-entry` 복원으로 통과 |
+| dogfood MCP 문서 workspace-brief 정렬 | **부재 탐지** | 〃 (mcp-server) |
+| packed CLI 스모크 정렬 | **부재 탐지** | 〃 (cli-developer-entry 스모크 절) |
+| dogfood CLI capability 카운트 비고정 | **부재 탐지** | 〃 + 근거 파일 목록을 body 로 (구 `elements:` 경로 92개 부활 금지) |
+| dogfood MCP capability 정렬 | **부재 탐지** | 〃 (mcp-server) |
+| MCP verify README census 정렬 | **혼합** — 목적(README 표본 == 재계산 진실)은 유지, 내부 핀은 구 형상 | `slug==='project'` → kind 로 탐색, smoke 슬러그 하드코딩 → verify 자신의 `buildGraphQuerySmokeArgs` 로 계산, 고정 6-kind 나열(`document:0` 요구) → 실재 kind 만. README 표본은 실측 verify 출력으로 재생성 |
+| self-ontology README census | **구 형상 핀 + 규율 위반** | AGENTS.md 「no document writes the number — docs name the command」와 정면 충돌. 개정: 숫자는 조건부(말하면 참이어야), census 명령 표기 필수, 실재 진입점(`ontology-atlas.md` · 두 에이전트 표면) 지시 필수, 스타터 토이 문구 회귀 금지 |
+
+**볼트 채움 — 규격의 두 번째 시험 결과**: `capabilities/mcp-server` ·
+`capabilities/cli-developer-entry` 를 CLI `add`(평평한 슬러그 게이트 + 저작
+스탬프 통과) + `relate`(preflight) 로 land. **maintenance queue 가 도메인
+역링크 2건을 스스로 처방**했고 그대로 실행해 큐 0. 손보정은 둘: 복원 본문
+속 낡은 「`elements/src/...` 제안」 서술 3곳(이날 규격 변경의 결과라 불가피),
+구 `elements:` 경로 배열(27·92개)을 body 근거 절로 강등(경로는 증거이지
+자식이 아니다). `scripts/`·`tests/` 노드는 **안 만든다** — 독립 패키지가
+아니고, 의미는 그들이 게이트하는 capability 의 근거 줄에 이미 산다.
+자기 볼트 README 는 스타터 템플릿에서 우리 프로젝트의 문서로 재작성
+(census 는 숫자 대신 `node cli/src/index.mjs overview`).
+
+**기록된 반대**: 두 capability 문서는 사실상 `cli/README`·`mcp/README` 의 세
+번째 사본이고, 게이트가 pin 하는 문장 수십 개는 볼트 노드의 본문으로는 과하다
+— 볼트 노드는 의미·경계·근거만 갖고 참조 문서는 링크해야 한다는 관점.
+**반증 조건**: 이 두 문서의 정렬 게이트가 향후 3회 이상 「내용은 옳은데 문구
+싱크」로만 깨지면 반대가 옳았던 것 — 그때 게이트를 링크+요약 계약으로 줄이고
+본문을 얇게 한다. **재검토**: 다음 MCP 도구 추가/CLI 명령 추가 시.
+
+**서명 (accountable)**: stark (코디네이터 위임 "이어서 처리하라")
+**상태**: 유효

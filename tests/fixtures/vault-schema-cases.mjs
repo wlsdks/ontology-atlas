@@ -197,3 +197,29 @@ export const FOLDER_CASES = [
   // unknown kind — `''` (no prefix), CLI 가 raw slug 로 통과시키게.
   { kind: 'no-such', expected: '' },
 ];
+
+/**
+ * 슬러그 평면성 (2026-08-01 판정 「슬러그는 평평한 식별자다」).
+ * `expected: null` = 통과, `expected: 'issue'` = flatSlugIssue 가 메시지 반환.
+ */
+export const FLAT_SLUG_CASES = [
+  // 스키마 폴더 + 평평한 이름 — 정상.
+  { name: 'element flat', kind: 'element', slug: 'elements/jwt-token', expected: null },
+  { name: 'capability flat', kind: 'capability', slug: 'capabilities/token-issue', expected: null },
+  { name: 'domain flat', kind: 'domain', slug: 'domains/auth', expected: null },
+  // 스키마 폴더 안 중첩 — 재생성 볼트가 실제로 낳은 결함 형태. 거부.
+  { name: 'element path-style', kind: 'element', slug: 'elements/src/views/home', expected: 'issue' },
+  { name: 'element deep file', kind: 'element', slug: 'elements/scripts/build-vault.mjs', expected: 'issue' },
+  { name: 'capability nested', kind: 'capability', slug: 'capabilities/auth/token-issue', expected: 'issue' },
+  { name: 'domain nested', kind: 'domain', slug: 'domains/a/b', expected: 'issue' },
+  { name: 'element backslash', kind: 'element', slug: 'elements/src\\views\\home', expected: 'issue' },
+  // 스키마 폴더 밖 — 사용자 볼트 자체의 관습. 게이트 소관 아님.
+  { name: 'foreign nesting untouched', kind: 'element', slug: 'services/auth/api', expected: null },
+  { name: 'bare name untouched', kind: 'element', slug: 'jwt-token', expected: null },
+  // 폴더 없는 kind (project/document) — root 는 재지 않는다.
+  { name: 'project any', kind: 'project', slug: 'projects/auth-platform', expected: null },
+  { name: 'document any', kind: 'document', slug: 'notes/2026/plan', expected: null },
+  // 형태가 아예 아닌 입력 — 조용히 통과 (다른 검증이 잡는다).
+  { name: 'unknown kind', kind: 'no-such', slug: 'elements/a/b', expected: null },
+  { name: 'non-string kind', kind: undefined, slug: 'elements/a/b', expected: null },
+];

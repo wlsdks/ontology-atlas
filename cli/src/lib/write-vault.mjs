@@ -1,6 +1,7 @@
 import { writeFileSync, mkdirSync, existsSync, readFileSync, realpathSync } from 'node:fs';
 import { dirname, resolve, sep } from 'node:path';
 import { buildMarkdown, parseFrontmatter } from './parse-frontmatter.mjs';
+import { flatSlugIssue } from './schema.mjs';
 
 /**
  * vault-relative slug → file path. AI agent / prompt injection 으로 악의적인
@@ -67,6 +68,10 @@ export function writeDoc(rootPath, slug, { frontmatter, body = '' }) {
   if (existsSync(filePath)) {
     throw new Error(`Doc already exists: ${slug}`);
   }
+  // 슬러그 평면성 — mcp/src/vault.mjs writeDoc 과 같은 계약 (schema 미러의
+  // flatSlugIssue 가 단일 규칙). 경로형 슬러그는 정체성 충돌이라 hard error.
+  const slugIssue = flatSlugIssue(frontmatter?.kind, slug);
+  if (slugIssue) throw new Error(slugIssue);
   mkdirSync(dirname(filePath), { recursive: true });
   const md = buildMarkdown({ frontmatter, body });
   writeFileSync(filePath, md, 'utf-8');

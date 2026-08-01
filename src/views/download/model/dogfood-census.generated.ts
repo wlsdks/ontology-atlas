@@ -17,74 +17,45 @@ export interface DogfoodCensus {
 }
 
 export const DOGFOOD_CENSUS: DogfoodCensus = {
-  "concepts": 97,
-  "relations": 464,
+  "concepts": 69,
+  "relations": 84,
   "kinds": {
     "project": 1,
     "domain": 6,
-    "capability": 38,
-    "element": 49,
-    "document": 3
+    "capability": 19,
+    "element": 43,
+    "document": 0
   },
   "domains": [
     {
-      "slug": "ai-agent-partner",
-      "title": "AI Agent Partner"
+      "slug": "agent-integration",
+      "title": "AI Agent Integration"
     },
     {
-      "slug": "mode-aware-adapters",
-      "title": "Mode-Aware Adapters"
+      "slug": "graph-modeling",
+      "title": "Graph Modeling & Ontology Schema"
     },
     {
-      "slug": "onboarding-ux",
-      "title": "Onboarding & UX (theme · toast · a11y · mobile · CLI)"
+      "slug": "local-vault-management",
+      "title": "Local Vault & Data Source Management"
     },
     {
-      "slug": "ontology-core",
-      "title": "Ontology Core (TBox · ABox · Evidence)"
+      "slug": "onboarding-and-shell",
+      "title": "Onboarding, Distribution & App Shell"
     },
     {
-      "slug": "vault-local-first",
-      "title": "Vault — Local-First"
+      "slug": "project-portfolio",
+      "title": "Project Portfolio Management"
     },
     {
-      "slug": "views",
-      "title": "Views (Topology · Workshop · Insights)"
+      "slug": "topology-navigation",
+      "title": "Topology Map Navigation"
     }
   ],
-  "domainRelates": [
-    [
-      "ai-agent-partner",
-      "ontology-core"
-    ],
-    [
-      "ai-agent-partner",
-      "vault-local-first"
-    ],
-    [
-      "mode-aware-adapters",
-      "ontology-core"
-    ],
-    [
-      "mode-aware-adapters",
-      "vault-local-first"
-    ],
-    [
-      "onboarding-ux",
-      "views"
-    ],
-    [
-      "ontology-core",
-      "vault-local-first"
-    ],
-    [
-      "ontology-core",
-      "views"
-    ]
-  ],
+  "domainRelates": [],
   "hub": {
     "slug": "mcp-server",
     "title": "MCP Server (32 tools)",
-    "domain": "ai-agent-partner"
+    "domain": "agent-integration"
   }
 };

@@ -212,7 +212,11 @@ test("desktop readiness check proves Tauri macOS shell prerequisites", () => {
   );
   assert.match(
     result.stdout,
-    /✓ dogfood ontology docs mirror the desktop-app and hosted-download split/,
+    // [개정 2026-08-01] 종전 라벨은 「dogfood ontology docs mirror the
+    // desktop-app and hosted-download split」 였고, 그 검사는 사라진 두 볼트
+    // 파일의 **정확한 문장**을 핀했다. 볼트는 에이전트가 자기 말로 쓰는
+    // 표면이라 문장 핀이 유지되지 않는다 — 이제 개념의 존재만 본다.
+    /✓ dogfood ontology carries the desktop-app install decision/,
   );
   assert.match(
     result.stdout,

@@ -1,66 +1,88 @@
 ---
 slug: README
 kind: vault-readme
-title: ontology-atlas — 자기 ontology vault
-display_ko: 이 폴더 안내
-display_en: About this folder
-describes:
-  - project
+title: Ontology Atlas — its own ontology vault
+display_ko: 아틀라스 자기 볼트
+display_en: Atlas self-ontology vault
+created_by: "agent:unknown"
 ---
 
-# ontology-atlas — 자기 ontology vault
+# Ontology Atlas — its own ontology vault
 
-이 디렉토리는 **이 프로젝트 자신의 ontology** 다. dogfooding — 이 서비스를 만드는 데
-필요한 mental model 을 이 서비스의 데이터 형식 (frontmatter md) 으로 표현.
+This folder is **Ontology Atlas described in its own data format** (dogfooding).
+Every `.md` file here is one node of the product's meaning model — the same
+`project / domain / capability / element` graph the app draws and the MCP
+server serves to AI agents. If you are an agent reading this: this vault *is*
+the shared mental model between the humans building Atlas and you.
 
-여기서 ontology 는 단순한 그래프 그림이 아니라 **프로젝트가 무엇으로 이루어져
-있고, 각 개념이 왜 연결되는지에 대한 실행 가능한 의미 모델**이다. `project`,
-`domain`, `capability`, `element` 노드와 `contains`, `depends_on`, `relates`,
-`describes` 같은 관계를 markdown frontmatter 로 저장하고, CLI/MCP/UI 가 같은
-그래프를 읽고 갱신한다.
+## Where to start
 
-이 vault 가 표현하려는 1차 대상은 **비즈니스 핵심과 구현 근거가 연결된 의미 모델**이다.
-Atlas 는 사업/제품이 무엇을 하려는지, 어떤 capability 가 그 목표를 나르고, 어떤 코드가
-그 의미를 구현하거나 증명하는지 한 그래프에서 보여줘야 한다. 비즈니스 용어는 domain
-language, ownership, capability boundary, decision path, change impact 를 설명할 때
-들어오고, 소스 파일은 그 의미를 실현하거나 증명하는 `element` 로 들어온다. 즉
-`domain` / `capability` 는 "무엇이 핵심이고 왜 존재하는가"를 설명하고, `element` 는
-"어떤 구현이 그 의미를 실제로 운반하는가"를 증명한다.
+- `ontology-atlas.md` — the `kind: project` root. Everything hangs off it.
+- `domains/` — the six functional areas (agent integration, graph modeling,
+  local vault management, onboarding & shell, project portfolio, topology
+  navigation). Domain boundaries are human judgment — see `created_by:`.
+- `capabilities/` — user-visible features inside those domains, including the
+  two agent surfaces: `capabilities/mcp-server` (32 MCP tools in `mcp/`) and
+  `capabilities/cli-developer-entry` (52 CLI commands in `cli/`).
+- `elements/` — implementation evidence. Each element names a *role* (flat
+  slug); the file location lives in its `path:` frontmatter, never in the slug.
 
-## 구조
+**No document writes the census number** — it rots the moment anyone adds a
+node. Ask the vault itself:
 
-```
-docs/ontology/
-├── project.md            — root project 노드 (ontology-atlas)
-├── domains/              — 도메인 6개 (vault, ontology-core, views, ai-agent-partner, mode-aware-adapters, onboarding-ux)
-├── capabilities/         — capability 38개 (frontmatter → ontology, project ontology indexing, topology direct edit, changes-only review …)
-├── documents/            — document 3개 (agent practice notes)
-└── elements/             — element 49개 (코드 디렉토리 / UI 모델 / 라이브러리)
+```bash
+node cli/src/index.mjs overview        # from the repo root
 ```
 
-총 98 노드 (capability 38 · document 3 · domain 6 · element 49 · project 1 · vault-readme 1).
-정확한 census 는 `ontology-atlas list` 또는 mcp `list_kinds` 호출.
+## How this vault is written
 
-## 사용
+- Frontmatter is the graph; git is the review. Plain markdown, no backend.
+- Slugs are flat identifiers under their kind folder (`elements/topology-map-v2`,
+  never `elements/src/widgets/topology-map-v2`) — path-style slugs collide on
+  tail aliases and are rejected at every write door.
+- Every node carries `created_by:` — `human` for nodes that exist only because
+  a person judged them (project definition, domain boundaries, the charter
+  capabilities), `agent:*` for everything derivable from code.
+- Agents write through the MCP server (`add_concept`, `patch_concept`,
+  `rename_concept`, …) or the CLI (`node cli/src/index.mjs add …`); both stamp
+  provenance and run the same construction gates.
 
-### 사람이 읽을 때
-파일을 직접 열거나, `pnpm dev` 후 `/docs/` 에서 vault picker 로 이 디렉토리 선택.
+## Verify the agent loop
 
-### Claude Code 같은 AI agent 가 읽을 때
-MCP 서버 등록 — `mcp/README.md` 의 `.mcp.json` 예시 참고.
+After connecting an agent (the installed app's connect button, or
+`agent-setup` from this checkout), ask it to prove the connection before it
+edits anything:
 
-32 도구 (read 19 + write 13):
-- **read** — `connection_info` · `git_status` · `git_history` · `list_concepts` · `get_concept` · `get_concepts` · `find_evidence` · `find_backlinks` · `find_neighbors` · `find_path` · `list_kinds` · `find_orphans` · `query_concepts` · `compile_ontology` · `query_ontology` · `validate_vault` · `analyze_repo_structure` · `infer_imports` · `index_project`
-- **write** — `absorb_document` · `add_concept` · `add_concepts` · `add_relation` · `add_relations` · `remove_relation` · `replace_relation` · `patch_concept` · `reclassify_concept` · `delete_concept` · `rename_concept` · `merge_concepts` · `git_snapshot`
+> Use the ontology-atlas MCP server to run `validate_vault`, then
+> `query_ontology({ "operation": "workspace_brief" })`, then
+> `query_ontology({ "operation": "health" })`. Tell me whether this vault is
+> readable and graph-clean before proposing changes.
 
-agent UX: 단일 도구 (`add_concept` / `add_relation` / `get_concept`) 의 description 이 batch 짝 (`add_concepts` / `add_relations` / `get_concepts`) cross-reference. 5+ 노드 land 는 batch 쓰면 K → 1 round-trip.
+The CLI equivalents, from the repo root:
 
-## 갱신
+```bash
+node cli/src/index.mjs validate docs/ontology
+node cli/src/index.mjs health
+node cli/src/index.mjs maintenance docs/ontology
+node cli/src/index.mjs mcp-verify docs/ontology --timeout-ms 15000
+```
 
-- 새 도메인이 생기면 `domains/<slug>.md` 추가
-- 새 capability — `capabilities/<slug>.md`. frontmatter `domain: <domain-slug>`
-- 새 element (코드 모듈) — `elements/<slug>.md`. frontmatter `path: src/...`
+## Relations (frontmatter keys)
 
-빈 codebase 부트스트랩은 `ontology-atlas bootstrap [repo]` 한 줄로 (analyze 노드 + infer-imports 의 depends_on edges 합본).
+| Key | What it expresses |
+|---|---|
+| `depends_on:` / `dependencies:` | This node depends on other nodes |
+| `capabilities: [...]` | Capabilities this domain / project provides |
+| `elements: [...]` | Elements this capability / domain uses |
+| `domain: <slug>` | Parent domain of this capability/element |
+| `relates: [...]` | Loose related-to references |
 
-이 vault 는 **frontmatter 만으로 ontology 표현 가능** 을 보여준다. 본문은 사람이 읽을 때 도움.
+## Kinds
+
+- `project` — top-level (`ontology-atlas.md`).
+- `domain` — a large functional area.
+- `capability` — a user-visible feature inside a domain.
+- `element` — a smaller unit a capability uses; evidence lives in `path:`.
+- `document` — narrative doc tied to the graph.
+
+Full MCP tool reference: https://github.com/wlsdks/ontology-atlas/tree/main/mcp

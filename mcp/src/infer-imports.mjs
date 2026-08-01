@@ -464,8 +464,13 @@ function moduleOf(filePath, sourceFolders, rootPath) {
   // folder, then take the next segment as the "module" id.
   //
   // R+ — slug parity with analyze_repo_structure. The analyzer emits
-  // folder-prefixed ontology slugs (`capabilities/X`, `elements/src/...`) so
-  // import-derived edges can be applied directly after bootstrap.
+  // folder-prefixed ontology slugs (`capabilities/X`, `elements/<flat-name>`)
+  // so import-derived edges can be applied directly after bootstrap.
+  //
+  // 슬러그는 평평한 식별자다 (2026-08-01 판정 — docs/DECISIONS.md). 종전의
+  // `elements/src/entities/foo` path-style 은 폐기 — analyze 와 같은 규칙으로
+  // 이름만 슬러그에 싣고, basename 이 레이어를 넘어 겹칠 때만 레이어 단수형
+  // 접미로 가른다 (같은 rootPath 를 보므로 두 도구의 판정이 일치한다).
   const parts = filePath.split(/[\\/]/);
   for (let i = 0; i < parts.length - 1; i += 1) {
     if (i !== 0) continue;
@@ -475,7 +480,12 @@ function moduleOf(filePath, sourceFolders, rootPath) {
         (parts[i] === 'apps' || parts[i] === 'packages') &&
         existsSync(join(rootPath, parts[i], next, 'package.json'))
       ) {
-        return `elements/${parts[i]}/${next}`;
+        // analyze 는 apps → packages 순서로 훑으며 두 번째 충돌자에만 폴더
+        // 접두를 붙인다 — 같은 규칙: apps 가 bare 이름을 갖는다.
+        const collidesWithApps =
+          parts[i] === 'packages' &&
+          existsSync(join(rootPath, 'apps', next, 'package.json'));
+        return `elements/${collidesWithApps ? `packages-${next}` : next}`;
       }
       // capability 류 bucket — analyze 가 inner name 만 slug 으로 쓰므로
       // capabilities/ 아래에 둔다.
@@ -483,10 +493,16 @@ function moduleOf(filePath, sourceFolders, rootPath) {
       if (capabilityBuckets.has(next) && parts[i + 2]) {
         return `capabilities/${stripSourceExtension(parts[i + 2])}`;
       }
-      // element 류 bucket — analyze 가 elements/src/... path-style 을 쓴다.
-      const elementBuckets = new Set(['entities', 'widgets', 'views']);
-      if (elementBuckets.has(next) && parts[i + 2]) {
-        return `elements/${parts[i]}/${next}/${stripSourceExtension(parts[i + 2])}`;
+      // element 류 bucket — analyze 와 같은 flat + 충돌 시 레이어 접미 규칙.
+      const elementBuckets = ['entities', 'widgets', 'views'];
+      if (elementBuckets.includes(next) && parts[i + 2]) {
+        const name = stripSourceExtension(parts[i + 2]);
+        const collides =
+          elementBuckets.filter((bucket) =>
+            existsSync(join(rootPath, parts[i], bucket, name)),
+          ).length > 1;
+        const layerSingular = next.replace(/ies$/, 'y').replace(/s$/, '');
+        return `elements/${collides ? `${name}-${layerSingular}` : name}`;
       }
       // Single-file layered repos are common in small apps:
       //   src/features/check-in.js   -> user-facing capability
@@ -501,10 +517,9 @@ function moduleOf(filePath, sourceFolders, rootPath) {
         return `capabilities/${stripSourceExtension(parts[i + 2])}`;
       }
       if (isSupportElementBucket(next) && parts[i + 2]) {
-        return `elements/${parts.slice(i, parts.length).join('/')}`.replace(
-          /\.[^.\\/]+$/,
-          '',
-        );
+        // 파일의 basename 이 role 이름 — `src/storage/json-store.js` →
+        // `elements/json-store`. 위치는 evidence 가 나른다.
+        return `elements/${stripSourceExtension(parts[parts.length - 1])}`;
       }
       // Generic fallback — sourceFolder 다음 첫 segment 가 module.
       return `capabilities/${next}`;

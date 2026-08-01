@@ -2127,8 +2127,9 @@ await test("infer_imports — import graph exposes structuredContent", async () 
     assert.ok(result.edges.some((edge) => edge.from === "src/features/auth/index.ts" && edge.to === "src/entities/user/index.ts" && edge.kind === "static"));
     assert.ok(result.edges.some((edge) => edge.from === "src/features/auth/index.ts" && edge.to === "src/shared/api/client.ts"));
     assert.ok(result.externalImports.some((entry) => entry.from === "src/features/auth/index.ts" && entry.spec === "zod"));
-    assert.ok(result.moduleEdges.some((edge) => edge.from === "capabilities/auth" && edge.to === "elements/src/entities/user" && edge.count >= 1));
-    assert.ok(result.moduleEdges.some((edge) => edge.from === "capabilities/auth" && edge.to === "elements/src/shared/api/client" && edge.count >= 1));
+    // 슬러그는 평평한 식별자 (2026-08-01 판정) — 모듈 슬러그는 role 이름만.
+    assert.ok(result.moduleEdges.some((edge) => edge.from === "capabilities/auth" && edge.to === "elements/user" && edge.count >= 1));
+    assert.ok(result.moduleEdges.some((edge) => edge.from === "capabilities/auth" && edge.to === "elements/client" && edge.count >= 1));
     assert.equal(result.reconciliationSummary.unresolvedImports, 1);
     assert.match(result.reconciliationSummary.hint, /unresolved import/i);
     assert.doesNotMatch(result.reconciliationSummary.hint, /are in sync/i);

@@ -2399,7 +2399,7 @@ await test('add — 새 노드 + duplicate throws', async () => {
     const r1 = await run([
       'add',
       'capability',
-      'auth/foo',
+      'foo',
       '--title',
       'Foo',
       '--vault',
@@ -2407,14 +2407,16 @@ await test('add — 새 노드 + duplicate throws', async () => {
     ]);
     assert.equal(r1.code, 0, `first add should succeed, got ${r1.code}: ${r1.stderr}`);
     // R15 — auto-prefix default on, capability → capabilities/ folder
-    const written = readFileSync(join(root, 'capabilities/auth/foo.md'), 'utf-8');
+    const written = readFileSync(join(root, 'capabilities/foo.md'), 'utf-8');
     assert.match(written, /kind: capability/);
     assert.match(written, /title: Foo/);
+    // 저작 스탬프 (2026-08-01 원장) — MCP add_concept 과 같은 기본값.
+    assert.match(written, /created_by: "?agent:unknown"?/);
 
     const r2 = await run([
       'add',
       'capability',
-      'auth/foo',
+      'foo',
       '--title',
       'Dup',
       '--vault',
@@ -2554,7 +2556,9 @@ await test('add --raw-slug — auto-prefix 명시 opt-out (R15)', async () => {
   }
 });
 
-await test('add element path-style → cyan hint advisory (post-Paravel dogfood)', async () => {
+await test('add element path-style → 거부 (2026-08-01 판정 「슬러그는 평평한 식별자다」)', async () => {
+  // 구 R15 는 path-style 을 cyan hint 로 통과시켰다 — 꼬리 별칭 충돌로 화면
+  // 노드가 접히는 결함(도그푸드 43건 실측)이라 이제 hard error 다.
   const root = withVault([]);
   try {
     const r = await run([
@@ -2568,17 +2572,9 @@ await test('add element path-style → cyan hint advisory (post-Paravel dogfood)
       '--vault',
       root,
     ]);
-    assert.equal(r.code, 0);
-    // 4단계 nested 작성 자체는 valid
-    const written = readFileSync(
-      join(root, 'elements/src/features/auth.md'),
-      'utf-8',
-    );
-    assert.match(written, /kind: element/);
-    // stderr 에 path-style hint
-    assert.match(r.stderr, /path-style/);
-    assert.match(r.stderr, /4 levels/);
-    assert.match(r.stderr, /--raw-slug/);
+    assert.equal(r.code, 1);
+    assert.match(r.stderr, /nests a path under elements\//);
+    assert.match(r.stderr, /path: instead/);
   } finally {
     rmSync(root, { recursive: true, force: true });
   }
@@ -2605,7 +2601,7 @@ await test('add element flat slug → hint 없음 (정상 case)', async () => {
   }
 });
 
-await test('add capability path slug → hint 없음 (element 만 적용)', async () => {
+await test('add capability path slug → 거부 (모든 kind 폴더에 적용)', async () => {
   const root = withVault([]);
   try {
     const r = await run([
@@ -2619,8 +2615,8 @@ await test('add capability path slug → hint 없음 (element 만 적용)', asyn
       '--vault',
       root,
     ]);
-    assert.equal(r.code, 0);
-    assert.doesNotMatch(r.stderr, /path-style/);
+    assert.equal(r.code, 1);
+    assert.match(r.stderr, /nests a path under capabilities\//);
   } finally {
     rmSync(root, { recursive: true, force: true });
   }

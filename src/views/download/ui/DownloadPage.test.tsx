@@ -6,7 +6,6 @@ import enMessages from '../../../../messages/en.json';
 import { GITHUB_RELEASES_URL } from '@/features/macos-download-link';
 import { shouldHideBottomTabBar } from '@/widgets/bottom-tab-bar';
 import { RELEASE_VERSION } from '../lib/release-facts';
-import { DOGFOOD_CENSUS } from '../model/dogfood-census.generated';
 import { DownloadPage } from './DownloadPage';
 import { useStageGraph } from './StageMap';
 
@@ -353,9 +352,19 @@ describe('DownloadPage', () => {
     expect(graph.nodes.length).toBeGreaterThan(0);
     expect(caption).toHaveTextContent(`${graph.nodes.length} concepts`);
     expect(caption).toHaveTextContent(`${graph.edges.length} relations`);
-    // 파생 그래프는 frontmatter 파일 수와 **다르다**. 그 차이를 여기 고정해
-    // 두지 않으면 다음 사람이 "같으니 캡션을 되돌려도 된다" 고 읽는다.
-    expect(graph.nodes.length).not.toBe(DOGFOOD_CENSUS.concepts);
+    // [삭제됨 2026-08-01] `expect(graph.nodes.length).not.toBe(DOGFOOD_CENSUS.concepts)`
+    //
+    // 이건 수를 재는 게이트가 아니라 **결함을 요구하는 게이트**였다. 두 수가
+    // 달랐던 이유는 옛 볼트에 「파일 없이 이름만 불린」 파생 노드가 있었기
+    // 때문이고 — frontmatter 파일 수 96 vs 파생 그래프 287 — 그 간극을 고정해
+    // 두는 것이 당시엔 "캡션을 파일 수로 되돌리지 마라" 는 방벽이었다.
+    // 볼트를 규격대로 재생성한 지금은 **모든 노드가 자기 문서를 가져서**
+    // 두 정의가 정당하게 같아질 수 있다. 「달라야 한다」를 남기면 그 결함을
+    // 되살려야만 초록이 된다.
+    //
+    // 원래 지키려던 것은 위 두 줄이 이미 지킨다: 캡션은 **자기가 그리는
+    // 그래프**를 센다. 둘 다 `useStageGraph()` 한 훅에서 나오므로 손으로 맞출
+    // 숫자가 없고, 파일 수를 적는 옛 판본으로 되돌리면 그 순간 빨개진다.
 
     // [download-honesty] 이 숫자에는 범위 라벨이 붙어야 한다 — 앱에서 자기
     // 폴더를 열면 다른 정의(런타임 파생 그래프)로 다른 숫자가 나오고, 라벨이
