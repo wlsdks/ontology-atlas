@@ -31,10 +31,12 @@ import { useLocalVault } from './LocalVaultProvider';
  * toast 띄우면 noise).
  */
 export function VaultDiffToaster() {
-  const { status, manifest, consumeSelfWrittenSlugs } = useLocalVault();
+  const { status, manifest, consumeSelfWrittenSlugs, agentActivityLog } = useLocalVault();
   const toast = useToast();
   const t = useTranslations('featuresMisc.vaultDiffToaster');
   const prevMapRef = useRef<Map<string, number | null> | null>(null);
+  /** 직전 diff 를 본 시각 — 이 창 안의 `delete_concept` 만 이번 버스트의 것이다. */
+  const prevSeenAtRef = useRef<number>(Date.now());
 
   useEffect(() => {
     if (status !== 'loaded' || !manifest) return;
@@ -62,14 +64,44 @@ export function VaultDiffToaster() {
     const externalAdded = added.filter((slug) => !selfWritten.has(slug));
     const externalModified = modified.filter((slug) => !selfWritten.has(slug));
 
-    if (externalAdded.length === 0 && externalModified.length === 0) return;
+    // 삭제는 매니페스트로 못 센다 — rename/merge 가 「삭제 + 추가」로 보이기
+    // 때문이다(diff-manifest.ts 주석의 실측). 도구 이름은 의도를 알고 있으므로
+    // 이 버스트 창 안의 `delete_concept` 만 센다.
+    const removed = countRecentDeletes(agentActivityLog, prevSeenAtRef.current);
+    prevSeenAtRef.current = Date.now();
 
-    for (const planned of planVaultDiffToasts({ added: externalAdded, modified: externalModified })) {
+    if (externalAdded.length === 0 && externalModified.length === 0 && removed === 0) return;
+
+    for (const planned of planVaultDiffToasts({
+      added: externalAdded,
+      modified: externalModified,
+      removed,
+    })) {
       toast.show(formatVaultDiffToastMessage(planned, t), planned.variant);
     }
-  }, [status, manifest, toast, t, consumeSelfWrittenSlugs]);
+  }, [status, manifest, toast, t, consumeSelfWrittenSlugs, agentActivityLog]);
 
   return null;
+}
+
+/**
+ * 이 버스트 창(`since` 이후)에 기록된 `delete_concept` 수.
+ *
+ * 활동 로그는 MCP 쓰기 성공 직후 서버가 append 하는 감사 로그라, 도구 이름이
+ * 곧 의도다 — 매니페스트 슬러그 diff 와 달리 rename 을 삭제로 오독하지 않는다.
+ */
+function countRecentDeletes(
+  entries: { at: string; tool: string }[] | undefined,
+  since: number,
+): number {
+  if (!entries?.length) return 0;
+  let count = 0;
+  for (const entry of entries) {
+    if (entry.tool !== 'delete_concept') continue;
+    const at = Date.parse(entry.at);
+    if (Number.isFinite(at) && at >= since) count += 1;
+  }
+  return count;
 }
 
 function formatVaultDiffToastMessage(
@@ -81,8 +113,15 @@ function formatVaultDiffToastMessage(
       return t('added', { slug: planned.slug ?? '' });
     case 'edited':
       return t('edited', { slug: planned.slug ?? '' });
-    case 'overflow':
-      return t('overflow', { count: planned.count ?? 0 });
+    case 'digest': {
+      const c = planned.counts ?? { added: 0, modified: 0, removed: 0 };
+      // 0인 갈래는 그리지 않는다 — 「삭제 0」은 정보가 아니라 소음이다.
+      const parts: string[] = [];
+      if (c.added > 0) parts.push(t('digestAdded', { count: c.added }));
+      if (c.modified > 0) parts.push(t('digestModified', { count: c.modified }));
+      if (c.removed > 0) parts.push(t('digestRemoved', { count: c.removed }));
+      return `${t('digestPrefix')}${parts.join(t('digestJoin'))}`;
+    }
     default:
       return '';
   }

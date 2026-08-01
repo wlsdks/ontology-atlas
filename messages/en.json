@@ -2501,7 +2501,11 @@
     "vaultDiffToaster": {
       "added": "Added: {slug}",
       "edited": "Edited: {slug}",
-      "overflow": "+{count} more node(s)"
+      "digestAdded": "{count} added",
+      "digestModified": "{count} edited",
+      "digestRemoved": "{count} removed",
+      "digestJoin": " · ",
+      "digestPrefix": "Folder changed — "
     },
     "starterCta": {
       "errorFallback": "Failed to create starter",

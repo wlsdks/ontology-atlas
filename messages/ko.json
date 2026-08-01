@@ -2501,7 +2501,11 @@
     "vaultDiffToaster": {
       "added": "추가됨: {slug}",
       "edited": "편집됨: {slug}",
-      "overflow": "+{count}개 더"
+      "digestAdded": "추가 {count}",
+      "digestModified": "편집 {count}",
+      "digestRemoved": "삭제 {count}",
+      "digestJoin": " · ",
+      "digestPrefix": "폴더가 바뀌었어요 — "
     },
     "starterCta": {
       "errorFallback": "시작 시드 만들기 실패",

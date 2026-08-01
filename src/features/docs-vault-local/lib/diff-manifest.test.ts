@@ -134,49 +134,35 @@ describe('planVaultDiffToasts', () => {
     ]);
   });
 
-  it('preview limit 안에서는 added 를 먼저 보여주고 남은 칸에 modified 를 보여준다', () => {
+  /**
+   * **부채꼴은 폐기됐다** (2026-08-01). 종전엔 앞 3개를 슬러그로 내고 나머지를
+   * `+N개 더` 라는 별도 토스트로 냈는데, 토스트는 각자 만료하므로 앞의 것이
+   * 먼저 사라지면 **참조 대상을 잃은 숫자만 남았다** — 소유자가 화면에서 그
+   * 상태를 잡았다(「+4개 더」 한 장). 34개 쓰기면 잔해가 「+31개 더」다.
+   */
+  it('preview 를 넘으면 한 장으로 접고, 합계가 아니라 세 갈래로 센다', () => {
     expect(
-      planVaultDiffToasts(
-        {
-          added: ['a', 'b'],
-          modified: ['c', 'd'],
-        },
-        3,
-      ),
+      planVaultDiffToasts({ added: ['a', 'b'], modified: ['c', 'd'] }, 3),
     ).toEqual([
-      { kind: 'added', slug: 'a', variant: 'info' },
-      { kind: 'added', slug: 'b', variant: 'info' },
-      { kind: 'edited', slug: 'c', variant: 'success' },
-      { kind: 'overflow', count: 1, variant: 'info' },
+      { kind: 'digest', counts: { added: 2, modified: 2, removed: 0 }, variant: 'info' },
     ]);
   });
 
-  it('added 만으로 preview 가 차면 modified 는 overflow 로만 집계한다', () => {
-    expect(
-      planVaultDiffToasts(
-        {
-          added: ['a', 'b', 'c', 'd'],
-          modified: ['e'],
-        },
-        3,
-      ),
-    ).toEqual([
-      { kind: 'added', slug: 'a', variant: 'info' },
-      { kind: 'added', slug: 'b', variant: 'info' },
-      { kind: 'added', slug: 'c', variant: 'info' },
-      { kind: 'overflow', count: 2, variant: 'info' },
+  it('삭제가 섞이면 개수가 작아도 다이제스트로 간다 — 지워진 슬러그는 열 수 없다', () => {
+    expect(planVaultDiffToasts({ added: ['a'], modified: [], removed: 1 }, 3)).toEqual([
+      { kind: 'digest', counts: { added: 1, modified: 0, removed: 1 }, variant: 'info' },
     ]);
   });
 
-  it('preview limit 0 은 개별 항목 없이 전체 overflow 만 보여준다', () => {
-    expect(
-      planVaultDiffToasts(
-        {
-          added: ['a'],
-          modified: ['b'],
-        },
-        0,
-      ),
-    ).toEqual([{ kind: 'overflow', count: 2, variant: 'info' }]);
+  it('삭제만 있어도 보고한다 — 종전엔 이 버스트가 통째로 침묵했다', () => {
+    expect(planVaultDiffToasts({ added: [], modified: [], removed: 3 })).toEqual([
+      { kind: 'digest', counts: { added: 0, modified: 0, removed: 3 }, variant: 'info' },
+    ]);
+  });
+
+  it('preview limit 0 이면 한 건이라도 다이제스트로 접는다', () => {
+    expect(planVaultDiffToasts({ added: ['a'], modified: ['b'] }, 0)).toEqual([
+      { kind: 'digest', counts: { added: 1, modified: 1, removed: 0 }, variant: 'info' },
+    ]);
   });
 });
