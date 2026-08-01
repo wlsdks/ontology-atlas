@@ -1,3 +1,5 @@
+import { readFileSync } from "node:fs";
+import path from "node:path";
 import { expect, test } from "@playwright/test";
 import { seedFirstRunSeen } from "./first-run-seed";
 import { useDogfoodSample } from "./sample-source";
@@ -14,7 +16,39 @@ import { useDogfoodSample } from "./sample-source";
  * dogfood vault slugs (`docs/ontology/`) rather than fixtures.
  */
 
-const REAL_CAPABILITY_SLUG = "capability:topology-analysis-modes";
+/**
+ * 딥링크로 열 노드는 **볼트에서 골라 온다 — 이름을 여기 박지 않는다.**
+ *
+ * 종전에는 `capability:topology-analysis-modes` 가 상수로 박혀 있었고,
+ * 2026-08-01 볼트를 규격 기준으로 재생성하자 그 역량이 사라져 세 스펙이
+ * 한꺼번에 죽었다(딥링크·Escape·문서 왕복). 볼트는 도그푸드라 계속 다시
+ * 그려지는데, 스펙이 노드 하나의 이름에 기대면 **볼트를 고칠 때마다 e2e 를
+ * 같이 고쳐야 한다.**
+ *
+ * 이 스펙이 실제로 재는 것은 「어떤 역량이 열리는가」가 아니라 「딥링크가
+ * 도착하고 선택이 유지되는가」다. 그러니 대상은 아무 역량이나 되면 되고,
+ * 결정론만 있으면 된다 — 매니페스트에서 슬러그순 첫 역량을 고른다.
+ */
+const REAL_CAPABILITY_SLUG = (() => {
+  const manifestPath = path.resolve(
+    __dirname,
+    "../../src/entities/docs-vault/data/manifest.json",
+  );
+  const manifest = JSON.parse(readFileSync(manifestPath, "utf8")) as {
+    docs: Array<{ slug: string; frontmatter?: { kind?: string } }>;
+  };
+  const slugs = manifest.docs
+    .filter((doc) => doc.frontmatter?.kind === "capability")
+    .map((doc) => doc.slug.split("/").pop() as string)
+    .sort();
+  if (slugs.length === 0) {
+    throw new Error(
+      "dogfood 매니페스트에 역량 노드가 없다 — 볼트나 생성기가 깨졌다",
+    );
+  }
+  // 지도의 노드 id 는 `<kind>:<이름>` 이다 (볼트 슬러그의 `capabilities/` 접두와 다름).
+  return `capability:${slugs[0]}`;
+})();
 
 // `next dev` can transiently double-render a page's client tree under load
 // (streaming/hydration artifact — not present in a production static
