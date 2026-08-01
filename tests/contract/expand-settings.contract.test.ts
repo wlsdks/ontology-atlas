@@ -170,6 +170,14 @@ describe("펼치기 표시 — 셋이 실제로 갈아끼워진다", () => {
     expect(new Set(centers).size, `셋이 같은 자리다: ${centers.join(" / ")}`).toBe(3);
 
     const [pill, bar, badge] = rects;
+    // **막대에는 빈 폭이 없다** — 알약은 선행 글리프 존(14px)에 `＋` 를 앉히지만
+    // 막대는 부호·숫자를 판 한가운데 정렬해 그린다. 그 존을 그대로 물려받아
+    // 판이 자기가 설명하는 노드보다 넓었다(실측 2026-08-02: 58.8 vs 노드 지름
+    // 48). 컨트롤이 데이터보다 큰 것은 잉크 역전이다(Tufte). 같은 라벨에서
+    // 막대는 알약보다 **좁아야** 한다 — 존을 되살리면 이 줄이 빨개진다.
+    expect(bar.w, "막대가 알약의 빈 글리프 존을 다시 물려받았다").toBeLessThan(
+      clusterChipRect(ANCHOR.x, ANCHOR.y, "+31", 1).w - 10,
+    );
     // 알약은 anchor 중심(노드에서 떨어진 빈 자리).
     expect(pill.x + pill.w / 2).toBeCloseTo(ANCHOR.x, 6);
     // 막대는 부모 **바로 위** — 가로 중심이 부모와 같고, 밑변이 노드 머리 위다.

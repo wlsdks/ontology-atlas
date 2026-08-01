@@ -107,7 +107,12 @@ export function clusterBarRect(
   scale: number = 1,
 ): ClusterChipRect {
   const textW = label.length * BAR_CHAR_WIDTH;
-  const w = (CHIP_GLYPH_WIDTH + textW + BAR_PAD_X * 2) * scale;
+  // 알약의 **선행 글리프 존(14px)은 여기 없다.** 알약은 그 자리에 `＋` 를
+  // 앉히지만 막대는 부호·숫자를 판 한가운데 정렬해 그린다 — 그래서 그 14px 은
+  // 그리는 것이 없는 빈 폭이었고, 판을 자기가 설명하는 노드보다 **넓게** 만들었다
+  // (실측 2026-08-02: 판 58.8 vs 도메인 노드 지름 48). 컨트롤이 데이터보다 큰
+  // 것은 잉크 역전이다(Tufte). 빼면 41.6 — 노드 안에 들어간다.
+  const w = (textW + BAR_PAD_X * 2) * scale;
   const h = CLUSTER_BAR_HEIGHT * scale;
   // 판의 **밑변**이 노드 머리에서 `BAR_NODE_LIFT` 만큼 떠 있다.
   const bottom = parentScreenY - nodeScreenRadius - BAR_NODE_LIFT;
