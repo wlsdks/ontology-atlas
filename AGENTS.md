@@ -241,6 +241,13 @@ mechanism this budget assumes.)
 - Start structural repo work with CodeGraph, then open only the exact files or symbols still needed.
 - Ask the ontology only focused questions (`get_concept`, `find_path`, `query_ontology` with narrow operations). Avoid full `list_concepts` dumps unless the task genuinely needs the whole vault.
 - Verify focused-first. Start with `pnpm checks:changed` (or `pnpm checks:changed -- <path...>`) and direct sibling/unit/contract checks for touched paths. Escalate to full `pnpm test:run`, `pnpm lint`, `pnpm build`, broad Playwright, or desktop packaging only when shared contracts, routing, config, release surfaces, or user-facing workflows changed, or when focused checks leave a concrete risk uncovered.
+  - **It is also the *last* command before you open a PR** — run what it recommends for
+    every path you touched, not a list you wrote from memory. A hand-written list is
+    always narrower than the tool, and it only ever errs narrow: 2026-08-01 lost three
+    CI rounds to exactly this (docs edited without regenerating the vault, a fourth
+    version site missed, a smoke marker outliving its component) and the tool would
+    have named the right check in all three. **When you brief someone else, point at
+    the command — never enumerate the checks for them.**
 - Summarize large command output before carrying it forward. Preserve decisions, failing lines, metrics, and file paths; drop progress bars, repeated logs, and boilerplate.
 - **Don't delegate what you can finish in a handful of tool calls, and don't spawn a
   subagent to double-check your own work.** A subagent earns its cost by *isolating
