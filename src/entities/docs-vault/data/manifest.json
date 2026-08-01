@@ -3885,6 +3885,11 @@
         },
         {
           "depth": 2,
+          "text": "2026-08-01 — 웹에서도 그 자리에서 에이전트를 붙인다 · 볼트 지문 한 번에 · 화면이 하던 거짓말 셋",
+          "slug": "2026-08-01-웹에서도-그-자리에서-에이전트를-붙인다-볼트-지문-한-번에-화면이-하던-거짓말-셋"
+        },
+        {
+          "depth": 2,
           "text": "2026-08-01 — 볼트만 넘겨받은 에이전트가 못 읽던 것들: 본문 전체 읽기 · 두 검사의 말 맞추기 · 증거 없는 능력 표시",
           "slug": "2026-08-01-볼트만-넘겨받은-에이전트가-못-읽던-것들-본문-전체-읽기-두-검사의-말-맞추기-증거-없는-능력-표시"
         },
@@ -5994,8 +5999,8 @@
           "slug": "2026-07-26-첫-만남은-쇼핑몰부터"
         }
       ],
-      "excerpt": "Major change history. Code commit messages answer why; this file answers when / which surface changed. Focused on user-visible changes, not PR-level granularity. Newest at the top. Entries stay date-based; the app version reached v1.0.0 on 2026-07-27, so a release tag now carries the semver promise instead. 낯선 저장소로 실전 ",
-      "wordCount": 61427,
+      "excerpt": "Major change history. Code commit messages answer why; this file answers when / which surface changed. Focused on user-visible changes, not PR-level granularity. Newest at the top. Entries stay date-based; the app version reached v1.0.0 on 2026-07-27, so a release tag now carries the semver promise instead. 「이 화면에서는 연결",
+      "wordCount": 61677,
       "updatedAt": "2026-08-01",
       "linksOut": [
         "audits/CASE-STUDY-AGENTS-MD-DRIFT",
