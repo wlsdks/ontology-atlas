@@ -252,23 +252,23 @@ mechanism this budget assumes.)
 - Do not run or add hooks that inject long dynamic context. SessionStart hooks must stay concise; PreToolUse hooks should block risky actions only, not record routine activity.
 - Mention residual uncertainty instead of loading more context reflexively.
 
-## Code intelligence — CodeGraph (only if your client has it)
+## Code intelligence — CodeGraph (optional, any agent)
 
-If the `codegraph` MCP server is configured for your client, it is **mandatory
-for structural work here**: start feature work, bug fixes, refactors,
-architecture questions, and impact analysis with the matching CodeGraph tool
-rather than reading source files. Answer *directly* from it — it is the
-pre-built index, so re-deriving its answers with a grep/read loop or a
-file-reading sub-agent costs more for the same result. Raw Read/Grep is for
-literal strings, docs, config, and details CodeGraph didn't cover.
+If your client has the `codegraph` MCP/CLI (colbymchenry's — one `codegraph
+install` wires Claude Code and Codex CLI alike), structural questions start
+there. The agent guide with measured boundaries is
+`.claude/rules/codegraph.md` — Claude Code auto-loads it; other agents open
+that file once before first use. The habits: query
+`codegraph_explore` with exact symbol names, never prose sentences; treat
+returned source as already read; before a rename/delete run
+`callers`/`impact` plus one grep for comments; when tests break, CLI
+`codegraph affected <files>` names the affected test files — cross-check with
+`pnpm checks:changed`. Worktrees index separately (`codegraph init .`, ~4s
+here; `.codegraph/` is gitignored). If results look stale, `codegraph status`
+lists them under "Pending Changes".
 
-Which tool for which question is documented by the server's own tool
-descriptions — read those instead of a copy here that drifts. If `.codegraph/`
-is missing, offer to run `codegraph init -i`.
-
-> Not configured for every client. `.codex/config.toml` registers only
-> `ontology-atlas`, so Codex has no CodeGraph and this section does not apply
-> to it.
+No codegraph in your client? Ignore all of this silently — `grep -rn` + Read
+answers the same questions, and `pnpm checks:changed` picks the tests.
 
 ## 🚫 npm publish guard
 
