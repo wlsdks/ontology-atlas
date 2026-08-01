@@ -31,6 +31,14 @@ use crate::git::find_repo_root;
 /// `Contents/MacOS/<이름>` 으로 굽는다.
 const MCP_BINARY_NAME: &str = "ontology-atlas-mcp";
 
+fn bundled_binary_name() -> &'static str {
+    if cfg!(target_os = "windows") {
+        "ontology-atlas-mcp.exe"
+    } else {
+        MCP_BINARY_NAME
+    }
+}
+
 /// 앱이 사용자 디스크에 쓸 수 있는 파일 — 이 목록 밖은 거절한다.
 ///
 /// **이 목록은 「쓸 수 있는 것」이고 「한 번에 쓰는 것」이 아니다.** 2026-07-30 까지
@@ -131,7 +139,7 @@ fn resolve_bundled_binary() -> Result<PathBuf, String> {
     let dir = exe
         .parent()
         .ok_or_else(|| err_str("the app executable has no parent directory"))?;
-    Ok(dir.join(MCP_BINARY_NAME))
+    Ok(dir.join(bundled_binary_name()))
 }
 
 #[tauri::command]
@@ -428,7 +436,7 @@ fn verify_inner(vault_path: &str, sample_slug: Option<&str>) -> Result<McpVerify
 
     if failure.is_none() && server_version.is_none() {
         failure = Some(
-            "the bundled MCP server did not answer within 25 seconds — it may be blocked by macOS Gatekeeper."
+            "the bundled MCP server did not answer within 25 seconds — the operating system may have blocked it."
                 .to_string(),
         );
     }

@@ -47,12 +47,12 @@ describe("SampleNotice", () => {
     const button = screen.getByRole("button", { name: "내 폴더 열기" });
     fireEvent.click(button);
     expect(onOpenFolder).toHaveBeenCalledTimes(1);
-    expect(screen.queryByText("macOS 앱 다운로드")).not.toBeInTheDocument();
+    expect(screen.queryByText("데스크톱 앱 다운로드")).not.toBeInTheDocument();
   });
 
-  it("offers the macOS app download link on web runtime instead of a folder action", () => {
+  it("offers the desktop app download link on web runtime instead of a folder action", () => {
     renderNotice(false);
-    const link = screen.getByRole("link", { name: "macOS 앱 다운로드" });
+    const link = screen.getByRole("link", { name: "데스크톱 앱 다운로드" });
     expect(link).toHaveAttribute("href", "/download/");
     expect(screen.queryByText("내 폴더 열기")).not.toBeInTheDocument();
   });

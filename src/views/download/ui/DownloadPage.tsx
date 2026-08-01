@@ -27,6 +27,7 @@ import {
   isMacosReleasePublished,
   macosAssetFor,
   macosPublishedDate,
+  windowsAsset,
   type DesktopArch,
 } from '../lib/release-state';
 import { StageMap, useStageGraph } from './StageMap';
@@ -538,6 +539,7 @@ function PublishedActions({
 
   return (
     <div data-testid="download-hero-actions" className="min-w-0">
+      <PlatformHeading title={t('macosPlatformTitle')} status={t('macosTrustBadge')} />
       <div className="flex min-w-0 flex-wrap items-center gap-2.5">
         <a
           href={primaryAsset.downloadUrl}
@@ -654,8 +656,8 @@ function AssetSize({ bytes, onFill = false }: { bytes: number; onFill?: boolean 
  * `outline` 은 이 램프에 이미 있는 「판 위 2차 액션」의 자리다 — 면
  * (`--color-overlay-1`) + 테두리(`--color-overlay-3`) + inset 헤어라인으로
  * 눌러지는 것임을 말하되, 채운 인디고는 여전히 화면에 **하나**뿐이라 주목
- * 승자(받기)는 안 흔들린다(`design.md`: 채색은 인디고 하나). 높이도 받기
- * 버튼(h-11)보다 한 단 낮은 h-8 그대로다.
+ * 승자(받기)는 안 흔들린다(`design.md`: 채색은 인디고 하나). 높이는 받기
+ * 버튼(h-11)보다 한 단 낮은 h-10이라 목적지가 읽히면서도 주 CTA를 넘지 않는다.
  *
  * ## 아이콘이 `↗` 가 아니라 **GitHub 마크** 인 이유
  *
@@ -682,7 +684,10 @@ function PlateExitRow({ published }: { published: boolean }) {
   const t = useTranslations('download');
 
   return (
-    <div className="mt-5 flex min-w-0 flex-wrap items-center gap-x-3 gap-y-2 border-t border-[color:var(--color-divider)] pt-3.5">
+    <div
+      data-testid="download-exit-row"
+      className="mt-5 grid min-w-0 grid-cols-1 gap-2.5 border-t border-[color:var(--color-divider)] pt-3.5 sm:grid-cols-[1.08fr_0.92fr]"
+    >
       <a
         href={GITHUB_REPOSITORY_URL}
         target="_blank"
@@ -690,16 +695,12 @@ function PlateExitRow({ published }: { published: boolean }) {
         data-testid="download-repo-link"
         // 좌우 패딩은 **위 두 버튼과 같은 값**이다(`px-4 sm:px-6`). 판 안의
         // 왼쪽 정렬선은 원래 둘뿐이었다 — 상자 모서리 189, 버튼 아이콘 214.
-        // `size: 'sm'` 의 기본 패딩(14px)을 그대로 쓰면 아이콘이 204 에 서서
-        // **세 번째 정렬선**이 생긴다(실측 2026-07-29). 높이만 한 단 낮추고
-        // (h-8 vs h-11) 세로 아이콘 열은 판 전체가 공유한다.
-        //
-        // `touch-hit-expand` 는 그 낮춘 높이의 대가다 — 시각 32px 은 유지하되
-        // coarse 포인터에서 히트만 `--touch-target-min`(44px)으로 넓힌다
-        // (`design.md` 터치 계약). 받기 버튼들은 h-11 이라 이미 44 다.
+        // 기본 패딩을 그대로 쓰면 아이콘이 204 에 서서 세 번째 정렬선이 생긴다.
+        // 2026-08-01 소유자 피드백으로 출구 둘을 같은 h-11 행에 올렸고, GitHub가
+        // 조금 더 넓은 첫 칸을 가져 오픈소스 신뢰 경로임을 분명히 한다.
         className={cn(
-          buttonVariants({ variant: 'outline', size: 'sm' }),
-          'touch-hit-expand min-w-0 rounded-chip px-4 sm:px-6',
+          buttonVariants({ variant: 'outline', size: 'lg' }),
+          'min-w-0 justify-center rounded-chip px-4 sm:px-6',
         )}
       >
         {/* 14px 인 이유(원본은 16)는 마크 쪽 주석 — 이 자리에 있던 lucide
@@ -719,9 +720,12 @@ function PlateExitRow({ published }: { published: boolean }) {
         <Link
           href="/topology"
           data-testid="download-web-cta"
-          className={cn(buttonVariants({ variant: 'outline', size: 'sm' }), 'touch-hit-expand rounded-chip')}
+          className={cn(
+            buttonVariants({ variant: 'outline', size: 'lg' }),
+            'min-w-0 justify-center rounded-chip px-4 sm:px-6',
+          )}
         >
-          {t('webCta')}
+          {t('windowsBrowserFallback')}
         </Link>
       ) : null}
     </div>
@@ -739,6 +743,7 @@ function PendingActions() {
 
   return (
     <div data-testid="download-hero-actions" className="min-w-0">
+      <PlatformHeading title={t('macosPlatformTitle')} status={t('macosPendingBadge')} />
       <div className="flex min-w-0 flex-wrap items-center gap-2.5">
         <Link
           href="/topology"
@@ -1159,6 +1164,47 @@ function ChecksumRow({ arch }: { arch: DesktopArch }) {
  */
 function PlatformStatus() {
   const t = useTranslations('download');
+  const installer = windowsAsset();
+
+  if (installer) {
+    const warningId = 'download-windows-unsigned-warning';
+    return (
+      <section
+        data-testid="download-platform-windows"
+        className="mt-5 min-w-0 border-t border-[color:var(--color-divider)] pt-5"
+        aria-labelledby="download-windows-title"
+      >
+        <PlatformHeading
+          id="download-windows-title"
+          title={t('windowsPlatformTitle')}
+          status={t('windowsUnsignedBadge')}
+        />
+        <p
+          id={warningId}
+          role="note"
+          data-testid="download-windows-unsigned-warning"
+          className="mt-3 break-words rounded-card border border-[color:var(--color-amber-source-a25)] bg-[color:var(--color-amber-source-a08)] px-3.5 py-3 text-body leading-body text-[color:var(--color-amber-source-text-a95)]"
+        >
+          {t('windowsUnsignedWarning')}
+        </p>
+        <div className="mt-2.5 flex min-w-0 flex-col items-stretch gap-2 sm:items-start">
+          <a
+            href={installer.downloadUrl}
+            aria-describedby={warningId}
+            data-testid="download-windows-x64"
+            className={cn(
+              buttonVariants({ variant: 'outline', size: 'lg' }),
+              'min-h-11 w-full rounded-chip px-4 sm:w-auto sm:px-6',
+            )}
+          >
+            <Download size={15} aria-hidden />
+            {t('windowsDownloadCta')}
+            <AssetSize bytes={installer.sizeBytes} />
+          </a>
+        </div>
+      </section>
+    );
+  }
 
   return (
     /*
@@ -1179,22 +1225,24 @@ function PlatformStatus() {
        * 칩과의 간격이 주 CTA 사이 간격과 같을 이유가 없다. 850 창은 카운슬이 게이트로
        * 지키는 폭이고(설치 3단이 접히면 안 된다), 그 제약이 이 값을 정한다.
        */
-      className="mt-2 flex min-w-0 flex-wrap items-center gap-2"
+      className="mt-5 min-w-0 border-t border-[color:var(--color-divider)] pt-5"
     >
-      <span
-        aria-disabled="true"
-        data-testid="download-platform-windows-pending"
+      <PlatformHeading title={t('windowsPlatformTitle')} status={t('windowsPendingBadge')} />
+      <div className="mt-2 flex min-w-0 flex-wrap items-center gap-2">
+        <span
+          aria-disabled="true"
+          data-testid="download-platform-windows-pending"
         /*
          * `sm`(h-8) — 기본 `md`(h-10)로 두 버튼을 얹었더니 1512×850 에서 판이 한 화면을
          * 넘겨 카운슬 게이트가 빨개졌다(설치 3단이 접히지 않는 것이 그 게이트의 일이다).
          * 이 줄은 **받을 수 없는 플랫폼**의 자리라 주 CTA 와 같은 무게일 이유가 없다.
          */
-        className={cn(
-          buttonVariants({ variant: 'outline', size: 'sm' }),
-          'touch-hit-expand rounded-chip cursor-not-allowed opacity-55',
-        )}
-      >
-        <Download size={14} aria-hidden />
+          className={cn(
+            buttonVariants({ variant: 'outline', size: 'sm' }),
+            'touch-hit-expand rounded-chip cursor-not-allowed opacity-55',
+          )}
+        >
+          <Download size={14} aria-hidden />
         {/*
           * **문구는 「아직 없습니다」로 남는다.** 소유자 지시는 *"준비중이라고"* 였고
           * 「준비 중」으로 바꿨더니 게이트가 잡았다 — `DownloadPage.test.tsx` 가 영문
@@ -1205,18 +1253,43 @@ function PlatformStatus() {
           * 둔다.** 비활성 버튼 자체가 이미 "준비 중"을 말한다 — 형태가 상태를 나르므로
           * 문구가 그것을 반복하며 약속까지 얹을 이유가 없다.
           */}
-        <span className="break-keep">{t('platformStatus')}</span>
+          <span className="break-keep">{t('platformStatus')}</span>
+        </span>
+        <a
+          href={WINDOWS_STATUS.trackingUrl}
+          target="_blank"
+          rel="noopener noreferrer"
+          data-testid="download-platform-windows-track"
+          className={cn(
+            buttonVariants({ variant: 'ghost', size: 'sm' }),
+            'touch-hit-expand rounded-chip',
+          )}
+        >
+          <ExternalLink size={13} aria-hidden />
+          {t('windowsTrackCta')}
+        </a>
+      </div>
+    </div>
+  );
+}
+
+function PlatformHeading({
+  id,
+  title,
+  status,
+}: {
+  id?: string;
+  title: string;
+  status: string;
+}) {
+  return (
+    <div className="flex min-w-0 flex-wrap items-baseline gap-x-2 gap-y-1">
+      <h2 id={id} className="text-title font-semibold leading-title text-[color:var(--color-text-primary)]">
+        {title}
+      </h2>
+      <span className="text-label leading-label text-[color:var(--color-text-tertiary)]">
+        {status}
       </span>
-      <a
-        href={WINDOWS_STATUS.trackingUrl}
-        target="_blank"
-        rel="noopener noreferrer"
-        data-testid="download-platform-windows-track"
-        className={cn(buttonVariants({ variant: 'ghost', size: 'sm' }), 'touch-hit-expand rounded-chip')}
-      >
-        <ExternalLink size={13} aria-hidden />
-        {t('windowsTrackCta')}
-      </a>
     </div>
   );
 }

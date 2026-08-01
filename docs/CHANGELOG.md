@@ -7,6 +7,31 @@
 
 ---
 
+## 2026-08-01 — `v1.0.0-rc.5`: 공개 Windows x64 미서명 베타와 네이티브 검증
+
+**Windows x64 설치 파일을 공개 베타 채널에 넣었다.** Tauri NSIS 산출물을
+`ontology-atlas_<version>_windows_x64-setup.exe`라는 결정적 이름으로 스테이징하고,
+같은 이름의 `.sha256`을 함께 게시한다. Windows 번들도 macOS와 마찬가지로 앱 안에
+컴파일된 MCP 서버를 싣는다; Windows에서는 `ontology-atlas-mcp.exe`와 네이티브
+credential store를 사용한다.
+
+**미서명 상태를 숨기지 않는다.** 다운로드 CTA 앞에 코드 서명 부재,
+Microsoft Defender SmartScreen의 알 수 없는 게시자 경고, 관리되는 회사 PC의 실행
+차단 가능성을 적었다. macOS와 Windows를 별도 동급 카드로 만들지 않고 한 다운로드
+plate 안의 두 플랫폼 절로 구분했으며, Windows CTA는 outline으로 남겨 인디고 주목
+승자를 둘로 만들지 않았다. 웹 경로는 Windows 절 안에서 빼고 판 바닥의 출구
+행으로 정리했다. 그 행은 큰 `GitHub로 이동하기`를 왼쪽, 같은 높이의
+`웹버전으로 보기`를 오른쪽에 두어 설치 선택과 페이지 이동을 섞지 않는다. `/`의
+시연 영상과 `/download`의 영상 비노출 계약은 바꾸지 않았다.
+
+**Windows 실기기 부재는 CI 증거와 한계로 나눴다.** PR과 태그 모두 네이티브
+Windows Server 2022에서 의존성 감사, Defender 검사, NSIS 무인 설치, 설치 앱 실행,
+번들 MCP 초기화·도구 목록·도그푸드 볼트 읽기를 통과해야 한다. 반면 Windows 11의
+실제 SmartScreen 화면은 검증했다고 주장하지 않는다. 공개 릴리스 사실은 GitHub
+Release의 EXE·체크섬 쌍에서 생성되어 사이트에 반영된다.
+
+---
+
 ## 2026-08-01 — 볼트만 넘겨받은 에이전트가 못 읽던 것들: 본문 전체 읽기 · 두 검사의 말 맞추기 · 증거 없는 능력 표시
 
 **낯선 저장소로 실전 시험을 했다.** 아무도 모르는 오픈소스 저장소에 빈 볼트를

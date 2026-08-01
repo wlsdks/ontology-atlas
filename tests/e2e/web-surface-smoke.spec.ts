@@ -390,7 +390,7 @@ test.describe("웹 스모크 ③ 정직한 강등", () => {
     const platform = page.getByTestId("download-platform-windows");
     await expect(platform).toBeVisible({ timeout: 15_000 });
     await expect(platform).toContainText("Windows");
-    await expect(platform).toContainText("아직 없습니다");
+    await expect(platform).toContainText(/아직 게시 전|코드 서명되지 않았습니다/);
 
     // ② 갈 곳이 둘 다 살아 있다: 추적할 곳과, **오늘 당장 되는 것**.
     //
@@ -403,7 +403,11 @@ test.describe("웹 스모크 ③ 정직한 강등", () => {
     //
     // 라벨과 목적지의 짝은 `tests/contract/map-destination-route.contract.test.ts`
     // 가 소스 레벨에서 따로 지킨다.
-    await expect(platform.getByRole("link")).toHaveAttribute("href", /github\.com/);
+    const platformExternal = platform.locator(
+      '[data-testid="download-windows-x64"], [data-testid="download-platform-windows-track"]',
+    );
+    await expect(platformExternal).toHaveCount(1);
+    await expect(platformExternal).toHaveAttribute("href", /github\.com/);
     const web = page.getByTestId("download-web-cta");
     await expect(web).toBeVisible();
     await expect(web).toHaveAttribute("href", /\/ko\/topology\/?$/);

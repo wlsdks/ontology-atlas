@@ -13,7 +13,7 @@
  * 받고 도구 수가 기대치와 같은지 본다. 부팅 못 하는 바이너리를 앱에 싣는 것이
  * 이 슬라이스의 최악 실패 모드라 여기서 막는다.
  */
-import { spawn, spawnSync } from 'node:child_process';
+import { spawnSync } from 'node:child_process';
 import { existsSync, mkdirSync, statSync } from 'node:fs';
 import path from 'node:path';
 
@@ -25,6 +25,7 @@ import {
   hostTargetTriple,
   SUPPORTED_TARGET_TRIPLES,
 } from './lib/mcp-binary.mjs';
+import { verifyMcpBinary } from './verify-mcp-binary.mjs';
 
 const root = process.cwd();
 const argv = process.argv.slice(2);
@@ -53,12 +54,8 @@ if (argv.includes('--help') || argv.includes('-h')) {
   process.exit(0);
 }
 
-if (process.platform !== 'darwin') {
-  fail('The bundled MCP binary is a macOS app payload — build it on macOS.');
-}
-
 const triple = flagValue('--target') ?? hostTargetTriple();
-if (!triple) fail(`Unsupported host architecture: ${process.arch}`);
+if (!triple) fail(`Unsupported host platform/architecture: ${process.platform}/${process.arch}`);
 
 const outDir = path.join(root, MCP_BINARY_OUTPUT_DIR);
 const outFile = path.join(outDir, binaryFileNameForTriple(triple));
@@ -99,75 +96,12 @@ if (triple !== hostTargetTriple()) {
   process.exit(0);
 }
 
-const EXPECTED_MIN_TOOLS = 32;
 const vault = path.join(root, 'docs', 'ontology');
-
-const child = spawn(outFile, [], {
-  env: { ...process.env, OATLAS_VAULT: vault },
-  stdio: ['pipe', 'pipe', 'pipe'],
-});
-
-let stdout = '';
-let stderr = '';
-child.stdout.on('data', (chunk) => {
-  stdout += chunk;
-});
-child.stderr.on('data', (chunk) => {
-  stderr += chunk;
-});
-child.on('error', (error) => fail(`could not spawn the compiled binary: ${error.message}`));
-
-const request = (id, method) =>
-  `${JSON.stringify({
-    jsonrpc: '2.0',
-    id,
-    method,
-    params:
-      method === 'initialize'
-        ? {
-            protocolVersion: '2024-11-05',
-            capabilities: {},
-            clientInfo: { name: 'build-mcp-binary', version: '1' },
-          }
-        : {},
-  })}\n`;
-
-child.stdin.write(request(1, 'initialize'));
-setTimeout(() => child.stdin.write(request(2, 'tools/list')), 700);
-
-const deadline = setTimeout(() => {
-  child.kill();
-  fail(
-    `compiled binary did not answer within 20s.\n  exit signal path\n  stderr: ${stderr.slice(0, 600)}`,
-  );
-}, 20_000);
-
-const poll = setInterval(() => {
-  const messages = stdout
-    .split('\n')
-    .filter(Boolean)
-    .map((line) => {
-      try {
-        return JSON.parse(line);
-      } catch {
-        return null;
-      }
-    })
-    .filter(Boolean);
-
-  const initialize = messages.find((m) => m.id === 1)?.result;
-  const tools = messages.find((m) => m.id === 2)?.result?.tools;
-  if (!initialize || !tools) return;
-
-  clearInterval(poll);
-  clearTimeout(deadline);
-  child.kill();
-
-  if (tools.length < EXPECTED_MIN_TOOLS) {
-    fail(`compiled binary advertised ${tools.length} tools, expected ≥ ${EXPECTED_MIN_TOOLS}`);
-  }
+try {
+  const result = await verifyMcpBinary({ binaryPath: outFile, vaultPath: vault });
   console.log(
-    `✔ spawn check — version ${initialize.serverInfo?.version}, ${tools.length} tools, vault ${path.relative(root, vault)}`,
+    `✔ spawn check — version ${result.version}, ${result.toolCount} tools, vault ${path.relative(root, vault)}`,
   );
-  process.exit(0);
-}, 150);
+} catch (error) {
+  fail(error instanceof Error ? error.message : String(error));
+}

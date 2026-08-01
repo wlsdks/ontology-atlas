@@ -1,0 +1,151 @@
+name: Windows x64 Beta Check
+
+on:
+  pull_request:
+    paths:
+      - ".github/workflows/release-macos.yml"
+      - ".github/workflows/windows-beta-check.yml"
+      - "package.json"
+      - "pnpm-lock.yaml"
+      - "mcp/**"
+      - "scripts/build-mcp-binary.mjs"
+      - "scripts/verify-mcp-binary.mjs"
+      - "scripts/stage-windows-release-assets.mjs"
+      - "scripts/lib/mcp-binary.mjs"
+      - "src-tauri/**"
+      - "tests/contract/windows-desktop-release.contract.test.ts"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  checks: write
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
+
+jobs:
+  verify-windows:
+    name: Verify unsigned Windows x64 beta
+    runs-on: windows-2022
+    timeout-minutes: 45
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v6
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v6
+        with:
+          node-version: 24
+
+      - name: Enable Corepack pnpm
+        shell: pwsh
+        run: |
+          corepack enable
+          corepack prepare pnpm@10.18.0 --activate
+          pnpm --version
+
+      - name: Setup Rust
+        uses: dtolnay/rust-toolchain@stable
+
+      - name: Setup Bun
+        uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: latest
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Install bundled MCP server dependencies
+        run: pnpm --dir mcp install --frozen-lockfile
+
+      - name: Audit JavaScript production dependencies
+        run: pnpm audit --prod --audit-level=high
+
+      - name: Audit Rust dependencies
+        uses: rustsec/audit-check@69366f33c96575abad1ee0dba8212993eecbe998 # v2.0.0
+        with:
+          token: ${{ github.token }}
+          working-directory: src-tauri
+
+      - name: Windows release contract tests
+        run: node --test scripts/lib/mcp-binary.test.mjs scripts/stage-windows-release-assets.test.mjs
+
+      - name: Desktop readiness
+        run: pnpm desktop:check
+
+      - name: Build and verify Windows MCP sidecar
+        run: pnpm mcp:build-binary
+
+      - name: Native bridge tests on Windows
+        run: pnpm test:desktop:bridge
+
+      - name: Build Windows NSIS installer without updater signing
+        shell: pwsh
+        run: pnpm tauri build --bundles nsis --config '{"bundle":{"createUpdaterArtifacts":false}}'
+
+      - name: Require the beta installer to be unsigned
+        shell: pwsh
+        run: |
+          $installer = Get-ChildItem "src-tauri/target/release/bundle/nsis/*-setup.exe"
+          if ($installer.Count -ne 1) { throw "Expected exactly one NSIS installer, found $($installer.Count)." }
+          $signature = Get-AuthenticodeSignature $installer.FullName
+          if ($signature.Status -ne "NotSigned") {
+            throw "The public copy says unsigned, but Authenticode status is $($signature.Status)."
+          }
+
+      - name: Scan installer with Microsoft Defender
+        shell: pwsh
+        run: |
+          $installer = (Get-ChildItem "src-tauri/target/release/bundle/nsis/*-setup.exe").FullName
+          $platformRoot = "$env:ProgramData\Microsoft\Windows Defender\Platform"
+          $scanner = $null
+          if (Test-Path $platformRoot) {
+            $scanner = Get-ChildItem $platformRoot -Filter MpCmdRun.exe -Recurse |
+              Sort-Object FullName -Descending |
+              Select-Object -First 1
+          }
+          if (-not $scanner) {
+            $fallback = "$env:ProgramFiles\Windows Defender\MpCmdRun.exe"
+            if (Test-Path $fallback) { $scanner = Get-Item $fallback }
+          }
+          if (-not $scanner) { throw "Microsoft Defender scanner is unavailable on the Windows runner." }
+          & $scanner.FullName -Scan -ScanType 3 -File $installer -DisableRemediation
+          if ($LASTEXITCODE -ne 0) { throw "Microsoft Defender scan failed or found a threat (exit $LASTEXITCODE)." }
+
+      - name: Silent install and installed-app smoke
+        shell: pwsh
+        run: |
+          $installer = (Get-ChildItem "src-tauri/target/release/bundle/nsis/*-setup.exe").FullName
+          $install = Start-Process $installer -ArgumentList '/S' -Wait -PassThru
+          if ($install.ExitCode -ne 0) { throw "NSIS silent install failed with exit $($install.ExitCode)." }
+
+          $app = Get-ChildItem $env:LOCALAPPDATA -Filter 'Ontology Atlas.exe' -File -Recurse -ErrorAction SilentlyContinue |
+            Select-Object -First 1 -ExpandProperty FullName
+          if (-not $app) { throw "The installer completed but Ontology Atlas.exe was not found." }
+
+          $sidecar = Join-Path (Split-Path $app) 'ontology-atlas-mcp.exe'
+          if (-not (Test-Path $sidecar)) { throw "The installed app is missing ontology-atlas-mcp.exe." }
+          $vault = (Resolve-Path 'docs/ontology').Path
+          node scripts/verify-mcp-binary.mjs "--binary=$sidecar" "--vault=$vault"
+
+          $process = Start-Process $app -PassThru
+          Start-Sleep -Seconds 10
+          if ($process.HasExited) { throw "The installed app exited during the 10-second launch smoke." }
+          Stop-Process -Id $process.Id -Force
+
+      - name: Stage Windows beta artifact
+        shell: pwsh
+        run: |
+          $packageVersion = (Get-Content package.json | ConvertFrom-Json).version
+          node scripts/stage-windows-release-assets.mjs "--version=$packageVersion"
+
+      - name: Upload verified Windows beta artifact
+        uses: actions/upload-artifact@v7
+        with:
+          name: ontology-atlas-windows-x64-pr-${{ github.event.pull_request.number || github.run_number }}
+          path: release-upload
+          if-no-files-found: error

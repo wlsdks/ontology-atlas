@@ -55,6 +55,7 @@ const alignedDownload = `<!doctype html>
   <p>${koDownloadCopy.eyebrow}</p>
   <a href="https://github.com/wlsdks/ontology-atlas/releases">${koDownloadCopy.primaryCtaPending}</a>
   <a href="https://github.com/wlsdks/ontology-atlas">${koDownloadCopy.sourceCta}</a>
+  <h2>${koDownloadCopy.windowsPlatformTitle}</h2>
   <p>${koDownloadCopy.platformStatus}</p>
   <a href="https://github.com/wlsdks/ontology-atlas/issues">${koDownloadCopy.windowsTrackCta}</a>
   <p>${koDownloadCopy.releaseGateNote}</p>
@@ -73,6 +74,24 @@ test("hosted download surface check passes for promo/download-aligned pages", as
 
     assert.equal(result.rootUrl, `${server.baseUrl}/ko/`);
     assert.equal(result.downloadUrl, `${server.baseUrl}/ko/download/`);
+  } finally {
+    await server.close();
+  }
+});
+
+test("hosted download surface check accepts the published unsigned Windows beta branch", async () => {
+  const publishedDownload = alignedDownload
+    .replace(`<p>${koDownloadCopy.platformStatus}</p>`, `<p>${koDownloadCopy.windowsUnsignedWarning}</p>`)
+    .replace(
+      `<a href="https://github.com/wlsdks/ontology-atlas/issues">${koDownloadCopy.windowsTrackCta}</a>`,
+      `<a href="https://github.com/wlsdks/ontology-atlas/releases/download/v1/ontology-atlas_1_windows_x64-setup.exe">${koDownloadCopy.windowsDownloadCta}</a>`,
+    );
+  const server = await startServer({
+    "/ko/": { body: alignedLanding },
+    "/ko/download/": { body: publishedDownload },
+  });
+  try {
+    await evaluateHostedSurface({ baseUrl: server.baseUrl, timeoutMs: 5000 });
   } finally {
     await server.close();
   }
