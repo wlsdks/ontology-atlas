@@ -3710,7 +3710,7 @@ describe("evaluateDogfoodGate", () => {
           matches: [{ ...okShape.similarNodes.matches[0], node: { slug: "capabilities/other", kind: "capability", title: "Other" } }],
         },
       }),
-      ["similar_nodes response missing existing mcp-server match"],
+      ["similar_nodes response missing existing capabilities/mcp-server match"],
     );
     assert.deepEqual(
       evaluateDogfoodGate({
@@ -3883,7 +3883,7 @@ describe("evaluateDogfoodGate", () => {
     );
     assert.deepEqual(
       evaluateDogfoodGate({ ...okShape, queryPath: { ...okShape.queryPath, found: false } }),
-      ["path operation expected mcp-server → vault-local-first path"],
+      ["path operation expected capabilities/mcp-server → domains/vault-local-first path"],
     );
     assert.deepEqual(
       evaluateDogfoodGate({ ...okShape, queryPath: { ...okShape.queryPath, hopCount: 3 } }),
@@ -4160,7 +4160,7 @@ describe("evaluateDogfoodGate", () => {
     });
     assert.deepEqual(failures, [
       "find_path structuredContent mismatch — $.found: parsed false, structuredContent true",
-      "find_path: expected mcp-server → vault-local-first path",
+      "find_path: expected capabilities/mcp-server → domains/vault-local-first path",
     ]);
   });
 

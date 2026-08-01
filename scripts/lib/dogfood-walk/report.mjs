@@ -27,7 +27,11 @@ import {
   missingResponseLabels,
   rpc,
 } from "./rpc-client.mjs";
-import { buildDogfoodRequests } from "./request-builder.mjs";
+import {
+  buildDogfoodDiscoveryRequests,
+  buildDogfoodRequests,
+  selectDogfoodTargets,
+} from "./request-builder.mjs";
 import {
   batchNoWriteMetadataCoverageSummary,
   batchRowRepairSummary,
@@ -87,9 +91,31 @@ export async function runDogfoodWalk() {
     `${COLORS.bold}AI agent dogfood walk${COLORS.reset} ${COLORS.dim}(vault=${VAULT})${COLORS.reset}`,
   );
 
-  const requests = buildDogfoodRequests();
+  const discoveryRun = await rpc(buildDogfoodDiscoveryRequests(), timeoutMs);
+  if (discoveryRun.timedOut) {
+    console.error(rpcTimeoutFailure(timeoutMs, ["dogfood target discovery"]));
+    return 1;
+  }
 
-  const { responses, stderr, timedOut } = await rpc(requests, timeoutMs);
+  let targets;
+  try {
+    targets = selectDogfoodTargets({
+      projects: getResult(discoveryRun.responses, 902),
+      domains: getResult(discoveryRun.responses, 903),
+      capabilities: getResult(discoveryRun.responses, 904),
+    });
+  } catch (error) {
+    console.error(`dogfood target discovery failed: ${error instanceof Error ? error.message : String(error)}`);
+    return 1;
+  }
+  console.log(
+    `${COLORS.dim}targets: ${targets.projectSlug} → ${targets.domainSlug} → ${targets.capabilitySlug}${COLORS.reset}`,
+  );
+
+  const requests = buildDogfoodRequests(targets);
+
+  const { responses, stderr: walkStderr, timedOut } = await rpc(requests, timeoutMs);
+  const stderr = [discoveryRun.stderr, walkStderr].filter(Boolean).join("\n");
   const structuredContent = (id) => getRpcResult(responses, id)?.structuredContent;
   const initialize = getRpcResult(responses, 1);
 
@@ -218,7 +244,7 @@ export async function runDogfoodWalk() {
   }
 
   // 5. find_path
-  header(`find_path(capabilities/mcp-server → domains/vault-local-first)`);
+  header(`find_path(${targets.capabilitySlug} → ${targets.pathTargetSlug})`);
   const path = getResult(responses, 5);
   const pathStructured = getRpcResult(responses, 5)?.structuredContent ?? null;
   if (path) {
@@ -232,7 +258,7 @@ export async function runDogfoodWalk() {
   }
 
   // 6. find_backlinks
-  header(`find_backlinks(capabilities/mcp-server)`);
+  header(`find_backlinks(${targets.capabilitySlug})`);
   const bl = getResult(responses, 6);
   const blStructured = getRpcResult(responses, 6)?.structuredContent ?? null;
   if (bl) {
@@ -258,7 +284,7 @@ export async function runDogfoodWalk() {
   }
 
   // 7b. query_concepts
-  header(`query_concepts(kind=capability AND domain=ai-agent-partner)`);
+  header(`query_concepts(kind=capability AND domain=${targets.domainSlug})`);
   const queryConcepts = getResult(responses, 56);
   const queryConceptsStructured = getRpcResult(responses, 56)?.structuredContent ?? null;
   if (queryConcepts) {
@@ -269,7 +295,7 @@ export async function runDogfoodWalk() {
     }
   }
 
-  header(`query_concepts(slug!=project, limit=1)`);
+  header(`query_concepts(slug!=${targets.projectSlug}, limit=1)`);
   const queryConceptsLimited = getResult(responses, 60);
   const queryConceptsLimitedStructured = getRpcResult(responses, 60)?.structuredContent ?? null;
   if (queryConceptsLimited) {
@@ -434,7 +460,7 @@ export async function runDogfoodWalk() {
   }
 
   // 13. pattern_walk
-  header(`query_ontology(pattern_walk project → domains → capabilities)`);
+  header(`query_ontology(pattern_walk ${targets.patternStartSlug} → ${targets.pattern.join(" → ")})`);
   const patternWalk = getResult(responses, 12);
   const patternWalkStructured = structuredContent(12);
   if (patternWalk) {
@@ -448,7 +474,7 @@ export async function runDogfoodWalk() {
   }
 
   // 14. all_paths
-  header(`query_ontology(all_paths mcp-server → vault-local-first)`);
+  header(`query_ontology(all_paths ${targets.capabilitySlug} → ${targets.pathTargetSlug})`);
   const allPaths = getResult(responses, 13);
   const allPathsStructured = structuredContent(13);
   if (allPaths) {
@@ -463,7 +489,7 @@ export async function runDogfoodWalk() {
   }
 
   // 15. all_paths query_plan
-  header(`query_ontology(query_plan all_paths mcp-server → vault-local-first)`);
+  header(`query_ontology(query_plan all_paths ${targets.capabilitySlug} → ${targets.pathTargetSlug})`);
   const allPathsPlan = getResult(responses, 14);
   const allPathsPlanStructured = structuredContent(14);
   if (allPathsPlan) {
@@ -504,7 +530,7 @@ export async function runDogfoodWalk() {
   }
 
   // 18. domain_profile
-  header(`query_ontology(domain_profile ai-agent-partner)`);
+  header(`query_ontology(domain_profile ${targets.domainSlug})`);
   const domainProfile = getResult(responses, 19);
   const domainProfileStructured = structuredContent(19);
   if (domainProfile) {
@@ -547,7 +573,7 @@ export async function runDogfoodWalk() {
   }
 
   // 21. relation_check
-  header(`query_ontology(relation_check mcp-server → ai-agent-partner)`);
+  header(`query_ontology(relation_check ${targets.capabilitySlug} → ${targets.domainSlug})`);
   const relationCheck = getResult(responses, 22);
   const relationCheckStructured = structuredContent(22);
   if (relationCheck) {
@@ -649,7 +675,7 @@ export async function runDogfoodWalk() {
   }
 
   // 27. lineage
-  header(`query_ontology(lineage mcp-server)`);
+  header(`query_ontology(lineage ${targets.capabilitySlug})`);
   const lineage = getResult(responses, 28);
   const lineageStructured = structuredContent(28);
   if (lineage) {
@@ -663,7 +689,7 @@ export async function runDogfoodWalk() {
   }
 
   // 28. containment_tree
-  header(`query_ontology(containment_tree project)`);
+  header(`query_ontology(containment_tree ${targets.projectSlug})`);
   const containmentTree = getResult(responses, 29);
   const containmentTreeStructured = structuredContent(29);
   if (containmentTree) {
@@ -677,7 +703,7 @@ export async function runDogfoodWalk() {
   }
 
   // 29. reachability
-  header(`query_ontology(reachability mcp-server)`);
+  header(`query_ontology(reachability ${targets.capabilitySlug})`);
   const reachability = getResult(responses, 30);
   const reachabilityStructured = structuredContent(30);
   if (reachability) {
@@ -691,7 +717,7 @@ export async function runDogfoodWalk() {
   }
 
   // 30. impact
-  header(`query_ontology(impact mcp-server)`);
+  header(`query_ontology(impact ${targets.capabilitySlug})`);
   const impact = getResult(responses, 31);
   const impactStructured = structuredContent(31);
   if (impact) {
@@ -705,7 +731,7 @@ export async function runDogfoodWalk() {
   }
 
   // 31. blast_radius
-  header(`query_ontology(blast_radius mcp-server)`);
+  header(`query_ontology(blast_radius ${targets.capabilitySlug})`);
   const blastRadius = getResult(responses, 32);
   const blastRadiusStructured = structuredContent(32);
   if (blastRadius) {
@@ -719,7 +745,7 @@ export async function runDogfoodWalk() {
   }
 
   // 32. subgraph
-  header(`query_ontology(subgraph mcp-server)`);
+  header(`query_ontology(subgraph ${targets.capabilitySlug})`);
   const subgraph = getResult(responses, 33);
   const subgraphStructured = structuredContent(33);
   if (subgraph) {
@@ -758,7 +784,7 @@ export async function runDogfoodWalk() {
   }
 
   // 35. match_nodes
-  header(`query_ontology(match_nodes capability slugContains=mcp)`);
+  header(`query_ontology(match_nodes capability slugContains=${targets.slugNeedle})`);
   const matchNodes = getResult(responses, 36);
   const matchNodesStructured = structuredContent(36);
   if (matchNodes) {
@@ -772,7 +798,7 @@ export async function runDogfoodWalk() {
   }
 
   // 36. match_edges
-  header(`query_ontology(match_edges from=mcp-server)`);
+  header(`query_ontology(match_edges from=${targets.capabilitySlug})`);
   const matchEdges = getResult(responses, 37);
   const matchEdgesStructured = structuredContent(37);
   if (matchEdges) {
@@ -786,7 +812,7 @@ export async function runDogfoodWalk() {
   }
 
   // 37. node_profile
-  header(`query_ontology(node_profile mcp-server)`);
+  header(`query_ontology(node_profile ${targets.capabilitySlug})`);
   const nodeProfile = getResult(responses, 38);
   const nodeProfileStructured = structuredContent(38);
   if (nodeProfile) {
@@ -828,7 +854,7 @@ export async function runDogfoodWalk() {
   }
 
   // 40. similar_nodes
-  header(`query_ontology(similar_nodes candidate=mcp-server-v2)`);
+  header(`query_ontology(similar_nodes candidate=${targets.similarCandidateSlug})`);
   const similarNodes = getResult(responses, 41);
   const similarNodesStructured = structuredContent(41);
   if (similarNodes) {
@@ -842,7 +868,7 @@ export async function runDogfoodWalk() {
   }
 
   // 41. explain_relation
-  header(`query_ontology(explain_relation mcp-server → vault-local-first)`);
+  header(`query_ontology(explain_relation ${targets.capabilitySlug} → ${targets.pathTargetSlug})`);
   const explainRelation = getResult(responses, 42);
   const explainRelationStructured = structuredContent(42);
   if (explainRelation) {
@@ -856,7 +882,7 @@ export async function runDogfoodWalk() {
   }
 
   // 42. neighbors
-  header(`query_ontology(neighbors mcp-server)`);
+  header(`query_ontology(neighbors ${targets.capabilitySlug})`);
   const neighbors = getResult(responses, 43);
   const neighborsStructured = structuredContent(43);
   if (neighbors) {
@@ -870,7 +896,7 @@ export async function runDogfoodWalk() {
   }
 
   // 43. path
-  header(`query_ontology(path mcp-server → vault-local-first)`);
+  header(`query_ontology(path ${targets.capabilitySlug} → ${targets.pathTargetSlug})`);
   const queryPath = getResult(responses, 44);
   const queryPathStructured = structuredContent(44);
   if (queryPath) {
@@ -884,7 +910,7 @@ export async function runDogfoodWalk() {
   }
 
   // 44. project_scope
-  header(`query_ontology(project_scope project)`);
+  header(`query_ontology(project_scope ${targets.projectSlug})`);
   const projectScope = getResult(responses, 45);
   const projectScopeStructured = structuredContent(45);
   if (projectScope) {
@@ -1130,6 +1156,7 @@ export async function runDogfoodWalk() {
   ];
 
   const failures = evaluateDogfoodGate({
+    targets,
     initialize,
     kinds,
     list,
@@ -1306,7 +1333,7 @@ export async function runDogfoodWalk() {
     `  validate_vault: ${validation ? formatCount(validation.summary?.problemFiles ?? 0, "problem file") : "n/a"}`,
   );
   console.log(`  find_path: hops ${path?.hopCount ?? "n/a"} · edges ${path?.edges?.length ?? "n/a"}`);
-  console.log(`  find_backlinks: ${bl?.total ?? "n/a"} (mcp-server 가 얼마나 popular)`);
+  console.log(`  find_backlinks: ${bl?.total ?? "n/a"} (${targets.capabilitySlug} incoming references)`);
   console.log(
     `  workspace_brief: ${brief?.status ?? "n/a"} (${(brief?.nextActions || []).length} next actions · ${(brief?.health?.checks || []).length} health checks)`,
   );

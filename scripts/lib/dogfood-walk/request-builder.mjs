@@ -1,6 +1,7 @@
 // Builds the ordered JSON-RPC request batch the dogfood MCP walk sends to the
-// stdio server (initialize, tools/list, and one tools/call per surface).
-// Split out of scripts/dogfood-mcp-walk.mjs (structural decomposition, logic unchanged).
+// stdio server. A small discovery batch first selects real project/domain/
+// capability targets from the current vault; the main walk then exercises every
+// surface against those targets instead of repository-specific fixture slugs.
 import { ROOT } from "./rpc-client.mjs";
 import {
   DOGFOOD_TUNED_HEALTH_ARGS,
@@ -21,6 +22,20 @@ const init = [
   { jsonrpc: "2.0", method: "notifications/initialized" },
 ];
 
+const discoveryInit = [
+  {
+    jsonrpc: "2.0",
+    id: 901,
+    method: "initialize",
+    params: {
+      protocolVersion: "2024-11-05",
+      capabilities: {},
+      clientInfo: { name: "dogfood-walk-discovery", version: "0" },
+    },
+  },
+  { jsonrpc: "2.0", method: "notifications/initialized" },
+];
+
 function call(id, name, args = {}) {
   return {
     jsonrpc: "2.0",
@@ -30,7 +45,95 @@ function call(id, name, args = {}) {
   };
 }
 
-export function buildDogfoodRequests() {
+export function buildDogfoodDiscoveryRequests() {
+  return [
+    ...discoveryInit,
+    call(902, "list_concepts", { kind: "project", limit: 500 }),
+    call(903, "list_concepts", { kind: "domain", limit: 500 }),
+    call(904, "list_concepts", { kind: "capability", limit: 500 }),
+  ];
+}
+
+export function selectDogfoodTargets({ projects, domains, capabilities }) {
+  const projectSlug = firstNodeSlug(projects, "project");
+  const domainSlugs = new Set(nodeRows(domains, "domain").map((node) => node.slug));
+  const capabilityRows = nodeRows(capabilities, "capability");
+  const capability = capabilityRows.find(
+    (node) => typeof node.domain === "string" && domainSlugs.has(node.domain),
+  );
+  const mergeTarget = capabilityRows.find((node) => node.slug !== capability?.slug);
+
+  if (!projectSlug || !capability || !mergeTarget) {
+    throw new Error(
+      "dogfood target discovery needs a project plus a capability with a resolved domain and a second merge target",
+    );
+  }
+
+  const slugNeedle = capability.slug.split("/").filter(Boolean).at(-1);
+  return {
+    projectSlug,
+    domainSlug: capability.domain,
+    capabilitySlug: capability.slug,
+    capabilityTitle: capability.title,
+    mergeTargetSlug: mergeTarget.slug,
+    pathTargetSlug: capability.domain,
+    patternStartSlug: capability.slug,
+    pattern: ["domain"],
+    relationType: "domain",
+    slugNeedle,
+    similarCandidateSlug: `${capability.slug}-dogfood-candidate`,
+  };
+}
+
+function nodeRows(payload, kind) {
+  return Array.isArray(payload?.nodes)
+    ? payload.nodes.filter(
+      (node) => node?.kind === kind && typeof node.slug === "string" && node.slug.length > 0,
+    )
+    : [];
+}
+
+function firstNodeSlug(payload, kind) {
+  return nodeRows(payload, kind)[0]?.slug ?? null;
+}
+
+function assertDogfoodTargets(targets) {
+  const required = [
+    "projectSlug",
+    "domainSlug",
+    "capabilitySlug",
+    "capabilityTitle",
+    "mergeTargetSlug",
+    "pathTargetSlug",
+    "patternStartSlug",
+    "relationType",
+    "slugNeedle",
+    "similarCandidateSlug",
+  ];
+  const missing = required.filter(
+    (key) => typeof targets?.[key] !== "string" || targets[key].length === 0,
+  );
+  if (!Array.isArray(targets?.pattern) || targets.pattern.length === 0) missing.push("pattern");
+  if (missing.length > 0) {
+    throw new Error(`dogfood targets missing: ${missing.join(", ")}`);
+  }
+}
+
+export function buildDogfoodRequests(targets) {
+  assertDogfoodTargets(targets);
+  const {
+    projectSlug,
+    domainSlug,
+    capabilitySlug,
+    capabilityTitle,
+    mergeTargetSlug,
+    pathTargetSlug,
+    patternStartSlug,
+    pattern,
+    relationType,
+    slugNeedle,
+    similarCandidateSlug,
+  } = targets;
   return [
     ...init,
     { jsonrpc: "2.0", id: 55, method: "tools/list", params: {} },
@@ -38,42 +141,42 @@ export function buildDogfoodRequests() {
     call(3, "list_concepts", { limit: 30 }),
     call(48, "list_concepts", { kind: "project", limit: 1 }),
     call(16, "get_concepts", {
-      slugs: ["project", "capabilities/mcp-server", "missing-dogfood-slug"],
+      slugs: [projectSlug, capabilitySlug, "missing-dogfood-slug"],
     }),
     call(81, "get_concepts", {
       slugs: Array.from({ length: 51 }, (_, index) => `dogfood-slug-${index}`),
     }),
     call(4, "find_evidence", { title: "vault" }),
     call(5, "find_path", {
-      from: "capabilities/mcp-server",
-      to: "domains/vault-local-first",
+      from: capabilitySlug,
+      to: pathTargetSlug,
     }),
-    call(6, "find_backlinks", { slug: "capabilities/mcp-server" }),
+    call(6, "find_backlinks", { slug: capabilitySlug }),
     call(7, "find_orphans", {}),
-    call(56, "query_concepts", { filter: "kind=capability AND domain=ai-agent-partner", limit: 5 }),
-    call(60, "query_concepts", { filter: "slug!=project", limit: 1 }),
+    call(56, "query_concepts", { filter: `kind=capability AND domain=${domainSlug}`, limit: 5 }),
+    call(60, "query_concepts", { filter: `slug!=${projectSlug}`, limit: 1 }),
     call(57, "analyze_repo_structure", { rootPath: ROOT, maxDepth: 2 }),
     call(58, "infer_imports", { rootPath: ROOT, maxFiles: 5000 }),
     call(63, "rename_concept", {
-      oldSlug: "capabilities/mcp-server",
-      newSlug: "capabilities/mcp-server-dogfood-dry-run",
+      oldSlug: capabilitySlug,
+      newSlug: `${capabilitySlug}-dogfood-dry-run`,
     }),
     call(64, "merge_concepts", {
-      fromSlug: "capabilities/mcp-server",
-      intoSlug: "domains/ai-agent-partner",
+      fromSlug: capabilitySlug,
+      intoSlug: mergeTargetSlug,
     }),
-    call(65, "delete_concept", { slug: "capabilities/mcp-server" }),
+    call(65, "delete_concept", { slug: capabilitySlug }),
     call(82, "add_concepts", {
       concepts: Array.from({ length: 51 }, (_, index) => ({
         slug: `capabilities/dogfood-batch-cap-${index}`,
         kind: "capability",
         title: `Dogfood Batch Cap ${index}`,
-        domain: "ai-agent-partner",
+        domain: domainSlug,
       })),
     }),
     call(83, "add_relations", {
       relations: Array.from({ length: 51 }, (_, index) => ({
-        from: "capabilities/mcp-server",
+        from: capabilitySlug,
         to: `capabilities/dogfood-batch-cap-${index}`,
         type: "relates",
       })),
@@ -86,7 +189,7 @@ export function buildDogfoodRequests() {
           kind: "capability",
           title: "Dogfood Row Repair Multi",
           titel: "typo",
-          domian: "ai-agent-partner",
+          domian: domainSlug,
         },
         {
           slug: "verify-duplicate-slug",
@@ -97,7 +200,7 @@ export function buildDogfoodRequests() {
           slug: "verify-duplicate-slug",
           kind: "capability",
           title: "Dogfood Row Repair Duplicate Later",
-          domain: "ai-agent-partner",
+          domain: domainSlug,
         },
         {
           slug: "dogfood-row-repair-single",
@@ -111,20 +214,20 @@ export function buildDogfoodRequests() {
       relations: [
         null,
         {
-          from: "capabilities/mcp-server",
-          to: "domains/ai-agent-partner",
+          from: capabilitySlug,
+          to: domainSlug,
           type: "relates",
           relation: "relates",
-          frm: "capabilities/mcp-server",
+          frm: capabilitySlug,
         },
         {
-          from: "capabilities/mcp-server",
-          to: "domains/ai-agent-partner",
+          from: capabilitySlug,
+          to: domainSlug,
           type: "depend_on",
         },
         {
-          from: "capabilities/mcp-server",
-          to: "domains/ai-agent-partner",
+          from: capabilitySlug,
+          to: domainSlug,
           type: "relates",
           relation: "relates",
         },
@@ -147,22 +250,22 @@ export function buildDogfoodRequests() {
     call(62, "compile_ontology", { nodesLimit: 1, edgesLimit: 1, includeIndexes: true }),
     call(12, "query_ontology", {
       operation: "pattern_walk",
-      slug: "project",
-      pattern: ["domains", "capabilities"],
+      slug: patternStartSlug,
+      pattern,
       limit: 5,
     }),
     call(13, "query_ontology", {
       operation: "all_paths",
-      from: "capabilities/mcp-server",
-      to: "domains/vault-local-first",
+      from: capabilitySlug,
+      to: pathTargetSlug,
       maxHops: 4,
       limit: 3,
     }),
     call(14, "query_ontology", {
       operation: "query_plan",
       targetOperation: "all_paths",
-      from: "capabilities/mcp-server",
-      to: "domains/vault-local-first",
+      from: capabilitySlug,
+      to: pathTargetSlug,
       maxHops: 4,
     }),
     call(15, "query_ontology", { operation: "overview" }),
@@ -176,13 +279,13 @@ export function buildDogfoodRequests() {
     }),
     call(19, "query_ontology", {
       operation: "domain_profile",
-      slug: "domains/ai-agent-partner",
+      slug: domainSlug,
       itemLimit: 5,
       limit: 5,
     }),
     call(20, "query_ontology", {
       operation: "domain_matrix",
-      project: "project",
+      project: projectSlug,
       limit: 10,
     }),
     call(21, "query_ontology", {
@@ -192,9 +295,9 @@ export function buildDogfoodRequests() {
     }),
     call(22, "query_ontology", {
       operation: "relation_check",
-      from: "capabilities/mcp-server",
-      to: "domains/ai-agent-partner",
-      type: "domain",
+      from: capabilitySlug,
+      to: domainSlug,
+      type: relationType,
     }),
     call(23, "query_ontology", {
       operation: "maintenance_plan",
@@ -297,40 +400,40 @@ export function buildDogfoodRequests() {
     }),
     call(28, "query_ontology", {
       operation: "lineage",
-      slug: "capabilities/mcp-server",
+      slug: capabilitySlug,
       depth: 3,
       limit: 10,
     }),
     call(29, "query_ontology", {
       operation: "containment_tree",
-      slug: "project",
+      slug: projectSlug,
       depth: 3,
       limit: 30,
     }),
     call(30, "query_ontology", {
       operation: "reachability",
-      slug: "capabilities/mcp-server",
+      slug: capabilitySlug,
       direction: "outgoing",
       depth: 2,
       limit: 10,
     }),
     call(31, "query_ontology", {
       operation: "impact",
-      slug: "capabilities/mcp-server",
+      slug: capabilitySlug,
       direction: "incoming",
       depth: 2,
       limit: 10,
     }),
     call(32, "query_ontology", {
       operation: "blast_radius",
-      slug: "capabilities/mcp-server",
+      slug: capabilitySlug,
       direction: "incoming",
       depth: 2,
       limit: 10,
     }),
     call(33, "query_ontology", {
       operation: "subgraph",
-      slug: "capabilities/mcp-server",
+      slug: capabilitySlug,
       direction: "both",
       depth: 1,
       limit: 12,
@@ -346,19 +449,19 @@ export function buildDogfoodRequests() {
     call(36, "query_ontology", {
       operation: "match_nodes",
       kind: "capability",
-      slugContains: "mcp",
+      slugContains: slugNeedle,
       sort: "degree",
       limit: 8,
     }),
     call(37, "query_ontology", {
       operation: "match_edges",
-      from: "capabilities/mcp-server",
+      from: capabilitySlug,
       includeExternal: true,
       limit: 8,
     }),
     call(38, "query_ontology", {
       operation: "node_profile",
-      slug: "capabilities/mcp-server",
+      slug: capabilitySlug,
       limit: 8,
     }),
     call(39, "query_ontology", {
@@ -372,33 +475,33 @@ export function buildDogfoodRequests() {
     }),
     call(41, "query_ontology", {
       operation: "similar_nodes",
-      candidateSlug: "capabilities/mcp-server-v2",
-      title: "MCP Server",
+      candidateSlug: similarCandidateSlug,
+      title: capabilityTitle,
       kind: "capability",
-      domain: "domains/ai-agent-partner",
+      domain: domainSlug,
       limit: 5,
     }),
     call(42, "query_ontology", {
       operation: "explain_relation",
-      from: "capabilities/mcp-server",
-      to: "domains/vault-local-first",
+      from: capabilitySlug,
+      to: pathTargetSlug,
       maxHops: 4,
       limit: 5,
     }),
     call(43, "query_ontology", {
       operation: "neighbors",
-      slug: "capabilities/mcp-server",
+      slug: capabilitySlug,
       limit: 8,
     }),
     call(44, "query_ontology", {
       operation: "path",
-      from: "capabilities/mcp-server",
-      to: "domains/vault-local-first",
+      from: capabilitySlug,
+      to: pathTargetSlug,
       maxHops: 4,
     }),
     call(45, "query_ontology", {
       operation: "project_scope",
-      project: "project",
+      project: projectSlug,
       limit: 12,
     }),
     call(46, "list_concepts", { lmit: 1 }),

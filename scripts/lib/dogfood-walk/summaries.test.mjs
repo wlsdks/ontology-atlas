@@ -13,6 +13,7 @@ import {
   batchNoWriteMetadataCoverageSummary,
   batchRowRepairSummary,
   batchWriteMetadataAbsenceSummary,
+  buildDogfoodDiscoveryRequests,
   buildDogfoodRequests,
   componentSummary,
   createUtf8Accumulator,
@@ -36,6 +37,7 @@ import {
   rpcTimeoutFailure,
   shouldFinishRpc,
   shouldPrintDogfoodHelp,
+  selectDogfoodTargets,
   stderrWarningLines,
   stderrWarningFailures,
   strictClosestValueSummary,
@@ -61,7 +63,105 @@ import {
 import { QUERY_ONTOLOGY_OPERATIONS } from "../../../mcp/src/ontology-engine.mjs";
 import { ROOT_PKG, makeDogfoodToolsList, okShape } from "./fixtures.mjs";
 
+const TEST_TARGETS = {
+  projectSlug: "project",
+  domainSlug: "domains/ai-agent-partner",
+  capabilitySlug: "capabilities/mcp-server",
+  capabilityTitle: "MCP Server",
+  mergeTargetSlug: "capabilities/vault-validator",
+  pathTargetSlug: "domains/vault-local-first",
+  patternStartSlug: "project",
+  pattern: ["domain"],
+  relationType: "domain",
+  slugNeedle: "mcp",
+  similarCandidateSlug: "capabilities/mcp-server-dogfood-candidate",
+};
+
 describe("rpc response completion helpers", () => {
+  it("derives live dogfood targets from kind probes instead of repository slugs", () => {
+    const targets = selectDogfoodTargets({
+      projects: {
+        nodes: [{ slug: "products/nova", kind: "project", title: "Nova" }],
+      },
+      domains: {
+        nodes: [{ slug: "domains/runtime", kind: "domain", title: "Runtime" }],
+      },
+      capabilities: {
+        nodes: [
+          {
+            slug: "capabilities/runtime-a",
+            kind: "capability",
+            title: "Runtime A",
+            domain: "domains/runtime",
+          },
+          {
+            slug: "capabilities/runtime-b",
+            kind: "capability",
+            title: "Runtime B",
+            domain: "domains/runtime",
+          },
+        ],
+      },
+    });
+
+    assert.deepEqual(targets, {
+      projectSlug: "products/nova",
+      domainSlug: "domains/runtime",
+      capabilitySlug: "capabilities/runtime-a",
+      capabilityTitle: "Runtime A",
+      mergeTargetSlug: "capabilities/runtime-b",
+      pathTargetSlug: "domains/runtime",
+      patternStartSlug: "capabilities/runtime-a",
+      pattern: ["domain"],
+      relationType: "domain",
+      slugNeedle: "runtime-a",
+      similarCandidateSlug: "capabilities/runtime-a-dogfood-candidate",
+    });
+
+    const requests = buildDogfoodRequests(targets);
+    assert.deepEqual(requests.find((request) => request.id === 5)?.params.arguments, {
+      from: "capabilities/runtime-a",
+      to: "domains/runtime",
+    });
+    assert.deepEqual(requests.find((request) => request.id === 12)?.params.arguments, {
+      operation: "pattern_walk",
+      slug: "capabilities/runtime-a",
+      pattern: ["domain"],
+      limit: 5,
+    });
+    assert.equal(requests.find((request) => request.id === 45)?.params.arguments.project, "products/nova");
+    assert.equal(JSON.stringify(requests).includes("ai-agent-partner"), false);
+    assert.equal(JSON.stringify(requests).includes("vault-local-first"), false);
+  });
+
+  it("arms discovery with non-empty project, domain, and capability probes", () => {
+    const requests = buildDogfoodDiscoveryRequests();
+    const calls = requests.filter((request) => request.method === "tools/call");
+
+    assert.deepEqual(
+      calls.map((request) => request.params.arguments),
+      [
+        { kind: "project", limit: 500 },
+        { kind: "domain", limit: 500 },
+        { kind: "capability", limit: 500 },
+      ],
+    );
+    assert.equal(new Set(calls.map((request) => request.id)).size, 3);
+  });
+
+  it("fails closed when discovery cannot form a real capability-domain relation", () => {
+    assert.throws(
+      () => selectDogfoodTargets({
+        projects: { nodes: [{ slug: "products/nova", kind: "project", title: "Nova" }] },
+        domains: { nodes: [{ slug: "domains/runtime", kind: "domain", title: "Runtime" }] },
+        capabilities: {
+          nodes: [{ slug: "capabilities/orphan", kind: "capability", title: "Orphan" }],
+        },
+      }),
+      /capability with a resolved domain and a second merge target/,
+    );
+  });
+
   it("formats workspace next actions with actionable detail", () => {
     assert.deepEqual(
       formatWorkspaceNextActionRows([
@@ -756,7 +856,7 @@ describe("rpc response completion helpers", () => {
     assert.equal(DOGFOOD_RESPONSE_LABELS.get(85), "add_concepts_row_repair");
     assert.equal(DOGFOOD_RESPONSE_LABELS.get(86), "add_relations_row_repair");
     assert.deepEqual(
-      [...expectedResponseIds(buildDogfoodRequests())].sort((a, b) => a - b),
+      [...expectedResponseIds(buildDogfoodRequests(TEST_TARGETS))].sort((a, b) => a - b),
       [...DOGFOOD_RESPONSE_LABELS.keys()].sort((a, b) => a - b),
     );
     const responsesWithoutGetConcepts = [...DOGFOOD_RESPONSE_LABELS.keys()]
@@ -770,7 +870,7 @@ describe("rpc response completion helpers", () => {
   });
 
   it("keeps dogfood batch cap requests read-safe or rejected before writes", () => {
-    const requests = buildDogfoodRequests();
+    const requests = buildDogfoodRequests(TEST_TARGETS);
     const getConceptsBatchCap = requests.find((request) => request.id === 81);
     const addConceptsBatchCap = requests.find((request) => request.id === 82);
     const addRelationsBatchCap = requests.find((request) => request.id === 83);
@@ -801,7 +901,7 @@ describe("rpc response completion helpers", () => {
   });
 
   it("keeps destructive dogfood dry-run requests non-writing", () => {
-    const requests = buildDogfoodRequests();
+    const requests = buildDogfoodRequests(TEST_TARGETS);
     assert.deepEqual(requests.find((request) => request.id === 63)?.params, {
       name: "rename_concept",
       arguments: {
@@ -813,7 +913,7 @@ describe("rpc response completion helpers", () => {
       name: "merge_concepts",
       arguments: {
         fromSlug: "capabilities/mcp-server",
-        intoSlug: "domains/ai-agent-partner",
+        intoSlug: "capabilities/vault-validator",
       },
     });
     assert.deepEqual(requests.find((request) => request.id === 65)?.params, {
@@ -823,7 +923,7 @@ describe("rpc response completion helpers", () => {
   });
 
   it("keeps strict relation_check dogfood request endpoint-independent", () => {
-    const requests = buildDogfoodRequests();
+    const requests = buildDogfoodRequests(TEST_TARGETS);
     assert.deepEqual(requests.find((request) => request.id === 66)?.params, {
       name: "query_ontology",
       arguments: {
@@ -836,7 +936,7 @@ describe("rpc response completion helpers", () => {
   });
 
   it("keeps strict find_neighbors types dogfood request endpoint-independent", () => {
-    const requests = buildDogfoodRequests();
+    const requests = buildDogfoodRequests(TEST_TARGETS);
     assert.deepEqual(requests.find((request) => request.id === 75)?.params, {
       name: "find_neighbors",
       arguments: {
@@ -847,7 +947,7 @@ describe("rpc response completion helpers", () => {
   });
 
   it("keeps strict find_orphans kind dogfood requests endpoint-independent", () => {
-    const requests = buildDogfoodRequests();
+    const requests = buildDogfoodRequests(TEST_TARGETS);
     assert.deepEqual(requests.find((request) => request.id === 76)?.params, {
       name: "find_orphans",
       arguments: {
@@ -863,7 +963,7 @@ describe("rpc response completion helpers", () => {
   });
 
   it("keeps strict query_concepts filter dogfood requests endpoint-independent", () => {
-    const requests = buildDogfoodRequests();
+    const requests = buildDogfoodRequests(TEST_TARGETS);
     assert.deepEqual(requests.find((request) => request.id === 78)?.params, {
       name: "query_concepts",
       arguments: {
@@ -879,7 +979,7 @@ describe("rpc response completion helpers", () => {
   });
 
   it("keeps strict list_concepts kind dogfood request endpoint-independent", () => {
-    const requests = buildDogfoodRequests();
+    const requests = buildDogfoodRequests(TEST_TARGETS);
     assert.deepEqual(requests.find((request) => request.id === 80)?.params, {
       name: "list_concepts",
       arguments: {
@@ -889,7 +989,7 @@ describe("rpc response completion helpers", () => {
   });
 
   it("keeps strict match_edges type dogfood request endpoint-independent", () => {
-    const requests = buildDogfoodRequests();
+    const requests = buildDogfoodRequests(TEST_TARGETS);
     assert.deepEqual(requests.find((request) => request.id === 74)?.params, {
       name: "query_ontology",
       arguments: {
@@ -900,7 +1000,7 @@ describe("rpc response completion helpers", () => {
   });
 
   it("keeps strict add_relation dogfood request endpoint-independent and non-writing", () => {
-    const requests = buildDogfoodRequests();
+    const requests = buildDogfoodRequests(TEST_TARGETS);
     assert.deepEqual(requests.find((request) => request.id === 70)?.params, {
       name: "add_relation",
       arguments: {
@@ -912,7 +1012,7 @@ describe("rpc response completion helpers", () => {
   });
 
   it("keeps tuned health dogfood requests aligned with the printed scope", () => {
-    const requests = buildDogfoodRequests();
+    const requests = buildDogfoodRequests(TEST_TARGETS);
     assert.deepEqual(requests.find((request) => request.id === 49)?.params.arguments, {
       operation: "health",
       ...DOGFOOD_TUNED_HEALTH_ARGS,
@@ -926,7 +1026,7 @@ describe("rpc response completion helpers", () => {
   });
 
   it("keeps dogfood request ids unique", () => {
-    const ids = buildDogfoodRequests()
+    const ids = buildDogfoodRequests(TEST_TARGETS)
       .map((request) => request.id)
       .filter((id) => Number.isInteger(id));
     assert.deepEqual(

@@ -66,7 +66,11 @@ export {
   tunedWorkspaceBriefScopeSummary,
 } from "./lib/dogfood-walk/summaries.mjs";
 
-export { buildDogfoodRequests } from "./lib/dogfood-walk/request-builder.mjs";
+export {
+  buildDogfoodDiscoveryRequests,
+  buildDogfoodRequests,
+  selectDogfoodTargets,
+} from "./lib/dogfood-walk/request-builder.mjs";
 
 export {
   recordResult,

@@ -108,7 +108,7 @@ export function facetsShapeFailure(result) {
   return null;
 }
 
-export function matchNodesShapeFailure(result) {
+export function matchNodesShapeFailure(result, targets) {
   if (result.operation !== "match_nodes") {
     return `match_nodes response operation mismatch — ${result.operation}`;
   }
@@ -118,7 +118,7 @@ export function matchNodesShapeFailure(result) {
   if (result.filters.kind !== "capability") {
     return `match_nodes filter kind mismatch — ${result.filters.kind}`;
   }
-  if (result.filters.slugContains !== "mcp") {
+  if (result.filters.slugContains !== targets.slugNeedle) {
     return `match_nodes filter slugContains mismatch — ${result.filters.slugContains}`;
   }
   if (result.filters.sort !== "degree") {
@@ -160,21 +160,21 @@ export function matchNodesShapeFailure(result) {
     if (node.kind !== "capability") {
       return `match_nodes row kind mismatch: ${node.slug}`;
     }
-    if (!node.slug.toLowerCase().includes("mcp")) {
+    if (!node.slug.toLowerCase().includes(targets.slugNeedle.toLowerCase())) {
       return `match_nodes row slug filter mismatch: ${node.slug}`;
     }
   }
   return null;
 }
 
-export function matchEdgesShapeFailure(result) {
+export function matchEdgesShapeFailure(result, targets) {
   if (result.operation !== "match_edges") {
     return `match_edges response operation mismatch — ${result.operation}`;
   }
   if (!result.filters || typeof result.filters !== "object" || Array.isArray(result.filters)) {
     return "match_edges response missing filters";
   }
-  if (result.filters.from !== "capabilities/mcp-server") {
+  if (result.filters.from !== targets.capabilitySlug) {
     return `match_edges filter from mismatch — ${result.filters.from}`;
   }
   if (result.filters.includeExternal !== true) {
@@ -201,7 +201,7 @@ export function matchEdgesShapeFailure(result) {
   for (const [index, edge] of result.edges.entries()) {
     const edgeFailure = graphEdgeFailure("match_edges edge", edge, index);
     if (edgeFailure) return edgeFailure;
-    if (edge.from !== "capabilities/mcp-server") {
+    if (edge.from !== targets.capabilitySlug) {
       return `match_edges row from mismatch at index ${index}`;
     }
     if (!edge.fromNode || edge.fromNode.slug !== edge.from) {
@@ -226,11 +226,11 @@ export function matchEdgesShapeFailure(result) {
   return null;
 }
 
-export function nodeProfileShapeFailure(result) {
+export function nodeProfileShapeFailure(result, targets) {
   if (result.operation !== "node_profile") {
     return `node_profile response operation mismatch — ${result.operation}`;
   }
-  if (result.center !== "capabilities/mcp-server") {
+  if (result.center !== targets.capabilitySlug) {
     return `node_profile response center mismatch — ${result.center}`;
   }
   if (!result.node || result.node.slug !== result.center) {
@@ -470,7 +470,7 @@ export function communityEdgeBucketFailure(label, bucket, expectedTotal) {
   return null;
 }
 
-export function similarNodesShapeFailure(result) {
+export function similarNodesShapeFailure(result, targets) {
   if (result.operation !== "similar_nodes") {
     return `similar_nodes response operation mismatch — ${result.operation}`;
   }
@@ -479,10 +479,10 @@ export function similarNodesShapeFailure(result) {
   }
   const expectedSource = {
     mode: "candidate",
-    slug: "capabilities/mcp-server-v2",
+    slug: targets.similarCandidateSlug,
     kind: "capability",
-    title: "MCP Server",
-    domain: "domains/ai-agent-partner",
+    title: targets.capabilityTitle,
+    domain: targets.domainSlug,
   };
   for (const [key, value] of Object.entries(expectedSource)) {
     if (result.source[key] !== value) {
@@ -516,8 +516,8 @@ export function similarNodesShapeFailure(result) {
   if (!result.limited && result.matches.length !== result.totalMatches) {
     return `similar_nodes row count mismatch — rows ${result.matches.length}, total ${result.totalMatches}`;
   }
-  if (!result.matches.some((match) => match?.node?.slug === "capabilities/mcp-server")) {
-    return "similar_nodes response missing existing mcp-server match";
+  if (!result.matches.some((match) => match?.node?.slug === targets.capabilitySlug)) {
+    return `similar_nodes response missing existing ${targets.capabilitySlug} match`;
   }
   for (const [index, match] of result.matches.entries()) {
     const matchFailure = similarMatchFailure(match, index);
@@ -553,14 +553,14 @@ export function similarMatchFailure(match, index) {
   return matchRowsFailure(`similar_nodes sharedNeighbors ${match.node.slug}`, match.sharedNeighbors);
 }
 
-export function explainRelationShapeFailure(result) {
+export function explainRelationShapeFailure(result, targets) {
   if (result.operation !== "explain_relation") {
     return `explain_relation response operation mismatch — ${result.operation}`;
   }
-  if (result.from !== "capabilities/mcp-server") {
+  if (result.from !== targets.capabilitySlug) {
     return `explain_relation from mismatch — ${result.from}`;
   }
-  if (result.to !== "domains/vault-local-first") {
+  if (result.to !== targets.pathTargetSlug) {
     return `explain_relation to mismatch — ${result.to}`;
   }
   if (!result.fromNode || result.fromNode.slug !== result.from) {
