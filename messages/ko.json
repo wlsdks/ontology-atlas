@@ -1207,7 +1207,7 @@
       },
       "sidebar": {
         "treeHeader": "문서 목록",
-        "treeCount": "전체 문서",
+        "treeCount": "{collection} {count}개",
         "treeFiltered": "#{tag} 필터 적용 중",
         "treeSearchCount": "검색 결과 {count}개",
         "searchLabel": "문서 검색",

@@ -1207,7 +1207,7 @@
       },
       "sidebar": {
         "treeHeader": "Document list",
-        "treeCount": "All documents",
+        "treeCount": "{collection} · {count}",
         "treeFiltered": "Filtered by #{tag}",
         "treeSearchCount": "{count} results",
         "searchLabel": "Search documents",

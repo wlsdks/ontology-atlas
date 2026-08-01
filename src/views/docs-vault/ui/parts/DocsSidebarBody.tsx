@@ -395,12 +395,21 @@ export function DocsSidebarBody({
           onClick={onCreateNewDoc}
         />
       </div>
+      {/* 이 줄은 **지금 보고 있는 것**을 말한다. 종전에는 `{count}` 를 받아
+          놓고 버리는 상수 "전체 문서" 라서, 「지도 문서」 탭을 골라도 여전히
+          "전체 문서" 라고 적혀 있었다(설치 앱에서도 재현). 위 아이콘 행은
+          이름과 개수를 툴팁에만 갖고 있으므로 — 이 줄을 지우면 화면에서 그
+          둘이 통째로 사라진다 — 지우는 대신 활성 컬렉션의 이름 + 개수로
+          고친다. */}
       <p className="flex-none px-3 pt-1.5 text-caption text-[color:var(--color-text-quaternary)]">
         {normalizedTreeQuery
           ? t("treeSearchCount", { count: queryMatchCount })
           : activeTag
             ? t("treeFiltered", { tag: activeTag })
-            : t("treeCount", { count: activeCollectionCount })}
+            : t("treeCount", {
+                collection: t(`collection.${collection}.label`),
+                count: activeCollectionCount,
+              })}
       </p>
       {searchExpanded ? (
         <label className="mx-3 mt-1.5 flex h-8 flex-none items-center gap-2 rounded-md border border-[color:var(--color-overlay-2)] bg-[color:var(--color-overlay-1)] px-2 text-[color:var(--color-text-quaternary)] focus-within:border-[color:var(--color-indigo-line-a45)] focus-within:text-[color:var(--color-text-secondary)]">
