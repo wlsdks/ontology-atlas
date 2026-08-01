@@ -809,7 +809,12 @@ current returned page, including the action id, executable flag, `phase`, `kind`
 and `severity`.
 This help path does not start the MCP server.
 
-A successful run looks like this:
+A successful run looks like this. **The transcript states no vault-derived
+counts, slugs, or graph hashes** — those change the moment anyone adds a node,
+so a number printed here would be wrong by the next commit and nobody would
+notice. `<N>` / `<slug>` mark the places your own run fills in; the numbers that
+*are* written out (tool inventory, batch caps, smoke coverage) are fixed by the
+verifier itself and change only when the tool contract changes.
 
 ```
 
@@ -844,42 +849,42 @@ A successful run looks like this:
 ✓ strict graph filters — invalid match_nodes.kind/sort, match_edges.type, and recommend_relations.kind rejected with narrowed diagnostics
 ✓ strict graph edge kind filters — invalid match_edges.fromKind/toKind rejected with closest-value hints
 ✓ maintenance cursor — missing afterActionId reported (afterActionId not found in filtered maintenance actions; phase none; severity none; kind none; executable none; review none)
-✓ maintenance cursor — ready page stable (0 remaining actions; phase none; severity none; kind none; executable none; review none)
+✓ maintenance cursor — ready page stable (<N> remaining actions; phase none; severity none; kind none; executable none; review none)
 · maintenance cursor — resume skipped (ready page has no actions)
-✓ list_concepts — vault total 70 nodes (vaultRoot /path/to/docs/ontology)
-✓ get_concept — ontology-atlas (6 outgoing edges)
+✓ list_concepts — vault total <N> nodes (vaultRoot /path/to/docs/ontology)
+✓ get_concept — <project slug> (<N> outgoing edges)
 ✓ get_concepts — 2 ok rows, 1 partial row
-✓ find_evidence — 17 evidence results for "project"
-✓ find_backlinks — ontology-atlas (0 backlinks)
-✓ query_concepts — 1 query result / 1 total query result
-✓ query_concepts limited — 1 query result / 69 total query results (limited true)
-✓ analyze_repo_structure — fsd (5 domain candidates, 16 capability candidates, 45 element candidates)
-✓ infer_imports — 1205 files scanned, 777 module edges (elements/home->elements/knowledge-graph x32 (static:31/dynamic:1), elements/ontology-insights->elements/knowledge-graph x29 (static:29), +775 more)
-✓ index_project — 67 concept candidates, 777 import relations, validation 0 problem files
-✓ find_neighbors — elements/agent-connect (3/3 edges, limited false)
-✓ find_path — elements/agent-connect → ontology-atlas (2 hops, 2 edges)
+✓ find_evidence — <N> evidence results for "project"
+✓ find_backlinks — <project slug> (<N> backlinks)
+✓ query_concepts — <N> query results / <N> total query results
+✓ query_concepts limited — 1 query result / <N> total query results (limited true)
+✓ analyze_repo_structure — <framework> (<N> domain candidates, <N> capability candidates, <N> element candidates)
+✓ infer_imports — <N> files scanned, <N> module edges (<from>-><to> x<N> (static:<N>/dynamic:<N>), …, +<N> more)
+✓ index_project — <N> concept candidates, <N> import relations, validation 0 problem files
+✓ find_neighbors — <smoke slug> (<N>/<N> edges, limited false)
+✓ find_path — <smoke slug> → <project slug> (<N> hops, <N> edges)
 ✓ find_orphans — 0 orphans (root/sentinel defaults excluded)
-✓ list_kinds — 70 nodes (capability:19, domain:6, element:43, project:1, vault-readme:1)
-✓ validate_vault — 70 files, 0 problem files
+✓ list_kinds — <N> nodes (capability:<N>, domain:<N>, element:<N>, project:<N>, vault-readme:<N>)
+✓ validate_vault — <N> files, 0 problem files
 ✓ project probe — 1 project node
-✓ workspace_brief — healthy (70 nodes, 0 next actions, 6 health checks, growth actions:0 external:0 ignoredExternal:0)
+✓ workspace_brief — healthy (<N> nodes, <N> next actions, <N> health checks, growth actions:<N> external:<N> ignoredExternal:<N>)
 ✓ agent_brief — healthy (ready 100/100, 3 entrypoints, 5 first calls, 6 graph DB pack items, 4 playbooks, 3 write guardrails, 3 result contracts)
-✓ workspace_brief_tuned — healthy (70 nodes, 1 next action, 6 health checks, growth actions:0 external:0 ignoredExternal:0; dependencyTypes=dependencies; componentTypes=domains/domain/capabilities/dependencies; nodeLimit=3)
-· workspace_brief_tuned non-blocking advisory nextActions — components/health_check:info:6 - The scoped ontology graph has disconnected actionable islands.
-✓ health — healthy (issues:0, unresolved:0, cycles:0, 6 checks: compile_issues:pass:0, unresolved_edges:pass:0, dependency_cycles:pass:0, relation_recommendations:pass:0, components:pass:1, +1 more)
-✓ health_tuned — healthy (issues:0, unresolved:0, cycles:0, 6 checks: compile_issues:pass:0, unresolved_edges:pass:0, dependency_cycles:pass:0, relation_recommendations:pass:0, components:info:6, +1 more; dependencyTypes=dependencies; componentTypes=domains/domain/capabilities/dependencies)
-· health_tuned non-blocking advisory checks — components:info:6 - The scoped ontology graph has disconnected actionable islands.
-✓ compile_ontology — graph 0007825d8760 (70 nodes, 152 edges, issues 0)
-✓ compile_ontology page — 1/70 nodes, 1/152 edges
-✓ compile_ontology indexes — out 69, in 68, edgeById 152, aliases 138, edges 152/0/0
-✓ overview — graph 0007825d8760 (70 nodes, 152 edges, hubs 5)
-✓ overview query_plan — aggregate_scan (medium, nodes 70, edges 152)
-✓ project_map query_plan — aggregate_scan (medium, nodes 70, edges 152)
-✓ neighbors — elements/agent-connect (3/3 edges, limited false)
-✓ path — elements/agent-connect → ontology-atlas (2 hops, 2 edges)
-✓ all_paths — elements/agent-connect → ontology-atlas (5/14 paths, budget 1000, expanded 335, exhaustive true, evidence partial)
-✓ project_scope — ontology-atlas (69 nodes, internalEdges 152)
-✓ read census consistency — 70 nodes across list_kinds/list_concepts/compile_ontology/overview, 5 kinds
+✓ workspace_brief_tuned — healthy (<N> nodes, <N> next actions, <N> health checks, growth actions:<N> external:<N> ignoredExternal:<N>; dependencyTypes=dependencies; componentTypes=domains/domain/capabilities/dependencies; nodeLimit=3)
+· workspace_brief_tuned non-blocking advisory nextActions — components/health_check:info:<N> - The scoped ontology graph has disconnected actionable islands.
+✓ health — healthy (issues:0, unresolved:0, cycles:0, <N> checks: compile_issues:pass:0, unresolved_edges:pass:0, dependency_cycles:pass:0, relation_recommendations:pass:0, components:pass:<N>, +<N> more)
+✓ health_tuned — healthy (issues:0, unresolved:0, cycles:0, <N> checks: compile_issues:pass:0, unresolved_edges:pass:0, dependency_cycles:pass:0, relation_recommendations:pass:0, components:info:<N>, +<N> more; dependencyTypes=dependencies; componentTypes=domains/domain/capabilities/dependencies)
+· health_tuned non-blocking advisory checks — components:info:<N> - The scoped ontology graph has disconnected actionable islands.
+✓ compile_ontology — graph <graph hash> (<N> nodes, <N> edges, issues 0)
+✓ compile_ontology page — 1/<N> nodes, 1/<N> edges
+✓ compile_ontology indexes — out <N>, in <N>, edgeById <N>, aliases <N>, edges <N>/<N>/<N>
+✓ overview — graph <graph hash> (<N> nodes, <N> edges, hubs <N>)
+✓ overview query_plan — aggregate_scan (medium, nodes <N>, edges <N>)
+✓ project_map query_plan — aggregate_scan (medium, nodes <N>, edges <N>)
+✓ neighbors — <smoke slug> (<N>/<N> edges, limited false)
+✓ path — <smoke slug> → <project slug> (<N> hops, <N> edges)
+✓ all_paths — <smoke slug> → <project slug> (<N>/<N> paths, budget 1000, expanded <N>, exhaustive true, evidence partial)
+✓ project_scope — <project slug> (<N> nodes, internalEdges <N>)
+✓ read census consistency — <N> nodes across list_kinds/list_concepts/compile_ontology/overview, <N> kinds
 ✓ structuredContent — direct 16/16, write 5/5 (batch row-isolation 2/2, batch no-write metadata 2/2, destructive dry-run 3/3), maintenance 2/2 (resume skipped: no actions), graph 13/13
 
 All passed — register .mcp.json with your MCP client and restart to use the 32 tools.

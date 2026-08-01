@@ -18,6 +18,23 @@ function readText(relativePath) {
   return fs.readFileSync(absolute, "utf8");
 }
 
+/**
+ * 디렉터리 아래 모든 `.md` 를 읽는다 — 볼트처럼 **파일 목록이 사람의 것이
+ * 아닌** 표면을 검사할 때 쓴다. 파일명을 고정하면 볼트를 다시 지을 때마다
+ * 게이트가 먼저 죽는다.
+ */
+function readVaultMarkdown(relativeDir) {
+  const absolute = path.join(root, relativeDir);
+  if (!fs.existsSync(absolute)) {
+    fail(`vault directory is missing — ${relativeDir}.`);
+    return [];
+  }
+  return fs
+    .readdirSync(absolute, { recursive: true, withFileTypes: true })
+    .filter((entry) => entry.isFile() && entry.name.endsWith(".md"))
+    .map((entry) => fs.readFileSync(path.join(entry.parentPath ?? entry.path, entry.name), "utf8"));
+}
+
 // scripts/verify-macos-app-launch.mjs was decomposed (refactor: cohesive-seam
 // module split) into a thin orchestrator plus scripts/lib/verify-macos/*.mjs
 // helper modules. The content-based `.includes(...)` gates below still check
@@ -85,8 +102,21 @@ const troubleshootingDoc = readText("docs/TROUBLESHOOTING.md");
 const publishNpmDoc = readText("docs/archive/PUBLISH-NPM.md");
 const demoStoryboardDoc = readText("docs/launch/DEMO-GIF-STORYBOARD.md");
 const redditPostsDoc = readText("docs/launch/REDDIT-POSTS.md");
-const desktopOntologyDoc = readText("docs/ontology/capabilities/desktop-app-distribution.md");
-const onboardingOntologyDoc = readText("docs/ontology/domains/onboarding-ux.md");
+/**
+ * 도그푸드 볼트 **전체**. 파일명도 문장도 고정하지 않는다.
+ *
+ * [개정 2026-08-01] 종전에는 `capabilities/desktop-app-distribution.md` 와
+ * `domains/onboarding-ux.md` **두 파일의 정확한 문장**을 핀했다. 볼트를 규격
+ * 기준으로 0에서 다시 지으면서 두 파일이 모두 사라졌고, 게이트는 제품 결함이
+ * 아니라 **자기 조준** 때문에 빨개졌다. 볼트는 에이전트가 자기 말로 쓰는
+ * 표면이라 문장 핀은 원리적으로 유지 불가능하다 — 같은 뜻을 다른 문장으로
+ * 쓰면 매번 게이트를 고쳐야 한다.
+ *
+ * 이 검사의 원래 목적은 「공유 온톨로지가 옛 hosted-workbench 프레이밍을
+ * 보존하지 않는다」였다. 그건 **개념의 존재** 문제이지 문장의 문제가 아니므로,
+ * 볼트 어딘가에 「데스크톱 앱 설치 결정」을 담은 노드가 있는지만 본다.
+ */
+const vaultDocTexts = readVaultMarkdown("docs/ontology");
 const downloadPage = readText("src/views/download/ui/DownloadPage.tsx");
 /**
  * 관문 상단 크롬 — 브랜드 이름이 실제로 그려지는 자리.
@@ -880,15 +910,17 @@ if (
   );
 }
 
+// 한 노드 안에서 「macOS/데스크톱 앱」과 「다운로드/설치」가 함께 나오는가.
+// 개념의 존재만 본다 — 어느 파일인지, 어떤 문장인지는 볼트가 정한다.
 if (
-  desktopOntologyDoc.includes("hosted empty states and demo badges route users to") &&
-  onboardingOntologyDoc.includes("설치된 macOS 앱의 starter") &&
-  onboardingOntologyDoc.includes("CLI/app starter README")
+  vaultDocTexts.some(
+    (text) => /macos|맥\s*os|desktop|데스크톱/i.test(text) && /download|install|다운로드|설치/i.test(text),
+  )
 ) {
-  pass("dogfood ontology docs mirror the desktop-app and hosted-download split");
+  pass("dogfood ontology carries the desktop-app install decision");
 } else {
   fail(
-    "docs/ontology must mirror the desktop-app distribution model so the shared ontology does not preserve the old hosted-workbench framing",
+    "docs/ontology must carry a node for the desktop-app install decision so the shared ontology does not fall back to the old hosted-workbench framing",
   );
 }
 

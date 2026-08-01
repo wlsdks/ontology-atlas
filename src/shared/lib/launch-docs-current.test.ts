@@ -4,7 +4,6 @@ import path from 'node:path';
 import { describe, expect, it } from 'vitest';
 import { CLI_COMMAND_COUNT } from '../../../cli/src/lib/cli-commands.mjs';
 import { parseMcpToolMetadataFromDescription } from '../../../cli/src/lib/mcp-metadata.mjs';
-import { dogfoodVaultCensus } from '../../../scripts/lib/vault-census.mjs';
 
 const ROOT = path.resolve(__dirname, '../../..');
 const MCP_PKG = JSON.parse(readFileSync(path.join(ROOT, 'mcp/package.json'), 'utf8'));
@@ -23,7 +22,13 @@ const CURRENT_SURFACE_DOCS = [
   'docs/launch/DEMO-GIF-STORYBOARD.md',
 ] as const;
 
-const DOGFOOD_COUNT_DOCS = [
+/**
+ * 데모 링크가 지도를 약속하면서 사이트 루트로 보내는지 보는 문서 목록.
+ *
+ * 종전 이름은 `DOGFOOD_COUNT_DOCS` 였고 「노드 수를 적는 문서」 목록이기도
+ * 했다. 그 두 번째 용도가 사라져(아래 결정) 이름을 남은 용도로 고쳤다.
+ */
+const DEMO_LINK_DOCS = [
   'README.md',
   'docs/launch/HN-POST.md',
   'docs/launch/DEMO-GIF-STORYBOARD.md',
@@ -69,18 +74,13 @@ const STALE_PATTERNS: Array<{ pattern: RegExp; message: string }> = [
     pattern: /\b12 read \+ 8 write\b/i,
     message: `MCP launch copy must use ${MCP_TOOL_METADATA?.readCount} read + ${MCP_TOOL_METADATA?.writeCount} write.`,
   },
-  {
-    pattern: /~?130 (?:nodes|노드)/i,
-    message: 'Hosted demo copy must not advertise the old 130-node dogfood vault.',
-  },
-  {
-    pattern: /\b26 (?:nodes|노드)\b/i,
-    message: 'Hosted demo copy must use the current 28-node dogfood vault.',
-  },
-  {
-    pattern: /165 (?:relations|관계)/i,
-    message: 'Hosted demo copy must not advertise the old 165-relation dogfood vault.',
-  },
+  // [삭제됨 2026-08-01, 소유자 지시] 볼트 노드/관계 수를 겨냥한 세 항목
+  // (`~130 nodes` · `26 nodes` · `165 relations`). 이 목록은 **낡은 수를 하나씩
+  // 손으로 등재해야** 자라는 장치였다 — 볼트가 커질 때마다 어제의 참값이
+  // 오늘의 금지어가 되므로, 항목을 안 더하면 게이트는 조용히 무력해지고
+  // 더하면 사람이 계속 잡일을 한다. 어느 쪽이든 «CI 가 볼트 노드 수를 센다»
+  // 는 관습을 지지한다. 아래 남은 항목들은 **공개 계약의 수**(MCP 도구
+  // 인벤토리)이거나 **수를 동결하지 말라는 규칙**이라 성격이 다르다.
   {
     pattern: /10 others/i,
     message: `MCP verification copy must mention the ${MCP_TOOL_METADATA?.toolCount}-tool namespace, not an old count.`,
@@ -92,7 +92,7 @@ const STALE_PATTERNS: Array<{ pattern: RegExp; message: string }> = [
 ];
 
 describe('current-surface launch docs', () => {
-  it('do not advertise stale MCP, dogfood, or test counts', async () => {
+  it('do not advertise stale MCP or frozen test counts', async () => {
     const findings: string[] = [];
 
     for (const relPath of CURRENT_SURFACE_DOCS) {
@@ -107,44 +107,26 @@ describe('current-surface launch docs', () => {
     expect(findings).toEqual([]);
   });
 
-  /**
-   * **수를 요구하지 않는다. 다만 있으면 맞아야 한다.** (2026-07-31 소유자 판정)
-   *
-   * 종전엔 이 문서들이 노드 수를 **적고 있으라고 강제**했다. 그게 정확히 이
-   * 저장소가 스스로 경계하는 썩음을 만들었다 — 노드는 아무나 추가하는데 산문은
-   * 손으로 고쳐야 하니, 게이트는 사람에게 "매번 네 곳을 갱신하라"를 요구하는
-   * 장치가 됐다. 실제로 AGENTS.md 가 정책대로 숫자를 빼자 CI 가 깨졌고, 그때
-   * 틀린 것은 문서가 아니라 게이트였다.
-   *
-   * 요구를 걷어내되 **거짓말 금지는 남긴다** — 문서가 수를 말하기로 했다면 그
-   * 수는 볼트와 같아야 한다. 이게 이 게이트의 진짜 가치이고, 산문이 명령
-   * (`node cli/src/index.mjs overview`)으로 바뀌어도 그대로 유효하다.
-   */
-  it('문서가 노드 수를 말한다면 그 수는 볼트와 같다 (수를 말할 의무는 없다)', async () => {
-    const nodeCount = dogfoodVaultCensus(ROOT).total;
-    const findings: string[] = [];
-
-    for (const relPath of DOGFOOD_COUNT_DOCS) {
-      const text = await readFile(path.join(ROOT, relPath), 'utf8');
-      /**
-       * **맞는 수가 있는 것만으로는 부족하다** — 틀린 수가 *함께* 있어도 위
-       * 검사는 통과한다. 실제로 README 가 영문 절에 98, 한국어 절에 97 을 동시에
-       * 들고 그 상태로 초록이었다(2026-07-30).
-       *
-       * 코드 펜스 안은 면제한다. 거기 있는 `10 노드` 는 질의 결과 예시라
-       * 도그푸드 볼트를 세는 문장이 아니다 — 죽은 npm 명령 게이트가 인용과
-       * 지시를 자리로 가르는 것과 같은 원리다.
-       */
-      const prose = text.replace(/```[\s\S]*?```/g, '');
-      for (const [, found] of prose.matchAll(/(\d+) (?:nodes\b|노드)/g)) {
-        if (Number(found) !== nodeCount) {
-          findings.push(`${relPath}: 낡은 노드 수 ${found} (현재 ${nodeCount})`);
-        }
-      }
-    }
-
-    expect(findings).toEqual([]);
-  });
+  // [삭제됨 2026-08-01, 소유자 지시] 「문서가 노드 수를 말한다면 그 수는 볼트와
+  // 같다」 게이트.
+  //
+  // 이 게이트의 마지막 판(2026-07-31)은 이미 **요구를 걷고 거짓말 금지만**
+  // 남긴 상태였고, 그것만 보면 유지 비용이 0 처럼 보인다. 그런데 비용은
+  // 게이트가 아니라 **다음 사람의 습관**에 있었다: 세는 장치가 살아 있는 한
+  // 문서에 수를 적는 것이 «지원되는 관습» 으로 읽히고, 적힌 수는 볼트가
+  // 자라는 순간 CI 를 빨갛게 만든다. 볼트를 규격대로 재생성하자 그 청구서가
+  // 한꺼번에 도착했다.
+  //
+  // 그래서 규율을 한 줄로 바꿨다 — **CI 는 볼트 노드 수를 세지 않는다.**
+  // 수를 말해야 하는 자리는 문서가 아니라 명령(`node cli/src/index.mjs
+  // overview`)이다. 잃은 것은 정직하게 적는다: 이제 산문에 낡은 노드 수를
+  // 적어도 CI 는 침묵한다. 되살릴 조건은 `docs/DECISIONS.md` 의 반증 조건
+  // (틀린 수가 사용자에게 노출된 사례가 관측되면)이다.
+  //
+  // **화면에 렌더되는 카피는 여전히 별개다** — 그건 사용자에게 하는 주장이라
+  // 런타임에 같은 출처에서 계산되어야 하고, `DownloadPage.test.tsx` 의
+  // 「캡션 == 그래프」 단언이 그 자리를 지킨다(그 단언은 손으로 맞출 숫자가
+  // 없어 썩지 않는다).
 
   it('keeps MCP tool-count claims aligned with the package metadata', async () => {
     expect(MCP_TOOL_METADATA).toBeTruthy();
@@ -187,13 +169,19 @@ describe('current-surface launch docs', () => {
   it('keeps the packaged agent workflow aligned with current CLI, MCP, and dogfood facts', async () => {
     expect(MCP_TOOL_METADATA).toBeTruthy();
     const workflow = await readFile(path.join(ROOT, 'docs/AGENT-GRAPH-WORKFLOW.md'), 'utf8');
-    const census = dogfoodVaultCensus(ROOT);
 
+    // 이 넷은 **공개 계약의 수**다 — 명령을 더하거나 도구를 등록해야만 바뀌고,
+    // 그 변경은 의도적이라 문서가 따라오는 것이 맞다.
     expect(workflow).toContain(`${CLI_COMMAND_COUNT} commands`);
     expect(workflow).toContain(`${MCP_TOOL_METADATA?.toolCount} local tools`);
     expect(workflow).toContain(`${MCP_TOOL_METADATA?.readCount} read tools`);
     expect(workflow).toContain(`${MCP_TOOL_METADATA?.writeCount} write tools`);
-    expect(workflow).toContain(`${census.total} nodes`);
+    // **볼트 노드 수는 여기서 요구하지 않는다.** 노드는 아무나 추가하는데 이
+    // 문서는 아무도 안 고친다 — 요구하면 문서가 그 말을 듣고, 그 다음 노드
+    // 하나에 낡는다. 실제로 그렇게 됐다: 이 게이트가 강제한 「98 nodes」 옆에
+    // 그래프 해시·엣지 수·파일 수까지 옛 볼트의 측정 기록이 통째로 얼어붙어
+    // 있었다(2026-08-01, 볼트 재생성으로 드러남). 지금 그 자리는 **명령을 적은
+    // 절차서**이고, 수는 그 명령을 돌린 사람이 자기 화면에서 본다.
   });
 
   /**
@@ -217,7 +205,7 @@ describe('current-surface launch docs', () => {
       new RegExp(`${SITE.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}(?![a-z]{2}/)`).test(text);
     const findings: string[] = [];
 
-    for (const relPath of ['README.md', ...DOGFOOD_COUNT_DOCS.slice(1)]) {
+    for (const relPath of DEMO_LINK_DOCS) {
       const text = await readFile(path.join(ROOT, relPath), 'utf8');
 
       /**

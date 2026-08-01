@@ -12,9 +12,18 @@ export const DESKTOP_SMOKE_ROUTES = [
   "/ontology/insights",
 ];
 export const DESKTOP_SMOKE_ROOT_ENTRY = "index.html";
+/**
+ * 번들에 볼트가 실렸는지 보는 두 표본.
+ *
+ * [개정 2026-08-01] 두 번째 항목은 `ontology/capabilities/desktop-app-distribution.md`
+ * 였는데, 볼트를 규격 기준으로 다시 지으면서 그 파일이 사라졌다. 이 검사의
+ * 목적은 「특정 개념이 있는가」가 아니라 「**볼트 디렉터리가 통째로 번들에
+ * 복사됐는가**」이므로, 표본은 **어떤 볼트에도 있는 파일**이어야 한다.
+ * `ontology/README.md` 는 `kind: vault-readme` 로 생성기가 항상 만든다.
+ */
 export const DESKTOP_SMOKE_DOCS = [
   "docs-vault/DESKTOP-MACOS.md",
-  "docs-vault/ontology/capabilities/desktop-app-distribution.md",
+  "docs-vault/ontology/README.md",
 ];
 
 /**

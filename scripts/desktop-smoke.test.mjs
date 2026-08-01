@@ -82,7 +82,9 @@ test("desktop smoke inventory covers the current packaged workbench", () => {
   ]);
   assert.deepEqual(DESKTOP_SMOKE_DOCS, [
     "docs-vault/DESKTOP-MACOS.md",
-    "docs-vault/ontology/capabilities/desktop-app-distribution.md",
+    // 볼트 재생성에도 살아남는 표본이어야 한다 — 개념 노드가 아니라
+    // 생성기가 항상 만드는 `vault-readme`.
+    "docs-vault/ontology/README.md",
   ]);
 });
 

@@ -293,32 +293,23 @@ CLI-only checks:
     `allPathsEvidenceStatus: "complete"`, and
     `explainRelationHasShortestPath: true`
 
-Current graph and MCP-connected facts:
+Graph and MCP-connected facts. **This section states no counts, hashes, or file
+totals** — every one of them changes the moment anyone adds a node, so a number
+written here is wrong by the next commit and nobody notices. Run the commands:
 
-- `compile --summary --json` returned graph hash
-  `f8a112a9da29d2ba30d5be8c7c7aa5d0c542ead5a2e53b55915ccd7d4b3d35c2`,
-  98 nodes, 552 edges, 323 resolved edges, 227 external edges, 0 unresolved
-  edges, 0 issues, and 0 canonicalization actions.
-- Kind census: 38 capabilities, 48 elements, 6 domains, 3 documents, 1 project,
-  and 1 vault README.
-- `validate_vault` scanned all 97 files with 0 problem files.
-- `workspace_brief` and `agent_brief` returned `healthy`; readiness was
-  `100/100`, with 3 non-blocking external-element materialization suggestions.
-- `health` returned 0 compile issues, unresolved edges, dependency cycles, or
-  relation recommendations.
-- `match_nodes` over capabilities with `minDegree: 2` returned 38 total
-  matches and the same
-  `followUp.focusSlug: "capabilities/cli-developer-entry"` evidence contract.
+```bash
+node cli/src/index.mjs compile docs/ontology --summary --json   # size, hash, kind census
+node cli/src/index.mjs validate docs/ontology                   # problem files
+node cli/src/index.mjs health docs/ontology                     # compile issues, cycles, unresolved
+node cli/src/index.mjs mcp-verify docs/ontology --timeout-ms 15000
+```
 
-Installed MCP verifier:
-
-- `node cli/src/index.mjs mcp-verify docs/ontology --timeout-ms 15000`
-  - passed parser, server boot, all 32 tools (`19` read, `13` write), strict
-    argument/enum checks, destructive dry-runs, batch no-write checks,
-    health/workspace/agent briefs, graph query smokes, and structured content
-    checks.
-  - compiled graph hash: `f8a112a9da29`
-  - graph size: 98 nodes, 552 edges, 0 issues.
+What the run must show, regardless of how large the vault has grown: `health`
+reports **healthy**, `validate` reports **0 problem files**, `workspace_brief`
+and `agent_brief` return **healthy**, and `mcp-verify` passes parser, server
+boot, every registered tool, strict argument/enum checks, destructive dry-runs,
+batch no-write checks, briefs, graph query smokes, and structured content
+checks.
 
 ## Recommended First User Flow
 
