@@ -60,6 +60,7 @@ export interface AgentLoopDeps {
     roundCap: string;
     aborted: string;
     networkFailed: string;
+    timedOut: string;
     rateLimited: string;
     rejected: string;
     auditBlocked: string;
@@ -108,6 +109,9 @@ function noticeFor(deps: AgentLoopDeps, status: number | null, message: string):
   }
   if (message.includes('감사 기록') || message.includes('기록을 남기지')) {
     return { kind: 'notice', code: 'audit-blocked', text: deps.notices.auditBlocked };
+  }
+  if (message.includes('시간 안에') || /timed?\s*out/i.test(message)) {
+    return { kind: 'notice', code: 'timed-out', text: deps.notices.timedOut };
   }
   return { kind: 'notice', code: 'network-failed', text: deps.notices.networkFailed };
 }

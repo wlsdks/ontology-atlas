@@ -122,13 +122,137 @@ describe('벤더 어댑터 — 셋이 같은 모양으로 접힌다', () => {
     }
   });
 
-  it('주소 갈래는 OpenAI 호환 문법을 바이트 단위로 공유한다', () => {
-    // 복제하지 않고 위임하는 것이 계약이다 — 한쪽만 고쳐지는 순간 같은 문법을
-    // 두 곳에서 다르게 알게 된다.
-    const turn = assembly({ model: 'qwen3:8b' });
-    expect(PROVIDER_ADAPTERS.local.buildBody(turn)).toBe(
-      PROVIDER_ADAPTERS.openai.buildBody(turn),
+  it('주소 갈래는 로컬 사고를 끄고 세 번 읽은 뒤 답을 강제한다', () => {
+    // 첫 왕복은 시스템 규율상 반드시 읽기 도구를 골라야 한다. Ollama 실물에서
+    // generic required 는 무시될 수 있어 전체 지도는 list_concepts 로 이름을 고정한다.
+    const firstTurn = assembly({ model: 'qwen3:8b' });
+    const firstLocal = JSON.parse(
+      PROVIDER_ADAPTERS.local.buildBody(firstTurn),
+    ) as Record<string, unknown>;
+    const firstOpenAi = JSON.parse(
+      PROVIDER_ADAPTERS.openai.buildBody(firstTurn),
+    ) as Record<string, unknown>;
+    expect(firstLocal).toEqual({
+      ...firstOpenAi,
+      tools: (firstOpenAi.tools as Array<{ function: { name: string } }>).filter(
+        (tool) => tool.function.name === 'list_kinds',
+      ),
+      reasoning_effort: 'none',
+      tool_choice: { type: 'function', function: { name: 'list_kinds' } },
+    });
+    expect(
+      (firstLocal.tools as Array<{ function: { name: string } }>).map(
+        (tool) => tool.function.name,
+      ),
+    ).toEqual(['list_kinds']);
+
+    const focusedFirst = JSON.parse(
+      PROVIDER_ADAPTERS.local.buildBody(
+        assembly({
+          model: 'qwen3:8b',
+          screenContextBlock:
+            '<screen_context>\nlooking_at: capabilities/payment (결제 · kind=capability)\n</screen_context>',
+        }),
+      ),
+    ) as Record<string, unknown>;
+    expect(focusedFirst.tool_choice).toEqual({
+      type: 'function',
+      function: { name: 'get_concept' },
+    });
+    expect(
+      (focusedFirst.tools as Array<{ function: { name: string } }>).map(
+        (tool) => tool.function.name,
+      ),
+    ).toEqual(['get_concept']);
+
+    const evidenceTurn = assembly({
+      model: 'qwen3:8b',
+      exchanges: [
+        {
+          assistant: { role: 'assistant', tool_calls: [] },
+          toolResults: [],
+        },
+      ],
+    });
+    const evidenceLocal = JSON.parse(
+      PROVIDER_ADAPTERS.local.buildBody(evidenceTurn),
+    ) as Record<string, unknown>;
+    const evidenceOpenAi = JSON.parse(
+      PROVIDER_ADAPTERS.openai.buildBody(evidenceTurn),
+    ) as Record<string, unknown>;
+    expect(evidenceLocal).toEqual({
+      ...evidenceOpenAi,
+      tools: (evidenceOpenAi.tools as Array<{ function: { name: string } }>).filter(
+        (tool) => tool.function.name === 'list_concepts',
+      ),
+      reasoning_effort: 'none',
+      tool_choice: { type: 'function', function: { name: 'list_concepts' } },
+    });
+    expect(
+      (evidenceLocal.tools as Array<{ function: { name: string } }>).map(
+        (tool) => tool.function.name,
+      ),
+    ).toEqual(['list_concepts']);
+
+    const detailTurn = assembly({
+      model: 'qwen3:8b',
+      exchanges: [
+        ...evidenceTurn.exchanges,
+        {
+          assistant: { role: 'assistant', tool_calls: [] },
+          toolResults: [],
+        },
+      ],
+    });
+    const detailLocal = JSON.parse(
+      PROVIDER_ADAPTERS.local.buildBody(detailTurn),
+    ) as Record<string, unknown>;
+    expect(detailLocal.reasoning_effort).toBe('none');
+    expect(detailLocal.tool_choice).toEqual({
+      type: 'function',
+      function: { name: 'get_concepts' },
+    });
+    expect(
+      (detailLocal.tools as Array<{ function: { name: string } }>).map(
+        (tool) => tool.function.name,
+      ),
+    ).toEqual(['get_concepts']);
+
+    const closingTurn = { ...evidenceTurn, tools: [] };
+    const closingLocal = JSON.parse(
+      PROVIDER_ADAPTERS.local.buildBody(closingTurn),
+    ) as Record<string, unknown>;
+    const closingOpenAi = JSON.parse(
+      PROVIDER_ADAPTERS.openai.buildBody(closingTurn),
+    ) as Record<string, unknown>;
+    expect(closingLocal).toEqual({
+      ...closingOpenAi,
+      messages: [
+        ...(closingOpenAi.messages as unknown[]),
+        {
+          role: 'user',
+          content:
+            'Tool access is closed. Answer the original question now from only the evidence you verified. Cite exact slugs you read and mark every uninspected area incomplete. Do not describe another plan or tool call.',
+        },
+      ],
+      reasoning_effort: 'none',
+    });
+
+    const thirdEvidenceTurn = assembly({
+      model: 'qwen3:8b',
+      exchanges: Array.from({ length: 3 }, () => evidenceTurn.exchanges[0]!),
+    });
+    const forcedSynthesis = JSON.parse(
+      PROVIDER_ADAPTERS.local.buildBody(thirdEvidenceTurn),
+    ) as Record<string, unknown>;
+    expect(forcedSynthesis.tools).toEqual([]);
+    expect(forcedSynthesis.reasoning_effort).toBe('none');
+    expect(forcedSynthesis).not.toHaveProperty('tool_choice');
+    expect((forcedSynthesis.messages as Array<{ content?: string }>).at(-1)?.content).toContain(
+      'Answer the original question now',
     );
+    expect(firstOpenAi).not.toHaveProperty('reasoning_effort');
+    expect(firstOpenAi).not.toHaveProperty('tool_choice');
     const body = fixture('openai-tool');
     expect(PROVIDER_ADAPTERS.local.parseResponse(body)).toEqual(
       PROVIDER_ADAPTERS.openai.parseResponse(body),

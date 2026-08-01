@@ -3255,6 +3255,7 @@
       "roundCap": "That is as far as I will go — wrapping up.",
       "aborted": "Stopped here.",
       "networkFailed": "The connection failed.",
+      "timedOut": "The model did not answer within the time limit. Narrow the question or try a faster model.",
       "rateLimited": "You have hit the rate limit for now. Try again shortly.",
       "rejected": "The key was rejected. Check it in settings.",
       "auditBlocked": "Nothing was sent, because the record could not be written.",

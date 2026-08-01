@@ -210,6 +210,7 @@ export function VaultAgentPanel({
       roundCap: t('notice.roundCap'),
       aborted: t('notice.aborted'),
       networkFailed: t('notice.networkFailed'),
+      timedOut: t('notice.timedOut'),
       rateLimited: t('notice.rateLimited'),
       rejected: t('notice.rejected'),
       auditBlocked: t('notice.auditBlocked'),
@@ -735,4 +736,3 @@ function MetaToggle({
     </button>
   );
 }
-

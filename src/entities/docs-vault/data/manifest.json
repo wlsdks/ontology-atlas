@@ -1,6 +1,6 @@
 {
   "version": "2026-04-23",
-  "generatedAt": "2026-08-01",
+  "generatedAt": "2026-08-02",
   "docs": [
     {
       "slug": "AGENT-GRAPH-WORKFLOW",
@@ -3885,6 +3885,11 @@
         },
         {
           "depth": 2,
+          "text": "2026-08-02 — 로컬 에이전트 첫 도구 선택 지연·구조 감사 근거 보강",
+          "slug": "2026-08-02-로컬-에이전트-첫-도구-선택-지연구조-감사-근거-보강"
+        },
+        {
+          "depth": 2,
           "text": "2026-08-01 — `v1.0.0-rc.5`: 공개 Windows x64 미서명 베타와 네이티브 검증",
           "slug": "2026-08-01-v100-rc5-공개-windows-x64-미서명-베타와-네이티브-검증"
         },
@@ -6004,9 +6009,9 @@
           "slug": "2026-07-26-첫-만남은-쇼핑몰부터"
         }
       ],
-      "excerpt": "Major change history. Code commit messages answer why; this file answers when / which surface changed. Focused on user-visible changes, not PR-level granularity. Newest at the top. Entries stay date-based; the app version reached v1.0.0 on 2026-07-27, so a release tag now carries the semver promise instead. Windows x64",
-      "wordCount": 61864,
-      "updatedAt": "2026-08-01",
+      "excerpt": "Major change history. Code commit messages answer why; this file answers when / which surface changed. Focused on user-visible changes, not PR-level granularity. Newest at the top. Entries stay date-based; the app version reached v1.0.0 on 2026-07-27, so a release tag now carries the semver promise instead. Ollama를 연결한",
+      "wordCount": 62153,
+      "updatedAt": "2026-08-02",
       "linksOut": [
         "audits/CASE-STUDY-AGENTS-MD-DRIFT",
         "slug"
@@ -6033,6 +6038,11 @@
           "depth": 2,
           "text": "기록 형식",
           "slug": "기록-형식"
+        },
+        {
+          "depth": 2,
+          "text": "2026-08-02 — 로컬 에이전트는 3회 근거 수집 뒤 답을 강제하고 60초에 닫는다",
+          "slug": "2026-08-02-로컬-에이전트는-3회-근거-수집-뒤-답을-강제하고-60초에-닫는다"
         },
         {
           "depth": 2,
@@ -6361,9 +6371,11 @@
         }
       ],
       "excerpt": "이 파일은 결정과 그때 진 반대 의견을 남긴다. docs/CHANGELOG.md 는 무엇이 언제 바뀌었나를 답하고, 이 파일은 왜 그렇게 정했고, 무엇을 걸었나를 답한다. 최신이 위. 기록은 덧붙이기만 한다 — 지난 기록을 고치지 않는다. 판단이 바뀌었으면 새 기록을 쓰고 옛 기록을 뒤집힘 으로 표시한다. 틀린 기록도 자산이다. 1. 소집 전에 읽는다. 카운슬을 열기 전(그리고 단독 PO 패스를 쓰기 전) 같은 표면 · 같은 질문에 대한 선행 결정이 있는지 먼저 본다. 있으면 새 패스는 그것을 ① 여전히 유효하다고 인용하거나 ② 명시적으로 뒤집는다. 조용히 다시 결정",
-      "wordCount": 31449,
-      "updatedAt": "2026-08-01",
-      "linksOut": []
+      "wordCount": 32321,
+      "updatedAt": "2026-08-02",
+      "linksOut": [
+        "slug"
+      ]
     },
     {
       "slug": "DEPLOYMENT",
@@ -7965,7 +7977,7 @@
       ],
       "excerpt": "개발자의 일상 진입점입니다. 소스 체크아웃에서 실행합니다. 레지스트리에 발행된 패키지가 아니라서 npx 로는 실행되지 않습니다. 살아있는 경로는 앱 번들(에이전트 연결 버튼이 절대 경로로 설정을 써 줍니다)과 소스 체크아웃 둘뿐입니다. 명령을 외우기 전에 이걸 먼저 알아 두면 나머지가 쉬워집니다. · 진입로 · 쓰는 사람 · CLI · 사람 — 터미널에서 · MCP · AI 에이전트 — Claude Code · Codex · Cursor · 화면 · 사람 — 공방 · 인사이트 · 셋이 같은 .md 폴더를 봅니다. 그래프를 다루는 명령들은 실제로 MCP 서버를 감싸고 ",
       "wordCount": 765,
-      "updatedAt": "2026-08-01",
+      "updatedAt": "2026-08-02",
       "linksOut": []
     },
     {
@@ -8275,7 +8287,7 @@
       ],
       "excerpt": "볼트가 자란 뒤 는 「이제 뭘 손봐야 하지」 를 CLI 로 답했습니다. 같은 일을 하는 화면이 있습니다. 왼쪽 레일의 「인사이트」, 주소는 /ontology/insights 입니다. 화면이 스스로 자기 일을 이렇게 말합니다. 이 화면은 지도를 가꾸는 사람과 AI 에이전트를 위한 정비 보드예요. 지도가 「지금 무엇이 있나」 라면 여기는 「지금 무엇이 덜 됐나」 입니다. 그리고 머리말이 한 가지를 못박아 둡니다 — 「모든 숫자는 문서에서 자동 계산됩니다」. 어디에도 손으로 적어 둔 수가 없다는 뜻입니다. 머리의 탭 다섯이 각각 다른 질문에 답합니다. · 탭 · 답하는 질",
       "wordCount": 1060,
-      "updatedAt": "2026-08-01",
+      "updatedAt": "2026-08-02",
       "linksOut": []
     },
     {
@@ -8461,7 +8473,7 @@
       ],
       "excerpt": "지도를 처음 열면 가운데 허브에서 도메인이 방사형으로 뻗어 나갑니다. 그 모양만 보면 이런 의문이 듭니다. 도메인끼리는 서로 아무 관계도 못 갖나? 이 구조는 미리 설계된 데이터를 조회하는 것뿐인가? 관계는 DB 에 들어 있나, md 에 들어 있나? 세 질문에 차례로 답합니다. 방사형으로 보이는 건 구조(담김) 관계뿐입니다. 그 위에 의미 관계가 따로 얹히고, 그건 계층을 자유롭게 가로지릅니다. 이 저장소는 자기 자신을 볼트로 들고 있어서(docs/ontology/) 실제로 세어 볼 수 있습니다. 관계 종류 분포가 이렇게 나옵니다 — 여기 수를 옮겨 적지 않습니다. ",
       "wordCount": 1182,
-      "updatedAt": "2026-08-01",
+      "updatedAt": "2026-08-02",
       "linksOut": []
     },
     {
@@ -8519,7 +8531,7 @@
       ],
       "excerpt": "관계는 어떻게 생기나 는 관계가 .md 맨 위 한 줄이라고 말했습니다. 그 줄을 YAML 을 치지 않고 쓰는 화면이 공방입니다. 공방은 왼쪽 레일의 「공방」 이고, 주소는 /ontology/studio 입니다. 가로 1024px 미만에서는 열리지 않습니다. 그 폭에서는 「공방은 넓은 화면에서 열려요」 라고 말하고 지도로 보내 줍니다 — 관계를 네 방향으로 펼쳐 놓는 화면이라 좁은 창에서는 방향이 무너집니다. 열면 「무엇을 할까요?」 하나가 뜹니다. · 고르는 것 · 하는 일 · 「기존 노드 강화」 · 이미 있는 노드를 무대에 올리고 빠진 관계를 채웁니다. 어느 노드부",
       "wordCount": 974,
-      "updatedAt": "2026-08-01",
+      "updatedAt": "2026-08-02",
       "linksOut": []
     },
     {
@@ -9851,9 +9863,9 @@
           "slug": "확신도"
         }
       ],
-      "excerpt": "AI 에이전트가 볼트를 발견·인증하고 읽고 쓸 수 있게 하는 앱 내 connect 플로우와 MCP 대면 표면. src/features/vault-agent (구현 증거) README.md — \"one button writes your agent's config and proves the connection\" medium-high (0.85)",
-      "wordCount": 41,
-      "updatedAt": "2026-08-01",
+      "excerpt": "AI 에이전트가 볼트를 발견·인증하고 읽고 쓸 수 있게 하는 앱 내 connect 플로우와 MCP 대면 표면. 앱 안의 대화형 에이전트는 실제 볼트 도구 근거를 수집하며, 로컬 러너에서는 제한된 읽기 순서·왕복 시간 상한·근거 없는 답 강등을 적용한다. src/features/vault-agent — 제공자 중립 에이전트 루프, 도구 실행, 근거 인용 src-tauri/src/llm.rs — 로컬/원격 전송, 감사 로그, 분리된 timeout src/widgets/vault-agent-panel — 사용자가 읽기·실패·제안을 판정하는 패널 scripts/deploy-",
+      "wordCount": 83,
+      "updatedAt": "2026-08-02",
       "linksOut": []
     },
     {
@@ -11067,9 +11079,9 @@
         "created_by": "agent:unknown"
       },
       "headings": [],
-      "excerpt": "에이전트 연결 상태/로그 패널 위젯. capabilities/vault-agent 의 구현 증거.",
-      "wordCount": 9,
-      "updatedAt": "2026-08-01",
+      "excerpt": "에이전트 연결 상태와 실제 도구 읽기, 감사 기록, timeout 및 근거 없는 답 강등을 보여주는 패널 위젯. capabilities/vault-agent의 사람 판정 표면이며, 구현은 src/widgets/vault-agent-panel과 src/features/vault-agent/model에 걸친다.",
+      "wordCount": 25,
+      "updatedAt": "2026-08-02",
       "linksOut": []
     },
     {
@@ -12879,6 +12891,11 @@
       {
         "fromSlug": "CHANGELOG",
         "context": "pt` + `merge_concepts` 추가. 한 번의 atomic 호출로 slug 변경/노드 합치기 + 모든 backlink (frontmatter array · inline string · body link `**[slug]**` · `(slug.md)`) 자동 redirect. 이전엔 AI agent 가 `find_backlinks` + N 회 `patch_concept` 으로 직접 짜야 했던 graph-level 변형이 1 콜. ##",
+        "linkText": "slug"
+      },
+      {
+        "fromSlug": "DECISIONS",
+        "context": "왕복에 63.009초 + 12.832초 + 43.370초(합 119.211초), 67,264자를 전송했다. 다음 결과는 30개 capability 목록만 읽고 실제 부모를 하나도 읽지 않은 채 중간 결론을 냈고, `**[slug]**` 인용이 없어 화면에서 근거 없음으로 강등됐다. 같은 18,888자·15도구 요청의 `list_kinds` 선택은 Ollama 기본 사고 모드 29.885초, `reasoning_effort: low` 3.610초",
         "linkText": "slug"
       },
       {

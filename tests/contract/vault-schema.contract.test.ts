@@ -243,6 +243,27 @@ describe("구축 규격 텍스트 3-way — mcp 정본 ↔ 앱 채팅 프롬프�
     expect(PRODUCT_DISCIPLINE).toContain("`vault-readme` is reserved");
   });
 
+  it("element 를 파일 목록과 혼동하지 않고 구조 감사는 실제 부모를 읽는다", () => {
+    expect(PRODUCT_DISCIPLINE).toContain(
+      "element — a concrete implementation role",
+    );
+    expect(PRODUCT_DISCIPLINE).toContain(
+      "A file path is evidence for that role, not a reason to create a node",
+    );
+    expect(PRODUCT_DISCIPLINE).toContain(
+      "For a structure audit, census and list results only choose suspects",
+    );
+    expect(PRODUCT_DISCIPLINE).toContain(
+      "read each suspect parent with `get_concept` or `get_concepts`",
+    );
+    expect(PRODUCT_DISCIPLINE).toContain(
+      "Spend at most three rounds gathering audit evidence",
+    );
+    expect(PRODUCT_DISCIPLINE).not.toContain(
+      "element — a concrete piece: a library, an API, a schema, a file",
+    );
+  });
+
   it("모델이 읽는 프롬프트에 한글이 없다 — 화면 문구와 다른 채널이다", () => {
     expect(PRODUCT_DISCIPLINE).not.toMatch(/[가-힣]/);
   });

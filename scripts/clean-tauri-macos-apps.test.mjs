@@ -29,6 +29,8 @@ describe("cleanTauriMacosApps", () => {
     makeDir(root, "src-tauri/target/release/bundle/macos/Ontology Atlas.app");
     makeDir(root, "src-tauri/target/release/bundle/macos/ontology-atlas.app");
     makeDir(root, "src-tauri/target/release/bundle/macos/keep.dSYM");
+    makeDir(root, "src-tauri/target/release");
+    fs.writeFileSync(path.join(root, "src-tauri/target/release/ontology-atlas"), "stale");
 
     const removed = cleanTauriMacosApps({ root });
 
@@ -44,6 +46,11 @@ describe("cleanTauriMacosApps", () => {
     assert.equal(
       fs.existsSync(path.join(root, "src-tauri/target/release/bundle/macos/keep.dSYM")),
       true,
+    );
+    assert.equal(
+      fs.existsSync(path.join(root, "src-tauri/target/release/ontology-atlas")),
+      false,
+      "the executable embeds frontendDist, so a desktop build must relink it after pnpm build",
     );
   });
 

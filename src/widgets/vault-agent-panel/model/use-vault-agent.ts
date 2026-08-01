@@ -47,6 +47,7 @@ export interface VaultAgentNotices {
   roundCap: string;
   aborted: string;
   networkFailed: string;
+  timedOut: string;
   rateLimited: string;
   rejected: string;
   auditBlocked: string;

@@ -13,6 +13,7 @@ const NOTICES: AgentLoopDeps['notices'] = {
   roundCap: '여기까지 하고 정리할게요',
   aborted: '여기까지 읽었어요',
   networkFailed: '연결에 실패했어요',
+  timedOut: '로컬 모델이 60초 안에 답하지 못했어요',
   rateLimited: '지금은 호출 한도예요',
   rejected: '키가 거부됐어요',
   auditBlocked: '기록을 남길 수 없어 보내지 않았어요',
@@ -205,6 +206,21 @@ describe('runTurn', () => {
       { signal: new AbortController().signal },
     );
     expect(result.turn.events.at(-1)).toMatchObject({ code: 'audit-blocked' });
+  });
+
+  it('생성 시간 초과를 연결 실패로 숨기지 않는다', async () => {
+    const send = vi.fn<Send>(async () => {
+      throw new Error('모델이 제한 시간 안에 응답하지 않았어요');
+    });
+    const result = await runTurn(
+      deps({ send }),
+      startTurn({ text: 'x', screenContext: EMPTY_SCREEN_CONTEXT }),
+      { signal: new AbortController().signal },
+    );
+    expect(result.turn.events.at(-1)).toMatchObject({
+      code: 'timed-out',
+      text: NOTICES.timedOut,
+    });
   });
 
   it('쓰기 시도는 실행되지 않고 제안 의사로만 모인다', async () => {

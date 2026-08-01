@@ -113,6 +113,7 @@ export interface ScreenContextSnapshot {
 
 export type NoticeCode =
   | 'network-failed'
+  | 'timed-out'
   | 'rate-limited'
   | 'rejected'
   | 'round-cap'
