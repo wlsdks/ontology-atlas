@@ -6025,7 +6025,7 @@
         }
       ],
       "excerpt": "Major change history. Code commit messages answer why; this file answers when / which surface changed. Focused on user-visible changes, not PR-level granularity. Newest at the top. Entries stay date-based; the app version reached v1.0.0 on 2026-07-27, so a release tag now carries the semver promise instead. 낯선 Rust 저장소",
-      "wordCount": 62395,
+      "wordCount": 62428,
       "updatedAt": "2026-08-02",
       "linksOut": [
         "audits/CASE-STUDY-AGENTS-MD-DRIFT",
@@ -9896,8 +9896,8 @@
           "slug": "확신도"
         }
       ],
-      "excerpt": "AI 에이전트가 볼트를 발견·인증하고 읽고 쓸 수 있게 하는 앱 내 connect 플로우와 MCP 대면 표면. 앱 안의 대화형 에이전트는 실제 볼트 도구 근거를 수집한다. 로컬 러너에서는 제한된 읽기 순서와 왕복 시간 상한을 적용하고, 필수 읽기를 생략하면 한 번 교정한 뒤에도 따르지 않은 답은 사용자에게 싣지 않는다. src/features/vault-agent — 제공자 중립 에이전트 루프, 도구 실행, 근거 인용 src-tauri/src/llm.rs — 로컬/원격 전송, 감사 로그, 분리된 timeout src/widgets/vault-agent-panel — ",
-      "wordCount": 94,
+      "excerpt": "AI 에이전트가 볼트를 발견·인증하고 읽고 쓸 수 있게 하는 앱 내 connect 플로우와 MCP 대면 표면. 앱 안의 대화형 에이전트는 실제 볼트 도구 근거를 수집한다. 절대 경로와 읽힌 manifest가 함께 있을 때만 활성화하여 화면의 개념, 모델이 읽는 본문, 볼트 안 감사 로그가 한 출처를 가리킨다. 로컬 러너에서는 제한된 읽기 순서와 왕복 시간 상한을 적용하고, 필수 읽기를 생략하면 한 번 교정한 뒤에도 따르지 않은 답은 사용자에게 싣지 않는다. src/features/vault-agent — 제공자 중립 에이전트 루프, 도구 실행, 근거 인용 src-ta",
+      "wordCount": 114,
       "updatedAt": "2026-08-02",
       "linksOut": []
     },
@@ -11113,8 +11113,8 @@
         "created_by": "agent:unknown"
       },
       "headings": [],
-      "excerpt": "에이전트 연결 상태와 실제 도구 읽기, 감사 기록, timeout 및 필수 읽기 실패를 보여주는 패널 위젯. 근거 읽기를 생략한 로컬 모델에는 한 번 교정하고, 두 번째에도 생략하면 답을 표시하지 않는다. capabilities/vault-agent의 사람 판정 표면이며, 구현은 src/widgets/vault-agent-panel과 src/features/vault-agent/model에 걸친다.",
-      "wordCount": 38,
+      "excerpt": "에이전트 연결 상태와 실제 도구 읽기, 감사 기록, timeout 및 필수 읽기 실패를 보여주는 패널 위젯. 읽힌 manifest 없이 절대 경로만 복원된 상태는 기존 no-folder 잠금으로 강등하여 번들 샘플 화면과 숨은 로컬 본문·감사 로그가 갈라지지 않게 한다. 근거 읽기를 생략한 로컬 모델에는 한 번 교정하고, 두 번째에도 생략하면 답을 표시하지 않는다. capabilities/vault-agent의 사람 판정 표면이며, 구현은 src/widgets/vault-agent-panel과 src/features/vault-agent/model에 걸친다.",
+      "wordCount": 59,
       "updatedAt": "2026-08-02",
       "linksOut": []
     },
