@@ -2817,6 +2817,8 @@
       "localModelLabel": "모델",
       "localModelPlaceholder": "모델 고르기",
       "localVerified": "연결됨 · 설치된 모델 {count}개 — 아래에서 고르세요",
+      "localVerifiedWithEmbedding": "연결됨 · 설치된 모델 {count}개 중 대화 가능 {chat}개 — 아래에서 고르세요",
+      "localModelEmbeddingOnly": "임베딩 전용 — 대화는 못 해요",
       "localSaved": "이 러너로 대화해요",
       "localDisconnect": "연결 해제",
       "localDisconnected": "로컬 러너 연결을 해제했어요",

@@ -1,7 +1,9 @@
 import { beforeEach, describe, expect, it } from 'vitest';
 import {
   clearLocalEndpoint,
+  countChatCapableModels,
   hostOfBaseUrl,
+  isEmbeddingOnlyModel,
   isLocalEndpointReady,
   parseOpenAiModelList,
   readLocalEndpoint,
@@ -51,11 +53,91 @@ describe('설치된 모델 목록', () => {
     expect(parseOpenAiModelList(body)).toContain('nomic-embed-text:latest');
   });
 
+  it('임베딩 전용 모델은 1번이 되지 못한다 (알파벳 → 쓸모)', () => {
+    // 2026-08-01 소유자 기계 실측: 7개 중 4개가 임베딩 전용이었고, 알파벳
+    // 정렬이 `embeddinggemma:latest` 를 1번에 올려 그것이 실제로 선택돼
+    // 「연결됨」으로 저장됐다 — 첫 질문에서 실패할 상태가 성공으로 표시됐다.
+    const body = JSON.stringify({
+      data: [
+        { id: 'qwen3:8b' },
+        { id: 'embeddinggemma:latest' },
+        { id: 'nomic-embed-text:latest' },
+        { id: 'gemma3:12b' },
+        { id: 'bge-m3:latest' },
+        { id: 'all-minilm:latest' },
+        { id: 'llama3.2:3b' },
+      ],
+    });
+    const models = parseOpenAiModelList(body);
+    // 앞 세 자리는 대화 가능한 것들이고, 그 안에서는 종전과 같은 알파벳 순서.
+    expect(models.slice(0, 3)).toEqual(['gemma3:12b', 'llama3.2:3b', 'qwen3:8b']);
+    // 임베딩 넷은 뒤로 밀리되 **사라지지 않는다** — 라벨링은 은닉이 아니다.
+    expect(models.slice(3)).toEqual([
+      'all-minilm:latest',
+      'bge-m3:latest',
+      'embeddinggemma:latest',
+      'nomic-embed-text:latest',
+    ]);
+  });
+
   it('깨진 본문·빈 본문은 빈 목록이지 예외가 아니다', () => {
     expect(parseOpenAiModelList('')).toEqual([]);
     expect(parseOpenAiModelList('not json')).toEqual([]);
     expect(parseOpenAiModelList('{"data":"nope"}')).toEqual([]);
     expect(parseOpenAiModelList('{"data":[{"noid":1}]}')).toEqual([]);
+  });
+});
+
+describe('임베딩 전용 판정', () => {
+  it('이름에 embed 가 들어가면 임베딩으로 본다', () => {
+    for (const name of [
+      'embeddinggemma:latest',
+      'nomic-embed-text:latest',
+      'mxbai-embed-large',
+      'snowflake-arctic-embed2:568m',
+      'granite-embedding:278m',
+      'qwen3-embedding:8b',
+      'text-embedding-3-small',
+    ]) {
+      expect(isEmbeddingOnlyModel(name), name).toBe(true);
+    }
+  });
+
+  it('embed 라는 낱말이 없는 알려진 계열도 판정한다', () => {
+    for (const name of [
+      'bge-m3:latest',
+      'gte-large',
+      'e5-mistral-7b-instruct',
+      'all-minilm:22m',
+      'paraphrase-multilingual:latest',
+    ]) {
+      expect(isEmbeddingOnlyModel(name), name).toBe(true);
+    }
+  });
+
+  it('대화 모델을 임베딩으로 오판하지 않는다', () => {
+    for (const name of [
+      'qwen3:8b',
+      'gemma3:12b',
+      'llama3.2:3b',
+      'deepseek-r1:14b',
+      'mistral-small:latest',
+      'gpt-oss:20b',
+      'phi4:latest',
+    ]) {
+      expect(isEmbeddingOnlyModel(name), name).toBe(false);
+    }
+  });
+
+  it('대화 가능한 개수는 임베딩으로 확신되는 것만 뺀 수다', () => {
+    expect(
+      countChatCapableModels([
+        'qwen3:8b',
+        'embeddinggemma:latest',
+        'bge-m3:latest',
+        'gemma3:12b',
+      ]),
+    ).toBe(2);
   });
 });
 

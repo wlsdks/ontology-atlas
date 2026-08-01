@@ -2817,6 +2817,8 @@
       "localModelLabel": "Model",
       "localModelPlaceholder": "Pick a model",
       "localVerified": "Connected · {count} model(s) installed — pick one below",
+      "localVerifiedWithEmbedding": "Connected · {chat} of {count} installed model(s) can chat — pick one below",
+      "localModelEmbeddingOnly": "Embeddings only — can't chat",
       "localSaved": "This runner will answer now",
       "localDisconnect": "Disconnect",
       "localDisconnected": "Disconnected the local runner",

@@ -17,7 +17,9 @@ import {
 } from '@/shared/lib/tauri-secrets';
 import {
   clearLocalEndpoint,
+  countChatCapableModels,
   hostOfBaseUrl,
+  isEmbeddingOnlyModel,
   isLocalEndpointReady,
   readLocalEndpoint,
   readLocalVerdict,
@@ -722,7 +724,18 @@ function LocalEndpointCard({
                   size="md"
                   value={settings.model}
                   onChange={handlePickModel}
-                  options={models.map((model) => ({ value: model, label: model }))}
+                  // 임베딩으로 판정된 행만 두 번째 줄을 받는다 — 이름만으로는
+                  // `embeddinggemma:latest` 가 대화가 되는지 알 수 없고,
+                  // 모르면 사람은 1번을 고른다(소유자가 실제로 그랬다).
+                  // 지우지 않고 **적어 준다**: 지우면 화면이 사용자 기계에
+                  // 있는 것을 없다고 말하게 된다.
+                  options={models.map((model) => ({
+                    value: model,
+                    label: model,
+                    description: isEmbeddingOnlyModel(model)
+                      ? t('localModelEmbeddingOnly')
+                      : undefined,
+                  }))}
                   placeholder={t('localModelPlaceholder')}
                   ariaLabel={t('localModelLabel')}
                   className="min-w-0 flex-1"
@@ -816,13 +829,22 @@ function LocalCaption({
     );
   }
   if (verify.kind === 'done' && verify.reason === 'ok') {
+    // 「설치된 모델 N개」만 말하면 그 N 이 전부 고를 만한 것처럼 읽힌다 —
+    // 실측된 러너에서는 7개 중 4개가 임베딩 전용이었다. 임베딩이 하나도
+    // 없으면 종전 문장 그대로다(없는 구분을 만들지 않는다).
+    const chatCount = countChatCapableModels(verify.models);
     return (
       <p
         data-testid="ai-local-verified"
-        className="flex items-center gap-1.5 text-caption text-[color:var(--color-status-success)]"
+        className="flex items-center gap-1.5 break-keep text-caption leading-4 text-[color:var(--color-status-success)]"
       >
         <StatusDot tone="success" />
-        {t('localVerified', { count: verify.models.length })}
+        {chatCount === verify.models.length
+          ? t('localVerified', { count: verify.models.length })
+          : t('localVerifiedWithEmbedding', {
+              count: verify.models.length,
+              chat: chatCount,
+            })}
       </p>
     );
   }
