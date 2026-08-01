@@ -1099,15 +1099,75 @@ function DocsVaultContent() {
   ]);
   const selectedDoc = selectedSlug ? (docsBySlug.get(selectedSlug) ?? null) : null;
   /**
-   * URL 이 요청한 문서가 **이 문서함에 없다.** 기본 선택 로직이 대신 다른
-   * 문서를 열어 주되, 그 사실을 배너가 말한다(아래 렌더). 볼트가 아직 안
-   * 실렸을 때(`docsBySlug` 가 빈 동안)의 깜빡임은 제외한다 — 그건 없는 게
-   * 아니라 아직 모르는 것이다.
+   * URL 이 요청한 문서가 **이 문서함에 없다** — 한 번만 말하고 사라진다.
+   *
+   * ## 왜 파생값이 아니라 상태인가 (2026-08-01 수리)
+   *
+   * 처음엔 `normalizedQuerySlug` 에서 바로 파생했다. 그랬더니 **볼 때마다
+   * 다시 떴다** — 소유자가 앱에서 잡았다(*"문서함에 이건 왜나오지?"*). 원인은
+   * 배너가 아니라 **URL 이 계속 거짓말한 것**이다: 못 찾은 슬러그가 주소에
+   * 그대로 남아 있어서, 문서함에 들어올 때마다 같은 판정이 다시 참이 됐다.
+   * 게다가 그 슬러그를 요청한 사람은 아무도 없었다 — 다른 볼트를 보던 시절의
+   * 잔재가 주소에 눌어붙어 있었을 뿐이다.
+   *
+   * 그래서 둘을 같이 고친다:
+   *
+   * 1. **주소를 실제 연 문서로 바로잡는다**(아래 기본 선택 effect). 종전엔
+   *    `?slug=` 가 있으면 URL 을 일부러 안 고쳤는데, 그 배려가 곧 거짓말의
+   *    수명이었다.
+   * 2. **배너는 그 순간을 붙잡아 상태로 들고 있는다.** 주소가 고쳐지면 파생
+   *    조건은 즉시 거짓이 되므로, 파생값이면 사람이 읽기도 전에 사라진다.
+   *
+   * 결과: 진짜 깨진 딥링크·핸드오프 링크에는 **한 번** 뜨고, 낡은 주소로는
+   * 다시 뜨지 않는다. 사용자가 문서를 직접 고르면 닫힌다.
    */
-  const missingQuerySlug =
-    normalizedQuerySlug && docsBySlug.size > 0 && !docsBySlug.has(normalizedQuerySlug)
-      ? normalizedQuerySlug
-      : null;
+  const [missingQuerySlug, setMissingQuerySlug] = useState<string | null>(null);
+  useEffect(() => {
+    if (!normalizedQuerySlug || docsBySlug.size === 0) return;
+    // 볼트가 아직 안 실린 동안(`docsBySlug` 가 빈 동안)은 "없다" 가 아니라
+    // "아직 모른다" 다 — 그 구간에서 말하면 깜빡임이 된다.
+    if (docsBySlug.has(normalizedQuerySlug)) return;
+    setMissingQuerySlug((prev) => prev ?? normalizedQuerySlug);
+  }, [normalizedQuerySlug, docsBySlug]);
+
+  /**
+   * **볼트가 바뀌면 볼트 전용 주소 상태를 걷어낸다** — 이게 근본 수리다.
+   *
+   * `?slug=` 는 **한 볼트 안에서만 뜻이 있는 이름**인데 주소는 볼트를 모른다.
+   * 그래서 사용자가 폴더를 바꾸거나 샘플↔내 볼트를 오가면 그 이름은 의미를
+   * 잃는데, 아무도 걷어내지 않아 주소에 눌어붙었다. 그 다음부터 문서함은
+   * 들어올 때마다 "요청한 문서가 없다" 를 다시 판정했고 — 정작 **그것을 요청한
+   * 사람은 아무도 없었다.**
+   *
+   * 배너를 조건부로 만드는 것은 증상 치료다(그 판정이 계속 참인 채로 남는다).
+   * 이름이 의미를 잃는 **그 순간에 지우는 것**이 원인 치료다. 그러면:
+   *
+   * - 낡은 슬러그가 볼트 경계를 넘어 살아남지 못한다 → 소음이 구조적으로 0
+   * - 배너는 제 일만 한다 — **밖에서 온 링크**(딥링크·에이전트 핸드오프·북마크)가
+   *   진짜로 깨졌을 때 한 번
+   * - 주소가 열려 있지 않은 문서를 가리키지 않는다
+   *
+   * 첫 마운트는 건너뛴다 — 그때의 `?slug=` 는 잔재가 아니라 **누군가 준 것**이다.
+   */
+  /**
+   * ⚠️ **`recentKey` 는 이 판정의 범위가 아니다.** 그 키는 저장 namespace 용이라
+   * 샘플 둘(도그푸드 · 예시 쇼핑몰)을 `'server'` 하나로 뭉뚱그린다. 그대로 쓰면
+   * **샘플↔샘플 전환이 범위 변화로 안 잡혀서**, 고치려던 그 소음이 그 축에만
+   * 그대로 남는다(2026-08-01 사냥에서 지적됐고 재현됐다).
+   *
+   * 그렇다고 `recentKey` 자체를 넓히지는 않는다 — 그건 핀·최근·열린 탭의 저장
+   * 자리를 옮기는 일이라, 고치는 대신 사용자의 기존 목록을 고아로 만든다.
+   * 정리 판정에만 정확한 범위를 쓴다.
+   */
+  const vaultScope = source === 'local' ? recentKey : `sample:${staticVault.source}`;
+  const vaultScopeRef = useRef<string | null>(null);
+  useEffect(() => {
+    const previous = vaultScopeRef.current;
+    vaultScopeRef.current = vaultScope;
+    if (previous === null || previous === vaultScope) return;
+    setMissingQuerySlug(null);
+    replaceUrlState({ slug: null });
+  }, [vaultScope, replaceUrlState]);
   // 트리·탭·검색·지도가 한 문서를 같은 이름으로 부른다. 파일 경로는 바로
   // 아랫줄 caption 이 계속 보여주므로 파일 정체성은 잃지 않는다.
   const selectedDocDisplayTitle = selectedDoc
@@ -1324,7 +1384,15 @@ function DocsVaultContent() {
 
     scheduleStateSync(() => {
       setSelectedSlug(nextSlug);
-      if (!normalizedQuerySlug) replaceUrlState({ slug: nextSlug });
+      /**
+       * **주소는 열려 있는 문서를 가리킨다** (2026-08-01 수리).
+       *
+       * 종전엔 `?slug=` 가 있으면 URL 을 일부러 안 고쳤다. 요청을 보존하려는
+       * 배려였는데, 요청한 문서를 열지 **못한** 경우에는 그 배려가 곧
+       * **거짓말의 수명**이었다 — 화면은 A 를 열어 놓고 주소는 계속 B 를
+       * 가리킨다. 그 주소를 복사해 공유하면 받는 사람도 같은 자리로 온다.
+       */
+      replaceUrlState({ slug: nextSlug });
     });
   }, [collectionDocSlugs, collectionDocs, collectionPinnedSlugs, collectionRecentSlugs, docsBySlug, localVaultStatus, normalizedQuerySlug, openDocTabsHydrated, pendingRestoredActiveSlug, replaceUrlState, selectedSlug, source, sourcePreferenceHydrated]);
 
@@ -2241,7 +2309,8 @@ function DocsVaultContent() {
                   >
                     {editing && canEditCurrent && editResolver ? (
                       <DocsVaultEditor
-                        key={`edit:${source}:${selectedDoc.slug}`}
+                        key={`edit:${vaultScope}:${selectedDoc.slug}`}
+                        vaultScope={vaultScope}
                         doc={selectedDoc}
                         getDocContent={editResolver}
                         onSave={(slug, content, expectedMtime) =>

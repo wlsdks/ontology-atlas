@@ -57,11 +57,29 @@ const mocks = vi.hoisted(() => ({
       downloadUrl: string;
     }>,
   },
+  windowsRelease: {
+    published: false,
+    prerelease: false,
+    tag: 'v1.0.0',
+    publishedAt: null as string | null,
+    releaseUrl: 'https://github.com/wlsdks/ontology-atlas/releases',
+    assets: [] as Array<{
+      arch: 'x64';
+      fileName: string;
+      sizeBytes: number;
+      sha256: string;
+      downloadUrl: string;
+      signed: false;
+    }>,
+  },
 }));
 
 vi.mock('../model/macos-release.generated', () => ({
   get MACOS_RELEASE() {
     return mocks.release;
+  },
+  get WINDOWS_RELEASE() {
+    return mocks.windowsRelease;
   },
 }));
 
@@ -94,6 +112,26 @@ function publishRelease() {
   };
 }
 
+function publishWindowsRelease() {
+  mocks.windowsRelease = {
+    published: true,
+    prerelease: true,
+    tag: `v${RELEASE_VERSION}`,
+    publishedAt: '2026-08-01T00:00:00Z',
+    releaseUrl: `https://github.com/wlsdks/ontology-atlas/releases/tag/v${RELEASE_VERSION}`,
+    assets: [
+      {
+        arch: 'x64',
+        fileName: `ontology-atlas_${RELEASE_VERSION}_windows_x64-setup.exe`,
+        sizeBytes: 21_500_000,
+        sha256: 'c'.repeat(64),
+        downloadUrl: `https://github.com/wlsdks/ontology-atlas/releases/download/v${RELEASE_VERSION}/ontology-atlas_${RELEASE_VERSION}_windows_x64-setup.exe`,
+        signed: false,
+      },
+    ],
+  };
+}
+
 const IntlWrapper = ({ children }: { children: ReactNode }) => (
   <NextIntlClientProvider locale="en" messages={enMessages}>
     {children}
@@ -113,6 +151,14 @@ describe('DownloadPage', () => {
       // 마지막에 리셋할 때 적힌 것이지 다음에 나올 버전이 아니다. 구
       // 픽스처는 이걸 항상 `v${RELEASE_VERSION}` 로 두어서 페이지가 두 출처를
       // 섞어 쓰는 것을 볼 수 없었다.
+      tag: 'v0.9.0-stale',
+      publishedAt: null,
+      releaseUrl: 'https://github.com/wlsdks/ontology-atlas/releases',
+      assets: [],
+    };
+    mocks.windowsRelease = {
+      published: false,
+      prerelease: false,
       tag: 'v0.9.0-stale',
       publishedAt: null,
       releaseUrl: 'https://github.com/wlsdks/ontology-atlas/releases',
@@ -267,6 +313,44 @@ describe('DownloadPage', () => {
     expect(screen.getByRole('link', { name: /Follow progress/i })).toBeInTheDocument();
   });
 
+  it('offers the published unsigned Windows x64 beta with the warning before download', () => {
+    publishRelease();
+    publishWindowsRelease();
+    renderDownloadPage();
+
+    const windowsCard = screen.getByTestId('download-platform-windows');
+    const warning = screen.getByTestId('download-windows-unsigned-warning');
+    const download = screen.getByTestId('download-windows-x64');
+
+    expect(download).toHaveAttribute(
+      'href',
+      expect.stringMatching(/ontology-atlas_.+_windows_x64-setup\.exe$/),
+    );
+    expect(download).toHaveTextContent(/Windows x64 beta/i);
+    expect(download).toHaveAttribute('aria-describedby', warning.id);
+    expect(warning).toHaveTextContent(/not code-signed/i);
+    expect(warning).toHaveTextContent(/Microsoft Defender SmartScreen/i);
+    expect(warning).toHaveTextContent(/unknown publisher/i);
+    expect(warning).toHaveTextContent(/managed work PC/i);
+    expect(
+      warning.compareDocumentPosition(download) & Node.DOCUMENT_POSITION_FOLLOWING,
+    ).toBeTruthy();
+    expect(windowsCard).not.toHaveTextContent(/not out yet/i);
+    expect(screen.getByRole('heading', { name: 'macOS' })).toBeInTheDocument();
+    expect(screen.getByRole('heading', { name: /Windows x64 beta/i })).toBeInTheDocument();
+    expect(screen.getAllByTestId('download-web-cta')).toHaveLength(1);
+
+    const exitRow = screen.getByTestId('download-exit-row');
+    const github = screen.getByTestId('download-repo-link');
+    const web = screen.getByTestId('download-web-cta');
+    expect(exitRow).toContainElement(github);
+    expect(exitRow).toContainElement(web);
+    expect(windowsCard).not.toContainElement(web);
+    expect(github).toHaveTextContent(/Go to GitHub/i);
+    expect(web).toHaveTextContent(/View web version/i);
+    expect(github.compareDocumentPosition(web) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+  });
+
   // 2026-07-27: the Developer ID certificate exists (docs/DECISIONS.md), so
   // the release path signs and notarizes again. Until this remake the page
   // still printed the unsigned-era copy — and printed it *contradicting
@@ -322,7 +406,7 @@ describe('DownloadPage', () => {
   it('keeps the hosted page focused on app releases instead of browser vault work', () => {
     renderDownloadPage();
 
-    expect(screen.getByRole('link', { name: /View source code/i })).toHaveAttribute(
+    expect(screen.getByRole('link', { name: /Go to GitHub/i })).toHaveAttribute(
       'href',
       'https://github.com/wlsdks/ontology-atlas',
     );

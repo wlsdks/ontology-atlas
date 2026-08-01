@@ -125,6 +125,8 @@ export {
   clearChangeBaseline,
   restorePersistedBaseline,
   getChangeBaseline,
+  setChangeBaselineScope,
+  getChangeBaselineScope,
   useChangeBaseline,
   shouldAutoMarkBaseline,
 } from "./change-baseline-store";

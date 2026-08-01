@@ -19,8 +19,8 @@
 
 > **Mission v3**: "One product/system, one ontology, that people and their AI agents grow together."
 > **Current framing**: an agent-native, human-sovereign meaning layer: typed enough for Claude Code, Cursor, and Codex; plain Markdown and Git diffs for human judgment.
-> **Operating model**: single-user tool. Local-first vault. No login, no backend. **4 surfaces (macOS app · CLI · MCP · Website)** — daily heavy-lift ontology work happens in the installed app / CLI / MCP; the hosted website's root map lets anyone open their own local vault folder directly too (root-first-open, 2026-07), while `/download` stays the product intro + release download path.
-> **Brand split**: **Ontology Atlas** is the user-facing macOS app / website brand and macOS release asset identity. `ontology-atlas` remains the repo, CLI binary, and MCP package name.
+> **Operating model**: single-user tool. Local-first vault. No login, no backend. **4 surfaces (desktop app · CLI · MCP · Website)** — daily heavy-lift ontology work happens in the installed app / CLI / MCP; the hosted website's root map lets anyone open their own local vault folder directly too (root-first-open, 2026-07), while `/download` stays the product intro + release download path.
+> **Brand split**: **Ontology Atlas** is the user-facing desktop app / website brand and release asset identity. `ontology-atlas` remains the repo, CLI binary, and MCP package name.
 
 The product should not feel like an ontology editor. The core user-visible loop
 is `init -> bootstrap -> MCP-backed agent answer -> agent sync proposal -> git
@@ -28,7 +28,7 @@ diff review -> better next agent task`.
 
 | Surface | Entry | Audience |
 |---|---|---|
-| **macOS app** (Ontology Atlas desktop distribution track) | signed DMG → installed local workbench; first run opens `/docs/?intent=local` vault setup welcome; visual routes `/docs`, `/ontology`, `/topology`, `/projects`, `/ontology/studio`, `/ontology/insights` | daily visual ontology work — pick a local vault folder, edit markdown-backed nodes/relations, reopen recent vaults without visiting the hosted site |
+| **Desktop app** (macOS · Windows x64 beta) | signed/notarized macOS DMG or unsigned Windows beta NSIS → installed local workbench; first run opens `/docs/?intent=local` vault setup welcome; visual routes `/docs`, `/ontology`, `/topology`, `/projects`, `/ontology/studio`, `/ontology/insights` | daily visual ontology work — pick a local vault folder, edit markdown-backed nodes/relations, reopen recent vaults without visiting the hosted site |
 | **CLI** (R12 / R14 / R15+ · 52 commands) | `init / agent-setup / agent-files / agent-activity / add / import / list / find / validate / mcp-verify / query / compile / export` (vault basics + existing-vault Claude/Codex config repair + read-only agent-file map/drift readout + explicit live activity heartbeat + installed MCP health/graph-query smoke + deterministic graph compile + standard-format interop export) · `index / analyze / infer-imports / bootstrap / preflight / snapshot` (autonomous ingest, project ontology indexing, commit preflight, and vault-scoped git snapshot commits) · `backlinks / orphans / path / explain / all-paths / reachability / relation-check / relate / rename / merge / delete` (graph CRUD + direct/path/common-neighbor explanation + bounded traversal + transitive closure + write preflight + write) · `match-nodes / match-edges / domain-matrix / facets / schema / pattern-walk / project-map / overview / hubs / blast-radius / cycles / components / topological-order / health / agent-brief / workspace-brief / growth / maintenance / node / similar` (graph deep dive — `query_ontology` ops, including graph DB-style node/edge scans, relation dashboard facets, relation schema patterns, explicit traversal and project maps, connected island checks, prerequisite ordering, relationship explanation, domain coupling matrix, agent handoff, and growth/maintenance queues) | developer terminal — vault scaffold, daily exploration, bulk import, MCP sanity check, live agent activity handoff, commit-time vault impact preview, graph deep dive (same authority as AI agent via MCP) |
 | **MCP** (R5 / R7 / R11 / R14 / R16 / R17) | 32 tools (19 read · 13 write) over JSON-RPC | AI agent (Claude Code, Codex, Cursor) — explicit vault/repo root proof · read for context · write back findings · vault-scoped Git status/local snapshots · safe relation removal/replacement and concept reclassification · bootstrap and index projects (R16 `analyze_repo_structure` · R17 `infer_imports` · R+ `index_project`) · compile/query/validator-backed health as graph-engine memory access |
 | **Website** | GitHub Pages static export / `/` + `/download` | `/` renders the topology map directly and lets you open your own local vault folder from the browser (File System Access API, no install); `/download` is the product intro + release download path. Only `/docs`'s own separate local-source *browsing* tab stays desktop-only. |
@@ -53,7 +53,7 @@ feature-parity backlog. **Desktop capabilities ship without a web equivalent,
 on purpose.** What the web owes instead is an honest degradation: why it cannot
 work here, and where it can.
 
-| Capability | Web (Chromium) | macOS app | Why they differ |
+| Capability | Web (Chromium) | Desktop app (macOS · Windows x64 beta) | Why they differ |
 |---|---|---|---|
 | Open the map with no install | ✅ | ✅ | the web's first job — gateway |
 | Open your own markdown folder | ✅ File System Access API | ✅ absolute path | Firefox and non-FSA browsers degrade to a notice + download link |
@@ -61,15 +61,15 @@ work here, and where it can.
 | Remember the folder between visits | ❌ pick it again | ✅ | web keeps an FSA handle in its own IndexedDB; a convenience cache, not the source of truth |
 | Work offline | ❌ | ✅ | |
 | Git history and snapshots | ❌ degraded card + `ontology-atlas snapshot` | ✅ | a browser has no right to run git on your machine |
-| API keys / in-app 「에이전트」 chat | ❌ **and will not be built** | ✅ macOS Keychain | keys in browser storage leak to a single XSS, and vendors name the direct-call header `…-dangerous-direct-browser-access` |
+| API keys / in-app 「에이전트」 chat | ❌ **and will not be built** | ✅ native credential store | keys in browser storage leak to a single XSS, and vendors name the direct-call header `…-dangerous-direct-browser-access` |
 | Write agent config (`.mcp.json`) into the vault | ⚠️ folder writes work, but there is no absolute path to record | ✅ | MCP registration needs a real path |
 | In-app updates | ❌ | ✅ | |
 
-**Windows today**: no app yet, so the web is the official second-best — you can
-open, read and edit your own folder in Chrome or Edge. The one thing Windows
-users cannot have is the AI connection, and the answer to that is a Windows
-app, not a web BYOK; `/download` says exactly this rather than implying it is
-coming soon.
+**Windows today**: an unsigned x64 beta carries the same local folder and MCP
+surface as the desktop app. `/download` states the SmartScreen unknown-publisher
+and managed-PC risk before the executable CTA. Chrome or Edge remains the
+install-free fallback when that warning or an organization policy is a blocker;
+the web still does not offer BYOK or MCP registration.
 
 ---
 
@@ -82,7 +82,7 @@ coming soon.
 | **local** | a vault folder is active — picked in the installed app, or in an FSA-capable browser | vault manifest is the source of truth |
 | **static** | no active vault | build-time dogfood manifest (this project's own ontology) |
 
-**Effect**: when a user opens a vault folder in the installed app, `/`, `/topology`, `/projects`, `/project/[slug]`, `/ontology`, `/ontology/insights`, and `/ontology/studio` all switch to vault data instantly. Mutations (create / edit / delete / connect) are mode-aware: local → write to vault `.md`; static → rejected with toast (read-only) and routed toward the macOS app download on hosted web.
+**Effect**: when a user opens a vault folder in the installed app, `/`, `/topology`, `/projects`, `/project/[slug]`, `/ontology`, `/ontology/insights`, and `/ontology/studio` all switch to vault data instantly. Mutations (create / edit / delete / connect) are mode-aware: local → write to vault `.md`; static → rejected with toast (read-only) and routed toward the desktop app download on hosted web.
 
 **Bootstrap from existing docs (2026-07-20, Slice 1)**: opening a folder that
 already has markdown but no `kind:` frontmatter used to strand the user on a
@@ -200,16 +200,16 @@ IndexedDB goes straight to their own workspace, no starter surfaces at all.
 ### `/` — Smart entry
 
 - **Hosted web, no vault** → the **gateway face** — headline, download, and "open it in the browser" — the same view `/download` renders (2026-07-30, root-first-open 뒤집기). Judged by `isGatewaySurface()`. A web user who *has* a vault still gets `HomePage` with the dogfood sample and the INDEX-panel first-run starter
-- **macOS app, no restored vault** → `FirstRunPage` (just start / open / create / browse demo), not the hosted intro
+- **Desktop app, no restored vault** → `FirstRunPage` (just start / open / create / browse demo), not the hosted intro
 - **Recent desktop vaults** → the picker stores recently opened Tauri vault paths, can reopen them without another Finder selection, and can remove stale paths from the list
 - **Vault loaded (web or desktop)** → `HomePage` — the topology hub (map + INDEX concept panel + node datasheet), same component `/topology` renders (B3 허브가 곧 지도 — the old tree/ego hub, `OntologyViewPage`, is retired; `/ontology` now redirects here with INDEX expanded). Restoring a previously-opened vault handle from IndexedDB goes straight here — no starter surfaces, no re-clicking through first-run every visit
 - **Switch vault mid-session**: the topology settings gear (⚙, top-right utility rail) has a "switch vault" row → `/docs/?intent=local`, alongside the `/docs` vault pill's own "swap" control
 
 ### `/download` — the install decision (remade 2026-07-27)
 
-**This screen's job, in one sentence**: *a first-time visitor decides whether to
-install this on their Mac right now, and if so gets the file that matches their
-machine without hunting for it.* Everything on the page earns its place against
+**This screen's job, in one sentence**: *a first-time visitor chooses their
+platform, understands its trust state, and gets the matching installer without
+hunting for it.* Everything on the page earns its place against
 that sentence; the remake removed what could not (a second landing hero, a
 Korean-only changelog excerpt, 12 same-weight boxes, and the signing copy that
 had become false).
@@ -217,14 +217,14 @@ had become false).
 - **Decision first, at full column width**: eyebrow → headline → one-paragraph lead → the macOS decision card. The card is the widest thing above the fold because it is the most important; it used to sit inside a half-width column under a taller figure.
 - **One filled indigo button per state, and it is the one that works.** Published → the Apple Silicon DMG with its real size (most Macs sold since 2020), Intel beside it at ghost weight. **Unpublished** → the winner is "open the map in your browser" (`/`), because today the GitHub releases page has nothing on it; a filled button pointed at an empty page spends the page's one strongest promise on a dead end. The releases link stays, at lower weight.
 - **Architecture help is on the page, not assumed**: "Apple menu → About This Mac; if *Chip* says Apple M1–M4 it's Apple Silicon". Naming both architectures and stopping there left the majority of visitors — who do not know which Mac they own — stuck in front of two buttons.
-- **One release-state source**: everything the page may claim about a build comes from `src/views/download/model/macos-release.generated.ts`, written by `pnpm download:release-facts` out of the real GitHub Release. Published → per-architecture direct downloads with real byte size, filename, and copyable SHA-256. Unpublished → one plain "not out yet" line instead of placeholder facts. There is no state where the page shows a size or checksum that does not exist.
+- **One release-state source**: everything the page may claim about a build comes from `src/views/download/model/macos-release.generated.ts`, written by `pnpm download:release-facts` out of the real GitHub Release. Published macOS → per-architecture DMGs; published Windows → the x64 NSIS installer; both carry real byte size, filename, direct URL, and copyable SHA-256. Unpublished → plain pending copy instead of placeholder facts. There is no state where the page shows a size or checksum that does not exist.
 - **Trust is four facts with their proofs, not a paragraph**: Developer ID signing (`codesign verified`) · Apple notarization + stapling (`stapler validate passes`) · a published SHA-256 per file with the verify command built from the current version's real DMG name · and *what the app does not do* — no account, no server, the folder you pick never leaves your disk. Signing is stated as a property of the release path and drift-guarded by `release-facts.test.ts` against the real `desktop:release-artifact` chain (`desktop:sign` → `desktop:notarize` → `desktop:verify-release-dmg --require-signed --require-notarized`), so the claim cannot outlive the pipeline that backs it.
 - **After-install path in three steps** — drag to Applications and launch · point it at a markdown folder · connect your AI assistant (tool and command counts derived from `mcp/src/index.js` and `cli/src/lib/cli-commands.mjs`, both drift-guarded) — plus the fact that makes this page a one-time visit: the installed app updates itself with one button (#726).
-- **Windows**: named, never omitted, but as one row rather than a card the size of macOS — it ships when it clears the same bar (a signed installer plus install verification). Omitting the platform left Windows visitors unable to tell whether the product excluded them or simply had not got there yet.
+- **Windows x64 beta**: a published unsigned NSIS installer appears in its own platform section inside the same decision plate. The static warning precedes the outline CTA and names SmartScreen's unknown-publisher warning and managed-PC blocking. Native Windows CI requires dependency audits, Microsoft Defender scan, silent install, app launch, and the installed MCP sidecar smoke; it does not claim to have verified the Windows 11 SmartScreen UI.
 - **Evidence figure**: the dogfood instrument (project hex + domain chips + hub capability circle, real `docs/ontology` census — `src/views/download/model/dogfood-census.generated.ts`, built by `scripts/build-docs-vault.mjs`) now sits beside step 02, the one place it is an answer rather than decoration, with its scope caption ("counts this repo's own vault, not yours").
-- **Secondary CTA**: "View source code" → GitHub repo.
+- **Secondary CTA**: "Go to GitHub" → GitHub repo, as a visible medium outline button rather than a small source footnote.
 - **Motion**: none on entrance (first painted frame is identical to the settled frame across every node in `#main`). The budget goes to the attention winner alone — the filled CTA eases on `--motion-base` + `--motion-ease` with a 6.1% first-frame share — and `prefers-reduced-motion` lands it instantly. The previous page inverted this: a staggered fade ran on background cards while the winner hard-cut.
-- **Live deploy verification**: `pnpm desktop:verify-hosted` checks the deployed `wlsdks.github.io/ontology-atlas` root/download pages. It asserts only **server-rendered** text: the root map hydrates client-side, so its in-app CTAs never reach the static HTML — expecting them is what kept this gate failing on every Pages deploy while the site itself was fine (5/5 runs red, 2026-07-26~27). Expected download copy is now read from `messages/ko.json` instead of duplicated in the checker, so the contract is "the page renders its own copy" and cannot drift: title, source-code CTA, both platform headings, the Windows in-preparation badge, the hosted-site scope note, a stable GitHub Releases href, and no `/releases/latest` dependency.
+- **Live deploy verification**: `pnpm desktop:verify-hosted` checks the deployed `wlsdks.github.io/ontology-atlas` root/download pages. It asserts only **server-rendered** text: the root map hydrates client-side, so its in-app CTAs never reach the static HTML — expecting them is what kept this gate failing on every Pages deploy while the site itself was fine (5/5 runs red, 2026-07-26~27). Expected download copy is read from `messages/ko.json` instead of duplicated in the checker, so the contract is "the page renders its own copy" and cannot drift: title, source-code CTA, both platform headings, the Windows beta trust state, the hosted-site scope note, a stable GitHub Releases href, and no `/releases/latest` dependency.
 - **Privacy note**: the installed app and vault data use local disk as the source of truth; `/docs`'s own local-source *browsing* tab stays desktop-only (unrelated to opening your primary vault from `/`)
 - **Footer**: license · GitHub · stack chips · `LocaleSwitch`
 
@@ -650,7 +650,7 @@ Used when a non-existent slug is hit in static export. Redirects or shows "not f
 
 ---
 
-### `/download` — macOS app download (rebuilt 2026-07-18)
+### `/download` — desktop app download (rebuilt 2026-07-18, Windows beta 2026-08-01)
 
 RATIO-SYSTEM 1600px container / 960px centered utility column.
 
@@ -664,7 +664,7 @@ RATIO-SYSTEM 1600px container / 960px centered utility column.
 
 #### Platform block (macOS + Windows)
 - **macOS** — published: one row per architecture with a direct download link, the real byte size, the DMG filename, and a copyable SHA-256. Unpublished: a single "not out yet" sentence, no placeholder facts
-- **Windows** — always shown, marked *in preparation*, with the reason (same bar as macOS: signed installer + install verification; an unsigned `.exe` means a SmartScreen warning for every downloader) and a link to follow progress
+- **Windows** — unpublished: one honest beta-pending line. Published: one unsigned x64 NSIS installer CTA derived from its real release URL and byte size, with a warning immediately before it; GitHub Release carries the sibling SHA-256 asset. Native CI proves build/scan/install/launch/MCP behavior; Windows 11 SmartScreen UI remains unverified
 - Source of truth: `src/views/download/model/macos-release.generated.ts`, written by `pnpm download:release-facts` from the real GitHub Release
 
 #### "Includes" cards (3, sm+)
@@ -734,7 +734,7 @@ AI agents read/write the same vault as humans. Two ways to get the server runnin
 
 | Channel | How the agent starts it | What the user does |
 |---|---|---|
-| **Installed macOS app** (primary, 2026-07-27) | The app ships a compiled MCP server inside its own bundle (`Ontology Atlas.app/Contents/MacOS/ontology-atlas-mcp`). The agent client spawns that binary directly, so it keeps serving while the app is closed. | Open the vault folder in the app and press **에이전트 연결 / Connect agent**. The app writes `.mcp.json` / `.codex/config.toml` with the bundled binary's absolute path and the vault's real path already filled in — no terminal, no Node, no install step. |
+| **Installed desktop app** (primary; macOS 2026-07-27, Windows beta 2026-08-01) | The app ships a compiled MCP server inside its own bundle (`Ontology Atlas.app/Contents/MacOS/ontology-atlas-mcp` on macOS, `ontology-atlas-mcp.exe` beside the Windows executable). The agent client spawns that binary directly, so it keeps serving while the app is closed. | Open the vault folder in the app and press **에이전트 연결 / Connect agent**. The app writes `.mcp.json` / `.codex/config.toml` with the bundled binary's absolute path and the vault's real path already filled in — no terminal, no Node, no install step. |
 | **Source checkout** (fallback) | `node <checkout>/mcp/src/index.js` with `OATLAS_VAULT` set. | Clone the repo, then either paste the config or let `node <checkout>/cli/src/index.mjs init` / `agent-setup --write` write it. |
 
 npm publishing is retired (`docs/DECISIONS.md`, 2026-07-27) — there is no `npx` channel.
@@ -905,7 +905,7 @@ just unmounted).
   agent entry are scanned in one column. `LocaleSwitch` is an immediate screen
   control; the long MCP connection proof stays behind the AI agent drill-in.
 - **AI 연결** (`AiConnectionPanel`, 2026-07-26) — a second drill-in row for
-  your own API key: store it in the macOS Keychain (desktop only), check the
+  your own API key: store it in the operating-system credential store (desktop only), check the
   connection with a request that carries **0 vault characters**, and read the
   tail of `.ontology-atlas/llm-audit.jsonl` where every call is recorded. The
   key is written once and never readable back (only its last 4 characters);
@@ -915,7 +915,7 @@ just unmounted).
   chat surface: the panel says in plain words that asking your vault is still
   being shaped.
   - **Named vendors: Anthropic · OpenAI · Google Gemini — frozen at three.**
-    All three share one concept (paste a key → Keychain → last 4 → check), so
+    All three share one concept (paste a key → OS credential store → last 4 → check), so
     the third costs the reader nothing new. A fourth is admitted only when it
     both (a) uses an auth protocol that a Bearer-compatible arm cannot absorb
     and (b) has demand evidence; every other vendor is meant for the

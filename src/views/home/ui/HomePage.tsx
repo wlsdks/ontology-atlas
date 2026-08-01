@@ -125,7 +125,6 @@ import {
   detectPromotionCandidates,
   detectStaleProjects,
   getProjectRuntimeDetailHref,
-  type Project,
   type ProjectImpactMode,
 } from "@/entities/project";
 import { buildDocsVaultHref, buildNewNodeDoc } from "@/entities/docs-vault";
@@ -139,7 +138,6 @@ import {
   resolveNodeAgentTarget,
   studioEditRelationForEdgeType,
   useRelationVocabulary,
-  type KnowledgeGraphNode,
 } from "@/entities/knowledge-graph";
 import { copyText } from "@/shared/lib/copy-text";
 import {
@@ -166,7 +164,9 @@ import {
   resolveRealmNodeId,
   buildContainmentParentMap,
   deriveDeeplinkAncestorExpansion,
+  clearVaultScopedRouteState,
 } from "../model/url-state";
+import { useVaultIdentityScope } from "@/features/vault-scope";
 import {
   buildTopologyAnalysisSummary,
   buildTopologyHealthActionTarget,
@@ -184,6 +184,15 @@ import {
 } from "../lib/topology-render-state";
 import { resolveTopologySelectedOntologyNode } from "../lib/resolve-topology-selected-node";
 import { resolveDeeplinkMissDecision } from "../lib/deeplink-miss-notice";
+import { resolveCanvasSelectedSlug } from "../lib/resolve-canvas-selection";
+import {
+  compactTopologyPanelTitle,
+  resolveTopologyNodeTitle,
+} from "../lib/resolve-topology-node-title";
+import {
+  canCopyTopologyPathPacket,
+  resolveTopologyPathChipState,
+} from "../lib/topology-path-chip-state";
 import { shouldSuppressGlobalShortcuts } from "../lib/blocking-surface";
 import { resolveAgentFocusNodeId } from "../lib/resolve-agent-focus-node";
 import { resolveTopologyNodeEditTarget } from "../lib/topology-node-edit";
@@ -665,17 +674,58 @@ export function HomePage() {
   // when the project list never finished loading, a bare miss used to stay
   // silent permanently — the dangling `?p=` param just sat there unexplained.
   const deeplinkMissNotifiedRef = useRef<string | null>(null);
+  /**
+   * **볼트가 바뀌면 볼트 전용 주소 상태를 걷어낸다** — 「범위를 넘긴 상태」의
+   * 원인 치료 (2026-08-01, `?slug=` 문서함 수리와 같은 문법).
+   *
+   * `?p=` · `?pathFrom=` 같은 키의 값은 **한 볼트 안에서만 뜻이 있는 이름**인데
+   * 주소는 볼트를 모른다. 그래서 사용자가 폴더를 바꾸거나 샘플↔내 볼트를
+   * 오가면 그 이름은 의미를 잃는데 아무도 걷어내지 않아 눌어붙었고, 지도는
+   * 없는 노드를 선택된 것으로 판정해 **통째로 흐려졌으며**, 경로 칩은 없는
+   * 노드 둘을 놓고 「경로 없음」이라고 단언했다.
+   *
+   * 첫 마운트는 건너뛴다 — 그때의 `?p=` 는 잔재가 아니라 **누군가 준 것**이다
+   * (딥링크 · 에이전트 핸드오프 · 북마크). 그건 지울 게 아니라 아래 미해석
+   * 토스트가 정직하게 말해야 할 대상이다.
+   *
+   * 토스트의 「한 번만」 기억도 같이 비운다. 그게 없으면 A→B→A 로 돌아왔을 때
+   * 같은 슬러그가 이번엔 진짜로 없는데도 화면이 **완전히 침묵한다**.
+   */
+  const vaultIdentity = useVaultIdentityScope();
+  const vaultIdentityRef = useRef<string | null>(null);
+  /**
+   * "없다" 를 진단해도 되는 시점인가 — 미해석 토스트와 캔버스 포커스 판정이
+   * **같은 신호**를 봐야 한다. 둘이 갈리면 화면은 유령을 포커스한 채로 있는데
+   * 토스트만 "없다" 고 말하는(또는 그 반대의) 상태가 생긴다.
+   */
+  const deeplinkSourceReady =
+    vault.restoreAttempted &&
+    (vault.status === "idle" ||
+      vault.status === "loaded" ||
+      vault.status === "unsupported");
+  /**
+   * ⚠️ **정착하기 전의 범위는 범위가 아니다.** 첫 렌더는 아직 볼트를 복원하기
+   * 전이라 `sample:...` 로 보인다. 그 값을 "앞 볼트" 로 기록하면, 저장된 폴더가
+   * 복원되는 순간이 **볼트 전환으로 오인**돼 사용자가 준 딥링크(`?p=`)를
+   * 지워버린다 — 실측(2026-08-01 브라우저 재현): 진짜 노드를 가리키는 주소로
+   * 새로고침했더니 `?p=` 가 그 자리에서 사라졌다. 그래서 `deeplinkSourceReady`
+   * 가 참이 된 뒤의 값만 센다.
+   */
+  useEffect(() => {
+    if (!deeplinkSourceReady) return;
+    const previous = vaultIdentityRef.current;
+    vaultIdentityRef.current = vaultIdentity;
+    if (previous === null || previous === vaultIdentity) return;
+    deeplinkMissNotifiedRef.current = null;
+    setRouteState(clearVaultScopedRouteState, { replace: true });
+  }, [deeplinkSourceReady, vaultIdentity, setRouteState]);
   useEffect(() => {
     const decision = resolveDeeplinkMissDecision({
       selectedSlug,
       hasOntologyMatch: Boolean(selectedOntologyNode),
       hasProjectMatch: Boolean(selectedProject),
       projectsLoaded: projectsQuery.loaded,
-      sourceReady:
-        vault.restoreAttempted &&
-        (vault.status === "idle" ||
-          vault.status === "loaded" ||
-          vault.status === "unsupported"),
+      sourceReady: deeplinkSourceReady,
     });
     if (decision.action === "none") return;
     if (!selectedSlug || deeplinkMissNotifiedRef.current === selectedSlug) return;
@@ -707,8 +757,7 @@ export function HomePage() {
     ontologyInsight,
     selectedProject,
     selectedOntologyNode,
-    vault.restoreAttempted,
-    vault.status,
+    deeplinkSourceReady,
     toast,
     t,
   ]);
@@ -1280,7 +1329,30 @@ export function HomePage() {
     return merged;
   }, [spotlightIds, topologyV2Graph, expandedParentSet]);
 
-  const canvasSelectedSlug = selectedProject?.slug ?? selectedOntologyNode?.id ?? selectedSlug;
+  /**
+   * **유령 슬러그로는 포커스하지 않는다** (2026-08-01). 판정 근거와 이 자리의
+   * 옛 결함은 `../lib/resolve-canvas-selection.ts` 주석에 있다 — 요약하면,
+   * 없는 노드를 선택으로 넘기면 지도가 통째로 흐려지고 첫 방문 힌트가 영구
+   * 소멸했다.
+   */
+  /**
+   * **실재가 확인된 선택**. `canvasSelectedSlug` 는 아직 판정할 수 없는 동안
+   * 원본 슬러그를 들고 있으므로(딥링크 깜빡임 방지), "노드를 정말 열어 봤다"
+   * 를 물어야 하는 곳은 이쪽을 본다 — 그 판정이 **영구 기록**을 남길 때 특히.
+   *
+   * 실측(2026-08-01): 첫 방문 힌트가 `canvasSelectedSlug` 를 보고 있어서, 없는
+   * 슬러그가 실린 링크로 들어오면 **판정이 확정되기 전 한 틱** 동안 참이 됐고
+   * 그걸로 힌트가 localStorage 에 영구 소멸했다. 누른 적도 없는데 학습 완료로
+   * 기록된 것이다.
+   */
+  const resolvedSelectionSlug = selectedProject?.slug ?? selectedOntologyNode?.id ?? null;
+  const canvasSelectedSlug = resolveCanvasSelectedSlug({
+    selectedSlug,
+    resolvedSlug: resolvedSelectionSlug,
+    sourceReady: deeplinkSourceReady,
+    projectsLoaded: projectsQuery.loaded,
+    ontologyLoaded: ontologyInsight !== null,
+  });
   const drawerProject = selectedProject;
 
   // S7 realm slug 해석(패널3-S7) — URL 의 `?realm=` 은 사용자가 손으로 bare
@@ -2562,27 +2634,47 @@ export function HomePage() {
     );
   }, [pathSourceSlug, pathTargetSlug, ontologyInsight]);
   // 경로 칩의 상단 중앙 상태 라인 — "경로: X → 대상 선택" / "X → Y · N홉" /
-  // 경로 없음. 예전 path 패널이 좌측 슬롯에서 하던 걸 상단 칩 1개로 압축
-  // (분석 패널 완전 소멸 2단계 §b).
+  // 경로 없음 / **이 볼트에 없는 끝점**. 예전 path 패널이 좌측 슬롯에서 하던
+  // 걸 상단 칩 1개로 압축 (분석 패널 완전 소멸 2단계 §b). 판정은 순수 함수로
+  // 빠져 있다 — 근거와 옛 거짓말은 `../lib/topology-path-chip-state.ts`.
+  const pathChipState = useMemo(
+    () =>
+      resolveTopologyPathChipState({
+        sourceSlug: pathSourceSlug,
+        targetSlug: pathTargetSlug,
+        sourceTitle: pathSourceTitle,
+        targetTitle: pathTargetTitle,
+        hopCount: pathHopCount,
+      }),
+    [pathSourceSlug, pathTargetSlug, pathSourceTitle, pathTargetTitle, pathHopCount],
+  );
   const pathChipLabel = useMemo(() => {
-    if (!pathSourceSlug || !pathSourceTitle) return null;
-    if (!pathTargetSlug || !pathTargetTitle) {
-      return t("analysis.pathChipUnresolved", { source: pathSourceTitle });
+    if (!pathChipState) return null;
+    switch (pathChipState.kind) {
+      case "missing-endpoints":
+        return t("analysis.pathChipMissingEndpoints", {
+          slugs: pathChipState.missing.join(" · "),
+        });
+      case "awaiting-target":
+        return t("analysis.pathChipUnresolved", { source: pathChipState.sourceTitle });
+      case "no-path":
+        return t("analysis.pathChipNoPath", {
+          source: pathChipState.sourceTitle,
+          target: pathChipState.targetTitle,
+        });
+      case "resolved":
+        return t("analysis.pathChipResolved", {
+          source: pathChipState.sourceTitle,
+          target: pathChipState.targetTitle,
+          hops: pathChipState.hops,
+        });
     }
-    if (pathHopCount === null) {
-      return t("analysis.pathChipNoPath", {
-        source: pathSourceTitle,
-        target: pathTargetTitle,
-      });
-    }
-    return t("analysis.pathChipResolved", {
-      source: pathSourceTitle,
-      target: pathTargetTitle,
-      hops: pathHopCount,
-    });
-  }, [pathSourceSlug, pathSourceTitle, pathTargetSlug, pathTargetTitle, pathHopCount, t]);
+  }, [pathChipState, t]);
   const [pathPacketCopied, setPathPacketCopied] = useState(false);
   const copyPathPacket = useCallback(async () => {
+    // 끝점이 이 볼트에 없으면 넘길 사실이 없다 — 없는 슬러그 둘과 「경로 없음」
+    // 이라는 결론을 에이전트에게 넘기는 것이 이 버튼의 옛 결함이었다.
+    if (!canCopyTopologyPathPacket(pathChipState)) return;
     if (!pathSourceSlug || !pathTargetSlug || !pathSourceTitle || !pathTargetTitle) return;
     const ok = await copyText(
       formatTopologyPathAgentPacket({
@@ -2608,7 +2700,7 @@ export function HomePage() {
     if (!ok) return;
     setPathPacketCopied(true);
     window.setTimeout(() => setPathPacketCopied(false), 1600);
-  }, [pathSourceSlug, pathTargetSlug, pathSourceTitle, pathTargetTitle, pathHopCount, t]);
+  }, [pathChipState, pathSourceSlug, pathTargetSlug, pathSourceTitle, pathTargetTitle, pathHopCount, t]);
   // 칩의 ✕ — 경로 상태를 완전히 지우고 지도로 복귀. 예전엔 path 모드가 좌측
   // 슬롯을 차지해 "지도" 탭을 다시 눌러야 나갈 수 있었다.
   const handleClearPath = useCallback(() => {
@@ -3137,7 +3229,7 @@ export function HomePage() {
                       analysisMode === "path" && pathChipLabel ? (
                         <TopologyPathChip
                           label={pathChipLabel}
-                          resolved={Boolean(pathSourceSlug && pathTargetSlug)}
+                          resolved={canCopyTopologyPathPacket(pathChipState)}
                           copyPacketLabel={t("analysis.pathChipCopyPacket")}
                           copyPacketCopied={pathPacketCopied}
                           copyPacketAriaLabel={t("analysis.pathChipCopyPacketAriaLabel")}
@@ -4325,7 +4417,9 @@ export function HomePage() {
               {/* 샘플 모드 첫 방문 1회성 지도 힌트 — 하단 중앙, pointer-events-none
                   이라 노드 클릭을 막지 않는다(통과 클릭 = 소멸). 첫 노드 선택 시
                   영구 소멸(localStorage). 소스: features/first-run-starter. */}
-              <SampleNodeHint hasSelection={Boolean(canvasSelectedSlug)} hidden={tour.open} />
+              {/* 실재가 확인된 선택만 학습 완료로 친다 — 유령 슬러그가 첫 방문
+                  힌트를 영구 소멸시키던 자리(`resolvedSelectionSlug` 주석). */}
+              <SampleNodeHint hasSelection={resolvedSelectionSlug !== null} hidden={tour.open} />
 
               {/* E-1c — 미지원 브라우저에서 크롬 타일/⌘O 가 부르는 정직한 안내.
                   지원 브라우저에서는 열리지 않으므로 숙련 사용자의 직행 경로
@@ -4723,30 +4817,6 @@ export function HomePage() {
       ) : null}
     </main>
   );
-}
-
-function resolveTopologyNodeTitle({
-  slug,
-  projectBySlug,
-  ontologyNodes,
-}: {
-  slug: string | null;
-  projectBySlug: ReadonlyMap<string, Project>;
-  ontologyNodes: readonly KnowledgeGraphNode[] | null | undefined;
-}): string | null {
-  if (!slug) return null;
-
-  const project = projectBySlug.get(slug);
-  if (project) return project.name;
-
-  const title = resolveTopologySelectedOntologyNode(slug, ontologyNodes)?.title ?? slug;
-  return compactTopologyPanelTitle(title);
-}
-
-function compactTopologyPanelTitle(title: string | null): string | null {
-  if (!title) return null;
-  const stripped = title.replace(/\s*\(.*$/, "").trim();
-  return stripped.length > 0 ? stripped : title;
 }
 
 /**

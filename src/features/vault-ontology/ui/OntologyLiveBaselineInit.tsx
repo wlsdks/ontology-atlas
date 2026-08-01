@@ -3,11 +3,13 @@
 import { useEffect, useRef } from "react";
 import { useDataSourceMode } from "@/features/data-source-mode";
 import {
+  getChangeBaseline,
   markChangeBaseline,
   restorePersistedBaseline,
+  setChangeBaselineScope,
   shouldAutoMarkBaseline,
-  useChangeBaseline,
 } from "@/shared/lib/ontology-tree";
+import { useVaultIdentityScope } from "@/features/vault-scope";
 import { useOntologyInsight } from "../model/use-ontology-insight";
 
 /**
@@ -23,33 +25,48 @@ import { useOntologyInsight } from "../model/use-ontology-insight";
  * 채널, INDEX, 리뷰 링크, 기록 workbench와 activity count에 같은 changeset으로
  * 뜬다.
  *
- * 마운트당 1회만 처리(handledRef) — 사용자가 명시적으로 Clear 하면 곧장 다시
- * 잡히지 않게(수동 의도 존중). static/dogfood 모드는 변하지 않으니 auto-mark 없음.
- * 헤드리스(렌더 없음) — layout 의 vault provider 안에 마운트.
+ * **볼트당 1회** 처리(handledScopeRef) — 사용자가 명시적으로 Clear 하면 곧장
+ * 다시 잡히지 않게(수동 의도 존중). static/dogfood 모드는 변하지 않으니
+ * auto-mark 없음. 헤드리스(렌더 없음) — layout 의 vault provider 안에 마운트.
+ *
+ * ## 왜 "마운트당" 이 아니라 "볼트당" 인가 (2026-08-01 수리)
+ *
+ * 종전엔 `handledRef` 가 boolean 이라 **세션 중 폴더 전환을 못 봤다**. 복원
+ * 가드(`snapshotMatchesGraph`)는 이 effect 안에서만 도는데 그 effect 가 다시
+ * 안 돌았으니, 메모리에 남은 볼트 A 의 기준이 볼트 B 의 그래프와 대조돼
+ * 「자리 비운 사이 N개 바뀜」의 N 이 **B 전체**가 됐다. 범위가 바뀌면 다시
+ * 처리한다 — 그리고 스토어는 `setChangeBaselineScope` 를 받는 즉시 앞 볼트의
+ * 기준을 버린다.
  */
 export function OntologyLiveBaselineInit() {
   const mode = useDataSourceMode();
-  const baseline = useChangeBaseline();
   const { insight } = useOntologyInsight();
-  const handledRef = useRef(false);
+  const vaultScope = useVaultIdentityScope();
+  const handledScopeRef = useRef<string | null>(null);
 
   useEffect(() => {
-    if (handledRef.current || !insight) return;
-    handledRef.current = true;
+    if (!insight) return;
+    if (handledScopeRef.current === vaultScope) return;
+    handledScopeRef.current = vaultScope;
+    // 0) 스토어에 활성 볼트를 알린다 — 범위가 바뀌었으면 여기서 앞 볼트의
+    //    기준이 버려지고, 저장/복원 키도 이 볼트의 것으로 바뀐다.
+    setChangeBaselineScope(vaultScope);
     // 1) 영속 baseline 복원 시도(겹침 가드) — 복원되면 auto-mark 건너뜀.
     const restored = restorePersistedBaseline(insight.nodes);
     // 2) 복원 못 했고 auto-mark 조건이면 새로 baseline 을 잡는다.
+    //    `getChangeBaseline()` 을 직접 읽는다 — 바로 위에서 범위 전환이
+    //    기준을 버렸을 수 있는데, 렌더에 실린 값은 아직 앞 볼트의 것이다.
     if (
       !restored &&
       shouldAutoMarkBaseline({
         mode,
-        hasBaseline: baseline !== null,
+        hasBaseline: getChangeBaseline() !== null,
         nodeCount: insight.nodes.length,
       })
     ) {
       markChangeBaseline(insight.nodes, insight.edges, Date.now());
     }
-  }, [mode, baseline, insight]);
+  }, [mode, insight, vaultScope]);
 
   return null;
 }

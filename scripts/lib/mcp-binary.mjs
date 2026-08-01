@@ -30,14 +30,16 @@ export const MCP_SERVER_ENTRY = 'mcp/src/index.js';
 const BUN_TARGET_BY_TRIPLE = Object.freeze({
   'aarch64-apple-darwin': 'bun-darwin-arm64',
   'x86_64-apple-darwin': 'bun-darwin-x64',
+  'x86_64-pc-windows-msvc': 'bun-windows-x64',
 });
 
 export const SUPPORTED_TARGET_TRIPLES = Object.freeze(Object.keys(BUN_TARGET_BY_TRIPLE));
 
-/** node 의 `process.arch` → macOS Rust target triple. */
-export function hostTargetTriple(arch = process.arch) {
-  if (arch === 'arm64') return 'aarch64-apple-darwin';
-  if (arch === 'x64') return 'x86_64-apple-darwin';
+/** node 의 플랫폼·아키텍처 → Rust target triple. */
+export function hostTargetTriple(platform = process.platform, arch = process.arch) {
+  if (platform === 'darwin' && arch === 'arm64') return 'aarch64-apple-darwin';
+  if (platform === 'darwin' && arch === 'x64') return 'x86_64-apple-darwin';
+  if (platform === 'win32' && arch === 'x64') return 'x86_64-pc-windows-msvc';
   return null;
 }
 
@@ -47,7 +49,8 @@ export function bunTargetForTriple(triple) {
 
 /** `externalBin` 이 실제로 찾는 파일명. */
 export function binaryFileNameForTriple(triple) {
-  return `${MCP_BINARY_NAME}-${triple}`;
+  const extension = triple.includes('-windows-') ? '.exe' : '';
+  return `${MCP_BINARY_NAME}-${triple}${extension}`;
 }
 
 /** bun compile 인자 — 스크립트와 테스트가 같은 배열을 본다. */

@@ -20,7 +20,9 @@ export {
   pinnedDocsStorageKey,
   recentDocsStorageKey,
   vaultScopeKey,
+  vaultIdentityScope,
   type VaultScopeKey,
+  type VaultIdentityScope,
 } from './lib/vault-scope-key';
 export {
   buildLocalManifest,
