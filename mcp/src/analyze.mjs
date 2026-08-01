@@ -44,8 +44,14 @@
 //     skipped: [{ path, reason }],
 //   }
 
-import { readFileSync, readdirSync, statSync, existsSync } from 'node:fs';
-import { join, basename, relative } from 'node:path';
+import {
+  readFileSync,
+  readdirSync,
+  statSync,
+  existsSync,
+  realpathSync,
+} from 'node:fs';
+import { join, basename, relative, isAbsolute, sep } from 'node:path';
 import { validateMeaningProposalAgainstAnalysis } from './meaning-evaluation.mjs';
 
 /**
@@ -82,6 +88,7 @@ const STARTER_ONTOLOGY_SLUGS = new Set([
 ]);
 const SEMANTIC_EVIDENCE_SEEDS = [
   ['README.md', 'mission'],
+  ['Cargo.toml', 'package-contract'],
   ['docs/FEATURES.md', 'product-capabilities'],
   ['docs/SYSTEM-MAP.md', 'architecture'],
   ['AGENTS.md', 'agent-guidance'],
@@ -89,6 +96,18 @@ const SEMANTIC_EVIDENCE_SEEDS = [
 const SEMANTIC_EVIDENCE_MAX_EXCERPT = 1200;
 const SEMANTIC_EVIDENCE_MAX_HEADINGS = 8;
 const SEMANTIC_EVIDENCE_MAX_DOCUMENTS = 6;
+const CARGO_MANIFEST_MAX_BYTES = 256 * 1024;
+const CARGO_MANIFEST_MAX_FEATURES = 48;
+const CARGO_MANIFEST_MAX_FEATURE_VALUES = 16;
+const CARGO_MANIFEST_MAX_TOKEN_LENGTH = 80;
+const CARGO_MANIFEST_MAX_DESCRIPTION_LENGTH = 320;
+const CARGO_PACKAGE_EVIDENCE_FIELDS = new Set([
+  'name',
+  'version',
+  'description',
+  'edition',
+  'rust-version',
+]);
 const SEMANTIC_DISCOVERY_MAX_FILES = 200;
 const SEMANTIC_DISCOVERY_SKIP_DIRS = new Set([
   'archive',
@@ -501,8 +520,41 @@ function collectSemanticEvidence(rootPath, skipped = []) {
     const path = join(rootPath, source);
     if (!existsSync(path)) continue;
     try {
+      if (source === 'Cargo.toml') {
+        const resolvedFromRoot = relative(
+          realpathSync(rootPath),
+          realpathSync(path),
+        );
+        if (
+          resolvedFromRoot === '..' ||
+          resolvedFromRoot.startsWith(`..${sep}`) ||
+          isAbsolute(resolvedFromRoot)
+        ) {
+          skipped.push({
+            path,
+            reason: 'package-contract-skip: Cargo.toml resolves outside repository root',
+          });
+          continue;
+        }
+      }
+      if (
+        source === 'Cargo.toml' &&
+        statSync(path).size > CARGO_MANIFEST_MAX_BYTES
+      ) {
+        skipped.push({
+          path,
+          reason: `package-contract-skip: Cargo.toml exceeds ${CARGO_MANIFEST_MAX_BYTES} bytes`,
+        });
+        continue;
+      }
       const text = readFileSync(path, 'utf-8');
-      const extracted = extractSemanticDocument(text);
+      const extracted = source === 'Cargo.toml'
+        ? extractCargoPackageContract(text)
+        : extractSemanticDocument(text);
+      if (extracted.skipReason) {
+        skipped.push({ path, reason: extracted.skipReason });
+        continue;
+      }
       if (!extracted.excerpt && extracted.headings.length === 0) continue;
       rows.push({
         source,
@@ -510,6 +562,7 @@ function collectSemanticEvidence(rootPath, skipped = []) {
         title: extracted.title || humanize(basename(source).replace(/\.md$/i, '')),
         headings: extracted.headings,
         excerpt: extracted.excerpt,
+        _riskText: extracted.riskText,
         _score: pathScore + semanticContentScore(extracted),
       });
     } catch (err) {
@@ -529,6 +582,7 @@ function collectSemanticEvidence(rootPath, skipped = []) {
   // evidence out of the bounded packet.
   for (const role of [
     'mission',
+    'package-contract',
     'product-contract',
     'product-capabilities',
     'architecture',
@@ -562,8 +616,246 @@ function collectSemanticEvidence(rootPath, skipped = []) {
   });
 }
 
-function scanSemanticEvidenceRisks({ headings = [], excerpt = '' }) {
-  const text = `${headings.join('\n')}\n${excerpt}`;
+function extractCargoPackageContract(text) {
+  const packageFields = new Map();
+  const features = [];
+  let section = '';
+  const lines = text.split(/\r?\n/);
+  for (let lineIndex = 0; lineIndex < lines.length; lineIndex += 1) {
+    const line = stripTomlComment(lines[lineIndex]).trim();
+    if (!line) continue;
+    const sectionMatch = line.match(/^\[([^\]]+)\]$/);
+    if (sectionMatch) {
+      section = sectionMatch[1].trim();
+      continue;
+    }
+    const assignment = line.match(/^([^=]+?)\s*=\s*(.+)$/);
+    if (!assignment) continue;
+    const key = normalizeTomlKey(assignment[1]);
+    const packageEvidenceField =
+      section === 'package' && CARGO_PACKAGE_EVIDENCE_FIELDS.has(key);
+    let assignmentValue = assignment[2];
+    if (
+      section === 'features' &&
+      assignmentValue.trimStart().startsWith('[')
+    ) {
+      while (
+        !isBalancedTomlFragment(assignmentValue) &&
+        lineIndex + 1 < lines.length
+      ) {
+        lineIndex += 1;
+        assignmentValue += ` ${stripTomlComment(lines[lineIndex]).trim()}`;
+      }
+    }
+    if (
+      (packageEvidenceField || section === 'features') &&
+      !isBalancedTomlFragment(assignmentValue)
+    ) {
+      return {
+        title: null,
+        headings: [],
+        excerpt: '',
+        skipReason: 'package-contract-skip: malformed Cargo.toml package/features contract',
+      };
+    }
+    if (
+      packageEvidenceField
+    ) {
+      packageFields.set(key, normalizeTomlScalar(assignmentValue));
+      continue;
+    }
+    if (section === 'features') {
+      features.push({
+        name: key,
+        values: [...assignmentValue.matchAll(/["']([^"']+)["']/g)]
+          .map((match) => match[1]),
+      });
+    }
+  }
+  const packageName = packageFields.get('name');
+  if (!packageName) {
+    return {
+      title: null,
+      headings: [],
+      excerpt: '',
+      skipReason: 'package-contract-skip: root Cargo.toml has no [package] table',
+    };
+  }
+  const visiblePackageName = truncateCargoValue(
+    packageName,
+    CARGO_MANIFEST_MAX_TOKEN_LENGTH,
+  );
+  const details = [
+    `Package: ${visiblePackageName}`,
+    packageFields.get('description')
+      ? `Description: ${truncateCargoValue(
+        packageFields.get('description'),
+        CARGO_MANIFEST_MAX_DESCRIPTION_LENGTH,
+      )}`
+      : null,
+    packageFields.get('version')
+      ? `Version: ${truncateCargoValue(
+        packageFields.get('version'),
+        CARGO_MANIFEST_MAX_TOKEN_LENGTH,
+      )}`
+      : null,
+    packageFields.get('edition')
+      ? `Edition: ${truncateCargoValue(
+        packageFields.get('edition'),
+        CARGO_MANIFEST_MAX_TOKEN_LENGTH,
+      )}`
+      : null,
+    packageFields.get('rust-version')
+      ? `Rust version: ${truncateCargoValue(
+        packageFields.get('rust-version'),
+        CARGO_MANIFEST_MAX_TOKEN_LENGTH,
+      )}`
+      : null,
+  ].filter(Boolean);
+  const visibleFeatures = features
+    .slice(0, CARGO_MANIFEST_MAX_FEATURES)
+    .map((feature) => ({
+      name: truncateCargoValue(feature.name, CARGO_MANIFEST_MAX_TOKEN_LENGTH),
+      values: feature.values
+        .slice(0, CARGO_MANIFEST_MAX_FEATURE_VALUES)
+        .map((value) =>
+          truncateCargoValue(value, CARGO_MANIFEST_MAX_TOKEN_LENGTH)
+        ),
+      omittedValues: Math.max(
+        0,
+        feature.values.length - CARGO_MANIFEST_MAX_FEATURE_VALUES,
+      ),
+    }));
+  const excerpt = cargoPackageContractExcerpt(
+    details,
+    visibleFeatures,
+    features.length,
+  );
+  return {
+    title: `${visiblePackageName} package contract`,
+    headings: features.length > 0
+      ? ['Package contract', 'Features']
+      : ['Package contract'],
+    excerpt,
+    riskText: [
+      ...packageFields.values(),
+      ...features.flatMap((feature) => [feature.name, ...feature.values]),
+    ].join('\n'),
+  };
+}
+
+function cargoPackageContractExcerpt(details, candidateFeatures, totalFeatures) {
+  const visibleFeatures = [...candidateFeatures];
+  while (true) {
+    const featureRows = visibleFeatures.map((feature) => {
+      const values = feature.values.join(', ') || '(empty)';
+      const suffix = feature.omittedValues > 0
+        ? ` (+${feature.omittedValues} values omitted)`
+        : '';
+      return `${feature.name} -> ${values}${suffix}`;
+    });
+    const omittedFeatures = Math.max(0, totalFeatures - visibleFeatures.length);
+    const parts = [
+      ...details,
+      featureRows.length > 0 ? `Features: ${featureRows.join('; ')}` : null,
+      omittedFeatures > 0
+        ? `Feature declarations omitted: ${omittedFeatures}`
+        : null,
+    ].filter(Boolean);
+    const excerpt = parts.join('. ');
+    if (
+      excerpt.length <= SEMANTIC_EVIDENCE_MAX_EXCERPT ||
+      visibleFeatures.length === 0
+    ) {
+      return excerpt.slice(0, SEMANTIC_EVIDENCE_MAX_EXCERPT);
+    }
+    visibleFeatures.pop();
+  }
+}
+
+function truncateCargoValue(value, maxLength) {
+  const normalized = String(value).replace(/\s+/g, ' ').trim();
+  if (normalized.length <= maxLength) return normalized;
+  return `${normalized.slice(0, Math.max(0, maxLength - 1))}…`;
+}
+
+function stripTomlComment(line) {
+  let quote = null;
+  let escaped = false;
+  for (let index = 0; index < line.length; index += 1) {
+    const character = line[index];
+    if (escaped) {
+      escaped = false;
+      continue;
+    }
+    if (character === '\\' && quote === '"') {
+      escaped = true;
+      continue;
+    }
+    if (character === '"' || character === "'") {
+      quote = quote === character ? null : quote ?? character;
+      continue;
+    }
+    if (character === '#' && quote === null) return line.slice(0, index);
+  }
+  return line;
+}
+
+function normalizeTomlKey(value) {
+  const trimmed = value.trim();
+  if (
+    (trimmed.startsWith('"') && trimmed.endsWith('"')) ||
+    (trimmed.startsWith("'") && trimmed.endsWith("'"))
+  ) {
+    return trimmed.slice(1, -1);
+  }
+  return trimmed;
+}
+
+function normalizeTomlScalar(value) {
+  const trimmed = value.trim();
+  if (
+    (trimmed.startsWith('"') && trimmed.endsWith('"')) ||
+    (trimmed.startsWith("'") && trimmed.endsWith("'"))
+  ) {
+    return trimmed.slice(1, -1);
+  }
+  return trimmed;
+}
+
+function isBalancedTomlFragment(value) {
+  const stack = [];
+  let quote = null;
+  let escaped = false;
+  for (const character of value) {
+    if (escaped) {
+      escaped = false;
+      continue;
+    }
+    if (character === '\\' && quote === '"') {
+      escaped = true;
+      continue;
+    }
+    if (character === '"' || character === "'") {
+      quote = quote === character ? null : quote ?? character;
+      continue;
+    }
+    if (quote) continue;
+    if (character === '[' || character === '{') stack.push(character);
+    if (character === ']' || character === '}') {
+      const expected = character === ']' ? '[' : '{';
+      if (stack.pop() !== expected) return false;
+    }
+  }
+  return quote === null && stack.length === 0;
+}
+
+function scanSemanticEvidenceRisks({
+  headings = [],
+  excerpt = '',
+  _riskText = '',
+}) {
+  const text = `${headings.join('\n')}\n${excerpt}\n${_riskText}`;
   const risks = [];
   if (
     /\b(?:ignore|disregard|override)\b.{0,80}\b(?:previous|prior|system|developer|agent|instructions?)\b/is.test(text) ||

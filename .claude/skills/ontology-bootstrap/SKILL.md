@@ -80,9 +80,14 @@ Prefer independent roles:
 
 1. mission or product outcome
 2. product contract or principles
-3. shipped capabilities
-4. architecture/system map
-5. agent or contributor guidance
+3. shipped package/configuration contract (for example a bounded root
+   `Cargo.toml` `package-contract` row)
+4. shipped capabilities
+5. architecture/system map
+6. agent or contributor guidance
+
+A package contract proves shipped configuration and implementation provenance;
+it does not promote manifest or feature names into domains/capabilities.
 
 Mark conflicts and roadmap-only statements. Do not silently combine
 aspirational and shipped behavior.

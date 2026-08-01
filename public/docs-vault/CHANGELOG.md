@@ -7,6 +7,19 @@
 
 ---
 
+## 2026-08-02 — Rust package manifest를 bootstrap 정본 근거로 읽는다
+
+낯선 Rust 저장소 field trial에서 capability가 `Cargo.toml`을 인용하자
+`analyze_repo_structure`가 evidence packet 밖의 경로라며 거절해 README로
+후퇴하던 공백을 닫았다. 이제 root package manifest의 `[package]` 식별·설명과
+`[features]` 이름·매핑은 bounded `package-contract` 근거 한 행으로 들어가고,
+proposal citation과 source-hidden handoff가 같은 정본을 읽는다. manifest나
+feature별 노드는 만들지 않는다. repo 밖 symlink, 256 KiB 초과, malformed,
+virtual-workspace-only manifest는 명시적으로 skip하며 comment와 allowlist 밖
+TOML은 semantic evidence에 들어오지 않는다.
+
+---
+
 ## 2026-08-02 — rename overwrite가 교체 대상을 되살리던 순서 역전 수정
 
 `rename_concept(..., overwrite: true)`가 source 문서를 target slug에 쓴 다음,

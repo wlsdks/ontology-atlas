@@ -42,6 +42,64 @@
 
 ---
 
+## 2026-08-02 — Rust package 계약은 노드가 아니라 bounded `package-contract` 근거 한 행이다
+
+**소집**: PO 카운슬 5인 전원(근거·결·지킴이·해자·지렛대), 독립 1라운드 +
+상호 반박 1라운드. 실행 환경은 root 포함 동시 4슬롯이라 같은 브리프를 3인→2인
+두 파동으로 보냈고 자리 간 출력은 2라운드 전까지 공유하지 않았다. ·
+**트리거**: `index_project` / `analyze_repo_structure`의 공개 MCP 응답 의미 계약 변경.
+**루브릭**: 22/24 (Problem insight 4 · User moment 4 · Differentiation 3 ·
+Ontology value 4 · Agent value 4 · Verification 3, 치명적 0: 없음).
+
+**선행 결정 관계**: 2026-08-01 「도구의 시야가 곧 볼트의 사정거리」 결정은
+유효하다. 당시 root 독립 패키지 누락이 에이전트 온톨로지의 침묵하는 구멍이
+됐고, 이번에는 낯선 Rust 저장소의 정본 package manifest가 같은 방식으로
+evidence packet 밖에 남았다. 선행 결정을 뒤집지 않고 새 실측 범위로 확장한다.
+
+**관측**: MCP-only field trial의 builder가 feature capability 근거로
+`Cargo.toml`을 제출하자 proposal validator가 `unknown-citation`으로 거절했다.
+builder는 `README.md`로 후퇴해 11개 의미 노드와 7/7 path 정확도는 지켰지만,
+source-hidden 인수자는 package-manifest 구현 세부를 unknown으로 남겼다.
+Cargo 공식 계약에서 root `Cargo.toml`은 package manifest이고 `[features]`는
+조건부 컴파일과 optional dependency를 정의한다. 문제는 Rust 구조를 더 많이
+노드로 만드는 것이 아니라 shipped configuration contract를 정본 provenance로
+인용할 수 없다는 데 있다.
+
+**갈린 지점**: 다섯 자리 모두 Build에 동의했지만, 한 저장소 관측을 범용 manifest
+전략으로 과잉 일반화하고 raw TOML·comment·악성 문자열을 semantic evidence로
+승격할 위험을 가장 강하게 제기했다. 반박 뒤 전원은 단순 seed 추가가 아니라
+root package manifest 하나의 allowlist 구조만 정규화하고 4시간 안전 종료 조건을
+두는 더 작은 안으로 좁혔다.
+
+**결정 (accountable: 소유자)**: repository root의 `Cargo.toml`이 실제
+`[package]`를 가진 경우, 제한된 package 식별·설명 필드와 `[features]`의
+이름·매핑만 `role: package-contract`인 bounded `semanticEvidence` 한 행으로
+제공한다. 이 행은 citation 후보이지 domain/capability/element 제안이 아니다.
+feature 이름별 노드는 0개 추가한다.
+
+**적용 규칙**: 최소 슬라이스 · 합집합 금지. IN — root containment, 파일 크기
+상한, comment/raw prose 배제, `[package]`·`[features]` allowlist,
+`unknown-citation → canWrite` red-green, mission/architecture evidence 비밀림,
+malformed·oversized·hostile·virtual-workspace fail-closed, 실제 scratch MCP와
+vault-only handoff 재검증. OUT — Rust import graph, workspace member 재귀,
+dependency/target/profile/build-script 해석, 범용 manifest framework,
+starter 삭제, UI, vault schema, 새 MCP 인자. appetite — 최대 4시간; 안전 경계
+하나라도 같은 슬라이스에서 증명하지 못하면 `Investigate first`로 되돌린다.
+
+**기록된 반대** (전원 반박에서 수용한 가장 강한 논점): 한 Rust 저장소의 partial
+handoff 하나를 고치다 TOML parser·workspace 탐색·dependency graph까지 떠안으면
+작은 evidence admission이 검증되지 않은 manifest subsystem으로 커지고,
+mission evidence와 10–20개 의미 모델을 오히려 훼손한다.
+**반증 조건**: 새 행이 기존 mission/architecture evidence를 packet 밖으로 밀거나,
+raw/comment 지시를 신뢰하거나, manifest/feature별 노드를 늘리거나, 두 번째
+field trial 전 workspace/member/general parser 확장이 필요해진다.
+**재검토**: 두 번째 비-Rust 또는 virtual-workspace field trial에서 같은 citation
+공백이 관측될 때만 범용 manifest/workspace 지원을 새 결정으로 연다.
+
+**상태**: 유효.
+
+---
+
 ## 2026-08-02 — capability 구현 근거는 `elements:`가 아니라 정본 `path:` 하나로 연다
 
 **소집**: PO 카운슬 5인 전원(근거·결·지킴이·해자·지렛대), 독립 1라운드 +

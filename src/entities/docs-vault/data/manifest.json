@@ -3885,6 +3885,11 @@
         },
         {
           "depth": 2,
+          "text": "2026-08-02 — Rust package manifest를 bootstrap 정본 근거로 읽는다",
+          "slug": "2026-08-02-rust-package-manifest를-bootstrap-정본-근거로-읽는다"
+        },
+        {
+          "depth": 2,
           "text": "2026-08-02 — rename overwrite가 교체 대상을 되살리던 순서 역전 수정",
           "slug": "2026-08-02-rename-overwrite가-교체-대상을-되살리던-순서-역전-수정"
         },
@@ -6019,8 +6024,8 @@
           "slug": "2026-07-26-첫-만남은-쇼핑몰부터"
         }
       ],
-      "excerpt": "Major change history. Code commit messages answer why; this file answers when / which surface changed. Focused on user-visible changes, not PR-level granularity. Newest at the top. Entries stay date-based; the app version reached v1.0.0 on 2026-07-27, so a release tag now carries the semver promise instead. renameconce",
-      "wordCount": 62295,
+      "excerpt": "Major change history. Code commit messages answer why; this file answers when / which surface changed. Focused on user-visible changes, not PR-level granularity. Newest at the top. Entries stay date-based; the app version reached v1.0.0 on 2026-07-27, so a release tag now carries the semver promise instead. 낯선 Rust 저장소",
+      "wordCount": 62369,
       "updatedAt": "2026-08-02",
       "linksOut": [
         "audits/CASE-STUDY-AGENTS-MD-DRIFT",
@@ -6048,6 +6053,11 @@
           "depth": 2,
           "text": "기록 형식",
           "slug": "기록-형식"
+        },
+        {
+          "depth": 2,
+          "text": "2026-08-02 — Rust package 계약은 노드가 아니라 bounded `package-contract` 근거 한 행이다",
+          "slug": "2026-08-02-rust-package-계약은-노드가-아니라-bounded-package-contract-근거-한-행이다"
         },
         {
           "depth": 2,
@@ -6386,7 +6396,7 @@
         }
       ],
       "excerpt": "이 파일은 결정과 그때 진 반대 의견을 남긴다. docs/CHANGELOG.md 는 무엇이 언제 바뀌었나를 답하고, 이 파일은 왜 그렇게 정했고, 무엇을 걸었나를 답한다. 최신이 위. 기록은 덧붙이기만 한다 — 지난 기록을 고치지 않는다. 판단이 바뀌었으면 새 기록을 쓰고 옛 기록을 뒤집힘 으로 표시한다. 틀린 기록도 자산이다. 1. 소집 전에 읽는다. 카운슬을 열기 전(그리고 단독 PO 패스를 쓰기 전) 같은 표면 · 같은 질문에 대한 선행 결정이 있는지 먼저 본다. 있으면 새 패스는 그것을 ① 여전히 유효하다고 인용하거나 ② 명시적으로 뒤집는다. 조용히 다시 결정",
-      "wordCount": 32690,
+      "wordCount": 33109,
       "updatedAt": "2026-08-02",
       "linksOut": [
         "slug"
@@ -7861,8 +7871,8 @@
         }
       ],
       "excerpt": "Complete inventory of features users can actually use right now. Last updated: 2026-07-27 (현재 route와 installed-app 계약 재검증 — /ontology은 /topology?index=expanded, /ontology/edit은 /ontology/studio 호환 redirect이며, Insights는 할 일·구성·연결·경계·신선도 5개 질문 탭의 maintenance board다. desktop static smoke와 installed-app verifier/Computer U",
-      "wordCount": 16530,
-      "updatedAt": "2026-08-01",
+      "wordCount": 16563,
+      "updatedAt": "2026-08-02",
       "linksOut": [
         "slug",
         "project:slug",
@@ -9587,7 +9597,7 @@
         }
       ],
       "excerpt": "@modelcontextprotocol/server v2 기반 stdio JSON-RPC 서버. 32 도구 노출 (read 19 + write 13). 런타임은 Node 24 계열만 지원한다: · 도구 · 동작 · connectioninfo · active vault/repo root와 해석 출처, 서버 버전, read-only 여부, 실제 광고 중인 tool count/name/hash를 반환해 잘못된 폴더와 stale client toolset을 막는 첫 호출 proof. 명시적 OATLASREPOROOT가 없으면 active vault의 Git top-level",
-      "wordCount": 13678,
+      "wordCount": 13718,
       "updatedAt": "2026-08-02",
       "linksOut": []
     },
