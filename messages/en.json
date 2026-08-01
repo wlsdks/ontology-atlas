@@ -3311,9 +3311,11 @@
       "vaultStructure": "Vault structure",
       "whatBecomesANode": "What becomes a node",
       "relations": "How relations work",
+      "studio": "Finishing a node in the studio",
       "fromYourRepo": "Start from your repo",
       "connectAgent": "Connect an AI agent",
       "growingVault": "When the vault grows",
+      "insights": "The maintenance board",
       "cli": "CLI",
       "trust": "On trust"
     },
