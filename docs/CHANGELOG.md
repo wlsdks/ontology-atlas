@@ -7,6 +7,27 @@
 
 ---
 
+## 2026-08-02 — rename overwrite가 교체 대상을 되살리던 순서 역전 수정
+
+`rename_concept(..., overwrite: true)`가 source 문서를 target slug에 쓴 다음,
+곧 사라질 기존 target의 backlink 갱신 계획으로 같은 파일을 다시 덮어쓰던 결함을
+고쳤다. overwrite 대상은 backlink rewrite에서 제외되어 source의 제목·본문·근거가
+실제로 남는다. MCP 직접 호출과 CLI `rename --confirm --overwrite`가 같은 결과를
+검증한다.
+
+---
+
+## 2026-08-02 — 능력의 코드 근거와 그래프 자식을 분리
+
+`capability_without_evidence`가 권한 밖 수정을 권하던 모순을 없앴다. 이제
+capability의 `path:`는 낯선 에이전트가 처음 열 정본 구현 진입점 하나이고,
+`elements:`에는 실제 구현 역할 노드의 slug만 들어간다. 경로를 증명하려고 파일별
+element 노드를 만드는 압력도, 경로를 관계 배열에 넣었다가 쓰기 게이트에서 다시
+경고받는 루프도 사라졌다. MCP와 CLI `add --path`가 같은 스키마를 쓰며 maintenance,
+경로 drift, 설치 서버 dogfood가 같은 판정을 낸다.
+
+---
+
 ## 2026-08-02 — 로컬 에이전트 첫 도구 선택 지연·구조 감사 근거 보강
 
 Ollama를 연결한 설치 앱의 실제 구조 감사가 3회 왕복에 약 119초가 걸렸고,

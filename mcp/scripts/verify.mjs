@@ -1336,6 +1336,7 @@ export function toolsListSchemaFailure(tools) {
     compileNodeSchema?.type !== 'object' ||
     !sameArray(compileNodeSchema.required, ['slug', 'kind', 'title', 'mtime', 'outDegree', 'inDegree']) ||
     compileNodeSchema.properties?.slug?.type !== 'string' ||
+    compileNodeSchema.properties?.path?.type !== 'string' ||
     compileNodeSchema.properties?.outDegree?.type !== 'integer' ||
     compileNodeSchema.properties?.inDegree?.minimum !== 0 ||
     compileNodeSchema.additionalProperties !== false

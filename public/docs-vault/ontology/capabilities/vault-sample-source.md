@@ -4,6 +4,7 @@ kind: capability
 title: Sample Vault Demo Source
 domain: domains/local-vault-management
 elements: []
+path: src/features/vault-sample-source
 created_by: "agent:unknown"
 ---
 

@@ -96,7 +96,8 @@ ${COLORS.bold}Usage:${COLORS.reset}
        --agent codex --state editing --json   ${COLORS.dim}.ontology-atlas/agent-activity.json${COLORS.reset}
   ontology-atlas add <kind> <slug>            Scaffold a new ontology node (.md)
        --title "..."                          ${COLORS.dim}required, non-empty${COLORS.reset}
-       --domain X --body "..." --vault path   ${COLORS.dim}optional${COLORS.reset}
+       --domain X --path repo/path            ${COLORS.dim}optional parent + canonical code entrypoint${COLORS.reset}
+       --body "..." --vault path              ${COLORS.dim}optional body + vault root${COLORS.reset}
        --raw-slug                             ${COLORS.dim}opt out of default kind→folder prefix${COLORS.reset}
   ontology-atlas find <query> [vault]         Search slug + title (case-insensitive)
        --kind X --json                        ${COLORS.dim}optional${COLORS.reset}

@@ -1269,6 +1269,7 @@ describe('verify.mjs first-contact gates', () => {
                   slug: { type: 'string' },
                   kind: { type: 'string' },
                   title: { type: 'string' },
+                  path: { type: 'string' },
                   mtime: { type: 'number' },
                   outDegree: { type: 'integer', minimum: 0 },
                   inDegree: { type: 'integer', minimum: 0 },

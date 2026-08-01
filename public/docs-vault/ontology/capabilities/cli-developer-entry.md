@@ -4,6 +4,7 @@ kind: capability
 title: CLI Developer Entry (52 commands — vault + MCP verify + project indexing + relationship explanation + bounded path enumeration + transitive reachability + relation preflight + commit preflight + git snapshot + agent handoff + growth/maintenance queue + graph deep dive)
 domain: domains/agent-integration
 elements: []
+path: cli/src
 created_by: "agent:unknown"
 dependencies: [capabilities/mcp-server]
 display: CLI Developer Entry

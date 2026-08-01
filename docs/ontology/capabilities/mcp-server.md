@@ -4,6 +4,7 @@ kind: capability
 title: MCP Server (32 tools)
 domain: domains/agent-integration
 elements: []
+path: mcp/src
 created_by: "agent:unknown"
 dependencies: [capabilities/vault-ontology]
 display_ko: AI 연결 서버

@@ -1625,7 +1625,7 @@ const TOOLS = [
           description: 'Element slugs this node uses (project / capability).',
         },
         path: nonBlankStringSchema(
-          'Implementation source path for an element (repo-relative). Preserved as evidence and checked by validate_vault path drift.',
+          'One canonical implementation entrypoint for a capability or element (repo-relative file or directory). Preserved as evidence and checked by validate_vault path drift.',
         ),
         body: {
           type: 'string',
@@ -1679,7 +1679,9 @@ const TOOLS = [
               domain: NON_BLANK_STRING_SCHEMA,
               capabilities: { type: 'array', maxItems: GRAPH_REF_ARRAY_MAX_ITEMS, items: NON_BLANK_STRING_SCHEMA },
               elements: { type: 'array', maxItems: GRAPH_REF_ARRAY_MAX_ITEMS, items: NON_BLANK_STRING_SCHEMA },
-              path: NON_BLANK_STRING_SCHEMA,
+              path: nonBlankStringSchema(
+                'One canonical implementation entrypoint for a capability or element (repo-relative file or directory).',
+              ),
               body: { type: 'string' },
               labels: LOCALE_LABELS_SCHEMA,
             },
@@ -2417,6 +2419,7 @@ const TOOLS = [
               kind: { type: 'string' },
               title: { type: 'string' },
               domain: { type: 'string' },
+              path: NON_BLANK_STRING_SCHEMA,
               mtime: { type: 'number' },
               outDegree: { type: 'integer', minimum: 0 },
               inDegree: { type: 'integer', minimum: 0 },
@@ -6750,7 +6753,14 @@ function renameConcept({ oldSlug, newSlug, confirm = false, overwrite = false, e
   }
 
   // Step 1 — dry-run preview of every backlink rewrite.
-  const preview = redirectBacklinks(VAULT_ROOT, oldSlug, newSlug, { dryRun: true });
+  // overwrite 대상은 곧 source 문서로 완전히 교체된다. 그 낡은 대상 문서의
+  // backlink rewrite 를 계획에 넣으면 source 를 쓴 직후 다시 낡은 target 이
+  // 덮어써지는 순서 역전이 생긴다.
+  const replacedSlugs = overwrite ? [newSlug] : [];
+  const preview = redirectBacklinks(VAULT_ROOT, oldSlug, newSlug, {
+    dryRun: true,
+    excludeSlugs: replacedSlugs,
+  });
 
   if (!confirm) {
     return {
@@ -6787,6 +6797,7 @@ function renameConcept({ oldSlug, newSlug, confirm = false, overwrite = false, e
   const result = redirectBacklinks(VAULT_ROOT, oldSlug, newSlug, {
     dryRun: false,
     deferWrite: true,
+    excludeSlugs: replacedSlugs,
   });
   applyAllOrNothing([
     {

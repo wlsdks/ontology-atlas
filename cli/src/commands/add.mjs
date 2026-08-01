@@ -16,11 +16,11 @@ import { formatAllowedValueError } from '../lib/suggestions.mjs';
 import { formatUnknownFlagError, parseRawRequiredFlagValue, parseVaultFlag } from '../lib/cli-args.mjs';
 import { readHeartbeatAgentName, recordCliWrite } from '../lib/activity-log.mjs';
 
-const ALLOWED_FLAGS = ['--vault', '--title', '--domain', '--body', '--auto-prefix', '--raw-slug', '--no-auto-prefix', '--created-by'];
+const ALLOWED_FLAGS = ['--vault', '--title', '--domain', '--path', '--body', '--auto-prefix', '--raw-slug', '--no-auto-prefix', '--created-by'];
 
 
 /**
- * R12 #34 — \`ontology-atlas add <kind> <slug> --title=... [--domain X] [--body "..."] [--vault path]\`
+ * R12 #34 — \`ontology-atlas add <kind> <slug> --title=... [--domain X] [--path repo/path] [--body "..."] [--vault path]\`
  *
  * 새 ontology 노드 .md 작성. 기존 slug 면 throw (덮어쓰기 절대 안 함 —
  * 사용자 작업 보호). mcp 의 add_concept 과 같은 contract.
@@ -37,7 +37,7 @@ export async function runAdd(args) {
     return 1;
   }
 
-  const { kind, slug: rawSlug, title, domain, body, vault, autoPrefix } = opts;
+  const { kind, slug: rawSlug, title, domain, path, body, vault, autoPrefix } = opts;
   const vaultPath = resolve(vault);
 
   // R15 — default folder prefix (capability → capabilities/foo).
@@ -60,7 +60,7 @@ export async function runAdd(args) {
   // R14 — schema 가 kind 별 양식 (project: domains/capabilities/elements 빈
   // 배열, capability: elements 빈 배열) 자동 채움. AI agent 의 add_concept
   // 과 동일 결과 → 두 진입점이 항상 같은 frontmatter 모양 만든다.
-  const fm = buildFrontmatter({ slug, kind, title, domain, [CREATED_BY_KEY]: createdBy });
+  const fm = buildFrontmatter({ slug, kind, title, domain, path, [CREATED_BY_KEY]: createdBy });
 
   try {
     const filePath = writeDoc(vaultPath, slug, {
@@ -113,6 +113,8 @@ function parseArgs(args) {
     else if (a.startsWith('--title=')) flags.title = parseRawRequiredFlagValue('--title', a.slice('--title='.length), { rejectSingleDash: true });
     else if (a === '--domain') flags.domain = parseRawRequiredFlagValue('--domain', args[++i], { rejectSingleDash: true });
     else if (a.startsWith('--domain=')) flags.domain = parseRawRequiredFlagValue('--domain', a.slice('--domain='.length), { rejectSingleDash: true });
+    else if (a === '--path') flags.path = parseRawRequiredFlagValue('--path', args[++i], { rejectSingleDash: true });
+    else if (a.startsWith('--path=')) flags.path = parseRawRequiredFlagValue('--path', a.slice('--path='.length), { rejectSingleDash: true });
     else if (a === '--body') flags.body = parseRawRequiredFlagValue('--body', args[++i]);
     else if (a.startsWith('--body=')) flags.body = parseRawRequiredFlagValue('--body', a.slice('--body='.length));
     else if (a === '--created-by') flags.createdBy = parseRawRequiredFlagValue('--created-by', args[++i], { rejectSingleDash: true });
@@ -149,6 +151,10 @@ function parseArgs(args) {
     const domainError = validateCleanString(flags.domain, '--domain');
     if (domainError) return { error: domainError };
   }
+  if (flags.path !== undefined) {
+    const pathError = validateCleanString(flags.path, '--path');
+    if (pathError) return { error: pathError };
+  }
   let createdBy;
   if (flags.createdBy !== undefined) {
     const normalized = normalizeCreatedByFlag(flags.createdBy);
@@ -160,6 +166,7 @@ function parseArgs(args) {
     slug,
     title: flags.title,
     domain: flags.domain,
+    path: flags.path,
     body: flags.body,
     vault: flags.vault || '.',
     autoPrefix: flags.autoPrefix,
@@ -201,12 +208,13 @@ function validateCleanString(value, name) {
 function printAddUsage(stream = process.stderr) {
   stream.write(
     `\n${COLORS.bold}Usage:${COLORS.reset}\n` +
-      `  ontology-atlas add <kind> <slug> --title="..." [--domain X] [--body "..."] [--vault path] [--raw-slug] [--created-by human|agent:<name>]\n` +
+      `  ontology-atlas add <kind> <slug> --title="..." [--domain X] [--path repo/path] [--body "..."] [--vault path] [--raw-slug] [--created-by human|agent:<name>]\n` +
       `\n${COLORS.bold}kind:${COLORS.reset} ${VAULT_KINDS.join(' / ')}\n` +
       `\n${COLORS.bold}slug layout:${COLORS.reset} kind→folder prefix is default (capability foo → capabilities/foo). Use --raw-slug to opt out.\n` +
       `${COLORS.bold}slug shape:${COLORS.reset} flat under the kind folder — a slug names a role, never a file path (put the path in path:).\n` +
+      `${COLORS.bold}implementation path:${COLORS.reset} capability/element may carry one repo-relative canonical entrypoint via --path.\n` +
       `${COLORS.bold}created_by:${COLORS.reset} defaults to agent:<heartbeat|unknown> (same stamp as MCP add_concept). A person adding by hand passes --created-by human.\n` +
       `\nExample:\n` +
-      `  ontology-atlas add capability token-issue --title="Token issue" --domain=domains/auth\n`,
+      `  ontology-atlas add capability token-issue --title="Token issue" --domain=domains/auth --path=src/auth/token-issue.ts\n`,
   );
 }

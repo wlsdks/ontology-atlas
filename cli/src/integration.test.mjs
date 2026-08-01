@@ -37,6 +37,7 @@ import { expectedToolsListAnnotationSummary } from '../../mcp/scripts/verify.mjs
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const CLI = join(__dirname, 'index.mjs');
+const CLI_INVOCATION = `node ${CLI}`;
 const ROOT_PKG = JSON.parse(readFileSync(join(__dirname, '..', '..', 'package.json'), 'utf-8'));
 const CLI_PKG = JSON.parse(readFileSync(join(__dirname, '..', 'package.json'), 'utf-8'));
 const MCP_PKG = JSON.parse(readFileSync(join(__dirname, '..', '..', 'mcp', 'package.json'), 'utf-8'));
@@ -243,8 +244,8 @@ await test('init — generated MCP config points at a runnable local server in s
     assert.match(clean, /codex mcp add ontology-atlas/);
     assert.match(clean, /\.codex\/config\.toml/);
     assert.match(clean, /graph smoke/);
-    assert.match(clean, /ontology-atlas analyze \. --vault \.\/ontology/);
-    assert.match(clean, /ontology-atlas bootstrap \. --vault \.\/ontology/);
+    assert.match(clean, new RegExp(`${escapeRegExp(CLI)} analyze \\. --vault \\.\\/ontology`));
+    assert.match(clean, new RegExp(`${escapeRegExp(CLI)} bootstrap \\. --vault \\.\\/ontology`));
     assert.doesNotMatch(clean, /\/path\/to\/your\/repo/);
 
     const config = JSON.parse(readFileSync(join(root, '.mcp.json'), 'utf-8'));
@@ -308,7 +309,7 @@ await test('init --locale=ko — Korean starter bodies, identical graph, English
     for (const dir of ['vault-ko', 'vault-en']) {
       const v = await run(['validate', dir], { cwd: repo });
       assert.equal(v.code, 0, `${dir} validate failed: ${v.stdout}${v.stderr}`);
-      assert.match(stripAnsi(v.stdout), /5 파일 스캔 — issue 0/);
+      assert.match(stripAnsi(v.stdout), /5 파일 스캔 — frontmatter · 그래프 참조 issue 0/);
     }
 
     // 모르는 로케일은 조용히 영어로 떨어지지 않고 명확히 실패한다.
@@ -365,8 +366,11 @@ await test('init --quick-start — suggests absorbing an existing AGENTS.md with
     const clean = stripAnsi(r.stdout);
 
     assert.match(clean, /found AGENTS\.md/);
-    assert.match(clean, /ontology-atlas absorb AGENTS\.md --vault \.\/ontology/);
-    const absorbLine = clean.split('\n').find((line) => line.includes('ontology-atlas absorb AGENTS.md'));
+    assert.match(
+      clean,
+      new RegExp(`${escapeRegExp(CLI)} absorb AGENTS\\.md --vault \\.\\/ontology`),
+    );
+    const absorbLine = clean.split('\n').find((line) => line.includes(`${CLI} absorb AGENTS.md`));
     assert.ok(absorbLine, `expected an absorb suggestion line in:\n${clean}`);
     assert.doesNotMatch(absorbLine, /--write/);
 
@@ -443,7 +447,9 @@ await test('agent-setup — writes agent configs for an existing vault without s
     assert.match(data.commands.restartGuidance, /Restart Claude Code, Cursor, or Codex from .* after repair/);
     assert.match(data.commands.setupGate, /agent-brief .* --verify-fallbacks --json/);
     assert.deepEqual(
-      data.commands.graphRunbook.map((command) => command.replace(data.vaultRoot, '<vault>')),
+      data.commands.graphRunbook.map((command) =>
+        command.replace(CLI_INVOCATION, 'ontology-atlas').replace(data.vaultRoot, '<vault>')
+      ),
       [
         'ontology-atlas validate <vault>',
         'ontology-atlas mcp-verify <vault> --timeout-ms 15000',
@@ -498,24 +504,25 @@ await test('agent-setup — terminal output points humans to the workflow guide'
     mkdirSync(join(root, 'ontology'), { recursive: true });
     const r = await run(['agent-setup', 'ontology', '--root', '.'], { cwd: root });
     assert.equal(r.code, 1);
-    assert.match(stripAnsi(r.stdout), /ontology-atlas agent-setup .*ontology.* --root .* --json/);
-    assert.match(stripAnsi(r.stdout), /Feature guide: docs\/AGENT-GRAPH-WORKFLOW\.md/);
-    assert.match(stripAnsi(r.stdout), /Read-first graph runbook:/);
-    assert.match(stripAnsi(r.stdout), /ontology-atlas workspace-brief .*ontology/);
-    assert.match(stripAnsi(r.stdout), /ontology-atlas agent-brief .*ontology.* --graph-db-pack/);
-    assert.match(stripAnsi(r.stdout), /ontology-atlas hubs .*ontology.* --plan --limit 10 --types depends_on,relates/);
-    assert.match(stripAnsi(r.stdout), /Repair missing configs only if needed: ontology-atlas agent-setup .*ontology.* --root .* --write/);
-    assert.match(stripAnsi(r.stdout), /Restart Claude Code, Cursor, or Codex from .* after repair/);
-    assert.match(stripAnsi(r.stdout), /Mode guide:/);
-    assert.match(stripAnsi(r.stdout), /MCP-connected — direct read\/write tools/);
-    assert.match(stripAnsi(r.stdout), /graph DB differences/);
-    assert.match(stripAnsi(r.stdout), /First-contact proof contract:/);
-    assert.match(stripAnsi(r.stdout), /Config state — agent-setup --json reports root-specific/);
-    assert.match(stripAnsi(r.stdout), /MCP verify — mcp-verify can boot the local MCP server/);
-    assert.match(stripAnsi(r.stdout), /JSON setup gate — agent-brief --verify-fallbacks --json returns ok\/performanceOk/);
-    assert.match(stripAnsi(r.stdout), /Graph briefs — workspace-brief and agent-brief --graph-db-pack/);
-    assert.match(stripAnsi(r.stdout), /After code changes:/);
-    assert.match(stripAnsi(r.stdout), /sync docs\/ontology before finishing/);
+    const clean = stripAnsi(r.stdout).replaceAll(CLI_INVOCATION, 'ontology-atlas');
+    assert.match(clean, /ontology-atlas agent-setup .*ontology.* --root .* --json/);
+    assert.match(clean, /Feature guide: docs\/AGENT-GRAPH-WORKFLOW\.md/);
+    assert.match(clean, /Read-first graph runbook:/);
+    assert.match(clean, /ontology-atlas workspace-brief .*ontology/);
+    assert.match(clean, /ontology-atlas agent-brief .*ontology.* --graph-db-pack/);
+    assert.match(clean, /ontology-atlas hubs .*ontology.* --plan --limit 10 --types depends_on,relates/);
+    assert.match(clean, /Repair missing configs only if needed: ontology-atlas agent-setup .*ontology.* --root .* --write/);
+    assert.match(clean, /Restart Claude Code, Cursor, or Codex from .* after repair/);
+    assert.match(clean, /Mode guide:/);
+    assert.match(clean, /MCP-connected — direct read\/write tools/);
+    assert.match(clean, /graph DB differences/);
+    assert.match(clean, /First-contact proof contract:/);
+    assert.match(clean, /Config state — agent-setup --json reports root-specific/);
+    assert.match(clean, /MCP verify — mcp-verify can boot the local MCP server/);
+    assert.match(clean, /JSON setup gate — agent-brief --verify-fallbacks --json returns ok\/performanceOk/);
+    assert.match(clean, /Graph briefs — workspace-brief and agent-brief --graph-db-pack/);
+    assert.match(clean, /After code changes:/);
+    assert.match(clean, /sync docs\/ontology before finishing/);
   } finally {
     rmSync(root, { recursive: true, force: true });
   }
@@ -1129,9 +1136,9 @@ await test('mcp-verify — verifies maintenance cursor resume when actions exist
     const r = await run(['mcp-verify', root, '--timeout-ms', '3000']);
     assert.equal(r.code, 0, `stdout: ${r.stdout}\nstderr: ${r.stderr}`);
     const clean = stripAnsi(r.stdout);
-    assert.match(clean, /maintenance cursor — ready page stable \(1 remaining action/);
-    assert.match(clean, /kind add_missing_relation:1/);
-    assert.match(clean, /maintenance cursor — resume afterActionId advanced \(maint_[a-f0-9]{8}; 0 remaining actions/);
+    assert.match(clean, /maintenance cursor — ready page stable \(2 remaining actions/);
+    assert.match(clean, /kind add_missing_relation:1,capability_without_evidence:1/);
+    assert.match(clean, /maintenance cursor — resume afterActionId advanced \(maint_[a-f0-9]{8}; 1 remaining action/);
     assert.match(clean, /query_concepts limited — 1 query result \/ 2 total query results \(limited true\)/);
     assert.match(clean, /destructive dry-runs — rename_concept · merge_concepts · delete_concept previewReady\/canConfirm contract without write-maintenance/);
     assert.match(clean, /all_paths — core → project/);
@@ -2429,6 +2436,31 @@ await test('add — 새 노드 + duplicate throws', async () => {
   }
 });
 
+await test('add capability --path — 정본 구현 진입점을 elements 노드 없이 기록', async () => {
+  const root = withVault([]);
+  try {
+    const r = await run([
+      'add',
+      'capability',
+      'mcp-server',
+      '--title',
+      'MCP server',
+      '--domain',
+      'agent',
+      '--path',
+      'mcp/src',
+      '--vault',
+      root,
+    ]);
+    assert.equal(r.code, 0, `stdout: ${r.stdout}\nstderr: ${r.stderr}`);
+    const written = readFileSync(join(root, 'capabilities/mcp-server.md'), 'utf-8');
+    assert.match(written, /path: mcp\/src/);
+    assert.match(written, /elements: \[\]/);
+  } finally {
+    rmSync(root, { recursive: true, force: true });
+  }
+});
+
 await test('add — title 빈 문자열 거부', async () => {
   const root = withVault([]);
   try {
@@ -3224,7 +3256,7 @@ await test('CLI 쓰기(add/relate/import)는 감사 로그에 기록된다 (P2-�
     assert.equal(dry.code, 0, `dry stdout: ${dry.stdout}\nstderr: ${dry.stderr}`);
     assert.equal(existsSync(join(root, '.ontology-atlas', 'activity.jsonl')), false, 'dry-run must not log');
 
-    const add = await run(['add', 'capability', 'auth/token-issue', '--title', 'Token issue', '--domain', 'auth', '--vault', root]);
+    const add = await run(['add', 'capability', 'token-issue', '--title', 'Token issue', '--domain', 'auth', '--vault', root]);
     assert.equal(add.code, 0, `add stdout: ${add.stdout}\nstderr: ${add.stderr}`);
     const rel = await run(['relate', 'a', 'b', 'depends_on', root, '--why', 'A 는 B 를 지난다']);
     assert.equal(rel.code, 0, `relate stdout: ${rel.stdout}\nstderr: ${rel.stderr}`);
@@ -5625,7 +5657,7 @@ await test('agent-brief --graph-db-pack — prints only executable graph DB CLI 
   try {
     const r = await run(['agent-brief', root, '--graph-db-pack']);
     assert.equal(r.code, 0, `stdout: ${r.stdout}\nstderr: ${r.stderr}`);
-    const clean = stripAnsi(r.stdout);
+    const clean = stripAnsi(r.stdout).replaceAll(CLI_INVOCATION, 'ontology-atlas');
     const vaultPath = escapeRegExp(root);
     assert.match(clean, /^# ontology-atlas Graph DB CLI pack/);
     assert.match(clean, /# Feature guide: docs\/AGENT-GRAPH-WORKFLOW\.md explains CLI-only use, MCP-connected use, graph DB differences, and verification checks\./);
@@ -7982,7 +8014,7 @@ await test('bootstrap — single-file layered repo import endpoints 먼저 생�
         (row) =>
           row.ok === true &&
           row.from === 'capabilities/check-in' &&
-          row.to === 'elements/src/storage/json-store',
+          row.to === 'elements/json-store',
       ),
       `expected check-in → storage element relation, got: ${JSON.stringify(data.imports.relations)}`,
     );
@@ -8009,7 +8041,7 @@ await test('bootstrap — single-file layered repo import endpoints 먼저 생�
       'utf-8',
     );
     assert.match(checkInDoc, /domain: domains\/writing-habit-tracking/);
-    assert.match(checkInDoc, /dependencies:.*elements\/src\/storage\/json-store/s);
+    assert.match(checkInDoc, /dependencies:.*elements\/json-store/s);
     assert.equal(
       existsSyncTest(join(vault, 'capabilities', 'domain.md')),
       false,
@@ -8021,7 +8053,7 @@ await test('bootstrap — single-file layered repo import endpoints 먼저 생�
       'support layer should not become capabilities/storage',
     );
     assert.equal(
-      existsSyncTest(join(vault, 'elements', 'src', 'storage', 'json-store.md')),
+      existsSyncTest(join(vault, 'elements', 'json-store.md')),
       true,
       'storage implementation should become an element',
     );

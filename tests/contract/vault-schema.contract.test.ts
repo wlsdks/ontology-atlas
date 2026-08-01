@@ -21,6 +21,7 @@ import {
   normalizeLocaleLabels as localeCli,
   NODE_ELIGIBILITY_GATE as gateCli,
   flatSlugIssue as flatSlugCli,
+  VAULT_KIND_SCHEMA as VAULT_KIND_SCHEMA_CLI,
 } from "../../cli/src/lib/schema.mjs";
 import { KIND_EXPECTED_EXTRAS } from "@/shared/lib/validate-vault-document";
 import { PRODUCT_DISCIPLINE } from "@/features/vault-agent/model/system-prompt";
@@ -44,6 +45,22 @@ import { KNOWN_VAULT_KINDS } from "../../mcp/src/validate.mjs";
  */
 
 describe("vault kind schema contract — mcp & cli agree", () => {
+  it("capability path 는 양쪽 쓰기 경로의 정본 구현 근거다", () => {
+    expect(VAULT_KIND_SCHEMA.capability.optional.length).toBeGreaterThan(0);
+    expect(VAULT_KIND_SCHEMA_CLI.capability.optional.length).toBeGreaterThan(0);
+    expect(VAULT_KIND_SCHEMA.capability.optional).toContain("path");
+    expect(VAULT_KIND_SCHEMA_CLI.capability.optional).toContain("path");
+    expect(VAULT_KIND_SCHEMA_CLI.capability.optional).toEqual(
+      VAULT_KIND_SCHEMA.capability.optional,
+    );
+    expect(VAULT_KIND_SCHEMA_CLI.capability.preferredOrder).toEqual(
+      VAULT_KIND_SCHEMA.capability.preferredOrder,
+    );
+    expect(VAULT_KIND_SCHEMA.capability.preferredOrder.indexOf("path")).toBeGreaterThan(
+      VAULT_KIND_SCHEMA.capability.preferredOrder.indexOf("elements"),
+    );
+  });
+
   describe("buildFrontmatter", () => {
     for (const c of BUILD_FM_CASES) {
       it(`${c.name} (mcp)`, () => {

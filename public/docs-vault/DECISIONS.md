@@ -42,6 +42,56 @@
 
 ---
 
+## 2026-08-02 — capability 구현 근거는 `elements:`가 아니라 정본 `path:` 하나로 연다
+
+**소집**: PO 카운슬 5인 전원(근거·결·지킴이·해자·지렛대), 독립 1라운드 +
+상호 반박 1라운드 · **트리거**: vault 스키마와 MCP/CLI 공개 계약 변경.
+**루브릭**: 22/24 (Problem insight 4 · User moment 4 · Differentiation 3 ·
+Ontology value 4 · Agent value 4 · Verification 3, 치명적 0: 없음).
+
+**선행 결정 관계**: 2026-07-31 「경로는 의미 슬롯이 아니라 근거」와
+`elements:` 원시 경로를 `path-shaped-reference`로 잡는 자격 게이트는 그대로
+유효하다. 2026-08-01 `capability_without_evidence` 기록 중 “원시 경로를
+`elements:`에 넣어도 된다”는 처방만 뒤집는다. 실제 maintenance가 그 처방을
+내린 직후 write gate가 같은 값을 범주 오류로 경고하는 왕복 모순이 반증 조건을
+충족했다. 쓰기를 막지 않는 원칙은 유지한다.
+
+**관측**: self-vault의 capability 19개 중 9개가 구현 근거 없음으로 남았고,
+field trial 기준선에도 8개가 있었다. `maintenance_plan`은 파일 경로를
+`elements:`에 넣으라고 했지만 `write-path-gate.test.mjs`는 그 입력을
+`path-shaped-reference`로 고정한다. 반면 write gate와 path-drift 소비자는 이미
+비어 있지 않은 `path:`를 비그래프 구현 위치로 읽는다. self-vault 9건은 모두
+정본 파일 또는 디렉터리 하나로 첫 진입점을 표현할 수 있었다.
+
+**갈린 지점**: 1라운드에서 근거·지렛대는 기존 `path:` 재사용을, 결·지킴이·해자는
+`evidence: string[]` 신설을 택했다. 반박 뒤 결·지킴이·해자는 관측되지 않은 복수
+루트를 위해 공개 필드와 하류 소비자를 늘리는 것은 과설계라고 수용해 `path:`로
+바꿨다. 근거는 관계와 근거의 의미 분리를 더 선명하게 지켜야 한다며
+`evidence: string[]`로 반대로 이동했다.
+
+**결정 (accountable: 소유자)**: capability의 `path:`를 “이 행동의 구현을 여는
+저장소 상대 정본 파일 또는 디렉터리 하나”로 정식화한다. `elements:`에는 해소되는
+element slug만 둔다. element는 파일이 독립된 역할을 한 문장으로 벌었을 때만
+승격하며, maintenance를 비우기 위한 파일 미러 노드는 만들지 않는다.
+
+**적용 규칙**: 최소 슬라이스 · 합집합 금지. IN — kind schema/MCP 작성 지시,
+write gate와 maintenance의 공통 근거 술어, path drift, 세 파서 계약,
+self-vault 9건 이관, MCP/CLI-only 왕복 dogfood. OUT — `evidence: []`, 구조화
+provenance, 복수 경로, UI, 자동 element 생성, 외부 vault 자동 migration.
+appetite — 1일.
+
+**기록된 반대** (근거, 가장 강함): `path:`는 element 하나의 위치라는 기존 뜻이
+있어 capability 주장에 대한 근거 집합까지 맡기면 또 다른 의미 과적재가 된다.
+별도 `evidence: string[]`가 object relation과 literal evidence를 더 정직하게
+분리한다. **반증 조건**: capability 하나가 서로 포함되지 않는 복수 구현 루트를
+필요로 하며 정본 `path:`만 받은 MCP-only 에이전트가 소스를 다시 탐색하거나 구현을
+누락하는 사례가 두 vault에서 관측된다. **재검토**: 다음 두 차례 field trial 또는
+위 실패의 첫 재현 중 빠른 쪽.
+
+**상태**: 유효
+
+---
+
 ## 2026-08-02 — 로컬 에이전트는 3회 근거 수집 뒤 답을 강제하고 60초에 닫는다
 
 **소집**: 단독 PO 패스 · **트리거**: 소유자 직접 지시 — MCP·Ollama

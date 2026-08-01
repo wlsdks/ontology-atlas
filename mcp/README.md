@@ -377,6 +377,10 @@ The server connects over stdio. You should now see 32 tools under the `ontology-
 
 ## The 32 tools
 
+For `add_concept` / `add_concepts`, `path` is one canonical repo-relative
+implementation entrypoint for a capability or element. `elements` contains only
+real element-node slugs; a raw file path is evidence, not a graph child.
+
 | Tool | What it does |
 |---|---|
 | `connection_info` | First-call connection proof: resolved vault/repository roots, resolution sources, same-root warning, restart requirement, server identity, read-only mode, and the actually advertised `toolCount` / `toolNames` / deterministic `toolsetHash`. An explicit `OATLAS_REPO_ROOT` wins; otherwise the server discovers the active vault's Git top-level and falls back to process cwd only outside Git. Run it before repository analysis or writes; compare the inventory after upgrades to catch a stale client process that needs restart. |
@@ -507,12 +511,13 @@ is limited to `inspect_compile_issue` / `break_dependency_cycle` /
 `separate_evidence_from_concept` and `fold_bulk_siblings` come from the write-path
 node-eligibility gate (2026-07-31 council) and only ever appear on a write response:
 a path sitting in a meaning slot, and siblings a single machine batch created under
-one parent. `capability_without_evidence` (2026-08-01 field trial) is a capability
-with no `elements:` entry at all — neither an element node nor a raw path — so
-nothing in the vault says where the behavior lives in code; an agent handed only the
-vault can describe it and cannot open it. It is `review` / `info` and **never blocks
-a write** (construction rule 5): it is raised once at creation by the write gate and
-then continuously by the vault-wide scan until the capability points at something.
+one parent. `capability_without_evidence` (2026-08-01 field trial, clarified
+2026-08-02) is a capability with neither a canonical repo-relative `path:` entrypoint
+nor an `elements:` relation to a real implementation-role node. A raw file path in
+`elements:` is a category error, not a graph child. It is `review` / `info` and
+**never blocks a write** (construction rule 5): it is raised once at creation by the
+write gate and then continuously by the vault-wide scan until the capability points
+at code or a real element concept.
 `health` / `workspace_brief` / `agent_brief` relation filters expose the same enum schema for
 `dependencyTypes` and `componentTypes` (`domains` / `domain` / `capabilities` /
 `elements` / `dependencies` / `depends_on` / `relates` / `contains` /
@@ -622,7 +627,7 @@ later.
 |---|---|---|---|---|
 | `project` | `slug`, `kind`, `title` | `domains: []`, `capabilities: []`, `elements: []` | — | `display`, `display_<locale>`, `description`, `status`, `dependencies`, `relates`, `created_by` |
 | `domain` | `slug`, `kind`, `title` | `capabilities: []` | — | `display`, `display_<locale>`, `description`, `depends_on`, `relates`, `broader`, `created_by` |
-| `capability` | `slug`, `kind`, `title` | `elements: []` | `domain` | same as `domain` |
+| `capability` | `slug`, `kind`, `title` | `elements: []` | `domain` | same as `domain`, plus `path` |
 | `element` | `slug`, `kind`, `title` | — | `domain` | same as `domain`, plus `path` |
 | `document` | `slug`, `kind`, `title` | — | — | `display`, `display_<locale>`, `describes`, `relates`, `created_by` |
 

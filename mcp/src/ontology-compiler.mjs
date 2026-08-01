@@ -146,6 +146,9 @@ export function compileOntology(docs, options = {}) {
       kind: doc.frontmatter?.kind,
       title: doc.frontmatter?.title || doc.frontmatter?.name || doc.slug,
       domain: doc.frontmatter?.domain,
+      ...(typeof doc.frontmatter?.path === 'string' && doc.frontmatter.path.trim()
+        ? { path: doc.frontmatter.path }
+        : {}),
       mtime: doc.mtime,
       outDegree: 0,
       inDegree: 0,

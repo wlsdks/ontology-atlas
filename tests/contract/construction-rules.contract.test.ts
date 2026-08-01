@@ -101,6 +101,15 @@ describe("값 정본 — 숫자는 schema.mjs 에서 온다", () => {
 });
 
 describe("Goodhart 방지 문장이 살아 있다", () => {
+  it("capability 근거는 path, graph 자식은 element slug 로 분리한다", () => {
+    const rules = flat(CONSTRUCTION_RULES_EN);
+    expect(rules.length).toBeGreaterThan(0);
+    expect(rules).toContain("one canonical implementation entry point in `path:`");
+    expect(rules).toContain("`elements:` contains only slugs of real element nodes");
+    expect(rules).not.toContain("the path itself, which counts");
+    expect(rules).not.toContain("file path straight into `elements:`");
+  });
+
   // 이 규격에서 숫자는 목표가 아니라 확인 요구선이다. 아래 문장들이 사라지면
   // 남는 것은 「N 미만으로 유지하라」이고, 그건 모델이 빈 버킷 두 개로
   // 통과시키는 지표다 — 카운슬이 모든 형태로 기각한 바로 그것.

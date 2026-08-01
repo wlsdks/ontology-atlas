@@ -27,6 +27,7 @@ import {
   pathShapedReferenceMessage,
   pathShapedTitleMessage,
 } from './construction-rules.mjs';
+import { hasCapabilityImplementationEvidence } from './capability-evidence.mjs';
 
 /**
  * 외부 변경 감지 (R11 #8). 사람 GUI · 외부 에디터 · 다른 AI MCP 가 같은 .md
@@ -862,14 +863,15 @@ function runNodeEligibilityGate(rootPath, slug, frontmatter, { created = false }
   //    `maintenance_plan` carries the durable version of the question.
   if (created && frontmatter.kind === 'capability') {
     const elements = Array.isArray(frontmatter.elements) ? frontmatter.elements : [];
-    const hasEvidence =
-      elements.some((ref) => typeof ref === 'string' && ref.trim() !== '') ||
-      (typeof frontmatter.path === 'string' && frontmatter.path.trim() !== '');
+    const hasEvidence = hasCapabilityImplementationEvidence({
+      path: frontmatter.path,
+      hasElementsEdge: elements.some((ref) => gateResolves(rootPath, ref)),
+    });
     if (!hasEvidence) {
       GATE.findings.push({
         code: 'capability-without-evidence',
         slug,
-        key: 'elements',
+        key: 'path',
         refs: [],
         count: 1,
         message: capabilityWithoutEvidenceMessage({ slug }),
@@ -1582,6 +1584,7 @@ export function applyAllOrNothing(plan) {
  * 본문 치환: `[[targetSlug]]` 와 `(targetSlug.md)` 를 nextSlug 로 치환.
  *
  * options.dryRun = true 면 디스크에 쓰지 않고 미리보기만.
+ * options.excludeSlugs 는 호출자가 같은 계획에서 교체할 문서를 제외한다.
  *
  * 반환: { updates: [{ slug, beforeKeys, afterKeys, bodyHit }], totalUpdated }.
  */
@@ -1593,7 +1596,8 @@ export function redirectBacklinks(rootPath, targetSlug, nextSlug, options = {}) 
    * 위한 것이다. `rename_concept` 이 파일 생성·백링크 재작성·옛 파일 삭제를
    * 한 단위로 묶는 데 쓴다.
    */
-  const { dryRun = false, deferWrite = false } = options;
+  const { dryRun = false, deferWrite = false, excludeSlugs = [] } = options;
+  const excluded = new Set(Array.isArray(excludeSlugs) ? excludeSlugs : []);
   if (typeof targetSlug !== 'string' || !targetSlug) {
     throw new Error('targetSlug is required.');
   }
@@ -1632,7 +1636,7 @@ export function redirectBacklinks(rootPath, targetSlug, nextSlug, options = {}) 
   /** 디스크에 낼 쓰기 계획 — 루프가 끝난 뒤 한 번에 적용한다. */
   const plan = [];
   for (const doc of docs) {
-    if (doc.slug === targetSlug) continue;
+    if (doc.slug === targetSlug || excluded.has(doc.slug)) continue;
     const filePath = slugToPath(rootPath, doc.slug);
     const nextFm = { ...doc.frontmatter };
     const beforeKeys = [];

@@ -197,7 +197,7 @@ export const VAULT_KIND_SCHEMA = {
   capability: {
     folder: 'capabilities/',
     arrayDefaults: ['elements'],
-    optional: ['depends_on', 'relates', 'broader', 'description', 'display', CREATED_BY_KEY],
+    optional: ['path', 'depends_on', 'relates', 'broader', 'description', 'display', CREATED_BY_KEY],
     // `domain` 은 트리 위계의 부모 — 비어 있으면 capability 가 orphan 으로
     // 떠다니며 사용자 인사이트에 분포 노이즈를 만든다. validator 가 경고.
     requiredExtras: ['domain'],
@@ -212,6 +212,7 @@ export const VAULT_KIND_SCHEMA = {
       'domain',
       'depends_on',
       'elements',
+      'path',
       CREATED_BY_KEY,
     ],
     bodyTemplate: (title) =>

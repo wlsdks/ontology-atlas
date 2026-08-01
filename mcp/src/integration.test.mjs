@@ -4959,6 +4959,12 @@ await test("MCP slug conflicts expose structured recovery fields", async () => {
         newSlug: "target",
         confirm: true,
       }),
+      callTool(4, "rename_concept", {
+        oldSlug: "exist",
+        newSlug: "target",
+        confirm: true,
+        overwrite: true,
+      }),
     ]);
 
     assert.equal(isErrorResponse(responses, 2), true);
@@ -4976,6 +4982,14 @@ await test("MCP slug conflicts expose structured recovery fields", async () => {
     assert.equal(existingTarget.conflictSlug, "target");
     assert.deepEqual(existingTarget.recoveryTools, ["rename_concept"]);
     assert.equal(existingTarget.overwriteOption, "overwrite");
+
+    assert.equal(isErrorResponse(responses, 4), false);
+    const overwritten = getCallStructured(responses, 4);
+    assert.equal(overwritten.ok, true);
+    assert.equal(overwritten.moved, true);
+    const targetDoc = readFileSync(join(root, "target.md"), "utf-8");
+    assert.match(targetDoc, /title: Exist/);
+    assert.doesNotMatch(targetDoc, /title: Target/);
   } finally {
     rmSync(root, { recursive: true, force: true });
   }

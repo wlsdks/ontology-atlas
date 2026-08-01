@@ -4,6 +4,7 @@ kind: capability
 title: Guided Tour
 domain: domains/onboarding-and-shell
 elements: []
+path: src/features/guided-tour
 created_by: "agent:unknown"
 ---
 
