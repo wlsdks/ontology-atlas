@@ -1,4 +1,4 @@
-name: Release macOS
+name: Release Desktop
 
 on:
   push:
@@ -7,6 +7,7 @@ on:
 
 permissions:
   contents: write
+  checks: write
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
@@ -220,13 +221,148 @@ jobs:
           security delete-keychain "$KEYCHAIN_PATH" 2>/dev/null || true
           rm -f "$CERTIFICATE_PATH"
 
+  build-windows:
+    name: Build unsigned Windows x64 beta
+    runs-on: windows-2022
+    timeout-minutes: 45
+    env:
+      TAURI_SIGNING_PRIVATE_KEY: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY }}
+      TAURI_SIGNING_PRIVATE_KEY_PASSWORD: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY_PASSWORD }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v6
+        with:
+          fetch-depth: 0
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v6
+        with:
+          node-version: 24
+
+      - name: Enable Corepack pnpm
+        shell: pwsh
+        run: |
+          corepack enable
+          corepack prepare pnpm@10.18.0 --activate
+          pnpm --version
+
+      - name: Setup Rust
+        uses: dtolnay/rust-toolchain@stable
+
+      - name: Setup Bun
+        uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: latest
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Install bundled MCP server dependencies
+        run: pnpm --dir mcp install --frozen-lockfile
+
+      - name: Audit JavaScript production dependencies
+        run: pnpm audit --prod --audit-level=high
+
+      - name: Audit Rust dependencies
+        uses: rustsec/audit-check@69366f33c96575abad1ee0dba8212993eecbe998 # v2.0.0
+        with:
+          token: ${{ github.token }}
+          working-directory: src-tauri
+
+      - name: Windows release contract tests
+        run: node --test scripts/lib/mcp-binary.test.mjs scripts/stage-windows-release-assets.test.mjs scripts/verify-mcp-binary.test.mjs
+
+      - name: Desktop readiness
+        run: pnpm desktop:check
+
+      - name: Build and verify Windows MCP sidecar
+        run: pnpm mcp:build-binary
+
+      - name: Native bridge tests on Windows
+        run: pnpm test:desktop:bridge
+
+      - name: Build Windows NSIS installer
+        run: pnpm desktop:build:windows
+
+      - name: Require the beta installer to be unsigned
+        shell: pwsh
+        run: |
+          $installer = Get-ChildItem "src-tauri/target/release/bundle/nsis/*-setup.exe"
+          if ($installer.Count -ne 1) { throw "Expected exactly one NSIS installer, found $($installer.Count)." }
+          $signature = Get-AuthenticodeSignature $installer.FullName
+          if ($signature.Status -ne "NotSigned") {
+            throw "The public copy says unsigned, but Authenticode status is $($signature.Status)."
+          }
+          "Unsigned status verified: $($installer.Name)"
+
+      - name: Scan installer with Microsoft Defender
+        shell: pwsh
+        run: |
+          $installer = (Get-ChildItem "src-tauri/target/release/bundle/nsis/*-setup.exe").FullName
+          $platformRoot = "$env:ProgramData\Microsoft\Windows Defender\Platform"
+          $scanner = $null
+          if (Test-Path $platformRoot) {
+            $scanner = Get-ChildItem $platformRoot -Filter MpCmdRun.exe -Recurse |
+              Sort-Object FullName -Descending |
+              Select-Object -First 1
+          }
+          if (-not $scanner) {
+            $fallback = "$env:ProgramFiles\Windows Defender\MpCmdRun.exe"
+            if (Test-Path $fallback) { $scanner = Get-Item $fallback }
+          }
+          if (-not $scanner) { throw "Microsoft Defender scanner is unavailable on the Windows runner." }
+          & $scanner.FullName -Scan -ScanType 3 -File $installer -DisableRemediation
+          if ($LASTEXITCODE -ne 0) { throw "Microsoft Defender scan failed or found a threat (exit $LASTEXITCODE)." }
+
+      - name: Silent install and installed-app smoke
+        shell: pwsh
+        run: |
+          $installer = (Get-ChildItem "src-tauri/target/release/bundle/nsis/*-setup.exe").FullName
+          $install = Start-Process $installer -ArgumentList '/S' -Wait -PassThru
+          if ($install.ExitCode -ne 0) { throw "NSIS silent install failed with exit $($install.ExitCode)." }
+
+          $candidates = @(
+            "$env:LOCALAPPDATA\Ontology Atlas\ontology-atlas.exe",
+            "$env:LOCALAPPDATA\Programs\Ontology Atlas\ontology-atlas.exe"
+          )
+          $app = $candidates | Where-Object { Test-Path $_ } | Select-Object -First 1
+          if (-not $app) {
+            $app = Get-ChildItem $env:LOCALAPPDATA -Filter 'ontology-atlas.exe' -File -Recurse -ErrorAction SilentlyContinue |
+              Select-Object -First 1 -ExpandProperty FullName
+          }
+          if (-not $app) { throw "The installer completed but ontology-atlas.exe was not found." }
+
+          $sidecar = Join-Path (Split-Path $app) 'ontology-atlas-mcp.exe'
+          if (-not (Test-Path $sidecar)) { throw "The installed app is missing ontology-atlas-mcp.exe." }
+          $vault = (Resolve-Path 'docs/ontology').Path
+          node scripts/verify-mcp-binary.mjs "--binary=$sidecar" "--vault=$vault"
+
+          $process = Start-Process $app -PassThru
+          Start-Sleep -Seconds 10
+          if ($process.HasExited) { throw "The installed app exited during the 10-second launch smoke." }
+          Stop-Process -Id $process.Id -Force
+
+      - name: Stage Windows release assets
+        shell: pwsh
+        run: |
+          $packageVersion = (Get-Content package.json | ConvertFrom-Json).version
+          node scripts/stage-windows-release-assets.mjs "--version=$packageVersion"
+
+      - name: Upload workflow artifact
+        uses: actions/upload-artifact@v7
+        with:
+          name: ontology-atlas-windows-x64
+          path: release-upload
+          if-no-files-found: error
+
   # Staging and publishing are separate jobs so a human can install the exact
   # bytes that will go public before they do. The draft release is assembled
   # and verified here; nothing is visible to users yet.
   stage-macos:
-    name: Stage Draft macOS Release
+    name: Stage Draft Desktop Release
+    if: ${{ always() && startsWith(github.ref, 'refs/tags/v') && needs.build-macos.result == 'success' && needs.build-windows.result == 'success' }}
     runs-on: ubuntu-latest
-    needs: build-macos
+    needs: [build-macos, build-windows]
     timeout-minutes: 10
     steps:
       - name: Checkout
@@ -257,6 +393,12 @@ jobs:
           # 고르면 사용자가 다른 아키텍처의 앱을 받는다.
           merge-multiple: false
 
+      - name: Download Windows artifact
+        uses: actions/download-artifact@v7
+        with:
+          name: ontology-atlas-windows-x64
+          path: release-assets/windows
+
       - name: Require clean GitHub Release slot
         run: pnpm desktop:release-slot -- --tag="${GITHUB_REF_NAME}"
         env:
@@ -282,6 +424,8 @@ jobs:
             release-assets/*/*.sha256
             release-assets/*/*.app.tar.gz
             release-assets/*/*.app.tar.gz.sig
+            release-assets/windows/*.exe
+            release-assets/windows/*.exe.sha256
             release-assets/latest.json
 
       - name: Verify draft release assets
@@ -293,10 +437,12 @@ jobs:
         run: |
           release_url="$(gh release view "${GITHUB_REF_NAME}" --json url --jq .url)"
           {
-            echo "## Draft macOS Release — awaiting approval"
+            echo "## Draft desktop release — awaiting approval"
             echo ""
-            echo "Install the draft DMG from ${release_url} on a real Mac, then approve"
-            echo "the \`release\` environment to publish these exact bytes."
+            echo "macOS DMGs and the unsigned Windows x64 beta are staged at ${release_url}."
+            echo "The Windows artifact passed the native Windows Server 2022 build, Defender scan,"
+            echo "silent install, app launch, and installed MCP sidecar smoke before this gate."
+            echo "Windows 11 client SmartScreen UI remains explicitly unverified."
           } >> "$GITHUB_STEP_SUMMARY"
         env:
           GITHUB_TOKEN: ${{ github.token }}
@@ -306,7 +452,7 @@ jobs:
   # release cannot happen without someone installing the draft build first —
   # the workflow alone cannot prove the app launches on a clean machine.
   publish-macos:
-    name: Publish macOS Release
+    name: Publish Desktop Release
     runs-on: ubuntu-latest
     needs: stage-macos
     timeout-minutes: 10
@@ -349,6 +495,12 @@ jobs:
           # 아치를 다시 갈라야 하는 일이 없다.
           merge-multiple: true
 
+      - name: Download Windows artifact
+        uses: actions/download-artifact@v7
+        with:
+          name: ontology-atlas-windows-x64
+          path: release-assets/windows
+
       - name: Publish verified stable release
         run: |
           # 발행 시점에도 태그가 진실원이다. 여기서 --prerelease=false 를 못박으면
@@ -364,6 +516,11 @@ jobs:
 
       - name: Verify public download assets
         run: pnpm desktop:verify-download -- --tag="${GITHUB_REF_NAME}" --require-updater
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+
+      - name: Verify public Windows asset facts
+        run: pnpm download:release-facts -- --tag="${GITHUB_REF_NAME}" --allow-prerelease
         env:
           GITHUB_TOKEN: ${{ github.token }}
 
@@ -417,11 +574,11 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ github.token }}
 
-      - name: Summarize published macOS release
+      - name: Summarize published desktop release
         run: |
           release_url="$(gh release view "${GITHUB_REF_NAME}" --json url --jq .url)"
           {
-            echo "## Published macOS Release"
+            echo "## Published desktop release"
             echo ""
             echo "Release: ${release_url}"
             echo ""
@@ -432,6 +589,12 @@ jobs:
               size="$(wc -c < "$dmg" | tr -d ' ')"
               sha="$(cut -d ' ' -f 1 "$checksum")"
               echo "| \`$(basename "$dmg")\` | ${size} bytes | \`${sha}\` |"
+            done
+            for installer in release-assets/windows/*.exe; do
+              checksum="${installer}.sha256"
+              size="$(wc -c < "$installer" | tr -d ' ')"
+              sha="$(cut -d ' ' -f 1 "$checksum")"
+              echo "| \`$(basename "$installer")\` | ${size} bytes | \`${sha}\` |"
             done
           } >> "$GITHUB_STEP_SUMMARY"
         env:

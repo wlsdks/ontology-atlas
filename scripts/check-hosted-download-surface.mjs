@@ -188,6 +188,16 @@ function assertIncludes(text, label, needles) {
   }
 }
 
+function assertIncludesOneOf(text, label, needles) {
+  const unusable = needles.filter((needle) => typeof needle !== "string" || needle.length === 0);
+  if (unusable.length > 0) {
+    throw new Error(`${label} check is misconfigured: a Windows release-state message is missing.`);
+  }
+  if (!needles.some((needle) => text.includes(needle))) {
+    throw new Error(`${label} is missing every expected Windows release-state text.`);
+  }
+}
+
 function assertExcludes(text, label, needles) {
   const present = needles.filter((needle) => text.includes(needle));
   if (present.length > 0) {
@@ -225,13 +235,19 @@ export async function evaluateHostedSurface({ baseUrl, timeoutMs = DEFAULT_TIMEO
     // the eyebrow names the platform and the product in one unbroken line.
     downloadCopy.eyebrow,
     downloadCopy.sourceCta,
-    // Both platforms are named, so a Windows visitor is never left guessing.
-    // The keys changed with the 2026-07-29 gateway redesign — the *contract*
-    // ("a Windows visitor is told where they stand, and where to follow it")
-    // is unchanged, so the check follows the copy rather than the key names.
-    downloadCopy.platformStatus,
-    downloadCopy.windowsTrackCta,
+    downloadCopy.windowsPlatformTitle,
     downloadCopy.releaseGateNote,
+  ]);
+  // A deploy can legitimately sit on either side of the release-facts commit:
+  // pending shows status + progress; published shows the unsigned warning + EXE.
+  // Requiring one exact branch made the post-release Pages refresh fail by design.
+  assertIncludesOneOf(downloadText, downloadPath, [
+    downloadCopy.platformStatus,
+    downloadCopy.windowsUnsignedWarning,
+  ]);
+  assertIncludesOneOf(downloadText, downloadPath, [
+    downloadCopy.windowsTrackCta,
+    downloadCopy.windowsDownloadCta,
   ]);
   assertIncludes(download.body, downloadPath, [releasesUrl]);
   assertExcludes(`${root.body}\n${download.body}`, "hosted pages", [

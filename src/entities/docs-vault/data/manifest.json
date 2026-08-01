@@ -223,8 +223,8 @@
         }
       ],
       "excerpt": "2026-07-27 update — the current architecture is a local-first, git-backed meaning layer shared by people and AI coding agents. Round 10 permanently removed all auth + cloud data surfaces; the current route model converges browsing on Topology, writing on Workshop, maintenance on five-question Insights, and keeps old on",
-      "wordCount": 2729,
-      "updatedAt": "2026-07-31",
+      "wordCount": 2730,
+      "updatedAt": "2026-08-01",
       "linksOut": [
         "../AGENTS",
         "PRODUCT-DIRECTION",
@@ -3885,6 +3885,11 @@
         },
         {
           "depth": 2,
+          "text": "2026-08-01 — `v1.0.0-rc.5`: 공개 Windows x64 미서명 베타와 네이티브 검증",
+          "slug": "2026-08-01-v100-rc5-공개-windows-x64-미서명-베타와-네이티브-검증"
+        },
+        {
+          "depth": 2,
           "text": "2026-08-01 — 웹에서도 그 자리에서 에이전트를 붙인다 · 볼트 지문 한 번에 · 화면이 하던 거짓말 셋",
           "slug": "2026-08-01-웹에서도-그-자리에서-에이전트를-붙인다-볼트-지문-한-번에-화면이-하던-거짓말-셋"
         },
@@ -5999,8 +6004,8 @@
           "slug": "2026-07-26-첫-만남은-쇼핑몰부터"
         }
       ],
-      "excerpt": "Major change history. Code commit messages answer why; this file answers when / which surface changed. Focused on user-visible changes, not PR-level granularity. Newest at the top. Entries stay date-based; the app version reached v1.0.0 on 2026-07-27, so a release tag now carries the semver promise instead. 「이 화면에서는 연결",
-      "wordCount": 61677,
+      "excerpt": "Major change history. Code commit messages answer why; this file answers when / which surface changed. Focused on user-visible changes, not PR-level granularity. Newest at the top. Entries stay date-based; the app version reached v1.0.0 on 2026-07-27, so a release tag now carries the semver promise instead. Windows x64",
+      "wordCount": 61864,
       "updatedAt": "2026-08-01",
       "linksOut": [
         "audits/CASE-STUDY-AGENTS-MD-DRIFT",
@@ -6063,6 +6068,11 @@
           "depth": 2,
           "text": "2026-08-01 — CI 는 볼트 노드 수를 세지 않는다 — 손으로 맞춰야 유지되는 수 게이트를 전부 걷고, 런타임에 계산되는 단언만 남긴다",
           "slug": "2026-08-01-ci-는-볼트-노드-수를-세지-않는다-손으로-맞춰야-유지되는-수-게이트를-전부-걷고-런타임에-계산되는-단언만-남긴다"
+        },
+        {
+          "depth": 2,
+          "text": "2026-08-01 — Windows x64는 공개 미서명 베타로 내되, 경고와 네이티브 증명을 다운로드의 일부로 만든다",
+          "slug": "2026-08-01-windows-x64는-공개-미서명-베타로-내되-경고와-네이티브-증명을-다운로드의-일부로-만든다"
         },
         {
           "depth": 2,
@@ -6346,7 +6356,7 @@
         }
       ],
       "excerpt": "이 파일은 결정과 그때 진 반대 의견을 남긴다. docs/CHANGELOG.md 는 무엇이 언제 바뀌었나를 답하고, 이 파일은 왜 그렇게 정했고, 무엇을 걸었나를 답한다. 최신이 위. 기록은 덧붙이기만 한다 — 지난 기록을 고치지 않는다. 판단이 바뀌었으면 새 기록을 쓰고 옛 기록을 뒤집힘 으로 표시한다. 틀린 기록도 자산이다. 1. 소집 전에 읽는다. 카운슬을 열기 전(그리고 단독 PO 패스를 쓰기 전) 같은 표면 · 같은 질문에 대한 선행 결정이 있는지 먼저 본다. 있으면 새 패스는 그것을 ① 여전히 유효하다고 인용하거나 ② 명시적으로 뒤집는다. 조용히 다시 결정",
-      "wordCount": 30237,
+      "wordCount": 30814,
       "updatedAt": "2026-08-01",
       "linksOut": []
     },
@@ -7664,8 +7674,8 @@
         },
         {
           "depth": 3,
-          "text": "`/download` — macOS app download (rebuilt 2026-07-18)",
-          "slug": "download-macos-app-download-rebuilt-2026-07-18"
+          "text": "`/download` — desktop app download (rebuilt 2026-07-18, Windows beta 2026-08-01)",
+          "slug": "download-desktop-app-download-rebuilt-2026-07-18-windows-beta-2026-08-01"
         },
         {
           "depth": 4,
@@ -7819,7 +7829,7 @@
         }
       ],
       "excerpt": "Complete inventory of features users can actually use right now. Last updated: 2026-07-27 (현재 route와 installed-app 계약 재검증 — /ontology은 /topology?index=expanded, /ontology/edit은 /ontology/studio 호환 redirect이며, Insights는 할 일·구성·연결·경계·신선도 5개 질문 탭의 maintenance board다. desktop static smoke와 installed-app verifier/Computer U",
-      "wordCount": 16470,
+      "wordCount": 16530,
       "updatedAt": "2026-08-01",
       "linksOut": [
         "slug",
@@ -9154,6 +9164,43 @@
       "linksOut": []
     },
     {
+      "slug": "ontology/capabilities/desktop-download-decision",
+      "path": "docs/ontology/capabilities/desktop-download-decision.md",
+      "title": "Desktop Download Decision",
+      "tags": [],
+      "frontmatter": {
+        "slug": "capabilities/desktop-download-decision",
+        "kind": "capability",
+        "title": "Desktop Download Decision",
+        "domain": "domains/onboarding-and-shell",
+        "elements": [
+          "elements/download"
+        ],
+        "created_by": "agent:unknown"
+      },
+      "headings": [
+        {
+          "depth": 2,
+          "text": "정의",
+          "slug": "정의"
+        },
+        {
+          "depth": 2,
+          "text": "근거",
+          "slug": "근거"
+        },
+        {
+          "depth": 2,
+          "text": "확신도",
+          "slug": "확신도"
+        }
+      ],
+      "excerpt": "플랫폼별 설치 파일과 신뢰 상태를 한 자리에서 비교하고, 설치가 막히면 웹으로 계속할 수 있게 하는 능력. macOS는 서명·공증된 Apple Silicon/Intel DMG를, Windows는 SmartScreen 위험을 먼저 밝힌 미서명 x64 베타를 제시한다. src/views/download (플랫폼 그룹·릴리스 사실·경고·CTA) .github/workflows/release-macos.yml (macOS + Windows 공개 릴리스 검증) .github/workflows/windows-beta-check.yml (비밀 키 없는 Windows PR 네이티브",
+      "wordCount": 75,
+      "updatedAt": "2026-08-01",
+      "linksOut": []
+    },
+    {
       "slug": "ontology/capabilities/docs-vault-local",
       "path": "docs/ontology/capabilities/docs-vault-local.md",
       "title": "Local Folder Mounting",
@@ -9297,43 +9344,6 @@
       ],
       "excerpt": "next-intl 기반 [locale] 프리픽스 라우팅으로 UI 로케일을 전환하는 능력. src/features/locale-switch (구현 증거) AGENTS.md — Routes (\"Seventeen routes, all [locale] prefixed by next-intl\") medium-high (0.8)",
       "wordCount": 32,
-      "updatedAt": "2026-08-01",
-      "linksOut": []
-    },
-    {
-      "slug": "ontology/capabilities/macos-download-link",
-      "path": "docs/ontology/capabilities/macos-download-link.md",
-      "title": "macOS Download Decision",
-      "tags": [],
-      "frontmatter": {
-        "slug": "capabilities/macos-download-link",
-        "kind": "capability",
-        "title": "macOS Download Decision",
-        "domain": "domains/onboarding-and-shell",
-        "elements": [
-          "elements/download"
-        ],
-        "created_by": "agent:unknown"
-      },
-      "headings": [
-        {
-          "depth": 2,
-          "text": "정의",
-          "slug": "정의"
-        },
-        {
-          "depth": 2,
-          "text": "근거",
-          "slug": "근거"
-        },
-        {
-          "depth": 2,
-          "text": "확신도",
-          "slug": "확신도"
-        }
-      ],
-      "excerpt": "설치 결정(macOS 앱 다운로드 vs 웹 계속 사용)을 제시하는 능력. src/features/macos-download-link (구현 증거) docs/FEATURES.md — \"/download — the install decision\" (risky-citation 경고 — 재검증 필요) medium-high (0.85)",
-      "wordCount": 35,
       "updatedAt": "2026-08-01",
       "linksOut": []
     },
@@ -9914,10 +9924,10 @@
         "display_en": "Onboarding, Distribution & App Shell",
         "capabilities": [
           "capabilities/app-update",
+          "capabilities/desktop-download-decision",
           "capabilities/first-run-starter",
           "capabilities/guided-tour",
-          "capabilities/locale-switch",
-          "capabilities/macos-download-link"
+          "capabilities/locale-switch"
         ],
         "elements": [
           "elements/app-nav-rail",
@@ -10292,8 +10302,8 @@
         "created_by": "agent:unknown"
       },
       "headings": [],
-      "excerpt": "/download 페이지. capabilities/macos-download-link 의 구현 증거.",
-      "wordCount": 6,
+      "excerpt": "/download 페이지. capabilities/desktop-download-decision 의 구현 증거. macOS와 Windows x64 베타를 한 plate 안의 플랫폼 절로 나누고, Windows 미서명 경고를 실행 파일 CTA보다 먼저 보여 준다.",
+      "wordCount": 25,
       "updatedAt": "2026-08-01",
       "linksOut": []
     },
@@ -11731,8 +11741,8 @@
         },
         {
           "depth": 3,
-          "text": "Recommendation: installed macOS app (carrying the MCP server) + CLI as the daily workbench",
-          "slug": "recommendation-installed-macos-app-carrying-the-mcp-server-cli-as-the-daily-workbench"
+          "text": "Recommendation: installed desktop app (carrying the MCP server) + CLI as the daily workbench",
+          "slug": "recommendation-installed-desktop-app-carrying-the-mcp-server-cli-as-the-daily-workbench"
         },
         {
           "depth": 2,
@@ -11806,8 +11816,8 @@
         }
       ],
       "excerpt": "[v10 정체성 공식, 2026-07-18] — agent-native, human-sovereign. \"에이전트를 위한 시스템\"이 아니라 \"에이전트가 1급 사용자인, 사람과 에이전트의 공유 의미 계층\"이다. 에이전트는 신선도를 유지하는 엔진이자 최대 소비자(MCP/CLI), 사람은 의미의 최종 결정권자(평문 마크다운 · git diff · 내 디스크가 진실원). agent-memory 카테고리(기계 전용 벡터/자동추출 — 자동화 규모전에서 패배)와 위키 카테고리(사람 전용 — 즉시 부패) 둘 다와 구분되는 위치. 마케팅 훅은 에이전트 통증으로 열고, 본질은 공유 계",
-      "wordCount": 5117,
-      "updatedAt": "2026-07-31",
+      "wordCount": 5176,
+      "updatedAt": "2026-08-01",
       "linksOut": [
         "AGENT-MEMORY-POSITIONING"
       ]
@@ -12919,6 +12929,11 @@
         "linkText": "domains/onboarding-and-shell"
       },
       {
+        "fromSlug": "ontology/capabilities/desktop-download-decision",
+        "context": "frontmatter · **[domains/onboarding-and-shell]**",
+        "linkText": "domains/onboarding-and-shell"
+      },
+      {
         "fromSlug": "ontology/capabilities/first-run-starter",
         "context": "frontmatter · **[domains/onboarding-and-shell]**",
         "linkText": "domains/onboarding-and-shell"
@@ -12930,11 +12945,6 @@
       },
       {
         "fromSlug": "ontology/capabilities/locale-switch",
-        "context": "frontmatter · **[domains/onboarding-and-shell]**",
-        "linkText": "domains/onboarding-and-shell"
-      },
-      {
-        "fromSlug": "ontology/capabilities/macos-download-link",
         "context": "frontmatter · **[domains/onboarding-and-shell]**",
         "linkText": "domains/onboarding-and-shell"
       },
@@ -13100,6 +13110,18 @@
         "linkText": "domains/local-vault-management"
       }
     ],
+    "ontology/elements/download": [
+      {
+        "fromSlug": "ontology/capabilities/desktop-download-decision",
+        "context": "frontmatter · **[elements/download]**",
+        "linkText": "elements/download"
+      },
+      {
+        "fromSlug": "ontology/domains/onboarding-and-shell",
+        "context": "frontmatter · **[elements/download]**",
+        "linkText": "elements/download"
+      }
+    ],
     "ontology/elements/docs-vault-entity": [
       {
         "fromSlug": "ontology/capabilities/docs-vault-local",
@@ -13158,18 +13180,6 @@
         "fromSlug": "ontology/domains/onboarding-and-shell",
         "context": "frontmatter · **[elements/first-run]**",
         "linkText": "elements/first-run"
-      }
-    ],
-    "ontology/elements/download": [
-      {
-        "fromSlug": "ontology/capabilities/macos-download-link",
-        "context": "frontmatter · **[elements/download]**",
-        "linkText": "elements/download"
-      },
-      {
-        "fromSlug": "ontology/domains/onboarding-and-shell",
-        "context": "frontmatter · **[elements/download]**",
-        "linkText": "elements/download"
       }
     ],
     "ontology/capabilities/vault-ontology": [
@@ -13626,6 +13636,13 @@
         "linkText": "capabilities/app-update"
       }
     ],
+    "ontology/capabilities/desktop-download-decision": [
+      {
+        "fromSlug": "ontology/domains/onboarding-and-shell",
+        "context": "frontmatter · **[capabilities/desktop-download-decision]**",
+        "linkText": "capabilities/desktop-download-decision"
+      }
+    ],
     "ontology/capabilities/first-run-starter": [
       {
         "fromSlug": "ontology/domains/onboarding-and-shell",
@@ -13645,13 +13662,6 @@
         "fromSlug": "ontology/domains/onboarding-and-shell",
         "context": "frontmatter · **[capabilities/locale-switch]**",
         "linkText": "capabilities/locale-switch"
-      }
-    ],
-    "ontology/capabilities/macos-download-link": [
-      {
-        "fromSlug": "ontology/domains/onboarding-and-shell",
-        "context": "frontmatter · **[capabilities/macos-download-link]**",
-        "linkText": "capabilities/macos-download-link"
       }
     ],
     "ontology/elements/app-nav-rail": [
@@ -14271,6 +14281,13 @@
                 "title": "Data Source Mode Branching"
               },
               {
+                "name": "desktop-download-decision",
+                "path": "ontology/capabilities/desktop-download-decision",
+                "type": "doc",
+                "slug": "ontology/capabilities/desktop-download-decision",
+                "title": "Desktop Download Decision"
+              },
+              {
                 "name": "docs-vault-local",
                 "path": "ontology/capabilities/docs-vault-local",
                 "type": "doc",
@@ -14297,13 +14314,6 @@
                 "type": "doc",
                 "slug": "ontology/capabilities/locale-switch",
                 "title": "Locale Switching"
-              },
-              {
-                "name": "macos-download-link",
-                "path": "ontology/capabilities/macos-download-link",
-                "type": "doc",
-                "slug": "ontology/capabilities/macos-download-link",
-                "title": "macOS Download Decision"
               },
               {
                 "name": "mcp-server",

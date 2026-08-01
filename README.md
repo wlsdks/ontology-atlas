@@ -21,7 +21,7 @@
 </p>
 
 <p align="center">
-  <strong>One download installs both surfaces.</strong> The macOS app carries a
+  <strong>One download installs both surfaces.</strong> The desktop app carries a
   compiled MCP server inside its own bundle, and one button writes your agent's
   config and proves the connection.
 </p>
@@ -104,26 +104,29 @@ The theory and prior art behind that position are cited in
 
 ## Status — read this before installing
 
-*Last updated 2026-07-28.*
+*Last updated 2026-08-01.*
 
 - **Check [GitHub Releases](https://github.com/wlsdks/ontology-atlas/releases)
   for a build.** If that page is empty, or only lists release candidates,
-  everything below runs from a source checkout. The screenshots here were
-  captured from a local build, before the first signed release.
-- **The release pipeline is credentialed to sign with a Developer ID
-  certificate and notarize with Apple**, and update packages are signed with a
-  separate project key the app verifies before replacing anything — see
-  [SECURITY.md](SECURITY.md). No build has shipped through that path yet, so
-  the first public release will be the first end-to-end proof of it.
+  treat it as beta software; everything below also runs from a source checkout.
+  The screenshots here were captured from local builds and are not release
+  verification evidence.
+- **macOS releases are signed with a Developer ID certificate and notarized by
+  Apple.** Update packages use a separate project key the app verifies before
+  replacing anything — see [SECURITY.md](SECURITY.md). The Windows x64 beta is
+  intentionally unsigned, so Microsoft Defender SmartScreen may show an
+  unknown-publisher warning and managed work PCs may block it.
 - **There is no npm channel, and there will not be one.** Earlier drafts of this
   README pointed at unpublished packages. That plan was retired on 2026-07-27:
   the MCP server is compiled into the app bundle instead, so installing the app
   installs the agent surface too. From source, the CLI and MCP server run
   directly out of the checkout.
-- **The desktop app is macOS-only** (Windows in preparation). The CLI, the MCP
-  server, and the browser app run anywhere Node 24 does.
-- **The screenshots below are from a locally built copy of the app**, not from a
-  signed release download, because there is no release to download yet.
+- **The desktop app ships for macOS and as an unsigned Windows x64 beta.** Both
+  bundles carry the MCP server. The source-checkout CLI and browser app remain
+  available anywhere their runtimes are supported.
+- **The screenshots below are illustrative local builds.** Download names,
+  checksums, signing state, and availability come from the current GitHub
+  Release rather than from screenshots or hand-written placeholders.
 
 ## The journey
 
@@ -495,7 +498,7 @@ is listed here on purpose: to this product an agent is a surface, not an add-on.
 | **MCP server** (32 tools, 19 read + 13 write) | The agent's surface — the same graph over stdio JSON-RPC, with dry-runs and write guardrails |
 
 Those routes are the same in all three places they can be opened: the installed
-macOS app, the CLI's sibling web build, and the hosted site. The
+desktop app, the CLI's sibling web build, and the hosted site. The
 [live demo](https://wlsdks.github.io/ontology-atlas/en/topology/) opens with this repository's own vault and needs no
 install; point it at your own Markdown folder in the browser and the same map
 switches to your data. (The site's front page, [`/`](https://wlsdks.github.io/ontology-atlas/), is the download
@@ -519,7 +522,7 @@ checked against the vault, not maintained by hand.
   Nothing is transmitted anywhere unless you explicitly ask for it.
 - **Two ways in, one folder.** The hosted web app can open a local folder
   through the File System Access API, so the live demo works on your own files
-  without installing anything. The macOS app uses a Tauri bridge to your
+  without installing anything. The desktop app uses a Tauri bridge to your
   selected folder instead, which lifts the browser's limits and lets the same
   vault stay open as a real desktop workspace.
 - **The Tauri macOS shell is a shell, not a silo.** It is granted a deliberately

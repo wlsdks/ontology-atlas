@@ -79,8 +79,8 @@ describe('i18n message catalog', () => {
     }
     assert.match(en.download.primaryCtaPending, /releases page/i);
     assert.match(ko.download.primaryCtaPending, /릴리스 페이지/);
-    assert.equal(en.download.sourceCta, 'View source code');
-    assert.match(ko.download.sourceCta, /소스 코드/);
+    assert.equal(en.download.sourceCta, 'Go to GitHub');
+    assert.equal(ko.download.sourceCta, 'GitHub로 이동하기');
 
     // The CTA must never depend on a /releases/latest URL — asset names carry
     // the version, so "latest" silently breaks on the next release.
@@ -135,8 +135,10 @@ describe('i18n message catalog', () => {
     // 이름이 아니라 **두 사실이 어딘가에는 있다**는 것이다.
     assert.match(en.download.platformStatus, /Windows/);
     assert.match(ko.download.platformStatus, /Windows/);
-    assert.match(en.download.windowsPolicy, /signed installer/i);
-    assert.match(ko.download.windowsPolicy, /서명된 설치 파일/);
+    assert.match(en.download.windowsUnsignedWarning, /not code-signed/i);
+    assert.match(en.download.windowsUnsignedWarning, /SmartScreen/i);
+    assert.match(ko.download.windowsUnsignedWarning, /코드 서명되지 않았습니다/);
+    assert.match(ko.download.windowsUnsignedWarning, /SmartScreen/i);
 
     // A domain that does not resolve must not be cited as fact.
     assert.doesNotMatch(JSON.stringify(en.download), /ontology-atlas\.dev/);

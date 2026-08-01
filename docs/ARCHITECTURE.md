@@ -141,7 +141,7 @@ Concurrent edits are held by `patch_concept(expected_mtime)`.
 
 Deliberately **not** shared: the "last opened vault" handle (each surface keeps
 its own IndexedDB — you pick the folder once per surface, and `/download`'s
-install step 02 says so), API keys (macOS Keychain, app only), and UI
+install step 02 says so), API keys (operating-system credential store, app only), and UI
 preferences (localStorage). Secrets and taste do not belong in a vault.
 
 **Verification is split three ways** (this replaced the old web↔app round-trip

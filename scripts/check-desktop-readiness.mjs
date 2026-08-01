@@ -219,7 +219,7 @@ const releasePublishOrder = orderedIndexes(releaseWorkflow, [
   "name: Summarize the draft awaiting approval",
   "name: Publish verified stable release",
   "name: Verify public download assets",
-  "name: Summarize published macOS release",
+  "name: Summarize published desktop release",
 ]);
 if (/output\s*:\s*['"]export['"]/.test(nextConfig)) {
   pass("Next.js uses static export output");
@@ -621,11 +621,10 @@ if (
   // 게이트가 조용히 빨간불이 된다(실제로 그랬다 — Pages 배포 5회 연속
   // deploy 성공 + verify 실패). 진실원은 출고되는 메시지 카탈로그다.
   hostedDownloadSurfaceScript.includes('readFileSync(path.join(REPO_ROOT, "messages", "ko.json")') &&
-  // 키 이름은 2026-07-29 관문 재설계에서 바뀌었다(`windowsHeading` /
-  // `windowsPendingBadge` → `platformStatus` / `windowsTrackCta`). 지키는
-  // **계약**은 그대로다: Windows 방문자가 자기 위치와 따라갈 곳을 함께 받는다.
-  hostedDownloadSurfaceScript.includes("downloadCopy.platformStatus") &&
-  hostedDownloadSurfaceScript.includes("downloadCopy.windowsTrackCta") &&
+  // 게시 전/후 어느 release-facts 상태에서도 Windows 방문자가 자기 위치와
+  // 다음 행동을 받는다. 검증기는 두 분기를 같은 배포 계약으로 다룬다.
+  hostedDownloadSurfaceScript.includes("downloadCopy.windowsUnsignedWarning") &&
+  hostedDownloadSurfaceScript.includes("downloadCopy.windowsDownloadCta") &&
   hostedDownloadSurfaceScript.includes("releases/latest") &&
   hostedDownloadSurfaceScript.includes("assertIncludes(download.body, downloadPath") &&
   hostedDownloadSurfaceScript.includes("deploy-pages.yml") &&
@@ -814,13 +813,13 @@ if (
   koMessages.searchWidgets.shortcuts.rows.localVault ===
     "설치된 앱에서 로컬 온톨로지 폴더 열기" &&
   enMessages.docsVault.vaultStatus.unsupportedTooltip ===
-    "Local ontology folder editing is available in the installed macOS app." &&
+    "Local ontology folder editing is available in the installed desktop app." &&
   koMessages.docsVault.vaultStatus.unsupportedTooltip ===
-    "로컬 온톨로지 폴더 편집은 설치된 macOS 앱에서 사용할 수 있습니다." &&
+    "로컬 온톨로지 폴더 편집은 설치된 데스크톱 앱에서 사용할 수 있습니다." &&
   enMessages.featuresMisc.localVaultPicker.openLabel === "Open vault folder" &&
   koMessages.featuresMisc.localVaultPicker.openLabel === "vault 폴더 열기" &&
-  enMessages.featuresMisc.localVaultPicker.unsupported.includes("Install the macOS app") &&
-  koMessages.featuresMisc.localVaultPicker.unsupported.includes("macOS 앱을 설치") &&
+  enMessages.featuresMisc.localVaultPicker.unsupported.includes("Install the desktop app") &&
+  koMessages.featuresMisc.localVaultPicker.unsupported.includes("데스크톱 앱을 설치") &&
   !enMessages.searchWidgets.shortcuts.rows.localVault.includes("File System Access") &&
   !koMessages.searchWidgets.shortcuts.rows.localVault.includes("File System Access") &&
   !enMessages.featuresMisc.localVaultPicker.openLabel.includes("markdown folder")
@@ -828,7 +827,7 @@ if (
   pass("local vault picker and shortcut copy describe the installed app path, not browser File System Access");
 } else {
   fail(
-    "Local vault picker and shortcut copy must route users toward the installed macOS app instead of preserving browser/File System Access wording",
+    "Local vault picker and shortcut copy must route users toward the installed desktop app instead of preserving browser/File System Access wording",
   );
 }
 
@@ -841,7 +840,7 @@ if (
   readmeFlow.includes("# Ontology Atlas") &&
   readmeFlow.includes("https://wlsdks.github.io/ontology-atlas/") &&
   readmeFlow.includes("Tauri macOS shell") &&
-  readmeFlow.includes("The macOS app uses a Tauri bridge to your selected folder") &&
+  readmeFlow.includes("The desktop app uses a Tauri bridge to your selected folder") &&
   readmeFlow.includes("hosted web app can open a local folder through the File System Access API") &&
   readmeFlow.includes("github.com/wlsdks/ontology-atlas/releases") &&
   // 은퇴/이전 표면으로 사용자를 보내면 안 된다. `/ontology/edit` 빌더는
@@ -859,8 +858,8 @@ if (
 }
 
 if (
-  featuresDoc.includes("4 surfaces (macOS app · CLI · MCP · Website)") &&
-  featuresDoc.includes("**Ontology Atlas** is the user-facing macOS app / website brand") &&
+  featuresDoc.includes("4 surfaces (desktop app · CLI · MCP · Website)") &&
+  featuresDoc.includes("**Ontology Atlas** is the user-facing desktop app / website brand") &&
   featuresDoc.includes("daily heavy-lift ontology work happens in the installed app / CLI / MCP") &&
   featuresDoc.includes("lets you open your own local vault folder from the browser") &&
   productDirectionDoc.includes("Ontology Atlas") &&
@@ -868,7 +867,7 @@ if (
   // 2026-07-28: npm 채널 폐기(#736)로 이 문장이 "설치 앱이 MCP 서버를 싣는다"
   // 까지 말하게 바뀌었다. 옛 나열 순서를 요구하던 리터럴을 새 문장으로 옮긴다 —
   // 게이트가 지키려는 것(설치 앱 + CLI 가 일상 표면)은 그대로다.
-  productDirectionDoc.includes("installed macOS app (carrying the MCP server) + CLI as the daily workbench") &&
+  productDirectionDoc.includes("installed desktop app (carrying the MCP server) + CLI as the daily workbench") &&
   productDirectionDoc.includes("hosted website is the product introduction and download entry point") &&
   desktopDoc.includes("Ontology Atlas") &&
   desktopDoc.includes("current release") &&
@@ -884,7 +883,7 @@ if (
   pass("product and architecture docs frame the installed app as the daily heavy-lift local workbench while the hosted root map offers its own direct local-folder open path");
 } else {
   fail(
-    "FEATURES, PRODUCT-DIRECTION, and ARCHITECTURE must describe macOS app / CLI / MCP as the daily heavy-lift local surfaces while still describing the hosted root map's direct local-folder open path (root-first-open)",
+    "FEATURES, PRODUCT-DIRECTION, and ARCHITECTURE must describe the installed desktop app / CLI / MCP as the daily heavy-lift local surfaces while still describing the hosted root map's direct local-folder open path (root-first-open)",
   );
 }
 
@@ -930,7 +929,7 @@ if (
   topologyEmptyState.includes("isTauriVaultRuntime") &&
   topologyEmptyState.includes('"/download/"') &&
   topologyEmptyState.includes('"/docs/?intent=local"') &&
-  /Install the macOS app/i.test(enMessages.topology?.empty?.bodyNoProjectsDownload ?? "")
+  /Install the desktop app/i.test(enMessages.topology?.empty?.bodyNoProjectsDownload ?? "")
 ) {
   pass("the topology empty state routes hosted users to the app download while preserving desktop vault picking");
 } else {
@@ -991,8 +990,10 @@ if (
   /Windows/.test(koMessages.download?.platformStatus ?? "") &&
   (enMessages.download?.windowsTrackCta ?? "").length > 0 &&
   (koMessages.download?.windowsTrackCta ?? "").length > 0 &&
-  /signed installer/.test(enMessages.download?.windowsPolicy ?? "") &&
-  /서명된 설치 파일/.test(koMessages.download?.windowsPolicy ?? "") &&
+  /not code-signed/.test(enMessages.download?.windowsUnsignedWarning ?? "") &&
+  /코드 서명되지 않았습니다/.test(koMessages.download?.windowsUnsignedWarning ?? "") &&
+  /SmartScreen/.test(enMessages.download?.windowsUnsignedWarning ?? "") &&
+  /SmartScreen/.test(koMessages.download?.windowsUnsignedWarning ?? "") &&
   // 서명 상태는 **지금 참인 것**으로 적는다 — 미래형("게이트가 요구합니다")도,
   // 아직 사실이 아닌 과거형도 금지다.
   //
@@ -1048,11 +1049,11 @@ if (
 }
 
 if (
-  releaseWorkflow.match(/uses:\s*actions\/checkout@v6/g)?.length === 3 &&
-  releaseWorkflow.match(/uses:\s*actions\/setup-node@v6/g)?.length === 3 &&
-  releaseWorkflow.match(/corepack enable/g)?.length === 3 &&
-  releaseWorkflow.match(/corepack prepare pnpm@10\.18\.0 --activate/g)?.length === 3 &&
-  releaseWorkflow.match(/pnpm --version/g)?.length === 3 &&
+  (releaseWorkflow.match(/uses:\s*actions\/checkout@v6/g)?.length ?? 0) >= 4 &&
+  (releaseWorkflow.match(/uses:\s*actions\/setup-node@v6/g)?.length ?? 0) >= 4 &&
+  (releaseWorkflow.match(/corepack enable/g)?.length ?? 0) >= 4 &&
+  (releaseWorkflow.match(/corepack prepare pnpm@10\.18\.0 --activate/g)?.length ?? 0) >= 4 &&
+  (releaseWorkflow.match(/pnpm --version/g)?.length ?? 0) >= 4 &&
   /uses:\s*actions\/upload-artifact@v7/.test(releaseWorkflow) &&
   /uses:\s*actions\/download-artifact@v7/.test(releaseWorkflow) &&
   /uses:\s*softprops\/action-gh-release@v3/.test(releaseWorkflow) &&
@@ -1073,7 +1074,7 @@ if (
   // 공개되게 한다. 환경의 required reviewer 설정은 저장소 Settings 몫이라
   // 런북(docs/DESKTOP-MACOS.md)이 함께 지킨다.
   /stage-macos:/.test(releaseWorkflow) &&
-  /publish-macos:\s*\n\s*name: Publish macOS Release/.test(releaseWorkflow) &&
+  /publish-macos:\s*\n\s*name: Publish Desktop Release/.test(releaseWorkflow) &&
   /needs:\s*stage-macos/.test(releaseWorkflow) &&
   /environment:\s*release/.test(releaseWorkflow) &&
   /pnpm desktop:release-slot -- --tag="\$\{GITHUB_REF_NAME\}"/.test(releaseWorkflow) &&
@@ -1106,14 +1107,14 @@ if (
   /if:\s*\$\{\{\s*always\(\)\s*&&\s*steps\.signing\.outputs\.signed/.test(releaseWorkflow) &&
   /security delete-keychain "\$KEYCHAIN_PATH" 2>\/dev\/null \|\| true/.test(releaseWorkflow) &&
   /rm -f "\$CERTIFICATE_PATH"/.test(releaseWorkflow) &&
-  /Summarize published macOS release/.test(releaseWorkflow) &&
-  /Published macOS Release/.test(releaseWorkflow) &&
+  /Summarize published desktop release/.test(releaseWorkflow) &&
+  /Published desktop release/.test(releaseWorkflow) &&
   /gh release view "\$\{GITHUB_REF_NAME\}" --json url --jq \.url/.test(releaseWorkflow) &&
   /GITHUB_STEP_SUMMARY/.test(releaseWorkflow) &&
   /SHA-256/.test(releaseWorkflow) &&
   /wc -c < "\$dmg"/.test(releaseWorkflow) &&
   /cut -d ' ' -f 1 "\$checksum"/.test(releaseWorkflow) &&
-  releaseWorkflow.match(/node-version:\s*24/g)?.length === 3 &&
+  (releaseWorkflow.match(/node-version:\s*24/g)?.length ?? 0) >= 4 &&
   /arch:\s*aarch64/.test(releaseWorkflow) &&
   /runner:\s*macos-14/.test(releaseWorkflow) &&
   /arch:\s*x64/.test(releaseWorkflow) &&

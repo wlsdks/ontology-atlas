@@ -79,7 +79,7 @@ test.describe("ontology view UI", () => {
     await expect(primary).toBeVisible();
     await expect(primary).toHaveAttribute("href", /github\.com\/wlsdks\/ontology-atlas/);
 
-    await expect(page.getByRole("link", { name: "View source code" })).toHaveAttribute(
+    await expect(page.getByRole("link", { name: "Go to GitHub" })).toHaveAttribute(
       "href",
       "https://github.com/wlsdks/ontology-atlas",
     );

@@ -7,6 +7,7 @@ import {
   artifactNameForArch,
   stageReleaseAssets,
 } from "../../scripts/stage-macos-release-assets.mjs";
+import { stageWindowsReleaseAssets } from "../../scripts/stage-windows-release-assets.mjs";
 import {
   buildManifest,
   findUpdaterArtifacts,
@@ -82,7 +83,7 @@ function fakeBundle(root: string, version: string, arch: string): string {
   return bundleDir;
 }
 
-const VERSION = "1.0.0-rc.4";
+const VERSION = "1.0.0-rc.5";
 const TAG = `v${VERSION}`;
 const REPO = "wlsdks/ontology-atlas";
 const scratch = mkdtempSync(join(tmpdir(), "oa-release-paths-"));
@@ -183,12 +184,25 @@ describe("릴리스 자산 경로 계약", () => {
     const cwd = join(root, "..");
     writeFileSync(join(root, "latest.json"), "{}\n");
 
+    const windowsBundle = join(cwd, "windows-bundle");
+    mkdirSync(join(windowsBundle, "nsis"), { recursive: true });
+    writeFileSync(
+      join(windowsBundle, "nsis", "Ontology Atlas_1.0.0_x64-setup.exe"),
+      "windows",
+    );
+    const windows = stageWindowsReleaseAssets({
+      bundleDir: windowsBundle,
+      outDir: join(root, "windows"),
+      version: VERSION,
+    });
+
     const expected = new Set<string>(["release-assets/latest.json"]);
     for (const [arch, files] of staged) {
       for (const file of files) {
         expected.add(`release-assets/${artifactNameForArch(arch)}/${file}`);
       }
     }
+    for (const file of windows.files) expected.add(`release-assets/windows/${file}`);
 
     const matched = new Set<string>();
     for (const glob of globs) {

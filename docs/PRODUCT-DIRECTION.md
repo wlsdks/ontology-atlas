@@ -33,7 +33,7 @@ Launch framing (v4, 2026-05-18):
 > mental model it can read, query, and maintain through MCP.
 
 - Product name split (v6, 2026-06-03): **Ontology Atlas** is the user-facing
-  macOS app / website brand and the macOS release asset identity.
+  desktop app / website brand and the release asset identity.
   `ontology-atlas` stays the repository, CLI binary, and MCP package name. The
   Tauri bundle product name is `Ontology Atlas`, the bundle identifier is
   `dev.jinan.ontology-atlas`, and DMG filenames use `ontology-atlas_*`.
@@ -228,15 +228,15 @@ This is the differentiator. **Generic ontology workbench (Protégé etc.) → "w
 
 | Audience | Role | Primary surface |
 |---|---|---|
-| **Planner / PM / marketer** | Understand the product/business core, narratives, ownership, and change impact without reading source | installed macOS app (`/ontology`, `/topology`, `/docs`), static/shared vault exports |
+| **Planner / PM / marketer** | Understand the product/business core, narratives, ownership, and change impact without reading source | installed desktop app (`/ontology`, `/topology`, `/docs`; macOS, Windows x64 beta), static/shared vault exports |
 | **C-level / decision-maker** | See what the organization/system is made of, which capabilities matter, and what changes affect strategic bets | overview, topology, graph proof/impact summaries |
-| **Developer** | Maintain the graph as implementation changes; connect code artifacts to domains/capabilities | CLI (`ontology-atlas init/list/validate/add/find/import/index`), installed macOS app (`/ontology`, `/docs`) |
+| **Developer** | Maintain the graph as implementation changes; connect code artifacts to domains/capabilities | CLI (`ontology-atlas init/list/validate/add/find/import/index`), installed desktop app (`/ontology`, `/docs`) |
 | **AI agent** (Claude Code, Codex, Cursor, …) | Read for context · write back findings · keep the graph current through verified MCP/CLI loops | MCP server (32 tools — read 19 + write 13), vault-scoped Git evidence/checkpoint, Builder handoff, agent heartbeat, agent brief |
 
 The single artifact serves all audiences: a local, git-backed ontology that
 links business language, product capabilities, implementation evidence, and
 change impact. Developer + agent workflows are the wedge that keeps it fresh;
-the macOS app/topology is the shared reading and decision surface.
+the installed app/topology is the shared reading and decision surface.
 
 > **2026-06-06 correction (user).** Atlas is not a developer-only service. It
 > should let planners, marketers, C-level decision-makers, developers, and AI
@@ -496,12 +496,18 @@ Use after `pnpm dev`. No packaging. Document with environment variables.
 Pros: fastest. Zero new deps.
 Cons: blocks distribution (clone overhead).
 
-### Recommendation: installed macOS app (carrying the MCP server) + CLI as the daily workbench
+### Recommendation: installed desktop app (carrying the MCP server) + CLI as the daily workbench
 
 > **2026-07-27 갱신**: 배포는 **B 하나**로 좁혀졌다 — 서명·공증된 DMG. 앱이
 > 컴파일된 MCP 서버를 자기 번들에 싣고 「에이전트 연결」 버튼이 클라이언트
 > 설정을 대신 쓰므로, **다운로드 1회가 사람 표면과 에이전트 표면을 동시에**
 > 설치한다. A 의 CLI 는 소스 체크아웃으로 남고, npm 은 채널이 아니다.
+>
+> **2026-08-01 갱신**: 같은 Tauri 번들을 Windows x64 공개 베타로 확장했다.
+> Windows installer는 아직 코드 서명되지 않았고, SmartScreen/관리 PC 차단 위험을
+> CTA 전에 밝힌다. 이는 macOS 서명 기준을 낮춘 것이 아니라, 베타 수요를 관측하기
+> 위한 소유자 override다. 네이티브 CI가 Defender 검사·설치·앱/MCP 실행을 막지만
+> Windows 11 SmartScreen UI를 검증했다고 주장하지는 않는다.
 
 The desktop proof has graduated from exploration into the primary visual
 distribution track. Ontology Atlas should be the daily local workbench for users
@@ -513,7 +519,7 @@ the same graph to Claude Code, Codex, Cursor, and other agents.
 
 The hosted website is the product introduction and download entry point. It
 should not be treated as the writable workbench. Keep browser-based local vault
-flows only as source/dev fallbacks, while installed macOS + CLI/MCP carry the
+flows as the install-free/degraded fallback, while the installed app + CLI/MCP carry the
 real local-first product promise.
 
 ---
@@ -522,7 +528,7 @@ real local-first product promise.
 
 ### 5-A. MCP server
 
-The `ontology-atlas-mcp` server ships compiled inside the macOS app bundle;
+The `ontology-atlas-mcp` server ships compiled inside the desktop app bundle;
 npm publishing is retired (`docs/DECISIONS.md`, 2026-07-27). Claude
 Code-compatible:
 

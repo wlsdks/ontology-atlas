@@ -7,36 +7,30 @@
  * gate *requires* Developer ID signing"). Six independent placeholders meant
  * six independent chances to drift out of sync with reality, and a visitor
  * could not tell whether the app was installable today. So release-dependent
- * copy now derives from a single boolean: is there a published macOS release?
+ * copy now derives from generated macOS and Windows release facts.
  *
  * - published  → real size, real SHA-256, per-arch direct download links, and
  *                signing/notarization stated in the past tense (it happened).
  * - unpublished → one clear "not out yet" state. No fake numbers, no download
  *                buttons that lead nowhere.
  *
- * `MACOS_RELEASE` is generated from the actual GitHub Release
+ * `MACOS_RELEASE` and `WINDOWS_RELEASE` are generated from the actual GitHub Release
  * (`pnpm download:release-facts`), never hand-edited.
  */
 
-import { MACOS_RELEASE, type MacosReleaseAsset } from '../model/macos-release.generated';
+import {
+  MACOS_RELEASE,
+  WINDOWS_RELEASE,
+  type MacosReleaseAsset,
+  type WindowsReleaseAsset,
+} from '../model/macos-release.generated';
 
 export type DesktopArch = MacosReleaseAsset['arch'];
 
 /** Apple Silicon first — it is the majority of Macs bought since 2020. */
 export const ARCH_ORDER: readonly DesktopArch[] = ['aarch64', 'x64'];
 
-/**
- * Windows is not shipping in this release. Stating that plainly beats
- * omitting the platform: a Windows visitor otherwise cannot tell whether the
- * product excludes them permanently or simply has not got there yet.
- *
- * Flipping this to a real release means the same honesty bar macOS clears —
- * a signed installer and an install-verification gate. An unsigned `.exe`
- * makes every downloader click through a SmartScreen warning, which would
- * contradict the verifiable-trust claim this page makes.
- */
 export const WINDOWS_STATUS = {
-  available: false,
   trackingUrl: 'https://github.com/wlsdks/ontology-atlas/issues',
 } as const;
 
@@ -72,6 +66,15 @@ export function macosAssetFor(arch: DesktopArch): MacosReleaseAsset | null {
   return MACOS_RELEASE.assets.find((asset) => asset.arch === arch) ?? null;
 }
 
+export function isWindowsReleasePublished(): boolean {
+  return WINDOWS_RELEASE.published && WINDOWS_RELEASE.assets.length === 1;
+}
+
+export function windowsAsset(): WindowsReleaseAsset | null {
+  if (!isWindowsReleasePublished()) return null;
+  return WINDOWS_RELEASE.assets[0] ?? null;
+}
+
 /**
  * Bytes → the size a download dialog would show, with one decimal: enough to
  * answer "will this take a moment or a while", not so precise it reads as a
@@ -92,5 +95,5 @@ export function formatAssetSize(sizeBytes: number): string {
   return `${(sizeBytes / 1_000_000).toFixed(1)} MB`;
 }
 
-export { MACOS_RELEASE };
-export type { MacosReleaseAsset };
+export { MACOS_RELEASE, WINDOWS_RELEASE };
+export type { MacosReleaseAsset, WindowsReleaseAsset };
