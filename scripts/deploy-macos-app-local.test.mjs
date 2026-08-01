@@ -62,7 +62,7 @@ test("local macOS app deploy default route falls back to English without a Korea
   );
 });
 
-test("local macOS app deploy defaults to build, Applications install, and the map route (drag proof opt-in)", () => {
+test("local macOS app deploy builds without release updater signing, installs, and verifies the map route", () => {
   const options = parseDeployMacosAppArgs([], {
     env: { LANG: "C.UTF-8" },
     appleLanguagesRaw: '("en-US")',
@@ -96,7 +96,7 @@ test("local macOS app deploy defaults to build, Applications install, and the ma
       "Ontology Atlas.app",
     ),
   );
-  assert.deepEqual(plan.build, ["pnpm", ["desktop:build:app"]]);
+  assert.deepEqual(plan.build, ["pnpm", ["desktop:build:app:local"]]);
   assert.deepEqual(plan.copyInstalled, [
     "ditto",
     [options.builtAppPath, "/Applications/Ontology Atlas.app"],

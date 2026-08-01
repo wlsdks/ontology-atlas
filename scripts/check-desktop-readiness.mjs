@@ -1364,7 +1364,9 @@ if (
 
 if (
   pkg.scripts?.["desktop:deploy:app"] === "node scripts/deploy-macos-app-local.mjs" &&
-  deployMacosAppLocalScript.includes("desktop:build:app") &&
+  pkg.scripts?.["desktop:build:app:local"] ===
+    "node scripts/clean-tauri-macos-apps.mjs && pnpm mcp:build-binary && pnpm tauri build --bundles app --config '{\"bundle\":{\"createUpdaterArtifacts\":false}}'" &&
+  deployMacosAppLocalScript.includes("desktop:build:app:local") &&
   deployMacosAppLocalScript.includes('path.join("/Applications", names.appBundleName)') &&
   deployMacosAppLocalScript.includes("ditto") &&
   deployMacosAppLocalScript.includes('const DEFAULT_ROUTE = "/en/topology/"') &&
@@ -1384,10 +1386,10 @@ if (
   deployMacosAppLocalScript.includes("ontology-atlas-deployed-relief.png") &&
   pkg.scripts?.["test:desktop:check"]?.includes("scripts/deploy-macos-app-local.test.mjs")
 ) {
-  pass("desktop local deploy command builds, installs, and verifies Relief health from /Applications with default best-effort visual and WebView evidence");
+  pass("desktop local deploy command builds without release updater signing, installs, and verifies Relief health from /Applications with default best-effort visual and WebView evidence");
 } else {
   fail(
-    "package.json must expose desktop:deploy:app, cover scripts/deploy-macos-app-local.test.mjs, and the deploy script must build the app, ditto it to /Applications, verify /en/topology/ Relief health plus drag dogfood, keep screenshot proof available as an opt-in, attempt 14-inch-compatible best-effort visual evidence by default, and save deterministic WebView evidence",
+    "package.json must expose desktop:deploy:app plus desktop:build:app:local with updater artifacts disabled, cover scripts/deploy-macos-app-local.test.mjs, and the deploy script must build without release updater signing, ditto the app to /Applications, verify /en/topology/ Relief health plus drag dogfood, keep screenshot proof available as an opt-in, attempt 14-inch-compatible best-effort visual evidence by default, and save deterministic WebView evidence",
   );
 }
 

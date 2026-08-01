@@ -153,7 +153,7 @@ export function buildDeployMacosAppPlan(options) {
   if (includeTopologyDragProof) fallbackVerifyArgs.push("--verify-topology-drag");
 
   return {
-    build: options.skipBuild ? null : ["pnpm", ["desktop:build:app"]],
+    build: options.skipBuild ? null : ["pnpm", ["desktop:build:app:local"]],
     quit: ["osascript", ["-e", `tell application "${names.appName}" to quit`]],
     removeInstalled: ["rm", ["-rf", options.installPath]],
     copyInstalled: ["ditto", [options.builtAppPath, options.installPath]],

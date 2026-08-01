@@ -72,7 +72,10 @@ localhost 러너의 한 왕복은 60초로 제한하고, 원격 제공자의 180
 설치 앱 dogfood가 실제 최신 코드를 실행하도록 로컬 배포도 고쳤다. Tauri가
 정적 `out/`을 내장하는 실행 바이너리를 매번 재링크하고, 앱 종료 뒤 WebKit의
 `NetworkCache`와 `CacheStorage`만 지운다. 볼트 핸들과 설정이 든
-IndexedDB·LocalStorage는 보존한다. qwen3:8b 실측은 새 순서의
+IndexedDB·LocalStorage는 보존한다. 로컬 `.app` 배포는 release updater 산출물을
+끄고 빌드하므로 updater 서명 private key가 없는 개발 환경에서도 막히지 않는다.
+공개 릴리스의 `desktop:build:app`은 updater 산출물과 서명 계약을 그대로 지킨다.
+qwen3:8b 실측은 새 순서의
 `list_kinds`(5.824초)와 capability 목록(2.484초)까지 따랐지만 세 번째
 `get_concepts`를 생략했다. 이제 필수 읽기 대신 답이나 계획을 내면 같은 도구를
 한 번만 다시 요구하고, 두 번째에도 생략하면 그 답을 화면에 싣지 않고 턴을
