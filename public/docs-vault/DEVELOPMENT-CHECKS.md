@@ -26,6 +26,7 @@ For user-facing UI changes, add the relevant Playwright route check.
 | Static deploy safety | `pnpm build` | `pnpm exec tsc --noEmit` |
 | GitHub Pages deploy | `pnpm build` | `pnpm desktop:verify-hosted` after deploy |
 | Static dogfood manifest | `pnpm docs-vault:check` | `pnpm test:docs-vault` |
+| Docs vs code surface | `pnpm docs:check` | `pnpm test:docs:checks` |
 | macOS desktop readiness | `pnpm desktop:check` | `pnpm desktop:doctor`, then `pnpm test:desktop:check` / `pnpm test:desktop:runtime` / `pnpm test:desktop:bridge` |
 | Vault integrity | `pnpm vault:validate` | `pnpm vault:audit` |
 | CLI argument parsing | `pnpm test:cli:args` | `pnpm test:cli:lib` |
@@ -104,6 +105,54 @@ node $ATLAS/cli/src/index.mjs agent-brief ./ontology --component-types domains,d
 node $ATLAS/cli/src/index.mjs workspace-brief ./ontology --component-types domains,domain,capabilities
 node $ATLAS/cli/src/index.mjs workspace-brief ./ontology --component-limit 5 --node-limit 10
 ```
+
+## Docs Checks
+
+```bash
+pnpm docs:check                  # both gates below
+pnpm docs:surface:check          # regenerate the MCP/CLI surface and diff it
+pnpm docs:surface:build          # refresh docs/.generated/mcp-surface.json
+pnpm docs:links                  # broken repo links + cited file paths
+pnpm docs:links:external         # opt-in: resolve http(s) links over the network
+pnpm test:docs:checks            # focused helper contracts for both scripts
+```
+
+**One rule decides what these may check** (2026-08-01 — `docs/DECISIONS.md`):
+
+> 기계가 만들 수 있는 것만 검사한다. 사람이 판단해서 쓴 문장은 검사하지 않는다.
+
+The suite that preceded them was 3,419 lines and 2,126 assertions, **1,915 of
+which (90%) pinned a sentence in a README.** Those pins caught nothing when a
+tool's behavior changed (the sentence still matched) and went red whenever
+someone improved the prose. They are gone; these two nets replace them.
+
+- **`docs:surface:check` — generate, then diff.** `scripts/build-docs-surface.mjs`
+  boots the real MCP server, asks it `tools/list`, and writes every tool name,
+  read/write mode, argument name, and required argument — plus the CLI command
+  inventory — into `docs/.generated/mcp-surface.json`. `--check` regenerates and
+  fails on any difference, then verifies that `mcp/README.md` and `cli/README.md`
+  actually name every registered tool and command. Same shape as Kubernetes'
+  `hack/verify-generated-docs.sh` and GitLab's `graphql-verify`. The artifact is
+  committed and must stay deterministic — sorted, no timestamps (see *Generated
+  manifest determinism* above, which the same discipline governs). Its first run
+  found six CLI commands (`absorb`, `agent-activity`, `agent-files`, `export`,
+  `index`, `moment`) that had never appeared in the CLI README's command tables.
+- **`docs:links` — referential integrity.** Repo-relative markdown links plus
+  repo-anchored `.md` paths cited in prose. Fenced code blocks and inline code are
+  skipped (examples are not claims). Root-absolute links resolve as docs-vault
+  slugs first (`/guide/cli` → `docs/guide/cli.md`). External URLs are **not** in
+  the default gate — a third-party outage must never red our build — run
+  `pnpm docs:links:external` for those. The prose-citation half skips append-only
+  history (`CHANGELOG.md`, `docs/DECISIONS.md`, `docs/archive|audits|superpowers|plans|prototypes/**`)
+  because naming a deleted file is what a changelog is *for*; links are still
+  checked there, since a link is a promise to open.
+
+markdownlint is deliberately **not** wired in. Measured 2026-08-01 with default
+rules (excluding `node_modules`): ~15,700 violations, 84% of them
+`MD013/line-length` (6,731) and `MD060/table-column-style` (6,423) — both of
+which this repo violates on purpose. Turning it on would be noise that buries
+existing signal, which is the same discipline `.claude/rules/design.md` states
+for lint rules. Re-measure before proposing it again.
 
 ## MCP And CLI Checks
 

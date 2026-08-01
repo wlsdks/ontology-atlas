@@ -5,7 +5,7 @@ tags: [data-model, firestore, schema]
 
 # Data Model
 
-> This document covers the storage contracts of both the current public product and the design-approved `knowledge subsystem v2`. Whenever a collection schema changes, update this document first. The change process follows [`rules/firestore-schema.md`](rules/firestore-schema.md).
+> This document covers the storage contracts of both the current public product and the design-approved `knowledge subsystem v2`. Whenever a collection schema changes, update this document first. The change process follows `rules/firestore-schema.md` (removed in R10).
 >
 > **Single-user mode (current):** A single logged-in user is the owner of their own workspace. There is no account / membership concept. All collections live at the root path. If multi-account support becomes necessary during the v2 collaboration phase, it will be introduced via a separate ADR.
 

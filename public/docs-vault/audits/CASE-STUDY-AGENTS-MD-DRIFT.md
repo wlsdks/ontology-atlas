@@ -45,7 +45,7 @@ study was written, and the fix is deliberately boring:
 - `CLAUDE.md` is a thin wrapper. Its entire body is one import line,
   `@AGENTS.md`, plus a short "Claude Code only" section for things that
   genuinely don't apply to other tools (skills, hooks, the design-guardian
-  subagent). See the current file: [`CLAUDE.md`](../CLAUDE.md).
+  subagent). See the current file: [`CLAUDE.md`](../../CLAUDE.md).
 - The sync rule is written down as policy, not left to memory —
   `AGENTS.md`'s own "CLAUDE.md / AGENTS.md sync" section states it directly:
   *"AGENTS.md 가 single source of truth... 이 파일은 thin wrapper... AGENTS.md
@@ -53,7 +53,7 @@ study was written, and the fix is deliberately boring:
   source of truth; this file is a thin wrapper; editing AGENTS.md keeps this
   file consistent without a second edit).
 - Drift between the two is listed as a named forbidden pattern in
-  [`.claude/rules/forbidden.md`](../.claude/rules/forbidden.md), under
+  [`.claude/rules/forbidden.md`](../../.claude/rules/forbidden.md), under
   "문서" (documentation): *"AGENTS.md 와 CLAUDE.md 가 비동기"* — AGENTS.md and
   CLAUDE.md being out of sync is treated the same as a shipped bug, not a
   documentation nice-to-have.
@@ -92,7 +92,7 @@ proves, what it depends on, and what changed recently. An agent calls
 `get_concept` or `workspace-brief` instead of re-deriving that mental model
 from source files and chat history every session — the same "consult a
 reference file instead of restating it" move, aimed at facts instead of
-rules. See [`mcp/README.md`](../mcp/README.md) for the tool surface an agent
+rules. See [`mcp/README.md`](../../mcp/README.md) for the tool surface an agent
 uses to read and write that reference file, and
-[`AGENTS.md`](../AGENTS.md#working-with-the-ontology-while-you-code) for how
+[`AGENTS.md`](../../AGENTS.md#working-with-the-ontology-while-you-code) for how
 this repo's own agents are told to use it.

@@ -7,6 +7,34 @@
 
 ---
 
+## 2026-08-01 — 문서 검사를 산문 핀에서 생성-후-diff 로 바꿨다
+
+**게이트가 잡아야 할 것을 못 잡고 개선을 막고 있었다.**
+`scripts/check-package-contracts.test.mjs` 는 3,264줄 · 단언 2,126개였고 그중
+**1,915개(90%)가 「README 에 이 문장이 있는가」** 였다. 도구 동작이 바뀌고 문서가
+안 바뀌면 문장이 그대로라 통과했고, 문서를 더 나은 말로 고치면 빨개졌다.
+판별 기준을 한 줄로 바꿨다 — **기계가 만들 수 있는 것만 검사한다.**
+
+**새 명령 둘.** `pnpm docs:surface:check` 는 실행 중인 MCP 서버에 `tools/list`
+를 물어 `docs/.generated/mcp-surface.json` 을 재생성해 diff 하고, 등록된 도구
+32개와 CLI 명령 52개가 각 README 에 실제로 나오는지 본다. `pnpm docs:links` 는
+깨진 링크와 존재하지 않는 파일 인용을 잡는다(외부 URL 은 `docs:links:external`
+로 분리 — 남의 서버가 죽었을 때 우리 게이트가 빨개지면 안 된다).
+둘을 합친 것이 `pnpm docs:check`.
+
+**첫 실행이 잡은 것.** CLI 명령 6개(`absorb` · `agent-activity` ·
+`agent-files` · `export` · `index` · `moment`)가 `cli/README.md` 커맨드 표에
+**한 번도 등장한 적이 없었다** — 이제 등재됐다. 그리고 링크/인용 7건이 깨져
+있었다: `AGENTS.md` 가 사라진 `docs/ontology/project.md` 를 진입점으로
+안내하고 있었고(볼트 재생성의 잔해), 감사 문서의 상대 경로 4건이 한 단계
+모자랐다. 산문 핀 1,915개는 그중 하나도 못 잡았다.
+
+계약 파일은 3,264줄 → 594줄, 단언 2,126개 → 105개가 됐다. 무엇을 잃었는지와
+되돌릴 반증 조건은 `docs/DECISIONS.md` 에 적혀 있다. markdownlint 는 전수
+측정(약 15,700건, 84%가 의도적 위반) 후 **넣지 않기로** 했다.
+
+---
+
 ## 2026-08-01 — 슬러그는 평평한 식별자다: 경로형 슬러그를 쓰기 관문이 거부한다
 
 **노드의 이름과 파일의 위치가 한 슬롯을 나눠 쓰고 있었다.** 재생성된 도그푸드
@@ -4165,7 +4193,7 @@ reduced-motion 즉착 경로를 그대로 재사용. 초기 로드/샘플에는 
 수요와 실제 카피 사이에 다리가 없었다. README에 "codebase map / agent
 memory / context layer" 시장 어휘를 잇는 브릿지 문단과 유산 선언 문장("이
 지도는 당신 디스크의 마크다운") 추가. 신규
-[`docs/audits/CASE-STUDY-AGENTS-MD-DRIFT.md`](CASE-STUDY-AGENTS-MD-DRIFT.md) —
+[`docs/audits/CASE-STUDY-AGENTS-MD-DRIFT.md`](audits/CASE-STUDY-AGENTS-MD-DRIFT.md) —
 AGENTS.md/CLAUDE.md drift 커뮤니티 고통 → 이 저장소가 실제로 쓰는 해법(단일
 진실원 + thin wrapper) → context rot 완화책으로서의 vault, 세 단계 케이스
 스터디. README에 Karpathy "Obsidian is the IDE; the LLM is the programmer;

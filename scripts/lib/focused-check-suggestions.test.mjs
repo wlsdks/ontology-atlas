@@ -25,6 +25,7 @@ describe('focused check suggestions', () => {
 
     assert.deepEqual(result.commands.map((row) => row.command), [
       'pnpm docs-vault:check',
+      'pnpm docs:links',
       'pnpm test:mcp:docs',
       'pnpm dogfood:status',
     ]);
@@ -33,7 +34,10 @@ describe('focused check suggestions', () => {
   it('suggests docs-vault freshness for any markdown doc indexed by the static docs vault', () => {
     const result = suggestFocusedChecks(['docs/FEATURES.md']);
 
-    assert.deepEqual(result.commands.map((row) => row.command), ['pnpm docs-vault:check']);
+    assert.deepEqual(result.commands.map((row) => row.command), [
+      'pnpm docs-vault:check',
+      'pnpm docs:links',
+    ]);
   });
 
   it('suggests narrow vault tooling tests for vault helper scripts', () => {
@@ -110,6 +114,7 @@ describe('focused check suggestions', () => {
     const result = suggestFocusedChecks(['mcp/src/index.js']);
 
     assert.deepEqual(result.commands.map((row) => row.command), [
+      'pnpm docs:surface:check',
       'pnpm test:mcp:unit',
       'pnpm integration:mcp:surface',
       'pnpm integration:mcp:write',
@@ -212,6 +217,7 @@ describe('focused check suggestions', () => {
     ]);
 
     assert.deepEqual(result.commands.map((row) => row.command), [
+      'pnpm docs:surface:check',
       'pnpm exec node --test mcp/src/vault.test.mjs',
       'pnpm exec node --test mcp/src/redirect-backlinks.test.mjs',
       'pnpm exec node --test mcp/src/conflict-detection.test.mjs',
@@ -334,6 +340,7 @@ describe('focused check suggestions', () => {
     ]);
 
     assert.deepEqual(result.commands.map((row) => row.command), [
+      'pnpm docs:surface:check',
       'pnpm exec node --test cli/src/lib/cli-commands.test.mjs',
       'pnpm test:cli:lib',
       'pnpm integration:cli:entry',
@@ -472,6 +479,7 @@ describe('focused check suggestions', () => {
       'pnpm exec vitest run src/views/docs-vault/lib/persistence.test.ts',
       'pnpm exec vitest run src/widgets/app-settings-menu/ui/AppSettingsMenu.test.tsx',
       'pnpm docs-vault:check',
+      'pnpm docs:links',
       'pnpm test:desktop:check',
       'pnpm test:desktop:runtime',
       'pnpm test:desktop:bridge',
@@ -572,6 +580,7 @@ describe('focused check suggestions', () => {
     ]);
 
     assert.deepEqual(result.commands.map((row) => row.command), [
+      'pnpm docs:links',
       'pnpm test:mcp:docs',
       'pnpm test:mcp:package',
     ]);
@@ -587,7 +596,10 @@ describe('focused check suggestions', () => {
       '.github/ISSUE_TEMPLATE/onboarding_friction.yml',
     ]);
 
-    assert.deepEqual(result.commands.map((row) => row.command), ['pnpm test:mcp:docs']);
+    assert.deepEqual(result.commands.map((row) => row.command), [
+      'pnpm docs:links',
+      'pnpm test:mcp:docs',
+    ]);
     assert.deepEqual(result.escalations, []);
   });
 
@@ -689,6 +701,8 @@ describe('focused check suggestions', () => {
 
     assert.deepEqual(result.commands.map((row) => row.command), [
       'pnpm docs-vault:check',
+      'pnpm docs:links',
+      'pnpm docs:surface:check',
       'pnpm vault:migrate --list',
       'pnpm test:dogfood:script-refs',
       'pnpm test:mcp:docs',

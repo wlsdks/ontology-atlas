@@ -49,42 +49,24 @@ const MCP_TOOL_SPLIT_DOCS = [
   'docs/launch/REDDIT-POSTS.md',
 ] as const;
 
+/**
+ * [정리됨 2026-08-01] 낡은 수를 **하나씩 손으로 등재하던** 항목 7개
+ * (`12 tools` · `20 tools` · `read 8 + write 4` · `read 12 + write 8` ·
+ * `8 read + 4 write` · `12 read + 8 write` · `10 others`).
+ *
+ * 이건 검사가 아니라 **금지어 사전**이었다 — 도구 수가 33이 되는 순간 「32」가
+ * 낡은 수가 되는데, 그때 누가 이 목록에 항목을 더해 주지 않으면 게이트는
+ * 조용히 무력해진다. 그리고 애초에 필요가 없다: 아래 두 검사가 문서마다
+ * **현재 수를 담고 있으라**고 양성으로 요구하고, 그 현재 수는
+ * `mcp/package.json` description → (2026-08-01 추가) MCP 레지스트리로
+ * 묶여 있다(`scripts/check-package-contracts.test.mjs`).
+ *
+ * 잃은 것: 문서가 현재 수와 낡은 수를 **동시에** 적으면 통과한다.
+ *
+ * 남은 한 항목은 성격이 다르다 — 특정 수가 아니라 **수를 동결하지 말라는
+ * 규칙**이라 어제의 참값이 오늘의 금지어가 되지 않는다.
+ */
 const STALE_PATTERNS: Array<{ pattern: RegExp; message: string }> = [
-  {
-    pattern: /\b12 tools\b/i,
-    message: `MCP launch copy must use the current ${MCP_TOOL_METADATA?.toolCount}-tool surface.`,
-  },
-  {
-    pattern: /\b20 tools\b/i,
-    message: `MCP launch copy must use the current ${MCP_TOOL_METADATA?.toolCount}-tool surface.`,
-  },
-  {
-    pattern: /\bread 8 \+ write 4\b/i,
-    message: `MCP launch copy must use read ${MCP_TOOL_METADATA?.readCount} + write ${MCP_TOOL_METADATA?.writeCount}.`,
-  },
-  {
-    pattern: /\bread 12 \+ write 8\b/i,
-    message: `MCP launch copy must use read ${MCP_TOOL_METADATA?.readCount} + write ${MCP_TOOL_METADATA?.writeCount}.`,
-  },
-  {
-    pattern: /\b8 read \+ 4 write\b/i,
-    message: `MCP launch copy must use ${MCP_TOOL_METADATA?.readCount} read + ${MCP_TOOL_METADATA?.writeCount} write.`,
-  },
-  {
-    pattern: /\b12 read \+ 8 write\b/i,
-    message: `MCP launch copy must use ${MCP_TOOL_METADATA?.readCount} read + ${MCP_TOOL_METADATA?.writeCount} write.`,
-  },
-  // [삭제됨 2026-08-01, 소유자 지시] 볼트 노드/관계 수를 겨냥한 세 항목
-  // (`~130 nodes` · `26 nodes` · `165 relations`). 이 목록은 **낡은 수를 하나씩
-  // 손으로 등재해야** 자라는 장치였다 — 볼트가 커질 때마다 어제의 참값이
-  // 오늘의 금지어가 되므로, 항목을 안 더하면 게이트는 조용히 무력해지고
-  // 더하면 사람이 계속 잡일을 한다. 어느 쪽이든 «CI 가 볼트 노드 수를 센다»
-  // 는 관습을 지지한다. 아래 남은 항목들은 **공개 계약의 수**(MCP 도구
-  // 인벤토리)이거나 **수를 동결하지 말라는 규칙**이라 성격이 다르다.
-  {
-    pattern: /10 others/i,
-    message: `MCP verification copy must mention the ${MCP_TOOL_METADATA?.toolCount}-tool namespace, not an old count.`,
-  },
   {
     pattern: /\d+ (?:unit )?test files?\s*\/\s*\d+ (?:unit )?tests?/i,
     message: 'Launch proof copy must not freeze test counts that drift with every added test.',
