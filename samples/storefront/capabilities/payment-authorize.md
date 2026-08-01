@@ -1,12 +1,16 @@
 ---
 slug: capabilities/payment-authorize
 kind: capability
-title: 결제 승인
-domain: payment
-elements: [payment-gateway]
+title: Payment Authorization
+display_ko: 결제 승인
+display_en: Payment Authorization
+description: "Asks the payment provider to guarantee the amount before the store promises anything to the shopper."
+domain: domains/payment
+elements: [elements/bank-transfer, elements/card-payment, elements/payment-gateway, elements/payment-transaction, elements/virtual-account]
 ---
 
-# 결제 승인
+# Payment Authorization · 결제 승인
 
-카드사·PG사에 결제 요청을 보내고 승인 결과를 받아옵니다. 주문 생성·주문
-취소 모두 이 승인 결과를 전제로 다음 단계로 넘어갑니다.
+Asks the payment provider to guarantee the amount before the store promises anything to the shopper.
+
+가게가 고객에게 약속하기 전에, 결제사에 그 금액을 보증받습니다.

@@ -1,14 +1,16 @@
 ---
 slug: domains/marketing
 kind: domain
-title: 마케팅
-display_en: Marketing
-description: 쿠폰과 이메일 캠페인으로 재구매를 유도합니다.
-capabilities: [coupon-issue, email-campaign]
-relates: [domains/catalog, domains/customer]
+title: Marketing & Promotions
+display_ko: 마케팅
+display_en: Marketing & Promotions
+description: "Reasons to come back — coupons, points, time-limited sales, curated campaigns — and the channels that carry them to a person."
+capabilities: [capabilities/campaign-planning, capabilities/coupon-issue, capabilities/coupon-redeem, capabilities/customer-messaging, capabilities/flash-sale, capabilities/loyalty-point, capabilities/referral]
+elements: [elements/campaign-page, elements/coupon-policy, elements/coupon-wallet, elements/email-sender, elements/kakao-alimtalk, elements/point-ledger, elements/push-sender, elements/referral-code, elements/sale-schedule, elements/sms-gateway]
 ---
 
-# 마케팅
+# Marketing & Promotions · 마케팅
 
-쿠폰을 발급하고 이메일 캠페인으로 고객에게 알리는 도메인입니다. 상품·회원
-도메인의 데이터를 바탕으로 재구매를 유도하는 역할을 합니다.
+Reasons to come back — coupons, points, time-limited sales, curated campaigns — and the channels that carry them to a person.
+
+다시 오게 만드는 이유 — 쿠폰·적립금·타임세일·기획전 — 과 그것을 사람에게 실어 나르는 통로를 다룹니다.

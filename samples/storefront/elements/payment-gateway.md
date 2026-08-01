@@ -1,9 +1,15 @@
 ---
 slug: elements/payment-gateway
 kind: element
-title: 결제 게이트웨이 연동
-domain: payment
+title: Payment Gateway
+display_ko: 결제 대행사(PG)
+display_en: Payment Gateway
+description: "The outside company that actually moves money; the store talks to one interface and it talks to the banks."
+domain: domains/payment
 ---
 
-카드사·간편결제사와 통신하는 PG(결제 대행) 연동 모듈. 결제 승인 요청과
-환불 요청 모두 이 연동을 거쳐 실제 금융망으로 전달됩니다.
+# Payment Gateway · 결제 대행사(PG)
+
+The outside company that actually moves money; the store talks to one interface and it talks to the banks.
+
+실제로 돈을 옮기는 바깥 회사입니다. 가게는 하나의 창구와 이야기하고, 그쪽이 은행들과 이야기합니다.

@@ -1,14 +1,17 @@
 ---
 slug: domains/fulfillment
 kind: domain
-title: 배송
-display_en: Shipping
-description: 결제가 끝난 주문을 고객에게 보내고 반품을 접수합니다.
-capabilities: [return-intake, shipment-tracking]
-relates: [domains/order]
+title: Fulfillment & Delivery
+display_ko: 배송
+display_en: Fulfillment & Delivery
+description: "Getting the parcel out of the warehouse, onto a carrier, into the shopper's hands — and, when it has to, back again."
+capabilities: [capabilities/carrier-integration, capabilities/return-pickup, capabilities/shipment-tracking, capabilities/shipping-fee, capabilities/warehouse-picking]
+elements: [elements/cj-logistics, elements/delivery-status-log, elements/hanjin-express, elements/korea-post, elements/picking-list, elements/pickup-request, elements/shipping-fee-rule, elements/waybill]
+relates: [domains/support]
 ---
 
-# 배송
+# Fulfillment & Delivery · 배송
 
-결제가 끝난 주문을 실제로 고객에게 보내고, 필요하면 반품을 접수하는
-도메인입니다. 배송사 연동과 환불 처리가 맞물려 동작합니다.
+Getting the parcel out of the warehouse, onto a carrier, into the shopper's hands — and, when it has to, back again.
+
+창고에서 물건을 꺼내 택배사에 넘기고 고객의 손에 닿기까지, 그리고 되돌려 받아야 할 때 회수하기까지를 다룹니다.

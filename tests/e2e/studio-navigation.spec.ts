@@ -1,5 +1,6 @@
 import { expect, test, type Page } from "@playwright/test";
 import { seedFirstRunSeen } from "./first-run-seed";
+import { STOREFRONT_STUDIO_NODE_PARAM } from "./storefront-node";
 
 /**
  * 공방이 **걷는다** — 같은-라우트 이동의 회귀 게이트.
@@ -48,7 +49,7 @@ test.describe("공방 내비게이션 — 주소가 실제로 움직인다", () 
   test("위성 클릭이 그 노드로 걸어간다 — 산책", async ({ page }) => {
     await open(
       page,
-      `/ko/ontology/studio/?guides=off&node=${encodeURIComponent("capability:order-create")}`,
+      `/ko/ontology/studio/?guides=off&node=${STOREFRONT_STUDIO_NODE_PARAM}`,
     );
 
     const satellite = page.getByTestId("studio-satellite-right").first();
@@ -58,7 +59,9 @@ test.describe("공방 내비게이션 — 주소가 실제로 움직인다", () 
     // 어느 이웃으로 걸어갔는지는 볼트 내용이 정하므로 고정하지 않는다 —
     // 지켜야 할 사실은 "출발한 노드가 아닌 곳에 도착했다" 이다.
     await expect(page).toHaveURL(/[?&]node=/);
-    await expect(page).not.toHaveURL(/node=capability%3Aorder-create/);
+    await expect(page).not.toHaveURL(
+      new RegExp(`node=${STOREFRONT_STUDIO_NODE_PARAM}`),
+    );
   });
 
   /**
@@ -78,7 +81,7 @@ test.describe("공방 내비게이션 — 주소가 실제로 움직인다", () 
   test("「그만하기」는 지도로 나간다", async ({ page }) => {
     await open(
       page,
-      `/ko/ontology/studio/?guides=off&node=${encodeURIComponent("capability:order-create")}`,
+      `/ko/ontology/studio/?guides=off&node=${STOREFRONT_STUDIO_NODE_PARAM}`,
     );
 
     await page.getByTestId("studio-exit").click();
@@ -104,7 +107,7 @@ test("공방 크롬이 스케일 계약을 지킨다 — 라벨 11px · 컨트�
 }) => {
   await open(
     page,
-    `/ko/ontology/studio/?guides=off&node=${encodeURIComponent("capability:order-create")}`,
+    `/ko/ontology/studio/?guides=off&node=${STOREFRONT_STUDIO_NODE_PARAM}`,
   );
 
   const measured = await page.evaluate(() => {

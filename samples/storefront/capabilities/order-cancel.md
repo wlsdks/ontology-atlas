@@ -1,14 +1,18 @@
 ---
 slug: capabilities/order-cancel
 kind: capability
-title: 주문 취소
-domain: order
-dependencies: [capabilities/payment-authorize]
-relates: [domains/fulfillment]
+title: Order Cancellation
+display_ko: 주문 취소
+display_en: Order Cancellation
+description: "Voids a whole order before it ships: the order stops existing as a commitment and the full amount goes back."
+domain: domains/order
+dependencies: [capabilities/payment-cancel, capabilities/stock-tracking]
+relates: [capabilities/order-partial-cancel]
+elements: []
 ---
 
-# 주문 취소
+# Order Cancellation · 주문 취소
 
-고객이나 운영자가 아직 배송이 시작되지 않은 주문을 취소합니다. 이미 승인된
-결제 건은 취소와 함께 결제 도메인에서 되돌려야 하므로 결제 승인 기능에
-의존합니다.
+Voids a whole order before it ships: the order stops existing as a commitment and the full amount goes back.
+
+출고 전에 주문 전체를 무효로 합니다 — 약속 자체가 사라지고 결제 금액은 전액 되돌아갑니다.

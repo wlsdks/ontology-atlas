@@ -1,9 +1,15 @@
 ---
 slug: elements/email-sender
 kind: element
-title: 이메일 발송 서비스
-domain: marketing
+title: Email Sender
+display_ko: 이메일 발송기
+display_en: Email Sender
+description: "Reaches an inbox. Carries long content and images, and stays there until the person deletes it."
+domain: domains/marketing
 ---
 
-이메일 캠페인 콘텐츠를 대량으로 발송하는 서비스. 발급된 쿠폰을 알리거나
-신상품 소식을 전할 때 이 서비스를 통해 고객 받은편지함으로 전달됩니다.
+# Email Sender · 이메일 발송기
+
+Reaches an inbox. Carries long content and images, and stays there until the person deletes it.
+
+메일함에 도달합니다. 긴 내용과 이미지를 실을 수 있고, 지우기 전까지 남아 있습니다.

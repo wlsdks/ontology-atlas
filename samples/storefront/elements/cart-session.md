@@ -1,9 +1,15 @@
 ---
 slug: elements/cart-session
 kind: element
-title: 장바구니 세션
-domain: order
+title: Cart Session
+display_ko: 장바구니 세션
+display_en: Cart Session
+description: "The shopper's in-progress selection, kept per person and outliving a browser tab."
+domain: domains/order
 ---
 
-장바구니에 담긴 상품 목록을 로그인 여부와 무관하게 임시로 저장하는 저장소.
-결제 화면으로 넘어갈 때 이 세션의 내용을 그대로 읽어 주문 초안을 만듭니다.
+# Cart Session · 장바구니 세션
+
+The shopper's in-progress selection, kept per person and outliving a browser tab.
+
+고객이 고르는 중인 목록이며, 사람 단위로 보관되고 브라우저 탭보다 오래 남습니다.

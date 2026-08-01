@@ -1,14 +1,17 @@
 ---
 slug: domains/customer
 kind: domain
-title: 회원
-display_en: Members
-description: 고객이 가입하고 구매한 상품에 리뷰를 남깁니다.
-capabilities: [review-write, signup]
-relates: [domains/order]
+title: Customers
+display_ko: 회원
+display_en: Customers
+description: "Who the shopper is, how they prove it, and what the store is allowed to remember about them between visits."
+capabilities: [capabilities/account-closure, capabilities/address-book, capabilities/login, capabilities/membership-tier, capabilities/signup, capabilities/wishlist]
+elements: [elements/address-record, elements/customer-account, elements/login-session, elements/tier-rule, elements/wishlist-entry]
+relates: [domains/marketing, domains/order]
 ---
 
-# 회원
+# Customers · 회원
 
-고객이 쇼핑몰에 가입하고, 구매한 상품에 리뷰를 남기는 도메인입니다. 회원
-인증은 장바구니·주문·리뷰 등 대부분의 개인화 기능의 전제가 됩니다.
+Who the shopper is, how they prove it, and what the store is allowed to remember about them between visits.
+
+고객이 누구인지, 그걸 어떻게 증명하는지, 그리고 다음 방문까지 가게가 무엇을 기억해도 되는지를 다룹니다.

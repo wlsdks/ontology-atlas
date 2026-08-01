@@ -1,5 +1,6 @@
 import { expect, test } from "@playwright/test";
 import { seedFirstRunSeen } from "./first-run-seed";
+import { STOREFRONT_STUDIO_NODE_PARAM } from "./storefront-node";
 
 /**
  * 공방 채움 확정 — **재료가 자리로 걸어 들어온다**.
@@ -22,7 +23,7 @@ import { seedFirstRunSeen } from "./first-run-seed";
 test("빈 소켓을 채우면 새 위성이 확정 램프로 도착한다", async ({ page }) => {
   await seedFirstRunSeen(page);
   await page.goto(
-    `/ko/ontology/studio/?guides=off&node=${encodeURIComponent("capability:order-create")}`,
+    `/ko/ontology/studio/?guides=off&node=${STOREFRONT_STUDIO_NODE_PARAM}`,
     { waitUntil: "networkidle" },
   );
 

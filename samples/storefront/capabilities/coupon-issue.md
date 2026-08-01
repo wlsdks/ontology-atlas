@@ -1,12 +1,16 @@
 ---
 slug: capabilities/coupon-issue
 kind: capability
-title: 쿠폰 발급
-domain: marketing
-elements: [coupon-engine]
+title: Coupon Issuing
+display_ko: 쿠폰 발급
+display_en: Coupon Issuing
+description: "Creates a conditional right to a discount and hands it to a specific person or group."
+domain: domains/marketing
+elements: [elements/coupon-policy]
 ---
 
-# 쿠폰 발급
+# Coupon Issuing · 쿠폰 발급
 
-특정 회원이나 전체 고객에게 할인 쿠폰을 발급합니다. 발급된 쿠폰은 결제
-금액을 낮추는 데 쓰이고, 이메일 캠페인으로 함께 안내됩니다.
+Creates a conditional right to a discount and hands it to a specific person or group.
+
+조건이 붙은 할인 권리를 만들어 특정한 사람이나 집단에게 줍니다.

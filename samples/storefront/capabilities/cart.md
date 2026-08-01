@@ -1,13 +1,17 @@
 ---
 slug: capabilities/cart
 kind: capability
-title: 장바구니
-domain: order
-elements: [cart-session]
-relates: [domains/payment]
+title: Shopping Cart
+display_ko: 장바구니
+display_en: Shopping Cart
+description: "Holds what a shopper intends to buy without committing them to it, and survives them closing the tab."
+domain: domains/order
+dependencies: [capabilities/product-detail]
+elements: [elements/cart-session]
 ---
 
-# 장바구니
+# Shopping Cart · 장바구니
 
-고객이 여러 상품을 한데 모아 두었다가 한 번에 결제로 넘길 수 있게 담아두는
-기능입니다. 담긴 상품과 수량은 결제 화면으로 그대로 전달됩니다.
+Holds what a shopper intends to buy without committing them to it, and survives them closing the tab.
+
+사겠다는 뜻만 담아 두고 아직 아무것도 확정하지 않습니다. 창을 닫아도 남아 있습니다.
