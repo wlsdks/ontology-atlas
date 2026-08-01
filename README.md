@@ -51,9 +51,9 @@
 
 <p align="center">
   <sub>The installed macOS app reading the example vault in
-  <a href="samples/storefront"><code>samples/storefront</code></a> — 31 Markdown
-  files in a folder. Every screenshot and clip below is the same app on the same
-  folder.</sub>
+  <a href="samples/storefront"><code>samples/storefront</code></a> — an online
+  store, written as nothing but Markdown files in a folder. Every screenshot and
+  clip below is the same app on the same folder.</sub>
 </p>
 
 ---
@@ -134,8 +134,11 @@ Markdown — and it reads it in place. No import step, no index to build, no
 account.
 
 The vault in every screenshot below is
-[`samples/storefront`](samples/storefront): an online store described as six
-domains, thirteen capabilities and eleven elements.
+[`samples/storefront`](samples/storefront): an online store described as
+products, inventory, orders, payments, delivery, members, marketing and support —
+each with the capabilities inside it and the things those capabilities work with.
+Run `node cli/src/index.mjs overview samples/storefront` for the current census;
+no document here writes the number, because it changes whenever anyone adds a node.
 
 ### 2. Connect your agent
 
@@ -214,22 +217,22 @@ by a command, not by hand, and the command said what it would do to the graph
 before touching a file:
 
 ```console
-$ node $ATLAS/cli/src/index.mjs relate capabilities/return-intake capabilities/shipment-tracking dependencies ./storefront --dry-run
+$ node $ATLAS/cli/src/index.mjs relate capabilities/return-request capabilities/refund dependencies ./storefront --dry-run
 
-capabilities/return-intake --dependencies--> capabilities/shipment-tracking
+capabilities/return-request --dependencies--> capabilities/refund
   verdict matches_existing_schema · exists no
   schema  capability --dependencies--> capability
-  pattern count 7 · resolved 7 · external 0 · unresolved 0
+  pattern count 51 · resolved 51 · external 0 · unresolved 0
   recommendation safe_to_add · No exact or inverse edge found; capability --dependencies--> capability is an existing schema pattern.
 
 nearby schema patterns
-  3 · capability --dependencies--> capability (count 7)
-  1 · capability --domain--> domain (count 13)
-  1 · domain --capabilities--> capability (count 13)
-  1 · capability --elements--> element (count 11)
-  1 · capability --relates--> domain (count 4)
+  3 · capability --dependencies--> capability (count 51)
+  2 · capability --relates--> capability (count 12)
+  1 · capability --elements--> element (count 54)
+  1 · capability --domain--> domain (count 49)
+  1 · domain --capabilities--> capability (count 49)
 
-dry-run would write dependencies on capabilities/return-intake → capabilities/shipment-tracking (no file changed)
+dry-run would write dependencies on capabilities/return-request → capabilities/refund (no file changed)
 ```
 
 An edge that would introduce a shape the vault has never used comes back as
@@ -281,40 +284,46 @@ same example vault the screenshots use:
 $ node $ATLAS/cli/src/index.mjs blast-radius capabilities/payment-authorize ./storefront --depth 2
 
 capabilities/payment-authorize — blast radius (depth 2, incoming)
-  risk high · 10 노드 · 15 관계 · 6 cross-domain
+  risk high · 22 노드 · 33 관계 · 6 cross-domain
 
 affected by kind
-  capability     6
+  capability     10
+  element        9
   domain         2
-  element        1
   project        1
 
 affected by domain
-  domains/order                            4
-  domains/payment                          3
+  domains/payment                          15
+  domains/order                            3
+  domains/catalog                          1
   domains/customer                         1
-  domains/fulfillment                      1
+  domains/marketing                        1
 
 affected nodes (distance 별)
-  d1 capabilities/order-cancel — 주문 취소
-  d1 capabilities/order-create — 주문 생성
-  d1 capabilities/refund-process — 환불 처리
-  d1 domains/payment — 결제
-  d2 capabilities/cart — 장바구니
+  d1 capabilities/installment — Instalment Payment
+  d1 capabilities/order-placement — Order Placement
+  d1 capabilities/payment-cancel — Payment Void
+  d1 capabilities/tax-receipt — Tax Receipt Issuing
+  d1 capabilities/wallet-payment — One-Tap Wallet Payment
+  d1 domains/payment — Payments
+  d2 capabilities/refund — Refund Processing
+  d2 elements/kakao-pay — KakaoPay Integration
   ...
 
-next impact capabilities/order-cancel — impact rows are candidates, not proof;
+next impact capabilities/installment — impact rows are candidates, not proof;
 inspect backlinks and node detail before refactor decisions
-  node $ATLAS/cli/src/index.mjs node capabilities/order-cancel [vault] --limit 20
+  node $ATLAS/cli/src/index.mjs node capabilities/installment [vault] --limit 20
   node $ATLAS/cli/src/index.mjs backlinks capabilities/payment-authorize [vault]
   node $ATLAS/cli/src/index.mjs reachability capabilities/payment-authorize [vault] --plan --depth 2 --direction both --limit 20
 ```
 
-*Verbatim. The node titles are Korean because this example vault is written in
-Korean, and a vault reads in whatever language you write it in; the CLI's own
-labels are on the list to translate. Node names can carry a `display_en` /
-`display_ko` pair, which is why the map above says "Payments" where this
-transcript says "결제".*
+*Verbatim, apart from the elided `...` rows and the runnable prefix — the CLI
+shortens its own follow-up hints to `ontology-atlas <command>`, which is not a
+command that exists on your machine, so they are spelled out here. Every node in
+the example vault carries a `display_ko` / `display_en` pair, so the same graph reads "Payments" in
+English and "결제" in Korean without the file changing; `title` stays one value
+because search and matching need a single truth. The CLI's own labels are still
+partly Korean and are on the list to translate.*
 
 No graph database is involved. `compile_ontology` builds the graph
 deterministically from frontmatter, and `query_ontology` runs paths,
