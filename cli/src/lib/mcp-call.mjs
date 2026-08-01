@@ -78,12 +78,23 @@ export function callMcpTool(vaultRoot, toolName, args = {}) {
     const entry = resolveMcpEntry();
     const timeoutMs = mcpCallTimeoutMs();
     const killGraceMs = mcpKillGraceMs();
+    // `OATLAS_REPO_ROOT` 는 **명시된 경우에만** 넘긴다 (2026-08-01 실측).
+    //
+    // 종전엔 미지정 시 `process.cwd()` 를 대신 실었다. 그러면 서버가 문서로
+    // 약속한 순서 — 볼트의 git top-level 을 먼저 본다 — 가 아예 실행되지
+    // 않고, **내가 서 있던 디렉터리**가 그 볼트의 저장소라고 선언된다. 남의
+    // 볼트를 이 저장소 안에서 점검하면 `health` 가 그 볼트의 코드 경로를
+    // *우리* 저장소에 대고 대조해서, 사실 아무 문제 없는 볼트에
+    // `needs_attention — vault_validation warn:13` 을 붙였다. 같은 볼트에
+    // `validate` 는 clean 이라고 답해서, 어느 쪽이 맞는지 알 방법이 없었다.
+    const env = { ...process.env, OATLAS_VAULT: vaultRoot };
+    if (!process.env.OATLAS_REPO_ROOT) delete env.OATLAS_REPO_ROOT;
     const proc = spawn(process.execPath, [entry], {
-      env: {
-        ...process.env,
-        OATLAS_VAULT: vaultRoot,
-        OATLAS_REPO_ROOT: process.env.OATLAS_REPO_ROOT || process.cwd(),
-      },
+      env,
+      // 서버의 마지막 fallback 도 `process.cwd()` 다. 자식의 cwd 를 볼트로
+      // 두어야 그 fallback 마저 볼트를 가리킨다 — 부모의 cwd 를 물려주면
+      // 위에서 지운 추측이 다른 문으로 되돌아온다.
+      cwd: vaultRoot,
       stdio: ['pipe', 'pipe', 'pipe'],
     });
 

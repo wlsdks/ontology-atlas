@@ -83,7 +83,7 @@ ${COLORS.bold}Usage:${COLORS.reset}
   ontology-atlas list [vault]                 List ontology nodes in a vault
                                               ${COLORS.dim}--kind <kind>     filter by kind${COLORS.reset}
                                               ${COLORS.dim}--json            JSON output${COLORS.reset}
-  ontology-atlas validate [vault]             Frontmatter integrity check (exit 1 on errors)
+  ontology-atlas validate [vault]             Frontmatter + graph-reference check (코드 경로는 안 봄 → health)
        --json --strict --fail-on=code,...     ${COLORS.dim}structured · warning 도 fail · 특정 code 만 fail${COLORS.reset}
        --list-codes                           ${COLORS.dim}사용 가능한 issue code 목록 (--fail-on 발견용)${COLORS.reset}
   ontology-atlas mcp-verify [vault]           MCP boot + tools + health + graph-query smoke
@@ -174,7 +174,7 @@ ${COLORS.bold}Graph-level commands${COLORS.reset} ${COLORS.dim}(R15 — wraps th
        --limit N --node-limit N --types A,B --json
   ontology-atlas topological-order [vault] Prerequisite-first dependency ordering
        --limit N --types A,B --include-isolated --json
-  ontology-atlas health [vault]               Graph 무결성 dashboard (5 checks)
+  ontology-atlas health [vault]               Graph 무결성 dashboard (6 checks, 코드 경로 대조 포함)
        --json --component-types A,B          ${COLORS.dim}focused diagnosis tuning 지원${COLORS.reset}
   ontology-atlas agent-brief [vault]          Claude Code/Codex handoff — readiness + first MCP calls
        --prompt --graph-db-pack --verify-fallbacks
