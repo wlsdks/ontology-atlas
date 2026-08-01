@@ -25,6 +25,7 @@ import { useLocalVault } from "@/features/docs-vault-local";
 import { isDesktopShell } from "@/shared/lib/desktop-shell";
 import { isGatewaySurface, resolveActiveNavDestination } from "@/shared/lib/nav-destination";
 import { RouteFocusManager } from "@/shared/ui/route-focus-manager";
+import { useHydrated } from "@/shared/lib/use-hydrated";
 
 /**
  * perf/persistent-shell — 레일(AppNavRail)을 8개 페이지 각각의 개별 마운트
@@ -186,9 +187,16 @@ function AppNavRailSlot() {
   // `/` 는 **웹 방문자에게만** 관문(얼굴)이다 — 볼트를 연 사람과 설치된 앱에는
   // 그대로 작업 진입점이라, 판정에 방문자 맥락이 든다. 단일 출처는
   // `isGatewaySurface`(같은 함수를 `RootEntryPage` 도 쓴다).
+  // ⚠️ `isDesktopShell()` 은 **브라우저만 아는 사실**이다. 정적 프리렌더에는
+  // `window` 가 없어 항상 false 이고, 그 값이 `lg:hidden` 으로 HTML 에 구워지면
+  // **하이드레이션이 그 속성을 고쳐 주지 않는다** — 렌더 함수는 옳은데 화면은
+  // 틀린 채로 남는다. 설치된 앱이 `/` 를 그 HTML 로 열기 때문에 좌측 레일이
+  // 영구히 사라졌다(2026-08-01 실측: 같은 주소도 클라이언트 내비로 들어가면
+  // 정상이었다). `useHydrated()` 가 하이드레이션 뒤 한 번의 리렌더를 보장한다.
+  const hydrated = useHydrated();
   const gateway = isGatewaySurface(pathname, {
     hasVault: Boolean(vault.manifest),
-    desktop: isDesktopShell(),
+    desktop: hydrated && isDesktopShell(),
     vaultKnown: vault.restoreAttempted,
   });
 
