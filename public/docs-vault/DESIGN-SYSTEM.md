@@ -2790,6 +2790,27 @@ JSX 안에 44px 정사각 버튼이나 라벨 버튼을 인라인 클래스로 �
   fill/line 만 가른다.
 - 지속: `glyphSet` (localStorage).
 
+### 확장 — 접힌 묶음을 어떻게 펼치나 (2026-08-01, 설정 시트 [확장] 절)
+
+시안 `.qa-scratch/proto-expand.html` 의 좌측 계측 패널을 그대로 이식했다. 같은
+`appearance-preferences` 스토어(`ontology-atlas:expand:v1`)를 쓰고, 지도 캔버스가
+매 프레임 ref 미러로 읽어 **다음 프레임부터** 반영된다.
+
+- **펼치기 표시** — `pill`(뜬 알약, 종전) · **`bar`(머리 위 막대, 기본)** ·
+  `badge`(어깨 배지). **기본값이 오늘 화면을 바꾸는 유일한 값**이고, 그 결정과
+  반증 조건은 `docs/DECISIONS.md` 2026-08-01 항목. 드로우·히트테스트·라벨 예약이
+  판정 함수 하나(`clusterControlForm`)를 공유한다 — 갈라지면 「보이는데 안 눌리는
+  버튼」이 난다.
+- **확장 구조** — `disc`(나선 원반, 기본 = 오늘의 phyllotaxis) · `fan` · `ring` ·
+  `column`. 임계(12) **초과** 부모에만 걸린다; 이하 부모는 종전 부채꼴 그대로.
+- **세 숫자** — 한 번에 여는 개수(4~24, 기본 24) · 이름을 시도할 개수(3~40,
+  기본 8) · 동시에 펼쳐 둘 부모(1~6, 기본 3). 셋 다 **이미 코드에 있던 상수**
+  (`EGO_NEIGHBOR_LIMIT` · `DISC_LABEL_TOP_K` · `MAX_EXPANDED_PARENTS`)이고, 이제
+  그 상수들이 이 설정의 기본값을 가져다 쓴다(값이 두 곳에 적히지 않게).
+- 게이트: `tests/contract/expand-settings.contract.test.ts`(29건 — 기본값이 실제로
+  칠해지는지 · 셋이 서로 다른 것을 그리는지 · 알약은 종전 지오메트리 그대로인지) +
+  `AppSettingsMenu.test.tsx`(LNB 4·2 · 아이콘 전원 · 시안 범위 그대로).
+
 ## Changelog
 
 - 2026-08-01: "노드 규격" 절 신설(형태·반지름·크기 스케일·각인 숫자를 심볼 이름으로 문서화, 브릿지 노드 자리 예약) + "에이전트가 소비하는 층" 절 신설(2026-07-31 기준 웹 조사 대비 이미 있는 것/새로 채운 것/필요 없다고 판단한 것). 게이트: `tests/contract/node-kind-shape-parity.contract.test.ts` 신설(캔버스·DOM 두 kind-glyph 게이트웨이의 parity, 이전엔 우연히 일치했을 뿐 계약이 아니었다). `--topology-v2-radius-magnitude-k` 주석 정정(로그→√, 구현과 어긋나 있던 드리프트). "Three ambers" 표에 4번째(발자국 트레일) 행 보강. "부채" 절의 행 번호 참조 1건을 심볼 이름으로 정정
