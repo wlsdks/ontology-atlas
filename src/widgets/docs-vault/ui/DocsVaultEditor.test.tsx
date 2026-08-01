@@ -29,7 +29,13 @@ const doc: VaultDoc = {
   linksOut: [],
 };
 
-const draftKey = `ontology-atlas:docs-vault-editor-draft:${doc.slug}`;
+/**
+ * 초안 키에는 **볼트 범위가 들어간다** (2026-08-01). 슬러그만이던 시절엔 다른
+ * 폴더의 같은 이름 파일이 서로의 초안을 덮었고, 두 파일이 바이트가 같으면
+ * 저장이 남의 파일을 덮어썼다.
+ */
+const VAULT_SCOPE = 'test-vault';
+const draftKey = `ontology-atlas:docs-vault-editor-draft:${VAULT_SCOPE}:${doc.slug}`;
 
 afterEach(() => {
   window.localStorage.clear();
@@ -40,7 +46,7 @@ describe('DocsVaultEditor', () => {
   it('saves edited content and shows saved feedback', async () => {
     const onSave = vi.fn().mockResolvedValue(undefined);
     render(
-      <DocsVaultEditor
+      <DocsVaultEditor vaultScope={VAULT_SCOPE}
         doc={doc}
         getDocContent={async () => 'initial'}
         onSave={onSave}
@@ -62,7 +68,7 @@ describe('DocsVaultEditor', () => {
 
   it('makes the draft-vs-disk save state explicit while editing', async () => {
     render(
-      <DocsVaultEditor
+      <DocsVaultEditor vaultScope={VAULT_SCOPE}
         doc={doc}
         getDocContent={async () => 'initial'}
         onSave={vi.fn().mockResolvedValue(undefined)}
@@ -117,7 +123,7 @@ describe('DocsVaultEditor', () => {
       }),
     );
     render(
-      <DocsVaultEditor
+      <DocsVaultEditor vaultScope={VAULT_SCOPE}
         doc={doc}
         getDocContent={async () => 'initial'}
         onSave={vi.fn().mockResolvedValue(undefined)}
@@ -136,7 +142,7 @@ describe('DocsVaultEditor', () => {
   // re-fetch over the user's UNSAVED edits when that identity changes.
   it('does not clobber unsaved edits when getDocContent identity changes (poll)', async () => {
     const { rerender } = render(
-      <DocsVaultEditor doc={doc} getDocContent={async () => 'initial'} onSave={vi.fn()} onClose={vi.fn()} />,
+      <DocsVaultEditor vaultScope={VAULT_SCOPE} doc={doc} getDocContent={async () => 'initial'} onSave={vi.fn()} onClose={vi.fn()} />,
     );
     const editor = await screen.findByDisplayValue('initial');
     fireEvent.change(editor, { target: { value: 'my unsaved edits' } });
@@ -144,7 +150,7 @@ describe('DocsVaultEditor', () => {
     // Simulate a poll: a NEW getDocContent identity returning DIFFERENT disk content.
     rerender(
       <NextIntlClientProvider locale="ko" messages={koMessages}>
-        <DocsVaultEditor doc={doc} getDocContent={async () => 'EXTERNAL CHANGE'} onSave={vi.fn()} onClose={vi.fn()} />
+        <DocsVaultEditor vaultScope={VAULT_SCOPE} doc={doc} getDocContent={async () => 'EXTERNAL CHANGE'} onSave={vi.fn()} onClose={vi.fn()} />
       </NextIntlClientProvider>,
     );
 
@@ -159,7 +165,7 @@ describe('DocsVaultEditor', () => {
     const onSave = vi.fn().mockResolvedValue(undefined);
     const initialDoc = { ...doc, mtime: 1000 };
     const firstMount = render(
-      <DocsVaultEditor
+      <DocsVaultEditor vaultScope={VAULT_SCOPE}
         doc={initialDoc}
         getDocContent={async () => 'initial'}
         onSave={onSave}
@@ -176,7 +182,7 @@ describe('DocsVaultEditor', () => {
     firstMount.unmount();
 
     render(
-      <DocsVaultEditor
+      <DocsVaultEditor vaultScope={VAULT_SCOPE}
         doc={{ ...initialDoc, mtime: 2000 }}
         getDocContent={async () => 'external agent edit'}
         onSave={onSave}
@@ -198,13 +204,13 @@ describe('DocsVaultEditor', () => {
   it('does not clobber edits when a clean re-fetch resolves AFTER the user starts typing', async () => {
     let resolveFetch: ((v: string) => void) | undefined;
     const { rerender } = render(
-      <DocsVaultEditor doc={doc} getDocContent={async () => 'initial'} onSave={vi.fn()} onClose={vi.fn()} />,
+      <DocsVaultEditor vaultScope={VAULT_SCOPE} doc={doc} getDocContent={async () => 'initial'} onSave={vi.fn()} onClose={vi.fn()} />,
     );
     await screen.findByDisplayValue('initial'); // mounted, clean
     // a poll starts a NEW (clean) re-fetch that hasn't resolved yet
     rerender(
       <NextIntlClientProvider locale="ko" messages={koMessages}>
-        <DocsVaultEditor
+        <DocsVaultEditor vaultScope={VAULT_SCOPE}
           doc={doc}
           getDocContent={() => new Promise<string>((r) => { resolveFetch = r; })}
           onSave={vi.fn()}
@@ -224,13 +230,13 @@ describe('DocsVaultEditor', () => {
 
   it('still reflects an external change when the editor is NOT dirty (clean re-fetch)', async () => {
     const { rerender } = render(
-      <DocsVaultEditor doc={doc} getDocContent={async () => 'initial'} onSave={vi.fn()} onClose={vi.fn()} />,
+      <DocsVaultEditor vaultScope={VAULT_SCOPE} doc={doc} getDocContent={async () => 'initial'} onSave={vi.fn()} onClose={vi.fn()} />,
     );
     await screen.findByDisplayValue('initial');
     // clean editor (no edits) — a poll bringing new content SHOULD reflect it.
     rerender(
       <NextIntlClientProvider locale="ko" messages={koMessages}>
-        <DocsVaultEditor doc={doc} getDocContent={async () => 'fresh from disk'} onSave={vi.fn()} onClose={vi.fn()} />
+        <DocsVaultEditor vaultScope={VAULT_SCOPE} doc={doc} getDocContent={async () => 'fresh from disk'} onSave={vi.fn()} onClose={vi.fn()} />
       </NextIntlClientProvider>,
     );
     await waitFor(() =>
@@ -249,7 +255,7 @@ describe('DocsVaultEditor', () => {
     });
     const onSave = vi.fn().mockRejectedValue(conflict);
     const { rerender } = render(
-      <DocsVaultEditor doc={doc} getDocContent={async () => 'initial'} onSave={onSave} onClose={vi.fn()} />,
+      <DocsVaultEditor vaultScope={VAULT_SCOPE} doc={doc} getDocContent={async () => 'initial'} onSave={onSave} onClose={vi.fn()} />,
     );
     const editor = await screen.findByDisplayValue('initial');
     fireEvent.change(editor, { target: { value: 'my unsaved edits' } });
@@ -267,7 +273,7 @@ describe('DocsVaultEditor', () => {
     // buffer must still be dirty → a subsequent poll re-fetch must not clobber it
     rerender(
       <NextIntlClientProvider locale="ko" messages={koMessages}>
-        <DocsVaultEditor doc={doc} getDocContent={async () => 'DISK VERSION'} onSave={onSave} onClose={vi.fn()} />
+        <DocsVaultEditor vaultScope={VAULT_SCOPE} doc={doc} getDocContent={async () => 'DISK VERSION'} onSave={onSave} onClose={vi.fn()} />
       </NextIntlClientProvider>,
     );
     await waitFor(() =>
@@ -280,7 +286,7 @@ describe('DocsVaultEditor', () => {
     const onClose = vi.fn();
     const confirmSpy = vi.spyOn(window, 'confirm').mockReturnValue(false);
     render(
-      <DocsVaultEditor
+      <DocsVaultEditor vaultScope={VAULT_SCOPE}
         doc={doc}
         getDocContent={async () => 'initial'}
         onSave={vi.fn()}
@@ -304,7 +310,7 @@ describe('DocsVaultEditor', () => {
 
   it('마크다운 편집 textarea 가 접근명(aria-label)을 가진다', async () => {
     render(
-      <DocsVaultEditor
+      <DocsVaultEditor vaultScope={VAULT_SCOPE}
         doc={doc}
         getDocContent={async () => 'initial'}
         onSave={vi.fn().mockResolvedValue(undefined)}
@@ -322,7 +328,7 @@ describe('DocsVaultEditor', () => {
     // "불러오는 중" 으로 announce 돼야 한다.
     let resolve!: (v: string) => void;
     render(
-      <DocsVaultEditor
+      <DocsVaultEditor vaultScope={VAULT_SCOPE}
         doc={doc}
         getDocContent={() => new Promise<string>((r) => (resolve = r))}
         onSave={vi.fn().mockResolvedValue(undefined)}
@@ -335,4 +341,42 @@ describe('DocsVaultEditor', () => {
     resolve('done');
     await screen.findByDisplayValue('done');
   });
+
+  /**
+   * **다른 볼트의 초안이 이 볼트의 편집기로 새지 않는다** (2026-08-01 신설).
+   *
+   * 종전 키는 슬러그만이었다(`…:README`). 그래서 폴더 A 의 `README.md` 를 열면
+   * 폴더 B 의 본문이 「임시저장됨 · 최종 저장 필요」 딱지를 달고 나타났다 —
+   * 사용자가 쓴 적 없는 글이 사용자의 미저장 변경으로 제시된 것이다.
+   *
+   * 그리고 두 파일이 그 시점에 **바이트가 같으면** 충돌 분기도 mtime 가드도
+   * 통과해서, 저장이 A 의 초안을 **B 의 파일 위에** 썼다. 이 시험이 잠그는 것은
+   * 미관이 아니라 그 데이터 손실 경로다.
+   */
+  it('다른 볼트의 초안을 읽지 않는다 — 키에 볼트가 들어간다', async () => {
+    window.localStorage.setItem(
+      `ontology-atlas:docs-vault-editor-draft:other-vault:${doc.slug}`,
+      JSON.stringify({
+        slug: doc.slug,
+        content: '# 남의 볼트에서 쓰던 글',
+        diskContent: '# 남의 볼트에서 쓰던 글',
+        updatedAt: Date.now(),
+      }),
+    );
+
+    render(
+      <DocsVaultEditor
+        vaultScope={VAULT_SCOPE}
+        doc={doc}
+        getDocContent={() => Promise.resolve('# 이 볼트의 원본')}
+        onSave={vi.fn()}
+        onClose={vi.fn()}
+      />,
+    );
+
+    const area = await screen.findByRole('textbox');
+    await waitFor(() => expect((area as HTMLTextAreaElement).value).toContain('이 볼트의 원본'));
+    expect((area as HTMLTextAreaElement).value).not.toContain('남의 볼트');
+  });
+
 });
