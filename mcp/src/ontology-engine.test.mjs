@@ -824,11 +824,13 @@ describe('queryCompiledOntology', () => {
     assert.equal(result.operation, 'maintenance_plan');
     assert.equal(result.sideEffect, false);
     assert.deepEqual(result.summary, {
-      totalActions: 3,
-      filteredActions: 3,
-      remainingActions: 3,
+      totalActions: 4,
+      filteredActions: 4,
+      remainingActions: 4,
       executableActions: 2,
-      reviewActions: 1,
+      // `capabilities/login` 은 이 fixture 에서 `elements:` 가 없다 — 그래서
+      // 「코드에 닿지 않는 능력」한 건이 review 큐에 같이 선다 (2026-08-01).
+      reviewActions: 2,
       compileIssues: 0,
       dependencyCycles: 0,
       canonicalizationActions: 0,
@@ -838,30 +840,33 @@ describe('queryCompiledOntology', () => {
       externalElementRefsIgnored: 0,
       unassignedNodes: 1,
       emptyDomains: 0,
+      capabilitiesWithoutEvidence: 1,
     });
-    assert.deepEqual(result.byPhase, { link: 1, materialize: 1, review: 1 });
-    assert.deepEqual(result.bySeverity, { info: 2, warn: 1 });
+    assert.deepEqual(result.byPhase, { link: 1, materialize: 1, review: 2 });
+    assert.deepEqual(result.bySeverity, { info: 3, warn: 1 });
     assert.deepEqual(result.byKind, {
       add_missing_relation: 1,
       materialize_external_element: 1,
       unassigned_node: 1,
+      capability_without_evidence: 1,
     });
     assert.equal(result.cursor.afterActionId, null);
     assert.equal(result.cursor.found, true);
     assert.equal(result.cursor.reason, null);
     assert.equal(result.cursor.startIndex, 0);
-    assert.equal(result.cursor.nextAfterActionId, result.actions[2].id);
+    assert.equal(result.cursor.nextAfterActionId, result.actions[3].id);
     assert.equal(result.cursor.hasMore, false);
     assert.deepEqual(result.actions.map((action) => action.kind), [
       'add_missing_relation',
       'materialize_external_element',
+      'capability_without_evidence',
       'unassigned_node',
     ]);
     assert.equal(result.nextExecutableAction.kind, 'add_missing_relation');
-    assert.equal(result.nextReviewAction.kind, 'unassigned_node');
+    assert.equal(result.nextReviewAction.kind, 'capability_without_evidence');
     assert.match(result.actions[0].id, /^maint_[a-f0-9]{8}$/);
     assert.equal(result.actions[0].executable, true);
-    assert.equal(result.actions[2].executable, false);
+    assert.equal(result.actions[3].executable, false);
     assert.deepEqual(result.actions[0].proposedAction, {
       tool: 'add_relation',
       args: {
@@ -887,7 +892,7 @@ describe('queryCompiledOntology', () => {
       severities: ['warn'],
       kinds: [],
     });
-    assert.equal(result.summary.totalActions, 3);
+    assert.equal(result.summary.totalActions, 4);
     assert.equal(result.summary.filteredActions, 1);
     assert.equal(result.summary.remainingActions, 1);
     assert.deepEqual(result.byPhase, { link: 1 });
@@ -1017,6 +1022,7 @@ describe('queryCompiledOntology', () => {
 
     assert.deepEqual(second.actions.map((action) => action.kind), [
       'materialize_external_element',
+      'capability_without_evidence',
       'unassigned_node',
     ]);
     assert.equal(second.cursor.afterActionId, first.cursor.nextAfterActionId);
@@ -1024,10 +1030,10 @@ describe('queryCompiledOntology', () => {
     assert.equal(second.cursor.reason, null);
     assert.equal(second.cursor.startIndex, 1);
     assert.equal(second.cursor.hasMore, false);
-    assert.equal(second.summary.filteredActions, 3);
-    assert.equal(second.summary.remainingActions, 2);
+    assert.equal(second.summary.filteredActions, 4);
+    assert.equal(second.summary.remainingActions, 3);
     assert.equal(second.nextExecutableAction.kind, 'materialize_external_element');
-    assert.equal(second.nextReviewAction.kind, 'unassigned_node');
+    assert.equal(second.nextReviewAction.kind, 'capability_without_evidence');
 
     const missing = queryCompiledOntology(artifact(), {
       operation: 'maintenance_plan',
@@ -1038,7 +1044,7 @@ describe('queryCompiledOntology', () => {
     assert.equal(missing.cursor.found, false);
     assert.equal(missing.cursor.reason, 'afterActionId not found in filtered maintenance actions');
     assert.equal(missing.cursor.startIndex, null);
-    assert.equal(missing.summary.filteredActions, 3);
+    assert.equal(missing.summary.filteredActions, 4);
     assert.equal(missing.summary.remainingActions, 0);
     assert.deepEqual(missing.actions, []);
     assert.deepEqual(missing.byPhase, {});

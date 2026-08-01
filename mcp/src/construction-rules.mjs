@@ -132,7 +132,14 @@ export const CONSTRUCTION_RULES_EN = `## Construction rules — read before add_
    IF you cannot satisfy all four: create NOTHING — count alone is not evidence of
    a problem.
 5. This procedure does not block writes. Skipping it still succeeds; \`warnings\` /
-   \`postWriteMaintenance\` on the response flags it for cleanup instead.`;
+   \`postWriteMaintenance\` on the response flags it for cleanup instead.
+6. When you create a \`capability\`, attach its EVIDENCE in the same pass: the file
+   or directory the behavior lives in goes into \`elements:\` — either the slug of an
+   element node, or the path itself, which counts. A capability with an empty
+   \`elements:\` is a claim nobody can open: an agent handed only this vault can
+   describe the behavior and cannot find it. This does not block the write either;
+   the node is reported back under \`capability_without_evidence\` in
+   \`maintenance_plan\` until it points at something.`;
 
 /**
  * Appended to `add_concept` / `add_concepts` tool descriptions.
@@ -318,6 +325,28 @@ export function danglingGraphReferenceMessage({ slug, key, refs, count, sampleLi
  */
 export function pathShapedReferenceMessage({ slug, key, refs, count, sampleLimit }) {
   return `${count} entry/entries in "${slug}".${key} are file paths, not concept names: ${sampleRefs(refs, sampleLimit)}. A path is EVIDENCE for a concept, not the concept — it names where something lives, so it cannot be a child in the graph. For each one, either write the sentence that says what distinct role that file plays and promote it with add_concept({kind:"element", title:"<the role>", path:"<the path>"}), or remove it from ${key}: and keep the path as evidence on "${slug}" (frontmatter path: / the node body). One node per file, mirroring a directory listing, is the failure this check exists to stop.`;
+}
+
+/**
+ * Warning literal for a capability created with no evidence at all.
+ *
+ * ## Why this fires at creation and only at creation
+ *
+ * The honest authoring sequence is "name the behavior, then attach the file", so
+ * a capability that has no `elements:` *right now* is not yet wrong. Firing on
+ * every later write to the same node would turn a legitimate two-step into a
+ * standing accusation, and a channel that repeats itself gets filtered out. The
+ * creation moment is the one where the author is still deciding, so that is where
+ * the sentence goes — and the durable version of the same question lives in
+ * `maintenance_plan` as `capability_without_evidence`, which keeps asking as long
+ * as the answer is missing.
+ *
+ * ⚠️ It never rejects. Construction rule 5 is not negotiable here: refusing an
+ * evidence-less capability would make the honest sequence impossible and push
+ * agents to route around the tool.
+ */
+export function capabilityWithoutEvidenceMessage({ slug }) {
+  return `"${slug}" is a capability with no \`elements:\` entry, so nothing in the vault says where this behavior lives in code. The write succeeded and nothing here blocks it — but an agent handed only this vault can describe this capability and cannot open it, which is the failure this warning exists to name. Attach evidence while you still have the file in hand: patch_concept({slug:"${slug}", frontmatter:{elements:["<path or element slug>"]}}). A raw path counts as evidence; it does not have to become a node. Until it points at something, this node is listed under \`capability_without_evidence\` in query_ontology({operation:"maintenance_plan"}).`;
 }
 
 /**

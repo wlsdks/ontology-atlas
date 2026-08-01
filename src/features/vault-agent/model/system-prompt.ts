@@ -145,6 +145,13 @@ Write plainly, in the person's language, for someone who is not a developer. Sho
    a problem.
 5. This procedure does not block writes. Skipping it still succeeds; \`warnings\` /
    \`postWriteMaintenance\` on the response flags it for cleanup instead.
+6. When you create a \`capability\`, attach its EVIDENCE in the same pass: the file
+   or directory the behavior lives in goes into \`elements:\` — either the slug of an
+   element node, or the path itself, which counts. A capability with an empty
+   \`elements:\` is a claim nobody can open: an agent handed only this vault can
+   describe the behavior and cannot find it. This does not block the write either;
+   the node is reported back under \`capability_without_evidence\` in
+   \`maintenance_plan\` until it points at something.
 
 # Construction rules — talking to a person
 
