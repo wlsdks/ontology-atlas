@@ -2,7 +2,7 @@
 
 import { Fragment, useState } from "react";
 import { useTranslations } from "next-intl";
-import { ArrowUpRight, Check, CircleAlert, Copy, Loader2, Terminal } from "lucide-react";
+import { ArrowUpRight, Check, Copy, Info, Loader2, Terminal } from "lucide-react";
 import { Link } from "@/i18n/navigation";
 import type { AgentServerAvailability } from "@/shared/config";
 import { copyText } from "@/shared/lib/copy-text";
@@ -22,6 +22,7 @@ import { useToast } from "@/shared/ui";
  */
 
 import { AGENT_CLIENTS, type AgentClientId } from "../lib/agent-clients";
+import { WebManualConnectPanel } from "./WebManualConnectPanel";
 
 type ClientId = "claudeCode" | "cursor" | "antigravity" | "codex";
 
@@ -140,25 +141,32 @@ export function AgentClientButtons({
   }
 
   if (!serverAvailability.launch) {
+    /**
+     * **웹 = 막다른 길이 아니다.** 종전 이 자리는 「이 화면에서는 연결할 수
+     * 없어요」 한 문장과 사람을 긴 문서로 떨구는 링크뿐이었다. 그 문장은
+     * 거짓이다 — MCP 는 Atlas 가 아니라 **폴더**에 붙고, 에이전트가 자기
+     * 세션에서 서버를 띄운다. 웹 사용자도 연결된다.
+     *
+     * 브라우저가 못 하는 것은 **설정을 대신 써 주는 것** 하나다(FSA 는 핸들만
+     * 주고 경로를 안 준다). 그러니 능력의 범위를 실제보다 좁게 말하지 않고,
+     * 브라우저가 모르는 그 값을 **아는 사람에게 묻는다**.
+     *
+     * 「왜 + 어디서」 계약(`.claude/rules/surfaces.md`)은 그대로다: 왜 자동이
+     * 안 되는지 말하고, 갈 곳을 준다. 달라진 것은 갈 곳이 **이 자리에도**
+     * 생겼다는 것이고, 앱(버튼 한 번)은 여전히 더 쉬운 길로 남는다.
+     */
     return (
       <div className="flex flex-col gap-2" data-testid="agent-client-buttons">
         <div
           role="status"
           data-testid="agent-server-unavailable"
-          // 경고 톤의 알파 사다리는 `--color-amber-source-*` 다(rgb 가
-          // `--color-status-warning` 과 같은 244,183,49). 종전에는 존재하지
-          // 않는 `--color-status-warning-a36/a10` 을 불렀고, **없는 토큰을
-          // 부르는 `var()` 는 문법상 완전히 정상**이라 어떤 게이트도 안
-          // 걸렸다 — 그 동안 이 경고 카드는 테두리가 본문색, 배경이 투명인
-          // 평범한 카드로 렌더됐다(2026-07-28 실측). `text-large` 사고와
-          // 같은 계열: 존재하지 않는 것은 리터럴을 남기지 않는다.
-          className="rounded-md border border-[color:var(--color-amber-source-a35)] bg-[color:var(--color-amber-source-a10)] px-3 py-2.5"
+          className="rounded-md border border-[color:var(--color-border-soft)] bg-[color:var(--color-overlay-1)] px-3 py-2.5"
         >
           <div className="flex items-start gap-2">
-            <CircleAlert
+            <Info
               size={14}
               aria-hidden
-              className="mt-0.5 shrink-0 text-[color:var(--color-status-warning)]"
+              className="mt-0.5 shrink-0 text-[color:var(--color-text-quaternary)]"
             />
             <div className="min-w-0">
               <p className="text-body font-medium text-[color:var(--color-text-primary)]">
@@ -167,9 +175,6 @@ export function AgentClientButtons({
               <p className="mt-1 text-label leading-relaxed text-[color:var(--color-text-tertiary)]">
                 {t("serverUnavailableDesc")}
               </p>
-              {/* 「왜 + 어디서」 계약 (`.claude/rules/surfaces.md`) — 이유만
-                  말하고 갈 곳이 없으면 그건 강등이 아니라 막다른 길이다.
-                  주 목적지는 앱이고, 앱을 못 까는 사람에게 소스 경로를 남긴다. */}
               <div className="mt-2 flex flex-wrap items-center gap-x-3 gap-y-1">
                 <Link
                   href="/download/"
@@ -178,6 +183,9 @@ export function AgentClientButtons({
                 >
                   {t("serverUnavailableGetApp")}
                 </Link>
+                {/* 더 읽고 싶은 사람만 간다 — **주 경로가 아니다.** 종전에는
+                    이것이 유일한 대안이라 연결하려던 사람이 시트를 잃고 문서
+                    한가운데에 놓였다. */}
                 <Link
                   href="/docs/?slug=AGENT-GRAPH-WORKFLOW"
                   className="inline-flex text-label text-[color:var(--color-text-quaternary)] transition-colors hover:text-[color:var(--color-text-secondary)]"
@@ -188,6 +196,7 @@ export function AgentClientButtons({
             </div>
           </div>
         </div>
+        <WebManualConnectPanel />
       </div>
     );
   }

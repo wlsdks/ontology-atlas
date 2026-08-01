@@ -1353,9 +1353,12 @@ describe('VaultAgentSetupPanel', () => {
       />,
     );
 
-    expect(screen.getByTestId('agent-server-unavailable')).toHaveTextContent(
-      '연결할 수 없어요',
-    );
+    // 2026-08-01 — 종전 단언은 「연결할 수 없어요」였고 그 문장은 거짓이었다.
+    // 브라우저가 못 하는 것은 **자동 저장** 하나다(원장 2026-08-01).
+    const card = screen.getByTestId('agent-server-unavailable');
+    expect(card).toHaveTextContent('설정 파일을 대신 저장하지 못합니다');
+    expect(card).not.toHaveTextContent('연결할 수 없어요');
+    expect(screen.getByTestId('web-manual-connect')).toBeInTheDocument();
     expect(screen.queryByTestId('agent-setup-step-2')).not.toBeInTheDocument();
     expect(screen.queryByTestId('agent-setup-step-3')).not.toBeInTheDocument();
     expect(screen.queryByRole('button', { name: 'Claude Code에 연결' })).not.toBeInTheDocument();

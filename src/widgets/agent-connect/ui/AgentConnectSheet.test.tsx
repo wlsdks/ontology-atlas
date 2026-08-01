@@ -101,7 +101,12 @@ describe("AgentConnectSheet focus contract", () => {
     ).not.toBeInTheDocument();
   });
 
-  it("fails closed instead of offering actions when the server cannot be started here", () => {
+  // 2026-08-01 — 종전 제목은 "fails closed" 였고 단언은 "cannot connect an
+  // agent" 였다. 그 문장은 **거짓**이었다: MCP 는 폴더에 붙고 에이전트가 자기
+  // 세션에서 서버를 띄우므로 웹 사용자도 연결된다. 여기서 닫히는 것은 **쓰기
+  // 행동**뿐이다 — 붙지 않는 설정을 만드는 버튼은 함정이라서. 정직 계약은
+  // 못 하는 것의 **크기**까지 정확할 것을 요구한다.
+  it("closes the write actions — but says only auto-saving is out of reach, not connecting", () => {
     render(
       <NextIntlClientProvider locale="en" messages={enMessages}>
         <AgentConnectSheet
@@ -125,9 +130,11 @@ describe("AgentConnectSheet focus contract", () => {
       </NextIntlClientProvider>,
     );
 
-    expect(screen.getByTestId("agent-server-unavailable")).toHaveTextContent(
-      "cannot connect an agent",
-    );
+    const card = screen.getByTestId("agent-server-unavailable");
+    expect(card).toHaveTextContent("cannot save the config file for you");
+    expect(card).not.toHaveTextContent("cannot connect an agent");
+    // 대신 그 자리에서 끝나는 길이 살아 있다 — 이유만 말하는 카드는 막다른 길이다.
+    expect(screen.getByTestId("web-manual-connect")).toBeInTheDocument();
     // 실행 방법을 모르면 쓰기 행동 자체를 그리지 않는다 — 붙지 않는 설정을
     // 만드는 버튼은 도움이 아니라 나중에 진단해야 할 함정이다.
     expect(screen.queryByTestId("agent-connect-action")).not.toBeInTheDocument();

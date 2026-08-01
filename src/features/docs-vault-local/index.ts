@@ -43,6 +43,22 @@ export {
   type AgentClientConfigState,
 } from './ui/AgentClientButtons';
 export { AgentConnectAction, type AgentConnectActionProps } from './ui/AgentConnectAction';
+export {
+  WebManualConnectPanel,
+  type WebManualConnectPanelProps,
+} from './ui/WebManualConnectPanel';
+export {
+  ATLAS_CLONE_COMMAND,
+  manualConnectConfig,
+  manualLaunch,
+  manualSetupCommand,
+  manualVerifyCommand,
+  normalizeManualPath,
+  type ManualConnectConfig,
+  type ManualConnectInput,
+  type ManualPathIssue,
+  type ManualPathResult,
+} from './lib/manual-connect';
 export { AgentGlobalScopePanel, type AgentGlobalScopePanelProps } from './ui/AgentGlobalScopePanel';
 export {
   globalScopeInstruction,
