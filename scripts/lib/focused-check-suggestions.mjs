@@ -17,6 +17,34 @@ const RULES = [
     matches: [/^scripts\/build-docs-vault\.(?:mjs|test\.mjs)$/],
   },
   {
+    // 이 그물이 실제로 잡는 사고는 「문서를 옮기거나 볼트를 재생성했는데
+    // 그것을 인용하던 산문이 남았다」이고, 그건 markdown 을 건드린 PR 에서만
+    // 생긴다 — 그래서 추천의 트리거도 markdown 이다.
+    command: 'pnpm docs:links',
+    reason: 'markdown moved or edited — cited paths and links may have gone stale',
+    matches: [/\.md$/],
+  },
+  {
+    command: 'pnpm docs:surface:check',
+    reason: 'MCP tool registry, CLI command registry, or their READMEs changed',
+    matches: [
+      /^mcp\/src\/index\.js$/,
+      /^cli\/src\/lib\/cli-commands\.mjs$/,
+      /^mcp\/README\.md$/,
+      /^cli\/README\.md$/,
+      /^docs\/\.generated\/mcp-surface\.json$/,
+    ],
+  },
+  {
+    command: 'pnpm test:docs:checks',
+    reason: 'docs surface or doc-link checker changed',
+    matches: [
+      /^scripts\/build-docs-surface\.(?:mjs|test\.mjs)$/,
+      /^scripts\/check-doc-links\.(?:mjs|test\.mjs)$/,
+      /^scripts\/lib\/(?:docs-surface|doc-links)\.mjs$/,
+    ],
+  },
+  {
     command: 'pnpm test:mcp:docs',
     reason: 'GitHub workflow or community template changed',
     matches: [

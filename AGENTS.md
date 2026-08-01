@@ -65,8 +65,9 @@ pnpm checks:changed               # start here: the focused checks for what you 
 if a task seems to need one, the design is wrong (Round 10 removed the optional
 Firebase/Auth surface permanently). `package.json` scripts carry the rest; the ones
 worth knowing by name are `vault:validate` (frontmatter integrity, also in CI),
-`agents:check` (this file's byte budget + agent-file drift), and `mcp:build-binary`
-(compiles the MCP server into the app bundle).
+`agents:check` (this file's byte budget + agent-file drift), `docs:check`
+(generated-surface diff + broken links), and `mcp:build-binary` (compiles the MCP
+server into the app bundle).
 
 ## Tech stack
 
@@ -205,19 +206,23 @@ The detailed rules live in `.claude/rules/*.md` and Claude Code auto-loads them.
   "looks fine" is not a verification.
 - **Design Guardian** — `@.claude/agents/design-guardian.md` is the standing senior design reviewer for UI work. Use it, or an equivalent sub-agent when available, before and after meaningful Relief/Topology design changes. It rejects token drift, attention-layer collisions, hidden typed facts, decorative motion, browser-only desktop proof, and reference copying. It approves only token-backed changes with screenshot/WebView evidence and installed-app proof when desktop behavior is affected.
 - **Design system** — neutrals + a single indigo, forbidden patterns — `@.claude/rules/design.md` · `@docs/DESIGN-SYSTEM.md`.
-  **디자인 규격은 md 뿐 아니라 `eslint.config.mjs` 의 `no-restricted-syntax` 로
-  강제된다** (타입 램프 · radius 램프 · 그림자 사다리 · 금지 그라디언트). 새
-  규격을 문서에 쓰면 **같은 PR 에서 룰도 넣는다** — 룰 없는 규격은 지켜지지
-  않는다(2026-07-26 실측: 그림자 사다리가 문서에만 있어 하드코딩 5건이 살아
-  있었다). 단, **룰을 켜기 전에 위반을 패턴별로 분류하고 한 PR 로 치환 가능한
-  규모인지 측정한다** — 수백 건 warning 을 만드는 룰은 강제가 아니라 소음이고
-  기존 신호까지 덮는다. 절차는 `design.md` "규격은 lint 로 강제된다" 절.
+  **규격은 문서가 아니라 lint 가 강제한다** (`eslint.config.mjs` 의
+  `no-restricted-syntax`) — 새 규격을 문서에 쓰면 같은 PR 에서 룰도 넣는다.
+  단 **룰을 켜기 전에 위반을 전수 측정한다**: 한 PR 로 못 치우는 규모의 룰은
+  강제가 아니라 소음이고 기존 신호까지 덮는다. 절차와 실측 사례는 `design.md`
+  "규격은 lint 로 강제된다" 절.
 - **Git workflow** — conventional prefix + Korean (or English) body — `@.claude/rules/git.md`
 - **Testing & verification** — TDD-first, unit → e2e — `@.claude/rules/testing.md`
 - **Local-first** — vault folder only, no backend — `@.claude/rules/local-first.md`
 - **Surface contract (web / app)** — `@.claude/rules/surfaces.md`
 - **Forbidden patterns / Do-Not list** — `@.claude/rules/forbidden.md`
-- **Documentation discipline** — `@.claude/rules/documentation.md`
+- **Documentation discipline** — `@.claude/rules/documentation.md`. One rule decides
+  what CI may check about a document (2026-08-01, `docs/DECISIONS.md`): **only what a
+  machine can generate.** Never pin a sentence a human wrote — 90% of the old contract
+  suite did, and it caught nothing while breaking on every rewrite. Derive instead
+  (`pnpm docs:surface:check` regenerates the MCP/CLI surface and diffs it, then checks
+  the READMEs name every registered tool and command) and check referential integrity
+  (`pnpm docs:links`).
 
 ## Context and token budget
 
@@ -296,7 +301,7 @@ section does not repeat them.)
 
 This project describes its own mental model in `docs/ontology/` as frontmatter markdown (dogfooding — we describe ourselves in our own data format).
 
-- Entry points: `docs/ontology/README.md` · `docs/ontology/project.md`
+- Entry points: `docs/ontology/README.md` · `docs/ontology/ontology-atlas.md`
 - Census: `node cli/src/index.mjs overview` — **no document writes the number, and
   CI does not count nodes** (2026-08-01, owner call — `docs/DECISIONS.md`). A pinned
   count rots silently (it did: 97 → 98 went unnoticed), and every gate that *checked*

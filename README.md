@@ -571,9 +571,19 @@ pnpm exec tsc --noEmit    # types
 pnpm lint                 # 0 errors (warnings are tracked, not zero)
 pnpm test:run             # unit + contract suites
 pnpm docs-vault:check     # committed app sample matches docs/
+pnpm docs:check           # generated MCP/CLI surface + broken doc links
 pnpm package:check        # MCP/CLI/docs/performance contracts
 pnpm vault:validate       # frontmatter integrity
 ```
+
+`pnpm docs:check` is two gates. `docs:surface:check` regenerates
+`docs/.generated/mcp-surface.json` from the live MCP tool registry and the CLI
+command registry, fails on any diff, and then checks that `mcp/README.md` and
+`cli/README.md` name every registered tool and command — run
+`pnpm docs:surface:build` and commit the diff after adding either. `docs:links`
+resolves repo-relative links and cited file paths (external URLs are opt-in:
+`pnpm docs:links:external`). The rule they enforce — *only check what a machine
+can generate* — is recorded in [docs/DECISIONS.md](docs/DECISIONS.md).
 
 `pnpm checks:changed` picks the smallest sufficient subset for what you touched;
 [CONTRIBUTING.md](CONTRIBUTING.md) explains when to escalate to the full set.

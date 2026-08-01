@@ -1,0 +1,494 @@
+{
+  "_generatedBy": "pnpm docs:surface:build",
+  "_contract": "Derived from the MCP tool registry and the CLI command registry. Never hand-edit — run `pnpm docs:surface:build` and commit the diff.",
+  "mcp": {
+    "toolCount": 32,
+    "readToolCount": 19,
+    "writeToolCount": 13,
+    "tools": [
+      {
+        "name": "absorb_document",
+        "mode": "write",
+        "arguments": [
+          "allowOutsideRepo",
+          "confirm",
+          "filePath"
+        ],
+        "required": [
+          "filePath"
+        ]
+      },
+      {
+        "name": "add_concept",
+        "mode": "write",
+        "arguments": [
+          "body",
+          "capabilities",
+          "domain",
+          "elements",
+          "kind",
+          "labels",
+          "path",
+          "slug",
+          "title"
+        ],
+        "required": [
+          "kind",
+          "slug",
+          "title"
+        ]
+      },
+      {
+        "name": "add_concepts",
+        "mode": "write",
+        "arguments": [
+          "concepts"
+        ],
+        "required": [
+          "concepts"
+        ]
+      },
+      {
+        "name": "add_relation",
+        "mode": "write",
+        "arguments": [
+          "expected_mtime",
+          "from",
+          "to",
+          "type",
+          "why"
+        ],
+        "required": [
+          "from",
+          "to",
+          "type"
+        ]
+      },
+      {
+        "name": "add_relations",
+        "mode": "write",
+        "arguments": [
+          "relations"
+        ],
+        "required": [
+          "relations"
+        ]
+      },
+      {
+        "name": "analyze_repo_structure",
+        "mode": "read",
+        "arguments": [
+          "ignore",
+          "maxDepth",
+          "proposal",
+          "rootPath"
+        ],
+        "required": []
+      },
+      {
+        "name": "compile_ontology",
+        "mode": "read",
+        "arguments": [
+          "edgesLimit",
+          "edgesOffset",
+          "includeIndexes",
+          "nodesLimit",
+          "nodesOffset",
+          "summary"
+        ],
+        "required": []
+      },
+      {
+        "name": "connection_info",
+        "mode": "read",
+        "arguments": [],
+        "required": []
+      },
+      {
+        "name": "delete_concept",
+        "mode": "write",
+        "arguments": [
+          "confirm",
+          "expected_mtime",
+          "force",
+          "slug"
+        ],
+        "required": [
+          "slug"
+        ]
+      },
+      {
+        "name": "find_backlinks",
+        "mode": "read",
+        "arguments": [
+          "slug"
+        ],
+        "required": [
+          "slug"
+        ]
+      },
+      {
+        "name": "find_evidence",
+        "mode": "read",
+        "arguments": [
+          "limit",
+          "title"
+        ],
+        "required": [
+          "title"
+        ]
+      },
+      {
+        "name": "find_neighbors",
+        "mode": "read",
+        "arguments": [
+          "direction",
+          "includeNodes",
+          "limit",
+          "slug",
+          "types"
+        ],
+        "required": [
+          "slug"
+        ]
+      },
+      {
+        "name": "find_orphans",
+        "mode": "read",
+        "arguments": [
+          "excludeKinds",
+          "kind"
+        ],
+        "required": []
+      },
+      {
+        "name": "find_path",
+        "mode": "read",
+        "arguments": [
+          "from",
+          "maxHops",
+          "to"
+        ],
+        "required": [
+          "from",
+          "to"
+        ]
+      },
+      {
+        "name": "get_concept",
+        "mode": "read",
+        "arguments": [
+          "slug"
+        ],
+        "required": [
+          "slug"
+        ]
+      },
+      {
+        "name": "get_concepts",
+        "mode": "read",
+        "arguments": [
+          "slugs"
+        ],
+        "required": [
+          "slugs"
+        ]
+      },
+      {
+        "name": "git_history",
+        "mode": "read",
+        "arguments": [
+          "limit"
+        ],
+        "required": []
+      },
+      {
+        "name": "git_snapshot",
+        "mode": "write",
+        "arguments": [
+          "confirm",
+          "expectedHead",
+          "message"
+        ],
+        "required": []
+      },
+      {
+        "name": "git_status",
+        "mode": "read",
+        "arguments": [],
+        "required": []
+      },
+      {
+        "name": "index_project",
+        "mode": "read",
+        "arguments": [
+          "maxDepth",
+          "maxFiles",
+          "rootPath",
+          "skipImports",
+          "threshold"
+        ],
+        "required": []
+      },
+      {
+        "name": "infer_imports",
+        "mode": "read",
+        "arguments": [
+          "ignore",
+          "maxFiles",
+          "reconcile",
+          "rootPath",
+          "sourceFolders"
+        ],
+        "required": []
+      },
+      {
+        "name": "list_concepts",
+        "mode": "read",
+        "arguments": [
+          "domain",
+          "kind",
+          "limit",
+          "since",
+          "summary"
+        ],
+        "required": []
+      },
+      {
+        "name": "list_kinds",
+        "mode": "read",
+        "arguments": [],
+        "required": []
+      },
+      {
+        "name": "merge_concepts",
+        "mode": "write",
+        "arguments": [
+          "confirm",
+          "expected_mtime",
+          "fromSlug",
+          "intoSlug"
+        ],
+        "required": [
+          "fromSlug",
+          "intoSlug"
+        ]
+      },
+      {
+        "name": "patch_concept",
+        "mode": "write",
+        "arguments": [
+          "body",
+          "expected_mtime",
+          "frontmatter",
+          "slug"
+        ],
+        "required": [
+          "slug"
+        ]
+      },
+      {
+        "name": "query_concepts",
+        "mode": "read",
+        "arguments": [
+          "filter",
+          "limit"
+        ],
+        "required": [
+          "filter"
+        ]
+      },
+      {
+        "name": "query_ontology",
+        "mode": "read",
+        "arguments": [
+          "afterActionId",
+          "candidateSlug",
+          "componentLimit",
+          "componentTypes",
+          "cycleLimit",
+          "dependencyTypes",
+          "depth",
+          "direction",
+          "domain",
+          "executableOnly",
+          "from",
+          "fromKind",
+          "hasIncoming",
+          "hasOutgoing",
+          "includeExternal",
+          "includeIsolated",
+          "includeOrphans",
+          "includeUnresolved",
+          "itemLimit",
+          "iterations",
+          "kind",
+          "kinds",
+          "limit",
+          "maxDegree",
+          "maxHops",
+          "minDegree",
+          "minInDegree",
+          "minOutDegree",
+          "nodeLimit",
+          "operation",
+          "orderLimit",
+          "pattern",
+          "phases",
+          "project",
+          "recommendationLimit",
+          "relation",
+          "searchBudget",
+          "seed",
+          "severities",
+          "slug",
+          "slugContains",
+          "sort",
+          "targetOperation",
+          "title",
+          "to",
+          "toKind",
+          "type",
+          "types"
+        ],
+        "required": [
+          "operation"
+        ]
+      },
+      {
+        "name": "reclassify_concept",
+        "mode": "write",
+        "arguments": [
+          "body",
+          "confirm",
+          "domain",
+          "expected_mtime",
+          "newKind",
+          "newSlug",
+          "slug"
+        ],
+        "required": [
+          "newKind",
+          "slug"
+        ]
+      },
+      {
+        "name": "remove_relation",
+        "mode": "write",
+        "arguments": [
+          "confirm",
+          "expected_mtime",
+          "from",
+          "to",
+          "type"
+        ],
+        "required": [
+          "from",
+          "to",
+          "type"
+        ]
+      },
+      {
+        "name": "rename_concept",
+        "mode": "write",
+        "arguments": [
+          "confirm",
+          "expected_mtime",
+          "newSlug",
+          "oldSlug",
+          "overwrite"
+        ],
+        "required": [
+          "newSlug",
+          "oldSlug"
+        ]
+      },
+      {
+        "name": "replace_relation",
+        "mode": "write",
+        "arguments": [
+          "confirm",
+          "expected_mtime",
+          "from",
+          "newTo",
+          "newType",
+          "oldTo",
+          "oldType",
+          "why"
+        ],
+        "required": [
+          "from",
+          "newTo",
+          "newType",
+          "oldTo",
+          "oldType"
+        ]
+      },
+      {
+        "name": "validate_vault",
+        "mode": "read",
+        "arguments": [
+          "repoRoot"
+        ],
+        "required": []
+      }
+    ]
+  },
+  "cli": {
+    "commandCount": 52,
+    "commands": [
+      "absorb",
+      "add",
+      "agent-activity",
+      "agent-brief",
+      "agent-files",
+      "agent-setup",
+      "all-paths",
+      "analyze",
+      "backlinks",
+      "blast-radius",
+      "bootstrap",
+      "compile",
+      "components",
+      "cycles",
+      "delete",
+      "domain-matrix",
+      "explain",
+      "export",
+      "facets",
+      "find",
+      "growth",
+      "health",
+      "hubs",
+      "import",
+      "index",
+      "infer-imports",
+      "init",
+      "list",
+      "maintenance",
+      "match-edges",
+      "match-nodes",
+      "mcp-verify",
+      "merge",
+      "moment",
+      "node",
+      "orphans",
+      "overview",
+      "path",
+      "pattern-walk",
+      "preflight",
+      "project-map",
+      "query",
+      "reachability",
+      "relate",
+      "relation-check",
+      "rename",
+      "schema",
+      "similar",
+      "snapshot",
+      "topological-order",
+      "validate",
+      "workspace-brief"
+    ]
+  }
+}

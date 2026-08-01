@@ -119,7 +119,7 @@ relates:
 
 ### 관계를 받는 쪽
 
-`docs/ontology/capabilities/topology-canvas-render.md` 는 **아무것도 적지
+볼트 안의 `capabilities/topology-canvas-render.md` 는 **아무것도 적지
 않습니다.**
 
 ```markdown

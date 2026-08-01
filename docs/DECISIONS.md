@@ -2707,3 +2707,118 @@ PO OS 는 그 두 행에 0 이 있으면 빌드 불가라고 명시한다.
 
 **서명 (accountable)**: stark (코디네이터 위임 "이어서 처리하라")
 **상태**: 유효
+
+---
+
+## 2026-08-01 — 문서 검사의 판별 기준: 기계가 만들 수 있는 것만 검사한다
+
+**소집**: 단독 판정 (소유자 확정 · 웹 조사 근거) · **트리거**:
+`scripts/check-package-contracts.test.mjs` 가 3,419줄 · 단언 2,126개로 자랐고,
+실측 분류에서 **1,915개(90%)가 「README 에 이 문장이 있는가」** 였다. 나머지
+150개(7%)만 코드에서 유도한 값과 대조했다.
+
+**문제 (현상이 아니라)**: 산문 핀은 **잡아야 할 것을 못 잡고 개선을 막는다.**
+도구 동작이 바뀌고 문서가 안 바뀌면 문장은 그대로라 통과한다. 반대로 문서를
+더 나은 말로 고치면 빨개진다. 이 파일 자신이 「게이트가 틀리고 문서가 옳았다」는
+주석을 최근 한 달에만 네 번 달았다(2026-07-31 CLAUDE.md 문구 핀 ·
+2026-07-31 노드 수 핀 · 2026-08-01 self-ontology census · 2026-08-01 verify
+README 형상). 그리고 같은 날 실물이 하나 더 나왔다 — 볼트 재생성으로
+`docs/ontology/domains/onboarding-ux.md` 가 사라졌는데 그것을 인용하던 산문을
+**1,915개 핀 중 아무것도 잡지 못했다**(사람이 손으로 찾았다).
+
+**조사 (웹)**: 산문 핀을 CI 로 거는 오픈소스를 찾지 못했다. 실제로 쓰이는 것은
+둘뿐이다.
+
+- **싸고 넓은 그물** — 린트 · 포매팅 · **깨진 링크**. GitLab 의 `docs-lint
+  markdown` / `docs-lint links`, OpenClaw 의 `check-docs`(= 포매팅 + 린트 +
+  깨진 링크 **셋뿐**).
+- **좁고 정확한 창** — **생성한 뒤 diff**. Kubernetes
+  `hack/verify-generated-docs.sh`, GitLab `graphql-verify`, OpenClaw
+  `pnpm config:docs:check`(`docs/.generated/config-baseline.counts.json` 대조),
+  Hermes `skills-index-freshness.yml`.
+
+GitLab 이 자기 CI 를 요약한 문장: *"primarily structural, lint, and link checks
+— **not content assertions about specific prose requirements**"*.
+
+**결정 — 판별 기준은 한 줄이다.**
+
+> **기계가 만들 수 있는 것만 검사한다. 사람이 판단해서 쓴 문장은 검사하지 않는다.**
+
+세 갈래로 구현했다.
+
+1. **생성 후 diff** — `pnpm docs:surface:build` 가 **실행 중인 MCP 서버에
+   `tools/list` 를 물어** `docs/.generated/mcp-surface.json` 을 쓴다(도구
+   이름 · read/write 모드 · 인자 이름 · 필수 인자 + CLI 커맨드 인벤토리).
+   `pnpm docs:surface:check` 가 재생성해 diff 하고, 덤으로 **등록된 이름이
+   `mcp/README.md` · `cli/README.md` 에 나오는지** 본다. 정적 파싱이 아니라
+   런타임 질의인 이유: 레지스트리는 5,000줄 파일 안에서 조립되고, 정적 파싱은
+   조립 규칙이 바뀌는 순간 조용히 틀린 답을 준다. 생성물은 커밋한다(정렬 ·
+   타임스탬프 0 — `docs/DEVELOPMENT-CHECKS.md` 「Generated manifest
+   determinism」 선례).
+   - **첫 실행이 바로 6건을 잡았다**: `absorb` · `agent-activity` ·
+     `agent-files` · `export` · `index` · `moment` 이 `cli/README.md` 의 커맨드
+     표에 **한 번도 등장한 적이 없었다.** 1,915개 핀이 못 잡던 바로 그 사고다.
+2. **깨진 링크** — `pnpm docs:links`. 저장소 상대 링크 + **산문이 인용하는
+   저장소 앵커 `.md` 경로**. 외부 URL 은 네트워크 의존이라 기본에서 빼고
+   `pnpm docs:links:external` 로 분리했다(남의 서버가 죽었을 때 우리 게이트가
+   빨개지면 안 된다).
+   - **오늘 7건의 진짜 위반을 잡았다**: `AGENTS.md` 가 사라진
+     `docs/ontology/project.md` 를 진입점으로 안내(#806 볼트 재생성의 잔해),
+     `docs/CHANGELOG.md` 의 감사 문서 링크 경로 누락, `docs/audits/…` 의 상대
+     경로 4건이 한 단계 모자람, `docs/archive/DATA-MODEL.md` 의 R10 에서 사라진
+     규칙 문서 링크. 두 건은 거짓 양성이라 예시 표기를 볼트 상대형으로 고쳤다.
+3. **산문 핀 철거** — 아래 「잃은 것」.
+
+**범위 결정 (측정 후)**: 산문 경로 인용 검사는 **이력 문서에서 뺀다**
+(`CHANGELOG.md` · `docs/DECISIONS.md` · `docs/archive|audits|superpowers|plans|prototypes/**`).
+이력 문서는 사라진 파일을 이름으로 부르는 것이 **일**이다 — 변경 로그가
+"`docs/GUIDE.md` 를 삭제했다" 고 쓰는 것은 부패가 아니라 기록이다. 실측: 이
+제외가 없으면 이력에서만 24건이 떠서 현행 문서 3건을 덮는다. **링크는 빼지
+않는다** — 눌렀을 때 열려야 하는 약속은 이력 문서에서도 약속이다.
+
+**markdownlint 는 이번에 넣지 않는다 (전수 측정 후).** 기본 룰로
+node_modules 를 제외하고 재면 **약 15,700건**이고, 상위 둘이 전체의 84% 다:
+`MD013/line-length` 6,731 · `MD060/table-column-style` 6,423 (이 저장소는 한국어
+장문과 compact 표를 의도적으로 쓴다). 그 둘을 꺼도 `MD032/blanks-around-lists`
+741 · `MD022/blanks-around-headings` 597 등 ~2,500건이 남는다. **한 PR 로 치환
+불가능**하고, 수백 건 warning 은 강제가 아니라 소음이며 기존 신호를 덮는다
+(`.claude/rules/design.md` 「룰을 켜기 전 반드시 측정한다」). 깨진 링크
+계열(`MD011` · `MD051` · `MD052`)만 좁혀 켜는 안도 재 봤으나 우리 문서에서
+뜨는 것은 전부 거짓 양성이었다(코드 예시 속 `('-')[0]`, 한국어 앵커,
+표처럼 쓴 `[전체][가이드]`) — `pnpm docs:links` 가 이미 더 정확하다.
+
+**걷어낸 것과 잃은 것** (핀 1,915개 중 이번에 사라지는 것):
+
+| 걷어낸 것 | 잃은 것 |
+|---|---|
+| `package.json` 스크립트 본문을 글자 그대로 복제한 `assert.equal` 약 150개 | 포커스 체크의 `--test-name-pattern` 을 누가 조용히 좁혀도 안 걸린다. 참조 무결성(`assertPnpmScriptsExist`)과 글롭 전수 검사는 남았다 |
+| MCP/CLI README · CHANGELOG · FEATURES · DEVELOPMENT-CHECKS · ARCHITECTURE · 볼트 capability 문서의 문장 핀 (블록 20여 개) | 문서가 도구의 **동작**을 틀리게 서술해도 CI 는 침묵한다. 원래도 침묵했다 — 문장 핀은 문장이 안 바뀌면 통과하므로. 이제 대신 **이름 커버리지**와 **인자 목록 diff** 가 잡는다 |
+| `scripts/smoke-packed-cli.mjs` · `cli/src/commands/mcp-verify.mjs` 의 소스 텍스트 핀 약 220개 | 그 스모크/래퍼의 구현이 바뀌어도 이 파일은 침묵한다. 두 대상의 **동작**은 `cli/src/integration.test.mjs` 가 실제로 실행해 검증한다(핀들이 그 테스트의 *이름*을 pin 하고 있었다 — 검증의 그림자였다) |
+| `desktop:verify-topology-composer-blocking*` 스크립트 플래그 핀 8개 | 설치 앱 증명 스크립트에서 스크린샷 증거 플래그가 빠져도 안 걸린다 |
+| `launch-docs-current.test.ts` 의 낡은 수 금지어 7개 (`12 tools` · `read 8 + write 4` …) | 문서가 현재 수와 낡은 수를 **동시에** 적으면 통과한다. 금지어 사전은 항목을 손으로 더해야 자라는 장치라 어느 쪽이든 썩었다 |
+| 볼트 README 의 문장 핀 | (대체됨) 이제 **README 가 부르는 노드가 실재하는지** + **공개 계약의 수가 생성물과 같은지** 를 본다 |
+
+**남긴 것과 근거**: ① 코드 유도 대조 — 관계/유지보수 enum 전수(엔진 배열에서
+기대 문자열 생성), `tunedHealthScopeOutputSummary()` 등 계산된 요약, 도구
+annotation 인구조사, `SERVER_VERSION`, `CLI_COMMAND_COUNT`, CLI↔MCP 관계 타입
+동일성. ② 참조 무결성 — 문서의 `pnpm ...` 실재, `test:mcp:unit` 글롭 전수,
+tarball `files` 도달성. ③ 실행 가능성 — help/`--check` 가 정말 도는가.
+**새로 묶은 것**: `mcp/package.json` 의 description 이 적은 도구 수를 **생성된
+레지스트리 표면과 대조**한다 — 런치 문서 게이트 전체가 그 문자열에서 수를
+파생하고 있었는데, 사람이 쓴 문자열이라 레지스트리와 어긋나면 파생 게이트가
+통째로 낡은 수를 진실로 삼아 조용히 통과했다.
+
+**기록된 반대**: 산문 핀은 「문서가 도구를 정확히 설명하는가」를 지키려는
+유일한 장치였고, 이름 커버리지는 *언급*만 볼 뿐 *설명의 정확성*은 안 본다 —
+새 그물은 문서가 도구를 **틀리게** 설명하는 경우에 대해 종전보다 더 약하다는
+관점. **반증 조건**: 앞으로 3개월 안에 「문서가 도구를 틀리게 설명해 사용자나
+에이전트가 실제로 잘못된 호출/기대를 한 사례」가 관측되면 반대가 옳았던
+것 — 그때는 산문 핀으로 되돌리지 말고 **인자/enum 대조의 사정거리를 넓힌다**
+(생성물이 이미 인자 이름을 갖고 있으므로, 문서가 나열한 인자 목록을 그것과
+대조하는 방향).
+
+**재검토**: 다음 MCP 도구 추가 또는 CLI 명령 추가 시 — 그때 커버리지 게이트가
+실제로 문서 누락을 잡는지 확인한다.
+
+**서명 (accountable)**: stark
+**상태**: 유효

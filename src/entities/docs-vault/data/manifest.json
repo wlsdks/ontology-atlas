@@ -741,12 +741,10 @@
           "slug": "9-change-history"
         }
       ],
-      "excerpt": "This document covers the storage contracts of both the current public product and the design-approved knowledge subsystem v2. Whenever a collection schema changes, update this document first. The change process follows rules/firestore-schema.md. Single-user mode (current): A single logged-in user is the owner of their ",
-      "wordCount": 5359,
-      "updatedAt": "2026-06-06",
-      "linksOut": [
-        "archive/rules/firestore-schema"
-      ]
+      "excerpt": "This document covers the storage contracts of both the current public product and the design-approved knowledge subsystem v2. Whenever a collection schema changes, update this document first. The change process follows rules/firestore-schema.md (removed in R10). Single-user mode (current): A single logged-in user is th",
+      "wordCount": 5362,
+      "updatedAt": "2026-08-01",
+      "linksOut": []
     },
     {
       "slug": "archive/dogfood-blank-folder-mcp-2026-07-23",
@@ -2415,12 +2413,12 @@
       ],
       "excerpt": "How this repo keeps its own instruction files in sync, and why the same pattern extends into the vault for facts that change faster than instructions do. Written from this repo's own history, not a hypothetical. Multiple coding-agent instruction files (AGENTS.md, CLAUDE.md, GEMINI.md, .github/copilot-instructions.md, …",
       "wordCount": 825,
-      "updatedAt": "2026-07-31",
+      "updatedAt": "2026-08-01",
       "linksOut": [
-        "CLAUDE",
-        ".claude/rules/forbidden",
-        "mcp/README",
-        "AGENTS"
+        "../CLAUDE",
+        "../.claude/rules/forbidden",
+        "../mcp/README",
+        "../AGENTS"
       ]
     },
     {
@@ -3884,6 +3882,11 @@
           "depth": 1,
           "text": "CHANGELOG",
           "slug": "changelog"
+        },
+        {
+          "depth": 2,
+          "text": "2026-08-01 — 문서 검사를 산문 핀에서 생성-후-diff 로 바꿨다",
+          "slug": "2026-08-01-문서-검사를-산문-핀에서-생성-후-diff-로-바꿨다"
         },
         {
           "depth": 2,
@@ -5976,11 +5979,11 @@
           "slug": "2026-07-26-첫-만남은-쇼핑몰부터"
         }
       ],
-      "excerpt": "Major change history. Code commit messages answer why; this file answers when / which surface changed. Focused on user-visible changes, not PR-level granularity. Newest at the top. Entries stay date-based; the app version reached v1.0.0 on 2026-07-27, so a release tag now carries the semver promise instead. 노드의 이름과 파일의",
-      "wordCount": 60441,
+      "excerpt": "Major change history. Code commit messages answer why; this file answers when / which surface changed. Focused on user-visible changes, not PR-level granularity. Newest at the top. Entries stay date-based; the app version reached v1.0.0 on 2026-07-27, so a release tag now carries the semver promise instead. 게이트가 잡아야 할 ",
+      "wordCount": 60651,
       "updatedAt": "2026-08-01",
       "linksOut": [
-        "CASE-STUDY-AGENTS-MD-DRIFT",
+        "audits/CASE-STUDY-AGENTS-MD-DRIFT",
         "slug"
       ]
     },
@@ -6285,10 +6288,15 @@
           "depth": 2,
           "text": "2026-08-01 — 도구의 시야가 곧 볼트의 사정거리였다: analyze 가 최상위 패키지를 못 보고, 게이트 8건의 절반은 「결함 요구」가 아니라 「부재 탐지」였다",
           "slug": "2026-08-01-도구의-시야가-곧-볼트의-사정거리였다-analyze-가-최상위-패키지를-못-보고-게이트-8건의-절반은-결함-요구가-아니라-부재-탐지였다"
+        },
+        {
+          "depth": 2,
+          "text": "2026-08-01 — 문서 검사의 판별 기준: 기계가 만들 수 있는 것만 검사한다",
+          "slug": "2026-08-01-문서-검사의-판별-기준-기계가-만들-수-있는-것만-검사한다"
         }
       ],
       "excerpt": "이 파일은 결정과 그때 진 반대 의견을 남긴다. docs/CHANGELOG.md 는 무엇이 언제 바뀌었나를 답하고, 이 파일은 왜 그렇게 정했고, 무엇을 걸었나를 답한다. 최신이 위. 기록은 덧붙이기만 한다 — 지난 기록을 고치지 않는다. 판단이 바뀌었으면 새 기록을 쓰고 옛 기록을 뒤집힘 으로 표시한다. 틀린 기록도 자산이다. 1. 소집 전에 읽는다. 카운슬을 열기 전(그리고 단독 PO 패스를 쓰기 전) 같은 표면 · 같은 질문에 대한 선행 결정이 있는지 먼저 본다. 있으면 새 패스는 그것을 ① 여전히 유효하다고 인용하거나 ② 명시적으로 뒤집는다. 조용히 다시 결정",
-      "wordCount": 26526,
+      "wordCount": 27516,
       "updatedAt": "2026-08-01",
       "linksOut": []
     },
@@ -7238,6 +7246,11 @@
         },
         {
           "depth": 2,
+          "text": "Docs Checks",
+          "slug": "docs-checks"
+        },
+        {
+          "depth": 2,
           "text": "MCP And CLI Checks",
           "slug": "mcp-and-cli-checks"
         },
@@ -7263,8 +7276,8 @@
         }
       ],
       "excerpt": "Maintainer-only checks live here so the public README stays readable. Use this page when you touch mcp/, cli/, package manifests, release scripts, or the dogfood ontology. Run this before pushing broad docs, package, MCP, or web changes: For user-facing UI changes, add the relevant Playwright route check. · Area · Firs",
-      "wordCount": 7278,
-      "updatedAt": "2026-07-29",
+      "wordCount": 7677,
+      "updatedAt": "2026-08-01",
       "linksOut": []
     },
     {
@@ -8020,7 +8033,7 @@
         }
       ],
       "excerpt": "지도를 처음 열면 가운데 허브에서 도메인이 방사형으로 뻗어 나갑니다. 그 모양만 보면 이런 의문이 듭니다. 도메인끼리는 서로 아무 관계도 못 갖나? 이 구조는 미리 설계된 데이터를 조회하는 것뿐인가? 관계는 DB 에 들어 있나, md 에 들어 있나? 세 질문에 차례로 답합니다. 방사형으로 보이는 건 구조(담김) 관계뿐입니다. 그 위에 의미 관계가 따로 얹히고, 그건 계층을 자유롭게 가로지릅니다. 이 저장소는 자기 자신을 볼트로 들고 있어서(docs/ontology/) 실제로 세어 볼 수 있습니다. 관계 종류 분포가 이렇게 나옵니다 — 여기 수를 옮겨 적지 않습니다. ",
-      "wordCount": 1181,
+      "wordCount": 1183,
       "updatedAt": "2026-08-01",
       "linksOut": []
     },
@@ -12240,6 +12253,11 @@
         "fromSlug": "ARCHITECTURE",
         "context": "ge config - `app/layout.tsx` — metadata, providers, head - `eslint.config.mjs` — FSD boundary rules Long-form docs: - **[`AGENTS.md`]** — contributor guide (canonical for AI tools) - [`PRODUCT-DIRECTION.md`](./PRODUCT-DIRECTION.md) — mission - [`FEATURES.",
         "linkText": "`AGENTS.md`"
+      },
+      {
+        "fromSlug": "audits/CASE-STUDY-AGENTS-MD-DRIFT",
+        "context": "ee [`mcp/README.md`](../../mcp/README.md) for the tool surface an agent uses to read and write that reference file, and **[`AGENTS.md`]** for how this repo's own agents are told to use it.",
+        "linkText": "`AGENTS.md`"
       }
     ],
     "PRODUCT-DIRECTION": [
@@ -12302,7 +12320,7 @@
         "linkText": "`CHANGELOG.md`"
       }
     ],
-    "CASE-STUDY-AGENTS-MD-DRIFT": [
+    "audits/CASE-STUDY-AGENTS-MD-DRIFT": [
       {
         "fromSlug": "CHANGELOG",
         "context": "다리가 없었다. README에 \"codebase map / agent memory / context layer\" 시장 어휘를 잇는 브릿지 문단과 유산 선언 문장(\"이 지도는 당신 디스크의 마크다운\") 추가. 신규 **[`docs/audits/CASE-STUDY-AGENTS-MD-DRIFT.md`]** — AGENTS.md/CLAUDE.md drift 커뮤니티 고통 → 이 저장소가 실제로 쓰는 해법(단일 진실원 + thin wrapper) → context rot 완화책으로서의 vault, 세 단계 케이스 스터디",
@@ -12431,6 +12449,11 @@
     ],
     "../mcp/README": [
       {
+        "fromSlug": "audits/CASE-STUDY-AGENTS-MD-DRIFT",
+        "context": "every session — the same \"consult a reference file instead of restating it\" move, aimed at facts instead of rules. See **[`mcp/README.md`]** for the tool surface an agent uses to read and write that reference file, and [`AGENTS.md`](../../AGENTS.md#working-wit",
+        "linkText": "`mcp/README.md`"
+      },
+      {
         "fromSlug": "README",
         "context": "SKTOP-MACOS.md) | macOS desktop app track, readiness gate, first Tauri prototype scope | Current distribution track | | **[`../mcp/README.md`]** | MCP registration, 32 tools, tool contracts, verification | Canonical agent interface | | [`../cli/README.md`](../cli/",
         "linkText": "`../mcp/README.md`"
@@ -12464,13 +12487,6 @@
         "linkText": "owner-topology-taste"
       }
     ],
-    "archive/rules/firestore-schema": [
-      {
-        "fromSlug": "archive/DATA-MODEL",
-        "context": "`knowledge subsystem v2`. Whenever a collection schema changes, update this document first. The change process follows **[`rules/firestore-schema.md`]**. > > **Single-user mode (current):** A single logged-in user is the owner of their own workspace. There is no account /",
-        "linkText": "`rules/firestore-schema.md`"
-      }
-    ],
     "other-doc": [
       {
         "fromSlug": "archive/ONTOLOGY-MODEL-V2-DRAFT",
@@ -12492,32 +12508,18 @@
         "linkText": "capability:tax"
       }
     ],
-    "CLAUDE": [
+    "../CLAUDE": [
       {
         "fromSlug": "audits/CASE-STUDY-AGENTS-MD-DRIFT",
         "context": "ings that genuinely don't apply to other tools (skills, hooks, the design-guardian subagent). See the current file: **[`CLAUDE.md`]**. - The sync rule is written down as policy, not left to memory — `AGENTS.md`'s own \"CLAUDE.md / AGENTS.md sync\" secti",
         "linkText": "`CLAUDE.md`"
       }
     ],
-    ".claude/rules/forbidden": [
+    "../.claude/rules/forbidden": [
       {
         "fromSlug": "audits/CASE-STUDY-AGENTS-MD-DRIFT",
         "context": "eeps this file consistent without a second edit). - Drift between the two is listed as a named forbidden pattern in **[`.claude/rules/forbidden.md`]**, under \"문서\" (documentation): *\"AGENTS.md 와 CLAUDE.md 가 비동기\"* — AGENTS.md and CLAUDE.md being out of sync is treated",
         "linkText": "`.claude/rules/forbidden.md`"
-      }
-    ],
-    "mcp/README": [
-      {
-        "fromSlug": "audits/CASE-STUDY-AGENTS-MD-DRIFT",
-        "context": "every session — the same \"consult a reference file instead of restating it\" move, aimed at facts instead of rules. See **[`mcp/README.md`]** for the tool surface an agent uses to read and write that reference file, and [`AGENTS.md`](../AGENTS.md#working-with-t",
-        "linkText": "`mcp/README.md`"
-      }
-    ],
-    "AGENTS": [
-      {
-        "fromSlug": "audits/CASE-STUDY-AGENTS-MD-DRIFT",
-        "context": ". See [`mcp/README.md`](../mcp/README.md) for the tool surface an agent uses to read and write that reference file, and **[`AGENTS.md`]** for how this repo's own agents are told to use it.",
-        "linkText": "`AGENTS.md`"
       }
     ],
     "benchmark/tasks": [
