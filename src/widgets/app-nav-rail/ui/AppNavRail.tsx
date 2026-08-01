@@ -352,7 +352,12 @@ export function AppNavRail({
                 <Link
                   href={buildRouteFocusHref(href)}
                   onClick={(event) => rememberRailRouteFocus(event, surfacePath)}
-                  title={label}
+                  /* `title` 없음 — 라벨이 아이콘 바로 아래 **이미 보인다**.
+                     네이티브 툴팁은 그 라벨 위에 회색 상자로 덮이고, OS 가
+                     그리는 것이라 토큰도 모션도 우리 것이 아니다. 아이콘만
+                     있는 하단 유틸 타일은 여전히 `title` 을 갖는다 — 거기서는
+                     그게 유일한 이름이다. (2026-08-01 소유자 지적: 시연 영상에
+                     그 상자가 찍혔다.) */
                   aria-current={isActive ? "page" : undefined}
                   data-testid={`app-nav-rail-item-${id}`}
                   data-active={isActive ? "true" : "false"}
