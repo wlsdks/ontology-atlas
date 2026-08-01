@@ -1,15 +1,17 @@
 ---
 slug: domains/order
 kind: domain
-title: 주문
+title: Orders
+display_ko: 주문
 display_en: Orders
-description: 장바구니에 담는 순간부터 주문 확정·취소까지의 흐름을 다룹니다.
-capabilities: [cart, order-cancel, order-create]
-relates: [domains/fulfillment, domains/payment]
+description: "The line between browsing and buying, and every change a shopper makes after crossing it — cancelling, cancelling part of it, moving the delivery address."
+capabilities: [capabilities/cart, capabilities/checkout, capabilities/order-address-change, capabilities/order-cancel, capabilities/order-lookup, capabilities/order-notification, capabilities/order-partial-cancel, capabilities/order-placement]
+elements: [elements/cart-session, elements/checkout-draft, elements/order-line-item, elements/order-number, elements/order-record, elements/order-status-log]
+relates: [domains/fulfillment, domains/payment, domains/support]
 ---
 
-# 주문
+# Orders · 주문
 
-고객이 상품을 장바구니에 담는 순간부터 주문을 확정하거나 취소하기까지의
-흐름을 다룹니다. 결제·재고·배송 도메인과 맞물려 움직이는 쇼핑몰의 중심
-도메인입니다.
+The line between browsing and buying, and every change a shopper makes after crossing it — cancelling, cancelling part of it, moving the delivery address.
+
+구경과 구매를 가르는 선, 그리고 그 선을 넘은 뒤 고객이 하는 모든 변경 — 취소·부분 취소·배송지 변경까지를 다룹니다.

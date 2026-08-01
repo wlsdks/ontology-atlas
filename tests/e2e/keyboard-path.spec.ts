@@ -1,5 +1,6 @@
 import { test, expect } from "@playwright/test";
 import { seedFirstRunSeen } from "./first-run-seed";
+import { STOREFRONT_STUDIO_NODE_PARAM } from "./storefront-node";
 
 /**
  * 키보드 경로 계약 — **합성 이벤트로는 잴 수 없는 층**.
@@ -107,7 +108,7 @@ test.describe("포커스 반환", () => {
   test("공방 피커를 Escape 로 닫으면 연 소켓으로 돌아온다", async ({ page }) => {
     await seedFirstRunSeen(page);
     await page.setViewportSize({ width: 1440, height: 900 });
-    await page.goto("/ko/ontology/studio/?node=capability%3Aorder-create&guides=off", {
+    await page.goto(`/ko/ontology/studio/?node=${STOREFRONT_STUDIO_NODE_PARAM}&guides=off`, {
       waitUntil: "domcontentloaded",
     });
 

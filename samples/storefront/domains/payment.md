@@ -1,14 +1,17 @@
 ---
 slug: domains/payment
 kind: domain
-title: 결제
+title: Payments
+display_ko: 결제
 display_en: Payments
-description: 결제를 승인하고 취소·반품 시 환불을 처리합니다.
-capabilities: [payment-authorize, refund-process]
-relates: [domains/order]
+description: "Taking the money, holding it while the order settles, and giving it back when the order does not."
+capabilities: [capabilities/installment, capabilities/payment-authorize, capabilities/payment-cancel, capabilities/refund, capabilities/tax-receipt, capabilities/wallet-payment]
+elements: [elements/bank-transfer, elements/card-payment, elements/kakao-pay, elements/naver-pay, elements/payment-gateway, elements/payment-transaction, elements/refund-record, elements/toss-pay, elements/virtual-account]
+relates: [domains/support]
 ---
 
-# 결제
+# Payments · 결제
 
-카드사·PG(결제 대행)를 통해 결제를 승인하고, 취소·반품 시 환불을 처리하는
-도메인입니다. 주문 확정과 취소 모두 이 도메인의 승인 결과에 의존합니다.
+Taking the money, holding it while the order settles, and giving it back when the order does not.
+
+돈을 받고, 주문이 확정될 때까지 붙들고 있다가, 주문이 깨지면 돌려주는 일을 다룹니다.

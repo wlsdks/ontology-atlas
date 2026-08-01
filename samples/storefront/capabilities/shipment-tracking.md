@@ -1,13 +1,17 @@
 ---
 slug: capabilities/shipment-tracking
 kind: capability
-title: 배송 추적
-domain: fulfillment
-elements: [carrier-integration-api, notification-queue]
-relates: [domains/order]
+title: Shipment Tracking
+display_ko: 배송 조회
+display_en: Shipment Tracking
+description: "Shows where the parcel is now, in the store's own words rather than each carrier's codes."
+domain: domains/fulfillment
+dependencies: [capabilities/carrier-integration]
+elements: [elements/delivery-status-log]
 ---
 
-# 배송 추적
+# Shipment Tracking · 배송 조회
 
-배송사로 넘어간 주문의 이동 상태(집화·배송중·완료)를 고객이 실시간으로
-확인할 수 있게 합니다. 상태가 바뀔 때마다 고객에게 알림도 함께 보냅니다.
+Shows where the parcel is now, in the store's own words rather than each carrier's codes.
+
+지금 물건이 어디 있는지, 택배사별 코드가 아니라 가게의 말로 보여 줍니다.

@@ -1,14 +1,17 @@
 ---
 slug: domains/catalog
 kind: domain
-title: 상품
-display_en: Products
-description: 판매할 상품을 등록하고 재고 수량을 관리합니다.
-capabilities: [inventory-management, product-register]
-relates: [domains/marketing, domains/order]
+title: Product Catalog
+display_ko: 상품
+display_en: Product Catalog
+description: "Everything a shopper sees before deciding to buy: the product itself, its category, its options, its price, and what other buyers said about it."
+capabilities: [capabilities/product-category, capabilities/product-detail, capabilities/product-option, capabilities/product-pricing, capabilities/product-recommendation, capabilities/product-registration, capabilities/product-review, capabilities/product-search]
+elements: [elements/category-tree, elements/price-history, elements/product-image-store, elements/product-record, elements/recommendation-rule, elements/review-record, elements/search-index, elements/sku]
+relates: [domains/inventory, domains/marketing]
 ---
 
-# 상품
+# Product Catalog · 상품
 
-판매할 상품을 등록하고 재고 수량을 관리하는 도메인입니다. 상품 정보와 재고
-상태는 장바구니 담기·주문 생성이 성립하기 위한 전제 조건입니다.
+Everything a shopper sees before deciding to buy: the product itself, its category, its options, its price, and what other buyers said about it.
+
+고객이 사기로 마음먹기 전에 보는 모든 것 — 상품 자체와 분류, 옵션, 가격, 그리고 먼저 산 사람들이 남긴 말입니다.

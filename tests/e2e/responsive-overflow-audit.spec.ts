@@ -1,4 +1,5 @@
 import { expect, test } from "@playwright/test";
+import { STOREFRONT_STUDIO_NODE_PARAM } from "./storefront-node";
 
 /**
  * 반응형 오버플로 전수 검수 (opus5 최종 검수 2026-07-25).
@@ -168,7 +169,7 @@ test("1024px 부터는 공방이 그대로 열린다 — 강등은 폭 축이지
 for (const width of [1024, 1040, 1180, 1264, 1440]) {
   test(`${width}px 공방 — 보드가 무대 밖으로 넘치지 않는다`, async ({ page }) => {
     await page.setViewportSize({ width, height: 900 });
-    await page.goto("/ko/ontology/studio/?guides=off&node=capability%3Aorder-create");
+    await page.goto(`/ko/ontology/studio/?guides=off&node=${STOREFRONT_STUDIO_NODE_PARAM}`);
 
     const stage = page.getByTestId("studio-compass-stage");
     await expect(stage).toBeVisible();

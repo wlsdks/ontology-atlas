@@ -1,12 +1,17 @@
 ---
 slug: capabilities/signup
 kind: capability
-title: 회원가입
-domain: customer
-elements: [customer-auth]
+title: Sign-up
+display_ko: 회원 가입
+display_en: Sign-up
+description: "Creates the identity everything else in the store attaches to — orders, addresses, points, coupons."
+domain: domains/customer
+relates: [capabilities/coupon-issue]
+elements: [elements/customer-account]
 ---
 
-# 회원가입
+# Sign-up · 회원 가입
 
-고객이 이메일이나 소셜 계정으로 쇼핑몰 회원이 됩니다. 회원 인증이 있어야
-장바구니 저장, 주문 내역 조회, 리뷰 작성 같은 개인화 기능을 쓸 수 있습니다.
+Creates the identity everything else in the store attaches to — orders, addresses, points, coupons.
+
+가게의 나머지 전부가 매달릴 정체성을 만듭니다 — 주문·주소·적립금·쿠폰이 모두 여기 붙습니다.
