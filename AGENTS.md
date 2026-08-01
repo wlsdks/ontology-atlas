@@ -198,6 +198,11 @@ The detailed rules live in `.claude/rules/*.md` and Claude Code auto-loads them.
   overturn it explicitly — quietly re-deciding is what the ledger exists to stop. Check
   whether a prior record's falsifier has since been observed; if it has, the losing side
   won and that is where the next pass starts. Append, never rewrite.
+- **Gate probe** — `@.claude/skills/gate-probe/SKILL.md` runs whenever a check is added or
+  changed. **A gate that only ever passes is indistinguishable from no gate**: measure the
+  violation census before switching a rule on, revert the defect to prove it turns red, and
+  assert the detector is not idling on an empty set. 2026-08 lost a release to a smoke gate
+  whose markers had outlived their components — it had never once checked what it claimed.
 - **Design audit** — `@.claude/skills/design-audit/SKILL.md` runs after a front-end change,
   before calling it done. It **measures** the rendered DOM (rect intersections, dimension
   variance across repeated sets, computed styles vs the ramps) and uses screenshots only as
@@ -241,6 +246,13 @@ mechanism this budget assumes.)
 - Start structural repo work with CodeGraph, then open only the exact files or symbols still needed.
 - Ask the ontology only focused questions (`get_concept`, `find_path`, `query_ontology` with narrow operations). Avoid full `list_concepts` dumps unless the task genuinely needs the whole vault.
 - Verify focused-first. Start with `pnpm checks:changed` (or `pnpm checks:changed -- <path...>`) and direct sibling/unit/contract checks for touched paths. Escalate to full `pnpm test:run`, `pnpm lint`, `pnpm build`, broad Playwright, or desktop packaging only when shared contracts, routing, config, release surfaces, or user-facing workflows changed, or when focused checks leave a concrete risk uncovered.
+  - **It is also the *last* command before you open a PR** — run what it recommends for
+    every path you touched, not a list you wrote from memory. A hand-written list is
+    always narrower than the tool, and it only ever errs narrow: 2026-08-01 lost three
+    CI rounds to exactly this (docs edited without regenerating the vault, a fourth
+    version site missed, a smoke marker outliving its component) and the tool would
+    have named the right check in all three. **When you brief someone else, point at
+    the command — never enumerate the checks for them.**
 - Summarize large command output before carrying it forward. Preserve decisions, failing lines, metrics, and file paths; drop progress bars, repeated logs, and boilerplate.
 - **Don't delegate what you can finish in a handful of tool calls, and don't spawn a
   subagent to double-check your own work.** A subagent earns its cost by *isolating

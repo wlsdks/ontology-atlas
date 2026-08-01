@@ -39,6 +39,11 @@ interface Props {
   onClose: () => void;
   /** vault 의 모든 문서 (wikilink 자동완성용). 없으면 autocomplete off. */
   allDocs?: VaultDoc[];
+  /**
+   * 이 초안이 **어느 볼트의 것인가** — 슬러그만으로는 폴더가 달라도 같은 키가
+   * 되어 서로의 초안을 덮는다(위 `draftStorageKey` 주석의 데이터 손실 경로).
+   */
+  vaultScope: string;
 }
 
 interface EditorDraft {
@@ -51,14 +56,31 @@ interface EditorDraft {
 
 const DRAFT_STORAGE_PREFIX = 'ontology-atlas:docs-vault-editor-draft:';
 
-function draftStorageKey(slug: string) {
-  return `${DRAFT_STORAGE_PREFIX}${slug}`;
+/**
+ * 초안 키는 **볼트까지 담는다** (2026-08-01 수리).
+ *
+ * 종전엔 슬러그만이었다(`…:README`). 그래서 **다른 폴더의 같은 이름 파일이
+ * 서로의 초안을 덮었다** — 폴더 A 의 `README.md` 를 편집하려고 열면 폴더 B 의
+ * 본문이 「임시저장됨 · 최종 저장 필요」라는 딱지를 달고 나타났다. 사용자가 쓴
+ * 적 없는 글이 사용자의 미저장 변경으로 제시된 것이다.
+ *
+ * 더 나쁜 것은 그 다음이다: 두 파일이 그 시점에 **바이트가 같으면**(README ·
+ * 스캐폴드된 온톨로지 문서라면 흔하다) 충돌 분기가 안 걸리고 mtime 가드도
+ * 통과해서, **저장이 폴더 A 의 초안을 폴더 B 의 파일 위에 쓴다.** 데이터 손실
+ * 경로다.
+ *
+ * ⚠️ 옛 키(`…:<slug>`)로는 **되읽지 않는다.** 되읽는 것이 바로 이 결함이고,
+ * 그 초안이 어느 볼트 것인지 알 방법이 없다. 남은 옛 키는 아무도 안 읽으므로
+ * 무해하고, 사용자가 같은 문서를 다시 편집하면 새 키로 덮인다.
+ */
+function draftStorageKey(vaultScope: string, slug: string) {
+  return `${DRAFT_STORAGE_PREFIX}${vaultScope}:${slug}`;
 }
 
-function readEditorDraft(slug: string): EditorDraft | null {
+function readEditorDraft(vaultScope: string, slug: string): EditorDraft | null {
   if (typeof window === 'undefined') return null;
   try {
-    const raw = window.localStorage.getItem(draftStorageKey(slug));
+    const raw = window.localStorage.getItem(draftStorageKey(vaultScope, slug));
     if (!raw) return null;
     const parsed = JSON.parse(raw) as Partial<EditorDraft>;
     if (
@@ -77,19 +99,19 @@ function readEditorDraft(slug: string): EditorDraft | null {
   }
 }
 
-function writeEditorDraft(draft: EditorDraft) {
+function writeEditorDraft(vaultScope: string, draft: EditorDraft) {
   if (typeof window === 'undefined') return;
   try {
-    window.localStorage.setItem(draftStorageKey(draft.slug), JSON.stringify(draft));
+    window.localStorage.setItem(draftStorageKey(vaultScope, draft.slug), JSON.stringify(draft));
   } catch {
     // localStorage may be unavailable in privacy modes. Disk save still works.
   }
 }
 
-function clearEditorDraft(slug: string) {
+function clearEditorDraft(vaultScope: string, slug: string) {
   if (typeof window === 'undefined') return;
   try {
-    window.localStorage.removeItem(draftStorageKey(slug));
+    window.localStorage.removeItem(draftStorageKey(vaultScope, slug));
   } catch {
     // no-op
   }
@@ -106,6 +128,7 @@ export function DocsVaultEditor({
   onSave,
   onClose,
   allDocs,
+  vaultScope,
 }: Props) {
   const t = useTranslations('vaultWidgets.editor');
   const [content, setContent] = useState<string | null>(null);
@@ -271,7 +294,7 @@ export function DocsVaultEditor({
     try {
       await onSave(doc.slug, content, loadedMtimeRef.current);
       setSavedContent(content);
-      clearEditorDraft(doc.slug);
+      clearEditorDraft(vaultScope, doc.slug);
       setDraftSavedAt(null);
       setSavedFlash(true);
       setLegacyDraftConflict(false);
@@ -310,7 +333,7 @@ export function DocsVaultEditor({
       return;
     }
     if (dirty) {
-      clearEditorDraft(doc.slug);
+      clearEditorDraft(vaultScope, doc.slug);
       setDraftSavedAt(null);
     }
     onClose();
@@ -330,7 +353,7 @@ export function DocsVaultEditor({
         // Also re-check dirty here: a CLEAN re-fetch that was already in flight
         // when the user started typing must not land over the new edits.
         if (cancelled || dirtyRef.current) return;
-        const draft = readEditorDraft(doc.slug);
+        const draft = readEditorDraft(vaultScope, doc.slug);
         const shouldRestoreDraft =
           draft !== null && draft.content !== text;
         const diskChangedSinceDraft =
@@ -395,7 +418,7 @@ export function DocsVaultEditor({
   useEffect(() => {
     if (content === null || savedContent === null || loadedSlug !== doc.slug) return;
     if (!dirty) {
-      clearEditorDraft(doc.slug);
+      clearEditorDraft(vaultScope, doc.slug);
       if (draftSavedAt !== null) {
         window.queueMicrotask(() => setDraftSavedAt(null));
       }
@@ -403,7 +426,7 @@ export function DocsVaultEditor({
     }
     const handle = window.setTimeout(() => {
       const updatedAt = Date.now();
-      writeEditorDraft({
+      writeEditorDraft(vaultScope, {
         slug: doc.slug,
         content,
         diskContent: savedContent,

@@ -62,7 +62,7 @@
 - `.claude/hooks/` — npm publish 차단 · SessionStart 볼트 census.
 
 스킬(`/po-pass` · `/po-council` · `/design-council` · `/design-audit` ·
-`/user-walkthrough` · `/motion-verify` · `/responsive-sweep` ·
+`/user-walkthrough` · `/motion-verify` · `/responsive-sweep` · `/gate-probe` ·
 `/ontology-sync` · `/ontology-bootstrap` · `/ontology-extract` ·
 `/ontology-absorb-confluence` · `/ontology-field-trial`)은 **양쪽 다 읽으므로** 전용이 아니다 — 위 3번
 규율의 대상이다. 소집 트리거와 프로토콜의 정본은 `AGENTS.md`, 결정과 진
