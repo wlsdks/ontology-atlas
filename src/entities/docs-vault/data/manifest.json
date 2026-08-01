@@ -3885,6 +3885,11 @@
         },
         {
           "depth": 2,
+          "text": "2026-08-01 — 웹에서도 그 자리에서 에이전트를 붙인다 · 볼트 지문 한 번에 · 화면이 하던 거짓말 셋",
+          "slug": "2026-08-01-웹에서도-그-자리에서-에이전트를-붙인다-볼트-지문-한-번에-화면이-하던-거짓말-셋"
+        },
+        {
+          "depth": 2,
           "text": "2026-08-01 — 볼트만 넘겨받은 에이전트가 못 읽던 것들: 본문 전체 읽기 · 두 검사의 말 맞추기 · 증거 없는 능력 표시",
           "slug": "2026-08-01-볼트만-넘겨받은-에이전트가-못-읽던-것들-본문-전체-읽기-두-검사의-말-맞추기-증거-없는-능력-표시"
         },
@@ -5994,8 +5999,8 @@
           "slug": "2026-07-26-첫-만남은-쇼핑몰부터"
         }
       ],
-      "excerpt": "Major change history. Code commit messages answer why; this file answers when / which surface changed. Focused on user-visible changes, not PR-level granularity. Newest at the top. Entries stay date-based; the app version reached v1.0.0 on 2026-07-27, so a release tag now carries the semver promise instead. 낯선 저장소로 실전 ",
-      "wordCount": 61427,
+      "excerpt": "Major change history. Code commit messages answer why; this file answers when / which surface changed. Focused on user-visible changes, not PR-level granularity. Newest at the top. Entries stay date-based; the app version reached v1.0.0 on 2026-07-27, so a release tag now carries the semver promise instead. 「이 화면에서는 연결",
+      "wordCount": 61677,
       "updatedAt": "2026-08-01",
       "linksOut": [
         "audits/CASE-STUDY-AGENTS-MD-DRIFT",
@@ -6023,6 +6028,11 @@
           "depth": 2,
           "text": "기록 형식",
           "slug": "기록-형식"
+        },
+        {
+          "depth": 2,
+          "text": "2026-08-01 (소유자 서명) — 시연은 주소로 갈리지 않는다: `/` 와 `/download` 가 같은 것을 보여준다",
+          "slug": "2026-08-01-소유자-서명-시연은-주소로-갈리지-않는다-와-download-가-같은-것을-보여준다"
         },
         {
           "depth": 2,
@@ -6336,7 +6346,7 @@
         }
       ],
       "excerpt": "이 파일은 결정과 그때 진 반대 의견을 남긴다. docs/CHANGELOG.md 는 무엇이 언제 바뀌었나를 답하고, 이 파일은 왜 그렇게 정했고, 무엇을 걸었나를 답한다. 최신이 위. 기록은 덧붙이기만 한다 — 지난 기록을 고치지 않는다. 판단이 바뀌었으면 새 기록을 쓰고 옛 기록을 뒤집힘 으로 표시한다. 틀린 기록도 자산이다. 1. 소집 전에 읽는다. 카운슬을 열기 전(그리고 단독 PO 패스를 쓰기 전) 같은 표면 · 같은 질문에 대한 선행 결정이 있는지 먼저 본다. 있으면 새 패스는 그것을 ① 여전히 유효하다고 인용하거나 ② 명시적으로 뒤집는다. 조용히 다시 결정",
-      "wordCount": 29817,
+      "wordCount": 30237,
       "updatedAt": "2026-08-01",
       "linksOut": []
     },

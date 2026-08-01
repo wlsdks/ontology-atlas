@@ -1098,6 +1098,16 @@ function DocsVaultContent() {
     pendingRestoredActiveSlug,
   ]);
   const selectedDoc = selectedSlug ? (docsBySlug.get(selectedSlug) ?? null) : null;
+  /**
+   * URL 이 요청한 문서가 **이 문서함에 없다.** 기본 선택 로직이 대신 다른
+   * 문서를 열어 주되, 그 사실을 배너가 말한다(아래 렌더). 볼트가 아직 안
+   * 실렸을 때(`docsBySlug` 가 빈 동안)의 깜빡임은 제외한다 — 그건 없는 게
+   * 아니라 아직 모르는 것이다.
+   */
+  const missingQuerySlug =
+    normalizedQuerySlug && docsBySlug.size > 0 && !docsBySlug.has(normalizedQuerySlug)
+      ? normalizedQuerySlug
+      : null;
   // 트리·탭·검색·지도가 한 문서를 같은 이름으로 부른다. 파일 경로는 바로
   // 아랫줄 caption 이 계속 보여주므로 파일 정체성은 잃지 않는다.
   const selectedDocDisplayTitle = selectedDoc
@@ -1991,6 +2001,36 @@ function DocsVaultContent() {
         </div>
       ) : null}
 
+      {/*
+       * **요청한 문서가 이 문서함에 없으면 말한다** (2026-08-01 실측 수리).
+       *
+       * `?slug=` 가 안 풀리면 기본 선택 로직이 README/FEATURES 중 하나를 골라
+       * 그냥 그린다. 그런데 URL 은 요청 슬러그를 그대로 달고 있고(위 기본 선택
+       * effect 는 `normalizedQuerySlug` 가 있으면 URL 을 안 고친다), 화면 어디에도
+       * 못 찾았다는 말이 없다.
+       *
+       * 실측된 결과: [에이전트 연결] 시트의 문서 링크를 누른 사람이 데모 쇼핑몰의
+       * **「회원 탈퇴」** 문서 앞에 놓였다. 그 링크 자체도 고쳤지만(볼트를 지정하지
+       * 않은 주소였다), **조용한 대체는 그 링크 하나의 문제가 아니다** — 볼트를
+       * 바꾸거나 문서를 지운 뒤의 모든 딥링크·북마크·에이전트 핸드오프가 같은
+       * 길로 온다.
+       *
+       * 이 저장소가 이미 한 번 배운 것과 같은 병이다: 바로 위 배너가
+       * *"이전엔 silent 으로 … 사용자가 자기 vault 가 죽었음을 모름"* 이라고
+       * 적어 둔 그 병.
+       */}
+      {missingQuerySlug ? (
+        <div
+          className="flex flex-none items-center gap-2 border-b border-[color:var(--color-amber-source-a34)] bg-[color:var(--color-amber-source-a08)] px-4 py-2 text-body text-[color:var(--color-status-warning)]"
+          role="status"
+          data-testid="docs-missing-slug-banner"
+        >
+          <span className="min-w-0 flex-1 truncate">
+            {t('vaultStatus.missingSlugBanner', { slug: missingQuerySlug })}
+          </span>
+        </div>
+      ) : null}
+
       {showDesktopWelcome ? (
         <DesktopVaultWelcome
           status={localVault.status}
@@ -2281,7 +2321,24 @@ function DocsVaultContent() {
                   역참조 0 개도 빈 상태 문구로 보여 "여긴 아직 없다" 를
                   알 수 있게 한다. */}
               {!editing ? (
-                <div className="flex flex-none items-center gap-2 border-t border-[color:var(--color-border-soft)] px-4 py-2.5">
+                /*
+                 * **예약고는 이 바에도 걸린다** (2026-08-01 실측 수리).
+                 *
+                 * 종전엔 위 스크롤러(`articleScrollRef`)에만 걸려 있었다. 그런데
+                 * 이 바는 그 스크롤러의 **형제 `flex-none`** 이라 스크롤러 안쪽
+                 * 패딩이 구조적으로 닿지 않는다. 캐스케이드에 진 게 아니라
+                 * **예약이 잘못된 상자에 걸려 있었다.**
+                 *
+                 * 결과는 가림을 넘어 **입력 탈취**였다 — 375·390·600·640·700·
+                 * 768·834·900·1023(탭바가 있는 `<lg` 전 구간)에서
+                 * `elementFromPoint(중심)` 이 `bottom-tab-get-app` 을 돌려주고,
+                 * 실제로 누르면 `/download/` 로 갔다. 문서를 지도에서 열려던
+                 * 사람이 다운로드 페이지에 도착한다.
+                 *
+                 * `max-lg:` 대신 **base + `lg:` 오버라이드**로 쓴다 — 어느 쪽이
+                 * 이기는지가 클래스 순서에 달리지 않게.
+                 */
+                <div className="flex flex-none items-center gap-2 border-t border-[color:var(--color-border-soft)] px-4 pt-2.5 pb-[calc(var(--topology-mobile-bottom-tab-reserve)+12px)] lg:pb-2.5">
                   {backlinksDetail.length > 0 ? (
                     <DocsVaultBacklinks
                       entries={backlinksDetail}

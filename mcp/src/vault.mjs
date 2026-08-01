@@ -2,6 +2,8 @@
 // tool 호출 빈도가 낮아 async 오버헤드 불필요).
 
 import {
+  accessSync,
+  constants as fsConstants,
   readdirSync,
   readFileSync,
   writeFileSync,
@@ -1458,6 +1460,115 @@ function buildRefResolver(docs) {
 }
 
 /**
+ * 볼트 다중 파일 쓰기를 **전부 아니면 전무**로 적용한다.
+ *
+ * ## 왜 필요했나 — 「atomic」이 거짓이었다
+ *
+ * `rename_concept` 의 도구 설명은 *"update every backlink in one atomic
+ * graph-level operation"* 이라고 말하고 `AGENTS.md` 도 *"atomically rewrites
+ * every backlink"* 라고 적었다. 실제로는 `redirectBacklinks` 가 루프 안에서
+ * 파일마다 즉시 썼고, 중간에 한 파일이 안 써지면 **반쪽 볼트**가 남았다
+ * (2026-08-01 실측: 참조 3개 중 하나를 `chmod 444` → 새 파일 생성됨 · 옛 파일
+ * 안 지워짐 → **제목이 같은 노드 둘**, 참조 2개는 새 이름 1개는 옛 이름).
+ *
+ * 가장 나쁜 것은 그 다음이다 — 그 볼트에 `validate` 는 *"issue 0 ✓"*,
+ * `health` 는 *"vault_validation pass"* 라고 답했다. **분열된 그래프가 검사
+ * 둘을 다 통과한다.** 사용자의 디스크가 진실원이라는 이 제품의 전제 위에서
+ * 그건 가장 비싼 종류의 조용한 실패다.
+ *
+ * ## 무엇을 보장하고 무엇을 안 하나
+ *
+ * 보장: **프로세스가 살아 있는 한** 어떤 I/O 실패(EACCES · EROFS · ENOSPC ·
+ * 편집기 잠금 · 동기화 클라이언트가 만든 읽기 전용 파일)에서도 볼트는 시작
+ * 상태로 돌아간다. 두 단계다 — ① 아무것도 쓰기 전에 **전 대상의 쓰기 권한을
+ * 미리 확인**하고, ② 그래도 실패하면 이미 쓴 것을 원본 바이트로 되돌린다.
+ *
+ * 안 하는 것: **크래시·전원 손실 안전성.** 그건 저널이나 `rename(2)` 기반
+ * 커밋이 필요하고, 볼트가 git 저장소라는 이 제품의 회복 경로(스냅샷 → diff →
+ * revert)와 중복된다. 그래서 여기서는 정직하게 선을 긋는다 — 이 함수의
+ * 이름은 `applyAllOrNothing` 이지 `applyAtomically` 가 아니다.
+ *
+ * 되돌리기마저 실패하면(그 자체가 I/O 실패다) **숨기지 않는다** — 에러가
+ * 어느 파일이 어느 상태로 남았는지 나열한다. 모른다고 말하는 것이
+ * 괜찮다고 말하는 것보다 낫다.
+ *
+ * @param {Array<{op:'write'|'delete', path:string, content?:string}>} plan
+ * @returns {{applied:number}}
+ */
+export function applyAllOrNothing(plan) {
+  if (!Array.isArray(plan) || plan.length === 0) return { applied: 0 };
+
+  // ① 사전 점검 — 한 글자도 쓰기 전에. 흔한 실패(읽기 전용 파일·잠긴 파일·
+  //    읽기 전용 볼트)는 여기서 걸러져 되돌리기 자체가 필요 없어진다.
+  const blocked = [];
+  for (const entry of plan) {
+    const dir = dirname(entry.path);
+    try {
+      if (existsSync(entry.path)) {
+        accessSync(entry.path, fsConstants.W_OK);
+      } else if (entry.op === 'write') {
+        if (!existsSync(dir)) mkdirSync(dir, { recursive: true });
+        accessSync(dir, fsConstants.W_OK);
+      }
+      if (entry.op === 'delete' && existsSync(entry.path)) {
+        // 파일을 지우려면 **파일이 아니라 디렉터리**에 쓰기 권한이 있어야 한다.
+        accessSync(dir, fsConstants.W_OK);
+      }
+    } catch (error) {
+      blocked.push(`${entry.path} (${error?.code ?? 'EACCES'})`);
+    }
+  }
+  if (blocked.length > 0) {
+    throw new Error(
+      `Refused before writing anything — ${blocked.length} file(s) are not writable, `
+        + `so this operation could not finish as one unit:\n  ${blocked.join('\n  ')}\n`
+        + 'The vault is unchanged. Fix permissions (or close the editor/sync client '
+        + 'holding them) and re-run with confirm: true.',
+    );
+  }
+
+  // ② 적용 — 각 항목의 **직전 상태**를 들고 간다. 되돌릴 재료다.
+  const done = [];
+  try {
+    for (const entry of plan) {
+      const existed = existsSync(entry.path);
+      const before = existed ? readFileSync(entry.path, 'utf-8') : null;
+      if (entry.op === 'write') {
+        mkdirSync(dirname(entry.path), { recursive: true });
+        writeFileSync(entry.path, entry.content, 'utf-8');
+      } else {
+        if (existed) unlinkSync(entry.path);
+      }
+      done.push({ path: entry.path, existed, before });
+    }
+    return { applied: done.length };
+  } catch (error) {
+    const unrecovered = [];
+    for (const step of done.reverse()) {
+      try {
+        if (step.existed) writeFileSync(step.path, step.before, 'utf-8');
+        else if (existsSync(step.path)) unlinkSync(step.path);
+      } catch {
+        unrecovered.push(step.path);
+      }
+    }
+    const reason = error?.message ?? String(error);
+    if (unrecovered.length > 0) {
+      throw new Error(
+        `Write failed (${reason}) and the rollback could not finish. `
+          + `The vault is INCONSISTENT — these files still hold rewritten content:\n  `
+          + `${unrecovered.join('\n  ')}\n`
+          + 'If the vault is a git repository, `git diff` shows exactly what changed '
+          + 'and `git checkout -- <path>` restores it.',
+      );
+    }
+    throw new Error(
+      `Write failed (${reason}). Every change was rolled back — the vault is unchanged.`,
+    );
+  }
+}
+
+/**
  * targetSlug 를 가리키는 모든 vault doc 의 frontmatter array 키와 body link
  * 를 nextSlug 로 치환. rename_concept / merge_concepts 의 핵심 동작.
  *
@@ -1475,7 +1586,14 @@ function buildRefResolver(docs) {
  * 반환: { updates: [{ slug, beforeKeys, afterKeys, bodyHit }], totalUpdated }.
  */
 export function redirectBacklinks(rootPath, targetSlug, nextSlug, options = {}) {
-  const { dryRun = false } = options;
+  /**
+   * `deferWrite: true` 면 계획만 만들어 `plan` 으로 돌려주고 디스크는 안
+   * 건드린다. `dryRun` 과 다르다 — dry-run 은 *사용자에게 보여 줄* 미리보기고,
+   * 이건 **호출자가 자기 쓰기까지 한 계획에 합쳐** 전부-아니면-전무로 적용하기
+   * 위한 것이다. `rename_concept` 이 파일 생성·백링크 재작성·옛 파일 삭제를
+   * 한 단위로 묶는 데 쓴다.
+   */
+  const { dryRun = false, deferWrite = false } = options;
   if (typeof targetSlug !== 'string' || !targetSlug) {
     throw new Error('targetSlug is required.');
   }
@@ -1483,7 +1601,7 @@ export function redirectBacklinks(rootPath, targetSlug, nextSlug, options = {}) 
     throw new Error('nextSlug is required.');
   }
   if (targetSlug === nextSlug) {
-    return { updates: [], totalUpdated: 0 };
+    return { updates: [], totalUpdated: 0, plan: [] };
   }
 
   const docs = loadVaultDocs(rootPath);
@@ -1511,6 +1629,8 @@ export function redirectBacklinks(rootPath, targetSlug, nextSlug, options = {}) 
   }
 
   const updates = [];
+  /** 디스크에 낼 쓰기 계획 — 루프가 끝난 뒤 한 번에 적용한다. */
+  const plan = [];
   for (const doc of docs) {
     if (doc.slug === targetSlug) continue;
     const filePath = slugToPath(rootPath, doc.slug);
@@ -1611,13 +1731,18 @@ export function redirectBacklinks(rootPath, targetSlug, nextSlug, options = {}) 
       bodyChanged,
     });
 
-    if (!dryRun) {
-      const md = buildMarkdown({ frontmatter: nextFm, body: nextBody });
-      writeFileSync(filePath, md, 'utf-8');
-    }
+    // 여기서 **쓰지 않는다.** 종전엔 이 줄이 `writeFileSync` 였고, 그래서
+    // 다음 파일이 안 써지면 앞의 것들만 바뀐 반쪽 볼트가 남았다.
+    plan.push({
+      op: 'write',
+      path: filePath,
+      content: buildMarkdown({ frontmatter: nextFm, body: nextBody }),
+    });
   }
 
-  return { updates, totalUpdated: updates.length };
+  if (!dryRun && !deferWrite) applyAllOrNothing(plan);
+
+  return { updates, totalUpdated: updates.length, plan };
 }
 
 function docTitle(doc) {

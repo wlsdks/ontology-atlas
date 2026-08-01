@@ -93,6 +93,127 @@ for (const vp of WIDTHS) {
 }
 
 /**
+ * **세로 축 — 하단 탭바가 무엇을 덮고 있나** (2026-08-01 추가).
+ *
+ * 위의 전수 검사는 **가로 축만** 본다. 그래서 rc.5 검수에서 나온 결함 둘을
+ * 원리적으로 못 잡았다 — 둘 다 `scrollWidth == clientWidth` 를 지키며 발생했다:
+ *
+ * 1. 문서함 하단 바(「지도에서 열기」 · 역참조 칩)가 `<lg` 전 구간에서 탭바 뒤로
+ *    20~30px 파고들었다. **가림을 넘어 입력이 탈취**돼서, 누르면 `/download/`
+ *    로 갔다 — 문서를 지도에서 열려던 사람이 다운로드 페이지에 도착한다.
+ * 2. 지도의 첫 상호작용 지시문(`sample-node-hint`)이 768–1023 에서 높이의
+ *    83% 를 덮였다. 좌우용 인셋 토큰을 써서 하단 예약고를 안 받았다.
+ *
+ * 그래서 두 가지를 잰다. **rect 교집합만으로는 부족하다** — 이 결함의 본질은
+ * 겹침이 아니라 **도달 불가**이고, 그건 `elementFromPoint` 만 답한다.
+ *
+ * 1024 는 대조군이다: 탭바가 `display:none` 이므로 겹침이 0이어야 하고, 0이
+ * **아니면** 이 시험이 탭바를 못 찾고 있다는 뜻이다(조용한 무력화 탐지).
+ */
+const TAB_BAR = 'nav[data-tabbar="primary"]';
+
+for (const width of [375, 768, 1023, 1024] as const) {
+  for (const route of ["/ko/docs/", "/ko/topology/"] as const) {
+    test(`${width}px ${route} — 하단 탭바가 아무것도 덮지 않는다`, async ({ page }) => {
+      await page.setViewportSize({ width, height: 1024 });
+      await page.goto(route);
+      await page.waitForTimeout(900);
+
+      const report = await page.evaluate(
+        ({ tabBarSelector, selector }) => {
+          const bar = document.querySelector(tabBarSelector);
+          const barRect = bar ? bar.getBoundingClientRect() : null;
+          const barVisible = Boolean(
+            barRect && barRect.height > 2 && getComputedStyle(bar!).display !== "none",
+          );
+          if (!barVisible) return { barVisible, covered: [], stolen: [] };
+
+          const covered: { tag: string; text: string; overlap: number }[] = [];
+          const stolen: { tag: string; text: string; hit: string }[] = [];
+          for (const el of Array.from(document.querySelectorAll(selector))) {
+            if (el === bar || bar!.contains(el)) continue;
+            const r = el.getBoundingClientRect();
+            if (r.width < 2 || r.height < 2) continue;
+            const cs = getComputedStyle(el);
+            if (cs.visibility === "hidden" || cs.display === "none") continue;
+            // 뷰포트 밖(스크롤로 내려가야 보이는 것)은 이 검사 대상이 아니다.
+            if (r.bottom <= 0 || r.top >= window.innerHeight) continue;
+
+            const overlap = Math.min(r.bottom, barRect!.bottom) - Math.max(r.top, barRect!.top);
+            if (overlap <= 1) continue;
+            const label = (el.textContent ?? "").trim().slice(0, 40);
+            covered.push({ tag: el.tagName, text: label, overlap: Math.round(overlap) });
+
+            // 도달 가능성 — 중심점이 자기(또는 자기 자손/조상)를 돌려주는가.
+            const hit = document.elementFromPoint(
+              Math.round(r.left + r.width / 2),
+              Math.round(r.top + r.height / 2),
+            );
+            if (!hit || !(el.contains(hit) || hit.contains(el))) {
+              stolen.push({
+                tag: el.tagName,
+                text: label,
+                hit: hit
+                  ? `${hit.tagName}${hit.getAttribute("data-testid") ? `[${hit.getAttribute("data-testid")}]` : ""}`
+                  : "null",
+              });
+            }
+          }
+          /**
+           * 2차 — **바닥에 앵커된 작은 표면**. 위 셀렉터는 `button/a/p/…` 라
+           * `div` 로 만든 힌트·칩·판독계를 못 본다. 실제로 `sample-node-hint`
+           * 가 그 사각지대로 빠져 83% 덮인 채 통과했다.
+           *
+           * 컨테이너는 제외한다 — 지도 캔버스처럼 화면을 채우는 원소 위에
+           * 탭바가 떠 있는 것은 **설계**이지 결함이 아니다. 판별은 크기로
+           * 한다: 탭바가 *덮으면 안 되는 것*은 바닥 근처에 앉은 작은 표면이고,
+           * 탭바가 *위에 떠도 되는 것*은 그 아래 깔린 큰 면이다.
+           */
+          for (const el of Array.from(document.querySelectorAll("[data-testid]"))) {
+            if (el === bar || bar!.contains(el) || el.contains(bar!)) continue;
+            const cs = getComputedStyle(el);
+            if (cs.position !== "absolute" && cs.position !== "fixed") continue;
+            if (cs.visibility === "hidden" || cs.display === "none") continue;
+            const r = el.getBoundingClientRect();
+            if (r.width < 2 || r.height < 2) continue;
+            if (r.height > 200 || r.width > window.innerWidth * 0.9) continue; // 컨테이너
+            const overlap = Math.min(r.bottom, barRect!.bottom) - Math.max(r.top, barRect!.top);
+            if (overlap <= 1) continue;
+            const id = el.getAttribute("data-testid") ?? el.tagName;
+            if (covered.some((c) => c.text === id)) continue;
+            covered.push({ tag: el.tagName, text: id, overlap: Math.round(overlap) });
+          }
+
+          return { barVisible, covered: covered.slice(0, 8), stolen: stolen.slice(0, 8) };
+        },
+        { tabBarSelector: TAB_BAR, selector: SELECTOR },
+      );
+
+      if (width >= 1024) {
+        // 대조군 — 여기서 탭바가 보이면 `<lg` 전용이라는 전제가 깨진 것이다.
+        expect(report.barVisible, "1024px 에서 하단 탭바가 아직 떠 있다").toBe(false);
+        return;
+      }
+
+      expect(
+        report.barVisible,
+        `${width}px 에서 하단 탭바를 못 찾았다 — 이 시험이 지금 아무것도 지키지 않는다`,
+      ).toBe(true);
+
+      // 탈취가 먼저다: 덮였어도 누를 수 있으면 등급이 다르고, 못 누르면 결함이다.
+      expect(
+        report.stolen,
+        `하단 탭바가 다른 컨트롤의 클릭을 가로챈다: ${JSON.stringify(report.stolen, null, 2)}`,
+      ).toEqual([]);
+      expect(
+        report.covered,
+        `하단 탭바가 요소를 덮는다: ${JSON.stringify(report.covered, null, 2)}`,
+      ).toEqual([]);
+    });
+  }
+}
+
+/**
  * 공방 <lg 정직 강등 (2026-07-28 판정 ②).
  *
  * 왜 여기인가 — 웹 스모크 ③ 의 `DEGRADED_SURFACES` 등록부가 아니라 이 파일에
