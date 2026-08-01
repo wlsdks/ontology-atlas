@@ -77,7 +77,7 @@ analyze /path/to/repo (framework=fsd)
 node cli/src/index.mjs infer-imports . --vault my-vault
 ```
 
-TS/JS 의 import 그래프를 읽어 「기댄다」 관계 후보를 냅니다.
+TS/JS 의 import 그래프를 읽어 「기대는 곳」(depends_on) 관계 후보를 냅니다.
 
 ```
 infer-imports /path/to/repo — 300 files / 714 edges / 273 external
@@ -145,7 +145,7 @@ node cli/src/index.mjs absorb AGENTS.md --vault my-vault
 시켜도 됩니다. 에이전트가 쓰는 도구는 CLI 와 **같은 것**입니다.
 
 - `analyze_repo_structure` — 저장소를 훑어 후보를 냅니다.
-- `infer_imports` — import 그래프에서 「기댄다」 후보를 냅니다.
+- `infer_imports` — import 그래프에서 「기대는 곳」 후보를 냅니다.
 - `index_project` — 위 둘에 검증까지 묶은 계획을 냅니다.
 
 에이전트가 유리한 점은 훑기 다음입니다. 「이 폴더가 무엇을 하는 곳인지」 는

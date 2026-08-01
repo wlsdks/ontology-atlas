@@ -141,7 +141,7 @@ vault health healthy — 70 노드 · 152 관계
 |---|---|
 | `validate` | frontmatter 와 참조가 성립하는가 |
 | `orphans` | 아무도 가리키지 않는 노드가 있는가 |
-| `cycles` | 「기댄다」가 원을 그리는가 |
+| `cycles` | 「기대는 곳」가 원을 그리는가 |
 | `components` | 그래프가 섬으로 쪼개졌는가 |
 | `overview` | 지금 볼트가 어떤 모양인가 |
 
