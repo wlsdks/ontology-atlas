@@ -270,6 +270,7 @@ import { createVaultFilePastTrailStore, type PastTrailStore } from "../lib/past-
 import { verifyHandlePermission } from "@/entities/local-fs-handle";
 import { TopologyInsightsReturnChip } from "./TopologyInsightsReturnChip";
 import { TopologyRelationLegend } from "./TopologyRelationLegend";
+import { AgentActivityChip } from "@/features/agent-activity";
 import { FrameMeter } from "@/shared/ui/frame-meter";
 import { TopologyReviewLink } from "./TopologyReviewLink";
 import { TopologyChangeAnnouncement } from "./TopologyChangeAnnouncement";
@@ -4289,6 +4290,25 @@ export function HomePage() {
                     줄로 들어간다. 같은 성격의 읽을거리를 다른 자리에 두면 눈이
                     한 번 더 훑어야 하고, 그게 이 저장소가 경계하는 「과업이 더
                     명확해지지 않는 새 크롬」이다. */}
+                {/* 「작업 중 / 마지막 작업」 + 벨 + 알림함.
+
+                    **이 자리인 이유는 실측이다.** 처음엔 상단 중앙 상태 열
+                    (영역·경로·걸어온 길 옆)에 뒀는데, 1024 에서 재 보니 그 열은
+                    INDEX 패널 오른끝(388px)과 69px 밖에 안 떨어져 있고 이 칩은
+                    194px 이라 **32px 겹쳤다**. 우상단 유틸 레인도 같은 폭에서
+                    28px 만 남았다 — 이 저장소가 반복해 사고를 낸 바로 그 구간이다.
+                    저 열의 칩 넷은 **사용자가 자기 손으로 만든** 일시 상태라 그
+                    여유를 알고 쓰는 것이고, 이건 **상시**다.
+
+                    이 스택은 좌우로 다툴 상대가 없고(우·하단 고정), 무엇보다
+                    토스트가 이미 이 스택의 실제 rect 를 읽어 위로 비켜선다
+                    (`resolveToastBottomOffsetForStack` + ResizeObserver) — 줄이
+                    하나 늘면 토스트가 저절로 그만큼 올라간다. 그리고 갈래도 맞다:
+                    범례·첫 실행 판독·계기가 사는 **앰비언트 판독**의 집이다.
+
+                    데이터시트가 열리면 스택 전체가 물러나므로(opacity-0) 그때
+                    보이지 않는 채 클릭 가능한 컨트롤이 남지 않게 언마운트한다. */}
+                <AgentActivityChip suppressed={Boolean(v2DatasheetModel)} />
                 <FrameMeter />
               </div>
 

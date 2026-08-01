@@ -195,6 +195,137 @@ export function useFrameMeter(): boolean {
   return useSyncExternalStore(subscribe, getSnapshot, getServerSnapshot);
 }
 
+/* ── 에이전트 활동 (작업 중 표시 · 알림) ──────────────────────────────────── */
+
+/**
+ * 「작업 중 표시」와 「알림」.
+ *
+ * ## 왜 기본이 **켜짐**인가 — 프레임 계기와 이유가 다르다
+ *
+ * 프레임 계기는 **진단 도구**라 기본이 꺼짐이다(지도를 읽으러 온 사람에게
+ * 숫자는 소음이다). 이건 진단이 아니라 **사실**이다 — *"내 폴더에서 지금 일이
+ * 벌어지고 있다"*. 그 사실을 옵트인 뒤에 숨기면, 켠 적 없는 사람은 자기
+ * 폴더가 남에게 고쳐지는 동안 아무것도 못 본다. 그래서 기본은 켜짐이고,
+ * 설정은 **끄는** 쪽으로만 쓰인다.
+ *
+ * 대신 값을 크게 잡지 않는다: 표시는 조용한 상태 칩 하나, 알림은 작업 단위뿐.
+ */
+const AGENT_STATUS_KEY = "atlas.agentActivity.status";
+const AGENT_NOTIFICATIONS_KEY = "atlas.agentActivity.notifications";
+const AGENT_NOTIFICATION_KINDS_KEY = "atlas.agentActivity.kinds";
+
+export const DEFAULT_AGENT_ACTIVITY_STATUS = true;
+export const DEFAULT_AGENT_NOTIFICATIONS = true;
+
+/** off 를 명시적으로 저장한다 — 「키가 없음」과 「껐음」을 구별하기 위해. */
+function readOnOff(key: string, fallback: boolean): boolean {
+  if (typeof window === "undefined") return fallback;
+  try {
+    const saved = window.localStorage.getItem(key);
+    if (saved === "on") return true;
+    if (saved === "off") return false;
+    return fallback;
+  } catch {
+    return fallback;
+  }
+}
+
+function writeOnOff(key: string, value: boolean): void {
+  if (typeof window === "undefined") return;
+  try {
+    window.localStorage.setItem(key, value ? "on" : "off");
+  } catch {
+    // 위와 동일 — 저장이 막혀도 이벤트로 현재 세션은 갱신된다.
+  }
+  notifyPreferenceChange();
+}
+
+export function readAgentActivityStatus(): boolean {
+  return readOnOff(AGENT_STATUS_KEY, DEFAULT_AGENT_ACTIVITY_STATUS);
+}
+
+export function writeAgentActivityStatus(value: boolean): void {
+  writeOnOff(AGENT_STATUS_KEY, value);
+}
+
+export function useAgentActivityStatusEnabled(): boolean {
+  const getSnapshot = useCallback(() => readAgentActivityStatus(), []);
+  const getServerSnapshot = useCallback(() => DEFAULT_AGENT_ACTIVITY_STATUS, []);
+  return useSyncExternalStore(subscribe, getSnapshot, getServerSnapshot);
+}
+
+export function readAgentNotificationsEnabled(): boolean {
+  return readOnOff(AGENT_NOTIFICATIONS_KEY, DEFAULT_AGENT_NOTIFICATIONS);
+}
+
+export function writeAgentNotificationsEnabled(value: boolean): void {
+  writeOnOff(AGENT_NOTIFICATIONS_KEY, value);
+}
+
+export function useAgentNotificationsEnabled(): boolean {
+  const getSnapshot = useCallback(() => readAgentNotificationsEnabled(), []);
+  const getServerSnapshot = useCallback(() => DEFAULT_AGENT_NOTIFICATIONS, []);
+  return useSyncExternalStore(subscribe, getSnapshot, getServerSnapshot);
+}
+
+/**
+ * 어떤 갈래를 받을지. **저장하는 것은 「끈 갈래」다** — 켠 갈래를 저장하면
+ * 나중에 갈래가 하나 늘었을 때 기존 사용자에게만 조용히 꺼진 채로 나온다.
+ * 끈 것만 적으면 새 갈래는 모두에게 켜진 채로 도착한다(기본은 전부 켜짐).
+ */
+const EMPTY_MUTED: ReadonlySet<string> = new Set();
+
+export function readMutedAgentNotificationKinds(): ReadonlySet<string> {
+  if (typeof window === "undefined") return EMPTY_MUTED;
+  try {
+    const saved = window.localStorage.getItem(AGENT_NOTIFICATION_KINDS_KEY);
+    if (!saved) return EMPTY_MUTED;
+    const parsed: unknown = JSON.parse(saved);
+    return Array.isArray(parsed)
+      ? new Set(parsed.filter((item): item is string => typeof item === "string"))
+      : EMPTY_MUTED;
+  } catch {
+    return EMPTY_MUTED;
+  }
+}
+
+export function writeMutedAgentNotificationKinds(kinds: ReadonlySet<string>): void {
+  if (typeof window === "undefined") return;
+  try {
+    window.localStorage.setItem(AGENT_NOTIFICATION_KINDS_KEY, JSON.stringify([...kinds].sort()));
+  } catch {
+    // 위와 동일.
+  }
+  notifyPreferenceChange();
+}
+
+/**
+ * `useSyncExternalStore` 는 스냅샷을 `Object.is` 로 비교하므로 매번 새 Set 을
+ * 돌려주면 무한 렌더가 된다 — 발자국과 같은 캐시 문법.
+ */
+let mutedCacheKey: string | null = null;
+let mutedCacheValue: ReadonlySet<string> = EMPTY_MUTED;
+
+function mutedSnapshot(): ReadonlySet<string> {
+  if (typeof window === "undefined") return EMPTY_MUTED;
+  let raw: string | null = null;
+  try {
+    raw = window.localStorage.getItem(AGENT_NOTIFICATION_KINDS_KEY);
+  } catch {
+    return EMPTY_MUTED;
+  }
+  if (raw === mutedCacheKey) return mutedCacheValue;
+  mutedCacheKey = raw;
+  mutedCacheValue = readMutedAgentNotificationKinds();
+  return mutedCacheValue;
+}
+
+export function useMutedAgentNotificationKinds(): ReadonlySet<string> {
+  const getSnapshot = useCallback(() => mutedSnapshot(), []);
+  const getServerSnapshot = useCallback(() => EMPTY_MUTED, []);
+  return useSyncExternalStore(subscribe, getSnapshot, getServerSnapshot);
+}
+
 /* ── 발자국 (걸어온 길) ──────────────────────────────────────────────────── */
 
 /**

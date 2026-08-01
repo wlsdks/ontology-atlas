@@ -149,7 +149,15 @@
       "frameMeterLabel": "프레임 계기",
       "frameMeterCaption": "지도가 초당 몇 프레임을 내주는지와 가장 크게 끊긴 간격을 띄웁니다. 기본은 꺼짐이고, 꺼져 있으면 측정도 하지 않습니다.",
       "frameMeterOn": "켬",
-      "frameMeterOff": "끔"
+      "frameMeterOff": "끔",
+      "toggleOn": "켬",
+      "toggleOff": "끔",
+      "agentStatusLabel": "작업 중 표시",
+      "agentStatusCaption": "에이전트나 사람이 이 폴더에 쓰는 동안 지도 위에 「작업 중」과 마지막 작업 시각을 띄웁니다. 기본은 켜짐.",
+      "agentNotificationsLabel": "알림",
+      "agentNotificationsCaption": "작업이 시작·끝날 때, 도메인이 생기거나 사라질 때 벨에 남깁니다. 노드 하나·관계 하나는 알리지 않아요 — 지도가 이미 보여줍니다.",
+      "agentNotificationKindsLabel": "받을 알림",
+      "agentNotificationKindsCaption": "끈 갈래는 벨에 쌓이지 않습니다."
     },
     "primaryAriaLabel": "주요 메뉴",
     "notificationsAriaLabel": "작업 알림"
@@ -3290,5 +3298,31 @@
     "guideNavLabel": "가이드 차례",
     "onThisGuide": "가이드",
     "entryNavLabel": "변경 항목"
+  },
+  "agentActivity": {
+    "writing": "작업 중",
+    "quietUnknown": "조용함",
+    "lastWorkedAt": "마지막 작업 {age}",
+    "openOnMap": "지도에서 {name} 열기",
+    "bellAria": "알림함 열기",
+    "bellUnreadAria": "알림함 열기 — 새 알림 {count}개",
+    "inboxTitle": "알림",
+    "inboxEmpty": "아직 알릴 것이 없어요. 에이전트나 사람이 이 폴더를 고치면 여기에 남습니다.",
+    "inboxFooter": "작업 단위로만 알립니다. 줄 단위 기록은 볼트 안 activity.jsonl 과 기록 화면에 있어요.",
+    "summaryAdded": "추가 {count}",
+    "summaryEdited": "편집 {count}",
+    "summaryRemoved": "삭제 {count}",
+    "summaryJoin": " · ",
+    "problemUnresolved": "허공 참조 {count}",
+    "problemCycles": "순환 {count}",
+    "bridgeChildren": "자식 {count}개를 데려감",
+    "event": {
+      "taskStart": "작업 시작",
+      "taskEnd": "작업 끝",
+      "domainAdded": "도메인 생김",
+      "domainRemoved": "도메인 사라짐",
+      "bridgeInserted": "브릿지 끼어듦",
+      "vaultProblem": "볼트 문제"
+    }
   }
 }

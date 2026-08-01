@@ -126,6 +126,17 @@ describe("deriveAgentWritingActivity", () => {
     expect(absorbed.lastTarget).toBeNull();
   });
 
+  it("종류 폴더가 붙은 슬러그는 통과한다 — 실측 로그의 대상은 전부 이 모양이다", () => {
+    // 회귀 가드: 「경로 구분자가 있으면 슬러그가 아니다」라는 옛 룰 아래에서는
+    // `capabilities/checkout` 이 걸러져 lastTarget 이 사실상 항상 null 이었다.
+    // 규격이 정하는 슬러그가 바로 `folderForKind(kind)` + 평평한 이름이다.
+    for (const target of ["capabilities/checkout", "domains/community", "elements/payment-transaction"]) {
+      expect(
+        deriveAgentWritingActivity([entry({ at: atOffset(1_000), target })], NOW).lastTarget,
+      ).toBe(target);
+    }
+  });
+
   it("한글 슬러그는 통과한다", () => {
     const result = deriveAgentWritingActivity(
       [entry({ at: atOffset(1_000), target: "수납-정책" })],

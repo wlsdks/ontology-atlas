@@ -3,7 +3,7 @@
 import { useCallback, useEffect, useId, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
 import { usePanelPresence } from '@/shared/lib/use-presence';
-import type { MouseEvent as ReactMouseEvent, ReactNode } from 'react';
+import type { MouseEvent as ReactMouseEvent } from 'react';
 import {
   Bot,
   ChevronLeft,
@@ -41,6 +41,8 @@ import {
 import { VaultAgentSetupPanel } from './VaultAgentSetupPanel';
 import { CanvasBackgroundPicker, GlyphSetPicker } from './AppearancePickers';
 import { FootprintSettings } from './FootprintSettings';
+import { AgentActivitySettings } from './AgentActivitySettings';
+import { SegmentSwitch, SettingsGroup, SettingsRow } from './settings-primitives';
 import { useFrameMeter, writeFrameMeter } from '@/shared/lib/appearance-preferences';
 import { AiConnectionPanel } from './AiConnectionPanel';
 import { AI_PROVIDER_LABEL_KEY } from '../model/ai-providers';
@@ -760,7 +762,8 @@ export function AppSettingsMenu({
                 data-testid={`app-settings-pane-${section}`}
               >
                 {section === 'screen' ? (
-                  // 절 제목을 다시 쓰지 않는다 — 왼쪽 목록이 이미 이 칸의 이름이다.
+                  <>
+                  {/* 절 제목을 다시 쓰지 않는다 — 왼쪽 목록이 이미 이 칸의 이름이다. */}
                   <SettingsGroup>
                 <SettingsRow
                   label={t('languageTitle')}
@@ -859,6 +862,11 @@ export function AppSettingsMenu({
                   />
                 ) : null}
                   </SettingsGroup>
+                  {/* 「작업 중 표시」·「알림」 — 이 칸인 이유: 둘 다 **화면이 무엇을
+                      말하는가**의 설정이다(에이전트를 어떻게 연결하는가가 아니다.
+                      그건 「AI 에이전트」 칸의 일이다). 기본은 둘 다 켜짐. */}
+                  <AgentActivitySettings />
+                  </>
                 ) : section === 'background' ? (
                   <>
                   <CanvasBackgroundPicker />
@@ -1140,111 +1148,5 @@ export function AppSettingsMenu({
         )
         : null}
     </details>
-  );
-}
-
-/** 그룹 헤더 + 행 컨테이너 — Toss 식 "그룹 헤더 + 즉시 조작 행" 문법의 뼈대. */
-/**
- * 한 무리의 설정 행. `label` 은 **선택**이다 — LNB 가 이미 그 칸의 이름을 말하는
- * 자리에서는 제목을 다시 쓰지 않는다(같은 단어가 왼쪽과 오른쪽에 나란히 서면
- * 둘 중 하나는 잉크 낭비다). 한 칸에 무리가 둘 이상일 때만 이름을 준다.
- */
-function SettingsGroup({ label, children }: { label?: string; children: ReactNode }) {
-  return (
-    <section aria-label={label}>
-      {label ? (
-        <h3 className="px-1 font-mono text-label uppercase tracking-[0.14em] text-[color:var(--color-text-quaternary)]">
-          {label}
-        </h3>
-      ) : null}
-      <div className={`${label ? 'mt-1.5 ' : ''}divide-y divide-[color:var(--color-divider)] overflow-hidden rounded-lg border border-[color:var(--color-border-soft)] bg-[color:var(--color-overlay-1)]`}>
-        {children}
-      </div>
-    </section>
-  );
-}
-
-/** 한 행 = 라벨(+필요시 1줄 설명) 좌측, 현재값+조작 우측. */
-function SettingsRow({
-  label,
-  caption,
-  captionTone = 'neutral',
-  control,
-  testId,
-}: {
-  label: string;
-  caption?: string;
-  captionTone?: 'neutral' | 'warning' | 'danger';
-  control: ReactNode;
-  testId?: string;
-}) {
-  return (
-    <div
-      className="flex min-h-12 items-center justify-between gap-3 px-3 py-2"
-      data-testid={testId}
-    >
-      <div className="min-w-0">
-        <p className="text-body text-[color:var(--color-text-secondary)]">{label}</p>
-        {caption ? (
-          <p
-            className={cn(
-              'mt-0.5 break-keep text-label leading-4',
-              captionTone === 'danger'
-                ? 'text-[color:var(--color-status-danger)]'
-                : captionTone === 'warning'
-                  ? 'text-[color:var(--color-status-warning)]'
-                  : 'text-[color:var(--color-text-quaternary)]',
-            )}
-          >
-            {caption}
-          </p>
-        ) : null}
-      </div>
-      <div className="flex shrink-0 items-center gap-2">{control}</div>
-    </div>
-  );
-}
-
-/** 2-세그먼트 토글 — LocaleSwitch 와 같은 표면 문법(구 설정 기어에서 승계). */
-function SegmentSwitch({
-  ariaLabel,
-  value,
-  options,
-  onChange,
-  testId,
-}: {
-  ariaLabel: string;
-  value: boolean;
-  options: ReadonlyArray<{ value: boolean; label: string }>;
-  onChange: (next: boolean) => void;
-  testId?: string;
-}) {
-  return (
-    <div
-      role="group"
-      aria-label={ariaLabel}
-      data-testid={testId}
-      className="inline-flex items-center gap-px rounded-md border border-[color:var(--color-border-soft)] bg-[color:var(--color-elevated)] p-px text-body"
-    >
-      {options.map((option) => {
-        const active = option.value === value;
-        return (
-          <button
-            key={String(option.value)}
-            type="button"
-            onClick={() => onChange(option.value)}
-            aria-pressed={active}
-            className={cn(
-              'flex h-8 items-center justify-center rounded-chip px-2 font-medium transition-colors',
-              active
-                ? 'bg-[color:var(--color-panel)] text-[color:var(--color-text-primary)]'
-                : 'text-[color:var(--color-text-tertiary)] hover:text-[color:var(--color-text-secondary)]',
-            )}
-          >
-            {option.label}
-          </button>
-        );
-      })}
-    </div>
   );
 }
