@@ -47,8 +47,25 @@ import { seedFirstRunSeen } from "./first-run-seed";
  * 4. 판의 오른끝이 카메라 인셋 안에 든다(`plate.right + 갭 ≤ safeInsetLeft`).
  * 5. **리사이즈 뒤에도 전부 유지된다** — 원점이 뷰포트의 함수가 된 순간
  *    마운트 1회 파생은 낡는다. 그게 이 페이지가 이미 한 번 당한 사고의 형태다.
- * 6. 첫 화면 약속 폭에서 **세로 스크롤 0**.
+ * 6. **설치 3단이 접히지 않는다** — 끝까지 스크롤하면 세 단이 전부 뷰포트
+ *    안에 온전히 들어오고, 조상 컨테이너가 잘라 놓지 않았다.
  * 7. 판 안의 어떤 컨트롤도 판의 안쪽 폭을 넘지 않는다(ko/en 둘 다).
+ *
+ * ## 6번의 사정거리는 2026-08-01 에 좁혀졌다 (넓힌 게 아니라 좁혔다)
+ *
+ * 종전 6번은 **「페이지 전체가 한 화면」** 이었다(`/download` 에서 세로 스크롤 0).
+ * 그건 시연 절이 `/` 에만 있던 시절의 형태다 — 소유자가 두 주소를 통일하면서
+ * (*"download는 결국 홍보 페이지랑 같잖아"*) `/download` 도 스크롤되는 페이지가
+ * 됐고, 그 순간 옛 6번은 **제품이 아니라 자기 전제를 지키는** 시험이 됐다.
+ *
+ * 그래서 지우지 않고 **원래 지키던 것**으로 돌려놨다. 그 게이트가 실제로 잡은
+ * 회귀는 "스크롤이 생겼다" 가 아니라 **"접힌 것이 하필 설치 3단이었다"** 다
+ * (구 `min(46rem,88vh)` 고정 바닥이 850 창에서 270px 을 접었다). 스크롤 0 은
+ * 그 property 를 담는 그릇이었지 property 자체가 아니었다.
+ *
+ * ⚠️ **그릇과 내용물을 헷갈리면 게이트가 두 방향으로 틀린다.** 그릇만 지키면
+ * 오늘처럼 정당한 설계 변경에 빨개지고, 그릇을 지우면 내용물까지 같이 사라진다.
+ * 시험이 무엇을 지키는지 문장으로 못 쓰면 그건 아직 property 가 아니다.
  */
 
 /**
@@ -307,20 +324,80 @@ test.describe("관문 다운로드의 그리드", () => {
   });
 
   for (const viewport of NO_SCROLL_VIEWPORTS) {
-    test(`${viewport.width}×${viewport.height} — 첫 화면이 스크롤 없이 끝난다`, async ({
-      page,
-    }) => {
-      await page.setViewportSize(viewport);
-      await seedFirstRunSeen(page);
-      await page.goto("/ko/download/", { waitUntil: "networkidle" });
-      await expect(page.getByTestId("download-plate")).toBeVisible({ timeout: 15_000 });
+    for (const route of ["/ko/", "/ko/download/"]) {
+      test(`${viewport.width}×${viewport.height} ${route} — 설치 3단이 접히지 않는다`, async ({
+        page,
+      }) => {
+        await page.setViewportSize(viewport);
+        await seedFirstRunSeen(page);
+        await page.goto(route, { waitUntil: "networkidle" });
+        await expect(page.getByTestId("download-plate")).toBeVisible({ timeout: 15_000 });
 
-      const m = await measure(page);
-      // 무대가 `flex-1` 로 남는 자리를 전부 먹으므로, 바닥 띠까지가 정확히
-      // 한 화면이다. 구 `min(46rem,88vh)` 고정 바닥은 850 창에서 270px 을
-      // 접었고, 접힌 것이 하필 설치 3단이었다.
-      expect(m.scrollDelta, `세로 스크롤이 생겼다: ${JSON.stringify(m.scrollDelta)}`).toEqual([]);
-    });
+        /**
+         * **두 주소가 같은 것을 보여준다** (2026-08-01 소유자 확정).
+         *
+         * 이 단언이 없으면 아래 시험은 **조용히 무의미해진다** — 시연 절이
+         * 사라지면 페이지가 짧아져 설치 3단은 저절로 접힘 위에 오고, 시험은
+         * 아무것도 안 재면서 초록이 된다. 그건 통과가 아니라 시야 상실이다
+         * (이 파일의 `sawOriginChange` 와 같은 규율).
+         *
+         * 동시에 이것이 통일 자체의 게이트다. 종전엔 `showDemo` 한 줄이 주소로
+         * 갈랐고 아무 시험도 그 갈림을 몰랐다.
+         */
+        await expect(
+          page.getByTestId("demo-stage"),
+          `${route} 에 시연 절이 없다 — 두 주소는 같은 것을 보여줘야 한다`,
+        ).toBeVisible({ timeout: 15_000 });
+
+        const install = page.getByTestId("download-install");
+        // 스크롤되는 페이지가 됐으므로 **끝까지 가서** 잰다. 도달 자체가
+        // 시험의 일부다 — 스크롤로도 못 닿으면 그건 접힌 것보다 나쁘다.
+        await install.scrollIntoViewIfNeeded();
+        await expect(install).toBeVisible();
+
+        const cut = await page.evaluate(() => {
+          const el = document.querySelector('[data-testid="download-install"]')!;
+          const rect = el.getBoundingClientRect();
+          const vh = window.innerHeight;
+          const steps = [...el.querySelectorAll("li")].map((li) => {
+            const r = li.getBoundingClientRect();
+            return { top: Math.round(r.top), bottom: Math.round(r.bottom), h: Math.round(r.height) };
+          });
+          /**
+           * 조상이 잘라 놓았는가 — `overflow:hidden` 인 조상의 하단보다
+           * 아래로 삐져나온 픽셀. 스크롤 컨테이너와 달리 이건 **도달 불가**다.
+           */
+          let clippedBy: string | null = null;
+          for (let p = el.parentElement; p; p = p.parentElement) {
+            const cs = getComputedStyle(p);
+            if (cs.overflowY !== "hidden") continue;
+            const pr = p.getBoundingClientRect();
+            if (rect.bottom - pr.bottom > 1) {
+              clippedBy = `${p.tagName.toLowerCase()}${p.className ? "." + String(p.className).split(/\s+/)[0] : ""}`;
+              break;
+            }
+          }
+          return {
+            vh,
+            bandBottom: Math.round(rect.bottom),
+            steps,
+            clippedBy,
+          };
+        });
+
+        // 구 `min(46rem,88vh)` 고정 바닥이 850 창에서 접은 것이 바로 이 셋이다.
+        expect(cut.steps, "설치 단계가 셋이 아니다").toHaveLength(3);
+        for (const [i, s] of cut.steps.entries()) {
+          expect(s.h, `설치 ${i + 1}단의 높이가 0 이다`).toBeGreaterThan(0);
+          expect(
+            s.bottom,
+            `설치 ${i + 1}단이 뷰포트 아래로 잘렸다: ${JSON.stringify(cut)}`,
+          ).toBeLessThanOrEqual(cut.vh + 1);
+          expect(s.top, `설치 ${i + 1}단이 뷰포트 위로 잘렸다`).toBeGreaterThanOrEqual(-1);
+        }
+        expect(cut.clippedBy, `조상 컨테이너가 설치 띠를 잘랐다: ${cut.clippedBy}`).toBeNull();
+      });
+    }
   }
 
   for (const locale of ["ko", "en"]) {

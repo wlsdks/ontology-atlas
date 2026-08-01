@@ -148,7 +148,7 @@ export const DESKTOP_SMOKE_ROUTE_CHUNK_TEXT = {
     "sourceContract.agentLabel",
   ],
   "/ontology": ["/topology/?", "index", "expanded"],
-  "/topology": ["canvas-v2", "active-relation-inspector", "focus-path-state"],
+  "/topology": ["topology-map-v2-canvas", "topology-concept-search"],
   "/ontology/edit": ["/ontology/studio/?node=", "/ontology/studio/"],
   "/ontology/insights": [
     "maintenance-board",

@@ -206,6 +206,39 @@ function mapLabelKeys(): Set<string> {
  * 감싸인다(`<span>{t("key")}</span>`). 그래서 뒤로 걸어 올라가며 href 를 가진
  * 첫 태그를 찾는다. 링크가 아니면(href 없음) 대상이 아니므로 건너뛴다.
  */
+/**
+ * 한 여는 태그에서 `href` 의 **값**을 읽는다. 못 읽으면 `null`.
+ *
+ * ⚠️ **이 함수의 사정거리가 곧 이 게이트의 사정거리다** (2026-08-01 실측 교훈).
+ * 종전엔 `href="…"` · `href={\`…\`}` · `href={"…"}` 셋만 봤고, 그래서 실제
+ * 결함이 **두 형태로 빠져나갔다**:
+ *
+ * - `href={workspaceHref}` — 같은 파일 위쪽의 `const workspaceHref = '/'`
+ * - `href={'/'}` — 중괄호 안 **작은따옴표**
+ *
+ * 둘 다 `/project/[slug]` 의 「지도」 링크였고, 라벨이 「지도」인데 관문으로
+ * 보내고 있었다. 게이트는 초록이었다 — 안 보는 형태였으니까. 이 저장소가
+ * 라벨 장식 룰에서 이미 배운 것과 같은 병이다: **룰이 있어도 사정거리가
+ * 짧으면 룰이 없는 것과 같다.**
+ *
+ * 값을 못 정하는 형태(`getTopologyProjectHref(slug)` 같은 호출식)는 `null` 을
+ * 돌려 **건너뛴다** — 여기서 추측하면 오탐이 나고, 오탐이 나는 게이트는 곧
+ * 꺼진다. 대신 그런 링크는 함수 이름 자체가 목적지를 말한다.
+ */
+function hrefValue(tag: string, source: string): string | null {
+  const literal = /href=(?:"([^"]*)"|'([^']*)'|\{`([^`]*)`\}|\{"([^"]*)"\}|\{'([^']*)'\})/.exec(tag);
+  if (literal) return literal[1] ?? literal[2] ?? literal[3] ?? literal[4] ?? literal[5] ?? "";
+
+  // `href={identifier}` — 같은 파일의 단순 상수 선언을 한 겹만 따라간다.
+  const ident = /href=\{([A-Za-z_$][\w$]*)\}/.exec(tag);
+  if (!ident) return null;
+  const decl = new RegExp(
+    `\\b(?:const|let|var)\\s+${ident[1]}\\s*(?::[^=]+)?=\\s*(?:"([^"]*)"|'([^']*)'|\`([^\`]*)\`)`,
+  ).exec(source);
+  if (!decl) return null;
+  return decl[1] ?? decl[2] ?? decl[3] ?? "";
+}
+
 function hrefForLabelKey(source: string, key: string): string[] {
   const found: string[] = [];
   for (const marker of [`t("${key}")`, `t('${key}')`]) {
@@ -220,9 +253,9 @@ function hrefForLabelKey(source: string, key: string): string[] {
         // 닫는 태그를 만났다 = 앞선 **형제** 원소를 지나친 것이다. 더 올라가면
         // 남의 링크 href 를 자기 것으로 주워온다(프로브가 이걸 잡았다).
         if (tag.startsWith("</")) break;
-        const match = /href=(?:"([^"]*)"|\{`([^`]*)`\}|\{"([^"]*)"\})/.exec(tag);
-        if (match) {
-          found.push(match[1] ?? match[2] ?? match[3] ?? "");
+        const href = hrefValue(tag, source);
+        if (href !== null) {
+          found.push(href);
           break;
         }
         at = open - 1;
@@ -269,5 +302,28 @@ describe("라벨이 「지도」인 링크는 등록 없이도 감시된다", ()
     expect(hrefForLabelKey(probe, "crumbBack")).toEqual(["/topology"]);
     expect(hrefForLabelKey(probe, "someOther")).toEqual(["/"]);
     expect(hrefForLabelKey(probe, "absent")).toEqual([]);
+  });
+
+  /**
+   * **실제로 빠져나갔던 두 형태.** 프로브가 여기 상주하는 이유는 이 게이트가
+   * 조용히 좁아지는 것을 막기 위해서다 — 2026-08-01 에 두 형태가 통과했고,
+   * 통과한 이유는 결함이 없어서가 아니라 **추출기가 안 보는 문법**이라서였다.
+   */
+  it("추출기가 변수 href 와 작은따옴표 href 도 읽는다 (사정거리 프로브)", () => {
+    const viaConst = `
+      const workspaceHref = '/';
+      <Link href={workspaceHref}>{t("crumbBack")}</Link>
+    `;
+    expect(hrefForLabelKey(viaConst, "crumbBack")).toEqual(["/"]);
+
+    const viaSingleQuote = `<Link href={'/'}>{t("crumbBack")}</Link>`;
+    expect(hrefForLabelKey(viaSingleQuote, "crumbBack")).toEqual(["/"]);
+
+    const viaTemplateConst = "const h = `/topology/`;\n<Link href={h}>{t(\"crumbBack\")}</Link>";
+    expect(hrefForLabelKey(viaTemplateConst, "crumbBack")).toEqual(["/topology/"]);
+
+    // 값을 못 정하는 호출식은 건너뛴다 — 추측하면 오탐이고, 오탐 나는 게이트는 꺼진다.
+    const viaCall = `<Link href={getTopologyProjectHref(slug)}>{t("crumbBack")}</Link>`;
+    expect(hrefForLabelKey(viaCall, "crumbBack")).toEqual([]);
   });
 });

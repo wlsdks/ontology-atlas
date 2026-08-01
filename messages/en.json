@@ -188,8 +188,6 @@
     },
     "exit": "Stop",
     "returnToReview": "Back to insight review",
-    "moreRelations": "More relations",
-    "moreRelationsSoon": "Soon",
     "flowEyebrow": "Completeness",
     "flowCount": "{filled} of {total} directions filled",
     "flowHint": {
@@ -1756,7 +1754,8 @@
       "unsupportedTooltip": "Local ontology folder editing is available in the installed desktop app.",
       "permissionNeededBanner": "Workspace is paused — re-grant folder access to keep editing. Showing sample docs until then.",
       "errorBanner": "Workspace folder is unavailable ({message}). Showing sample docs — open the picker to re-pick or refresh.",
-      "openPicker": "Open picker"
+      "openPicker": "Open picker",
+      "missingSlugBanner": "Couldn't find “{slug}” in this vault, so another document is open instead. If it lives in a different folder, switch vaults."
     },
     "desktopWelcome": {
       "eyebrow": "Local-first workspace",
@@ -3317,9 +3316,13 @@
     "guidePages": {
       "whatIsAtlas": "What is Atlas?",
       "firstFiveMinutes": "First five minutes",
+      "readingTheMap": "Reading the map",
       "vaultStructure": "Vault structure",
+      "whatBecomesANode": "What becomes a node",
       "relations": "How relations work",
+      "fromYourRepo": "Start from your repo",
       "connectAgent": "Connect an AI agent",
+      "growingVault": "When the vault grows",
       "cli": "CLI",
       "trust": "On trust"
     },

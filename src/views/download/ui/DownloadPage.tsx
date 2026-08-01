@@ -9,9 +9,8 @@ import {
 } from 'lucide-react';
 import { useFormatter, useTranslations } from 'next-intl';
 import { resolveDisplayReleaseTag } from '../lib/pending-release-tag';
-import { Link, usePathname } from '@/i18n/navigation';
+import { Link } from '@/i18n/navigation';
 import { cn } from '@/shared/lib/cn';
-import { stripLocalePrefix } from '@/shared/lib/nav-destination';
 import { PAGE_COLUMN, PAGE_GUTTER } from '@/shared/lib/gateway-frame';
 import { GatewayNav } from '@/widgets/gateway-chrome';
 import { DemoStage } from './DemoStage';
@@ -146,30 +145,26 @@ const STAGE_COLUMN = 'w-full max-w-[calc(var(--gateway-plate-width)*1px)]';
 export function DownloadPage() {
   const tFooter = useTranslations('footer');
   /**
-   * **시연 절은 `/` 에만 붙는다.** 원장 2026-07-29 밤: 소유자가 카운슬 평결
-   * (다운로드 페이지 복도)과 다르게 **첫 페이지**로 서명했다. 이 뷰가 두 주소에
-   * 살기 때문에(`/` 얼굴 · `/download` 딥링크) 경로로 갈라야 그 서명이 지켜진다.
+   * **시연 절은 두 주소 모두에 있다** (2026-08-01 소유자 확정, 원장 「시연은
+   * 주소로 갈리지 않는다」).
+   *
+   * 종전엔 `/` 에만 붙였다 — 2026-07-29 원장이 "시연 영상은 첫 페이지로 간다"
+   * 로 서명했고, 이 뷰가 두 주소에 살기 때문에 경로로 갈랐다. 그 갈림이
+   * **실제로 만든 것은 위계가 아니라 혼란**이다: 같은 얼굴의 두 주소가 서로
+   * 다른 것을 보여 주고, `/download` 로 직접 들어온 사람은 이 제품이 움직이는
+   * 것을 한 번도 못 본 채 설치 버튼만 본다. 소유자 판정 — *"download는 결국
+   * 홍보 페이지랑 같잖아"*.
+   *
+   * 되돌리기를 막고 있던 것은 게이트 하나였다: `/download` 의 「첫 화면이
+   * 스크롤 없이 끝난다」(`tests/e2e/download-gateway-grid.spec.ts`). 그 게이트가
+   * **실제로 지키는 것**은 페이지가 한 화면인 것이 아니라 **설치 3단이 접히지
+   * 않는 것**이다(구 고정 바닥이 850 창에서 270px 을 접었고, 접힌 것이 하필
+   * 설치 단계였다). 그래서 게이트를 지우지 않고 **사정거리를 그 property 로
+   * 좁혔다** — 앞선 주석이 뒤집는 방법으로 남겨 둔 바로 그 순서다.
    *
    * 자산이 없으면 `DemoStage` 가 스스로 `null` 을 반환한다 — 재생할 것 없는
-   * 플레이어를 관문 첫인상 자리에 두지 않기 위해 그 판정이 데이터에 있다.
+   * 플레이어를 첫인상 자리에 두지 않기 위해 그 판정이 데이터에 있다.
    */
-  /**
-   * **시연 절은 `/` 에만 있다.** 원장 「시연 영상은 첫 페이지로 간다」(2026-07-29).
-   *
-   * 두 주소 모두에 두려고 `true` 로 바꿨다가 **되돌렸다** — 같은 날 같은 카운슬이
-   * `/download` 에 「첫 화면이 스크롤 없이 끝난다」를 e2e 게이트로 걸어 뒀고
-   * (`tests/e2e/download-gateway-grid.spec.ts`), 그 게이트가 지키는 것은 **설치 3단이
-   * 접히지 않는 것**이다(구 고정 바닥이 850 창에서 270px 을 접었고, 접힌 것이 하필
-   * 설치 단계였다). 543px 짜리 영상 절을 얹으면 그 property 가 깨진다.
-   *
-   * 「두 주소가 같은 얼굴」과 부딪히는 것처럼 보이지만, **웹 방문자가 실제로 착지하는
-   * 주소는 `/` 다**(`isGatewaySurface()`). 홍보 영상은 그것을 볼 사람에게 있고,
-   * `/download` 는 링크로 도착해 **설치만 하려는** 사람의 한 화면 페이지로 남는다.
-   *
-   * 다시 뒤집으려면 그 게이트의 사정거리를 「페이지 전체가 한 화면」에서 「설치 3단이
-   * 접힘 위」로 좁히는 것이 먼저다 — 게이트를 지우는 것이 아니다.
-   */
-  const showDemo = stripLocalePrefix(usePathname() ?? '/') === '/';
   const published = isMacosReleasePublished();
   // Apple Silicon 이 기본 제안 — 2020년 말 이후 팔린 맥은 거의 전부 그쪽이다.
   const primaryAsset = published ? macosAssetFor('aarch64') : null;
@@ -179,15 +174,13 @@ export function DownloadPage() {
       <GatewayNav />
 
       <main id="main" tabIndex={-1} className="flex min-w-0 flex-1 flex-col bg-[color:var(--color-canvas)]">
-        <PortraitStage published={published} primaryAsset={primaryAsset} scrolls={showDemo} />
+        <PortraitStage published={published} primaryAsset={primaryAsset} />
 
-        {showDemo ? (
-          <div className={cn(PAGE_GUTTER, 'w-full')}>
-            <div className={cn(PAGE_COLUMN, 'py-8 md:py-10')}>
-              <DemoStage />
-            </div>
+        <div className={cn(PAGE_GUTTER, 'w-full')}>
+          <div className={cn(PAGE_COLUMN, 'py-8 md:py-10')}>
+            <DemoStage />
           </div>
-        ) : null}
+        </div>
 
         {/*
          * **바닥 띠** — 절이 아니라 한 벌의 꼬리다 (2026-07-29 평결 ③).
@@ -304,20 +297,9 @@ export function DownloadPage() {
 function PortraitStage({
   published,
   primaryAsset,
-  scrolls,
 }: {
   published: boolean;
   primaryAsset: ReturnType<typeof macosAssetFor>;
-  /**
-   * 이 페이지가 **스크롤되는 페이지인가**(= 아래에 시연 절이 있는가).
-   *
-   * 바닥 높이를 가르는 유일한 조건이다. 두 주소의 일이 다르기 때문이다:
-   * `/download` 는 링크로 도착해 설치만 하려는 사람의 **한 화면** 페이지라
-   * 무대가 설치 3단에 자리를 양보해야 하고(1512×850 에서 40rem 바닥이면
-   * 그 3단이 접힌다 — 게이트가 실측으로 잡았다), `/` 는 어차피 아래로
-   * 이어지는 페이지라 무대가 높아도 잃는 것이 없다.
-   */
-  scrolls: boolean;
 }) {
   const t = useTranslations('download');
   const graph = useStageGraph();
@@ -327,10 +309,12 @@ function PortraitStage({
       data-testid="download-stage"
       className={cn(
         'relative isolate flex w-full flex-col overflow-hidden border-b border-[color:var(--color-divider)] lg:flex-1',
-        // 값을 조건부로 갈아끼우되 **둘 다 램프 밖 기하값**이라 짝이 어긋날
-        // 짝(행간 같은)이 없다 — `design.md` 의 조건부 크기 주의는 타입 램프의
-        // 이야기이고, 여기는 레이아웃 바닥이다.
-        scrolls ? 'lg:min-h-[44rem]' : 'lg:min-h-[34rem]',
+        // 값이 하나다 (2026-08-01). 종전엔 `/download` 만 34rem 으로 낮춰
+        // 설치 3단에 자리를 양보했는데, 그 조건부는 "이 주소에는 시연이 없다"
+        // 는 전제 위에 있었다. 시연이 두 주소 모두에 오면서 전제가 사라졌고,
+        // 접힘은 이제 높이 조건부가 아니라 게이트가 지키는 property
+        // (설치 3단이 접힘 위)로 관리된다.
+        'lg:min-h-[44rem]',
       )}
     >
       {/*

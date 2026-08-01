@@ -10,7 +10,6 @@ const labels: StudioCompassLabels = {
   searchPlaceholder: "search",
   agentDock: "에이전트",
   exit: "stop",
-  moreRelations: "more",
   flowEyebrow: "completeness",
   flowCount: (f, t) => `${f}/${t} filled`,
   domainMembership: (d) => `already in ${d}`,

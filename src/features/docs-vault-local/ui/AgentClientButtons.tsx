@@ -4,7 +4,7 @@ import { Fragment, useState } from "react";
 import { useTranslations } from "next-intl";
 import { ArrowUpRight, Check, Copy, Info, Loader2, Terminal } from "lucide-react";
 import { Link } from "@/i18n/navigation";
-import type { AgentServerAvailability } from "@/shared/config";
+import { AGENT_GRAPH_WORKFLOW_HREF, type AgentServerAvailability } from "@/shared/config";
 import { copyText } from "@/shared/lib/copy-text";
 import { useToast } from "@/shared/ui";
 
@@ -187,7 +187,7 @@ export function AgentClientButtons({
                     이것이 유일한 대안이라 연결하려던 사람이 시트를 잃고 문서
                     한가운데에 놓였다. */}
                 <Link
-                  href="/docs/?slug=AGENT-GRAPH-WORKFLOW"
+                  href={AGENT_GRAPH_WORKFLOW_HREF}
                   className="inline-flex text-label text-[color:var(--color-text-quaternary)] transition-colors hover:text-[color:var(--color-text-secondary)]"
                 >
                   {t("serverUnavailableSource")}

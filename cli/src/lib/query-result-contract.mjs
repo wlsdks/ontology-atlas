@@ -1713,12 +1713,37 @@ function validAllPathsSuggestedQuery(query) {
   return query.operation === 'query_plan' && query.targetOperation === 'all_paths';
 }
 
+/**
+ * 백링크 한 행 — **근거는 둘 중 하나면 된다.**
+ *
+ * 종전엔 `matchedKeys` 를 무조건 요구했다. 그런데 서버는 본문 링크
+ * (`[[slug]]` · `(slug.md)` · `/slug.md`)로만 걸린 행에 `matchedKeys` 를
+ * **넣지 않고** `matchedInBody: true` 를 넣는다(`mcp/src/vault.mjs:1419-1420`,
+ * outputSchema 의 `required` 도 `slug·kind·title·mtime` 넷뿐이다). 그래서 CLI
+ * 검증기가 서버보다 **엄격해져** 정상 응답을 거부했다.
+ *
+ * 증상은 조용하지 않았다 — `init` 직후 3번째 명령에서 종료 코드 2 와
+ * "invalid backlink shape" 라는 내부 계약 문구가 나왔다. 게다가 스타터
+ * 문서(`domains/example-domain.md`)가 스스로 `domains/auth.md` 를 안내하므로,
+ * 안내대로 따른 사람이 정확히 이 경로를 밟는다.
+ *
+ * **왜 dogfood 볼트가 못 잡았나**: 이 저장소의 볼트는 참조가 전부 frontmatter
+ * 로 배선돼 있어 `matchedKeys` 가 항상 찬다. 본문 링크만으로 걸리는 행은
+ * `cli/` 아래 어떤 픽스처에도 없었다 — 그래서 통과했다.
+ *
+ * 규칙의 정본은 `mcp/scripts/verify.mjs:5047` 이고 여기 옮긴 것이다:
+ * 근거가 **하나도 없는** 행은 여전히 거부한다(왜 걸렸는지 못 말하는 백링크는
+ * 백링크가 아니다).
+ */
 function validBacklinkRow(row) {
-  return Boolean(
-    validNodeSummary(row)
-    && Array.isArray(row.matchedKeys)
-    && row.matchedKeys.every((key) => hasNonEmptyString(key))
-  );
+  if (!validNodeSummary(row)) return false;
+  if (row.matchedKeys !== undefined) {
+    if (!Array.isArray(row.matchedKeys)) return false;
+    if (!row.matchedKeys.every((key) => hasNonEmptyString(key))) return false;
+  }
+  if (row.matchedInBody !== undefined && typeof row.matchedInBody !== 'boolean') return false;
+  const hasKeys = Array.isArray(row.matchedKeys) && row.matchedKeys.length > 0;
+  return hasKeys || row.matchedInBody === true;
 }
 
 function validDegree(degree) {

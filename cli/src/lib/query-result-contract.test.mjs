@@ -1812,6 +1812,51 @@ describe('query-result-contract', () => {
 
     assert.equal(assertBacklinksShape(backlinks), backlinks);
     assert.equal(assertBacklinksShape({ target: 'capabilities/foo', matches: [] }).total, undefined);
+
+    /**
+     * **본문 링크로만 걸린 행** — 서버가 실제로 내는 두 번째 모양이다
+     * (`mcp/src/vault.mjs`: `matchedKeys` 는 `undefined`, `matchedInBody: true`).
+     *
+     * 이 픽스처가 없어서 회귀가 통과했다. dogfood 볼트는 참조가 전부
+     * frontmatter 라 이 모양이 한 번도 안 나왔고, `init` 직후의 스타터 볼트
+     * (본문이 `domains/auth.md` 를 안내한다)에서만 나왔다 — 즉 **우리가 안
+     * 쓰는 경로에서만** 터졌다.
+     */
+    const bodyOnly = {
+      target: 'domains/auth',
+      total: 1,
+      matches: [
+        {
+          slug: 'domains/example-domain',
+          kind: 'domain',
+          title: 'Example domain',
+          mtime: 1,
+          matchedInBody: true,
+        },
+      ],
+    };
+    assert.equal(assertBacklinksShape(bodyOnly), bodyOnly);
+
+    // 근거가 하나도 없는 행은 여전히 거부한다 — 왜 걸렸는지 못 말하는
+    // 백링크는 백링크가 아니다(정본: `mcp/scripts/verify.mjs`).
+    assert.throws(
+      () =>
+        assertBacklinksShape({
+          target: 'domains/auth',
+          matches: [{ slug: 'domains/x', kind: 'domain', title: 'X', mtime: 1 }],
+        }),
+      /find_backlinks matches\[0\] has an invalid backlink shape/,
+    );
+    assert.throws(
+      () =>
+        assertBacklinksShape({
+          target: 'domains/auth',
+          matches: [
+            { slug: 'domains/x', kind: 'domain', title: 'X', mtime: 1, matchedKeys: [], matchedInBody: false },
+          ],
+        }),
+      /find_backlinks matches\[0\] has an invalid backlink shape/,
+    );
     assert.equal(assertOrphansShape(orphans), orphans);
     assert.equal(assertOrphansShape({ orphans: [] }).total, undefined);
     assert.throws(

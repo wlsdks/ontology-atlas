@@ -238,7 +238,6 @@ function StudioStage({
       // 지도 칩과 **같은 키** — 이름이 바뀌면 두 표면이 함께 바뀐다.
       agentDock: tAgentPanel("title"),
       exit: insightsReturnTab ? t("returnToReview") : t("exit"),
-      moreRelations: t("moreRelations"),
       flowEyebrow: t("flowEyebrow"),
       flowCount: (filled, total) => `${t("flowCount", { filled, total })} ${flowHint(filled)}`,
       domainMembership: (domain) => t("domainMembership", { domain }),
@@ -1015,7 +1014,6 @@ function StudioStage({
         onToggleAgentDock={agentDock?.toggle}
         searchNodes={candidates}
         onOpenNode={openNode}
-        moreRelationsSoon={t("moreRelationsSoon")}
         canSave={Boolean(title.trim()) && !createSlugCollision}
         summary={title.trim() ? createSummary : null}
         deltaPreview={title.trim() ? createDeltaPreview : null}
@@ -1456,7 +1454,6 @@ function StudioStage({
       // the Slice 4 arrival ring); otherwise the walked-from node keeps the ring.
       arrivedFrom={editTarget?.neighbor.id ?? backTo?.id ?? null}
       backTo={backTo}
-      moreRelationsSoon={t("moreRelationsSoon")}
     />
     {docConsent ? (
       <StudioMaterializeDialog

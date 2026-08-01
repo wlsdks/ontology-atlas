@@ -47,6 +47,7 @@ import { useFrameMeter, writeFrameMeter } from '@/shared/lib/appearance-preferen
 import { AiConnectionPanel } from './AiConnectionPanel';
 import { AI_PROVIDER_LABEL_KEY } from '../model/ai-providers';
 import { useAiConnection } from '../model/use-ai-connection';
+import { AGENT_GRAPH_WORKFLOW_HREF } from '@/shared/config';
 
 /**
  * 단일 설정 표면 (설정 통합 2026-07-24, 소유자 지시) — 이전엔 설정이 두 곳에
@@ -113,8 +114,10 @@ type SettingsTriggerVariant = 'header-pill' | 'rail-tile' | 'chrome-tile';
 
 const SETTINGS_LOCALE_FOCUS_KEY = 'ontology-atlas:settings-locale-focus';
 const SETTINGS_LOCALE_FOCUS_MAX_AGE_MS = 10_000;
-export const AGENT_GRAPH_WORKFLOW_HREF =
-  '/docs/?source=server&sample=dogfood&slug=AGENT-GRAPH-WORKFLOW';
+// 값의 단일 출처는 `@/shared/config` 다 — 여기 다시 적으면 시트 쪽과
+// 갈라진다(그게 2026-08-01 에 실제로 일어난 일이다). 이 파일은 쓰기만 하고
+// 기존 소비처를 위해 이름만 다시 내보낸다.
+export { AGENT_GRAPH_WORKFLOW_HREF };
 
 interface SettingsLocaleFocusIntent {
   locale: string;

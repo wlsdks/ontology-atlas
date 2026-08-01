@@ -103,7 +103,18 @@ function ProjectDetailTopBar({
   census?: { concepts: number; relations: number } | null;
 }) {
   const t = useTranslations("projectPages.detail");
-  const workspaceHref = '/';
+  /**
+   * 라벨이 「지도」(`topBarWorkspaceFallback`)이고 aria 가 「지도로 돌아가기」인
+   * 링크다. 그러니 목적지는 **지도의 주소**여야 한다.
+   *
+   * 종전엔 `/` 였다. 그건 2026-07-30 에 `/` 가 관문(마케팅)으로 갈리기 전의
+   * 값이고, 그 뒤로 이 링크는 지도라고 적어 놓고 다운로드 페이지로 보내고
+   * 있었다 — 실측(2026-08-01 rc.5 검수): 눌러서 도착한 화면에
+   * `download-primary-cta` 가 있고 지도 캔버스는 0개.
+   *
+   * 하필 이 페이지가 제품의 유일한 공개 데모 주소(`/project/storefront/`)다.
+   */
+  const workspaceHref = '/topology/';
   const projectsListHref = '/projects/';
   const docsVaultHref = '/docs/';
   return (
@@ -197,7 +208,8 @@ function ProjectDetailState({
                   {t("stateBackToWorkspace")}
                 </Button>
               </Link>
-              <Link href={'/'}>
+              {/* 라벨이 「지도 열기」다 — `/` 는 관문이지 지도가 아니다. */}
+              <Link href={'/topology/'}>
                 <Button type="button" variant="ghost" size="sm">
                   {t("stateBackToMap")}
                 </Button>

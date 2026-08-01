@@ -188,8 +188,6 @@
     },
     "exit": "그만하기",
     "returnToReview": "인사이트 검토로 돌아가기",
-    "moreRelations": "다른 관계",
-    "moreRelationsSoon": "곧",
     "flowEyebrow": "완성도",
     "flowCount": "{total}방향 중 {filled} 채움",
     "flowHint": {
@@ -1756,7 +1754,8 @@
       "unsupportedTooltip": "로컬 온톨로지 폴더 편집은 설치된 데스크톱 앱에서 사용할 수 있습니다.",
       "permissionNeededBanner": "Vault 잠시 멈춤 — 폴더 권한 재승인이 필요합니다. 그동안 샘플 문서를 보여주고 있어요.",
       "errorBanner": "Vault 폴더에 접근할 수 없어요 ({message}). 샘플 문서를 대신 표시 — picker 에서 다시 선택하거나 refresh 해 주세요.",
-      "openPicker": "문서함 다시 선택"
+      "openPicker": "문서함 다시 선택",
+      "missingSlugBanner": "「{slug}」 문서를 이 문서함에서 못 찾았어요. 대신 다른 문서를 열었습니다 — 다른 폴더의 문서라면 문서함을 바꿔 주세요."
     },
     "desktopWelcome": {
       "eyebrow": "로컬 우선 작업공간",
@@ -3317,9 +3316,13 @@
     "guidePages": {
       "whatIsAtlas": "이게 무엇인가",
       "firstFiveMinutes": "첫 5분",
+      "readingTheMap": "지도 읽는 법",
       "vaultStructure": "볼트의 구조",
+      "whatBecomesANode": "무엇을 노드로 만드나",
       "relations": "관계는 어떻게 생기나",
+      "fromYourRepo": "내 저장소에서 시작하기",
       "connectAgent": "AI 에이전트 연결하기",
+      "growingVault": "볼트가 자란 뒤",
       "cli": "CLI",
       "trust": "신뢰에 관하여"
     },

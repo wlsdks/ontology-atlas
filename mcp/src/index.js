@@ -91,6 +91,7 @@ import {
   loadVaultDocs,
   normalizeRelationRefs,
   readDoc,
+  applyAllOrNothing,
   redirectBacklinks,
   slugToPath,
   patchFrontmatter,
@@ -6766,22 +6767,38 @@ function renameConcept({ oldSlug, newSlug, confirm = false, overwrite = false, e
     };
   }
 
-  // Step 2 — write target with updated frontmatter (slug key reflects new path).
+  /**
+   * Step 2 — **세 단계를 한 계획으로 묶어 전부-아니면-전무로 적용한다.**
+   *
+   * 종전엔 순서대로 즉시 썼다: 새 파일 생성 → 백링크 재작성 → 옛 파일 삭제.
+   * 주석은 *"partial failure doesn't lose data"* 라고 적었고 그건 사실이었지만
+   * (데이터는 안 잃는다), **그래프는 분열됐다** — 2026-08-01 실측: 참조 셋 중
+   * 하나가 읽기 전용이면 제목이 같은 노드 둘이 남고 참조가 두 이름으로 갈렸다.
+   * 그리고 그 볼트에 `validate` 와 `health` 가 둘 다 clean 이라고 답했다.
+   * 도구 설명이 약속한 "one atomic graph-level operation" 이 거짓이었다.
+   *
+   * 이제 계획만 세우고(`deferWrite`) 마지막에 한 번 적용한다. 실패하면
+   * 되돌린다 — 프로세스가 살아 있는 한 볼트는 시작 상태다.
+   */
   const nextFrontmatter = { ...sourceDoc.frontmatter };
   if (typeof nextFrontmatter.slug === 'string') {
     nextFrontmatter.slug = newSlug;
   }
-  mkdirSync(dirname(targetPath), { recursive: true });
-  const md = buildMarkdown({ frontmatter: nextFrontmatter, body: sourceDoc.body });
-  writeFileSync(targetPath, md, 'utf-8');
-
-  // Step 3 — redirect all backlinks (write mode).
-  const result = redirectBacklinks(VAULT_ROOT, oldSlug, newSlug, { dryRun: false });
-
-  // Step 4 — remove the old file last (so partial failure doesn't lose data).
-  if (sourcePath !== targetPath) {
-    unlinkSync(sourcePath);
-  }
+  const result = redirectBacklinks(VAULT_ROOT, oldSlug, newSlug, {
+    dryRun: false,
+    deferWrite: true,
+  });
+  applyAllOrNothing([
+    {
+      op: 'write',
+      path: targetPath,
+      content: buildMarkdown({ frontmatter: nextFrontmatter, body: sourceDoc.body }),
+    },
+    ...result.plan,
+    // 삭제는 마지막이다 — 계획 안에서도 순서는 유지된다. 되돌리기는 역순이라
+    // 옛 파일이 먼저 복원되고 새 파일이 지워진다.
+    ...(sourcePath !== targetPath ? [{ op: 'delete', path: sourcePath }] : []),
+  ]);
 
   return {
     ok: true,
@@ -6867,12 +6884,20 @@ function reclassifyConcept({ slug, newKind, newSlug, domain, body, confirm = fal
   const nextFrontmatter = { ...sourceDoc.frontmatter, slug: canonicalNew, kind: newKind };
   if (domain === null || !['capability', 'element'].includes(newKind)) delete nextFrontmatter.domain;
   else if (domain !== undefined) nextFrontmatter.domain = domain;
-  mkdirSync(dirname(targetPath), { recursive: true });
-  writeFileSync(targetPath, buildMarkdown({ frontmatter: nextFrontmatter, body: nextBody }), 'utf-8');
+  // rename 과 같은 이유로 한 계획이다 — 이 도구도 파일 생성 · 백링크 재작성 ·
+  // 옛 파일 삭제 셋을 하고, 중간에 멈추면 kind 가 갈린 반쪽 볼트가 남았다.
   const appliedBacklinks = canonicalNew === canonicalOld
     ? backlinkUpdates
-    : redirectBacklinks(VAULT_ROOT, canonicalOld, canonicalNew, { dryRun: false });
-  if (sourcePath !== targetPath) unlinkSync(sourcePath);
+    : redirectBacklinks(VAULT_ROOT, canonicalOld, canonicalNew, { dryRun: false, deferWrite: true });
+  applyAllOrNothing([
+    {
+      op: 'write',
+      path: targetPath,
+      content: buildMarkdown({ frontmatter: nextFrontmatter, body: nextBody }),
+    },
+    ...(appliedBacklinks.plan ?? []),
+    ...(sourcePath !== targetPath ? [{ op: 'delete', path: sourcePath }] : []),
+  ]);
   return { ...base, ok: true, dryRun: false, changed: true, backlinkUpdates: appliedBacklinks, postWriteMaintenance: compactPostWriteMaintenance() };
 }
 
@@ -6919,8 +6944,14 @@ function mergeConcepts({ fromSlug, intoSlug, confirm = false, expected_mtime }) 
     };
   }
 
-  const result = redirectBacklinks(VAULT_ROOT, fromSlug, intoSlug, { dryRun: false });
-  unlinkSync(fromPath);
+  // 재작성 + 삭제를 한 계획으로. 종전엔 재작성이 파일마다 즉시 쓰고 삭제가
+  // 따로였다 — 중간에 한 파일이 안 써지면 참조 일부만 새 이름을 가리키고
+  // `fromSlug` 는 살아남았다(그리고 검사 둘 다 clean 이라고 답했다).
+  const result = redirectBacklinks(VAULT_ROOT, fromSlug, intoSlug, {
+    dryRun: false,
+    deferWrite: true,
+  });
+  applyAllOrNothing([...result.plan, { op: 'delete', path: fromPath }]);
 
   return {
     ok: true,
