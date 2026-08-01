@@ -3312,7 +3312,9 @@
       "vaultStructure": "볼트의 구조",
       "whatBecomesANode": "무엇을 노드로 만드나",
       "relations": "관계는 어떻게 생기나",
+      "fromYourRepo": "내 저장소에서 시작하기",
       "connectAgent": "AI 에이전트 연결하기",
+      "growingVault": "볼트가 자란 뒤",
       "cli": "CLI",
       "trust": "신뢰에 관하여"
     },

@@ -34,7 +34,9 @@ export const GUIDE_PAGES: readonly GuidePage[] = [
   { slug: 'guide/vault-structure', segment: 'vault-structure', titleKey: 'vaultStructure' },
   { slug: 'guide/what-becomes-a-node', segment: 'what-becomes-a-node', titleKey: 'whatBecomesANode' },
   { slug: 'guide/relations', segment: 'relations', titleKey: 'relations' },
+  { slug: 'guide/from-your-repo', segment: 'from-your-repo', titleKey: 'fromYourRepo' },
   { slug: 'guide/connect-agent', segment: 'connect-agent', titleKey: 'connectAgent' },
+  { slug: 'guide/growing-vault', segment: 'growing-vault', titleKey: 'growingVault' },
   { slug: 'guide/cli', segment: 'cli', titleKey: 'cli' },
   { slug: 'guide/trust', segment: 'trust', titleKey: 'trust' },
 ] as const;
