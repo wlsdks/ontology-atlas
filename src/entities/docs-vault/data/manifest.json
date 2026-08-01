@@ -8247,6 +8247,69 @@
       "linksOut": []
     },
     {
+      "slug": "guide/what-becomes-a-node",
+      "path": "docs/guide/what-becomes-a-node.md",
+      "title": "무엇을 노드로 만드나",
+      "tags": [],
+      "frontmatter": {},
+      "headings": [
+        {
+          "depth": 1,
+          "text": "무엇을 노드로 만드나",
+          "slug": "무엇을-노드로-만드나"
+        },
+        {
+          "depth": 2,
+          "text": "1. 네 층은 추상도가 아니라 질문이 다르다",
+          "slug": "1-네-층은-추상도가-아니라-질문이-다르다"
+        },
+        {
+          "depth": 2,
+          "text": "2. 파일 하나당 노드 하나는 함정이다",
+          "slug": "2-파일-하나당-노드-하나는-함정이다"
+        },
+        {
+          "depth": 2,
+          "text": "3. 자식이 많은 것 자체는 결함이 아니다",
+          "slug": "3-자식이-많은-것-자체는-결함이-아니다"
+        },
+        {
+          "depth": 3,
+          "text": "그럼 무엇이 신호인가",
+          "slug": "그럼-무엇이-신호인가"
+        },
+        {
+          "depth": 2,
+          "text": "4. 유일한 시험 — 한 문장",
+          "slug": "4-유일한-시험-한-문장"
+        },
+        {
+          "depth": 2,
+          "text": "5. 셋 이상 못 쓰겠으면 — 다리 노드",
+          "slug": "5-셋-이상-못-쓰겠으면-다리-노드"
+        },
+        {
+          "depth": 2,
+          "text": "6. 역량에는 근거를 같은 손에 붙인다",
+          "slug": "6-역량에는-근거를-같은-손에-붙인다"
+        },
+        {
+          "depth": 2,
+          "text": "7. 아무것도 막지 않는다",
+          "slug": "7-아무것도-막지-않는다"
+        },
+        {
+          "depth": 2,
+          "text": "정리",
+          "slug": "정리"
+        }
+      ],
+      "excerpt": "볼트를 만들다 보면 반드시 이 질문에서 멈춥니다. 이건 도메인인가 역량인가? 파일마다 노드를 하나씩 만들어야 하나? 한 노드 아래에 자식이 서른 개면 잘못된 건가? 여기 답이 있습니다. 그리고 답의 대부분은 \"세지 말라\" 입니다. \"얼마나 큰가\" 로 층을 고르면 계속 헷갈립니다. 무엇에 답하는가로 고르십시오. · kind · 답하는 질문 · 예 · project · 우리가 무엇을 내놓는가 · auth-platform · domain · 그 안에서 관심사가 어디서 갈리는가 · auth · billing · capability · 이 시스템이 무엇을 할 수 있는가 · t",
+      "wordCount": 976,
+      "updatedAt": "2026-08-01",
+      "linksOut": []
+    },
+    {
       "slug": "guide/what-is-atlas",
       "path": "docs/guide/what-is-atlas.md",
       "title": "이게 무엇인가",
@@ -13922,6 +13985,13 @@
             "type": "doc",
             "slug": "guide/vault-structure",
             "title": "볼트의 구조"
+          },
+          {
+            "name": "what-becomes-a-node",
+            "path": "guide/what-becomes-a-node",
+            "type": "doc",
+            "slug": "guide/what-becomes-a-node",
+            "title": "무엇을 노드로 만드나"
           },
           {
             "name": "what-is-atlas",

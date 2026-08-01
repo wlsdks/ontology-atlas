@@ -32,6 +32,7 @@ export const GUIDE_PAGES: readonly GuidePage[] = [
   { slug: 'guide/first-five-minutes', segment: 'first-five-minutes', titleKey: 'firstFiveMinutes' },
   { slug: 'guide/reading-the-map', segment: 'reading-the-map', titleKey: 'readingTheMap' },
   { slug: 'guide/vault-structure', segment: 'vault-structure', titleKey: 'vaultStructure' },
+  { slug: 'guide/what-becomes-a-node', segment: 'what-becomes-a-node', titleKey: 'whatBecomesANode' },
   { slug: 'guide/relations', segment: 'relations', titleKey: 'relations' },
   { slug: 'guide/connect-agent', segment: 'connect-agent', titleKey: 'connectAgent' },
   { slug: 'guide/cli', segment: 'cli', titleKey: 'cli' },
