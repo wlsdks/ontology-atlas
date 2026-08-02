@@ -71,6 +71,7 @@ import { createHash } from 'node:crypto';
 
 import { SERVER_VERSION } from './server-version.mjs';
 import { readProjectSourceView } from './project-source-receipt.mjs';
+import { buildProjectSourceGraphHash } from '../../src/shared/lib/project-source-graph-hash.mjs';
 
 import { existsSync, readFileSync, copyFileSync, realpathSync, statSync } from 'node:fs';
 import {
@@ -6088,7 +6089,7 @@ function queryOntologyTool(args = {}) {
         projectSource: readProjectSourceView(
           VAULT_ROOT,
           validatedResult.projectSlug,
-          artifact.graphHash,
+          currentProjectSourceGraphHash(artifact, validatedResult.projectSlug),
         ),
       }
     : validatedResult;
@@ -6105,6 +6106,24 @@ function queryOntologyTool(args = {}) {
       issues: artifact.issues.length,
     },
   };
+}
+
+function currentProjectSourceGraphHash(artifact, projectSlug) {
+  try {
+    const scope = queryCompiledOntology(artifact, {
+      operation: 'project_scope',
+      project: projectSlug,
+      limit: 500,
+    });
+    // The engine caps public rows. A partial project scope is not evidence
+    // that the ontology changed, so large scopes degrade to unavailable.
+    if (scope.nodes.limited) return null;
+    const scopedSlugs = new Set(scope.nodes.rows.map((node) => node.slug));
+    const docs = loadVaultDocs(VAULT_ROOT).filter((doc) => scopedSlugs.has(doc.slug));
+    return buildProjectSourceGraphHash(projectSlug, docs);
+  } catch {
+    return null;
+  }
 }
 
 function attachVaultValidation(result, args = {}) {

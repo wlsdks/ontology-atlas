@@ -3,6 +3,7 @@ import { mkdtempSync, mkdirSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import test from 'node:test';
+import { buildProjectSourceGraphHash } from '../../src/shared/lib/project-source-graph-hash.mjs';
 import {
   PROJECT_SOURCE_RECEIPT_VERSION,
   readProjectSourceView,
@@ -75,6 +76,30 @@ test('readProjectSourceView returns one saved receipt without leaking its privat
   assert.doesNotMatch(JSON.stringify(result), /\/private\/work\/music/);
 });
 
+test('browser and MCP share one project-scoped graph hash contract', () => {
+  const root = vault();
+  const graphHash = buildProjectSourceGraphHash('music-streaming', [
+    {
+      slug: 'capabilities/play',
+      frontmatter: { path: './src/player.ts', title: 'Play', kind: 'capability' },
+    },
+    {
+      slug: 'music-streaming',
+      frontmatter: {
+        capabilities: ['capabilities/play'],
+        title: 'Music',
+        kind: 'project',
+      },
+    },
+  ]);
+  writeState(root, [binding({ receipt: receipt({ graphHash }) })]);
+
+  const result = readProjectSourceView(root, 'music-streaming', graphHash);
+  assert.equal(result.status, 'verified_current');
+  assert.equal(result.topGap, null);
+  assert.equal(result.receipt.graphHash, graphHash);
+});
+
 test('readProjectSourceView fails closed for duplicate bindings and malformed state', () => {
   const duplicateRoot = vault();
   writeState(duplicateRoot, [binding(), binding({ sourceId: 'src_other', rootPath: '/private/work/other' })]);
@@ -96,6 +121,16 @@ test('readProjectSourceView fails closed for duplicate bindings and malformed st
   const malformed = readProjectSourceView(malformedRoot, 'music-streaming', 'graph-a');
   assert.equal(malformed.status, 'invalid');
   assert.equal(malformed.topGap.id, 'receipt_malformed');
+
+  const privateWitnessRoot = vault();
+  writeState(privateWitnessRoot, [binding({
+    receipt: receipt({
+      witnesses: [{ id: 'player-entry', nodeSlug: 'player', role: 'entrypoint', path: '/private/work/player.ts', supported: true }],
+    }),
+  })]);
+  const privateWitness = readProjectSourceView(privateWitnessRoot, 'music-streaming', 'graph-a');
+  assert.equal(privateWitness.status, 'invalid');
+  assert.equal(privateWitness.topGap.id, 'receipt_malformed');
 });
 
 test('readProjectSourceView marks a receipt stale when the ontology graph changed', () => {

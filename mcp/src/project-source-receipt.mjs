@@ -5,6 +5,27 @@ export const PROJECT_SOURCE_RECEIPT_VERSION = 1;
 export const PROJECT_SOURCE_STATE_RELATIVE_PATH = '.ontology-atlas/project-sources.json';
 
 const RECEIPT_STATUSES = new Set(['needs_evidence', 'review_required', 'verified_current']);
+const GAP_IDS = new Set([
+  'source_unbound',
+  'multiple_active_sources',
+  'receipt_missing',
+  'receipt_malformed',
+  'source_role_evidence_missing',
+  'declared_source_path_missing',
+  'source_inventory_truncated',
+  'ontology_changed',
+  'source_changed',
+]);
+const ACTION_IDS = new Set([
+  'connect_source',
+  'repair_source_binding',
+  'measure_source',
+  'record_source_role',
+  'repair_source_path',
+  'review_inventory_limit',
+  'remeasure_source',
+  'use_current_evidence',
+]);
 
 function base(projectSlug, bindingCardinality, status, currentness, topGap, nextAction, receipt = null) {
   return {
@@ -37,7 +58,7 @@ function string(value) {
 
 function sanitizeGap(value) {
   if (value === null) return null;
-  if (!value || typeof value !== 'object' || !string(value.id)) return undefined;
+  if (!value || typeof value !== 'object' || !GAP_IDS.has(value.id)) return undefined;
   return {
     id: value.id,
     ...(string(value.nodeSlug) ? { nodeSlug: value.nodeSlug } : {}),
@@ -45,11 +66,20 @@ function sanitizeGap(value) {
 }
 
 function sanitizeAction(value) {
-  if (!value || typeof value !== 'object' || !string(value.id)) return null;
+  if (!value || typeof value !== 'object' || !ACTION_IDS.has(value.id)) return null;
   return {
     id: value.id,
     ...(string(value.target) ? { target: value.target } : {}),
   };
+}
+
+function safeRelativePath(value) {
+  const path = string(value);
+  if (!path) return false;
+  const normalized = path.replaceAll('\\', '/');
+  return !normalized.startsWith('/')
+    && !/^[A-Za-z]:\//.test(normalized)
+    && !normalized.split('/').includes('..');
 }
 
 /** Pick only the public receipt contract. Unknown sidecar fields never reach MCP output. */
@@ -73,7 +103,16 @@ function sanitizeReceipt(value, projectSlug) {
     || !Number.isInteger(value.witnessSummary.total)
     || !Number.isInteger(value.witnessSummary.supported)
     || !Number.isInteger(value.witnessSummary.missing)
+    || value.witnessSummary.total < 0
+    || value.witnessSummary.supported < 0
+    || value.witnessSummary.missing < 0
+    || value.witnessSummary.total
+      !== value.witnessSummary.supported + value.witnessSummary.missing
     || !Array.isArray(value.witnesses)
+    || value.witnesses.length !== value.witnessSummary.total
+    || !value.diagnostics
+    || !(typeof value.diagnostics.dirty === 'boolean' || value.diagnostics.dirty === null)
+    || typeof value.diagnostics.truncated !== 'boolean'
   ) {
     return null;
   }
@@ -84,7 +123,7 @@ function sanitizeReceipt(value, projectSlug) {
       || !string(witness.id)
       || !string(witness.nodeSlug)
       || !string(witness.role)
-      || !string(witness.path)
+      || !safeRelativePath(witness.path)
       || typeof witness.supported !== 'boolean'
     ) return null;
     witnesses.push({
@@ -94,6 +133,9 @@ function sanitizeReceipt(value, projectSlug) {
       path: witness.path,
       supported: witness.supported,
     });
+  }
+  if (witnesses.filter((witness) => witness.supported).length !== value.witnessSummary.supported) {
+    return null;
   }
   return {
     contractVersion: PROJECT_SOURCE_RECEIPT_VERSION,
@@ -115,8 +157,8 @@ function sanitizeReceipt(value, projectSlug) {
     },
     witnesses,
     diagnostics: {
-      dirty: typeof value.diagnostics?.dirty === 'boolean' ? value.diagnostics.dirty : null,
-      truncated: value.diagnostics?.truncated === true,
+      dirty: value.diagnostics.dirty,
+      truncated: value.diagnostics.truncated,
     },
   };
 }
@@ -125,7 +167,8 @@ function sanitizeReceipt(value, projectSlug) {
  * Reads the local sidecar and returns the exact public view used by agent_brief.
  * Source currentness is deliberately `unavailable`: this reader does not
  * independently rescan the private root, so it must not restamp a saved receipt
- * as current. Graph currentness is still checked against the compiled hash.
+ * as current. Graph currentness is checked only when the caller could derive a
+ * complete project-scoped hash; a bounded/unknown scope is not evidence of drift.
  */
 export function readProjectSourceView(vaultRoot, projectSlug, graphHash) {
   let parsed;
@@ -183,7 +226,7 @@ export function readProjectSourceView(vaultRoot, projectSlug, graphHash) {
   if (!receipt || receipt.sourceId !== binding.sourceId || receipt.sourceKind !== binding.kind) {
     return malformed(projectSlug, 1);
   }
-  if (receipt.graphHash !== graphHash) {
+  if (typeof graphHash === 'string' && receipt.graphHash !== graphHash) {
     return base(
       projectSlug,
       1,

@@ -352,7 +352,26 @@ Both routes render the same `HomePage` (R3 keep-both decision: `/` = home/back-l
 - Chevron toggles the selected-node inspector support rail when a node is focused, or closes the drawer/datasheet otherwise
 
 #### Node datasheet — two variants by node kind
-- **Project node click** → right-side `ProjectDrawer`: name + icon + category badge · description · tags · stack · "View project" (`/project/[slug]/`) · "Open workspace" (`/docs/?slug=...`) · connections summary (dependencies / referencedBy) · impact mode toggle (Default · Upstream · Downstream · Network) · integrity checks · screenshots (lazy top 2) · timeline · links · footer "slug · updated DATE"
+- **Project node click** → the same right-side datasheet shell, with a project-only
+  **code-evidence receipt** in place of the generic stats row. The receipt reports
+  a categorical state, measurement time, currentness, the first evidence gap, and
+  one next action; it is not a numeric confidence score or a claim that the whole
+  repository is correct. In the installed app, **Connect code folder** binds one
+  Git worktree or ordinary folder and measures declared capability/element code
+  paths. The receipt labels the detected source honestly as **Git repository** or
+  **Local folder**; it does not imply a GitHub account or remote integration.
+  **Measure again** reuses that saved binding rather than asking for a new
+  folder. Cancelling the picker or failing to inspect/save preserves the previous
+  binding and receipt. The web can read the saved category but cannot bind or
+  remeasure a private local folder.
+- **Receipt privacy/currentness** → the private absolute folder path lives only in
+  the vault-local `.ontology-atlas/project-sources.json` sidecar, never in graph
+  Markdown, copied handoff text, or MCP output. A new sidecar write also creates
+  `.ontology-atlas/.gitignore` when it is absent (an existing ignore file is left
+  untouched). The installed app may show `current` only after it re-inspects the
+  bound folder and matches its source identity, revision, and fingerprint to the
+  receipt. If that recheck cannot run, the saved receipt remains visible but
+  currentness is `unavailable`; an observed source or ontology change is `stale`.
 - **Domain / capability / element node click** → `TopologyV2DetailPanel`, the 352px datasheet (scaled up from 288px, 2026-07-18): single engraved metric line ("쓰는 곳 N · 기대는 곳 N · 근거 N"), two direction groups — **쓰는 곳** (direct incoming — places that use this node) and **기대는 곳** (direct outgoing — places this node leans on), each capped with a "+N more" overflow; a promoted **근거** (evidence) group listing `evidenceIds` rows; a copyable agent handoff row (MCP/CLI-style payload); "전체 상세 →" opt-in to the full detail panel. Direction, not relation type, is the single grouping axis (R+ — avoids double-counting the same edge under both a type split and a direction split)
 
 #### Mobile-only

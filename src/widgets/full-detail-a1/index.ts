@@ -1,5 +1,10 @@
 export { FullDetailA1 } from "./ui/FullDetailA1";
-export type { FullDetailA1Node, FullDetailA1Breadcrumb, FullDetailA1Props } from "./ui/FullDetailA1";
+export type {
+  FullDetailA1Node,
+  FullDetailA1Breadcrumb,
+  FullDetailA1ProjectSourceLabels,
+  FullDetailA1Props,
+} from "./ui/FullDetailA1";
 export {
   buildFullDetailGroups,
   type FullDetailConnectionRow,

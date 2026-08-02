@@ -2142,6 +2142,9 @@
       "updated_daysAgo": "{count}일 전 바뀜",
       "updated_weeksAgo": "{count}주 전 바뀜",
       "updated_monthsAgo": "{count}달 전 바뀜",
+      "sourceHeading": "프로젝트 코드 근거",
+      "sourceKind_git": "소스 · Git 저장소",
+      "sourceKind_folder": "소스 · 로컬 폴더",
       "sourceStatus_not_measured": "코드 근거를 아직 측정하지 않음",
       "sourceStatus_needs_evidence": "코드 역할 근거가 더 필요함",
       "sourceStatus_review_required": "코드 근거 재검토 필요",
@@ -2173,7 +2176,14 @@
       "sourceRelationsShow": "관계 펼치기",
       "sourceRelationsHide": "관계 접기",
       "sourceOntologyDocument": "개념 문서",
-      "sourceAppRequired": "설치 앱에서 코드 폴더를 연결할 수 있어요"
+      "sourceAppRequired": "설치 앱에서 코드 폴더를 연결할 수 있어요",
+      "sourceBusy": "코드 근거 측정 중",
+      "sourceError_sidecar_malformed": "로컬 분석 기록이 손상되어 자동으로 덮어쓰지 않았습니다.",
+      "sourceError_sidecar_unavailable": "로컬 분석 기록을 읽을 수 없어 기존 연결을 보존했습니다.",
+      "sourceError_picker_failed": "코드 폴더 선택기를 열지 못했습니다. 기존 연결은 그대로입니다.",
+      "sourceError_measurement_failed": "코드 근거를 측정하지 못했습니다. 기존 연결은 그대로입니다.",
+      "sourceError_invalid_measurement": "측정 결과가 선택한 프로젝트와 맞지 않아 저장하지 않았습니다.",
+      "sourceError_persistence_failed": "분석 기록을 저장하지 못했습니다. 기존 연결은 그대로입니다."
     },
     "createNode": {
       "toggleLabel": "개념",

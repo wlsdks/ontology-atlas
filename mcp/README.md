@@ -405,6 +405,27 @@ real element-node slugs; a raw file path is evidence, not a graph child.
 
 `agent_brief` also exposes guide metadata under `docs.workflowGuide`, the setup mode chooser under `docs.modeComparison`, the graph scan proof steps under `docs.graphScanProofChecklist`, and the business-first read order under `businessOntologyLens`, so agents can read the same mode, proof, and outcome → domain → capability → element contracts without parsing Markdown or prompt prose.
 
+For the selected project, `agent_brief.projectSource` also exposes the versioned,
+categorical code-evidence view saved by the installed app in
+`.ontology-atlas/project-sources.json`: `status`, `currentness`, `measuredAt`,
+`topGap`, `nextAction`, `bindingCardinality`, and a validated public `receipt`.
+This is evidence about declared capability/element code locations at a recorded
+measurement, not a numeric confidence score and not proof that the whole repository
+is correct. `receipt.sourceKind` is either `git` or `folder`; `git` means the chosen
+source is a Git worktree, not that a GitHub account or remote is connected. The
+private absolute `rootPath` stays in the local binding envelope and
+is never returned; the public receipt contains only the source identity/revision/
+fingerprint and source-relative witness paths.
+
+MCP deliberately does not rescan that private source root. A valid saved receipt can
+therefore keep `status:"verified_current"` while the MCP view reports
+`currentness:"unavailable"`: unavailable means “not rechecked by this process,” not
+“known stale.” The installed-app UI may report `current` after it has re-inspected the
+bound folder and matched the receipt. MCP reports `stale` when a complete current
+project graph hash is available and differs from the receipt; a bounded/unknown graph
+scope degrades to `unavailable` instead of inventing drift. `projectSource` augments
+the handoff and does not replace `agent_brief.readiness`.
+
 `health`, `workspace_brief`, and `agent_brief` also attach whole-vault
 validation. A validator warning/failure inserts an actionable
 `vault_validation` next action; when validation alone downgrades readiness,

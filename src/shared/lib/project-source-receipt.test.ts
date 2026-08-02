@@ -5,6 +5,7 @@ import {
   buildProjectSourceReceipt,
   deriveProjectSourceView,
   deserializeProjectSourceState,
+  formatProjectSourceHandoff,
   serializeProjectSourceState,
   type ProjectSourceBinding,
   type ProjectSourceProbe,
@@ -35,22 +36,41 @@ describe("project source receipt", () => {
     const a = buildProjectGraphHash({
       projectSlug: "music-streaming",
       nodes: [
-        { id: "capability:play", kind: "capability", title: "Play", projectIds: ["music-streaming"] },
-        { id: "project:music-streaming", kind: "project", title: "Music", projectIds: [] },
+        { id: "capability:play", kind: "capability", projectIds: ["music-streaming"], agentSlug: "capabilities/play" },
+        { id: "project:music-streaming", kind: "project", projectIds: [], agentSlug: "music-streaming" },
       ],
-      edges: [{ from: "project:music-streaming", to: "capability:play", type: "contains", projectIds: ["music-streaming"] }],
+      docs: [
+        { slug: "music-streaming", frontmatter: { kind: "project", title: "Music", capabilities: ["capabilities/play"] } },
+        { slug: "capabilities/play", frontmatter: { kind: "capability", title: "Play", path: "src/play.ts" } },
+      ],
     });
     const b = buildProjectGraphHash({
       projectSlug: "music-streaming",
       nodes: [
-        { id: "project:music-streaming", kind: "project", title: "Music", projectIds: [] },
-        { id: "capability:play", kind: "capability", title: "Play", projectIds: ["music-streaming"] },
+        { id: "project:music-streaming", kind: "project", projectIds: [], agentSlug: "music-streaming" },
+        { id: "capability:play", kind: "capability", projectIds: ["music-streaming"], agentSlug: "capabilities/play" },
       ],
-      edges: [{ from: "project:music-streaming", to: "capability:play", type: "contains", projectIds: ["music-streaming"] }],
+      docs: [
+        { slug: "capabilities/play", frontmatter: { path: "./src/play.ts", title: "Play", kind: "capability" } },
+        { slug: "music-streaming", frontmatter: { capabilities: ["capabilities/play"], title: "Music", kind: "project" } },
+      ],
     });
     expect(a).toBe(b);
     expect(a).toMatch(/^project-graph-v1:[a-f0-9]{8}$/);
     expect(a).not.toContain("nodes=");
+
+    const changedPath = buildProjectGraphHash({
+      projectSlug: "music-streaming",
+      nodes: [
+        { id: "project:music-streaming", kind: "project", projectIds: [], agentSlug: "music-streaming" },
+        { id: "capability:play", kind: "capability", projectIds: ["music-streaming"], agentSlug: "capabilities/play" },
+      ],
+      docs: [
+        { slug: "music-streaming", frontmatter: { kind: "project", title: "Music", capabilities: ["capabilities/play"] } },
+        { slug: "capabilities/play", frontmatter: { kind: "capability", title: "Play", path: "src/player.ts" } },
+      ],
+    });
+    expect(changedPath).not.toBe(a);
   });
   it("does not turn an unbound legacy project into a failure or a fake percentage", () => {
     const view = deriveProjectSourceView({
@@ -140,6 +160,44 @@ describe("project source receipt", () => {
     });
   });
 
+  it("treats a declared directory as supported when the inventory contains a descendant file", () => {
+    const receipt = buildProjectSourceReceipt({
+      projectSlug: "atlas",
+      graphHash: "graph-a",
+      probe: probe({ files: ["src/features/project-source/index.ts"] }),
+      witnesses: [
+        {
+          id: "project-source:path",
+          nodeSlug: "capabilities/project-source",
+          role: "entrypoint",
+          path: "src/features/project-source",
+        },
+      ],
+    });
+
+    expect(receipt.status).toBe("verified_current");
+    expect(receipt.witnesses[0]).toMatchObject({ supported: true });
+  });
+
+  it("does not confuse a same-prefix sibling with a declared directory", () => {
+    const receipt = buildProjectSourceReceipt({
+      projectSlug: "atlas",
+      graphHash: "graph-a",
+      probe: probe({ files: ["src/features/project-source-old/index.ts"] }),
+      witnesses: [
+        {
+          id: "project-source:path",
+          nodeSlug: "capabilities/project-source",
+          role: "entrypoint",
+          path: "src/features/project-source",
+        },
+      ],
+    });
+
+    expect(receipt.status).toBe("review_required");
+    expect(receipt.witnesses[0]).toMatchObject({ supported: false });
+  });
+
   it("downgrades a saved receipt when the graph changed and degrades honestly without a live probe", () => {
     const receipt = buildProjectSourceReceipt({
       projectSlug: "music-streaming",
@@ -179,10 +237,43 @@ describe("project source receipt", () => {
     expect(JSON.stringify(receipt)).not.toContain("/private/work/music");
     expect(restored.bindings).toHaveLength(1);
     expect(restored.bindings[0]?.receipt).toEqual(receipt);
+    const handoff = formatProjectSourceHandoff(deriveProjectSourceView({
+      projectSlug: "music-streaming",
+      bindings: [binding({ receipt })],
+      graphHash: "graph-a",
+      probe: probe(),
+    }));
+    expect(handoff).toContain("sourceKind: git");
+    expect(handoff).toContain("status: verified_current");
+    expect(handoff).toContain("topGap: none");
+    expect(handoff).toContain("nextAction: use_current_evidence");
+    expect(handoff).not.toContain("/private/work/music");
   });
 
   it("rejects malformed sidecars instead of silently inventing a clean state", () => {
     const restored = deserializeProjectSourceState('{"contractVersion":1,"bindings":"oops"}');
     expect(restored).toEqual({ contractVersion: PROJECT_SOURCE_RECEIPT_VERSION, bindings: [], malformed: true });
+  });
+
+  it("rejects malformed nested receipts and absolute witness paths like the MCP reader", () => {
+    const validReceipt = buildProjectSourceReceipt({
+      projectSlug: "music-streaming",
+      graphHash: "graph-a",
+      probe: probe(),
+      witnesses: [{ id: "player", nodeSlug: "player", role: "entrypoint", path: "src/player.ts" }],
+    });
+    const state = (receipt: unknown) => JSON.stringify({
+      contractVersion: 1,
+      bindings: [{ ...binding(), receipt }],
+    });
+
+    expect(deserializeProjectSourceState(state({
+      ...validReceipt,
+      witnessSummary: { total: 2, supported: 1, missing: 0 },
+    })).malformed).toBe(true);
+    expect(deserializeProjectSourceState(state({
+      ...validReceipt,
+      witnesses: [{ ...validReceipt.witnesses[0], path: "/private/work/player.ts" }],
+    })).malformed).toBe(true);
   });
 });

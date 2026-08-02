@@ -7,6 +7,28 @@
 
 ---
 
+## 2026-08-02 — 프로젝트 코드 근거를 사람과 에이전트가 같은 receipt로 읽는다
+
+지도에서 project 노드를 고르면 코드 근거의 범주형 상태·측정 시각·현재성·첫
+빈틈·다음 행동이 데이터시트와 전체 상세에 나타난다. 설치 앱은 프로젝트마다
+Git worktree 또는 일반 폴더 하나를 연결해 capability/element가 선언한 코드
+위치를 측정하고, 이후 **다시 측정**은 저장된 연결을 재사용한다. 폴더 선택을
+취소하거나 측정·저장에 실패해도 기존 연결과 receipt를 지우지 않는다. 숫자형
+confidence나 저장소 전체가 옳다는 판정은 만들지 않는다. UI의 `Git 저장소`와
+`로컬 폴더` 표시는 소스 종류 판별이며 GitHub 계정·원격 연동을 뜻하지 않는다.
+
+비공개 절대 경로는 graph Markdown이 아니라 vault-local
+`.ontology-atlas/project-sources.json` sidecar에만 남는다. 복사 인계와
+`query_ontology({operation:"agent_brief"})`의 `projectSource`에는 버전이 붙은
+범주·빈틈·다음 행동과 source-relative witness만 전달되고 절대 경로는 빠진다.
+설치 앱은 연결 폴더를 실제로 다시 읽어 receipt와 맞을 때만 `current`를 말한다.
+MCP는 그 비공개 폴더를 재탐색하지 않으므로 저장된 status가
+`verified_current`여도 currentness는 `unavailable`일 수 있다. 이는 stale의
+동의어가 아니라 “이 프로세스에서는 재확인하지 않음”이며, 확인 가능한 프로젝트
+그래프가 receipt와 달라졌을 때만 `stale`로 내린다.
+
+---
+
 ## 2026-08-02 — bootstrap 답변의 근거와 빈틈을 쓰기 계획에 보존한다
 
 `analyze_repo_structure`의 두 번째 호출이 competency 질문에 임의 문자열만

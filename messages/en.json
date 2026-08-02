@@ -2142,6 +2142,9 @@
       "updated_daysAgo": "changed {count}d ago",
       "updated_weeksAgo": "changed {count}w ago",
       "updated_monthsAgo": "changed {count}mo ago",
+      "sourceHeading": "Project code evidence",
+      "sourceKind_git": "Source · Git repository",
+      "sourceKind_folder": "Source · Local folder",
       "sourceStatus_not_measured": "Code evidence not measured",
       "sourceStatus_needs_evidence": "More source-role evidence needed",
       "sourceStatus_review_required": "Code evidence needs review",
@@ -2173,7 +2176,14 @@
       "sourceRelationsShow": "Show relations",
       "sourceRelationsHide": "Hide relations",
       "sourceOntologyDocument": "Concept document",
-      "sourceAppRequired": "Connect a code folder in the installed app"
+      "sourceAppRequired": "Connect a code folder in the installed app",
+      "sourceBusy": "Measuring code evidence",
+      "sourceError_sidecar_malformed": "The local analysis receipt is damaged, so Atlas did not overwrite it.",
+      "sourceError_sidecar_unavailable": "Atlas could not read the local receipt and preserved the existing binding.",
+      "sourceError_picker_failed": "Atlas could not open the code-folder picker. The existing binding is unchanged.",
+      "sourceError_measurement_failed": "Atlas could not measure the code evidence. The existing binding is unchanged.",
+      "sourceError_invalid_measurement": "The measurement did not match this project, so Atlas did not save it.",
+      "sourceError_persistence_failed": "Atlas could not save the receipt. The existing binding is unchanged."
     },
     "createNode": {
       "toggleLabel": "Concept",

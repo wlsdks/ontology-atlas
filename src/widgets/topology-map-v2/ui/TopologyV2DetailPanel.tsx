@@ -25,6 +25,7 @@ import {
 import { Link } from "@/i18n/navigation";
 import { buildDocsVaultHref } from "@/entities/docs-vault";
 import type { ProjectSourceStatus, ProjectSourceView } from "@/shared/lib/project-source-receipt";
+import { useViewportBelow } from "@/shared/lib/use-viewport-below";
 import { truncateMiddlePath } from "@/shared/lib/truncate-middle-path";
 import { useCopyFeedback } from "@/shared/lib/use-copy-feedback";
 import {
@@ -202,6 +203,7 @@ export interface TopologyV2DetailPanelLabels {
   editSubjectHuman: string;
   editConflictMessage: string;
   /** Project-only source receipt copy, preformatted by the caller. */
+  sourceKind?: string;
   sourceStatus?: string;
   sourceMeasuredAt?: string;
   sourceCurrentness?: string;
@@ -209,6 +211,8 @@ export interface TopologyV2DetailPanelLabels {
   sourceAction?: string;
   sourceRelationsShow?: string;
   sourceRelationsHide?: string;
+  sourceOntologyDocument?: string;
+  sourceBusy?: string;
 }
 
 export interface TopologyV2DetailPanelProps {
@@ -347,7 +351,11 @@ export interface TopologyV2DetailPanelProps {
   /** Project-only 0/1 source binding receipt. Other kinds ignore it. */
   projectSource?: ProjectSourceView | null;
   /** Executes the receipt's already-bounded next action (connect or remeasure). */
-  onProjectSourceAction?: () => void;
+  onProjectSourceAction?: () => void | Promise<void>;
+  /** Keeps the prior receipt visible while a replacement is measured. */
+  projectSourceBusy?: boolean;
+  /** Localized explicit-action failure; never used for picker cancellation. */
+  projectSourceError?: string | null;
 }
 
 function ProjectSourceStatusIcon({ status }: { status: ProjectSourceStatus }) {
@@ -588,9 +596,13 @@ export function TopologyV2DetailPanel({
   showSourcePath = true,
   projectSource = null,
   onProjectSourceAction,
+  projectSourceBusy = false,
+  projectSourceError = null,
 }: TopologyV2DetailPanelProps) {
   const isProject = kind === "project";
   const showProjectSource = isProject && projectSource !== null;
+  const compactProjectRelations = useViewportBelow(1513);
+  const collapseProjectRelations = showProjectSource && compactProjectRelations;
   // 시안 재설계 (2026-07-24) — 상단 stats 는 집계 한 줄. 타입별 분해는 아래
   // 각 관계 그룹 헤더의 카운트 칩이 담당한다(한 사실 한 번).
   //
@@ -873,7 +885,7 @@ export function TopologyV2DetailPanel({
           </div>
         ) : null}
         {/* project source receipt 는 아래 OPS rail 이 meta 자리까지 맡는다. */}
-        {!showProjectSource || domain ? (
+        {!showProjectSource || domain || updatedAtLabel ? (
           <div className="flex items-center justify-between gap-3">
             {!showProjectSource ? (
               updatedAtLabel ? (
@@ -888,6 +900,14 @@ export function TopologyV2DetailPanel({
                   {powered ? labels.poweredOn : labels.poweredOff}
                 </span>
               )
+            ) : updatedAtLabel ? (
+              <span
+                data-testid="topology-v2-datasheet-updated-at"
+                className="shrink-0 text-[12px] text-[color:var(--topology-v2-panel-text-quaternary)]"
+              >
+                {labels.sourceOntologyDocument ? `${labels.sourceOntologyDocument} · ` : ""}
+                {updatedAtLabel}
+              </span>
             ) : null}
             {domain ? (
               <button
@@ -949,6 +969,11 @@ export function TopologyV2DetailPanel({
             <div className="flex min-w-0 items-center gap-1.5 text-[color:var(--topology-v2-panel-text-secondary)]">
               <ProjectSourceStatusIcon status={projectSource.status} />
               <span className="truncate font-medium">{labels.sourceStatus}</span>
+              {labels.sourceKind ? (
+                <span className="ml-auto shrink-0 font-mono text-label text-[color:var(--topology-v2-panel-text-quaternary)]">
+                  {labels.sourceKind}
+                </span>
+              ) : null}
             </div>
             <div className="flex items-center justify-between gap-3">
               <span>{labels.sourceMeasuredAt}</span>
@@ -957,6 +982,14 @@ export function TopologyV2DetailPanel({
             <span className="text-[color:var(--topology-v2-panel-text-secondary)]">
               {labels.sourceGap}
             </span>
+            {projectSourceError ? (
+              <span
+                data-testid="topology-v2-project-source-error"
+                className="text-[color:var(--color-status-danger)]"
+              >
+                {projectSourceError}
+              </span>
+            ) : null}
           </div>
         ) : (
           <div
@@ -1074,7 +1107,7 @@ export function TopologyV2DetailPanel({
           (28px)로 그룹 내부 행 간격보다 훨씬 크게 벌려 각 typed-fact 블록이
           자체 섹션으로 읽히게 한다("space encodes grouping"). */}
       <div className="flex flex-col gap-[var(--topology-v2-panel-zone-gap)] px-[var(--topology-v2-panel-pad)] py-[18px]">
-        {isProject && connectedTotal > 0 ? (
+        {collapseProjectRelations && connectedTotal > 0 ? (
           <div
             data-testid="topology-v2-project-relations-summary"
             data-source-relations-expanded={showProjectRelations}
@@ -1126,7 +1159,7 @@ export function TopologyV2DetailPanel({
         ) : null}
         {hasConnections ? (
           <>
-            {!isProject || showProjectRelations ? (
+            {!collapseProjectRelations || showProjectRelations ? (
               <>
                 {renderGroup("contains", "contains", labels.metricContains, labels.metricContainsHelp, groups.contains)}
                 {renderGroup("usedBy", "usedBy", labels.metricUsedBy, labels.metricUsedByHelp, groups.usedBy)}
@@ -1179,11 +1212,13 @@ export function TopologyV2DetailPanel({
           onProjectSourceAction ? (
             <button
               type="button"
-              onClick={onProjectSourceAction}
+              onClick={() => { void onProjectSourceAction(); }}
+              disabled={projectSourceBusy}
+              aria-busy={projectSourceBusy}
               data-testid="topology-v2-project-source-action"
-              className="shrink-0 rounded-[var(--topology-v2-panel-row-radius)] border border-[color:var(--topology-v2-panel-primary-border)] bg-[color:var(--topology-v2-panel-primary-surface)] px-3 py-[7px] text-body font-semibold text-[color:var(--topology-v2-panel-primary-text)] transition-colors hover:border-[color:var(--topology-v2-panel-primary-border-hover)] hover:bg-[color:var(--topology-v2-panel-primary-surface-hover)]"
+              className="shrink-0 rounded-[var(--topology-v2-panel-row-radius)] border border-[color:var(--topology-v2-panel-primary-border)] bg-[color:var(--topology-v2-panel-primary-surface)] px-3 py-[7px] text-body font-semibold text-[color:var(--topology-v2-panel-primary-text)] transition-colors hover:border-[color:var(--topology-v2-panel-primary-border-hover)] hover:bg-[color:var(--topology-v2-panel-primary-surface-hover)] disabled:cursor-wait disabled:opacity-60"
             >
-              {labels.sourceAction}
+              {projectSourceBusy ? labels.sourceBusy ?? labels.sourceAction : labels.sourceAction}
             </button>
           ) : (
             <span className="shrink-0 text-body text-[color:var(--topology-v2-panel-text-secondary)]">

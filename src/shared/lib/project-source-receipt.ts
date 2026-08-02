@@ -4,6 +4,8 @@
  * envelope; it is deliberately absent from `ProjectSourceReceipt`.
  */
 
+import { buildProjectSourceGraphHash } from "./project-source-graph-hash.mjs";
+
 export const PROJECT_SOURCE_RECEIPT_VERSION = 1 as const;
 
 export type ProjectSourceStatus =
@@ -115,14 +117,13 @@ interface ProjectGraphHashInput {
   nodes: ReadonlyArray<{
     id: string;
     kind: string;
-    title: string;
     projectIds?: readonly string[];
+    agentSlug?: string | null;
   }>;
-  edges: ReadonlyArray<{
-    from: string;
-    to: string;
-    type: string;
-    projectIds?: readonly string[];
+  docs: ReadonlyArray<{
+    slug: string;
+    title?: string;
+    frontmatter?: Record<string, unknown>;
   }>;
 }
 
@@ -131,28 +132,33 @@ interface ProjectGraphHashInput {
  * score: the digest deliberately exposes no node/file denominator.
  */
 export function buildProjectGraphHash(input: ProjectGraphHashInput): string {
-  const nodes = input.nodes
-    .filter((node) => (
+  const relevantNodes = input.nodes.filter((node) => (
       node.projectIds?.includes(input.projectSlug)
-      || (node.kind === "project" && (node.id === input.projectSlug || node.id.endsWith(`:${input.projectSlug}`)))
-    ))
-    .map(({ id, kind, title }) => ({ id, kind, title }))
-    .sort((a, b) => a.id.localeCompare(b.id));
-  const ids = new Set(nodes.map((node) => node.id));
-  const edges = input.edges
-    .filter((edge) => (
-      edge.projectIds?.includes(input.projectSlug)
-      || (ids.has(edge.from) && ids.has(edge.to))
-    ))
-    .map(({ from, to, type }) => ({ from, to, type }))
-    .sort((a, b) => `${a.from}:${a.type}:${a.to}`.localeCompare(`${b.from}:${b.type}:${b.to}`));
-  const value = JSON.stringify({ version: 1, projectSlug: input.projectSlug, nodes, edges });
-  let hash = 0x811c9dc5;
-  for (let index = 0; index < value.length; index += 1) {
-    hash ^= value.charCodeAt(index);
-    hash = Math.imul(hash, 0x01000193);
+      || (node.kind === "project" && (
+        node.id === input.projectSlug
+        || node.id.endsWith(`:${input.projectSlug}`)
+        || node.agentSlug === input.projectSlug
+      ))
+    ));
+  const scopedDocSlugs = new Set(
+    relevantNodes
+      .map((node) => node.agentSlug)
+      .filter((slug): slug is string => Boolean(slug)),
+  );
+  // A hand-authored project root can predate agentSlug derivation. Include an
+  // exact frontmatter/filename match without guessing by title.
+  for (const doc of input.docs) {
+    if (
+      doc.frontmatter?.kind === "project"
+      && (doc.slug === input.projectSlug || doc.frontmatter.slug === input.projectSlug)
+    ) {
+      scopedDocSlugs.add(doc.slug);
+    }
   }
-  return `project-graph-v1:${(hash >>> 0).toString(16).padStart(8, "0")}`;
+  return buildProjectSourceGraphHash(
+    input.projectSlug,
+    input.docs.filter((doc) => scopedDocSlugs.has(doc.slug)),
+  );
 }
 
 function normalizedRelativePath(path: string): string {
@@ -188,7 +194,15 @@ export function buildProjectSourceReceipt(input: {
   witnesses: readonly ProjectSourceWitnessInput[];
   measuredAt?: string;
 }): ProjectSourceReceipt {
-  const files = new Set(input.probe.files.map(normalizedRelativePath));
+  const files = new Set<string>();
+  for (const sourcePath of input.probe.files) {
+    const normalized = normalizedRelativePath(sourcePath);
+    files.add(normalized);
+    const segments = normalized.split("/");
+    for (let index = 1; index < segments.length; index += 1) {
+      files.add(segments.slice(0, index).join("/"));
+    }
+  }
   const witnesses = input.witnesses.map((candidate) => {
     const path = normalizedRelativePath(candidate.path);
     return { ...candidate, path, supported: files.has(path) };
@@ -322,6 +336,22 @@ export function deriveProjectSourceView(input: {
   );
 }
 
+/** Copy-safe receipt summary. Field order matches CLI and the inspector. */
+export function formatProjectSourceHandoff(view: ProjectSourceView): string {
+  return [
+    "PROJECT SOURCE",
+    `contractVersion: ${view.contractVersion}`,
+    `projectSlug: ${view.projectSlug}`,
+    `sourceKind: ${view.receipt?.sourceKind ?? "unavailable"}`,
+    `status: ${view.status}`,
+    `currentness: ${view.currentness}`,
+    `measuredAt: ${view.measuredAt ?? "unmeasured"}`,
+    `topGap: ${view.topGap?.id ?? "none"}`,
+    `nextAction: ${view.nextAction.id}`,
+    `bindingCardinality: ${view.bindingCardinality}`,
+  ].join("\n");
+}
+
 export function serializeProjectSourceState(state: ProjectSourceState): string {
   return `${JSON.stringify({
     contractVersion: PROJECT_SOURCE_RECEIPT_VERSION,
@@ -337,8 +367,108 @@ function isBinding(value: unknown): value is ProjectSourceBinding {
     typeof binding.sourceId === "string" &&
     typeof binding.rootPath === "string" &&
     (binding.kind === "git" || binding.kind === "folder") &&
-    typeof binding.boundAt === "string"
+    typeof binding.boundAt === "string" &&
+    (
+      binding.receipt === undefined
+      || (
+        isReceipt(binding.receipt)
+        && binding.receipt.projectSlug === binding.projectSlug
+        && binding.receipt.sourceId === binding.sourceId
+        && binding.receipt.sourceKind === binding.kind
+      )
+    )
   );
+}
+
+const RECEIPT_STATUSES = new Set<ProjectSourceReceipt["status"]>([
+  "needs_evidence",
+  "review_required",
+  "verified_current",
+]);
+const GAP_IDS = new Set<ProjectSourceGap["id"]>([
+  "source_unbound",
+  "multiple_active_sources",
+  "receipt_missing",
+  "receipt_malformed",
+  "source_role_evidence_missing",
+  "declared_source_path_missing",
+  "source_inventory_truncated",
+  "ontology_changed",
+  "source_changed",
+]);
+const ACTION_IDS = new Set<ProjectSourceNextAction["id"]>([
+  "connect_source",
+  "repair_source_binding",
+  "measure_source",
+  "record_source_role",
+  "repair_source_path",
+  "review_inventory_limit",
+  "remeasure_source",
+  "use_current_evidence",
+]);
+
+function nonBlank(value: unknown): value is string {
+  return typeof value === "string" && value.trim().length > 0;
+}
+
+function safeRelativePath(value: unknown): value is string {
+  if (!nonBlank(value)) return false;
+  const normalized = value.replaceAll("\\", "/");
+  return (
+    !normalized.startsWith("/")
+    && !/^[A-Za-z]:\//.test(normalized)
+    && !normalized.split("/").includes("..")
+  );
+}
+
+function isReceipt(value: unknown): value is ProjectSourceReceipt {
+  if (!value || typeof value !== "object") return false;
+  const receipt = value as Partial<ProjectSourceReceipt>;
+  if (
+    receipt.contractVersion !== PROJECT_SOURCE_RECEIPT_VERSION
+    || !nonBlank(receipt.projectSlug)
+    || !nonBlank(receipt.sourceId)
+    || (receipt.sourceKind !== "git" && receipt.sourceKind !== "folder")
+    || !nonBlank(receipt.sourceRevision)
+    || !nonBlank(receipt.sourceFingerprint)
+    || !nonBlank(receipt.graphHash)
+    || !nonBlank(receipt.measuredAt)
+    || !receipt.status
+    || !RECEIPT_STATUSES.has(receipt.status)
+    || receipt.currentness !== "current"
+    || !receipt.nextAction
+    || !ACTION_IDS.has(receipt.nextAction.id)
+    || (receipt.topGap !== null && (!receipt.topGap || !GAP_IDS.has(receipt.topGap.id)))
+    || !receipt.witnessSummary
+    || !Number.isInteger(receipt.witnessSummary.total)
+    || !Number.isInteger(receipt.witnessSummary.supported)
+    || !Number.isInteger(receipt.witnessSummary.missing)
+    || receipt.witnessSummary.total < 0
+    || receipt.witnessSummary.supported < 0
+    || receipt.witnessSummary.missing < 0
+    || receipt.witnessSummary.total
+      !== receipt.witnessSummary.supported + receipt.witnessSummary.missing
+    || !Array.isArray(receipt.witnesses)
+    || receipt.witnesses.length !== receipt.witnessSummary.total
+    || !receipt.diagnostics
+    || !(
+      typeof receipt.diagnostics.dirty === "boolean"
+      || receipt.diagnostics.dirty === null
+    )
+    || typeof receipt.diagnostics.truncated !== "boolean"
+  ) return false;
+  let supported = 0;
+  for (const witness of receipt.witnesses) {
+    if (
+      !nonBlank(witness.id)
+      || !nonBlank(witness.nodeSlug)
+      || !nonBlank(witness.role)
+      || !safeRelativePath(witness.path)
+      || typeof witness.supported !== "boolean"
+    ) return false;
+    if (witness.supported) supported += 1;
+  }
+  return supported === receipt.witnessSummary.supported;
 }
 
 export function deserializeProjectSourceState(text: string | null | undefined): Required<Pick<ProjectSourceState, "contractVersion" | "bindings">> & Pick<ProjectSourceState, "malformed"> {

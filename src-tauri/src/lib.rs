@@ -767,7 +767,7 @@ struct SourceInventory {
     truncated: bool,
 }
 
-const SOURCE_INVENTORY_VERSION: &str = "inventory-v1";
+const SOURCE_INVENTORY_VERSION: &str = "inventory-v2";
 const SOURCE_INVENTORY_MAX_DEPTH: usize = 20;
 const SOURCE_INVENTORY_MAX_FILES: usize = 4000;
 const SOURCE_INVENTORY_MAX_HASH_BYTES: u64 = 32 * 1024 * 1024;
@@ -790,6 +790,63 @@ fn source_digest(parts: &[&[u8]]) -> String {
         hasher.update([0]);
     }
     format!("sha256:{:x}", hasher.finalize())
+}
+
+fn hash_source_file(
+    path: &Path,
+    relative: &str,
+    inventory: &mut SourceInventory,
+    hash_content: bool,
+) -> Result<(), String> {
+    let metadata = match fs::symlink_metadata(path) {
+        Ok(metadata) => metadata,
+        Err(err) if err.kind() == std::io::ErrorKind::NotFound => return Ok(()),
+        Err(err) => return Err(err.to_string()),
+    };
+    let file_type = metadata.file_type();
+    if !file_type.is_file() && !file_type.is_symlink() {
+        return Ok(());
+    }
+
+    inventory.files.push(relative.to_string());
+    inventory.hasher.update(relative.as_bytes());
+    inventory.hasher.update([0]);
+    inventory.hasher.update(metadata.len().to_le_bytes());
+
+    if !hash_content {
+        return Ok(());
+    }
+
+    if file_type.is_symlink() {
+        // A tracked symlink is evidence of the repository entry, not
+        // permission to read whatever happens to live outside the root.
+        let target = fs::read_link(path).map_err(|err| err.to_string())?;
+        let target = target.to_string_lossy();
+        let bytes = target.as_bytes();
+        let remaining = SOURCE_INVENTORY_MAX_HASH_BYTES.saturating_sub(inventory.hashed_bytes);
+        let copied = remaining.min(bytes.len() as u64) as usize;
+        inventory.hasher.update(&bytes[..copied]);
+        inventory.hashed_bytes += copied as u64;
+        if copied < bytes.len() {
+            inventory.truncated = true;
+        }
+        return Ok(());
+    }
+
+    let remaining = SOURCE_INVENTORY_MAX_HASH_BYTES.saturating_sub(inventory.hashed_bytes);
+    if remaining == 0 {
+        inventory.truncated = true;
+        return Ok(());
+    }
+    let file = fs::File::open(path).map_err(|err| err.to_string())?;
+    let mut limited = Read::take(file, remaining);
+    let copied =
+        std::io::copy(&mut limited, &mut inventory.hasher).map_err(|err| err.to_string())?;
+    inventory.hashed_bytes += copied;
+    if copied < metadata.len() {
+        inventory.truncated = true;
+    }
+    Ok(())
 }
 
 fn walk_source_inventory(
@@ -839,25 +896,7 @@ fn walk_source_inventory(
             continue;
         }
 
-        let metadata = fs::metadata(&path).map_err(|err| err.to_string())?;
-        inventory.files.push(relative.clone());
-        inventory.hasher.update(relative.as_bytes());
-        inventory.hasher.update([0]);
-        inventory.hasher.update(metadata.len().to_le_bytes());
-
-        let remaining = SOURCE_INVENTORY_MAX_HASH_BYTES.saturating_sub(inventory.hashed_bytes);
-        if remaining == 0 {
-            inventory.truncated = true;
-            continue;
-        }
-        let file = fs::File::open(&path).map_err(|err| err.to_string())?;
-        let mut limited = Read::take(file, remaining);
-        let copied =
-            std::io::copy(&mut limited, &mut inventory.hasher).map_err(|err| err.to_string())?;
-        inventory.hashed_bytes += copied;
-        if copied < metadata.len() {
-            inventory.truncated = true;
-        }
+        hash_source_file(&path, &relative, inventory, true)?;
     }
     Ok(())
 }
@@ -894,12 +933,80 @@ fn run_source_git(root: &Path, args: &[&str]) -> Result<Vec<u8>, String> {
     Ok(output.stdout)
 }
 
+fn inspect_git_source_inventory(root: &Path) -> Result<(String, bool, Vec<String>), String> {
+    let listing = run_source_git(
+        root,
+        &[
+            "ls-files",
+            "--cached",
+            "--others",
+            "--exclude-standard",
+            "-z",
+        ],
+    )?;
+    let mut paths: Vec<String> = listing
+        .split(|byte| *byte == 0)
+        .filter(|path| !path.is_empty())
+        .map(|path| String::from_utf8_lossy(path).replace('\\', "/"))
+        .collect();
+    paths.sort();
+    paths.dedup();
+
+    let mut dirty_paths: std::collections::HashSet<String> = run_source_git(
+        root,
+        &["diff", "--name-only", "--no-renames", "-z", "HEAD", "--"],
+    )?
+    .split(|byte| *byte == 0)
+    .filter(|path| !path.is_empty())
+    .map(|path| String::from_utf8_lossy(path).replace('\\', "/"))
+    .collect();
+    dirty_paths.extend(
+        run_source_git(root, &["ls-files", "--others", "--exclude-standard", "-z"])?
+            .split(|byte| *byte == 0)
+            .filter(|path| !path.is_empty())
+            .map(|path| String::from_utf8_lossy(path).replace('\\', "/")),
+    );
+
+    let mut inventory = SourceInventory {
+        hasher: Sha256::new(),
+        files: Vec::new(),
+        hashed_bytes: 0,
+        truncated: paths.len() > SOURCE_INVENTORY_MAX_FILES,
+    };
+    inventory.hasher.update(SOURCE_INVENTORY_VERSION.as_bytes());
+    inventory.hasher.update([0]);
+    for relative in paths.iter().take(SOURCE_INVENTORY_MAX_FILES) {
+        hash_source_file(
+            &root.join(relative),
+            relative,
+            &mut inventory,
+            dirty_paths.remove(relative),
+        )?;
+    }
+    // Deleted tracked paths are absent from the visible inventory, but still
+    // need to perturb the worktree fingerprint deterministically.
+    let mut deleted: Vec<String> = dirty_paths.into_iter().collect();
+    deleted.sort();
+    for relative in deleted {
+        inventory.hasher.update(b"deleted");
+        inventory.hasher.update([0]);
+        inventory.hasher.update(relative.as_bytes());
+        inventory.hasher.update([0]);
+    }
+    let fingerprint = format!("sha256:{:x}", inventory.hasher.finalize());
+    Ok((fingerprint, inventory.truncated, inventory.files))
+}
+
 #[tauri::command]
 fn inspect_project_source(root_path: String) -> Result<ProjectSourceInspection, String> {
     let selected_root = canonical_root(&root_path)?;
     match git::find_repo_root(&selected_root)? {
         Some(repo_root) => {
-            let (inventory_fingerprint, truncated, files) = inspect_source_inventory(&repo_root)?;
+            // Git already owns the source inclusion boundary. Respect its
+            // tracked + unignored-untracked set so build caches and private
+            // ignored artifacts cannot consume the bounded evidence budget.
+            let (inventory_fingerprint, truncated, files) =
+                inspect_git_source_inventory(&repo_root)?;
             let head = run_source_git(&repo_root, &["rev-parse", "HEAD"])?;
             let revision = String::from_utf8_lossy(&head).trim().to_string();
             let status = run_source_git(
@@ -7159,6 +7266,54 @@ mod tests {
             .any(|path| path.starts_with(".git/")));
         assert!(!inspection.source_id.contains("example.invalid"));
         assert!(!inspection.fingerprint.contains("example.invalid"));
+
+        fs::remove_dir_all(root).ok();
+    }
+
+    #[test]
+    fn inspect_project_source_uses_git_visible_files_instead_of_ignored_inventory_noise() {
+        let root = std::env::temp_dir().join(format!(
+            "ontology-atlas-project-source-git-ignore-{}",
+            std::time::SystemTime::now()
+                .duration_since(UNIX_EPOCH)
+                .unwrap()
+                .as_nanos()
+        ));
+        fs::create_dir_all(root.join("src")).unwrap();
+        fs::create_dir_all(root.join("generated")).unwrap();
+        fs::write(root.join(".gitignore"), "generated/\n").unwrap();
+        fs::write(root.join("src/index.ts"), "export const value = 1;\n").unwrap();
+        for index in 0..=SOURCE_INVENTORY_MAX_FILES {
+            fs::write(root.join("generated").join(format!("{index:04}.txt")), "x").unwrap();
+        }
+
+        for args in [
+            vec!["init"],
+            vec!["config", "user.email", "atlas@example.invalid"],
+            vec!["config", "user.name", "Atlas Test"],
+            vec!["add", "."],
+            vec!["commit", "-m", "initial"],
+        ] {
+            let output = Command::new("git")
+                .args(args)
+                .current_dir(&root)
+                .output()
+                .unwrap();
+            assert!(
+                output.status.success(),
+                "{}",
+                String::from_utf8_lossy(&output.stderr)
+            );
+        }
+
+        let inspection = inspect_project_source(root.to_string_lossy().to_string()).unwrap();
+
+        assert!(!inspection.truncated);
+        assert_eq!(inspection.files, [".gitignore", "src/index.ts"]);
+        assert!(!inspection
+            .files
+            .iter()
+            .any(|path| path.starts_with("generated/")));
 
         fs::remove_dir_all(root).ok();
     }

@@ -3885,6 +3885,11 @@
         },
         {
           "depth": 2,
+          "text": "2026-08-02 — 프로젝트 코드 근거를 사람과 에이전트가 같은 receipt로 읽는다",
+          "slug": "2026-08-02-프로젝트-코드-근거를-사람과-에이전트가-같은-receipt로-읽는다"
+        },
+        {
+          "depth": 2,
           "text": "2026-08-02 — bootstrap 답변의 근거와 빈틈을 쓰기 계획에 보존한다",
           "slug": "2026-08-02-bootstrap-답변의-근거와-빈틈을-쓰기-계획에-보존한다"
         },
@@ -6044,8 +6049,8 @@
           "slug": "2026-07-26-첫-만남은-쇼핑몰부터"
         }
       ],
-      "excerpt": "Major change history. Code commit messages answer why; this file answers when / which surface changed. Focused on user-visible changes, not PR-level granularity. Newest at the top. Entries stay date-based; the app version reached v1.0.0 on 2026-07-27, so a release tag now carries the semver promise instead. analyzerepo",
-      "wordCount": 63145,
+      "excerpt": "Major change history. Code commit messages answer why; this file answers when / which surface changed. Focused on user-visible changes, not PR-level granularity. Newest at the top. Entries stay date-based; the app version reached v1.0.0 on 2026-07-27, so a release tag now carries the semver promise instead. 지도에서 projec",
+      "wordCount": 63291,
       "updatedAt": "2026-08-02",
       "linksOut": [
         "audits/CASE-STUDY-AGENTS-MD-DRIFT",
@@ -7982,7 +7987,7 @@
         }
       ],
       "excerpt": "Complete inventory of features users can actually use right now. Last updated: 2026-07-27 (현재 route와 installed-app 계약 재검증 — /ontology은 /topology?index=expanded, /ontology/edit은 /ontology/studio 호환 redirect이며, Insights는 할 일·구성·연결·경계·신선도 5개 질문 탭의 maintenance board다. desktop static smoke와 installed-app verifier/Computer U",
-      "wordCount": 16770,
+      "wordCount": 16938,
       "updatedAt": "2026-08-02",
       "linksOut": [
         "slug",
@@ -9901,6 +9906,43 @@
       "linksOut": []
     },
     {
+      "slug": "ontology/capabilities/project-source-evidence",
+      "path": "docs/ontology/capabilities/project-source-evidence.md",
+      "title": "Project Source Evidence Receipt",
+      "tags": [],
+      "frontmatter": {
+        "slug": "capabilities/project-source-evidence",
+        "kind": "capability",
+        "title": "Project Source Evidence Receipt",
+        "display_ko": "프로젝트 코드 근거 영수증",
+        "display_en": "Project Source Evidence Receipt",
+        "domain": "domains/project-portfolio",
+        "path": "src/shared/lib/project-source-receipt.ts",
+        "created_by": "agent:codex"
+      },
+      "headings": [
+        {
+          "depth": 2,
+          "text": "정의",
+          "slug": "정의"
+        },
+        {
+          "depth": 2,
+          "text": "근거",
+          "slug": "근거"
+        },
+        {
+          "depth": 2,
+          "text": "경계",
+          "slug": "경계"
+        }
+      ],
+      "excerpt": "project 노드 하나에 Git 저장소 또는 로컬 폴더 하나를 연결하고, 온톨로지가 선언한 capability/element 구현 경로를 실제 소스 목록과 대조해 버전이 붙은 범주형 영수증으로 남기는 능력. 지도 데이터시트·전체 상세·CLI·MCP agentbrief가 같은 상태·현재성·첫 빈틈·다음 행동을 읽는다. Git 저장소 표시는 선택한 소스의 종류이며 GitHub 계정이나 원격 저장소 연결을 뜻하지 않는다. 절대 경로는 vault-local .ontology-atlas/project-sources.json sidecar에만 보관하고, 복사 인계와 MCP에는",
+      "wordCount": 142,
+      "updatedAt": "2026-08-02",
+      "linksOut": []
+    },
+    {
       "slug": "ontology/capabilities/taxonomy",
       "path": "docs/ontology/capabilities/taxonomy.md",
       "title": "Kind Taxonomy Management",
@@ -9976,7 +10018,7 @@
       ],
       "excerpt": "볼트 전체 그래프를 커스텀 canvas-2D 엔진 위에서 렌더링·팬/줌·검색하는 능력. src/features/에 전용 폴더는 없으나 위젯 증거 + 문서 서술로 제안됨(review-required). src/widgets/topology-map-v2, topology-controls, global-search (구현 증거) AGENTS.md — Tech stack (\"The graph renderer is ours — a custom canvas-2D engine (topology-map-v2)\") medium-high (0.85) — capability 후보가 fe",
       "wordCount": 59,
-      "updatedAt": "2026-08-01",
+      "updatedAt": "2026-08-02",
       "linksOut": []
     },
     {
@@ -10323,7 +10365,8 @@
         "capabilities": [
           "capabilities/project-edit",
           "capabilities/project-quick-edit",
-          "capabilities/project-share"
+          "capabilities/project-share",
+          "capabilities/project-source-evidence"
         ],
         "elements": [
           "elements/project",
@@ -10358,7 +10401,7 @@
       ],
       "excerpt": "하나의 볼트 안에서 여러 project 노드를 목록화·조회·편집·공유하는 관리 영역. AGENTS.md — Project overview (project/domain/capability/element kind 위계, 다중 프로젝트 컨테인먼트) src/features/project-edit, project-quick-edit, project-share (구현 증거) 포함: 프로젝트 상세/편집기/셀렉터, 빠른 편집, 공유 링크 제외: 프로젝트가 담는 도메인/능력 자체의 의미(그건 각자 도메인) medium (0.7) — AGENTS.md 근거는 간접적, 주로 폴더 증거에",
       "wordCount": 65,
-      "updatedAt": "2026-08-01",
+      "updatedAt": "2026-08-02",
       "linksOut": []
     },
     {
@@ -13659,6 +13702,11 @@
         "linkText": "domains/project-portfolio"
       },
       {
+        "fromSlug": "ontology/capabilities/project-source-evidence",
+        "context": "frontmatter · **[domains/project-portfolio]**",
+        "linkText": "domains/project-portfolio"
+      },
+      {
         "fromSlug": "ontology/elements/project",
         "context": "frontmatter · **[domains/project-portfolio]**",
         "linkText": "domains/project-portfolio"
@@ -14096,6 +14144,13 @@
         "fromSlug": "ontology/domains/project-portfolio",
         "context": "frontmatter · **[capabilities/project-share]**",
         "linkText": "capabilities/project-share"
+      }
+    ],
+    "ontology/capabilities/project-source-evidence": [
+      {
+        "fromSlug": "ontology/domains/project-portfolio",
+        "context": "frontmatter · **[capabilities/project-source-evidence]**",
+        "linkText": "capabilities/project-source-evidence"
       }
     ],
     "ontology/elements/project-detail": [
@@ -14720,6 +14775,13 @@
                 "type": "doc",
                 "slug": "ontology/capabilities/project-share",
                 "title": "Project Sharing"
+              },
+              {
+                "name": "project-source-evidence",
+                "path": "ontology/capabilities/project-source-evidence",
+                "type": "doc",
+                "slug": "ontology/capabilities/project-source-evidence",
+                "title": "Project Source Evidence Receipt"
               },
               {
                 "name": "taxonomy",
