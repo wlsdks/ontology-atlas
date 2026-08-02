@@ -72,6 +72,23 @@ describe("ONTOLOGY_STARTER_FILES", () => {
     );
   });
 
+  it("starter prose never teaches a node example or file copy that reuses or omits identity", () => {
+    for (const locale of ["en", "ko"] as const) {
+      const files = starterFilesForLocale(locale);
+      const readme = files.find(({ relPath }) => relPath === "README.md")?.content ?? "";
+      const project = files.find(({ relPath }) => relPath === "project.md")?.content ?? "";
+      const markdownBlocks = [...readme.matchAll(/```markdown\n([\s\S]*?)```/g)].map(
+        (match) => match[1],
+      );
+
+      expect(
+        markdownBlocks.filter((value) => /^\s*kind:\s*\S+/m.test(value)),
+      ).toHaveLength(0);
+      expect(readme).toContain("node $ATLAS/cli/src/index.mjs add domain auth");
+      expect(project).not.toMatch(/rename or copy starters|바꾸거나\s+복사합니다/i);
+    }
+  });
+
   it("3 example 파일은 정확히 1 줄로 example slug 가짐 (도메인/역량/요소 컨벤션)", () => {
     const example = ONTOLOGY_STARTER_FILES.find(
       (f) => f.relPath === "domains/example-domain.md",

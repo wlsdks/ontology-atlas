@@ -204,9 +204,10 @@ node cli/src/index.mjs delete elements/old-thing --vault my-vault
 이름만 남은 유령이 되기 때문입니다. 정말 지우려면 가리키던 쪽을 먼저 정리하거나,
 `--force` 로 그 판단을 직접 지십시오.
 
-삭제된 UID는 다시 발급하지 않습니다. 현재 범위에서는 별도 tombstone 장부를
-만들지 않으므로, 삭제 후 구 UID 조회는 `not found`가 정상입니다. 이력을
-이어야 한다면 삭제가 아니라 `merge`를 쓰십시오.
+기본 writer는 삭제된 UID를 의도적으로 다시 발급하지 않습니다. 다만 현재 범위에는
+별도 tombstone 장부가 없으므로, 현재 vault만 검사해서 사람이 과거 UID를 수동으로
+재사용했는지 증명할 수는 없습니다. 삭제 후 구 UID 조회는 `not found`가 정상이며,
+이력을 이어야 한다면 삭제가 아니라 `merge`를 쓰십시오.
 
 ## 정리
 

@@ -108,6 +108,24 @@ describe('parseBlockManifest', () => {
     ).toBeNull();
   });
 
+  it('rejects duplicate slug claims instead of silently choosing one UID', () => {
+    expect(
+      parseBlockManifest(
+        JSON.stringify({
+          schemaVersion: 2,
+          blockName: 'duplicate',
+          sourceProject: 'p',
+          exportedAt: '2026-07-23T00:00:00.000Z',
+          census,
+          nodes: [
+            { uid: UIDS.a, urn: `urn:uuid:${UIDS.a}`, slug: 'a', kind: 'element', title: 'A' },
+            { uid: UIDS.mcp, urn: `urn:uuid:${UIDS.mcp}`, slug: 'a', kind: 'element', title: 'Other A' },
+          ],
+        }),
+      ),
+    ).toBeNull();
+  });
+
   it('exposes the canonical sidecar filename', () => {
     expect(BLOCK_MANIFEST_FILENAME).toBe('block-manifest.json');
   });

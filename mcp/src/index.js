@@ -789,6 +789,7 @@ const BACKLINK_REWRITE_PLAN_OUTPUT_SCHEMA = Object.freeze({
 const BACKLINK_ROW_OUTPUT_SCHEMA = Object.freeze({
   type: 'object',
   properties: {
+    uid: { ...NON_BLANK_STRING_SCHEMA, pattern: NODE_UID_PATTERN },
     slug: NON_BLANK_STRING_SCHEMA,
     kind: NON_BLANK_STRING_SCHEMA,
     title: NON_BLANK_STRING_SCHEMA,
@@ -797,7 +798,7 @@ const BACKLINK_ROW_OUTPUT_SCHEMA = Object.freeze({
     matchedKeys: { type: 'array', items: NON_BLANK_STRING_SCHEMA },
     matchedInBody: { type: 'boolean' },
   },
-  required: ['slug', 'kind', 'title', 'mtime'],
+  required: ['uid', 'slug', 'kind', 'title', 'mtime'],
   additionalProperties: false,
 });
 const CAPTURED_DOC_OUTPUT_SCHEMA = Object.freeze({
@@ -1488,7 +1489,7 @@ The user is the single source of truth. Never auto-write generated proposals.
 - **\`delete_concept\`** refuses by default if any backlinks remain. The error response captures the deleted frontmatter + body so a mistake is recoverable. Pass \`force: true\` only after confirming with the user that dangling referrers are acceptable.
 - **\`git_status\` / \`git_history\` / \`git_snapshot\`** expose local, vault-scoped Git evidence and checkpoints. Use \`git_history({limit})\` to inspect only commits that touched the active vault. Start a checkpoint with \`git_snapshot({})\`; the dry-run returns the exact \`expectedHead\`, files, validator summary, and risk warnings. Commit only by repeating with \`confirm:true\` and that exact HEAD. The tools never initialize a repository, include paths outside the vault, or push; snapshot also refuses merge/rebase/cherry-pick/revert. Tool annotations are hints; these runtime guards are authoritative.
 - **\`absorb_document\`** (Slice 0 — the "absorption tool") converts a CLAUDE.md/AGENTS.md-style file into typed vault nodes. Dry-run by default (plan only); \`confirm: true\` writes rule/policy sections as \`kind: document\` (\`role: policy\`) nodes, backs up the source to \`<file>.pre-absorb.bak\`, and rewrites it into a slim pointer that preserves every non-absorbed section (architecture/component suggestions, unclassified prose, and injection-suspect sections) verbatim. If the canonical source path is outside \`repoRoot\` (including an inside-repo symlink that resolves outside), confirmation is blocked until the caller explicitly passes \`allowOutsideRepo:true\` after reviewing the absolute path. Architecture/component sections are reported as candidates only — never auto-written; land them yourself with \`add_concept\` if useful.
-- **\`expected_mtime\` (all write tools)** — to guard against concurrent edits by the human or another agent: capture \`mtime\` from \`get_concept\`, pass it as \`expected_mtime\` on the next write. If the file changed in between, the call throws \`VaultConflictError\` instead of silently overwriting.
+- **\`expected_mtime\` (existing-node write tools)** — to guard against concurrent edits by the human or another agent: capture \`mtime\` from \`get_concept\`, pass it as \`expected_mtime\` on the next write. If the file changed in between, the call throws \`VaultConflictError\` instead of silently overwriting. For \`merge_concepts\`, also pass the survivor's mtime as \`expected_into_mtime\`; both identities can otherwise race.
 - **\`finalize_project_meaning\`** is the post-write boundary for project competency answers. Call it only after accepted concept/relation writes, \`validate_vault\`, and a complete compile. It derives current body/graph/source provenance itself and stores no raw answers or private source coordinates; \`ok:true\` means the receipt was written, while the returned categorical \`meaningAssessment\` remains fail-closed when source currentness cannot be checked.
 
 ## When a tool throws — read the error suffix
@@ -1678,7 +1679,7 @@ const TOOLS = [
                 description: 'Only present (and always true) when the body carries more than this summary shows.',
               },
             },
-            required: ['slug', 'kind', 'title', 'mtime'],
+            required: ['uid', 'slug', 'kind', 'title', 'mtime'],
             additionalProperties: false,
           },
         },
@@ -1899,6 +1900,10 @@ const TOOLS = [
           items: {
             type: 'object',
             properties: {
+              uid: {
+                ...NON_BLANK_STRING_SCHEMA,
+                pattern: NODE_UID_PATTERN,
+              },
               slug: NON_BLANK_STRING_SCHEMA,
               kind: NON_BLANK_STRING_SCHEMA,
               title: NON_BLANK_STRING_SCHEMA,
@@ -1924,7 +1929,7 @@ const TOOLS = [
                 description: 'Only present alongside excerptTruncated — the full body length.',
               },
             },
-            required: ['slug', 'kind', 'title', 'mtime', 'matchedIn', 'score', 'excerpt'],
+            required: ['uid', 'slug', 'kind', 'title', 'mtime', 'matchedIn', 'score', 'excerpt'],
             additionalProperties: false,
           },
         },
@@ -2422,6 +2427,7 @@ const TOOLS = [
           items: {
             type: 'object',
             properties: {
+              uid: { ...NON_BLANK_STRING_SCHEMA, pattern: NODE_UID_PATTERN },
               slug: NON_BLANK_STRING_SCHEMA,
               kind: NON_BLANK_STRING_SCHEMA,
               title: NON_BLANK_STRING_SCHEMA,
@@ -2433,7 +2439,7 @@ const TOOLS = [
               },
               matchedInBody: { type: 'boolean' },
             },
-            required: ['slug', 'kind', 'title', 'mtime'],
+            required: ['uid', 'slug', 'kind', 'title', 'mtime'],
             additionalProperties: false,
           },
         },
@@ -2521,13 +2527,14 @@ const TOOLS = [
           items: {
             type: 'object',
             properties: {
+              uid: { ...NON_BLANK_STRING_SCHEMA, pattern: NODE_UID_PATTERN },
               slug: NON_BLANK_STRING_SCHEMA,
               kind: NON_BLANK_STRING_SCHEMA,
               title: NON_BLANK_STRING_SCHEMA,
               domain: { type: 'string' },
               mtime: { type: 'number', minimum: 0 },
             },
-            required: ['slug', 'kind', 'title', 'mtime'],
+            required: ['uid', 'slug', 'kind', 'title', 'mtime'],
             additionalProperties: false,
           },
         },
@@ -2540,7 +2547,7 @@ const TOOLS = [
     name: 'find_path',
     description:
       'Shortest path between two nodes (undirected BFS). Returns ' +
-      '`{ from, to, hops: [slug...], nodes: [{slug, kind, title, domain?}], edges: [{from, to, via}] }` where each ' +
+      '`{ from, to, hops: [slug...], nodes: [{uid, slug, kind, title, domain?}], edges: [{from, to, via}] }` where each ' +
       '`via` is the frontmatter key (`domains` / `domain` / `capabilities` / `elements` / `dependencies` / ' +
       '`relates` / `contains` / `describes`) that linked the two slugs — so the ' +
       'agent sees not just *that* A and B are connected but *why*. ' +
@@ -2589,12 +2596,13 @@ const TOOLS = [
           items: {
             type: 'object',
             properties: {
+              uid: { ...NON_BLANK_STRING_SCHEMA, pattern: NODE_UID_PATTERN },
               slug: NON_BLANK_STRING_SCHEMA,
               kind: NON_BLANK_STRING_SCHEMA,
               title: NON_BLANK_STRING_SCHEMA,
               domain: { type: 'string' },
             },
-            required: ['slug', 'kind', 'title'],
+            required: ['uid', 'slug', 'kind', 'title'],
             additionalProperties: false,
           },
         },
@@ -2671,13 +2679,14 @@ const TOOLS = [
           items: {
             type: 'object',
             properties: {
+              uid: { ...NON_BLANK_STRING_SCHEMA, pattern: NODE_UID_PATTERN },
               slug: NON_BLANK_STRING_SCHEMA,
               kind: NON_BLANK_STRING_SCHEMA,
               title: NON_BLANK_STRING_SCHEMA,
               domain: { type: 'string' },
               mtime: { type: 'number', minimum: 0 },
             },
-            required: ['slug', 'kind', 'title', 'mtime'],
+            required: ['uid', 'slug', 'kind', 'title', 'mtime'],
             additionalProperties: false,
           },
         },
@@ -2728,6 +2737,7 @@ const TOOLS = [
           items: {
             type: 'object',
             properties: {
+              uid: { ...NON_BLANK_STRING_SCHEMA, pattern: NODE_UID_PATTERN },
               slug: NON_BLANK_STRING_SCHEMA,
               kind: NON_BLANK_STRING_SCHEMA,
               title: NON_BLANK_STRING_SCHEMA,
@@ -2742,7 +2752,7 @@ const TOOLS = [
               },
               mtime: { type: 'number', minimum: 0 },
             },
-            required: ['slug', 'kind', 'title', 'mtime'],
+            required: ['uid', 'slug', 'kind', 'title', 'mtime'],
             additionalProperties: false,
           },
         },
@@ -4220,6 +4230,12 @@ const TOOLS = [
           description:
             'Optional conflict guard for fromSlug. Throws if the source has been modified externally.',
         },
+        expected_into_mtime: {
+          type: 'number',
+          minimum: 0,
+          description:
+            'Optional conflict guard for intoSlug. Pass the survivor mtime from get_concept so a concurrent edit or identity-history change is never overwritten.',
+        },
       },
       required: ['fromSlug', 'intoSlug'],
     },
@@ -5274,6 +5290,7 @@ function findEvidence({ title, limit } = {}) {
     // 없는 채로 끝난다. 잘렸을 때만 두 필드를 붙인다 (깨끗한 행은 그대로).
     const evidenceDelivery = describeBodyDelivery(doc.body, { maxLen: 200 });
     matches.push({
+      uid: doc.frontmatter.uid,
       slug: doc.slug,
       kind: doc.frontmatter.kind,
       title: doc.frontmatter.title || doc.frontmatter.name || doc.slug,
@@ -6217,6 +6234,7 @@ function normalizeGraphRelationKey(type) {
 
 function summarizeDoc(doc) {
   return {
+    uid: doc.frontmatter.uid,
     slug: doc.slug,
     kind: doc.frontmatter.kind,
     title: doc.frontmatter.title || doc.frontmatter.name || doc.slug,
@@ -6266,6 +6284,7 @@ function summarizePathNode(doc, slug) {
   }
   const frontmatter = doc.frontmatter || {};
   const summary = {
+    uid: frontmatter.uid,
     slug: doc.slug || slug,
     kind: String(frontmatter.kind || 'document'),
     title: String(frontmatter.title || frontmatter.name || doc.slug || slug),
@@ -6303,6 +6322,7 @@ function queryConceptsTool({ filter, limit }) {
     total += 1;
     if (matches.length < cap) {
       matches.push({
+        uid: doc.frontmatter.uid,
         slug: doc.slug,
         kind: doc.frontmatter.kind,
         title: doc.frontmatter.title || doc.frontmatter.name || doc.slug,
@@ -7639,11 +7659,12 @@ function reclassifyConcept({ slug, newKind, newSlug, domain, body, confirm = fal
   return { ...base, ok: true, dryRun: false, changed: true, backlinkUpdates: appliedBacklinks, postWriteMaintenance: compactPostWriteMaintenance() };
 }
 
-function mergeConcepts({ fromSlug, intoSlug, confirm = false, expected_mtime }) {
+function mergeConcepts({ fromSlug, intoSlug, confirm = false, expected_mtime, expected_into_mtime }) {
   requireNonBlankString(fromSlug, 'fromSlug');
   requireNonBlankString(intoSlug, 'intoSlug');
   requireOptionalBoolean(confirm, 'confirm');
   requireOptionalNonNegativeNumber(expected_mtime, 'expected_mtime');
+  requireOptionalNonNegativeNumber(expected_into_mtime, 'expected_into_mtime');
   if (fromSlug === intoSlug) {
     throw new Error('fromSlug and intoSlug are identical.');
   }
@@ -7664,6 +7685,9 @@ function mergeConcepts({ fromSlug, intoSlug, confirm = false, expected_mtime }) 
   // R11 closeout — fromSlug mtime conflict guard.
   if (typeof expected_mtime === 'number' && fromDoc.mtime !== expected_mtime) {
     throw new VaultConflictError(fromSlug, expected_mtime, fromDoc.mtime);
+  }
+  if (typeof expected_into_mtime === 'number' && intoDoc.mtime !== expected_into_mtime) {
+    throw new VaultConflictError(intoSlug, expected_into_mtime, intoDoc.mtime);
   }
 
   const preview = redirectBacklinks(VAULT_ROOT, fromSlug, intoSlug, { dryRun: true });

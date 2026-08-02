@@ -42,6 +42,41 @@
 
 ---
 
+## 2026-08-02 — 필수 UID는 vault format v2이며 공식 migration 경로가 함께 간다
+
+### 먼저 — 세 줄
+
+- **정한 것**: 모든 `kind:` 노드의 필수 UID는 additive v1 확장이 아니라 명시적인
+  vault format v2 breaking 계약이다.
+- **다르게 한 것**: first-party 일회 스크립트만 남기지 않고 canonical
+  `pnpm vault:migrate` inventory·dry-run·dirty guard에 UID 변환을 등록한다.
+- **네가 할 일**: UID 없는 vault가 있다면 먼저 dry-run 결과를 보고 `--write`한다.
+
+**선행 결정 관계**: 바로 아래 「UID는 노드의 영구 정체성」 결정을 폐기하지 않고,
+그 결정이 빠뜨린 배포·호환성 경계를 닫는다. `docs/ONTOLOGY-ATLAS-SPEC.md`의 v1
+additive-only 정책을 조용히 어기는 대신 문서 자체를 v2.0-rc로 올린다.
+
+**Decision (accountable: owner)**:
+
+1. 공식 ID는 `2026-08-02-add-node-uids`다. `--list`에 나타나고 dry-run이 기본이며
+   `--write`만 기록한다.
+2. write 전에 vault 전체 primary/merged UID claim을 검증하고, malformed·duplicate면
+   첫 바이트를 쓰기 전에 실패한다. git vault의 commit 안 된 Markdown은 기존 dirty
+   guard가 막고 `--force`만 의식적으로 우회한다.
+3. 기존 `scripts/migrate-node-uids.mjs`는 first-party 호환 wrapper로만 남고 같은
+   migration 구현에 위임한다.
+4. 스타터와 공개 가이드의 완전한 frontmatter 예시는 v2 규격을 따라야 한다. 새 노드는
+   파일 복사보다 Studio·MCP·CLI writer로 만들고, writer가 fresh UID를 발급한다.
+
+**Recorded dissent**: 외부 사용자가 아직 없다면 v2 명명과 migration runner 등록은
+실제 데이터 복구보다 절차 비용일 수 있다. **falsifier**: v1 형식 vault가 단 하나도
+남지 않고 독립 변환 경로도 한 번도 실행되지 않으며, v2 표기가 사용자 이해만 낮추는
+관찰이 나오면 다음 RFC에서 migration 호환층을 제거한다.
+
+**상태**: 유효.
+
+---
+
 ## 2026-08-02 — UID는 노드의 영구 정체성이고 slug는 사람이 읽는 현재 주소다
 
 ### 먼저 — 세 줄

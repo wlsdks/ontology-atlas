@@ -397,6 +397,7 @@ await test("tools/list — 단일 도구 description 이 batch 짝을 cross-refe
     assert.equal(listConcepts?.outputSchema?.additionalProperties, false);
     assert.equal(listConcepts?.outputSchema?.properties?.total?.type, "integer");
     assert.equal(listConcepts?.outputSchema?.properties?.vaultRoot?.type, "string");
+    assert.deepEqual(listConcepts?.outputSchema?.properties?.nodes?.items?.required, ["uid", "slug", "kind", "title", "mtime"]);
     assert.equal(listConcepts?.outputSchema?.properties?.nodes?.items?.properties?.mtime?.type, "number");
     assert.equal(listConcepts?.outputSchema?.properties?.nodes?.items?.additionalProperties, false);
     assert.deepEqual(listConcepts?.outputSchema?.properties?.vaultWarnings?.required, ["errorCount", "warningCount"]);
@@ -450,7 +451,7 @@ await test("tools/list — 단일 도구 description 이 batch 짝을 cross-refe
     assert.deepEqual(findEvidence?.outputSchema?.required, ["query", "matches"]);
     assert.equal(findEvidence?.outputSchema?.additionalProperties, false);
     assert.equal(findEvidence?.outputSchema?.properties?.matches?.type, "array");
-    assert.deepEqual(findEvidence?.outputSchema?.properties?.matches?.items?.required, ["slug", "kind", "title", "mtime", "matchedIn", "score", "excerpt"]);
+    assert.deepEqual(findEvidence?.outputSchema?.properties?.matches?.items?.required, ["uid", "slug", "kind", "title", "mtime", "matchedIn", "score", "excerpt"]);
     assert.equal(findEvidence?.outputSchema?.properties?.matches?.items?.additionalProperties, false);
     assert.deepEqual(findEvidence?.outputSchema?.properties?.matches?.items?.properties?.matchedIn?.enum, ["frontmatter", "body"]);
     const findBacklinks = findTool("find_backlinks");
@@ -468,7 +469,7 @@ await test("tools/list — 단일 도구 description 이 batch 짝을 cross-refe
     assert.deepEqual(findBacklinks?.outputSchema?.required, ["target", "total", "matches"]);
     assert.equal(findBacklinks?.outputSchema?.additionalProperties, false);
     assert.equal(findBacklinks?.outputSchema?.properties?.total?.type, "integer");
-    assert.deepEqual(findBacklinks?.outputSchema?.properties?.matches?.items?.required, ["slug", "kind", "title", "mtime"]);
+    assert.deepEqual(findBacklinks?.outputSchema?.properties?.matches?.items?.required, ["uid", "slug", "kind", "title", "mtime"]);
     assert.equal(findBacklinks?.outputSchema?.properties?.matches?.items?.additionalProperties, false);
     assert.equal(findBacklinks?.outputSchema?.properties?.matches?.items?.properties?.matchedKeys?.items?.type, "string");
     const findNeighbors = findTool("find_neighbors");
@@ -479,7 +480,7 @@ await test("tools/list — 단일 도구 description 이 batch 짝을 cross-refe
     assert.equal(findNeighbors?.outputSchema?.properties?.totalEdges?.type, "integer");
     assert.deepEqual(findNeighbors?.outputSchema?.properties?.edges?.items?.required, ["direction", "from", "to", "via", "ref", "resolved"]);
     assert.equal(findNeighbors?.outputSchema?.properties?.edges?.items?.additionalProperties, false);
-    assert.deepEqual(findNeighbors?.outputSchema?.properties?.nodes?.items?.required, ["slug", "kind", "title", "mtime"]);
+    assert.deepEqual(findNeighbors?.outputSchema?.properties?.nodes?.items?.required, ["uid", "slug", "kind", "title", "mtime"]);
     assert.equal(findNeighbors?.outputSchema?.properties?.nodes?.items?.additionalProperties, false);
     const findPath = findTool("find_path");
     assert.equal(findPath?.outputSchema?.type, "object");
@@ -490,6 +491,7 @@ await test("tools/list — 단일 도구 description 이 batch 짝을 cross-refe
     assert.equal(findPath?.outputSchema?.properties?.hops?.items?.type, "string");
     assert.deepEqual(findPath?.outputSchema?.properties?.edges?.items?.required, ["from", "to", "via"]);
     assert.equal(findPath?.outputSchema?.properties?.edges?.items?.additionalProperties, false);
+    assert.deepEqual(findPath?.outputSchema?.properties?.nodes?.items?.required, ["uid", "slug", "kind", "title"]);
     const findOrphans = findTool("find_orphans");
     assert.match(
       findOrphans?.description ?? "",
@@ -505,7 +507,7 @@ await test("tools/list — 단일 도구 description 이 batch 짝을 cross-refe
     assert.deepEqual(findOrphans?.outputSchema?.required, ["total", "orphans"]);
     assert.equal(findOrphans?.outputSchema?.additionalProperties, false);
     assert.equal(findOrphans?.outputSchema?.properties?.total?.type, "integer");
-    assert.deepEqual(findOrphans?.outputSchema?.properties?.orphans?.items?.required, ["slug", "kind", "title", "mtime"]);
+    assert.deepEqual(findOrphans?.outputSchema?.properties?.orphans?.items?.required, ["uid", "slug", "kind", "title", "mtime"]);
     assert.equal(findOrphans?.outputSchema?.properties?.orphans?.items?.additionalProperties, false);
     assert.equal(findOrphans?.outputSchema?.properties?.orphans?.items?.properties?.mtime?.type, "number");
     const queryConcepts = findTool("query_concepts");
@@ -514,7 +516,7 @@ await test("tools/list — 단일 도구 description 이 batch 짝을 cross-refe
     assert.equal(queryConcepts?.outputSchema?.additionalProperties, false);
     assert.equal(queryConcepts?.outputSchema?.properties?.total?.type, "integer");
     assert.equal(queryConcepts?.outputSchema?.properties?.limited?.type, "boolean");
-    assert.deepEqual(queryConcepts?.outputSchema?.properties?.matches?.items?.required, ["slug", "kind", "title", "mtime"]);
+    assert.deepEqual(queryConcepts?.outputSchema?.properties?.matches?.items?.required, ["uid", "slug", "kind", "title", "mtime"]);
     assert.equal(queryConcepts?.outputSchema?.properties?.matches?.items?.additionalProperties, false);
     assert.equal(queryConcepts?.outputSchema?.properties?.matches?.items?.properties?.mtime?.type, "number");
     const compileOntology = findTool("compile_ontology");
@@ -813,9 +815,10 @@ await test("tools/list — 단일 도구 description 이 batch 짝을 cross-refe
     assert.equal(deleteConcept?.outputSchema?.properties?.changed?.type, "boolean");
     assert.equal(deleteConcept?.outputSchema?.properties?.backlinks?.items?.type, "object");
     assert.equal(deleteConcept?.outputSchema?.properties?.backlinksAtDelete?.items?.type, "object");
-    assert.deepEqual(deleteConcept?.outputSchema?.properties?.backlinks?.items?.required, ["slug", "kind", "title", "mtime"]);
+    assert.deepEqual(deleteConcept?.outputSchema?.properties?.backlinks?.items?.required, ["uid", "slug", "kind", "title", "mtime"]);
     assert.equal(deleteConcept?.outputSchema?.properties?.backlinks?.items?.additionalProperties, false);
     const deleteBacklinkRow = deleteConcept?.outputSchema?.properties?.backlinksAtDelete?.items;
+    assert.equal(deleteBacklinkRow?.properties?.uid?.pattern, "^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$");
     assertCleanStringSchema(deleteBacklinkRow?.properties?.slug, "delete backlink slug");
     assertCleanStringSchema(deleteBacklinkRow?.properties?.kind, "delete backlink kind");
     assertCleanStringSchema(deleteBacklinkRow?.properties?.title, "delete backlink title");
@@ -1114,6 +1117,23 @@ await test("tools/list — 단일 도구 description 이 batch 짝을 cross-refe
         `${toolName} explains expected_mtime conflict semantics`,
       );
     }
+
+    const mergeTargetMtime = findTool("merge_concepts")?.inputSchema?.properties?.expected_into_mtime;
+    assert.equal(
+      mergeTargetMtime?.type,
+      "number",
+      "merge_concepts exposes the survivor mtime as a numeric conflict guard",
+    );
+    assert.equal(
+      mergeTargetMtime?.minimum,
+      0,
+      "merge_concepts exposes the survivor mtime as non-negative",
+    );
+    assert.match(
+      mergeTargetMtime?.description ?? "",
+      /survivor|concurrent|mtime|modified externally/i,
+      "merge_concepts explains survivor conflict semantics",
+    );
 
     const relationItemSchema =
       findTool("add_relations")?.inputSchema?.properties?.relations?.items;
@@ -3265,6 +3285,7 @@ await test("find_evidence — 각 match 에 prose excerpt 동봉 (R+)", async ()
     assert.ok(Array.isArray(result.matches));
     assert.ok(result.matches.length >= 1);
     for (const m of result.matches) {
+      assert.match(m.uid, /^[0-9a-f-]{36}$/, `${m.slug}.uid`);
       assert.equal(typeof m.excerpt, "string");
       // markdown table syntax / # heading 은 안 들어가야
       assert.doesNotMatch(m.excerpt, /^#/);
@@ -3453,6 +3474,7 @@ await test("find_backlinks — 매치 row 에 domain + mtime 포함 (R+)", async
     assert.deepEqual(getCallStructured(responses, 2), result);
     assert.equal(result.total, 1);
     const m = result.matches[0];
+    assert.match(m.uid, /^[0-9a-f-]{36}$/);
     assert.equal(m.slug, "capabilities/login");
     assert.equal(m.kind, "capability");
     assert.equal(m.domain, "identity");
@@ -3563,6 +3585,7 @@ await test("find_neighbors — one-hop graph subgraph 를 방향/타입 기준�
       both.nodes.map((node) => node.slug),
       ["domains/auth", "elements/token"],
     );
+    for (const node of both.nodes) assert.match(node.uid, /^[0-9a-f-]{36}$/);
 
     const incoming = getCallParsed(responses, 3);
     assert.deepEqual(getCallStructured(responses, 3), incoming);
@@ -3632,6 +3655,7 @@ await test("find_path — structuredContent 로 shortest path 계약을 노출",
     assert.equal(found.found, true);
     assert.equal(found.hopCount, 1);
     assert.deepEqual(found.hops, ["capabilities/login", "elements/token"]);
+    for (const node of found.nodes) assert.match(node.uid, /^[0-9a-f-]{36}$/);
     assert.deepEqual(found.edges, [
       { from: "capabilities/login", to: "elements/token", via: "dependencies" },
     ]);
@@ -4140,6 +4164,7 @@ await test("query_concepts — 매치 row 에 mtime 포함 (R+)", async () => {
     assert.deepEqual(getCallStructured(responses, 2), result);
     assert.equal(result.total, 2);
     for (const m of result.matches) {
+      assert.match(m.uid, /^[0-9a-f-]{36}$/, `${m.slug}.uid`);
       assert.equal(typeof m.mtime, "number", `${m.slug}.mtime number`);
       assert.ok(m.mtime > 0);
     }
@@ -4361,6 +4386,7 @@ await test("find_orphans — orphan row 에 domain + mtime 포함 (R+)", async (
     // domains/auth + used-cap (어느 곳도 used-cap 을 reference 안 함) — 둘 다 orphan
     assert.ok(result.total >= 1);
     for (const o of result.orphans) {
+      assert.match(o.uid, /^[0-9a-f-]{36}$/, `${o.slug}.uid`);
       assert.equal(typeof o.mtime, "number", `${o.slug}.mtime number`);
       assert.ok(o.mtime > 0);
     }
@@ -6264,6 +6290,32 @@ await test("merge_concepts dry-run — preview 만, 디스크 변경 0", async (
     assert.equal(result.postWriteMaintenance, undefined);
     assert.equal(readFileSync(join(root, "from.md"), "utf-8"), beforeFrom);
     assert.equal(readFileSync(join(root, "ref.md"), "utf-8"), beforeRef);
+  } finally {
+    rmSync(root, { recursive: true, force: true });
+  }
+});
+
+await test("merge_concepts — survivor expected_into_mtime 충돌도 쓰기 전에 차단한다", async () => {
+  const root = makeVault([
+    { slug: "from", content: "---\nkind: capability\ntitle: From\n---\n" },
+    { slug: "into", content: "---\nkind: capability\ntitle: Into\n---\n" },
+  ]);
+  try {
+    const beforeFrom = readFileSync(join(root, "from.md"), "utf-8");
+    const beforeInto = readFileSync(join(root, "into.md"), "utf-8");
+    const { responses } = await rpc(root, [
+      ...INIT_REQUESTS,
+      callTool(2, "merge_concepts", {
+        fromSlug: "from",
+        intoSlug: "into",
+        confirm: true,
+        expected_into_mtime: 1,
+      }),
+    ]);
+    assert.equal(isErrorResponse(responses, 2), true);
+    assert.match(responses.find((row) => row.id === 2).result.content[0].text, /conflict|modified externally/i);
+    assert.equal(readFileSync(join(root, "from.md"), "utf-8"), beforeFrom);
+    assert.equal(readFileSync(join(root, "into.md"), "utf-8"), beforeInto);
   } finally {
     rmSync(root, { recursive: true, force: true });
   }

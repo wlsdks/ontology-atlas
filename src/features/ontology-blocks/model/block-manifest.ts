@@ -113,6 +113,7 @@ export function parseBlockManifest(raw: string): BlockManifest | null {
   const nodesRaw = Array.isArray(m.nodes) ? m.nodes : [];
   const nodes: BlockManifestNode[] = [];
   const seenUids = new Set<string>();
+  const seenSlugs = new Set<string>();
   for (const n of nodesRaw) {
     if (n === null || typeof n !== 'object') continue;
     const node = n as Record<string, unknown>;
@@ -125,8 +126,15 @@ export function parseBlockManifest(raw: string): BlockManifest | null {
     } catch {
       return null;
     }
-    if ((node.urn !== undefined && node.urn !== urn) || seenUids.has(node.uid)) return null;
+    if (
+      (node.urn !== undefined && node.urn !== urn) ||
+      seenUids.has(node.uid) ||
+      seenSlugs.has(node.slug)
+    ) {
+      return null;
+    }
     seenUids.add(node.uid);
+    seenSlugs.add(node.slug);
     nodes.push({
       uid: node.uid,
       urn,

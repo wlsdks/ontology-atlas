@@ -2357,7 +2357,7 @@
       "freshTitle": "최근 갱신",
       "emptyHint": "일치하는 개념이 없습니다",
       "agentHandoff": "AI에게 이어서 맡기기",
-      "agentHandoffAria": "AI에게 넘길 메모 복사 (요약 · 다시 분석 요청 · 최신 상태 확인)",
+      "agentHandoffAria": "AI 작업 메뉴 열기 (프로젝트 정보 복사 · 다시 분석 · 최신 상태 확인)",
       "segmentAll": "전체",
       "segmentRecent": "최근 {days}일 · {count}",
       "segmentRecentAria": "최근 변경 노드로 지도 좁히기",

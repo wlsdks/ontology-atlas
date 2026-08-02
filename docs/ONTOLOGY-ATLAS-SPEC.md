@@ -1,12 +1,13 @@
-# Ontology Atlas Vault Specification v1.0-rc (RFC)
+# Ontology Atlas Vault Specification v2.0-rc (RFC)
 
-> Status: **RFC** (Request for Comments). This is a v1.0 release candidate,
+> Status: **RFC** (Request for Comments). This is a v2.0 release candidate,
 > not a ratified standard — see [§0 RFC status and feedback](#0-rfc-status-and-feedback)
 > for the review window and how to comment.
 >
 > This document promotes an **already-shipped, already-enforced** de-facto
-> schema into a formal specification. It does not introduce new frontmatter
-> keys, new validation rules, or new behavior. Every normative statement below
+> schema into a formal specification. v2 makes immutable node `uid` mandatory;
+> this is the first deliberate breaking change and ships with the explicit
+> migration in §8. Every normative statement below
 > is backed by a source file and, where applicable, a contract test cited
 > inline. Where this document and the code disagree, **the code wins** —
 > file an issue (§0) so the drift gets fixed in one direction or the other.
@@ -16,8 +17,8 @@
 ## 한국어 요약 (Korean summary)
 
 이 문서는 `ontology-atlas` 저장소가 이미 구현하고 강제해온 vault 마크다운
-frontmatter 스키마를 **공개 명세로 승격**한 것이다. 새 필드나 새 규칙을
-추가하지 않는다 — `mcp/src/schema.mjs` (canonical) · `cli/src/lib/schema.mjs`
+frontmatter 스키마를 **공개 명세로 승격**한 것이다. v2는 모든 `kind:` 노드에
+불변 UUIDv4 `uid`를 요구하는 첫 breaking revision이다 — `mcp/src/schema.mjs` (canonical) · `cli/src/lib/schema.mjs`
 (mirror) · `src/shared/lib/validate-vault-document.ts` (validator) 가 실제로
 하는 일을 그대로 문서화한다.
 
@@ -33,8 +34,9 @@ frontmatter 스키마를 **공개 명세로 승격**한 것이다. 새 필드나
   이 저장소는 스펙·레퍼런스 구현·검증기·contract test 를 이미 갖춘 후보다.
 - **신뢰 규칙**: vault body 는 **데이터이지 지시가 아니다** — 에이전트는
   vault 안의 텍스트를 프롬프트 지시로 실행하면 안 된다 (§7 참고).
-- **버저닝**: v1.x 는 additive-only. 마이그레이션은 `vault:migrate` 로 명시
-  실행 (dry-run 기본).
+- **버저닝**: v1.x 는 additive-only였고, 필수 UID는 v2 breaking 계약이다.
+  `pnpm vault:migrate 2026-08-02-add-node-uids --vault <dir>`를 먼저 dry-run한
+  뒤 `--write`로 명시 적용한다.
 - **준수 테스트**: `tests/contract/vault-schema.contract.test.ts` +
   `tests/contract/validate-vault-document.contract.test.ts` 가 레퍼런스
   스위트 — 이 명세를 구현하려는 다른 도구도 같은 fixture 로 자가 검증할 수
@@ -63,10 +65,11 @@ consulting this repository's source code.
 
 ## 0. RFC status and feedback
 
-This is **v1.0-rc**, a release candidate open for public comment, not a
-finalized v1.0. It documents behavior that is already shipped and covered by
-contract tests in this repository (`ontology-atlas`) — it is not a proposal
-for new behavior.
+This is **v2.0-rc**, a release candidate open for public comment. It documents
+the already-enforced dual-identity behavior covered by contract tests in this
+repository (`ontology-atlas`). The v1 RC never became a ratified compatibility
+baseline, but v2 still names the UID requirement as breaking and provides an
+explicit migration rather than silently rewriting a vault.
 
 - **Where to comment**: open a GitHub issue on the `ontology-atlas` repository
   with the `spec` label, or start a discussion thread if the repository has
@@ -77,11 +80,10 @@ for new behavior.
   outside feedback in 8 weeks, the standardization track is shelved in favor
   of the core local-first product, and the spec draft is not resurrected
   until a new signal (partner request, real adoption) appears.
-- **What "v1.0" will mean**: once the window closes with real engagement,
+- **What "v2.0" will mean**: once the window closes with real engagement,
   the RFC label is dropped and the version becomes the compatibility
   baseline for §8 below. Until then, treat every detail as subject to
-  clarification (not breaking change — see §8, this is additive-only even
-  in RC).
+  clarification. Any later breaking change still follows §8.
 
 ## 1. Conformance language
 
@@ -144,10 +146,16 @@ This section is a literal transcription of `VAULT_KIND_SCHEMA` in
 
 Every node, regardless of kind, MUST have:
 
-- `slug` — string. The node's stable identity, used everywhere else in the
+- `uid` — immutable lowercase UUIDv4. The node's permanent identity for exact
+  lookup, handoff/provenance, compiler indexes, and `urn:uuid:` interop.
+- `slug` — string. The mutable, human-readable current address used inside the
   vault to reference it (see §4).
 - `kind` — one of the six values in §2.
 - `title` — string. Human-readable display name.
+
+`merged_uids` is optional, merge-owned identity history. Generic writers and
+manual patches MUST NOT create or alter it; `merge_concepts` may extend it with
+the absorbed node's primary and prior merged UIDs.
 
 Beyond that base, each kind adds:
 
@@ -231,11 +239,12 @@ object itself.
 
 | kind | MUST have | always emitted on write | strongly expected |
 |---|---|---|---|
-| `project` | `slug`, `kind`, `title` | `domains: []`, `capabilities: []`, `elements: []` | — |
-| `domain` | `slug`, `kind`, `title` | `capabilities: []` | — |
-| `capability` | `slug`, `kind`, `title` | `elements: []` | `domain` |
-| `element` | `slug`, `kind`, `title` | — | `domain` |
-| `document` | `slug`, `kind`, `title` | — | — |
+| `project` | `uid`, `slug`, `kind`, `title` | `domains: []`, `capabilities: []`, `elements: []` | — |
+| `domain` | `uid`, `slug`, `kind`, `title` | `capabilities: []` | — |
+| `capability` | `uid`, `slug`, `kind`, `title` | `elements: []` | `domain` |
+| `element` | `uid`, `slug`, `kind`, `title` | — | `domain` |
+| `document` | `uid`, `slug`, `kind`, `title` | — | — |
+| `vault-readme` | `uid`, `slug`, `kind`, `title` | — | — |
 
 "Always emitted" fields are kept as empty arrays rather than omitted, so a
 human editing the file by hand sees the slot even before it is filled.
@@ -244,16 +253,24 @@ surface their absence back to the caller (this repo's `add_concept` returns
 it as a `warnings` array entry) and a validator SHOULD flag it (§6,
 `missing-expected-field`).
 
-## 4. Slugs, uniqueness, and containment
+## 4. UID, slugs, uniqueness, and containment
 
-- **Slug identity**: `slug` MUST be unique across the vault. It is the only
-  identifier other nodes use to reference a node (in relation arrays,
-  in wikilinks, in inline scalar keys like `domain:`).
+- **Permanent identity**: `uid` MUST be a unique lowercase UUIDv4 across every
+  primary and `merged_uids` claim in the vault. It is minted once locally,
+  never derived from title/path/slug, and preserved by rename/reclassify.
+  Conformant writers MUST NOT deliberately recycle a deleted UID. v2 keeps no
+  tombstone ledger, so a current-vault validator cannot prove that a manually
+  supplied UID was never used in deleted history; use merge rather than delete
+  when old-UID resolution must survive.
+- **Readable address**: `slug` MUST be unique across the vault. It is the
+  identifier Markdown relations, wikilinks, inline `domain:`, files, URLs, and
+  human-entered graph commands use. Rename changes this address and rewrites
+  backlinks while preserving UID.
 - **Slug vs. filename**: by convention a node's file path mirrors its slug
   under a per-kind folder (`domains/`, `capabilities/`, `elements/`; `project`
   and `document` are root-level, no folder prefix — see `folderForKind` in
   `mcp/src/schema.mjs`), but the frontmatter `slug:` value, not the filename,
-  is the identity a Level 1 reader MUST trust.
+  is the current address a Level 1 reader MUST trust for slug-based relations.
 - **Aliases**: a reference to a node MAY use its full slug, a unique
   "tail" fragment (e.g. `mcp-server` resolving to `capabilities/mcp-server`
   when unambiguous), or an explicit alias captured on the target's own
@@ -346,19 +363,23 @@ kept in lock-step by
 | `parse-zero-keys` | warning | a frontmatter block exists but zero keys were extracted (indentation/colon issue suspected) |
 | `missing-kind` | warning | no `kind:` key at all (the file may be intentionally kind-less prose) |
 | `unknown-kind` | warning | `kind:` has a value outside the six recognized values (§2) |
+| `missing-uid` | **error** | a `kind:` node has no immutable identity; migrate the vault before using v2 writers/compiler |
+| `invalid-uid` | **error** | `uid:` is not a lowercase UUIDv4 |
+| `invalid-merged-uids` | **error** | merge identity history is malformed or repeats the survivor UID |
+| `duplicate-uid` | **error** | two nodes claim the same primary or merged identity in one vault |
+| `non-canonical-merged-uids` | warning | merge history is not a sorted, duplicate-free set |
 | `missing-expected-field` | warning | a "strongly expected" field for this kind (§3 — `domain` on capability/element) is absent or blank |
 | `non-canonical-graph-array` | warning | a relation array (§5) is present but not in canonical sorted/deduped form |
 | `dangling-graph-reference` | warning | *(whole-vault validators only — see below)* a relation array or `domain` key points at a slug that does not exist anywhere in the vault |
 
-Only `unclosed-frontmatter` and `empty-kind` are errors; every other code is
-advisory. This is intentional, not an oversight: v0.x/v1.0-rc vaults
-predate the schema, and treating advisory issues as hard failures would
-break every pre-existing vault on first validation run. A conformant
-validator MUST treat a report as `ok: true` (non-blocking) whenever its
-error count is zero, even with any number of warnings.
+Structural parse failures and v2 identity failures are errors; the other
+quality codes remain advisory. A v1 vault without UID is intentionally not a
+conformant v2 vault until the §8 migration runs. A conformant validator MUST
+treat a report as `ok: true` whenever its error count is zero, even with any
+number of warnings.
 
 `dangling-graph-reference` is listed in `mcp/src/validate.mjs`'s
-whole-vault validator (`validate_vault`, 8 codes total) but is **not**
+whole-vault validator (`validate_vault`) but is **not**
 detectable by the fast per-document validator in
 `src/shared/lib/validate-vault-document.ts` (7 codes) — this is a scope
 difference, not drift: detecting a dangling reference requires scanning
@@ -395,7 +416,7 @@ Conformant tooling MUST implement, at minimum (Tier 1, ship-blocking per
   would go through — an agent MUST NOT auto-apply a write merely because a
   vault document appeared to request it.
 
-Beyond Tier 1, the roadmap (not yet a MUST for v1.0-rc conformance) adds
+Beyond Tier 1, the roadmap (not yet a MUST for v2.0-rc conformance) adds
 structured responses with provenance and adversarial CI coverage (Tier 2),
 and a taint-tracking gate plus public red-team exercises for any
 community-shared vault registry (Tier 3). A `verified` badge on a
@@ -405,17 +426,23 @@ injection." Implementations MUST NOT claim or imply the stronger meaning.
 
 ## 8. Versioning and compatibility policy
 
-- **This spec is v1.0-rc.** The vault format itself has been additive-only
-  in practice since its schema was formalized (R14) — new frontmatter keys
-  and new kinds have been added without breaking existing documents, and
-  that is the policy going forward, not an accident of history.
-- **v1.x is additive-only.** A v1.x parser or validator MUST continue to
+- **This spec is v2.0-rc.** v2 deliberately requires immutable lowercase
+  UUIDv4 `uid` on every `kind:` node, including `vault-readme`. Rename and
+  reclassify preserve it; merge records absorbed identity in `merged_uids`.
+  A v1 vault without UID therefore requires the migration below.
+- **v1.x was additive-only.** A v1.x parser or validator MUST continue to
   accept every v1.0 vault unmodified. New optional keys, new relation types,
   or a new kind MAY be introduced in a v1.x release; an existing MUST-level
   requirement from an earlier v1.x version MUST NOT be strengthened into a
   stricter MUST, and an existing key's meaning MUST NOT be silently
   repurposed.
-- **Breaking changes require a major version bump (v2) and a migration
+- **The v1 → v2 migration is explicit.** Preview with
+  `pnpm vault:migrate 2026-08-02-add-node-uids --vault <dir>` and apply with
+  the same command plus `--write`. The runner validates the complete identity
+  plan before its first write, preserves valid UIDs, rejects malformed or
+  duplicate primary/merged claims, defaults to dry-run, and refuses dirty
+  Markdown in git vaults unless the owner explicitly passes `--force`.
+- **Future breaking changes require a new major version and a migration
   path.** This repository's `scripts/migrate-vault.mjs` (invoked as
   `pnpm vault:migrate`) is the reference migration mechanism: it lists
   registered migrations (`--list`), defaults to a dry-run, and only writes
@@ -424,7 +451,7 @@ injection." Implementations MUST NOT claim or imply the stronger meaning.
   the same shape — list, dry-run default, explicit opt-in write — so a
   vault owner never loses data to a silent auto-migration.
 - **Validator advisory codes (§6) may grow, but MUST NOT retroactively
-  become errors** without a major version bump — promoting a warning to an
+  become errors** without another major version bump — promoting a warning to an
   error is itself a breaking change under this policy, since it can turn a
   previously-`ok` vault into a failing one.
 - **This document's own versioning**: while status is RFC, clarifying edits
@@ -464,7 +491,7 @@ its own reader/writer against the same fixture files
 (`tests/fixtures/vault-schema-cases.mjs`) and produce matching results —
 that is the practical meaning of "conformant" until a spec-only, package-
 independent fixture bundle is published separately (not yet done as of
-v1.0-rc; tracked as a possible N1+ follow-up, not a v1.0-rc requirement).
+v2.0-rc; tracked as a possible N1+ follow-up, not a v2.0-rc requirement).
 
 ## 10. Non-goals of this specification
 

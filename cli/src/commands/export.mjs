@@ -139,7 +139,7 @@ function printUsage(stream = process.stderr) {
       `  --vault path      vault root (default: cwd or OATLAS_VAULT)\n\n` +
       `The payload is written to stdout (pipe-safe); status goes to stderr.\n` +
       `Node identity is the permanent UID URN: urn:uuid:<uid>; slug remains readable data.\n` +
-      `is a snapshot; the compiler graphHash is its version. External / dangling\n` +
+      `This export is a snapshot; the compiler graphHash is its version. External / dangling\n` +
       `refs are omitted (an interop snapshot never mints phantom nodes).\n`,
   );
 }

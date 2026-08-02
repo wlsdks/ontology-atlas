@@ -2357,7 +2357,7 @@
       "freshTitle": "Recently updated",
       "emptyHint": "No concepts match",
       "agentHandoff": "Agent handoff",
-      "agentHandoffAria": "Copy notes for your AI agent (summary, re-check request, update check)",
+      "agentHandoffAria": "Open AI work menu (copy project info, re-analyze, check latest status)",
       "segmentAll": "All",
       "segmentRecent": "Last {days}d · {count}",
       "segmentRecentAria": "Narrow the map to recently changed nodes",

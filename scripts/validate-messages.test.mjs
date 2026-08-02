@@ -606,15 +606,29 @@ describe('i18n message catalog', () => {
     assert.doesNotMatch(ko.topology.index.agentSync, /동기화|Agent|sync/i);
     assert.doesNotMatch(en.topology.index.agentSync, /\bsync\b/i);
 
-    assert.equal(
+    const handoffLabels = [
       ko.topology.index.agentHandoffAria,
-      'AI에게 넘길 메모 복사 (요약 · 다시 분석 요청 · 최신 상태 확인)',
-    );
-    assert.equal(
       en.topology.index.agentHandoffAria,
-      'Copy notes for your AI agent (summary, re-check request, update check)',
+    ];
+    assert.equal(handoffLabels.length, 2, 'both configured locales must expose the INDEX AI work-menu label');
+    for (const label of handoffLabels) {
+      assert.equal(typeof label, 'string');
+      assert.ok(label.trim().length > 0, 'INDEX AI work-menu labels must not be empty');
+    }
+
+    assert.match(ko.topology.index.agentHandoffAria, /AI 작업 메뉴/);
+    assert.match(ko.topology.index.agentHandoffAria, /프로젝트 정보 복사/);
+    assert.match(ko.topology.index.agentHandoffAria, /다시 분석/);
+    assert.match(ko.topology.index.agentHandoffAria, /최신 상태 확인/);
+    assert.doesNotMatch(
+      ko.topology.index.agentHandoffAria,
+      /인계문|넘길 메모|동기화 게이트|재분석 지시/,
     );
-    assert.doesNotMatch(ko.topology.index.agentHandoffAria, /동기화 게이트|재분석 지시/);
+
+    assert.match(en.topology.index.agentHandoffAria, /AI work menu/i);
+    assert.match(en.topology.index.agentHandoffAria, /copy project info/i);
+    assert.match(en.topology.index.agentHandoffAria, /re-analy[sz]e/i);
+    assert.match(en.topology.index.agentHandoffAria, /latest status/i);
   });
 
   it('keeps active download/settings copy free of untranslated English nouns mixed into Korean sentences', async () => {

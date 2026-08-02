@@ -13,6 +13,7 @@
  */
 
 import type { Project, ProjectInput } from '@/entities/project';
+import { generateNodeUid } from './build-vault-markdown';
 
 /**
  * Starter `display_<locale>` values shipped by the `node $ATLAS/cli/src/index.mjs init`
@@ -148,10 +149,12 @@ export function projectToFrontmatter(
  */
 export function buildProjectMarkdown(
   project: ProjectFrontmatterShape,
-  options: { body?: string } = {},
+  options: { body?: string; uid?: string } = {},
 ): string {
   const fm = projectToFrontmatter(project);
-  const fmLines = Object.entries(fm).map(([k, v]) => `${k}: ${serializeValue(v)}`);
+  const fmLines = Object.entries({ uid: generateNodeUid(options.uid), ...fm }).map(
+    ([k, v]) => `${k}: ${serializeValue(v)}`,
+  );
   const body = options.body?.trim() || `# ${project.name}\n`;
   return `---\n${fmLines.join('\n')}\n---\n\n${body}`;
 }

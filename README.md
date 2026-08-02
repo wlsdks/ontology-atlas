@@ -400,9 +400,11 @@ question is worth asking.
 
 ## How relations are stored
 
-There is no database. No schema migration, no sync button, no server. **A
-relation is one line of frontmatter**, and the graph is derived from those files
-every time they are read — never queried out of a prebuilt store.
+There is no database, DB schema migration, sync button, or server. **A relation
+is one line of frontmatter**, and the graph is derived from those files every
+time they are read — never queried out of a prebuilt store. The one explicit
+file-format migration is v1→v2 UID issuance; it is dry-run first through
+`pnpm vault:migrate 2026-08-02-add-node-uids --vault <dir>`.
 
 That has one consequence worth stating plainly: **the hierarchy is not a
 ceiling.** Containment (`project → domain → capability → element`) is only the

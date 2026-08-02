@@ -39,6 +39,22 @@ describe('docs surface derivation', () => {
     assert.deepEqual(tools[1].arguments, ['apple', 'slug']);
   });
 
+  it('preserves oneOf required alternatives so exact selectors are not generated as optional', () => {
+    const [tool] = normalizeMcpTools([
+      {
+        name: 'exact_reader',
+        annotations: { readOnlyHint: true },
+        inputSchema: {
+          properties: { slug: {}, uid: {}, body: {} },
+          oneOf: [{ required: ['uid'] }, { required: ['slug'] }],
+        },
+      },
+    ]);
+
+    assert.deepEqual(tool.required, []);
+    assert.deepEqual(tool.oneOfRequired, [['slug'], ['uid']]);
+  });
+
   it('splits the public read/write counts from the annotation, not from a hand-written number', () => {
     assert.deepEqual(mcpSurfaceCounts(normalizeMcpTools(SAMPLE_TOOLS)), {
       toolCount: 2,
@@ -109,6 +125,17 @@ describe('committed surface artifact', () => {
       surface.mcp.readToolCount,
     );
     assert.equal(surface.mcp.readToolCount + surface.mcp.writeToolCount, surface.mcp.toolCount);
+  });
+
+  it('keeps exact-selector alternatives armed in the generated MCP surface', () => {
+    const exactReaders = surface.mcp.tools.filter((tool) =>
+      ['get_concept', 'get_concepts'].includes(tool.name),
+    );
+    assert.equal(exactReaders.length, 2, 'exact selector tools disappeared from the generated surface');
+    assert.deepEqual(
+      exactReaders.map((tool) => tool.oneOfRequired),
+      [[['slug'], ['uid']], [['slugs'], ['uids']]],
+    );
   });
 
   it('says how it is regenerated so nobody hand-edits it', () => {

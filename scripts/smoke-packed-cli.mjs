@@ -6,6 +6,7 @@
 
 import assert from 'node:assert/strict';
 import { spawnSync } from 'node:child_process';
+import { randomUUID } from 'node:crypto';
 import {
   existsSync,
   mkdirSync,
@@ -109,6 +110,8 @@ function packSummary(packageDir) {
   };
 }
 
+const nodeUidLine = () => `uid: ${randomUUID()}`;
+
 function writeCycleVault(root) {
   mkdirSync(join(root, 'capabilities'), { recursive: true });
   mkdirSync(join(root, 'domains'), { recursive: true });
@@ -116,6 +119,7 @@ function writeCycleVault(root) {
     join(root, 'capabilities', 'a.md'),
     [
       '---',
+      nodeUidLine(),
       'kind: capability',
       'slug: capabilities/a',
       'title: A',
@@ -131,6 +135,7 @@ function writeCycleVault(root) {
     join(root, 'capabilities', 'b.md'),
     [
       '---',
+      nodeUidLine(),
       'kind: capability',
       'slug: capabilities/b',
       'title: B',
@@ -146,6 +151,7 @@ function writeCycleVault(root) {
     join(root, 'domains', 'auth.md'),
     [
       '---',
+      nodeUidLine(),
       'kind: domain',
       'slug: domains/auth',
       'title: Auth',
@@ -164,6 +170,7 @@ function writeDanglingVault(root) {
     join(root, 'capabilities', 'a.md'),
     [
       '---',
+      nodeUidLine(),
       'kind: capability',
       'slug: capabilities/a',
       'title: A',
@@ -183,6 +190,7 @@ function writeDisconnectedVault(root) {
       join(root, 'capabilities', `${slug}.md`),
       [
         '---',
+        nodeUidLine(),
         'kind: capability',
         `slug: capabilities/${slug}`,
         `title: ${slug.toUpperCase()}`,
@@ -201,6 +209,7 @@ function writeProjectlessVault(root) {
     join(root, 'domains', 'core.md'),
     [
       '---',
+      nodeUidLine(),
       'kind: domain',
       'slug: domains/core',
       'title: Core',
@@ -218,6 +227,7 @@ function writeMaintenanceResumeVault(root) {
     join(root, 'project.md'),
     [
       '---',
+      nodeUidLine(),
       'kind: project',
       'slug: project',
       'title: Project',
@@ -233,6 +243,7 @@ function writeMaintenanceResumeVault(root) {
     join(root, 'core.md'),
     [
       '---',
+      nodeUidLine(),
       'kind: domain',
       'slug: core',
       'title: Core',
@@ -246,6 +257,7 @@ function writeMaintenanceResumeVault(root) {
     join(root, 'feature.md'),
     [
       '---',
+      nodeUidLine(),
       'kind: capability',
       'slug: feature',
       'title: Feature',
@@ -452,11 +464,20 @@ try {
     cliMcpVerifyArgs([maintenanceResumeVault, '--timeout-ms', '3000']),
     { cwd: projectDir, label: 'installed CLI mcp-verify maintenance resume' },
   );
-  assert.match(cliMaintenanceResumeMcpVerify.stdout, /maintenance cursor — ready page stable \(1 remaining action/);
+  const readyCursor = cliMaintenanceResumeMcpVerify.stdout.match(
+    /maintenance cursor — ready page stable \((\d+) remaining actions?;[^\n]*executable (maint_[a-f0-9]{8}):/,
+  );
+  assert.ok(readyCursor, 'maintenance ready page must expose a remaining count and executable cursor');
   assert.match(cliMaintenanceResumeMcpVerify.stdout, /kind add_missing_relation:1/);
-  assert.match(
-    cliMaintenanceResumeMcpVerify.stdout,
-    /maintenance cursor — resume afterActionId advanced \(maint_[a-f0-9]{8}; 0 remaining actions/,
+  const resumedCursor = cliMaintenanceResumeMcpVerify.stdout.match(
+    /maintenance cursor — resume afterActionId advanced \((maint_[a-f0-9]{8}); (\d+) remaining actions?/,
+  );
+  assert.ok(resumedCursor, 'maintenance resume must expose the consumed cursor and remaining count');
+  assert.equal(resumedCursor[1], readyCursor[2], 'maintenance resume must consume the ready-page executable cursor');
+  assert.equal(
+    Number(resumedCursor[2]),
+    Number(readyCursor[1]) - 1,
+    'maintenance resume must advance exactly one action without pinning the fixture census',
   );
   assert.match(cliMaintenanceResumeMcpVerify.stdout, /destructive dry-runs — rename_concept · merge_concepts · delete_concept previewReady\/canConfirm contract without write-maintenance/);
   assert.match(
@@ -688,15 +709,17 @@ try {
     mcpVerifyArgs([maintenanceResumeVault, '--timeout-ms', '3000']),
     { cwd: projectDir, label: 'installed MCP verify maintenance resume' },
   );
-  assert.match(
-    directMcpMaintenanceResumeVerify.stdout,
-    /maintenance cursor — ready page stable \(1 remaining action/,
+  const directReadyCursor = directMcpMaintenanceResumeVerify.stdout.match(
+    /maintenance cursor — ready page stable \((\d+) remaining actions?;[^\n]*executable (maint_[a-f0-9]{8}):/,
   );
+  assert.ok(directReadyCursor, 'direct MCP maintenance ready page must expose a remaining count and executable cursor');
   assert.match(directMcpMaintenanceResumeVerify.stdout, /kind add_missing_relation:1/);
-  assert.match(
-    directMcpMaintenanceResumeVerify.stdout,
-    /maintenance cursor — resume afterActionId advanced \(maint_[a-f0-9]{8}; 0 remaining actions/,
+  const directResumedCursor = directMcpMaintenanceResumeVerify.stdout.match(
+    /maintenance cursor — resume afterActionId advanced \((maint_[a-f0-9]{8}); (\d+) remaining actions?/,
   );
+  assert.ok(directResumedCursor, 'direct MCP maintenance resume must expose the consumed cursor and remaining count');
+  assert.equal(directResumedCursor[1], directReadyCursor[2]);
+  assert.equal(Number(directResumedCursor[2]), Number(directReadyCursor[1]) - 1);
   assert.match(directMcpMaintenanceResumeVerify.stdout, /destructive dry-runs — rename_concept · merge_concepts · delete_concept previewReady\/canConfirm contract without write-maintenance/);
   assert.match(
     directMcpMaintenanceResumeVerify.stdout,

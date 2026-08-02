@@ -56,6 +56,7 @@ describe('focused check suggestions', () => {
       'pnpm test:docs-vault',
       'pnpm test:vault:validate',
       'pnpm test:vault:audit',
+      'pnpm test:vault:migrate',
       'pnpm vault:migrate --list',
       'pnpm test:contracts',
     ]);
@@ -67,6 +68,16 @@ describe('focused check suggestions', () => {
     assert.deepEqual(result.commands.map((row) => row.command), [
       'pnpm exec node --test scripts/validate-messages.test.mjs',
       'pnpm test:i18n:messages',
+    ]);
+  });
+
+  it('suggests the executable frontmatter-example gate for public guide changes', () => {
+    const result = suggestFocusedChecks(['docs/guide/relations.md']);
+
+    assert.deepEqual(result.commands.map((row) => row.command), [
+      'pnpm docs-vault:check',
+      'pnpm docs:links',
+      'pnpm test:guide-examples',
     ]);
   });
 

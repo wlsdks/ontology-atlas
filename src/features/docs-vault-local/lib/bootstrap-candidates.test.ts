@@ -86,6 +86,17 @@ describe('selectedElements', () => {
 });
 
 describe('buildProjectMarkdown', () => {
+  it('생성하는 project에 fresh lowercase UUIDv4 uid를 넣는다', () => {
+    const plan = deriveBootstrapPlan(MY_SAAS, 'x');
+    const first = buildProjectMarkdown(plan, new Set(['docs']));
+    const second = buildProjectMarkdown(plan, new Set(['docs']));
+    const uidPattern = /^uid: ([0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12})$/m;
+
+    expect(first).toMatch(uidPattern);
+    expect(second).toMatch(uidPattern);
+    expect(first.match(uidPattern)?.[1]).not.toBe(second.match(uidPattern)?.[1]);
+  });
+
   it('kind: project + 승인된 domains + 루트 elements 를 frontmatter 로 노출한다', () => {
     const plan = deriveBootstrapPlan([...MY_SAAS, doc('CONTRIBUTING', 'Contributing')], 'x');
     const md = buildProjectMarkdown(plan, new Set(['docs', 'notes']));
@@ -119,5 +130,15 @@ describe('domainDocSlug · buildDomainMarkdown (재검 마찰 D — 도메인 �
     expect(md).toContain('title: docs');
     expect(md).toContain('문서 3개');
     expect(md.startsWith('---\n')).toBe(true);
+  });
+
+  it('생성하는 domain에 fresh lowercase UUIDv4 uid를 넣는다', () => {
+    const first = buildDomainMarkdown({ name: 'docs', docCount: 3 });
+    const second = buildDomainMarkdown({ name: 'docs', docCount: 3 });
+    const uidPattern = /^uid: ([0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12})$/m;
+
+    expect(first).toMatch(uidPattern);
+    expect(second).toMatch(uidPattern);
+    expect(first.match(uidPattern)?.[1]).not.toBe(second.match(uidPattern)?.[1]);
   });
 });

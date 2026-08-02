@@ -25,6 +25,14 @@ const RULES = [
     matches: [/\.md$/],
   },
   {
+    command: 'pnpm test:guide-examples',
+    reason: 'public guide ontology examples must satisfy the live UID schema',
+    matches: [
+      /^docs\/guide\/[^/]+\.md$/,
+      /^scripts\/check-guide-frontmatter-examples\.test\.mjs$/,
+    ],
+  },
+  {
     command: 'pnpm docs:surface:check',
     reason: 'MCP tool registry, CLI command registry, or their READMEs changed',
     matches: [
@@ -129,6 +137,15 @@ const RULES = [
       /^src-tauri\//,
       /^package\.json$/,
       /^next\.config\.ts$/,
+    ],
+  },
+  {
+    command: 'pnpm test:vault:migrate',
+    reason: 'vault migration behavior changed',
+    matches: [
+      /^scripts\/migrate-vault\.(?:mjs|test\.mjs)$/,
+      /^scripts\/migrate-node-uids\.(?:mjs|test\.mjs)$/,
+      /^scripts\/migrations\/[^/]+\.(?:mjs|test\.mjs)$/,
     ],
   },
   {

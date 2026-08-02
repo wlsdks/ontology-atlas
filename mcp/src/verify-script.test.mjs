@@ -453,8 +453,9 @@ describe('verify.mjs first-contact gates', () => {
     };
     const backlinkRowSchema = {
       type: 'object',
-      required: ['slug', 'kind', 'title', 'mtime'],
+      required: ['uid', 'slug', 'kind', 'title', 'mtime'],
       properties: {
+        uid: { type: 'string', pattern: NODE_UID_PATTERN },
         slug: nonBlankStringSchema,
         kind: nonBlankStringSchema,
         title: nonBlankStringSchema,
@@ -754,7 +755,7 @@ describe('verify.mjs first-contact gates', () => {
               type: 'array',
               items: {
                 type: 'object',
-                required: ['slug', 'kind', 'title', 'mtime'],
+                required: ['uid', 'slug', 'kind', 'title', 'mtime'],
                 properties: {
                   uid: { type: 'string', pattern: NODE_UID_PATTERN },
                   slug: { type: 'string' },
@@ -858,8 +859,9 @@ describe('verify.mjs first-contact gates', () => {
               type: 'array',
               items: {
                 type: 'object',
-                required: ['slug', 'kind', 'title', 'mtime'],
+                required: ['uid', 'slug', 'kind', 'title', 'mtime'],
                 properties: {
+                  uid: { type: 'string', pattern: NODE_UID_PATTERN },
                   slug: { type: 'string' },
                   kind: { type: 'string' },
                   title: { type: 'string' },
@@ -1131,6 +1133,7 @@ describe('verify.mjs first-contact gates', () => {
           properties: {
             confirm: { type: 'boolean' },
             expected_mtime: { type: 'number', minimum: 0 },
+            expected_into_mtime: { type: 'number', minimum: 0 },
           },
         },
         outputSchema: {
@@ -1340,8 +1343,9 @@ describe('verify.mjs first-contact gates', () => {
               type: 'array',
               items: {
                 type: 'object',
-                required: ['slug', 'kind', 'title', 'mtime'],
+                required: ['uid', 'slug', 'kind', 'title', 'mtime'],
                 properties: {
+                  uid: { type: 'string', pattern: NODE_UID_PATTERN },
                   slug: { type: 'string' },
                   kind: { type: 'string' },
                   title: { type: 'string' },
@@ -1952,8 +1956,9 @@ describe('verify.mjs first-contact gates', () => {
               type: 'array',
               items: {
                 type: 'object',
-                required: ['slug', 'kind', 'title', 'mtime', 'matchedIn', 'score', 'excerpt'],
+                required: ['uid', 'slug', 'kind', 'title', 'mtime', 'matchedIn', 'score', 'excerpt'],
                 properties: {
+                  uid: { type: 'string', pattern: NODE_UID_PATTERN },
                   slug: { type: 'string' },
                   kind: { type: 'string' },
                   title: { type: 'string' },
@@ -1994,8 +1999,9 @@ describe('verify.mjs first-contact gates', () => {
               type: 'array',
               items: {
                 type: 'object',
-                required: ['slug', 'kind', 'title', 'mtime'],
+                required: ['uid', 'slug', 'kind', 'title', 'mtime'],
                 properties: {
+                  uid: { type: 'string', pattern: NODE_UID_PATTERN },
                   slug: { type: 'string' },
                   kind: { type: 'string' },
                   title: { type: 'string' },
@@ -2072,8 +2078,9 @@ describe('verify.mjs first-contact gates', () => {
               type: 'array',
               items: {
                 type: 'object',
-                required: ['slug', 'kind', 'title', 'mtime'],
+                required: ['uid', 'slug', 'kind', 'title', 'mtime'],
                 properties: {
+                  uid: { type: 'string', pattern: NODE_UID_PATTERN },
                   slug: { type: 'string' },
                   kind: { type: 'string' },
                   title: { type: 'string' },
@@ -2129,8 +2136,9 @@ describe('verify.mjs first-contact gates', () => {
               type: 'array',
               items: {
                 type: 'object',
-                required: ['slug', 'kind', 'title'],
+                required: ['uid', 'slug', 'kind', 'title'],
                 properties: {
+                  uid: { type: 'string', pattern: NODE_UID_PATTERN },
                   slug: { type: 'string' },
                   kind: { type: 'string' },
                   title: { type: 'string' },
@@ -2494,6 +2502,31 @@ describe('verify.mjs first-contact gates', () => {
           : tool
       ))),
       'list_concepts outputSchema required drift',
+    );
+    assert.equal(
+      toolsListSchemaFailure(tools.map((tool) => (
+        tool.name === 'list_concepts'
+          ? {
+            ...tool,
+            outputSchema: {
+              ...tool.outputSchema,
+              properties: {
+                ...tool.outputSchema.properties,
+                nodes: {
+                  ...tool.outputSchema.properties.nodes,
+                  items: {
+                    ...tool.outputSchema.properties.nodes.items,
+                    required: tool.outputSchema.properties.nodes.items.required.filter(
+                      (field) => field !== 'uid',
+                    ),
+                  },
+                },
+              },
+            },
+          }
+          : tool
+      ))),
+      'list_concepts outputSchema nodes drift',
     );
     assert.equal(
       toolsListSchemaFailure(tools.map((tool) => (
@@ -4775,6 +4808,22 @@ describe('verify.mjs first-contact gates', () => {
         },
       ]),
       'add_relation.expected_mtime conflict guard schema drift',
+    );
+    assert.equal(
+      toolsListSchemaFailure([
+        ...tools.filter((tool) => tool.name !== 'merge_concepts'),
+        {
+          ...tools.find((tool) => tool.name === 'merge_concepts'),
+          inputSchema: {
+            ...tools.find((tool) => tool.name === 'merge_concepts').inputSchema,
+            properties: {
+              ...tools.find((tool) => tool.name === 'merge_concepts').inputSchema.properties,
+              expected_into_mtime: { type: 'number' },
+            },
+          },
+        },
+      ]),
+      'merge_concepts.expected_into_mtime conflict guard schema drift',
     );
     assert.equal(
       toolsListSchemaFailure([

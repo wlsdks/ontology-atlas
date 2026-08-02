@@ -12,7 +12,7 @@ import { mkdtempSync, rmSync, existsSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 
-import { writeDoc } from './write-vault.mjs';
+import { writeDoc, writeFrontmatterKeys } from './write-vault.mjs';
 
 function withVault(fn) {
   const root = mkdtempSync(join(tmpdir(), 'ontology-atlas-write-vault-test-'));
@@ -72,6 +72,27 @@ describe('write-vault writeDoc — UID identity gate', () => {
           frontmatter: { uid, slug: 'second', kind: 'project', title: 'Second' },
         }),
         /already belongs|collision|UID/i,
+      );
+    });
+  });
+
+  it('generic frontmatter writer cannot mutate UID or merge-owned history', () => {
+    withVault((root) => {
+      writeDoc(root, 'first', {
+        frontmatter: {
+          uid: '01890f3e-7b5d-4c0a-8f14-123456789abc',
+          slug: 'first',
+          kind: 'project',
+          title: 'First',
+        },
+      });
+      assert.throws(
+        () => writeFrontmatterKeys(root, 'first', { uid: '11890f3e-7b5d-4c0a-8f14-123456789abc' }),
+        /immutable|uid/i,
+      );
+      assert.throws(
+        () => writeFrontmatterKeys(root, 'first', { merged_uids: ['21890f3e-7b5d-4c0a-8f14-123456789abc'] }),
+        /merge_concepts|merged_uids/i,
       );
     });
   });

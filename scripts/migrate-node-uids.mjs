@@ -5,7 +5,10 @@ import { resolve, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
 import { parseFrontmatter } from './lib/parse-frontmatter.mjs';
-import { generateNodeUid, inspectMergedUids, nodeUidIssue } from '../cli/src/lib/schema.mjs';
+import {
+  migrate as migrateUidFile,
+  prepare as prepareUidMigration,
+} from './migrations/2026-08-02-add-node-uids.mjs';
 
 function walkMarkdown(target) {
   const info = statSync(target);
@@ -24,52 +27,33 @@ function walkMarkdown(target) {
   return files.sort();
 }
 
-function insertUid(raw, uid) {
-  if (raw.startsWith('---\r\n')) return `---\r\nuid: ${uid}\r\n${raw.slice(5)}`;
-  if (raw.startsWith('---\n')) return `---\nuid: ${uid}\n${raw.slice(4)}`;
-  throw new Error('ontology node frontmatter must start with an opening --- delimiter');
-}
-
 export function migrateNodeUids(targets, { write = false } = {}) {
   const files = [...new Set(targets.flatMap((target) => walkMarkdown(resolve(target))))];
+  const migrationFiles = files.map((file) => ({
+    path: file,
+    relativePath: file,
+    raw: readFileSync(file, 'utf-8'),
+  }));
+  const fileByPath = new Map(migrationFiles.map((file) => [file.path, file]));
+  const context = prepareUidMigration(migrationFiles);
   const candidates = [];
   const preserved = [];
-  const claims = new Map();
 
-  for (const file of files) {
-    const raw = readFileSync(file, 'utf-8');
-    const { frontmatter } = parseFrontmatter(raw);
+  for (const file of migrationFiles) {
+    const { frontmatter } = parseFrontmatter(file.raw);
     if (typeof frontmatter.kind !== 'string' || !frontmatter.kind.trim()) continue;
-    const uid = frontmatter.uid;
-    if (uid === undefined || uid === null || uid === '') {
-      candidates.push({ file, raw });
-      continue;
-    }
-    const issue = nodeUidIssue(uid);
-    if (issue) throw new Error(`invalid UID in ${file}: ${issue}`);
-    const merged = inspectMergedUids(uid, frontmatter.merged_uids);
-    if (merged.invalidIssue) throw new Error(`invalid merged UID history in ${file}: ${merged.invalidIssue}`);
-    if (merged.nonCanonical) throw new Error(`non-canonical merged UID history in ${file}`);
-    preserved.push({ file, uid });
-    for (const claimed of [uid, ...merged.canonical]) {
-      const owner = claims.get(claimed);
-      if (owner) throw new Error(`duplicate UID ${claimed} in ${owner} and ${file}`);
-      claims.set(claimed, file);
-    }
+    const assignedUid = context.assignments.get(file.relativePath);
+    if (assignedUid) candidates.push({ file: file.path, raw: file.raw, uid: assignedUid });
+    else preserved.push({ file: file.path, uid: frontmatter.uid });
   }
 
   const assigned = [];
   if (write) {
     for (const candidate of candidates) {
-      let uid = generateNodeUid();
-      while (claims.has(uid)) uid = generateNodeUid();
-      claims.set(uid, candidate.file);
-      assigned.push({ file: candidate.file, uid });
-    }
-    // Validate the complete plan before the first byte changes, then write.
-    for (const assignment of assigned) {
-      const candidate = candidates.find(({ file }) => file === assignment.file);
-      writeFileSync(assignment.file, insertUid(candidate.raw, assignment.uid), 'utf-8');
+      const file = fileByPath.get(candidate.file);
+      const result = migrateUidFile(file, context);
+      writeFileSync(candidate.file, result.raw, 'utf-8');
+      assigned.push({ file: candidate.file, uid: candidate.uid });
     }
   }
 
@@ -83,6 +67,12 @@ export function migrateNodeUids(targets, { write = false } = {}) {
 
 function main() {
   const argv = process.argv.slice(2);
+  if (argv.includes('--help') || argv.includes('-h')) {
+    process.stdout.write(
+      'Compatibility wrapper. Prefer: pnpm vault:migrate 2026-08-02-add-node-uids --vault <dir> [--write]\n',
+    );
+    return;
+  }
   const write = argv.includes('--write');
   const targets = argv.filter((arg) => arg !== '--write');
   const selected = targets.length > 0 ? targets : ['docs/ontology', 'samples'];

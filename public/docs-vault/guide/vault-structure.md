@@ -48,6 +48,19 @@ JSON-LD 노드 식별자가 IRI여야 한다는 [W3C JSON-LD 1.1](https://www.w3
 따릅니다. 내보낼 때는 `urn:uuid:<uid>`를 쓰므로 slug를 바꿔도 외부 정체성이
 바뀌지 않습니다.
 
+### UID 없는 기존 문서함을 v2로 바꾸기
+
+읽는 순간 조용히 파일을 고치지 않습니다. Ontology Atlas 소스 체크아웃 루트에서
+먼저 변경 대상을 미리 봅니다.
+
+```bash
+pnpm vault:migrate 2026-08-02-add-node-uids --vault /path/to/vault
+```
+
+검토한 뒤 같은 명령에 `--write`를 붙여 적용합니다. git 안의 문서함에 commit 안 된
+Markdown이 있으면 변환을 거부하므로 먼저 commit하거나 stash해야 합니다. 올바른 기존
+UID는 보존하고, 잘못됐거나 중복된 primary/merged UID는 첫 파일을 쓰기 전에 실패합니다.
+
 ## kind — 그 파일이 무엇인지
 
 `kind` 가 그 파일이 무엇인지 정합니다. 위에서 아래로 갈수록 구체적입니다.

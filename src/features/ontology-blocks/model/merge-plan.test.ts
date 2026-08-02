@@ -5,12 +5,28 @@ import {
   prefixBlockSlug,
   type BlockImportFile,
 } from './merge-plan';
+import { buildBlockManifest } from './block-manifest';
 
 const OPTS = {
   resolution: 'skip' as const,
   blockName: 'Auth Block',
   sourceProject: 'ontology-atlas',
 };
+
+const UIDS = {
+  login: '11111111-1111-4111-8111-111111111111',
+  session: '22222222-2222-4222-8222-222222222222',
+};
+
+function manifestFor(nodes: { uid: string; slug: string; kind: string; title: string }[]) {
+  return buildBlockManifest({
+    blockName: 'Auth Block',
+    sourceProject: 'ontology-atlas',
+    exportedAt: '2026-08-02T00:00:00.000Z',
+    census: { elementCount: 0, capabilityCount: nodes.length, depth: 1 },
+    nodes,
+  });
+}
 
 function file(path: string, raw: string): BlockImportFile {
   return { path, raw };
@@ -42,6 +58,11 @@ describe('planBlockImport — dry-run contract', () => {
       'capabilities/login',
       'capabilities/session',
     ]);
+    for (const write of plan.writes) {
+      expect(write.content).toMatch(
+        /^uid: [0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/m,
+      );
+    }
   });
 
   it('detects slug conflicts against the vault and, with skip resolution, excludes them from writes', () => {
@@ -81,6 +102,150 @@ describe('planBlockImport — dry-run contract', () => {
     const noSlug = file('domains/views.md', '---\nkind: domain\ntitle: Views\n---\nBody\n');
     const plan = planBlockImport([noSlug], new Set(), OPTS);
     expect(plan.writes[0]?.slug).toBe('domains/views');
+  });
+
+  it('rejects a malformed source UID instead of importing a graph that cannot compile', () => {
+    const malformed = file(
+      'capabilities/login.md',
+      '---\nuid: not-a-uuid\nslug: capabilities/login\nkind: capability\ntitle: Login\n---\n',
+    );
+
+    expect(() => planBlockImport([malformed], new Set(), OPTS)).toThrow(
+      /capabilities\/login.*valid lowercase UUIDv4/i,
+    );
+  });
+
+  it('rejects two planned writes that claim the same permanent UID', () => {
+    const first = file(
+      'capabilities/login.md',
+      `---\nuid: ${UIDS.login}\nslug: capabilities/login\nkind: capability\ntitle: Login\n---\n`,
+    );
+    const second = file(
+      'capabilities/session.md',
+      `---\nuid: ${UIDS.login}\nslug: capabilities/session\nkind: capability\ntitle: Session\n---\n`,
+    );
+
+    expect(() => planBlockImport([first, second], new Set(), OPTS)).toThrow(
+      /UID collision.*capabilities\/login.*capabilities\/session/i,
+    );
+  });
+
+  it('rejects a planned write whose UID is already claimed by the open vault', () => {
+    const copied = file(
+      'capabilities/session.md',
+      `---\nuid: ${UIDS.login}\nslug: capabilities/session\nkind: capability\ntitle: Session\n---\n`,
+    );
+
+    expect(() =>
+      planBlockImport([copied], new Set(), {
+        ...OPTS,
+        existingUidClaims: new Set([UIDS.login]),
+      }),
+    ).toThrow(/UID collision.*already exists in the open vault/i);
+  });
+
+  it('rejects an absorbed UID claim that collides with the open vault', () => {
+    const copiedHistory = file(
+      'capabilities/session.md',
+      `---\nuid: ${UIDS.session}\nmerged_uids:\n  - ${UIDS.login}\nslug: capabilities/session\nkind: capability\ntitle: Session\n---\n`,
+    );
+
+    expect(() =>
+      planBlockImport([copiedHistory], new Set(), {
+        ...OPTS,
+        existingUidClaims: new Set([UIDS.login]),
+      }),
+    ).toThrow(/UID collision.*already exists in the open vault/i);
+  });
+
+  it('rejects malformed or non-canonical absorbed UID history', () => {
+    const malformedHistory = file(
+      'capabilities/session.md',
+      `---\nuid: ${UIDS.session}\nmerged_uids:\n  - not-a-uuid\nslug: capabilities/session\nkind: capability\ntitle: Session\n---\n`,
+    );
+
+    expect(() => planBlockImport([malformedHistory], new Set(), OPTS)).toThrow(
+      /merged_uids.*lowercase UUIDv4/i,
+    );
+  });
+
+  it('validates absorbed UID history even when the Markdown file would be skipped', () => {
+    const malformedHistory = file(
+      'capabilities/session.md',
+      `---\nuid: ${UIDS.session}\nmerged_uids:\n  - not-a-uuid\nslug: capabilities/session\nkind: capability\ntitle: Session\n---\n`,
+    );
+
+    expect(() =>
+      planBlockImport([malformedHistory], new Set(['capabilities/session']), OPTS),
+    ).toThrow(/merged_uids.*lowercase UUIDv4/i);
+  });
+
+  it('rejects a v2 block when the manifest UID and Markdown UID disagree', () => {
+    const markdown = file(
+      'capabilities/login.md',
+      `---\nuid: ${UIDS.session}\nslug: capabilities/login\nkind: capability\ntitle: Login\n---\n`,
+    );
+
+    expect(() =>
+      planBlockImport([markdown], new Set(), {
+        ...OPTS,
+        manifest: manifestFor([
+          { uid: UIDS.login, slug: 'capabilities/login', kind: 'capability', title: 'Login' },
+        ]),
+      }),
+    ).toThrow(/manifest.*Markdown.*capabilities\/login.*UID/i);
+  });
+
+  it('validates manifest identity even when a slug conflict would skip that Markdown file', () => {
+    const markdown = file(
+      'capabilities/login.md',
+      `---\nuid: ${UIDS.session}\nslug: capabilities/login\nkind: capability\ntitle: Login\n---\n`,
+    );
+
+    expect(() =>
+      planBlockImport([markdown], new Set(['capabilities/login']), {
+        ...OPTS,
+        manifest: manifestFor([
+          { uid: UIDS.login, slug: 'capabilities/login', kind: 'capability', title: 'Login' },
+        ]),
+      }),
+    ).toThrow(/manifest.*Markdown.*capabilities\/login.*UID/i);
+  });
+
+  it('rejects missing Markdown UID when a v2 manifest claims an existing identity', () => {
+    expect(() =>
+      planBlockImport([CAP], new Set(), {
+        ...OPTS,
+        manifest: manifestFor([
+          { uid: UIDS.login, slug: 'capabilities/login', kind: 'capability', title: 'Login' },
+        ]),
+      }),
+    ).toThrow(/manifest.*capabilities\/login.*missing.*uid/i);
+  });
+
+  it('rejects a v2 manifest that does not describe every ontology Markdown file', () => {
+    const markdown = file(
+      'capabilities/login.md',
+      `---\nuid: ${UIDS.login}\nslug: capabilities/login\nkind: capability\ntitle: Login\n---\n`,
+    );
+
+    expect(() =>
+      planBlockImport([markdown], new Set(), {
+        ...OPTS,
+        manifest: manifestFor([]),
+      }),
+    ).toThrow(/manifest.*missing node.*capabilities\/login/i);
+  });
+
+  it('rejects a v2 manifest node whose Markdown file is missing', () => {
+    expect(() =>
+      planBlockImport([], new Set(), {
+        ...OPTS,
+        manifest: manifestFor([
+          { uid: UIDS.login, slug: 'capabilities/login', kind: 'capability', title: 'Login' },
+        ]),
+      }),
+    ).toThrow(/manifest node.*capabilities\/login.*no matching Markdown/i);
   });
 });
 

@@ -14,6 +14,7 @@
 //   node scripts/perf-graph.mjs --json
 
 import { performance } from "node:perf_hooks";
+import { randomUUID } from "node:crypto";
 
 import { compileOntology } from "../mcp/src/ontology-compiler.mjs";
 import { queryCompiledOntology } from "../mcp/src/ontology-engine.mjs";
@@ -73,7 +74,15 @@ function parseSize(value, flag) {
 }
 
 function doc(slug, frontmatter, mtime = 1) {
-  return { slug, frontmatter: { slug, ...frontmatter }, body: "", mtime };
+  // Benchmark fixtures are ephemeral but still exercise the v2 identity
+  // contract. Mint once when the fixture is created; repeated measurements
+  // compile the same document objects and therefore the same identities.
+  return {
+    slug,
+    frontmatter: { uid: randomUUID(), slug, ...frontmatter },
+    body: "",
+    mtime,
+  };
 }
 
 function generateDocs(n) {
