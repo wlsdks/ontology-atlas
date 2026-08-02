@@ -115,7 +115,7 @@ vi.mock('next-intl', () => ({
  * 시트를 연다. 2026-07-29 에 설정이 **LNB 2단**이 되면서, 화면 절이 아닌 내용은
  * 왼쪽 목록을 눌러야 나온다 — 그래서 절을 인자로 받는다. 기본값은 첫 화면(화면 절).
  */
-function openSheet(ui?: ReactNode, section?: 'screen' | 'background' | 'footprint' | 'workspace' | 'agent') {
+function openSheet(ui?: ReactNode, section?: 'screen' | 'background' | 'expand' | 'footprint' | 'workspace' | 'agent') {
   render(ui ?? <AppSettingsMenu mode="static" />);
   fireEvent.click(screen.getByTestId('app-settings-trigger'));
   if (section && section !== 'screen') fireEvent.click(screen.getByTestId(`app-settings-nav-${section}`));
@@ -554,7 +554,7 @@ describe('AppSettingsMenu appearance pickers (#20/#21)', () => {
     const baseline = sizeClasses();
     expect(baseline, '고정 높이가 없다 — 내용이 창 크기를 정하고 있다').toMatch(/h-\[\d+px\]/);
     expect(baseline, '고정 폭이 없다').toMatch(/w-\[\d+px\]/);
-    for (const item of ['background', 'footprint', 'workspace', 'agent']) {
+    for (const item of ['background', 'expand', 'footprint', 'workspace', 'agent']) {
       fireEvent.click(screen.getByTestId(`app-settings-nav-${item}`));
       expect(sizeClasses(), `${item} 절에서 창 크기가 바뀐다`).toBe(baseline);
     }
@@ -564,15 +564,15 @@ describe('AppSettingsMenu appearance pickers (#20/#21)', () => {
    * LNB 는 **묶음**을 가진다. 다섯 항목이 왜 그 순서인지를 말하는 것이 묶음의
    * 일이고, 그게 없으면 목록이 그냥 다섯 줄이다.
    */
-  it('LNB 는 두 묶음으로 나뉘고 3·2 로 갈린다', () => {
+  it('LNB 는 두 묶음으로 나뉘고 4·2 로 갈린다', () => {
     openSheet();
     const nav = screen.getByTestId('app-settings-nav');
     // 문구가 아니라 **구조**로 잠근다 — 라벨을 다듬을 때마다 깨지면 안 된다.
     const groups = [...nav.children];
     expect(groups.length, '묶음이 둘이 아니다').toBe(2);
-    expect(groups.map((g) => g.querySelectorAll('button').length)).toEqual([3, 2]);
+    expect(groups.map((g) => g.querySelectorAll('button').length)).toEqual([4, 2]);
     for (const g of groups) {
-      expect(g.querySelector('p'), '묶음에 제목이 없다 — 그러면 그냥 다섯 줄이다').not.toBeNull();
+      expect(g.querySelector('p'), '묶음에 제목이 없다 — 그러면 그냥 여섯 줄이다').not.toBeNull();
     }
   });
 
@@ -582,15 +582,15 @@ describe('AppSettingsMenu appearance pickers (#20/#21)', () => {
    */
   it('LNB 항목마다 아이콘이 하나씩 있다', () => {
     openSheet();
-    for (const item of ['screen', 'background', 'footprint', 'workspace', 'agent']) {
+    for (const item of ['screen', 'background', 'expand', 'footprint', 'workspace', 'agent']) {
       const svgs = screen.getByTestId(`app-settings-nav-${item}`).querySelectorAll('svg');
       expect(svgs.length, `${item} 항목에 아이콘이 없다`).toBe(1);
     }
   });
 
-  it('LNB 다섯 절을 모두 싣는다', () => {
+  it('LNB 여섯 절을 모두 싣는다', () => {
     openSheet();
-    for (const item of ['screen', 'background', 'footprint', 'workspace', 'agent']) {
+    for (const item of ['screen', 'background', 'expand', 'footprint', 'workspace', 'agent']) {
       expect(screen.getByTestId(`app-settings-nav-${item}`)).toBeInTheDocument();
     }
   });
@@ -599,6 +599,7 @@ describe('AppSettingsMenu appearance pickers (#20/#21)', () => {
     openSheet();
     expect(screen.getByTestId('app-settings-pane-screen')).toBeInTheDocument();
     expect(screen.queryByTestId('app-settings-canvas-background')).toBeNull();
+    expect(screen.queryByTestId('app-settings-expand')).toBeNull();
     expect(screen.queryByTestId('app-settings-footprint')).toBeNull();
   });
 
@@ -638,6 +639,109 @@ describe('AppSettingsMenu appearance pickers (#20/#21)', () => {
     expect(screen.queryByTestId('app-settings-footprint-size')).toBeNull();
     fireEvent.click(screen.getByTestId('app-settings-footprint-detail-toggle'));
     expect(screen.getByTestId('app-settings-footprint-size')).toBeInTheDocument();
+  });
+
+  /* ── 확장 절 (2026-08-01, 시안 `.qa-scratch/proto-expand.html` 이식) ──── */
+
+  it('확장 절은 어포던스 3안 · 구조 4안 · 슬라이더 3개를 싣는다', () => {
+    openSection('expand');
+    expect(screen.getByTestId('app-settings-expand')).toBeInTheDocument();
+    for (const value of ['pill', 'bar', 'badge']) {
+      expect(screen.getByTestId(`app-settings-expand-affordance-${value}`)).toBeInTheDocument();
+    }
+    for (const value of ['disc', 'fan', 'ring', 'column']) {
+      expect(screen.getByTestId(`app-settings-expand-structure-${value}`)).toBeInTheDocument();
+    }
+    // 세 숫자는 **접혀서 시작한다**(2026-08-02 디자인 감사) — 여섯 항목이 같은
+    // 무게로 나란히 서면 이 절이 「고르는 자리」가 아니라 목록으로 읽힌다.
+    // 이웃한 「발자국」이 이미 쓰는 문법(「직접 맞추기」)을 그대로 쓴다.
+    for (const id of [
+      'app-settings-expand-batch',
+      'app-settings-expand-label-attempts',
+      'app-settings-expand-max-open',
+    ]) {
+      expect(screen.queryByTestId(id)).toBeNull();
+    }
+    fireEvent.click(screen.getByTestId('app-settings-expand-detail-toggle'));
+    for (const id of [
+      'app-settings-expand-batch',
+      'app-settings-expand-label-attempts',
+      'app-settings-expand-max-open',
+    ]) {
+      expect(screen.getByTestId(id)).toBeInTheDocument();
+    }
+  });
+
+  /**
+   * **시안 전용 시험 부하는 옮기지 않는다.** 시안의 「볼트 규모」(작음/실제/큼)는
+   * 자기를 재려고 만든 손잡이지 제품 설정이 아니다 — 그게 여기 들어오면 사용자가
+   * 자기 데이터의 크기를 «고르는» 컨트롤을 보게 된다.
+   */
+  it('시안의 「볼트 규모」는 제품 설정에 없다', () => {
+    openSection('expand');
+    for (const value of ['small', 'real', 'huge']) {
+      expect(screen.queryByTestId(`app-settings-expand-scale-${value}`)).toBeNull();
+    }
+  });
+
+  /**
+   * 슬라이더 상·하한은 **시안 값 그대로**다. 여기서 좁히면 시안이 27조합을
+   * 실측하며 확인한 범위 밖의 화면만 제품에 남는다.
+   */
+  it('슬라이더 범위가 시안 값과 같다', () => {
+    openSection('expand');
+    fireEvent.click(screen.getByTestId('app-settings-expand-detail-toggle'));
+    const range = (id: string) => {
+      const el = screen.getByTestId(id) as HTMLInputElement;
+      return [el.min, el.max];
+    };
+    expect(range('app-settings-expand-batch')).toEqual(['4', '24']);
+    expect(range('app-settings-expand-label-attempts')).toEqual(['3', '40']);
+    expect(range('app-settings-expand-max-open')).toEqual(['1', '6']);
+  });
+
+  /**
+   * **기본 어포던스는 「머리 위 막대」다** (소유자 결정 2026-08-01). 이건 오늘
+   * 화면을 의도적으로 바꾸는 값이라, 설정을 한 번도 안 건드린 사람이 실제로 그
+   * 값을 받는지가 계약이다 — 화면 쪽 계약은
+   * `tests/contract/expand-affordance.contract.test.ts` 가 렌더로 잰다.
+   */
+  it('설정을 안 건드리면 어포던스는 「머리 위 막대」다', () => {
+    openSection('expand');
+    expect(screen.getByTestId('app-settings-expand-affordance-bar')).toHaveAttribute(
+      'aria-checked',
+      'true',
+    );
+    expect(screen.getByTestId('app-settings-expand-affordance-pill')).toHaveAttribute(
+      'aria-checked',
+      'false',
+    );
+  });
+
+  it('어포던스를 고르면 저장되고 aria-checked 가 따라간다', () => {
+    openSection('expand');
+    fireEvent.click(screen.getByTestId('app-settings-expand-affordance-badge'));
+    expect(screen.getByTestId('app-settings-expand-affordance-badge')).toHaveAttribute(
+      'aria-checked',
+      'true',
+    );
+    expect(
+      JSON.parse(window.localStorage.getItem('ontology-atlas:expand:v1') ?? '{}').affordance,
+    ).toBe('badge');
+  });
+
+  /** 고른 값이 무엇을 하는지 한 줄로 말한다 — 이름만으로는 셋이 안 갈린다. */
+  it('고른 어포던스·구조의 설명이 바뀐다', () => {
+    openSection('expand');
+    const hint = () => screen.getByTestId('app-settings-expand-affordance-hint').textContent;
+    const before = hint();
+    fireEvent.click(screen.getByTestId('app-settings-expand-affordance-pill'));
+    expect(hint()).not.toBe(before);
+    const structureHint = () =>
+      screen.getByTestId('app-settings-expand-structure-hint').textContent;
+    const structureBefore = structureHint();
+    fireEvent.click(screen.getByTestId('app-settings-expand-structure-ring'));
+    expect(structureHint()).not.toBe(structureBefore);
   });
 
   /**

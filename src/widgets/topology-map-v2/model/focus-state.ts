@@ -30,6 +30,8 @@
  * changes that this module reacts to.
  */
 
+import { DEFAULT_EXPAND } from "@/shared/lib/appearance-preferences";
+
 export type NodeEgoState = "center" | "neighbor" | "dim" | "normal";
 export type EdgeEgoState = "ego" | "dim" | "normal";
 
@@ -38,8 +40,14 @@ export type EdgeEgoState = "ego" | "dim" | "normal";
  * 이웃 허브) 전부 점등하면 다발이 화면을 관통해 판독 불가다. DOI 랭크 상위
  * `EGO_NEIGHBOR_LIMIT` 개만 full 점등하고 나머지는 **dim 이 아니라 hidden**,
  * 포커스 노드 옆 `이웃 +N` 집계 칩으로 접는다(칩 클릭 = 다음 배치 점등).
+ *
+ * **값의 단일 출처는 설정이다** — 「확장 → 한 번에 여는 개수」(기본 24)가 그대로
+ * 여기로 온다. 종전엔 이 파일이 24 를 직접 적었고 설정은 그 숫자를 다시 적어야
+ * 했는데, 값이 두 곳에 적히면 이미 드리프트가 시작된 것이다(Carbon). 라이브
+ * 값은 `use-topology-loop` 이 프레임마다 읽고, 이 상수는 그 기본값이자
+ * 설정을 모르는 순수 함수의 폴백이다.
  */
-export const EGO_NEIGHBOR_LIMIT = 24;
+export const EGO_NEIGHBOR_LIMIT = DEFAULT_EXPAND.batchSize;
 
 /**
  * 선택적 ego 의 `이웃 +N` 집계 칩이 쓰는 합성 parentId. 실제 노드 id 와

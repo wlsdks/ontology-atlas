@@ -6404,10 +6404,20 @@
           "depth": 2,
           "text": "2026-08-01 — 「범위를 넘긴 상태」를 부류로 잠근다: 선언된 범위 등록부, 그리고 `vaultScopeKey` 는 범위가 아니라는 명문화",
           "slug": "2026-08-01-범위를-넘긴-상태를-부류로-잠근다-선언된-범위-등록부-그리고-vaultscopekey-는-범위가-아니라는-명문화"
+        },
+        {
+          "depth": 2,
+          "text": "2026-08-01 — 시안의 확장 계측을 설정으로 이식하고, 오늘의 칩 어포던스를 「머리 위 막대」로 **교체**한다",
+          "slug": "2026-08-01-시안의-확장-계측을-설정으로-이식하고-오늘의-칩-어포던스를-머리-위-막대로-교체한다"
+        },
+        {
+          "depth": 2,
+          "text": "2026-08-02 — 확장 구조 기본값은 「부챗살」이고, 한 노드의 컨트롤은 서로 다른 방위를 쓴다",
+          "slug": "2026-08-02-확장-구조-기본값은-부챗살이고-한-노드의-컨트롤은-서로-다른-방위를-쓴다"
         }
       ],
       "excerpt": "이 파일은 결정과 그때 진 반대 의견을 남긴다. docs/CHANGELOG.md 는 무엇이 언제 바뀌었나를 답하고, 이 파일은 왜 그렇게 정했고, 무엇을 걸었나를 답한다. 최신이 위. 기록은 덧붙이기만 한다 — 지난 기록을 고치지 않는다. 판단이 바뀌었으면 새 기록을 쓰고 옛 기록을 뒤집힘 으로 표시한다. 틀린 기록도 자산이다. 1. 소집 전에 읽는다. 카운슬을 열기 전(그리고 단독 PO 패스를 쓰기 전) 같은 표면 · 같은 질문에 대한 선행 결정이 있는지 먼저 본다. 있으면 새 패스는 그것을 ① 여전히 유효하다고 인용하거나 ② 명시적으로 뒤집는다. 조용히 다시 결정",
-      "wordCount": 33612,
+      "wordCount": 35059,
       "updatedAt": "2026-08-02",
       "linksOut": [
         "slug"
@@ -7192,14 +7202,19 @@
           "slug": "노드-아이콘-세트-21"
         },
         {
+          "depth": 3,
+          "text": "확장 — 접힌 묶음을 어떻게 펼치나 (2026-08-01 신설 · 2026-08-02 개정)",
+          "slug": "확장-접힌-묶음을-어떻게-펼치나-2026-08-01-신설-2026-08-02-개정"
+        },
+        {
           "depth": 2,
           "text": "Changelog",
           "slug": "changelog"
         }
       ],
       "excerpt": "This document is maintained based on Section 3 of the design spec. For the original Linear specification, see design-references/DESIGN-linear.md. v2 (2026-07): topology-map-v2 에서 출하된 B2+ \"Circuit × Constellation\" 시각 언어가 페이지 롤아웃(랜딩 → docs/ontology 허브 → projects/insights → download)의 규범이 되었다 — 아래 v2 — \"Circuit × Constell",
-      "wordCount": 22286,
-      "updatedAt": "2026-08-01",
+      "wordCount": 22775,
+      "updatedAt": "2026-08-02",
       "linksOut": [
         "design-references/DESIGN-linear",
         "TOPOLOGY-V2-DESIGN",
@@ -7882,7 +7897,7 @@
         }
       ],
       "excerpt": "Complete inventory of features users can actually use right now. Last updated: 2026-07-27 (현재 route와 installed-app 계약 재검증 — /ontology은 /topology?index=expanded, /ontology/edit은 /ontology/studio 호환 redirect이며, Insights는 할 일·구성·연결·경계·신선도 5개 질문 탭의 maintenance board다. desktop static smoke와 installed-app verifier/Computer U",
-      "wordCount": 16563,
+      "wordCount": 16684,
       "updatedAt": "2026-08-02",
       "linksOut": [
         "slug",

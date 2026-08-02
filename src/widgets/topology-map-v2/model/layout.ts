@@ -30,6 +30,8 @@
  * `render/node-shapes.ts`, not layout).
  */
 
+import { DEFAULT_EXPAND } from "@/shared/lib/appearance-preferences";
+import type { ExpandStructure } from "@/shared/lib/appearance-preferences";
 import { DENSITY_GATE_THRESHOLD } from "./density-gate";
 import { rankEgoNeighborsByDOI } from "./focus-state";
 
@@ -101,6 +103,14 @@ export interface LayoutOptions {
    * 비어 있지 않아야 줌 공개가 그대로 동작한다.
    */
   relaxScope?: ReadonlySet<string>;
+  /**
+   * 임계 초과 부모의 자식을 **어떻게 놓나** (설정 「확장 → 확장 구조」).
+   * 생략 시 `"disc"` — 오늘의 배치(황금각 phyllotaxis 나선)라 회귀 0.
+   *
+   * 임계 **이하** 부모는 이 값과 무관하게 종전 부채꼴을 바이트 동일하게 탄다 —
+   * 이 설정이 말하는 「확장」이 정확히 밀도 게이트가 접는 그 부모들이기 때문이다.
+   */
+  expandStructure?: ExpandStructure;
 }
 
 const DEFAULT_RADII: LayoutRadii = { project: 25, domain: 17, capability: 11, element: 7 };
@@ -161,6 +171,7 @@ export function computeConcentricLayout(
   options: LayoutOptions = {},
 ): LayoutPoint[] {
   const placed = new Map<string, PlacedPoint>();
+  const expandStructure = options.expandStructure ?? DEFAULT_EXPAND.structure;
 
   // 각 노드의 containment 자식 수 — phyllotaxis 디스크 자식을 DOI 로 정렬할 때
   // "허브도(度)" 프록시로 쓴다(layout 은 전체 엣지를 모르므로 자식 수가 유일한
@@ -211,7 +222,7 @@ export function computeConcentricLayout(
     // 밀도 게이트: 초대형 부채꼴은 반지름이 폭주하므로 phyllotaxis 디스크로
     // 유계 배치한다 (임계 이하 부모는 아래 부채꼴 경로를 바이트 동일하게 탄다).
     if (fan.length > PHYLLOTAXIS_THRESHOLD) {
-      placePhyllotaxisDisk(domainPoint, rankDiscChildren(fan), rings.capability, placed);
+      placeExpandedChildren(domainPoint, rankDiscChildren(fan), rings.capability, placed, expandStructure);
       return;
     }
     // High-child-count de-pileup: push the ring out and widen the arc
@@ -240,7 +251,7 @@ export function computeConcentricLayout(
     if (!elements.length) return;
     // 밀도 게이트: element 도 임계 초과 시 phyllotaxis 디스크 (부채꼴 폭주 방지).
     if (elements.length > PHYLLOTAXIS_THRESHOLD) {
-      placePhyllotaxisDisk(capPoint, rankDiscChildren(elements), rings.element, placed);
+      placeExpandedChildren(capPoint, rankDiscChildren(elements), rings.element, placed, expandStructure);
       return;
     }
     const elR = rings.element * Math.max(1, elements.length / ELEMENT_DENSITY_THRESHOLD);
@@ -256,7 +267,7 @@ export function computeConcentricLayout(
     });
   });
 
-  placeRemainingByParentChain(nodes, rings, placed, rankDiscChildren);
+  placeRemainingByParentChain(nodes, rings, placed, rankDiscChildren, expandStructure);
   placeOrphans(nodes, rings, placed);
 
   relaxCollisions(nodes, placed, options);
@@ -278,6 +289,7 @@ function placeRemainingByParentChain(
   rings: LayoutRings,
   placed: Map<string, PlacedPoint>,
   rankDiscChildren: (children: readonly LayoutGraphNode[]) => LayoutGraphNode[],
+  expandStructure: ExpandStructure,
 ): void {
   // 깊은 체인도 수렴하도록 진행이 있는 동안 반복 (입력 순서 고정 → 결정론).
   for (let pass = 0; pass < nodes.length; pass += 1) {
@@ -294,7 +306,7 @@ function placeRemainingByParentChain(
       if (!parentPoint) continue;
       // 밀도 게이트: 비표준 계보의 대량 자식도 phyllotaxis 디스크로 유계 배치.
       if (kids.length > PHYLLOTAXIS_THRESHOLD) {
-        placePhyllotaxisDisk(parentPoint, rankDiscChildren(kids), rings.element, placed);
+        placeExpandedChildren(parentPoint, rankDiscChildren(kids), rings.element, placed, expandStructure);
         continue;
       }
       const r = rings.element * Math.max(1, kids.length / ELEMENT_DENSITY_THRESHOLD);
@@ -340,6 +352,156 @@ function placePhyllotaxisDisk(
       angle: parent.angle,
     });
   });
+}
+
+/* ── 확장 구조 3안 (시안 `.qa-scratch/proto-expand.html` 좌측 「확장 구조」) ──
+ *
+ * 시안은 **자리를 이름까지 포함해서** 잡았다(자식 한 개가 실제로 차지하는 폭은
+ * `max(몸통 지름, 이름 폭)`). 이 모듈은 캔버스를 모르는 순수 함수라 글자 폭을
+ * 잴 수 없다 — 그래서 여기서는 **기하만** 옮기고, 이름은 상위의 greedy 라벨
+ * 배치기(`render/label-layout.ts`)와 「이름을 시도할 개수」 예산이 계속 맡는다.
+ * 시안의 폭 실측을 그대로 옮긴 것이 아니라는 뜻이고, 그건 정직하게 적어 둔다.
+ *
+ * 셋 다 결정론이다 — 같은 입력 순서 → 같은 좌표. 남는 겹침은 상위
+ * `relaxCollisions` 가 마무리하는 것도 나선 원반과 같다.
+ */
+
+/**
+ * 부챗살 — 바깥쪽으로 부채꼴. 한 층이 차면 다음 층으로 올라간다.
+ *
+ * 반지름이 개수에 **비례**해 자라므로(나선의 √ 성장과 대비) 층이 쌓이며 넓어져
+ * 형제 도메인과 부딪힐 수 있다 — 시안이 이 안의 대가로 적어 둔 그 성질이다.
+ * 쐐기 폭은 부모의 outward 방향 기준 ±`FAN_SPREAD/2` 로 가둔다.
+ */
+const FAN_SPREAD = Math.PI * 0.62;
+
+/**
+ * 이웃한 두 자식의 **호 위 간격**(월드). 나선 원반의 26 을 그대로 쓰다가
+ * 올렸다 — 실측(2026-08-02, 1512×982, 부모 셋 펼침 48자식): 부챗살에서 마크가
+ * **26쌍** 겹쳤고 나선·고리는 0쌍이었다. 원인은 값 하나다: 자식 반지름은
+ * `magnitudeScale` 로 최대 1.4배까지 자라(역량 11 → 15.4) 두 개가 나란히
+ * 서려면 30.8 이 필요한데 26 을 줬다. `relaxCollisions` 는 **기본 반지름**만
+ * 보고 밀어서 이 초과분을 못 되돌린다.
+ */
+const FAN_ARC_SPACING = 34;
+/** 층 간 간격 — 같은 이유로 호 간격과 같은 값을 쓴다(층끼리도 나란히 선다). */
+const FAN_ROW_GAP = 34;
+
+/**
+ * 한 층에 자식을 **일정 간격으로, 가운데부터** 앉힌다.
+ *
+ * 종전엔 `k/(take-1) - 0.5` 로 그 층의 자식을 쐐기 **폭 전체**에 늘였다. 층이
+ * 꽉 찼을 때는 같은 답이지만 **마지막 층**에서 갈렸다 — 남은 두 개가 부챗살의
+ * 양 끝으로 날아가 부모에서 가장 먼 두 점에 홀로 섰다(부채가 아니라 부스러기로
+ * 읽히는 자리이고, 형제 도메인에 가장 먼저 닿는 자리이기도 하다). 간격을
+ * 고정하고 가운데 정렬하면 마지막 층이 중심선 옆에 모인다 — 시안이 폭을 재서
+ * 얻던 성질을, 글자를 못 재는 이 모듈에서 낼 수 있는 만큼.
+ */
+function placeExpandedFan(
+  parent: PlacedPoint,
+  children: readonly LayoutGraphNode[],
+  ringRadius: number,
+  placed: Map<string, PlacedPoint>,
+): void {
+  let index = 0;
+  let row = 0;
+  while (index < children.length) {
+    const r = ringRadius + row * FAN_ROW_GAP;
+    const step = FAN_ARC_SPACING / r; // 라디안 — 이 반지름에서 간격 고정
+    // 이 층이 담을 수 있는 개수 — 적어도 하나는 놓는다(무한 루프 방지).
+    const capacity = Math.max(1, Math.floor(FAN_SPREAD / step) + 1);
+    const take = Math.min(capacity, children.length - index);
+    for (let k = 0; k < take; k += 1) {
+      const angle = parent.angle + (k - (take - 1) / 2) * step;
+      placed.set(children[index + k].id, {
+        x: parent.x + Math.cos(angle) * r,
+        y: parent.y + Math.sin(angle) * r,
+        angle,
+      });
+    }
+    index += take;
+    row += 1;
+  }
+}
+
+/**
+ * 고리 — 부모를 **감싼다**. 사방을 쓰니 같은 개수를 더 좁은 면적에 담는다.
+ * 대신 부모가 자식에 둘러싸여 「어디서 왔는지」가 약해진다(시안의 대가).
+ * 각 고리는 바깥쪽(부모의 outward 방향 반대편)에서 시작해 한 바퀴 돈다.
+ */
+function placeExpandedRing(
+  parent: PlacedPoint,
+  children: readonly LayoutGraphNode[],
+  ringRadius: number,
+  placed: Map<string, PlacedPoint>,
+): void {
+  let index = 0;
+  let r = ringRadius;
+  while (index < children.length) {
+    const capacity = Math.max(1, Math.floor((TAU * r) / PHYLLOTAXIS_SPACING));
+    const take = Math.min(capacity, children.length - index);
+    for (let k = 0; k < take; k += 1) {
+      const angle = parent.angle + Math.PI + (k / take) * TAU;
+      placed.set(children[index + k].id, {
+        x: parent.x + Math.cos(angle) * r,
+        y: parent.y + Math.sin(angle) * r,
+        angle,
+      });
+    }
+    index += take;
+    r += PHYLLOTAXIS_SPACING;
+  }
+}
+
+/**
+ * 기둥 — 바깥으로 **줄 세우기**. 이름이 옆으로 나란해 읽기가 가장 쉽고 겹칠
+ * 여지가 거의 없다. 대신 길어져서 화면 밖으로 나가기 쉽다(시안의 대가).
+ * 열은 부모의 outward 방향으로 나아가고, 각 열은 그 수직 방향으로 늘어선다.
+ */
+const COLUMN_LENGTH = 6;
+const COLUMN_GAP = FAN_ARC_SPACING * 1.6;
+/** 한 줄 안에서 위아래 간격 — 부챗살과 같은 이유로 26 이 아니라 34 다. */
+const COLUMN_ROW_GAP = FAN_ARC_SPACING;
+
+function placeExpandedColumns(
+  parent: PlacedPoint,
+  children: readonly LayoutGraphNode[],
+  ringRadius: number,
+  placed: Map<string, PlacedPoint>,
+): void {
+  const dirX = Math.cos(parent.angle);
+  const dirY = Math.sin(parent.angle);
+  // 열이 늘어서는 방향 = outward 의 수직.
+  const perpX = -dirY;
+  const perpY = dirX;
+  children.forEach((child, i) => {
+    const column = Math.floor(i / COLUMN_LENGTH);
+    const row = i % COLUMN_LENGTH;
+    const along = ringRadius + column * COLUMN_GAP;
+    const across = (row - (COLUMN_LENGTH - 1) / 2) * COLUMN_ROW_GAP;
+    placed.set(child.id, {
+      x: parent.x + dirX * along + perpX * across,
+      y: parent.y + dirY * along + perpY * across,
+      angle: parent.angle,
+    });
+  });
+}
+
+/**
+ * 임계 초과 부모의 자식 배치 — 설정이 고른 구조로 위임한다. `disc` 가 기본이자
+ * 오늘의 배치라, 설정을 안 건드린 화면은 좌표가 바이트 동일하다.
+ */
+function placeExpandedChildren(
+  parent: PlacedPoint,
+  children: readonly LayoutGraphNode[],
+  ringRadius: number,
+  placed: Map<string, PlacedPoint>,
+  structure: ExpandStructure,
+): void {
+  if (structure === "fan") return placeExpandedFan(parent, children, ringRadius, placed);
+  if (structure === "ring") return placeExpandedRing(parent, children, ringRadius, placed);
+  if (structure === "column") return placeExpandedColumns(parent, children, ringRadius, placed);
+  placePhyllotaxisDisk(parent, children, ringRadius, placed);
 }
 
 /**

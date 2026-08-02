@@ -147,6 +147,9 @@ const STORAGE_KEY_REGISTRY: StorageEntry[] = [
   { key: "ontology-atlas:canvas-background:v1", kind: "storage", scope: "global", note: "캔버스 배경 선호" },
   { key: "ontology-atlas:glyph-set:v1", kind: "storage", scope: "global", note: "글리프 세트 선호" },
   { key: "ontology-atlas:footprint:v1", kind: "storage", scope: "global", note: "발자국 트레일 선호" },
+  // 확장 어포던스·구조·세 숫자. 발자국·배경과 같은 화면 취향이라 볼트와 무관하다 —
+  // 폴더를 바꿔도 "펼치는 방식"에 대한 내 선호는 그대로여야 한다.
+  { key: "ontology-atlas:expand:v1", kind: "storage", scope: "global", note: "확장 어포던스·구조·개수 선호" },
   { key: "ontology-atlas:locale", kind: "storage", scope: "global", note: "화면 언어" },
   { key: "ontology-atlas:local-endpoint", kind: "storage", scope: "global", note: "LLM 로컬 엔드포인트" },
   { key: "ontology-atlas:agent-config-scope", kind: "storage", scope: "global", note: "MCP 설정 적용 범위(project|global)" },

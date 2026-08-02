@@ -94,18 +94,24 @@ describe("clusterBadgeRect", () => {
   const PARENT_Y = 300;
   const NODE_R = 20;
 
-  it("배지는 부모의 우상단(스크린 x+ 오른쪽, y- 위)에 앉는다", () => {
+  /**
+   * **좌**상단이다 — 우상단은 궤도 「이것만 보기」 버튼의 방위다(2026-08-02).
+   * 둘이 같은 어깨에 앉아 배지의 80% 가 버튼에 덮이고 클릭이 통째로 버튼에
+   * 먹혔다. 방위 배분의 근거와 전수 겹침 0 은
+   * `tests/contract/expand-settings.contract.test.ts`.
+   */
+  it("배지는 부모의 좌상단(스크린 x- 왼쪽, y- 위)에 앉는다", () => {
     const rect = clusterBadgeRect(PARENT_X, PARENT_Y, NODE_R, clusterBadgeLabel(63));
     const cx = rect.x + rect.w / 2;
     const cy = rect.y + rect.h / 2;
-    expect(cx).toBeGreaterThan(PARENT_X); // 오른쪽
+    expect(cx).toBeLessThan(PARENT_X); // 왼쪽
     expect(cy).toBeLessThan(PARENT_Y); // 위
   });
 
   it("배지는 부모 노드 반지름 바깥에 완전히 벗어난다(오라·노드 겹침 차단)", () => {
     const rect = clusterBadgeRect(PARENT_X, PARENT_Y, NODE_R, clusterBadgeLabel(63));
-    // 배지의 부모에 가장 가까운 모서리(좌하단)까지의 거리 > 노드 반지름.
-    const nearX = rect.x; // 왼쪽 변이 부모에 더 가깝다
+    // 배지의 부모에 가장 가까운 모서리(**우**하단)까지의 거리 > 노드 반지름.
+    const nearX = rect.x + rect.w; // 오른쪽 변이 부모에 더 가깝다
     const nearY = rect.y + rect.h; // 아래 변이 부모에 더 가깝다
     const dist = Math.hypot(nearX - PARENT_X, nearY - PARENT_Y);
     expect(dist).toBeGreaterThan(NODE_R);

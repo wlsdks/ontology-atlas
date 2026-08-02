@@ -45,7 +45,7 @@ const VaultAgentPanel = dynamic(
 import { useDocumentTitle } from "@/shared/lib/use-document-title";
 import { useLocalStorageBoolean } from "@/shared/lib/use-local-storage-boolean";
 import { useAudiencePlain } from "@/shared/lib/audience-preference";
-import { useCanvasBackground, useFootprint, useGlyphSet } from "@/shared/lib/appearance-preferences";
+import { useCanvasBackground, useExpand, useFootprint, useGlyphSet } from "@/shared/lib/appearance-preferences";
 
 const CREATE_NODE_DIALOG_TITLE_ID = "topology-create-node-dialog-title";
 // Bare `?p=` miss grace window — see the deeplinkMissNotifiedRef effect
@@ -159,6 +159,7 @@ import {
   selectTopologyPathRouteState,
   resolveTopologyNodeClickRouteState,
   toggleExpandedParent,
+  limitExpandedParents,
   enterRealmRouteState,
   exitRealmRouteState,
   resolveRealmNodeId,
@@ -336,6 +337,8 @@ export function HomePage() {
   const canvasBackground = useCanvasBackground();
   const footprint = useFootprint();
   const glyphSet = useGlyphSet();
+  // 확장 설정(펼치기 표시 · 배치 · 세 숫자) — 같은 스토어, 같은 lockstep.
+  const expand = useExpand();
   // 슬라이스 C — 지도 표면의 관계 어휘 레지스터. 비개발(plain) 모드는
   // 데이터시트와 같은 plain 레지스터로 통일.
   const relationRegister: "formal" | "plain" = audiencePlain ? "plain" : "formal";
@@ -463,10 +466,15 @@ export function HomePage() {
   const renderProjects = projects;
   // 밀도 게이트 (fable 설계) — URL `?open=` 의 부모 slug 목록을 Set 으로
   // 변환해 지도로 내린다. 문자열 join 을 dep 으로 써 안정적으로 메모.
-  const expandedParentsKey = expandedParentSlugs.join(",");
+  // **딥링크도 사용자의 상한을 받는다** (2026-08-02 실측 defect). `?open=` 파싱은
+  // 순수 함수라 설정을 모르고 기본값 3 을 쓴다 — 그래서 「동시에 펼쳐 둘 부모」를
+  // 1 로 내려 둔 사람이 링크 하나로 셋을 받았다(실측: maxOpen=1 인데 부모 3개가
+  // 펼쳐진 채 82노드). 클릭 경로만 상한을 지키면 그건 상한이 아니다. 뒤쪽을
+  // 남기는 방향은 `toggleExpandedParent` 의 LRU 축출과 같다(나중에 적힌 것이 더
+  // 최근 의도다).
+  const expandedParentsKey = limitExpandedParents(expandedParentSlugs, expand.maxOpenParents).join(",");
   const expandedParentSet = useMemo(
-    () => new Set(expandedParentSlugs),
-    // eslint-disable-next-line react-hooks/exhaustive-deps
+    () => new Set(expandedParentsKey ? expandedParentsKey.split(",") : []),
     [expandedParentsKey],
   );
   // 밀도 게이트 — 클러스터 칩 클릭 → 해당 부모 확장 토글(URL 왕복). 노드
@@ -475,10 +483,17 @@ export function HomePage() {
     (parentId: string) => {
       setRouteState((current) => ({
         ...current,
-        expandedParents: toggleExpandedParent(current.expandedParents, parentId),
+        // 상한은 설정(「확장 → 동시에 펼쳐 둘 부모」)이 정한다. 넘치면 여기서
+        // 가장 오래 펼쳐 둔 것이 닫힌다 — 클릭이 아무 일도 안 하는 상태를
+        // 만들지 않는다(`toggleExpandedParent` 주석).
+        expandedParents: toggleExpandedParent(
+          current.expandedParents,
+          parentId,
+          expand.maxOpenParents,
+        ),
       }));
     },
-    [setRouteState],
+    [setRouteState, expand.maxOpenParents],
   );
   // S4 "영역 전개" — 궤도 버튼/데이터시트 액션 → 이 노드의 세계로 전환(URL 왕복).
   const handleEnterRealm = useCallback(
@@ -4177,6 +4192,7 @@ export function HomePage() {
                     glyphSet={glyphSet}
                     canvasBackground={canvasBackground}
                     footprint={footprint}
+                    expand={expand}
                   />
                 ) : null}
                 {topologyRenderState.renderCanvas ? (
