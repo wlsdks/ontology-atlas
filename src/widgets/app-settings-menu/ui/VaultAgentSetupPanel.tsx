@@ -818,12 +818,17 @@ export function VaultAgentSetupPanel({
                   title={tc('step2Title')}
                   desc={tc('step2Desc')}
                 />
-                <StepRow
-                  n={3}
-                  testId="agent-setup-step-3"
-                  title={tc('step3Title')}
-                  desc={tc('step3Desc')}
-                >
+                {/*
+                  **`step3Desc` 를 여기서는 안 쓴다** (2026-08-02, 디자인 카운슬).
+                  그 문장은 「에이전트가 이 지도를 읽기 시작하면 여기에 표시돼요」
+                  인데, 그 약속을 지키는 heartbeat 신호는 **지도 시트만** 갖고
+                  있다(`use-agent-connect-model.ts`). 이 화면이 아래에 그리는 것은
+                  1단계와 같은 값(설정 파일 유효성)을 라벨만 바꿔 다시 말한 것이라,
+                  문장을 그대로 두면 지키지 않는 약속이 된다.
+                  아래 줄이 이 화면이 실제로 아는 것을 말하므로 설명은 뺀다 —
+                  배선(`agentActivityStatus`)은 카피 통합과 한 묶음이라 다음이다.
+                */}
+                <StepRow n={3} testId="agent-setup-step-3" title={tc('step3Title')}>
                   <div className="flex items-center gap-2 rounded-md border border-[color:var(--color-border-soft)] bg-[color:var(--color-overlay-1)] px-2.5 py-2">
                     <span
                       aria-hidden
