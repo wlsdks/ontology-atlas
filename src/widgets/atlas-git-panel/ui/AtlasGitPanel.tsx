@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useState, useSyncExternalStore } from "react";
+import { Fragment, useCallback, useEffect, useMemo, useState, useSyncExternalStore } from "react";
 import { useCopyFeedback, type CopyFeedbackState } from "@/shared/lib/use-copy-feedback";
 import { stepRowMotionClass, stepRowUsesStagger } from "../lib/step-row-motion";
 import { useTranslations } from "next-intl";
@@ -509,15 +509,30 @@ export function AtlasGitPanel({
             ? "workbench"
             : "not-initialized";
 
+  /**
+   * 사용자가 직접 쓴 커밋 제목. **빈 문자열이면 자동 문구**를 쓴다 —
+   * Rust 의 `git_snapshot(message: Option<String>)` 이 이미 그렇게 갈린다.
+   *
+   * 종전엔 자동 문구만 가능했다. 그 문구는 「무엇이 바뀌었나」는 잘 말하지만
+   * **왜 바꿨나**는 못 말하고, 그건 나중에 이력을 읽는 사람이 실제로 찾는
+   * 것이다(소유자: *"수동으로 커밋도 할 수도 있잖아"*).
+   */
+  const [snapshotMessage, setSnapshotMessage] = useState("");
+
   const confirmSnapshot = useCallback(async () => {
     if (!vaultPath) return;
     setSnapshotting(true);
     setSnapshotError(null);
     try {
-      const result = await gitSnapshot(vaultPath, { push: pushOptIn });
+      const trimmed = snapshotMessage.trim();
+      const result = await gitSnapshot(vaultPath, {
+        push: pushOptIn,
+        ...(trimmed ? { message: trimmed } : {}),
+      });
       setSnapshotResult(result);
       setConfirming(false);
       setPushOptIn(false);
+      setSnapshotMessage("");
       /*
        * 사용자의 명시 선택을 지운다 — 커밋 직후 화면은 기본값으로 돌아간다.
        * 남은 변경이 있으면 계속 「아직 커밋 안 한 변경」, 없으면 방금 만든
@@ -531,7 +546,7 @@ export function AtlasGitPanel({
     } finally {
       setSnapshotting(false);
     }
-  }, [vaultPath, pushOptIn, refresh]);
+  }, [vaultPath, pushOptIn, snapshotMessage, refresh]);
 
   /**
    * 복사 결과는 **성공도 실패도** 말한다 (2026-07-28 QA).
@@ -683,6 +698,8 @@ export function AtlasGitPanel({
         stage === "error" ? (
           <DesktopBody
             commitDiff={commitDiff}
+            snapshotMessage={snapshotMessage}
+            setSnapshotMessage={setSnapshotMessage}
             hostPlatformHint={
               typeof navigator === "undefined"
                 ? ""
@@ -1501,7 +1518,7 @@ function LocationLine({
             label={behind && behind > 0 ? `${t("remotePull")} ${behind}` : t("remotePull")}
             hint={behind && behind > 0 ? t("remotePullHint", { behind }) : t("remoteSameHint")}
             busy={remoteBusy === "pull"}
-            disabled={remoteBusy !== null || !known || behind === 0}
+            disabled={remoteBusy !== null}
             onClick={onRemoteAction}
           />
           <RemoteActionButton
@@ -1509,7 +1526,7 @@ function LocationLine({
             label={ahead && ahead > 0 ? `${t("remotePush")} ${ahead}` : t("remotePush")}
             hint={ahead && ahead > 0 ? t("remotePushHint", { ahead }) : t("remoteSameHint")}
             busy={remoteBusy === "push"}
-            disabled={remoteBusy !== null || !known || ahead === 0}
+            disabled={remoteBusy !== null}
             onClick={onRemoteAction}
           />
         </>
@@ -1528,22 +1545,38 @@ function LocationLine({
           </button>
         </>
       )}
-      {error ? (
-        <span
-          data-testid="atlas-git-remote-error"
-          className="basis-full text-label text-[color:var(--color-danger-text)]"
-        >
-          {error}
-        </span>
-      ) : notice ? (
-        <span
-          data-testid="atlas-git-remote-notice"
-          className="basis-full text-label text-[color:var(--color-text-tertiary)]"
-        >
-          {notice}
-        </span>
-      ) : null}
     </div>
+  );
+}
+
+/**
+ * 원격 동작의 결과 한 줄 — 성공도 실패도 **같은 자리**에서 말한다.
+ *
+ * 상단 바 **밖**에 있는 이유: 바 안에서 줄바꿈으로 붙이면 새 줄이 생기는 순간
+ * 바가 높아지고 Fetch·Pull·Push 세 버튼이 통째로 내려앉는다(소유자 지적
+ * 2026-08-03: *"fetch 누르니까 위치 이상하게 변경되고"*). 방금 누른 버튼이
+ * 손가락 밑에서 도망가는 것은 결과 표시의 부작용이 아니라 결함이다.
+ */
+function RemoteResultLine({
+  notice,
+  error,
+}: {
+  notice: string | null;
+  error: string | null;
+}) {
+  if (!error && !notice) return null;
+  return (
+    <p
+      data-testid={error ? "atlas-git-remote-error" : "atlas-git-remote-notice"}
+      className={cn(
+        "git-fade-in flex-none border-b border-[color:var(--color-divider)] px-4 py-2 text-label leading-relaxed",
+        error
+          ? "text-[color:var(--color-danger-text)]"
+          : "text-[color:var(--color-text-tertiary)]",
+      )}
+    >
+      {error ?? notice}
+    </p>
   );
 }
 
@@ -2055,6 +2088,10 @@ function StepList({
   pendingCount,
   selection,
   setSelection,
+  ahead,
+  behind,
+  upstream,
+  onRemoteAction,
 }: {
   t: Translator;
   history: GitCommitInfo[];
@@ -2078,6 +2115,12 @@ function StepList({
   pendingCount: number;
   selection: WorkbenchSelection;
   setSelection: (v: WorkbenchSelection) => void;
+  /** 아직 안 보낸 걸음 수 — 목록 맨 위 N 개가 그것이다. */
+  ahead: number | null;
+  /** 원격에만 있는 걸음 수. 로컬 이력에 없으므로 **행이 아니라 안내**다. */
+  behind: number | null;
+  upstream: string | null;
+  onRemoteAction: (kind: "fetch" | "pull" | "push") => void;
 }) {
   if (history.length === 0) {
     return (
@@ -2090,8 +2133,44 @@ function StepList({
     );
   }
 
+  /*
+   * **탭을 쓰지 않는다.** 「아직 안 보냄」·「받을 것」·「커밋 안 함」을 탭으로
+   * 가르면 각 탭이 나머지를 숨기고, 이 저장소에는 그러지 말자는 결정과 그것을
+   * 지키는 테스트가 이미 있다(「커밋 이력이 탭 뒤에 숨지 않는다」). 세 상태는
+   * **한 시간축 위의 서로 다른 구간**이라 순서가 이미 관계를 말한다 — 필요한
+   * 것은 칸막이가 아니라 **경계선**이다.
+   *
+   *   [원격에만 있음 ↓N]  ← 로컬에 없으니 행이 아니라 안내 + 받기
+   *   [지금 · 커밋 안 함]  ← 이름이 아직 없는 변경 묶음
+   *   ── 아직 안 보냄 N ──
+   *     걸음 · 걸음
+   *   ── origin/main 과 같은 지점 ──
+   *     걸음 · 걸음 …
+   */
+  const unpushed = Math.max(0, Math.min(ahead ?? 0, history.length));
+
   return (
     <ul data-testid="atlas-git-steps" className="flex flex-col">
+      {behind && behind > 0 ? (
+        <li>
+          <button
+            type="button"
+            data-testid="atlas-git-behind-row"
+            onClick={() => onRemoteAction("pull")}
+            className={cn(STEP_ROW, "border-l-transparent")}
+          >
+            <span className="truncate text-label text-[color:var(--color-text-tertiary)]">
+              {t("remoteOnlyWhen")}
+            </span>
+            <span className="truncate text-body-lg font-semibold text-[color:var(--color-text-primary)]">
+              {t("remoteOnlyTitle", { count: behind })}
+            </span>
+            <span className="truncate text-label text-[color:var(--color-text-tertiary)]">
+              {t("remoteOnlyHint")}
+            </span>
+          </button>
+        </li>
+      ) : null}
       {/*
         아직 커밋 안 한 변경도 **변경 묶음**이라는 점에서 커밋과 같다. 다른
         것은 아직 이름이 안 붙었다는 것뿐이라, 같은 행 문법을 쓰고 구별은
@@ -2137,9 +2216,26 @@ function StepList({
         const names = summary.slugs.join(", ");
         const trail = summary.overflow > 0 ? t("moreSlugs", { count: summary.overflow }) : "";
         const expanded = selection.kind === "commit" && selection.hash === commit.hash;
+        // 경계는 **두 곳**: 안 보낸 구간의 머리와, 원격과 같아지는 지점.
+        const boundary =
+          unpushed > 0 && index === 0
+            ? t("sectionUnpushed", { count: unpushed })
+            : unpushed > 0 && index === unpushed
+              ? t("sectionSynced", { upstream: upstream ?? "" })
+              : null;
         return (
+          <Fragment key={`row-${commit.hash}`}>
+          {boundary ? (
+            <li
+              aria-hidden
+              data-testid="atlas-git-section"
+              className="flex items-center gap-2.5 px-4 pt-3 pb-1.5 text-caption text-[color:var(--color-text-quaternary)]"
+            >
+              <span className="truncate">{boundary}</span>
+              <i className="h-px min-w-4 flex-1 bg-[color:var(--color-divider)]" />
+            </li>
+          ) : null}
           <li
-            key={commit.hash}
             // 방금 남긴 줄만 확정 서명을 받는다 — 이미 있던 역사가 다시
             // 태어나면 "무엇이 방금 일어났나" 라는 정보가 흐려진다.
             className={stepRowMotionClass(commit.hash, settledHash)}
@@ -2189,6 +2285,7 @@ function StepList({
               </span>
             </button>
           </li>
+          </Fragment>
         );
       })}
     </ul>
@@ -2263,6 +2360,8 @@ function ActionDock({
   snapshotError,
   confirmSnapshot,
   upstream,
+  snapshotMessage,
+  setSnapshotMessage,
 }: {
   t: Translator;
   /** 원격이 없을 때 도크 마지막 줄이 여는 입력. */
@@ -2279,6 +2378,9 @@ function ActionDock({
   snapshotError: string | null;
   confirmSnapshot: () => void;
   upstream: string | null;
+  /** 사용자가 직접 쓴 제목. 비면 자동 문구를 쓴다. */
+  snapshotMessage: string;
+  setSnapshotMessage: (v: string) => void;
 }) {
   return (
     <div
@@ -2288,9 +2390,21 @@ function ActionDock({
       {confirming ? (
         <div className="git-fade-in flex flex-col gap-2" data-testid="atlas-git-confirm-step">
           <p className="text-caption text-[color:var(--color-text-tertiary)]">{t("confirmBody")}</p>
-          <p className="rounded-[var(--radius-chip)] bg-[color:var(--color-overlay-1)] px-2 py-1.5 font-mono text-label break-all text-[color:var(--color-text-primary)]">
-            {predictedSubject}
-          </p>
+          {/*
+            제목은 **고칠 수 있다.** 자동 문구는 「무엇이 바뀌었나」를 잘 말하지만
+            「왜 바꿨나」는 못 말하고, 나중에 이력을 읽는 사람이 찾는 것은 후자다.
+            비워 두면 종전대로 자동 문구가 들어가므로 아무것도 안 하던 사람의
+            경로는 그대로다(placeholder 가 그 값을 그대로 보여 준다).
+          */}
+          <input
+            type="text"
+            data-testid="atlas-git-message-input"
+            value={snapshotMessage}
+            onChange={(event) => setSnapshotMessage(event.target.value)}
+            placeholder={predictedSubject}
+            aria-label={t("messageLabel")}
+            className="min-h-8 w-full rounded-[var(--radius-chip)] border border-[color:var(--color-border-soft)] bg-[color:var(--color-overlay-1)] px-2.5 py-1.5 font-mono text-label break-all text-[color:var(--color-text-primary)] transition-colors placeholder:text-[color:var(--color-text-quaternary)] focus:border-[color:var(--color-indigo-a46)] focus:outline-none"
+          />
           <label className="flex items-center gap-2 text-label text-[color:var(--color-text-secondary)]">
             <input
               type="checkbox"
@@ -2388,6 +2502,8 @@ function ActionDock({
 function DesktopBody({
   t,
   commitDiff,
+  snapshotMessage,
+  setSnapshotMessage,
   stage,
   hostPlatformHint,
   onRecheckGit,
@@ -2440,6 +2556,8 @@ function DesktopBody({
   focusedConceptId,
   setFocusedConceptId,
 }: {
+  snapshotMessage: string;
+  setSnapshotMessage: (v: string) => void;
   /** 고른 걸음의 patch — `null` 은 「아직 모름」, `""` 는 「없음」. */
   commitDiff: string | null;
   /** `navigator.platform ?? userAgent` — 설치 안내를 플랫폼별로 고르는 힌트. */
@@ -2736,6 +2854,8 @@ function DesktopBody({
       snapshotError={snapshotError}
       confirmSnapshot={confirmSnapshot}
       upstream={upstream}
+      snapshotMessage={snapshotMessage}
+      setSnapshotMessage={setSnapshotMessage}
     />
   );
 
@@ -2799,6 +2919,7 @@ function DesktopBody({
         <PageHeader t={t} inColumn showScope={false} />
         <div className="ml-auto flex min-w-0 items-center gap-3">{locationLine}</div>
       </div>
+      <RemoteResultLine notice={remoteActionNotice} error={remoteActionError} />
 
       {/* 본문 — 바닥까지. 두 열은 구분선으로 갈리고 각자 스크롤한다. */}
       <div
@@ -2832,6 +2953,10 @@ function DesktopBody({
               pendingCount={statusCounts.total}
               selection={selection}
               setSelection={setSelection}
+              ahead={status?.ahead ?? null}
+              behind={status?.behind ?? null}
+              upstream={upstream}
+              onRemoteAction={onRemoteAction}
             />
           </div>
           {dock ? <div className="flex-none px-4 pb-3">{dock}</div> : null}

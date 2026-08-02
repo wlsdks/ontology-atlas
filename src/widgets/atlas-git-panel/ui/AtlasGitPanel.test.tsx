@@ -679,6 +679,55 @@ describe("AtlasGitPanel — 원격 세 동작 (Fetch · Pull · Push)", () => {
     expect(screen.getByTestId("atlas-git-divergence")).toHaveTextContent("2");
   });
 
+  it("커밋 제목을 직접 쓰면 그 문장이 그대로 git 에 간다", async () => {
+    /*
+     * 자동 문구는 「무엇이 바뀌었나」를 잘 말하지만 **왜 바꿨나**는 못 말한다.
+     * 나중에 이력을 읽는 사람이 찾는 것은 후자다. 비워 두면 종전대로 자동
+     * 문구가 가므로 아무것도 안 하던 사람의 경로는 그대로다.
+     */
+    installDesktopGit();
+    renderPanel(<AtlasGitPanel vaultPath="/repo/vault" />);
+    fireEvent.click(await screen.findByTestId("atlas-git-snapshot-button"));
+    const input = await screen.findByTestId("atlas-git-message-input");
+    fireEvent.change(input, { target: { value: "fix: 왜 고쳤는지" } });
+    fireEvent.click(screen.getByTestId("atlas-git-confirm-button"));
+    await waitFor(() => {
+      const call = tauriApiMock.invoke.mock.calls.find(([c]) => c === "git_snapshot");
+      expect(call?.[1]).toMatchObject({ message: "fix: 왜 고쳤는지" });
+    });
+  });
+
+  it("Pull·Push 는 할 일이 없어도 **눌린다** — 침묵으로 답하지 않는다", async () => {
+    /*
+     * 종전엔 `behind === 0` 이면 Pull 이 비활성이었다. 그런데 「받을 게 없다」는
+     * **눌러 보고 알 수 있어야 하는 사실**이지, 버튼을 죽여 침묵으로 답할 일이
+     * 아니다 — 화면은 마지막으로 확인한 시점의 수를 들고 있을 뿐이라 그 수가
+     * 이미 낡았을 수도 있다(소유자: *"버튼은 일단 눌려야지"*).
+     */
+    installDesktopGit({
+      status: { ...STATUS_WITH_CHANGES, ahead: 0, behind: 0 },
+    });
+    renderPanel(<AtlasGitPanel vaultPath="/repo/vault" />);
+    expect(await screen.findByTestId("atlas-git-remote-pull")).toBeEnabled();
+    expect(screen.getByTestId("atlas-git-remote-push")).toBeEnabled();
+  });
+
+  it("아직 안 보낸 구간이 목록에서 갈린다 — 탭 뒤에 숨기지 않는다", async () => {
+    /*
+     * 세 상태(커밋 안 함 · 안 보냄 · 원격에만 있음)를 탭으로 가르면 각 탭이
+     * 나머지를 숨긴다. 이 저장소에는 그러지 말자는 결정과 그것을 지키는
+     * 테스트가 이미 있다. 한 시간축 위의 구간이므로 필요한 것은 칸막이가
+     * 아니라 경계선이다.
+     */
+    installDesktopGit({ status: { ...STATUS_WITH_CHANGES, ahead: 1, behind: 2 } });
+    renderPanel(<AtlasGitPanel vaultPath="/repo/vault" />);
+    const sections = await screen.findAllByTestId("atlas-git-section");
+    const text = sections.map((el) => el.textContent).join(" ");
+    expect(text).toContain("아직 안 보냄 1");
+    // 원격에만 있는 걸음은 로컬 이력에 없으므로 **행이 아니라 안내**다.
+    expect(screen.getByTestId("atlas-git-behind-row")).toHaveTextContent("2");
+  });
+
   it("Fetch 를 누르면 git_fetch 를 부른다 — 그 전에는 0회", async () => {
     installDesktopGit();
     renderPanel(<AtlasGitPanel vaultPath="/repo/vault" />);

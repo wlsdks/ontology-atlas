@@ -466,6 +466,30 @@ fn classify_git_error(raw: &str, operation: &str) -> GitErrorInfo {
         };
     }
 
+    if text.contains("repository not found")
+        || text.contains("could not read from remote")
+        || text.contains("does not appear to be a git repository")
+    {
+        return GitErrorInfo {
+            reason: "remote-unreachable",
+            message: "원격 저장소에 닿지 못했어요 — 주소가 맞는지, 접근 권한이 있는지 확인하세요.".into(),
+            note: first_line,
+            guidance: Some("git remote -v   # 등록된 주소 확인".into()),
+        };
+    }
+
+    if text.contains("authentication failed")
+        || text.contains("permission denied")
+        || text.contains("could not read username")
+    {
+        return GitErrorInfo {
+            reason: "remote-auth",
+            message: "원격 인증에 실패했어요 — 자격 증명을 확인하세요.".into(),
+            note: first_line,
+            guidance: None,
+        };
+    }
+
     if text.contains("pre-commit") || text.contains("commit-msg") || text.contains("hook") {
         return GitErrorInfo {
             reason: "pre-commit-hook",
@@ -758,8 +782,10 @@ pub fn git_fetch(vault_path: String) -> Result<GitFetchResult, String> {
     };
     let out = run_git(&repo_root, &["fetch", "--prune"])?;
     if !out.success {
+        // `message` 만 돌려주면 git 이 말해 준 이유(`note`)와 다음 수(`guidance`)를
+        // 우리가 지우는 셈이다 — 「무엇이 잘못됐는지」 없는 실패는 못 고친다.
         let info = classify_git_error(&out.stderr, "fetch");
-        return Err(info.message);
+        return Err(classified_error_string(&info));
     }
     let (ahead, behind) = divergence_counts(&repo_root);
     Ok(GitFetchResult {
