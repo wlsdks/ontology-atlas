@@ -65,6 +65,11 @@ const EQUIVALENT_CLASSES = [
   // 그건 진짜 이동 축이라 감속에서 잘리는 것이 맞다. 동등물이 필요한 것은
   // 불투명도처럼 전정계를 안 건드리면서 정보를 나르는 축이다.
   'guided-tour-card-in',
+  // 2026-08-02 프레임 실측 — 캐노니컬 Select 목록. 등장만 있고 **퇴장이 아예
+  // 없어서** 감속 여부와 무관하게 1프레임 소멸이었다(패널 휘도 델타의 98%가
+  // 한 프레임). 퇴장을 만들면서 감속 동등물도 같이 등재한다 — 목록이 어디서
+  // 나왔고 어디로 갔는지는 감속 사용자에게도 정보다.
+  'select-listbox',
 ] as const;
 
 /** `@media (prefers-reduced-motion: reduce) { … }` 블록 본문들 (중괄호 매칭). */
@@ -163,6 +168,8 @@ describe('reduced-motion 동등물 계약', () => {
       'settings-view-push-in',
       'settings-view-pop-in',
       'rail-status-dot-in',
+      // 목록은 scaleY 가 실린 등장/퇴장이라 시간만 되돌리면 여전히 움직인다.
+      'select-listbox',
     ]) {
       const matching = allRules.filter((r) =>
         r.selector.split(',').some((s) => new RegExp(`\\.${cls}(?![\\w-])`).test(s)),
