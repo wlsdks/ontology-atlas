@@ -5,6 +5,7 @@ import { createPortal } from 'react-dom';
 import { usePanelPresence } from '@/shared/lib/use-presence';
 import type { MouseEvent as ReactMouseEvent } from 'react';
 import {
+  Bell,
   Bot,
   ChevronRight,
   Copy,
@@ -129,7 +130,10 @@ const SETTINGS_GROUPS = [
   // 하나 넣어주면 될듯"*): 앞의 둘은 지도가 무엇으로 그려지는가(바닥·글리프)고
   // 「확장」은 그 위에서 무엇이 열리는가다. 발자국은 다 그린 뒤 남는 흔적이라
   // 맨 뒤가 맞다.
-  { key: 'look', items: ['screen', 'background', 'expand', 'footprint'] },
+  // 「알림」이 발자국 **뒤**인 이유: 앞의 넷은 지도가 어떻게 그려지는가(바닥 ·
+  // 글리프 · 펼침 · 흔적)의 순서이고, 알림은 그 위에 앱이 말을 얹는 층이라
+  // 마지막이다. 「이어진 것」으로 내리지 않는 이유는 렌더 분기 주석에.
+  { key: 'look', items: ['screen', 'background', 'expand', 'footprint', 'notify'] },
   // 「내 에이전트 연결」·「앱 안 에이전트」가 여기 **나란히** 있는 이유: 둘은
   // 같은 절의 두 요약 행이 아니라 서로 다른 목적지다. 하나는 밖의 도구가 이
   // 폴더를 읽게 하는 **설정 파일**이고, 하나는 앱 안에서 말을 거는 **키**다.
@@ -148,6 +152,10 @@ const SECTION_ICON: Record<SettingsSection, typeof Monitor> = {
   // 안 섞인다(아이콘은 장식이 아니라 훑기 채널이다, 위 주석).
   expand: Expand,
   footprint: Footprints,
+  // 종 — 이 목록에서 유일한 «울리는» 실루엣이다. 말풍선(ai)과 헷갈릴 자리가
+  // 아닌 이유: 말풍선은 «내가 말을 건다», 종은 «앱이 나를 부른다» 이고 외곽선도
+  // 사각 대 삼각이라 훑기에서 갈린다.
+  notify: Bell,
   workspace: HardDrive,
   // 밖의 도구 = 로봇, 앱 안의 대화 = 말풍선. 실루엣이 갈려야 훑기 채널이 선다
   // (이름의 첫 글자를 가른 것과 같은 이유다).
@@ -782,11 +790,29 @@ export function AppSettingsMenu({
                   />
                 ) : null}
                   </SettingsGroup>
-                  {/* 「작업 중 표시」·「알림」 — 이 칸인 이유: 둘 다 **화면이 무엇을
-                      말하는가**의 설정이다(에이전트를 어떻게 연결하는가가 아니다.
-                      그건 「AI 에이전트」 칸의 일이다). 기본은 둘 다 켜짐. */}
-                  <AgentActivitySettings />
                   </>
+                ) : section === 'notify' ? (
+                  /*
+                   * 「알림」이 자기 칸을 갖는 이유 (2026-08-02, 소유자 지적).
+                   *
+                   * 이 셋은 어제까지 「화면」 절의 **바닥**에 있었고, 그 자리를
+                   * 정당화한 주석은 *"둘 다 화면이 무엇을 말하는가의 설정이다"*
+                   * 였다. 그 문장은 맞다 — 그리고 그게 바로 **자기 절이어야 하는
+                   * 근거**다. 「화면」의 나머지 여섯(언어 · 뷰 모드 · INDEX 기본 ·
+                   * 글리프 세트 · 가이드 둘)은 «지도를 어떻게 그리는가»이고, 이
+                   * 셋은 «앱이 나에게 무엇을 알리는가»다.
+                   *
+                   * 부피로도 그렇다 — 실측: 「화면」이 컨트롤 여섯에 더해 이 셋
+                   * (행 3개 + 칩 6개)을 함께 지고 있었다. 「받을 알림」 6칩은 접힌
+                   * 세부가 아니라 **주 컨트롤**이라, 한 절의 절반을 다른 주제가
+                   * 차지하고 있던 셈이다. 빼내도 「화면」에는 여섯이 남는다.
+                   *
+                   * 「이어진 것」이 아니라 「보이는 것」에 두는 이유: 「작업 중
+                   * 표시」는 문자 그대로 **지도 위에** 뜨고, 알림도 앱이 나에게
+                   * 보여주는 것이다. 「이어진 것」은 «밖의 무엇과 연결되는가»의
+                   * 자리라 성격이 다르다.
+                   */
+                  <AgentActivitySettings />
                 ) : section === 'background' ? (
                   <>
                   <CanvasBackgroundPicker />

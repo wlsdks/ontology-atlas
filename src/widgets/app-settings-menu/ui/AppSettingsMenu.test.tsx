@@ -568,7 +568,7 @@ describe('AppSettingsMenu appearance pickers (#20/#21)', () => {
     const baseline = sizeClasses();
     expect(baseline, '고정 높이가 없다 — 내용이 창 크기를 정하고 있다').toMatch(/h-\[\d+px\]/);
     expect(baseline, '고정 폭이 없다').toMatch(/w-\[\d+px\]/);
-    for (const item of ['background', 'expand', 'footprint', 'workspace', 'agent', 'ai']) {
+    for (const item of ['background', 'expand', 'footprint', 'notify', 'workspace', 'agent', 'ai']) {
       fireEvent.click(screen.getByTestId(`app-settings-nav-${item}`));
       expect(sizeClasses(), `${item} 절에서 창 크기가 바뀐다`).toBe(baseline);
     }
@@ -578,13 +578,13 @@ describe('AppSettingsMenu appearance pickers (#20/#21)', () => {
    * LNB 는 **묶음**을 가진다. 다섯 항목이 왜 그 순서인지를 말하는 것이 묶음의
    * 일이고, 그게 없으면 목록이 그냥 다섯 줄이다.
    */
-  it('LNB 는 두 묶음으로 나뉘고 4·3 으로 갈린다', () => {
+  it('LNB 는 두 묶음으로 나뉘고 5·3 으로 갈린다', () => {
     openSheet();
     const nav = screen.getByTestId('app-settings-nav');
     // 문구가 아니라 **구조**로 잠근다 — 라벨을 다듬을 때마다 깨지면 안 된다.
     const groups = [...nav.children];
     expect(groups.length, '묶음이 둘이 아니다').toBe(2);
-    expect(groups.map((g) => g.querySelectorAll('button').length)).toEqual([4, 3]);
+    expect(groups.map((g) => g.querySelectorAll('button').length)).toEqual([5, 3]);
     for (const g of groups) {
       expect(g.querySelector('p'), '묶음에 제목이 없다 — 그러면 그냥 일곱 줄이다').not.toBeNull();
     }
@@ -596,16 +596,51 @@ describe('AppSettingsMenu appearance pickers (#20/#21)', () => {
    */
   it('LNB 항목마다 아이콘이 하나씩 있다', () => {
     openSheet();
-    for (const item of ['screen', 'background', 'expand', 'footprint', 'workspace', 'agent', 'ai']) {
+    for (const item of ['screen', 'background', 'expand', 'footprint', 'notify', 'workspace', 'agent', 'ai']) {
       const svgs = screen.getByTestId(`app-settings-nav-${item}`).querySelectorAll('svg');
       expect(svgs.length, `${item} 항목에 아이콘이 없다`).toBe(1);
     }
   });
 
-  it('LNB 일곱 절을 모두 싣는다', () => {
+  it('LNB 여덟 절을 모두 싣는다', () => {
     openSheet();
-    for (const item of ['screen', 'background', 'expand', 'footprint', 'workspace', 'agent', 'ai']) {
+    for (const item of ['screen', 'background', 'expand', 'footprint', 'notify', 'workspace', 'agent', 'ai']) {
       expect(screen.getByTestId(`app-settings-nav-${item}`)).toBeInTheDocument();
+    }
+  });
+
+  /**
+   * 「알림」 셋은 **「화면」으로 돌아가지 않는다** (2026-08-02, 소유자 지적).
+   *
+   * 이 셋은 원래 「화면」 절 바닥에 얹혀 있었고, 그 자리를 정당화한 주석까지
+   * 있었다 — 즉 **의도적으로 거기 있었다.** 그래서 되돌아갈 길이 넓다: 다음에
+   * 알림 관련 행을 하나 더 만드는 사람이 「화면」에 붙이면 아무 검사도 안
+   * 걸린다(양쪽 다 정당한 컴포넌트 배치라 lint 가 볼 리터럴이 없다).
+   *
+   * 그래서 **두 방향을 함께** 잠근다: 알림 컨트롤이 「알림」 절에 있을 것, 그리고
+   * 「화면」 절에는 없을 것. 한쪽만 잠그면 복제(양쪽에 다 있는 상태)를 통과시킨다.
+   */
+  it('알림 컨트롤은 「알림」 절에 있고 「화면」 절에는 없다', () => {
+    const NOTIFY_CONTROLS = [
+      'app-settings-agent-status',
+      'app-settings-agent-notifications',
+      'app-settings-agent-notification-kinds',
+    ];
+    openSheet();
+
+    // 첫 화면(=「화면」 절)에는 하나도 없다.
+    expect(screen.getByTestId('app-settings-pane-screen')).toBeInTheDocument();
+    for (const testId of NOTIFY_CONTROLS) {
+      expect(
+        screen.queryByTestId(testId),
+        `${testId} 가 「화면」 절에 남아 있다 — 알림은 자기 절로 빠졌다`,
+      ).toBeNull();
+    }
+
+    fireEvent.click(screen.getByTestId('app-settings-nav-notify'));
+    expect(screen.getByTestId('app-settings-pane-notify')).toBeInTheDocument();
+    for (const testId of NOTIFY_CONTROLS) {
+      expect(screen.getByTestId(testId), `${testId} 가 「알림」 절에 없다`).toBeInTheDocument();
     }
   });
 
