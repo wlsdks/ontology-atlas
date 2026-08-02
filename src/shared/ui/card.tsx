@@ -6,7 +6,7 @@ export const Card = forwardRef<HTMLDivElement, HTMLAttributes<HTMLDivElement>>(
     <div
       ref={ref}
       className={cn(
-        'rounded-lg border border-[color:var(--color-overlay-2)] bg-[color:var(--color-panel)] p-5',
+        'rounded-card border border-[color:var(--color-overlay-2)] bg-[color:var(--color-panel)] p-5',
         className,
       )}
       {...props}
@@ -41,7 +41,7 @@ export const CardDescription = forwardRef<HTMLParagraphElement, HTMLAttributes<H
   ({ className, ...props }, ref) => (
     <p
       ref={ref}
-      className={cn('text-sm text-[color:var(--color-text-tertiary)]', className)}
+      className={cn('text-body-lg text-[color:var(--color-text-tertiary)]', className)}
       {...props}
     />
   ),
@@ -50,7 +50,7 @@ CardDescription.displayName = 'CardDescription';
 
 export const CardContent = forwardRef<HTMLDivElement, HTMLAttributes<HTMLDivElement>>(
   ({ className, ...props }, ref) => (
-    <div ref={ref} className={cn('text-sm text-[color:var(--color-text-secondary)]', className)} {...props} />
+    <div ref={ref} className={cn('text-body-lg text-[color:var(--color-text-secondary)]', className)} {...props} />
   ),
 );
 CardContent.displayName = 'CardContent';

@@ -187,7 +187,7 @@ export function OntologyStarterCta({ onScaffold, docCount, vaultPath = null }: P
           <br />
           {t('emptyBodyLine2')}
         </p>
-        <div className="mx-auto mt-4 max-w-[560px] rounded-md border border-[color:var(--color-indigo-a24)] bg-[color:var(--color-surface-deep-a18)] px-3 py-2 text-left">
+        <div className="mx-auto mt-4 max-w-[560px] rounded-chip border border-[color:var(--color-indigo-a24)] bg-[color:var(--color-surface-deep-a18)] px-3 py-2 text-left">
           <p className="font-mono text-caption uppercase tracking-[0.12em] text-[color:var(--color-indigo-accent)]">
             {t('definitionLabel')}
           </p>
@@ -199,7 +199,7 @@ export function OntologyStarterCta({ onScaffold, docCount, vaultPath = null }: P
           {proofCards.map((card) => (
             <div
               key={card.label}
-              className="rounded-md border border-[color:var(--color-divider)] bg-[color:var(--color-overlay-1)] px-3 py-2 text-left"
+              className="rounded-chip border border-[color:var(--color-divider)] bg-[color:var(--color-overlay-1)] px-3 py-2 text-left"
             >
               <p className="font-mono text-caption uppercase tracking-[0.12em] text-[color:var(--color-text-tertiary)]">
                 {card.label}
@@ -217,7 +217,7 @@ export function OntologyStarterCta({ onScaffold, docCount, vaultPath = null }: P
           {verificationSteps.map((step, index) => (
             <div
               key={step}
-              className="grid grid-cols-[18px_1fr] items-start gap-2 rounded-md border border-[color:var(--color-indigo-a18)] bg-[color:var(--color-overlay-1)] px-3 py-2 text-label leading-5 text-[color:var(--color-text-secondary)]"
+              className="grid grid-cols-[18px_1fr] items-start gap-2 rounded-chip border border-[color:var(--color-indigo-a18)] bg-[color:var(--color-overlay-1)] px-3 py-2 text-label leading-5 text-[color:var(--color-text-secondary)]"
             >
               <CheckCircle2
                 size={14}
@@ -237,7 +237,7 @@ export function OntologyStarterCta({ onScaffold, docCount, vaultPath = null }: P
           <button
             type="button"
             onClick={handleCopyPrompt}
-            className="inline-flex items-center gap-2 rounded-md border border-[color:var(--color-divider)] bg-[color:var(--color-overlay-1)] px-3 py-1.5 text-label text-[color:var(--color-text-secondary)] transition-colors hover:border-[color:var(--color-indigo-a46)] hover:text-[color:var(--color-text-primary)]"
+            className="inline-flex items-center gap-2 rounded-chip border border-[color:var(--color-divider)] bg-[color:var(--color-overlay-1)] px-3 py-1.5 text-label text-[color:var(--color-text-secondary)] transition-colors hover:border-[color:var(--color-indigo-a46)] hover:text-[color:var(--color-text-primary)]"
           >
             <ClipboardCopy size={12} aria-hidden />
             {copyPromptLabel}
@@ -245,7 +245,7 @@ export function OntologyStarterCta({ onScaffold, docCount, vaultPath = null }: P
           <button
             type="button"
             onClick={handleCopyCliVerify}
-            className="inline-flex items-center gap-2 rounded-md border border-[color:var(--color-divider)] bg-[color:var(--color-overlay-1)] px-3 py-1.5 text-label text-[color:var(--color-text-secondary)] transition-colors hover:border-[color:var(--color-indigo-a46)] hover:text-[color:var(--color-text-primary)]"
+            className="inline-flex items-center gap-2 rounded-chip border border-[color:var(--color-divider)] bg-[color:var(--color-overlay-1)] px-3 py-1.5 text-label text-[color:var(--color-text-secondary)] transition-colors hover:border-[color:var(--color-indigo-a46)] hover:text-[color:var(--color-text-primary)]"
           >
             <ClipboardCopy size={12} aria-hidden />
             {copyCliLabel}
@@ -253,7 +253,7 @@ export function OntologyStarterCta({ onScaffold, docCount, vaultPath = null }: P
           <button
             type="button"
             onClick={handleCopyJsonGate}
-            className="inline-flex items-center gap-2 rounded-md border border-[color:var(--color-success-a28)] bg-[color:var(--color-success-a07)] px-3 py-1.5 text-label text-[color:var(--color-success-text-a94)] transition-colors hover:border-[color:var(--color-success-a42)] hover:bg-[color:var(--color-success-a11)]"
+            className="inline-flex items-center gap-2 rounded-chip border border-[color:var(--color-success-a28)] bg-[color:var(--color-success-a07)] px-3 py-1.5 text-label text-[color:var(--color-success-text-a94)] transition-colors hover:border-[color:var(--color-success-a42)] hover:bg-[color:var(--color-success-a11)]"
           >
             <ClipboardCopy size={12} aria-hidden />
             {copyJsonGateLabel}
@@ -263,7 +263,7 @@ export function OntologyStarterCta({ onScaffold, docCount, vaultPath = null }: P
           type="button"
           onClick={handleClick}
           disabled={busy}
-          className="mt-4 inline-flex items-center gap-2 rounded-md border border-[color:var(--color-indigo-brand)] bg-[color:var(--color-indigo-a18)] px-4 py-2 text-body text-[color:var(--color-text-primary)] transition-colors hover:bg-[color:var(--color-indigo-a28)] disabled:opacity-60"
+          className="mt-4 inline-flex items-center gap-2 rounded-chip border border-[color:var(--color-indigo-brand)] bg-[color:var(--color-indigo-a18)] px-4 py-2 text-body text-[color:var(--color-text-primary)] transition-colors hover:bg-[color:var(--color-indigo-a28)] disabled:opacity-60"
         >
           <Sparkles size={13} aria-hidden />
           {busy ? t('emptyBusy') : t('emptyCta')}
@@ -288,7 +288,7 @@ export function OntologyStarterCta({ onScaffold, docCount, vaultPath = null }: P
         onClick={handleClick}
         disabled={busy}
         title={t('secondaryTitle')}
-        className="inline-flex w-full items-center justify-center gap-1.5 rounded-md border border-[color:var(--color-divider)] bg-[color:var(--color-overlay-1)] px-3 py-1.5 text-label text-[color:var(--color-text-secondary)] transition-colors hover:border-[color:var(--color-indigo-a46)] hover:text-[color:var(--color-text-primary)] disabled:opacity-60"
+        className="inline-flex w-full items-center justify-center gap-1.5 rounded-chip border border-[color:var(--color-divider)] bg-[color:var(--color-overlay-1)] px-3 py-1.5 text-label text-[color:var(--color-text-secondary)] transition-colors hover:border-[color:var(--color-indigo-a46)] hover:text-[color:var(--color-text-primary)] disabled:opacity-60"
       >
         <Sparkles size={12} aria-hidden />
         {busy ? t('secondaryBusy') : t('secondaryLabel')}
@@ -297,7 +297,7 @@ export function OntologyStarterCta({ onScaffold, docCount, vaultPath = null }: P
         type="button"
         onClick={handleCopyPrompt}
         title={t('secondaryCopyTitle')}
-        className="inline-flex w-full items-center justify-center gap-1.5 rounded-md border border-[color:var(--color-indigo-a28)] bg-[color:var(--color-indigo-a08)] px-3 py-1.5 text-label text-[color:var(--color-text-secondary)] transition-colors hover:border-[color:var(--color-indigo-a46)] hover:text-[color:var(--color-text-primary)]"
+        className="inline-flex w-full items-center justify-center gap-1.5 rounded-chip border border-[color:var(--color-indigo-a28)] bg-[color:var(--color-indigo-a08)] px-3 py-1.5 text-label text-[color:var(--color-text-secondary)] transition-colors hover:border-[color:var(--color-indigo-a46)] hover:text-[color:var(--color-text-primary)]"
       >
         <ClipboardCopy size={12} aria-hidden />
         {copyPromptLabel}
@@ -306,7 +306,7 @@ export function OntologyStarterCta({ onScaffold, docCount, vaultPath = null }: P
         type="button"
         onClick={handleCopyCliVerify}
         title={t('secondaryCliTitle')}
-        className="inline-flex w-full items-center justify-center gap-1.5 rounded-md border border-[color:var(--color-divider)] bg-[color:var(--color-overlay-1)] px-3 py-1.5 text-label text-[color:var(--color-text-secondary)] transition-colors hover:border-[color:var(--color-indigo-a46)] hover:text-[color:var(--color-text-primary)]"
+        className="inline-flex w-full items-center justify-center gap-1.5 rounded-chip border border-[color:var(--color-divider)] bg-[color:var(--color-overlay-1)] px-3 py-1.5 text-label text-[color:var(--color-text-secondary)] transition-colors hover:border-[color:var(--color-indigo-a46)] hover:text-[color:var(--color-text-primary)]"
       >
         <ClipboardCopy size={12} aria-hidden />
         {copyCliLabel}
@@ -315,7 +315,7 @@ export function OntologyStarterCta({ onScaffold, docCount, vaultPath = null }: P
         type="button"
         onClick={handleCopyJsonGate}
         title={t('secondaryJsonGateTitle')}
-        className="inline-flex w-full items-center justify-center gap-1.5 rounded-md border border-[color:var(--color-success-a28)] bg-[color:var(--color-success-a07)] px-3 py-1.5 text-label text-[color:var(--color-success-text-a94)] transition-colors hover:border-[color:var(--color-success-a42)] hover:bg-[color:var(--color-success-a11)]"
+        className="inline-flex w-full items-center justify-center gap-1.5 rounded-chip border border-[color:var(--color-success-a28)] bg-[color:var(--color-success-a07)] px-3 py-1.5 text-label text-[color:var(--color-success-text-a94)] transition-colors hover:border-[color:var(--color-success-a42)] hover:bg-[color:var(--color-success-a11)]"
       >
         <ClipboardCopy size={12} aria-hidden />
         {copyJsonGateLabel}

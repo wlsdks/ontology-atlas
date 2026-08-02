@@ -152,7 +152,7 @@ describe("LNB 는 크롬 치수를 빌려오지 않는다", () => {
   it("LNB 항목이 오른쪽 칸 행과 같은 인셋을 쓰고 한 단 위 글자를 쓴다", () => {
     const menu = sourceWithoutComments("AppSettingsMenu.tsx");
     expect(menu, "LNB 항목이 크롬 치수(px-2.5 py-1.5 / text-body)로 되돌아갔다").toMatch(
-      /flex w-full items-center gap-2\.5 rounded-lg px-3 py-2 text-left text-body-lg/,
+      /flex w-full items-center gap-2\.5 rounded-(?:lg|card) px-3 py-2 text-left text-body-lg/,
     );
   });
 

@@ -128,12 +128,12 @@ export function CreateNodeForm({
       data-surface-token="--topology-blocking-composer-surface"
       data-border-token="--topology-blocking-composer-border"
       data-shadow-token="--topology-blocking-composer-shadow"
-      className="rounded-lg border border-[color:var(--topology-blocking-composer-border)] bg-[color:var(--topology-blocking-composer-surface)] px-5 py-4 shadow-[var(--topology-blocking-composer-shadow)]"
+      className="rounded-card border border-[color:var(--topology-blocking-composer-border)] bg-[color:var(--topology-blocking-composer-surface)] px-5 py-4 shadow-[var(--topology-blocking-composer-shadow)]"
     >
       <div className="flex items-center justify-between gap-2">
         <p
           id={labels.headingId}
-          className="font-mono text-[10px] uppercase tracking-[0.14em] text-[color:var(--color-indigo-accent)]"
+          className="font-mono text-label uppercase tracking-[0.14em] text-[color:var(--color-indigo-accent)]"
         >
           {labels.heading}
         </p>
@@ -162,7 +162,7 @@ export function CreateNodeForm({
           }}
           aria-label={localeNames ? labels.primaryNamePlaceholder : labels.titlePlaceholder}
           data-testid="create-node-title"
-          className="h-[var(--control-h-lg)] rounded-md border border-[color:var(--color-border-soft)] bg-[color:var(--color-overlay-1)] px-3 text-[13px] text-[color:var(--color-text-primary)] transition-colors focus-visible:border-[color:var(--color-indigo-a46)] focus-visible:outline-none"
+          className="h-[var(--control-h-lg)] rounded-chip border border-[color:var(--color-border-soft)] bg-[color:var(--color-overlay-1)] px-3 text-body text-[color:var(--color-text-primary)] transition-colors focus-visible:border-[color:var(--color-indigo-a46)] focus-visible:outline-none"
         />
         {localeNames ? (
           <>
@@ -180,18 +180,18 @@ export function CreateNodeForm({
               }}
               aria-label={labels.secondaryNamePlaceholder}
               data-testid="create-node-title-secondary"
-              className="h-[var(--control-h-lg)] rounded-md border border-[color:var(--color-border-soft)] bg-[color:var(--color-overlay-1)] px-3 text-[13px] text-[color:var(--color-text-primary)] transition-colors focus-visible:border-[color:var(--color-indigo-a46)] focus-visible:outline-none"
+              className="h-[var(--control-h-lg)] rounded-chip border border-[color:var(--color-border-soft)] bg-[color:var(--color-overlay-1)] px-3 text-body text-[color:var(--color-text-primary)] transition-colors focus-visible:border-[color:var(--color-indigo-a46)] focus-visible:outline-none"
             />
             {secondaryOnly ? (
               <p
                 role="alert"
                 data-testid="create-node-primary-required"
-                className="text-[11px] leading-relaxed text-[color:var(--color-status-warning)]"
+                className="text-label leading-relaxed text-[color:var(--color-status-warning)]"
               >
                 {labels.primaryLocaleRequired}
               </p>
             ) : (
-              <p className="text-[10.5px] leading-relaxed text-[color:var(--color-text-quaternary)]">
+              <p className="text-label leading-relaxed text-[color:var(--color-text-quaternary)]">
                 {labels.localeNamesHint}
               </p>
             )}
@@ -199,7 +199,7 @@ export function CreateNodeForm({
         ) : null}
         {/* 종류 — 한 줄 라벨 + 캐노니컬 Select(#4). */}
         <label className="flex flex-col gap-1.5">
-          <span className="font-mono text-[10px] uppercase tracking-[0.10em] text-[color:var(--color-text-quaternary)]">
+          <span className="font-mono text-label uppercase tracking-[0.10em] text-[color:var(--color-text-quaternary)]">
             {labels.kind}
           </span>
           <Select
@@ -216,7 +216,7 @@ export function CreateNodeForm({
             없음" 을 캐노니컬 Select 로 고른다. 비개발자가 slug 를 알 필요가
             없고, 값은 저장 시 canonicalizeDomainRef 를 지난다(HomePage 글루). */}
         <div className="flex flex-col gap-1.5">
-          <span className="font-mono text-[10px] uppercase tracking-[0.10em] text-[color:var(--color-text-quaternary)]">
+          <span className="font-mono text-label uppercase tracking-[0.10em] text-[color:var(--color-text-quaternary)]">
             {labels.domainQuestion}
           </span>
           <Select
@@ -231,7 +231,7 @@ export function CreateNodeForm({
               ...domainOptions.map((o) => ({ value: o.value, label: o.label })),
             ]}
           />
-          <p className="text-[10.5px] leading-relaxed text-[color:var(--color-text-quaternary)]">
+          <p className="text-label leading-relaxed text-[color:var(--color-text-quaternary)]">
             {labels.domainHelper}
           </p>
         </div>
@@ -240,7 +240,7 @@ export function CreateNodeForm({
           onClick={() => void submit()}
           disabled={!canCreate}
           data-testid="create-node-submit"
-          className="inline-flex h-[var(--control-h-lg)] items-center justify-center gap-1.5 rounded-full border border-[color:var(--color-indigo-a46)] bg-[color:var(--color-indigo-a16)] px-3 text-[12px] font-[var(--font-weight-signature)] text-[color:var(--color-indigo-accent)] transition-colors hover:bg-[color:var(--color-indigo-a24)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--color-indigo-a46)] focus-visible:ring-inset disabled:opacity-50"
+          className="inline-flex h-[var(--control-h-lg)] items-center justify-center gap-1.5 rounded-full border border-[color:var(--color-indigo-a46)] bg-[color:var(--color-indigo-a16)] px-3 text-body font-[var(--font-weight-signature)] text-[color:var(--color-indigo-accent)] transition-colors hover:bg-[color:var(--color-indigo-a24)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--color-indigo-a46)] focus-visible:ring-inset disabled:opacity-50"
         >
           <Plus size={13} aria-hidden />
           {labels.create}

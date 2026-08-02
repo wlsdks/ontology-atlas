@@ -242,7 +242,7 @@ export function BlockImportModule() {
               aria-modal="true"
               aria-label={t("dialogAria")}
               data-testid="block-import-dialog"
-              className="flex max-h-[calc(100vh-3rem)] w-full max-w-[440px] flex-col overflow-hidden rounded-xl border border-[color:var(--color-divider)] bg-[color:var(--color-panel)] shadow-[var(--shadow-elevation-3)]"
+              className="flex max-h-[calc(100vh-3rem)] w-full max-w-[440px] flex-col overflow-hidden rounded-panel border border-[color:var(--color-divider)] bg-[color:var(--color-panel)] shadow-[var(--shadow-elevation-3)]"
             >
               <header className="flex shrink-0 items-start justify-between gap-3 border-b border-[color:var(--color-border-soft)] px-5 py-4">
                 <div className="min-w-0">
@@ -264,7 +264,7 @@ export function BlockImportModule() {
                   onClick={() => setPreview(null)}
                   aria-label={t("closeAria")}
                   data-testid="block-import-close"
-                  className="flex size-7 shrink-0 items-center justify-center rounded-md text-[color:var(--color-text-tertiary)] transition-colors hover:bg-[color:var(--color-overlay-2)] hover:text-[color:var(--color-text-primary)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--color-border-strong)]"
+                  className="flex size-7 shrink-0 items-center justify-center rounded-chip text-[color:var(--color-text-tertiary)] transition-colors hover:bg-[color:var(--color-overlay-2)] hover:text-[color:var(--color-text-primary)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--color-border-strong)]"
                 >
                   <X size={14} />
                 </button>
@@ -382,7 +382,7 @@ export function BlockImportModule() {
                   type="button"
                   onClick={() => setPreview(null)}
                   data-testid="block-import-cancel"
-                  className="rounded-md px-3 py-1.5 text-body text-[color:var(--color-text-tertiary)] transition-colors hover:bg-[color:var(--color-overlay-2)] hover:text-[color:var(--color-text-primary)]"
+                  className="rounded-chip px-3 py-1.5 text-body text-[color:var(--color-text-tertiary)] transition-colors hover:bg-[color:var(--color-overlay-2)] hover:text-[color:var(--color-text-primary)]"
                 >
                   {t("cancel")}
                 </button>
@@ -391,7 +391,7 @@ export function BlockImportModule() {
                   onClick={() => void confirmImport()}
                   disabled={busy || plan.writes.length === 0}
                   data-testid="block-import-confirm"
-                  className="rounded-md bg-[color:var(--color-indigo-brand)] px-3 py-1.5 text-body font-medium text-white transition-colors enabled:hover:bg-[color:var(--color-indigo-accent)] disabled:opacity-50"
+                  className="rounded-chip bg-[color:var(--color-indigo-brand)] px-3 py-1.5 text-body font-medium text-white transition-colors enabled:hover:bg-[color:var(--color-indigo-accent)] disabled:opacity-50"
                 >
                   {busy ? t("confirmBusy") : t("confirm", { count: plan.writes.length })}
                 </button>

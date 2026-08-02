@@ -119,7 +119,7 @@ export function DomainCompositionGrid({
                 <div
                   key={title ?? `empty-${slot}`}
                   aria-hidden={title === null}
-                  className="flex items-center gap-1.5 text-[12.5px] text-[color:var(--color-text-secondary)]"
+                  className="flex items-center gap-1.5 text-body text-[color:var(--color-text-secondary)]"
                   style={{ height: "var(--card-row-h)" }}
                 >
                   {title === null ? null : (

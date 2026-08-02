@@ -49,7 +49,7 @@ export function DetailCard({
               </p>
             ) : null}
             {title ? (
-              <h2 className="mt-2 text-sm font-[var(--font-weight-signature)] text-[color:var(--color-text-primary)]">
+              <h2 className="mt-2 text-body-lg font-[var(--font-weight-signature)] text-[color:var(--color-text-primary)]">
                 {title}
               </h2>
             ) : null}

@@ -3251,7 +3251,7 @@ export function HomePage() {
                   width={26}
                   height={26}
                   priority
-                  className="h-[26px] w-[26px] shrink-0 rounded-[7px] border border-[color:var(--color-border-soft)] object-cover"
+                  className="h-[26px] w-[26px] shrink-0 rounded-chip border border-[color:var(--color-border-soft)] object-cover"
                 />
                 <div
                   className="min-w-0 overflow-hidden"
@@ -3265,11 +3265,11 @@ export function HomePage() {
                 >
                   <span
                     translate="no"
-                    className="block truncate text-[11px] text-[color:var(--color-text-quaternary)]"
+                    className="block truncate text-label text-[color:var(--color-text-quaternary)]"
                   >
                     ontology-atlas
                   </span>
-                  <p className="mt-0.5 truncate text-[11px] leading-4 text-[color:var(--color-text-tertiary)]">
+                  <p className="mt-0.5 truncate text-label leading-4 text-[color:var(--color-text-tertiary)]">
                     {t('mobileTagline')}
                   </p>
                 </div>
@@ -3605,7 +3605,7 @@ export function HomePage() {
                               data-utility-count-badge="spotlight-recent"
                               data-surface-token="--topology-utility-lane-count-surface"
                               data-text-token="--topology-utility-lane-count-text"
-                              className="inline-flex h-[18px] min-w-[18px] items-center justify-center rounded-full bg-[color:var(--topology-utility-lane-count-surface)] px-1.5 font-mono text-[10px] tabular-nums text-[color:var(--topology-utility-lane-count-text)]"
+                              className="inline-flex h-[18px] min-w-[18px] items-center justify-center rounded-full bg-[color:var(--topology-utility-lane-count-surface)] px-1.5 font-mono text-label tabular-nums text-[color:var(--topology-utility-lane-count-text)]"
                               aria-label={t('controls.spotlightWindowSummary', {
                                 days: recentChanges.windowDays,
                                 count: recentChanges.recentNodeIds.size,
@@ -3646,7 +3646,7 @@ export function HomePage() {
                             data-utility-count-badge="pinned-docs"
                             data-surface-token="--topology-utility-lane-count-surface"
                             data-text-token="--topology-utility-lane-count-text"
-                            className="inline-flex h-[18px] min-w-[18px] items-center justify-center rounded-full bg-[color:var(--topology-utility-lane-count-surface)] px-1.5 font-mono text-[10px] tabular-nums text-[color:var(--topology-utility-lane-count-text)]"
+                            className="inline-flex h-[18px] min-w-[18px] items-center justify-center rounded-full bg-[color:var(--topology-utility-lane-count-surface)] px-1.5 font-mono text-label tabular-nums text-[color:var(--topology-utility-lane-count-text)]"
                             aria-label={t('controls.pinnedDocsCount', { count: docsPinnedCount })}
                             title={t('controls.pinnedDocsCount', { count: docsPinnedCount })}
                           >
@@ -3903,16 +3903,16 @@ export function HomePage() {
                   data-top-token="--topology-blocking-composer-top"
                   data-width-token="--topology-blocking-composer-width"
                 >
-                  <section className="rounded-lg border border-[color:var(--topology-blocking-composer-border)] bg-[color:var(--topology-blocking-composer-surface)] px-4 py-3 shadow-[var(--topology-blocking-composer-shadow)]">
+                  <section className="rounded-card border border-[color:var(--topology-blocking-composer-border)] bg-[color:var(--topology-blocking-composer-surface)] px-4 py-3 shadow-[var(--topology-blocking-composer-shadow)]">
                     <div className="flex items-start justify-between gap-3">
                       <div className="min-w-0">
                         <p
                           id="topology-create-node-unavailable-title"
-                          className="font-mono text-[10px] uppercase tracking-[0.14em] text-[color:var(--color-indigo-accent)]"
+                          className="font-mono text-label uppercase tracking-[0.14em] text-[color:var(--color-indigo-accent)]"
                         >
                           {t('createNode.unavailableHeading')}
                         </p>
-                        <p className="mt-2 text-[12px] leading-5 text-[color:var(--color-text-secondary)]">
+                        <p className="mt-2 text-body leading-5 text-[color:var(--color-text-secondary)]">
                           {t('createNode.unavailableBody')}
                         </p>
                       </div>
@@ -3932,7 +3932,7 @@ export function HomePage() {
                         setDocsDrawerOpen(true);
                       }}
                       data-testid="topology-create-node-open-workspace"
-                      className="mt-3 inline-flex h-8 items-center justify-center rounded-full border border-[color:var(--color-indigo-a46)] bg-[color:var(--color-indigo-a16)] px-3 text-[11px] font-[var(--font-weight-signature)] text-[color:var(--color-indigo-accent)] transition-colors hover:bg-[color:var(--color-indigo-a24)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--color-indigo-a46)] focus-visible:ring-inset"
+                      className="mt-3 inline-flex h-8 items-center justify-center rounded-full border border-[color:var(--color-indigo-a46)] bg-[color:var(--color-indigo-a16)] px-3 text-label font-[var(--font-weight-signature)] text-[color:var(--color-indigo-accent)] transition-colors hover:bg-[color:var(--color-indigo-a24)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--color-indigo-a46)] focus-visible:ring-inset"
                     >
                       {t('createNode.unavailableAction')}
                     </button>
@@ -4520,13 +4520,13 @@ export function HomePage() {
               />
               {localGraphStack.length > 0 ? (
                 <div className="pointer-events-auto absolute left-1/2 top-[96px] z-30 flex max-w-[70vw] -translate-x-1/2 items-center gap-2 rounded-full border border-[color:var(--color-indigo-line-a32)] bg-[color:var(--color-panel)] px-3 py-1.5 shadow-[var(--shadow-elevation-1)]">
-                  <span className="font-mono text-[10px] uppercase tracking-[0.16em] text-[color:var(--color-text-quaternary)]">
+                  <span className="font-mono text-label uppercase tracking-[0.16em] text-[color:var(--color-text-quaternary)]">
                     Local
                   </span>
                   <button
                     type="button"
                     onClick={() => setLocalGraphStack([])}
-                    className="font-mono text-[10px] uppercase tracking-[0.12em] text-[color:var(--color-text-tertiary)] transition-colors hover:text-[color:var(--color-text-primary)]"
+                    className="font-mono text-label uppercase tracking-[0.12em] text-[color:var(--color-text-tertiary)] transition-colors hover:text-[color:var(--color-text-primary)]"
                   >
                     Root
                   </button>
@@ -4538,7 +4538,7 @@ export function HomePage() {
                         onClick={() =>
                           setLocalGraphStack((stack) => stack.slice(0, idx + 1))
                         }
-                        className={`truncate text-[12px] transition-colors ${
+                        className={`truncate text-body transition-colors ${
                           idx === localGraphStack.length - 1
                             ? 'text-[color:var(--color-text-primary)]'
                             : 'text-[color:var(--color-text-tertiary)] hover:text-[color:var(--color-text-primary)]'
@@ -4552,7 +4552,7 @@ export function HomePage() {
                   <button
                     type="button"
                     onClick={() => setLocalGraphStack((stack) => stack.slice(0, -1))}
-                    className="ml-2 rounded-full border border-[color:var(--color-divider)] px-2 py-0.5 font-mono text-[9px] uppercase tracking-[0.14em] text-[color:var(--color-text-tertiary)] transition-colors hover:bg-[color:var(--color-overlay-2)]"
+                    className="ml-2 rounded-full border border-[color:var(--color-divider)] px-2 py-0.5 font-mono text-caption uppercase tracking-[0.14em] text-[color:var(--color-text-tertiary)] transition-colors hover:bg-[color:var(--color-overlay-2)]"
                   >
                     Esc
                   </button>
@@ -4562,7 +4562,7 @@ export function HomePage() {
               {/* 필터 컨텍스트 — 현재 visible 노드 수가 전체보다 적으면 표시.
                   로컬 그래프/카테고리 필터가 노드를 줄였을 때 컨텍스트를 주는 칩. */}
               {topologyVisibleCount !== null && topologyVisibleCount < localGraphProjects.length ? (
-                <div className="pointer-events-none absolute bottom-6 left-[220px] z-10 rounded-md border border-[color:var(--color-indigo-line-a32)] bg-[color:var(--color-panel)] px-3 py-1.5 font-mono text-[10px] uppercase tracking-[0.14em] text-[color:var(--color-indigo-line-a90)] md:left-[228px] xl:left-[236px]">
+                <div className="pointer-events-none absolute bottom-6 left-[220px] z-10 rounded-chip border border-[color:var(--color-indigo-line-a32)] bg-[color:var(--color-panel)] px-3 py-1.5 font-mono text-label uppercase tracking-[0.14em] text-[color:var(--color-indigo-line-a90)] md:left-[228px] xl:left-[236px]">
                   filter · {topologyVisibleCount} / {localGraphProjects.length}
                 </div>
               ) : null}
@@ -4655,9 +4655,9 @@ export function HomePage() {
         {projectsError ? (
           <div
             role="alert"
-            className="pointer-events-auto absolute left-1/2 top-[52px] z-40 flex -translate-x-1/2 items-center gap-3 rounded-full border border-[color:var(--color-danger-a32)] bg-[color:rgba(18,20,26,0.98)] px-4 py-2 text-[12px] text-[color:var(--color-text-primary)] shadow-[var(--shadow-elevation-1)]"
+            className="pointer-events-auto absolute left-1/2 top-[52px] z-40 flex -translate-x-1/2 items-center gap-3 rounded-full border border-[color:var(--color-danger-a32)] bg-[color:rgba(18,20,26,0.98)] px-4 py-2 text-body text-[color:var(--color-text-primary)] shadow-[var(--shadow-elevation-1)]"
           >
-            <span className="font-mono text-[10px] uppercase tracking-[0.16em] text-[color:var(--color-danger-text)]">
+            <span className="font-mono text-label uppercase tracking-[0.16em] text-[color:var(--color-danger-text)]">
               Error
             </span>
             <span>{projectsError}</span>
@@ -4666,7 +4666,7 @@ export function HomePage() {
               onClick={() => {
                 if (typeof window !== "undefined") window.location.reload();
               }}
-              className="ml-2 rounded-full border border-[color:var(--color-divider)] px-2.5 py-0.5 font-mono text-[9px] uppercase tracking-[0.14em] text-[color:var(--color-text-tertiary)] transition-colors hover:bg-[color:var(--color-overlay-2)] hover:text-[color:var(--color-text-primary)]"
+              className="ml-2 rounded-full border border-[color:var(--color-divider)] px-2.5 py-0.5 font-mono text-caption uppercase tracking-[0.14em] text-[color:var(--color-text-tertiary)] transition-colors hover:bg-[color:var(--color-overlay-2)] hover:text-[color:var(--color-text-primary)]"
             >
               {t('errorBanner.retry')}
             </button>

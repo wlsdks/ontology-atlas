@@ -131,7 +131,7 @@ function RailIconButton({
         aria-label={label}
         aria-pressed={active}
         data-testid={testId}
-        className={`inline-flex h-8 w-8 flex-none items-center justify-center rounded-md border transition-colors disabled:cursor-not-allowed disabled:opacity-40 ${
+        className={`inline-flex h-8 w-8 flex-none items-center justify-center rounded-chip border transition-colors disabled:cursor-not-allowed disabled:opacity-40 ${
           active
             ? "border-[color:var(--color-indigo-line-a45)] bg-[color:var(--color-indigo-a16)] text-[color:var(--color-indigo-pale-a95)]"
             : "border-[color:var(--color-overlay-2)] text-[color:var(--color-text-tertiary)] hover:border-[color:var(--color-indigo-line-a35)] hover:text-[color:var(--color-text-primary)]"
@@ -412,7 +412,7 @@ export function DocsSidebarBody({
               })}
       </p>
       {searchExpanded ? (
-        <label className="mx-3 mt-1.5 flex h-8 flex-none items-center gap-2 rounded-md border border-[color:var(--color-overlay-2)] bg-[color:var(--color-overlay-1)] px-2 text-[color:var(--color-text-quaternary)] focus-within:border-[color:var(--color-indigo-line-a45)] focus-within:text-[color:var(--color-text-secondary)]">
+        <label className="mx-3 mt-1.5 flex h-8 flex-none items-center gap-2 rounded-chip border border-[color:var(--color-overlay-2)] bg-[color:var(--color-overlay-1)] px-2 text-[color:var(--color-text-quaternary)] focus-within:border-[color:var(--color-indigo-line-a45)] focus-within:text-[color:var(--color-text-secondary)]">
           <Search size={12} aria-hidden />
           <span className="sr-only">{t("searchLabel")}</span>
           <input

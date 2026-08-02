@@ -353,7 +353,7 @@ function MeaningGapRowView({
               data-testid="meaning-gap-write-toggle"
               aria-expanded={open}
               onClick={() => (open ? requestClose() : onOpen())}
-              className={`inline-flex min-h-8 items-center gap-1 rounded-md border px-2.5 text-label transition-colors ${
+              className={`inline-flex min-h-8 items-center gap-1 rounded-chip border px-2.5 text-label transition-colors ${
                 open
                   ? "border-[color:var(--color-indigo-line-a32)] bg-[color:var(--color-indigo-line-a13)] text-[color:var(--color-indigo-accent)]"
                   : "border-[color:var(--color-indigo-line-a22)] text-[color:var(--color-indigo-accent)] hover:border-[color:var(--color-indigo-line-a42)] hover:bg-[color:var(--color-indigo-line-a13)]"
@@ -372,7 +372,7 @@ function MeaningGapRowView({
           )}
           <Link
             href={mapHref(row.nodeId)}
-            className="inline-flex min-h-8 items-center rounded-md border border-[color:var(--color-border-soft)] px-2.5 text-label text-[color:var(--color-text-tertiary)] transition-colors hover:text-[color:var(--color-text-primary)]"
+            className="inline-flex min-h-8 items-center rounded-chip border border-[color:var(--color-border-soft)] px-2.5 text-label text-[color:var(--color-text-tertiary)] transition-colors hover:text-[color:var(--color-text-primary)]"
           >
             {labels.openMap}
           </Link>
@@ -441,7 +441,7 @@ function MeaningGapRowView({
                       }}
                       // 한 문장에 1,300px 짜리 줄을 주면 읽는 눈이 화면을
                       // 가로지른다 — 측정선(measure)을 문장 길이에 맞춘다.
-                      className="min-h-9 w-full max-w-2xl rounded-md border border-[color:var(--color-border-soft)] bg-[color:var(--color-canvas)] px-2.5 text-body text-[color:var(--color-text-primary)] placeholder:text-[color:var(--color-text-quaternary)] focus-visible:border-[color:var(--color-indigo-a46)] focus-visible:outline-none disabled:opacity-60"
+                      className="min-h-9 w-full max-w-2xl rounded-chip border border-[color:var(--color-border-soft)] bg-[color:var(--color-canvas)] px-2.5 text-body text-[color:var(--color-text-primary)] placeholder:text-[color:var(--color-text-quaternary)] focus-visible:border-[color:var(--color-indigo-a46)] focus-visible:outline-none disabled:opacity-60"
                     />
                   ) : (
                     <fieldset className="min-w-0" disabled={saving}>
@@ -460,7 +460,7 @@ function MeaningGapRowView({
                               onClick={() =>
                                 onPatch({ value: choice.value, cancelArmed: false })
                               }
-                              className={`inline-flex min-h-8 items-center rounded-md border px-2.5 text-label transition-colors ${
+                              className={`inline-flex min-h-8 items-center rounded-chip border px-2.5 text-label transition-colors ${
                                 active
                                   ? "border-[color:var(--color-indigo-line-a45)] bg-[color:var(--color-indigo-line-a13)] text-[color:var(--color-indigo-accent)]"
                                   : "border-[color:var(--color-border-soft)] text-[color:var(--color-text-tertiary)] hover:border-[color:var(--color-indigo-line-a32)] hover:text-[color:var(--color-text-primary)]"
@@ -488,7 +488,7 @@ function MeaningGapRowView({
                       data-testid="meaning-gap-save"
                       onClick={() => onSave(ui.value.trim())}
                       disabled={!canSave}
-                      className="inline-flex min-h-8 items-center rounded-md border border-[color:var(--color-indigo-line-a32)] bg-[color:var(--color-indigo-line-a13)] px-2.5 text-label font-medium text-[color:var(--color-indigo-accent)] transition-colors hover:border-[color:var(--color-indigo-line-a45)] disabled:opacity-50"
+                      className="inline-flex min-h-8 items-center rounded-chip border border-[color:var(--color-indigo-line-a32)] bg-[color:var(--color-indigo-line-a13)] px-2.5 text-label font-medium text-[color:var(--color-indigo-accent)] transition-colors hover:border-[color:var(--color-indigo-line-a45)] disabled:opacity-50"
                     >
                       {saving ? labels.saving : labels.save}
                     </button>
@@ -497,7 +497,7 @@ function MeaningGapRowView({
                       data-testid="meaning-gap-cancel"
                       onClick={requestClose}
                       disabled={saving}
-                      className="inline-flex min-h-8 items-center rounded-md border border-[color:var(--color-border-soft)] px-2.5 text-label text-[color:var(--color-text-tertiary)] transition-colors hover:text-[color:var(--color-text-primary)] disabled:opacity-50"
+                      className="inline-flex min-h-8 items-center rounded-chip border border-[color:var(--color-border-soft)] px-2.5 text-label text-[color:var(--color-text-tertiary)] transition-colors hover:text-[color:var(--color-text-primary)] disabled:opacity-50"
                     >
                       {labels.cancel}
                     </button>

@@ -86,7 +86,7 @@ export function TopologyIndexAgentHandoff({
       </summary>
       <div
         data-testid="topology-index-agent-handoff-menu"
-        className="absolute bottom-full right-0 z-10 mb-1.5 hidden w-56 flex-col gap-1 rounded-md border border-[color:var(--topology-v2-panel-border)] bg-[color:var(--topology-v2-panel-surface)] p-1.5 shadow-[var(--topology-v2-panel-shadow)] group-open:flex"
+        className="absolute bottom-full right-0 z-10 mb-1.5 hidden w-56 flex-col gap-1 rounded-chip border border-[color:var(--topology-v2-panel-border)] bg-[color:var(--topology-v2-panel-surface)] p-1.5 shadow-[var(--topology-v2-panel-shadow)] group-open:flex"
       >
         <CompactCopyButton
           copied={briefCopied}

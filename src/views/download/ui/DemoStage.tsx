@@ -240,7 +240,7 @@ function DemoPanel({
        */
       className="mt-4 min-w-0"
     >
-      <div className="relative min-w-0 overflow-hidden rounded-xl border border-[color:var(--color-border-soft)] bg-[color:var(--color-canvas)]">
+      <div className="relative min-w-0 overflow-hidden rounded-panel border border-[color:var(--color-border-soft)] bg-[color:var(--color-canvas)]">
         {/*
          * `preload="none"` — 관문의 첫 바이트는 지도와 받기 버튼의 것이다. 두
          * 클립을 미리 받으면 정작 사람이 누를 것이 늦게 온다.

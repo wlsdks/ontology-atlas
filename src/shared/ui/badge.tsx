@@ -6,7 +6,7 @@ const badgeVariants = cva(
   [
     'inline-flex items-center gap-1',
     'rounded-full px-2.5 py-0.5',
-    'text-xs',
+    'text-body',
     'font-[var(--font-weight-signature)]',
     'border',
     // 좁은 카드 layout 안에서 한 글자씩 vertical 줄바꿈 되는 결함 차단.

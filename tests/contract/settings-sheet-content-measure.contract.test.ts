@@ -47,7 +47,14 @@ const CSS = readFileSync(path.join(ROOT, 'app/globals.css'), 'utf8');
 
 /** 시트 자신의 고정 폭. */
 function sheetWidth(): number {
-  const match = MENU.match(/w-\[(\d+)px\][^`'"]*rounded-xl border border-\[color:var\(--color-border-soft\)\] bg-\[color:var\(--color-panel\)\]/);
+  /*
+   * 이 게이트가 재는 것은 **폭**이다. 종전엔 정규식이 그 옆의 radius 클래스
+   * 이름(`rounded-xl`)까지 못박고 있어서, 같은 값의 램프 이름
+   * (`rounded-panel` = 12px)으로 올리는 순간 「폭 선언을 못 찾았다」로 터졌다 —
+   * 폭은 한 글자도 안 바뀌었는데. 게이트가 규격이 아니라 이웃 서식을 지키면
+   * 다음 사람은 게이트를 고치는 대신 규격을 되돌린다.
+   */
+  const match = MENU.match(/w-\[(\d+)px\][^`'"]*rounded-(?:xl|panel) border border-\[color:var\(--color-border-soft\)\] bg-\[color:var\(--color-panel\)\]/);
   expect(match, '설정 시트의 고정 폭 선언을 못 찾았다 — 이 게이트가 빈 집합 위에서 돈다').toBeTruthy();
   return Number(match![1]);
 }

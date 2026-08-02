@@ -110,7 +110,7 @@ export function DomainCouplingCard({
         <Link
           href={labels.emptyActionHref}
           data-testid="domain-coupling-empty-action"
-          className="mt-3 inline-flex rounded-md text-body text-[color:var(--color-indigo-accent)] transition-colors hover:text-[color:var(--color-text-primary)] hover:underline"
+          className="mt-3 inline-flex rounded-chip text-body text-[color:var(--color-indigo-accent)] transition-colors hover:text-[color:var(--color-text-primary)] hover:underline"
         >
           {labels.emptyAction}
         </Link>

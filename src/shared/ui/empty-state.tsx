@@ -105,9 +105,9 @@ export function EmptyState({
     <TitleTag
       className={cn(
         'font-[var(--font-weight-signature)] text-[color:var(--color-text-primary)]',
-        size === 'compact' ? 'text-sm' : 'text-title',
+        size === 'compact' ? 'text-body-lg' : 'text-title',
         // align=center 한 문장 패턴 — 본문 톤 (h1 무게 없이 secondary 색).
-        isCenter && 'font-normal text-sm text-[color:var(--color-text-tertiary)]',
+        isCenter && 'font-normal text-body-lg text-[color:var(--color-text-tertiary)]',
       )}
     >
       {title}
@@ -118,7 +118,7 @@ export function EmptyState({
     <p
       className={cn(
         'leading-6 text-[color:var(--color-text-tertiary)]',
-        size === 'compact' ? 'mt-1 text-xs' : 'mt-2 text-sm',
+        size === 'compact' ? 'mt-1 text-body' : 'mt-2 text-body-lg',
       )}
     >
       {description}

@@ -84,7 +84,7 @@ function PathField({
         onChange={(event) => onChange(event.target.value)}
         data-testid={testId}
         aria-invalid={issueMessage ? true : undefined}
-        className="h-[var(--control-h-md)] w-full rounded-md border border-[color:var(--color-border-soft)] bg-[color:var(--color-overlay-1)] px-2.5 font-mono text-label text-[color:var(--color-text-primary)] transition-colors placeholder:text-[color:var(--color-text-quaternary)] focus-visible:border-[color:var(--color-indigo-a46)] focus-visible:outline-none"
+        className="h-[var(--control-h-md)] w-full rounded-chip border border-[color:var(--color-border-soft)] bg-[color:var(--color-overlay-1)] px-2.5 font-mono text-label text-[color:var(--color-text-primary)] transition-colors placeholder:text-[color:var(--color-text-quaternary)] focus-visible:border-[color:var(--color-indigo-a46)] focus-visible:outline-none"
       />
       {issueMessage ? (
         <p
@@ -239,7 +239,7 @@ export function WebManualConnectPanel({
               aria-selected={entry.id === active.id}
               onClick={() => setClient(entry.id)}
               data-testid={`${testIdPrefix}-tool-${entry.id}`}
-              className={`rounded-md border px-2.5 py-1 text-label font-medium transition-colors ${
+              className={`rounded-chip border px-2.5 py-1 text-label font-medium transition-colors ${
                 entry.id === active.id
                   ? 'border-[color:var(--color-indigo-a46)] bg-[color:var(--color-indigo-a16)] text-[color:var(--color-text-primary)]'
                   : 'border-[color:var(--color-border-soft)] text-[color:var(--color-text-tertiary)] hover:text-[color:var(--color-text-primary)]'
@@ -252,7 +252,7 @@ export function WebManualConnectPanel({
 
         <div
           data-testid={`${testIdPrefix}-config-${active.id}`}
-          className="rounded-md border border-[color:var(--color-border-soft)] bg-[color:var(--color-overlay-1)] px-3 py-2.5"
+          className="rounded-chip border border-[color:var(--color-border-soft)] bg-[color:var(--color-overlay-1)] px-3 py-2.5"
         >
           <p className="font-mono text-caption text-[color:var(--color-text-quaternary)]">
             {config.file}

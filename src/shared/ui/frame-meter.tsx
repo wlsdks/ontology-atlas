@@ -118,7 +118,7 @@ function FrameMeterLive({ className }: { className?: string }) {
       // 매 250ms 바뀌는 숫자를 스크린리더가 계속 읽으면 방해만 된다.
       aria-hidden="true"
     >
-      <div className="flex items-center gap-2 rounded-md border border-[color:var(--color-border-soft)] bg-[color:var(--color-panel)] px-2 py-1 font-mono text-label tabular-nums">
+      <div className="flex items-center gap-2 rounded-chip border border-[color:var(--color-border-soft)] bg-[color:var(--color-panel)] px-2 py-1 font-mono text-label tabular-nums">
         <span className={tone}>{sample.fps} fps</span>
         <span className="text-[color:var(--color-divider)]">·</span>
         <span className={tone}>최악 {sample.worst}ms</span>

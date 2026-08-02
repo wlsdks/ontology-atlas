@@ -25,9 +25,9 @@ interface QuickEditValues {
   tags: string;
 }
 
-// #9 — 캐노니컬 컨트롤: --control-h-lg(40px) 높이 · rounded-md · 5단계 서피스.
+// #9 — 캐노니컬 컨트롤: --control-h-lg(40px) 높이 · rounded-chip · 5단계 서피스.
 const FIELD_INPUT_CLASS =
-  "mt-1.5 h-[var(--control-h-lg)] w-full rounded-md border border-[color:var(--color-divider)] bg-[color:var(--color-overlay-1)] px-3 text-body text-[color:var(--color-text-primary)] outline-none transition-[border-color,box-shadow] placeholder:text-[color:var(--color-text-quaternary)] focus:border-[color:var(--color-indigo-accent)] focus:ring-2 focus:ring-[color:var(--color-indigo-a24)]";
+  "mt-1.5 h-[var(--control-h-lg)] w-full rounded-chip border border-[color:var(--color-divider)] bg-[color:var(--color-overlay-1)] px-3 text-body text-[color:var(--color-text-primary)] outline-none transition-[border-color,box-shadow] placeholder:text-[color:var(--color-text-quaternary)] focus:border-[color:var(--color-indigo-accent)] focus:ring-2 focus:ring-[color:var(--color-indigo-a24)]";
 
 const TERTIARY_LINK_CLASS =
   "text-label text-[color:var(--color-text-tertiary)] underline-offset-2 transition-colors hover:text-[color:var(--color-indigo-accent)] hover:underline";
@@ -219,7 +219,7 @@ export function ProjectQuickEditPanel({
                 <p className="font-mono text-caption uppercase tracking-[0.12em] text-[color:var(--color-indigo-accent)]">
                   {t("headerEyebrow")}
                 </p>
-                <p className="mt-2 text-sm leading-6 text-[color:var(--color-text-secondary)]">
+                <p className="mt-2 text-body-lg leading-6 text-[color:var(--color-text-secondary)]">
                   {t("headerSubtitle")}
                 </p>
               </div>
@@ -257,7 +257,7 @@ export function ProjectQuickEditPanel({
                   value={values.description}
                   onChange={(event) => handleChange("description", event.target.value)}
                   rows={3}
-                  className="mt-1.5 w-full rounded-md border border-[color:var(--color-divider)] bg-[color:var(--color-overlay-1)] px-3 py-2 text-body leading-relaxed text-[color:var(--color-text-primary)] outline-none transition-[border-color,box-shadow] placeholder:text-[color:var(--color-text-quaternary)] focus:border-[color:var(--color-indigo-accent)] focus:ring-2 focus:ring-[color:var(--color-indigo-a24)]"
+                  className="mt-1.5 w-full rounded-chip border border-[color:var(--color-divider)] bg-[color:var(--color-overlay-1)] px-3 py-2 text-body leading-relaxed text-[color:var(--color-text-primary)] outline-none transition-[border-color,box-shadow] placeholder:text-[color:var(--color-text-quaternary)] focus:border-[color:var(--color-indigo-accent)] focus:ring-2 focus:ring-[color:var(--color-indigo-a24)]"
                   placeholder={t("fieldDescriptionPlaceholder")}
                 />
               </label>

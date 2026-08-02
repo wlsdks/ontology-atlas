@@ -104,7 +104,7 @@ export function StudioEntryChoice({
         type="button"
         data-testid="studio-entry-practice"
         onClick={onPractice}
-        className="studio-stage-in mt-5 rounded-lg px-3 py-1.5 text-caption text-[color:var(--color-text-tertiary)] underline underline-offset-4 transition-colors hover:text-[color:var(--color-text-primary)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--color-indigo-a46)]"
+        className="studio-stage-in mt-5 rounded-card px-3 py-1.5 text-caption text-[color:var(--color-text-tertiary)] underline underline-offset-4 transition-colors hover:text-[color:var(--color-text-primary)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--color-indigo-a46)]"
         style={{ ["--studio-stagger" as string]: "120ms" }}
       >
         {labels.practice}
@@ -114,7 +114,7 @@ export function StudioEntryChoice({
         type="button"
         data-testid="studio-entry-exit"
         onClick={onExit}
-        className="studio-stage-in mt-3 rounded-lg px-3 py-1.5 text-label text-[color:var(--color-text-quaternary)] transition-colors hover:text-[color:var(--color-text-secondary)]"
+        className="studio-stage-in mt-3 rounded-card px-3 py-1.5 text-label text-[color:var(--color-text-quaternary)] transition-colors hover:text-[color:var(--color-text-secondary)]"
         style={{ ["--studio-stagger" as string]: "160ms" }}
       >
         {labels.exit}

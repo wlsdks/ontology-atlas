@@ -953,7 +953,7 @@ export function StudioCompass(props: StudioCompassProps) {
             onClick={() => guardedOpen(props.backTo!.id)}
             aria-label={labels.walkBackAria(props.backTo.label)}
             title={labels.walkBackAria(props.backTo.label)}
-            className="flex h-[30px] max-w-[180px] items-center gap-1.5 rounded-lg border border-[color:var(--color-border-soft)] px-2.5 text-caption text-[color:var(--color-text-tertiary)] transition-colors hover:border-[color:var(--color-indigo-a46)] hover:text-[color:var(--color-text-secondary)]"
+            className="flex h-[30px] max-w-[180px] items-center gap-1.5 rounded-card border border-[color:var(--color-border-soft)] px-2.5 text-caption text-[color:var(--color-text-tertiary)] transition-colors hover:border-[color:var(--color-indigo-a46)] hover:text-[color:var(--color-text-secondary)]"
           >
             <ArrowLeft size={13} aria-hidden className="flex-none text-[color:var(--color-text-quaternary)]" />
             <span className="min-w-0 truncate [word-break:keep-all]">{props.backTo.label}</span>
@@ -992,7 +992,7 @@ export function StudioCompass(props: StudioCompassProps) {
                 setDraftsOpen(false);
                 setPreviewOpen(true);
               }}
-              className="flex h-[30px] items-center gap-1.5 rounded-lg border border-[color:var(--color-border-soft)] px-3 text-caption text-[color:var(--color-text-tertiary)] transition-colors hover:border-[color:var(--color-border-strong)] hover:text-[color:var(--color-text-secondary)]"
+              className="flex h-[30px] items-center gap-1.5 rounded-card border border-[color:var(--color-border-soft)] px-3 text-caption text-[color:var(--color-text-tertiary)] transition-colors hover:border-[color:var(--color-border-strong)] hover:text-[color:var(--color-text-secondary)]"
             >
               <Eye size={13} aria-hidden className="text-[color:var(--color-text-quaternary)]" />
               {labels.previewOpen}
@@ -1012,7 +1012,7 @@ export function StudioCompass(props: StudioCompassProps) {
                 setDraftsOpen((v) => !v);
               }}
               className={cn(
-                "flex h-[30px] items-center gap-1.5 rounded-lg border px-3 text-caption transition-colors",
+                "flex h-[30px] items-center gap-1.5 rounded-card border px-3 text-caption transition-colors",
                 draftsOpen
                   ? "border-[color:var(--color-indigo-line-a45)] bg-[color:var(--color-indigo-a12)] text-[color:var(--color-indigo-accent)]"
                   : "border-[color:var(--color-border-soft)] text-[color:var(--color-text-tertiary)] hover:border-[color:var(--color-border-strong)] hover:text-[color:var(--color-text-secondary)]",
@@ -1035,7 +1035,7 @@ export function StudioCompass(props: StudioCompassProps) {
               aria-pressed={agentDockOpen}
               data-testid="studio-agent-dock-toggle"
               className={cn(
-                "flex h-8 items-center gap-1.5 rounded-lg border px-3 text-label transition-colors",
+                "flex h-8 items-center gap-1.5 rounded-card border px-3 text-label transition-colors",
                 agentDockOpen
                   ? "border-[color:var(--color-indigo-line-a45)] bg-[color:var(--color-indigo-a12)] text-[color:var(--color-indigo-accent)]"
                   : "border-[color:var(--color-border-soft)] text-[color:var(--color-text-tertiary)] hover:border-[color:var(--color-border-strong)] hover:text-[color:var(--color-text-secondary)]",
@@ -1051,7 +1051,7 @@ export function StudioCompass(props: StudioCompassProps) {
             // 나가도 초안은 남고, 돌아오면 그대로다.
             onClick={onExit}
             data-testid="studio-exit"
-            className="flex h-8 items-center gap-1.5 rounded-lg border border-[color:var(--color-border-soft)] px-3 text-label text-[color:var(--color-text-tertiary)] transition-colors hover:text-[color:var(--color-text-secondary)]"
+            className="flex h-8 items-center gap-1.5 rounded-card border border-[color:var(--color-border-soft)] px-3 text-label text-[color:var(--color-text-tertiary)] transition-colors hover:text-[color:var(--color-text-secondary)]"
           >
             <span className="text-[color:var(--color-text-quaternary)]">✕</span> {labels.exit}
           </button>
@@ -1392,7 +1392,7 @@ export function StudioCompass(props: StudioCompassProps) {
             data-testid="studio-summary-toggle"
             aria-expanded={summaryOpen}
             onClick={() => setSummaryOpen((v) => !v)}
-            className="flex h-8 items-center gap-1.5 rounded-lg border border-[color:var(--color-border-soft)] px-3 text-label text-[color:var(--color-text-tertiary)] transition-colors hover:border-[color:var(--color-border-strong)] hover:text-[color:var(--color-text-secondary)]"
+            className="flex h-8 items-center gap-1.5 rounded-card border border-[color:var(--color-border-soft)] px-3 text-label text-[color:var(--color-text-tertiary)] transition-colors hover:border-[color:var(--color-border-strong)] hover:text-[color:var(--color-text-secondary)]"
           >
             {effectiveSummary.collapsed}
             <ChevronDown size={12} aria-hidden className={cn("text-[color:var(--color-text-quaternary)] transition-transform", summaryOpen && "rotate-180")} />
@@ -1412,7 +1412,7 @@ export function StudioCompass(props: StudioCompassProps) {
             <span
               aria-hidden
               data-testid="studio-commit-converge"
-              className="studio-summary-converge pointer-events-none absolute right-[128px] top-1/2 z-[7] -translate-y-1/2 whitespace-nowrap rounded-md border border-[color:var(--color-indigo-line-a32)] bg-[color:var(--color-indigo-a12)] px-2 py-1 text-label font-medium text-[color:var(--color-indigo-accent)]"
+              className="studio-summary-converge pointer-events-none absolute right-[128px] top-1/2 z-[7] -translate-y-1/2 whitespace-nowrap rounded-chip border border-[color:var(--color-indigo-line-a32)] bg-[color:var(--color-indigo-a12)] px-2 py-1 text-label font-medium text-[color:var(--color-indigo-accent)]"
               style={
                 {
                   "--studio-converge-x": "104px",
@@ -1428,7 +1428,7 @@ export function StudioCompass(props: StudioCompassProps) {
             data-testid="studio-save"
             disabled={props.canSave === false}
             onClick={runSave}
-            className="flex h-8 items-center gap-2 rounded-lg bg-[color:var(--color-indigo-brand)] px-4 text-label font-semibold text-white transition-colors hover:bg-[color:var(--color-indigo-hover)] disabled:opacity-40"
+            className="flex h-8 items-center gap-2 rounded-card bg-[color:var(--color-indigo-brand)] px-4 text-label font-semibold text-white transition-colors hover:bg-[color:var(--color-indigo-hover)] disabled:opacity-40"
           >
             {mode === "create" ? <Check size={15} aria-hidden /> : null}
             {labels.save}
@@ -1446,7 +1446,7 @@ export function StudioCompass(props: StudioCompassProps) {
           data-testid="studio-drafts-panel"
           role="dialog"
           aria-label={labels.draftsTitle}
-          className="studio-fade-in absolute right-3 top-[52px] z-[11] flex w-[288px] flex-col rounded-[12px] border border-[color:var(--color-border-strong)] bg-[color:var(--color-elevated)]"
+          className="studio-fade-in absolute right-3 top-[52px] z-[11] flex w-[288px] flex-col rounded-panel border border-[color:var(--color-border-strong)] bg-[color:var(--color-elevated)]"
           style={{ boxShadow: "0 12px 34px rgba(0,0,0,.5)", maxHeight: "min(420px, calc(100% - 96px))" }}
         >
           <div className="flex items-start gap-2 px-3.5 pt-3">
@@ -1462,7 +1462,7 @@ export function StudioCompass(props: StudioCompassProps) {
               type="button"
               onClick={() => setDraftsOpen(false)}
               aria-label={labels.draftsCloseAria}
-              className="-mr-1 flex h-6 w-6 flex-none items-center justify-center rounded-md text-[color:var(--color-text-quaternary)] transition-colors hover:text-[color:var(--color-text-secondary)]"
+              className="-mr-1 flex h-6 w-6 flex-none items-center justify-center rounded-chip text-[color:var(--color-text-quaternary)] transition-colors hover:text-[color:var(--color-text-secondary)]"
             >
               <X size={13} aria-hidden />
             </button>
@@ -1472,7 +1472,7 @@ export function StudioCompass(props: StudioCompassProps) {
               const isCurrent = draft.focalId === props.focalId;
               return (
                 <li key={draft.focalId} data-testid={`studio-draft-row-${draft.focalId}`}>
-                  <div className="flex items-center gap-2 rounded-lg px-1.5 py-1.5 transition-colors hover:bg-[color:var(--color-overlay-1)]">
+                  <div className="flex items-center gap-2 rounded-card px-1.5 py-1.5 transition-colors hover:bg-[color:var(--color-overlay-1)]">
                     <div className="min-w-0 flex-1">
                       <p className="truncate text-caption text-[color:var(--color-text-primary)]">
                         {draft.title}
@@ -1489,7 +1489,7 @@ export function StudioCompass(props: StudioCompassProps) {
                           setDraftsOpen(false);
                           props.onOpenDraft?.(draft.focalId);
                         }}
-                        className="flex h-7 flex-none items-center rounded-md border border-[color:var(--color-indigo-line-a32)] px-2 text-label text-[color:var(--color-indigo-accent)] transition-colors hover:border-[color:var(--color-indigo-line-a45)] hover:bg-[color:var(--color-indigo-line-a13)]"
+                        className="flex h-7 flex-none items-center rounded-chip border border-[color:var(--color-indigo-line-a32)] px-2 text-label text-[color:var(--color-indigo-accent)] transition-colors hover:border-[color:var(--color-indigo-line-a45)] hover:bg-[color:var(--color-indigo-line-a13)]"
                       >
                         {labels.draftsResume}
                       </button>
@@ -1501,7 +1501,7 @@ export function StudioCompass(props: StudioCompassProps) {
                         onClick={() => props.onDiscardDraft?.(draft.focalId)}
                         aria-label={labels.draftsDiscardAria(draft.title)}
                         title={labels.draftsDiscard}
-                        className="flex h-7 w-7 flex-none items-center justify-center rounded-md text-[color:var(--color-text-quaternary)] transition-colors hover:bg-[color:var(--color-danger-a12)] hover:text-[color:var(--color-danger-text)]"
+                        className="flex h-7 w-7 flex-none items-center justify-center rounded-chip text-[color:var(--color-text-quaternary)] transition-colors hover:bg-[color:var(--color-danger-a12)] hover:text-[color:var(--color-danger-text)]"
                       >
                         <X size={12} aria-hidden />
                       </button>
@@ -1599,7 +1599,7 @@ function CenterCard(
             <div
               role="group"
               aria-labelledby={CREATE_KIND_LABEL_ID}
-              className="flex gap-1 rounded-md border border-[color:var(--color-border-soft)] bg-[color:var(--color-overlay-1)] p-[3px]"
+              className="flex gap-1 rounded-chip border border-[color:var(--color-border-soft)] bg-[color:var(--color-overlay-1)] p-[3px]"
             >
             {props.createKinds.map((k) => (
               <button
@@ -1916,7 +1916,7 @@ function LaneRender({
                 aria-label={labels.edit}
                 title={labels.edit}
                 onClick={() => onEditNeighbor(sat)}
-                className="absolute right-1.5 top-1.5 grid h-5 w-5 place-items-center rounded-[6px] text-[color:var(--color-text-quaternary)] opacity-70 transition-opacity transition-colors hover:bg-[color:var(--color-overlay-1)] hover:text-[color:var(--color-text-secondary)] group-hover:opacity-100 motion-reduce:transition-none"
+                className="absolute right-1.5 top-1.5 grid h-5 w-5 place-items-center rounded-chip text-[color:var(--color-text-quaternary)] opacity-70 transition-opacity transition-colors hover:bg-[color:var(--color-overlay-1)] hover:text-[color:var(--color-text-secondary)] group-hover:opacity-100 motion-reduce:transition-none"
               >
                 <MoreHorizontal size={14} aria-hidden />
               </button>
@@ -1986,7 +1986,7 @@ function LaneRender({
           title={labels.addMore(view.laneLabel)}
           onClick={onOpen}
           {...hoverProps}
-          className="studio-stage-in group/add absolute z-[2] flex items-center justify-center gap-1.5 rounded-[9px] border border-dashed border-[color:var(--color-border-strong)] text-label text-[color:var(--color-text-quaternary)] transition-colors hover:border-[color:var(--color-indigo-a46)] hover:text-[color:var(--color-text-secondary)]"
+          className="studio-stage-in group/add absolute z-[2] flex items-center justify-center gap-1.5 rounded-card border border-dashed border-[color:var(--color-border-strong)] text-label text-[color:var(--color-text-quaternary)] transition-colors hover:border-[color:var(--color-indigo-a46)] hover:text-[color:var(--color-text-secondary)]"
           style={{
             left: layout.addChip.x,
             top: layout.addChip.y,
@@ -2011,7 +2011,7 @@ function LaneRender({
           onClick={onOpen}
           {...hoverProps}
           className={cn(
-            "studio-stage-in absolute z-[2] flex flex-col items-start justify-center gap-1 rounded-[12px] px-3.5 py-2.5 text-left transition-colors",
+            "studio-stage-in absolute z-[2] flex flex-col items-start justify-center gap-1 rounded-panel px-3.5 py-2.5 text-left transition-colors",
           )}
           style={{
             left: layout.socket.x,
@@ -2146,7 +2146,7 @@ function LaneOverflowList({
                   aria-label={labels.edit}
                   title={labels.edit}
                   onClick={() => onEditNeighbor(sat)}
-                  className="mr-1.5 grid h-6 w-6 flex-none place-items-center rounded-[6px] text-[color:var(--color-text-quaternary)] opacity-70 transition-colors hover:bg-[color:var(--color-overlay-1)] hover:text-[color:var(--color-text-secondary)] group-hover:opacity-100"
+                  className="mr-1.5 grid h-6 w-6 flex-none place-items-center rounded-chip text-[color:var(--color-text-quaternary)] opacity-70 transition-colors hover:bg-[color:var(--color-overlay-1)] hover:text-[color:var(--color-text-secondary)] group-hover:opacity-100"
                 >
                   <MoreHorizontal size={14} aria-hidden />
                 </button>
@@ -2265,7 +2265,7 @@ function InlineEditCard({
                 <button
                   type="button"
                   onClick={() => setConfirmDelete(false)}
-                  className="flex-none rounded-md px-2 py-1 text-label text-[color:var(--color-text-tertiary)] hover:text-[color:var(--color-text-secondary)]"
+                  className="flex-none rounded-chip px-2 py-1 text-label text-[color:var(--color-text-tertiary)] hover:text-[color:var(--color-text-secondary)]"
                 >
                   {labels.editDeleteCancel}
                 </button>
@@ -2273,7 +2273,7 @@ function InlineEditCard({
                   type="button"
                   data-testid="studio-edit-delete-confirm"
                   onClick={onRemove}
-                  className="flex-none rounded-md border border-[color:var(--color-danger-a42)] bg-[color:var(--color-danger-a12)] px-2 py-1 text-label font-semibold text-[color:var(--color-danger-text)] transition-colors hover:bg-[color:var(--color-danger-a32)]"
+                  className="flex-none rounded-chip border border-[color:var(--color-danger-a42)] bg-[color:var(--color-danger-a12)] px-2 py-1 text-label font-semibold text-[color:var(--color-danger-text)] transition-colors hover:bg-[color:var(--color-danger-a32)]"
                 >
                   {labels.editDeleteYes}
                 </button>
@@ -2300,7 +2300,7 @@ function InlineEditCard({
             type="button"
             data-testid="studio-edit-open-other"
             onClick={onOpenOther}
-            className="mt-2.5 flex items-center gap-1.5 rounded-lg border border-[color:var(--color-border-soft)] px-2.5 py-1.5 text-label font-medium text-[color:var(--color-text-secondary)] transition-colors hover:border-[color:var(--color-indigo-a46)] hover:text-[color:var(--color-text-primary)]"
+            className="mt-2.5 flex items-center gap-1.5 rounded-card border border-[color:var(--color-border-soft)] px-2.5 py-1.5 text-label font-medium text-[color:var(--color-text-secondary)] transition-colors hover:border-[color:var(--color-indigo-a46)] hover:text-[color:var(--color-text-primary)]"
           >
             {labels.editElsewhereGo}
           </button>
@@ -2610,7 +2610,7 @@ function InlinePicker({
       {similarHit ? (
         <div
           data-testid="studio-picker-similar"
-          className="mx-2 mb-1.5 flex items-start gap-2 rounded-[9px] border px-2.5 py-2 text-label leading-label text-[color:var(--color-text-tertiary)]"
+          className="mx-2 mb-1.5 flex items-start gap-2 rounded-card border px-2.5 py-2 text-label leading-label text-[color:var(--color-text-tertiary)]"
           style={{ borderColor: "var(--color-amber-muted-a34)", background: "var(--color-amber-muted-a18)" }}
         >
           <span className="flex-none text-[color:var(--color-amber-muted-a62)]">⚠</span>
@@ -2632,7 +2632,7 @@ function InlinePicker({
           type="button"
           data-testid="studio-picker-create-new"
           onClick={() => onCreateNew?.({ relation, query })}
-          className="flex w-full items-center justify-center gap-1.5 rounded-lg border border-dashed border-[color:var(--color-border-strong)] py-2 text-caption text-[color:var(--color-text-secondary)] transition-colors hover:text-[color:var(--color-text-primary)]"
+          className="flex w-full items-center justify-center gap-1.5 rounded-card border border-dashed border-[color:var(--color-border-strong)] py-2 text-caption text-[color:var(--color-text-secondary)] transition-colors hover:text-[color:var(--color-text-primary)]"
         >
           <Plus size={13} aria-hidden className="text-[color:var(--color-text-tertiary)]" />
           {labels.pickerCreateNew}
@@ -2667,7 +2667,7 @@ function NodeSearch({
   // Static placeholder when the surface renders in isolation (no data / handler).
   if (!nodes || !onOpenNode) {
     return (
-      <div className="flex h-8 w-[300px] items-center gap-2 rounded-lg border border-[color:var(--color-border-soft)] bg-[color:var(--color-canvas)] px-3 text-body text-[color:var(--color-text-quaternary)]">
+      <div className="flex h-8 w-[300px] items-center gap-2 rounded-card border border-[color:var(--color-border-soft)] bg-[color:var(--color-canvas)] px-3 text-body text-[color:var(--color-text-quaternary)]">
         <Search size={14} aria-hidden className="flex-none" />
         <span className="truncate">{placeholder}</span>
       </div>
@@ -2695,7 +2695,7 @@ function NodeSearch({
         if (!boxRef.current?.contains(e.relatedTarget as Node | null)) setOpen(false);
       }}
     >
-      <div className="flex h-8 items-center gap-2 rounded-lg border border-[color:var(--color-border-soft)] bg-[color:var(--color-canvas)] px-3 text-body focus-within:border-[color:var(--color-indigo-a46)]">
+      <div className="flex h-8 items-center gap-2 rounded-card border border-[color:var(--color-border-soft)] bg-[color:var(--color-canvas)] px-3 text-body focus-within:border-[color:var(--color-indigo-a46)]">
         <Search size={14} aria-hidden className="flex-none text-[color:var(--color-text-quaternary)]" />
         <input
           data-testid="studio-node-search"
@@ -2719,7 +2719,7 @@ function NodeSearch({
       {open ? (
         <div
           data-testid="studio-node-search-results"
-          className="absolute left-0 top-[calc(100%+6px)] z-[9] w-[340px] overflow-hidden rounded-[12px] border border-[color:var(--color-border-strong)] bg-[color:var(--color-elevated)]"
+          className="absolute left-0 top-[calc(100%+6px)] z-[9] w-[340px] overflow-hidden rounded-panel border border-[color:var(--color-border-strong)] bg-[color:var(--color-elevated)]"
           style={{ boxShadow: "0 12px 34px rgba(0,0,0,.5)" }}
         >
           <div className="max-h-[320px] overflow-y-auto p-1.5">
@@ -2948,7 +2948,7 @@ function DeltaPreviewModal({
           <div className="px-5 pt-4">
             <div className="overflow-x-auto">
             <div
-              className="relative mx-auto rounded-[12px] border border-[color:var(--color-divider)] bg-[color:var(--color-canvas)]"
+              className="relative mx-auto rounded-panel border border-[color:var(--color-divider)] bg-[color:var(--color-canvas)]"
               style={{ width: MINI.w, height: MINI.h }}
               data-testid="studio-preview-graph"
             >
@@ -3061,7 +3061,7 @@ function DeltaPreviewModal({
             type="button"
             data-testid="studio-preview-dismiss"
             onClick={onClose}
-            className="rounded-lg px-3 py-2 text-caption text-[color:var(--color-text-tertiary)] transition-colors hover:text-[color:var(--color-text-secondary)]"
+            className="rounded-card px-3 py-2 text-caption text-[color:var(--color-text-tertiary)] transition-colors hover:text-[color:var(--color-text-secondary)]"
           >
             {labels.previewClose}
           </button>
@@ -3070,7 +3070,7 @@ function DeltaPreviewModal({
             data-testid="studio-preview-save"
             disabled={!canSave}
             onClick={onSave}
-            className="flex h-[34px] items-center gap-2 rounded-lg bg-[color:var(--color-indigo-brand)] px-4 text-caption font-semibold text-white transition-colors hover:bg-[color:var(--color-indigo-hover)] disabled:opacity-40"
+            className="flex h-[34px] items-center gap-2 rounded-card bg-[color:var(--color-indigo-brand)] px-4 text-caption font-semibold text-white transition-colors hover:bg-[color:var(--color-indigo-hover)] disabled:opacity-40"
           >
             {labels.save}
           </button>

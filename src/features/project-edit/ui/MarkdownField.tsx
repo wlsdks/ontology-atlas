@@ -24,7 +24,7 @@ export function MarkdownField({ id, value, onChange, placeholder, rows = 8 }: Pr
   const [mode, setMode] = useState<Mode>('write');
 
   return (
-    <div className="flex flex-col gap-2 rounded-lg border border-[color:var(--color-divider)] bg-[color:var(--color-canvas)] p-2">
+    <div className="flex flex-col gap-2 rounded-card border border-[color:var(--color-divider)] bg-[color:var(--color-canvas)] p-2">
       <div className="flex items-center gap-1 border-b border-[color:var(--color-overlay-2)] pb-1.5">
         <TabButton active={mode === 'write'} onClick={() => setMode('write')}>
           {t('tabWrite')}
@@ -44,7 +44,7 @@ export function MarkdownField({ id, value, onChange, placeholder, rows = 8 }: Pr
           placeholder={placeholder}
           rows={rows}
           className={cn(
-            'rounded-md bg-transparent px-2 py-1.5 font-mono text-sm text-[color:var(--color-text-primary)]',
+            'rounded-chip bg-transparent px-2 py-1.5 font-mono text-body-lg text-[color:var(--color-text-primary)]',
             'placeholder:text-[color:var(--color-text-quaternary)]',
             'focus:outline-none',
             'resize-y',
@@ -53,7 +53,7 @@ export function MarkdownField({ id, value, onChange, placeholder, rows = 8 }: Pr
       ) : (
         <div
           className={cn(
-            'min-h-[160px] rounded-md px-2 py-1.5 text-sm leading-relaxed text-[color:var(--color-text-secondary)]',
+            'min-h-[160px] rounded-chip px-2 py-1.5 text-body-lg leading-relaxed text-[color:var(--color-text-secondary)]',
             // 간단한 마크다운 스타일
             '[&>h1]:mt-3 [&>h1]:mb-2 [&>h1]:text-xl [&>h1]:font-[var(--font-weight-signature)] [&>h1]:text-[color:var(--color-text-primary)]',
             '[&>h2]:mt-3 [&>h2]:mb-1.5 [&>h2]:text-lg [&>h2]:font-[var(--font-weight-signature)] [&>h2]:text-[color:var(--color-text-primary)]',
@@ -62,7 +62,7 @@ export function MarkdownField({ id, value, onChange, placeholder, rows = 8 }: Pr
             '[&>ul]:my-1.5 [&>ul]:list-disc [&>ul]:pl-5',
             '[&>ol]:my-1.5 [&>ol]:list-decimal [&>ol]:pl-5',
             '[&_code]:rounded [&_code]:bg-[color:var(--color-elevated)] [&_code]:px-1 [&_code]:py-0.5 [&_code]:font-mono [&_code]:text-[13px]',
-            '[&>pre]:rounded-md [&>pre]:bg-[color:var(--color-elevated)] [&>pre]:p-3 [&>pre]:my-2 [&>pre]:font-mono [&>pre]:text-[12px] [&>pre>code]:bg-transparent [&>pre>code]:px-0',
+            '[&>pre]:rounded-chip [&>pre]:bg-[color:var(--color-elevated)] [&>pre]:p-3 [&>pre]:my-2 [&>pre]:font-mono [&>pre]:text-[12px] [&>pre>code]:bg-transparent [&>pre>code]:px-0',
             '[&_a]:text-[color:var(--color-indigo-accent)] [&_a]:underline',
             '[&>blockquote]:border-l-2 [&>blockquote]:border-[color:var(--color-border-strong)] [&>blockquote]:pl-3 [&>blockquote]:text-[color:var(--color-text-tertiary)]',
           )}
@@ -92,7 +92,7 @@ function TabButton({
       type="button"
       onClick={onClick}
       className={cn(
-        'rounded-md px-2.5 py-1 font-mono text-[10px] uppercase tracking-[0.1em] transition-colors',
+        'rounded-chip px-2.5 py-1 font-mono text-[10px] uppercase tracking-[0.1em] transition-colors',
         active
           ? 'bg-[color:var(--color-indigo-a14)] text-[color:var(--color-indigo-accent)]'
           : 'text-[color:var(--color-text-tertiary)] hover:text-[color:var(--color-text-primary)]',

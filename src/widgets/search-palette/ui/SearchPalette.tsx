@@ -383,7 +383,7 @@ function SearchPaletteDialog({
             type="button"
             onClick={onClose}
             aria-label={t('closeAriaLabel')}
-            className="flex h-[var(--overlay-close-size)] w-[var(--overlay-close-size)] items-center justify-center rounded-md text-[color:var(--color-text-tertiary)] transition-colors hover:bg-[color:var(--color-overlay-2)] hover:text-[color:var(--color-text-primary)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--color-indigo-a46)] focus-visible:ring-inset"
+            className="flex h-[var(--overlay-close-size)] w-[var(--overlay-close-size)] items-center justify-center rounded-chip text-[color:var(--color-text-tertiary)] transition-colors hover:bg-[color:var(--color-overlay-2)] hover:text-[color:var(--color-text-primary)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--color-indigo-a46)] focus-visible:ring-inset"
           >
             <X size={15} />
           </button>
@@ -467,7 +467,7 @@ function SearchPaletteDialog({
           <div className="border-b border-[color:var(--color-overlay-2)] px-4 py-2.5">
             <p
               id="search-palette-help"
-              className="text-xs leading-6 text-[color:var(--color-text-tertiary)]"
+              className="text-body leading-6 text-[color:var(--color-text-tertiary)]"
             >
               {t('helpRecent')}
             </p>
@@ -530,10 +530,10 @@ function SearchPaletteDialog({
           {results.length === 0 ? (
             docResults.length > 0 ? null : projects.length === 0 ? (
               <div className="flex flex-col items-center px-4 py-8 text-center">
-                <p className="text-sm text-[color:var(--color-text-secondary)]">
+                <p className="text-body-lg text-[color:var(--color-text-secondary)]">
                   {t('emptyNoProjectsTitle')}
                 </p>
-                <p className="mt-2 text-xs leading-6 text-[color:var(--color-text-tertiary)]">
+                <p className="mt-2 text-body leading-6 text-[color:var(--color-text-tertiary)]">
                   {t('emptyNoProjectsBody')}
                 </p>
                 <button
@@ -547,10 +547,10 @@ function SearchPaletteDialog({
             ) : filteredProjects.length === 0 && layerFilter !== 'all' ? (
               // 쿼리 없어도 layer filter 가 너무 좁아 결과 0. filter 리셋 CTA.
               <div className="flex flex-col items-center px-4 py-8 text-center">
-                <p className="text-sm text-[color:var(--color-text-secondary)]">
+                <p className="text-body-lg text-[color:var(--color-text-secondary)]">
                   {t('emptyLayerTitle')}
                 </p>
-                <p className="mt-2 text-xs leading-6 text-[color:var(--color-text-tertiary)]">
+                <p className="mt-2 text-body leading-6 text-[color:var(--color-text-tertiary)]">
                   {t('emptyLayerBody', {
                     layer: t(
                       LAYER_FILTERS.find((f) => f.value === layerFilter)?.labelKey ?? 'layerAll',
@@ -570,8 +570,8 @@ function SearchPaletteDialog({
               </div>
             ) : (
               <div className="flex flex-col items-center px-4 py-8 text-center">
-                <p className="text-sm text-[color:var(--color-text-secondary)]">{t('emptyNoMatchTitle')}</p>
-                <p className="mt-2 text-xs leading-6 text-[color:var(--color-text-tertiary)]">
+                <p className="text-body-lg text-[color:var(--color-text-secondary)]">{t('emptyNoMatchTitle')}</p>
+                <p className="mt-2 text-body leading-6 text-[color:var(--color-text-tertiary)]">
                   {t('emptyNoMatchBody', { query: query.trim() })}
                 </p>
                 <button
@@ -620,7 +620,7 @@ function SearchPaletteDialog({
                         <div className="flex items-center gap-2">
                           <span
                             className={cn(
-                              'truncate text-sm font-[var(--font-weight-signature)]',
+                              'truncate text-body-lg font-[var(--font-weight-signature)]',
                               r.project.isHub
                                 ? 'text-[color:var(--color-indigo-accent)]'
                                 : 'text-[color:var(--color-text-primary)]',
@@ -634,7 +634,7 @@ function SearchPaletteDialog({
                             </span>
                           ) : null}
                         </div>
-                        <p className="mt-0.5 truncate text-xs text-[color:var(--color-text-tertiary)]">
+                        <p className="mt-0.5 truncate text-body text-[color:var(--color-text-tertiary)]">
                           {r.project.description}
                         </p>
                         <div className="mt-2 flex flex-wrap items-center gap-1.5">

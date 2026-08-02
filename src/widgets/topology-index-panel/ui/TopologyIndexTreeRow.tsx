@@ -157,7 +157,7 @@ export function TopologyIndexTreeRow({
         }}
         onKeyDown={handleRowKeyDown}
         style={{ marginLeft: depth * 16 }}
-        className={`grid min-h-[34px] grid-cols-[22px_15px_1fr_auto] items-center gap-x-2 rounded-md border py-1 pl-1 pr-2 text-body transition-colors ${
+        className={`grid min-h-[34px] grid-cols-[22px_15px_1fr_auto] items-center gap-x-2 rounded-chip border py-1 pl-1 pr-2 text-body transition-colors ${
           selected
             ? "border-[color:var(--color-indigo-a55)] bg-[color:var(--topology-v2-panel-metric-surface)] text-[color:var(--topology-v2-panel-text-primary)]"
             : "border-transparent text-[color:var(--topology-v2-panel-text-secondary)] hover:border-[color:var(--topology-v2-panel-action-border)] hover:text-[color:var(--topology-v2-panel-text-primary)]"

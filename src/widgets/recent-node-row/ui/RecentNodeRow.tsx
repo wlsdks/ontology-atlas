@@ -70,7 +70,7 @@ export function RecentNodeRow({
 
   // 클릭 대상이 없는 행(지도 노드로 못 찾은 dangling doc)엔 hover 배경을
   // 주지 않는다 — 누를 수 없는데 인터랙티브해 보이면 그 자체가 결함.
-  const className = `flex items-center gap-2.5 rounded-md border-t border-[color:var(--color-divider)] px-1.5 py-2.5 transition-colors first:border-t-0 ${
+  const className = `flex items-center gap-2.5 rounded-chip border-t border-[color:var(--color-divider)] px-1.5 py-2.5 transition-colors first:border-t-0 ${
     href ? "-mx-1.5 hover:bg-[color:var(--color-overlay-1)]" : ""
   }`;
 

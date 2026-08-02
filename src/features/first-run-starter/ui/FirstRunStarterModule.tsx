@@ -394,7 +394,7 @@ export function FirstRunStarterModule({
            강등: 미지원 고지 한 줄 + macOS 앱(/download) 링크로 치환. */
         <div
           data-testid="first-run-starter-unsupported"
-          className="rounded-lg border border-[color:var(--topology-v2-panel-divider)] bg-[color:rgba(6,6,9,0.45)] px-3 py-2.5"
+          className="rounded-card border border-[color:var(--topology-v2-panel-divider)] bg-[color:rgba(6,6,9,0.45)] px-3 py-2.5"
         >
           <p className="text-label leading-label text-[color:var(--topology-v2-panel-text-tertiary)]">
             {t("unsupportedNotice")}
@@ -413,7 +413,7 @@ export function FirstRunStarterModule({
           onClick={() => setGuideOpen(true)}
           disabled={busy}
           data-testid="first-run-starter-open"
-          className="touch-hit-expand relative flex h-10 w-full items-center justify-center gap-2 rounded-lg border border-[color:var(--color-indigo-line-a45)] bg-[color:var(--color-indigo-brand)] text-body font-semibold text-white shadow-[inset_0_1px_0_var(--color-overlay-3)] transition-colors hover:bg-[color:var(--color-indigo-accent)] disabled:opacity-60"
+          className="touch-hit-expand relative flex h-10 w-full items-center justify-center gap-2 rounded-card border border-[color:var(--color-indigo-line-a45)] bg-[color:var(--color-indigo-brand)] text-body font-semibold text-white shadow-[inset_0_1px_0_var(--color-overlay-3)] transition-colors hover:bg-[color:var(--color-indigo-accent)] disabled:opacity-60"
         >
           <FolderOpen size={14} aria-hidden />
           {busy && !scaffolding ? t("openBusy") : t("openLabel")}
@@ -433,7 +433,7 @@ export function FirstRunStarterModule({
           type="button"
           data-testid="first-run-tour-cta"
           onClick={onStartTour}
-          className="touch-hit-expand mt-2 inline-flex h-8 w-full items-center justify-center gap-1.5 rounded-lg border border-[color:var(--topology-v2-panel-divider)] text-body text-[color:var(--topology-v2-panel-text-secondary)] transition-colors hover:border-[color:var(--color-indigo-line-a35)] hover:text-[color:var(--topology-v2-panel-text-primary)]"
+          className="touch-hit-expand mt-2 inline-flex h-8 w-full items-center justify-center gap-1.5 rounded-card border border-[color:var(--topology-v2-panel-divider)] text-body text-[color:var(--topology-v2-panel-text-secondary)] transition-colors hover:border-[color:var(--color-indigo-line-a35)] hover:text-[color:var(--topology-v2-panel-text-primary)]"
         >
           {t("tourCta")}
         </button>
@@ -620,7 +620,7 @@ export function FirstRunStarterModule({
           <div
             id="first-run-starter-cli-bridge"
             data-testid="first-run-starter-cli-bridge"
-            className="mt-2 rounded-md border border-[color:var(--topology-v2-panel-divider)] bg-[color:rgba(6,6,9,0.35)] px-2.5 py-2"
+            className="mt-2 rounded-chip border border-[color:var(--topology-v2-panel-divider)] bg-[color:rgba(6,6,9,0.35)] px-2.5 py-2"
           >
             <div className="flex items-center justify-between gap-2">
               <p className="min-w-0 break-keep text-caption leading-tight text-[color:var(--topology-v2-panel-text-quaternary)]">

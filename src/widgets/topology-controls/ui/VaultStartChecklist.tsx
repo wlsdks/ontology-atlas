@@ -177,7 +177,7 @@ export function VaultStartChecklist({
           onClick={onScaffoldStarter}
           disabled={scaffolding}
           data-testid="checklist-cta-scaffold"
-          className="inline-flex h-7 items-center gap-1 rounded-md border border-[color:var(--color-overlay-3)] px-2.5 text-label text-[color:var(--color-text-secondary)] transition-colors hover:border-[color:var(--color-indigo-line-a35)] hover:text-[color:var(--color-text-primary)] disabled:opacity-60"
+          className="inline-flex h-7 items-center gap-1 rounded-chip border border-[color:var(--color-overlay-3)] px-2.5 text-label text-[color:var(--color-text-secondary)] transition-colors hover:border-[color:var(--color-indigo-line-a35)] hover:text-[color:var(--color-text-primary)] disabled:opacity-60"
         >
           <Sparkles size={11} aria-hidden />
           {scaffolding ? t("ctaScaffoldBusy") : t("ctaScaffold")}
@@ -187,7 +187,7 @@ export function VaultStartChecklist({
           type="button"
           onClick={() => onCreateNode("project")}
           data-testid="checklist-cta-project"
-          className="inline-flex h-7 items-center gap-1 rounded-md border border-[color:var(--color-overlay-3)] px-2.5 text-label text-[color:var(--color-text-secondary)] transition-colors hover:border-[color:var(--color-indigo-line-a35)] hover:text-[color:var(--color-text-primary)]"
+          className="inline-flex h-7 items-center gap-1 rounded-chip border border-[color:var(--color-overlay-3)] px-2.5 text-label text-[color:var(--color-text-secondary)] transition-colors hover:border-[color:var(--color-indigo-line-a35)] hover:text-[color:var(--color-text-primary)]"
         >
           <Plus size={11} aria-hidden />
           {t("ctaCreate")}
@@ -205,7 +205,7 @@ export function VaultStartChecklist({
         role="status"
         aria-label={t("title")}
         aria-live="polite"
-        className="pointer-events-auto w-[min(420px,calc(100vw-2rem))] rounded-lg border border-[color:var(--color-divider)] bg-[color:var(--color-panel)] px-5 py-5 shadow-[var(--shadow-elevation-1)]"
+        className="pointer-events-auto w-[min(420px,calc(100vw-2rem))] rounded-card border border-[color:var(--color-divider)] bg-[color:var(--color-panel)] px-5 py-5 shadow-[var(--shadow-elevation-1)]"
       >
         <p className="font-mono text-caption uppercase tracking-[0.18em] text-[color:var(--color-text-quaternary)]">
           {t("kicker", { done: doneCount, total: steps.length })}

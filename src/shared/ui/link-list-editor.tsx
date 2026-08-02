@@ -110,7 +110,7 @@ export function LinkListEditor({
       {value.map((link, idx) => (
         <div
           key={`${link.url}-${idx}`}
-          className="flex items-center gap-2 rounded-2xl border border-[color:var(--color-border-soft)] px-3 py-2.5 text-sm text-[color:var(--color-text-secondary)] transition-colors hover:border-[color:var(--color-indigo-a32)] hover:text-[color:var(--color-text-primary)]"
+          className="flex items-center gap-2 rounded-2xl border border-[color:var(--color-border-soft)] px-3 py-2.5 text-body-lg text-[color:var(--color-text-secondary)] transition-colors hover:border-[color:var(--color-indigo-a32)] hover:text-[color:var(--color-text-primary)]"
         >
           <a
             href={link.url}
@@ -154,7 +154,7 @@ export function LinkListEditor({
               onChange={(e) => setDraftLabel(e.target.value)}
               onKeyDown={handleKeyDown}
               placeholder={labelPlaceholder}
-              className="flex-1 rounded-md border border-[color:var(--color-divider)] bg-[color:var(--color-canvas)] px-2 py-1.5 text-xs text-[color:var(--color-text-primary)] outline-none focus:border-[color:var(--color-indigo-brand)]"
+              className="flex-1 rounded-chip border border-[color:var(--color-divider)] bg-[color:var(--color-canvas)] px-2 py-1.5 text-body text-[color:var(--color-text-primary)] outline-none focus:border-[color:var(--color-indigo-brand)]"
             />
             <input
               type="url"
@@ -162,20 +162,20 @@ export function LinkListEditor({
               onChange={(e) => setDraftUrl(e.target.value)}
               onKeyDown={handleKeyDown}
               placeholder={urlPlaceholder}
-              className="flex-1 rounded-md border border-[color:var(--color-divider)] bg-[color:var(--color-canvas)] px-2 py-1.5 text-xs text-[color:var(--color-text-primary)] outline-none focus:border-[color:var(--color-indigo-brand)]"
+              className="flex-1 rounded-chip border border-[color:var(--color-divider)] bg-[color:var(--color-canvas)] px-2 py-1.5 text-body text-[color:var(--color-text-primary)] outline-none focus:border-[color:var(--color-indigo-brand)]"
             />
             <div className="flex shrink-0 items-center gap-1">
               <button
                 type="button"
                 onClick={commit}
-                className="rounded-md border border-[color:var(--color-indigo-brand)] bg-[color:var(--color-indigo-a16)] px-2 py-1 text-caption uppercase tracking-[0.12em] text-[color:var(--color-indigo-accent)] hover:bg-[color:var(--color-indigo-a24)]"
+                className="rounded-chip border border-[color:var(--color-indigo-brand)] bg-[color:var(--color-indigo-a16)] px-2 py-1 text-caption uppercase tracking-[0.12em] text-[color:var(--color-indigo-accent)] hover:bg-[color:var(--color-indigo-a24)]"
               >
                 {commitLabel}
               </button>
               <button
                 type="button"
                 onClick={cancel}
-                className="rounded-md border border-[color:var(--color-divider)] px-2 py-1 text-caption uppercase tracking-[0.12em] text-[color:var(--color-text-tertiary)] hover:text-[color:var(--color-text-primary)]"
+                className="rounded-chip border border-[color:var(--color-divider)] px-2 py-1 text-caption uppercase tracking-[0.12em] text-[color:var(--color-text-tertiary)] hover:text-[color:var(--color-text-primary)]"
               >
                 {cancelLabel}
               </button>
@@ -185,7 +185,7 @@ export function LinkListEditor({
           <button
             type="button"
             onClick={() => setAdding(true)}
-            className="inline-flex items-center justify-center gap-1 self-start rounded-2xl border border-dashed border-[color:var(--color-border-strong)] bg-transparent px-3 py-2 text-xs text-[color:var(--color-text-tertiary)] transition-colors hover:border-[color:var(--color-indigo-a32)] hover:text-[color:var(--color-text-primary)]"
+            className="inline-flex items-center justify-center gap-1 self-start rounded-2xl border border-dashed border-[color:var(--color-border-strong)] bg-transparent px-3 py-2 text-body text-[color:var(--color-text-tertiary)] transition-colors hover:border-[color:var(--color-indigo-a32)] hover:text-[color:var(--color-text-primary)]"
             aria-label={addLinkLabel}
           >
             <Plus size={11} />
