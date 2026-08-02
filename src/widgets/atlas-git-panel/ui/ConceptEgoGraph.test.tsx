@@ -20,6 +20,9 @@ function ego(count: number): ConceptEgo {
     kind: "domain",
     domainLabel: null,
     docSlug: "domains/shop",
+    summary: null,
+    agentSlug: "domains/shop",
+    projectLabels: [],
     total: count,
     neighbors: {
       belongsTo: [],

@@ -824,10 +824,24 @@ describe("AtlasGitPanel — 고른 개념의 성질과 이웃", () => {
         title: "Foo",
         display: "첫 실행 안내",
         kind: "capability",
-        projectIds: [],
+        projectIds: ["project:atlas"],
         evidenceIds: ["capabilities/foo"],
         hasOwnDocument: true,
         agentSlug: "capabilities/foo",
+        ref: null,
+        lastApprovedAt: "",
+        lastApprovedBy: "",
+        summary: "첫 실행에서 볼트를 만들어 준다",
+      },
+      {
+        id: "project:atlas",
+        title: "Atlas",
+        display: "아틀라스",
+        kind: "project",
+        projectIds: [],
+        evidenceIds: ["atlas"],
+        hasOwnDocument: true,
+        agentSlug: "atlas",
         ref: null,
         lastApprovedAt: "",
         lastApprovedBy: "",
@@ -890,6 +904,20 @@ describe("AtlasGitPanel — 고른 개념의 성질과 이웃", () => {
     expect(ego).toHaveTextContent("첫 실행 안내");
     // 소속 도메인은 belongsTo 이웃에서 온다 — 「속한 곳」이 그려져야 한다.
     expect(ego).toHaveTextContent("속한 곳");
+
+    /*
+     * **아는 것을 안 보여주는 것은 강등이 아니라 누락이다.** 그래프 노드가
+     * 이미 나르는 셋을 화면이 안 쓰고 있었다 — 사람이 가장 먼저 읽는 한 줄
+     * 설명, 이 개념이 속한 프로젝트, 그리고 **에이전트가 부르는 이름**.
+     * 마지막 것이 빠지면 이 화면은 두 사용자 중 하나에게만 답한 것이다.
+     */
+    expect(ego).toHaveTextContent("첫 실행에서 볼트를 만들어 준다");
+    expect(ego).toHaveTextContent("아틀라스");
+    expect(ego).toHaveTextContent("capabilities/foo");
+
+    // 관계는 **수가 아니라 이름**이다 — 「1」은 1이 무엇인지 못 말한다.
+    const neighbors = screen.getAllByTestId("atlas-git-ego-neighbor");
+    expect(neighbors.map((el) => el.textContent).join(" ")).toContain("온보딩·배포·앱 셸");
   });
 
   it("그래프가 없으면 (웹·미로드) 카드를 아예 안 그린다 — 빈 상자를 두지 않는다", async () => {

@@ -2041,7 +2041,7 @@ const STEP_CONCEPT_SLOTS = 2;
  * 3열(시각 · 이름 · 왜)은 시안 실측 그대로다.
  */
 const STEP_ROW =
-  "grid w-full grid-cols-[var(--git-when-w)_minmax(0,1.7fr)_minmax(0,1fr)] items-center gap-3 border-b border-l-2 border-b-[color:var(--color-divider)] px-4 py-2 text-left transition-colors hover:bg-[color:var(--color-overlay-1)]";
+  "grid w-full grid-cols-[var(--git-when-w)_minmax(0,1.7fr)_minmax(0,1fr)] min-h-[var(--git-row-h)] items-center gap-3 border-b border-l-2 border-b-[color:var(--color-divider)] px-4 py-2 text-left transition-colors hover:bg-[color:var(--color-overlay-1)]";
 
 function StepList({
   t,
