@@ -3329,7 +3329,7 @@
     "uncited": "이 턴에 읽은 자료:",
     "footerDetail": "이 턴에 오간 글 {chars}자 — 대부분 시스템 안내와 도구 설명이에요.",
     "reground": {
-      "title": "읽고 다시 답하게 하려면"
+      "title": "{round}/{cap}번째에서 멈췄어요 — 읽고 다시 답하게 하기"
     }
   },
   "skillParity": {

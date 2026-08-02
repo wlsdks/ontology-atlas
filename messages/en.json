@@ -3329,7 +3329,7 @@
     "uncited": "Read this turn:",
     "footerDetail": "{chars} characters went out this turn — mostly system guidance and tool descriptions.",
     "reground": {
-      "title": "Ask it to read first"
+      "title": "Stopped at round {round}/{cap} — have it read first"
     }
   },
   "skillParity": {

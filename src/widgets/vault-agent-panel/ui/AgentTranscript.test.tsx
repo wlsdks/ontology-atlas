@@ -19,7 +19,7 @@ const labels: AgentTranscriptLabels = {
   footerDetail: ({ chars }) => `이 턴에 오간 글 ${chars}자`,
   nextStepTitle: '다음 한 걸음',
   retryTitle: '다시 해볼까요',
-  regroundTitle: '읽고 다시 답하게 하려면',
+  regroundTitle: ({ round, cap }) => `${round}/${cap}번째에서 멈췄어요 — 읽고 다시 답하게 하기`,
 };
 
 function turn(overrides: Partial<AgentTurn> = {}): AgentTurn {
@@ -161,11 +161,62 @@ describe('AgentTranscript', () => {
     expect(screen.queryByTestId('agent-retry')).not.toBeInTheDocument();
   });
 
+  /**
+   * 2026-08-02 합집합 정정 — 처음 구현은 강등 문장 + `no-tool-call` 알림 줄 +
+   * 칩 제목으로 **한 턴에 경고를 셋** 세웠다(상호작용석의 칩 처방과 작업대석의
+   * 알림 처방을 둘 다 실은 결과). 셋이 되는 순간 그 경고들은 벽지가 된다 —
+   * 이 파일이 이미 2026-07-27 에 배운 것과 같은 실패다. 알림은 칩 제목이
+   * 흡수하고, **타입 코드는 데이터에 그대로 남는다.**
+   */
+  const noToolCallTurn = () =>
+    turn({
+      roundsUsed: 1,
+      events: [
+        ...turn().events,
+        {
+          kind: 'assistant',
+          paragraphs: [{ text: '아마 그럴 거예요.', citations: [] }],
+          grounding: 'unread',
+        },
+        { kind: 'notice', code: 'no-tool-call', text: '1/6번째에서 도구를 한 번도 안 부르고 멈췄어요.' },
+      ],
+    });
+
   it('아무것도 안 읽은 턴에는 되돌아갈 길이 붙는다 — 새 배너가 아니라 같은 칩 슬롯', () => {
-    const { onPrefill } = renderTranscript(
+    const { onPrefill } = renderTranscript(noToolCallTurn());
+    expect(screen.getByTestId('agent-retry-title')).toHaveTextContent(
+      '1/6번째에서 멈췄어요 — 읽고 다시 답하게 하기',
+    );
+    fireEvent.click(screen.getByTestId('agent-retry-chip'));
+    expect(onPrefill).toHaveBeenCalledWith('이 개념에 빠진 연결 이어줘');
+  });
+
+  it('경고 줄은 한 턴에 둘까지다 — 알림은 칩 제목이 흡수한다', () => {
+    const fixture = noToolCallTurn();
+    // 데이터에는 남는다: 흡수는 렌더의 일이지 사실을 지우는 것이 아니다.
+    expect(
+      fixture.events.filter((event) => event.kind === 'notice' && event.code === 'no-tool-call'),
+    ).toHaveLength(1);
+
+    renderTranscript(fixture);
+    const warningLines = [
+      ...screen.queryAllByTestId('agent-answer-unsupported'),
+      ...screen.queryAllByTestId('agent-notice'),
+      ...screen.queryAllByTestId('agent-retry-title'),
+    ];
+    expect(warningLines.map((node) => node.dataset.testid)).toEqual([
+      'agent-answer-unsupported',
+      'agent-retry-title',
+    ]);
+  });
+
+  it('흡수할 칩이 안 서면 알림은 그대로 남는다 — 사실이 사라지지 않는다', () => {
+    // 원 질문이 없는 턴(칩이 앉힐 문장이 없다). 흡수는 흡수하는 쪽이 실제로
+    // 있을 때만 성립한다.
+    renderTranscript(
       turn({
+        roundsUsed: 1,
         events: [
-          ...turn().events,
           {
             kind: 'assistant',
             paragraphs: [{ text: '아마 그럴 거예요.', citations: [] }],
@@ -175,9 +226,11 @@ describe('AgentTranscript', () => {
         ],
       }),
     );
-    expect(screen.getByTestId('agent-retry')).toHaveTextContent('읽고 다시 답하게 하려면');
-    fireEvent.click(screen.getByTestId('agent-retry-chip'));
-    expect(onPrefill).toHaveBeenCalledWith('이 개념에 빠진 연결 이어줘');
+    expect(screen.queryByTestId('agent-retry')).not.toBeInTheDocument();
+    expect(screen.getByTestId('agent-notice')).toHaveAttribute(
+      'data-notice-code',
+      'no-tool-call',
+    );
   });
 
   it('강등 판정은 턴의 결론에만 붙는다 — 중간 서술은 주장이 아니다', () => {

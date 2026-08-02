@@ -585,7 +585,7 @@ export function VaultAgentPanel({
                 labels={{
                   nextStepTitle: t('nextStep.title'),
                   retryTitle: t('retry.title'),
-                  regroundTitle: t('reground.title'),
+                  regroundTitle: ({ round, cap }) => t('reground.title', { round, cap }),
                   you: t('you'),
                   lookingAt: (title) => t('screenContext.lookingAt', { title, josa: josa(title, 'object') }),
                   wholeMap: t('screenContext.wholeMap'),

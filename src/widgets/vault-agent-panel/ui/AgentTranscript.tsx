@@ -2,6 +2,7 @@
 
 import { Fragment } from 'react';
 
+import { AGENT_ROUND_CAP } from '@/features/vault-agent';
 import type { AgentEvent, AgentTurn, CitedParagraph } from '@/features/vault-agent';
 
 import { AgentToolLine } from './AgentToolLine';
@@ -24,8 +25,14 @@ export interface AgentTranscriptLabels {
   nextStepTitle: string;
   /** 실패한 턴의 되돌아갈 길 — 같은 말을 입력칸에 다시 앉힌다(전송 아님). */
   retryTitle: string;
-  /** `unread` 갈래의 되돌아갈 길 — 같은 슬롯, 다른 문구. */
-  regroundTitle: string;
+  /**
+   * `unread` 갈래의 되돌아갈 길 — 같은 슬롯, 다른 문구.
+   *
+   * **멈춘 이유(라운드)를 이 한 줄이 함께 나른다.** 「도구를 한 번도 안
+   * 부르고 멈췄어요」를 별도 알림 줄로 세우면 한 턴에 경고가 셋이 되고,
+   * 셋이 되는 순간 그 경고들은 벽지가 된다.
+   */
+  regroundTitle: (args: { round: number; cap: number }) => string;
 }
 
 /**
@@ -36,6 +43,14 @@ export interface AgentTranscriptLabels {
  * "호출 한도예요" 가 화면에서 가장 조용한 문장이었다. 멎은 이유는 그 턴에서
  * 가장 중요한 사실이다(Tufte — 잉크는 데이터에).
  */
+/**
+ * 되돌아갈 칩이 **제목으로 흡수하는** 알림 코드. 데이터에는 남고 화면에서만
+ * 접힌다 — 같은 사실을 두 줄로 말하지 않기 위한 것이지, 사실을 지우는 것이
+ * 아니다(타입 코드는 인계·기록의 근거로 계속 읽힌다).
+ */
+const ABSORBED_BY_RECOVERY: ReadonlySet<string> = new Set(['no-tool-call']);
+const EMPTY_CODES: ReadonlySet<string> = new Set();
+
 const BLOCKING_NOTICES: ReadonlySet<string> = new Set([
   'network-failed',
   'rate-limited',
@@ -97,7 +112,23 @@ export function AgentTranscript({
           conclusion?.kind === 'assistant' && conclusion.grounding === 'unread';
         // 같은 자리, 같은 문법. 이유가 둘이라 문구만 갈린다.
         const recoveryTitle =
-          turn.status === 'failed' ? labels.retryTitle : unread ? labels.regroundTitle : null;
+          turn.status === 'failed'
+            ? labels.retryTitle
+            : unread
+              ? labels.regroundTitle({ round: turn.roundsUsed, cap: AGENT_ROUND_CAP })
+              : null;
+        const showsRecovery = Boolean(recoveryTitle && asked);
+        /**
+         * **알림 줄을 칩이 흡수한다.** `no-tool-call` 은 데이터 층에 그대로
+         * 남아 있고(다음 사람이 프로그램으로 읽을 수 있어야 한다), 화면에서만
+         * 되돌아갈 칩의 제목으로 접힌다 — 같은 사실을 두 줄로 말하지 않는다.
+         *
+         * 칩이 안 서는 경우(원 질문을 잃은 턴)에는 **알림이 그대로 남는다**.
+         * 흡수는 흡수하는 쪽이 실제로 있을 때만 성립한다.
+         */
+        const absorbedCodes: ReadonlySet<string> = showsRecovery
+          ? ABSORBED_BY_RECOVERY
+          : EMPTY_CODES;
         return (
         <section key={turn.id} data-testid="agent-turn" data-turn-status={turn.status}>
           {turn.events.map((event, index) => (
@@ -109,6 +140,7 @@ export function AgentTranscript({
                 onPrefill,
                 renderProposal,
                 index === lastAssistant,
+                absorbedCodes,
               )}
             </Fragment>
           ))}
@@ -137,9 +169,12 @@ export function AgentTranscript({
               같은 슬롯을 **볼트를 아예 안 본 턴**도 쓴다. 새 배너를 세우지
               않는 이유: 이미 있는 칩 하나를 채우는 것으로 끝나고, 사용자가
               배울 상호작용도 그대로 하나다. */}
-          {recoveryTitle && asked ? (
+          {showsRecovery && asked ? (
             <div data-testid="agent-retry" className="mt-2 flex flex-col gap-1.5">
-              <p className="text-label tracking-label text-[color:var(--color-text-quaternary)]">
+              <p
+                data-testid="agent-retry-title"
+                className="text-label tracking-label text-[color:var(--color-text-quaternary)]"
+              >
                 {recoveryTitle}
               </p>
               <button
@@ -187,6 +222,8 @@ function renderEvent(
   renderProposal: (event: Extract<AgentEvent, { kind: 'proposal' }>) => React.ReactNode,
   /** 이 턴의 마지막 답인가 — 강등 경고는 결론에만 붙는다. */
   isConclusion: boolean,
+  /** 되돌아갈 칩이 제목으로 흡수한 알림 코드 — 화면에서만 접힌다. */
+  absorbedCodes: ReadonlySet<string>,
 ) {
   switch (event.kind) {
     case 'user':
@@ -297,6 +334,8 @@ function renderEvent(
       return renderProposal(event);
 
     case 'notice': {
+      // 되돌아갈 칩이 제목으로 이미 말한 사실은 줄을 하나 더 쓰지 않는다.
+      if (absorbedCodes.has(event.code)) return null;
       // 멎은 이유는 그 턴에서 가장 중요한 사실이라 본문 무게로 그린다.
       // 진행 보고(중단·상한)는 종전대로 조용하다.
       const blocking = BLOCKING_NOTICES.has(event.code);
