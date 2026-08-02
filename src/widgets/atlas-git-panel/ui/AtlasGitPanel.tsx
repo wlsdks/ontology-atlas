@@ -254,9 +254,19 @@ export function AtlasGitPanel({
     // 브리지가 없으면(`null`) 웹 경로이고, 그건 이 상태가 판정할 일이 아니다.
     setGitInstalled(probe === null ? null : probe.installed);
   }, []);
+  /*
+   * **폴더를 고른 뒤에만** 부른다 (2026-08-02, 계약 테스트가 잡았다: 「앱 안에서
+   * 폴더가 없으면 … 아무 IPC 도 안 부른다」).
+   *
+   * 이유가 둘이다. ① 폴더가 없으면 git 이 있든 없든 이 화면이 할 일이 없다 —
+   * 안 쓸 답을 미리 물을 이유가 없다. ② macOS 는 명령어 도구가 없을 때 git 을
+   * 부르면 **시스템 설치 다이얼로그**를 띄운다 — 사용자가 「기록」을 열지도
+   * 않았는데 OS 창이 뜨면 그건 우리가 부른 적 없는 화면이다.
+   */
   useEffect(() => {
+    if (!vaultPath) return;
     void probeGit();
-  }, [probeGit]);
+  }, [probeGit, vaultPath]);
   const [loadErrorText, setLoadErrorText] = useState<string | null>(null);
 
   const [confirming, setConfirming] = useState(false);
