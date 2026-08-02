@@ -56,7 +56,7 @@ describe("pre-commit 훅 배선", () => {
     expect(source).toContain("git checkout-index");
     // 인덱스를 펼친 곳에서 검사기가 돌아야 의미가 있다 — 저장소 루트에서
     // 돌리면 다시 작업본을 재는 것이다.
-    expect(source).toMatch(/cd "\$staging_tree".*build-docs-vault\.mjs --check/s);
+    expect(source).toMatch(/cd "\$staging_tree"[\s\S]*build-docs-vault\.mjs --check/);
   });
 
   it("볼트 입력과 산출물 양쪽을 사정거리에 둔다", () => {
