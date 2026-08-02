@@ -3,6 +3,7 @@
 import {
   Fragment,
   useEffect,
+  useRef,
   useState,
   useSyncExternalStore,
   type ReactNode,
@@ -59,6 +60,18 @@ export interface FirstRunStarterModuleProps {
    * (소유자 지적: "상단 스크롤 따로 하단 스크롤 따로"). 사용자가 선택하면
    * 카드가 접히고 children(INDEX)이 열린다.
    */
+  /**
+   * 「최근 변경」 렌즈가 켜졌나 (2026-08-02, 소유자 실보고: *"시작 안내 패널이
+   * 열린 상태에서 최근 변경 버튼 누르면 왼쪽 패널이 안바뀌는 오류"*).
+   *
+   * 카드와 INDEX 가 **배타적 두 상태**라, 카드가 펼쳐져 있으면 INDEX 의
+   * 세그먼트·기간 칩이 아예 렌더되지 않는다. 그래서 렌즈를 켜면 URL 도 지도도
+   * 바뀌는데 왼쪽만 그대로였다 — 버그가 아니라 그 설계가 이 경우를 못 봤다.
+   *
+   * 렌즈를 켠 것도 아래 `collapsed` 주석이 말하는 **「무엇을 볼지 골랐다」**의 한
+   * 형태다. 그래서 새 상태를 만들지 않고 같은 접힘 경로를 탄다.
+   */
+  lensActive?: boolean;
   children?: ReactNode;
 }
 
@@ -99,6 +112,7 @@ export function FirstRunStarterModule({
   onStartTour,
   onEnablePlainMode,
   audiencePlain = false,
+  lensActive = false,
   children,
 }: FirstRunStarterModuleProps) {
   const t = useTranslations("firstRunStarter");
@@ -143,6 +157,26 @@ export function FirstRunStarterModule({
   // INDEX 에 자리를 넘길지. 사용자가 "무엇을 볼지" 를 고른 순간(샘플 전환)
   // 접어 데이터로 넘긴다. dismiss 는 세션 영구, 이건 세션 내 토글.
   const [collapsed, setCollapsed] = useState(false);
+  /*
+   * 렌즈가 켜지면 카드를 접어 INDEX 에 자리를 넘긴다(위 `lensActive` 주석).
+   *
+   * **끌 때 되돌리지 않는다.** 접힘은 「사용자가 이미 무엇을 볼지 골랐다」는
+   * 사실이고, 렌즈를 껐다고 그 사실이 취소되지는 않는다 — 되돌리면 방금 보던
+   * 트리가 눈앞에서 사라진다. 카드는 「되돌아오기」 행으로 언제든 다시 연다.
+   *
+   * 렌더 중 setState 대신 ref 로 **한 번만** 트리거하는 이유: 렌즈가 켜진 동안
+   * 매 렌더마다 접기를 시도하면 사용자가 카드를 다시 열어도 즉시 다시 접힌다.
+   */
+  const lensCollapsedRef = useRef(false);
+  useEffect(() => {
+    if (!lensActive) {
+      lensCollapsedRef.current = false;
+      return;
+    }
+    if (lensCollapsedRef.current) return;
+    lensCollapsedRef.current = true;
+    setCollapsed(true);
+  }, [lensActive]);
   // PO 카운슬 2026-08-02 — `⌘O` 배지는 **맥에서만** 참이다. 이 앱의 폴더 열기
   // 단축키는 `{ key: "o", meta: true }` 하나뿐이고(HomePage 단축키 표) 대응
   // 하는 Ctrl+O 바인딩이 없다. 웹 관문의 핵심 청중이 Windows/Linux 인데 없는

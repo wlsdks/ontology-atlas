@@ -46,6 +46,7 @@ import { ExpandSettings } from './ExpandSettings';
 import { AgentActivitySettings } from './AgentActivitySettings';
 import { SegmentSwitch, SettingsGroup, SettingsRow } from './settings-primitives';
 import { useFrameMeter, writeFrameMeter } from '@/shared/lib/appearance-preferences';
+import { BlockImportModule } from '@/features/ontology-blocks';
 import { AiConnectionPanel } from './AiConnectionPanel';
 import { useAiConnection } from '../model/use-ai-connection';
 import { AGENT_GRAPH_WORKFLOW_HREF } from '@/shared/config';
@@ -846,6 +847,7 @@ export function AppSettingsMenu({
                 ) : section === 'footprint' ? (
                   <FootprintSettings />
                 ) : section === 'workspace' ? (
+                    <>
                   <SettingsGroup>
                 {showVaultManagement ? (
                   <SettingsRow
@@ -1024,6 +1026,23 @@ export function AppSettingsMenu({
                   </span>
                 </Link>
                   </SettingsGroup>
+                    {/*
+                      「다른 폴더에서 노드 가져오기」 (2026-08-02, INDEX 바닥에서
+                      이관 — 소유자: *"이건 뭐임? 이 문구가 왜 있는거지..? 필요없는건가"*).
+
+                      여기가 맞는 이유: 이 일은 **이 폴더에 무엇이 들어오나**이고,
+                      그게 이 절의 주제다. 지도를 읽는 화면에 상시 버튼으로 둘 일이
+                      아니다 — 평생 한두 번 쓴다.
+
+                      이름도 바꿨다. 종전 「블록 가져오기」의 「블록」은 이 앱 어디에도
+                      정의가 없어서, 처음 보는 사람에게는 무엇을 여는 버튼인지 알 길이
+                      없었다.
+
+                      모듈은 자립형이라 vault 가 로드된 상태에서만 스스로 렌더한다.
+                    */}
+                    <BlockImportModule />
+                    </>
+
                 ) : section === 'agent' ? (
                   isLocalVaultLoaded ? (
                     <VaultAgentSetupPanel
