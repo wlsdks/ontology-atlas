@@ -85,7 +85,7 @@ jobs:
         with:
           name: playwright-report-static-export
           path: output/playwright/test-results
-          retention-days: 7
+          retention-days: 1
 
   # ── 웹 스모크 — 분류기가 못 끄는 자리 ────────────────────────────────
   #
@@ -127,7 +127,7 @@ jobs:
         with:
           name: playwright-report-web-smoke
           path: output/playwright/test-results
-          retention-days: 7
+          retention-days: 1
 
   # ── 전체 스위트 — 3 샤드 ─────────────────────────────────────────────
   #
@@ -175,4 +175,4 @@ jobs:
         with:
           name: playwright-report-shard-${{ matrix.shard }}
           path: output/playwright/test-results
-          retention-days: 7
+          retention-days: 1
