@@ -2687,11 +2687,55 @@ JSX 안에 44px 정사각 버튼이나 라벨 버튼을 인라인 클래스로 �
   (`--color-indigo-a16`), 선택 옵션은 인디고 체크.
 - **키보드** — ↑↓ 순환 · Enter/Space 확정 · Esc 닫기(+트리거 포커스 복귀) ·
   Home/End · 타입어헤드(600ms 버퍼). 바깥 클릭 시 닫힘.
-- **모션** — `select-pop` 150ms, opacity + `scaleY`(origin-top) 만.
-  `prefers-reduced-motion` 에서 `animate-none` 으로 정지 (헌장의 "모션은
-  opacity/색 위주, transform 최소" 준수).
+- **목록은 포털이다** (2026-08-02 설치 앱 실측 회귀). `createPortal(document.body)`
+  + 트리거 rect 앵커 + 충돌 회피(아래 자리가 264px 을 못 채우고 위가 더 넓으면
+  뒤로 뒤집고, `max-height` 는 실제 가용 공간으로 깎는다). `position: fixed`
+  이므로 열려 있는 동안 scroll(capture)·resize 에 재앵커한다.
+  **왜**: 구 `position: absolute` 는 조상의 `overflow: hidden` 에 그대로 잘렸다 —
+  AI 연결의 모델 칸에서 러너가 준 7개 중 화면에 1개만 남았고(264px 중 39px,
+  가시 14.8%), `aria-activedescendant` 는 7개를 정상적으로 훑었다. **키보드
+  사용자가 듣는 세상과 눈으로 보는 세상이 갈린** 상태이고(Nielsen ① 시스템
+  상태 가시성), role·aria 마커를 전부 통과한다. 자르던 조상
+  (`.ai-row-disclosure`)의 `overflow: hidden` 은 높이 전이용이라 풀 수 없다.
+- **모션** — 등장 `select-pop`(`--motion-fast`), 퇴장 `select-unpop`
+  (`calc(var(--motion-fast) * 0.67)` — 나가는 것은 들어오는 것보다 빠르다,
+  `settingsPanelOut`·`overlayFadeOut` 과 같은 문법). opacity + `scaleY` 만,
+  `transform-origin` 은 열리는 방향. 셰브런의 `transition-transform` 도
+  **같은 80ms** — 한 입력이 낳은 두 원소가 다른 시간을 쓰면 두 사건으로
+  읽힌다(구 상태: 목록 1프레임 소멸 + 셰브런 120ms 이징).
+  퇴장 창은 `usePanelPresence` 공용 게이트를 쓰고, 그 프레임은 `aria-hidden`
+  + `inert` 로 접근성 트리에서 즉시 빠진다. `prefers-reduced-motion` 동등물은
+  `panelCrossfadeIn`/`overlayFadeOut` (흔들리는 축만 제거, 시간은 유지).
 - **API** — `{ value, onChange, options: [{value,label,description?}],
   placeholder, ariaLabel, size?, disabled? }`. 토큰만.
+- **게이트** — `src/shared/ui/select.test.tsx`(포털·클리퍼 탈출·퇴장 프레임
+  a11y) · `tests/contract/reduced-motion-equivalent.contract.test.ts`
+  (`select-listbox`) · `tests/contract/exit-motion-restart.contract.test.ts` ·
+  설치 앱 `--verify-ai-settings`(목록 잘림·히트테스트 실측).
+
+### 설정 시트의 행 측정폭 (`--settings-content-measure`, 2026-08-02)
+
+| 토큰 | 값 | 무엇을 정하나 |
+|---|---|---|
+| `--settings-content-measure` | 658px | 설정 시트 **어느 얼굴에서든** 행이 사는 최대 폭 |
+
+시트는 고정 880×672 인데 얼굴마다 행 폭이 달랐다: 루트(LNB 2단)는
+`880 − 2 보더 − 180 LNB − 40 오른쪽 칸 p-5 = 658px`, AI 드릴인은
+`880 − 2 − 32 p-4 = 846px`. **드릴인이 LNB 를 떼면서 그 180px 를 내용이
+먹었다.** 늘어난 188px(+28.6%)이 나르는 정보는 0인데, `justify-between` 행은
+폭이 커질수록 양끝을 더 벌리므로 「Anthropic ‥‥‥ [키 등록]」 사이가 통째로
+빈 칸이 됐다(소유자 2회 지적).
+
+**묶는 것은 시트가 아니라 행이다.** 시트 크기는 소유자 확정 고정값이고
+(2026-07-29), 줄이면 루트의 LNB 2단과 「확장」 절이 같이 깨진다. 그리고 폭을
+줄이는 것만으로는 재발이 안 막힌다 — 다음에 시트를 넓히면 같은 병이 돌아온다.
+
+값은 취향이 아니라 **루트 얼굴의 유도값 그대로**이고, 유도가 어긋나면
+`tests/contract/settings-sheet-content-measure.contract.test.ts` 가 잡는다
+(시트 폭·LNB 폭·패딩 중 무엇이 바뀌어도 토큰이 따라와야 한다).
+
+**산문은 이보다 좁다** — `--git-setup-measure`(520px)를 재사용한다. 읽는 것과
+조작하는 것의 측정폭은 다르고, 같은 값의 토큰을 새로 만들지 않는다.
 
 ### EmptyState (#16)
 

@@ -83,6 +83,27 @@ export function validateAiSettingsMarkers(markers, { expectedBaseUrl = null } = 
   if (!Number.isFinite(modelCount) || modelCount < 1) {
     return "installed app verified the local runner but offered no model to choose";
   }
+  // **목록이 보인다는 것까지가 "고를 수 있다" 이다** (2026-08-02 설치 앱 실측).
+  // 종전 판정은 `modelOptionCount >= 1` 에서 멈췄고, 그 사이 화면에서는 조상의
+  // `overflow: hidden` 이 264px 목록을 39px 로 잘라 7개 중 1개만 보였다 —
+  // role·aria·텍스트 마커를 전부 통과하면서. 세는 것과 보이는 것은 다르다.
+  const listHeight = Number(run.modelListHeight);
+  const visibleHeight = Number(run.modelListVisibleHeight);
+  if (!Number.isFinite(listHeight) || listHeight < 1) {
+    return "WebView never measured the model list box (missing modelListHeight marker)";
+  }
+  if (!Number.isFinite(visibleHeight) || visibleHeight + 1 < listHeight) {
+    return `installed app clipped the model list: ${visibleHeight}px of ${listHeight}px was on screen — an ancestor overflow is cutting the list, so ${modelCount} model(s) are announced but not all are reachable`;
+  }
+  const inView = Number(run.modelOptionsInView);
+  const hittable = Number(run.modelOptionsHittable);
+  if (!Number.isFinite(inView) || inView < 1) {
+    return "installed app opened the model list but not one option landed inside its own scroll view";
+  }
+  if (!Number.isFinite(hittable) || hittable !== inView) {
+    return `installed app showed ${inView} model option(s) but only ${Number.isFinite(hittable) ? hittable : 0} answered a hit test at their own centre — something is drawn over them or they are outside the window`;
+  }
+
   const selectedModel = String(run.selectedModel ?? "").trim();
   if (!selectedModel) {
     return "WebView did not choose a model from the local runner list";

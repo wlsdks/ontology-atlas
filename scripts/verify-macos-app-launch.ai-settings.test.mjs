@@ -28,6 +28,11 @@ const PASSING_MARKERS = {
     modelListOpened: true,
     modelOptionCount: 7,
     models: ["qwen3:8b"],
+    // 목록이 잘리지 않고, 보인다고 주장하는 옵션이 전부 눌린다.
+    modelListHeight: 259,
+    modelListVisibleHeight: 259,
+    modelOptionsInView: 7,
+    modelOptionsHittable: 7,
     selectedModel: "qwen3:8b",
   },
 };
@@ -102,6 +107,53 @@ test("AI settings verification fails loudly instead of passing on missing elemen
         },
       },
       /offered no model to choose/,
+    ],
+    // 2026-08-02 설치 앱 실측 — **세는 것과 보이는 것은 다르다.** 러너가 준
+    // 7개가 role/aria/텍스트 마커를 전부 통과하는 동안 화면에는 1개만 있었다
+    // (264px 목록이 조상 overflow 에 39px 로 잘렸다). 종전 판정은 여기서
+    // 초록이었고, 그래서 이 결함은 어느 게이트에도 안 걸렸다.
+    [
+      {
+        ...PASSING_MARKERS,
+        aiSettingsVerification: {
+          ...PASSING_MARKERS.aiSettingsVerification,
+          modelListHeight: 264,
+          modelListVisibleHeight: 39,
+        },
+      },
+      /clipped the model list: 39px of 264px/,
+    ],
+    [
+      {
+        ...PASSING_MARKERS,
+        aiSettingsVerification: {
+          ...PASSING_MARKERS.aiSettingsVerification,
+          modelListHeight: undefined,
+          modelListVisibleHeight: undefined,
+        },
+      },
+      /never measured the model list box/,
+    ],
+    [
+      {
+        ...PASSING_MARKERS,
+        aiSettingsVerification: {
+          ...PASSING_MARKERS.aiSettingsVerification,
+          modelOptionsHittable: 1,
+        },
+      },
+      /showed 7 model option\(s\) but only 1 answered a hit test/,
+    ],
+    [
+      {
+        ...PASSING_MARKERS,
+        aiSettingsVerification: {
+          ...PASSING_MARKERS.aiSettingsVerification,
+          modelOptionsInView: 0,
+          modelOptionsHittable: 0,
+        },
+      },
+      /not one option landed inside its own scroll view/,
     ],
     [
       {
@@ -300,6 +352,16 @@ test("installed-app AI settings driver walks the real settings testids", () => {
 
   // 토글 컨트롤을 폴링마다 다시 누르면 열고 닫기를 반복한다.
   assert.equal(tauriLib.includes("CLICK_COOLDOWN"), true);
+  // 목록을 **재는** 코드가 실제로 실려 있다 — 계약만 있고 마커를 만드는 쪽이
+  // 없으면 판정은 영원히 `undefined` 위에서 돈다.
+  for (const marker of [
+    "modelListVisibleHeight",
+    "modelOptionsInView",
+    "modelOptionsHittable",
+    "elementFromPoint",
+  ]) {
+    assert.equal(tauriLib.includes(marker), true, `verifier should measure ${marker}`);
+  }
   // 주소가 없으면 조용히 건너뛰지 않고 마커로 실패를 남긴다.
   assert.equal(
     tauriLib.includes("ONTOLOGY_ATLAS_VERIFY_AI_BASE_URL was missing or unsafe"),

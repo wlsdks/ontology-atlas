@@ -511,6 +511,41 @@ const AI_SETTINGS_VERIFY_SCRIPT: &str = r#"(() => {
       result.reason = "model list opened with zero options";
       return;
     }
+
+    // 목록이 **화면에 실제로 있는가.** 2026-08-02 실측: 러너가 준 모델 7개가
+    // aria 로는 전부 정상이었는데(activedescendant 가 7개를 훑었다) 화면에는
+    // 1개만 보였다 — 두 단계 위 조상의 `overflow: hidden` 이 264px 짜리 목록을
+    // 39px 로 잘랐기 때문이다(가시 14.8%). 그 상태는 role/aria/텍스트 마커를
+    // 전부 통과한다. 그래서 여기서 재는 것은 **잘림과 클릭 가능성**이다.
+    const listRect = listbox.getBoundingClientRect();
+    let clipTop = listRect.top;
+    let clipBottom = listRect.bottom;
+    for (let node = listbox.parentElement; node && node !== document.body; node = node.parentElement) {
+      const style = window.getComputedStyle(node);
+      if (style.overflow === "visible" && style.overflowY === "visible") continue;
+      const rect = node.getBoundingClientRect();
+      clipTop = Math.max(clipTop, rect.top);
+      clipBottom = Math.min(clipBottom, rect.bottom);
+    }
+    clipTop = Math.max(clipTop, 0);
+    clipBottom = Math.min(clipBottom, window.innerHeight);
+    result.modelListHeight = Math.round(listRect.height);
+    result.modelListVisibleHeight = Math.round(Math.max(0, clipBottom - clipTop));
+    // 목록 자신의 스크롤 창 안에 있는 옵션만 센다 — 목록이 길어 안에서
+    // 스크롤되는 것은 결함이 아니고, "보인다고 주장하는 것이 안 눌리는" 것이
+    // 결함이다.
+    const inView = options.filter((option) => {
+      const rect = option.getBoundingClientRect();
+      const centerY = rect.top + rect.height / 2;
+      return centerY >= listRect.top && centerY <= listRect.bottom;
+    });
+    result.modelOptionsInView = inView.length;
+    result.modelOptionsHittable = inView.filter((option) => {
+      const rect = option.getBoundingClientRect();
+      const hit = document.elementFromPoint(rect.left + rect.width / 2, rect.top + rect.height / 2);
+      return Boolean(hit) && (hit === option || option.contains(hit));
+    }).length;
+
     result.step = "pick-model";
     result.selectedModel = result.models[0];
     options[0].click();
