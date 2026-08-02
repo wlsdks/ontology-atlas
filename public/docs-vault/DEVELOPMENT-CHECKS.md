@@ -17,6 +17,28 @@ pnpm build
 
 For user-facing UI changes, add the relevant Playwright route check.
 
+## Pre-commit hook — generated vault freshness
+
+`pnpm install` points `core.hooksPath` at `.githooks/` (the `prepare` script;
+nothing to run by hand). One hook lives there: **`pre-commit` refuses a commit
+whose staged set touches the vault's markdown or its generated outputs while
+`node scripts/build-docs-vault.mjs --check` reports drift.**
+
+It exists because the same failure landed three times in two days (#826 · #828 ·
+#831): docs edited, `pnpm docs-vault:build` skipped, CI red eight minutes later.
+The tool was never the problem — `pnpm checks:changed` named
+`pnpm docs-vault:check` on every one of them. Moving the verdict from CI to the
+commit is the only part that changes anything, so the hook does exactly that and
+nothing else: **it blocks and prints the fix, it never edits your staged files.**
+A hook that silently rewrites a commit puts bytes nobody wrote under a person's
+name.
+
+```bash
+pnpm docs-vault:build && git add src/entities/docs-vault/data public/docs-vault
+```
+
+`--no-verify` is not the escape hatch — `.claude/rules/git.md` forbids it.
+
 ## Quick Matrix
 
 | Area | First check | Escalate when needed |
