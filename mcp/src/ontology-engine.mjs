@@ -3486,7 +3486,12 @@ export function createOntologyEngine(artifact, options = {}) {
     const overviewResult = overview({ limit });
     const topEntrypoint = overviewResult.hubs[0] ?? nodes.find((node) => ['domain', 'capability', 'element'].includes(node.kind));
     const secondEntrypoint = overviewResult.hubs.find((node) => node.slug !== topEntrypoint?.slug);
-    const projectSlug = projectRootSlugs()[0] ?? '<project-slug>';
+    const projectSlug = options.project
+      ? resolve(options.project, 'project')
+      : projectRootSlugs()[0] ?? '<project-slug>';
+    if (options.project && nodeBySlug.get(projectSlug)?.kind !== 'project') {
+      throw new Error(`project must resolve to a project node. Received: "${options.project}".`);
+    }
     const meaningfulNodes = nodes.filter((node) => ['domain', 'capability', 'element'].includes(node.kind)).length;
     const relationCount = edges.length;
     const shaped = meaningfulNodes >= 3;
@@ -3826,6 +3831,7 @@ export function createOntologyEngine(artifact, options = {}) {
     const brief = {
       operation: 'agent_brief',
       sideEffect: false,
+      projectSlug,
       status: workspace.status,
       readiness: {
         status: readinessStatus,

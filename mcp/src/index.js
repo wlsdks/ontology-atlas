@@ -70,6 +70,7 @@ import { basename, relative, resolve, sep } from 'node:path';
 import { createHash } from 'node:crypto';
 
 import { SERVER_VERSION } from './server-version.mjs';
+import { readProjectSourceView } from './project-source-receipt.mjs';
 
 import { existsSync, readFileSync, copyFileSync, realpathSync, statSync } from 'node:fs';
 import {
@@ -6078,9 +6079,19 @@ function queryOntologyTool(args = {}) {
     ontologyAtlasIgnorePatterns,
     ...(args.operation === 'builder_context' ? { sourceDocs: loadVaultDocs(VAULT_ROOT) } : {}),
   });
-  const result = ['health', 'workspace_brief', 'agent_brief'].includes(args.operation)
+  const validatedResult = ['health', 'workspace_brief', 'agent_brief'].includes(args.operation)
     ? attachVaultValidation(queryResult, args)
     : queryResult;
+  const result = args.operation === 'agent_brief'
+    ? {
+        ...validatedResult,
+        projectSource: readProjectSourceView(
+          VAULT_ROOT,
+          validatedResult.projectSlug,
+          artifact.graphHash,
+        ),
+      }
+    : validatedResult;
   return {
     ...result,
     compiledSummary: {

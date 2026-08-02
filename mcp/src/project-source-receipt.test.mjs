@@ -1,0 +1,109 @@
+import assert from 'node:assert/strict';
+import { mkdtempSync, mkdirSync, writeFileSync } from 'node:fs';
+import { tmpdir } from 'node:os';
+import { join } from 'node:path';
+import test from 'node:test';
+import {
+  PROJECT_SOURCE_RECEIPT_VERSION,
+  readProjectSourceView,
+} from './project-source-receipt.mjs';
+
+function vault() {
+  return mkdtempSync(join(tmpdir(), 'atlas-project-source-'));
+}
+
+function writeState(root, bindings) {
+  mkdirSync(join(root, '.ontology-atlas'), { recursive: true });
+  writeFileSync(join(root, '.ontology-atlas', 'project-sources.json'), JSON.stringify({
+    contractVersion: PROJECT_SOURCE_RECEIPT_VERSION,
+    bindings,
+  }));
+}
+
+const receipt = (overrides = {}) => ({
+  contractVersion: PROJECT_SOURCE_RECEIPT_VERSION,
+  projectSlug: 'music-streaming',
+  sourceId: 'src_7b9f',
+  sourceKind: 'git',
+  sourceRevision: 'abc123',
+  sourceFingerprint: 'git:abc123:clean',
+  graphHash: 'graph-a',
+  measuredAt: '2026-08-02T10:00:00.000Z',
+  status: 'verified_current',
+  currentness: 'current',
+  topGap: null,
+  nextAction: { id: 'use_current_evidence' },
+  witnessSummary: { total: 1, supported: 1, missing: 0 },
+  witnesses: [{ id: 'player-entry', nodeSlug: 'player', role: 'entrypoint', path: 'src/player.ts', supported: true }],
+  diagnostics: { dirty: false, truncated: false },
+  ...overrides,
+});
+
+const binding = (overrides = {}) => ({
+  projectSlug: 'music-streaming',
+  sourceId: 'src_7b9f',
+  rootPath: '/private/work/music',
+  kind: 'git',
+  boundAt: '2026-08-02T09:00:00.000Z',
+  receipt: receipt(),
+  ...overrides,
+});
+
+test('readProjectSourceView keeps an unbound project valid and unmeasured', () => {
+  const result = readProjectSourceView(vault(), 'music-streaming', 'graph-a');
+  assert.deepEqual(result, {
+    contractVersion: PROJECT_SOURCE_RECEIPT_VERSION,
+    projectSlug: 'music-streaming',
+    status: 'not_measured',
+    currentness: 'unavailable',
+    measuredAt: null,
+    topGap: { id: 'source_unbound' },
+    nextAction: { id: 'connect_source' },
+    bindingCardinality: 0,
+    receipt: null,
+  });
+});
+
+test('readProjectSourceView returns one saved receipt without leaking its private root', () => {
+  const root = vault();
+  writeState(root, [binding()]);
+  const result = readProjectSourceView(root, 'music-streaming', 'graph-a');
+  assert.equal(result.status, 'verified_current');
+  assert.equal(result.currentness, 'unavailable');
+  assert.equal(result.bindingCardinality, 1);
+  assert.equal(result.receipt.contractVersion, PROJECT_SOURCE_RECEIPT_VERSION);
+  assert.doesNotMatch(JSON.stringify(result), /\/private\/work\/music/);
+});
+
+test('readProjectSourceView fails closed for duplicate bindings and malformed state', () => {
+  const duplicateRoot = vault();
+  writeState(duplicateRoot, [binding(), binding({ sourceId: 'src_other', rootPath: '/private/work/other' })]);
+  assert.deepEqual(readProjectSourceView(duplicateRoot, 'music-streaming', 'graph-a'), {
+    contractVersion: PROJECT_SOURCE_RECEIPT_VERSION,
+    projectSlug: 'music-streaming',
+    status: 'invalid',
+    currentness: 'stale',
+    measuredAt: null,
+    topGap: { id: 'multiple_active_sources' },
+    nextAction: { id: 'repair_source_binding' },
+    bindingCardinality: 2,
+    receipt: null,
+  });
+
+  const malformedRoot = vault();
+  mkdirSync(join(malformedRoot, '.ontology-atlas'));
+  writeFileSync(join(malformedRoot, '.ontology-atlas', 'project-sources.json'), '{not-json');
+  const malformed = readProjectSourceView(malformedRoot, 'music-streaming', 'graph-a');
+  assert.equal(malformed.status, 'invalid');
+  assert.equal(malformed.topGap.id, 'receipt_malformed');
+});
+
+test('readProjectSourceView marks a receipt stale when the ontology graph changed', () => {
+  const root = vault();
+  writeState(root, [binding()]);
+  const result = readProjectSourceView(root, 'music-streaming', 'graph-b');
+  assert.equal(result.status, 'review_required');
+  assert.equal(result.currentness, 'stale');
+  assert.deepEqual(result.topGap, { id: 'ontology_changed' });
+  assert.deepEqual(result.nextAction, { id: 'remeasure_source' });
+});

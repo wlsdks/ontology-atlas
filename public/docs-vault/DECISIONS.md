@@ -42,6 +42,167 @@
 
 ---
 
+## 2026-08-02 — source receipt는 새 카드가 아니라 프로젝트 inspector의 기존 위계를 치환한다
+
+**소집**: 디자인 카운슬 6자리(위계·체계·상호작용·도해·작업대·핸드오프),
+독립 1라운드 + 상호 비평 1라운드. 모든 자리가 설치 앱 또는 실제
+`agent_brief`를 열었고, 설치 앱을 열지 못한 핸드오프 자리는 화면 판정을 유보한
+채 명령 계약만 처방했다. · **트리거**: Topology의 선택 프로젝트 inspector,
+native folder picker, MCP/CLI handoff를 함께 바꾸는 시각·상호작용 결정.
+
+**선행 결정 관계**: 바로 아래 「프로젝트의 현재 source 근거는 하나의 receipt로
+사람과 agent에게 보인다」는 유효하다. PO 결정이 무엇을 한 사실로 만들지 정했고,
+이번 결정은 그 사실이 이미 밀도 높은 작업대에서 어떤 위계와 상태 전이로 보여야
+하는지 정한다.
+
+**실물 관측**: `/Applications/Ontology Atlas.app`의 `/ko/topology`, 1512×949,
+프로젝트 `음악 스트리밍` 선택 상태에서 우측 inspector는 `3일 전 바뀜`, 관계·문서
+집계, 동등한 여섯 행동, `담는 것` 6행, sticky `전체 상세`를 한 위계로 쌓는다.
+source binding·측정 revision·top gap은 없다. 별도 receipt 카드나 네 행을 그대로
+추가하면 첫 viewport의 그래프 사실과 다음 행동을 밀어낸다. 반대로 실제
+`agent_brief`는 graph readiness 100을 내지만 project source receipt 필드가 없어,
+사람과 agent의 상태 순서를 맞출 계약도 아직 없다.
+
+**결정 (accountable: design-guardian 대행)**: 조건부 승인, Build and verify.
+project 선택에서만 기존 슬롯을 치환한다. 현재 meta는 label+icon의 categorical
+source 상태와 `measuredAt`, 중복 stats 자리는 최대 두 줄의 `topGap`, sticky
+footer의 유일한 primary는 receipt `nextAction`이 된다. `전체 상세`와 나머지 행동은
+utility로 강등한다. 기존 `3일 전 바뀜`은 `개념 문서 · 3일 전`처럼 주어를 붙여
+source 측정 시각과 분리한다. 1512 이하에서는 `담는 것 N · 근거 M` 집계만 남기고
+project의 개별 관계 목록을 기본 접는다. 다른 kind의 inspector는 바꾸지 않는다.
+
+새 panel/card/dashboard, progress·donut·`x/y`·confidence, 지도 노드의 추가 ring/glow,
+새 agent CTA는 만들지 않는다. 기존 neutral/indigo/status token만 재사용하며 color만으로
+상태를 뜻하지 않는다. compact inspector·전체 상세·MCP `agent_brief`·CLI는 같은
+versioned receipt를 `status → measuredAt → topGap → nextAction` 순서와 의미로 읽고,
+절대 경로와 private remote를 표시하거나 복사하지 않는다. graph readiness와 source
+상태는 서로 대체하지 않는다.
+
+**상호작용 계약**: folder 선택 취소는 무변경이다. 새 선택은 canonicalize와 receipt
+생성·검증이 모두 성공한 뒤에만 binding+receipt를 원자 교체한다. 교체 실패는 이전
+binding/receipt·route·project selection을 보존하고 실패만 `aria-live=polite`로
+알린다. 성공·취소·실패 뒤 focus는 호출한 source 버튼 또는 갱신된 상태 heading으로
+돌아온다. 측정 중에도 이전 receipt를 지우지 않는다. 연결 해제와 확인 modal은 첫
+슬라이스에서 만들지 않는다.
+
+**검증 계약**: component/contract는 receipt contract version, 상태, top gap,
+next action, currentness, binding cardinality와 UI↔`agent_brief` parity를 fail-closed로
+검증한다. 설치 앱은 1512×949와 외부 1920/2560에서 project selected 상태의 겹침 0,
+footer 도달, 목록 접힘, raw path 비노출을 증명한다. native picker는 성공·취소·실패의
+원자 교체·이전 receipt 보존·focus return을 증명한다. 기존 token만 쓰므로 새 lint
+gate는 만들지 않는다.
+
+**기록된 반대**: 이 조밀한 inspector에서 source receipt가 attention winner가 되면
+관계와 근거 문서라는 온톨로지 본체가 utility로 밀리고, source 측정 기능이 아직
+약한 상태에서는 큰 `needs_evidence` CTA만 반복하는 진단 UI가 될 수 있다. 별도
+UI보다 bounded source-role evidence를 먼저 넓혀야 한다는 반대도 여기에 포함된다.
+**반증 조건**: 1512 설치 앱에서 사용자가 첫 viewport 안에 project 관계 사실 또는
+receipt next action 중 하나를 보려 스크롤해야 하거나, 두 외부 trial에서 top gap이
+같은 막연한 문구만 반복하고 handoff 정확도를 바꾸지 못하면 이 반대가 옳다. 그때
+receipt 노출을 더 키우지 않고 rail을 축소한 뒤 source-role evidence부터 보강한다.
+**재검토**: 설치 앱 1512·1920·2560 proof와 두 외부 trial 재측정 직후.
+
+**상태**: 유효.
+
+---
+
+## 2026-08-02 — 프로젝트의 현재 source 근거는 하나의 receipt로 사람과 agent에게 보인다
+
+**소집**: PO 카운슬 5인 전원(근거·결·지킴이·해자·지렛대), 독립 1라운드 +
+상호 반박 1라운드. 3인→2인 두 파동으로 원 관측을 독립 검토했고, 2라운드에는
+다섯 판정을 모두 공유했다. · **트리거**: project↔source 로컬 계약, MCP 분석
+receipt, agent handoff, Topology의 신뢰 상태를 함께 바꾸는 공개 제품 결정.
+**루브릭**: 22/24 (Problem insight 4 · User moment 4 · Differentiation 3 ·
+Ontology value 4 · Agent value 4 · Verification 3, 치명적 0: 없음).
+
+**선행 결정 관계**: 같은 날 「`canWrite`는 competency 답의 witness와 visible
+gap을 함께 보존한다」와 2026-07-31 「팬아웃 상한이 아니라 노드 자격 게이트」는
+유효하다. 전자는 현재 proposal 안의 답을 정직하게 만들었고, 후자는 10·20 같은
+고정 node 수를 품질 기준으로 쓰지 못하게 했다. 이번 결정은 둘을 project의 실제
+source revision과 묶어 다음 사람과 agent가 같은 현재성 판정을 읽게 한다.
+
+**관측**: 현재 MCP의 `REPO_ROOT`는 프로세스 전역이고 root 변경에는 재시작이
+필요하다. `index_project(rootPath)`는 명시 폴더를 읽을 수 있지만 그 선택과 결과를
+project별로 보존하지 않는다. map/project 표면은 node·relation·document 수를
+보여주며, MCP와 web의 readiness는 node 수·관계 수·graph health·hub를 합산한다.
+dogfood vault는 이 휴리스틱에서 `ready 100/100`이지만 source 의미 정확도를
+측정한 값은 아니다.
+
+두 외부 field trial이 서로 다른 거짓 안심을 재현했다. 첫 trial은 6 concept·5
+relation을 저장하고도 source-hidden 6문항 중 1개만 완전 답변했으며 canonical
+entrypoint 하나가 틀렸다. 두 번째 비-Rust Go trial은 6분 16초 동안 위험 표시된
+README claim을 현재 source 역할로 독립 확인하지 못해 `canWrite:false`, 의미 node·
+relation write 0으로 정직하게 닫혔다. 그러나 남은 5 starter node·7 relation은
+compiler issue 0·unresolved edge 0으로 깨끗했고, source-hidden 인수자는 109.54초 뒤
+6문항 전부를 `unknown`으로 판정했다. source claim은 0개라 hallucination 비율은
+`0/0 = 100%`가 아니라 `not_applicable`이다. 구조 health만으로는 두 경우를
+구분할 수 없다.
+
+**근거 원칙**: competency question은 온톨로지가 목적에 필요한 정보를 답할 수
+있는지 묻는 litmus test다([Stanford Ontology Development 101](https://protege.stanford.edu/publications/ontology_development/ontology101.pdf)).
+품질 차원은 구체 indicator를 관측하는 절차와 측정 provenance를 가져야 한다
+([W3C DQV](https://www.w3.org/TR/vocab-dqv/),
+[W3C PROV-O](https://www.w3.org/TR/prov-o/)). Atlas는 이 원칙을 RDF 도입 요구로
+읽지 않고, 측정 대상·revision·시간·생성 계약을 receipt에 남기는 제품 계약으로
+적용한다. 구조 적합 여부와 상세 위반을 분리하는 형태도 SHACL validation report의
+원칙을 차용한다([W3C SHACL](https://www.w3.org/TR/shacl/)).
+
+**갈린 지점**: 근거 자리는 기존 `index_project`의 read-only report가 두 trial을
+먼저 구분해야 false green을 싸게 막는다고 했다. 다른 네 자리는 binding 없는
+report가 임의 root를 더 정밀하게 측정하고, 사람 판단과 다음 agent 행동을 바꾸지
+못하는 숨은 진단 파일이 된다고 반박했다. 2라운드에서 근거 자리도 이 반박을
+수용해 최소 수직 loop로 판정을 바꿨다. 결 자리는 처음 `근거 확인 x/14`를
+제안했으나, 현재 5 CQ·14 witness obligation·source-hidden 6문항의 서로 다른
+분모가 허위 정밀도로 보일 수 있다는 지킴이·해자 반론을 받아 첫 UI 수치를
+보류했다.
+
+**결정 (accountable: 소유자)**: 한 project의 **활성 분석 source는 0개 또는
+1개**다. folder를 고르면 Git worktree 안에서는 canonical worktree root와 HEAD·
+dirty/content fingerprint를, Git 밖에서는 canonical folder root와 bounded inventory
+fingerprint를 쓴다. 여러 project가 같은 monorepo root를 공유할 수 있지만, 한
+project가 여러 독립 root를 합치는 aggregate mode는 v1에서 제외한다. source가 없는
+legacy/conceptual project는 계속 유효하고 `not_measured`; 둘 이상의 활성 binding,
+사라진 root, 깨진 receipt는 `invalid`다. 절대 경로와 private remote는 Markdown에
+쓰지 않고 vault의 gitignored `.ontology-atlas/` local sidecar에만 둔다.
+
+하나의 공용 receipt 생성기가 `projectSlug` · opaque source identity · source
+revision/fingerprint · ontology `graphHash` · `measuredAt` · contract version ·
+versioned CQ witness/gap · scan diagnostics · validation findings를 만든다. 현재 상태는
+그 receipt와 현 source/graph를 다시 대조해 `not_measured` · `needs_evidence` ·
+`review_required` · `invalid` · `verified_current` 중 하나로 파생한다.
+`verified_current`는 path 존재와 graph shape만으로 주지 않고, 필수 witness가 현재
+source 역할을 지지할 때만 허용한다. map의 선택된 project 상세와 `agent_brief`는
+상태를 다시 계산하지 않고 같은 receipt의 사람용 한 줄·최상위 gap·다음 bounded
+action을 읽는다. web이 local root의 현재성을 다시 확인할 수 없으면 마지막 결과와
+`현재성 확인 불가`를 분리해 열화한다.
+
+**적용 규칙**: 최소 수직 슬라이스 · 합집합 금지 · appetite 2일. IN — project
+하나의 folder picker와 Git/non-Git canonicalization, 활성 binding 0/1/2 fail-closed
+fixture, local sidecar 한 계약, 공용 versioned receipt, source/graph stale 판정,
+map project 상세의 categorical 상태·측정 시각·top gap·next action, 같은 receipt를
+읽는 MCP `agent_brief`, legacy unbound/web degraded/monorepo shared-root fixture,
+설치 앱과 source-hidden handoff 재검증. OUT — 첫 UI의 `x/y`, combined confidence,
+node/file/relation quality denominator, multi-root aggregate, 새 dashboard/route,
+주기 watcher, 자동 graph write, 범용 AST/import/symbol graph, 모든 언어 scanner 확대.
+현재 obligation 수와 충족 수는 receipt 안에서 versioning하되 여러 언어 trial에서
+분모가 안정되기 전에는 사용자 신뢰 숫자로 승격하지 않는다.
+
+**기록된 반대**: report-only부터 만들면 의미 계산을 싸게 검증하고 binding·app·
+handoff를 동시에 건드리는 운영 부담을 줄일 수 있다. 더 근본적으로, 동일한 제한된
+evidence packet을 만든 agent가 자기 witness를 다시 채점하면 더 정교한 false green을
+만들 수 있으므로 UI를 붙이기 전에 bounded source-role evidence가 먼저일 수 있다.
+**반증 조건**: 정확히 binding된 Trial A의 잘못된 canonical path가
+`verified_current`를 받거나 Trial B가 top gap·next action 없이 `needs_evidence`만
+반복하고, source-hidden handoff의 답변/거절 정확도가 개선되지 않으면 이 반대가
+옳다. 그때 UI 확장을 멈추고 반복된 unknown 역할만 수집하는 bounded source-role
+evidence와 report gate를 다음 최소 슬라이스로 연다. **재검토**: 두 trial의 fresh
+receipt와 source-hidden 6문항 재채점 직후. 두 개 이상의 실제 project가 active-root
+전환으로 해결되지 않는 multi-root evidence를 요구해도 cardinality를 재검토한다.
+
+**상태**: 유효.
+
+---
+
 ## 2026-08-02 — `canWrite`는 competency 답의 witness와 visible gap을 함께 보존한다
 
 **소집**: PO 카운슬 5인 전원(근거·결·지킴이·해자·지렛대), 독립 1라운드 +

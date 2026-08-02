@@ -2435,6 +2435,34 @@ await test("query_ontology — compiled graph engine neighbors/path/all_paths/qu
     },
   ]);
   try {
+    mkdirSync(join(root, ".ontology-atlas"), { recursive: true });
+    writeFileSync(join(root, ".ontology-atlas", "project-sources.json"), JSON.stringify({
+      contractVersion: 1,
+      bindings: [{
+        projectSlug: "project",
+        sourceId: "src_fixture",
+        rootPath: "/private/fixture/root",
+        kind: "git",
+        boundAt: "2026-08-02T09:00:00.000Z",
+        receipt: {
+          contractVersion: 1,
+          projectSlug: "project",
+          sourceId: "src_fixture",
+          sourceKind: "git",
+          sourceRevision: "abc123",
+          sourceFingerprint: "git:abc123:clean",
+          graphHash: "old-graph",
+          measuredAt: "2026-08-02T10:00:00.000Z",
+          status: "verified_current",
+          currentness: "current",
+          topGap: null,
+          nextAction: { id: "use_current_evidence" },
+          witnessSummary: { total: 1, supported: 1, missing: 0 },
+          witnesses: [{ id: "login", nodeSlug: "capabilities/login", role: "implementation", path: "src/auth/login.ts", supported: true }],
+          diagnostics: { dirty: false, truncated: false },
+        },
+      }],
+    }));
     const { responses } = await rpc(root, [
       ...INIT_REQUESTS,
       callTool(2, "query_ontology", {
@@ -2603,6 +2631,7 @@ await test("query_ontology — compiled graph engine neighbors/path/all_paths/qu
       }),
       callTool(36, "query_ontology", {
         operation: "agent_brief",
+        project: "project",
         limit: 5,
       }),
     ]);
@@ -2937,6 +2966,12 @@ await test("query_ontology — compiled graph engine neighbors/path/all_paths/qu
     assert.equal(agentBrief.readiness.status, "needs_attention");
     assert.equal(agentBrief.readiness.meaningfulNodes, 3);
     assert.equal(agentBrief.graph.nodes, 4);
+    assert.equal(agentBrief.projectSlug, "project");
+    assert.equal(agentBrief.projectSource.status, "review_required");
+    assert.equal(agentBrief.projectSource.currentness, "stale");
+    assert.equal(agentBrief.projectSource.topGap.id, "ontology_changed");
+    assert.equal(agentBrief.projectSource.receipt.contractVersion, 1);
+    assert.doesNotMatch(JSON.stringify(agentBrief.projectSource), /\/private\/fixture\/root/);
     assert.deepEqual(agentBrief.firstCalls.map((call) => call.arguments.operation), [
       "workspace_brief",
       "health",

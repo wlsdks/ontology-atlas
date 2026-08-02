@@ -2182,6 +2182,24 @@ describe('queryCompiledOntology', () => {
     assert.ok(result.writePolicy.some((line) => line.includes('find_backlinks before rename_concept')));
   });
 
+  it('targets an explicitly requested project in agent_brief instead of silently choosing the first root', () => {
+    const graph = compileOntology([
+      doc('project-a', { kind: 'project', title: 'Project A', domains: ['domain-a'] }),
+      doc('domain-a', { kind: 'domain', title: 'Domain A' }),
+      doc('project-b', { kind: 'project', title: 'Project B', domains: ['domain-b'] }),
+      doc('domain-b', { kind: 'domain', title: 'Domain B' }),
+    ], { includeIndexes: true });
+
+    const result = queryCompiledOntology(graph, { operation: 'agent_brief', project: 'project-b' });
+    assert.equal(result.projectSlug, 'project-b');
+    assert.equal(result.graphDbQueryPack.find((pack) => pack.id === 'business_questions').calls[0].arguments.operation, 'facets');
+    assert.ok(result.cliFallbackCommands.some((command) => command.includes('project-map project-b')));
+    assert.throws(
+      () => queryCompiledOntology(graph, { operation: 'agent_brief', project: 'domain-b' }),
+      /project must resolve to a project node/,
+    );
+  });
+
   it('matches compiled nodes by graph-derived attributes', () => {
     const result = queryCompiledOntology(artifact(), {
       operation: 'match_nodes',

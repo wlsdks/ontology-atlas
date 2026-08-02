@@ -43,6 +43,7 @@
     "src/compiled-cache.mjs",
     "src/ontology-compiler.mjs",
     "src/ontology-engine.mjs",
+    "src/project-source-receipt.mjs",
     "src/suggestions.mjs",
     "src/parser.test.mjs",
     "scripts/verify.mjs",
@@ -53,7 +54,7 @@
   "scripts": {
     "start": "node src/index.js",
     "test": "node --test src/parser.test.mjs",
-    "test:all": "node --test src/git-tools.test.mjs src/parser.test.mjs src/query.test.mjs src/validate.test.mjs src/vault.test.mjs src/write-path-gate.test.mjs src/redirect-backlinks.test.mjs src/conflict-detection.test.mjs src/analyze.test.mjs src/analyze-golden-corpus.test.mjs src/analyze-adversarial.test.mjs src/meaning-evaluation.test.mjs src/infer-imports.test.mjs src/reconcile-imports.test.mjs src/detect-drift.test.mjs src/evidence-rank.test.mjs src/ontology-atlas-ignore.test.mjs src/compiled-cache.test.mjs src/ontology-compiler.test.mjs src/ontology-engine.test.mjs src/suggestions.test.mjs src/json-rpc-lines.test.mjs src/absorb.test.mjs src/verify-script.test.mjs src/integration.test.mjs",
+    "test:all": "node --test src/git-tools.test.mjs src/parser.test.mjs src/query.test.mjs src/validate.test.mjs src/vault.test.mjs src/write-path-gate.test.mjs src/redirect-backlinks.test.mjs src/conflict-detection.test.mjs src/analyze.test.mjs src/analyze-golden-corpus.test.mjs src/analyze-adversarial.test.mjs src/meaning-evaluation.test.mjs src/infer-imports.test.mjs src/reconcile-imports.test.mjs src/detect-drift.test.mjs src/evidence-rank.test.mjs src/ontology-atlas-ignore.test.mjs src/compiled-cache.test.mjs src/ontology-compiler.test.mjs src/ontology-engine.test.mjs src/project-source-receipt.test.mjs src/suggestions.test.mjs src/json-rpc-lines.test.mjs src/absorb.test.mjs src/verify-script.test.mjs src/integration.test.mjs",
     "test:smoke": "node src/parser.test.mjs",
     "verify": "node scripts/verify.mjs"
   },

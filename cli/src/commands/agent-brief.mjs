@@ -612,6 +612,15 @@ function render(result) {
       ` · ${readiness.healthChecks} health checks${COLORS.reset}\n\n`,
   );
 
+  const projectSourceLines = formatProjectSourceSummary(result.projectSource);
+  if (projectSourceLines.length > 0) {
+    process.stdout.write(`${COLORS.dim}PROJECT SOURCE${COLORS.reset} ${COLORS.dim}(receipt v${result.projectSource.contractVersion} · ${result.projectSlug})${COLORS.reset}\n`);
+    for (const line of projectSourceLines) {
+      process.stdout.write(`  ${COLORS.dim}${line}${COLORS.reset}\n`);
+    }
+    process.stdout.write('\n');
+  }
+
   if (typeof result.handoffPrompt === 'string' && result.handoffPrompt.trim()) {
     process.stdout.write(
       `${COLORS.dim}HANDOFF PROMPT${COLORS.reset} ${COLORS.dim}available in --json as .handoffPrompt for Claude Code/Codex paste-in setup${COLORS.reset}\n\n`,
@@ -746,6 +755,22 @@ function render(result) {
   for (const policy of result.writePolicy) {
     process.stdout.write(`  ${COLORS.dim}- ${policy}${COLORS.reset}\n`);
   }
+}
+
+export function formatProjectSourceSummary(projectSource) {
+  if (!projectSource || typeof projectSource !== 'object') return [];
+  const gap = projectSource.topGap?.id
+    ? `${projectSource.topGap.id}${projectSource.topGap.nodeSlug ? `:${projectSource.topGap.nodeSlug}` : ''}`
+    : 'none';
+  const action = projectSource.nextAction?.id
+    ? `${projectSource.nextAction.id}${projectSource.nextAction.target ? `:${projectSource.nextAction.target}` : ''}`
+    : 'none';
+  return [
+    `status       ${projectSource.status} (${projectSource.currentness})`,
+    `measuredAt   ${projectSource.measuredAt ?? 'not measured'}`,
+    `topGap       ${gap}`,
+    `nextAction   ${action}`,
+  ];
 }
 
 function renderChecklist(label, items, color) {

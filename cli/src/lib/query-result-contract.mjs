@@ -28,6 +28,14 @@ const EXPLAIN_RELATION_VERDICTS = new Set([
   'unrelated_within_hops',
 ]);
 const PATH_DIRECTIONS = new Set(['incoming', 'outgoing', 'both', 'undirected']);
+const PROJECT_SOURCE_STATUSES = new Set([
+  'not_measured',
+  'needs_evidence',
+  'review_required',
+  'invalid',
+  'verified_current',
+]);
+const PROJECT_SOURCE_CURRENTNESS = new Set(['current', 'stale', 'unavailable']);
 
 export function assertQueryOperation(result, expectedOperation) {
   if (!result || typeof result !== 'object' || Array.isArray(result)) {
@@ -261,6 +269,9 @@ export function assertAgentBriefShape(result) {
   if (!isPlainObject(result.graph)) {
     throw new Error('agent_brief graph must be an object');
   }
+  if (!validProjectSourceView(result.projectSource, result.projectSlug)) {
+    throw new Error('agent_brief projectSource must contain the versioned categorical source receipt view');
+  }
   if (!validAgentBriefDocs(result.docs)) {
     throw new Error('agent_brief docs must include workflowGuide and graphScanProofChecklist guidance');
   }
@@ -400,6 +411,73 @@ export function assertAgentBriefShape(result) {
     throw new Error('agent_brief relationDecisionGuide must cover relation_check decision outcomes');
   }
   return result;
+}
+
+function validProjectSourceView(value, projectSlug) {
+  if (
+    !hasNonEmptyString(projectSlug)
+    || !isPlainObject(value)
+    || value.contractVersion !== 1
+    || value.projectSlug !== projectSlug
+    || !PROJECT_SOURCE_STATUSES.has(value.status)
+    || !PROJECT_SOURCE_CURRENTNESS.has(value.currentness)
+    || !(value.measuredAt === null || hasNonEmptyString(value.measuredAt))
+    || !validCount(value.bindingCardinality)
+    || !validProjectSourceGap(value.topGap)
+    || !validProjectSourceAction(value.nextAction)
+    || containsPrivateSourceField(value)
+  ) return false;
+
+  if (value.receipt === null) {
+    return ['not_measured', 'invalid'].includes(value.status);
+  }
+  const receipt = value.receipt;
+  if (
+    !isPlainObject(receipt)
+    || receipt.contractVersion !== value.contractVersion
+    || receipt.projectSlug !== projectSlug
+    || !['needs_evidence', 'review_required', 'verified_current'].includes(receipt.status)
+    || receipt.currentness !== 'current'
+    || !hasNonEmptyString(receipt.sourceId)
+    || !['git', 'folder'].includes(receipt.sourceKind)
+    || !hasNonEmptyString(receipt.sourceRevision)
+    || !hasNonEmptyString(receipt.sourceFingerprint)
+    || !hasNonEmptyString(receipt.graphHash)
+    || !hasNonEmptyString(receipt.measuredAt)
+    || !validProjectSourceGap(receipt.topGap)
+    || !validProjectSourceAction(receipt.nextAction)
+    || !isPlainObject(receipt.witnessSummary)
+    || !['total', 'supported', 'missing'].every((field) => validCount(receipt.witnessSummary[field]))
+    || receipt.witnessSummary.supported + receipt.witnessSummary.missing !== receipt.witnessSummary.total
+    || !Array.isArray(receipt.witnesses)
+  ) return false;
+  return receipt.witnesses.every((witness) => (
+    isPlainObject(witness)
+    && hasNonEmptyString(witness.id)
+    && hasNonEmptyString(witness.nodeSlug)
+    && hasNonEmptyString(witness.role)
+    && hasNonEmptyString(witness.path)
+    && !/^(?:\/|[A-Za-z]:[\\/]|\.\.\/)/.test(witness.path)
+    && typeof witness.supported === 'boolean'
+  ));
+}
+
+function validProjectSourceGap(value) {
+  return value === null || (isPlainObject(value) && hasNonEmptyString(value.id));
+}
+
+function validProjectSourceAction(value) {
+  return isPlainObject(value) && hasNonEmptyString(value.id);
+}
+
+function containsPrivateSourceField(value) {
+  if (!value || typeof value !== 'object') return false;
+  if (Array.isArray(value)) return value.some(containsPrivateSourceField);
+  for (const [key, nested] of Object.entries(value)) {
+    if (['rootPath', 'remote', 'remoteUrl', 'privateRemote'].includes(key)) return true;
+    if (containsPrivateSourceField(nested)) return true;
+  }
+  return false;
 }
 
 export function assertCyclesShape(result) {

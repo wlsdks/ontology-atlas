@@ -19,6 +19,7 @@ import {
   listTauriDirectoryNames,
   openTauriVaultInFinder,
   pickTauriVaultDirectory,
+  inspectTauriProjectSource,
   tauriVaultPathExists,
 } from './tauri-vault-fs';
 
@@ -75,6 +76,33 @@ describe('tauri vault file-system shim', () => {
     });
 
     await expect(pickTauriVaultDirectory()).resolves.toBeNull();
+  });
+
+  it('inspects a project source through the native command', async () => {
+    const inspection = {
+      rootPath: '/Users/me/repo',
+      sourceId: 'sha256:source',
+      kind: 'git' as const,
+      revision: 'abc123',
+      fingerprint: 'sha256:fingerprint',
+      dirty: false,
+      truncated: false,
+      files: ['README.md', 'src/index.ts'],
+    };
+    const calls = installInvoke(({ command }) => {
+      if (command === 'inspect_project_source') return inspection;
+      throw new Error(`unexpected command: ${command}`);
+    });
+
+    await expect(inspectTauriProjectSource('/Users/me/repo/packages/app')).resolves.toEqual(
+      inspection,
+    );
+    expect(calls).toEqual([
+      {
+        command: 'inspect_project_source',
+        args: { rootPath: '/Users/me/repo/packages/app' },
+      },
+    ]);
   });
 
   it('checks whether a native vault root path exists', async () => {

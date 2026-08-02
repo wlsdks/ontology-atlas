@@ -1,9 +1,30 @@
 "use client";
 
-import { type KeyboardEvent as ReactKeyboardEvent, type ReactElement, type ReactNode, useCallback, useState } from "react";
-import { Check, ChevronRight, Clipboard, Copy, FileText, GitBranch, MessageCircle, Orbit, Route, X } from "lucide-react";
+import {
+  type KeyboardEvent as ReactKeyboardEvent,
+  type ReactElement,
+  type ReactNode,
+  useCallback,
+  useState,
+} from "react";
+import {
+  AlertCircle,
+  Check,
+  CheckCircle2,
+  ChevronRight,
+  CircleHelp,
+  Clipboard,
+  Copy,
+  FileText,
+  GitBranch,
+  MessageCircle,
+  Orbit,
+  Route,
+  X,
+} from "lucide-react";
 import { Link } from "@/i18n/navigation";
 import { buildDocsVaultHref } from "@/entities/docs-vault";
+import type { ProjectSourceStatus, ProjectSourceView } from "@/shared/lib/project-source-receipt";
 import { truncateMiddlePath } from "@/shared/lib/truncate-middle-path";
 import { useCopyFeedback } from "@/shared/lib/use-copy-feedback";
 import {
@@ -180,6 +201,14 @@ export interface TopologyV2DetailPanelLabels {
   editSubjectAgent: string;
   editSubjectHuman: string;
   editConflictMessage: string;
+  /** Project-only source receipt copy, preformatted by the caller. */
+  sourceStatus?: string;
+  sourceMeasuredAt?: string;
+  sourceCurrentness?: string;
+  sourceGap?: string;
+  sourceAction?: string;
+  sourceRelationsShow?: string;
+  sourceRelationsHide?: string;
 }
 
 export interface TopologyV2DetailPanelProps {
@@ -315,6 +344,33 @@ export interface TopologyV2DetailPanelProps {
    * `true`. 비개발(plain) 모드에서 `false` — 코드 경로는 개발자 어휘.
    */
   showSourcePath?: boolean;
+  /** Project-only 0/1 source binding receipt. Other kinds ignore it. */
+  projectSource?: ProjectSourceView | null;
+  /** Executes the receipt's already-bounded next action (connect or remeasure). */
+  onProjectSourceAction?: () => void;
+}
+
+function ProjectSourceStatusIcon({ status }: { status: ProjectSourceStatus }) {
+  let Icon = CircleHelp;
+  let color = "var(--topology-v2-panel-text-tertiary)";
+  if (status === "verified_current") {
+    Icon = CheckCircle2;
+    color = "var(--color-status-success)";
+  } else if (status === "invalid") {
+    Icon = AlertCircle;
+    color = "var(--color-status-danger)";
+  } else if (status === "needs_evidence" || status === "review_required") {
+    color = "var(--color-status-warning)";
+  }
+  return (
+    <span
+      data-source-status-icon={status}
+      className="flex shrink-0 items-center justify-center"
+      style={{ color }}
+    >
+      <Icon size={14} aria-hidden="true" />
+    </span>
+  );
 }
 
 // 데이터시트 내부 정제 (2026-07-23) — `justify-start` + 고정 상단 패딩: 라벨이
@@ -530,7 +586,11 @@ export function TopologyV2DetailPanel({
   className,
   showHandoff = true,
   showSourcePath = true,
+  projectSource = null,
+  onProjectSourceAction,
 }: TopologyV2DetailPanelProps) {
+  const isProject = kind === "project";
+  const showProjectSource = isProject && projectSource !== null;
   // 시안 재설계 (2026-07-24) — 상단 stats 는 집계 한 줄. 타입별 분해는 아래
   // 각 관계 그룹 헤더의 카운트 칩이 담당한다(한 사실 한 번).
   //
@@ -547,6 +607,7 @@ export function TopologyV2DetailPanel({
   // 토글로 기존 리스트를 편다(세션 임시 상태). 노드가 바뀌면 기본(요약)으로 리셋
   // 되도록 slug 를 key 로 쓴다(호출부 HomePage 가 key 를 주므로 재마운트).
   const [showAllContains, setShowAllContains] = useState(false);
+  const [showProjectRelations, setShowProjectRelations] = useState(false);
 
   const handleKeyDown = useCallback(
     (event: ReactKeyboardEvent<HTMLDivElement>) => {
@@ -811,42 +872,46 @@ export function TopologyV2DetailPanel({
             {sourceTitle}
           </div>
         ) : null}
-        {/* meta row: 신선도(좌) · 도메인 칩(우) */}
-        <div className="flex items-center justify-between gap-3">
-          {updatedAtLabel ? (
-            <span
-              data-testid="topology-v2-datasheet-updated-at"
-              className="shrink-0 text-[12px] text-[color:var(--topology-v2-panel-text-quaternary)]"
-            >
-              {updatedAtLabel}
-            </span>
-          ) : (
-            <span className="shrink-0 text-[12px] text-[color:var(--topology-v2-panel-text-quaternary)]">
-              {powered ? labels.poweredOn : labels.poweredOff}
-            </span>
-          )}
-          {domain ? (
-            <button
-              type="button"
-              onClick={() => onSelectConnection(domain.id)}
-              aria-label={`${labels.domainLabel} ${domain.title}`}
-              data-testid="topology-v2-detail-panel-domain"
-              className="flex min-w-0 items-center gap-1.5 rounded-[8px] border border-[color:var(--topology-v2-panel-domain-border)] bg-[color:var(--topology-v2-panel-domain-surface)] py-1.5 pl-2.5 pr-2 text-left transition-colors hover:border-[color:var(--topology-v2-panel-domain-border-hover)] hover:bg-[color:var(--topology-v2-panel-domain-surface-hover)]"
-            >
-              <span className="shrink-0 text-[11px] text-[color:var(--topology-v2-panel-text-tertiary)]">
-                {labels.domainLabel}
-              </span>
-              <span className="truncate text-[12px] font-semibold text-[color:var(--topology-v2-panel-domain-text)]">
-                {domain.title}
-              </span>
-              <ChevronRight
-                size={13}
-                aria-hidden="true"
-                className="shrink-0 text-[color:var(--topology-v2-panel-domain-text)] opacity-65"
-              />
-            </button>
-          ) : null}
-        </div>
+        {/* project source receipt 는 아래 OPS rail 이 meta 자리까지 맡는다. */}
+        {!showProjectSource || domain ? (
+          <div className="flex items-center justify-between gap-3">
+            {!showProjectSource ? (
+              updatedAtLabel ? (
+                <span
+                  data-testid="topology-v2-datasheet-updated-at"
+                  className="shrink-0 text-[12px] text-[color:var(--topology-v2-panel-text-quaternary)]"
+                >
+                  {updatedAtLabel}
+                </span>
+              ) : (
+                <span className="shrink-0 text-[12px] text-[color:var(--topology-v2-panel-text-quaternary)]">
+                  {powered ? labels.poweredOn : labels.poweredOff}
+                </span>
+              )
+            ) : null}
+            {domain ? (
+              <button
+                type="button"
+                onClick={() => onSelectConnection(domain.id)}
+                aria-label={`${labels.domainLabel} ${domain.title}`}
+                data-testid="topology-v2-detail-panel-domain"
+                className="flex min-w-0 items-center gap-1.5 rounded-[8px] border border-[color:var(--topology-v2-panel-domain-border)] bg-[color:var(--topology-v2-panel-domain-surface)] py-1.5 pl-2.5 pr-2 text-left transition-colors hover:border-[color:var(--topology-v2-panel-domain-border-hover)] hover:bg-[color:var(--topology-v2-panel-domain-surface-hover)]"
+              >
+                <span className="shrink-0 text-[11px] text-[color:var(--topology-v2-panel-text-tertiary)]">
+                  {labels.domainLabel}
+                </span>
+                <span className="truncate text-[12px] font-semibold text-[color:var(--topology-v2-panel-domain-text)]">
+                  {domain.title}
+                </span>
+                <ChevronRight
+                  size={13}
+                  aria-hidden="true"
+                  className="shrink-0 text-[color:var(--topology-v2-panel-domain-text)] opacity-65"
+                />
+              </button>
+            ) : null}
+          </div>
+        ) : null}
       </div>
 
       <hr className="h-px border-0 bg-[color:var(--topology-v2-panel-zone-divider)]" />
@@ -866,24 +931,50 @@ export function TopologyV2DetailPanel({
         ) : null}
         {mtimeConflict ? <MtimeConflictBadge message={labels.editConflictMessage} /> : null}
 
-        {/* 평문 stats — 집계 한 줄(무거운 pill 없음). 타입별 분해는 아래 각
-            관계 그룹 헤더 카운트가 담당(한 사실 한 번). 전체 라인 스코프
-            풀이는 `metricHelp` 툴팁으로 보존. */}
-        <div
-          data-testid="topology-v2-detail-panel-stats"
-          title={labels.metricHelp}
-          className="flex items-center gap-1.5 text-[13px] text-[color:var(--topology-v2-panel-text-tertiary)]"
-        >
-          <span>{labels.statsConnected}</span>
-          <b className="font-[650] tabular-nums text-[color:var(--topology-v2-panel-text-secondary)]">
-            {connectedTotal}
-          </b>
-          <span className="text-[color:var(--topology-v2-panel-text-quaternary)]">·</span>
-          <span>{labels.statsEvidenceDocs}</span>
-          <b className="font-[650] tabular-nums text-[color:var(--topology-v2-panel-text-secondary)]">
-            {evidence.total}
-          </b>
-        </div>
+        {/* Project 는 같은 자리를 receipt rail 로 치환한다. 나머지는 기존
+            평문 stats(집계 한 줄)를 그대로 유지한다. */}
+        {showProjectSource ? (
+          <div
+            data-testid="topology-v2-project-source-receipt"
+            data-source-status={projectSource.status}
+            data-source-version={projectSource.contractVersion}
+            data-source-measured-at={projectSource.measuredAt ?? "unmeasured"}
+            data-source-top-gap={projectSource.topGap?.id ?? "none"}
+            data-source-action={projectSource.nextAction.id}
+            data-source-currentness={projectSource.currentness}
+            data-source-cardinality={projectSource.bindingCardinality}
+            aria-live="polite"
+            className="flex flex-col gap-1.5 text-body text-[color:var(--topology-v2-panel-text-tertiary)]"
+          >
+            <div className="flex min-w-0 items-center gap-1.5 text-[color:var(--topology-v2-panel-text-secondary)]">
+              <ProjectSourceStatusIcon status={projectSource.status} />
+              <span className="truncate font-medium">{labels.sourceStatus}</span>
+            </div>
+            <div className="flex items-center justify-between gap-3">
+              <span>{labels.sourceMeasuredAt}</span>
+              <span className="shrink-0">{labels.sourceCurrentness}</span>
+            </div>
+            <span className="text-[color:var(--topology-v2-panel-text-secondary)]">
+              {labels.sourceGap}
+            </span>
+          </div>
+        ) : (
+          <div
+            data-testid="topology-v2-detail-panel-stats"
+            title={labels.metricHelp}
+            className="flex items-center gap-1.5 text-[13px] text-[color:var(--topology-v2-panel-text-tertiary)]"
+          >
+            <span>{labels.statsConnected}</span>
+            <b className="font-[650] tabular-nums text-[color:var(--topology-v2-panel-text-secondary)]">
+              {connectedTotal}
+            </b>
+            <span className="text-[color:var(--topology-v2-panel-text-quaternary)]">·</span>
+            <span>{labels.statsEvidenceDocs}</span>
+            <b className="font-[650] tabular-nums text-[color:var(--topology-v2-panel-text-secondary)]">
+              {evidence.total}
+            </b>
+          </div>
+        )}
 
         {/* 액션 스트립 — 조용한 ghost 아이콘+라벨(무거운 박스 아님). 핸들러/
             href 가 없는 항목은 렌더하지 않는다(죽은 어포던스 금지). */}
@@ -983,15 +1074,69 @@ export function TopologyV2DetailPanel({
           (28px)로 그룹 내부 행 간격보다 훨씬 크게 벌려 각 typed-fact 블록이
           자체 섹션으로 읽히게 한다("space encodes grouping"). */}
       <div className="flex flex-col gap-[var(--topology-v2-panel-zone-gap)] px-[var(--topology-v2-panel-pad)] py-[18px]">
+        {isProject && connectedTotal > 0 ? (
+          <div
+            data-testid="topology-v2-project-relations-summary"
+            data-source-relations-expanded={showProjectRelations}
+            className="flex flex-wrap items-center gap-x-3 gap-y-1.5 text-label text-[color:var(--topology-v2-panel-text-tertiary)]"
+          >
+            {groups.contains.total > 0 ? (
+              <span>
+                {labels.metricContains}
+                <b className="ml-1 tabular-nums text-[color:var(--topology-v2-panel-text-secondary)]">
+                  {groups.contains.total}
+                </b>
+              </span>
+            ) : null}
+            {groups.usedBy.total > 0 ? (
+              <span>
+                {labels.metricUsedBy}
+                <b className="ml-1 tabular-nums text-[color:var(--topology-v2-panel-text-secondary)]">
+                  {groups.usedBy.total}
+                </b>
+              </span>
+            ) : null}
+            {groups.dependsOn.total > 0 ? (
+              <span>
+                {labels.metricDependsOn}
+                <b className="ml-1 tabular-nums text-[color:var(--topology-v2-panel-text-secondary)]">
+                  {groups.dependsOn.total}
+                </b>
+              </span>
+            ) : null}
+            {groups.belongsTo.total > 0 ? (
+              <span>
+                {labels.metricBelongsTo}
+                <b className="ml-1 tabular-nums text-[color:var(--topology-v2-panel-text-secondary)]">
+                  {groups.belongsTo.total}
+                </b>
+              </span>
+            ) : null}
+            <button
+              type="button"
+              onClick={() => setShowProjectRelations((value) => !value)}
+              aria-expanded={showProjectRelations}
+              className="ml-auto shrink-0 text-[color:var(--topology-v2-panel-text-tertiary)] transition-colors hover:text-[color:var(--topology-v2-panel-text-secondary)] active:text-[color:var(--topology-v2-panel-text-primary)]"
+            >
+              {showProjectRelations
+                ? labels.sourceRelationsHide ?? labels.containsShowSummary
+                : labels.sourceRelationsShow ?? labels.containsShowAll}
+            </button>
+          </div>
+        ) : null}
         {hasConnections ? (
           <>
-            {renderGroup("contains", "contains", labels.metricContains, labels.metricContainsHelp, groups.contains)}
-            {renderGroup("usedBy", "usedBy", labels.metricUsedBy, labels.metricUsedByHelp, groups.usedBy)}
-            {renderGroup("dependsOn", "dependsOn", labels.metricDependsOn, labels.metricDependsOnHelp, groups.dependsOn)}
-            {/* 속한 곳 — 전체 상세와 같은 순서(담는 것 → 쓰는 곳 → 기대는 곳 →
-                속한 곳)로 마지막에 둔다. 두 표면을 오가는 사람이 같은 자리에서
-                같은 단어를 만나게. */}
-            {renderGroup("belongsTo", "belongsTo", labels.metricBelongsTo, labels.metricBelongsToHelp, groups.belongsTo)}
+            {!isProject || showProjectRelations ? (
+              <>
+                {renderGroup("contains", "contains", labels.metricContains, labels.metricContainsHelp, groups.contains)}
+                {renderGroup("usedBy", "usedBy", labels.metricUsedBy, labels.metricUsedByHelp, groups.usedBy)}
+                {renderGroup("dependsOn", "dependsOn", labels.metricDependsOn, labels.metricDependsOnHelp, groups.dependsOn)}
+                {/* 속한 곳 — 전체 상세와 같은 순서(담는 것 → 쓰는 곳 → 기대는 곳 →
+                    속한 곳)로 마지막에 둔다. 두 표면을 오가는 사람이 같은 자리에서
+                    같은 단어를 만나게. */}
+                {renderGroup("belongsTo", "belongsTo", labels.metricBelongsTo, labels.metricBelongsToHelp, groups.belongsTo)}
+              </>
+            ) : null}
             {renderEvidenceGroup()}
             {renderCodeLocationsGroup()}
           </>
@@ -1007,22 +1152,44 @@ export function TopologyV2DetailPanel({
           스크롤 컨테이너라 음수 마진 없이 sticky bottom-0 로 앵커된다 —
           내용이 넘칠 때도 항상 뷰포트 안에 남는다(P3-③). */}
       <div className="sticky bottom-0 flex items-center gap-2.5 rounded-b-[var(--topology-v2-panel-radius)] border-t border-[color:var(--topology-v2-panel-border)] bg-[color:var(--topology-v2-panel-surface)] px-[var(--topology-v2-panel-pad)] py-[11px]">
-        <span
-          data-testid="topology-v2-detail-panel-slug"
-          title={slug}
-          className="min-w-0 flex-1 truncate font-mono text-[10.5px] text-[color:var(--topology-v2-panel-text-quaternary)]"
-        >
-          {slugDisplaySegment(slug)}
-        </span>
+        {!showProjectSource ? (
+          <span
+            data-testid="topology-v2-detail-panel-slug"
+            title={slug}
+            className="min-w-0 flex-1 truncate font-mono text-[10.5px] text-[color:var(--topology-v2-panel-text-quaternary)]"
+          >
+            {slugDisplaySegment(slug)}
+          </span>
+        ) : (
+          <span className="min-w-0 flex-1" />
+        )}
         {onOpenFullDetail ? (
           <button
             type="button"
             onClick={onOpenFullDetail}
             data-testid="topology-v2-detail-panel-open-full-detail"
-            className="shrink-0 rounded-[8px] border border-[color:var(--topology-v2-panel-primary-border)] bg-[color:var(--topology-v2-panel-primary-surface)] px-3 py-[7px] text-[12px] font-semibold text-[color:var(--topology-v2-panel-primary-text)] transition-colors hover:border-[color:var(--topology-v2-panel-primary-border-hover)] hover:bg-[color:var(--topology-v2-panel-primary-surface-hover)]"
+            className={showProjectSource
+              ? "shrink-0 rounded-[var(--topology-v2-panel-row-radius)] px-1.5 py-[7px] text-body text-[color:var(--topology-v2-panel-text-tertiary)] transition-colors hover:text-[color:var(--topology-v2-panel-text-secondary)]"
+              : "shrink-0 rounded-[8px] border border-[color:var(--topology-v2-panel-primary-border)] bg-[color:var(--topology-v2-panel-primary-surface)] px-3 py-[7px] text-[12px] font-semibold text-[color:var(--topology-v2-panel-primary-text)] transition-colors hover:border-[color:var(--topology-v2-panel-primary-border-hover)] hover:bg-[color:var(--topology-v2-panel-primary-surface-hover)]"}
           >
             {labels.openFullDetail}
           </button>
+        ) : null}
+        {showProjectSource && labels.sourceAction ? (
+          onProjectSourceAction ? (
+            <button
+              type="button"
+              onClick={onProjectSourceAction}
+              data-testid="topology-v2-project-source-action"
+              className="shrink-0 rounded-[var(--topology-v2-panel-row-radius)] border border-[color:var(--topology-v2-panel-primary-border)] bg-[color:var(--topology-v2-panel-primary-surface)] px-3 py-[7px] text-body font-semibold text-[color:var(--topology-v2-panel-primary-text)] transition-colors hover:border-[color:var(--topology-v2-panel-primary-border-hover)] hover:bg-[color:var(--topology-v2-panel-primary-surface-hover)]"
+            >
+              {labels.sourceAction}
+            </button>
+          ) : (
+            <span className="shrink-0 text-body text-[color:var(--topology-v2-panel-text-secondary)]">
+              {labels.sourceAction}
+            </span>
+          )
         ) : null}
       </div>
     </div>

@@ -1,8 +1,9 @@
 use notify_debouncer_full::notify::{RecommendedWatcher, RecursiveMode, Watcher};
 use notify_debouncer_full::{new_debouncer, DebounceEventResult, Debouncer, FileIdMap};
 use serde::Serialize;
+use sha2::{Digest, Sha256};
 use std::fs;
-use std::io::Write;
+use std::io::{Read, Write};
 use std::path::{Component, Path, PathBuf};
 use std::process::Command;
 use std::sync::Mutex;
@@ -704,6 +705,199 @@ struct VaultFingerprint {
     entries: Vec<VaultStamp>,
     truncated: bool,
     pruned_dirs: Vec<String>,
+}
+
+#[derive(Debug, Serialize)]
+#[serde(rename_all = "camelCase")]
+struct ProjectSourceInspection {
+    root_path: String,
+    source_id: String,
+    kind: String,
+    revision: String,
+    fingerprint: String,
+    dirty: Option<bool>,
+    truncated: bool,
+    files: Vec<String>,
+}
+
+struct SourceInventory {
+    hasher: Sha256,
+    files: Vec<String>,
+    hashed_bytes: u64,
+    truncated: bool,
+}
+
+const SOURCE_INVENTORY_VERSION: &str = "inventory-v1";
+const SOURCE_INVENTORY_MAX_DEPTH: usize = 20;
+const SOURCE_INVENTORY_MAX_FILES: usize = 4000;
+const SOURCE_INVENTORY_MAX_HASH_BYTES: u64 = 32 * 1024 * 1024;
+const SOURCE_PRUNE_DIR_NAMES: &[&str] = &[
+    ".git",
+    ".next",
+    ".turbo",
+    ".cache",
+    "node_modules",
+    "target",
+    "dist",
+    "build",
+    "coverage",
+];
+
+fn source_digest(parts: &[&[u8]]) -> String {
+    let mut hasher = Sha256::new();
+    for part in parts {
+        hasher.update(part);
+        hasher.update([0]);
+    }
+    format!("sha256:{:x}", hasher.finalize())
+}
+
+fn walk_source_inventory(
+    dir: &Path,
+    prefix: &str,
+    depth: usize,
+    inventory: &mut SourceInventory,
+) -> Result<(), String> {
+    if inventory.files.len() >= SOURCE_INVENTORY_MAX_FILES {
+        inventory.truncated = true;
+        return Ok(());
+    }
+    if depth > SOURCE_INVENTORY_MAX_DEPTH {
+        inventory.truncated = true;
+        return Ok(());
+    }
+
+    let mut children = Vec::new();
+    for entry in fs::read_dir(dir).map_err(|err| err.to_string())? {
+        let entry = entry.map_err(|err| err.to_string())?;
+        let file_type = entry.file_type().map_err(|err| err.to_string())?;
+        if file_type.is_dir() || file_type.is_file() {
+            children.push((
+                entry.file_name().to_string_lossy().to_string(),
+                file_type.is_dir(),
+            ));
+        }
+    }
+    children.sort_by(|left, right| left.0.cmp(&right.0));
+
+    for (name, is_dir) in children {
+        if inventory.files.len() >= SOURCE_INVENTORY_MAX_FILES {
+            inventory.truncated = true;
+            break;
+        }
+        let relative = if prefix.is_empty() {
+            name.clone()
+        } else {
+            format!("{prefix}/{name}")
+        };
+        let path = dir.join(&name);
+        if is_dir {
+            if SOURCE_PRUNE_DIR_NAMES.contains(&name.as_str()) {
+                continue;
+            }
+            walk_source_inventory(&path, &relative, depth + 1, inventory)?;
+            continue;
+        }
+
+        let metadata = fs::metadata(&path).map_err(|err| err.to_string())?;
+        inventory.files.push(relative.clone());
+        inventory.hasher.update(relative.as_bytes());
+        inventory.hasher.update([0]);
+        inventory.hasher.update(metadata.len().to_le_bytes());
+
+        let remaining = SOURCE_INVENTORY_MAX_HASH_BYTES.saturating_sub(inventory.hashed_bytes);
+        if remaining == 0 {
+            inventory.truncated = true;
+            continue;
+        }
+        let file = fs::File::open(&path).map_err(|err| err.to_string())?;
+        let mut limited = Read::take(file, remaining);
+        let copied =
+            std::io::copy(&mut limited, &mut inventory.hasher).map_err(|err| err.to_string())?;
+        inventory.hashed_bytes += copied;
+        if copied < metadata.len() {
+            inventory.truncated = true;
+        }
+    }
+    Ok(())
+}
+
+fn inspect_source_inventory(root: &Path) -> Result<(String, bool, Vec<String>), String> {
+    let mut inventory = SourceInventory {
+        hasher: Sha256::new(),
+        files: Vec::new(),
+        hashed_bytes: 0,
+        truncated: false,
+    };
+    inventory.hasher.update(SOURCE_INVENTORY_VERSION.as_bytes());
+    inventory.hasher.update([0]);
+    walk_source_inventory(root, "", 0, &mut inventory)?;
+    let fingerprint = format!("sha256:{:x}", inventory.hasher.finalize());
+    Ok((fingerprint, inventory.truncated, inventory.files))
+}
+
+fn run_source_git(root: &Path, args: &[&str]) -> Result<Vec<u8>, String> {
+    let output = Command::new("git")
+        .args(args)
+        .current_dir(root)
+        .output()
+        .map_err(|err| format!("git source inspection failed: {err}"))?;
+    if !output.status.success() {
+        let detail = String::from_utf8_lossy(&output.stderr)
+            .lines()
+            .find(|line| !line.trim().is_empty())
+            .unwrap_or("unknown git error")
+            .trim()
+            .to_string();
+        return Err(format!("git source inspection failed: {detail}"));
+    }
+    Ok(output.stdout)
+}
+
+#[tauri::command]
+fn inspect_project_source(root_path: String) -> Result<ProjectSourceInspection, String> {
+    let selected_root = canonical_root(&root_path)?;
+    match git::find_repo_root(&selected_root)? {
+        Some(repo_root) => {
+            let (inventory_fingerprint, truncated, files) = inspect_source_inventory(&repo_root)?;
+            let head = run_source_git(&repo_root, &["rev-parse", "HEAD"])?;
+            let revision = String::from_utf8_lossy(&head).trim().to_string();
+            let status = run_source_git(
+                &repo_root,
+                &["status", "--porcelain=v1", "-z", "--untracked-files=all"],
+            )?;
+            let canonical = repo_root.to_string_lossy().to_string();
+            Ok(ProjectSourceInspection {
+                root_path: canonical.clone(),
+                source_id: source_digest(&[b"git", canonical.as_bytes()]),
+                kind: "git".into(),
+                revision: revision.clone(),
+                fingerprint: source_digest(&[
+                    b"git-state-v1",
+                    revision.as_bytes(),
+                    inventory_fingerprint.as_bytes(),
+                    &status,
+                ]),
+                dirty: Some(!status.is_empty()),
+                truncated,
+                files,
+            })
+        }
+        None => {
+            let (fingerprint, truncated, files) = inspect_source_inventory(&selected_root)?;
+            let canonical = selected_root.to_string_lossy().to_string();
+            Ok(ProjectSourceInspection {
+                root_path: canonical.clone(),
+                source_id: source_digest(&[b"folder", canonical.as_bytes()]),
+                kind: "folder".into(),
+                revision: fingerprint.clone(),
+                fingerprint,
+                dirty: None,
+                truncated,
+                files,
+            })
+        }
+    }
 }
 
 /// TS `VAULT_WALK_MAX_DEPTH` 와 **같은 값이어야 한다** (계약 테스트가 본다).
@@ -6486,6 +6680,7 @@ pub fn run() {
         })
         .invoke_handler(tauri::generate_handler![
             pick_vault_directory,
+            inspect_project_source,
             list_vault_directory,
             vault_fingerprint,
             read_vault_text_file,
@@ -6801,6 +6996,171 @@ mod tests {
         )
         .unwrap();
         assert!(!root.join("docs").exists());
+
+        fs::remove_dir_all(root).ok();
+    }
+
+    #[test]
+    fn inspect_project_source_returns_a_deterministic_bounded_folder_inventory() {
+        let root = std::env::temp_dir().join(format!(
+            "ontology-atlas-project-source-folder-{}",
+            std::time::SystemTime::now()
+                .duration_since(UNIX_EPOCH)
+                .unwrap()
+                .as_nanos()
+        ));
+        fs::create_dir_all(root.join("src")).unwrap();
+        fs::create_dir_all(root.join("node_modules/pkg")).unwrap();
+        fs::write(root.join("README.md"), "hello").unwrap();
+        fs::write(root.join("src/index.ts"), "export const value = 1;\n").unwrap();
+        fs::write(root.join("node_modules/pkg/index.js"), "ignored").unwrap();
+
+        let first = inspect_project_source(root.to_string_lossy().to_string()).unwrap();
+        let second = inspect_project_source(root.to_string_lossy().to_string()).unwrap();
+
+        assert_eq!(first.kind, "folder");
+        assert_eq!(
+            first.root_path,
+            fs::canonicalize(&root).unwrap().to_string_lossy()
+        );
+        assert!(first.source_id.starts_with("sha256:"));
+        assert!(first.fingerprint.starts_with("sha256:"));
+        assert_eq!(first.revision, first.fingerprint);
+        assert_eq!(first.dirty, None);
+        assert!(!first.truncated);
+        assert_eq!(first.files, ["README.md", "src/index.ts"]);
+        assert_eq!(first.fingerprint, second.fingerprint);
+        assert_eq!(first.source_id, second.source_id);
+
+        fs::remove_dir_all(root).ok();
+    }
+
+    #[test]
+    fn inspect_project_source_promotes_a_selected_subfolder_to_its_git_worktree() {
+        let root = std::env::temp_dir().join(format!(
+            "ontology-atlas-project-source-git-{}",
+            std::time::SystemTime::now()
+                .duration_since(UNIX_EPOCH)
+                .unwrap()
+                .as_nanos()
+        ));
+        fs::create_dir_all(root.join("packages/app")).unwrap();
+        fs::write(root.join("README.md"), "repo\n").unwrap();
+        fs::write(
+            root.join("packages/app/index.ts"),
+            "export const value = 1;\n",
+        )
+        .unwrap();
+
+        for args in [
+            vec!["init"],
+            vec!["config", "user.email", "atlas@example.invalid"],
+            vec!["config", "user.name", "Atlas Test"],
+            vec!["add", "."],
+            vec!["commit", "-m", "initial"],
+        ] {
+            let output = Command::new("git")
+                .args(args)
+                .current_dir(&root)
+                .output()
+                .unwrap();
+            assert!(
+                output.status.success(),
+                "{}",
+                String::from_utf8_lossy(&output.stderr)
+            );
+        }
+        Command::new("git")
+            .args([
+                "remote",
+                "add",
+                "origin",
+                "git@example.invalid:private/repo.git",
+            ])
+            .current_dir(&root)
+            .output()
+            .unwrap();
+        let selected = root.join("packages/app");
+        let clean = inspect_project_source(selected.to_string_lossy().to_string()).unwrap();
+        assert_eq!(clean.dirty, Some(false));
+
+        fs::write(
+            root.join("packages/app/index.ts"),
+            "export const value = 2;\n",
+        )
+        .unwrap();
+        fs::write(root.join("packages/app/new.ts"), "export {};\n").unwrap();
+
+        let inspection = inspect_project_source(selected.to_string_lossy().to_string()).unwrap();
+        let head = Command::new("git")
+            .args(["rev-parse", "HEAD"])
+            .current_dir(&root)
+            .output()
+            .unwrap();
+
+        assert_eq!(inspection.kind, "git");
+        assert_eq!(
+            inspection.root_path,
+            fs::canonicalize(&root).unwrap().to_string_lossy()
+        );
+        assert_eq!(
+            inspection.revision,
+            String::from_utf8_lossy(&head.stdout).trim()
+        );
+        assert_eq!(inspection.dirty, Some(true));
+        assert_ne!(inspection.fingerprint, clean.fingerprint);
+        assert_eq!(
+            inspection.files,
+            ["README.md", "packages/app/index.ts", "packages/app/new.ts"]
+        );
+        assert!(!inspection
+            .files
+            .iter()
+            .any(|path| path.starts_with(".git/")));
+        assert!(!inspection.source_id.contains("example.invalid"));
+        assert!(!inspection.fingerprint.contains("example.invalid"));
+
+        fs::remove_dir_all(root).ok();
+    }
+
+    #[test]
+    fn inspect_project_source_is_registered_with_the_tauri_invoke_handler() {
+        let source = include_str!("lib.rs");
+        let handler = source
+            .split(".invoke_handler(tauri::generate_handler![")
+            .nth(1)
+            .and_then(|rest| rest.split("])").next())
+            .expect("Tauri invoke handler");
+
+        assert!(handler.contains("inspect_project_source"));
+    }
+
+    #[test]
+    fn inspect_project_source_reports_when_the_file_inventory_is_truncated() {
+        let root = std::env::temp_dir().join(format!(
+            "ontology-atlas-project-source-limit-{}",
+            std::time::SystemTime::now()
+                .duration_since(UNIX_EPOCH)
+                .unwrap()
+                .as_nanos()
+        ));
+        fs::create_dir_all(&root).unwrap();
+        for index in 0..=SOURCE_INVENTORY_MAX_FILES {
+            fs::write(root.join(format!("{index:04}.txt")), "x").unwrap();
+        }
+
+        let inspection = inspect_project_source(root.to_string_lossy().to_string()).unwrap();
+
+        assert!(inspection.truncated);
+        assert_eq!(inspection.files.len(), SOURCE_INVENTORY_MAX_FILES);
+        assert_eq!(
+            inspection.files.first().map(String::as_str),
+            Some("0000.txt")
+        );
+        assert_eq!(
+            inspection.files.last().map(String::as_str),
+            Some("3999.txt")
+        );
 
         fs::remove_dir_all(root).ok();
     }
