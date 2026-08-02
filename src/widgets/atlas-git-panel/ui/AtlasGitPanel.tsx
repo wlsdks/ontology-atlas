@@ -35,9 +35,11 @@ import {
 } from "@/shared/lib/atlas-git-record";
 import {
   gitDiff,
+  gitFetch,
   gitErrorMessage,
   gitHistory,
   gitInit,
+  gitPull,
   gitProbe,
   gitSetRemote,
   gitSnapshot,
@@ -452,6 +454,54 @@ export function AtlasGitPanel({
     }
   }, [vaultPath, refresh]);
 
+  /*
+   * 원격 세 동작 — Fetch · Pull · Push.
+   *
+   * 이 화면에는 **Pull 이 아예 없었고**(브리지에도 Rust 에도 있는데 호출부가
+   * 없었다), Push 는 「남기기」 확인 단계의 체크박스 안에만 있었다. 그래서
+   * 남길 변경이 0 이면 이미 쌓인 걸음을 보낼 방법이 화면에 없다 — 원격보다
+   * 앞서 있어도 그렇다(소유자 실측: ↑2 인데 보낼 길이 없었다).
+   *
+   * 셋 다 **명시 클릭 뒤에만** 돈다. 자동 호출 0 — 신뢰 헌장 그대로다.
+   */
+  const [remoteBusy, setRemoteBusy] = useState<null | "fetch" | "pull" | "push">(null);
+  const [remoteActionNotice, setRemoteActionNotice] = useState<string | null>(null);
+  const [remoteActionError, setRemoteActionError] = useState<string | null>(null);
+  const runRemote = useCallback(
+    async (kind: "fetch" | "pull" | "push") => {
+      if (!vaultPath) return;
+      setRemoteBusy(kind);
+      setRemoteActionError(null);
+      setRemoteActionNotice(null);
+      try {
+        if (kind === "fetch") {
+          const r = await gitFetch(vaultPath);
+          if (r) setRemoteActionNotice(t("remoteDoneFetch", { summary: r.summary }));
+        } else if (kind === "pull") {
+          const r = await gitPull(vaultPath);
+          if (r) setRemoteActionNotice(t("remoteDonePull", { summary: r.summary }));
+        } else {
+          /*
+           * Push 는 전용 명령이 없다 — `git_snapshot(push:true)` 가 그 일을
+           * 한다. 남길 변경이 0 이면 `committed:false/no-changes` 로 돌아오고
+           * **이미 쌓인 걸음만 전송된다**. 그래서 「남길 게 없어도 보낼 수
+           * 있다」가 성립한다.
+           */
+          const r = await gitSnapshot(vaultPath, { push: true });
+          if (r?.push?.pushed) setRemoteActionNotice(t("remoteDonePush"));
+          else if (r?.push?.guidance) setRemoteActionError(r.push.guidance);
+          else if (r?.push?.message) setRemoteActionError(r.push.message);
+        }
+        await refresh();
+      } catch (err) {
+        setRemoteActionError(gitErrorMessage(err));
+      } finally {
+        setRemoteBusy(null);
+      }
+    },
+    [vaultPath, refresh, t],
+  );
+
   /**
    * 보낼 곳 등록 — 주소만 등록하고 **보내지 않는다**. 전송은 사용자가 스냅샷
    * 화면에서 따로 눌러야 한다("누를 때만 나가요" 를 호출 경계에서 지킨다).
@@ -565,6 +615,10 @@ export function AtlasGitPanel({
             remoteError={remoteError}
             remoteNotice={remoteNotice}
             onSetRemote={submitRemote}
+            remoteBusy={remoteBusy}
+            onRemoteAction={(kind) => void runRemote(kind)}
+            remoteActionNotice={remoteActionNotice}
+            remoteActionError={remoteActionError}
           />
         ) : stage === "no-vault" ? (
           <NoVaultSetup key={stage} t={t} />
@@ -956,20 +1010,66 @@ function EvidenceTab({
  * 그래서 **사실은 남기고 형태를 없앴다**: 사실은 크롬 한 줄(11px quaternary),
  * 행동은 그 옆의 조용한 버튼 하나. 입력칸은 누를 때만 온다.
  */
+/** 원격 동작 한 알 — 라벨은 원어, 무엇을 하는지는 툴팁이 진다. */
+function RemoteActionButton({
+  id,
+  label,
+  hint,
+  busy,
+  disabled,
+  onClick,
+}: {
+  id: "fetch" | "pull" | "push";
+  label: string;
+  hint: string;
+  busy: boolean;
+  disabled: boolean;
+  onClick: (kind: "fetch" | "pull" | "push") => void;
+}) {
+  return (
+    <button
+      type="button"
+      data-testid={`atlas-git-remote-${id}`}
+      title={hint}
+      disabled={disabled}
+      onClick={() => onClick(id)}
+      className="rounded-[var(--radius-chip)] border border-[color:var(--color-border-soft)] px-2 py-0.5 text-label text-[color:var(--color-text-tertiary)] transition-colors hover:border-[color:var(--color-indigo-a46)] hover:text-[color:var(--color-text-primary)] disabled:cursor-default disabled:opacity-40 disabled:hover:border-[color:var(--color-border-soft)] disabled:hover:text-[color:var(--color-text-tertiary)]"
+    >
+      {busy ? "…" : label}
+    </button>
+  );
+}
+
 function LocationLine({
   t,
   branch,
   upstream,
+  ahead,
+  behind,
   remoteOpen,
   setRemoteOpen,
+  remoteBusy,
+  onRemoteAction,
+  notice,
+  error,
 }: {
   t: Translator;
   branch: string | null;
   upstream: string | null;
+  /** upstream 이 없으면 둘 다 null — 0 이 아니라 「모름」이다. */
+  ahead: number | null;
+  behind: number | null;
   remoteOpen: boolean;
   setRemoteOpen: (v: boolean) => void;
+  remoteBusy: null | "fetch" | "pull" | "push";
+  onRemoteAction: (kind: "fetch" | "pull" | "push") => void;
+  /** 방금 한 일의 결과. 성공도 실패도 **같은 자리**에서 말한다. */
+  notice: string | null;
+  error: string | null;
 }) {
   if (!branch) return null;
+  const known = ahead !== null && behind !== null;
+  const same = known && ahead === 0 && behind === 0;
   return (
     <div
       data-testid="atlas-git-location"
@@ -985,7 +1085,56 @@ function LocationLine({
       >
         {upstream ? t("locationChip", { branch, upstream }) : branch}
       </span>
-      {upstream ? null : (
+      {upstream ? (
+        <>
+          {/* 갈라짐은 **마지막 확인 시점 기준**이라 그 사실을 툴팁으로 함께
+              말한다 — 숫자만 보이면 실시간으로 읽힌다. */}
+          <span
+            data-testid="atlas-git-divergence"
+            title={t("remoteStale")}
+            className="inline-flex items-center gap-1.5 rounded-[var(--radius-chip)] border border-[color:var(--color-border-soft)] px-2 py-0.5 tabular-nums"
+          >
+            {same ? (
+              <span>{t("divergeSame")}</span>
+            ) : (
+              <>
+                <span className="text-[color:var(--color-text-secondary)]">
+                  {t("divergeAhead", { ahead: ahead ?? 0 })}
+                </span>
+                <span className="text-[color:var(--color-text-secondary)]">
+                  {t("divergeBehind", { behind: behind ?? 0 })}
+                </span>
+              </>
+            )}
+          </span>
+          {/* Fetch·Pull·Push 는 **원어**로 둔다. 번역하면 무슨 일이 일어나는지가
+              오히려 흐려진다(소유자 판정 2026-08-02). */}
+          <RemoteActionButton
+            id="fetch"
+            label={t("remoteFetch")}
+            hint={t("remoteFetchHint")}
+            busy={remoteBusy === "fetch"}
+            disabled={remoteBusy !== null}
+            onClick={onRemoteAction}
+          />
+          <RemoteActionButton
+            id="pull"
+            label={t("remotePull")}
+            hint={behind && behind > 0 ? t("remotePullHint", { behind }) : t("remoteSameHint")}
+            busy={remoteBusy === "pull"}
+            disabled={remoteBusy !== null || !known || behind === 0}
+            onClick={onRemoteAction}
+          />
+          <RemoteActionButton
+            id="push"
+            label={t("remotePush")}
+            hint={ahead && ahead > 0 ? t("remotePushHint", { ahead }) : t("remoteSameHint")}
+            busy={remoteBusy === "push"}
+            disabled={remoteBusy !== null || !known || ahead === 0}
+            onClick={onRemoteAction}
+          />
+        </>
+      ) : (
         <>
           <span aria-hidden>·</span>
           <span>{t("noUpstream")}</span>
@@ -1000,6 +1149,21 @@ function LocationLine({
           </button>
         </>
       )}
+      {error ? (
+        <span
+          data-testid="atlas-git-remote-error"
+          className="basis-full text-label text-[color:var(--color-danger-text)]"
+        >
+          {error}
+        </span>
+      ) : notice ? (
+        <span
+          data-testid="atlas-git-remote-notice"
+          className="basis-full text-label text-[color:var(--color-text-tertiary)]"
+        >
+          {notice}
+        </span>
+      ) : null}
     </div>
   );
 }
@@ -1763,6 +1927,10 @@ function DesktopBody({
   remoteError,
   remoteNotice,
   onSetRemote,
+  remoteBusy,
+  onRemoteAction,
+  remoteActionNotice,
+  remoteActionError,
 }: {
   /** `navigator.platform ?? userAgent` — 설치 안내를 플랫폼별로 고르는 힌트. */
   hostPlatformHint: string;
@@ -1810,6 +1978,10 @@ function DesktopBody({
   remoteError: string | null;
   remoteNotice: string | null;
   onSetRemote: () => void;
+  remoteBusy: null | "fetch" | "pull" | "push";
+  onRemoteAction: (kind: "fetch" | "pull" | "push") => void;
+  remoteActionNotice: string | null;
+  remoteActionError: string | null;
 }) {
   /**
    * 방금 남긴 커밋의 해시 — 지난 걸음 목록에서 **그 한 줄만** 확정 램프로
@@ -1985,8 +2157,14 @@ function DesktopBody({
       t={t}
       branch={status?.branch ?? null}
       upstream={upstream}
+      ahead={status?.ahead ?? null}
+      behind={status?.behind ?? null}
       remoteOpen={remoteOpen}
       setRemoteOpen={setRemoteOpen}
+      remoteBusy={remoteBusy}
+      onRemoteAction={onRemoteAction}
+      notice={remoteActionNotice}
+      error={remoteActionError}
     />
   );
 

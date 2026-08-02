@@ -35,6 +35,8 @@ const STATUS_WITH_CHANGES = {
   upstream: "origin/main",
   changedCount: 2,
   stagedOutsideVault: [],
+  ahead: 2,
+  behind: 1,
 };
 
 const DIFF_WITH_CHANGES = {
@@ -87,6 +89,8 @@ function installDesktopGit({
     replaced: null,
   },
   probe = { installed: true, version: "git version 2.49.0" },
+  fetch = { ok: true, upstream: "origin/main", ahead: 2, behind: 0, summary: "내 걸음 2개 · 원격 걸음 0개" },
+  pull = { ok: true, upstream: "origin/main", summary: "1개 받아옴" },
 }: {
   status?: unknown;
   diff?: unknown;
@@ -95,6 +99,8 @@ function installDesktopGit({
   init?: unknown;
   setRemote?: unknown;
   probe?: unknown;
+  fetch?: unknown;
+  pull?: unknown;
 } = {}) {
   tauriApiMock.runtimeAvailable = true;
   tauriApiMock.invoke.mockImplementation(async (command: string) => {
@@ -105,6 +111,8 @@ function installDesktopGit({
     if (command === "git_init") return init;
     if (command === "git_set_remote") return setRemote;
     if (command === "git_probe") return probe;
+    if (command === "git_fetch") return fetch;
+    if (command === "git_pull") return pull;
     throw new Error(`unexpected command: ${command}`);
   });
 }
@@ -653,5 +661,73 @@ describe("AtlasGitPanel — 작업대 빈 상태", () => {
     const result = await screen.findByTestId("atlas-git-snapshot-result");
     expect(result).toHaveTextContent("2개 남겼어요");
     expect(result).not.toHaveTextContent("atlasGit");
+  });
+});
+
+describe("AtlasGitPanel — 원격 세 동작 (Fetch · Pull · Push)", () => {
+  /*
+   * 이 화면에는 **Pull 이 아예 없었다** — 브리지에도 Rust 에도 있는데 호출부가
+   * 0회였다. Push 는 「남기기」 확인 단계의 체크박스 안에만 있어서, 남길 변경이
+   * 0 이면 이미 쌓인 걸음을 보낼 방법이 없었다(소유자 실측: ↑2 인데 보낼 길 없음).
+   * 아래 넷이 그 회귀를 잡는다.
+   */
+  it("갈라짐 수치를 위치 줄에 그린다 — 숫자가 있어야 무엇을 눌러야 할지 정해진다", async () => {
+    installDesktopGit();
+    renderPanel(<AtlasGitPanel vaultPath="/repo/vault" />);
+    const chip = await screen.findByTestId("atlas-git-divergence");
+    expect(chip).toHaveTextContent("2");
+    expect(chip).toHaveTextContent("1");
+  });
+
+  it("Fetch 를 누르면 git_fetch 를 부른다 — 그 전에는 0회", async () => {
+    installDesktopGit();
+    renderPanel(<AtlasGitPanel vaultPath="/repo/vault" />);
+    const btn = await screen.findByTestId("atlas-git-remote-fetch");
+    const before = tauriApiMock.invoke.mock.calls.filter(([c]) => c === "git_fetch");
+    expect(before).toHaveLength(0);
+    fireEvent.click(btn);
+    await waitFor(() =>
+      expect(
+        tauriApiMock.invoke.mock.calls.filter(([c]) => c === "git_fetch"),
+      ).toHaveLength(1),
+    );
+  });
+
+  it("Pull 을 누르면 git_pull 을 부른다 — 이 배선이 없던 것이 결함이었다", async () => {
+    installDesktopGit();
+    renderPanel(<AtlasGitPanel vaultPath="/repo/vault" />);
+    fireEvent.click(await screen.findByTestId("atlas-git-remote-pull"));
+    await waitFor(() =>
+      expect(
+        tauriApiMock.invoke.mock.calls.filter(([c]) => c === "git_pull"),
+      ).toHaveLength(1),
+    );
+  });
+
+  it("Push 는 남길 변경이 없어도 눌린다 — 이미 쌓인 걸음을 보내는 길", async () => {
+    installDesktopGit({
+      status: { ...STATUS_WITH_CHANGES, changedCount: 0, ahead: 2, behind: 0 },
+      diff: { count: 0, files: [], diff: "" },
+    });
+    renderPanel(<AtlasGitPanel vaultPath="/repo/vault" />);
+    const push = await screen.findByTestId("atlas-git-remote-push");
+    expect(push).not.toBeDisabled();
+    fireEvent.click(push);
+    await waitFor(() => {
+      const calls = tauriApiMock.invoke.mock.calls.filter(([c]) => c === "git_snapshot");
+      expect(calls).toHaveLength(1);
+      expect(calls[0][1]).toMatchObject({ push: true });
+    });
+  });
+
+  it("보낼 곳이 없으면 세 버튼을 아예 안 그린다 — 누를 수 없는 것을 보여주지 않는다", async () => {
+    installDesktopGit({
+      status: { ...STATUS_WITH_CHANGES, upstream: null, ahead: null, behind: null },
+    });
+    renderPanel(<AtlasGitPanel vaultPath="/repo/vault" />);
+    await screen.findByTestId("atlas-git-location");
+    expect(screen.queryByTestId("atlas-git-remote-fetch")).toBeNull();
+    expect(screen.queryByTestId("atlas-git-remote-pull")).toBeNull();
+    expect(screen.queryByTestId("atlas-git-remote-push")).toBeNull();
   });
 });
