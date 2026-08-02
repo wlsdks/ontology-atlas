@@ -31,16 +31,26 @@
  * 모르는 사람까지**다.
  */
 
-/** 한 클립의 계약. 전달 규격(원장 「촬영 후 게이트」)이 타입에 박혀 있다. */
+/**
+ * 한 클립의 계약. 전달 규격(원장 「촬영 후 게이트」)이 타입에 박혀 있다.
+ *
+ * ## 2026-08-03 개정 — 클립 **하나**, 자막 없음, 로케일별 영상
+ *
+ * 소유자 확정 셋:
+ *
+ * ① **둘에서 하나로.** 탭이 둘이면 관객은 «무엇을 볼지»를 먼저 골라야 하는데,
+ *    첫인상 자리에서 그 선택은 비용이지 값이 아니다 — 대부분은 첫 탭만 보고
+ *    떠나므로 두 번째 클립은 «만들었지만 아무도 안 보는 것»이 된다.
+ * ② **자막을 굽지도 그리지도 않는다.** 로케일별 영상을 따로 찍으므로 자막이
+ *    나를 정보가 없다. `.vtt` 배관을 남겨 두면 빈 트랙이 붙는다.
+ * ③ **영상 자체가 로케일을 탄다** — 화면 안의 글자가 한국어/영어로 갈리기
+ *    때문이다. 그래서 `basename` 이 아니라 `basenameFor(locale)` 이다.
+ */
 export interface DemoClip {
-  id: 'one-folder' | 'one-button';
-  /** i18n 키 — 탭 라벨. 클립이 끝났을 때 관객이 갖게 될 문장. */
-  tabKey: string;
-  /** 자동재생 여부. 클립 A 만 무음 자동재생, B 는 포스터 + 재생 버튼. */
-  autoplay: boolean;
-  /** 초 단위 길이(실측). 자막 타이밍 검수의 기준이 된다. */
+  id: 'atlas-tour';
+  /** 초 단위 길이(실측). 촬영 후 게이트가 대조한다. */
   seconds: number;
-  /** `public/demo/` 안의 파일 이름(확장자 없음). */
+  /** `public/demo/` 안의 파일 이름 앞부분 — 뒤에 `.ko` / `.en` 이 붙는다. */
   basename: string;
 }
 
@@ -49,8 +59,7 @@ export interface DemoClip {
  * 「무엇을 찍어야 하는가」가 코드에 남고, 촬영 후 게이트가 대조할 대상이 생긴다.
  */
 export const DEMO_CLIPS: readonly DemoClip[] = [
-  { id: 'one-folder', tabKey: 'demoTabOneFolder', autoplay: true, seconds: 24, basename: 'one-folder' },
-  { id: 'one-button', tabKey: 'demoTabOneButton', autoplay: false, seconds: 14, basename: 'one-button' },
+  { id: 'atlas-tour', seconds: 45, basename: 'atlas-tour' },
 ];
 
 /**
@@ -62,7 +71,16 @@ export const DEMO_CLIPS: readonly DemoClip[] = [
  * 것이 이 배열의 요점이다(파일 존재만으로 켜면, 반쯤 올라간 자산이 첫인상 자리에
  * 그대로 나간다).
  */
-export const AVAILABLE_DEMO_CLIP_IDS: readonly DemoClip['id'][] = ['one-folder', 'one-button'];
+/*
+ * 아직 비어 있다 — **새 시나리오의 촬영본이 없다.** 구 2클립 자산
+ * (`one-folder` · `one-button`)은 지난 시나리오의 것이라 이 표의 대상이 아니다.
+ * 재생할 것 없는 플레이어는 죽은 UI 이고, 관문의 첫인상 자리에 죽은 UI 를 두는
+ * 것은 「곧 됩니다는 강등이 아니라 거짓말」과 같은 결함이다.
+ *
+ * 켜는 절차: `public/demo/atlas-tour.{ko,en}.{webm,mp4}` +
+ * `atlas-tour.{ko,en}-poster.png` 를 넣고 여기에 `'atlas-tour'` 를 더한다.
+ */
+export const AVAILABLE_DEMO_CLIP_IDS: readonly DemoClip['id'][] = [];
 
 /** 렌더할 클립 — 선언과 자산이 모두 있는 것만. */
 export function availableDemoClips(
@@ -83,18 +101,18 @@ export function hasDemoClips(
  * 방문자가 macOS(=Safari) 이고 Safari 의 AV1 은 하드웨어 지원에 따라 갈리므로
  * 떨어질 자리가 있어선 안 된다.
  */
-export function demoSources(clip: DemoClip): { src: string; type: string }[] {
+function localeTag(locale: string): 'ko' | 'en' {
+  return locale === 'ko' ? 'ko' : 'en';
+}
+
+export function demoSources(clip: DemoClip, locale: string): { src: string; type: string }[] {
+  const base = `/demo/${clip.basename}.${localeTag(locale)}`;
   return [
-    { src: `/demo/${clip.basename}.webm`, type: 'video/webm' },
-    { src: `/demo/${clip.basename}.mp4`, type: 'video/mp4' },
+    { src: `${base}.webm`, type: 'video/webm' },
+    { src: `${base}.mp4`, type: 'video/mp4' },
   ];
 }
 
-export function demoPoster(clip: DemoClip): string {
-  return `/demo/${clip.basename}-poster.png`;
-}
-
-/** 자막은 굽지 않는다 — `.vtt` 가 진실원이고 DOM 이 그린다(원장 확정). */
-export function demoCaptions(clip: DemoClip, locale: string): string {
-  return `/demo/${clip.basename}.${locale === 'ko' ? 'ko' : 'en'}.vtt`;
+export function demoPoster(clip: DemoClip, locale: string): string {
+  return `/demo/${clip.basename}.${localeTag(locale)}-poster.png`;
 }
