@@ -916,3 +916,47 @@ describe("AtlasGitPanel — 고른 개념의 성질과 이웃", () => {
     expect(screen.queryByTestId("atlas-git-concept-ego")).toBeNull();
   });
 });
+
+describe("AtlasGitPanel — 2단 작업대의 선택", () => {
+  /*
+   * 탭을 없앤 자리는 **선택**이 진다. 그래서 "고르면 오른쪽이 바뀐다" 가
+   * 동작하지 않으면 화면은 멀쩡해 보이면서 아무것도 못 하게 된다 — 탭이
+   * 있던 시절에는 최소한 탭이 눈에 보였다.
+   */
+  it("커밋을 고르면 오른쪽이 그 커밋의 상세로 바뀐다", async () => {
+    installDesktopGit();
+    renderPanel(<AtlasGitPanel vaultPath="/repo/vault" />);
+
+    // 기본은 미커밋(변경이 있으므로) — 상세는 아직 없다.
+    await screen.findByTestId("atlas-git-pending-row");
+    expect(screen.queryByTestId("atlas-git-history-detail")).toBeNull();
+
+    fireEvent.click(screen.getByTestId("atlas-git-history-item"));
+    expect(await screen.findByTestId("atlas-git-history-detail")).toHaveTextContent(
+      "abc1234def5678",
+    );
+    // 커밋을 고르면 미커밋 줄은 눌린 상태가 풀린다 — 둘이 동시에 열리지 않는다.
+    expect(screen.getByTestId("atlas-git-pending-row")).toHaveAttribute("aria-pressed", "false");
+  });
+
+  it("미커밋 줄로 되돌아오면 변경 내용이 다시 보인다", async () => {
+    installDesktopGit();
+    renderPanel(<AtlasGitPanel vaultPath="/repo/vault" />);
+    fireEvent.click(await screen.findByTestId("atlas-git-history-item"));
+    await screen.findByTestId("atlas-git-history-detail");
+
+    fireEvent.click(screen.getByTestId("atlas-git-pending-row"));
+    expect(await screen.findByTestId("atlas-git-diff-pre")).toHaveTextContent("+new line");
+    expect(screen.queryByTestId("atlas-git-history-detail")).toBeNull();
+  });
+
+  it("커밋할 게 없으면 미커밋 줄을 안 그린다 — 없는 것에 자리를 주지 않는다", async () => {
+    installDesktopGit({
+      status: { ...STATUS_WITH_CHANGES, changedCount: 0 },
+      diff: { count: 0, files: [], diff: "" },
+    });
+    renderPanel(<AtlasGitPanel vaultPath="/repo/vault" />);
+    await screen.findByTestId("atlas-git-steps");
+    expect(screen.queryByTestId("atlas-git-pending-row")).toBeNull();
+  });
+});
