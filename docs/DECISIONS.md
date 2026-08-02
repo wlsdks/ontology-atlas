@@ -42,6 +42,71 @@
 
 ---
 
+## 2026-08-02 — README는 공개 품질 계약, 내부 문서는 규칙 권위 지도를 맡는다
+
+### 먼저 — 세 줄
+
+- **정한 것**: README에는 변하지 않는 온톨로지 품질 약속만 짧게 공개하고,
+  `docs/ONTOLOGY-QUALITY.md`는 규칙 사본이 아니라 코드·스킬·테스트의 권위 지도만
+  맡는다.
+- **다르게 한 것**: Python 분석의 현재 수치를 README에 복제하지 않는다. bounded
+  evidence packet이 graph 상한이 아니라는 범주만 공개하고 정확한 값은 analyzer와
+  MCP 계약이 소유한다.
+- **네가 할 일**: 없음 — 계약 오류를 먼저 고친 뒤 전체 README 미디어 재촬영은
+  별도 슬라이스에서 설치 앱으로 검증한다.
+
+**소집**: PO 카운슬 5인 전원(근거·결·지킴이·해자·지렛대), 독립 1라운드 +
+상호 반박 1라운드. 동시 슬롯 한계로 서로의 의견을 보지 않는 파동으로 실행했다. ·
+**트리거**: 공개 README의 온톨로지 정책·형식·제품 표면 주장이 현행 writer와
+surface 계약에 어긋났고, 소유자가 프로젝트 문서와 README에 기준을 남길지 물었다. ·
+**루브릭**: 20/24 (Problem insight 4 · User moment 4 · Differentiation 3 ·
+Ontology value 4 · Agent value 4 · Verification 1, 치명적 0: 없음). Verification은
+변경 전 실물이 없어서 1이며, 구현 뒤 GitHub 렌더·문서 gate·fresh-context 해석으로
+증명한다.
+
+## PO Council Verdict — public contract + authority map
+
+| PO | 판정 | 소유 행 점수 |
+|---|---|---|
+| 근거 | Build and verify | Problem insight 4 · User moment 4 |
+| 결 | Build and verify — correctness first | Verification 1 |
+| 지킴이 | Shape a slice | Ontology value 4 · Agent value 4 |
+| 해자 | Shape a slice | Differentiation 3 |
+| 지렛대 | Build and verify | appetite: 최대 반나절 |
+
+**선행 결정 관계**: 같은 날 「노드 총량에는 상한이 없고, 직접 연결 폭은 자격을
+묻는 신호다」와 「UID는 영구 정체성, slug는 현재 주소」를 그대로 공개 계약에
+올린다. Python 12/4/2는 그 결정이 이미 분리한 processing bound이므로 README에서
+다시 숫자 규범처럼 강조하지 않는다.
+
+**The decisive disagreement**: 새 품질 문서가 흩어진 정본을 찾게 하는가, 아니면
+또 하나의 정본을 만드는가. 새 파일은 만든다. 단 각 규칙의 문구와 수치를 다시
+소유하지 않고 `질문 → 분류 → canonical source/symbol → verification`만 연결한다.
+사람용 설명은 기존 `docs/guide/what-becomes-a-node.md`, 형식은
+`docs/ONTOLOGY-ATLAS-SPEC.md`, 값과 실행은 코드, 이유와 반증은 이 원장에 남는다.
+
+**Decision (accountable: owner)**:
+
+1. README는 no total cap, contextual fan-out, legitimate hub, earned bridge,
+   packet bound≠graph bound, UID/slug/path, external-trial isolation만 요약한다.
+2. README의 필수 UID 누락·raw `elements:` path·오래된 kind/count/release/surface
+   주장과 깨진 브랜드 자산을 같은 correctness 슬라이스에서 고친다.
+3. SPEC의 path-style element slug 허용과 guide의 raw path relation 예시를 현행
+   flat role slug + `path:` evidence 계약으로 맞춘다.
+4. raw HTML 문서 자산은 존재 여부를 기계가 판단할 수 있으므로 docs link gate에
+   포함하고 실제 깨진 README로 red, 교정 후 green을 증명한다.
+5. 전체 README IA·스크린샷·영상 재촬영은 이 슬라이스의 사실 계약을 먼저 합친 뒤
+   설치 앱 Computer Use 증거로 별도 진행한다. 외부 trial 산출물은 반입하지 않는다.
+
+**기록된 반대**: authority map도 손으로 쓴 파일이므로 다음 threshold/schema 변경 때
+가장 먼저 낡고, README에서 현재 analyzer 수치를 숨기면 FDE가 boundedness를 감사하기
+어렵다. **반증 조건**: 다음 기여자가 map만 보고 정확한 소유 파일·검증을 찾지 못하거나,
+다음 analyzer 변경 뒤 map/README가 수동 값 사본 때문에 어긋나거나, fresh FDE가
+processing bound를 graph cap으로 다시 해석하면 반대가 옳다. 그때 문구를 더 늘리지
+말고 코드에서 생성한 current-limits reference로 옮기거나 authority map을 제거한다.
+
+**상태**: 유효.
+
 ## 2026-08-02 — 노드 총량에는 상한이 없고, 직접 연결 폭은 자격을 묻는 신호다
 
 **소집**: 소유자 직접 정정 · **트리거**: Python field trial의 “20개 이하” 표현이

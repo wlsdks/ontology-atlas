@@ -124,7 +124,7 @@ export const VAULT_KINDS = ['project', 'domain', 'capability', 'element', 'docum
 | `project` | top-level deliverable this vault describes | — (root) | `domain`, direct `capability`/`element` |
 | `domain` | a functional grouping inside the project (auth, billing, search, …) | `project` | `capability` |
 | `capability` | one user-visible or agent-visible unit of behavior inside a domain | `domain` | `element` |
-| `element` | a concrete implementation unit a capability uses — a file, module, library, or external dependency | `capability` or `domain` | — (leaf) |
+| `element` | a distinct implementation role a capability uses — supported by a file/module path, library, or external dependency | `capability` or `domain` | — (leaf) |
 | `document` | narrative or reference material tied to the graph but not itself a domain object (an ADR, a design doc, a README) | any | — |
 
 A sixth value, `vault-readme`, appears in the runtime's `KNOWN_VAULT_KINDS`
@@ -214,15 +214,17 @@ tooling.
 
 Elements have no `arrayDefaults` — no array key is auto-emitted on creation.
 
-**Element slug — two valid patterns** (from `mcp/README.md`, §"Element slug"):
+**Element slug — one writer pattern** (from `mcp/src/construction-rules.mjs`):
 
 | pattern | example | when to use |
 |---|---|---|
-| flat | `mcp-sdk`, `file-system-access-api` | the element is an external library or abstract concept with no single file path |
-| path-style | `src/features/auth`, `scripts/build-vault.mjs` | the element is a concrete code module/file; a Level 2 writer's `--auto-prefix` default produces `elements/src/features/auth.md` |
+| flat role slug | `mcp-sdk`, `file-system-access-api`, `jwt-signer` | always; the slug names the implementation role and its source location lives in `path:` |
 
-Both are conformant; a Level 1 reader MUST accept either without assuming a
-convention.
+A Level 2 writer MUST NOT emit a path-shaped element slug such as
+`elements/src/features/auth`. This repository's writer rejects it because path
+segments are evidence, not identity, and basename collisions can silently fold
+different roles together. A Level 1 reader MAY parse a legacy path-shaped slug
+for recovery, but MUST NOT treat that as permission to emit a new one.
 
 ### `document`
 

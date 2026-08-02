@@ -160,8 +160,9 @@ node cli/src/index.mjs absorb AGENTS.md --vault my-vault
 
 1. **이름을 역할로 고칩니다.** `Docs Vault Local` 은 폴더 이름이지 그것이 하는
    일이 아닙니다.
-2. **근거를 붙입니다.** 역량의 `elements:` 에 코드 경로를 넣습니다 — 경로만으로도
-   근거가 됩니다.
+2. **근거를 붙입니다.** 역량의 `path:` 에 낯선 에이전트가 먼저 열 구현 진입점
+   하나를 넣습니다. `elements:`에는 파일 경로가 아니라 역할이 서로 다른 실제
+   element node slug만 넣습니다.
 3. **의미 관계를 얹습니다.** 담김만 있으면 트리이고, `relates` · `dependencies`
    가 붙어야 그래프입니다.
 4. **덜 된 곳을 확인합니다.**

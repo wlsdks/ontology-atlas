@@ -12,7 +12,13 @@ import { existsSync, readdirSync, readFileSync, statSync } from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath, pathToFileURL } from 'node:url';
 
-import { collectMarkdownLinks, collectProseDocRefs, isExternalTarget, isHistoricalDoc } from './lib/doc-links.mjs';
+import {
+  collectHtmlAssetRefs,
+  collectMarkdownLinks,
+  collectProseDocRefs,
+  isExternalTarget,
+  isHistoricalDoc,
+} from './lib/doc-links.mjs';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const ROOT = path.resolve(__dirname, '..');
@@ -125,6 +131,13 @@ export function checkFile(file, { root = ROOT } = {}) {
     const resolved = resolveLinkTarget(file, link.target, root);
     if (resolved && !exists(resolved)) {
       problems.push({ file: relative, line: link.line, target: link.target, kind: 'link' });
+    }
+  }
+
+  for (const asset of collectHtmlAssetRefs(markdown)) {
+    const resolved = resolveLinkTarget(file, asset.target, root);
+    if (resolved && !exists(resolved)) {
+      problems.push({ file: relative, line: asset.line, target: asset.target, kind: 'asset' });
     }
   }
 

@@ -141,6 +141,31 @@ describe('checkFile', () => {
       );
     });
   });
+
+  it('reports missing local HTML image sources and srcset candidates', () => {
+    withRepo(
+      {
+        'README.md': [
+          '<picture>',
+          '  <source srcset="public/brand/missing-dark.svg 2x" />',
+          '  <img src="public/brand/missing-light.svg" alt="Brand" />',
+          '</picture>',
+          '<img src="https://example.com/remote.svg" alt="Remote" />',
+        ].join('\n'),
+      },
+      (root) => {
+        const problems = checkFile(join(root, 'README.md'), { root });
+
+        assert.deepEqual(
+          problems.map((problem) => [problem.kind, problem.target]),
+          [
+            ['asset', 'public/brand/missing-dark.svg'],
+            ['asset', 'public/brand/missing-light.svg'],
+          ],
+        );
+      },
+    );
+  });
 });
 
 describe('walker and CLI', () => {

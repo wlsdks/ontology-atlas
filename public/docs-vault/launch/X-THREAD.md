@@ -37,9 +37,12 @@ each .md = a node. frontmatter = the graph.
 
 ```yaml
 ---
+uid: 71890f3e-7b5d-4c0a-8f14-123456789abc
 kind: capability
+slug: capabilities/login
+title: Login
 domain: domains/auth
-depends_on: [capabilities/signup]
+dependencies: [capabilities/signup]
 ---
 ```
 ```
