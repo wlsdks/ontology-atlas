@@ -2709,9 +2709,35 @@ JSX 안에 44px 정사각 버튼이나 라벨 버튼을 인라인 클래스로 �
 - **API** — `{ value, onChange, options: [{value,label,description?}],
   placeholder, ariaLabel, size?, disabled? }`. 토큰만.
 - **게이트** — `src/shared/ui/select.test.tsx`(포털·클리퍼 탈출·퇴장 프레임
-  a11y) · `tests/contract/reduced-motion-equivalent.contract.test.ts`
+  a11y) · `src/shared/ui/select-growth.test.ts`(상한 산수) ·
+  `tests/contract/reduced-motion-equivalent.contract.test.ts`
   (`select-listbox`) · `tests/contract/exit-motion-restart.contract.test.ts` ·
-  설치 앱 `--verify-ai-settings`(목록 잘림·히트테스트 실측).
+  설치 앱 `--verify-ai-settings`(목록 잘림·히트테스트·상한 실측).
+
+#### 목록의 자람과 상한 (`select-growth.ts`, 2026-08-02)
+
+구 상한은 `max-h-[264px]` 리터럴 하나였고, 그 값은 **아무것도 답하지 않았다**:
+항목이 몇 개일 때까지 다 보이나 · 언제부터 스크롤인가 · 화면 아래쪽에서 열면
+어떻게 되나. 셋 다 틀려 있었다. 상한은 **둘이고 작은 쪽이 이긴다.**
+
+| 상한 | 값 | 근거 |
+|---|---|---|
+| 행 상한 `LISTBOX_MAX_ROWS` | **8행** | ① 실측 러너가 모델 **7개** — 흔한 경우가 스크롤되면 「더 있다」가 거짓말이 된다 ② 설명 줄 섞인 8행 ≈ 320px 로 이 목록이 뜨는 설정 시트(672px)의 절반 아래. 그 위로 자라면 «고르는 컨트롤» 이 아니라 «덮는 표면» 이고, 그때 필요한 건 더 큰 드롭다운이 아니라 검색이다 |
+| 자리 상한 | 앵커 기준 뷰포트 잔여 | 화면 아래쪽 트리거에서 행 상한을 그대로 쓰면 창 밖으로 나간다 |
+
+세 규율:
+
+1. **행 높이는 재는 것이지 가정하는 것이 아니다.** 「임베딩 전용」 설명이 붙는
+   행은 두 줄이라 더 높다. 줄 수 × 고정 높이로 자르면 상한 근처에서 반 행이
+   걸린다. `ResizeObserver` 로 늦게 오는 웹폰트까지 따라간다.
+2. **아무것도 안 묶을 때의 상한은 «측정한 내용 높이» 가 아니다.** 그렇게 두면
+   서브픽셀이나 늦게 온 폰트로 행이 1px 자라는 순간 상자가 자기 내용을
+   스크롤한다 — 실측으로 잡혔다(7개가 전부 보이는데 `scrollHeight >
+   clientHeight` 라 어포던스가 거짓으로 켜졌다). 안 묶이면 상한은 **남은 자리**다.
+3. **어포던스는 상한에 닿고 실제로 가려졌을 때만.** `listboxTopIsHidden` /
+   `listboxBottomIsHidden` — 컴포저의 `composerTopIsHidden` 과 같은 판정이고
+   문법을 일부러 맞췄다(두 표면이 같은 병을 다르게 풀면 다음 사람이 어느 쪽을
+   베낄지 모른다). 상한 미도달이면 `overflow: hidden` 이라 스크롤바 자체가 없다.
 
 ### 설정 시트의 행 측정폭 (`--settings-content-measure`, 2026-08-02)
 

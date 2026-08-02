@@ -14,6 +14,12 @@ import { createPortal } from "react-dom";
 import { Check, ChevronDown } from "lucide-react";
 import { cn } from "@/shared/lib/cn";
 import { usePanelPresence } from "@/shared/lib/use-presence";
+import {
+  listboxBottomIsHidden,
+  listboxGrowth,
+  listboxTopIsHidden,
+  type ListboxGrowth,
+} from "./select-growth";
 
 export interface SelectOption {
   value: string;
@@ -43,8 +49,15 @@ export interface SelectProps {
 const ANCHOR_GAP = 4;
 /** 뷰포트 가장자리에 남기는 여백 — 목록이 창에 닿아 잘리지 않게. */
 const VIEWPORT_PAD = 8;
-/** 목록 최대 높이 — 자리가 더 넓어도 이보다 길게 열지 않는다(구 `max-h-[264px]`). */
-const MAX_LIST_HEIGHT = 264;
+/**
+ * 어느 쪽으로 열지 정할 때 «자리가 넉넉하다» 로 치는 높이.
+ *
+ * 뒤집기 판정에만 쓰고 **높이 상한으로는 쓰지 않는다** — 상한은
+ * `select-growth.ts` 의 두 규칙(행 상한 · 자리 상한)이 정한다. 구 구현은 이
+ * 값 하나가 상한까지 겸했고, 그래서 "몇 개까지 다 보이나" 에 아무 답도
+ * 없었다.
+ */
+const PREFERRED_SPACE = 264;
 
 type Anchor = {
   left: number;
@@ -53,34 +66,46 @@ type Anchor = {
   top: number | null;
   /** 위로 열 때의 하단 좌표(고정 좌표계). 아래로 열면 `null`. */
   bottom: number | null;
-  maxHeight: number;
+  /** 이 방향으로 뷰포트에 실제로 남은 공간 — 자리 상한의 재료. */
+  availableHeight: number;
   placement: "below" | "above";
 };
 
 /**
  * 트리거의 화면 좌표에서 목록의 자리를 정한다 — **아래에 자리가 없으면 위로
- * 뒤집고, 높이는 실제 가용 공간으로 깎는다.**
+ * 뒤집고, 남은 공간을 그대로 보고한다.**
  *
- * 고정 264px 을 그대로 쓰면 창 아래쪽 트리거에서 목록이 뷰포트 밖으로 나간다.
- * 자리를 재서 정하면 "목록이 화면 밖에 있다" 는 상태 자체가 생기지 않는다.
+ * 높이를 여기서 정하지 않는 이유: 몇 행까지 담기는지는 렌더된 행 높이를 봐야
+ * 알 수 있고(설명 줄이 붙는 행은 더 높다), 그 판정은 순수 함수가 갖는다.
  */
 function measureAnchor(trigger: HTMLElement): Anchor {
   const rect = trigger.getBoundingClientRect();
   const viewportHeight = window.innerHeight || 0;
   const spaceBelow = viewportHeight - rect.bottom - ANCHOR_GAP - VIEWPORT_PAD;
   const spaceAbove = rect.top - ANCHOR_GAP - VIEWPORT_PAD;
-  // 아래가 264px 을 못 채우고 위가 더 넓을 때만 뒤집는다 — 아래로 여는 것이
+  // 아래가 넉넉하지 않고 위가 더 넓을 때만 뒤집는다 — 아래로 여는 것이
   // 기본값이고, 뒤집기는 그것이 실패할 때의 보정이다.
-  const flip = spaceBelow < MAX_LIST_HEIGHT && spaceAbove > spaceBelow;
-  const space = Math.max(0, flip ? spaceAbove : spaceBelow);
+  const flip = spaceBelow < PREFERRED_SPACE && spaceAbove > spaceBelow;
   return {
     left: rect.left,
     width: rect.width,
     top: flip ? null : rect.bottom + ANCHOR_GAP,
     bottom: flip ? viewportHeight - rect.top + ANCHOR_GAP : null,
-    maxHeight: Math.min(MAX_LIST_HEIGHT, space),
+    availableHeight: Math.max(0, flip ? spaceAbove : spaceBelow),
     placement: flip ? "above" : "below",
   };
+}
+
+/** 렌더된 목록에서 자람의 재료를 걷는다 — 행 높이는 재는 것이지 가정하는 것이 아니다. */
+function readGrowth(list: HTMLUListElement, availableHeight: number): ListboxGrowth | null {
+  const style = window.getComputedStyle(list);
+  const px = (value: string) => Number.parseFloat(value) || 0;
+  return listboxGrowth({
+    rowHeights: Array.from(list.children, (row) => row.getBoundingClientRect().height),
+    paddingBlock: px(style.paddingTop) + px(style.paddingBottom),
+    borderBlock: px(style.borderTopWidth) + px(style.borderBottomWidth),
+    availableHeight,
+  });
 }
 
 /**
@@ -135,6 +160,12 @@ export function Select({
   // 키보드 하이라이트(활성) 인덱스. 열릴 때 선택 값(없으면 0)으로 초기화.
   const [activeIndex, setActiveIndex] = useState(0);
   const [anchor, setAnchor] = useState<Anchor | null>(null);
+  const [growth, setGrowth] = useState<ListboxGrowth | null>(null);
+  // 어포던스는 **가려졌을 때만** 켠다 — 열자마자는 아래만 가려져 있다.
+  const [edges, setEdges] = useState<{ top: boolean; bottom: boolean }>({
+    top: false,
+    bottom: false,
+  });
   // 퇴장 창을 앱 공통 게이트에서 받는다 — 목록만의 상태 기계를 새로 만들지
   // 않는다(퇴장 창은 이 앱에 하나여야 한다, `use-presence.ts`).
   const { mounted, exiting } = usePanelPresence(open);
@@ -209,6 +240,59 @@ export function Select({
     if (!open || !triggerRef.current) return;
     setAnchor(measureAnchor(triggerRef.current));
   }, [open, options.length]);
+
+  /**
+   * 렌더된 행을 재서 상한을 확정한다 — **행 높이는 가정하지 않고 잰다.**
+   * 페인트 전에 도므로 잘못된 높이가 한 프레임도 보이지 않는다.
+   */
+  useLayoutEffect(() => {
+    if (!mounted || !anchor) return;
+    const list = listRef.current;
+    if (!list) return;
+    const remeasure = () => {
+      const next = readGrowth(list, anchor.availableHeight);
+      setGrowth((current) =>
+        current &&
+        next &&
+        current.height === next.height &&
+        current.rows === next.rows &&
+        current.overflowing === next.overflowing &&
+        current.cappedBy === next.cappedBy
+          ? current
+          : next,
+      );
+    };
+    remeasure();
+    // 행은 나중에도 자란다 — 늦게 온 웹폰트가 대표적이다. 한 번만 재고 끝내면
+    // 그 뒤의 성장은 조용히 스크롤로 흘러가고, 어포던스가 거짓으로 켜진다.
+    if (typeof ResizeObserver === "undefined") return;
+    const observer = new ResizeObserver(remeasure);
+    observer.observe(list);
+    for (const row of list.children) observer.observe(row);
+    return () => observer.disconnect();
+  }, [mounted, anchor, options]);
+
+  // 열릴 때는 맨 위이므로 위는 안 가려져 있다 — 「더 있다」 는 아래가 나른다.
+  useLayoutEffect(() => {
+    const list = listRef.current;
+    if (!open || !list || !growth) {
+      setEdges({ top: false, bottom: false });
+      return;
+    }
+    const read = () =>
+      setEdges({
+        top: listboxTopIsHidden(growth.overflowing, list.scrollTop),
+        bottom: listboxBottomIsHidden(
+          growth.overflowing,
+          list.scrollTop,
+          list.clientHeight,
+          list.scrollHeight,
+        ),
+      });
+    read();
+    list.addEventListener("scroll", read, { passive: true });
+    return () => list.removeEventListener("scroll", read);
+  }, [open, growth, activeIndex]);
 
   // 활성 옵션이 뷰 밖이면 스크롤로 따라가게.
   useEffect(() => {
@@ -294,13 +378,33 @@ export function Select({
     }
   };
 
+  /**
+   * 가려진 쪽에만 페이드 마스크. **상한에 닿고 실제로 가려졌을 때만** —
+   * 없는 넘침을 광고하지 않는다(컴포저와 같은 문법). 마스크는 색을 더하지
+   * 않으므로 채색 시스템이 늘지 않는다.
+   */
+  const edgeMask = (() => {
+    const fade = "var(--leading-body)";
+    if (edges.top && edges.bottom) {
+      return `linear-gradient(to bottom, transparent 0, #000 ${fade}, #000 calc(100% - ${fade}), transparent 100%)`;
+    }
+    if (edges.top) return `linear-gradient(to bottom, transparent 0, #000 ${fade})`;
+    if (edges.bottom) return `linear-gradient(to top, transparent 0, #000 ${fade})`;
+    return undefined;
+  })();
+
   const anchorStyle: CSSProperties | undefined = anchor
     ? {
         left: anchor.left,
         width: anchor.width,
-        maxHeight: anchor.maxHeight,
+        // 상한 둘 중 작은 쪽. 행을 아직 못 쟀으면(첫 레이아웃) 자리 상한만 쓴다.
+        maxHeight: growth ? growth.height : anchor.availableHeight,
         ...(anchor.top !== null ? { top: anchor.top } : {}),
         ...(anchor.bottom !== null ? { bottom: anchor.bottom } : {}),
+        // 상한에 안 닿았으면 스크롤 어포던스 자체가 없다 — 다 보이는데
+        // 스크롤바가 있으면 「더 있다」 가 거짓말이 된다.
+        overflowY: growth?.overflowing === false ? "hidden" : "auto",
+        ...(edgeMask ? { maskImage: edgeMask, WebkitMaskImage: edgeMask } : {}),
         // 목록은 트리거에서 자라난다 — 위로 열면 아래쪽이 그 자리다.
         transformOrigin: anchor.placement === "above" ? "bottom" : "top",
       }
@@ -320,9 +424,13 @@ export function Select({
         inert={exiting || undefined}
         data-state={exiting ? "closed" : "open"}
         data-placement={anchor.placement}
+        // 상한 판정을 DOM 에 남긴다 — 설치 앱 검증기와 사람이 «왜 여기서
+        // 멈췄나» 를 원인 이름으로 읽는다.
+        data-capped-by={growth?.cappedBy}
+        data-overflowing={growth ? String(growth.overflowing) : undefined}
         data-testid={dataTestid ? `${dataTestid}-listbox` : undefined}
         style={anchorStyle}
-        className="select-listbox fixed z-40 overflow-y-auto rounded-panel border border-[color:var(--color-border-strong)] bg-[color:var(--color-elevated)] p-1 shadow-[var(--shadow-elevation-1)]"
+        className="select-listbox fixed z-40 rounded-panel border border-[color:var(--color-border-strong)] bg-[color:var(--color-elevated)] p-1 shadow-[var(--shadow-elevation-1)]"
       >
         {options.map((option, index) => {
           const isSelected = option.value === value;

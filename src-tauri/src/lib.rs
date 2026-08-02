@@ -531,6 +531,11 @@ const AI_SETTINGS_VERIFY_SCRIPT: &str = r#"(() => {
     clipBottom = Math.min(clipBottom, window.innerHeight);
     result.modelListHeight = Math.round(listRect.height);
     result.modelListVisibleHeight = Math.round(Math.max(0, clipBottom - clipTop));
+    // 목록이 **자기 안에서** 넘쳤나 — 조상 잘림과는 다른 사실이다. 상한
+    // 규칙(`select-growth.ts`)이 참이면 항목 수가 행 상한 아래일 때 이건
+    // 거짓이어야 한다: 다 보이는데 스크롤이 있으면 「더 있다」가 거짓말이다.
+    result.modelListOverflowing = listbox.scrollHeight > listbox.clientHeight + 1;
+    result.modelListCappedBy = listbox.getAttribute("data-capped-by") || "";
     // 목록 자신의 스크롤 창 안에 있는 옵션만 센다 — 목록이 길어 안에서
     // 스크롤되는 것은 결함이 아니고, "보인다고 주장하는 것이 안 눌리는" 것이
     // 결함이다.

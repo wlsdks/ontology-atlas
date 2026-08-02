@@ -2,6 +2,7 @@ import assert from "node:assert/strict";
 import fs from "node:fs";
 import test from "node:test";
 import {
+  AI_SETTINGS_LISTBOX_MAX_ROWS,
   authorityOfBaseUrl,
   isSafeAiSettingsBaseUrl,
   parseVerifyAppLaunchArgs,
@@ -28,9 +29,11 @@ const PASSING_MARKERS = {
     modelListOpened: true,
     modelOptionCount: 7,
     models: ["qwen3:8b"],
-    // 목록이 잘리지 않고, 보인다고 주장하는 옵션이 전부 눌린다.
+    // 목록이 잘리지 않고, 보인다고 주장하는 옵션이 전부 눌리고,
+    // 행 상한 아래라 스크롤이 아예 없다.
     modelListHeight: 259,
     modelListVisibleHeight: 259,
+    modelListOverflowing: false,
     modelOptionsInView: 7,
     modelOptionsHittable: 7,
     selectedModel: "qwen3:8b",
@@ -154,6 +157,39 @@ test("AI settings verification fails loudly instead of passing on missing elemen
         },
       },
       /not one option landed inside its own scroll view/,
+    ],
+    // 상한 규칙 — 7개는 행 상한(8) 아래이므로 한 번에 다 보여야 하고,
+    // 스크롤은 «더 있다» 를 뜻하므로 그때 켜져 있으면 거짓말이다.
+    [
+      {
+        ...PASSING_MARKERS,
+        aiSettingsVerification: {
+          ...PASSING_MARKERS.aiSettingsVerification,
+          modelOptionsInView: 6,
+          modelOptionsHittable: 6,
+        },
+      },
+      /under the 8-row cap.*only showed 6 at once/,
+    ],
+    [
+      {
+        ...PASSING_MARKERS,
+        aiSettingsVerification: {
+          ...PASSING_MARKERS.aiSettingsVerification,
+          modelListOverflowing: true,
+        },
+      },
+      /overflowing=true while showing 7 of 7/,
+    ],
+    [
+      {
+        ...PASSING_MARKERS,
+        aiSettingsVerification: {
+          ...PASSING_MARKERS.aiSettingsVerification,
+          modelListOverflowing: undefined,
+        },
+      },
+      /never reported whether the model list actually overflowed/,
     ],
     [
       {
@@ -356,6 +392,7 @@ test("installed-app AI settings driver walks the real settings testids", () => {
   // 없으면 판정은 영원히 `undefined` 위에서 돈다.
   for (const marker of [
     "modelListVisibleHeight",
+    "modelListOverflowing",
     "modelOptionsInView",
     "modelOptionsHittable",
     "elementFromPoint",
@@ -366,6 +403,22 @@ test("installed-app AI settings driver walks the real settings testids", () => {
   assert.equal(
     tauriLib.includes("ONTOLOGY_ATLAS_VERIFY_AI_BASE_URL was missing or unsafe"),
     true,
+  );
+});
+
+/**
+ * 행 상한은 두 곳에 적혀 있다 — 앱(`select-growth.ts`)과 이 검증기. 이
+ * 스크립트는 앱 번들을 import 하지 않으므로 복제가 불가피하고, 그러면 드리프트는
+ * 시간 문제다. 값이 갈리는 순간 게이트가 **틀린 기준으로 초록**이 된다.
+ */
+test("model list row cap matches the shipped rule", () => {
+  const source = fs.readFileSync("src/shared/ui/select-growth.ts", "utf8");
+  const match = source.match(/export const LISTBOX_MAX_ROWS = (\d+)/);
+  assert.ok(match, "select-growth.ts should export LISTBOX_MAX_ROWS");
+  assert.equal(
+    Number(match[1]),
+    AI_SETTINGS_LISTBOX_MAX_ROWS,
+    "verifier row cap drifted from the shipped rule — the gate would judge by a number the app does not use",
   );
 });
 
