@@ -45,6 +45,8 @@ export interface AgentSessionSummary {
 
 export interface VaultAgentNotices {
   roundCap: string;
+  /** 도구를 한 번도 안 부르고 멈춘 턴 — 상한 도달과 대칭인 한 줄. */
+  noToolCall: (args: { round: number; cap: number }) => string;
   aborted: string;
   networkFailed: string;
   timedOut: string;

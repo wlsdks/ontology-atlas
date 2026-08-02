@@ -32,9 +32,9 @@ import type { ForceSimulation } from "../model/force-layout";
 import { computeZoomRatio, DEFAULT_TIER_REVEAL, isNodeHittable, isSpineOnlyZoom, type TierRevealConfig } from "../model/tier-visibility";
 import { computeDragTugSets, type DragTugSets } from "../interaction/drag-tug";
 import { hitTestEdges, type EdgeHitCandidate } from "./topology-edge-hit";
-import { clusterBadgeLabel, clusterBadgeRect, clusterBarRect, clusterChipLabel, clusterChipRect, clusterChipScale, clusterControlForm } from "../render/cluster-chips";
+import { clusterBadgeLabel, clusterBadgeRect, clusterBarLabel, clusterBarRect, clusterChipLabel, clusterChipRect, clusterChipScale, clusterControlForm, type ClusterBarLabels } from "../render/cluster-chips";
 import type { ClusterChip } from "../model/density-gate";
-import type { ExpandPreference } from "@/shared/lib/appearance-preferences";
+import { DEFAULT_EXPAND, type ExpandPreference } from "@/shared/lib/appearance-preferences";
 import { depthParallaxOffsetFor, type DepthParallaxOffset } from "../model/realm-depth-parallax";
 import { computeGrabOffsetWorld, computePinWorld, type WorldOffset } from "../interaction/node-drag";
 import {
@@ -206,6 +206,12 @@ export interface PointerHandlerRefs {
    */
   expandPrefRef?: Ref<ExpandPreference>;
   /**
+   * 막대 문구(번역문) 미러 — 히트 사각형의 폭은 **글자가 정하므로**, 히트가
+   * 드로우와 같은 문자열을 봐야 한다. 문구가 갈리면 사각형이 갈리고, 그게
+   * 「보이는데 안 눌리는 버튼」의 생성 경로다.
+   */
+  clusterBarLabelsRef?: Ref<ClusterBarLabels | null>;
+  /**
    * S5 깊이 시차 — 영역 active 중 rAF 가 채우는 밴드별 렌더 오프셋 + depthById.
    * 히트테스트가 드로우와 **같은** 오프셋을 노드에 적용해 클릭 어긋남을 막는다.
    * null(정지/미영역)이면 오프셋 없음.
@@ -336,6 +342,7 @@ export function createTopologyPointerHandlers(refs: PointerHandlerRefs): Topolog
     clusteredIdsRef,
     hoveredClusterIdRef,
     expandPrefRef,
+    clusterBarLabelsRef,
     realmParallaxRef,
     realmTierKindsRef,
     tierRevealRef,
@@ -368,20 +375,27 @@ export function createTopologyPointerHandlers(refs: PointerHandlerRefs): Topolog
     // 형태와 눌리는 사각형이 함께 바뀌어야 한다(둘이 갈라지면 「보이는데 안
     // 눌리는 버튼」이 생긴다).
     const affordance = expandPrefRef?.current.affordance ?? "pill";
+    const batchSize = expandPrefRef?.current.batchSize ?? DEFAULT_EXPAND.batchSize;
+    const barLabels = clusterBarLabelsRef?.current ?? undefined;
     const focusedSlug = focusedSlugRef.current;
     for (const chip of chips) {
+      // 도킹 가능성은 **드로우와 같은 조건**이다 — 부모 노드를 그래프에서 찾을
+      // 수 있는가. 배치 공개의 `+N 더보기` 칩은 부모 id 가 합성이라 못 찾고,
+      // 그때 형태는 사라지는 게 아니라 알약으로 남는다(그 판정도 한 함수).
+      const parentNode = world?.nodeById.get(chip.parentId);
+      const dockable = parentNode !== undefined && tokens !== null;
       const form = clusterControlForm({
         affordance,
         expanded: chip.expanded,
         // ego 합성 칩(`이웃 +N`)은 부모 노드가 곧 고른 노드다 — 그 칩까지
         // 「안 고르면 없음」에 걸리면 배치 공개 자체가 닫힌다.
         focused: chip.ego === true || focusedSlug === chip.parentId,
+        dockable,
       });
       if (form === "none") continue;
       let rect: ReturnType<typeof clusterChipRect>;
       if (form === "badge" || form === "bar") {
         // S10 결함 2 — 노드에 도킹된 형태. 드로우와 **같은** 사각형 함수로 유도.
-        const parentNode = world?.nodeById.get(chip.parentId);
         if (!parentNode || !tokens) continue;
         const parentScreen = worldToScreen(camera, width, height, parentNode.x, parentNode.y);
         const nodeScreenRadius = radiusForKind(parentNode.kind, tokens) * parentNode.magnitudeScale * camera.scale.value;
@@ -391,7 +405,12 @@ export function createTopologyPointerHandlers(refs: PointerHandlerRefs): Topolog
                 parentScreen.x,
                 parentScreen.y,
                 nodeScreenRadius,
-                clusterChipLabel(chip.count, chip.expanded),
+                clusterBarLabel({
+                  expanded: chip.expanded,
+                  count: chip.count,
+                  batchSize,
+                  labels: barLabels,
+                }),
                 scale,
               )
             : clusterBadgeRect(

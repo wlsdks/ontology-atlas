@@ -7,6 +7,18 @@
  * 같은 철학).
  */
 
+/**
+ * 이 답이 무엇에 기대고 있는가. 화면의 문구·컨트롤이 여기서 갈린다.
+ * 판정은 `citation.ts` 가 하고, 갈래의 뜻은 그 파일의 머리주석에 있다.
+ */
+export type AnswerGrounding =
+  /** `[[slug]]` 인용이 하나 이상 — 문장이 스스로 근거를 가리킨다. */
+  | 'grounded'
+  /** 이 턴에 읽기는 했는데 인용 표기가 없다. 화면이 읽은 목록으로 보정한다. */
+  | 'uncited'
+  /** 이 턴에 읽은 것이 없다. 근거 없이 말한 답이다. */
+  | 'unread';
+
 /** 이 왕복에 실린 도구 호출 한 건의 실측 기록. */
 export interface ToolCallRecord {
   /** 벤더가 준 id. Gemini 는 주지 않아 실행기가 합성한다. */
@@ -117,6 +129,15 @@ export type NoticeCode =
   | 'rate-limited'
   | 'rejected'
   | 'round-cap'
+  /**
+   * **도구를 한 번도 안 부르고 멈춘 턴** (2026-08-02).
+   *
+   * 라운드 상한 분기는 `round-cap` 을 명시적으로 띄우는데, 조기 종료 분기는
+   * 아무 알림도 없이 `status: 'done'` 으로 접수됐다 — 화면은 정상 완료와
+   * 똑같이 입력칸을 되돌려 줬고, 사용자는 볼트를 아예 안 본 답을 읽은 답과
+   * 구별할 수 없었다. 두 분기가 대칭이 되도록 이 코드가 있다.
+   */
+  | 'no-tool-call'
   | 'aborted'
   | 'audit-blocked'
   | 'provider-refused'
@@ -129,7 +150,18 @@ export type AgentEvent =
   | {
       kind: 'assistant';
       paragraphs: CitedParagraph[];
-      demoted: boolean;
+      /**
+       * 이 답이 무엇에 기대고 있는가 — `citation.ts` 의 두 갈래 판정.
+       * 구 `demoted: boolean` 은 인용 **표기** 개수만 보느라, 볼트를 읽고
+       * 답한 턴에도 「읽은 근거 없이 답했어요」를 띄웠다.
+       */
+      grounding: AnswerGrounding;
+      /**
+       * 이 턴에 실제로 읽은 노드들. `uncited` 갈래에서 화면이 「참고한 자료」
+       * 칩으로 **기계적으로 보정**하는 재료다 — 모델이 표기를 지켰는지에
+       * 기대지 않는다.
+       */
+      sources?: string[];
       /**
        * 같은 응답의 마지막 줄에서 떼어낸 **다음 한 걸음**. 추가 호출로 얻은
        * 것이 아니라 이 턴이 이미 말한 것이다. 칩 하나가 되고, 칩은 프리필이지

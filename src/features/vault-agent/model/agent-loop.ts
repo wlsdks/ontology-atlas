@@ -58,6 +58,12 @@ export interface AgentLoopDeps {
   /** 상한 도달·중단·오류 문구는 화면 언어로 온다 — 모델이 짓지 않는다. */
   notices: {
     roundCap: string;
+    /**
+     * 도구를 한 번도 안 부르고 멈춘 턴의 한 줄. 라운드 수를 실어 보내는
+     * 이유는 상한 도달 문구와 **대칭**이 되게 하기 위해서다 — 둘 다
+     * "몇 번째에서 멈췄나" 를 말한다.
+     */
+    noToolCall: (args: { round: number; cap: number }) => string;
     aborted: string;
     networkFailed: string;
     timedOut: string;
@@ -252,6 +258,24 @@ export async function runTurn(
 
     if (parsed.toolCalls.length === 0) {
       pushAssistant(parsed.text);
+      /**
+       * **도구를 한 번도 안 부르고 끝난 턴은 조용히 죽으면 안 된다.**
+       *
+       * 이 분기는 두 가지를 동시에 받는다: ① 도구를 쓰고 나서 마무리하는
+       * 정상 종료(그때 `toolRefs` 는 차 있다) ② 볼트를 아예 안 열고 멈춘 턴.
+       * ②는 상한 도달과 똑같이 "여기서 멈췄다" 인데 `round-cap` 과 달리
+       * 아무 알림도 없어서, 화면이 정상 완료와 구별되지 않았다. 실측 감사
+       * 로그에 `agent ok tools=[]` 로 남은 그 턴들이다.
+       *
+       * 알림은 ②에만 붙인다 — ①에 붙이면 모든 정상 턴에 벽지가 하나 는다.
+       */
+      if (toolRefs.length === 0) {
+        events.push({
+          kind: 'notice',
+          code: 'no-tool-call',
+          text: deps.notices.noToolCall({ round: rounds, cap: AGENT_ROUND_CAP }),
+        });
+      }
       status = 'done';
       emit();
       return { turn: snapshot(), readSlugs, writeIntents };
@@ -367,7 +391,10 @@ export async function runTurn(
     events.push({
       kind: 'assistant',
       paragraphs: cited.paragraphs,
-      demoted: cited.demoted,
+      grounding: cited.grounding,
+      // 화면이 인용 표기 없이도 근거를 그릴 수 있게, 이 시점의 읽은 목록을
+      // 그대로 실어 보낸다 (모델 순응에 기대지 않는 보정의 재료).
+      sources: [...readSlugs],
       nextStep,
     });
   }

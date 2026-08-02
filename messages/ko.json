@@ -2370,6 +2370,9 @@
       "hint": "자식이 많은 그룹은 +N 칩으로 접혀 있습니다 — 칩을 클릭하면 그 그룹이 펼쳐지고, 다시 클릭하면 접힙니다.",
       "expandAria": "숨겨진 하위 항목 {count}개 펼치기",
       "collapseAria": "이 그룹 접기",
+      "barExpandAll": "모두 펼치기",
+      "barExpandCount": "{count}개 펼치기",
+      "barCollapse": "접기",
       "tooltipCollapsed": "「{name}」 — 하위 전체 {total}개 · 이 티어 숨김 {hidden}개. 클릭하면 펼쳐요",
       "tooltipExpanded": "「{name}」 — 하위 전체 {total}개 · 이 티어 {hidden}개 펼침. 클릭하면 접어요"
     },
@@ -3230,9 +3233,9 @@
     "placeholderFirst": "무엇을 시킬지 여기에 적어요",
     "thinking": "생각 중",
     "thinkingSeconds": "생각 중 · {seconds}초",
-    "unsupported": "읽은 근거 없이 답했어요. 그대로 믿지 마세요.",
+    "unsupported": "이 턴에는 볼트를 읽지 않고 답했어요. 그대로 믿지 마세요.",
     "charsLabel": "{chars}자",
-    "footer": "{provider} · 이 턴 {chars}자 · 기록 {rounds}건",
+    "footer": "{provider} · 기록 {rounds}건",
     "boundary": "코드까지 봐야 하는 일은 내 컴퓨터의 터미널에서 여는 AI 가 나아요. 여기서는 문서 폴더만 봐요.",
     "handoffSummary": "터미널에서 이어가기",
     "handoffNote": "아래를 복사해 내 컴퓨터의 터미널에 붙여넣어요. 실행은 사용자가 해요 — 앱은 명령을 대신 치지 않아요.",
@@ -3293,7 +3296,8 @@
       "rejected": "키가 거부됐어요. 설정에서 확인해 주세요.",
       "auditBlocked": "기록을 남길 수 없어 보내지 않았어요.",
       "providerRefused": "이 요청은 거절됐어요.",
-      "failed": "실패했어요."
+      "failed": "실패했어요.",
+      "noToolCall": "{round}/{cap}번째에서 도구를 한 번도 안 부르고 멈췄어요."
     },
     "degraded": {
       "webTitle": "데스크톱 앱에서만 쓸 수 있어요",
@@ -3325,6 +3329,11 @@
     },
     "retry": {
       "title": "다시 해볼까요"
+    },
+    "uncited": "이 턴에 읽은 자료:",
+    "footerDetail": "이 턴에 오간 글 {chars}자 — 대부분 시스템 안내와 도구 설명이에요.",
+    "reground": {
+      "title": "{round}/{cap}번째에서 멈췄어요 — 읽고 다시 답하게 하기"
     }
   },
   "skillParity": {

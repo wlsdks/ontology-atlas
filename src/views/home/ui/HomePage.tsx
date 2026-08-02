@@ -2878,6 +2878,21 @@ export function HomePage() {
     if (census.capabilityCount > 0) parts.push(`${t("index.capabilitiesShort")} ${census.capabilityCount}`);
     return parts.length > 0 ? `${rootTitle} · ${parts.join(" · ")}` : rootTitle;
   }, [realmLedgerModel, t]);
+  /**
+   * 「머리 위 막대」의 문구 — 캔버스는 문자열을 만들지 않는다.
+   *
+   * `{count}` 자리표시자를 **그대로** 넘긴다: 실제 개수는 렌더러가 프레임마다
+   * 알고(설정 「한 번에 여는 개수」와 남은 개수의 함수) 여기서는 모른다.
+   * next-intl 의 보간을 못 쓰는 대신 자리표시자 규약을 계약 테스트가 잡는다.
+   */
+  const clusterBarLabels = useMemo(
+    () => ({
+      expandAll: t("cluster.barExpandAll"),
+      expandCount: t("cluster.barExpandCount", { count: "{count}" }),
+      collapse: t("cluster.barCollapse"),
+    }),
+    [t],
+  );
   // root-first-open v3 우하단 판독(`FirstRunReadout`) 의 "N project" 숫자 —
   // 실데이터, indexDomainCount 와 같은 ontologyInsight 파생이라 drift 불가.
   const firstRunProjectCount = useMemo(
@@ -4173,6 +4188,7 @@ export function HomePage() {
                     realmEnterLabel={t('realm.enterAction')}
                     realmEnterTooltip={t('realm.enterTooltip')}
                     realmCaption={realmCaption}
+                    clusterBarLabels={clusterBarLabels}
                     canvasLabel={t('canvas.ariaLabel')}
                     visitedTrail={footprintVisitedIds}
                     trailLensActiveRef={footprintLensActiveRef}
