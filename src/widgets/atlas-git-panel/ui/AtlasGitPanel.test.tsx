@@ -257,7 +257,7 @@ describe("AtlasGitPanel — 데스크톱(Tauri)", () => {
     // 내용이 아니라 DOM 위치를 붙든다.
     await screen.findByTestId("atlas-git-not-initialized");
     const setup = screen.getByTestId("atlas-git-setup");
-    expect(setup).toHaveTextContent("이 폴더의 변경을 남겨둘까요?");
+    expect(setup).toHaveTextContent("git 을 연동하면 변경이 쌓여요");
     expect(screen.getByTestId("atlas-git-init")).toBeEnabled();
     // 무엇이 만들어지는지 + 되돌리는 방법을 누르기 전에 말한다.
     expect(setup).toHaveTextContent(".git");
@@ -964,5 +964,70 @@ describe("AtlasGitPanel — 2단 작업대의 선택", () => {
     renderPanel(<AtlasGitPanel vaultPath="/repo/vault" />);
     await screen.findByTestId("atlas-git-steps");
     expect(screen.queryByTestId("atlas-git-pending-row")).toBeNull();
+  });
+});
+
+describe("AtlasGitPanel — git 이 없어도 바뀐 것은 보인다", () => {
+  /*
+   * 소유자 지적(2026-08-02): "우리 깃 안쓰는 사람은 기록 보는거 제공 안하나?"
+   *
+   * 제공된다 — `change-baseline-store` 가 볼트별 기준점을 들고 있어 git 과
+   * 무관하게 이번 세션의 변경을 안다. 그런데 그 요약을 **웹 강등에서만**
+   * 그려서, 아직 git 을 안 켠 데스크톱 사용자는 「연동하기」만 권유받고
+   * 지금 무엇이 바뀌었는지는 못 봤다. 아는 것을 안 보여주는 건 강등이
+   * 아니라 누락이다.
+   */
+  const CHANGESET = {
+    addedNodes: ["a"],
+    removedNodes: [],
+    changedNodes: ["b", "c"],
+    addedEdges: ["e1"],
+    removedEdges: [],
+    total: 4,
+    touchedNodeIds: new Set(["a", "b", "c"]),
+    removedNodeKinds: new Map(),
+  } satisfies OntologyChangeset;
+
+  it("git 미연동 폴더에서도 이번에 바뀐 것을 보여준다", async () => {
+    installDesktopGit({
+      status: {
+        initialized: false,
+        repoRoot: null,
+        branch: null,
+        upstream: null,
+        changedCount: 0,
+        stagedOutsideVault: [],
+        ahead: null,
+        behind: null,
+      },
+    });
+    renderPanel(<AtlasGitPanel vaultPath="/repo/vault" sessionChangeset={CHANGESET} />);
+    const summary = await screen.findByTestId("atlas-git-session-changes");
+    expect(summary).toHaveTextContent("개념 추가 1");
+    expect(summary).toHaveTextContent("개념 수정 2");
+  });
+
+  it("연동 화면이 git 을 이름으로 부른다 — 무엇을 켜는지 알 수 있게", async () => {
+    installDesktopGit({
+      status: {
+        initialized: false,
+        repoRoot: null,
+        branch: null,
+        upstream: null,
+        changedCount: 0,
+        stagedOutsideVault: [],
+        ahead: null,
+        behind: null,
+      },
+    });
+    renderPanel(<AtlasGitPanel vaultPath="/repo/vault" />);
+    // 상태가 도착하기 전에는 로딩 프레임이라, 연동 버튼이 뜰 때까지 기다린다.
+    expect(await screen.findByTestId("atlas-git-init")).toHaveTextContent("git 연동하기");
+    expect(screen.getByTestId("atlas-git-setup")).toHaveTextContent("git 을 연동하면 변경이 쌓여요");
+  });
+
+  it("웹 강등도 같은 요약 컴포넌트를 쓴다 — 두 곳이 갈라지지 않게", async () => {
+    renderPanel(<AtlasGitPanel sessionChangeset={CHANGESET} />);
+    expect(await screen.findByTestId("atlas-git-session-changes")).toHaveTextContent("개념 추가 1");
   });
 });

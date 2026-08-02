@@ -707,6 +707,7 @@ export function AtlasGitPanel({
             onRemoteAction={(kind) => void runRemote(kind)}
             remoteActionNotice={remoteActionNotice}
             remoteActionError={remoteActionError}
+            sessionChangeset={sessionChangeset}
             concepts={conceptsByHash}
             egoFor={egoFor}
             kindLabel={kindLabel}
@@ -1124,6 +1125,63 @@ function SetupFrame({
  * 걸음(`앱 받기`)은 11px 텍스트 링크였고 그 위의 복사 버튼보다 작았다.
  * 지금은 앱 받기가 주 버튼이고, 터미널 경로는 아래 보조 탈출구다.
  */
+
+/**
+ * 이번 세션에 바뀐 것 — **git 과 무관하게** 안다.
+ *
+ * `change-baseline-store` 가 볼트별 기준점을 들고 있고 `computeOntologyChangeset`
+ * 이 그 기준 대비 추가·수정·삭제를 센다. 새로고침을 넘어 살아남는다.
+ *
+ * 종전에는 이 요약을 **웹 강등에서만** 그렸다. 그래서 git 을 아직 안 켠
+ * 데스크톱 사용자는 「기록 시작하기」만 권유받고 *지금 무엇이 바뀌었는지*는
+ * 한 글자도 못 봤다 — 웹보다 못한 상태였다(소유자 지적 2026-08-02).
+ * 아는 것을 안 보여주는 것은 강등이 아니라 누락이다.
+ */
+function SessionChangeSummary({
+  t,
+  changeset,
+  title,
+}: {
+  t: Translator;
+  changeset: OntologyChangeset | null;
+  /** 절 제목 — 웹과 데스크톱이 서로 다른 말을 쓴다. */
+  title: string;
+}) {
+  const rows = changeset
+    ? (
+        [
+          ["webNodesAdded", changeset.addedNodes.length],
+          ["webNodesChanged", changeset.changedNodes.length],
+          ["webNodesRemoved", changeset.removedNodes.length],
+          ["webEdgesAdded", changeset.addedEdges.length],
+          ["webEdgesRemoved", changeset.removedEdges.length],
+        ] as const
+      ).filter(([, count]) => count > 0)
+    : [];
+  return (
+    <div
+      data-testid="atlas-git-session-changes"
+      className="flex flex-col gap-1.5 border-t border-[color:var(--color-divider)] pt-4"
+    >
+      <SectionLabel>{title}</SectionLabel>
+      {rows.length > 0 ? (
+        <ul className="flex flex-wrap items-center gap-x-3 gap-y-1">
+          <li aria-hidden className="flex items-center">
+            <span className="h-1.5 w-1.5 rounded-full bg-[color:var(--color-status-warning)]" />
+          </li>
+          {rows.map(([key, count]) => (
+            <li key={key} className="text-body text-[color:var(--color-text-secondary)]">
+              {t(key, { count })}
+            </li>
+          ))}
+        </ul>
+      ) : (
+        <p className="text-body text-[color:var(--color-text-quaternary)]">{t("webNoChanges")}</p>
+      )}
+    </div>
+  );
+}
+
 function WebSetup({
   t,
   kindLabel,
@@ -1137,18 +1195,6 @@ function WebSetup({
   commandCopyState: CopyFeedbackState;
   copyCliCommand: () => void;
 }) {
-  const rows = sessionChangeset
-    ? (
-        [
-          ["webNodesAdded", sessionChangeset.addedNodes.length],
-          ["webNodesChanged", sessionChangeset.changedNodes.length],
-          ["webNodesRemoved", sessionChangeset.removedNodes.length],
-          ["webEdgesAdded", sessionChangeset.addedEdges.length],
-          ["webEdgesRemoved", sessionChangeset.removedEdges.length],
-        ] as const
-      ).filter(([, count]) => count > 0)
-    : [];
-
   return (
     <SetupFrame
       t={t}
@@ -1168,28 +1214,8 @@ function WebSetup({
         {t("webGetApp")}
       </Link>
 
-      {/* 이번에 바뀐 것 — 행동의 **근거**라 주 동작 아래에 온다.
-          구 화면은 이 블록을 1176px 전폭 카드로 그렸는데, 담긴 건 24자 한
-          문장이었다(Tufte data-ink 역전: 보더 잉크 > 내용 잉크). 셋업 측정폭
-          안으로 들어오면서 카드 껍데기 자체가 필요 없어졌다 — 변경이 있을
-          때만 amber 신호점이 붙는다. */}
-      <div className="flex flex-col gap-1.5 border-t border-[color:var(--color-divider)] pt-4">
-        <SectionLabel>{t("webSummaryTitle")}</SectionLabel>
-        {rows.length > 0 ? (
-          <ul className="flex flex-wrap items-center gap-x-3 gap-y-1">
-            <li aria-hidden className="flex items-center">
-              <span className="h-1.5 w-1.5 rounded-full bg-[color:var(--color-status-warning)]" />
-            </li>
-            {rows.map(([key, count]) => (
-              <li key={key} className="text-body text-[color:var(--color-text-secondary)]">
-                {t(key, { count })}
-              </li>
-            ))}
-          </ul>
-        ) : (
-          <p className="text-body text-[color:var(--color-text-quaternary)]">{t("webNoChanges")}</p>
-        )}
-      </div>
+      {/* 이번에 바뀐 것 — 행동의 **근거**라 주 동작 아래에 온다. */}
+      <SessionChangeSummary t={t} changeset={sessionChangeset} title={t("webSummaryTitle")} />
 
       {/* 터미널 탈출구 — 이미 CLI 를 쓰는 사용자를 위해 남기되, 주 동작과 같은
           무게로 경쟁하지 않는다. `webCommandHint`("누르면 …복사돼요")는 버튼
@@ -2346,6 +2372,7 @@ function DesktopBody({
   onRemoteAction,
   remoteActionNotice,
   remoteActionError,
+  sessionChangeset,
   concepts,
   egoFor,
   kindLabel,
@@ -2400,6 +2427,7 @@ function DesktopBody({
   onRemoteAction: (kind: "fetch" | "pull" | "push") => void;
   remoteActionNotice: string | null;
   remoteActionError: string | null;
+  sessionChangeset: OntologyChangeset | null;
   /** 걸음 해시 → 그 걸음이 바꾼 볼트 개념. */
   concepts: ReadonlyMap<string, readonly { id: string; label: string; kind: string }[]>;
   egoFor: (nodeId: string) => ConceptEgo | null;
@@ -2585,6 +2613,19 @@ function DesktopBody({
           {/* 되돌리는 방법(`initEscape`)은 무대의 마지막 줄(`note`)이 진다 —
               처음 겪는 사용자가 가장 겁내는 지점이라 행동 **직전**에 있어야
               하고, 여기서 또 쓰면 같은 말이 두 번 나온다. */}
+
+          {/*
+           * git 이 없어도 **이번에 바뀐 것은 안다.** 볼트별 기준점이 새로고침을
+           * 넘어 살아 있기 때문이다. 종전에는 이 요약을 웹 강등에서만 그려서,
+           * 아직 git 을 안 켠 사람은 「시작하기」만 권유받고 지금 무엇이
+           * 바뀌었는지는 못 봤다 — 아는 것을 안 보여주는 건 강등이 아니라
+           * 누락이다(소유자 지적 2026-08-02).
+           */}
+          <SessionChangeSummary
+            t={t}
+            changeset={sessionChangeset}
+            title={t("initSessionTitle")}
+          />
         </div>
       </SetupFrame>
     );
