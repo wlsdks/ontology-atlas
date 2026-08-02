@@ -31,7 +31,7 @@ import { INITIAL_POINTER_MACHINE_STATE, type PointerMachineState } from "../inte
 import { initHomeSpring, isHomeSpringConverged, stepHomeSpring, type HomeSpringState } from "../model/relayout-home";
 import type { NodeDragState } from "./topology-pointer-handlers";
 import { DEPTH_DOT_LAYERS, buildDepthDotPattern, buildGridPattern } from "../render/grid";
-import { orbitButtonRect } from "../render/cluster-chips";
+import { orbitButtonRect, type ClusterBarLabels } from "../render/cluster-chips";
 import { createAnimatedBackground, type AnimatedBackground } from "../render/animated-background";
 import { buildDustPoints, buildRealmCosmosPoints, computeStarDustCount, type DustPoint } from "../render/starfield";
 import { DEFAULT_EXPAND } from "@/shared/lib/appearance-preferences";
@@ -270,6 +270,11 @@ export interface UseTopologyLoopArgs {
    */
   trailLensActiveRef?: RefObject<boolean>;
   /**
+   * 「모두 펼치기」·「N개 펼치기」·「접기」의 번역문. 캔버스가 문자열을 만들지
+   * 않는다 — 결계 캡션(`realmCaption`)이 이미 쓰는 그 경로 그대로다.
+   */
+  clusterBarLabels?: ClusterBarLabels | null;
+  /**
    * 걸어온 길 브러싱 — 팝오버에서 hover/focus 중인 행의 노드 id를 담는 **ref**.
    * 렌즈 동안 지도의 호버 채널을 빌려 그 노드에 기존 호버 프리뷰 링을 그린다
    * ("2걸음 전이 어느 노드지"를 숫자 없이 가리켜서 답한다).
@@ -331,7 +336,7 @@ export type UseTopologyLoopResult = TopologyPointerHandlers & {
 };
 
 export function useTopologyLoop(args: UseTopologyLoopArgs): UseTopologyLoopResult {
-  const { nodes, edges, focusedSlug, emphasizedNeighborSlug = null, fitViewToken, relayoutToken, revealToken = 0, onSelectEdge, onHoverEdge, onSelect, onPaneClick, onVisibleCountChange, onGraphStatsChange, onZoomTierChange, onContextMenuNode, agentFocusNodeId = null, spotlightIds = null, selectedEdge = null, expandedParents = EMPTY_EXPANDED_SET, onToggleCluster, onHoverCluster, realmRootId = null, onEnterRealm, realmEnterButtonRef, realmCaption = null, visitedTrail = EMPTY_TRAIL, trailLensActiveRef, trailHoverNodeIdRef, tierReveal = DEFAULT_TIER_REVEAL, tourAnchorNodeId = null, tourAnchorRef, glyphSet = "geometric", canvasBackground = "dot", footprint = null, expand = DEFAULT_EXPAND, wheelIntent = "zoom", ambientSleepDelayMs } = args;
+  const { nodes, edges, focusedSlug, emphasizedNeighborSlug = null, fitViewToken, relayoutToken, revealToken = 0, onSelectEdge, onHoverEdge, onSelect, onPaneClick, onVisibleCountChange, onGraphStatsChange, onZoomTierChange, onContextMenuNode, agentFocusNodeId = null, spotlightIds = null, selectedEdge = null, expandedParents = EMPTY_EXPANDED_SET, onToggleCluster, onHoverCluster, realmRootId = null, onEnterRealm, realmEnterButtonRef, realmCaption = null, visitedTrail = EMPTY_TRAIL, trailLensActiveRef, clusterBarLabels = null, trailHoverNodeIdRef, tierReveal = DEFAULT_TIER_REVEAL, tourAnchorNodeId = null, tourAnchorRef, glyphSet = "geometric", canvasBackground = "dot", footprint = null, expand = DEFAULT_EXPAND, wheelIntent = "zoom", ambientSleepDelayMs } = args;
 
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
   const containerRef = useRef<HTMLDivElement | null>(null);
@@ -502,6 +507,9 @@ export function useTopologyLoop(args: UseTopologyLoopArgs): UseTopologyLoopResul
   /** 결계 센서스 캡션 prop 미러 — rAF 프레임 클로저가 최신 문구를 읽는다. */
   const realmCaptionRef = useRef<string | null>(realmCaption);
   realmCaptionRef.current = realmCaption;
+  // 막대 문구 미러 — 히트테스트와 드로우가 **같은 문자열**로 폭을 잰다.
+  const clusterBarLabelsRef = useRef<ClusterBarLabels | null>(clusterBarLabels);
+  clusterBarLabelsRef.current = clusterBarLabels;
 
   const cameraRef = useRef<CameraAxes>({
     x: { value: 0, velocity: 0 },
@@ -746,6 +754,12 @@ export function useTopologyLoop(args: UseTopologyLoopArgs): UseTopologyLoopResul
   /** 스포트라이트 — prop 미러(같은 패턴) + on/off 지수 램프(0..1, 프레임 바디가 step). */
   const spotlightIdsRef = useRef<ReadonlySet<string> | null>(spotlightIds);
   const spotlightRampRef = useRef(0);
+  /**
+   * 「걸어온 길」 렌즈 세기 0..1 — 스포트라이트와 **같은** 지수 램프를 쓴다
+   * (신규 easing 0). 팝오버를 닫아도 이 값이 0 에 닿을 때까지 렌즈 집합을 계속
+   * 넘겨 트레일 잉크가 램프로 소멸한다.
+   */
+  const trailLensRampRef = useRef(0);
   /** M-5 — mirror the tier-change callback into a ref for the rAF closure, and
    * track the last emitted tier so the callback fires only on transitions. */
   const onZoomTierChangeRef = useRef<typeof onZoomTierChange>(onZoomTierChange);
@@ -1734,7 +1748,11 @@ export function useTopologyLoop(args: UseTopologyLoopArgs): UseTopologyLoopResul
             ((trailLensPropRef.current?.current ?? false) && (trailBrushPropRef.current?.current ?? null) !== null),
           // 렌즈 on/off 전이 — 마지막으로 그린 상태와 다르면 한 프레임 깨워
           // 새 상태를 그린다(스포트라이트 램프 정착과 같은 계약).
-          trailLensSettling: (trailLensPropRef.current?.current ?? false) !== drawnTrailLensRef.current,
+          trailLensSettling:
+            (trailLensPropRef.current?.current ?? false) !== drawnTrailLensRef.current ||
+            Math.abs(
+              trailLensRampRef.current - ((trailLensPropRef.current?.current ?? false) ? 1 : 0),
+            ) > 0.01,
           // 앰비언트 휴면 — fresh 브리드는 에이전트가 매일 볼트를 고치는 이
           // 제품의 **정상 상태**에서 거의 항상 참이라(카운슬 실측), 이 플래그가
           // 유휴 게이트를 영구히 열어 두는 두 원인 중 하나였다.
@@ -2907,6 +2925,12 @@ export function useTopologyLoop(args: UseTopologyLoopArgs): UseTopologyLoopResul
         ? (spotlightIdsRef.current !== null ? 1 : 0)
         : stepFocusRamp(spotlightRampRef.current, spotlightIdsRef.current !== null, dt, tokens.focusDimTau);
 
+      // 걸어온 길 렌즈 on/off 램프 — 같은 easing·같은 토큰 재사용.
+      // reduced-motion 은 즉착(정적 대비만으로 정보 성립 — 스포트라이트와 같은 계약).
+      trailLensRampRef.current = reducedMotionRef.current
+        ? (trailLensActive ? 1 : 0)
+        : stepFocusRamp(trailLensRampRef.current, trailLensActive, dt, tokens.focusDimTau);
+
       // 움직이는 배경 한 스텝 — 그리기 **전에** 자기 버퍼를 갱신한다.
       // `ambientFactor` 를 그대로 넘기므로 손을 놓으면 감속해 멎고, 0 이 되면
       // 이 호출은 조기 반환한다(유휴 래스터 비용 0).
@@ -2981,7 +3005,11 @@ export function useTopologyLoop(args: UseTopologyLoopArgs): UseTopologyLoopResul
         footprintNewestId,
         footprintAppear,
         // 렌즈 keep-set — 팝오버가 열려 있을 때만 넘긴다(닫히면 null = 회귀 0).
-        trailLensIds: trailLensActive ? visitedTrailSetRef.current : null,
+        // 렌즈가 꺼져도 램프가 0 에 닿을 때까지 집합을 계속 넘긴다 — 그래야
+        // 트레일 잉크와 배경 dim 이 «사라지는» 대신 «내려간다».
+        trailLensIds:
+          trailLensActive || trailLensRampRef.current > 0.01 ? visitedTrailSetRef.current : null,
+        trailLensRamp: trailLensRampRef.current,
         spotlightIds: spotlightIdsRef.current,
         spotlightRamp: spotlightRampRef.current,
         tierReveal: tierRevealRef.current,
@@ -2992,6 +3020,7 @@ export function useTopologyLoop(args: UseTopologyLoopArgs): UseTopologyLoopResul
           : null,
         depthDotPatterns: canvasBackgroundRef.current === "depth" ? depthDotPatternsRef.current : undefined,
         expand: expandPrefRef.current,
+        clusterBarLabels: clusterBarLabelsRef.current,
       });
       // 이번 프레임이 어떤 렌즈 상태를 그렸는지 기록 — 유휴 게이트가 다음
       // 프레임에 "바뀌었나"를 이 값으로 판정한다.
@@ -3095,6 +3124,7 @@ export function useTopologyLoop(args: UseTopologyLoopArgs): UseTopologyLoopResul
     selectedEdgeRef,
     clusterChipsRef,
     expandPrefRef,
+    clusterBarLabelsRef,
     clusteredIdsRef,
     hoveredClusterIdRef,
     realmParallaxRef,

@@ -6,7 +6,7 @@
  */
 
 import type { CameraAxes } from "../engine/camera";
-import { rankEgoNeighborsByDOI, resolveEdgeEgoStateWithPair, resolveNodeEgoStateWithPair, resolveTrailLensNodeEgoState, type EdgeEgoState, type EdgePairFocus, type NodeEgoState } from "../model/focus-state";
+import { rankEgoNeighborsByDOI, resolveEdgeEgoStateWithPair, resolveNodeEgoStateWithPair, resolveTrailLensNodeEgoState, trailNodeInkStrength, type EdgeEgoState, type EdgePairFocus, type NodeEgoState } from "../model/focus-state";
 import { resolveFreshnessVisual } from "../model/freshness";
 import { backgroundParallaxOrigin, resolveBackgroundOrigin } from "../model/background-parallax";
 import { computeSelectionPulse, type SelectionPulseVisual } from "../model/selection-pulse";
@@ -59,7 +59,7 @@ import {
   type SafeRect,
 } from "../render/label-layout";
 import { draw as nodeShapesDraw } from "../render/node-shapes";
-import { clusterChipOccupancyRect, drawClusterChip, clusterChipScale } from "../render/cluster-chips";
+import { clusterChipOccupancyRect, drawClusterChip, clusterChipScale, type ClusterBarLabels } from "../render/cluster-chips";
 import type { ClusterChip } from "../model/density-gate";
 import { drawDiffractionSpike, drawRealmCosmos, drawStarDust, type DustPoint } from "../render/starfield";
 import { isEdgeCulled, isNodeCulled, isPassthroughEdge } from "../render/viewport-cull";
@@ -532,6 +532,21 @@ export interface FrameDrawParams {
    * 생략 시 `DEFAULT_EXPAND`(설정을 안 건드린 화면과 동일).
    */
   expand?: ExpandPreference;
+  /**
+   * 막대 문구(번역문). 캔버스 렌더러는 문자열을 만들지 않는다 — 결계 캡션
+   * (`wardingRing.caption`)이 이미 쓰는 그 경로 그대로 호출부가 번역해 넘긴다.
+   */
+  clusterBarLabels?: ClusterBarLabels | null;
+  /**
+   * 「걸어온 길」 렌즈의 세기 0..1 — on/off 지수 램프(loop 가 스텝).
+   *
+   * 왜 boolean 이 아닌가: 렌즈가 켜지면 방문 노드와 **밟은 관계선**이 트레일
+   * 색으로 올라오는데, 그 색이 하드컷으로 나타나고 사라지면 «장식이 튀어나왔다»
+   * 로 읽힌다. 선행 렌즈 예외 둘(에이전트 포커스 링 · 최근 변경 스포트라이트)이
+   * 이미 램프로 소멸하는 문법을 세워 뒀고, 이 렌즈도 같은 문법을 쓴다.
+   * 생략 시 `trailLensIds` 유무로 0/1(하위호환).
+   */
+  trailLensRamp?: number;
 }
 
 /** The full per-frame paint, in the prototype's `render()` order (§13): background -> dust -> edges (contains, depends) -> nodes (+ bright-star spikes) -> labels. */
@@ -593,6 +608,8 @@ export function drawTopologyFrame(params: FrameDrawParams): void {
     paintAnimatedBackground = null,
     depthDotPatterns,
     expand = DEFAULT_EXPAND,
+    clusterBarLabels = null,
+    trailLensRamp,
   } = params;
 
   // 스포트라이트 침강 배수 — 렌즈 ON + 램프 진행 중 + 포커스/엣지선택 비활성
@@ -608,6 +625,16 @@ export function drawTopologyFrame(params: FrameDrawParams): void {
   // 는 즉시 전환이고(200ms 이내 계약), 닫으면 ego 강조가 그대로 복귀한다.
   const trailLensKeepIds = trailLensIds !== null && trailLensIds.size > 0 ? trailLensIds : null;
   const trailLensActive = trailLensKeepIds !== null;
+  /**
+   * 렌즈의 **세기** — 0 이면 아무 트레일 잉크도 없다.
+   *
+   * 켜짐(집합 유무)과 세기(램프)를 갈라 둔 이유: 팝오버를 닫는 순간 집합을
+   * 비우면 색이 하드컷으로 사라진다. loop 가 램프가 0 에 닿을 때까지 집합을
+   * 계속 넘기고, 이 값만 내려간다.
+   */
+  const trailRamp = trailLensActive
+    ? Math.min(1, Math.max(0, trailLensRamp ?? 1))
+    : 0;
   const isTrailKept = (nodeId: string): boolean => trailLensKeepIds !== null && trailLensKeepIds.has(nodeId);
   /** 렌즈 ON 이면 방문 keep-set 기준 분류, OFF 면 기존 ego/페어 분류 그대로. */
   const lensNodeEgoState = (nodeId: string, focusId: string | null, neighbors: ReadonlySet<string>, pair: EdgePairFocus | null): NodeEgoState =>
@@ -910,6 +937,19 @@ export function drawTopologyFrame(params: FrameDrawParams): void {
       const edgeSpotlightSink = spotlightSink(
         spotlightIds !== null && spotlightIds.has(edge.sourceId) && spotlightIds.has(edge.targetId),
       );
+      // 「걸어온 길」 — 연달아 밟은 쌍이면서 **실재하는 관계선**일 때만. 이 루프가
+      // `world.edges` 를 돌기 때문에 후자는 구조적으로 보장된다(발자국이 이미
+      // 쓰는 그 계약). 렌즈가 꺼져 있으면 램프가 0 이라 값이 종전과 같다.
+      const walkedTrail =
+        trailRamp > 0.001 &&
+        walkedEdgeKeys !== null &&
+        walkedEdgeKeys.has(
+          edge.sourceId < edge.targetId
+            ? `${edge.sourceId} ${edge.targetId}`
+            : `${edge.targetId} ${edge.sourceId}`,
+        )
+          ? trailRamp
+          : 0;
       ctx.globalAlpha = (passthrough ? edgeAlpha * tokens.edgePassthroughAlpha : edgeAlpha) * edgeSpotlightSink;
       tracesDraw(
         ctx,
@@ -923,6 +963,7 @@ export function drawTopologyFrame(params: FrameDrawParams): void {
           directional: isDirectionalRelation(edge.relationType),
           egoState: edgeEgoState,
           selected: isSelectedEdge && !trailLensActive,
+          trailWalked: walkedTrail,
           farT,
           t: edge.t,
           emphasized,
@@ -941,6 +982,10 @@ export function drawTopologyFrame(params: FrameDrawParams): void {
           indigo: tokens.indigo,
           indigoBright: tokens.indigoBright,
           edgeSelected: tokens.edgeSelected,
+          // 트레일 잉크는 토큰이 아니라 **발자국이 쓰는 그 색 그대로**다 —
+          // 사용자가 설정에서 고른 노랑/인디고 2택이 자국과 선에 동시에 적용돼야
+          // 둘이 같은 사실의 두 표기로 읽힌다.
+          edgeTrail: footprintStepColor,
         },
       );
       /**
@@ -1032,13 +1077,34 @@ export function drawTopologyFrame(params: FrameDrawParams): void {
     // deselect fade) + this node's focus ramp — everything else keeps the live
     // `egoState`.
     const colorEgoState = lensNodeEgoState(node.id, colorFocusedNodeId, colorNeighbors, colorSelectedEdge);
-    // 렌즈는 자기 램프를 만들지 않는다(새 모션 0) — 켜져 있는 동안 색 램프를 1 로
-    // 고정해 포커스 없이 팝오버만 연 경우에도 dim 타깃이 그대로 적용되게 한다.
-    // 포커스가 있는 통상 경로에선 이미 1 이라 값이 바뀌지 않는다(회귀 0).
-    const focusRamp = trailLensActive ? 1 : (focusRampById.get(node.id) ?? 0);
+    // 렌즈는 자기 easing 을 만들지 않는다(신규 이징 0) — 스포트라이트가 이미 쓰는
+    // 지수 램프(`focusDimTau`)를 그대로 색 램프로 꽂는다. 그래서 팝오버를 열면
+    // 배경이 램프로 내려앉고, 닫으면 램프로 되돌아온다(하드컷 없음). 포커스가
+    // 있는 통상 경로에선 렌즈가 꺼져 있어 값이 바뀌지 않는다(회귀 0).
+    const focusRamp = trailLensActive ? trailRamp : (focusRampById.get(node.id) ?? 0);
     const emphasis = emphasisById.get(node.id) ?? 0;
     const isEmphasizedNeighbor = emphasizedNeighborId !== null && node.id === emphasizedNeighborId && egoState === "neighbor";
     const visual = resolveNodeVisual(node, colorEgoState, emphasis, colorFocusedNodeId, isEmphasizedNeighbor, tokens, reducedMotion, focusRamp);
+    /**
+     * 「걸어온 길」 — **방문한 노드 자신**이 트레일 색으로 읽힌다.
+     *
+     * 종전 렌즈는 방문 노드를 `"normal"` 로 «남기기만» 했다. 나머지가 dim 이라
+     * 상대적으로 도드라지긴 했지만, 방문 표시는 노드 **옆** 발자국뿐이라
+     * 소유자가 본 화면에는 「걸어온 길」의 노드도 선도 없었다.
+     *
+     * 새 원(넷째 링)을 두르지 않는다 — 노드가 **이미 가진 stroke 채널**의 색만
+     * 바꾼다. 그래서 궤도가 늘지 않고, 잉크도 늘지 않고, 램프로 되돌아온다.
+     * 「빛나게」의 헌장 안 형태가 이것이다: 어두워진 장 위의 **값·색 대비**이지
+     * glow 가 아니다(번짐은 발자국 글리프 한 파일의 opt-in 예외로만 존재한다).
+     */
+    const trailInk = trailNodeInkStrength({
+      kept: isTrailKept(node.id),
+      ramp: trailRamp,
+      colorEgoState,
+    });
+    if (trailInk > 0.001) {
+      visual.stroke = lerpColorHex(visual.stroke, footprintStepColor, trailInk);
+    }
 
     const baseRadius = radiusForKind(node.kind, tokens) * node.magnitudeScale;
     // rank8 — new-node appear ramp: micro scale 0.6→1 + alpha 0→1. rank7 —
@@ -1424,7 +1490,14 @@ export function drawTopologyFrame(params: FrameDrawParams): void {
       spotlightSink(
         (spotlightIds !== null && spotlightIds.has(chip.parentId)) || isChipHovered,
       ) *
-      (trailLensActive && !isTrailKept(chip.parentId) ? BACKGROUND_DIM_WHEN_EXPANDED : 1);
+      // 걸어온 길 렌즈 — **확장 컨트롤은 궤적이 아니다.** 종전에는 방문 노드에
+      // 붙은 칩만 예외로 남겼는데, 기본 어포던스가 「머리 위 막대」가 되면서 그
+      // 예외가 불투명한 판이 되어 **밟은 관계선을 정확히 가로막았다**(실측
+      // 2026-08-02: 「주문」에 도착하는 트레일이 판 밑에서 끊겼다). 렌즈가 켜져
+      // 있는 동안에는 칩도 함께 물러난다 — 예외가 하나 줄고 궤적이 주인공이 된다.
+      // 램프를 타므로 렌즈가 꺼질 때 칩만 하드컷으로 돌아오지 않는다
+      // (모션 §「한 입력 = 한 사건」).
+      (trailLensActive ? 1 - (1 - BACKGROUND_DIM_WHEN_EXPANDED) * trailRamp : 1);
     // draw 와 라벨 예약이 **같은 입력**을 보게 하나로 묶는다 — 갈라지면 라벨이
     // 칩 위에 다시 겹치거나(예약 누락) 빈 곳을 피한다(유령 예약).
     const chipDrawInput = {
@@ -1441,6 +1514,8 @@ export function drawTopologyFrame(params: FrameDrawParams): void {
       parentScreenY: parentScreen?.y,
       nodeScreenRadius,
       affordance: expand.affordance,
+      batchSize: expand.batchSize,
+      barLabels: clusterBarLabels ?? undefined,
       // 「고른 노드 바로 위」 어포던스의 존재 조건. ego 합성 칩(`이웃 +N`)의
       // 부모는 정의상 고른 노드다 — 그걸 빼면 배치 공개가 통째로 닫힌다.
       focused: chip.ego === true || focusedNodeId === chip.parentId,
@@ -1471,6 +1546,11 @@ export function drawTopologyFrame(params: FrameDrawParams): void {
         plusInk: tokens.clusterChipInkRest,
         numeralInk: tokens.clusterChipInkRest,
         tether: tokens.edgeContains,
+        // 막대는 **부른 컨트롤**이라 상시 크롬 잉크로는 글자가 안 읽힌다
+        // (rest 단은 3.0:1 로 램프 맨 아래 — 배경 노드 테두리보다 어둡다).
+        // 노드 라벨과 같은 단으로 올리되 인디고는 쓰지 않는다 — 인디고는
+        // 사용자가 고른 노드의 것이고, 막대는 그 노드에 붙은 종속물이다.
+        barInk: tokens.numeralFace,
         hoverSurface: tokens.nodeFillCapability,
         hoverBorder: tokens.indigo,
         hoverInk: tokens.indigoBright,

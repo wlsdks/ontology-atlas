@@ -14,13 +14,17 @@ import {
   CLUSTER_BAR_HEIGHT,
   CLUSTER_CHIP_HEIGHT,
   clusterBadgeRect,
+  clusterBarLabel,
   clusterBarRect,
   clusterChipOccupancyRect,
   clusterChipRect,
   clusterControlForm,
   drawClusterChip,
+  estimateCanvasTextWidth,
   orbitButtonRect,
+  type ClusterBarLabels,
   type ClusterChipColors,
+  type ClusterChipRect,
 } from "@/widgets/topology-map-v2/render/cluster-chips";
 import {
   EGO_NEIGHBOR_LIMIT,
@@ -58,6 +62,12 @@ import {
 
 const PARENT = { x: 400, y: 300, radius: 17 };
 const ANCHOR = { x: 520, y: 300 };
+/** 화면에 실제로 쓰이는 문구(ko) — 폴백 영문이 아니라 이걸로 잰다. */
+const KO_BAR_LABELS: ClusterBarLabels = {
+  expandAll: "모두 펼치기",
+  expandCount: "{count}개 펼치기",
+  collapse: "접기",
+};
 
 const chipInput = (over: Partial<Parameters<typeof clusterChipOccupancyRect>[0]> = {}) => ({
   screenX: ANCHOR.x,
@@ -68,6 +78,8 @@ const chipInput = (over: Partial<Parameters<typeof clusterChipOccupancyRect>[0]>
   parentScreenX: PARENT.x,
   parentScreenY: PARENT.y,
   nodeScreenRadius: PARENT.radius,
+  batchSize: 24,
+  barLabels: KO_BAR_LABELS,
   ...over,
 });
 
@@ -170,13 +182,18 @@ describe("펼치기 표시 — 셋이 실제로 갈아끼워진다", () => {
     expect(new Set(centers).size, `셋이 같은 자리다: ${centers.join(" / ")}`).toBe(3);
 
     const [pill, bar, badge] = rects;
-    // **막대에는 빈 폭이 없다** — 알약은 선행 글리프 존(14px)에 `＋` 를 앉히지만
-    // 막대는 부호·숫자를 판 한가운데 정렬해 그린다. 그 존을 그대로 물려받아
-    // 판이 자기가 설명하는 노드보다 넓었다(실측 2026-08-02: 58.8 vs 노드 지름
-    // 48). 컨트롤이 데이터보다 큰 것은 잉크 역전이다(Tufte). 같은 라벨에서
-    // 막대는 알약보다 **좁아야** 한다 — 존을 되살리면 이 줄이 빨개진다.
-    expect(bar.w, "막대가 알약의 빈 글리프 존을 다시 물려받았다").toBeLessThan(
-      clusterChipRect(ANCHOR.x, ANCHOR.y, "+31", 1).w - 10,
+    // **막대에는 빈 폭이 없다.** 알약은 선행 글리프 존(14px)에 `＋` 를 앉히지만
+    // 막대는 그 자리에 아무것도 안 그린다 — 한때 그 존을 그대로 물려받아 판이
+    // 그리는 것 없는 폭을 갖고 있었다(실측 2026-08-02).
+    //
+    // 판정을 «알약보다 좁다» 로 두면 안 된다: 막대가 글자 버튼이 된 뒤에는
+    // 문구가 길어질수록 그 부등식이 문구의 함수가 되어, **빈 폭이 아니라 언어**를
+    // 재게 된다(한국어 「모두 펼치기」에서 이미 뒤집힌다). 그래서 빈 폭을 직접
+    // 잰다 — 판 폭은 글자 폭 + 좌우 패딩 «정확히» 그만큼이다.
+    const barLabel = clusterBarLabel({ expanded: false, count: 31, batchSize: 24, labels: KO_BAR_LABELS });
+    expect(bar.w, "막대에 그리는 것 없는 폭이 생겼다").toBeCloseTo(
+      estimateCanvasTextWidth(barLabel, 12) + 20,
+      6,
     );
     // 알약은 anchor 중심(노드에서 떨어진 빈 자리).
     expect(pill.x + pill.w / 2).toBeCloseTo(ANCHOR.x, 6);
@@ -203,18 +220,17 @@ describe("펼치기 표시 — 셋이 실제로 갈아끼워진다", () => {
     );
   });
 
-  /** 「머리 위 막대」는 접힘·펼침 둘 다 막대고, 부호만 `+`↔`−` 로 바뀐다. */
+  /** 「머리 위 막대」는 접힘·펼침 둘 다 막대고, **문구**가 바뀐다. */
   it("「머리 위 막대」의 예약 사각형이 막대 지오메트리와 같다", () => {
     const collapsed = clusterChipOccupancyRect(chipInput({ affordance: "bar", focused: true }));
     expect(collapsed).toEqual(
-      clusterBarRect(PARENT.x, PARENT.y, PARENT.radius, "+31", 1),
+      // 31개 중 24개만 이번에 열린다 — 그 24 는 노드 각인(31)과 **다른 수**다.
+      clusterBarRect(PARENT.x, PARENT.y, PARENT.radius, "24개 펼치기", 1),
     );
     const expanded = clusterChipOccupancyRect(
       chipInput({ affordance: "bar", expanded: true, focused: true }),
     );
-    expect(expanded).toEqual(
-      clusterBarRect(PARENT.x, PARENT.y, PARENT.radius, "− 31", 1),
-    );
+    expect(expanded).toEqual(clusterBarRect(PARENT.x, PARENT.y, PARENT.radius, "접기", 1));
   });
 
   /** 「어깨 배지」는 접힘·펼침 **둘 다** 배지고, 부호만 바뀐다. */
@@ -232,21 +248,56 @@ describe("펼치기 표시 — 셋이 실제로 갈아끼워진다", () => {
    * 판정 함수**를 본다. 그 함수가 없으면 셋이 각자 `if (expanded)` 를 다시 써서
    * 언젠가 갈라진다 — 그게 「보이는데 안 눌리는 버튼」의 생성 경로다.
    */
-  it("부모 좌표를 모르면 도킹 형태는 그리지도 예약하지도 않는다", () => {
+  /**
+   * **못 붙는 것은 사라지지 않고 안 붙는 형태로 남는다** — 2026-08-02 실측 defect.
+   *
+   * 배치 공개의 `+N 더보기` 칩은 부모 id 가 합성 문자열이라 그래프에 그 노드가
+   * 없다(구조적이다 — 합성 id 는 실제 부모와 1:1 이지만 노드는 아니다). 도킹
+   * 형태가 기본값이 된 #826 이후 이 칩은 **그려지지도 눌리지도 않았고**, 그래서
+   * 「한 번에 여는 개수」를 낮춘 사람은 나머지를 열 방법이 없었다.
+   */
+  it("부모 좌표를 모르면 도킹 형태 대신 알약으로 남는다 — 사라지지 않는다", () => {
     for (const affordance of ["bar", "badge"] as const) {
-      expect(
-        clusterChipOccupancyRect({
-          screenX: ANCHOR.x,
-          screenY: ANCHOR.y,
-          count: 9,
-          expanded: false,
-          hovered: false,
-          affordance,
-          focused: true,
-        }),
+      const undocked = {
+        screenX: ANCHOR.x,
+        screenY: ANCHOR.y,
+        count: 9,
+        expanded: false,
+        hovered: false,
         affordance,
-      ).toBeNull();
+        focused: true,
+      };
+      expect(
+        clusterControlForm({ affordance, expanded: false, focused: true, dockable: false }),
+        affordance,
+      ).toBe("pill");
+      // 알약 지오메트리 그대로 — anchor 중심.
+      expect(clusterChipOccupancyRect(undocked), affordance).toEqual(
+        clusterChipRect(ANCHOR.x, ANCHOR.y, "+9", 1),
+      );
+      // 그리고 실제로 칠해진다(공회전 차단).
+      const rec = recordingCtx();
+      drawClusterChip(rec.ctx, undocked, COLORS);
+      expect(rec.ops, `${affordance}: 못 붙는 칩이 통째로 사라졌다`).toContain("fill");
     }
+  });
+
+  /**
+   * 「뜬 알약」의 펼침 배지는 이 폴백을 **안 받는다**(회귀 0 계약) — 종전대로
+   * 부모 좌표를 모르면 아무것도 없다.
+   */
+  it("「뜬 알약」의 펼침 배지는 종전대로 부모 없이는 없다", () => {
+    expect(
+      clusterChipOccupancyRect({
+        screenX: ANCHOR.x,
+        screenY: ANCHOR.y,
+        count: 9,
+        expanded: true,
+        hovered: false,
+        affordance: "pill",
+        focused: true,
+      }),
+    ).toBeNull();
   });
 });
 
@@ -621,5 +672,135 @@ describe("동시에 펼쳐 둘 부모 — 딥링크도 상한을 받는다", () 
   it("지도 화면이 그 상한을 실제로 건다", () => {
     const source = readFileSync("src/views/home/ui/HomePage.tsx", "utf8");
     expect(source).toContain("limitExpandedParents(expandedParentSlugs, expand.maxOpenParents)");
+  });
+});
+
+/**
+ * **막대는 「글자 버튼」이라야 막대다** — 2026-08-02 소유자 실보고
+ * *"머리위막대가 조금 다른듯한데 머리위 배지랑 다른게없는데?"*.
+ *
+ * 시안이 셋을 가르는 것은 자리만이 아니다: 뜬 알약은 «떨어진 빈 자리 + 점선»,
+ * 어깨 배지는 «작은 원 + 호버로 말함», 머리 위 막대는 «고른 노드 바로 위 +
+ * **글자 버튼** + 몇 개가 열릴지 숫자로 말함». 구현은 자리와 선택 게이팅만
+ * 옮기고 그리는 것은 `+N` 뿐이라, 남은 것이 «노드 근처의 작은 마크» — 배지와
+ * 같아졌다. 소유자의 판독이 정확했다.
+ */
+describe("머리 위 막대 — 동사가 든 글자 버튼", () => {
+  it("접히면 동사를 말하고, 펼쳐지면 되돌리는 동사를 말한다", () => {
+    expect(clusterBarLabel({ expanded: false, count: 17, batchSize: 24, labels: KO_BAR_LABELS }))
+      .toBe("모두 펼치기");
+    expect(clusterBarLabel({ expanded: true, count: 17, batchSize: 24, labels: KO_BAR_LABELS }))
+      .toBe("접기");
+  });
+
+  /**
+   * **같은 수를 두 번 말하지 않는다.** 노드는 자기 몸에 하위 총 개수를 각인한다
+   * (`17`). 종전 막대는 그 바로 위에서 `+17` 이라 했다 — 정보 0, 동사 0.
+   * 수는 그 수가 **정보일 때만** 말한다: 한 번에 다 열리면 「모두」, 나뉘면
+   * 「N개」이고 그 N 은 각인과 다른 수다.
+   */
+  it("한 번에 다 열리는 경우에는 숫자를 말하지 않는다", () => {
+    const label = clusterBarLabel({ expanded: false, count: 17, batchSize: 24, labels: KO_BAR_LABELS });
+    expect(label, "막대가 노드 각인과 같은 수를 되풀이한다").not.toContain("17");
+  });
+
+  it("나뉘어 열릴 때는 이번에 열릴 개수를 말한다 — 각인과 다른 수", () => {
+    const label = clusterBarLabel({ expanded: false, count: 17, batchSize: 4, labels: KO_BAR_LABELS });
+    expect(label).toBe("4개 펼치기");
+    expect(label).not.toContain("17");
+  });
+
+  /**
+   * **폭의 자는 하나다.** 사각형을 만드는 자리(`clusterBarRect`)에는 캔버스가
+   * 없고, 히트테스트·라벨 예약도 같은 함수를 부른다. 여기서 재는 것과 draw 가
+   * 재는 것이 갈리면 그 즉시 「보이는데 안 눌리는 글자」가 생긴다.
+   *
+   * 그리고 그 자는 **CJK 2셀 폭**을 알아야 한다 — 라틴 기준 `length × 상수` 는
+   * 한글에서 폭을 40% 가까이 과소평가한다(실측 600 12px: 한글 음절 10.38px).
+   */
+  it("폭 추정기가 한글을 라틴보다 넓게 잰다", () => {
+    const hangul = estimateCanvasTextWidth("가나다", 12);
+    const latin = estimateCanvasTextWidth("abc", 12);
+    expect(hangul, "한글이 라틴과 같은 폭으로 계산됐다 — 2셀 폭이 빠졌다").toBeGreaterThan(latin * 1.4);
+  });
+
+  /**
+   * 추정은 **실측보다 넓어야** 한다 — 좁으면 글자가 판을 뚫고 나가고, 그 바깥은
+   * 히트 사각형 밖이다. 아래 실측치는 헤드리스 Chromium `600 12px -apple-system`
+   * (`.qa-scratch/map-affordance/measure.mjs`).
+   */
+  it("추정 폭이 실측 폭보다 좁아지지 않는다", () => {
+    const measured: [string, number][] = [
+      ["모두 펼치기", 55.23],
+      ["접기", 20.76],
+      ["24개 펼치기", 58.2],
+      ["Expand all", 60.02],
+      ["Collapse", 50.02],
+      ["Expand 24", 60.02],
+    ];
+    for (const [text, actual] of measured) {
+      expect(estimateCanvasTextWidth(text, 12), text).toBeGreaterThanOrEqual(actual);
+    }
+  });
+
+  /** draw 와 예약이 **같은 문자열**을 쓴다 — 갈리면 사각형이 갈린다. */
+  it("예약 사각형이 그려질 문구의 폭과 같다", () => {
+    for (const [expanded, label] of [[false, "모두 펼치기"], [true, "접기"]] as const) {
+      const rect = clusterChipOccupancyRect(
+        chipInput({ affordance: "bar", focused: true, expanded, count: 17 }),
+      );
+      expect(rect?.w, label).toBeCloseTo(estimateCanvasTextWidth(label, 12) + 20, 6);
+    }
+  });
+
+  /**
+   * **문구는 볼트 언어를 따른다.** 캔버스가 문자열을 만들면 영어 화면에 한국어가
+   * 그려진다. 결계 캡션(`wardingRing.caption`)이 이미 쓰는 그 경로로 지도 화면이
+   * 번역문을 주입하는지 배선을 본다 — 이 배선이 끊기면 화면에 영문 폴백이 뜬다.
+   */
+  it("지도 화면이 세 문구를 번역해 캔버스로 넘긴다", () => {
+    const source = readFileSync("src/views/home/ui/HomePage.tsx", "utf8");
+    expect(source).toContain('t("cluster.barExpandAll")');
+    expect(source).toContain('t("cluster.barExpandCount"');
+    expect(source).toContain('t("cluster.barCollapse")');
+    expect(source).toContain("clusterBarLabels={clusterBarLabels}");
+    for (const locale of ["ko", "en"] as const) {
+      const messages = JSON.parse(readFileSync(`messages/${locale}.json`, "utf8")) as {
+        topology: { cluster: Record<string, string> };
+      };
+      const cluster = messages.topology.cluster;
+      for (const key of ["barExpandAll", "barExpandCount", "barCollapse"]) {
+        expect(cluster[key], `${locale}.${key}`).toBeTruthy();
+      }
+      // `{count}` 자리표시자는 렌더러가 채운다 — 사라지면 화면에 그대로 뜬다.
+      expect(cluster.barExpandCount, locale).toContain("{count}");
+    }
+  });
+
+  /**
+   * 판이 노드보다 넓어도 되지만 **글자보다 넓어선 안 된다** — 빈 폭 금지는 그대로다.
+   * 그리고 방위 계약(막대=북)은 폭과 무관하게 성립해야 한다: 판의 밑변이 노드
+   * 머리 위이고 궤도 버튼(동)의 윗변보다 위다.
+   */
+  it("문구가 길어져도 궤도 버튼과 겹치지 않는다", () => {
+    const overlap = (a: ClusterChipRect, b: ClusterChipRect): number => {
+      const w = Math.min(a.x + a.w, b.x + b.w) - Math.max(a.x, b.x);
+      const h = Math.min(a.y + a.h, b.y + b.h) - Math.max(a.y, b.y);
+      return w > 0 && h > 0 ? w * h : 0;
+    };
+    let checked = 0;
+    for (const radius of [7, 11, 17, 30, 42]) {
+      for (const scale of [0.85, 1, 1.5]) {
+        for (const label of ["모두 펼치기", "접기", "24개 펼치기", "Expand all"]) {
+          const bar = clusterBarRect(PARENT.x, PARENT.y, radius, label, scale);
+          expect(
+            overlap(bar, orbitButtonRect(PARENT.x, PARENT.y, radius)),
+            `${label} r=${radius} scale=${scale}`,
+          ).toBe(0);
+          checked += 1;
+        }
+      }
+    }
+    expect(checked).toBeGreaterThan(50);
   });
 });

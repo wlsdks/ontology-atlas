@@ -3885,6 +3885,11 @@
         },
         {
           "depth": 2,
+          "text": "2026-08-02 — 머리 위 막대가 말을 하고, 「걸어온 길」에 길이 보인다",
+          "slug": "2026-08-02-머리-위-막대가-말을-하고-걸어온-길에-길이-보인다"
+        },
+        {
+          "depth": 2,
           "text": "2026-08-01 — `v1.0.0-rc.5`: 공개 Windows x64 미서명 베타와 네이티브 검증",
           "slug": "2026-08-01-v100-rc5-공개-windows-x64-미서명-베타와-네이티브-검증"
         },
@@ -6004,9 +6009,9 @@
           "slug": "2026-07-26-첫-만남은-쇼핑몰부터"
         }
       ],
-      "excerpt": "Major change history. Code commit messages answer why; this file answers when / which surface changed. Focused on user-visible changes, not PR-level granularity. Newest at the top. Entries stay date-based; the app version reached v1.0.0 on 2026-07-27, so a release tag now carries the semver promise instead. Windows x64",
-      "wordCount": 61864,
-      "updatedAt": "2026-08-01",
+      "excerpt": "Major change history. Code commit messages answer why; this file answers when / which surface changed. Focused on user-visible changes, not PR-level granularity. Newest at the top. Entries stay date-based; the app version reached v1.0.0 on 2026-07-27, so a release tag now carries the semver promise instead. 막대에 동사가 들어갔",
+      "wordCount": 62026,
+      "updatedAt": "2026-08-02",
       "linksOut": [
         "audits/CASE-STUDY-AGENTS-MD-DRIFT",
         "slug"
@@ -6378,10 +6383,15 @@
           "depth": 2,
           "text": "2026-08-02 — 설정 시트는 「스케일 고정 계약」 밖이다. 그리고 안이 두 방언이었다",
           "slug": "2026-08-02-설정-시트는-스케일-고정-계약-밖이다-그리고-안이-두-방언이었다"
+        },
+        {
+          "depth": 2,
+          "text": "2026-08-02 — 막대를 막대로 만드는 것은 「글자 버튼」이고, 「걸어온 길」은 노드와 선까지 물들인다",
+          "slug": "2026-08-02-막대를-막대로-만드는-것은-글자-버튼이고-걸어온-길은-노드와-선까지-물들인다"
         }
       ],
       "excerpt": "이 파일은 결정과 그때 진 반대 의견을 남긴다. docs/CHANGELOG.md 는 무엇이 언제 바뀌었나를 답하고, 이 파일은 왜 그렇게 정했고, 무엇을 걸었나를 답한다. 최신이 위. 기록은 덧붙이기만 한다 — 지난 기록을 고치지 않는다. 판단이 바뀌었으면 새 기록을 쓰고 옛 기록을 뒤집힘 으로 표시한다. 틀린 기록도 자산이다. 1. 소집 전에 읽는다. 카운슬을 열기 전(그리고 단독 PO 패스를 쓰기 전) 같은 표면 · 같은 질문에 대한 선행 결정이 있는지 먼저 본다. 있으면 새 패스는 그것을 ① 여전히 유효하다고 인용하거나 ② 명시적으로 뒤집는다. 조용히 다시 결정",
-      "wordCount": 35632,
+      "wordCount": 36606,
       "updatedAt": "2026-08-02",
       "linksOut": []
     },

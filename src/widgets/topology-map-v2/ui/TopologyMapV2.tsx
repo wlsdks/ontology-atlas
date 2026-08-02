@@ -4,6 +4,7 @@ import { useEffect, useRef, type RefObject } from "react";
 import { Orbit } from "lucide-react";
 import { useTopologyLoop } from "./use-topology-loop";
 import type { TierRevealConfig } from "../model/tier-visibility";
+import type { ClusterBarLabels } from "../render/cluster-chips";
 import { DEFAULT_EXPAND } from "@/shared/lib/appearance-preferences";
 import type { CanvasBackground, ExpandPreference, FootprintPreference, GlyphSet } from "@/shared/lib/appearance-preferences";
 
@@ -166,6 +167,12 @@ export interface TopologyMapV2Props {
    */
   realmCaption?: string | null;
   /**
+   * 「머리 위 막대」의 문구(i18n, HomePage 주입) — 「모두 펼치기」/「N개
+   * 펼치기」/「접기」. 캔버스 렌더러는 문자열을 만들지 않는다(결계 캡션과
+   * 같은 규약). 생략하면 영문 폴백이 그려지므로 배선은 계약 테스트가 잡는다.
+   */
+  clusterBarLabels?: ClusterBarLabels | null;
+  /**
    * H3 P2 — 캔버스 접근성 라벨(i18n, HomePage 주입). canvas 는 회화 픽셀이라
    * 스크린리더에 빈 그래픽으로 읽힌다 → `role="img"` + 이 라벨로 "무엇인지 +
    * 키보드 대안(INDEX 패널)"을 한 문장으로 알린다. 생략하면 role/label 을 안
@@ -267,7 +274,7 @@ export interface TopologyMapV2Props {
 }
 
 export function TopologyMapV2(props: TopologyMapV2Props) {
-  const { nodes, edges, focus, minimal, emphasizedNeighborSlug, fitViewToken, relayoutToken, revealToken, onSelectEdge, onSelect, onPaneClick, onVisibleCountChange, onGraphStatsChange, onZoomTierChange, onContextMenuNode, agentFocusNodeId, spotlightIds = null, onHoverEdge, selectedEdge = null, expandedParents, onToggleCluster, onHoverCluster, clusterHint, realmRootId = null, onEnterRealm, realmEnterLabel, realmEnterTooltip, realmCaption = null, canvasLabel, visitedTrail, trailLensActiveRef, trailHoverNodeIdRef, tierReveal, tourAnchorNodeId = null, tourAnchorRef, overlayOpen = false, glyphSet = "geometric", canvasBackground = "dot", footprint = null, expand = DEFAULT_EXPAND, wheelIntent = "zoom", ambientSleepDelayMs } = props;
+  const { nodes, edges, focus, minimal, emphasizedNeighborSlug, fitViewToken, relayoutToken, revealToken, onSelectEdge, onSelect, onPaneClick, onVisibleCountChange, onGraphStatsChange, onZoomTierChange, onContextMenuNode, agentFocusNodeId, spotlightIds = null, onHoverEdge, selectedEdge = null, expandedParents, onToggleCluster, onHoverCluster, clusterHint, realmRootId = null, onEnterRealm, realmEnterLabel, realmEnterTooltip, realmCaption = null, clusterBarLabels = null, canvasLabel, visitedTrail, trailLensActiveRef, trailHoverNodeIdRef, tierReveal, tourAnchorNodeId = null, tourAnchorRef, overlayOpen = false, glyphSet = "geometric", canvasBackground = "dot", footprint = null, expand = DEFAULT_EXPAND, wheelIntent = "zoom", ambientSleepDelayMs } = props;
 
   const realmEnterButtonRef = useRef<HTMLButtonElement | null>(null);
 
@@ -349,6 +356,7 @@ export function TopologyMapV2(props: TopologyMapV2Props) {
       onEnterRealm,
       realmEnterButtonRef,
       realmCaption,
+      clusterBarLabels,
       visitedTrail,
       trailLensActiveRef,
       trailHoverNodeIdRef,
