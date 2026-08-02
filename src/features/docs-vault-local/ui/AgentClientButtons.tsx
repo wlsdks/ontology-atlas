@@ -2,7 +2,7 @@
 
 import { Fragment, useState } from "react";
 import { useTranslations } from "next-intl";
-import { ArrowUpRight, Check, Copy, Info, Loader2, Terminal } from "lucide-react";
+import { ArrowUpRight, Check, Copy, Info, Loader2 } from "lucide-react";
 import { Link } from "@/i18n/navigation";
 import { AGENT_GRAPH_WORKFLOW_HREF, type AgentServerAvailability } from "@/shared/config";
 import { copyText } from "@/shared/lib/copy-text";
@@ -211,7 +211,18 @@ export function AgentClientButtons({
    * `AgentClientButtons.test.tsx` "render order follows AGENT_CLIENTS".
    */
   const clientRenderers: Record<ClientId, () => React.ReactNode> = {
-    // Claude Code — 주 CTA. Tauri: .mcp.json 자동 생성. 웹: 복사.
+    // Claude Code — Tauri: .mcp.json 자동 생성. 웹: 복사.
+    //
+    // **채움을 뺐다 (2026-08-02, 디자인 카운슬 S2).** 이 갈래만 `primary` 를
+    // 무조건 참으로 하드코딩해 인디고 워시를 입었고, 나머지 셋에는 그 값을
+    // 넘기는 경로 자체가 없었다. 실측 결과 넷은 `750×38, x=407` 로 치수 분산이
+    // 0인데 하나만 채워져 있어서, 「선택지 넷」이 아니라 **「정답 하나 + 탈락
+    // 셋」**으로 읽혔다. 넷은 서로 다른 파일에 쓴다(`.mcp.json` ·
+    // `.codex/config.toml` · `.cursor/mcp.json` · `.agents/mcp_config.json`) —
+    // 한 사람이 둘 이상 붙이는 것이 정상 시나리오라 «정답» 이 있을 수 없다.
+    //
+    // 어느 도구를 쓰는지 아는 신호(`recommendedClientId`)는 아직 없다. 없는
+    // 신호를 있는 척 배선하는 대신 **잘못된 신호부터 끈다**.
     claudeCode: () =>
       mcpJsonIsReady ? (
         <ClientStatus
@@ -221,7 +232,6 @@ export function AgentClientButtons({
       ) : resolvedMcpJsonState === "invalid" ? (
         <ClientButton
           testId="agent-client-claude-code"
-          primary
           icon={<Copy size={13} aria-hidden />}
           label={t("replaceClaudeCodeConfig")}
           feedback={feedback.claudeCode}
@@ -236,8 +246,6 @@ export function AgentClientButtons({
       ) : onWriteConfigs ? (
         <ClientButton
           testId="agent-client-claude-code"
-          primary
-          icon={<Terminal size={13} aria-hidden />}
           label={t("connectClaudeCode")}
           feedback={feedback.claudeCode}
           doneLabel={t("claudeCodeDone")}
@@ -247,7 +255,6 @@ export function AgentClientButtons({
       ) : (
         <ClientButton
           testId="agent-client-claude-code"
-          primary
           icon={<Copy size={13} aria-hidden />}
           label={t("copyClaudeCodeConfig")}
           feedback={feedback.claudeCode}
@@ -264,7 +271,6 @@ export function AgentClientButtons({
       onWriteConfigs ? (
         <ClientButton
           testId="agent-client-cursor"
-          icon={<Terminal size={13} aria-hidden />}
           label={t("connectCursor")}
           feedback={feedback.cursor}
           doneLabel={t("cursorDone")}
@@ -299,7 +305,6 @@ export function AgentClientButtons({
       onWriteConfigs ? (
         <ClientButton
           testId="agent-client-antigravity"
-          icon={<Terminal size={13} aria-hidden />}
           label={t("connectAntigravity")}
           feedback={feedback.antigravity}
           doneLabel={t("antigravityDone")}
@@ -341,7 +346,6 @@ export function AgentClientButtons({
       ) : onWriteConfigs ? (
         <ClientButton
           testId="agent-client-codex"
-          icon={<Terminal size={13} aria-hidden />}
           label={t("connectCodex")}
           feedback={feedback.codex}
           doneLabel={t("codexDone")}
@@ -423,17 +427,16 @@ function ClientButton({
   doneLabel,
   copiedLabel,
   busyLabel,
-  primary = false,
   onClick,
 }: {
   testId: string;
-  icon: React.ReactNode;
+  /** 상태를 나르는 글리프만 넘긴다 — 상태 없는 장식은 자리를 안 받는다. */
+  icon?: React.ReactNode;
   label: string;
   feedback: Feedback;
   doneLabel?: string;
   copiedLabel?: string;
   busyLabel?: string;
-  primary?: boolean;
   onClick: () => void;
 }) {
   const isDone = feedback === "done";
@@ -460,11 +463,7 @@ function ClientButton({
       data-state={feedback}
       onClick={onClick}
       disabled={isBusy}
-      className={
-        primary
-          ? "inline-flex min-h-[var(--control-h-md)] w-full items-center justify-center gap-2 rounded-md border border-[color:var(--color-indigo-line-a54)] bg-[color:var(--color-indigo-a24)] px-3 py-2 text-body font-medium text-[color:var(--color-indigo-pale-a94)] transition-colors hover:bg-[color:var(--color-indigo-a32)] disabled:opacity-70"
-          : "inline-flex min-h-[var(--control-h-md)] w-full items-center justify-center gap-2 rounded-md border border-[color:var(--color-border-soft)] px-3 py-2 text-body text-[color:var(--color-text-secondary)] transition-colors hover:border-[color:var(--color-indigo-a46)] hover:text-[color:var(--color-text-primary)] disabled:opacity-70"
-      }
+      className="inline-flex min-h-[var(--control-h-md)] w-full items-center justify-center gap-2 rounded-md border border-[color:var(--color-border-soft)] px-3 py-2 text-body text-[color:var(--color-text-secondary)] transition-colors hover:border-[color:var(--color-indigo-a46)] hover:text-[color:var(--color-text-primary)] disabled:opacity-70"
     >
       {shownIcon}
       {shownLabel}

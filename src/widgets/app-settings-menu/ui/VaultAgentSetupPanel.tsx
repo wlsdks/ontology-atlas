@@ -772,24 +772,16 @@ export function VaultAgentSetupPanel({
           className="mt-0.5 text-[color:var(--color-indigo-accent)]"
         />
         <div className="min-w-0 flex-1">
-          <div className="flex items-center justify-between gap-2">
-            <h3 className="text-label font-medium text-[color:var(--color-text-primary)]">
-              {t('agentSetup.title')}
-            </h3>
-            <span
-              className={`rounded-sm px-1.5 py-0.5 font-mono text-caption uppercase tracking-[0.12em] ${
-                agentSetupReady
-                  ? 'bg-[color:var(--color-success-a12)] text-[color:var(--color-success-text-a92)]'
-                  : 'bg-[color:var(--color-amber-source-a12)] text-[color:var(--color-amber-docs-a92)]'
-              }`}
-            >
-              {agentSetupReady
-                ? t('agentSetup.ready')
-                : publicPackagesReady
-                  ? t('agentSetup.missing')
-                  : t('agentSetup.packageBlocked')}
-            </span>
-          </div>
+          {/*
+            **배지가 없다 (2026-08-02, 디자인 카운슬 S2).** 「누락」 앰버 배지는
+            같은 사실의 **세 번째 진술**이었다: y=195 「누락」 · y≈214 「설정
+            파일 0/3개 준비됨」 · y=721 「연결 파일 0/3 준비됨…」. 셋 다 같은
+            수를 말하는데 첫째만 색으로 소리쳤다. 바로 아래 줄이 그 수를 이미
+            말하므로 배지는 잉크만 쓰고 정보를 안 나른다.
+          */}
+          <h3 className="text-label font-medium text-[color:var(--color-text-primary)]">
+            {t('agentSetup.title')}
+          </h3>
           <p className="mt-1 text-label leading-4 text-[color:var(--color-text-tertiary)]">
             {publicPackagesReady
               ? t('agentSetup.statusSummary', {
