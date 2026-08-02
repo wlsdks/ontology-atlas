@@ -61,13 +61,16 @@ const labels = {
   actionDocument: "Document",
   actionEditRelations: "Edit relations",
   actionCopyHandoff: "Copy handoff",
+  actionAskAgent: "Ask agent",
   actionPath: "Path",
   actionRealm: "Expand realm",
+  sourceHeading: "Code evidence",
   sourceKind: "Source · Git repository",
   sourceStatus: "Source verified",
   sourceMeasuredAt: "Measured today",
   sourceCurrentness: "Current source",
-  sourceGap: "No evidence gaps",
+  sourceGap: "Connect a code folder",
+  sourceGapLabel: "Next check",
   sourceAction: "Use current evidence",
   sourceRelationsShow: "Show project relations",
   sourceRelationsHide: "Hide project relations",
@@ -96,6 +99,8 @@ function renderPanel(
     kind?: string;
     projectSource?: ProjectSourceView | null;
     onProjectSourceAction?: () => void | Promise<void>;
+    onAskAgent?: () => void;
+    onEnterRealm?: () => void;
     projectSourceBusy?: boolean;
     projectSourceError?: string | null;
     updatedAtLabel?: string | null;
@@ -132,8 +137,10 @@ function renderPanel(
       mtimeConflict={overrides.mtimeConflict ?? false}
       onSelectConnection={overrides.onSelectConnection ?? (() => {})}
       onCopyHandoff={overrides.onCopyHandoff ?? (() => {})}
+      onAskAgent={overrides.onAskAgent}
       onClose={() => {}}
       onSetPathSource={overrides.onSetPathSource ?? (() => {})}
+      onEnterRealm={overrides.onEnterRealm}
       onOpenFullDetail={onOpenFullDetail}
       projectSource={overrides.projectSource}
       onProjectSourceAction={overrides.onProjectSourceAction}
@@ -169,12 +176,73 @@ describe("TopologyV2DetailPanel — project source receipt", () => {
     expect(rail).toHaveAttribute("data-source-action", "use_current_evidence");
     expect(rail).toHaveAttribute("data-source-currentness", "current");
     expect(rail).toHaveAttribute("data-source-cardinality", "1");
+    expect(rail).toHaveAttribute("data-source-layout", "status-action-separated");
+    expect(rail).toHaveAttribute("data-source-gap-visible", "false");
     expect(rail).toHaveAttribute("aria-live", "polite");
+    expect(screen.getByTestId("topology-v2-project-source-heading")).toHaveTextContent(
+      "Code evidence",
+    );
     expect(rail).toHaveTextContent("Source verified");
     expect(rail).toHaveTextContent("Source · Git repository");
     expect(rail).toHaveTextContent("Measured today");
     expect(rail).toHaveTextContent("Current source");
-    expect(rail).toHaveTextContent("No evidence gaps");
+    expect(rail).not.toHaveTextContent("Connect a code folder");
+    expect(screen.queryByTestId("topology-v2-project-source-gap")).not.toBeInTheDocument();
+  });
+
+  it("shows only a real top gap as the next check", () => {
+    const projectSource: ProjectSourceView = {
+      contractVersion: 1,
+      projectSlug: "views",
+      status: "not_measured",
+      currentness: "unavailable",
+      measuredAt: null,
+      topGap: { id: "source_unbound" },
+      nextAction: { id: "connect_source" },
+      bindingCardinality: 0,
+      receipt: null,
+    };
+
+    renderPanel(undefined, undefined, {
+      kind: "project",
+      projectSource,
+      projectSourceError: null,
+    });
+
+    const rail = screen.getByTestId("topology-v2-project-source-receipt");
+    expect(rail).toHaveAttribute("data-source-gap-visible", "true");
+    expect(screen.getByTestId("topology-v2-project-source-gap")).toHaveTextContent(
+      "Next check: Connect a code folder",
+    );
+  });
+
+  it("keeps four inline ontology actions for a current project and one footer handoff", () => {
+    const projectSource: ProjectSourceView = {
+      contractVersion: 1,
+      projectSlug: "views",
+      status: "verified_current",
+      currentness: "current",
+      measuredAt: "2026-08-02T10:00:00.000Z",
+      topGap: null,
+      nextAction: { id: "use_current_evidence" },
+      bindingCardinality: 1,
+      receipt: null,
+    };
+
+    renderPanel(vi.fn(), undefined, {
+      kind: "project",
+      projectSource,
+      onProjectSourceAction: vi.fn(),
+      onAskAgent: vi.fn(),
+      onEnterRealm: vi.fn(),
+    });
+
+    const actions = screen.getByTestId("topology-v2-detail-panel-actions");
+    expect(actions).toHaveAttribute("data-inline-action-count", "4");
+    expect(actions.children).toHaveLength(4);
+    expect(screen.queryByTestId("topology-v2-detail-panel-action-handoff")).not.toBeInTheDocument();
+    expect(screen.queryByTestId("topology-v2-detail-panel-action-path")).not.toBeInTheDocument();
+    expect(screen.getByTestId("topology-v2-project-source-action")).toBeInTheDocument();
   });
 
   it("keeps project relation counts visible while individual rows start collapsed", () => {

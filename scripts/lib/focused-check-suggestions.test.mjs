@@ -443,6 +443,19 @@ describe('focused check suggestions', () => {
     assert.doesNotMatch(commands.join(' '), /firebase|bundle:check/i);
   });
 
+  it('routes installed-app WebView verifier changes to the desktop contract suite', () => {
+    const result = suggestFocusedChecks([
+      'scripts/verify-macos-app-launch.mjs',
+      'scripts/verify-macos-app-launch.payload-contract.test.mjs',
+      'scripts/lib/verify-macos/payload-contract.mjs',
+    ]);
+
+    assert.ok(
+      result.commands.some((row) => row.command === 'pnpm test:desktop:check'),
+      'WebView verifier changes must run the suite that includes its payload contract',
+    );
+  });
+
   it('suggests desktop readiness checks for macOS desktop distribution files', () => {
     const result = suggestFocusedChecks([
       'scripts/check-desktop-readiness.mjs',

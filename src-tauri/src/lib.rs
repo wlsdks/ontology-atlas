@@ -2803,6 +2803,35 @@ pub fn run() {
                                 topologyV2DetailPanelStyle?.visibility !== "hidden" &&
                                 Number(topologyV2DetailPanelStyle?.opacity || "1") > 0.01
                               );
+                              const topologyV2ProjectSourceReceipt = document.querySelector(
+                                '[data-testid="topology-v2-project-source-receipt"]'
+                              );
+                              const topologyV2ProjectSourceGap = document.querySelector(
+                                '[data-testid="topology-v2-project-source-gap"]'
+                              );
+                              const topologyV2DetailPanelActions = document.querySelector(
+                                '[data-testid="topology-v2-detail-panel-actions"]'
+                              );
+                              const topologyV2DetailPanelFooter = document.querySelector(
+                                '[data-testid="topology-v2-detail-panel-footer"]'
+                              );
+                              const topologyV2ProjectSourceReceiptRect =
+                                topologyV2ProjectSourceReceipt?.getBoundingClientRect();
+                              const topologyV2DetailPanelActionsRect =
+                                topologyV2DetailPanelActions?.getBoundingClientRect();
+                              const topologyV2DetailPanelFooterRect =
+                                topologyV2DetailPanelFooter?.getBoundingClientRect();
+                              const topologyV2RectOverlapArea = (a, b) => {
+                                if (!a || !b) return 0;
+                                const width = Math.min(a.right, b.right) - Math.max(a.left, b.left);
+                                const height = Math.min(a.bottom, b.bottom) - Math.max(a.top, b.top);
+                                return width > 0.5 && height > 0.5 ? width * height : 0;
+                              };
+                              const topologyV2InlineActionWidths = topologyV2DetailPanelActions
+                                ? Array.from(topologyV2DetailPanelActions.children)
+                                  .filter(aiSettingsVisible)
+                                  .map((action) => action.getBoundingClientRect().width)
+                                : [];
                               const topologyV2EdgePanel = document.querySelector(
                                 '[data-testid="topology-v2-edge-panel"]'
                               );
@@ -6549,6 +6578,39 @@ pub fn run() {
                                     topologyV2DetailPanelRect?.width || 0,
                                   topologyV2DetailPanelHeight:
                                     topologyV2DetailPanelRect?.height || 0,
+                                  topologyV2ProjectSourceReceiptVisible:
+                                    aiSettingsVisible(topologyV2ProjectSourceReceipt),
+                                  topologyV2ProjectSourceLayout:
+                                    topologyV2ProjectSourceReceipt?.getAttribute("data-source-layout") || "",
+                                  topologyV2ProjectSourceTopGap:
+                                    topologyV2ProjectSourceReceipt?.getAttribute("data-source-top-gap") || "",
+                                  topologyV2ProjectSourceGapVisible:
+                                    aiSettingsVisible(topologyV2ProjectSourceGap),
+                                  topologyV2ProjectSourceAction:
+                                    topologyV2ProjectSourceReceipt?.getAttribute("data-source-action") || "",
+                                  topologyV2ProjectSourceInlineActionCount:
+                                    Number(topologyV2DetailPanelActions?.getAttribute("data-inline-action-count") || "0"),
+                                  topologyV2ProjectSourceRenderedActionCount:
+                                    topologyV2InlineActionWidths.length,
+                                  topologyV2ProjectSourceInlineActionMinWidth:
+                                    topologyV2InlineActionWidths.length > 0
+                                      ? Math.min(...topologyV2InlineActionWidths)
+                                      : 0,
+                                  topologyV2ProjectSourceReceiptActionOverlap:
+                                    topologyV2RectOverlapArea(
+                                      topologyV2ProjectSourceReceiptRect,
+                                      topologyV2DetailPanelActionsRect
+                                    ),
+                                  topologyV2ProjectSourceReceiptFooterOverlap:
+                                    topologyV2RectOverlapArea(
+                                      topologyV2ProjectSourceReceiptRect,
+                                      topologyV2DetailPanelFooterRect
+                                    ),
+                                  topologyV2ProjectSourceActionFooterOverlap:
+                                    topologyV2RectOverlapArea(
+                                      topologyV2DetailPanelActionsRect,
+                                      topologyV2DetailPanelFooterRect
+                                    ),
                                   topologyV2EdgePanelVisible,
                                   topologyV2EdgePanelRole:
                                     topologyV2EdgePanel?.getAttribute("role") || "",

@@ -140,6 +140,7 @@ import {
   useRelationVocabulary,
 } from "@/entities/knowledge-graph";
 import { copyText } from "@/shared/lib/copy-text";
+import { copyHandoffWithFeedback } from "../lib/copy-handoff-with-feedback";
 import { formatProjectSourceHandoff } from "@/shared/lib/project-source-receipt";
 import {
   buildOntologyTree,
@@ -1988,8 +1989,13 @@ export function HomePage() {
   }, [renderedIndexState]);
   const copyV2NodeHandoff = useCallback(
     async (text: string) => {
-      const ok = await copyText(text);
-      if (ok) toast.show(t("nodeDatasheet.handoffCopied"), "success");
+      await copyHandoffWithFeedback({
+        text,
+        copy: copyText,
+        show: toast.show,
+        copiedMessage: t("nodeDatasheet.handoffCopied"),
+        failedMessage: t("nodeDatasheet.handoffCopyFailed"),
+      });
     },
     [t, toast],
   );
@@ -4685,11 +4691,13 @@ export function HomePage() {
                   actionAskAgentTip: t("nodeDatasheet.actionAskAgentTip"),
                   actionPathTip: t("nodeDatasheet.actionPathTip"),
                   actionRealmTip: t("realm.enterTooltip"),
+                  sourceHeading: projectSourceLabels?.heading,
                   sourceKind: projectSourceLabels?.sourceKind,
                   sourceStatus: projectSourceLabels?.status,
                   sourceMeasuredAt: projectSourceLabels?.measuredAt,
                   sourceCurrentness: projectSourceLabels?.currentness,
                   sourceGap: projectSourceLabels?.gap,
+                  sourceGapLabel: t("nodeDatasheet.sourceGapLabel"),
                   sourceAction: projectSourceLabels?.action,
                   sourceRelationsShow: t("nodeDatasheet.sourceRelationsShow"),
                   sourceRelationsHide: t("nodeDatasheet.sourceRelationsHide"),

@@ -7352,8 +7352,7 @@ test("WebView verification payload parses nested JSON and checks loaded DOM", ()
     }, { expectedPath: "/en/topology/" }),
     null,
   );
-  assert.equal(
-    validateWebviewVerifyPayload({
+  const currentProjectSourcePayload = {
       ...payload,
       href: "tauri://localhost/ko/topology/?p=project%3Aproject",
       title: "내 프로젝트 · 지형도 · ontology-atlas",
@@ -7375,12 +7374,77 @@ test("WebView verification payload parses nested JSON and checks loaded DOM", ()
         topologyV2DetailPanelNodeKind: "project",
         topologyV2DetailPanelNodeTitle: "내 프로젝트",
         topologyV2PrefersReducedMotion: true,
+        topologyV2ProjectSourceReceiptVisible: true,
+        topologyV2ProjectSourceLayout: "status-action-separated",
+        topologyV2ProjectSourceTopGap: "none",
+        topologyV2ProjectSourceGapVisible: false,
+        topologyV2ProjectSourceAction: "use_current_evidence",
+        topologyV2ProjectSourceInlineActionCount: 4,
+        topologyV2ProjectSourceRenderedActionCount: 4,
+        topologyV2ProjectSourceInlineActionMinWidth: 72,
+        topologyV2ProjectSourceReceiptActionOverlap: 0,
+        topologyV2ProjectSourceReceiptFooterOverlap: 0,
+        topologyV2ProjectSourceActionFooterOverlap: 0,
       },
-    }, {
+    };
+  const currentProjectSourceOptions = {
       expectedPath: "/ko/topology/?p=project%3Aproject",
       requireWebviewReducedMotion: true,
-    }),
+    };
+  assert.equal(
+    validateWebviewVerifyPayload(currentProjectSourcePayload, currentProjectSourceOptions),
     null,
+  );
+  assert.match(
+    validateWebviewVerifyPayload({
+      ...currentProjectSourcePayload,
+      markers: {
+        ...currentProjectSourcePayload.markers,
+        topologyV2ProjectSourceReceiptVisible: false,
+      },
+    }, currentProjectSourceOptions),
+    /did not expose a project source receipt/,
+  );
+  assert.match(
+    validateWebviewVerifyPayload({
+      ...currentProjectSourcePayload,
+      markers: {
+        ...currentProjectSourcePayload.markers,
+        topologyV2ProjectSourceGapVisible: true,
+      },
+    }, currentProjectSourceOptions),
+    /rendered a healthy no-gap row/,
+  );
+  assert.match(
+    validateWebviewVerifyPayload({
+      ...currentProjectSourcePayload,
+      markers: {
+        ...currentProjectSourcePayload.markers,
+        topologyV2ProjectSourceInlineActionCount: 5,
+        topologyV2ProjectSourceRenderedActionCount: 5,
+      },
+    }, currentProjectSourceOptions),
+    /rendered 5 inline actions/,
+  );
+  assert.match(
+    validateWebviewVerifyPayload({
+      ...currentProjectSourcePayload,
+      markers: {
+        ...currentProjectSourcePayload.markers,
+        topologyV2ProjectSourceInlineActionMinWidth: 48,
+      },
+    }, currentProjectSourceOptions),
+    /minimum width was 48px/,
+  );
+  assert.match(
+    validateWebviewVerifyPayload({
+      ...currentProjectSourcePayload,
+      markers: {
+        ...currentProjectSourcePayload.markers,
+        topologyV2ProjectSourceActionFooterOverlap: 2,
+      },
+    }, currentProjectSourceOptions),
+    /actions\/footer overlap was 2px²/,
   );
   assert.match(
     validateWebviewVerifyPayload({

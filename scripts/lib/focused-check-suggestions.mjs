@@ -71,6 +71,8 @@ const RULES = [
       /^scripts\/check-desktop-readiness\.(?:mjs|test\.mjs)$/,
       /^scripts\/desktop-doctor\.(?:mjs|test\.mjs)$/,
       /^scripts\/desktop-smoke\.(?:mjs|test\.mjs)$/,
+      /^scripts\/verify-macos-app-launch(?:\.[^/]+)?\.mjs$/,
+      /^scripts\/lib\/verify-macos\/[^/]+\.mjs$/,
       /^scripts\/verify-macos-dmg\.mjs$/,
       /^scripts\/verify-macos-install-smoke\.mjs$/,
       /^scripts\/lib\/macos-dmg-layout\.(?:mjs|test\.mjs)$/,

@@ -1136,6 +1136,59 @@ export function validateWebviewVerifyPayload(payload, {
       if (payload.markers.topologyUtilityActionLaneVisible === true) {
         return "WebView canvas-v2 selected node utility action lane was visible while inspector owns focus";
       }
+      if (
+        v2SelectedNodeKind === "project" &&
+        payload.markers.topologyV2ProjectSourceReceiptVisible !== true
+      ) {
+        return "WebView selected project did not expose a project source receipt";
+      }
+      if (payload.markers.topologyV2ProjectSourceReceiptVisible === true) {
+        if (v2SelectedNodeKind !== "project") {
+          return "WebView project source receipt was visible for a non-project node";
+        }
+        if (
+          payload.markers.topologyV2ProjectSourceLayout !==
+          "status-action-separated"
+        ) {
+          return `WebView project source layout was ${payload.markers.topologyV2ProjectSourceLayout || "missing"}`;
+        }
+        if (
+          payload.markers.topologyV2ProjectSourceTopGap === "none" &&
+          payload.markers.topologyV2ProjectSourceGapVisible === true
+        ) {
+          return "WebView project source receipt rendered a healthy no-gap row";
+        }
+        const declaredActionCount = Number(
+          payload.markers.topologyV2ProjectSourceInlineActionCount || 0,
+        );
+        const renderedActionCount = Number(
+          payload.markers.topologyV2ProjectSourceRenderedActionCount || 0,
+        );
+        if (declaredActionCount !== renderedActionCount) {
+          return `WebView project source inline action count drifted (${declaredActionCount} declared / ${renderedActionCount} rendered)`;
+        }
+        if (
+          payload.markers.topologyV2ProjectSourceAction === "use_current_evidence" &&
+          renderedActionCount !== 4
+        ) {
+          return `WebView current project source receipt rendered ${renderedActionCount} inline actions, expected 4`;
+        }
+        if (
+          renderedActionCount > 0 &&
+          Number(payload.markers.topologyV2ProjectSourceInlineActionMinWidth || 0) < 56
+        ) {
+          return `WebView project source inline action minimum width was ${payload.markers.topologyV2ProjectSourceInlineActionMinWidth || "missing"}px`;
+        }
+        for (const [label, value] of [
+          ["receipt/actions", payload.markers.topologyV2ProjectSourceReceiptActionOverlap],
+          ["receipt/footer", payload.markers.topologyV2ProjectSourceReceiptFooterOverlap],
+          ["actions/footer", payload.markers.topologyV2ProjectSourceActionFooterOverlap],
+        ]) {
+          if (Number(value || 0) > 0.5) {
+            return `WebView project source ${label} overlap was ${value}px²`;
+          }
+        }
+      }
     }
     if (requireTopologyFocusNoop) {
       const focusNoopError = validateTopologyFocusNoopMarkers(payload);

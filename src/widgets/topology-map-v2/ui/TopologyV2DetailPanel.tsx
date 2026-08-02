@@ -203,11 +203,13 @@ export interface TopologyV2DetailPanelLabels {
   editSubjectHuman: string;
   editConflictMessage: string;
   /** Project-only source receipt copy, preformatted by the caller. */
+  sourceHeading?: string;
   sourceKind?: string;
   sourceStatus?: string;
   sourceMeasuredAt?: string;
   sourceCurrentness?: string;
   sourceGap?: string;
+  sourceGapLabel?: string;
   sourceAction?: string;
   sourceRelationsShow?: string;
   sourceRelationsHide?: string;
@@ -601,6 +603,20 @@ export function TopologyV2DetailPanel({
 }: TopologyV2DetailPanelProps) {
   const isProject = kind === "project";
   const showProjectSource = isProject && projectSource !== null;
+  const showInlineHandoff = showHandoff && !(
+    showProjectSource && projectSource.nextAction.id === "use_current_evidence"
+  );
+  // A project root's path finder remains available from the context menu.
+  // Removing it only from this compact rail keeps the first ontology-reading
+  // moment to four actions when the footer already owns agent handoff.
+  const showInlinePath = !showProjectSource;
+  const inlineActionCount =
+    (documentHref ? 1 : 0)
+    + 1
+    + (showInlineHandoff ? 1 : 0)
+    + (onAskAgent && labels.actionAskAgent ? 1 : 0)
+    + (showInlinePath ? 1 : 0)
+    + (onEnterRealm ? 1 : 0);
   const compactProjectRelations = useViewportBelow(1513);
   const collapseProjectRelations = showProjectSource && compactProjectRelations;
   // 시안 재설계 (2026-07-24) — 상단 stats 는 집계 한 줄. 타입별 분해는 아래
@@ -963,9 +979,19 @@ export function TopologyV2DetailPanel({
             data-source-action={projectSource.nextAction.id}
             data-source-currentness={projectSource.currentness}
             data-source-cardinality={projectSource.bindingCardinality}
+            data-source-layout="status-action-separated"
+            data-source-gap-visible={projectSource.topGap !== null}
             aria-live="polite"
-            className="flex flex-col gap-1.5 text-body text-[color:var(--topology-v2-panel-text-tertiary)]"
+            className="flex flex-col gap-2 text-body text-[color:var(--topology-v2-panel-text-tertiary)]"
           >
+            {labels.sourceHeading ? (
+              <span
+                data-testid="topology-v2-project-source-heading"
+                className="text-label font-semibold text-[color:var(--topology-v2-panel-text-secondary)]"
+              >
+                {labels.sourceHeading}
+              </span>
+            ) : null}
             <div className="flex min-w-0 items-center gap-1.5 text-[color:var(--topology-v2-panel-text-secondary)]">
               <ProjectSourceStatusIcon status={projectSource.status} />
               <span className="truncate font-medium">{labels.sourceStatus}</span>
@@ -979,9 +1005,17 @@ export function TopologyV2DetailPanel({
               <span>{labels.sourceMeasuredAt}</span>
               <span className="shrink-0">{labels.sourceCurrentness}</span>
             </div>
-            <span className="text-[color:var(--topology-v2-panel-text-secondary)]">
-              {labels.sourceGap}
-            </span>
+            {projectSource.topGap && labels.sourceGap ? (
+              <span
+                data-testid="topology-v2-project-source-gap"
+                className="text-[color:var(--topology-v2-panel-text-secondary)]"
+              >
+                {labels.sourceGapLabel ? (
+                  <span className="font-medium">{labels.sourceGapLabel}: </span>
+                ) : null}
+                {labels.sourceGap}
+              </span>
+            ) : null}
             {projectSourceError ? (
               <span
                 data-testid="topology-v2-project-source-error"
@@ -1015,7 +1049,10 @@ export function TopologyV2DetailPanel({
           role="group"
           aria-label={labels.actionsGroupLabel}
           data-testid="topology-v2-detail-panel-actions"
-          className="flex items-stretch gap-0.5"
+          data-inline-action-count={inlineActionCount}
+          className={showProjectSource
+            ? "flex items-stretch gap-0.5 border-t border-[color:var(--topology-v2-panel-zone-divider)] pt-2"
+            : "flex items-stretch gap-0.5"}
         >
           {documentHref
             ? withActionTip(
@@ -1041,7 +1078,7 @@ export function TopologyV2DetailPanel({
               <span>{labels.actionEditRelations}</span>
             </Link>,
           )}
-          {showHandoff
+          {showInlineHandoff
             ? withActionTip(
                 labels.actionCopyHandoffTip,
                 <button
@@ -1071,18 +1108,20 @@ export function TopologyV2DetailPanel({
                 </button>,
               )
             : null}
-          {withActionTip(
-            labels.actionPathTip,
-            <button
-              type="button"
-              onClick={onSetPathSource}
-              data-testid="topology-v2-detail-panel-action-path"
-              className={ACTION_TILE_CLASS}
-            >
-              <Route size={16} aria-hidden="true" />
-              <span>{labels.actionPath}</span>
-            </button>,
-          )}
+          {showInlinePath
+            ? withActionTip(
+                labels.actionPathTip,
+                <button
+                  type="button"
+                  onClick={onSetPathSource}
+                  data-testid="topology-v2-detail-panel-action-path"
+                  className={ACTION_TILE_CLASS}
+                >
+                  <Route size={16} aria-hidden="true" />
+                  <span>{labels.actionPath}</span>
+                </button>,
+              )
+            : null}
           {/* S4 "영역 전개" 2차 발견 경로 — 컨테이너 노드에서만(HomePage 주입). */}
           {onEnterRealm
             ? withActionTip(
@@ -1184,7 +1223,10 @@ export function TopologyV2DetailPanel({
           인디고 채움 primary "전체 상세"(단 하나의 강조). root 가 무패딩
           스크롤 컨테이너라 음수 마진 없이 sticky bottom-0 로 앵커된다 —
           내용이 넘칠 때도 항상 뷰포트 안에 남는다(P3-③). */}
-      <div className="sticky bottom-0 flex items-center gap-2.5 rounded-b-[var(--topology-v2-panel-radius)] border-t border-[color:var(--topology-v2-panel-border)] bg-[color:var(--topology-v2-panel-surface)] px-[var(--topology-v2-panel-pad)] py-[11px]">
+      <div
+        data-testid="topology-v2-detail-panel-footer"
+        className="sticky bottom-0 flex items-center gap-2.5 rounded-b-[var(--topology-v2-panel-radius)] border-t border-[color:var(--topology-v2-panel-border)] bg-[color:var(--topology-v2-panel-surface)] px-[var(--topology-v2-panel-pad)] py-[11px]"
+      >
         {!showProjectSource ? (
           <span
             data-testid="topology-v2-detail-panel-slug"

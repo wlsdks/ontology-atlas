@@ -42,6 +42,46 @@
 
 ---
 
+## 2026-08-02 — 프로젝트 inspector의 건강한 빈틈 문장과 중복 행동을 걷어낸다
+
+**소집**: 디자인 카운슬 5자리(위계·체계·상호작용·작업대·핸드오프) +
+design-guardian 단일 결정. · **트리거**: 1512 설치 앱의 project inspector에서
+소유자가 `확인된 최상위 빈틈 없음`이라는 문장과 여섯 개 동등 행동이 어지럽고
+구분되지 않는다고 직접 관측했다.
+
+**선행 결정 관계**: 바로 아래 source receipt 결정의 반증 조건이 관측됐다.
+receipt가 관계 사실보다 먼저 이기고 다음 행동이 중복되면 rail을 줄이기로 했던
+약속을 실행한다. receipt를 project inspector의 기존 슬롯에 두고 별도 카드·점수·
+대시보드를 만들지 않는 본래 결정은 유지한다.
+
+**결정 (accountable: design-guardian)**: 조건부 승인, Build and verify. compact
+receipt는 `코드 근거` heading 아래 상태/출처와 측정 시각/현재성을 두 행으로
+묶고, 기존 hairline으로 inline 행동과 분리한다. `topGap:null`은 typed marker에는
+`none`으로 보존하되 건강한 부재를 화면 한 행으로 쓰지 않는다. 실제 gap만
+`다음 확인: ...`으로 보인다. `use_current_evidence`일 때는 inline `AI 요약 복사`를
+없애고 sticky footer의 실제 clipboard 행동 `AI 인계문 복사` 하나만 남긴다.
+project receipt가 열린 compact inspector에서는 `경로`도 inline에서 걷어내되
+기존 context menu 경로는 유지한다. 따라서 설치 앱의 첫 project 읽기 행동은
+문서·관계 편집·AI 요청·이것만 보기 네 개가 된다. 새 token이나 motion은 만들지
+않고 기존 divider, spacing, type, neutral/indigo/status token만 재사용한다.
+
+**검증 계약**: component는 heading, 건강한 gap 비노출, 실제 gap 노출, receipt와
+action의 구획, current handoff 중복 제거, inline action count를 잠근다. 설치 앱은
+1512에서 receipt·action·footer 교집합 0, action 최소 폭, footer 도달 가능성과
+복사 성공 toast를 측정하고 1920/2560에서 같은 정보 순서를 확인한다.
+
+**기록된 반대**: project도 inline `경로`를 유지한 다섯 행동이 ontology 탐색의
+발견 가능성을 더 잘 보존하며, 네 행동으로 줄이면 context menu를 모르는 사용자가
+경로 분석을 찾지 못할 수 있다.
+**반증 조건**: project를 고른 사용자가 경로 분석을 시작하려고 inspector를
+반복 탐색하거나 context menu에서 경로를 찾지 못하는 walkthrough가 관측되면,
+행동을 다시 늘리기 전에 관계 편집 또는 영역 전개의 우선순위와 교체 여부를
+재검토한다. **재검토**: 설치 앱 walkthrough 2회 또는 해당 문의 첫 1건.
+
+**상태**: 유효.
+
+---
+
 ## 2026-08-02 — source receipt는 새 카드가 아니라 프로젝트 inspector의 기존 위계를 치환한다
 
 **소집**: 디자인 카운슬 6자리(위계·체계·상호작용·도해·작업대·핸드오프),
