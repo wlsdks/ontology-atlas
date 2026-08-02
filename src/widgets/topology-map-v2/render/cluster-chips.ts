@@ -82,12 +82,118 @@ export function clusterBadgeLabel(count: number, expanded: boolean = true): stri
 export const CLUSTER_BAR_HEIGHT = 24;
 /** 막대를 부모 노드 반지름 **위로** 띄우는 여유(스크린 px, 스케일 불변). */
 const BAR_NODE_LIFT = 12;
-/** 막대 mono 글자당 근사 폭(px) — 히트/드로우 폭 일치용 결정론 상수. */
-const BAR_CHAR_WIDTH = 7.2;
-/** 막대 mono 폰트 기준 크기(px). */
+/** 막대 폰트 기준 크기(px). */
 const BAR_FONT_SIZE = 12;
+/**
+ * 막대 글자의 폰트 — **본문 계열이다, mono 가 아니다.**
+ *
+ * 막대가 나르는 것은 수가 아니라 **문장**(「모두 펼치기」)이라 tabular 정렬이
+ * 필요 없고, 무엇보다 mono 스택에는 한글이 없어 폴백이 일어난다 — 그러면
+ * 폭이 스택 해석에 따라 달라져 아래 추정기가 무엇을 추정하는지 알 수 없게
+ * 된다. 지도 라벨(`render/labels.ts`)이 이미 쓰는 스택을 그대로 쓴다.
+ */
+const BAR_FONT_FAMILY = "-apple-system, 'SF Pro Text', sans-serif";
 /** 막대 텍스트 좌우 패딩(px). */
 const BAR_PAD_X = 10;
+
+/**
+ * 이 글자가 **두 셀 폭**인가 — 한글 · 한자 · 가나 · 전각.
+ *
+ * 라틴 기준의 `length × 상수` 는 한글에서 폭을 40% 가까이 과소평가한다
+ * (실측 600 12px: 한글 음절 10.38px vs 라틴 소문자 ≈7px). 과소평가한 폭으로
+ * 판을 그리면 글자가 판 밖으로 삐져나오고, 그건 히트 사각형 밖이라 **보이는데
+ * 안 눌리는 글자**가 된다.
+ */
+function isWideGlyph(codePoint: number): boolean {
+  return (
+    (codePoint >= 0x1100 && codePoint <= 0x11ff) || // 한글 자모
+    (codePoint >= 0x2e80 && codePoint <= 0xa4cf) || // CJK 부수 ~ 한자 ~ 가나 ~ 호환 자모
+    (codePoint >= 0xac00 && codePoint <= 0xd7a3) || // 한글 음절
+    (codePoint >= 0xf900 && codePoint <= 0xfaff) ||
+    (codePoint >= 0xfe30 && codePoint <= 0xfe4f) ||
+    (codePoint >= 0xff00 && codePoint <= 0xff60) ||
+    (codePoint >= 0xffe0 && codePoint <= 0xffe6)
+  );
+}
+
+/**
+ * `ctx` 없이 재는 **결정론적** 텍스트 폭 — 막대 사각형의 단일 출처.
+ *
+ * 왜 `ctx.measureText` 가 아닌가: 사각형을 만드는 자리
+ * (`clusterBarRect`)에는 캔버스가 없다(히트테스트·라벨 예약도 같은 함수를
+ * 부른다). 폭을 재는 곳이 둘이면 draw 와 hit 이 어긋나고, 이 파일은 그 결함을
+ * 이미 두 번 겪었다. 그래서 **여기가 유일한 자**이고 `drawClusterBar` 는
+ * 재지 않고 이 사각형 한가운데에 글자를 놓기만 한다.
+ *
+ * 계수는 헤드리스 Chromium 실측(600 12px, 위 스택)에 안전 여유를 더한 값이라
+ * **항상 실제보다 넓다** — 좁으면 글자가 판을 뚫고, 넓으면 여백이 조금 늘 뿐이다.
+ * 실측/추정: 「모두 펼치기」 55.2/59.0 · 「접기」 20.8/22.1 · `Collapse` 50.0/57.4.
+ */
+export function estimateCanvasTextWidth(text: string, fontSize: number): number {
+  let cells = 0;
+  for (const ch of text) {
+    const cp = ch.codePointAt(0) ?? 0;
+    if (isWideGlyph(cp)) cells += 0.92;
+    else if (cp === 0x20) cells += 0.32;
+    else if (cp >= 0x30 && cp <= 0x39) cells += 0.62;
+    else if (cp >= 0x41 && cp <= 0x5a) cells += 0.72;
+    else cells += 0.58;
+  }
+  return cells * fontSize;
+}
+
+/**
+ * 막대가 말하는 **문장** — 어권별 문구는 호출부가 번역해 넘긴다.
+ *
+ * 캔버스에 i18n 문자열을 그리는 것은 이 엔진의 새 능력이 아니다 — 결계 캡션
+ * (`wardingRing.caption`)이 이미 같은 경로로 번역문을 받아 그린다.
+ */
+export interface ClusterBarLabels {
+  /** 이 한 번으로 남은 것을 **전부** 여는 경우. 숫자가 없다 — 아래 주석 참고. */
+  expandAll: string;
+  /** 이 한 번에 열릴 개수. `{count}` 자리표시자를 포함한다. */
+  expandCount: string;
+  /** 펼쳐진 것을 접는다. */
+  collapse: string;
+}
+
+/**
+ * 호출부가 문구를 안 넘겼을 때의 최후 폴백. 화면에 보이면 배선이 끊긴 것이라
+ * 계약 테스트가 그 배선을 따로 잡는다.
+ */
+export const FALLBACK_CLUSTER_BAR_LABELS: ClusterBarLabels = {
+  expandAll: "Expand all",
+  expandCount: "Expand {count}",
+  collapse: "Collapse",
+};
+
+/**
+ * 막대의 라벨 — draw · 히트 · 라벨 예약 **셋이 부르는 하나**.
+ *
+ * ## 왜 「N개 펼치기」가 아니라 「모두 펼치기」인가 (2026-08-02 소유자 실보고)
+ *
+ * 종전 막대는 `+17` 이었고, 그 바로 밑 노드에는 `17` 이 각인돼 있었다 —
+ * **같은 수를 두 번 말하고 동사는 한 번도 안 했다.** 각인은 「여기 몇 개가
+ * 있나」(전체)이고 막대는 「누르면 무슨 일이 나나」(이번에 열릴 개수)라 서로
+ * 다른 사실인데, 한 번에 다 열리는 흔한 경우에는 두 수가 같아져 중복이 된다.
+ *
+ * 그래서 **수는 그 수가 정보일 때만 말한다**: 이번 누름이 남은 것을 전부 열면
+ * 「모두 펼치기」(수 없음 — 각인이 이미 말했다), 일부만 열면 「N개 펼치기」.
+ * Tufte 의 data-ink 규율을 문구에 적용한 것이다.
+ */
+export function clusterBarLabel(input: {
+  expanded: boolean;
+  count: number;
+  batchSize: number;
+  labels?: ClusterBarLabels;
+}): string {
+  const labels = input.labels ?? FALLBACK_CLUSTER_BAR_LABELS;
+  if (input.expanded) return labels.collapse;
+  const opens = Math.max(1, Math.min(Math.floor(input.batchSize), input.count));
+  return opens >= input.count
+    ? labels.expandAll
+    : labels.expandCount.replace("{count}", String(opens));
+}
 
 /**
  * 「머리 위 막대」의 사각형 — **부모 머리 바로 위. 언제나.**
@@ -98,6 +204,18 @@ const BAR_PAD_X = 10;
  *
  * draw/hit/occupancy 공용 진실원. 셋이 이 함수 하나를 부르므로 클릭 좌표가
  * 어긋날 수 없다(알약·배지가 이미 쓰는 규약).
+ *
+ * ## 판이 노드보다 넓어도 되는가 — 된다, 이 판만 (2026-08-02 재판정)
+ *
+ * 직전 판정은 «컨트롤이 데이터보다 크면 잉크 역전» 이라 판을 노드 지름(48)
+ * 안(41.6)으로 조였다. 그 판정의 전제는 판이 **수 하나**만 말한다는 것이었고,
+ * 그때는 옳았다 — 아무것도 더 말하지 않는 판이 넓은 것은 순수한 낭비다.
+ * 이제 판은 **동사가 든 문장**을 말한다. data-ink 는 절대 크기가 아니라
+ * 정보당 잉크의 규율이므로, 문장을 담느라 넓어지는 것은 역전이 아니다.
+ * 그리고 이 판은 **고른 노드에만** 있다 — 사용자가 방금 부른 주인공이라
+ * 자리를 차지하는 쪽이 맞다(시안 `actionBarRect` 가 적어 둔 그 결론).
+ * 여전히 금지인 것은 **빈 폭**이다: 알약의 선행 글리프 존(14px)처럼 그리는
+ * 것이 없는 폭은 다시 들어오지 않는다(아래 폭 식에 그 존이 없다).
  */
 export function clusterBarRect(
   parentScreenX: number,
@@ -106,13 +224,7 @@ export function clusterBarRect(
   label: string,
   scale: number = 1,
 ): ClusterChipRect {
-  const textW = label.length * BAR_CHAR_WIDTH;
-  // 알약의 **선행 글리프 존(14px)은 여기 없다.** 알약은 그 자리에 `＋` 를
-  // 앉히지만 막대는 부호·숫자를 판 한가운데 정렬해 그린다 — 그래서 그 14px 은
-  // 그리는 것이 없는 빈 폭이었고, 판을 자기가 설명하는 노드보다 **넓게** 만들었다
-  // (실측 2026-08-02: 판 58.8 vs 도메인 노드 지름 48). 컨트롤이 데이터보다 큰
-  // 것은 잉크 역전이다(Tufte). 빼면 41.6 — 노드 안에 들어간다.
-  const w = (textW + BAR_PAD_X * 2) * scale;
+  const w = (estimateCanvasTextWidth(label, BAR_FONT_SIZE) + BAR_PAD_X * 2) * scale;
   const h = CLUSTER_BAR_HEIGHT * scale;
   // 판의 **밑변**이 노드 머리에서 `BAR_NODE_LIFT` 만큼 떠 있다.
   const bottom = parentScreenY - nodeScreenRadius - BAR_NODE_LIFT;
@@ -126,11 +238,14 @@ export interface ClusterBarDrawInput {
   count: number;
   expanded: boolean;
   hovered: boolean;
+  /** 한 번 누르면 열리는 개수 — 라벨이 「모두」와 「N개」를 가르는 기준. */
+  batchSize: number;
+  labels?: ClusterBarLabels;
   scale?: number;
 }
 
 /**
- * 막대 하나를 그린다 — 불투명 판 + `+N` / `− N`.
+ * 막대 하나를 그린다 — 불투명 판 + **동사가 든 글자 버튼**.
  *
  * **판이 불투명한 것이 요점이다.** 이 컨트롤은 노드 위에 겹치라고 만든 것이라
  * (자리를 안 찾으므로), 반투명하면 뒤의 선·숫자가 글자 사이로 새어 나온다.
@@ -142,7 +257,7 @@ export function drawClusterBar(
   colors: ClusterChipColors,
 ): void {
   const scale = input.scale ?? 1;
-  const label = clusterChipLabel(input.count, input.expanded);
+  const label = clusterBarLabel(input);
   const rect = clusterBarRect(
     input.parentScreenX,
     input.parentScreenY,
@@ -160,21 +275,13 @@ export function drawClusterBar(
   ctx.strokeStyle = input.hovered ? colors.hoverBorder : colors.border;
   ctx.stroke();
 
-  ctx.font = `600 ${BAR_FONT_SIZE * scale}px ui-monospace, SFMono-Regular, Menlo, monospace`;
-  ctx.textAlign = "left";
+  // 글자는 **재지 않고** 판 한가운데에 놓는다 — 폭의 자는 `clusterBarRect`
+  // 하나뿐이고, 여기서 다시 재면 그 순간 자가 둘이 된다.
+  ctx.font = `600 ${BAR_FONT_SIZE * scale}px ${BAR_FONT_FAMILY}`;
+  ctx.textAlign = "center";
   ctx.textBaseline = "middle";
-  const sign = input.expanded ? "−" : "+";
-  const num = String(input.count);
-  const signW = ctx.measureText(sign).width;
-  const numW = ctx.measureText(num).width;
-  const cx = rect.x + rect.w / 2;
-  const cy = rect.y + rect.h / 2;
-  let tx = cx - (signW + numW) / 2;
-  ctx.fillStyle = input.hovered ? colors.hoverInk : colors.plusInk;
-  ctx.fillText(sign, tx, cy + 0.5 * scale);
-  tx += signW;
-  ctx.fillStyle = input.hovered ? colors.hoverInk : colors.numeralInk;
-  ctx.fillText(num, tx, cy + 0.5 * scale);
+  ctx.fillStyle = input.hovered ? colors.hoverInk : colors.barInk ?? colors.numeralInk;
+  ctx.fillText(label, rect.x + rect.w / 2, rect.y + rect.h / 2 + 0.5 * scale);
   ctx.textAlign = "start";
   ctx.textBaseline = "alphabetic";
 }
@@ -195,6 +302,17 @@ export interface ClusterControlInput {
    * 있으므로, 컨트롤까지 상시로 띄우면 같은 사실이 화면에 두 번 있다.
    */
   focused: boolean;
+  /**
+   * 이 칩이 **노드에 붙을 수 있는가** — 부모 노드의 화면 좌표를 아는가.
+   *
+   * 아는 게 정상이지만 하나가 구조적으로 모른다: 배치 공개의 `+N 더보기` 칩은
+   * 부모 id 가 합성 문자열(`clusterMoreChipId`)이라 그래프에 그 노드가 없다.
+   * 그래서 도킹 형태(막대·배지)를 고르면 이 칩은 **그려지지도 눌리지도
+   * 않았다** — 2026-08-02 실측, 기본 어포던스가 막대가 된 #826 이후 배치
+   * 공개가 통째로 닿을 수 없는 기능이 돼 있었다. 못 붙는 것은 사라지는 게
+   * 아니라 **안 붙는 형태(알약)로 남는다**. 생략 시 `true`(도킹 가능).
+   */
+  dockable?: boolean;
 }
 
 /**
@@ -208,8 +326,11 @@ export interface ClusterControlInput {
  * - `bar` — 고른 노드 **바로 위**. 안 고르면 없다.
  */
 export function clusterControlForm(input: ClusterControlInput): ClusterControlForm {
-  if (input.affordance === "bar") return input.focused ? "bar" : "none";
-  if (input.affordance === "badge") return "badge";
+  if (input.affordance === "bar") {
+    if (!input.focused) return "none";
+    return input.dockable === false ? "pill" : "bar";
+  }
+  if (input.affordance === "badge") return input.dockable === false ? "pill" : "badge";
   return input.expanded ? "badge" : "pill";
 }
 
@@ -444,10 +565,15 @@ export function clusterChipRect(
  */
 export function clusterChipOccupancyRect(input: ClusterChipDrawInput): ClusterChipRect | null {
   const scale = input.scale ?? 1;
+  const dockedNow =
+    input.parentScreenX !== undefined &&
+    input.parentScreenY !== undefined &&
+    input.nodeScreenRadius !== undefined;
   const form = clusterControlForm({
     affordance: input.affordance ?? "pill",
     expanded: input.expanded,
     focused: input.focused ?? false,
+    dockable: dockedNow,
   });
   if (form === "none") return null;
   // drawClusterChip 의 formAlpha 와 동일식 — 램프로 사라지는 형태는 점유하지 않는다.
@@ -457,24 +583,26 @@ export function clusterChipOccupancyRect(input: ClusterChipDrawInput): ClusterCh
       : Math.min(1, Math.max(0, input.expanded ? input.revealT : 1 - input.revealT));
   if (formAlpha < 0.01) return null;
 
-  const docked =
-    input.parentScreenX !== undefined &&
-    input.parentScreenY !== undefined &&
-    input.nodeScreenRadius !== undefined;
-
   if (form === "bar") {
-    if (!docked) return null; // draw 도 이 경우 그리지 않는다(디그레이드).
     return clusterBarRect(
       input.parentScreenX as number,
       input.parentScreenY as number,
       input.nodeScreenRadius as number,
-      clusterChipLabel(input.count, input.expanded),
+      clusterBarLabel({
+        expanded: input.expanded,
+        count: input.count,
+        batchSize: input.batchSize ?? input.count,
+        labels: input.barLabels,
+      }),
       scale,
     );
   }
 
   if (form === "badge") {
-    if (!docked) return null;
+    // 「뜬 알약」 어포던스의 펼침 배지는 도킹 폴백이 **없다**(회귀 0 계약) —
+    // 못 붙으면 종전대로 아무것도 없다. 폴백은 `badge`/`bar` 어포던스에만
+    // 있고, 그쪽은 위 `clusterControlForm` 이 이미 `pill` 로 바꿔 여기 안 온다.
+    if (!dockedNow) return null;
     return clusterBadgeRect(
       input.parentScreenX as number,
       input.parentScreenY as number,
@@ -499,6 +627,15 @@ export interface ClusterChipColors {
   plusInk: string;
   /** 카운트 숫자 + 펼침 배지 rest 잉크(중립 numeralFace, mono tabular). */
   numeralInk: string;
+  /**
+   * 막대 글자 rest 잉크 — 없으면 `numeralInk`.
+   *
+   * 왜 갈라 뒀나: 알약·배지는 **상시 크롬**이라 램프 맨 아래 잉크가 맞지만
+   * (크롬은 콘텐츠보다 어둡다), 막대는 사용자가 노드를 골라야 나타나는
+   * **부른 컨트롤**이다. 같은 잉크를 쓰면 방금 부른 버튼의 글자가 배경 노드의
+   * 테두리보다 어두워 읽히지 않는다.
+   */
+  barInk?: string;
   /** 부모→칩 tether stroke(edgeContains — depends 잉크와 명도대 어긋냄). */
   tether: string;
   /** hover pill surface(nodeFillCapability). */
@@ -563,6 +700,10 @@ export interface ClusterChipDrawInput {
   affordance?: ExpandAffordance;
   /** 이 부모가 고른 노드인가 — `"bar"` 어포던스의 존재 조건. 생략 시 false. */
   focused?: boolean;
+  /** 설정 「한 번에 여는 개수」 — 막대 문구가 「모두」와 「N개」를 가르는 기준. */
+  batchSize?: number;
+  /** 막대 문구(번역문). 호출부가 넘긴다 — 렌더러는 문자열을 만들지 않는다. */
+  barLabels?: ClusterBarLabels;
 }
 
 /**
@@ -576,22 +717,21 @@ export function drawClusterChip(
 ): void {
   const scale = input.scale ?? 1;
   const affordance = input.affordance ?? "pill";
+  const docked =
+    input.parentScreenX !== undefined &&
+    input.parentScreenY !== undefined &&
+    input.nodeScreenRadius !== undefined;
   const form = clusterControlForm({
     affordance,
     expanded: input.expanded,
     focused: input.focused ?? false,
+    dockable: docked,
   });
   // 「고른 노드 바로 위」 어포던스에서 안 고른 부모는 컨트롤이 **없다**(시안
   // 계약). 점유(`clusterChipOccupancyRect`)도 같은 판정으로 null 을 낸다.
   if (form === "none") return;
 
-  const docked =
-    input.parentScreenX !== undefined &&
-    input.parentScreenY !== undefined &&
-    input.nodeScreenRadius !== undefined;
-
   if (form === "bar") {
-    if (!docked) return;
     drawClusterBar(
       ctx,
       {
@@ -601,6 +741,8 @@ export function drawClusterChip(
         count: input.count,
         expanded: input.expanded,
         hovered: input.hovered,
+        batchSize: input.batchSize ?? input.count,
+        labels: input.barLabels,
         scale,
       },
       colors,
@@ -610,8 +752,7 @@ export function drawClusterChip(
 
   // 「어깨 배지」 어포던스는 접힘·펼침 **둘 다** 배지다 — 알약이 없으므로
   // 크로스페이드할 짝도 없다(형태가 안 바뀌고 부호만 `+`↔`−` 로 바뀐다).
-  if (affordance === "badge") {
-    if (!docked) return;
+  if (form === "badge" && affordance === "badge") {
     drawClusterBadge(
       ctx,
       {
