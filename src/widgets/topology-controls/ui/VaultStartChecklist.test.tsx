@@ -1,4 +1,4 @@
-import { fireEvent, render, screen } from "@testing-library/react";
+import { cleanup, fireEvent, render, screen } from "@testing-library/react";
 import { describe, expect, it, vi } from "vitest";
 import { VaultStartChecklist } from "./VaultStartChecklist";
 
@@ -72,7 +72,9 @@ describe("VaultStartChecklist (에이전트-우선, 2026-07-24 소유자 지시)
   // C9 — the hint must reflect the REAL `.mcp.json` state, not assert it is
   // "already prepared" regardless of whether the file exists.
   it("shows the pending hint when .mcp.json is not present", () => {
-    renderChecklist({ mcpConfigReady: false });
+    // 이 안내는 「시작 문서 만들기」 버튼을 이름으로 부르므로 그 버튼이 있는
+    // 갈래에서만 뜬다 — 아래 「안내는 화면에 있는 것만 가리킨다」 참조.
+    renderChecklist({ mcpConfigReady: false, onScaffoldStarter: vi.fn() });
     expect(screen.getByText("agentHintPending")).toBeInTheDocument();
     expect(screen.queryByText("agentHintReady")).not.toBeInTheDocument();
   });
@@ -104,5 +106,67 @@ describe("VaultStartChecklist — 빈 폴더 스타터 버튼", () => {
     renderChecklist();
     expect(screen.getByTestId("checklist-cta-project")).toBeInTheDocument();
     expect(screen.queryByTestId("checklist-cta-scaffold")).not.toBeInTheDocument();
+  });
+});
+
+describe("VaultStartChecklist — 문서가 있는 저장소 (2026-08-03 게이트 확장)", () => {
+  /*
+   * 종전엔 `HomePage` 가 **진짜 빈 폴더에만** 이 체크리스트를 세웠다. 문서가
+   * 한 장이라도 있으면 「내 문서로 지도 만들기」만 주는 빈 상태로 갔고, 그
+   * 화면은 에이전트 이야기를 한 마디도 안 한다 — 개발 저장소를 연 사람,
+   * 정확히 이 흐름이 도우려던 그 사람이 연결 경로를 못 봤다.
+   */
+  it("문서가 있으면 1단이 부트스트랩이고, 에이전트 단은 그대로 남는다", () => {
+    const onStartFromDocs = vi.fn();
+    renderChecklist({ docsFoundCount: 12, onStartFromDocs });
+
+    const docs = screen.getByTestId("checklist-cta-docs");
+    fireEvent.click(docs);
+    expect(onStartFromDocs).toHaveBeenCalledTimes(1);
+
+    // 부트스트랩이 에이전트를 **대체하지 않는다** — 그게 종전 결함이었다.
+    expect(screen.getByTestId("checklist-cta-agent")).toBeInTheDocument();
+    expect(screen.getByTestId("checklist-cta-analyze")).toBeInTheDocument();
+  });
+
+  it("빈 폴더면 부트스트랩 단이 아예 없다 — 없는 문서를 권하지 않는다", () => {
+    renderChecklist({ docsFoundCount: 0 });
+    expect(screen.queryByTestId("checklist-cta-docs")).toBeNull();
+  });
+
+  it("관계가 이미 있어도 「지시 복사」로 가는 문이 남는다", () => {
+    /*
+     * 완료 판정이 `relationCount > 0` 이라 손으로 관계 하나만 만들어도 참이
+     * 되는데, 종전엔 그 순간 복사 CTA 가 영구히 사라졌다 — 사용자가 한 번도
+     * 안 눌렀는데도.
+     */
+    renderChecklist({ relationCount: 5 });
+    expect(screen.getByTestId("checklist-cta-analyze")).toBeInTheDocument();
+  });
+
+  it("연결 전에는 붙여넣을 곳이 없다는 순서를 말한다 — 막지는 않는다", () => {
+    renderChecklist({ agentConnected: false });
+    expect(screen.getByTestId("checklist-analyze-needs-agent")).toBeInTheDocument();
+    expect(screen.getByTestId("checklist-cta-analyze")).toBeEnabled();
+
+    cleanup();
+    renderChecklist({ agentConnected: true });
+    expect(screen.queryByTestId("checklist-analyze-needs-agent")).toBeNull();
+  });
+});
+
+describe("VaultStartChecklist — 안내는 화면에 있는 것만 가리킨다", () => {
+  it("「시작 문서 만들기」가 없는 갈래에서는 그 버튼을 부르는 안내도 없다", () => {
+    /*
+     * `agentHintPending` 은 버튼 이름을 문장 안에서 부른다. 그 버튼은 빈
+     * 폴더에만 있으므로, 문서가 있는 갈래에 그대로 두면 사용자는 화면에 없는
+     * 것을 찾게 된다.
+     */
+    renderChecklist({ docsFoundCount: 3, onStartFromDocs: vi.fn(), mcpConfigReady: false });
+    expect(screen.queryByText("agentHintPending")).toBeNull();
+
+    cleanup();
+    renderChecklist({ onScaffoldStarter: vi.fn(), mcpConfigReady: false });
+    expect(screen.getByText("agentHintPending")).toBeInTheDocument();
   });
 });

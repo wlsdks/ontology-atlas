@@ -2,9 +2,11 @@
 
 import { useCallback, useState } from 'react';
 import { useTranslations } from 'next-intl';
-import { Check, CircleAlert, FileText, Loader2 } from 'lucide-react';
+import { Check, CircleAlert, ClipboardCopy, FileText, Loader2 } from 'lucide-react';
 
 import type { McpServerLaunch } from '@/shared/config';
+import { buildAgentAnalyzePrompt } from '@/shared/config/agent-prompts';
+import { useCopyFeedback } from '@/shared/lib/use-copy-feedback';
 import { type AgentClientId, filesForClient } from '../lib/agent-clients';
 import {
   planAgentConfig,
@@ -60,6 +62,7 @@ export function AgentConnectAction({ vaultPath, launch, onWritten, clientId }: A
   const [plan, setPlan] = useState<AgentConfigPlan | null>(null);
   const [verification, setVerification] = useState<McpVerifyResult | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const { state: analyzeCopy, copy: copyAnalyze } = useCopyFeedback();
 
   const startPreview = useCallback(async () => {
     if (!vaultPath) return;
@@ -214,9 +217,37 @@ export function AgentConnectAction({ vaultPath, launch, onWritten, clientId }: A
               node: verification.sampleTitle ?? verification.sampleSlug ?? '',
             })}
           </p>
-          <p className="mt-1 text-label leading-relaxed text-[color:var(--color-text-tertiary)]">
+          {/*
+           * 재시작은 **조건이지 다음 걸음이 아니다** — 한 단 낮춰 CTA 가
+           * 행동 승자로 남게 한다(위계 평결: 선행 조건은 행동보다 먼저 읽힌다).
+           */}
+          <p className="mt-1 text-label leading-relaxed text-[color:var(--color-text-quaternary)]">
             {t('connectVerifiedRestart')}
           </p>
+          {/*
+           * 연결만 하고 끝내면 사용자는 「이제 뭘 하지」에 그대로 남는다.
+           * 카드의 마지막 줄이 다음 걸음을 손에 쥐여 준다 — 우리가 그 세션에
+           * 명령을 밀어 넣을 수는 없으므로(MCP 는 에이전트가 서버를 띄우는
+           * pull 모델이라 인바운드 채널이 없다), 붙여넣을 문장을 준다.
+           * 라벨이 「재시작한 세션에」라고 말해 선행 조건까지 나른다.
+           */}
+          <button
+            type="button"
+            data-testid="agent-connect-copy-analyze"
+            onClick={() => void copyAnalyze(buildAgentAnalyzePrompt({ vaultPath }))}
+            className="mt-2.5 inline-flex h-7 items-center gap-1.5 rounded-[var(--radius-chip)] border border-[color:var(--color-overlay-3)] px-2.5 text-label text-[color:var(--color-text-secondary)] transition-colors hover:border-[color:var(--color-indigo-line-a35)] hover:text-[color:var(--color-text-primary)]"
+          >
+            {analyzeCopy === 'failed' ? (
+              <CircleAlert size={11} aria-hidden />
+            ) : (
+              <ClipboardCopy size={11} aria-hidden />
+            )}
+            {analyzeCopy === 'copied'
+              ? t('connectVerifiedCopied')
+              : analyzeCopy === 'failed'
+                ? t('connectVerifiedCopyFailed')
+                : t('connectVerifiedCopyAnalyze')}
+          </button>
         </div>
       ) : null}
 
