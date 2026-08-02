@@ -54,7 +54,8 @@ import type { OntologyChangeset } from "@/shared/lib/ontology-tree";
 import { gitHostPlatformFrom, gitInstallGuide } from "@/shared/lib/git-install-guide";
 import { TopologyV2KindGlyph } from "@/shared/ui/topology-v2-kind-glyph";
 import type { KnowledgeGraphEdge, KnowledgeGraphNode } from "@/entities/knowledge-graph";
-import { matchNodeId } from "../model/build-concept-ego";
+import { buildConceptEgo, matchNodeId, type ConceptEgo } from "../model/build-concept-ego";
+import { ConceptEgoCard } from "./ConceptEgoCard";
 import { cn } from "@/shared/lib/cn";
 import { ATLAS_CLI } from "@/shared/config/cli-invocation";
 
@@ -244,6 +245,18 @@ export function AtlasGitPanel({
   className,
 }: AtlasGitPanelProps) {
   const t = useTranslations("atlasGit");
+  /*
+   * 종류 이름은 `kinds` 네임스페이스가 진실원이다 — 이 화면이 자기 키를 새로
+   * 만들면 같은 사실이 두 곳에 적히고 그 순간부터 드리프트가 시작된다.
+   */
+  const tKinds = useTranslations("kinds");
+  const kindLabel = useCallback(
+    (kind: string) => {
+      const known = ["project", "domain", "capability", "element", "document", "vault-readme"];
+      return tKinds(known.includes(kind) ? kind : "unknown");
+    },
+    [tKinds],
+  );
 
   // SSR/hydration 안전한 런타임 판별 — 서버 스냅샷은 false(웹), 클라이언트에서
   // Tauri 면 true 로 재렌더된다 (uSES 가 mismatch 를 스스로 정리).
@@ -288,6 +301,14 @@ export function AtlasGitPanel({
     }
     return map;
   }, [history, graph]);
+
+  const egoFor = useCallback(
+    (nodeId: string) =>
+      graph ? buildConceptEgo(nodeId, graph.nodes, graph.edges) : null,
+    [graph],
+  );
+  /** 펼친 걸음 안에서 지금 보고 있는 개념. 걸음을 접으면 풀린다. */
+  const [focusedConceptId, setFocusedConceptId] = useState<string | null>(null);
 
   const [gitInstalled, setGitInstalled] = useState<boolean | null>(null);
   const probeGit = useCallback(async () => {
@@ -659,6 +680,10 @@ export function AtlasGitPanel({
             remoteActionNotice={remoteActionNotice}
             remoteActionError={remoteActionError}
             concepts={conceptsByHash}
+            egoFor={egoFor}
+            kindLabel={kindLabel}
+            focusedConceptId={focusedConceptId}
+            setFocusedConceptId={setFocusedConceptId}
           />
         ) : stage === "no-vault" ? (
           <NoVaultSetup key={stage} t={t} />
@@ -1673,6 +1698,10 @@ function StepList({
   t,
   history,
   concepts,
+  egoFor,
+  kindLabel,
+  focusedConceptId,
+  setFocusedConceptId,
   expandedHash,
   setExpandedHash,
   settledHash,
@@ -1684,6 +1713,12 @@ function StepList({
    * 아니라 #842 가 실어 보낸 kind/slug 를 그래프에 맞춘 결과다.
    */
   concepts: ReadonlyMap<string, readonly { id: string; label: string; kind: string }[]>;
+  /** 노드 id → ego. 그래프가 없으면 항상 `null` 이고 카드는 안 그려진다. */
+  egoFor: (nodeId: string) => ConceptEgo | null;
+  /** 종류 이름 — `kinds` 네임스페이스가 진실원. */
+  kindLabel: (kind: string) => string;
+  focusedConceptId: string | null;
+  setFocusedConceptId: (id: string) => void;
   expandedHash: string | null;
   setExpandedHash: (v: string | null) => void;
   /** 방금 남긴 커밋의 해시 — 그 한 줄만 확정 램프로 정착시킨다. */
@@ -1786,6 +1821,36 @@ function StepList({
                 <p className="font-mono text-caption break-all text-[color:var(--color-text-quaternary)]">
                   {commit.subject}
                 </p>
+                {stepConcepts.length > 0 ? (
+                  <div className="mt-2 flex flex-col gap-2">
+                    {/* 개념이 둘 이상이면 **무엇을 볼지 고르는 축**이 필요하다.
+                        「첫 개념만」은 나머지를 볼 길이 없고, 전부 펼치면
+                        overview-first 를 어긴다 — 칩이 그 선택기다. */}
+                    {stepConcepts.length > 1 ? (
+                      <div className="flex flex-wrap gap-1.5">
+                        {stepConcepts.map((concept) => (
+                          <button
+                            key={concept.id}
+                            type="button"
+                            data-testid="atlas-git-concept-chip"
+                            aria-pressed={focusedConceptId === concept.id}
+                            onClick={() => setFocusedConceptId(concept.id)}
+                            className="inline-flex min-h-6 items-center gap-1.5 rounded-[var(--radius-chip)] border border-[color:var(--color-border-soft)] px-2 py-0.5 text-label text-[color:var(--color-text-secondary)] transition-colors hover:border-[color:var(--color-indigo-a46)] hover:text-[color:var(--color-text-primary)] aria-pressed:border-[color:var(--color-indigo-a46)] aria-pressed:bg-[color:var(--color-indigo-a16)] aria-pressed:text-[color:var(--color-text-primary)]"
+                          >
+                            <TopologyV2KindGlyph kind={concept.kind} size={11} />
+                            {concept.label}
+                          </button>
+                        ))}
+                      </div>
+                    ) : null}
+                    <ConceptEgoCard
+                      ego={egoFor(focusedConceptId ?? stepConcepts[0].id)}
+                      t={t}
+                      kindLabel={kindLabel}
+                      onSelect={setFocusedConceptId}
+                    />
+                  </div>
+                ) : null}
               </div>
             ) : null}
           </li>
@@ -2007,6 +2072,10 @@ function DesktopBody({
   remoteActionNotice,
   remoteActionError,
   concepts,
+  egoFor,
+  kindLabel,
+  focusedConceptId,
+  setFocusedConceptId,
 }: {
   /** `navigator.platform ?? userAgent` — 설치 안내를 플랫폼별로 고르는 힌트. */
   hostPlatformHint: string;
@@ -2060,6 +2129,10 @@ function DesktopBody({
   remoteActionError: string | null;
   /** 걸음 해시 → 그 걸음이 바꾼 볼트 개념. */
   concepts: ReadonlyMap<string, readonly { id: string; label: string; kind: string }[]>;
+  egoFor: (nodeId: string) => ConceptEgo | null;
+  kindLabel: (kind: string) => string;
+  focusedConceptId: string | null;
+  setFocusedConceptId: (id: string) => void;
 }) {
   /**
    * 방금 남긴 커밋의 해시 — 지난 걸음 목록에서 **그 한 줄만** 확정 램프로
@@ -2313,6 +2386,10 @@ function DesktopBody({
               t={t}
               history={history}
               concepts={concepts}
+              egoFor={egoFor}
+              kindLabel={kindLabel}
+              focusedConceptId={focusedConceptId}
+              setFocusedConceptId={setFocusedConceptId}
               expandedHash={expandedHash}
               setExpandedHash={setExpandedHash}
               settledHash={settledHash}
@@ -2424,6 +2501,10 @@ function DesktopBody({
                   t={t}
                   history={history}
                   concepts={concepts}
+                  egoFor={egoFor}
+                  kindLabel={kindLabel}
+                  focusedConceptId={focusedConceptId}
+                  setFocusedConceptId={setFocusedConceptId}
                   expandedHash={expandedHash}
                   setExpandedHash={setExpandedHash}
                   settledHash={settledHash}

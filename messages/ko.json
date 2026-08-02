@@ -3230,7 +3230,20 @@
     "remoteDoneFetch": "원격 상태를 다시 읽었어요 — {summary}",
     "remoteDonePull": "받아왔어요 — {summary}",
     "remoteDonePush": "보냈어요.",
-    "remoteStale": "마지막으로 확인한 시점 기준이에요. Fetch 로 갱신해요."
+    "remoteStale": "마지막으로 확인한 시점 기준이에요. Fetch 로 갱신해요.",
+    "egoHeading": "고른 개념",
+    "egoHint": "성질과 바로 옆 이웃 · 이웃을 누르면 그쪽으로 넘어갑니다",
+    "egoDomain": "도메인",
+    "egoDoc": "근거 문서",
+    "egoLinked": "이어진 곳",
+    "egoNone": "없음",
+    "egoUnregistered": "이 문서는 아직 개념으로 등록되지 않았어요",
+    "egoEmpty": "이 개념은 아직 이어진 곳이 없어요",
+    "egoBack": "걸음이 바꾼 개념으로",
+    "bearingBelongsTo": "속한 곳",
+    "bearingContains": "담고 있는 것",
+    "bearingDependsOn": "기대는 곳",
+    "bearingUsedBy": "이곳을 쓰는 곳"
   },
   "agentFiles": {
     "header": "에이전트 파일",

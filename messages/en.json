@@ -3230,7 +3230,20 @@
     "remoteDoneFetch": "Re-read the remote — {summary}",
     "remoteDonePull": "Pulled — {summary}",
     "remoteDonePush": "Sent.",
-    "remoteStale": "As of the last check. Use Fetch to refresh."
+    "remoteStale": "As of the last check. Use Fetch to refresh.",
+    "egoHeading": "Selected concept",
+    "egoHint": "Its facts and immediate neighbours · click a neighbour to move there",
+    "egoDomain": "Domain",
+    "egoDoc": "Source document",
+    "egoLinked": "Linked",
+    "egoNone": "None",
+    "egoUnregistered": "This document is not registered as a concept yet",
+    "egoEmpty": "This concept has no links yet",
+    "egoBack": "Back to this step's concepts",
+    "bearingBelongsTo": "Belongs to",
+    "bearingContains": "Contains",
+    "bearingDependsOn": "Depends on",
+    "bearingUsedBy": "Used by"
   },
   "agentFiles": {
     "header": "Agent files",

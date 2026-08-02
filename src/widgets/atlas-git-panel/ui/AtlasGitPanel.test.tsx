@@ -810,3 +810,93 @@ describe("AtlasGitPanel — 걸음의 주어는 개념이다", () => {
     expect(screen.getByTestId("atlas-git-history-item")).not.toHaveTextContent("첫 실행 안내");
   });
 });
+
+describe("AtlasGitPanel — 고른 개념의 성질과 이웃", () => {
+  /*
+   * 「이 걸음을 지도에서 보기」를 없앤 자리다(소유자 판정: 여기서 다 보이게
+   * 하려던 건데 나가는 버튼을 둘 이유가 없다). 그래서 개념을 눌렀을 때 이
+   * 자리가 비어 있으면 그건 기능이 사라진 것이다.
+   */
+  const EGO_GRAPH = {
+    nodes: [
+      {
+        id: "capability:foo",
+        title: "Foo",
+        display: "첫 실행 안내",
+        kind: "capability",
+        projectIds: [],
+        evidenceIds: ["capabilities/foo"],
+        hasOwnDocument: true,
+        agentSlug: "capabilities/foo",
+        ref: null,
+        lastApprovedAt: "",
+        lastApprovedBy: "",
+        summary: null,
+      },
+      {
+        id: "domain:shell",
+        title: "Shell",
+        display: "온보딩·배포·앱 셸",
+        kind: "domain",
+        projectIds: [],
+        evidenceIds: ["domains/shell"],
+        hasOwnDocument: true,
+        agentSlug: "domains/shell",
+        ref: null,
+        lastApprovedAt: "",
+        lastApprovedBy: "",
+        summary: null,
+      },
+    ],
+    edges: [
+      {
+        id: "e1",
+        from: "domain:shell",
+        to: "capability:foo",
+        type: "contains",
+        projectIds: [],
+        evidenceIds: [],
+        lastApprovedAt: "",
+        lastApprovedBy: "",
+      },
+    ],
+  } as unknown as NonNullable<Parameters<typeof AtlasGitPanel>[0]["graph"]>;
+
+  const HISTORY = [
+    {
+      shortHash: "abc1234",
+      hash: "abc1234def5678",
+      subject: "fix: 무언가 고쳤다",
+      relativeTime: "2 hours ago",
+      isoTime: "2026-07-23T10:00:00+09:00",
+      files: [
+        {
+          path: "docs/capabilities/foo.md",
+          status: "modified",
+          kind: "capability",
+          slug: "capabilities/foo",
+          renamedFrom: null,
+        },
+      ],
+    },
+  ];
+
+  it("걸음을 펼치면 그 개념의 성질과 이웃이 그 자리에 뜬다", async () => {
+    installDesktopGit({ history: HISTORY });
+    renderPanel(<AtlasGitPanel vaultPath="/repo/vault" graph={EGO_GRAPH} />);
+    fireEvent.click(await screen.findByTestId("atlas-git-history-tab"));
+    fireEvent.click(screen.getByTestId("atlas-git-history-item"));
+    const ego = await screen.findByTestId("atlas-git-concept-ego");
+    expect(ego).toHaveTextContent("첫 실행 안내");
+    // 소속 도메인은 belongsTo 이웃에서 온다 — 「속한 곳」이 그려져야 한다.
+    expect(ego).toHaveTextContent("속한 곳");
+  });
+
+  it("그래프가 없으면 (웹·미로드) 카드를 아예 안 그린다 — 빈 상자를 두지 않는다", async () => {
+    installDesktopGit({ history: HISTORY });
+    renderPanel(<AtlasGitPanel vaultPath="/repo/vault" />);
+    fireEvent.click(await screen.findByTestId("atlas-git-history-tab"));
+    fireEvent.click(screen.getByTestId("atlas-git-history-item"));
+    expect(screen.queryByTestId("atlas-git-concept-ego")).toBeNull();
+  });
+});
