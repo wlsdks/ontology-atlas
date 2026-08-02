@@ -621,11 +621,18 @@ export function HomePage() {
    * 그것만으로는 "방금 바뀌었다"를 알 수 없고, 매 프레임 맞추면 사람이 그 뒤에
    * 잡아둔 화면을 계속 뺏는다.
    */
-  const spotlightFitToken = useMemo(
-    () => Date.now(),
-    // eslint-disable-next-line react-hooks/exhaustive-deps -- 사건 토큰: 이 둘이 바뀐 렌더에서만 새 값을 만든다.
-    [recentWindow, spotlightOn],
-  );
+  /*
+   * 사건 카운터 — 렌더 중 `Date.now()` 를 부르지 않는다. lint 가 잡았고
+   * 규칙이 맞다: 렌더는 순수해야 하고, 시계를 읽으면 같은 입력에 다른 출력이
+   * 나온다(React 가 렌더를 버리고 다시 할 수 있다).
+   *
+   * 필요한 성질은 「시각」이 아니라 **「달라졌다」** 뿐이므로 단조 증가 카운터로
+   * 충분하다. 렌즈·기간이 바뀐 렌더에서만 올라간다.
+   */
+  const [spotlightFitToken, setSpotlightFitToken] = useState(0);
+  useEffect(() => {
+    setSpotlightFitToken((n) => n + 1);
+  }, [recentWindow, spotlightOn]);
   const recentChanges = useAdaptiveRecentChanges(
     spotlightOn && recentWindow !== "auto" ? recentWindow : undefined,
   );

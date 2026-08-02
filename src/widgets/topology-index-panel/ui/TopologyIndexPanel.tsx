@@ -529,7 +529,7 @@ export function TopologyIndexPanel({
                *
                * 터치에서는 `--touch-target-min`(44px)까지 세운다.
                */
-              className={`inline-flex h-6 min-w-12 items-center justify-center rounded-[7px] border text-label transition-colors [@media(pointer:coarse)]:h-[var(--touch-target-min)] ${
+              className={`inline-flex h-6 min-w-12 items-center justify-center rounded-[var(--chrome-radius-inner)] border text-label transition-colors [@media(pointer:coarse)]:h-[var(--touch-target-min)] ${
                 recentWindow === value
                   ? "border-[color:var(--color-indigo-a46)] bg-[color:var(--color-indigo-a16)] text-[color:var(--topology-v2-panel-text-primary)]"
                   : "border-[color:var(--topology-v2-panel-border)] text-[color:var(--topology-v2-panel-text-tertiary)] hover:text-[color:var(--topology-v2-panel-text-primary)]"
