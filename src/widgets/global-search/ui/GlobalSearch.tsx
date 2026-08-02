@@ -270,7 +270,7 @@ export function GlobalSearch({
                 ? t('placeholderWithProjects')
                 : t('placeholderOntologyOnly')
             }
-            className="flex-1 bg-transparent text-sm text-[color:var(--color-text-primary)] placeholder:text-[color:var(--color-text-quaternary)] focus:outline-none"
+            className="flex-1 bg-transparent text-body-lg text-[color:var(--color-text-primary)] placeholder:text-[color:var(--color-text-quaternary)] focus:outline-none"
           />
           <kbd className="hidden shrink-0 rounded border border-[color:var(--color-overlay-3)] bg-[color:var(--color-overlay-2)] px-1.5 py-0.5 font-mono text-caption text-[color:var(--color-text-quaternary)] sm:inline-block">
             ESC
@@ -282,7 +282,7 @@ export function GlobalSearch({
             data-testid="global-search-close"
             data-global-search-close-contract="touch-visible"
             data-global-search-close-size-token="--topology-search-sheet-close-size"
-            className="flex h-[var(--topology-search-sheet-close-size)] w-[var(--topology-search-sheet-close-size)] shrink-0 items-center justify-center rounded-md text-[color:var(--color-text-tertiary)] transition-colors hover:bg-[color:var(--color-overlay-2)] hover:text-[color:var(--color-text-primary)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--color-indigo-a46)] focus-visible:ring-inset"
+            className="flex h-[var(--topology-search-sheet-close-size)] w-[var(--topology-search-sheet-close-size)] shrink-0 items-center justify-center rounded-chip text-[color:var(--color-text-tertiary)] transition-colors hover:bg-[color:var(--color-overlay-2)] hover:text-[color:var(--color-text-primary)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--color-indigo-a46)] focus-visible:ring-inset"
           >
             <X size={15} aria-hidden />
           </button>
@@ -393,7 +393,7 @@ export function GlobalSearch({
         </div>
 
         <Command.List className="flex-1 overflow-y-auto overscroll-y-contain px-2 py-2 md:max-h-[52vh] md:flex-none">
-          <Command.Empty className="px-3 py-6 text-center text-sm text-[color:var(--color-text-tertiary)]">
+          <Command.Empty className="px-3 py-6 text-center text-body-lg text-[color:var(--color-text-tertiary)]">
             {isEmptyQuery
               ? totalCorpus === 0
                 ? t('emptyNoCorpus')
@@ -437,7 +437,7 @@ export function GlobalSearch({
                       onSelectNode(node);
                       closeAndClear();
                     }}
-                    className="flex cursor-pointer items-center gap-2 rounded-md px-3 py-2 text-sm text-[color:var(--color-text-secondary)] aria-selected:bg-[color:var(--color-indigo-a14)] aria-selected:text-[color:var(--color-text-primary)]"
+                    className="flex cursor-pointer items-center gap-2 rounded-chip px-3 py-2 text-body-lg text-[color:var(--color-text-secondary)] aria-selected:bg-[color:var(--color-indigo-a14)] aria-selected:text-[color:var(--color-text-primary)]"
                   >
                     <span className="inline-flex shrink-0 items-center rounded-full border border-[color:var(--color-overlay-3)] bg-[color:var(--color-overlay-1)] px-1.5 py-[1px] font-mono text-caption uppercase tracking-[0.10em] text-[color:var(--color-text-quaternary)]">
                       {kindLabel(node.kind)}
@@ -454,7 +454,7 @@ export function GlobalSearch({
                       <HighlightedText text={label} query={isEmptyQuery ? undefined : query} />
                     </span>
                     {node.summary ? (
-                      <span className="hidden min-w-0 max-w-[14rem] truncate text-xs text-[color:var(--color-text-quaternary)] md:block">
+                      <span className="hidden min-w-0 max-w-[14rem] truncate text-body text-[color:var(--color-text-quaternary)] md:block">
                         {node.summary}
                       </span>
                     ) : null}
@@ -481,7 +481,7 @@ export function GlobalSearch({
                     onSelectProject(project);
                     closeAndClear();
                   }}
-                  className="flex cursor-pointer items-center gap-2 rounded-md px-3 py-2 text-sm text-[color:var(--color-text-secondary)] aria-selected:bg-[color:var(--color-indigo-a14)] aria-selected:text-[color:var(--color-text-primary)]"
+                  className="flex cursor-pointer items-center gap-2 rounded-chip px-3 py-2 text-body-lg text-[color:var(--color-text-secondary)] aria-selected:bg-[color:var(--color-indigo-a14)] aria-selected:text-[color:var(--color-text-primary)]"
                 >
                   <span className="inline-flex shrink-0 items-center rounded-full border border-[color:var(--color-indigo-a20)] bg-[color:var(--color-indigo-a06)] px-1.5 py-[1px] font-mono text-caption uppercase tracking-[0.10em] text-[color:rgba(159,170,235,0.95)]">
                     {project.isHub ? t('hub') : t('project')}

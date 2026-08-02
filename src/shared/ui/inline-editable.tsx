@@ -155,7 +155,7 @@ export function InlineEditable({
       "aria-label": ariaLabel,
       "data-testid": dataTestId,
       className: cn(
-        "w-full rounded-md border border-[color:var(--color-indigo-a32)] bg-[color:var(--color-elevated)] px-2 py-1 outline-none transition-colors focus:border-[color:var(--color-indigo-brand)]",
+        "w-full rounded-chip border border-[color:var(--color-indigo-a32)] bg-[color:var(--color-elevated)] px-2 py-1 outline-none transition-colors focus:border-[color:var(--color-indigo-brand)]",
         className,
       ),
     };
@@ -177,7 +177,7 @@ export function InlineEditable({
     content: value || placeholder,
     isEmpty: !value,
     className: cn(
-      "cursor-text rounded-md transition-colors hover:bg-[color:var(--color-overlay-1)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--color-indigo-a32)]",
+      "cursor-text rounded-chip transition-colors hover:bg-[color:var(--color-overlay-1)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--color-indigo-a32)]",
       className,
     ),
     interactive: true,

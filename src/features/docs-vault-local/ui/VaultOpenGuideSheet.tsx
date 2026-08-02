@@ -137,7 +137,7 @@ export function VaultOpenGuideSheet({
                 <Link
                   href="/download/"
                   data-testid="vault-guide-unsupported-cta"
-                  className="inline-flex h-9 w-full items-center justify-center gap-1.5 rounded-md border border-[color:var(--color-indigo-line-a45)] bg-[color:var(--color-indigo-brand)] text-body font-semibold text-white transition-colors hover:bg-[color:var(--color-indigo-accent)]"
+                  className="inline-flex h-9 w-full items-center justify-center gap-1.5 rounded-chip border border-[color:var(--color-indigo-line-a45)] bg-[color:var(--color-indigo-brand)] text-body font-semibold text-white transition-colors hover:bg-[color:var(--color-indigo-accent)]"
                 >
                   <HardDrive size={13} aria-hidden />
                   {tUnsupported("unsupportedCta")}
@@ -148,7 +148,7 @@ export function VaultOpenGuideSheet({
                 hidden={unsupported}
                 onClick={onPickExisting}
                 data-testid="vault-guide-pick-existing"
-                className="inline-flex h-9 w-full items-center justify-center gap-1.5 rounded-md border border-[color:var(--color-indigo-line-a45)] bg-[color:var(--color-indigo-brand)] text-body font-semibold text-white transition-colors hover:bg-[color:var(--color-indigo-accent)]"
+                className="inline-flex h-9 w-full items-center justify-center gap-1.5 rounded-chip border border-[color:var(--color-indigo-line-a45)] bg-[color:var(--color-indigo-brand)] text-body font-semibold text-white transition-colors hover:bg-[color:var(--color-indigo-accent)]"
               >
                 <FolderOpen size={13} aria-hidden />
                 {t("actionPickExisting")}
@@ -158,7 +158,7 @@ export function VaultOpenGuideSheet({
                 hidden={unsupported}
                 onClick={onCreateNew}
                 data-testid="vault-guide-create-new"
-                className="inline-flex h-9 w-full items-center justify-center gap-1.5 rounded-md border border-[color:var(--color-border-soft)] text-body text-[color:var(--color-text-secondary)] transition-colors hover:border-[color:var(--color-indigo-line-a35)] hover:text-[color:var(--color-text-primary)]"
+                className="inline-flex h-9 w-full items-center justify-center gap-1.5 rounded-chip border border-[color:var(--color-border-soft)] text-body text-[color:var(--color-text-secondary)] transition-colors hover:border-[color:var(--color-indigo-line-a35)] hover:text-[color:var(--color-text-primary)]"
               >
                 <Sparkles size={13} aria-hidden />
                 {t("actionCreateNew")}

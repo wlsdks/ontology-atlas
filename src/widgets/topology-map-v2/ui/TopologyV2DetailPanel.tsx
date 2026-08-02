@@ -443,7 +443,7 @@ const ACTION_TILE_LEADING = "leading-[1.1]";
  * `surfaces.md` 가 말하는 "설치 앱 실측만 인정" 의 실제 사례다.
  */
 const ACTION_TILE_CLASS =
-  `flex flex-1 flex-col items-center justify-start gap-1.5 rounded-[var(--topology-v2-panel-row-radius)] px-1 py-1.5 text-center text-[10px] font-medium ${ACTION_TILE_LEADING} [word-break:keep-all] text-[color:var(--topology-v2-panel-text-tertiary)] transition-colors hover:bg-[color:var(--topology-v2-panel-row-hover)] hover:text-[color:var(--topology-v2-panel-text-secondary)] active:bg-[color:var(--topology-v2-panel-row-active)]`;
+  `flex flex-1 flex-col items-center justify-start gap-1.5 rounded-[var(--topology-v2-panel-row-radius)] px-1 py-1.5 text-center text-label font-medium ${ACTION_TILE_LEADING} [word-break:keep-all] text-[color:var(--topology-v2-panel-text-tertiary)] transition-colors hover:bg-[color:var(--topology-v2-panel-row-hover)] hover:text-[color:var(--topology-v2-panel-text-secondary)] active:bg-[color:var(--topology-v2-panel-row-active)]`;
 
 /**
  * 관계 그룹 헤더의 방향 글리프 — 승인된 시안(mockup-panel-detail)의 SVG 를
@@ -550,13 +550,13 @@ function RelationGroupShell({
         </span>
         <span
           title={help}
-          className="text-[12px] font-semibold tracking-[0.005em] text-[color:var(--topology-v2-panel-text-secondary)]"
+          className="text-body font-semibold tracking-[0.005em] text-[color:var(--topology-v2-panel-text-secondary)]"
         >
           {label}
         </span>
         <span
           data-datasheet-group-total={groupKey}
-          className="rounded-[5px] bg-[color:var(--topology-v2-panel-count-surface)] px-1.5 py-px font-mono text-[10px] leading-label text-[color:var(--topology-v2-panel-count-text)]"
+          className="rounded-chip bg-[color:var(--topology-v2-panel-count-surface)] px-1.5 py-px font-mono text-label leading-label text-[color:var(--topology-v2-panel-count-text)]"
         >
           {count}
         </span>
@@ -679,7 +679,7 @@ export function TopologyV2DetailPanel({
           type="button"
           onClick={() => setShowAllContains((v) => !v)}
           data-testid="topology-v2-contains-summary-toggle"
-          className="ml-auto shrink-0 text-[10.5px] text-[color:var(--topology-v2-panel-text-tertiary)] transition-colors hover:text-[color:var(--topology-v2-panel-text-secondary)] active:text-[color:var(--topology-v2-panel-text-primary)]"
+          className="ml-auto shrink-0 text-label text-[color:var(--topology-v2-panel-text-tertiary)] transition-colors hover:text-[color:var(--topology-v2-panel-text-secondary)] active:text-[color:var(--topology-v2-panel-text-primary)]"
         >
           {showAllContains ? labels.containsShowSummary : labels.containsShowAll}
         </button>
@@ -700,20 +700,20 @@ export function TopologyV2DetailPanel({
                 key={`contains-summary:${g.key}`}
                 className="flex items-center gap-2 px-2 py-1"
               >
-                <span className="min-w-0 flex-1 truncate font-mono text-[11.5px] text-[color:var(--topology-v2-panel-text-secondary)]">
+                <span className="min-w-0 flex-1 truncate font-mono text-label text-[color:var(--topology-v2-panel-text-secondary)]">
                   {g.key}
                 </span>
-                <span className="shrink-0 font-mono text-[11px] text-[color:var(--topology-v2-panel-text-quaternary)]">
+                <span className="shrink-0 font-mono text-label text-[color:var(--topology-v2-panel-text-quaternary)]">
                   {g.count}
                 </span>
               </li>
             ))}
             {view.summary.otherCount > 0 ? (
               <li className="flex items-center gap-2 px-2 py-1">
-                <span className="min-w-0 flex-1 truncate font-mono text-[11.5px] text-[color:var(--topology-v2-panel-text-tertiary)]">
+                <span className="min-w-0 flex-1 truncate font-mono text-label text-[color:var(--topology-v2-panel-text-tertiary)]">
                   {labels.containsOtherGroup}
                 </span>
-                <span className="shrink-0 font-mono text-[11px] text-[color:var(--topology-v2-panel-text-quaternary)]">
+                <span className="shrink-0 font-mono text-label text-[color:var(--topology-v2-panel-text-quaternary)]">
                   {view.summary.otherCount}
                 </span>
               </li>
@@ -736,7 +736,7 @@ export function TopologyV2DetailPanel({
                   className="flex min-h-[33px] w-full items-center gap-2.5 rounded-[var(--topology-v2-panel-row-radius)] px-2 py-1.5 text-left transition-colors hover:bg-[color:var(--topology-v2-panel-row-hover)] active:bg-[color:var(--topology-v2-panel-row-active)]"
                 >
                   <TopologyV2KindGlyph kind={row.kind} />
-                  <span className="min-w-0 flex-1 truncate text-[13px] text-[color:var(--topology-v2-panel-text-secondary)]">
+                  <span className="min-w-0 flex-1 truncate text-body text-[color:var(--topology-v2-panel-text-secondary)]">
                     {row.title}
                   </span>
                 </button>
@@ -747,7 +747,7 @@ export function TopologyV2DetailPanel({
         {overflow > 0 && !useSummary ? (
           <span
             data-datasheet-group-overflow={group}
-            className="pl-[34px] pt-0.5 font-mono text-[10.5px] text-[color:var(--topology-v2-panel-text-quaternary)]"
+            className="pl-[34px] pt-0.5 font-mono text-label text-[color:var(--topology-v2-panel-text-quaternary)]"
           >
             +{overflow}
           </span>
@@ -794,7 +794,7 @@ export function TopologyV2DetailPanel({
                   aria-hidden="true"
                   className="shrink-0 text-[color:var(--topology-v2-panel-text-tertiary)]"
                 />
-                <span className="min-w-0 flex-1 truncate text-[13px] text-[color:var(--topology-v2-panel-text-secondary)]">
+                <span className="min-w-0 flex-1 truncate text-body text-[color:var(--topology-v2-panel-text-secondary)]">
                   {row.title}
                 </span>
               </Link>
@@ -874,11 +874,11 @@ export function TopologyV2DetailPanel({
           생기지 않고 긴 이름에서도 성립한다. */}
       <div className="px-[var(--topology-v2-panel-pad)] pt-[15px] pb-4">
         <div className="mb-[11px] flex items-center gap-2.5">
-          <h2 className="min-w-0 flex-1 truncate text-[20px] font-[650] leading-title tracking-[-0.015em] text-[color:var(--topology-v2-panel-text-primary)]">
+          <h2 className="min-w-0 flex-1 truncate text-title font-[650] leading-title tracking-title text-[color:var(--topology-v2-panel-text-primary)]">
             {title}
           </h2>
           {/* kind = 읽히는 텍스트 배지(글리프 + 단어), 우측 counterweight */}
-          <span className="flex shrink-0 items-center gap-1.5 rounded-[6px] border border-[color:var(--topology-v2-panel-kind-badge-border)] bg-[color:var(--topology-v2-panel-kind-badge-surface)] py-[3px] pl-[7px] pr-[9px] text-[11px] font-semibold tracking-[0.01em] text-[color:var(--topology-v2-panel-text-secondary)]">
+          <span className="flex shrink-0 items-center gap-1.5 rounded-chip border border-[color:var(--topology-v2-panel-kind-badge-border)] bg-[color:var(--topology-v2-panel-kind-badge-surface)] py-[3px] pl-[7px] pr-[9px] text-label font-semibold tracking-[0.01em] text-[color:var(--topology-v2-panel-text-secondary)]">
             <TopologyV2KindGlyph kind={kind} size={12} />
             {labels.kindLabel}
           </span>
@@ -895,7 +895,7 @@ export function TopologyV2DetailPanel({
         {showSourcePath && sourceTitle && sourceTitle !== title ? (
           <div
             data-testid="topology-v2-detail-panel-source-path"
-            className="mb-2 font-mono text-[11px] text-[color:var(--topology-v2-panel-text-quaternary)] break-all"
+            className="mb-2 font-mono text-label text-[color:var(--topology-v2-panel-text-quaternary)] break-all"
           >
             {sourceTitle}
           </div>
@@ -907,19 +907,19 @@ export function TopologyV2DetailPanel({
               updatedAtLabel ? (
                 <span
                   data-testid="topology-v2-datasheet-updated-at"
-                  className="shrink-0 text-[12px] text-[color:var(--topology-v2-panel-text-quaternary)]"
+                  className="shrink-0 text-body text-[color:var(--topology-v2-panel-text-quaternary)]"
                 >
                   {updatedAtLabel}
                 </span>
               ) : (
-                <span className="shrink-0 text-[12px] text-[color:var(--topology-v2-panel-text-quaternary)]">
+                <span className="shrink-0 text-body text-[color:var(--topology-v2-panel-text-quaternary)]">
                   {powered ? labels.poweredOn : labels.poweredOff}
                 </span>
               )
             ) : updatedAtLabel ? (
               <span
                 data-testid="topology-v2-datasheet-updated-at"
-                className="shrink-0 text-[12px] text-[color:var(--topology-v2-panel-text-quaternary)]"
+                className="shrink-0 text-body text-[color:var(--topology-v2-panel-text-quaternary)]"
               >
                 {labels.sourceOntologyDocument ? `${labels.sourceOntologyDocument} · ` : ""}
                 {updatedAtLabel}
@@ -931,12 +931,12 @@ export function TopologyV2DetailPanel({
                 onClick={() => onSelectConnection(domain.id)}
                 aria-label={`${labels.domainLabel} ${domain.title}`}
                 data-testid="topology-v2-detail-panel-domain"
-                className="flex min-w-0 items-center gap-1.5 rounded-[8px] border border-[color:var(--topology-v2-panel-domain-border)] bg-[color:var(--topology-v2-panel-domain-surface)] py-1.5 pl-2.5 pr-2 text-left transition-colors hover:border-[color:var(--topology-v2-panel-domain-border-hover)] hover:bg-[color:var(--topology-v2-panel-domain-surface-hover)]"
+                className="flex min-w-0 items-center gap-1.5 rounded-card border border-[color:var(--topology-v2-panel-domain-border)] bg-[color:var(--topology-v2-panel-domain-surface)] py-1.5 pl-2.5 pr-2 text-left transition-colors hover:border-[color:var(--topology-v2-panel-domain-border-hover)] hover:bg-[color:var(--topology-v2-panel-domain-surface-hover)]"
               >
-                <span className="shrink-0 text-[11px] text-[color:var(--topology-v2-panel-text-tertiary)]">
+                <span className="shrink-0 text-label text-[color:var(--topology-v2-panel-text-tertiary)]">
                   {labels.domainLabel}
                 </span>
-                <span className="truncate text-[12px] font-semibold text-[color:var(--topology-v2-panel-domain-text)]">
+                <span className="truncate text-body font-semibold text-[color:var(--topology-v2-panel-domain-text)]">
                   {domain.title}
                 </span>
                 <ChevronRight
@@ -1029,7 +1029,7 @@ export function TopologyV2DetailPanel({
           <div
             data-testid="topology-v2-detail-panel-stats"
             title={labels.metricHelp}
-            className="flex items-center gap-1.5 text-[13px] text-[color:var(--topology-v2-panel-text-tertiary)]"
+            className="flex items-center gap-1.5 text-body text-[color:var(--topology-v2-panel-text-tertiary)]"
           >
             <span>{labels.statsConnected}</span>
             <b className="font-[650] tabular-nums text-[color:var(--topology-v2-panel-text-secondary)]">
@@ -1213,7 +1213,7 @@ export function TopologyV2DetailPanel({
             {renderCodeLocationsGroup()}
           </>
         ) : (
-          <span className="text-[11.5px] text-[color:var(--topology-v2-panel-text-tertiary)]">
+          <span className="text-label text-[color:var(--topology-v2-panel-text-tertiary)]">
             {labels.noConnections}
           </span>
         )}
@@ -1231,7 +1231,7 @@ export function TopologyV2DetailPanel({
           <span
             data-testid="topology-v2-detail-panel-slug"
             title={slug}
-            className="min-w-0 flex-1 truncate font-mono text-[10.5px] text-[color:var(--topology-v2-panel-text-quaternary)]"
+            className="min-w-0 flex-1 truncate font-mono text-label text-[color:var(--topology-v2-panel-text-quaternary)]"
           >
             {slugDisplaySegment(slug)}
           </span>
@@ -1245,7 +1245,7 @@ export function TopologyV2DetailPanel({
             data-testid="topology-v2-detail-panel-open-full-detail"
             className={showProjectSource
               ? "shrink-0 rounded-[var(--topology-v2-panel-row-radius)] px-1.5 py-[7px] text-body leading-body text-[color:var(--topology-v2-panel-text-tertiary)] transition-colors hover:text-[color:var(--topology-v2-panel-text-secondary)]"
-              : "shrink-0 rounded-[8px] border border-[color:var(--topology-v2-panel-primary-border)] bg-[color:var(--topology-v2-panel-primary-surface)] px-3 py-[7px] text-label leading-label font-semibold text-[color:var(--topology-v2-panel-primary-text)] transition-colors hover:border-[color:var(--topology-v2-panel-primary-border-hover)] hover:bg-[color:var(--topology-v2-panel-primary-surface-hover)]"}
+              : "shrink-0 rounded-card border border-[color:var(--topology-v2-panel-primary-border)] bg-[color:var(--topology-v2-panel-primary-surface)] px-3 py-[7px] text-label leading-label font-semibold text-[color:var(--topology-v2-panel-primary-text)] transition-colors hover:border-[color:var(--topology-v2-panel-primary-border-hover)] hover:bg-[color:var(--topology-v2-panel-primary-surface-hover)]"}
           >
             {labels.openFullDetail}
           </button>
@@ -1296,7 +1296,7 @@ function CodeLocationRow({
     >
       <span
         title={path}
-        className="min-w-0 flex-1 truncate font-mono text-[12px] text-[color:var(--topology-v2-panel-text-tertiary)]"
+        className="min-w-0 flex-1 truncate font-mono text-body text-[color:var(--topology-v2-panel-text-tertiary)]"
       >
         {truncateMiddlePath(path)}
       </span>

@@ -54,14 +54,14 @@ export function StudioTooNarrow() {
             <Link
               href="/topology/"
               data-testid="studio-too-narrow-map"
-              className="rounded-lg border border-[color:var(--color-border-strong)] px-3 py-1.5 text-label font-semibold text-[color:var(--color-text-secondary)] transition-colors hover:text-[color:var(--color-text-primary)]"
+              className="rounded-card border border-[color:var(--color-border-strong)] px-3 py-1.5 text-label font-semibold text-[color:var(--color-text-secondary)] transition-colors hover:text-[color:var(--color-text-primary)]"
             >
               {t("openMap")}
             </Link>
             <Link
               href="/download/"
               data-testid="studio-too-narrow-get-app"
-              className="rounded-lg border border-[color:var(--color-border-strong)] px-3 py-1.5 text-label font-semibold text-[color:var(--color-text-secondary)] transition-colors hover:text-[color:var(--color-text-primary)]"
+              className="rounded-card border border-[color:var(--color-border-strong)] px-3 py-1.5 text-label font-semibold text-[color:var(--color-text-secondary)] transition-colors hover:text-[color:var(--color-text-primary)]"
             >
               {t("getApp")}
             </Link>

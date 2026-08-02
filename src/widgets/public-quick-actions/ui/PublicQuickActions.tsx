@@ -65,10 +65,10 @@ export function PublicQuickActions({
         </p>
         <InfoHint label={t("infoHintLabel")}>
           <div className="space-y-3">
-            <p className="text-sm leading-6 text-[color:var(--color-text-secondary)]">
+            <p className="text-body-lg leading-6 text-[color:var(--color-text-secondary)]">
               {t("infoHintBody")}
             </p>
-            <dl className="space-y-2 text-sm">
+            <dl className="space-y-2 text-body-lg">
               {shouldShowCreateAction ? (
                 <div>
                   <dt className="font-[var(--font-weight-signature)] text-[color:var(--color-text-primary)]">

@@ -86,9 +86,9 @@ export function FirstRunPage() {
           : null;
 
   const cardBase =
-    "grid w-full grid-cols-[32px_1fr] items-start gap-3 rounded-md border bg-[color:var(--color-panel)] px-4 py-3.5 text-left transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--color-indigo-a46)] focus-visible:ring-inset disabled:opacity-60";
+    "grid w-full grid-cols-[32px_1fr] items-start gap-3 rounded-chip border bg-[color:var(--color-panel)] px-4 py-3.5 text-left transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--color-indigo-a46)] focus-visible:ring-inset disabled:opacity-60";
   const iconChip =
-    "flex h-8 w-8 items-center justify-center rounded-md border border-[color:var(--color-divider)] bg-[color:var(--color-elevated)]";
+    "flex h-8 w-8 items-center justify-center rounded-chip border border-[color:var(--color-divider)] bg-[color:var(--color-elevated)]";
 
   return (
     <main
@@ -99,7 +99,7 @@ export function FirstRunPage() {
       <section className="grid w-full max-w-[440px] gap-6">
         <header className="grid justify-items-center gap-3 text-center">
           <div className="inline-flex items-center gap-3">
-            <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-md border border-[color:var(--color-border-soft)] bg-[color:var(--color-elevated)] text-[color:var(--color-indigo-accent)]">
+            <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-chip border border-[color:var(--color-border-soft)] bg-[color:var(--color-elevated)] text-[color:var(--color-indigo-accent)]">
               <Orbit size={13} aria-hidden />
             </span>
             <span className="text-[13px] font-[var(--font-weight-signature)] text-[color:var(--color-text-secondary)]">

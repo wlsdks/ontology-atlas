@@ -131,7 +131,7 @@ export function CanvasBackgroundPicker() {
               data-testid={`app-settings-canvas-bg-${variant}`}
               onClick={() => writeCanvasBackground(variant)}
               className={cn(
-                'flex flex-col items-stretch gap-1 rounded-lg border p-1.5 text-center transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--color-indigo-a46)]',
+                'flex flex-col items-stretch gap-1 rounded-card border p-1.5 text-center transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--color-indigo-a46)]',
                 active
                   ? 'border-[color:var(--color-indigo-accent)] bg-[color:var(--color-indigo-line-a13)]'
                   : 'border-[color:var(--color-border-soft)] hover:border-[color:var(--color-border-strong)]',
@@ -177,7 +177,7 @@ export function GlyphSetPicker() {
               data-testid={`app-settings-glyph-set-${set}`}
               onClick={() => writeGlyphSet(set)}
               className={cn(
-                'flex flex-col items-center gap-1.5 rounded-lg border p-2 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--color-indigo-a46)]',
+                'flex flex-col items-center gap-1.5 rounded-card border p-2 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--color-indigo-a46)]',
                 active
                   ? 'border-[color:var(--color-indigo-accent)] bg-[color:var(--color-indigo-line-a13)]'
                   : 'border-[color:var(--color-border-soft)] hover:border-[color:var(--color-border-strong)]',

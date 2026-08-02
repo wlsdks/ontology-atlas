@@ -342,7 +342,7 @@ const PROSE_COMPONENTS: Components = {
   },
   pre: ({ children, ...rest }) => (
     <pre
-      className="my-6 overflow-x-auto rounded-md border border-[color:var(--color-overlay-2)] bg-[color:var(--color-surface-deep-a80)] p-4 font-mono text-label leading-body text-[color:var(--color-indigo-pale-a92)] md:text-body"
+      className="my-6 overflow-x-auto rounded-chip border border-[color:var(--color-overlay-2)] bg-[color:var(--color-surface-deep-a80)] p-4 font-mono text-label leading-body text-[color:var(--color-indigo-pale-a92)] md:text-body"
       {...rest}
     >
       {children}

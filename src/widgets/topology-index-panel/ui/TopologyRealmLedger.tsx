@@ -325,7 +325,7 @@ export function TopologyRealmLedger({
                   <li
                     key={row.edgeId}
                     data-testid="topology-realm-boundary-row"
-                    className="group flex items-center gap-2 rounded-md px-1 py-1 transition-colors hover:bg-[color:var(--topology-v2-panel-row-hover)]"
+                    className="group flex items-center gap-2 rounded-chip px-1 py-1 transition-colors hover:bg-[color:var(--topology-v2-panel-row-hover)]"
                   >
                     <span className="min-w-0 flex-1 truncate text-label text-[color:var(--topology-v2-panel-text-secondary)]">
                       <span className="text-[color:var(--topology-v2-panel-text-primary)]">

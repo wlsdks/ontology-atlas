@@ -31,16 +31,26 @@
  * 모르는 사람까지**다.
  */
 
-/** 한 클립의 계약. 전달 규격(원장 「촬영 후 게이트」)이 타입에 박혀 있다. */
+/**
+ * 한 클립의 계약. 전달 규격(원장 「촬영 후 게이트」)이 타입에 박혀 있다.
+ *
+ * ## 2026-08-03 개정 — 클립 **하나**, 자막 없음, 로케일별 영상
+ *
+ * 소유자 확정 셋:
+ *
+ * ① **둘에서 하나로.** 탭이 둘이면 관객은 «무엇을 볼지»를 먼저 골라야 하는데,
+ *    첫인상 자리에서 그 선택은 비용이지 값이 아니다 — 대부분은 첫 탭만 보고
+ *    떠나므로 두 번째 클립은 «만들었지만 아무도 안 보는 것»이 된다.
+ * ② **자막을 굽지도 그리지도 않는다.** 로케일별 영상을 따로 찍으므로 자막이
+ *    나를 정보가 없다. `.vtt` 배관을 남겨 두면 빈 트랙이 붙는다.
+ * ③ **영상 자체가 로케일을 탄다** — 화면 안의 글자가 한국어/영어로 갈리기
+ *    때문이다. 그래서 `basename` 이 아니라 `basenameFor(locale)` 이다.
+ */
 export interface DemoClip {
-  id: 'one-folder' | 'one-button';
-  /** i18n 키 — 탭 라벨. 클립이 끝났을 때 관객이 갖게 될 문장. */
-  tabKey: string;
-  /** 자동재생 여부. 클립 A 만 무음 자동재생, B 는 포스터 + 재생 버튼. */
-  autoplay: boolean;
-  /** 초 단위 길이(실측). 자막 타이밍 검수의 기준이 된다. */
+  id: 'atlas-tour';
+  /** 초 단위 길이(실측). 촬영 후 게이트가 대조한다. */
   seconds: number;
-  /** `public/demo/` 안의 파일 이름(확장자 없음). */
+  /** `public/demo/` 안의 파일 이름 앞부분 — 뒤에 `.ko` / `.en` 이 붙는다. */
   basename: string;
 }
 
@@ -49,8 +59,8 @@ export interface DemoClip {
  * 「무엇을 찍어야 하는가」가 코드에 남고, 촬영 후 게이트가 대조할 대상이 생긴다.
  */
 export const DEMO_CLIPS: readonly DemoClip[] = [
-  { id: 'one-folder', tabKey: 'demoTabOneFolder', autoplay: true, seconds: 24, basename: 'one-folder' },
-  { id: 'one-button', tabKey: 'demoTabOneButton', autoplay: false, seconds: 14, basename: 'one-button' },
+  // `seconds` 는 새 촬영본이 붙을 때 ffprobe 실측값으로 고친다(현재는 잠정 자산의 길이).
+  { id: 'atlas-tour', seconds: 24, basename: 'atlas-tour' },
 ];
 
 /**
@@ -62,7 +72,23 @@ export const DEMO_CLIPS: readonly DemoClip[] = [
  * 것이 이 배열의 요점이다(파일 존재만으로 켜면, 반쯤 올라간 자산이 첫인상 자리에
  * 그대로 나간다).
  */
-export const AVAILABLE_DEMO_CLIP_IDS: readonly DemoClip['id'][] = ['one-folder', 'one-button'];
+/*
+ * ⚠️ **지금 붙어 있는 것은 잠정 자산이다** (2026-08-03). 새 45초 시나리오
+ * (`docs/DEMO-SCENARIO.md`)의 촬영본이 아직 없어서, 지난 시나리오의 24초
+ * 영상을 새 이름으로 이어 두었다 — 두 로케일이 **같은 마스터**를 가리킨다.
+ *
+ * 왜 비워 두지 않았나: 등록부를 비우면 관문에서 시연 절이 통째로 사라지는데,
+ * 그러면 첫인상이 나빠지는 것에 더해 그 아래 「설치 3단이 접히지 않는다」
+ * 시험이 **조용히 무의미해진다** — 절이 없으면 페이지가 짧아져 3단이 저절로
+ * 접힘 위에 오고, 아무것도 안 재면서 초록이 된다(그 시험 자신의 주석이 이
+ * 함정을 이름으로 적어 두었다).
+ *
+ * **교체 절차**: `public/demo/atlas-tour.{ko,en}.{webm,mp4}` 와
+ * `atlas-tour.{ko,en}-poster.png` 를 새 촬영본으로 덮고, `seconds` 를 ffprobe
+ * 실측값으로 고친다. 그때 구 자산(`one-folder.*` · `one-button.*`)을 지운다 —
+ * 먼저 지우면 되돌릴 자리가 없다.
+ */
+export const AVAILABLE_DEMO_CLIP_IDS: readonly DemoClip['id'][] = ['atlas-tour'];
 
 /** 렌더할 클립 — 선언과 자산이 모두 있는 것만. */
 export function availableDemoClips(
@@ -83,18 +109,18 @@ export function hasDemoClips(
  * 방문자가 macOS(=Safari) 이고 Safari 의 AV1 은 하드웨어 지원에 따라 갈리므로
  * 떨어질 자리가 있어선 안 된다.
  */
-export function demoSources(clip: DemoClip): { src: string; type: string }[] {
+function localeTag(locale: string): 'ko' | 'en' {
+  return locale === 'ko' ? 'ko' : 'en';
+}
+
+export function demoSources(clip: DemoClip, locale: string): { src: string; type: string }[] {
+  const base = `/demo/${clip.basename}.${localeTag(locale)}`;
   return [
-    { src: `/demo/${clip.basename}.webm`, type: 'video/webm' },
-    { src: `/demo/${clip.basename}.mp4`, type: 'video/mp4' },
+    { src: `${base}.webm`, type: 'video/webm' },
+    { src: `${base}.mp4`, type: 'video/mp4' },
   ];
 }
 
-export function demoPoster(clip: DemoClip): string {
-  return `/demo/${clip.basename}-poster.png`;
-}
-
-/** 자막은 굽지 않는다 — `.vtt` 가 진실원이고 DOM 이 그린다(원장 확정). */
-export function demoCaptions(clip: DemoClip, locale: string): string {
-  return `/demo/${clip.basename}.${locale === 'ko' ? 'ko' : 'en'}.vtt`;
+export function demoPoster(clip: DemoClip, locale: string): string {
+  return `/demo/${clip.basename}.${localeTag(locale)}-poster.png`;
 }

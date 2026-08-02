@@ -163,7 +163,7 @@ export function ProjectSelectorPage() {
           <Link
             href={newProjectHref}
             data-testid="project-selector-new-cta"
-            className="ml-auto inline-flex h-9 items-center rounded-md border border-[color:var(--color-indigo-a50)] bg-[color:var(--topology-v2-panel-action-surface,var(--color-indigo-a06))] px-4 text-body font-medium text-[color:var(--color-indigo-accent)] transition-colors hover:border-[color:var(--color-indigo-brand)] hover:bg-[color:var(--color-overlay-2)]"
+            className="ml-auto inline-flex h-9 items-center rounded-chip border border-[color:var(--color-indigo-a50)] bg-[color:var(--topology-v2-panel-action-surface,var(--color-indigo-a06))] px-4 text-body font-medium text-[color:var(--color-indigo-accent)] transition-colors hover:border-[color:var(--color-indigo-brand)] hover:bg-[color:var(--color-overlay-2)]"
           >
             {t("ctaNewProject")}
           </Link>

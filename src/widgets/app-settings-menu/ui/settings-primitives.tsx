@@ -50,7 +50,7 @@ export function SettingsGroup({ label, children }: { label?: string; children: R
           {label}
         </h3>
       ) : null}
-      <div className={`${label ? 'mt-1.5 ' : ''}divide-y divide-[color:var(--color-divider)] overflow-hidden rounded-lg border border-[color:var(--color-border-soft)] bg-[color:var(--color-overlay-1)]`}>
+      <div className={`${label ? 'mt-1.5 ' : ''}divide-y divide-[color:var(--color-divider)] overflow-hidden rounded-card border border-[color:var(--color-border-soft)] bg-[color:var(--color-overlay-1)]`}>
         {children}
       </div>
     </section>
@@ -221,7 +221,7 @@ export function SegmentSwitch({
       role="group"
       aria-label={ariaLabel}
       data-testid={testId}
-      className="inline-flex items-center gap-px rounded-md border border-[color:var(--color-border-soft)] bg-[color:var(--color-elevated)] p-px text-body"
+      className="inline-flex items-center gap-px rounded-chip border border-[color:var(--color-border-soft)] bg-[color:var(--color-elevated)] p-px text-body"
     >
       {options.map((option) => {
         const active = option.value === value;

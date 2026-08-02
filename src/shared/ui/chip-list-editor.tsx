@@ -118,7 +118,7 @@ export function ChipListEditor({
         <span
           key={item}
           className={cn(
-            "inline-flex items-center gap-1.5 rounded-full border px-3 py-1.5 text-xs",
+            "inline-flex items-center gap-1.5 rounded-full border px-3 py-1.5 text-body",
             chipClass,
           )}
         >
@@ -145,13 +145,13 @@ export function ChipListEditor({
             onBlur={commit}
             onKeyDown={handleKeyDown}
             placeholder={placeholder}
-            className="rounded-full border border-[color:var(--color-indigo-a32)] bg-[color:var(--color-elevated)] px-3 py-1.5 text-xs text-[color:var(--color-text-primary)] outline-none focus:border-[color:var(--color-indigo-brand)]"
+            className="rounded-full border border-[color:var(--color-indigo-a32)] bg-[color:var(--color-elevated)] px-3 py-1.5 text-body text-[color:var(--color-text-primary)] outline-none focus:border-[color:var(--color-indigo-brand)]"
           />
         ) : (
           <button
             type="button"
             onClick={() => setAdding(true)}
-            className="inline-flex items-center gap-1 rounded-full border border-dashed border-[color:var(--color-border-strong)] bg-transparent px-3 py-1.5 text-xs text-[color:var(--color-text-tertiary)] transition-colors hover:border-[color:var(--color-indigo-a32)] hover:text-[color:var(--color-text-primary)]"
+            className="inline-flex items-center gap-1 rounded-full border border-dashed border-[color:var(--color-border-strong)] bg-transparent px-3 py-1.5 text-body text-[color:var(--color-text-tertiary)] transition-colors hover:border-[color:var(--color-indigo-a32)] hover:text-[color:var(--color-text-primary)]"
             aria-label={addAriaLabel}
           >
             <Plus size={11} />

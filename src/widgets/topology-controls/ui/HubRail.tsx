@@ -125,7 +125,7 @@ export function HubRail({
     <div
       role="listbox"
       aria-label={railLabel}
-      className="pointer-events-auto absolute bottom-[212px] left-4 top-[140px] z-10 hidden max-h-[calc(100vh-352px)] w-[180px] flex-col gap-1 overflow-auto rounded-md border border-[color:var(--color-border-soft)] bg-[color:var(--color-panel)] px-2 py-2 md:left-6 md:flex xl:left-8"
+      className="pointer-events-auto absolute bottom-[212px] left-4 top-[140px] z-10 hidden max-h-[calc(100vh-352px)] w-[180px] flex-col gap-1 overflow-auto rounded-chip border border-[color:var(--color-border-soft)] bg-[color:var(--color-panel)] px-2 py-2 md:left-6 md:flex xl:left-8"
     >
       <div className="flex items-center justify-between px-1 pb-1">
         <span className="font-mono text-caption uppercase tracking-[0.16em] text-[color:var(--color-text-quaternary)]">

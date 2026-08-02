@@ -56,7 +56,7 @@ export function DocsVaultBacklinks({
               key={entry.fromSlug}
               type="button"
               onClick={() => onNavigate(doc.slug)}
-              className="inline-flex flex-none items-center gap-1.5 rounded-md border border-[color:var(--color-border-soft)] bg-[color:var(--color-overlay-1)] px-2.5 py-1 text-body text-[color:var(--color-text-secondary)] transition-colors hover:border-[color:var(--color-indigo-line-a40)] hover:text-[color:var(--color-text-primary)]"
+              className="inline-flex flex-none items-center gap-1.5 rounded-chip border border-[color:var(--color-border-soft)] bg-[color:var(--color-overlay-1)] px-2.5 py-1 text-body text-[color:var(--color-text-secondary)] transition-colors hover:border-[color:var(--color-indigo-line-a40)] hover:text-[color:var(--color-text-primary)]"
             >
               {kindStr && isTopologyV2RenderableKind(kindStr) ? (
                 <TopologyV2KindGlyph kind={kindStr} size={11} />

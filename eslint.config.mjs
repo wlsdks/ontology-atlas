@@ -53,6 +53,47 @@ const scaleGradientSelectors = [
 // no-restricted-syntax -- <사유>` 로 명시. 마이그레이션 완료 디렉토리 = error,
 // 미완(topology-map-v2 · views/home) = warn.
 const arbitrarySizeSelectors = [
+  /*
+   * ── 이름 있는 Tailwind 기본 스텝도 램프 밖이다 (2026-08-03 전수조사) ──────
+   *
+   * 아래 대괄호 셀렉터들은 `text-[13px]` 같은 **arbitrary 문법만** 본다. 그런데
+   * Tailwind v4 는 우리 램프를 *추가*했을 뿐 자기 기본 스케일을 덮어쓰지 않아서,
+   * `text-sm`(14) · `rounded-md`(6) 같은 **이름 있는 클래스는 어떤 룰도 안 거치고
+   * 렌더된다**. 실측 268건 — 램프를 통째로 우회하는 두 번째 시스템이었다.
+   *
+   * 값이 같은 것부터(md=chip 6px · xl=panel 12px · sm=body-lg 14px) 전부 램프
+   * 이름으로 치환한 뒤 이 셀렉터를 켰다. 켤 때 위반 0.
+   *
+   * `rounded-full` 은 제외한다 — 완전 원형(점·아바타·필)은 선형 3단 램프가
+   * 답할 질문이 아니다.
+   *
+   * ⚠️ **셋은 아직 사정거리 밖이다** — `rounded-sm`(4px, 62건) · `rounded-2xl`
+   * (16px, 12건) · `text-xl`(20px, 2건). 값이 램프 밖이라 치환이 **픽셀을
+   * 움직인다**(4→6 은 작은 칩에서 눈에 보인다). 한 PR 로 못 치우는 규모의
+   * 룰은 강제가 아니라 소음이고 기존 신호까지 덮는다 — 래칫
+   * (`type-ramp-coverage.contract.test.ts`)이 늘지 않게 붙들고, 디자인 판정
+   * 뒤에 사정거리를 넓힌다.
+   */
+  {
+    selector: 'Literal[value=/(^|[^-\\w])text-(xs|sm)([^-\\w]|$)/]',
+    message:
+      'Geometry Codex — Tailwind 기본 타입 스텝 금지(램프 우회). text-caption/label/body/body-lg/title/display/hero 로.',
+  },
+  {
+    selector: 'TemplateElement[value.raw=/(^|[^-\\w])text-(xs|sm)([^-\\w]|$)/]',
+    message:
+      'Geometry Codex — Tailwind 기본 타입 스텝 금지 (template literal). text-* 램프로.',
+  },
+  {
+    selector: 'Literal[value=/(^|[^-\\w])rounded-(md|lg|xl)([^-\\w]|$)/]',
+    message:
+      'Geometry Codex — Tailwind 기본 radius 스텝 금지(램프 우회). rounded-chip/card/panel 로.',
+  },
+  {
+    selector: 'TemplateElement[value.raw=/(^|[^-\\w])rounded-(md|lg|xl)([^-\\w]|$)/]',
+    message:
+      'Geometry Codex — Tailwind 기본 radius 스텝 금지 (template literal). rounded-* 램프로.',
+  },
   {
     selector: 'Literal[value=/text-\\[[0-9.]+px\\]/]',
     message:
@@ -338,6 +379,9 @@ export const codexMigratedGlobs = [
    * 만들고 승격한다.
    */
   'app/**/*.{ts,tsx}',
+  // 2026-08-03 — 중심 표면 둘을 warn 에서 승격(위 `codexR6Globs` 주석 참조).
+  'src/widgets/topology-map-v2/**/*.{ts,tsx}',
+  'src/views/home/**/*.{ts,tsx}',
   'src/features/first-run-starter/**/*.{ts,tsx}',
   'src/features/docs-vault-local/**/*.{ts,tsx}',
   'src/features/locale-switch/**/*.{ts,tsx}',
@@ -366,10 +410,20 @@ export const codexMigratedGlobs = [
   'src/widgets/**/*.{ts,tsx}',
 ];
 // R6(다른 에이전트) 동시 작업 중 — 아직 미치환, warn 으로만 신규 유입 경고.
-const codexR6Globs = [
-  'src/widgets/topology-map-v2/**/*.{ts,tsx}',
-  'src/views/home/**/*.{ts,tsx}',
-];
+/*
+ * ── 2026-08-03: warn 강등 블록을 없앴다 ────────────────────────────────────
+ *
+ * 여기 `codexR6Globs` 라는 목록이 있었다 — 램프 룰을 **warn 으로 내리는** 목록
+ * 이고, 거기 있던 둘이 하필 제품의 중심 표면(`topology-map-v2` · `views/home`)
+ * 이었다. `pnpm lint` 에 `--max-warnings` 가 없어서 그 둘의 램프 이탈 66건은
+ * **아무것도 실패시키지 않았다** — 게이트가 항상 통과하기만 하면 게이트가 없는
+ * 것과 구별되지 않는다.
+ *
+ * 66건을 램프로 흡수하고 두 경로를 `codexMigratedGlobs`(error)로 승격했다.
+ * 블록 자체를 지운 이유: 빈 배열은 flat config 가 거부하고, 무엇보다 **강등할
+ * 자리를 비워 두면 다음 사람이 거기에 넣는다.** 다시 필요해지면 그때 이 주석을
+ * 지우고 만들되, 같은 PR 에 「언제 error 로 올릴지」를 함께 적어야 한다.
+ */
 // 테스트는 렌더된 className 문자열을 assert 하므로 램프 룰에서 제외.
 const codexTestIgnores = ['**/*.test.{ts,tsx}', '**/*.spec.{ts,tsx}'];
 
@@ -628,19 +682,6 @@ const eslintConfig = defineConfig([
     rules: {
       'no-restricted-syntax': [
         'error',
-        ...scaleGradientSelectors,
-        ...arbitrarySizeSelectors,
-      ],
-    },
-  },
-  // R6 동시 작업 디렉토리 = warn (미치환 유입만 경고). 위 migrated 블록보다
-  // 뒤라 widgets/topology-map-v2 는 여기서 warn 으로 내려간다.
-  {
-    files: codexR6Globs,
-    ignores: codexTestIgnores,
-    rules: {
-      'no-restricted-syntax': [
-        'warn',
         ...scaleGradientSelectors,
         ...arbitrarySizeSelectors,
       ],

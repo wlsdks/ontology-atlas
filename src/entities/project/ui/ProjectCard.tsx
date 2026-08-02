@@ -137,12 +137,12 @@ export function ProjectCard({
               ? 'border-[color:var(--color-indigo-brand)] bg-[color:var(--color-indigo-a18)] text-[color:var(--color-indigo-accent)]'
               : 'border-[color:var(--color-border-strong)] bg-[color:rgba(20,21,23,0.96)] text-[color:var(--color-text-primary)] group-hover:border-[color:var(--color-indigo-a26)] group-hover:bg-[color:var(--color-indigo-a08)]',
             selected
-              ? 'h-11 w-11 text-[14px] ring-2 ring-[color:var(--color-indigo-a50)] ring-offset-2 ring-offset-[color:var(--color-canvas)] shadow-[var(--shadow-elevation-1)]'
+              ? 'h-11 w-11 text-body-lg ring-2 ring-[color:var(--color-indigo-a50)] ring-offset-2 ring-offset-[color:var(--color-canvas)] shadow-[var(--shadow-elevation-1)]'
               : related
-                ? 'h-9 w-9 text-[13px] border-[color:var(--color-indigo-a32)] shadow-[var(--shadow-elevation-1)]'
+                ? 'h-9 w-9 text-body border-[color:var(--color-indigo-a32)] shadow-[var(--shadow-elevation-1)]'
                 : dense
-                  ? 'h-7 w-7 text-[11px]'
-                  : 'h-8.5 w-8.5 text-[12px]',
+                  ? 'h-7 w-7 text-label'
+                  : 'h-8.5 w-8.5 text-body',
           )}
         >
           <span
@@ -237,7 +237,7 @@ export function ProjectCard({
       <div className="flex items-start gap-2.5 pr-4">
         {project.icon && (
           <span
-            className="mt-0.5 inline-flex h-4.5 w-4.5 shrink-0 items-center justify-center rounded-md border border-[color:var(--color-border-soft)] bg-[color:var(--color-overlay-1)] text-[11px] md:h-5 md:w-5 md:text-[12px]"
+            className="mt-0.5 inline-flex h-4.5 w-4.5 shrink-0 items-center justify-center rounded-chip border border-[color:var(--color-border-soft)] bg-[color:var(--color-overlay-1)] text-[11px] md:h-5 md:w-5 md:text-[12px]"
             aria-hidden="true"
           >
             {project.icon}
@@ -258,8 +258,8 @@ export function ProjectCard({
           <p
             className={cn(
               dense
-                ? 'text-[13px] leading-display-tight font-[var(--font-weight-signature)] tracking-[var(--tracking-card)] md:text-[14px]'
-                : 'text-[14px] leading-display-tight font-[var(--font-weight-signature)] tracking-[var(--tracking-card)] md:text-[15px]',
+                ? 'text-[13px] leading-display-tight font-[var(--font-weight-signature)] tracking-[var(--tracking-card)] md:text-body-lg'
+                : 'text-body-lg leading-display-tight font-[var(--font-weight-signature)] tracking-[var(--tracking-card)] md:text-[15px]',
               isHub
                 ? 'text-[color:var(--color-indigo-accent)]'
                 : 'text-[color:var(--color-text-primary)]',

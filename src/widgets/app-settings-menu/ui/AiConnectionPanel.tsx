@@ -137,7 +137,7 @@ export function AiConnectionPanel({
       >
         <TrustHeadline>{t('principle')}</TrustHeadline>
         <div
-          className="rounded-lg border border-[color:var(--color-border-soft)] bg-[color:var(--color-overlay-1)] px-3 py-2.5"
+          className="rounded-card border border-[color:var(--color-border-soft)] bg-[color:var(--color-overlay-1)] px-3 py-2.5"
           data-testid="ai-connection-web-degraded"
         >
           <p className="text-label font-medium text-[color:var(--color-text-secondary)]">
@@ -160,7 +160,7 @@ export function AiConnectionPanel({
             href={downloadHref}
             onClick={onDownloadNavigate}
             data-testid="ai-connection-download-link"
-            className="mt-2 inline-flex h-8 items-center rounded-md border border-[color:var(--color-indigo-line-a32)] px-2.5 text-label text-[color:var(--color-indigo-accent)] transition-colors hover:border-[color:var(--color-indigo-line-a45)] hover:bg-[color:var(--color-indigo-line-a13)]"
+            className="mt-2 inline-flex h-8 items-center rounded-chip border border-[color:var(--color-indigo-line-a32)] px-2.5 text-label text-[color:var(--color-indigo-accent)] transition-colors hover:border-[color:var(--color-indigo-line-a45)] hover:bg-[color:var(--color-indigo-line-a13)]"
           >
             {t('webDegradedCta')}
           </Link>
@@ -215,7 +215,7 @@ export function AiConnectionPanel({
       {/* 이 패널에서 채워진 테두리 상자를 갖는 유일한 블록 — 조작하는 곳. */}
       <div
         ref={listRef}
-        className="divide-y divide-[color:var(--color-divider)] overflow-hidden rounded-lg border border-[color:var(--color-border-soft)] bg-[color:var(--color-overlay-1)]"
+        className="divide-y divide-[color:var(--color-divider)] overflow-hidden rounded-card border border-[color:var(--color-border-soft)] bg-[color:var(--color-overlay-1)]"
       >
         {SECRET_PROVIDERS.map((provider) => (
           <ProviderCard
@@ -460,7 +460,7 @@ function ProviderCard({
             // 카드가 어디서 나왔는지 가리키는 것이 화면에서 없어져, 접힐 때
             // 돌아갈 자리도 같이 사라진다.
             className={cn(
-              'inline-flex h-8 shrink-0 items-center rounded-md border px-2.5 text-label transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--color-indigo-a46)] focus-visible:ring-inset',
+              'inline-flex h-8 shrink-0 items-center rounded-chip border px-2.5 text-label transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--color-indigo-a46)] focus-visible:ring-inset',
               expanded
                 ? 'border-[color:var(--color-indigo-line-a32)] bg-[color:var(--color-indigo-line-a13)] text-[color:var(--color-indigo-accent)]'
                 : 'border-[color:var(--color-border-soft)] text-[color:var(--color-text-tertiary)] hover:border-[color:var(--color-indigo-line-a32)] hover:text-[color:var(--color-indigo-accent)]',
@@ -493,7 +493,7 @@ function ProviderCard({
                     data-testid={`ai-verify-${provider}`}
                     onClick={() => void handleVerify()}
                     disabled={verify.kind === 'checking' || !vaultRootPath}
-                    className="inline-flex h-8 items-center rounded-md border border-[color:var(--color-indigo-line-a32)] px-2.5 text-label text-[color:var(--color-indigo-accent)] transition-colors hover:border-[color:var(--color-indigo-line-a45)] hover:bg-[color:var(--color-indigo-line-a13)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--color-indigo-a46)] focus-visible:ring-inset disabled:opacity-60"
+                    className="inline-flex h-8 items-center rounded-chip border border-[color:var(--color-indigo-line-a32)] px-2.5 text-label text-[color:var(--color-indigo-accent)] transition-colors hover:border-[color:var(--color-indigo-line-a45)] hover:bg-[color:var(--color-indigo-line-a13)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--color-indigo-a46)] focus-visible:ring-inset disabled:opacity-60"
                   >
                     {verify.kind === 'checking' ? t('verifying') : t('verify')}
                   </button>
@@ -502,7 +502,7 @@ function ProviderCard({
                     data-testid={`ai-clear-${provider}`}
                     onClick={() => void handleClear()}
                     className={cn(
-                      'inline-flex h-8 items-center rounded-md border px-2.5 text-label transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--color-indigo-a46)] focus-visible:ring-inset',
+                      'inline-flex h-8 items-center rounded-chip border px-2.5 text-label transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--color-indigo-a46)] focus-visible:ring-inset',
                       clearArmed
                         ? 'border-[color:var(--color-danger-a32)] text-[color:var(--color-status-danger)] hover:bg-[color:var(--color-danger-a10)]'
                         : 'border-[color:var(--color-border-soft)] text-[color:var(--color-text-tertiary)] hover:border-[color:var(--color-border-strong)] hover:text-[color:var(--color-text-secondary)]',
@@ -673,7 +673,7 @@ function LocalEndpointCard({
             onClick={expanded ? onCancel : onExpand}
             aria-expanded={expanded}
             className={cn(
-              'inline-flex h-8 shrink-0 items-center rounded-md border px-2.5 text-label transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--color-indigo-a46)] focus-visible:ring-inset',
+              'inline-flex h-8 shrink-0 items-center rounded-chip border px-2.5 text-label transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--color-indigo-a46)] focus-visible:ring-inset',
               expanded
                 ? 'border-[color:var(--color-indigo-line-a32)] bg-[color:var(--color-indigo-line-a13)] text-[color:var(--color-indigo-accent)]'
                 : 'border-[color:var(--color-border-soft)] text-[color:var(--color-text-tertiary)] hover:border-[color:var(--color-indigo-line-a32)] hover:text-[color:var(--color-indigo-accent)]',
@@ -707,14 +707,14 @@ function LocalEndpointCard({
                 onKeyDown={(event) => {
                   if (event.key === 'Enter') void handleVerify();
                 }}
-                className="h-8 min-w-0 flex-1 rounded-md border border-[color:var(--color-border-soft)] bg-[color:var(--color-elevated)] px-2 font-mono text-caption text-[color:var(--color-text-primary)] transition-colors placeholder:font-sans placeholder:text-[color:var(--color-text-quaternary)] focus-visible:border-[color:var(--color-indigo-line-a45)] focus-visible:outline-none"
+                className="h-8 min-w-0 flex-1 rounded-chip border border-[color:var(--color-border-soft)] bg-[color:var(--color-elevated)] px-2 font-mono text-caption text-[color:var(--color-text-primary)] transition-colors placeholder:font-sans placeholder:text-[color:var(--color-text-quaternary)] focus-visible:border-[color:var(--color-indigo-line-a45)] focus-visible:outline-none"
               />
               {!connected ? (
                 <button
                   type="button"
                   data-testid="ai-cancel-local"
                   onClick={onCancel}
-                  className="inline-flex h-8 shrink-0 items-center rounded-md border border-[color:var(--color-border-soft)] px-2.5 text-label text-[color:var(--color-text-tertiary)] transition-colors hover:border-[color:var(--color-border-strong)] hover:text-[color:var(--color-text-secondary)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--color-indigo-a46)] focus-visible:ring-inset"
+                  className="inline-flex h-8 shrink-0 items-center rounded-chip border border-[color:var(--color-border-soft)] px-2.5 text-label text-[color:var(--color-text-tertiary)] transition-colors hover:border-[color:var(--color-border-strong)] hover:text-[color:var(--color-text-secondary)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--color-indigo-a46)] focus-visible:ring-inset"
                 >
                   {t('cancel')}
                 </button>
@@ -724,7 +724,7 @@ function LocalEndpointCard({
                 data-testid="ai-verify-local"
                 onClick={() => void handleVerify()}
                 disabled={verify.kind === 'checking' || !vaultRootPath || !draftUrl.trim()}
-                className="inline-flex h-8 shrink-0 items-center rounded-md border border-[color:var(--color-indigo-line-a32)] px-2.5 text-label text-[color:var(--color-indigo-accent)] transition-colors hover:border-[color:var(--color-indigo-line-a45)] hover:bg-[color:var(--color-indigo-line-a13)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--color-indigo-a46)] focus-visible:ring-inset disabled:opacity-60"
+                className="inline-flex h-8 shrink-0 items-center rounded-chip border border-[color:var(--color-indigo-line-a32)] px-2.5 text-label text-[color:var(--color-indigo-accent)] transition-colors hover:border-[color:var(--color-indigo-line-a45)] hover:bg-[color:var(--color-indigo-line-a13)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--color-indigo-a46)] focus-visible:ring-inset disabled:opacity-60"
               >
                 {verify.kind === 'checking' ? t('verifying') : t('verify')}
               </button>
@@ -760,7 +760,7 @@ function LocalEndpointCard({
                     type="button"
                     data-testid="ai-local-disconnect"
                     onClick={handleDisconnect}
-                    className="inline-flex h-8 shrink-0 items-center rounded-md border border-[color:var(--color-border-soft)] px-2.5 text-label text-[color:var(--color-text-tertiary)] transition-colors hover:border-[color:var(--color-border-strong)] hover:text-[color:var(--color-text-secondary)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--color-indigo-a46)] focus-visible:ring-inset"
+                    className="inline-flex h-8 shrink-0 items-center rounded-chip border border-[color:var(--color-border-soft)] px-2.5 text-label text-[color:var(--color-text-tertiary)] transition-colors hover:border-[color:var(--color-border-strong)] hover:text-[color:var(--color-text-secondary)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--color-indigo-a46)] focus-visible:ring-inset"
                   >
                     {t('localDisconnect')}
                   </button>
@@ -775,7 +775,7 @@ function LocalEndpointCard({
                   type="button"
                   data-testid="ai-local-disconnect"
                   onClick={handleDisconnect}
-                  className="inline-flex h-8 shrink-0 items-center rounded-md border border-[color:var(--color-border-soft)] px-2.5 text-label text-[color:var(--color-text-tertiary)] transition-colors hover:border-[color:var(--color-border-strong)] hover:text-[color:var(--color-text-secondary)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--color-indigo-a46)] focus-visible:ring-inset"
+                  className="inline-flex h-8 shrink-0 items-center rounded-chip border border-[color:var(--color-border-soft)] px-2.5 text-label text-[color:var(--color-text-tertiary)] transition-colors hover:border-[color:var(--color-border-strong)] hover:text-[color:var(--color-text-secondary)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--color-indigo-a46)] focus-visible:ring-inset"
                 >
                   {t('localDisconnect')}
                 </button>
@@ -974,7 +974,7 @@ function KeyDraftForm({
         }}
         // 값은 mono(기계 문자열), 안내 문구는 본문 서체 — 한국어 placeholder 까지
         // 등폭으로 그리면 "API  키  붙여넣기" 처럼 낱말 사이가 벌어진다.
-        className="h-8 min-w-0 flex-1 rounded-md border border-[color:var(--color-border-soft)] bg-[color:var(--color-elevated)] px-2 font-mono text-caption text-[color:var(--color-text-primary)] transition-colors placeholder:font-sans placeholder:text-[color:var(--color-text-quaternary)] focus-visible:border-[color:var(--color-indigo-line-a45)] focus-visible:outline-none"
+        className="h-8 min-w-0 flex-1 rounded-chip border border-[color:var(--color-border-soft)] bg-[color:var(--color-elevated)] px-2 font-mono text-caption text-[color:var(--color-text-primary)] transition-colors placeholder:font-sans placeholder:text-[color:var(--color-text-quaternary)] focus-visible:border-[color:var(--color-indigo-line-a45)] focus-visible:outline-none"
       />
       {/* 저장 왼쪽의 중립 컨트롤 — 눌러 보고 마음이 바뀐 사람의 출구다.
           Esc 로도 같은 일이 일어나지만 그건 보이지 않는다. 되돌릴 길이 화면에
@@ -983,7 +983,7 @@ function KeyDraftForm({
         type="button"
         data-testid={`ai-cancel-${provider}`}
         onClick={onCancel}
-        className="inline-flex h-8 shrink-0 items-center rounded-md border border-[color:var(--color-border-soft)] px-2.5 text-label text-[color:var(--color-text-tertiary)] transition-colors hover:border-[color:var(--color-border-strong)] hover:text-[color:var(--color-text-secondary)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--color-indigo-a46)] focus-visible:ring-inset"
+        className="inline-flex h-8 shrink-0 items-center rounded-chip border border-[color:var(--color-border-soft)] px-2.5 text-label text-[color:var(--color-text-tertiary)] transition-colors hover:border-[color:var(--color-border-strong)] hover:text-[color:var(--color-text-secondary)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--color-indigo-a46)] focus-visible:ring-inset"
       >
         {t('cancel')}
       </button>
@@ -992,7 +992,7 @@ function KeyDraftForm({
         data-testid={`ai-save-${provider}`}
         onClick={() => void handleSave()}
         disabled={!draftKey.trim() || saving}
-        className="inline-flex h-8 shrink-0 items-center rounded-md border border-[color:var(--color-indigo-line-a32)] px-2.5 text-label text-[color:var(--color-indigo-accent)] transition-colors hover:border-[color:var(--color-indigo-line-a45)] hover:bg-[color:var(--color-indigo-line-a13)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--color-indigo-a46)] focus-visible:ring-inset disabled:opacity-60"
+        className="inline-flex h-8 shrink-0 items-center rounded-chip border border-[color:var(--color-indigo-line-a32)] px-2.5 text-label text-[color:var(--color-indigo-accent)] transition-colors hover:border-[color:var(--color-indigo-line-a45)] hover:bg-[color:var(--color-indigo-line-a13)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--color-indigo-a46)] focus-visible:ring-inset disabled:opacity-60"
       >
         {saving ? t('saving') : t('save')}
       </button>

@@ -190,7 +190,7 @@ function EditorContent({
   if (loading) {
     return (
       <div className="flex min-h-full items-center justify-center">
-        <p className="font-mono text-xs uppercase tracking-[0.15em] text-[color:var(--color-text-quaternary)]">
+        <p className="font-mono text-body uppercase tracking-[0.15em] text-[color:var(--color-text-quaternary)]">
           {t("loadingLabel")}
         </p>
       </div>
@@ -205,12 +205,12 @@ function EditorContent({
           aria-live="assertive"
           className="max-w-md text-center"
         >
-          <p className="text-sm text-[color:var(--color-status-danger)]">
+          <p className="text-body-lg text-[color:var(--color-status-danger)]">
             {t("missingSlug")}
           </p>
           <Link
             href={safeReturnTo}
-            className="mt-4 inline-block text-xs text-[color:var(--color-indigo-accent)] underline"
+            className="mt-4 inline-block text-body text-[color:var(--color-indigo-accent)] underline"
           >
             {t("backToDashboard")}
           </Link>
@@ -227,12 +227,12 @@ function EditorContent({
           aria-live="assertive"
           className="max-w-md text-center"
         >
-          <p className="text-sm text-[color:var(--color-status-danger)]">
+          <p className="text-body-lg text-[color:var(--color-status-danger)]">
             {loadError}
           </p>
           <Link
             href={safeReturnTo}
-            className="mt-4 inline-block text-xs text-[color:var(--color-indigo-accent)] underline"
+            className="mt-4 inline-block text-body text-[color:var(--color-indigo-accent)] underline"
           >
             {t("backToDashboard")}
           </Link>
@@ -300,7 +300,7 @@ function EditorContent({
               </span>
             )}
           </div>
-          <p className="mt-2 max-w-xl text-sm leading-6 text-[color:var(--color-text-tertiary)]">
+          <p className="mt-2 max-w-xl text-body-lg leading-6 text-[color:var(--color-text-tertiary)]">
             {mode === "create" ? t("headerSubtitleCreate") : t("headerSubtitle")}
           </p>
           <div className={mode === "edit" ? "mt-4 flex justify-start" : "hidden"}>
@@ -311,7 +311,7 @@ function EditorContent({
                   target="_blank"
                   rel="noopener noreferrer"
                   aria-label={t("openPublicAria")}
-                  className="inline-flex h-9 items-center gap-2 rounded-md border border-[color:var(--color-indigo-a24)] bg-[color:var(--color-indigo-a08)] px-3 text-sm text-[color:var(--color-text-primary)] transition-colors hover:border-[color:var(--color-indigo-brand)] hover:bg-[color:var(--color-indigo-a12)]"
+                  className="inline-flex h-9 items-center gap-2 rounded-chip border border-[color:var(--color-indigo-a24)] bg-[color:var(--color-indigo-a08)] px-3 text-body-lg text-[color:var(--color-text-primary)] transition-colors hover:border-[color:var(--color-indigo-brand)] hover:bg-[color:var(--color-indigo-a12)]"
                 >
                   <ArrowUpRight size={14} />
                   {t("openPublicLabel")}
@@ -331,7 +331,7 @@ function EditorContent({
                       )}&returnTo=${encodeURIComponent(safeReturnTo)}`,
                     )
                   }
-                  className="inline-flex h-9 items-center gap-2 rounded-md border border-[color:var(--color-divider)] px-3 text-sm text-[color:var(--color-text-primary)] transition-colors hover:border-[color:var(--color-indigo-brand)] hover:bg-[color:var(--color-overlay-1)]"
+                  className="inline-flex h-9 items-center gap-2 rounded-chip border border-[color:var(--color-divider)] px-3 text-body-lg text-[color:var(--color-text-primary)] transition-colors hover:border-[color:var(--color-indigo-brand)] hover:bg-[color:var(--color-overlay-1)]"
                 >
                   <CopyPlus size={14} />
                   {t("duplicateLabel")}
@@ -344,7 +344,7 @@ function EditorContent({
         {savedNotice && mode === "edit" ? (
           <div
             role="status"
-            className="mt-6 rounded-xl border border-[color:var(--color-indigo-a28)] bg-[color:var(--color-indigo-a10)] px-5 py-4 text-sm text-[color:var(--color-indigo-accent)]"
+            className="mt-6 rounded-panel border border-[color:var(--color-indigo-a28)] bg-[color:var(--color-indigo-a10)] px-5 py-4 text-body-lg text-[color:var(--color-indigo-accent)]"
           >
             {t("savedNotice")}
           </div>
@@ -359,11 +359,11 @@ function EditorContent({
 
         <section className={mode === "create" ? "mt-6" : "mt-10"}>
           {mode === "edit" && slug && (
-            <div className="mb-6 rounded-xl border border-[color:var(--color-indigo-a18)] bg-[color:var(--color-indigo-a06)] px-5 py-4">
+            <div className="mb-6 rounded-panel border border-[color:var(--color-indigo-a18)] bg-[color:var(--color-indigo-a06)] px-5 py-4">
               <p className="font-mono text-[10px] uppercase tracking-[0.12em] text-[color:var(--color-indigo-accent)]">
                 {t("publicCompanionEyebrow")}
               </p>
-              <p className="mt-2 text-sm leading-6 text-[color:var(--color-text-secondary)]">
+              <p className="mt-2 text-body-lg leading-6 text-[color:var(--color-text-secondary)]">
                 {t("publicCompanionDesc")}
               </p>
             </div>

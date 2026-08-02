@@ -9,7 +9,7 @@ describe('Card primitives', () => {
     expect(el.tagName).toBe('DIV');
     expect(el.textContent).toBe('본문');
     // 헌장 §11 — 무채색 alpha border + 패널 배경
-    expect(el.className).toContain('rounded-lg');
+    expect(el.className).toContain('rounded-card');
     expect(el.className).toContain('var(--color-overlay-2)');
     expect(el.className).toContain('color-panel');
   });

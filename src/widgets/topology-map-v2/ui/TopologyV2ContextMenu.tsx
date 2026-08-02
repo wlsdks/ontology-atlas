@@ -76,7 +76,7 @@ export function clampContextMenuPosition(
 }
 
 const MENU_ITEM_CLASS =
-  "flex w-full items-center gap-2 rounded-[var(--topology-v2-panel-row-radius)] px-2.5 py-1.5 text-left text-[12.5px] text-[color:var(--topology-v2-panel-text-secondary)] transition-colors hover:bg-[color:var(--topology-v2-panel-row-hover)]";
+  "flex w-full items-center gap-2 rounded-[var(--topology-v2-panel-row-radius)] px-2.5 py-1.5 text-left text-body text-[color:var(--topology-v2-panel-text-secondary)] transition-colors hover:bg-[color:var(--topology-v2-panel-row-hover)]";
 const MENU_ITEM_DISABLED_CLASS = "pointer-events-none opacity-40";
 
 export function TopologyV2ContextMenu({

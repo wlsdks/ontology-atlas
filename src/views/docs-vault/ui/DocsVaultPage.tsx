@@ -1848,7 +1848,7 @@ function DocsVaultContent() {
             <Link
               href={workspaceHref}
               aria-label={t('header.backToReviewAriaLabel')}
-              className="inline-flex h-8 flex-none items-center justify-center gap-1.5 rounded-md border border-[color:var(--color-divider)] px-2 text-body text-[color:var(--color-text-tertiary)] transition-colors hover:border-[color:var(--color-indigo-line-a35)] hover:text-[color:var(--color-text-primary)]"
+              className="inline-flex h-8 flex-none items-center justify-center gap-1.5 rounded-chip border border-[color:var(--color-divider)] px-2 text-body text-[color:var(--color-text-tertiary)] transition-colors hover:border-[color:var(--color-indigo-line-a35)] hover:text-[color:var(--color-text-primary)]"
             >
               <ArrowLeft size={14} aria-hidden />
               <span className="hidden sm:inline">{t('header.reviewBack')}</span>
@@ -1857,7 +1857,7 @@ function DocsVaultContent() {
           <button
             type="button"
             onClick={() => setSourceTreeOpen(true)}
-            className="inline-flex h-8 flex-none items-center justify-center gap-1.5 rounded-md border border-[color:var(--color-divider)] px-2 text-body text-[color:var(--color-text-tertiary)] transition-colors hover:border-[color:var(--color-indigo-line-a35)] hover:text-[color:var(--color-text-primary)] lg:hidden"
+            className="inline-flex h-8 flex-none items-center justify-center gap-1.5 rounded-chip border border-[color:var(--color-divider)] px-2 text-body text-[color:var(--color-text-tertiary)] transition-colors hover:border-[color:var(--color-indigo-line-a35)] hover:text-[color:var(--color-text-primary)] lg:hidden"
             aria-label={t('header.openTreeAriaLabel')}
             title={t('header.openTreeTitle')}
           >
@@ -1935,7 +1935,7 @@ function DocsVaultContent() {
           {/* Source 토글 — 이전엔 advanced dropdown 안 깊숙이 묻혀 있던 가장
               중요한 결정 (샘플 vs 내 vault) 를 헤더에 직접 노출. */}
           <div
-            className="flex min-h-9 items-center gap-0.5 rounded-lg border border-[color:var(--color-border-soft)] p-0.5 text-label"
+            className="flex min-h-9 items-center gap-0.5 rounded-card border border-[color:var(--color-border-soft)] p-0.5 text-label"
             role="radiogroup"
             aria-label={t('header.sourceAriaLabel')}
           >
@@ -1944,7 +1944,7 @@ function DocsVaultContent() {
               role="radio"
               aria-checked={source === 'server'}
               onClick={() => handleSourceChange('server')}
-              className={`inline-flex min-h-8 items-center gap-1 rounded-md px-3 transition-colors ${
+              className={`inline-flex min-h-8 items-center gap-1 rounded-chip px-3 transition-colors ${
                 source === 'server'
                   ? 'bg-[color:var(--color-indigo-a16)] text-[color:var(--color-text-primary)]'
                   : 'text-[color:var(--color-text-tertiary)] hover:text-[color:var(--color-text-primary)]'
@@ -1972,7 +1972,7 @@ function DocsVaultContent() {
                     : undefined
                 }
                 onClick={() => handleSourceChange('local')}
-                className={`inline-flex min-h-8 items-center gap-1 rounded-md px-3 transition-colors disabled:cursor-not-allowed disabled:opacity-45 ${
+                className={`inline-flex min-h-8 items-center gap-1 rounded-chip px-3 transition-colors disabled:cursor-not-allowed disabled:opacity-45 ${
                   source === 'local'
                     ? 'bg-[color:var(--color-indigo-a16)] text-[color:var(--color-text-primary)]'
                     : 'text-[color:var(--color-text-tertiary)] hover:text-[color:var(--color-text-primary)]'
@@ -2241,7 +2241,7 @@ function DocsVaultContent() {
                   <div
                     role="tablist"
                     aria-label={`${t('editorHeader.previewTab')} / ${t('editorHeader.editTab')}`}
-                    className="inline-flex flex-none items-stretch gap-0.5 rounded-md border border-[color:var(--color-border-soft)] bg-[color:var(--color-canvas)] p-0.5 shadow-[inset_0_1px_2px_var(--color-shadow-a35)]"
+                    className="inline-flex flex-none items-stretch gap-0.5 rounded-chip border border-[color:var(--color-border-soft)] bg-[color:var(--color-canvas)] p-0.5 shadow-[inset_0_1px_2px_var(--color-shadow-a35)]"
                   >
                     <button
                       type="button"

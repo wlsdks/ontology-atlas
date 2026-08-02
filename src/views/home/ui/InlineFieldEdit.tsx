@@ -61,14 +61,14 @@ export function InlineFieldEdit({
   if (!editing) {
     return (
       <div className="flex items-center gap-2" data-testid="inline-field-read">
-        <span className="font-mono text-[10px] uppercase tracking-[0.12em] text-[color:var(--color-text-quaternary)]">
+        <span className="font-mono text-label uppercase tracking-[0.12em] text-[color:var(--color-text-quaternary)]">
           {labels.field}
         </span>
         <span
           className={
             value
-              ? "text-[12px] text-[color:var(--color-text-secondary)]"
-              : "text-[12px] italic text-[color:var(--color-text-quaternary)]"
+              ? "text-body text-[color:var(--color-text-secondary)]"
+              : "text-body italic text-[color:var(--color-text-quaternary)]"
           }
         >
           {value || labels.empty}
@@ -88,7 +88,7 @@ export function InlineFieldEdit({
 
   return (
     <div className="flex items-center gap-1.5" data-testid="inline-field-edit">
-      <span className="font-mono text-[10px] uppercase tracking-[0.12em] text-[color:var(--color-text-quaternary)]">
+      <span className="font-mono text-label uppercase tracking-[0.12em] text-[color:var(--color-text-quaternary)]">
         {labels.field}
       </span>
       <input
@@ -104,7 +104,7 @@ export function InlineFieldEdit({
         }}
         aria-label={labels.field}
         data-testid="inline-field-input"
-        className="h-7 min-w-0 flex-1 rounded-md border border-[color:var(--color-border-soft)] bg-[color:var(--color-overlay-1)] px-2 text-[12px] text-[color:var(--color-text-primary)] transition-colors focus-visible:border-[color:var(--color-indigo-a46)] focus-visible:outline-none"
+        className="h-7 min-w-0 flex-1 rounded-chip border border-[color:var(--color-border-soft)] bg-[color:var(--color-overlay-1)] px-2 text-body text-[color:var(--color-text-primary)] transition-colors focus-visible:border-[color:var(--color-indigo-a46)] focus-visible:outline-none"
       />
       <button
         type="button"

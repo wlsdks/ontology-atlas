@@ -416,7 +416,7 @@ export function ProjectDrawer({
               <button
                 type="button"
                 onClick={onClose}
-                className="flex h-8 w-8 items-center justify-center rounded-md text-[color:var(--color-text-tertiary)] transition-colors hover:bg-[color:var(--color-overlay-2)] hover:text-[color:var(--color-text-primary)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--color-indigo-a46)] focus-visible:ring-offset-2 focus-visible:ring-offset-[color:var(--color-panel)]"
+                className="flex h-8 w-8 items-center justify-center rounded-chip text-[color:var(--color-text-tertiary)] transition-colors hover:bg-[color:var(--color-overlay-2)] hover:text-[color:var(--color-text-primary)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--color-indigo-a46)] focus-visible:ring-offset-2 focus-visible:ring-offset-[color:var(--color-panel)]"
                 aria-label={t("closeAriaLabel")}
               >
                 <X size={16} />
@@ -493,7 +493,7 @@ export function ProjectDrawer({
                     </h2>
 
                     {project.nameEn && project.nameEn !== project.name && (
-                      <p className="mt-1 text-sm text-[color:var(--color-text-tertiary)]">
+                      <p className="mt-1 text-body-lg text-[color:var(--color-text-tertiary)]">
                         {project.nameEn}
                       </p>
                     )}
@@ -519,7 +519,7 @@ export function ProjectDrawer({
                         onEnterContainer?.(project.slug);
                         onClose();
                       }}
-                      className="inline-flex h-10 w-full items-center justify-center gap-1.5 rounded-md border border-[color:var(--color-amber-docs-a45)] bg-[color:var(--color-amber-docs-a10)] px-3 text-sm font-[var(--font-weight-signature)] text-[color:var(--color-text-primary)] transition-colors hover:border-[color:var(--color-amber-docs-a65)] hover:bg-[color:var(--color-amber-docs-a16)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--color-amber-docs-a50)] focus-visible:ring-offset-2 focus-visible:ring-offset-[color:var(--color-panel)]"
+                      className="inline-flex h-10 w-full items-center justify-center gap-1.5 rounded-chip border border-[color:var(--color-amber-docs-a45)] bg-[color:var(--color-amber-docs-a10)] px-3 text-body-lg font-[var(--font-weight-signature)] text-[color:var(--color-text-primary)] transition-colors hover:border-[color:var(--color-amber-docs-a65)] hover:bg-[color:var(--color-amber-docs-a16)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--color-amber-docs-a50)] focus-visible:ring-offset-2 focus-visible:ring-offset-[color:var(--color-panel)]"
                     >
                       {t("openContainerTopology")}
                     </button>
@@ -533,7 +533,7 @@ export function ProjectDrawer({
                         onEnterContainer(project.slug);
                         onClose();
                       }}
-                      className="inline-flex h-10 w-full items-center justify-center gap-1.5 rounded-md border border-[color:var(--color-indigo-a38)] bg-[color:var(--color-indigo-a12)] px-3 text-sm font-[var(--font-weight-signature)] text-[color:var(--color-text-primary)] transition-colors hover:border-[color:var(--color-indigo-brand)] hover:bg-[color:var(--color-indigo-a16)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--color-indigo-a46)] focus-visible:ring-offset-2 focus-visible:ring-offset-[color:var(--color-panel)]"
+                      className="inline-flex h-10 w-full items-center justify-center gap-1.5 rounded-chip border border-[color:var(--color-indigo-a38)] bg-[color:var(--color-indigo-a12)] px-3 text-body-lg font-[var(--font-weight-signature)] text-[color:var(--color-text-primary)] transition-colors hover:border-[color:var(--color-indigo-brand)] hover:bg-[color:var(--color-indigo-a16)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--color-indigo-a46)] focus-visible:ring-offset-2 focus-visible:ring-offset-[color:var(--color-panel)]"
                     >
                       {t("openHubTopology")}
                     </button>
@@ -550,7 +550,7 @@ export function ProjectDrawer({
                         href={detailHref}
                         prefetch
                         onClick={handleDetailClick}
-                        className="inline-flex h-10 w-full items-center justify-center gap-1.5 rounded-md border border-[color:var(--color-indigo-a38)] bg-[color:var(--color-indigo-a12)] px-3 text-sm font-[var(--font-weight-signature)] text-[color:var(--color-text-primary)] transition-colors hover:border-[color:var(--color-indigo-brand)] hover:bg-[color:var(--color-indigo-a16)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--color-indigo-a46)] focus-visible:ring-offset-2 focus-visible:ring-offset-[color:var(--color-panel)]"
+                        className="inline-flex h-10 w-full items-center justify-center gap-1.5 rounded-chip border border-[color:var(--color-indigo-a38)] bg-[color:var(--color-indigo-a12)] px-3 text-body-lg font-[var(--font-weight-signature)] text-[color:var(--color-text-primary)] transition-colors hover:border-[color:var(--color-indigo-brand)] hover:bg-[color:var(--color-indigo-a16)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--color-indigo-a46)] focus-visible:ring-offset-2 focus-visible:ring-offset-[color:var(--color-panel)]"
                       >
                         {t("openProjectDetail")}
                       </Link>
@@ -561,7 +561,7 @@ export function ProjectDrawer({
                             ? t("openDocsVaultTitleWithDoc", { name: project.name })
                             : t("openDocsVaultTitleEmpty")
                         }
-                        className="inline-flex h-10 items-center justify-center gap-1.5 rounded-md border border-[color:var(--color-indigo-a28)] bg-[color:var(--color-indigo-a06)] px-3 text-sm text-[color:var(--color-indigo-accent)] transition-colors hover:border-[color:var(--color-indigo-a55)] hover:text-[color:var(--color-text-primary)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--color-indigo-a46)] focus-visible:ring-offset-2 focus-visible:ring-offset-[color:var(--color-panel)]"
+                        className="inline-flex h-10 items-center justify-center gap-1.5 rounded-chip border border-[color:var(--color-indigo-a28)] bg-[color:var(--color-indigo-a06)] px-3 text-body-lg text-[color:var(--color-indigo-accent)] transition-colors hover:border-[color:var(--color-indigo-a55)] hover:text-[color:var(--color-text-primary)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--color-indigo-a46)] focus-visible:ring-offset-2 focus-visible:ring-offset-[color:var(--color-panel)]"
                       >
                         <BookOpen size={13} />
                         {t("openDocsVault")}
@@ -575,7 +575,7 @@ export function ProjectDrawer({
                           매칭 실패해도 페이지는 graceful 로드). */}
                       <Link
                         href={buildOntologyNodeHref(`project:${project.slug}`)}
-                        className="inline-flex h-10 items-center justify-center rounded-md border border-[color:var(--color-divider)] px-3 text-sm text-[color:var(--color-text-secondary)] transition-colors hover:border-[color:var(--color-border-strong)] hover:text-[color:var(--color-text-primary)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--color-indigo-a46)] focus-visible:ring-offset-2 focus-visible:ring-offset-[color:var(--color-panel)]"
+                        className="inline-flex h-10 items-center justify-center rounded-chip border border-[color:var(--color-divider)] px-3 text-body-lg text-[color:var(--color-text-secondary)] transition-colors hover:border-[color:var(--color-border-strong)] hover:text-[color:var(--color-text-primary)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--color-indigo-a46)] focus-visible:ring-offset-2 focus-visible:ring-offset-[color:var(--color-panel)]"
                       >
                         {t("openOntology")}
                       </Link>
@@ -603,7 +603,7 @@ export function ProjectDrawer({
                     </h3>
                   </div>
                   <div className="mt-3 rounded-2xl border border-[color:var(--color-border-soft)] bg-[color:var(--color-overlay-1)] px-4 py-4">
-                    <p className="text-sm leading-6 text-[color:var(--color-text-secondary)]">
+                    <p className="text-body-lg leading-6 text-[color:var(--color-text-secondary)]">
                       {relationshipSummary}
                     </p>
                     {relatedProjects.length > 0 && (
@@ -615,12 +615,12 @@ export function ProjectDrawer({
                           <button
                             type="button"
                             onClick={() => onSelectProject(relatedProjects[0]!.slug)}
-                            className="inline-flex items-center gap-2 rounded-md border border-[color:var(--color-divider)] px-2.5 py-1.5 text-xs text-[color:var(--color-text-secondary)] transition-colors hover:border-[color:var(--color-indigo-brand)] hover:text-[color:var(--color-text-primary)]"
+                            className="inline-flex items-center gap-2 rounded-chip border border-[color:var(--color-divider)] px-2.5 py-1.5 text-body text-[color:var(--color-text-secondary)] transition-colors hover:border-[color:var(--color-indigo-brand)] hover:text-[color:var(--color-text-primary)]"
                           >
                             <span>{relatedProjects[0]!.name}</span>
                           </button>
                           {relatedProjects.length > 1 ? (
-                            <p className="text-xs text-[color:var(--color-text-tertiary)]">
+                            <p className="text-body text-[color:var(--color-text-tertiary)]">
                               {t("moreRelated", { count: relatedProjects.length - 1 })}
                             </p>
                           ) : null}
@@ -637,11 +637,11 @@ export function ProjectDrawer({
               <details className="mt-5 overflow-hidden rounded-2xl border border-[color:var(--color-border-soft)] bg-[color:var(--color-overlay-1)]">
                 <summary
                   data-testid="project-drawer-more-info-summary"
-                  className="group flex cursor-pointer list-none items-center justify-between gap-3 px-4 py-3 text-sm font-[var(--font-weight-signature)] text-[color:var(--color-text-primary)] transition-colors hover:bg-[color:var(--color-overlay-1)]"
+                  className="group flex cursor-pointer list-none items-center justify-between gap-3 px-4 py-3 text-body-lg font-[var(--font-weight-signature)] text-[color:var(--color-text-primary)] transition-colors hover:bg-[color:var(--color-overlay-1)]"
                 >
                   <div className="min-w-0">
                     <p>{t("moreInfoSummary")}</p>
-                    <p className="mt-1 text-xs font-normal text-[color:var(--color-text-tertiary)]">
+                    <p className="mt-1 text-body font-normal text-[color:var(--color-text-tertiary)]">
                       {t("moreInfoHint")}
                     </p>
                   </div>
@@ -660,7 +660,7 @@ export function ProjectDrawer({
                       <h3 className="font-mono text-caption uppercase tracking-[0.12em] text-[color:var(--color-status-warning)]">
                         {t("integrityTitle")}
                       </h3>
-                      <ul className="mt-2 space-y-1.5 text-xs leading-5 text-[color:var(--color-text-secondary)]">
+                      <ul className="mt-2 space-y-1.5 text-body leading-5 text-[color:var(--color-text-secondary)]">
                         {integrityIssueLabels.map((label) => (
                           <li key={label}>{label}</li>
                         ))}
@@ -676,7 +676,7 @@ export function ProjectDrawer({
                         <span
                           id="project-drawer-impact-help"
                           data-testid="project-drawer-impact-help"
-                          className="text-xs text-[color:var(--color-text-tertiary)]"
+                          className="text-body text-[color:var(--color-text-tertiary)]"
                         >
                           {/* rank16 — 모드 전환 시 헬퍼 텍스트만 120ms
                               crossfade(클릭 확정 시에만, hover 아님). 노드
@@ -710,21 +710,21 @@ export function ProjectDrawer({
                     {(completenessInsight || freshnessInsight) && (
                       <div className="mt-3 grid gap-2 sm:grid-cols-2">
                         {completenessInsight ? (
-                          <div className="rounded-xl border border-[color:var(--color-border-soft)] bg-[color:var(--color-overlay-1)] px-3.5 py-3">
+                          <div className="rounded-panel border border-[color:var(--color-border-soft)] bg-[color:var(--color-overlay-1)] px-3.5 py-3">
                             <p className="font-mono text-caption uppercase tracking-[0.12em] text-[color:var(--color-text-quaternary)]">
                               {t("completeness")}
                             </p>
-                            <p className="mt-1 text-sm font-[var(--font-weight-signature)] text-[color:var(--color-text-primary)]">
+                            <p className="mt-1 text-body-lg font-[var(--font-weight-signature)] text-[color:var(--color-text-primary)]">
                               {completenessInsight.score}%
                             </p>
                           </div>
                         ) : null}
                         {freshnessInsight ? (
-                          <div className="rounded-xl border border-[color:var(--color-border-soft)] bg-[color:var(--color-overlay-1)] px-3.5 py-3">
+                          <div className="rounded-panel border border-[color:var(--color-border-soft)] bg-[color:var(--color-overlay-1)] px-3.5 py-3">
                             <p className="font-mono text-caption uppercase tracking-[0.12em] text-[color:var(--color-text-quaternary)]">
                               {t("freshness")}
                             </p>
-                            <p className="mt-1 text-sm font-[var(--font-weight-signature)] text-[color:var(--color-text-primary)]">
+                            <p className="mt-1 text-body-lg font-[var(--font-weight-signature)] text-[color:var(--color-text-primary)]">
                               {tFreshness(freshnessInsight.level)}
                             </p>
                           </div>
@@ -844,7 +844,7 @@ export function ProjectDrawer({
                                   <li key={item.project.slug}>
                                     <button
                                       onClick={() => onSelectProject(item.project.slug)}
-                                      className="inline-flex items-center gap-2 rounded-md border border-[color:var(--color-divider)] px-2.5 py-1 text-xs text-[color:var(--color-text-secondary)] transition-colors hover:border-[color:var(--color-indigo-brand)] hover:text-[color:var(--color-text-primary)]"
+                                      className="inline-flex items-center gap-2 rounded-chip border border-[color:var(--color-divider)] px-2.5 py-1 text-body text-[color:var(--color-text-secondary)] transition-colors hover:border-[color:var(--color-indigo-brand)] hover:text-[color:var(--color-text-primary)]"
                                     >
                                       <span className="font-mono text-caption uppercase tracking-[0.08em] text-[color:var(--color-text-quaternary)]">
                                         {item.relationship.label}
@@ -858,7 +858,7 @@ export function ProjectDrawer({
                                 <li key={`missing-${issue.dependencySlug}`}>
                                   <span
                                     data-testid={`project-drawer-missing-dependency-${issue.dependencySlug}`}
-                                    className="rounded-md border border-[color:var(--color-amber-source-a25)] bg-[color:var(--color-amber-source-a08)] px-2.5 py-1 text-xs text-[color:var(--color-status-warning)]"
+                                    className="rounded-chip border border-[color:var(--color-amber-source-a25)] bg-[color:var(--color-amber-source-a08)] px-2.5 py-1 text-body text-[color:var(--color-status-warning)]"
                                   >
                                     {t("missingPrefix", { slug: issue.dependencySlug })}
                                   </span>
@@ -878,7 +878,7 @@ export function ProjectDrawer({
                                 <li key={item.project.slug}>
                                   <button
                                     onClick={() => onSelectProject(item.project.slug)}
-                                    className="inline-flex items-center gap-2 rounded-md border border-[color:var(--color-divider)] px-2.5 py-1 text-xs text-[color:var(--color-text-secondary)] transition-colors hover:border-[color:var(--color-indigo-brand)] hover:text-[color:var(--color-text-primary)]"
+                                    className="inline-flex items-center gap-2 rounded-chip border border-[color:var(--color-divider)] px-2.5 py-1 text-body text-[color:var(--color-text-secondary)] transition-colors hover:border-[color:var(--color-indigo-brand)] hover:text-[color:var(--color-text-primary)]"
                                   >
                                     <span className="font-mono text-caption uppercase tracking-[0.08em] text-[color:var(--color-text-quaternary)]">
                                       {item.relationship.label}
@@ -903,7 +903,7 @@ export function ProjectDrawer({
                                   <li key={m.doc.slug}>
                                     <Link
                                       href={buildDocsVaultHref({ slug: m.doc.slug })}
-                                      className="group flex flex-col gap-1 rounded-md border border-transparent px-2 py-1 text-left text-body text-[color:var(--color-text-secondary)] transition-colors hover:border-[color:var(--color-indigo-line-a32)] hover:text-[color:var(--color-text-primary)]"
+                                      className="group flex flex-col gap-1 rounded-chip border border-transparent px-2 py-1 text-left text-body text-[color:var(--color-text-secondary)] transition-colors hover:border-[color:var(--color-indigo-line-a32)] hover:text-[color:var(--color-text-primary)]"
                                     >
                                       <span className="flex items-center gap-2">
                                         <span className="flex-1 truncate">
@@ -937,7 +937,7 @@ export function ProjectDrawer({
                     project.timeline?.launchedAt ||
                     project.links.length > 0) && (
                     <details className="rounded-2xl border border-[color:var(--color-border-soft)] bg-[color:var(--color-overlay-1)] px-4 py-3">
-                      <summary className="cursor-pointer list-none text-sm font-[var(--font-weight-signature)] text-[color:var(--color-text-primary)]">
+                      <summary className="cursor-pointer list-none text-body-lg font-[var(--font-weight-signature)] text-[color:var(--color-text-primary)]">
                         {t("moreScreensAndRecords")}
                       </summary>
                       <div className="mt-4 space-y-5 border-t border-[color:var(--color-border-soft)] pt-4">
@@ -965,7 +965,7 @@ export function ProjectDrawer({
                             <h3 className="font-mono text-caption uppercase tracking-[0.12em] text-[color:var(--color-text-quaternary)]">
                               {t("timelineTitle")}
                             </h3>
-                            <dl className="mt-3 space-y-2 rounded-2xl border border-[color:var(--color-border-soft)] bg-[color:var(--color-overlay-1)] px-4 py-4 text-sm text-[color:var(--color-text-secondary)]">
+                            <dl className="mt-3 space-y-2 rounded-2xl border border-[color:var(--color-border-soft)] bg-[color:var(--color-overlay-1)] px-4 py-4 text-body-lg text-[color:var(--color-text-secondary)]">
                               {project.timeline?.startedAt && (
                                 <div className="flex items-baseline justify-between gap-4">
                                   <dt className="text-[color:var(--color-text-tertiary)]">
@@ -1002,7 +1002,7 @@ export function ProjectDrawer({
                                     href={link.url}
                                     target="_blank"
                                     rel="noopener noreferrer"
-                                    className="inline-flex items-center gap-1.5 text-sm text-[color:var(--color-indigo-accent)] transition-colors hover:text-[color:var(--color-indigo-hover)]"
+                                    className="inline-flex items-center gap-1.5 text-body-lg text-[color:var(--color-indigo-accent)] transition-colors hover:text-[color:var(--color-indigo-hover)]"
                                   >
                                     {link.label}
                                     <ArrowUpRight size={14} />
