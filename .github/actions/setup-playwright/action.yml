@@ -1,0 +1,68 @@
+name: Setup Playwright
+description: >-
+  Node · pnpm · 브라우저 캐시 · 변경 분류를 한 번에. E2E 잡 다섯이 같은 준비를
+  하므로 여기 한 곳에 둔다 — 복사본이 다섯이면 어긋나는 쪽이 기본값이다(이
+  저장소가 스킬 사본으로 이미 겪었다).
+
+  ⚠️ **체크아웃은 여기 못 넣는다.** 로컬 복합 액션은 워크스페이스에 이미 있어야
+  로드되므로, 체크아웃보다 먼저 부르면 `action.yml` 을 못 찾고 죽는다. 그래서
+  체크아웃만 각 잡의 첫 스텝으로 남고 `fetch-depth: 0` 도 거기 붙는다.
+
+outputs:
+  runtime:
+    description: shipped code(런타임)가 바뀌었나
+    value: ${{ steps.classify.outputs.runtime }}
+  browser:
+    description: 브라우저가 의존하는 경로가 바뀌었나
+    value: ${{ steps.classify.outputs.browser }}
+
+runs:
+  using: composite
+  steps:
+    - name: Setup Node.js
+      uses: actions/setup-node@v6
+      with:
+        node-version: 24
+
+    - name: Enable Corepack pnpm
+      shell: bash
+      run: |
+        corepack enable
+        corepack prepare pnpm@10.18.0 --activate
+        pnpm --version
+
+    - name: Install dependencies
+      shell: bash
+      run: pnpm install --frozen-lockfile
+
+    - name: Resolve installed Playwright version
+      id: playwright-version
+      shell: bash
+      run: |
+        version=$(node -e "console.log(require('@playwright/test/package.json').version)")
+        echo "version=$version" >> "$GITHUB_OUTPUT"
+
+    # 캐시 키가 잡마다 같으므로 다섯 잡이 같은 브라우저 캐시를 공유한다.
+    - name: Cache Playwright browsers
+      uses: actions/cache@v6
+      id: playwright-cache
+      with:
+        path: ~/.cache/ms-playwright
+        key: playwright-chromium-${{ runner.os }}-${{ steps.playwright-version.outputs.version }}
+
+    - name: Install Playwright chromium (+ system deps)
+      shell: bash
+      if: steps.playwright-cache.outputs.cache-hit != 'true'
+      run: pnpm exec playwright install --with-deps chromium
+
+    - name: Install Playwright system deps only
+      shell: bash
+      if: steps.playwright-cache.outputs.cache-hit == 'true'
+      run: pnpm exec playwright install-deps chromium
+
+    # node 빌트인만 쓰는 스크립트라 잡마다 따로 돌려도 0초다. 앞단 잡을 두고
+    # `needs:` 로 묶으면 그 잡의 준비 시간이 전체 앞에 직렬로 붙는다.
+    - name: Classify change
+      id: classify
+      shell: bash
+      run: node scripts/classify-change.mjs --base=origin/${{ github.base_ref }}

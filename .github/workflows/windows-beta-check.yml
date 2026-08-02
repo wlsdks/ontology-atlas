@@ -1,12 +1,29 @@
 name: Windows x64 Beta Check
 
+# 발동 조건은 **Windows 에서만 알 수 있는 것**으로 좁힌다 (2026-08-02).
+#
+# 실측: #834(pre-commit 훅)가 이 12분짜리 잡을 **5번** 켰다 — 총 60분. 그 PR 이
+# 한 일은 `package.json` 에 `prepare` 스크립트 한 줄을 더한 것이고, Windows
+# 설치 파일과는 아무 상관이 없었다. 최근 40런의 절반 가까이가 이런 부류다.
+#
+# `package.json` · `pnpm-lock.yaml` 을 뺀다. **빼도 잃는 게 없다** — 둘 다
+# `scripts/classify-change.mjs` 의 RUNTIME 목록에 있어서, 바뀌면 리눅스에서
+# 전체 단위 스위트와 정적 export 빌드(`pnpm build`)가 이미 돈다. Windows 릴리스
+# 계약 테스트 3종도 `pnpm test:desktop:check` 안에 있어 매 PR 리눅스에서 돈다.
+# 즉 저 둘이 켜던 것은 «Windows 에서만 알 수 있는 것» 이 아니었다.
+#
+# 남은 목록은 전부 **네이티브 산출물에 직접 들어가는 것**이다: Rust 소스,
+# 번들되는 MCP 서버, 그 바이너리를 굽고 검증하고 스테이징하는 스크립트, 그리고
+# 이 워크플로 자신.
+#
+# ⚠️ 이 잡은 사람들이 받는 `.exe` 를 만들지 않는다. 그건 `release-macos.yml` 의
+# `build-windows` 잡이 태그에서 만든다. 여기 올라가는 아티팩트는 조기경보용
+# 사본이다 — 그래서 발동을 좁히는 것이 릴리스 검증을 약화시키지 않는다.
 on:
   pull_request:
     paths:
       - ".github/workflows/release-macos.yml"
       - ".github/workflows/windows-beta-check.yml"
-      - "package.json"
-      - "pnpm-lock.yaml"
       - "mcp/**"
       - "scripts/build-mcp-binary.mjs"
       - "scripts/verify-mcp-binary.mjs"
@@ -26,6 +43,22 @@ concurrency:
 
 env:
   FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
+  # `cargo test` 의 debug 컴파일에서 **전체 디버그 정보를 만들지 않는다**.
+  # MSVC 에서 556개 크레이트의 PDB 를 굽고 링크하는 비용이 이 프로파일의 큰
+  # 몫인데, CI 의 이 잡은 디버거를 붙이지 않는다.
+  #
+  # 그렇다고 `0` 으로 끄지는 않는다 — 그러면 테스트가 깨졌을 때 백트레이스에서
+  # 파일·줄이 사라져 원격 진단이 어려워진다. `line-tables-only` 는 파일·줄은
+  # 남기고 타입 정보만 버리는 중간값이라, 이 잡이 실제로 쓰는 것은 그대로 두고
+  # 안 쓰는 것만 안 만든다.
+  #
+  # **release 프로파일은 안 건드린다** — 사람들이 받을 설치 파일은 릴리스
+  # 워크플로가 굽는 것과 같은 방식으로 굽혀야 이 잡의 증명이 유효하다.
+  #
+  # `CARGO_INCREMENTAL` 은 여기 없다. `Swatinem/rust-cache` 가 스스로 0 으로
+  # 건다(문서 명시) — 같은 값을 두 곳에 적으면 그 순간부터 드리프트가 시작된다.
+  CARGO_PROFILE_DEV_DEBUG: line-tables-only
+  CARGO_PROFILE_TEST_DEBUG: line-tables-only
 
 jobs:
   verify-windows:
@@ -50,6 +83,24 @@ jobs:
 
       - name: Setup Rust
         uses: dtolnay/rust-toolchain@stable
+
+      # 이 잡의 시간은 거의 전부 Rust 컴파일이다 (실측 2026-08-02, 마지막 성공
+      # 런의 스텝별 소요): 720초 중 **637초(88%)** — release 번들 437초 +
+      # `cargo test` 의 debug 컴파일 200초. 나머지 스텝을 전부 0으로 만들어도
+      # 83초밖에 못 줄인다.
+      #
+      # 그런데 그 637초는 매번 **의존성부터** 다시 짓는 시간이다. Tauri 의
+      # 의존 그래프는 우리 크레이트보다 압도적으로 크고, 그 부분은 `Cargo.lock`
+      # 이 그대로면 바이트가 같다. `target/` 과 `~/.cargo` 를 캐시하면 우리
+      # 크레이트만 다시 짓는다.
+      #
+      # 캐시 키는 이 액션이 `Cargo.lock` + 러너 + 툴체인으로 만든다 — 잠금이
+      # 바뀌면 자동으로 미스가 나므로 낡은 의존성이 살아남지 않는다.
+      # 서드파티 액션이라 이 저장소의 관례대로 SHA 로 고정한다.
+      - name: Cache Rust build
+        uses: Swatinem/rust-cache@c19371144df3bb44fab255c43d04cbc2ab54d1c4 # v2.9.1
+        with:
+          workspaces: src-tauri
 
       - name: Setup Bun
         uses: oven-sh/setup-bun@v2
