@@ -250,12 +250,18 @@ describe("AtlasGitPanel — 데스크톱(Tauri)", () => {
     renderPanel(<AtlasGitPanel vaultPath="/repo/vault" />);
 
     // 이 화면의 결함은 "안내만 있고 누를 것이 없다" 였다 — 버튼 존재 자체가 계약.
-    const region = await screen.findByTestId("atlas-git-not-initialized");
-    expect(region).toHaveTextContent("이 폴더의 변경을 남겨둘까요?");
+    //
+    // 2026-08-02: 제목과 「되돌리는 방법」의 **자리가** 바뀌었다(무대의 h1 과
+    // 마지막 줄). 계약은 "이 화면에 있다" 이지 "이 div 안에 있다" 가 아니므로
+    // 범위를 셋업 무대로 올린다 — 안 그러면 배치를 고칠 때마다 게이트가
+    // 내용이 아니라 DOM 위치를 붙든다.
+    await screen.findByTestId("atlas-git-not-initialized");
+    const setup = screen.getByTestId("atlas-git-setup");
+    expect(setup).toHaveTextContent("이 폴더의 변경을 남겨둘까요?");
     expect(screen.getByTestId("atlas-git-init")).toBeEnabled();
     // 무엇이 만들어지는지 + 되돌리는 방법을 누르기 전에 말한다.
-    expect(region).toHaveTextContent(".git");
-    expect(region).toHaveTextContent("그만두려면");
+    expect(setup).toHaveTextContent(".git");
+    expect(setup).toHaveTextContent("그만두려면");
     expect(screen.queryByTestId("atlas-git-snapshot-button")).not.toBeInTheDocument();
   });
 
