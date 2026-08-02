@@ -16,5 +16,22 @@ import { useDataSourceMode } from '@/features/data-source-mode';
 export function useFirstRunSampleModeSettled(): boolean {
   const vault = useLocalVault();
   const mode = useDataSourceMode();
-  return vault.restoreAttempted && mode === 'static';
+  /*
+   * **한 번이라도 폴더를 연 사람에게는 샘플 안내를 띄우지 않는다**
+   * (2026-08-02, 소유자: *"이미 연결한거 아님? 한번이라도 연결했으면 이 샘플은
+   * 안나와야하는데? 샘플은 정말 연결 한번도 안하고 그냥 써보는 사람이
+   * 체험하기 위한거라서"*).
+   *
+   * 종전 판정은 **지금 볼트가 열려 있나**뿐이었다(`mode === 'static'`). 그래서
+   * 예전에 폴더를 연결했던 사람도 볼트를 닫았거나 다른 이유로 static 이면
+   * **첫 방문자와 똑같은 화면**을 봤다 — 「쇼핑몰 예시 / 이 앱의 코드」 탭까지.
+   *
+   * `recentVaults`(최근 연 폴더 목록)가 그 사실을 이미 안다. 비어 있지 않으면
+   * 그 사람은 이 제품을 체험할 단계를 지났다.
+   *
+   * 위 `restoreAttempted` 주석이 고친 것은 **깜빡임**이었고, 이 줄이 고치는 것은
+   * **대상**이다 — 같은 함수가 두 번 틀렸던 자리라 둘 다 남긴다.
+   */
+  const neverConnected = vault.recentVaults.length === 0;
+  return vault.restoreAttempted && mode === 'static' && neverConnected;
 }

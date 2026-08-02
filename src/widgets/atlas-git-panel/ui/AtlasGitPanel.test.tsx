@@ -86,6 +86,7 @@ function installDesktopGit({
     url: "git@github.com:me/repo.git",
     replaced: null,
   },
+  probe = { installed: true, version: "git version 2.49.0" },
 }: {
   status?: unknown;
   diff?: unknown;
@@ -93,6 +94,7 @@ function installDesktopGit({
   snapshot?: unknown;
   init?: unknown;
   setRemote?: unknown;
+  probe?: unknown;
 } = {}) {
   tauriApiMock.runtimeAvailable = true;
   tauriApiMock.invoke.mockImplementation(async (command: string) => {
@@ -102,6 +104,7 @@ function installDesktopGit({
     if (command === "git_snapshot") return snapshot;
     if (command === "git_init") return init;
     if (command === "git_set_remote") return setRemote;
+    if (command === "git_probe") return probe;
     throw new Error(`unexpected command: ${command}`);
   });
 }

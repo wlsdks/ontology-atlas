@@ -33,6 +33,8 @@ export interface TopologyV2Tokens {
   indigo: string;
   indigoBright: string;
   amberHub: string;
+  /** 「최근 변경」 렌즈 전용 청록 — 허브 앰버와 구별되어야 한다(2026-08-02 소유자 확정). */
+  recentChange: string;
   numeralShadow: string;
   numeralFace: string;
   /** 클러스터 칩 rest 보더 — 크롬은 콘텐츠보다 어둡다(램프 맨 아래 단). */
@@ -264,6 +266,7 @@ const TOKEN_SPECS: readonly TokenSpec[] = [
   { key: "indigo", cssVar: "--topology-v2-indigo", kind: "color" },
   { key: "indigoBright", cssVar: "--topology-v2-indigo-bright", kind: "color" },
   { key: "amberHub", cssVar: "--topology-v2-amber-hub", kind: "color" },
+  { key: "recentChange", cssVar: "--topology-v2-recent-change", kind: "color" },
   { key: "numeralShadow", cssVar: "--topology-v2-numeral-shadow", kind: "color" },
   { key: "numeralFace", cssVar: "--topology-v2-numeral-face", kind: "color" },
   { key: "clusterChipBorderRest", cssVar: "--topology-v2-cluster-chip-border-rest", kind: "color" },

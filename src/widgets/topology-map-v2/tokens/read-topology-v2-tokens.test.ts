@@ -31,6 +31,7 @@ const FIXTURE_VALUES: Record<string, string> = {
   "--topology-v2-indigo": "#5e6ad2",
   "--topology-v2-indigo-bright": "#8890e0",
   "--topology-v2-amber-hub": "#d4b478",
+  "--topology-v2-recent-change": "#3fbfae",
   "--topology-v2-numeral-shadow": "#08080a",
   "--topology-v2-numeral-face": "#8c8c94",
   "--topology-v2-cluster-chip-border-rest": "#5c5c65",

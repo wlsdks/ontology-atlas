@@ -2,13 +2,55 @@ import { describe, expect, it } from "vitest";
 
 import { DEFAULT_FOOTPRINT, FOOTPRINT_EDGE_SCALE } from "./appearance-preferences";
 import {
+  FOOTPRINT_MIN_SIZE,
+  FOOTPRINT_NODE_RATIO,
   FOOTPRINT_SCALE_RANGE,
   edgeFootprintPlacements,
   footprintAnchor,
   footprintPairRadius,
   footprintScaleFor,
+  footprintSizeFor,
   formatStepNumbers,
 } from "./footprint-glyph";
+
+/**
+ * 자국은 **자기가 표시하는 노드보다 커지지 않는다** (2026-08-02, 소유자 지적:
+ * *"화면 작아졌을때 발걸음 사이즈같은거 조절도 좀 꼼꼼히"*).
+ *
+ * 이 게이트가 잠그는 것은 **비율**이지 픽셀이 아니다. 종전 구현에는 상한이
+ * 없어서, 카메라 배율의 제곱근으로 커지는 자국이 선형으로 작아지는 노드를
+ * 앞질렀다 — 실측: 배율 0.3 에서 노드 반경 2.1px 옆에 자국 6.4px(**3.1배**),
+ * 0.2 에서 **4.6배**. 상한이 조용히 사라지면 그 화면으로 되돌아간다.
+ */
+describe("footprintSizeFor — 자국은 노드보다 커지지 않는다", () => {
+  it("큰 노드에서는 기본 크기를 그대로 쓴다 — 문제 없던 자리는 안 건드린다", () => {
+    // 도메인 반경 17px → 상한 18.9 > 기본 13. 자르지 않는다.
+    expect(footprintSizeFor(13, 17)).toBe(13);
+  });
+
+  it("작은 노드에서는 노드 반경에 맞춰 잘린다", () => {
+    const size = footprintSizeFor(13, 7);
+    expect(footprintPairRadius(size)).toBeCloseTo(FOOTPRINT_NODE_RATIO * 7, 5);
+  });
+
+  it("깊은 줌아웃에서도 하한 아래로는 안 내려간다 — 소멸하면 「걸었다」를 못 말한다", () => {
+    expect(footprintSizeFor(13, 0.4)).toBe(FOOTPRINT_MIN_SIZE);
+  });
+
+  it("노드 대비 배수가 전 구간에서 2.5배를 넘지 않는다", () => {
+    for (const cameraScale of [1, 0.8, 0.6, 0.4, 0.3, 0.2]) {
+      const k = footprintScaleFor(cameraScale);
+      const nodeRadius = 7 * cameraScale;
+      const ratio = footprintPairRadius(footprintSizeFor(13 * k, nodeRadius)) / nodeRadius;
+      expect(ratio).toBeLessThanOrEqual(2.5);
+    }
+  });
+
+  it("노드 반경이 없거나 이상하면 기본 크기로 물러난다", () => {
+    expect(footprintSizeFor(13, 0)).toBe(13);
+    expect(footprintSizeFor(13, Number.NaN)).toBe(13);
+  });
+});
 
 /**
  * 선 옆 자국의 성질은 **좌표로만** 검증된다 — 캔버스 없이 잠글 수 있고, 그림을

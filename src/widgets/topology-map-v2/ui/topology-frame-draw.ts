@@ -1266,6 +1266,7 @@ export function drawTopologyFrame(params: FrameDrawParams): void {
       },
       {
         amberHub: tokens.amberHub,
+        recentChange: tokens.recentChange,
         numeralShadow: tokens.numeralShadow,
         numeralFace: tokens.numeralFace,
         holeFill: tokens.nodeHoleFill,

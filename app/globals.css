@@ -2179,8 +2179,34 @@
        here is correct; do NOT also multiply by
        `--topology-ui-scale-factor`, that would double-apply the scale
        since this element already carries `topology-ui-scale` itself). */
-    --topology-node-popover-top: 84px;
-    --topology-node-popover-right-inset: clamp(24px, 2.1vw, 44px);
+    /*
+     * 검사 패널의 여백은 **네 변이 같다** (2026-08-02, 소유자 지적:
+     * *"상단 공백은 많고 하단은 없는? … 상하단 똑같아야하고 하단이 지금 너무
+     * 바닥에 붙어있음"*).
+     *
+     * 종전: 위 84px · 아래 8px — **비대칭 76px**. 실측(1512×862)에서 패널이
+     * 위로 84px 을 비우고 아래로는 8px 만 남겨 바닥에 붙어 보였다.
+     *
+     * 84px 의 출처는 미관이 아니라 **충돌 회피**였다 — 상단 유틸리티 크롬
+     * (「내 데이터로 전환」·「최근 변경」·「작업공간」, y 32–68)이 패널과 같은
+     * x 밴드(1128–1480)에 있어서다. **그런데 패널이 열리면 그 크롬이 사라진다**:
+     * `topologyUtilityChromeState === "selected-node-inspector"` 이고 계약 이름이
+     * `selected-node-inspector-owns-right-rail` 이다. 실측으로도 확인했다 —
+     * 패널이 열린 상태에서 위쪽 84px 의 패널 x 밴드 안에 있는 것은 **캔버스뿐**
+     * 이었다(크롬 원소 0개). 즉 84px 은 없는 것을 피하고 있었다.
+     *
+     * 그래서 세 변이 이미 쓰던 값 하나로 통일한다. 새 값은 만들지 않는다 —
+     * 오른쪽 인셋이 쓰던 `clamp(24px, 2.1vw, 44px)` 를 위·아래도 쓴다.
+     * 결과(1512×862): 위·오른쪽·아래 모두 31.8px, 패널 높이 770 → 798px 로
+     * **오히려 늘어난다**(위에서 52 벌고 아래로 24 내주므로).
+     *
+     * `<lg` 는 해당 없다 — 그 구간의 positioner 는 이 토큰이 아니라
+     * `top-[72px] inset-x-3` 로 가운데 정렬되고, 하단 예약고는 BottomTabBar
+     * 오버라이드(아래 `@media (max-width: 1023px)`)가 계속 소유한다.
+     */
+    --topology-node-popover-inset: clamp(24px, 2.1vw, 44px);
+    --topology-node-popover-top: var(--topology-node-popover-inset);
+    --topology-node-popover-right-inset: var(--topology-node-popover-inset);
     /* 지도의 DOM 표면(포커스 링·패널)은 앱 공통 램프의 "이동" 스텝을 그대로
        쓴다 — 같은 180ms 를 손잡이 두 개로 갈라 두면 언젠가 한쪽만 돌아간다.
        카메라(420)·드래그 안착(720)은 캔버스 물리라 DOM 램프와 독립. */
@@ -2363,6 +2389,25 @@
     --topology-v2-indigo: var(--color-indigo-brand);
     --topology-v2-indigo-bright: #8890e0;
     --topology-v2-amber-hub: #d4b478;
+    /*
+     * 「최근 변경」 렌즈 전용 청록 (2026-08-02, 소유자 확정 — 후보 셋을 실제
+     * 화면에 적용해 비교한 뒤 고름).
+     *
+     * **왜 새 hue 를 여는가**: 종전 이 렌즈는 `--topology-v2-amber-hub` 로
+     * 파선 링을 그렸다. 그런데 그 값은 지도에서 이미 **「여기가 중심」**(허브)의
+     * 뜻이라, 렌즈를 켜면 「중심」과 「방금 바뀜」이 한 색을 쓴다. 실제 화면에서
+     * 가운데 허브 노드와 변경 노드 15개가 같은 앰버로 떠 구별되지 않았다.
+     *
+     * 남은 자리가 없었다: 인디고=선택 · 앰버=허브 · #e8c47a=걸어온 길 ·
+     * 빨강/초록=오류/성공. 무채색 후보는 dim 노드와 붙어 신호가 죽었고,
+     * 인디고 후보는 선택과 다투었다. 청록은 그 넷 어디와도 안 섞인다.
+     *
+     * **확장 금지**: 이 값은 「최근 변경 렌즈가 켜져 있는 동안의 변경 노드
+     * 파선 링」 **한 자리**에만 쓴다 — 앰버의 명문 예외 두 건(에이전트 포커스
+     * 링 · 걸어온 길)과 같은 구조다. 렌즈를 끄면 화면에서 사라지므로 상시
+     * 채색 확장이 아니다. 다른 표면이 이 색을 쓰려면 원장 기록이 필요하다.
+     */
+    --topology-v2-recent-change: #3fbfae;
     /* 발자국 트레일(걸어온 길) — amber 네 번째 갈래(design.md "Three ambers" 절
        참고). 허브 앰버 #d4b478 와 **같은 비트를 쓰지 않는다**: 이 지도에서
        노랑은 이미 "여기가 중심"이라는 뜻이라, 같은 값이면 "중심"과 "걸었다"가
@@ -2783,7 +2828,11 @@
     /* 반응형 감사 rank3 (2026-07-23) — bottom reserve is a single knob so the
        `<lg` override (below) can add the fixed BottomTabBar height + safe-area
        and stop the datasheet from underlapping the tab bar on tablet/mobile. */
-    --topology-v2-panel-bottom-reserve: 8px;
+    /* 위 인셋과 **같은 값**이라 네 변의 여백이 같아진다(2026-08-02) — 종전
+       8px 은 "푸터가 화면 밖으로 밀리지 않게" 만 한 최소 여유였고, 그래서
+       패널이 바닥에 붙어 보였다. `<lg` 오버라이드(아래)는 BottomTabBar 를
+       더해야 하므로 그대로 둔다. */
+    --topology-v2-panel-bottom-reserve: var(--topology-node-popover-inset);
     --topology-v2-panel-max-height: calc(
       100dvh / var(--topology-ui-scale-factor) - var(--topology-node-popover-top) -
         var(--topology-v2-panel-bottom-reserve)

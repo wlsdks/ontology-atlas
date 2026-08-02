@@ -84,6 +84,41 @@ export function footprintScaleFor(cameraScale: number): number {
 }
 
 /**
+ * 자국은 **자기가 표시하는 노드보다 커지지 않는다** (2026-08-02, 소유자 지적:
+ * *"화면 작아졌을때 발걸음 사이즈같은거 조절도 좀 꼼꼼히"*).
+ *
+ * 위 `footprintScaleFor` 는 카메라 배율의 **제곱근**이고 노드는 **선형**이라,
+ * 줌아웃할수록 자국이 노드보다 상대적으로 커진다. 실측:
+ *
+ * | 카메라 배율 | 노드 대비 자국 |
+ * |---|---|
+ * | 1.0 | 1.00배 |
+ * | 0.5 | 1.41배 |
+ * | 0.3 | 1.83배 |
+ * | 0.2 | 2.75배 |
+ *
+ * 제곱근 자체는 옳다 — 완전 비례로 두면 깊이 줌아웃했을 때 자국이 한 점이 되어
+ * "여기 걸었다"를 못 말한다(위 주석). **고칠 것은 기울기가 아니라 상한**이다:
+ * 자국의 반경이 노드 반경의 `FOOTPRINT_NODE_RATIO` 배를 넘지 않게 자른다.
+ * 그러면 큰 노드(도메인·프로젝트)에서는 아무것도 안 바뀌고 — 거기서는 이미
+ * 상한 아래다 — 작은 요소 노드에서만 줄어든다. 문제가 있던 자리에서만 움직인다.
+ *
+ * 하한(`FOOTPRINT_MIN_SIZE`)이 따로 있는 이유: 노드가 2px 이 되는 깊은 줌아웃에서
+ * 상한만 걸면 자국이 소멸해, 제곱근이 막으려던 바로 그 실패로 되돌아간다.
+ */
+export const FOOTPRINT_NODE_RATIO = 1.0;
+/** 자국이 이보다 작아지면 실루엣(앞꿈치·뒤꿈치 두 덩어리)이 죽는다. */
+export const FOOTPRINT_MIN_SIZE = 3.5;
+
+/** 노드 반경(화면 공간)에 맞춰 자른 자국 크기. 순수 함수(테스트 대상). */
+export function footprintSizeFor(baseSize: number, screenNodeRadius: number): number {
+  if (!Number.isFinite(screenNodeRadius) || screenNodeRadius <= 0) return baseSize;
+  // `footprintPairRadius(size) = size * 0.9` 이므로 그 반경 기준으로 자른다.
+  const capped = (FOOTPRINT_NODE_RATIO * screenNodeRadius) / 0.9;
+  return Math.max(FOOTPRINT_MIN_SIZE, Math.min(baseSize, capped));
+}
+
+/**
  * 신발 자국 실루엣 — 앞꿈치와 뒤꿈치가 **끊어진 두 덩어리**다. 그게 이 실루엣의
  * 핵심이고, 이어 붙이면 그냥 타원이 된다. 프로시저럴 경로만 쓴다(에셋 import 0).
  *
@@ -191,7 +226,7 @@ export function drawNodeFootprint(
   alpha: number,
 ): void {
   const k = paint.scale ?? 1;
-  const size = paint.pref.size * k;
+  const size = footprintSizeFor(paint.pref.size * k, nodeRadius);
   const at = footprintAnchor(x, y, nodeRadius, paint.pref.gap * k, size);
   // 등장은 **자리로** 표현한다 — 발이 노드 쪽에서 바깥으로 내딛듯 짧게 밀려난다.
   // 크기를 키우며 등장시키면 "커지는 표시"가 되어 상시 애니메이션처럼 읽힌다.
@@ -235,7 +270,7 @@ export function drawFootprintSteps(
   if (label === "") return;
   const { ctx, pref } = paint;
   const k = paint.scale ?? 1;
-  const size = pref.size * k;
+  const size = footprintSizeFor(pref.size * k, nodeRadius);
   const at = footprintAnchor(x, y, nodeRadius, pref.gap * k, size);
   ctx.save();
   ctx.globalAlpha = alpha * (paint.appear ?? 1);

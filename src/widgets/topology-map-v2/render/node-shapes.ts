@@ -165,6 +165,7 @@ export function glyphStyleDescriptor(glyphStyle: "fill" | "line" | undefined): G
 
 export interface NodeShapeTokens {
   amberHub: string;
+  recentChange: string;
   numeralShadow: string;
   numeralFace: string;
   holeFill: string;
@@ -594,7 +595,7 @@ export function draw(ctx: CanvasRenderingContext2D, state: NodeShapeDrawState, t
   if (spotlightRing !== null && egoState !== "dim") {
     ctx.setLineDash([5, 4]);
     ctx.lineDashOffset = -spotlightRing.dashOffset;
-    strokeKindOutline(ctx, kind, x, y, r + 6, farT, tokens.amberHub, 1.2, spotlightRing.alpha);
+    strokeKindOutline(ctx, kind, x, y, r + 6, farT, tokens.recentChange, 1.2, spotlightRing.alpha);
     ctx.setLineDash([]);
     ctx.lineDashOffset = 0;
   }
