@@ -11,6 +11,7 @@
     "**/globals.css"
   ],
   "scripts": {
+    "prepare": "git rev-parse --git-dir >/dev/null 2>&1 && git config core.hooksPath .githooks || true",
     "predev": "node scripts/clean-next-dev-cache.mjs && pnpm docs-vault:build",
     "dev": "next dev",
     "dev:route-smoke": "node scripts/check-dev-locale-routes.mjs",

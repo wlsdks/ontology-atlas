@@ -131,7 +131,10 @@ export function AiConnectionPanel({
 
   if (!bridgeAvailable) {
     return (
-      <div className="grid content-start gap-3" data-testid="ai-connection-view">
+      <div
+        className="grid max-w-[var(--settings-content-measure)] content-start gap-3"
+        data-testid="ai-connection-view"
+      >
         <TrustHeadline>{t('principle')}</TrustHeadline>
         <div
           className="rounded-lg border border-[color:var(--color-border-soft)] bg-[color:var(--color-overlay-1)] px-3 py-2.5"
@@ -167,8 +170,13 @@ export function AiConnectionPanel({
   }
 
   return (
+    // 폭은 **루트 얼굴의 행과 같은 값**으로 묶는다(`--settings-content-measure`).
+    // 드릴인은 LNB 를 떼면서 그 180px 를 내용이 먹었고, 그 결과 같은 시트인데
+    // 행이 846px 로 벌어져 「Anthropic ‥‥‥ [키 등록]」 사이가 통째로 빈 칸이
+    // 됐다. 묶는 것은 시트가 아니라 행이다 — 시트는 고정 크기이고, 줄이면
+    // 루트의 LNB 2단이 깨진다.
     <div
-      className="grid content-start gap-3"
+      className="grid max-w-[var(--settings-content-measure)] content-start gap-3"
       data-testid="ai-connection-view"
       onKeyDown={(event) => {
         // Esc 사다리의 **가장 안쪽 칸**. 펼친 입력 카드가 있으면 그것부터
@@ -191,9 +199,15 @@ export function AiConnectionPanel({
           보낸 CTA 를 무효화했다. 그래서 문구는 **오늘 되는 것만** 말한다:
           읽고 답한다(읽기 도구 10종) · 쓰기는 확인 뒤(`scope.consent` 가
           이미 그 계약이다). 미래 시제는 한 톨도 쓰지 않는다. */}
+      {/* 크기는 `text-label`(11px) — 이 문장은 램프가 말하는 "마이크로 라벨·
+          범례·타임스탬프"(9.5px)가 아니라 **읽히려고 있는 한 줄**이다. 행간은
+          스텝이 자기 짝(16px)을 싣는다.
+          폭은 산문 measure 안으로 — 도크의 산문 칼럼은 846px 이라 9.5px 로
+          **한 줄에 74자**가 들어갔다(`--measure-prose: 70ch` 초과). 컨트롤 행은
+          820px 를 쓰므로 이 상한은 **산문에만** 건다. */}
       <p
         data-testid="ai-what-it-unlocks"
-        className="break-keep px-1 text-caption leading-4 text-[color:var(--color-text-secondary)]"
+        className="max-w-[var(--git-setup-measure)] break-keep px-1 text-label text-[color:var(--color-text-secondary)]"
       >
         {t('whatItUnlocks')}
       </p>
@@ -267,7 +281,7 @@ export function AiConnectionPanel({
  */
 function TrustHeadline({ children }: { children: ReactNode }) {
   return (
-    <p className="break-keep px-1 text-body leading-5 text-[color:var(--color-text-secondary)]">
+    <p className="max-w-[var(--git-setup-measure)] break-keep px-1 text-body leading-5 text-[color:var(--color-text-secondary)]">
       {children}
     </p>
   );

@@ -52,7 +52,10 @@
 
 ## 함부로 하지 말 것
 
-- `--no-verify` 로 hook 우회 금지.
+- `--no-verify` 로 hook 우회 금지. **훅은 실재한다** — `pnpm install` 이
+  `core.hooksPath` 를 `.githooks/` 로 걸고, 거기 `pre-commit` 이 볼트 생성물
+  드리프트를 커밋 자리에서 막는다(이틀에 세 번 난 CI 사고를 앞으로 당긴 것 —
+  `docs/DEVELOPMENT-CHECKS.md`). 막히면 시키는 명령을 돌려라.
 - `git reset --hard` / `git push --force` 는 user 명시 명령 후만.
 - main 에 force push 절대 금지.
 - **생성물 JSON 충돌을 손으로 편집하지 말 것.** `src/entities/docs-vault/data/*`

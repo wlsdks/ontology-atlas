@@ -1,6 +1,12 @@
 "use client";
 
-import { Fragment, useEffect, useState, type ReactNode } from "react";
+import {
+  Fragment,
+  useEffect,
+  useState,
+  useSyncExternalStore,
+  type ReactNode,
+} from "react";
 import { ChevronRight, FolderOpen } from "lucide-react";
 import { useTranslations } from "next-intl";
 import { Link } from "@/i18n/navigation";
@@ -70,6 +76,12 @@ export interface FirstRunStarterModuleProps {
 const CLI_BOOTSTRAP_COMMAND =
   "node cli/src/index.mjs init && node cli/src/index.mjs bootstrap";
 
+/** 플랫폼은 세션 중 바뀌지 않는다 — 구독할 것이 없다. */
+const subscribeNever = () => () => {};
+const readApplePlatform = () =>
+  /Mac|iPhone|iPad|iPod/.test(navigator.platform || navigator.userAgent);
+const readApplePlatformOnServer = () => false;
+
 /**
  * INDEX 패널(TopologyIndexPanel) 맨 위에 통합되는 "시작하기" 모듈 —
  * 승인 계약: `docs/prototypes/first-run-v3-flagship.html` (2026-07-18,
@@ -131,6 +143,20 @@ export function FirstRunStarterModule({
   // INDEX 에 자리를 넘길지. 사용자가 "무엇을 볼지" 를 고른 순간(샘플 전환)
   // 접어 데이터로 넘긴다. dismiss 는 세션 영구, 이건 세션 내 토글.
   const [collapsed, setCollapsed] = useState(false);
+  // PO 카운슬 2026-08-02 — `⌘O` 배지는 **맥에서만** 참이다. 이 앱의 폴더 열기
+  // 단축키는 `{ key: "o", meta: true }` 하나뿐이고(HomePage 단축키 표) 대응
+  // 하는 Ctrl+O 바인딩이 없다. 웹 관문의 핵심 청중이 Windows/Linux 인데 없는
+  // 키를 광고하면 그건 힌트가 아니라 거짓 글리프다.
+  //
+  // 정적 export 는 서버에서 플랫폼을 모르므로 서버 스냅샷은 항상 `false`(배지
+  // 없음)다 — `useEffect` + `setState` 대신 `useSyncExternalStore` 를 쓰는
+  // 이유가 그것이다. 값이 바뀌지 않는 읽기라 구독은 no-op 이고, 하이드레이션
+  // 불일치 없이 첫 클라이언트 렌더에서 정답이 나온다.
+  const applePlatform = useSyncExternalStore(
+    subscribeNever,
+    readApplePlatform,
+    readApplePlatformOnServer,
+  );
 
   // 폴더-우선 첫 방문 (소유자 지시 2026-07-24) — 첫 화면을 열자마자 폴더
   // 지정 유도(시트)가 첫 액션이 된다. "다음에"로 건너뛰면 자동 투어가
@@ -189,6 +215,16 @@ export function FirstRunStarterModule({
       // 줄어들며 내부 스크롤로 전환된다(충분하면 종전과 동일).
       className="relative flex-1 min-h-0 overflow-y-auto overscroll-contain bg-gradient-to-b from-[color:var(--color-indigo-a08)] via-[color:var(--color-indigo-a06)] to-transparent px-4 pb-3.5 pt-4"
     >
+      {/* PO 카운슬 2026-08-02 — 실측 하단 공백이 806px 창에서 25.4%(982px
+          풀스크린 환산 ≈38%) 였다. 위는 빽빽하고 아래가 빈다. 이 래퍼가
+          `min-h-full` 로 패널 높이를 채우고 참조 블록(용어사전 + 개발자
+          disclosure)이 `mt-auto` 로 바닥에 서면, 그 여백은 카드의 꼬리가
+          아니라 **행동층과 참조층 사이의 설계된 간격**이 된다.
+          래퍼가 필요한 이유: 루트는 스크롤 컨테이너(`overflow-y-auto`)라
+          여기에 flex 를 얹으면 낮은 창에서 자식들이 눌린다. 높이가 자동인
+          내부 래퍼에 `min-h-full` 을 주면 내용이 길 때는 그대로 자라고,
+          짧을 때만 바닥 정렬이 작동한다. */}
+      <div className="flex min-h-full flex-col">
       {/* 페르소나 재조사 개선 후보 2 (2026-07-23) — 첫 실행 카드가 "이
           화면이 뭘 하는지"만 말하고 "이 제품이 뭔지"(이름)는 말하지
           않아 완전 초심자에게 정체성 공백이 있었다. 로고 마크 없이
@@ -201,17 +237,21 @@ export function FirstRunStarterModule({
       >
         {t("brand")}
       </p>
+      {/* 상태 신호는 둘이다 (PO 카운슬 2026-08-02) — 「첫 실행」(언제인가)과
+          「지금은 샘플」(누구의 데이터인가). 앰버 점은 전에 왼쪽 「첫 실행」
+          옆에 있어 색이 홀로 세 번째 신호처럼 읽혔다. 점을 자기 문장 옆으로
+          옮겨 **한 클러스터**로 묶는다 — 색과 말이 같은 것을 가리킨다. */}
       <p
         className={`mb-3 flex items-center gap-2 text-caption text-[color:var(--topology-v2-panel-text-secondary)] ${eyebrowWide}`}
       >
-        <span className="relative h-2 w-2 shrink-0" aria-hidden>
-          <span className="absolute inset-0 rounded-full bg-[color:var(--color-status-warning)]" />
-          <span className="absolute -inset-[3px] rounded-full border border-[color:var(--color-amber-source-a42)]" />
-        </span>
         {t("caption")}
         <span
-          className={`ml-auto text-caption text-[color:var(--color-status-warning)] ${eyebrowTight}`}
+          className={`ml-auto inline-flex items-center gap-1.5 text-caption text-[color:var(--color-status-warning)] ${eyebrowTight}`}
         >
+          <span className="relative h-2 w-2 shrink-0" aria-hidden>
+            <span className="absolute inset-0 rounded-full bg-[color:var(--color-status-warning)]" />
+            <span className="absolute -inset-[3px] rounded-full border border-[color:var(--color-amber-source-a42)]" />
+          </span>
           {t("sampleLabel")}
         </span>
       </p>
@@ -220,27 +260,44 @@ export function FirstRunStarterModule({
         data-testid="first-run-starter-context"
         className="mb-4 text-body leading-body text-[color:var(--topology-v2-panel-text-tertiary)]"
       >
-        <b className="font-semibold text-[color:var(--topology-v2-panel-text-primary)]">
-          {t(sampleSource === "storefront" ? "contextStorefrontBold" : "contextBold")}
-        </b>{" "}
-        {t(sampleSource === "storefront" ? "contextStorefrontRest" : "contextRest")}
-      </p>
+        {/* 계기를 강등하면 카드의 최대 활자가 리드와 CTA 라벨로 **동률**이
+            된다(둘 다 12.5px semibold). 주목 승자는 하나여야 하므로 리드만
+            램프 한 단 위(`text-body-lg` 14px)로 올린다 — 짝 행간을 같이
+            싣지 않으면 12.5px 단의 20px 행간이 남으므로 명시한다
+            (`design.md` "크기 스텝이 자기 행간을 싣는다"). 새 토큰 0개.
 
-      <div className="mb-3 grid grid-cols-3 divide-x divide-[color:var(--topology-v2-panel-divider)] rounded-card border border-[color:var(--topology-v2-panel-divider)] bg-[color:rgba(6,6,9,0.55)] shadow-[inset_0_1px_2px_var(--color-shadow-a35)]">
-        <MeterCell value={concepts} label={t("meterConcepts")} />
-        <MeterCell value={relations} label={t("meterRelations")} />
-        <MeterCell value={domains} label={t("meterDomains")} />
-      </div>
+            `block` 인 이유는 실측 결함이다: 인라인으로 두면 크기 전환이
+            **문장 중간**에서 일어나 리드의 마지막 음절이 다음 줄로 떨어지고
+            그 뒤에 작은 활자가 곧바로 붙었다("…보는 지도예 / 요. 내 마크다운
+            폴더를…"). 한 줄 안에서 두 크기와 두 행간이 겹치는 자리다. 크기
+            전환은 줄 경계에서만 일어나게 한다. */}
+        <b className="mb-1.5 block text-body-lg font-semibold leading-body-lg text-[color:var(--topology-v2-panel-text-primary)]">
+          {t(sampleSource === "storefront" ? "contextStorefrontBold" : "contextBold")}
+        </b>
+        {t(sampleSource === "storefront" ? "contextStorefrontRest" : "contextRest")}{" "}
+        {/* PO 카운슬 2026-08-02 — 이 카드의 33개 문자열에 「에이전트」·「MCP」·
+            「AI」가 0회였다. 앱 전체는 179곳이 쓰는데 **첫 접점만** 정체성
+            선언이 비어, 굵은 리드가 다른 마크다운 지도 도구와 구분되지 않았다.
+            새 개념을 도입하지 않고 투어 4단계가 이미 쓰는 어휘로 한 문장. */}
+        <span data-testid="first-run-starter-agent-clause">{t("agentClause")}</span>
+      </p>
 
       {/* P0 공감형 샘플 vault — dogfood(이 도구 자기 설명) 는 비개발자에게
           와닿지 않는다는 실측 문제의 완화책. 즉시 알아볼 수 있는 예시
           비즈니스("온라인 쇼핑몰")로 한 클릭 전환. 기존 "전체 | 최근 변경"
-          세그먼트(TopologyIndexPanel)와 같은 토큰/구조를 재사용. */}
+          세그먼트(TopologyIndexPanel)와 같은 토큰/구조를 재사용.
+
+          semantics 정정 (PO 카운슬 2026-08-02): `role="tab"` 이었는데 클릭이
+          탭 패널을 바꾸는 게 아니라 **카드를 접었다** — 이미 선택된 탭을
+          눌러도 접혔다. 탭이 자기 화면을 없애는 것은 tablist 계약이 아니다.
+          전환 시 접히는 동작(2026-07-24 핸드오프 설계)은 유지하되 semantics
+          를 선택 컨트롤(`aria-pressed`)로 바로잡고, 같은 선택의 재클릭은
+          아무 일도 하지 않는다. */}
       <div
-        role="tablist"
+        role="group"
         aria-label={t("sampleSourceAria")}
         data-testid="first-run-starter-sample-source"
-        className="mb-4 grid shrink-0 grid-cols-2 gap-1 rounded-[var(--chrome-radius-inner)] border border-[color:var(--topology-v2-panel-border)] bg-[color:var(--color-overlay-1)] p-1"
+        className="mb-2 grid shrink-0 grid-cols-2 gap-1 rounded-[var(--chrome-radius-inner)] border border-[color:var(--topology-v2-panel-border)] bg-[color:var(--color-overlay-1)] p-1"
       >
         {/* 순서가 곧 기본값이다 — 처음 온 사람은 왼쪽을 먼저 읽는다. 그래서
             예시 비즈니스가 앞, 이 앱 자신의 코드가 뒤다. 두 버튼이 글자만
@@ -254,11 +311,11 @@ export function FirstRunStarterModule({
           <button
             key={source}
             type="button"
-            role="tab"
-            aria-selected={sampleSource === source}
+            aria-pressed={sampleSource === source}
             title={t(tip)}
             data-testid={`first-run-starter-sample-source-${source}`}
             onClick={() => {
+              if (source === sampleSource) return;
               setSampleSource(source);
               setCollapsed(true);
             }}
@@ -272,6 +329,29 @@ export function FirstRunStarterModule({
           </button>
         ))}
       </div>
+
+      {/* 계기 강등 (PO 카운슬 2026-08-02) — 개념/관계/도메인 수는 3분할 인셋
+          계기 블록(19px mono semibold)이었고, 실측상 **카드 안 최대 활자이자
+          최고 휘도**였다. 계기 대접은 사용자 **자신의** 볼트가 열렸을 때의
+          것이다. 이 카드는 그 전에만 렌더되므로 여기서 가장 센 잉크가 남의
+          샘플 크기인 것은 「지금은 샘플」을 네 번 말하는 화면의 자기모순이다.
+          숫자의 출처는 그대로다 — `topologyCanonicalCensus` 파생이 props 로
+          들어오고, 고정 숫자 금지(2026-08-01 원장)는 여전히 지켜진다. */}
+      <p
+        data-testid="first-run-starter-sample-scale"
+        className="mb-4 text-label leading-label text-[color:var(--topology-v2-panel-text-tertiary)]"
+      >
+        {t("sampleScale", { concepts, relations, domains })}
+        {/* 집계 셋보다 실제 엣지 하나가 「관계」를 더 가르친다(지킴이). 다만
+            질의된 사실인 척하지 않는다 — 배선 0, 예시 어법의 정적 문장이다.
+            쇼핑몰 샘플에는 실제로 `domains/order` relates `domains/fulfillment`
+            가 있다. dogfood 는 억지 대칭을 만들지 않고 비운다. */}
+        {sampleSource === "storefront" ? (
+          <span className="block text-[color:var(--topology-v2-panel-text-quaternary)]">
+            {t("sampleRelationExample")}
+          </span>
+        ) : null}
+      </p>
 
       {fsaUnsupported ? (
         /* ease-of-use G1 (2026-07-23) — Safari/Firefox 는 File System Access
@@ -303,9 +383,11 @@ export function FirstRunStarterModule({
         >
           <FolderOpen size={14} aria-hidden />
           {busy && !scaffolding ? t("openBusy") : t("openLabel")}
-          <span className="rounded border border-b-2 border-white/35 px-1.5 py-px font-mono text-caption font-medium opacity-80">
-            ⌘O
-          </span>
+          {applePlatform ? (
+            <span className="rounded border border-b-2 border-white/35 px-1.5 py-px font-mono text-caption font-medium opacity-80">
+              ⌘O
+            </span>
+          ) : null}
         </button>
       )}
 
@@ -371,11 +453,39 @@ export function FirstRunStarterModule({
         </p>
       )}
 
+      {/* 진입 검수 E-1 — 이전에는 브라우저 원문 문자열(`errorText`)이 사용자
+          문구 자리를 통째로 차지했다. `window.showDirectoryPicker is not a
+          function` 은 사람이 읽고 다음 행동을 고를 수 있는 문장이 아니다.
+          이제 사람 말 한 줄이 먼저 서고, 원인 문자열은 그 아래 조용한 단서로
+          남는다 — 원인을 버리지 않으면서 읽는 순서를 뒤집었다.
+          2026-08-02 — 참조 블록이 바닥으로 내려가면서 이 경고가 카드 끝까지
+          밀려나 자기가 설명하는 버튼과 멀어졌다. 행동층 안에 둔다. */}
+      {errorText !== null ? (
+        <div role="alert" className="mt-2">
+          <p className="text-label text-[color:var(--color-status-danger)]">
+            {t("errorFallback")}
+          </p>
+          {errorText ? (
+            <p
+              data-testid="first-run-starter-error-detail"
+              className="mt-0.5 break-words text-label leading-label text-[color:var(--topology-v2-panel-text-quaternary)]"
+            >
+              {errorText}
+            </p>
+          ) : null}
+        </div>
+      ) : null}
+
+      {/* 참조층 (PO 카운슬 2026-08-02) — 용어사전과 개발자 disclosure 는
+          "지금 할 일"이 아니라 "필요할 때 보는 것"이다. `mt-auto` 로 바닥에
+          세워 행동층과 사이에 간격을 만든다. 빈 자리는 그대로 둔다 —
+          채우라는 처방이 아니라 층을 가르라는 처방이다. */}
+      <div className="mt-auto">
       {/* rank17 (design-council B6) — 도메인/역량/요소 3-용어 정의를 "?"
           단축키 모달에서 이 첫실행 카드로 승격. disclosure 뒤에 숨기지
           않고 항상 보이는 3줄 — 완전 초심자가 지도를 처음 열자마자 세
           단어의 뜻을 알 수 있어야 하는 표면이라 접힘 대상이 아니다. */}
-      <div className="mt-3 border-t border-[color:var(--topology-v2-panel-divider)] pt-3">
+      <div className="mt-4 border-t border-[color:var(--topology-v2-panel-divider)] pt-3">
         <p
           className={`mb-1.5 text-caption text-[color:var(--topology-v2-panel-text-quaternary)] ${eyebrow}`}
         >
@@ -443,7 +553,13 @@ export function FirstRunStarterModule({
           뿐, "내 리포를 분석해서 채워줘"에는 답하지 못한다 — 그 답은
           `node $ATLAS/cli/src/index.mjs bootstrap` 인데 웹 첫 화면엔 안내가 전혀 없었다.
           온보딩 디자이너 지적: 기본 접힘 disclosure 로 감춰 비개발자 시선에서
-          제거하고, 개발자만 "개발자라면 —" 을 펼쳐 명령을 본다. */}
+          제거하고, 펼친 사람만 명령을 본다.
+          문구 정정 (PO 카운슬 2026-08-02): 라벨이 「코드베이스에서 자동으로
+          시작하려면」(= 내 리포)이었는데 명령은 상대 경로라 **실행한 그 폴더**
+          를 훑는다 — 소스 체크아웃 안에서 돌리면 atlas 자신을 부트스트랩한다.
+          명령 자체는 CLI 공개 계약이라 이번 슬라이스 밖이고, 여기서는 문구를
+          명령이 실제로 하는 일로 좁힌다(`cliBridgeSourceOnly` 의 정직한 고지와
+          모순되지 않게). 토글도 직군 호명("개발자라면")에서 행위 호명으로. */}
       <div className="mt-3">
         <button
           type="button"
@@ -497,27 +613,8 @@ export function FirstRunStarterModule({
           </div>
         ) : null}
       </div>
-
-      {/* 진입 검수 E-1 — 이전에는 브라우저 원문 문자열(`errorText`)이 사용자
-          문구 자리를 통째로 차지했다. `window.showDirectoryPicker is not a
-          function` 은 사람이 읽고 다음 행동을 고를 수 있는 문장이 아니다.
-          이제 사람 말 한 줄이 먼저 서고, 원인 문자열은 그 아래 조용한 단서로
-          남는다 — 원인을 버리지 않으면서 읽는 순서를 뒤집었다. */}
-      {errorText !== null ? (
-        <div role="alert" className="mt-2">
-          <p className="text-label text-[color:var(--color-status-danger)]">
-            {t("errorFallback")}
-          </p>
-          {errorText ? (
-            <p
-              data-testid="first-run-starter-error-detail"
-              className="mt-0.5 break-words text-label leading-label text-[color:var(--topology-v2-panel-text-quaternary)]"
-            >
-              {errorText}
-            </p>
-          ) : null}
-        </div>
-      ) : null}
+      </div>
+      </div>
 
       <VaultOpenGuideSheet
         open={guideOpen}
@@ -532,30 +629,6 @@ export function FirstRunStarterModule({
           void createVault();
         }}
       />
-    </div>
-  );
-}
-
-function MeterCell({ value, label }: { value: number; label: string }) {
-  // E-10 — 숫자는 기계 문자열이라 mono 가 정보다. 그 아래 라벨(개념·관계·
-  // 도메인)은 한국어 낱말이라 아이브로를 걷는다 — 종전에는 8px 한글에 자간
-  // 1.44px 이 얹혀 첫 화면에서 가장 심하게 벌어진 자리였다.
-  const eyebrow = useLatinEyebrow("tracking-[0.18em]");
-  return (
-    <div className="py-2.5 text-center">
-      {/* 타입 램프에 16 ↔ 23 사이가 없다. 23(text-display)은 300px 패널 안
-          3분할 계기에서 카드 본문(12.5px)을 압도하고, 16(text-title)은 계기
-          숫자의 무게를 잃는다. 램프 스텝을 늘리는 대신 이 한 자리를 명시
-          예외로 둔다 — 스텝 신설은 전역 위계를 바꾸는 결정이라 별 PR 이다. */}
-      {/* eslint-disable-next-line no-restricted-syntax -- 램프 갭(16↔23) 안의 계기 숫자. 사유는 위 주석. */}
-      <span className="block font-mono text-[19px] font-semibold leading-none text-[color:var(--topology-v2-panel-text-primary)]">
-        {value}
-      </span>
-      <span
-        className={`mt-1.5 block text-caption text-[color:var(--topology-v2-panel-text-quaternary)] ${eyebrow}`}
-      >
-        {label}
-      </span>
     </div>
   );
 }
