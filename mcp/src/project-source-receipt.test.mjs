@@ -3,7 +3,7 @@ import { mkdtempSync, mkdirSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import test from 'node:test';
-import { buildProjectSourceGraphHash } from '../../src/shared/lib/project-source-graph-hash.mjs';
+import { buildProjectSourceGraphHash } from './project-source-graph-hash.mjs';
 import {
   PROJECT_SOURCE_RECEIPT_VERSION,
   readProjectSourceView,

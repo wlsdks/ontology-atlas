@@ -2,6 +2,7 @@ import { existsSync } from 'node:fs';
 import { isAbsolute, relative, resolve, sep } from 'node:path';
 
 import { WRITE_RELATION_TYPE_VALUES } from './ontology-engine.mjs';
+import { MEANING_COMPETENCY_QUESTIONS } from './meaning-assessment.mjs';
 
 const DEFAULT_THRESHOLDS = Object.freeze({
   conceptPrecision: 0.8,
@@ -13,43 +14,7 @@ const DEFAULT_THRESHOLDS = Object.freeze({
   maximumUnsupportedHighConfidence: 0,
 });
 
-export const COMPETENCY_QUESTION_CONTRACTS = Object.freeze([
-  Object.freeze({
-    id: 'scope',
-    type: 'scoping',
-    question: 'What product/system outcome and user problem define the ontology scope?',
-    priority: 'core',
-    requiredWitnesses: Object.freeze(['concepts', 'evidence']),
-  }),
-  Object.freeze({
-    id: 'domains',
-    type: 'scoping',
-    question: 'Which stable business responsibilities or decision boundaries form its domains?',
-    priority: 'core',
-    requiredWitnesses: Object.freeze(['concepts', 'relations', 'evidence']),
-  }),
-  Object.freeze({
-    id: 'abilities',
-    type: 'validation',
-    question: 'Which observable abilities realize those outcomes inside each domain?',
-    priority: 'core',
-    requiredWitnesses: Object.freeze(['concepts', 'relations', 'evidence']),
-  }),
-  Object.freeze({
-    id: 'evidence',
-    type: 'validation',
-    question: 'Which source artifacts provide implementation evidence for each ability?',
-    priority: 'core',
-    requiredWitnesses: Object.freeze(['concepts', 'evidence', 'paths']),
-  }),
-  Object.freeze({
-    id: 'impact',
-    type: 'relationship',
-    question: 'Which typed dependencies explain change impact across the model?',
-    priority: 'core',
-    requiredWitnesses: Object.freeze(['concepts', 'relations', 'evidence']),
-  }),
-]);
+export const COMPETENCY_QUESTION_CONTRACTS = MEANING_COMPETENCY_QUESTIONS;
 
 const COMPETENCY_STATUSES = new Set(['answered', 'partial', 'visible-gap']);
 const COMPETENCY_WITNESS_KEYS = Object.freeze([

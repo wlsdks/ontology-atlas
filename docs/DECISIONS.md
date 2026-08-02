@@ -42,6 +42,57 @@
 
 ---
 
+## 2026-08-02 — 의미 평가는 구조 readiness와 분리한 순수 계약부터 연다
+
+**소집**: PO 카운슬 5자리 조사 판정 + 독립 코드 경로 조사 2건. · **트리거**:
+project inspector의 source receipt 다음 단계로 분석률·신뢰도를 검토했지만, 현재
+`agent_brief`의 100점/healthy가 의미 근거 없이도 성립하는 구조적 false green이
+재현됐다. **루브릭**: 판정 보류(Investigate first — 공개 제품 구현 승인 아님).
+
+**선행 결정 관계**: 아래 「프로젝트의 현재 source 근거는 하나의 receipt로 사람과
+agent에게 보인다」의 `verified_current`를 path 존재와 graph shape만으로 주지 않는다는
+규칙은 유효하다. 이번 기록은 그 규칙을 공개 UI/MCP에 연결하기 전에 어떤 최소
+판정 계약으로 거짓 양성을 닫을지 정한다.
+
+**결정 (accountable: 소유자)**: 첫 단위는 cross-runtime 순수 파생 계약
+`meaningAssessment:v1`과 가상 fixture만 만든다. 구조 readiness, 고정 evaluator와
+graph hash에 묶인 다섯 competency question receipt의 raw typed witness·미해소 목록,
+source receipt의 상태·현재성·opaque ID·revision·fingerprint·측정 시각을 검증 입력으로
+받는다. 결과에는 raw witness를 복사하지 않고 categorical 상태와 inventory contract·
+graph hash·source fingerprint provenance만 남긴다. 모든 competency가 answered이고
+계약상 필수 typed witness가 현재 inventory에서
+해소됐으며, source가 `verified_current`+`current`이고 두 receipt의 graph provenance가
+일치할 때만 전체 상태를
+`verified_current`로 낸다. 구조가 ready여도 competency gap이 있으면
+`needs_evidence`, graph/source가 바뀌었거나 source를 현재 재확인할 수 없으면
+`review_required`로 닫는다. 결과에는 percentage, combined confidence, node/file
+분모를 넣지 않는다.
+
+**검증 계약**: synthetic positive, 실제 `agent_brief`가 100/100 ready로 판정하는
+최소 containment graph의 semantic false-green, stale graph/source,
+source-hidden 네 fixture를 RED→GREEN으로 고정한다. false-green은 절대
+`verified_current`가 아니어야 하고, positive만 통과해야 하며, 모든 결과는 evaluator·
+graph·source receipt·competency contract provenance를 가져야 한다. fixture와 구현에는
+외부 field-trial의 node·relation·문구를 반입하지 않는다.
+
+**적용 규칙**: IN — 순수 계약, 단일 competency contract 정본, 결정적 categorical
+output, 네 synthetic fixture. OUT — sidecar persistence, project inspector, CLI/MCP
+public field, 숫자 점수, 기존 receipt 상태 변경, source-role scanner 확대. 저장된
+ontology에서 typed competency를 다시 읽는 계약을 별도로 결정하기 전에는 공개 표면에
+연결하지 않는다.
+
+**기록된 반대**: source-hidden에서도 마지막 verified receipt를 그대로
+`verified_current`로 유지하고 currentness만 `unavailable`로 병기하면 과도한 강등을
+피할 수 있다.
+**반증 조건**: `review_required + unavailable`이 실제 handoff에서 이미 검증된 근거의
+사용을 반복적으로 막고, 소비자가 상태와 현재성을 함께 읽어도 오판하지 않는다는
+walkthrough 근거가 생기면 전체 상태 승격 규칙을 재검토한다. **재검토**: typed CQ
+read-back 계약과 source-hidden agent walkthrough가 모두 존재할 때.
+
+**상태**: 유효.
+
+---
+
 ## 2026-08-02 — 프로젝트 inspector의 건강한 빈틈 문장과 중복 행동을 걷어낸다
 
 **소집**: 디자인 카운슬 5자리(위계·체계·상호작용·작업대·핸드오프) +

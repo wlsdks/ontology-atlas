@@ -22,15 +22,25 @@ sidecar에만 보관하고, 복사 인계와 MCP에는 source-relative witness�
 설치 앱만 비공개 소스를 다시 읽어 `current`를 확인할 수 있으며, MCP/CLI가 다시
 스캔하지 않은 상태는 `unavailable`로 남겨 신뢰를 과장하지 않는다.
 
+내부 `meaningAssessment:v1` 파생 계약은 구조 readiness, 고정 evaluator와 graph
+hash에 묶인 다섯 competency question receipt의 typed witness, source ID·revision·
+fingerprint·측정 시각과 현재성을 함께 검증한다. raw witness는 결과에 복사하지 않고
+categorical 판정과 inventory provenance만 남긴다.
+구조가 ready여도 의미 witness가 비거나 source를 현재 재확인할 수 없으면
+`verified_current`로 승격하지 않는다.
+
 ## 근거
 
 - `src/shared/lib/project-source-receipt.ts` — 영수증·현재성·빈틈·인계 계약
 - `src/views/home/model/use-project-source-model.ts` — 선택·측정·원자적 저장·재측정
 - `src-tauri/src/lib.rs` — Git tracked/unignored inventory와 bounded fingerprint
 - `mcp/src/project-source-receipt.mjs` — private path를 제거한 `agent_brief` read model
+- `mcp/src/meaning-assessment.mjs` — 수치 없이 false-green을 닫는 순수 의미 판정 정본
 
 ## 경계
 
 - 저장소 전체 정답률이나 숫자형 confidence를 주장하지 않는다.
 - 한 project에 활성 소스는 최대 하나이며 중복 binding은 명시적 교체로만 복구한다.
 - 폴더 선택 취소·측정 실패·저장 실패는 기존 binding과 receipt를 보존한다.
+- 저장된 typed competency를 다시 읽는 계약 전에는 의미 판정을 UI·CLI·MCP 공개
+  필드로 노출하지 않는다.
