@@ -153,6 +153,19 @@ export interface TraceDrawState {
    * 회귀하지 않는다.
    */
   dependsCometEligible?: boolean;
+  /**
+   * 「걸어온 길」 렌즈 세기 0..1 — 이 관계선을 **연달아 밟았을 때만** 0 이 아니다.
+   *
+   * 왜 필요한가(2026-08-02 소유자 실보고 *"노란색으로 선까지 다?"*): 렌즈가
+   * 켜지면 이 파일은 모든 엣지를 `dim` 으로 그렸다. 방문 노드 옆에는 발자국이
+   * 찍히는데 **그 사이를 이은 선은 배경과 같은 잉크**라, 「걸어온 길」인데
+   * 길이 안 보였다.
+   *
+   * 새 hue 를 여는 것이 아니다 — 색은 호출부가 `edgeTrail` 로 넘기는 **발자국
+   * 잉크 그대로**(`--color-footprint-trail`, 사용자가 노랑/인디고 2택으로 고른
+   * 그 값)다. 자국과 선이 한 색이어야 «같은 사실의 두 표기»로 읽힌다.
+   */
+  trailWalked?: number;
 }
 
 export interface TraceTokens {
@@ -166,6 +179,36 @@ export interface TraceTokens {
   indigoBright: string;
   /** 엣지 선택 전용 스트로크 (`--topology-v2-edge-selected`) — 없으면 indigoBright 폴백. */
   edgeSelected?: string;
+  /**
+   * 밟은 관계선의 스트로크 — 발자국과 **같은** 잉크(`--color-footprint-trail`).
+   * `trailWalked > 0` 인 엣지에서만 쓰인다. 없으면 트레일 강조 없음(회귀 0).
+   */
+  edgeTrail?: string;
+}
+
+/** 값을 [0,1] 로 자른다. */
+function clamp01(v: number): number {
+  return v < 0 ? 0 : v > 1 ? 1 : v;
+}
+
+/**
+ * 두 hex 색을 선형 보간한다 — 트레일 램프가 `dim` 에서 트레일 잉크로 올라오는
+ * 데만 쓴다(하드컷 금지 계약). `render/grid.ts` 의 `lerpColorHex` 와 같은 식이나,
+ * 이 파일은 토큰 레이어를 모르는 순수 렌더러라 의존을 늘리지 않고 여기 둔다.
+ */
+function mixHex(from: string, to: string, t: number): string {
+  const parse = (hex: string): [number, number, number] | null => {
+    const m = /^#?([0-9a-f]{6})$/i.exec(hex.trim());
+    if (!m) return null;
+    const n = Number.parseInt(m[1], 16);
+    return [(n >> 16) & 255, (n >> 8) & 255, n & 255];
+  };
+  const a = parse(from);
+  const b = parse(to);
+  if (!a || !b) return t >= 0.5 ? to : from;
+  const k = clamp01(t);
+  const ch = (i: 0 | 1 | 2) => Math.round(a[i] + (b[i] - a[i]) * k);
+  return `rgb(${ch(0)}, ${ch(1)}, ${ch(2)})`;
 }
 
 /**
@@ -218,7 +261,15 @@ export function draw(ctx: CanvasRenderingContext2D, state: TraceDrawState, token
 
   let stroke: string;
   let width: number;
-  if (state.selected === true) {
+  // 「걸어온 길」 — 밟은 선이 **먼저**다. 렌즈가 켜져 있는 동안 이 선은
+  // 선택도 ego 도 아니지만(호출부가 렌즈 중 그 둘을 끈다) 사용자가 지금 읽으려는
+  // 유일한 것이다. 굵기는 dim(1)에서 1.6 까지만 — 자국 본체보다 굵어지면
+  // 선이 자국을 이기고, 그러면 「길」이 아니라 「강조된 관계」로 읽힌다.
+  const trailWalked = clamp01(state.trailWalked ?? 0);
+  if (trailWalked > 0.01 && tokens.edgeTrail) {
+    stroke = mixHex(tokens.edgeDim, tokens.edgeTrail, trailWalked);
+    width = 1 + 0.6 * trailWalked;
+  } else if (state.selected === true) {
     // 페어 포커스의 주인공 — pale 인디고, 최상 잉크.
     stroke = tokens.edgeSelected ?? tokens.indigoBright;
     // 톤다운 (소유자: "색이 너무 진하다") — dim 장면 위에서 잉크가 아니라

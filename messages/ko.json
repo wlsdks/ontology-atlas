@@ -2370,6 +2370,9 @@
       "hint": "자식이 많은 그룹은 +N 칩으로 접혀 있습니다 — 칩을 클릭하면 그 그룹이 펼쳐지고, 다시 클릭하면 접힙니다.",
       "expandAria": "숨겨진 하위 항목 {count}개 펼치기",
       "collapseAria": "이 그룹 접기",
+      "barExpandAll": "모두 펼치기",
+      "barExpandCount": "{count}개 펼치기",
+      "barCollapse": "접기",
       "tooltipCollapsed": "「{name}」 — 하위 전체 {total}개 · 이 티어 숨김 {hidden}개. 클릭하면 펼쳐요",
       "tooltipExpanded": "「{name}」 — 하위 전체 {total}개 · 이 티어 {hidden}개 펼침. 클릭하면 접어요"
     },
