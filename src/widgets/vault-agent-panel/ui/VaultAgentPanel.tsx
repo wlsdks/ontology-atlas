@@ -1,12 +1,19 @@
 'use client';
 
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
 import { useLocale, useTranslations } from 'next-intl';
 import { X } from 'lucide-react';
 
 import type { VaultManifest } from '@/entities/docs-vault';
 import type { KnowledgeProjectInsight } from '@/entities/knowledge-graph';
-import { buildFirstWords, type ScreenContextSnapshot } from '@/features/vault-agent';
+import {
+  buildFirstWords,
+  COMPOSER_MIN_ROWS,
+  composerGrowth,
+  composerTopIsHidden,
+  snapScrollTop,
+  type ScreenContextSnapshot,
+} from '@/features/vault-agent';
 import { useVaultConceptFacts } from '@/features/vault-ontology';
 import {
   hostOfBaseUrl,
@@ -102,6 +109,15 @@ export function VaultAgentPanel({
    */
   const [meta, setMeta] = useState<'prompt' | 'handoff' | null>(null);
   const inputRef = useRef<HTMLTextAreaElement>(null);
+  /**
+   * 자람을 재는 **오프스크린 미러**. 보이는 입력칸의 높이를 `''` 로 되돌려
+   * `scrollHeight` 를 읽는 흔한 패턴은 매 프레임 상자를 0 으로 접었다 펴므로
+   * 자람이 전이가 아니라 계단이 된다. 미러는 같은 타이포·같은 폭이라 같은
+   * 값을 주고, 보이는 상자는 한 번도 되돌려지지 않는다.
+   */
+  const mirrorRef = useRef<HTMLTextAreaElement>(null);
+  /** 상한(6줄)에 닿아 **실제로 위가 가려졌는가** — 그때만 상단 페이드. */
+  const [composerHidesTop, setComposerHidesTop] = useState(false);
   const scrollRef = useRef<HTMLDivElement>(null);
 
   const bridgeAvailable = isLlmChatBridgeAvailable();
@@ -208,6 +224,7 @@ export function VaultAgentPanel({
     snapshotLabel: t('snapshotLabel'),
     notices: {
       roundCap: t('notice.roundCap'),
+      noToolCall: ({ round, cap }) => t('notice.noToolCall', { round, cap }),
       aborted: t('notice.aborted'),
       networkFailed: t('notice.networkFailed'),
       rateLimited: t('notice.rateLimited'),
@@ -266,17 +283,47 @@ export function VaultAgentPanel({
   }, [open, vaultPath, appliedTally]);
 
   /**
-   * 칩 → 프리필. **누른 그 프레임**에 문장이 앉고 전체 선택 + 포커스 —
-   * 한 타로 덮어쓸 수 있다. 전송은 언제나 [보내기]다.
+   * 프리필된 문장을 **처음부터 읽히게** 놓는다 — 캐럿은 문장 끝(이어서
+   * 쓸 자리), 시야는 첫 줄.
+   *
+   * 구 구현은 `input.select()` 였다. 전체 선택은 "다음 타건이 이 문장을
+   * 지운다" 는 뜻인데, 사용자는 방금 이 문장을 **고르려고** 눌렀다 — 의도와
+   * 반대다. 게다가 select 는 선택 끝(마지막 줄)으로 스크롤해서, 2줄 고정
+   * 상자에 3줄이 들어온 순간 한 프레임에 `scrollTop` 을 9px 로 밀어 넣었다.
+   * 줄 높이가 20px 이라 9는 배수가 아니고, 그래서 윗변에 글리프가 반으로
+   * 잘린 줄이 걸렸다(실측: 420프레임 중 f231, 16.7ms).
+   *
+   * `scrollTop` 은 언제나 줄 격자에 붙인다. 이건 모션이 아니라 **정렬**이라
+   * reduced-motion 에서도 그대로 산다.
    */
-  const prefill = useCallback((text: string) => {
-    setDraft(text);
-    const input = inputRef.current;
-    if (!input) return;
+  const seatDraft = useCallback((input: HTMLTextAreaElement) => {
     input.focus();
+    const end = input.value.length;
     // jsdom·구형 WebView 에 없을 수 있는 API 는 있을 때만 부른다.
-    if (typeof input.select === 'function') input.select();
+    if (typeof input.setSelectionRange === 'function') input.setSelectionRange(end, end);
+    const lineHeight = Number.parseFloat(window.getComputedStyle(input).lineHeight);
+    input.scrollTop = snapScrollTop(0, lineHeight);
   }, []);
+
+  /**
+   * 칩 → 프리필. **누른 그 프레임**에 문장이 앉는다. 전송은 언제나 [보내기]다.
+   *
+   * 자리 앉히기는 `requestAnimationFrame` 뒤로 미룬다 — `setDraft` 직후에는
+   * React 가 아직 값을 써 넣지 않아 캐럿이 옛 값(빈 문자열) 기준으로 잡힌다.
+   */
+  const prefill = useCallback(
+    (text: string) => {
+      setDraft(text);
+      const input = inputRef.current;
+      if (!input) return;
+      input.focus();
+      window.requestAnimationFrame(() => {
+        const current = inputRef.current;
+        if (current) seatDraft(current);
+      });
+    },
+    [seatDraft],
+  );
 
   /**
    * 바깥에서 건너온 첫 마디(S7).
@@ -294,14 +341,51 @@ export function VaultAgentPanel({
     setSeenPrefillNonce(prefillNonce);
     setDraft(prefillText);
   }
-  // 포커스·전체 선택은 DOM 조작이라 렌더 뒤에 한다 — 한 타로 덮어쓸 수 있게.
+  // 포커스·캐럿은 DOM 조작이라 렌더 뒤에 한다 — 그때는 값이 이미 들어와 있다.
   useEffect(() => {
     if (seenPrefillNonce === null) return;
     const input = inputRef.current;
     if (!input) return;
-    input.focus();
-    if (typeof input.select === 'function') input.select();
-  }, [seenPrefillNonce]);
+    seatDraft(input);
+  }, [seenPrefillNonce, seatDraft]);
+
+  /**
+   * 컴포저 자람 — 2줄에서 시작해 6줄까지 **내용을 따라** 자란다.
+   *
+   * 구 구현은 `rows={2}` 고정이라 세 줄짜리 문장이 들어와도 상자가 그대로였고
+   * (420프레임 전체에서 높이 58px 고정, 프레임간 픽셀 diff 평균 0.013),
+   * 사용자는 자기가 방금 고른 문장의 3분의 1만 볼 수 있었다.
+   *
+   * 높이는 `transform` 이 아니라 **실제 `height`** 로 간다 — 형제(보내기
+   * 버튼·곁가지 줄)가 같이 자리를 내줘야 "이 칸이 자랐다" 로 읽히고,
+   * transform 은 자리를 안 만든다. 곡선은 표면 이동 램프(`--motion-base`)
+   * 하나이고 스프링은 쓰지 않는다: 재타기팅이 없는데 baseline 을 넘어서면
+   * 읽는 중에 글자가 흔들린다.
+   */
+  useLayoutEffect(() => {
+    const input = inputRef.current;
+    const mirror = mirrorRef.current;
+    if (!input || !mirror) return;
+    mirror.value = draft;
+    const style = window.getComputedStyle(input);
+    const lineHeight = Number.parseFloat(style.lineHeight);
+    const growth = composerGrowth({
+      lineHeight,
+      paddingBlock:
+        Number.parseFloat(style.paddingTop) + Number.parseFloat(style.paddingBottom),
+      borderBlock:
+        Number.parseFloat(style.borderTopWidth) + Number.parseFloat(style.borderBottomWidth),
+      contentHeight: mirror.scrollHeight,
+    });
+    // 잴 수 없는 상태(SSR·jsdom·폰트 로드 전)에서는 손대지 않는다 — 0px 로
+    // 접히는 것보다 `rows` 기본값이 언제나 낫다.
+    if (!growth) return;
+    input.style.height = `${growth.height}px`;
+    input.scrollTop = snapScrollTop(input.scrollTop, lineHeight);
+    setComposerHidesTop(composerTopIsHidden(growth.overflowing, input.scrollTop));
+    // `scopeAccepted`/`provider` 는 입력칸이 **마운트되는** 순간이다 — 그때
+    // 한 번 재야 첫 그림부터 맞는 높이로 선다.
+  }, [draft, open, scopeAccepted, provider]);
 
   // 새 내용은 아래로만 자란다 — 스크롤 앵커 하단 고정.
   useEffect(() => {
@@ -501,15 +585,17 @@ export function VaultAgentPanel({
                 labels={{
                   nextStepTitle: t('nextStep.title'),
                   retryTitle: t('retry.title'),
+                  regroundTitle: t('reground.title'),
                   you: t('you'),
                   lookingAt: (title) => t('screenContext.lookingAt', { title, josa: josa(title, 'object') }),
                   wholeMap: t('screenContext.wholeMap'),
                   unsupported: t('unsupported'),
+                  uncited: t('uncited'),
                   charsLabel: (chars) => t('charsLabel', { chars }),
                   thinking: t('thinking'),
                   thinkingSeconds: (seconds) => t('thinkingSeconds', { seconds }),
-                  footer: ({ provider: name, chars, rounds }) =>
-                    t('footer', { provider: name, chars, rounds }),
+                  footer: ({ provider: name, rounds }) => t('footer', { provider: name, rounds }),
+                  footerDetail: ({ chars }) => t('footerDetail', { chars }),
                 }}
                 renderProposal={() => null}
               />
@@ -599,13 +685,36 @@ export function VaultAgentPanel({
             key={stage}
             className="agent-panel-stage-swap shrink-0 border-t border-[color:var(--color-border-soft)] p-2.5"
           >
+            {/* 버튼은 `items-end` — 텍스트 입력의 주 행동은 아래에 고정한다
+                (Apple HIG: 직접 조작의 목적지는 움직이지 않는다). 칸이 자라면
+                버튼이 그 아래 끝을 따라가므로 세로 정렬도 함께 맞는다. */}
             <div className="flex items-end gap-2">
+              <div className="relative min-w-0 flex-1">
               <textarea
                 ref={inputRef}
                 data-testid="vault-agent-input"
+                data-composer-hides-top={composerHidesTop ? 'true' : 'false'}
                 value={draft}
-                rows={2}
+                rows={COMPOSER_MIN_ROWS}
                 disabled={agent.running}
+                onScroll={(event) => {
+                  const input = event.currentTarget;
+                  setComposerHidesTop(
+                    input.scrollHeight > input.clientHeight && input.scrollTop > 0,
+                  );
+                }}
+                style={{
+                  // 자람은 **표면 이동**이다 — 앱 공통 램프를 그대로 탄다.
+                  // 새 토큰 0 · 새 duration 0.
+                  transitionProperty: 'height',
+                  transitionDuration: 'var(--motion-base)',
+                  transitionTimingFunction: 'var(--motion-ease)',
+                  // 넘침 신호는 상한에 닿아 **위가 실제로 가려졌을 때만**.
+                  // 자라는 동안에는 없는 넘침을 광고하지 않는다.
+                  maskImage: composerHidesTop
+                    ? 'linear-gradient(to bottom, transparent 0, #000 var(--leading-body))'
+                    : undefined,
+                }}
                 // 아직 아무 말도 안 한 사람에게 "이어서 말하기" 는 이어갈 것이
                 // 없는 문장이다. 첫 마디용 자리표시는 잠긴 상태의 띠가 쓰는
                 // 문구와 **같은 키**라, 키가 들어오는 순간 같은 자리에 같은
@@ -620,8 +729,25 @@ export function VaultAgentPanel({
                     submit();
                   }
                 }}
-                className="min-w-0 flex-1 resize-none rounded-card border border-[color:var(--color-border-soft)] bg-[color:var(--color-panel)] px-2.5 py-2 text-body leading-body text-[color:var(--color-text-primary)] placeholder:text-[color:var(--color-text-quaternary)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--color-indigo-accent)] disabled:opacity-60"
+                className={`${COMPOSER_BOX_CLASS} block w-full text-[color:var(--color-text-primary)] placeholder:text-[color:var(--color-text-quaternary)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--color-indigo-accent)] disabled:opacity-60`}
               />
+              {/* 자람을 재는 미러. **같은 클래스 = 같은 타이포·같은 폭**이라
+                  같은 줄 나눔이 나온다. 화면 밖으로 치우지 않고 같은 자리에
+                  두는 이유: 폭(패딩·보더 포함)이 실제 칸과 같아야 줄 수가 같다.
+
+                  `invisible`(visibility: hidden)이지 `opacity-0` 이 아니다 —
+                  투명한 원소는 여전히 그려지는 원소라 겹침 감사에 잡히고,
+                  캐럿·선택이 칠해질 여지도 남는다. 레이아웃은 그대로 도니
+                  `scrollHeight` 는 똑같이 나온다. */}
+              <textarea
+                ref={mirrorRef}
+                aria-hidden="true"
+                tabIndex={-1}
+                readOnly
+                data-testid="vault-agent-input-mirror"
+                className={`${COMPOSER_BOX_CLASS} pointer-events-none invisible absolute left-0 top-0 h-0 w-full overflow-hidden`}
+              />
+              </div>
               {agent.running ? (
                 <button
                   type="button"
@@ -702,6 +828,14 @@ export function VaultAgentPanel({
     </aside>
   );
 }
+
+/**
+ * 입력칸과 미러가 **함께** 쓰는 상자 규격. 하나의 문자열이라 둘의 타이포가
+ * 갈라질 자리가 없다 — 갈라지면 미러가 다른 줄 수를 재고 상자가 틀린 높이로
+ * 선다(값이 두 곳에 적히면 이미 드리프트가 시작된 것).
+ */
+const COMPOSER_BOX_CLASS =
+  'resize-none rounded-card border border-[color:var(--color-border-soft)] bg-[color:var(--color-panel)] px-2.5 py-2 text-body leading-body';
 
 /**
  * 곁가지를 여는 한 줄짜리 컨트롤. 테두리도 배경도 없다 — 이 줄이 입력칸과
