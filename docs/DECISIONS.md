@@ -42,6 +42,70 @@
 
 ---
 
+## 2026-08-02 — `canWrite`는 승인된 전체 그래프의 deterministic write plan만 통과시킨다
+
+**소집**: PO 카운슬 5인 전원(근거·결·지킴이·해자·지렛대), 독립 1라운드 +
+상호 반박 1라운드. 실행 환경은 root 포함 동시 4슬롯이라 같은 브리프를 3인→2인
+두 파동으로 보냈고 자리 간 출력은 2라운드 전까지 공유하지 않았다. ·
+**트리거**: `analyze_repo_structure.proposal`의 공개 MCP 입력·출력 계약 변경.
+**루브릭**: 23/24 (Problem insight 4 · User moment 4 · Differentiation 3 ·
+Ontology value 4 · Agent value 4 · Verification 4, 치명적 0: 없음).
+
+**선행 결정 관계**: 2026-08-02 「Rust package 계약은 노드가 아니라 bounded
+`package-contract` 근거 한 행」 결정은 유효하다. 그 결정은 evidence packet의
+정본 근거를 늘렸지만, 사용자가 승인한 전체 의미 그래프가 검증과 쓰기 사이에서
+같은 객체로 보존되는지는 다루지 않았다. 이번 두 번째 field trial은 근거 수집보다
+하류인 approval→validation→write 경계의 별도 결함을 관측했다.
+
+**관측**: 낯선 저장소의 실제 MCP-only bootstrap에서 승인안은 6개 concept와
+7개 typed relation을 제시했지만 validator의 공개 schema는 project·domain·
+capability 4개만 받을 수 있었다. `canWrite:true`, findings 0이 나온 뒤 agent는
+검증 가능한 4개만 썼고 element 2개와 relation 7개를 모두 제외했다. 쓰기 입력을
+손으로 다시 만들면서 이미 검증된 capability의 `domain`도 잃었다. 결과는 의미
+관계 0개, capability 구현 근거 0/2, `health: needs_attention`이었고, source-hidden
+handoff는 6개 질문 중 1개를 답하지 못하고 3개를 부분 답변했다. 이는 agent의
+복사 실수만이 아니다. 현재 schema로는 승인된 element와 relation을 완전한
+proposal로 표현하거나 검증할 수 없다.
+
+**갈린 지점**: 다섯 자리 모두 Build에 동의했지만 검증-적용 동일성 자체는
+Terraform식 plan/apply를 포함한 신뢰 가능한 도구의 기본 계약이지 Atlas의 해자가
+아니라는 반론을 수용해 Differentiation을 3점으로 낮췄다. 또한 `writePlan`이
+원자 transaction이나 쓰기 성공을 보장한다는 오해가 더 강한 거짓 신호가 될 수
+있다고 봤다. 반박 뒤 전원은 `canWrite`를 evidence-ready exact input plan으로만
+한정하고 실제 batch 결과를 별도로 확인하는 데 합의했다.
+
+**결정 (accountable: 소유자)**: `analyze_repo_structure.proposal`은 승인 대상
+전체(project·domain·capability·element·typed relation)를 한 번에 검증한다.
+성공할 때만 기존 `add_concepts`와 `add_relations`의 실제 행 형식과 동일한
+deterministic `writePlan`을 반환한다. capability·element의 `domain`과 정본
+`path`, concept의 definition·evidence·confidence·boundary/uncertainty, relation의
+endpoint·type·why를 손실 없이 보존한다. 선택 승인은 선택된 subset 전체를 다시
+검증한다. concept batch에 실패 행이 하나라도 있으면 relation batch를 실행하지
+않는다. relation source는 evidence/confidence를 본문에 보존할 proposed concept여야
+한다. 기존 node를 source로 확장하는 일은 별도 patch workflow로 남긴다.
+`canWrite`는 사람의 승인, 원자성, 실제 write 성공을 뜻하지 않는다.
+
+**적용 규칙**: 최소 슬라이스 · 합집합 금지. IN — all-kind duplicate slug,
+element citation/domain/path, relation duplicate/endpoint/type/rationale 검증,
+deterministic concept body, batch `why` 배선, 실패 시 `writePlan` 미반환,
+bootstrap skill의 exact-plan 전달, 실제 6 concept·7 relation MCP replay와
+health/path/source-hidden handoff 재검증. OUT — 새 MCP 도구·kind·UI, 자동 write,
+approval token, 원자 transaction/rollback, import 추론, starter 삭제, 범용 workflow
+engine. appetite — 최대 2일; 첫날 contract red-green, 둘째날 real MCP/handoff.
+
+**기록된 반대** (근거·지킴이, 가장 강함): 현행 skill만 정확히 고친 fresh MCP
+run 두 번이 승인된 전체 그래프를 보존한다면 한 번의 agent 복사 실수를 공개 schema
+확장으로 고정하는 것은 과잉 처방이다. 전체 그래프 저장 후에도 source-hidden
+handoff가 개선되지 않으면 병목은 validator가 아니라 source evidence 부족이다.
+**반증 조건**: 현행 공개 계약의 대조 run이 전체 승인 집합을 두 번 연속 손실 없이
+저장하거나, 새 exact plan으로 전체 그래프를 저장해도 handoff의 code entrypoint와
+impact 답변이 개선되지 않거나, writer가 plan의 rationale/evidence를 다시 버린다.
+**재검토**: 같은 scratch trial의 실제 MCP replay와 source-hidden handoff 직후.
+
+**상태**: 유효.
+
+---
+
 ## 2026-08-02 — Rust package 계약은 노드가 아니라 bounded `package-contract` 근거 한 행이다
 
 **소집**: PO 카운슬 5인 전원(근거·결·지킴이·해자·지렛대), 독립 1라운드 +

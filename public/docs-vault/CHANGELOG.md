@@ -7,6 +7,22 @@
 
 ---
 
+## 2026-08-02 — 승인한 전체 그래프를 검증된 write plan으로 보존한다
+
+MCP cold-start bootstrap이 project·domain·capability만 검증한 뒤 승인 화면에는
+element와 relation까지 섞어 보여주고, 쓰기 단계에서 검증된 `domain`마저 잃던
+공백을 닫았다. 이제 `analyze_repo_structure`의 complete proposal은 project,
+domain, capability, element, typed relation 전체를 검증한다. 통과한 경우에만
+`add_concepts`·`add_relations`가 그대로 받는 deterministic `writePlan`을 반환해
+정의·근거·confidence·경계·domain/path와 relation rationale를 보존한다.
+
+`canWrite`는 여전히 사람의 승인이나 원자적 쓰기 성공을 뜻하지 않는다. 선택한
+subset은 다시 검증하고, concept batch의 모든 행이 성공한 뒤에만 relation batch를
+실행한다. Batch relation의 `why`도 이제 단건 writer와 같이 `relation_notes`에
+저장된다.
+
+---
+
 ## 2026-08-02 — Rust package manifest를 bootstrap 정본 근거로 읽는다
 
 낯선 Rust 저장소 field trial에서 capability가 `Cargo.toml`을 인용하자

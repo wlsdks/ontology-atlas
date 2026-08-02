@@ -583,10 +583,15 @@ await test("tools/list — 단일 도구 description 이 batch 짝을 cross-refe
     assert.deepEqual(analyzeRepo?.outputSchema?.properties?.capabilities?.items?.required, ["slug", "title", "evidence"]);
     assert.equal(analyzeRepo?.outputSchema?.properties?.capabilities?.items?.additionalProperties, false);
     assert.equal(analyzeRepo?.outputSchema?.properties?.capabilities?.items?.properties?.evidence?.additionalProperties, false);
-    assert.deepEqual(analyzeRepo?.inputSchema?.properties?.proposal?.required, ["project", "domains", "capabilities", "competencyAnswers"]);
+    assert.deepEqual(analyzeRepo?.inputSchema?.properties?.proposal?.required, ["project", "domains", "capabilities", "elements", "relations", "competencyAnswers"]);
     assert.equal(analyzeRepo?.inputSchema?.properties?.proposal?.additionalProperties, false);
+    assert.deepEqual(analyzeRepo?.inputSchema?.properties?.proposal?.properties?.elements?.items?.required, ["slug", "title", "definition", "evidence", "confidence", "domain", "path"]);
+    assert.deepEqual(analyzeRepo?.inputSchema?.properties?.proposal?.properties?.relations?.items?.required, ["from", "to", "type", "why", "evidence", "confidence"]);
     assert.deepEqual(analyzeRepo?.outputSchema?.properties?.proposalValidation?.required, ["status", "canWrite", "summary", "gates", "findings", "nextStep"]);
     assert.equal(analyzeRepo?.outputSchema?.properties?.proposalValidation?.additionalProperties, false);
+    assert.deepEqual(analyzeRepo?.outputSchema?.properties?.proposalValidation?.properties?.summary?.required, ["concepts", "relations", "findings", "errors", "warnings"]);
+    assert.deepEqual(analyzeRepo?.outputSchema?.properties?.proposalValidation?.properties?.writePlan?.required, ["concepts", "relations"]);
+    assert.deepEqual(analyzeRepo?.outputSchema?.properties?.proposalValidation?.properties?.writePlan?.properties?.relations?.items?.required, ["from", "to", "type", "why"]);
     const analyzeMeaningGate = analyzeRepo?.outputSchema?.properties?.meaningGate;
     assert.deepEqual(analyzeMeaningGate?.required, ["policy", "sourceStructureRole", "businessOntology", "proposedBusinessOntology", "implementationEvidence", "reviewQuestions"]);
     assert.equal(analyzeMeaningGate?.additionalProperties, false);
@@ -698,6 +703,8 @@ await test("tools/list — 단일 도구 description 이 batch 짝을 cross-refe
     assert.equal(addRelations?.outputSchema?.properties?.relations?.items?.properties?.alreadyExists?.type, "boolean");
     assert.equal(addRelations?.outputSchema?.properties?.relations?.items?.properties?.receivedValue?.type, "string");
     assert.equal(addRelations?.outputSchema?.properties?.postWriteMaintenance?.type, "object");
+    assert.equal(addRelations?.inputSchema?.properties?.relations?.items?.properties?.why?.type, "string");
+    assert.equal(addRelations?.inputSchema?.properties?.relations?.items?.properties?.why?.maxLength, 300);
     const addRelation = findTool("add_relation");
     assert.equal(addRelation?.outputSchema?.type, "object");
     assert.deepEqual(addRelation?.outputSchema?.required, ["ok", "from", "to", "type"]);
@@ -2079,6 +2086,8 @@ await test("analyze_repo_structure — validates a complete meaning proposal bef
         evidence: ["README.md", "src/review"],
         confidence: 0.9,
       }],
+      elements: [],
+      relations: [],
       competencyAnswers: {
         scope: "Teams publishing reviewable claims.",
         domains: "Review owns publication readiness.",
@@ -2095,6 +2104,10 @@ await test("analyze_repo_structure — validates a complete meaning proposal bef
     assert.equal(result.proposalValidation.status, "pass");
     assert.equal(result.proposalValidation.canWrite, true);
     assert.equal(result.proposalValidation.summary.errors, 0);
+    assert.equal(result.proposalValidation.summary.concepts, 3);
+    assert.equal(result.proposalValidation.summary.relations, 0);
+    assert.equal(result.proposalValidation.writePlan.concepts.length, 3);
+    assert.deepEqual(result.proposalValidation.writePlan.relations, []);
   } finally {
     rmSync(vaultRoot, { recursive: true, force: true });
     rmSync(repoRoot, { recursive: true, force: true });
@@ -5168,7 +5181,7 @@ await test("add_relations — 배치 write, row 순서 보존 + canonical sort +
       ...INIT_REQUESTS,
       callTool(2, "add_relations", {
         relations: [
-          { from: "p", to: "c2", type: "contains" },
+          { from: "p", to: "c2", type: "contains", why: "P contains the C2 capability." },
           // 같은 from 으로 누적 — readDoc 이 매번 다시 읽어 누락 없음
           { from: "p", to: "c1", type: "contains" },
           // idempotent — 같은 edge 두번
@@ -5221,6 +5234,7 @@ await test("add_relations — 배치 write, row 순서 보존 + canonical sort +
     // p.contains 는 edge set 기준으로 중복 제거 + 정렬되어 land
     const p = getCallParsed(responses, 3);
     assert.deepEqual(p.frontmatter.contains, ["c1", "c2"]);
+    assert.equal(p.frontmatter.relation_notes.c2, "P contains the C2 capability.");
   } finally {
     rmSync(root, { recursive: true, force: true });
   }

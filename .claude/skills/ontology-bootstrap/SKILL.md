@@ -188,13 +188,19 @@ Unresolved conflicts may remain only when explicitly shown to the user.
 ### 8. Ask for approval before writing
 
 Before showing the approval prompt, call `analyze_repo_structure` again with
-the complete `proposal` object (project, domains, capabilities, citations,
-numeric confidence, and all five competency answers). Treat
+the complete `proposal` object (project, domains, capabilities, elements,
+typed relations, citations, numeric confidence, and all five competency
+answers). Treat
 `proposalValidation.canWrite` as a hard precondition:
 
 - if false, show and resolve every error finding, then repeat the validation;
 - if true, it means the proposal is structurally evidence-ready, not that the
   user has approved it;
+- require `proposalValidation.writePlan`; its rows are the exact validated
+  writer inputs, not a suggestion to reconstruct by hand;
+- keep every relation source inside the proposed concept set so its evidence
+  and confidence land in that source node body; extending an existing source
+  node needs a separate patch workflow, not a lossy bootstrap plan;
 - never translate warnings into silent acceptance.
 
 Show a compact proposal grouped by project, domains, capabilities, elements,
@@ -206,20 +212,31 @@ and relations. Include definitions and evidence, not only slugs. Offer:
 - stop without writing
 
 Do not call write tools before the user chooses.
+If the user selects a subset, remove rejected concepts and relations whose
+endpoints are no longer present, then validate that complete subset again.
 
 ### 9. Persist only accepted meaning
 
 Use `similar_nodes` or `find_evidence` before writes when non-starter concepts
-may already exist. Then:
+may already exist. After approval, pass `writePlan.concepts` rows unchanged in
+chunks of at most 50:
 
 ```text
 add_concepts({ "concepts": [...] })
+```
+
+Only when every concept result row is `ok: true`, pass
+`writePlan.relations` rows unchanged in chunks of at most 50:
+
+```text
 add_relations({ "relations": [...] })
 ```
 
-Batch at most 50 rows. Remove relations whose endpoints were rejected. Preserve
-the evidence, definition, includes/excludes, and uncertainty summary in each
-node body so the persisted concept remains auditable.
+If any concept row fails, stop before relation writes, repair the proposal, and
+repeat validation. `canWrite` proves evidence readiness; it does not prove user
+approval, atomicity, or write success. The deterministic plan preserves the
+evidence, definition, includes/excludes, uncertainty, domain/path, and relation
+rationale so the persisted graph remains auditable.
 
 ### 10. Verify the shared ontology
 

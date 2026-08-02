@@ -5606,7 +5606,7 @@ export function batchRowIsolationFailure(response, key, label) {
         ['relation', 'type'],
         ['frm', 'from'],
       ]) ||
-      !sameArray(unknownFieldRow.allowedFields, ['from', 'to', 'type', 'expected_mtime']) ||
+      !sameArray(unknownFieldRow.allowedFields, ['from', 'to', 'type', 'why', 'expected_mtime']) ||
       !sameArray(unknownFieldRow.receivedFields, ['frm', 'from', 'relation', 'to', 'type'])
     )
   ) {
@@ -5622,7 +5622,7 @@ export function batchRowIsolationFailure(response, key, label) {
       singleUnknownFieldRow.rowName !== 'relations[3]' ||
       singleUnknownFieldRow.receivedField !== 'relation' ||
       !sameUnknownFields(singleUnknownFieldRow.unknownFields, [['relation', 'type']]) ||
-      !sameArray(singleUnknownFieldRow.allowedFields, ['from', 'to', 'type', 'expected_mtime']) ||
+      !sameArray(singleUnknownFieldRow.allowedFields, ['from', 'to', 'type', 'why', 'expected_mtime']) ||
       !sameArray(singleUnknownFieldRow.receivedFields, ['from', 'relation', 'to', 'type'])
     )
   ) {

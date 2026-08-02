@@ -340,6 +340,20 @@ const MEANING_PROPOSAL_CONCEPT_INPUT_PROPERTIES = Object.freeze({
   slug: NON_BLANK_STRING_SCHEMA,
   title: NON_BLANK_STRING_SCHEMA,
   definition: NON_BLANK_STRING_SCHEMA,
+  path: NON_BLANK_STRING_SCHEMA,
+  includes: {
+    type: 'array',
+    maxItems: 20,
+    uniqueItems: true,
+    items: NON_BLANK_STRING_SCHEMA,
+  },
+  excludes: {
+    type: 'array',
+    maxItems: 20,
+    uniqueItems: true,
+    items: NON_BLANK_STRING_SCHEMA,
+  },
+  uncertainty: NON_BLANK_STRING_SCHEMA,
   evidence: {
     type: 'array',
     minItems: 1,
@@ -381,6 +395,50 @@ const MEANING_PROPOSAL_INPUT_SCHEMA = Object.freeze({
         additionalProperties: false,
       },
     },
+    elements: {
+      type: 'array',
+      maxItems: 100,
+      items: {
+        type: 'object',
+        properties: {
+          ...MEANING_PROPOSAL_CONCEPT_INPUT_PROPERTIES,
+          domain: NON_BLANK_STRING_SCHEMA,
+        },
+        required: [
+          'slug',
+          'title',
+          'definition',
+          'evidence',
+          'confidence',
+          'domain',
+          'path',
+        ],
+        additionalProperties: false,
+      },
+    },
+    relations: {
+      type: 'array',
+      maxItems: 200,
+      items: {
+        type: 'object',
+        properties: {
+          from: NON_BLANK_STRING_SCHEMA,
+          to: NON_BLANK_STRING_SCHEMA,
+          type: { ...NON_BLANK_STRING_SCHEMA, enum: WRITE_RELATION_TYPE_VALUES },
+          why: { type: 'string', minLength: 1, maxLength: 300 },
+          evidence: {
+            type: 'array',
+            minItems: 1,
+            maxItems: 20,
+            uniqueItems: true,
+            items: NON_BLANK_STRING_SCHEMA,
+          },
+          confidence: { type: 'number', minimum: 0, maximum: 1 },
+        },
+        required: ['from', 'to', 'type', 'why', 'evidence', 'confidence'],
+        additionalProperties: false,
+      },
+    },
     competencyAnswers: {
       type: 'object',
       properties: {
@@ -394,7 +452,47 @@ const MEANING_PROPOSAL_INPUT_SCHEMA = Object.freeze({
       additionalProperties: false,
     },
   },
-  required: ['project', 'domains', 'capabilities', 'competencyAnswers'],
+  required: ['project', 'domains', 'capabilities', 'elements', 'relations', 'competencyAnswers'],
+  additionalProperties: false,
+});
+const MEANING_WRITE_PLAN_OUTPUT_SCHEMA = Object.freeze({
+  type: 'object',
+  properties: {
+    concepts: {
+      type: 'array',
+      items: {
+        type: 'object',
+        properties: {
+          slug: NON_BLANK_STRING_SCHEMA,
+          kind: {
+            ...NON_BLANK_STRING_SCHEMA,
+            enum: ['project', 'domain', 'capability', 'element'],
+          },
+          title: NON_BLANK_STRING_SCHEMA,
+          domain: NON_BLANK_STRING_SCHEMA,
+          path: NON_BLANK_STRING_SCHEMA,
+          body: { type: 'string' },
+        },
+        required: ['slug', 'kind', 'title', 'body'],
+        additionalProperties: false,
+      },
+    },
+    relations: {
+      type: 'array',
+      items: {
+        type: 'object',
+        properties: {
+          from: NON_BLANK_STRING_SCHEMA,
+          to: NON_BLANK_STRING_SCHEMA,
+          type: { ...NON_BLANK_STRING_SCHEMA, enum: WRITE_RELATION_TYPE_VALUES },
+          why: { type: 'string', minLength: 1, maxLength: 300 },
+        },
+        required: ['from', 'to', 'type', 'why'],
+        additionalProperties: false,
+      },
+    },
+  },
+  required: ['concepts', 'relations'],
   additionalProperties: false,
 });
 const MEANING_PROPOSAL_VALIDATION_OUTPUT_SCHEMA = Object.freeze({
@@ -409,11 +507,12 @@ const MEANING_PROPOSAL_VALIDATION_OUTPUT_SCHEMA = Object.freeze({
       type: 'object',
       properties: {
         concepts: { type: 'integer', minimum: 0 },
+        relations: { type: 'integer', minimum: 0 },
         findings: { type: 'integer', minimum: 0 },
         errors: { type: 'integer', minimum: 0 },
         warnings: { type: 'integer', minimum: 0 },
       },
-      required: ['concepts', 'findings', 'errors', 'warnings'],
+      required: ['concepts', 'relations', 'findings', 'errors', 'warnings'],
       additionalProperties: false,
     },
     gates: {
@@ -424,6 +523,9 @@ const MEANING_PROPOSAL_VALIDATION_OUTPUT_SCHEMA = Object.freeze({
         citationsResolved: { type: 'boolean' },
         riskyEvidenceControlled: { type: 'boolean' },
         capabilityDomainsResolved: { type: 'boolean' },
+        elementDomainsResolved: { type: 'boolean' },
+        elementPathsResolved: { type: 'boolean' },
+        relationsResolved: { type: 'boolean' },
         confidenceValid: { type: 'boolean' },
         competencyQuestionsAnswered: { type: 'boolean' },
       },
@@ -433,6 +535,9 @@ const MEANING_PROPOSAL_VALIDATION_OUTPUT_SCHEMA = Object.freeze({
         'citationsResolved',
         'riskyEvidenceControlled',
         'capabilityDomainsResolved',
+        'elementDomainsResolved',
+        'elementPathsResolved',
+        'relationsResolved',
         'confidenceValid',
         'competencyQuestionsAnswered',
       ],
@@ -453,6 +558,7 @@ const MEANING_PROPOSAL_VALIDATION_OUTPUT_SCHEMA = Object.freeze({
         additionalProperties: false,
       },
     },
+    writePlan: MEANING_WRITE_PLAN_OUTPUT_SCHEMA,
     nextStep: NON_BLANK_STRING_SCHEMA,
   },
   required: ['status', 'canWrite', 'summary', 'gates', 'findings', 'nextStep'],
@@ -1141,9 +1247,9 @@ When the user says "이 codebase 분석해줘" or you find only starter nodes:
 3. Extract in order: project outcome → stable responsibility domains → observable implementation-independent capabilities → concrete elements → typed relations. A folder, package, team, technology, or README section is not a domain/capability without independent semantic evidence.
 4. Give every proposed domain/capability a non-circular definition, includes/excludes boundary, citation, confidence, and counterevidence/uncertainty. Keep observed facts, proposed meanings, and persisted shared concepts separate.
 5. Answer every \`extractionContract.competencyQuestions\` item. Report unsupported assertions, citation gaps, implementation-name leakage, undefined/circular concepts, unresolved conflicts, and question coverage. Do not write while the first four counts are non-zero.
-6. Call \`analyze_repo_structure\` again with the complete \`proposal\`. Fix every \`proposalValidation.findings\` error; do not call write tools unless \`proposalValidation.canWrite\` is true.
-7. Show the validated evidence-backed proposal and obtain explicit user approval. Unknown is a valid result; invented completeness is not.
-8. Persist only accepted rows with \`add_concepts\` / \`add_relations\` (max 50 each), then run \`validate_vault\`, \`compile_ontology({summary:true})\`, and verify a project → domain → capability → element path.
+6. Call \`analyze_repo_structure\` again with the complete \`proposal\`: project, domains, capabilities, elements, typed relations, citations, confidence, and every competency answer. Fix every \`proposalValidation.findings\` error; do not call write tools unless \`proposalValidation.canWrite\` is true and a deterministic \`writePlan\` is present.
+7. Show that exact validated graph and obtain explicit user approval. Unknown is a valid result; invented completeness is not. If the user selects a subset, remove rejected endpoints and revalidate the complete subset before writing.
+8. After approval, pass \`writePlan.concepts\` rows unchanged to \`add_concepts\` (chunks of 50). Only when every concept row succeeds, pass \`writePlan.relations\` rows unchanged to \`add_relations\`. \`canWrite\` proves evidence readiness, not approval, atomicity, or write success. Then run \`validate_vault\`, \`compile_ontology({summary:true})\`, and verify a project → domain → capability → element path.
 
 A non-object row, unknown row fields, missing endpoint, or duplicate slug fail independently with \`ok: false\`. Invalid-only batches return no row-level write metadata and no top-level \`postWriteMaintenance\`; treat them as dry validation evidence. For relation batches, Invalid-only batches return no row-level \`changed\` / \`alreadyExists\` write metadata and no top-level \`postWriteMaintenance\`; treat them as dry validation evidence. An unknown type row includes a closest-value hint such as \`Did you mean "depends_on"?\`. Duplicate slugs fail as \`concepts[n] duplicate slug in input batch; first seen at concepts[m]\`. Retry only corrected rows.
 
@@ -1822,6 +1928,11 @@ const TOOLS = [
               from: NON_BLANK_STRING_SCHEMA,
               to: NON_BLANK_STRING_SCHEMA,
               type: ADD_RELATION_TYPE_SCHEMA,
+              why: {
+                type: 'string',
+                maxLength: 300,
+                description: 'One-line rationale stored with the relation in relation_notes.',
+              },
               expected_mtime: { type: 'number', minimum: 0 },
             },
             required: ['from', 'to', 'type'],
@@ -3412,9 +3523,12 @@ const TOOLS = [
       '  - src/features|entities|widgets|views/* (FSD) → capability/element candidates\n' +
       '  - src/* depth-1 folders (generic) → capability candidates + index entry → element\n' +
       '  - apps/* and packages/* members with package.json → implementation element candidates\n\n' +
-      'Optionally pass a complete `proposal` to validate definitions, citations, risk controls, ' +
-      'domain placement, confidence, and competency answers against the same evidence packet. ' +
-      'Do not call write tools unless proposalValidation.canWrite is true and the user approves.\n\n' +
+      'Optionally pass a complete `proposal` to validate project/domain/capability/element definitions, ' +
+      'typed relations, citations, risk controls, domain placement, implementation paths, confidence, ' +
+      'and competency answers against the same evidence packet. A passing validation includes a ' +
+      'deterministic `writePlan` whose rows match `add_concepts` and `add_relations` inputs. ' +
+      'Do not call write tools unless proposalValidation.canWrite is true and the user approves; ' +
+      'write every concept row successfully before writing relations.\n\n' +
       'Use this once when a user asks "이 codebase 분석해줘" / "bootstrap the ontology". ' +
       'Single source of truth preserved — only the user (via your subsequent add_concept calls) ' +
       'writes to the vault.',
@@ -5542,6 +5656,7 @@ function addRelationsBatch({ relations }) {
         'from',
         'to',
         'type',
+        'why',
         'expected_mtime',
       ]);
       return addRelation(spec, { includePostWriteMaintenance: false });

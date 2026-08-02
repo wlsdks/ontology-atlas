@@ -97,3 +97,162 @@ test('repository proposal blocks unknown citations and unresolved capability dom
   assert.ok(result.findings.some((row) => row.code === 'unknown-citation'));
   assert.ok(result.findings.some((row) => row.code === 'unresolved-capability-domain'));
 });
+
+test('repository proposal validates the complete approved graph and returns an exact write plan', () => {
+  const analysis = analyzeRepoStructure(fixtureRoot);
+  const proposal = repositoryProposalFromGolden(expected);
+  proposal.elements = [{
+    slug: 'elements/checkout-entrypoint',
+    title: 'Checkout Entrypoint',
+    definition: 'The source entrypoint that implements checkout behavior.',
+    domain: 'domains/purchase',
+    path: 'src/features/checkout/index.ts',
+    evidence: ['src/features/checkout'],
+    confidence: 0.9,
+    includes: ['The checkout feature entrypoint.'],
+    excludes: ['Inventory reconciliation.'],
+    uncertainty: 'Individual helper symbols remain outside this proposal.',
+  }];
+  proposal.relations = [
+    {
+      from: 'northstar-commerce',
+      to: 'domains/purchase',
+      type: 'domains',
+      why: 'The project owns the purchase responsibility boundary.',
+      evidence: ['README.md'],
+      confidence: 0.9,
+    },
+    {
+      from: 'domains/purchase',
+      to: 'capabilities/checkout',
+      type: 'capabilities',
+      why: 'Purchase is realized through checkout.',
+      evidence: ['README.md'],
+      confidence: 0.9,
+    },
+    {
+      from: 'capabilities/checkout',
+      to: 'elements/checkout-entrypoint',
+      type: 'elements',
+      why: 'The checkout entrypoint implements checkout behavior.',
+      evidence: ['src/features/checkout'],
+      confidence: 0.9,
+    },
+  ];
+
+  const result = validateMeaningProposalAgainstAnalysis(analysis, proposal);
+
+  assert.equal(result.status, 'pass');
+  assert.equal(result.canWrite, true);
+  assert.deepEqual(result.summary, {
+    concepts: 6,
+    relations: 3,
+    findings: 0,
+    errors: 0,
+    warnings: 0,
+  });
+  assert.equal(result.writePlan.concepts.length, 6);
+  assert.equal(result.writePlan.relations.length, 3);
+  const capability = result.writePlan.concepts.find(
+    (row) => row.slug === 'capabilities/checkout',
+  );
+  assert.equal(capability.kind, 'capability');
+  assert.equal(capability.slug, 'capabilities/checkout');
+  assert.equal(capability.domain, 'domains/purchase');
+  const element = result.writePlan.concepts.find(
+    (row) => row.slug === 'elements/checkout-entrypoint',
+  );
+  assert.equal(element.domain, 'domains/purchase');
+  assert.equal(element.path, 'src/features/checkout/index.ts');
+  assert.match(element.body, /## Definition[\s\S]*source entrypoint/i);
+  assert.match(element.body, /## Evidence[\s\S]*src\/features\/checkout/i);
+  assert.match(element.body, /## Confidence[\s\S]*0\.9/i);
+  assert.match(element.body, /## Includes[\s\S]*checkout feature entrypoint/i);
+  assert.match(element.body, /## Excludes[\s\S]*Inventory reconciliation/i);
+  assert.match(element.body, /## Uncertainty[\s\S]*helper symbols/i);
+  assert.deepEqual(result.writePlan.relations[2], {
+    from: 'capabilities/checkout',
+    to: 'elements/checkout-entrypoint',
+    type: 'elements',
+    why: 'The checkout entrypoint implements checkout behavior.',
+  });
+});
+
+test('repository proposal fails closed on incomplete or invalid approved graph rows', () => {
+  const analysis = analyzeRepoStructure(fixtureRoot);
+  const proposal = repositoryProposalFromGolden(expected);
+  proposal.elements = [{
+    slug: 'capabilities/checkout',
+    title: 'Duplicate Checkout',
+    definition: 'A duplicate slug in another kind.',
+    domain: 'domains/missing',
+    path: 'src/features/missing/index.ts',
+    evidence: ['docs/imaginary.md'],
+    confidence: 0.9,
+  }];
+  proposal.relations = [
+    {
+      from: 'capabilities/checkout',
+      to: 'elements/missing',
+      type: 'contains',
+      why: 'The missing element would implement checkout.',
+      evidence: ['README.md'],
+      confidence: 0.9,
+    },
+    {
+      from: 'capabilities/checkout',
+      to: 'elements/missing',
+      type: 'contains',
+      why: 'Duplicate relation.',
+      evidence: ['README.md'],
+      confidence: 0.9,
+    },
+    {
+      from: 'northstar-commerce',
+      to: 'domains/purchase',
+      type: 'invented_relation',
+      why: 'Unsupported relation type.',
+      evidence: ['README.md'],
+      confidence: 0.9,
+    },
+  ];
+
+  const result = validateMeaningProposalAgainstAnalysis(analysis, proposal);
+
+  assert.equal(result.status, 'fail');
+  assert.equal(result.canWrite, false);
+  assert.equal(result.writePlan, undefined);
+  for (const code of [
+    'duplicate-slug',
+    'unknown-citation',
+    'unresolved-element-domain',
+    'missing-element-path',
+    'missing-relation-endpoint',
+    'duplicate-relation',
+    'unsupported-relation-type',
+  ]) {
+    assert.ok(result.findings.some((row) => row.code === code), `missing ${code}`);
+  }
+});
+
+test('repository proposal rejects relation sources that the write plan cannot preserve', () => {
+  const analysis = analyzeRepoStructure(fixtureRoot);
+  analysis.meaningGate.businessOntology.domains.push('domains/existing');
+  const proposal = repositoryProposalFromGolden(expected);
+  proposal.relations = [{
+    from: 'domains/existing',
+    to: 'capabilities/checkout',
+    type: 'capabilities',
+    why: 'The existing domain owns checkout.',
+    evidence: ['README.md'],
+    confidence: 0.9,
+  }];
+
+  const result = validateMeaningProposalAgainstAnalysis(analysis, proposal);
+
+  assert.equal(result.canWrite, false);
+  assert.equal(result.writePlan, undefined);
+  assert.ok(result.findings.some(
+    (row) => row.code === 'relation-source-not-in-write-plan',
+  ));
+});

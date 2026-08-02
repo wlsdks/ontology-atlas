@@ -5189,7 +5189,7 @@ describe('verify.mjs first-contact gates', () => {
           { name: 'relation', suggestion: 'type' },
           { name: 'frm', suggestion: 'from' },
         ],
-        allowedFields: ['from', 'to', 'type', 'expected_mtime'],
+        allowedFields: ['from', 'to', 'type', 'why', 'expected_mtime'],
         receivedFields: ['frm', 'from', 'relation', 'to', 'type'],
       },
       {
@@ -5208,7 +5208,7 @@ describe('verify.mjs first-contact gates', () => {
         rowName: 'relations[3]',
         receivedField: 'relation',
         unknownFields: [{ name: 'relation', suggestion: 'type' }],
-        allowedFields: ['from', 'to', 'type', 'expected_mtime'],
+        allowedFields: ['from', 'to', 'type', 'why', 'expected_mtime'],
         receivedFields: ['from', 'relation', 'to', 'type'],
       },
     ];

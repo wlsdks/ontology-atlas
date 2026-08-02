@@ -201,6 +201,8 @@ test('root Cargo package contract is admissible evidence for a feature capabilit
         evidence: ['Cargo.toml'],
         confidence: 0.9,
       }],
+      elements: [],
+      relations: [],
       competencyAnswers: {
         scope: 'Rust teams performing scientific calculations.',
         domains: 'Library Configuration owns optional behavior selection.',
