@@ -115,8 +115,8 @@ export function CanvasBackgroundPicker() {
      * (실측: 다른 절 20px, 여기만 32px).
      */
     <div data-testid="app-settings-canvas-background">
-      <p className="text-label text-[color:var(--color-text-secondary)]">{t('canvasBgLabel')}</p>
-      <p className="mt-0.5 break-keep text-caption leading-4 text-[color:var(--color-text-quaternary)]">
+      <p className="text-body text-[color:var(--color-text-secondary)]">{t('canvasBgLabel')}</p>
+      <p className="mt-0.5 break-keep text-label text-[color:var(--color-text-quaternary)]">
         {t('canvasBgCaption')}
       </p>
       <div role="radiogroup" aria-label={t('canvasBgLabel')} className="mt-3 grid grid-cols-2 gap-2.5">
@@ -140,7 +140,7 @@ export function CanvasBackgroundPicker() {
               <CanvasBgSwatch variant={variant} />
               <span
                 className={cn(
-                  'text-caption',
+                  'text-label',
                   active
                     ? 'text-[color:var(--color-indigo-accent)]'
                     : 'text-[color:var(--color-text-tertiary)]',
@@ -161,8 +161,8 @@ export function GlyphSetPicker() {
   const value = useGlyphSet();
   return (
     <div className="px-3 py-2.5" data-testid="app-settings-glyph-set">
-      <p className="text-label text-[color:var(--color-text-secondary)]">{t('glyphSetLabel')}</p>
-      <p className="mt-0.5 break-keep text-caption leading-4 text-[color:var(--color-text-quaternary)]">
+      <p className="text-body text-[color:var(--color-text-secondary)]">{t('glyphSetLabel')}</p>
+      <p className="mt-0.5 break-keep text-label text-[color:var(--color-text-quaternary)]">
         {t('glyphSetCaption')}
       </p>
       <div role="radiogroup" aria-label={t('glyphSetLabel')} className="mt-2 grid grid-cols-2 gap-2">
@@ -190,7 +190,7 @@ export function GlyphSetPicker() {
               </span>
               <span
                 className={cn(
-                  'text-caption',
+                  'text-label',
                   active
                     ? 'text-[color:var(--color-indigo-accent)]'
                     : 'text-[color:var(--color-text-tertiary)]',

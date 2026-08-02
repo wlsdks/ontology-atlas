@@ -71,12 +71,12 @@ export function ExpandSettings() {
   ];
 
   return (
-    <div className="grid gap-3" data-testid="app-settings-expand">
-      <p className="break-keep text-caption leading-4 text-[color:var(--color-text-quaternary)]">
+    <div className="grid min-w-0 gap-3" data-testid="app-settings-expand">
+      <p className="break-keep text-label text-[color:var(--color-text-quaternary)]">
         {t('caption')}
       </p>
 
-      <div className="grid gap-0.5 rounded-lg border border-[color:var(--color-border-soft)] p-2">
+      <div className="grid min-w-0 gap-0.5 rounded-lg border border-[color:var(--color-border-soft)] p-2">
         <Choice
           label={t('affordanceLabel')}
           testId="app-settings-expand-affordance"
@@ -89,13 +89,13 @@ export function ExpandSettings() {
             나란히 있으면 이름만으로는 갈리지 않는다(시안이 힌트를 둔 이유). */}
         <p
           data-testid="app-settings-expand-affordance-hint"
-          className="px-1 pb-1 break-keep text-caption leading-4 text-[color:var(--color-text-quaternary)]"
+          className="px-1 pb-1 break-keep text-label text-[color:var(--color-text-quaternary)]"
         >
           {t(`affordanceHint.${pref.affordance}`)}
         </p>
       </div>
 
-      <div className="grid gap-0.5 rounded-lg border border-[color:var(--color-border-soft)] p-2">
+      <div className="grid min-w-0 gap-0.5 rounded-lg border border-[color:var(--color-border-soft)] p-2">
         <Choice
           label={t('structureLabel')}
           testId="app-settings-expand-structure"
@@ -106,7 +106,7 @@ export function ExpandSettings() {
         />
         <p
           data-testid="app-settings-expand-structure-hint"
-          className="px-1 pb-1 break-keep text-caption leading-4 text-[color:var(--color-text-quaternary)]"
+          className="px-1 pb-1 break-keep text-label text-[color:var(--color-text-quaternary)]"
         >
           {t(`structureHint.${pref.structure}`)}
         </p>
@@ -117,10 +117,10 @@ export function ExpandSettings() {
         data-testid="app-settings-expand-detail-toggle"
         aria-expanded={detailOpen}
         onClick={() => setDetailOpen((open) => !open)}
-        className="flex items-center gap-1.5 justify-self-start rounded-chip border border-[color:var(--color-border-soft)] px-2.5 py-1.5 text-label text-[color:var(--color-text-secondary)] transition-colors hover:border-[color:var(--color-border-strong)] hover:text-[color:var(--color-text-primary)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--color-indigo-a46)]"
+        className="flex h-8 items-center gap-1.5 justify-self-start rounded-chip border border-[color:var(--color-border-soft)] px-3 text-body text-[color:var(--color-text-secondary)] transition-colors hover:border-[color:var(--color-border-strong)] hover:text-[color:var(--color-text-primary)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--color-indigo-a46)]"
       >
         <ChevronDown
-          size={13}
+          size={14}
           aria-hidden
           className={detailOpen ? 'rotate-180 transition-transform' : 'transition-transform'}
         />
@@ -128,7 +128,7 @@ export function ExpandSettings() {
       </button>
 
       {detailOpen ? (
-      <div className="grid gap-0.5 rounded-lg border border-[color:var(--color-border-soft)] p-2">
+      <div className="grid min-w-0 gap-0.5 rounded-lg border border-[color:var(--color-border-soft)] p-2">
         <Slider
           label={t('batchLabel')}
           testId="app-settings-expand-batch"
@@ -137,7 +137,7 @@ export function ExpandSettings() {
           format={(v) => String(v)}
           onChange={(batchSize) => set({ batchSize })}
         />
-        <p className="px-1 pb-1 break-keep text-caption leading-4 text-[color:var(--color-text-quaternary)]">
+        <p className="px-1 pb-1 break-keep text-label text-[color:var(--color-text-quaternary)]">
           {t('batchHint')}
         </p>
         <Slider
@@ -148,7 +148,7 @@ export function ExpandSettings() {
           format={(v) => String(v)}
           onChange={(labelAttempts) => set({ labelAttempts })}
         />
-        <p className="px-1 pb-1 break-keep text-caption leading-4 text-[color:var(--color-text-quaternary)]">
+        <p className="px-1 pb-1 break-keep text-label text-[color:var(--color-text-quaternary)]">
           {t('labelAttemptsHint')}
         </p>
         <Slider
@@ -159,7 +159,7 @@ export function ExpandSettings() {
           format={(v) => String(v)}
           onChange={(maxOpenParents) => set({ maxOpenParents })}
         />
-        <p className="px-1 pb-1 break-keep text-caption leading-4 text-[color:var(--color-text-quaternary)]">
+        <p className="px-1 pb-1 break-keep text-label text-[color:var(--color-text-quaternary)]">
           {t('maxOpenHint')}
         </p>
       </div>
