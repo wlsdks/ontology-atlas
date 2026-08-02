@@ -7,6 +7,27 @@
 
 ---
 
+## 2026-08-02 — bootstrap 답변의 근거와 빈틈을 쓰기 계획에 보존한다
+
+`analyze_repo_structure`의 두 번째 호출이 competency 질문에 임의 문자열만
+받아, 존재하지 않는 구현 역할이나 아직 모르는 영향 관계도 "답변 완료"로
+통과시킬 수 있던 공백을 닫았다. 이제 각 답은 `answered` · `partial` ·
+`visible-gap` 상태와 concept · relation · evidence · path witness를 함께 내며,
+`answered`가 요구 근거를 찾지 못하면 `canWrite:false`로 닫힌다.
+
+근거가 부족하다고 정직하게 표시한 `partial`과 `visible-gap`은 승인 가능한
+그래프까지 막지는 않지만, finding과 gate에 남고 deterministic `writePlan` 및
+project 문서의 `Competency answers` 절까지 보존된다. 따라서 `canWrite:true`가
+더 이상 "모든 질문이 해결됨"을 뜻하지 않으며, 다음 사람이나 에이전트가
+숨겨진 미확인 범위를 이어서 조사할 수 있다.
+
+실제 Codex↔MCP 오픈소스 dogfood에서 `includes`/`excludes`를 배열 대신
+문자열로 보낸 입력이 내부 본문 렌더러까지 도달하는 것도 확인했다. 이제 공개
+스키마에만 의존하지 않고 내부 preflight가 같은 경계 조건을 다시 검증해,
+서버 예외 대신 `invalid-concept-boundary-list` finding으로 수정 경로를 돌려준다.
+
+---
+
 ## 2026-08-02 — macOS 경로 별칭에서도 init의 MCP repo root를 보존한다
 
 `ontology-atlas init /tmp/.../ontology`처럼 vault 절대 경로가 macOS의

@@ -42,6 +42,71 @@
 
 ---
 
+## 2026-08-02 — `canWrite`는 competency 답의 witness와 visible gap을 함께 보존한다
+
+**소집**: PO 카운슬 5인 전원(근거·결·지킴이·해자·지렛대), 독립 1라운드 +
+상호 반박 1라운드. 동시 에이전트 슬롯 한계로 3인→2인 두 파동을 사용했고,
+2라운드 전까지 다른 자리의 출력을 공유하지 않았다. · **트리거**: 공개 MCP
+입력·출력 의미 계약 변경 + 선행 `canWrite` 결정의 반증 조건 관측.
+**루브릭**: 22/24 (Problem insight 4 · User moment 4 · Differentiation 3 ·
+Ontology value 4 · Agent value 4 · Verification 3, 치명적 0: 없음).
+
+**선행 결정 관계**: 같은 날 「`canWrite`는 승인된 전체 그래프의 deterministic
+write plan만 통과시킨다」와 2026-07-31 「팬아웃 상한이 아니라 노드 자격 게이트」는
+둘 다 유효하다. 전자는 검증한 그래프와 쓰는 그래프의 동일성을 해결했고, 후자는
+10·20 같은 수를 품질 상한으로 쓰는 것을 금지했다. 다만 전자의 기록된 반증 조건,
+즉 exact plan으로 전체 그래프를 저장해도 code entrypoint와 impact handoff가
+개선되지 않는 경우가 이번 다음 field trial에서 그대로 관측됐다.
+
+**관측**: 낯선 저장소를 Atlas MCP만으로 분석한 builder는 6개 의미 concept와
+5개 relation을 손실 없이 저장했고 `canWrite:true`, findings 0을 받았다. 그러나
+source-hidden 인수자는 사전에 고정한 6문항 중 1개만 완전히 답하고 5개를 부분
+답변했다. 저장된 capability는 BibTeX·YAML·query 전체의 canonical path를
+`src/types`라고 했지만 실제 공개 진입점은 `src/io.rs`, 핵심 collection model은
+`src/lib.rs`, BibLaTeX 변환은 `src/interop.rs`, query는 selector 모듈에 나뉜다.
+dependency relation이 없는데도 impact competency는 비어 있지 않은 문자열 하나로
+통과했다. 현재 validator가 증명한 것은 답 문자열의 존재이지, 답을 지지하는
+concept·typed relation·evidence·path의 존재가 아니다.
+
+**갈린 지점**: 1라운드의 근거·결·해자는 bounded source-role evidence를 먼저
+늘려야 잘못된 canonical path를 바로잡을 수 있다고 했고, 지킴이·지렛대는 먼저
+typed competency answer로 거짓 완전 통과를 없애야 실제 evidence 공백을 측정할 수
+있다고 했다. 반박에서 전자는 source packet부터 넓히면 Atlas가 열등한 source index를
+복제하고 원인별 수요를 모른 채 payload만 키운다는 주장을 수용해 판정을
+`typed-CQ-only`로 바꿨다.
+
+**결정 (accountable: 소유자)**: 기존 다섯 competency answer를 단순 문자열에서
+`answer` · `status` · 실제 graph/evidence `witnesses`를 가진 구조로 바꾼다.
+`answered`는 해당 질문이 요구하는 concept·typed relation·evidence·canonical path
+witness가 proposal 안에서 해소될 때만 허용한다. 일부만 증명되거나 증명할 수 없으면
+`partial` 또는 `visible-gap`으로 남기고, 그 gap은 finding과 deterministic
+`writePlan`, persisted project body까지 손실 없이 보존한다. 따라서 honest gap이
+있는 proposal은 승인·쓰기 가능할 수 있지만 findings 0이나 완전 답변으로 표시되지
+않는다. `canWrite`는 계속 boolean evidence-readiness gate이며 사람 승인·원자성·
+완전성을 뜻하지 않는다.
+
+**적용 규칙**: 최소 슬라이스 · 합집합 금지. IN — 기존 5문항의 typed metadata,
+answer/status/witness input schema, witness endpoint/source/path 해소, 질문별 최소 witness,
+partial/visible-gap warning, exact plan과 project body 보존, 현 field trial의 거짓
+canonical/impact proposal RED, fresh MCP-only rebuild와 source-hidden 재시험. OUT —
+semantic evidence packet 확대, source/AST/import index, 새 MCP 도구·kind, 고정 노드
+수·kind별 상한, 자동 bridge, UI, 자동 write, Ollama tool routing. appetite — 최대
+2일; 둘째 날 안에 거짓 통과 RED와 exact unknown handoff를 재현하지 못하면 확장하지
+않고 중단한다.
+
+**기록된 반대**: 현재 packet은 README와 Cargo contract 중심이어서 typed witness만
+추가해도 `src/types`가 그 역할의 정본인지 기계가 판별할 수 없다. source-role
+evidence를 동시에 추가하지 않으면 형식만 복잡해지고 handoff의 정확도는 그대로일 수
+있다. **반증 조건**: typed CQ가 현 거짓 canonical path·근거 없는 impact를
+`answered`에서 내리지 못하거나, 내린 뒤에도 fresh source-hidden handoff가 gap을
+숨기거나 잘못된 시작점을 확정하면 이 반대가 옳다. 그때 다음 슬라이스는 반복된
+unknown이 요구한 역할만 수집하는 bounded source-role evidence다. **재검토**: 동일
+scratch repo의 fresh MCP rebuild와 source-hidden 6문항 재채점 직후.
+
+**상태**: 유효.
+
+---
+
 ## 2026-08-02 — init의 vault와 repo root는 같은 canonical 좌표계에서 계산한다
 
 **소집**: 단독 패스 · **트리거**: 실제 field trial에서 CLI가 생성한 MCP 설정이

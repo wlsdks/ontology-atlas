@@ -13,6 +13,52 @@ const DEFAULT_THRESHOLDS = Object.freeze({
   maximumUnsupportedHighConfidence: 0,
 });
 
+export const COMPETENCY_QUESTION_CONTRACTS = Object.freeze([
+  Object.freeze({
+    id: 'scope',
+    type: 'scoping',
+    question: 'What product/system outcome and user problem define the ontology scope?',
+    priority: 'core',
+    requiredWitnesses: Object.freeze(['concepts', 'evidence']),
+  }),
+  Object.freeze({
+    id: 'domains',
+    type: 'scoping',
+    question: 'Which stable business responsibilities or decision boundaries form its domains?',
+    priority: 'core',
+    requiredWitnesses: Object.freeze(['concepts', 'relations', 'evidence']),
+  }),
+  Object.freeze({
+    id: 'abilities',
+    type: 'validation',
+    question: 'Which observable abilities realize those outcomes inside each domain?',
+    priority: 'core',
+    requiredWitnesses: Object.freeze(['concepts', 'relations', 'evidence']),
+  }),
+  Object.freeze({
+    id: 'evidence',
+    type: 'validation',
+    question: 'Which source artifacts provide implementation evidence for each ability?',
+    priority: 'core',
+    requiredWitnesses: Object.freeze(['concepts', 'evidence', 'paths']),
+  }),
+  Object.freeze({
+    id: 'impact',
+    type: 'relationship',
+    question: 'Which typed dependencies explain change impact across the model?',
+    priority: 'core',
+    requiredWitnesses: Object.freeze(['concepts', 'relations', 'evidence']),
+  }),
+]);
+
+const COMPETENCY_STATUSES = new Set(['answered', 'partial', 'visible-gap']);
+const COMPETENCY_WITNESS_KEYS = Object.freeze([
+  'concepts',
+  'relations',
+  'evidence',
+  'paths',
+]);
+
 export function evaluateMeaningProposal(expected, proposal, thresholds = {}) {
   validateExpected(expected);
   validateProposal(proposal);
@@ -149,6 +195,11 @@ export function proposalFromGolden(expected, confidence = 0.9) {
 }
 
 export function repositoryProposalFromGolden(expected, confidence = 0.9) {
+  const domainSlugs = expected.domains.map((row) => row.slug);
+  const capabilitySlugs = expected.capabilities.map((row) => row.slug);
+  const capabilityPaths = expected.capabilities
+    .map((row) => row.evidence?.find((source) => source.startsWith('src/')))
+    .filter(Boolean);
   return {
     project: {
       ...expected.project,
@@ -156,11 +207,54 @@ export function repositoryProposalFromGolden(expected, confidence = 0.9) {
       confidence,
     },
     domains: expected.domains.map((row) => ({ ...row, confidence })),
-    capabilities: expected.capabilities.map((row) => ({ ...row, confidence })),
+    capabilities: expected.capabilities.map((row) => ({
+      ...row,
+      ...(row.evidence?.find((source) => source.startsWith('src/'))
+        ? { path: row.evidence.find((source) => source.startsWith('src/')) }
+        : {}),
+      confidence,
+    })),
     elements: [],
     relations: [],
-    competencyAnswers: { ...expected.competencyAnswers },
+    competencyAnswers: {
+      scope: competencyAnswer(expected.competencyAnswers.scope, 'answered', {
+        concepts: [expected.project.slug],
+        evidence: ['README.md'],
+      }),
+      domains: competencyAnswer(expected.competencyAnswers.domains, 'partial', {
+        concepts: domainSlugs,
+        evidence: uniqueConceptEvidence(expected.domains),
+      }, 'The proposal has not yet attached project-to-domain relation witnesses.'),
+      abilities: competencyAnswer(expected.competencyAnswers.abilities, 'partial', {
+        concepts: capabilitySlugs,
+        evidence: uniqueConceptEvidence(expected.capabilities),
+      }, 'The proposal has not yet attached domain-to-capability relation witnesses.'),
+      evidence: competencyAnswer(expected.competencyAnswers.evidence, 'answered', {
+        concepts: capabilitySlugs,
+        evidence: capabilityPaths,
+        paths: capabilityPaths,
+      }),
+      impact: competencyAnswer(expected.competencyAnswers.impact, 'visible-gap', {
+        concepts: capabilitySlugs,
+        evidence: ['README.md'],
+      }, 'The proposal has not yet attached a typed change-impact relation.'),
+    },
   };
+}
+
+function competencyAnswer(answer, status, witnesses = {}, gap) {
+  return {
+    answer,
+    status,
+    ...(gap ? { gap } : {}),
+    witnesses: Object.fromEntries(
+      COMPETENCY_WITNESS_KEYS.map((key) => [key, witnesses[key] ?? []]),
+    ),
+  };
+}
+
+function uniqueConceptEvidence(concepts) {
+  return [...new Set(concepts.flatMap((row) => row.evidence ?? []))];
 }
 
 export function candidateProposalFromAnalysis(analysis) {
@@ -202,6 +296,7 @@ export function validateMeaningProposalAgainstAnalysis(analysis, proposal) {
         relationsResolved: false,
         confidenceValid: false,
         competencyQuestionsAnswered: false,
+        competencyWitnessesResolved: false,
       },
       findings: [],
       nextStep:
@@ -243,6 +338,8 @@ export function validateMeaningProposalAgainstAnalysis(analysis, proposal) {
     if (!nonEmpty(concept.definition)) {
       findings.push(finding('missing-definition', 'error', path, 'Every proposed concept needs a non-circular definition.'));
     }
+    validateOptionalConceptBoundaryList(concept.includes, `${path}.includes`, findings);
+    validateOptionalConceptBoundaryList(concept.excludes, `${path}.excludes`, findings);
     validateCitationsAndConfidence({
       row: concept,
       path,
@@ -288,7 +385,7 @@ export function validateMeaningProposalAgainstAnalysis(analysis, proposal) {
   const relationEndpoints = new Set([...seenSlugs, ...sharedConcepts]);
   for (const [index, relation] of proposal.relations.entries()) {
     const path = `relations[${index}]`;
-    const key = `${relation.from}\u0000${relation.type}\u0000${relation.to}`;
+    const key = relationKey(relation);
     if (relationKeys.has(key)) {
       findings.push(finding(
         'duplicate-relation',
@@ -342,17 +439,16 @@ export function validateMeaningProposalAgainstAnalysis(analysis, proposal) {
     });
   }
 
-  const competencyKeys = ['scope', 'domains', 'abilities', 'evidence', 'impact'];
-  for (const key of competencyKeys) {
-    if (!nonEmpty(proposal.competencyAnswers?.[key])) {
-      findings.push(finding(
-        'unanswered-competency-question',
-        'error',
-        `competencyAnswers.${key}`,
-        `Competency answer "${key}" is required before writes.`,
-      ));
-    }
-  }
+  const competencyAudit = validateCompetencyAnswers({
+    analysis,
+    proposal,
+    availableSources,
+    evidenceBySource,
+    conceptSlugs: relationEndpoints,
+    proposalPaths: new Set(concepts.map((row) => row.path).filter(nonEmpty)),
+    relationKeys,
+    findings,
+  });
 
   const errors = findings.filter((row) => row.severity === 'error').length;
   const warnings = findings.filter((row) => row.severity === 'warning').length;
@@ -375,7 +471,8 @@ export function validateMeaningProposalAgainstAnalysis(analysis, proposal) {
       'unsupported-relation-type',
     ].includes(row.code)),
     confidenceValid: !findings.some((row) => row.code === 'invalid-confidence'),
-    competencyQuestionsAnswered: !findings.some((row) => row.code === 'unanswered-competency-question'),
+    competencyQuestionsAnswered: competencyAudit.allAnswered,
+    competencyWitnessesResolved: competencyAudit.witnessesResolved,
   };
   const result = {
     status: errors === 0 ? 'pass' : 'fail',
@@ -390,11 +487,214 @@ export function validateMeaningProposalAgainstAnalysis(analysis, proposal) {
     gates,
     findings,
     nextStep: errors === 0
-      ? 'Show the validated full graph to the user. After approval, pass writePlan rows unchanged to add_concepts first; call add_relations only when every concept row succeeds.'
+      ? warnings > 0
+        ? 'Show the validated graph and every partial/visible competency gap to the user. After approval, pass writePlan rows unchanged to add_concepts first; call add_relations only when every concept row succeeds.'
+        : 'Show the validated full graph to the user. After approval, pass writePlan rows unchanged to add_concepts first; call add_relations only when every concept row succeeds.'
       : 'Revise the proposal from findings and call analyze_repo_structure again before any write tool.',
   };
   if (errors === 0) result.writePlan = buildWritePlan(proposal);
   return result;
+}
+
+function validateOptionalConceptBoundaryList(value, path, findings) {
+  if (value == null) return;
+  const valid = Array.isArray(value) &&
+    value.length <= 20 &&
+    value.every(nonEmpty) &&
+    new Set(value).size === value.length;
+  if (valid) return;
+  findings.push(finding(
+    'invalid-concept-boundary-list',
+    'error',
+    path,
+    'Concept includes/excludes must be a unique array of at most 20 non-empty strings.',
+  ));
+}
+
+function validateCompetencyAnswers({
+  analysis,
+  proposal,
+  availableSources,
+  evidenceBySource,
+  conceptSlugs,
+  proposalPaths,
+  relationKeys,
+  findings,
+}) {
+  let answered = 0;
+  const findingStart = findings.length;
+  for (const contract of COMPETENCY_QUESTION_CONTRACTS) {
+    const path = `competencyAnswers.${contract.id}`;
+    const row = proposal.competencyAnswers?.[contract.id];
+    if (!row || typeof row !== 'object' || Array.isArray(row)) {
+      findings.push(finding(
+        'unstructured-competency-answer',
+        'error',
+        path,
+        `Competency answer "${contract.id}" must include answer, status, and typed witnesses.`,
+      ));
+      continue;
+    }
+    if (!nonEmpty(row.answer)) {
+      findings.push(finding(
+        'unanswered-competency-question',
+        'error',
+        `${path}.answer`,
+        `Competency answer "${contract.id}" needs a non-empty answer.`,
+      ));
+    }
+    if (!COMPETENCY_STATUSES.has(row.status)) {
+      findings.push(finding(
+        'invalid-competency-status',
+        'error',
+        `${path}.status`,
+        `Competency status must be answered, partial, or visible-gap.`,
+      ));
+    }
+    const witnesses = row.witnesses;
+    if (
+      !witnesses ||
+      typeof witnesses !== 'object' ||
+      COMPETENCY_WITNESS_KEYS.some((key) => !Array.isArray(witnesses[key]))
+    ) {
+      findings.push(finding(
+        'invalid-competency-witnesses',
+        'error',
+        `${path}.witnesses`,
+        `Competency witnesses must contain concepts, relations, evidence, and paths arrays.`,
+      ));
+      continue;
+    }
+
+    for (const [index, slug] of witnesses.concepts.entries()) {
+      if (!nonEmpty(slug) || !conceptSlugs.has(slug)) {
+        findings.push(finding(
+          'unknown-competency-concept',
+          'error',
+          `${path}.witnesses.concepts[${index}]`,
+          `Competency witness concept is absent from the proposal or shared ontology: ${slug ?? ''}`,
+          [slug].filter(nonEmpty),
+        ));
+      }
+    }
+    for (const [index, relation] of witnesses.relations.entries()) {
+      if (
+        !relation ||
+        typeof relation !== 'object' ||
+        !nonEmpty(relation.from) ||
+        !nonEmpty(relation.to) ||
+        !nonEmpty(relation.type) ||
+        !relationKeys.has(relationKey(relation))
+      ) {
+        findings.push(finding(
+          'unknown-competency-relation',
+          'error',
+          `${path}.witnesses.relations[${index}]`,
+          `Competency witness relation is absent from the validated proposal.`,
+          [relation?.from, relation?.to].filter(nonEmpty),
+        ));
+      }
+    }
+    for (const [index, source] of witnesses.evidence.entries()) {
+      if (!nonEmpty(source) || !availableSources.has(source)) {
+        findings.push(finding(
+          'unknown-competency-evidence',
+          'error',
+          `${path}.witnesses.evidence[${index}]`,
+          `Competency witness evidence is absent from the analysis packet: ${source ?? ''}`,
+          [source].filter(nonEmpty),
+        ));
+        continue;
+      }
+      const semantic = evidenceBySource.get(source);
+      if (semantic?.trust === 'untrusted-instruction') {
+        findings.push(finding(
+          'untrusted-competency-evidence',
+          'error',
+          `${path}.witnesses.evidence[${index}]`,
+          `Untrusted instruction content cannot support a competency answer: ${source}`,
+          [source],
+        ));
+      } else if (semantic?.trust === 'claim-review-required') {
+        findings.push(finding(
+          'risky-competency-evidence',
+          'warning',
+          `${path}.witnesses.evidence[${index}]`,
+          `This competency witness needs independent current-state corroboration: ${source}`,
+          [source],
+        ));
+      }
+    }
+    for (const [index, sourcePath] of witnesses.paths.entries()) {
+      if (!repositoryPathExists(analysis.rootPath, sourcePath)) {
+        findings.push(finding(
+          'missing-competency-path',
+          'error',
+          `${path}.witnesses.paths[${index}]`,
+          `Competency witness path is absent from the repository or escapes its root: ${sourcePath ?? ''}`,
+          [sourcePath].filter(nonEmpty),
+        ));
+      } else if (!proposalPaths.has(sourcePath)) {
+        findings.push(finding(
+          'unattached-competency-path',
+          'error',
+          `${path}.witnesses.paths[${index}]`,
+          `Competency witness path is not attached to any proposed concept: ${sourcePath}`,
+          [sourcePath],
+        ));
+      }
+    }
+
+    if (row.status === 'answered') {
+      let complete = true;
+      for (const witnessKey of contract.requiredWitnesses) {
+        if (witnesses[witnessKey].length > 0) continue;
+        complete = false;
+        findings.push(finding(
+          'missing-competency-witness',
+          'error',
+          `${path}.witnesses.${witnessKey}`,
+          `Answered competency "${contract.id}" requires at least one ${witnessKey} witness.`,
+        ));
+      }
+      if (
+        contract.id === 'impact' &&
+        !witnesses.relations.some((relation) => relation?.type === 'depends_on')
+      ) {
+        complete = false;
+        findings.push(finding(
+          'missing-impact-dependency-witness',
+          'error',
+          `${path}.witnesses.relations`,
+          `An answered impact competency requires a depends_on relation witness.`,
+        ));
+      }
+      if (complete) answered += 1;
+    } else if (COMPETENCY_STATUSES.has(row.status)) {
+      if (!nonEmpty(row.gap)) {
+        findings.push(finding(
+          'missing-competency-gap',
+          'error',
+          `${path}.gap`,
+          `A ${row.status} competency answer must state the remaining evidence gap.`,
+        ));
+      } else {
+        findings.push(finding(
+          row.status === 'partial'
+            ? 'partial-competency-answer'
+            : 'visible-competency-gap',
+          'warning',
+          path,
+          `Competency "${contract.id}" remains ${row.status}: ${row.gap}`,
+        ));
+      }
+    }
+  }
+  const competencyFindings = findings.slice(findingStart);
+  return {
+    allAnswered: answered === COMPETENCY_QUESTION_CONTRACTS.length,
+    witnessesResolved: !competencyFindings.some((row) => row.severity === 'error'),
+  };
 }
 
 function validateCitationsAndConfidence({
@@ -502,7 +802,11 @@ function buildWritePlan(proposal) {
       title: concept.title,
       ...(nonEmpty(concept.domain) ? { domain: concept.domain } : {}),
       ...(nonEmpty(concept.path) ? { path: concept.path } : {}),
-      body: buildConceptBody(concept, outgoing.get(concept.slug) ?? []),
+      body: buildConceptBody(
+        concept,
+        outgoing.get(concept.slug) ?? [],
+        kind === 'project' ? proposal.competencyAnswers : null,
+      ),
     })),
     relations: proposal.relations.map(({ from, to, type, why }) => ({
       from,
@@ -510,10 +814,11 @@ function buildWritePlan(proposal) {
       type,
       why,
     })),
+    competencyAnswers: normalizeCompetencyAnswers(proposal.competencyAnswers),
   };
 }
 
-function buildConceptBody(concept, relations) {
+function buildConceptBody(concept, relations, competencyAnswers = null) {
   const sections = [
     ['Definition', concept.definition],
     ['Evidence', concept.evidence.map((source) => `- \`${source}\``).join('\n')],
@@ -535,7 +840,68 @@ function buildConceptBody(concept, relations) {
       `  - Confidence: ${relation.confidence}`,
     ].join('\n')).join('\n')]);
   }
+  if (competencyAnswers) {
+    sections.push(['Competency answers', renderCompetencyAnswers(competencyAnswers)]);
+  }
   return `${sections.map(([heading, body]) => `## ${heading}\n\n${body}`).join('\n\n')}\n`;
+}
+
+function normalizeCompetencyAnswers(answers) {
+  return Object.fromEntries(
+    COMPETENCY_QUESTION_CONTRACTS.map(({ id }) => {
+      const row = answers[id];
+      return [id, {
+        answer: row.answer,
+        status: row.status,
+        ...(nonEmpty(row.gap) ? { gap: row.gap } : {}),
+        witnesses: {
+          concepts: [...row.witnesses.concepts],
+          relations: row.witnesses.relations.map(({ from, to, type }) => ({
+            from,
+            to,
+            type,
+          })),
+          evidence: [...row.witnesses.evidence],
+          paths: [...row.witnesses.paths],
+        },
+      }];
+    }),
+  );
+}
+
+function renderCompetencyAnswers(answers) {
+  return COMPETENCY_QUESTION_CONTRACTS.map(({ id, question }) => {
+    const row = answers[id];
+    const witnessLines = [
+      row.witnesses.concepts.length > 0
+        ? `- Concepts: ${row.witnesses.concepts.map((slug) => `\`${slug}\``).join(', ')}`
+        : null,
+      row.witnesses.relations.length > 0
+        ? `- Relations: ${row.witnesses.relations.map(
+          (relation) => `\`${relation.from}\` --${relation.type}--> \`${relation.to}\``,
+        ).join(', ')}`
+        : null,
+      row.witnesses.evidence.length > 0
+        ? `- Evidence: ${row.witnesses.evidence.map((source) => `\`${source}\``).join(', ')}`
+        : null,
+      row.witnesses.paths.length > 0
+        ? `- Paths: ${row.witnesses.paths.map((source) => `\`${source}\``).join(', ')}`
+        : null,
+      nonEmpty(row.gap) ? `- Gap: ${row.gap}` : null,
+    ].filter(Boolean);
+    return [
+      `### ${id} — ${row.status}`,
+      '',
+      question,
+      '',
+      row.answer,
+      ...(witnessLines.length > 0 ? ['', ...witnessLines] : []),
+    ].join('\n');
+  }).join('\n\n');
+}
+
+function relationKey(relation) {
+  return `${relation.from}\u0000${relation.type}\u0000${relation.to}`;
 }
 
 function conceptMap(value) {

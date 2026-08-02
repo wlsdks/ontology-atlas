@@ -204,11 +204,60 @@ test('root Cargo package contract is admissible evidence for a feature capabilit
       elements: [],
       relations: [],
       competencyAnswers: {
-        scope: 'Rust teams performing scientific calculations.',
-        domains: 'Library Configuration owns optional behavior selection.',
-        abilities: 'Consumers select complex-number and plotting support.',
-        evidence: 'README and the root Cargo package contract.',
-        impact: 'Changing feature mappings changes available optional behavior.',
+        scope: {
+          answer: 'Rust teams performing scientific calculations.',
+          status: 'answered',
+          witnesses: {
+            concepts: ['calc-kit'],
+            relations: [],
+            evidence: ['README.md'],
+            paths: [],
+          },
+        },
+        domains: {
+          answer: 'Library Configuration owns optional behavior selection.',
+          status: 'visible-gap',
+          gap: 'No project-to-domain relation witness is attached yet.',
+          witnesses: {
+            concepts: ['domains/library-configuration'],
+            relations: [],
+            evidence: ['README.md'],
+            paths: [],
+          },
+        },
+        abilities: {
+          answer: 'Consumers select complex-number and plotting support.',
+          status: 'visible-gap',
+          gap: 'No domain-to-capability relation witness is attached yet.',
+          witnesses: {
+            concepts: ['capabilities/optional-feature-selection'],
+            relations: [],
+            evidence: ['Cargo.toml'],
+            paths: [],
+          },
+        },
+        evidence: {
+          answer: 'README and the root Cargo package contract.',
+          status: 'visible-gap',
+          gap: 'No canonical implementation path is attached yet.',
+          witnesses: {
+            concepts: ['capabilities/optional-feature-selection'],
+            relations: [],
+            evidence: ['README.md', 'Cargo.toml'],
+            paths: [],
+          },
+        },
+        impact: {
+          answer: 'Changing feature mappings may change available optional behavior.',
+          status: 'visible-gap',
+          gap: 'No typed dependency relation proves the change impact.',
+          witnesses: {
+            concepts: ['capabilities/optional-feature-selection'],
+            relations: [],
+            evidence: ['Cargo.toml'],
+            paths: [],
+          },
+        },
       },
     };
     const result = analyzeRepoStructure(root, { proposal });
@@ -821,6 +870,20 @@ test('Meaning gate separates shared ontology, business proposals, and implementa
     assert.equal(r.extractionContract.qualityGates.proposedBusinessConcepts, 4);
     assert.equal(r.extractionContract.qualityGates.uncertaintyExplicit, true);
     assert.equal(r.extractionContract.competencyQuestions.length, 5);
+    assert.deepEqual(
+      r.extractionContract.competencyQuestions.map((question) => question.id),
+      ['scope', 'domains', 'abilities', 'evidence', 'impact'],
+    );
+    assert.deepEqual(
+      r.extractionContract.competencyQuestions.map((question) => question.type),
+      ['scoping', 'scoping', 'validation', 'validation', 'relationship'],
+    );
+    assert.deepEqual(
+      r.extractionContract.competencyQuestions.find(
+        (question) => question.id === 'impact',
+      ).requiredWitnesses,
+      ['concepts', 'relations', 'evidence'],
+    );
   } finally {
     rmSync(root, { recursive: true, force: true });
   }

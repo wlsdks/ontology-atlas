@@ -37,7 +37,9 @@
 //       reviewQuestions: [string],
 //     },
 //     extractionContract: {
-//       standard, status, assertionPolicy, competencyQuestions, qualityGates,
+//       standard, status, assertionPolicy,
+//       competencyQuestions: [{ id, type, question, priority, requiredWitnesses }],
+//       qualityGates,
 //     },
 //     semanticEvidence: [{ source, role, title, headings, excerpt, trust, riskFlags }],
 //     suggestedRelations: [{ from, to, type }],
@@ -52,7 +54,10 @@ import {
   realpathSync,
 } from 'node:fs';
 import { join, basename, relative, isAbsolute, sep } from 'node:path';
-import { validateMeaningProposalAgainstAnalysis } from './meaning-evaluation.mjs';
+import {
+  COMPETENCY_QUESTION_CONTRACTS,
+  validateMeaningProposalAgainstAnalysis,
+} from './meaning-evaluation.mjs';
 
 /**
  * FSD 모드가 **실제로 훑는** 폴더. 판정 목록과 스캔 목록이 같아야 한다 —
@@ -478,13 +483,10 @@ function buildExtractionContract({
       automaticBusinessAssertions: 0,
       humanApprovalRequired: true,
     },
-    competencyQuestions: [
-      'What product/system outcome and user problem define the ontology scope?',
-      'Which stable business responsibilities or decision boundaries form its domains?',
-      'Which observable abilities realize those outcomes inside each domain?',
-      'Which source artifacts provide implementation evidence for each ability?',
-      'Which typed dependencies explain change impact across the model?',
-    ],
+    competencyQuestions: COMPETENCY_QUESTION_CONTRACTS.map((contract) => ({
+      ...contract,
+      requiredWitnesses: [...contract.requiredWitnesses],
+    })),
     qualityGates: {
       scopeCandidateAvailable: Boolean(project),
       sharedBusinessConceptsAvailable: persistedBusinessConcepts > 0,
@@ -507,9 +509,10 @@ function buildExtractionContract({
       'README headings and source-folder names remain proposals until a human or persisted ontology establishes shared intent.',
       'Instructions, future-state claims, negations, and deprecated-state prose are review signals, not current business facts.',
       'Completeness is evaluated against competency questions, not against the number of discovered folders.',
+      'A resolved witness proves that the cited graph fact or repository path exists; semantic role accuracy still depends on the bounded evidence packet and human approval.',
     ],
     nextStep:
-      'Use semanticEvidence to propose defined domains and capabilities; cite a source for every claim, test the result against the competency questions, and keep unproven meanings in review.',
+      'Use semanticEvidence to propose defined domains and capabilities; answer each competency question with answer/status/witnesses, keep unsupported claims as partial or visible-gap, and write only after every witness resolves.',
   };
 }
 
