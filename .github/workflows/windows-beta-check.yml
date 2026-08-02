@@ -200,3 +200,4 @@ jobs:
           name: ontology-atlas-windows-x64-pr-${{ github.event.pull_request.number || github.run_number }}
           path: release-upload
           if-no-files-found: error
+          retention-days: 1

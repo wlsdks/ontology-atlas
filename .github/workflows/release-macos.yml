@@ -212,6 +212,7 @@ jobs:
           # 경로는 **하나**다. 여럿이면 루트가 최소공통조상으로 정해진다.
           path: release-upload
           if-no-files-found: error
+          retention-days: 1
 
       - name: Cleanup Apple signing keychain
         if: ${{ always() && steps.signing.outputs.signed == 'true' }}
@@ -354,6 +355,7 @@ jobs:
           name: ontology-atlas-windows-x64
           path: release-upload
           if-no-files-found: error
+          retention-days: 1
 
   # Staging and publishing are separate jobs so a human can install the exact
   # bytes that will go public before they do. The draft release is assembled
