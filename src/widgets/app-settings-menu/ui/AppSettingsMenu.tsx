@@ -96,6 +96,25 @@ type SettingsView = 'root' | 'agent' | 'ai';
  * 아이콘은 장식이 아니라 **훑기 채널**이다(반복해 여는 목록에서 글자를 읽기 전에
  * 자리를 기억하게 한다). 묶음 제목은 다섯 항목이 왜 그 순서인지를 말한다 —
  * 앞 셋은 보이는 것, 뒤 둘은 이 앱이 무엇과 이어져 있는가다.
+ *
+ * ## 치수는 크롬에서 빌려오지 않는다 (2026-08-02, 소유자 *"이 LNB버튼도 작고"*)
+ *
+ * 종전 항목은 `px-2.5 py-1.5` → 높이 **32px**, 아이콘 **14px** 이었다. 32px 은
+ * 나브레일 유틸리티 타일(`--app-nav-rail-tile-height`)의 값이고, 14px 은 이
+ * 시트 어디에도 근거가 없는 값이다. 즉 **지도 위에 떠서 화면을 양보하는 도구
+ * 막대**의 치수를 «일부러 들어와서 읽고 고르는 목적지» 가 빌려 쓰고 있었다 —
+ * 「스케일 고정 계약」이 스스로 사정거리를 워크벤치 크롬으로 한정하는 바로 그
+ * 이유가 여기에 반대로 적용됐다(`design.md`, `GatewayNav` 예외의 논리와 같다).
+ *
+ * 그래서 값을 **이 시트 안에서** 끌어온다. 새 토큰은 만들지 않는다:
+ *
+ * - `px-3 py-2` — 오른쪽 칸 `SettingsRow` 와 **같은 패딩**이다. 세로 인셋이
+ *   같아지면서 높이 36px 이 파생되고, 가로 인셋이 같아지면서 왼쪽 목록과
+ *   오른쪽 행의 글자 시작선이 같은 리듬을 탄다.
+ * - `text-body-lg`(14px) — 이 목록은 시트가 열렸을 때 **먼저 고르게 하는
+ *   자리**(주목 승자)다. 오른쪽 행 라벨(12.5px)보다 한 단 위여야 «어디로
+ *   갈까»와 «무엇을 바꿀까»가 한 무게로 경쟁하지 않는다.
+ * - 아이콘 16px — 14px 은 글자(14px)와 같아서 훑기 채널로 서지 못했다.
  */
 const SETTINGS_GROUPS = [
   // 「확장」이 배경과 발자국 **사이**인 이유(소유자 2026-08-01: *"발자국 위에
@@ -621,11 +640,24 @@ export function AppSettingsMenu({
            * 절에서는 세로로 긴 창이 됐다. 설정 창은 **머무는 자리**라 그 흔들림이
            * 그대로 "정돈 안 됨"으로 읽힌다.
            *
-           * 760×560 은 앱 최소 창(1040×720) 안에 여백을 두고 들어가는 크기이고,
+           * 크기는 앱 최소 창(1040×720) 안에 자기 여백을 두고 들어가야 하고,
            * 좁은 화면에서는 뷰포트에 맞춰 줄어든다(그때만 크기가 변한다). 내용이
            * 넘치면 **오른쪽 칸이 스크롤**하지, 창이 자라지 않는다.
+           *
+           * ## 높이 640 → 672 (2026-08-02, 소유자 *"뭔가 답답해 설정내부"*)
+           *
+           * 640 일 때 가장 붐비는 「화면」 절이 **41px 잘려 있었다**(내용 626 /
+           * 보이는 칸 585). 동시에 14인치 실측 뷰포트(1512×806)에서 이 패널
+           * 바깥의 **118px 이 그대로 비어 있었다** — 잘린 상자와 남는 자리가
+           * 같은 화면에 있었던 것이고, 그게 «답답» 의 기계적 형태다.
+           *
+           * 672 는 취향이 아니라 **파생값**이다: 최소 창 720 에서 오버레이
+           * 여백(`p-3`, 위아래 12px)을 뺀 696 안에, 그 여백을 **한 벌 더**
+           * 남기고 들어가는 최대 높이다(696 − 24 = 672). 그보다 크면 최소
+           * 창에서 자기가 선언한 거터를 스스로 먹는다. 폭 880 은 그대로 —
+           * 넓히면 라벨과 컨트롤 사이 빈 구간(실측 최대 541px)만 더 벌어진다.
            */
-          className={`${settingsExiting ? 'app-settings-panel-out' : 'app-settings-panel-in'} flex h-[640px] max-h-[calc(100dvh-1.5rem)] w-[880px] focus:outline-none max-w-[calc(100vw-1.5rem)] flex-col overflow-hidden rounded-xl border border-[color:var(--color-border-soft)] bg-[color:var(--color-panel)] text-body shadow-[var(--shadow-elevation-3)]`}
+          className={`${settingsExiting ? 'app-settings-panel-out' : 'app-settings-panel-in'} flex h-[672px] max-h-[calc(100dvh-1.5rem)] w-[880px] focus:outline-none max-w-[calc(100vw-1.5rem)] flex-col overflow-hidden rounded-xl border border-[color:var(--color-border-soft)] bg-[color:var(--color-panel)] text-body shadow-[var(--shadow-elevation-3)]`}
           data-testid="app-settings-popover"
         >
           <div className="flex shrink-0 items-center justify-between gap-3 border-b border-[color:var(--color-border-soft)] px-4 py-3">
@@ -754,13 +786,13 @@ export function AppSettingsMenu({
                           data-testid={`app-settings-nav-${item}`}
                           aria-current={active ? 'page' : undefined}
                           onClick={() => setSection(item)}
-                          className={`flex w-full items-center gap-2 rounded-lg px-2.5 py-1.5 text-left text-body transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--color-indigo-a46)] ${
+                          className={`flex w-full items-center gap-2.5 rounded-lg px-3 py-2 text-left text-body-lg transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--color-indigo-a46)] ${
                             active
                               ? 'bg-[color:var(--color-indigo-line-a13)] text-[color:var(--color-indigo-accent)]'
                               : 'text-[color:var(--color-text-tertiary)] hover:bg-[color:var(--color-overlay-2)] hover:text-[color:var(--color-text-primary)]'
                           }`}
                         >
-                          <Icon size={14} aria-hidden className="shrink-0" />
+                          <Icon size={16} aria-hidden className="shrink-0" />
                           {t(`section.${item}`)}
                         </button>
                       );
