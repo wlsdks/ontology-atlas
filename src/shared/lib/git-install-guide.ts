@@ -77,3 +77,18 @@ export function gitInstallGuide(platform: GitHostPlatform): GitInstallGuide {
     ],
   };
 }
+
+/**
+ * 브라우저/WebView 가 알려주는 값에서 호스트 플랫폼을 고른다. 순수 함수라
+ * 테스트가 문자열만 넣어 볼 수 있다 — `navigator` 를 직접 읽는 자리는 호출부다.
+ *
+ * 못 알아보면 `linux` 로 떨어진다: 세 안내 중 유일하게 **패키지 관리자 이름을
+ * 틀려도 사용자가 스스로 고쳐 읽을 수 있는** 형태이고, 다운로드 링크는 세
+ * 플랫폼 모두에 붙는다.
+ */
+export function gitHostPlatformFrom(uaOrPlatform: string): GitHostPlatform {
+  const value = uaOrPlatform.toLowerCase();
+  if (/mac|iphone|ipad|ipod|darwin/.test(value)) return 'macos';
+  if (/win/.test(value)) return 'windows';
+  return 'linux';
+}

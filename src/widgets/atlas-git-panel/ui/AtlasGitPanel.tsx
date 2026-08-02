@@ -38,6 +38,7 @@ import {
   gitErrorMessage,
   gitHistory,
   gitInit,
+  gitProbe,
   gitSetRemote,
   gitSnapshot,
   gitStatus,
@@ -48,6 +49,7 @@ import {
   type GitStatusResult,
 } from "@/shared/lib/tauri-git";
 import type { OntologyChangeset } from "@/shared/lib/ontology-tree";
+import { gitHostPlatformFrom, gitInstallGuide } from "@/shared/lib/git-install-guide";
 import { cn } from "@/shared/lib/cn";
 import { ATLAS_CLI } from "@/shared/config/cli-invocation";
 
@@ -216,7 +218,7 @@ function SectionLabel({ children }: { children: React.ReactNode }) {
  * 다시 확인하는 것 하나뿐이라, 전폭 상단 정렬로 두면 "내용이 안 나온 페이지"
  * 로 읽힌다.
  */
-type GitStage = "web" | "no-vault" | "loading" | "error" | "not-initialized" | "workbench";
+type GitStage = "web" | "no-vault" | "loading" | "not-installed" | "error" | "not-initialized" | "workbench";
 
 type SetupStep = 1 | 2 | 3;
 
@@ -241,6 +243,20 @@ export function AtlasGitPanel({
   const [diffText, setDiffText] = useState("");
   const [history, setHistory] = useState<GitCommitInfo[]>([]);
   const [loadState, setLoadState] = useState<"loading" | "ready" | "error">("loading");
+  /*
+   * git 설치 여부 — `null` 은 「아직 모름」이다(확인 전에 없다고 단정하지 않는다).
+   * 읽기 전용 감지라 자동 호출이 헌장의 「자동 실행 금지」와 충돌하지 않는다:
+   * `git_probe` 는 아무것도 설치하지 않고 실행 가능 여부만 본다.
+   */
+  const [gitInstalled, setGitInstalled] = useState<boolean | null>(null);
+  const probeGit = useCallback(async () => {
+    const probe = await gitProbe();
+    // 브리지가 없으면(`null`) 웹 경로이고, 그건 이 상태가 판정할 일이 아니다.
+    setGitInstalled(probe === null ? null : probe.installed);
+  }, []);
+  useEffect(() => {
+    void probeGit();
+  }, [probeGit]);
   const [loadErrorText, setLoadErrorText] = useState<string | null>(null);
 
   const [confirming, setConfirming] = useState(false);
@@ -334,6 +350,20 @@ export function AtlasGitPanel({
     ? "web"
     : !vaultPath
       ? "no-vault"
+      /*
+       * git 이 아예 없는 것을 「오류」와 **가른다** (2026-08-02).
+       *
+       * 종전에는 미설치가 `loadState === "error"` 로 떨어져 원시 스폰 실패
+       * 문자열만 보였다. 그런데 이 저장소에는 **설치 안내가 이미 다 있다** —
+       * `git_probe`(Rust) · `gitProbe()`(브리지) · `gitInstallGuide()`(플랫폼별
+       * 명령 + 다운로드 링크, 테스트까지) · 문구 13종(`atlasGit.install.*`).
+       * 화면이 그걸 부르지 않았을 뿐이다. **문을 다 지어놓고 안 뚫은 상태**였다.
+       *
+       * `surfaces.md` 의 강등 카드 계약(왜 안 되는지 + 어디서 되는지 + 여기서
+       * 되는 것)을 이 자리에 적용하는 데 **새로 쓸 문장이 하나도 없다.**
+       */
+      : gitInstalled === false
+        ? "not-installed"
       : loadState === "error"
         ? "error"
         : !status
@@ -464,6 +494,15 @@ export function AtlasGitPanel({
         stage === "loading" ||
         stage === "error" ? (
           <DesktopBody
+            hostPlatformHint={
+              typeof navigator === "undefined"
+                ? ""
+                : navigator.platform || navigator.userAgent
+            }
+            onRecheckGit={() => {
+              void probeGit();
+              refresh();
+            }}
             key={stage}
             t={t}
             stage={stage}
@@ -1663,6 +1702,8 @@ function ActionDock({
 function DesktopBody({
   t,
   stage,
+  hostPlatformHint,
+  onRecheckGit,
   loadErrorText,
   status,
   kindGroups,
@@ -1704,8 +1745,12 @@ function DesktopBody({
   remoteNotice,
   onSetRemote,
 }: {
+  /** `navigator.platform ?? userAgent` — 설치 안내를 플랫폼별로 고르는 힌트. */
+  hostPlatformHint: string;
+  /** 「다시 확인하기」 — git 을 방금 깐 사람이 앱을 안 껐다 켜도 되게. */
+  onRecheckGit: () => void;
   t: Translator;
-  stage: Extract<GitStage, "loading" | "error" | "not-initialized" | "workbench">;
+  stage: Extract<GitStage, "loading" | "not-installed" | "error" | "not-initialized" | "workbench">;
   loadErrorText: string | null;
   status: GitStatusResult | null;
   kindGroups: AtlasGitKindGroup<GitChangeEntry>[];
@@ -1766,6 +1811,62 @@ function DesktopBody({
       </SetupFrame>
     );
   }
+  if (stage === "not-installed") {
+    /*
+     * 강등 카드 3요소를 그대로 채운다 (`surfaces.md`) — **새 문구 0개**.
+     * ① 왜: `install.title` / `install.body`
+     * ② 어디서: `gitInstallGuide(platform)` 의 플랫폼별 명령(복사) + 다운로드 링크
+     * ③ 다시 확인: `install.recheck`
+     *
+     * 「곧 됩니다」를 쓰지 않는다 — 오늘 안 되는 것은 안 된다고 쓰고, 대신 갈
+     * 곳을 준다. 외부 링크는 클릭 전 경고로 선행 `↗` 를 단다(design.md).
+     */
+    const guide = gitInstallGuide(gitHostPlatformFrom(hostPlatformHint));
+    const options = [guide.primary, ...guide.alternatives];
+    return (
+      <SetupFrame t={t} step={null} state="error">
+        <div className="flex flex-col gap-3" data-testid="atlas-git-not-installed">
+          <SetupHeading title={t("install.title")} body={t("install.body")} />
+          <ul className="flex flex-col gap-2">
+            {options.map((option) => (
+              <li key={option.labelKey} className="flex items-center gap-2">
+                <span className="text-label text-[color:var(--color-text-tertiary)]">
+                  {t(option.labelKey)}
+                </span>
+                {option.command ? (
+                  <code className="rounded-[var(--radius-chip)] bg-[color:var(--color-overlay-1)] px-2 py-0.5 font-mono text-label text-[color:var(--color-text-secondary)]">
+                    {option.command}
+                  </code>
+                ) : option.href ? (
+                  <a
+                    href={option.href}
+                    target="_blank"
+                    rel="noreferrer noopener"
+                    data-testid="atlas-git-install-download"
+                    className="rounded-[var(--radius-chip)] px-1 text-label text-[color:var(--color-indigo-accent)] underline-offset-2 hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--color-indigo-a46)]"
+                  >
+                    ↗ {option.href}
+                  </a>
+                ) : null}
+              </li>
+            ))}
+          </ul>
+          <button
+            type="button"
+            data-testid="atlas-git-install-recheck"
+            onClick={() => {
+              onRecheckGit();
+            }}
+            className={cn(SECONDARY_ACTION_CLASS, "self-start")}
+          >
+            <RefreshCw size={13} aria-hidden />
+            {t("install.recheck")}
+          </button>
+        </div>
+      </SetupFrame>
+    );
+  }
+
   if (stage === "error") {
     // 오류도 막다른 길이 아니어야 한다 — 폴더가 되돌아왔을 때 사용자가 앱을
     // 떠나지 않고 다시 확인할 수 있는 버튼을 같은 자리에 둔다.
