@@ -51,6 +51,24 @@ jobs:
       - name: Setup Rust
         uses: dtolnay/rust-toolchain@stable
 
+      # 이 잡의 시간은 거의 전부 Rust 컴파일이다 (실측 2026-08-02, 마지막 성공
+      # 런의 스텝별 소요): 720초 중 **637초(88%)** — release 번들 437초 +
+      # `cargo test` 의 debug 컴파일 200초. 나머지 스텝을 전부 0으로 만들어도
+      # 83초밖에 못 줄인다.
+      #
+      # 그런데 그 637초는 매번 **의존성부터** 다시 짓는 시간이다. Tauri 의
+      # 의존 그래프는 우리 크레이트보다 압도적으로 크고, 그 부분은 `Cargo.lock`
+      # 이 그대로면 바이트가 같다. `target/` 과 `~/.cargo` 를 캐시하면 우리
+      # 크레이트만 다시 짓는다.
+      #
+      # 캐시 키는 이 액션이 `Cargo.lock` + 러너 + 툴체인으로 만든다 — 잠금이
+      # 바뀌면 자동으로 미스가 나므로 낡은 의존성이 살아남지 않는다.
+      # 서드파티 액션이라 이 저장소의 관례대로 SHA 로 고정한다.
+      - name: Cache Rust build
+        uses: Swatinem/rust-cache@c19371144df3bb44fab255c43d04cbc2ab54d1c4 # v2.9.1
+        with:
+          workspaces: src-tauri
+
       - name: Setup Bun
         uses: oven-sh/setup-bun@v2
         with:

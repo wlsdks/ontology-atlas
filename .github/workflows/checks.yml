@@ -1,4 +1,4 @@
-# 단위 검증 게이트 — tsc · lint · vitest.
+# 단위 검증 게이트 — tsc · lint · vitest · MCP.
 #
 # 왜 있는가: 2026-07-26 까지 PR 에서 도는 것은 Playwright(15분)와 vault
 # 정합뿐이었다. `pnpm test:run` 3900여 개, `tsc`, `lint` 는 **한 번도 돌지
@@ -6,8 +6,24 @@
 # 들어가 앉아 있다가 사람이 우연히 발견했고, 브랜치가 자기가 지운 모듈을
 # 자기가 import 하는 상태로 CI 를 세 번 깨뜨렸다.
 #
-# 이 잡은 Playwright 보다 **훨씬 빨라서** 오히려 먼저 답을 준다 — 타입/단위
-# 회귀는 여기서 몇 분 안에 걸리고, 느린 e2e 는 그 뒤에 온다.
+# 이 워크플로는 Playwright 보다 **훨씬 빨라서** 오히려 먼저 답을 준다 —
+# 타입/단위 회귀는 여기서 몇 분 안에 걸리고, 느린 e2e 는 그 뒤에 온다.
+#
+# ## 왜 한 잡이 아니라 셋인가 (2026-08-02)
+#
+# 실측: 이 워크플로가 624초였고 그중 **463초(74%)가 단 두 스텝**이었다 —
+# 유닛+계약 291초, MCP 통합 172초. 둘은 서로를 전혀 안 기다리는데 한 잡
+# 안에서 줄줄이 돌아 합이 그대로 대기 시간이 됐다.
+#
+# 셋으로 가르면 임계 경로가 **가장 느린 하나**가 된다. 대가는 잡마다
+# 체크아웃·설치가 반복되는 것(잡당 ≈25초)인데, 그건 각 잡의 경로에 얹힐 뿐
+# 합산되지 않는다.
+#
+# 가른 기준은 「무엇을 검사하나」가 아니라 **「얼마나 걸리나」**다 — 빠른 게이트
+# 아홉은 서로를 기다리게 할 값이 없어 한 잡에 몰아 둔다.
+#
+# `if: always()` 는 잡 **안에서** 유지한다 — 첫 실패가 나머지를 가리면 검수가
+# 왕복이 된다. 잡 **사이**는 원래 독립이라 한 잡이 빨개도 나머지는 끝까지 돈다.
 name: Checks
 
 on:
@@ -27,14 +43,16 @@ env:
   FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
 
 jobs:
-  checks:
-    name: Types · Lint · Unit
+  # ── 잡 1: 빠른 게이트 아홉 (실측 합 ≈100초) ──────────────────────────
+  gates:
+    name: Types · Lint · Docs
     runs-on: ubuntu-latest
     timeout-minutes: 20
     steps:
       # fetch-depth: 0 필수 — `docs-vault:check` 가 문서별 "마지막으로 바뀐 날"
       # 을 git 히스토리에서 읽는다. 얕은 클론은 문서 전부에 같은 날짜를 줘
-      # 검증이 실제와 다른 값을 비교하게 된다.
+      # 검증이 실제와 다른 값을 비교하게 된다. `decisions:check` 도 base ref 를
+      # 필요로 한다.
       - name: Checkout
         uses: actions/checkout@v6
         with:
@@ -54,8 +72,8 @@ jobs:
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
 
-      # 셋을 각각 별 스텝으로 둔다 — 한 스텝에 묶으면 어느 게 깨졌는지
-      # 로그를 뒤져야 한다. `if: always()` 로 첫 실패가 나머지를 가리지 않게.
+      # 각각 별 스텝으로 둔다 — 한 스텝에 묶으면 어느 게 깨졌는지 로그를
+      # 뒤져야 한다. `if: always()` 로 첫 실패가 나머지를 가리지 않게.
       # 카운슬 소집 트리거 중 **기계적으로 확인 가능한 두 줄**만 강제한다:
       # 라우트 신설/제거, MCP·CLI 공개 계약 변경. 나머지 트리거("포지셔닝",
       # "낯선 사람이 처음 읽는 문구")는 의미라서 스크립트가 볼 수 없다.
@@ -65,32 +83,12 @@ jobs:
         if: github.event_name == 'pull_request'
         run: pnpm decisions:check -- --base=origin/${{ github.base_ref }}
 
-      # 변경이 실제로 깨뜨릴 수 있는 것만 돌린다. 실측(2026-07-27): Checks 5~6분
-      # 중 **270초가 단위 스위트**이고, 이 세션의 변경은 거의 전부 에이전트
-      # 브리프와 문서였다. 판단이 안 서면 runtime=true 로 열어둔다 — 빠뜨린
-      # 테스트는 출하되는 버그고, 남는 테스트는 4분이다.
-      - name: Classify change
-        id: classify
-        if: github.event_name == 'pull_request'
-        run: node scripts/classify-change.mjs --base=origin/${{ github.base_ref }}
-
       - name: Typecheck
         run: pnpm exec tsc --noEmit
 
       - name: Lint
         if: always()
         run: pnpm lint
-
-      # 런타임 코드가 안 바뀌었으면 계약 스위트만 돈다(2.4초 vs 270초).
-      # 계약 테스트는 `.claude/**` 배선을 읽으므로 거버넌스 변경에서도 반드시
-      # 돈다 — 건너뛰는 건 런타임 단위 테스트뿐이다.
-      - name: Unit + contract tests
-        if: always() && (github.event_name != 'pull_request' || steps.classify.outputs.runtime == 'true')
-        run: pnpm test:run
-
-      - name: Contract tests only (no runtime change)
-        if: always() && github.event_name == 'pull_request' && steps.classify.outputs.runtime != 'true'
-        run: pnpm exec vitest run tests/contract/
 
       # 아래 둘은 `pnpm test:run` 밖의 node:test 스위트라 여기 걸지 않으면
       # 아무 데서도 안 돈다. 실제로 2026-07-26 까지 둘 다 main 에서 깨진 채
@@ -122,49 +120,6 @@ jobs:
         if: always()
         run: pnpm agents:check
 
-      # MCP 서버의 단위 스위트. **어느 워크플로에도 물려 있지 않았다** —
-      # `package:check` 가 CLI 쪽(`test:cli:lib`/`test:cli:commands`)은 돌리는데
-      # MCP 는 대칭 스텝이 없었다. 그 사이 `verify-script.test.mjs` 1건이 소스
-      # 변경에 뒤처진 채 실패하고 있었고 아무도 못 봤다(2026-07-28 발견).
-      #
-      # 파일 목록이 아니라 **글롭**으로 찾는다. 종전 스크립트는 손으로 적은
-      # 21개 목록이었고 디스크에는 27개가 있었다 — 새 테스트 파일이 조용히
-      # 빠지는 구조였다. 목록이 곧 사정거리인데 목록이 손으로 관리되면
-      # 사정거리도 손으로 줄어든다.
-      #
-      # 통합 테스트(`integration.test.mjs`)만 뺀다. 그 하나가 162초이고
-      # (단위 416건은 합쳐 1.2초) 실서버를 띄운다 — 별도 스텝의 몫이다.
-      # MCP 는 워크스페이스 멤버가 아니라(루트에 `pnpm-workspace.yaml` 이 없다)
-      # 루트 설치가 `mcp/node_modules` 를 안 만든다. 순수 단위 케이스는 그래도
-      # 돌지만, 실제 서버를 띄우는 케이스가 `@modelcontextprotocol/sdk` 를 못
-      # 찾아 죽는다 — 로컬에서는 예전에 설치해 둔 게 있어서 통과했고, CI 에서
-      # 처음 드러났다(스위트를 물린 첫날). 릴리스 워크플로가 이미 쓰는 것과
-      # 같은 한 줄이다.
-      - name: Install MCP dependencies
-        if: always()
-        run: pnpm --dir mcp install --frozen-lockfile
-
-      - name: MCP unit tests
-        if: always()
-        run: pnpm test:mcp:unit
-
-      # **통합 스위트 — 이제 실제로 돈다.** 바로 위 주석이 162초를 이유로 이걸
-      # 빼면서 *"별도 스텝의 몫이다"* 라고 적었는데, 그 스텝은 만들어진 적이
-      # 없다. 결과: 실서버를 띄우는 가장 큰 MCP 스위트가 **어느 워크플로에도
-      # 안 물린 채** #806(경로형 슬러그 거부) 이후로 계속 빨간색이었고 아무도
-      # 못 봤다 — 2026-08-01 rc.5 검수에서 사람이 손으로 돌려서야 드러났다.
-      #
-      # 이 파일이 이미 두 번 적어 둔 것과 같은 병이다: *"목록이 곧 사정거리인데
-      # 목록이 손으로 관리되면 사정거리도 손으로 줄어든다."* 여기서는 목록이
-      # 아니라 **의도**가 손으로 관리됐다 — "나중에 스텝을 만든다"는 의도는
-      # 어디에도 강제되지 않았다.
-      #
-      # 162초는 다른 스텝들과 병렬로 흡수된다. `if: always()` 라 앞 스텝이
-      # 빨개도 이건 돈다 — 한 번에 한 결함만 알려 주면 검수가 왕복이 된다.
-      - name: MCP integration tests
-        if: always()
-        run: node --test mcp/src/integration.test.mjs
-
       # 데스크톱 게이트의 단위 스위트다. 지금까지 **릴리스 워크플로에만** 걸려
       # 있어서, 여기서 잡혔어야 할 결함이 전부 "태그를 찍은 뒤"에 처음 드러났다
       # — `v1.0.0-rc.2` 가 네 번 찍혀 네 번 다 빌드 잡에서 멈춘 이유다. 30초짜리
@@ -177,10 +132,14 @@ jobs:
         if: always()
         run: pnpm test:desktop:check
 
-      # 생성 매니페스트 게이트 둘. 지금까지 어느 PR 검증에도 물려 있지 않았다 —
-      # `docs-vault:check` 는 macOS 릴리스 경로에만, `test:docs-vault` 는 아무
-      # 곳에도 없었다. 그래서 `docs/**` 를 고치고 재생성을 잊은 PR 도, 생성이
-      # 비결정적으로 되돌아간 PR 도 아무도 막지 못했다.
+      # 생성 매니페스트 게이트 둘. 2026-07 까지 어느 PR 검증에도 물려 있지
+      # 않았다 — `docs-vault:check` 는 macOS 릴리스 경로에만, `test:docs-vault`
+      # 는 아무 곳에도 없었다. 그래서 `docs/**` 를 고치고 재생성을 잊은 PR 도,
+      # 생성이 비결정적으로 되돌아간 PR 도 아무도 막지 못했다.
+      #
+      # 2026-08-02 부터 `.githooks/pre-commit`(#834)이 같은 검사를 커밋 자리에서
+      # 먼저 한다. 그래도 여기 남는다 — 훅은 로컬 설정에 의존하고(`pnpm install`
+      # 을 안 한 클론 · `--no-verify` · 포크 기여자), CI 는 그렇지 않다.
       - name: Docs vault freshness
         if: always()
         run: pnpm docs-vault:check
@@ -188,3 +147,109 @@ jobs:
       - name: Docs vault determinism
         if: always()
         run: pnpm test:docs-vault
+
+  # ── 잡 2: 단위 + 계약 스위트 (실측 291초 — 임계 경로) ────────────────
+  unit:
+    name: Unit · Contract
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      # `classify-change.mjs` 가 base ref 와 비교하므로 전체 히스토리가 필요하다.
+      - name: Checkout
+        uses: actions/checkout@v6
+        with:
+          fetch-depth: 0
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v6
+        with:
+          node-version: 24
+
+      - name: Enable Corepack pnpm
+        run: |
+          corepack enable
+          corepack prepare pnpm@10.18.0 --activate
+          pnpm --version
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      # 변경이 실제로 깨뜨릴 수 있는 것만 돌린다. 실측(2026-07-27): 이 스위트가
+      # 270초였고 그 세션의 변경은 거의 전부 에이전트 브리프와 문서였다. 판단이
+      # 안 서면 runtime=true 로 열어둔다 — 빠뜨린 테스트는 출하되는 버그고,
+      # 남는 테스트는 4분이다.
+      - name: Classify change
+        id: classify
+        if: github.event_name == 'pull_request'
+        run: node scripts/classify-change.mjs --base=origin/${{ github.base_ref }}
+
+      # 런타임 코드가 안 바뀌었으면 계약 스위트만 돈다(2.4초 vs 270초).
+      # 계약 테스트는 `.claude/**` 배선을 읽으므로 거버넌스 변경에서도 반드시
+      # 돈다 — 건너뛰는 건 런타임 단위 테스트뿐이다.
+      - name: Unit + contract tests
+        if: always() && (github.event_name != 'pull_request' || steps.classify.outputs.runtime == 'true')
+        run: pnpm test:run
+
+      - name: Contract tests only (no runtime change)
+        if: always() && github.event_name == 'pull_request' && steps.classify.outputs.runtime != 'true'
+        run: pnpm exec vitest run tests/contract/
+
+  # ── 잡 3: MCP 서버 (실측 176초) ──────────────────────────────────────
+  mcp:
+    name: MCP
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v6
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v6
+        with:
+          node-version: 24
+
+      - name: Enable Corepack pnpm
+        run: |
+          corepack enable
+          corepack prepare pnpm@10.18.0 --activate
+          pnpm --version
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      # MCP 는 워크스페이스 멤버가 아니라(루트에 `pnpm-workspace.yaml` 이 없다)
+      # 루트 설치가 `mcp/node_modules` 를 안 만든다. 순수 단위 케이스는 그래도
+      # 돌지만, 실제 서버를 띄우는 케이스가 `@modelcontextprotocol/sdk` 를 못
+      # 찾아 죽는다 — 로컬에서는 예전에 설치해 둔 게 있어서 통과했고, CI 에서
+      # 처음 드러났다(스위트를 물린 첫날). 릴리스 워크플로가 이미 쓰는 것과
+      # 같은 한 줄이다.
+      - name: Install MCP dependencies
+        run: pnpm --dir mcp install --frozen-lockfile
+
+      # MCP 서버의 단위 스위트. **어느 워크플로에도 물려 있지 않았다** —
+      # `package:check` 가 CLI 쪽(`test:cli:lib`/`test:cli:commands`)은 돌리는데
+      # MCP 는 대칭 스텝이 없었다. 그 사이 `verify-script.test.mjs` 1건이 소스
+      # 변경에 뒤처진 채 실패하고 있었고 아무도 못 봤다(2026-07-28 발견).
+      #
+      # 파일 목록이 아니라 **글롭**으로 찾는다. 종전 스크립트는 손으로 적은
+      # 21개 목록이었고 디스크에는 27개가 있었다 — 새 테스트 파일이 조용히
+      # 빠지는 구조였다. 목록이 곧 사정거리인데 목록이 손으로 관리되면
+      # 사정거리도 손으로 줄어든다.
+      - name: MCP unit tests
+        if: always()
+        run: pnpm test:mcp:unit
+
+      # **통합 스위트 — 이제 실제로 돈다.** 종전 주석이 162초를 이유로 이걸
+      # 단위 스텝에서 빼면서 *"별도 스텝의 몫이다"* 라고 적었는데, 그 스텝은
+      # 만들어진 적이 없다. 결과: 실서버를 띄우는 가장 큰 MCP 스위트가 **어느
+      # 워크플로에도 안 물린 채** #806(경로형 슬러그 거부) 이후로 계속
+      # 빨간색이었고 아무도 못 봤다 — 2026-08-01 rc.5 검수에서 사람이 손으로
+      # 돌려서야 드러났다.
+      #
+      # 이 파일이 이미 두 번 적어 둔 것과 같은 병이다: *"목록이 곧 사정거리인데
+      # 목록이 손으로 관리되면 사정거리도 손으로 줄어든다."* 여기서는 목록이
+      # 아니라 **의도**가 손으로 관리됐다 — "나중에 스텝을 만든다"는 의도는
+      # 어디에도 강제되지 않았다. 2026-08-02, 그 "별도" 가 드디어 이 잡이다.
+      - name: MCP integration tests
+        if: always()
+        run: node --test mcp/src/integration.test.mjs
