@@ -859,9 +859,15 @@ function SetupFrame({
     <div
       data-testid="atlas-git-setup"
       data-setup-state={state}
-      className="topology-chrome-in m-auto flex w-full max-w-[var(--git-setup-measure)] flex-col gap-4"
+      className="topology-chrome-in mx-auto flex w-full max-w-[var(--git-setup-measure)] flex-col gap-4 pt-[var(--git-setup-top)]"
     >
-      {/* 헤더가 기둥의 첫 줄이다 — 셋업에서 이 화면은 "발자취 대시보드" 가
+      {/* 세로는 **위 정렬**이다. `m-auto` 로 정가운데에 두면 이 화면이 목적지가
+          아니라 대화상자로 읽힌다 — 실측: 1512×806 창에서 기둥이 화면의 17%
+          만 쓰고 위 209px · 아래 189px 이 균등하게 비어, 어디에도 매이지 않은
+          한 덩어리가 됐다. 레일이 있는 목적지는 페이지이므로 첫 줄이 위에서
+          시작한다.
+
+          헤더가 기둥의 첫 줄이다 — 셋업에서 이 화면은 "발자취 대시보드" 가
           아니라 "기록을 시작하는 한 장" 이고, 제목·범위 고지·사다리·과업이
           하나의 세로 리듬으로 읽혀야 한다. */}
       <PageHeader t={t} inColumn />

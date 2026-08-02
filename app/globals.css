@@ -435,6 +435,10 @@
    * 마커: `data-testid="atlas-git-setup"` — 세 상태 모두 이 프레임을 쓴다는
    * 것을 unit test 가 고정한다.
    */
+  /* 셋업 기둥의 위 여백 — 세로 가운데 정렬(구 `m-auto`)을 대체한다. 화면이
+     커질수록 조금만 내려가고, 좁으면 붙는다. 값은 spacing 램프의 정규 스텝
+     사이(24~72px)이고 새 사다리를 만들지 않는다. */
+  --git-setup-top: clamp(24px, 7vh, 72px);
   --git-setup-measure: 520px;
 
   /*
