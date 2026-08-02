@@ -7,6 +7,18 @@
 
 ---
 
+## 2026-08-02 — macOS 경로 별칭에서도 init의 MCP repo root를 보존한다
+
+`ontology-atlas init /tmp/.../ontology`처럼 vault 절대 경로가 macOS의
+`/tmp` 별칭을 쓰고 현재 작업 폴더는 canonical `/private/tmp`로 보일 때, vault 안에
+생성된 `.mcp.json`과 `.codex/config.toml`이 `OATLAS_REPO_ROOT`를
+`/private/private/tmp/...`로 계산하던 첫 연결 결함을 고쳤다. init은 scaffold 뒤
+실재하는 vault와 cwd를 같은 canonical 좌표계로 맞춘 다음 상대 경로를 만들며,
+symlink 별칭 fixture와 CLI 전체 통합 테스트로 생성 설정이 실제 repo root에
+도달하는지 검증한다.
+
+---
+
 ## 2026-08-02 — 승인한 전체 그래프를 검증된 write plan으로 보존한다
 
 MCP cold-start bootstrap이 project·domain·capability만 검증한 뒤 승인 화면에는

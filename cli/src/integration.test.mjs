@@ -14,8 +14,10 @@ import {
   rmSync,
   readdirSync,
   existsSync,
+  realpathSync,
+  symlinkSync,
 } from 'node:fs';
-import { join, dirname } from 'node:path';
+import { join, dirname, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { tmpdir } from 'node:os';
 import {
@@ -263,6 +265,29 @@ await test('init — generated MCP config points at a runnable local server in s
     assert.match(vaultCodexConfig, /OATLAS_VAULT = "\."/);
   } finally {
     rmSync(root, { recursive: true, force: true });
+  }
+});
+
+await test('init — vault config resolves the repository through a canonical path alias', async () => {
+  const canonicalRoot = mkdtempSync(join(tmpdir(), 'cli-init-canonical-'));
+  const aliasRoot = `${canonicalRoot}-alias`;
+  symlinkSync(canonicalRoot, aliasRoot, 'dir');
+  const repoRoot = join(canonicalRoot, 'repo');
+  const aliasedVault = join(aliasRoot, 'ontology');
+  mkdirSync(repoRoot, { recursive: true });
+
+  try {
+    const r = await run(['init', aliasedVault], { cwd: repoRoot });
+    assert.equal(r.code, 0, `stdout: ${r.stdout}\nstderr: ${r.stderr}`);
+
+    const vaultRoot = realpathSync(aliasedVault);
+    const config = JSON.parse(readFileSync(join(vaultRoot, '.mcp.json'), 'utf-8'));
+    const configuredRepoRoot = config.mcpServers['ontology-atlas'].env.OATLAS_REPO_ROOT;
+
+    assert.equal(realpathSync(resolve(vaultRoot, configuredRepoRoot)), realpathSync(repoRoot));
+  } finally {
+    rmSync(aliasRoot, { force: true });
+    rmSync(canonicalRoot, { recursive: true, force: true });
   }
 });
 

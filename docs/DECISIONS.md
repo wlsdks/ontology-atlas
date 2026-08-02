@@ -42,6 +42,46 @@
 
 ---
 
+## 2026-08-02 — init의 vault와 repo root는 같은 canonical 좌표계에서 계산한다
+
+**소집**: 단독 패스 · **트리거**: 실제 field trial에서 CLI가 생성한 MCP 설정이
+존재하지 않는 repo root를 가리켜 첫 agent 연결이 멈춤.
+**루브릭**: 23/24 (Problem insight 4 · User moment 4 · Differentiation 3 ·
+Ontology value 4 · Agent value 4 · Verification 4, 치명적 0: 없음).
+
+**선행 결정 관계**: 2026-08-01 「인수인계 시험이 찾아낸 셋」의 두 번째 결정,
+즉 근거 없는 `OATLAS_REPO_ROOT`로 코드 drift를 재지 않는다는 원칙은 유효하다.
+이번 결함은 같은 실재 폴더를 macOS의 `/tmp`와 `/private/tmp` 두 표기로 섞어
+init 자체가 근거 없는 경로를 만들어 낸 하류 위반이다.
+
+**관측**: source checkout의 CLI를 `/private/tmp/.../repo`에서 실행하면서 vault
+인자만 `/tmp/.../ontology` 절대 경로로 주자, 두 경로를 그대로 `relative()`에
+넣은 설정은 vault에서 해석될 때 `/private/private/tmp/.../repo`를 가리켰다.
+실제 MCP session은 명시적 `rootPath`로만 복구됐고 자동 repo 분석·path 검증은
+첫 호출에서 멈췄다. 같은 현상을 임의 symlink 별칭 fixture로 재현한 RED는
+`ENOENT ... /private/private`를 반환했다.
+
+**결정**: scaffold가 끝나 vault와 cwd가 모두 실재한 뒤 두 디렉터리를
+`realpath`로 canonicalize하고, vault-local·cwd-local 설정의 상대 경로와 global
+Codex 등록 명령을 그 한 좌표계에서 계산한다. 설정 키, 파일 위치, 기존 파일 보존
+정책, MCP 도구/CLI 명령은 바꾸지 않는다.
+
+**적용 규칙**: 최소 슬라이스. IN — `init` 경로 계산, symlink alias 통합 회귀,
+실제 `/tmp` dogfood. OUT — `agent-setup` 재설계, symlink 생성/제거, 설정 덮어쓰기,
+새 fallback 경로 또는 UI.
+
+**서명**: owner
+
+**기록된 반대**: `/tmp`는 macOS 특수 사례이므로 문서화만 하고 사용자가 절대
+canonical path를 넣게 해도 된다. **반증 조건**: canonicalization 때문에 실제
+symlink 위치를 의도적으로 보존해야 하는 vault가 다른 repo를 가리키거나, 기존
+상대 경로 init fixture가 달라진다. **재검토**: symlink vault를 source checkout
+밖의 별도 repo root로 의도적으로 운영한 사례가 보고될 때.
+
+**상태**: 유효.
+
+---
+
 ## 2026-08-02 — `canWrite`는 승인된 전체 그래프의 deterministic write plan만 통과시킨다
 
 **소집**: PO 카운슬 5인 전원(근거·결·지킴이·해자·지렛대), 독립 1라운드 +

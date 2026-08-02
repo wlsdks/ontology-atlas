@@ -20,6 +20,7 @@ import {
   cpSync,
   statSync,
   readdirSync,
+  realpathSync,
 } from 'node:fs';
 import { join, dirname, resolve, relative } from 'node:path';
 import { fileURLToPath } from 'node:url';
@@ -461,8 +462,15 @@ async function runInit(targetArg, opts = {}) {
     }
   }
 
-  const cwdPath = cwd();
-  let vaultRepoArg = relative(target, cwdPath) || '.';
+  // macOS exposes the same temporary directory through aliases such as
+  // `/tmp` and `/private/tmp`. Mixing an aliased absolute target with the
+  // canonical process cwd makes `relative()` produce `/private/private/...`
+  // when the generated config is resolved from the vault. Both directories
+  // exist after scaffolding, so calculate every config path in one canonical
+  // coordinate system.
+  const cwdPath = realpathSync(cwd());
+  const canonicalTarget = realpathSync(target);
+  let vaultRepoArg = relative(canonicalTarget, cwdPath) || '.';
   if (!vaultRepoArg.startsWith('.')) vaultRepoArg = `./${vaultRepoArg}`;
   // 1. Vault target itself — vault is cwd; repo root remains explicit.
   writeMcpJson(target, '.', vaultRepoArg, 'vault');
@@ -471,8 +479,8 @@ async function runInit(targetArg, opts = {}) {
   // 2. cwd (codebase root) — only if distinct from target. OATLAS_VAULT is the
   //    relative path from cwd to target.
   let cwdVaultArg = '.';
-  if (resolve(cwdPath) !== resolve(target)) {
-    let omotRel = relative(cwdPath, target) || '.';
+  if (cwdPath !== canonicalTarget) {
+    let omotRel = relative(cwdPath, canonicalTarget) || '.';
     if (!omotRel.startsWith('.')) omotRel = `./${omotRel}`;
     cwdVaultArg = omotRel;
     writeMcpJson(cwdPath, omotRel, '.', 'cwd');
