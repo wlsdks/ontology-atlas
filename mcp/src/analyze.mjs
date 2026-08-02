@@ -87,13 +87,16 @@ const DEFAULT_IGNORE = new Set([
 
 const SOURCE_FOLDERS = ['src', 'lib', 'app'];
 const WORKSPACE_FOLDERS = ['apps', 'packages'];
+const PYTHON_NON_PRODUCT_PACKAGES = new Set(['test', 'tests']);
 const STARTER_ONTOLOGY_SLUGS = new Set([
   'domains/example-domain',
   'capabilities/example-capability',
 ]);
 const SEMANTIC_EVIDENCE_SEEDS = [
   ['README.md', 'mission'],
+  ['README.rst', 'mission'],
   ['Cargo.toml', 'package-contract'],
+  ['setup.py', 'package-contract'],
   ['docs/FEATURES.md', 'product-capabilities'],
   ['docs/SYSTEM-MAP.md', 'architecture'],
   ['AGENTS.md', 'agent-guidance'],
@@ -102,6 +105,7 @@ const SEMANTIC_EVIDENCE_MAX_EXCERPT = 1200;
 const SEMANTIC_EVIDENCE_MAX_HEADINGS = 8;
 const SEMANTIC_EVIDENCE_MAX_DOCUMENTS = 6;
 const CARGO_MANIFEST_MAX_BYTES = 256 * 1024;
+const PYTHON_SETUP_MAX_BYTES = 256 * 1024;
 const CARGO_MANIFEST_MAX_FEATURES = 48;
 const CARGO_MANIFEST_MAX_FEATURE_VALUES = 16;
 const CARGO_MANIFEST_MAX_TOKEN_LENGTH = 80;
@@ -302,6 +306,14 @@ export function analyzeRepoStructure(rootPath, options = {}) {
       ignore,
       domainForName,
       existingElements: elements,
+    }),
+  );
+  elements.push(
+    ...detectRootPythonPackages(rootPath, {
+      ignore,
+      domainForName,
+      existingElements: elements,
+      skipped,
     }),
   );
 
@@ -523,37 +535,29 @@ function collectSemanticEvidence(rootPath, skipped = []) {
     const path = join(rootPath, source);
     if (!existsSync(path)) continue;
     try {
-      if (source === 'Cargo.toml') {
-        const resolvedFromRoot = relative(
-          realpathSync(rootPath),
-          realpathSync(path),
+      const packageContractMaxBytes = source === 'Cargo.toml'
+        ? CARGO_MANIFEST_MAX_BYTES
+        : source === 'setup.py'
+          ? PYTHON_SETUP_MAX_BYTES
+          : null;
+      if (packageContractMaxBytes !== null) {
+        const issue = packageContractPathIssue(
+          rootPath,
+          path,
+          source,
+          packageContractMaxBytes,
         );
-        if (
-          resolvedFromRoot === '..' ||
-          resolvedFromRoot.startsWith(`..${sep}`) ||
-          isAbsolute(resolvedFromRoot)
-        ) {
-          skipped.push({
-            path,
-            reason: 'package-contract-skip: Cargo.toml resolves outside repository root',
-          });
+        if (issue) {
+          pushSkippedOnce(skipped, { path, reason: issue });
           continue;
         }
-      }
-      if (
-        source === 'Cargo.toml' &&
-        statSync(path).size > CARGO_MANIFEST_MAX_BYTES
-      ) {
-        skipped.push({
-          path,
-          reason: `package-contract-skip: Cargo.toml exceeds ${CARGO_MANIFEST_MAX_BYTES} bytes`,
-        });
-        continue;
       }
       const text = readFileSync(path, 'utf-8');
       const extracted = source === 'Cargo.toml'
         ? extractCargoPackageContract(text)
-        : extractSemanticDocument(text);
+        : source === 'setup.py'
+          ? extractPythonSetupPackageContract(text)
+          : extractSemanticDocument(text);
       if (extracted.skipReason) {
         skipped.push({ path, reason: extracted.skipReason });
         continue;
@@ -617,6 +621,139 @@ function collectSemanticEvidence(rootPath, skipped = []) {
       riskFlags,
     };
   });
+}
+
+function packageContractPathIssue(rootPath, path, source, maxBytes) {
+  if (!pathResolvesInsideRoot(rootPath, path)) {
+    return `package-contract-skip: ${source} resolves outside repository root`;
+  }
+  if (statSync(path).size > maxBytes) {
+    return `package-contract-skip: ${source} exceeds ${maxBytes} bytes`;
+  }
+  return null;
+}
+
+function pathResolvesInsideRoot(rootPath, path) {
+  const resolvedFromRoot = relative(realpathSync(rootPath), realpathSync(path));
+  return !(
+    resolvedFromRoot === '..' ||
+    resolvedFromRoot.startsWith(`..${sep}`) ||
+    isAbsolute(resolvedFromRoot)
+  );
+}
+
+function pushSkippedOnce(skipped, row) {
+  if (
+    skipped.some(
+      (existing) =>
+        existing.path === row.path && existing.reason === row.reason,
+    )
+  ) {
+    return;
+  }
+  skipped.push(row);
+}
+
+function extractPythonSetupPackageContract(text) {
+  const packageFields = new Map();
+  let insideSetupCall = false;
+  let nesting = 0;
+  for (const rawLine of text.split(/\r?\n/)) {
+    const line = stripPythonComment(rawLine).trim();
+    if (!insideSetupCall) {
+      if (!/^(?:setup|setuptools\.setup)\s*\(\s*$/.test(line)) continue;
+      insideSetupCall = true;
+      nesting = 1;
+      continue;
+    }
+    const staticField = line.match(
+      /^(name|description|python_requires)\s*=\s*(['"])(.*?)\2\s*,?$/,
+    );
+    if (staticField) packageFields.set(staticField[1], staticField[3]);
+    nesting += pythonDelimiterDelta(line);
+    if (nesting <= 0) break;
+  }
+  const packageName = packageFields.get('name');
+  if (!packageName) {
+    return {
+      title: null,
+      headings: [],
+      excerpt: '',
+      skipReason: 'package-contract-skip: setup.py has no static setup name',
+    };
+  }
+  const visiblePackageName = truncateCargoValue(
+    packageName,
+    CARGO_MANIFEST_MAX_TOKEN_LENGTH,
+  );
+  const details = [
+    `Package: ${visiblePackageName}`,
+    packageFields.get('description')
+      ? `Description: ${truncateCargoValue(
+          packageFields.get('description'),
+          CARGO_MANIFEST_MAX_DESCRIPTION_LENGTH,
+        )}`
+      : null,
+    packageFields.get('python_requires')
+      ? `Python: ${truncateCargoValue(
+          packageFields.get('python_requires'),
+          CARGO_MANIFEST_MAX_TOKEN_LENGTH,
+        )}`
+      : null,
+  ].filter(Boolean);
+  return {
+    packageName: visiblePackageName,
+    title: `${visiblePackageName} package contract`,
+    headings: ['Package contract'],
+    excerpt: details.join('. ').slice(0, SEMANTIC_EVIDENCE_MAX_EXCERPT),
+    riskText: [...packageFields.values()].join('\n'),
+  };
+}
+
+function stripPythonComment(line) {
+  let quote = null;
+  let escaped = false;
+  for (let index = 0; index < line.length; index += 1) {
+    const character = line[index];
+    if (escaped) {
+      escaped = false;
+      continue;
+    }
+    if (character === '\\' && quote) {
+      escaped = true;
+      continue;
+    }
+    if (character === '"' || character === "'") {
+      quote = quote === character ? null : quote ?? character;
+      continue;
+    }
+    if (character === '#' && quote === null) return line.slice(0, index);
+  }
+  return line;
+}
+
+function pythonDelimiterDelta(line) {
+  let quote = null;
+  let escaped = false;
+  let delta = 0;
+  for (const character of line) {
+    if (escaped) {
+      escaped = false;
+      continue;
+    }
+    if (character === '\\' && quote) {
+      escaped = true;
+      continue;
+    }
+    if (character === '"' || character === "'") {
+      quote = quote === character ? null : quote ?? character;
+      continue;
+    }
+    if (quote) continue;
+    if (character === '(' || character === '[' || character === '{') delta += 1;
+    if (character === ')' || character === ']' || character === '}') delta -= 1;
+  }
+  return delta;
 }
 
 function extractCargoPackageContract(text) {
@@ -983,10 +1120,15 @@ function extractSemanticDocument(text) {
   let proseLength = 0;
   let title = null;
   let fence = null;
+  let rstLiteralBlock = false;
   let frontmatter = lines[0]?.trim() === '---';
   for (let lineIndex = 0; lineIndex < lines.length; lineIndex += 1) {
     const rawLine = lines[lineIndex];
     const line = rawLine.trim();
+    if (rstLiteralBlock) {
+      if (!line || /^\s/.test(rawLine)) continue;
+      rstLiteralBlock = false;
+    }
     if (frontmatter) {
       if (lineIndex > 0 && line === '---') frontmatter = false;
       continue;
@@ -998,23 +1140,43 @@ function extractSemanticDocument(text) {
       continue;
     }
     if (fence) continue;
+    if (/^\.\.\s+(?:code-block|sourcecode|literalinclude)::/i.test(line)) {
+      rstLiteralBlock = true;
+      continue;
+    }
+    const nextLine = lines[lineIndex + 1]?.trim() ?? '';
+    const setextOrRstHeading =
+      line && isHeadingAdornment(nextLine)
+        ? {
+            level: headingLevelForAdornment(nextLine, Boolean(title)),
+            value: line,
+          }
+        : null;
     const markdownHeading = line.match(/^(#{1,3})\s+(.+?)\s*$/);
     const htmlHeading = line.match(/<h([1-3])\b[^>]*>(.*?)<\/h\1>/i);
-    if (markdownHeading || htmlHeading) {
-      const level = markdownHeading
+    if (setextOrRstHeading || markdownHeading || htmlHeading) {
+      const level = setextOrRstHeading
+        ? setextOrRstHeading.level
+        : markdownHeading
         ? markdownHeading[1].length
         : Number(htmlHeading[1]);
-      const value = (markdownHeading ? markdownHeading[2] : htmlHeading[2])
+      const value = (setextOrRstHeading
+        ? setextOrRstHeading.value
+        : markdownHeading
+          ? markdownHeading[2]
+          : htmlHeading[2])
         .replace(/<[^>]+>/g, '')
         .replace(/\[(.*?)\]\([^)]*\)/g, '$1')
         .trim();
       if (!value) continue;
       if (level === 1 && !title) title = value;
       if (headings.length < SEMANTIC_EVIDENCE_MAX_HEADINGS) headings.push(value);
+      if (setextOrRstHeading) lineIndex += 1;
       continue;
     }
     if (
       !line ||
+      /^\.\.\s+\S+::/.test(line) ||
       /^<!--/.test(line) ||
       /^<\/?(?:p|div|img|a)\b/i.test(line) ||
       /^!\[/.test(line) ||
@@ -1082,19 +1244,52 @@ function detectProject(rootPath, skipped = []) {
       });
     }
   }
+  const setupPath = join(rootPath, 'setup.py');
+  if (existsSync(setupPath)) {
+    try {
+      const issue = packageContractPathIssue(
+        rootPath,
+        setupPath,
+        'setup.py',
+        PYTHON_SETUP_MAX_BYTES,
+      );
+      if (issue) {
+        pushSkippedOnce(skipped, { path: setupPath, reason: issue });
+      } else {
+        const contract = extractPythonSetupPackageContract(
+          readFileSync(setupPath, 'utf-8'),
+        );
+        if (contract.packageName) {
+          const slug = slugify(contract.packageName.replace(/_/g, '-'));
+          if (slug) {
+            return {
+              slug,
+              title: detectReadmeH1(rootPath) || humanize(contract.packageName),
+            };
+          }
+        }
+      }
+    } catch (err) {
+      skipped.push({
+        path: setupPath,
+        reason: `python-package-contract-read-error: ${err.message}`,
+      });
+    }
+  }
   const readmeTitle = detectReadmeH1(rootPath);
   if (readmeTitle) return { slug: basename(rootPath), title: readmeTitle };
   return { slug: basename(rootPath), title: humanize(basename(rootPath)) };
 }
 
 function detectReadmeH1(rootPath) {
-  for (const cand of ['README.md', 'readme.md', 'README']) {
+  for (const cand of ['README.md', 'readme.md', 'README.rst', 'readme.rst', 'README']) {
     const path = join(rootPath, cand);
     if (!existsSync(path)) continue;
     try {
       const lines = readFileSync(path, 'utf-8').split(/\r?\n/);
       let fence = null;
-      for (const line of lines) {
+      for (let lineIndex = 0; lineIndex < lines.length; lineIndex += 1) {
+        const line = lines[lineIndex];
         const fenceMatch = line.match(/^\s*(`{3,}|~{3,})/);
         if (fenceMatch) {
           const marker = fenceMatch[1][0];
@@ -1102,6 +1297,14 @@ function detectReadmeH1(rootPath) {
           continue;
         }
         if (fence) continue;
+        const nextLine = lines[lineIndex + 1]?.trim() ?? '';
+        if (
+          line.trim() &&
+          isHeadingAdornment(nextLine) &&
+          (cand.toLowerCase().endsWith('.rst') || nextLine.startsWith('='))
+        ) {
+          return line.trim();
+        }
         const markdownHeading = line.match(/^#\s+(.+?)\s*$/);
         if (markdownHeading) return markdownHeading[1].trim();
         const htmlHeading = line.match(/<h1\b[^>]*>(.*?)<\/h1>/i);
@@ -1115,6 +1318,16 @@ function detectReadmeH1(rootPath) {
     }
   }
   return null;
+}
+
+function isHeadingAdornment(line) {
+  return /^([^\p{L}\p{N}\s])\1{2,}$/u.test(line);
+}
+
+function headingLevelForAdornment(line, hasTitle) {
+  if (line.startsWith('=')) return 1;
+  if (line.startsWith('-')) return 2;
+  return hasTitle ? 2 : 1;
 }
 
 function detectExistingOntologyEvidence(rootPath, skipped = []) {
@@ -1318,6 +1531,61 @@ function detectRootPackages(rootPath, { ignore, domainForName, existingElements 
     if (!existsSync(join(memberPath, 'package.json'))) continue;
     // 슬러그는 평평하게 — 이미 잡힌 이름과 겹치면 -package 접미로 가른다.
     const flatName = claimed.has(`elements/${entry}`) ? `${entry}-package` : entry;
+    const slug = `elements/${flatName}`;
+    claimed.add(slug);
+    out.push({
+      slug,
+      title: humanize(entry),
+      ...(domainForName(entry) ? { domain: domainForName(entry) } : {}),
+      path: entry,
+      evidence: { source: entry },
+    });
+  }
+  return out;
+}
+
+function detectRootPythonPackages(
+  rootPath,
+  { ignore, domainForName, existingElements, skipped },
+) {
+  const out = [];
+  const claimed = new Set(existingElements.map((element) => element.slug));
+  let entries;
+  try {
+    entries = readdirSync(rootPath).sort();
+  } catch {
+    return out;
+  }
+  for (const entry of entries) {
+    if (
+      ignore.has(entry) ||
+      PYTHON_NON_PRODUCT_PACKAGES.has(entry.toLowerCase()) ||
+      entry.startsWith('.') ||
+      SOURCE_FOLDERS.includes(entry) ||
+      WORKSPACE_FOLDERS.includes(entry)
+    ) {
+      continue;
+    }
+    const packagePath = join(rootPath, entry);
+    try {
+      if (!statSync(packagePath).isDirectory()) continue;
+    } catch {
+      continue;
+    }
+    const packageEntry = join(packagePath, '__init__.py');
+    if (!existsSync(packageEntry)) continue;
+    if (
+      !pathResolvesInsideRoot(rootPath, packagePath) ||
+      !pathResolvesInsideRoot(rootPath, packageEntry)
+    ) {
+      pushSkippedOnce(skipped, {
+        path: packagePath,
+        reason: 'python-package-skip: path resolves outside repository root',
+      });
+      continue;
+    }
+    const flatName = slugify(entry.replace(/_/g, '-'));
+    if (!flatName || claimed.has(`elements/${flatName}`)) continue;
     const slug = `elements/${flatName}`;
     claimed.add(slug);
     out.push({

@@ -46,6 +46,11 @@ stdio JSON-RPC 인터페이스다. 사람과 에이전트가 같은 파일을 �
    작업은 preview 후 명시 확인한다.
 5. 변경 뒤 `validate_vault`, compile, health/maintenance 흐름으로 그래프를 재검증한다.
 
+Python cold start에서는 `README.rst`, 실행하지 않는 정적 `setup.py` package
+contract, 최상위 `__init__.py` package를 bounded 근거로 읽는다. `infer_imports`는
+그 package의 정적 import를 file/module edge로 축약한다. 이 결과는 구현 증거이며,
+domain·capability·의미 `depends_on`으로 자동 승격하지 않는다.
+
 ## 포함 / 제외
 
 - 포함: MCP 도구 등록과 입출력 계약, 볼트 parser/writer, deterministic compiler와
@@ -56,6 +61,8 @@ stdio JSON-RPC 인터페이스다. 사람과 에이전트가 같은 파일을 �
 ## 구현 근거
 
 - `mcp/src/index.js` — 도구 registry, schema, handler, 첫 연결 지침
+- `mcp/src/analyze.mjs` · `mcp/src/infer-imports.mjs` — bounded repository 의미
+  ingress와 실행 없는 TS/JS/Python import 근거
 - `mcp/src/vault.mjs` · `mcp/src/schema.mjs` — 파일 읽기/쓰기와 UID/slug 규격
 - `mcp/src/ontology-compiler.mjs` · `mcp/src/ontology-engine.mjs` — compile/query
 - `mcp/scripts/verify.mjs` · `scripts/dogfood-mcp-walk.mjs` — 설치·실사용 검증

@@ -95,6 +95,84 @@ test('No package.json — README H1 fallback for project title', () => {
   }
 });
 
+test('README.rst provides bounded mission evidence without promoting documentation sections to domains', () => {
+  const root = withRepo((r) => {
+    writeFileSync(
+      join(r, 'README.rst'),
+      [
+        'Vehicle Diagnostics Toolkit',
+        '===========================',
+        '',
+        'A Python toolkit that lets developers issue standardized diagnostic requests.',
+        '',
+        'Documentation',
+        '-------------',
+        '',
+        'The complete reference is published separately.',
+        '',
+        'Installation',
+        '------------',
+        '',
+        'Install the package with pip.',
+      ].join('\n'),
+    );
+  });
+  try {
+    const result = analyzeRepoStructure(root);
+    const evidence = result.semanticEvidence.find(
+      (row) => row.source === 'README.rst',
+    );
+
+    assert.equal(result.project.title, 'Vehicle Diagnostics Toolkit');
+    assert.equal(evidence?.role, 'mission');
+    assert.equal(evidence?.title, 'Vehicle Diagnostics Toolkit');
+    assert.match(evidence?.excerpt ?? '', /standardized diagnostic requests/);
+    assert.deepEqual(result.domains, []);
+  } finally {
+    rmSync(root, { recursive: true, force: true });
+  }
+});
+
+test('README.rst accepts punctuation title adornments and excludes directive code blocks from evidence', () => {
+  const root = withRepo((r) => {
+    writeFileSync(
+      join(r, 'README.rst'),
+      [
+        'Protocol Client',
+        '###############',
+        '',
+        '.. image:: https://example.invalid/badge.svg',
+        '',
+        'A client that issues standardized protocol requests.',
+        '',
+        'Example',
+        '-------',
+        '',
+        '.. code-block:: python',
+        '',
+        '   import secret_runtime',
+        '   raise RuntimeError("example only")',
+      ].join('\n'),
+    );
+  });
+  try {
+    const result = analyzeRepoStructure(root);
+    const evidence = result.semanticEvidence.find(
+      (row) => row.source === 'README.rst',
+    );
+
+    assert.equal(result.project.title, 'Protocol Client');
+    assert.equal(evidence?.title, 'Protocol Client');
+    assert.match(evidence?.excerpt ?? '', /standardized protocol requests/);
+    assert.doesNotMatch(
+      evidence?.excerpt ?? '',
+      /image::|code-block::|secret_runtime|RuntimeError/,
+    );
+  } finally {
+    rmSync(root, { recursive: true, force: true });
+  }
+});
+
 test('README title ignores fenced shell comments and supports centered HTML H1', () => {
   const root = withRepo((r) => {
     writeFileSync(join(r, 'package.json'), JSON.stringify({ name: 'muse' }));
@@ -152,6 +230,107 @@ test('semantic evidence discovery ranks generic product/strategy docs without pr
     );
   } finally {
     rmSync(root, { recursive: true, force: true });
+  }
+});
+
+test('setup.py contributes a bounded static package contract without executing or admitting dynamic fields', () => {
+  const root = withRepo((r) => {
+    writeFileSync(
+      join(r, 'README.rst'),
+      [
+        'Diagnostic Client',
+        '=================',
+        '',
+        'A client library for standardized device diagnostics.',
+      ].join('\n'),
+    );
+    writeFileSync(
+      join(r, 'setup.py'),
+      [
+        'raise RuntimeError("setup.py must never execute during analysis")',
+        'setup(',
+        "    name='diagnostic-client',",
+        "    description='Standardized device diagnostic requests',",
+        "    python_requires='>=3.9',",
+        '    version=load_version(),',
+        "    install_requires=['transport-lib'],",
+        ')',
+      ].join('\n'),
+    );
+  });
+  try {
+    const result = analyzeRepoStructure(root);
+    const evidence = result.semanticEvidence.find(
+      (row) => row.source === 'setup.py',
+    );
+
+    assert.equal(evidence?.role, 'package-contract');
+    assert.match(evidence?.excerpt ?? '', /Package: diagnostic-client/);
+    assert.match(
+      evidence?.excerpt ?? '',
+      /Description: Standardized device diagnostic requests/,
+    );
+    assert.match(evidence?.excerpt ?? '', /Python: >=3\.9/);
+    assert.doesNotMatch(evidence?.excerpt ?? '', /load_version|transport-lib|RuntimeError/);
+  } finally {
+    rmSync(root, { recursive: true, force: true });
+  }
+});
+
+test('static setup.py name replaces a generic folder slug while README.rst remains the display title', () => {
+  const root = withRepo((r) => {
+    writeFileSync(
+      join(r, 'README.rst'),
+      'Protocol Client\n###############\n\nA protocol diagnostic client.\n',
+    );
+    writeFileSync(
+      join(r, 'setup.py'),
+      ['setup(', "    name='protocol-client',", ')'].join('\n'),
+    );
+  });
+  try {
+    const result = analyzeRepoStructure(root);
+
+    assert.equal(result.project.slug, 'protocol-client');
+    assert.equal(result.project.title, 'Protocol Client');
+  } finally {
+    rmSync(root, { recursive: true, force: true });
+  }
+});
+
+test('setup.py symlink outside the repository is rejected before project identity or evidence admission', () => {
+  const outside = withRepo((r) => {
+    writeFileSync(
+      join(r, 'setup.py'),
+      ['setup(', "    name='escaped-package',", ')'].join('\n'),
+    );
+  });
+  const root = withRepo((r) => {
+    writeFileSync(
+      join(r, 'README.rst'),
+      'Contained Client\n================\n\nA contained client.\n',
+    );
+    symlinkSync(join(outside, 'setup.py'), join(r, 'setup.py'));
+  });
+  try {
+    const result = analyzeRepoStructure(root);
+
+    assert.notEqual(result.project.slug, 'escaped-package');
+    assert.equal(
+      result.semanticEvidence.some((row) => row.source === 'setup.py'),
+      false,
+    );
+    assert.ok(
+      result.skipped.some(
+        (row) =>
+          row.path.endsWith('setup.py') &&
+          row.reason ===
+            'package-contract-skip: setup.py resolves outside repository root',
+      ),
+    );
+  } finally {
+    rmSync(root, { recursive: true, force: true });
+    rmSync(outside, { recursive: true, force: true });
   }
 });
 
@@ -695,6 +874,83 @@ test('최상위 독립 패키지(mcp/·cli/ 류)가 요소 후보로 잡힌다 �
     );
     // containment spine 에도 실린다.
     assert.ok(r.suggestedRelations.some((rel) => rel.to === 'elements/mcp'));
+  } finally {
+    rmSync(root, { recursive: true, force: true });
+  }
+});
+
+test('top-level Python package becomes implementation evidence without promoting test packages or capabilities', () => {
+  const root = withRepo((r) => {
+    writeFileSync(
+      join(r, 'README.rst'),
+      'Diagnostic Client\n=================\n\nA diagnostic protocol client.\n',
+    );
+    writeFileSync(
+      join(r, 'setup.py'),
+      [
+        'setup(',
+        "    name='diagnostic-client',",
+        "    description='Diagnostic protocol client',",
+        ')',
+      ].join('\n'),
+    );
+    mkdirSync(join(r, 'diagnostic_client'), { recursive: true });
+    writeFileSync(join(r, 'diagnostic_client/__init__.py'), '');
+    mkdirSync(join(r, 'test'), { recursive: true });
+    writeFileSync(join(r, 'test/__init__.py'), '');
+  });
+  try {
+    const result = analyzeRepoStructure(root);
+    const pythonPackage = result.elements.find(
+      (row) => row.slug === 'elements/diagnostic-client',
+    );
+
+    assert.equal(pythonPackage?.title, 'Diagnostic Client');
+    assert.equal(pythonPackage?.path, 'diagnostic_client');
+    assert.equal(pythonPackage?.evidence.source, 'diagnostic_client');
+    assert.equal(result.elements.some((row) => row.slug === 'elements/test'), false);
+    assert.equal(result.capabilities.some((row) => row.slug.includes('diagnostic')), false);
+  } finally {
+    rmSync(root, { recursive: true, force: true });
+  }
+});
+
+test('repository-escaping Python package symlinks do not become implementation evidence', () => {
+  const outside = withRepo((r) => {
+    writeFileSync(join(r, '__init__.py'), '');
+    writeFileSync(join(r, 'client.py'), '');
+  });
+  const root = withRepo((r) => {
+    symlinkSync(outside, join(r, 'escaped_package'));
+  });
+  try {
+    const result = analyzeRepoStructure(root);
+
+    assert.equal(
+      result.elements.some((row) => row.path === 'escaped_package'),
+      false,
+    );
+    assert.ok(
+      result.skipped.some(
+        (row) =>
+          row.path.endsWith('escaped_package') &&
+          row.reason === 'python-package-skip: path resolves outside repository root',
+      ),
+    );
+  } finally {
+    rmSync(root, { recursive: true, force: true });
+    rmSync(outside, { recursive: true, force: true });
+  }
+});
+
+test('Markdown setext H2 is not mistaken for the project title', () => {
+  const root = withRepo((r) => {
+    writeFileSync(join(r, 'README.md'), 'Installation\n------------\n\nUse pip.\n');
+  });
+  try {
+    const result = analyzeRepoStructure(root);
+
+    assert.notEqual(result.project.title, 'Installation');
   } finally {
     rmSync(root, { recursive: true, force: true });
   }

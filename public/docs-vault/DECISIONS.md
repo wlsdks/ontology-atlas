@@ -42,6 +42,77 @@
 
 ---
 
+## 2026-08-02 — Python cold-start는 의미 ingress와 import impact를 두 계약으로 나눈다
+
+### 먼저 — 세 줄
+
+- **정한 것**: 먼저 실제 실패가 증명한 `README.rst`·정적 `setup.py`·최상위
+  Python package만 기존 분석 packet에 넣고, 그 field trial이 남긴 impact 공백을
+  근거로 `.py` import 계약을 별도 연다.
+- **다르게 한 것**: 요청에 함께 있던 `README.adoc`·`pyproject.toml`·`.py` import를
+  한 변경의 성공으로 묶지 않는다. 앞의 둘은 아직 실측되지 않았고, import는 의미
+  근거 수집과 다른 정확도·축약 계약을 요구한다.
+- **네가 할 일**: 없음 — 두 단계 모두 독립 RED와 source-hidden handoff로 판정한다.
+
+**소집**: PO 카운슬 5인 전원(근거·결·지킴이·해자·지렛대), 독립 1라운드 +
+상호 반박 1라운드. 동시 슬롯 한계로 서로의 의견을 보지 않는 파동으로 실행했다. ·
+**트리거**: `index_project`·`analyze_repo_structure`·`infer_imports` 공개 응답의
+의미 사정거리 변경, 그리고 2026-08-02 「Rust package 계약」의 비-Rust 재검토
+조건 관측. · **루브릭**: 23/24 (Problem insight 4 · User moment 4 ·
+Differentiation 3 · Ontology value 4 · Agent value 4 · Verification 4,
+치명적 0: 없음).
+
+**선행 결정 관계**: 2026-08-01 「도구의 시야가 곧 볼트의 사정거리」와
+2026-08-02 「Rust package 계약은 bounded 근거 한 행」의 원칙은 유효하다. 후자의
+재검토 조건인 “두 번째 비-Rust field trial에서 같은 citation 공백”은 관측됐다.
+명확한 목적·예제·package 설명과 최상위 package가 있는 MIT Python 저장소에서
+source MCP가 files 0 · semantic evidence 0을 반환했고, Atlas-only builder는 쓰기를
+거부했다. 저장소 정보 부족이 아니라 입력 사정거리 결함이다.
+
+## PO Council Verdict — bounded Python construction ingress
+
+| PO | 판정 | 소유 행 점수 |
+|---|---|---|
+| 근거 | 두 단계 Build | Problem insight 4 · User moment 4 |
+| 결 | 두 단계 Build | Verification 4 |
+| 지킴이 | 두 단계 Build | Ontology value 4 · Agent value 4 |
+| 해자 | Build and verify | Differentiation 3 |
+| 지렛대 | 두 단계 Build | 1차 최대 6시간 · 2차 최대 4시간 |
+
+**The decisive disagreement**: 251개 Python import가 모두 사라지는 것을 첫 변경에서
+함께 고칠 것인가. 함께 고치지 않는다. 현재 write 거부의 직접 원인은 의미 문서·
+package 계약·정본 package 경로가 packet 밖인 것이고, import graph는 file fact를
+의미 `depends_on`으로 오해하지 않게 하는 별도 축약·정확도 계약이 필요하다. 먼저
+ingress만 고친 독립 handoff가 impact를 여전히 못 답할 때 그 실패가 2차 RED다.
+
+**Decision (accountable: owner)**:
+
+1. **Slice 1 — 관측된 ingress**: root-contained·크기 제한 `README.rst`에서 제목과
+   bounded semantic evidence를 추출한다. RST의 일반 문서 절은 domain/capability로
+   자동 승격하지 않는다. root `setup.py`는 절대 실행·import하지 않고 `setup(...)`의
+   허용된 정적 literal만 하나의 `package-contract` evidence row로 읽는다. 계산식·
+   함수 호출·동적 값은 unknown으로 남긴다. 최상위 `__init__.py` package는 element와
+   repo-relative canonical path 후보일 뿐 business capability가 아니다.
+2. **Slice 1 OUT**: `README.adoc`, `pyproject.toml`, `.py` import, namespace package,
+   workspace 재귀, 새 tool/kind/schema/인자, 문서 절의 의미 노드 자동 생성.
+3. **Slice 1 proof**: 같은 유형의 fresh Atlas-only run이 5분 안에 비제로 mission·
+   package/path evidence를 얻고, cited path 100% · unsupported claim 0 · 파일별 노드
+   0을 지킨다. 기존 Markdown·Cargo·TS/JS 결과와 bundled MCP가 회귀하지 않는다.
+4. **Slice 2 opening condition**: Slice 1 source-hidden handoff에서 impact가 유일한
+   주요 공백으로 남고, 실제 정적 Python import가 그 질문의 witness임을 source로
+   확인하면 `.py` internal import inference를 별도 최대 4시간으로 연다. file edge는
+   관측 근거이며 domain/capability 또는 semantic `depends_on`으로 자동 승격하지 않는다.
+
+**Recorded dissent**: ingress만 먼저 고치면 사용자가 요청한 code impact가 계속 비어
+“Python 지원”이 반쪽짜리로 남는다. **falsifier**: Slice 1 뒤 write와 canonical path는
+회복하지만 source-hidden agent가 정적 import 조사 없이는 impact 질문을 답하지 못하면
+이 반대가 옳고 Slice 2를 즉시 연다. 반대로 의미 ingress만으로 질문이 해결되면 내장
+Python source index는 Atlas의 해자가 아니라 불필요한 범위였다.
+
+**상태**: 유효.
+
+---
+
 ## 2026-08-02 — 필수 UID는 vault format v2이며 공식 migration 경로가 함께 간다
 
 ### 먼저 — 세 줄

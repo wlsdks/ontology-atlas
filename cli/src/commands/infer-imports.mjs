@@ -290,7 +290,7 @@ function printUsage(stream = process.stderr) {
       `  ontology-atlas infer-imports [rootPath] [--vault path] [--apply] [--json]\n` +
       `                              [--max-files N] [--threshold N]\n\n` +
       `${COLORS.bold}What it does:${COLORS.reset}\n` +
-      `  Walk TS/JS files (default: src,lib,app,packages → fallback rootPath),\n` +
+      `  Walk TS/JS files and bounded root Python packages (default: src,lib,app,packages → fallback rootPath),\n` +
       `  parse imports (static / dynamic / require / re-export / side-effect),\n` +
       `  resolve relative imports, tsconfig paths, and fallback @/* aliases,\n` +
       `  classify external (npm) separately and unresolved aliases explicitly,\n` +

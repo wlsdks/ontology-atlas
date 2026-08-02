@@ -22,7 +22,7 @@
  *   - query_ontology         — compiled graph engine query (neighbors / path / all_paths / query_plan / centrality / communities / similar_nodes / explain_relation / reachability / pattern_walk / impact / blast_radius / subgraph / builder_context / overview / schema / facets / match_nodes / match_edges / node_profile / domain_profile / domain_matrix / project_scope / project_map / relation_check / components / lineage / containment_tree / cycles / topological_order / recommend_relations / growth_plan / maintenance_plan / agent_brief / workspace_brief / health)
  *   - validate_vault         — vault 전체 health 한 호출 (per-doc + byCode aggregate)
  *   - analyze_repo_structure — R16, code repo 분석 → ontology 후보 (side effect 0)
- *   - infer_imports          — R17, TS/JS import graph → depends_on 후보 (side effect 0)
+ *   - infer_imports          — R17, TS/JS/Python import graph → depends_on 후보 (side effect 0)
  *   - index_project          — repo 분석 + import graph + vault validation plan (side effect 0)
  *
  * write 14:
@@ -3427,7 +3427,7 @@ const TOOLS = [
   {
     name: 'infer_imports',
     description:
-      'R17 (autonomous ingest deeper) — walk TS/JS files in a code repo and infer file-level + module-level import edges. ' +
+      'R17 (autonomous ingest deeper) — walk TS/JS files in a code repo and infer file-level + module-level import edges. It also walks bounded root Python packages. ' +
       'side effect 0 (vault frontmatter NOT modified). The agent reviews moduleEdges (capability A → capability B from import count) and selectively passes accepted edges to add_relation as `depends_on`. ' +
       'Each module edge includes `kindCounts` so the agent can distinguish static-heavy edges from dynamic/require/reexport/side-effect evidence before writing. ' +
       'Detects:\n' +
@@ -3435,7 +3435,8 @@ const TOOLS = [
       '  - dynamic import() / require() / export ... from\n' +
       '  - bare side-effect imports (import "X")\n' +
       '  - apps/* and packages/* workspace imports collapse to analyzer-compatible element slugs\n' +
-      '  - external (npm) imports listed separately\n' +
+      '  - bounded static Python import / from ... import statements in root packages with __init__.py; source is parsed as text and never executed\n' +
+      '  - external package imports listed separately\n' +
       '  - tsconfig.json compilerOptions.paths aliases first, then fallback common @/* aliases → resolved to internal files when the target exists; otherwise unresolved as alias-not-found\n\n' +
       'Use after analyze_repo_structure to pull *real* dependency edges from the code, not just suggestedRelations heuristics. ' +
       'Unless reconcile:false, also returns `reconciliation` (+ `reconciliationSummary` counts): the module edges diffed against the vault\'s compiled depends_on edges into `inBoth` / `inCodeMissingFromVault` (each with an add_relation `proposedAction`) / `inVaultNotInCode` (possibly-stale vault edges) — i.e. EXACTLY what to sync toward code↔vault drift 0, not a raw firehose. ' +
