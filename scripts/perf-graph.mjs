@@ -80,7 +80,15 @@ function parseSize(value, flag) {
  * 죽고, 재는 대상(질의 성능)에 닿지도 못한다.
  */
 function doc(slug, frontmatter, mtime = 1) {
-  return { slug, frontmatter: { uid: randomUUID(), slug, ...frontmatter }, body: "", mtime };
+  // Benchmark fixtures are ephemeral but still exercise the v2 identity
+  // contract. Mint once when the fixture is created; repeated measurements
+  // compile the same document objects and therefore the same identities.
+  return {
+    slug,
+    frontmatter: { uid: randomUUID(), slug, ...frontmatter },
+    body: "",
+    mtime,
+  };
 }
 
 function generateDocs(n) {

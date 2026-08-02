@@ -168,6 +168,21 @@ describe("useProjectMutations path-agnostic project source", () => {
     expect(mocks.vault.createDoc).not.toHaveBeenCalled();
   });
 
+  it("신규 project는 createDoc에 영구 UUIDv4 uid가 포함된 markdown을 넘긴다", async () => {
+    mocks.vault.manifest = null;
+    mocks.vault.fileHandles = new Map();
+    const { result } = renderHook(() => useProjectMutations());
+
+    await act(() => result.current.createProject(makeInput("fresh")));
+
+    expect(mocks.vault.createDoc).toHaveBeenCalledWith(
+      "projects/fresh",
+      expect.stringMatching(
+        /^---\nuid: [0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}\n/m,
+      ),
+    );
+  });
+
   it("루트 project 삭제도 원본 VaultDoc.slug를 쓴다", async () => {
     const { result } = renderHook(() => useProjectMutations());
 

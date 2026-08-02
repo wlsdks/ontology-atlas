@@ -15,11 +15,23 @@ export function normalizeMcpTools(tools) {
     .map((tool) => {
       const properties = tool?.inputSchema?.properties ?? {};
       const required = Array.isArray(tool?.inputSchema?.required) ? tool.inputSchema.required : [];
+      const oneOfRequired = (Array.isArray(tool?.inputSchema?.oneOf)
+        ? tool.inputSchema.oneOf
+        : []
+      )
+        .map((alternative) =>
+          Array.isArray(alternative?.required)
+            ? [...alternative.required].map(String).sort()
+            : [],
+        )
+        .filter((alternative) => alternative.length > 0)
+        .sort((a, b) => JSON.stringify(a).localeCompare(JSON.stringify(b)));
       return {
         name: String(tool?.name ?? ''),
         mode: tool?.annotations?.readOnlyHint === true ? 'read' : 'write',
         arguments: Object.keys(properties).sort(),
         required: [...required].map(String).sort(),
+        ...(oneOfRequired.length > 0 ? { oneOfRequired } : {}),
       };
     })
     .sort((a, b) => (a.name < b.name ? -1 : a.name > b.name ? 1 : 0));

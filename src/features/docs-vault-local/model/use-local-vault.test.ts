@@ -73,6 +73,28 @@ function emptyManifest() {
   };
 }
 
+function manifestWithDoc(slug: string, frontmatter: Record<string, unknown>): LocalVaultBuild['manifest'] {
+  return {
+    ...emptyManifest(),
+    docs: [
+      {
+        slug,
+        path: `${slug}.md`,
+        title: String(frontmatter.title ?? slug),
+        description: '',
+        tags: [],
+        frontmatter,
+        headings: [],
+        excerpt: '',
+        wordCount: 0,
+        updatedAt: '',
+        linksOut: [],
+        mtime: 1000,
+      },
+    ],
+  };
+}
+
 function makeBuildResult(
   overrides: Partial<LocalVaultBuild> = {},
 ): { build: LocalVaultBuild; entries: BuiltVaultEntry[] } {
@@ -229,6 +251,31 @@ describe('useLocalVaultInternal — saveDoc conflict 계약 (silent-overwrite �
     return result;
   }
 
+  it('saveDoc도 기존 uid와 merged_uids를 바꾼 전체 문서를 거부한다', async () => {
+    const uid = '01890f3e-7b5d-4c0a-8f14-123456789abc';
+    const mergedUid = '11890f3e-7b5d-4c0a-8f14-123456789abc';
+    const raw = `---\nuid: ${uid}\nmerged_uids: [${mergedUid}]\nkind: project\ntitle: A\n---\n\nbody`;
+    const fh = fakeFileHandle({ text: raw, lastModified: 1000 });
+    const result = await loadedHookWithDoc(fh);
+
+    await expect(
+      act(async () => {
+        await result.current.saveDoc(
+          'note',
+          raw.replace(uid, '21890f3e-7b5d-4c0a-8f14-123456789abc'),
+        );
+      }),
+    ).rejects.toThrow(/uid.*immutable|immutable.*uid/i);
+    await expect(
+      act(async () => {
+        await result.current.saveDoc('note', raw.replace(`merged_uids: [${mergedUid}]\n`, ''));
+      }),
+    ).rejects.toThrow(/merged_uids.*merge/i);
+
+    expect(fh.write).not.toHaveBeenCalled();
+    expect(fh.state.text).toBe(raw);
+  });
+
   it('expectedMtime 이 디스크 mtime 과 일치하면 정상 저장 후 재스캔한다', async () => {
     const fh = fakeFileHandle({ text: 'old', lastModified: 1000 });
     const result = await loadedHookWithDoc(fh);
@@ -277,6 +324,69 @@ describe('useLocalVaultInternal — saveDoc conflict 계약 (silent-overwrite �
 });
 
 describe('useLocalVaultInternal — updateFrontmatter conflict 계약', () => {
+  it('UID 없는 legacy 문서는 kind 승격과 함께 한 번만 UID를 초기화할 수 있다', async () => {
+    const uid = '01890f3e-7b5d-4c0a-8f14-123456789abc';
+    const fh = fakeFileHandle({ text: '# Legacy document\n', lastModified: 1000 });
+    const root = fakeRootHandle('my-vault');
+    fsHandleMocks.getLocalFsHandle.mockResolvedValue(makeRecord(root));
+    fsHandleMocks.verifyHandlePermission.mockResolvedValue('granted');
+    entitiesMocks.buildLocalManifestWithEntries.mockResolvedValue(
+      makeBuildResult({ fileHandles: new Map([['legacy', fh.handle]]) }),
+    );
+
+    const { result } = renderHook(() => useLocalVaultInternal());
+    await waitFor(() => expect(result.current.status).toBe('loaded'));
+
+    await act(async () => {
+      await result.current.updateFrontmatter('legacy', {
+        uid,
+        kind: 'element',
+        title: 'Legacy',
+      }, { skipRefresh: true });
+    });
+
+    expect(fh.state.text).toContain(`uid: ${uid}`);
+    expect(fh.state.text).toContain('kind: element');
+  });
+
+  it('이미 발급된 uid와 merge history는 generic frontmatter patch로 바꾸지 못한다', async () => {
+    const uid = '01890f3e-7b5d-4c0a-8f14-123456789abc';
+    const fh = fakeFileHandle({
+      text: `---\nuid: ${uid}\nkind: project\ntitle: A\n---\n\nbody`,
+      lastModified: 1000,
+    });
+    const root = fakeRootHandle('my-vault');
+    fsHandleMocks.getLocalFsHandle.mockResolvedValue(makeRecord(root));
+    fsHandleMocks.verifyHandlePermission.mockResolvedValue('granted');
+    entitiesMocks.buildLocalManifestWithEntries.mockResolvedValue(
+      makeBuildResult({
+        manifest: manifestWithDoc('note', { uid, kind: 'project', title: 'A' }),
+        fileHandles: new Map([['note', fh.handle]]),
+      }),
+    );
+
+    const { result } = renderHook(() => useLocalVaultInternal());
+    await waitFor(() => expect(result.current.status).toBe('loaded'));
+
+    await expect(
+      act(async () => {
+        await result.current.updateFrontmatter('note', {
+          uid: '11890f3e-7b5d-4c0a-8f14-123456789abc',
+        });
+      }),
+    ).rejects.toThrow(/uid.*immutable|immutable.*uid/i);
+    await expect(
+      act(async () => {
+        await result.current.updateFrontmatter('note', {
+          merged_uids: ['11890f3e-7b5d-4c0a-8f14-123456789abc'],
+        });
+      }),
+    ).rejects.toThrow(/merged_uids.*merge/i);
+
+    expect(fh.write).not.toHaveBeenCalled();
+    expect(fh.state.text).toContain(`uid: ${uid}`);
+  });
+
   it('expectedMtime 충돌 시 VaultConflictError 를 던지고 파일을 쓰지 않는다', async () => {
     const fh = fakeFileHandle({
       text: '---\ntitle: A\n---\n\nbody',
@@ -404,6 +514,117 @@ describe('useLocalVaultInternal — 탭 focus 복귀 auto-refresh (poll → 병�
 });
 
 describe('useLocalVaultInternal — 기존 파일 보호 (createDoc / renameDoc)', () => {
+  it('createDoc: kind 노드는 유효한 uid 없이 디스크에 쓰지 않는다', async () => {
+    const created = fakeFileHandle({ text: '', lastModified: 0 });
+    const getFileHandle = vi.fn(async (_name: string, options?: { create?: boolean }) => {
+      if (options?.create) return created.handle;
+      throw new DOMException('missing', 'NotFoundError');
+    });
+    const root = {
+      kind: 'directory',
+      name: 'my-vault',
+      getFileHandle,
+    } as unknown as FileSystemDirectoryHandle;
+    fsHandleMocks.getLocalFsHandle.mockResolvedValue(makeRecord(root));
+    fsHandleMocks.verifyHandlePermission.mockResolvedValue('granted');
+    entitiesMocks.buildLocalManifestWithEntries.mockResolvedValue(makeBuildResult());
+
+    const { result } = renderHook(() => useLocalVaultInternal());
+    await waitFor(() => expect(result.current.status).toBe('loaded'));
+
+    await expect(
+      act(async () => {
+        await result.current.createDoc('new', '---\nkind: project\ntitle: Missing UID\n---\n');
+      }),
+    ).rejects.toThrow(/uid/i);
+
+    expect(created.write).not.toHaveBeenCalled();
+  });
+
+  it('createDoc: 기존 primary/merged UID와 충돌하는 새 노드를 쓰지 않는다', async () => {
+    const uid = '01890f3e-7b5d-4c0a-8f14-123456789abc';
+    const mergedUid = '11890f3e-7b5d-4c0a-8f14-123456789abc';
+    const created = fakeFileHandle({ text: '', lastModified: 0 });
+    const getFileHandle = vi.fn(async (_name: string, options?: { create?: boolean }) => {
+      if (options?.create) return created.handle;
+      throw new DOMException('missing', 'NotFoundError');
+    });
+    const root = {
+      kind: 'directory',
+      name: 'my-vault',
+      getFileHandle,
+    } as unknown as FileSystemDirectoryHandle;
+    fsHandleMocks.getLocalFsHandle.mockResolvedValue(makeRecord(root));
+    fsHandleMocks.verifyHandlePermission.mockResolvedValue('granted');
+    entitiesMocks.buildLocalManifestWithEntries.mockResolvedValue(
+      makeBuildResult({
+        manifest: manifestWithDoc('existing', {
+          uid,
+          merged_uids: [mergedUid],
+          kind: 'project',
+          title: 'Existing',
+        }),
+      }),
+    );
+
+    const { result } = renderHook(() => useLocalVaultInternal());
+    await waitFor(() => expect(result.current.status).toBe('loaded'));
+
+    await expect(
+      act(async () => {
+        await result.current.createDoc(
+          'new',
+          `---\nuid: ${uid}\nkind: project\ntitle: Duplicate\n---\n`,
+        );
+      }),
+    ).rejects.toThrow(/UID collision.*existing/i);
+
+    await expect(
+      act(async () => {
+        await result.current.createDoc(
+          'new-from-absorbed-id',
+          `---\nuid: 21890f3e-7b5d-4c0a-8f14-123456789abc\nmerged_uids: [${mergedUid}]\nkind: project\ntitle: Duplicate absorbed identity\n---\n`,
+        );
+      }),
+    ).rejects.toThrow(/UID collision.*existing/i);
+
+    expect(created.write).not.toHaveBeenCalled();
+  });
+
+  it('createDoc: 로드 뒤 외부에서 생긴 동일 slug도 다시 확인해 덮어쓰지 않는다', async () => {
+    const external = fakeFileHandle({
+      text: '---\nuid: 01890f3e-7b5d-4c0a-8f14-123456789abc\nkind: project\ntitle: External\n---\n',
+      lastModified: 2000,
+    });
+    const getFileHandle = vi.fn(async (name: string) => {
+      if (name === 'new.md') return external.handle;
+      throw new DOMException('missing', 'NotFoundError');
+    });
+    const root = {
+      kind: 'directory',
+      name: 'my-vault',
+      getFileHandle,
+    } as unknown as FileSystemDirectoryHandle;
+    fsHandleMocks.getLocalFsHandle.mockResolvedValue(makeRecord(root));
+    fsHandleMocks.verifyHandlePermission.mockResolvedValue('granted');
+    entitiesMocks.buildLocalManifestWithEntries.mockResolvedValue(makeBuildResult());
+
+    const { result } = renderHook(() => useLocalVaultInternal());
+    await waitFor(() => expect(result.current.status).toBe('loaded'));
+
+    await expect(
+      act(async () => {
+        await result.current.createDoc(
+          'new',
+          '---\nuid: 11890f3e-7b5d-4c0a-8f14-123456789abc\nkind: project\ntitle: New\n---\n',
+        );
+      }),
+    ).rejects.toThrow(/already exists/);
+
+    expect(external.write).not.toHaveBeenCalled();
+    expect(external.state.text).toContain('title: External');
+  });
+
   it('createDoc: 이미 존재하는 slug 면 기존 파일을 덮어쓰지 않고 에러를 던진다', async () => {
     const fh = fakeFileHandle({ text: 'existing', lastModified: 1000 });
     const root = fakeRootHandle('my-vault');

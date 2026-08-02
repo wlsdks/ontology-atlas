@@ -30,6 +30,11 @@ Exact identity, handoff/provenance, compiler indexes, and interop exports use UI
 Rename/reclassify preserve it; merge retains the target UID and absorbs source
 identities into merge-owned `merged_uids`.
 
+Vaults created before this v2 identity contract migrate explicitly from the
+source checkout: `pnpm vault:migrate 2026-08-02-add-node-uids --vault <dir>`
+previews and the same command with `--write` applies. It preserves valid UIDs,
+validates all claims before writing, and inherits the dirty-Markdown guard.
+
 | Command | What it does |
 |---|---|
 | `ontology-atlas init [folder] [--locale=en\|ko]` | Scaffold a new vault and mint a different fresh UID for every starter node, including the vault README. Locale variants share graph shape and titles but never fixed identities. Also writes wired agent configs in both codebase and vault roots; existing configs are preserved. |

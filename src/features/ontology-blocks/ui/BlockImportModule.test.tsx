@@ -14,6 +14,12 @@ const tauriMocks = vi.hoisted(() => ({
   pickTauriVaultDirectory: vi.fn(),
 }));
 
+const UIDS = {
+  existingLogin: '11111111-1111-4111-8111-111111111111',
+  blockLogin: '22222222-2222-4222-8222-222222222222',
+  blockSession: '33333333-3333-4333-8333-333333333333',
+};
+
 vi.mock('@/features/docs-vault-local', () => ({
   useLocalVault: () => mocks.vault,
 }));
@@ -70,12 +76,27 @@ const BLOCK_FILES = {
     sourceProject: 'other-project',
     exportedAt: '2026-07-23T00:00:00.000Z',
     census: { elementCount: 0, capabilityCount: 2, depth: 1 },
-    nodes: [],
+    nodes: [
+      {
+        uid: UIDS.blockLogin,
+        urn: `urn:uuid:${UIDS.blockLogin}`,
+        slug: 'capabilities/login',
+        kind: 'capability',
+        title: 'Login',
+      },
+      {
+        uid: UIDS.blockSession,
+        urn: `urn:uuid:${UIDS.blockSession}`,
+        slug: 'capabilities/session',
+        kind: 'capability',
+        title: 'Session',
+      },
+    ],
   }),
   'capabilities/login.md':
-    '---\nslug: capabilities/login\nkind: capability\ntitle: Login\n---\n\n# Login\n',
+    `---\nuid: ${UIDS.blockLogin}\nslug: capabilities/login\nkind: capability\ntitle: Login\n---\n\n# Login\n`,
   'capabilities/session.md':
-    '---\nslug: capabilities/session\nkind: capability\ntitle: Session\n---\n\n# Session\n',
+    `---\nuid: ${UIDS.blockSession}\nslug: capabilities/session\nkind: capability\ntitle: Session\n---\n\n# Session\n`,
 };
 
 function makeVault(overrides: Partial<MockVault> = {}): MockVault {
@@ -85,7 +106,7 @@ function makeVault(overrides: Partial<MockVault> = {}): MockVault {
       docs: [
         {
           slug: 'capabilities/login',
-          frontmatter: { kind: 'capability' },
+          frontmatter: { kind: 'capability', uid: UIDS.existingLogin },
           title: 'Login (existing)',
         },
       ],
@@ -140,6 +161,79 @@ describe('BlockImportModule', () => {
       'capabilities/session',
     );
     // 승인 전 쓰기 0.
+    expect(mocks.vault.createDoc).not.toHaveBeenCalled();
+  });
+
+  it('rejects a present but malformed v2 manifest instead of treating it as manifest-less Markdown', async () => {
+    stubPicker(
+      fakeBlockDir({
+        ...BLOCK_FILES,
+        'block-manifest.json': 'not json',
+      }),
+    );
+
+    render(<BlockImportModule />);
+    fireEvent.click(screen.getByTestId('block-import-open'));
+
+    await waitFor(() => expect(screen.getByTestId('block-import-inline')).toHaveTextContent('importError'));
+    expect(screen.queryByTestId('block-import-dialog')).not.toBeInTheDocument();
+    expect(mocks.vault.createDoc).not.toHaveBeenCalled();
+  });
+
+  it('safely mints a UID for manifest-less ontology Markdown before writing', async () => {
+    stubPicker(
+      fakeBlockDir({
+        'capabilities/new-session.md':
+          '---\nslug: capabilities/new-session\nkind: capability\ntitle: New Session\n---\n',
+      }),
+    );
+
+    render(<BlockImportModule />);
+    await openPreview();
+    fireEvent.click(screen.getByTestId('block-import-confirm'));
+
+    await waitFor(() => expect(mocks.vault.createDoc).toHaveBeenCalledTimes(1));
+    const [, content] = mocks.vault.createDoc.mock.calls[0];
+    expect(content).toMatch(
+      /^uid: [0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/m,
+    );
+  });
+
+  it('stops before preview when v2 manifest and Markdown UIDs disagree', async () => {
+    stubPicker(
+      fakeBlockDir({
+        ...BLOCK_FILES,
+        'capabilities/session.md':
+          `---\nuid: ${UIDS.blockLogin}\nslug: capabilities/session\nkind: capability\ntitle: Session\n---\n`,
+      }),
+    );
+
+    render(<BlockImportModule />);
+    fireEvent.click(screen.getByTestId('block-import-open'));
+
+    await waitFor(() => expect(screen.getByTestId('block-import-inline')).toHaveTextContent('importError'));
+    expect(screen.queryByTestId('block-import-dialog')).not.toBeInTheDocument();
+    expect(mocks.vault.createDoc).not.toHaveBeenCalled();
+  });
+
+  it('stops before preview when an imported UID is already owned by another vault node', async () => {
+    mocks.vault = makeVault({
+      manifest: {
+        docs: [
+          {
+            slug: 'capabilities/existing',
+            frontmatter: { kind: 'capability', uid: UIDS.blockSession },
+            title: 'Existing',
+          },
+        ],
+      },
+    });
+
+    render(<BlockImportModule />);
+    fireEvent.click(screen.getByTestId('block-import-open'));
+
+    await waitFor(() => expect(screen.getByTestId('block-import-inline')).toHaveTextContent('importError'));
+    expect(screen.queryByTestId('block-import-dialog')).not.toBeInTheDocument();
     expect(mocks.vault.createDoc).not.toHaveBeenCalled();
   });
 

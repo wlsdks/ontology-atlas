@@ -355,52 +355,41 @@ never writes to the vault.
 
 **Write at the end of a task** (the part that's easy to skip). When a unit of work introduced a new capability / element / domain, or renamed/folded an existing one, mirror the change in the vault:
 
-- new node → `add_concept(slug, kind, title, domain?, …)` — the writer mints its immutable UUIDv4 `uid`; callers never supply one. Frontmatter is auto-normalized per kind, body defaults to a kind-specific starter, and missing strongly-expected fields come back as `warnings`. If a node with the same title already exists, patch it instead of forking a duplicate.
+- new node → `add_concept(...)` mints UID and returns schema warnings; patch a title match instead of duplicating it
 - new edge between existing nodes → `add_relation(from, to, type)`
 - node moved or renamed in code → `rename_concept(oldSlug, newSlug)` (dry-run first, then `confirm: true`) — atomically rewrites every backlink and preserves `uid`
 - two near-duplicates collapse → `merge_concepts(fromSlug, intoSlug)` (same dry-run pattern) — preserves the survivor `uid` and records absorbed identities in merge-owned `merged_uids`
 - existing node refined → `patch_concept(slug, frontmatter, body, expected_mtime)` — pass `expected_mtime` from a prior `get_concept` so a concurrent human edit isn't silently overwritten
-- accepted project competency answers → after writes, validation, and a complete compile, call `finalize_project_meaning({ projectSlug, expected_mtime })`. It stores provenance, never raw answers or a private source root; judge the categorical, fail-closed result from `agent_brief.meaningAssessment` (`agent-brief --project SLUG` in the CLI). `ok: true` means the receipt was written, not that meaning is verified.
+- accepted competency answers → after validation + complete compile, call `finalize_project_meaning`; judge `agent_brief.meaningAssessment`, not write success
 
-For the explicit "I'm done with this task — please sync the ontology now" loop, invoke the **`/ontology-sync`** skill (see `.claude/skills/ontology-sync/SKILL.md` or `.agents/skills/ontology-sync/SKILL.md`). It bundles the read-then-write pattern with a checklist for when to skip (typos, style nudges).
+For the explicit end-of-task loop, invoke **`/ontology-sync`**; its skill owns the read/write/skip protocol.
 
-For the *implicit* "I just opened this repo" loop, the **SessionStart hook** at `.claude/hooks/inject-ontology-summary.sh` or `.codex/hooks/inject-ontology-summary.sh` runs once when Claude Code/Codex attaches to the workspace and injects only a compact vault census plus drift warning. Keep this hook terse: it exists to prevent a full `list_concepts` round trip, not to preload the whole ontology. PreToolUse hooks are limited to the npm publish guard; routine agent-activity heartbeats are intentionally not registered because they add per-command overhead without improving model context.
+SessionStart injects only a compact census + drift warning. Keep it terse; PreToolUse remains risk-blocking only.
 
 **Skip the ontology** for: typo fixes, comment tweaks, single-line style nudges, lint config, test fixtures with no shape change. Anything that changes "what the codebase *is*" goes into the vault; anything that doesn't, stays out.
 
 ## Frontmatter shape per kind (R14)
 
-When an AI agent (`add_concept`) or a developer (`ontology-atlas add` / `ontology-atlas import`) creates a new node, the frontmatter is normalized per `kind` so external `.md` ingestion stays consistent. See `mcp/README.md` for the full table and `mcp/src/schema.mjs` (mirror at `cli/src/lib/schema.mjs`) for the source. Contract test: `tests/contract/vault-schema.contract.test.ts`. Validator surfaces missing strongly-expected fields (e.g. capability/element without `domain:`) as the `missing-expected-field` warning — advisory only, not a hard error, so pre-existing vaults still pass.
-
-Every `kind:` node (including `vault-readme`) has immutable lowercase UUIDv4
-`uid` plus mutable human-readable `slug`. UID is for exact lookup, handoff,
-indexes, and `urn:uuid:` export; slug stays in files, relations, URLs, React IDs,
-and graph commands. Writers mint UID once — never derive, copy, or patch it.
-Rename/reclassify preserve it; merge adds source history to merge-only
-`merged_uids`; delete never reuses it. Full contract: `mcp/README.md`.
+One shared per-kind schema serves MCP/CLI/import. Source: `mcp/src/schema.mjs`
+(CLI mirror); full shape, UID/slug boundary, and v1→v2 migration: `mcp/README.md`.
+Every `kind:` node has writer-minted immutable UUIDv4 `uid`; slug stays readable
+and mutable, rename preserves UID, and merge alone extends `merged_uids`.
 
 A capability's `path:` is one canonical repo-relative implementation entrypoint;
 `elements:` contains only real element-node slugs, never raw file paths. Create an
 element only when its implementation role has ontology meaning beyond its location.
 
-노드 이름은 어권별로 병기할 수 있다 — `display_ko` / `display_en` 같은
-`display_<locale>` 키를 쓰면 화면 언어에 맞는 이름이 지도·INDEX·팝오버에
-그려진다(`title` 은 검색/매칭의 단일 진실원이라 바뀌지 않는다). MCP 는
-`add_concept({ labels: { ko, en } })`, 사람은 지도 컴포저의 어권별 이름
-칸으로 쓴다. **vault 가 쓰는 로케일은 전부 채운다** — 한쪽만 채우면 다른
-언어 사용자에게 원문 title 이 그대로 노출된다(MCP 는 warning, 폼은 현재
-화면 언어 칸 필수).
+지역화 이름은 `display_<locale>`/MCP `labels`로 vault의 모든 언어를 채운다;
+`title`은 검색 진실원이다. 세부 규칙: `mcp/README.md`.
 
-`ontology-atlas import <path...>` is the bulk path: hand it your own `.md` (single file, directory, or many) and each file is run through the same schema before landing in the vault. Frontmatter `kind`/`slug`/`title` win when present; `--kind` is the fallback, the first `# H1` is the title fallback, `--auto-prefix` / `--rename` / `--dry-run` cover the typical conflict cases. Same shape as `add_concept` / `add` — one schema, three entry points.
+Bulk ingestion is `ontology-atlas import <path...>`; it uses the same schema as
+`add_concept`/`add`. Options and precedence: `cli/README.md`.
 
 ### Project containment is implicit (no `project:` key needed)
 
-Frontmatter does **not** require an explicit `project:` key. The runtime (`derivationToInsight`) walks the `contains` / `belongs_to` graph from each `kind: project` root and stamps every descendant (domain / capability / element) with that project's slug as a `projectIds` entry. So:
-
-- write `kind: capability` with `domain: foo` and the project containment falls out automatically (capability → domain → project, all wired via `contains`)
-- `/projects` card fact strips, `/ontology/insights` per-project bars, and cross-project edge counts all derive from this BFS — no manual stamping
-
-A vault with no `kind: project` doc still works (no containment, all nodes orphans in project terms). When you eventually add the project doc, all existing descendants pick up `projectIds` on the next derive — no migration.
+Do not stamp `project:`. `derivationToInsight` derives `projectIds` by BFS over
+containment from each project root; a project-less vault remains valid with
+project-orphan nodes until a root is added.
 
 ## CLAUDE.md / AGENTS.md sync
 

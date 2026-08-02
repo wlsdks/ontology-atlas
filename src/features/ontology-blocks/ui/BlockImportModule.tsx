@@ -12,7 +12,7 @@ import {
   pickTauriVaultDirectory,
 } from "@/shared/lib/tauri-vault-fs";
 import { useLocalVault } from "@/features/docs-vault-local";
-import { parseBlockManifest } from "../model/block-manifest";
+import { parseBlockManifest, type BlockManifest } from "../model/block-manifest";
 import { readBlockDirectory, type BlockDirectoryHandleLike } from "../model/block-fsa";
 import {
   planBlockImport,
@@ -24,6 +24,7 @@ interface PreviewSource {
   files: BlockImportFile[];
   blockName: string;
   sourceProject: string;
+  manifest?: BlockManifest;
 }
 
 /**
@@ -71,14 +72,44 @@ export function BlockImportModule() {
     [manifest],
   );
 
-  const plan = useMemo(() => {
-    if (!preview) return null;
-    return planBlockImport(preview.files, existingSlugs, {
-      resolution,
-      blockName: preview.blockName,
-      sourceProject: preview.sourceProject,
-    });
-  }, [preview, existingSlugs, resolution]);
+  const existingUidClaims = useMemo(() => {
+    const claims = new Set<string>();
+    for (const doc of manifest?.docs ?? []) {
+      const uid = doc.frontmatter.uid;
+      if (typeof uid === "string" && uid.trim()) claims.add(uid.trim());
+      const merged = doc.frontmatter.merged_uids;
+      if (Array.isArray(merged)) {
+        for (const value of merged) {
+          if (typeof value === "string" && value.trim()) claims.add(value.trim());
+        }
+      }
+    }
+    return claims;
+  }, [manifest]);
+
+  const { plan, planError } = useMemo(() => {
+    if (!preview) return { plan: null, planError: false };
+    try {
+      return {
+        plan: planBlockImport(preview.files, existingSlugs, {
+          resolution,
+          blockName: preview.blockName,
+          sourceProject: preview.sourceProject,
+          manifest: preview.manifest,
+          existingUidClaims,
+        }),
+        planError: false,
+      };
+    } catch {
+      return { plan: null, planError: true };
+    }
+  }, [preview, existingSlugs, existingUidClaims, resolution]);
+
+  useEffect(() => {
+    if (!planError) return;
+    setPreview(null);
+    setInlineText({ kind: "error", text: t("importError") });
+  }, [planError, t]);
 
   // 키 존재(`in`)가 아니라 호출 가능한지로 판정 — 값이 undefined 인 환경에서
   // "지원함"으로 오판하면 원문 JS 오류가 사용자 문구 자리에 그려진다.
@@ -107,12 +138,16 @@ export function BlockImportModule() {
         return;
       }
       const blockManifest = manifestRaw ? parseBlockManifest(manifestRaw) : null;
+      if (manifestRaw && !blockManifest) {
+        throw new Error("Invalid ontology block manifest");
+      }
       setResolution("skip");
       setDialogError(false);
       setPreview({
         files,
         blockName: blockManifest?.blockName?.trim() || dir.name,
         sourceProject: blockManifest?.sourceProject?.trim() || dir.name,
+        ...(blockManifest ? { manifest: blockManifest } : {}),
       });
     } catch (err) {
       if (isPickerAbort(err)) return;

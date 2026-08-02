@@ -65,18 +65,22 @@ function assertRealPathInside(candidate, normalizedRoot, slug) {
  * 안 함 — 사용자 작업 보호). mcp/src/vault.mjs 의 writeDoc 와 같은 contract.
  */
 export function writeDoc(rootPath, slug, { frontmatter, body = '' }) {
+  const filePath = preflightWriteDoc(rootPath, slug, frontmatter);
+  mkdirSync(dirname(filePath), { recursive: true });
+  const md = buildMarkdown({ frontmatter, body });
+  writeFileSync(filePath, md, 'utf-8');
+  return filePath;
+}
+
+/** dry-run과 실제 write가 동일한 slug·UID 계약을 검사하는 단일 preflight. */
+export function preflightWriteDoc(rootPath, slug, frontmatter) {
   const filePath = slugToPath(rootPath, slug);
   if (existsSync(filePath)) {
     throw new Error(`Doc already exists: ${slug}`);
   }
-  // 슬러그 평면성 — mcp/src/vault.mjs writeDoc 과 같은 계약 (schema 미러의
-  // flatSlugIssue 가 단일 규칙). 경로형 슬러그는 정체성 충돌이라 hard error.
   const slugIssue = flatSlugIssue(frontmatter?.kind, slug);
   if (slugIssue) throw new Error(slugIssue);
   assertNodeIdentity(rootPath, slug, frontmatter);
-  mkdirSync(dirname(filePath), { recursive: true });
-  const md = buildMarkdown({ frontmatter, body });
-  writeFileSync(filePath, md, 'utf-8');
   return filePath;
 }
 
@@ -138,7 +142,14 @@ export function writeFrontmatterKey(rootPath, slug, key, value) {
 /** 복수 키를 한 번의 파일 쓰기로 — 관계+relation_notes 원자성 (P6 게이트 ③ CLI 측). */
 export function writeFrontmatterKeys(rootPath, slug, patch) {
   const { filePath, frontmatter, body } = readDocFrontmatter(rootPath, slug);
+  if ('uid' in patch && patch.uid !== frontmatter.uid) {
+    throw new Error('`uid:` is immutable and cannot be changed by a generic frontmatter writer.');
+  }
+  if ('merged_uids' in patch) {
+    throw new Error('`merged_uids:` is merge_concepts-owned identity history.');
+  }
   const next = { ...frontmatter, ...patch };
+  assertNodeIdentity(rootPath, slug, next);
   const md = buildMarkdown({ frontmatter: next, body });
   writeFileSync(filePath, md, 'utf-8');
   return filePath;

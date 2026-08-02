@@ -24,7 +24,11 @@ async function listMigrations() {
   const entries = await readdir(MIGRATIONS_DIR, { withFileTypes: true });
   const out = [];
   for (const entry of entries) {
-    if (!entry.isFile() || !entry.name.endsWith(".mjs")) continue;
+    if (
+      !entry.isFile() ||
+      !entry.name.endsWith(".mjs") ||
+      entry.name.endsWith(".test.mjs")
+    ) continue;
     const full = path.join(MIGRATIONS_DIR, entry.name);
     const mod = await import(full);
     out.push({
@@ -67,13 +71,15 @@ function parseArgs(argv) {
   const args = {
     write: false,
     list: false,
+    help: false,
     id: null,
     vault: DEFAULT_VAULT,
     force: false,
   };
   for (let i = 2; i < argv.length; i += 1) {
     const a = argv[i];
-    if (a === "--list") args.list = true;
+    if (a === "--help" || a === "-h") args.help = true;
+    else if (a === "--list") args.list = true;
     else if (a === "--write") args.write = true;
     else if (a === "--force") args.force = true;
     else if (a === "--vault") args.vault = path.resolve(process.cwd(), argv[++i]);
@@ -115,6 +121,18 @@ function checkGitState(vaultDir) {
 
 async function main() {
   const args = parseArgs(process.argv);
+
+  if (args.help) {
+    console.log(`사용: pnpm vault:migrate <id> [options]
+
+옵션:
+  --list          등록된 migration 목록
+  --vault <dir>   대상 vault (기본: docs/ontology)
+  --write         dry-run 결과를 디스크에 기록
+  --force         commit 안 된 Markdown 보호를 의식적으로 우회
+  --help, -h      이 도움말`);
+    return;
+  }
 
   if (args.list || (!args.id && !args.list)) {
     const all = await listMigrations();
@@ -158,25 +176,32 @@ async function main() {
   }
 
   const files = await walk(args.vault);
+  const migrationFiles = [];
+  for (const full of files) {
+    migrationFiles.push({
+      path: full,
+      raw: await readFile(full, "utf8"),
+      relativePath: path.relative(args.vault, full),
+    });
+  }
+  // Vault-wide identity migrations must validate and allocate their complete
+  // plan before a write begins. Existing per-file migrations need no context.
+  const context =
+    typeof mod.prepare === "function" ? await mod.prepare(migrationFiles) : undefined;
 
   let changedCount = 0;
   let inspectedCount = 0;
   const previews = [];
 
-  for (const full of files) {
+  for (const file of migrationFiles) {
     inspectedCount += 1;
-    const raw = await readFile(full, "utf8");
-    const result = mod.migrate({
-      path: full,
-      raw,
-      relativePath: path.relative(args.vault, full),
-    });
-    if (!result || result.raw === raw) continue;
+    const result = await mod.migrate(file, context);
+    if (!result || result.raw === file.raw) continue;
     changedCount += 1;
     if (args.write) {
-      await writeFile(full, result.raw, "utf8");
+      await writeFile(file.path, result.raw, "utf8");
     } else {
-      previews.push({ file: path.relative(ROOT, full) });
+      previews.push({ file: path.relative(ROOT, file.path) });
     }
   }
 

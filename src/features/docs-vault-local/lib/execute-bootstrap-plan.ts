@@ -5,6 +5,7 @@ import {
   selectedElements,
   type BootstrapPlan,
 } from './bootstrap-candidates';
+import { generateNodeUid } from '@/entities/docs-vault';
 
 /**
  * 부트스트랩("내 문서에서 온톨로지 시작하기") 승인분을 vault 에 쓰는
@@ -55,9 +56,17 @@ export async function executeBootstrapPlan(
   const elements = selectedElements(plan, input.acceptedDomains);
 
   for (const el of elements) {
+    const existing = vault.manifest.docs.find((doc) => doc.slug === el.slug);
+    const uid = generateNodeUid(
+      existing?.frontmatter.uid === undefined || existing.frontmatter.uid === null || existing.frontmatter.uid === ''
+        ? undefined
+        : String(existing.frontmatter.uid),
+    );
     await vault.updateFrontmatter(
       el.slug,
-      el.domain ? { kind: 'element', title: el.title, domain: el.domain } : { kind: 'element', title: el.title },
+      el.domain
+        ? { uid, kind: 'element', title: el.title, domain: el.domain }
+        : { uid, kind: 'element', title: el.title },
       { skipRefresh: true },
     );
   }
@@ -81,7 +90,16 @@ export async function executeBootstrapPlan(
       : [];
     const accepted = acceptedDomainCandidates.map((d) => d.name);
     const mergedDomains = [...new Set([...prevDomains, ...accepted])];
-    await vault.updateFrontmatter(plan.existingProjectSlug, { domains: mergedDomains }, { skipRefresh: true });
+    const uid = generateNodeUid(
+      existing?.frontmatter.uid === undefined || existing.frontmatter.uid === null || existing.frontmatter.uid === ''
+        ? undefined
+        : String(existing.frontmatter.uid),
+    );
+    await vault.updateFrontmatter(
+      plan.existingProjectSlug,
+      { uid, domains: mergedDomains },
+      { skipRefresh: true },
+    );
   } else {
     await vault.createDoc(plan.projectSlug, buildProjectMarkdown(plan, input.acceptedDomains), {
       skipRefresh: true,

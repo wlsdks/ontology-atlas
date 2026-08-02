@@ -49,6 +49,7 @@ node cli/src/index.mjs domain-matrix --vault docs/ontology
 
 ```markdown
 ---
+uid: 31890f3e-7b5d-4c0a-8f14-123456789abc
 slug: domains/onboarding-and-shell
 kind: domain
 title: "Onboarding, Distribution & App Shell"
@@ -61,6 +62,7 @@ relates: [domains/topology-navigation]
 
 ```markdown
 ---
+uid: 41890f3e-7b5d-4c0a-8f14-123456789abc
 slug: domains/topology-navigation
 kind: domain
 relates:
@@ -95,8 +97,10 @@ element           element
 
 ## 3. 저장은 DB 가 아니라 마크다운입니다
 
-별도의 데이터베이스가 없습니다. 스키마 마이그레이션도, 동기화 버튼도, 서버도
-없습니다. **관계는 `.md` 파일 맨 위 frontmatter 의 한 줄**입니다.
+별도의 데이터베이스·동기화 버튼·서버가 없습니다. **관계는 `.md` 파일 맨 위
+frontmatter 의 한 줄**이며 관계를 추가할 때 DB migration은 없습니다. 단 UID 없는
+v1 문서함을 v2로 바꾸는 명시적 파일 migration은 [볼트의 구조](/guide/vault-structure)에
+따릅니다.
 
 ### 관계를 선언하는 쪽
 
@@ -104,6 +108,7 @@ element           element
 
 ```markdown
 ---
+uid: 51890f3e-7b5d-4c0a-8f14-123456789abc
 slug: capabilities/vault-live-updates
 kind: capability
 title: Vault live updates
@@ -124,6 +129,7 @@ relates:
 
 ```markdown
 ---
+uid: 61890f3e-7b5d-4c0a-8f14-123456789abc
 slug: capabilities/topology-canvas-render
 kind: capability
 title: Topology canvas render
@@ -206,7 +212,7 @@ AI 에이전트가 관계를 추가해도 똑같이 이 형태로 남습니다. 
 파생은 `src/entities/docs-vault/lib/derive-ontology-from-vault.ts` 가 합니다.
 그래서:
 
-- 파일을 고치면 **다음 파생에서 곧바로** 그래프가 달라집니다. 마이그레이션이 없습니다.
+- 관계 파일을 고치면 **다음 파생에서 곧바로** 그래프가 달라집니다. 관계별 migration은 없습니다.
 - `domain:` 만 적으면 그 위의 프로젝트 소속은 담김 사슬을 타고 **자동으로** 정해집니다.
   `project:` 키를 손으로 적을 일이 없습니다.
 - 존재하지 않는 이름을 가리키면 그 참조는 "이름만 불린 개념" 으로 남습니다.

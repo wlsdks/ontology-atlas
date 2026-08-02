@@ -102,6 +102,14 @@ jobs:
         if: always()
         run: pnpm package:check
 
+      - name: Vault migration contracts
+        if: always()
+        run: pnpm test:vault:migrate
+
+      - name: Public guide node examples
+        if: always()
+        run: pnpm test:guide-examples
+
       # 에이전트 지시 파일의 드리프트. **CLI 가 이미 exit 1 로 알려주고 있었는데
       # 어느 워크플로에도 물려 있지 않았다** — 그래서 둘 다 조용히 썩었다
       # (2026-07-31 발견):

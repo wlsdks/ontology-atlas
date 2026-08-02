@@ -6,6 +6,8 @@
 
 ## 사용
 
+아래 명령은 Ontology Atlas 소스 체크아웃 루트에서 실행한다.
+
 ```bash
 # 사용 가능한 마이그레이션 목록
 pnpm vault:migrate --list
@@ -32,6 +34,18 @@ rollback 이 어려워지는 상황 방지. 먼저 commit / stash 후 재시도 
 
 vault 경로 미지정 시 dogfood vault (`docs/ontology/`) 사용.
 
+### v1 → v2: 노드 UID 발급
+
+```bash
+pnpm vault:migrate 2026-08-02-add-node-uids --vault /path/to/vault
+pnpm vault:migrate 2026-08-02-add-node-uids --vault /path/to/vault --write
+```
+
+모든 `kind:` 노드에 없는 UID만 발급합니다. 올바른 기존 UID는 보존하고 malformed,
+primary/merged 충돌, 비정규 merge 이력은 전체 계획 단계에서 거부하므로 첫 파일을
+쓰기 전에 실패합니다. `scripts/migrate-node-uids.mjs`는 같은 구현을 쓰는 first-party
+호환 wrapper이며 새 사용법은 위 canonical runner입니다.
+
 ## 마이그레이션 작성
 
 각 마이그레이션은 `migrations/<YYYY-MM-DD>-<slug>.mjs`. shape:
@@ -40,11 +54,16 @@ vault 경로 미지정 시 dogfood vault (`docs/ontology/`) 사용.
 export const id = "2026-05-04-trim-frontmatter-values";
 export const description = "한 줄 설명 — 무엇을 바꾸는가, 왜.";
 
+// 선택: vault 전체를 먼저 검증하거나 identity를 배정해야 할 때.
+export function prepare(files) {
+  return { /* migrate가 읽을 immutable plan */ };
+}
+
 /**
  * @param {{ path: string; raw: string; relativePath: string }} file
  * @returns {{ raw: string } | null}  null = no-op (skip)
  */
-export function migrate(file) {
+export function migrate(file, context) {
   // 입력 raw 를 변형해 새 raw 를 돌려준다.
   // null 또는 raw 가 동일하면 변경 없음으로 카운트.
   return { raw: transformedRaw };
