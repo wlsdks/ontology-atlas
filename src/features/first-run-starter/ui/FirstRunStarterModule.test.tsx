@@ -544,3 +544,57 @@ describe('FirstRunStarterModule — 가이드/INDEX 배타 렌더', () => {
     expect(screen.getByTestId('index-body')).toBeInTheDocument();
   });
 });
+
+/**
+ * 렌즈를 켜면 카드가 자리를 넘긴다 (2026-08-02, 소유자 실보고: *"시작 안내
+ * 패널이 열린 상태에서 최근 변경 버튼 누르면 왼쪽 패널이 안바뀌는 오류"*).
+ *
+ * 카드와 INDEX 는 **배타적 두 상태**다 — 카드가 펼쳐져 있으면 children(INDEX)이
+ * 아예 렌더되지 않으므로, 렌즈를 켜도 세그먼트·기간 칩이 나올 자리가 없었다.
+ * URL 과 지도만 바뀌고 왼쪽은 그대로였다.
+ *
+ * 되돌아갈 길이 넓어서 게이트가 필요하다: 이 접힘은 **부수 효과**라, 다음
+ * 사람이 `lensActive` 배선을 지워도 타입도 lint 도 아무 말을 안 한다.
+ */
+describe('FirstRunStarterModule — 렌즈가 켜지면 INDEX 에 자리를 넘긴다', () => {
+  beforeEach(() => {
+    // 이 파일의 다른 describe 들이 공유 목을 바꾼다(로컬 모드·restore 미완 등).
+    // 렌즈 접힘은 **카드가 실제로 보이는 상태**에서만 의미가 있으므로 명시한다.
+    mocks.vault = makeVault();
+    mocks.mode = 'static';
+    window.sessionStorage.removeItem(FIRST_RUN_STARTER_DISMISSED_KEY);
+    resetSampleSourceCacheForTests();
+  });
+
+  it('lensActive 가 켜지면 카드가 접히고 children 이 렌더된다', () => {
+    const { rerender } = render(
+      <FirstRunStarterModule concepts={1} relations={1} domains={1}>
+        <div data-testid="index-body" />
+      </FirstRunStarterModule>,
+    );
+    expect(screen.queryByTestId('index-body'), '처음엔 카드가 자리를 차지한다').toBeNull();
+
+    rerender(
+      <FirstRunStarterModule concepts={1} relations={1} domains={1} lensActive>
+        <div data-testid="index-body" />
+      </FirstRunStarterModule>,
+    );
+    expect(screen.getByTestId('index-body'), '렌즈를 켰는데 INDEX 가 안 열렸다').toBeInTheDocument();
+  });
+
+  it('렌즈를 꺼도 다시 펼치지 않는다 — 보던 트리를 뺏지 않는다', () => {
+    const { rerender } = render(
+      <FirstRunStarterModule concepts={1} relations={1} domains={1} lensActive>
+        <div data-testid="index-body" />
+      </FirstRunStarterModule>,
+    );
+    expect(screen.getByTestId('index-body')).toBeInTheDocument();
+
+    rerender(
+      <FirstRunStarterModule concepts={1} relations={1} domains={1}>
+        <div data-testid="index-body" />
+      </FirstRunStarterModule>,
+    );
+    expect(screen.getByTestId('index-body'), '렌즈를 껐다고 트리가 사라졌다').toBeInTheDocument();
+  });
+});

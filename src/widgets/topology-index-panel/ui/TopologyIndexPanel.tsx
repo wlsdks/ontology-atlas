@@ -336,6 +336,14 @@ export function TopologyIndexPanel({
           받아 어느 쪽을 그릴지 결정 — 위젯은 INDEX 본문만 넘긴다. */}
       <FirstRunStarterModule
         concepts={totalConcepts}
+        /*
+         * 위쪽 `lensActive` 변수가 아니라 **렌즈 상태 자체**를 넘긴다. 그 변수는
+         * `!isFiltering && recentChanges !== null` 까지 요구하는 «트리를 실제로
+         * 좁힐 수 있나»의 판정인데, 여기서 필요한 것은 «사용자가 렌즈를 눌렀나»
+         * 다 — 강조가 0개여도 카드는 접히고 INDEX 가 열려야, 누른 사람이
+         * 「아무 일도 안 일어났다」로 읽지 않는다.
+         */
+        lensActive={lens === "recent"}
         relations={totalRelations}
         domains={domainCount}
         onStartTour={onStartTour}
