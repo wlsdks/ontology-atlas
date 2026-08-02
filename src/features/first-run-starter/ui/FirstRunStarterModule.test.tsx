@@ -65,13 +65,50 @@ describe('FirstRunStarterModule', () => {
     window.localStorage.setItem('vault-open-guide:auto:v1', '1');
   });
 
-  it('renders the real census numbers passed in (concepts/relations/domains)', () => {
+  // PO 카운슬 2026-08-02 — 계기 블록(19px mono)을 탭 아래 캡션 1행으로
+  // 강등했다. **숫자의 출처는 그대로다** — 고정 숫자 금지(2026-08-01 원장)에
+  // 걸리지 않도록, props 로 들어온 실census 가 그대로 그려지는지 고정한다.
+  it('renders the real census as a caption line, not a meter block', () => {
     render(<FirstRunStarterModule concepts={102} relations={478} domains={6} />);
 
     expect(screen.getByTestId('first-run-starter')).toBeInTheDocument();
-    expect(screen.getByText('102')).toBeInTheDocument();
-    expect(screen.getByText('478')).toBeInTheDocument();
-    expect(screen.getByText('6')).toBeInTheDocument();
+    const scale = screen.getByTestId('first-run-starter-sample-scale');
+    expect(scale).toHaveTextContent('sampleScale');
+    // 19px mono 계기 셀은 사라졌다 — 숫자만 홀로 선 원소가 없어야 한다.
+    expect(screen.queryByText('102')).not.toBeInTheDocument();
+    expect(screen.queryByText('478')).not.toBeInTheDocument();
+  });
+
+  // 첫 접점에서 이 제품이 남과 다른 이유(사람 + 에이전트가 같은 폴더를
+  // 읽고 쓴다)를 한 문장으로 말한다 — 33개 문자열에 「에이전트」가 0회였다.
+  it('names the agent audience once in the lead paragraph', () => {
+    render(<FirstRunStarterModule concepts={1} relations={1} domains={1} />);
+    expect(screen.getByTestId('first-run-starter-agent-clause')).toHaveTextContent(
+      'agentClause',
+    );
+  });
+
+  // PO 카운슬 2026-08-02 — `⌘O` 는 이 앱에서 meta 키에만 묶여 있고
+  // (HomePage 단축키 표) 대응하는 Ctrl+O 바인딩이 없다. 웹 관문의 핵심
+  // 청중인 Windows/Linux 사용자에게 없는 키를 광고하면 그건 힌트가 아니라
+  // 거짓 글리프다. 플랫폼을 실제로 갈라 두 방향 다 고정한다.
+  it('hides the ⌘O badge on non-Apple platforms', () => {
+    render(<FirstRunStarterModule concepts={1} relations={1} domains={1} />);
+    expect(screen.getByTestId('first-run-starter-open')).not.toHaveTextContent('⌘O');
+  });
+
+  it('shows the ⌘O badge on Apple platforms', () => {
+    const original = Object.getOwnPropertyDescriptor(window.navigator, 'platform');
+    Object.defineProperty(window.navigator, 'platform', {
+      value: 'MacIntel',
+      configurable: true,
+    });
+    try {
+      render(<FirstRunStarterModule concepts={1} relations={1} domains={1} />);
+      expect(screen.getByTestId('first-run-starter-open')).toHaveTextContent('⌘O');
+    } finally {
+      if (original) Object.defineProperty(window.navigator, 'platform', original);
+    }
   });
 
   // 2026-07-24 온보딩 라운드 — 투어 진입점이 우측 레일 아이콘뿐이라
@@ -344,8 +381,8 @@ describe('FirstRunStarterModule', () => {
 
     const dogfoodTab = screen.getByTestId('first-run-starter-sample-source-dogfood');
     const storefrontTab = screen.getByTestId('first-run-starter-sample-source-storefront');
-    expect(storefrontTab).toHaveAttribute('aria-selected', 'true');
-    expect(dogfoodTab).toHaveAttribute('aria-selected', 'false');
+    expect(storefrontTab).toHaveAttribute('aria-pressed', 'true');
+    expect(dogfoodTab).toHaveAttribute('aria-pressed', 'false');
 
     // 2026-07-24 구조 개편 — 샘플 선택은 "무엇을 볼지 골랐다"는 신호라
     // 카드가 접히고 INDEX 에 자리를 넘긴다(되돌아오기 1행이 항상 남는다).
@@ -363,9 +400,34 @@ describe('FirstRunStarterModule', () => {
     render(<FirstRunStarterModule concepts={1} relations={1} domains={1} />);
 
     expect(screen.getByTestId('first-run-starter-sample-source-dogfood')).toHaveAttribute(
-      'aria-selected',
+      'aria-pressed',
       'true',
     );
+  });
+
+  // PO 카운슬 2026-08-02 실측 결함 — `role="tab"` 인데 클릭이 탭 패널을
+  // 바꾸는 게 아니라 카드를 접었고, **이미 선택된 탭을 눌러도 접혔다**.
+  // 자기 화면을 없애는 탭은 tablist 계약이 아니다. 같은 선택의 재클릭은
+  // 아무 일도 하지 않는다(전환 시 접힘은 유지 — 2026-07-24 핸드오프 설계).
+  it('does not collapse the card when the already-selected source is clicked again', () => {
+    render(
+      <FirstRunStarterModule concepts={1} relations={1} domains={1}>
+        <div data-testid="index-body" />
+      </FirstRunStarterModule>,
+    );
+
+    fireEvent.click(screen.getByTestId('first-run-starter-sample-source-storefront'));
+
+    expect(screen.getByTestId('first-run-starter')).toBeInTheDocument();
+    expect(screen.queryByTestId('first-run-starter-reopen')).not.toBeInTheDocument();
+  });
+
+  it('exposes the sample source as a selection control, not a tablist', () => {
+    render(<FirstRunStarterModule concepts={1} relations={1} domains={1} />);
+
+    const group = screen.getByTestId('first-run-starter-sample-source');
+    expect(group).toHaveAttribute('role', 'group');
+    expect(group.querySelectorAll('[role="tab"]')).toHaveLength(0);
   });
 
   // 왼쪽부터 읽는다 — 순서가 곧 "무엇을 먼저 권하는가" 다.
@@ -374,7 +436,7 @@ describe('FirstRunStarterModule', () => {
 
     const tabs = screen
       .getByTestId('first-run-starter-sample-source')
-      .querySelectorAll('[role="tab"]');
+      .querySelectorAll('[aria-pressed]');
     expect(tabs[0]).toHaveAttribute(
       'data-testid',
       'first-run-starter-sample-source-storefront',
@@ -391,7 +453,7 @@ describe('FirstRunStarterModule', () => {
     render(<FirstRunStarterModule concepts={1} relations={1} domains={1} />);
 
     expect(screen.getByTestId('first-run-starter-sample-source-storefront')).toHaveAttribute(
-      'aria-selected',
+      'aria-pressed',
       'true',
     );
     expect(screen.getByTestId('first-run-starter-context')).toHaveTextContent(
