@@ -43,17 +43,32 @@ export interface StepRowProps {
 
 export function StepRow({ n, title, desc, testId, children }: StepRowProps) {
   return (
-    <section className="flex gap-3" data-testid={testId ?? `agent-connect-step-${n}`}>
-      <span
-        aria-hidden
-        className="mt-0.5 inline-flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-[color:var(--color-indigo-a16)] font-mono text-caption font-medium text-[color:var(--color-indigo-accent)]"
-      >
-        {n}
-      </span>
+    <section className="flex flex-col" data-testid={testId ?? `agent-connect-step-${n}`}>
+      {/*
+       * 번호는 **줄머리**이지 왼쪽 레일이 아니다 (2026-08-03, 소유자 지적:
+       * *"1하고 밑에보면 그냥 다 공백 이어지는 이런 구조 이상해"*).
+       *
+       * 종전은 `flex gap-3` 이라 번호가 자기 열을 갖고, 그 열이 단계 내용
+       * **전체 높이만큼** 빈 채로 내려갔다. 단계 하나가 코드 블록까지 품어
+       * 400px 넘게 길어지는 이 시트에서는 그 열이 화면에서 가장 긴 빈 띠가
+       * 된다 — 잉크는 없는데 자리는 가장 크다.
+       *
+       * 번호를 제목 줄로 올리면 그 띠가 사라지고 내용이 폭을 다 쓴다.
+       */}
+      <p className="flex items-center gap-2">
+        <span
+          aria-hidden
+          className="inline-flex size-6 shrink-0 items-center justify-center rounded-full bg-[color:var(--color-indigo-a16)] font-mono text-label font-medium text-[color:var(--color-indigo-accent)]"
+        >
+          {n}
+        </span>
+        <b className="min-w-0 text-body-lg font-semibold text-[color:var(--color-text-primary)]">
+          {title}
+        </b>
+      </p>
       <div className="min-w-0 flex-1">
-        <p className="text-body font-medium text-[color:var(--color-text-primary)]">{title}</p>
         {desc ? (
-          <p className="mt-0.5 text-label leading-relaxed text-[color:var(--color-text-tertiary)]">
+          <p className="mt-1.5 text-body leading-relaxed text-[color:var(--color-text-tertiary)]">
             {desc}
           </p>
         ) : null}

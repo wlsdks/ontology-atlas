@@ -3261,6 +3261,7 @@
     "remoteOnlyTitle": "여기에만 있는 걸음 {count}개",
     "remoteOnlyHint": "눌러서 받아오기",
     "messageLabel": "커밋 제목",
+    "lensLabel": "보는 방식",
     "pendingNow": "지금",
     "pendingHint": "{count}개 · 커밋하면 이력이 됩니다",
     "ladderStart": "git 연동",

@@ -409,6 +409,9 @@ describe("AtlasGitPanel — 데스크톱(Tauri)", () => {
     await screen.findByTestId("atlas-git-steps");
     fireEvent.click(screen.getByTestId("atlas-git-history-item"));
 
+    // 파일은 **다른 렌즈**다 — 정체(제목·해시)는 남고 표현만 바뀐다.
+    fireEvent.click(await screen.findByTestId("atlas-git-lens-files"));
+
     // 바뀐 파일 — 「무엇이」. 이력이 개념 이름만 말하면 개념이 아닌 파일을
     // 건드린 걸음은 화면에서 통째로 증발한다.
     const files = await screen.findAllByTestId("atlas-git-commit-file");
@@ -425,7 +428,8 @@ describe("AtlasGitPanel — 데스크톱(Tauri)", () => {
     // 이 단언이 없으면 다음 사람이 파서를 되돌려도 아무도 모른다.
     expect(patch.textContent).not.toContain("diff --git");
     expect(patch.textContent).not.toContain("index 05d74bf");
-    expect(patch.textContent).toContain("docs/capabilities/foo.md");
+    // 파일 이름은 **위 목록**이 나른다 — patch 상자에서 다시 말하지 않는다.
+    expect(patch.textContent).not.toContain("docs/capabilities/foo.md");
   });
 
   it("커밋 이력이 탭 뒤에 숨지 않는다 — 목록에 늘 있다", async () => {
