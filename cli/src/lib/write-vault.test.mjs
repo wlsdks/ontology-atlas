@@ -29,7 +29,7 @@ describe('write-vault writeDoc — 슬러그 평면성 게이트 배선', () => 
       assert.throws(
         () =>
           writeDoc(root, 'elements/src/views/home', {
-            frontmatter: { slug: 'elements/src/views/home', kind: 'element', title: 'Home' },
+            frontmatter: { uid: '01890f3e-7b5d-4c0a-8f14-123456789abc', slug: 'elements/src/views/home', kind: 'element', title: 'Home' },
             body: '',
           }),
         /nests a path under elements\//,
@@ -41,15 +41,38 @@ describe('write-vault writeDoc — 슬러그 평면성 게이트 배선', () => 
   it('평평한 슬러그와 스키마 폴더 밖 중첩은 그대로 통과한다', () => {
     withVault((root) => {
       writeDoc(root, 'elements/jwt-token', {
-        frontmatter: { slug: 'elements/jwt-token', kind: 'element', title: 'JWT Token' },
+        frontmatter: { uid: '11890f3e-7b5d-4c0a-8f14-123456789abc', slug: 'elements/jwt-token', kind: 'element', title: 'JWT Token' },
         body: '',
       });
       writeDoc(root, 'services/auth-api', {
-        frontmatter: { slug: 'services/auth-api', kind: 'element', title: 'Auth API' },
+        frontmatter: { uid: '21890f3e-7b5d-4c0a-8f14-123456789abc', slug: 'services/auth-api', kind: 'element', title: 'Auth API' },
         body: '',
       });
       assert.equal(existsSync(join(root, 'elements/jwt-token.md')), true);
       assert.equal(existsSync(join(root, 'services/auth-api.md')), true);
+    });
+  });
+});
+
+describe('write-vault writeDoc — UID identity gate', () => {
+  it('known-kind create requires a unique lowercase UUIDv4', () => {
+    withVault((root) => {
+      assert.throws(
+        () => writeDoc(root, 'missing', {
+          frontmatter: { slug: 'missing', kind: 'project', title: 'Missing' },
+        }),
+        /uid/i,
+      );
+      const uid = '01890f3e-7b5d-4c0a-8f14-123456789abc';
+      writeDoc(root, 'first', {
+        frontmatter: { uid, slug: 'first', kind: 'project', title: 'First' },
+      });
+      assert.throws(
+        () => writeDoc(root, 'second', {
+          frontmatter: { uid, slug: 'second', kind: 'project', title: 'Second' },
+        }),
+        /already belongs|collision|UID/i,
+      );
     });
   });
 });

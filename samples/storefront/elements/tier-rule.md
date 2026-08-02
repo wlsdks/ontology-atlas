@@ -1,4 +1,5 @@
 ---
+uid: 0be51d90-5c44-4488-93ab-85b9581d3d90
 slug: elements/tier-rule
 kind: element
 title: Tier Rule

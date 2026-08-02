@@ -1,4 +1,5 @@
 ---
+uid: d3a3879a-2288-4640-894c-33a9f0393bf9
 slug: elements/campaign-page
 kind: element
 title: Campaign Page

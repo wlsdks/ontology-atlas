@@ -1,4 +1,5 @@
 ---
+uid: 95abc534-2507-4b7e-b07e-d0fcccdfb74b
 slug: domains/payment
 kind: domain
 title: Payments

@@ -1,3 +1,5 @@
+import { randomUUID } from 'node:crypto';
+
 /**
  * Vault kind schema — per-kind frontmatter shape that AI agents and the CLI
  * both follow when they create new ontology nodes. Single source of truth for
@@ -28,6 +30,97 @@
  */
 
 export const VAULT_KINDS = ['project', 'domain', 'capability', 'element', 'document'];
+
+/**
+ * Node identity v1 (2026-08-02 decision ledger).
+ *
+ * `uid` is the immutable machine identity. It is deliberately random rather
+ * than derived from slug/title/path, because all three are allowed to change.
+ * UUIDv4 is locally generatable, has no central allocator, and does not create
+ * branch-order semantics like a sequential number would.
+ */
+export const NODE_UID_PATTERN =
+  '^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$';
+const NODE_UID_RE = new RegExp(NODE_UID_PATTERN);
+
+export function generateNodeUid() {
+  return randomUUID();
+}
+
+export function nodeUidIssue(uid) {
+  if (typeof uid !== 'string' || !NODE_UID_RE.test(uid)) {
+    return (
+      '`uid:` must be a lowercase UUIDv4 generated once for this node ' +
+      '(example: 01890f3e-7b5d-4c0a-8f14-123456789abc). It is immutable and must not be derived from slug, title, or path.'
+    );
+  }
+  return null;
+}
+
+/**
+ * Absorbed identities retained by the surviving node after merge.
+ * They are lookup aliases only: they never become relation endpoints, URLs,
+ * file names, or graph node IDs.
+ */
+export function inspectMergedUids(uid, mergedUids) {
+  if (mergedUids === undefined) return { canonical: [], invalidIssue: null, nonCanonical: false };
+  if (!Array.isArray(mergedUids)) {
+    return {
+      canonical: [],
+      invalidIssue: '`merged_uids:` must be an array of lowercase UUIDv4 values.',
+      nonCanonical: false,
+    };
+  }
+  for (const value of mergedUids) {
+    if (nodeUidIssue(value)) {
+      return {
+        canonical: [],
+        invalidIssue: '`merged_uids:` may contain only lowercase UUIDv4 values.',
+        nonCanonical: false,
+      };
+    }
+    if (value === uid) {
+      return {
+        canonical: [],
+        invalidIssue: '`merged_uids:` must not repeat the surviving node\'s `uid:`.',
+        nonCanonical: false,
+      };
+    }
+  }
+  const canonical = [...new Set(mergedUids)].sort((a, b) => a.localeCompare(b, 'en'));
+  return {
+    canonical,
+    invalidIssue: null,
+    nonCanonical:
+      canonical.length !== mergedUids.length ||
+      canonical.some((value, index) => value !== mergedUids[index]),
+  };
+}
+
+export function normalizeMergedUids(uid, mergedUids) {
+  const inspected = inspectMergedUids(uid, mergedUids);
+  if (inspected.invalidIssue) throw new Error(inspected.invalidIssue);
+  return inspected.canonical;
+}
+
+export function mergeNodeIdentityHistory(fromFrontmatter, intoFrontmatter) {
+  const fromUidIssue = nodeUidIssue(fromFrontmatter?.uid);
+  const intoUidIssue = nodeUidIssue(intoFrontmatter?.uid);
+  if (fromUidIssue || intoUidIssue) {
+    throw new Error('Both merge_concepts nodes must have valid lowercase UUIDv4 identities.');
+  }
+  const fromMerged = normalizeMergedUids(fromFrontmatter.uid, fromFrontmatter.merged_uids);
+  const intoMerged = normalizeMergedUids(intoFrontmatter.uid, intoFrontmatter.merged_uids);
+  const sourceClaims = [fromFrontmatter.uid, ...fromMerged];
+  const survivorClaims = new Set([intoFrontmatter.uid, ...intoMerged]);
+  const overlap = sourceClaims.find((uid) => survivorClaims.has(uid));
+  if (overlap) throw new Error(`UID collision during merge: ${overlap} is already claimed by both nodes.`);
+  return {
+    survivorUid: intoFrontmatter.uid,
+    absorbedUids: sourceClaims,
+    merged_uids: [...new Set([...intoMerged, ...sourceClaims])].sort((a, b) => a.localeCompare(b, 'en')),
+  };
+}
 
 /**
  * 저작 출처 (2026-07-31 원장 — 「사람이 만든 노드 표기」).
@@ -154,6 +247,8 @@ export const VAULT_KIND_SCHEMA = {
     // 사용자 가독성을 위한 권장 키 순서. buildFrontmatter 가 이 순서로
     // 정렬 후 미정의 키 (외부 import 의 custom_field 등) 는 뒤에 append.
     preferredOrder: [
+      'uid',
+      'merged_uids',
       'slug',
       'kind',
       'title',
@@ -180,6 +275,8 @@ export const VAULT_KIND_SCHEMA = {
     optional: ['depends_on', 'relates', 'broader', 'description', 'display', CREATED_BY_KEY],
     requiredExtras: [],
     preferredOrder: [
+      'uid',
+      'merged_uids',
       'slug',
       'kind',
       'title',
@@ -204,6 +301,8 @@ export const VAULT_KIND_SCHEMA = {
     // capability 의 핵심 정체성은 'domain 안의 한 기능' 이라 domain 이
     // arrays 보다 위. 자식 (elements / depends_on) 은 그 다음.
     preferredOrder: [
+      'uid',
+      'merged_uids',
       'slug',
       'kind',
       'title',
@@ -227,6 +326,8 @@ export const VAULT_KIND_SCHEMA = {
     // 트리에서 sink 로 떠다닌다.
     requiredExtras: ['domain'],
     preferredOrder: [
+      'uid',
+      'merged_uids',
       'slug',
       'kind',
       'title',
@@ -246,7 +347,7 @@ export const VAULT_KIND_SCHEMA = {
     arrayDefaults: [],
     optional: ['describes', 'relates', 'display', CREATED_BY_KEY],
     requiredExtras: [],
-    preferredOrder: ['slug', 'kind', 'title', 'display', 'describes', 'relates', CREATED_BY_KEY],
+    preferredOrder: ['uid', 'merged_uids', 'slug', 'kind', 'title', 'display', 'describes', 'relates', CREATED_BY_KEY],
     bodyTemplate: (title) => `# ${title}\n`,
   },
 };
@@ -292,14 +393,18 @@ function normalizeGraphArray(key, value) {
  *
  * Throws if kind is unknown.
  */
-export function buildFrontmatter({ slug, kind, title, ...extras }) {
+export function buildFrontmatter(input) {
+  const { uid, slug, kind, title, ...extras } = input;
   if (!VAULT_KIND_SCHEMA[kind]) {
     throw new Error(
       `Unknown kind: ${kind}. Expected one of ${VAULT_KINDS.join(' / ')}.`,
     );
   }
   const schema = VAULT_KIND_SCHEMA[kind];
-  const accumulator = { slug, kind, title };
+  const nodeUid = uid ?? generateNodeUid();
+  const uidIssue = nodeUidIssue(nodeUid);
+  if (uidIssue) throw new Error(uidIssue);
+  const accumulator = { uid: nodeUid, slug, kind, title };
   // Caller-supplied keys win over arrayDefaults — explicit values aren't
   // overwritten by an empty array.
   for (const key of schema.arrayDefaults) {
@@ -312,6 +417,11 @@ export function buildFrontmatter({ slug, kind, title, ...extras }) {
       continue;
     }
     accumulator[key] = normalizeGraphArray(key, value);
+  }
+  if ('merged_uids' in accumulator) {
+    const mergedUids = normalizeMergedUids(nodeUid, accumulator.merged_uids);
+    if (mergedUids.length > 0) accumulator.merged_uids = mergedUids;
+    else delete accumulator.merged_uids;
   }
   // 사용자 가독성 — schema 의 preferredOrder 로 키 정렬. 정의 안 된 키
   // (사용자가 import 한 외부 frontmatter 의 custom_field 등) 는 뒤에 append.

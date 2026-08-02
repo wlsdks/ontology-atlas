@@ -1,4 +1,5 @@
 ---
+uid: 050c8160-befd-4e7b-8ae0-f95db543105f
 slug: elements/kakao-alimtalk
 kind: element
 title: KakaoTalk Alimtalk

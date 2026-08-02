@@ -59,6 +59,12 @@ const nodes = [
 const edges = [makeEdge('project:atlas', 'domain:views'), makeEdge('domain:views', 'capability:render')];
 const subtree = buildOntologyTree(nodes, edges).roots[0].children[0];
 const census = { elementCount: 0, capabilityCount: 1, depth: 1 };
+const UIDS = {
+  project: '01890f3e-7b5d-4c0a-8f14-123456789abc',
+  views: '11890f3e-7b5d-4c0a-8f14-123456789abc',
+  render: '21890f3e-7b5d-4c0a-8f14-123456789abc',
+  other: '31890f3e-7b5d-4c0a-8f14-123456789abc',
+} as const;
 
 function fileHandle(content: string) {
   return { getFile: async () => ({ text: async () => content }) };
@@ -69,10 +75,10 @@ function makeVault(): MockVault {
     status: 'loaded',
     manifest: {
       docs: [
-        { slug: 'project', frontmatter: { kind: 'project', slug: 'atlas' }, title: 'Atlas' },
-        { slug: 'domains/views', frontmatter: { kind: 'domain' }, title: 'Views' },
-        { slug: 'capabilities/render', frontmatter: { kind: 'capability' }, title: 'Render' },
-        { slug: 'capabilities/other', frontmatter: { kind: 'capability' }, title: 'Other' },
+        { slug: 'project', frontmatter: { uid: UIDS.project, kind: 'project', slug: 'atlas' }, title: 'Atlas' },
+        { slug: 'domains/views', frontmatter: { uid: UIDS.views, kind: 'domain' }, title: 'Views' },
+        { slug: 'capabilities/render', frontmatter: { uid: UIDS.render, kind: 'capability' }, title: 'Render' },
+        { slug: 'capabilities/other', frontmatter: { uid: UIDS.other, kind: 'capability' }, title: 'Other' },
       ],
     },
     fileHandles: new Map([
@@ -162,6 +168,32 @@ describe('RealmBlockExportAction', () => {
       'capabilities/render',
       'domains/views',
     ]);
+    expect(manifest.nodes).toEqual([
+      expect.objectContaining({
+        uid: UIDS.render,
+        urn: `urn:uuid:${UIDS.render}`,
+        slug: 'capabilities/render',
+      }),
+      expect.objectContaining({
+        uid: UIDS.views,
+        urn: `urn:uuid:${UIDS.views}`,
+        slug: 'domains/views',
+      }),
+    ]);
+  });
+
+  it('shows an export error and writes nothing when a selected node has no UID', async () => {
+    const target = fakeTargetDir();
+    const views = mocks.vault.manifest?.docs.find((doc) => doc.slug === 'domains/views');
+    if (views) delete views.frontmatter.uid;
+    (window as unknown as { showDirectoryPicker: () => Promise<unknown> }).showDirectoryPicker =
+      vi.fn(async () => target.handle);
+
+    render(<RealmBlockExportAction rootTitle="Views" census={census} subtree={subtree} />);
+    fireEvent.click(screen.getByTestId('realm-block-export'));
+
+    expect(await screen.findByTestId('realm-block-export-error')).toBeInTheDocument();
+    expect(target.written.size).toBe(0);
   });
 
   it('exports through the native Tauri folder picker when the WebView has no browser picker', async () => {

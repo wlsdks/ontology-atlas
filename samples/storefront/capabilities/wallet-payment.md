@@ -1,4 +1,5 @@
 ---
+uid: 4ccdd883-2646-4197-b6a4-2f0f45487a25
 slug: capabilities/wallet-payment
 kind: capability
 title: One-Tap Wallet Payment

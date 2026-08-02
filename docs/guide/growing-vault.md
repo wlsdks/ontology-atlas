@@ -51,6 +51,11 @@ re-run with --confirm to apply.
 **기본이 dry-run 입니다.** 무엇이 바뀌는지 먼저 보고, `--confirm` 을 붙여야
 실행됩니다.
 
+병합해도 정체성 이력은 끊기지 않습니다. 남는 노드의 `uid`는 그대로이고,
+사라지는 노드의 `uid`와 기존 `merged_uids`는 남는 노드의
+`merged_uids`로 흡수됩니다. 예전 UID를 저장한 에이전트 핸드오프도 같은
+노드를 찾습니다.
+
 ## 2. 이름 바꾸기 — 백링크는 알아서 따라온다
 
 이름을 바꿀 때 무서운 건 그 이름을 부르던 곳들입니다. 손으로 고치면 반드시
@@ -71,6 +76,8 @@ re-run with --confirm to apply.
 
 `.md` 파일을 옮기고 **그 슬러그를 가리키던 모든 frontmatter 를 함께 고칩니다.**
 관계에 붙여 둔 이유 메모(`relation_notes`)의 키까지 따라갑니다.
+`slug`는 바뀌지만 `uid`는 바뀌지 않습니다. 이 차이 때문에 이름과 파일이
+바뀌어도 에이전트·내보내기·출처 이력은 같은 개념으로 인식합니다.
 
 바꾸기 전에 파장을 보고 싶으면:
 
@@ -197,10 +204,15 @@ node cli/src/index.mjs delete elements/old-thing --vault my-vault
 이름만 남은 유령이 되기 때문입니다. 정말 지우려면 가리키던 쪽을 먼저 정리하거나,
 `--force` 로 그 판단을 직접 지십시오.
 
+삭제된 UID는 다시 발급하지 않습니다. 현재 범위에서는 별도 tombstone 장부를
+만들지 않으므로, 삭제 후 구 UID 조회는 `not found`가 정상입니다. 이력을
+이어야 한다면 삭제가 아니라 `merge`를 쓰십시오.
+
 ## 정리
 
 - 중복이 1번 고장입니다 — 만들기 전에 `similar`, 이미 갈라졌으면 `merge`.
 - `rename` 은 **백링크를 전부 다시 씁니다.** 손으로 고치지 마십시오.
+- `uid`는 영구 정체성, `slug`는 바꿀 수 있는 현재 주소입니다.
 - `rename` · `merge` · `delete` · `snapshot` 은 **dry-run 이 기본**입니다.
 - 다음 할 일은 `maintenance`, 자랄 자리는 `growth`, 전체는 `health`.
 - 협업 기제는 **git 그 자체**입니다. 동시 편집만 `expected_mtime` 이 지킵니다.

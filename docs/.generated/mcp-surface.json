@@ -191,22 +191,20 @@
         "mode": "read",
         "arguments": [
           "body",
-          "slug"
+          "slug",
+          "uid"
         ],
-        "required": [
-          "slug"
-        ]
+        "required": []
       },
       {
         "name": "get_concepts",
         "mode": "read",
         "arguments": [
           "body",
-          "slugs"
+          "slugs",
+          "uids"
         ],
-        "required": [
-          "slugs"
-        ]
+        "required": []
       },
       {
         "name": "git_history",

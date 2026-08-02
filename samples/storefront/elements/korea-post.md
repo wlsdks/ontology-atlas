@@ -1,4 +1,5 @@
 ---
+uid: 5b77abed-c204-4247-a81b-e56bc39ac9f1
 slug: elements/korea-post
 kind: element
 title: Korea Post Integration

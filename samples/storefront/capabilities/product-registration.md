@@ -1,4 +1,5 @@
 ---
+uid: 4937dbb9-9044-447f-a573-461d4ddd5c05
 slug: capabilities/product-registration
 kind: capability
 title: Product Registration

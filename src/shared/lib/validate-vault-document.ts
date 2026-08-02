@@ -19,6 +19,11 @@ export type VaultIssueCode =
   | "empty-kind"
   | "missing-kind"
   | "unknown-kind"
+  | "missing-uid"
+  | "invalid-uid"
+  | "invalid-merged-uids"
+  | "non-canonical-merged-uids"
+  | "duplicate-uid"
   | "missing-expected-field"
   | "non-canonical-graph-array"
   | "parse-zero-keys";
@@ -62,6 +67,9 @@ export const KNOWN_VAULT_KINDS = [
   "document",
   "vault-readme",
 ] as const;
+
+const NODE_UID_RE =
+  /^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/;
 
 const GRAPH_ARRAY_KEYS = [
   "domains",
@@ -143,9 +151,64 @@ export function validateVaultDocument(raw: string): VaultDocumentReport {
     pushMissingExpectedExtrasIssues(trimmedKind, frontmatter, issues);
   }
 
+  if (typeof rawKind === "string" && rawKind.trim()) {
+    pushUidIssues(frontmatter, issues);
+  }
+
   pushNonCanonicalGraphArrayIssues(frontmatter, issues);
 
   return { ok: issuesHaveNoErrors(issues), issues };
+}
+
+function pushUidIssues(
+  frontmatter: Record<string, unknown>,
+  issues: VaultDocumentIssue[],
+): void {
+  const uid = frontmatter.uid;
+  if (uid === undefined || uid === null || uid === "") {
+    issues.push({
+      code: "missing-uid",
+      severity: "error",
+      message:
+        "`uid:`가 없습니다 — 모든 ontology 노드는 생성 후 바뀌지 않는 lowercase UUIDv4 영구 식별자를 가져야 합니다.",
+    });
+    return;
+  }
+  if (typeof uid !== "string" || !NODE_UID_RE.test(uid)) {
+    issues.push({
+      code: "invalid-uid",
+      severity: "error",
+      message:
+        "`uid:`는 생성 후 바뀌지 않는 lowercase UUIDv4여야 합니다. slug, title, path에서 파생하지 마세요.",
+    });
+    return;
+  }
+  const merged = frontmatter.merged_uids;
+  if (merged === undefined) return;
+  if (
+    !Array.isArray(merged) ||
+    merged.some((value) => typeof value !== "string" || !NODE_UID_RE.test(value) || value === uid)
+  ) {
+    issues.push({
+      code: "invalid-merged-uids",
+      severity: "error",
+      message:
+        "`merged_uids:`는 흡수된 노드의 lowercase UUIDv4 배열이어야 하며 현재 `uid:`를 반복하면 안 됩니다.",
+    });
+    return;
+  }
+  const canonical = [...new Set(merged)].sort((a, b) => a.localeCompare(b, "en"));
+  if (
+    canonical.length !== merged.length ||
+    canonical.some((value, index) => value !== merged[index])
+  ) {
+    issues.push({
+      code: "non-canonical-merged-uids",
+      severity: "warning",
+      message:
+        "`merged_uids:`는 중복 없이 오름차순으로 정렬된 UUIDv4 set이어야 합니다.",
+    });
+  }
 }
 
 function pushMissingExpectedExtrasIssues(
@@ -242,6 +305,10 @@ export function validateVaultDocFrontmatter(
     pushMissingExpectedExtrasIssues(trimmedKind, frontmatter, issues);
   }
 
+  if (typeof rawKind === "string" && rawKind.trim()) {
+    pushUidIssues(frontmatter, issues);
+  }
+
   pushNonCanonicalGraphArrayIssues(frontmatter, issues);
 
   return { ok: issuesHaveNoErrors(issues), issues };
@@ -300,6 +367,36 @@ export function summarizeVaultValidation(
     for (const issue of report.issues) {
       if (issue.severity === "error") errorCount += 1;
       else warningCount += 1;
+    }
+  }
+  const claims = new Map<string, string[]>();
+  for (const item of items) {
+    const uid = item.frontmatter.uid;
+    const merged = item.frontmatter.merged_uids;
+    const values = [
+      ...(typeof uid === "string" && NODE_UID_RE.test(uid) ? [uid] : []),
+      ...(Array.isArray(merged)
+        ? merged.filter((value): value is string => typeof value === "string" && NODE_UID_RE.test(value))
+        : []),
+    ];
+    for (const value of new Set(values)) {
+      const owners = claims.get(value) ?? [];
+      owners.push(item.slug);
+      claims.set(value, owners);
+    }
+  }
+  for (const [uid, owners] of claims) {
+    if (owners.length < 2) continue;
+    for (const slug of owners) {
+      const issue: VaultDocumentIssue = {
+        code: "duplicate-uid",
+        severity: "error",
+        message: `UID ${uid}를 다른 노드도 정체성으로 주장합니다 (${owners.filter((owner) => owner !== slug).join(", ")}).`,
+      };
+      const existing = issuesBySlug.find((entry) => entry.slug === slug);
+      if (existing) existing.issues.push(issue);
+      else issuesBySlug.push({ slug, issues: [issue] });
+      errorCount += 1;
     }
   }
   return {

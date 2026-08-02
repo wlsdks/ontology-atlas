@@ -85,7 +85,7 @@ node cli/src/index.mjs agent-setup my-vault --write
 
 **작업 시작 전** — 에이전트가 건드릴 개념과 이웃을 먼저 읽습니다.
 
-- `get_concept(slug)` — 노드와 이웃을 한 번에
+- `get_concept({ slug })` 또는 `get_concept({ uid })` — 현재 주소나 영구 정체성으로 노드와 이웃을 한 번에
 - `find_backlinks(slug)` — 이름을 바꾸기 전에 누가 기대고 있는지
 - `find_path(from, to)` — 이미 관계가 있는지
 
@@ -97,6 +97,16 @@ node cli/src/index.mjs agent-setup my-vault --write
 - `finalize_project_meaning(...)` — 승인된 쓰기·검증·전체 컴파일 뒤 프로젝트 의미 영수증을 남김. 원문 답변이나 비공개 소스 루트는 저장하지 않으며, `ok: true`는 영수증 기록 성공이지 의미 검증 완료가 아닙니다
 
 읽기 19개 · 쓰기 14개, 도구 33개가 있습니다.
+
+### 에이전트가 UID와 slug를 쓰는 법
+
+읽기 응답의 노드는 항상 `{ uid, slug }`를 같이 줍니다. 에이전트가 오래
+유지할 핸드오프·작업 대상·출처에는 `uid`를, 사람에게 보여 주거나 관계·URL·CLI
+명령을 만들 때는 `slug`를 쓸 수 있습니다.
+
+- UID로 조회하면 rename 후에도 같은 노드를 찾습니다.
+- slug로 조회하면 현재 볼트에서 읽기 좋은 주소를 쓸 수 있습니다.
+- `uid`를 관계 배열이나 URL에 복사하지 마십시오. 그 표면의 주소 규격은 계속 slug입니다.
 
 ## 첫 대화 — 무엇을 물어볼까
 

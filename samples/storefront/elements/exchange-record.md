@@ -1,4 +1,5 @@
 ---
+uid: ca3ada5c-f0d6-4501-84ad-cecff5e85f64
 slug: elements/exchange-record
 kind: element
 title: Exchange Record

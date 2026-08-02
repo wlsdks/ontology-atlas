@@ -1,4 +1,5 @@
 ---
+uid: 5825c783-8673-4a3b-b3a5-cbedf6f67c36
 slug: capabilities/coupon-issue
 kind: capability
 title: Coupon Issuing

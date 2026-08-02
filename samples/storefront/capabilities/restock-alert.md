@@ -1,4 +1,5 @@
 ---
+uid: 7ca242f1-6b2e-466e-8d2b-b2e5749d3576
 slug: capabilities/restock-alert
 kind: capability
 title: Restock Alert

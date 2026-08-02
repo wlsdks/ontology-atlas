@@ -12,6 +12,17 @@
 import { slugify } from "@/shared/lib/slugify";
 import { canonicalizeDomainRef } from "@/shared/lib/canonicalize-domain-ref";
 
+const NODE_UID_PATTERN =
+  /^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/;
+
+export function generateNodeUid(uid?: string): string {
+  const resolved = uid ?? globalThis.crypto.randomUUID();
+  if (!NODE_UID_PATTERN.test(resolved)) {
+    throw new Error(`uid must be a lowercase UUIDv4: ${resolved}`);
+  }
+  return resolved;
+}
+
 function quoteYamlScalar(v: string): string {
   // 콜론 / 따옴표 등 YAML 특수문자가 있으면 안전하게 quote + escape.
   return /[:#\[\]{}"',&|*!%@`]/.test(v) ? `"${v.replace(/"/g, '\\"')}"` : v;
@@ -37,6 +48,8 @@ export function vaultAgentCreatedBy(agentName: string | null | undefined): strin
 }
 
 export function buildVaultMarkdown(args: {
+  /** 영구 노드 식별자. 테스트·명시적 복원만 주입하고 일반 생성은 fresh UUIDv4. */
+  uid?: string;
   kind: string;
   title: string;
   slug: string;
@@ -58,6 +71,7 @@ export function buildVaultMarkdown(args: {
   createdBy?: string;
 }): string {
   const lines = ["---"];
+  lines.push(`uid: ${generateNodeUid(args.uid)}`);
   lines.push(`slug: ${args.slug}`);
   lines.push(`kind: ${args.kind}`);
   // C7 — single canonical `domain:` serialization (bare tail-slug) so map + 공방
@@ -108,6 +122,7 @@ export function vaultFolderForKind(kind: string): string {
  * slug 로 환원 불가하면 throw. createDoc(slug, markdown) 으로 디스크에 쓴다.
  */
 export function buildNewNodeDoc(args: {
+  uid?: string;
   title: string;
   kind: string;
   domain?: string;
@@ -119,6 +134,7 @@ export function buildNewNodeDoc(args: {
   if (!tail) throw new Error("title produced an empty slug");
   const slug = `${vaultFolderForKind(args.kind)}/${tail}`;
   const markdown = buildVaultMarkdown({
+    uid: args.uid,
     kind: args.kind,
     title,
     slug,

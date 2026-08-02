@@ -1,4 +1,5 @@
 ---
+uid: 638b1263-0ce9-4d54-8508-4378d84b5001
 slug: elements/stock-ledger
 kind: element
 title: Stock Ledger

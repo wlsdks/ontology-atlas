@@ -1,4 +1,5 @@
 ---
+uid: 23ebf680-08f5-4be9-be61-5677208e0032
 slug: capabilities/installment
 kind: capability
 title: Instalment Payment

@@ -1,4 +1,5 @@
 ---
+uid: 1d11c6ef-c486-441e-ae73-2e24681b5c64
 slug: capabilities/warehouse-picking
 kind: capability
 title: Warehouse Picking

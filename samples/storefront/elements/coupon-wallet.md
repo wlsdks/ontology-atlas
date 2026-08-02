@@ -1,4 +1,5 @@
 ---
+uid: 136f0b27-488a-41c4-8bac-49705a81ce19
 slug: elements/coupon-wallet
 kind: element
 title: Coupon Wallet

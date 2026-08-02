@@ -1,4 +1,5 @@
 ---
+uid: 17e408fd-a53d-4106-8dc8-77d0608c32f3
 slug: elements/payment-gateway
 kind: element
 title: Payment Gateway

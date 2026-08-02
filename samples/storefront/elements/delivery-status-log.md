@@ -1,4 +1,5 @@
 ---
+uid: a2d67b4a-7c02-49bb-8d52-8b632b76926f
 slug: elements/delivery-status-log
 kind: element
 title: Delivery Status Log

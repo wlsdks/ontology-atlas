@@ -1,4 +1,5 @@
 ---
+uid: ac84cdf7-3a20-4093-b818-0e92d9717b95
 slug: capabilities/return-pickup
 kind: capability
 title: Return Pickup

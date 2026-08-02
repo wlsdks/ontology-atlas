@@ -1,4 +1,5 @@
 ---
+uid: 7b04ff83-d51a-4337-b388-1b01b975e642
 slug: capabilities/order-address-change
 kind: capability
 title: Delivery Address Change

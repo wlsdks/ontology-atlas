@@ -1,4 +1,5 @@
 ---
+uid: 27d39866-0bf0-4f71-ab23-1218bd580188
 slug: elements/restock-subscription
 kind: element
 title: Restock Subscription

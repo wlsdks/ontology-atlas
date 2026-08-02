@@ -14,6 +14,8 @@ import {
   findPath,
   suggestSimilarSlugs,
   vaultSlugExists,
+  patchFrontmatter,
+  updateDoc,
   writeDoc,
 } from './vault.mjs';
 
@@ -308,6 +310,41 @@ describe('actionable 에러 메시지 (R+)', () => {
     assert.ok(caught);
     assert.match(caught.message, /not found/i);
     assert.match(caught.message, /list_concepts/);
+  });
+});
+
+describe('UID identity write gate', () => {
+  const uidA = '01890f3e-7b5d-4c0a-8f14-123456789abc';
+  const uidB = '11890f3e-7b5d-4c0a-8f14-123456789abc';
+
+  it('known-kind create requires one valid unique UID', () => {
+    assert.throws(
+      () => writeDoc(root, 'capabilities/missing-uid', {
+        frontmatter: { slug: 'capabilities/missing-uid', kind: 'capability', title: 'Missing' },
+      }),
+      /uid/i,
+    );
+    writeDoc(root, 'capabilities/first', {
+      frontmatter: { uid: uidA, slug: 'capabilities/first', kind: 'capability', title: 'First' },
+    });
+    assert.throws(
+      () => writeDoc(root, 'capabilities/collision', {
+        frontmatter: { uid: uidA, slug: 'capabilities/collision', kind: 'capability', title: 'Collision' },
+      }),
+      /already belongs|collision|UID/i,
+    );
+  });
+
+  it('generic patch/update cannot change, remove, or forge merged identities', () => {
+    writeDoc(root, 'capabilities/identity', {
+      frontmatter: { uid: uidA, slug: 'capabilities/identity', kind: 'capability', title: 'Identity' },
+    });
+    assert.throws(() => patchFrontmatter(root, 'capabilities/identity', { uid: uidB }), /immutable|uid/i);
+    assert.throws(() => patchFrontmatter(root, 'capabilities/identity', { uid: null }), /immutable|uid/i);
+    assert.throws(
+      () => updateDoc(root, 'capabilities/identity', { frontmatter: { merged_uids: [uidB] } }),
+      /merge_concepts|merged_uids/i,
+    );
   });
 });
 

@@ -1,4 +1,5 @@
 ---
+uid: db1497cb-32da-4db2-acaf-a1556289d956
 slug: capabilities/shipment-tracking
 kind: capability
 title: Shipment Tracking

@@ -1,4 +1,5 @@
 ---
+uid: 222b71f2-29d1-45c1-b1f4-d293e8a998fd
 slug: capabilities/exchange-request
 kind: capability
 title: Exchange Request

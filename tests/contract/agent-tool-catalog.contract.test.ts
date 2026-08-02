@@ -78,14 +78,46 @@ function readMcpToolShape(toolName: string): McpToolShape {
 
   const propertyNames = collectDepthOneKeys(propsBody);
 
-  // required 는 inputSchema 최상위에만 있다 — properties 블록 밖에서 찾는다.
+  // required 는 inputSchema 최상위에만 있다. `oneOf: [{ required: ... }]` 같은
+  // selector 분기 안의 required 를 최상위 필수 인자로 오인하지 않는다.
   const tail = schema.slice(propsEnd);
-  const requiredMatch = /required:\s*\[([^\]]*)\]/.exec(tail);
+  const requiredMatch = findDepthZeroRequired(tail);
   const required = requiredMatch
-    ? Array.from(requiredMatch[1].matchAll(/'([^']+)'/g)).map((m) => m[1])
+    ? Array.from(requiredMatch.matchAll(/'([^']+)'/g)).map((m) => m[1])
     : [];
 
   return { propertyNames, required };
+}
+
+function findDepthZeroRequired(source: string): string | null {
+  let depth = 0;
+  let inString: string | null = null;
+  for (let index = 0; index < source.length; index += 1) {
+    const ch = source[index];
+    const prev = source[index - 1];
+    if (inString) {
+      if (ch === inString && prev !== '\\') inString = null;
+      continue;
+    }
+    if (ch === "'" || ch === '"' || ch === '`') {
+      inString = ch;
+      continue;
+    }
+    if (ch === '{' || ch === '[' || ch === '(') {
+      depth += 1;
+      continue;
+    }
+    if (ch === '}' || ch === ']' || ch === ')') {
+      depth -= 1;
+      continue;
+    }
+    if (depth === 0 && source.startsWith('required:', index)) {
+      const open = source.indexOf('[', index);
+      const close = matchBrace(source, open, '[');
+      return source.slice(open + 1, close - 1);
+    }
+  }
+  return null;
 }
 
 /** 객체 본문에서 depth 0 인 키 이름만 순서대로 모은다 (문자열·주석 무시). */
@@ -142,11 +174,12 @@ function collectDepthOneKeys(body: string): string[] {
 }
 
 describe('에이전트 도구 카탈로그 ↔ MCP 서버 정의', () => {
-  it('추출기 자체가 동작한다 (get_concept 은 slug 를 요구하고 body 를 받는다)', () => {
+  it('추출기 자체가 동작한다 (get_concept 은 slug/uid 중 하나와 body 를 받는다)', () => {
     // 파서가 조용히 빈 배열을 돌려주면 아래 테스트가 전부 무의미해진다.
     const shape = readMcpToolShape('get_concept');
-    expect(shape.propertyNames).toEqual(['slug', 'body']);
-    expect(shape.required).toEqual(['slug']);
+    expect(shape.propertyNames).toEqual(['slug', 'uid', 'body']);
+    // 정확히 하나를 고르는 계약은 MCP JSON Schema 의 oneOf 가 강제한다.
+    expect(shape.required).toEqual([]);
   });
 
   it.each(AGENT_TOOLS.map((tool) => [tool.name, tool] as const))(

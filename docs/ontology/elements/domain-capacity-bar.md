@@ -1,4 +1,5 @@
 ---
+uid: 5b66c2ec-54fa-481b-9a2a-2522820cefc9
 slug: elements/domain-capacity-bar
 kind: element
 title: Domain Capacity Bar

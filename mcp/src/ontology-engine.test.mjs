@@ -5,10 +5,20 @@ import { compileOntology } from './ontology-compiler.mjs';
 import { deriveBridgeShapes, queryCompiledOntology } from './ontology-engine.mjs';
 import { defaultBody } from './schema.mjs';
 
+const testUidBySlug = new Map();
+
+function testUid(slug) {
+  if (!testUidBySlug.has(slug)) {
+    const suffix = (testUidBySlug.size + 1).toString(16).padStart(12, '0');
+    testUidBySlug.set(slug, `00000000-0000-4000-8000-${suffix}`);
+  }
+  return testUidBySlug.get(slug);
+}
+
 function doc(slug, frontmatter = {}, mtime = 1) {
   return {
     slug,
-    frontmatter,
+    frontmatter: { uid: testUid(slug), ...frontmatter },
     body: '',
     mtime,
   };
@@ -92,6 +102,55 @@ describe('queryCompiledOntology', () => {
         },
       ],
     );
+  });
+
+  it('carries permanent uid beside the current slug in graph rows and agent handoff', () => {
+    const projectUid = '11111111-1111-4111-8111-111111111111';
+    const domainUid = '22222222-2222-4222-8222-222222222222';
+    const capabilityUid = '33333333-3333-4333-8333-333333333333';
+    const graph = compileOntology(
+      [
+        doc('project', {
+          uid: projectUid,
+          kind: 'project',
+          title: 'Project',
+          domains: ['domains/auth'],
+        }),
+        doc('domains/auth', {
+          uid: domainUid,
+          kind: 'domain',
+          title: 'Auth',
+          capabilities: ['capabilities/login'],
+        }),
+        doc('capabilities/login', {
+          uid: capabilityUid,
+          kind: 'capability',
+          title: 'Login',
+          domain: 'domains/auth',
+        }),
+      ],
+      { includeIndexes: true },
+    );
+
+    const neighbors = queryCompiledOntology(graph, {
+      operation: 'neighbors',
+      slug: 'project',
+      direction: 'outgoing',
+    });
+    assert.deepEqual(
+      neighbors.nodes.map(({ uid, slug }) => ({ uid, slug })),
+      [{ uid: domainUid, slug: 'domains/auth' }],
+    );
+
+    const brief = queryCompiledOntology(graph, {
+      operation: 'agent_brief',
+      project: 'project',
+      limit: 5,
+    });
+    assert.equal(brief.projectUid, projectUid);
+    assert.ok(brief.entrypoints.every((entrypoint) => entrypoint.uid));
+    assert.match(brief.handoffPrompt, /uid is the permanent identity/i);
+    assert.match(brief.handoffPrompt, new RegExp(`${domainUid}.*domains/auth`));
   });
 
   it('reports neighbors total and limited from the unsliced edge set', () => {
@@ -3752,6 +3811,7 @@ describe('queryCompiledOntology', () => {
             },
           },
           node: {
+            uid: testUid('capabilities/login'),
             slug: 'capabilities/login',
             kind: 'capability',
             title: 'Login',

@@ -1,4 +1,5 @@
 ---
+uid: 74c21391-8605-46a0-b880-e19cd30c65e4
 slug: capabilities/app-update
 kind: capability
 title: App Auto-Update

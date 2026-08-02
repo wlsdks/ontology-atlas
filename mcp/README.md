@@ -377,6 +377,29 @@ The server connects over stdio. You should now see 33 tools under the `ontology-
 
 ## The 33 tools
 
+### Node identity contract
+
+Every `kind:` document has two identifiers:
+
+- `uid` is the immutable lowercase UUIDv4 identity. The writer mints it once;
+  callers do not supply it. Exact read selectors, handoff/provenance, compiler
+  indexes, and interop `urn:uuid:<uid>` use it.
+- `slug` is the mutable, human-readable current address. Markdown relations,
+  file paths, URLs, graph edge endpoints, and slug-oriented tools keep using it.
+
+`list_concepts` and all node summaries return both `{ uid, slug }`.
+`get_concept` accepts exactly one of `{ slug }` or `{ uid }`; `get_concepts`
+accepts exactly one of `slugs[]` or `uids[]`. UID misses never use fuzzy
+suggestions. Rename and reclassify preserve UID. Merge preserves the target UID
+and records the source UID plus prior absorbed identities in merge-owned
+`merged_uids`; old UIDs then resolve to the survivor. Generic patch cannot edit
+either identity field. Delete retires the UID without reuse; this version does
+not add a tombstone ledger.
+
+This boundary is deliberate: UID is not a filename, URL token, relation value,
+display number, or React/canvas node ID. Slug remains the inspectable address on
+those surfaces.
+
 For `add_concept` / `add_concepts`, `path` is one canonical repo-relative
 implementation entrypoint for a capability or element. `elements` contains only
 real element-node slugs; a raw file path is evidence, not a graph child.
@@ -574,6 +597,7 @@ Write conflict guards are strict as well: every `expected_mtime` field must be
 a non-negative finite number, so malformed values cannot silently disable the
 concurrent-edit check.
 Batch arrays expose the same runtime cap as schema too: `get_concepts.slugs`,
+`get_concepts.uids`,
 `add_concepts.concepts`, and `add_relations.relations` all advertise
 `maxItems: 50`.
 `query_ontology.targetOperation` also exposes the supported `query_plan`
@@ -607,9 +631,10 @@ node $ATLAS/cli/src/index.mjs export [vault] --format json      # raw compile ar
 ```
 
 The payload goes to stdout and status to stderr, so it pipes cleanly into other
-tools. Node identity is a stable URN — `urn:ontology-atlas:<kind>:<slug>` — used
-as both the JSON-LD `@id` and the GraphML node id, so both formats share one
-identity. Edge `via` keys become `oatlas:` predicates (JSON-LD) / a `via`
+tools. Node identity is the stable `urn:uuid:<uid>`, used as both the JSON-LD
+`@id` and the GraphML node id. The readable slug remains an explicit property,
+and resolved edge endpoints are mapped from slug to the target UID URN. Edge
+`via` keys become `oatlas:` predicates (JSON-LD) / a `via`
 attribute (GraphML). The CLI and MCP serializer stay byte-identical through
 `interop-format`, lock-stepped by
 `tests/contract/interop-format.contract.test.ts`. The retired web ERD builder
@@ -639,10 +664,12 @@ node $ATLAS/cli/src/index.mjs export docs/ontology --format jsonld > atlas.jsonl
 - **`graphHash` is the version.** The `--format json` artifact carries the
   compiler's `graphHash`; identical hashes mean identical graphs. Key your
   downstream cache/diff on it.
-- **A rename mints a *new* URN and does not rewrite already-emitted URNs.**
-  `rename_concept` changes the slug, so the URN of that node changes in the
-  *next* export. URNs written into a prior snapshot are not retroactively
-  fixed — external consumers key on the URN and re-import to pick up renames.
+- **Rename and reclassify preserve the URN.** They change the readable address
+  while preserving `uid`, so already-emitted identity remains stable. Merge
+  preserves the survivor URN and records absorbed UIDs in `merged_uids`.
+- **Invalid identity fails closed.** Missing, malformed, or duplicate primary
+  and merged UID claims abort compilation/export instead of emitting a partial
+  graph or quietly deriving identity from a slug.
 - **External / dangling refs are omitted.** An interop snapshot only emits
   edges whose endpoints are both real vault nodes; it never mints phantom
   nodes for unresolved element paths.
@@ -656,16 +683,21 @@ later.
 
 | kind | required | always emitted | strongly expected | optional |
 |---|---|---|---|---|
-| `project` | `slug`, `kind`, `title` | `domains: []`, `capabilities: []`, `elements: []` | — | `display`, `display_<locale>`, `description`, `status`, `dependencies`, `relates`, `created_by` |
-| `domain` | `slug`, `kind`, `title` | `capabilities: []` | — | `display`, `display_<locale>`, `description`, `depends_on`, `relates`, `broader`, `created_by` |
-| `capability` | `slug`, `kind`, `title` | `elements: []` | `domain` | same as `domain`, plus `path` |
-| `element` | `slug`, `kind`, `title` | — | `domain` | same as `domain`, plus `path` |
-| `document` | `slug`, `kind`, `title` | — | — | `display`, `display_<locale>`, `describes`, `relates`, `created_by` |
+| `project` | `uid`, `slug`, `kind`, `title` | `domains: []`, `capabilities: []`, `elements: []` | — | merge-owned `merged_uids`, `display`, `display_<locale>`, `description`, `status`, `dependencies`, `relates`, `created_by` |
+| `domain` | `uid`, `slug`, `kind`, `title` | `capabilities: []` | — | merge-owned `merged_uids`, `display`, `display_<locale>`, `description`, `depends_on`, `relates`, `broader`, `created_by` |
+| `capability` | `uid`, `slug`, `kind`, `title` | `elements: []` | `domain` | same as `domain`, plus `path` |
+| `element` | `uid`, `slug`, `kind`, `title` | — | `domain` | same as `domain`, plus `path` |
+| `document` | `uid`, `slug`, `kind`, `title` | — | — | merge-owned `merged_uids`, `display`, `display_<locale>`, `describes`, `relates`, `created_by` |
 
 “Strongly expected” fields don’t throw — they come back in the response under
 `warnings`, and the validator (`mcp:validate`) flags them with the
 `missing-expected-field` issue code so users see them in the workbench banner
 without breaking pre-existing vaults.
+
+`uid` is different: it is a hard invariant for every `kind:` node, including
+`vault-readme`. Missing/invalid UID, invalid `merged_uids`, and any primary or
+merged UID collision are errors. Generic `patch_concept` cannot change `uid` or
+edit `merged_uids`; only `merge_concepts` may extend identity history.
 
 ### `created_by` — who authored the node (2026-07-31)
 

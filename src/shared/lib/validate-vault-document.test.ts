@@ -5,6 +5,8 @@ import {
   validateVaultDocument,
 } from "./validate-vault-document";
 
+const VALID_UID = "00000000-0000-4000-8000-000000000001";
+
 describe("validateVaultDocument", () => {
   it("frontmatter 자체가 없는 docs 파일은 ok", () => {
     const r = validateVaultDocument("# Heading\n\n그냥 메모.");
@@ -13,7 +15,7 @@ describe("validateVaultDocument", () => {
   });
 
   it("정상 frontmatter (canonical kind) 는 ok", () => {
-    const raw = `---\nkind: project\nslug: foo\ntitle: Foo\n---\n# Foo`;
+    const raw = `---\nuid: ${VALID_UID}\nkind: project\nslug: foo\ntitle: Foo\n---\n# Foo`;
     const r = validateVaultDocument(raw);
     expect(r.ok).toBe(true);
     expect(r.issues).toHaveLength(0);
@@ -44,7 +46,7 @@ describe("validateVaultDocument", () => {
   });
 
   it("canonical 외 kind 값은 unknown-kind warning (ok)", () => {
-    const raw = `---\nkind: bogus\nslug: foo\n---\n`;
+    const raw = `---\nuid: ${VALID_UID}\nkind: bogus\nslug: foo\n---\n`;
     const r = validateVaultDocument(raw);
     expect(r.ok).toBe(true);
     expect(r.issues.map((i) => i.code)).toContain("unknown-kind");
@@ -62,7 +64,7 @@ describe("validateVaultDocument", () => {
   it("trim 된 kind 가 canonical 이면 ok (capability + domain)", () => {
     // R14 — capability/element 는 domain 누락 시 missing-expected-field
     // warning. canonical kind 인식 자체를 보는 케이스라 domain 까지 박아 clean.
-    const raw = `---\nkind:    capability   \ndomain: domains/auth\n---\n`;
+    const raw = `---\nuid: ${VALID_UID}\nkind:    capability   \ndomain: domains/auth\n---\n`;
     const r = validateVaultDocument(raw);
     expect(r.ok).toBe(true);
     expect(r.issues).toHaveLength(0);
@@ -81,21 +83,25 @@ describe("validateVaultDocument", () => {
     ];
     for (const c of cases) {
       const extraLine = c.extra ? `\n${c.extra}` : "";
-      const r = validateVaultDocument(`---\nkind: ${c.kind}${extraLine}\n---\n`);
+      const r = validateVaultDocument(
+        `---\nuid: ${VALID_UID}\nkind: ${c.kind}${extraLine}\n---\n`,
+      );
       expect(r.ok, `kind=${c.kind}`).toBe(true);
       expect(r.issues, `kind=${c.kind}`).toHaveLength(0);
     }
   });
 
   it("R14 — capability/element 가 domain 없으면 missing-expected-field warning", () => {
-    const r = validateVaultDocument(`---\nkind: capability\ntitle: X\n---\n`);
+    const r = validateVaultDocument(
+      `---\nuid: ${VALID_UID}\nkind: capability\ntitle: X\n---\n`,
+    );
     expect(r.ok).toBe(true);
     expect(r.issues.map((i) => i.code)).toContain("missing-expected-field");
   });
 
   it("graph 배열 중복/비정렬이면 non-canonical-graph-array warning", () => {
     const r = validateVaultDocument(
-      `---\nkind: project\ntitle: X\ndependencies: [z, a, z]\n---\n`,
+      `---\nuid: ${VALID_UID}\nkind: project\ntitle: X\ndependencies: [z, a, z]\n---\n`,
     );
     expect(r.ok).toBe(true);
     expect(r.issues.map((i) => i.code)).toContain(
@@ -146,6 +152,7 @@ describe("validateVaultDocFrontmatter (parsed-only fast path)", () => {
 
   it("canonical kind 는 ok (capability with domain)", () => {
     const r = validateVaultDocFrontmatter({
+      uid: VALID_UID,
       kind: "capability",
       title: "X",
       domain: "domains/auth",
@@ -155,13 +162,18 @@ describe("validateVaultDocFrontmatter (parsed-only fast path)", () => {
   });
 
   it("R14 — capability without domain → missing-expected-field warning", () => {
-    const r = validateVaultDocFrontmatter({ kind: "capability", title: "X" });
+    const r = validateVaultDocFrontmatter({
+      uid: VALID_UID,
+      kind: "capability",
+      title: "X",
+    });
     expect(r.ok).toBe(true);
     expect(r.issues.map((i) => i.code)).toContain("missing-expected-field");
   });
 
   it("graph 배열 중복/비정렬이면 non-canonical-graph-array warning", () => {
     const r = validateVaultDocFrontmatter({
+      uid: VALID_UID,
       kind: "project",
       title: "X",
       dependencies: ["z", "a", "z"],
@@ -173,7 +185,11 @@ describe("validateVaultDocFrontmatter (parsed-only fast path)", () => {
   });
 
   it("non-canonical kind 는 unknown-kind warning", () => {
-    const r = validateVaultDocFrontmatter({ kind: "weird", title: "X" });
+    const r = validateVaultDocFrontmatter({
+      uid: VALID_UID,
+      kind: "weird",
+      title: "X",
+    });
     expect(r.ok).toBe(true);
     expect(r.issues.map((i) => i.code)).toContain("unknown-kind");
   });
@@ -182,7 +198,10 @@ describe("validateVaultDocFrontmatter (parsed-only fast path)", () => {
 describe("summarizeVaultValidation", () => {
   it("clean docs — ok / counts 0", () => {
     const summary = summarizeVaultValidation([
-      { slug: "a", frontmatter: { kind: "project", title: "A" } },
+      {
+        slug: "a",
+        frontmatter: { uid: VALID_UID, kind: "project", title: "A" },
+      },
       { slug: "b", frontmatter: {} }, // docs-only
     ]);
     expect(summary.ok).toBe(true);
@@ -194,7 +213,7 @@ describe("summarizeVaultValidation", () => {
 
   it("warning 만 있으면 ok=true, errorCount=0, warningCount > 0", () => {
     const summary = summarizeVaultValidation([
-      { slug: "a", frontmatter: { kind: "weird" } },
+      { slug: "a", frontmatter: { uid: VALID_UID, kind: "weird" } },
       { slug: "b", frontmatter: { capabilities: ["x"] } },
     ]);
     expect(summary.ok).toBe(true);
@@ -206,7 +225,10 @@ describe("summarizeVaultValidation", () => {
   it("error 가 하나라도 있으면 ok=false", () => {
     const summary = summarizeVaultValidation([
       { slug: "a", frontmatter: { kind: "" } },
-      { slug: "b", frontmatter: { kind: "project", title: "OK" } },
+      {
+        slug: "b",
+        frontmatter: { uid: VALID_UID, kind: "project", title: "OK" },
+      },
     ]);
     expect(summary.ok).toBe(false);
     expect(summary.errorCount).toBe(1);
@@ -214,7 +236,7 @@ describe("summarizeVaultValidation", () => {
 
   it("issuesBySlug 가 slug 별로 묶여서 반환", () => {
     const summary = summarizeVaultValidation([
-      { slug: "a", frontmatter: { kind: "weird" } },
+      { slug: "a", frontmatter: { uid: VALID_UID, kind: "weird" } },
     ]);
     expect(summary.issuesBySlug).toEqual([
       {

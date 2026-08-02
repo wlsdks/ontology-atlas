@@ -27,7 +27,7 @@ import {
 } from '@/entities/local-fs-handle';
 import type { LocalFsHandleRecord } from '@/entities/local-fs-handle';
 import {
-  starterFilesForLocale,
+  materializeStarterFiles,
   buildCodexConfigToml,
   buildMcpConfigJson,
   buildVaultMcpConfigJson,
@@ -1155,7 +1155,7 @@ export function useLocalVaultInternal() {
     // 화면이 다른 수를 말했다 (codex 감사 P2).
     let markdownCreated = 0;
     let skipped = 0;
-    for (const { relPath, content } of starterFilesForLocale(starterLocale)) {
+    for (const { relPath, content } of materializeStarterFiles(starterLocale)) {
       // slug 는 .md 확장자 제거한 경로로. createDoc / saveDoc 의 규칙 따름.
       const slug = relPath.replace(/\.md$/, '');
       if (state.fileHandles.has(slug)) {

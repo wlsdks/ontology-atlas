@@ -1,4 +1,5 @@
 ---
+uid: defe81dc-dfc4-426d-bd64-3cf587392583
 slug: capabilities/order-placement
 kind: capability
 title: Order Placement

@@ -67,6 +67,7 @@ import {
 } from '../src/infer-imports.mjs';
 import { VAULT_ISSUE_CODE_VALUES } from '../src/validate.mjs';
 import { GRAPH_ARRAY_KEYS } from '../src/vault.mjs';
+import { NODE_UID_PATTERN } from '../src/schema.mjs';
 export {
   IMPORT_EDGE_KIND_VALUES,
   IMPORT_UNRESOLVED_REASON_VALUES,
@@ -90,6 +91,7 @@ const VERIFY_ALLOWED_FLAGS = ['--vault', '--timeout-ms', '--help'];
 const DEFAULT_VERIFY_RETRY_EXAMPLE = 'npm run verify -- --timeout-ms 15000';
 const DEFAULT_VERIFY_KILL_GRACE_MS = 1_000;
 const GRAPH_ARRAY_KEY_SET = new Set(GRAPH_ARRAY_KEYS);
+const NODE_UID_RE = new RegExp(NODE_UID_PATTERN);
 const VERIFY_ARGS = parseVerifyArgs({ isMain: IS_MAIN });
 const VAULT = VERIFY_ARGS.vault;
 const VERIFY_TIMEOUT_MS_RAW = VERIFY_ARGS.timeoutMsRaw;
@@ -915,8 +917,26 @@ export function toolsListSchemaFailure(tools) {
   if (getConceptTool.outputSchema?.type !== 'object') {
     return 'get_concept outputSchema root drift';
   }
-  if (!sameArray(getConceptTool.outputSchema?.required, ['slug', 'frontmatter', 'bodyInfo', 'neighbors', 'outgoingEdges', 'mtime'])) {
+  if (!sameArray(getConceptTool.outputSchema?.required, ['uid', 'slug', 'frontmatter', 'bodyInfo', 'neighbors', 'outgoingEdges', 'mtime'])) {
     return 'get_concept outputSchema required drift';
+  }
+  const getConceptSelectors = getConceptTool.inputSchema?.oneOf;
+  if (
+    !Array.isArray(getConceptSelectors) ||
+    getConceptSelectors.length !== 2 ||
+    !sameArray(getConceptSelectors[0]?.required, ['slug']) ||
+    !sameArray(getConceptSelectors[1]?.required, ['uid'])
+  ) {
+    return 'get_concept inputSchema identity selector drift';
+  }
+  const getConceptUidInput = propertyAt(getConceptTool, ['properties', 'uid']);
+  if (
+    getConceptUidInput?.type !== 'string' ||
+    getConceptUidInput.pattern !== NODE_UID_PATTERN ||
+    !/permanent node UID/i.test(getConceptUidInput.description || '') ||
+    !/never together/i.test(getConceptUidInput.description || '')
+  ) {
+    return 'get_concept inputSchema uid drift';
   }
   // `excerpt` 는 더 이상 필수가 아니다 — `body: 'full'` 이면 본문이 `body` 로
   // 온다. 대신 **`bodyInfo` 가 필수다**: 무엇을 안 줬는지 말하지 않는 응답이
@@ -931,10 +951,13 @@ export function toolsListSchemaFailure(tools) {
   if (getConceptTool.outputSchema?.additionalProperties !== false) {
     return 'get_concept outputSchema root openness drift';
   }
-  for (const propertyName of ['slug', 'excerpt', 'body']) {
+  for (const propertyName of ['uid', 'slug', 'excerpt', 'body']) {
     if (outputPropertyAt(getConceptTool, ['properties', propertyName])?.type !== 'string') {
       return `get_concept outputSchema ${propertyName} drift`;
     }
+  }
+  if (outputPropertyAt(getConceptTool, ['properties', 'uid'])?.pattern !== NODE_UID_PATTERN) {
+    return 'get_concept outputSchema uid drift';
   }
   if (outputPropertyAt(getConceptTool, ['properties', 'frontmatter'])?.type !== 'object') {
     return 'get_concept outputSchema frontmatter drift';
@@ -958,12 +981,22 @@ export function toolsListSchemaFailure(tools) {
   const getConceptsTool = tools.find((tool) => tool?.name === 'get_concepts');
   if (!getConceptsTool) return 'tools/list response missing get_concepts tool';
   if (
-    !/saves K-1 round-trips/i.test(getConceptsTool.description || '') ||
-    !/Order of `concepts\[\]` matches input `slugs\[\]`/i.test(getConceptsTool.description || '') ||
-    !/Missing or invalid slug rows return/i.test(getConceptsTool.description || '') ||
+    !/exactly one selector array/i.test(getConceptsTool.description || '') ||
+    !/immutable `uids`/i.test(getConceptsTool.description || '') ||
+    !/permanent `uid` plus current canonical `slug`/i.test(getConceptsTool.description || '') ||
+    !/graph-operation inputs remain slug-based/i.test(getConceptsTool.description || '') ||
     !/later valid slugs still resolve/i.test(getConceptsTool.description || '')
   ) {
     return 'get_concepts description missing batch partial-result guidance';
+  }
+  const getConceptsSelectors = getConceptsTool.inputSchema?.oneOf;
+  if (
+    !Array.isArray(getConceptsSelectors) ||
+    getConceptsSelectors.length !== 2 ||
+    !sameArray(getConceptsSelectors[0]?.required, ['slugs']) ||
+    !sameArray(getConceptsSelectors[1]?.required, ['uids'])
+  ) {
+    return 'get_concepts inputSchema identity selector drift';
   }
   const getConceptsSlugsSchema = propertyAt(getConceptsTool, ['properties', 'slugs']);
   if (
@@ -975,6 +1008,17 @@ export function toolsListSchemaFailure(tools) {
     !/Max 50 per call/i.test(getConceptsSlugsSchema.description || '')
   ) {
     return 'get_concepts inputSchema slugs alias and cap guidance drift';
+  }
+  const getConceptsUidsSchema = propertyAt(getConceptsTool, ['properties', 'uids']);
+  if (
+    getConceptsUidsSchema?.type !== 'array' ||
+    getConceptsUidsSchema.maxItems !== 50 ||
+    getConceptsUidsSchema.items?.type !== 'string' ||
+    getConceptsUidsSchema.items?.pattern !== NODE_UID_PATTERN ||
+    !/permanent node UIDs/i.test(getConceptsUidsSchema.description || '') ||
+    !/never together/i.test(getConceptsUidsSchema.description || '')
+  ) {
+    return 'get_concepts inputSchema uids drift';
   }
   if (getConceptsTool.outputSchema?.type !== 'object') {
     return 'get_concepts outputSchema root drift';
@@ -989,7 +1033,7 @@ export function toolsListSchemaFailure(tools) {
   if (outputPropertyAt(getConceptsTool, ['properties', 'concepts'])?.type !== 'array' || getConceptsItemsSchema?.type !== 'object') {
     return 'get_concepts outputSchema concepts drift';
   }
-  if (!sameArray(getConceptsItemsSchema.required, ['ok', 'slug'])) {
+  if (!sameArray(getConceptsItemsSchema.required, ['ok'])) {
     return 'get_concepts outputSchema row required drift';
   }
   if (getConceptsItemsSchema.additionalProperties !== false) {
@@ -1000,6 +1044,12 @@ export function toolsListSchemaFailure(tools) {
   }
   if (getConceptsItemsSchema.properties?.slug?.type !== 'string') {
     return 'get_concepts outputSchema row slug drift';
+  }
+  if (
+    getConceptsItemsSchema.properties?.uid?.type !== 'string' ||
+    getConceptsItemsSchema.properties?.uid?.pattern !== NODE_UID_PATTERN
+  ) {
+    return 'get_concepts outputSchema row uid drift';
   }
   if (getConceptsItemsSchema.properties?.mtime?.type !== 'number' || getConceptsItemsSchema.properties?.mtime?.minimum !== 0) {
     return 'get_concepts outputSchema row mtime drift';
@@ -1460,7 +1510,10 @@ export function toolsListSchemaFailure(tools) {
   const compileNodeSchema = outputPropertyAt(compileTool, ['properties', 'nodes', 'items']);
   if (
     compileNodeSchema?.type !== 'object' ||
-    !sameArray(compileNodeSchema.required, ['slug', 'kind', 'title', 'mtime', 'outDegree', 'inDegree']) ||
+    !sameArray(compileNodeSchema.required, ['uid', 'slug', 'kind', 'title', 'mtime', 'outDegree', 'inDegree']) ||
+    compileNodeSchema.properties?.uid?.pattern !== NODE_UID_PATTERN ||
+    compileNodeSchema.properties?.merged_uids?.type !== 'array' ||
+    compileNodeSchema.properties?.merged_uids?.items?.pattern !== NODE_UID_PATTERN ||
     compileNodeSchema.properties?.slug?.type !== 'string' ||
     compileNodeSchema.properties?.path?.type !== 'string' ||
     compileNodeSchema.properties?.outDegree?.type !== 'integer' ||
@@ -1570,6 +1623,23 @@ export function toolsListSchemaFailure(tools) {
     aliasToSlugSchema.additionalProperties?.type !== 'string'
   ) {
     return 'compile_ontology outputSchema indexes.aliasToSlug drift';
+  }
+  for (const propertyName of ['uidToSlug', 'mergedUidToSlug']) {
+    const identityIndexSchema = indexesSchema.properties?.[propertyName];
+    if (
+      identityIndexSchema?.type !== 'object' ||
+      identityIndexSchema.additionalProperties?.type !== 'string'
+    ) {
+      return `compile_ontology outputSchema indexes.${propertyName} drift`;
+    }
+  }
+  const slugToUidSchema = indexesSchema.properties?.slugToUid;
+  if (
+    slugToUidSchema?.type !== 'object' ||
+    slugToUidSchema.additionalProperties?.type !== 'string' ||
+    slugToUidSchema.additionalProperties?.pattern !== NODE_UID_PATTERN
+  ) {
+    return 'compile_ontology outputSchema indexes.slugToUid drift';
   }
   const compileOutputSummarySchema = outputPropertyAt(compileTool, ['properties', 'summary']);
   if (
@@ -2070,7 +2140,6 @@ export function toolsListSchemaFailure(tools) {
   }
 
   for (const [toolName, propertyName] of [
-    ['get_concepts', 'slugs'],
     ['add_concepts', 'concepts'],
     ['add_relations', 'relations'],
   ]) {
@@ -2384,6 +2453,7 @@ export function toolsListSchemaFailure(tools) {
     'canConfirm',
     'wouldChange',
     'blockedReasons',
+    'uid',
     'oldSlug',
     'newSlug',
     'sourcePath',
@@ -2395,6 +2465,9 @@ export function toolsListSchemaFailure(tools) {
   }
   if (renameConceptTool.outputSchema?.additionalProperties !== false) {
     return 'rename_concept outputSchema root openness drift';
+  }
+  if (outputPropertyAt(renameConceptTool, ['properties', 'uid'])?.pattern !== NODE_UID_PATTERN) {
+    return 'rename_concept outputSchema uid drift';
   }
   for (const propertyName of ['oldSlug', 'newSlug', 'sourcePath', 'targetPath', 'message']) {
     if (outputPropertyAt(renameConceptTool, ['properties', propertyName])?.type !== 'string') {
@@ -2427,6 +2500,9 @@ export function toolsListSchemaFailure(tools) {
     'canConfirm',
     'wouldChange',
     'blockedReasons',
+    'fromUid',
+    'intoUid',
+    'absorbedUids',
     'fromSlug',
     'intoSlug',
     'fromPath',
@@ -2438,6 +2514,15 @@ export function toolsListSchemaFailure(tools) {
   }
   if (mergeConceptsTool.outputSchema?.additionalProperties !== false) {
     return 'merge_concepts outputSchema root openness drift';
+  }
+  for (const propertyName of ['fromUid', 'intoUid']) {
+    if (outputPropertyAt(mergeConceptsTool, ['properties', propertyName])?.pattern !== NODE_UID_PATTERN) {
+      return `merge_concepts outputSchema ${propertyName} drift`;
+    }
+  }
+  const absorbedUidsSchema = outputPropertyAt(mergeConceptsTool, ['properties', 'absorbedUids']);
+  if (absorbedUidsSchema?.type !== 'array' || absorbedUidsSchema.items?.pattern !== NODE_UID_PATTERN) {
+    return 'merge_concepts outputSchema absorbedUids drift';
   }
   for (const propertyName of ['fromSlug', 'intoSlug', 'fromPath', 'message']) {
     if (outputPropertyAt(mergeConceptsTool, ['properties', propertyName])?.type !== 'string') {
@@ -2475,6 +2560,7 @@ export function toolsListSchemaFailure(tools) {
     'canConfirm',
     'wouldChange',
     'blockedReasons',
+    'uid',
     'slug',
     'filePath',
   ])) {
@@ -2482,6 +2568,9 @@ export function toolsListSchemaFailure(tools) {
   }
   if (deleteConceptTool.outputSchema?.additionalProperties !== false) {
     return 'delete_concept outputSchema root openness drift';
+  }
+  if (outputPropertyAt(deleteConceptTool, ['properties', 'uid'])?.pattern !== NODE_UID_PATTERN) {
+    return 'delete_concept outputSchema uid drift';
   }
   for (const propertyName of ['slug', 'filePath', 'message']) {
     if (nonBlankStringSchemaFailure(outputPropertyAt(deleteConceptTool, ['properties', propertyName]))) {
@@ -5013,6 +5102,9 @@ export function listConceptsFailure(parsed) {
     if (typeof node.slug !== 'string' || node.slug.length === 0) {
       return `list_concepts response missing node slug at index ${index}`;
     }
+    if (typeof node.uid !== 'string' || !NODE_UID_RE.test(node.uid)) {
+      return `list_concepts response missing node uid: ${node.slug}`;
+    }
     if (typeof node.kind !== 'string' || node.kind.length === 0) {
       return `list_concepts response missing node kind: ${node.slug}`;
     }
@@ -5065,6 +5157,9 @@ export function getConceptsFailure(parsed) {
     if (!hasNonEmptyString(row.slug)) {
       return `get_concepts response missing success slug at index ${index}`;
     }
+    if (!hasNonEmptyString(row.uid) || !NODE_UID_RE.test(row.uid)) {
+      return `get_concepts response missing success uid at index ${index}`;
+    }
     if (!row.frontmatter || typeof row.frontmatter !== 'object' || Array.isArray(row.frontmatter)) {
       return `get_concepts response missing frontmatter: ${row.slug}`;
     }
@@ -5099,6 +5194,9 @@ export function getConceptFailure(parsed, expectedSlug) {
   }
   if (parsed.slug !== expectedSlug) {
     return `get_concept response slug mismatch — expected ${expectedSlug}, got ${parsed.slug}`;
+  }
+  if (!hasNonEmptyString(parsed.uid) || !NODE_UID_RE.test(parsed.uid)) {
+    return `get_concept response missing uid: ${expectedSlug}`;
   }
   if (!parsed.frontmatter || typeof parsed.frontmatter !== 'object' || Array.isArray(parsed.frontmatter)) {
     return `get_concept response missing frontmatter: ${expectedSlug}`;
@@ -5946,6 +6044,12 @@ export function compileFullArtifactFailure(parsed) {
   if (edgesPaginationFailure) return edgesPaginationFailure;
   const node = parsed.nodes[0];
   if (node && (
+    typeof node.uid !== 'string' ||
+    !NODE_UID_RE.test(node.uid) ||
+    (node.merged_uids != null && (
+      !Array.isArray(node.merged_uids) ||
+      node.merged_uids.some((uid) => typeof uid !== 'string' || !NODE_UID_RE.test(uid))
+    )) ||
     typeof node.slug !== 'string' ||
     typeof node.kind !== 'string' ||
     typeof node.title !== 'string' ||
@@ -6212,6 +6316,49 @@ export function compileIndexesFailure(parsed) {
   for (const [alias, slug] of Object.entries(indexes.aliasToSlug)) {
     if (!alias || typeof slug !== 'string' || !slug) {
       return 'compile_ontology.indexes.aliasToSlug malformed row';
+    }
+  }
+  for (const name of ['uidToSlug', 'slugToUid', 'mergedUidToSlug']) {
+    if (!indexes[name] || typeof indexes[name] !== 'object' || Array.isArray(indexes[name])) {
+      return `compile_ontology.indexes.${name} missing`;
+    }
+  }
+  const primaryUidRows = parsed.nodes.map((node) => [node.uid, node.slug]);
+  if (Object.keys(indexes.uidToSlug).length !== parsed.nodeCount) {
+    return `compile_ontology.indexes.uidToSlug count mismatch — index ${Object.keys(indexes.uidToSlug).length}, nodeCount ${parsed.nodeCount}`;
+  }
+  if (Object.keys(indexes.slugToUid).length !== parsed.nodeCount) {
+    return `compile_ontology.indexes.slugToUid count mismatch — index ${Object.keys(indexes.slugToUid).length}, nodeCount ${parsed.nodeCount}`;
+  }
+  for (const [uid, slug] of Object.entries(indexes.uidToSlug)) {
+    if (!NODE_UID_RE.test(uid) || typeof slug !== 'string' || !slug) {
+      return 'compile_ontology.indexes.uidToSlug malformed row';
+    }
+  }
+  for (const [slug, uid] of Object.entries(indexes.slugToUid)) {
+    if (!slug || typeof uid !== 'string' || !NODE_UID_RE.test(uid)) {
+      return 'compile_ontology.indexes.slugToUid malformed row';
+    }
+  }
+  for (const [uid, slug] of primaryUidRows) {
+    if (indexes.uidToSlug[uid] !== slug || indexes.slugToUid[slug] !== uid) {
+      return `compile_ontology identity indexes mismatch: ${slug}`;
+    }
+  }
+  const historicalUidRows = parsed.nodes.flatMap((node) =>
+    (node.merged_uids || []).map((uid) => [uid, node.slug]),
+  );
+  if (parsed.nodes.length === parsed.nodeCount && Object.keys(indexes.mergedUidToSlug).length !== historicalUidRows.length) {
+    return `compile_ontology.indexes.mergedUidToSlug count mismatch — index ${Object.keys(indexes.mergedUidToSlug).length}, merged_uids ${historicalUidRows.length}`;
+  }
+  for (const [uid, slug] of Object.entries(indexes.mergedUidToSlug)) {
+    if (!NODE_UID_RE.test(uid) || typeof slug !== 'string' || !slug) {
+      return 'compile_ontology.indexes.mergedUidToSlug malformed row';
+    }
+  }
+  for (const [uid, slug] of historicalUidRows) {
+    if (indexes.mergedUidToSlug[uid] !== slug) {
+      return `compile_ontology.indexes.mergedUidToSlug mismatch: ${uid}`;
     }
   }
   const knownSlugs = new Set([

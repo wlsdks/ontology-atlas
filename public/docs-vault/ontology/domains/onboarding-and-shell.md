@@ -1,4 +1,5 @@
 ---
+uid: 465b06f3-67fa-4e94-97c9-593a9a45cc23
 slug: domains/onboarding-and-shell
 kind: domain
 title: "Onboarding, Distribution & App Shell"

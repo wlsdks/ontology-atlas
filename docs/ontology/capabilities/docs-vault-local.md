@@ -1,4 +1,5 @@
 ---
+uid: 2f1761bb-5498-4675-9c45-099709bb6c2b
 slug: capabilities/docs-vault-local
 kind: capability
 title: Local Folder Mounting

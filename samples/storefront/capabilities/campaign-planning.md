@@ -1,4 +1,5 @@
 ---
+uid: f2630d86-4986-4320-b072-22a538c035cd
 slug: capabilities/campaign-planning
 kind: capability
 title: Campaign Planning

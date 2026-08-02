@@ -1,4 +1,5 @@
 ---
+uid: 6a38a082-73c5-4edb-9750-06dbef8ea04d
 slug: capabilities/stock-tracking
 kind: capability
 title: Stock Level Tracking

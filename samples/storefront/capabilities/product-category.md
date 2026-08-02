@@ -1,4 +1,5 @@
 ---
+uid: 0a8baeac-6e84-46cc-9c00-e9f53c720c7a
 slug: capabilities/product-category
 kind: capability
 title: Category Management

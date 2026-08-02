@@ -14,6 +14,7 @@ import type { OntologyTreeNode } from '@/shared/lib/ontology-tree';
  */
 
 export interface RealmBlockDoc {
+  uid: string;
   slug: string;
   kind: string;
   title: string;
@@ -51,7 +52,9 @@ export function selectRealmBlockDocs(
     if (!id || !subtreeIds.has(id)) continue;
     if (picked.has(doc.slug)) continue;
     const kind = (doc.frontmatter.kind as string).trim();
+    const uid = typeof doc.frontmatter.uid === 'string' ? doc.frontmatter.uid.trim() : '';
     picked.set(doc.slug, {
+      uid,
       slug: doc.slug,
       kind,
       title: doc.title?.trim() || doc.slug.split('/').pop() || doc.slug,

@@ -1,7 +1,8 @@
 import { writeFileSync, mkdirSync, existsSync, readFileSync, realpathSync } from 'node:fs';
 import { dirname, resolve, sep } from 'node:path';
 import { buildMarkdown, parseFrontmatter } from './parse-frontmatter.mjs';
-import { flatSlugIssue } from './schema.mjs';
+import { flatSlugIssue, inspectMergedUids, nodeUidIssue } from './schema.mjs';
+import { walkMd, pathToSlug } from './walk-vault.mjs';
 
 /**
  * vault-relative slug → file path. AI agent / prompt injection 으로 악의적인
@@ -72,10 +73,42 @@ export function writeDoc(rootPath, slug, { frontmatter, body = '' }) {
   // flatSlugIssue 가 단일 규칙). 경로형 슬러그는 정체성 충돌이라 hard error.
   const slugIssue = flatSlugIssue(frontmatter?.kind, slug);
   if (slugIssue) throw new Error(slugIssue);
+  assertNodeIdentity(rootPath, slug, frontmatter);
   mkdirSync(dirname(filePath), { recursive: true });
   const md = buildMarkdown({ frontmatter, body });
   writeFileSync(filePath, md, 'utf-8');
   return filePath;
+}
+
+function identityClaims(frontmatter) {
+  const primary = typeof frontmatter?.uid === 'string' ? frontmatter.uid : '';
+  const merged = Array.isArray(frontmatter?.merged_uids) ? frontmatter.merged_uids : [];
+  return [...new Set([primary, ...merged].filter(Boolean))];
+}
+
+function assertNodeIdentity(rootPath, slug, frontmatter) {
+  const kind = frontmatter?.kind;
+  if (typeof kind !== 'string' || !kind.trim()) return;
+  const uidIssue = nodeUidIssue(frontmatter.uid);
+  if (uidIssue) throw new Error(uidIssue);
+  const merged = inspectMergedUids(frontmatter.uid, frontmatter.merged_uids);
+  if (merged.invalidIssue) throw new Error(merged.invalidIssue);
+  if (merged.nonCanonical) {
+    throw new Error('`merged_uids:` must be a deduplicated, ascending canonical UUIDv4 set.');
+  }
+  const claims = new Set(identityClaims(frontmatter));
+  for (const file of walkMd(rootPath)) {
+    const existingSlug = pathToSlug(rootPath, file);
+    if (existingSlug === slug) continue;
+    const { frontmatter: existing } = parseFrontmatter(readFileSync(file, 'utf-8'));
+    for (const claimed of identityClaims(existing)) {
+      if (!claims.has(claimed)) continue;
+      throw new Error(
+        `UID collision: ${claimed} already belongs to "${existingSlug}". ` +
+          'Create a new node with a fresh UID instead of copying an identity.',
+      );
+    }
+  }
 }
 
 /**

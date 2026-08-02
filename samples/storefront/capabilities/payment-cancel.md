@@ -1,4 +1,5 @@
 ---
+uid: 2743e491-ae47-4ed5-bc6f-d2ef8d369d73
 slug: capabilities/payment-cancel
 kind: capability
 title: Payment Void

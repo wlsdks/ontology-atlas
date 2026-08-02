@@ -1,4 +1,5 @@
 ---
+uid: 7dbe14e4-e368-441e-b021-e0dcdb88f831
 slug: capabilities/product-search
 kind: capability
 title: Product Search

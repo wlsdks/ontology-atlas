@@ -1,4 +1,5 @@
 ---
+uid: 0d97f037-d26a-446a-a7de-eef4706c40e3
 slug: elements/search-index
 kind: element
 title: Search Index

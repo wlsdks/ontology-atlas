@@ -1,4 +1,5 @@
 ---
+uid: 2a90d185-d775-47c0-811e-3286cf19d4b3
 slug: elements/bank-transfer
 kind: element
 title: Bank Transfer

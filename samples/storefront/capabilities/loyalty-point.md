@@ -1,4 +1,5 @@
 ---
+uid: 4f1e5f2c-be53-4964-a739-569801cd3d56
 slug: capabilities/loyalty-point
 kind: capability
 title: Loyalty Points

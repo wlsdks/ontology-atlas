@@ -1,4 +1,5 @@
 ---
+uid: bbc38ee5-271e-4396-bd1d-769abdc570c4
 slug: elements/card-payment
 kind: element
 title: Card Payment

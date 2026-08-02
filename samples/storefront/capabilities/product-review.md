@@ -1,4 +1,5 @@
 ---
+uid: 6dc1f627-80e0-4cbc-9ad4-153aa145d7f0
 slug: capabilities/product-review
 kind: capability
 title: Product Reviews

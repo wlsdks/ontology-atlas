@@ -1,4 +1,5 @@
 ---
+uid: f63e231d-819b-4bf8-a7b7-e715f629efcb
 slug: domains/project-portfolio
 kind: domain
 title: Project Portfolio Management

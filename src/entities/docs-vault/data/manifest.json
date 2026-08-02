@@ -173,6 +173,11 @@
         },
         {
           "depth": 3,
+          "text": "Dual node identity",
+          "slug": "dual-node-identity"
+        },
+        {
+          "depth": 3,
           "text": "Vault mode (user picked a markdown folder)",
           "slug": "vault-mode-user-picked-a-markdown-folder"
         },
@@ -223,7 +228,7 @@
         }
       ],
       "excerpt": "2026-07-27 update — the current architecture is a local-first, git-backed meaning layer shared by people and AI coding agents. Round 10 permanently removed all auth + cloud data surfaces; the current route model converges browsing on Topology, writing on Workshop, maintenance on five-question Insights, and keeps old on",
-      "wordCount": 2818,
+      "wordCount": 2914,
       "updatedAt": "2026-08-02",
       "linksOut": [
         "../AGENTS",
@@ -3885,6 +3890,11 @@
         },
         {
           "depth": 2,
+          "text": "2026-08-02 — 노드에 영구 UID와 읽을 수 있는 slug를 같이 둔다",
+          "slug": "2026-08-02-노드에-영구-uid와-읽을-수-있는-slug를-같이-둔다"
+        },
+        {
+          "depth": 2,
           "text": "2026-08-02 — 지도 패널이 내부 용어 대신 사용자가 얻는 결과를 말한다",
           "slug": "2026-08-02-지도-패널이-내부-용어-대신-사용자가-얻는-결과를-말한다"
         },
@@ -6064,8 +6074,8 @@
           "slug": "2026-07-26-첫-만남은-쇼핑몰부터"
         }
       ],
-      "excerpt": "Major change history. Code commit messages answer why; this file answers when / which surface changed. Focused on user-visible changes, not PR-level granularity. Newest at the top. Entries stay date-based; the app version reached v1.0.0 on 2026-07-27, so a release tag now carries the semver promise instead. 프로젝트 패널의 AI",
-      "wordCount": 63561,
+      "excerpt": "Major change history. Code commit messages answer why; this file answers when / which surface changed. Focused on user-visible changes, not PR-level granularity. Newest at the top. Entries stay date-based; the app version reached v1.0.0 on 2026-07-27, so a release tag now carries the semver promise instead. 모든 온톨로지 노드에",
+      "wordCount": 63658,
       "updatedAt": "2026-08-02",
       "linksOut": [
         "audits/CASE-STUDY-AGENTS-MD-DRIFT",
@@ -6097,13 +6107,28 @@
         },
         {
           "depth": 2,
+          "text": "2026-08-02 — UID는 노드의 영구 정체성이고 slug는 사람이 읽는 현재 주소다",
+          "slug": "2026-08-02-uid는-노드의-영구-정체성이고-slug는-사람이-읽는-현재-주소다"
+        },
+        {
+          "depth": 3,
+          "text": "먼저 — 세 줄",
+          "slug": "먼저-세-줄"
+        },
+        {
+          "depth": 2,
+          "text": "PO Council Verdict — immutable node UID + readable slug",
+          "slug": "po-council-verdict-immutable-node-uid-readable-slug"
+        },
+        {
+          "depth": 2,
           "text": "2026-08-02 — 프로젝트 inspector는 내부 인계어 대신 사용자가 얻는 결과를 말한다",
           "slug": "2026-08-02-프로젝트-inspector는-내부-인계어-대신-사용자가-얻는-결과를-말한다"
         },
         {
           "depth": 3,
           "text": "먼저 — 세 줄",
-          "slug": "먼저-세-줄"
+          "slug": "먼저-세-줄-2"
         },
         {
           "depth": 2,
@@ -6557,7 +6582,7 @@
         }
       ],
       "excerpt": "이 파일은 결정과 그때 진 반대 의견을 남긴다. docs/CHANGELOG.md 는 무엇이 언제 바뀌었나를 답하고, 이 파일은 왜 그렇게 정했고, 무엇을 걸었나를 답한다. 최신이 위. 기록은 덧붙이기만 한다 — 지난 기록을 고치지 않는다. 판단이 바뀌었으면 새 기록을 쓰고 옛 기록을 뒤집힘 으로 표시한다. 틀린 기록도 자산이다. 1. 소집 전에 읽는다. 카운슬을 열기 전(그리고 단독 PO 패스를 쓰기 전) 같은 표면 · 같은 질문에 대한 선행 결정이 있는지 먼저 본다. 있으면 새 패스는 그것을 ① 여전히 유효하다고 인용하거나 ② 명시적으로 뒤집는다. 조용히 다시 결정",
-      "wordCount": 45047,
+      "wordCount": 45753,
       "updatedAt": "2026-08-02",
       "linksOut": [
         "slug"
@@ -8052,7 +8077,7 @@
         }
       ],
       "excerpt": "Complete inventory of features users can actually use right now. Last updated: 2026-08-02 (현재 route와 installed-app 계약 및 project meaning receipt 계약 재검증 — /ontology은 /topology?index=expanded, /ontology/edit은 /ontology/studio 호환 redirect이며, Insights는 할 일·구성·연결·경계·신선도 5개 질문 탭의 maintenance board다. desktop static smoke와 inst",
-      "wordCount": 17090,
+      "wordCount": 17086,
       "updatedAt": "2026-08-02",
       "linksOut": [
         "slug",
@@ -8224,6 +8249,11 @@
           "slug": "연결되면-무엇이-달라지나"
         },
         {
+          "depth": 3,
+          "text": "에이전트가 UID와 slug를 쓰는 법",
+          "slug": "에이전트가-uid와-slug를-쓰는-법"
+        },
+        {
           "depth": 2,
           "text": "첫 대화 — 무엇을 물어볼까",
           "slug": "첫-대화-무엇을-물어볼까"
@@ -8240,7 +8270,7 @@
         }
       ],
       "excerpt": "앱의 「에이전트 연결」 버튼 한 번이면 됩니다. 지금 쓰는 도구를 고르면 그 도구의 설정 파일에 볼트의 실제 절대 경로가 박힌 설정을 써 줍니다. · 도구 · 쓰는 파일 · Claude Code · .mcp.json · Codex · .codex/config.toml · Cursor · .cursor/mcp.json · Antigravity · .agents/mcpconfig.json · 버튼 하나가 파일 하나를 씁니다 — 고르지 않은 도구의 파일은 만들지 않습니다. 여기서 한 번 헷갈리면 나머지가 다 이상해집니다. 에이전트는 Atlas 앱에 붙는 게 아니라 폴더에 ",
-      "wordCount": 753,
+      "wordCount": 828,
       "updatedAt": "2026-08-02",
       "linksOut": []
     },
@@ -8419,7 +8449,7 @@
         }
       ],
       "excerpt": "노드가 스무 개일 때는 아무 문제도 없습니다. 문제는 이백 개가 되고, 세 사람이 같이 쓰고, 에이전트가 매일 몇 개씩 더할 때 나타납니다. 같은 걸 두 번 만든 것 같은데 어디 있지? 이 이름 바꾸면 뭐가 깨지나? 이제 뭘 손봐야 하는지 어떻게 아나? 이 장은 그 뒤의 일입니다. 볼트가 자라면서 생기는 1번 실패 모드는 같은 개념을 두 번 만드는 것입니다. 「사용자 인증」과 「로그인 처리」가 따로 살면 관계가 둘로 갈리고, 어느 쪽을 봐야 할지 아무도 모르게 됩니다. 만들기 전에 물어보십시오. 이미 있으면 새로 만들지 말고 있는 것을 고칩니다. MCP 로 붙은 에이",
-      "wordCount": 889,
+      "wordCount": 968,
       "updatedAt": "2026-08-02",
       "linksOut": []
     },
@@ -8802,6 +8832,11 @@
         },
         {
           "depth": 2,
+          "text": "uid와 slug — 영구 정체성과 현재 주소",
+          "slug": "uid와-slug-영구-정체성과-현재-주소"
+        },
+        {
+          "depth": 2,
           "text": "kind — 그 파일이 무엇인지",
           "slug": "kind-그-파일이-무엇인지"
         },
@@ -8826,9 +8861,9 @@
           "slug": "진실원은-파일입니다"
         }
       ],
-      "excerpt": "볼트는 그냥 마크다운 폴더입니다. 특별한 것은 각 파일 맨 위의 frontmatter 뿐입니다. kind 가 그 파일이 무엇인지 정합니다. 위에서 아래로 갈수록 구체적입니다. · kind · 뜻 · 예 · project · 최상위 산출물 · auth-platform · domain · 기능 묶음 · auth, billing · capability · 하나의 일관된 행동 · token-issue · element · 구체적인 조각 (파일·라이브러리·스키마) · jwt-signer.ts · document · 그래프에 매인 설명 문서 · 이 가이드 · 관계는 contai",
-      "wordCount": 267,
-      "updatedAt": "2026-07-31",
+      "excerpt": "볼트는 그냥 마크다운 폴더입니다. 특별한 것은 각 파일 맨 위의 frontmatter 뿐입니다. 모든 노드는 두 식별자를 같이 가집니다. · 필드 · 의미 · 바꾸어도 되나 · 주로 쓰는 곳 · uid · 그 노드 자체의 영구 정체성 · 안 됨 · MCP 정확 조회·핸드오프·출처·내보내기 URN · slug · 사람이 읽는 현재 주소 · rename으로 바꿀 수 있음 · 파일 경로·관계값·URL·CLI 그래프 명령 · title · 사람에게 보이는 이름 · 바꿀 수 있음 · 화면·검색·설명 · uid는 작성기가 노드를 만들 때 한 번만 발급하는 lowercase UU",
+      "wordCount": 462,
+      "updatedAt": "2026-08-02",
       "linksOut": []
     },
     {
@@ -9432,6 +9467,7 @@
       "title": "App Auto-Update",
       "tags": [],
       "frontmatter": {
+        "uid": "74c21391-8605-46a0-b880-e19cd30c65e4",
         "slug": "capabilities/app-update",
         "kind": "capability",
         "title": "App Auto-Update",
@@ -9468,6 +9504,7 @@
       "title": "CLI Developer Entry (52 commands — vault + MCP verify + project indexing + relationship explanation + bounded path enumeration + transitive reachability + relation preflight + commit preflight + git snapshot + agent handoff + growth/maintenance queue + graph deep dive)",
       "tags": [],
       "frontmatter": {
+        "uid": "dce02204-0454-4a2d-8db3-68d669065489",
         "slug": "capabilities/cli-developer-entry",
         "kind": "capability",
         "title": "CLI Developer Entry (52 commands — vault + MCP verify + project indexing + relationship explanation + bounded path enumeration + transitive reachability + relation preflight + commit preflight + git snapshot + agent handoff + growth/maintenance queue + graph deep dive)",
@@ -9520,7 +9557,7 @@
         }
       ],
       "excerpt": "R12 (2026-05-04) 에 도입된 developer + agent 운영 진입점. R14 에서 import, R15 follow-up 에서 graph-level 5 명령, R16-R17 에서 analyze / infer-imports, R+ cycle 에서 path / explain / all-paths / reachability / orphans + 두 --apply 플래그 + bootstrap 합본 명령, compile, growth, maintenance, graph DB-style scan 인 match-nodes / match-edges, domain ",
-      "wordCount": 10697,
+      "wordCount": 10727,
       "updatedAt": "2026-08-02",
       "linksOut": []
     },
@@ -9530,6 +9567,7 @@
       "title": "Data Source Mode Branching",
       "tags": [],
       "frontmatter": {
+        "uid": "5cd03c77-f1ed-448f-bb17-c4c3c804418a",
         "slug": "capabilities/data-source-mode",
         "kind": "capability",
         "title": "Data Source Mode Branching",
@@ -9566,6 +9604,7 @@
       "title": "Desktop Download Decision",
       "tags": [],
       "frontmatter": {
+        "uid": "de739ff1-9bfd-49e3-ac86-54427a5f5840",
         "slug": "capabilities/desktop-download-decision",
         "kind": "capability",
         "title": "Desktop Download Decision",
@@ -9594,7 +9633,7 @@
       ],
       "excerpt": "플랫폼별 설치 파일과 신뢰 상태를 한 자리에서 비교하고, 설치가 막히면 웹으로 계속할 수 있게 하는 능력. macOS는 서명·공증된 Apple Silicon/Intel DMG를, Windows는 SmartScreen 위험을 먼저 밝힌 미서명 x64 베타를 제시한다. src/views/download (플랫폼 그룹·릴리스 사실·경고·CTA) .github/workflows/release-macos.yml (macOS + Windows 공개 릴리스 검증) .github/workflows/windows-beta-check.yml (비밀 키 없는 Windows PR 네이티브",
       "wordCount": 75,
-      "updatedAt": "2026-08-01",
+      "updatedAt": "2026-08-02",
       "linksOut": []
     },
     {
@@ -9603,6 +9642,7 @@
       "title": "Local Folder Mounting",
       "tags": [],
       "frontmatter": {
+        "uid": "2f1761bb-5498-4675-9c45-099709bb6c2b",
         "slug": "capabilities/docs-vault-local",
         "kind": "capability",
         "title": "Local Folder Mounting",
@@ -9634,7 +9674,7 @@
       ],
       "excerpt": "File System Access API로 로컬 마크다운 폴더를 선택·마운트해 실시간 데이터소스로 삼는 능력. src/features/docs-vault-local (구현 증거) high (0.9) — local-first 원칙 문서와 정합",
       "wordCount": 29,
-      "updatedAt": "2026-08-01",
+      "updatedAt": "2026-08-02",
       "linksOut": []
     },
     {
@@ -9643,6 +9683,7 @@
       "title": "First-Run Starter Vault",
       "tags": [],
       "frontmatter": {
+        "uid": "1560e52a-f6d8-4715-8404-9143efee388c",
         "slug": "capabilities/first-run-starter",
         "kind": "capability",
         "title": "First-Run Starter Vault",
@@ -9685,6 +9726,7 @@
       "title": "Guided Tour",
       "tags": [],
       "frontmatter": {
+        "uid": "f9d7c89e-dff5-4ce7-b2b4-89f5ca52b6d0",
         "slug": "capabilities/guided-tour",
         "kind": "capability",
         "title": "Guided Tour",
@@ -9721,6 +9763,7 @@
       "title": "Locale Switching",
       "tags": [],
       "frontmatter": {
+        "uid": "3585d1e9-a0c1-4e25-ad02-ba63d71156f2",
         "slug": "capabilities/locale-switch",
         "kind": "capability",
         "title": "Locale Switching",
@@ -9757,6 +9800,7 @@
       "title": "MCP Server (33 tools)",
       "tags": [],
       "frontmatter": {
+        "uid": "895c062c-28f0-4564-a6a5-0ef2a6b56e51",
         "slug": "capabilities/mcp-server",
         "kind": "capability",
         "title": "MCP Server (33 tools)",
@@ -9782,8 +9826,8 @@
           "slug": "구현-근거"
         }
       ],
-      "excerpt": "@modelcontextprotocol/server v2 기반 stdio JSON-RPC 서버. 33 도구 노출 (read 19 + write 14). 런타임은 Node 24 계열만 지원한다: · 도구 · 동작 · connectioninfo · active vault/repo root와 해석 출처, 서버 버전, read-only 여부, 실제 광고 중인 tool count/name/hash를 반환해 잘못된 폴더와 stale client toolset을 막는 첫 호출 proof. 명시적 OATLASREPOROOT가 없으면 active vault의 Git top-level",
-      "wordCount": 13916,
+      "excerpt": "@modelcontextprotocol/server v2 기반 stdio JSON-RPC 서버. 33 도구 노출 (read 19 + write 14). 런타임은 Node 24 계열만 지원한다: 모든 노드 응답은 영구 uid와 현재 주소 slug를 같이 나른다. exact read는 둘 중 하나로 조회하고, compiler는 uidToSlug / slugToUid / mergedUidToSlug를 구축한다. 관계·URL·graph edge는 slug를 유지하며 JSON-LD·GraphML 외부 정체성만 urn:uuid:<uid를 쓴다. rename/reclassify는",
+      "wordCount": 13935,
       "updatedAt": "2026-08-02",
       "linksOut": []
     },
@@ -9793,6 +9837,7 @@
       "title": "Studio Relation Blocks",
       "tags": [],
       "frontmatter": {
+        "uid": "fa08540f-a6c0-4a13-8dd9-b43df420534f",
         "slug": "capabilities/ontology-blocks",
         "kind": "capability",
         "title": "Studio Relation Blocks",
@@ -9819,9 +9864,9 @@
           "slug": "확신도"
         }
       ],
-      "excerpt": "Studio의 나침반 방위 관계 블록(UP=isa, DOWN=contains, RIGHT=depends, LEFT=relates) — 채우면 실제 frontmatter 관계를 쓴다. src/features/ontology-blocks (구현 증거) AGENTS.md — Routes (\"/ontology/studio is the write surface — relation types at fixed compass bearings\") high (0.9)",
-      "wordCount": 42,
-      "updatedAt": "2026-08-01",
+      "excerpt": "Studio의 나침반 방위 관계 블록(UP=isa, DOWN=contains, RIGHT=depends, LEFT=relates) — 채우면 실제 frontmatter 관계를 쓴다. Ontology Block manifest v2는 노드를 {uid, urn:uuid:<uid, slug}로 보존한다. UID가 없는 legacy v1/slug-only manifest를 영구 identity로 위장하지 않고 거부하며, 마크다운 블록 import fallback은 그대로 남겨 두었다. src/features/ontology-blocks (구현 증거) AGENTS.md — R",
+      "wordCount": 68,
+      "updatedAt": "2026-08-02",
       "linksOut": []
     },
     {
@@ -9830,6 +9875,7 @@
       "title": "Active Project Resolution",
       "tags": [],
       "frontmatter": {
+        "uid": "0563e7ee-3818-4bbd-97fa-4035ad43a03d",
         "slug": "capabilities/project-data-source",
         "kind": "capability",
         "title": "Active Project Resolution",
@@ -9858,7 +9904,7 @@
       ],
       "excerpt": "선택된 볼트 안에서 현재 활성 프로젝트가 무엇인지 판정하는 능력. src/features/project-data-source (구현 증거만) low-medium (0.6) — 폴더 증거만",
       "wordCount": 24,
-      "updatedAt": "2026-08-01",
+      "updatedAt": "2026-08-02",
       "linksOut": []
     },
     {
@@ -9867,6 +9913,7 @@
       "title": "Project Full Edit",
       "tags": [],
       "frontmatter": {
+        "uid": "b8a4b1ad-616b-4230-b206-9efa6292d217",
         "slug": "capabilities/project-edit",
         "kind": "capability",
         "title": "Project Full Edit",
@@ -9895,7 +9942,7 @@
       ],
       "excerpt": "project 노드의 필드와 컨테인먼트를 전체 편집하는 능력. src/features/project-edit (구현 증거만) low-medium (0.6)",
       "wordCount": 19,
-      "updatedAt": "2026-08-01",
+      "updatedAt": "2026-08-02",
       "linksOut": []
     },
     {
@@ -9904,6 +9951,7 @@
       "title": "Project Quick Edit",
       "tags": [],
       "frontmatter": {
+        "uid": "6b2e10a4-b30f-405a-a02f-90ccc4d471a0",
         "slug": "capabilities/project-quick-edit",
         "kind": "capability",
         "title": "Project Quick Edit",
@@ -9940,6 +9988,7 @@
       "title": "Project Sharing",
       "tags": [],
       "frontmatter": {
+        "uid": "034ea9b5-5381-46c3-ae91-b1dc6ad8b184",
         "slug": "capabilities/project-share",
         "kind": "capability",
         "title": "Project Sharing",
@@ -9976,6 +10025,7 @@
       "title": "Project Source Evidence Receipt",
       "tags": [],
       "frontmatter": {
+        "uid": "b4af8e2b-05f1-4931-9544-f8a6aae4aef7",
         "slug": "capabilities/project-source-evidence",
         "kind": "capability",
         "title": "Project Source Evidence Receipt",
@@ -10013,6 +10063,7 @@
       "title": "Kind Taxonomy Management",
       "tags": [],
       "frontmatter": {
+        "uid": "84789e29-bdf1-49ad-89d3-a25593009741",
         "slug": "capabilities/taxonomy",
         "kind": "capability",
         "title": "Kind Taxonomy Management",
@@ -10042,7 +10093,7 @@
       ],
       "excerpt": "project/domain/capability/element/document 라는 고정 kind/category 분류 체계를 관리하는 능력. src/features/taxonomy (구현 증거만 — 업무 서술 직접 인용 없음) low-medium (0.6) — 폴더 증거만, 업무 의미는 추론. 재검토 권장",
       "wordCount": 34,
-      "updatedAt": "2026-08-01",
+      "updatedAt": "2026-08-02",
       "linksOut": []
     },
     {
@@ -10051,6 +10102,7 @@
       "title": "Topology Map Rendering & Search",
       "tags": [],
       "frontmatter": {
+        "uid": "c183b392-62bd-455f-a310-c541f49e7c38",
         "slug": "capabilities/topology-browsing",
         "kind": "capability",
         "title": "Topology Map Rendering & Search",
@@ -10092,6 +10144,7 @@
       "title": "Agent Connect & Vault Access",
       "tags": [],
       "frontmatter": {
+        "uid": "a81da7e2-8ff6-46c9-a0aa-27b2948bc7b3",
         "slug": "capabilities/vault-agent",
         "kind": "capability",
         "title": "Agent Connect & Vault Access",
@@ -10130,6 +10183,7 @@
       "title": "Vault Ontology Schema Authoring",
       "tags": [],
       "frontmatter": {
+        "uid": "1ee91a34-14c2-4bdd-bda8-84910555939b",
         "slug": "capabilities/vault-ontology",
         "kind": "capability",
         "title": "Vault Ontology Schema Authoring",
@@ -10159,7 +10213,7 @@
       ],
       "excerpt": "kind별 frontmatter 형태와 관계 타입 등 온톨로지 스키마를 저작·정규화하는 능력. src/features/vault-ontology (구현 증거) AGENTS.md — Frontmatter shape per kind (R14) medium-high (0.85)",
       "wordCount": 30,
-      "updatedAt": "2026-08-01",
+      "updatedAt": "2026-08-02",
       "linksOut": []
     },
     {
@@ -10168,6 +10222,7 @@
       "title": "Sample Vault Demo Source",
       "tags": [],
       "frontmatter": {
+        "uid": "9d0c5be0-e2dc-4487-8b52-1db955939352",
         "slug": "capabilities/vault-sample-source",
         "kind": "capability",
         "title": "Sample Vault Demo Source",
@@ -10204,6 +10259,7 @@
       "title": "AI Agent Integration",
       "tags": [],
       "frontmatter": {
+        "uid": "0f1364a5-7d0f-4fa5-b913-454d47b33cca",
         "slug": "domains/agent-integration",
         "kind": "domain",
         "title": "AI Agent Integration",
@@ -10258,6 +10314,7 @@
       "title": "Graph Modeling & Ontology Schema",
       "tags": [],
       "frontmatter": {
+        "uid": "c42d7066-a77e-45f5-89bb-e78a4adeb660",
         "slug": "domains/graph-modeling",
         "kind": "domain",
         "title": "Graph Modeling & Ontology Schema",
@@ -10304,7 +10361,7 @@
       ],
       "excerpt": "markdown frontmatter가 인코딩하는 타입 kind/relation 모델(project/domain/capability/element, isa/contains/depends/relates)을 정의하고, 이를 결정론적 그래프로 컴파일·쿼리한다. README.md — \"Because the kinds and relation types are a small fixed set, the folder is not just readable — it is computable.\" docs/ARCHITECTURE.md — \"compileontology turns markd",
       "wordCount": 110,
-      "updatedAt": "2026-08-01",
+      "updatedAt": "2026-08-02",
       "linksOut": []
     },
     {
@@ -10313,6 +10370,7 @@
       "title": "Local Vault & Data Source Management",
       "tags": [],
       "frontmatter": {
+        "uid": "48bf1a02-e1f8-4b8c-b06e-d6f261466109",
         "slug": "domains/local-vault-management",
         "kind": "domain",
         "title": "Local Vault & Data Source Management",
@@ -10358,7 +10416,7 @@
       ],
       "excerpt": "로컬 디스크의 마크다운 폴더를 고르고(File System Access API), git을 진실원으로 쓰며, 데모용 샘플 볼트를 제공하는 로컬-퍼스트·백엔드 0 데이터소스 계층. README.md — \"A folder of Markdown files. Each file's frontmatter declares what it is... That is the whole database.\" docs/ARCHITECTURE.md — \"There is no backend, no server database, no auth provider. The user's markdown ",
       "wordCount": 110,
-      "updatedAt": "2026-08-01",
+      "updatedAt": "2026-08-02",
       "linksOut": []
     },
     {
@@ -10367,6 +10425,7 @@
       "title": "Onboarding, Distribution & App Shell",
       "tags": [],
       "frontmatter": {
+        "uid": "465b06f3-67fa-4e94-97c9-593a9a45cc23",
         "slug": "domains/onboarding-and-shell",
         "kind": "domain",
         "title": "Onboarding, Distribution & App Shell",
@@ -10418,7 +10477,7 @@
       ],
       "excerpt": "공유 링크 → 설치된 앱 → 연결까지의 첫 5분 경로(다운로드 결정, 첫 실행 투어, 로케일, 자동 업데이트)와 그 주위의 상시 내비게이션 셸. README.md — \"One download installs both surfaces. The macOS app carries a compiled MCP server inside its own bundle.\" AGENTS.md — Routes (\"/ is decided by who is asking\", \"Seventeen routes, all [locale] prefixed by next-intl\") 포함: 첫 실행, 가이",
       "wordCount": 97,
-      "updatedAt": "2026-08-01",
+      "updatedAt": "2026-08-02",
       "linksOut": []
     },
     {
@@ -10427,6 +10486,7 @@
       "title": "Project Portfolio Management",
       "tags": [],
       "frontmatter": {
+        "uid": "f63e231d-819b-4bf8-a7b7-e715f629efcb",
         "slug": "domains/project-portfolio",
         "kind": "domain",
         "title": "Project Portfolio Management",
@@ -10480,6 +10540,7 @@
       "title": "Topology Map Navigation",
       "tags": [],
       "frontmatter": {
+        "uid": "1d2e6601-19af-4547-9e3b-bddf98ce9a77",
         "slug": "domains/topology-navigation",
         "kind": "domain",
         "title": "Topology Map Navigation",
@@ -10527,7 +10588,7 @@
       ],
       "excerpt": "canvas-2D 그래프 브라우징 표면(지도·검색·인덱스 패널) — 볼트 전체를 시각적으로 탐색하는 제품의 1차 진입 경로. docs/ARCHITECTURE.md — \"the current route model converges browsing on Topology, writing on Workshop, maintenance on five-question Insights\" (risky-citation 경고 — AGENTS.md와 함께 인용하여 상호 검증) AGENTS.md — Routes (\"/topology is the map's address, not /\") 포함",
       "wordCount": 84,
-      "updatedAt": "2026-08-01",
+      "updatedAt": "2026-08-02",
       "linksOut": []
     },
     {
@@ -10536,6 +10597,7 @@
       "title": "Agent Connect",
       "tags": [],
       "frontmatter": {
+        "uid": "981cd7f6-506a-4b2b-b62c-cd56896e81b0",
         "slug": "elements/agent-connect",
         "kind": "element",
         "title": "Agent Connect",
@@ -10546,7 +10608,7 @@
       "headings": [],
       "excerpt": "앱 내 AI 에이전트 connect 플로우 위젯. capabilities/vault-agent 의 구현 증거.",
       "wordCount": 11,
-      "updatedAt": "2026-08-01",
+      "updatedAt": "2026-08-02",
       "linksOut": []
     },
     {
@@ -10555,6 +10617,7 @@
       "title": "App Nav Rail",
       "tags": [],
       "frontmatter": {
+        "uid": "4b0891b9-2ab2-4c7b-a8b9-1f37b59508c6",
         "slug": "elements/app-nav-rail",
         "kind": "element",
         "title": "App Nav Rail",
@@ -10565,7 +10628,7 @@
       "headings": [],
       "excerpt": "앱 내비게이션 레일 위젯.",
       "wordCount": 4,
-      "updatedAt": "2026-08-01",
+      "updatedAt": "2026-08-02",
       "linksOut": []
     },
     {
@@ -10574,6 +10637,7 @@
       "title": "App Settings Menu",
       "tags": [],
       "frontmatter": {
+        "uid": "3b3f8e42-62a7-43ec-8371-20815fa2851b",
         "slug": "elements/app-settings-menu",
         "kind": "element",
         "title": "App Settings Menu",
@@ -10584,7 +10648,7 @@
       "headings": [],
       "excerpt": "앱 설정 메뉴 위젯.",
       "wordCount": 4,
-      "updatedAt": "2026-08-01",
+      "updatedAt": "2026-08-02",
       "linksOut": []
     },
     {
@@ -10593,6 +10657,7 @@
       "title": "Atlas Git Panel",
       "tags": [],
       "frontmatter": {
+        "uid": "2aab69c2-c4c9-4446-bb37-f48457a00fd0",
         "slug": "elements/atlas-git-panel",
         "kind": "element",
         "title": "Atlas Git Panel",
@@ -10603,7 +10668,7 @@
       "headings": [],
       "excerpt": "볼트의 git 상태/스냅샷을 보여주는 패널 위젯.",
       "wordCount": 6,
-      "updatedAt": "2026-08-01",
+      "updatedAt": "2026-08-02",
       "linksOut": []
     },
     {
@@ -10612,6 +10677,7 @@
       "title": "Bottom Tab Bar",
       "tags": [],
       "frontmatter": {
+        "uid": "ad3f50c1-6bf9-4b4b-a1f5-b26483149940",
         "slug": "elements/bottom-tab-bar",
         "kind": "element",
         "title": "Bottom Tab Bar",
@@ -10622,7 +10688,7 @@
       "headings": [],
       "excerpt": "모바일/웹 하단 탭 네비게이션 위젯.",
       "wordCount": 5,
-      "updatedAt": "2026-08-01",
+      "updatedAt": "2026-08-02",
       "linksOut": []
     },
     {
@@ -10631,6 +10697,7 @@
       "title": "Category",
       "tags": [],
       "frontmatter": {
+        "uid": "8d195cf8-8a8c-4166-94a8-fa5034cb1e8c",
         "slug": "elements/category",
         "kind": "element",
         "title": "Category",
@@ -10641,7 +10708,7 @@
       "headings": [],
       "excerpt": "kind/category 분류 데이터 엔튰티. capabilities/taxonomy 의 구현 증거.",
       "wordCount": 8,
-      "updatedAt": "2026-08-01",
+      "updatedAt": "2026-08-02",
       "linksOut": []
     },
     {
@@ -10650,6 +10717,7 @@
       "title": "Docs Quick Drawer",
       "tags": [],
       "frontmatter": {
+        "uid": "e79cc4aa-c895-4788-b62c-2ce85a35185a",
         "slug": "elements/docs-quick-drawer",
         "kind": "element",
         "title": "Docs Quick Drawer",
@@ -10660,7 +10728,7 @@
       "headings": [],
       "excerpt": "문서 빠른 접근 서랑 위젯.",
       "wordCount": 5,
-      "updatedAt": "2026-08-01",
+      "updatedAt": "2026-08-02",
       "linksOut": []
     },
     {
@@ -10669,6 +10737,7 @@
       "title": "Docs Vault (entity)",
       "tags": [],
       "frontmatter": {
+        "uid": "ef8e3784-815c-4201-ad2e-f8d799af737a",
         "slug": "elements/docs-vault-entity",
         "kind": "element",
         "title": "Docs Vault (entity)",
@@ -10679,7 +10748,7 @@
       "headings": [],
       "excerpt": "볼트 데이터 모델 엔튰티. capabilities/docs-vault-local 의 구현 증거.",
       "wordCount": 8,
-      "updatedAt": "2026-08-01",
+      "updatedAt": "2026-08-02",
       "linksOut": []
     },
     {
@@ -10688,6 +10757,7 @@
       "title": "Docs Vault (view)",
       "tags": [],
       "frontmatter": {
+        "uid": "a2b4089e-0496-4ad2-b09d-8f2bcefd9ce4",
         "slug": "elements/docs-vault-view",
         "kind": "element",
         "title": "Docs Vault (view)",
@@ -10698,7 +10768,7 @@
       "headings": [],
       "excerpt": "/docs 페이지. capabilities/docs-vault-local 의 구현 증거.",
       "wordCount": 6,
-      "updatedAt": "2026-08-01",
+      "updatedAt": "2026-08-02",
       "linksOut": []
     },
     {
@@ -10707,6 +10777,7 @@
       "title": "Docs Vault (widget)",
       "tags": [],
       "frontmatter": {
+        "uid": "ad381f17-ccc6-4ce5-b6e7-2141e487781d",
         "slug": "elements/docs-vault-widget",
         "kind": "element",
         "title": "Docs Vault (widget)",
@@ -10717,7 +10788,7 @@
       "headings": [],
       "excerpt": "볼트 트리/목록 UI 위젯. capabilities/docs-vault-local 의 구현 증거.",
       "wordCount": 8,
-      "updatedAt": "2026-08-01",
+      "updatedAt": "2026-08-02",
       "linksOut": []
     },
     {
@@ -10726,6 +10797,7 @@
       "title": "Domain Capacity Bar",
       "tags": [],
       "frontmatter": {
+        "uid": "5b66c2ec-54fa-481b-9a2a-2522820cefc9",
         "slug": "elements/domain-capacity-bar",
         "kind": "element",
         "title": "Domain Capacity Bar",
@@ -10736,7 +10808,7 @@
       "headings": [],
       "excerpt": "도메인별 노드 밀도 표시 위젯.",
       "wordCount": 5,
-      "updatedAt": "2026-08-01",
+      "updatedAt": "2026-08-02",
       "linksOut": []
     },
     {
@@ -10745,6 +10817,7 @@
       "title": "Download",
       "tags": [],
       "frontmatter": {
+        "uid": "64c7101a-1d50-4ce0-b02f-9d96d719f1f6",
         "slug": "elements/download",
         "kind": "element",
         "title": "Download",
@@ -10755,7 +10828,7 @@
       "headings": [],
       "excerpt": "/download 페이지. capabilities/desktop-download-decision 의 구현 증거. macOS와 Windows x64 베타를 한 plate 안의 플랫폼 절로 나누고, Windows 미서명 경고를 실행 파일 CTA보다 먼저 보여 준다.",
       "wordCount": 25,
-      "updatedAt": "2026-08-01",
+      "updatedAt": "2026-08-02",
       "linksOut": []
     },
     {
@@ -10764,6 +10837,7 @@
       "title": "First Run",
       "tags": [],
       "frontmatter": {
+        "uid": "d2b30e04-1fb4-4630-a8d8-f4a289594a3a",
         "slug": "elements/first-run",
         "kind": "element",
         "title": "First Run",
@@ -10774,7 +10848,7 @@
       "headings": [],
       "excerpt": "첫 실행 화면. capabilities/first-run-starter 의 구현 증거.",
       "wordCount": 7,
-      "updatedAt": "2026-08-01",
+      "updatedAt": "2026-08-02",
       "linksOut": []
     },
     {
@@ -10783,6 +10857,7 @@
       "title": "Full Detail A1",
       "tags": [],
       "frontmatter": {
+        "uid": "c7498dcb-c410-447f-b9ce-535e13228e5f",
         "slug": "elements/full-detail-a1",
         "kind": "element",
         "title": "Full Detail A1",
@@ -10793,7 +10868,7 @@
       "headings": [],
       "excerpt": "노드 전체 상세 opt-in 패널 위젯.",
       "wordCount": 6,
-      "updatedAt": "2026-08-01",
+      "updatedAt": "2026-08-02",
       "linksOut": []
     },
     {
@@ -10802,6 +10877,7 @@
       "title": "Gateway Chrome",
       "tags": [],
       "frontmatter": {
+        "uid": "d47fbf09-315d-40d1-bdda-b14da014917d",
         "slug": "elements/gateway-chrome",
         "kind": "element",
         "title": "Gateway Chrome",
@@ -10812,7 +10888,7 @@
       "headings": [],
       "excerpt": "게이트웨이(미설치 웹 방문자) 상시 크롬 위젯.",
       "wordCount": 6,
-      "updatedAt": "2026-08-01",
+      "updatedAt": "2026-08-02",
       "linksOut": []
     },
     {
@@ -10821,6 +10897,7 @@
       "title": "Gateway Doc",
       "tags": [],
       "frontmatter": {
+        "uid": "0d604e7d-00b6-4b47-9a7a-41a003ddddb3",
         "slug": "elements/gateway-doc",
         "kind": "element",
         "title": "Gateway Doc",
@@ -10831,7 +10908,7 @@
       "headings": [],
       "excerpt": "게이트웨이 문서/마케팅 페이지.",
       "wordCount": 3,
-      "updatedAt": "2026-08-01",
+      "updatedAt": "2026-08-02",
       "linksOut": []
     },
     {
@@ -10840,6 +10917,7 @@
       "title": "Gesture Hint",
       "tags": [],
       "frontmatter": {
+        "uid": "cc71c7c2-a617-432c-8275-61be491640c5",
         "slug": "elements/gesture-hint",
         "kind": "element",
         "title": "Gesture Hint",
@@ -10850,7 +10928,7 @@
       "headings": [],
       "excerpt": "지도 제스처 힌트 오버레이 위젯.",
       "wordCount": 5,
-      "updatedAt": "2026-08-01",
+      "updatedAt": "2026-08-02",
       "linksOut": []
     },
     {
@@ -10859,6 +10937,7 @@
       "title": "Git",
       "tags": [],
       "frontmatter": {
+        "uid": "0c5386c8-d36f-4ce7-88fb-9179c6234dc2",
         "slug": "elements/git",
         "kind": "element",
         "title": "Git",
@@ -10869,7 +10948,7 @@
       "headings": [],
       "excerpt": "git 상태/이력 페이지.",
       "wordCount": 3,
-      "updatedAt": "2026-08-01",
+      "updatedAt": "2026-08-02",
       "linksOut": []
     },
     {
@@ -10878,6 +10957,7 @@
       "title": "Global Search",
       "tags": [],
       "frontmatter": {
+        "uid": "7bfee02d-2c07-438d-8a2b-5884df37d955",
         "slug": "elements/global-search",
         "kind": "element",
         "title": "Global Search",
@@ -10888,7 +10968,7 @@
       "headings": [],
       "excerpt": "전역 검색 위젯. capabilities/topology-browsing 의 구현 증거.",
       "wordCount": 7,
-      "updatedAt": "2026-08-01",
+      "updatedAt": "2026-08-02",
       "linksOut": []
     },
     {
@@ -10897,6 +10977,7 @@
       "title": "Home",
       "tags": [],
       "frontmatter": {
+        "uid": "b4366e4d-c2cd-4e86-b798-9a5665a99fb4",
         "slug": "elements/home",
         "kind": "element",
         "title": "Home",
@@ -10907,7 +10988,7 @@
       "headings": [],
       "excerpt": "/ 홈 진입 페이지.",
       "wordCount": 4,
-      "updatedAt": "2026-08-01",
+      "updatedAt": "2026-08-02",
       "linksOut": []
     },
     {
@@ -10916,6 +10997,7 @@
       "title": "Knowledge Graph",
       "tags": [],
       "frontmatter": {
+        "uid": "81a0e0cc-c8ea-4f15-90bd-ee100ed1322b",
         "slug": "elements/knowledge-graph",
         "kind": "element",
         "title": "Knowledge Graph",
@@ -10926,7 +11008,7 @@
       "headings": [],
       "excerpt": "그래프 노드/엣지 자료구조 엔티티. capabilities/vault-ontology 의 구현 증거.",
       "wordCount": 8,
-      "updatedAt": "2026-08-01",
+      "updatedAt": "2026-08-02",
       "linksOut": []
     },
     {
@@ -10935,6 +11017,7 @@
       "title": "Local Fs Handle",
       "tags": [],
       "frontmatter": {
+        "uid": "e73d3580-a0a2-465f-9d86-9837f8cc4c35",
         "slug": "elements/local-fs-handle",
         "kind": "element",
         "title": "Local Fs Handle",
@@ -10945,7 +11028,7 @@
       "headings": [],
       "excerpt": "File System Access API 핸들 엔티티. capabilities/docs-vault-local 의 구현 증거.",
       "wordCount": 10,
-      "updatedAt": "2026-08-01",
+      "updatedAt": "2026-08-02",
       "linksOut": []
     },
     {
@@ -10954,6 +11037,7 @@
       "title": "Ontology Class",
       "tags": [],
       "frontmatter": {
+        "uid": "e493e922-d415-486b-bf3e-19f2469f85e0",
         "slug": "elements/ontology-class",
         "kind": "element",
         "title": "Ontology Class",
@@ -10964,7 +11048,7 @@
       "headings": [],
       "excerpt": "kind별 스키마 클래스 정의 엔티티. capabilities/vault-ontology 의 구현 증거.",
       "wordCount": 9,
-      "updatedAt": "2026-08-01",
+      "updatedAt": "2026-08-02",
       "linksOut": []
     },
     {
@@ -10973,6 +11057,7 @@
       "title": "Ontology Edit Redirect",
       "tags": [],
       "frontmatter": {
+        "uid": "1b3e2a6f-46d8-47b5-8764-299ec2767fe7",
         "slug": "elements/ontology-edit-redirect",
         "kind": "element",
         "title": "Ontology Edit Redirect",
@@ -10983,7 +11068,7 @@
       "headings": [],
       "excerpt": "/ontology/edit → /ontology/studio 호환 리다이렉트.",
       "wordCount": 5,
-      "updatedAt": "2026-08-01",
+      "updatedAt": "2026-08-02",
       "linksOut": []
     },
     {
@@ -10992,6 +11077,7 @@
       "title": "Ontology Insights",
       "tags": [],
       "frontmatter": {
+        "uid": "4f5ec185-5722-4ff2-854b-ab661168f65c",
         "slug": "elements/ontology-insights",
         "kind": "element",
         "title": "Ontology Insights",
@@ -11002,7 +11088,7 @@
       "headings": [],
       "excerpt": "5질문 유지보수 대시보드. docs/ARCHITECTURE.md: \"maintenance on five-question Insights\".",
       "wordCount": 8,
-      "updatedAt": "2026-08-01",
+      "updatedAt": "2026-08-02",
       "linksOut": []
     },
     {
@@ -11011,6 +11097,7 @@
       "title": "Ontology Redirect",
       "tags": [],
       "frontmatter": {
+        "uid": "de8ffdb5-288d-484a-be8b-4c997483be2a",
         "slug": "elements/ontology-redirect",
         "kind": "element",
         "title": "Ontology Redirect",
@@ -11021,7 +11108,7 @@
       "headings": [],
       "excerpt": "/ontology → /topology?index=expanded 호환 리다이렉트.",
       "wordCount": 5,
-      "updatedAt": "2026-08-01",
+      "updatedAt": "2026-08-02",
       "linksOut": []
     },
     {
@@ -11030,6 +11117,7 @@
       "title": "Ontology Studio",
       "tags": [],
       "frontmatter": {
+        "uid": "eb2a7d5e-0050-4043-b8ae-1300046d7e21",
         "slug": "elements/ontology-studio",
         "kind": "element",
         "title": "Ontology Studio",
@@ -11040,7 +11128,7 @@
       "headings": [],
       "excerpt": "/ontology/studio 쓰기 표면(공방). capabilities/ontology-blocks 의 구현 증거.",
       "wordCount": 7,
-      "updatedAt": "2026-08-01",
+      "updatedAt": "2026-08-02",
       "linksOut": []
     },
     {
@@ -11049,6 +11137,7 @@
       "title": "Project (entity)",
       "tags": [],
       "frontmatter": {
+        "uid": "74fbd403-d9df-4c44-b5c3-958890da21ff",
         "slug": "elements/project",
         "kind": "element",
         "title": "Project (entity)",
@@ -11059,7 +11148,7 @@
       "headings": [],
       "excerpt": "project 노드 데이터 모델 엔티티. capabilities/project-data-source 의 구현 증거.",
       "wordCount": 9,
-      "updatedAt": "2026-08-01",
+      "updatedAt": "2026-08-02",
       "linksOut": []
     },
     {
@@ -11068,6 +11157,7 @@
       "title": "Project Detail",
       "tags": [],
       "frontmatter": {
+        "uid": "4a94a537-a650-4b6e-b5ab-b2c15fe54ddc",
         "slug": "elements/project-detail",
         "kind": "element",
         "title": "Project Detail",
@@ -11078,7 +11168,7 @@
       "headings": [],
       "excerpt": "프로젝트 상세 페이지.",
       "wordCount": 3,
-      "updatedAt": "2026-08-01",
+      "updatedAt": "2026-08-02",
       "linksOut": []
     },
     {
@@ -11087,6 +11177,7 @@
       "title": "Project Drawer",
       "tags": [],
       "frontmatter": {
+        "uid": "207e4118-99da-4d53-bb42-50fea31baa1a",
         "slug": "elements/project-drawer",
         "kind": "element",
         "title": "Project Drawer",
@@ -11097,7 +11188,7 @@
       "headings": [],
       "excerpt": "프로젝트 서랑 패널 위젯.",
       "wordCount": 4,
-      "updatedAt": "2026-08-01",
+      "updatedAt": "2026-08-02",
       "linksOut": []
     },
     {
@@ -11106,6 +11197,7 @@
       "title": "Project Editor",
       "tags": [],
       "frontmatter": {
+        "uid": "413941f6-04a0-4439-bd8d-268f6ec754c9",
         "slug": "elements/project-editor",
         "kind": "element",
         "title": "Project Editor",
@@ -11116,7 +11208,7 @@
       "headings": [],
       "excerpt": "프로젝트 편집 페이지. capabilities/project-edit 의 구현 증거.",
       "wordCount": 7,
-      "updatedAt": "2026-08-01",
+      "updatedAt": "2026-08-02",
       "linksOut": []
     },
     {
@@ -11125,6 +11217,7 @@
       "title": "Project Selector",
       "tags": [],
       "frontmatter": {
+        "uid": "ae7f757a-28b0-4192-ba2c-cc40846a3814",
         "slug": "elements/project-selector",
         "kind": "element",
         "title": "Project Selector",
@@ -11135,7 +11228,7 @@
       "headings": [],
       "excerpt": "프로젝트 선택/목록 페이지.",
       "wordCount": 3,
-      "updatedAt": "2026-08-01",
+      "updatedAt": "2026-08-02",
       "linksOut": []
     },
     {
@@ -11144,6 +11237,7 @@
       "title": "Public Quick Actions",
       "tags": [],
       "frontmatter": {
+        "uid": "64869f2e-f67f-45f3-8b39-7e70c0345a7a",
         "slug": "elements/public-quick-actions",
         "kind": "element",
         "title": "Public Quick Actions",
@@ -11154,7 +11248,7 @@
       "headings": [],
       "excerpt": "비로그인 방문자용 빠른 액션 위젯.",
       "wordCount": 5,
-      "updatedAt": "2026-08-01",
+      "updatedAt": "2026-08-02",
       "linksOut": []
     },
     {
@@ -11163,6 +11257,7 @@
       "title": "Recent Node Row",
       "tags": [],
       "frontmatter": {
+        "uid": "cfdab26b-0dc7-44e9-ad3b-a9db4afeb7e6",
         "slug": "elements/recent-node-row",
         "kind": "element",
         "title": "Recent Node Row",
@@ -11173,7 +11268,7 @@
       "headings": [],
       "excerpt": "최근 본 노드 목록 행 위젯.",
       "wordCount": 6,
-      "updatedAt": "2026-08-01",
+      "updatedAt": "2026-08-02",
       "linksOut": []
     },
     {
@@ -11182,6 +11277,7 @@
       "title": "Root Entry",
       "tags": [],
       "frontmatter": {
+        "uid": "6d84e487-03a3-45ca-b8e5-22e42f395347",
         "slug": "elements/root-entry",
         "kind": "element",
         "title": "Root Entry",
@@ -11192,7 +11288,7 @@
       "headings": [],
       "excerpt": "/ 스마트 진입(누구인지에 따라 분기) 로직.",
       "wordCount": 6,
-      "updatedAt": "2026-08-01",
+      "updatedAt": "2026-08-02",
       "linksOut": []
     },
     {
@@ -11201,6 +11297,7 @@
       "title": "Search Hint",
       "tags": [],
       "frontmatter": {
+        "uid": "15683f06-ba71-4703-8212-1f87138e5c01",
         "slug": "elements/search-hint",
         "kind": "element",
         "title": "Search Hint",
@@ -11211,7 +11308,7 @@
       "headings": [],
       "excerpt": "검색 힌트 오버레이 위젯.",
       "wordCount": 4,
-      "updatedAt": "2026-08-01",
+      "updatedAt": "2026-08-02",
       "linksOut": []
     },
     {
@@ -11220,6 +11317,7 @@
       "title": "Search Palette",
       "tags": [],
       "frontmatter": {
+        "uid": "24f84dd5-f402-4929-8670-75ddd05cdd20",
         "slug": "elements/search-palette",
         "kind": "element",
         "title": "Search Palette",
@@ -11230,7 +11328,7 @@
       "headings": [],
       "excerpt": "검색 팔레트(커맨드-K 류) 위젯. capabilities/topology-browsing 의 구현 증거.",
       "wordCount": 8,
-      "updatedAt": "2026-08-01",
+      "updatedAt": "2026-08-02",
       "linksOut": []
     },
     {
@@ -11239,6 +11337,7 @@
       "title": "Shortcut Sheet",
       "tags": [],
       "frontmatter": {
+        "uid": "568703a3-2967-417a-b750-70d3b43ede16",
         "slug": "elements/shortcut-sheet",
         "kind": "element",
         "title": "Shortcut Sheet",
@@ -11249,7 +11348,7 @@
       "headings": [],
       "excerpt": "키보드 단축키 안내 시트 위젯.",
       "wordCount": 5,
-      "updatedAt": "2026-08-01",
+      "updatedAt": "2026-08-02",
       "linksOut": []
     },
     {
@@ -11258,6 +11357,7 @@
       "title": "Status",
       "tags": [],
       "frontmatter": {
+        "uid": "b2cf15e3-d6ca-4c32-b7d1-4f1fd49c682b",
         "slug": "elements/status",
         "kind": "element",
         "title": "Status",
@@ -11268,7 +11368,7 @@
       "headings": [],
       "excerpt": "노드 상태 값 엔티티. capabilities/taxonomy 의 구현 증거.",
       "wordCount": 8,
-      "updatedAt": "2026-08-01",
+      "updatedAt": "2026-08-02",
       "linksOut": []
     },
     {
@@ -11277,6 +11377,7 @@
       "title": "Topology Controls",
       "tags": [],
       "frontmatter": {
+        "uid": "a7acdee6-5bc8-4135-ab1a-b6dd474868be",
         "slug": "elements/topology-controls",
         "kind": "element",
         "title": "Topology Controls",
@@ -11287,7 +11388,7 @@
       "headings": [],
       "excerpt": "지도 패/줌/리셋 컨트롤 위젯. capabilities/topology-browsing 의 구현 증거.",
       "wordCount": 8,
-      "updatedAt": "2026-08-01",
+      "updatedAt": "2026-08-02",
       "linksOut": []
     },
     {
@@ -11296,6 +11397,7 @@
       "title": "Topology Index Panel",
       "tags": [],
       "frontmatter": {
+        "uid": "83ab7e8f-4019-46d2-9545-97a20df8683d",
         "slug": "elements/topology-index-panel",
         "kind": "element",
         "title": "Topology Index Panel",
@@ -11306,7 +11408,7 @@
       "headings": [],
       "excerpt": "지도 인덱스(INDEX) 패널 위젯. capabilities/topology-browsing 의 구현 증거.",
       "wordCount": 8,
-      "updatedAt": "2026-08-01",
+      "updatedAt": "2026-08-02",
       "linksOut": []
     },
     {
@@ -11315,6 +11417,7 @@
       "title": "Topology Map V2",
       "tags": [],
       "frontmatter": {
+        "uid": "cc95edb1-2eab-4752-941f-8bcf99d19769",
         "slug": "elements/topology-map-v2",
         "kind": "element",
         "title": "Topology Map V2",
@@ -11325,7 +11428,7 @@
       "headings": [],
       "excerpt": "커스텀 canvas-2D 그래프 렌더러 본체. capabilities/topology-browsing 의 핵심 구현 증거. AGENTS.md Tech stack: \"The graph renderer is ours\".",
       "wordCount": 18,
-      "updatedAt": "2026-08-01",
+      "updatedAt": "2026-08-02",
       "linksOut": []
     },
     {
@@ -11334,6 +11437,7 @@
       "title": "Vault Agent Panel",
       "tags": [],
       "frontmatter": {
+        "uid": "7294bda8-ce25-46e4-80ae-5f2e3619a48d",
         "slug": "elements/vault-agent-panel",
         "kind": "element",
         "title": "Vault Agent Panel",
@@ -11353,6 +11457,7 @@
       "title": "Ontology Atlas",
       "tags": [],
       "frontmatter": {
+        "uid": "8c48b61f-1f75-448e-87a5-6ea2a7b02cf8",
         "slug": "ontology-atlas",
         "kind": "project",
         "title": "Ontology Atlas",
@@ -11435,6 +11540,7 @@
       "title": "Ontology Atlas — its own ontology vault",
       "tags": [],
       "frontmatter": {
+        "uid": "c467d5e2-50ac-45f2-bbf0-996a1b6e1dd7",
         "slug": "README",
         "kind": "vault-readme",
         "title": "Ontology Atlas — its own ontology vault",
@@ -11475,7 +11581,7 @@
         }
       ],
       "excerpt": "This folder is Ontology Atlas described in its own data format (dogfooding). Every .md file here is one node of the product's meaning model — the same project / domain / capability / element graph the app draws and the MCP server serves to AI agents. If you are an agent reading this: this vault is the shared mental mod",
-      "wordCount": 573,
+      "wordCount": 606,
       "updatedAt": "2026-08-02",
       "linksOut": []
     },

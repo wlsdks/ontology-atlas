@@ -1,4 +1,5 @@
 ---
+uid: 1ee91a34-14c2-4bdd-bda8-84910555939b
 slug: capabilities/vault-ontology
 kind: capability
 title: Vault Ontology Schema Authoring

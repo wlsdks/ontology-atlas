@@ -1,4 +1,5 @@
 ---
+uid: 0d604e7d-00b6-4b47-9a7a-41a003ddddb3
 slug: elements/gateway-doc
 kind: element
 title: Gateway Doc

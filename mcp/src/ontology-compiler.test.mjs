@@ -1,12 +1,13 @@
 import { describe, it } from 'node:test';
 import { strict as assert } from 'node:assert';
+import { createHash } from 'node:crypto';
 
 import { compileOntology } from './ontology-compiler.mjs';
 
 function doc(slug, frontmatter = {}) {
   return {
     slug,
-    frontmatter,
+    frontmatter: withUid(slug, frontmatter),
     body: '',
     mtime: 1,
   };
@@ -15,10 +16,19 @@ function doc(slug, frontmatter = {}) {
 function timedDoc(slug, frontmatter = {}, mtime = 1) {
   return {
     slug,
-    frontmatter,
+    frontmatter: withUid(slug, frontmatter),
     body: '',
     mtime,
   };
+}
+
+function withUid(slug, frontmatter) {
+  if (Object.prototype.hasOwnProperty.call(frontmatter, 'uid')) return frontmatter;
+  const hex = createHash('sha256').update(slug).digest('hex').slice(0, 32).split('');
+  hex[12] = '4';
+  hex[16] = '8';
+  const uid = `${hex.slice(0, 8).join('')}-${hex.slice(8, 12).join('')}-${hex.slice(12, 16).join('')}-${hex.slice(16, 20).join('')}-${hex.slice(20).join('')}`;
+  return { uid, ...frontmatter };
 }
 
 describe('compileOntology', () => {
@@ -36,7 +46,7 @@ describe('compileOntology', () => {
       { includeIndexes: true },
     );
 
-    assert.equal(result.version, 1);
+    assert.equal(result.version, 2);
     assert.match(result.graphHash, /^[a-f0-9]{64}$/);
     assert.equal(result.maxMtime, 1);
     assert.equal(result.nodeCount, 2);
@@ -94,7 +104,12 @@ describe('compileOntology', () => {
       'domains/auth',
     );
     assert.equal(result.indexes.aliasToSlug['auth-domain'], 'domains/auth');
+    const authUid = withUid('domains/auth', {}).uid;
+    assert.equal(result.indexes.uidToSlug[authUid], 'domains/auth');
+    assert.equal(result.indexes.slugToUid['domains/auth'], authUid);
+    assert.deepEqual(result.indexes.mergedUidToSlug, {});
     assert.deepEqual(result.nodes.find((node) => node.slug === 'capabilities/login'), {
+      uid: withUid('capabilities/login', {}).uid,
       slug: 'capabilities/login',
       kind: 'capability',
       title: 'Login',
@@ -105,6 +120,161 @@ describe('compileOntology', () => {
     });
     assert.ok(result.aliases.some((alias) => alias.alias === 'auth-domain' && alias.slug === 'domains/auth'));
     assert.ok(result.issues.some((issue) => issue.code === 'dangling-graph-reference'));
+  });
+
+  it('fails closed with a structured issue when a graph node has no UID', () => {
+    assert.throws(
+      () => compileOntology([doc('domains/auth', { uid: undefined, kind: 'domain' })]),
+      (error) => {
+        assert.equal(error.name, 'OntologyIdentityError');
+        assert.equal(error.code, 'invalid-ontology-identity');
+        assert.deepEqual(error.issues, [
+          {
+            code: 'missing-uid',
+            severity: 'error',
+            slug: 'domains/auth',
+            message: 'Node "domains/auth" is missing required `uid`.',
+          },
+        ]);
+        return true;
+      },
+    );
+  });
+
+  it('fails closed on malformed UID instead of emitting a partial node', () => {
+    assert.throws(
+      () => compileOntology([doc('domains/auth', { uid: 'AUTH-1', kind: 'domain' })]),
+      (error) => {
+        assert.deepEqual(error.issues, [
+          {
+            code: 'invalid-uid',
+            severity: 'error',
+            slug: 'domains/auth',
+            uid: 'AUTH-1',
+            message: 'Node "domains/auth" has invalid `uid`; expected a lowercase UUIDv4.',
+          },
+        ]);
+        return true;
+      },
+    );
+  });
+
+  it('reports every node sharing one primary UID and fails closed', () => {
+    const uid = withUid('shared-identity', {}).uid;
+    assert.throws(
+      () =>
+        compileOntology([
+          doc('domains/auth', { uid, kind: 'domain' }),
+          doc('capabilities/login', { uid, kind: 'capability' }),
+        ]),
+      (error) => {
+        assert.deepEqual(error.issues, [
+          {
+            code: 'duplicate-uid',
+            severity: 'error',
+            uid,
+            slugs: ['capabilities/login', 'domains/auth'],
+            message: `Primary UID "${uid}" is used by multiple nodes: capabilities/login, domains/auth.`,
+          },
+        ]);
+        return true;
+      },
+    );
+  });
+
+  it('fails when a historical merged UID collides with a live primary UID', () => {
+    const authUid = withUid('domains/auth', {}).uid;
+    assert.throws(
+      () =>
+        compileOntology([
+          doc('domains/auth', { uid: authUid, kind: 'domain' }),
+          doc('capabilities/login', {
+            kind: 'capability',
+            merged_uids: [authUid],
+          }),
+        ]),
+      (error) => {
+        assert.deepEqual(error.issues, [
+          {
+            code: 'primary-merged-uid-collision',
+            severity: 'error',
+            uid: authUid,
+            primarySlug: 'domains/auth',
+            mergedSlugs: ['capabilities/login'],
+            message: `UID "${authUid}" is primary for "domains/auth" and historical for: capabilities/login.`,
+          },
+        ]);
+        return true;
+      },
+    );
+  });
+
+  it('fails closed when merged_uids contains a malformed historical identity', () => {
+    assert.throws(
+      () =>
+        compileOntology([
+          doc('capabilities/login', {
+            kind: 'capability',
+            merged_uids: ['legacy-login'],
+          }),
+        ]),
+      (error) => {
+        assert.deepEqual(error.issues, [
+          {
+            code: 'invalid-merged-uid',
+            severity: 'error',
+            slug: 'capabilities/login',
+            uid: 'legacy-login',
+            message: 'Node "capabilities/login" has invalid `merged_uids` entry "legacy-login"; expected a lowercase UUIDv4.',
+          },
+        ]);
+        return true;
+      },
+    );
+  });
+
+  it('fails when one historical UID is claimed by multiple survivors', () => {
+    const mergedUid = withUid('retired-login', {}).uid;
+    assert.throws(
+      () =>
+        compileOntology([
+          doc('capabilities/login', { kind: 'capability', merged_uids: [mergedUid] }),
+          doc('capabilities/sign-in', { kind: 'capability', merged_uids: [mergedUid] }),
+        ]),
+      (error) => {
+        assert.deepEqual(error.issues, [
+          {
+            code: 'duplicate-merged-uid',
+            severity: 'error',
+            uid: mergedUid,
+            slugs: ['capabilities/login', 'capabilities/sign-in'],
+            message: `Historical UID "${mergedUid}" is claimed by multiple nodes: capabilities/login, capabilities/sign-in.`,
+          },
+        ]);
+        return true;
+      },
+    );
+  });
+
+  it('requires merged_uids to be an array instead of accepting a scalar UID', () => {
+    const mergedUid = withUid('retired-login', {}).uid;
+    assert.throws(
+      () =>
+        compileOntology([
+          doc('capabilities/login', { kind: 'capability', merged_uids: mergedUid }),
+        ]),
+      (error) => {
+        assert.deepEqual(error.issues, [
+          {
+            code: 'invalid-merged-uids',
+            severity: 'error',
+            slug: 'capabilities/login',
+            message: 'Node "capabilities/login" must store `merged_uids` as an array of lowercase UUIDv4 values.',
+          },
+        ]);
+        return true;
+      },
+    );
   });
 
   it('reports ambiguous aliases without resolving them', () => {
@@ -183,6 +353,37 @@ describe('compileOntology', () => {
     assert.equal(first.graphHash, second.graphHash);
     assert.equal(first.maxMtime, 20);
     assert.equal(second.maxMtime, 200);
+  });
+
+  it('changes graphHash when permanent identity changes while slug stays the same', () => {
+    const first = compileOntology([
+      doc('domains/auth', { uid: withUid('auth-v1', {}).uid, kind: 'domain' }),
+    ]);
+    const second = compileOntology([
+      doc('domains/auth', { uid: withUid('auth-v2', {}).uid, kind: 'domain' }),
+    ]);
+
+    assert.notEqual(first.graphHash, second.graphHash);
+  });
+
+  it('emits canonical historical identities and their exact resolver index', () => {
+    const olderUid = withUid('older-auth', {}).uid;
+    const oldUid = withUid('old-auth', {}).uid;
+    const result = compileOntology(
+      [
+        doc('domains/auth', {
+          kind: 'domain',
+          merged_uids: [oldUid, olderUid],
+        }),
+      ],
+      { includeIndexes: true },
+    );
+
+    assert.deepEqual(result.nodes[0].merged_uids, [oldUid, olderUid].sort());
+    assert.deepEqual(result.indexes.mergedUidToSlug, {
+      [oldUid]: 'domains/auth',
+      [olderUid]: 'domains/auth',
+    });
   });
 
   it('reports graph array canonicalization actions outside graphHash', () => {

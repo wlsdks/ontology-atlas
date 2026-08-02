@@ -1,4 +1,5 @@
 ---
+uid: d6c66098-542f-4781-9199-04d3f0b6119b
 slug: capabilities/checkout
 kind: capability
 title: Checkout

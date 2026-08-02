@@ -1,4 +1,5 @@
 ---
+uid: b000aa3e-d9da-4e0d-bcc1-644934df42f1
 slug: capabilities/cart
 kind: capability
 title: Shopping Cart

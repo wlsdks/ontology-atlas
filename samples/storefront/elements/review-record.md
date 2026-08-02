@@ -1,4 +1,5 @@
 ---
+uid: 2ee60b32-7fdd-4e1b-a15b-e7e9ab99470d
 slug: elements/review-record
 kind: element
 title: Review Record

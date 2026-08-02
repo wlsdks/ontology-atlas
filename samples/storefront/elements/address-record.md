@@ -1,4 +1,5 @@
 ---
+uid: 4663682f-7bed-48a3-9c17-45ba234216c1
 slug: elements/address-record
 kind: element
 title: Address Record

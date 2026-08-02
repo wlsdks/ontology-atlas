@@ -1,4 +1,5 @@
 ---
+uid: a81da7e2-8ff6-46c9-a0aa-27b2948bc7b3
 slug: capabilities/vault-agent
 kind: capability
 title: Agent Connect & Vault Access

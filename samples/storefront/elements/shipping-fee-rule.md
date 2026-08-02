@@ -1,4 +1,5 @@
 ---
+uid: e04498bd-4cc0-4258-818e-d40c6db94bb0
 slug: elements/shipping-fee-rule
 kind: element
 title: Shipping Fee Rule

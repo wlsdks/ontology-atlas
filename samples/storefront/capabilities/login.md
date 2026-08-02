@@ -1,4 +1,5 @@
 ---
+uid: a00abb55-c7f6-4101-a88f-6b1ccd77f307
 slug: capabilities/login
 kind: capability
 title: Login

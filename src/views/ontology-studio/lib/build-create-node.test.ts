@@ -160,6 +160,12 @@ describe("groupRelationRefs", () => {
 });
 
 describe("buildCreateNodeDoc", () => {
+  it("direct-create 문서에 테스트 UID를 주입해 영구 식별자를 기록", () => {
+    const uid = "00000000-0000-4000-8000-000000000001";
+    const { markdown } = buildCreateNodeDoc(draft(), { uid });
+    expect(markdown).toContain(`uid: ${uid}`);
+  });
+
   it("serializes the assembled node with runtime-read relation keys", () => {
     const { slug, markdown } = buildCreateNodeDoc(
       draft({
@@ -194,6 +200,11 @@ describe("buildCreateNodeDoc", () => {
 });
 
 describe("buildMcpPacket", () => {
+  it("MCP 위임 packet에는 UID를 싣지 않고 서버 발급에 맡긴다", () => {
+    const packet = buildMcpPacket(draft());
+    expect(packet).not.toMatch(/\buid\s*:/);
+  });
+
   it("reflects the assembled node and its relations as add_concept + add_relation", () => {
     const packet = buildMcpPacket(
       draft({

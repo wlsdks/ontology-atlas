@@ -1,4 +1,5 @@
 ---
+uid: 1a0cb00c-fb28-41c2-8788-32afa5cb8f14
 slug: elements/stock-hold
 kind: element
 title: Stock Hold

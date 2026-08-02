@@ -74,9 +74,9 @@ test('reconcileImportEdges — accepts aliasToSlug as plain object too', () => {
 // test fails loudly.
 test('reconcileImportEdges — matches REAL compileOntology depends_on edges (via=dependencies)', () => {
   const docs = [
-    { slug: 'capabilities/a', frontmatter: { kind: 'capability', title: 'A', depends_on: ['capabilities/b', 'capabilities/stale'] }, body: '', mtime: 1 },
-    { slug: 'capabilities/b', frontmatter: { kind: 'capability', title: 'B' }, body: '', mtime: 1 },
-    { slug: 'capabilities/stale', frontmatter: { kind: 'capability', title: 'Stale' }, body: '', mtime: 1 },
+    { slug: 'capabilities/a', frontmatter: { uid: '00000000-0000-4000-8000-000000000001', kind: 'capability', title: 'A', depends_on: ['capabilities/b', 'capabilities/stale'] }, body: '', mtime: 1 },
+    { slug: 'capabilities/b', frontmatter: { uid: '00000000-0000-4000-8000-000000000002', kind: 'capability', title: 'B' }, body: '', mtime: 1 },
+    { slug: 'capabilities/stale', frontmatter: { uid: '00000000-0000-4000-8000-000000000003', kind: 'capability', title: 'Stale' }, body: '', mtime: 1 },
   ];
   const art = compileOntology(docs, { includeIndexes: true });
   // sanity: the compiler really emits via:'dependencies', not 'depends_on'

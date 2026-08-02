@@ -1,4 +1,5 @@
 ---
+uid: 1beed293-711b-4b51-b8c0-65f51bc4d606
 slug: storefront
 kind: project
 title: Online Store

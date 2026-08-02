@@ -1,4 +1,5 @@
 ---
+uid: c43a5015-ac5c-46e5-8c8d-9a9c11c5385d
 slug: capabilities/signup
 kind: capability
 title: Sign-up

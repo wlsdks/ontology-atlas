@@ -1,4 +1,5 @@
 ---
+uid: c183b392-62bd-455f-a310-c541f49e7c38
 slug: capabilities/topology-browsing
 kind: capability
 title: Topology Map Rendering & Search

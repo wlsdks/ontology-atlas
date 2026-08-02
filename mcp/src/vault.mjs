@@ -16,7 +16,12 @@ import {
 import { join, relative, dirname, resolve, sep } from 'node:path';
 
 import { parseFrontmatter, buildMarkdown } from './parser.mjs';
-import { NODE_ELIGIBILITY_GATE, flatSlugIssue } from './schema.mjs';
+import {
+  NODE_ELIGIBILITY_GATE,
+  flatSlugIssue,
+  inspectMergedUids,
+  nodeUidIssue,
+} from './schema.mjs';
 import {
   bulkProvenanceMessage,
   capabilityWithoutEvidenceMessage,
@@ -1020,6 +1025,45 @@ function commitDoc(rootPath, slug, filePath, frontmatter, body, { created = fals
   return filePath;
 }
 
+function identityClaims(frontmatter) {
+  const primary = typeof frontmatter?.uid === 'string' ? frontmatter.uid : '';
+  const merged = Array.isArray(frontmatter?.merged_uids) ? frontmatter.merged_uids : [];
+  return [...new Set([primary, ...merged].filter(Boolean))];
+}
+
+function assertNodeIdentity(rootPath, slug, frontmatter) {
+  const kind = frontmatter?.kind;
+  if (typeof kind !== 'string' || !kind.trim()) return;
+  const uidIssue = nodeUidIssue(frontmatter.uid);
+  if (uidIssue) throw new Error(uidIssue);
+  const merged = inspectMergedUids(frontmatter.uid, frontmatter.merged_uids);
+  if (merged.invalidIssue) throw new Error(merged.invalidIssue);
+  if (merged.nonCanonical) {
+    throw new Error('`merged_uids:` must be a deduplicated, ascending canonical UUIDv4 set.');
+  }
+  const claims = new Set(identityClaims(frontmatter));
+  for (const doc of loadVaultDocs(rootPath)) {
+    if (doc.slug === slug) continue;
+    for (const claimed of identityClaims(doc.frontmatter)) {
+      if (!claims.has(claimed)) continue;
+      throw new Error(
+        `UID collision: ${claimed} already belongs to "${doc.slug}". ` +
+          'Create a new node with a fresh UID, or use merge_concepts to absorb an existing identity.',
+      );
+    }
+  }
+}
+
+function assertIdentityPatch(previousFrontmatter, patch) {
+  if (!patch) return;
+  if ('uid' in patch && patch.uid !== undefined && patch.uid !== previousFrontmatter.uid) {
+    throw new Error('`uid:` is immutable. Rename or reclassify the node without changing its UID.');
+  }
+  if ('merged_uids' in patch) {
+    throw new Error('`merged_uids:` is merge_concepts-owned identity history and cannot be edited by a generic patch.');
+  }
+}
+
 /**
  * Record which child refs THIS write added to a parent's graph arrays.
  *
@@ -1062,6 +1106,7 @@ export function writeDoc(rootPath, slug, { frontmatter, body = '' }) {
   // hard error (팬아웃 게이트의 「막지 않는다」 원칙은 의미 판단에만 적용).
   const slugIssue = flatSlugIssue(frontmatter?.kind, slug);
   if (slugIssue) throw new Error(slugIssue);
+  assertNodeIdentity(rootPath, slug, frontmatter);
   mkdirSync(dirname(filePath), { recursive: true });
   return commitDoc(rootPath, slug, filePath, frontmatter, body, { created: true });
 }
@@ -1103,6 +1148,7 @@ export function patchFrontmatter(rootPath, slug, patch, options = {}) {
   assertMtime(slug, filePath, options.expectedMtime);
   const raw = readFileSync(filePath, 'utf-8');
   const { frontmatter, body } = parseFrontmatter(raw);
+  assertIdentityPatch(frontmatter, patch);
   const next = { ...frontmatter };
   for (const [key, value] of Object.entries(patch)) {
     if (value === null) {
@@ -1111,6 +1157,7 @@ export function patchFrontmatter(rootPath, slug, patch, options = {}) {
       next[key] = normalizeFrontmatterValue(key, value);
     }
   }
+  assertNodeIdentity(rootPath, slug, next);
   return commitDoc(rootPath, slug, filePath, next, body, { previousFrontmatter: frontmatter });
 }
 
@@ -1128,6 +1175,7 @@ export function updateDoc(rootPath, slug, { frontmatter: patch, body, expectedMt
   assertMtime(slug, filePath, expectedMtime);
   const raw = readFileSync(filePath, 'utf-8');
   const { frontmatter, body: oldBody } = parseFrontmatter(raw);
+  assertIdentityPatch(frontmatter, patch);
   const nextFm = { ...frontmatter };
   if (patch !== undefined) {
     for (const [key, value] of Object.entries(patch)) {
@@ -1142,6 +1190,7 @@ export function updateDoc(rootPath, slug, { frontmatter: patch, body, expectedMt
     throw new Error('body must be a string.');
   }
   const nextBody = body === undefined ? oldBody : body;
+  assertNodeIdentity(rootPath, slug, nextFm);
   return commitDoc(rootPath, slug, filePath, nextFm, nextBody, { previousFrontmatter: frontmatter });
 }
 

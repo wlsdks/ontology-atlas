@@ -49,6 +49,26 @@ export const KNOWN_CODES = [
     description: 'project / domain / capability / element / document 외 값.',
   },
   {
+    code: 'missing-uid',
+    severity: 'error',
+    description: '온톨로지 노드에 영구 `uid:`가 없음.',
+  },
+  {
+    code: 'invalid-uid',
+    severity: 'error',
+    description: '`uid:`가 lowercase UUIDv4 규격이 아님.',
+  },
+  {
+    code: 'invalid-merged-uids',
+    severity: 'error',
+    description: '`merged_uids:`가 흡수된 UUIDv4 identity alias 규격을 어김.',
+  },
+  {
+    code: 'non-canonical-merged-uids',
+    severity: 'warning',
+    description: '`merged_uids:`가 중복 제거·오름차순 정렬된 canonical set이 아님.',
+  },
+  {
     code: 'missing-expected-field',
     severity: 'warning',
     description: 'kind 별 강하게 기대되는 필드 누락 (예: capability/element 의 `domain:`).',
@@ -69,6 +89,12 @@ export const KNOWN_CODES = [
     severity: 'error',
     scope: 'vault',
     description: '두 문서가 같은 canonical slug 를 주장 — 관계가 어느 쪽인지 정할 수 없음.',
+  },
+  {
+    code: 'duplicate-uid',
+    severity: 'error',
+    scope: 'vault',
+    description: '두 노드가 같은 primary 또는 merged UID를 영구 정체성으로 주장함.',
   },
 ];
 
@@ -159,6 +185,13 @@ export function runValidate(args) {
     if (!report) continue;
     report.issues.push(issue);
     report.ok = !report.issues.some((i) => i.severity === 'error');
+  }
+
+  for (const { file, issue } of findDuplicateUidIssues(entries)) {
+    const report = reportByFile.get(file);
+    if (!report) continue;
+    report.issues.push(issue);
+    report.ok = false;
   }
 
   for (const { file, issue } of findDanglingGraphReferenceIssues(entries)) {
@@ -473,6 +506,37 @@ function findDuplicateSlugIssues(entries) {
             `\`slug: ${declared}\` 를 다른 문서도 주장합니다 (${rest.join(', ')}). ` +
             `같은 이름을 가리키는 관계가 어느 쪽을 뜻하는지 정할 수 없습니다 — ` +
             `한쪽의 slug 를 바꾸거나 rename_concept 으로 합치세요.`,
+        },
+      });
+    }
+  }
+  return issues;
+}
+
+function findDuplicateUidIssues(entries) {
+  const claims = new Map();
+  for (const entry of entries) {
+    const primary = typeof entry.frontmatter?.uid === 'string' ? entry.frontmatter.uid.trim() : '';
+    const merged = Array.isArray(entry.frontmatter?.merged_uids) ? entry.frontmatter.merged_uids : [];
+    for (const uid of new Set([primary, ...merged].filter((value) => typeof value === 'string' && value))) {
+      if (!claims.has(uid)) claims.set(uid, []);
+      claims.get(uid).push(entry);
+    }
+  }
+  const issues = [];
+  for (const [uid, group] of claims) {
+    if (group.length < 2) continue;
+    for (const entry of group) {
+      const others = group.filter((candidate) => candidate !== entry).map((candidate) => candidate.slug);
+      issues.push({
+        file: entry.file,
+        slug: entry.slug,
+        issue: {
+          code: 'duplicate-uid',
+          severity: 'error',
+          message:
+            `UID ${uid}를 다른 문서도 정체성으로 주장합니다 (${others.join(', ')}). ` +
+            '영구 identity 충돌이므로 새 노드에는 새 UID를 발급하고, 병합은 merge_concepts로 처리하세요.',
         },
       });
     }

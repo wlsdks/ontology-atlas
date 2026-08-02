@@ -12,9 +12,19 @@ import { compileOntology } from './ontology-compiler.mjs';
 import { queryCompiledOntology } from './ontology-engine.mjs';
 
 const GRAPH_HASH = 'project-graph-v1:a1b2c3d4';
+let uidSequence = 0;
 
 function doc(slug, frontmatter) {
-  return { slug, frontmatter, body: '', mtime: 1 };
+  uidSequence += 1;
+  return {
+    slug,
+    frontmatter: {
+      uid: `00000000-0000-4000-8000-${String(uidSequence).padStart(12, '0')}`,
+      ...frontmatter,
+    },
+    body: '',
+    mtime: 1,
+  };
 }
 
 test('a real agent_brief 100/100 cannot override missing semantic witnesses', () => {

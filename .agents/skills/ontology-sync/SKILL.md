@@ -39,7 +39,7 @@ primary path. Fall back to the `cli/` binary (`ontology-atlas add` /
 ```
 list_kinds                                # how many of each kind
 list_concepts                             # full node table (paginated)
-get_concept(slug)                         # for any node you might extend
+get_concept({ slug }) or ({ uid })        # current address or permanent identity
 find_backlinks(slug)                      # before renaming or merging
 ```
 
@@ -74,6 +74,13 @@ For each delta, prefer one tool:
 | Two near-duplicates collapse | `merge_concepts` (dry-run; commit with `confirm: true`) |
 | Edge between existing nodes | `add_relation(from, to, type)` |
 
+`uid` is writer-owned permanent identity; `slug` is the readable current
+address. Never mint, copy, or patch `uid` yourself, and never patch
+`merged_uids` — only `merge_concepts` may extend that history. Report both
+`{uid, slug}` for nodes that a later agent handoff must find, but keep relation
+arguments and graph links slug-based. Rename/reclassify preserve UID; merge
+preserves the target UID and absorbs the source identity history.
+
 `add_concept` returns `warnings: ["expected field \"domain\" missing for kind \"capability\""]` when a strongly-expected field is absent. Treat that as a follow-up `patch_concept` to fill it in, not a hard error.
 
 ### 4. Verify
@@ -92,7 +99,7 @@ human sees new nodes pulse and a toast appear without reloading.
 Five lines max. Cover:
 
 1. What you read (`list_kinds` summary or the slug you focused on).
-2. What you added — slug + kind + parent.
+2. What you added — uid + slug + kind + parent.
 3. What you patched / renamed — old → new.
 4. Any `warnings` returned (and whether you'll address them in a follow-up).
 5. Verify line — node count delta, orphan count delta.
@@ -103,6 +110,7 @@ is a changelog.
 ## Failure modes worth catching
 
 - **Duplicate slugs**: `add_concept` throws on duplicate. Switch to `patch_concept`.
+- **Duplicate identities**: never copy `uid` into a new node. Validation and compilation fail closed on primary/merged UID collisions.
 - **Dangling parent**: `domain: domains/foo` where `domains/foo.md` doesn't
   exist. Either add the parent first, or accept the
   `missing-expected-field` warning and tell the human.

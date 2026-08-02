@@ -1,4 +1,5 @@
 ---
+uid: de610a89-5b71-4426-9d5b-ed6d80b22fb9
 slug: capabilities/refund
 kind: capability
 title: Refund Processing

@@ -1,4 +1,5 @@
 ---
+uid: e84410ff-f930-43b6-ba70-551cb0e0b5de
 slug: elements/customer-account
 kind: element
 title: Customer Account

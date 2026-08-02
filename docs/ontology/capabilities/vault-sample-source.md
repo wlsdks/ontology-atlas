@@ -1,4 +1,5 @@
 ---
+uid: 9d0c5be0-e2dc-4487-8b52-1db955939352
 slug: capabilities/vault-sample-source
 kind: capability
 title: Sample Vault Demo Source

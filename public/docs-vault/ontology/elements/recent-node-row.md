@@ -1,4 +1,5 @@
 ---
+uid: cfdab26b-0dc7-44e9-ad3b-a9db4afeb7e6
 slug: elements/recent-node-row
 kind: element
 title: Recent Node Row

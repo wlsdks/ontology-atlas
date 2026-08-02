@@ -90,12 +90,18 @@ console.log(
 
 function makeVault(seed = []) {
   const root = mkdtempSync(join(tmpdir(), "ontology-atlas-int-"));
-  for (const { slug, content } of seed) {
+  for (const [index, { slug, content }] of seed.entries()) {
     const fullPath = join(root, `${slug}.md`);
     // subdir slug ("capabilities/foo") 도 자동 mkdir — fixture writer 가
     // top-level 외에도 자유롭게 디렉터리 구조 표현 가능.
     mkdirSync(dirname(fullPath), { recursive: true });
-    writeFileSync(fullPath, content, "utf-8");
+    const seededContent = /^---\r?\n/.test(content) && /(?:^|\r?\n)kind\s*:/m.test(content) && !/(?:^|\r?\n)uid\s*:/m.test(content)
+      ? content.replace(
+          /^---(\r?\n)/,
+          `---$1uid: 00000000-0000-4000-8000-${String(index + 1).padStart(12, "0")}$1`,
+        )
+      : content;
+    writeFileSync(fullPath, seededContent, "utf-8");
   }
   return root;
 }
@@ -397,7 +403,9 @@ await test("tools/list — 단일 도구 description 이 batch 짝을 cross-refe
     assert.equal(listConcepts?.outputSchema?.properties?.vaultWarnings?.additionalProperties, false);
     const getConceptTool = findTool("get_concept");
     assert.equal(getConceptTool?.outputSchema?.type, "object");
-    assert.deepEqual(getConceptTool?.outputSchema?.required, ["slug", "frontmatter", "bodyInfo", "neighbors", "outgoingEdges", "mtime"]);
+    assert.deepEqual(getConceptTool?.outputSchema?.required, ["uid", "slug", "frontmatter", "bodyInfo", "neighbors", "outgoingEdges", "mtime"]);
+    assert.equal(getConceptTool?.inputSchema?.properties?.uid?.pattern, "^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$");
+    assert.deepEqual(getConceptTool?.inputSchema?.oneOf, [{ required: ["slug"] }, { required: ["uid"] }]);
     assert.deepEqual(getConceptTool?.inputSchema?.properties?.body?.enum, ["excerpt", "full"]);
     assert.deepEqual(getConceptTool?.outputSchema?.properties?.bodyInfo?.required, ["mode", "totalChars", "returnedChars", "truncated"]);
     assert.equal(getConceptTool?.outputSchema?.additionalProperties, false);
@@ -414,7 +422,8 @@ await test("tools/list — 단일 도구 description 이 batch 짝을 cross-refe
     assert.deepEqual(getConceptsTool?.outputSchema?.required, ["concepts"]);
     assert.equal(getConceptsTool?.outputSchema?.additionalProperties, false);
     assert.equal(getConceptsTool?.outputSchema?.properties?.concepts?.type, "array");
-    assert.deepEqual(getConceptsTool?.outputSchema?.properties?.concepts?.items?.required, ["ok", "slug"]);
+    assert.deepEqual(getConceptsTool?.outputSchema?.properties?.concepts?.items?.required, ["ok"]);
+    assert.deepEqual(getConceptsTool?.inputSchema?.oneOf, [{ required: ["slugs"] }, { required: ["uids"] }]);
     assert.equal(getConceptsTool?.outputSchema?.properties?.concepts?.items?.additionalProperties, false);
     assert.equal(getConceptsTool?.outputSchema?.properties?.concepts?.items?.properties?.ok?.type, "boolean");
     assert.equal(getConceptsTool?.outputSchema?.properties?.concepts?.items?.properties?.frontmatter?.type, "object");
@@ -530,7 +539,7 @@ await test("tools/list — 단일 도구 description 이 batch 짝을 cross-refe
     assert.equal(compileOntology?.outputSchema?.properties?.graphHash?.type, "string");
     assert.equal(compileOntology?.outputSchema?.properties?.nodeCount?.type, "integer");
     assert.equal(compileOntology?.outputSchema?.properties?.byKind?.additionalProperties?.type, "integer");
-    assert.deepEqual(compileOntology?.outputSchema?.properties?.nodes?.items?.required, ["slug", "kind", "title", "mtime", "outDegree", "inDegree"]);
+    assert.deepEqual(compileOntology?.outputSchema?.properties?.nodes?.items?.required, ["uid", "slug", "kind", "title", "mtime", "outDegree", "inDegree"]);
     assert.equal(compileOntology?.outputSchema?.properties?.nodes?.items?.additionalProperties, false);
     assert.deepEqual(compileOntology?.outputSchema?.properties?.edges?.items?.required, ["id", "from", "to", "via", "ref", "resolved", "external"]);
     assert.equal(compileOntology?.outputSchema?.properties?.edges?.items?.additionalProperties, false);
@@ -553,6 +562,9 @@ await test("tools/list — 단일 도구 description 이 batch 짝을 cross-refe
     assert.equal(canonicalizationActionSchema?.properties?.expected_mtime?.minimum, 0);
     assert.equal(compileOntology?.outputSchema?.properties?.indexes?.additionalProperties, false);
     assert.equal(compileOntology?.outputSchema?.properties?.indexes?.properties?.edgeById?.additionalProperties?.additionalProperties, false);
+    assert.equal(compileOntology?.outputSchema?.properties?.indexes?.properties?.uidToSlug?.type, "object");
+    assert.equal(compileOntology?.outputSchema?.properties?.indexes?.properties?.slugToUid?.type, "object");
+    assert.equal(compileOntology?.outputSchema?.properties?.indexes?.properties?.mergedUidToSlug?.type, "object");
     assert.deepEqual(compileOntology?.outputSchema?.properties?.summary?.required, ["nodes", "edges", "graphHash", "maxMtime", "resolvedEdges", "externalEdges", "unresolvedEdges", "aliases", "ambiguousAliases", "issues"]);
     assert.equal(compileOntology?.outputSchema?.properties?.summary?.additionalProperties, false);
     const indexProject = findTool("index_project");
@@ -736,7 +748,7 @@ await test("tools/list — 단일 도구 description 이 batch 짝을 cross-refe
     assert.equal(renameConcept?.outputSchema?.type, "object");
     assert.deepEqual(renameConcept?.outputSchema?.required, [
       "ok", "dryRun", "previewReady", "canConfirm", "wouldChange", "blockedReasons",
-      "oldSlug", "newSlug", "sourcePath", "targetPath", "moved", "backlinkUpdates",
+      "uid", "oldSlug", "newSlug", "sourcePath", "targetPath", "moved", "backlinkUpdates",
     ]);
     assert.equal(renameConcept?.outputSchema?.additionalProperties, false);
     assert.equal(renameConcept?.outputSchema?.properties?.oldSlug?.type, "string");
@@ -768,7 +780,7 @@ await test("tools/list — 단일 도구 description 이 batch 짝을 cross-refe
     assert.equal(mergeConcepts?.outputSchema?.type, "object");
     assert.deepEqual(mergeConcepts?.outputSchema?.required, [
       "ok", "dryRun", "previewReady", "canConfirm", "wouldChange", "blockedReasons",
-      "fromSlug", "intoSlug", "fromPath", "deleted", "backlinkUpdates", "capturedFrom",
+      "fromUid", "intoUid", "absorbedUids", "fromSlug", "intoSlug", "fromPath", "deleted", "backlinkUpdates", "capturedFrom",
     ]);
     assert.equal(mergeConcepts?.outputSchema?.additionalProperties, false);
     assert.equal(mergeConcepts?.outputSchema?.properties?.fromSlug?.type, "string");
@@ -789,7 +801,7 @@ await test("tools/list — 단일 도구 description 이 batch 짝을 cross-refe
     const deleteConcept = findTool("delete_concept");
     assert.equal(deleteConcept?.outputSchema?.type, "object");
     assert.deepEqual(deleteConcept?.outputSchema?.required, [
-      "ok", "dryRun", "previewReady", "canConfirm", "wouldChange", "blockedReasons", "slug", "filePath",
+      "ok", "dryRun", "previewReady", "canConfirm", "wouldChange", "blockedReasons", "uid", "slug", "filePath",
     ]);
     assert.equal(deleteConcept?.outputSchema?.additionalProperties, false);
     assertCleanStringSchema(deleteConcept?.outputSchema?.properties?.slug, "delete slug");
@@ -1979,7 +1991,7 @@ await test("compile_ontology — deterministic graph artifact + indexes", async 
     ]);
     const result = getCallParsed(responses, 2);
     assert.deepEqual(getCallStructured(responses, 2), result);
-    assert.equal(result.version, 1);
+    assert.equal(result.version, 2);
     assert.equal(result.summary.nodes, 2);
     assert.equal(result.summary.edges, 2);
     assert.match(result.summary.graphHash, /^[a-f0-9]{64}$/);
@@ -2021,6 +2033,10 @@ await test("compile_ontology — deterministic graph artifact + indexes", async 
     assert.deepEqual(result.indexes.in["domains/auth"], [
       "capabilities/login->domains/auth:dependencies:auth-domain",
     ]);
+    for (const node of result.nodes) {
+      assert.equal(result.indexes.uidToSlug[node.uid], node.slug);
+      assert.equal(result.indexes.slugToUid[node.slug], node.uid);
+    }
     assert.ok(result.issues.some((issue) => issue.code === "dangling-graph-reference"));
   } finally {
     rmSync(root, { recursive: true, force: true });
@@ -4518,6 +4534,58 @@ await test("get_concept/add_relation — ambiguous alias 는 명시적 에러로
   }
 });
 
+await test("identity reads — list/get/batch expose uid beside canonical slug and resolve exact uid selectors", async () => {
+  const alphaUid = "11111111-1111-4111-8111-111111111111";
+  const betaUid = "22222222-2222-4222-8222-222222222222";
+  const root = makeVault([
+    {
+      slug: "alpha",
+      content: `---\nuid: ${alphaUid}\nkind: capability\ntitle: Alpha\n---\nAlpha body`,
+    },
+    {
+      slug: "beta",
+      content: `---\nuid: ${betaUid}\nkind: element\ntitle: Beta\n---\nBeta body`,
+    },
+  ]);
+  try {
+    const { responses } = await rpc(root, [
+      ...INIT_REQUESTS,
+      callTool(2, "list_concepts"),
+      callTool(3, "get_concept", { slug: "alpha" }),
+      callTool(4, "get_concept", { uid: betaUid }),
+      callTool(5, "get_concepts", { uids: [betaUid, alphaUid] }),
+      callTool(6, "get_concept", { slug: "alpha", uid: alphaUid }),
+    ]);
+
+    assert.deepEqual(
+      getCallParsed(responses, 2).nodes.map(({ uid, slug }) => ({ uid, slug })),
+      [
+        { uid: alphaUid, slug: "alpha" },
+        { uid: betaUid, slug: "beta" },
+      ],
+    );
+    assert.deepEqual(
+      (({ uid, slug }) => ({ uid, slug }))(getCallParsed(responses, 3)),
+      { uid: alphaUid, slug: "alpha" },
+    );
+    assert.deepEqual(
+      (({ uid, slug }) => ({ uid, slug }))(getCallParsed(responses, 4)),
+      { uid: betaUid, slug: "beta" },
+    );
+    assert.deepEqual(
+      getCallParsed(responses, 5).concepts.map(({ uid, slug }) => ({ uid, slug })),
+      [
+        { uid: betaUid, slug: "beta" },
+        { uid: alphaUid, slug: "alpha" },
+      ],
+    );
+    assert.equal(isErrorResponse(responses, 6), true);
+    assert.match(getCallText(responses, 6), /exactly one of slug or uid/i);
+  } finally {
+    rmSync(root, { recursive: true, force: true });
+  }
+});
+
 // R+ — get_concepts 배치 reader. K개 slug → 1 round trip. 입력 순서 보존,
 // missing slug 는 batch 를 abort 하지 않고 { ok: false, error } 행으로 surface.
 await test("get_concepts — 배치 read, 입력 순서 보존 + partial result", async () => {
@@ -5739,6 +5807,42 @@ await test("validate_vault — dangling graph reference warning surface", async 
   }
 });
 
+await test("validate_vault — duplicate uid across primary and merged history is a whole-vault hard error", async () => {
+  const claimedUid = "11111111-1111-4111-8111-111111111111";
+  const root = makeVault([
+    {
+      slug: "a",
+      content: `---\nuid: ${claimedUid}\nkind: document\ntitle: A\n---\n`,
+    },
+    {
+      slug: "b",
+      content: `---\nuid: 22222222-2222-4222-8222-222222222222\nmerged_uids: [${claimedUid}]\nkind: document\ntitle: B\n---\n`,
+    },
+    {
+      slug: "c",
+      content: `---\nuid: 33333333-3333-4333-8333-333333333333\nmerged_uids: [${claimedUid}]\nkind: document\ntitle: C\n---\n`,
+    },
+  ]);
+  try {
+    const { responses } = await rpc(root, [
+      ...INIT_REQUESTS,
+      callTool(2, "validate_vault"),
+    ]);
+    const result = getCallParsed(responses, 2);
+    assert.equal(result.summary.errorFiles, 3);
+    assert.equal(result.summary.byCode["duplicate-uid"].severity, "error");
+    assert.equal(result.summary.byCode["duplicate-uid"].count, 3);
+    assert.deepEqual(
+      result.problems
+        .filter((problem) => problem.issues.some((issue) => issue.code === "duplicate-uid"))
+        .map((problem) => problem.slug),
+      ["a", "b", "c"],
+    );
+  } finally {
+    rmSync(root, { recursive: true, force: true });
+  }
+});
+
 await test("patch_concept — expected_mtime stale 면 conflict error response", async () => {
   const root = makeVault([
     { slug: "foo", content: "---\nkind: capability\ntitle: Foo\n---\n" },
@@ -6080,6 +6184,48 @@ await test("merge_concepts confirm:true — fromSlug 삭제 + backlink redirect"
   }
 });
 
+await test("merge_concepts confirm:true — survivor uid is preserved and source identity history is absorbed", async () => {
+  const fromUid = "11111111-1111-4111-8111-111111111111";
+  const fromHistoricalUid = "44444444-4444-4444-8444-444444444444";
+  const intoUid = "22222222-2222-4222-8222-222222222222";
+  const intoHistoricalUid = "33333333-3333-4333-8333-333333333333";
+  const root = makeVault([
+    {
+      slug: "from",
+      content: `---\nuid: ${fromUid}\nmerged_uids: [${fromHistoricalUid}]\nkind: document\ntitle: From\n---\nFrom body`,
+    },
+    {
+      slug: "into",
+      content: `---\nuid: ${intoUid}\nmerged_uids: [${intoHistoricalUid}]\nkind: document\ntitle: Into\n---\nInto body`,
+    },
+  ]);
+  try {
+    const { responses } = await rpc(root, [
+      ...INIT_REQUESTS,
+      callTool(2, "merge_concepts", {
+        fromSlug: "from",
+        intoSlug: "into",
+        confirm: true,
+      }),
+      callTool(3, "get_concept", { slug: "into" }),
+    ]);
+    const merged = getCallParsed(responses, 2);
+    assert.equal(merged.fromUid, fromUid);
+    assert.equal(merged.intoUid, intoUid);
+    assert.deepEqual(merged.absorbedUids, [fromUid, fromHistoricalUid]);
+
+    const survivor = getCallParsed(responses, 3);
+    assert.equal(survivor.uid, intoUid);
+    assert.deepEqual(survivor.frontmatter.merged_uids, [
+      fromUid,
+      intoHistoricalUid,
+      fromHistoricalUid,
+    ].sort());
+  } finally {
+    rmSync(root, { recursive: true, force: true });
+  }
+});
+
 await test("merge_concepts dry-run — preview 만, 디스크 변경 0", async () => {
   const root = makeVault([
     { slug: "from", content: "---\nkind: capability\ntitle: From\n---\n| raw | table |\n| --- | --- |\n\nDry-run source summary." },
@@ -6188,6 +6334,43 @@ await test("delete_concept dry-run — backlink preview 만, 디스크 변경 0"
     assert.equal(result.postWriteMaintenance, undefined);
     assert.equal(readFileSync(join(root, "gone.md"), "utf-8"), beforeGone);
     assert.equal(readFileSync(join(root, "ref.md"), "utf-8"), beforeRef);
+  } finally {
+    rmSync(root, { recursive: true, force: true });
+  }
+});
+
+await test("identity destructive previews — rename/reclassify/delete expose uid and merge exposes both uids", async () => {
+  const fromUid = "11111111-1111-4111-8111-111111111111";
+  const intoUid = "22222222-2222-4222-8222-222222222222";
+  const root = makeVault([
+    {
+      slug: "from",
+      content: `---\nuid: ${fromUid}\nkind: capability\ntitle: From\ndomain: domain\n---\nFrom body`,
+    },
+    {
+      slug: "into",
+      content: `---\nuid: ${intoUid}\nkind: capability\ntitle: Into\ndomain: domain\n---\nInto body`,
+    },
+  ]);
+  try {
+    const { responses } = await rpc(root, [
+      ...INIT_REQUESTS,
+      callTool(2, "rename_concept", { oldSlug: "from", newSlug: "renamed" }),
+      callTool(3, "reclassify_concept", { slug: "from", newKind: "document" }),
+      callTool(4, "merge_concepts", { fromSlug: "from", intoSlug: "into" }),
+      callTool(5, "delete_concept", { slug: "from" }),
+    ]);
+
+    assert.equal(getCallParsed(responses, 2).uid, fromUid);
+    assert.equal(getCallParsed(responses, 3).uid, fromUid);
+    assert.deepEqual(
+      (({ fromUid: actualFromUid, intoUid: actualIntoUid }) => ({
+        fromUid: actualFromUid,
+        intoUid: actualIntoUid,
+      }))(getCallParsed(responses, 4)),
+      { fromUid, intoUid },
+    );
+    assert.equal(getCallParsed(responses, 5).uid, fromUid);
   } finally {
     rmSync(root, { recursive: true, force: true });
   }
@@ -6768,7 +6951,11 @@ await test("git_status/git_snapshot — validated dry-run and vault-only local c
     git("add", ".");
     git("commit", "-m", "initial");
     const expectedHead = git("rev-parse", "HEAD");
-    writeFileSync(join(root, "project.md"), "---\nkind: project\ntitle: Updated Project\n---\n");
+    const projectPath = join(root, "project.md");
+    writeFileSync(
+      projectPath,
+      readFileSync(projectPath, "utf-8").replace("title: Project", "title: Updated Project"),
+    );
 
     const { responses } = await rpc(root, [
       ...INIT_REQUESTS,

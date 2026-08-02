@@ -45,6 +45,7 @@ export {
 export {
   buildVaultMarkdown,
   buildNewNodeDoc,
+  generateNodeUid,
   vaultFolderForKind,
   VAULT_CREATED_BY_KEY,
   VAULT_CREATED_BY_HUMAN,

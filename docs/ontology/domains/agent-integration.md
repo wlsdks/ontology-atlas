@@ -1,4 +1,5 @@
 ---
+uid: 0f1364a5-7d0f-4fa5-b913-454d47b33cca
 slug: domains/agent-integration
 kind: domain
 title: AI Agent Integration

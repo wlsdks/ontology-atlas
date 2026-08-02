@@ -1,4 +1,5 @@
 ---
+uid: b7bd6fec-7f97-456b-8819-fd58feb8aa32
 slug: elements/point-ledger
 kind: element
 title: Point Ledger

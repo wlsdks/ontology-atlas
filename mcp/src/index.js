@@ -123,7 +123,7 @@ import { appendActivityEntry, buildActivityEntry, readHeartbeatAgent } from './a
 import { writeFileSync, unlinkSync } from 'node:fs';
 import { dirname } from 'node:path';
 import { mkdirSync } from 'node:fs';
-import { buildMarkdown } from './parser.mjs';
+import { buildMarkdown, parseFrontmatter } from './parser.mjs';
 import { analyzeRepoStructure } from './analyze.mjs';
 import { buildAbsorptionPlan, buildSlimPointer } from './absorb.mjs';
 import {
@@ -170,7 +170,10 @@ import {
   localeLabelCodes,
   agentCreatedBy,
   CREATED_BY_KEY,
+  NODE_UID_PATTERN,
   flatSlugIssue,
+  mergeNodeIdentityHistory,
+  nodeUidIssue,
 } from './schema.mjs';
 import {
   closestAllowedValue,
@@ -1411,6 +1414,10 @@ try {
 // 매번 시행착오로 학습되는 문제를 단번에 해소.
 const SERVER_INSTRUCTIONS = `ontology-atlas — vault of markdown files where each \`.md\` with a frontmatter \`kind:\` is an ontology node. The graph encodes the codebase's mental model and is shared with the human via plain markdown.
 
+## Node identity
+
+Every valid node has both identities: immutable \`uid\` is the permanent machine identity, while \`slug\` is the current human-readable address. \`list_concepts\`, \`get_concept\`, \`get_concepts\`, compiled/query node rows, and agent handoffs return both. Use \`get_concept({uid})\` or \`get_concepts({uids:[...]})\` for exact continuity across renames; use slug for frontmatter relations, URLs, and all graph-operation inputs. Never treat a slug change as a new UID.
+
 ## Tool inventory (33 tools = read 19 + write 14)
 
 **read** — \`connection_info\` · \`git_status\` · \`git_history\` · \`list_concepts\` · \`get_concept\` · \`get_concepts\` · \`find_evidence\` · \`find_backlinks\` · \`find_neighbors\` · \`find_path\` · \`list_kinds\` · \`find_orphans\` · \`query_concepts\` · \`compile_ontology\` · \`query_ontology\` · \`validate_vault\` · \`analyze_repo_structure\` · \`infer_imports\` · \`index_project\`.
@@ -1437,7 +1444,7 @@ const SERVER_INSTRUCTIONS = `ontology-atlas — vault of markdown files where ea
 5. \`query_ontology({operation:'workspace_brief'})\` — read-only first-contact diagnosis: project shape, health status, and next actions without fetching the full graph. Use \`query_ontology({operation:'health'})\` when you need a deeper integrity dashboard.
 6. \`query_ontology({operation:'overview', limit: 5})\` — cheap graph-query smoke: counts, relation distribution, and hubs without fetching the full compile artifact.
 7. \`query_ontology({operation:'query_plan', targetOperation:'overview'})\` and \`query_ontology({operation:'query_plan', targetOperation:'project_map'})\` — side-effect-free cost/index contracts before heavier graph exploration, including \`execution.shouldRun\`, \`nextStep\`, \`suggestedQuery\`, and narrowed \`saferQuery\` guidance when the planned traversal is too broad. \`targetOperation\` accepts ${QUERY_PLAN_TARGET_OPERATION_UNION}.
-8. \`get_concept(slug)\` — frontmatter + body excerpt + graph neighbors / outgoingEdges + \`mtime\`. **Capture the \`mtime\`** if you plan to write later. **For K specific slugs use \`get_concepts({slugs: [...]})\` (max 50) to fetch all in one call instead of K round-trips.**
+8. \`get_concept({slug})\` or \`get_concept({uid})\` — exact node identity as \`{uid, slug}\` plus frontmatter, body excerpt, graph neighbors / outgoingEdges, and \`mtime\`. **Capture the \`mtime\`** if you plan to write later. **For K specific selectors use one of \`get_concepts({slugs: [...]})\` / \`get_concepts({uids: [...]})\` (max 50).**
 9. \`find_backlinks(slug)\` — understand how a node is referenced (run *before* rename / merge). Each row already includes \`domain\` + \`mtime\` — no follow-up \`get_concept\` needed for sort/filter.
 10. \`find_neighbors(slug)\` — one-hop graph subgraph around a node; use \`direction\` / \`types\` to inspect incoming, outgoing, or both.
 11. \`find_path(from, to)\` — "how does A relate to B?" (BFS, undirected). Returns \`hops: [slug...]\`, aligned \`nodes: [{slug, kind, title, domain?}]\`, **and \`edges: [{from, to, via}]\` where \`via\` is the frontmatter key (\`domains\` / \`domain\` / \`capabilities\` / \`elements\` / \`dependencies\` / \`relates\` / \`contains\` / \`describes\`) that linked the pair** — so you see not just *that* A and B are connected but *why*.
@@ -1447,9 +1454,9 @@ const SERVER_INSTRUCTIONS = `ontology-atlas — vault of markdown files where ea
 15. \`query_ontology({operation:${QUERY_ONTOLOGY_OPERATION_UNION}, ...})\` — graph-engine query over the compiled artifact. Use \`neighbors\` for local graph view, \`path\` for one relation route, \`all_paths\` for bounded simple paths between two nodes, \`query_plan\` for an EXPLAIN-style side-effect-free cost/index estimate before running a target operation (including filter-preserving \`suggestedQuery\` and \`estimate.totalMatches\` for \`match_nodes\` / \`match_edges\`), \`centrality\` for PageRank-style core-node ranking plus bridge/authority/hub lists, \`communities\` for label-propagation clusters inside the graph, \`similar_nodes\` before writes to catch likely duplicate or overlapping concepts, \`explain_relation\` for direct edges + shortest path + shared-neighbor explanation between two nodes, \`reachability\` for transitive graph closure from a start node, \`pattern_walk\` for explicit relation-sequence paths such as project → domains → capabilities, \`impact\` for "what depends on this?" change analysis, \`blast_radius\` for impact grouped by kind/domain with cross-domain edge risk, \`subgraph\` for a bounded N-hop graph slice, \`builder_context\` for persisted Workshop focus/layout plus safe MCP write handoff (operation name retained for compatibility), \`overview\` for dashboard-style graph aggregates, \`schema\` for \`(:kind)-[:relation]->(:kind)\` patterns, \`facets\` for filter/dashboard aggregates, \`match_nodes\` for graph DB-style node rows with degree filters plus a \`followUp\` packet for focused next queries, \`match_edges\` for graph DB-style edge pattern rows plus a \`followUp\` packet for focused relation evidence and preflight, \`node_profile\` for a single node detail dashboard, \`domain_profile\` for a domain detail dashboard, \`domain_matrix\` for domain-to-domain coupling, \`project_scope\` for a project-contained graph slice, \`project_map\` for a domain-by-domain project map, \`relation_check\` before writes, \`components\` to find disconnected graph islands, \`lineage\` and \`containment_tree\` for project/domain/capability containment, \`cycles\` for directed dependency-cycle checks, \`topological_order\` for prerequisite-first dependency ordering, \`recommend_relations\` for safe domain-containment suggestions, \`growth_plan\` for side-effect-free ontology expansion candidates, \`maintenance_plan\` for ordered post-write graph cleanup/repair actions, \`agent_brief\` for Claude Code/Codex handoff prompt, recipes, graph entrypoints, playbook evidence/stopWhen checklists, write guardrails, \`graph_traversal\` playbook, \`traversalStrategy\` for plan-first bounded traversal, \`relationDecisionGuide\`, \`resultContracts\` for interpreting \`all_paths\` completeness (\`limit\` / \`searchBudget\` / \`expandedStates\` / \`exhaustive\` / \`truncatedByBudget\` / \`totalPathsExact\` plus \`evidence.status\` / \`evidence.reason\` / \`evidence.pathsComplete\`) and \`match_nodes\` / \`match_edges\` followUp evidence, and read-first write policy, \`workspace_brief\` for first-contact status + next actions, and \`health\` for a one-shot graph integrity dashboard.
 16. \`index_project({rootPath, maxFiles, threshold})\` — one read-only indexing checkpoint for large projects. It combines repository analysis, imports, vault validation/alignment, bounded semantic evidence, and an extraction contract. Treat source/import facts as observed, generated meanings as proposed, and only user-approved persisted concepts as shared. It never writes markdown.
 
-All read-tool match rows share the same shape \`{slug, kind, title, domain, mtime, ...}\` — same sort/filter logic works across every read tool.
+All node rows carry \`{uid, slug, ...}\`: UID is permanent identity, slug is the current readable address. Graph relation values and graph-operation inputs remain slug-based.
 
-All tool input schemas are strict: unknown arguments are rejected instead of being ignored, unknown tool names are rejected with the closest tool-name hint, and invalid enum values are rejected too. Tool-level error responses include \`structuredContent: { ok: false, errorCode, error, ...repairFields }\`; \`unknown_tool\` means fix the reported tool name, \`unknown_argument\` means fix reported argument names, while \`invalid_arguments\` means fix reported enum/filter/type values. For repairable strict-input errors, read structured fields such as \`receivedTool\`, \`receivedArgument\`, \`unknownArguments\`, \`rowName\`, \`receivedField\`, \`unknownFields\`, \`allowedFields\`, \`receivedFields\`, \`firstSeenAt\`, \`receivedValue\`, \`suggestion\`, \`allowedTools\`, \`allowedArguments\`, \`allowedValues\` before retrying. For missing node errors, read \`missingSlug\`, \`similarSlugs\`, \`recoveryTools\`, and optional \`createTool\` instead of parsing prose. For slug conflicts, read \`conflictSlug\`, \`recoveryTools\`, and optional \`overwriteOption\`. Do not parse the human-readable text unless a client cannot read \`structuredContent\`. If you see an error like \`Unknown tool: list_concept. Did you mean "list_concepts"?\`, \`Unknown argument "lmit" for list_concepts. Did you mean "limit"?\`, \`Unknown arguments for list_concepts: "lmit" (did you mean "limit"?), "summry" (did you mean "summary"?)\`, or \`operation must be one of: ... Did you mean "overview"?\`, fix every reported key/value before retrying; do not assume the server fell back to a default.
+All tool input schemas are strict: unknown arguments are rejected instead of being ignored, unknown tool names are rejected with the closest tool-name hint, and invalid enum values are rejected too. Tool-level error responses include \`structuredContent: { ok: false, errorCode, error, ...repairFields }\`; \`unknown_tool\` means fix the reported tool name, \`unknown_argument\` means fix reported argument names, while \`invalid_arguments\` means fix reported enum/filter/type values. For repairable strict-input errors, read structured fields such as \`receivedTool\`, \`receivedArgument\`, \`unknownArguments\`, \`rowName\`, \`receivedField\`, \`unknownFields\`, \`allowedFields\`, \`receivedFields\`, \`firstSeenAt\`, \`receivedValue\`, \`suggestion\`, \`allowedTools\`, \`allowedArguments\`, \`allowedValues\` before retrying. For missing node errors, read \`missingUid\` for an exact UID miss or \`missingSlug\` / \`similarSlugs\` / \`recoveryTools\` / optional \`createTool\` for a slug miss instead of parsing prose. For slug conflicts, read \`conflictSlug\`, \`recoveryTools\`, and optional \`overwriteOption\`. Do not parse the human-readable text unless a client cannot read \`structuredContent\`. If you see an error like \`Unknown tool: list_concept. Did you mean "list_concepts"?\`, \`Unknown argument "lmit" for list_concepts. Did you mean "limit"?\`, \`Unknown arguments for list_concepts: "lmit" (did you mean "limit"?), "summry" (did you mean "summary"?)\`, or \`operation must be one of: ... Did you mean "overview"?\`, fix every reported key/value before retrying; do not assume the server fell back to a default.
 
 \`health\`, \`workspace_brief\`, and \`agent_brief\` can tune their internal graph probes with \`componentLimit\`, \`cycleLimit\`, \`recommendationLimit\`, \`orderLimit\`, \`nodeLimit\`, \`dependencyTypes\`, and \`componentTypes\`. \`dependencyTypes\` / \`componentTypes\` accept relation types ${RELATION_TYPE_UNION}; typoed values fail with nearest-value hints. Use these controls for large vaults or focused diagnostics instead of pulling the full compile artifact.
 
@@ -1644,6 +1651,11 @@ const TOOLS = [
           items: {
             type: 'object',
             properties: {
+              uid: {
+                ...NON_BLANK_STRING_SCHEMA,
+                pattern: NODE_UID_PATTERN,
+                description: 'Permanent immutable node identity. Slug remains the current human-readable address.',
+              },
               slug: NON_BLANK_STRING_SCHEMA,
               kind: NON_BLANK_STRING_SCHEMA,
               title: NON_BLANK_STRING_SCHEMA,
@@ -1691,13 +1703,18 @@ const TOOLS = [
   {
     name: 'get_concept',
     description:
-      'Fetch a single node by slug or unique alias — its frontmatter, its body, direct graph neighbors, outgoingEdges, and mtime. Accepts exact vault-relative slugs, unique tail slugs, or frontmatter `slug` aliases; response slug is canonical. **By default you get `excerpt` — the first prose paragraph only. The node body is where the construction rules put definition, evidence, confidence, and in-scope/out-of-scope, so pass `body: "full"` whenever you are reading a node to answer a question rather than just to identify it.** `bodyInfo` always reports `totalChars` / `returnedChars` / `truncated`, so a partial read is never silent. **For K specific slugs in one call use `get_concepts({slugs: [...]})` (max 50, or 20 with `body: "full"`) instead of K round-trips.** When the slug doesn\'t resolve, the error\'s `structuredContent.growthHint` carries a did-you-mean near-slug or an add_concept scaffold — read it instead of retrying blind.',
+      'Fetch one node by exactly one selector: `slug` (canonical slug or unique alias) or immutable `uid`. Successful responses always carry both the permanent `uid` and current canonical `slug`; graph relations and graph-operation inputs remain slug-based. Returns frontmatter, body, direct graph neighbors, outgoingEdges, and mtime. **By default you get `excerpt` — the first prose paragraph only. The node body is where the construction rules put definition, evidence, confidence, and in-scope/out-of-scope, so pass `body: "full"` whenever you are reading a node to answer a question rather than just to identify it.** `bodyInfo` always reports `totalChars` / `returnedChars` / `truncated`, so a partial read is never silent. **For K specific selectors in one call use `get_concepts({slugs: [...]})` or `get_concepts({uids: [...]})`.** When a slug does not resolve, structured growth guidance remains available.',
     inputSchema: {
       type: 'object',
       properties: {
         slug: nonBlankStringSchema(
           'Vault-relative slug (e.g. projects/auth-platform), unique tail slug, or frontmatter `slug` alias. Omit the .md extension.',
         ),
+        uid: {
+          ...NON_BLANK_STRING_SCHEMA,
+          pattern: NODE_UID_PATTERN,
+          description: 'Exact permanent node UID. Use instead of `slug`, never together with it.',
+        },
         body: {
           type: 'string',
           enum: BODY_DELIVERY_MODES,
@@ -1705,11 +1722,16 @@ const TOOLS = [
             '`excerpt` (default) returns the first prose paragraph as `excerpt`. `full` returns the entire markdown body as `body` and omits `excerpt`. Use `full` when the answer depends on what the node actually says — evidence paths, confidence, scope boundaries.',
         },
       },
-      required: ['slug'],
+      oneOf: [{ required: ['slug'] }, { required: ['uid'] }],
     },
     outputSchema: {
       type: 'object',
       properties: {
+        uid: {
+          ...NON_BLANK_STRING_SCHEMA,
+          pattern: NODE_UID_PATTERN,
+          description: 'Permanent immutable node identity.',
+        },
         slug: NON_BLANK_STRING_SCHEMA,
         frontmatter: {
           type: 'object',
@@ -1746,14 +1768,14 @@ const TOOLS = [
       },
       // `excerpt` 는 더 이상 필수가 아니다 — `body: "full"` 이면 본문이 `body`
       // 로 오고 발췌는 아예 실리지 않는다 (같은 글 두 번 보내지 않기).
-      required: ['slug', 'frontmatter', 'bodyInfo', 'neighbors', 'outgoingEdges', 'mtime'],
+      required: ['uid', 'slug', 'frontmatter', 'bodyInfo', 'neighbors', 'outgoingEdges', 'mtime'],
       additionalProperties: false,
     },
   },
   {
     name: 'get_concepts',
     description:
-      'Fetch *multiple* nodes in one call — same per-row shape as `get_concept` (frontmatter + excerpt|body + bodyInfo + neighbors + mtime + warnings?), but accepts an array of slugs or unique aliases. Use when you have K specific slugs from `list_concepts` / `find_path` / `find_orphans` etc. and need their full details — saves K-1 round-trips. `body: "full"` applies to every row (max 20 slugs in that mode) and is how you read the definition / evidence / confidence sections the construction rules ask authors to write. Order of `concepts[]` matches input `slugs[]`; successful rows return canonical `slug`. Missing or invalid slug rows return `{ slug, ok: false, error, errorCode, ...repairFields }` rather than aborting the batch, including missing-node guidance and `growthHint` when available, so later valid slugs still resolve and agents can recover without parsing prose.',
+      'Fetch multiple nodes by exactly one selector array: `slugs` (canonical slugs or unique aliases) or immutable `uids`. Same per-row shape as `get_concept`; successful rows always return permanent `uid` plus current canonical `slug`. Order matches the selected input array. Missing or invalid slug rows return partial `{slug, ok:false, error, ...repairFields}` rows, so later valid slugs still resolve; UID misses likewise return `{uid, ok:false, error, ...repairFields}` without aborting the batch. Graph relations and graph-operation inputs remain slug-based.',
     inputSchema: {
       type: 'object',
       properties: {
@@ -1763,6 +1785,12 @@ const TOOLS = [
           items: NON_BLANK_STRING_SCHEMA,
           description: 'Vault-relative slugs, unique tail slugs, or frontmatter `slug` aliases (e.g. ["capabilities/x", "elements/y"]). Omit the .md extension. Max 50 per call (max 20 when body is `full`).',
         },
+        uids: {
+          type: 'array',
+          maxItems: 50,
+          items: { ...NON_BLANK_STRING_SCHEMA, pattern: NODE_UID_PATTERN },
+          description: 'Exact permanent node UIDs. Use instead of `slugs`, never together with it. Max 50 (max 20 with body `full`).',
+        },
         body: {
           type: 'string',
           enum: BODY_DELIVERY_MODES,
@@ -1770,7 +1798,7 @@ const TOOLS = [
             'Applies to every row. `excerpt` (default) returns the first prose paragraph per row; `full` returns the entire markdown body per row and caps the batch at 20 slugs.',
         },
       },
-      required: ['slugs'],
+      oneOf: [{ required: ['slugs'] }, { required: ['uids'] }],
     },
     outputSchema: {
       type: 'object',
@@ -1783,6 +1811,11 @@ const TOOLS = [
               ok: {
                 type: 'boolean',
                 description: 'True for resolved concept rows; false for missing or invalid input rows.',
+              },
+              uid: {
+                ...NON_BLANK_STRING_SCHEMA,
+                pattern: NODE_UID_PATTERN,
+                description: 'Canonical permanent UID for successful rows; requested UID for UID-selector error rows.',
               },
               slug: {
                 ...NON_BLANK_STRING_SCHEMA,
@@ -1825,12 +1858,13 @@ const TOOLS = [
               errorCode: { type: 'string' },
               missingSubject: { type: 'string' },
               missingSlug: { type: 'string' },
+              missingUid: { type: 'string', pattern: NODE_UID_PATTERN },
               similarSlugs: { type: 'array', items: { type: 'string' } },
               recoveryTools: { type: 'array', items: { type: 'string' } },
               createTool: { type: 'string' },
               growthHint: GROWTH_HINT_OUTPUT_SCHEMA,
             },
-            required: ['ok', 'slug'],
+            required: ['ok'],
             additionalProperties: false,
           },
         },
@@ -2734,7 +2768,7 @@ const TOOLS = [
         includeIndexes: {
           type: 'boolean',
           description:
-            'When true, include indexes `{out, in, byKind, byDomain, edgeById, aliasToSlug}`. Defaults false to keep payload smaller.',
+            'When true, include indexes `{out, in, byKind, byDomain, edgeById, aliasToSlug, uidToSlug, slugToUid, mergedUidToSlug}`. Graph traversal remains slug-based; UID indexes provide exact identity resolution. Defaults false to keep payload smaller.',
         },
         summary: {
           type: 'boolean',
@@ -2793,6 +2827,11 @@ const TOOLS = [
           items: {
             type: 'object',
             properties: {
+              uid: { ...NON_BLANK_STRING_SCHEMA, pattern: NODE_UID_PATTERN },
+              merged_uids: {
+                type: 'array',
+                items: { ...NON_BLANK_STRING_SCHEMA, pattern: NODE_UID_PATTERN },
+              },
               slug: NON_BLANK_STRING_SCHEMA,
               kind: { type: 'string' },
               title: { type: 'string' },
@@ -2802,7 +2841,7 @@ const TOOLS = [
               outDegree: { type: 'integer', minimum: 0 },
               inDegree: { type: 'integer', minimum: 0 },
             },
-            required: ['slug', 'kind', 'title', 'mtime', 'outDegree', 'inDegree'],
+            required: ['uid', 'slug', 'kind', 'title', 'mtime', 'outDegree', 'inDegree'],
             additionalProperties: false,
           },
         },
@@ -2918,6 +2957,18 @@ const TOOLS = [
               },
             },
             aliasToSlug: {
+              type: 'object',
+              additionalProperties: NON_BLANK_STRING_SCHEMA,
+            },
+            uidToSlug: {
+              type: 'object',
+              additionalProperties: NON_BLANK_STRING_SCHEMA,
+            },
+            slugToUid: {
+              type: 'object',
+              additionalProperties: { ...NON_BLANK_STRING_SCHEMA, pattern: NODE_UID_PATTERN },
+            },
+            mergedUidToSlug: {
               type: 'object',
               additionalProperties: NON_BLANK_STRING_SCHEMA,
             },
@@ -4048,6 +4099,7 @@ const TOOLS = [
     name: 'rename_concept',
     description:
       '⚠ MULTI-FILE WRITE — change a slug and update every backlink in one atomic graph-level operation. ' +
+      'The node UID is preserved; only its current human-readable slug changes. ' +
       'Renames the .md file (oldSlug → newSlug, directory move OK), updates the moved file\'s ' +
       'frontmatter `slug:` key, and rewrites every backlink — frontmatter array entries (capabilities / ' +
       'elements / dependencies / relates / contains / describes), inline-string keys, and body links ' +
@@ -4091,6 +4143,7 @@ const TOOLS = [
         ok: { type: 'boolean' },
         dryRun: { type: 'boolean' },
         ...DESTRUCTIVE_PREVIEW_OUTPUT_PROPERTIES,
+        uid: { ...NON_BLANK_STRING_SCHEMA, pattern: NODE_UID_PATTERN },
         oldSlug: { type: 'string' },
         newSlug: { type: 'string' },
         sourcePath: { type: 'string' },
@@ -4101,14 +4154,14 @@ const TOOLS = [
         changed: { type: 'boolean' },
         postWriteMaintenance: POST_WRITE_MAINTENANCE_OUTPUT_SCHEMA,
       },
-      required: ['ok', 'dryRun', ...DESTRUCTIVE_PREVIEW_REQUIRED, 'oldSlug', 'newSlug', 'sourcePath', 'targetPath', 'moved', 'backlinkUpdates'],
+      required: ['ok', 'dryRun', ...DESTRUCTIVE_PREVIEW_REQUIRED, 'uid', 'oldSlug', 'newSlug', 'sourcePath', 'targetPath', 'moved', 'backlinkUpdates'],
       additionalProperties: false,
     },
   },
   {
     name: 'reclassify_concept',
     description:
-      '⚠ MULTI-FILE WRITE — change a concept kind and optionally its canonical slug/domain in one previewable transaction. Redirects backlinks like rename_concept and replaces a generated starter body with the new kind template while preserving custom prose. Defaults to dry-run.',
+      '⚠ MULTI-FILE WRITE — change a concept kind and optionally its canonical slug/domain in one previewable transaction. The permanent UID is preserved. Redirects backlinks like rename_concept and replaces a generated starter body with the new kind template while preserving custom prose. Defaults to dry-run.',
     inputSchema: {
       type: 'object',
       properties: {
@@ -4126,6 +4179,7 @@ const TOOLS = [
       properties: {
         ok: { type: 'boolean' }, dryRun: { type: 'boolean' }, changed: { type: 'boolean' },
         ...DESTRUCTIVE_PREVIEW_OUTPUT_PROPERTIES,
+        uid: { ...NON_BLANK_STRING_SCHEMA, pattern: NODE_UID_PATTERN },
         oldSlug: NON_BLANK_STRING_SCHEMA, newSlug: NON_BLANK_STRING_SCHEMA,
         oldKind: NON_BLANK_STRING_SCHEMA, newKind: NON_BLANK_STRING_SCHEMA,
         sourcePath: NON_BLANK_STRING_SCHEMA, targetPath: NON_BLANK_STRING_SCHEMA,
@@ -4133,7 +4187,7 @@ const TOOLS = [
         backlinkUpdates: BACKLINK_REWRITE_PLAN_OUTPUT_SCHEMA,
         postWriteMaintenance: POST_WRITE_MAINTENANCE_OUTPUT_SCHEMA,
       },
-      required: ['ok', 'dryRun', 'changed', ...DESTRUCTIVE_PREVIEW_REQUIRED, 'oldSlug', 'newSlug', 'oldKind', 'newKind', 'sourcePath', 'targetPath', 'bodyAction', 'backlinkUpdates'],
+      required: ['ok', 'dryRun', 'changed', ...DESTRUCTIVE_PREVIEW_REQUIRED, 'uid', 'oldSlug', 'newSlug', 'oldKind', 'newKind', 'sourcePath', 'targetPath', 'bodyAction', 'backlinkUpdates'],
       additionalProperties: false,
     },
   },
@@ -4142,7 +4196,8 @@ const TOOLS = [
     description:
       '⚠ DESTRUCTIVE MULTI-FILE WRITE — fold one node into another. Every backlink to fromSlug is ' +
       'redirected to intoSlug (frontmatter array entries + body links), then fromSlug is deleted. The ' +
-      'intoSlug node is preserved as-is — its frontmatter / body are not merged automatically (use ' +
+      'survivor keeps its UID while the source UID/history is recorded in canonical `merged_uids`. The ' +
+      'intoSlug prose and non-identity frontmatter are preserved as-is — they are not merged automatically (use ' +
       'patch_concept after if you want to combine descriptions). Tail-only references are also ' +
       'redirected. Two-stage safety:\n' +
       '  1. Without confirm: true the call is a dry-run — returns the redirect plan + list of deletions ' +
@@ -4174,6 +4229,12 @@ const TOOLS = [
         ok: { type: 'boolean' },
         dryRun: { type: 'boolean' },
         ...DESTRUCTIVE_PREVIEW_OUTPUT_PROPERTIES,
+        fromUid: { ...NON_BLANK_STRING_SCHEMA, pattern: NODE_UID_PATTERN },
+        intoUid: { ...NON_BLANK_STRING_SCHEMA, pattern: NODE_UID_PATTERN },
+        absorbedUids: {
+          type: 'array',
+          items: { ...NON_BLANK_STRING_SCHEMA, pattern: NODE_UID_PATTERN },
+        },
         fromSlug: { type: 'string' },
         intoSlug: { type: 'string' },
         fromPath: { type: 'string' },
@@ -4184,7 +4245,7 @@ const TOOLS = [
         changed: { type: 'boolean' },
         postWriteMaintenance: POST_WRITE_MAINTENANCE_OUTPUT_SCHEMA,
       },
-      required: ['ok', 'dryRun', ...DESTRUCTIVE_PREVIEW_REQUIRED, 'fromSlug', 'intoSlug', 'fromPath', 'deleted', 'backlinkUpdates', 'capturedFrom'],
+      required: ['ok', 'dryRun', ...DESTRUCTIVE_PREVIEW_REQUIRED, 'fromUid', 'intoUid', 'absorbedUids', 'fromSlug', 'intoSlug', 'fromPath', 'deleted', 'backlinkUpdates', 'capturedFrom'],
       additionalProperties: false,
     },
   },
@@ -4192,6 +4253,7 @@ const TOOLS = [
     name: 'delete_concept',
     description:
       '⚠ DESTRUCTIVE — permanently deletes the vault .md file. Two-stage safety:\n' +
+      'Both preview and confirmed responses identify the node by permanent `uid` plus current `slug`. ' +
       '  1. Without confirm: true the call is a dry-run — returns a backlinks preview without deleting.\n' +
       '  2. If any backlinks exist the call throws — refuses while other nodes still reference this slug. ' +
       'Pass force: true to delete anyway (the referrers become dangling).\n' +
@@ -4228,6 +4290,7 @@ const TOOLS = [
         ok: { type: 'boolean' },
         dryRun: { type: 'boolean' },
         ...DESTRUCTIVE_PREVIEW_OUTPUT_PROPERTIES,
+        uid: { ...NON_BLANK_STRING_SCHEMA, pattern: NODE_UID_PATTERN },
         slug: NON_BLANK_STRING_SCHEMA,
         filePath: NON_BLANK_STRING_SCHEMA,
         backlinks: { type: 'array', items: BACKLINK_ROW_OUTPUT_SCHEMA },
@@ -4238,7 +4301,7 @@ const TOOLS = [
         captured: CAPTURED_DOC_OUTPUT_SCHEMA,
         postWriteMaintenance: POST_WRITE_MAINTENANCE_OUTPUT_SCHEMA,
       },
-      required: ['ok', 'dryRun', ...DESTRUCTIVE_PREVIEW_REQUIRED, 'slug', 'filePath'],
+      required: ['ok', 'dryRun', ...DESTRUCTIVE_PREVIEW_REQUIRED, 'uid', 'slug', 'filePath'],
       additionalProperties: false,
     },
   },
@@ -4963,6 +5026,7 @@ function listConcepts({ kind, domain, since, summary, limit = 100 }) {
       };
     }
     return {
+      uid: doc.frontmatter.uid,
       slug: doc.slug,
       kind: doc.frontmatter.kind,
       title: doc.frontmatter.title || doc.frontmatter.name || doc.slug,
@@ -5022,6 +5086,16 @@ function docNotFoundError(slug, docs) {
   return err;
 }
 
+function uidNotFoundError(uid) {
+  const err = new Error(`Doc not found for uid: ${uid}`);
+  err.repairFields = {
+    missingSubject: 'Doc not found for uid',
+    missingUid: uid,
+    recoveryTools: ['list_concepts', 'find_evidence'],
+  };
+  return err;
+}
+
 function requireBodyMode(value, name = 'body') {
   if (value === undefined) return 'excerpt';
   if (typeof value !== 'string' || !BODY_DELIVERY_MODES.includes(value)) {
@@ -5030,12 +5104,26 @@ function requireBodyMode(value, name = 'body') {
   return value;
 }
 
-function getConcept({ slug, body }, context = {}) {
-  requireNonBlankString(slug, 'slug');
+function getConcept({ slug, uid, body }, context = {}) {
+  const hasSlug = slug !== undefined;
+  const hasUid = uid !== undefined;
+  if (hasSlug === hasUid) {
+    throw new Error('get_concept requires exactly one of slug or uid.');
+  }
+  if (hasSlug) requireNonBlankString(slug, 'slug');
+  if (hasUid) {
+    requireNonBlankString(uid, 'uid');
+    const issue = nodeUidIssue(uid);
+    if (issue) throw new Error(issue);
+  }
   const bodyMode = requireBodyMode(body);
-  const canonicalSlug = resolveExistingVaultSlug(slug, context.docs);
+  const docs = context.docs ?? loadVaultDocs(VAULT_ROOT);
+  const canonicalSlug = hasUid
+    ? resolveExistingVaultUid(uid, docs)
+    : resolveExistingVaultSlug(slug, docs);
   if (!canonicalSlug) {
-    throw docNotFoundError(slug, context.docs);
+    if (hasUid) throw uidNotFoundError(uid);
+    throw docNotFoundError(slug, docs);
   }
   let doc;
   try {
@@ -5044,6 +5132,7 @@ function getConcept({ slug, body }, context = {}) {
     // ENOENT 등 fs 오류는 사용자 친화 메시지로 surface — 절대 경로 leak 회피
     // (Panel E audit 2026-05-02 finding).
     if (err && (err.code === 'ENOENT' || /no such file/i.test(err.message))) {
+      if (hasUid) throw uidNotFoundError(uid);
       throw docNotFoundError(slug);
     }
     throw err;
@@ -5072,6 +5161,7 @@ function getConcept({ slug, body }, context = {}) {
         : `Only the first prose paragraph was returned. Call get_concept({ slug: "${doc.slug}", body: "full" }) for the whole body (definition / evidence / confidence / in-scope-out-of-scope sections live there).`,
   });
   return {
+    uid: doc.frontmatter.uid,
     slug: doc.slug,
     frontmatter: doc.frontmatter,
     // `full` 에서는 `excerpt` 를 빼고 `body` 만 싣는다 — 같은 글을 두 번
@@ -5104,32 +5194,42 @@ function getConcept({ slug, body }, context = {}) {
 // partial result 받아 핸들링 (예: list_concepts 결과를 재검증 없이 그대로
 // 사용하다 stale slug 한두 개 있어도 배치 전체가 죽지 않음). 50 cap 은
 // payload 폭주 방지 (vault 가 더 큰 경우 청크 분할).
-function getConceptsBatch({ slugs, body }) {
-  if (!Array.isArray(slugs)) {
-    throw new Error('slugs must be an array of strings');
+function getConceptsBatch({ slugs, uids, body }) {
+  const hasSlugs = slugs !== undefined;
+  const hasUids = uids !== undefined;
+  if (hasSlugs === hasUids) {
+    throw new Error('get_concepts requires exactly one of slugs or uids.');
+  }
+  const selectors = hasUids ? uids : slugs;
+  const selectorName = hasUids ? 'uids' : 'slugs';
+  if (!Array.isArray(selectors)) {
+    throw new Error(`${selectorName} must be an array of strings`);
   }
   const bodyMode = requireBodyMode(body);
-  if (slugs.length === 0) {
+  if (selectors.length === 0) {
     return { concepts: [] };
   }
-  if (slugs.length > 50) {
+  if (selectors.length > 50) {
     throw new Error(
-      `Too many slugs: ${slugs.length}. Max 50 per call — split into multiple get_concepts batches.`
+      `Too many ${selectorName}: ${selectors.length}. Max 50 per call — split into multiple get_concepts batches.`
     );
   }
   // 전체 본문은 행당 페이로드가 두 자릿수 배로 커진다. 50행 × 전체 본문은 한
   // 응답으로 보낼 것이 아니라 **나눠 부를 것**이라, 상한을 낮추고 그렇게 말한다.
-  if (bodyMode === 'full' && slugs.length > GET_CONCEPTS_FULL_BODY_MAX) {
+  if (bodyMode === 'full' && selectors.length > GET_CONCEPTS_FULL_BODY_MAX) {
     throw new Error(
-      `Too many slugs for body:"full": ${slugs.length}. Max ${GET_CONCEPTS_FULL_BODY_MAX} per call — split into multiple get_concepts batches, or drop body:"full" to read ${slugs.length} excerpts at once.`
+      `Too many ${selectorName} for body:"full": ${selectors.length}. Max ${GET_CONCEPTS_FULL_BODY_MAX} per call — split into multiple get_concepts batches, or drop body:"full" to read ${selectors.length} excerpts at once.`
     );
   }
   const docs = loadVaultDocs(VAULT_ROOT);
   const danglingIssuesBySlug = groupDanglingIssuesBySlug(docs);
-  const concepts = slugs.map((slug) => {
+  const concepts = selectors.map((selector) => {
     try {
-      requireNonBlankString(slug, 'slug');
-      const result = getConcept({ slug, body: bodyMode }, { docs, danglingIssuesBySlug });
+      requireNonBlankString(selector, hasUids ? 'uid' : 'slug');
+      const result = getConcept(
+        hasUids ? { uid: selector, body: bodyMode } : { slug: selector, body: bodyMode },
+        { docs, danglingIssuesBySlug },
+      );
       return { ok: true, ...result };
     } catch (err) {
       const msg = err && err.message ? err.message : String(err);
@@ -5139,7 +5239,7 @@ function getConceptsBatch({ slugs, body }) {
       const growthHint = err && typeof err === 'object' ? err.growthHint : undefined;
       // Doc not found 같은 친화 메시지를 그대로 surface — 절대 경로 leak 방지.
       return {
-        slug,
+        ...(hasUids ? { uid: selector } : { slug: selector }),
         ok: false,
         error: msg,
         ...structuredRowErrorDetails(err, msg),
@@ -5896,6 +5996,28 @@ function resolveExistingVaultSlug(slug, docs = null) {
   }
   if (tailMatches.length === 1) return tailMatches[0];
   return null;
+}
+
+function resolveExistingVaultUid(uid, docs = null) {
+  if (typeof uid !== 'string' || uid.trim() === '') return null;
+  const vaultDocs = docs ?? loadVaultDocs(VAULT_ROOT);
+  const primaryMatches = vaultDocs.filter((doc) => doc.frontmatter.uid === uid);
+  if (primaryMatches.length > 1) {
+    throw new Error(
+      `Ambiguous permanent uid "${uid}" matches: ${primaryMatches.map((doc) => doc.slug).join(', ')}. Run validate_vault and repair duplicate-uid errors before reading by uid.`,
+    );
+  }
+  if (primaryMatches.length === 1) return primaryMatches[0].slug;
+
+  const mergedMatches = vaultDocs.filter(
+    (doc) => Array.isArray(doc.frontmatter.merged_uids) && doc.frontmatter.merged_uids.includes(uid),
+  );
+  if (mergedMatches.length > 1) {
+    throw new Error(
+      `Ambiguous merged uid "${uid}" matches: ${mergedMatches.map((doc) => doc.slug).join(', ')}. Run validate_vault and repair merged uid ownership before reading by uid.`,
+    );
+  }
+  return mergedMatches[0]?.slug ?? null;
 }
 
 // R+ — add_relation 의 batch 변종. analyze_repo_structure (suggestedRelations)
@@ -6929,6 +7051,41 @@ function findDuplicateSlugIssues(docs) {
   return issues;
 }
 
+function findDuplicateUidIssues(docs) {
+  const claimsByUid = new Map();
+  for (const doc of docs ?? []) {
+    const claims = new Set([
+      doc?.frontmatter?.uid,
+      ...(Array.isArray(doc?.frontmatter?.merged_uids) ? doc.frontmatter.merged_uids : []),
+    ]);
+    for (const uid of claims) {
+      if (nodeUidIssue(uid)) continue;
+      if (!claimsByUid.has(uid)) claimsByUid.set(uid, []);
+      claimsByUid.get(uid).push(doc);
+    }
+  }
+
+  const issues = [];
+  for (const [uid, group] of claimsByUid) {
+    if (group.length < 2) continue;
+    const all = group.map((doc) => doc.slug);
+    for (const doc of group) {
+      const rest = all.filter((slug) => slug !== doc.slug);
+      issues.push({
+        slug: doc.slug,
+        issue: {
+          code: 'duplicate-uid',
+          severity: 'error',
+          message:
+            `UID ${uid} is also claimed by ${rest.join(', ')} as a primary or merged identity. ` +
+            'Permanent identity must resolve to exactly one surviving node.',
+        },
+      });
+    }
+  }
+  return issues;
+}
+
 function groupDanglingIssuesBySlug(docs) {
   const bySlug = new Map();
   for (const { slug, issue } of findDanglingGraphReferenceIssues(docs)) {
@@ -6938,6 +7095,10 @@ function groupDanglingIssuesBySlug(docs) {
   // 중복 slug 도 같은 볼트 전수 패스에 태운다 — 둘 다 "한 파일만 보면 정상"인
   // 종류라 이 자리가 유일하게 볼 수 있는 곳이다.
   for (const { slug, issue } of findDuplicateSlugIssues(docs)) {
+    if (!bySlug.has(slug)) bySlug.set(slug, []);
+    bySlug.get(slug).push(issue);
+  }
+  for (const { slug, issue } of findDuplicateUidIssues(docs)) {
     if (!bySlug.has(slug)) bySlug.set(slug, []);
     bySlug.get(slug).push(issue);
   }
@@ -7330,6 +7491,7 @@ function renameConcept({ oldSlug, newSlug, confirm = false, overwrite = false, e
       ok: false,
       dryRun: true,
       ...destructivePreviewState({ dryRun: true, wouldChange: true }),
+      uid: sourceDoc.frontmatter.uid,
       oldSlug,
       newSlug,
       sourcePath,
@@ -7378,6 +7540,7 @@ function renameConcept({ oldSlug, newSlug, confirm = false, overwrite = false, e
     ok: true,
     dryRun: false,
     ...destructivePreviewState({ dryRun: false, wouldChange: false }),
+    uid: sourceDoc.frontmatter.uid,
     oldSlug,
     newSlug,
     sourcePath,
@@ -7445,6 +7608,7 @@ function reclassifyConcept({ slug, newKind, newSlug, domain, body, confirm = fal
     dryRun,
     changed: false,
     ...destructivePreviewState({ dryRun, wouldChange: true }),
+    uid: sourceDoc.frontmatter.uid,
     oldSlug: canonicalOld,
     newSlug: canonicalNew,
     oldKind,
@@ -7492,6 +7656,10 @@ function mergeConcepts({ fromSlug, intoSlug, confirm = false, expected_mtime }) 
 
   const fromPath = slugToPath(VAULT_ROOT, fromSlug);
   const fromDoc = readDoc(VAULT_ROOT, fromPath);
+  const intoPath = slugToPath(VAULT_ROOT, intoSlug);
+  const intoDoc = readDoc(VAULT_ROOT, intoPath);
+  const identityHistory = mergeNodeIdentityHistory(fromDoc.frontmatter, intoDoc.frontmatter);
+  const absorbedUids = identityHistory.absorbedUids;
 
   // R11 closeout — fromSlug mtime conflict guard.
   if (typeof expected_mtime === 'number' && fromDoc.mtime !== expected_mtime) {
@@ -7505,6 +7673,9 @@ function mergeConcepts({ fromSlug, intoSlug, confirm = false, expected_mtime }) 
       ok: false,
       dryRun: true,
       ...destructivePreviewState({ dryRun: true, wouldChange: true }),
+      fromUid: fromDoc.frontmatter.uid,
+      intoUid: intoDoc.frontmatter.uid,
+      absorbedUids,
       fromSlug,
       intoSlug,
       fromPath,
@@ -7525,12 +7696,33 @@ function mergeConcepts({ fromSlug, intoSlug, confirm = false, expected_mtime }) 
     dryRun: false,
     deferWrite: true,
   });
+  const intoPlanIndex = result.plan.findIndex((operation) => operation.path === intoPath);
+  const redirectedInto = intoPlanIndex >= 0
+    ? parseFrontmatter(result.plan[intoPlanIndex].content)
+    : { frontmatter: intoDoc.frontmatter, body: intoDoc.body };
+  const intoIdentityWrite = {
+    op: 'write',
+    path: intoPath,
+    content: buildMarkdown({
+      frontmatter: {
+        ...redirectedInto.frontmatter,
+        uid: identityHistory.survivorUid,
+        merged_uids: identityHistory.merged_uids,
+      },
+      body: redirectedInto.body,
+    }),
+  };
+  if (intoPlanIndex >= 0) result.plan[intoPlanIndex] = intoIdentityWrite;
+  else result.plan.push(intoIdentityWrite);
   applyAllOrNothing([...result.plan, { op: 'delete', path: fromPath }]);
 
   return {
     ok: true,
     dryRun: false,
     ...destructivePreviewState({ dryRun: false, wouldChange: false }),
+    fromUid: fromDoc.frontmatter.uid,
+    intoUid: intoDoc.frontmatter.uid,
+    absorbedUids,
     fromSlug,
     intoSlug,
     fromPath,
@@ -7686,6 +7878,7 @@ function deleteConcept({ slug, confirm = false, force = false, expected_mtime })
   if (!existsSync(filePath)) {
     throw new Error(missingSlugMessage('Doc not found', slug));
   }
+  const sourceDoc = readDoc(VAULT_ROOT, filePath);
   const backlinks = findBacklinks(VAULT_ROOT, slug);
 
   if (!confirm) {
@@ -7701,6 +7894,7 @@ function deleteConcept({ slug, confirm = false, force = false, expected_mtime })
         wouldChange: true,
         blockedReasons,
       }),
+      uid: sourceDoc.frontmatter.uid,
       slug,
       filePath,
       backlinks,
@@ -7726,6 +7920,7 @@ function deleteConcept({ slug, confirm = false, force = false, expected_mtime })
     ok: true,
     dryRun: false,
     ...destructivePreviewState({ dryRun: false, wouldChange: false }),
+    uid: deleted.frontmatter.uid,
     slug,
     filePath: deleted.filePath ?? filePath,
     forced: backlinks.length > 0 ? true : undefined,

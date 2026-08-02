@@ -23,6 +23,7 @@ import {
   realpathSync,
 } from 'node:fs';
 import { join, dirname, resolve, relative } from 'node:path';
+import { randomUUID } from 'node:crypto';
 import { fileURLToPath } from 'node:url';
 import { createRequire } from 'node:module';
 import { stdout, stderr, argv, cwd } from 'node:process';
@@ -349,7 +350,15 @@ function copyTree(srcRoot, destRoot) {
         skipped += 1;
       } else {
         mkdirSync(dirname(dest), { recursive: true });
-        cpSync(src, dest);
+        const template = readFileSync(src, 'utf-8');
+        if (/^kind:\s*\S+/m.test(template)) {
+          if (/^uid:\s*/m.test(template)) {
+            throw new Error(`starter template must not contain a fixed uid: ${rel}`);
+          }
+          writeFileSync(dest, template.replace(/^---\n/, `---\nuid: ${randomUUID()}\n`), 'utf-8');
+        } else {
+          cpSync(src, dest);
+        }
         created += 1;
         ok(`  ${rel}`);
       }

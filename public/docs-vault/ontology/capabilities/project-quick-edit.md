@@ -1,4 +1,5 @@
 ---
+uid: 6b2e10a4-b30f-405a-a02f-90ccc4d471a0
 slug: capabilities/project-quick-edit
 kind: capability
 title: Project Quick Edit

@@ -14,6 +14,19 @@ interface StarterFile {
   content: string;
 }
 
+export type StarterUidFactory = () => string;
+
+const NODE_UID_PATTERN =
+  /^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/;
+
+function freshStarterUid(uidFactory: StarterUidFactory): string {
+  const uid = uidFactory();
+  if (!NODE_UID_PATTERN.test(uid)) {
+    throw new Error(`starter uid must be a lowercase UUIDv4: ${uid}`);
+  }
+  return uid;
+}
+
 const README_MD = `---
 slug: README
 kind: vault-readme
@@ -575,6 +588,28 @@ const STARTER_FILES_KO: ReadonlyArray<StarterFile> = [
 /** 이 로케일의 스타터 파일. 모르는 로케일은 영어로 떨어진다. */
 export function starterFilesForLocale(locale: string): ReadonlyArray<StarterFile> {
   return locale === "ko" ? STARTER_FILES_KO : STARTER_FILES_EN;
+}
+
+/**
+ * 정적 스타터에는 영구 식별자를 넣지 않는다. 실제 vault scaffold 한 번마다
+ * 모든 kind 문서(vault-readme 포함)에 서로 다른 UUIDv4를 발급한다. 테스트는
+ * factory를 주입해 산출물을 결정론적으로 검증한다.
+ */
+export function materializeStarterFiles(
+  locale: string,
+  uidFactory: StarterUidFactory = () => globalThis.crypto.randomUUID(),
+): ReadonlyArray<StarterFile> {
+  return starterFilesForLocale(locale).map((file) => {
+    if (!/^kind:\s*\S+/m.test(file.content)) return file;
+    if (/^uid:\s*/m.test(file.content)) {
+      throw new Error(`starter template must not contain a fixed uid: ${file.relPath}`);
+    }
+    const uid = freshStarterUid(uidFactory);
+    return {
+      ...file,
+      content: file.content.replace(/^---\n/, `---\nuid: ${uid}\n`),
+    };
+  });
 }
 
 /**

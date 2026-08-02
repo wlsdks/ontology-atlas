@@ -1,4 +1,5 @@
 ---
+uid: 2a3941ac-bc36-48ee-9cce-f9bfcf155d2b
 slug: domains/marketing
 kind: domain
 title: Marketing & Promotions

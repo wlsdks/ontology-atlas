@@ -1,4 +1,5 @@
 ---
+uid: c2acbad2-dd29-49b0-97f1-ae49875564c7
 slug: capabilities/shipping-fee
 kind: capability
 title: Shipping Fee Policy

@@ -6,10 +6,12 @@ import {
 } from "./build-vault-markdown";
 
 describe("buildVaultMarkdown", () => {
+  const uid = "00000000-0000-4000-8000-000000000001";
+
   it("slug·kind·title frontmatter + H1 본문을 생성", () => {
-    const md = buildVaultMarkdown({ kind: "capability", title: "Auth", slug: "capabilities/auth" });
+    const md = buildVaultMarkdown({ uid, kind: "capability", title: "Auth", slug: "capabilities/auth" });
     expect(md).toBe(
-      ["---", "slug: capabilities/auth", "kind: capability", "title: Auth", "---", "", "# Auth", ""].join("\n"),
+      ["---", `uid: ${uid}`, "slug: capabilities/auth", "kind: capability", "title: Auth", "---", "", "# Auth", ""].join("\n"),
     );
   });
 
@@ -27,15 +29,15 @@ describe("buildVaultMarkdown", () => {
   });
 
   it("domain 주어지면 kind 와 title 사이에 emit", () => {
-    const md = buildVaultMarkdown({ kind: "capability", title: "Auth", slug: "capabilities/auth", domain: "iam" });
+    const md = buildVaultMarkdown({ uid, kind: "capability", title: "Auth", slug: "capabilities/auth", domain: "iam" });
     expect(md).toBe(
-      ["---", "slug: capabilities/auth", "kind: capability", "domain: iam", "title: Auth", "---", "", "# Auth", ""].join("\n"),
+      ["---", `uid: ${uid}`, "slug: capabilities/auth", "kind: capability", "domain: iam", "title: Auth", "---", "", "# Auth", ""].join("\n"),
     );
   });
 
   it("domain 미지정/공백이면 emit 안 함 (추출 전 byte-identical)", () => {
-    const a = buildVaultMarkdown({ kind: "element", title: "JWT", slug: "elements/jwt" });
-    const b = buildVaultMarkdown({ kind: "element", title: "JWT", slug: "elements/jwt", domain: "   " });
+    const a = buildVaultMarkdown({ uid, kind: "element", title: "JWT", slug: "elements/jwt" });
+    const b = buildVaultMarkdown({ uid, kind: "element", title: "JWT", slug: "elements/jwt", domain: "   " });
     expect(a).toBe(b);
     expect(a).not.toContain("domain:");
   });
@@ -54,6 +56,22 @@ describe("vaultFolderForKind", () => {
 });
 
 describe("buildNewNodeDoc", () => {
+  it("직접 생성 문서에 주입 UID를 기록하고 기본 생성은 매번 새 UUIDv4를 발급", () => {
+    const fixedUid = "00000000-0000-4000-8000-000000000001";
+    const fixed = buildNewNodeDoc({
+      title: "Token Issue",
+      kind: "capability",
+      uid: fixedUid,
+    });
+    expect(fixed.markdown).toContain(`uid: ${fixedUid}`);
+
+    const first = buildNewNodeDoc({ title: "First", kind: "domain" }).markdown.match(/^uid:\s*(.+)$/m)?.[1];
+    const second = buildNewNodeDoc({ title: "Second", kind: "domain" }).markdown.match(/^uid:\s*(.+)$/m)?.[1];
+    expect(first).toMatch(/^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/);
+    expect(second).toMatch(/^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/);
+    expect(first).not.toBe(second);
+  });
+
   it("title→slug, 폴더 복수형, markdown 생성", () => {
     const r = buildNewNodeDoc({ title: "Token Issue", kind: "capability", domain: "auth" });
     expect(r.slug).toBe("capabilities/token-issue");

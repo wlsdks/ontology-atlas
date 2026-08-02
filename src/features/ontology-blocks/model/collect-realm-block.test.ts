@@ -55,6 +55,13 @@ const edges = [
 ];
 // realm = domain:views 서브트리 (project 루트 제외).
 const subtree = buildOntologyTree(nodes, edges).roots[0].children[0];
+const UIDS = {
+  project: '01890f3e-7b5d-4c0a-8f14-123456789abc',
+  views: '11890f3e-7b5d-4c0a-8f14-123456789abc',
+  render: '21890f3e-7b5d-4c0a-8f14-123456789abc',
+  canvas: '31890f3e-7b5d-4c0a-8f14-123456789abc',
+  outside: '41890f3e-7b5d-4c0a-8f14-123456789abc',
+} as const;
 
 describe('collectSubtreeNodeIds', () => {
   it('collects the realm root and every descendant id', () => {
@@ -69,11 +76,11 @@ describe('collectSubtreeNodeIds', () => {
 
 describe('selectRealmBlockDocs', () => {
   const docs = [
-    makeDoc('project', { kind: 'project', slug: 'atlas' }, 'Atlas'),
-    makeDoc('domains/views', { kind: 'domain' }, 'Views'),
-    makeDoc('capabilities/render', { kind: 'capability' }, 'Render'),
-    makeDoc('elements/canvas', { kind: 'element' }, 'Canvas'),
-    makeDoc('elements/outside', { kind: 'element' }, 'Outside'),
+    makeDoc('project', { uid: UIDS.project, kind: 'project', slug: 'atlas' }, 'Atlas'),
+    makeDoc('domains/views', { uid: UIDS.views, kind: 'domain' }, 'Views'),
+    makeDoc('capabilities/render', { uid: UIDS.render, kind: 'capability' }, 'Render'),
+    makeDoc('elements/canvas', { uid: UIDS.canvas, kind: 'element' }, 'Canvas'),
+    makeDoc('elements/outside', { uid: UIDS.outside, kind: 'element' }, 'Outside'),
     makeDoc('README', {}, 'Readme'), // kind 없음 — 지도 밖 문서
   ];
 
@@ -85,6 +92,7 @@ describe('selectRealmBlockDocs', () => {
       'elements/canvas',
     ]);
     expect(picked.find((d) => d.slug === 'domains/views')).toEqual({
+      uid: UIDS.views,
       slug: 'domains/views',
       kind: 'domain',
       title: 'Views',

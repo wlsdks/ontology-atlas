@@ -11,6 +11,7 @@ import {
   buildAgentSetupCheckCliCommandTemplate,
   buildMcpConfigJson,
   buildVaultMcpConfigJson,
+  materializeStarterFiles,
   starterFilesForLocale,
 } from "./ontology-starter";
 
@@ -38,6 +39,37 @@ describe("ONTOLOGY_STARTER_FILES", () => {
       expect(f.content.startsWith("---\n")).toBe(true);
       expect(f.content).toMatch(/^kind:\s/m);
     }
+  });
+
+  it("정적 템플릿에는 UID를 고정하지 않고 scaffold마다 모든 노드에 새 UID를 발급", () => {
+    const firstUids = [
+      "00000000-0000-4000-8000-000000000001",
+      "00000000-0000-4000-8000-000000000002",
+      "00000000-0000-4000-8000-000000000003",
+      "00000000-0000-4000-8000-000000000004",
+      "00000000-0000-4000-8000-000000000005",
+    ];
+    const secondUids = Array.from(
+      { length: 5 },
+      (_, index) => `00000000-0000-4000-8000-${String(index + 6).padStart(12, "0")}`,
+    );
+    const uidFactory = (uids: string[]) => () => uids.shift()!;
+
+    for (const template of starterFilesForLocale("en")) {
+      expect(template.content).not.toMatch(/^uid:/m);
+    }
+
+    const first = materializeStarterFiles("en", uidFactory([...firstUids]));
+    const second = materializeStarterFiles("en", uidFactory([...secondUids]));
+    const extractUids = (files: ReadonlyArray<{ content: string }>) =>
+      files.map(({ content }) => content.match(/^uid:\s*(.+)$/m)?.[1]);
+
+    expect(extractUids(first)).toEqual(firstUids);
+    expect(new Set(extractUids(first)).size).toBe(5);
+    expect(new Set([...extractUids(first), ...extractUids(second)]).size).toBe(10);
+    expect(first.find(({ relPath }) => relPath === "README.md")?.content).toContain(
+      `uid: ${firstUids[0]}`,
+    );
   });
 
   it("3 example 파일은 정확히 1 줄로 example slug 가짐 (도메인/역량/요소 컨벤션)", () => {

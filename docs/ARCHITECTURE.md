@@ -197,6 +197,19 @@ The directory layout is enforced by `eslint-plugin-boundaries` in `eslint.config
    source currentness remain separate; missing, stale, or unresolved evidence
    closes the assessment as a categorical review/evidence state.
 
+### Dual node identity
+
+Every frontmatter node has an immutable lowercase UUIDv4 `uid` and a mutable,
+human-readable `slug`. The compiler requires UID validity and uniqueness,
+includes UID and merge-owned `merged_uids` in the semantic hash, and exposes
+`uidToSlug`, `slugToUid`, and `mergedUidToSlug`. Compiled nodes and agent-facing
+node summaries carry both values. Relations, adjacency maps, edge endpoints,
+URLs, and canvas IDs remain slug-based; exact MCP identity lookup and interop
+exports use UID. JSON-LD/GraphML serialize identity as `urn:uuid:<uid>`.
+Rename/reclassify preserve UID; merge preserves the survivor and absorbs source
+identity history. Invalid identity aborts compilation rather than producing a
+partial artifact.
+
 ### Vault mode (user picked a markdown folder)
 
 1. `useLocalVault()` returns `{ status: 'loaded', handle, manifest }`.

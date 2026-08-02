@@ -1,4 +1,5 @@
 ---
+uid: 3585d1e9-a0c1-4e25-ad02-ba63d71156f2
 slug: capabilities/locale-switch
 kind: capability
 title: Locale Switching

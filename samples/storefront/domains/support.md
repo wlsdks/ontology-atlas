@@ -1,4 +1,5 @@
 ---
+uid: 6daf51d1-384a-4563-b893-b2ca688990c5
 slug: domains/support
 kind: domain
 title: Customer Support

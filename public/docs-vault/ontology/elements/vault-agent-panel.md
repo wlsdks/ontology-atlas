@@ -1,4 +1,5 @@
 ---
+uid: 7294bda8-ce25-46e4-80ae-5f2e3619a48d
 slug: elements/vault-agent-panel
 kind: element
 title: Vault Agent Panel

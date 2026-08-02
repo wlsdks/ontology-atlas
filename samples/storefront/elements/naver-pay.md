@@ -1,4 +1,5 @@
 ---
+uid: 94cce5c7-e7bd-4491-b620-5e341b7c40e5
 slug: elements/naver-pay
 kind: element
 title: NaverPay Integration

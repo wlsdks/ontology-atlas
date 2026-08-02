@@ -13,6 +13,7 @@ import { readFile, readdir, stat } from "node:fs/promises";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 import { parseFrontmatter } from "./lib/parse-frontmatter.mjs";
+import { inspectMergedUids, nodeUidIssue } from "../cli/src/lib/schema.mjs";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const ROOT = path.resolve(__dirname, "..");
@@ -198,6 +199,33 @@ function validate(raw) {
     }
   }
 
+  if (typeof rawKind === "string" && rawKind.trim()) {
+    const uid = frontmatter.uid;
+    if (uid === undefined || uid === null || uid === "") {
+      issues.push({
+        code: "missing-uid",
+        severity: "error",
+        message: "`uid:`가 없습니다 — 모든 ontology 노드는 lowercase UUIDv4 영구 식별자를 가져야 합니다.",
+      });
+    } else {
+      const uidIssue = nodeUidIssue(uid);
+      if (uidIssue) {
+        issues.push({ code: "invalid-uid", severity: "error", message: uidIssue });
+      } else {
+        const merged = inspectMergedUids(uid, frontmatter.merged_uids);
+        if (merged.invalidIssue) {
+          issues.push({ code: "invalid-merged-uids", severity: "error", message: merged.invalidIssue });
+        } else if (merged.nonCanonical) {
+          issues.push({
+            code: "non-canonical-merged-uids",
+            severity: "warning",
+            message: "`merged_uids:`는 중복 없이 오름차순으로 정렬된 UUIDv4 set이어야 합니다.",
+          });
+        }
+      }
+    }
+  }
+
   pushNonCanonicalGraphArrayIssues(frontmatter, issues);
 
   return {
@@ -273,6 +301,13 @@ export async function main({ argv = process.argv, cwd = process.cwd() } = {}) {
     if (!report) continue;
     report.issues.push(issue);
     report.ok = !report.issues.some((i) => i.severity === 'error');
+  }
+
+  for (const { file, issue } of findDuplicateUidIssues(entries)) {
+    const report = reportByFile.get(file);
+    if (!report) continue;
+    report.issues.push(issue);
+    report.ok = false;
   }
 
   for (const { file, issue } of findDanglingGraphReferenceIssues(entries)) {
@@ -367,6 +402,34 @@ function findDuplicateSlugIssues(entries) {
             `\`slug: ${declared}\` 를 다른 문서도 주장합니다 (${rest.join(', ')}). ` +
             `같은 이름을 가리키는 관계가 어느 쪽을 뜻하는지 정할 수 없습니다 — ` +
             `한쪽의 slug 를 바꾸거나 rename_concept 으로 합치세요.`,
+        },
+      });
+    }
+  }
+  return issues;
+}
+
+function findDuplicateUidIssues(entries) {
+  const claims = new Map();
+  for (const entry of entries) {
+    const primary = typeof entry.frontmatter?.uid === "string" ? entry.frontmatter.uid.trim() : "";
+    const merged = Array.isArray(entry.frontmatter?.merged_uids) ? entry.frontmatter.merged_uids : [];
+    for (const uid of new Set([primary, ...merged].filter((value) => typeof value === "string" && value))) {
+      if (!claims.has(uid)) claims.set(uid, []);
+      claims.get(uid).push(entry);
+    }
+  }
+  const issues = [];
+  for (const [uid, group] of claims) {
+    if (group.length < 2) continue;
+    for (const entry of group) {
+      const others = group.filter((candidate) => candidate !== entry).map((candidate) => candidate.slug);
+      issues.push({
+        file: entry.file,
+        issue: {
+          code: "duplicate-uid",
+          severity: "error",
+          message: `UID ${uid}를 다른 문서도 정체성으로 주장합니다 (${others.join(", ")}).`,
         },
       });
     }

@@ -1,4 +1,5 @@
 ---
+uid: 44cf0da0-4f09-4a02-a9ab-f79e6162ecac
 slug: domains/order
 kind: domain
 title: Orders

@@ -1,4 +1,5 @@
 ---
+uid: 87d114a4-1e3b-42fa-8ad0-729c522cfb5e
 slug: elements/order-record
 kind: element
 title: Order Record

@@ -1,4 +1,5 @@
 ---
+uid: 88185a5b-4287-4623-b658-9ec1bd79dbe6
 slug: elements/toss-pay
 kind: element
 title: TossPay Integration

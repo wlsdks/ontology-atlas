@@ -1,4 +1,5 @@
 ---
+uid: 92d12829-9b6c-4bce-8e03-978ca6462560
 slug: capabilities/order-partial-cancel
 kind: capability
 title: Partial Cancellation

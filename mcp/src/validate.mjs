@@ -20,7 +20,7 @@ export function isValidVaultTitle(value) {
 }
 
 import { parseFrontmatter } from './parser.mjs';
-import { missingExpectedFields } from './schema.mjs';
+import { inspectMergedUids, missingExpectedFields, nodeUidIssue } from './schema.mjs';
 
 /**
  * R11 #23 — vault frontmatter silent corruption 검출. src/shared/lib/
@@ -46,12 +46,17 @@ export const VAULT_ISSUE_CODE_VALUES = Object.freeze([
   'missing-kind',
   'empty-kind',
   'unknown-kind',
+  'missing-uid',
+  'invalid-uid',
+  'invalid-merged-uids',
+  'non-canonical-merged-uids',
   'missing-expected-field',
   'non-canonical-graph-array',
   'dangling-graph-reference',
   // 두 문서가 같은 canonical slug 를 주장하는 상태 (2026-07-29 실측).
   // 파일 단위 검사로는 원리적으로 못 잡는다 — 한 파일만 보면 완벽히 정상이다.
   'duplicate-slug',
+  'duplicate-uid',
 ]);
 
 export const KNOWN_VAULT_KINDS = [
@@ -142,12 +147,43 @@ export function validateVaultDocument(raw) {
     }
   }
 
+  if (typeof rawKind === 'string' && rawKind.trim()) {
+    pushUidIssues(frontmatter, issues);
+  }
+
   pushNonCanonicalGraphArrayIssues(frontmatter, issues);
 
   return {
     ok: !issues.some((i) => i.severity === 'error'),
     issues,
   };
+}
+
+function pushUidIssues(frontmatter, issues) {
+  const uid = frontmatter.uid;
+  if (uid === undefined || uid === null || uid === '') {
+    issues.push({
+      code: 'missing-uid',
+      severity: 'error',
+      message: '`uid:`가 없습니다 — 모든 ontology 노드는 생성 후 바뀌지 않는 lowercase UUIDv4 영구 식별자를 가져야 합니다.',
+    });
+    return;
+  }
+  const uidIssue = nodeUidIssue(uid);
+  if (uidIssue) {
+    issues.push({ code: 'invalid-uid', severity: 'error', message: uidIssue });
+    return;
+  }
+  const merged = inspectMergedUids(uid, frontmatter.merged_uids);
+  if (merged.invalidIssue) {
+    issues.push({ code: 'invalid-merged-uids', severity: 'error', message: merged.invalidIssue });
+  } else if (merged.nonCanonical) {
+    issues.push({
+      code: 'non-canonical-merged-uids',
+      severity: 'warning',
+      message: '`merged_uids:`는 중복 없이 오름차순으로 정렬된 UUIDv4 set이어야 합니다.',
+    });
+  }
 }
 
 function pushNonCanonicalGraphArrayIssues(frontmatter, issues) {

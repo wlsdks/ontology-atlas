@@ -1,4 +1,5 @@
 ---
+uid: 8e91ea38-2c63-4ed8-af4b-5606b4875abe
 slug: elements/wishlist-entry
 kind: element
 title: Wishlist Entry
