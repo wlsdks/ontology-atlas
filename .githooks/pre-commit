@@ -36,6 +36,17 @@ trap 'rm -rf "$staging_tree"' EXIT INT TERM
 
 git checkout-index -a --prefix="$staging_tree/"
 
+# 재생성기는 문서 날짜를 `git log` 에서 읽는다. 인덱스 사본에는 `.git` 이
+# 없으므로 그대로 두면 매 커밋마다 `fatal: not a git repository` 가 두 줄씩
+# 뜨고, 날짜는 전부 오늘로 붕괴한다(실측: 150개 문서 전부 오늘).
+#
+# 판정 자체는 그래도 옳다 — `comparableManifest` 가 `updatedAt`/`generatedAt`
+# 을 비교에서 제외한다. 그래도 진짜 저장소를 가리켜 준다: **읽어서 무해한
+# 에러가 매번 뜨는 게이트는 다음 사람이 무시하는 법을 배우는 게이트다.**
+GIT_DIR=$(git rev-parse --absolute-git-dir)
+GIT_WORK_TREE=$(git rev-parse --show-toplevel)
+export GIT_DIR GIT_WORK_TREE
+
 if ! (cd "$staging_tree" && node scripts/build-docs-vault.mjs --check); then
   echo ""
   echo "[pre-commit] 볼트 생성물이 입력과 어긋난 채 커밋되려 했다."
