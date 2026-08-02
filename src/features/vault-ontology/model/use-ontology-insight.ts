@@ -80,6 +80,8 @@ export function derivationToInsight(
     ref: stub.ref,
     lastApprovedAt: VAULT_SENTINEL_DATE,
     lastApprovedBy: VAULT_SENTINEL_AUTHOR,
+    // 저작 출처는 파생이 프론트매터에서 읽어 온 값을 **그대로** 나른다.
+    createdBy: stub.createdBy,
     summary: stub.summary,
   }));
   const edges: KnowledgeGraphEdge[] = d.edges.map((stub) => ({

@@ -111,6 +111,9 @@ export function buildTopologyV2Graph(
     isHub: node.id === hubId,
     ownerKey: null,
     recentlyUpdated: options.changedSlugs?.has(node.id) ?? false,
+    // 저작 출처는 파생이 프론트매터에서 읽은 값을 **그대로** 나른다 —
+    // 여기서 기본값을 주면 그게 2026-07-31 원장이 금지한 소급 추론이 된다.
+    createdBy: node.createdBy,
     stale: options.dustySlugs?.has(node.id) ?? false,
     fullDegree: fullDegreeById.get(node.id) ?? 0,
     // Engraved-numeral source (project/domain only, drawn in circuit range) —

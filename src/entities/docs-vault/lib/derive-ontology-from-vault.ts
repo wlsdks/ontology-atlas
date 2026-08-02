@@ -82,6 +82,16 @@ export interface OntologyStubNode {
    */
   hasOwnDocument: boolean;
   /**
+   * **누가 이 노드를 썼나** — `human` 또는 `agent:<name>`. 2026-07-31 원장의
+   * 값 규약 그대로다(`mcp/src/schema.mjs`).
+   *
+   * **부재는 결함이 아니라 unknown 이다.** 어떤 경로도 부재를 `human` 으로
+   * 기본값 처리하지 않는다 — 소급 추론(「로그 없음 = 사람」)으로는 출처가
+   * 존재하지 않기 때문이다. 그래서 optional 이고, 화면은 값이 **정확히**
+   * `human` 일 때만 검수 표시를 그린다.
+   */
+  createdBy?: string;
+  /**
    * 문서 없는 파생 노드가 **볼트에 실제로 적혀 있는 참조 문자열** 원문.
    * 예: `src/entities/docs-vault/lib/derive-ontology-from-vault.ts`.
    *
@@ -239,6 +249,8 @@ function deriveDocNode(doc: VaultDoc): OntologyStubNode | null {
     sourceSlug: doc.slug,
     // Pass 1 = 실제 문서. sourceSlug 가 자기 자신이므로 "이 노드의 문서" 가 성립.
     hasOwnDocument: true,
+    // 프론트매터가 적어 둔 값만 싣는다 — 없으면 없는 채로 둔다(unknown).
+    createdBy: typeof fm.created_by === 'string' ? fm.created_by.trim() : undefined,
     source: 'frontmatter',
     summary: doc.description ?? doc.excerpt ?? undefined,
   };
