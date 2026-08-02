@@ -131,9 +131,42 @@
         "placementBoth": "양쪽 번갈아",
         "reset": "기본값으로 되돌리기"
       },
+      "expand": {
+        "caption": "지도에서 접힌 묶음을 어떻게 펼칠지 정해요. 바꾸면 지도에 바로 반영돼요.",
+        "affordanceLabel": "펼치기 표시",
+        "affordancePill": "뜬 알약",
+        "affordanceBar": "머리 위 막대",
+        "affordanceBadge": "어깨 배지",
+        "affordanceHint": {
+          "pill": "노드에서 떨어진 빈 자리에 뜨고 점선으로 이어진다. 셋 중 유일하게 자리를 「찾아야」 해서, 빈 곳이 없어지면 멀어진다.",
+          "bar": "고른 노드 바로 위에 글자 버튼이 뜬다. 안 고르면 아무것도 없고, 몇 개가 열릴지 숫자로 말한다.",
+          "badge": "노드 왼쪽 위 어깨에 붙은 작은 원. 노드를 따라다니므로 자리를 찾을 일이 없고, 무엇을 할지는 호버로 말한다."
+        },
+        "structureLabel": "확장 구조",
+        "structureDisc": "나선 원반",
+        "structureFan": "부챗살",
+        "structureRing": "고리",
+        "structureColumn": "기둥",
+        "structureHint": {
+          "disc": "종전 배치. 황금각 나선이라 자식이 늘어도 차지하는 면적이 √로만 자란다.",
+          "fan": "지금 쓰는 배치. 바깥쪽으로 부채꼴이라 이름이 나란히 놓인다. 층이 쌓이며 넓어진다.",
+          "ring": "부모를 감싸는 고리. 사방을 쓰니 같은 개수를 더 좁은 면적에 담는다.",
+          "column": "바깥으로 줄 세우기. 이름이 옆으로 나란해 읽기가 가장 쉽다. 대신 길어진다."
+        },
+        "batchLabel": "한 번에 여는 개수",
+        "batchHint": "나머지는 「N개 펼치기」를 다시 누른다. 작을수록 이름이 붙을 자리가 생긴다.",
+        "labelAttemptsLabel": "이름을 시도할 개수",
+        "labelAttemptsHint": "한 부모당. 중요한 것부터 시도하고, 자리가 없으면 그 이름은 버린다. 그래서 이 값은 「몇 개가 붙나」가 아니라 「몇 개까지 시도하나」다.",
+        "maxOpenLabel": "동시에 펼쳐 둘 부모",
+        "maxOpenHint": "넘게 펼치면 가장 오래 펼쳐 둔 부모가 닫힌다. 누른 것이 아무 일도 안 하는 것보다 낫다.",
+        "detailShow": "숫자 맞추기",
+        "detailHide": "숫자 맞추기 접기",
+        "reset": "기본값으로 되돌리기"
+      },
       "section": {
         "screen": "화면",
         "background": "지도 배경",
+        "expand": "확장",
         "footprint": "발자국",
         "workspace": "작업 공간",
         "agent": "AI 에이전트"

@@ -27,6 +27,8 @@
  * greedy placement.
  */
 
+import { DEFAULT_EXPAND } from "@/shared/lib/appearance-preferences";
+
 /** Default label budget for the gated (overview/mid) bands — top 20 by degree. */
 export const LABEL_TOP_K = 20;
 
@@ -41,8 +43,12 @@ export const LABEL_TOP_K = 20;
  * hover/ego. 6–8 is the "읽히는 라벨 한 줌" band (Shneiderman overview-first,
  * `.claude/rules/design.md`); 8 keeps the disc's spine caps readable without the
  * text wall.
+ *
+ * **값의 단일 출처는 설정이다** — 「확장 → 이름을 시도할 개수」(기본 8). 라이브
+ * 값은 프레임 드로우가 읽고, 이 상수는 그 기본값이자 설정을 모르는 호출부의
+ * 폴백이다(`focus-state.ts#EGO_NEIGHBOR_LIMIT` 과 같은 규약).
  */
-export const DISC_LABEL_TOP_K = 8;
+export const DISC_LABEL_TOP_K = DEFAULT_EXPAND.labelAttempts;
 
 /**
  * Given each expanded disc's already-DOI-ranked child ids, returns the union of

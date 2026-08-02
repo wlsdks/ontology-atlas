@@ -72,6 +72,102 @@ export function SettingsRow({
   );
 }
 
+/**
+ * 값 슬라이더 — 라벨 · 트랙 · 현재값 한 줄.
+ *
+ * 트랙을 직접 칠한다. `accent-color` 만 쓰면 **채워지지 않은 쪽이 브라우저 기본
+ * 밝은 회색**이라, 다크 패널 위에서 슬라이더가 라벨보다 밝아진다(소유자:
+ * *"너무 못생겼잖아"*). 채운 만큼만 인디고, 나머지는 표면 토큰.
+ *
+ * `FootprintSettings` 안에 사적으로 살다가 두 번째 소비처(`ExpandSettings`)가
+ * 생겨 여기로 내려왔다 — 사본을 만들면 두 설정 칸이 다른 트랙 색으로 자란다.
+ */
+export function Slider({
+  label,
+  value,
+  range,
+  format,
+  onChange,
+  testId,
+}: {
+  label: string;
+  value: number;
+  range: { min: number; max: number; step: number };
+  format: (v: number) => string;
+  onChange: (v: number) => void;
+  testId: string;
+}) {
+  const filled = ((value - range.min) / (range.max - range.min)) * 100;
+  return (
+    <label className="flex items-center gap-3 px-1 py-1.5">
+      <span className="w-24 shrink-0 text-label text-[color:var(--color-text-secondary)]">{label}</span>
+      <input
+        type="range"
+        data-testid={testId}
+        min={range.min}
+        max={range.max}
+        step={range.step}
+        value={value}
+        onChange={(e) => onChange(Number(e.target.value))}
+        style={{
+          background: `linear-gradient(to right, var(--color-indigo-accent) ${filled}%, var(--color-overlay-3) ${filled}%)`,
+        }}
+        className="h-1 min-w-0 flex-1 cursor-pointer appearance-none rounded-full focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--color-indigo-a46)] [&::-webkit-slider-thumb]:h-3.5 [&::-webkit-slider-thumb]:w-3.5 [&::-webkit-slider-thumb]:appearance-none [&::-webkit-slider-thumb]:rounded-full [&::-webkit-slider-thumb]:bg-[color:var(--color-indigo-accent)]"
+      />
+      <span className="w-12 shrink-0 text-right font-mono text-caption text-[color:var(--color-text-tertiary)]">
+        {format(value)}
+      </span>
+    </label>
+  );
+}
+
+/** 값 몇 개 중 하나 고르기 — 라디오 칩 한 줄. `Slider` 와 같은 행 문법. */
+export function Choice<T extends string | boolean>({
+  label,
+  value,
+  options,
+  onChange,
+  testId,
+  optionTestId,
+}: {
+  label: string;
+  value: T;
+  options: readonly { value: T; label: string }[];
+  onChange: (v: T) => void;
+  testId: string;
+  /** 항목별 testId — 어느 값이 골라졌는지 계약 테스트가 재야 하는 자리에서 쓴다. */
+  optionTestId?: (value: T) => string;
+}) {
+  return (
+    <div className="flex items-center gap-3 px-1 py-1.5">
+      <span className="w-24 shrink-0 text-label text-[color:var(--color-text-secondary)]">{label}</span>
+      <div role="radiogroup" aria-label={label} data-testid={testId} className="flex flex-wrap gap-1.5">
+        {options.map((option) => {
+          const active = option.value === value;
+          return (
+            <button
+              key={String(option.value)}
+              type="button"
+              role="radio"
+              aria-checked={active}
+              data-testid={optionTestId?.(option.value)}
+              onClick={() => onChange(option.value)}
+              className={cn(
+                'rounded-chip border px-2.5 py-1 text-caption transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--color-indigo-a46)]',
+                active
+                  ? 'border-[color:var(--color-indigo-accent)] bg-[color:var(--color-indigo-line-a13)] text-[color:var(--color-indigo-accent)]'
+                  : 'border-[color:var(--color-border-soft)] text-[color:var(--color-text-tertiary)] hover:border-[color:var(--color-border-strong)]',
+              )}
+            >
+              {option.label}
+            </button>
+          );
+        })}
+      </div>
+    </div>
+  );
+}
+
 /** 2-세그먼트 토글 — LocaleSwitch 와 같은 표면 문법(구 설정 기어에서 승계). */
 export function SegmentSwitch({
   ariaLabel,
