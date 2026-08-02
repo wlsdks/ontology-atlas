@@ -568,6 +568,22 @@ export function useTopologyLoop(args: UseTopologyLoopArgs): UseTopologyLoopResul
   const initialFitTokensRef = useRef({ relayout: relayoutToken, fitView: fitViewToken });
   // 마운트 시점 값 — 위 fit 들과 같은 이유로 첫 발화를 건너뛴다.
   const initialSpotlightFitTokenRef = useRef(spotlightFitToken);
+  /*
+   * **밀린 맞춤** — 딥링크로 들어온 세션을 위해 (2026-08-02, 모션석 감사가
+   * 잡았다).
+   *
+   * `?recent=` 가 URL 에 이미 있는 채로 마운트하면 토큰이 **마운트 직후 한 번**
+   * 올라가는데, 그 순간 지도는 아직 레이아웃 전이라 아래 가드
+   * (`!hasInitializedRef.current`)에 걸려 **조용히 반환**된다. 토큰은 다시 안
+   * 바뀌므로 **영영 안 움직인다** — 기록 화면에서 보낸 사람이 강조 노드가 화면
+   * 밖인 기본 오버뷰에 착지한다. 고치려던 바로 그 증상이다.
+   *
+   * 그래서 「지금 못 하면 버린다」가 아니라 **「빚으로 남긴다」**로 바꾼다.
+   * 초기화가 끝나는 자리에서 한 번 갚고 지운다.
+   */
+  const pendingSpotlightFitRef = useRef(false);
+  /** 최신 `runSpotlightFit` 을 지역 함수에서 부르기 위한 손잡이(낡은 클로저 방지). */
+  const runSpotlightFitRef = useRef<(() => boolean) | null>(null);
   // C1 B3 — same mount-skip pattern, but for the DEDICATED relayout-only
   // effect below (node-position homing), which must not fire on mount either.
   const initialRelayoutTokenRef = useRef(relayoutToken);
@@ -1061,6 +1077,17 @@ export function useTopologyLoop(args: UseTopologyLoopArgs): UseTopologyLoopResul
     overviewScaleRef.current = computeOverviewFitScale(world.spineBounds, width, height, tokens, world.nodes.length);
     cameraAngularFreqRef.current = tokens.cameraSpringAngFreqTransition;
     hasInitializedRef.current = true;
+    /*
+     * 딥링크로 들어와 밀려 있던 강조 맞춤을 여기서 갚는다(`pendingSpotlightFitRef`).
+     * 초기 카메라를 방금 세운 **직후**라, 오버뷰가 한 프레임 보였다가 강조로
+     * 이동하는 게 아니라 처음부터 강조를 향한다.
+     *
+     * 함수를 ref 로 부르는 이유: 이 자리는 `useCallback` 밖의 지역 함수이고,
+     * `runSpotlightFit` 을 직접 닫으면 그 시점의 낡은 클로저를 붙든다.
+     */
+    if (pendingSpotlightFitRef.current && runSpotlightFitRef.current?.()) {
+      pendingSpotlightFitRef.current = false;
+    }
   };
 
   // --- world (layout + adjacency) — rebuilt whenever the graph itself changes ---
@@ -1330,14 +1357,18 @@ export function useTopologyLoop(args: UseTopologyLoopArgs): UseTopologyLoopResul
    * 그 뒤 팬/줌 하면 다시 안 건드린다(위 fit 들과 같은 계약). 강조가 0개면 아예
    * 움직이지 않는다 — 맞출 대상이 없는데 움직이면 길만 잃는다.
    */
-  useEffect(() => {
-    if (spotlightFitToken === initialSpotlightFitTokenRef.current) return;
+  /*
+   * 실제 맞춤 — 성공하면 `true`. 실패 이유가 「아직 준비 안 됨」이면 호출부가
+   * 빚으로 남기고, 「맞출 대상이 없음」이면 그대로 끝난다(빚을 남겨도 갚을 게
+   * 없다). 두 실패를 가르지 않으면 강조 0개인 세션이 초기화 때마다 헛일한다.
+   */
+  const runSpotlightFit = useCallback((): boolean => {
     const ids = spotlightIdsRef.current;
-    if (ids === null || ids.size === 0) return;
+    if (ids === null || ids.size === 0) return true; // 갚을 빚 없음
     const tokens = readTopologyV2TokensOrNull();
     const world = worldRef.current;
     const { width, height } = viewportRef.current;
-    if (!tokens || !world || width <= 0 || height <= 0 || !hasInitializedRef.current) return;
+    if (!tokens || !world || width <= 0 || height <= 0 || !hasInitializedRef.current) return false;
 
     let minX = Infinity, minY = Infinity, maxX = -Infinity, maxY = -Infinity;
     let hit = 0;
@@ -1350,8 +1381,9 @@ export function useTopologyLoop(args: UseTopologyLoopArgs): UseTopologyLoopResul
       if (node.y > maxY) maxY = node.y;
     }
     // 강조 id 가 현재 월드에 하나도 없을 수 있다(접힌 클러스터 안 등) — 맞출
-    // bbox 가 없으므로 카메라를 건드리지 않는다.
-    if (hit === 0) return;
+    // bbox 가 없으므로 카메라를 건드리지 않는다. 빚으로도 안 남긴다: 다시
+    // 시도해도 같은 결과다.
+    if (hit === 0) return true;
 
     // 가장자리에 딱 붙지 않게 여백을 준다 — bbox 를 그대로 맞추면 라벨·링·자국이
     // 잘린다.
@@ -1369,7 +1401,15 @@ export function useTopologyLoop(args: UseTopologyLoopArgs): UseTopologyLoopResul
     dampingRef.current = tokens.cameraDampingDefault;
     cameraAngularFreqRef.current = tokens.cameraSpringAngFreqTransition;
     beginCameraTween(target);
-  }, [spotlightFitToken, beginCameraTween]);
+    return true;
+  }, [beginCameraTween]);
+  runSpotlightFitRef.current = runSpotlightFit;
+
+  useEffect(() => {
+    if (spotlightFitToken === initialSpotlightFitTokenRef.current) return;
+    if (!runSpotlightFit()) pendingSpotlightFitRef.current = true;
+  }, [spotlightFitToken, runSpotlightFit]);
+
 
   // --- relayoutToken ONLY (not fitViewToken) — also restores every node's
   // position to its canonical (`homeX`/`homeY`) layout coordinate over a
