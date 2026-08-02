@@ -241,6 +241,45 @@ export function resolveTrailLensNodeEgoState(
 }
 
 /**
+ * 렌즈 동안 이 노드가 **트레일 잉크를 얼마나 받나** (0 = 안 받음, 1 = 완전).
+ *
+ * ## 왜 이 함수가 생겼나 (2026-08-02 소유자 실보고)
+ *
+ * *"걸어온길 클릭했을때 화면인데 노드 선택되어서 빛나게 해줘야지?"* — 종전
+ * 렌즈는 방문 노드를 `"normal"` 로 **남기기만** 했다. 나머지가 dim 이라 상대적
+ * 대비는 있었지만 방문 표시는 노드 **옆** 발자국뿐이라, 「걸어온 길」을 켜도
+ * 길 위의 노드가 자기 몸으로는 아무 말도 하지 않았다.
+ *
+ * ## 「빛나게」의 헌장 안 형태
+ *
+ * glow 가 아니다. 번짐(`ctx.shadowBlur`)은 `shared/lib/footprint-glyph.ts`
+ * 한 파일의 opt-in·기본 0 예외로만 존재하고, 그 밖으로 나가지 않는다
+ * (`.claude/rules/forbidden.md`). 여기서 하는 것은 노드가 **이미 가진 stroke
+ * 채널**의 색을 트레일 잉크 쪽으로 옮기는 것뿐이다 — 새 링(넷째 원)도, 새
+ * 궤도도, 새 hue 도 없다. 어두워진 장 위의 값·색 대비가 이 지도에서 「빛난다」의
+ * 뜻이다.
+ *
+ * ## 세 규칙
+ *
+ * 1. **렌즈 한정** — `ramp` 는 팝오버가 열려 있는 동안만 1 로 오르고 닫히면
+ *    0 으로 내린다. 상시 앰버 확장이 아니라는 것이 이 값이 보증하는 성질이고,
+ *    선행 예외 둘(에이전트 포커스 링 · 최근 변경 스포트라이트)과 같은 구조다.
+ * 2. **방문한 것만** — 안 방문한 노드는 0 이다(기존대로 dim 으로 물러난다).
+ * 3. **고른 노드는 받지 않는다** — 선택 링(인디고) > 발자국 위계가 불변이다.
+ *    받게 하면 사용자가 방금 고른 노드가 «걸었던 곳»과 같은 색이 되어, 화면이
+ *    「지금 여기」와 「지나온 곳」을 더 이상 가르지 않는다.
+ */
+export function trailNodeInkStrength(input: {
+  kept: boolean;
+  ramp: number;
+  colorEgoState: NodeEgoState;
+}): number {
+  if (!input.kept || input.colorEgoState === "center") return 0;
+  if (!Number.isFinite(input.ramp)) return 0;
+  return Math.min(1, Math.max(0, input.ramp));
+}
+
+/**
  * Ambient comet-tail advance speed for one `depends` edge (`world.edges[].t +=
  * dt * speed`). When a node is clicked ("powered"), its own incident edges carry
  * *more current* — the pulse advances at `egoSpeed` instead of the ambient

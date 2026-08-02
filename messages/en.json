@@ -2370,6 +2370,9 @@
       "hint": "Dense groups are folded into +N chips — click a chip to expand that group, click again to collapse.",
       "expandAria": "Expand {count} hidden items",
       "collapseAria": "Collapse this group",
+      "barExpandAll": "Expand all",
+      "barExpandCount": "Expand {count}",
+      "barCollapse": "Collapse",
       "tooltipCollapsed": "“{name}” — {total} total under it · {hidden} hidden at this tier. Click to expand",
       "tooltipExpanded": "“{name}” — {total} total under it · {hidden} expanded at this tier. Click to collapse"
     },
