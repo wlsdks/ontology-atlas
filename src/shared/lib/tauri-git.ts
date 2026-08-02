@@ -9,6 +9,7 @@ import { invoke as tauriInvoke, isTauri } from '@tauri-apps/api/core';
  * - `git_history(vault_path, limit?)` → `GitCommitInfo[]` — 커밋 0개면 빈 배열
  * - `git_diff(vault_path)`     → `GitDiffResult`
  * - `git_pull(vault_path)`     → `GitPullResult`
+ * - `git_fetch(vault_path)`    → `GitFetchResult` — 받아만 온다(작업 트리 불변)
  *
  * 신뢰 헌장 (git.rs 상단 불변식 — UI 도 지켜야 한다):
  * 1. 기본 로컬 커밋만 — push/pull 은 명시 opt-in 호출로만.
@@ -62,6 +63,14 @@ export interface GitStatusResult {
   upstream: string | null;
   /** vault 범위의 미커밋 변경 수 — dirty 점의 진실원. */
   changedCount: number;
+  /**
+   * upstream 과의 갈라짐 — `[ahead, behind]`. upstream 이 없으면 둘 다 `null`.
+   *
+   * **마지막 fetch 시점 기준**이다. 갱신하려면 `gitFetch()` 를 불러야 한다 —
+   * git 이 원래 그렇고, 그래서 화면에 Fetch 가 따로 있다.
+   */
+  ahead: number | null;
+  behind: number | null;
   /** vault 밖에 이미 staged 된 경로 (스냅샷이 건드리지 않음 — 정보용). */
   stagedOutsideVault: string[];
 }
@@ -96,6 +105,25 @@ export interface GitCommitInfo {
   subject: string;
   relativeTime: string;
   isoTime: string;
+  /**
+   * 이 걸음이 건드린 vault 파일 — `kind`/`slug` 가 실려 있다.
+   *
+   * 이게 없던 동안 이력은 **커밋 제목 문자열**일 뿐이라, 화면이 「이 걸음이
+   * 어떤 개념을 바꿨나」를 물어볼 방법이 아예 없었다. `kind` 는 지금 디스크의
+   * 파일에서 읽으므로 지워진 파일에서는 `null` 이다.
+   */
+  files: GitChangeEntry[];
+}
+
+/** Rust `GitFetchResult` — 받아만 오고 작업 트리는 안 건드린다. */
+export interface GitFetchResult {
+  ok: boolean;
+  /** upstream ref. 없으면 빈 문자열 + `ok:false`. */
+  upstream: string;
+  /** fetch **직후** 다시 잰 갈라짐. */
+  ahead: number | null;
+  behind: number | null;
+  summary: string;
 }
 
 /** Rust `GitDiffResult`. */
@@ -235,6 +263,19 @@ export async function gitPull(vaultPath: string): Promise<GitPullResult | null> 
   const invoke = getInvoke();
   if (!invoke) return null;
   return invoke<GitPullResult>('git_pull', { vaultPath });
+}
+
+/**
+ * 원격의 최신 상태를 **받아만 온다** — 작업 트리는 안 건드린다.
+ *
+ * 네트워크를 타는 셋(`gitSnapshot(push)` · `gitPull` · 이것) 중 유일하게
+ * 로컬 파일을 하나도 바꾸지 않는 것이라, 「지금 원격이 어떤지 알고 싶다」에
+ * 대한 가장 싼 답이다. 그래도 **명시 클릭 뒤에만** 돈다 — 자동 호출 금지.
+ */
+export async function gitFetch(vaultPath: string): Promise<GitFetchResult | null> {
+  const invoke = getInvoke();
+  if (!invoke) return null;
+  return invoke<GitFetchResult>('git_fetch', { vaultPath });
 }
 
 /**
