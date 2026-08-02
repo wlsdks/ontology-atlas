@@ -37,12 +37,14 @@ Each `.md` has frontmatter:
 
 ```yaml
 ---
+uid: 71890f3e-7b5d-4c0a-8f14-123456789abc
 slug: capabilities/login
 kind: capability
+title: Login
 domain: domains/auth
 elements:
   - elements/jwt-token
-depends_on:
+dependencies:
   - capabilities/signup
 ---
 ```
@@ -180,9 +182,12 @@ files into embeddings — agent just reads the markdown live.
 
 ```yaml
 ---
+uid: 71890f3e-7b5d-4c0a-8f14-123456789abc
 kind: capability
+slug: capabilities/login
+title: Login
 domain: domains/auth
-depends_on: [capabilities/signup]
+dependencies: [capabilities/signup]
 ---
 ```
 

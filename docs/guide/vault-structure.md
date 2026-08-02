@@ -70,20 +70,23 @@ UID는 보존하고, 잘못됐거나 중복된 primary/merged UID는 첫 파일�
 | `project` | 최상위 산출물 | `auth-platform` |
 | `domain` | 기능 묶음 | `auth`, `billing` |
 | `capability` | 하나의 일관된 행동 | `token-issue` |
-| `element` | 구체적인 조각 (파일·라이브러리·스키마) | `jwt-signer.ts` |
+| `element` | 역량을 실현하는 구별되는 구현 역할 | `jwt-signer` |
 | `document` | 그래프에 매인 설명 문서 | 이 가이드 |
 
 ## 관계
 
-관계는 `contains` · `depends_on` · `broader` 같은 키로 씁니다.
+사람과 도구는 관계를 `contains` · `depends_on` · `broader` 같은 이름으로
+읽습니다. Markdown frontmatter에서 `depends_on`의 정본 저장 키는
+`dependencies:`입니다.
 
 ```markdown
 ---
 uid: 11890f3e-7b5d-4c0a-8f14-123456789abc
 kind: capability
 slug: token-issue
+title: 토큰 발급
 domain: auth
-depends_on: [jwt-signer, session-store]
+dependencies: [jwt-signer, session-store]
 ---
 ```
 

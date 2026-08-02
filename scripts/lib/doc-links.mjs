@@ -33,6 +33,25 @@ export function collectMarkdownLinks(markdown) {
   return links;
 }
 
+/** GitHub README에서 쓰는 raw HTML picture/img 자산도 눌리지 않는 로컬 약속이다. */
+export function collectHtmlAssetRefs(markdown) {
+  const refs = [];
+  stripFencedBlocks(markdown).forEach((line, index) => {
+    for (const tagMatch of line.matchAll(/<(?:img|source)\b[^>]*>/gi)) {
+      for (const attrMatch of tagMatch[0].matchAll(/\b(src|srcset)\s*=\s*(["'])(.*?)\2/gi)) {
+        const [, attribute, , value] = attrMatch;
+        const candidates = attribute.toLowerCase() === 'srcset' && !isExternalTarget(value)
+          ? value.split(',').map((candidate) => candidate.trim().split(/\s+/)[0])
+          : [value.trim()];
+        for (const target of candidates) {
+          if (target && !isExternalTarget(target)) refs.push({ line: index + 1, target });
+        }
+      }
+    }
+  });
+  return refs;
+}
+
 export function isExternalTarget(target) {
   return /^[a-z][a-z0-9+.-]*:/i.test(target) || target.startsWith('//');
 }

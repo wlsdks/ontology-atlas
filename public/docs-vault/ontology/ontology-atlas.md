@@ -5,6 +5,7 @@ kind: project
 title: Ontology Atlas
 display_ko: 온톨로지 아틀라스
 display_en: Ontology Atlas
+description: 사람과 AI 에이전트가 제품의 의미와 구현 근거를 같은 로컬 마크다운 그래프로 읽고 함께 가꾸는 온톨로지 워크벤치.
 domains: []
 capabilities: []
 elements: []

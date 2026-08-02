@@ -43,6 +43,9 @@ workspace briefs, graph health, handoff packets, or memory update diffs.
 | [`AGENT-MEMORY-POSITIONING.md`](AGENT-MEMORY-POSITIONING.md) | Why the product should be sold as agent memory, not ontology editing | Canonical positioning note |
 | [`AGENT-GRAPH-WORKFLOW.md`](AGENT-GRAPH-WORKFLOW.md) | How to use the local graph with CLI-only workflows, MCP-connected agents, graph-DB-style query packs, and actual verification evidence | Canonical user-facing workflow |
 | [`FEATURES.md`](FEATURES.md) | Complete inventory of shipping macOS app, CLI, MCP, and website surfaces | Canonical feature inventory |
+| [`ONTOLOGY-QUALITY.md`](ONTOLOGY-QUALITY.md) | Authority map for hard schema rules, advisory graph-quality signals, human judgment, analyzer bounds, and field-trial isolation | Canonical ownership map; does not duplicate code-owned values |
+| [`ONTOLOGY-ATLAS-SPEC.md`](ONTOLOGY-ATLAS-SPEC.md) | Public v2 Markdown/frontmatter conformance format | Public RFC; code wins on drift |
+| [`guide/what-becomes-a-node.md`](guide/what-becomes-a-node.md) | Human-facing node eligibility, fan-out, hub, bridge, and evidence guidance | Canonical practical construction guide |
 | [`ARCHITECTURE.md`](ARCHITECTURE.md) | Local-first architecture, route/data flow, build/test pipeline | Canonical technical overview |
 | [`DEVELOPMENT-CHECKS.md`](DEVELOPMENT-CHECKS.md) | Maintainer verification, package checks, dogfood release gates | Canonical maintainer checks |
 | [`DESKTOP-MACOS.md`](DESKTOP-MACOS.md) | macOS desktop app track, readiness gate, first Tauri prototype scope | Current distribution track |

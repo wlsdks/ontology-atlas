@@ -146,7 +146,7 @@ The vault may have no edges yet. Add a relation:
 
 ```yaml
 # in some capability's frontmatter
-depends_on:
+dependencies:
   - capabilities/login
 ```
 

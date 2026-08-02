@@ -2,14 +2,14 @@
 
 <p align="center">
   <picture>
-    <source media="(prefers-color-scheme: dark)" srcset="public/brand/lockup-dark@2x.png" />
-    <img src="public/brand/lockup-light@2x.png" alt="Ontology Atlas — Map your codebase knowledge." width="360" />
+    <source media="(prefers-color-scheme: dark)" srcset="public/brand/lockup-dark.svg" />
+    <img src="public/brand/lockup-light.svg" alt="Ontology Atlas — Map your codebase knowledge." width="360" />
   </picture>
 </p>
 
 <p align="center">
-  <strong>Your AI coding agent forgets your codebase between sessions.<br />
-  Give it a typed model of your product — in Markdown you own.</strong>
+  <strong>Your AI coding agent forgets your product between sessions.<br />
+  Keep the shared map beside the code — in Markdown you own.</strong>
 </p>
 
 <p align="center">
@@ -52,8 +52,9 @@
 <p align="center">
   <sub>The installed macOS app reading the example vault in
   <a href="samples/storefront"><code>samples/storefront</code></a> — an online
-  store, written as nothing but Markdown files in a folder. Every screenshot and
-  clip below is the same app on the same folder.</sub>
+  store, written as nothing but Markdown files in a folder. The interface moves
+  quickly; the live demo and <a href="docs/FEATURES.md">feature inventory</a>
+  are the current behavior contract.</sub>
 </p>
 
 ---
@@ -61,8 +62,8 @@
 ## In 30 seconds
 
 A folder of Markdown files. Each file's frontmatter declares what it is
-(`project`, `domain`, `capability`, `element`) and what it points at. That is
-the whole database.
+(`project`, `domain`, `capability`, `element`, or a linked `document`) and what
+it points at. That is the whole database.
 
 Because the kinds and relation types are a small fixed set, the folder is not
 just readable — it is **computable**. Atlas compiles it into a graph and answers
@@ -87,9 +88,9 @@ The difference is what sits on top:
 | | Notes with MCP (Basic Memory, Obsidian bridges) | Graph stores for agents (Zep/Graphiti, Cognee, Mem0) | Ontology Atlas |
 |---|---|---|---|
 | Store | Markdown you own | A database you cannot read by hand | Markdown you own |
-| Structure | Freeform notes, freeform link labels | Typed, but vendor-defined | A fixed 4-kind hierarchy with typed relations |
+| Structure | Freeform notes, freeform link labels | Typed, but vendor-defined | A four-layer product hierarchy, linked documents, and typed relations |
 | Graph reach | Traverse *N* hops from a note | Full graph engine | Blast radius, reachability, cycles, shortest path, centrality, health |
-| Derived from your repo | No — you write the notes | No — you feed it a corpus | Yes — `index_project` and `infer_imports` propose nodes and edges from your source tree |
+| Derived from your repo | No — you write the notes | No — you feed it a corpus | Bounded, read-only proposals from supported source evidence; nothing lands until approval |
 | Reading surface | Obsidian, or a paid web app | A vendor console | A free local map, workshop, and maintenance board |
 
 Read the middle rows together, because that is the actual argument: **the typed
@@ -104,7 +105,7 @@ The theory and prior art behind that position are cited in
 
 ## Status — read this before installing
 
-*Last updated 2026-08-01.*
+*Last updated 2026-08-02.*
 
 - **Check [GitHub Releases](https://github.com/wlsdks/ontology-atlas/releases)
   for a build.** If that page is empty, or only lists release candidates,
@@ -361,13 +362,15 @@ body is the explanation a person judges.
 
 ```yaml
 ---
+uid: 71890f3e-7b5d-4c0a-8f14-123456789abc
 slug: capabilities/token-issue
 kind: capability
 title: Token issue
 domain: domains/auth
+path: src/auth/token-service.ts          # a path — code evidence
 elements:
-  - src/auth/token-service.ts     # a path — code evidence
-depends_on:
+  - elements/jwt-signer                  # a slug — an implementation-role node
+dependencies:
   - capabilities/session-refresh  # a slug — another node
 ---
 
@@ -391,6 +394,28 @@ Typed relations add dependency, evidence, containment, and descriptive meaning.
 The goal is not to index every symbol — a source artifact earns a node when it
 helps a person or an agent understand a capability, trace impact, or run the
 right proof. Curated, not exhaustive.
+
+## Ontology quality contract
+
+- **There is no vault-wide or project-wide node cap.** Node count is an
+  observation, never a pass condition.
+- **Direct fan-out is a review signal, not a limit.** A wide hub is correct when
+  its children resolve, name distinct roles, and carry clear provenance.
+- **Bridge nodes must earn their layer.** They name one shared behavior, differ
+  from their siblings, and actually reparent the children they group. Count
+  alone never justifies a bridge.
+- **Analyzer bounds are evidence-packet bounds, not graph bounds.** Each language
+  adapter keeps one proposal readable; it does not limit ontology size or a
+  node's number of relations.
+- **`uid` and `slug` have different jobs.** UID is permanent identity; slug is
+  the readable current address. Source locations belong in `path:` evidence.
+- **External field trials stay isolated.** Generalized measurements may improve
+  Atlas, but a trial repository's ontology is never merged into the product's
+  dogfood graph.
+
+The authority and verification path for each rule lives in the
+[Ontology Quality Authority Map](docs/ONTOLOGY-QUALITY.md). The practical node
+test is [What becomes a node?](docs/guide/what-becomes-a-node.md).
 
 Atlas deliberately sits *above* code intelligence. Grep, language servers, and
 AST indexes answer where a symbol lives and what calls it. Atlas answers why
@@ -486,7 +511,7 @@ The [guide chapter on relations](docs/guide/relations.md) walks through the same
 model with diagrams, and covers how the map keeps thousands of them legible
 (concentric rings, phyllotaxis packing, density gating, semantic zoom).
 
-## Seven surfaces, one vault
+## Product destinations, one vault
 
 The journey above moves through them in order. Every surface reads and writes the
 same `.md` files — the interface changes, the authority does not. The MCP server
@@ -503,20 +528,20 @@ is listed here on purpose: to this product an agent is a surface, not an add-on.
 | **History** (`/git`) | Vault-scoped changes, history, and local snapshots — nothing outside the vault is ever committed |
 | **MCP server** (33 tools, 19 read + 14 write) | The agent's surface — the same graph over stdio JSON-RPC, with dry-runs and write guardrails |
 
-Those routes are the same in all three places they can be opened: the installed
-desktop app, the CLI's sibling web build, and the hosted site. The
-[live demo](https://wlsdks.github.io/ontology-atlas/en/topology/) opens with this repository's own vault and needs no
-install; point it at your own Markdown folder in the browser and the same map
-switches to your data. (The site's front page, [`/`](https://wlsdks.github.io/ontology-atlas/), is the download
-face — the map lives at `/topology`, and that is the address to share when you
-want someone to *see* the graph rather than install it.)
+The installed app is the vault's full workbench. The hosted web surface is the
+no-install gateway and a second-best workbench where the native bridge is not
+available; it does **not** promise every desktop screen. CLI and MCP do not render
+these routes at all — they read and write the same folder directly. The
+[live demo](https://wlsdks.github.io/ontology-atlas/en/topology/) opens with this
+repository's own vault, while the site's
+[`/`](https://wlsdks.github.io/ontology-atlas/) remains the download gateway.
 
 | | |
 |---|---|
 | **Dogfooding** | This product describes itself — domains, capabilities, and elements living in [`docs/ontology/`](docs/ontology/). Run `node cli/src/index.mjs overview` for the current census; the map's number reads higher than the file count because it also draws the source paths those files cite as evidence. |
 
-A test fails if those counts drift from the folder. Numbers in this README are
-checked against the vault, not maintained by hand.
+No document pins that census. Run the command when you need the current number;
+the app derives its displayed facts from the graph it renders.
 
 ## Local-first, by construction
 
@@ -532,8 +557,8 @@ checked against the vault, not maintained by hand.
   selected folder instead, which lifts the browser's limits and lets the same
   vault stay open as a real desktop workspace.
 - **The Tauri macOS shell is a shell, not a silo.** It is granted a deliberately
-  short permission list — broad filesystem, shell, HTTP, and opener grants are
-  refused by a build gate — and the MCP server and CLI read that same directory
+  short permission list; broad filesystem, shell, HTTP, and opener grants are
+  refused by a build gate. The MCP server and CLI read that same directory
   directly.
 - **The bundled MCP server is a file, not a service.** It sits inside the app
   bundle and keeps working when the app is closed, because your agent launches
@@ -541,8 +566,8 @@ checked against the vault, not maintained by hand.
 
 ## Running from source
 
-Requires Node.js 24 and pnpm. This is the supported path until the first release
-ships.
+Requires Node.js 24 and pnpm. This is the source-checkout fallback for
+environments without a supported installed app.
 
 ```bash
 # Keep the tool outside the project you are describing.
@@ -626,6 +651,8 @@ measurement discipline are documented in
 |---|---|
 | [Product direction](docs/PRODUCT-DIRECTION.md) | Mission, audience, and boundaries |
 | [Foundations](docs/FOUNDATIONS.md) | The cited theory and prior art behind the positioning |
+| [Ontology quality](docs/ONTOLOGY-QUALITY.md) | Which rules are hard, advisory, human judgment, or evidence protocol — and who owns each one |
+| [Vault specification](docs/ONTOLOGY-ATLAS-SPEC.md) | The public v2 Markdown/frontmatter format |
 | [Features](docs/FEATURES.md) | The complete current inventory — app, MCP, CLI, desktop |
 | [Architecture](docs/ARCHITECTURE.md) | Local-first data flow and runtime contracts |
 | [MCP guide](mcp/README.md) | Registration and all 33 tool contracts |

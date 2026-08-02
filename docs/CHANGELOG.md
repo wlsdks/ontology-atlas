@@ -7,6 +7,26 @@
 
 ---
 
+## 2026-08-02 — 온톨로지 품질 계약과 문서 권위가 한 방향을 가리킨다
+
+공개 README가 이제 vault/project 전체 노드 수에는 상한이 없고, 직접 fan-out은
+검토 신호이며, 넓은 hub와 bridge는 숫자가 아니라 역할 배타성·공유 행동·실제
+재부모화로 판단한다고 명시한다. 저장소 분석기의 bounded proposal packet은 graph
+크기 제한이 아니며, UID는 영구 정체성·slug는 현재 주소·path는 코드 근거라는
+경계와 외부 field-trial ontology의 dogfood 격리도 같은 계약에 들어갔다.
+
+새 `docs/ONTOLOGY-QUALITY.md`는 규칙을 복제하지 않고 schema·construction rule·
+analyzer·field-trial skill과 각각의 검증을 연결하는 authority map 역할만 한다.
+README와 공개 v2 SPEC, 저장소 시작 가이드의 오래된 raw-path element 예시와
+path-style slug 허용 문구를 현재 writer 계약에 맞췄다. README의 깨진 로고,
+고정 kind 표현, 폐기된 census gate, desktop/web 동등 화면 주장, 첫 릴리스 전
+source-only 문구도 정정했다. 문서 링크 검사는 이제 Markdown 링크뿐 아니라 raw HTML
+`img src`와 `source srcset`의 로컬 자산도 검사한다.
+
+설치 앱 dogfood에서는 자기 프로젝트 상세의 정의가 정상인데 목록 카드만 설명 없음으로
+표시되는 불일치도 확인했다. 본문 발췌를 카드에 노출하지 않는 안전 경계는 유지하고,
+project 노드에 사람이 승인한 `description:` 한 줄을 추가해 두 화면이 같은 말을 하게 했다.
+
 ## 2026-08-02 — Python import 근거가 검증 가능한 의미 경계로 이어진다
 
 `analyze_repo_structure`는 이제 최상위 Python package 하나만 보여주고 끝나지
