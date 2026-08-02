@@ -6,6 +6,8 @@ import { ArrowUpRight, Check, Copy, Info, Loader2 } from "lucide-react";
 import { Link } from "@/i18n/navigation";
 import { AGENT_GRAPH_WORKFLOW_HREF, type AgentServerAvailability } from "@/shared/config";
 import { copyText } from "@/shared/lib/copy-text";
+import { cn } from "@/shared/lib/cn";
+import { Button, buttonVariants } from "@/shared/ui/button";
 import { useToast } from "@/shared/ui";
 
 /**
@@ -230,7 +232,7 @@ export function AgentClientButtons({
           label={t("claudeCodeReady")}
         />
       ) : resolvedMcpJsonState === "invalid" ? (
-        <ClientButton
+        <ClientAction
           testId="agent-client-claude-code"
           icon={<Copy size={13} aria-hidden />}
           label={t("replaceClaudeCodeConfig")}
@@ -244,7 +246,7 @@ export function AgentClientButtons({
           }
         />
       ) : onWriteConfigs ? (
-        <ClientButton
+        <ClientAction
           testId="agent-client-claude-code"
           label={t("connectClaudeCode")}
           feedback={feedback.claudeCode}
@@ -253,7 +255,7 @@ export function AgentClientButtons({
           onClick={() => void writeAndConfirm("claudeCode")}
         />
       ) : (
-        <ClientButton
+        <ClientAction
           testId="agent-client-claude-code"
           icon={<Copy size={13} aria-hidden />}
           label={t("copyClaudeCodeConfig")}
@@ -269,7 +271,7 @@ export function AgentClientButtons({
     // 웹에서는 파일을 못 쓰니 딥링크가 남는다.
     cursor: () =>
       onWriteConfigs ? (
-        <ClientButton
+        <ClientAction
           testId="agent-client-cursor"
           label={t("connectCursor")}
           feedback={feedback.cursor}
@@ -285,7 +287,7 @@ export function AgentClientButtons({
           href={cursorDeeplink}
         />
       ) : (
-        <ClientButton
+        <ClientAction
           testId="agent-client-cursor"
           icon={<Copy size={13} aria-hidden />}
           label={t("copyCursorConfig")}
@@ -303,7 +305,7 @@ export function AgentClientButtons({
     // 겹침 대비 비쌌다. 스니펫은 고급 접기의 「다른 툴」 표에 남는다.
     antigravity: () =>
       onWriteConfigs ? (
-        <ClientButton
+        <ClientAction
           testId="agent-client-antigravity"
           label={t("connectAntigravity")}
           feedback={feedback.antigravity}
@@ -312,7 +314,7 @@ export function AgentClientButtons({
           onClick={() => void writeAndConfirm("antigravity")}
         />
       ) : (
-        <ClientButton
+        <ClientAction
           testId="agent-client-antigravity"
           icon={<Copy size={13} aria-hidden />}
           label={t("copyAntigravityConfig")}
@@ -330,7 +332,7 @@ export function AgentClientButtons({
           label={t("codexReady")}
         />
       ) : codexConfigState === "invalid" ? (
-        <ClientButton
+        <ClientAction
           testId="agent-client-codex"
           icon={<Copy size={13} aria-hidden />}
           label={t("replaceCodexConfig")}
@@ -344,7 +346,7 @@ export function AgentClientButtons({
           }
         />
       ) : onWriteConfigs ? (
-        <ClientButton
+        <ClientAction
           testId="agent-client-codex"
           label={t("connectCodex")}
           feedback={feedback.codex}
@@ -353,7 +355,7 @@ export function AgentClientButtons({
           onClick={() => void writeAndConfirm("codex")}
         />
       ) : (
-        <ClientButton
+        <ClientAction
           testId="agent-client-codex"
           icon={<Copy size={13} aria-hidden />}
           label={t("copyCodexCommand")}
@@ -394,6 +396,29 @@ export function AgentClientButtons({
   );
 }
 
+/**
+ * 이 열의 표면은 **`shared/ui/button` 이 정한다** (2026-08-02, 디자인 카운슬 S3).
+ *
+ * 종전엔 세 조각(`ClientStatus`/`ClientButton`/`ClientLink`)이 같은 클래스
+ * 문자열을 각자 손으로 다시 썼고, 그중 하나는 반투명 `--color-indigo-a24`
+ * 워시로 프리미티브의 불투명 `primary`(#5e6ad2)를 흉내 냈다. 전수 결과 그
+ * 워시는 24건/19파일인데 `Button` 프리미티브를 거친 곳은 **0건**이었다 —
+ * 규격이 있는데 아무도 안 쓰면 그건 규격이 아니라 문서다.
+ *
+ * 프리미티브를 쓰면 focus-visible 링도 함께 따라온다. 실측: 이 화면 버튼들만
+ * `focus-visible:ring` 이 하나도 없어 브라우저 기본
+ * `outline: rgb(208,214,224) auto 1px` 이 떴고, 앱 나머지 아홉 곳 이상은
+ * 인디고 링 토큰을 쓰고 있었다.
+ *
+ * 이 표면의 방언 셋만 덮는다 — 전폭(`w-full`) · 이 시트의 반지름
+ * (`rounded-md`) · 설정 시트 타입 방언(`text-body`). 나머지(색 · 상태 · 눌림 ·
+ * 비활성 · 포커스 링)는 프리미티브가 소유한다. `size="sm"` 의 `h-8` 이 곧
+ * `--control-h-md`(32px)라 높이는 종전 값 그대로다.
+ */
+function clientControlClass(extra?: string) {
+  return cn(buttonVariants({ variant: "outline", size: "sm" }), "w-full rounded-md text-body", extra);
+}
+
 function ClientStatus({
   testId,
   label,
@@ -407,7 +432,8 @@ function ClientStatus({
       aria-label={label}
       data-testid={testId}
       data-state="ready"
-      className="inline-flex min-h-[var(--control-h-md)] w-full items-center justify-center gap-2 rounded-md border border-[color:var(--color-border-soft)] bg-[color:var(--color-overlay-1)] px-3 py-2 text-body text-[color:var(--color-text-secondary)]"
+      // 상태는 눌리지 않는다 — 프리미티브의 press 어포던스만 되돌린다.
+      className={clientControlClass("active:translate-y-0")}
     >
       <Check
         size={13}
@@ -419,7 +445,7 @@ function ClientStatus({
   );
 }
 
-function ClientButton({
+function ClientAction({
   testId,
   icon,
   label,
@@ -457,17 +483,19 @@ function ClientButton({
         ? (copiedLabel ?? label)
         : label;
   return (
-    <button
+    <Button
       type="button"
+      variant="outline"
+      size="sm"
       data-testid={testId}
       data-state={feedback}
       onClick={onClick}
       disabled={isBusy}
-      className="inline-flex min-h-[var(--control-h-md)] w-full items-center justify-center gap-2 rounded-md border border-[color:var(--color-border-soft)] px-3 py-2 text-body text-[color:var(--color-text-secondary)] transition-colors hover:border-[color:var(--color-indigo-a46)] hover:text-[color:var(--color-text-primary)] disabled:opacity-70"
+      className={clientControlClass()}
     >
       {shownIcon}
       {shownLabel}
-    </button>
+    </Button>
   );
 }
 
@@ -488,7 +516,7 @@ function ClientLink({
     <a
       href={href}
       data-testid={testId}
-      className="inline-flex min-h-[var(--control-h-md)] w-full items-center justify-center gap-2 rounded-md border border-[color:var(--color-border-soft)] px-3 py-2 text-body text-[color:var(--color-text-secondary)] transition-colors hover:border-[color:var(--color-indigo-a46)] hover:text-[color:var(--color-text-primary)]"
+      className={clientControlClass()}
     >
       {icon}
       {label}

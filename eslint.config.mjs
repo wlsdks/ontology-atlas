@@ -657,6 +657,46 @@ const eslintConfig = defineConfig([
       ],
     },
   },
+  // 설정 시트에서 `--color-amber-docs-*` 격리 토큰 금지 (2026-08-02, 디자인
+  // 카운슬 S3 · 체계석).
+  //
+  // `VaultAgentSetupPanel` 은 **같은 배지 안에서** 두 앰버 계보를 섞고 있었다:
+  // 면은 `--color-amber-source-a12`(경고 사다리, 정상)인데 글자는
+  // `--color-amber-docs-a92`(문서 표면 장식용 quarantine)였다. `globals.css`
+  // 의 그 토큰 블록 주석이 스스로 *"확장 금지 · 후속 강등 검토 대기"* 라고
+  // 적어 뒀는데, 실제로는 이 파일이 15건으로 **최대 소비처**였다.
+  //
+  // ⚠️ **켜기 전 전수 측정**(`design.md` "룰을 켜기 전 반드시 측정한다"):
+  // 치환 후 이 경로의 위반은 0이다. 사정거리를 이 디렉터리로 좁힌 이유도
+  // 같다 — 전역으로 켜면 문서함 표면(그 토큰의 정당한 집)과 `ProjectDrawer` ·
+  // `LiveActivityIndicator` 의 유산 17건이 한꺼번에 빨개져 강제가 아니라
+  // 소음이 된다. 그 둘은 이 카운슬의 표면이 아니라서 다음 순서다.
+  //
+  // ⚠️ **flat config 는 rule option 배열을 병합하지 않고 교체한다.** 그래서
+  // 이 블록은 램프 셀렉터를 **다시 실어야** 한다 — 안 실으면
+  // `codexMigratedGlobs`(`src/widgets/**` 포함)가 이 디렉터리에 걸어 둔 램프
+  // 가드가 조용히 사라진다. 뒤에 오는 블록 중 이 글롭을 다시 덮는 것은 없다.
+  {
+    files: ['src/widgets/app-settings-menu/**/*.{ts,tsx}'],
+    ignores: codexTestIgnores,
+    rules: {
+      'no-restricted-syntax': [
+        'error',
+        ...scaleGradientSelectors,
+        ...arbitrarySizeSelectors,
+        {
+          selector: 'Literal[value=/color-amber-docs-/]',
+          message:
+            '설정 시트에서 docs 표면 장식용 quarantine 앰버를 쓰지 않는다. 경고 신호는 --color-amber-source-* (면·보더) 와 --color-amber-source-text-* (글자) 사다리를 쓴다 — 한 배지 안에서 두 앰버 계보가 섞이면 신호가 아니라 장식으로 읽힌다.',
+        },
+        {
+          selector: 'TemplateElement[value.raw=/color-amber-docs-/]',
+          message:
+            '설정 시트에서 docs 표면 장식용 quarantine 앰버를 쓰지 않는다 (template literal). --color-amber-source-* / --color-amber-source-text-* 사다리를 쓴다.',
+        },
+      ],
+    },
+  },
   globalIgnores([
     '.next/**',
     // 에이전트 병렬 작업용 임시 git worktree — 자기 lint는 각 워크트리에서

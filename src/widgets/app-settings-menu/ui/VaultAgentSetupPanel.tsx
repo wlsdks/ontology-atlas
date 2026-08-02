@@ -23,6 +23,7 @@ import {
   ONTOLOGY_STARTER_AGENT_VERIFY_PROMPT,
   ONTOLOGY_STARTER_JSON_GATE_COMMAND,
   ONTOLOGY_POST_CHANGE_SYNC_LINES,
+  StepRow,
 } from '@/features/docs-vault-local';
 import { formatAgentPostChangeSyncPacket } from '@/shared/lib/ontology-tree';
 import type { VaultManifest } from '@/entities/docs-vault';
@@ -269,42 +270,6 @@ export interface VaultAgentSetupLocalVault {
   ensureAgentConfigs: (
     client?: AgentClientId,
   ) => Promise<{ created: number; skipped: number }>;
-}
-
-/** 번호 배지 + 제목 + 설명 + 내용 — 설정 패널 첫 화면 3단계 통일 문법. */
-function StepCard({
-  n,
-  title,
-  desc,
-  children,
-}: {
-  n: number;
-  title: string;
-  desc?: string;
-  children?: React.ReactNode;
-}) {
-  return (
-    <section
-      data-testid={`agent-setup-step-${n}`}
-      className="flex gap-2.5 rounded-md border border-[color:var(--color-overlay-2)] bg-[color:var(--color-overlay-recessed-a12)] px-2.5 py-2.5"
-    >
-      <span
-        aria-hidden
-        className="mt-0.5 inline-flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-[color:var(--color-indigo-a16)] font-mono text-caption font-medium text-[color:var(--color-indigo-accent)]"
-      >
-        {n}
-      </span>
-      <div className="min-w-0 flex-1">
-        <p className="text-label font-medium text-[color:var(--color-text-primary)]">{title}</p>
-        {desc ? (
-          <p className="mt-0.5 break-keep text-caption leading-relaxed text-[color:var(--color-text-tertiary)]">
-            {desc}
-          </p>
-        ) : null}
-        {children ? <div className="mt-2">{children}</div> : null}
-      </div>
-    </section>
-  );
 }
 
 interface Props {
@@ -790,7 +755,7 @@ export function VaultAgentSetupPanel({
                 })
               : t('agentSetup.serverStatusSummary')}
             {publicPackagesReady && nextMissingAgentConfig ? (
-              <span className="block font-mono text-caption text-[color:var(--color-amber-docs-a92)]">
+              <span className="block font-mono text-caption text-[color:var(--color-amber-source-text-a95)]">
                 {agentStatus[nextMissingAgentConfig.key]
                   ? t('agentSetup.nextInvalid', {
                       path: nextMissingAgentConfig.path,
@@ -811,8 +776,9 @@ export function VaultAgentSetupPanel({
 
           {/* 첫 화면 = 3단계만 (C13). 나머지 검증·스니펫·게이트는 아래 고급 접기. */}
           <div className="mt-3 grid gap-2">
-            <StepCard
+            <StepRow
               n={1}
+              testId="agent-setup-step-1"
               title={tc('step1Title')}
               desc={publicPackagesReady ? tc('step1Desc') : undefined}
             >
@@ -843,11 +809,21 @@ export function VaultAgentSetupPanel({
                 )}
                 needsManualPath={vaultRootPath === null}
               />
-            </StepCard>
+            </StepRow>
             {publicPackagesReady ? (
               <>
-                <StepCard n={2} title={tc('step2Title')} desc={tc('step2Desc')} />
-                <StepCard n={3} title={tc('step3Title')} desc={tc('step3Desc')}>
+                <StepRow
+                  n={2}
+                  testId="agent-setup-step-2"
+                  title={tc('step2Title')}
+                  desc={tc('step2Desc')}
+                />
+                <StepRow
+                  n={3}
+                  testId="agent-setup-step-3"
+                  title={tc('step3Title')}
+                  desc={tc('step3Desc')}
+                >
                   <div className="flex items-center gap-2 rounded-md border border-[color:var(--color-border-soft)] bg-[color:var(--color-overlay-1)] px-2.5 py-2">
                     <span
                       aria-hidden
@@ -867,7 +843,7 @@ export function VaultAgentSetupPanel({
                           })}
                     </span>
                   </div>
-                </StepCard>
+                </StepRow>
               </>
             ) : null}
           </div>
@@ -915,7 +891,7 @@ export function VaultAgentSetupPanel({
                     <CircleAlert
                       size={12}
                       aria-hidden
-                      className="mt-0.5 text-[color:var(--color-amber-docs-a92)]"
+                      className="mt-0.5 text-[color:var(--color-amber-source-text-a95)]"
                     />
                   )}
                   <span className="min-w-0">
@@ -927,7 +903,7 @@ export function VaultAgentSetupPanel({
                         className={`shrink-0 rounded-sm px-1.5 py-0.5 text-caption ${
                           ready
                             ? 'bg-[color:var(--color-success-a10)] text-[color:var(--color-success-text-a92)]'
-                            : 'bg-[color:var(--color-amber-source-a10)] text-[color:var(--color-amber-docs-a92)]'
+                            : 'bg-[color:var(--color-amber-source-a10)] text-[color:var(--color-amber-source-text-a95)]'
                         }`}
                       >
                         {ready
@@ -960,7 +936,7 @@ export function VaultAgentSetupPanel({
                 ? 'border-[color:var(--color-success-a20)] bg-[color:var(--color-success-a055)]'
                 : validationGateTone === 'blocked'
                   ? 'border-[color:var(--color-danger-a32)] bg-[color:var(--color-danger-a08)]'
-                  : 'border-[color:var(--color-amber-docs-a22)] bg-[color:var(--color-amber-source-a07)]'
+                  : 'border-[color:var(--color-amber-source-a25)] bg-[color:var(--color-amber-source-a07)]'
             }`}
           >
             {validationGateTone === 'ready' ? (
@@ -976,7 +952,7 @@ export function VaultAgentSetupPanel({
                 className={`mt-0.5 ${
                   validationGateTone === 'blocked'
                     ? 'text-[color:var(--color-status-danger)]'
-                    : 'text-[color:var(--color-amber-docs-a92)]'
+                    : 'text-[color:var(--color-amber-source-text-a95)]'
                 }`}
               />
             )}
@@ -991,7 +967,7 @@ export function VaultAgentSetupPanel({
                       ? 'bg-[color:var(--color-success-a10)] text-[color:var(--color-success-text-a92)]'
                       : validationGateTone === 'blocked'
                         ? 'bg-[color:var(--color-danger-a12)] text-[color:var(--color-status-danger)]'
-                        : 'bg-[color:var(--color-amber-source-a10)] text-[color:var(--color-amber-docs-a92)]'
+                        : 'bg-[color:var(--color-amber-source-a10)] text-[color:var(--color-amber-source-text-a95)]'
                   }`}
                 >
                   {validationGateStatus}
@@ -1065,7 +1041,7 @@ export function VaultAgentSetupPanel({
                   <CircleAlert
                     size={12}
                     aria-hidden
-                    className="mt-0.5 text-[color:var(--color-amber-docs-a92)]"
+                    className="mt-0.5 text-[color:var(--color-amber-source-text-a95)]"
                   />
                 )}
                 <dt className="truncate font-mono text-caption uppercase tracking-[0.08em] text-[color:var(--color-text-quaternary)]">
@@ -1117,7 +1093,7 @@ export function VaultAgentSetupPanel({
                     <CircleAlert
                       size={12}
                       aria-hidden
-                      className="mt-0.5 text-[color:var(--color-amber-docs-a92)]"
+                      className="mt-0.5 text-[color:var(--color-amber-source-text-a95)]"
                     />
                   )}
                   <span>
@@ -1128,7 +1104,7 @@ export function VaultAgentSetupPanel({
                       {label}
                     </span>
                     {present && !valid ? (
-                      <span className="ml-1 text-[color:var(--color-amber-docs-a92)]">
+                      <span className="ml-1 text-[color:var(--color-amber-source-text-a95)]">
                         {t('agentSetup.needsReview')}
                       </span>
                     ) : null}
@@ -1152,7 +1128,7 @@ export function VaultAgentSetupPanel({
             </button>
           ) : null}
           {hasInvalidAgentConfig ? (
-            <p className="mt-2 break-keep rounded-sm border border-[color:var(--color-amber-docs-a18)] bg-[color:var(--color-amber-source-a08)] px-2 py-1.5 text-label leading-4 text-[color:var(--color-amber-docs-a92)]">
+            <p className="mt-2 break-keep rounded-sm border border-[color:var(--color-amber-source-a14)] bg-[color:var(--color-amber-source-a08)] px-2 py-1.5 text-label leading-4 text-[color:var(--color-amber-source-text-a95)]">
               {t('agentSetup.invalidRepairHint')}
             </p>
           ) : null}
@@ -1373,7 +1349,7 @@ export function VaultAgentSetupPanel({
             type="button"
             onClick={() => void handleCopyAgentSetupCliCommand()}
             title={t('agentSetup.copySetupCliTitle')}
-            className="mt-1.5 inline-flex w-full items-center justify-center gap-1.5 rounded-md border border-[color:var(--color-amber-docs-a28)] bg-[color:var(--color-amber-source-a07)] px-2 py-1.5 text-label text-[color:var(--color-amber-docs-a94)] transition-colors hover:border-[color:var(--color-amber-docs-a42)] hover:bg-[color:var(--color-amber-source-a11)]"
+            className="mt-1.5 inline-flex w-full items-center justify-center gap-1.5 rounded-md border border-[color:var(--color-amber-source-a25)] bg-[color:var(--color-amber-source-a07)] px-2 py-1.5 text-label text-[color:var(--color-amber-source-text-a95)] transition-colors hover:border-[color:var(--color-amber-source-a42)] hover:bg-[color:var(--color-amber-source-a11)]"
           >
             <Terminal size={12} aria-hidden />
             {copySetupCliLabel}
