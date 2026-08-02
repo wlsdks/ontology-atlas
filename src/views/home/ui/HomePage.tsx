@@ -3379,9 +3379,18 @@ export function HomePage() {
                       ) : undefined
                     }
                     trailChip={
-                      // 걸어온 길 칩 — 방문 2개 이상부터. "걸어온 길 · N" 클릭 시
-                      // 미니 타임라인 팝(최신순 방문 + 노드 포커스 + AI 인계 + 지우기).
-                      footprintTrailEntries.length >= 2 ? (
+                      /*
+                       * 걸어온 길 칩 — **방문 1개부터** (2026-08-03 소유자 지적:
+                       * *"노드 1개만 봤을때 상단에 걸어온길에 안나오는 이슈"*).
+                       *
+                       * 종전 문턱은 2였다. 근거는 「길은 둘 이상이어야 길이다」
+                       * 였는데, 이 칩이 실제로 하는 일은 길 그리기만이 아니라
+                       * **에이전트 인계 패킷**과 **되돌아갈 문**이다 — 그 둘은
+                       * 방문 하나에서도 값이 있고, 오히려 첫 노드를 열어 본
+                       * 직후가 「이걸 AI 에게 넘기고 싶다」가 가장 강한 순간이다.
+                       * 문턱이 2 라서 그 순간에만 문이 없었다.
+                       */
+                      footprintTrailEntries.length >= 1 ? (
                         <TopologyTrailChip
                           label={t("footprint.chipLabel", { count: footprintTrailEntries.length })}
                           entries={footprintTrailEntries}
