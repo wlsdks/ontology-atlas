@@ -1,4 +1,5 @@
 ---
+uid: 3c0a57b7-85ba-4fe6-a345-78012d34c6f8
 slug: elements/cj-logistics
 kind: element
 title: CJ Logistics Integration

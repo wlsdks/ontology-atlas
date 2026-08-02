@@ -1,8 +1,9 @@
 import { createHash } from 'node:crypto';
 
+import { nodeUidIssue } from './schema.mjs';
 import { GRAPH_ARRAY_KEYS, collectNeighborRefs, normalizeRelationRefs } from './vault.mjs';
 
-const COMPILER_VERSION = 1;
+const COMPILER_VERSION = 2;
 
 /**
  * `summary: true` 면 nodes / edges / aliases 배열을 생략하고 카운트/aggregate
@@ -47,6 +48,7 @@ export function compileOntology(docs, options = {}) {
     return typeof kind === 'string' && kind.trim() !== '';
   });
   const skippedNonNodeCount = docs.length - graphDocs.length;
+  const { uidToSlug, slugToUid, mergedUidToSlug } = validateGraphIdentity(graphDocs);
 
   for (const doc of graphDocs) {
     nodeMap.set(doc.slug, doc);
@@ -141,18 +143,24 @@ export function compileOntology(docs, options = {}) {
   );
 
   const nodes = [...graphDocs]
-    .map((doc) => ({
-      slug: doc.slug,
-      kind: doc.frontmatter?.kind,
-      title: doc.frontmatter?.title || doc.frontmatter?.name || doc.slug,
-      domain: doc.frontmatter?.domain,
-      ...(typeof doc.frontmatter?.path === 'string' && doc.frontmatter.path.trim()
-        ? { path: doc.frontmatter.path }
-        : {}),
-      mtime: doc.mtime,
-      outDegree: 0,
-      inDegree: 0,
-    }))
+    .map((doc) => {
+      const uid = doc.frontmatter?.uid;
+      const mergedUids = normalizeUidList(doc.frontmatter?.merged_uids);
+      return {
+        uid,
+        ...(mergedUids.length > 0 ? { merged_uids: mergedUids } : {}),
+        slug: doc.slug,
+        kind: doc.frontmatter?.kind,
+        title: doc.frontmatter?.title || doc.frontmatter?.name || doc.slug,
+        domain: doc.frontmatter?.domain,
+        ...(typeof doc.frontmatter?.path === 'string' && doc.frontmatter.path.trim()
+          ? { path: doc.frontmatter.path }
+          : {}),
+        mtime: doc.mtime,
+        outDegree: 0,
+        inDegree: 0,
+      };
+    })
     .sort((a, b) => a.slug.localeCompare(b.slug));
   const nodeBySlug = new Map(nodes.map((node) => [node.slug, node]));
   const out = {};
@@ -177,7 +185,9 @@ export function compileOntology(docs, options = {}) {
   const aliasToSlugIndex = Object.fromEntries(aliases.map(({ alias, slug }) => [alias, slug]));
   const graphHash = hashGraph({
     version: COMPILER_VERSION,
-    nodes: nodes.map(({ slug, kind, title, domain, outDegree, inDegree }) => ({
+    nodes: nodes.map(({ uid, merged_uids, slug, kind, title, domain, outDegree, inDegree }) => ({
+      uid,
+      ...(merged_uids ? { merged_uids } : {}),
       slug,
       kind,
       title,
@@ -265,7 +275,17 @@ export function compileOntology(docs, options = {}) {
     issues,
     canonicalizationActions,
     indexes: includeIndexes
-      ? { out, in: incoming, byKind, byDomain, edgeById, aliasToSlug: aliasToSlugIndex }
+      ? {
+          out,
+          in: incoming,
+          byKind,
+          byDomain,
+          edgeById,
+          aliasToSlug: aliasToSlugIndex,
+          uidToSlug,
+          slugToUid,
+          mergedUidToSlug,
+        }
       : undefined,
   };
 }
@@ -366,4 +386,126 @@ function addAlias(aliasEntries, alias, slug) {
   const key = alias.trim();
   if (!aliasEntries.has(key)) aliasEntries.set(key, new Set());
   aliasEntries.get(key).add(slug);
+}
+
+function normalizeUidList(value) {
+  if (!Array.isArray(value)) return [];
+  return [...new Set(value.filter((uid) => typeof uid === 'string').map((uid) => uid.trim()).filter(Boolean))].sort();
+}
+
+function validateGraphIdentity(graphDocs) {
+  const issues = [];
+  const primaryUidSlugs = new Map();
+  const mergedUidSlugs = new Map();
+  const uidToSlug = {};
+  const slugToUid = {};
+  const mergedUidToSlug = {};
+
+  for (const doc of graphDocs) {
+    const uid = doc.frontmatter?.uid;
+    if (uid === undefined || uid === null || uid === '') {
+      issues.push({
+        code: 'missing-uid',
+        severity: 'error',
+        slug: doc.slug,
+        message: `Node "${doc.slug}" is missing required \`uid\`.`,
+      });
+      continue;
+    }
+    if (nodeUidIssue(uid)) {
+      issues.push({
+        code: 'invalid-uid',
+        severity: 'error',
+        slug: doc.slug,
+        uid,
+        message: `Node "${doc.slug}" has invalid \`uid\`; expected a lowercase UUIDv4.`,
+      });
+      continue;
+    }
+    if (!primaryUidSlugs.has(uid)) primaryUidSlugs.set(uid, []);
+    primaryUidSlugs.get(uid).push(doc.slug);
+  }
+
+  for (const [uid, rawSlugs] of [...primaryUidSlugs].sort(([a], [b]) => a.localeCompare(b))) {
+    const slugs = rawSlugs.sort();
+    if (slugs.length > 1) {
+      issues.push({
+        code: 'duplicate-uid',
+        severity: 'error',
+        uid,
+        slugs,
+        message: `Primary UID "${uid}" is used by multiple nodes: ${slugs.join(', ')}.`,
+      });
+      continue;
+    }
+    uidToSlug[uid] = slugs[0];
+    slugToUid[slugs[0]] = uid;
+  }
+
+  for (const doc of graphDocs) {
+    const mergedUids = doc.frontmatter?.merged_uids;
+    if (mergedUids === undefined) continue;
+    if (!Array.isArray(mergedUids)) {
+      issues.push({
+        code: 'invalid-merged-uids',
+        severity: 'error',
+        slug: doc.slug,
+        message: `Node "${doc.slug}" must store \`merged_uids\` as an array of lowercase UUIDv4 values.`,
+      });
+      continue;
+    }
+    for (const mergedUid of mergedUids) {
+      if (nodeUidIssue(mergedUid)) {
+        issues.push({
+          code: 'invalid-merged-uid',
+          severity: 'error',
+          slug: doc.slug,
+          uid: mergedUid,
+          message: `Node "${doc.slug}" has invalid \`merged_uids\` entry "${String(mergedUid)}"; expected a lowercase UUIDv4.`,
+        });
+        continue;
+      }
+      if (!mergedUidSlugs.has(mergedUid)) mergedUidSlugs.set(mergedUid, []);
+      mergedUidSlugs.get(mergedUid).push(doc.slug);
+    }
+  }
+  for (const [uid, rawSlugs] of [...mergedUidSlugs].sort(([a], [b]) => a.localeCompare(b))) {
+    const mergedSlugs = rawSlugs.sort();
+    if (mergedSlugs.length > 1) {
+      issues.push({
+        code: 'duplicate-merged-uid',
+        severity: 'error',
+        uid,
+        slugs: mergedSlugs,
+        message: `Historical UID "${uid}" is claimed by multiple nodes: ${mergedSlugs.join(', ')}.`,
+      });
+    }
+    const primarySlug = uidToSlug[uid];
+    if (primarySlug) {
+      issues.push({
+        code: 'primary-merged-uid-collision',
+        severity: 'error',
+        uid,
+        primarySlug,
+        mergedSlugs,
+        message: `UID "${uid}" is primary for "${primarySlug}" and historical for: ${mergedSlugs.join(', ')}.`,
+      });
+      continue;
+    }
+    if (mergedSlugs.length === 1) mergedUidToSlug[uid] = mergedSlugs[0];
+  }
+
+  if (issues.length > 0) throwIdentityIssues(issues);
+  return { uidToSlug, slugToUid, mergedUidToSlug };
+}
+
+function throwIdentityIssues(issues) {
+  const error = new Error(
+    `Ontology compilation failed with ${issues.length} node identity error${issues.length === 1 ? '' : 's'}: ` +
+      issues.map((issue) => `${issue.code} (${issue.slug})`).join(', '),
+  );
+  error.name = 'OntologyIdentityError';
+  error.code = 'invalid-ontology-identity';
+  error.issues = issues;
+  throw error;
 }

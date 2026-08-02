@@ -2,6 +2,8 @@ import { describe, it } from 'node:test';
 import { strict as assert } from 'node:assert';
 import { isValidVaultTitle, validateVaultDocument } from './validate.mjs';
 
+const TEST_UID = '00000000-0000-4000-8000-000000000001';
+
 describe('isValidVaultTitle', () => {
   it('비-string 은 false', () => {
     assert.equal(isValidVaultTitle(undefined), false);
@@ -36,7 +38,7 @@ describe('validateVaultDocument (R11 #23)', () => {
 
   it('정상 frontmatter ok', () => {
     const r = validateVaultDocument(
-      '---\nkind: project\ntitle: Foo\n---\nbody',
+      `---\nuid: ${TEST_UID}\nkind: project\ntitle: Foo\n---\nbody`,
     );
     assert.equal(r.ok, true);
     assert.equal(r.issues.length, 0);
@@ -62,7 +64,7 @@ describe('validateVaultDocument (R11 #23)', () => {
   });
 
   it('non-canonical kind 는 unknown-kind warning', () => {
-    const r = validateVaultDocument('---\nkind: weird\n---\n');
+    const r = validateVaultDocument(`---\nuid: ${TEST_UID}\nkind: weird\n---\n`);
     assert.equal(r.ok, true);
     assert.equal(r.issues.some((i) => i.code === 'unknown-kind'), true);
   });
@@ -80,14 +82,14 @@ describe('validateVaultDocument (R11 #23)', () => {
     ];
     for (const { k, extra } of cases) {
       const extraLine = extra ? `\n${extra}` : '';
-      const r = validateVaultDocument(`---\nkind: ${k}${extraLine}\n---\n`);
+      const r = validateVaultDocument(`---\nuid: ${TEST_UID}\nkind: ${k}${extraLine}\n---\n`);
       assert.equal(r.ok, true, `kind=${k}`);
       assert.equal(r.issues.length, 0, `kind=${k}`);
     }
   });
 
   it('R14 — capability without domain → missing-expected-field warning', () => {
-    const r = validateVaultDocument('---\nkind: capability\ntitle: X\n---\n');
+    const r = validateVaultDocument(`---\nuid: ${TEST_UID}\nkind: capability\ntitle: X\n---\n`);
     assert.equal(r.ok, true);
     assert.equal(
       r.issues.some((i) => i.code === 'missing-expected-field'),
@@ -97,7 +99,7 @@ describe('validateVaultDocument (R11 #23)', () => {
 
   it('graph 배열 중복/비정렬이면 non-canonical-graph-array warning', () => {
     const r = validateVaultDocument(
-      '---\nkind: project\ntitle: X\ndependencies: [z, a, z]\n---\n',
+      `---\nuid: ${TEST_UID}\nkind: project\ntitle: X\ndependencies: [z, a, z]\n---\n`,
     );
     assert.equal(r.ok, true);
     assert.equal(

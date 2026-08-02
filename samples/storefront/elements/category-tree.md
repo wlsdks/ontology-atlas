@@ -1,4 +1,5 @@
 ---
+uid: 44246353-11df-43c1-869f-3fcb04d7d91b
 slug: elements/category-tree
 kind: element
 title: Category Tree

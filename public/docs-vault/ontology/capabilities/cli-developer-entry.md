@@ -1,4 +1,5 @@
 ---
+uid: dce02204-0454-4a2d-8db3-68d669065489
 slug: capabilities/cli-developer-entry
 kind: capability
 title: CLI Developer Entry (52 commands — vault + MCP verify + project indexing + relationship explanation + bounded path enumeration + transitive reachability + relation preflight + commit preflight + git snapshot + agent handoff + growth/maintenance queue + graph deep dive)
@@ -15,6 +16,11 @@ display_en: Terminal Commands
 # CLI Developer Entry
 
 R12 (2026-05-04) 에 도입된 developer + agent 운영 진입점. R14 에서 `import`, R15 follow-up 에서 graph-level 5 명령, R16-R17 에서 `analyze` / `infer-imports`, R+ cycle 에서 `path` / `explain` / `all-paths` / `reachability` / `orphans` + 두 `--apply` 플래그 + `bootstrap` 합본 명령, `compile`, `growth`, `maintenance`, graph DB-style scan 인 `match-nodes` / `match-edges`, domain coupling matrix 를 보는 `domain-matrix`, dashboard facet 을 보는 `facets`, relation pattern 을 보는 `schema`, explicit traversal evidence 를 보는 `pattern-walk`, project containment map 을 보는 `project-map`, disconnected island 를 보는 `components`, prerequisite-first dependency order 를 보는 `topological-order`, write 전 schema preflight 인 `relation-check`, Claude Code/Codex handoff 를 보는 `agent-brief`, 기존 vault 의 Claude Code/Cursor/Codex 설정만 점검·복구하는 `agent-setup`, repo 루트의 에이전트 지침 파일(CLAUDE.md/AGENTS.md/.claude·.agents·.cursor·.codex·.mcp.json)이 어느 도구에 읽히는지와 4종 drift(브리지·스킬 복제 byte diff·@참조·32KiB cap)를 읽기 전용으로 보여주는 `agent-files`, agent live heartbeat 를 쓰고 읽는 `agent-activity`, 큰 프로젝트의 side-effect-free indexing plan 과 명시 apply 를 묶는 `index`, 설치된 MCP surface 를 확인하는 `mcp-verify`, staged 파일을 vault 노드와 매칭해 커밋 전 blast-radius 를 알려주는 `preflight` (`cli/src/commands/preflight.mjs` — `agent-setup --install-pre-commit-hook` 으로 pre-commit hook 설치 가능, 항상 exit 0 informational), 그리고 Atlas Git 슬라이스 1 인 `snapshot` (`cli/src/commands/snapshot.mjs` + `cli/src/lib/git-snapshot.mjs` — vault 범위만 골라 `git status --porcelain -- <vaultRel>` 로 변경을 모으고 kind별 추가/수정/삭제 카운트 + 대표 슬러그 최대 3개인 의미 단위 커밋 메시지로 `git commit -m <요약> -- <vaultRel>` 를 실행한다. pathspec-scoped partial commit 이라 vault 밖에 이미 staged 된 변경은 건드리지 않는다. 기본은 로컬 커밋만이고, `--push` 를 명시할 때만 기존 upstream 으로 전송하며 upstream 이 없으면 자동으로 설정하지 않고 안내만 한다. `--dry-run` / `--message "..."` / `--json` 지원) 명령 추가 — **총 52 명령**. 사용자가 vault 만든 후 *터미널 즉시* ontology 작업 가능 — 웹 UI / MCP 등록 불필요. 이 CLI 는 Atlas 의 전체 audience 를 개발자로 제한하지 않고, git-backed source of truth 를 최신 상태로 유지하는 운영 wedge 다.
+
+`init`·`add`·`import`·`bootstrap`는 새 노드의 lowercase UUIDv4 `uid`를 로컬에서
+발급하고, 모든 관계·URL·graph CLI 인자는 읽을 수 있는 `slug`를 계속 쓴다.
+`validate`는 missing/invalid/duplicate primary·merged UID를 hard error로 막고,
+`export`는 `urn:uuid:<uid>`로 JSON-LD·GraphML 정체성을 보존한다.
 
 `pnpm smoke:memory-loop` 는 fresh repo 에서 `init -> bootstrap -> validate -> workspace_brief -> agent_brief -> node_profile -> sync proposal` 까지 10분 예산 안에 이어지는지 검증한다. 새 feature 파일을 만든 뒤 `analyze_repo_structure` 가 side-effect-free 후보를 제안하고 git diff 와 일치하는지 확인해, agent 가 vault 쓰기 전에도 사용자가 sync 제안을 리뷰할 수 있게 한다.
 

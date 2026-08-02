@@ -1,4 +1,5 @@
 ---
+uid: 3dfe4ceb-036c-4756-830c-d3fe2029c2ad
 slug: domains/fulfillment
 kind: domain
 title: Fulfillment & Delivery

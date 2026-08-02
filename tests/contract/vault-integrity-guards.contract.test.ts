@@ -134,10 +134,13 @@ describe("유니코드 정규화 — NFD 파일명", () => {
 
   it("컴파일러가 NFC 참조를 NFD 파일에 연결한다 — 경고만 지우는 것으로는 부족하다", () => {
     const root = vault();
-    writeFileSync(join(root, `${NFD}.md`), "---\nkind: domain\ntitle: NFD\n---\nx\n");
+    writeFileSync(
+      join(root, `${NFD}.md`),
+      "---\nuid: 01890f3e-7b5d-4c0a-8f14-123456789abc\nkind: domain\ntitle: NFD\n---\nx\n",
+    );
     writeFileSync(
       join(root, "ref.md"),
-      `---\nkind: capability\ntitle: Ref\ndomain: ${NFC}\n---\nx\n`,
+      `---\nuid: 11890f3e-7b5d-4c0a-8f14-123456789abc\nkind: capability\ntitle: Ref\ndomain: ${NFC}\n---\nx\n`,
     );
     const compiled = compileOntology(loadVaultDocs(root), {}) as {
       edges?: { resolved?: boolean }[];
@@ -165,7 +168,10 @@ describe("유니코드 정규화 — NFD 파일명", () => {
 describe("노드 수 일치 — kind 없는 .md", () => {
   function mixedVault(): string {
     const root = vault();
-    writeFileSync(join(root, "real.md"), "---\nkind: domain\ntitle: Real\n---\nx\n");
+    writeFileSync(
+      join(root, "real.md"),
+      "---\nuid: 21890f3e-7b5d-4c0a-8f14-123456789abc\nkind: domain\ntitle: Real\n---\nx\n",
+    );
     writeFileSync(join(root, "note.md"), "# 그냥 메모\n");
     writeFileSync(join(root, "readme-ish.md"), "설명만 있는 파일\n");
     return root;
@@ -189,8 +195,14 @@ describe("노드 수 일치 — kind 없는 .md", () => {
 
   it("정상 볼트에서는 아무것도 지나치지 않는다 — 새 필터가 오탐하지 않는다", () => {
     const root = vault();
-    writeFileSync(join(root, "a.md"), "---\nkind: domain\ntitle: A\n---\nx\n");
-    writeFileSync(join(root, "b.md"), "---\nkind: capability\ntitle: B\n---\nx\n");
+    writeFileSync(
+      join(root, "a.md"),
+      "---\nuid: 31890f3e-7b5d-4c0a-8f14-123456789abc\nkind: domain\ntitle: A\n---\nx\n",
+    );
+    writeFileSync(
+      join(root, "b.md"),
+      "---\nuid: 41890f3e-7b5d-4c0a-8f14-123456789abc\nkind: capability\ntitle: B\n---\nx\n",
+    );
     const summary = compileVault(root) as { nodeCount: number; skippedNonNodeCount?: number };
     expect(summary.nodeCount).toBe(2);
     expect(summary.skippedNonNodeCount).toBe(0);

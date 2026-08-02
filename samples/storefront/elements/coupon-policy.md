@@ -1,4 +1,5 @@
 ---
+uid: 136fa82c-5d79-42b7-bd26-1c32b76b6dc1
 slug: elements/coupon-policy
 kind: element
 title: Coupon Policy

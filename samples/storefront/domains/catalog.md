@@ -1,4 +1,5 @@
 ---
+uid: 2af513d5-3423-4a24-9fe2-85fecaab807d
 slug: domains/catalog
 kind: domain
 title: Product Catalog

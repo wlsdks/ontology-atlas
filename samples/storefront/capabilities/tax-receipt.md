@@ -1,4 +1,5 @@
 ---
+uid: cb778b9d-9b2a-4411-9241-45fda9019512
 slug: capabilities/tax-receipt
 kind: capability
 title: Tax Receipt Issuing

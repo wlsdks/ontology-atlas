@@ -1,4 +1,5 @@
 ---
+uid: 9e91f313-a5fa-48d6-b7e9-f86e530d27f9
 slug: capabilities/wishlist
 kind: capability
 title: Wishlist

@@ -1,4 +1,5 @@
 ---
+uid: 399a8caa-c878-4fa3-bfc5-f8dbb2c14db4
 slug: capabilities/product-detail
 kind: capability
 title: Product Detail Page

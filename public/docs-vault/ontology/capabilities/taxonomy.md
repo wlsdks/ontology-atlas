@@ -1,4 +1,5 @@
 ---
+uid: 84789e29-bdf1-49ad-89d3-a25593009741
 slug: capabilities/taxonomy
 kind: capability
 title: Kind Taxonomy Management

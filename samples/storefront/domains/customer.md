@@ -1,4 +1,5 @@
 ---
+uid: cf8e7593-9185-4932-a0b9-bfbec7b3e5b7
 slug: domains/customer
 kind: domain
 title: Customers

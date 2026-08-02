@@ -1,4 +1,5 @@
 ---
+uid: b9b41e37-7feb-45ea-b34d-79703e28857b
 slug: capabilities/stock-receiving
 kind: capability
 title: Goods Receiving

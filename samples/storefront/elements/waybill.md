@@ -1,4 +1,5 @@
 ---
+uid: a44e7a45-a7dc-4568-a732-dd5fc1e0c84f
 slug: elements/waybill
 kind: element
 title: Waybill

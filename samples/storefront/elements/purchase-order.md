@@ -1,4 +1,5 @@
 ---
+uid: 80005feb-91c3-4667-876c-75fd10eb9d18
 slug: elements/purchase-order
 kind: element
 title: Purchase Order

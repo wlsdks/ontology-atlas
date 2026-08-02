@@ -1,4 +1,5 @@
 ---
+uid: 034ea9b5-5381-46c3-ae91-b1dc6ad8b184
 slug: capabilities/project-share
 kind: capability
 title: Project Sharing

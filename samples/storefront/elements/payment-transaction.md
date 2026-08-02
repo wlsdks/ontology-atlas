@@ -1,4 +1,5 @@
 ---
+uid: 5fca125c-fcb9-4970-aab2-0d966aead07b
 slug: elements/payment-transaction
 kind: element
 title: Payment Transaction Record

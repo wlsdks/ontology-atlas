@@ -1,4 +1,5 @@
 ---
+uid: 9573139e-cb33-4bcf-9c5b-92c3e061d7e9
 slug: capabilities/faq
 kind: capability
 title: FAQ

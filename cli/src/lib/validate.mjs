@@ -4,7 +4,7 @@
 // contract.test.ts 의 fixture 매트릭스 (3-way 강제).
 
 import { parseFrontmatter } from './parse-frontmatter.mjs';
-import { missingExpectedFields } from './schema.mjs';
+import { inspectMergedUids, missingExpectedFields, nodeUidIssue } from './schema.mjs';
 
 export const KNOWN_VAULT_KINDS = [
   'project',
@@ -98,12 +98,43 @@ export function validateVaultDocument(raw) {
     }
   }
 
+  if (typeof rawKind === 'string' && rawKind.trim()) {
+    pushUidIssues(frontmatter, issues);
+  }
+
   pushNonCanonicalGraphArrayIssues(frontmatter, issues);
 
   return {
     ok: !issues.some((i) => i.severity === 'error'),
     issues,
   };
+}
+
+function pushUidIssues(frontmatter, issues) {
+  const uid = frontmatter.uid;
+  if (uid === undefined || uid === null || uid === '') {
+    issues.push({
+      code: 'missing-uid',
+      severity: 'error',
+      message: '`uid:`가 없습니다 — 모든 ontology 노드는 생성 후 바뀌지 않는 lowercase UUIDv4 영구 식별자를 가져야 합니다.',
+    });
+    return;
+  }
+  const uidIssue = nodeUidIssue(uid);
+  if (uidIssue) {
+    issues.push({ code: 'invalid-uid', severity: 'error', message: uidIssue });
+    return;
+  }
+  const merged = inspectMergedUids(uid, frontmatter.merged_uids);
+  if (merged.invalidIssue) {
+    issues.push({ code: 'invalid-merged-uids', severity: 'error', message: merged.invalidIssue });
+  } else if (merged.nonCanonical) {
+    issues.push({
+      code: 'non-canonical-merged-uids',
+      severity: 'warning',
+      message: '`merged_uids:`는 중복 없이 오름차순으로 정렬된 UUIDv4 set이어야 합니다.',
+    });
+  }
 }
 
 function pushNonCanonicalGraphArrayIssues(frontmatter, issues) {

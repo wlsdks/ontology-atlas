@@ -1,4 +1,5 @@
 ---
+uid: c42d7066-a77e-45f5-89bb-e78a4adeb660
 slug: domains/graph-modeling
 kind: domain
 title: Graph Modeling & Ontology Schema

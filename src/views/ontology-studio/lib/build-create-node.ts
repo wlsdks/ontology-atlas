@@ -28,6 +28,7 @@ import { slugify } from "@/shared/lib/slugify";
 import { canonicalizeDomainRef } from "@/shared/lib/canonicalize-domain-ref";
 import {
   vaultFolderForKind,
+  generateNodeUid,
   VAULT_CREATED_BY_KEY,
   VAULT_CREATED_BY_HUMAN,
 } from "@/entities/docs-vault";
@@ -215,7 +216,7 @@ export function groupRelationRefs(relations: readonly PendingRelation[]): Array<
  */
 export function buildCreateNodeDoc(
   draft: CreateDraft,
-  opts: { slug?: string } = {},
+  opts: { slug?: string; uid?: string } = {},
 ): { slug: string; markdown: string } {
   const title = draft.title.trim();
   if (!title) throw new Error("title must not be empty");
@@ -242,7 +243,12 @@ export function buildCreateNodeDoc(
     extra.push(`${key}: [${refs.join(", ")}]`);
   }
 
-  const lines: string[] = ["---", `slug: ${slug}`, `kind: ${draft.kind}`];
+  const lines: string[] = [
+    "---",
+    `uid: ${generateNodeUid(opts.uid)}`,
+    `slug: ${slug}`,
+    `kind: ${draft.kind}`,
+  ];
   // C7 — canonical bare tail-slug `domain:` (shared with the map writer).
   const domain = canonicalizeDomainRef(draft.domainValue);
   if (domain && kindExpectsDomain(draft.kind)) lines.push(`domain: ${quoteYamlScalar(domain)}`);

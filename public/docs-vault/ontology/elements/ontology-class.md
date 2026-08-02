@@ -1,4 +1,5 @@
 ---
+uid: e493e922-d415-486b-bf3e-19f2469f85e0
 slug: elements/ontology-class
 kind: element
 title: Ontology Class

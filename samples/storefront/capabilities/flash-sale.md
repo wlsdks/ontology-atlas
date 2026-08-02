@@ -1,4 +1,5 @@
 ---
+uid: dd2ecb07-d8ce-4d90-a3b9-a074c295b0cf
 slug: capabilities/flash-sale
 kind: capability
 title: Flash Sale

@@ -1,4 +1,5 @@
 ---
+uid: 0a89c65f-a592-4203-8670-c04c8ddee961
 slug: capabilities/coupon-redeem
 kind: capability
 title: Coupon Redemption

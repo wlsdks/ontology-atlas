@@ -1,4 +1,5 @@
 ---
+uid: 9365ea36-4c5e-4e8f-87b4-f1561478b5fc
 slug: elements/recommendation-rule
 kind: element
 title: Recommendation Rule

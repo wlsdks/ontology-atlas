@@ -12,6 +12,9 @@ import {
   normalizeLocaleLabels as localeMcp,
   NODE_ELIGIBILITY_GATE as gateMcp,
   flatSlugIssue as flatSlugMcp,
+  generateNodeUid as generateUidMcp,
+  nodeUidIssue as uidIssueMcp,
+  mergeNodeIdentityHistory as mergeIdentityMcp,
   VAULT_KIND_SCHEMA,
 } from "../../mcp/src/schema.mjs";
 import {
@@ -21,6 +24,9 @@ import {
   normalizeLocaleLabels as localeCli,
   NODE_ELIGIBILITY_GATE as gateCli,
   flatSlugIssue as flatSlugCli,
+  generateNodeUid as generateUidCli,
+  nodeUidIssue as uidIssueCli,
+  mergeNodeIdentityHistory as mergeIdentityCli,
   VAULT_KIND_SCHEMA as VAULT_KIND_SCHEMA_CLI,
 } from "../../cli/src/lib/schema.mjs";
 import { KIND_EXPECTED_EXTRAS } from "@/shared/lib/validate-vault-document";
@@ -45,6 +51,52 @@ import { KNOWN_VAULT_KINDS } from "../../mcp/src/validate.mjs";
  */
 
 describe("vault kind schema contract — mcp & cli agree", () => {
+  describe("node UID — immutable identity format", () => {
+    it("두 생성문이 lowercase UUIDv4를 로컬 발급한다", () => {
+      const mcpUid = generateUidMcp();
+      const cliUid = generateUidCli();
+
+      expect(uidIssueMcp(mcpUid)).toBeNull();
+      expect(uidIssueCli(cliUid)).toBeNull();
+      expect(mcpUid).not.toBe(cliUid);
+    });
+
+    it.each([
+      ["missing", undefined],
+      ["blank", ""],
+      ["uppercase", "01890F3E-7B5D-4C0A-8F14-123456789ABC"],
+      ["not v4", "01890f3e-7b5d-7c0a-8f14-123456789abc"],
+      ["not uuid", "node-12"],
+    ])("%s UID를 양쪽에서 같은 invalid로 판정한다", (_name, uid) => {
+      expect(uidIssueMcp(uid)).toBeTruthy();
+      expect(uidIssueCli(uid)).toBe(uidIssueMcp(uid));
+    });
+
+    it("유효한 lowercase UUIDv4는 양쪽에서 통과한다", () => {
+      const uid = "01890f3e-7b5d-4c0a-8f14-123456789abc";
+      expect(uidIssueMcp(uid)).toBeNull();
+      expect(uidIssueCli(uid)).toBeNull();
+    });
+
+    it("merge는 survivor UID를 보존하고 source identity history를 흡수한다", () => {
+      const from = {
+        uid: "01890f3e-7b5d-4c0a-8f14-123456789abc",
+        merged_uids: ["11890f3e-7b5d-4c0a-8f14-123456789abc"],
+      };
+      const into = {
+        uid: "21890f3e-7b5d-4c0a-8f14-123456789abc",
+        merged_uids: ["31890f3e-7b5d-4c0a-8f14-123456789abc"],
+      };
+      const expected = {
+        survivorUid: into.uid,
+        absorbedUids: [from.uid, ...from.merged_uids],
+        merged_uids: [from.uid, ...from.merged_uids, ...into.merged_uids].sort(),
+      };
+      expect(mergeIdentityMcp(from, into)).toEqual(expected);
+      expect(mergeIdentityCli(from, into)).toEqual(expected);
+    });
+  });
+
   it("capability path 는 양쪽 쓰기 경로의 정본 구현 근거다", () => {
     expect(VAULT_KIND_SCHEMA.capability.optional.length).toBeGreaterThan(0);
     expect(VAULT_KIND_SCHEMA_CLI.capability.optional.length).toBeGreaterThan(0);
@@ -151,6 +203,7 @@ describe("display_<locale> 정규화 2-way contract", () => {
 
   it("emits display_<locale> in both builders identically", () => {
     const args = {
+      uid: "31890f3e-7b5d-4c0a-8f14-123456789abc",
       slug: "domains/payment",
       kind: "domain",
       title: "결제",

@@ -1,4 +1,5 @@
 ---
+uid: a2b4089e-0496-4ad2-b09d-8f2bcefd9ce4
 slug: elements/docs-vault-view
 kind: element
 title: Docs Vault (view)

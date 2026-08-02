@@ -1,4 +1,5 @@
 ---
+uid: 0563e7ee-3818-4bbd-97fa-4035ad43a03d
 slug: capabilities/project-data-source
 kind: capability
 title: Active Project Resolution

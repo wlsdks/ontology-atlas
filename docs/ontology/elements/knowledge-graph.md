@@ -1,4 +1,5 @@
 ---
+uid: 81a0e0cc-c8ea-4f15-90bd-ee100ed1322b
 slug: elements/knowledge-graph
 kind: element
 title: Knowledge Graph

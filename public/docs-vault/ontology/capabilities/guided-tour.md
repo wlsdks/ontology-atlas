@@ -1,4 +1,5 @@
 ---
+uid: f9d7c89e-dff5-4ce7-b2b4-89f5ca52b6d0
 slug: capabilities/guided-tour
 kind: capability
 title: Guided Tour

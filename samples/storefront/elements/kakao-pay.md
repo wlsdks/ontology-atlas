@@ -1,4 +1,5 @@
 ---
+uid: 5a1492ac-f28a-45a7-925b-93dd9f474901
 slug: elements/kakao-pay
 kind: element
 title: KakaoPay Integration

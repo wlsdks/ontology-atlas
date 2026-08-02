@@ -65,7 +65,7 @@ function fakeBlockDir(files: Record<string, string>) {
 
 const BLOCK_FILES = {
   'block-manifest.json': JSON.stringify({
-    schemaVersion: 1,
+    schemaVersion: 2,
     blockName: 'Auth Block',
     sourceProject: 'other-project',
     exportedAt: '2026-07-23T00:00:00.000Z',

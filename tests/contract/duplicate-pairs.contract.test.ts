@@ -1,3 +1,4 @@
+import { createHash } from 'node:crypto';
 import { describe, expect, it } from 'vitest';
 import { DUPLICATE_PAIR_CASES } from '../fixtures/duplicate-pairs-cases.mjs';
 import type { VaultDoc, VaultManifest } from '@/entities/docs-vault';
@@ -29,8 +30,22 @@ import { queryCompiledOntology } from '../../mcp/src/ontology-engine.mjs';
  * 어긋나도 순위가 뒤집힌다.
  */
 
+function uidForSlug(slug: string): string {
+  const hex = createHash('sha256').update(slug).digest('hex').slice(0, 32).split('');
+  hex[12] = '4';
+  hex[16] = '8';
+  return `${hex.slice(0, 8).join('')}-${hex.slice(8, 12).join('')}-${hex.slice(12, 16).join('')}-${hex.slice(16, 20).join('')}-${hex.slice(20).join('')}`;
+}
+
+function withUid<T extends { slug: string; frontmatter: Record<string, unknown> }>(doc: T): T {
+  return {
+    ...doc,
+    frontmatter: { uid: uidForSlug(doc.slug), ...doc.frontmatter },
+  };
+}
+
 function manifestOf(docs: { slug: string; frontmatter: Record<string, unknown> }[]): VaultManifest {
-  const vaultDocs: VaultDoc[] = docs.map((doc) => ({
+  const vaultDocs: VaultDoc[] = docs.map(withUid).map((doc) => ({
     slug: doc.slug,
     path: `${doc.slug}.md`,
     title: String(doc.frontmatter.title ?? doc.slug),
@@ -63,7 +78,7 @@ function agentSimilarNodes(
   slug: string,
 ): Map<string, AgentMatch> {
   const artifact = compileOntology(
-    docs.map((doc, index) => ({ ...doc, body: '', mtime: index + 1 })),
+    docs.map(withUid).map((doc, index) => ({ ...doc, body: '', mtime: index + 1 })),
     { includeIndexes: true },
   );
   const result = queryCompiledOntology(artifact, {

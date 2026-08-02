@@ -1,4 +1,5 @@
 ---
+uid: 5cd03c77-f1ed-448f-bb17-c4c3c804418a
 slug: capabilities/data-source-mode
 kind: capability
 title: Data Source Mode Branching

@@ -1,4 +1,5 @@
 ---
+uid: bf0f27d5-bb99-48e0-a1e1-f7adf3f01668
 slug: elements/pickup-request
 kind: element
 title: Pickup Request

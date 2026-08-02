@@ -1,4 +1,5 @@
 ---
+uid: 12fdd120-8b2e-4f79-933a-7a20fef0ed2c
 slug: capabilities/order-cancel
 kind: capability
 title: Order Cancellation

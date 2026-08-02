@@ -1,4 +1,5 @@
 ---
+uid: 981cd7f6-506a-4b2b-b62c-cd56896e81b0
 slug: elements/agent-connect
 kind: element
 title: Agent Connect

@@ -42,6 +42,94 @@
 
 ---
 
+## 2026-08-02 — UID는 노드의 영구 정체성이고 slug는 사람이 읽는 현재 주소다
+
+### 먼저 — 세 줄
+
+- **정한 것**: 모든 `kind:` 노드는 로컬에서 발급한 불변 UUIDv4 `uid`와 변경 가능한
+  `slug`를 함께 가진다. UID는 조회·인계·export·계보를, slug는 파일·관계·URL을 맡는다.
+- **네 말과 다르게 한 것**: UID를 지도 번호나 URL·관계의 새 키로 쓰지 않는다. 사람이
+  읽는 표면은 계속 title/slug이고, 이번 변경은 영구 정체성 kernel까지만 닫는다.
+- **네가 할 일**: 없음 — 기존 first-party vault는 명시적 migration으로 한 번 변환하고,
+  이후 생성 경로가 UID를 자동 발급한다.
+
+**소집**: PO 카운슬 5인 전원(근거·결·지킴이·해자·지렛대), 독립 1라운드 +
+상호 반박 1라운드. 동시 슬롯 한계로 같은 brief를 서로 보지 않는 파동으로 실행했다. ·
+**트리거**: vault schema, MCP/CLI selector·출력, interop export의 공개 계약 변경. ·
+**루브릭**: 19/24 (Problem insight 2 · User moment 2 · Differentiation 3 ·
+Ontology value 4 · Agent value 4 · Verification 4, 치명적 0: 없음). 실제 사용 실패는
+아직 가설이지만, rename 전후 slug URN 단절은 synthetic journey로 재현·반증 가능하다.
+
+**선행 결정 관계**: 2026-08-01 「슬러그는 평평한 식별자다」는 폐기하지 않는다.
+그 결정이 지키는 것은 사람이 읽는 **주소의 유일성과 평면성**이다. 이번 결정은
+그 주소가 바뀌어도 같은 개념임을 증명하는 별도 영구 정체성을 추가해 `slug=identity`
+라는 표현만 `slug=current address`로 좁힌다.
+
+## PO Council Verdict — immutable node UID + readable slug
+
+| PO | 판정 | 소유 행 점수 |
+|---|---|---|
+| 근거 | Build and verify | Problem insight 2 · User moment 2 |
+| 결 | Shape a slice | Verification 4 |
+| 지킴이 | Build and verify | Ontology value 4 · Agent value 4 |
+| 해자 | Build and verify | Differentiation 3 |
+| 지렛대 | Build and verify | appetite: 최대 3 focused days |
+
+**The decisive disagreement**: UID가 실제 정체성이라면 URL·relation·React graph id도
+즉시 UID로 바꿔야 하는가. 바꾸지 않는다. 그 셋은 사람이 읽고 편집하는 현재 주소의
+표면이며, 전면 재키잉은 검증된 rename/export 문제보다 훨씬 넓다. 대신 exact resolver,
+handoff, compiler index, interop export가 UID를 사용해 이번 슬라이스만으로도 정체성
+연속성을 실제로 증명한다.
+
+**Decision (accountable: owner)**: Build and verify. 적용 규칙은 다음과 같다.
+
+1. **형식과 발급**: `uid`는 모든 `kind:` 노드(`vault-readme` 포함)에 필수인
+   lowercase UUIDv4다. `crypto.randomUUID()`로 로컬에서 발급하며 순차 번호·중앙
+   allocator·slug/title/path 파생값을 쓰지 않는다. 생성 후 generic patch로 변경·삭제할
+   수 없고, 같은 vault에서 primary/merged UID 전체가 유일해야 한다.
+2. **사람 표면**: `slug`는 vault-relative 파일 주소이자 Markdown relation/wikilink,
+   `<kind>:<slug>` URL, 사람이 입력하는 CLI 주소다. 기존 flat-slug 게이트는 그대로다.
+   title은 표시 이름, path는 구현 근거 위치다. UID를 기본 지도 라벨·배지·버튼으로
+   노출하지 않는다.
+3. **생성·가져오기**: MCP single/batch add, CLI add/import/bootstrap/absorb/init,
+   앱 starter·Studio 등 모든 노드 생성문이 UID를 발급한다. 고정 starter UID 복사는
+   금지한다. Import는 유효한 UID를 보존하고, 없으면 발급하며, 다른 현존 노드와
+   충돌하면 자동 재발급·덮어쓰기 없이 거부한다. 새 개체로 복사하려는 사람은 source
+   UID를 제거해 명시적으로 새 정체성을 요청한다.
+4. **수명주기**: rename/reclassify는 UID를 보존한다. merge는 target UID를 살리고
+   source의 primary/기존 merged UID를 target의 `merged_uids`에 canonical set으로
+   보존해 과거 UID가 survivor로 해소되게 한다. delete는 별도 tombstone을 만들지
+   않으며 삭제된 UID는 해소되지 않고 재사용하지 않는다.
+5. **런타임**: compiler node는 `{uid, slug}`를 내고 `uidToSlug`·`slugToUid` index를
+   파생한다. MCP의 exact node selector는 UID 또는 slug를 받아 canonical `{uid, slug}`를
+   반환한다. UID와 slug를 함께 받는 미래 표면은 서로 다른 노드로 해소될 때 반드시
+   fail closed한다. relation은 디스크에 slug를 저장하고 런타임에서 UID로 해소한다.
+6. **Interop·인계**: JSON-LD `@id`와 GraphML node id는 `urn:uuid:<uid>`를 사용하고
+   slug/kind/title은 읽을 수 있는 속성으로 유지한다. agent handoff와 장기 provenance는
+   `{uid, slug}`를 함께 운반한다. 이번 슬라이스는 UID exact lookup·rename·merge·export
+   연속성을 보장하지만 slug-only URL의 rename 연속성은 약속하지 않는다.
+7. **마이그레이션과 검증**: 폴더를 여는 read path는 조용히 UID를 쓰지 않는다.
+   first-party dogfood/sample/fixture는 missing-only 명시적 migration으로 변환한다.
+   missing·malformed·duplicate·primary-vs-merged 충돌은 hard error다. 새 gate는 각 결함을
+   주입해 red가 되는지 `/gate-probe`로 증명한다.
+
+**Recorded dissent**: 실제 사용자·에이전트의 반복 rename 실패가 없고 alias만으로도
+현재 문제를 풀 수 있으므로 영구 UID는 미래를 위한 스키마 비용일 수 있다.
+**falsifier**: rename 전 handoff/export를 재사용하는 합성 journey에서 slug alias만으로
+UID와 같은 정확 조회·snapshot 동일성·import 구분을 모두 얻고, UID가 추가 복구율이나
+계보 증거를 전혀 만들지 못한다.
+**revisit**: UID migration 뒤 첫 20개 rename/merge handoff dogfood에서 UID resolver가
+한 번도 사용되지 않거나 slug-only alias와 결과가 완전히 같을 때.
+
+**Slice**: IN UID schema/generator/gates · 모든 생성 ingress · compiler/resolver ·
+MCP/CLI exact lookup/output · rename/reclassify/merge · UID interop · first-party migration ·
+가이드/문서 · bundled MCP dogfood. OUT relation/wikilink·URL·React ID 재키잉 · delete
+tombstone ledger · UID 관리 UI/상시 표시 · 순차 `#12` · 외부 OSS 결과 병합.
+
+**상태**: 유효.
+
+---
+
 ## 2026-08-02 — 프로젝트 inspector는 내부 인계어 대신 사용자가 얻는 결과를 말한다
 
 ### 먼저 — 세 줄

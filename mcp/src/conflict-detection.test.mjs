@@ -23,6 +23,12 @@ import {
 
 let passed = 0;
 let failed = 0;
+let uidSequence = 0;
+
+function nextTestUid() {
+  uidSequence += 1;
+  return `00000000-0000-4000-8000-${String(uidSequence).padStart(12, "0")}`;
+}
 
 function test(name, fn) {
   try {
@@ -42,7 +48,10 @@ function makeVault() {
 
 function writeMd(root, slug, content) {
   const full = join(root, `${slug}.md`);
-  writeFileSync(full, content, "utf-8");
+  const identityCompleteContent = content.startsWith("---\n") && !content.includes("\nuid:")
+    ? content.replace("---\n", `---\nuid: ${nextTestUid()}\n`)
+    : content;
+  writeFileSync(full, identityCompleteContent, "utf-8");
   return full;
 }
 

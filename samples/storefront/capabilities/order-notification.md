@@ -1,4 +1,5 @@
 ---
+uid: dc4ceb54-20d6-4a40-9252-bc607290b96e
 slug: capabilities/order-notification
 kind: capability
 title: Order Status Notification

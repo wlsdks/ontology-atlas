@@ -1,4 +1,5 @@
 ---
+uid: dfed7795-63f6-43c4-a1ce-a6021b2edfca
 slug: elements/push-sender
 kind: element
 title: App Push Sender

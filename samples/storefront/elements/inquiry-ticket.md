@@ -1,4 +1,5 @@
 ---
+uid: 30b6c4f7-c1a7-4066-adbd-be75dfa16f74
 slug: elements/inquiry-ticket
 kind: element
 title: Inquiry Ticket

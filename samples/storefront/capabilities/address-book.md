@@ -1,4 +1,5 @@
 ---
+uid: 12983a69-c21e-426a-92c2-e577b867643b
 slug: capabilities/address-book
 kind: capability
 title: Address Book

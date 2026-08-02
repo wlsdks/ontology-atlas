@@ -1,4 +1,5 @@
 ---
+uid: c467d5e2-50ac-45f2-bbf0-996a1b6e1dd7
 slug: README
 kind: vault-readme
 title: Ontology Atlas — its own ontology vault
@@ -37,6 +38,10 @@ node cli/src/index.mjs overview        # from the repo root
 ## How this vault is written
 
 - Frontmatter is the graph; git is the review. Plain markdown, no backend.
+- Every node has immutable lowercase UUIDv4 `uid` identity and a mutable,
+  readable `slug` address. Relations stay slug-based; exact agent handoff and
+  `urn:uuid:<uid>` export identity use UID. Never hand-patch UID or
+  merge-owned `merged_uids`.
 - Slugs are flat identifiers under their kind folder (`elements/topology-map-v2`,
   never `elements/src/widgets/topology-map-v2`) — path-style slugs collide on
   tail aliases and are rejected at every write door.

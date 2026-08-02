@@ -1,4 +1,5 @@
 ---
+uid: 9d5604f7-ccea-43a3-97d6-90d62f2defa1
 slug: elements/email-sender
 kind: element
 title: Email Sender

@@ -1,4 +1,5 @@
 ---
+uid: bdecb4b7-0463-4378-ab15-7ee12da0593e
 slug: domains/inventory
 kind: domain
 title: Inventory

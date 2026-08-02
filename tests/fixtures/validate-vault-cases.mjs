@@ -16,7 +16,7 @@ export const VALIDATE_CASES = [
   },
   {
     name: 'canonical kind = project — clean',
-    input: '---\nkind: project\ntitle: Foo\n---\nbody',
+    input: '---\nuid: 01890f3e-7b5d-4c0a-8f14-123456789abc\nkind: project\ntitle: Foo\n---\nbody',
     expectedCodes: [],
     expectedOk: true,
   },
@@ -24,14 +24,44 @@ export const VALIDATE_CASES = [
     // R14 — capability/element 는 domain 없으면 missing-expected-field warning.
     // domain 까지 채운 경우가 'clean' baseline.
     name: 'canonical kind = capability — clean (with domain)',
-    input: '---\nkind: capability\ntitle: Cap\ndomain: domains/auth\n---\n',
+    input: '---\nuid: 01890f3e-7b5d-4c0a-8f14-123456789abd\nkind: capability\ntitle: Cap\ndomain: domains/auth\n---\n',
     expectedCodes: [],
     expectedOk: true,
   },
   {
     name: 'capability without domain → missing-expected-field warning',
-    input: '---\nkind: capability\ntitle: Cap\n---\n',
+    input: '---\nuid: 01890f3e-7b5d-4c0a-8f14-123456789abe\nkind: capability\ntitle: Cap\n---\n',
     expectedCodes: ['missing-expected-field'],
+    expectedOk: true,
+  },
+  {
+    name: 'canonical kind without uid → missing-uid (error, ok=false)',
+    input: '---\nkind: project\ntitle: Foo\n---\nbody',
+    expectedCodes: ['missing-uid'],
+    expectedOk: false,
+  },
+  {
+    name: 'canonical kind with malformed uid → invalid-uid (error, ok=false)',
+    input: '---\nuid: node-12\nkind: project\ntitle: Foo\n---\nbody',
+    expectedCodes: ['invalid-uid'],
+    expectedOk: false,
+  },
+  {
+    name: 'merged_uids contains malformed identity → invalid-merged-uids',
+    input: '---\nuid: 01890f3e-7b5d-4c0a-8f14-123456789abc\nmerged_uids: [node-12]\nkind: project\ntitle: Foo\n---\nbody',
+    expectedCodes: ['invalid-merged-uids'],
+    expectedOk: false,
+  },
+  {
+    name: 'merged_uids cannot repeat the surviving uid',
+    input: '---\nuid: 01890f3e-7b5d-4c0a-8f14-123456789abc\nmerged_uids: [01890f3e-7b5d-4c0a-8f14-123456789abc]\nkind: project\ntitle: Foo\n---\nbody',
+    expectedCodes: ['invalid-merged-uids'],
+    expectedOk: false,
+  },
+  {
+    name: 'merged_uids must be canonical sorted unique UUIDv4 values',
+    input: '---\nuid: 01890f3e-7b5d-4c0a-8f14-123456789abc\nmerged_uids: [21890f3e-7b5d-4c0a-8f14-123456789abc, 11890f3e-7b5d-4c0a-8f14-123456789abc, 21890f3e-7b5d-4c0a-8f14-123456789abc]\nkind: project\ntitle: Foo\n---\nbody',
+    expectedCodes: ['non-canonical-merged-uids'],
     expectedOk: true,
   },
   {
@@ -54,7 +84,7 @@ export const VALIDATE_CASES = [
   },
   {
     name: 'unknown kind value → unknown-kind (warning, ok=true)',
-    input: '---\nkind: bogus\ntitle: Foo\n---\n',
+    input: '---\nuid: 21890f3e-7b5d-4c0a-8f14-123456789abc\nkind: bogus\ntitle: Foo\n---\n',
     expectedCodes: ['unknown-kind'],
     expectedOk: true,
   },
@@ -66,7 +96,7 @@ export const VALIDATE_CASES = [
   },
   {
     name: 'graph 배열 중복/비정렬 → non-canonical-graph-array warning',
-    input: '---\nkind: project\ntitle: Foo\ndependencies: [z, a, z]\n---\n',
+    input: '---\nuid: 11890f3e-7b5d-4c0a-8f14-123456789abc\nkind: project\ntitle: Foo\ndependencies: [z, a, z]\n---\n',
     expectedCodes: ['non-canonical-graph-array'],
     expectedOk: true,
   },
@@ -83,7 +113,7 @@ export const VALIDATE_CASES = [
     name: 'broader 배열도 canonical 검사를 받는다 (검증기 3-way drift 차단)',
     // `kind: project` — capability 로 쓰면 `missing-expected-field`(domain 없음)가
     // 함께 붙어 이 fixture 가 검사하려는 계약이 흐려진다. 옆 fixture 와 동일 조건.
-    input: '---\nkind: project\ntitle: Foo\nbroader: [z, a, z]\n---\n',
+    input: '---\nuid: 11890f3e-7b5d-4c0a-8f14-123456789abd\nkind: project\ntitle: Foo\nbroader: [z, a, z]\n---\n',
     expectedCodes: ['non-canonical-graph-array'],
     expectedOk: true,
   },

@@ -9,8 +9,9 @@
 export const BUILD_FM_CASES = [
   {
     name: 'project — arrayDefaults 빈 배열로 채워짐',
-    input: { slug: 'demo', kind: 'project', title: 'Demo' },
+    input: { uid: '01890f3e-7b5d-4c0a-8f14-123456789abc', slug: 'demo', kind: 'project', title: 'Demo' },
     expected: {
+      uid: '01890f3e-7b5d-4c0a-8f14-123456789abc',
       slug: 'demo',
       kind: 'project',
       title: 'Demo',
@@ -22,12 +23,14 @@ export const BUILD_FM_CASES = [
   {
     name: 'project — 호출자가 capabilities 명시하면 canonical set 으로 보존',
     input: {
+      uid: '01890f3e-7b5d-4c0a-8f14-123456789abd',
       slug: 'demo',
       kind: 'project',
       title: 'Demo',
       capabilities: [' cap-b ', 'cap-a', 'cap-b', ''],
     },
     expected: {
+      uid: '01890f3e-7b5d-4c0a-8f14-123456789abd',
       slug: 'demo',
       kind: 'project',
       title: 'Demo',
@@ -39,6 +42,7 @@ export const BUILD_FM_CASES = [
   {
     name: 'project — graph arrays 는 모두 dedup + sort',
     input: {
+      uid: '01890f3e-7b5d-4c0a-8f14-123456789abe',
       slug: 'demo',
       kind: 'project',
       title: 'Demo',
@@ -47,6 +51,7 @@ export const BUILD_FM_CASES = [
       relates: ['docs/rfc', 'docs/adr', 'docs/rfc'],
     },
     expected: {
+      uid: '01890f3e-7b5d-4c0a-8f14-123456789abe',
       slug: 'demo',
       kind: 'project',
       title: 'Demo',
@@ -59,8 +64,9 @@ export const BUILD_FM_CASES = [
   },
   {
     name: 'domain — capabilities 빈 배열만',
-    input: { slug: 'domains/auth', kind: 'domain', title: 'Auth' },
+    input: { uid: '01890f3e-7b5d-4c0a-8f14-123456789abf', slug: 'domains/auth', kind: 'domain', title: 'Auth' },
     expected: {
+      uid: '01890f3e-7b5d-4c0a-8f14-123456789abf',
       slug: 'domains/auth',
       kind: 'domain',
       title: 'Auth',
@@ -74,12 +80,14 @@ export const BUILD_FM_CASES = [
     // 둬서 코드 리뷰 때 한눈에 들어오게.
     name: 'capability — domain 명시 + elements 빈 배열 (domain 이 elements 앞)',
     input: {
+      uid: '11890f3e-7b5d-4c0a-8f14-123456789abc',
       slug: 'capabilities/login',
       kind: 'capability',
       title: 'Login',
       domain: 'domains/auth',
     },
     expected: {
+      uid: '11890f3e-7b5d-4c0a-8f14-123456789abc',
       slug: 'capabilities/login',
       kind: 'capability',
       title: 'Login',
@@ -89,8 +97,9 @@ export const BUILD_FM_CASES = [
   },
   {
     name: 'capability — domain 미지정 (orphan, validator 가 warn)',
-    input: { slug: 'capabilities/checkout', kind: 'capability', title: 'Checkout' },
+    input: { uid: '11890f3e-7b5d-4c0a-8f14-123456789abd', slug: 'capabilities/checkout', kind: 'capability', title: 'Checkout' },
     expected: {
+      uid: '11890f3e-7b5d-4c0a-8f14-123456789abd',
       slug: 'capabilities/checkout',
       kind: 'capability',
       title: 'Checkout',
@@ -100,12 +109,14 @@ export const BUILD_FM_CASES = [
   {
     name: 'element — domain 명시',
     input: {
+      uid: '11890f3e-7b5d-4c0a-8f14-123456789abe',
       slug: 'elements/jwt-token',
       kind: 'element',
       title: 'JWT token',
       domain: 'domains/auth',
     },
     expected: {
+      uid: '11890f3e-7b5d-4c0a-8f14-123456789abe',
       slug: 'elements/jwt-token',
       kind: 'element',
       title: 'JWT token',
@@ -114,8 +125,9 @@ export const BUILD_FM_CASES = [
   },
   {
     name: 'document — minimal',
-    input: { slug: 'docs/decision-1', kind: 'document', title: 'Decision 1' },
+    input: { uid: '11890f3e-7b5d-4c0a-8f14-123456789abf', slug: 'docs/decision-1', kind: 'document', title: 'Decision 1' },
     expected: {
+      uid: '11890f3e-7b5d-4c0a-8f14-123456789abf',
       slug: 'docs/decision-1',
       kind: 'document',
       title: 'Decision 1',
@@ -127,6 +139,7 @@ export const BUILD_FM_CASES = [
     // 그대로 보존된다 (normalize 시 사라지거나 이동하지 않음).
     name: 'capability — display 필드 명시 시 title 바로 뒤 순서로 보존',
     input: {
+      uid: '21890f3e-7b5d-4c0a-8f14-123456789abc',
       slug: 'capabilities/cli-developer-entry',
       kind: 'capability',
       title: 'CLI Developer Entry (52 commands — vault + MCP verify + ...)',
@@ -134,6 +147,7 @@ export const BUILD_FM_CASES = [
       domain: 'domains/cli',
     },
     expected: {
+      uid: '21890f3e-7b5d-4c0a-8f14-123456789abc',
       slug: 'capabilities/cli-developer-entry',
       kind: 'capability',
       title: 'CLI Developer Entry (52 commands — vault + MCP verify + ...)',

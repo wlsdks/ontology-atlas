@@ -1,4 +1,5 @@
 ---
+uid: de739ff1-9bfd-49e3-ac86-54427a5f5840
 slug: capabilities/desktop-download-decision
 kind: capability
 title: Desktop Download Decision

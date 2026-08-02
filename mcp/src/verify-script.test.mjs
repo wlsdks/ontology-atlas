@@ -151,6 +151,7 @@ import {
 } from '../scripts/verify.mjs';
 import { expectedResponseIds, missingResponseLabels } from '../scripts/json-rpc-lines.mjs';
 import { GRAPH_ARRAY_KEYS } from './vault.mjs';
+import { NODE_UID_PATTERN } from './schema.mjs';
 import { assertPnpmScriptsExist } from '../../scripts/lib/pnpm-script-refs.mjs';
 import { buildAbsorptionPlan } from './absorb.mjs';
 
@@ -158,6 +159,7 @@ const __dirname = dirname(fileURLToPath(import.meta.url));
 const MCP_PKG = JSON.parse(readFileSync(join(__dirname, '..', 'package.json'), 'utf-8'));
 const ROOT_PKG = JSON.parse(readFileSync(join(__dirname, '..', '..', 'package.json'), 'utf-8'));
 const VERIFY_SCRIPT = join(__dirname, '..', 'scripts', 'verify.mjs');
+const TEST_UID = '00000000-0000-4000-8000-000000000001';
 
 function strictErrorResponse(text, extraResult = {}) {
   return {
@@ -754,6 +756,7 @@ describe('verify.mjs first-contact gates', () => {
                 type: 'object',
                 required: ['slug', 'kind', 'title', 'mtime'],
                 properties: {
+                  uid: { type: 'string', pattern: NODE_UID_PATTERN },
                   slug: { type: 'string' },
                   kind: { type: 'string' },
                   title: { type: 'string' },
@@ -778,10 +781,10 @@ describe('verify.mjs first-contact gates', () => {
       {
         name: 'get_concepts',
         description:
-          'Fetch multiple nodes in one call — same per-row shape as get_concept. Use when you have K specific slugs and need their full details — saves K-1 round-trips. Order of `concepts[]` matches input `slugs[]`; successful rows return canonical `slug`. Missing or invalid slug rows return `{ slug, ok: false, error }` rather than aborting the batch, so later valid slugs still resolve.',
+          'Fetch multiple nodes by exactly one selector array: `slugs` or immutable `uids`. Successful rows return permanent `uid` plus current canonical `slug`; graph-operation inputs remain slug-based. Missing slug rows do not abort the batch, so later valid slugs still resolve.',
         inputSchema: {
           additionalProperties: false,
-          required: ['slugs'],
+          oneOf: [{ required: ['slugs'] }, { required: ['uids'] }],
           properties: {
             slugs: {
               type: 'array',
@@ -789,6 +792,12 @@ describe('verify.mjs first-contact gates', () => {
               items: { type: 'string' },
               description:
                 'Vault-relative slugs, unique tail slugs, or frontmatter `slug` aliases (e.g. ["capabilities/x", "elements/y"]). Omit the .md extension. Max 50 per call.',
+            },
+            uids: {
+              type: 'array',
+              maxItems: 50,
+              items: { type: 'string', pattern: NODE_UID_PATTERN },
+              description: 'Exact permanent node UIDs. Use instead of slugs, never together with it.',
             },
           },
         },
@@ -800,9 +809,10 @@ describe('verify.mjs first-contact gates', () => {
               type: 'array',
               items: {
                 type: 'object',
-                required: ['ok', 'slug'],
+                required: ['ok'],
                 properties: {
                   ok: { type: 'boolean' },
+                  uid: { type: 'string', pattern: NODE_UID_PATTERN },
                   slug: { type: 'string' },
                   frontmatter: { type: 'object' },
                   excerpt: { type: 'string' },
@@ -1092,12 +1102,13 @@ describe('verify.mjs first-contact gates', () => {
           type: 'object',
           required: [
             'ok', 'dryRun', 'previewReady', 'canConfirm', 'wouldChange', 'blockedReasons',
-            'oldSlug', 'newSlug', 'sourcePath', 'targetPath', 'moved', 'backlinkUpdates',
+            'uid', 'oldSlug', 'newSlug', 'sourcePath', 'targetPath', 'moved', 'backlinkUpdates',
           ],
           properties: {
             ok: { type: 'boolean' },
             dryRun: { type: 'boolean' },
             ...destructivePreviewProperties,
+            uid: { type: 'string', pattern: NODE_UID_PATTERN },
             oldSlug: { type: 'string' },
             newSlug: { type: 'string' },
             sourcePath: { type: 'string' },
@@ -1126,12 +1137,15 @@ describe('verify.mjs first-contact gates', () => {
           type: 'object',
           required: [
             'ok', 'dryRun', 'previewReady', 'canConfirm', 'wouldChange', 'blockedReasons',
-            'fromSlug', 'intoSlug', 'fromPath', 'deleted', 'backlinkUpdates', 'capturedFrom',
+            'fromUid', 'intoUid', 'absorbedUids', 'fromSlug', 'intoSlug', 'fromPath', 'deleted', 'backlinkUpdates', 'capturedFrom',
           ],
           properties: {
             ok: { type: 'boolean' },
             dryRun: { type: 'boolean' },
             ...destructivePreviewProperties,
+            fromUid: { type: 'string', pattern: NODE_UID_PATTERN },
+            intoUid: { type: 'string', pattern: NODE_UID_PATTERN },
+            absorbedUids: { type: 'array', items: { type: 'string', pattern: NODE_UID_PATTERN } },
             fromSlug: { type: 'string' },
             intoSlug: { type: 'string' },
             fromPath: { type: 'string' },
@@ -1161,12 +1175,13 @@ describe('verify.mjs first-contact gates', () => {
           type: 'object',
           required: [
             'ok', 'dryRun', 'previewReady', 'canConfirm', 'wouldChange', 'blockedReasons',
-            'slug', 'filePath',
+            'uid', 'slug', 'filePath',
           ],
           properties: {
             ok: { type: 'boolean' },
             dryRun: { type: 'boolean' },
             ...destructivePreviewProperties,
+            uid: { type: 'string', pattern: NODE_UID_PATTERN },
             slug: nonBlankStringSchema,
             filePath: nonBlankStringSchema,
             backlinks: { type: 'array', items: backlinkRowSchema },
@@ -1403,8 +1418,10 @@ describe('verify.mjs first-contact gates', () => {
               type: 'array',
               items: {
                 type: 'object',
-                required: ['slug', 'kind', 'title', 'mtime', 'outDegree', 'inDegree'],
+                required: ['uid', 'slug', 'kind', 'title', 'mtime', 'outDegree', 'inDegree'],
                 properties: {
+                  uid: { type: 'string', pattern: NODE_UID_PATTERN },
+                  merged_uids: { type: 'array', items: { type: 'string', pattern: NODE_UID_PATTERN } },
                   slug: { type: 'string' },
                   kind: { type: 'string' },
                   title: { type: 'string' },
@@ -1558,6 +1575,18 @@ describe('verify.mjs first-contact gates', () => {
                   },
                 },
                 aliasToSlug: {
+                  type: 'object',
+                  additionalProperties: { type: 'string' },
+                },
+                uidToSlug: {
+                  type: 'object',
+                  additionalProperties: { type: 'string' },
+                },
+                slugToUid: {
+                  type: 'object',
+                  additionalProperties: { type: 'string', pattern: NODE_UID_PATTERN },
+                },
+                mergedUidToSlug: {
                   type: 'object',
                   additionalProperties: { type: 'string' },
                 },
@@ -1860,13 +1889,22 @@ describe('verify.mjs first-contact gates', () => {
         name: 'get_concept',
         inputSchema: {
           additionalProperties: false,
-          required: ['slug'],
-          properties: { body: { type: 'string', enum: ['excerpt', 'full'] } },
+          oneOf: [{ required: ['slug'] }, { required: ['uid'] }],
+          properties: {
+            slug: { type: 'string' },
+            uid: {
+              type: 'string',
+              pattern: NODE_UID_PATTERN,
+              description: 'Exact permanent node UID. Use instead of slug, never together with it.',
+            },
+            body: { type: 'string', enum: ['excerpt', 'full'] },
+          },
         },
         outputSchema: {
           type: 'object',
-          required: ['slug', 'frontmatter', 'bodyInfo', 'neighbors', 'outgoingEdges', 'mtime'],
+          required: ['uid', 'slug', 'frontmatter', 'bodyInfo', 'neighbors', 'outgoingEdges', 'mtime'],
           properties: {
+            uid: { type: 'string', pattern: NODE_UID_PATTERN },
             slug: { type: 'string' },
             frontmatter: { type: 'object' },
             excerpt: { type: 'string' },
@@ -3619,12 +3657,12 @@ describe('verify.mjs first-contact gates', () => {
           ...tools[1],
           inputSchema: {
             ...tools[1].inputSchema,
-            required: [],
+            oneOf: [{ required: ['slugs'] }],
           },
         },
         ...tools.slice(2),
       ]),
-      'get_concepts required schema drift',
+      'get_concepts inputSchema identity selector drift',
     );
     assert.equal(
       toolsListSchemaFailure([
@@ -7794,8 +7832,9 @@ describe('verify.mjs first-contact gates', () => {
     assert.equal(
       getConceptFailure(
         {
+          uid: TEST_UID,
           slug: 'capabilities/mcp-server',
-          frontmatter: { kind: 'capability', title: 'MCP Server' },
+          frontmatter: { uid: TEST_UID, kind: 'capability', title: 'MCP Server' },
           excerpt: 'Agent-facing MCP server.',
           neighbors: {
             domains: [],
@@ -7838,8 +7877,9 @@ describe('verify.mjs first-contact gates', () => {
   it('accepts clean get_concepts batch payloads with partial rows', () => {
     const row = (slug, frontmatter) => ({
       ok: true,
+      uid: TEST_UID,
       slug,
-      frontmatter,
+      frontmatter: { uid: TEST_UID, ...frontmatter },
       excerpt: `${frontmatter.title} body`,
       neighbors: {
         domains: [],
@@ -8040,8 +8080,9 @@ describe('verify.mjs first-contact gates', () => {
   it('fails malformed get_concepts batch payloads', () => {
     const row = (slug, frontmatter) => ({
       ok: true,
+      uid: TEST_UID,
       slug,
-      frontmatter,
+      frontmatter: { uid: TEST_UID, ...frontmatter },
       excerpt: `${frontmatter.title} body`,
       neighbors: {
         domains: [],
@@ -8098,8 +8139,9 @@ describe('verify.mjs first-contact gates', () => {
 
   it('fails malformed get_concept single-node payloads', () => {
     const okConcept = {
+      uid: TEST_UID,
       slug: 'capabilities/mcp-server',
-      frontmatter: { kind: 'capability', title: 'MCP Server' },
+      frontmatter: { uid: TEST_UID, kind: 'capability', title: 'MCP Server' },
       excerpt: 'Agent-facing MCP server.',
       neighbors: {
         domains: [],
@@ -8287,7 +8329,7 @@ describe('verify.mjs first-contact gates', () => {
       listConceptsFailure({
         total: 1,
         vaultRoot: '/tmp/vault',
-        nodes: [{ slug: 'project', kind: 'project', title: 'Project', mtime: 1 }],
+        nodes: [{ uid: TEST_UID, slug: 'project', kind: 'project', title: 'Project', mtime: 1 }],
       }),
       null,
     );
@@ -8328,14 +8370,14 @@ describe('verify.mjs first-contact gates', () => {
     assert.equal(listConceptsFailure({ total: 0, nodes: [] }), 'list_concepts response missing vaultRoot');
     assert.equal(listConceptsFailure({ total: 0, vaultRoot: '/tmp/vault' }), 'list_concepts response missing nodes array');
     assert.equal(
-      listConceptsFailure({ total: 0, vaultRoot: '/tmp/vault', nodes: [{ slug: 'project', kind: 'project', title: 'Project', mtime: 1 }] }),
+      listConceptsFailure({ total: 0, vaultRoot: '/tmp/vault', nodes: [{ uid: TEST_UID, slug: 'project', kind: 'project', title: 'Project', mtime: 1 }] }),
       'list_concepts response node count exceeds total — nodes 1, total 0',
     );
     assert.equal(listConceptsFailure({ total: 1, vaultRoot: '/tmp/vault', nodes: [null] }), 'list_concepts response malformed node at index 0');
     assert.equal(listConceptsFailure({ total: 1, vaultRoot: '/tmp/vault', nodes: [{}] }), 'list_concepts response missing node slug at index 0');
-    assert.equal(listConceptsFailure({ total: 1, vaultRoot: '/tmp/vault', nodes: [{ slug: 'project' }] }), 'list_concepts response missing node kind: project');
-    assert.equal(listConceptsFailure({ total: 1, vaultRoot: '/tmp/vault', nodes: [{ slug: 'project', kind: 'project' }] }), 'list_concepts response missing node title: project');
-    assert.equal(listConceptsFailure({ total: 1, vaultRoot: '/tmp/vault', nodes: [{ slug: 'project', kind: 'project', title: 'Project' }] }), 'list_concepts response missing node mtime: project');
+    assert.equal(listConceptsFailure({ total: 1, vaultRoot: '/tmp/vault', nodes: [{ uid: TEST_UID, slug: 'project' }] }), 'list_concepts response missing node kind: project');
+    assert.equal(listConceptsFailure({ total: 1, vaultRoot: '/tmp/vault', nodes: [{ uid: TEST_UID, slug: 'project', kind: 'project' }] }), 'list_concepts response missing node title: project');
+    assert.equal(listConceptsFailure({ total: 1, vaultRoot: '/tmp/vault', nodes: [{ uid: TEST_UID, slug: 'project', kind: 'project', title: 'Project' }] }), 'list_concepts response missing node mtime: project');
   });
 
   it('fails malformed project probe payloads', () => {
@@ -8353,7 +8395,7 @@ describe('verify.mjs first-contact gates', () => {
       projectProbeFailure({
         total: 1,
         vaultRoot: '/tmp/vault',
-        nodes: [{ slug: 'capabilities/not-project', kind: 'capability', title: 'Wrong', mtime: 1 }],
+        nodes: [{ uid: TEST_UID, slug: 'capabilities/not-project', kind: 'capability', title: 'Wrong', mtime: 1 }],
       }, { byKind: { project: 1 } }),
       'project probe returned non-project node: capabilities/not-project',
     );
@@ -8361,7 +8403,7 @@ describe('verify.mjs first-contact gates', () => {
       projectProbeFailure({
         total: 2,
         vaultRoot: '/tmp/vault',
-        nodes: [{ slug: 'project', kind: 'project', title: 'Project', mtime: 1 }],
+        nodes: [{ uid: TEST_UID, slug: 'project', kind: 'project', title: 'Project', mtime: 1 }],
       }, { byKind: { project: 1 } }),
       'project probe count mismatch — list_kinds project 1, probe 2',
     );
@@ -8369,7 +8411,7 @@ describe('verify.mjs first-contact gates', () => {
       projectProbeFailure({
         total: 1,
         vaultRoot: '/tmp/vault',
-        nodes: [{ slug: 'project', kind: 'project', title: 'Project', mtime: 1 }],
+        nodes: [{ uid: TEST_UID, slug: 'project', kind: 'project', title: 'Project', mtime: 1 }],
       }, { byKind: { project: 1 } }),
       null,
     );
@@ -8549,6 +8591,7 @@ describe('verify.mjs first-contact gates', () => {
         byKind: { project: 1 },
         byDomain: {},
         nodes: [{
+          uid: TEST_UID,
           slug: 'project',
           kind: 'project',
           title: 'Project',
@@ -8604,7 +8647,7 @@ describe('verify.mjs first-contact gates', () => {
       canonicalizationActionCount: 1,
       byKind: { project: 1 },
       byDomain: {},
-      nodes: [{ slug: 'project', kind: 'project', title: 'Project', mtime: 1, outDegree: 1, inDegree: 0 }],
+      nodes: [{ uid: TEST_UID, slug: 'project', kind: 'project', title: 'Project', mtime: 1, outDegree: 1, inDegree: 0 }],
       edges: [{ id: 'e', from: 'project', to: 'domains/core', via: 'domains', ref: 'domains/core', resolved: true, external: false }],
       nodesPagination: { offset: 0, limit: 1, total: 1, returned: 1, hasMore: false, nextOffset: null },
       edgesPagination: { offset: 0, limit: 1, total: 1, returned: 1, hasMore: false, nextOffset: null },
@@ -8649,7 +8692,7 @@ describe('verify.mjs first-contact gates', () => {
         canonicalizationActionCount: 0,
         byKind: { project: 1 },
         byDomain: {},
-        nodes: [{ slug: 'project', kind: 'project', title: 'Project', mtime: 1, outDegree: 1, inDegree: 0 }],
+        nodes: [{ uid: TEST_UID, slug: 'project', kind: 'project', title: 'Project', mtime: 1, outDegree: 1, inDegree: 0 }],
         edges: [{ id: edgeId, from: 'project', to: 'domains/core', via: 'domains', ref: 'domains/core', resolved: true, external: false }],
         nodesPagination: { offset: 0, limit: 1, total: 1, returned: 1, hasMore: false, nextOffset: null },
         edgesPagination: { offset: 0, limit: 1, total: 1, returned: 1, hasMore: false, nextOffset: null },
@@ -8667,6 +8710,9 @@ describe('verify.mjs first-contact gates', () => {
             [edgeId]: { id: edgeId, from: 'project', to: 'domains/core', via: 'domains', ref: 'domains/core', resolved: true, external: false },
           },
           aliasToSlug: { project: 'project' },
+          uidToSlug: { [TEST_UID]: 'project' },
+          slugToUid: { project: TEST_UID },
+          mergedUidToSlug: {},
         },
       }),
       null,
@@ -8690,7 +8736,7 @@ describe('verify.mjs first-contact gates', () => {
       canonicalizationActionCount: 0,
       byKind: { project: 1 },
       byDomain: {},
-      nodes: [{ slug: 'project', kind: 'project', title: 'Project', mtime: 1, outDegree: 1, inDegree: 0 }],
+      nodes: [{ uid: TEST_UID, slug: 'project', kind: 'project', title: 'Project', mtime: 1, outDegree: 1, inDegree: 0 }],
       edges: [{ id: edgeId, from: 'project', to: 'domains/core', via: 'domains', ref: 'domains/core', resolved: true, external: false }],
       nodesPagination: { offset: 0, limit: 1, total: 1, returned: 1, hasMore: false, nextOffset: null },
       edgesPagination: { offset: 0, limit: 1, total: 1, returned: 1, hasMore: false, nextOffset: null },
@@ -8708,6 +8754,9 @@ describe('verify.mjs first-contact gates', () => {
           [edgeId]: { id: edgeId, from: 'project', to: 'domains/core', via: 'domains', ref: 'domains/core', resolved: true, external: false },
         },
         aliasToSlug: { project: 'project' },
+        uidToSlug: { [TEST_UID]: 'project' },
+        slugToUid: { project: TEST_UID },
+        mergedUidToSlug: {},
       },
     };
 
@@ -9195,7 +9244,7 @@ describe('verify.mjs first-contact gates', () => {
     const list = {
       total: 1,
       vaultRoot: '/tmp/vault',
-      nodes: [{ slug: 'project', kind: 'project', title: 'Project', mtime: 1 }],
+      nodes: [{ uid: TEST_UID, slug: 'project', kind: 'project', title: 'Project', mtime: 1 }],
     };
     const validation = {
       scanned: 1,

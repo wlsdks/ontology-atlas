@@ -1,4 +1,5 @@
 ---
+uid: 49e9e960-77ef-44a9-aace-7b8fdc666737
 slug: elements/checkout-draft
 kind: element
 title: Checkout Draft

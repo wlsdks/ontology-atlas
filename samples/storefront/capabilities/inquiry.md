@@ -1,4 +1,5 @@
 ---
+uid: 3caa1908-b9ba-42d9-a3e2-6c6c27009e3f
 slug: capabilities/inquiry
 kind: capability
 title: Customer Inquiry

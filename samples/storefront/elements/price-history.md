@@ -1,4 +1,5 @@
 ---
+uid: 484e3e18-06ab-41de-ac45-b95ea5145255
 slug: elements/price-history
 kind: element
 title: Price History

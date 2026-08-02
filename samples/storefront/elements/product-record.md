@@ -1,4 +1,5 @@
 ---
+uid: 69eb74e4-abbc-43ff-8056-e116078fd361
 slug: elements/product-record
 kind: element
 title: Product Record

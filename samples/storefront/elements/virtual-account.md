@@ -1,4 +1,5 @@
 ---
+uid: f61b18e5-ae32-4baf-9978-f83a1de8207f
 slug: elements/virtual-account
 kind: element
 title: Virtual Account

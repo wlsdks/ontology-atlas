@@ -1,4 +1,5 @@
 ---
+uid: ad381f17-ccc6-4ce5-b6e7-2141e487781d
 slug: elements/docs-vault-widget
 kind: element
 title: Docs Vault (widget)

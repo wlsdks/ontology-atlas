@@ -1,4 +1,5 @@
 ---
+uid: 8b8768b5-a530-40cf-80b4-ad827d5050ee
 slug: elements/sale-schedule
 kind: element
 title: Sale Schedule

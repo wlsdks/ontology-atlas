@@ -1,4 +1,5 @@
 ---
+uid: 944e3369-f678-439f-9db7-0486bdc9abd0
 slug: capabilities/customer-messaging
 kind: capability
 title: Customer Messaging

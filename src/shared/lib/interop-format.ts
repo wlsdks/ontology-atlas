@@ -6,17 +6,17 @@
  *
  * Input is the deterministic *compile artifact shape*:
  *
- *     { nodes: [{ slug, kind, title, domain? }],
+ *     { nodes: [{ uid, slug, kind, title, domain? }],
  *       edges: [{ from, to, via }] }
  *
  * — the same node/edge records `mcp/src/ontology-compiler.mjs` emits. Node
- * identity is the vault **slug**, namespaced as a stable URN:
+ * identity is the node's permanent UUIDv4:
  *
- *     urn:ontology-atlas:<kind>:<slug>
+ *     urn:uuid:<uid>
  *
  * Interop contract with external tools: an export is a *snapshot*; the
- * compiler's `graphHash` is its *version*. A rename in the vault mints a new
- * URN — it does NOT rewrite URNs already emitted into a prior export.
+ * compiler's `graphHash` is its *version*. Consumers key on the UID URN;
+ * renaming the readable slug does not mint a new identity.
  *
  * Mirror copy: `cli/src/lib/interop-format.mjs` (the CLI `export` command +
  * the source the MCP compiler feeds). The contract test
@@ -30,12 +30,15 @@
  * phantom nodes for dangling/external refs.
  */
 
-export const INTEROP_URN_BASE = 'urn:ontology-atlas';
+export const INTEROP_URN_BASE = 'urn:uuid';
+export const INTEROP_SCHEMA_VERSION = 2;
 
 const OATLAS_NS = 'https://wlsdks.github.io/ontology-atlas/ns#';
 const GRAPHML_GRAPH_ID = 'atlas';
+const NODE_UID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/;
 
 export interface InteropNode {
+  uid: string;
   slug: string;
   kind: string;
   title: string;
@@ -71,9 +74,11 @@ const VIA_PREDICATE: Record<string, string> = {
   domain: 'domain',
 };
 
-export function nodeUrn(kind: string | undefined, slug: string): string {
-  const k = typeof kind === 'string' && kind.trim() ? kind.trim() : 'node';
-  return `${INTEROP_URN_BASE}:${k}:${slug}`;
+export function nodeUrn(uid: string): string {
+  if (!NODE_UID_RE.test(uid)) {
+    throw new Error('Interop URN requires a valid lowercase UUIDv4 `uid`.');
+  }
+  return `${INTEROP_URN_BASE}:${uid}`;
 }
 
 function predicateTerm(via: string): string {
@@ -81,6 +86,7 @@ function predicateTerm(via: string): string {
 }
 
 interface NormalNode {
+  uid: string;
   slug: string;
   kind: string;
   title: string;
@@ -96,10 +102,23 @@ function normalizeGraph(graph: InteropGraph): {
   const rawEdges = Array.isArray(graph?.edges) ? graph.edges : [];
 
   const nodeBySlug = new Map<string, NormalNode>();
+  const slugByUid = new Map<string, string>();
   for (const n of rawNodes) {
     const slug = typeof n?.slug === 'string' ? n.slug.trim() : '';
+    const uid = typeof n?.uid === 'string' ? n.uid.trim() : '';
+    if (!NODE_UID_RE.test(uid)) {
+      throw new Error(
+        `Interop graph node "${slug || '<unknown>'}" requires a valid lowercase UUIDv4 \`uid\`.`,
+      );
+    }
     if (!slug || nodeBySlug.has(slug)) continue;
+    const priorSlug = slugByUid.get(uid);
+    if (priorSlug && priorSlug !== slug) {
+      throw new Error(`Interop graph UID "${uid}" is shared by "${priorSlug}" and "${slug}".`);
+    }
+    slugByUid.set(uid, slug);
     nodeBySlug.set(slug, {
+      uid,
       slug,
       kind: typeof n.kind === 'string' && n.kind.trim() ? n.kind.trim() : 'node',
       title: typeof n.title === 'string' && n.title !== '' ? n.title : slug,
@@ -140,6 +159,7 @@ export function buildJsonLd(graph: InteropGraph): string {
   const context: Record<string, unknown> = {
     '@vocab': 'https://schema.org/',
     oatlas: OATLAS_NS,
+    uid: 'oatlas:uid',
     slug: 'oatlas:slug',
     kind: 'oatlas:kind',
     title: 'oatlas:title',
@@ -162,8 +182,9 @@ export function buildJsonLd(graph: InteropGraph): string {
 
   const graphNodes = nodes.map((n) => {
     const node: Record<string, unknown> = {
-      '@id': nodeUrn(n.kind, n.slug),
+      '@id': nodeUrn(n.uid),
       '@type': capitalize(n.kind),
+      uid: n.uid,
       slug: n.slug,
       kind: n.kind,
       title: n.title,
@@ -171,7 +192,7 @@ export function buildJsonLd(graph: InteropGraph): string {
     if (n.domain !== undefined) node.domain = n.domain;
     for (const e of outgoing.get(n.slug) ?? []) {
       const target = nodeBySlug.get(e.to)!;
-      const targetUri = nodeUrn(target.kind, target.slug);
+      const targetUri = nodeUrn(target.uid);
       const term = predicateTerm(e.via);
       const existing = node[term];
       if (Array.isArray(existing)) existing.push({ '@id': targetUri });
@@ -196,6 +217,7 @@ export function buildGraphML(graph: InteropGraph): string {
       'xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" ' +
       'xsi:schemaLocation="http://graphml.graphdrawing.org/xmlns http://graphml.graphdrawing.org/xmlns/1.0/graphml.xsd">',
   );
+  lines.push('  <key id="uid" for="node" attr.name="uid" attr.type="string"/>');
   lines.push('  <key id="slug" for="node" attr.name="slug" attr.type="string"/>');
   lines.push('  <key id="kind" for="node" attr.name="kind" attr.type="string"/>');
   lines.push('  <key id="title" for="node" attr.name="title" attr.type="string"/>');
@@ -204,8 +226,9 @@ export function buildGraphML(graph: InteropGraph): string {
   lines.push(`  <graph id="${GRAPHML_GRAPH_ID}" edgedefault="directed">`);
 
   for (const n of nodes) {
-    const id = nodeUrn(n.kind, n.slug);
+    const id = nodeUrn(n.uid);
     lines.push(`    <node id="${escapeXml(id)}">`);
+    lines.push(`      <data key="uid">${escapeXml(n.uid)}</data>`);
     lines.push(`      <data key="slug">${escapeXml(n.slug)}</data>`);
     lines.push(`      <data key="kind">${escapeXml(n.kind)}</data>`);
     lines.push(`      <data key="title">${escapeXml(n.title)}</data>`);
@@ -217,8 +240,8 @@ export function buildGraphML(graph: InteropGraph): string {
 
   let edgeIdx = 0;
   for (const e of edges) {
-    const src = nodeUrn(nodeBySlug.get(e.from)!.kind, e.from);
-    const dst = nodeUrn(nodeBySlug.get(e.to)!.kind, e.to);
+    const src = nodeUrn(nodeBySlug.get(e.from)!.uid);
+    const dst = nodeUrn(nodeBySlug.get(e.to)!.uid);
     lines.push(
       `    <edge id="e${edgeIdx}" source="${escapeXml(src)}" target="${escapeXml(dst)}">`,
     );

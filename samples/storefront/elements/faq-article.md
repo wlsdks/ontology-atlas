@@ -1,4 +1,5 @@
 ---
+uid: 1f48dd6a-81ae-4c74-83fa-ad4766250ff0
 slug: elements/faq-article
 kind: element
 title: FAQ Article

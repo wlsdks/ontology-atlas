@@ -1,4 +1,5 @@
 ---
+uid: 5ce43a0e-ba89-4be6-ade7-e4ff73bdbf3f
 slug: capabilities/payment-authorize
 kind: capability
 title: Payment Authorization

@@ -4,6 +4,7 @@
 
 ```markdown
 ---
+uid: 01890f3e-7b5d-4c0a-8f14-123456789abc
 kind: capability
 slug: token-issue
 title: 토큰 발급
@@ -14,6 +15,38 @@ domain: auth
 
 로그인에 성공한 사용자에게 세션 토큰을 내준다.
 ```
+
+## uid와 slug — 영구 정체성과 현재 주소
+
+모든 노드는 두 식별자를 같이 가집니다.
+
+| 필드 | 의미 | 바꾸어도 되나 | 주로 쓰는 곳 |
+|---|---|---|---|
+| `uid` | 그 노드 자체의 영구 정체성 | **안 됨** | MCP 정확 조회·핸드오프·출처·내보내기 URN |
+| `slug` | 사람이 읽는 현재 주소 | rename으로 바꿀 수 있음 | 파일 경로·관계값·URL·CLI 그래프 명령 |
+| `title` | 사람에게 보이는 이름 | 바꿀 수 있음 | 화면·검색·설명 |
+
+`uid`는 작성기가 노드를 만들 때 한 번만 발급하는 **lowercase UUIDv4**입니다.
+slug·title·파일 경로로부터 계산하지 않으며, 복사해서 새 노드에 재사용하지도
+않습니다. `rename`과 `reclassify`는 UID를 보존합니다. `merge`는 남는
+노드의 UID를 보존하고 흡수된 UID를 `merged_uids`에 기록하여 예전 UID
+조회도 같은 노드로 이어지게 합니다.
+
+```markdown
+uid: 21890f3e-7b5d-4c0a-8f14-123456789abc
+merged_uids:
+  - 01890f3e-7b5d-4c0a-8f14-123456789abc
+slug: token-issue
+```
+
+`merged_uids`는 `merge_concepts` 전용 이력입니다. 손으로 발급하거나 일반 patch로
+고치지 마십시오. UID 중복·잘못된 형식·생존 UID의 자기 반복은 `validate`가
+하드 오류로 막습니다.
+
+이 규격은 무작위 UUIDv4를 정의한 [RFC 9562](https://www.rfc-editor.org/rfc/rfc9562.html)와,
+JSON-LD 노드 식별자가 IRI여야 한다는 [W3C JSON-LD 1.1](https://www.w3.org/TR/json-ld11/#node-identifiers)을
+따릅니다. 내보낼 때는 `urn:uuid:<uid>`를 쓰므로 slug를 바꿔도 외부 정체성이
+바뀌지 않습니다.
 
 ## kind — 그 파일이 무엇인지
 
@@ -33,6 +66,7 @@ domain: auth
 
 ```markdown
 ---
+uid: 11890f3e-7b5d-4c0a-8f14-123456789abc
 kind: capability
 slug: token-issue
 domain: auth
@@ -42,6 +76,8 @@ depends_on: [jwt-signer, session-store]
 
 **프로젝트 소속은 따로 적지 않습니다.** `contains` 사슬을 타고 자동으로 정해집니다.
 `domain: auth` 라고만 써 두면 그 위의 프로젝트까지 알아서 이어집니다.
+관계값에는 UID가 아니라 slug를 쓸 수 있어, 사람이 파일만 열어도 그래프를 읽을
+수 있습니다. rename 도구가 이 관계값을 원자적으로 같이 바꿔 줍니다.
 
 ## 이름을 두 언어로
 

@@ -1,4 +1,5 @@
 ---
+uid: 3e928544-81c9-48ec-8188-2dadaf6ab62c
 slug: capabilities/carrier-integration
 kind: capability
 title: Carrier Integration

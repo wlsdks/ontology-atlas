@@ -156,7 +156,12 @@ export const AGENT_READ_TOOLS: readonly AgentToolDefinition[] = [
         slug: {
           type: 'string',
           description:
-            'Vault-relative slug (e.g. capabilities/card-payment), unique tail slug, or frontmatter `slug` alias. Omit the .md extension.',
+            'Vault-relative slug (e.g. capabilities/card-payment), unique tail slug, or frontmatter `slug` alias. Omit the .md extension. Pass exactly one of slug or uid.',
+        },
+        uid: {
+          type: 'string',
+          description:
+            'Exact permanent node UID. Pass exactly one of uid or slug; successful responses still include both identities.',
         },
         body: {
           type: 'string',
@@ -165,7 +170,6 @@ export const AGENT_READ_TOOLS: readonly AgentToolDefinition[] = [
             "'full' (the default here — this surface reads the user's own disk with no round-trip budget) returns the whole markdown body; 'excerpt' asks for the first prose paragraph only. Either way bodyInfo says whether anything was left out.",
         },
       },
-      required: ['slug'],
     },
   },
   {
@@ -180,7 +184,13 @@ export const AGENT_READ_TOOLS: readonly AgentToolDefinition[] = [
           type: 'array',
           maxItems: 50,
           items: { type: 'string' },
-          description: "Vault-relative slugs. Max 50 per call (20 when body is 'full').",
+          description: "Vault-relative slugs. Pass exactly one of slugs or uids. Max 50 per call (20 when body is 'full').",
+        },
+        uids: {
+          type: 'array',
+          maxItems: 50,
+          items: { type: 'string' },
+          description: "Exact permanent node UIDs. Pass exactly one of uids or slugs. Max 50 per call (20 when body is 'full').",
         },
         body: {
           type: 'string',
@@ -188,7 +198,6 @@ export const AGENT_READ_TOOLS: readonly AgentToolDefinition[] = [
           description: "Applies to every row. 'full' (default here) or 'excerpt'.",
         },
       },
-      required: ['slugs'],
     },
   },
   {

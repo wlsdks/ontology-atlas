@@ -1,4 +1,5 @@
 ---
+uid: 15683f06-ba71-4703-8212-1f87138e5c01
 slug: elements/search-hint
 kind: element
 title: Search Hint

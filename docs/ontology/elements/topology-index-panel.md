@@ -1,4 +1,5 @@
 ---
+uid: 83ab7e8f-4019-46d2-9545-97a20df8683d
 slug: elements/topology-index-panel
 kind: element
 title: Topology Index Panel

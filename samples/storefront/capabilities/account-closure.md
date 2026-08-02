@@ -1,4 +1,5 @@
 ---
+uid: 0caae896-a624-4a9b-b2e0-8317236ff7f9
 slug: capabilities/account-closure
 kind: capability
 title: Account Closure

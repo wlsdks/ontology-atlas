@@ -27,10 +27,23 @@ import {
   patchFrontmatter,
   resetNodeEligibilityGate,
   updateDoc,
-  writeDoc,
+  writeDoc as writeVaultDoc,
 } from './vault.mjs';
 
 let root;
+let uidSequence = 0;
+
+function nextTestUid() {
+  uidSequence += 1;
+  return `00000000-0000-4000-8000-${String(uidSequence).padStart(12, '0')}`;
+}
+
+function writeDoc(vaultRoot, slug, doc, options) {
+  return writeVaultDoc(vaultRoot, slug, {
+    ...doc,
+    frontmatter: { uid: nextTestUid(), ...doc.frontmatter },
+  }, options);
+}
 
 beforeEach(() => {
   root = mkdtempSync(join(tmpdir(), 'ontology-atlas-write-gate-test-'));
@@ -38,11 +51,11 @@ beforeEach(() => {
   mkdirSync(join(root, 'domains'), { recursive: true });
   writeFileSync(
     join(root, 'domains', 'cli.md'),
-    '---\nslug: domains/cli\nkind: domain\ntitle: CLI\n---\n',
+    `---\nuid: ${nextTestUid()}\nslug: domains/cli\nkind: domain\ntitle: CLI\n---\n`,
   );
   writeFileSync(
     join(root, 'capabilities', 'entry.md'),
-    '---\nslug: capabilities/entry\nkind: capability\ntitle: Entry\ndomain: domains/cli\nelements: []\n---\n',
+    `---\nuid: ${nextTestUid()}\nslug: capabilities/entry\nkind: capability\ntitle: Entry\ndomain: domains/cli\nelements: []\n---\n`,
   );
   resetNodeEligibilityGate();
 });
@@ -217,7 +230,7 @@ describe('node-eligibility gate — the three write doors inherit one gate', () 
         if (resolved) {
           writeFileSync(
             join(root, 'elements', `e${i}.md`),
-            `---\nslug: elements/e${i}\nkind: element\ntitle: E${i}\ndomain: domains/cli\n---\n`,
+            `---\nuid: ${nextTestUid()}\nslug: elements/e${i}\nkind: element\ntitle: E${i}\ndomain: domains/cli\n---\n`,
           );
           refs.push(`elements/e${i}`);
         } else {

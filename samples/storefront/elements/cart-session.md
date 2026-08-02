@@ -1,4 +1,5 @@
 ---
+uid: 04ab7350-9ba4-48ef-80f9-87478fcab014
 slug: elements/cart-session
 kind: element
 title: Cart Session

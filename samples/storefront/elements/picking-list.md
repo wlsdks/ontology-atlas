@@ -1,4 +1,5 @@
 ---
+uid: 8116c3b7-f695-4ebe-a2d4-6b412ea03cc2
 slug: elements/picking-list
 kind: element
 title: Picking List

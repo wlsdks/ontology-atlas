@@ -1,3 +1,4 @@
+import { createHash } from 'node:crypto';
 import { describe, expect, it } from 'vitest';
 import { VAULT_HEALTH_CASES } from '../fixtures/vault-health-cases.mjs';
 import { computeVaultHealth } from '@/entities/knowledge-graph/lib/vault-health';
@@ -41,6 +42,20 @@ function mcpHealth(docs: { slug: string; frontmatter: Record<string, unknown> }[
   return result;
 }
 
+function uidForSlug(slug: string): string {
+  const hex = createHash('sha256').update(slug).digest('hex').slice(0, 32).split('');
+  hex[12] = '4';
+  hex[16] = '8';
+  return `${hex.slice(0, 8).join('')}-${hex.slice(8, 12).join('')}-${hex.slice(12, 16).join('')}-${hex.slice(16, 20).join('')}-${hex.slice(20).join('')}`;
+}
+
+function withUids(docs: { slug: string; frontmatter: Record<string, unknown> }[]) {
+  return docs.map((doc) => ({
+    ...doc,
+    frontmatter: { uid: uidForSlug(doc.slug), ...doc.frontmatter },
+  }));
+}
+
 function checkMap(checks: { id: string; status: string; count: number }[]) {
   const map: Record<string, { status: string; count: number }> = {};
   for (const c of checks) {
@@ -54,8 +69,9 @@ function checkMap(checks: { id: string; status: string; count: number }[]) {
 describe('vault-health contract — src lib mirrors the MCP engine health verdict', () => {
   for (const c of VAULT_HEALTH_CASES) {
     it(c.name, () => {
-      const mcp = mcpHealth(c.docs);
-      const app = computeVaultHealth(c.docs);
+      const docs = withUids(c.docs);
+      const mcp = mcpHealth(docs);
+      const app = computeVaultHealth(docs);
 
       expect(app.status).toBe(mcp.status);
       expect(checkMap(app.checks)).toEqual(checkMap(mcp.checks));

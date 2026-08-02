@@ -1,4 +1,5 @@
 ---
+uid: f17b6080-a3ce-4d9d-bdfc-fea0c87ab6ef
 slug: elements/order-status-log
 kind: element
 title: Order Status Log

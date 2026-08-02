@@ -75,12 +75,23 @@ function escapeRegExp(value) {
   return String(value).replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
 }
 
+let fixtureUidSequence = 1;
+
+function withFixtureUid(content) {
+  if (!/^kind:/m.test(content) || /^uid:/m.test(content) || !content.startsWith('---\n')) {
+    return content;
+  }
+  const tail = fixtureUidSequence.toString(16).padStart(12, '0');
+  fixtureUidSequence += 1;
+  return content.replace('---\n', `---\nuid: 00000000-0000-4000-8000-${tail}\n`);
+}
+
 function withVault(seed = []) {
   const root = mkdtempSync(join(tmpdir(), 'cli-int-'));
   for (const { slug, content } of seed) {
     const full = join(root, `${slug}.md`);
     mkdirSync(dirname(full), { recursive: true });
-    writeFileSync(full, content, 'utf-8');
+    writeFileSync(full, withFixtureUid(content), 'utf-8');
   }
   return root;
 }
@@ -329,6 +340,33 @@ await test('init --locale=ko — Korean starter bodies, identical graph, English
     const enReadme = readFileSync(join(repo, 'vault-en', 'README.md'), 'utf-8');
     // 기본값은 종전과 같은 영어 — 기존 사용자의 init 결과가 바뀌지 않는다.
     assert.match(enReadme, /# My ontology vault/);
+
+    // UID는 템플릿에 고정하지 않고 실제 scaffold 때 발급한다. 한 vault 안의
+    // 모든 kind 문서(vault-readme 포함)가 고유하며 별도 init끼리도 겹치지 않는다.
+    const starterPaths = [
+      'README.md',
+      'project.md',
+      'domains/example-domain.md',
+      'capabilities/example-capability.md',
+      'elements/example-element.md',
+    ];
+    const readStarterUids = (vaultName) => starterPaths.map((relPath) => {
+      const content = readFileSync(join(repo, vaultName, relPath), 'utf-8');
+      const uid = content.match(/^uid:\s*([0-9a-f-]+)$/m)?.[1];
+      assert.match(uid ?? '', /^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/);
+      return uid;
+    });
+    const koUids = readStarterUids('vault-ko');
+    const enUids = readStarterUids('vault-en');
+    assert.equal(new Set(koUids).size, 5);
+    assert.equal(new Set(enUids).size, 5);
+    assert.equal(new Set([...koUids, ...enUids]).size, 10);
+    for (const localeRoot of ['vault', 'vault-ko']) {
+      for (const relPath of starterPaths) {
+        const template = readFileSync(join(__dirname, '..', 'templates', localeRoot, relPath), 'utf-8');
+        assert.doesNotMatch(template, /^uid:/m);
+      }
+    }
 
     // 두 볼트 모두 스키마상 유효하고 노드 수가 같다.
     for (const dir of ['vault-ko', 'vault-en']) {
@@ -2425,6 +2463,30 @@ await test('validate --json — dangling graph reference warning', async () => {
   }
 });
 
+await test('validate --json — duplicate primary/merged UID claims are hard errors', async () => {
+  const sharedUid = '01890f3e-7b5d-4c0a-8f14-123456789abc';
+  const root = withVault([
+    {
+      slug: 'a',
+      content: `---\nuid: ${sharedUid}\nkind: project\ntitle: A\n---\n`,
+    },
+    {
+      slug: 'b',
+      content: `---\nuid: 11890f3e-7b5d-4c0a-8f14-123456789abc\nmerged_uids: [${sharedUid}]\nkind: project\ntitle: B\n---\n`,
+    },
+  ]);
+  try {
+    const r = await run(['validate', root, '--json']);
+    assert.equal(r.code, 1);
+    const data = JSON.parse(r.stdout);
+    assert.equal(data.summary.byCode['duplicate-uid'].severity, 'error');
+    assert.equal(data.summary.byCode['duplicate-uid'].count, 2);
+    assert.ok(data.problems.every((problem) => problem.issues.some((issue) => issue.code === 'duplicate-uid')));
+  } finally {
+    rmSync(root, { recursive: true, force: true });
+  }
+});
+
 await test('add — 새 노드 + duplicate throws', async () => {
   const root = withVault([]);
   try {
@@ -2840,6 +2902,66 @@ await test('import --auto-prefix — kind→folder 자동', async () => {
     assert.equal(r.code, 0);
     const written = readFileSync(join(vault, 'capabilities/login.md'), 'utf-8');
     assert.match(written, /slug: capabilities\/login/);
+  } finally {
+    rmSync(vault, { recursive: true, force: true });
+    rmSync(src, { recursive: true, force: true });
+  }
+});
+
+await test('import — UID를 보존하고, 없으면 새 UUIDv4를 발급한다', async () => {
+  const vault = withVault([]);
+  const src = withTmpDir();
+  const preservedUid = '11111111-1111-4111-8111-111111111111';
+  try {
+    const preserved = join(src, 'preserved.md');
+    const minted = join(src, 'minted.md');
+    writeFileSync(
+      preserved,
+      `---\nuid: ${preservedUid}\nkind: domain\ntitle: Preserved\n---\n`,
+      'utf-8',
+    );
+    writeFileSync(minted, '---\nkind: domain\ntitle: Minted\n---\n', 'utf-8');
+
+    const result = await run(['import', preserved, minted, '--vault', vault]);
+    assert.equal(result.code, 0);
+    assert.match(readFileSync(join(vault, 'domains/preserved.md'), 'utf-8'), new RegExp(`uid: ${preservedUid}`));
+    assert.match(
+      readFileSync(join(vault, 'domains/minted.md'), 'utf-8'),
+      /uid: [0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}/,
+    );
+  } finally {
+    rmSync(vault, { recursive: true, force: true });
+    rmSync(src, { recursive: true, force: true });
+  }
+});
+
+await test('import — 잘못된 UID와 기존 identity 충돌을 거부한다', async () => {
+  const claimedUid = '22222222-2222-4222-8222-222222222222';
+  const vault = withVault([
+    {
+      slug: 'domains/existing',
+      content: `---\nuid: ${claimedUid}\nkind: domain\nslug: domains/existing\ntitle: Existing\n---\n`,
+    },
+  ]);
+  const src = withTmpDir();
+  try {
+    const malformed = join(src, 'malformed.md');
+    const duplicate = join(src, 'duplicate.md');
+    writeFileSync(malformed, '---\nuid: NOT-A-UUID\nkind: domain\ntitle: Malformed\n---\n', 'utf-8');
+    writeFileSync(
+      duplicate,
+      `---\nuid: ${claimedUid}\nkind: domain\ntitle: Duplicate\n---\n`,
+      'utf-8',
+    );
+
+    const malformedResult = await run(['import', malformed, '--vault', vault]);
+    assert.equal(malformedResult.code, 1);
+    assert.equal(existsSync(join(vault, 'domains/malformed.md')), false);
+
+    const duplicateResult = await run(['import', duplicate, '--vault', vault]);
+    assert.equal(duplicateResult.code, 1);
+    assert.match(stripAnsi(duplicateResult.stderr), /UID|uid|identity|claimed/i);
+    assert.equal(existsSync(join(vault, 'domains/duplicate.md')), false);
   } finally {
     rmSync(vault, { recursive: true, force: true });
     rmSync(src, { recursive: true, force: true });
@@ -3273,8 +3395,13 @@ await test('CLI 쓰기(add/relate/import)는 감사 로그에 기록된다 (P2-�
     { slug: 'a', content: '---\nkind: capability\ntitle: A\n---\n' },
     { slug: 'b', content: '---\nkind: capability\ntitle: B\n---\n' },
   ]);
-  const incoming = join(root, 'incoming.md');
-  writeFileSync(incoming, '---\nkind: element\nslug: imported-el\ntitle: Imported\n---\n본문\n', 'utf-8');
+  const sourceRoot = withTmpDir();
+  const incoming = join(sourceRoot, 'incoming.md');
+  writeFileSync(
+    incoming,
+    withFixtureUid('---\nkind: element\nslug: imported-el\ntitle: Imported\n---\n본문\n'),
+    'utf-8',
+  );
   try {
     // dry-run 은 기록되면 안 된다.
     const dry = await run(['relate', 'a', 'b', 'depends_on', root, '--dry-run']);
@@ -3303,6 +3430,7 @@ await test('CLI 쓰기(add/relate/import)는 감사 로그에 기록된다 (P2-�
     assert.match(stripAnsi(shown.stdout), /a --depends_on--> b/);
   } finally {
     rmSync(root, { recursive: true, force: true });
+    rmSync(sourceRoot, { recursive: true, force: true });
   }
 });
 

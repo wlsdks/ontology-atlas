@@ -1,4 +1,5 @@
 ---
+uid: 03c839c5-318a-4165-939a-94645aba831f
 slug: capabilities/stock-reservation
 kind: capability
 title: Stock Reservation

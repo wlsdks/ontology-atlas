@@ -1,4 +1,5 @@
 ---
+uid: 74fbd403-d9df-4c44-b5c3-958890da21ff
 slug: elements/project
 kind: element
 title: Project (entity)

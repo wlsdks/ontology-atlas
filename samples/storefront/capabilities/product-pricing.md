@@ -1,4 +1,5 @@
 ---
+uid: fb15b2d5-ae3c-48f2-8d44-3a885fb085cf
 slug: capabilities/product-pricing
 kind: capability
 title: Price Management

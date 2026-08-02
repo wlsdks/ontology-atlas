@@ -3819,6 +3819,7 @@ export function createOntologyEngine(artifact, options = {}) {
       },
     ];
     const entrypoints = overviewResult.hubs.slice(0, limit).map((node) => ({
+      uid: node.uid,
       slug: node.slug,
       title: node.title,
       kind: node.kind,
@@ -3831,6 +3832,7 @@ export function createOntologyEngine(artifact, options = {}) {
     const brief = {
       operation: 'agent_brief',
       sideEffect: false,
+      projectUid: nodeBySlug.get(projectSlug)?.uid,
       projectSlug,
       status: workspace.status,
       readiness: {
@@ -4016,6 +4018,7 @@ export function createOntologyEngine(artifact, options = {}) {
         },
       ],
       writePolicy: [
+        'Use uid as the permanent node identity and slug as its current human-readable address; graph relations and graph-operation inputs remain slug-based.',
         'Run read tools first and cite returned slugs/edges before editing.',
         'Run relation_check before add_relation to confirm matchingEdges, inverseEdges, schema pattern, and proposedAction args.',
         'For all_paths, report limit/searchBudget/expandedStates/exhaustive/truncatedByBudget/totalPathsExact plus evidence.status/evidence.reason/evidence.pathsComplete and treat incomplete paths as partial evidence.',
@@ -5020,7 +5023,7 @@ function buildAgentBriefHandoffPrompt(brief) {
         .join('\n')
     : '';
   const entrypoints = brief.entrypoints.length > 0
-    ? brief.entrypoints.map((entrypoint) => `- ${entrypoint.slug} (${entrypoint.kind}, degree ${entrypoint.degree})`).join('\n')
+    ? brief.entrypoints.map((entrypoint) => `- ${entrypoint.uid} · ${entrypoint.slug} (${entrypoint.kind}, degree ${entrypoint.degree})`).join('\n')
     : '- <no concrete entrypoint; start with workspace_brief and health>';
   const businessOntologyLens = brief.businessOntologyLens ?? buildAgentBusinessOntologyLens(brief.entrypoints);
   const businessDomains = businessOntologyLens.businessDomains;
@@ -5052,6 +5055,7 @@ function buildAgentBriefHandoffPrompt(brief) {
 
   return [
     'Use the ontology-atlas MCP server as the shared codebase graph memory before editing.',
+    'Identity contract: uid is the permanent identity; slug is the current human-readable address. Keep graph relations, URLs, and graph-operation inputs slug-based.',
     `Current readiness: ${brief.readiness.status} ${brief.readiness.score}/100; graph ${brief.graph.nodes ?? 0} nodes, ${brief.graph.edges ?? 0} edges; status ${brief.status}.`,
     'Feature guide: docs/AGENT-GRAPH-WORKFLOW.md explains CLI-only use, MCP-connected use, graph DB differences, graph query packs, and verification checks.',
     '',
@@ -5206,6 +5210,7 @@ function degreeBucket(degree) {
 function topHubs(nodes, limit) {
   return [...nodes]
     .map((node) => ({
+      uid: node.uid,
       slug: node.slug,
       kind: node.kind,
       title: node.title,
@@ -5283,6 +5288,7 @@ function titleFromReference(ref) {
 function summarizeNode(node) {
   if (!node) return null;
   return {
+    uid: node.uid,
     slug: node.slug,
     kind: node.kind,
     title: node.title,

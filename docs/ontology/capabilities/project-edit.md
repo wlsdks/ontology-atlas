@@ -1,4 +1,5 @@
 ---
+uid: b8a4b1ad-616b-4230-b206-9efa6292d217
 slug: capabilities/project-edit
 kind: capability
 title: Project Full Edit

@@ -1,4 +1,5 @@
 ---
+uid: e9f0b080-7840-4f92-94c9-3dc5bb75c516
 slug: capabilities/product-recommendation
 kind: capability
 title: Related Product Recommendation

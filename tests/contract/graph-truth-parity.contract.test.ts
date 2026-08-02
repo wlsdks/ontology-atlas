@@ -249,6 +249,7 @@ describe("이름만 적힌 개념을 물으면 엔진이 정직하게 답한다"
       {
         slug: "capabilities/ghost-parent",
         frontmatter: {
+          uid: "01890f3e-7b5d-4c0a-8f14-123456789abc",
           kind: "capability",
           title: "Ghost parent",
           elements: ["elements/ghost-node"],

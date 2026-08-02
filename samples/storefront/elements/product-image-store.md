@@ -1,4 +1,5 @@
 ---
+uid: 7754826e-8c52-4087-9be3-354116de91c6
 slug: elements/product-image-store
 kind: element
 title: Product Image Store

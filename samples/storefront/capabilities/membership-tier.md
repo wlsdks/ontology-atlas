@@ -1,4 +1,5 @@
 ---
+uid: c4b5557d-fb71-4a66-8b01-7d6c66614d02
 slug: capabilities/membership-tier
 kind: capability
 title: Membership Tier

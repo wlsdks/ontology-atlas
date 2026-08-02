@@ -333,7 +333,7 @@ The vault is the **shared mental model** between the developer and the AI agent.
 
 - `list_kinds` — what's in the codebase, by kind?
 - `list_concepts` (filter by kind / project) — full node table
-- `get_concept(slug)` — fetch the node + its neighbors before extending it
+- `get_concept({ slug })` or `get_concept({ uid })` — fetch the node + its neighbors by current address or permanent identity
 - `find_backlinks(slug)` — who depends on this? (run *before* you rename or merge)
 - `find_path(from, to)` — does a relation already exist?
 
@@ -355,10 +355,10 @@ never writes to the vault.
 
 **Write at the end of a task** (the part that's easy to skip). When a unit of work introduced a new capability / element / domain, or renamed/folded an existing one, mirror the change in the vault:
 
-- new node → `add_concept(slug, kind, title, domain?, …)` — frontmatter is auto-normalized per kind, body defaults to a kind-specific starter, and missing strongly-expected fields come back as `warnings` so you know what to follow up. If a node with the same title already exists, a near-duplicate `warning` is included too — `patch_concept` the existing node instead of forking a duplicate (duplicates are the #1 growing-vault failure mode)
+- new node → `add_concept(slug, kind, title, domain?, …)` — the writer mints its immutable UUIDv4 `uid`; callers never supply one. Frontmatter is auto-normalized per kind, body defaults to a kind-specific starter, and missing strongly-expected fields come back as `warnings`. If a node with the same title already exists, patch it instead of forking a duplicate.
 - new edge between existing nodes → `add_relation(from, to, type)`
-- node moved or renamed in code → `rename_concept(oldSlug, newSlug)` (dry-run first, then `confirm: true`) — atomically rewrites every backlink
-- two near-duplicates collapse → `merge_concepts(fromSlug, intoSlug)` (same dry-run pattern)
+- node moved or renamed in code → `rename_concept(oldSlug, newSlug)` (dry-run first, then `confirm: true`) — atomically rewrites every backlink and preserves `uid`
+- two near-duplicates collapse → `merge_concepts(fromSlug, intoSlug)` (same dry-run pattern) — preserves the survivor `uid` and records absorbed identities in merge-owned `merged_uids`
 - existing node refined → `patch_concept(slug, frontmatter, body, expected_mtime)` — pass `expected_mtime` from a prior `get_concept` so a concurrent human edit isn't silently overwritten
 - accepted project competency answers → after writes, validation, and a complete compile, call `finalize_project_meaning({ projectSlug, expected_mtime })`. It stores provenance, never raw answers or a private source root; judge the categorical, fail-closed result from `agent_brief.meaningAssessment` (`agent-brief --project SLUG` in the CLI). `ok: true` means the receipt was written, not that meaning is verified.
 
@@ -371,6 +371,13 @@ For the *implicit* "I just opened this repo" loop, the **SessionStart hook** at 
 ## Frontmatter shape per kind (R14)
 
 When an AI agent (`add_concept`) or a developer (`ontology-atlas add` / `ontology-atlas import`) creates a new node, the frontmatter is normalized per `kind` so external `.md` ingestion stays consistent. See `mcp/README.md` for the full table and `mcp/src/schema.mjs` (mirror at `cli/src/lib/schema.mjs`) for the source. Contract test: `tests/contract/vault-schema.contract.test.ts`. Validator surfaces missing strongly-expected fields (e.g. capability/element without `domain:`) as the `missing-expected-field` warning — advisory only, not a hard error, so pre-existing vaults still pass.
+
+Every `kind:` node (including `vault-readme`) has immutable lowercase UUIDv4
+`uid` plus mutable human-readable `slug`. UID is for exact lookup, handoff,
+indexes, and `urn:uuid:` export; slug stays in files, relations, URLs, React IDs,
+and graph commands. Writers mint UID once — never derive, copy, or patch it.
+Rename/reclassify preserve it; merge adds source history to merge-only
+`merged_uids`; delete never reuses it. Full contract: `mcp/README.md`.
 
 A capability's `path:` is one canonical repo-relative implementation entrypoint;
 `elements:` contains only real element-node slugs, never raw file paths. Create an

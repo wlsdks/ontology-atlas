@@ -1,4 +1,5 @@
 ---
+uid: 48bf1a02-e1f8-4b8c-b06e-d6f261466109
 slug: domains/local-vault-management
 kind: domain
 title: Local Vault & Data Source Management

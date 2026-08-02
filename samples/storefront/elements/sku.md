@@ -1,4 +1,5 @@
 ---
+uid: 0e8b6980-e0db-4b2d-98ad-29dc6727e18c
 slug: elements/sku
 kind: element
 title: SKU

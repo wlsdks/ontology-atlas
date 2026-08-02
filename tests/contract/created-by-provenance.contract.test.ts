@@ -24,6 +24,8 @@ import { buildCreateNodeDoc } from "@/views/ontology-studio/lib/build-create-nod
 import { buildProposal } from "@/features/vault-agent/model/proposal-builder";
 import { VAULT_CREATED_BY_HUMAN } from "@/entities/docs-vault";
 
+const TEST_UID = "01890f3e-7b5d-4c0a-8f14-123456789abc";
+
 /**
  * 노드 저작 출처(`created_by`) 계약 — 2026-07-31 원장
  * 「사람이 만든 노드 표기: 소급 출처는 존재하지 않는다」.
@@ -84,7 +86,7 @@ describe("스키마 — 선택 필드로 등록되고 왕복 보존된다", () =
   });
 
   it("값을 주면 그대로 남는다 — human / agent 양쪽", () => {
-    const base = { slug: "capabilities/x", kind: "capability", title: "X" };
+    const base = { uid: TEST_UID, slug: "capabilities/x", kind: "capability", title: "X" };
     expect(fmOf(buildMcp({ ...base, created_by: HUMAN_MCP })).created_by).toBe("human");
     expect(fmOf(buildMcp({ ...base, created_by: agentMcp("codex") })).created_by).toBe(
       "agent:codex",
@@ -96,9 +98,10 @@ describe("스키마 — 선택 필드로 등록되고 왕복 보존된다", () =
 
   it("값을 안 주면 키 자체가 생기지 않는다 — 소급 파생 0", () => {
     for (const kind of KINDS_MCP) {
-      const fm = buildMcp({ slug: `${kind}-x`, kind, title: "X" });
+      const input = { uid: TEST_UID, slug: `${kind}-x`, kind, title: "X" };
+      const fm = buildMcp(input);
       expect(Object.prototype.hasOwnProperty.call(fm, KEY_MCP)).toBe(false);
-      expect(buildCli({ slug: `${kind}-x`, kind, title: "X" })).toEqual(fm);
+      expect(buildCli(input)).toEqual(fm);
     }
   });
 

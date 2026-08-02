@@ -4,7 +4,7 @@
  * (`cli/src/lib/interop-format.mjs`) drift guard.
  *
  * Each case is a compile-artifact-shaped graph:
- *   { nodes: [{ slug, kind, title, domain? }], edges: [{ from, to, via }] }
+ *   { nodes: [{ uid, slug, kind, title, domain? }], edges: [{ from, to, via }] }
  *
  * The contract test feeds every case to both serializers and asserts
  * byte-identical JSON-LD and GraphML. Add a case here (never inline in the
@@ -19,7 +19,7 @@ export const INTEROP_CASES = [
   {
     name: 'single node, no edges',
     input: {
-      nodes: [{ slug: 'auth', kind: 'domain', title: 'Auth' }],
+      nodes: [{ uid: '01890f3e-7b5d-4c0a-8f14-123456789abc', slug: 'auth', kind: 'domain', title: 'Auth' }],
       edges: [],
     },
   },
@@ -27,8 +27,8 @@ export const INTEROP_CASES = [
     name: 'project → capability via capabilities',
     input: {
       nodes: [
-        { slug: 'atlas', kind: 'project', title: 'Atlas' },
-        { slug: 'auth/login', kind: 'capability', title: 'Login', domain: 'auth' },
+        { uid: '11890f3e-7b5d-4c0a-8f14-123456789abc', slug: 'atlas', kind: 'project', title: 'Atlas' },
+        { uid: '21890f3e-7b5d-4c0a-8f14-123456789abc', slug: 'auth/login', kind: 'capability', title: 'Login', domain: 'auth' },
       ],
       edges: [{ from: 'atlas', to: 'auth/login', via: 'capabilities' }],
     },
@@ -37,9 +37,9 @@ export const INTEROP_CASES = [
     name: 'multiple predicates + array form (same via repeated)',
     input: {
       nodes: [
-        { slug: 'a', kind: 'capability', title: 'A', domain: 'core' },
-        { slug: 'b', kind: 'element', title: 'B', domain: 'core' },
-        { slug: 'c', kind: 'element', title: 'C', domain: 'core' },
+        { uid: '31890f3e-7b5d-4c0a-8f14-123456789abc', slug: 'a', kind: 'capability', title: 'A', domain: 'core' },
+        { uid: '41890f3e-7b5d-4c0a-8f14-123456789abc', slug: 'b', kind: 'element', title: 'B', domain: 'core' },
+        { uid: '51890f3e-7b5d-4c0a-8f14-123456789abc', slug: 'c', kind: 'element', title: 'C', domain: 'core' },
       ],
       edges: [
         { from: 'a', to: 'b', via: 'dependencies' },
@@ -52,8 +52,8 @@ export const INTEROP_CASES = [
     name: 'input order does not matter (sorted internally)',
     input: {
       nodes: [
-        { slug: 'zeta', kind: 'element', title: 'Zeta' },
-        { slug: 'alpha', kind: 'capability', title: 'Alpha' },
+        { uid: '61890f3e-7b5d-4c0a-8f14-123456789abc', slug: 'zeta', kind: 'element', title: 'Zeta' },
+        { uid: '71890f3e-7b5d-4c0a-8f14-123456789abc', slug: 'alpha', kind: 'capability', title: 'Alpha' },
       ],
       edges: [
         { from: 'zeta', to: 'alpha', via: 'relates' },
@@ -64,7 +64,7 @@ export const INTEROP_CASES = [
   {
     name: 'external / dangling edge endpoints dropped',
     input: {
-      nodes: [{ slug: 'cap', kind: 'capability', title: 'Cap' }],
+      nodes: [{ uid: '81890f3e-7b5d-4c0a-8f14-123456789abc', slug: 'cap', kind: 'capability', title: 'Cap' }],
       edges: [
         { from: 'cap', to: 'src/does/not/exist.ts', via: 'elements' },
         { from: 'ghost', to: 'cap', via: 'relates' },
@@ -76,6 +76,7 @@ export const INTEROP_CASES = [
     input: {
       nodes: [
         {
+          uid: '91890f3e-7b5d-4c0a-8f14-123456789abc',
           slug: 'x',
           kind: 'project',
           title: '<script>&"alert"</script>',
@@ -89,8 +90,8 @@ export const INTEROP_CASES = [
     name: 'unicode / korean slug + title',
     input: {
       nodes: [
-        { slug: 'domain/인증', kind: 'domain', title: '인증 도메인' },
-        { slug: 'cap/토큰-발급', kind: 'capability', title: '토큰 발급', domain: 'domain/인증' },
+        { uid: 'a1890f3e-7b5d-4c0a-8f14-123456789abc', slug: 'domain/인증', kind: 'domain', title: '인증 도메인' },
+        { uid: 'b1890f3e-7b5d-4c0a-8f14-123456789abc', slug: 'cap/토큰-발급', kind: 'capability', title: '토큰 발급', domain: 'domain/인증' },
       ],
       edges: [{ from: 'domain/인증', to: 'cap/토큰-발급', via: 'contains' }],
     },
@@ -99,8 +100,8 @@ export const INTEROP_CASES = [
     name: 'unknown via falls back to raw term',
     input: {
       nodes: [
-        { slug: 'a', kind: 'capability', title: 'A' },
-        { slug: 'b', kind: 'capability', title: 'B' },
+        { uid: 'c1890f3e-7b5d-4c0a-8f14-123456789abc', slug: 'a', kind: 'capability', title: 'A' },
+        { uid: 'd1890f3e-7b5d-4c0a-8f14-123456789abc', slug: 'b', kind: 'capability', title: 'B' },
       ],
       edges: [{ from: 'a', to: 'b', via: 'implements' }],
     },
@@ -109,8 +110,8 @@ export const INTEROP_CASES = [
     name: 'depends_on canonical (dependencies) predicate mapping',
     input: {
       nodes: [
-        { slug: 'a', kind: 'element', title: 'A' },
-        { slug: 'b', kind: 'element', title: 'B' },
+        { uid: 'e1890f3e-7b5d-4c0a-8f14-123456789abc', slug: 'a', kind: 'element', title: 'A' },
+        { uid: 'f1890f3e-7b5d-4c0a-8f14-123456789abc', slug: 'b', kind: 'element', title: 'B' },
       ],
       edges: [{ from: 'a', to: 'b', via: 'dependencies' }],
     },

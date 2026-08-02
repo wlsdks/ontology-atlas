@@ -1,4 +1,5 @@
 ---
+uid: 6a94f2b8-3e78-44c0-af14-c04f9d008244
 slug: capabilities/product-option
 kind: capability
 title: Product Options & SKUs

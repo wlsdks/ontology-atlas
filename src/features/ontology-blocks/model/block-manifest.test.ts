@@ -7,6 +7,12 @@ import {
 } from './block-manifest';
 
 const census = { elementCount: 3, capabilityCount: 2, depth: 2 };
+const UIDS = {
+  mcp: '01890f3e-7b5d-4c0a-8f14-123456789abc',
+  views: '11890f3e-7b5d-4c0a-8f14-123456789abc',
+  render: '21890f3e-7b5d-4c0a-8f14-123456789abc',
+  a: '31890f3e-7b5d-4c0a-8f14-123456789abc',
+} as const;
 
 describe('buildBlockManifest', () => {
   it('stamps schema version, block identity, and the interop URN per node', () => {
@@ -16,7 +22,7 @@ describe('buildBlockManifest', () => {
       exportedAt: '2026-07-23T00:00:00.000Z',
       census,
       nodes: [
-        { slug: 'capabilities/mcp-server', kind: 'capability', title: 'MCP Server' },
+        { uid: UIDS.mcp, slug: 'capabilities/mcp-server', kind: 'capability', title: 'MCP Server' },
       ],
     });
 
@@ -27,8 +33,8 @@ describe('buildBlockManifest', () => {
     expect(manifest.census).toEqual(census);
     expect(manifest.nodes).toEqual([
       {
-        // interop-format.ts 의 urn:ontology-atlas:<kind>:<slug> 규약 재사용.
-        urn: 'urn:ontology-atlas:capability:capabilities/mcp-server',
+        uid: UIDS.mcp,
+        urn: `urn:uuid:${UIDS.mcp}`,
         slug: 'capabilities/mcp-server',
         kind: 'capability',
         title: 'MCP Server',
@@ -43,9 +49,9 @@ describe('buildBlockManifest', () => {
       exportedAt: '2026-07-23T00:00:00.000Z',
       census,
       nodes: [
-        { slug: 'domains/views', kind: 'domain', title: 'Views' },
-        { slug: 'capabilities/render', kind: 'capability', title: 'Render' },
-        { slug: 'domains/views', kind: 'domain', title: 'Views dup' },
+        { uid: UIDS.views, slug: 'domains/views', kind: 'domain', title: 'Views' },
+        { uid: UIDS.render, slug: 'capabilities/render', kind: 'capability', title: 'Render' },
+        { uid: UIDS.views, slug: 'domains/views', kind: 'domain', title: 'Views dup' },
       ],
     });
 
@@ -53,6 +59,18 @@ describe('buildBlockManifest', () => {
       'capabilities/render',
       'domains/views',
     ]);
+  });
+
+  it('fails clearly when a node has no UID instead of exporting a slug URN', () => {
+    expect(() =>
+      buildBlockManifest({
+        blockName: 'b',
+        sourceProject: 'p',
+        exportedAt: '2026-07-23T00:00:00.000Z',
+        census,
+        nodes: [{ slug: 'a', kind: 'element', title: 'A' }],
+      } as unknown as Parameters<typeof buildBlockManifest>[0]),
+    ).toThrow('Block manifest node "a" requires a valid lowercase UUIDv4 `uid`.');
   });
 });
 
@@ -63,7 +81,7 @@ describe('parseBlockManifest', () => {
       sourceProject: 'p',
       exportedAt: '2026-07-23T00:00:00.000Z',
       census,
-      nodes: [{ slug: 'a', kind: 'element', title: 'A' }],
+      nodes: [{ uid: UIDS.a, slug: 'a', kind: 'element', title: 'A' }],
     });
     const parsed = parseBlockManifest(JSON.stringify(manifest));
     expect(parsed).toEqual(manifest);
@@ -73,6 +91,21 @@ describe('parseBlockManifest', () => {
     expect(parseBlockManifest('not json')).toBeNull();
     expect(parseBlockManifest('{"blockName": 42}')).toBeNull();
     expect(parseBlockManifest('null')).toBeNull();
+  });
+
+  it('rejects a legacy slug-only manifest instead of treating its slug as a UID', () => {
+    expect(
+      parseBlockManifest(
+        JSON.stringify({
+          schemaVersion: 1,
+          blockName: 'legacy',
+          sourceProject: 'p',
+          exportedAt: '2026-07-23T00:00:00.000Z',
+          census,
+          nodes: [{ slug: 'a', kind: 'element', title: 'A' }],
+        }),
+      ),
+    ).toBeNull();
   });
 
   it('exposes the canonical sidecar filename', () => {

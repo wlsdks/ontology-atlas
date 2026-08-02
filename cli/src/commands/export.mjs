@@ -68,12 +68,19 @@ export async function runExport(args) {
 
   const graph = { nodes: artifact.nodes, edges: artifact.edges };
   let payload;
-  if (parsed.format === 'json') {
-    payload = JSON.stringify(artifact, null, 2) + '\n';
-  } else if (parsed.format === 'graphml') {
-    payload = buildGraphML(graph);
-  } else {
-    payload = buildJsonLd(graph);
+  try {
+    if (parsed.format === 'json') {
+      payload = JSON.stringify(artifact, null, 2) + '\n';
+    } else if (parsed.format === 'graphml') {
+      payload = buildGraphML(graph);
+    } else {
+      payload = buildJsonLd(graph);
+    }
+  } catch (err) {
+    process.stderr.write(
+      `${COLORS.red}error${COLORS.reset}  ${err instanceof Error ? err.message : String(err)}\n`,
+    );
+    return 2;
   }
 
   process.stdout.write(payload);
@@ -131,7 +138,7 @@ function printUsage(stream = process.stderr) {
       `  --format json     raw deterministic compile artifact (nodes/edges/graphHash)\n` +
       `  --vault path      vault root (default: cwd or OATLAS_VAULT)\n\n` +
       `The payload is written to stdout (pipe-safe); status goes to stderr.\n` +
-      `Node identity is a stable URN: urn:ontology-atlas:<kind>:<slug>. An export\n` +
+      `Node identity is the permanent UID URN: urn:uuid:<uid>; slug remains readable data.\n` +
       `is a snapshot; the compiler graphHash is its version. External / dangling\n` +
       `refs are omitted (an interop snapshot never mints phantom nodes).\n`,
   );
