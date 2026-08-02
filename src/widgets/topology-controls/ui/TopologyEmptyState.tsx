@@ -54,15 +54,35 @@ export function TopologyEmptyState({
       ? t('kicker', { count: projectCount })
       : t('kickerNoDeps', { count: projectCount });
 
+  /*
+   * ── 행동은 **한 벌로 보인다** (2026-08-03, 소유자 지적: *"버튼 삐뚤한거
+   * 싫어서"*) ────────────────────────────────────────────────────────────────
+   *
+   * 종전은 `flex-wrap justify-center` 였다. 그러면 각 버튼의 폭이 **글자 수로**
+   * 정해지고 줄바꿈 자리도 글자 수가 정한다 — 넷이 1·2·1 로 앉아 가운데 줄만
+   * 튀어나온 계단이 됐다. 이건 취향 문제가 아니라 이 저장소가 이미 이름 붙인
+   * 규율의 위반이다: **치수 규칙성** — 반복되는 세트의 치수는 설계 결정이지
+   * 내용물의 부산물이 아니다(`design.md`).
+   *
+   * 그래서 세로 한 벌로 세운다. 폭이 전부 같고 줄바꿈 자리가 없다. 위계는
+   * 폭이 아니라 **채움**이 진다(주 행동만 인디고 면).
+   */
+  const ACTION =
+    "inline-flex h-9 w-full items-center gap-2 rounded-[var(--radius-chip)] px-3.5 text-body transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--color-indigo-a46)] focus-visible:ring-offset-2 focus-visible:ring-offset-[color:var(--color-panel)]";
+  const PRIMARY = `${ACTION} border border-[color:var(--color-indigo-a46)] bg-[color:var(--color-indigo-a16)] font-[var(--font-weight-signature)] text-[color:var(--color-indigo-accent)] hover:border-[color:var(--color-indigo-a60)] hover:bg-[color:var(--color-indigo-a24)]`;
+  const SECONDARY = `${ACTION} border border-[color:var(--color-border-soft)] text-[color:var(--color-text-secondary)] hover:border-[color:var(--color-indigo-a46)] hover:text-[color:var(--color-text-primary)]`;
+
   return (
     <div className="pointer-events-none absolute inset-0 z-20 flex items-center justify-center px-4">
       <div
-        className="pointer-events-auto w-[min(380px,calc(100vw-2rem))] rounded-lg border border-[color:var(--color-divider)] bg-[color:var(--color-panel)] px-5 py-5 text-center shadow-[var(--shadow-elevation-1)]"
+        className="pointer-events-auto flex w-[min(380px,calc(100vw-2rem))] flex-col rounded-[var(--radius-panel)] border border-[color:var(--color-divider)] bg-[color:var(--color-panel)] p-5 shadow-[var(--shadow-elevation-1)]"
         role="status"
         aria-label={isNoProjects ? t('titleNoProjects') : t('titleNoDeps')}
         aria-live="polite"
       >
-        <p className="font-mono text-caption uppercase tracking-[0.18em] text-[color:var(--color-text-quaternary)]">
+        {/* 산문은 **왼쪽 맞춤**이다. 380px 상자에서 3줄짜리 문단을 가운데
+            맞추면 양끝이 다 들쭉날쭉해지고, 그건 버튼 계단과 같은 병이다. */}
+        <p className="font-mono text-caption tracking-[0.14em] uppercase text-[color:var(--color-text-quaternary)]">
           {kicker}
         </p>
         <h2 className="mt-2 text-title font-[var(--font-weight-signature)] text-[color:var(--color-text-primary)]">
@@ -83,16 +103,16 @@ export function TopologyEmptyState({
                 )
               : t('bodyNoDeps')}
         </p>
-        <p className="mt-3 text-label leading-relaxed text-[color:var(--color-text-tertiary)]">
+        <p className="mt-2 text-label leading-relaxed text-[color:var(--color-text-quaternary)]">
           {t('crossViewHint')}
         </p>
-        <div className="mt-4 flex flex-col items-stretch gap-2 sm:flex-row sm:flex-wrap sm:justify-center">
+        <div className="mt-4 flex flex-col gap-1.5 border-t border-[color:var(--color-divider)] pt-4">
           {hasDocsToBootstrap ? (
             <button
               type="button"
               onClick={onStartFromDocs}
               data-testid="empty-start-from-docs"
-              className="inline-flex h-9 items-center justify-center gap-1.5 rounded-md border border-[color:var(--color-indigo-a46)] bg-[color:var(--color-indigo-a16)] px-4 text-body font-[var(--font-weight-signature)] text-[color:var(--color-indigo-accent)] transition-colors hover:bg-[color:var(--color-indigo-a24)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--color-indigo-a46)] focus-visible:ring-offset-2 focus-visible:ring-offset-[color:var(--color-panel)]"
+              className={PRIMARY}
             >
               <MapIcon size={14} aria-hidden="true" />
               {t('ctaStartFromDocs')}
@@ -103,38 +123,28 @@ export function TopologyEmptyState({
               type="button"
               onClick={onCreateNode}
               data-testid="empty-create-node"
-              className="inline-flex h-9 items-center justify-center gap-1.5 rounded-md border border-[color:var(--color-indigo-a46)] bg-[color:var(--color-indigo-a16)] px-4 text-body font-[var(--font-weight-signature)] text-[color:var(--color-indigo-accent)] transition-colors hover:bg-[color:var(--color-indigo-a24)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--color-indigo-a46)] focus-visible:ring-offset-2 focus-visible:ring-offset-[color:var(--color-panel)]"
+              className={hasDocsToBootstrap ? SECONDARY : PRIMARY}
             >
               <Plus size={14} aria-hidden="true" />
               {t('ctaCreateNode')}
             </button>
           ) : null}
-          <Link
-            href="/ontology/"
-            className="inline-flex h-9 items-center justify-center gap-1.5 rounded-md border border-[color:var(--color-indigo-a40)] bg-[color:var(--color-indigo-a14)] px-4 text-body font-[var(--font-weight-signature)] text-[color:var(--color-text-primary)] transition-colors hover:border-[color:var(--color-indigo-a60)] hover:bg-[color:var(--color-indigo-a20)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--color-indigo-a46)] focus-visible:ring-offset-2 focus-visible:ring-offset-[color:var(--color-panel)]"
-          >
+          <Link href="/ontology/" className={SECONDARY}>
             <Network size={14} aria-hidden="true" />
             {t('ctaTree')}
           </Link>
-          <Link
-            href="/ontology/studio/"
-            className="inline-flex h-9 items-center justify-center gap-1.5 rounded-md border border-[color:var(--color-overlay-3)] px-4 text-body text-[color:var(--color-text-secondary)] transition-colors hover:border-[color:var(--color-indigo-line-a35)] hover:text-[color:var(--color-text-primary)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--color-indigo-a46)] focus-visible:ring-offset-2 focus-visible:ring-offset-[color:var(--color-panel)]"
-          >
+          <Link href="/ontology/studio/" className={SECONDARY}>
             <GitBranch size={14} aria-hidden="true" />
             {t(isNoProjects ? 'ctaBuilder' : 'ctaBuilderNoDeps')}
           </Link>
           {hasDocsToBootstrap ? null : (
-          <Link
-            href={showPickerPath ? "/docs/?intent=local" : "/download/"}
-            className="inline-flex h-9 items-center justify-center gap-1.5 rounded-md border border-[color:var(--color-overlay-3)] px-4 text-body text-[color:var(--color-text-secondary)] transition-colors hover:border-[color:var(--color-indigo-line-a35)] hover:text-[color:var(--color-text-primary)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--color-indigo-a46)] focus-visible:ring-offset-2 focus-visible:ring-offset-[color:var(--color-panel)]"
-          >
-            <FolderOpen size={14} aria-hidden="true" />
-            {t(
-              showPickerPath
-                ? 'ctaOpenVaultPicker'
-                : 'ctaOpenVaultDownload',
-            )}
-          </Link>
+            <Link
+              href={showPickerPath ? '/docs/?intent=local' : '/download/'}
+              className={SECONDARY}
+            >
+              <FolderOpen size={14} aria-hidden="true" />
+              {t(showPickerPath ? 'ctaOpenVaultPicker' : 'ctaOpenVaultDownload')}
+            </Link>
           )}
         </div>
       </div>

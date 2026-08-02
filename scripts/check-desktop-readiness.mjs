@@ -927,8 +927,12 @@ if (
   // B3 허브가 곧 지도: `/ontology` 의 트리 허브(OntologyViewPage)가 retire 되고
   // `/` 와 `/ontology` 모두 이 empty state 로 수렴했다 — 검증 대상도 하나로.
   topologyEmptyState.includes("isTauriVaultRuntime") &&
-  topologyEmptyState.includes('"/download/"') &&
-  topologyEmptyState.includes('"/docs/?intent=local"') &&
+  // 목적지를 재지, **따옴표를 재지 않는다** (2026-08-03). 종전엔 큰따옴표를
+  // 못박아서, 같은 링크를 작은따옴표로 쓴 리팩터에 이 게이트가 빨간불을
+  // 냈다 — 목적지는 그대로인데 문자만 바뀐 자리였다. 게이트가 규격이 아니라
+  // 서식을 지키면, 다음 사람은 게이트를 고치는 대신 서식을 되돌린다.
+  /["']\/download\/["']/.test(topologyEmptyState) &&
+  /["']\/docs\/\?intent=local["']/.test(topologyEmptyState) &&
   /Install the desktop app/i.test(enMessages.topology?.empty?.bodyNoProjectsDownload ?? "")
 ) {
   pass("the topology empty state routes hosted users to the app download while preserving desktop vault picking");

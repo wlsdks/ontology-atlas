@@ -92,12 +92,12 @@ export function OntologyBootstrapForm({
       data-surface-token="--topology-blocking-composer-surface"
       data-border-token="--topology-blocking-composer-border"
       data-shadow-token="--topology-blocking-composer-shadow"
-      className="rounded-lg border border-[color:var(--topology-blocking-composer-border)] bg-[color:var(--topology-blocking-composer-surface)] px-4 py-3 shadow-[var(--topology-blocking-composer-shadow)]"
+      className="rounded-[var(--radius-panel)] border border-[color:var(--topology-blocking-composer-border)] bg-[color:var(--topology-blocking-composer-surface)] px-4 py-3 shadow-[var(--topology-blocking-composer-shadow)]"
     >
       <div className="flex items-center justify-between gap-2">
         <p
           id={labels.headingId}
-          className="font-mono text-[10px] uppercase tracking-[0.14em] text-[color:var(--color-indigo-accent)]"
+          className="text-body-lg font-semibold text-[color:var(--color-text-primary)]"
         >
           {labels.heading}
         </p>
@@ -114,7 +114,7 @@ export function OntologyBootstrapForm({
 
       <div className="mt-2.5 flex flex-col gap-2.5">
         <label className="flex flex-col gap-1">
-          <span className="font-mono text-[9px] uppercase tracking-[0.10em] text-[color:var(--color-text-quaternary)]">
+          <span className="text-label text-[color:var(--color-text-tertiary)]">
             {labels.projectName}
           </span>
           <input
@@ -128,20 +128,20 @@ export function OntologyBootstrapForm({
             }}
             aria-label={labels.projectName}
             data-testid="ontology-bootstrap-title"
-            className="h-8 rounded-md border border-[color:var(--color-border-soft)] bg-[color:var(--color-overlay-1)] px-2 text-[12px] text-[color:var(--color-text-primary)] transition-colors focus-visible:border-[color:var(--color-indigo-a46)] focus-visible:outline-none"
+            className="h-8 rounded-[var(--radius-chip)] border border-[color:var(--color-border-soft)] bg-[color:var(--color-overlay-1)] px-2 text-body text-[color:var(--color-text-primary)] transition-colors focus-visible:border-[color:var(--color-indigo-a46)] focus-visible:outline-none"
           />
         </label>
 
         {plan.domains.length > 0 ? (
           <fieldset className="flex flex-col gap-1">
-            <legend className="font-mono text-[9px] uppercase tracking-[0.10em] text-[color:var(--color-text-quaternary)]">
+            <legend className="text-label text-[color:var(--color-text-tertiary)]">
               {labels.folders}
             </legend>
             <div className="mt-1 flex max-h-40 flex-col gap-0.5 overflow-y-auto">
               {plan.domains.map((d) => (
                 <label
                   key={d.name}
-                  className="flex cursor-pointer items-center gap-2 rounded-md px-1.5 py-1 text-[12px] text-[color:var(--color-text-primary)] transition-colors hover:bg-[color:var(--color-overlay-1)]"
+                  className="flex cursor-pointer items-center gap-2 rounded-[var(--radius-chip)] px-1.5 py-1 text-body text-[color:var(--color-text-primary)] transition-colors hover:bg-[color:var(--color-overlay-1)]"
                 >
                   <input
                     type="checkbox"
@@ -152,7 +152,7 @@ export function OntologyBootstrapForm({
                     className="h-3.5 w-3.5 accent-[color:var(--color-indigo-brand)]"
                   />
                   <span className="min-w-0 flex-1 truncate">{d.name}</span>
-                  <span className="font-mono text-[10px] text-[color:var(--color-text-quaternary)]">
+                  <span className="font-mono text-caption text-[color:var(--color-text-quaternary)]">
                     {labels.folderDocCount(d.docCount)}
                   </span>
                 </label>
@@ -161,15 +161,15 @@ export function OntologyBootstrapForm({
           </fieldset>
         ) : null}
 
-        <div className="rounded-md border border-[color:var(--color-border-soft)] bg-[color:var(--color-overlay-1)] px-2.5 py-2">
-          <p className="text-[11px] leading-relaxed text-[color:var(--color-text-secondary)]" data-testid="ontology-bootstrap-summary">
+        <div className="rounded-[var(--radius-chip)] border border-[color:var(--color-border-soft)] bg-[color:var(--color-overlay-1)] px-2.5 py-2">
+          <p className="text-label leading-relaxed text-[color:var(--color-text-secondary)]" data-testid="ontology-bootstrap-summary">
             {labels.summary(pickedCount, projectFileName)}
           </p>
-          <p className="mt-1 text-[11px] leading-relaxed text-[color:var(--color-text-tertiary)]">
+          <p className="mt-1 text-label leading-relaxed text-[color:var(--color-text-tertiary)]">
             {labels.bodyUntouched}
           </p>
           {plan.alreadyTypedCount > 0 ? (
-            <p className="mt-1 text-[11px] leading-relaxed text-[color:var(--color-text-tertiary)]">
+            <p className="mt-1 text-label leading-relaxed text-[color:var(--color-text-tertiary)]">
               {labels.alreadyTyped(plan.alreadyTypedCount)}
             </p>
           ) : null}
@@ -179,7 +179,7 @@ export function OntologyBootstrapForm({
           <p
             role="alert"
             data-testid="ontology-bootstrap-error"
-            className="rounded-md border border-[color:var(--color-danger-a32)] bg-[color:var(--color-danger-a08)] px-2.5 py-1.5 text-[11px] text-[color:var(--color-danger-text)]"
+            className="rounded-[var(--radius-chip)] border border-[color:var(--color-danger-a32)] bg-[color:var(--color-danger-a08)] px-2.5 py-1.5 text-label text-[color:var(--color-danger-text)]"
           >
             {labels.errorPrefix} {error}
           </p>
@@ -190,7 +190,7 @@ export function OntologyBootstrapForm({
           onClick={() => void submit()}
           disabled={!canConfirm}
           data-testid="ontology-bootstrap-confirm"
-          className="inline-flex h-8 items-center justify-center gap-1.5 rounded-full border border-[color:var(--color-indigo-a46)] bg-[color:var(--color-indigo-a16)] px-3 text-[11px] font-[var(--font-weight-signature)] text-[color:var(--color-indigo-accent)] transition-colors hover:bg-[color:var(--color-indigo-a24)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--color-indigo-a46)] focus-visible:ring-inset disabled:opacity-50"
+          className="inline-flex h-8 items-center justify-center gap-1.5 rounded-full border border-[color:var(--color-indigo-a46)] bg-[color:var(--color-indigo-a16)] px-3 text-label font-[var(--font-weight-signature)] text-[color:var(--color-indigo-accent)] transition-colors hover:bg-[color:var(--color-indigo-a24)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--color-indigo-a46)] focus-visible:ring-inset disabled:opacity-50"
         >
           <MapIcon size={12} aria-hidden />
           {busy ? "…" : labels.confirm}
