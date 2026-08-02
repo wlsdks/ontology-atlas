@@ -258,6 +258,21 @@ export async function gitDiff(vaultPath: string): Promise<GitDiffResult | null> 
   return invoke<GitDiffResult>('git_diff', { vaultPath });
 }
 
+/**
+ * 한 커밋이 실제로 쓴 것 — 그 걸음의 vault 범위 patch.
+ *
+ * `gitDiff` 와 별도인 이유는 Rust 쪽 주석과 같다: 저쪽은 아직 이름이 안 붙은
+ * 작업 트리, 이쪽은 이미 이름이 붙은 한 걸음이다.
+ */
+export async function gitCommitDiff(
+  vaultPath: string,
+  hash: string,
+): Promise<GitDiffResult | null> {
+  const invoke = getInvoke();
+  if (!invoke) return null;
+  return invoke<GitDiffResult>('git_commit_diff', { vaultPath, hash });
+}
+
 /** upstream 에서 pull — opt-in 전송, **명시 클릭 뒤에만**. */
 export async function gitPull(vaultPath: string): Promise<GitPullResult | null> {
   const invoke = getInvoke();

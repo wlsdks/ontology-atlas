@@ -67,8 +67,28 @@ const HISTORY = [
     subject: "ontology snapshot: +1 concept (capabilities/foo)",
     relativeTime: "2 hours ago",
     isoTime: "2026-07-23T10:00:00+09:00",
+    files: [
+      {
+        path: "docs/capabilities/foo.md",
+        status: "added",
+        kind: "capability",
+        slug: "capabilities/foo",
+        renamedFrom: null,
+      },
+    ],
   },
 ];
+
+/** 한 걸음이 실제로 쓴 것 — `git show` 의 patch. */
+const COMMIT_PATCH = [
+  "diff --git a/docs/capabilities/foo.md b/docs/capabilities/foo.md",
+  "index 05d74bf..e04bf82 100644",
+  "--- a/docs/capabilities/foo.md",
+  "+++ b/docs/capabilities/foo.md",
+  "@@ -0,0 +1 @@",
+  "+한 줄 새로 씀",
+  "",
+].join("\n");
 
 function installDesktopGit({
   status = STATUS_WITH_CHANGES,
@@ -106,6 +126,7 @@ function installDesktopGit({
   tauriApiMock.invoke.mockImplementation(async (command: string) => {
     if (command === "git_status") return status;
     if (command === "git_diff") return diff;
+    if (command === "git_commit_diff") return { count: 0, files: [], diff: COMMIT_PATCH };
     if (command === "git_history") return history;
     if (command === "git_snapshot") return snapshot;
     if (command === "git_init") return init;
@@ -182,7 +203,9 @@ describe("AtlasGitPanel — 데스크톱(Tauri)", () => {
     // 번역하지 않은 것이다.
     expect(step).toHaveTextContent("추가 1");
     expect(step).toHaveTextContent("capabilities/foo");
-    expect(step).toHaveTextContent("abc1234");
+    // 해시는 **행이 아니라 상세**가 진다 (시안 실측). 목록의 일은 훑는
+    // 것이고, 한 줄 3열(시각·이름·왜)에 해시를 끼우면 「왜」가 밀린다.
+    expect(step).not.toHaveTextContent("abc1234");
     expect(step).not.toHaveTextContent("ontology snapshot");
 
     // 다만 원문은 사라지지 않는다 — 펼치면 감사 흔적으로 그대로 있다.
@@ -380,11 +403,36 @@ describe("AtlasGitPanel — 데스크톱(Tauri)", () => {
     expect(screen.queryByTestId("atlas-git-history-tab")).toBeNull();
   });
 
+  it("고른 걸음은 바뀐 파일과 그 걸음이 쓴 원문까지 보여준다", async () => {
+    installDesktopGit();
+    renderPanel(<AtlasGitPanel vaultPath="/repo/vault" />);
+    await screen.findByTestId("atlas-git-steps");
+    fireEvent.click(screen.getByTestId("atlas-git-history-item"));
+
+    // 바뀐 파일 — 「무엇이」. 이력이 개념 이름만 말하면 개념이 아닌 파일을
+    // 건드린 걸음은 화면에서 통째로 증발한다.
+    const files = await screen.findAllByTestId("atlas-git-commit-file");
+    expect(files.map((el) => el.textContent).join(" ")).toContain(
+      "docs/capabilities/foo.md",
+    );
+
+    // 바뀐 내용 — 「어떻게」. 요약이 아니라 원문이라 터미널에서 보던 것과 같다.
+    const patch = await screen.findByTestId("atlas-git-commit-diff");
+    expect(patch).toHaveTextContent("한 줄 새로 씀");
+
+    // 그리고 **잡음은 안 보인다**. `diff --git`·`index`·`---`·`+++` 넷이
+    // 말하는 것은 파일 이름 하나뿐이라, 넷을 접어 머리 한 줄로 바꿨다.
+    // 이 단언이 없으면 다음 사람이 파서를 되돌려도 아무도 모른다.
+    expect(patch.textContent).not.toContain("diff --git");
+    expect(patch.textContent).not.toContain("index 05d74bf");
+    expect(patch.textContent).toContain("docs/capabilities/foo.md");
+  });
+
   it("커밋 이력이 탭 뒤에 숨지 않는다 — 목록에 늘 있다", async () => {
     installDesktopGit();
     renderPanel(<AtlasGitPanel vaultPath="/repo/vault" />);
     const steps = await screen.findByTestId("atlas-git-steps");
-    expect(steps).toHaveTextContent("abc1234");
+    expect(steps).toHaveTextContent("capabilities/foo");
   });
 
   it("expands a history item to its full hash + iso time on click", async () => {
@@ -539,12 +587,16 @@ describe("AtlasGitPanel — 연결 셋업 모드", () => {
 });
 
 describe("AtlasGitPanel — 작업대 빈 상태", () => {
-  it("다 남긴 상태에서는 빈 열을 만들지 않는다 — 지난 걸음이 본문이 된다", async () => {
-    // 이 테스트의 계약은 2026-07-27 에 **더 세졌다**. 이전 계약은 "빈 우측 열
-    // 방지 = 우측 탭을 최근 기록으로 착지시킨다" 였는데, 그건 증상 처리였다:
-    // 열은 여전히 있었고 세로 구분선도 화면 끝까지 그어져 있었다(소유자 실측
-    // "화면의 절반이 빈 공간"). 지금은 **열 자체를 만들지 않는다** —
-    // 이 순간 사용자의 일이 "되짚기" 하나뿐이라 화면도 하나만 말한다.
+  it("다 커밋한 상태에서도 작업대는 한 모양이다 — 열이 사라지지 않는다", async () => {
+    /*
+     * 구 계약은 "미커밋 0 이면 열을 안 만든다"(`data-shape="recall"`)였다.
+     * 그건 **2단 전환 전의 판단**이다 — 그때 오른쪽은 「증거」라 정말 보여줄
+     * 게 없었다. 지금 오른쪽은 **고른 것의 상세**이고, 커밋을 고르면 바뀐
+     * 개념·ego 그림·변경 내용이 찬다. 그 갈래가 남아 있던 동안 커밋이 4개
+     * 쌓인 볼트에서 화면 절반이 통째로 사라졌다(소유자 실측 2026-08-02).
+     *
+     * 모양은 하나다. 미커밋 유무는 **목록 맨 윗줄의 유무**로만 드러난다.
+     */
     installDesktopGit({
       status: { ...STATUS_WITH_CHANGES, changedCount: 0 },
       diff: { count: 0, files: [], diff: "" },
@@ -553,93 +605,13 @@ describe("AtlasGitPanel — 작업대 빈 상태", () => {
     renderPanel(<AtlasGitPanel vaultPath="/repo/vault" />);
 
     const workbench = await screen.findByTestId("atlas-git-workbench");
-    expect(workbench).toHaveAttribute("data-shape", "recall");
-    // 걸음이 본문이다.
-    expect(screen.getByTestId("atlas-git-history-item")).toBeInTheDocument();
-    // 그리고 빈 증거 열이 없다 — 열의 존재는 내용의 존재를 약속한다.
-    expect(screen.queryByTestId("atlas-git-evidence")).not.toBeInTheDocument();
-  });
-
-  it("새로 만든 문서만 바뀐 순간에도 변경 목록이 살아 있다", async () => {
-    /*
-     * 소유자 스크린샷의 그 순간: 새로 만든 문서 하나 + 첫 커밋 전 → 비교할
-     * 예전 내용이 없어 diff 가 0줄이다. 2단 전환에서 변경 목록이 오른쪽 열로
-     * 옮겨갔으므로, 열의 존재 조건이 `diff 가 있는가` 로 남아 있으면 이
-     * 순간에 판단 대상이 **통째로 사라진다**. 그 회귀를 잡는다.
-     */
-    installDesktopGit({
-      status: { ...STATUS_WITH_CHANGES, changedCount: 1 },
-      diff: { count: 1, files: [DIFF_WITH_CHANGES.files[0]], diff: "" },
-      history: [],
-    });
-    renderPanel(<AtlasGitPanel vaultPath="/repo/vault" />);
-
-    const workbench = await screen.findByTestId("atlas-git-workbench");
     expect(workbench).toHaveAttribute("data-shape", "decide");
-    // 판단 대상은 그대로 있다.
-    expect(screen.getByTestId("atlas-git-change-groups")).toHaveTextContent("capabilities/foo");
-  });
-
-  it("개념이 아닌 파일은 접혀서 온다 — 판단 대상이 아니다", async () => {
-    installDesktopGit({
-      diff: {
-        count: 3,
-        files: [
-          ...DIFF_WITH_CHANGES.files,
-          { path: ".gitignore", status: "modified", kind: null, slug: ".gitignore", renamedFrom: null },
-        ],
-        diff: DIFF_WITH_CHANGES.diff,
-      },
-    });
-    renderPanel(<AtlasGitPanel vaultPath="/repo/vault" />);
-
-    const toggle = await screen.findByTestId("atlas-git-others-toggle");
-    expect(toggle).toHaveAttribute("aria-expanded", "false");
-    expect(screen.getByTestId("atlas-git-change-groups")).not.toHaveTextContent(".gitignore");
-
-    fireEvent.click(toggle);
-    expect(screen.getByTestId("atlas-git-change-groups")).toHaveTextContent(".gitignore");
-  });
-
-  it("행을 고르면 그 문서의 바뀐 줄만 증거 열에 온다", async () => {
-    installDesktopGit();
-    renderPanel(<AtlasGitPanel vaultPath="/repo/vault" />);
-
-    // 고르기 전 기본값은 "전부" 다 — 아무도 요청하지 않은 빈 칸을 만들지 않는다.
-    expect(await screen.findByTestId("atlas-git-diff-pre")).toHaveTextContent("new line");
-
-    const rows = screen.getAllByTestId("atlas-git-change-row");
-    // capabilities/foo 는 추적 전 새 파일이라 diff 본문이 없다.
-    fireEvent.click(rows[0]);
-    expect(screen.queryByTestId("atlas-git-diff-pre")).not.toBeInTheDocument();
-    expect(screen.getByText("새로 만든 문서라 비교할 예전 내용이 없어요.")).toBeInTheDocument();
-
-    // 다시 누르면 선택이 풀린다 — 되돌아갈 길이 같은 자리에 있다.
-    fireEvent.click(rows[0]);
-    expect(screen.getByTestId("atlas-git-diff-pre")).toHaveTextContent("new line");
-  });
-
-  it("증거 열이 git 배관을 그대로 쏟지 않는다", async () => {
-    installDesktopGit({
-      diff: {
-        ...DIFF_WITH_CHANGES,
-        diff:
-          "diff --git a/docs/elements/bar.md b/docs/elements/bar.md\n" +
-          "index 22ffa01..90c1d3e 100644\n" +
-          "--- a/docs/elements/bar.md\n" +
-          "+++ b/docs/elements/bar.md\n" +
-          "@@ -3,7 +3,7 @@ kind: element\n" +
-          "-title: 옛 이름\n" +
-          "+title: 새 이름\n",
-      },
-    });
-    renderPanel(<AtlasGitPanel vaultPath="/repo/vault" />);
-
-    const pane = await screen.findByTestId("atlas-git-diff-pre");
-    expect(pane).toHaveTextContent("새 이름");
-    expect(pane).not.toHaveTextContent("diff --git");
-    expect(pane).not.toHaveTextContent("22ffa01");
-    expect(pane).not.toHaveTextContent("@@");
+    // 커밋 이력은 목록에 그대로 있다.
+    expect(screen.getByTestId("atlas-git-history-item")).toBeInTheDocument();
+    // 미커밋 줄만 없다.
+    expect(screen.queryByTestId("atlas-git-pending-row")).toBeNull();
+    // 상세 열은 살아 있다 — 기본 선택이 최근 커밋이다.
+    expect(screen.getByTestId("atlas-git-evidence")).toBeInTheDocument();
   });
 
   it("`모두 커밋했어요` 를 화면에 두 번 쓰지 않는다", async () => {
@@ -693,12 +665,18 @@ describe("AtlasGitPanel — 원격 세 동작 (Fetch · Pull · Push)", () => {
    * 0 이면 이미 쌓인 걸음을 보낼 방법이 없었다(소유자 실측: ↑2 인데 보낼 길 없음).
    * 아래 넷이 그 회귀를 잡는다.
    */
-  it("갈라짐 수치를 위치 줄에 그린다 — 숫자가 있어야 무엇을 눌러야 할지 정해진다", async () => {
+  it("갈라짐 수치는 **그 숫자가 정당화하는 버튼 위**에 있다", async () => {
+    /*
+     * 종전엔 「↑2 ↓1」 칩이 따로 앉아 있었다. 그 숫자가 하는 일은 어느 버튼을
+     * 누를지 정해 주는 것 하나인데, 떨어져 있으면 읽고 나서 눈을 다시 옮겨야
+     * 한다. 칩을 없애고 라벨로 옮겼다 — 되돌리면 여기가 터진다.
+     */
     installDesktopGit();
     renderPanel(<AtlasGitPanel vaultPath="/repo/vault" />);
-    const chip = await screen.findByTestId("atlas-git-divergence");
-    expect(chip).toHaveTextContent("2");
-    expect(chip).toHaveTextContent("1");
+    expect(await screen.findByTestId("atlas-git-remote-push")).toHaveTextContent("Push 2");
+    expect(screen.getByTestId("atlas-git-remote-pull")).toHaveTextContent("Pull 1");
+    // 수치 자체는 보조 기술에도 남는다(시각 칩이 사라졌다고 사실이 사라지진 않는다).
+    expect(screen.getByTestId("atlas-git-divergence")).toHaveTextContent("2");
   });
 
   it("Fetch 를 누르면 git_fetch 를 부른다 — 그 전에는 0회", async () => {

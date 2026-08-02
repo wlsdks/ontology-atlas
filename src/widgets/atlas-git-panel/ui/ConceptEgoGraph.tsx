@@ -182,8 +182,16 @@ export function ConceptEgoGraph({
   for (const group of groups) {
     const span = (group.slots / slotTotal) * usable;
     const cap = labelCap(group.slots);
+    /*
+     * 부채가 **원 전체**를 차지할 때(관계가 한 종류뿐)는 양 끝이 같은 각도다.
+     * `i/(slots-1)` 로 나누면 첫 슬롯과 끝 슬롯이 정확히 겹쳐 이웃 하나가
+     * 다른 하나 밑에 숨는다 — 화면은 「담고 있는 것 3」이라 써 놓고 둘만
+     * 그렸다(실측 2026-08-02). 닫힌 원에서는 `slots` 로 나눈다.
+     */
+    const closed = groups.length === 1;
     for (let i = 0; i < group.slots; i += 1) {
-      const ratio = group.slots === 1 ? 0.5 : i / (group.slots - 1);
+      const ratio =
+        group.slots === 1 ? 0.5 : closed ? i / group.slots : i / (group.slots - 1);
       const angle =
         ((cursor + gap / 2 + (group.slots === 1 ? span / 2 : span * ratio)) * Math.PI) / 180;
       const isMore = group.rest > 0 && i === group.slots - 1;
@@ -201,6 +209,8 @@ export function ConceptEgoGraph({
           }
           strokeWidth={1}
           strokeDasharray={dashed ? "3.5 3.5" : undefined}
+          className="git-fade-in"
+          style={{ ["--git-row-index" as string]: Math.min(i, 7) }}
         />,
       );
       if (isMore) {
@@ -257,7 +267,8 @@ export function ConceptEgoGraph({
                 }
               : undefined
           }
-          className={cn("group/ego", onSelect && "cursor-pointer")}
+          className={cn("git-fade-in group/ego", onSelect && "cursor-pointer")}
+          style={{ ["--git-row-index" as string]: Math.min(i, 7) }}
         >
           <title>{neighbor.label}</title>
           <NodeShape kind={neighbor.kind} x={x} y={y} r={r} />
@@ -282,12 +293,14 @@ export function ConceptEgoGraph({
   const selfRadius = radiusOf(geometry.self, ego.kind);
 
   return (
-    <div className={cn("bg-[color:var(--color-canvas)]", className)}>
+    <div className={cn("grid min-h-0 place-items-stretch bg-[color:var(--color-canvas)]", className)}>
       <svg
+        key={ego.id}
         viewBox={`0 0 ${VIEW_W} ${VIEW_H}`}
         role="img"
         aria-label={`${ego.label} · ${bearingLabel("contains")} ${ego.total}`}
-        className="block h-[clamp(268px,34vh,352px)] w-full"
+        preserveAspectRatio="xMidYMid meet"
+        className="block h-[var(--git-ego-min-h)] w-full"
       >
         <defs>
           <linearGradient id={gradientId} x1="0" y1="0" x2="0" y2="1">

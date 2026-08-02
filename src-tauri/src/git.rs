@@ -1052,6 +1052,46 @@ pub fn git_diff(vault_path: String) -> Result<GitDiffResult, String> {
     })
 }
 
+/// **한 커밋이 실제로 쓴 것** — 그 커밋의 vault 범위 patch.
+///
+/// `git_diff` 와 갈라 둔 이유: 저쪽은 «아직 커밋 안 된» 작업 트리를 보고,
+/// 이쪽은 «이미 이름이 붙은» 한 걸음을 본다. 인자도 결과도 다르므로 한
+/// 명령에 `Option` 을 달아 두 뜻을 겸하게 하면 호출부가 무엇을 묻는지
+/// 시그니처로 못 읽는다.
+#[tauri::command]
+pub fn git_commit_diff(vault_path: String, hash: String) -> Result<GitDiffResult, String> {
+    let vault_dir = validate_vault_dir(&vault_path)?;
+    let repo_root = require_repo_root(&vault_dir)?;
+    let pathspec = vault_pathspec(&repo_root, &vault_dir);
+
+    // 해시는 사용자 입력이 아니라 우리가 방금 `git log` 로 읽은 값이지만,
+    // 인자로 오는 이상 옵션으로 오해될 문자열은 거른다(`--upload-pack=…` 류).
+    let rev = hash.trim();
+    if rev.is_empty() || !rev.chars().all(|c| c.is_ascii_hexdigit()) {
+        return Err("commit hash must be hexadecimal".to_string());
+    }
+
+    let out = run_git(
+        &repo_root,
+        &[
+            "show",
+            "--format=",
+            "--no-color",
+            "--patch",
+            rev,
+            "--",
+            &pathspec,
+        ],
+    )?;
+    let diff = if out.success { out.stdout } else { String::new() };
+
+    Ok(GitDiffResult {
+        count: 0,
+        files: Vec::new(),
+        diff,
+    })
+}
+
 /// upstream 에서 git pull (opt-in 전송). upstream 없음/충돌/비-fast-forward 를
 /// 크래시 없이 깔끔한 Err 로 안내한다.
 #[tauri::command]

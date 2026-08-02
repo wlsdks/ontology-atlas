@@ -43,7 +43,7 @@ export function ConceptEgoCard({
   return (
     <div
       data-testid="atlas-git-concept-ego"
-      className="overflow-hidden rounded-[var(--radius-panel)] border border-[color:var(--color-border-soft)]"
+      className="flex flex-col overflow-hidden rounded-[var(--radius-panel)] border border-[color:var(--color-border-soft)]"
     >
       <div className="flex items-center gap-2.5 border-b border-[color:var(--color-divider)] bg-[color:var(--color-overlay-1)] px-3.5 py-3">
         <TopologyV2KindGlyph kind={ego.kind} size={15} />
@@ -87,7 +87,7 @@ export function ConceptEgoCard({
           {bearings.length > 0 ? (
             <div className="border-t border-[color:var(--color-divider)] px-3.5 py-2.5">
               <dt className="mb-1 text-caption text-[color:var(--color-text-quaternary)]">
-                {t("egoLinked")}
+                {t("egoBearings")}
               </dt>
               {bearings.map((row) => (
                 <div
