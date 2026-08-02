@@ -173,6 +173,21 @@ serves two readers at once: a visual hierarchy for a person, and a typed
 relation list — `contains`, `used by`, `leans on` — for an agent, with **Copy
 handoff** right there, because the next reader is often not a human.
 
+The map can answer a simpler question before you inspect any one node: **what
+changed this week?** Turn on **Recent** and Atlas keeps documents changed inside
+the selected time window crisp while the rest of the map recedes. The INDEX
+narrows to those nodes but preserves their project and domain parents, so a
+refund change still reads in the context of Customer Support and Payments. In a
+local vault, the signal comes from the Markdown files' modification times on
+your disk — not inferred activity or a hosted service.
+
+![Recent changes in the installed macOS app, using a capture-only local copy of the Storefront sample: 7 fixture documents changed in the last 7 days, cyan dashed rings mark those recent nodes while the rest of the map recedes, and the INDEX keeps the matching nodes together with their project and domain parent chain; 7 is the result of this fixture, not a product limit](docs/assets/readme/recent-changes.png)
+
+_Installed-app capture from a local, capture-only copy of `samples/storefront`.
+Seven documents were marked as changed in this 7-day fixture — **7 is not a
+product limit**. Cyan dashed rings mark recent nodes; the INDEX retains their
+project/domain parent chain so the change remains readable in context._
+
 **Footprints** mark the concepts you opened, numbered in the order you walked
 them, so a long session leaves a path you can retrace instead of a map you have
 to re-derive.
