@@ -3667,53 +3667,21 @@ export function HomePage() {
                       {t('controls.docsLabel')}
                     </ChromeChip>
                     </Tooltip>
-                    {canCreateNode ? (
-                      <Tooltip content={t('createNode.toggleTooltip')} side="bottom" withProvider={false}>
-                        <button
-                          type="button"
-                          ref={createNodeToggleRef}
-                          onClick={() => {
-                            if (createNodeOpen) {
-                              closeCreateNode();
-                            } else {
-                              openCreateNode();
-                            }
-                          }}
-                          aria-expanded={createNodeOpen}
-                          aria-label={t('createNode.toggleAria')}
-                          data-testid="topology-create-node-toggle"
-                          data-utility-action-token-contract="accent-surface-family"
-                          data-utility-action-surface-token="--topology-utility-lane-accent-surface"
-                          data-utility-action-border-token="--topology-utility-lane-accent-border"
-                          data-utility-action-shadow-token="--topology-utility-lane-shadow"
-                          data-utility-action-focus-ring-token="--topology-utility-lane-focus-ring"
-                          // 높이/radius/compact 폭은 ChromeChip 기준(44px·10px)으로
-                          // 수렴 — 같은 열의 "작업공간" 칩과 나란히 있어
-                          // --topology-utility-lane-height(32~36px clamp) 를
-                          // 쓰면 과도기 높이 불일치가 났다(feat/chrome-finish).
-                          // #13 정합 (2026-07-25) — 옆 ChromeChip 들과 같은
-                          // 타이포/아이콘 규격으로 수렴: 높이 --chrome-tile-size,
-                          // radius --chrome-radius, text-label, 아이콘 size-3.5.
-                          // accent surface(인디고) 만 primary 로 남긴다.
-                          className={`inline-flex h-[var(--chrome-tile-size)] items-center justify-center gap-2 rounded-[var(--chrome-radius)] border border-[color:var(--topology-utility-lane-accent-border)] bg-[color:var(--topology-utility-lane-accent-surface)] text-label tracking-label font-[var(--font-weight-signature)] text-[color:var(--color-indigo-accent)] shadow-[var(--topology-utility-lane-shadow)] transition-[background-color,border-color] duration-[var(--motion-fast)] ease-[var(--motion-ease)] hover:bg-[color:var(--topology-utility-lane-accent-hover-surface)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--topology-utility-lane-focus-ring)] focus-visible:ring-offset-2 focus-visible:ring-offset-[color:var(--color-canvas)] motion-reduce:transition-none [&>svg]:size-3.5 [&>svg]:shrink-0 ${
-                            topologyUtilityChromeCompact
-                              ? "w-[var(--chrome-tile-size)] px-0"
-                              : "px-3.5"
-                          }`}
-                        >
-                          <Plus aria-hidden />
-                          {/* <xl 아이콘-only — 레인 라벨 사다리(겹침 소탕
-                              2026-07-23). aria-label + 툴팁이 뜻을 보존한다. */}
-                          <span
-                            className={
-                              topologyUtilityChromeCompact ? "sr-only" : "max-xl:hidden"
-                            }
-                          >
-                            {t('createNode.toggleLabel')}
-                          </span>
-                        </button>
-                      </Tooltip>
-                    ) : null}
+                    {/*
+                      ⚠️ **「+ 개념」 크롬 필을 뺐다** (2026-08-03, 소유자 지시).
+                      *"이거좀 이상해 없어져도 될듯?"*
+
+                      이 필은 「노드가 이미 있는 지도에서, 아무것도 안 고른 채
+                      새 개념을 만들 때」의 **유일한** 문이었다 — 빈 지도의 두
+                      진입점(시작 체크리스트 · 빈 상태)은 지도가 차면 사라지기
+                      때문이다. 그래서 그냥 지우면 populated 지도에서 만들 길이
+                      통째로 없어진다.
+
+                      그 자리를 **빈 캔버스 우클릭**이 대신한다(`onContextMenuPane`).
+                      빈 자리 우클릭은 어느 도구에서나 «여기에 새로 만들기»의
+                      관용구이고, 무엇보다 **클릭한 좌표가 곧 새 노드의 자리**라
+                      상단 고정 버튼보다 뜻이 분명하다. 상시 잉크도 0이 된다.
+                    */}
                     {/* 기록 <lg 진입점. `lg+` 는 레일 목적지가 담당하고
                         레일이 사라지는 `<lg` 에서는 이 크롬 타일이 같은
                         목적지로 보낸다 — 브레이크포인트가 달라도 **같은
@@ -4383,6 +4351,12 @@ export function HomePage() {
                     onGraphStatsChange={handleTopologyGraphStatsChange}
                     onZoomTierChange={setMapZoomTier}
                     onContextMenuNode={handleContextMenuNode}
+                    /*
+                     * 빈 캔버스 우클릭 = 「여기에 개념 만들기」 — 상단에서 뺀
+                     * 크롬 필의 자리를 대신한다. 쓰기 가능한 볼트일 때만 건다:
+                     * 못 쓰는 볼트에서 메뉴가 뜨면 그건 죽은 문이다.
+                     */
+                    onContextMenuPane={canCreateNode ? () => openCreateNode() : undefined}
                     minimal={localGraphRoot !== null}
                     agentFocusNodeId={agentFocusNodeId}
                     spotlightIds={spotlightIds}

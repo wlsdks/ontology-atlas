@@ -115,6 +115,8 @@ export interface TopologyMapV2Props {
    * unchanged (browser default menu everywhere, same as before this slice).
    */
   onContextMenuNode?: (slug: string, position: { x: number; y: number }) => void;
+  /** 빈 캔버스 우클릭 — 「여기에 개념 만들기」. 생략하면 종전대로 no-op. */
+  onContextMenuPane?: (position: { x: number; y: number }) => void;
   /**
    * 밀도 게이트 (fable 설계) — 사용자가 펼친 부모 slug Set(URL `?open=`).
    * 임계(12) 초과 자식을 가진 부모는 기본 접힘(클러스터 칩)이고 여기 담긴
@@ -282,7 +284,7 @@ export interface TopologyMapV2Props {
 }
 
 export function TopologyMapV2(props: TopologyMapV2Props) {
-  const { nodes, edges, focus, minimal, emphasizedNeighborSlug, fitViewToken, spotlightFitToken = 0, relayoutToken, revealToken, onSelectEdge, onSelect, onPaneClick, onVisibleCountChange, onGraphStatsChange, onZoomTierChange, onContextMenuNode, agentFocusNodeId, spotlightIds = null, onHoverEdge, selectedEdge = null, expandedParents, onToggleCluster, onHoverCluster, clusterHint, realmRootId = null, onEnterRealm, realmEnterLabel, realmEnterTooltip, realmCaption = null, clusterBarLabels = null, canvasLabel, visitedTrail, trailLensActiveRef, trailHoverNodeIdRef, tierReveal, tourAnchorNodeId = null, tourAnchorRef, overlayOpen = false, glyphSet = "geometric", canvasBackground = "dot", footprint = null, expand = DEFAULT_EXPAND, wheelIntent = "zoom", ambientSleepDelayMs } = props;
+  const { nodes, edges, focus, minimal, emphasizedNeighborSlug, fitViewToken, spotlightFitToken = 0, relayoutToken, revealToken, onSelectEdge, onSelect, onPaneClick, onVisibleCountChange, onGraphStatsChange, onZoomTierChange, onContextMenuNode, onContextMenuPane, agentFocusNodeId, spotlightIds = null, onHoverEdge, selectedEdge = null, expandedParents, onToggleCluster, onHoverCluster, clusterHint, realmRootId = null, onEnterRealm, realmEnterLabel, realmEnterTooltip, realmCaption = null, clusterBarLabels = null, canvasLabel, visitedTrail, trailLensActiveRef, trailHoverNodeIdRef, tierReveal, tourAnchorNodeId = null, tourAnchorRef, overlayOpen = false, glyphSet = "geometric", canvasBackground = "dot", footprint = null, expand = DEFAULT_EXPAND, wheelIntent = "zoom", ambientSleepDelayMs } = props;
 
   const realmEnterButtonRef = useRef<HTMLButtonElement | null>(null);
 
@@ -356,6 +358,7 @@ export function TopologyMapV2(props: TopologyMapV2Props) {
       onGraphStatsChange,
       onZoomTierChange,
       onContextMenuNode,
+      onContextMenuPane,
       agentFocusNodeId,
       spotlightIds,
       expandedParents,

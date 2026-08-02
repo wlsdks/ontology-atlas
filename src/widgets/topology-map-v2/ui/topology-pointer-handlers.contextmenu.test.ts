@@ -98,3 +98,47 @@ describe("createTopologyPointerHandlers — handleContextMenu (W2-B)", () => {
     expect(event.preventDefault).not.toHaveBeenCalled();
   });
 });
+
+describe("createTopologyPointerHandlers — 빈 캔버스 우클릭 (2026-08-03)", () => {
+  /*
+   * 상단 「+ 개념」 크롬 필을 지우면서 이 자리가 **populated 지도에서 노드를
+   * 만드는 유일한 문**이 됐다. 빈 지도의 두 진입점(시작 체크리스트 · 빈 상태)은
+   * 지도가 차는 순간 사라지기 때문이다 — 이 배선이 끊기면 노드가 있는 볼트에서
+   * 지도로는 아무것도 못 만든다.
+   */
+  it("빈 자리에서는 만들기를 부르고 브라우저 기본 메뉴를 막는다", () => {
+    vi.mocked(hitTestWorld).mockReturnValue(null);
+    const onContextMenuPane = vi.fn();
+    const { handleContextMenu } = createTopologyPointerHandlers(
+      buildRefs({ onContextMenuPane }),
+    );
+
+    const event = fakeContextMenuEvent(300, 420);
+    handleContextMenu(event);
+
+    expect(onContextMenuPane).toHaveBeenCalledWith({ x: 300, y: 420 });
+    expect(event.preventDefault).toHaveBeenCalledTimes(1);
+  });
+
+  it("노드를 맞히면 빈 자리 콜백은 안 부른다 — 두 자리가 섞이면 안 된다", () => {
+    vi.mocked(hitTestWorld).mockReturnValue("capabilities/mcp-server");
+    const onContextMenuNode = vi.fn();
+    const onContextMenuPane = vi.fn();
+    const { handleContextMenu } = createTopologyPointerHandlers(
+      buildRefs({ onContextMenuNode, onContextMenuPane }),
+    );
+
+    handleContextMenu(fakeContextMenuEvent(10, 20));
+
+    expect(onContextMenuNode).toHaveBeenCalledTimes(1);
+    expect(onContextMenuPane).not.toHaveBeenCalled();
+  });
+
+  it("소비처가 없으면 종전대로 no-op — 브라우저 기본 메뉴가 살아 있다", () => {
+    vi.mocked(hitTestWorld).mockReturnValue(null);
+    const { handleContextMenu } = createTopologyPointerHandlers(buildRefs({}));
+    const event = fakeContextMenuEvent(10, 20);
+    handleContextMenu(event);
+    expect(event.preventDefault).not.toHaveBeenCalled();
+  });
+});
