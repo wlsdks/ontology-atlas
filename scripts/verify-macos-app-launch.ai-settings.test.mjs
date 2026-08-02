@@ -366,9 +366,8 @@ test("installed-app AI settings driver walks the real settings testids", () => {
   for (const testId of [
     "app-settings-trigger",
     "app-settings-popover",
-    "app-settings-nav-agent",
-    "app-settings-ai-drillin",
-    "app-settings-ai-view",
+    "app-settings-nav-ai",
+    "app-settings-pane-ai",
     "ai-provider-local",
     "ai-register-local",
     "ai-local-url",

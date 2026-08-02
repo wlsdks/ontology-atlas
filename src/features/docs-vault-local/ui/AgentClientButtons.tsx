@@ -2,10 +2,12 @@
 
 import { Fragment, useState } from "react";
 import { useTranslations } from "next-intl";
-import { ArrowUpRight, Check, Copy, Info, Loader2, Terminal } from "lucide-react";
+import { ArrowUpRight, Check, Copy, Info, Loader2 } from "lucide-react";
 import { Link } from "@/i18n/navigation";
 import { AGENT_GRAPH_WORKFLOW_HREF, type AgentServerAvailability } from "@/shared/config";
 import { copyText } from "@/shared/lib/copy-text";
+import { cn } from "@/shared/lib/cn";
+import { Button, buttonVariants } from "@/shared/ui/button";
 import { useToast } from "@/shared/ui";
 
 /**
@@ -211,7 +213,18 @@ export function AgentClientButtons({
    * `AgentClientButtons.test.tsx` "render order follows AGENT_CLIENTS".
    */
   const clientRenderers: Record<ClientId, () => React.ReactNode> = {
-    // Claude Code — 주 CTA. Tauri: .mcp.json 자동 생성. 웹: 복사.
+    // Claude Code — Tauri: .mcp.json 자동 생성. 웹: 복사.
+    //
+    // **채움을 뺐다 (2026-08-02, 디자인 카운슬 S2).** 이 갈래만 `primary` 를
+    // 무조건 참으로 하드코딩해 인디고 워시를 입었고, 나머지 셋에는 그 값을
+    // 넘기는 경로 자체가 없었다. 실측 결과 넷은 `750×38, x=407` 로 치수 분산이
+    // 0인데 하나만 채워져 있어서, 「선택지 넷」이 아니라 **「정답 하나 + 탈락
+    // 셋」**으로 읽혔다. 넷은 서로 다른 파일에 쓴다(`.mcp.json` ·
+    // `.codex/config.toml` · `.cursor/mcp.json` · `.agents/mcp_config.json`) —
+    // 한 사람이 둘 이상 붙이는 것이 정상 시나리오라 «정답» 이 있을 수 없다.
+    //
+    // 어느 도구를 쓰는지 아는 신호(`recommendedClientId`)는 아직 없다. 없는
+    // 신호를 있는 척 배선하는 대신 **잘못된 신호부터 끈다**.
     claudeCode: () =>
       mcpJsonIsReady ? (
         <ClientStatus
@@ -219,9 +232,8 @@ export function AgentClientButtons({
           label={t("claudeCodeReady")}
         />
       ) : resolvedMcpJsonState === "invalid" ? (
-        <ClientButton
+        <ClientAction
           testId="agent-client-claude-code"
-          primary
           icon={<Copy size={13} aria-hidden />}
           label={t("replaceClaudeCodeConfig")}
           feedback={feedback.claudeCode}
@@ -234,10 +246,8 @@ export function AgentClientButtons({
           }
         />
       ) : onWriteConfigs ? (
-        <ClientButton
+        <ClientAction
           testId="agent-client-claude-code"
-          primary
-          icon={<Terminal size={13} aria-hidden />}
           label={t("connectClaudeCode")}
           feedback={feedback.claudeCode}
           doneLabel={t("claudeCodeDone")}
@@ -245,9 +255,8 @@ export function AgentClientButtons({
           onClick={() => void writeAndConfirm("claudeCode")}
         />
       ) : (
-        <ClientButton
+        <ClientAction
           testId="agent-client-claude-code"
-          primary
           icon={<Copy size={13} aria-hidden />}
           label={t("copyClaudeCodeConfig")}
           feedback={feedback.claudeCode}
@@ -262,9 +271,8 @@ export function AgentClientButtons({
     // 웹에서는 파일을 못 쓰니 딥링크가 남는다.
     cursor: () =>
       onWriteConfigs ? (
-        <ClientButton
+        <ClientAction
           testId="agent-client-cursor"
-          icon={<Terminal size={13} aria-hidden />}
           label={t("connectCursor")}
           feedback={feedback.cursor}
           doneLabel={t("cursorDone")}
@@ -279,7 +287,7 @@ export function AgentClientButtons({
           href={cursorDeeplink}
         />
       ) : (
-        <ClientButton
+        <ClientAction
           testId="agent-client-cursor"
           icon={<Copy size={13} aria-hidden />}
           label={t("copyCursorConfig")}
@@ -297,9 +305,8 @@ export function AgentClientButtons({
     // 겹침 대비 비쌌다. 스니펫은 고급 접기의 「다른 툴」 표에 남는다.
     antigravity: () =>
       onWriteConfigs ? (
-        <ClientButton
+        <ClientAction
           testId="agent-client-antigravity"
-          icon={<Terminal size={13} aria-hidden />}
           label={t("connectAntigravity")}
           feedback={feedback.antigravity}
           doneLabel={t("antigravityDone")}
@@ -307,7 +314,7 @@ export function AgentClientButtons({
           onClick={() => void writeAndConfirm("antigravity")}
         />
       ) : (
-        <ClientButton
+        <ClientAction
           testId="agent-client-antigravity"
           icon={<Copy size={13} aria-hidden />}
           label={t("copyAntigravityConfig")}
@@ -325,7 +332,7 @@ export function AgentClientButtons({
           label={t("codexReady")}
         />
       ) : codexConfigState === "invalid" ? (
-        <ClientButton
+        <ClientAction
           testId="agent-client-codex"
           icon={<Copy size={13} aria-hidden />}
           label={t("replaceCodexConfig")}
@@ -339,9 +346,8 @@ export function AgentClientButtons({
           }
         />
       ) : onWriteConfigs ? (
-        <ClientButton
+        <ClientAction
           testId="agent-client-codex"
-          icon={<Terminal size={13} aria-hidden />}
           label={t("connectCodex")}
           feedback={feedback.codex}
           doneLabel={t("codexDone")}
@@ -349,7 +355,7 @@ export function AgentClientButtons({
           onClick={() => void writeAndConfirm("codex")}
         />
       ) : (
-        <ClientButton
+        <ClientAction
           testId="agent-client-codex"
           icon={<Copy size={13} aria-hidden />}
           label={t("copyCodexCommand")}
@@ -390,6 +396,29 @@ export function AgentClientButtons({
   );
 }
 
+/**
+ * 이 열의 표면은 **`shared/ui/button` 이 정한다** (2026-08-02, 디자인 카운슬 S3).
+ *
+ * 종전엔 세 조각(`ClientStatus`/`ClientButton`/`ClientLink`)이 같은 클래스
+ * 문자열을 각자 손으로 다시 썼고, 그중 하나는 반투명 `--color-indigo-a24`
+ * 워시로 프리미티브의 불투명 `primary`(#5e6ad2)를 흉내 냈다. 전수 결과 그
+ * 워시는 24건/19파일인데 `Button` 프리미티브를 거친 곳은 **0건**이었다 —
+ * 규격이 있는데 아무도 안 쓰면 그건 규격이 아니라 문서다.
+ *
+ * 프리미티브를 쓰면 focus-visible 링도 함께 따라온다. 실측: 이 화면 버튼들만
+ * `focus-visible:ring` 이 하나도 없어 브라우저 기본
+ * `outline: rgb(208,214,224) auto 1px` 이 떴고, 앱 나머지 아홉 곳 이상은
+ * 인디고 링 토큰을 쓰고 있었다.
+ *
+ * 이 표면의 방언 셋만 덮는다 — 전폭(`w-full`) · 이 시트의 반지름
+ * (`rounded-md`) · 설정 시트 타입 방언(`text-body`). 나머지(색 · 상태 · 눌림 ·
+ * 비활성 · 포커스 링)는 프리미티브가 소유한다. `size="sm"` 의 `h-8` 이 곧
+ * `--control-h-md`(32px)라 높이는 종전 값 그대로다.
+ */
+function clientControlClass(extra?: string) {
+  return cn(buttonVariants({ variant: "outline", size: "sm" }), "w-full rounded-md text-body", extra);
+}
+
 function ClientStatus({
   testId,
   label,
@@ -403,7 +432,8 @@ function ClientStatus({
       aria-label={label}
       data-testid={testId}
       data-state="ready"
-      className="inline-flex min-h-[var(--control-h-md)] w-full items-center justify-center gap-2 rounded-md border border-[color:var(--color-border-soft)] bg-[color:var(--color-overlay-1)] px-3 py-2 text-body text-[color:var(--color-text-secondary)]"
+      // 상태는 눌리지 않는다 — 프리미티브의 press 어포던스만 되돌린다.
+      className={clientControlClass("active:translate-y-0")}
     >
       <Check
         size={13}
@@ -415,7 +445,7 @@ function ClientStatus({
   );
 }
 
-function ClientButton({
+function ClientAction({
   testId,
   icon,
   label,
@@ -423,17 +453,16 @@ function ClientButton({
   doneLabel,
   copiedLabel,
   busyLabel,
-  primary = false,
   onClick,
 }: {
   testId: string;
-  icon: React.ReactNode;
+  /** 상태를 나르는 글리프만 넘긴다 — 상태 없는 장식은 자리를 안 받는다. */
+  icon?: React.ReactNode;
   label: string;
   feedback: Feedback;
   doneLabel?: string;
   copiedLabel?: string;
   busyLabel?: string;
-  primary?: boolean;
   onClick: () => void;
 }) {
   const isDone = feedback === "done";
@@ -454,21 +483,19 @@ function ClientButton({
         ? (copiedLabel ?? label)
         : label;
   return (
-    <button
+    <Button
       type="button"
+      variant="outline"
+      size="sm"
       data-testid={testId}
       data-state={feedback}
       onClick={onClick}
       disabled={isBusy}
-      className={
-        primary
-          ? "inline-flex min-h-[var(--control-h-md)] w-full items-center justify-center gap-2 rounded-md border border-[color:var(--color-indigo-line-a54)] bg-[color:var(--color-indigo-a24)] px-3 py-2 text-body font-medium text-[color:var(--color-indigo-pale-a94)] transition-colors hover:bg-[color:var(--color-indigo-a32)] disabled:opacity-70"
-          : "inline-flex min-h-[var(--control-h-md)] w-full items-center justify-center gap-2 rounded-md border border-[color:var(--color-border-soft)] px-3 py-2 text-body text-[color:var(--color-text-secondary)] transition-colors hover:border-[color:var(--color-indigo-a46)] hover:text-[color:var(--color-text-primary)] disabled:opacity-70"
-      }
+      className={clientControlClass()}
     >
       {shownIcon}
       {shownLabel}
-    </button>
+    </Button>
   );
 }
 
@@ -489,7 +516,7 @@ function ClientLink({
     <a
       href={href}
       data-testid={testId}
-      className="inline-flex min-h-[var(--control-h-md)] w-full items-center justify-center gap-2 rounded-md border border-[color:var(--color-border-soft)] px-3 py-2 text-body text-[color:var(--color-text-secondary)] transition-colors hover:border-[color:var(--color-indigo-a46)] hover:text-[color:var(--color-text-primary)]"
+      className={clientControlClass()}
     >
       {icon}
       {label}

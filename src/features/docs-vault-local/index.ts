@@ -43,6 +43,7 @@ export {
   type AgentClientConfigState,
 } from './ui/AgentClientButtons';
 export { AgentConnectAction, type AgentConnectActionProps } from './ui/AgentConnectAction';
+export { StepRow, type StepRowProps } from './ui/StepRow';
 export {
   WebManualConnectPanel,
   type WebManualConnectPanelProps,

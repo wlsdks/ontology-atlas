@@ -121,7 +121,9 @@ describe('VaultAgentSetupPanel', () => {
     expect(
       screen.getByRole('region', { name: 'AI 에이전트 설정 상태' }),
     ).toBeInTheDocument();
-    expect(screen.getByText('누락')).toBeInTheDocument();
+    // 같은 사실을 세 번 말하던 앰버 배지는 사라졌다 (2026-08-02 디자인 카운슬
+    // S2) — 수를 말하는 줄이 바로 아래에 그대로 있고, 그것이 유일한 진술이다.
+    expect(screen.queryByText('누락')).toBeNull();
     expect(screen.getByText('설정 파일 1/3개 준비됨')).toBeInTheDocument();
     expect(screen.getByText('다음: .mcp.json 만들기')).toBeInTheDocument();
     expect(
@@ -272,7 +274,9 @@ describe('VaultAgentSetupPanel', () => {
       },
     });
 
-    expect(screen.getByText('준비됨')).toBeInTheDocument();
+    // 같은 사실을 세 번 말하던 앰버 배지는 사라졌다 (2026-08-02 디자인 카운슬
+    // S2) — 수를 말하는 줄이 바로 아래에 그대로 있고, 그것이 유일한 진술이다.
+    expect(screen.queryByText('준비됨')).toBeNull();
     expect(screen.getByText('설정 파일 3/3개 준비됨')).toBeInTheDocument();
     expect(
       screen.queryByRole('button', { name: '누락된 에이전트 설정 만들기' }),
@@ -381,7 +385,9 @@ describe('VaultAgentSetupPanel', () => {
       },
     });
 
-    expect(screen.getByText('누락')).toBeInTheDocument();
+    // 같은 사실을 세 번 말하던 앰버 배지는 사라졌다 (2026-08-02 디자인 카운슬
+    // S2) — 수를 말하는 줄이 바로 아래에 그대로 있고, 그것이 유일한 진술이다.
+    expect(screen.queryByText('누락')).toBeNull();
     expect(screen.getByText('설정 파일 2/3개 준비됨')).toBeInTheDocument();
     expect(
       screen.getByText('점검: .codex/config.toml 가 ontology-atlas MCP 설정이 아닙니다'),

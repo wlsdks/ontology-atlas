@@ -390,20 +390,16 @@ const AI_SETTINGS_VERIFY_SCRIPT: &str = r#"(() => {
     }
     result.sheetOpen = true;
 
-    const aiView = find("app-settings-ai-view");
+    // 2026-08-02 — 드릴인 복도가 없어졌다. 「앱 안 에이전트」는 LNB 한 줄이고,
+    // 그 내용은 오른쪽 칸(`app-settings-pane-ai`)에 바로 선다. 종전 두 걸음
+    // (절 → 요약 행 → 서브뷰)이 한 걸음이 됐다.
+    const aiView = find("app-settings-pane-ai");
     if (!aiView) {
       result.step = "open-ai-connection-view";
-      const drillIn = find("app-settings-ai-drillin");
-      if (drillIn) {
-        clickOnce("ai-drillin", drillIn, attempt);
-        result.reason = "waiting for the AI connection view";
-        again(220);
-        return;
-      }
-      const navAgent = find("app-settings-nav-agent");
-      if (navAgent) {
-        clickOnce("nav-agent", navAgent, attempt);
-        result.reason = "waiting for the agent settings section";
+      const navAi = find("app-settings-nav-ai");
+      if (navAi) {
+        clickOnce("nav-ai", navAi, attempt);
+        result.reason = "waiting for the AI connection section";
         again(220);
         return;
       }
@@ -2481,7 +2477,7 @@ pub fn run() {
                                   rect.height > 0;
                               };
                               const aiSettingsPopover = document.querySelector('[data-testid="app-settings-popover"]');
-                              const aiSettingsAiView = document.querySelector('[data-testid="app-settings-ai-view"]');
+                              const aiSettingsAiView = document.querySelector('[data-testid="app-settings-pane-ai"]');
                               const aiSettingsUrlInput = document.querySelector('[data-testid="ai-local-url"]');
                               const aiSettingsVerifiedLine = document.querySelector('[data-testid="ai-local-verified"]');
                               const aiSettingsFailureLine = document.querySelector('[data-testid="ai-local-failure"]');
@@ -6649,8 +6645,8 @@ mod tests {
         assert!(script.contains("window.__ontologyAtlasAiSettingsVerify = result"));
         for test_id in [
             "app-settings-trigger",
-            "app-settings-ai-drillin",
-            "app-settings-ai-view",
+            "app-settings-nav-ai",
+            "app-settings-pane-ai",
             "ai-register-local",
             "ai-local-url",
             "ai-verify-local",

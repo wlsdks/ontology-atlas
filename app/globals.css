@@ -594,12 +594,10 @@
   --color-amber-docs-a12: rgba(234, 198, 138, 0.12);
   --color-amber-docs-a16: rgba(234, 198, 138, 0.16);
   --color-amber-docs-a18: rgba(234, 198, 138, 0.18);
-  --color-amber-docs-a22: rgba(234, 198, 138, 0.22);
   --color-amber-docs-a25: rgba(234, 198, 138, 0.25);
   --color-amber-docs-a28: rgba(234, 198, 138, 0.28);
   --color-amber-docs-a34: rgba(234, 198, 138, 0.34);
   --color-amber-docs-a35: rgba(234, 198, 138, 0.35);
-  --color-amber-docs-a42: rgba(234, 198, 138, 0.42);
   --color-amber-docs-a45: rgba(234, 198, 138, 0.45);
   --color-amber-docs-a50: rgba(234, 198, 138, 0.5);
   --color-amber-docs-a54: rgba(234, 198, 138, 0.54);
@@ -607,7 +605,6 @@
   --color-amber-docs-a82: rgba(234, 198, 138, 0.82);
   --color-amber-docs-a85: rgba(234, 198, 138, 0.85);
   --color-amber-docs-a92: rgba(234, 198, 138, 0.92);
-  --color-amber-docs-a94: rgba(234, 198, 138, 0.94);
   --color-amber-docs-a95: rgba(234, 198, 138, 0.95);
   --color-amber-docs-a100: rgba(234, 198, 138, 1);
 
@@ -1772,12 +1769,10 @@
     --color-amber-docs-a12: rgba(234, 198, 138, 0.12);
     --color-amber-docs-a16: rgba(234, 198, 138, 0.16);
     --color-amber-docs-a18: rgba(234, 198, 138, 0.18);
-    --color-amber-docs-a22: rgba(234, 198, 138, 0.22);
     --color-amber-docs-a25: rgba(234, 198, 138, 0.25);
     --color-amber-docs-a28: rgba(234, 198, 138, 0.28);
     --color-amber-docs-a34: rgba(234, 198, 138, 0.34);
     --color-amber-docs-a35: rgba(234, 198, 138, 0.35);
-    --color-amber-docs-a42: rgba(234, 198, 138, 0.42);
     --color-amber-docs-a45: rgba(234, 198, 138, 0.45);
     --color-amber-docs-a50: rgba(234, 198, 138, 0.5);
     --color-amber-docs-a54: rgba(234, 198, 138, 0.54);
@@ -1785,7 +1780,6 @@
     --color-amber-docs-a82: rgba(234, 198, 138, 0.82);
     --color-amber-docs-a85: rgba(234, 198, 138, 0.85);
     --color-amber-docs-a92: rgba(234, 198, 138, 0.92);
-    --color-amber-docs-a94: rgba(234, 198, 138, 0.94);
     --color-amber-docs-a95: rgba(234, 198, 138, 0.95);
     --color-amber-docs-a100: rgba(234, 198, 138, 1);
     --color-indigo-pale-a28: rgba(200, 210, 255, 0.28);
