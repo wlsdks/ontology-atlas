@@ -224,7 +224,7 @@ describe("AtlasGitPanel — 데스크톱(Tauri)", () => {
     expect(snapshotInvokeCalls()[0][1]).toMatchObject({ push: true });
   });
 
-  it("disables the snapshot button and says 모두 남겼어요 when there are no changes", async () => {
+  it("disables the snapshot button and says 모두 커밋했어요 when there are no changes", async () => {
     installDesktopGit({
       status: { ...STATUS_WITH_CHANGES, changedCount: 0 },
       diff: { count: 0, files: [], diff: "" },
@@ -234,7 +234,7 @@ describe("AtlasGitPanel — 데스크톱(Tauri)", () => {
 
     const button = await screen.findByTestId("atlas-git-snapshot-button");
     expect(button).toBeDisabled();
-    expect(button).toHaveTextContent("모두 남겼어요");
+    expect(button).toHaveTextContent("모두 커밋했어요");
   });
 
   it("offers a working start button — not a dead end — when the vault is outside a git repo", async () => {
@@ -319,7 +319,7 @@ describe("AtlasGitPanel — 데스크톱(Tauri)", () => {
     // 좌측 앰버 레일이 붙은 둥근 카드로 콘텐츠 **위에** 상주해, 기록을 보러
     // 온 사용자의 첫 인상이 설정 권유였다(헌장 금지 패턴 + 앰버 확장).
     const location = await screen.findByTestId("atlas-git-location");
-    expect(location).toHaveTextContent("지금은 이 컴퓨터에만 쌓이고 있어요");
+    expect(location).toHaveTextContent("원격 저장소가 아직 없어요");
     // 입력칸은 아직 없다 — 상주하지 않는다.
     expect(screen.queryByTestId("atlas-git-remote-setup")).not.toBeInTheDocument();
 
@@ -620,7 +620,7 @@ describe("AtlasGitPanel — 작업대 빈 상태", () => {
     expect(pane).not.toHaveTextContent("@@");
   });
 
-  it("`모두 남겼어요` 를 화면에 두 번 쓰지 않는다", async () => {
+  it("`모두 커밋했어요` 를 화면에 두 번 쓰지 않는다", async () => {
     installDesktopGit({
       status: { ...STATUS_WITH_CHANGES, changedCount: 0 },
       diff: { count: 0, files: [], diff: "" },
@@ -629,14 +629,14 @@ describe("AtlasGitPanel — 작업대 빈 상태", () => {
     renderPanel(<AtlasGitPanel vaultPath="/repo/vault" />);
 
     await screen.findByTestId("atlas-git-snapshot-button");
-    expect(screen.getAllByText("모두 남겼어요")).toHaveLength(1);
+    expect(screen.getAllByText("모두 커밋했어요")).toHaveLength(1);
     // 목록 자리는 같은 문장을 반복하는 대신 "그래서 지금 무슨 상태냐" 를 말한다.
     expect(
-      screen.getByText("지금 이 폴더와 마지막 걸음이 같아요. 문서를 고치면 여기에 나타나요."),
+      screen.getByText("지금 이 폴더와 마지막 커밋이 같아요. 문서를 고치면 여기에 나타나요."),
     ).toBeInTheDocument();
   });
 
-  it("남기기 버튼과 결과 문장이 키 경로가 아니라 문장을 그린다 (ICU 인자 계약)", async () => {
+  it("커밋 버튼과 결과 문장이 키 경로가 아니라 문장을 그린다 (ICU 인자 계약)", async () => {
     installDesktopGit({
       snapshot: {
         committed: true,
@@ -653,13 +653,13 @@ describe("AtlasGitPanel — 작업대 빈 상태", () => {
     renderPanel(<AtlasGitPanel vaultPath="/repo/vault" />);
 
     const button = await screen.findByTestId("atlas-git-snapshot-button");
-    expect(button).toHaveTextContent("2개 남기기");
+    expect(button).toHaveTextContent("2개 커밋");
     expect(button).not.toHaveTextContent("atlasGit");
 
     fireEvent.click(button);
     fireEvent.click(screen.getByTestId("atlas-git-confirm-button"));
     const result = await screen.findByTestId("atlas-git-snapshot-result");
-    expect(result).toHaveTextContent("2개 남겼어요");
+    expect(result).toHaveTextContent("2개 커밋했어요");
     expect(result).not.toHaveTextContent("atlasGit");
   });
 });

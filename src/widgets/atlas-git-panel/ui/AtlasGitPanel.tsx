@@ -1921,6 +1921,7 @@ function SnapshotResultLine({
  */
 function ActionDock({
   t,
+  onConnectRemote,
   hasChanges,
   changeCount,
   predictedSubject,
@@ -1935,6 +1936,8 @@ function ActionDock({
   upstream,
 }: {
   t: Translator;
+  /** 원격이 없을 때 도크 마지막 줄이 여는 입력. */
+  onConnectRemote: () => void;
   hasChanges: boolean;
   changeCount: number;
   predictedSubject: string;
@@ -2019,11 +2022,36 @@ function ActionDock({
         <SnapshotResultLine t={t} result={snapshotResult} fallbackCount={changeCount} />
       ) : null}
 
-      {/* 신뢰 문구는 쓰기가 일어나는 자리에서 읽힌다. */}
-      <p className="flex items-center gap-1.5 text-caption leading-relaxed text-[color:var(--color-text-quaternary)]">
-        <ShieldCheck size={11} aria-hidden className="shrink-0" />
-        {t("scopeNotice")}
-      </p>
+      {/*
+        쓰기 자리의 마지막 줄은 **지금 상태에서 다음 걸음**을 말한다.
+
+        원격이 없으면 남긴 걸음은 이 컴퓨터에만 있다 — 그게 지금 알아야 할
+        사실이고, 다음 걸음은 연결이다. 종전에는 이 자리가 언제나 범위 고지
+        하나였는데, 그 문장은 헤더에도 같이 떠서 같은 말이 두 번 나왔고
+        (소유자 지적) 정작 "그래서 이제 뭘 하나" 는 아무 데도 없었다.
+      */}
+      {upstream ? (
+        <p className="flex items-center gap-1.5 text-caption leading-relaxed text-[color:var(--color-text-quaternary)]">
+          <ShieldCheck size={11} aria-hidden className="shrink-0" />
+          {t("scopeNotice")}
+        </p>
+      ) : (
+        <p
+          data-testid="atlas-git-dock-no-remote"
+          className="flex flex-wrap items-center gap-x-2 gap-y-1 text-caption leading-relaxed text-[color:var(--color-text-quaternary)]"
+        >
+          <ShieldCheck size={11} aria-hidden className="shrink-0" />
+          <span>{t("dockNoRemote")}</span>
+          <button
+            type="button"
+            data-testid="atlas-git-dock-connect-remote"
+            onClick={onConnectRemote}
+            className="rounded-[var(--radius-chip)] border border-[color:var(--color-border-soft)] px-2 py-0.5 text-caption text-[color:var(--color-text-tertiary)] transition-colors hover:border-[color:var(--color-indigo-a46)] hover:text-[color:var(--color-text-primary)]"
+          >
+            {t("dockConnectRemote")}
+          </button>
+        </p>
+      )}
     </div>
   );
 }
@@ -2328,6 +2356,7 @@ function DesktopBody({
   const dock = (
     <ActionDock
       t={t}
+      onConnectRemote={() => setRemoteOpen(true)}
       hasChanges={hasChanges}
       changeCount={changeCount}
       predictedSubject={predictedSubject}
