@@ -11,6 +11,7 @@ import { AGENT_ROUND_CAP } from './types';
 
 const NOTICES: AgentLoopDeps['notices'] = {
   roundCap: '여기까지 하고 정리할게요',
+  noToolCall: ({ round, cap }) => `${round}/${cap}번째에서 도구를 한 번도 안 부르고 멈췄어요`,
   aborted: '여기까지 읽었어요',
   networkFailed: '연결에 실패했어요',
   rateLimited: '지금은 호출 한도예요',
@@ -246,7 +247,7 @@ describe('runTurn', () => {
     ]);
   });
 
-  it('인용 0 인 답은 강등 표시가 붙는다', async () => {
+  it('아무것도 안 읽고 나온 답은 unread 로 표시된다', async () => {
     const send = vi.fn<Send>(async () =>
       echo({ content: [{ type: 'text', text: '그냥 제 생각인데요' }], stop_reason: 'end_turn' }),
     );
@@ -256,6 +257,43 @@ describe('runTurn', () => {
       { signal: new AbortController().signal },
     );
     const assistant = result.turn.events.find((event) => event.kind === 'assistant');
-    expect(assistant).toMatchObject({ demoted: true });
+    expect(assistant).toMatchObject({ grounding: 'unread' });
+  });
+
+  /**
+   * 2026-08-02 — 이 분기는 아무 알림 없이 `status: 'done'` 으로 접수됐다.
+   * 상한 도달은 `round-cap` 을 띄우는데 조기 종료는 조용해서, 화면이 정상
+   * 완료와 구별되지 않았다(실측 감사 로그의 `agent ok tools=[]` 턴들).
+   */
+  it('도구를 한 번도 안 부르고 멈춘 턴은 상한 도달과 대칭인 알림을 남긴다', async () => {
+    const send = vi.fn<Send>(async () =>
+      echo({ content: [{ type: 'text', text: '아마 그럴 거예요' }], stop_reason: 'end_turn' }),
+    );
+    const result = await runTurn(
+      deps({ send }),
+      startTurn({ text: 'x', screenContext: EMPTY_SCREEN_CONTEXT }),
+      { signal: new AbortController().signal },
+    );
+    const notice = result.turn.events.find((event) => event.kind === 'notice');
+    expect(notice).toMatchObject({ code: 'no-tool-call' });
+    expect(notice).toMatchObject({ text: `1/${AGENT_ROUND_CAP}번째에서 도구를 한 번도 안 부르고 멈췄어요` });
+  });
+
+  it('도구를 쓴 뒤 마무리하는 정상 종료에는 그 알림이 붙지 않는다', async () => {
+    // ①에 붙이면 모든 정상 턴에 벽지가 하나 는다.
+    const send = vi
+      .fn<Send>()
+      .mockResolvedValueOnce(echo(TOOL_CALL))
+      .mockResolvedValueOnce(echo(TEXT_ONLY));
+    const result = await runTurn(
+      deps({ send }),
+      startTurn({ text: 'x', screenContext: EMPTY_SCREEN_CONTEXT }),
+      { signal: new AbortController().signal },
+    );
+    expect(
+      result.turn.events.filter(
+        (event) => event.kind === 'notice' && event.code === 'no-tool-call',
+      ),
+    ).toHaveLength(0);
   });
 });

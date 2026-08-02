@@ -180,12 +180,17 @@ test.describe("웹 스모크 ① 관문", () => {
 
     // 그 숫자가 **실제 데이터에서 나온 값**이어야 한다. 0 이면 지도는 떴는데
     // 아무것도 안 그려진 상태 — 관문으로서는 죽은 화면이다.
-    const counts = await starter.evaluate((node) =>
-      [...node.querySelectorAll("span")]
-        .map((span) => span.textContent?.trim() ?? "")
-        .filter((text) => /^\d+$/.test(text))
-        .map(Number),
-    );
+    //
+    // 마커를 카드 안 "숫자만 든 span" 에서 샘플 크기 캡션으로 옮겼다
+    // (2026-08-02). 그 전 마커는 3분할 계기 셀(`<span>112</span>`)의 마크업에
+    // 기대고 있었는데, 계기가 캡션 한 줄로 강등되면서 숫자가 문장 안으로
+    // 들어가 **컴포넌트보다 오래 산 마커**가 됐다 — 2026-08 에 릴리스를 하나
+    // 잃은 바로 그 실패 모드다. 이제 마커는 자기 testid 를 가진 표면 하나를
+    // 가리키고, 그 표면이 사라지면 게이트가 먼저 터진다.
+    const scale = starter.getByTestId("first-run-starter-sample-scale");
+    await expect(scale).toBeVisible();
+    const counts = (((await scale.textContent()) ?? "").match(/\d+/g) ?? []).map(Number);
+    expect(counts.length).toBeGreaterThan(0);
     expect(counts.some((value) => value > 0)).toBe(true);
 
     // 관문의 다음 행동 두 개가 살아 있다(비활성·부재는 관문 고장).
