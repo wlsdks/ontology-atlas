@@ -372,7 +372,6 @@ export function AtlasGitPanel({
    * `null` = 아직 안 골랐음 → 아래 `selection` 이 상태를 보고 정한다.
    */
   const [selectionChoice, setSelectionChoice] = useState<WorkbenchSelection | null>(null);
-  const [expandedHash, setExpandedHash] = useState<string | null>(null);
 
   /**
    * 목록에서 고른 문서의 경로. `null` = 안 골랐음 → 증거 열은 바뀐 개념
@@ -687,8 +686,6 @@ export function AtlasGitPanel({
             setSelection={setSelectionChoice}
             diffFiles={diffFiles}
             history={history}
-            expandedHash={expandedHash}
-            setExpandedHash={setExpandedHash}
             selectedPath={selectedPath}
             setSelectedPath={setSelectedPath}
             othersOpen={othersOpen}
@@ -1066,38 +1063,6 @@ function NoVaultSetup({ t }: { t: Translator }) {
   );
 }
 
-/**
- * 증거 pane 탭 (#85). 활성은 인디고 언더라인 — 채색 시스템 증식 없이 `border-b`
- * 하나로 상태를 말한다(`design.md`: "카테고리 구분은 색이 아닌 보더 스타일").
- */
-function EvidenceTab({
-  active,
-  testId,
-  onClick,
-  children,
-}: {
-  active: boolean;
-  testId: string;
-  onClick: () => void;
-  children: React.ReactNode;
-}) {
-  return (
-    <button
-      type="button"
-      data-testid={testId}
-      aria-pressed={active}
-      onClick={onClick}
-      className={cn(
-        "border-b-2 px-1.5 pb-1.5 text-label transition-colors",
-        active
-          ? "border-[color:var(--color-indigo-brand)] font-semibold text-[color:var(--color-text-primary)]"
-          : "border-transparent text-[color:var(--color-text-quaternary)] hover:text-[color:var(--color-text-secondary)]",
-      )}
-    >
-      {children}
-    </button>
-  );
-}
 
 /**
  * 위치 줄 — 이 폴더의 걸음이 **어디에 쌓이는가**. 헤더 오른쪽, 한 줄.
@@ -1739,8 +1704,6 @@ function StepList({
   kindLabel,
   focusedConceptId,
   setFocusedConceptId,
-  expandedHash,
-  setExpandedHash,
   settledHash,
   pendingCount,
   selection,
@@ -1759,8 +1722,6 @@ function StepList({
   kindLabel: (kind: string) => string;
   focusedConceptId: string | null;
   setFocusedConceptId: (id: string) => void;
-  expandedHash: string | null;
-  setExpandedHash: (v: string | null) => void;
   /** 방금 남긴 커밋의 해시 — 그 한 줄만 확정 램프로 정착시킨다. */
   settledHash?: string | null;
   /**
@@ -2110,8 +2071,6 @@ function DesktopBody({
   setSelection,
   diffFiles,
   history,
-  expandedHash,
-  setExpandedHash,
   selectedPath,
   setSelectedPath,
   othersOpen,
@@ -2166,8 +2125,6 @@ function DesktopBody({
   setSelection: (v: WorkbenchSelection) => void;
   diffFiles: AtlasGitDiffFile[];
   history: GitCommitInfo[];
-  expandedHash: string | null;
-  setExpandedHash: (v: string | null) => void;
   selectedPath: string | null;
   setSelectedPath: (v: string | null) => void;
   othersOpen: boolean;
@@ -2453,8 +2410,6 @@ function DesktopBody({
               kindLabel={kindLabel}
               focusedConceptId={focusedConceptId}
               setFocusedConceptId={setFocusedConceptId}
-              expandedHash={null}
-              setExpandedHash={() => {}}
               settledHash={settledHash}
               pendingCount={0}
               selection={selection}
@@ -2526,8 +2481,6 @@ function DesktopBody({
               kindLabel={kindLabel}
               focusedConceptId={focusedConceptId}
               setFocusedConceptId={setFocusedConceptId}
-              expandedHash={null}
-              setExpandedHash={() => {}}
               settledHash={settledHash}
               pendingCount={statusCounts.total}
               selection={selection}
