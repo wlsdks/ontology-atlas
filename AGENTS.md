@@ -209,6 +209,15 @@ The detailed rules live in `.claude/rules/*.md` and Claude Code auto-loads them.
   evidence. A few pixels of misalignment is not something anyone — human or model —
   reliably localises by looking; if it is not measured it cannot be prescribed, so
   "looks fine" is not a verification.
+- **Design system audit** — `@.claude/skills/design-system-audit/SKILL.md` asks whether
+  the system is **enforced**, not whether one change conforms. Run it before a release or
+  when "왜 이 화면만 다르지" comes up. Its primary output is closed gates: 2026-08-03 found
+  300+ off-ramp values, and every one of them came through four holes — a lint selector that
+  only saw bracket syntax (so `text-sm`/`rounded-md` bypassed the ramp entirely, 268 cases),
+  two central surfaces sitting at `warn` with no `--max-warnings`, a colour checker skipping
+  a whole directory, and one surface running a **parallel 4-step ramp** it had documented in
+  its own comments. Fix values in order (identical → ±1px → design call), turn gates on last,
+  and prove each with a probe.
 - **Design Guardian** — `@.claude/agents/design-guardian.md` is the standing senior design reviewer for UI work. Use it, or an equivalent sub-agent when available, before and after meaningful Relief/Topology design changes. It rejects token drift, attention-layer collisions, hidden typed facts, decorative motion, browser-only desktop proof, and reference copying. It approves only token-backed changes with screenshot/WebView evidence and installed-app proof when desktop behavior is affected.
 - **Design system** — neutrals + a single indigo, forbidden patterns — `@.claude/rules/design.md` · `@docs/DESIGN-SYSTEM.md`.
   **규격은 문서가 아니라 lint 가 강제한다** (`eslint.config.mjs` 의
