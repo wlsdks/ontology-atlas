@@ -109,6 +109,23 @@ describe('projectToFrontmatter', () => {
 });
 
 describe('buildProjectMarkdown', () => {
+  it('새 project 노드마다 서로 다른 lowercase UUIDv4 uid를 발급한다', () => {
+    const input = {
+      slug: 'iam',
+      name: 'IAM',
+      category: 'platform',
+      status: 'active',
+      description: '인증 서비스',
+    };
+    const first = buildProjectMarkdown(input);
+    const second = buildProjectMarkdown(input);
+    const uidPattern = /^uid: ([0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12})$/m;
+
+    expect(first).toMatch(uidPattern);
+    expect(second).toMatch(uidPattern);
+    expect(first.match(uidPattern)?.[1]).not.toBe(second.match(uidPattern)?.[1]);
+  });
+
   it('frontmatter + 기본 body 생성', () => {
     const md = buildProjectMarkdown({
       slug: 'iam',

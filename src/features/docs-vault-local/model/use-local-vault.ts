@@ -40,6 +40,7 @@ import {
 } from '@/shared/lib/tauri-vault-fs';
 import { toErrorMessage } from '@/shared/lib/error-message';
 import { isPickerAbort } from '@/shared/lib/picker-abort';
+import { parseFrontmatter } from '@/shared/lib/parse-frontmatter';
 import { bundledServerLaunch, type McpServerLaunch } from '@/shared/config';
 import { readBundledMcpServer } from '@/shared/lib/tauri-agent-setup';
 import {
@@ -88,6 +89,97 @@ export function assertExpectedMtime(
 ): void {
   if (typeof expectedMtime === 'number' && currentMtime !== expectedMtime) {
     throw new VaultConflictError(slug, expectedMtime, currentMtime);
+  }
+}
+
+const NODE_UID_RE =
+  /^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/;
+
+function identityClaims(frontmatter: Record<string, unknown>): string[] {
+  return [
+    ...(typeof frontmatter.uid === 'string' ? [frontmatter.uid] : []),
+    ...(Array.isArray(frontmatter.merged_uids)
+      ? frontmatter.merged_uids.filter((value): value is string => typeof value === 'string')
+      : []),
+  ];
+}
+
+function assertNodeIdentityContent(
+  slug: string,
+  raw: string,
+  docs: ReadonlyArray<{ slug: string; frontmatter: Record<string, unknown> }>,
+): void {
+  const frontmatter = parseFrontmatter(raw).frontmatter;
+  if (typeof frontmatter.kind !== 'string' || !frontmatter.kind.trim()) return;
+  if (typeof frontmatter.uid !== 'string' || !NODE_UID_RE.test(frontmatter.uid)) {
+    throw new Error('Every kind node must have a lowercase UUIDv4 `uid:`.');
+  }
+  const merged = frontmatter.merged_uids;
+  if (merged !== undefined) {
+    if (
+      !Array.isArray(merged) ||
+      merged.some(
+        (value) =>
+          typeof value !== 'string' ||
+          !NODE_UID_RE.test(value) ||
+          value === frontmatter.uid,
+      )
+    ) {
+      throw new Error('`merged_uids:` must contain only absorbed lowercase UUIDv4 identities.');
+    }
+    const canonical = [...new Set(merged)].sort((a, b) => a.localeCompare(b, 'en'));
+    if (canonical.length !== merged.length || canonical.some((value, index) => value !== merged[index])) {
+      throw new Error('`merged_uids:` must be a deduplicated, ascending canonical UUIDv4 set.');
+    }
+  }
+  const claims = new Set(identityClaims(frontmatter));
+  for (const doc of docs) {
+    if (doc.slug === slug) continue;
+    const collision = identityClaims(doc.frontmatter).find((uid) => claims.has(uid));
+    if (collision) {
+      throw new Error(`UID collision: ${collision} already belongs to "${doc.slug}".`);
+    }
+  }
+}
+
+function assertIdentityPatch(
+  raw: string,
+  updates: Record<string, FrontmatterUpdateValue>,
+): void {
+  const previous = parseFrontmatter(raw).frontmatter;
+  if ('merged_uids' in updates) {
+    throw new Error(
+      '`merged_uids:` is merge-owned identity history and cannot be edited by a generic browser patch.',
+    );
+  }
+  if (!('uid' in updates)) return;
+  const nextUid = updates.uid;
+  const previousUid = previous.uid;
+  const hasPreviousUid = previousUid !== undefined && previousUid !== null && previousUid !== '';
+  if (hasPreviousUid && nextUid !== previousUid) {
+    throw new Error('`uid:` is immutable. Rename or reclassify the node without changing its UID.');
+  }
+  if (typeof nextUid !== 'string' || !NODE_UID_RE.test(nextUid)) {
+    throw new Error('`uid:` must be a lowercase UUIDv4.');
+  }
+}
+
+function assertIdentityTransition(previousRaw: string, nextRaw: string): void {
+  const previous = parseFrontmatter(previousRaw).frontmatter;
+  const next = parseFrontmatter(nextRaw).frontmatter;
+  const previousUid = previous.uid;
+  if (
+    previousUid !== undefined &&
+    previousUid !== null &&
+    previousUid !== '' &&
+    next.uid !== previousUid
+  ) {
+    throw new Error('`uid:` is immutable. Rename or reclassify the node without changing its UID.');
+  }
+  if (JSON.stringify(next.merged_uids) !== JSON.stringify(previous.merged_uids)) {
+    throw new Error(
+      '`merged_uids:` is merge-owned identity history and cannot be edited by a generic browser save.',
+    );
   }
 }
 
@@ -879,10 +971,10 @@ export function useLocalVaultInternal() {
       const fh = state.fileHandles.get(slug);
       if (!fh) throw new Error(`Local vault: no file handle for "${slug}"`);
       await requireWritePermission(fh);
-      if (typeof options.expectedMtime === 'number') {
-        const file = await fh.getFile();
-        assertExpectedMtime(slug, options.expectedMtime, file.lastModified);
-      }
+      const file = await fh.getFile();
+      assertExpectedMtime(slug, options.expectedMtime, file.lastModified);
+      assertIdentityTransition(await file.text(), content);
+      assertNodeIdentityContent(slug, content, state.manifest?.docs ?? []);
       const writable = await fh.createWritable();
       await writable.write(content);
       await writable.close();
@@ -890,7 +982,7 @@ export function useLocalVaultInternal() {
       // 저장 성공 뒤 전체 매니페스트 재스캔 — backlinks/headings 등 반영.
       if (state.handle) await load(state.handle);
     },
-    [state.fileHandles, state.handle, load, requireWritePermission, markSelfWrite],
+    [state.fileHandles, state.handle, state.manifest, load, requireWritePermission, markSelfWrite],
   );
 
   /**
@@ -902,8 +994,20 @@ export function useLocalVaultInternal() {
       if (state.fileHandles.has(slug)) {
         throw new Error(`Document already exists: "${slug}"`);
       }
+      assertNodeIdentityContent(slug, content, state.manifest?.docs ?? []);
       const resolved = await getParentAndName(slug, true);
       if (!resolved) throw new Error('Vault is not open');
+      try {
+        await resolved.parent.getFileHandle(resolved.fileName);
+        throw new Error(`Document already exists: "${slug}"`);
+      } catch (error) {
+        if (error instanceof Error && error.message.startsWith('Document already exists:')) {
+          throw error;
+        }
+        if (!(error instanceof Error) || error.name !== 'NotFoundError') {
+          throw error;
+        }
+      }
       const fh = await resolved.parent.getFileHandle(resolved.fileName, {
         create: true,
       });
@@ -915,7 +1019,7 @@ export function useLocalVaultInternal() {
       // 쓰기에서만 리로드하도록 (updateFrontmatter 와 같은 계약).
       if (!opts.skipRefresh && state.handle) await load(state.handle);
     },
-    [state.fileHandles, state.handle, getParentAndName, load, markSelfWrite],
+    [state.fileHandles, state.handle, state.manifest, getParentAndName, load, markSelfWrite],
   );
 
   /**
@@ -956,7 +1060,9 @@ export function useLocalVaultInternal() {
       const file = await fh.getFile();
       assertExpectedMtime(slug, opts.expectedMtime, file.lastModified);
       const raw = await file.text();
+      assertIdentityPatch(raw, updates);
       const next = applyFrontmatterUpdates(raw, updates);
+      assertNodeIdentityContent(slug, next, state.manifest?.docs ?? []);
       if (next === raw) return; // 변경 없음
       const writable = await fh.createWritable();
       await writable.write(next);
@@ -964,7 +1070,7 @@ export function useLocalVaultInternal() {
       markSelfWrite(slug);
       if (!opts.skipRefresh && state.handle) await load(state.handle);
     },
-    [state.fileHandles, state.handle, load, requireWritePermission, markSelfWrite],
+    [state.fileHandles, state.handle, state.manifest, load, requireWritePermission, markSelfWrite],
   );
 
   /**

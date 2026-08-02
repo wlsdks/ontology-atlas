@@ -1303,6 +1303,7 @@ export function findOrphans(rootPath, options = {}) {
     if (kindFilter && kind !== kindFilter) continue;
     if (referenced.has(doc.slug)) continue;
     orphans.push({
+      uid: doc.frontmatter.uid,
       slug: doc.slug,
       kind,
       title: doc.frontmatter.title || doc.frontmatter.name || doc.slug,
@@ -1461,6 +1462,7 @@ export function findBacklinks(rootPath, targetSlug) {
     );
     if (matchedKeys.length === 0 && !bodyHit) continue;
     matches.push({
+      uid: doc.frontmatter.uid,
       slug: doc.slug,
       kind: doc.frontmatter.kind,
       title: doc.frontmatter.title || doc.frontmatter.name || doc.slug,

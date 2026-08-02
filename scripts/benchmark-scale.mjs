@@ -13,6 +13,7 @@
 //   node scripts/benchmark-scale.mjs --bypass
 
 import { spawnSync } from "node:child_process";
+import { randomUUID } from "node:crypto";
 import {
   mkdtempSync,
   mkdirSync,
@@ -59,7 +60,7 @@ mkdirSync(join(root, "elements"), { recursive: true });
 // 1 hub element that 30%+ of capabilities reference
 writeFileSync(
   join(root, "elements/hub.md"),
-  "---\nslug: elements/hub\nkind: element\ntitle: Hub element\ndomain: domains/dom-0\n---\n\n# Hub\n",
+  `---\nuid: ${randomUUID()}\nslug: elements/hub\nkind: element\ntitle: Hub element\ndomain: domains/dom-0\n---\n\n# Hub\n`,
 );
 
 // Domain stubs
@@ -67,7 +68,7 @@ const numDomains = 5;
 for (let d = 0; d < numDomains; d += 1) {
   writeFileSync(
     join(root, `domains/dom-${d}.md`),
-    `---\nslug: domains/dom-${d}\nkind: domain\ntitle: Domain ${d}\n---\n\n# Domain ${d}\n`,
+    `---\nuid: ${randomUUID()}\nslug: domains/dom-${d}\nkind: domain\ntitle: Domain ${d}\n---\n\n# Domain ${d}\n`,
   );
 }
 
@@ -79,7 +80,7 @@ for (let i = 0; i < N - numDomains - 1; i += 1) {
   const dom = `domains/dom-${i % numDomains}`;
   writeFileSync(
     join(root, `capabilities/cap-${i}.md`),
-    `---\nslug: capabilities/cap-${i}\nkind: capability\ntitle: Cap ${i}\ndomain: ${dom}\n${
+    `---\nuid: ${randomUUID()}\nslug: capabilities/cap-${i}\nkind: capability\ntitle: Cap ${i}\ndomain: ${dom}\n${
       refsHub ? "relates:\n  - elements/hub\n" : ""
     }---\n\n# Cap ${i}\n`,
   );

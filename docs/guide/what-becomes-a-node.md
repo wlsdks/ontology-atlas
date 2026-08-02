@@ -124,6 +124,7 @@ B」라는 빈 바구니 두 개를 만들고 절반씩 옮겨 넣으면 통과�
 
 ```markdown
 ---
+uid: 71890f3e-7b5d-4c0a-8f14-123456789abc
 kind: capability
 slug: capabilities/token-issue
 title: 토큰 발급

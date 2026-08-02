@@ -88,6 +88,8 @@ pnpm docs-vault:build            # refresh static dogfood manifest and public md
 pnpm vault:audit                 # dogfood path drift guard
 pnpm test:vault:audit            # focused vault audit CLI argument contract
 pnpm vault:migrate --list        # registered migrations
+pnpm test:vault:migrate          # list/help/dry-run/write/idempotency/dirty guard
+pnpm test:guide-examples         # public guide node examples satisfy live UID schema
 ```
 
 ### Generated manifest determinism
@@ -198,8 +200,10 @@ the touched behavior needs them. Vault helper changes route to direct sibling
 `pnpm exec node --test ...` checks when available, then to their narrow package
 shortcuts: `pnpm test:docs-vault`, `pnpm test:vault:validate`, or
 `pnpm test:vault:audit`. Vault migration runner or migration files route to
-`pnpm vault:migrate --list` first, and migration implementations also route to
-`pnpm test:contracts` so schema-evolution fixtures stay checked. Any
+`pnpm test:vault:migrate` and `pnpm vault:migrate --list` first, and migration
+implementations also route to `pnpm test:contracts` so schema-evolution fixtures
+stay checked. Public guide edits route to `pnpm test:guide-examples`; the gate
+parses complete fenced node frontmatter instead of pinning prose. Any
 `docs/**/*.md` change routes to `pnpm docs-vault:check`, because
 the static docs vault indexes the whole docs tree, not only `docs/ontology`.
 Parser/schema/validator parity changes, including the shared

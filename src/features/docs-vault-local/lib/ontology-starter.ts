@@ -49,20 +49,13 @@ ownership, dependency, evidence, and change impact.
 ## Get started in 5 minutes
 
 1. Open \`project.md\` and write your project's name and description.
-2. When a new domain comes to mind, add \`<slug>.md\` under \`domains/\`:
-   \`\`\`markdown
-   ---
-   slug: domains/auth
-   kind: domain
-   title: Authentication
-   capabilities:
-     - capabilities/login
-     - capabilities/signup
-   ---
-
-   Owns user authentication, sessions, and permissions.
+2. Create new nodes through the workbench Studio, MCP \`add_concept\`, or the
+   source-checkout CLI. These writers mint the immutable UID; do not copy a
+   starter file and its identity. After setting \`$ATLAS\` as shown below:
+   \`\`\`bash
+   ${ATLAS_CLI} add domain auth --title="Authentication" --vault .
    \`\`\`
-3. Same pattern for capability and element — under \`capabilities/\` and \`elements/\`.
+3. Use the same writer path for capabilities and elements.
 4. Register an AI agent (Claude Code, Cursor, …) and it reads/writes the
    same vault, growing it alongside you.
 5. To see the graph, open the workbench's \`/docs\` picker and point it at
@@ -203,7 +196,8 @@ The problem this project solves, or the value it creates, in a single sentence.
 
 1. Edit this file's \`title\` (and any other frontmatter besides \`kind: project\`)
    to match your project.
-2. Rename or copy starters like \`domains/example-domain.md\` into your real domains.
+2. Rename one starter in place, or create each additional domain through Studio,
+   MCP \`add_concept\`, or CLI \`add\`. Never copy a starter UID into a new node.
 3. Register an AI agent (Claude Code, Cursor, …) and ask it to "tidy up
    the ontology in this vault."
 `;
@@ -323,21 +317,13 @@ capabilities / elements / domain)입니다.
 ## 5분 만에 시작하기
 
 1. \`project.md\` 를 열어 프로젝트 이름과 설명을 씁니다.
-2. 새 도메인이 떠오르면 \`domains/\` 아래에 \`<slug>.md\` 를 추가합니다:
-   \`\`\`markdown
-   ---
-   slug: domains/auth
-   kind: domain
-   title: Authentication
-   display_ko: 인증
-   capabilities:
-     - capabilities/login
-     - capabilities/signup
-   ---
-
-   사용자 인증, 세션, 권한을 담당합니다.
+2. 새 노드는 공방, MCP \`add_concept\`, 또는 소스 체크아웃 CLI로 만듭니다.
+   이 작성 경로가 불변 UID를 발급하므로 스타터 파일과 정체성을 복사하지 마세요.
+   아래 안내대로 \`$ATLAS\`를 설정한 뒤:
+   \`\`\`bash
+   ${ATLAS_CLI} add domain auth --title="Authentication" --vault .
    \`\`\`
-3. 역량과 요소도 같은 방식으로 — \`capabilities/\` 와 \`elements/\` 아래에.
+3. 역량과 요소도 같은 작성 경로로 만듭니다.
 4. AI 에이전트(Claude Code, Cursor, …)를 연결하면 같은 문서함을 읽고 쓰면서
    함께 키웁니다.
 5. 그래프로 보려면 워크벤치의 \`/docs\` 피커에서 이 폴더를 고릅니다.
@@ -474,8 +460,9 @@ elements:
 
 1. 이 파일의 \`title\`(그리고 \`kind: project\` 외 다른 frontmatter)을 내 프로젝트에
    맞게 고칩니다.
-2. \`domains/example-domain.md\` 같은 스타터를 실제 도메인 이름으로 바꾸거나
-   복사합니다.
+2. 스타터 하나는 제자리에서 이름을 바꾸고, 도메인을 더 만들 때는 공방,
+   MCP \`add_concept\`, 또는 CLI \`add\`를 씁니다. 스타터 UID를 새 노드에
+   복사하지 않습니다.
 3. AI 에이전트(Claude Code, Cursor, …)를 연결하고 "이 문서함의 온톨로지를
    정리해 줘" 라고 부탁합니다.
 `;

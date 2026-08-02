@@ -32,7 +32,8 @@ elements:
 
 1. 이 파일의 `title`(그리고 `kind: project` 외 다른 frontmatter)을 내 프로젝트에
    맞게 고칩니다.
-2. `domains/example-domain.md` 같은 스타터를 실제 도메인 이름으로 바꾸거나
-   복사합니다.
+2. 스타터 하나는 제자리에서 이름을 바꾸고, 도메인을 더 만들 때는 공방,
+   MCP `add_concept`, 또는 CLI `add`를 씁니다. 스타터 UID를 새 노드에
+   복사하지 않습니다.
 3. AI 에이전트(Claude Code, Cursor, …)를 연결하고 "이 문서함의 온톨로지를
    정리해 줘" 라고 부탁합니다.

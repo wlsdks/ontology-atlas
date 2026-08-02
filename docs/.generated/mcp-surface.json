@@ -194,7 +194,15 @@
           "slug",
           "uid"
         ],
-        "required": []
+        "required": [],
+        "oneOfRequired": [
+          [
+            "slug"
+          ],
+          [
+            "uid"
+          ]
+        ]
       },
       {
         "name": "get_concepts",
@@ -204,7 +212,15 @@
           "slugs",
           "uids"
         ],
-        "required": []
+        "required": [],
+        "oneOfRequired": [
+          [
+            "slugs"
+          ],
+          [
+            "uids"
+          ]
+        ]
       },
       {
         "name": "git_history",
@@ -277,6 +293,7 @@
         "mode": "write",
         "arguments": [
           "confirm",
+          "expected_into_mtime",
           "expected_mtime",
           "fromSlug",
           "intoSlug"

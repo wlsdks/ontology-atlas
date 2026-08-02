@@ -4,7 +4,7 @@ import { executeBootstrapPlan, type BootstrapVaultWriter } from './execute-boots
 
 type Call =
   | { op: 'updateFrontmatter'; slug: string; updates: Record<string, unknown>; skipRefresh: boolean }
-  | { op: 'createDoc'; slug: string; skipRefresh: boolean }
+  | { op: 'createDoc'; slug: string; content: string; skipRefresh: boolean }
   | { op: 'refresh' };
 
 function fakeVault(docs: Array<{ slug: string; frontmatter: Record<string, unknown> }>) {
@@ -14,8 +14,8 @@ function fakeVault(docs: Array<{ slug: string; frontmatter: Record<string, unkno
     async updateFrontmatter(slug, updates, opts) {
       calls.push({ op: 'updateFrontmatter', slug, updates, skipRefresh: opts?.skipRefresh === true });
     },
-    async createDoc(slug, _content, opts) {
-      calls.push({ op: 'createDoc', slug, skipRefresh: opts?.skipRefresh === true });
+    async createDoc(slug, content, opts) {
+      calls.push({ op: 'createDoc', slug, content, skipRefresh: opts?.skipRefresh === true });
     },
     async refresh() {
       calls.push({ op: 'refresh' });
@@ -31,6 +31,30 @@ const doc = (slug: string, fm: Record<string, unknown> = {}, title = slug) => ({
 });
 
 describe('executeBootstrapPlan (HomePage 모듈화 1차 — batch 쓰기 계약)', () => {
+  it('kind를 처음 부여하는 기존 문서에는 UID를 발급하고 기존 UID는 보존한다', async () => {
+    const preservedUid = '01890f3e-7b5d-4c0a-8f14-123456789abc';
+    const docs = [
+      doc('guides/missing'),
+      doc('guides/preserved', { uid: preservedUid }),
+    ];
+    const { vault, calls } = fakeVault(docs);
+    const plan = deriveBootstrapPlan(docs, 'my-vault');
+
+    await executeBootstrapPlan(vault, plan, {
+      projectTitle: 'My Vault',
+      acceptedDomains: new Set(['guides']),
+    });
+
+    const missing = calls.find((call) => call.op === 'updateFrontmatter' && call.slug === 'guides/missing');
+    const preserved = calls.find((call) => call.op === 'updateFrontmatter' && call.slug === 'guides/preserved');
+    expect(missing && missing.op === 'updateFrontmatter' ? missing.updates.uid : null).toMatch(
+      /^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/,
+    );
+    expect(preserved && preserved.op === 'updateFrontmatter' ? preserved.updates.uid : null).toBe(
+      preservedUid,
+    );
+  });
+
   it('모든 쓰기 skipRefresh + 마지막 refresh 정확히 1회 (batch 회귀 고정)', async () => {
     const docs = [doc('guides/a'), doc('guides/b')];
     const { vault, calls } = fakeVault(docs);
@@ -75,9 +99,13 @@ describe('executeBootstrapPlan (HomePage 모듈화 1차 — batch 쓰기 계약)
 
     expect(result?.addedToExisting).toBe(true);
     const projectWrite = calls.find((c) => c.op === 'updateFrontmatter' && c.slug === 'project');
-    expect(projectWrite && projectWrite.op === 'updateFrontmatter' ? projectWrite.updates : null).toEqual({
+    const projectUpdates = projectWrite && projectWrite.op === 'updateFrontmatter' ? projectWrite.updates : null;
+    expect(projectUpdates).toMatchObject({
       domains: ['old', 'guides'],
     });
+    expect(projectUpdates?.uid).toMatch(
+      /^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/,
+    );
     expect(calls.filter((c) => c.op === 'createDoc' && c.slug === plan.projectSlug)).toHaveLength(0);
   });
 

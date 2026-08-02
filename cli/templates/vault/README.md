@@ -20,20 +20,13 @@ ownership, dependency, evidence, and change impact.
 ## Get started in 5 minutes
 
 1. Open `project.md` and write your project's name and description.
-2. When a new domain comes to mind, add `<slug>.md` under `domains/`:
-   ```markdown
-   ---
-   slug: domains/auth
-   kind: domain
-   title: Authentication
-   capabilities:
-     - capabilities/login
-     - capabilities/signup
-   ---
-
-   Owns user authentication, sessions, and permissions.
+2. Create new nodes through the workbench Studio, MCP `add_concept`, or the
+   source-checkout CLI. These writers mint the immutable UID; do not copy a
+   starter file and its identity. After setting `$ATLAS` as shown below:
+   ```bash
+   node $ATLAS/cli/src/index.mjs add domain auth --title="Authentication" --vault .
    ```
-3. Same pattern for capability and element — under `capabilities/` and `elements/`.
+3. Use the same writer path for capabilities and elements.
 4. Register an AI agent (Claude Code, Cursor, …) and it reads/writes the
    same vault, growing it alongside you.
 5. To see the graph, open the workbench's `/docs` picker and point it at

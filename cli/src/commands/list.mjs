@@ -48,6 +48,7 @@ export function runList(args) {
     if (!kind) continue;
     if (kindFilter && kind !== kindFilter) continue;
     nodes.push({
+      uid: typeof frontmatter.uid === 'string' ? frontmatter.uid.trim() : null,
       slug: pathToSlug(vaultPath, f),
       kind,
       title:

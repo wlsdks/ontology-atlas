@@ -11,6 +11,7 @@ import { mkdtempSync, mkdirSync, writeFileSync, readFileSync, readdirSync, rmSyn
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { performance } from "node:perf_hooks";
+import { randomUUID } from "node:crypto";
 import { parseFrontmatter } from "./lib/parse-frontmatter.mjs";
 
 const KINDS = ['project', 'domain', 'capability', 'element', 'document'];
@@ -27,6 +28,7 @@ function genFrontmatter(i) {
 
   const fm = [
     '---',
+    `uid: ${randomUUID()}`,
     `slug: ${slug}`,
     `kind: ${kind}`,
     `title: Node ${i}`,

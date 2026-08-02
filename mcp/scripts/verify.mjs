@@ -464,8 +464,10 @@ function backlinkRowsSchemaFailure(schema, label) {
   if (
     schema?.type !== 'array' ||
     row?.type !== 'object' ||
-    !sameArray(row.required, ['slug', 'kind', 'title', 'mtime']) ||
+    !sameArray(row.required, ['uid', 'slug', 'kind', 'title', 'mtime']) ||
     row.additionalProperties !== false ||
+    row.properties?.uid?.type !== 'string' ||
+    row.properties?.uid?.pattern !== NODE_UID_PATTERN ||
     nonBlankStringSchemaFailure(row.properties?.slug) ||
     nonBlankStringSchemaFailure(row.properties?.kind) ||
     nonBlankStringSchemaFailure(row.properties?.title) ||
@@ -883,11 +885,14 @@ export function toolsListSchemaFailure(tools) {
     return 'list_concepts outputSchema vaultRoot drift';
   }
   const listNodesSchema = outputPropertyAt(listConceptsTool, ['properties', 'nodes']);
-  if (listNodesSchema?.type !== 'array' || listNodesSchema.items?.type !== 'object' || !sameArray(listNodesSchema.items?.required, ['slug', 'kind', 'title', 'mtime'])) {
+  if (listNodesSchema?.type !== 'array' || listNodesSchema.items?.type !== 'object' || !sameArray(listNodesSchema.items?.required, ['uid', 'slug', 'kind', 'title', 'mtime'])) {
     return 'list_concepts outputSchema nodes drift';
   }
   if (listNodesSchema.items?.additionalProperties !== false) {
     return 'list_concepts outputSchema node openness drift';
+  }
+  if (listNodesSchema.items?.properties?.uid?.type !== 'string' || listNodesSchema.items?.properties?.uid?.pattern !== NODE_UID_PATTERN) {
+    return 'list_concepts outputSchema node uid drift';
   }
   for (const propertyName of ['slug', 'kind', 'title']) {
     if (listNodesSchema.items?.properties?.[propertyName]?.type !== 'string') {
@@ -1109,12 +1114,15 @@ export function toolsListSchemaFailure(tools) {
   if (
     evidenceMatchesSchema?.type !== 'array' ||
     evidenceMatchesSchema.items?.type !== 'object' ||
-    !sameArray(evidenceMatchesSchema.items?.required, ['slug', 'kind', 'title', 'mtime', 'matchedIn', 'score', 'excerpt'])
+    !sameArray(evidenceMatchesSchema.items?.required, ['uid', 'slug', 'kind', 'title', 'mtime', 'matchedIn', 'score', 'excerpt'])
   ) {
     return 'find_evidence outputSchema matches drift';
   }
   if (evidenceMatchesSchema.items?.additionalProperties !== false) {
     return 'find_evidence outputSchema match openness drift';
+  }
+  if (evidenceMatchesSchema.items?.properties?.uid?.type !== 'string' || evidenceMatchesSchema.items?.properties?.uid?.pattern !== NODE_UID_PATTERN) {
+    return 'find_evidence outputSchema match uid drift';
   }
   for (const propertyName of ['slug', 'kind', 'title', 'excerpt']) {
     if (evidenceMatchesSchema.items?.properties?.[propertyName]?.type !== 'string') {
@@ -1170,12 +1178,15 @@ export function toolsListSchemaFailure(tools) {
   if (
     backlinksMatchesSchema?.type !== 'array' ||
     backlinksMatchesSchema.items?.type !== 'object' ||
-    !sameArray(backlinksMatchesSchema.items?.required, ['slug', 'kind', 'title', 'mtime'])
+    !sameArray(backlinksMatchesSchema.items?.required, ['uid', 'slug', 'kind', 'title', 'mtime'])
   ) {
     return 'find_backlinks outputSchema matches drift';
   }
   if (backlinksMatchesSchema.items?.additionalProperties !== false) {
     return 'find_backlinks outputSchema match openness drift';
+  }
+  if (backlinksMatchesSchema.items?.properties?.uid?.type !== 'string' || backlinksMatchesSchema.items?.properties?.uid?.pattern !== NODE_UID_PATTERN) {
+    return 'find_backlinks outputSchema match uid drift';
   }
   for (const propertyName of ['slug', 'kind', 'title']) {
     if (backlinksMatchesSchema.items?.properties?.[propertyName]?.type !== 'string') {
@@ -1277,12 +1288,15 @@ export function toolsListSchemaFailure(tools) {
   if (
     neighborsNodesSchema?.type !== 'array' ||
     neighborsNodesSchema.items?.type !== 'object' ||
-    !sameArray(neighborsNodesSchema.items?.required, ['slug', 'kind', 'title', 'mtime'])
+    !sameArray(neighborsNodesSchema.items?.required, ['uid', 'slug', 'kind', 'title', 'mtime'])
   ) {
     return 'find_neighbors outputSchema nodes drift';
   }
   if (neighborsNodesSchema.items?.additionalProperties !== false) {
     return 'find_neighbors outputSchema node openness drift';
+  }
+  if (neighborsNodesSchema.items?.properties?.uid?.type !== 'string' || neighborsNodesSchema.items?.properties?.uid?.pattern !== NODE_UID_PATTERN) {
+    return 'find_neighbors outputSchema node uid drift';
   }
   for (const propertyName of ['slug', 'kind', 'title']) {
     if (neighborsNodesSchema.items?.properties?.[propertyName]?.type !== 'string') {
@@ -1349,12 +1363,15 @@ export function toolsListSchemaFailure(tools) {
   if (
     findPathNodesSchema?.type !== 'array' ||
     findPathNodesSchema.items?.type !== 'object' ||
-    !sameArray(findPathNodesSchema.items?.required, ['slug', 'kind', 'title'])
+    !sameArray(findPathNodesSchema.items?.required, ['uid', 'slug', 'kind', 'title'])
   ) {
     return 'find_path outputSchema nodes drift';
   }
   if (findPathNodesSchema.items?.additionalProperties !== false) {
     return 'find_path outputSchema node openness drift';
+  }
+  if (findPathNodesSchema.items?.properties?.uid?.type !== 'string' || findPathNodesSchema.items?.properties?.uid?.pattern !== NODE_UID_PATTERN) {
+    return 'find_path outputSchema node uid drift';
   }
   for (const propertyName of ['slug', 'kind', 'title']) {
     if (findPathNodesSchema.items?.properties?.[propertyName]?.type !== 'string') {
@@ -1414,12 +1431,15 @@ export function toolsListSchemaFailure(tools) {
   if (
     queryConceptsRowsSchema?.type !== 'array' ||
     queryConceptsRowsSchema.items?.type !== 'object' ||
-    !sameArray(queryConceptsRowsSchema.items?.required, ['slug', 'kind', 'title', 'mtime'])
+    !sameArray(queryConceptsRowsSchema.items?.required, ['uid', 'slug', 'kind', 'title', 'mtime'])
   ) {
     return 'query_concepts outputSchema rows drift';
   }
   if (queryConceptsRowsSchema.items?.additionalProperties !== false) {
     return 'query_concepts outputSchema row openness drift';
+  }
+  if (queryConceptsRowsSchema.items?.properties?.uid?.type !== 'string' || queryConceptsRowsSchema.items?.properties?.uid?.pattern !== NODE_UID_PATTERN) {
+    return 'query_concepts outputSchema row uid drift';
   }
   for (const propertyName of ['slug', 'kind', 'title']) {
     if (queryConceptsRowsSchema.items?.properties?.[propertyName]?.type !== 'string') {
@@ -2112,12 +2132,15 @@ export function toolsListSchemaFailure(tools) {
   if (
     orphansRowsSchema?.type !== 'array' ||
     orphansRowsSchema.items?.type !== 'object' ||
-    !sameArray(orphansRowsSchema.items?.required, ['slug', 'kind', 'title', 'mtime'])
+    !sameArray(orphansRowsSchema.items?.required, ['uid', 'slug', 'kind', 'title', 'mtime'])
   ) {
     return 'find_orphans outputSchema rows drift';
   }
   if (orphansRowsSchema.items?.additionalProperties !== false) {
     return 'find_orphans outputSchema row openness drift';
+  }
+  if (orphansRowsSchema.items?.properties?.uid?.type !== 'string' || orphansRowsSchema.items?.properties?.uid?.pattern !== NODE_UID_PATTERN) {
+    return 'find_orphans outputSchema row uid drift';
   }
   for (const propertyName of ['slug', 'kind', 'title']) {
     if (orphansRowsSchema.items?.properties?.[propertyName]?.type !== 'string') {
@@ -2642,6 +2665,14 @@ export function toolsListSchemaFailure(tools) {
     if (expectedMtime?.type !== 'number' || expectedMtime?.minimum !== 0) {
       return `${toolName}.expected_mtime conflict guard schema drift`;
     }
+  }
+
+  const mergeTargetMtime = propertyAt(
+    tools.find((candidate) => candidate?.name === 'merge_concepts'),
+    ['properties', 'expected_into_mtime'],
+  );
+  if (mergeTargetMtime?.type !== 'number' || mergeTargetMtime?.minimum !== 0) {
+    return 'merge_concepts.expected_into_mtime conflict guard schema drift';
   }
 
   const addRelations = tools.find((candidate) => candidate?.name === 'add_relations');

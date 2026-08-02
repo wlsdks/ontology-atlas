@@ -20,21 +20,13 @@ capabilities / elements / domain)입니다.
 ## 5분 만에 시작하기
 
 1. `project.md` 를 열어 프로젝트 이름과 설명을 씁니다.
-2. 새 도메인이 떠오르면 `domains/` 아래에 `<slug>.md` 를 추가합니다:
-   ```markdown
-   ---
-   slug: domains/auth
-   kind: domain
-   title: Authentication
-   display_ko: 인증
-   capabilities:
-     - capabilities/login
-     - capabilities/signup
-   ---
-
-   사용자 인증, 세션, 권한을 담당합니다.
+2. 새 노드는 공방, MCP `add_concept`, 또는 소스 체크아웃 CLI로 만듭니다.
+   이 작성 경로가 불변 UID를 발급하므로 스타터 파일과 정체성을 복사하지 마세요.
+   아래 안내대로 `$ATLAS`를 설정한 뒤:
+   ```bash
+   node $ATLAS/cli/src/index.mjs add domain auth --title="Authentication" --vault .
    ```
-3. 역량과 요소도 같은 방식으로 — `capabilities/` 와 `elements/` 아래에.
+3. 역량과 요소도 같은 작성 경로로 만듭니다.
 4. AI 에이전트(Claude Code, Cursor, …)를 연결하면 같은 문서함을 읽고 쓰면서
    함께 키웁니다.
 5. 그래프로 보려면 워크벤치의 `/docs` 피커에서 이 폴더를 고릅니다.

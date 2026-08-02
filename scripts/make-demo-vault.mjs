@@ -28,6 +28,7 @@
  */
 import { writeFileSync, mkdirSync, rmSync, existsSync } from 'node:fs';
 import { execFileSync } from 'node:child_process';
+import { randomUUID } from 'node:crypto';
 import { dirname, join, resolve } from 'node:path';
 
 const OUT = resolve(process.argv[2] ?? '../atlas-demo-music');
@@ -109,7 +110,7 @@ const ELEMENTS = [
   ['household-signal', 'account', '가구 신호', 'Household signal', 'services/account/household-signal.ts', '위치를 저장하지 않고 같은 가구인지 추정한다.'],
 ];
 
-const yaml = (lines) => `---\n${lines.filter(Boolean).join('\n')}\n---\n`;
+const yaml = (lines) => `---\nuid: ${randomUUID()}\n${lines.filter(Boolean).join('\n')}\n---\n`;
 /**
  * graph 배열은 **canonical set** 으로 쓴다 — 정렬 + 중복 제거. 검증기가
  * `non-canonical-graph-array` 로 잡는 규격이고, 안 지키면 새 볼트가 경고 23개를

@@ -23,7 +23,7 @@
  * - 두 경로의 slug 가 일치해야 그래프가 이어진다 — 같은 원문 이름을 쓴다.
  */
 
-import { slugifyName } from '@/entities/docs-vault';
+import { generateNodeUid, slugifyName } from '@/entities/docs-vault';
 
 export interface BootstrapDocInput {
   slug: string;
@@ -144,9 +144,10 @@ export function domainDocSlug(name: string): string {
   return `${name}/${tail}`;
 }
 
-export function buildDomainMarkdown(domain: BootstrapDomainCandidate): string {
+export function buildDomainMarkdown(domain: BootstrapDomainCandidate, uid?: string): string {
   return [
     '---',
+    `uid: ${generateNodeUid(uid)}`,
     'kind: domain',
     `title: ${domain.name}`,
     '---',
@@ -162,8 +163,14 @@ export function buildDomainMarkdown(domain: BootstrapDomainCandidate): string {
 export function buildProjectMarkdown(
   plan: BootstrapPlan,
   acceptedDomains: ReadonlySet<string>,
+  uid?: string,
 ): string {
-  const lines: string[] = ['---', 'kind: project', `title: ${plan.projectTitle}`];
+  const lines: string[] = [
+    '---',
+    `uid: ${generateNodeUid(uid)}`,
+    'kind: project',
+    `title: ${plan.projectTitle}`,
+  ];
   const domains = plan.domains.filter((d) => acceptedDomains.has(d.name));
   if (domains.length > 0) {
     lines.push('domains:');

@@ -33,6 +33,7 @@ The problem this project solves, or the value it creates, in a single sentence.
 
 1. Edit this file's `title` (and any other frontmatter besides `kind: project`)
    to match your project.
-2. Rename or copy starters like `domains/example-domain.md` into your real domains.
+2. Rename one starter in place, or create each additional domain through Studio,
+   MCP `add_concept`, or CLI `add`. Never copy a starter UID into a new node.
 3. Register an AI agent (Claude Code, Cursor, …) and ask it to "tidy up
    the ontology in this vault."

@@ -3,6 +3,7 @@ import {
   fireEvent,
   render as rtlRender,
   screen,
+  waitFor,
   waitForElementToBeRemoved,
 } from "@testing-library/react";
 import { NextIntlClientProvider } from "next-intl";
@@ -97,7 +98,10 @@ describe("SearchPalette", () => {
       timeout: 2000,
     });
 
-    expect(document.activeElement).toBe(trigger);
+    // AnimatePresence removes the dialog before React finishes every effect
+    // cleanup. Under a loaded full-suite worker, the mutation observer can
+    // therefore resolve one tick before the cleanup restores focus.
+    await waitFor(() => expect(document.activeElement).toBe(trigger));
   });
 
   it("data-overlay-spring 검증마커가 스크림·패널에 있다", () => {

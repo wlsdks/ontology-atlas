@@ -12,6 +12,8 @@ import {
 } from '../lib/cli-args.mjs';
 
 const ALLOWED_FLAGS = ['--kind', '--json', '--vault'];
+const NODE_UID_RE =
+  /^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/;
 
 
 
@@ -34,9 +36,11 @@ export function runFind(args) {
 
   const { query, vaultPath, kindFilter, asJson } = opts;
   const needle = query.toLowerCase();
+  const exactUidQuery = NODE_UID_RE.test(query);
   const files = walkMd(vaultPath);
 
   const matches = [];
+  const exactUidClaimSlugs = [];
   for (const f of files) {
     let raw;
     try {
@@ -47,25 +51,39 @@ export function runFind(args) {
     const { frontmatter } = parseFrontmatter(raw);
     const kind = typeof frontmatter.kind === 'string' ? frontmatter.kind : null;
     if (!kind) continue;
-    if (kindFilter && kind !== kindFilter) continue;
 
     const slug = pathToSlug(vaultPath, f);
     const title =
       (typeof frontmatter.title === 'string' && frontmatter.title) ||
       (typeof frontmatter.name === 'string' && frontmatter.name) ||
       '';
+    const uid = typeof frontmatter.uid === 'string' ? frontmatter.uid.trim() : null;
+    const mergedUids = Array.isArray(frontmatter.merged_uids)
+      ? frontmatter.merged_uids.filter((value) => typeof value === 'string')
+      : [];
+    const exactUidMatch = exactUidQuery && (uid === query || mergedUids.includes(query));
+    if (exactUidMatch) exactUidClaimSlugs.push(slug);
+    if (kindFilter && kind !== kindFilter) continue;
 
     if (
-      slug.toLowerCase().includes(needle) ||
-      title.toLowerCase().includes(needle)
+      exactUidQuery
+        ? exactUidMatch
+        : slug.toLowerCase().includes(needle) || title.toLowerCase().includes(needle)
     ) {
-      matches.push({ slug, kind, title });
+      matches.push({ uid, slug, kind, title });
     }
   }
 
   matches.sort((a, b) =>
     a.kind === b.kind ? a.slug.localeCompare(b.slug) : a.kind.localeCompare(b.kind),
   );
+  if (exactUidClaimSlugs.length > 1) {
+    exactUidClaimSlugs.sort();
+    process.stderr.write(
+      `error  ambiguous UID ${query}: claimed by ${exactUidClaimSlugs.join(', ')}\n`,
+    );
+    return 1;
+  }
 
   if (asJson) {
     process.stdout.write(
@@ -149,6 +167,6 @@ function printUsage(stream = process.stderr) {
   stream.write(
     `\n${COLORS.bold}Usage:${COLORS.reset}\n` +
       `  ontology-atlas find <query> [vault] [--kind K] [--json]\n\n` +
-      `Search ontology node slugs and titles case-insensitively.\n`,
+      `Search slugs and titles case-insensitively; a lowercase UUIDv4 query resolves exact primary or merged identity.\n`,
   );
 }

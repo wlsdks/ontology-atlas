@@ -1893,6 +1893,7 @@ await test('list --json — JSON 머신 가독', async () => {
     assert.equal(parsed.total, 1);
     assert.equal(parsed.nodes[0].kind, 'capability');
     assert.equal(parsed.nodes[0].slug, 'foo');
+    assert.match(parsed.nodes[0].uid, /^[0-9a-f-]{36}$/);
   } finally {
     rmSync(root, { recursive: true, force: true });
   }
@@ -2760,6 +2761,80 @@ await test('find — title 부분매칭', async () => {
   }
 });
 
+await test('find --json — permanent UID performs exact lookup and returns uid plus current slug', async () => {
+  const uid = '44444444-4444-4444-8444-444444444444';
+  const root = withVault([
+    {
+      slug: 'auth-token',
+      content: `---\nuid: ${uid}\nkind: capability\ntitle: Auth Token\n---\n`,
+    },
+    { slug: 'other', content: '---\nkind: domain\ntitle: Other\n---\n' },
+  ]);
+  try {
+    const r = await run(['find', uid, root, '--json']);
+    assert.equal(r.code, 0, r.stderr);
+    const data = JSON.parse(r.stdout);
+    assert.equal(data.total, 1);
+    assert.deepEqual(data.matches[0], {
+      uid,
+      slug: 'auth-token',
+      kind: 'capability',
+      title: 'Auth Token',
+    });
+  } finally {
+    rmSync(root, { recursive: true, force: true });
+  }
+});
+
+await test('find --json — absorbed UID resolves to the survivor UID and current slug', async () => {
+  const survivorUid = '55555555-5555-4555-8555-555555555555';
+  const absorbedUid = '66666666-6666-4666-8666-666666666666';
+  const root = withVault([
+    {
+      slug: 'auth-token-v2',
+      content:
+        `---\nuid: ${survivorUid}\nmerged_uids:\n` +
+        `  - ${absorbedUid}\nkind: capability\ntitle: Auth Token V2\n---\n`,
+    },
+  ]);
+  try {
+    const r = await run(['find', absorbedUid, root, '--json']);
+    assert.equal(r.code, 0, r.stderr);
+    const data = JSON.parse(r.stdout);
+    assert.equal(data.total, 1);
+    assert.equal(data.matches[0].uid, survivorUid);
+    assert.equal(data.matches[0].slug, 'auth-token-v2');
+  } finally {
+    rmSync(root, { recursive: true, force: true });
+  }
+});
+
+await test('find — ambiguous primary or absorbed UID claims fail closed', async () => {
+  const claimedUid = '77777777-7777-4777-8777-777777777777';
+  const root = withVault([
+    {
+      slug: 'first',
+      content:
+        '---\nuid: 88888888-8888-4888-8888-888888888888\nmerged_uids:\n' +
+        `  - ${claimedUid}\nkind: capability\ntitle: First\n---\n`,
+    },
+    {
+      slug: 'second',
+      content:
+        '---\nuid: 99999999-9999-4999-8999-999999999999\nmerged_uids:\n' +
+        `  - ${claimedUid}\nkind: capability\ntitle: Second\n---\n`,
+    },
+  ]);
+  try {
+    const r = await run(['find', claimedUid, root, '--json']);
+    assert.equal(r.code, 1);
+    assert.match(r.stderr, /ambiguous UID.*first.*second/i);
+    assert.equal(r.stdout, '');
+  } finally {
+    rmSync(root, { recursive: true, force: true });
+  }
+});
+
 await test('find — 매칭 0 도 exit 0 (정상)', async () => {
   const root = withVault([
     { slug: 'foo', content: '---\nkind: capability\ntitle: Foo\n---\n' },
@@ -2968,6 +3043,26 @@ await test('import — 잘못된 UID와 기존 identity 충돌을 거부한다',
   }
 });
 
+await test('import — 잘못된 UID 행을 격리하고 뒤의 유효한 파일은 계속 처리한다', async () => {
+  const vault = withVault([]);
+  const src = withTmpDir();
+  try {
+    const malformed = join(src, 'a-malformed.md');
+    const valid = join(src, 'b-valid.md');
+    writeFileSync(malformed, '---\nuid: NOT-A-UUID\nkind: domain\ntitle: Malformed\n---\n', 'utf-8');
+    writeFileSync(valid, '---\nkind: domain\ntitle: Valid\n---\n', 'utf-8');
+
+    const result = await run(['import', malformed, valid, '--vault', vault]);
+    assert.equal(result.code, 0, stripAnsi(result.stderr));
+    assert.equal(existsSync(join(vault, 'domains/a-malformed.md')), false);
+    assert.equal(existsSync(join(vault, 'domains/b-valid.md')), true);
+    assert.match(stripAnsi(result.stderr), /a-malformed\.md.*uid/i);
+  } finally {
+    rmSync(vault, { recursive: true, force: true });
+    rmSync(src, { recursive: true, force: true });
+  }
+});
+
 await test('import — slug 충돌 시 default skip, --rename 시 -2 회피', async () => {
   // 같은 slug 의 .md 가 vault 에 이미 있는 상태로 시작.
   // R15 — auto-prefix default on, vault seed slug 도 capabilities/ 안.
@@ -3028,6 +3123,52 @@ await test('import --dry-run — 디스크 변경 0', async () => {
     );
     const clean = stripAnsi(r.stdout);
     assert.match(clean, /would import|plan/);
+  } finally {
+    rmSync(vault, { recursive: true, force: true });
+    rmSync(src, { recursive: true, force: true });
+  }
+});
+
+await test('import --dry-run — 기존 vault의 UID 충돌을 성공 계획으로 보고하지 않는다', async () => {
+  const claimedUid = '33333333-3333-4333-8333-333333333333';
+  const vault = withVault([
+    {
+      slug: 'domains/existing',
+      content: `---\nuid: ${claimedUid}\nkind: domain\nslug: domains/existing\ntitle: Existing\n---\n`,
+    },
+  ]);
+  const src = withTmpDir();
+  try {
+    const file = join(src, 'duplicate.md');
+    writeFileSync(file, `---\nuid: ${claimedUid}\nkind: domain\ntitle: Duplicate\n---\n`, 'utf-8');
+    const result = await run(['import', file, '--vault', vault, '--dry-run']);
+    assert.equal(result.code, 1);
+    assert.doesNotMatch(stripAnsi(result.stdout), /plan\s+.*duplicate\.md/i);
+    assert.match(stripAnsi(result.stderr), /UID collision/i);
+    assert.equal(existsSync(join(vault, 'domains/duplicate.md')), false);
+  } finally {
+    rmSync(vault, { recursive: true, force: true });
+    rmSync(src, { recursive: true, force: true });
+  }
+});
+
+await test('import --dry-run — 같은 batch 안의 UID 충돌도 두 성공 계획으로 보고하지 않는다', async () => {
+  const vault = withVault([]);
+  const src = withTmpDir();
+  const claimedUid = '55555555-5555-4555-8555-555555555555';
+  try {
+    const first = join(src, 'a-first.md');
+    const duplicate = join(src, 'b-duplicate.md');
+    writeFileSync(first, `---\nuid: ${claimedUid}\nkind: domain\ntitle: First\n---\n`, 'utf-8');
+    writeFileSync(duplicate, `---\nuid: ${claimedUid}\nkind: domain\ntitle: Duplicate\n---\n`, 'utf-8');
+
+    const result = await run(['import', first, duplicate, '--vault', vault, '--dry-run']);
+    assert.equal(result.code, 0, stripAnsi(result.stderr));
+    assert.match(stripAnsi(result.stdout), /plan\s+.*a-first\.md/i);
+    assert.doesNotMatch(stripAnsi(result.stdout), /plan\s+.*b-duplicate\.md/i);
+    assert.match(stripAnsi(result.stderr), /b-duplicate\.md.*UID collision/i);
+    assert.equal(existsSync(join(vault, 'domains/a-first.md')), false);
+    assert.equal(existsSync(join(vault, 'domains/b-duplicate.md')), false);
   } finally {
     rmSync(vault, { recursive: true, force: true });
     rmSync(src, { recursive: true, force: true });

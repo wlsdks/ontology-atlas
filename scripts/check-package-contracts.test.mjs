@@ -42,7 +42,6 @@ import {
 } from '../mcp/src/ontology-engine.mjs';
 import { RELATION_TYPE_VALUES as CLI_RELATION_TYPE_VALUES } from '../cli/src/lib/relation-types.mjs';
 import { SERVER_VERSION } from '../mcp/src/server-version.mjs';
-import { CLI_COMMAND_COUNT } from '../cli/src/lib/cli-commands.mjs';
 import { parseMcpToolMetadataFromDescription } from '../cli/src/lib/mcp-metadata.mjs';
 import {
   checkPackage,
@@ -268,7 +267,6 @@ describe('package contract helpers', () => {
   it('keeps every relation and maintenance enum value documented from the engine', () => {
     const mcpReadme = readFileSync('mcp/README.md', 'utf-8');
     const features = readFileSync('docs/FEATURES.md', 'utf-8');
-    const dogfoodDoc = readFileSync('docs/ontology/capabilities/mcp-server.md', 'utf-8');
     const strictInputSection = mcpReadme.split('String-array options are strict too:')[1]?.split('Scalar string options')[0] ?? '';
     const addRelationRow = mcpReadme.split('| `add_relation` |')[1]?.split('\n')[0] ?? '';
     const addRelationsRow = mcpReadme.split('| `add_relations` |')[1]?.split('\n')[0] ?? '';
@@ -293,15 +291,6 @@ describe('package contract helpers', () => {
       assert.ok(normalizedMarkdownIncludes(section, expected), `MCP README must document: ${expected}`);
     }
 
-    const dogfoodSection = dogfoodDoc.split('환경변수 `OATLAS_VAULT`')[0];
-    for (const [key, values] of [
-      ['phases', MAINTENANCE_PHASE_VALUES],
-      ['severities', MAINTENANCE_SEVERITY_VALUES],
-      ['kinds', MAINTENANCE_KIND_VALUES],
-    ]) {
-      const expected = `\`maintenance_plan.${key}\` 는 ${markdownEnumList(values)}`;
-      assert.ok(normalizedMarkdownIncludes(dogfoodSection, expected), `dogfood MCP docs must document: ${expected}`);
-    }
   });
 
   /**
@@ -380,12 +369,24 @@ describe('package contract helpers', () => {
     assert.match(readme, new RegExp(`${surface.cli.commandCount} CLI commands`));
   });
 
-  it('keeps dogfood CLI capability docs from freezing the command count by hand', () => {
-    const doc = readFileSync('docs/ontology/capabilities/cli-developer-entry.md', 'utf-8');
+  it('keeps dogfood CLI capability and MCP capability nodes concise and delegates inventories to their generated public sources', () => {
+    const cliDoc = readFileSync('docs/ontology/capabilities/cli-developer-entry.md', 'utf-8');
+    const mcpDoc = readFileSync('docs/ontology/capabilities/mcp-server.md', 'utf-8');
+    const cliTitle = cliDoc.match(/^title:\s*(.+)$/m)?.[1] ?? '';
+    const mcpTitle = mcpDoc.match(/^title:\s*(.+)$/m)?.[1] ?? '';
+    const cliHeading = cliDoc.match(/^#\s+(.+)$/m)?.[1] ?? '';
+    const mcpHeading = mcpDoc.match(/^#\s+(.+)$/m)?.[1] ?? '';
 
-    // 카운트는 CLI 가 export 하는 진실원에서 파생 — 하드코딩 숫자 rot 방지.
-    assert.match(doc, new RegExp(`CLI Developer Entry \\(${CLI_COMMAND_COUNT} commands`));
-    assert.match(doc, new RegExp(`총 ${CLI_COMMAND_COUNT} 명령`));
+    assert.notEqual(cliTitle, '', 'CLI capability must retain a frontmatter title');
+    assert.notEqual(mcpTitle, '', 'MCP capability must retain a frontmatter title');
+    assert.doesNotMatch(cliTitle, /\b\d+\s+commands\b/i, 'semantic node titles must not freeze the CLI inventory');
+    assert.doesNotMatch(mcpTitle, /\b\d+\s+tools\b/i, 'semantic node titles must not freeze the MCP inventory');
+    assert.doesNotMatch(cliHeading, /\b\d+\s+commands\b/i, 'semantic node headings must not freeze the CLI inventory');
+    assert.doesNotMatch(mcpHeading, /\b\d+\s+tools\b/i, 'semantic node headings must not freeze the MCP inventory');
+    assert.match(cliDoc, /`cli\/README\.md`/, 'CLI capability must point to the detailed public contract');
+    assert.match(mcpDoc, /`mcp\/README\.md`/, 'MCP capability must point to the detailed public contract');
+    assert.doesNotMatch(mcpDoc, /`maintenance_plan\.(?:phases|severities|kinds)`/,
+      'meaning nodes must not duplicate generated maintenance enum inventories');
   });
 
   it('keeps the embedded SERVER_VERSION in sync with mcp/package.json', () => {

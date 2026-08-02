@@ -1,7 +1,7 @@
 import { COLORS } from '../lib/colors.mjs';
 import { resolve, relative, basename, join, sep } from 'node:path';
 import { readFileSync, statSync, readdirSync, existsSync } from 'node:fs';
-import { writeDoc, slugToPath } from '../lib/write-vault.mjs';
+import { preflightWriteDoc, writeDoc, slugToPath } from '../lib/write-vault.mjs';
 import { parseFrontmatter } from '../lib/parse-frontmatter.mjs';
 import {
   VAULT_KINDS,
@@ -66,16 +66,18 @@ export async function runImport(args) {
   // 같은 batch 안에서 두 입력이 같은 slug 로 충돌하지 않도록 누적 추적.
   // disk 의 기존 slug + 이번 배치에서 이미 import 한 slug 둘 다 본다.
   const claimedSlugs = new Set();
+  const claimedUids = new Map();
   const summary = { imported: 0, skipped: 0, conflicts: 0, kindless: 0 };
   let firstError = null;
 
   for (const src of sources) {
-    const result = importOne(src, vaultPath, opts, claimedSlugs);
+    const result = importOne(src, vaultPath, opts, claimedSlugs, claimedUids);
     switch (result.status) {
       case 'imported':
       case 'would-import':
         summary.imported += 1;
         claimedSlugs.add(result.slug);
+        for (const uid of result.uidClaims) claimedUids.set(uid, src);
         process.stdout.write(
           `${COLORS.green}${result.status === 'would-import' ? 'plan' : 'ok  '}${COLORS.reset}  ${relative(process.cwd(), src)}\n` +
             `${COLORS.dim}      → ${result.kind} · ${result.slug}${COLORS.reset}\n`,
@@ -127,7 +129,7 @@ export async function runImport(args) {
   return 0;
 }
 
-function importOne(srcPath, vaultPath, opts, claimedSlugs) {
+function importOne(srcPath, vaultPath, opts, claimedSlugs, claimedUids) {
   let raw;
   try {
     raw = readFileSync(srcPath, 'utf-8');
@@ -181,22 +183,44 @@ function importOne(srcPath, vaultPath, opts, claimedSlugs) {
   // 도 함께 보존. slug/kind/title 은 우리 결정값으로 덮어씌움.
   // buildFrontmatter 의 ...extras 가 이미 input 의 모든 키를 받으니
   // 명시적으로 새 값을 마지막에 spread.
-  const fm = buildFrontmatter({
-    ...inputFm,
-    slug: candidateSlug,
-    kind,
-    title,
-  });
+  let fm;
+  try {
+    fm = buildFrontmatter({
+      ...inputFm,
+      slug: candidateSlug,
+      kind,
+      title,
+    });
+  } catch (err) {
+    return { status: 'error', error: err instanceof Error ? err.message : String(err) };
+  }
 
   const body = inputBody.trim() === '' ? defaultBody(kind, title) : inputBody;
 
+  const uidClaims = [fm.uid, ...(Array.isArray(fm.merged_uids) ? fm.merged_uids : [])];
+  for (const uid of uidClaims) {
+    const owner = claimedUids.get(uid);
+    if (owner) {
+      return {
+        status: 'error',
+        error: `UID collision: ${uid} is already claimed by another input in this import batch (${owner}).`,
+      };
+    }
+  }
+
+  try {
+    preflightWriteDoc(vaultPath, candidateSlug, fm);
+  } catch (err) {
+    return { status: 'error', error: err instanceof Error ? err.message : String(err) };
+  }
+
   if (opts.dryRun) {
-    return { status: 'would-import', slug: candidateSlug, kind };
+    return { status: 'would-import', slug: candidateSlug, kind, uidClaims };
   }
 
   try {
     writeDoc(vaultPath, candidateSlug, { frontmatter: fm, body });
-    return { status: 'imported', slug: candidateSlug, kind };
+    return { status: 'imported', slug: candidateSlug, kind, uidClaims };
   } catch (err) {
     return { status: 'error', error: err instanceof Error ? err.message : String(err) };
   }

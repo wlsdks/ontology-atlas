@@ -9,7 +9,7 @@
 
 ## 2026-08-02 — 노드에 영구 UID와 읽을 수 있는 slug를 같이 둔다
 
-모든 온톨로지 노드에 한 번 발급하고 바꾸지 않는 lowercase UUIDv4
+Vault format v2부터 모든 온톨로지 노드에 한 번 발급하고 바꾸지 않는 lowercase UUIDv4
 `uid`가 추가됐다. `slug`는 관계·파일·URL·CLI에서 사람이 읽는
 현재 주소로 남는다. rename·reclassify는 UID를 보존하고, merge는 남는
 노드의 UID를 보존하며 흡수한 identity를 `merged_uids`에 기록한다.
@@ -17,9 +17,11 @@
 MCP 정확 조회와 노드 응답은 `{ uid, slug }`를 같이 다루고, compiler는 UID
 인덱스와 충돌 게이트를 제공한다. JSON-LD·GraphML·Ontology Block 내보내기
 정체성은 `urn:uuid:<uid>`로 바뀌어 slug rename 후에도 같은 외부 노드로 남는다.
-기존 dogfood·sample 183개 노드는 일회 변환했고, CLI·앱 starter는 생성할
-때마다 서로 다른 UID를 발급한다. 중복·잘못된 UID와 일반 patch의 identity
-변경은 hard error로 막힌다.
+기존 dogfood·storefront sample은 전체 변환했고, CLI·앱 starter는 생성할
+때마다 서로 다른 UID를 발급한다. UID 없는 v1 vault는
+`pnpm vault:migrate 2026-08-02-add-node-uids --vault <dir>`로 먼저 미리 보고
+`--write`로 적용한다. 중복·잘못된 UID와 일반 patch의 identity 변경은 hard
+error로 막힌다.
 
 ---
 
