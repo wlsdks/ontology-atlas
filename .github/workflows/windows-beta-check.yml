@@ -26,6 +26,22 @@ concurrency:
 
 env:
   FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
+  # `cargo test` 의 debug 컴파일에서 **전체 디버그 정보를 만들지 않는다**.
+  # MSVC 에서 556개 크레이트의 PDB 를 굽고 링크하는 비용이 이 프로파일의 큰
+  # 몫인데, CI 의 이 잡은 디버거를 붙이지 않는다.
+  #
+  # 그렇다고 `0` 으로 끄지는 않는다 — 그러면 테스트가 깨졌을 때 백트레이스에서
+  # 파일·줄이 사라져 원격 진단이 어려워진다. `line-tables-only` 는 파일·줄은
+  # 남기고 타입 정보만 버리는 중간값이라, 이 잡이 실제로 쓰는 것은 그대로 두고
+  # 안 쓰는 것만 안 만든다.
+  #
+  # **release 프로파일은 안 건드린다** — 사람들이 받을 설치 파일은 릴리스
+  # 워크플로가 굽는 것과 같은 방식으로 굽혀야 이 잡의 증명이 유효하다.
+  #
+  # `CARGO_INCREMENTAL` 은 여기 없다. `Swatinem/rust-cache` 가 스스로 0 으로
+  # 건다(문서 명시) — 같은 값을 두 곳에 적으면 그 순간부터 드리프트가 시작된다.
+  CARGO_PROFILE_DEV_DEBUG: line-tables-only
+  CARGO_PROFILE_TEST_DEBUG: line-tables-only
 
 jobs:
   verify-windows:
