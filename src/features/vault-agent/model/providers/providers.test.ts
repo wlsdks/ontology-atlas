@@ -28,6 +28,27 @@ function assembly(overrides: Partial<TurnAssembly> = {}): TurnAssembly {
   };
 }
 
+function openAiTool(name: string, args: Record<string, unknown> = {}) {
+  return {
+    choices: [
+      {
+        message: {
+          role: 'assistant',
+          content: '',
+          tool_calls: [
+            {
+              id: `call_${name}`,
+              type: 'function',
+              function: { name, arguments: JSON.stringify(args) },
+            },
+          ],
+        },
+        finish_reason: 'tool_calls',
+      },
+    ],
+  };
+}
+
 describe('벤더 어댑터 — 셋이 같은 모양으로 접힌다', () => {
   for (const provider of ['anthropic', 'openai', 'gemini'] as const) {
     describe(provider, () => {
@@ -134,6 +155,14 @@ describe('벤더 어댑터 — 셋이 같은 모양으로 접힌다', () => {
     ) as Record<string, unknown>;
     expect(firstLocal).toEqual({
       ...firstOpenAi,
+      messages: [
+        ...(firstOpenAi.messages as unknown[]),
+        {
+          role: 'user',
+          content:
+            'The required evidence read did not happen. Call list_kinds now. Do not answer or describe a plan.',
+        },
+      ],
       tools: (firstOpenAi.tools as Array<{ function: { name: string } }>).filter(
         (tool) => tool.function.name === 'list_kinds',
       ),
@@ -164,6 +193,9 @@ describe('벤더 어댑터 — 셋이 같은 모양으로 접힌다', () => {
         (tool) => tool.function.name,
       ),
     ).toEqual(['get_concept']);
+    expect((focusedFirst.messages as Array<{ content?: string }>).at(-1)?.content).toBe(
+      'The required evidence read did not happen. Call get_concept now. Do not answer or describe a plan.',
+    );
 
     const evidenceTurn = assembly({
       model: 'qwen3:8b',
@@ -189,6 +221,14 @@ describe('벤더 어댑터 — 셋이 같은 모양으로 접힌다', () => {
     ) as Record<string, unknown>;
     expect(evidenceLocal).toEqual({
       ...evidenceOpenAi,
+      messages: [
+        ...(evidenceOpenAi.messages as unknown[]),
+        {
+          role: 'user',
+          content:
+            'The required evidence read did not happen. Call list_concepts now. Do not answer or describe a plan.',
+        },
+      ],
       tools: (evidenceOpenAi.tools as Array<{ function: { name: string } }>).filter(
         (tool) => tool.function.name === 'list_concepts',
       ),
@@ -231,6 +271,9 @@ describe('벤더 어댑터 — 셋이 같은 모양으로 접힌다', () => {
         (tool) => tool.function.name,
       ),
     ).toEqual(['get_concepts']);
+    expect((detailLocal.messages as Array<{ content?: string }>).at(-1)?.content).toBe(
+      'The required evidence read did not happen. Call get_concepts now. Do not answer or describe a plan.',
+    );
 
     const closingTurn = { ...evidenceTurn, tools: [] };
     const closingLocal = JSON.parse(
@@ -409,6 +452,152 @@ describe('벤더 어댑터 — 셋이 같은 모양으로 접힌다', () => {
     );
     expect(PROVIDER_ADAPTERS.local.reviewResponse?.(evidenceTurn, cited)).toEqual({
       action: 'accept',
+    });
+  });
+
+  it('주소 갈래의 구조 감사는 도메인 후보와 상세 slug 인자까지 검증한다', () => {
+    const structuralQuestion =
+      '온톨로지 구조를 감사해줘. fan-out만으로 브릿지를 만들지는 마.';
+    const censusTurn = assembly({
+      model: 'qwen3:8b',
+      userText: structuralQuestion,
+      exchanges: [
+        {
+          assistant: { role: 'assistant', tool_calls: [{ id: 'o0' }] },
+          toolResults: [
+            {
+              id: 'o0',
+              name: 'list_kinds',
+              content: '{"total":112,"byKind":{"domain":8,"capability":49,"element":54}}',
+              isError: false,
+            },
+          ],
+        },
+      ],
+    });
+    const wrongCandidateScope = PROVIDER_ADAPTERS.local.parseResponse(
+      JSON.stringify(openAiTool('list_concepts', { kind: 'project', summary: true, limit: 12 })),
+    );
+    expect(
+      PROVIDER_ADAPTERS.local.reviewResponse?.(censusTurn, wrongCandidateScope),
+    ).toMatchObject({
+      action: 'retry',
+      expectedTool: 'list_concepts',
+      message: expect.stringContaining('kind "domain"'),
+    });
+
+    const candidates = ['domains/catalog', 'domains/order', 'domains/payment', 'domains/support'];
+    const candidateTurn = assembly({
+      ...censusTurn,
+      exchanges: [
+        ...censusTurn.exchanges,
+        {
+          assistant: { role: 'assistant', tool_calls: [{ id: 'o1' }] },
+          toolResults: [
+            {
+              id: 'o1',
+              name: 'list_concepts',
+              content: JSON.stringify({ rows: candidates.map((slug) => ({ slug })) }),
+              isError: false,
+            },
+          ],
+        },
+      ],
+    });
+    const detailBody = JSON.parse(PROVIDER_ADAPTERS.local.buildBody(candidateTurn)) as {
+      messages: Array<{ content?: string }>;
+    };
+    expect(detailBody.messages.at(-1)?.content).toContain(candidates.join(', '));
+    expect(detailBody.messages.at(-1)?.content).toContain('body "full"');
+
+    const shallowDetail = PROVIDER_ADAPTERS.local.parseResponse(
+      JSON.stringify(openAiTool('get_concepts', { slugs: ['storefront'] })),
+    );
+    expect(PROVIDER_ADAPTERS.local.reviewResponse?.(candidateTurn, shallowDetail)).toMatchObject({
+      action: 'retry',
+      expectedTool: 'get_concepts',
+      message: expect.stringContaining('domains/catalog'),
+    });
+    const completeDetail = PROVIDER_ADAPTERS.local.parseResponse(
+      JSON.stringify(openAiTool('get_concepts', { slugs: candidates, body: 'full' })),
+    );
+    expect(PROVIDER_ADAPTERS.local.reviewResponse?.(candidateTurn, completeDetail)).toEqual({
+      action: 'accept',
+    });
+  });
+
+  it('주소 갈래는 census와 모순되거나 좁은 근거를 과장한 합성을 거부한다', () => {
+    const turn = assembly({
+      model: 'qwen3:8b',
+      userText: '이 온톨로지 구조를 감사해줘. 브릿지는 근거가 있을 때만 말해.',
+      exchanges: [
+        {
+          assistant: { role: 'assistant', tool_calls: [{ id: 'o0' }] },
+          toolResults: [
+            {
+              id: 'o0',
+              name: 'list_kinds',
+              content: '{"byKind":{"domain":8,"capability":49,"element":54}}',
+              isError: false,
+            },
+          ],
+        },
+        {
+          assistant: { role: 'assistant', tool_calls: [{ id: 'o1' }] },
+          toolResults: [
+            { id: 'o1', name: 'list_concepts', content: '{"rows":[]}', isError: false },
+          ],
+        },
+        {
+          assistant: { role: 'assistant', tool_calls: [{ id: 'o2' }] },
+          toolResults: [
+            {
+              id: 'o2',
+              name: 'get_concepts',
+              content: '{"concepts":[{"slug":"storefront","found":true}]}',
+              isError: false,
+            },
+          ],
+        },
+      ],
+    });
+    const contradiction = PROVIDER_ADAPTERS.local.parseResponse(
+      JSON.stringify({
+        choices: [
+          {
+            message: {
+              role: 'assistant',
+              content:
+                '[[storefront]]에는 Capability 또는 Element가 정의되지 않았고 브릿지는 불필요합니다.',
+            },
+            finish_reason: 'stop',
+          },
+        ],
+      }),
+    );
+    const retry = PROVIDER_ADAPTERS.local.reviewResponse?.(turn, contradiction);
+    expect(retry).toMatchObject({
+      action: 'retry',
+      expectedTool: 'evidence-consistency',
+      message: expect.stringContaining('capability=49'),
+    });
+    const retriedTurn = assembly({
+      ...turn,
+      exchanges: [
+        ...turn.exchanges,
+        {
+          assistant: contradiction.raw,
+          toolResults: [],
+          retry: {
+            expectedTool: 'evidence-consistency',
+            instruction: retry?.action === 'retry' ? retry.message : '',
+          },
+        },
+      ],
+    });
+    expect(PROVIDER_ADAPTERS.local.reviewResponse?.(retriedTurn, contradiction)).toMatchObject({
+      action: 'fail',
+      expectedTool: 'evidence-consistency',
     });
   });
 

@@ -51,6 +51,136 @@ function missedKoreanResponse(userText: string, responseText: string): boolean {
   return /[가-힣]/.test(userText) && !/[가-힣]/.test(responseText);
 }
 
+function isStructureAudit(userText: string): boolean {
+  return /(?:ontology|structure|fan[ -]?out|bridge|duplicate|온톨로지|구조|팬[ -]?아웃|브릿지|중복)/i.test(
+    userText,
+  );
+}
+
+function asRecord(value: unknown): Record<string, unknown> {
+  return value && typeof value === 'object' ? (value as Record<string, unknown>) : {};
+}
+
+function listedCandidateSlugs(exchanges: TurnAssembly['exchanges']): string[] {
+  for (const exchange of [...exchanges].reverse()) {
+    const result = exchange.toolResults.find(
+      (candidate) => candidate.name === 'list_concepts' && !candidate.isError,
+    );
+    if (!result) continue;
+    try {
+      const payload = JSON.parse(result.content) as Record<string, unknown>;
+      const rows = Array.isArray(payload.rows)
+        ? payload.rows
+        : Array.isArray(payload.nodes)
+          ? payload.nodes
+          : [];
+      return rows.flatMap((row) => {
+        const slug = asRecord(row).slug;
+        return typeof slug === 'string' ? [slug] : [];
+      });
+    } catch {
+      return [];
+    }
+  }
+  return [];
+}
+
+function requiredReadInstruction(turn: TurnAssembly, toolName: string): string {
+  if (!isStructureAudit(turn.userText)) {
+    return `The required evidence read did not happen. Call ${toolName} now. Do not answer or describe a plan.`;
+  }
+  if (toolName === 'list_kinds') {
+    return 'Call list_kinds now to read the ontology census. Do not answer or describe a plan.';
+  }
+  if (toolName === 'list_concepts') {
+    return 'Call list_concepts now with kind "domain", summary true, and limit 12. A project row alone cannot support a whole-map structure audit. Do not answer.';
+  }
+  if (toolName === 'get_concepts') {
+    const candidates = listedCandidateSlugs(turn.exchanges).slice(0, 8);
+    const exact =
+      candidates.length > 0 ? candidates.join(', ') : 'the exact slugs from the preceding list';
+    return `Call get_concepts now with body "full" and these candidate slugs: ${exact}. Use every listed candidate when there are eight or fewer. Do not answer.`;
+  }
+  return `Call ${toolName} now. Do not answer or describe a plan.`;
+}
+
+function requiredReadArgumentIssue(
+  turn: TurnAssembly,
+  toolName: string,
+  argsValue: unknown,
+): string | null {
+  if (!isStructureAudit(turn.userText)) return null;
+  const args = asRecord(argsValue);
+  if (toolName === 'list_concepts') {
+    return args.kind === 'domain' && args.summary === true && args.limit === 12
+      ? null
+      : requiredReadInstruction(turn, toolName);
+  }
+  if (toolName !== 'get_concepts') return null;
+
+  const candidates = listedCandidateSlugs(turn.exchanges).slice(0, 8);
+  const selected = Array.isArray(args.slugs)
+    ? args.slugs.filter((slug): slug is string => typeof slug === 'string')
+    : [];
+  const selectedSet = new Set(selected);
+  const includesExpected =
+    candidates.length === 0
+      ? selected.length > 0
+      : candidates.every((slug) => selectedSet.has(slug));
+  return args.body === 'full' && selected.length === candidates.length && includesExpected
+    ? null
+    : requiredReadInstruction(turn, toolName);
+}
+
+function kindCensus(exchanges: TurnAssembly['exchanges']): Record<string, number> {
+  for (const exchange of exchanges) {
+    const result = exchange.toolResults.find(
+      (candidate) => candidate.name === 'list_kinds' && !candidate.isError,
+    );
+    if (!result) continue;
+    try {
+      const payload = JSON.parse(result.content) as Record<string, unknown>;
+      const byKind = asRecord(payload.byKind);
+      return Object.fromEntries(
+        Object.entries(byKind).filter((entry): entry is [string, number] =>
+          typeof entry[1] === 'number'),
+      );
+    } catch {
+      return {};
+    }
+  }
+  return {};
+}
+
+function deniesExistingKind(text: string, kind: 'capability' | 'element'): boolean {
+  const term = kind === 'capability' ? '(?:capabilit(?:y|ies)|역량)' : '(?:elements?|요소)';
+  return new RegExp(
+    `(?:\\bno\\s+${term}|${term}.{0,60}(?:없|정의되지|존재하지|not defined|none))`,
+    'i',
+  ).test(text);
+}
+
+function evidenceConsistencyIssue(
+  turn: TurnAssembly,
+  responseText: string,
+  detailSlugs: readonly string[],
+): string | null {
+  const census = kindCensus(turn.exchanges);
+  const contradictions = (['capability', 'element'] as const).filter(
+    (kind) => (census[kind] ?? 0) > 0 && deniesExistingKind(responseText, kind),
+  );
+  const overstatesBridgeBoundary =
+    detailSlugs.length < 3 &&
+    /(?:bridge|브릿지).{0,80}(?:not needed|unnecessary|필요하지 않|불필요)/i.test(responseText);
+  if (contradictions.length === 0 && !overstatesBridgeBoundary) return null;
+
+  const counts = Object.entries(census)
+    .map(([kind, count]) => `${kind}=${count}`)
+    .join(', ');
+  const receipt = detailSlugs.map((slug) => `[[${slug}]]`).join(', ');
+  return `Answer again in the original question's language and correct every evidence conflict. The verified census is ${counts || 'unavailable'}; do not claim a positive kind count is absent. The delivered concept receipt is ${receipt || 'empty'}. ${detailSlugs.length < 3 ? 'With fewer than three evidence rows, say only that the verified scope does not establish whether a bridge is needed.' : ''} Cite an exact receipt slug and do not call a tool.`;
+}
+
 function hasFocusedConcept(screenContextBlock: string): boolean {
   return /\nlooking_at:\s+[^\s(]+/.test(screenContextBlock);
 }
@@ -79,10 +209,6 @@ function forcedReadTool(turn: TurnAssembly): string | null {
   if (completed === 1) return 'list_concepts';
   if (completed === 2) return 'get_concepts';
   return null;
-}
-
-function requiredReadInstruction(toolName: string): string {
-  return `The required evidence read did not happen. Call ${toolName} now. Do not answer or describe a plan.`;
 }
 
 /**
@@ -147,6 +273,8 @@ export const localAdapter: ProviderAdapter = {
       messages.push({ role: 'user', content: synthesisInstruction(turn.exchanges) });
       body.reasoning_effort = 'none';
     } else if (forcedToolName) {
+      const messages = body.messages as Array<Record<string, unknown>>;
+      messages.push({ role: 'user', content: requiredReadInstruction(turn, forcedToolName) });
       body.reasoning_effort = 'none';
       // Ollama 의 모델은 named tool_choice 도 무시할 수 있다. 이 왕복에 허용된
       // 도구 목록까지 하나로 줄여야 다른 census 도구로 새는 것을 막을 수 있다.
@@ -163,7 +291,11 @@ export const localAdapter: ProviderAdapter = {
   reviewResponse(turn, response) {
     const expectedTool = forcedReadTool(turn);
     if (expectedTool) {
-      if (response.toolCalls.some((call) => call.name === expectedTool)) {
+      const expectedCall = response.toolCalls.find((call) => call.name === expectedTool);
+      const argumentIssue = expectedCall
+        ? requiredReadArgumentIssue(turn, expectedTool, expectedCall.args)
+        : requiredReadInstruction(turn, expectedTool);
+      if (expectedCall && !argumentIssue) {
         return { action: 'accept' };
       }
       const alreadyRetried = turn.exchanges.some(
@@ -173,13 +305,38 @@ export const localAdapter: ProviderAdapter = {
         return {
           action: 'fail',
           expectedTool,
-          message: `The local model skipped the required ${expectedTool} evidence read twice. The answer was not accepted.`,
+          message: `The local model skipped or mis-scoped the required ${expectedTool} evidence read twice. The answer was not accepted.`,
         };
       }
       return {
         action: 'retry',
         expectedTool,
-        message: requiredReadInstruction(expectedTool),
+        message: argumentIssue ?? requiredReadInstruction(turn, expectedTool),
+      };
+    }
+
+    const detailSlugs = verifiedDetailSlugs(turn.exchanges);
+    const consistencyIssue =
+      response.toolCalls.length === 0
+        ? evidenceConsistencyIssue(turn, response.text, detailSlugs)
+        : null;
+    if (consistencyIssue) {
+      const expectedConsistency = 'evidence-consistency';
+      const alreadyRetried = turn.exchanges.some(
+        (exchange) => exchange.retry?.expectedTool === expectedConsistency,
+      );
+      if (alreadyRetried) {
+        return {
+          action: 'fail',
+          expectedTool: expectedConsistency,
+          message:
+            'The local model contradicted verified ontology evidence twice. The answer was not accepted.',
+        };
+      }
+      return {
+        action: 'retry',
+        expectedTool: expectedConsistency,
+        message: consistencyIssue,
       };
     }
 
@@ -204,7 +361,6 @@ export const localAdapter: ProviderAdapter = {
       };
     }
 
-    const detailSlugs = verifiedDetailSlugs(turn.exchanges);
     if (
       response.toolCalls.length > 0 ||
       detailSlugs.length === 0 ||

@@ -142,39 +142,69 @@ describe('runTurn', () => {
     expect(retryBody.messages.at(-1)).toEqual({
       role: 'user',
       content:
-        'The required evidence read did not happen. Call list_kinds now. Do not answer or describe a plan.',
+        'Call list_kinds now to read the ontology census. Do not answer or describe a plan.',
     });
     expect(result.turn.status).toBe('failed');
     expect(result.turn.events.some((event) => event.kind === 'assistant')).toBe(false);
     expect(result.turn.events.at(-1)).toMatchObject({
       code: 'failed',
-      text: expect.stringContaining('skipped the required list_kinds evidence read twice'),
+      text: expect.stringContaining(
+        'skipped or mis-scoped the required list_kinds evidence read twice',
+      ),
     });
   });
 
   it('로컬 모델이 교정 뒤 필수 읽기를 수행하면 다음 근거 단계로 진행한다', async () => {
+    const candidates = [
+      'domains/agent-experience',
+      'domains/graph-modeling',
+      'domains/local-vault-management',
+    ];
     const responses = [
       OPENAI_TEXT_ONLY,
       openAiTool('list_kinds'),
-      openAiTool('list_concepts', { kind: 'domain', summary: true }),
-      openAiTool('get_concepts', { slugs: ['domains/agent-experience'], body: 'excerpt' }),
+      openAiTool('list_concepts', { kind: 'domain', summary: true, limit: 12 }),
+      openAiTool('get_concepts', { slugs: candidates, body: 'full' }),
       {
         choices: [
           {
-            message: { role: 'assistant', content: '[[domains/agent-experience]]만 확인했습니다.' },
+            message: {
+              role: 'assistant',
+              content:
+                '[[domains/agent-experience]], [[domains/graph-modeling]], [[domains/local-vault-management]]를 확인했습니다.',
+            },
             finish_reason: 'stop',
           },
         ],
       },
     ];
     const send = vi.fn<Send>(async () => echo(responses.shift()));
-    const execute = vi.fn(async (call) =>
-      okExecution({
+    const execute = vi.fn(async (call) => {
+      if (call.name === 'list_kinds') {
+        return okExecution({
+          content: '{"total":112,"byKind":{"domain":8,"capability":49,"element":54}}',
+          target: call.name,
+          summary: `읽음: ${call.name}`,
+          readSlugs: [],
+        });
+      }
+      if (call.name === 'list_concepts') {
+        return okExecution({
+          content: JSON.stringify({ rows: candidates.map((slug) => ({ slug })) }),
+          target: call.name,
+          summary: `읽음: ${call.name}`,
+          readSlugs: [],
+        });
+      }
+      return okExecution({
+        content: JSON.stringify({
+          concepts: candidates.map((slug) => ({ slug, found: true })),
+        }),
         target: call.name,
         summary: `읽음: ${call.name}`,
-        readSlugs: call.name === 'get_concepts' ? ['domains/agent-experience'] : [],
-      }),
-    );
+        readSlugs: candidates,
+      });
+    });
 
     const result = await runTurn(
       deps({ adapter: localAdapter, send, execute, tools: AGENT_TOOLS, model: 'qwen3:8b' }),
@@ -224,6 +254,36 @@ describe('runTurn', () => {
     // 상한 왕복 + 마무리 1회.
     expect(send).toHaveBeenCalledTimes(AGENT_ROUND_CAP + 1);
     expect(result.turn.events.at(-1)).toMatchObject({ code: 'round-cap' });
+  });
+
+  it('상한 뒤 마무리 답도 provider 검토를 우회하지 못한다', async () => {
+    let sendCount = 0;
+    const send = vi.fn<Send>(async () => {
+      sendCount += 1;
+      return sendCount <= AGENT_ROUND_CAP ? echo(TOOL_CALL) : echo(TEXT_ONLY);
+    });
+    const adapter = {
+      ...anthropicAdapter,
+      reviewResponse: (
+        _turn: Parameters<NonNullable<typeof localAdapter.reviewResponse>>[0],
+        response: Parameters<NonNullable<typeof localAdapter.reviewResponse>>[1],
+      ) =>
+        response.toolCalls.length > 0
+          ? ({ action: 'accept' } as const)
+          : ({
+              action: 'retry',
+              expectedTool: 'closing-quality',
+              message: 'closing answer failed review',
+            } as const),
+    };
+    const result = await runTurn(
+      deps({ send, adapter }),
+      startTurn({ text: 'x', screenContext: EMPTY_SCREEN_CONTEXT }),
+      { signal: new AbortController().signal },
+    );
+    expect(send).toHaveBeenCalledTimes(AGENT_ROUND_CAP + 1);
+    expect(result.turn.status).toBe('failed');
+    expect(result.turn.events.some((event) => event.kind === 'assistant')).toBe(false);
   });
 
   it('중단하면 그 자리에서 멈추고 정리 행을 남긴다', async () => {
