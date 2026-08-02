@@ -21,7 +21,6 @@ import {
   type MeaningGapKind,
 } from "@/entities/knowledge-graph";
 import {
-  LiveActivityIndicator,
   useOntologyInsight,
   useVaultConceptFacts,
   useVaultDocFreshnessIndex,
@@ -856,13 +855,19 @@ export function OntologyInsightsPage() {
     <div className="flex min-h-full w-full">
       {/* 레일은 perf/persistent-shell 이후 layout(AppShell) 상주. */}
       <div className="min-w-0 flex-1">
-        <div className="flex items-center justify-end gap-2 px-4 pt-3 md:px-6">
-          <LiveActivityIndicator agentActivityStatus={vault.agentActivityStatus} />
-          {/* #15 — 설정은 lg+ 에선 나브레일 하단 톱니가 담당. 레일이 숨는
-              <lg 에서만 chrome-tile 로 노출(지도와 동일 계약). */}
-          <div className="lg:hidden">
-            <AppSettingsMenu mode={dataSourceMode} triggerVariant="chrome-tile" />
-          </div>
+        {/*
+         * ⚠️ **실시간 표시를 뺐다** (2026-08-03, 소유자 지적 — 프로젝트 목록과
+         * 같은 이유). 「실시간 · 변경 N」은 **지도의 물건**이다: 무엇이 바뀌었는지
+         * 를 노드 위에 그려 주기 때문에 거기서는 그 수가 다음 행동으로 이어진다.
+         * 정비 보드는 자기 숫자(할 일 · 구성 · 연결 · 경계 · 신선도)를 이미
+         * 갖고 있어서, 그 위에 또 다른 변경 수가 뜨면 **어느 수를 봐야 하는지**가
+         * 흐려지고 우상단의 가장 센 잉크를 가져간다.
+         *
+         * 줄 자체가 `lg:hidden` 인 이유: 레일이 설정을 지는 폭에서는 이 줄에
+         * 남는 것이 없고, 빈 줄이 자리를 지키면 그건 여백이 아니라 결함이다.
+         */}
+        <div className="flex items-center justify-end gap-2 px-4 pt-3 md:px-6 lg:hidden">
+          <AppSettingsMenu mode={dataSourceMode} triggerVariant="chrome-tile" />
         </div>
         <main
           id="main"
