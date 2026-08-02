@@ -6910,6 +6910,7 @@ pub fn run() {
             git::git_history,
             git::git_diff,
             git::git_pull,
+            git::git_fetch,
             agent_setup::mcp_bundled_server,
             agent_setup::plan_agent_config,
             agent_setup::write_agent_config,
