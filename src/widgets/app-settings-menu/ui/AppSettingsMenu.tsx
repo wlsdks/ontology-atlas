@@ -5,8 +5,8 @@ import { createPortal } from 'react-dom';
 import { usePanelPresence } from '@/shared/lib/use-presence';
 import type { MouseEvent as ReactMouseEvent } from 'react';
 import {
+  Bell,
   Bot,
-  ChevronLeft,
   ChevronRight,
   Copy,
   Check,
@@ -14,6 +14,7 @@ import {
   Footprints,
   HardDrive,
   Layers,
+  MessageSquare,
   Monitor,
   Settings,
   X,
@@ -33,7 +34,6 @@ import { useCopyFeedback } from '@/shared/lib/use-copy-feedback';
 import { useDialogFocusTrap } from '@/shared/lib/use-dialog-focus-trap';
 import { cn } from '@/shared/lib/cn';
 import { subscribeSettingsViewIntent } from '@/shared/lib/settings-view-intent';
-import { SECRET_PROVIDERS } from '@/shared/lib/tauri-secrets';
 
 import {
   buildRouteFocusHref,
@@ -47,7 +47,6 @@ import { AgentActivitySettings } from './AgentActivitySettings';
 import { SegmentSwitch, SettingsGroup, SettingsRow } from './settings-primitives';
 import { useFrameMeter, writeFrameMeter } from '@/shared/lib/appearance-preferences';
 import { AiConnectionPanel } from './AiConnectionPanel';
-import { AI_PROVIDER_LABEL_KEY } from '../model/ai-providers';
 import { useAiConnection } from '../model/use-ai-connection';
 import { AGENT_GRAPH_WORKFLOW_HREF } from '@/shared/config';
 
@@ -67,18 +66,28 @@ import { AGENT_GRAPH_WORKFLOW_HREF } from '@/shared/config';
  *   이 그룹으로 복원됐다 — B2 병합 당시 "/docs vault 필이 담당" 이라고 적었지만
  *   실제로는 어느 표면도 그 컴포넌트를 렌더하지 않아 데스크톱에서 통째로
  *   유실돼 있었다(opus5 검수 2026-07-25).
- * - [AI 에이전트] 상태 요약 1행 → "연결·검증" 드릴인 서브뷰(뒤로가기 헤더)로
- *   `VaultAgentSetupPanel` 이동. MCP 증명 장문·상태 카드 그리드·판정 순서
- *   문서는 기본 화면에 절대 노출하지 않는다.
- * - [AI 연결] (#80) 내 API 키 요약 1행 → 키 등록/연결 확인/보낸 기록 드릴인
- *   서브뷰. 새 라우트 0개 — 설정의 집은 여기 하나다.
+ * - [내 에이전트 연결] `VaultAgentSetupPanel` — 밖의 도구(Claude Code · Codex ·
+ *   Cursor · Antigravity)가 이 폴더를 읽게 하는 설정 파일. MCP 증명 장문·상태
+ *   카드 그리드·판정 순서 문서는 「고급 · 자세한 검증」 접기 뒤에 있다.
+ * - [앱 안 에이전트] (#80) 키 등록/연결 확인/보낸 기록. 새 라우트 0개 —
+ *   설정의 집은 여기 하나다.
+ *
+ * ## 드릴인 복도를 없앴다 (2026-08-02, 디자인 카운슬 A-3)
+ *
+ * 위 둘은 한때 「AI 에이전트」라는 **한 LNB 절 안의 요약 2행**이었고, 각 행이
+ * 서브뷰로 드릴인했다. 그 복도 판을 실측하니 698×617 중 잉크가 108px,
+ * **빈칸 82.5%** 에 설정 항목은 0개였다 — 아무것도 고를 수 없는 칸이 한 절을
+ * 통째로 쓰고 있었다. 게다가 드릴인하면 LNB 180px 이 통째로 사라져, 방금
+ * 고른 목록을 잃은 채 뒤로가기 계단이 하나 생겼다.
+ *
+ * 그래서 **복도를 지우고 두 목적지를 LNB 로 승격**한다(6행 → 7행). 서브뷰
+ * 전환 2 → 0, 뒤로가기 1 → 0, LNB 는 상시. 「AI」로 시작하는 이름 셋이 첫
+ * 글자로 안 갈렸던 것도 여기서 끝난다 — 「내」 vs 「앱 안」.
  *
  * P3 결함⑥ 계약 유지 — `open`/`onOpenChange` optional controlled prop, ⌘K 는
  * 팔레트에 양보(settings demote), Escape 는 이 다이얼로그가 소유하고
  * stopPropagation 으로 지도 Esc 래더에 새지 않는다.
  */
-
-type SettingsView = 'root' | 'agent' | 'ai';
 
 /**
  * LNB 항목 — 왼쪽 목록의 순서와 묶음이 곧 이 배열이다.
@@ -121,8 +130,15 @@ const SETTINGS_GROUPS = [
   // 하나 넣어주면 될듯"*): 앞의 둘은 지도가 무엇으로 그려지는가(바닥·글리프)고
   // 「확장」은 그 위에서 무엇이 열리는가다. 발자국은 다 그린 뒤 남는 흔적이라
   // 맨 뒤가 맞다.
-  { key: 'look', items: ['screen', 'background', 'expand', 'footprint'] },
-  { key: 'connect', items: ['workspace', 'agent'] },
+  // 「알림」이 발자국 **뒤**인 이유: 앞의 넷은 지도가 어떻게 그려지는가(바닥 ·
+  // 글리프 · 펼침 · 흔적)의 순서이고, 알림은 그 위에 앱이 말을 얹는 층이라
+  // 마지막이다. 「이어진 것」으로 내리지 않는 이유는 렌더 분기 주석에.
+  { key: 'look', items: ['screen', 'background', 'expand', 'footprint', 'notify'] },
+  // 「내 에이전트 연결」·「앱 안 에이전트」가 여기 **나란히** 있는 이유: 둘은
+  // 같은 절의 두 요약 행이 아니라 서로 다른 목적지다. 하나는 밖의 도구가 이
+  // 폴더를 읽게 하는 **설정 파일**이고, 하나는 앱 안에서 말을 거는 **키**다.
+  // 이름의 첫 글자가 갈리는 것이 그 차이를 나르는 채널이다.
+  { key: 'connect', items: ['workspace', 'agent', 'ai'] },
 ] as const;
 
 type SettingsSection = (typeof SETTINGS_GROUPS)[number]['items'][number];
@@ -136,8 +152,15 @@ const SECTION_ICON: Record<SettingsSection, typeof Monitor> = {
   // 안 섞인다(아이콘은 장식이 아니라 훑기 채널이다, 위 주석).
   expand: Expand,
   footprint: Footprints,
+  // 종 — 이 목록에서 유일한 «울리는» 실루엣이다. 말풍선(ai)과 헷갈릴 자리가
+  // 아닌 이유: 말풍선은 «내가 말을 건다», 종은 «앱이 나를 부른다» 이고 외곽선도
+  // 사각 대 삼각이라 훑기에서 갈린다.
+  notify: Bell,
   workspace: HardDrive,
+  // 밖의 도구 = 로봇, 앱 안의 대화 = 말풍선. 실루엣이 갈려야 훑기 채널이 선다
+  // (이름의 첫 글자를 가른 것과 같은 이유다).
   agent: Bot,
+  ai: MessageSquare,
 };
 type SettingsTriggerVariant = 'header-pill' | 'rail-tile' | 'chrome-tile';
 
@@ -262,7 +285,6 @@ export function AppSettingsMenu({
   triggerVariant = 'header-pill',
 }: AppSettingsMenuProps) {
   const t = useTranslations('nav.settingsMenu');
-  const tAi = useTranslations('settings.ai');
   // #72 — 경로 복사/Finder 문구는 구 LocalVaultPicker 가 쓰던 키를 그대로
   // 재사용한다(문구 중복 생성 없이 표면만 옮긴다).
   const tPicker = useTranslations('featuresMisc.localVaultPicker');
@@ -287,26 +309,12 @@ export function AppSettingsMenu({
     },
     [isControlled, onOpenChange],
   );
-  const [view, setView] = useState<SettingsView>('root');
   /** 지금 보고 있는 LNB 절. 시트를 닫아도 유지된다(세션 한정) — 다시 열면 하던 자리다. */
   const [section, setSection] = useState<SettingsSection>('screen');
-  /**
-   * 하위면 이동의 **방향**. 계층이 깊어지면 오른쪽에서 들어오고 돌아오면
-   * 왼쪽에서 들어온다 — 그 방향이 곧 "어디로 갔는지" 다. 예전에는 push 도
-   * pop 도 0ms 하드컷이라(1프레임, 전후 변화 0) 뒤로와 앞으로가 화면에서
-   * 구분되지 않았다.
-   *
-   * `'none'` 이 초기값인 이유: 시트를 **여는** 모션은 이미 패널 자체가
-   * 소유한다(`.app-settings-panel-in`). 첫 마운트에도 하위면 모션을 걸면 한
-   * 동작에 두 모션이 겹친다.
-   */
-  const [viewEnter, setViewEnter] = useState<'none' | 'push' | 'pop'>('none');
   const detailsRef = useRef<HTMLDetailsElement | null>(null);
   const triggerRef = useRef<HTMLElement | null>(null);
   const overlayRef = useRef<HTMLDivElement | null>(null);
-  const agentBackRef = useRef<HTMLButtonElement | null>(null);
-  const agentDrillInRef = useRef<HTMLButtonElement | null>(null);
-  const aiDrillInRef = useRef<HTMLButtonElement | null>(null);
+  const navRef = useRef<HTMLElement | null>(null);
   const panelRef = useDialogFocusTrap<HTMLDivElement>({
     open,
     initialFocus: 'container',
@@ -367,45 +375,12 @@ export function AppSettingsMenu({
     rememberRouteFocusIntent(vaultHref);
   };
 
-  // AI 에이전트 요약 1행 — 설정 파일 준비 상태를 한 값으로 접는다. 상세
-  // (파일별 상태·수리·복사 패킷·검증 게이트)는 드릴인 서브뷰가 소유.
-  const agentConfig = localVault.agentConfigStatus;
-  const agentConfigTotal = 3;
-  const agentConfigReadyCount = agentConfig
-    ? [
-        agentConfig.mcpJson && agentConfig.mcpJsonValid !== false,
-        agentConfig.codexConfig && agentConfig.codexConfigValid !== false,
-        agentConfig.mcpExample && agentConfig.mcpExampleValid !== false,
-      ].filter(Boolean).length
-    : 0;
-  const agentSummary =
-    isLocalVaultLoaded && agentConfig
-      ? agentConfigReadyCount === agentConfigTotal
-        ? t('agentStatusReady', { ready: agentConfigReadyCount, total: agentConfigTotal })
-        : t('agentStatusRepair', { ready: agentConfigReadyCount, total: agentConfigTotal })
-      : t('agentStatusNoVault');
-  const agentSummaryNeedsAttention =
-    isLocalVaultLoaded && agentConfig != null && agentConfigReadyCount < agentConfigTotal;
-
-  // [AI 연결] (#80) — 루트 행의 요약 칩과 서브뷰가 같은 상태를 본다. 시트가
-  // 닫혀 있으면 키체인도 감사 로그도 읽지 않는다(조용한 조회 0).
+  // [앱 안 에이전트] (#80) — 시트가 닫혀 있으면 키체인도 감사 로그도 읽지
+  // 않는다(조용한 조회 0).
   const aiConnection = useAiConnection({
     enabled: open,
     vaultHandle: isLocalVaultLoaded ? (localVault.handle ?? null) : null,
   });
-  const storedProviders = SECRET_PROVIDERS.filter(
-    (provider) => aiConnection.statuses[provider]?.stored,
-  );
-  const aiSummary = !aiConnection.bridgeAvailable
-    ? tAi('chipDesktopOnly')
-    : storedProviders.length === 0
-      ? tAi('chipEmpty')
-      : storedProviders.length === 1
-        ? tAi('chipStored', {
-            provider: tAi(AI_PROVIDER_LABEL_KEY[storedProviders[0]]),
-            last4: aiConnection.statuses[storedProviders[0]]?.last4 ?? '',
-          })
-        : tAi('chipMany', { count: storedProviders.length });
 
   // P3 결함⑥ — controlled 모드에서 이 `<details>` 는 React state 가 곧
   // 진실원이어야 한다. 매 렌더마다 DOM `open` 을 React 값으로 되맞춰 race 를
@@ -427,19 +402,6 @@ export function AppSettingsMenu({
   useEffect(() => {
     if (detailsRef.current) detailsRef.current.open = open;
   }, [open]);
-
-  // 닫힐 때 드릴인 상태 초기화 — 다시 열면 항상 루트 시트부터. effect 가 아닌
-  // 렌더 중 이전값 latch(React 공식 "adjusting state when a prop changes"
-  // 패턴)라 cascading effect 렌더가 없다 (구 설정 기어의 suppressed 처리와
-  // 같은 관례).
-  const [prevOpen, setPrevOpen] = useState(open);
-  if (open !== prevOpen) {
-    setPrevOpen(open);
-    if (!open) {
-      setView('root');
-      setViewEnter('none');
-    }
-  }
 
   useEffect(() => {
     if (!consumeSettingsLocaleFocus(locale, triggerVariant)) return undefined;
@@ -470,10 +432,14 @@ export function AppSettingsMenu({
       window.setTimeout(() => triggerRef.current?.focus(), 0);
     }
   };
-  const openSubview = (next: Exclude<SettingsView, 'root'>) => {
-    setViewEnter('push');
-    setView(next);
-    window.setTimeout(() => agentBackRef.current?.focus({ preventScroll: true }), 0);
+  /** 요청받은 절로 데려가고 **그 목록 항목에 초점**을 둔다 — 어디에 왔는지가 목록에 남는다. */
+  const focusSection = (next: SettingsSection) => {
+    setSection(next);
+    window.setTimeout(() => {
+      navRef.current
+        ?.querySelector<HTMLButtonElement>(`[data-testid="app-settings-nav-${next}"]`)
+        ?.focus({ preventScroll: true });
+    }, 0);
   };
 
   // 다른 표면이 "설정의 그 자리" 를 열어 달라고 보낸 요청. 지도 오른쪽 도크의
@@ -491,24 +457,12 @@ export function AppSettingsMenu({
         const trigger = triggerRef.current;
         if (!trigger || trigger.offsetParent === null) return;
         setOpen(true);
-        setView(next);
-        window.setTimeout(() => agentBackRef.current?.focus({ preventScroll: true }), 0);
+        // 서브뷰가 사라졌으므로 요청은 그대로 **LNB 절**로 착지한다 —
+        // `'ai'`/`'agent'` 라는 이름은 그대로라 부르는 쪽은 아무것도 안 바뀐다.
+        focusSection(next);
       }),
     [setOpen],
   );
-  const returnToRootView = () => {
-    // 돌아온 뒤 포커스는 **떠났던 그 행** — 드릴인/아웃이 위치 감각을 잃지 않게.
-    const target = view === 'ai' ? aiDrillInRef : agentDrillInRef;
-    setViewEnter('pop');
-    setView('root');
-    window.setTimeout(() => target.current?.focus({ preventScroll: true }), 0);
-  };
-  const viewEnterClass =
-    viewEnter === 'push'
-      ? 'settings-view-push-in'
-      : viewEnter === 'pop'
-        ? 'settings-view-pop-in'
-        : '';
 
   return (
     <details
@@ -527,12 +481,9 @@ export function AppSettingsMenu({
         event.preventDefault();
         // 지도 Esc 래더(window keydown)가 같은 keypress 에 이중으로 반응하지
         // 않도록 이 다이얼로그가 Escape 를 소유한다 — "one overlay owns one
-        // Escape" (구 설정 기어와 같은 계약).
+        // Escape" (구 설정 기어와 같은 계약). 드릴인 서브뷰가 없어졌으므로
+        // 사다리는 한 칸이다: 이 시트가 닫힌다.
         event.stopPropagation();
-        if (view !== 'root') {
-          returnToRootView();
-          return;
-        }
         closePanel();
       }}
     >
@@ -662,29 +613,18 @@ export function AppSettingsMenu({
         >
           <div className="flex shrink-0 items-center justify-between gap-3 border-b border-[color:var(--color-border-soft)] px-4 py-3">
             <div className="flex min-w-0 items-center gap-2">
-              {view !== 'root' ? (
-                <button
-                  ref={agentBackRef}
-                  type="button"
-                  aria-label={t('agentBackLabel')}
-                  data-testid="app-settings-agent-back"
-                  onClick={returnToRootView}
-                  className="inline-flex h-7 w-7 shrink-0 items-center justify-center rounded-md border border-[color:var(--color-border-soft)] text-[color:var(--color-text-tertiary)] transition-colors hover:border-[color:var(--color-border-strong)] hover:text-[color:var(--color-text-primary)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--color-indigo-a46)] focus-visible:ring-inset"
-                >
-                  <ChevronLeft size={14} aria-hidden />
-                </button>
-              ) : (
-                <Settings
-                  size={15}
-                  aria-hidden
-                  className="shrink-0 text-[color:var(--color-indigo-accent)]"
-                />
-              )}
+              {/* 뒤로가기 버튼이 없다 — 갈 뒤가 없다. 모든 목적지가 LNB 에
+                  상시 있으므로 제목은 언제나 이 시트의 이름 하나다. */}
+              <Settings
+                size={15}
+                aria-hidden
+                className="shrink-0 text-[color:var(--color-indigo-accent)]"
+              />
               <h2
                 id={titleId}
                 className="truncate text-body-lg font-[var(--font-weight-signature)] text-[color:var(--color-text-primary)]"
               >
-                {view === 'agent' ? t('agentTitle') : view === 'ai' ? tAi('title') : t('title')}
+                {t('title')}
               </h2>
             </div>
             <button
@@ -697,76 +637,19 @@ export function AppSettingsMenu({
             </button>
           </div>
 
-          {view === 'agent' ? (
-            <div
-              key="agent"
-              className={`grid min-h-0 flex-1 content-start gap-3 overflow-y-auto p-4 ${viewEnterClass}`}
-              data-testid="app-settings-agent-view"
-            >
-              {isLocalVaultLoaded ? (
-                <VaultAgentSetupPanel
-                  canEditCurrent={isLocalVaultLoaded}
-                  localVault={localVault}
-                  serverAvailability={agentServer}
-                  validationSummary={localVaultValidationSummary}
-                  onOpenWorkflowGuide={handleOpenWorkflowGuide}
-                />
-              ) : (
-                <>
-                  <div className="rounded-lg border border-[color:var(--color-border-soft)] bg-[color:var(--color-overlay-1)] px-3 py-2.5">
-                    <p className="text-body font-medium text-[color:var(--color-text-secondary)]">
-                      {t('agentStatusNoVault')}
-                    </p>
-                    <p className="mt-1 break-keep text-label leading-4 text-[color:var(--color-text-tertiary)]">
-                      {t('agentNoVaultHint')}
-                    </p>
-                  </div>
-                  <div className="rounded-lg border border-[color:var(--color-border-soft)] bg-[color:var(--color-overlay-1)] px-3 py-2.5">
-                    <p className="text-body font-medium text-[color:var(--color-text-secondary)]">
-                      {t('mcpProofTitle')}
-                    </p>
-                    <p className="mt-1 break-keep text-label leading-4 text-[color:var(--color-text-tertiary)]">
-                      {t('mcpProofBody')}
-                    </p>
-                    <button
-                      type="button"
-                      onClick={() => void copy(MCP_FIRST_CALLS_PACKET)}
-                      className="mt-2 inline-flex h-8 w-full items-center justify-center gap-1.5 rounded-md border border-[color:var(--color-indigo-line-a32)] px-2 font-mono text-label text-[color:var(--color-indigo-accent)] transition-colors hover:border-[color:var(--color-indigo-line-a45)] hover:bg-[color:var(--color-indigo-line-a13)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--color-indigo-a46)] focus-visible:ring-inset"
-                    >
-                      {copyState === 'copied' ? (
-                        <Check size={12} aria-hidden />
-                      ) : (
-                        <Copy size={12} aria-hidden />
-                      )}
-                      {copyState === 'copied' ? t('mcpProofCopied') : t('mcpProofCopy')}
-                    </button>
-                  </div>
-                </>
-              )}
-            </div>
-          ) : view === 'ai' ? (
-            <div
-              key="ai"
-              className={`grid min-h-0 flex-1 content-start gap-3 overflow-y-auto p-4 ${viewEnterClass}`}
-              data-testid="app-settings-ai-view"
-            >
-              <AiConnectionPanel
-                connection={aiConnection}
-                vaultRootPath={vaultRootPath}
-                downloadHref={buildRouteFocusHref('/download/')}
-                onDownloadNavigate={() => rememberRouteFocusIntent('/download/')}
-              />
-            </div>
-          ) : (
+          {
             /*
              * LNB 2단 — 왼쪽 목록, 오른쪽 내용. 소유자 지시(2026-07-29, 재확인):
              * *"다른 서비스 보면 LNB가 있는 팝업창 형태로 많이 구성하잖아.. 우리도
              * 그렇게 해달라고"*. 앞선 드릴인 안(카운슬 권고)은 뒤집혔다 — 절이
              * 다섯이라 드릴인은 매번 뒤로 나갔다 다시 들어가야 하고, 그건 값 몇
-             * 개를 비교하며 고르는 일에 맞지 않는다.
+             * 개를 비교하며 고르는 일에 맞지 않는다. 2026-08-02 에 마지막 두
+             * 드릴인(에이전트 연결 · 앱 안 에이전트)도 이 목록으로 올라오면서
+             * **이 시트에 서브뷰는 남아 있지 않다**.
              */
-            <div key="root" className={`flex min-h-0 flex-1 ${viewEnterClass}`} data-testid="app-settings-body">
+            <div key="root" className="flex min-h-0 flex-1" data-testid="app-settings-body">
               <nav
+                ref={navRef}
                 aria-label={t('title')}
                 data-testid="app-settings-nav"
                 className="flex w-[180px] shrink-0 flex-col gap-0.5 overflow-y-auto border-r border-[color:var(--color-border-soft)] p-2"
@@ -907,11 +790,29 @@ export function AppSettingsMenu({
                   />
                 ) : null}
                   </SettingsGroup>
-                  {/* 「작업 중 표시」·「알림」 — 이 칸인 이유: 둘 다 **화면이 무엇을
-                      말하는가**의 설정이다(에이전트를 어떻게 연결하는가가 아니다.
-                      그건 「AI 에이전트」 칸의 일이다). 기본은 둘 다 켜짐. */}
-                  <AgentActivitySettings />
                   </>
+                ) : section === 'notify' ? (
+                  /*
+                   * 「알림」이 자기 칸을 갖는 이유 (2026-08-02, 소유자 지적).
+                   *
+                   * 이 셋은 어제까지 「화면」 절의 **바닥**에 있었고, 그 자리를
+                   * 정당화한 주석은 *"둘 다 화면이 무엇을 말하는가의 설정이다"*
+                   * 였다. 그 문장은 맞다 — 그리고 그게 바로 **자기 절이어야 하는
+                   * 근거**다. 「화면」의 나머지 여섯(언어 · 뷰 모드 · INDEX 기본 ·
+                   * 글리프 세트 · 가이드 둘)은 «지도를 어떻게 그리는가»이고, 이
+                   * 셋은 «앱이 나에게 무엇을 알리는가»다.
+                   *
+                   * 부피로도 그렇다 — 실측: 「화면」이 컨트롤 여섯에 더해 이 셋
+                   * (행 3개 + 칩 6개)을 함께 지고 있었다. 「받을 알림」 6칩은 접힌
+                   * 세부가 아니라 **주 컨트롤**이라, 한 절의 절반을 다른 주제가
+                   * 차지하고 있던 셈이다. 빼내도 「화면」에는 여섯이 남는다.
+                   *
+                   * 「이어진 것」이 아니라 「보이는 것」에 두는 이유: 「작업 중
+                   * 표시」는 문자 그대로 **지도 위에** 뜨고, 알림도 앱이 나에게
+                   * 보여주는 것이다. 「이어진 것」은 «밖의 무엇과 연결되는가»의
+                   * 자리라 성격이 다르다.
+                   */
+                  <AgentActivitySettings />
                 ) : section === 'background' ? (
                   <>
                   <CanvasBackgroundPicker />
@@ -1123,72 +1024,58 @@ export function AppSettingsMenu({
                   </span>
                 </Link>
                   </SettingsGroup>
+                ) : section === 'agent' ? (
+                  isLocalVaultLoaded ? (
+                    <VaultAgentSetupPanel
+                      canEditCurrent={isLocalVaultLoaded}
+                      localVault={localVault}
+                      serverAvailability={agentServer}
+                      validationSummary={localVaultValidationSummary}
+                      onOpenWorkflowGuide={handleOpenWorkflowGuide}
+                    />
+                  ) : (
+                    <>
+                      <div className="rounded-lg border border-[color:var(--color-border-soft)] bg-[color:var(--color-overlay-1)] px-3 py-2.5">
+                        <p className="text-body font-medium text-[color:var(--color-text-secondary)]">
+                          {t('agentStatusNoVault')}
+                        </p>
+                        <p className="mt-1 break-keep text-label leading-4 text-[color:var(--color-text-tertiary)]">
+                          {t('agentNoVaultHint')}
+                        </p>
+                      </div>
+                      <div className="rounded-lg border border-[color:var(--color-border-soft)] bg-[color:var(--color-overlay-1)] px-3 py-2.5">
+                        <p className="text-body font-medium text-[color:var(--color-text-secondary)]">
+                          {t('mcpProofTitle')}
+                        </p>
+                        <p className="mt-1 break-keep text-label leading-4 text-[color:var(--color-text-tertiary)]">
+                          {t('mcpProofBody')}
+                        </p>
+                        <button
+                          type="button"
+                          onClick={() => void copy(MCP_FIRST_CALLS_PACKET)}
+                          className="mt-2 inline-flex h-8 w-full items-center justify-center gap-1.5 rounded-md border border-[color:var(--color-indigo-line-a32)] px-2 font-mono text-label text-[color:var(--color-indigo-accent)] transition-colors hover:border-[color:var(--color-indigo-line-a45)] hover:bg-[color:var(--color-indigo-line-a13)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--color-indigo-a46)] focus-visible:ring-inset"
+                        >
+                          {copyState === 'copied' ? (
+                            <Check size={12} aria-hidden />
+                          ) : (
+                            <Copy size={12} aria-hidden />
+                          )}
+                          {copyState === 'copied' ? t('mcpProofCopied') : t('mcpProofCopy')}
+                        </button>
+                      </div>
+                    </>
+                  )
                 ) : (
-                  <>
-                    <SettingsGroup>
-                <button
-                  ref={agentDrillInRef}
-                  type="button"
-                  data-testid="app-settings-agent-drillin"
-                  onClick={() => openSubview('agent')}
-                  className="flex min-h-12 w-full items-center justify-between gap-3 px-3 py-2 text-left transition-colors hover:bg-[color:var(--color-overlay-2)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--color-indigo-a46)] focus-visible:ring-inset"
-                >
-                  <span className="min-w-0">
-                    <span className="block text-body text-[color:var(--color-text-secondary)]">
-                      {t('agentTitle')}
-                    </span>
-                    <span className="mt-0.5 block break-keep text-label leading-4 text-[color:var(--color-text-quaternary)]">
-                      {t('agentBody')}
-                    </span>
-                  </span>
-                  <span className="flex shrink-0 items-center gap-1">
-                    <span
-                      className={cn(
-                        'text-body',
-                        agentSummaryNeedsAttention
-                          ? 'text-[color:var(--color-status-warning)]'
-                          : 'text-[color:var(--color-text-tertiary)]',
-                      )}
-                      data-testid="app-settings-agent-summary"
-                    >
-                      {agentSummary}
-                    </span>
-                    <ChevronRight size={13} aria-hidden className="text-[color:var(--color-text-quaternary)]" />
-                  </span>
-                </button>
-                    </SettingsGroup>
-                    <SettingsGroup label={tAi('title')}>
-                <button
-                  ref={aiDrillInRef}
-                  type="button"
-                  data-testid="app-settings-ai-drillin"
-                  onClick={() => openSubview('ai')}
-                  className="flex min-h-12 w-full items-center justify-between gap-3 px-3 py-2 text-left transition-colors hover:bg-[color:var(--color-overlay-2)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--color-indigo-a46)] focus-visible:ring-inset"
-                >
-                  <span className="min-w-0">
-                    <span className="block text-body text-[color:var(--color-text-secondary)]">
-                      {tAi('rowLabel')}
-                    </span>
-                    <span className="mt-0.5 block break-keep text-label leading-4 text-[color:var(--color-text-quaternary)]">
-                      {tAi('rowBody')}
-                    </span>
-                  </span>
-                  <span className="flex shrink-0 items-center gap-1">
-                    <span
-                      className="text-body text-[color:var(--color-text-tertiary)]"
-                      data-testid="app-settings-ai-summary"
-                    >
-                      {aiSummary}
-                    </span>
-                    <ChevronRight size={13} aria-hidden className="text-[color:var(--color-text-quaternary)]" />
-                  </span>
-                </button>
-                    </SettingsGroup>
-                  </>
+                  <AiConnectionPanel
+                    connection={aiConnection}
+                    vaultRootPath={vaultRootPath}
+                    downloadHref={buildRouteFocusHref('/download/')}
+                    onDownloadNavigate={() => rememberRouteFocusIntent('/download/')}
+                  />
                 )}
               </div>
             </div>
-          )}
+          }
         </div>
       </div>,
           document.body,

@@ -1,3 +1,33 @@
+# E2E — Playwright(chromium).
+#
+# ## 왜 한 잡이 아니라 다섯인가 (2026-08-02)
+#
+# 이 파일은 2026-07 정리 때 *"스위트가 충분히 작아져 샤딩 없이 한 잡으로 돌린다"*
+# 고 적어 뒀다. 그 전제가 낡았다 — 실측(가장 오래 걸린 성공 런의 스텝별 소요):
+#
+# | 스텝 | 테스트 | 소요 |
+# |---|---|---|
+# | 정적 export (공방 내비) | 5 | 49초 |
+# | 웹 스모크 | 10 | 46초 |
+# | **전체 스위트** | **150** | **448초** (부팅 22초 + 실행 426초) |
+#
+# 셋이 한 잡에서 줄줄이 돌아 543초였다.
+#
+# **워커를 올리지 않고 러너를 늘린다.** `playwright.config.ts` 의 `workers: 1`
+# 과 `fullyParallel: false` 는 취향이 아니라 dev(Turbopack) 콜드 스타트의
+# 타이밍 취약성에 대한 답이다(같은 파일의 `retries` 주석 참고 — 온디맨드
+# 재컴파일이 산발 실패를 낸다). 워커를 올리면 **한 dev 서버에 동시 요청이
+# 늘어** 정확히 그 취약성을 키운다. 샤딩은 다르다: 샤드마다 러너도 dev 서버도
+# 따로라 **서버당 동시성은 그대로 1**이고 벽시계만 나뉜다.
+#
+# 산수: 샤드당 고정비가 부팅 22초 + 준비 36초 ≈ 58초다. 150개를 N 등분하면
+# 샤드 하나가 58 + 426/N 초. N=3 이면 200초, N=4 면 165초, N=5 면 143초 —
+# **고정비 때문에 수확이 빠르게 준다.** 3을 고른다(543 → 200초, 63% 감소).
+# 더 잘게 썰 이유가 생기면 `shard` 배열만 늘리고 `/3` 을 같이 고친다.
+#
+# 다섯 잡은 서로를 안 기다린다 — 분류(`classify-change.mjs`)는 node 빌트인만
+# 쓰는 스크립트라 잡마다 따로 돌려도 0초다. 앞단 잡을 두고 `needs:` 로 묶으면
+# 그 잡의 준비 시간이 전체 앞에 직렬로 붙는다.
 name: E2E smoke
 
 on:
@@ -17,113 +47,132 @@ env:
   FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
 
 jobs:
-  playwright:
-    name: Playwright (chromium)
+  # ── 정적 export 전용 층 — dev 로는 못 잡는다 ──────────────────────────
+  #
+  # 2026-07-28 실측: 공방의 같은-라우트 이동(산책 · 생성 전환)이 프로덕션
+  # 빌드에서만 죽어 있었다. 경로가 같고 쿼리만 다른 `router.push` 는 라우팅
+  # 단위가 아니라 no-op 이 되는데, dev 는 같은 코드로 둘 다 성공한다 —
+  # **dev 는 그 결함에 대해 진단력이 0** 이다. 나머지 스위트가 전부 dev 를
+  # 상대하므로, 이 잡이 없으면 그 부류의 회귀는 영원히 초록으로 통과한다.
+  static-export:
+    name: Playwright (static export)
     runs-on: ubuntu-latest
     timeout-minutes: 20
     steps:
-      # fetch-depth: 0 필수 — 변경 분류가 `git merge-base` 를 쓴다. 얕은 클론
-      # 이면 베이스를 못 찾아 "전부 실행"으로 열리고 게이트가 무의미해진다.
+      # fetch-depth: 0 필수 — 변경 분류가 `git merge-base` 를 쓴다. 얕은 클론이면
+      # 베이스를 못 찾아 "전부 실행"으로 열리고 게이트가 무의미해진다. 체크아웃은
+      # 복합 액션 안에 못 넣는다 — 로컬 액션은 워크스페이스에 이미 있어야 로드된다.
       - name: Checkout
         uses: actions/checkout@v6
         with:
           fetch-depth: 0
 
-      - name: Setup Node.js
-        uses: actions/setup-node@v6
-        with:
-          node-version: 24
+      - uses: ./.github/actions/setup-playwright
+        id: setup
 
-      - name: Enable Corepack pnpm
-        run: |
-          corepack enable
-          corepack prepare pnpm@10.18.0 --activate
-          pnpm --version
-
-      - name: Install dependencies
-        run: pnpm install --frozen-lockfile
-
-      - name: Resolve installed Playwright version
-        id: playwright-version
-        run: |
-          version=$(node -e "console.log(require('@playwright/test/package.json').version)")
-          echo "version=$version" >> "$GITHUB_OUTPUT"
-
-      - name: Cache Playwright browsers
-        uses: actions/cache@v6
-        id: playwright-cache
-        with:
-          path: ~/.cache/ms-playwright
-          key: playwright-chromium-${{ runner.os }}-${{ steps.playwright-version.outputs.version }}
-
-      - name: Install Playwright chromium (+ system deps)
-        run: pnpm exec playwright install --with-deps chromium
-        if: steps.playwright-cache.outputs.cache-hit != 'true'
-
-      - name: Install Playwright system deps only
-        run: pnpm exec playwright install-deps chromium
-        if: steps.playwright-cache.outputs.cache-hit == 'true'
-
-      # Full e2e suite — small enough post-decontamination (2026-07) to run
-      # as one job rather than sharding. `webServer` in playwright.config.ts
-      # boots `pnpm dev` itself; do not start a dev server here separately.
-      # 렌더되는 페이지가 의존하지 않는 변경(에이전트 브리프 · 문서 · 워크플로)
-      # 에 브라우저를 띄우지 않는다. 잡은 그대로 초록으로 끝나므로 required
-      # check 가 막히지 않는다 — 스텝만 건너뛴다.
-      - name: Classify change
-        id: classify
-        run: node scripts/classify-change.mjs --base=origin/${{ github.base_ref }}
-
-      # 웹 스모크는 분류기가 못 끄는 자리에 둔다.
-      #
-      # 2026-07-27 표면 분리(`docs/DECISIONS.md`) 이후 웹은 앱을 따라가지
-      # 않고, 소유자는 앱만 쓴다. 즉 웹은 **무인 표면**인데 유일한 유입
-      # 경로다. 나머지 스위트와 같은 조건(browser)만 걸면, 데스크톱 브리지만
-      # 건드린 변경(`src-tauri/**`)은 웹을 한 번도 안 보고 머지된다 — 그게
-      # 정확히 이 게이트가 막으라고 만들어진 부패다. 그래서 조건을 하나 넓혀
-      # **shipped code 가 바뀌면(runtime) 무조건** 돌고, main 푸시에서는
-      # 분류기가 비교 베이스를 못 찾아도 항상 돈다.
-      # 정적 export 에서만 재현되는 층 — dev 로는 못 잡는다.
-      #
-      # 2026-07-28 실측: 공방의 같은-라우트 이동(산책 · 생성 전환)이 프로덕션
-      # 빌드에서만 죽어 있었다. 경로가 같고 쿼리만 다른 `router.push` 는 라우팅
-      # 단위가 아니라 no-op 이 되는데, dev 는 같은 코드로 둘 다 성공한다 —
-      # **dev 는 그 결함에 대해 진단력이 0** 이다. 나머지 스위트가 전부 dev 를
-      # 상대하므로, 이 스텝이 없으면 그 부류의 회귀는 영원히 초록으로 통과한다.
       - name: Static export e2e (studio navigation)
         if: >-
-          steps.classify.outputs.runtime == 'true'
-          || steps.classify.outputs.browser == 'true'
+          steps.setup.outputs.runtime == 'true'
+          || steps.setup.outputs.browser == 'true'
           || github.event_name != 'pull_request'
         run: pnpm test:e2e:static
         env:
           CI: true
 
+      - name: Upload Playwright report on failure
+        if: failure()
+        uses: actions/upload-artifact@v7
+        with:
+          name: playwright-report-static-export
+          path: output/playwright/test-results
+          retention-days: 7
+
+  # ── 웹 스모크 — 분류기가 못 끄는 자리 ────────────────────────────────
+  #
+  # 2026-07-27 표면 분리(`docs/DECISIONS.md`) 이후 웹은 앱을 따라가지 않고,
+  # 소유자는 앱만 쓴다. 즉 웹은 **무인 표면**인데 유일한 유입 경로다. 나머지
+  # 스위트와 같은 조건(browser)만 걸면, 데스크톱 브리지만 건드린 변경
+  # (`src-tauri/**`)은 웹을 한 번도 안 보고 머지된다 — 그게 정확히 이 게이트가
+  # 막으라고 만들어진 부패다. 그래서 조건을 하나 넓혀 **shipped code 가
+  # 바뀌면(runtime) 무조건** 돌고, main 푸시에서는 분류기가 비교 베이스를 못
+  # 찾아도 항상 돈다.
+  web-smoke:
+    name: Playwright (web surface)
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      # fetch-depth: 0 필수 — 변경 분류가 `git merge-base` 를 쓴다. 얕은 클론이면
+      # 베이스를 못 찾아 "전부 실행"으로 열리고 게이트가 무의미해진다. 체크아웃은
+      # 복합 액션 안에 못 넣는다 — 로컬 액션은 워크스페이스에 이미 있어야 로드된다.
+      - name: Checkout
+        uses: actions/checkout@v6
+        with:
+          fetch-depth: 0
+
+      - uses: ./.github/actions/setup-playwright
+        id: setup
+
       - name: Web surface smoke
         if: >-
-          steps.classify.outputs.runtime == 'true'
-          || steps.classify.outputs.browser == 'true'
+          steps.setup.outputs.runtime == 'true'
+          || steps.setup.outputs.browser == 'true'
           || github.event_name != 'pull_request'
         run: pnpm exec playwright test tests/e2e/web-surface-smoke.spec.ts
         env:
           CI: true
 
-      # 전체 스위트가 위 스모크를 한 번 더 포함하는 것은 의도적이다(약 20초).
-      # 스텝을 나눠야 웹이 깨졌을 때 로그를 뒤지지 않고 스텝 이름만 보고 안다.
-      - name: Run Playwright suite
-        if: steps.classify.outputs.browser == 'true'
-        run: pnpm exec playwright test
+      - name: Upload Playwright report on failure
+        if: failure()
+        uses: actions/upload-artifact@v7
+        with:
+          name: playwright-report-web-smoke
+          path: output/playwright/test-results
+          retention-days: 7
+
+  # ── 전체 스위트 — 3 샤드 ─────────────────────────────────────────────
+  #
+  # 전체 스위트가 위 웹 스모크를 한 번 더 포함하는 것은 의도적이다(약 20초).
+  # 잡을 나눠야 웹이 깨졌을 때 로그를 뒤지지 않고 잡 이름만 보고 안다.
+  #
+  # 렌더되는 페이지가 의존하지 않는 변경(에이전트 브리프 · 문서 · 워크플로)에
+  # 브라우저를 띄우지 않는다. 잡은 그대로 초록으로 끝나므로 머지가 막히지
+  # 않는다 — 스텝만 건너뛴다.
+  suite:
+    name: Playwright (chromium ${{ matrix.shard }}/3)
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    strategy:
+      # 한 샤드가 빨개도 나머지는 끝까지 돈다 — 한 번에 한 결함만 알려 주면
+      # 검수가 왕복이 된다. `if: always()` 를 잡 안에서 쓰는 것과 같은 이유다.
+      fail-fast: false
+      matrix:
+        shard: [1, 2, 3]
+    steps:
+      # fetch-depth: 0 필수 — 변경 분류가 `git merge-base` 를 쓴다. 얕은 클론이면
+      # 베이스를 못 찾아 "전부 실행"으로 열리고 게이트가 무의미해진다. 체크아웃은
+      # 복합 액션 안에 못 넣는다 — 로컬 액션은 워크스페이스에 이미 있어야 로드된다.
+      - name: Checkout
+        uses: actions/checkout@v6
+        with:
+          fetch-depth: 0
+
+      - uses: ./.github/actions/setup-playwright
+        id: setup
+
+      - name: Run Playwright suite (shard ${{ matrix.shard }}/3)
+        if: steps.setup.outputs.browser == 'true'
+        run: pnpm exec playwright test --shard=${{ matrix.shard }}/3
         env:
           CI: true
 
       - name: Skip note
-        if: steps.classify.outputs.browser != 'true'
-        run: echo "브라우저가 의존하는 경로 변경 없음 — 전체 Playwright 생략(웹 스모크는 위에서 별도 판정)"
+        if: steps.setup.outputs.browser != 'true'
+        run: echo "브라우저가 의존하는 경로 변경 없음 — 전체 Playwright 생략(웹 스모크는 별도 잡에서 판정)"
 
       - name: Upload Playwright report on failure
         if: failure()
         uses: actions/upload-artifact@v7
         with:
-          name: playwright-report
+          name: playwright-report-shard-${{ matrix.shard }}
           path: output/playwright/test-results
           retention-days: 7

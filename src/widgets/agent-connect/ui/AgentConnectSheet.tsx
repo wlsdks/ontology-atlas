@@ -17,6 +17,7 @@ import {
   type AgentClientConfigState,
   type AgentConfigScope,
   setAgentConfigScope,
+  StepRow,
   useAgentConfigScope,
 } from "@/features/docs-vault-local";
 
@@ -101,51 +102,6 @@ function CopyBlock({ label, value, testId }: { label: string; value: string; tes
         {value}
       </pre>
     </div>
-  );
-}
-
-/** 번호 배지 + 제목 + 설명 + 내용 — 첫 화면 3단계의 통일 문법. */
-function StepRow({
-  n,
-  title,
-  desc,
-  children,
-}: {
-  n: number;
-  title: string;
-  desc?: string;
-  children?: React.ReactNode;
-}) {
-  return (
-    <section className="flex gap-3" data-testid={`agent-connect-step-${n}`}>
-      <span
-        aria-hidden
-        className="mt-0.5 inline-flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-[color:var(--color-indigo-a16)] font-mono text-caption font-medium text-[color:var(--color-indigo-accent)]"
-      >
-        {n}
-      </span>
-      <div className="min-w-0 flex-1">
-        <p className="text-body font-medium text-[color:var(--color-text-primary)]">{title}</p>
-        {desc ? (
-          <p className="mt-0.5 text-label leading-relaxed text-[color:var(--color-text-tertiary)]">
-            {desc}
-          </p>
-        ) : null}
-        {/*
-         * ⚠️ **자식이 둘 이상일 수 있다 — 그래서 여기가 `flex-col gap` 이다.**
-         *
-         * 예전엔 `mt-2.5` 만 있는 평범한 div 였다. 각 자식이 자기 안에서
-         * `gap-2.5` 를 쓰므로 대부분의 화면에서는 멀쩡해 보였는데, ① 단계처럼
-         * **자식이 둘**(`AgentConnectAction` + `AgentClientButtons`)인 자리에서만
-         * 그 둘 사이가 0 이 됐다 — 「무엇을 만들지 먼저 보기」와 「Claude Code에
-         * 연결」이 서로 붙어 한 덩어리로 읽혔다(소유자 실보고 2026-07-29).
-         *
-         * 컨테이너가 자식 사이의 간격을 책임지지 않고 자식에게 맡기면, 자식이
-         * 하나일 때는 티가 안 나고 둘이 되는 순간 조용히 깨진다.
-         */}
-        {children ? <div className="mt-2.5 flex flex-col gap-2.5">{children}</div> : null}
-      </div>
-    </section>
   );
 }
 
