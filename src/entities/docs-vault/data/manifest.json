@@ -6041,6 +6041,26 @@
         },
         {
           "depth": 2,
+          "text": "2026-08-02 — AI 연결·에이전트 턴: 화면이 사실과 다른 것을 말한 자리 넷을 끊는다 (반복 지적 2건 포함)",
+          "slug": "2026-08-02-ai-연결에이전트-턴-화면이-사실과-다른-것을-말한-자리-넷을-끊는다-반복-지적-2건-포함"
+        },
+        {
+          "depth": 3,
+          "text": "chief 가 틀렸던 것 — 기록에 남긴다",
+          "slug": "chief-가-틀렸던-것-기록에-남긴다"
+        },
+        {
+          "depth": 3,
+          "text": "기록된 반대 (자리별 · 전부 반증 조건 포함)",
+          "slug": "기록된-반대-자리별-전부-반증-조건-포함"
+        },
+        {
+          "depth": 3,
+          "text": "슬라이스",
+          "slug": "슬라이스"
+        },
+        {
+          "depth": 2,
           "text": "2026-08-02 — 첫 실행 카드: 「지금은 샘플」을 네 번 말하는 화면에서 가장 센 잉크가 샘플의 크기였다 — 계기를 캡션으로 강등하고 리드를 주목 승자로",
           "slug": "2026-08-02-첫-실행-카드-지금은-샘플을-네-번-말하는-화면에서-가장-센-잉크가-샘플의-크기였다-계기를-캡션으로-강등하고-리드를-주목-승자로"
         },
@@ -6391,9 +6411,11 @@
         }
       ],
       "excerpt": "이 파일은 결정과 그때 진 반대 의견을 남긴다. docs/CHANGELOG.md 는 무엇이 언제 바뀌었나를 답하고, 이 파일은 왜 그렇게 정했고, 무엇을 걸었나를 답한다. 최신이 위. 기록은 덧붙이기만 한다 — 지난 기록을 고치지 않는다. 판단이 바뀌었으면 새 기록을 쓰고 옛 기록을 뒤집힘 으로 표시한다. 틀린 기록도 자산이다. 1. 소집 전에 읽는다. 카운슬을 열기 전(그리고 단독 PO 패스를 쓰기 전) 같은 표면 · 같은 질문에 대한 선행 결정이 있는지 먼저 본다. 있으면 새 패스는 그것을 ① 여전히 유효하다고 인용하거나 ② 명시적으로 뒤집는다. 조용히 다시 결정",
-      "wordCount": 36606,
+      "wordCount": 37874,
       "updatedAt": "2026-08-02",
-      "linksOut": []
+      "linksOut": [
+        "slug"
+      ]
     },
     {
       "slug": "DEPLOYMENT",
@@ -7139,6 +7161,16 @@
           "slug": "select-listbox-4"
         },
         {
+          "depth": 4,
+          "text": "목록의 자람과 상한 (`select-growth.ts`, 2026-08-02)",
+          "slug": "목록의-자람과-상한-select-growthts-2026-08-02"
+        },
+        {
+          "depth": 3,
+          "text": "설정 시트의 행 측정폭 (`--settings-content-measure`, 2026-08-02)",
+          "slug": "설정-시트의-행-측정폭---settings-content-measure-2026-08-02"
+        },
+        {
           "depth": 3,
           "text": "EmptyState (#16)",
           "slug": "emptystate-16"
@@ -7185,7 +7217,7 @@
         }
       ],
       "excerpt": "This document is maintained based on Section 3 of the design spec. For the original Linear specification, see design-references/DESIGN-linear.md. v2 (2026-07): topology-map-v2 에서 출하된 B2+ \"Circuit × Constellation\" 시각 언어가 페이지 롤아웃(랜딩 → docs/ontology 허브 → projects/insights → download)의 규범이 되었다 — 아래 v2 — \"Circuit × Constell",
-      "wordCount": 22775,
+      "wordCount": 23359,
       "updatedAt": "2026-08-02",
       "linksOut": [
         "design-references/DESIGN-linear",
@@ -12919,6 +12951,11 @@
       {
         "fromSlug": "CHANGELOG",
         "context": "pt` + `merge_concepts` 추가. 한 번의 atomic 호출로 slug 변경/노드 합치기 + 모든 backlink (frontmatter array · inline string · body link `**[slug]**` · `(slug.md)`) 자동 redirect. 이전엔 AI agent 가 `find_backlinks` + N 회 `patch_concept` 으로 직접 짜야 했던 graph-level 변형이 1 콜. ##",
+        "linkText": "slug"
+      },
+      {
+        "fromSlug": "DECISIONS",
+        "context": "없음) **갈린 지점**: **화면이 사실과 다른 것을 말할 때, 고칠 쪽이 문구인가 판정 로직인가.** 「읽은 근거 없이 답했어요」는 문구가 정직했고 판정이 틀렸다(`citation.ts:53` 이 인용 표기 `**[slug]**` 개수만 셈 — 도구 4회·1,336자를 읽은 턴에 강등). 「웹에서는 안 됩니다」는 조건절이 참인데 인상이 거짓이었다(Ollama 기본값이 이미 CORS 를 허용 — 실측 `/v1/models` 200, `/v1",
         "linkText": "slug"
       },
       {

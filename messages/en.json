@@ -2872,7 +2872,7 @@
       "localFailNoModels": "Connected, but no models are installed. Pull one (ollama pull qwen3:8b) and check again.",
       "localScopeLoopback": "Sends: your question + the vault excerpts you picked → {host}. It never leaves this computer, and the log records {host} as the destination — that record is the proof.",
       "localScopeRemote": "Sends: your question + the vault excerpts you picked → {host}. That address is off this computer, so the log records {host} as the destination.",
-      "webDegradedLocalBody": "Connecting by address to a runner on this computer (Ollama, LM Studio) does not work in the browser either: a web page cannot reach localhost unless the runner explicitly allows that origin, and for the same reason this app ships no LLM send path on the web. In the desktop app you only type the runner's address — no key — and the log records localhost as the destination."
+      "webDegradedLocalBody": "Connecting by address to a runner on this computer (Ollama, LM Studio) does not work in the browser either. This has nothing to do with the runner's CORS setting — even when the runner does allow a browser origin, this app deliberately ships no LLM send path on the web. In the desktop app you only type the runner's address — no key — and the log records localhost as the destination."
     }
   },
   "copyProjectLink": {

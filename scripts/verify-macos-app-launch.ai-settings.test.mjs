@@ -2,6 +2,7 @@ import assert from "node:assert/strict";
 import fs from "node:fs";
 import test from "node:test";
 import {
+  AI_SETTINGS_LISTBOX_MAX_ROWS,
   authorityOfBaseUrl,
   isSafeAiSettingsBaseUrl,
   parseVerifyAppLaunchArgs,
@@ -28,6 +29,13 @@ const PASSING_MARKERS = {
     modelListOpened: true,
     modelOptionCount: 7,
     models: ["qwen3:8b"],
+    // 목록이 잘리지 않고, 보인다고 주장하는 옵션이 전부 눌리고,
+    // 행 상한 아래라 스크롤이 아예 없다.
+    modelListHeight: 259,
+    modelListVisibleHeight: 259,
+    modelListOverflowing: false,
+    modelOptionsInView: 7,
+    modelOptionsHittable: 7,
     selectedModel: "qwen3:8b",
   },
 };
@@ -102,6 +110,86 @@ test("AI settings verification fails loudly instead of passing on missing elemen
         },
       },
       /offered no model to choose/,
+    ],
+    // 2026-08-02 설치 앱 실측 — **세는 것과 보이는 것은 다르다.** 러너가 준
+    // 7개가 role/aria/텍스트 마커를 전부 통과하는 동안 화면에는 1개만 있었다
+    // (264px 목록이 조상 overflow 에 39px 로 잘렸다). 종전 판정은 여기서
+    // 초록이었고, 그래서 이 결함은 어느 게이트에도 안 걸렸다.
+    [
+      {
+        ...PASSING_MARKERS,
+        aiSettingsVerification: {
+          ...PASSING_MARKERS.aiSettingsVerification,
+          modelListHeight: 264,
+          modelListVisibleHeight: 39,
+        },
+      },
+      /clipped the model list: 39px of 264px/,
+    ],
+    [
+      {
+        ...PASSING_MARKERS,
+        aiSettingsVerification: {
+          ...PASSING_MARKERS.aiSettingsVerification,
+          modelListHeight: undefined,
+          modelListVisibleHeight: undefined,
+        },
+      },
+      /never measured the model list box/,
+    ],
+    [
+      {
+        ...PASSING_MARKERS,
+        aiSettingsVerification: {
+          ...PASSING_MARKERS.aiSettingsVerification,
+          modelOptionsHittable: 1,
+        },
+      },
+      /showed 7 model option\(s\) but only 1 answered a hit test/,
+    ],
+    [
+      {
+        ...PASSING_MARKERS,
+        aiSettingsVerification: {
+          ...PASSING_MARKERS.aiSettingsVerification,
+          modelOptionsInView: 0,
+          modelOptionsHittable: 0,
+        },
+      },
+      /not one option landed inside its own scroll view/,
+    ],
+    // 상한 규칙 — 7개는 행 상한(8) 아래이므로 한 번에 다 보여야 하고,
+    // 스크롤은 «더 있다» 를 뜻하므로 그때 켜져 있으면 거짓말이다.
+    [
+      {
+        ...PASSING_MARKERS,
+        aiSettingsVerification: {
+          ...PASSING_MARKERS.aiSettingsVerification,
+          modelOptionsInView: 6,
+          modelOptionsHittable: 6,
+        },
+      },
+      /under the 8-row cap.*only showed 6 at once/,
+    ],
+    [
+      {
+        ...PASSING_MARKERS,
+        aiSettingsVerification: {
+          ...PASSING_MARKERS.aiSettingsVerification,
+          modelListOverflowing: true,
+        },
+      },
+      /overflowing=true while showing 7 of 7/,
+    ],
+    [
+      {
+        ...PASSING_MARKERS,
+        aiSettingsVerification: {
+          ...PASSING_MARKERS.aiSettingsVerification,
+          modelListOverflowing: undefined,
+        },
+      },
+      /never reported whether the model list actually overflowed/,
     ],
     [
       {
@@ -300,10 +388,37 @@ test("installed-app AI settings driver walks the real settings testids", () => {
 
   // 토글 컨트롤을 폴링마다 다시 누르면 열고 닫기를 반복한다.
   assert.equal(tauriLib.includes("CLICK_COOLDOWN"), true);
+  // 목록을 **재는** 코드가 실제로 실려 있다 — 계약만 있고 마커를 만드는 쪽이
+  // 없으면 판정은 영원히 `undefined` 위에서 돈다.
+  for (const marker of [
+    "modelListVisibleHeight",
+    "modelListOverflowing",
+    "modelOptionsInView",
+    "modelOptionsHittable",
+    "elementFromPoint",
+  ]) {
+    assert.equal(tauriLib.includes(marker), true, `verifier should measure ${marker}`);
+  }
   // 주소가 없으면 조용히 건너뛰지 않고 마커로 실패를 남긴다.
   assert.equal(
     tauriLib.includes("ONTOLOGY_ATLAS_VERIFY_AI_BASE_URL was missing or unsafe"),
     true,
+  );
+});
+
+/**
+ * 행 상한은 두 곳에 적혀 있다 — 앱(`select-growth.ts`)과 이 검증기. 이
+ * 스크립트는 앱 번들을 import 하지 않으므로 복제가 불가피하고, 그러면 드리프트는
+ * 시간 문제다. 값이 갈리는 순간 게이트가 **틀린 기준으로 초록**이 된다.
+ */
+test("model list row cap matches the shipped rule", () => {
+  const source = fs.readFileSync("src/shared/ui/select-growth.ts", "utf8");
+  const match = source.match(/export const LISTBOX_MAX_ROWS = (\d+)/);
+  assert.ok(match, "select-growth.ts should export LISTBOX_MAX_ROWS");
+  assert.equal(
+    Number(match[1]),
+    AI_SETTINGS_LISTBOX_MAX_ROWS,
+    "verifier row cap drifted from the shipped rule — the gate would judge by a number the app does not use",
   );
 });
 
