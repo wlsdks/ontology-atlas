@@ -15,7 +15,8 @@ export interface ImpactModeCopyKeys {
  * 목록을 참조하게 한다(drift 방지).
  *
  * 방향 어휘는 rank13(FullDetailA1 reach direction 토글)과 통일한다:
- * upstream(의존) = "이게 기대는 곳", downstream(영향) = "이걸 기대받는 곳".
+ * upstream(의존) = "이 항목에 필요한 대상", downstream(영향) =
+ * "이 항목을 필요로 하는 대상".
  */
 export const IMPACT_MODE_COPY_KEYS: ImpactModeCopyKeys[] = [
   { mode: "none", labelKey: "impactModeNone", helpKey: "impactHelpNone" },

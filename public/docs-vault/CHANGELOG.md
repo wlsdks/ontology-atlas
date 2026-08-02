@@ -7,6 +7,38 @@
 
 ---
 
+## 2026-08-02 — 지도 패널이 내부 용어 대신 사용자가 얻는 결과를 말한다
+
+프로젝트 패널의 `AI 인계문 복사`를 `AI에게 줄 프로젝트 정보 복사`로 바꾸고,
+일반 노드는 `AI에게 줄 항목 정보 복사`로 구분했다. 복사 뒤에는
+`AI에게 줄 정보를 복사했어요. 대화창에 붙여넣으세요.`라고 다음 행동까지 알린다.
+복사 payload와 MCP/CLI 계약, source receipt의 범주형 사실은 바꾸지 않았다.
+
+같은 표면의 내부 관계어도 함께 정리했다. `담는 것`·`속한 곳`·`기대는 곳`은
+`하위 항목`·`상위 항목`·`필요한 항목`으로, `근거` 수치는 `근거 문서`로,
+`문서`·`AI에게 요청`·`이것만 보기`·`전체 상세`는 `문서 열기`·`AI에게
+물어보기`·`이 영역만 보기`·`자세히 보기`로 바뀐다. 코드 source의 `측정`도
+사람이 이해하는 `확인`으로 통일했다.
+
+---
+
+## 2026-08-02 — 프로젝트 의미 답을 새 에이전트 세션에서도 다시 검증한다
+
+MCP는 이제 33개 도구(읽기 19 · 쓰기 14)를 제공한다. 새
+`finalize_project_meaning`은 승인한 concept/relation 쓰기와 vault 검증·compile이
+끝난 뒤 project Markdown의 다섯 competency 답을 현재 graph/source 근거에 묶는다.
+사람이 편집하는 정본은 계속 Markdown 하나이며, sidecar receipt에는 원시 답변이나
+witness, 비공개 source root·remote를 복제하지 않는다.
+
+새 MCP 프로세스의 `query_ontology({operation:"agent_brief"})`는 Markdown과 receipt,
+현재 graph inventory를 다시 대조해 범주형 `meaningAssessment`를 파생한다. 저장된
+source receipt가 검증돼 있어도 현재 프로세스가 source를 다시 읽지 못해
+currentness가 `unavailable`이면 `verified_current`로 올리지 않고
+`review_required`로 닫는다. CLI의 `agent-brief --project <slug>`는 여러 project가
+있는 vault에서 그 project containment tree 하나를 명시적으로 선택한다.
+
+---
+
 ## 2026-08-02 — 프로젝트 코드 근거 패널의 말과 행동을 정리했다
 
 프로젝트를 고르면 `코드 근거` 아래에 상태와 출처, 측정 시각과 현재성이 구분되어

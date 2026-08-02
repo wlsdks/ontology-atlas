@@ -180,8 +180,8 @@ describe('i18n message catalog', () => {
     // shortcutDoubleClick·shortcutEsc)는 죽은 "지도 조절" 패널 철거(2026-07-21)로
     // 사라졌다 — Fit 타일만 남아 fitViewTooltip/fitViewAriaLabel 만 검증한다.
     assert.equal(ko.topologyWidgets.controls.fitViewAriaLabel, '지도 전체 맞추기');
-    assert.equal(ko.topology.analysis.overviewAgentReadiness, '에이전트 인계');
-    assert.equal(ko.topology.analysis.overviewAgentReadinessReady, '인계 가능');
+    assert.equal(ko.topology.analysis.overviewAgentReadiness, 'AI가 이어서 작업할 준비');
+    assert.equal(ko.topology.analysis.overviewAgentReadinessReady, '준비됨');
     assert.equal(ko.topology.analysis.overviewAgentReadinessPreflight, '사전 점검');
     assert.doesNotMatch(
       [
@@ -359,7 +359,7 @@ describe('i18n message catalog', () => {
     assert.match(koCopy.pathChipUnresolved, /대상 선택/);
     assert.match(koCopy.pathChipResolved, /홉/);
     assert.match(koCopy.pathChipNoPath, /경로 없음/);
-    assert.equal(koCopy.pathChipCopyPacket, '경로 패킷 복사');
+    assert.equal(koCopy.pathChipCopyPacket, 'AI에게 줄 경로 정보 복사');
     assert.equal(koCopy.pathChipClear, '경로 지우기');
 
     assert.doesNotMatch(
@@ -644,7 +644,7 @@ describe('i18n message catalog', () => {
     );
     assert.equal(
       settings.mcpProofBody,
-      '연결 여부는 이 화면만으로 단정하지 않고 에이전트 세션에서 증명합니다. Codex나 Claude에 서버가 보이면 이 호출 패킷을 먼저 붙여넣으세요.',
+      '연결 여부는 이 화면만으로 단정하지 않고 에이전트 세션에서 증명합니다. Codex나 Claude에 서버가 보이면 이 첫 호출 안내를 붙여넣으세요.',
     );
     assert.doesNotMatch(
       mixedLanguageCopy,

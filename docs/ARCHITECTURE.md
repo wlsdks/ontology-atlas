@@ -55,11 +55,12 @@ tags: [architecture, infra, overview]
 │ ├─ 19 read tools  connection/git proof · list/get/find ·│
 │ │                  compile_ontology · query_ontology ·  │
 │ │                  analyze_repo_structure · infer_imports│
-│ └─ 13 write tools add_concept · add_concepts ·          │
+│ └─ 14 write tools add_concept · add_concepts ·          │
 │                    add_relation · add_relations ·       │
 │                    remove/replace relation · patch ·    │
 │                    reclassify · delete/rename/merge ·   │
-│                    absorb_document · git_snapshot       │
+│                    absorb_document · git_snapshot ·     │
+│                    finalize_project_meaning             │
 │                                                         │
 │ AI agent (Claude Code, Cursor, …) reads/writes the     │
 │ same vault directory the user picked in /docs.         │
@@ -183,10 +184,18 @@ The directory layout is enforced by `eslint-plugin-boundaries` in `eslint.config
    query indexes.
 4. `query_ontology` serves graph operations such as `neighbors`, `path`,
    `project_scope`, `blast_radius`, `cycles`, `maintenance_plan`,
-   `workspace_brief`, and `health`.
+   `workspace_brief`, and `health`. `agent_brief` accepts an explicit project
+   in multi-project vaults and derives a fresh categorical `meaningAssessment`
+   for that project; it does not reuse a saved score.
 5. Write tools mutate markdown only after explicit add/patch/relation/rename/
    merge/delete calls. Analysis tools such as `analyze_repo_structure` and
    `infer_imports` are side-effect-free candidate generators.
+6. `finalize_project_meaning` is the post-write boundary: after current vault
+   validation and complete project scope, it stores a versioned competency
+   receipt bound to graph and source provenance. A successful receipt write is
+   not a claim that the source is current. Structure, competency witnesses, and
+   source currentness remain separate; missing, stale, or unresolved evidence
+   closes the assessment as a categorical review/evidence state.
 
 ### Vault mode (user picked a markdown folder)
 

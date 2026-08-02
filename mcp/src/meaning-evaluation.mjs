@@ -3,6 +3,7 @@ import { isAbsolute, relative, resolve, sep } from 'node:path';
 
 import { WRITE_RELATION_TYPE_VALUES } from './ontology-engine.mjs';
 import { MEANING_COMPETENCY_QUESTIONS } from './meaning-assessment.mjs';
+import { renderProjectCompetencyMarkdown } from './project-meaning-receipt.mjs';
 
 const DEFAULT_THRESHOLDS = Object.freeze({
   conceptPrecision: 0.8,
@@ -805,10 +806,10 @@ function buildConceptBody(concept, relations, competencyAnswers = null) {
       `  - Confidence: ${relation.confidence}`,
     ].join('\n')).join('\n')]);
   }
-  if (competencyAnswers) {
-    sections.push(['Competency answers', renderCompetencyAnswers(competencyAnswers)]);
-  }
-  return `${sections.map(([heading, body]) => `## ${heading}\n\n${body}`).join('\n\n')}\n`;
+  const rendered = sections.map(([heading, body]) => `## ${heading}\n\n${body}`).join('\n\n');
+  return competencyAnswers
+    ? `${rendered}\n\n${renderProjectCompetencyMarkdown(competencyAnswers)}`
+    : `${rendered}\n`;
 }
 
 function normalizeCompetencyAnswers(answers) {
@@ -832,37 +833,6 @@ function normalizeCompetencyAnswers(answers) {
       }];
     }),
   );
-}
-
-function renderCompetencyAnswers(answers) {
-  return COMPETENCY_QUESTION_CONTRACTS.map(({ id, question }) => {
-    const row = answers[id];
-    const witnessLines = [
-      row.witnesses.concepts.length > 0
-        ? `- Concepts: ${row.witnesses.concepts.map((slug) => `\`${slug}\``).join(', ')}`
-        : null,
-      row.witnesses.relations.length > 0
-        ? `- Relations: ${row.witnesses.relations.map(
-          (relation) => `\`${relation.from}\` --${relation.type}--> \`${relation.to}\``,
-        ).join(', ')}`
-        : null,
-      row.witnesses.evidence.length > 0
-        ? `- Evidence: ${row.witnesses.evidence.map((source) => `\`${source}\``).join(', ')}`
-        : null,
-      row.witnesses.paths.length > 0
-        ? `- Paths: ${row.witnesses.paths.map((source) => `\`${source}\``).join(', ')}`
-        : null,
-      nonEmpty(row.gap) ? `- Gap: ${row.gap}` : null,
-    ].filter(Boolean);
-    return [
-      `### ${id} — ${row.status}`,
-      '',
-      question,
-      '',
-      row.answer,
-      ...(witnessLines.length > 0 ? ['', ...witnessLines] : []),
-    ].join('\n');
-  }).join('\n\n');
 }
 
 function relationKey(relation) {

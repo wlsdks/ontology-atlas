@@ -69,7 +69,7 @@ the category; we are taking a specific, opinionated position in it.
 - **MemGPT (Packer et al., 2023)** — "virtual context management": the model pages information between
   a fixed context window (fast memory) and external stores (slow memory) via self-issued function
   calls, simulating unbounded context. → We are the **codebase-specific, structured & human-readable
-  version of MemGPT's "slow memory"**: the agent pages the repo's mental model in/out via 32 MCP tools
+  version of MemGPT's "slow memory"**: the agent pages the repo's mental model in/out via 33 MCP tools
   instead of opaque archival storage.
 - **"A Survey on the Memory Mechanism of LLM-based Agents" (Zhang et al., ACM TOIS, 2024)** — the
   peer-reviewed taxonomy of memory *sources / forms / operations* and *evaluation*. → Lets us name our
@@ -195,7 +195,7 @@ applied reading of public, citable design thinking — not arbitrary taste.
 Everything above already exists. Our contribution is a **specific combination** none of the prior art
 holds all of at once:
 
-1. **Agent-maintained** — the AI coding agent reads *and writes* the graph directly via MCP (32 tools),
+1. **Agent-maintained** — the AI coding agent reads *and writes* the graph directly via MCP (33 tools),
    not a human-only ontology editor (Protégé) and not a machine-only fact generator (Glean/CodeQL).
 2. **Git-native, markdown-IS-the-graph** — the frontmatter is the source of truth, reviewable as a
    diff, versioned by git, no backend / no DB. (Zep/Graphiti = graph DB; GraphRAG = generated store;
@@ -205,6 +205,13 @@ holds all of at once:
 4. **Codebase-scoped meaning layer** — not conversation memory (Zep/mem0) and not structural code facts
    (tree-sitter/Glean), but the *why/owns/impacts* layer **on top of** structure, curated by developer +
    agent.
+5. **Evidence-bound meaning receipts** — an agent can finalize five competency
+   answers, but the receipt is provenance, not an oracle. Every fresh project
+   brief rechecks the current graph, typed witnesses, and source receipt, and
+   keeps structural readiness, competency coverage, and source currentness as
+   separate categorical dimensions. This follows the same inspectability
+   principle as the vault itself: no combined confidence percentage can hide a
+   stale source or an unresolved witness.
 
 **The honest framing:** *agent memory = a maintained knowledge graph* (Zep, Pan et al., the memory
 survey all agree). We take the most **inspectable, lowest-infrastructure** position in that space — a

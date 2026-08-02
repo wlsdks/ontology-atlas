@@ -11,6 +11,10 @@ function normalizedPath(value: string): string {
   return value.replaceAll("\\", "/").replace(/^\.\//, "").replace(/^\/+/, "");
 }
 
+function looksLikeSourceWitnessPath(value: string): boolean {
+  return looksLikeCodePath(value) || /^[^/\\\s]+\.[A-Za-z0-9]+$/.test(value);
+}
+
 function roleForKind(kind: unknown): string {
   return kind === "capability" || kind === "project" ? "entrypoint" : "implementation";
 }
@@ -27,11 +31,26 @@ export function deriveProjectSourceWitnesses(input: {
   const relevantDocSlugs = new Set(
     relevantNodes.map((node) => node.agentSlug).filter((slug): slug is string => Boolean(slug)),
   );
+  // Hand-authored project roots can predate `agentSlug` derivation. The graph
+  // hash already keeps the same exact frontmatter/filename fallback; source
+  // witnesses must use that identical containment boundary or a project-level
+  // README can never satisfy the scope competency evidence contract.
+  for (const doc of input.docs) {
+    if (
+      doc.frontmatter.kind === "project"
+      && (doc.slug === input.projectSlug || doc.frontmatter.slug === input.projectSlug)
+    ) {
+      relevantDocSlugs.add(doc.slug);
+    }
+  }
   const candidates: ProjectSourceWitnessInput[] = [];
   const seenPaths = new Set<string>();
   const add = (candidate: ProjectSourceWitnessInput) => {
     const path = normalizedPath(candidate.path);
-    if (!looksLikeCodePath(path) || seenPaths.has(path)) return;
+    // An explicit frontmatter `path:` can legitimately be a repository-root
+    // artifact such as README.md or package.json. It is still checked against
+    // the inspected source inventory before becoming supported evidence.
+    if (!looksLikeSourceWitnessPath(path) || seenPaths.has(path)) return;
     seenPaths.add(path);
     candidates.push({ ...candidate, path });
   };

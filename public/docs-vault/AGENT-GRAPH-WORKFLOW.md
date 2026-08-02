@@ -1,6 +1,6 @@
 # Agent Graph Workflow
 
-> Current as of 2026-07-27. This is the user-facing guide for running
+> Current as of 2026-08-02. This is the user-facing guide for running
 > `ontology-atlas` as a local meaning graph: CLI-only, MCP-connected, and web
 > workbench flows over the same markdown vault.
 
@@ -168,14 +168,15 @@ parsing Markdown.
 ## What MCP Adds
 
 MCP is the agent interface. When Claude Code, Codex, or Cursor has the
-`ontology-atlas` MCP server registered, the agent can call 32 local tools:
+`ontology-atlas` MCP server registered, the agent can call 33 local tools:
 
 - 19 read tools: connection and git state, node listing, evidence search,
   backlinks, neighbors, paths, validation, compile, repo analysis, import
   inference, project indexing, and graph queries.
-- 13 write tools: document absorption, single/batch node and relation writes,
+- 14 write tools: document absorption, single/batch node and relation writes,
   patch/reclassify, relation removal/replacement, rename, merge, delete, and git
-  snapshot with dry-run, idempotency, or conflict safety where needed.
+  snapshot with dry-run, idempotency, or conflict safety where needed, plus the
+  project-meaning receipt finalizer.
 
 MCP adds three things that terminal-only use does not provide as naturally:
 
@@ -196,6 +197,17 @@ The first MCP calls should be read-only:
 ```
 
 Only after those checks are clean should an agent propose writes.
+
+After the person accepts project competency answers and the agent has completed
+the related concept/relation writes, `validate_vault`, and a complete compile,
+call `finalize_project_meaning({ projectSlug, expected_mtime })`. The server
+derives the body/graph/source provenance and writes only the receipt—never raw
+answers, witness text, a private absolute source root, or remote coordinates.
+`ok: true` means that receipt write completed; it does not mean the project is
+verified. Read `agent_brief.meaningAssessment` for the categorical fail-closed
+state (`verified_current`, `review_required`, `needs_evidence`, or `invalid`).
+For a multi-project vault, use `query_ontology({ operation: "agent_brief",
+project: "SLUG" })` or `ontology-atlas agent-brief <vault> --project SLUG`.
 
 ## How This Differs From A Graph Database
 

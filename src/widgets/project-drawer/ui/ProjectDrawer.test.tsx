@@ -119,8 +119,8 @@ describe("ProjectDrawer 임팩트 모드 도움말 (rank16)", () => {
     const upstream = screen.getByRole("button", { name: /^의존 —/ });
     const downstream = screen.getByRole("button", { name: /^영향 —/ });
 
-    expect(upstream.getAttribute("aria-label")).toContain("기대는 곳");
-    expect(downstream.getAttribute("aria-label")).toContain("기대받는 곳");
+    expect(upstream.getAttribute("aria-label")).toContain("필요한 대상");
+    expect(downstream.getAttribute("aria-label")).toContain("필요로 하는 대상");
   });
 
   it("모드 필 클릭은 콜백을 부르고, 각 모드는 자기 도움말 문구를 보인다", () => {
@@ -141,7 +141,7 @@ describe("ProjectDrawer 임팩트 모드 도움말 (rank16)", () => {
     renderDrawer({ impactMode: "upstream", onChangeImpactMode });
     expect(
       within(screen.getByTestId("project-drawer-impact-help")).getByText(
-        "이게 기대는 곳을 강조합니다",
+        "이 항목에 필요한 대상을 강조합니다",
       ),
     ).toBeInTheDocument();
   });

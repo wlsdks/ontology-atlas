@@ -1244,8 +1244,8 @@ export function TopologyV2DetailPanel({
             onClick={onOpenFullDetail}
             data-testid="topology-v2-detail-panel-open-full-detail"
             className={showProjectSource
-              ? "shrink-0 rounded-[var(--topology-v2-panel-row-radius)] px-1.5 py-[7px] text-body text-[color:var(--topology-v2-panel-text-tertiary)] transition-colors hover:text-[color:var(--topology-v2-panel-text-secondary)]"
-              : "shrink-0 rounded-[8px] border border-[color:var(--topology-v2-panel-primary-border)] bg-[color:var(--topology-v2-panel-primary-surface)] px-3 py-[7px] text-[12px] font-semibold text-[color:var(--topology-v2-panel-primary-text)] transition-colors hover:border-[color:var(--topology-v2-panel-primary-border-hover)] hover:bg-[color:var(--topology-v2-panel-primary-surface-hover)]"}
+              ? "shrink-0 rounded-[var(--topology-v2-panel-row-radius)] px-1.5 py-[7px] text-body leading-body text-[color:var(--topology-v2-panel-text-tertiary)] transition-colors hover:text-[color:var(--topology-v2-panel-text-secondary)]"
+              : "shrink-0 rounded-[8px] border border-[color:var(--topology-v2-panel-primary-border)] bg-[color:var(--topology-v2-panel-primary-surface)] px-3 py-[7px] text-label leading-label font-semibold text-[color:var(--topology-v2-panel-primary-text)] transition-colors hover:border-[color:var(--topology-v2-panel-primary-border-hover)] hover:bg-[color:var(--topology-v2-panel-primary-surface-hover)]"}
           >
             {labels.openFullDetail}
           </button>

@@ -1,7 +1,11 @@
 import assert from 'node:assert/strict';
 import { describe, it } from 'node:test';
 
-import { formatProjectSourceSummary, readinessExitCode } from './agent-brief.mjs';
+import {
+  formatMeaningAssessmentSummary,
+  formatProjectSourceSummary,
+  readinessExitCode,
+} from './agent-brief.mjs';
 
 // R+ (agent-persona-2026-07 QA friction #5) — agent-brief's exit code
 // encodes graph readiness, not command success. --exit-zero lets scripting
@@ -68,5 +72,28 @@ describe('agent-brief project source summary', () => {
       'nextAction   remeasure_source',
     ]);
     assert.doesNotMatch(lines.join('\n'), /confidence|score|\/private/);
+  });
+});
+
+describe('agent-brief project meaning summary', () => {
+  it('keeps categorical dimensions and next action without inventing a score', () => {
+    const lines = formatMeaningAssessmentSummary({
+      contract: 'meaningAssessment:v1',
+      status: 'review_required',
+      dimensions: {
+        structure: { status: 'ready' },
+        competency: { status: 'answered' },
+        source: { status: 'verified_current', currentness: 'unavailable' },
+      },
+      topGap: { dimension: 'source', id: 'source_currentness_unavailable' },
+      nextAction: { id: 'verify_source_currentness' },
+    });
+    assert.deepEqual(lines, [
+      'status       review_required',
+      'dimensions   structure:ready · competency:answered · source:verified_current/unavailable',
+      'topGap       source:source_currentness_unavailable',
+      'nextAction   verify_source_currentness',
+    ]);
+    assert.doesNotMatch(lines.join('\n'), /confidence|score|%|\/private/);
   });
 });

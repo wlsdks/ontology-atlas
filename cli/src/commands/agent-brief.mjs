@@ -7,14 +7,14 @@ import { fileURLToPath } from 'node:url';
 import { callMcpTool } from '../lib/mcp-call.mjs';
 import { assertAgentBriefShape, agentBriefExitCode } from '../lib/query-result-contract.mjs';
 import { resolveVaultRoot } from '../lib/resolve-vault.mjs';
-import { formatUnknownFlagError, parsePositiveIntegerFlag, parseVaultFlag, resolveExclusiveVaultArg } from '../lib/cli-args.mjs';
+import { formatUnknownFlagError, parsePositiveIntegerFlag, parseRequiredFlagValue, parseVaultFlag, resolveExclusiveVaultArg } from '../lib/cli-args.mjs';
 import { DIAGNOSIS_OPTION_FLAGS, parseDiagnosisOption } from '../lib/diagnosis-options.mjs';
 import { diagnosisStatusColor } from '../lib/diagnosis-colors.mjs';
 import { stampMomentIfFirst } from '../lib/telemetry.mjs';
 import { cliInvocation } from '../lib/self-invocation.mjs';
 
 const CLI_ENTRYPOINT = fileURLToPath(new URL('../index.mjs', import.meta.url));
-const ALLOWED_FLAGS = ['--vault', '--json', '--prompt', '--graph-db-pack', '--verify-fallbacks', '--exit-zero', '--fallback-timeout-ms', '--fallback-slow-ms', '--fallback-concurrency', ...DIAGNOSIS_OPTION_FLAGS];
+const ALLOWED_FLAGS = ['--vault', '--project', '--json', '--prompt', '--graph-db-pack', '--verify-fallbacks', '--exit-zero', '--fallback-timeout-ms', '--fallback-slow-ms', '--fallback-concurrency', ...DIAGNOSIS_OPTION_FLAGS];
 const DEFAULT_FALLBACK_TIMEOUT_MS = 15_000;
 const DEFAULT_FALLBACK_SLOW_MS = 5_000;
 const DEFAULT_FALLBACK_CONCURRENCY = 4;
@@ -621,6 +621,15 @@ function render(result) {
     process.stdout.write('\n');
   }
 
+  const meaningLines = formatMeaningAssessmentSummary(result.meaningAssessment);
+  if (meaningLines.length > 0) {
+    process.stdout.write(`${COLORS.dim}PROJECT MEANING${COLORS.reset} ${COLORS.dim}(${result.meaningAssessment.contract} · categorical, no score)${COLORS.reset}\n`);
+    for (const line of meaningLines) {
+      process.stdout.write(`  ${COLORS.dim}${line}${COLORS.reset}\n`);
+    }
+    process.stdout.write('\n');
+  }
+
   if (typeof result.handoffPrompt === 'string' && result.handoffPrompt.trim()) {
     process.stdout.write(
       `${COLORS.dim}HANDOFF PROMPT${COLORS.reset} ${COLORS.dim}available in --json as .handoffPrompt for Claude Code/Codex paste-in setup${COLORS.reset}\n\n`,
@@ -773,6 +782,26 @@ export function formatProjectSourceSummary(projectSource) {
   ];
 }
 
+export function formatMeaningAssessmentSummary(assessment) {
+  if (!assessment || typeof assessment !== 'object') return [];
+  const structure = assessment.dimensions?.structure?.status ?? 'invalid';
+  const competency = assessment.dimensions?.competency?.status ?? 'needs_evidence';
+  const sourceStatus = assessment.dimensions?.source?.status ?? 'invalid';
+  const sourceCurrentness = assessment.dimensions?.source?.currentness ?? 'unavailable';
+  const gap = assessment.topGap?.id
+    ? `${assessment.topGap.dimension ?? 'assessment'}:${assessment.topGap.id}`
+    : 'none';
+  const action = assessment.nextAction?.id
+    ? `${assessment.nextAction.id}${assessment.nextAction.target ? `:${assessment.nextAction.target}` : ''}`
+    : 'none';
+  return [
+    `status       ${assessment.status}`,
+    `dimensions   structure:${structure} · competency:${competency} · source:${sourceStatus}/${sourceCurrentness}`,
+    `topGap       ${gap}`,
+    `nextAction   ${action}`,
+  ];
+}
+
 function renderChecklist(label, items, color) {
   if (!Array.isArray(items) || items.length === 0) return;
   process.stdout.write(`     ${color}${label}:${COLORS.reset} ${COLORS.dim}${items[0]}${COLORS.reset}\n`);
@@ -808,6 +837,16 @@ function parseArgs(args) {
     const [maybeFlag, maybeValue] = a.includes('=') ? a.split(/=(.*)/s, 2) : [a, null];
     if (a === '--vault') flags.vault = parseVaultFlag(args[++i]);
     else if (a.startsWith('--vault=')) flags.vault = parseVaultFlag(a.slice('--vault='.length));
+    else if (a === '--project') {
+      const project = parseRequiredFlagValue('--project', args[++i]);
+      if (project instanceof Error) return { error: project.message };
+      options.project = project;
+    }
+    else if (a.startsWith('--project=')) {
+      const project = parseRequiredFlagValue('--project', a.slice('--project='.length));
+      if (project instanceof Error) return { error: project.message };
+      options.project = project;
+    }
     else if (a === '--json') flags.json = true;
     else if (a === '--prompt') flags.prompt = true;
     else if (a === '--graph-db-pack') flags.graphDbPack = true;
@@ -881,7 +920,7 @@ function printUsage(stream = process.stderr) {
   stream.write(
     `\n${COLORS.bold}Usage:${COLORS.reset}\n` +
       `  ontology-atlas agent-brief [vault] [--json|--prompt|--graph-db-pack|--verify-fallbacks]\n` +
-      `       [--exit-zero]\n` +
+      `       [--project SLUG] [--exit-zero]\n` +
       `       [--dependency-types A,B] [--component-types A,B]\n` +
       `       [--fallback-timeout-ms N] [--fallback-slow-ms N] [--fallback-concurrency N]\n` +
       `       [--component-limit N] [--cycle-limit N] [--recommendation-limit N]\n` +

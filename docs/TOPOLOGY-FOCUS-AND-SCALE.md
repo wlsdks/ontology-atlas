@@ -56,7 +56,7 @@ demand). See [References](#references).
 | **Overview (default)** | Domains + hubs only (semantic-zoom level 0), not all 2–3k nodes. A short "start here" hint. |
 | **Hover** | Lightweight preview: highlight the node + its direct neighbors; optional tooltip (title · kind · 1-line). No layout change. |
 | **Focus (click)** | Graph keeps the node + its **ego network (direct neighbors)** at full opacity; everything else dims to `opacity 0.15` (existing filter-toggle motion) or hides. A **compact popover** anchors near the clicked node. |
-| **Full detail (opt-in)** | The existing `NodeDetailPanel` content, reached via the popover's `전체 상세 →`. This is the *only* place the large surface appears — and it is now a deliberate drill, not the click default. |
+| **Full detail (opt-in)** | The existing `NodeDetailPanel` content, reached via the popover's `자세히 보기`. This is the *only* place the large surface appears — and it is now a deliberate drill, not the click default. |
 | **Clear** | `Esc` / click empty canvas / popover close → restore the overview. |
 
 ### The compact popover
@@ -75,9 +75,9 @@ size). Contents, top to bottom:
    Bloom/Linkurious pattern). Cap visible rows (e.g. 6) with `… +N`.
 4. **Plain-language counts** — replace jargon:
    - `영향받음 1` → **"이 노드를 쓰는 곳 1"** (incoming)
-   - `의존 68` → **"이 노드가 기대는 곳 68"** (outgoing/transitive)
+   - `의존 68` → **"필요한 항목 68"** (outgoing/transitive)
 5. **Actions rail** — keep the workbench exits the design system already
-   mandates: `전체 상세 →` (full panel), `Builder` (edit), `Insights` (query).
+   mandates: `자세히 보기` (full panel), `Builder` (edit), `Insights` (query).
    One row, compact.
 6. **Close** (`✕` / `Esc`).
 
@@ -116,7 +116,7 @@ layout — not node count. Order of mitigation:
 
 - **In scope:** topology click → ego focus + popover; overview-first default;
   jargon → plain language; LOD/label perf settings; keep full `NodeDetailPanel`
-  behind `전체 상세`.
+  behind `자세히 보기`.
 - **Out of scope:** Builder/Insights redesign; new graph queries (ego data
   already exists); the `/ontology` tree page (it may reuse the popover later,
   but this spec targets topology).

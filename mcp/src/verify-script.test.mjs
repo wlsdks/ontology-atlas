@@ -188,6 +188,16 @@ function structuredValueRepairDetails(text) {
 }
 
 describe('verify.mjs first-contact gates', () => {
+  it('publishes finalize_project_meaning as the 14th non-destructive non-idempotent write tool', () => {
+    assert.equal(EXPECTED_TOOLS.length, 33);
+    assert.equal(EXPECTED_READ_TOOLS.length, 19);
+    assert.equal(EXPECTED_WRITE_TOOLS.length, 14);
+    assert.ok(EXPECTED_WRITE_TOOLS.includes('finalize_project_meaning'));
+    assert.equal(EXPECTED_READ_TOOLS.includes('finalize_project_meaning'), false);
+    assert.equal(EXPECTED_DESTRUCTIVE_TOOLS.includes('finalize_project_meaning'), false);
+    assert.equal(EXPECTED_IDEMPOTENT_TOOLS.includes('finalize_project_meaning'), false);
+  });
+
   it('keeps package metadata tool count aligned with verify inventory', () => {
     const described = MCP_PKG.description.match(/(\d+) tools \((\d+) read \+ (\d+) write\)/);
     assert.ok(described, 'package description must include tool count and read/write split');
@@ -195,6 +205,16 @@ describe('verify.mjs first-contact gates', () => {
     assert.equal(described[2], String(EXPECTED_READ_TOOLS.length));
     assert.equal(described[3], String(EXPECTED_WRITE_TOOLS.length));
     assert.equal(expectedToolSplitLabel(), `${described[2]} read + ${described[3]} write`);
+  });
+
+  it('packages project-meaning runtime modules and runs their source-checkout proofs', () => {
+    assert.ok(MCP_PKG.files.includes('src/project-meaning-inventory.mjs'));
+    assert.ok(MCP_PKG.files.includes('src/project-meaning-receipt.mjs'));
+
+    const fullTestCommand = MCP_PKG.scripts['test:all'];
+    assert.match(fullTestCommand, /(?:^|\s)src\/project-meaning-inventory\.test\.mjs(?:\s|$)/);
+    assert.match(fullTestCommand, /(?:^|\s)src\/project-meaning-receipt\.test\.mjs(?:\s|$)/);
+    assert.match(fullTestCommand, /(?:^|\s)src\/project-meaning-restart\.test\.mjs(?:\s|$)/);
   });
 
   it('summarizes tools/list annotation coverage for verify output', () => {
@@ -568,6 +588,125 @@ describe('verify.mjs first-contact gates', () => {
         nextReviewAction: { ...compactActionSchema, type: ['object', 'null'] },
         actions: { type: 'array', items: compactActionSchema },
       },
+      additionalProperties: false,
+    };
+    const meaningAssessmentSchema = {
+      type: 'object',
+      properties: {
+        contract: { type: 'string', enum: ['meaningAssessment:v1'] },
+        projectSlug: { type: ['string', 'null'] },
+        status: {
+          type: 'string',
+          enum: ['verified_current', 'review_required', 'needs_evidence', 'invalid'],
+        },
+        dimensions: {
+          type: 'object',
+          properties: {
+            structure: {
+              type: 'object',
+              properties: {
+                status: { type: 'string', enum: ['ready', 'needs_structure', 'invalid'] },
+                basis: { type: 'string', enum: ['structure_only'] },
+              },
+              required: ['status', 'basis'],
+              additionalProperties: false,
+            },
+            competency: {
+              type: 'object',
+              properties: {
+                status: { type: 'string', enum: ['answered', 'needs_evidence'] },
+                questions: {
+                  type: 'array',
+                  items: {
+                    type: 'object',
+                    properties: {
+                      id: nonBlankStringSchema,
+                      status: { type: 'string', enum: ['answered', 'partial', 'visible-gap', 'unassessed'] },
+                      witnessStatus: { type: 'string', enum: ['resolved', 'missing', 'unavailable'] },
+                    },
+                    required: ['id', 'status', 'witnessStatus'],
+                    additionalProperties: false,
+                  },
+                },
+              },
+              required: ['status', 'questions'],
+              additionalProperties: false,
+            },
+            source: {
+              type: 'object',
+              properties: {
+                status: {
+                  type: 'string',
+                  enum: ['not_measured', 'needs_evidence', 'review_required', 'invalid', 'verified_current'],
+                },
+                currentness: { type: 'string', enum: ['current', 'stale', 'unavailable'] },
+              },
+              required: ['status', 'currentness'],
+              additionalProperties: false,
+            },
+          },
+          required: ['structure', 'competency', 'source'],
+          additionalProperties: false,
+        },
+        topGap: {
+          type: ['object', 'null'],
+          properties: {
+            dimension: nonBlankStringSchema,
+            id: nonBlankStringSchema,
+            questionId: nonBlankStringSchema,
+          },
+          required: ['dimension', 'id'],
+          additionalProperties: false,
+        },
+        nextAction: {
+          type: 'object',
+          properties: {
+            id: nonBlankStringSchema,
+            target: nonBlankStringSchema,
+          },
+          required: ['id'],
+          additionalProperties: false,
+        },
+        provenance: {
+          type: 'object',
+          properties: {
+            evaluator: nonBlankStringSchema,
+            graphHash: { type: ['string', 'null'] },
+            competencyContract: { type: ['string', 'null'] },
+            competencyEvaluator: { type: ['string', 'null'] },
+            competencyGraphHash: { type: ['string', 'null'] },
+            witnessInventoryContract: { type: ['string', 'null'] },
+            witnessInventoryGraphHash: { type: ['string', 'null'] },
+            witnessInventorySourceFingerprint: { type: ['string', 'null'] },
+            sourceGraphHash: { type: ['string', 'null'] },
+            sourceReceiptContractVersion: { type: ['integer', 'null'] },
+            sourceId: { type: ['string', 'null'] },
+            sourceRevision: { type: ['string', 'null'] },
+            sourceFingerprint: { type: ['string', 'null'] },
+            sourceMeasuredAt: { type: ['string', 'null'] },
+            sourceGapId: { type: ['string', 'null'] },
+          },
+          required: [
+            'evaluator',
+            'graphHash',
+            'competencyContract',
+            'competencyEvaluator',
+            'competencyGraphHash',
+            'witnessInventoryContract',
+            'witnessInventoryGraphHash',
+            'witnessInventorySourceFingerprint',
+            'sourceGraphHash',
+            'sourceReceiptContractVersion',
+            'sourceId',
+            'sourceRevision',
+            'sourceFingerprint',
+            'sourceMeasuredAt',
+            'sourceGapId',
+          ],
+          additionalProperties: false,
+        },
+      },
+      required: ['contract', 'projectSlug', 'status', 'dimensions', 'topGap', 'nextAction', 'provenance'],
       additionalProperties: false,
     };
     const tools = [
@@ -1966,6 +2105,44 @@ describe('verify.mjs first-contact gates', () => {
           additionalProperties: false,
         },
       },
+      {
+        name: 'finalize_project_meaning',
+        inputSchema: {
+          type: 'object',
+          properties: {
+            projectSlug: nonBlankStringSchema,
+            expected_mtime: { type: 'number', minimum: 0 },
+          },
+          required: ['projectSlug', 'expected_mtime'],
+          additionalProperties: false,
+        },
+        outputSchema: {
+          type: 'object',
+          properties: {
+            ok: { type: 'boolean' },
+            changed: { type: 'boolean' },
+            contract: { type: 'string', enum: ['projectMeaningReceipt:v1'] },
+            projectSlug: nonBlankStringSchema,
+            bodyDigest: { type: 'string', pattern: '^sha256:[a-f0-9]{64}$' },
+            graphHash: { type: 'string', pattern: '^project-graph-v1:[a-f0-9]{8}$' },
+            sourceFingerprint: nonBlankStringSchema,
+            measuredAt: { type: 'string', format: 'date-time' },
+            meaningAssessment: meaningAssessmentSchema,
+          },
+          required: [
+            'ok',
+            'changed',
+            'contract',
+            'projectSlug',
+            'bodyDigest',
+            'graphHash',
+            'sourceFingerprint',
+            'measuredAt',
+            'meaningAssessment',
+          ],
+          additionalProperties: false,
+        },
+      },
     ].map((tool) => ({
       ...tool,
       annotations: {
@@ -2036,9 +2213,86 @@ describe('verify.mjs first-contact gates', () => {
       ...tools.filter((candidate) => candidate.name !== 'find_neighbors'),
       tool,
     ];
+    const finalizeProjectMeaningTool = tools.find((tool) => tool.name === 'finalize_project_meaning');
+    const withFinalizeProjectMeaningTool = (tool) => [
+      ...tools.filter((candidate) => candidate.name !== 'finalize_project_meaning'),
+      tool,
+    ];
 
     assert.equal(toolsListSchemaFailure(tools), null);
     assert.equal(toolsListSchemaFailure(null), 'tools/list response missing tools array');
+    assert.equal(
+      toolsListSchemaFailure(withFinalizeProjectMeaningTool({
+        ...finalizeProjectMeaningTool,
+        inputSchema: {
+          ...finalizeProjectMeaningTool.inputSchema,
+          required: ['projectSlug'],
+        },
+      })),
+      'finalize_project_meaning inputSchema conflict guard drift',
+    );
+    assert.equal(
+      toolsListSchemaFailure(withFinalizeProjectMeaningTool({
+        ...finalizeProjectMeaningTool,
+        outputSchema: {
+          ...finalizeProjectMeaningTool.outputSchema,
+          required: finalizeProjectMeaningTool.outputSchema.required.filter(
+            (field) => field !== 'meaningAssessment',
+          ),
+        },
+      })),
+      'finalize_project_meaning flat outputSchema drift',
+    );
+    assert.equal(
+      toolsListSchemaFailure(withFinalizeProjectMeaningTool({
+        ...finalizeProjectMeaningTool,
+        outputSchema: {
+          ...finalizeProjectMeaningTool.outputSchema,
+          properties: {
+            ...finalizeProjectMeaningTool.outputSchema.properties,
+            meaningAssessment: {
+              ...meaningAssessmentSchema,
+              properties: {
+                ...meaningAssessmentSchema.properties,
+                status: { type: 'string' },
+              },
+            },
+          },
+        },
+      })),
+      'finalize_project_meaning meaningAssessment categorical/privacy contract drift',
+    );
+    assert.equal(
+      toolsListSchemaFailure(withFinalizeProjectMeaningTool({
+        ...finalizeProjectMeaningTool,
+        outputSchema: {
+          ...finalizeProjectMeaningTool.outputSchema,
+          properties: {
+            ...finalizeProjectMeaningTool.outputSchema.properties,
+            meaningAssessment: {
+              ...meaningAssessmentSchema,
+              properties: {
+                ...meaningAssessmentSchema.properties,
+                dimensions: {
+                  ...meaningAssessmentSchema.properties.dimensions,
+                  properties: {
+                    ...meaningAssessmentSchema.properties.dimensions.properties,
+                    source: {
+                      ...meaningAssessmentSchema.properties.dimensions.properties.source,
+                      properties: {
+                        ...meaningAssessmentSchema.properties.dimensions.properties.source.properties,
+                        currentness: { type: 'string', enum: ['current', 'stale'] },
+                      },
+                    },
+                  },
+                },
+              },
+            },
+          },
+        },
+      })),
+      'finalize_project_meaning meaningAssessment categorical/privacy contract drift',
+    );
     assert.equal(
       toolsListSchemaFailure(tools.map((tool) => (
         tool.name === 'add_concept' && tool.outputSchema
@@ -9337,6 +9591,54 @@ describe('verify.mjs first-contact gates', () => {
       operation: 'agent_brief',
       sideEffect: false,
       status: 'healthy',
+      projectSlug: 'project:app',
+      projectSource: {
+        contractVersion: 1,
+        projectSlug: 'project:app',
+        status: 'not_measured',
+        currentness: 'unavailable',
+        measuredAt: null,
+        topGap: { id: 'source_unbound' },
+        nextAction: { id: 'connect_source' },
+        bindingCardinality: 0,
+        receipt: null,
+      },
+      meaningAssessment: {
+        contract: 'meaningAssessment:v1',
+        projectSlug: 'project:app',
+        status: 'needs_evidence',
+        dimensions: {
+          structure: { status: 'ready', basis: 'structure_only' },
+          competency: {
+            status: 'needs_evidence',
+            questions: ['scope', 'domains', 'abilities', 'evidence', 'impact'].map((id) => ({
+              id,
+              status: 'unassessed',
+              witnessStatus: 'unavailable',
+            })),
+          },
+          source: { status: 'not_measured', currentness: 'unavailable' },
+        },
+        topGap: { dimension: 'competency', id: 'competency_unassessed', questionId: 'scope' },
+        nextAction: { id: 'answer_competency', target: 'scope' },
+        provenance: {
+          evaluator: 'projectMeaningAssessment:v1',
+          graphHash: null,
+          competencyContract: null,
+          competencyEvaluator: null,
+          competencyGraphHash: null,
+          witnessInventoryContract: null,
+          witnessInventoryGraphHash: null,
+          witnessInventorySourceFingerprint: null,
+          sourceGraphHash: null,
+          sourceReceiptContractVersion: null,
+          sourceId: null,
+          sourceRevision: null,
+          sourceFingerprint: null,
+          sourceMeasuredAt: null,
+          sourceGapId: 'source_unbound',
+        },
+      },
       readiness: {
         status: 'ready',
         score: 100,
@@ -9599,6 +9901,31 @@ describe('verify.mjs first-contact gates', () => {
     };
 
     assert.equal(agentBriefFailure(payload), null);
+    assert.equal(
+      agentBriefFailure({ ...payload, projectSource: undefined }),
+      'agent_brief response missing categorical projectSource',
+    );
+    assert.equal(
+      agentBriefFailure({
+        ...payload,
+        projectSource: { ...payload.projectSource, rootPath: '/private/source' },
+      }),
+      'agent_brief projectSource exposes private source coordinates',
+    );
+    assert.equal(
+      agentBriefFailure({ ...payload, meaningAssessment: undefined }),
+      'agent_brief response missing categorical meaningAssessment',
+    );
+    assert.equal(
+      agentBriefFailure({
+        ...payload,
+        meaningAssessment: {
+          ...payload.meaningAssessment,
+          score: 100,
+        },
+      }),
+      'agent_brief response malformed categorical meaningAssessment',
+    );
     assert.equal(agentBriefSummary(payload), 'ready 100/100, 1 entrypoint, 3 first calls, 6 graph DB pack items, 2 playbooks, 3 write guardrails, 1 result contract');
     assert.equal(
       agentBriefFailure({ ...payload, readiness: { ...payload.readiness, score: 101 } }),

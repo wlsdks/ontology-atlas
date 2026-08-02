@@ -42,6 +42,126 @@
 
 ---
 
+## 2026-08-02 — 프로젝트 inspector는 내부 인계어 대신 사용자가 얻는 결과를 말한다
+
+### 먼저 — 세 줄
+
+- **정한 것**: `AI 인계문 복사`를 `AI에게 줄 프로젝트 정보 복사`로 바꾸고, 같은
+  표면의 명사 조각과 내부 관계어를 결과형 한국어로 함께 정리한다.
+- **네 말과 다르게 한 것**: 모든 `인계` 기능을 넓히지는 않는다. 복사 payload와
+  MCP/CLI 계약은 그대로 두고, 실제로 보이는 topology/project 용어만 고친다.
+- **네가 할 일**: 없음 — 설치 앱에서 새 문구와 복사 완료 안내를 다시 확인한다.
+
+**소집**: 디자인 카운슬 3자리(위계·체계·핸드오프) + design-guardian 단일 결정.
+설치 앱의 copy-only 용어 변경이라 layout/window chrome은 바꾸지 않아 작업대 자리는
+소집하지 않았다. · **트리거**: 소유자가 설치 앱 project compact inspector에서
+`AI 인계문 복사`와 주변 문구가 이상하다고 스크린샷으로 직접 관측했다.
+
+**선행 결정 관계**: 2026-08-02 「프로젝트 inspector의 건강한 빈틈 문장과 중복
+행동을 걷어낸다」가 sticky footer의 단일 복사 행동을 `AI 인계문 복사`로 정했다.
+행동 하나만 남기는 구조는 유지하지만 그 문구는 이번 실사용 관측으로 즉시 뒤집는다.
+
+## Design Council Verdict — project inspector plain-language vocabulary
+
+**Seats convened**: 위계 · 체계 · 핸드오프 — **why these**: attention hierarchy,
+공용 i18n 어휘, 실제 clipboard/agent next action이 함께 걸린 copy-only 변경.
+
+Primary moment: 프로젝트의 코드 상태와 관계를 읽고 AI 대화로 이어갈 정보를 복사한다.
+Attention stack: base=project facts · support=source kind/time/currentness ·
+focus=copy action · blocking=none · utility=edit/filter actions.
+Graph fact: project contains children, evidence documents, and categorical source receipt remain
+distinct typed facts; wording may not collapse them into a confidence score.
+Responsive rule: 기존 compact footer와 4-action geometry를 유지하고 문구만 교체한다.
+Proof: owner screenshot · installed app 1512×949 Computer Use · Korean render/i18n tests ·
+copy payload and toast replay.
+
+| 자리 | 판정 | 핵심 처방 |
+|---|---|---|
+| 위계 | Build and verify | attention winner는 footer copy; 명사 조각·내부어 강등 |
+| 체계 | Build and verify | 관계=명사군, 행동=대상+결과; 공용 i18n/render 계약 |
+| 핸드오프 | Build and verify | payload 범위보다 큰 `인계` 약속 제거; 복사와 AI 대화 분리 |
+
+**Removed / dimmed / collapsed / aligned**: `인계문`·`패킷`·`담는 것`·`속한 곳`·
+`기대는 곳`·`이것만 보기`·`전체 상세`를 보이는 topology/project 표면에서 제거한다.
+관계 수치는 `하위 항목`·`상위 항목`·`근거 문서`, 행동은 `문서 열기`·`관계 편집`·
+`AI에게 물어보기`·`자세히 보기`로 정렬한다. 일반 노드 복사는 `AI에게 줄 항목 정보
+복사`, project source action은 `AI에게 줄 프로젝트 정보 복사`로 문맥을 보존한다.
+
+**The decisive disagreement**: 한 공용 CTA로 짧게 통일할지, 실제 payload 대상을
+node/project별로 말할지. design-guardian은 이미 분리된 i18n 키를 이용하는 후자를
+선택한다. 전송하지 않는 동작이므로 `보낼`은 쓰지 않는다.
+
+**Verdict (design-guardian)**: Build and verify. 구조·payload·typed marker·token은
+그대로 두고 보이는 한국어와 완료 안내만 고친다.
+
+**Recorded dissent**: `AI에게 줄 내용 복사` 하나가 더 짧고 모든 노드에 재사용돼
+compact footer 폭과 번역 유지비를 줄인다.
+**falsifier**: 14인치 설치 앱에서 문맥별 문구가 실제로 줄바꿈되거나, 사용자가 같은
+복사 행동을 서로 다른 기능으로 오인하는 첫 walkthrough. 그때 payload 대상을 숨기기
+전에 짧은 공용 `AI에게 줄 정보 복사`로 수렴한다.
+
+---
+
+## 2026-08-02 — competency read-back은 Markdown 정본과 post-write receipt를 새 프로세스에서 다시 결합한다
+
+**소집**: PO 카운슬 5인 전원(근거·결·지킴이·해자·지렛대), 독립 1라운드 +
+상호 반박 1라운드. 동시 슬롯 한계로 3인→2인 파동을 사용했고 2라운드 전에는
+다른 자리의 출력을 공유하지 않았다. · **트리거**: 새 MCP write 계약과 기존
+`agent_brief` 공개 출력 변경 가능성. **루브릭**: 구현 전 17/24 (Problem insight 3 ·
+User moment 3 · Differentiation 3 · Ontology value 4 · Agent value 4 ·
+Verification 0, 치명적 0: Verification). 실제 restart proof 전에는 공개 등록을
+승인하지 않는다.
+
+**선행 결정 관계**: 바로 아래 「의미 평가는 구조 readiness와 분리한 순수 계약부터
+연다」는 유효하다. 그 기록이 OUT으로 둔 sidecar persistence와 public MCP field를
+이번에 한꺼번에 여는 것이 아니라, 저장된 ontology에서 typed competency를 다시 읽는
+최소 commit point부터 증명한다. 「프로젝트의 현재 source 근거는 하나의 receipt로
+사람과 agent에게 보인다」의 0/1 source cardinality·private root 비노출·현재성 분리도
+그대로 유지한다.
+
+**관측**: `meaningAssessment:v1`은 순수 함수이고 현재 `agent_brief`는 source receipt만
+결합한다. `buildWritePlan`은 승인된 다섯 typed competency answer를 사람이 읽는
+project Markdown의 `## Competency answers`로 이미 보존하지만, version/evaluator·
+graph hash·source fingerprint를 묶어 새 MCP 프로세스가 다시 검증하는 reader가 없다.
+dogfood project 본문에도 아직 그 section이 없어서 구조 `ready 100/100`과 source
+53/53만으로는 의미 질문의 현재 답·gap을 복원할 수 없다. 반복 재분석 행동 자체는
+아직 관측되지 않았으므로 사람 UI 필요성이나 숫자 분석률로 확대하지 않는다.
+
+**결정 (accountable: 소유자)**: 첫 commit point는 project Markdown을 답·typed
+witness·gap의 유일한 사람이 편집 가능한 정본으로 유지한다. 모든 concept/relation
+write와 `validate_vault`·project compile이 성공한 뒤에만 내부 finalize가 evaluator
+version·project body digest·현재 graph hash·source fingerprint·measuredAt을 local
+sidecar receipt로 원자 기록한다. sidecar에는 raw answer, raw body, overall status,
+absolute root, private remote를 복제하지 않는다. read-back은 Markdown과 receipt 및
+현재 graph/source inventory를 다시 대조해 `meaningAssessment:v1`을 매번 파생하며,
+legacy/missing·malformed·digest mismatch·ghost witness·graph/source drift를 절대
+`verified_current`로 승격하지 않는다.
+
+**공개 등록 게이트**: 먼저 internal helper와 synthetic temporary vault로
+write → validate → compile → finalize → MCP 종료 → 새 MCP process `agent_brief`
+read-back을 RED→GREEN으로 증명한다. 이어 body 외부 편집, relation/witness 삭제,
+future/malformed receipt, source-hidden, private path leak, finalize 실패 주입에서
+fail-closed와 부분 commit 0을 증명한다. 이 증거로 결 자리의 Verification이 4가 되기
+전에는 새 MCP tool과 `agent_brief.meaningAssessment`를 registry에 넣지 않는다.
+
+**적용 규칙**: 최대 2일 · 합집합 금지. IN — versioned Markdown serializer/parser,
+post-write finalize core, body digest·graph/source provenance receipt, current inventory
+재검증, fresh-process integration proof, proof 뒤 전용 finalize MCP tool 1개와 기존
+`agent_brief`의 categorical field 1개. OUT — 지도/UI, percentage·combined confidence,
+새 CLI command, `analyze_repo_structure`의 side effect, watcher, multi-root, 범용
+AST/source-role scanner, Ollama routing, 외부 field-trial 결과물 반입, legacy 자동 migration.
+
+**기록된 반대**: versioned Markdown parser만으로도 다음 세션이 답과 witness를 복원할
+수 있는데 별도 finalize receipt를 요구하면 사람이 Markdown을 고친 뒤 stale 상태와
+추가 마찰만 만든다.
+**반증 조건**: 두 독립 MCP 프로세스가 receipt 없이 project Markdown만으로 같은
+typed CQ와 current graph/source provenance를 손실 없이 복원하고, 부분 graph write나
+동시 외부 편집 뒤에도 false current를 만들지 않는다면 finalize 계약은 불필요하다.
+**재검토**: fresh-process proof에서 finalize가 없을 때도 위 조건이 성립하거나,
+finalize 누락이 정상 handoff를 반복적으로 막는 첫 관측 시.
+
+**상태**: 유효.
+
 ## 2026-08-02 — 의미 평가는 구조 readiness와 분리한 순수 계약부터 연다
 
 **소집**: PO 카운슬 5자리 조사 판정 + 독립 코드 경로 조사 2건. · **트리거**:

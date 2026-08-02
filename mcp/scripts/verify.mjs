@@ -183,6 +183,7 @@ export const EXPECTED_WRITE_TOOLS = [
   'merge_concepts',
   'absorb_document',
   'git_snapshot',
+  'finalize_project_meaning',
 ];
 
 export const EXPECTED_TOOLS = [...EXPECTED_READ_TOOLS, ...EXPECTED_WRITE_TOOLS];
@@ -664,6 +665,125 @@ function postWriteMaintenanceSchemaFailure(schema, toolName) {
   return null;
 }
 
+function meaningAssessmentOutputSchemaFailure(schema) {
+  const required = ['contract', 'projectSlug', 'status', 'dimensions', 'topGap', 'nextAction', 'provenance'];
+  const properties = schema?.properties;
+  const dimensions = properties?.dimensions;
+  const structure = dimensions?.properties?.structure;
+  const competency = dimensions?.properties?.competency;
+  const question = competency?.properties?.questions?.items;
+  const source = dimensions?.properties?.source;
+  const provenance = properties?.provenance;
+  const provenanceFields = [
+    'evaluator',
+    'graphHash',
+    'competencyContract',
+    'competencyEvaluator',
+    'competencyGraphHash',
+    'witnessInventoryContract',
+    'witnessInventoryGraphHash',
+    'witnessInventorySourceFingerprint',
+    'sourceGraphHash',
+    'sourceReceiptContractVersion',
+    'sourceId',
+    'sourceRevision',
+    'sourceFingerprint',
+    'sourceMeasuredAt',
+    'sourceGapId',
+  ];
+
+  if (
+    schema?.type !== 'object' ||
+    !sameArray(schema.required, required) ||
+    !sameArray(Object.keys(properties ?? {}), required) ||
+    schema.additionalProperties !== false ||
+    !sameArray(properties?.contract?.enum, ['meaningAssessment:v1']) ||
+    !sameArray(properties?.projectSlug?.type, ['string', 'null']) ||
+    !sameArray(properties?.status?.enum, ['verified_current', 'review_required', 'needs_evidence', 'invalid']) ||
+    dimensions?.type !== 'object' ||
+    !sameArray(dimensions.required, ['structure', 'competency', 'source']) ||
+    !sameArray(Object.keys(dimensions.properties ?? {}), ['structure', 'competency', 'source']) ||
+    dimensions.additionalProperties !== false ||
+    !sameArray(structure?.required, ['status', 'basis']) ||
+    structure?.additionalProperties !== false ||
+    !sameArray(structure?.properties?.status?.enum, ['ready', 'needs_structure', 'invalid']) ||
+    !sameArray(structure?.properties?.basis?.enum, ['structure_only']) ||
+    !sameArray(competency?.required, ['status', 'questions']) ||
+    competency?.additionalProperties !== false ||
+    !sameArray(competency?.properties?.status?.enum, ['answered', 'needs_evidence']) ||
+    competency?.properties?.questions?.type !== 'array' ||
+    !sameArray(question?.required, ['id', 'status', 'witnessStatus']) ||
+    question?.additionalProperties !== false ||
+    nonBlankStringSchemaFailure(question?.properties?.id) ||
+    !sameArray(question?.properties?.status?.enum, ['answered', 'partial', 'visible-gap', 'unassessed']) ||
+    !sameArray(question?.properties?.witnessStatus?.enum, ['resolved', 'missing', 'unavailable']) ||
+    !sameArray(source?.required, ['status', 'currentness']) ||
+    source?.additionalProperties !== false ||
+    !sameArray(source?.properties?.status?.enum, ['not_measured', 'needs_evidence', 'review_required', 'invalid', 'verified_current']) ||
+    !sameArray(source?.properties?.currentness?.enum, ['current', 'stale', 'unavailable']) ||
+    !sameArray(properties?.topGap?.type, ['object', 'null']) ||
+    !sameArray(properties?.topGap?.required, ['dimension', 'id']) ||
+    properties?.topGap?.additionalProperties !== false ||
+    !sameArray(Object.keys(properties?.topGap?.properties ?? {}), ['dimension', 'id', 'questionId']) ||
+    properties?.nextAction?.type !== 'object' ||
+    !sameArray(properties?.nextAction?.required, ['id']) ||
+    properties?.nextAction?.additionalProperties !== false ||
+    !sameArray(Object.keys(properties?.nextAction?.properties ?? {}), ['id', 'target']) ||
+    provenance?.type !== 'object' ||
+    !sameArray(provenance.required, provenanceFields) ||
+    !sameArray(Object.keys(provenance.properties ?? {}), provenanceFields) ||
+    provenance.additionalProperties !== false
+  ) return true;
+
+  return false;
+}
+
+function finalizeProjectMeaningSchemaFailure(tool) {
+  if (
+    tool?.inputSchema?.type !== 'object' ||
+    !sameArray(tool.inputSchema.required, ['projectSlug', 'expected_mtime']) ||
+    nonBlankStringSchemaFailure(tool.inputSchema.properties?.projectSlug) ||
+    tool.inputSchema.properties?.expected_mtime?.type !== 'number' ||
+    tool.inputSchema.properties?.expected_mtime?.minimum !== 0
+  ) {
+    return 'finalize_project_meaning inputSchema conflict guard drift';
+  }
+
+  const output = tool.outputSchema;
+  const required = [
+    'ok',
+    'changed',
+    'contract',
+    'projectSlug',
+    'bodyDigest',
+    'graphHash',
+    'sourceFingerprint',
+    'measuredAt',
+    'meaningAssessment',
+  ];
+  if (
+    output?.type !== 'object' ||
+    !sameArray(output.required, required) ||
+    !sameArray(Object.keys(output.properties ?? {}), required) ||
+    output.additionalProperties !== false ||
+    output.properties?.ok?.type !== 'boolean' ||
+    output.properties?.changed?.type !== 'boolean' ||
+    !sameArray(output.properties?.contract?.enum, ['projectMeaningReceipt:v1']) ||
+    nonBlankStringSchemaFailure(output.properties?.projectSlug) ||
+    output.properties?.bodyDigest?.pattern !== '^sha256:[a-f0-9]{64}$' ||
+    output.properties?.graphHash?.pattern !== '^project-graph-v1:[a-f0-9]{8}$' ||
+    nonBlankStringSchemaFailure(output.properties?.sourceFingerprint) ||
+    output.properties?.measuredAt?.type !== 'string' ||
+    output.properties?.measuredAt?.format !== 'date-time'
+  ) {
+    return 'finalize_project_meaning flat outputSchema drift';
+  }
+  if (meaningAssessmentOutputSchemaFailure(output.properties.meaningAssessment)) {
+    return 'finalize_project_meaning meaningAssessment categorical/privacy contract drift';
+  }
+  return null;
+}
+
 export function toolsListSchemaFailure(tools) {
   if (!Array.isArray(tools)) return 'tools/list response missing tools array';
   const schemaDriftTool = tools.find((tool) => tool?.inputSchema?.additionalProperties !== false);
@@ -694,6 +814,12 @@ export function toolsListSchemaFailure(tools) {
   const idempotentDriftTool = tools.find((tool) => tool?.annotations?.idempotentHint !== expectedIdempotentTools.has(tool?.name));
   if (idempotentDriftTool) {
     return `tools/list idempotentHint annotation drift: ${idempotentDriftTool.name || '(unknown)'} (expected ${expectedIdempotentTools.has(idempotentDriftTool?.name)}, got ${JSON.stringify(idempotentDriftTool?.annotations?.idempotentHint)})`;
+  }
+
+  const finalizeProjectMeaningTool = tools.find((tool) => tool?.name === 'finalize_project_meaning');
+  if (finalizeProjectMeaningTool) {
+    const failure = finalizeProjectMeaningSchemaFailure(finalizeProjectMeaningTool);
+    if (failure) return failure;
   }
 
   const listConceptsTool = tools.find((tool) => tool?.name === 'list_concepts');
@@ -6995,6 +7121,167 @@ export function agentBriefSummary(parsed) {
   )}`;
 }
 
+const AGENT_BRIEF_SOURCE_STATUSES = new Set([
+  'not_measured',
+  'needs_evidence',
+  'review_required',
+  'invalid',
+  'verified_current',
+]);
+const AGENT_BRIEF_SOURCE_CURRENTNESS = new Set(['current', 'stale', 'unavailable']);
+const AGENT_BRIEF_MEANING_STATUSES = new Set([
+  'verified_current',
+  'review_required',
+  'needs_evidence',
+  'invalid',
+]);
+const AGENT_BRIEF_QUESTION_IDS = ['scope', 'domains', 'abilities', 'evidence', 'impact'];
+const AGENT_BRIEF_PROVENANCE_FIELDS = [
+  'evaluator',
+  'graphHash',
+  'competencyContract',
+  'competencyEvaluator',
+  'competencyGraphHash',
+  'witnessInventoryContract',
+  'witnessInventoryGraphHash',
+  'witnessInventorySourceFingerprint',
+  'sourceGraphHash',
+  'sourceReceiptContractVersion',
+  'sourceId',
+  'sourceRevision',
+  'sourceFingerprint',
+  'sourceMeasuredAt',
+  'sourceGapId',
+];
+
+function agentBriefPlainObject(value) {
+  return value !== null && typeof value === 'object' && !Array.isArray(value);
+}
+
+function agentBriefExactKeys(value, keys) {
+  return agentBriefPlainObject(value)
+    && Object.keys(value).length === keys.length
+    && keys.every((key) => Object.hasOwn(value, key));
+}
+
+function agentBriefPrivateSourceCoordinate(value) {
+  if (!value || typeof value !== 'object') return false;
+  if (Array.isArray(value)) return value.some(agentBriefPrivateSourceCoordinate);
+  for (const [key, nested] of Object.entries(value)) {
+    if (['rootPath', 'remote', 'remoteUrl', 'privateRemote'].includes(key)) return true;
+    if (agentBriefPrivateSourceCoordinate(nested)) return true;
+  }
+  return false;
+}
+
+function validAgentBriefProjectSource(value, projectSlug) {
+  if (
+    !hasNonEmptyString(projectSlug)
+    || !agentBriefExactKeys(value, [
+      'contractVersion', 'projectSlug', 'status', 'currentness', 'measuredAt',
+      'topGap', 'nextAction', 'bindingCardinality', 'receipt',
+    ])
+    || value.contractVersion !== 1
+    || value.projectSlug !== projectSlug
+    || !AGENT_BRIEF_SOURCE_STATUSES.has(value.status)
+    || !AGENT_BRIEF_SOURCE_CURRENTNESS.has(value.currentness)
+    || !(value.measuredAt === null || hasNonEmptyString(value.measuredAt))
+    || !Number.isInteger(value.bindingCardinality)
+    || value.bindingCardinality < 0
+    || !(value.topGap === null || (agentBriefPlainObject(value.topGap) && hasNonEmptyString(value.topGap.id)))
+    || !agentBriefPlainObject(value.nextAction)
+    || !hasNonEmptyString(value.nextAction.id)
+  ) return false;
+  if (value.receipt === null) return ['not_measured', 'invalid'].includes(value.status);
+  const receipt = value.receipt;
+  if (
+    !agentBriefPlainObject(receipt)
+    || receipt.contractVersion !== 1
+    || receipt.projectSlug !== projectSlug
+    || !['needs_evidence', 'review_required', 'verified_current'].includes(receipt.status)
+    || receipt.currentness !== 'current'
+    || !hasNonEmptyString(
+      receipt.sourceId,
+      receipt.sourceKind,
+      receipt.sourceRevision,
+      receipt.sourceFingerprint,
+      receipt.graphHash,
+      receipt.measuredAt,
+    )
+    || !['git', 'folder'].includes(receipt.sourceKind)
+    || !agentBriefPlainObject(receipt.witnessSummary)
+    || !['total', 'supported', 'missing'].every(
+      (field) => Number.isInteger(receipt.witnessSummary[field]) && receipt.witnessSummary[field] >= 0,
+    )
+    || receipt.witnessSummary.supported + receipt.witnessSummary.missing !== receipt.witnessSummary.total
+    || !Array.isArray(receipt.witnesses)
+    || receipt.witnesses.length !== receipt.witnessSummary.total
+  ) return false;
+  return receipt.witnesses.every((witness) => (
+    agentBriefPlainObject(witness)
+    && hasNonEmptyString(witness.id, witness.nodeSlug, witness.role, witness.path)
+    && !/^(?:\/|[A-Za-z]:[\\/]|\.\.\/)/.test(witness.path)
+    && typeof witness.supported === 'boolean'
+  ));
+}
+
+function validAgentBriefMeaningAssessment(value, projectSlug) {
+  if (
+    !agentBriefExactKeys(value, [
+      'contract', 'projectSlug', 'status', 'dimensions', 'topGap', 'nextAction', 'provenance',
+    ])
+    || value.contract !== 'meaningAssessment:v1'
+    || value.projectSlug !== projectSlug
+    || !AGENT_BRIEF_MEANING_STATUSES.has(value.status)
+  ) return false;
+  const { structure, competency, source } = value.dimensions ?? {};
+  if (
+    !agentBriefExactKeys(value.dimensions, ['structure', 'competency', 'source'])
+    || !agentBriefExactKeys(structure, ['status', 'basis'])
+    || !['ready', 'needs_structure', 'invalid'].includes(structure.status)
+    || structure.basis !== 'structure_only'
+    || !agentBriefExactKeys(competency, ['status', 'questions'])
+    || !['answered', 'needs_evidence'].includes(competency.status)
+    || !Array.isArray(competency.questions)
+    || competency.questions.length !== AGENT_BRIEF_QUESTION_IDS.length
+    || !agentBriefExactKeys(source, ['status', 'currentness'])
+    || !AGENT_BRIEF_SOURCE_STATUSES.has(source.status)
+    || !AGENT_BRIEF_SOURCE_CURRENTNESS.has(source.currentness)
+  ) return false;
+  for (let index = 0; index < competency.questions.length; index += 1) {
+    const question = competency.questions[index];
+    if (
+      !agentBriefExactKeys(question, ['id', 'status', 'witnessStatus'])
+      || question.id !== AGENT_BRIEF_QUESTION_IDS[index]
+      || !['answered', 'partial', 'visible-gap', 'unassessed'].includes(question.status)
+      || !['resolved', 'missing', 'unavailable'].includes(question.witnessStatus)
+    ) return false;
+  }
+  const allAnswered = competency.questions.every(
+    (question) => question.status === 'answered' && question.witnessStatus === 'resolved',
+  );
+  if ((competency.status === 'answered') !== allAnswered) return false;
+  if (value.topGap !== null && (
+    !agentBriefPlainObject(value.topGap)
+    || !Object.keys(value.topGap).every((key) => ['dimension', 'id', 'questionId'].includes(key))
+    || !hasNonEmptyString(value.topGap.dimension, value.topGap.id)
+    || (value.topGap.questionId !== undefined && !hasNonEmptyString(value.topGap.questionId))
+  )) return false;
+  if (
+    !agentBriefPlainObject(value.nextAction)
+    || !Object.keys(value.nextAction).every((key) => ['id', 'target'].includes(key))
+    || !hasNonEmptyString(value.nextAction.id)
+    || (value.nextAction.target !== undefined && !hasNonEmptyString(value.nextAction.target))
+  ) return false;
+  const provenance = value.provenance;
+  return agentBriefExactKeys(provenance, AGENT_BRIEF_PROVENANCE_FIELDS)
+    && hasNonEmptyString(provenance.evaluator)
+    && AGENT_BRIEF_PROVENANCE_FIELDS
+      .filter((field) => !['evaluator', 'sourceReceiptContractVersion'].includes(field))
+      .every((field) => provenance[field] === null || hasNonEmptyString(provenance[field]))
+    && (provenance.sourceReceiptContractVersion === null || provenance.sourceReceiptContractVersion === 1);
+}
+
 export function agentBriefFailure(parsed) {
   if (parsed?.operation !== 'agent_brief') {
     return `agent_brief returned unexpected operation: ${parsed?.operation}`;
@@ -7013,6 +7300,24 @@ export function agentBriefFailure(parsed) {
   }
   if (!Number.isInteger(parsed.readiness.score) || parsed.readiness.score < 0 || parsed.readiness.score > 100) {
     return 'agent_brief response malformed readiness score';
+  }
+  if (!agentBriefPlainObject(parsed.projectSource)) {
+    return 'agent_brief response missing categorical projectSource';
+  }
+  if (agentBriefPrivateSourceCoordinate(parsed.projectSource)) {
+    return 'agent_brief projectSource exposes private source coordinates';
+  }
+  if (!validAgentBriefProjectSource(parsed.projectSource, parsed.projectSlug)) {
+    return 'agent_brief response malformed categorical projectSource';
+  }
+  if (!agentBriefPlainObject(parsed.meaningAssessment)) {
+    return 'agent_brief response missing categorical meaningAssessment';
+  }
+  if (agentBriefPrivateSourceCoordinate(parsed.meaningAssessment)) {
+    return 'agent_brief meaningAssessment exposes private source coordinates';
+  }
+  if (!validAgentBriefMeaningAssessment(parsed.meaningAssessment, parsed.projectSlug)) {
+    return 'agent_brief response malformed categorical meaningAssessment';
   }
   const readinessCountFailure = numericFieldsFailure('agent_brief readiness', parsed.readiness, [
     'meaningfulNodes',

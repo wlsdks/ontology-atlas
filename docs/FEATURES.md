@@ -1,7 +1,8 @@
 # FEATURES — ontology-atlas
 
 > Complete inventory of features users can **actually use right now**.
-> Last updated: 2026-07-27 (현재 route와 installed-app 계약 재검증 —
+> Last updated: 2026-08-02 (현재 route와 installed-app 계약 및 project meaning
+> receipt 계약 재검증 —
 > `/ontology`은 `/topology?index=expanded`, `/ontology/edit`은
 > `/ontology/studio` 호환 redirect이며, Insights는 할 일·구성·연결·경계·신선도
 > 5개 질문 탭의 maintenance board다. desktop static smoke와 installed-app
@@ -30,8 +31,12 @@ diff review -> better next agent task`.
 |---|---|---|
 | **Desktop app** (macOS · Windows x64 beta) | signed/notarized macOS DMG or unsigned Windows beta NSIS → installed local workbench; first run opens `/docs/?intent=local` vault setup welcome; visual routes `/docs`, `/ontology`, `/topology`, `/projects`, `/ontology/studio`, `/ontology/insights` | daily visual ontology work — pick a local vault folder, edit markdown-backed nodes/relations, reopen recent vaults without visiting the hosted site |
 | **CLI** (R12 / R14 / R15+ · 52 commands) | `init / agent-setup / agent-files / agent-activity / add / import / list / find / validate / mcp-verify / query / compile / export` (vault basics + existing-vault Claude/Codex config repair + read-only agent-file map/drift readout + explicit live activity heartbeat + installed MCP health/graph-query smoke + deterministic graph compile + standard-format interop export) · `index / analyze / infer-imports / bootstrap / preflight / snapshot` (autonomous ingest, project ontology indexing, commit preflight, and vault-scoped git snapshot commits) · `backlinks / orphans / path / explain / all-paths / reachability / relation-check / relate / rename / merge / delete` (graph CRUD + direct/path/common-neighbor explanation + bounded traversal + transitive closure + write preflight + write) · `match-nodes / match-edges / domain-matrix / facets / schema / pattern-walk / project-map / overview / hubs / blast-radius / cycles / components / topological-order / health / agent-brief / workspace-brief / growth / maintenance / node / similar` (graph deep dive — `query_ontology` ops, including graph DB-style node/edge scans, relation dashboard facets, relation schema patterns, explicit traversal and project maps, connected island checks, prerequisite ordering, relationship explanation, domain coupling matrix, agent handoff, and growth/maintenance queues) | developer terminal — vault scaffold, daily exploration, bulk import, MCP sanity check, live agent activity handoff, commit-time vault impact preview, graph deep dive (same authority as AI agent via MCP) |
-| **MCP** (R5 / R7 / R11 / R14 / R16 / R17) | 32 tools (19 read · 13 write) over JSON-RPC | AI agent (Claude Code, Codex, Cursor) — explicit vault/repo root proof · read for context · write back findings · vault-scoped Git status/local snapshots · safe relation removal/replacement and concept reclassification · bootstrap and index projects (R16 `analyze_repo_structure` · R17 `infer_imports` · R+ `index_project`) · compile/query/validator-backed health as graph-engine memory access |
+| **MCP** (R5 / R7 / R11 / R14 / R16 / R17) | 33 tools (19 read · 14 write) over JSON-RPC | AI agent (Claude Code, Codex, Cursor) — explicit vault/repo root proof · read for context · write back findings · vault-scoped Git status/local snapshots · safe relation removal/replacement and concept reclassification · bootstrap/index projects · finalize project competency receipts · compile/query/validator-backed health and fresh categorical meaning assessment |
 | **Website** | GitHub Pages static export / `/` + `/download` | `/` renders the topology map directly and lets you open your own local vault folder from the browser (File System Access API, no install); `/download` is the product intro + release download path. Only `/docs`'s own separate local-source *browsing* tab stays desktop-only. |
+
+Multi-project vaults use explicit selection at the agent boundary:
+`ontology-atlas agent-brief --project SLUG` forwards the same project identity
+as `query_ontology({ operation: "agent_brief", project: SLUG })`.
 
 ```
 input (humans + AI agents)     parse           store              output
@@ -372,7 +377,7 @@ Both routes render the same `HomePage` (R3 keep-both decision: `/` = home/back-l
   bound folder and matches its source identity, revision, and fingerprint to the
   receipt. If that recheck cannot run, the saved receipt remains visible but
   currentness is `unavailable`; an observed source or ontology change is `stale`.
-- **Domain / capability / element node click** → `TopologyV2DetailPanel`, the 352px datasheet (scaled up from 288px, 2026-07-18): single engraved metric line ("쓰는 곳 N · 기대는 곳 N · 근거 N"), two direction groups — **쓰는 곳** (direct incoming — places that use this node) and **기대는 곳** (direct outgoing — places this node leans on), each capped with a "+N more" overflow; a promoted **근거** (evidence) group listing `evidenceIds` rows; a copyable agent handoff row (MCP/CLI-style payload); "전체 상세 →" opt-in to the full detail panel. Direction, not relation type, is the single grouping axis (R+ — avoids double-counting the same edge under both a type split and a direction split)
+- **Domain / capability / element node click** → `TopologyV2DetailPanel`, the 352px datasheet (scaled up from 288px, 2026-07-18): single engraved metric line ("사용하는 항목 N · 필요한 항목 N · 근거 문서 N"), typed groups for **하위 항목**, **상위 항목**, **사용하는 항목**, and **필요한 항목**, each capped with a "+N more" overflow; a promoted **근거 문서** group listing `evidenceIds` rows; an **AI에게 줄 항목 정보 복사** action with MCP/CLI-style context; **자세히 보기** opens the full detail panel. Relation role stays explicit so the same edge is not counted twice.
 
 #### Mobile-only
 - `BottomTabBar` (4 tabs: Map / Docs / Insights / Projects) at safe-area bottom
@@ -747,7 +752,7 @@ RATIO-SYSTEM 1600px container / 960px centered utility column.
 
 ---
 
-## 3. MCP server (32 tools)
+## 3. MCP server (33 tools)
 
 AI agents read/write the same vault as humans. Two ways to get the server running, and only two:
 
@@ -814,7 +819,7 @@ id). Contract: **an export is a snapshot**, the compiler `graphHash` is its
 already emitted into a prior snapshot, and external/dangling refs are omitted
 (never phantom nodes). Full loading recipes live in `mcp/README.md` → *Interop*.
 Read-only MCP registration for external read consumers: set `OATLAS_READ_ONLY=1`
-(tools/list drops the 13 write tools; write calls are rejected).
+(tools/list drops the 14 write tools; write calls are rejected).
 
 Staying file-only here is deliberate and matches the Obsidian precedent
 (files + offline core, servers behind an opt-in localhost plugin). A live HTTP
@@ -850,11 +855,19 @@ file export + the local stdio MCP genuinely can't serve them.
 18. **infer_imports** `{ rootPath?, sourceFolders?, ignore?, maxFiles? }` — side-effect-free TS/JS import graph → file/module dependency edge candidates. Use after `analyze_repo_structure` to pull real `depends_on` candidates from code rather than only layout heuristics; the agent reviews `moduleEdges` with `count` + `kindCounts` and lands accepted edges via `add_relation` / `add_relations`, so the vault is not modified by analysis. Unresolved import `reason` is schema-bound to `empty`, `relative-not-found`, or `alias-not-found`; `kindCounts` is schema-bound to positive integer `static`, `dynamic`, `require`, `reexport`, and `side` keys. Resolves relative imports, `tsconfig.json` paths, and fallback common `@/*` aliases when the target exists; `maxFiles` defaults to 5000 and caps at 50000 to stop pathological monorepo walks.
 19. **index_project** `{ rootPath?, maxFiles?, threshold?, skipImports? }` — side-effect-free project indexing checkpoint that combines repo structure analysis, import-edge indexing, and vault validation. `plan.conceptDelta` separates raw candidates into existing, ambiguous-alias review, and genuinely new buckets, and `next.reviewCalls` gives exact calls for retrieving full rows before applying anything.
 
+For `agent_brief`, structural readiness is not meaning confidence. A fresh call
+for an explicit project derives `meaningAssessment:v1` from three independent
+dimensions: the current graph structure, the versioned competency receipt and
+its typed witness inventory, and project-source provenance/currentness. The
+overall result is categorical (`verified_current`, `needs_evidence`,
+`review_required`, or `invalid`); Atlas emits no combined score or percentage
+that could hide a stale source or unresolved witness.
+
 `query_ontology({operation:"cycles"})` returns each cycle as the canonical slug
 path plus aligned `nodeSummaries[]`, so dependency-cycle diagnostics are readable
 without extra node lookups.
 
-#### Write tools (13)
+#### Write tools (14)
 
 All destructive dry-runs (`git_snapshot`, relation remove/replace,
 rename/reclassify/merge/delete, and absorb) expose the same agent decision
@@ -893,6 +906,7 @@ contract: `previewReady`, `canConfirm`, `wouldChange`, and
 11. **reclassify_concept** `{ slug, newKind, newSlug?, domain?, body?, confirm?, expected_mtime? }` — kind/slug/domain transition with backlink redirect and generated-starter handling
 12. **absorb_document** `{ filePath, confirm?, allowOutsideRepo? }` — classifies a local agent-instruction document, writes accepted policy nodes, backs up the source, then rewrites it as a slim pointer. Canonical paths outside `repoRoot`, including symlink escapes, are blocked until a reviewed dry-run is repeated with `allowOutsideRepo:true`
 13. **git_snapshot** `{ confirm?, expectedHead?, message? }` — validates and commits only the active vault pathspec locally; blocks stale HEAD, detached HEAD, Git operations in progress, and validator errors; never pushes
+14. **finalize_project_meaning** `{ projectSlug, expected_mtime }` — post-write finalization for one explicit project. It reads the five competency answers from the current project Markdown; after current vault validation and a complete project scope, it resolves every typed witness against the current graph/source inventory and stores a versioned receipt with optimistic-concurrency protection. It stores no raw answers or private source coordinates. `ok: true` means the receipt write succeeded, not that the ontology or source is verified; callers read the returned categorical `meaningAssessment` or a fresh explicit-project `agent_brief`.
 
 ---
 

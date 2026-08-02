@@ -55,7 +55,7 @@ export const DOGFOOD_CENSUS: DogfoodCensus = {
   "domainRelates": [],
   "hub": {
     "slug": "mcp-server",
-    "title": "MCP Server (32 tools)",
+    "title": "MCP Server (33 tools)",
     "domain": "agent-integration"
   }
 };

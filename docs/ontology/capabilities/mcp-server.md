@@ -1,7 +1,7 @@
 ---
 slug: capabilities/mcp-server
 kind: capability
-title: MCP Server (32 tools)
+title: MCP Server (33 tools)
 domain: domains/agent-integration
 elements: []
 path: mcp/src
@@ -11,10 +11,10 @@ display_ko: AI 연결 서버
 display_en: AI Connection Server
 ---
 
-# MCP Server (32 tools)
+# MCP Server (33 tools)
 
-`@modelcontextprotocol/server` v2 기반 stdio JSON-RPC 서버. 32 도구 노출
-(read 19 + write 13). 런타임은 Node 24 계열만 지원한다:
+`@modelcontextprotocol/server` v2 기반 stdio JSON-RPC 서버. 33 도구 노출
+(read 19 + write 14). 런타임은 Node 24 계열만 지원한다:
 
 | 도구 | 동작 |
 |---|---|
@@ -22,6 +22,7 @@ display_en: AI Connection Server
 | `git_status` | vault 범위의 로컬 Git HEAD/branch/변경 파일과 vault 밖 변경·staging·detached HEAD·진행 중 operation 위험을 구조화해 반환하는 read-only 도구. NUL-delimited porcelain으로 한글·공백 경로를 그대로 보존한다. |
 | `git_history` | active vault pathspec을 실제로 건드린 최신 commit만 newest-first로 반환하는 read-only 도구. hash/short hash/authoredAt/subject와 `limited` / `hasMore`, shallow repository 여부, `historyComplete`를 제공해 잘린 이력을 완전한 증거로 오인하지 않게 한다. vault 밖 파일만 바꾼 commit은 제외하며, limit은 최대 100이다. |
 | `git_snapshot` | validator error, detached HEAD, merge/rebase/cherry-pick/revert, stale `expectedHead`를 차단하고 vault pathspec만 로컬 commit하는 dry-run-first checkpoint. repo init과 remote push는 지원하지 않는다. |
+| `finalize_project_meaning` | 승인한 concept/relation write와 `validate_vault`·project compile 뒤 project Markdown의 `## Competency answers`를 현재 graph/source provenance에 묶는 post-write receipt. `expected_mtime`으로 동시 편집을 막고 `.ontology-atlas/project-meaning.json`을 원자 갱신한다. sidecar에는 원시 답변·본문·witness나 private source root/remote를 저장하지 않는다. `ok:true`는 receipt write 성공이지 source currentness 검증 성공이 아니며, 함께 반환되는 범주형 `meaningAssessment`를 읽어야 한다. |
 | `list_concepts` | vault 의 모든 노드 (enum-validated kind 필터, limit default 100 / max 500) |
 | `get_concept` | 단일 slug 의 frontmatter + body excerpt + graph neighbors + `outgoingEdges[]` |
 | `get_concepts` | **R+** 배치 reader — 여러 slug 한 호출에 (max 50, 입력 순서 보존, missing/invalid slug row 는 partial result 로 격리) |
@@ -157,9 +158,18 @@ containment-specific check 만 skip 한다.
 | `merge_concepts` | **⚠ DESTRUCTIVE MULTI-FILE (R11)** — `fromSlug` 의 backlink 를 `intoSlug` 로 redirect 후 fromSlug.md 삭제. `intoSlug` 의 frontmatter/body 는 자동 합치지 않음 (필요 시 후속 `patch_concept`). dry-run default. missing `fromSlug` / `intoSlug` 는 `list_concepts()` / `find_evidence({title:"..."})` 복구 안내와 유사 slug 후보를 함께 반환한다. confirmed merge 는 `capturedFrom.frontmatter` / full `body` / prose-aware `bodyExcerpt`, backlink redirect plan, compact `postWriteMaintenance` (`byPhase`·`bySeverity`·`byKind` bucket / `score` / executable `proposedAction`) 를 함께 반환한다. |
 | `absorb_document` | **⚠ DESTRUCTIVE (external file), Slice 0** — CLAUDE.md/AGENTS.md 형태의 markdown 파일을 typed vault 노드로 흡수해 tech lead 의 기존 agent-instruction 파일이 이중 관리되지 않게 한다. `##` 섹션 단위로 분리 — rule/policy/decision 섹션은 `role: policy` frontmatter 를 가진 `kind: document` 노드로, architecture/component 섹션은 *제안만* (자동 작성 없음), injection-suspect 패턴(Tier 1 — instruction-hijack 문구, shell/SQL fragment) 섹션은 카테고리와 무관하게 흡수 대상에서 제외한다. `confirm:true` 없이는 dry-run(분류 계획만, 쓰기 없음), `confirm:true` 지정 시 흡수된 섹션을 기록하고 원본은 `<file>.pre-absorb.bak` 로 백업한 뒤 흡수되지 않은 모든 섹션을 그대로 보존하는 slim pointer 로 재작성한다 (내용 파괴 없음). 기존 backup 을 덮어쓰지 않고 throw. CLI 대응: `ontology-atlas absorb <file...> [--write]`. |
 
+`query_ontology({operation:"agent_brief", project:"<slug>"})`의
+`meaningAssessment`는 구조 readiness 점수와 별도인 범주형 의미 판정이다. 새 MCP
+프로세스는 project Markdown의 다섯 competency 답, post-write receipt, 현재 project
+graph inventory를 다시 결합하며 body digest 불일치·ghost witness·graph/source
+drift를 fail-closed한다. 저장된 source receipt가 `current`였더라도 이 프로세스가
+private source root를 다시 읽지 않아 top-level currentness가 `unavailable`이면 전체
+판정은 `review_required`다. receipt나 handoff에는 원시 답변·raw witness·private
+root/remote를 싣지 않는다.
+
 환경변수 `OATLAS_VAULT` 로 vault 위치 지정. 등록 가이드: `mcp/README.md`. 1줄 verify:
-`npm run verify` (mcp/) — parser smoke, server boot, 32-tool inventory
-(`19 read + 13 write` split 포함), strict argument schema 와 graph-query enum schema,
+`npm run verify` (mcp/) — parser smoke, server boot, 33-tool inventory
+(`19 read + 14 write` split 포함), strict argument schema 와 graph-query enum schema,
 strict schema/runtime unknown-tool, unknown-argument, and invalid-enum rejection,
 unknown-tool / unknown-argument structured repair fields (`receivedTool`, `receivedArgument`, `unknownArguments`, `suggestion`, `allowedTools`, `allowedArguments` — 단일 unknown argument 도 `unknownArguments` 배열 포함),
 `add_concepts` / `add_relations` row-isolation runtime smoke (`concepts[n]` / `relations[n]` row label, `add_concepts` duplicate slug structured `rowName` / `firstSeenAt` 포함),
@@ -226,7 +236,7 @@ human-readable text hint 와 MCP client 용 repair payload 가 따로 drift 나�
 정확히 비교해 MCP client 가 받을 repair 후보 목록이 축약되거나 순서 drift 나는 것을 막는다.
 JSON-RPC integration test 도 unknown tool 의 전체 `allowedTools` 와 invalid enum / filter repair 의
 전체 `allowedValues` 를 직접 비교해 runtime 응답 contract 를 설치 verify 와 같은 수준으로 고정한다.
-dogfood fixture 도 strict enum / unknown-tool repair summary 에 전체 operation enum 과 32-tool inventory 를 사용해
+dogfood fixture 도 strict enum / unknown-tool repair summary 에 전체 operation enum 과 33-tool inventory 를 사용해
 요약 출력의 `allowed N` 이 실제 MCP surface 크기와 함께 움직이게 한다.
 dogfood walk 의 strict tool-name / argument / multi-argument / enum / filter 섹션은 `structuredContent` 의
 repair field 를 읽어 `arg lmit->limit`, `args lmit->limit, summry->summary`,
@@ -500,7 +510,7 @@ error message 를 바로 출력한다.
 `mcp/src/integration.test.mjs` 와 `mcp/src/verify-script.test.mjs` 는 실제
 `tools/list` registry, `verify.mjs` 의 `EXPECTED_TOOLS`, `mcp/package.json`
 tool count metadata, 그리고 `initialize.instructions` 의 agent-facing inventory 가
-서로 drift 나지 않도록 같은 32-tool 목록을 교차 검증한다.
+서로 drift 나지 않도록 같은 33-tool 목록을 교차 검증한다.
 installed verify 도 `tools/list` schema 의 `additionalProperties:false` 와
 required `query_ontology.operation`, `operation` / `targetOperation` enum 이
 runtime allow-list 와 일치하는지 검사해, MCP client schema 와 실제 graph engine
@@ -907,7 +917,7 @@ installed verify 양쪽에서 잡는다. 같은 gate 는
 direct verify help 와 CLI wrapper help 도 이 `list_concepts.kind` / `query_concepts.kind` / `query_concepts.has-key` / `find_neighbors.types` / `find_orphans.kind` / `find_orphans.excludeKinds` / `match_nodes.kind` / `match_nodes.sort` /
 `recommend_relations.kind` / `match_edges.type` / `match_edges.fromKind` / `match_edges.toKind` typo and unsupported-kind rejection 을 명시해, 서버를
 띄우기 전에도 graph filter typo 가 빈 결과로 숨지 않는다는 계약을 볼 수 있게 한다.
-`tools/list` 의 `annotations.title` 표시명과 `annotations.readOnlyHint` 도 16 read / 9 write split 과
+`tools/list` 의 `annotations.title` 표시명과 `annotations.readOnlyHint` 도 19 read / 14 write split 과
 일치하게 노출하고, destructive multi-file/delete 도구는 `annotations.destructiveHint`,
 retry-safe relation writer 는 `annotations.idempotentHint`, 모든 도구는 local
 vault-only 경계인 `annotations.openWorldHint:false` 를 노출한다.
@@ -915,7 +925,7 @@ verify / dogfood 가 같은 helper 로 annotation drift 를 막아 agent 가
 사람이 읽는 표시명 / 읽기 전용 탐색 / 위험한 쓰기 / 안전한 재시도 / 외부-world 접근 여부를
 tool metadata 만으로 구분할 수 있게 한다.
 installed verify 의 `tools/list` 성공 라인도 같은 annotation summary helper 를 사용해
-`32/32 titled; 19/19 read; 13/13 write; 8/8 destructive; 3/3 idempotent; 32/32 local-only`
+`33/33 titled; 19/19 read; 14/14 write; 8/8 destructive; 3/3 idempotent; 33/33 local-only`
 coverage 를 직접 출력한다. source dogfood 와 설치 verify 가 같은 사람이 읽는 증거를
 공유하므로 annotation gate 가 통과했지만 로그에서는 숨는 상태를 줄인다.
 inventory name gate 도 성공 로그에서 `tools/list inventory names — missing/extra/duplicate/invalid checks passed`
@@ -1043,7 +1053,7 @@ dogfood walk 의 실패 조건이 조용히 약해지지 않게 막고, 전체 h
 
 ## 구현 근거
 
-- `mcp/src/index.js` — 32 도구 등록·핸들러·SERVER_INSTRUCTIONS
+- `mcp/src/index.js` — 33 도구 등록·핸들러·SERVER_INSTRUCTIONS
 - `mcp/src/vault.mjs` — 공유 쓰기 프리미티브 + node-eligibility/평평한 슬러그 게이트
 - `mcp/src/ontology-compiler.mjs` · `mcp/src/ontology-engine.mjs` — deterministic compile + graph query
 - `mcp/scripts/verify.mjs` — 설치 검증 (first-contact smoke)

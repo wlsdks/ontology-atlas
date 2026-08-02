@@ -55,9 +55,9 @@
           "slug": "recommended-first-user-flow"
         }
       ],
-      "excerpt": "Current as of 2026-07-27. This is the user-facing guide for running ontology-atlas as a local meaning graph: CLI-only, MCP-connected, and web workbench flows over the same markdown vault. ontology-atlas is not a hosted graph database. It is a local-first graph workbench where markdown frontmatter is the graph, git is t",
-      "wordCount": 2552,
-      "updatedAt": "2026-08-01",
+      "excerpt": "Current as of 2026-08-02. This is the user-facing guide for running ontology-atlas as a local meaning graph: CLI-only, MCP-connected, and web workbench flows over the same markdown vault. ontology-atlas is not a hosted graph database. It is a local-first graph workbench where markdown frontmatter is the graph, git is t",
+      "wordCount": 2650,
+      "updatedAt": "2026-08-02",
       "linksOut": []
     },
     {
@@ -223,8 +223,8 @@
         }
       ],
       "excerpt": "2026-07-27 update — the current architecture is a local-first, git-backed meaning layer shared by people and AI coding agents. Round 10 permanently removed all auth + cloud data surfaces; the current route model converges browsing on Topology, writing on Workshop, maintenance on five-question Insights, and keeps old on",
-      "wordCount": 2730,
-      "updatedAt": "2026-08-01",
+      "wordCount": 2818,
+      "updatedAt": "2026-08-02",
       "linksOut": [
         "../AGENTS",
         "PRODUCT-DIRECTION",
@@ -3151,9 +3151,9 @@
           "slug": "잔여-게이트-다음-라운드"
         }
       ],
-      "excerpt": "작업 순번 만. user 가 \"T?? 진행해\" 하면 그것만 분해해서 실행. 완료된 항목은 ✅ 표시 후 별도 batch 정리 시 일괄 삭제. 갱신 (2026-05-26): macOS app distribution track 반영. local-first 4 surface (macOS app · CLI · MCP · Website), dogfood vault (census: node cli/src/index.mjs overview), CLI 52 commands, MCP 32 tools, compiler/query/health/agent-brief/workspace-bri",
-      "wordCount": 1669,
-      "updatedAt": "2026-07-31",
+      "excerpt": "작업 순번 만. user 가 \"T?? 진행해\" 하면 그것만 분해해서 실행. 완료된 항목은 ✅ 표시 후 별도 batch 정리 시 일괄 삭제. 갱신 (2026-08-02): macOS app distribution 및 project meaning receipt track 반영. local-first 4 surface (macOS app · CLI · MCP · Website), dogfood vault (census: node cli/src/index.mjs overview), CLI 52 commands, MCP 33 tools (read 19 + write 14), ",
+      "wordCount": 1709,
+      "updatedAt": "2026-08-02",
       "linksOut": []
     },
     {
@@ -3882,6 +3882,16 @@
           "depth": 1,
           "text": "CHANGELOG",
           "slug": "changelog"
+        },
+        {
+          "depth": 2,
+          "text": "2026-08-02 — 지도 패널이 내부 용어 대신 사용자가 얻는 결과를 말한다",
+          "slug": "2026-08-02-지도-패널이-내부-용어-대신-사용자가-얻는-결과를-말한다"
+        },
+        {
+          "depth": 2,
+          "text": "2026-08-02 — 프로젝트 의미 답을 새 에이전트 세션에서도 다시 검증한다",
+          "slug": "2026-08-02-프로젝트-의미-답을-새-에이전트-세션에서도-다시-검증한다"
         },
         {
           "depth": 2,
@@ -6054,8 +6064,8 @@
           "slug": "2026-07-26-첫-만남은-쇼핑몰부터"
         }
       ],
-      "excerpt": "Major change history. Code commit messages answer why; this file answers when / which surface changed. Focused on user-visible changes, not PR-level granularity. Newest at the top. Entries stay date-based; the app version reached v1.0.0 on 2026-07-27, so a release tag now carries the semver promise instead. 프로젝트를 고르면 코",
-      "wordCount": 63370,
+      "excerpt": "Major change history. Code commit messages answer why; this file answers when / which surface changed. Focused on user-visible changes, not PR-level granularity. Newest at the top. Entries stay date-based; the app version reached v1.0.0 on 2026-07-27, so a release tag now carries the semver promise instead. 프로젝트 패널의 AI",
+      "wordCount": 63561,
       "updatedAt": "2026-08-02",
       "linksOut": [
         "audits/CASE-STUDY-AGENTS-MD-DRIFT",
@@ -6084,6 +6094,26 @@
           "depth": 2,
           "text": "기록 형식",
           "slug": "기록-형식"
+        },
+        {
+          "depth": 2,
+          "text": "2026-08-02 — 프로젝트 inspector는 내부 인계어 대신 사용자가 얻는 결과를 말한다",
+          "slug": "2026-08-02-프로젝트-inspector는-내부-인계어-대신-사용자가-얻는-결과를-말한다"
+        },
+        {
+          "depth": 3,
+          "text": "먼저 — 세 줄",
+          "slug": "먼저-세-줄"
+        },
+        {
+          "depth": 2,
+          "text": "Design Council Verdict — project inspector plain-language vocabulary",
+          "slug": "design-council-verdict-project-inspector-plain-language-vocabulary"
+        },
+        {
+          "depth": 2,
+          "text": "2026-08-02 — competency read-back은 Markdown 정본과 post-write receipt를 새 프로세스에서 다시 결합한다",
+          "slug": "2026-08-02-competency-read-back은-markdown-정본과-post-write-receipt를-새-프로세스에서-다시-결합한다"
         },
         {
           "depth": 2,
@@ -6527,7 +6557,7 @@
         }
       ],
       "excerpt": "이 파일은 결정과 그때 진 반대 의견을 남긴다. docs/CHANGELOG.md 는 무엇이 언제 바뀌었나를 답하고, 이 파일은 왜 그렇게 정했고, 무엇을 걸었나를 답한다. 최신이 위. 기록은 덧붙이기만 한다 — 지난 기록을 고치지 않는다. 판단이 바뀌었으면 새 기록을 쓰고 옛 기록을 뒤집힘 으로 표시한다. 틀린 기록도 자산이다. 1. 소집 전에 읽는다. 카운슬을 열기 전(그리고 단독 PO 패스를 쓰기 전) 같은 표면 · 같은 질문에 대한 선행 결정이 있는지 먼저 본다. 있으면 새 패스는 그것을 ① 여전히 유효하다고 인용하거나 ② 명시적으로 뒤집는다. 조용히 다시 결정",
-      "wordCount": 44112,
+      "wordCount": 45047,
       "updatedAt": "2026-08-02",
       "linksOut": [
         "slug"
@@ -7937,8 +7967,8 @@
         },
         {
           "depth": 2,
-          "text": "3. MCP server (32 tools)",
-          "slug": "3-mcp-server-32-tools"
+          "text": "3. MCP server (33 tools)",
+          "slug": "3-mcp-server-33-tools"
         },
         {
           "depth": 4,
@@ -7957,8 +7987,8 @@
         },
         {
           "depth": 4,
-          "text": "Write tools (13)",
-          "slug": "write-tools-13"
+          "text": "Write tools (14)",
+          "slug": "write-tools-14"
         },
         {
           "depth": 2,
@@ -8021,8 +8051,8 @@
           "slug": "8-source-of-truth-files"
         }
       ],
-      "excerpt": "Complete inventory of features users can actually use right now. Last updated: 2026-07-27 (현재 route와 installed-app 계약 재검증 — /ontology은 /topology?index=expanded, /ontology/edit은 /ontology/studio 호환 redirect이며, Insights는 할 일·구성·연결·경계·신선도 5개 질문 탭의 maintenance board다. desktop static smoke와 installed-app verifier/Computer U",
-      "wordCount": 16938,
+      "excerpt": "Complete inventory of features users can actually use right now. Last updated: 2026-08-02 (현재 route와 installed-app 계약 및 project meaning receipt 계약 재검증 — /ontology은 /topology?index=expanded, /ontology/edit은 /ontology/studio 호환 redirect이며, Insights는 할 일·구성·연결·경계·신선도 5개 질문 탭의 maintenance board다. desktop static smoke와 inst",
+      "wordCount": 17090,
       "updatedAt": "2026-08-02",
       "linksOut": [
         "slug",
@@ -8079,8 +8109,8 @@
         }
       ],
       "excerpt": "이 문서는 제품을 느낌이 아니라 공개·인용 가능한 학술/표준/craft 레퍼런스에 묶어 둔다. \"온톨로지가 뭔지도 모르면서 만드는\" 것을 막기 위한 근거 모음 — 무엇이 이미 있고, 우리가 그 위에서 우리만의 것을 어디서 어떻게 다르게 만드는지. 인용 규율: 여기 실린 레퍼런스는 전부 공개 논문 / W3C 표준 / 공개 서적 / 공개 블로그이며, 2026-06-01 자동 리서치 워크플로(6 facet × research→adversarial fact-check)에서 각 출처의 제목·저자·URL 을 독립 웹 확인(25/25 verified) 한 것만 실었다. 링크/인용",
-      "wordCount": 2653,
-      "updatedAt": "2026-07-27",
+      "wordCount": 2722,
+      "updatedAt": "2026-08-02",
       "linksOut": []
     },
     {
@@ -8210,8 +8240,8 @@
         }
       ],
       "excerpt": "앱의 「에이전트 연결」 버튼 한 번이면 됩니다. 지금 쓰는 도구를 고르면 그 도구의 설정 파일에 볼트의 실제 절대 경로가 박힌 설정을 써 줍니다. · 도구 · 쓰는 파일 · Claude Code · .mcp.json · Codex · .codex/config.toml · Cursor · .cursor/mcp.json · Antigravity · .agents/mcpconfig.json · 버튼 하나가 파일 하나를 씁니다 — 고르지 않은 도구의 파일은 만들지 않습니다. 여기서 한 번 헷갈리면 나머지가 다 이상해집니다. 에이전트는 Atlas 앱에 붙는 게 아니라 폴더에 ",
-      "wordCount": 698,
-      "updatedAt": "2026-08-01",
+      "wordCount": 753,
+      "updatedAt": "2026-08-02",
       "linksOut": []
     },
     {
@@ -8332,7 +8362,7 @@
       ],
       "excerpt": "빈 볼트에 노드를 손으로 백 개 적는 일은 아무도 하지 않습니다. 그래서 시작은 이미 가진 것에서 뽑아내는 것입니다. 여러분은 이미 코드가 있고, 폴더 구조가 있고, 아마 CLAUDE.md 나 AGENTS.md 도 있습니다. 세 가지 입구가 있습니다. · 가진 것 · 입구 · 코드 저장소 · init --quick-start (아래 1·2절) · 이미 쓰던 에이전트 지침 파일 · absorb (3절) · 마크다운 문서가 든 폴더 · 앱의 「내 문서로 지도 만들기」 (4절) · 셋 다 공통 규칙이 하나 있습니다: 제안 단계는 아무것도 쓰지 않습니다. 확인한 것만 볼트에",
       "wordCount": 847,
-      "updatedAt": "2026-08-01",
+      "updatedAt": "2026-08-02",
       "linksOut": []
     },
     {
@@ -8389,7 +8419,7 @@
         }
       ],
       "excerpt": "노드가 스무 개일 때는 아무 문제도 없습니다. 문제는 이백 개가 되고, 세 사람이 같이 쓰고, 에이전트가 매일 몇 개씩 더할 때 나타납니다. 같은 걸 두 번 만든 것 같은데 어디 있지? 이 이름 바꾸면 뭐가 깨지나? 이제 뭘 손봐야 하는지 어떻게 아나? 이 장은 그 뒤의 일입니다. 볼트가 자라면서 생기는 1번 실패 모드는 같은 개념을 두 번 만드는 것입니다. 「사용자 인증」과 「로그인 처리」가 따로 살면 관계가 둘로 갈리고, 어느 쪽을 봐야 할지 아무도 모르게 됩니다. 만들기 전에 물어보십시오. 이미 있으면 새로 만들지 말고 있는 것을 고칩니다. MCP 로 붙은 에이",
-      "wordCount": 888,
+      "wordCount": 889,
       "updatedAt": "2026-08-02",
       "linksOut": []
     },
@@ -8540,8 +8570,8 @@
         }
       ],
       "excerpt": "폴더를 고르면 점과 선이 나타납니다. 그런데 점들이 거의 다 같은 회색입니다. 이 점은 무엇이고 저 점은 무엇인가? 왜 어떤 건 크고 어떤 건 작은가? 숫자는 왜 어떤 점에만 붙어 있나? 줌을 당겼더니 점이 늘었는데, 아까는 어디 있었나? 지도는 이 질문들에 색이 아니라 모양·크기·위치로 답합니다. 한 번 익히면 그다음부터는 설명 없이 읽힙니다. 노드의 종류(kind)는 도형으로 구분합니다. · 모양 · 종류 · 뜻 · 육각형 판 · project · 최상위 산출물 · 사각 칩 (모서리에 다리 네 개) · domain · 기능 묶음 · 원 · capability · ",
-      "wordCount": 1126,
-      "updatedAt": "2026-08-01",
+      "wordCount": 1134,
+      "updatedAt": "2026-08-02",
       "linksOut": []
     },
     {
@@ -8706,7 +8736,7 @@
         }
       ],
       "excerpt": "관계는 어떻게 생기나 는 관계가 .md 맨 위 한 줄이라고 말했습니다. 그 줄을 YAML 을 치지 않고 쓰는 화면이 공방입니다. 공방은 왼쪽 레일의 「공방」 이고, 주소는 /ontology/studio 입니다. 가로 1024px 미만에서는 열리지 않습니다. 그 폭에서는 「공방은 넓은 화면에서 열려요」 라고 말하고 지도로 보내 줍니다 — 관계를 네 방향으로 펼쳐 놓는 화면이라 좁은 창에서는 방향이 무너집니다. 열면 「무엇을 할까요?」 하나가 뜹니다. · 고르는 것 · 하는 일 · 「기존 노드 강화」 · 이미 있는 노드를 무대에 올리고 빠진 관계를 채웁니다. 어느 노드부",
-      "wordCount": 974,
+      "wordCount": 975,
       "updatedAt": "2026-08-02",
       "linksOut": []
     },
@@ -9043,7 +9073,7 @@
       ],
       "excerpt": "Submission type: Show HN Category: open source / dev tool (80 chars exactly — under HN's 80 char limit. If too long, fallback: Show HN: ontology-atlas – frontmatter is the graph; AI agents read it via MCP) https://github.com/wlsdks/ontology-atlas (Word count: ~380. HN expects substantive Show HN posts, not one-liners; ",
       "wordCount": 642,
-      "updatedAt": "2026-07-31",
+      "updatedAt": "2026-08-02",
       "linksOut": []
     },
     {
@@ -9100,8 +9130,8 @@
         }
       ],
       "excerpt": "오픈소스 launch 단계의 publication 초안 모음. 메인테이너가 시점에 맞춰 직접 publish. 배포 채널 (2026-07-27 확정, docs/DECISIONS.md): npm 발행 계획은 폐기됐다. 공개 채널은 서명·공증된 macOS DMG 하나이고, 앱이 컴파일된 MCP 서버를 자기 번들에 싣고 다닌다 — 다운로드 1회가 사람 표면과 에이전트 표면을 동시에 설치한다. 터미널을 쓰는 사람에게는 소스 체크아웃이 두 번째 길이다. 아래 초안에 npx 를 다시 넣지 말 것 — 실행하면 404 다. 1. 사전 준비 [ ] 서명·공증된 macOS DMG 를 G",
-      "wordCount": 640,
-      "updatedAt": "2026-07-28",
+      "wordCount": 644,
+      "updatedAt": "2026-08-02",
       "linksOut": []
     },
     {
@@ -9139,7 +9169,7 @@
       ],
       "excerpt": "Reddit responds best to honest, problem-first framing. Each subreddit has its own norms; copy below tuned per audience. Title: ontology-atlas — frontmatter as a codebase ontology, AI agents read it via MCP Body (400~500 words, Reddit allows long-form better than HN): my-project/ ├── project.md ├── domains/ │ ├── auth.m",
       "wordCount": 1059,
-      "updatedAt": "2026-07-30",
+      "updatedAt": "2026-08-02",
       "linksOut": []
     },
     {
@@ -9197,7 +9227,7 @@
       ],
       "excerpt": "X 의 언어는 짧고 시각적. 5–7 트윗 짜리 thread 가 sweet spot. 각 트윗 280 chars 안. 1 트윗 = 1 idea. yaml kind: capability domain: domains/auth dependson: [capabilities/signup] Post the thread in one go (drafts feature) Pin tweet 1 to profile Quote-tweet your HN submission link in a separate post a few hours later Tag relevant accounts onl",
       "wordCount": 454,
-      "updatedAt": "2026-07-28",
+      "updatedAt": "2026-08-02",
       "linksOut": []
     },
     {
@@ -9724,12 +9754,12 @@
     {
       "slug": "ontology/capabilities/mcp-server",
       "path": "docs/ontology/capabilities/mcp-server.md",
-      "title": "MCP Server (32 tools)",
+      "title": "MCP Server (33 tools)",
       "tags": [],
       "frontmatter": {
         "slug": "capabilities/mcp-server",
         "kind": "capability",
-        "title": "MCP Server (32 tools)",
+        "title": "MCP Server (33 tools)",
         "domain": "domains/agent-integration",
         "elements": [],
         "path": "mcp/src",
@@ -9743,8 +9773,8 @@
       "headings": [
         {
           "depth": 1,
-          "text": "MCP Server (32 tools)",
-          "slug": "mcp-server-32-tools"
+          "text": "MCP Server (33 tools)",
+          "slug": "mcp-server-33-tools"
         },
         {
           "depth": 2,
@@ -9752,8 +9782,8 @@
           "slug": "구현-근거"
         }
       ],
-      "excerpt": "@modelcontextprotocol/server v2 기반 stdio JSON-RPC 서버. 32 도구 노출 (read 19 + write 13). 런타임은 Node 24 계열만 지원한다: · 도구 · 동작 · connectioninfo · active vault/repo root와 해석 출처, 서버 버전, read-only 여부, 실제 광고 중인 tool count/name/hash를 반환해 잘못된 폴더와 stale client toolset을 막는 첫 호출 proof. 명시적 OATLASREPOROOT가 없으면 active vault의 Git top-level",
-      "wordCount": 13807,
+      "excerpt": "@modelcontextprotocol/server v2 기반 stdio JSON-RPC 서버. 33 도구 노출 (read 19 + write 14). 런타임은 Node 24 계열만 지원한다: · 도구 · 동작 · connectioninfo · active vault/repo root와 해석 출처, 서버 버전, read-only 여부, 실제 광고 중인 tool count/name/hash를 반환해 잘못된 폴더와 stale client toolset을 막는 첫 호출 proof. 명시적 OATLASREPOROOT가 없으면 active vault의 Git top-level",
+      "wordCount": 13916,
       "updatedAt": "2026-08-02",
       "linksOut": []
     },
@@ -10208,13 +10238,18 @@
         },
         {
           "depth": 2,
+          "text": "프로젝트 의미 인계",
+          "slug": "프로젝트-의미-인계"
+        },
+        {
+          "depth": 2,
           "text": "확신도",
           "slug": "확신도"
         }
       ],
-      "excerpt": "AI 코딩 에이전트(Claude Code, Codex, Cursor)와 개발자가 사람과 같은 온톨로지 볼트를 읽고 쓸 수 있게 하는 표면들 — MCP 서버, 터미널 CLI, 앱 내 connect 플로우. README.md — \"Your agent reads and maintains it over MCP... one button writes your agent's config and proves the connection.\" AGENTS.md — \"AI agent (Claude Code, Codex, Cursor) reads/writes the same .md file",
-      "wordCount": 120,
-      "updatedAt": "2026-08-01",
+      "excerpt": "AI 코딩 에이전트(Claude Code, Codex, Cursor)와 개발자가 사람과 같은 온톨로지 볼트를 읽고 쓸 수 있게 하는 표면들 — MCP 서버, 터미널 CLI, 앱 내 connect 플로우. README.md — \"Your agent reads and maintains it over MCP... one button writes your agent's config and proves the connection.\" mcp/src/index.js — 33개 MCP 도구 registry와 finalizeprojectmeaning, agentbrief.meanin",
+      "wordCount": 187,
+      "updatedAt": "2026-08-02",
       "linksOut": []
     },
     {
@@ -11334,7 +11369,8 @@
           "domains/project-portfolio",
           "domains/topology-navigation"
         ],
-        "created_by": "human"
+        "created_by": "human",
+        "path": "README.md"
       },
       "headings": [
         {
@@ -11356,11 +11392,41 @@
           "depth": 2,
           "text": "확신도",
           "slug": "확신도"
+        },
+        {
+          "depth": 2,
+          "text": "Competency answers",
+          "slug": "competency-answers"
+        },
+        {
+          "depth": 3,
+          "text": "scope — answered",
+          "slug": "scope-answered"
+        },
+        {
+          "depth": 3,
+          "text": "domains — answered",
+          "slug": "domains-answered"
+        },
+        {
+          "depth": 3,
+          "text": "abilities — answered",
+          "slug": "abilities-answered"
+        },
+        {
+          "depth": 3,
+          "text": "evidence — answered",
+          "slug": "evidence-answered"
+        },
+        {
+          "depth": 3,
+          "text": "impact — answered",
+          "slug": "impact-answered"
         }
       ],
       "excerpt": "로컬 마크다운 볼트의 frontmatter를 타입이 있는 계산 가능 그래프(도메인·능력·구현 증거·의존·영향)로 바꾸는 로컬-퍼스트 온톨로지 워크벤치. 개발자는 CLI/웹으로, AI 코딩 에이전트는 MCP로 같은 파일을 읽고 쓴다. README.md — \"Your AI coding agent forgets your codebase between sessions... turns the Markdown in your repository into a graph of your product\" AGENTS.md — Project overview (\"a local-first o",
-      "wordCount": 110,
-      "updatedAt": "2026-08-01",
+      "wordCount": 376,
+      "updatedAt": "2026-08-02",
       "linksOut": []
     },
     {
@@ -11409,8 +11475,8 @@
         }
       ],
       "excerpt": "This folder is Ontology Atlas described in its own data format (dogfooding). Every .md file here is one node of the product's meaning model — the same project / domain / capability / element graph the app draws and the MCP server serves to AI agents. If you are an agent reading this: this vault is the shared mental mod",
-      "wordCount": 503,
-      "updatedAt": "2026-08-01",
+      "wordCount": 573,
+      "updatedAt": "2026-08-02",
       "linksOut": []
     },
     {
@@ -12122,13 +12188,18 @@
         },
         {
           "depth": 3,
-          "text": "3-B. Write path (needed)",
-          "slug": "3-b-write-path-needed"
+          "text": "3-B. Write path (works)",
+          "slug": "3-b-write-path-works"
         },
         {
           "depth": 3,
           "text": "3-C. Two-way sync",
           "slug": "3-c-two-way-sync"
+        },
+        {
+          "depth": 3,
+          "text": "3-D. Project meaning finalization",
+          "slug": "3-d-project-meaning-finalization"
         },
         {
           "depth": 2,
@@ -12232,8 +12303,8 @@
         }
       ],
       "excerpt": "[v10 정체성 공식, 2026-07-18] — agent-native, human-sovereign. \"에이전트를 위한 시스템\"이 아니라 \"에이전트가 1급 사용자인, 사람과 에이전트의 공유 의미 계층\"이다. 에이전트는 신선도를 유지하는 엔진이자 최대 소비자(MCP/CLI), 사람은 의미의 최종 결정권자(평문 마크다운 · git diff · 내 디스크가 진실원). agent-memory 카테고리(기계 전용 벡터/자동추출 — 자동화 규모전에서 패배)와 위키 카테고리(사람 전용 — 즉시 부패) 둘 다와 구분되는 위치. 마케팅 훅은 에이전트 통증으로 열고, 본질은 공유 계",
-      "wordCount": 5176,
-      "updatedAt": "2026-08-01",
+      "wordCount": 5322,
+      "updatedAt": "2026-08-02",
       "linksOut": [
         "AGENT-MEMORY-POSITIONING"
       ]
@@ -12551,8 +12622,8 @@
         }
       ],
       "excerpt": "이 폴더는 Ontology Atlas 를 만드는 사람들이 쓰는 기술 문서 모음입니다. 제품이 무엇인지 알고 싶어서 들어오셨다면 이 목록이 아니라 지도 화면을 먼저 보세요 — 제품이 어떤 영역으로 나뉘고 각 영역에 무엇이 들어 있는지 그림 한 장으로 보여 줍니다. 아래 표는 \"어떤 주제를 어느 문서에서 찾는가\" 를 정리한 색인입니다. This folder is the working documentation for people building Ontology Atlas. If you came here to learn what the product is, open the ",
-      "wordCount": 955,
-      "updatedAt": "2026-07-31",
+      "wordCount": 1027,
+      "updatedAt": "2026-08-02",
       "linksOut": [
         "../README",
         "PRODUCT-OWNER-OPERATING-SYSTEM",
@@ -12712,8 +12783,8 @@
         }
       ],
       "excerpt": "Design spec for how the topology view (/, /topology) reveals a node on click and how it stays readable + fast as the vault grows past 2–3k nodes. This is the canonical decision; .claude/rules/design.md and DESIGN-SYSTEM.md carry the short rule, this doc carries the reasoning + cited references. Status: approved directi",
-      "wordCount": 1089,
-      "updatedAt": "2026-07-27",
+      "wordCount": 1085,
+      "updatedAt": "2026-08-02",
       "linksOut": []
     },
     {
@@ -12870,8 +12941,8 @@
         }
       ],
       "excerpt": "Historical implementation record (superseded, 2026-07-27). This document preserves the measurements and decisions that led to topology-map-v2; its descriptions of coexisting DOM/Sigma engines and future migration phases are not current runtime instructions. The shipped contract is one canvas-2D engine. Use docs/TECH-ST",
-      "wordCount": 3715,
-      "updatedAt": "2026-07-31",
+      "wordCount": 3710,
+      "updatedAt": "2026-08-02",
       "linksOut": [
         "owner-topology-taste"
       ]
@@ -13255,14 +13326,14 @@
       },
       {
         "fromSlug": "README",
-        "context": "SKTOP-MACOS.md) | macOS desktop app track, readiness gate, first Tauri prototype scope | Current distribution track | | **[`../mcp/README.md`]** | MCP registration, 32 tools, tool contracts, verification | Canonical agent interface | | [`../cli/README.md`](../cli/",
+        "context": "SKTOP-MACOS.md) | macOS desktop app track, readiness gate, first Tauri prototype scope | Current distribution track | | **[`../mcp/README.md`]** | MCP registration, 33 tools, tool contracts, verification | Canonical agent interface | | [`../cli/README.md`](../cli/",
         "linkText": "`../mcp/README.md`"
       }
     ],
     "../cli/README": [
       {
         "fromSlug": "README",
-        "context": "EADME.md`](../mcp/README.md) | MCP registration, 32 tools, tool contracts, verification | Canonical agent interface | | **[`../cli/README.md`]** | CLI commands, graph workflows, installed-package checks | Canonical developer terminal interface | | [`DESIGN-SYSTEM.",
+        "context": "EADME.md`](../mcp/README.md) | MCP registration, 33 tools, tool contracts, verification | Canonical agent interface | | **[`../cli/README.md`]** | CLI commands, graph workflows, installed-package checks | Canonical developer terminal interface | | [`DESIGN-SYSTEM.",
         "linkText": "`../cli/README.md`"
       }
     ],
@@ -14774,7 +14845,7 @@
                 "path": "ontology/capabilities/mcp-server",
                 "type": "doc",
                 "slug": "ontology/capabilities/mcp-server",
-                "title": "MCP Server (32 tools)"
+                "title": "MCP Server (33 tools)"
               },
               {
                 "name": "ontology-blocks",

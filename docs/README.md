@@ -46,7 +46,7 @@ workspace briefs, graph health, handoff packets, or memory update diffs.
 | [`ARCHITECTURE.md`](ARCHITECTURE.md) | Local-first architecture, route/data flow, build/test pipeline | Canonical technical overview |
 | [`DEVELOPMENT-CHECKS.md`](DEVELOPMENT-CHECKS.md) | Maintainer verification, package checks, dogfood release gates | Canonical maintainer checks |
 | [`DESKTOP-MACOS.md`](DESKTOP-MACOS.md) | macOS desktop app track, readiness gate, first Tauri prototype scope | Current distribution track |
-| [`../mcp/README.md`](../mcp/README.md) | MCP registration, 32 tools, tool contracts, verification | Canonical agent interface |
+| [`../mcp/README.md`](../mcp/README.md) | MCP registration, 33 tools, tool contracts, verification | Canonical agent interface |
 | [`../cli/README.md`](../cli/README.md) | CLI commands, graph workflows, installed-package checks | Canonical developer terminal interface |
 | [`DESIGN-SYSTEM.md`](DESIGN-SYSTEM.md) | Visual language, tokens, forbidden patterns | Canonical UI style guide |
 | [`MAP-TESTABILITY.md`](MAP-TESTABILITY.md) | Observing the canvas map from outside (`?e2e=1` → `window.__atlasMap`), and the measurement discipline that a 2026-07-31 six-false-negative incident produced | Canonical map test surface |
@@ -61,7 +61,11 @@ The normative product model is:
 1. **One codebase, one ontology, developer and AI agent grow it together.**
 2. The vault's `.md` frontmatter is the graph. The markdown body is the human
    explanation. Git is the source of truth.
-3. The AI-agent surface is MCP: 32 tools, read/write, local-only, no backend.
+3. The AI-agent surface is MCP: 33 tools (19 read + 14 write), local-only, no
+   backend. `finalize_project_meaning` stores a versioned competency receipt;
+   a fresh `agent_brief` re-derives the categorical meaning assessment from the
+   current project graph, current witness inventory, saved receipt, and
+   project-source provenance.
 4. The developer surface is the CLI: 52 commands for scaffold, import,
    validation, compile, agent handoff, live activity heartbeat, graph queries, dashboard facets, relation schema scans,
    connected island checks, prerequisite ordering, growth/maintenance, commit
@@ -79,6 +83,11 @@ The normative product model is:
 8. User-facing graph workflow docs must explain what works without MCP, what
    MCP adds, how the local graph differs from a graph database, and which
    commands prove the setup on the current machine.
+9. Structural readiness, competency evidence, and source currentness are
+   separate dimensions. Atlas does not collapse them into a confidence score:
+   incomplete or stale evidence fails closed as `needs_evidence`,
+   `review_required`, or `invalid`, and multi-project reads name the project
+   explicitly (`agent-brief --project SLUG`).
 
 ## What Is Historical
 

@@ -1888,7 +1888,7 @@ details-on-demand* — not the inverse (everything-at-once + fullscreen-on-click
   + hub nodes at level 0; reveal a domain's members on demand (semantic zoom).
   Never drop the full 2–3k-node hairball on the user uninvited.
 - **Plain language over graph jargon.** `영향받음 N` → "이 노드를 쓰는 곳 N";
-  `의존 N` → "이 노드가 기대는 곳 N". No duplicated labels (`개념 정보` ×3).
+  `의존 N` → "필요한 항목 N". No duplicated labels (`개념 정보` ×3).
 - **Scale path is evidence-gated.** The current canvas uses a deterministic
   semantic skeleton, tier reveal, density-gate cluster chips, label collision
   suppression, viewport pass-through edge demotion, and focus/realm filters
@@ -2010,7 +2010,7 @@ the words aren't:
 | --- | --- |
 | `{source} → {target}` — a path between two nodes | `문서 열기 →` |
 | `오래된 → 최근` — an ordering | `상세 →` |
-| `설정 → Developer` — a menu path to follow | `전체 상세 →` |
+| `설정 → Developer` — a menu path to follow | `자세히 보기` |
 | `목차 클릭 → 해당 위치로` — cause and effect | label + trailing `ArrowRight` icon |
 | Leading `↗` on a link that **leaves the app** (`target="_blank"`, an external deeplink) — it warns before the click | Trailing `↗` on in-app navigation |
 | `ChevronRight`/`ChevronDown` as a disclosure state, or prev/next on a carousel | |
@@ -2101,8 +2101,8 @@ workshop finally look like this app.
 **What the Workshop is now (restrained, full charter):**
 
 - **Compass Stage.** The focal node is the center hero card; relation *types* are
-  nailed to fixed bearings — UP = 상위개념 (is_a), DOWN = 담는 것 (contains),
-  RIGHT = 기대는 곳 (depends), LEFT = 비슷한 것 (relates). Filled = solid indigo
+  nailed to fixed bearings — UP = 상위 개념 (is_a), DOWN = 하위 항목 (contains),
+  RIGHT = 필요한 항목 (depends), LEFT = 관련 항목 (relates). Filled = solid indigo
   strut + satellite card; missing = a **dashed line-art socket** (not a jewel)
   you fill via an inline anchored picker.
 - **Completeness** reads from the center card's 4-side border (dashed = empty,
@@ -2771,7 +2771,7 @@ JSX 안에 44px 정사각 버튼이나 라벨 버튼을 인라인 클래스로 �
 - **톤/정렬** — `tone` dashed(목록/카드 안, "채울 자리" 신호) | solid,
   `align` left(기본) | center(페이지 본문 통째 빈 상황).
 - 빈 차트/목록은 "긴 공백" 대신 **채워질 형태(스켈레톤)** 를 먼저 보여준다 —
-  현재 인사이트 "가장 많이 기대는 곳" / "허브" 빈 영역에 적용.
+  현재 인사이트 "필요한 항목이 가장 많은 곳" / "허브" 빈 영역에 적용.
 
 ### 컨트롤 높이 토큰 (#13)
 
@@ -2874,7 +2874,7 @@ JSX 안에 44px 정사각 버튼이나 라벨 버튼을 인라인 클래스로 �
   `column`. 임계(12) **초과** 부모에만 걸린다; 이하 부모는 종전 부채꼴 그대로.
   기본값 둘(막대 · 부챗살)이 화면을 바꾸고, 세 숫자는 종전 상수 그대로다.
 - **한 노드의 컨트롤은 서로 다른 방위를 쓴다** (2026-08-02) — 막대=북(머리 위) ·
-  배지=**북서**(왼쪽 어깨) · 궤도 「이것만 보기」 버튼=**동**(정오른쪽). 셋이
+  배지=**북서**(왼쪽 어깨) · 궤도 「이 영역만 보기」 버튼=**동**(정오른쪽). 셋이
   같은 노드 둘레에 앵커되므로 방위가 겹치면 자리를 다툰다. 실측: 배지와 궤도
   버튼이 둘 다 우상단 45° 라 배지의 **80%(513px²)** 가 버튼에 덮였고
   `elementFromPoint` 가 버튼을 돌려줘 **배지가 한 번도 안 눌렸다**; 기본값인

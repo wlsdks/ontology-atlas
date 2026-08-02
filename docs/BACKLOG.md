@@ -3,9 +3,9 @@
 > 작업 *순번* 만. user 가 "T?? 진행해" 하면 그것만 분해해서 실행.
 > 완료된 항목은 ✅ 표시 후 별도 batch 정리 시 일괄 삭제.
 >
-> **갱신 (2026-05-26)**: macOS app distribution track 반영.
+> **갱신 (2026-08-02)**: macOS app distribution 및 project meaning receipt track 반영.
 > local-first 4 surface (macOS app · CLI · MCP · Website), dogfood vault (census: `node cli/src/index.mjs overview`), CLI 52 commands,
-> MCP 32 tools, compiler/query/health/agent-brief/workspace-brief/bootstrap/import-inference
+> MCP 33 tools (read 19 + write 14), compiler/query/health/agent-brief/workspace-brief/bootstrap/import-inference
 > 루프 기준으로 재정렬.
 
 ---
@@ -89,6 +89,10 @@ V2 통합 자체도 `mission v2 default path 에서 invisible` 한 cloud 컬렉�
   ontology를 오래 작성해야 하면 실패.
 - **성공 기준**: agent가 `workspace_brief` / `health` / `query_ontology` 기반으로
   구조를 더 빨리 파악하고, 작업 후 vault diff 제안이 실제 코드 변화와 맞는다.
+- **현재 의미 검증 경계**: `finalize_project_meaning`이 현재 프로젝트의 다섯
+  competency 답변을 versioned receipt로 고정하고, 이후 `agent_brief --project
+  SLUG`가 구조·competency·source 차원을 다시 대조한다. receipt write 성공이나
+  구조 readiness를 신뢰도 점수로 해석하지 않는다.
 - **왜 P0**: 시장성은 ontology 자체가 아니라 agent memory 유지비 감소 루프에
   있다. 이 루프가 안 보이면 좋은 엔진이지만 제품은 아직 아니다.
 
@@ -147,7 +151,7 @@ R10b (firebase / functions / firestore 영구 제거) 후 cloud-side 진화 컨�
 
 ### F3. .mcp.json git-tracked (✅ 이번 R14 closeout 에서 추가)
 
-- 사용자가 git clone 후 Claude Code 열면 즉시 32 tools 자동 등록.
+- 사용자가 git clone 후 Claude Code 열면 즉시 33 tools 자동 등록.
 
 ### ~~T23. mode-aware e2e tests~~ — VOID (R10b)
 
@@ -202,7 +206,7 @@ P1 V1.x 진화가 모두 ✅/N/A 로 닫혔고, 현재 surface 는 macOS app · 
 - `docs/FEATURES.md` — 사용자가 *지금* 사용 가능한 기능 전수
 - `docs/archive/ONTOLOGY-MODEL-V2-DRAFT.md` — V1.x 진화 spec (cloud 부분 N/A archive)
 - `docs/CHANGELOG.md` — 시간순 사용자 가시 변화
-- `mcp/README.md` — MCP 서버 32 도구 (read 19 + write 13) + 등록
+- `mcp/README.md` — MCP 서버 33 도구 (read 19 + write 14) + 등록
 - `docs/benchmark/` — AI agent quality 측정 매트릭스
 
 

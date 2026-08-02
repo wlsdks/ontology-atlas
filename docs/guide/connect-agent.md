@@ -94,8 +94,9 @@ node cli/src/index.mjs agent-setup my-vault --write
 - `add_concept(...)` — 새 역량·요소
 - `rename_concept(...)` — 이름이 바뀌면 백링크를 전부 다시 씀
 - `merge_concepts(...)` — 거의 같은 노드 둘을 접음
+- `finalize_project_meaning(...)` — 승인된 쓰기·검증·전체 컴파일 뒤 프로젝트 의미 영수증을 남김. 원문 답변이나 비공개 소스 루트는 저장하지 않으며, `ok: true`는 영수증 기록 성공이지 의미 검증 완료가 아닙니다
 
-읽기 19개 · 쓰기 13개, 도구 32개가 있습니다.
+읽기 19개 · 쓰기 14개, 도구 33개가 있습니다.
 
 ## 첫 대화 — 무엇을 물어볼까
 
@@ -118,6 +119,11 @@ node cli/src/index.mjs agent-setup my-vault --write
 ```bash
 node cli/src/index.mjs agent-brief my-vault
 ```
+
+프로젝트가 여러 개라면 `--project SLUG`로 하나를 고릅니다. 출력의
+`meaningAssessment`는 `verified_current` / `review_required` /
+`needs_evidence` / `invalid` 중 하나이며, 근거를 확인할 수 없을 때는
+추정하지 않고 fail-closed 상태를 반환합니다.
 
 ```
 agent brief healthy — readiness ready 100/100 · 70 노드 · 152 관계 · 6 health checks

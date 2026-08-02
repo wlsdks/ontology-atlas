@@ -158,7 +158,7 @@ describe('VaultAgentSetupPanel', () => {
       screen.getByText('수정 전에 JSON gate를 실행하고 ok와 performanceOk를 따로 확인합니다.'),
     ).toBeInTheDocument();
     expect(
-      screen.getByText('에이전트 root에서 mcp-verify를 실행해 index_project 포함 로컬 32개 tool 연결을 증명합니다.'),
+      screen.getByText('에이전트 root에서 mcp-verify를 실행해 finalize_project_meaning 포함 로컬 33개 tool 연결을 증명합니다.'),
     ).toBeInTheDocument();
     expect(
       screen.getByText('첫 ontology write 전에 workspace-brief와 agent-brief를 읽습니다.'),
@@ -173,7 +173,7 @@ describe('VaultAgentSetupPanel', () => {
     expect(screen.getByText('configs')).toBeInTheDocument();
     expect(screen.getByText('agent root')).toBeInTheDocument();
     expect(
-      screen.getByText('다른 codebase root에서 Claude Code나 Codex를 열기 전 설정 패킷을 복사'),
+      screen.getByText('다른 codebase root에서 Claude Code나 Codex를 열기 전 연결 설정을 복사'),
     ).toBeInTheDocument();
     expect(screen.getByText('json gate')).toBeInTheDocument();
     expect(screen.getByText('수정 전 에이전트 root에서 JSON gate를 복사해 실행')).toBeInTheDocument();
@@ -186,7 +186,7 @@ describe('VaultAgentSetupPanel', () => {
     ).toBeInTheDocument();
     expect(screen.getByText('mcp_verify')).toBeInTheDocument();
     expect(
-      screen.getByText('mcp-verify 로 local MCP server boot, index_project 포함 32개 tool 목록, target vault 읽기를 증명합니다.'),
+      screen.getByText('mcp-verify 로 local MCP server boot, finalize_project_meaning 포함 33개 tool 목록, target vault 읽기를 증명합니다.'),
     ).toBeInTheDocument();
     expect(screen.getByText('json_gate')).toBeInTheDocument();
     expect(
@@ -204,7 +204,7 @@ describe('VaultAgentSetupPanel', () => {
     expect(screen.getByText('Graph DB pack')).toBeInTheDocument();
     expect(screen.getByText('Setup gate')).toBeInTheDocument();
     expect(
-      screen.getByText('Claude Code, Codex, Cursor가 index_project 포함 32개 tool을 직접 호출하고 구조화된 오류 복구와 write guardrail을 받습니다.'),
+      screen.getByText('Claude Code, Codex, Cursor가 finalize_project_meaning 포함 33개 tool을 직접 호출하고 구조화된 오류 복구와 write guardrail을 받습니다.'),
     ).toBeInTheDocument();
     expect(
       screen.getByLabelText('MCP verify 명령 미리보기'),
@@ -395,7 +395,7 @@ describe('VaultAgentSetupPanel', () => {
     expect(screen.getByText('점검 필요')).toBeInTheDocument();
     expect(
       screen.getByText(
-        '기존 설정 파일은 자동으로 덮어쓰지 않습니다. 설정 패킷이나 codebase-root 템플릿을 복사해 점검 대상 파일을 직접 교체하세요.',
+        '기존 설정 파일은 자동으로 덮어쓰지 않습니다. 연결 설정이나 codebase-root 템플릿을 복사해 점검 대상 파일을 직접 교체하세요.',
       ),
     ).toBeInTheDocument();
     expect(
@@ -464,7 +464,7 @@ describe('VaultAgentSetupPanel', () => {
     expect(onOpenWorkflowGuide).toHaveBeenCalledTimes(1);
   });
 
-  it('AI agent 설정 패널에서 전체 setup packet 을 복사한다', async () => {
+  it('AI agent 설정 패널에서 전체 연결 설정을 복사한다', async () => {
     copyTextMock.mockResolvedValue(true);
     renderPanel({
       handle: { name: 'team-vault' } as FileSystemDirectoryHandle,
@@ -475,7 +475,7 @@ describe('VaultAgentSetupPanel', () => {
       },
     });
 
-    fireEvent.click(screen.getByRole('button', { name: '설정 패킷 복사' }));
+    fireEvent.click(screen.getByRole('button', { name: '연결 설정 복사' }));
 
     await waitFor(() => expect(copyTextMock).toHaveBeenCalledTimes(1));
     expect(copyTextMock).toHaveBeenCalledWith(
@@ -500,7 +500,7 @@ describe('VaultAgentSetupPanel', () => {
       expect.stringContaining('CLI-only: use validate, workspace-brief'),
     );
     expect(copyTextMock).toHaveBeenCalledWith(
-      expect.stringContaining('MCP-connected: let Claude Code, Codex, or Cursor call 32 tools'),
+      expect.stringContaining('MCP-connected: let Claude Code, Codex, or Cursor call 33 tools'),
     );
     expect(copyTextMock).toHaveBeenCalledWith(
       expect.stringContaining('Graph DB pack: use bounded query plans'),
@@ -515,7 +515,7 @@ describe('VaultAgentSetupPanel', () => {
       expect.stringContaining('Config state: agent-setup --json reports root-specific'),
     );
     expect(copyTextMock).toHaveBeenCalledWith(
-      expect.stringContaining('MCP verify: mcp-verify can boot the local MCP server, list the 32 tools including index_project'),
+      expect.stringContaining('MCP verify: mcp-verify can boot the local MCP server, list the 33 tools including finalize_project_meaning'),
     );
     expect(copyTextMock).toHaveBeenCalledWith(
       expect.stringContaining('JSON setup gate: agent-brief --verify-fallbacks --json returns ok/performanceOk'),
@@ -643,11 +643,11 @@ describe('VaultAgentSetupPanel', () => {
       expect.stringContaining('<absolute path to your team-vault folder>'),
     );
     expect(
-      await screen.findByRole('button', { name: '설정 패킷 복사됨' }),
+      await screen.findByRole('button', { name: '연결 설정을 복사했어요' }),
     ).toBeInTheDocument();
   });
 
-  it('Tauri vault 경로가 있으면 setup packet 이 selected path 를 사용한다', async () => {
+  it('Tauri vault 경로가 있으면 연결 설정이 selected path 를 사용한다', async () => {
     copyTextMock.mockResolvedValue(true);
     renderPanel({
       handle: {
@@ -661,7 +661,7 @@ describe('VaultAgentSetupPanel', () => {
       },
     });
 
-    fireEvent.click(screen.getByRole('button', { name: '설정 패킷 복사' }));
+    fireEvent.click(screen.getByRole('button', { name: '연결 설정 복사' }));
 
     await waitFor(() => expect(copyTextMock).toHaveBeenCalledTimes(1));
     expect(copyTextMock).toHaveBeenCalledWith(
@@ -973,7 +973,7 @@ describe('VaultAgentSetupPanel', () => {
       expect.stringContaining('Config state: agent-setup --json reports root-specific'),
     );
     expect(copyTextMock).toHaveBeenCalledWith(
-      expect.stringContaining('MCP verify: mcp-verify can boot the local MCP server, list the 32 tools including index_project'),
+      expect.stringContaining('MCP verify: mcp-verify can boot the local MCP server, list the 33 tools including finalize_project_meaning'),
     );
     expect(copyTextMock).toHaveBeenCalledWith(
       expect.stringContaining('JSON setup gate: agent-brief --verify-fallbacks --json returns ok/performanceOk'),

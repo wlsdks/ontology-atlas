@@ -25,7 +25,8 @@
  *   - infer_imports          — R17, TS/JS import graph → depends_on 후보 (side effect 0)
  *   - index_project          — repo 분석 + import graph + vault validation plan (side effect 0)
  *
- * write 13:
+ * write 14:
+ *   - finalize_project_meaning — current project competency receipt (post-write, expected mtime)
  *   - add_concept       — 새 노드 (.md 파일 작성, 기존 slug 면 throw)
  *   - add_concepts      — 배치 write (concepts[] → results[], partial 허용)
  *   - add_relation      — 두 노드 사이 edge (frontmatter 배열 키 append)
@@ -72,6 +73,17 @@ import { createHash } from 'node:crypto';
 import { SERVER_VERSION } from './server-version.mjs';
 import { readProjectSourceView } from './project-source-receipt.mjs';
 import { buildProjectSourceGraphHash } from './project-source-graph-hash.mjs';
+import { buildProjectMeaningInventory } from './project-meaning-inventory.mjs';
+import {
+  finalizeProjectMeaningReceipt,
+  parseProjectCompetencyMarkdown,
+  readProjectMeaningAssessment,
+} from './project-meaning-receipt.mjs';
+import {
+  MEANING_COMPETENCY_CONTRACT,
+  MEANING_COMPETENCY_EVALUATOR,
+  deriveMeaningAssessment,
+} from './meaning-assessment.mjs';
 
 import { existsSync, readFileSync, copyFileSync, realpathSync, statSync } from 'node:fs';
 import {
@@ -1072,6 +1084,126 @@ const POST_WRITE_MAINTENANCE_OUTPUT_SCHEMA = Object.freeze({
   additionalProperties: false,
 });
 
+const MEANING_ASSESSMENT_OUTPUT_SCHEMA = Object.freeze({
+  type: 'object',
+  properties: {
+    contract: { type: 'string', enum: ['meaningAssessment:v1'] },
+    projectSlug: { type: ['string', 'null'] },
+    status: {
+      type: 'string',
+      enum: ['verified_current', 'review_required', 'needs_evidence', 'invalid'],
+    },
+    dimensions: {
+      type: 'object',
+      properties: {
+        structure: {
+          type: 'object',
+          properties: {
+            status: { type: 'string', enum: ['ready', 'needs_structure', 'invalid'] },
+            basis: { type: 'string', enum: ['structure_only'] },
+          },
+          required: ['status', 'basis'],
+          additionalProperties: false,
+        },
+        competency: {
+          type: 'object',
+          properties: {
+            status: { type: 'string', enum: ['answered', 'needs_evidence'] },
+            questions: {
+              type: 'array',
+              items: {
+                type: 'object',
+                properties: {
+                  id: NON_BLANK_STRING_SCHEMA,
+                  status: { type: 'string', enum: ['answered', 'partial', 'visible-gap', 'unassessed'] },
+                  witnessStatus: { type: 'string', enum: ['resolved', 'missing', 'unavailable'] },
+                },
+                required: ['id', 'status', 'witnessStatus'],
+                additionalProperties: false,
+              },
+            },
+          },
+          required: ['status', 'questions'],
+          additionalProperties: false,
+        },
+        source: {
+          type: 'object',
+          properties: {
+            status: {
+              type: 'string',
+              enum: ['not_measured', 'needs_evidence', 'review_required', 'invalid', 'verified_current'],
+            },
+            currentness: { type: 'string', enum: ['current', 'stale', 'unavailable'] },
+          },
+          required: ['status', 'currentness'],
+          additionalProperties: false,
+        },
+      },
+      required: ['structure', 'competency', 'source'],
+      additionalProperties: false,
+    },
+    topGap: {
+      type: ['object', 'null'],
+      properties: {
+        dimension: NON_BLANK_STRING_SCHEMA,
+        id: NON_BLANK_STRING_SCHEMA,
+        questionId: NON_BLANK_STRING_SCHEMA,
+      },
+      required: ['dimension', 'id'],
+      additionalProperties: false,
+    },
+    nextAction: {
+      type: 'object',
+      properties: {
+        id: NON_BLANK_STRING_SCHEMA,
+        target: NON_BLANK_STRING_SCHEMA,
+      },
+      required: ['id'],
+      additionalProperties: false,
+    },
+    provenance: {
+      type: 'object',
+      properties: {
+        evaluator: NON_BLANK_STRING_SCHEMA,
+        graphHash: { type: ['string', 'null'] },
+        competencyContract: { type: ['string', 'null'] },
+        competencyEvaluator: { type: ['string', 'null'] },
+        competencyGraphHash: { type: ['string', 'null'] },
+        witnessInventoryContract: { type: ['string', 'null'] },
+        witnessInventoryGraphHash: { type: ['string', 'null'] },
+        witnessInventorySourceFingerprint: { type: ['string', 'null'] },
+        sourceGraphHash: { type: ['string', 'null'] },
+        sourceReceiptContractVersion: { type: ['integer', 'null'] },
+        sourceId: { type: ['string', 'null'] },
+        sourceRevision: { type: ['string', 'null'] },
+        sourceFingerprint: { type: ['string', 'null'] },
+        sourceMeasuredAt: { type: ['string', 'null'] },
+        sourceGapId: { type: ['string', 'null'] },
+      },
+      required: [
+        'evaluator',
+        'graphHash',
+        'competencyContract',
+        'competencyEvaluator',
+        'competencyGraphHash',
+        'witnessInventoryContract',
+        'witnessInventoryGraphHash',
+        'witnessInventorySourceFingerprint',
+        'sourceGraphHash',
+        'sourceReceiptContractVersion',
+        'sourceId',
+        'sourceRevision',
+        'sourceFingerprint',
+        'sourceMeasuredAt',
+        'sourceGapId',
+      ],
+      additionalProperties: false,
+    },
+  },
+  required: ['contract', 'projectSlug', 'status', 'dimensions', 'topGap', 'nextAction', 'provenance'],
+  additionalProperties: false,
+});
+
 function nonBlankStringSchema(description, extra = {}) {
   return {
     ...NON_BLANK_STRING_SCHEMA,
@@ -1279,10 +1411,10 @@ try {
 // 매번 시행착오로 학습되는 문제를 단번에 해소.
 const SERVER_INSTRUCTIONS = `ontology-atlas — vault of markdown files where each \`.md\` with a frontmatter \`kind:\` is an ontology node. The graph encodes the codebase's mental model and is shared with the human via plain markdown.
 
-## Tool inventory (32 tools = read 19 + write 13)
+## Tool inventory (33 tools = read 19 + write 14)
 
 **read** — \`connection_info\` · \`git_status\` · \`git_history\` · \`list_concepts\` · \`get_concept\` · \`get_concepts\` · \`find_evidence\` · \`find_backlinks\` · \`find_neighbors\` · \`find_path\` · \`list_kinds\` · \`find_orphans\` · \`query_concepts\` · \`compile_ontology\` · \`query_ontology\` · \`validate_vault\` · \`analyze_repo_structure\` · \`infer_imports\` · \`index_project\`.
-**write** — \`add_concept\` · \`add_concepts\` · \`add_relation\` · \`add_relations\` · \`remove_relation\` · \`replace_relation\` · \`patch_concept\` · \`reclassify_concept\` · \`delete_concept\` · \`rename_concept\` · \`merge_concepts\` · \`absorb_document\` · \`git_snapshot\`.
+**write** — \`add_concept\` · \`add_concepts\` · \`add_relation\` · \`add_relations\` · \`remove_relation\` · \`replace_relation\` · \`patch_concept\` · \`reclassify_concept\` · \`delete_concept\` · \`rename_concept\` · \`merge_concepts\` · \`absorb_document\` · \`git_snapshot\` · \`finalize_project_meaning\`.
 
 ## Kind hierarchy (top → leaf)
 
@@ -1350,6 +1482,7 @@ The user is the single source of truth. Never auto-write generated proposals.
 - **\`git_status\` / \`git_history\` / \`git_snapshot\`** expose local, vault-scoped Git evidence and checkpoints. Use \`git_history({limit})\` to inspect only commits that touched the active vault. Start a checkpoint with \`git_snapshot({})\`; the dry-run returns the exact \`expectedHead\`, files, validator summary, and risk warnings. Commit only by repeating with \`confirm:true\` and that exact HEAD. The tools never initialize a repository, include paths outside the vault, or push; snapshot also refuses merge/rebase/cherry-pick/revert. Tool annotations are hints; these runtime guards are authoritative.
 - **\`absorb_document\`** (Slice 0 — the "absorption tool") converts a CLAUDE.md/AGENTS.md-style file into typed vault nodes. Dry-run by default (plan only); \`confirm: true\` writes rule/policy sections as \`kind: document\` (\`role: policy\`) nodes, backs up the source to \`<file>.pre-absorb.bak\`, and rewrites it into a slim pointer that preserves every non-absorbed section (architecture/component suggestions, unclassified prose, and injection-suspect sections) verbatim. If the canonical source path is outside \`repoRoot\` (including an inside-repo symlink that resolves outside), confirmation is blocked until the caller explicitly passes \`allowOutsideRepo:true\` after reviewing the absolute path. Architecture/component sections are reported as candidates only — never auto-written; land them yourself with \`add_concept\` if useful.
 - **\`expected_mtime\` (all write tools)** — to guard against concurrent edits by the human or another agent: capture \`mtime\` from \`get_concept\`, pass it as \`expected_mtime\` on the next write. If the file changed in between, the call throws \`VaultConflictError\` instead of silently overwriting.
+- **\`finalize_project_meaning\`** is the post-write boundary for project competency answers. Call it only after accepted concept/relation writes, \`validate_vault\`, and a complete compile. It derives current body/graph/source provenance itself and stores no raw answers or private source coordinates; \`ok:true\` means the receipt was written, while the returned categorical \`meaningAssessment\` remains fail-closed when source currentness cannot be checked.
 
 ## When a tool throws — read the error suffix
 
@@ -1771,6 +1904,55 @@ const TOOLS = [
         },
       },
       required: ['query', 'matches'],
+      additionalProperties: false,
+    },
+  },
+  {
+    name: 'finalize_project_meaning',
+    description:
+      'Finalize the current project competency Markdown after concept/relation writes, vault validation, and a complete project compile. ' +
+      'The server derives the current body digest, project graph hash, source fingerprint, and witness inventory itself; callers cannot submit or restamp those values. ' +
+      'This writes only a small provenance receipt to `.ontology-atlas/project-meaning.json`. It never stores raw answers, witness text, absolute source roots, or remote coordinates. ' +
+      '`ok: true` means the receipt was written, not that source currentness is verified; read `meaningAssessment` or a fresh `agent_brief` for the fail-closed categorical result.',
+    inputSchema: {
+      type: 'object',
+      properties: {
+        projectSlug: nonBlankStringSchema(
+          'Exact project node slug (or an unambiguous vault alias) whose current Competency answers section should be finalized.',
+        ),
+        expected_mtime: {
+          type: 'number',
+          minimum: 0,
+          description:
+            'Required conflict guard. Pass the project node mtime from get_concept; any intervening human or agent edit blocks finalization.',
+        },
+      },
+      required: ['projectSlug', 'expected_mtime'],
+    },
+    outputSchema: {
+      type: 'object',
+      properties: {
+        ok: { type: 'boolean' },
+        changed: { type: 'boolean' },
+        contract: { type: 'string', enum: ['projectMeaningReceipt:v1'] },
+        projectSlug: NON_BLANK_STRING_SCHEMA,
+        bodyDigest: { type: 'string', pattern: '^sha256:[a-f0-9]{64}$' },
+        graphHash: { type: 'string', pattern: '^project-graph-v1:[a-f0-9]{8}$' },
+        sourceFingerprint: NON_BLANK_STRING_SCHEMA,
+        measuredAt: { type: 'string', format: 'date-time' },
+        meaningAssessment: MEANING_ASSESSMENT_OUTPUT_SCHEMA,
+      },
+      required: [
+        'ok',
+        'changed',
+        'contract',
+        'projectSlug',
+        'bodyDigest',
+        'graphHash',
+        'sourceFingerprint',
+        'measuredAt',
+        'meaningAssessment',
+      ],
       additionalProperties: false,
     },
   },
@@ -2819,7 +3001,7 @@ const TOOLS = [
           'Source node slug or unique alias. Required for path, all_paths, and explain_relation.',
         ),
         project: nonBlankStringSchema(
-          'domain_matrix/project_scope/project_map only: project root slug or unique alias. Optional for domain_matrix; optional for project_scope/project_map when exactly one kind: project node exists.',
+          'domain_matrix/project_scope/project_map/agent_brief: project root slug or unique alias. Optional when exactly one kind: project node exists; pass it explicitly in multi-project vaults.',
         ),
         to: nonBlankStringSchema(
           'Target node slug or unique alias. Required for path, all_paths, and explain_relation.',
@@ -4344,6 +4526,10 @@ server.setRequestHandler('tools/call', async (request) => {
         return ok(getConceptsBatch(args));
       case 'find_evidence':
         return ok(findEvidence(args));
+      case 'finalize_project_meaning':
+        // The receipt is the complete durable write. Appending activity after
+        // it would immediately create a second, non-atomic vault mutation.
+        return ok(finalizeProjectMeaningTool(args));
       case 'add_concept':
         return ok(logWrite(name, args, addConcept(args)));
       case 'add_concepts':
@@ -6084,14 +6270,7 @@ function queryOntologyTool(args = {}) {
     ? attachVaultValidation(queryResult, args)
     : queryResult;
   const result = args.operation === 'agent_brief'
-    ? {
-        ...validatedResult,
-        projectSource: readProjectSourceView(
-          VAULT_ROOT,
-          validatedResult.projectSlug,
-          currentProjectSourceGraphHash(artifact, validatedResult.projectSlug),
-        ),
-      }
+    ? attachProjectMeaning(validatedResult, artifact)
     : validatedResult;
   return {
     ...result,
@@ -6108,22 +6287,176 @@ function queryOntologyTool(args = {}) {
   };
 }
 
-function currentProjectSourceGraphHash(artifact, projectSlug) {
+function meaningSourceFromProjectSource(projectSource) {
+  const receipt = projectSource?.receipt;
+  return {
+    status: projectSource?.status,
+    currentness: projectSource?.currentness,
+    topGapId: projectSource?.topGap?.id ?? null,
+    ...(receipt ? {
+      receiptContractVersion: receipt.contractVersion,
+      graphHash: receipt.graphHash,
+      sourceId: receipt.sourceId,
+      sourceRevision: receipt.sourceRevision,
+      sourceFingerprint: receipt.sourceFingerprint,
+      measuredAt: receipt.measuredAt,
+    } : {}),
+  };
+}
+
+function projectMeaningContext(artifact, projectSlug, structureStatus) {
+  let scope = null;
+  let docs = [];
+  let graphHash = null;
   try {
-    const scope = queryCompiledOntology(artifact, {
+    scope = queryCompiledOntology(artifact, {
       operation: 'project_scope',
       project: projectSlug,
       limit: 500,
     });
-    // The engine caps public rows. A partial project scope is not evidence
-    // that the ontology changed, so large scopes degrade to unavailable.
-    if (scope.nodes.limited) return null;
-    const scopedSlugs = new Set(scope.nodes.rows.map((node) => node.slug));
-    const docs = loadVaultDocs(VAULT_ROOT).filter((doc) => scopedSlugs.has(doc.slug));
-    return buildProjectSourceGraphHash(projectSlug, docs);
+    if (!scope.nodes.limited && scope.nodes.total === scope.nodes.rows.length) {
+      const scopedSlugs = new Set(scope.nodes.rows.map((node) => node.slug));
+      docs = loadVaultDocs(VAULT_ROOT).filter((doc) => scopedSlugs.has(doc.slug));
+      graphHash = buildProjectSourceGraphHash(projectSlug, docs);
+    }
   } catch {
-    return null;
+    // A partial or invalid scope is represented by the fail-closed assessment.
   }
+  const projectSource = readProjectSourceView(VAULT_ROOT, projectSlug, graphHash);
+  const inventoryResult = buildProjectMeaningInventory({
+    projectSlug,
+    graphHash,
+    projectScope: scope,
+    artifactEdges: artifact?.edges,
+    scopedDocs: docs,
+    projectSource,
+  });
+  const projectDoc = docs.find((doc) => doc.slug === projectSlug && doc.frontmatter?.kind === 'project') ?? null;
+  const assessmentInput = {
+    vaultRoot: VAULT_ROOT,
+    projectSlug,
+    projectBody: projectDoc?.body,
+    graphHash,
+    structure: { status: structureStatus },
+    source: meaningSourceFromProjectSource(projectSource),
+    inventory: inventoryResult.status === 'ready' ? inventoryResult.inventory : null,
+  };
+  return {
+    scope,
+    docs,
+    graphHash,
+    projectDoc,
+    projectSource,
+    inventoryResult,
+    assessmentInput,
+    meaningAssessment: readProjectMeaningAssessment(assessmentInput),
+  };
+}
+
+function attachProjectMeaning(agentBrief, artifact) {
+  const context = projectMeaningContext(
+    artifact,
+    agentBrief.projectSlug,
+    agentBrief.readiness?.status,
+  );
+  return {
+    ...agentBrief,
+    projectSource: context.projectSource,
+    meaningAssessment: context.meaningAssessment,
+  };
+}
+
+function finalizeProjectMeaningTool({ projectSlug, expected_mtime } = {}) {
+  requireOptionalNonBlankString(projectSlug, 'projectSlug');
+  requireOptionalNonNegativeNumber(expected_mtime, 'expected_mtime');
+  if (typeof projectSlug !== 'string') throw new Error('projectSlug is required.');
+  if (typeof expected_mtime !== 'number') throw new Error('expected_mtime is required.');
+
+  const allDocs = loadVaultDocs(VAULT_ROOT);
+  const canonicalSlug = resolveExistingVaultSlug(projectSlug, allDocs);
+  if (!canonicalSlug) {
+    throw new Error(
+      `Project slug does not exist in vault: "${projectSlug}". Use list_concepts({kind:"project"}) to choose an exact project slug.`,
+    );
+  }
+  const projectDoc = allDocs.find((doc) => doc.slug === canonicalSlug);
+  if (projectDoc?.frontmatter?.kind !== 'project') {
+    throw new Error(`finalize_project_meaning requires a kind: project node; received "${canonicalSlug}".`);
+  }
+  if (projectDoc.mtime !== expected_mtime) {
+    throw new VaultConflictError(canonicalSlug, expected_mtime, projectDoc.mtime);
+  }
+
+  const validation = validateVaultTool({});
+  if (validation.summary.errorFiles > 0) {
+    throw new Error(
+      `finalize_project_meaning blocked: validate_vault found ${validation.summary.errorFiles} file(s) with errors. Repair them before finalizing.`,
+    );
+  }
+
+  const artifact = COMPILED_ONTOLOGY_CACHE.get({ includeIndexes: true });
+  const brief = attachVaultValidation(
+    queryCompiledOntology(artifact, {
+      operation: 'agent_brief',
+      project: canonicalSlug,
+    }),
+    { operation: 'agent_brief', project: canonicalSlug },
+  );
+  const context = projectMeaningContext(artifact, canonicalSlug, brief.readiness?.status);
+  if (!context.graphHash || context.inventoryResult.status !== 'ready') {
+    throw new Error(
+      `finalize_project_meaning blocked: current project witness inventory is unavailable (${context.inventoryResult.reason ?? 'unknown'}).`,
+    );
+  }
+  const sourceReceipt = context.projectSource.receipt;
+  if (!sourceReceipt) {
+    throw new Error('finalize_project_meaning blocked: a valid project source receipt is required first.');
+  }
+
+  const competency = parseProjectCompetencyMarkdown(context.projectDoc.body);
+  const witnessAssessment = deriveMeaningAssessment({
+    projectSlug: canonicalSlug,
+    graphHash: context.graphHash,
+    structure: { status: brief.readiness?.status },
+    source: meaningSourceFromProjectSource(context.projectSource),
+    competency: {
+      contract: MEANING_COMPETENCY_CONTRACT,
+      receiptVersion: 1,
+      evaluator: MEANING_COMPETENCY_EVALUATOR,
+      graphHash: context.graphHash,
+      inventory: context.inventoryResult.inventory,
+      questions: competency.questions,
+    },
+  });
+  const unresolvedAnswered = witnessAssessment.dimensions.competency.questions.find(
+    (row) => row.status === 'answered' && row.witnessStatus !== 'resolved',
+  );
+  if (unresolvedAnswered) {
+    throw new Error(
+      `finalize_project_meaning blocked: competency "${unresolvedAnswered.id}" is marked answered but its current witnesses do not resolve.`,
+    );
+  }
+
+  const receipt = finalizeProjectMeaningReceipt({
+    vaultRoot: VAULT_ROOT,
+    projectSlug: canonicalSlug,
+    projectBody: context.projectDoc.body,
+    graphHash: context.graphHash,
+    sourceFingerprint: sourceReceipt.sourceFingerprint,
+    measuredAt: new Date().toISOString(),
+  });
+  const meaningAssessment = readProjectMeaningAssessment(context.assessmentInput);
+  return {
+    ok: true,
+    changed: true,
+    contract: 'projectMeaningReceipt:v1',
+    projectSlug: canonicalSlug,
+    bodyDigest: receipt.bodyDigest,
+    graphHash: receipt.graphHash,
+    sourceFingerprint: receipt.sourceFingerprint,
+    measuredAt: receipt.measuredAt,
+    meaningAssessment,
+  };
 }
 
 function attachVaultValidation(result, args = {}) {

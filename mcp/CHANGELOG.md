@@ -2,6 +2,22 @@
 
 ## Unreleased
 
+### Added — post-write project meaning receipt and fresh-process read-back
+
+- MCP now exposes 33 tools (19 read and 14 write). The new non-destructive
+  `finalize_project_meaning` write tool runs only after accepted graph writes,
+  vault validation, and a complete project compile, then binds the current
+  project Markdown body to graph and source provenance.
+- `.ontology-atlas/project-meaning.json` stores a versioned per-project receipt
+  envelope with only evaluator/Markdown contracts, a body SHA-256 digest,
+  graph hash, opaque source fingerprint, and measurement time. It does not
+  duplicate raw competency answers, raw witnesses, private roots, or remotes.
+- A fresh `query_ontology({ operation: "agent_brief" })` re-parses the five
+  typed competency sections and returns categorical `meaningAssessment`.
+  Missing or malformed receipts, body edits, ghost witnesses, and graph/source
+  drift fail closed. When this MCP process cannot re-check source currentness,
+  the result is `review_required`, never `verified_current`.
+
 ### Fixed — competency answers keep resolvable witnesses and visible gaps
 
 - `analyze_repo_structure` proposals now answer the five competency questions

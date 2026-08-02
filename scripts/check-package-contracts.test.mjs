@@ -325,7 +325,7 @@ describe('package contract helpers', () => {
   it('keeps the tools/list annotation census on its published contract', () => {
     assert.equal(
       expectedToolsListAnnotationSummary(),
-      '32/32 titled; 19/19 read; 13/13 write; 8/8 destructive; 3/3 idempotent; 32/32 local-only',
+      '33/33 titled; 19/19 read; 14/14 write; 8/8 destructive; 3/3 idempotent; 33/33 local-only',
     );
   });
 

@@ -36,6 +36,16 @@ const PROJECT_SOURCE_STATUSES = new Set([
   'verified_current',
 ]);
 const PROJECT_SOURCE_CURRENTNESS = new Set(['current', 'stale', 'unavailable']);
+const MEANING_ASSESSMENT_STATUSES = new Set([
+  'verified_current',
+  'review_required',
+  'needs_evidence',
+  'invalid',
+]);
+const MEANING_STRUCTURE_STATUSES = new Set(['ready', 'needs_structure', 'invalid']);
+const MEANING_QUESTION_STATUSES = new Set(['answered', 'partial', 'visible-gap', 'unassessed']);
+const MEANING_WITNESS_STATUSES = new Set(['resolved', 'missing', 'unavailable']);
+const MEANING_QUESTION_IDS = ['scope', 'domains', 'abilities', 'evidence', 'impact'];
 
 export function assertQueryOperation(result, expectedOperation) {
   if (!result || typeof result !== 'object' || Array.isArray(result)) {
@@ -272,6 +282,9 @@ export function assertAgentBriefShape(result) {
   if (!validProjectSourceView(result.projectSource, result.projectSlug)) {
     throw new Error('agent_brief projectSource must contain the versioned categorical source receipt view');
   }
+  if (!validMeaningAssessment(result.meaningAssessment, result.projectSlug)) {
+    throw new Error('agent_brief meaningAssessment must contain the categorical fail-closed project meaning view');
+  }
   if (!validAgentBriefDocs(result.docs)) {
     throw new Error('agent_brief docs must include workflowGuide and graphScanProofChecklist guidance');
   }
@@ -460,6 +473,93 @@ function validProjectSourceView(value, projectSlug) {
     && !/^(?:\/|[A-Za-z]:[\\/]|\.\.\/)/.test(witness.path)
     && typeof witness.supported === 'boolean'
   ));
+}
+
+function validMeaningAssessment(value, projectSlug) {
+  const rootKeys = ['contract', 'projectSlug', 'status', 'dimensions', 'topGap', 'nextAction', 'provenance'];
+  if (
+    !isPlainObject(value)
+    || !hasExactKeys(value, rootKeys)
+    || value.contract !== 'meaningAssessment:v1'
+    || value.projectSlug !== projectSlug
+    || !MEANING_ASSESSMENT_STATUSES.has(value.status)
+  ) return false;
+
+  const dimensions = value.dimensions;
+  const structure = dimensions?.structure;
+  const competency = dimensions?.competency;
+  const source = dimensions?.source;
+  if (
+    !isPlainObject(dimensions)
+    || !hasExactKeys(dimensions, ['structure', 'competency', 'source'])
+    || !isPlainObject(structure)
+    || !hasExactKeys(structure, ['status', 'basis'])
+    || !MEANING_STRUCTURE_STATUSES.has(structure.status)
+    || structure.basis !== 'structure_only'
+    || !isPlainObject(competency)
+    || !hasExactKeys(competency, ['status', 'questions'])
+    || !['answered', 'needs_evidence'].includes(competency.status)
+    || !Array.isArray(competency.questions)
+    || competency.questions.length !== MEANING_QUESTION_IDS.length
+    || !isPlainObject(source)
+    || !hasExactKeys(source, ['status', 'currentness'])
+    || !PROJECT_SOURCE_STATUSES.has(source.status)
+    || !PROJECT_SOURCE_CURRENTNESS.has(source.currentness)
+  ) return false;
+
+  for (let index = 0; index < competency.questions.length; index += 1) {
+    const question = competency.questions[index];
+    if (
+      !isPlainObject(question)
+      || !hasExactKeys(question, ['id', 'status', 'witnessStatus'])
+      || question.id !== MEANING_QUESTION_IDS[index]
+      || !MEANING_QUESTION_STATUSES.has(question.status)
+      || !MEANING_WITNESS_STATUSES.has(question.witnessStatus)
+    ) return false;
+  }
+  const allAnswered = competency.questions.every(
+    (question) => question.status === 'answered' && question.witnessStatus === 'resolved',
+  );
+  if ((competency.status === 'answered') !== allAnswered) return false;
+
+  if (value.topGap !== null && (
+    !isPlainObject(value.topGap)
+    || !hasAllowedKeys(value.topGap, ['dimension', 'id', 'questionId'])
+    || !hasNonEmptyString(value.topGap.dimension, value.topGap.id)
+    || (value.topGap.questionId !== undefined && !hasNonEmptyString(value.topGap.questionId))
+  )) return false;
+  if (
+    !isPlainObject(value.nextAction)
+    || !hasAllowedKeys(value.nextAction, ['id', 'target'])
+    || !hasNonEmptyString(value.nextAction.id)
+    || (value.nextAction.target !== undefined && !hasNonEmptyString(value.nextAction.target))
+  ) return false;
+
+  const provenanceFields = [
+    'evaluator',
+    'graphHash',
+    'competencyContract',
+    'competencyEvaluator',
+    'competencyGraphHash',
+    'witnessInventoryContract',
+    'witnessInventoryGraphHash',
+    'witnessInventorySourceFingerprint',
+    'sourceGraphHash',
+    'sourceReceiptContractVersion',
+    'sourceId',
+    'sourceRevision',
+    'sourceFingerprint',
+    'sourceMeasuredAt',
+    'sourceGapId',
+  ];
+  const provenance = value.provenance;
+  return isPlainObject(provenance)
+    && hasExactKeys(provenance, provenanceFields)
+    && hasNonEmptyString(provenance.evaluator)
+    && provenanceFields
+      .filter((field) => !['evaluator', 'sourceReceiptContractVersion'].includes(field))
+      .every((field) => provenance[field] === null || hasNonEmptyString(provenance[field]))
+    && (provenance.sourceReceiptContractVersion === null || provenance.sourceReceiptContractVersion === 1);
 }
 
 function validProjectSourceGap(value) {
@@ -2348,6 +2448,15 @@ function nullableString(value) {
 
 function isPlainObject(value) {
   return Boolean(value && typeof value === 'object' && !Array.isArray(value));
+}
+
+function hasExactKeys(value, keys) {
+  return isPlainObject(value)
+    && Object.keys(value).sort().join('\0') === [...keys].sort().join('\0');
+}
+
+function hasAllowedKeys(value, keys) {
+  return isPlainObject(value) && Object.keys(value).every((key) => keys.includes(key));
 }
 
 function numberValue(value, fallback = 0) {

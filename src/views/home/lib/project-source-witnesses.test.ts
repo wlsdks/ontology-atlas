@@ -40,4 +40,20 @@ describe("deriveProjectSourceWitnesses", () => {
       { id: "project:element:src/player.ts", nodeSlug: "project", role: "implementation", path: "src/player.ts" },
     ]);
   });
+
+  it("keeps an exact project document path when the project node has no agent slug", () => {
+    const witnesses = deriveProjectSourceWitnesses({
+      projectSlug: "music",
+      nodes: [
+        { id: "project:music", kind: "project", title: "Music", projectIds: [], agentSlug: null },
+      ],
+      docs: [
+        { slug: "music", frontmatter: { slug: "music", kind: "project", path: "README.md" } },
+      ],
+    });
+
+    expect(witnesses).toEqual([
+      { id: "music:path", nodeSlug: "music", role: "entrypoint", path: "README.md" },
+    ]);
+  });
 });

@@ -42,7 +42,7 @@
 
 <p align="center">
   <a href="LICENSE"><img alt="MIT license" src="https://img.shields.io/badge/license-MIT-5e6ad2.svg" /></a>
-  <a href="mcp/README.md"><img alt="32 MCP tools" src="https://img.shields.io/badge/MCP-32_tools-5e6ad2.svg" /></a>
+  <a href="mcp/README.md"><img alt="33 MCP tools" src="https://img.shields.io/badge/MCP-33_tools-5e6ad2.svg" /></a>
   <a href="cli/README.md"><img alt="52 CLI commands" src="https://img.shields.io/badge/CLI-52_commands-5e6ad2.svg" /></a>
   <img alt="Local-first" src="https://img.shields.io/badge/storage-local--first-17181f.svg" />
 </p>
@@ -270,7 +270,7 @@ coverage from how the documents link to each other.
 
 ## What your agent gets
 
-**32 MCP tools — 19 read, 13 write** — over stdio JSON-RPC, for Claude Code,
+**33 MCP tools — 19 read, 14 write** — over stdio JSON-RPC, for Claude Code,
 Cursor, Codex, and any MCP client. The point is not the tool count; it is that
 the answers are *typed*, so an agent can act on them.
 
@@ -336,15 +336,19 @@ Three properties make this usable by an agent rather than merely printable:
 
 - **Focused starting context, not a repo dump.** `agent_brief` returns reading
   order, graph entry points, first tool calls, investigation playbooks, write
-  guardrails, and stop conditions. `workspace-brief` is the cheap first-contact dashboard:
+  guardrails, and stop conditions; CLI sessions use `agent-brief --project SLUG`
+  when a vault contains more than one project. `workspace-brief` is the cheap first-contact dashboard:
   per-project node counts (`project_scope`), health-check coverage as
   `id:status:count`, and growth counts before the agent chooses where to read
   deeper — so the first call is a summary, not a download.
 - **Writes that survive review.** Analysis tools are side-effect free by
   default; destructive changes return a complete dry-run before confirmation;
   renames and merges redirect backlinks atomically; optimistic `mtime` guards
-  stop an agent from overwriting a concurrent human edit. The preflight in step
-  5 is the same idea — it named the schema consequence before writing anything.
+  stop an agent from overwriting a concurrent human edit. After accepted graph
+  writes, validation, and a complete compile, `finalize_project_meaning` stores
+  a small project-meaning provenance receipt—not raw answers or a private source
+  root. Its `ok: true` means the receipt was written; the categorical,
+  fail-closed verdict remains `agent_brief.meaningAssessment`.
 - **The same authority without a connector.** The CLI's 52 commands cover the
   same ground for sessions with no MCP client attached.
 
@@ -495,7 +499,7 @@ is listed here on purpose: to this product an agent is a surface, not an add-on.
 | **Insights** (`/ontology/insights`) | The maintenance board — what to do next, composition, connections, boundaries, freshness |
 | **Projects** (`/projects`) | Project cards and coverage derived from containment |
 | **History** (`/git`) | Vault-scoped changes, history, and local snapshots — nothing outside the vault is ever committed |
-| **MCP server** (32 tools, 19 read + 13 write) | The agent's surface — the same graph over stdio JSON-RPC, with dry-runs and write guardrails |
+| **MCP server** (33 tools, 19 read + 14 write) | The agent's surface — the same graph over stdio JSON-RPC, with dry-runs and write guardrails |
 
 Those routes are the same in all three places they can be opened: the installed
 desktop app, the CLI's sibling web build, and the hosted site. The
@@ -559,7 +563,7 @@ node $ATLAS index . --vault ./ontology --apply
 node $ATLAS agent-brief ./ontology
 ```
 
-Restart your agent in your repository and the 32 MCP tools register from the
+Restart your agent in your repository and the 33 MCP tools register from the
 generated config. `node $ATLAS mcp-verify ./ontology` proves the actual server
 process and its contracts at any time.
 
@@ -622,7 +626,7 @@ measurement discipline are documented in
 | [Foundations](docs/FOUNDATIONS.md) | The cited theory and prior art behind the positioning |
 | [Features](docs/FEATURES.md) | The complete current inventory — app, MCP, CLI, desktop |
 | [Architecture](docs/ARCHITECTURE.md) | Local-first data flow and runtime contracts |
-| [MCP guide](mcp/README.md) | Registration and all 32 tool contracts |
+| [MCP guide](mcp/README.md) | Registration and all 33 tool contracts |
 | [CLI reference](cli/README.md) | All 52 commands with examples |
 | [Decisions](docs/DECISIONS.md) | What was decided, what lost the argument, and what would overturn it |
 | [Brand](docs/BRAND.md) | What the mark means, and which asset to use where |

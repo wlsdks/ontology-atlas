@@ -289,8 +289,8 @@ Design Contract")를 만족하려면 P4 에서 아래 행을 추가한다:
 |---|---|---|
 | 온톨로지 팩트 | kind 한글 라벨 + slug | 기존(`KIND_LABEL`) |
 | 배지 | 허브 / 최근 갱신(fresh) / 정체됨(stale) | 기존 |
-| 카운트 | "이 노드가 기대는 곳 N" / "이 노드를 쓰는 곳 N" / "N개 노드" | 기존(평문 원칙 이미 준수) |
-| **다음 행동(신규)** | "전체 상세 →"(opt-in, 풀스크린 모달 금지 계약 준수) | 기존 팝오버 확장 패턴 |
+| 카운트 | "필요한 항목 N" / "사용하는 항목 N" / "N개 노드" | 공용 평문 관계 어휘 |
+| **다음 행동(신규)** | "자세히 보기"(opt-in, 풀스크린 모달 금지 계약 준수) | 기존 팝오버 확장 패턴 |
 | **MCP 액션(신규)** | `get_concept("<slug>")` / 이웃 hop 이 있으면 `find_backlinks("<slug>")` | Phase 0 §4.2 어댑터의 `onSelect`/`onOpen` 과 별개로 텍스트 표기 |
 | **CLI 대체(신규)** | `ontology-atlas node <slug>` / `ontology-atlas backlinks <slug>` | MCP 미보유 에이전트(Codex 등)를 위한 동등 경로 |
 

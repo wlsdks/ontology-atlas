@@ -141,16 +141,16 @@ For an agent opened at your codebase root instead of this vault folder, replace
 
 ## What an AI agent can do for you
 
-Once you register the \`ontology-atlas-mcp\` server, the agent gets 32
+Once you register the \`ontology-atlas-mcp\` server, the agent gets 33
 tools to read/write this vault:
 
 - **read 19**: connection_info / git_status / git_history / list_concepts / get_concept / get_concepts / find_evidence /
   find_backlinks / find_neighbors / find_path / list_kinds / find_orphans /
   query_concepts / compile_ontology / query_ontology / validate_vault /
   analyze_repo_structure / infer_imports / index_project
-- **write 13**: absorb_document / add_concept / add_concepts / add_relation / add_relations /
+- **write 14**: absorb_document / add_concept / add_concepts / add_relation / add_relations /
   remove_relation / replace_relation / patch_concept / reclassify_concept /
-  delete_concept / rename_concept / merge_concepts / git_snapshot
+  delete_concept / rename_concept / merge_concepts / git_snapshot / finalize_project_meaning
 
 Details: https://github.com/wlsdks/ontology-atlas/tree/main/mcp
 `;
@@ -414,15 +414,15 @@ ${ATLAS_CLI} agent-brief . --verify-fallbacks --json --fallback-timeout-ms 15000
 ## AI 에이전트가 해줄 수 있는 일
 
 \`ontology-atlas-mcp\` 서버를 등록하면 에이전트가 이 문서함을 읽고 쓰는 도구
-32개를 갖습니다:
+33개를 갖습니다:
 
 - **읽기 19**: connection_info / git_status / git_history / list_concepts / get_concept / get_concepts / find_evidence /
   find_backlinks / find_neighbors / find_path / list_kinds / find_orphans /
   query_concepts / compile_ontology / query_ontology / validate_vault /
   analyze_repo_structure / infer_imports / index_project
-- **쓰기 13**: absorb_document / add_concept / add_concepts / add_relation / add_relations /
+- **쓰기 14**: absorb_document / add_concept / add_concepts / add_relation / add_relations /
   remove_relation / replace_relation / patch_concept / reclassify_concept /
-  delete_concept / rename_concept / merge_concepts / git_snapshot
+  delete_concept / rename_concept / merge_concepts / git_snapshot / finalize_project_meaning
 
 자세히: https://github.com/wlsdks/ontology-atlas/tree/main/mcp
 `;

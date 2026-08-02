@@ -55,7 +55,7 @@
 
 ### "MCP 가 뭐예요?"
 
-> Model Context Protocol — AI agent 도구 호출 표준. JSON-RPC over stdio. Claude Code / Cursor / Codex 등이 지원. 우리 서버는 32 tools (read 19 + write 13) 로 vault read/write, vault-scoped Git history/checkpoint, Builder handoff를 제공한다.
+> Model Context Protocol — AI agent 도구 호출 표준. JSON-RPC over stdio. Claude Code / Cursor / Codex 등이 지원. 우리 서버는 33 tools (read 19 + write 14) 로 vault read/write, vault-scoped Git history/checkpoint, Builder handoff와 프로젝트 의미 영수증 확정을 제공한다.
 
 ### "백엔드는 뭘 쓰나요?"
 

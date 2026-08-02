@@ -22,7 +22,7 @@ the shared mental model between the humans building Atlas and you.
   local vault management, onboarding & shell, project portfolio, topology
   navigation). Domain boundaries are human judgment — see `created_by:`.
 - `capabilities/` — user-visible features inside those domains, including the
-  two agent surfaces: `capabilities/mcp-server` (32 MCP tools in `mcp/`) and
+  two agent surfaces: `capabilities/mcp-server` (33 MCP tools in `mcp/`) and
   `capabilities/cli-developer-entry` (52 CLI commands in `cli/`).
 - `elements/` — implementation evidence. Each element names a *role* (flat
   slug); the file location lives in its `path:` frontmatter, never in the slug.
@@ -66,6 +66,20 @@ node cli/src/index.mjs health
 node cli/src/index.mjs maintenance docs/ontology
 node cli/src/index.mjs mcp-verify docs/ontology --timeout-ms 15000
 ```
+
+In a multi-project vault, select one containment tree explicitly instead of
+combining project ontologies:
+
+```bash
+node cli/src/index.mjs agent-brief docs/ontology --project <project-slug> --json
+```
+
+After accepted concept/relation writes and validation, MCP
+`finalize_project_meaning` binds the human-editable project Markdown competency
+section to current graph/source provenance. A later `agent_brief` re-derives
+categorical `meaningAssessment`; it never stores raw answers or private source
+roots in the receipt, and source currentness `unavailable` remains
+`review_required` rather than becoming `verified_current`.
 
 ## Relations (frontmatter keys)
 

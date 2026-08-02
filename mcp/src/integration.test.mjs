@@ -8,7 +8,7 @@
 
 import assert from "node:assert/strict";
 import { execFileSync, spawn } from "node:child_process";
-import { existsSync, mkdirSync, mkdtempSync, readFileSync, readdirSync, realpathSync, rmSync, symlinkSync, writeFileSync } from "node:fs";
+import { existsSync, mkdirSync, mkdtempSync, readFileSync, readdirSync, realpathSync, rmSync, statSync, symlinkSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join, dirname, resolve } from "node:path";
 import { StringDecoder } from "node:string_decoder";
@@ -34,7 +34,9 @@ import {
   RELATION_TYPE_VALUES,
   WRITE_RELATION_TYPE_VALUES,
 } from "./ontology-engine.mjs";
-import { GRAPH_ARRAY_KEYS } from "./vault.mjs";
+import { GRAPH_ARRAY_KEYS, loadVaultDocs } from "./vault.mjs";
+import { buildProjectSourceGraphHash } from "./project-source-graph-hash.mjs";
+import { renderProjectCompetencyMarkdown } from "./project-meaning-receipt.mjs";
 import {
   formatNoTestMatchMessage,
   formatTestFilterSuffix,
@@ -5145,6 +5147,142 @@ await test("MCP slug conflicts expose structured recovery fields", async () => {
     const targetDoc = readFileSync(join(root, "target.md"), "utf-8");
     assert.match(targetDoc, /title: Exist/);
     assert.doesNotMatch(targetDoc, /title: Target/);
+  } finally {
+    rmSync(root, { recursive: true, force: true });
+  }
+});
+
+await test("MCP write tools — finalize project meaning survives a fresh MCP process and fails closed after a body edit", async () => {
+  const competency = renderProjectCompetencyMarkdown({
+    scope: {
+      answer: "The project enables one bounded checkout outcome.",
+      status: "answered",
+      witnesses: { concepts: ["project"], relations: [], evidence: ["README.md"], paths: [] },
+    },
+    domains: {
+      answer: "Core owns the checkout responsibility boundary.",
+      status: "answered",
+      witnesses: {
+        concepts: ["domains/core"],
+        relations: [{ from: "project", to: "domains/core", type: "contains" }],
+        evidence: ["README.md"],
+        paths: [],
+      },
+    },
+    abilities: {
+      answer: "Search realizes one observable product ability.",
+      status: "answered",
+      witnesses: {
+        concepts: ["capabilities/search"],
+        relations: [{ from: "domains/core", to: "capabilities/search", type: "contains" }],
+        evidence: ["src/search.ts"],
+        paths: [],
+      },
+    },
+    evidence: {
+      answer: "The search module is the implementation entrypoint.",
+      status: "answered",
+      witnesses: {
+        concepts: ["capabilities/search"],
+        relations: [],
+        evidence: ["src/search.ts"],
+        paths: ["src/search.ts"],
+      },
+    },
+    impact: {
+      answer: "Checkout depends on search.",
+      status: "answered",
+      witnesses: {
+        concepts: ["capabilities/checkout", "capabilities/search"],
+        relations: [{ from: "capabilities/checkout", to: "capabilities/search", type: "depends_on" }],
+        evidence: ["src/checkout.ts"],
+        paths: [],
+      },
+    },
+  });
+  const root = makeVault([
+    {
+      slug: "project",
+      content: `---\nslug: project\nkind: project\ntitle: Project\npath: README.md\ncontains: [domains/core]\n---\n## Definition\n\nSynthetic project.\n\n${competency}`,
+    },
+    {
+      slug: "domains/core",
+      content: "---\nslug: domains/core\nkind: domain\ntitle: Core\ncontains: [capabilities/checkout, capabilities/search]\n---\n",
+    },
+    {
+      slug: "capabilities/search",
+      content: "---\nslug: capabilities/search\nkind: capability\ntitle: Search\ndomain: domains/core\npath: src/search.ts\n---\n",
+    },
+    {
+      slug: "capabilities/checkout",
+      content: "---\nslug: capabilities/checkout\nkind: capability\ntitle: Checkout\ndomain: domains/core\npath: src/checkout.ts\ndependencies: [capabilities/search]\n---\n",
+    },
+  ]);
+  try {
+    const graphHash = buildProjectSourceGraphHash("project", loadVaultDocs(root));
+    mkdirSync(join(root, ".ontology-atlas"), { recursive: true });
+    writeFileSync(join(root, ".ontology-atlas", "project-sources.json"), JSON.stringify({
+      contractVersion: 1,
+      bindings: [{
+        projectSlug: "project",
+        sourceId: "source_project",
+        rootPath: "/private/synthetic/project",
+        kind: "git",
+        boundAt: "2026-08-02T10:00:00.000Z",
+        receipt: {
+          contractVersion: 1,
+          projectSlug: "project",
+          sourceId: "source_project",
+          sourceKind: "git",
+          sourceRevision: "abc123",
+          sourceFingerprint: "git:abc123:clean",
+          graphHash,
+          measuredAt: "2026-08-02T10:00:01.000Z",
+          status: "verified_current",
+          currentness: "current",
+          topGap: null,
+          nextAction: { id: "use_current_evidence" },
+          witnessSummary: { total: 3, supported: 3, missing: 0 },
+          witnesses: [
+            { id: "project_readme", nodeSlug: "project", role: "scope", path: "README.md", supported: true },
+            { id: "search_path", nodeSlug: "capabilities/search", role: "implementation", path: "src/search.ts", supported: true },
+            { id: "checkout_path", nodeSlug: "capabilities/checkout", role: "implementation", path: "src/checkout.ts", supported: true },
+          ],
+          diagnostics: { dirty: false, truncated: false },
+        },
+      }],
+    }), "utf8");
+
+    const projectPath = join(root, "project.md");
+    const first = await rpc(root, [
+      ...INIT_REQUESTS,
+      callTool(2, "finalize_project_meaning", {
+        projectSlug: "project",
+        expected_mtime: statSync(projectPath).mtimeMs,
+      }),
+    ]);
+    const finalized = getCallParsed(first.responses, 2);
+    assert.equal(finalized.ok, true);
+    assert.equal(finalized.projectSlug, "project");
+    assert.equal(JSON.stringify(finalized).includes("/private/synthetic"), false);
+
+    const second = await rpc(root, [
+      ...INIT_REQUESTS,
+      callTool(2, "query_ontology", { operation: "agent_brief", project: "project" }),
+    ]);
+    const brief = getCallParsed(second.responses, 2);
+    assert.equal(brief.meaningAssessment.status, "review_required");
+    assert.equal(brief.meaningAssessment.dimensions.competency.status, "answered");
+    assert.equal(brief.meaningAssessment.dimensions.source.currentness, "unavailable");
+    assert.equal(JSON.stringify(brief.meaningAssessment).includes("src/search.ts"), false);
+
+    writeFileSync(projectPath, `${readFileSync(projectPath, "utf8")}\nHuman edit.\n`, "utf8");
+    const third = await rpc(root, [
+      ...INIT_REQUESTS,
+      callTool(2, "query_ontology", { operation: "agent_brief", project: "project" }),
+    ]);
+    const edited = getCallParsed(third.responses, 2);
+    assert.equal(edited.meaningAssessment.status, "invalid");
   } finally {
     rmSync(root, { recursive: true, force: true });
   }

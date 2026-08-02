@@ -9,6 +9,7 @@ capabilities: []
 elements: []
 contains: [domains/agent-integration, domains/graph-modeling, domains/local-vault-management, domains/onboarding-and-shell, domains/project-portfolio, domains/topology-navigation]
 created_by: human
+path: README.md
 ---
 
 ## 정의
@@ -24,3 +25,54 @@ created_by: human
 
 ## 확신도
 high (README + AGENTS.md 직접 인용)
+
+## Competency answers
+
+### scope — answered
+
+What product/system outcome and user problem define the ontology scope?
+
+Ontology Atlas helps people and AI coding agents preserve and judge one shared, local-first meaning model of a product and the implementation evidence behind it.
+
+- Concepts: `ontology-atlas`
+- Evidence: `README.md`
+
+### domains — answered
+
+Which stable business responsibilities or decision boundaries form its domains?
+
+Six stable responsibility boundaries cover agent integration, graph modeling, local vault management, onboarding and shell delivery, project portfolio work, and topology navigation.
+
+- Concepts: `ontology-atlas`, `domains/agent-integration`, `domains/graph-modeling`, `domains/local-vault-management`, `domains/onboarding-and-shell`, `domains/project-portfolio`, `domains/topology-navigation`
+- Relations: `ontology-atlas` --contains--> `domains/agent-integration`, `ontology-atlas` --contains--> `domains/graph-modeling`, `ontology-atlas` --contains--> `domains/local-vault-management`, `ontology-atlas` --contains--> `domains/onboarding-and-shell`, `ontology-atlas` --contains--> `domains/project-portfolio`, `ontology-atlas` --contains--> `domains/topology-navigation`
+- Evidence: `README.md`
+
+### abilities — answered
+
+Which observable abilities realize those outcomes inside each domain?
+
+The agent-integration domain exposes an MCP server and terminal workflow that let agents query, write, verify, and hand off the same ontology humans inspect.
+
+- Concepts: `domains/agent-integration`, `capabilities/mcp-server`, `capabilities/cli-developer-entry`
+- Relations: `domains/agent-integration` --capabilities--> `capabilities/mcp-server`, `domains/agent-integration` --capabilities--> `capabilities/cli-developer-entry`
+- Evidence: `mcp/src`, `cli/src`
+
+### evidence — answered
+
+Which source artifacts provide implementation evidence for each ability?
+
+The MCP and CLI source entrypoints are exact repository witnesses for the agent-facing read, write, verification, and handoff abilities.
+
+- Concepts: `capabilities/mcp-server`, `capabilities/cli-developer-entry`
+- Evidence: `mcp/src`, `cli/src`
+- Paths: `mcp/src`, `cli/src`
+
+### impact — answered
+
+Which typed dependencies explain change impact across the model?
+
+The CLI depends on the MCP server contract, so MCP schema or behavior changes define a typed impact boundary that must be verified across both surfaces.
+
+- Concepts: `capabilities/cli-developer-entry`, `capabilities/mcp-server`
+- Relations: `capabilities/cli-developer-entry` --depends_on--> `capabilities/mcp-server`
+- Evidence: `cli/src`, `mcp/src`

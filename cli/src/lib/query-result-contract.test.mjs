@@ -584,6 +584,42 @@ describe('query-result-contract', () => {
           diagnostics: { dirty: false, truncated: false },
         },
       },
+      meaningAssessment: {
+        contract: 'meaningAssessment:v1',
+        projectSlug: 'project/app',
+        status: 'review_required',
+        dimensions: {
+          structure: { status: 'ready', basis: 'structure_only' },
+          competency: {
+            status: 'answered',
+            questions: ['scope', 'domains', 'abilities', 'evidence', 'impact'].map((id) => ({
+              id,
+              status: 'answered',
+              witnessStatus: 'resolved',
+            })),
+          },
+          source: { status: 'verified_current', currentness: 'unavailable' },
+        },
+        topGap: { dimension: 'source', id: 'source_currentness_unavailable' },
+        nextAction: { id: 'verify_source_currentness' },
+        provenance: {
+          evaluator: 'meaningAssessment:v1',
+          graphHash: 'project-graph-v1:a1b2c3d4',
+          competencyContract: 'meaningCompetency:v1',
+          competencyEvaluator: 'meaningProposalValidator:v1',
+          competencyGraphHash: 'project-graph-v1:a1b2c3d4',
+          witnessInventoryContract: 'meaningWitnessInventory:v1',
+          witnessInventoryGraphHash: 'project-graph-v1:a1b2c3d4',
+          witnessInventorySourceFingerprint: 'git:abc123:clean',
+          sourceGraphHash: 'project-graph-v1:a1b2c3d4',
+          sourceReceiptContractVersion: 1,
+          sourceId: 'src_fixture',
+          sourceRevision: 'abc123',
+          sourceFingerprint: 'git:abc123:clean',
+          sourceMeasuredAt: '2026-08-02T10:00:00.000Z',
+          sourceGapId: null,
+        },
+      },
       readiness: {
         status: 'ready',
         score: 100,
@@ -956,6 +992,21 @@ describe('query-result-contract', () => {
     assert.throws(
       () => assertAgentBriefShape({ ...valid, projectSource: { ...valid.projectSource, status: 'ready' } }),
       /agent_brief projectSource must contain the versioned categorical source receipt view/,
+    );
+    assert.throws(
+      () => {
+        const withoutAssessment = { ...valid };
+        delete withoutAssessment.meaningAssessment;
+        return assertAgentBriefShape(withoutAssessment);
+      },
+      /agent_brief meaningAssessment must contain the categorical fail-closed project meaning view/,
+    );
+    assert.throws(
+      () => assertAgentBriefShape({
+        ...valid,
+        meaningAssessment: { ...valid.meaningAssessment, confidence: 0.99 },
+      }),
+      /agent_brief meaningAssessment must contain the categorical fail-closed project meaning view/,
     );
     assert.throws(
       () => assertAgentBriefShape({

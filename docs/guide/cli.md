@@ -98,7 +98,7 @@ node cli/src/index.mjs preflight --staged
 | frontmatter 가 깨졌나 | `validate` — **코드 경로는 안 봅니다** |
 | 근거로 적은 파일이 사라졌나 | `health` — 여섯 검사, 코드 경로까지 대조 |
 | 아무도 안 가리키는 노드가 있나 | `orphans` |
-| 「기대는 곳」 이 원을 그리나 | `cycles` |
+| 「필요한 항목」 관계가 원을 그리나 | `cycles` |
 | 그래프가 섬으로 쪼개졌나 | `components` |
 | 에이전트 붙이는 설정이 맞나 | `mcp-verify` · `agent-setup` · `agent-files` |
 

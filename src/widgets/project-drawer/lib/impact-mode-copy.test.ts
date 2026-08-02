@@ -41,9 +41,9 @@ describe("IMPACT_MODE_COPY_KEYS (rank16)", () => {
     },
   );
 
-  it("upstream/downstream 도움말이 rank13 방향 어휘('기대는 곳'/'기대받는 곳')와 일치한다 (ko)", () => {
+  it("upstream/downstream 도움말이 필요한 대상/필요로 하는 대상 어휘와 일치한다 (ko)", () => {
     const drawer = koMessages.vaultWidgets.projectDrawer;
-    expect(drawer.impactHelpUpstream).toContain("기대는 곳");
-    expect(drawer.impactHelpDownstream).toContain("기대받는 곳");
+    expect(drawer.impactHelpUpstream).toContain("필요한 대상");
+    expect(drawer.impactHelpDownstream).toContain("필요로 하는 대상");
   });
 });

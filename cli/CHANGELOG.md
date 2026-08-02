@@ -2,6 +2,16 @@
 
 ## Unreleased
 
+### Added — project-scoped agent handoff
+
+- `agent-brief --project <slug>` now selects one explicit project containment
+  tree in a multi-project vault and passes that slug to the same MCP
+  `agent_brief` operation used by coding agents. It does not infer a project
+  from the first row or combine projects into one assessment.
+- The installed `mcp-verify` path recognizes the 33-tool MCP surface, including
+  the post-write `finalize_project_meaning` contract. This adds no CLI command;
+  the developer-facing command count remains 52.
+
 ### Fixed — installed-package and external-vault contracts
 
 - `validate --json` now reports issue files relative to the selected vault,
