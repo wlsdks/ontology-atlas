@@ -1,0 +1,36 @@
+#!/bin/sh
+# 생성물 신선도 — 커밋 자리에서 잡는다 (2026-08-02)
+#
+# 이 저장소는 볼트 문서를 고치고 `pnpm docs-vault:build` 를 빠뜨리는 실패를
+# 이틀에 세 번 냈다(#826 · #828 · #831). 셋 다 도구 문제가 아니었다 —
+# `pnpm checks:changed` 는 매번 `pnpm docs-vault:check` 를 정확히 지목했고,
+# 아무도 안 돌렸을 뿐이다. **기억에 의존하는 규율은 세 번 이상 반복되면
+# 규율이 아니라 사고 대기열이다.**
+#
+# 그래서 판정을 8분 뒤 CI 에서 0.5초 뒤 커밋으로 옮긴다. 고치지는 않는다 —
+# 스테이지된 내용을 훅이 말없이 바꾸면 사람이 안 쓴 바이트가 사람 이름으로
+# 커밋된다. 막고, 정확한 명령을 말한다.
+#
+# 우회는 `--no-verify` 인데 그건 `.claude/rules/git.md` 가 금지한다.
+
+set -e
+
+staged=$(git diff --cached --name-only --diff-filter=ACMR)
+[ -n "$staged" ] || exit 0
+
+# 입력(볼트 마크다운)이든 산출물이든 손댔으면 본다 — 산출물만 손으로 고치는
+# 경우도 같은 게이트가 잡아야 한다.
+if ! printf '%s\n' "$staged" | grep -qE '^(docs/.*\.md|samples/storefront/.*\.md|src/entities/docs-vault/data/|public/docs-vault/)'; then
+  exit 0
+fi
+
+if ! node scripts/build-docs-vault.mjs --check; then
+  echo ""
+  echo "[pre-commit] 볼트 생성물이 입력과 어긋난 채 커밋되려 했다."
+  echo "[pre-commit] 고치고 다시 커밋해라:"
+  echo ""
+  echo "    pnpm docs-vault:build && git add src/entities/docs-vault/data public/docs-vault"
+  echo ""
+  exit 1
+fi
+
