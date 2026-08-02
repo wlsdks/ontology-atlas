@@ -2,6 +2,22 @@
 
 ## Unreleased
 
+### Fixed — competency answers keep resolvable witnesses and visible gaps
+
+- `analyze_repo_structure` proposals now answer the five competency questions
+  with a typed `answered` / `partial` / `visible-gap` status and explicit
+  concept, relation, evidence, and path witnesses.
+- An `answered` row fails closed when a required witness is missing or cannot be
+  resolved against the proposal and analysis packet. Honest partial answers and
+  visible gaps stay writable but remain visible as findings and failed quality
+  gates.
+- The deterministic `writePlan` and generated project body preserve the full
+  competency answer packet, so a successful preflight cannot erase unresolved
+  questions before the graph is written.
+- Runtime validation now mirrors the public `includes` / `excludes` array
+  contract. MCP clients that bypass JSON Schema enforcement receive a structured
+  `invalid-concept-boundary-list` finding instead of crashing body rendering.
+
 ### Fixed — adversarial MCP dogfood round 2
 
 - `git_status` now parses `git status --porcelain=v1 -z`, preserving Unicode

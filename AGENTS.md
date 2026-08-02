@@ -371,6 +371,10 @@ For the *implicit* "I just opened this repo" loop, the **SessionStart hook** at 
 
 When an AI agent (`add_concept`) or a developer (`ontology-atlas add` / `ontology-atlas import`) creates a new node, the frontmatter is normalized per `kind` so external `.md` ingestion stays consistent. See `mcp/README.md` for the full table and `mcp/src/schema.mjs` (mirror at `cli/src/lib/schema.mjs`) for the source. Contract test: `tests/contract/vault-schema.contract.test.ts`. Validator surfaces missing strongly-expected fields (e.g. capability/element without `domain:`) as the `missing-expected-field` warning — advisory only, not a hard error, so pre-existing vaults still pass.
 
+A capability's `path:` is one canonical repo-relative implementation entrypoint;
+`elements:` contains only real element-node slugs, never raw file paths. Create an
+element only when its implementation role has ontology meaning beyond its location.
+
 노드 이름은 어권별로 병기할 수 있다 — `display_ko` / `display_en` 같은
 `display_<locale>` 키를 쓰면 화면 언어에 맞는 이름이 지도·INDEX·팝오버에
 그려진다(`title` 은 검색/매칭의 단일 진실원이라 바뀌지 않는다). MCP 는

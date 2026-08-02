@@ -6,6 +6,7 @@ const DEFAULT_LIMIT = 100;
 const DEFAULT_ALL_PATHS_SEARCH_BUDGET = 5000;
 const MAX_ALL_PATHS_SEARCH_BUDGET = 50000;
 import { defaultBody } from './schema.mjs';
+import { hasCapabilityImplementationEvidence } from './capability-evidence.mjs';
 
 /**
  * Is this body still the template `add_concept` writes when no body is given?
@@ -2719,12 +2720,9 @@ export function createOntologyEngine(artifact, options = {}) {
    *
    * `retire_unearned_node` below explains why "a capability with no resolved
    * children" is too loud a signal: capabilities routinely name a behavior whose
-   * elements have no node yet, and a path in `elements:` is evidence even when
-   * no node exists for it. So this check counts BOTH shapes as evidence — a
-   * resolved element node and an unresolved file path — and fires only when
-   * there is neither. That is the exact shape the field trial measured: an
-   * `elements:` key that is empty or missing entirely, so nothing in the vault
-   * says where the behavior lives.
+   * elements have no node yet. This check counts either a real element relation or
+   * the capability's canonical `path:` entrypoint as evidence. A raw path inside
+   * `elements:` is still noticed by the write gate as a category error.
    *
    * ## Why this reports instead of blocking
    *
@@ -2736,17 +2734,25 @@ export function createOntologyEngine(artifact, options = {}) {
    */
   function capabilityWithoutEvidenceCandidates(limit) {
     const hasElementsEdge = new Set(
-      edges.filter((edge) => edge.via === 'elements').map((edge) => edge.from),
+      edges
+        .filter((edge) => edge.via === 'elements' && edge.resolved === true)
+        .map((edge) => edge.from),
     );
     const rows = nodes
       .filter((node) => node.kind === 'capability')
-      .filter((node) => !hasElementsEdge.has(node.slug))
+      .filter(
+        (node) =>
+          !hasCapabilityImplementationEvidence({
+            path: node.path,
+            hasElementsEdge: hasElementsEdge.has(node.slug),
+          }),
+      )
       .sort((a, b) => a.slug.localeCompare(b.slug))
       .map((node) => ({
         kind: 'capability_without_evidence',
         score: 0.5,
         slug: node.slug,
-        reason: `"${node.slug}" has no \`elements:\` entry, so nothing in the vault says where this behavior lives in code. An agent handed only this vault can describe the capability and cannot open it. Either add_concept({kind:"element", …}) for the concept the code realizes and reference it, or — if no single element earns a node — put the file path straight into \`elements:\` as evidence. This never blocked the write and does not block one now; it stays here until the capability points at something.`,
+        reason: `"${node.slug}" has neither a canonical \`path:\` entrypoint nor an \`elements:\` relation to a real implementation concept, so nothing in the vault says where this behavior lives in code. An agent handed only this vault can describe the capability and cannot open it. Patch \`path:\` with one repo-relative file or directory; add an element node only when a distinct implementation role earns ontology identity. This never blocked the write and does not block one now; it stays here until the capability points at something.`,
         node: summarizeNode(node),
       }));
 
@@ -3480,7 +3486,12 @@ export function createOntologyEngine(artifact, options = {}) {
     const overviewResult = overview({ limit });
     const topEntrypoint = overviewResult.hubs[0] ?? nodes.find((node) => ['domain', 'capability', 'element'].includes(node.kind));
     const secondEntrypoint = overviewResult.hubs.find((node) => node.slug !== topEntrypoint?.slug);
-    const projectSlug = projectRootSlugs()[0] ?? '<project-slug>';
+    const projectSlug = options.project
+      ? resolve(options.project, 'project')
+      : projectRootSlugs()[0] ?? '<project-slug>';
+    if (options.project && nodeBySlug.get(projectSlug)?.kind !== 'project') {
+      throw new Error(`project must resolve to a project node. Received: "${options.project}".`);
+    }
     const meaningfulNodes = nodes.filter((node) => ['domain', 'capability', 'element'].includes(node.kind)).length;
     const relationCount = edges.length;
     const shaped = meaningfulNodes >= 3;
@@ -3820,6 +3831,7 @@ export function createOntologyEngine(artifact, options = {}) {
     const brief = {
       operation: 'agent_brief',
       sideEffect: false,
+      projectSlug,
       status: workspace.status,
       readiness: {
         status: readinessStatus,

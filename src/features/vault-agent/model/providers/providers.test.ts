@@ -28,6 +28,27 @@ function assembly(overrides: Partial<TurnAssembly> = {}): TurnAssembly {
   };
 }
 
+function openAiTool(name: string, args: Record<string, unknown> = {}) {
+  return {
+    choices: [
+      {
+        message: {
+          role: 'assistant',
+          content: '',
+          tool_calls: [
+            {
+              id: `call_${name}`,
+              type: 'function',
+              function: { name, arguments: JSON.stringify(args) },
+            },
+          ],
+        },
+        finish_reason: 'tool_calls',
+      },
+    ],
+  };
+}
+
 describe('벤더 어댑터 — 셋이 같은 모양으로 접힌다', () => {
   for (const provider of ['anthropic', 'openai', 'gemini'] as const) {
     describe(provider, () => {
@@ -122,17 +143,462 @@ describe('벤더 어댑터 — 셋이 같은 모양으로 접힌다', () => {
     }
   });
 
-  it('주소 갈래는 OpenAI 호환 문법을 바이트 단위로 공유한다', () => {
-    // 복제하지 않고 위임하는 것이 계약이다 — 한쪽만 고쳐지는 순간 같은 문법을
-    // 두 곳에서 다르게 알게 된다.
-    const turn = assembly({ model: 'qwen3:8b' });
-    expect(PROVIDER_ADAPTERS.local.buildBody(turn)).toBe(
-      PROVIDER_ADAPTERS.openai.buildBody(turn),
+  it('주소 갈래는 로컬 사고를 끄고 세 번 읽은 뒤 답을 강제한다', () => {
+    // 첫 왕복은 시스템 규율상 반드시 읽기 도구를 골라야 한다. Ollama 실물에서
+    // generic required 는 무시될 수 있어 전체 지도는 list_concepts 로 이름을 고정한다.
+    const firstTurn = assembly({ model: 'qwen3:8b' });
+    const firstLocal = JSON.parse(
+      PROVIDER_ADAPTERS.local.buildBody(firstTurn),
+    ) as Record<string, unknown>;
+    const firstOpenAi = JSON.parse(
+      PROVIDER_ADAPTERS.openai.buildBody(firstTurn),
+    ) as Record<string, unknown>;
+    expect(firstLocal).toEqual({
+      ...firstOpenAi,
+      messages: [
+        ...(firstOpenAi.messages as unknown[]),
+        {
+          role: 'user',
+          content:
+            'The required evidence read did not happen. Call list_kinds now. Do not answer or describe a plan.',
+        },
+      ],
+      tools: (firstOpenAi.tools as Array<{ function: { name: string } }>).filter(
+        (tool) => tool.function.name === 'list_kinds',
+      ),
+      reasoning_effort: 'none',
+      tool_choice: { type: 'function', function: { name: 'list_kinds' } },
+    });
+    expect(
+      (firstLocal.tools as Array<{ function: { name: string } }>).map(
+        (tool) => tool.function.name,
+      ),
+    ).toEqual(['list_kinds']);
+
+    const focusedFirst = JSON.parse(
+      PROVIDER_ADAPTERS.local.buildBody(
+        assembly({
+          model: 'qwen3:8b',
+          screenContextBlock:
+            '<screen_context>\nlooking_at: capabilities/payment (결제 · kind=capability)\n</screen_context>',
+        }),
+      ),
+    ) as Record<string, unknown>;
+    expect(focusedFirst.tool_choice).toEqual({
+      type: 'function',
+      function: { name: 'get_concept' },
+    });
+    expect(
+      (focusedFirst.tools as Array<{ function: { name: string } }>).map(
+        (tool) => tool.function.name,
+      ),
+    ).toEqual(['get_concept']);
+    expect((focusedFirst.messages as Array<{ content?: string }>).at(-1)?.content).toBe(
+      'The required evidence read did not happen. Call get_concept now. Do not answer or describe a plan.',
     );
+
+    const evidenceTurn = assembly({
+      model: 'qwen3:8b',
+      exchanges: [
+        {
+          assistant: { role: 'assistant', tool_calls: [{ id: 'o0' }] },
+          toolResults: [
+            {
+              id: 'o0',
+              name: 'list_kinds',
+              content: '{"total":70}',
+              isError: false,
+            },
+          ],
+        },
+      ],
+    });
+    const evidenceLocal = JSON.parse(
+      PROVIDER_ADAPTERS.local.buildBody(evidenceTurn),
+    ) as Record<string, unknown>;
+    const evidenceOpenAi = JSON.parse(
+      PROVIDER_ADAPTERS.openai.buildBody(evidenceTurn),
+    ) as Record<string, unknown>;
+    expect(evidenceLocal).toEqual({
+      ...evidenceOpenAi,
+      messages: [
+        ...(evidenceOpenAi.messages as unknown[]),
+        {
+          role: 'user',
+          content:
+            'The required evidence read did not happen. Call list_concepts now. Do not answer or describe a plan.',
+        },
+      ],
+      tools: (evidenceOpenAi.tools as Array<{ function: { name: string } }>).filter(
+        (tool) => tool.function.name === 'list_concepts',
+      ),
+      reasoning_effort: 'none',
+      tool_choice: { type: 'function', function: { name: 'list_concepts' } },
+    });
+    expect(
+      (evidenceLocal.tools as Array<{ function: { name: string } }>).map(
+        (tool) => tool.function.name,
+      ),
+    ).toEqual(['list_concepts']);
+
+    const detailTurn = assembly({
+      model: 'qwen3:8b',
+      exchanges: [
+        ...evidenceTurn.exchanges,
+        {
+          assistant: { role: 'assistant', tool_calls: [{ id: 'o1' }] },
+          toolResults: [
+            {
+              id: 'o1',
+              name: 'list_concepts',
+              content: '{"nodes":[]}',
+              isError: false,
+            },
+          ],
+        },
+      ],
+    });
+    const detailLocal = JSON.parse(
+      PROVIDER_ADAPTERS.local.buildBody(detailTurn),
+    ) as Record<string, unknown>;
+    expect(detailLocal.reasoning_effort).toBe('none');
+    expect(detailLocal.tool_choice).toEqual({
+      type: 'function',
+      function: { name: 'get_concepts' },
+    });
+    expect(
+      (detailLocal.tools as Array<{ function: { name: string } }>).map(
+        (tool) => tool.function.name,
+      ),
+    ).toEqual(['get_concepts']);
+    expect((detailLocal.messages as Array<{ content?: string }>).at(-1)?.content).toBe(
+      'The required evidence read did not happen. Call get_concepts now. Do not answer or describe a plan.',
+    );
+
+    const closingTurn = { ...evidenceTurn, tools: [] };
+    const closingLocal = JSON.parse(
+      PROVIDER_ADAPTERS.local.buildBody(closingTurn),
+    ) as Record<string, unknown>;
+    const closingOpenAi = JSON.parse(
+      PROVIDER_ADAPTERS.openai.buildBody(closingTurn),
+    ) as Record<string, unknown>;
+    expect(closingLocal).toEqual({
+      ...closingOpenAi,
+      messages: [
+        ...(closingOpenAi.messages as unknown[]),
+        {
+          role: 'user',
+          content:
+            'Tool access is closed. Answer the original question now, in the same language as the person, from only the evidence you verified. Cite exact slugs you read and mark every uninspected area incomplete. For a structure audit, a census, list, child count, fan-out number, or mix of kinds only selects suspects; none proves a defect, a preferred node count, or a bridge. Never invent or recommend a numeric node target. Recommend a bridge only when the bodies and resolved neighbors you read establish at least three exact sibling slugs that share one behavior, and state that behavior in one sentence. Absence of that evidence proves neither that a bridge is needed nor that it is unnecessary; say only that the verified scope does not establish one. Do not describe another plan or tool call.',
+        },
+      ],
+      reasoning_effort: 'none',
+    });
+
+    const thirdEvidenceTurn = assembly({
+      model: 'qwen3:8b',
+      exchanges: [
+        evidenceTurn.exchanges[0]!,
+        detailTurn.exchanges[1]!,
+        {
+          assistant: { role: 'assistant', tool_calls: [{ id: 'o2' }] },
+          toolResults: [
+            {
+              id: 'o2',
+              name: 'get_concepts',
+              content:
+                '{"concepts":[{"slug":"domains/agent-experience","found":true}]}',
+              isError: false,
+            },
+          ],
+        },
+      ],
+    });
+    const forcedSynthesis = JSON.parse(
+      PROVIDER_ADAPTERS.local.buildBody(thirdEvidenceTurn),
+    ) as Record<string, unknown>;
+    expect(forcedSynthesis.tools).toEqual([]);
+    expect(forcedSynthesis.reasoning_effort).toBe('none');
+    expect(forcedSynthesis).not.toHaveProperty('tool_choice');
+    expect((forcedSynthesis.messages as Array<{ content?: string }>).at(-1)?.content).toContain(
+      'at least three exact sibling slugs',
+    );
+    expect((forcedSynthesis.messages as Array<{ content?: string }>).at(-1)?.content).toContain(
+      'Only these concept evidence rows were delivered: [[domains/agent-experience]]. They were found',
+    );
+    expect((forcedSynthesis.messages as Array<{ content?: string }>).at(-1)?.content).toContain(
+      'Treat every bodyInfo, neighborsInfo, and frontmatterInfo truncation marker as an evidence boundary',
+    );
+    expect((forcedSynthesis.messages as Array<{ content?: string }>).at(-1)?.content).toContain(
+      'Fewer than three concept evidence rows survived the evidence cap',
+    );
+    expect(firstOpenAi).not.toHaveProperty('reasoning_effort');
+    expect(firstOpenAi).not.toHaveProperty('tool_choice');
     const body = fixture('openai-tool');
     expect(PROVIDER_ADAPTERS.local.parseResponse(body)).toEqual(
       PROVIDER_ADAPTERS.openai.parseResponse(body),
     );
+  });
+
+  it('주소 갈래는 상세 읽기 뒤 인용·한국어 응답을 각각 한 번만 교정한다', () => {
+    const evidenceTurn = assembly({
+      model: 'qwen3:8b',
+      exchanges: [
+        {
+          assistant: { role: 'assistant', tool_calls: [{ id: 'o0' }] },
+          toolResults: [
+            { id: 'o0', name: 'list_kinds', content: '{}', isError: false },
+          ],
+        },
+        {
+          assistant: { role: 'assistant', tool_calls: [{ id: 'o1' }] },
+          toolResults: [
+            { id: 'o1', name: 'list_concepts', content: '{}', isError: false },
+          ],
+        },
+        {
+          assistant: { role: 'assistant', tool_calls: [{ id: 'o2' }] },
+          toolResults: [
+            {
+              id: 'o2',
+              name: 'get_concepts',
+              content:
+                '{"concepts":[{"slug":"domains/catalog","found":true},{"slug":"domains/order","found":true}]}',
+              isError: false,
+            },
+          ],
+        },
+      ],
+    });
+    const unsupported = PROVIDER_ADAPTERS.local.parseResponse(
+      JSON.stringify({
+        choices: [
+          {
+            message: { role: 'assistant', content: '읽은 개념이 모두 없었습니다.' },
+            finish_reason: 'stop',
+          },
+        ],
+      }),
+    );
+    const retry = PROVIDER_ADAPTERS.local.reviewResponse?.(evidenceTurn, unsupported);
+    expect(retry).toMatchObject({ action: 'retry', expectedTool: 'verified-citation' });
+
+    const retriedTurn = assembly({
+      ...evidenceTurn,
+      exchanges: [
+        ...evidenceTurn.exchanges,
+        {
+          assistant: unsupported.raw,
+          toolResults: [],
+          retry: {
+            expectedTool: 'verified-citation',
+            instruction: retry?.action === 'retry' ? retry.message : '',
+          },
+        },
+      ],
+    });
+    expect(PROVIDER_ADAPTERS.local.reviewResponse?.(retriedTurn, unsupported)).toMatchObject({
+      action: 'fail',
+      expectedTool: 'verified-citation',
+    });
+
+    const wrongLanguage = PROVIDER_ADAPTERS.local.parseResponse(
+      JSON.stringify({
+        choices: [
+          {
+            message: {
+              role: 'assistant',
+              content: 'Only [[domains/catalog]] was inspected.',
+            },
+            finish_reason: 'stop',
+          },
+        ],
+      }),
+    );
+    expect(PROVIDER_ADAPTERS.local.reviewResponse?.(evidenceTurn, wrongLanguage)).toMatchObject({
+      action: 'retry',
+      expectedTool: 'response-language',
+    });
+    const languageRetriedTurn = assembly({
+      ...evidenceTurn,
+      exchanges: [
+        ...evidenceTurn.exchanges,
+        {
+          assistant: wrongLanguage.raw,
+          toolResults: [],
+          retry: {
+            expectedTool: 'response-language',
+            instruction: 'Answer again in Korean.',
+          },
+        },
+      ],
+    });
+    expect(
+      PROVIDER_ADAPTERS.local.reviewResponse?.(languageRetriedTurn, wrongLanguage),
+    ).toMatchObject({ action: 'fail', expectedTool: 'response-language' });
+
+    const cited = PROVIDER_ADAPTERS.local.parseResponse(
+      JSON.stringify({
+        choices: [
+          {
+            message: {
+              role: 'assistant',
+              content: '[[domains/catalog]]과 [[domains/order]]만 확인했습니다.',
+            },
+            finish_reason: 'stop',
+          },
+        ],
+      }),
+    );
+    expect(PROVIDER_ADAPTERS.local.reviewResponse?.(evidenceTurn, cited)).toEqual({
+      action: 'accept',
+    });
+  });
+
+  it('주소 갈래의 구조 감사는 도메인 후보와 상세 slug 인자까지 검증한다', () => {
+    const structuralQuestion =
+      '온톨로지 구조를 감사해줘. fan-out만으로 브릿지를 만들지는 마.';
+    const censusTurn = assembly({
+      model: 'qwen3:8b',
+      userText: structuralQuestion,
+      exchanges: [
+        {
+          assistant: { role: 'assistant', tool_calls: [{ id: 'o0' }] },
+          toolResults: [
+            {
+              id: 'o0',
+              name: 'list_kinds',
+              content: '{"total":112,"byKind":{"domain":8,"capability":49,"element":54}}',
+              isError: false,
+            },
+          ],
+        },
+      ],
+    });
+    const wrongCandidateScope = PROVIDER_ADAPTERS.local.parseResponse(
+      JSON.stringify(openAiTool('list_concepts', { kind: 'project', summary: true, limit: 12 })),
+    );
+    expect(
+      PROVIDER_ADAPTERS.local.reviewResponse?.(censusTurn, wrongCandidateScope),
+    ).toMatchObject({
+      action: 'retry',
+      expectedTool: 'list_concepts',
+      message: expect.stringContaining('kind "domain"'),
+    });
+
+    const candidates = ['domains/catalog', 'domains/order', 'domains/payment', 'domains/support'];
+    const candidateTurn = assembly({
+      ...censusTurn,
+      exchanges: [
+        ...censusTurn.exchanges,
+        {
+          assistant: { role: 'assistant', tool_calls: [{ id: 'o1' }] },
+          toolResults: [
+            {
+              id: 'o1',
+              name: 'list_concepts',
+              content: JSON.stringify({ rows: candidates.map((slug) => ({ slug })) }),
+              isError: false,
+            },
+          ],
+        },
+      ],
+    });
+    const detailBody = JSON.parse(PROVIDER_ADAPTERS.local.buildBody(candidateTurn)) as {
+      messages: Array<{ content?: string }>;
+    };
+    expect(detailBody.messages.at(-1)?.content).toContain(candidates.join(', '));
+    expect(detailBody.messages.at(-1)?.content).toContain('body "full"');
+
+    const shallowDetail = PROVIDER_ADAPTERS.local.parseResponse(
+      JSON.stringify(openAiTool('get_concepts', { slugs: ['storefront'] })),
+    );
+    expect(PROVIDER_ADAPTERS.local.reviewResponse?.(candidateTurn, shallowDetail)).toMatchObject({
+      action: 'retry',
+      expectedTool: 'get_concepts',
+      message: expect.stringContaining('domains/catalog'),
+    });
+    const completeDetail = PROVIDER_ADAPTERS.local.parseResponse(
+      JSON.stringify(openAiTool('get_concepts', { slugs: candidates, body: 'full' })),
+    );
+    expect(PROVIDER_ADAPTERS.local.reviewResponse?.(candidateTurn, completeDetail)).toEqual({
+      action: 'accept',
+    });
+  });
+
+  it('주소 갈래는 census와 모순되거나 좁은 근거를 과장한 합성을 거부한다', () => {
+    const turn = assembly({
+      model: 'qwen3:8b',
+      userText: '이 온톨로지 구조를 감사해줘. 브릿지는 근거가 있을 때만 말해.',
+      exchanges: [
+        {
+          assistant: { role: 'assistant', tool_calls: [{ id: 'o0' }] },
+          toolResults: [
+            {
+              id: 'o0',
+              name: 'list_kinds',
+              content: '{"byKind":{"domain":8,"capability":49,"element":54}}',
+              isError: false,
+            },
+          ],
+        },
+        {
+          assistant: { role: 'assistant', tool_calls: [{ id: 'o1' }] },
+          toolResults: [
+            { id: 'o1', name: 'list_concepts', content: '{"rows":[]}', isError: false },
+          ],
+        },
+        {
+          assistant: { role: 'assistant', tool_calls: [{ id: 'o2' }] },
+          toolResults: [
+            {
+              id: 'o2',
+              name: 'get_concepts',
+              content: '{"concepts":[{"slug":"storefront","found":true}]}',
+              isError: false,
+            },
+          ],
+        },
+      ],
+    });
+    const contradiction = PROVIDER_ADAPTERS.local.parseResponse(
+      JSON.stringify({
+        choices: [
+          {
+            message: {
+              role: 'assistant',
+              content:
+                '[[storefront]]에는 Capability 또는 Element가 정의되지 않았고 브릿지는 불필요합니다.',
+            },
+            finish_reason: 'stop',
+          },
+        ],
+      }),
+    );
+    const retry = PROVIDER_ADAPTERS.local.reviewResponse?.(turn, contradiction);
+    expect(retry).toMatchObject({
+      action: 'retry',
+      expectedTool: 'evidence-consistency',
+      message: expect.stringContaining('capability=49'),
+    });
+    const retriedTurn = assembly({
+      ...turn,
+      exchanges: [
+        ...turn.exchanges,
+        {
+          assistant: contradiction.raw,
+          toolResults: [],
+          retry: {
+            expectedTool: 'evidence-consistency',
+            instruction: retry?.action === 'retry' ? retry.message : '',
+          },
+        },
+      ],
+    });
+    expect(PROVIDER_ADAPTERS.local.reviewResponse?.(retriedTurn, contradiction)).toMatchObject({
+      action: 'fail',
+      expectedTool: 'evidence-consistency',
+    });
   });
 
   it('주소 갈래에는 기본 모델이 없다 — 그 컴퓨터만 아는 사실이라서', () => {
@@ -140,6 +606,45 @@ describe('벤더 어댑터 — 셋이 같은 모양으로 접힌다', () => {
     // 그 이유가 화면 어디에도 없다. 사용자가 목록에서 고를 때까지 이 갈래는
     // 켜지지 않는다(`isLocalEndpointReady`).
     expect(PROVIDER_ADAPTERS.local.defaultModel).toBe('');
+  });
+
+  it('주소 갈래는 필수 읽기 생략을 정상 답으로 받지 않는다', () => {
+    const turn = assembly({ model: 'qwen3:8b' });
+    const response = PROVIDER_ADAPTERS.local.parseResponse(
+      JSON.stringify({
+        choices: [
+          {
+            message: { role: 'assistant', content: '먼저 조사하겠습니다.' },
+            finish_reason: 'stop',
+          },
+        ],
+      }),
+    );
+    const retry = PROVIDER_ADAPTERS.local.reviewResponse?.(turn, response);
+    expect(retry).toMatchObject({ action: 'retry', expectedTool: 'list_kinds' });
+
+    const retriedTurn = assembly({
+      model: 'qwen3:8b',
+      exchanges: [
+        {
+          assistant: response.raw,
+          toolResults: [],
+          retry: {
+            expectedTool: 'list_kinds',
+            instruction: retry?.action === 'retry' ? retry.message : '',
+          },
+        },
+      ],
+    });
+    const retriedBody = JSON.parse(
+      PROVIDER_ADAPTERS.local.buildBody(retriedTurn),
+    ) as { tool_choice: { function: { name: string } }; tools: unknown[] };
+    expect(retriedBody.tool_choice.function.name).toBe('list_kinds');
+    expect(retriedBody.tools).toHaveLength(1);
+    expect(PROVIDER_ADAPTERS.local.reviewResponse?.(retriedTurn, response)).toMatchObject({
+      action: 'fail',
+      expectedTool: 'list_kinds',
+    });
   });
 
   it('쓰기 도구도 목록에는 실린다 — 막는 곳은 실행기다', () => {

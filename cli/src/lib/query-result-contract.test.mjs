@@ -556,6 +556,34 @@ describe('query-result-contract', () => {
       operation: 'agent_brief',
       sideEffect: false,
       status: 'healthy',
+      projectSlug: 'project/app',
+      projectSource: {
+        contractVersion: 1,
+        projectSlug: 'project/app',
+        status: 'verified_current',
+        currentness: 'unavailable',
+        measuredAt: '2026-08-02T10:00:00.000Z',
+        topGap: null,
+        nextAction: { id: 'use_current_evidence' },
+        bindingCardinality: 1,
+        receipt: {
+          contractVersion: 1,
+          projectSlug: 'project/app',
+          sourceId: 'src_fixture',
+          sourceKind: 'git',
+          sourceRevision: 'abc123',
+          sourceFingerprint: 'git:abc123:clean',
+          graphHash: 'graph-a',
+          measuredAt: '2026-08-02T10:00:00.000Z',
+          status: 'verified_current',
+          currentness: 'current',
+          topGap: null,
+          nextAction: { id: 'use_current_evidence' },
+          witnessSummary: { total: 1, supported: 1, missing: 0 },
+          witnesses: [{ id: 'login', nodeSlug: 'capabilities/login', role: 'implementation', path: 'src/auth/login.ts', supported: true }],
+          diagnostics: { dirty: false, truncated: false },
+        },
+      },
       readiness: {
         status: 'ready',
         score: 100,
@@ -925,6 +953,20 @@ describe('query-result-contract', () => {
     assert.equal(assertAgentBriefShape(valid), valid);
     assert.equal(agentBriefExitCode(valid), 0);
     assert.equal(agentBriefExitCode({ ...valid, readiness: { ...valid.readiness, status: 'needs_attention' } }), 1);
+    assert.throws(
+      () => assertAgentBriefShape({ ...valid, projectSource: { ...valid.projectSource, status: 'ready' } }),
+      /agent_brief projectSource must contain the versioned categorical source receipt view/,
+    );
+    assert.throws(
+      () => assertAgentBriefShape({
+        ...valid,
+        projectSource: {
+          ...valid.projectSource,
+          receipt: { ...valid.projectSource.receipt, rootPath: '/private/work/app' },
+        },
+      }),
+      /agent_brief projectSource must contain the versioned categorical source receipt view/,
+    );
     assert.throws(
       () => {
         const withoutLens = { ...valid };

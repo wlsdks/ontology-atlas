@@ -211,10 +211,19 @@ export function VaultAgentPanel({
         ? SECRET_PROVIDER_HOSTS[provider]
         : '';
 
+  /**
+   * 절대 경로만으로 보낼 준비가 되지 않는다. 데스크톱 복원 중에는
+   * handle/절대 경로가 manifest보다 먼저 살아날 수 있다. 그 프레임의
+   * 화면은 번들 샘플인데 경로를 바로 쓰면 에이전트는 숨은 로컬
+   * 폴더에 감사 로그를 남겨 화면·근거·기록의 볼트가 갈라진다. manifest가
+   * 없으면 읽을 볼트가 없는 것이므로 기존 no-folder 상태로 정직하게 내린다.
+   */
+  const readableVaultPath = manifest ? vaultPath : null;
+
   const agent = useVaultAgent({
     provider,
     localEndpoint,
-    vaultPath,
+    vaultPath: readableVaultPath,
     insight,
     manifest,
     screenContext: screenContextWithHistory,
@@ -227,6 +236,7 @@ export function VaultAgentPanel({
       noToolCall: ({ round, cap }) => t('notice.noToolCall', { round, cap }),
       aborted: t('notice.aborted'),
       networkFailed: t('notice.networkFailed'),
+      timedOut: t('notice.timedOut'),
       rateLimited: t('notice.rateLimited'),
       rejected: t('notice.rejected'),
       auditBlocked: t('notice.auditBlocked'),
@@ -262,12 +272,12 @@ export function VaultAgentPanel({
     void (async () => {
       // 읽을 수 없는 상태(닫힘·폴더 없음·git 아님)는 **빈 이력**이지 오류가
       // 아니다. 그때는 그 블록만 문맥에서 빠진다.
-      if (!open || !vaultPath || !isGitBridgeAvailable()) {
+      if (!open || !readableVaultPath || !isGitBridgeAvailable()) {
         if (!cancelled) setRecentChanges((current) => (current.length === 0 ? current : []));
         return;
       }
       try {
-        const commits = await gitHistory(vaultPath, 5);
+        const commits = await gitHistory(readableVaultPath, 5);
         if (cancelled) return;
         setRecentChanges(
           (commits ?? []).map((commit) => `${commit.subject} (${commit.relativeTime})`),
@@ -280,7 +290,7 @@ export function VaultAgentPanel({
     return () => {
       cancelled = true;
     };
-  }, [open, vaultPath, appliedTally]);
+  }, [open, readableVaultPath, appliedTally]);
 
   /**
    * 프리필된 문장을 **처음부터 읽히게** 놓는다 — 캐럿은 문장 끝(이어서
@@ -395,7 +405,7 @@ export function VaultAgentPanel({
     node.scrollTo({ top: node.scrollHeight });
   }, [agent.turns, agent.proposal]);
 
-  const ready = bridgeAvailable && Boolean(provider) && Boolean(vaultPath);
+  const ready = bridgeAvailable && Boolean(provider) && Boolean(readableVaultPath);
   const canSend = ready && scopeAccepted && !agent.running && draft.trim().length > 0;
 
   /**
@@ -404,7 +414,7 @@ export function VaultAgentPanel({
    */
   const stage = !bridgeAvailable
     ? 'web'
-    : !vaultPath
+    : !readableVaultPath
       ? 'no-folder'
       : !provider
         ? 'no-key'
@@ -523,7 +533,7 @@ export function VaultAgentPanel({
               examplesTitle={t('locked.examplesTitle')}
               chips={firstWordsChips}
             />
-          ) : !vaultPath ? (
+          ) : !readableVaultPath ? (
             <AgentLockedState
               title={t('degraded.noVaultTitle')}
               body={t('degraded.noVaultBody')}
@@ -779,7 +789,7 @@ export function VaultAgentPanel({
                 label={t('promptDisclosure.summary')}
                 onToggle={() => setMeta((current) => (current === 'prompt' ? null : 'prompt'))}
               />
-              {vaultPath ? (
+              {readableVaultPath ? (
                 <>
                   <span
                     aria-hidden="true"
@@ -806,11 +816,11 @@ export function VaultAgentPanel({
                     systemPrompt={agent.systemPrompt}
                     note={t('promptDisclosure.note')}
                   />
-                ) : vaultPath ? (
+                ) : readableVaultPath ? (
                   // 경계 문장은 **넘기는 자리**에서만 값을 한다 — 대화 내내
                   // 입력칸 아래 상주하며 두 줄을 먹던 문장이 여기로 내려왔다.
                   <AgentHandoffPacket
-                    vaultPath={vaultPath}
+                    vaultPath={readableVaultPath}
                     focusedSlug={screenContext.focusedSlug}
                     labels={{
                       boundary: t('boundary'),
@@ -869,4 +879,3 @@ function MetaToggle({
     </button>
   );
 }
-

@@ -66,6 +66,7 @@ export interface AgentLoopDeps {
     noToolCall: (args: { round: number; cap: number }) => string;
     aborted: string;
     networkFailed: string;
+    timedOut: string;
     rateLimited: string;
     rejected: string;
     auditBlocked: string;
@@ -114,6 +115,9 @@ function noticeFor(deps: AgentLoopDeps, status: number | null, message: string):
   }
   if (message.includes('감사 기록') || message.includes('기록을 남기지')) {
     return { kind: 'notice', code: 'audit-blocked', text: deps.notices.auditBlocked };
+  }
+  if (message.includes('시간 안에') || /timed?\s*out/i.test(message)) {
+    return { kind: 'notice', code: 'timed-out', text: deps.notices.timedOut };
   }
   return { kind: 'notice', code: 'network-failed', text: deps.notices.networkFailed };
 }
@@ -169,14 +173,15 @@ export async function runTurn(
       return { turn: snapshot(), readSlugs, writeIntents };
     }
 
-    const payload = deps.adapter.buildBody({
+    const assembly = {
       model: deps.model,
       system: deps.system,
       userText: question,
       screenContextBlock,
       exchanges,
       tools: deps.tools,
-    });
+    };
+    const payload = deps.adapter.buildBody(assembly);
 
     let echo: LlmChatEcho;
     try {
@@ -226,6 +231,26 @@ export async function runTurn(
           : parsed.stop === 'refusal'
             ? deps.notices.providerRefused
             : deps.notices.failed,
+      });
+      emit();
+      return { turn: snapshot(), readSlugs, writeIntents };
+    }
+
+    const review = deps.adapter.reviewResponse?.(assembly, parsed) ?? { action: 'accept' as const };
+    if (review.action === 'retry') {
+      exchanges.push({
+        assistant: parsed.raw,
+        toolResults: [],
+        retry: { expectedTool: review.expectedTool, instruction: review.message },
+      });
+      continue;
+    }
+    if (review.action === 'fail') {
+      status = 'failed';
+      events.push({
+        kind: 'notice',
+        code: 'failed',
+        text: `${deps.notices.failed} (${review.message})`,
       });
       emit();
       return { turn: snapshot(), readSlugs, writeIntents };
@@ -313,14 +338,15 @@ export async function runTurn(
   // 상한 도달 — 마무리 한 번만 더 청한다 (도구 없이).
   if (!options.signal.aborted) {
     try {
-      const closingBody = deps.adapter.buildBody({
+      const closingAssembly = {
         model: deps.model,
         system: deps.system,
         userText: question,
         screenContextBlock,
         exchanges,
         tools: [],
-      });
+      };
+      const closingBody = deps.adapter.buildBody(closingAssembly);
       const echo = await deps.send({
         body: closingBody,
         model: deps.model,
@@ -335,6 +361,18 @@ export async function runTurn(
       sentChars += closingBody.length;
       auditCount += 1;
       const parsed = deps.adapter.parseResponse(echo.body);
+      const review =
+        deps.adapter.reviewResponse?.(closingAssembly, parsed) ?? { action: 'accept' as const };
+      if (review.action !== 'accept') {
+        status = 'failed';
+        events.push({
+          kind: 'notice',
+          code: 'failed',
+          text: `${deps.notices.failed} (${review.message})`,
+        });
+        emit();
+        return { turn: snapshot(), readSlugs, writeIntents };
+      }
       if (parsed.text.trim()) pushAssistant(parsed.text);
     } catch {
       // 마무리 실패는 턴 자체의 실패가 아니다 — 읽은 것은 이미 화면에 있다.

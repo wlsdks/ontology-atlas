@@ -17,6 +17,17 @@ interface TauriBinaryFile {
   lastModified: number;
 }
 
+export interface ProjectSourceInspection {
+  rootPath: string;
+  sourceId: string;
+  kind: 'git' | 'folder';
+  revision: string;
+  fingerprint: string;
+  dirty: boolean | null;
+  truncated: boolean;
+  files: string[];
+}
+
 type WritableChunk = string | Blob | ArrayBuffer | ArrayBufferView;
 
 function getInvoke(): TauriInvoke | null {
@@ -134,6 +145,15 @@ export async function nativeVaultFingerprint(
   const invoke = getInvoke();
   if (!invoke) return null;
   return invoke('vault_fingerprint', { rootPath });
+}
+
+/** 선택한 폴더를 canonical Git worktree 또는 bounded folder source로 판별한다. */
+export async function inspectTauriProjectSource(
+  rootPath: string,
+): Promise<ProjectSourceInspection | null> {
+  const invoke = getInvoke();
+  if (!invoke) return null;
+  return invoke<ProjectSourceInspection>('inspect_project_source', { rootPath });
 }
 
 class TauriDirectoryHandle {

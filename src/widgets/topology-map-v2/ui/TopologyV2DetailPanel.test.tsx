@@ -1,7 +1,8 @@
 import { fireEvent, render, screen } from "@testing-library/react";
 import type React from "react";
-import { describe, expect, it, vi } from "vitest";
-import { TopologyV2DetailPanel } from "./TopologyV2DetailPanel";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+import type { ProjectSourceView } from "@/shared/lib/project-source-receipt";
+import { TopologyV2DetailPanel, type TopologyV2DetailPanelProps } from "./TopologyV2DetailPanel";
 
 // `@/i18n/navigation`'s Link wraps next-intl's `createNavigation`, which
 // pulls in `next/navigation` — unresolvable under vitest's module graph in
@@ -14,6 +15,21 @@ vi.mock("@/i18n/navigation", () => ({
     </a>
   ),
 }));
+
+beforeEach(() => {
+  vi.stubGlobal("matchMedia", vi.fn(() => ({
+    matches: true,
+    media: "(max-width: 1512.98px)",
+    onchange: null,
+    addEventListener: vi.fn(),
+    removeEventListener: vi.fn(),
+    addListener: vi.fn(),
+    removeListener: vi.fn(),
+    dispatchEvent: vi.fn(),
+  })));
+});
+
+afterEach(() => vi.unstubAllGlobals());
 
 const labels = {
   kindLabel: "Domain",
@@ -47,6 +63,16 @@ const labels = {
   actionCopyHandoff: "Copy handoff",
   actionPath: "Path",
   actionRealm: "Expand realm",
+  sourceKind: "Source · Git repository",
+  sourceStatus: "Source verified",
+  sourceMeasuredAt: "Measured today",
+  sourceCurrentness: "Current source",
+  sourceGap: "No evidence gaps",
+  sourceAction: "Use current evidence",
+  sourceRelationsShow: "Show project relations",
+  sourceRelationsHide: "Hide project relations",
+  sourceOntologyDocument: "Concept document",
+  sourceBusy: "Measuring code evidence",
 };
 
 function renderPanel(
@@ -67,6 +93,13 @@ function renderPanel(
     codeLocations?: readonly string[];
     lastEditSubject?: { kind: "agent" | "human"; ageLabel: string } | null;
     mtimeConflict?: boolean;
+    kind?: string;
+    projectSource?: ProjectSourceView | null;
+    onProjectSourceAction?: () => void | Promise<void>;
+    projectSourceBusy?: boolean;
+    projectSourceError?: string | null;
+    updatedAtLabel?: string | null;
+    groups?: TopologyV2DetailPanelProps["groups"];
   } = {},
 ) {
   render(
@@ -75,10 +108,10 @@ function renderPanel(
       slug="domains/views"
       title="Views"
       sourceTitle={overrides.sourceTitle ?? null}
-      kind="domain"
+      kind={overrides.kind ?? "domain"}
       domain={overrides.domain !== undefined ? overrides.domain : null}
       powered={false}
-      groups={{
+      groups={overrides.groups ?? {
         contains: { rows: [], total: 0 },
         usedBy: { rows: [], total: 1 },
         dependsOn: { rows: [], total: 2 },
@@ -86,6 +119,7 @@ function renderPanel(
       }}
       evidence={evidence}
       codeLocations={overrides.codeLocations ?? []}
+      updatedAtLabel={overrides.updatedAtLabel}
       handoffText="node: domains/views"
       documentHref={
         overrides.documentHref !== undefined
@@ -101,11 +135,272 @@ function renderPanel(
       onClose={() => {}}
       onSetPathSource={overrides.onSetPathSource ?? (() => {})}
       onOpenFullDetail={onOpenFullDetail}
+      projectSource={overrides.projectSource}
+      onProjectSourceAction={overrides.onProjectSourceAction}
+      projectSourceBusy={overrides.projectSourceBusy}
+      projectSourceError={overrides.projectSourceError}
       showHandoff={overrides.showHandoff}
       showSourcePath={overrides.showSourcePath}
     />,
   );
 }
+
+describe("TopologyV2DetailPanel — project source receipt", () => {
+  it("renders one flat, versioned receipt rail for a selected project", () => {
+    const projectSource: ProjectSourceView = {
+      contractVersion: 1,
+      projectSlug: "views",
+      status: "verified_current",
+      currentness: "current",
+      measuredAt: "2026-08-02T10:00:00.000Z",
+      topGap: null,
+      nextAction: { id: "use_current_evidence" },
+      bindingCardinality: 1,
+      receipt: null,
+    };
+
+    renderPanel(vi.fn(), undefined, { kind: "project", projectSource });
+
+    const rail = screen.getByTestId("topology-v2-project-source-receipt");
+    expect(rail).toHaveAttribute("data-source-status", "verified_current");
+    expect(rail).toHaveAttribute("data-source-version", "1");
+    expect(rail).toHaveAttribute("data-source-measured-at", "2026-08-02T10:00:00.000Z");
+    expect(rail).toHaveAttribute("data-source-top-gap", "none");
+    expect(rail).toHaveAttribute("data-source-action", "use_current_evidence");
+    expect(rail).toHaveAttribute("data-source-currentness", "current");
+    expect(rail).toHaveAttribute("data-source-cardinality", "1");
+    expect(rail).toHaveAttribute("aria-live", "polite");
+    expect(rail).toHaveTextContent("Source verified");
+    expect(rail).toHaveTextContent("Source · Git repository");
+    expect(rail).toHaveTextContent("Measured today");
+    expect(rail).toHaveTextContent("Current source");
+    expect(rail).toHaveTextContent("No evidence gaps");
+  });
+
+  it("keeps project relation counts visible while individual rows start collapsed", () => {
+    const projectSource: ProjectSourceView = {
+      contractVersion: 1,
+      projectSlug: "views",
+      status: "not_measured",
+      currentness: "unavailable",
+      measuredAt: null,
+      topGap: { id: "source_unbound" },
+      nextAction: { id: "connect_source" },
+      bindingCardinality: 0,
+      receipt: null,
+    };
+    const groups: TopologyV2DetailPanelProps["groups"] = {
+      contains: {
+        rows: [
+          {
+            id: "domain:catalog",
+            title: "Catalog",
+            kind: "domain",
+            relationType: "contains",
+            direction: "outgoing",
+          },
+        ],
+        total: 1,
+      },
+      usedBy: { rows: [], total: 0 },
+      dependsOn: {
+        rows: [
+          {
+            id: "project:billing",
+            title: "Billing",
+            kind: "project",
+            relationType: "depends_on",
+            direction: "outgoing",
+          },
+        ],
+        total: 1,
+      },
+      belongsTo: { rows: [], total: 0 },
+    };
+
+    renderPanel(undefined, undefined, { kind: "project", projectSource, groups });
+
+    const summary = screen.getByTestId("topology-v2-project-relations-summary");
+    expect(summary).toHaveTextContent("contains1");
+    expect(summary).toHaveTextContent("leans on1");
+    expect(screen.queryByText("Catalog")).not.toBeInTheDocument();
+    expect(screen.queryByText("Billing")).not.toBeInTheDocument();
+
+    fireEvent.click(screen.getByRole("button", { name: "Show project relations" }));
+    expect(screen.getByText("Catalog")).toBeInTheDocument();
+    expect(screen.getByText("Billing")).toBeInTheDocument();
+  });
+
+  it("keeps project relation rows expanded on a wider workbench", () => {
+    vi.stubGlobal("matchMedia", vi.fn(() => ({
+      matches: false,
+      media: "(max-width: 1512.98px)",
+      onchange: null,
+      addEventListener: vi.fn(),
+      removeEventListener: vi.fn(),
+      addListener: vi.fn(),
+      removeListener: vi.fn(),
+      dispatchEvent: vi.fn(),
+    })));
+    const projectSource: ProjectSourceView = {
+      contractVersion: 1,
+      projectSlug: "views",
+      status: "not_measured",
+      currentness: "unavailable",
+      measuredAt: null,
+      topGap: { id: "source_unbound" },
+      nextAction: { id: "connect_source" },
+      bindingCardinality: 0,
+      receipt: null,
+    };
+    const groups: TopologyV2DetailPanelProps["groups"] = {
+      contains: {
+        rows: [{ id: "domain:catalog", title: "Catalog", kind: "domain", relationType: "contains", direction: "outgoing" }],
+        total: 1,
+      },
+      usedBy: { rows: [], total: 0 },
+      dependsOn: { rows: [], total: 0 },
+      belongsTo: { rows: [], total: 0 },
+    };
+
+    renderPanel(undefined, undefined, { kind: "project", projectSource, groups });
+
+    expect(screen.queryByTestId("topology-v2-project-relations-summary")).not.toBeInTheDocument();
+    expect(screen.getByText("Catalog")).toBeInTheDocument();
+  });
+
+  it("makes the receipt next action the sole footer primary and demotes full detail", () => {
+    const onProjectSourceAction = vi.fn();
+    const projectSource: ProjectSourceView = {
+      contractVersion: 1,
+      projectSlug: "views",
+      status: "not_measured",
+      currentness: "unavailable",
+      measuredAt: null,
+      topGap: { id: "source_unbound" },
+      nextAction: { id: "connect_source" },
+      bindingCardinality: 0,
+      receipt: null,
+    };
+
+    renderPanel(vi.fn(), undefined, {
+      kind: "project",
+      projectSource,
+      onProjectSourceAction,
+    });
+
+    const action = screen.getByTestId("topology-v2-project-source-action");
+    fireEvent.click(action);
+    expect(onProjectSourceAction).toHaveBeenCalledTimes(1);
+    expect(action.className).toContain("--topology-v2-panel-primary-surface");
+
+    const fullDetail = screen.getByTestId("topology-v2-detail-panel-open-full-detail");
+    expect(fullDetail.className).not.toContain("--topology-v2-panel-primary-surface");
+    expect(fullDetail.className).toContain("--topology-v2-panel-text-tertiary");
+  });
+
+  it("ignores a source receipt for non-project kinds and preserves the old panel contract", () => {
+    const projectSource: ProjectSourceView = {
+      contractVersion: 1,
+      projectSlug: "views",
+      status: "verified_current",
+      currentness: "current",
+      measuredAt: "2026-08-02T10:00:00.000Z",
+      topGap: null,
+      nextAction: { id: "use_current_evidence" },
+      bindingCardinality: 1,
+      receipt: null,
+    };
+
+    renderPanel(vi.fn(), undefined, { kind: "domain", projectSource });
+
+    expect(screen.queryByTestId("topology-v2-project-source-receipt")).not.toBeInTheDocument();
+    expect(screen.getByTestId("topology-v2-detail-panel-stats")).toBeInTheDocument();
+    expect(screen.getByTestId("topology-v2-detail-panel-open-full-detail").className).toContain(
+      "--topology-v2-panel-primary-surface",
+    );
+  });
+
+  it("keeps a next action readable but non-interactive when no callback is available", () => {
+    const projectSource: ProjectSourceView = {
+      contractVersion: 1,
+      projectSlug: "views",
+      status: "verified_current",
+      currentness: "unavailable",
+      measuredAt: "2026-08-02T10:00:00.000Z",
+      topGap: null,
+      nextAction: { id: "use_current_evidence" },
+      bindingCardinality: 1,
+      receipt: null,
+    };
+
+    renderPanel(undefined, undefined, { kind: "project", projectSource });
+
+    expect(screen.queryByTestId("topology-v2-project-source-action")).not.toBeInTheDocument();
+    expect(screen.getByText("Use current evidence")).toBeInTheDocument();
+  });
+
+  it("keeps concept-document age distinct from source measurement time", () => {
+    const projectSource: ProjectSourceView = {
+      contractVersion: 1,
+      projectSlug: "views",
+      status: "verified_current",
+      currentness: "current",
+      measuredAt: "2026-08-02T10:00:00.000Z",
+      topGap: null,
+      nextAction: { id: "use_current_evidence" },
+      bindingCardinality: 1,
+      receipt: null,
+    };
+
+    renderPanel(undefined, undefined, {
+      kind: "project",
+      projectSource,
+      updatedAtLabel: "changed 3d ago",
+    });
+
+    expect(screen.getByTestId("topology-v2-datasheet-updated-at")).toHaveTextContent(
+      "Concept document · changed 3d ago",
+    );
+    expect(screen.getByTestId("topology-v2-project-source-receipt")).toHaveTextContent(
+      "Measured today",
+    );
+  });
+
+  it("keeps the previous receipt visible while busy and announces an actionable error", () => {
+    const projectSource: ProjectSourceView = {
+      contractVersion: 1,
+      projectSlug: "views",
+      status: "review_required",
+      currentness: "stale",
+      measuredAt: "2026-08-02T10:00:00.000Z",
+      topGap: { id: "source_changed" },
+      nextAction: { id: "remeasure_source" },
+      bindingCardinality: 1,
+      receipt: null,
+    };
+
+    renderPanel(undefined, undefined, {
+      kind: "project",
+      projectSource,
+      onProjectSourceAction: vi.fn(),
+      projectSourceBusy: true,
+      projectSourceError: "Could not save the receipt. The previous binding is unchanged.",
+    });
+
+    expect(screen.getByTestId("topology-v2-project-source-receipt")).toHaveAttribute(
+      "data-source-status",
+      "review_required",
+    );
+    const action = screen.getByTestId("topology-v2-project-source-action");
+    expect(action).toBeDisabled();
+    expect(action).toHaveAttribute("aria-busy", "true");
+    expect(action).toHaveTextContent("Measuring code evidence");
+    expect(screen.getByTestId("topology-v2-project-source-error")).toHaveTextContent(
+      "previous binding is unchanged",
+    );
+  });
+});
 
 describe("TopologyV2DetailPanel — installed-app evidence identity", () => {
   it("exposes the selected ontology handle and readable identity on the panel root", () => {

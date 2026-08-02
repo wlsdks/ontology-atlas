@@ -80,9 +80,14 @@ Prefer independent roles:
 
 1. mission or product outcome
 2. product contract or principles
-3. shipped capabilities
-4. architecture/system map
-5. agent or contributor guidance
+3. shipped package/configuration contract (for example a bounded root
+   `Cargo.toml` `package-contract` row)
+4. shipped capabilities
+5. architecture/system map
+6. agent or contributor guidance
+
+A package contract proves shipped configuration and implementation provenance;
+it does not promote manifest or feature names into domains/capabilities.
 
 Mark conflicts and roadmap-only statements. Do not silently combine
 aspirational and shipped behavior.
@@ -153,16 +158,26 @@ edges are implementation evidence and may justify element-level `depends_on`.
 ### 6. Answer the competency questions
 
 Answer every question returned by `extractionContract.competencyQuestions`.
-At minimum prove:
+Each row names its `id`, question `type`, and `requiredWitnesses`. Return the
+matching `competencyAnswers.<id>` as:
 
-1. What outcome does the project exist to create?
-2. What stable domains divide that responsibility, and why are their
-   boundaries different?
-3. What observable capabilities realize each domain?
-4. Which implementation elements provide evidence for each capability?
-5. Which typed dependencies explain change impact?
+```text
+answer: the bounded claim
+status: answered | partial | visible-gap
+gap: required for partial / visible-gap
+witnesses:
+  concepts: proposal or shared slugs used by the answer
+  relations: exact { from, to, type } rows from the proposal
+  evidence: exact sources returned in the analysis packet
+  paths: repo-relative paths attached to proposed concepts
+```
 
-An unanswered question is a visible gap, not permission to guess.
+Use `answered` only when every witness kind named by the question is present.
+For change impact, `answered` requires an actual `depends_on` witness. If the
+packet exposes a folder but not its file-level role, do not call that path the
+canonical start: use `partial` or `visible-gap` and state what evidence is
+missing. A visible gap can still be an honest writable ontology; it must remain
+visible in findings, the exact write plan, and the persisted project body.
 
 ### 7. Run the meaning audit
 
@@ -174,22 +189,32 @@ business concepts without citations: N
 implementation names misclassified as domains/capabilities: N
 undefined or circular concepts: N
 unresolved evidence conflicts: N
-competency questions answered: N/total
+competency questions answered / partial / visible-gap: N / N / N
+unresolved competency witnesses: N
 ```
 
 The proposal is approval-ready only when the first four counts are zero.
-Unresolved conflicts may remain only when explicitly shown to the user.
+Every competency witness must resolve. Partial answers and evidence conflicts
+may remain only when explicitly shown to the user.
 
 ### 8. Ask for approval before writing
 
 Before showing the approval prompt, call `analyze_repo_structure` again with
-the complete `proposal` object (project, domains, capabilities, citations,
-numeric confidence, and all five competency answers). Treat
+the complete `proposal` object (project, domains, capabilities, elements,
+typed relations, citations, numeric confidence, and all five typed competency
+answers with their witnesses). Treat
 `proposalValidation.canWrite` as a hard precondition:
 
 - if false, show and resolve every error finding, then repeat the validation;
 - if true, it means the proposal is structurally evidence-ready, not that the
   user has approved it;
+- require `proposalValidation.writePlan`; its rows are the exact validated
+  writer inputs, not a suggestion to reconstruct by hand;
+- inspect every competency warning. `canWrite:true` with a partial or visible
+  gap means the gap is preserved, not that the question is fully answered;
+- keep every relation source inside the proposed concept set so its evidence
+  and confidence land in that source node body; extending an existing source
+  node needs a separate patch workflow, not a lossy bootstrap plan;
 - never translate warnings into silent acceptance.
 
 Show a compact proposal grouped by project, domains, capabilities, elements,
@@ -201,20 +226,31 @@ and relations. Include definitions and evidence, not only slugs. Offer:
 - stop without writing
 
 Do not call write tools before the user chooses.
+If the user selects a subset, remove rejected concepts and relations whose
+endpoints are no longer present, then validate that complete subset again.
 
 ### 9. Persist only accepted meaning
 
 Use `similar_nodes` or `find_evidence` before writes when non-starter concepts
-may already exist. Then:
+may already exist. After approval, pass `writePlan.concepts` rows unchanged in
+chunks of at most 50:
 
 ```text
 add_concepts({ "concepts": [...] })
+```
+
+Only when every concept result row is `ok: true`, pass
+`writePlan.relations` rows unchanged in chunks of at most 50:
+
+```text
 add_relations({ "relations": [...] })
 ```
 
-Batch at most 50 rows. Remove relations whose endpoints were rejected. Preserve
-the evidence, definition, includes/excludes, and uncertainty summary in each
-node body so the persisted concept remains auditable.
+If any concept row fails, stop before relation writes, repair the proposal, and
+repeat validation. `canWrite` proves evidence readiness; it does not prove user
+approval, atomicity, or write success. The deterministic plan preserves the
+evidence, definition, includes/excludes, uncertainty, domain/path, and relation
+rationale so the persisted graph remains auditable.
 
 ### 10. Verify the shared ontology
 

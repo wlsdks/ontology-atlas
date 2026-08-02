@@ -6,6 +6,7 @@ import {
   mkdirSync,
   writeFileSync,
   rmSync,
+  symlinkSync,
 } from 'node:fs';
 import { join } from 'node:path';
 import { tmpdir } from 'node:os';
@@ -149,6 +150,374 @@ test('semantic evidence discovery ranks generic product/strategy docs without pr
     assert.ok(
       r.semanticEvidence.every((row) => row.source !== 'docs/goals/backlog.md'),
     );
+  } finally {
+    rmSync(root, { recursive: true, force: true });
+  }
+});
+
+test('root Cargo package contract is admissible evidence for a feature capability proposal', () => {
+  const root = withRepo((r) => {
+    writeFileSync(
+      join(r, 'README.md'),
+      '# Calc Kit\n\nTeams use Calc Kit for repeatable scientific calculations.\n',
+    );
+    writeFileSync(
+      join(r, 'Cargo.toml'),
+      [
+        '[package]',
+        'name = "calc-kit"',
+        'version = "0.1.0"',
+        'description = "Repeatable scientific calculations"',
+        '',
+        '[features]',
+        'default = ["complex"]',
+        'complex = ["dep:num-complex"]',
+        'plot = ["dep:plotters"]',
+        '',
+      ].join('\n'),
+    );
+  });
+  try {
+    const proposal = {
+      project: {
+        slug: 'calc-kit',
+        title: 'Calc Kit',
+        definition: 'A library for repeatable scientific calculations.',
+        evidence: ['README.md'],
+        confidence: 0.9,
+      },
+      domains: [{
+        slug: 'domains/library-configuration',
+        title: 'Library Configuration',
+        definition: 'The responsibility boundary for selecting optional library behavior.',
+        evidence: ['README.md'],
+        confidence: 0.9,
+      }],
+      capabilities: [{
+        slug: 'capabilities/optional-feature-selection',
+        title: 'Optional Feature Selection',
+        definition: 'Let consumers select optional calculation and plotting behavior.',
+        domain: 'domains/library-configuration',
+        evidence: ['Cargo.toml'],
+        confidence: 0.9,
+      }],
+      elements: [],
+      relations: [],
+      competencyAnswers: {
+        scope: {
+          answer: 'Rust teams performing scientific calculations.',
+          status: 'answered',
+          witnesses: {
+            concepts: ['calc-kit'],
+            relations: [],
+            evidence: ['README.md'],
+            paths: [],
+          },
+        },
+        domains: {
+          answer: 'Library Configuration owns optional behavior selection.',
+          status: 'visible-gap',
+          gap: 'No project-to-domain relation witness is attached yet.',
+          witnesses: {
+            concepts: ['domains/library-configuration'],
+            relations: [],
+            evidence: ['README.md'],
+            paths: [],
+          },
+        },
+        abilities: {
+          answer: 'Consumers select complex-number and plotting support.',
+          status: 'visible-gap',
+          gap: 'No domain-to-capability relation witness is attached yet.',
+          witnesses: {
+            concepts: ['capabilities/optional-feature-selection'],
+            relations: [],
+            evidence: ['Cargo.toml'],
+            paths: [],
+          },
+        },
+        evidence: {
+          answer: 'README and the root Cargo package contract.',
+          status: 'visible-gap',
+          gap: 'No canonical implementation path is attached yet.',
+          witnesses: {
+            concepts: ['capabilities/optional-feature-selection'],
+            relations: [],
+            evidence: ['README.md', 'Cargo.toml'],
+            paths: [],
+          },
+        },
+        impact: {
+          answer: 'Changing feature mappings may change available optional behavior.',
+          status: 'visible-gap',
+          gap: 'No typed dependency relation proves the change impact.',
+          witnesses: {
+            concepts: ['capabilities/optional-feature-selection'],
+            relations: [],
+            evidence: ['Cargo.toml'],
+            paths: [],
+          },
+        },
+      },
+    };
+    const result = analyzeRepoStructure(root, { proposal });
+    const cargoEvidence = result.semanticEvidence.find(
+      (row) => row.source === 'Cargo.toml',
+    );
+
+    assert.ok(
+      cargoEvidence,
+      'root Cargo.toml package contract must enter semanticEvidence',
+    );
+    assert.equal(cargoEvidence.role, 'package-contract');
+    assert.match(cargoEvidence.excerpt, /default.*complex/);
+    assert.match(cargoEvidence.excerpt, /plot.*dep:plotters/);
+    assert.ok(
+      result.semanticEvidence.some((row) => row.source === 'README.md'),
+      'package contract must not displace the mission evidence',
+    );
+    assert.equal(result.proposalValidation.canWrite, true);
+  } finally {
+    rmSync(root, { recursive: true, force: true });
+  }
+});
+
+test('virtual Cargo workspace is reported as skipped instead of becoming package evidence', () => {
+  const root = withRepo((r) => {
+    writeFileSync(join(r, 'README.md'), '# Workspace\n\nA multi-package workspace.\n');
+    writeFileSync(
+      join(r, 'Cargo.toml'),
+      '[workspace]\nmembers = ["crates/core", "crates/cli"]\n',
+    );
+  });
+  try {
+    const result = analyzeRepoStructure(root);
+    assert.equal(
+      result.semanticEvidence.some((row) => row.source === 'Cargo.toml'),
+      false,
+    );
+    assert.ok(
+      result.skipped.some(
+        (row) =>
+          row.path.endsWith('Cargo.toml') &&
+          row.reason === 'package-contract-skip: root Cargo.toml has no [package] table',
+      ),
+    );
+  } finally {
+    rmSync(root, { recursive: true, force: true });
+  }
+});
+
+test('oversized Cargo manifest is skipped before it enters semantic evidence', () => {
+  const root = withRepo((r) => {
+    writeFileSync(join(r, 'README.md'), '# Oversized\n\nA bounded packet.\n');
+    writeFileSync(
+      join(r, 'Cargo.toml'),
+      [
+        '[package]',
+        'name = "oversized"',
+        'description = "' + 'x'.repeat(300_000) + '"',
+        '',
+      ].join('\n'),
+    );
+  });
+  try {
+    const result = analyzeRepoStructure(root);
+    assert.equal(
+      result.semanticEvidence.some((row) => row.source === 'Cargo.toml'),
+      false,
+    );
+    assert.ok(
+      result.skipped.some(
+        (row) =>
+          row.path.endsWith('Cargo.toml') &&
+          row.reason === 'package-contract-skip: Cargo.toml exceeds 262144 bytes',
+      ),
+    );
+  } finally {
+    rmSync(root, { recursive: true, force: true });
+  }
+});
+
+test('Cargo manifest symlink outside the repository root is skipped', () => {
+  const outside = mkdtempSync(join(tmpdir(), 'ontology-atlas-cargo-outside-'));
+  const root = withRepo((r) => {
+    writeFileSync(join(r, 'README.md'), '# Contained\n\nLocal package evidence.\n');
+    writeFileSync(
+      join(outside, 'Cargo.toml'),
+      '[package]\nname = "outside"\n',
+    );
+    symlinkSync(join(outside, 'Cargo.toml'), join(r, 'Cargo.toml'));
+  });
+  try {
+    const result = analyzeRepoStructure(root);
+    assert.equal(
+      result.semanticEvidence.some((row) => row.source === 'Cargo.toml'),
+      false,
+    );
+    assert.ok(
+      result.skipped.some(
+        (row) =>
+          row.path.endsWith('Cargo.toml') &&
+          row.reason === 'package-contract-skip: Cargo.toml resolves outside repository root',
+      ),
+    );
+  } finally {
+    rmSync(root, { recursive: true, force: true });
+    rmSync(outside, { recursive: true, force: true });
+  }
+});
+
+test('malformed Cargo package or feature contract is skipped fail-closed', () => {
+  const root = withRepo((r) => {
+    writeFileSync(join(r, 'README.md'), '# Broken\n\nA broken manifest fixture.\n');
+    writeFileSync(
+      join(r, 'Cargo.toml'),
+      [
+        '[package]',
+        'name = "broken"',
+        '',
+        '[features]',
+        'complex = ["dep:num-complex"',
+        '',
+      ].join('\n'),
+    );
+  });
+  try {
+    const result = analyzeRepoStructure(root);
+    assert.equal(
+      result.semanticEvidence.some((row) => row.source === 'Cargo.toml'),
+      false,
+    );
+    assert.ok(
+      result.skipped.some(
+        (row) =>
+          row.path.endsWith('Cargo.toml') &&
+          row.reason === 'package-contract-skip: malformed Cargo.toml package/features contract',
+      ),
+    );
+  } finally {
+    rmSync(root, { recursive: true, force: true });
+  }
+});
+
+test('multiline Cargo feature arrays remain a bounded package contract', () => {
+  const root = withRepo((r) => {
+    writeFileSync(join(r, 'README.md'), '# Multiline\n\nA Rust package.\n');
+    writeFileSync(
+      join(r, 'Cargo.toml'),
+      [
+        '[package]',
+        'name = "multiline"',
+        '',
+        '[features]',
+        'default = [',
+        '  "rand",',
+        '  "serde",',
+        ']',
+        'parallel = ["dep:rayon"]',
+        '',
+      ].join('\n'),
+    );
+  });
+  try {
+    const result = analyzeRepoStructure(root);
+    const cargoEvidence = result.semanticEvidence.find(
+      (row) => row.source === 'Cargo.toml',
+    );
+    assert.match(cargoEvidence.excerpt, /default.*rand, serde/);
+    assert.match(cargoEvidence.excerpt, /parallel.*dep:rayon/);
+    assert.equal(
+      result.skipped.some((row) => row.path.endsWith('Cargo.toml')),
+      false,
+    );
+  } finally {
+    rmSync(root, { recursive: true, force: true });
+  }
+});
+
+test('non-allowlisted multiline package fields do not block Cargo contract evidence', () => {
+  const root = withRepo((r) => {
+    writeFileSync(join(r, 'README.md'), '# Allowlist\n\nA Rust package.\n');
+    writeFileSync(
+      join(r, 'Cargo.toml'),
+      [
+        '[package]',
+        'name = "allowlist"',
+        'keywords = [',
+        '  "science",',
+        '  "math",',
+        ']',
+        'include = [',
+        '  "src/**",',
+        ']',
+        '',
+        '[features]',
+        'default = ["science"]',
+        '',
+      ].join('\n'),
+    );
+  });
+  try {
+    const result = analyzeRepoStructure(root);
+    const cargoEvidence = result.semanticEvidence.find(
+      (row) => row.source === 'Cargo.toml',
+    );
+    assert.match(cargoEvidence.excerpt, /default.*science/);
+    assert.doesNotMatch(cargoEvidence.excerpt, /keywords|src\/\*\*/);
+  } finally {
+    rmSync(root, { recursive: true, force: true });
+  }
+});
+
+test('Cargo package contract reports omitted feature declarations within the excerpt bound', () => {
+  const root = withRepo((r) => {
+    const featureLines = Array.from(
+      { length: 60 },
+      (_, index) => `f${String(index).padStart(2, '0')} = []`,
+    );
+    writeFileSync(join(r, 'README.md'), '# Bounded\n\nA Rust package.\n');
+    writeFileSync(
+      join(r, 'Cargo.toml'),
+      ['[package]', 'name = "bounded"', '', '[features]', ...featureLines, ''].join('\n'),
+    );
+  });
+  try {
+    const cargoEvidence = analyzeRepoStructure(root).semanticEvidence.find(
+      (row) => row.source === 'Cargo.toml',
+    );
+    assert.ok(cargoEvidence.excerpt.length <= 1200);
+    assert.match(cargoEvidence.excerpt, /Feature declarations omitted: 12/);
+    assert.doesNotMatch(cargoEvidence.excerpt, /f59/);
+  } finally {
+    rmSync(root, { recursive: true, force: true });
+  }
+});
+
+test('Cargo package identity metadata stays bounded and visible', () => {
+  const root = withRepo((r) => {
+    writeFileSync(join(r, 'README.md'), '# Metadata\n\nA Rust package.\n');
+    writeFileSync(
+      join(r, 'Cargo.toml'),
+      [
+        '[package]',
+        `name = "${'n'.repeat(120)}"`,
+        `version = "${'1'.repeat(120)}"`,
+        'edition = "2024"',
+        'rust-version = "1.85"',
+        '',
+      ].join('\n'),
+    );
+  });
+  try {
+    const cargoEvidence = analyzeRepoStructure(root).semanticEvidence.find(
+      (row) => row.source === 'Cargo.toml',
+    );
+    assert.ok(cargoEvidence.title.length <= 100);
+    assert.match(cargoEvidence.title, /… package contract$/);
+    assert.match(cargoEvidence.excerpt, /Version: 1+…/);
+    assert.match(cargoEvidence.excerpt, /Edition: 2024/);
+    assert.match(cargoEvidence.excerpt, /Rust version: 1\.85/);
   } finally {
     rmSync(root, { recursive: true, force: true });
   }
@@ -501,6 +870,20 @@ test('Meaning gate separates shared ontology, business proposals, and implementa
     assert.equal(r.extractionContract.qualityGates.proposedBusinessConcepts, 4);
     assert.equal(r.extractionContract.qualityGates.uncertaintyExplicit, true);
     assert.equal(r.extractionContract.competencyQuestions.length, 5);
+    assert.deepEqual(
+      r.extractionContract.competencyQuestions.map((question) => question.id),
+      ['scope', 'domains', 'abilities', 'evidence', 'impact'],
+    );
+    assert.deepEqual(
+      r.extractionContract.competencyQuestions.map((question) => question.type),
+      ['scoping', 'scoping', 'validation', 'validation', 'relationship'],
+    );
+    assert.deepEqual(
+      r.extractionContract.competencyQuestions.find(
+        (question) => question.id === 'impact',
+      ).requiredWitnesses,
+      ['concepts', 'relations', 'evidence'],
+    );
   } finally {
     rmSync(root, { recursive: true, force: true });
   }

@@ -4,7 +4,7 @@ kind: domain
 title: Project Portfolio Management
 display_ko: 프로젝트 포트폴리오 관리
 display_en: Project Portfolio Management
-capabilities: [capabilities/project-edit, capabilities/project-quick-edit, capabilities/project-share]
+capabilities: [capabilities/project-edit, capabilities/project-quick-edit, capabilities/project-share, capabilities/project-source-evidence]
 elements: [elements/project, elements/project-detail, elements/project-drawer, elements/project-editor, elements/project-selector]
 created_by: human
 ---

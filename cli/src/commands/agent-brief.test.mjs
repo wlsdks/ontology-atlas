@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict';
 import { describe, it } from 'node:test';
 
-import { readinessExitCode } from './agent-brief.mjs';
+import { formatProjectSourceSummary, readinessExitCode } from './agent-brief.mjs';
 
 // R+ (agent-persona-2026-07 QA friction #5) — agent-brief's exit code
 // encodes graph readiness, not command success. --exit-zero lets scripting
@@ -45,5 +45,28 @@ describe('agent-brief readinessExitCode', () => {
 
   it('--exit-zero silences the needs_attention readiness signal', () => {
     assert.equal(readinessExitCode(needsAttentionResult, true), 0);
+  });
+});
+
+describe('agent-brief project source summary', () => {
+  it('keeps status, measuredAt, topGap, nextAction in the shared handoff order', () => {
+    const lines = formatProjectSourceSummary({
+      contractVersion: 1,
+      projectSlug: 'project/app',
+      status: 'review_required',
+      currentness: 'stale',
+      measuredAt: '2026-08-02T10:00:00.000Z',
+      topGap: { id: 'ontology_changed' },
+      nextAction: { id: 'remeasure_source' },
+      bindingCardinality: 1,
+      receipt: null,
+    });
+    assert.deepEqual(lines, [
+      'status       review_required (stale)',
+      'measuredAt   2026-08-02T10:00:00.000Z',
+      'topGap       ontology_changed',
+      'nextAction   remeasure_source',
+    ]);
+    assert.doesNotMatch(lines.join('\n'), /confidence|score|\/private/);
   });
 });

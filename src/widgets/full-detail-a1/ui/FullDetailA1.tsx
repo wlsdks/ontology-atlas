@@ -12,6 +12,10 @@ import {
 import { useOntologyKindLabel } from "@/entities/ontology-class";
 import { useCopyFeedback } from "@/shared/lib/use-copy-feedback";
 import { truncateMiddlePath } from "@/shared/lib/truncate-middle-path";
+import {
+  formatProjectSourceHandoff,
+  type ProjectSourceView,
+} from "@/shared/lib/project-source-receipt";
 import { LastEditSubjectRow, MtimeConflictBadge, useToast } from "@/shared/ui";
 import {
   NodeExplanationEdit,
@@ -90,6 +94,17 @@ export interface FullDetailA1Breadcrumb {
   totalRelations: number | null;
 }
 
+export interface FullDetailA1ProjectSourceLabels {
+  heading: string;
+  sourceKind?: string;
+  status: string;
+  measuredAt: string;
+  currentness: string;
+  gap: string;
+  action: string;
+  busy: string;
+}
+
 export interface FullDetailA1Props {
   node: FullDetailA1Node;
   groups: FullDetailGroups;
@@ -122,6 +137,17 @@ export interface FullDetailA1Props {
    * never fabricated.
    */
   codeLocations?: readonly string[];
+  /** Same public, versioned receipt the compact project inspector and agent
+   * brief consume. The private binding envelope is intentionally not part of
+   * this prop. */
+  projectSource?: ProjectSourceView | null;
+  projectSourceLabels?: FullDetailA1ProjectSourceLabels | null;
+  projectSourceBusy?: boolean;
+  projectSourceError?: string | null;
+  /** Omit when the displayed bounded next action has no destination on this
+   * surface. `use_current_evidence` stays actionable through the local
+   * handoff-copy control. */
+  onProjectSourceAction?: (() => void | Promise<void>) | null;
   className?: string;
 }
 
@@ -138,6 +164,11 @@ export function FullDetailA1({
   documentHref,
   mentionDocumentHref = null,
   codeLocations = [],
+  projectSource = null,
+  projectSourceLabels = null,
+  projectSourceBusy = false,
+  projectSourceError = null,
+  onProjectSourceAction = null,
   className,
 }: FullDetailA1Props) {
   const t = useTranslations("fullDetailA1");
@@ -150,14 +181,15 @@ export function FullDetailA1({
   const copyHandoffFeedback = useCopyFeedback();
   const [step, setStep] = useState<FullDetailReachDepth>(3);
 
-  const handoffChain = useMemo(
-    () =>
-      formatFullDetailHandoffChain(node.agentSlug ?? node.slug, step, {
+  const handoffChain = useMemo(() => {
+    const nodeChain = formatFullDetailHandoffChain(node.agentSlug ?? node.slug, step, {
         documented: node.documented,
         kind: node.kind,
-      }),
-    [node.agentSlug, node.slug, node.documented, node.kind, step],
-  );
+      });
+    return node.kind === "project" && projectSource
+      ? `${nodeChain}\n\n${formatProjectSourceHandoff(projectSource)}`
+      : nodeChain;
+  }, [node.agentSlug, node.slug, node.documented, node.kind, step, projectSource]);
 
   const explanationEditLabels: NodeExplanationEditLabels = useMemo(
     () => ({
@@ -201,6 +233,12 @@ export function FullDetailA1({
     const ok = await copyHandoffFeedback.copy(handoffChain);
     if (ok) show(t("handoff.copied"), "success");
   }, [copyHandoffFeedback, handoffChain, show, t]);
+
+  const showProjectSource =
+    node.kind === "project" && projectSource !== null && projectSourceLabels !== null;
+  const projectSourceAction = projectSource?.nextAction.id === "use_current_evidence"
+    ? handleCopyHandoff
+    : onProjectSourceAction;
 
   return (
     <div
@@ -328,6 +366,66 @@ export function FullDetailA1({
       >
         {metricLine}
       </div>
+
+      {showProjectSource ? (
+        <section
+          data-testid="full-detail-project-source"
+          data-source-version={projectSource.contractVersion}
+          data-source-status={projectSource.status}
+          data-source-measured-at={projectSource.measuredAt ?? "unmeasured"}
+          data-source-top-gap={projectSource.topGap?.id ?? "none"}
+          data-source-action={projectSource.nextAction.id}
+          data-source-currentness={projectSource.currentness}
+          data-source-cardinality={projectSource.bindingCardinality}
+          aria-live="polite"
+          className="mt-5.5 grid gap-2 border-y border-[color:var(--topology-v2-panel-border)] py-3.5 sm:grid-cols-[minmax(0,1fr)_auto] sm:items-end"
+        >
+          <div className="min-w-0">
+            <p className="text-label font-medium uppercase tracking-[0.08em] text-[color:var(--topology-v2-panel-text-quaternary)]">
+              {projectSourceLabels.heading}
+              {projectSourceLabels.sourceKind ? (
+                <span className="ml-2 font-mono normal-case tracking-normal">
+                  {projectSourceLabels.sourceKind}
+                </span>
+              ) : null}
+            </p>
+            <p className="mt-1 text-body-lg font-medium text-[color:var(--topology-v2-panel-text-primary)]">
+              {projectSourceLabels.status}
+            </p>
+            <p className="mt-0.5 text-body text-[color:var(--topology-v2-panel-text-tertiary)]">
+              {projectSourceLabels.measuredAt}
+              <span className="mx-1.5 text-[color:var(--topology-v2-panel-text-quaternary)]">·</span>
+              {projectSourceLabels.currentness}
+            </p>
+            <p className="mt-2 text-body text-[color:var(--topology-v2-panel-text-secondary)]">
+              {projectSourceLabels.gap}
+            </p>
+            {projectSourceError ? (
+              <p
+                role="status"
+                className="mt-1.5 text-body text-[color:var(--color-danger-text)]"
+              >
+                {projectSourceError}
+              </p>
+            ) : null}
+          </div>
+          {projectSourceAction ? (
+            <button
+              type="button"
+              onClick={() => void projectSourceAction()}
+              disabled={projectSourceBusy}
+              aria-busy={projectSourceBusy}
+              className="justify-self-start rounded-chip border border-[color:var(--topology-v2-indigo-border)] bg-[color:var(--topology-v2-panel-action-surface)] px-3 py-1.5 text-body font-medium text-[color:var(--topology-v2-indigo-bright)] transition-colors hover:border-[color:var(--topology-v2-indigo)] hover:bg-[color:var(--topology-v2-panel-row-hover)] disabled:cursor-wait disabled:opacity-60 sm:justify-self-end"
+            >
+              {projectSourceBusy ? projectSourceLabels.busy : projectSourceLabels.action}
+            </button>
+          ) : (
+            <span className="justify-self-start text-body font-medium text-[color:var(--topology-v2-indigo-bright)] sm:justify-self-end">
+              {projectSourceLabels.action}
+            </span>
+          )}
+        </section>
+      ) : null}
 
       <FullDetailA1GroupsPanel
         className="mt-5.5"

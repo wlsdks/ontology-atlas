@@ -6,6 +6,15 @@ import { pathToFileURL } from "node:url";
 const root = process.cwd();
 
 export function cleanTauriMacosApps({ root: workspaceRoot = root } = {}) {
+  // Tauri embeds `frontendDist` in the Rust executable. Removing only the old
+  // `.app` lets Cargo reuse a binary that still contains yesterday's web build.
+  // Keep dependency artifacts, but force the cheap final crate relink so the
+  // bundle always receives the `out/` that `beforeBuildCommand` just produced.
+  fs.rmSync(
+    path.join(workspaceRoot, "src-tauri", "target", "release", "ontology-atlas"),
+    { force: true },
+  );
+
   const macosBundleDir = path.join(
     workspaceRoot,
     "src-tauri",

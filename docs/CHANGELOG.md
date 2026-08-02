@@ -7,6 +7,187 @@
 
 ---
 
+## 2026-08-02 — 프로젝트 코드 근거를 사람과 에이전트가 같은 receipt로 읽는다
+
+지도에서 project 노드를 고르면 코드 근거의 범주형 상태·측정 시각·현재성·첫
+빈틈·다음 행동이 데이터시트와 전체 상세에 나타난다. 설치 앱은 프로젝트마다
+Git worktree 또는 일반 폴더 하나를 연결해 capability/element가 선언한 코드
+위치를 측정하고, 이후 **다시 측정**은 저장된 연결을 재사용한다. 폴더 선택을
+취소하거나 측정·저장에 실패해도 기존 연결과 receipt를 지우지 않는다. 숫자형
+confidence나 저장소 전체가 옳다는 판정은 만들지 않는다. UI의 `Git 저장소`와
+`로컬 폴더` 표시는 소스 종류 판별이며 GitHub 계정·원격 연동을 뜻하지 않는다.
+
+비공개 절대 경로는 graph Markdown이 아니라 vault-local
+`.ontology-atlas/project-sources.json` sidecar에만 남는다. 복사 인계와
+`query_ontology({operation:"agent_brief"})`의 `projectSource`에는 버전이 붙은
+범주·빈틈·다음 행동과 source-relative witness만 전달되고 절대 경로는 빠진다.
+설치 앱은 연결 폴더를 실제로 다시 읽어 receipt와 맞을 때만 `current`를 말한다.
+MCP는 그 비공개 폴더를 재탐색하지 않으므로 저장된 status가
+`verified_current`여도 currentness는 `unavailable`일 수 있다. 이는 stale의
+동의어가 아니라 “이 프로세스에서는 재확인하지 않음”이며, 확인 가능한 프로젝트
+그래프가 receipt와 달라졌을 때만 `stale`로 내린다.
+
+---
+
+## 2026-08-02 — bootstrap 답변의 근거와 빈틈을 쓰기 계획에 보존한다
+
+`analyze_repo_structure`의 두 번째 호출이 competency 질문에 임의 문자열만
+받아, 존재하지 않는 구현 역할이나 아직 모르는 영향 관계도 "답변 완료"로
+통과시킬 수 있던 공백을 닫았다. 이제 각 답은 `answered` · `partial` ·
+`visible-gap` 상태와 concept · relation · evidence · path witness를 함께 내며,
+`answered`가 요구 근거를 찾지 못하면 `canWrite:false`로 닫힌다.
+
+근거가 부족하다고 정직하게 표시한 `partial`과 `visible-gap`은 승인 가능한
+그래프까지 막지는 않지만, finding과 gate에 남고 deterministic `writePlan` 및
+project 문서의 `Competency answers` 절까지 보존된다. 따라서 `canWrite:true`가
+더 이상 "모든 질문이 해결됨"을 뜻하지 않으며, 다음 사람이나 에이전트가
+숨겨진 미확인 범위를 이어서 조사할 수 있다.
+
+실제 Codex↔MCP 오픈소스 dogfood에서 `includes`/`excludes`를 배열 대신
+문자열로 보낸 입력이 내부 본문 렌더러까지 도달하는 것도 확인했다. 이제 공개
+스키마에만 의존하지 않고 내부 preflight가 같은 경계 조건을 다시 검증해,
+서버 예외 대신 `invalid-concept-boundary-list` finding으로 수정 경로를 돌려준다.
+
+---
+
+## 2026-08-02 — macOS 경로 별칭에서도 init의 MCP repo root를 보존한다
+
+`ontology-atlas init /tmp/.../ontology`처럼 vault 절대 경로가 macOS의
+`/tmp` 별칭을 쓰고 현재 작업 폴더는 canonical `/private/tmp`로 보일 때, vault 안에
+생성된 `.mcp.json`과 `.codex/config.toml`이 `OATLAS_REPO_ROOT`를
+`/private/private/tmp/...`로 계산하던 첫 연결 결함을 고쳤다. init은 scaffold 뒤
+실재하는 vault와 cwd를 같은 canonical 좌표계로 맞춘 다음 상대 경로를 만들며,
+symlink 별칭 fixture와 CLI 전체 통합 테스트로 생성 설정이 실제 repo root에
+도달하는지 검증한다.
+
+---
+
+## 2026-08-02 — 승인한 전체 그래프를 검증된 write plan으로 보존한다
+
+MCP cold-start bootstrap이 project·domain·capability만 검증한 뒤 승인 화면에는
+element와 relation까지 섞어 보여주고, 쓰기 단계에서 검증된 `domain`마저 잃던
+공백을 닫았다. 이제 `analyze_repo_structure`의 complete proposal은 project,
+domain, capability, element, typed relation 전체를 검증한다. 통과한 경우에만
+`add_concepts`·`add_relations`가 그대로 받는 deterministic `writePlan`을 반환해
+정의·근거·confidence·경계·domain/path와 relation rationale를 보존한다.
+
+`canWrite`는 여전히 사람의 승인이나 원자적 쓰기 성공을 뜻하지 않는다. 선택한
+subset은 다시 검증하고, concept batch의 모든 행이 성공한 뒤에만 relation batch를
+실행한다. Batch relation의 `why`도 이제 단건 writer와 같이 `relation_notes`에
+저장된다.
+
+---
+
+## 2026-08-02 — Rust package manifest를 bootstrap 정본 근거로 읽는다
+
+낯선 Rust 저장소 field trial에서 capability가 `Cargo.toml`을 인용하자
+`analyze_repo_structure`가 evidence packet 밖의 경로라며 거절해 README로
+후퇴하던 공백을 닫았다. 이제 root package manifest의 `[package]` 식별·설명과
+`[features]` 이름·매핑은 bounded `package-contract` 근거 한 행으로 들어가고,
+proposal citation과 source-hidden handoff가 같은 정본을 읽는다. manifest나
+feature별 노드는 만들지 않는다. repo 밖 symlink, 256 KiB 초과, malformed,
+virtual-workspace-only manifest는 명시적으로 skip하며 comment와 allowlist 밖
+TOML은 semantic evidence에 들어오지 않는다.
+
+---
+
+## 2026-08-02 — rename overwrite가 교체 대상을 되살리던 순서 역전 수정
+
+`rename_concept(..., overwrite: true)`가 source 문서를 target slug에 쓴 다음,
+곧 사라질 기존 target의 backlink 갱신 계획으로 같은 파일을 다시 덮어쓰던 결함을
+고쳤다. overwrite 대상은 backlink rewrite에서 제외되어 source의 제목·본문·근거가
+실제로 남는다. MCP 직접 호출과 CLI `rename --confirm --overwrite`가 같은 결과를
+검증한다.
+
+---
+
+## 2026-08-02 — 능력의 코드 근거와 그래프 자식을 분리
+
+`capability_without_evidence`가 권한 밖 수정을 권하던 모순을 없앴다. 이제
+capability의 `path:`는 낯선 에이전트가 처음 열 정본 구현 진입점 하나이고,
+`elements:`에는 실제 구현 역할 노드의 slug만 들어간다. 경로를 증명하려고 파일별
+element 노드를 만드는 압력도, 경로를 관계 배열에 넣었다가 쓰기 게이트에서 다시
+경고받는 루프도 사라졌다. MCP와 CLI `add --path`가 같은 스키마를 쓰며 maintenance,
+경로 drift, 설치 서버 dogfood가 같은 판정을 낸다.
+
+---
+
+## 2026-08-02 — 로컬 에이전트 첫 도구 선택 지연·구조 감사 근거 보강
+
+Ollama를 연결한 설치 앱의 실제 구조 감사가 3회 왕복에 약 119초가 걸렸고,
+첫 호출이 끝나기 전 63초 동안 정지한 것처럼 보였다. OpenAI 호환 로컬
+요청은 모든 왕복의 사고를 끈다. 실물 모델이 막연한 `tool_choice:required`를
+무시한 것도 확인해, 첫 읽기는 선택된 개념이 있으면
+`get_concept` 하나만 허용한다. 전체 지도는 `list_kinds` 하나로 방향을 고르고,
+`list_concepts` 하나로 후보를 고른 뒤 `get_concepts` 하나로 실제 본문을 묶어
+읽게 해 목록만으로 판정하지 못하게 한다. 이름 지정 `tool_choice`까지 무시한
+로컬 모델이 있어 필수 턴에는 다른 도구 정의 자체를 보내지 않는다.
+중간 판단만
+`low`로 둔 실험도 한 왕복이 180초 timeout을 냈기 때문이다.
+세 번 읽은 뒤에는 도구를 회수하고, 확인한 근거만으로
+즉시 답하라는 명시적 합성 지시를 `none`으로 보낸다. 같은
+`gemma4:12b` + 복잡한 15도구 감사 첫 요청의 `list_kinds` 실측은
+`low` 59.7초에서 `none+required` 0.632초로 줄었고 tool call은 같았다.
+
+로컬 생성 한 번이 180.016초 뒤에야 timeout 되는 실물 실패도 확인했다.
+localhost 러너의 한 왕복은 60초로 제한하고, 원격 제공자의 180초 여유와
+분리했다. 시간 초과는 더 이상 일반 연결 실패로 뭉개지지 않고 질문을 좁히거나
+더 빠른 모델을 고르라는 안내로 표시된다.
+
+시스템 프롬프트에서 `element`를 파일 자체로 읽히게 하던 문장을 구현
+역할 중심으로 고쳤다. 구조 감사는 노드 수·목록만으로 문제 없음을
+결론내리지 않고, 실제 의심 부모의 해소된 이웃을 읽고 정확한 slug로 인용한다.
+독립적인 읽기는 한 응답에 묶고, 최대 3회 증거 수집 턴 뒤에는 검증된 범위만
+답한다. 남은 범위에는 광범위한 무결함 주장 대신 감사 미완료를 표시한다.
+
+설치 앱 dogfood가 실제 최신 코드를 실행하도록 로컬 배포도 고쳤다. Tauri가
+정적 `out/`을 내장하는 실행 바이너리를 매번 재링크하고, 앱 종료 뒤 WebKit의
+`NetworkCache`와 `CacheStorage`만 지운다. 볼트 핸들과 설정이 든
+IndexedDB·LocalStorage는 보존한다. 로컬 `.app` 배포는 release updater 산출물을
+끄고 빌드하므로 updater 서명 private key가 없는 개발 환경에서도 막히지 않는다.
+공개 릴리스의 `desktop:build:app`은 updater 산출물과 서명 계약을 그대로 지킨다.
+qwen3:8b 실측은 새 순서의
+`list_kinds`(5.824초)와 capability 목록(2.484초)까지 따랐지만 세 번째
+`get_concepts`를 생략했다. 이제 필수 읽기 대신 답이나 계획을 내면 같은 도구를
+한 번만 다시 요구하고, 두 번째에도 생략하면 그 답을 화면에 싣지 않고 턴을
+명시적으로 실패시킨다. 실제 `qwen3:8b` 재검증에서는 `list_kinds` →
+`list_concepts` → `get_concepts`를 모두 수행한 뒤에만 제한된 결론을 냈다.
+
+로컬 모델의 마지막 합성도 도구 호출과 별도 품질 게이트를 지난다. 구조 감사에서
+목록·fan-out·kind 혼합은 의심 대상을 고르는 신호일 뿐 결함·권장 노드 수·브릿지의
+근거가 아니며, 실제 상세 payload에 남은 slug를 receipt로 다시 건넨다. 검증된
+인용이 없거나 한국어 질문에 한국어가 전혀 없으면 한 번만 재합성하고, 두 번째에도
+어기면 답을 표시하지 않는다. storefront 112개념 + Ollama `qwen3:8b` 실측은
+`list_kinds` → `list_concepts` → `get_concepts` 뒤 언어 재합성을 거쳐 약 25초에
+`[[domains/catalog]]`만 인용하고 “검증 범위로는 브릿지 필요 여부를 판단할 수
+없음”이라고 한국어로 답했다. 임의의 숫자 목표와 근거 없는 브릿지 권고는 없었다.
+
+배치 상세 읽기의 6,000자 상한도 의미 비교를 보존한다. 예전 이분 절삭은 긴
+`get_concepts` 결과에서 첫 행 하나만 남기면서도 읽기 범위와 본문 글자 수에는
+버린 행까지 포함했다. 이제 모든 행을 정의 발췌·비관계 frontmatter·관계 개수·
+해소된 이웃의 같은 모양으로 먼저 압축하고, 그래도 안 맞을 때만 뒤 행을 생략한다.
+`bodyInfo`·`neighborsInfo`·`frontmatterInfo`가 빠진 범위를 말하며, 인용과 감사
+scope는 실제 payload에 남은 slug·본문만 센다. storefront 8개 도메인 실측은
+기존 1/8행에서 8/8행으로 늘면서도 5,560자에 머물렀고, 각 행에 정의 발췌와
+실제 이웃을 남겼다.
+
+실제 `qwen3:8b`가 종류별 census에서 capability 49개·element 54개를 읽고도
+`project` 루트 하나만 상세 읽은 뒤 둘 다 정의되지 않았다고 합성하는
+추가 실물 실패를 재현했다. 이제 구조 감사는 `list_concepts(kind=domain,
+summary=true, limit=12)`와 그 결과의 최대 8개 slug를 모두 담은
+`get_concepts(body=full)`까지 이름과 인자를 함께 검증한다. census의 양수
+kind를 없다고 하거나 세 행 미만으로 브릿지 불필요를 확정하면 한 번
+교정하고 다시 모순되면 폐기한다. 왕복 상한 뒤의 마지막 답도 같은
+검증을 우회하지 못한다. 번들 dogfood 온톨로지 실물 재검증은 `list_kinds` → 6개
+domain 목록 → 6개 상세 읽기 → 한국어 합성을 4회 왕복·약 44초에
+완료했다. 모든 도메인을 정확한 slug로 인용했고, 임의의 노드 수 목표나
+kind 부재 오판은 없었다.
+
+데스크톱 복원 중 절대 경로만 먼저 살아나고 manifest를 읽지 못한 프레임은
+더 이상 에이전트를 활성화하지 않는다. 화면의 번들 샘플과 숨은 로컬 폴더의
+본문·감사 로그가 갈라지는 대신, 기존 “폴더를 열어야 함” 상태로 정직하게 강등한다.
+---
+
 ## 2026-08-02 — 머리 위 막대가 말을 하고, 「걸어온 길」에 길이 보인다
 
 **막대에 동사가 들어갔다.** 고른 노드 바로 위의 판이 `+17` 대신
@@ -25,7 +206,6 @@
 소멸하고, 고른 노드는 선택 링을 유지한다 — 「지금 여기」와 「지나온 곳」은 계속
 다른 색이다. 렌즈가 켜져 있는 동안에는 확장 컨트롤도 함께 물러나 판이 궤적을
 가로막지 않는다.
-
 ---
 
 ## 2026-08-01 — `v1.0.0-rc.5`: 공개 Windows x64 미서명 베타와 네이티브 검증

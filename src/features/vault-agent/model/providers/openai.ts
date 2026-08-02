@@ -60,6 +60,9 @@ export const openaiAdapter: ProviderAdapter = {
           content: result.isError ? `ERROR: ${result.content}` : result.content,
         });
       }
+      if (exchange.retry) {
+        messages.push({ role: 'user', content: exchange.retry.instruction });
+      }
     }
     return JSON.stringify({
       model: turn.model,

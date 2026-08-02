@@ -1269,6 +1269,7 @@ describe('verify.mjs first-contact gates', () => {
                   slug: { type: 'string' },
                   kind: { type: 'string' },
                   title: { type: 'string' },
+                  path: { type: 'string' },
                   mtime: { type: 'number' },
                   outDegree: { type: 'integer', minimum: 0 },
                   inDegree: { type: 'integer', minimum: 0 },
@@ -5188,7 +5189,7 @@ describe('verify.mjs first-contact gates', () => {
           { name: 'relation', suggestion: 'type' },
           { name: 'frm', suggestion: 'from' },
         ],
-        allowedFields: ['from', 'to', 'type', 'expected_mtime'],
+        allowedFields: ['from', 'to', 'type', 'why', 'expected_mtime'],
         receivedFields: ['frm', 'from', 'relation', 'to', 'type'],
       },
       {
@@ -5207,7 +5208,7 @@ describe('verify.mjs first-contact gates', () => {
         rowName: 'relations[3]',
         receivedField: 'relation',
         unknownFields: [{ name: 'relation', suggestion: 'type' }],
-        allowedFields: ['from', 'to', 'type', 'expected_mtime'],
+        allowedFields: ['from', 'to', 'type', 'why', 'expected_mtime'],
         receivedFields: ['from', 'relation', 'to', 'type'],
       },
     ];

@@ -60,7 +60,7 @@ Every \`.md\` file whose frontmatter has a \`kind:\` is one concept. The frontma
 - project — the top-level deliverable. Owns domains, capabilities, and elements.
 - domain — a functional grouping (auth, billing). Parent of capabilities.
 - capability — a coherent unit of behavior (token-issue). Often realized by elements.
-- element — a concrete piece: a library, an API, a schema, a file. Leaf level.
+- element — a concrete implementation role: a library, API, schema, component, or file-level unit with a distinct responsibility. A file path is evidence for that role, not a reason to create a node. Leaf level.
 - document — narrative tied to the graph but not a domain object.
 - (\`vault-readme\` is reserved for the auto-generated README.md — never propose that kind.)
 
@@ -79,6 +79,7 @@ Some concepts are named inside other documents' relation keys but have no file o
 5. Fill every locale the vault already uses in \`labels\`. Filling one leaves the other audience reading a foreign string.
 6. When you patch, carry \`expected_mtime\` from your most recent read of that concept, so a person editing the same file at the same time is not silently overwritten.
 7. If the evidence is not there, do not invent it. Say what is missing and propose it as a question, not as a fact.
+8. For a structure audit, census and list results only choose suspects; they cannot prove a parent is healthy. Before judging fan-out, duplication, or a bridge, read each suspect parent with \`get_concept\` or \`get_concepts\`, inspect its resolved neighbors, and cite the exact slugs you actually read. Batch independent reads in the same response. Spend at most three rounds gathering audit evidence, then answer from what you verified and mark every uninspected area incomplete.
 
 # Citing
 
@@ -145,12 +146,13 @@ Write plainly, in the person's language, for someone who is not a developer. Sho
    a problem.
 5. This procedure does not block writes. Skipping it still succeeds; \`warnings\` /
    \`postWriteMaintenance\` on the response flags it for cleanup instead.
-6. When you create a \`capability\`, attach its EVIDENCE in the same pass: the file
-   or directory the behavior lives in goes into \`elements:\` — either the slug of an
-   element node, or the path itself, which counts. A capability with an empty
-   \`elements:\` is a claim nobody can open: an agent handed only this vault can
-   describe the behavior and cannot find it. This does not block the write either;
-   the node is reported back under \`capability_without_evidence\` in
+6. When you create a \`capability\`, attach its EVIDENCE in the same pass. Put one
+   canonical implementation entry point in \`path:\` — the repo-relative file or
+   directory an unfamiliar agent should open first. \`elements:\` contains only
+   slugs of real element nodes whose implementation roles differ in a sentence;
+   never put a raw file path in that graph relation. A capability with neither
+   \`path:\` nor an element relation is a claim nobody can open. This does not block
+   the write; the node is reported under \`capability_without_evidence\` in
    \`maintenance_plan\` until it points at something.
 
 # Construction rules — talking to a person

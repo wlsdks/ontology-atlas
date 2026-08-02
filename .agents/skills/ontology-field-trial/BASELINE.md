@@ -9,6 +9,82 @@ which is all a comparison needs.
 
 ---
 
+## 2026-08-02 — compact evidence-first run
+
+**Subject**: an unfamiliar dual MIT/Apache-2.0 Rust scientific-computing
+library, 11 MB shallow clone. Vault started with the five scaffold records.
+
+### Phase 1 — build
+
+| | |
+|---|---|
+| wall clock | **5 min 36 s** |
+| meaningful nodes | **11** (1 project · 3 domains · 7 capabilities · 0 elements) |
+| relations | **10** written containment relations · **17** compiled directed edges including domain back-references |
+| driver | a fresh Codex MCP agent using `/ontology-bootstrap` |
+
+The agent kept the semantic model below the 10–20 target without mirroring
+folders, files, or algorithms. Four untouched example records remained because
+non-interactive Codex cancelled destructive `delete_concept` calls; they are
+excluded from the meaningful count and reported separately rather than hidden.
+
+### Phase 2 — citation accuracy
+
+| | |
+|---|---|
+| cited paths checked | **7** |
+| paths that exist in the clone | **7** (100%) |
+| capabilities without implementation evidence | **0 / 7** |
+
+`health` checked all seven frontmatter paths against the hidden subject clone
+and reported zero drift. The only maintenance action belonged to the untouched
+example scaffold.
+
+### Phase 3 — handoff (vault only, source hidden)
+
+A fresh Codex agent answered all six onboarding questions from 11 focused
+concept reads. All 11 full bodies reported `bodyInfo.truncated: false`.
+
+**Answered and checkable from the vault alone:**
+
+- project outcome, with the user persona kept explicitly inferential
+- three responsibility boundaries and their exclusions
+- all seven capabilities grouped under those boundaries
+- canonical starting paths for complex-number and macro-syntax changes
+- the exact containment paths from project to domain to capability
+- the absence of encoded dependency facts, without treating absence as source proof
+
+**Explicitly unanswered rather than guessed:**
+
+- actual macro consumers and runtime/import/test blast radius
+- package-manifest implementation detail for optional feature selection
+
+The same handoff attempted through Codex CLI 0.146.0 + Ollama `qwen3:8b`
+failed before Atlas answered: model-list schema fallback was followed by four
+empty tool identities and `unsupported call`. This is recorded as
+Codex/Ollama interoperability evidence, not an Atlas answer-quality result.
+
+### Phase 4 — hallucination check
+
+| | |
+|---|---|
+| source-checkable factual claims | **14 / 14 verified** |
+| vault-graph claims | **2 / 2 verified** |
+| hallucinated paths | **0** |
+| unsupported source claims presented as fact | **0** |
+
+### What the next run has to beat
+
+- fully unanswered onboarding questions: **0** — hold this while reducing the
+  two explicitly partial dependency/manifest subquestions
+- capabilities without evidence: **0 / 7**
+- cited-path accuracy: **7 / 7** — hold 100%
+- full-body handoff: **11 / 11**, no truncation
+- build cost: **5 min 36 s for 11 meaningful nodes**
+- claim audit: **16 / 16 verified** across source and vault facts
+
+---
+
 ## 2026-08-01 — first run (the baseline)
 
 **Subject**: an unfamiliar Apache-2.0 TypeScript monorepo, ~677 MB shallow

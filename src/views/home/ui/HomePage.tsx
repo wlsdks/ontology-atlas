@@ -140,6 +140,7 @@ import {
   useRelationVocabulary,
 } from "@/entities/knowledge-graph";
 import { copyText } from "@/shared/lib/copy-text";
+import { formatProjectSourceHandoff } from "@/shared/lib/project-source-receipt";
 import {
   buildOntologyTree,
   computeDomainCensusRows,
@@ -154,6 +155,10 @@ import { useBootstrapFlow } from "../model/use-bootstrap-flow";
 import { useAgentConnectModel } from "../model/use-agent-connect-model";
 import { useNodeDatasheetModel } from "../model/use-node-datasheet-model";
 import { useFullDetailA1Model } from "../model/use-full-detail-a1-model";
+import {
+  projectSlugForSource,
+  useProjectSourceModel,
+} from "../model/use-project-source-model";
 import {
   selectTopologyNodeRouteState,
   selectTopologyPathRouteState,
@@ -1829,6 +1834,25 @@ export function HomePage() {
     selfEditTimestamps: vault.selfEditTimestamps,
     formatEditAgeLabel,
   });
+  const sourceProjectSlug = projectSlugForSource(selectedOntologyNode);
+  const projectSource = useProjectSourceModel({
+    projectSlug: sourceProjectSlug,
+    vaultHandle: vault.status === "loaded" ? vault.handle : null,
+    nodes: ontologyInsight?.nodes ?? [],
+    docs: vault.manifest?.docs ?? [],
+  });
+  const projectSourceMeasuredAtLabel = useMemo(() => {
+    const measuredAt = projectSource.view?.measuredAt;
+    if (!measuredAt) return t("nodeDatasheet.sourceMeasuredNever");
+    const date = new Date(measuredAt);
+    const time = Number.isNaN(date.getTime())
+      ? measuredAt
+      : new Intl.DateTimeFormat(activeLocale, {
+          dateStyle: "medium",
+          timeStyle: "short",
+        }).format(date);
+    return t("nodeDatasheet.sourceMeasuredAt", { time });
+  }, [projectSource.view?.measuredAt, activeLocale, t]);
   // 과제 ⑪ — LNB 컨텍스트 이월. 노드를 선택한 채 좌측 레일의 "문서함"으로
   // 이동하면 선택과 무관한 `/docs/` 기본 화면이 뜨던 문제 — 데이터시트가
   // 이미 파생해 둔 `documentHref`(vault 파일 경로 `?slug=` 딥링크, H5 계약)를
@@ -1969,6 +1993,70 @@ export function HomePage() {
     },
     [t, toast],
   );
+  const projectAwareHandoffText = useMemo(() => {
+    if (!v2DatasheetModel) return "";
+    if (!projectSource.view) return v2DatasheetModel.handoffText;
+    return `${v2DatasheetModel.handoffText}\n\n${formatProjectSourceHandoff(projectSource.view)}`;
+  }, [v2DatasheetModel, projectSource.view]);
+  const handleProjectSourceAction = useCallback(async () => {
+    const action = projectSource.view?.nextAction.id;
+    if (!action || !v2DatasheetModel) return;
+    if (projectSource.canRunSourceAction) {
+      await projectSource.runNextAction();
+      return;
+    }
+    if (action === "use_current_evidence") {
+      await copyV2NodeHandoff(projectAwareHandoffText);
+      return;
+    }
+    if (
+      action === "record_source_role"
+      || action === "repair_source_path"
+      || action === "review_inventory_limit"
+    ) {
+      setFullDetailSlug(v2DatasheetModel.nodeId);
+    }
+  }, [projectSource, v2DatasheetModel, copyV2NodeHandoff, projectAwareHandoffText]);
+  const projectSourceNextAction = projectSource.view?.nextAction.id ?? null;
+  const projectSourceNextActionAvailable = Boolean(
+    projectSource.canRunSourceAction
+    || projectSourceNextAction === "use_current_evidence"
+    || projectSourceNextAction === "record_source_role"
+    || projectSourceNextAction === "repair_source_path"
+    || projectSourceNextAction === "review_inventory_limit",
+  );
+  const projectSourceNeedsNativeRuntime = Boolean(
+    projectSourceNextAction === "connect_source"
+    || projectSourceNextAction === "repair_source_binding"
+    || projectSourceNextAction === "measure_source"
+    || projectSourceNextAction === "remeasure_source",
+  );
+  const projectSourceLabels = useMemo(() => {
+    const view = projectSource.view;
+    if (!view) return null;
+    const sourceKind = view.receipt?.sourceKind;
+    return {
+      heading: t("nodeDatasheet.sourceHeading"),
+      sourceKind: sourceKind ? t(`nodeDatasheet.sourceKind_${sourceKind}`) : undefined,
+      status: t(`nodeDatasheet.sourceStatus_${view.status}`),
+      measuredAt: projectSourceMeasuredAtLabel,
+      currentness: t(`nodeDatasheet.sourceCurrent_${view.currentness}`),
+      gap: t(`nodeDatasheet.sourceGap_${view.topGap?.id ?? "none"}`),
+      action: !projectSource.runtimeAvailable && projectSourceNeedsNativeRuntime
+        ? t("nodeDatasheet.sourceAppRequired")
+        : t(`nodeDatasheet.sourceAction_${view.nextAction.id}`),
+      busy: t("nodeDatasheet.sourceBusy"),
+    };
+  }, [
+    projectSource.view,
+    projectSource.runtimeAvailable,
+    projectSourceNeedsNativeRuntime,
+    projectSourceMeasuredAtLabel,
+    t,
+  ]);
+  const projectSourceErrorLabel = projectSource.error
+    ? t(`nodeDatasheet.sourceError_${projectSource.error}`)
+    : null;
   // W2-A "경로" action tile — sets this node as the path-analysis source and
   // enters path mode. Reuses `selectTopologyPathRouteState` (already defined
   // in `model/url-state.ts` for the URL-driven path deep link, but never
@@ -4526,7 +4614,9 @@ export function HomePage() {
                 updatedAtLabel={panelDatasheetModel.updatedAtLabel}
                 lastEditSubject={panelDatasheetModel.lastEditSubject}
                 mtimeConflict={panelDatasheetModel.mtimeConflict}
-                handoffText={panelDatasheetModel.handoffText}
+                handoffText={projectSource.view
+                  ? `${panelDatasheetModel.handoffText}\n\n${formatProjectSourceHandoff(projectSource.view)}`
+                  : panelDatasheetModel.handoffText}
                 documentHref={panelDatasheetModel.documentHref}
                 studioEditHref={panelDatasheetModel.studioEditHref}
                 labels={{
@@ -4595,6 +4685,16 @@ export function HomePage() {
                   actionAskAgentTip: t("nodeDatasheet.actionAskAgentTip"),
                   actionPathTip: t("nodeDatasheet.actionPathTip"),
                   actionRealmTip: t("realm.enterTooltip"),
+                  sourceKind: projectSourceLabels?.sourceKind,
+                  sourceStatus: projectSourceLabels?.status,
+                  sourceMeasuredAt: projectSourceLabels?.measuredAt,
+                  sourceCurrentness: projectSourceLabels?.currentness,
+                  sourceGap: projectSourceLabels?.gap,
+                  sourceAction: projectSourceLabels?.action,
+                  sourceRelationsShow: t("nodeDatasheet.sourceRelationsShow"),
+                  sourceRelationsHide: t("nodeDatasheet.sourceRelationsHide"),
+                  sourceOntologyDocument: t("nodeDatasheet.sourceOntologyDocument"),
+                  sourceBusy: projectSourceLabels?.busy,
                 }}
                 onSelectConnection={(id) => handleSelect(id)}
                 onCopyHandoff={copyV2NodeHandoff}
@@ -4603,6 +4703,12 @@ export function HomePage() {
                 onAskAgent={llmBridgeAvailable ? askAgentAboutSelectedNode : undefined}
                 onClose={handleDatasheetClose}
                 onSetPathSource={() => handleSetPathSource(panelDatasheetModel.nodeId)}
+                projectSource={projectSource.view}
+                projectSourceBusy={projectSource.busy}
+                projectSourceError={projectSourceErrorLabel}
+                onProjectSourceAction={projectSourceNextActionAvailable
+                  ? handleProjectSourceAction
+                  : undefined}
                 onEnterRealm={
                   // S4 — 컨테이너 노드(자식 있음)이며 영역 밖일 때만 2차 발견
                   // 경로를 노출한다. leaf/이미 영역 안이면 omit → 버튼 미표시.
@@ -4726,6 +4832,13 @@ export function HomePage() {
               documentHref={fullDetailA1Model.documentHref}
               mentionDocumentHref={fullDetailA1Model.mentionDocumentHref}
               codeLocations={fullDetailA1Model.codeLocations}
+              projectSource={projectSource.view}
+              projectSourceLabels={projectSourceLabels}
+              projectSourceBusy={projectSource.busy}
+              projectSourceError={projectSourceErrorLabel}
+              onProjectSourceAction={projectSource.canRunSourceAction
+                ? projectSource.runNextAction
+                : undefined}
               onSelectNode={(id) => handleSelect(id)}
               onClose={handleClose}
               onBackToMap={handleClose}

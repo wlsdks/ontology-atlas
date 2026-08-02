@@ -1,5 +1,5 @@
 // 패널이 지키는 것: 웹 정직 강등 · 닫힘=중단 · 범위 시트 선행 · 리플로우 계약.
-import { fireEvent, render, screen } from '@testing-library/react';
+import { fireEvent, render, screen, waitFor } from '@testing-library/react';
 import { NextIntlClientProvider } from 'next-intl';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
@@ -88,7 +88,7 @@ function renderPanel(overrides: Partial<Parameters<typeof VaultAgentPanel>[0]> =
         onClose={vi.fn()}
         vaultPath="/vault"
         insight={null}
-        manifest={null}
+        manifest={{ docs: [] } as never}
         screenContext={{
           focusedSlug: 'capabilities/payment',
           focusedTitle: '결제 처리',
@@ -155,6 +155,24 @@ describe('VaultAgentPanel', () => {
     renderPanel({ vaultPath: null });
     expect(screen.getByTestId('vault-agent-notice')).toBeInTheDocument();
     expect(screen.queryByTestId('vault-agent-input')).not.toBeInTheDocument();
+  });
+
+  it('경로만 복원되고 manifest가 없으면 샘플 지도에 숨은 폴더 에이전트를 열지 않는다', async () => {
+    bridge.available = true;
+    renderPanel({
+      vaultPath: '/restored-but-unreadable-vault',
+      manifest: null,
+      insight: { nodes: [payNode], edges: [] } as never,
+    });
+    await waitFor(() =>
+      expect(
+        screen.getByTestId('vault-agent-panel').querySelector('[data-agent-panel-stage]'),
+      ).toHaveAttribute('data-agent-panel-stage', 'no-folder'),
+    );
+    expect(screen.getByTestId('vault-agent-notice')).toBeInTheDocument();
+    expect(screen.queryByTestId('agent-scope-sheet')).not.toBeInTheDocument();
+    expect(screen.queryByTestId('vault-agent-input')).not.toBeInTheDocument();
+    expect(screen.queryByTestId('agent-meta-handoff')).not.toBeInTheDocument();
   });
 
   it('첫 턴 전에는 범위 시트가 먼저 서고 입력칸이 없다', async () => {

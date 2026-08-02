@@ -154,11 +154,11 @@ export function topologicalNodeRowFailure(label, row, index, { requireRank = fal
   return null;
 }
 
-export function lineageShapeFailure(result) {
+export function lineageShapeFailure(result, targets) {
   if (result.operation !== "lineage") {
     return `lineage response operation mismatch — ${result.operation}`;
   }
-  if (result.center !== "capabilities/mcp-server") {
+  if (result.center !== targets.capabilitySlug) {
     return `lineage response center mismatch — ${result.center}`;
   }
   if (!Number.isInteger(result.depth) || result.depth < 0) {
@@ -180,8 +180,8 @@ export function lineageShapeFailure(result) {
   }
   const ancestorSlugs = new Set(result.ancestors.nodes.map((row) => row.slug));
   const descendantSlugs = new Set(result.descendants.nodes.map((row) => row.slug));
-  if (!ancestorSlugs.has("domains/ai-agent-partner")) {
-    return "lineage response missing ai-agent-partner ancestor";
+  if (!ancestorSlugs.has(targets.domainSlug)) {
+    return `lineage response missing ${targets.domainSlug} ancestor`;
   }
   if (descendantSlugs.has(result.center) || ancestorSlugs.has(result.center)) {
     return "lineage response includes center in lineage rows";
@@ -234,11 +234,11 @@ export function lineageNodeFailure(label, row, index) {
   return null;
 }
 
-export function containmentTreeShapeFailure(result) {
+export function containmentTreeShapeFailure(result, targets) {
   if (result.operation !== "containment_tree") {
     return `containment_tree response operation mismatch — ${result.operation}`;
   }
-  if (result.root !== "project") {
+  if (result.root !== targets.projectSlug) {
     return `containment_tree response root mismatch — ${result.root}`;
   }
   for (const key of ["depth", "totalRoots", "emittedNodes"]) {
@@ -264,7 +264,7 @@ export function containmentTreeShapeFailure(result) {
   let countedNodes = 0;
   for (const [index, root] of result.roots.entries()) {
     const rootFailure = containmentNodeFailure(root, index, {
-      expectedSlug: index === 0 ? "project" : null,
+      expectedSlug: index === 0 ? targets.projectSlug : null,
       expectedDistance: 0,
       path: [],
     });
@@ -341,11 +341,11 @@ export function graphEdgeFailure(label, edge, index) {
   return null;
 }
 
-export function reachabilityShapeFailure(result) {
+export function reachabilityShapeFailure(result, targets) {
   if (result.operation !== "reachability") {
     return `reachability response operation mismatch — ${result.operation}`;
   }
-  if (result.start !== "capabilities/mcp-server") {
+  if (result.start !== targets.capabilitySlug) {
     return `reachability response start mismatch — ${result.start}`;
   }
   if (!result.node || result.node.slug !== result.start) {
@@ -395,7 +395,12 @@ export function reachabilityShapeFailure(result) {
     const layerRowsFailure = matchRowsFailure(`reachability layer ${layer.distance}`, layer.nodes);
     if (layerRowsFailure) return layerRowsFailure;
   }
-  const pathsFailure = reachablePathsFailure("reachability paths", result.paths, result.summary.reachableNodes);
+  const pathsFailure = reachablePathsFailure(
+    "reachability paths",
+    result.paths,
+    result.summary.reachableNodes,
+    targets.capabilitySlug,
+  );
   if (pathsFailure) return pathsFailure;
   if (!Array.isArray(result.terminalNodes)) {
     return "reachability response missing terminalNodes";
@@ -410,7 +415,7 @@ export function reachabilityShapeFailure(result) {
   return null;
 }
 
-export function reachablePathsFailure(label, paths, expectedTotal) {
+export function reachablePathsFailure(label, paths, expectedTotal, startSlug = null) {
   if (!paths || typeof paths !== "object" || Array.isArray(paths)) {
     return `${label} missing bucket`;
   }
@@ -442,7 +447,7 @@ export function reachablePathsFailure(label, paths, expectedTotal) {
     if (!Number.isInteger(row.distance) || row.distance <= 0) {
       return `${label} row missing distance: ${row.slug}`;
     }
-    if (!Array.isArray(row.path) || row.path[0] !== "capabilities/mcp-server" || row.path[row.path.length - 1] !== row.slug) {
+    if (!Array.isArray(row.path) || (startSlug && row.path[0] !== startSlug) || row.path[row.path.length - 1] !== row.slug) {
       return `${label} row path mismatch: ${row.slug}`;
     }
     if (!Array.isArray(row.edges)) {
@@ -484,11 +489,11 @@ export function graphEdgeBucketFailure(label, bucket, expectedTotal = null) {
   return null;
 }
 
-export function impactShapeFailure(result) {
+export function impactShapeFailure(result, targets) {
   if (result.operation !== "impact") {
     return `impact response operation mismatch — ${result.operation}`;
   }
-  if (result.center !== "capabilities/mcp-server") {
+  if (result.center !== targets.capabilitySlug) {
     return `impact response center mismatch — ${result.center}`;
   }
   if (result.direction !== "incoming") {
@@ -542,11 +547,11 @@ export function impactedNodeFailure(label, row, index) {
   return null;
 }
 
-export function blastRadiusShapeFailure(result) {
+export function blastRadiusShapeFailure(result, targets) {
   if (result.operation !== "blast_radius") {
     return `blast_radius response operation mismatch — ${result.operation}`;
   }
-  if (result.center !== "capabilities/mcp-server") {
+  if (result.center !== targets.capabilitySlug) {
     return `blast_radius response center mismatch — ${result.center}`;
   }
   if (!result.node || result.node.slug !== result.center) {
@@ -635,11 +640,11 @@ export function blastRadiusEdgeBucketFailure(bucket, expectedTotal) {
   return null;
 }
 
-export function subgraphShapeFailure(result) {
+export function subgraphShapeFailure(result, targets) {
   if (result.operation !== "subgraph") {
     return `subgraph response operation mismatch — ${result.operation}`;
   }
-  if (result.seed !== "capabilities/mcp-server") {
+  if (result.seed !== targets.capabilitySlug) {
     return `subgraph response seed mismatch — ${result.seed}`;
   }
   if (result.direction !== "both") {

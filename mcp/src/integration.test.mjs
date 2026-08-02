@@ -583,10 +583,21 @@ await test("tools/list — 단일 도구 description 이 batch 짝을 cross-refe
     assert.deepEqual(analyzeRepo?.outputSchema?.properties?.capabilities?.items?.required, ["slug", "title", "evidence"]);
     assert.equal(analyzeRepo?.outputSchema?.properties?.capabilities?.items?.additionalProperties, false);
     assert.equal(analyzeRepo?.outputSchema?.properties?.capabilities?.items?.properties?.evidence?.additionalProperties, false);
-    assert.deepEqual(analyzeRepo?.inputSchema?.properties?.proposal?.required, ["project", "domains", "capabilities", "competencyAnswers"]);
+    assert.deepEqual(analyzeRepo?.inputSchema?.properties?.proposal?.required, ["project", "domains", "capabilities", "elements", "relations", "competencyAnswers"]);
     assert.equal(analyzeRepo?.inputSchema?.properties?.proposal?.additionalProperties, false);
+    assert.deepEqual(analyzeRepo?.inputSchema?.properties?.proposal?.properties?.elements?.items?.required, ["slug", "title", "definition", "evidence", "confidence", "domain", "path"]);
+    assert.deepEqual(analyzeRepo?.inputSchema?.properties?.proposal?.properties?.relations?.items?.required, ["from", "to", "type", "why", "evidence", "confidence"]);
+    const competencyAnswerSchema = analyzeRepo?.inputSchema?.properties?.proposal?.properties?.competencyAnswers?.properties?.scope;
+    assert.deepEqual(competencyAnswerSchema?.required, ["answer", "status", "witnesses"]);
+    assert.deepEqual(competencyAnswerSchema?.properties?.status?.enum, ["answered", "partial", "visible-gap"]);
+    assert.deepEqual(competencyAnswerSchema?.properties?.witnesses?.required, ["concepts", "relations", "evidence", "paths"]);
     assert.deepEqual(analyzeRepo?.outputSchema?.properties?.proposalValidation?.required, ["status", "canWrite", "summary", "gates", "findings", "nextStep"]);
     assert.equal(analyzeRepo?.outputSchema?.properties?.proposalValidation?.additionalProperties, false);
+    assert.deepEqual(analyzeRepo?.outputSchema?.properties?.proposalValidation?.properties?.summary?.required, ["concepts", "relations", "findings", "errors", "warnings"]);
+    assert.deepEqual(analyzeRepo?.outputSchema?.properties?.proposalValidation?.properties?.writePlan?.required, ["concepts", "relations", "competencyAnswers"]);
+    assert.deepEqual(analyzeRepo?.outputSchema?.properties?.proposalValidation?.properties?.writePlan?.properties?.relations?.items?.required, ["from", "to", "type", "why"]);
+    assert.ok(analyzeRepo?.outputSchema?.properties?.proposalValidation?.properties?.gates?.required?.includes("competencyWitnessesResolved"));
+    assert.deepEqual(analyzeRepo?.outputSchema?.properties?.extractionContract?.properties?.competencyQuestions?.items?.required, ["id", "type", "question", "priority", "requiredWitnesses"]);
     const analyzeMeaningGate = analyzeRepo?.outputSchema?.properties?.meaningGate;
     assert.deepEqual(analyzeMeaningGate?.required, ["policy", "sourceStructureRole", "businessOntology", "proposedBusinessOntology", "implementationEvidence", "reviewQuestions"]);
     assert.equal(analyzeMeaningGate?.additionalProperties, false);
@@ -698,6 +709,8 @@ await test("tools/list — 단일 도구 description 이 batch 짝을 cross-refe
     assert.equal(addRelations?.outputSchema?.properties?.relations?.items?.properties?.alreadyExists?.type, "boolean");
     assert.equal(addRelations?.outputSchema?.properties?.relations?.items?.properties?.receivedValue?.type, "string");
     assert.equal(addRelations?.outputSchema?.properties?.postWriteMaintenance?.type, "object");
+    assert.equal(addRelations?.inputSchema?.properties?.relations?.items?.properties?.why?.type, "string");
+    assert.equal(addRelations?.inputSchema?.properties?.relations?.items?.properties?.why?.maxLength, 300);
     const addRelation = findTool("add_relation");
     assert.equal(addRelation?.outputSchema?.type, "object");
     assert.deepEqual(addRelation?.outputSchema?.required, ["ok", "from", "to", "type"]);
@@ -2076,15 +2089,72 @@ await test("analyze_repo_structure — validates a complete meaning proposal bef
         title: "Claim Review",
         definition: "Evaluate a claim before publication.",
         domain: "domains/review",
+        path: "src/review",
         evidence: ["README.md", "src/review"],
         confidence: 0.9,
       }],
+      elements: [],
+      relations: [
+        {
+          from: "claims",
+          to: "domains/review",
+          type: "domains",
+          why: "The project owns the review boundary.",
+          evidence: ["README.md"],
+          confidence: 0.9,
+        },
+        {
+          from: "domains/review",
+          to: "capabilities/review",
+          type: "capabilities",
+          why: "Review is realized through claim evaluation.",
+          evidence: ["README.md"],
+          confidence: 0.9,
+        },
+      ],
       competencyAnswers: {
-        scope: "Teams publishing reviewable claims.",
-        domains: "Review owns publication readiness.",
-        abilities: "Claim Review evaluates claims.",
-        evidence: "README and source implementation.",
-        impact: "Review decisions gate publication.",
+        scope: {
+          answer: "Teams publishing reviewable claims.",
+          status: "answered",
+          witnesses: {
+            concepts: ["claims"], relations: [], evidence: ["README.md"], paths: [],
+          },
+        },
+        domains: {
+          answer: "Review owns publication readiness.",
+          status: "answered",
+          witnesses: {
+            concepts: ["domains/review"],
+            relations: [{ from: "claims", to: "domains/review", type: "domains" }],
+            evidence: ["README.md"], paths: [],
+          },
+        },
+        abilities: {
+          answer: "Claim Review evaluates claims.",
+          status: "answered",
+          witnesses: {
+            concepts: ["capabilities/review"],
+            relations: [{ from: "domains/review", to: "capabilities/review", type: "capabilities" }],
+            evidence: ["README.md"], paths: [],
+          },
+        },
+        evidence: {
+          answer: "README and source implementation.",
+          status: "answered",
+          witnesses: {
+            concepts: ["capabilities/review"], relations: [],
+            evidence: ["src/review"], paths: ["src/review"],
+          },
+        },
+        impact: {
+          answer: "The current proposal does not prove a change-impact dependency.",
+          status: "visible-gap",
+          gap: "No depends_on relation is supported by the bounded evidence packet.",
+          witnesses: {
+            concepts: ["capabilities/review"], relations: [],
+            evidence: ["README.md"], paths: [],
+          },
+        },
       },
     };
     const { responses } = await rpc(vaultRoot, [
@@ -2095,6 +2165,56 @@ await test("analyze_repo_structure — validates a complete meaning proposal bef
     assert.equal(result.proposalValidation.status, "pass");
     assert.equal(result.proposalValidation.canWrite, true);
     assert.equal(result.proposalValidation.summary.errors, 0);
+    assert.equal(result.proposalValidation.summary.warnings, 1);
+    assert.equal(result.proposalValidation.summary.concepts, 3);
+    assert.equal(result.proposalValidation.summary.relations, 2);
+    assert.equal(result.proposalValidation.writePlan.concepts.length, 3);
+    assert.equal(result.proposalValidation.writePlan.relations.length, 2);
+    assert.equal(result.proposalValidation.writePlan.competencyAnswers.impact.status, "visible-gap");
+
+    const legacyProposal = {
+      ...proposal,
+      competencyAnswers: {
+        scope: "Teams publishing reviewable claims.",
+        domains: "Review owns publication readiness.",
+        abilities: "Claim Review evaluates claims.",
+        evidence: "README and source implementation.",
+        impact: "Review decisions gate publication.",
+      },
+    };
+    const { responses: legacyResponses } = await rpc(vaultRoot, [
+      ...INIT_REQUESTS,
+      callTool(2, "analyze_repo_structure", {
+        rootPath: repoRoot,
+        proposal: legacyProposal,
+      }),
+    ]);
+    const legacyResult = getCallParsed(legacyResponses, 2);
+    assert.equal(legacyResult.proposalValidation.status, "fail");
+    assert.equal(legacyResult.proposalValidation.canWrite, false);
+    assert.equal(legacyResult.proposalValidation.writePlan, undefined);
+    assert.ok(legacyResult.proposalValidation.findings.some(
+      (finding) => finding.code === "unstructured-competency-answer",
+    ));
+
+    const malformedBoundaryProposal = {
+      ...proposal,
+      project: { ...proposal.project, includes: "Reviewable claims." },
+    };
+    const { responses: malformedBoundaryResponses } = await rpc(vaultRoot, [
+      ...INIT_REQUESTS,
+      callTool(2, "analyze_repo_structure", {
+        rootPath: repoRoot,
+        proposal: malformedBoundaryProposal,
+      }),
+    ]);
+    const malformedBoundaryResult = getCallParsed(malformedBoundaryResponses, 2);
+    assert.equal(malformedBoundaryResult.proposalValidation.status, "fail");
+    assert.equal(malformedBoundaryResult.proposalValidation.canWrite, false);
+    assert.equal(malformedBoundaryResult.proposalValidation.writePlan, undefined);
+    assert.ok(malformedBoundaryResult.proposalValidation.findings.some(
+      (finding) => finding.code === "invalid-concept-boundary-list",
+    ));
   } finally {
     rmSync(vaultRoot, { recursive: true, force: true });
     rmSync(repoRoot, { recursive: true, force: true });
@@ -2315,6 +2435,34 @@ await test("query_ontology — compiled graph engine neighbors/path/all_paths/qu
     },
   ]);
   try {
+    mkdirSync(join(root, ".ontology-atlas"), { recursive: true });
+    writeFileSync(join(root, ".ontology-atlas", "project-sources.json"), JSON.stringify({
+      contractVersion: 1,
+      bindings: [{
+        projectSlug: "project",
+        sourceId: "src_fixture",
+        rootPath: "/private/fixture/root",
+        kind: "git",
+        boundAt: "2026-08-02T09:00:00.000Z",
+        receipt: {
+          contractVersion: 1,
+          projectSlug: "project",
+          sourceId: "src_fixture",
+          sourceKind: "git",
+          sourceRevision: "abc123",
+          sourceFingerprint: "git:abc123:clean",
+          graphHash: "old-graph",
+          measuredAt: "2026-08-02T10:00:00.000Z",
+          status: "verified_current",
+          currentness: "current",
+          topGap: null,
+          nextAction: { id: "use_current_evidence" },
+          witnessSummary: { total: 1, supported: 1, missing: 0 },
+          witnesses: [{ id: "login", nodeSlug: "capabilities/login", role: "implementation", path: "src/auth/login.ts", supported: true }],
+          diagnostics: { dirty: false, truncated: false },
+        },
+      }],
+    }));
     const { responses } = await rpc(root, [
       ...INIT_REQUESTS,
       callTool(2, "query_ontology", {
@@ -2483,6 +2631,7 @@ await test("query_ontology — compiled graph engine neighbors/path/all_paths/qu
       }),
       callTool(36, "query_ontology", {
         operation: "agent_brief",
+        project: "project",
         limit: 5,
       }),
     ]);
@@ -2817,6 +2966,12 @@ await test("query_ontology — compiled graph engine neighbors/path/all_paths/qu
     assert.equal(agentBrief.readiness.status, "needs_attention");
     assert.equal(agentBrief.readiness.meaningfulNodes, 3);
     assert.equal(agentBrief.graph.nodes, 4);
+    assert.equal(agentBrief.projectSlug, "project");
+    assert.equal(agentBrief.projectSource.status, "review_required");
+    assert.equal(agentBrief.projectSource.currentness, "stale");
+    assert.equal(agentBrief.projectSource.topGap.id, "ontology_changed");
+    assert.equal(agentBrief.projectSource.receipt.contractVersion, 1);
+    assert.doesNotMatch(JSON.stringify(agentBrief.projectSource), /\/private\/fixture\/root/);
     assert.deepEqual(agentBrief.firstCalls.map((call) => call.arguments.operation), [
       "workspace_brief",
       "health",
@@ -4959,6 +5114,12 @@ await test("MCP slug conflicts expose structured recovery fields", async () => {
         newSlug: "target",
         confirm: true,
       }),
+      callTool(4, "rename_concept", {
+        oldSlug: "exist",
+        newSlug: "target",
+        confirm: true,
+        overwrite: true,
+      }),
     ]);
 
     assert.equal(isErrorResponse(responses, 2), true);
@@ -4976,6 +5137,14 @@ await test("MCP slug conflicts expose structured recovery fields", async () => {
     assert.equal(existingTarget.conflictSlug, "target");
     assert.deepEqual(existingTarget.recoveryTools, ["rename_concept"]);
     assert.equal(existingTarget.overwriteOption, "overwrite");
+
+    assert.equal(isErrorResponse(responses, 4), false);
+    const overwritten = getCallStructured(responses, 4);
+    assert.equal(overwritten.ok, true);
+    assert.equal(overwritten.moved, true);
+    const targetDoc = readFileSync(join(root, "target.md"), "utf-8");
+    assert.match(targetDoc, /title: Exist/);
+    assert.doesNotMatch(targetDoc, /title: Target/);
   } finally {
     rmSync(root, { recursive: true, force: true });
   }
@@ -5154,7 +5323,7 @@ await test("add_relations — 배치 write, row 순서 보존 + canonical sort +
       ...INIT_REQUESTS,
       callTool(2, "add_relations", {
         relations: [
-          { from: "p", to: "c2", type: "contains" },
+          { from: "p", to: "c2", type: "contains", why: "P contains the C2 capability." },
           // 같은 from 으로 누적 — readDoc 이 매번 다시 읽어 누락 없음
           { from: "p", to: "c1", type: "contains" },
           // idempotent — 같은 edge 두번
@@ -5207,6 +5376,7 @@ await test("add_relations — 배치 write, row 순서 보존 + canonical sort +
     // p.contains 는 edge set 기준으로 중복 제거 + 정렬되어 land
     const p = getCallParsed(responses, 3);
     assert.deepEqual(p.frontmatter.contains, ["c1", "c2"]);
+    assert.equal(p.frontmatter.relation_notes.c2, "P contains the C2 capability.");
   } finally {
     rmSync(root, { recursive: true, force: true });
   }

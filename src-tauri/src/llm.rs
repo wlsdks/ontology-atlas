@@ -53,6 +53,10 @@ const GEMINI_CHAT_URL_PREFIX: &str = "https://generativelanguage.googleapis.com/
 /// 알 수 없는 실패를 본다. 그래도 무한은 아니다: [멈추기]가 사용자 쪽 상한이고
 /// 이 값은 매달린 소켓의 상한이다.
 const CHAT_TIMEOUT_SECONDS: &str = "180";
+/// 로컬 러너는 사용자의 같은 기계에서 돌고 재시도가 무료다. 3분 동안 패널을
+/// 붙잡는 것보다 한 왕복을 실패로 닫고 더 작은 모델/질문을 고르게 하는 편이
+/// 정직하다. 원격 모델의 긴 생성 여유와 분리한다.
+const LOCAL_CHAT_TIMEOUT_SECONDS: &str = "60";
 
 /// "키가 틀렸다" 로 읽어야 할 상태 코드. 벤더마다 다르므로 요청에 붙여 다닌다 —
 /// 화면이 `거부됨`(사용자가 키를 고치면 되는 일)과 `실패`(우리/네트워크 문제)를
@@ -720,12 +724,23 @@ fn curl_chat_config(request: &ChatRequest) -> String {
     curl_config_for(&request.url, &request.headers, Some(&request.body))
 }
 
-fn send_chat_via_curl(request: &ChatRequest) -> Result<ChatEcho, String> {
+fn send_chat_via_curl_with_timeout(
+    request: &ChatRequest,
+    timeout_seconds: &'static str,
+) -> Result<ChatEcho, String> {
     let (status, body) = run_curl(
-        curl_argv_with_timeout(CHAT_TIMEOUT_SECONDS),
+        curl_argv_with_timeout(timeout_seconds),
         &curl_chat_config(request),
     )?;
     Ok(ChatEcho { status, body })
+}
+
+fn send_chat_via_curl(request: &ChatRequest) -> Result<ChatEcho, String> {
+    send_chat_via_curl_with_timeout(request, CHAT_TIMEOUT_SECONDS)
+}
+
+fn send_local_chat_via_curl(request: &ChatRequest) -> Result<ChatEcho, String> {
+    send_chat_via_curl_with_timeout(request, LOCAL_CHAT_TIMEOUT_SECONDS)
 }
 
 /// 대화 왕복의 본체 — sender 주입형. **순서가 계약이다**: 예약 → (성공했을
@@ -838,7 +853,7 @@ pub fn llm_chat(
             },
             &body,
             scope,
-            send_chat_via_curl,
+            send_local_chat_via_curl,
         );
     }
     if base_url.is_some() {
@@ -1640,6 +1655,13 @@ mod tests {
         assert!(timeout.contains("시간 안에"));
         assert_ne!(refused, unknown_host);
         assert_ne!(refused, timeout);
+    }
+
+    #[test]
+    fn a_local_chat_cannot_hold_the_panel_for_three_minutes() {
+        assert_eq!(LOCAL_CHAT_TIMEOUT_SECONDS, "60");
+        assert_eq!(curl_argv_with_timeout(LOCAL_CHAT_TIMEOUT_SECONDS)[3], "60");
+        assert_eq!(curl_argv_with_timeout(CHAT_TIMEOUT_SECONDS)[3], "180");
     }
 
     #[test]

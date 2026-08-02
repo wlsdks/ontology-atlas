@@ -584,13 +584,31 @@ export function makeDogfoodToolsList() {
         };
       }
       if (name === "get_concept") {
+        tool.inputSchema.properties.body = {
+          type: "string",
+          enum: ["excerpt", "full"],
+        };
         tool.outputSchema = {
           type: "object",
-          required: ["slug", "frontmatter", "excerpt", "neighbors", "outgoingEdges", "mtime"],
+          required: ["slug", "frontmatter", "bodyInfo", "neighbors", "outgoingEdges", "mtime"],
           properties: {
             slug: { type: "string" },
             frontmatter: { type: "object" },
             excerpt: { type: "string" },
+            body: { type: "string" },
+            bodyInfo: {
+              type: "object",
+              required: ["mode", "totalChars", "returnedChars", "truncated"],
+              properties: {
+                mode: { type: "string", enum: ["excerpt", "full"] },
+                totalChars: { type: "integer", minimum: 0 },
+                returnedChars: { type: "integer", minimum: 0 },
+                truncated: { type: "boolean" },
+                omittedChars: { type: "integer", minimum: 0 },
+                hint: { type: "string" },
+              },
+              additionalProperties: false,
+            },
             neighbors: conceptNeighborsSchemaFixture(),
             outgoingEdges: outgoingEdgesSchemaFixture(),
             mtime: { type: "number", minimum: 0 },
@@ -1160,7 +1178,19 @@ export function makeDogfoodToolsList() {
         };
         tool.outputSchema = {
           type: "object",
-          required: ["rootPath", "framework", "domains", "capabilities", "elements", "meaningGate", "suggestedRelations", "skipped"],
+          required: [
+            "rootPath",
+            "framework",
+            "domains",
+            "capabilities",
+            "elements",
+            "meaningGate",
+            "extractionContract",
+            "semanticEvidence",
+            "proposalValidation",
+            "suggestedRelations",
+            "skipped",
+          ],
           properties: {
             rootPath: { type: "string" },
             project: {
@@ -1713,7 +1743,22 @@ export function strictValueErrorResponse(valueName, allowedValues, receivedValue
   };
 }
 
+export const dogfoodTargets = {
+  projectSlug: "project",
+  domainSlug: "domains/ai-agent-partner",
+  capabilitySlug: "capabilities/mcp-server",
+  capabilityTitle: "MCP Server",
+  mergeTargetSlug: "capabilities/vault-validator",
+  pathTargetSlug: "domains/vault-local-first",
+  patternStartSlug: "project",
+  pattern: ["domains", "capabilities"],
+  relationType: "domain",
+  slugNeedle: "mcp",
+  similarCandidateSlug: "capabilities/mcp-server-v2",
+};
+
 export const okShape = {
+  targets: dogfoodTargets,
   initialize: makeDogfoodInitialize(),
   toolsList: makeDogfoodToolsList(),
   kinds: { total: 1, byKind: { project: 1 } },
@@ -1790,14 +1835,14 @@ export const okShape = {
       {
         slug: "dogfood-row-repair-multi",
         ok: false,
-        error: 'Unknown fields in concepts[1]: "titel" (did you mean "title"?), "domian" (did you mean "domain"?). Allowed fields: slug, kind, title, domain, capabilities, elements, body. Received fields: domian, kind, slug, titel, title.',
+        error: 'Unknown fields in concepts[1]: "titel" (did you mean "title"?), "domian" (did you mean "domain"?). Allowed fields: slug, kind, title, domain, capabilities, elements, path, body, labels. Received fields: domian, kind, slug, titel, title.',
         errorCode: "invalid_arguments",
         rowName: "concepts[1]",
         unknownFields: [
           { name: "titel", suggestion: "title" },
           { name: "domian", suggestion: "domain" },
         ],
-        allowedFields: ["slug", "kind", "title", "domain", "capabilities", "elements", "path", "body"],
+        allowedFields: ["slug", "kind", "title", "domain", "capabilities", "elements", "path", "body", "labels"],
         receivedFields: ["domian", "kind", "slug", "titel", "title"],
       },
       {
@@ -1823,13 +1868,13 @@ export const okShape = {
       {
         slug: "dogfood-row-repair-single",
         ok: false,
-        error: 'Unknown field "titel" in concepts[4]. Did you mean "title"? Allowed fields: slug, kind, title, domain, capabilities, elements, body. Received fields: kind, slug, titel, title.',
+        error: 'Unknown field "titel" in concepts[4]. Did you mean "title"? Allowed fields: slug, kind, title, domain, capabilities, elements, path, body, labels. Received fields: kind, slug, titel, title.',
         errorCode: "invalid_arguments",
         rowName: "concepts[4]",
         receivedField: "titel",
         suggestion: "title",
         unknownFields: [{ name: "titel", suggestion: "title" }],
-        allowedFields: ["slug", "kind", "title", "domain", "capabilities", "elements", "path", "body"],
+        allowedFields: ["slug", "kind", "title", "domain", "capabilities", "elements", "path", "body", "labels"],
         receivedFields: ["kind", "slug", "titel", "title"],
       },
     ],
@@ -1840,14 +1885,14 @@ export const okShape = {
       {
         slug: "dogfood-row-repair-multi",
         ok: false,
-        error: 'Unknown fields in concepts[1]: "titel" (did you mean "title"?), "domian" (did you mean "domain"?). Allowed fields: slug, kind, title, domain, capabilities, elements, body. Received fields: domian, kind, slug, titel, title.',
+        error: 'Unknown fields in concepts[1]: "titel" (did you mean "title"?), "domian" (did you mean "domain"?). Allowed fields: slug, kind, title, domain, capabilities, elements, path, body, labels. Received fields: domian, kind, slug, titel, title.',
         errorCode: "invalid_arguments",
         rowName: "concepts[1]",
         unknownFields: [
           { name: "titel", suggestion: "title" },
           { name: "domian", suggestion: "domain" },
         ],
-        allowedFields: ["slug", "kind", "title", "domain", "capabilities", "elements", "path", "body"],
+        allowedFields: ["slug", "kind", "title", "domain", "capabilities", "elements", "path", "body", "labels"],
         receivedFields: ["domian", "kind", "slug", "titel", "title"],
       },
       {
@@ -1873,13 +1918,13 @@ export const okShape = {
       {
         slug: "dogfood-row-repair-single",
         ok: false,
-        error: 'Unknown field "titel" in concepts[4]. Did you mean "title"? Allowed fields: slug, kind, title, domain, capabilities, elements, body. Received fields: kind, slug, titel, title.',
+        error: 'Unknown field "titel" in concepts[4]. Did you mean "title"? Allowed fields: slug, kind, title, domain, capabilities, elements, path, body, labels. Received fields: kind, slug, titel, title.',
         errorCode: "invalid_arguments",
         rowName: "concepts[4]",
         receivedField: "titel",
         suggestion: "title",
         unknownFields: [{ name: "titel", suggestion: "title" }],
-        allowedFields: ["slug", "kind", "title", "domain", "capabilities", "elements", "path", "body"],
+        allowedFields: ["slug", "kind", "title", "domain", "capabilities", "elements", "path", "body", "labels"],
         receivedFields: ["kind", "slug", "titel", "title"],
       },
     ],
@@ -3657,7 +3702,7 @@ export const okShape = {
   strictFindOrphansKindFilter: strictValueErrorResponse("kind", ["project", "domain", "capability", "element", "document", "vault-readme"], "capabilty", "capability"),
   strictFindOrphansExcludeKindFilter: strictValueErrorResponse("excludeKinds items", ["project", "domain", "capability", "element", "document", "vault-readme"], "capabilty", "capability"),
   strictQueryConceptsKindFilter: strictValueErrorResponse("kind", ["project", "domain", "capability", "element", "document", "vault-readme"], "capabilty", "capability"),
-  strictQueryConceptsHasKeyFilter: strictValueErrorResponse("has key", ["domains", "capabilities", "elements", "dependencies", "relates", "contains", "describes", "depends_on"], "capabilties", "capabilities"),
+  strictQueryConceptsHasKeyFilter: strictValueErrorResponse("has key", [...GRAPH_ARRAY_KEYS], "capabilties", "capabilities"),
   strictListConceptsKindFilter: strictValueErrorResponse("kind", ["project", "domain", "capability", "element", "document", "vault-readme"], "capabilty", "capability"),
   strictRelationCheck: strictValueErrorResponse("type", ["domains", "domain", "capabilities", "elements", "dependencies", "depends_on", "relates", "contains", "describes"], "depend_on", "depends_on"),
   strictAddRelation: strictValueErrorResponse("type", ["depends_on", "relates", "contains", "describes", "domains", "capabilities", "elements", "domain"], "depend_on", "depends_on"),

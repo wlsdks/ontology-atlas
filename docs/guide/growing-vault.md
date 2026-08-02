@@ -103,8 +103,8 @@ summary: compileIssues:0, cycles:0, canonicalize:0, dangling:0, relations:0
 buckets: phase review:8 · severity info:8 · kind capability_without_evidence:8
 
   [info] maint_b4dc8feb  review/capability_without_evidence · score 0.5
-     "capabilities/app-update" 에 `elements:` 항목이 없어, 이 행동이 코드
-     어디에 사는지 볼트가 말하지 못합니다. …
+     "capabilities/app-update" 에 정본 `path:`도 실제 element 관계도 없어,
+     이 행동이 코드 어디에 사는지 볼트가 말하지 못합니다. …
 ```
 
 **행 하나가 곧 할 일 하나**이고, 각 행이 무엇을 하라는지 문장으로 말합니다.

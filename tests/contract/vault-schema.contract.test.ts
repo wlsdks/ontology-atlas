@@ -21,6 +21,7 @@ import {
   normalizeLocaleLabels as localeCli,
   NODE_ELIGIBILITY_GATE as gateCli,
   flatSlugIssue as flatSlugCli,
+  VAULT_KIND_SCHEMA as VAULT_KIND_SCHEMA_CLI,
 } from "../../cli/src/lib/schema.mjs";
 import { KIND_EXPECTED_EXTRAS } from "@/shared/lib/validate-vault-document";
 import { PRODUCT_DISCIPLINE } from "@/features/vault-agent/model/system-prompt";
@@ -44,6 +45,22 @@ import { KNOWN_VAULT_KINDS } from "../../mcp/src/validate.mjs";
  */
 
 describe("vault kind schema contract — mcp & cli agree", () => {
+  it("capability path 는 양쪽 쓰기 경로의 정본 구현 근거다", () => {
+    expect(VAULT_KIND_SCHEMA.capability.optional.length).toBeGreaterThan(0);
+    expect(VAULT_KIND_SCHEMA_CLI.capability.optional.length).toBeGreaterThan(0);
+    expect(VAULT_KIND_SCHEMA.capability.optional).toContain("path");
+    expect(VAULT_KIND_SCHEMA_CLI.capability.optional).toContain("path");
+    expect(VAULT_KIND_SCHEMA_CLI.capability.optional).toEqual(
+      VAULT_KIND_SCHEMA.capability.optional,
+    );
+    expect(VAULT_KIND_SCHEMA_CLI.capability.preferredOrder).toEqual(
+      VAULT_KIND_SCHEMA.capability.preferredOrder,
+    );
+    expect(VAULT_KIND_SCHEMA.capability.preferredOrder.indexOf("path")).toBeGreaterThan(
+      VAULT_KIND_SCHEMA.capability.preferredOrder.indexOf("elements"),
+    );
+  });
+
   describe("buildFrontmatter", () => {
     for (const c of BUILD_FM_CASES) {
       it(`${c.name} (mcp)`, () => {
@@ -241,6 +258,27 @@ describe("구축 규격 텍스트 3-way — mcp 정본 ↔ 앱 채팅 프롬프�
     // MCP 안내문에는 이 경고가 있었고 채팅 프롬프트에는 없었다.
     expect(KNOWN_VAULT_KINDS).toContain("vault-readme");
     expect(PRODUCT_DISCIPLINE).toContain("`vault-readme` is reserved");
+  });
+
+  it("element 를 파일 목록과 혼동하지 않고 구조 감사는 실제 부모를 읽는다", () => {
+    expect(PRODUCT_DISCIPLINE).toContain(
+      "element — a concrete implementation role",
+    );
+    expect(PRODUCT_DISCIPLINE).toContain(
+      "A file path is evidence for that role, not a reason to create a node",
+    );
+    expect(PRODUCT_DISCIPLINE).toContain(
+      "For a structure audit, census and list results only choose suspects",
+    );
+    expect(PRODUCT_DISCIPLINE).toContain(
+      "read each suspect parent with `get_concept` or `get_concepts`",
+    );
+    expect(PRODUCT_DISCIPLINE).toContain(
+      "Spend at most three rounds gathering audit evidence",
+    );
+    expect(PRODUCT_DISCIPLINE).not.toContain(
+      "element — a concrete piece: a library, an API, a schema, a file",
+    );
   });
 
   it("모델이 읽는 프롬프트에 한글이 없다 — 화면 문구와 다른 채널이다", () => {

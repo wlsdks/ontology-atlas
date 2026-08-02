@@ -49,6 +49,7 @@ export interface VaultAgentNotices {
   noToolCall: (args: { round: number; cap: number }) => string;
   aborted: string;
   networkFailed: string;
+  timedOut: string;
   rateLimited: string;
   rejected: string;
   auditBlocked: string;
@@ -168,7 +169,9 @@ export function useVaultAgent(args: UseVaultAgentArgs) {
       const provider = args.provider;
       const vaultPath = args.vaultPath;
       const adapter = provider ? resolveProviderAdapter(provider) : null;
-      if (!provider || !vaultPath || !adapter) return;
+      // 경로만 복원된 프레임은 보낼 볼트가 있는 상태가 아니다.
+      // UI 게이트가 어긋나더라도 버튼 아래의 실행 경로에서 다시 닫는다.
+      if (!provider || !vaultPath || !adapter || !args.manifest) return;
 
       // 새 턴을 보내면 살아 있던 제안은 지나간 제안이 된다.
       setProposal((current) =>

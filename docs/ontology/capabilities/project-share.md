@@ -4,6 +4,7 @@ kind: capability
 title: Project Sharing
 domain: domains/project-portfolio
 elements: []
+path: src/features/project-share
 created_by: "agent:unknown"
 ---
 

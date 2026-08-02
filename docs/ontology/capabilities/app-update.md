@@ -4,6 +4,7 @@ kind: capability
 title: App Auto-Update
 domain: domains/onboarding-and-shell
 elements: []
+path: src/features/app-update
 created_by: "agent:unknown"
 ---
 

@@ -42,6 +42,549 @@
 
 ---
 
+## 2026-08-02 — source receipt는 새 카드가 아니라 프로젝트 inspector의 기존 위계를 치환한다
+
+**소집**: 디자인 카운슬 6자리(위계·체계·상호작용·도해·작업대·핸드오프),
+독립 1라운드 + 상호 비평 1라운드. 모든 자리가 설치 앱 또는 실제
+`agent_brief`를 열었고, 설치 앱을 열지 못한 핸드오프 자리는 화면 판정을 유보한
+채 명령 계약만 처방했다. · **트리거**: Topology의 선택 프로젝트 inspector,
+native folder picker, MCP/CLI handoff를 함께 바꾸는 시각·상호작용 결정.
+
+**선행 결정 관계**: 바로 아래 「프로젝트의 현재 source 근거는 하나의 receipt로
+사람과 agent에게 보인다」는 유효하다. PO 결정이 무엇을 한 사실로 만들지 정했고,
+이번 결정은 그 사실이 이미 밀도 높은 작업대에서 어떤 위계와 상태 전이로 보여야
+하는지 정한다.
+
+**실물 관측**: `/Applications/Ontology Atlas.app`의 `/ko/topology`, 1512×949,
+프로젝트 `음악 스트리밍` 선택 상태에서 우측 inspector는 `3일 전 바뀜`, 관계·문서
+집계, 동등한 여섯 행동, `담는 것` 6행, sticky `전체 상세`를 한 위계로 쌓는다.
+source binding·측정 revision·top gap은 없다. 별도 receipt 카드나 네 행을 그대로
+추가하면 첫 viewport의 그래프 사실과 다음 행동을 밀어낸다. 반대로 실제
+`agent_brief`는 graph readiness 100을 내지만 project source receipt 필드가 없어,
+사람과 agent의 상태 순서를 맞출 계약도 아직 없다.
+
+**결정 (accountable: design-guardian 대행)**: 조건부 승인, Build and verify.
+project 선택에서만 기존 슬롯을 치환한다. 현재 meta는 label+icon의 categorical
+source 상태와 `measuredAt`, 중복 stats 자리는 최대 두 줄의 `topGap`, sticky
+footer의 유일한 primary는 receipt `nextAction`이 된다. `전체 상세`와 나머지 행동은
+utility로 강등한다. 기존 `3일 전 바뀜`은 `개념 문서 · 3일 전`처럼 주어를 붙여
+source 측정 시각과 분리한다. 1512 이하에서는 `담는 것 N · 근거 M` 집계만 남기고
+project의 개별 관계 목록을 기본 접는다. 다른 kind의 inspector는 바꾸지 않는다.
+
+새 panel/card/dashboard, progress·donut·`x/y`·confidence, 지도 노드의 추가 ring/glow,
+새 agent CTA는 만들지 않는다. 기존 neutral/indigo/status token만 재사용하며 color만으로
+상태를 뜻하지 않는다. compact inspector·전체 상세·MCP `agent_brief`·CLI는 같은
+versioned receipt를 `status → measuredAt → topGap → nextAction` 순서와 의미로 읽고,
+절대 경로와 private remote를 표시하거나 복사하지 않는다. graph readiness와 source
+상태는 서로 대체하지 않는다.
+
+**상호작용 계약**: folder 선택 취소는 무변경이다. 새 선택은 canonicalize와 receipt
+생성·검증이 모두 성공한 뒤에만 binding+receipt를 원자 교체한다. 교체 실패는 이전
+binding/receipt·route·project selection을 보존하고 실패만 `aria-live=polite`로
+알린다. 성공·취소·실패 뒤 focus는 호출한 source 버튼 또는 갱신된 상태 heading으로
+돌아온다. 측정 중에도 이전 receipt를 지우지 않는다. 연결 해제와 확인 modal은 첫
+슬라이스에서 만들지 않는다.
+
+**검증 계약**: component/contract는 receipt contract version, 상태, top gap,
+next action, currentness, binding cardinality와 UI↔`agent_brief` parity를 fail-closed로
+검증한다. 설치 앱은 1512×949와 외부 1920/2560에서 project selected 상태의 겹침 0,
+footer 도달, 목록 접힘, raw path 비노출을 증명한다. native picker는 성공·취소·실패의
+원자 교체·이전 receipt 보존·focus return을 증명한다. 기존 token만 쓰므로 새 lint
+gate는 만들지 않는다.
+
+**기록된 반대**: 이 조밀한 inspector에서 source receipt가 attention winner가 되면
+관계와 근거 문서라는 온톨로지 본체가 utility로 밀리고, source 측정 기능이 아직
+약한 상태에서는 큰 `needs_evidence` CTA만 반복하는 진단 UI가 될 수 있다. 별도
+UI보다 bounded source-role evidence를 먼저 넓혀야 한다는 반대도 여기에 포함된다.
+**반증 조건**: 1512 설치 앱에서 사용자가 첫 viewport 안에 project 관계 사실 또는
+receipt next action 중 하나를 보려 스크롤해야 하거나, 두 외부 trial에서 top gap이
+같은 막연한 문구만 반복하고 handoff 정확도를 바꾸지 못하면 이 반대가 옳다. 그때
+receipt 노출을 더 키우지 않고 rail을 축소한 뒤 source-role evidence부터 보강한다.
+**재검토**: 설치 앱 1512·1920·2560 proof와 두 외부 trial 재측정 직후.
+
+**상태**: 유효.
+
+---
+
+## 2026-08-02 — 프로젝트의 현재 source 근거는 하나의 receipt로 사람과 agent에게 보인다
+
+**소집**: PO 카운슬 5인 전원(근거·결·지킴이·해자·지렛대), 독립 1라운드 +
+상호 반박 1라운드. 3인→2인 두 파동으로 원 관측을 독립 검토했고, 2라운드에는
+다섯 판정을 모두 공유했다. · **트리거**: project↔source 로컬 계약, MCP 분석
+receipt, agent handoff, Topology의 신뢰 상태를 함께 바꾸는 공개 제품 결정.
+**루브릭**: 22/24 (Problem insight 4 · User moment 4 · Differentiation 3 ·
+Ontology value 4 · Agent value 4 · Verification 3, 치명적 0: 없음).
+
+**선행 결정 관계**: 같은 날 「`canWrite`는 competency 답의 witness와 visible
+gap을 함께 보존한다」와 2026-07-31 「팬아웃 상한이 아니라 노드 자격 게이트」는
+유효하다. 전자는 현재 proposal 안의 답을 정직하게 만들었고, 후자는 10·20 같은
+고정 node 수를 품질 기준으로 쓰지 못하게 했다. 이번 결정은 둘을 project의 실제
+source revision과 묶어 다음 사람과 agent가 같은 현재성 판정을 읽게 한다.
+
+**관측**: 현재 MCP의 `REPO_ROOT`는 프로세스 전역이고 root 변경에는 재시작이
+필요하다. `index_project(rootPath)`는 명시 폴더를 읽을 수 있지만 그 선택과 결과를
+project별로 보존하지 않는다. map/project 표면은 node·relation·document 수를
+보여주며, MCP와 web의 readiness는 node 수·관계 수·graph health·hub를 합산한다.
+dogfood vault는 이 휴리스틱에서 `ready 100/100`이지만 source 의미 정확도를
+측정한 값은 아니다.
+
+두 외부 field trial이 서로 다른 거짓 안심을 재현했다. 첫 trial은 6 concept·5
+relation을 저장하고도 source-hidden 6문항 중 1개만 완전 답변했으며 canonical
+entrypoint 하나가 틀렸다. 두 번째 비-Rust Go trial은 6분 16초 동안 위험 표시된
+README claim을 현재 source 역할로 독립 확인하지 못해 `canWrite:false`, 의미 node·
+relation write 0으로 정직하게 닫혔다. 그러나 남은 5 starter node·7 relation은
+compiler issue 0·unresolved edge 0으로 깨끗했고, source-hidden 인수자는 109.54초 뒤
+6문항 전부를 `unknown`으로 판정했다. source claim은 0개라 hallucination 비율은
+`0/0 = 100%`가 아니라 `not_applicable`이다. 구조 health만으로는 두 경우를
+구분할 수 없다.
+
+**근거 원칙**: competency question은 온톨로지가 목적에 필요한 정보를 답할 수
+있는지 묻는 litmus test다([Stanford Ontology Development 101](https://protege.stanford.edu/publications/ontology_development/ontology101.pdf)).
+품질 차원은 구체 indicator를 관측하는 절차와 측정 provenance를 가져야 한다
+([W3C DQV](https://www.w3.org/TR/vocab-dqv/),
+[W3C PROV-O](https://www.w3.org/TR/prov-o/)). Atlas는 이 원칙을 RDF 도입 요구로
+읽지 않고, 측정 대상·revision·시간·생성 계약을 receipt에 남기는 제품 계약으로
+적용한다. 구조 적합 여부와 상세 위반을 분리하는 형태도 SHACL validation report의
+원칙을 차용한다([W3C SHACL](https://www.w3.org/TR/shacl/)).
+
+**갈린 지점**: 근거 자리는 기존 `index_project`의 read-only report가 두 trial을
+먼저 구분해야 false green을 싸게 막는다고 했다. 다른 네 자리는 binding 없는
+report가 임의 root를 더 정밀하게 측정하고, 사람 판단과 다음 agent 행동을 바꾸지
+못하는 숨은 진단 파일이 된다고 반박했다. 2라운드에서 근거 자리도 이 반박을
+수용해 최소 수직 loop로 판정을 바꿨다. 결 자리는 처음 `근거 확인 x/14`를
+제안했으나, 현재 5 CQ·14 witness obligation·source-hidden 6문항의 서로 다른
+분모가 허위 정밀도로 보일 수 있다는 지킴이·해자 반론을 받아 첫 UI 수치를
+보류했다.
+
+**결정 (accountable: 소유자)**: 한 project의 **활성 분석 source는 0개 또는
+1개**다. folder를 고르면 Git worktree 안에서는 canonical worktree root와 HEAD·
+dirty/content fingerprint를, Git 밖에서는 canonical folder root와 bounded inventory
+fingerprint를 쓴다. 여러 project가 같은 monorepo root를 공유할 수 있지만, 한
+project가 여러 독립 root를 합치는 aggregate mode는 v1에서 제외한다. source가 없는
+legacy/conceptual project는 계속 유효하고 `not_measured`; 둘 이상의 활성 binding,
+사라진 root, 깨진 receipt는 `invalid`다. 절대 경로와 private remote는 Markdown에
+쓰지 않고 vault의 gitignored `.ontology-atlas/` local sidecar에만 둔다.
+
+하나의 공용 receipt 생성기가 `projectSlug` · opaque source identity · source
+revision/fingerprint · ontology `graphHash` · `measuredAt` · contract version ·
+versioned CQ witness/gap · scan diagnostics · validation findings를 만든다. 현재 상태는
+그 receipt와 현 source/graph를 다시 대조해 `not_measured` · `needs_evidence` ·
+`review_required` · `invalid` · `verified_current` 중 하나로 파생한다.
+`verified_current`는 path 존재와 graph shape만으로 주지 않고, 필수 witness가 현재
+source 역할을 지지할 때만 허용한다. map의 선택된 project 상세와 `agent_brief`는
+상태를 다시 계산하지 않고 같은 receipt의 사람용 한 줄·최상위 gap·다음 bounded
+action을 읽는다. web이 local root의 현재성을 다시 확인할 수 없으면 마지막 결과와
+`현재성 확인 불가`를 분리해 열화한다.
+
+**적용 규칙**: 최소 수직 슬라이스 · 합집합 금지 · appetite 2일. IN — project
+하나의 folder picker와 Git/non-Git canonicalization, 활성 binding 0/1/2 fail-closed
+fixture, local sidecar 한 계약, 공용 versioned receipt, source/graph stale 판정,
+map project 상세의 categorical 상태·측정 시각·top gap·next action, 같은 receipt를
+읽는 MCP `agent_brief`, legacy unbound/web degraded/monorepo shared-root fixture,
+설치 앱과 source-hidden handoff 재검증. OUT — 첫 UI의 `x/y`, combined confidence,
+node/file/relation quality denominator, multi-root aggregate, 새 dashboard/route,
+주기 watcher, 자동 graph write, 범용 AST/import/symbol graph, 모든 언어 scanner 확대.
+현재 obligation 수와 충족 수는 receipt 안에서 versioning하되 여러 언어 trial에서
+분모가 안정되기 전에는 사용자 신뢰 숫자로 승격하지 않는다.
+
+**기록된 반대**: report-only부터 만들면 의미 계산을 싸게 검증하고 binding·app·
+handoff를 동시에 건드리는 운영 부담을 줄일 수 있다. 더 근본적으로, 동일한 제한된
+evidence packet을 만든 agent가 자기 witness를 다시 채점하면 더 정교한 false green을
+만들 수 있으므로 UI를 붙이기 전에 bounded source-role evidence가 먼저일 수 있다.
+**반증 조건**: 정확히 binding된 Trial A의 잘못된 canonical path가
+`verified_current`를 받거나 Trial B가 top gap·next action 없이 `needs_evidence`만
+반복하고, source-hidden handoff의 답변/거절 정확도가 개선되지 않으면 이 반대가
+옳다. 그때 UI 확장을 멈추고 반복된 unknown 역할만 수집하는 bounded source-role
+evidence와 report gate를 다음 최소 슬라이스로 연다. **재검토**: 두 trial의 fresh
+receipt와 source-hidden 6문항 재채점 직후. 두 개 이상의 실제 project가 active-root
+전환으로 해결되지 않는 multi-root evidence를 요구해도 cardinality를 재검토한다.
+
+**상태**: 유효.
+
+---
+
+## 2026-08-02 — `canWrite`는 competency 답의 witness와 visible gap을 함께 보존한다
+
+**소집**: PO 카운슬 5인 전원(근거·결·지킴이·해자·지렛대), 독립 1라운드 +
+상호 반박 1라운드. 동시 에이전트 슬롯 한계로 3인→2인 두 파동을 사용했고,
+2라운드 전까지 다른 자리의 출력을 공유하지 않았다. · **트리거**: 공개 MCP
+입력·출력 의미 계약 변경 + 선행 `canWrite` 결정의 반증 조건 관측.
+**루브릭**: 22/24 (Problem insight 4 · User moment 4 · Differentiation 3 ·
+Ontology value 4 · Agent value 4 · Verification 3, 치명적 0: 없음).
+
+**선행 결정 관계**: 같은 날 「`canWrite`는 승인된 전체 그래프의 deterministic
+write plan만 통과시킨다」와 2026-07-31 「팬아웃 상한이 아니라 노드 자격 게이트」는
+둘 다 유효하다. 전자는 검증한 그래프와 쓰는 그래프의 동일성을 해결했고, 후자는
+10·20 같은 수를 품질 상한으로 쓰는 것을 금지했다. 다만 전자의 기록된 반증 조건,
+즉 exact plan으로 전체 그래프를 저장해도 code entrypoint와 impact handoff가
+개선되지 않는 경우가 이번 다음 field trial에서 그대로 관측됐다.
+
+**관측**: 낯선 저장소를 Atlas MCP만으로 분석한 builder는 6개 의미 concept와
+5개 relation을 손실 없이 저장했고 `canWrite:true`, findings 0을 받았다. 그러나
+source-hidden 인수자는 사전에 고정한 6문항 중 1개만 완전히 답하고 5개를 부분
+답변했다. 저장된 capability는 BibTeX·YAML·query 전체의 canonical path를
+`src/types`라고 했지만 실제 공개 진입점은 `src/io.rs`, 핵심 collection model은
+`src/lib.rs`, BibLaTeX 변환은 `src/interop.rs`, query는 selector 모듈에 나뉜다.
+dependency relation이 없는데도 impact competency는 비어 있지 않은 문자열 하나로
+통과했다. 현재 validator가 증명한 것은 답 문자열의 존재이지, 답을 지지하는
+concept·typed relation·evidence·path의 존재가 아니다.
+
+**갈린 지점**: 1라운드의 근거·결·해자는 bounded source-role evidence를 먼저
+늘려야 잘못된 canonical path를 바로잡을 수 있다고 했고, 지킴이·지렛대는 먼저
+typed competency answer로 거짓 완전 통과를 없애야 실제 evidence 공백을 측정할 수
+있다고 했다. 반박에서 전자는 source packet부터 넓히면 Atlas가 열등한 source index를
+복제하고 원인별 수요를 모른 채 payload만 키운다는 주장을 수용해 판정을
+`typed-CQ-only`로 바꿨다.
+
+**결정 (accountable: 소유자)**: 기존 다섯 competency answer를 단순 문자열에서
+`answer` · `status` · 실제 graph/evidence `witnesses`를 가진 구조로 바꾼다.
+`answered`는 해당 질문이 요구하는 concept·typed relation·evidence·canonical path
+witness가 proposal 안에서 해소될 때만 허용한다. 일부만 증명되거나 증명할 수 없으면
+`partial` 또는 `visible-gap`으로 남기고, 그 gap은 finding과 deterministic
+`writePlan`, persisted project body까지 손실 없이 보존한다. 따라서 honest gap이
+있는 proposal은 승인·쓰기 가능할 수 있지만 findings 0이나 완전 답변으로 표시되지
+않는다. `canWrite`는 계속 boolean evidence-readiness gate이며 사람 승인·원자성·
+완전성을 뜻하지 않는다.
+
+**적용 규칙**: 최소 슬라이스 · 합집합 금지. IN — 기존 5문항의 typed metadata,
+answer/status/witness input schema, witness endpoint/source/path 해소, 질문별 최소 witness,
+partial/visible-gap warning, exact plan과 project body 보존, 현 field trial의 거짓
+canonical/impact proposal RED, fresh MCP-only rebuild와 source-hidden 재시험. OUT —
+semantic evidence packet 확대, source/AST/import index, 새 MCP 도구·kind, 고정 노드
+수·kind별 상한, 자동 bridge, UI, 자동 write, Ollama tool routing. appetite — 최대
+2일; 둘째 날 안에 거짓 통과 RED와 exact unknown handoff를 재현하지 못하면 확장하지
+않고 중단한다.
+
+**기록된 반대**: 현재 packet은 README와 Cargo contract 중심이어서 typed witness만
+추가해도 `src/types`가 그 역할의 정본인지 기계가 판별할 수 없다. source-role
+evidence를 동시에 추가하지 않으면 형식만 복잡해지고 handoff의 정확도는 그대로일 수
+있다. **반증 조건**: typed CQ가 현 거짓 canonical path·근거 없는 impact를
+`answered`에서 내리지 못하거나, 내린 뒤에도 fresh source-hidden handoff가 gap을
+숨기거나 잘못된 시작점을 확정하면 이 반대가 옳다. 그때 다음 슬라이스는 반복된
+unknown이 요구한 역할만 수집하는 bounded source-role evidence다. **재검토**: 동일
+scratch repo의 fresh MCP rebuild와 source-hidden 6문항 재채점 직후.
+
+**상태**: 유효.
+
+---
+
+## 2026-08-02 — init의 vault와 repo root는 같은 canonical 좌표계에서 계산한다
+
+**소집**: 단독 패스 · **트리거**: 실제 field trial에서 CLI가 생성한 MCP 설정이
+존재하지 않는 repo root를 가리켜 첫 agent 연결이 멈춤.
+**루브릭**: 23/24 (Problem insight 4 · User moment 4 · Differentiation 3 ·
+Ontology value 4 · Agent value 4 · Verification 4, 치명적 0: 없음).
+
+**선행 결정 관계**: 2026-08-01 「인수인계 시험이 찾아낸 셋」의 두 번째 결정,
+즉 근거 없는 `OATLAS_REPO_ROOT`로 코드 drift를 재지 않는다는 원칙은 유효하다.
+이번 결함은 같은 실재 폴더를 macOS의 `/tmp`와 `/private/tmp` 두 표기로 섞어
+init 자체가 근거 없는 경로를 만들어 낸 하류 위반이다.
+
+**관측**: source checkout의 CLI를 `/private/tmp/.../repo`에서 실행하면서 vault
+인자만 `/tmp/.../ontology` 절대 경로로 주자, 두 경로를 그대로 `relative()`에
+넣은 설정은 vault에서 해석될 때 `/private/private/tmp/.../repo`를 가리켰다.
+실제 MCP session은 명시적 `rootPath`로만 복구됐고 자동 repo 분석·path 검증은
+첫 호출에서 멈췄다. 같은 현상을 임의 symlink 별칭 fixture로 재현한 RED는
+`ENOENT ... /private/private`를 반환했다.
+
+**결정**: scaffold가 끝나 vault와 cwd가 모두 실재한 뒤 두 디렉터리를
+`realpath`로 canonicalize하고, vault-local·cwd-local 설정의 상대 경로와 global
+Codex 등록 명령을 그 한 좌표계에서 계산한다. 설정 키, 파일 위치, 기존 파일 보존
+정책, MCP 도구/CLI 명령은 바꾸지 않는다.
+
+**적용 규칙**: 최소 슬라이스. IN — `init` 경로 계산, symlink alias 통합 회귀,
+실제 `/tmp` dogfood. OUT — `agent-setup` 재설계, symlink 생성/제거, 설정 덮어쓰기,
+새 fallback 경로 또는 UI.
+
+**서명**: owner
+
+**기록된 반대**: `/tmp`는 macOS 특수 사례이므로 문서화만 하고 사용자가 절대
+canonical path를 넣게 해도 된다. **반증 조건**: canonicalization 때문에 실제
+symlink 위치를 의도적으로 보존해야 하는 vault가 다른 repo를 가리키거나, 기존
+상대 경로 init fixture가 달라진다. **재검토**: symlink vault를 source checkout
+밖의 별도 repo root로 의도적으로 운영한 사례가 보고될 때.
+
+**상태**: 유효.
+
+---
+
+## 2026-08-02 — `canWrite`는 승인된 전체 그래프의 deterministic write plan만 통과시킨다
+
+**소집**: PO 카운슬 5인 전원(근거·결·지킴이·해자·지렛대), 독립 1라운드 +
+상호 반박 1라운드. 실행 환경은 root 포함 동시 4슬롯이라 같은 브리프를 3인→2인
+두 파동으로 보냈고 자리 간 출력은 2라운드 전까지 공유하지 않았다. ·
+**트리거**: `analyze_repo_structure.proposal`의 공개 MCP 입력·출력 계약 변경.
+**루브릭**: 23/24 (Problem insight 4 · User moment 4 · Differentiation 3 ·
+Ontology value 4 · Agent value 4 · Verification 4, 치명적 0: 없음).
+
+**선행 결정 관계**: 2026-08-02 「Rust package 계약은 노드가 아니라 bounded
+`package-contract` 근거 한 행」 결정은 유효하다. 그 결정은 evidence packet의
+정본 근거를 늘렸지만, 사용자가 승인한 전체 의미 그래프가 검증과 쓰기 사이에서
+같은 객체로 보존되는지는 다루지 않았다. 이번 두 번째 field trial은 근거 수집보다
+하류인 approval→validation→write 경계의 별도 결함을 관측했다.
+
+**관측**: 낯선 저장소의 실제 MCP-only bootstrap에서 승인안은 6개 concept와
+7개 typed relation을 제시했지만 validator의 공개 schema는 project·domain·
+capability 4개만 받을 수 있었다. `canWrite:true`, findings 0이 나온 뒤 agent는
+검증 가능한 4개만 썼고 element 2개와 relation 7개를 모두 제외했다. 쓰기 입력을
+손으로 다시 만들면서 이미 검증된 capability의 `domain`도 잃었다. 결과는 의미
+관계 0개, capability 구현 근거 0/2, `health: needs_attention`이었고, source-hidden
+handoff는 6개 질문 중 1개를 답하지 못하고 3개를 부분 답변했다. 이는 agent의
+복사 실수만이 아니다. 현재 schema로는 승인된 element와 relation을 완전한
+proposal로 표현하거나 검증할 수 없다.
+
+**갈린 지점**: 다섯 자리 모두 Build에 동의했지만 검증-적용 동일성 자체는
+Terraform식 plan/apply를 포함한 신뢰 가능한 도구의 기본 계약이지 Atlas의 해자가
+아니라는 반론을 수용해 Differentiation을 3점으로 낮췄다. 또한 `writePlan`이
+원자 transaction이나 쓰기 성공을 보장한다는 오해가 더 강한 거짓 신호가 될 수
+있다고 봤다. 반박 뒤 전원은 `canWrite`를 evidence-ready exact input plan으로만
+한정하고 실제 batch 결과를 별도로 확인하는 데 합의했다.
+
+**결정 (accountable: 소유자)**: `analyze_repo_structure.proposal`은 승인 대상
+전체(project·domain·capability·element·typed relation)를 한 번에 검증한다.
+성공할 때만 기존 `add_concepts`와 `add_relations`의 실제 행 형식과 동일한
+deterministic `writePlan`을 반환한다. capability·element의 `domain`과 정본
+`path`, concept의 definition·evidence·confidence·boundary/uncertainty, relation의
+endpoint·type·why를 손실 없이 보존한다. 선택 승인은 선택된 subset 전체를 다시
+검증한다. concept batch에 실패 행이 하나라도 있으면 relation batch를 실행하지
+않는다. relation source는 evidence/confidence를 본문에 보존할 proposed concept여야
+한다. 기존 node를 source로 확장하는 일은 별도 patch workflow로 남긴다.
+`canWrite`는 사람의 승인, 원자성, 실제 write 성공을 뜻하지 않는다.
+
+**적용 규칙**: 최소 슬라이스 · 합집합 금지. IN — all-kind duplicate slug,
+element citation/domain/path, relation duplicate/endpoint/type/rationale 검증,
+deterministic concept body, batch `why` 배선, 실패 시 `writePlan` 미반환,
+bootstrap skill의 exact-plan 전달, 실제 6 concept·7 relation MCP replay와
+health/path/source-hidden handoff 재검증. OUT — 새 MCP 도구·kind·UI, 자동 write,
+approval token, 원자 transaction/rollback, import 추론, starter 삭제, 범용 workflow
+engine. appetite — 최대 2일; 첫날 contract red-green, 둘째날 real MCP/handoff.
+
+**기록된 반대** (근거·지킴이, 가장 강함): 현행 skill만 정확히 고친 fresh MCP
+run 두 번이 승인된 전체 그래프를 보존한다면 한 번의 agent 복사 실수를 공개 schema
+확장으로 고정하는 것은 과잉 처방이다. 전체 그래프 저장 후에도 source-hidden
+handoff가 개선되지 않으면 병목은 validator가 아니라 source evidence 부족이다.
+**반증 조건**: 현행 공개 계약의 대조 run이 전체 승인 집합을 두 번 연속 손실 없이
+저장하거나, 새 exact plan으로 전체 그래프를 저장해도 handoff의 code entrypoint와
+impact 답변이 개선되지 않거나, writer가 plan의 rationale/evidence를 다시 버린다.
+**재검토**: 같은 scratch trial의 실제 MCP replay와 source-hidden handoff 직후.
+
+**상태**: 유효.
+
+---
+
+## 2026-08-02 — Rust package 계약은 노드가 아니라 bounded `package-contract` 근거 한 행이다
+
+**소집**: PO 카운슬 5인 전원(근거·결·지킴이·해자·지렛대), 독립 1라운드 +
+상호 반박 1라운드. 실행 환경은 root 포함 동시 4슬롯이라 같은 브리프를 3인→2인
+두 파동으로 보냈고 자리 간 출력은 2라운드 전까지 공유하지 않았다. ·
+**트리거**: `index_project` / `analyze_repo_structure`의 공개 MCP 응답 의미 계약 변경.
+**루브릭**: 22/24 (Problem insight 4 · User moment 4 · Differentiation 3 ·
+Ontology value 4 · Agent value 4 · Verification 3, 치명적 0: 없음).
+
+**선행 결정 관계**: 2026-08-01 「도구의 시야가 곧 볼트의 사정거리」 결정은
+유효하다. 당시 root 독립 패키지 누락이 에이전트 온톨로지의 침묵하는 구멍이
+됐고, 이번에는 낯선 Rust 저장소의 정본 package manifest가 같은 방식으로
+evidence packet 밖에 남았다. 선행 결정을 뒤집지 않고 새 실측 범위로 확장한다.
+
+**관측**: MCP-only field trial의 builder가 feature capability 근거로
+`Cargo.toml`을 제출하자 proposal validator가 `unknown-citation`으로 거절했다.
+builder는 `README.md`로 후퇴해 11개 의미 노드와 7/7 path 정확도는 지켰지만,
+source-hidden 인수자는 package-manifest 구현 세부를 unknown으로 남겼다.
+Cargo 공식 계약에서 root `Cargo.toml`은 package manifest이고 `[features]`는
+조건부 컴파일과 optional dependency를 정의한다. 문제는 Rust 구조를 더 많이
+노드로 만드는 것이 아니라 shipped configuration contract를 정본 provenance로
+인용할 수 없다는 데 있다.
+
+**갈린 지점**: 다섯 자리 모두 Build에 동의했지만, 한 저장소 관측을 범용 manifest
+전략으로 과잉 일반화하고 raw TOML·comment·악성 문자열을 semantic evidence로
+승격할 위험을 가장 강하게 제기했다. 반박 뒤 전원은 단순 seed 추가가 아니라
+root package manifest 하나의 allowlist 구조만 정규화하고 4시간 안전 종료 조건을
+두는 더 작은 안으로 좁혔다.
+
+**결정 (accountable: 소유자)**: repository root의 `Cargo.toml`이 실제
+`[package]`를 가진 경우, 제한된 package 식별·설명 필드와 `[features]`의
+이름·매핑만 `role: package-contract`인 bounded `semanticEvidence` 한 행으로
+제공한다. 이 행은 citation 후보이지 domain/capability/element 제안이 아니다.
+feature 이름별 노드는 0개 추가한다.
+
+**적용 규칙**: 최소 슬라이스 · 합집합 금지. IN — root containment, 파일 크기
+상한, comment/raw prose 배제, `[package]`·`[features]` allowlist,
+`unknown-citation → canWrite` red-green, mission/architecture evidence 비밀림,
+malformed·oversized·hostile·virtual-workspace fail-closed, 실제 scratch MCP와
+vault-only handoff 재검증. OUT — Rust import graph, workspace member 재귀,
+dependency/target/profile/build-script 해석, 범용 manifest framework,
+starter 삭제, UI, vault schema, 새 MCP 인자. appetite — 최대 4시간; 안전 경계
+하나라도 같은 슬라이스에서 증명하지 못하면 `Investigate first`로 되돌린다.
+
+**기록된 반대** (전원 반박에서 수용한 가장 강한 논점): 한 Rust 저장소의 partial
+handoff 하나를 고치다 TOML parser·workspace 탐색·dependency graph까지 떠안으면
+작은 evidence admission이 검증되지 않은 manifest subsystem으로 커지고,
+mission evidence와 10–20개 의미 모델을 오히려 훼손한다.
+**반증 조건**: 새 행이 기존 mission/architecture evidence를 packet 밖으로 밀거나,
+raw/comment 지시를 신뢰하거나, manifest/feature별 노드를 늘리거나, 두 번째
+field trial 전 workspace/member/general parser 확장이 필요해진다.
+**재검토**: 두 번째 비-Rust 또는 virtual-workspace field trial에서 같은 citation
+공백이 관측될 때만 범용 manifest/workspace 지원을 새 결정으로 연다.
+
+**상태**: 유효.
+
+---
+
+## 2026-08-02 — capability 구현 근거는 `elements:`가 아니라 정본 `path:` 하나로 연다
+
+**소집**: PO 카운슬 5인 전원(근거·결·지킴이·해자·지렛대), 독립 1라운드 +
+상호 반박 1라운드 · **트리거**: vault 스키마와 MCP/CLI 공개 계약 변경.
+**루브릭**: 22/24 (Problem insight 4 · User moment 4 · Differentiation 3 ·
+Ontology value 4 · Agent value 4 · Verification 3, 치명적 0: 없음).
+
+**선행 결정 관계**: 2026-07-31 「경로는 의미 슬롯이 아니라 근거」와
+`elements:` 원시 경로를 `path-shaped-reference`로 잡는 자격 게이트는 그대로
+유효하다. 2026-08-01 `capability_without_evidence` 기록 중 “원시 경로를
+`elements:`에 넣어도 된다”는 처방만 뒤집는다. 실제 maintenance가 그 처방을
+내린 직후 write gate가 같은 값을 범주 오류로 경고하는 왕복 모순이 반증 조건을
+충족했다. 쓰기를 막지 않는 원칙은 유지한다.
+
+**관측**: self-vault의 capability 19개 중 9개가 구현 근거 없음으로 남았고,
+field trial 기준선에도 8개가 있었다. `maintenance_plan`은 파일 경로를
+`elements:`에 넣으라고 했지만 `write-path-gate.test.mjs`는 그 입력을
+`path-shaped-reference`로 고정한다. 반면 write gate와 path-drift 소비자는 이미
+비어 있지 않은 `path:`를 비그래프 구현 위치로 읽는다. self-vault 9건은 모두
+정본 파일 또는 디렉터리 하나로 첫 진입점을 표현할 수 있었다.
+
+**갈린 지점**: 1라운드에서 근거·지렛대는 기존 `path:` 재사용을, 결·지킴이·해자는
+`evidence: string[]` 신설을 택했다. 반박 뒤 결·지킴이·해자는 관측되지 않은 복수
+루트를 위해 공개 필드와 하류 소비자를 늘리는 것은 과설계라고 수용해 `path:`로
+바꿨다. 근거는 관계와 근거의 의미 분리를 더 선명하게 지켜야 한다며
+`evidence: string[]`로 반대로 이동했다.
+
+**결정 (accountable: 소유자)**: capability의 `path:`를 “이 행동의 구현을 여는
+저장소 상대 정본 파일 또는 디렉터리 하나”로 정식화한다. `elements:`에는 해소되는
+element slug만 둔다. element는 파일이 독립된 역할을 한 문장으로 벌었을 때만
+승격하며, maintenance를 비우기 위한 파일 미러 노드는 만들지 않는다.
+
+**적용 규칙**: 최소 슬라이스 · 합집합 금지. IN — kind schema/MCP 작성 지시,
+write gate와 maintenance의 공통 근거 술어, path drift, 세 파서 계약,
+self-vault 9건 이관, MCP/CLI-only 왕복 dogfood. OUT — `evidence: []`, 구조화
+provenance, 복수 경로, UI, 자동 element 생성, 외부 vault 자동 migration.
+appetite — 1일.
+
+**기록된 반대** (근거, 가장 강함): `path:`는 element 하나의 위치라는 기존 뜻이
+있어 capability 주장에 대한 근거 집합까지 맡기면 또 다른 의미 과적재가 된다.
+별도 `evidence: string[]`가 object relation과 literal evidence를 더 정직하게
+분리한다. **반증 조건**: capability 하나가 서로 포함되지 않는 복수 구현 루트를
+필요로 하며 정본 `path:`만 받은 MCP-only 에이전트가 소스를 다시 탐색하거나 구현을
+누락하는 사례가 두 vault에서 관측된다. **재검토**: 다음 두 차례 field trial 또는
+위 실패의 첫 재현 중 빠른 쪽.
+
+**상태**: 유효
+
+---
+
+## 2026-08-02 — 로컬 에이전트는 3회 근거 수집 뒤 답을 강제하고 60초에 닫는다
+
+**소집**: 단독 PO 패스 · **트리거**: 소유자 직접 지시 — MCP·Ollama
+에이전트가 의미 기반 온톨로지를 잘 짓는지 실물 dogfood 하고, 30개씩
+쏟아지는 이상 구조와 시스템 프롬프트를 재검토하라는 요청. **루브릭**: 21/24
+(치명적 0: 없음).
+
+**선행 결정 관계**: 2026-07-31 「팬아웃 상한이 아닌 노드 자격 게이트」는
+그대로 유효하다. 이번 실측은 10·20 상한을 만들 근거가 아니라, 하나의
+로컬 모델이 목록을 실제 노드로 착각하는 경로를 더 명확히 보였다. 2026-08-01
+「네 번째 연결은 문이다」의 재검토 조건(첫 실제 로컬 볼트 작업)이 충족됐다.
+
+**관측**: 설치 앱 + `gemma4:12b` + Ollama 0.32.5에서 구조 감사는 3회
+왕복에 63.009초 + 12.832초 + 43.370초(합 119.211초), 67,264자를 전송했다.
+다음 결과는 30개 capability 목록만 읽고 실제 부모를 하나도 읽지 않은 채
+중간 결론을 냈고, `[[slug]]` 인용이 없어 화면에서 근거 없음으로 강등됐다.
+같은 18,888자·15도구 요청의 `list_kinds` 선택은 Ollama 기본 사고 모드
+29.885초, `reasoning_effort: low` 3.610초였고 두 응답의 tool call은 같았다.
+그러나 복잡한 실제 감사에 low 만 적용한 재실행은 첫 왕복 59.692초,
+총 7왕복·291.450초·217,491자였다. 프롬프트 보강으로 실제 부모를
+`get_concepts`로 읽기는 했지만 6회 도구 턴을 소진했고, 도구 없는 마무리가
+117.310초 동안 reasoning 만 내고 사용자 답을 내지 못했다. 같은 복잡한
+첫 요청을 `reasoning_effort:none + tool_choice:required`로 주면 0.632초에 같은
+`list_kinds` tool call을 냈다. 조건부 정책을 설치 앱에 반영한 세 번째 실행은
+25.383 + 44.266 + 10.375 + 3.892 + 3.507 + 3.203초의 6회 읽기와
+21.222초의 마무리(합 111.848초)까지 줄었지만, 모델이 「최대 3회」 지시를
+무시하고 한 번에 한 도구만 불렀으며 마무리 본문도 비워 똑같이 답하지 못했다.
+강제 합성을 넣은 네 번째 실행에서는 첫 읽기 21.703초 뒤 두 번째 요청이
+기존 Rust 상한 180초를 모두 쓰고 timeout 됐다. 화면은 이를 일반 연결 실패로
+표시했다. Ollama는 그동안 GPU에서 실행 중이었고 감사 로그도 정확히
+180.016초·`outcome:error`를 기록했으므로 연결 단절이 아니라 생성 지연이다.
+모든 턴의 사고를 끈 다섯 번째 실행은 24.330초 뒤 `tool_choice:required`를
+무시하고 실제 도구 없이 「조사하겠다」는 계획만 반환했다. 같은 모델에 특정
+함수 `list_kinds`를 지정한 OpenAI 호환 요청은 1초 안에 실제 tool call을 냈다.
+이름 지정 도구와 3회 회수를 반영한 여섯 번째 `gemma4:12b` 실행은 첫 도구를
+2.060초에 실제로 불렀고 6개 의심 노드까지 읽었지만, 최종 합성이 60.015초에
+timeout 됐다. 같은 설치 앱에서 `qwen3:8b`는 13.920 + 1.414 + 2.653초의
+세 읽기와 34.009초의 합성을 끝냈다. 그러나 개별 본문을 읽기 전에 목록 세 번을
+써 `elements/billing` 같은 검증하지 않은 예를 말했고 화면에서 근거 없음으로
+강등됐다. 빠른 답과 좋은 답은 별도 게이트다. 이후 qwen은 이름 지정
+`tool_choice`를 받고도 허용된 15개 중 `list_kinds`를 골라 계약을 무시했다.
+필수 턴의 도구 목록 자체를 하나로 줄이자 `list_kinds`(5.824초) →
+`list_concepts({kind:"capability"})`(2.484초)까지는 정확히 수행했다. 그러나
+본문 묶음 읽기만 허용한 세 번째 요청은 6.161초 뒤 `get_concepts` 없이 끝났다.
+앱은 30개 목록을 읽은 사실만 표시하고 답을 「읽은 근거 없음」으로 강등했다.
+작은 로컬 모델의 도구 준수는 API 지원 선언과 별도 품질 게이트다.
+
+설치 앱 검증에서도 거짓 양성이 하나 나왔다. Next 정적 청크 URL은 코드가
+바뀌어도 같을 수 있고, 로컬 Tauri 빌드는 기존 실행 바이너리를 재사용할 수
+있으며 WebKit 자산 캐시도 설치 사이에 남았다. 실제 감사 로그가 새 정책과 다른
+도구 순서를 기록해 발견했다. 실행 바이너리 재링크와 WebKit의
+`NetworkCache`/`CacheStorage` 제거 전에는 새 앱을 검증했다는 증거가 아니었다.
+
+**결정**:
+
+1. 주소로 연결한 OpenAI 호환 러너는 모든 왕복의 `reasoning_effort`를
+   `none`으로 둔다. 반드시 읽기를 시작해야 하는 첫 왕복에는
+   막연한 `required`가 아니라 특정 읽기 도구를 지정하고, 그 턴에 제공하는
+   도구 목록도 하나로 줄인다. 화면에서 개념을 보고 있으면 `get_concept`다.
+   전체 지도는 `list_kinds`로 방향을 고른 뒤 `list_concepts`로 후보를 고르고,
+   `get_concepts`로 실제 본문을 묶어 읽는다. census는 방향 선택일 뿐 판정
+   근거가 아니다. `required`와 이름 지정만으로는 실제 설치 모델의 도구
+   이탈·생략을 막지 못했다.
+   `low`를 중간 판단에만 남긴 설치 앱 실험도
+   180초 timeout을 냈으므로 사고 시간이 곧 판단 품질이라는 가정을 버린다.
+   품질은 실제 노드 읽기·정확한 인용·결함 재현으로만 판정한다. 세 번의 도구
+   왕복 뒤에는 어댑터가 도구를
+   회수하고, 검증한 근거만으로 지금 답하라는 명시적 사용자 메시지와 `none`을
+   보낸다. 프롬프트의 턴 제한은 지시이고 실행기의 회수는 계약이다.
+2. 앱 시스템 프롬프트의 `element` 정의를 「파일」에서 「구현 역할」로
+   바꾼다. 파일 경로는 역할의 근거이지 노드 생성 이유가 아니다.
+3. 구조 감사에서 census/list는 의심 대상을 고르는 데만 쓴다. 팬아웃·중복·
+   브리지를 판정하기 전 `get_concept(s)`로 실제 부모와 해소된 이웃을 읽고,
+   독립적인 읽기는 한 응답에 묶는다. 최대 3회 증거 수집 턴 뒤에는 검증한
+   범위만 답하고, 나머지는 넓은 문제 없음이 아니라 감사 미완료로 보고한다.
+4. 로컬 러너의 한 왕복 상한은 60초, 명명 원격 제공자는 기존 180초로 분리한다.
+   로컬 timeout은 일반 연결 실패로 숨기지 않고, 질문을 좁히거나 더 빠른 모델을
+   고르라는 별도 안내로 표시한다.
+5. 로컬 macOS 배포는 `.app` 폴더만 지우지 않는다. 정적 자산을 내장하는 Tauri
+   실행 바이너리를 매번 재링크하고, 앱 종료 뒤 WebKit의 두 자산 캐시만 지운다.
+   IndexedDB·LocalStorage를 포함한 WebsiteData는 보존한다.
+
+**근거 범위**: [Ollama OpenAI 호환 문서](https://docs.ollama.com/api/openai-compatibility)는
+`reasoning_effort`, `tool_choice`, tools를 현재 지원한다. 온톨로지 품질은 노드 수 자체가 아니라
+요구·질문 충족과 모델링 피트폴로 판정한다. OOPS! 카탈로그는 다의성·동의어
+중복·고립 요소·영역 정보 누락을 피트폴로 다루지만 보편적 자식 수 상한은
+두지 않는다. [LLMs4OL](https://arxiv.org/abs/2307.16648)의 결과처럼 기본
+제로샷 LLM을 온톨로지 판정자로 믿지 않고 도구·근거·검증으로 감싼다.
+
+**기록된 반대**: `reasoning_effort` 는 Ollama에서 유효해도 모든 OpenAI 호환
+러너가 받는 필드라고 보장할 수 없다. 또 사고를 모두 끄면 어려운 중복·브리지
+판단의 품질이 떨어질 수 있다.
+
+**반증 조건**: 지원 모델이 `reasoning_effort` 또는 이름 지정 `tool_choice` 미지원
+필드로 첫 왕복을 400 거절하거나, 동일 구조 감사에서 조건부 정책이 기본보다
+실제 부모 읽기·인용·결함 재현을 열화하면 반대가 옳았다. 전자는 연결 검증의
+러너 capability 판정+필드 강등, 후자는 조건부 정책 철회로 돌아간다. 정상적인
+로컬 응답이 반복해서 60~180초 구간에서만 완성되면 60초 상한도 다시 조정한다.
+
+**재검토**: 실제 본문 읽기를 생략한 로컬 응답을 실행기가 재시도/실패로 다루는
+다음 슬라이스 뒤, 또는 Ollama 외 로컬 호환 러너 첫 연결 뒤. **서명**: stark.
+**상태**: 유효.
+
+---
+
 ## 2026-08-02 (2) — 「AI 가 디자인한 것 같다」를 지문 여섯으로 번역하고, 복도 하나를 지운다
 
 **소집 근거**: 소유자 직접 — *"이것도 파란색 배경에 뭔가 너무 ai가 디자인한것같이 생겼거든? 아예 리디자인 가능할까?"*
@@ -131,6 +674,8 @@
 **머지 순서** — #833 → #835 → `feat/vault-character` 리베이스. 충돌 지점: `nav.settingsMenu.section` 행 집합, `groupAgent`·`agentTitle`·`agentBody`·`agentBackLabel`·`agentStatusReady`·`agentStatusRepair` 삭제, `settings.ai.rowLabel/rowBody/chip*` 삭제, `scripts/validate-messages.test.mjs` 고정 문장 블록 2곳.
 
 **서명 (accountable: 소유자)**: 대기 — **개명 A안**(「내 에이전트 연결」 / 「앱 안 에이전트」)으로 넣었다. 뒤집으려면 `messages/{ko,en}.json` 두 줄만 고치면 된다(코드 무관). **설치 앱 실측은 대기 중** — 번들 MCP 바이너리를 만들지 못해 앱을 싸지 못했고, 데스크톱 분기는 Tauri 브리지 스텁으로 렌더시켜 확인했다.
+
+---
 
 ## 2026-08-02 — AI 연결·에이전트 턴: 화면이 사실과 다른 것을 말한 자리 넷을 끊는다 (반복 지적 2건 포함)
 

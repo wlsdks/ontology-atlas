@@ -69,8 +69,11 @@ describe('node-eligibility gate — the three write doors inherit one gate', () 
       body: '',
     });
     const findings = drainNodeEligibilityFindings();
-    assert.deepEqual(codesFor(findings, 'capabilities/fresh'), ['path-shaped-reference']);
-    const [finding] = findings.filter((f) => f.slug === 'capabilities/fresh');
+    assert.deepEqual(codesFor(findings, 'capabilities/fresh'), [
+      'capability-without-evidence',
+      'path-shaped-reference',
+    ]);
+    const [finding] = findings.filter((f) => f.code === 'path-shaped-reference');
     assert.equal(finding.key, 'elements');
     assert.deepEqual(finding.refs, ['cli/src/commands/absorb.mjs']);
     assert.match(finding.message, /evidence/i);
@@ -175,19 +178,20 @@ describe('node-eligibility gate — the three write doors inherit one gate', () 
       assert.match(finding.message, /patch_concept/);
     });
 
-    it('경로만 있어도 증거다 — 노드가 아니어도 조용하다', () => {
+    it('capability path 만 있어도 증거다 — 노드가 아니어도 조용하다', () => {
       writeDoc(root, 'capabilities/path-evidence', {
         frontmatter: {
           slug: 'capabilities/path-evidence',
           kind: 'capability',
           title: 'Path Evidence',
           domain: 'domains/cli',
-          elements: ['cli/src/commands/absorb.mjs'],
+          path: 'cli/src/commands/absorb.mjs',
         },
         body: '',
       });
       const codes = codesFor(drainNodeEligibilityFindings(), 'capabilities/path-evidence');
       assert.equal(codes.includes('capability-without-evidence'), false);
+      assert.equal(codes.includes('path-shaped-reference'), false);
     });
 
     it('나중 수정에는 다시 말하지 않는다 — 이름 먼저, 파일 나중이 정직한 순서다', () => {

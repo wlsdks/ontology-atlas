@@ -824,13 +824,13 @@ describe('queryCompiledOntology', () => {
     assert.equal(result.operation, 'maintenance_plan');
     assert.equal(result.sideEffect, false);
     assert.deepEqual(result.summary, {
-      totalActions: 4,
-      filteredActions: 4,
-      remainingActions: 4,
+      totalActions: 5,
+      filteredActions: 5,
+      remainingActions: 5,
       executableActions: 2,
-      // `capabilities/login` 은 이 fixture 에서 `elements:` 가 없다 — 그래서
-      // 「코드에 닿지 않는 능력」한 건이 review 큐에 같이 선다 (2026-08-01).
-      reviewActions: 2,
+      // 빈 capability 하나와 raw path 를 elements: 에 넣은 capability 하나가
+      // 모두 「코드에 닿지 않는 능력」으로 review 큐에 선다.
+      reviewActions: 3,
       compileIssues: 0,
       dependencyCycles: 0,
       canonicalizationActions: 0,
@@ -840,25 +840,26 @@ describe('queryCompiledOntology', () => {
       externalElementRefsIgnored: 0,
       unassignedNodes: 1,
       emptyDomains: 0,
-      capabilitiesWithoutEvidence: 1,
+      capabilitiesWithoutEvidence: 2,
     });
-    assert.deepEqual(result.byPhase, { link: 1, materialize: 1, review: 2 });
-    assert.deepEqual(result.bySeverity, { info: 3, warn: 1 });
+    assert.deepEqual(result.byPhase, { link: 1, materialize: 1, review: 3 });
+    assert.deepEqual(result.bySeverity, { info: 4, warn: 1 });
     assert.deepEqual(result.byKind, {
       add_missing_relation: 1,
       materialize_external_element: 1,
       unassigned_node: 1,
-      capability_without_evidence: 1,
+      capability_without_evidence: 2,
     });
     assert.equal(result.cursor.afterActionId, null);
     assert.equal(result.cursor.found, true);
     assert.equal(result.cursor.reason, null);
     assert.equal(result.cursor.startIndex, 0);
-    assert.equal(result.cursor.nextAfterActionId, result.actions[3].id);
+    assert.equal(result.cursor.nextAfterActionId, result.actions[4].id);
     assert.equal(result.cursor.hasMore, false);
     assert.deepEqual(result.actions.map((action) => action.kind), [
       'add_missing_relation',
       'materialize_external_element',
+      'capability_without_evidence',
       'capability_without_evidence',
       'unassigned_node',
     ]);
@@ -866,7 +867,7 @@ describe('queryCompiledOntology', () => {
     assert.equal(result.nextReviewAction.kind, 'capability_without_evidence');
     assert.match(result.actions[0].id, /^maint_[a-f0-9]{8}$/);
     assert.equal(result.actions[0].executable, true);
-    assert.equal(result.actions[3].executable, false);
+    assert.equal(result.actions[4].executable, false);
     assert.deepEqual(result.actions[0].proposedAction, {
       tool: 'add_relation',
       args: {
@@ -875,6 +876,58 @@ describe('queryCompiledOntology', () => {
         type: 'capabilities',
       },
     });
+  });
+
+  it('treats a capability path as implementation evidence without requiring a file-mirror element', () => {
+    const graph = compileOntology(
+      [
+        doc('domains/agent', { kind: 'domain', title: 'Agent' }),
+        doc('capabilities/mcp-server', {
+          kind: 'capability',
+          title: 'MCP server',
+          domain: 'domains/agent',
+          path: 'mcp/src',
+        }),
+      ],
+      { includeIndexes: true },
+    );
+
+    assert.equal(graph.nodeCount, 2);
+    const result = queryCompiledOntology(graph, {
+      operation: 'maintenance_plan',
+      kinds: ['capability_without_evidence'],
+      limit: 10,
+    });
+
+    assert.equal(result.summary.capabilitiesWithoutEvidence, 0);
+    assert.deepEqual(result.actions, []);
+  });
+
+  it('does not treat a raw path in elements as a real implementation concept', () => {
+    const graph = compileOntology(
+      [
+        doc('domains/agent', { kind: 'domain', title: 'Agent' }),
+        doc('capabilities/mcp-server', {
+          kind: 'capability',
+          title: 'MCP server',
+          domain: 'domains/agent',
+          elements: ['mcp/src/index.js'],
+        }),
+      ],
+      { includeIndexes: true },
+    );
+
+    assert.equal(graph.nodeCount, 2);
+    assert.equal(graph.edges.filter((edge) => edge.via === 'elements').length, 1);
+    const result = queryCompiledOntology(graph, {
+      operation: 'maintenance_plan',
+      kinds: ['capability_without_evidence'],
+      limit: 10,
+    });
+
+    assert.equal(result.summary.capabilitiesWithoutEvidence, 1);
+    assert.equal(result.actions.length, 1);
+    assert.equal(result.actions[0].node.slug, 'capabilities/mcp-server');
   });
 
   it('filters maintenance actions for executable agent work queues', () => {
@@ -892,7 +945,7 @@ describe('queryCompiledOntology', () => {
       severities: ['warn'],
       kinds: [],
     });
-    assert.equal(result.summary.totalActions, 4);
+    assert.equal(result.summary.totalActions, 5);
     assert.equal(result.summary.filteredActions, 1);
     assert.equal(result.summary.remainingActions, 1);
     assert.deepEqual(result.byPhase, { link: 1 });
@@ -1023,6 +1076,7 @@ describe('queryCompiledOntology', () => {
     assert.deepEqual(second.actions.map((action) => action.kind), [
       'materialize_external_element',
       'capability_without_evidence',
+      'capability_without_evidence',
       'unassigned_node',
     ]);
     assert.equal(second.cursor.afterActionId, first.cursor.nextAfterActionId);
@@ -1030,8 +1084,8 @@ describe('queryCompiledOntology', () => {
     assert.equal(second.cursor.reason, null);
     assert.equal(second.cursor.startIndex, 1);
     assert.equal(second.cursor.hasMore, false);
-    assert.equal(second.summary.filteredActions, 4);
-    assert.equal(second.summary.remainingActions, 3);
+    assert.equal(second.summary.filteredActions, 5);
+    assert.equal(second.summary.remainingActions, 4);
     assert.equal(second.nextExecutableAction.kind, 'materialize_external_element');
     assert.equal(second.nextReviewAction.kind, 'capability_without_evidence');
 
@@ -1044,7 +1098,7 @@ describe('queryCompiledOntology', () => {
     assert.equal(missing.cursor.found, false);
     assert.equal(missing.cursor.reason, 'afterActionId not found in filtered maintenance actions');
     assert.equal(missing.cursor.startIndex, null);
-    assert.equal(missing.summary.filteredActions, 4);
+    assert.equal(missing.summary.filteredActions, 5);
     assert.equal(missing.summary.remainingActions, 0);
     assert.deepEqual(missing.actions, []);
     assert.deepEqual(missing.byPhase, {});
@@ -2126,6 +2180,24 @@ describe('queryCompiledOntology', () => {
     assert.ok(result.writePolicy.some((line) => line.includes('match_nodes') && line.includes('followUp')));
     assert.ok(result.writePolicy.some((line) => line.includes('relationDecisionGuide')));
     assert.ok(result.writePolicy.some((line) => line.includes('find_backlinks before rename_concept')));
+  });
+
+  it('targets an explicitly requested project in agent_brief instead of silently choosing the first root', () => {
+    const graph = compileOntology([
+      doc('project-a', { kind: 'project', title: 'Project A', domains: ['domain-a'] }),
+      doc('domain-a', { kind: 'domain', title: 'Domain A' }),
+      doc('project-b', { kind: 'project', title: 'Project B', domains: ['domain-b'] }),
+      doc('domain-b', { kind: 'domain', title: 'Domain B' }),
+    ], { includeIndexes: true });
+
+    const result = queryCompiledOntology(graph, { operation: 'agent_brief', project: 'project-b' });
+    assert.equal(result.projectSlug, 'project-b');
+    assert.equal(result.graphDbQueryPack.find((pack) => pack.id === 'business_questions').calls[0].arguments.operation, 'facets');
+    assert.ok(result.cliFallbackCommands.some((command) => command.includes('project-map project-b')));
+    assert.throws(
+      () => queryCompiledOntology(graph, { operation: 'agent_brief', project: 'domain-b' }),
+      /project must resolve to a project node/,
+    );
   });
 
   it('matches compiled nodes by graph-derived attributes', () => {

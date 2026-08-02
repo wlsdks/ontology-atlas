@@ -4,6 +4,7 @@ kind: capability
 title: Locale Switching
 domain: domains/onboarding-and-shell
 elements: []
+path: src/features/locale-switch
 created_by: "agent:unknown"
 ---
 

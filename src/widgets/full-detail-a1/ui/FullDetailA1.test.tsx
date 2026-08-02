@@ -5,6 +5,7 @@ import { buildFullDetailGroups } from "../lib/full-detail-groups";
 import { buildFullDetailReachModel } from "../lib/full-detail-reach";
 import { FullDetailA1 } from "./FullDetailA1";
 import type { KnowledgeGraphEdge, KnowledgeGraphNode } from "@/entities/knowledge-graph";
+import type { ProjectSourceView } from "@/shared/lib/project-source-receipt";
 
 vi.mock("@/i18n/navigation", () => ({
   Link: ({ href, children, ...props }: React.ComponentProps<"a">) => (
@@ -75,6 +76,7 @@ const messages = {
       copy: "다음 액션 복사",
       copied: "에이전트 핸드오프 호출을 복사했어요",
       openDocument: "문서 열기 →",
+      openStudio: "공방에서 완성",
     },
     codeLocations: {
       heading: "코드 위치",
@@ -164,6 +166,21 @@ function renderFullDetail(overrides: Partial<Parameters<typeof FullDetailA1>[0]>
   return { onSelectNode, onClose };
 }
 
+function projectSourceView(overrides: Partial<ProjectSourceView> = {}): ProjectSourceView {
+  return {
+    contractVersion: 1,
+    projectSlug: "ontology-atlas",
+    status: "review_required",
+    currentness: "stale",
+    measuredAt: "2026-08-02T04:00:00.000Z",
+    topGap: { id: "ontology_changed" },
+    nextAction: { id: "remeasure_source" },
+    bindingCardinality: 1,
+    receipt: null,
+    ...overrides,
+  };
+}
+
 describe("FullDetailA1", () => {
   it("헤더에 제목/kind/slug 를 렌더", () => {
     renderFullDetail();
@@ -241,6 +258,108 @@ describe("FullDetailA1", () => {
     expect(screen.getByTestId("node-explanation-read")).toBeInTheDocument();
     fireEvent.click(screen.getByTestId("node-explanation-edit-button"));
     expect(screen.getByTestId("node-explanation-edit")).toBeInTheDocument();
+  });
+});
+
+describe("FullDetailA1 — project source receipt parity", () => {
+  const sourceLabels = {
+    heading: "프로젝트 코드 근거",
+    sourceKind: "소스 · Git 저장소",
+    status: "코드 근거 재검토 필요",
+    measuredAt: "2026. 8. 2. 13:00 측정",
+    currentness: "변경 뒤 재측정 필요",
+    gap: "온톨로지가 마지막 측정 뒤 바뀌었습니다.",
+    action: "다시 측정",
+    busy: "측정 중…",
+  };
+
+  it("project에서 receipt를 고정 순서와 public markers로 렌더한다", () => {
+    renderFullDetail({
+      node: {
+        id: "project:ontology-atlas",
+        title: "Ontology Atlas",
+        kind: "project",
+        slug: "ontology-atlas",
+        fresh: true,
+      },
+      projectSource: projectSourceView(),
+      projectSourceLabels: sourceLabels,
+    });
+
+    const rail = screen.getByTestId("full-detail-project-source");
+    expect(rail).toHaveAttribute("data-source-version", "1");
+    expect(rail).toHaveAttribute("data-source-status", "review_required");
+    expect(rail).toHaveAttribute("data-source-currentness", "stale");
+    expect(rail).toHaveAttribute("data-source-top-gap", "ontology_changed");
+    expect(rail).toHaveAttribute("data-source-action", "remeasure_source");
+    expect(rail).toHaveAttribute("data-source-cardinality", "1");
+    expect(rail).toHaveTextContent(sourceLabels.sourceKind);
+    const text = rail.textContent ?? "";
+    expect(text.indexOf(sourceLabels.status)).toBeLessThan(text.indexOf(sourceLabels.measuredAt));
+    expect(text.indexOf(sourceLabels.measuredAt)).toBeLessThan(text.indexOf(sourceLabels.gap));
+    expect(text.indexOf(sourceLabels.gap)).toBeLessThan(text.indexOf(sourceLabels.action));
+  });
+
+  it("non-project에는 receipt prop이 와도 표시하지 않는다", () => {
+    renderFullDetail({
+      projectSource: projectSourceView(),
+      projectSourceLabels: sourceLabels,
+    });
+    expect(screen.queryByTestId("full-detail-project-source")).not.toBeInTheDocument();
+  });
+
+  it("busy/error 중에도 이전 receipt를 보존하고 action을 잠근다", () => {
+    const onProjectSourceAction = vi.fn();
+    renderFullDetail({
+      node: {
+        id: "project:ontology-atlas",
+        title: "Ontology Atlas",
+        kind: "project",
+        slug: "ontology-atlas",
+        fresh: true,
+      },
+      projectSource: projectSourceView(),
+      projectSourceLabels: sourceLabels,
+      projectSourceBusy: true,
+      projectSourceError: "이전 연결은 그대로예요.",
+      onProjectSourceAction,
+    });
+    expect(screen.getByText(sourceLabels.status)).toBeInTheDocument();
+    expect(screen.getByText("이전 연결은 그대로예요.")).toHaveAttribute("role", "status");
+    const action = screen.getByRole("button", { name: sourceLabels.busy });
+    expect(action).toBeDisabled();
+    expect(action).toHaveAttribute("aria-busy", "true");
+  });
+
+  it("전체 상세 handoff에 copy-safe source receipt를 이어 붙인다", () => {
+    const writeText = vi.fn().mockResolvedValue(undefined);
+    Object.assign(navigator, { clipboard: { writeText } });
+    renderFullDetail({
+      node: {
+        id: "project:ontology-atlas",
+        title: "Ontology Atlas",
+        kind: "project",
+        slug: "ontology-atlas",
+        fresh: true,
+      },
+      projectSource: projectSourceView({
+        status: "verified_current",
+        currentness: "current",
+        topGap: null,
+        nextAction: { id: "use_current_evidence" },
+      }),
+      projectSourceLabels: { ...sourceLabels, action: "현재 근거로 인계" },
+    });
+
+    fireEvent.click(screen.getByTestId("full-detail-a1-handoff-copy"));
+    expect(writeText).toHaveBeenCalledTimes(1);
+    const copied = String(writeText.mock.calls[0]?.[0]);
+    expect(copied).toContain("PROJECT SOURCE");
+    expect(copied).toContain("projectSlug: ontology-atlas");
+    expect(copied).toContain("sourceKind: unavailable");
+    expect(copied).toContain("nextAction: use_current_evidence");
+    expect(copied).not.toContain("rootPath");
+    expect(copied).not.toContain("remote");
   });
 });
 

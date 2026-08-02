@@ -122,6 +122,7 @@ export function stderrWarningLines(stderr) {
 }
 
 export function evaluateDogfoodGate({
+  targets,
   initialize,
   kinds,
   list,
@@ -456,7 +457,7 @@ export function evaluateDogfoodGate({
     }
   }
   if (batch) {
-    const batchFailure = getConceptsShapeFailure(batch);
+    const batchFailure = getConceptsShapeFailure(batch, targets);
     if (batchFailure) failures.push(batchFailure);
     else recordStructuredContentFailure(failures, "get_concepts", batch, batchStructured);
   }
@@ -470,7 +471,7 @@ export function evaluateDogfoodGate({
     if (pathFailure) failures.push(pathFailure);
     else {
       recordStructuredContentFailure(failures, "find_path", path, pathStructured);
-      if (!path.found) failures.push("find_path: expected mcp-server → vault-local-first path");
+      if (!path.found) failures.push(`find_path: expected ${targets.capabilitySlug} → ${targets.pathTargetSlug} path`);
     }
   }
   if (bl) {
@@ -493,7 +494,7 @@ export function evaluateDogfoodGate({
     if (queryConceptsLimitedFailure) failures.push(queryConceptsLimitedFailure);
     else {
       if (queryConceptsLimited.limited !== true) failures.push("query_concepts_limited: expected limited=true");
-      if ((queryConceptsLimited.matches || []).some((row) => row?.slug === "project")) {
+      if ((queryConceptsLimited.matches || []).some((row) => row?.slug === targets.projectSlug)) {
         failures.push("query_concepts_limited: excluded project slug was returned");
       }
       recordStructuredContentFailure(failures, "query_concepts_limited", queryConceptsLimited, queryConceptsLimitedStructured);
@@ -549,17 +550,17 @@ export function evaluateDogfoodGate({
     if (overviewShapeFailure) failures.push(overviewShapeFailure);
   }
   if (patternWalk) {
-    const patternWalkFailure = patternWalkShapeFailure(patternWalk);
+    const patternWalkFailure = patternWalkShapeFailure(patternWalk, targets);
     if (patternWalkFailure) failures.push(patternWalkFailure);
   }
   let allPathsFailure = null;
   if (allPaths) {
-    allPathsFailure = allPathsShapeFailure(allPaths);
+    allPathsFailure = allPathsShapeFailure(allPaths, targets);
     if (allPathsFailure) failures.push(allPathsFailure);
   }
   let allPathsPlanFailure = null;
   if (allPathsPlan) {
-    allPathsPlanFailure = allPathsPlanShapeFailure(allPathsPlan);
+    allPathsPlanFailure = allPathsPlanShapeFailure(allPathsPlan, targets);
     if (allPathsPlanFailure) failures.push(allPathsPlanFailure);
   }
   if (projectMapPlan) {
@@ -567,15 +568,15 @@ export function evaluateDogfoodGate({
     if (projectMapPlanFailure) failures.push(projectMapPlanFailure);
   }
   if (projectMap) {
-    const projectMapFailure = projectMapShapeFailure(projectMap);
+    const projectMapFailure = projectMapShapeFailure(projectMap, targets);
     if (projectMapFailure) failures.push(projectMapFailure);
   }
   if (domainProfile) {
-    const domainProfileFailure = domainProfileShapeFailure(domainProfile);
+    const domainProfileFailure = domainProfileShapeFailure(domainProfile, targets);
     if (domainProfileFailure) failures.push(domainProfileFailure);
   }
   if (domainMatrix) {
-    const domainMatrixFailure = domainMatrixShapeFailure(domainMatrix);
+    const domainMatrixFailure = domainMatrixShapeFailure(domainMatrix, targets);
     if (domainMatrixFailure) failures.push(domainMatrixFailure);
   }
   if (components) {
@@ -583,7 +584,7 @@ export function evaluateDogfoodGate({
     if (componentsFailure) failures.push(componentsFailure);
   }
   if (relationCheck) {
-    const relationCheckFailure = relationCheckShapeFailure(relationCheck);
+    const relationCheckFailure = relationCheckShapeFailure(relationCheck, targets);
     if (relationCheckFailure) failures.push(relationCheckFailure);
   }
   if (maintenancePlan) {
@@ -611,27 +612,27 @@ export function evaluateDogfoodGate({
     if (topologicalOrderFailure) failures.push(topologicalOrderFailure);
   }
   if (lineage) {
-    const lineageFailure = lineageShapeFailure(lineage);
+    const lineageFailure = lineageShapeFailure(lineage, targets);
     if (lineageFailure) failures.push(lineageFailure);
   }
   if (containmentTree) {
-    const containmentTreeFailure = containmentTreeShapeFailure(containmentTree);
+    const containmentTreeFailure = containmentTreeShapeFailure(containmentTree, targets);
     if (containmentTreeFailure) failures.push(containmentTreeFailure);
   }
   if (reachability) {
-    const reachabilityFailure = reachabilityShapeFailure(reachability);
+    const reachabilityFailure = reachabilityShapeFailure(reachability, targets);
     if (reachabilityFailure) failures.push(reachabilityFailure);
   }
   if (impact) {
-    const impactFailure = impactShapeFailure(impact);
+    const impactFailure = impactShapeFailure(impact, targets);
     if (impactFailure) failures.push(impactFailure);
   }
   if (blastRadius) {
-    const blastRadiusFailure = blastRadiusShapeFailure(blastRadius);
+    const blastRadiusFailure = blastRadiusShapeFailure(blastRadius, targets);
     if (blastRadiusFailure) failures.push(blastRadiusFailure);
   }
   if (subgraph) {
-    const subgraphFailure = subgraphShapeFailure(subgraph);
+    const subgraphFailure = subgraphShapeFailure(subgraph, targets);
     if (subgraphFailure) failures.push(subgraphFailure);
   }
   if (schema) {
@@ -643,15 +644,15 @@ export function evaluateDogfoodGate({
     if (facetsFailure) failures.push(facetsFailure);
   }
   if (matchNodes) {
-    const matchNodesFailure = matchNodesShapeFailure(matchNodes);
+    const matchNodesFailure = matchNodesShapeFailure(matchNodes, targets);
     if (matchNodesFailure) failures.push(matchNodesFailure);
   }
   if (matchEdges) {
-    const matchEdgesFailure = matchEdgesShapeFailure(matchEdges);
+    const matchEdgesFailure = matchEdgesShapeFailure(matchEdges, targets);
     if (matchEdgesFailure) failures.push(matchEdgesFailure);
   }
   if (nodeProfile) {
-    const nodeProfileFailure = nodeProfileShapeFailure(nodeProfile);
+    const nodeProfileFailure = nodeProfileShapeFailure(nodeProfile, targets);
     if (nodeProfileFailure) failures.push(nodeProfileFailure);
   }
   if (centrality) {
@@ -663,23 +664,23 @@ export function evaluateDogfoodGate({
     if (communitiesFailure) failures.push(communitiesFailure);
   }
   if (similarNodes) {
-    const similarNodesFailure = similarNodesShapeFailure(similarNodes);
+    const similarNodesFailure = similarNodesShapeFailure(similarNodes, targets);
     if (similarNodesFailure) failures.push(similarNodesFailure);
   }
   if (explainRelation) {
-    const explainRelationFailure = explainRelationShapeFailure(explainRelation);
+    const explainRelationFailure = explainRelationShapeFailure(explainRelation, targets);
     if (explainRelationFailure) failures.push(explainRelationFailure);
   }
   if (neighbors) {
-    const neighborsFailure = neighborsShapeFailure(neighbors);
+    const neighborsFailure = neighborsShapeFailure(neighbors, targets);
     if (neighborsFailure) failures.push(neighborsFailure);
   }
   if (queryPath) {
-    const queryPathFailure = queryPathShapeFailure(queryPath);
+    const queryPathFailure = queryPathShapeFailure(queryPath, targets);
     if (queryPathFailure) failures.push(queryPathFailure);
   }
   if (projectScope) {
-    const projectScopeFailure = projectScopeShapeFailure(projectScope);
+    const projectScopeFailure = projectScopeShapeFailure(projectScope, targets);
     if (projectScopeFailure) failures.push(projectScopeFailure);
   }
   if (allPaths && allPathsPlan && !allPathsFailure && !allPathsPlanFailure) {

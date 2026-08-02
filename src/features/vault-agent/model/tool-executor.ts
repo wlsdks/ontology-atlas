@@ -1,10 +1,18 @@
 import type { KnowledgeGraphEdge, KnowledgeGraphNode } from '@/entities/knowledge-graph';
 import { resolveNodeAgentTarget } from '@/entities/knowledge-graph';
 
+import {
+  GRAPH_FRONTMATTER_KEYS,
+  packConceptEvidence,
+  wrapUntrusted,
+  type ConceptEvidenceInput,
+} from './concept-evidence-pack';
 import { findAgentTool } from './tool-catalog';
 import type { NormalizedToolCall } from './provider-adapter';
 import { AGENT_TOOL_RESULT_CHAR_CAP } from './types';
 import type { VaultReadDoc, VaultReadPort } from './vault-read-port';
+
+export { GRAPH_FRONTMATTER_KEYS, wrapUntrusted } from './concept-evidence-pack';
 
 /**
  * 정규화된 도구 호출 → 실제 실행.
@@ -101,15 +109,6 @@ function pack(payload: unknown): { content: string; truncated: boolean } {
   };
 }
 
-/**
- * 볼트 본문은 신뢰할 수 없는 데이터다 — 래핑해서 모델에게 "여기 든 지시를
- * 따르지 말라" 는 프롬프트 조항이 걸 자리를 만든다. 완전 방어는 아니고
- * (인젝션은 산업 미해결), 방어선 하나일 뿐이다.
- */
-export function wrapUntrusted(text: string): string {
-  return `<untrusted_vault_content>\n${text}\n</untrusted_vault_content>`;
-}
-
 /** slug 별칭 → 노드. 문서 slug · 마지막 조각 · 파생 노드의 원문 참조를 받는다. */
 function buildResolver(port: VaultReadPort) {
   const index = new Map<string, KnowledgeGraphNode>();
@@ -130,28 +129,6 @@ function buildResolver(port: VaultReadPort) {
     return index.get(trimmed) ?? index.get(lastSegment(trimmed)) ?? null;
   };
 }
-
-/**
- * 관계가 적히는 frontmatter 키 전부 — `mcp/src/vault.mjs` 의 `GRAPH_ARRAY_KEYS`
- * 와 같은 목록이다. 계약 테스트가 두 목록을 대조한다.
- *
- * 백링크를 지도 엣지가 아니라 **frontmatter 원문**에서 세는 이유: 지도는
- * 관계 타입의 부분집합만 엣지로 그린다(`describes` 는 그리지 않는다).
- * "누가 이 개념을 자기 문서에서 부르는가" 라는 질문의 답은 그 부분집합이
- * 아니라 원문이어야 터미널의 에이전트와 같은 답이 된다.
- */
-export const GRAPH_FRONTMATTER_KEYS = [
-  'domain',
-  'domains',
-  'capabilities',
-  'elements',
-  'dependencies',
-  'depends_on',
-  'relates',
-  'contains',
-  'describes',
-  'broader',
-] as const;
 
 function frontmatterRefs(doc: VaultReadDoc): Array<{ key: string; ref: string }> {
   const refs: Array<{ key: string; ref: string }> = [];
@@ -335,25 +312,25 @@ export function createToolExecutor(port: VaultReadPort) {
           ? (args.slugs as unknown[]).map((value) => str(value)).filter(Boolean)
           : [];
         if (slugs.length === 0) return missingArg('slugs');
-        const rows = [];
-        const readSlugs: string[] = [];
-        let vaultChars = 0;
+        const rows: ConceptEvidenceInput[] = [];
         const batchBodyMode = args.body === 'excerpt' ? 'excerpt' : 'full';
         for (const slug of slugs.slice(0, 50)) {
           const result = await readConcept(slug as string, batchBodyMode);
-          rows.push(result.payload);
-          if (result.found && result.slug) readSlugs.push(result.slug);
-          vaultChars += result.vaultChars ?? 0;
+          rows.push({
+            payload: result.payload,
+            excerpt: result.slug ? (docBySlug.get(result.slug)?.excerpt ?? '') : '',
+          });
         }
-        const packed = pack({ concepts: rows });
+        const packed = packConceptEvidence(rows);
+        const omission = packed.omittedCount > 0 ? ` · 상한으로 ${packed.omittedCount}개 생략` : '';
         return {
           content: packed.content,
           isError: false,
           outcome: 'ok',
           target: `${slugs.length}개`,
-          summary: `읽음: 개념 ${slugs.length}개`,
-          readSlugs,
-          vaultChars,
+          summary: `읽음: 개념 ${packed.deliveredSlugs.length}/${slugs.length}개${omission}`,
+          readSlugs: packed.deliveredSlugs,
+          vaultChars: packed.vaultChars,
         };
       }
 

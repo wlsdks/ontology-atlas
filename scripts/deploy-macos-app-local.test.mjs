@@ -1,14 +1,46 @@
 import assert from "node:assert/strict";
+import fs from "node:fs";
+import os from "node:os";
 import path from "node:path";
 import test from "node:test";
 import {
   buildDeployMacosAppPlan,
+  clearInstalledWebkitAssetCaches,
   installedProcessPatterns,
   parseDeployMacosAppArgs,
   resolveDefaultDeployRoute,
   routeSupportsTopologyDragProof,
   summarizeDeployMacosAppEvidence,
 } from "./deploy-macos-app-local.mjs";
+
+test("local deploy clears stale WebKit assets without deleting vault persistence", () => {
+  const homeDir = fs.mkdtempSync(path.join(os.tmpdir(), "ontology-atlas-webkit-cache-"));
+  const cacheRoot = path.join(
+    homeDir,
+    "Library/Caches/dev.jinan.ontology-atlas/WebKit",
+  );
+  const indexedDb = path.join(
+    homeDir,
+    "Library/WebKit/dev.jinan.ontology-atlas/WebsiteData/IndexedDB",
+  );
+  fs.mkdirSync(path.join(cacheRoot, "NetworkCache"), { recursive: true });
+  fs.mkdirSync(path.join(cacheRoot, "CacheStorage"), { recursive: true });
+  fs.mkdirSync(indexedDb, { recursive: true });
+
+  try {
+    const removed = clearInstalledWebkitAssetCaches({ homeDir });
+
+    assert.deepEqual(removed.map((entry) => path.basename(entry)).sort(), [
+      "CacheStorage",
+      "NetworkCache",
+    ]);
+    assert.equal(fs.existsSync(path.join(cacheRoot, "NetworkCache")), false);
+    assert.equal(fs.existsSync(path.join(cacheRoot, "CacheStorage")), false);
+    assert.equal(fs.existsSync(indexedDb), true);
+  } finally {
+    fs.rmSync(homeDir, { recursive: true, force: true });
+  }
+});
 
 test("local macOS app deploy default route follows macOS preferred Korean language", () => {
   assert.equal(
@@ -30,7 +62,7 @@ test("local macOS app deploy default route falls back to English without a Korea
   );
 });
 
-test("local macOS app deploy defaults to build, Applications install, and the map route (drag proof opt-in)", () => {
+test("local macOS app deploy builds without release updater signing, installs, and verifies the map route", () => {
   const options = parseDeployMacosAppArgs([], {
     env: { LANG: "C.UTF-8" },
     appleLanguagesRaw: '("en-US")',
@@ -64,7 +96,7 @@ test("local macOS app deploy defaults to build, Applications install, and the ma
       "Ontology Atlas.app",
     ),
   );
-  assert.deepEqual(plan.build, ["pnpm", ["desktop:build:app"]]);
+  assert.deepEqual(plan.build, ["pnpm", ["desktop:build:app:local"]]);
   assert.deepEqual(plan.copyInstalled, [
     "ditto",
     [options.builtAppPath, "/Applications/Ontology Atlas.app"],

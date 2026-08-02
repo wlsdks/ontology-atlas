@@ -416,6 +416,12 @@ names each direct-download secret by role: `APPLE_CERTIFICATE_P12_BASE64` and
 `APPLE_APP_SPECIFIC_PASSWORD`, plus `APPLE_TEAM_ID` are used by Apple
 `notarytool`. They are required for signed and notarized public DMGs from the
 project website/GitHub Releases path, not for Mac App Store submission.
+For installed-app dogfood, use `pnpm desktop:deploy:app`. It calls
+`desktop:build:app:local`, which overrides only
+`bundle.createUpdaterArtifacts=false` so a release updater private key is not
+required, then replaces `/Applications/Ontology Atlas.app` and runs the local
+app/WebView proof. Do not use that local build as a release artifact:
+`desktop:build:app` remains the release path and keeps updater artifacts enabled.
 `pnpm desktop:build` keeps the local unsigned prototype shortcut by running the
 app build and DMG packager.
 Before a release is made public, the tag workflow runs
@@ -541,6 +547,8 @@ committing or publishing changes.
 | `pnpm desktop:doctor` | Local machine prerequisite report for macOS desktop builds: Tauri CLI, Cargo, rustc, Xcode command line tools, CLI/MCP agent setup gates, and non-blocking local `.app` signing state |
 | `pnpm desktop:smoke` | Built `out/` payload smoke for the packaged root entry; current EN/KO titles; Download install/vault/AI handoff copy and fact/checksum/release markers; Docs header/viewer/source-contract markers; `/ontology` → `/topology?index=expanded` and `/ontology/edit` → `/ontology/studio` compatibility redirects; Topology canvas-v2/focus/path markers; Insights `maintenance-board` / `one-tab-one-question` / `tab-query` markers; `_next` assets; and offline desktop docs. Missing artifacts advise `pnpm build`; title/copy/chunk mismatches advise current-source contract review instead of a redundant rebuild. |
 | `pnpm desktop:build:app` | Build the Tauri `.app` before optional release signing or local DMG packaging |
+| `pnpm desktop:build:app:local` | Build the local dogfood `.app` with updater artifacts disabled; never use it for a public release |
+| `pnpm desktop:deploy:app` | Build through the local-only path, replace `/Applications/Ontology Atlas.app`, and run installed-app/WebView verification without requiring release updater signing keys |
 | `pnpm desktop:verify-app` | Launch the built `.app` from its executable directory long enough to catch early Tauri/WebView startup crashes and require the packaged WebView DOM to report loaded `tauri://` Ontology Atlas content, then terminate it; locks per app path before stale-process cleanup; supports `--kill-existing --open-app --require-window --require-capturable-window --require-accessibility-window --require-accessibility-text=...` for LaunchServices dogfood checks with CoreGraphics metadata, local screenshot capture, Accessibility-window assertions, and app-content text proof before separate Computer Use observation |
 | `pnpm desktop:verify-topology-design:ko` | Focused installed-app Relief design proof for Korean selected relation, Path result, and Add Concept composer states at 14-inch-class WebView size; each topology verifier opens a non-persistent WebView, loads the explicit `docs/ontology` fixture, and saves deterministic evidence without reading or replacing the user's stored vault |
 | `pnpm desktop:verify-ai-settings:ko` | Installed-app proof for the keyless connect-by-address LLM branch: opens the settings sheet, walks into AI connection, types the base URL, presses the connection check, requires a live model list and a chosen model, and then requires a matching fresh `provider: "local"` verify line in the fixture vault's `.ontology-atlas/llm-audit.jsonl`; fails with the on-screen failure sentence when no local runner answers |

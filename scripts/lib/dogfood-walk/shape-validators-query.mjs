@@ -41,15 +41,16 @@ export function evidenceShapeFailure(result) {
   return matchRowsFailure("find_evidence", result.matches);
 }
 
-export function getConceptsShapeFailure(result) {
+export function getConceptsShapeFailure(result, targets) {
   if (!Array.isArray(result.concepts)) {
     return "get_concepts response missing concepts array";
   }
   if (result.concepts.length !== 3) {
     return `get_concepts response row count mismatch — expected 3, got ${result.concepts.length}`;
   }
-  const [project, mcpServer, missing] = result.concepts;
-  for (const [index, row] of [project, mcpServer].entries()) {
+  const [project, capability, missing] = result.concepts;
+  const expectedSlugs = [targets.projectSlug, targets.capabilitySlug];
+  for (const [index, row] of [project, capability].entries()) {
     if (!row || typeof row !== "object" || Array.isArray(row)) {
       return `get_concepts response malformed success row at index ${index}`;
     }
@@ -58,6 +59,9 @@ export function getConceptsShapeFailure(result) {
     }
     if (!isNonBlankString(row.slug)) {
       return `get_concepts response missing success slug at index ${index}`;
+    }
+    if (row.slug !== expectedSlugs[index]) {
+      return `get_concepts response slug mismatch at index ${index} — ${row.slug}`;
     }
     if (!row.frontmatter || typeof row.frontmatter !== "object" || Array.isArray(row.frontmatter)) {
       return `get_concepts response missing frontmatter: ${row.slug}`;
@@ -81,12 +85,18 @@ export function getConceptsShapeFailure(result) {
   return null;
 }
 
-export function patternWalkShapeFailure(result) {
+export function patternWalkShapeFailure(result, targets = null) {
   if (result.operation !== "pattern_walk") {
     return "pattern_walk response operation mismatch";
   }
   if (!Array.isArray(result.pattern) || result.pattern.length === 0) {
     return "pattern_walk response missing pattern array";
+  }
+  if (targets && result.start !== targets.patternStartSlug) {
+    return `pattern_walk response start mismatch — ${result.start}`;
+  }
+  if (targets && JSON.stringify(result.pattern) !== JSON.stringify(targets.pattern)) {
+    return `pattern_walk response pattern mismatch — ${result.pattern.join(" → ")}`;
   }
   if (!Array.isArray(result.layers)) {
     return "pattern_walk response missing layers array";
@@ -127,9 +137,12 @@ export function patternWalkShapeFailure(result) {
   return null;
 }
 
-export function allPathsShapeFailure(result) {
+export function allPathsShapeFailure(result, targets = null) {
   if (result.operation !== "all_paths") {
     return "all_paths response operation mismatch";
+  }
+  if (targets && (result.from !== targets.capabilitySlug || result.to !== targets.pathTargetSlug)) {
+    return `all_paths response endpoints mismatch — ${result.from} → ${result.to}`;
   }
   if (typeof result.found !== "boolean") {
     return "all_paths response missing found flag";
@@ -204,7 +217,7 @@ export function allPathsShapeFailure(result) {
   return null;
 }
 
-export function allPathsPlanShapeFailure(result) {
+export function allPathsPlanShapeFailure(result, targets) {
   if (result.operation !== "query_plan") {
     return "all_paths query_plan response operation mismatch";
   }
@@ -223,10 +236,10 @@ export function allPathsPlanShapeFailure(result) {
   if (result.normalized.searchBudget !== 5000) {
     return `all_paths query_plan default searchBudget mismatch — expected 5000, got ${result.normalized.searchBudget}`;
   }
-  if (result.normalized.from !== "capabilities/mcp-server") {
+  if (result.normalized.from !== targets.capabilitySlug) {
     return `all_paths query_plan normalized from mismatch — ${result.normalized.from}`;
   }
-  if (result.normalized.to !== "domains/vault-local-first") {
+  if (result.normalized.to !== targets.pathTargetSlug) {
     return `all_paths query_plan normalized to mismatch — ${result.normalized.to}`;
   }
   if (!result.estimate || result.estimate.strategy !== "bounded_path_enumeration") {
@@ -271,11 +284,11 @@ export function queryPlanExecutionShapeFailure(execution, targetOperation, label
   return null;
 }
 
-export function neighborsShapeFailure(result) {
+export function neighborsShapeFailure(result, targets) {
   if (result.operation !== "neighbors") {
     return `neighbors response operation mismatch — ${result.operation}`;
   }
-  if (result.center !== "capabilities/mcp-server") {
+  if (result.center !== targets.capabilitySlug) {
     return `neighbors response center mismatch — ${result.center}`;
   }
   if (!result.node || result.node.slug !== result.center) {
@@ -320,20 +333,20 @@ export function neighborsShapeFailure(result) {
   return null;
 }
 
-export function queryPathShapeFailure(result) {
+export function queryPathShapeFailure(result, targets) {
   if (result.operation !== "path") {
     return `path operation response mismatch — ${result.operation}`;
   }
-  if (result.from !== "capabilities/mcp-server") {
+  if (result.from !== targets.capabilitySlug) {
     return `path operation from mismatch — ${result.from}`;
   }
-  if (result.to !== "domains/vault-local-first") {
+  if (result.to !== targets.pathTargetSlug) {
     return `path operation to mismatch — ${result.to}`;
   }
   const pathFailure = pathShapeFailure(result);
   if (pathFailure) return pathFailure.replace("find_path", "path operation");
   if (!result.found) {
-    return "path operation expected mcp-server → vault-local-first path";
+    return `path operation expected ${targets.capabilitySlug} → ${targets.pathTargetSlug} path`;
   }
   if (!Array.isArray(result.edges)) {
     return "path operation response missing edges";
@@ -351,11 +364,11 @@ export function queryPathShapeFailure(result) {
   return null;
 }
 
-export function projectScopeShapeFailure(result) {
+export function projectScopeShapeFailure(result, targets) {
   if (result.operation !== "project_scope") {
     return `project_scope response operation mismatch — ${result.operation}`;
   }
-  if (result.project !== "project") {
+  if (result.project !== targets.projectSlug) {
     return `project_scope response project mismatch — ${result.project}`;
   }
   if (!result.node || result.node.slug !== result.project) {
@@ -400,12 +413,15 @@ export function projectScopeShapeFailure(result) {
   return null;
 }
 
-export function projectMapShapeFailure(result) {
+export function projectMapShapeFailure(result, targets = null) {
   if (result.operation !== "project_map") {
     return `project_map response operation mismatch — ${result.operation}`;
   }
   if (typeof result.project !== "string" || result.project.length === 0) {
     return "project_map response missing project";
+  }
+  if (targets && result.project !== targets.projectSlug) {
+    return `project_map response project mismatch — ${result.project}`;
   }
   const summaryFailure = numericSummaryFailure("project_map", result.summary, [
     "nodes",
@@ -470,11 +486,11 @@ export function projectMapShapeFailure(result) {
   return matchRowsFailure("project_map hotspots", result.hotspots);
 }
 
-export function domainProfileShapeFailure(result) {
+export function domainProfileShapeFailure(result, targets) {
   if (result.operation !== "domain_profile") {
     return `domain_profile response operation mismatch — ${result.operation}`;
   }
-  if (result.domain !== "domains/ai-agent-partner") {
+  if (result.domain !== targets.domainSlug) {
     return `domain_profile response domain mismatch — ${result.domain}`;
   }
   if (!result.node || result.node.slug !== result.domain) {
@@ -518,11 +534,11 @@ export function domainProfileShapeFailure(result) {
   return null;
 }
 
-export function domainMatrixShapeFailure(result) {
+export function domainMatrixShapeFailure(result, targets) {
   if (result.operation !== "domain_matrix") {
     return `domain_matrix response operation mismatch — ${result.operation}`;
   }
-  if (result.project !== "project") {
+  if (result.project !== targets.projectSlug) {
     return `domain_matrix response project mismatch — ${result.project}`;
   }
   const summaryFailure = numericSummaryFailure("domain_matrix", result.summary, [
@@ -669,7 +685,7 @@ export function componentsShapeFailure(result) {
   return null;
 }
 
-export function relationCheckShapeFailure(result) {
+export function relationCheckShapeFailure(result, targets = null) {
   if (result.operation !== "relation_check") {
     return `relation_check response operation mismatch — ${result.operation}`;
   }
@@ -677,6 +693,13 @@ export function relationCheckShapeFailure(result) {
     if (typeof result[key] !== "string" || result[key].length === 0) {
       return `relation_check response missing ${key}`;
     }
+  }
+  if (targets && (
+    result.from !== targets.capabilitySlug
+    || result.to !== targets.domainSlug
+    || result.relation !== targets.relationType
+  )) {
+    return `relation_check response target mismatch — ${result.from} -[${result.relation}]-> ${result.to}`;
   }
   if (typeof result.exists !== "boolean") {
     return "relation_check response missing exists flag";

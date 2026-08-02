@@ -155,6 +155,21 @@ describe('compileOntology', () => {
     ]);
   });
 
+  it('preserves a capability canonical implementation path without turning it into an edge', () => {
+    const result = compileOntology([
+      doc('capabilities/mcp-server', {
+        kind: 'capability',
+        title: 'MCP server',
+        path: 'mcp/src',
+      }),
+    ]);
+
+    assert.equal(result.nodeCount, 1);
+    assert.equal(result.nodes[0].path, 'mcp/src');
+    assert.equal(result.edgeCount, 0);
+    assert.deepEqual(result.edges, []);
+  });
+
   it('keeps graphHash stable across mtime-only changes', () => {
     const first = compileOntology([
       timedDoc('domains/auth', { kind: 'domain', title: 'Auth' }, 10),

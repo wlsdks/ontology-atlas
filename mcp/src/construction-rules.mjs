@@ -61,7 +61,7 @@
  * It cannot. Writing "single source" over a duplicate does not make it one —
  * only the gate does.
  *
- * ## Status (2026-07-31, PR1 of six)
+ * ## Status (2026-08-02)
  *
  * The **gate-logic half is now wired**: `mcp/src/vault.mjs` imports
  * {@link looksLikePath} and the message builders below from this module, and it
@@ -71,12 +71,12 @@
  * routes around it, and `tests/contract/vault-schema.contract.test.ts` fails if
  * the two packages' thresholds drift.
  *
- * The **prompt half is not yet wired**: `CONSTRUCTION_RULES_EN`,
- * `ELEMENT_NAMING_RULE_EN`, `ELEMENT_NAMING_RULE_BATCH_EN`, and
- * `CHAT_RULES_DELTA_EN` still have no consumer and no contract test. Those are
- * PR2 (`SERVER_INSTRUCTIONS` / tool descriptions) and PR3 (in-app chat prompt).
- * Until then, treat the four prompt strings as drafts and the four functions
- * below as canon.
+ * The **prompt half is wired too**: `CONSTRUCTION_RULES_EN` is interpolated into
+ * `SERVER_INSTRUCTIONS`; the naming rules are appended to the single/batch tool
+ * descriptions; and the in-app chat carries the construction rules plus
+ * `CHAT_RULES_DELTA_EN`. `construction-rules.contract.test.ts` proves the MCP
+ * import path, while `vault-schema.contract.test.ts` proves the app's necessary
+ * literal copy stays byte-aligned with this canon.
  */
 
 /**
@@ -133,12 +133,13 @@ export const CONSTRUCTION_RULES_EN = `## Construction rules — read before add_
    a problem.
 5. This procedure does not block writes. Skipping it still succeeds; \`warnings\` /
    \`postWriteMaintenance\` on the response flags it for cleanup instead.
-6. When you create a \`capability\`, attach its EVIDENCE in the same pass: the file
-   or directory the behavior lives in goes into \`elements:\` — either the slug of an
-   element node, or the path itself, which counts. A capability with an empty
-   \`elements:\` is a claim nobody can open: an agent handed only this vault can
-   describe the behavior and cannot find it. This does not block the write either;
-   the node is reported back under \`capability_without_evidence\` in
+6. When you create a \`capability\`, attach its EVIDENCE in the same pass. Put one
+   canonical implementation entry point in \`path:\` — the repo-relative file or
+   directory an unfamiliar agent should open first. \`elements:\` contains only
+   slugs of real element nodes whose implementation roles differ in a sentence;
+   never put a raw file path in that graph relation. A capability with neither
+   \`path:\` nor an element relation is a claim nobody can open. This does not block
+   the write; the node is reported under \`capability_without_evidence\` in
    \`maintenance_plan\` until it points at something.`;
 
 /**
@@ -346,7 +347,7 @@ export function pathShapedReferenceMessage({ slug, key, refs, count, sampleLimit
  * agents to route around the tool.
  */
 export function capabilityWithoutEvidenceMessage({ slug }) {
-  return `"${slug}" is a capability with no \`elements:\` entry, so nothing in the vault says where this behavior lives in code. The write succeeded and nothing here blocks it — but an agent handed only this vault can describe this capability and cannot open it, which is the failure this warning exists to name. Attach evidence while you still have the file in hand: patch_concept({slug:"${slug}", frontmatter:{elements:["<path or element slug>"]}}). A raw path counts as evidence; it does not have to become a node. Until it points at something, this node is listed under \`capability_without_evidence\` in query_ontology({operation:"maintenance_plan"}).`;
+  return `"${slug}" is a capability with neither a canonical \`path:\` entrypoint nor an \`elements:\` relation to a real implementation concept, so nothing in the vault says where this behavior lives in code. The write succeeded and nothing here blocks it — but an agent handed only this vault can describe this capability and cannot open it. Attach evidence while you still have the file in hand: patch_concept({slug:"${slug}", frontmatter:{path:"<repo-relative file or directory>"}}). Create an element node only when a distinct implementation role earns ontology identity. Until it points at something, this node is listed under \`capability_without_evidence\` in query_ontology({operation:"maintenance_plan"}).`;
 }
 
 /**

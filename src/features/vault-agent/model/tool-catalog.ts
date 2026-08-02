@@ -119,7 +119,11 @@ const CONCEPT_SPEC_SCHEMA: AgentJsonSchema = {
       maxItems: GRAPH_REF_ARRAY_MAX_ITEMS,
       items: { type: 'string' },
     },
-    path: { type: 'string' },
+    path: {
+      type: 'string',
+      description:
+        'One canonical implementation entrypoint for a capability or element (repo-relative file or directory).',
+    },
     body: { type: 'string' },
     labels: LOCALE_LABELS_SCHEMA,
   },
@@ -389,7 +393,8 @@ export const AGENT_WRITE_TOOLS: readonly AgentToolDefinition[] = [
         },
         path: {
           type: 'string',
-          description: 'Implementation source path for an element (repo-relative).',
+          description:
+            'One canonical implementation entrypoint for a capability or element (repo-relative file or directory).',
         },
         body: { type: 'string', description: 'Markdown body. Include a definition and its boundary.' },
         labels: LOCALE_LABELS_SCHEMA,

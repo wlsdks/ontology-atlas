@@ -5,7 +5,9 @@ import type { LlmChatEcho } from '@/shared/lib/tauri-llm';
 
 import { runTurn, startTurn, type AgentLoopDeps } from './agent-loop';
 import { anthropicAdapter } from './providers/anthropic';
+import { localAdapter } from './providers/local';
 import { EMPTY_SCREEN_CONTEXT } from './screen-context';
+import { AGENT_TOOLS } from './tool-catalog';
 import type { ToolExecution } from './tool-executor';
 import { AGENT_ROUND_CAP } from './types';
 
@@ -14,6 +16,7 @@ const NOTICES: AgentLoopDeps['notices'] = {
   noToolCall: ({ round, cap }) => `${round}/${cap}번째에서 도구를 한 번도 안 부르고 멈췄어요`,
   aborted: '여기까지 읽었어요',
   networkFailed: '연결에 실패했어요',
+  timedOut: '로컬 모델이 60초 안에 답하지 못했어요',
   rateLimited: '지금은 호출 한도예요',
   rejected: '키가 거부됐어요',
   auditBlocked: '기록을 남길 수 없어 보내지 않았어요',
@@ -49,6 +52,36 @@ const TOOL_CALL = {
   ],
   stop_reason: 'tool_use',
 };
+
+const OPENAI_TEXT_ONLY = {
+  choices: [
+    {
+      message: { role: 'assistant', content: '먼저 구조를 살펴보겠습니다.' },
+      finish_reason: 'stop',
+    },
+  ],
+};
+
+function openAiTool(name: string, args: Record<string, unknown> = {}) {
+  return {
+    choices: [
+      {
+        message: {
+          role: 'assistant',
+          content: '',
+          tool_calls: [
+            {
+              id: `call_${name}`,
+              type: 'function',
+              function: { name, arguments: JSON.stringify(args) },
+            },
+          ],
+        },
+        finish_reason: 'tool_calls',
+      },
+    ],
+  };
+}
 
 function okExecution(overrides: Partial<ToolExecution> = {}): ToolExecution {
   return {
@@ -88,6 +121,107 @@ describe('startTurn — 누른 프레임에 반응한다', () => {
 });
 
 describe('runTurn', () => {
+  it('로컬 모델이 필수 읽기를 생략하면 한 번 교정한 뒤 명시적으로 실패한다', async () => {
+    const send = vi.fn<Send>(async () => echo(OPENAI_TEXT_ONLY));
+    const d = deps({
+      adapter: localAdapter,
+      send,
+      tools: AGENT_TOOLS,
+      model: 'qwen3:8b',
+    });
+
+    const result = await runTurn(
+      d,
+      startTurn({ text: '구조를 감사해줘', screenContext: EMPTY_SCREEN_CONTEXT }),
+      { signal: new AbortController().signal },
+    );
+
+    expect(send).toHaveBeenCalledTimes(2);
+    const retryBody = JSON.parse(send.mock.calls[1]![0].body) as {
+      messages: Array<{ role: string; content?: string }>;
+    };
+    expect(retryBody.messages.at(-1)).toEqual({
+      role: 'user',
+      content:
+        'Call list_kinds now to read the ontology census. Do not answer or describe a plan.',
+    });
+    expect(result.turn.status).toBe('failed');
+    expect(result.turn.events.some((event) => event.kind === 'assistant')).toBe(false);
+    expect(result.turn.events.at(-1)).toMatchObject({
+      code: 'failed',
+      text: expect.stringContaining(
+        'skipped or mis-scoped the required list_kinds evidence read twice',
+      ),
+    });
+  });
+
+  it('로컬 모델이 교정 뒤 필수 읽기를 수행하면 다음 근거 단계로 진행한다', async () => {
+    const candidates = [
+      'domains/agent-experience',
+      'domains/graph-modeling',
+      'domains/local-vault-management',
+    ];
+    const responses = [
+      OPENAI_TEXT_ONLY,
+      openAiTool('list_kinds'),
+      openAiTool('list_concepts', { kind: 'domain', summary: true, limit: 12 }),
+      openAiTool('get_concepts', { slugs: candidates, body: 'full' }),
+      {
+        choices: [
+          {
+            message: {
+              role: 'assistant',
+              content:
+                '[[domains/agent-experience]], [[domains/graph-modeling]], [[domains/local-vault-management]]를 확인했습니다.',
+            },
+            finish_reason: 'stop',
+          },
+        ],
+      },
+    ];
+    const send = vi.fn<Send>(async () => echo(responses.shift()));
+    const execute = vi.fn(async (call) => {
+      if (call.name === 'list_kinds') {
+        return okExecution({
+          content: '{"total":112,"byKind":{"domain":8,"capability":49,"element":54}}',
+          target: call.name,
+          summary: `읽음: ${call.name}`,
+          readSlugs: [],
+        });
+      }
+      if (call.name === 'list_concepts') {
+        return okExecution({
+          content: JSON.stringify({ rows: candidates.map((slug) => ({ slug })) }),
+          target: call.name,
+          summary: `읽음: ${call.name}`,
+          readSlugs: [],
+        });
+      }
+      return okExecution({
+        content: JSON.stringify({
+          concepts: candidates.map((slug) => ({ slug, found: true })),
+        }),
+        target: call.name,
+        summary: `읽음: ${call.name}`,
+        readSlugs: candidates,
+      });
+    });
+
+    const result = await runTurn(
+      deps({ adapter: localAdapter, send, execute, tools: AGENT_TOOLS, model: 'qwen3:8b' }),
+      startTurn({ text: '구조를 감사해줘', screenContext: EMPTY_SCREEN_CONTEXT }),
+      { signal: new AbortController().signal },
+    );
+
+    expect(result.turn.status).toBe('done');
+    expect(send).toHaveBeenCalledTimes(5);
+    expect(execute.mock.calls.map(([call]) => call.name)).toEqual([
+      'list_kinds',
+      'list_concepts',
+      'get_concepts',
+    ]);
+  });
+
   it('도구가 없으면 왕복 1회로 끝난다', async () => {
     const d = deps();
     const result = await runTurn(d, startTurn({ text: '뭐가 이상해?', screenContext: EMPTY_SCREEN_CONTEXT }), {
@@ -121,6 +255,36 @@ describe('runTurn', () => {
     // 상한 왕복 + 마무리 1회.
     expect(send).toHaveBeenCalledTimes(AGENT_ROUND_CAP + 1);
     expect(result.turn.events.at(-1)).toMatchObject({ code: 'round-cap' });
+  });
+
+  it('상한 뒤 마무리 답도 provider 검토를 우회하지 못한다', async () => {
+    let sendCount = 0;
+    const send = vi.fn<Send>(async () => {
+      sendCount += 1;
+      return sendCount <= AGENT_ROUND_CAP ? echo(TOOL_CALL) : echo(TEXT_ONLY);
+    });
+    const adapter = {
+      ...anthropicAdapter,
+      reviewResponse: (
+        _turn: Parameters<NonNullable<typeof localAdapter.reviewResponse>>[0],
+        response: Parameters<NonNullable<typeof localAdapter.reviewResponse>>[1],
+      ) =>
+        response.toolCalls.length > 0
+          ? ({ action: 'accept' } as const)
+          : ({
+              action: 'retry',
+              expectedTool: 'closing-quality',
+              message: 'closing answer failed review',
+            } as const),
+    };
+    const result = await runTurn(
+      deps({ send, adapter }),
+      startTurn({ text: 'x', screenContext: EMPTY_SCREEN_CONTEXT }),
+      { signal: new AbortController().signal },
+    );
+    expect(send).toHaveBeenCalledTimes(AGENT_ROUND_CAP + 1);
+    expect(result.turn.status).toBe('failed');
+    expect(result.turn.events.some((event) => event.kind === 'assistant')).toBe(false);
   });
 
   it('중단하면 그 자리에서 멈추고 정리 행을 남긴다', async () => {
@@ -206,6 +370,21 @@ describe('runTurn', () => {
       { signal: new AbortController().signal },
     );
     expect(result.turn.events.at(-1)).toMatchObject({ code: 'audit-blocked' });
+  });
+
+  it('생성 시간 초과를 연결 실패로 숨기지 않는다', async () => {
+    const send = vi.fn<Send>(async () => {
+      throw new Error('모델이 제한 시간 안에 응답하지 않았어요');
+    });
+    const result = await runTurn(
+      deps({ send }),
+      startTurn({ text: 'x', screenContext: EMPTY_SCREEN_CONTEXT }),
+      { signal: new AbortController().signal },
+    );
+    expect(result.turn.events.at(-1)).toMatchObject({
+      code: 'timed-out',
+      text: NOTICES.timedOut,
+    });
   });
 
   it('쓰기 시도는 실행되지 않고 제안 의사로만 모인다', async () => {

@@ -1,6 +1,7 @@
 #!/usr/bin/env node
 import { spawnSync } from "node:child_process";
 import fs from "node:fs";
+import os from "node:os";
 import path from "node:path";
 import { loadMacosReleaseNames, resolveMacosExecutable } from "./lib/macos-release-names.mjs";
 
@@ -17,6 +18,28 @@ const DEFAULT_MIN_WINDOW_SIZE = "1360x840";
 const DEFAULT_MIN_WEBVIEW_SIZE = "1400x860";
 const PROCESS_EXIT_TIMEOUT_MS = 6000;
 const PROCESS_POLL_MS = 250;
+const BUNDLE_IDENTIFIER = "dev.jinan.ontology-atlas";
+
+export function clearInstalledWebkitAssetCaches({
+  homeDir = os.homedir(),
+  bundleIdentifier = BUNDLE_IDENTIFIER,
+} = {}) {
+  const webkitCacheRoot = path.join(
+    homeDir,
+    "Library",
+    "Caches",
+    bundleIdentifier,
+    "WebKit",
+  );
+  const assetCaches = ["NetworkCache", "CacheStorage"].map((name) =>
+    path.join(webkitCacheRoot, name),
+  );
+  const removed = assetCaches.filter((cachePath) => fs.existsSync(cachePath));
+  for (const cachePath of removed) {
+    fs.rmSync(cachePath, { recursive: true, force: true });
+  }
+  return removed;
+}
 
 function readMacosAppleLanguages() {
   const result = spawnSync("defaults", ["read", "-g", "AppleLanguages"], {
@@ -130,7 +153,7 @@ export function buildDeployMacosAppPlan(options) {
   if (includeTopologyDragProof) fallbackVerifyArgs.push("--verify-topology-drag");
 
   return {
-    build: options.skipBuild ? null : ["pnpm", ["desktop:build:app"]],
+    build: options.skipBuild ? null : ["pnpm", ["desktop:build:app:local"]],
     quit: ["osascript", ["-e", `tell application "${names.appName}" to quit`]],
     removeInstalled: ["rm", ["-rf", options.installPath]],
     copyInstalled: ["ditto", [options.builtAppPath, options.installPath]],
@@ -247,6 +270,12 @@ function main() {
       );
       process.exit(1);
     }
+  }
+  const clearedCaches = clearInstalledWebkitAssetCaches();
+  if (clearedCaches.length > 0) {
+    console.log(
+      `[desktop-deploy-app] cleared stale WebKit asset caches: ${clearedCaches.join(", ")}`,
+    );
   }
   run(plan.removeInstalled[0], plan.removeInstalled[1]);
   run(plan.copyInstalled[0], plan.copyInstalled[1]);

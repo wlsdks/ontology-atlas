@@ -4,6 +4,7 @@ kind: capability
 title: Data Source Mode Branching
 domain: domains/local-vault-management
 elements: []
+path: src/features/data-source-mode
 created_by: "agent:unknown"
 ---
 
