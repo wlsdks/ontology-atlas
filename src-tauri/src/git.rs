@@ -587,6 +587,13 @@ pub struct GitStatusResult {
     changed_count: usize,
     /// vault 밖에 이미 staged 된 경로(스냅샷이 건드리지 않음 — 정보용).
     staged_outside_vault: Vec<String>,
+    /// upstream 에 아직 안 간 내 걸음 수. upstream 이 없으면 `None`.
+    ///
+    /// 이 둘이 없으면 화면은 「보낼 게 있는지」를 말할 수 없어 Push 버튼이
+    /// 항상 켜져 있거나 항상 꺼져 있다 — 둘 다 거짓말이다.
+    ahead: Option<usize>,
+    /// upstream 에는 있고 내게 없는 걸음 수. upstream 이 없으면 `None`.
+    behind: Option<usize>,
 }
 
 #[derive(Debug, Serialize)]
@@ -634,6 +641,10 @@ pub struct GitCommitInfo {
     subject: String,
     relative_time: String,
     iso_time: String,
+    /// 이 걸음이 건드린 vault 파일 — `kind`/`slug` 가 실려 있어 화면이 커밋을
+    /// 「개념이 어떻게 변했나」로 읽을 수 있다. 이게 없으면 이력은 커밋 제목
+    /// 문자열일 뿐이고, 개념 단위로 볼 방법이 아예 없다.
+    files: Vec<ChangeEntry>,
 }
 
 #[derive(Debug, Serialize)]
@@ -643,6 +654,18 @@ pub struct GitDiffResult {
     files: Vec<ChangeEntry>,
     /// 추적 파일의 텍스트 diff (신규 파일은 목록으로만).
     diff: String,
+}
+
+#[derive(Debug, Serialize)]
+#[serde(rename_all = "camelCase")]
+pub struct GitFetchResult {
+    ok: bool,
+    /// upstream ref (예: origin/main). 없으면 빈 문자열 + `ok:false`.
+    upstream: String,
+    /// fetch **직후** 다시 잰 갈라짐 — 화면이 이 값으로 Pull/Push 를 켠다.
+    ahead: Option<usize>,
+    behind: Option<usize>,
+    summary: String,
 }
 
 #[derive(Debug, Serialize)]
@@ -670,20 +693,88 @@ pub fn git_status(vault_path: String) -> Result<GitStatusResult, String> {
             upstream: None,
             changed_count: 0,
             staged_outside_vault: Vec::new(),
+            ahead: None,
+            behind: None,
         });
     };
     let pathspec = vault_pathspec(&repo_root, &vault_dir);
     let rows = get_porcelain_status(&repo_root, &pathspec)?;
     let full_rows = get_full_porcelain_status(&repo_root);
     let staged_outside = find_staged_outside_vault(&full_rows, &pathspec);
+    let upstream = get_upstream_ref(&repo_root);
+    let (ahead, behind) = match upstream.as_deref() {
+        Some(_) => divergence_counts(&repo_root),
+        None => (None, None),
+    };
 
     Ok(GitStatusResult {
         initialized: true,
         repo_root: Some(repo_root.to_string_lossy().into_owned()),
         branch: get_current_branch(&repo_root),
-        upstream: get_upstream_ref(&repo_root),
+        upstream,
         changed_count: rows.len(),
         staged_outside_vault: staged_outside,
+        ahead,
+        behind,
+    })
+}
+
+/// upstream 과 얼마나 갈라졌나 — `(ahead, behind)`.
+///
+/// 이 값은 **마지막 fetch 시점 기준**이다. git 이 원래 그렇다: 로컬은 원격을
+/// 다시 물어보기 전까지 자기가 아는 마지막 상태로 답한다. 그래서 화면에
+/// `Fetch` 가 따로 있어야 이 숫자가 갱신된다.
+fn divergence_counts(repo_root: &Path) -> (Option<usize>, Option<usize>) {
+    let out = match run_git(
+        repo_root,
+        &["rev-list", "--left-right", "--count", "HEAD...@{upstream}"],
+    ) {
+        Ok(o) if o.success => o,
+        // upstream 이 사라졌거나 참조가 깨졌으면 「모른다」 — 0 이 아니다.
+        _ => return (None, None),
+    };
+    let mut parts = out.stdout.split_whitespace();
+    let ahead = parts.next().and_then(|v| v.parse::<usize>().ok());
+    let behind = parts.next().and_then(|v| v.parse::<usize>().ok());
+    (ahead, behind)
+}
+
+/// 원격의 최신 상태를 **받아만 온다** — 작업 트리는 건드리지 않는다.
+///
+/// 신뢰 헌장: 네트워크를 타는 유일한 다른 명령(`git_snapshot(push)`·`git_pull`)
+/// 과 같은 규율이다 — 사용자가 누를 때만 돈다. 자동 호출 금지.
+#[tauri::command]
+pub fn git_fetch(vault_path: String) -> Result<GitFetchResult, String> {
+    let vault_dir = validate_vault_dir(&vault_path)?;
+    let repo_root = require_repo_root(&vault_dir)?;
+    let Some(upstream) = get_upstream_ref(&repo_root) else {
+        return Ok(GitFetchResult {
+            ok: false,
+            upstream: String::new(),
+            ahead: None,
+            behind: None,
+            summary: "보낼 곳이 아직 없어요".to_string(),
+        });
+    };
+    let out = run_git(&repo_root, &["fetch", "--prune"])?;
+    if !out.success {
+        let info = classify_git_error(&out.stderr, "fetch");
+        return Err(info.message);
+    }
+    let (ahead, behind) = divergence_counts(&repo_root);
+    Ok(GitFetchResult {
+        ok: true,
+        upstream,
+        ahead,
+        behind,
+        summary: match (ahead, behind) {
+            (Some(0), Some(0)) => "원격과 같아요".to_string(),
+            (a, b) => format!(
+                "내 걸음 {}개 · 원격 걸음 {}개",
+                a.unwrap_or(0),
+                b.unwrap_or(0)
+            ),
+        },
     })
 }
 
@@ -839,7 +930,12 @@ pub fn git_history(
     let pathspec = vault_pathspec(&repo_root, &vault_dir);
     let max_count = limit.unwrap_or(10).max(1).to_string();
     const SEP: char = '\x1f';
-    let format = format!("--pretty=format:%h{SEP}%H{SEP}%s{SEP}%cr{SEP}%cI");
+    /*
+     * 레코드 구분자를 **머리에** 둔다. 꼬리에 두면 `--name-status` 줄이 구분자
+     * 뒤로 밀려 다음 커밋의 것으로 붙는다.
+     */
+    const REC: char = '\x1e';
+    let format = format!("--pretty=format:{REC}%h{SEP}%H{SEP}%s{SEP}%cr{SEP}%cI");
 
     let out = run_git(
         &repo_root,
@@ -847,6 +943,8 @@ pub fn git_history(
             "log",
             &format!("--max-count={max_count}"),
             &format,
+            "--name-status",
+            "--no-renames",
             "--",
             &pathspec,
         ],
@@ -860,20 +958,72 @@ pub fn git_history(
         return Ok(Vec::new());
     }
     let commits = trimmed
-        .lines()
-        .filter(|l| !l.is_empty())
-        .filter_map(|line| {
-            let mut fields = line.split(SEP);
+        .split(REC)
+        .filter(|block| !block.trim().is_empty())
+        .filter_map(|block| {
+            let mut lines = block.trim_matches('\n').lines();
+            let mut fields = lines.next()?.split(SEP);
+            let info = (
+                fields.next()?.to_string(),
+                fields.next()?.to_string(),
+                fields.next().unwrap_or("").to_string(),
+                fields.next().unwrap_or("").to_string(),
+                fields.next().unwrap_or("").to_string(),
+            );
+            let files = lines
+                .filter_map(|line| history_change_entry(line, &repo_root, &vault_dir))
+                .collect();
             Some(GitCommitInfo {
-                short_hash: fields.next()?.to_string(),
-                hash: fields.next()?.to_string(),
-                subject: fields.next().unwrap_or("").to_string(),
-                relative_time: fields.next().unwrap_or("").to_string(),
-                iso_time: fields.next().unwrap_or("").to_string(),
+                short_hash: info.0,
+                hash: info.1,
+                subject: info.2,
+                relative_time: info.3,
+                iso_time: info.4,
+                files,
             })
         })
         .collect();
     Ok(commits)
+}
+
+/// `--name-status` 한 줄(`M\tpath`)을 `ChangeEntry` 로.
+///
+/// `kind` 는 **지금 디스크의 파일**에서 읽는다 — 그 커밋 시점의 blob 이 아니다.
+/// 개념의 정체는 시간이 지나도 같은 것으로 다루는 편이 화면에 유용하고,
+/// 커밋마다 `git show` 를 도는 비용을 치를 값이 없다. 지워진 파일은 경로에서
+/// 슬러그만 얻고 `kind` 는 비운다.
+fn history_change_entry(line: &str, repo_root: &Path, vault_dir: &Path) -> Option<ChangeEntry> {
+    let mut cols = line.split('\t');
+    let code = cols.next()?.trim();
+    let path = cols.next()?.trim();
+    if code.is_empty() || path.is_empty() {
+        return None;
+    }
+    let status = match code.chars().next()? {
+        'A' => "added",
+        'D' => "deleted",
+        'R' => "renamed",
+        _ => "modified",
+    };
+    let abs_path = repo_root.join(path);
+    let mut kind = None;
+    let mut slug = path_based_slug(vault_dir, &abs_path);
+    if path.ends_with(".md") && status != "deleted" {
+        let (k, s) = read_kind_slug(&abs_path);
+        if k.is_some() {
+            kind = k;
+        }
+        if let Some(s) = s {
+            slug = s;
+        }
+    }
+    Some(ChangeEntry {
+        path: path.to_string(),
+        status: status.to_string(),
+        kind,
+        slug,
+        renamed_from: None,
+    })
 }
 
 /// 아직 커밋 안 된 vault 범위 변경의 파일 목록 + 텍스트 diff.
@@ -1165,6 +1315,52 @@ mod tests {
         assert_eq!(rows[0].index, 'R');
         assert_eq!(rows[0].renamed_from.as_deref(), Some("docs/old.md"));
         assert_eq!(rows[0].path, "docs/new.md");
+    }
+
+    /// `--name-status` 한 줄이 `ChangeEntry` 가 되는가.
+    ///
+    /// 이 파싱이 이력의 「개념」을 만든다 — 여기서 조용히 빈 목록이 나오면
+    /// 화면은 모든 걸음을 「개념 밖」으로 그리고, 아무 에러도 안 난다.
+    #[test]
+    fn history_change_entry_reads_status_code_and_path() {
+        let repo = PathBuf::from("/repo");
+        let vault = PathBuf::from("/repo/docs");
+        let added = history_change_entry("A\tdocs/elements/foo.md", &repo, &vault).unwrap();
+        assert_eq!(added.status, "added");
+        assert_eq!(added.path, "docs/elements/foo.md");
+        // 디스크에 없는 파일이라 frontmatter 를 못 읽는다 → 경로 기반 슬러그.
+        assert_eq!(added.slug, "elements/foo");
+        assert_eq!(added.kind, None);
+
+        assert_eq!(
+            history_change_entry("D\tdocs/gone.md", &repo, &vault)
+                .unwrap()
+                .status,
+            "deleted"
+        );
+        assert_eq!(
+            history_change_entry("M\tdocs/x.md", &repo, &vault)
+                .unwrap()
+                .status,
+            "modified"
+        );
+        // `R100` 처럼 점수가 붙어도 첫 글자로 판정한다.
+        assert_eq!(
+            history_change_entry("R100\tdocs/y.md", &repo, &vault)
+                .unwrap()
+                .status,
+            "renamed"
+        );
+    }
+
+    /// 커밋 제목 줄과 파일 줄이 섞이면 안 된다 — 빈/깨진 줄은 버린다.
+    #[test]
+    fn history_change_entry_rejects_lines_without_a_tab() {
+        let repo = PathBuf::from("/repo");
+        let vault = PathBuf::from("/repo/docs");
+        assert!(history_change_entry("", &repo, &vault).is_none());
+        assert!(history_change_entry("no tab here", &repo, &vault).is_none());
+        assert!(history_change_entry("M\t", &repo, &vault).is_none());
     }
 
     #[test]
