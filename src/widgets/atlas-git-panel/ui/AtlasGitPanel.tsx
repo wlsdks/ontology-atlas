@@ -52,6 +52,9 @@ import {
 } from "@/shared/lib/tauri-git";
 import type { OntologyChangeset } from "@/shared/lib/ontology-tree";
 import { gitHostPlatformFrom, gitInstallGuide } from "@/shared/lib/git-install-guide";
+import { TopologyV2KindGlyph } from "@/shared/ui/topology-v2-kind-glyph";
+import type { KnowledgeGraphEdge, KnowledgeGraphNode } from "@/entities/knowledge-graph";
+import { matchNodeId } from "../model/build-concept-ego";
 import { cn } from "@/shared/lib/cn";
 import { ATLAS_CLI } from "@/shared/config/cli-invocation";
 
@@ -154,6 +157,16 @@ export interface AtlasGitPanelProps {
   vaultPath?: string | null;
   /** 웹 강등 요약에 쓸 세션 changeset — HomePage 의 `ontologyChangeset`. */
   sessionChangeset?: OntologyChangeset | null;
+  /**
+   * 볼트 그래프 — 걸음이 바꾼 파일을 **개념**으로 옮기는 데 쓴다.
+   *
+   * 훅으로 안에서 읽지 않고 **밖에서 받는다**. `useOntologyInsight` 는 안에서
+   * `useLocalVault` 를 부르는데, 위젯이 그걸 직접 부르면 이 컴포넌트를 그리는
+   * 모든 테스트가 프로바이더를 요구하게 된다(실측: 33개가 한 번에 터졌다).
+   * 데이터를 밖에서 넣으면 위젯은 순수하게 남고 호출부가 그 결정을 진다 —
+   * `sessionChangeset` 이 이미 그 관례다.
+   */
+  graph?: { nodes: readonly KnowledgeGraphNode[]; edges: readonly KnowledgeGraphEdge[] } | null;
   className?: string;
 }
 
@@ -227,6 +240,7 @@ type SetupStep = 1 | 2 | 3;
 export function AtlasGitPanel({
   vaultPath = null,
   sessionChangeset = null,
+  graph = null,
   className,
 }: AtlasGitPanelProps) {
   const t = useTranslations("atlasGit");
@@ -250,6 +264,31 @@ export function AtlasGitPanel({
    * 읽기 전용 감지라 자동 호출이 헌장의 「자동 실행 금지」와 충돌하지 않는다:
    * `git_probe` 는 아무것도 설치하지 않고 실행 가능 여부만 본다.
    */
+  /*
+   * 걸음마다 「바꾼 개념」. 종전에는 커밋 **제목 문자열을 파싱해서 추측**했는데
+   * (`describeSnapshotSubject`), 그건 우리 도구가 쓴 제목에만 맞고 사람이 쓴
+   * 커밋에는 안 맞았다. #842 가 커밋별 파일 + kind/slug 를 실어 보내므로 이제
+   * 추측하지 않는다 — 볼트의 개념 노드에 실제로 맞는 것만 센다.
+   */
+  const conceptsByHash = useMemo(() => {
+    const nodes = graph?.nodes ?? [];
+    const map = new Map<string, { id: string; label: string; kind: string }[]>();
+    for (const commit of history) {
+      const seen = new Set<string>();
+      const list: { id: string; label: string; kind: string }[] = [];
+      for (const file of commit.files ?? []) {
+        const id = matchNodeId(file, nodes);
+        if (!id || seen.has(id)) continue;
+        const node = nodes.find((n) => n.id === id);
+        if (!node) continue;
+        seen.add(id);
+        list.push({ id, label: node.display || node.title, kind: node.kind });
+      }
+      map.set(commit.hash, list);
+    }
+    return map;
+  }, [history, graph]);
+
   const [gitInstalled, setGitInstalled] = useState<boolean | null>(null);
   const probeGit = useCallback(async () => {
     try {
@@ -619,6 +658,7 @@ export function AtlasGitPanel({
             onRemoteAction={(kind) => void runRemote(kind)}
             remoteActionNotice={remoteActionNotice}
             remoteActionError={remoteActionError}
+            concepts={conceptsByHash}
           />
         ) : stage === "no-vault" ? (
           <NoVaultSetup key={stage} t={t} />
@@ -1623,15 +1663,27 @@ function DiffView({
  * 치수 규칙성: 시각은 고정 폭 열, 요약과 이름은 각각 한 줄로 클램프되고
  * 이름이 없는 걸음도 그 줄의 자리를 지킨다(높이 `--git-step-h`).
  */
+/**
+ * 한 걸음 행에 이름을 몇 개까지 보일까. **고정 개수 + 나머지 캡션**이다 —
+ * "들어가는 만큼" 은 반복 세트의 리듬을 내용 길이가 정하게 만든다(치수 규칙성).
+ */
+const STEP_CONCEPT_SLOTS = 2;
+
 function StepList({
   t,
   history,
+  concepts,
   expandedHash,
   setExpandedHash,
   settledHash,
 }: {
   t: Translator;
   history: GitCommitInfo[];
+  /**
+   * 걸음 해시 → 그 걸음이 바꾼 **볼트 개념**. 커밋 제목을 파싱한 추측이
+   * 아니라 #842 가 실어 보낸 kind/slug 를 그래프에 맞춘 결과다.
+   */
+  concepts: ReadonlyMap<string, readonly { id: string; label: string; kind: string }[]>;
   expandedHash: string | null;
   setExpandedHash: (v: string | null) => void;
   /** 방금 남긴 커밋의 해시 — 그 한 줄만 확정 램프로 정착시킨다. */
@@ -1663,6 +1715,7 @@ function StepList({
             ? parts.join(" · ")
             : t("stepNoConcepts")
           : commit.subject;
+        const stepConcepts = concepts.get(commit.hash) ?? [];
         const names = summary.slugs.join(", ");
         const trail = summary.overflow > 0 ? t("moreSlugs", { count: summary.overflow }) : "";
         const expanded = expandedHash === commit.hash;
@@ -1686,13 +1739,35 @@ function StepList({
                 {commit.relativeTime}
               </span>
               <span className="flex min-w-0 flex-1 flex-col">
-                <span className="truncate text-body text-[color:var(--color-text-primary)]">
-                  {headline}
+                {/* 주어는 **개념**이다. 개념을 안 건드린 걸음만 요약/원문이
+                    그 자리를 대신한다 — 빈 줄로 두면 무슨 걸음인지 알 수 없다. */}
+                <span className="flex min-w-0 items-center gap-2 truncate text-body text-[color:var(--color-text-primary)]">
+                  {stepConcepts.length > 0 ? (
+                    <>
+                      {stepConcepts.slice(0, STEP_CONCEPT_SLOTS).map((concept) => (
+                        <span key={concept.id} className="inline-flex shrink-0 items-center gap-1.5">
+                          <TopologyV2KindGlyph kind={concept.kind} size={11} />
+                          <span className="truncate font-medium">{concept.label}</span>
+                        </span>
+                      ))}
+                      {stepConcepts.length > STEP_CONCEPT_SLOTS ? (
+                        <span className="shrink-0 text-label text-[color:var(--color-text-quaternary)]">
+                          {t("moreSlugs", { count: stepConcepts.length - STEP_CONCEPT_SLOTS })}
+                        </span>
+                      ) : null}
+                    </>
+                  ) : (
+                    <span className="truncate">{headline}</span>
+                  )}
                 </span>
-                {/* 이름 줄은 비어도 자리를 지킨다 — 반복 세트의 행 높이가
-                    이름의 유무로 정해지지 않게. */}
-                <span className="truncate font-mono text-caption text-[color:var(--color-text-quaternary)]">
-                  {names && trail ? `${names} · ${trail}` : names || trail || " "}
+                {/* 아래 줄은 비어도 자리를 지킨다 — 반복 세트의 행 높이가
+                    내용의 유무로 정해지지 않게(치수 규칙성). */}
+                <span className="truncate text-label text-[color:var(--color-text-quaternary)]">
+                  {stepConcepts.length > 0
+                    ? commit.subject
+                    : names && trail
+                      ? `${names} · ${trail}`
+                      : names || trail || " "}
                 </span>
               </span>
               <span className="shrink-0 font-mono text-caption text-[color:var(--color-text-quaternary)]">
@@ -1931,6 +2006,7 @@ function DesktopBody({
   onRemoteAction,
   remoteActionNotice,
   remoteActionError,
+  concepts,
 }: {
   /** `navigator.platform ?? userAgent` — 설치 안내를 플랫폼별로 고르는 힌트. */
   hostPlatformHint: string;
@@ -1982,6 +2058,8 @@ function DesktopBody({
   onRemoteAction: (kind: "fetch" | "pull" | "push") => void;
   remoteActionNotice: string | null;
   remoteActionError: string | null;
+  /** 걸음 해시 → 그 걸음이 바꾼 볼트 개념. */
+  concepts: ReadonlyMap<string, readonly { id: string; label: string; kind: string }[]>;
 }) {
   /**
    * 방금 남긴 커밋의 해시 — 지난 걸음 목록에서 **그 한 줄만** 확정 램프로
@@ -2234,6 +2312,7 @@ function DesktopBody({
             <StepList
               t={t}
               history={history}
+              concepts={concepts}
               expandedHash={expandedHash}
               setExpandedHash={setExpandedHash}
               settledHash={settledHash}
@@ -2344,6 +2423,7 @@ function DesktopBody({
                 <StepList
                   t={t}
                   history={history}
+                  concepts={concepts}
                   expandedHash={expandedHash}
                   setExpandedHash={setExpandedHash}
                   settledHash={settledHash}

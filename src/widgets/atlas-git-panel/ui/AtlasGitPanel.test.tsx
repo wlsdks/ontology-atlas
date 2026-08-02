@@ -731,3 +731,82 @@ describe("AtlasGitPanel — 원격 세 동작 (Fetch · Pull · Push)", () => {
     expect(screen.queryByTestId("atlas-git-remote-push")).toBeNull();
   });
 });
+
+describe("AtlasGitPanel — 걸음의 주어는 개념이다", () => {
+  /*
+   * 종전에는 커밋 **제목 문자열을 파싱해서** 무엇이 바뀌었는지 추측했다. 그건
+   * 우리 도구가 쓴 제목에만 맞고 사람이 쓴 커밋에는 안 맞아서, 실제 화면은
+   * 개념을 하나도 안 보여주고 제목만 나열했다(소유자 실측). #842 가 커밋별
+   * kind/slug 를 실어 보내므로 이제 추측하지 않는다.
+   */
+  const GRAPH = {
+    nodes: [
+      {
+        id: "capability:foo",
+        title: "Foo Capability",
+        display: "첫 실행 안내",
+        kind: "capability",
+        projectIds: [],
+        evidenceIds: ["capabilities/foo"],
+        hasOwnDocument: true,
+        agentSlug: "capabilities/foo",
+        ref: null,
+        lastApprovedAt: "",
+        lastApprovedBy: "",
+        summary: null,
+      },
+    ],
+    edges: [],
+  } as unknown as NonNullable<Parameters<typeof AtlasGitPanel>[0]["graph"]>;
+
+  const HISTORY_WITH_FILES = [
+    {
+      shortHash: "abc1234",
+      hash: "abc1234def5678",
+      subject: "fix: 사람이 직접 쓴 커밋 제목이라 파싱으로는 못 읽는다",
+      relativeTime: "2 hours ago",
+      isoTime: "2026-07-23T10:00:00+09:00",
+      files: [
+        {
+          path: "docs/capabilities/foo.md",
+          status: "modified",
+          kind: "capability",
+          slug: "capabilities/foo",
+          renamedFrom: null,
+        },
+      ],
+    },
+  ];
+
+  it("걸음 행이 커밋 제목이 아니라 개념 이름을 주어로 그린다", async () => {
+    installDesktopGit({ history: HISTORY_WITH_FILES });
+    renderPanel(<AtlasGitPanel vaultPath="/repo/vault" graph={GRAPH} />);
+    fireEvent.click(await screen.findByTestId("atlas-git-history-tab"));
+    const step = screen.getByTestId("atlas-git-history-item");
+    expect(step).toHaveTextContent("첫 실행 안내");
+    // 원문은 사라지지 않는다 — 아래 줄에서 그 걸음을 구별해 준다.
+    expect(step).toHaveTextContent("사람이 직접 쓴 커밋 제목");
+  });
+
+  it("볼트의 개념이 아닌 파일만 건드린 걸음은 개념을 지어내지 않는다", async () => {
+    installDesktopGit({
+      history: [
+        {
+          ...HISTORY_WITH_FILES[0],
+          files: [
+            {
+              path: "README.md",
+              status: "modified",
+              kind: null,
+              slug: "README",
+              renamedFrom: null,
+            },
+          ],
+        },
+      ],
+    });
+    renderPanel(<AtlasGitPanel vaultPath="/repo/vault" graph={GRAPH} />);
+    fireEvent.click(await screen.findByTestId("atlas-git-history-tab"));
+    expect(screen.getByTestId("atlas-git-history-item")).not.toHaveTextContent("첫 실행 안내");
+  });
+});

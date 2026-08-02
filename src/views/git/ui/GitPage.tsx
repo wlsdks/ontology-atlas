@@ -31,7 +31,7 @@ import { AtlasGitPanel, useAtlasGitContext } from "@/widgets/atlas-git-panel";
  * 라우트·레일·흡수를 먼저 착지시켜 입구가 하나가 되게 하는 것이 이 슬라이스다.
  */
 export function GitPage() {
-  const { vaultPath, changeset } = useAtlasGitContext();
+  const { vaultPath, changeset, graph } = useAtlasGitContext();
 
   return (
     <main
@@ -56,7 +56,12 @@ export function GitPage() {
           연결 전 상태(셋업 모드)에서는 패널이 이 프레임 정중앙에 단일 컬럼으로
           선다 — 폭을 좁히는 건 패널이 하고, 프레임은 그대로 목적지 폭이다. */}
       <div className="mx-auto flex w-full max-w-[1280px] min-h-0 flex-1 flex-col overflow-hidden px-4 pt-5 sm:px-8">
-        <AtlasGitPanel vaultPath={vaultPath} sessionChangeset={changeset} className="flex-1" />
+        <AtlasGitPanel
+          vaultPath={vaultPath}
+          sessionChangeset={changeset}
+          graph={graph}
+          className="flex-1"
+        />
       </div>
     </main>
   );
