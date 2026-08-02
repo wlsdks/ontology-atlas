@@ -42,6 +42,38 @@
 
 ---
 
+## 2026-08-03 — README의 최근 변경 증명은 전체 설치 앱 프레임과 부모 맥락을 보존한다
+
+**소집**: 디자인 카운슬 — 위계 · 체계 · 도해 · 작업대, 독립 검토 뒤 최종 판정 ·
+**트리거**: README에 설치 앱의 Recent 렌즈를 공개 증거로 추가하는 시각 변경
+
+**Primary moment**: FDE가 노드를 하나씩 열기 전에 이번 주 무엇이 바뀌었고 어느
+project/domain 맥락에 속하는지 판단한다.
+
+**Attention stack**: base = 물러난 전체 graph · support = 부모 체인과 Recent/7d
+controls · focus = 최근 노드의 cyan dashed ring과 INDEX 결과 · blocking = 없음 ·
+utility = 설치 앱 chrome.
+
+**결정**: 3248×2122 Retina PNG를 Journey 3의 선택 노드 설명과 Footprints 사이에
+full-width로 둔다. 내부 graph/INDEX/app chrome을 자르거나 새 overlay·marketing
+color·token을 만들지 않는다. 오래된 노드는 시각적으로 물러나게 두고, INDEX가
+최근 노드와 project/domain 부모 체인을 함께 보존하는 장면을 사용한다. Recent는
+local Markdown file mtime에서 파생되며, 화면의 `7`은 촬영용 storefront fixture
+결과이지 graph·fan-out·제품 상한이 아니다. 캡션과 alt text가 이 사실을 명시한다.
+
+**검증**: `/Applications/Ontology Atlas.app`에서 촬영 전용 로컬
+`samples/storefront` 복사본을 열어 Recent 7d를 실동작시킨 뒤 native capture했다.
+문서 링크 검사가 PNG 참조를 확인하고 GitHub 렌더에서 full-width 배치를 확인한다.
+
+**기록된 반대**: 전체 프레임은 설치 앱과 작업대 맥락을 정직하게 보여주지만,
+README 축소 배율에서는 recent ring이 작아져 복잡한 예쁜 graph로만 읽힐 수 있다.
+그래서 내부 crop 대신 full-width 배치와 명시적 캡션으로 해결한다.
+**반증 조건**: 독자가 `7`을 제품 상한으로 해석하거나 Recent가 무엇을 강조하는지
+캡션 없이 식별하지 못하면 이 이미지와 설명은 실패한 것이다.
+**재검토**: GitHub README 렌더에서 위 오해가 관측되거나 marker가 판독되지 않을 때.
+
+**상태**: 유효
+
 ## 2026-08-02 — README는 공개 품질 계약, 내부 문서는 규칙 권위 지도를 맡는다
 
 ### 먼저 — 세 줄
