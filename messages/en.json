@@ -162,6 +162,7 @@
         "background": "Map background",
         "expand": "Expansion",
         "footprint": "Footprints",
+        "notify": "Notifications",
         "workspace": "Workspace",
         "agent": "Connect my agents",
         "ai": "In-app agent"
@@ -530,7 +531,7 @@
     "contextStorefrontBold": "A sample map of how an online store connects products, orders, customers, delivery, and marketing.",
     "contextStorefrontRest": "Pick your markdown folder and the same map switches to your data.",
     "sampleScale": "Sample size — {concepts} concepts · {relations} relations · {domains} domains",
-    "sampleRelationExample": "For example, a relation like \u201cOrders \u2192 Fulfillment\u201d.",
+    "sampleRelationExample": "For example, a relation like “Orders → Fulfillment”.",
     "agentClause": "AI agents like Claude Code read and write the same folder.",
     "openLabel": "Open my markdown folder",
     "openBusy": "Opening folder…",
