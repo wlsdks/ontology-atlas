@@ -250,9 +250,18 @@ export function AtlasGitPanel({
    */
   const [gitInstalled, setGitInstalled] = useState<boolean | null>(null);
   const probeGit = useCallback(async () => {
-    const probe = await gitProbe();
-    // 브리지가 없으면(`null`) 웹 경로이고, 그건 이 상태가 판정할 일이 아니다.
-    setGitInstalled(probe === null ? null : probe.installed);
+    try {
+      const probe = await gitProbe();
+      // 브리지가 없으면(`null`) 웹 경로이고, 그건 이 상태가 판정할 일이 아니다.
+      setGitInstalled(probe === null ? null : probe.installed);
+    } catch {
+      /*
+       * 확인에 실패한 것은 **없다는 뜻이 아니다.** `null`(모름)로 두면 화면은
+       * 설치 안내가 아니라 평소 경로를 그린다 — 있는 git 을 없다고 말하는 쪽이
+       * 모른다고 두는 쪽보다 나쁘다. 잡지 않으면 unhandled rejection 이 된다.
+       */
+      setGitInstalled(null);
+    }
   }, []);
   /*
    * **폴더를 고른 뒤에만** 부른다 (2026-08-02, 계약 테스트가 잡았다: 「앱 안에서
