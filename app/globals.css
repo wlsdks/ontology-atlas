@@ -2179,8 +2179,34 @@
        here is correct; do NOT also multiply by
        `--topology-ui-scale-factor`, that would double-apply the scale
        since this element already carries `topology-ui-scale` itself). */
-    --topology-node-popover-top: 84px;
-    --topology-node-popover-right-inset: clamp(24px, 2.1vw, 44px);
+    /*
+     * 검사 패널의 여백은 **네 변이 같다** (2026-08-02, 소유자 지적:
+     * *"상단 공백은 많고 하단은 없는? … 상하단 똑같아야하고 하단이 지금 너무
+     * 바닥에 붙어있음"*).
+     *
+     * 종전: 위 84px · 아래 8px — **비대칭 76px**. 실측(1512×862)에서 패널이
+     * 위로 84px 을 비우고 아래로는 8px 만 남겨 바닥에 붙어 보였다.
+     *
+     * 84px 의 출처는 미관이 아니라 **충돌 회피**였다 — 상단 유틸리티 크롬
+     * (「내 데이터로 전환」·「최근 변경」·「작업공간」, y 32–68)이 패널과 같은
+     * x 밴드(1128–1480)에 있어서다. **그런데 패널이 열리면 그 크롬이 사라진다**:
+     * `topologyUtilityChromeState === "selected-node-inspector"` 이고 계약 이름이
+     * `selected-node-inspector-owns-right-rail` 이다. 실측으로도 확인했다 —
+     * 패널이 열린 상태에서 위쪽 84px 의 패널 x 밴드 안에 있는 것은 **캔버스뿐**
+     * 이었다(크롬 원소 0개). 즉 84px 은 없는 것을 피하고 있었다.
+     *
+     * 그래서 세 변이 이미 쓰던 값 하나로 통일한다. 새 값은 만들지 않는다 —
+     * 오른쪽 인셋이 쓰던 `clamp(24px, 2.1vw, 44px)` 를 위·아래도 쓴다.
+     * 결과(1512×862): 위·오른쪽·아래 모두 31.8px, 패널 높이 770 → 798px 로
+     * **오히려 늘어난다**(위에서 52 벌고 아래로 24 내주므로).
+     *
+     * `<lg` 는 해당 없다 — 그 구간의 positioner 는 이 토큰이 아니라
+     * `top-[72px] inset-x-3` 로 가운데 정렬되고, 하단 예약고는 BottomTabBar
+     * 오버라이드(아래 `@media (max-width: 1023px)`)가 계속 소유한다.
+     */
+    --topology-node-popover-inset: clamp(24px, 2.1vw, 44px);
+    --topology-node-popover-top: var(--topology-node-popover-inset);
+    --topology-node-popover-right-inset: var(--topology-node-popover-inset);
     /* 지도의 DOM 표면(포커스 링·패널)은 앱 공통 램프의 "이동" 스텝을 그대로
        쓴다 — 같은 180ms 를 손잡이 두 개로 갈라 두면 언젠가 한쪽만 돌아간다.
        카메라(420)·드래그 안착(720)은 캔버스 물리라 DOM 램프와 독립. */
@@ -2783,7 +2809,11 @@
     /* 반응형 감사 rank3 (2026-07-23) — bottom reserve is a single knob so the
        `<lg` override (below) can add the fixed BottomTabBar height + safe-area
        and stop the datasheet from underlapping the tab bar on tablet/mobile. */
-    --topology-v2-panel-bottom-reserve: 8px;
+    /* 위 인셋과 **같은 값**이라 네 변의 여백이 같아진다(2026-08-02) — 종전
+       8px 은 "푸터가 화면 밖으로 밀리지 않게" 만 한 최소 여유였고, 그래서
+       패널이 바닥에 붙어 보였다. `<lg` 오버라이드(아래)는 BottomTabBar 를
+       더해야 하므로 그대로 둔다. */
+    --topology-v2-panel-bottom-reserve: var(--topology-node-popover-inset);
     --topology-v2-panel-max-height: calc(
       100dvh / var(--topology-ui-scale-factor) - var(--topology-node-popover-top) -
         var(--topology-v2-panel-bottom-reserve)
