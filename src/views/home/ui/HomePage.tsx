@@ -3430,9 +3430,36 @@ export function HomePage() {
                     {/* 최근 변경 스포트라이트 (협의회 설계 2026-07-23) — 렌즈
                         토글. 스포트라이트 칩의 ChromeChip 문법/축약 사다리.
                         상태는 URL `?recent=` 단일 진실원 (공유/에이전트 재현). */}
-                    <Tooltip content={t('controls.spotlightTooltip')} side="bottom" withProvider={false}>
+                    <Tooltip
+                      content={
+                        !spotlightOn && recentChanges.recentNodeIds.size === 0
+                          ? t('controls.spotlightEmptyTooltip')
+                          : t('controls.spotlightTooltip')
+                      }
+                      side="bottom"
+                      withProvider={false}
+                    >
                       <ChromeChip
                         onClick={handleToggleSpotlight}
+                        /*
+                         * 바뀐 게 없으면 **누를 수 없다** (2026-08-02, 소유자:
+                         * *"변경이 없을때는 그럼 버튼 클릭을 비활성화 하면 되는거
+                         * 아닌가? 누르면 팝업 나와서 변경된게 없다고 띄우거나"*).
+                         *
+                         * 팝업 안은 안 골랐다 — 아무것도 없다는 사실을 말하려고
+                         * 모달을 여는 것은 누른 사람에게 일을 두 번 시키는 것이고,
+                         * 이 저장소가 「popup soup」로 금지한 부류다.
+                         *
+                         * **숨기지도 않는다.** 사라지면 「최근 변경이라는 기능이
+                         * 있었나」가 되고, 그건 이 세션에서 이미 겪은 문제다(무라벨
+                         * 아이콘이라 못 찾았다). 자리는 남기고 이유는 툴팁이 말한다
+                         * — `BlockImportModule` 의 「disabled + 힌트로 존치, 완전
+                         * 은폐 금지」와 같은 규율.
+                         *
+                         * 켜져 있는 동안은 **끌 수 있어야** 하므로, 꺼져 있고
+                         * 강조가 0일 때만 비활성이다.
+                         */
+                        disabled={!spotlightOn && recentChanges.recentNodeIds.size === 0}
                         aria-pressed={spotlightOn}
                         aria-label={t('controls.spotlightAriaLabel')}
                         data-testid="topology-spotlight-toggle"

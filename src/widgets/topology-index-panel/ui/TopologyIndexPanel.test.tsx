@@ -126,7 +126,15 @@ function buildFixtureTree() {
 }
 
 describe("TopologyIndexPanel", () => {
-  it("mounts the ontology block import module (Slice A wiring)", () => {
+  /**
+   * 「다른 폴더에서 노드 가져오기」는 **INDEX 에 없다** (2026-08-02 이관, 소유자:
+   * *"이건 뭐임? 이 문구가 왜 있는거지..?"*).
+   *
+   * 평생 한두 번 쓸 일이 지도를 읽는 화면에 상시 버튼으로 서 있었다. 지금 자리는
+   * 설정 → 작업 공간이다(`AppSettingsMenu`). 이 케이스는 **되돌아오는 것**을
+   * 막는다 — 자립 모듈이라 여기 한 줄만 다시 넣으면 조용히 부활한다.
+   */
+  it("블록 가져오기 모듈을 INDEX 에 싣지 않는다 — 설정으로 옮겼다", () => {
     blockImportMounted.current = 0;
     render(
       <TopologyIndexPanel
@@ -141,7 +149,7 @@ describe("TopologyIndexPanel", () => {
         labels={labels}
       />,
     );
-    expect(blockImportMounted.current).toBe(1);
+    expect(blockImportMounted.current).toBe(0);
   });
 
   it("renders the project root and reveals children on caret expand", () => {

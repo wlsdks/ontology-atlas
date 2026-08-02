@@ -16,7 +16,6 @@ import {
   type OntologyTreeBuildResult,
 } from "@/shared/lib/ontology-tree";
 import { FirstRunStarterModule } from "@/features/first-run-starter";
-import { BlockImportModule } from "@/features/ontology-blocks";
 import { computeMaxDomainDescendantCount } from "../lib/domain-subcounts";
 import {
   flattenVisibleRowIds,
@@ -641,11 +640,14 @@ export function TopologyIndexPanel({
         </Link>
       ) : null}
 
-      {/* 온톨로지 블록 Slice A — "블록 가져오기" (병합 프리뷰). 자립 모듈:
-          vault 로드 상태에서만 스스로 렌더(첫 실행 스타터는 vault 미로드
-          전용이라 동시 노출 없음), 라벨은 ontologyBlocks i18n 을 자급.
-          위 "지도에 없는 문서/먼지 앉은 노드" 행과 같은 조용한 행 문법. */}
-      <BlockImportModule />
+      {/* 「다른 폴더에서 노드 가져오기」는 **설정 → 작업 공간**으로 옮겼다
+          (2026-08-02, 소유자: *"이건 뭐임? 이 문구가 왜 있는거지..? 필요없는건가"*).
+
+          기능 자체는 로컬-퍼스트 제품에 맞다 — 다른 볼트의 `.md` 를 골라 병합
+          미리보기를 열고, 승인 전에는 폴더에 아무것도 안 쓴다. 자리가 틀렸다:
+          **평생 한두 번 쓸 일**이 지도를 읽을 때마다 INDEX 바닥에 상시 버튼으로
+          서 있었다. 「블록」이라는 말도 이 앱 어디에도 정의가 없어서, 처음 보는
+          사람에게는 무엇을 여는 버튼인지 알 길이 없었다. */}
 
       {/* v2.1 푸터 — 구 헤더의 "● 에이전트 동기화" 문구 + 성장 신호가
           여기로 이관. 단축키 캡은 장식(⇧⌘K 는 전역 팔레트가 이미 쓰는
