@@ -86,13 +86,8 @@ const UNCOVERED_DEBT: ReadonlyArray<readonly [string, number]> = [
   ["src/features/vault-ontology", 27],
   ["src/views/project-detail", 23],
   ["src/views/first-run", 14],
-  ["app/[locale]/not-found.tsx", 7],
-  ["app/error.tsx", 7],
-  ["app/global-error.tsx", 7],
-  ["app/not-found.tsx", 7],
   ["src/views/project-editor", 2],
   ["src/views/root-entry", 6],
-  ["app/[locale]/layout.tsx", 1],
 ];
 
 const ROOTS = ["src", "app"] as const;

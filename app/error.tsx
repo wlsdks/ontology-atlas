@@ -21,24 +21,24 @@ export default function RouteError({ error, reset }: Props) {
 
   return (
     <main className="flex min-h-screen items-center justify-center bg-[color:var(--color-canvas)] px-6 py-10">
-      <div className="w-full max-w-[440px] rounded-[22px] border border-[color:var(--color-divider)] bg-[color:var(--color-panel)] p-6">
+      <div className="w-full max-w-[440px] rounded-[var(--radius-panel)] border border-[color:var(--color-divider)] bg-[color:var(--color-panel)] p-6">
         <div className="flex items-center gap-2">
-          <span className="flex h-8 w-8 items-center justify-center rounded-md border border-[color:rgba(244,183,49,0.35)] bg-[color:rgba(244,183,49,0.08)] text-[color:var(--color-status-warning)]">
+          <span className="flex h-8 w-8 items-center justify-center rounded-[var(--radius-chip)] border border-[color:var(--color-amber-source-a35)] bg-[color:var(--color-amber-source-a08)] text-[color:var(--color-status-warning)]">
             <AlertTriangle size={16} />
           </span>
-          <p className="font-mono text-[10px] uppercase tracking-[0.14em] text-[color:var(--color-text-quaternary)]">
+          <p className="font-mono text-caption uppercase tracking-[0.14em] text-[color:var(--color-text-quaternary)]">
             Unexpected error
           </p>
         </div>
-        <h1 className="mt-4 text-[22px] leading-display tracking-[var(--tracking-section)] font-[var(--font-weight-signature)] text-[color:var(--color-text-primary)]">
+        <h1 className="mt-4 text-display tracking-[var(--tracking-section)] font-[var(--font-weight-signature)] text-[color:var(--color-text-primary)]">
           Something went wrong while rendering this screen.
         </h1>
-        <p className="mt-3 text-[13px] leading-6 text-[color:var(--color-text-secondary)]">
+        <p className="mt-3 text-body leading-relaxed text-[color:var(--color-text-secondary)]">
           It might be a temporary issue. Try again or return to the topology
           home. If it persists, please report it with the error ID below.
         </p>
         {error.digest && (
-          <p className="mt-3 font-mono text-[10px] text-[color:var(--color-text-quaternary)]">
+          <p className="mt-3 font-mono text-caption text-[color:var(--color-text-quaternary)]">
             Error ID: <span className="tabular-nums">{error.digest}</span>
           </p>
         )}
@@ -46,14 +46,14 @@ export default function RouteError({ error, reset }: Props) {
           <button
             type="button"
             onClick={reset}
-            className="inline-flex h-10 items-center gap-2 rounded-full border border-[color:rgba(94,106,210,0.38)] bg-[color:rgba(94,106,210,0.14)] px-4 text-[13px] font-[var(--font-weight-signature)] text-[color:var(--color-text-primary)] transition-colors hover:border-[color:var(--color-indigo-brand)] hover:bg-[color:rgba(94,106,210,0.2)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:rgba(94,106,210,0.5)]"
+            className="inline-flex h-10 items-center gap-2 rounded-full border border-[color:var(--color-indigo-a38)] bg-[color:var(--color-indigo-a14)] px-4 text-body font-[var(--font-weight-signature)] text-[color:var(--color-text-primary)] transition-colors hover:border-[color:var(--color-indigo-brand)] hover:bg-[color:var(--color-indigo-a20)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--color-indigo-a50)]"
           >
             <RefreshCw size={14} />
             Try again
           </button>
           <Link
             href="/"
-            className="inline-flex h-10 items-center rounded-full border border-[color:var(--color-divider)] px-4 text-[13px] text-[color:var(--color-text-secondary)] transition-colors hover:border-[color:var(--color-border-strong)] hover:text-[color:var(--color-text-primary)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:rgba(94,106,210,0.5)]"
+            className="inline-flex h-10 items-center rounded-full border border-[color:var(--color-divider)] px-4 text-body text-[color:var(--color-text-secondary)] transition-colors hover:border-[color:var(--color-border-strong)] hover:text-[color:var(--color-text-primary)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--color-indigo-a50)]"
           >
             Topology home
           </Link>

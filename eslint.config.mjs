@@ -330,6 +330,14 @@ export const codexMigratedGlobs = [
   // `pnpm exec eslint <file>` 에서 **error 0 / warning 0** 을 보고했다. 룰이
   // 틀린 게 아니라 이 디렉토리들을 안 보고 있었다(침묵하는 통과). 진입 경로
   // 4곳의 이탈을 0으로 만들고 여기 승격한다 — 이제 error 로 막힌다.
+  /*
+   * 2026-08-03 — 경계 페이지 넷(`error` · `global-error` · `not-found` ×2)이
+   * 거의 같은 JSX 를 복제하면서 램프 이탈 22줄까지 그대로 복제하고 있었다.
+   * `app/**` 이 이 목록 밖이라 `pnpm exec eslint` 가 **error 0 / warning 0**
+   * 을 보고했다 — 룰이 틀린 게 아니라 이 경로를 안 보고 있었다. 이탈을 0으로
+   * 만들고 승격한다.
+   */
+  'app/**/*.{ts,tsx}',
   'src/features/first-run-starter/**/*.{ts,tsx}',
   'src/features/docs-vault-local/**/*.{ts,tsx}',
   'src/features/locale-switch/**/*.{ts,tsx}',

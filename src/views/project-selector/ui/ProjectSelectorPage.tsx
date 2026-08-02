@@ -10,7 +10,7 @@ import {
   type Project,
 } from "@/entities/project";
 import { useProjects } from "@/features/project-data-source";
-import { LiveActivityIndicator, useOntologyInsight } from "@/features/vault-ontology";
+import { useOntologyInsight } from "@/features/vault-ontology";
 import { useDataSourceMode } from "@/features/data-source-mode";
 import { useLocalVault } from "@/features/docs-vault-local";
 import { useOntologyKindLabel } from "@/entities/ontology-class";
@@ -106,13 +106,20 @@ export function ProjectSelectorPage() {
     <div className="flex min-h-full w-full">
       {/* 레일은 perf/persistent-shell 이후 layout(AppShell) 상주. */}
       <main id="main" tabIndex={-1} className="min-w-0 flex-1 bg-[color:var(--color-canvas)] max-lg:pb-[calc(var(--topology-mobile-bottom-tab-reserve)+24px)]">
-        <div className="flex items-center justify-end gap-2 px-4 pt-3 md:px-6">
-          <LiveActivityIndicator agentActivityStatus={vault.agentActivityStatus} />
-          {/* #15 — 설정은 lg+ 에선 나브레일 하단 톱니. 레일이 숨는 <lg 에서만
-              chrome-tile 로 노출. */}
-          <div className="lg:hidden">
-            <AppSettingsMenu mode={dataSourceMode} triggerVariant="chrome-tile" />
-          </div>
+        {/*
+         * ⚠️ **실시간 표시를 여기서 뺐다** (2026-08-03, 소유자 지적).
+         *
+         * 「실시간 · 추적 중 · 변경 8」은 **지도의 물건**이다 — 무엇이 바뀌었는지
+         * 를 노드 위에 그려 주기 때문에 거기서는 그 수가 다음 행동으로 이어진다.
+         * 프로젝트 목록은 훑는 화면이라 그 수가 갈 곳이 없고, 대신 **화면에서
+         * 가장 센 잉크를 우상단에서 가져가고** 자기 줄까지 예약해 아래 내용을
+         * 통째로 밀어냈다(실측: lg+ 에서 이 줄의 유일한 내용이 그 칩이다).
+         *
+         * 그래서 줄 자체도 `lg:hidden` 이다 — 레일이 설정을 지는 폭에서는 이
+         * 줄에 남는 것이 없고, 빈 줄이 자리를 지키면 그건 여백이 아니라 결함이다.
+         */}
+        <div className="flex items-center justify-end gap-2 px-4 pt-3 md:px-6 lg:hidden">
+          <AppSettingsMenu mode={dataSourceMode} triggerVariant="chrome-tile" />
         </div>
         <div className="mx-auto px-5 py-6 md:px-10 md:py-10" style={{ maxWidth: PAGE_MAX_WIDTH }}>
         <nav className="mb-5 flex flex-wrap items-center gap-2.5 text-body text-[color:var(--color-text-tertiary)]">
