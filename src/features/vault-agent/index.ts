@@ -10,6 +10,14 @@ export type { AgentLoopDeps, StartTurnInput, TurnRunResult } from './model/agent
 export { extractCitations } from './model/citation';
 export type { CitationResult } from './model/citation';
 export {
+  COMPOSER_MAX_ROWS,
+  COMPOSER_MIN_ROWS,
+  composerGrowth,
+  composerTopIsHidden,
+  snapScrollTop,
+} from './model/composer-growth';
+export type { ComposerGrowth, ComposerMetrics } from './model/composer-growth';
+export {
   FIRST_WORDS_MAX_CHIPS,
   buildFirstWords,
   nodeIntent,
@@ -69,6 +77,7 @@ export {
 export type {
   AgentEvent,
   AgentProposal,
+  AnswerGrounding,
   AgentTurn,
   AgentTurnStatus,
   CitedParagraph,

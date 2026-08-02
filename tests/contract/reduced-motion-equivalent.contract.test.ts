@@ -175,6 +175,52 @@ describe('reduced-motion 동등물 계약', () => {
   });
 
   /**
+   * 2026-08-02 컴포저 자람 — **일부러 `EQUIVALENT_CLASSES` 에 넣지 않는다.**
+   *
+   * 동등물이 필요한 것은 불투명도처럼 전정계를 안 건드리면서 **정보를 나르는**
+   * 축이다. 입력칸이 두 줄에서 세 줄로 자라는 것은 그런 축이 아니라 컷아웃
+   * 링과 같은 **진짜 이동**이라, 감속 사용자에게는 `swap` 이 아니라 **즉시
+   * 도착**이 정답이다 — 전역 kill 규칙(`transition-duration: 0.01ms`)이 그
+   * 답을 이미 주고 있으므로 carve-out 을 만들면 오히려 되돌리는 셈이 된다.
+   *
+   * 그래서 이 자리에서 지키는 것은 둘이다: ① 시간이 램프 토큰이라 전역 규칙이
+   * 닿는다 ② 아무도 이 표면에 carve-out 을 슬쩍 넣지 않는다. 등록부 밖에
+   * 있어도 결정이 기록되고 검사되게 하는 형식이다(컷아웃 링은 주석으로만
+   * 남아 있어 다음 사람이 되돌릴 수 있었다).
+   */
+  describe('컴포저 자람 — 감속에서는 즉시 도착', () => {
+    const PANEL = 'src/widgets/vault-agent-panel/ui/VaultAgentPanel.tsx';
+
+    it('자람의 시간은 표면 이동 램프 토큰이다 (리터럴 ms 0)', () => {
+      const src = TS(PANEL);
+      expect(src).toContain("transitionProperty: 'height'");
+      expect(src).toContain("transitionDuration: 'var(--motion-base)'");
+      expect(src).toContain("transitionTimingFunction: 'var(--motion-ease)'");
+      expect(
+        /transitionDuration:\s*['"`]\s*\d/.test(src),
+        '컴포저 자람이 리터럴 ms 로 시간을 적었다 — 램프를 탄다',
+      ).toBe(false);
+    });
+
+    it('감속 경로에 carve-out 이 없다 — 있으면 잘려야 할 이동이 되살아난다', () => {
+      const carved = allRules.filter((rule) =>
+        /vault-agent-input|agent-composer/.test(rule.selector),
+      );
+      expect(
+        carved.map((rule) => rule.selector),
+        '컴포저에 reduced-motion 동등물이 생겼다 — 이 축은 잘리는 것이 맞다',
+      ).toEqual([]);
+    });
+
+    it('전역 kill 규칙이 transition 까지 덮는다 (그게 이 결정의 전제다)', () => {
+      const global = allRules.find((r) =>
+        /\*,?\s*\*::before/.test(r.selector.replace(/\s+/g, ' ')),
+      );
+      expect(global!.body).toMatch(/transition-duration:\s*0\.01ms/);
+    });
+  });
+
+  /**
    * D8 (2026-07-28) — 토스트는 벤더(sonner)가 자기 `@media
    * (prefers-reduced-motion)` 에서 `transition: none !important` 로 전부 끈다.
    * 실측 결과 **둘 중 나쁜 쪽만** 남았다: 알림의 도착이라는 정보 모션(불투명도)은

@@ -3233,9 +3233,9 @@
     "placeholderFirst": "Write what you want done",
     "thinking": "Thinking",
     "thinkingSeconds": "Thinking · {seconds}s",
-    "unsupported": "Answered without reading anything. Do not take it as fact.",
+    "unsupported": "Answered without reading the vault this turn. Do not take it as fact.",
     "charsLabel": "{chars} chars",
-    "footer": "{provider} · {chars} chars this turn · {rounds} recorded",
+    "footer": "{provider} · {rounds} recorded",
     "boundary": "Work that needs your source code is better done by the AI in your own terminal. Here the agent only reads your document folder.",
     "handoffSummary": "Continue in your terminal",
     "handoffNote": "Copy this and paste it into your own terminal. You run it — this app never types commands for you.",
@@ -3295,7 +3295,8 @@
       "rejected": "The key was rejected. Check it in settings.",
       "auditBlocked": "Nothing was sent, because the record could not be written.",
       "providerRefused": "This request was declined.",
-      "failed": "Something went wrong."
+      "failed": "Something went wrong.",
+      "noToolCall": "Stopped at round {round}/{cap} without calling a single tool."
     },
     "degraded": {
       "webTitle": "Available in the desktop app only",
@@ -3327,6 +3328,11 @@
     },
     "retry": {
       "title": "Try again"
+    },
+    "uncited": "Read this turn:",
+    "footerDetail": "{chars} characters went out this turn — mostly system guidance and tool descriptions.",
+    "reground": {
+      "title": "Stopped at round {round}/{cap} — have it read first"
     }
   },
   "skillParity": {
