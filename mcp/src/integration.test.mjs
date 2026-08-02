@@ -650,7 +650,7 @@ await test("tools/list — 단일 도구 description 이 batch 짝을 cross-refe
     assert.equal(kindCountsSchema?.properties?.static?.minimum, 1);
     assert.match(
       inferImports?.description ?? "",
-      /walk TS\/JS files in a code repo and infer file-level \+ module-level import edges[\s\S]*side effect 0 \(vault frontmatter NOT modified\)[\s\S]*reviews moduleEdges[\s\S]*accepted edges to add_relation as `depends_on`[\s\S]*Use after analyze_repo_structure[\s\S]*not just suggestedRelations heuristics[\s\S]*Single source of truth preserved/i,
+      /walk TS\/JS files in a code repo and infer file-level \+ module-level import edges[\s\S]*bounded root Python packages[\s\S]*side effect 0 \(vault frontmatter NOT modified\)[\s\S]*reviews moduleEdges[\s\S]*accepted edges to add_relation as `depends_on`[\s\S]*Use after analyze_repo_structure[\s\S]*not just suggestedRelations heuristics[\s\S]*Single source of truth preserved/i,
       "infer_imports description documents dependency-ingest safety workflow",
     );
     assert.match(
@@ -2403,6 +2403,75 @@ await test("index_project — repo analysis, import indexing, and vault validati
       },
     ]);
     assert.equal(existsSync(join(vaultRoot, "sample-app.md")), false);
+  } finally {
+    rmSync(vaultRoot, { recursive: true, force: true });
+    rmSync(repoRoot, { recursive: true, force: true });
+  }
+});
+
+await test("index_project — Python RST, static setup contract, and root package reach the public read-only plan", async () => {
+  const vaultRoot = makeVault([]);
+  const repoRoot = mkdtempSync(join(tmpdir(), "ontology-atlas-index-python-"));
+  try {
+    writeFileSync(
+      join(repoRoot, "README.rst"),
+      "Protocol Client\n###############\n\nA standardized diagnostic protocol client.\n",
+      "utf-8",
+    );
+    writeFileSync(
+      join(repoRoot, "setup.py"),
+      [
+        "setup(",
+        "    name='protocol-client',",
+        "    description='Standardized diagnostic protocol client',",
+        "    python_requires='>=3.9',",
+        ")",
+      ].join("\n"),
+      "utf-8",
+    );
+    mkdirSync(join(repoRoot, "diagnostic_client"), { recursive: true });
+    writeFileSync(join(repoRoot, "diagnostic_client", "__init__.py"), "", "utf-8");
+    mkdirSync(join(repoRoot, "diagnostic_client", "services"), { recursive: true });
+    writeFileSync(join(repoRoot, "diagnostic_client", "Request.py"), "", "utf-8");
+    writeFileSync(join(repoRoot, "diagnostic_client", "connections.py"), "", "utf-8");
+    writeFileSync(join(repoRoot, "diagnostic_client", "services", "__init__.py"), "", "utf-8");
+    writeFileSync(
+      join(repoRoot, "diagnostic_client", "client.py"),
+      [
+        "from diagnostic_client import Request, services",
+        "from diagnostic_client.connections import BaseConnection",
+      ].join("\n"),
+      "utf-8",
+    );
+
+    const { responses } = await rpc(vaultRoot, [
+      ...INIT_REQUESTS,
+      callTool(2, "index_project", { rootPath: repoRoot }),
+    ]);
+    const result = getCallParsed(responses, 2);
+
+    assert.deepEqual(getCallStructured(responses, 2), result);
+    assert.deepEqual(result.analyze.project, {
+      slug: "protocol-client",
+      title: "Protocol Client",
+    });
+    assert.equal(result.analyze.elements, 1);
+    assert.equal(result.plan.concepts, 2);
+    assert.deepEqual(result.plan.conceptDelta.sampleNewSlugs, [
+      "elements/diagnostic-client",
+      "protocol-client",
+    ]);
+    assert.deepEqual(
+      result.semanticEvidence.map((row) => [row.source, row.role]),
+      [
+        ["README.rst", "mission"],
+        ["setup.py", "package-contract"],
+      ],
+    );
+    assert.equal(result.imports.filesScanned, 5);
+    assert.equal(result.imports.moduleEdges, 3);
+    assert.equal(result.plan.importRelations, 3);
+    assert.equal(existsSync(join(vaultRoot, "protocol-client.md")), false);
   } finally {
     rmSync(vaultRoot, { recursive: true, force: true });
     rmSync(repoRoot, { recursive: true, force: true });

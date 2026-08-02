@@ -119,7 +119,7 @@ ${COLORS.bold}Bootstrap${COLORS.reset} ${COLORS.dim}(R16/R17 — autonomous inge
        --threshold N --skip-imports --json    ${COLORS.dim}weak edge 차단 · 노드만 · machine output${COLORS.reset}
   ontology-atlas analyze [rootPath]           Walk a repo, propose ontology node candidates (side effect 0)
        --apply --max-depth N --json           ${COLORS.dim}or land via batch · folder walk depth · machine output${COLORS.reset}
-  ontology-atlas infer-imports [rootPath] TS/JS import graph → depends_on edge candidates (side effect 0)
+  ontology-atlas infer-imports [rootPath] TS/JS/Python import graph → depends_on edge candidates (side effect 0)
        --apply --threshold N --max-files N    ${COLORS.dim}or land · weak filter · default 5000 max${COLORS.reset}
   ontology-atlas preflight [vault]            ${COLORS.green}Commit preflight${COLORS.reset} — staged files → vault nodes → blast-radius summary
        --staged --depth N --json              ${COLORS.dim}non-blocking, silent when nothing matches${COLORS.reset}

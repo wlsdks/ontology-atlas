@@ -1,7 +1,8 @@
 // R17 — infer_imports
 //
-// TS/JS file 들의 *relative import* 를 walk + regex parse → file-level
-// dependency edges. analyze_repo_structure 의 suggestedRelations 가 *project
+// TS/JS and Python files' static imports become observed file-level dependency
+// edges. Python is parsed as bounded text and never imported or executed.
+// analyze_repo_structure 의 suggestedRelations 가 *project
 // contains capability* 한 줄이라면, 이건 진짜 *capability A depends_on
 // capability B* edge 의 source.
 //
@@ -16,10 +17,12 @@
 //     → real files. unresolved aliases surface as alias-not-found instead of
 //     external npm.
 //     외부 npm import 는 externalImports 로 별도 분류.
+//   - Python 은 import / from ... import 만 보수적으로 읽으며 동적 import,
+//     namespace-package 추측, 의미 관계 자동 승격은 하지 않음
 //   - 더 정교한 AST parsing 은 후속
 
-import { readFileSync, readdirSync, statSync, existsSync } from 'node:fs';
-import { join, dirname, resolve, relative, isAbsolute } from 'node:path';
+import { readFileSync, readdirSync, statSync, lstatSync, existsSync } from 'node:fs';
+import { join, dirname, resolve, relative, isAbsolute, extname } from 'node:path';
 
 const DEFAULT_IGNORE = new Set([
   'node_modules',
@@ -45,6 +48,7 @@ const SOURCE_EXT = new Set([
   '.cjs',
   '.mts',
   '.cts',
+  '.py',
 ]);
 
 const RESOLVE_EXT_ORDER = [
@@ -139,7 +143,10 @@ export function inferImports(rootPath, options = {}) {
     if (ignore.has(f)) continue;
     roots.push(p);
   }
-  if (roots.length === 0 && !configuredRootExists) roots.push(rootPath);
+  if (roots.length === 0 && !configuredRootExists) {
+    const pythonPackageRoots = discoverRootPythonPackages(rootPath, ignore);
+    roots.push(...(pythonPackageRoots.length > 0 ? pythonPackageRoots : [rootPath]));
+  }
 
   const files = [];
   for (const r of roots) walk(r, ignore, files, maxFiles);
@@ -157,6 +164,21 @@ export function inferImports(rootPath, options = {}) {
       continue;
     }
     const dir = dirname(file);
+
+    if (extname(file) === '.py') {
+      for (const pythonImport of parsePythonImports(content)) {
+        classifyPythonImport(
+          pythonImport,
+          file,
+          rootPath,
+          edges,
+          externalImports,
+          unresolved,
+          ignore,
+        );
+      }
+      continue;
+    }
 
     for (const match of content.matchAll(IMPORT_RE)) {
       const spec = match[1];
@@ -215,6 +237,227 @@ export function inferImports(rootPath, options = {}) {
   };
 }
 
+function discoverRootPythonPackages(rootPath, ignore) {
+  let entries;
+  try {
+    entries = readdirSync(rootPath).sort();
+  } catch {
+    return [];
+  }
+  return entries
+    .filter(
+      (entry) =>
+        !ignore.has(entry) &&
+        !['test', 'tests'].includes(entry.toLowerCase()) &&
+        !entry.startsWith('.'),
+    )
+    .map((entry) => join(rootPath, entry))
+    .filter((path) => {
+      try {
+        return !lstatSync(path).isSymbolicLink() &&
+          lstatSync(path).isDirectory() &&
+          existsSync(join(path, '__init__.py')) &&
+          !lstatSync(join(path, '__init__.py')).isSymbolicLink();
+      } catch {
+        return false;
+      }
+    });
+}
+
+function parsePythonImports(content) {
+  const imports = [];
+  for (const rawLine of pythonLogicalLines(content)) {
+    const line = rawLine.trim();
+    if (!line) continue;
+    const fromMatch = line.match(
+      /^from\s+([A-Za-z_][\w.]*|\.+[\w.]*)\s+import\s+(.+)$/,
+    );
+    if (fromMatch) {
+      imports.push({
+        module: fromMatch[1],
+        names: pythonImportedNames(fromMatch[2]),
+      });
+      continue;
+    }
+    const importMatch = line.match(/^import\s+(.+)$/);
+    if (!importMatch) continue;
+    for (const item of importMatch[1].split(',')) {
+      const moduleName = item.trim().split(/\s+as\s+/i)[0]?.trim();
+      if (moduleName) imports.push({ module: moduleName, names: [] });
+    }
+  }
+  return imports;
+}
+
+function pythonImportedNames(value) {
+  return value
+    .replace(/^\(|\)$/g, '')
+    .split(',')
+    .map((item) => item.trim().split(/\s+as\s+/i)[0]?.trim())
+    .filter((item) => item && item !== '*');
+}
+
+function pythonLogicalLines(content) {
+  const lines = [];
+  let buffer = '';
+  let parenthesisDepth = 0;
+  let tripleQuote = null;
+  for (const rawLine of content.split(/\r?\n/)) {
+    const code = stripPythonStringsAndComment(rawLine, {
+      get tripleQuote() { return tripleQuote; },
+      set tripleQuote(value) { tripleQuote = value; },
+    });
+    const continued = /\\\s*$/.test(code);
+    const fragment = code.replace(/\\\s*$/, '').trim();
+    if (fragment) buffer = buffer ? `${buffer} ${fragment}` : fragment;
+    parenthesisDepth += [...code].reduce(
+      (depth, character) =>
+        character === '(' ? depth + 1 : character === ')' ? depth - 1 : depth,
+      0,
+    );
+    if (!tripleQuote && parenthesisDepth <= 0 && !continued) {
+      if (buffer) lines.push(buffer);
+      buffer = '';
+      parenthesisDepth = 0;
+    }
+  }
+  if (!tripleQuote && buffer) lines.push(buffer);
+  return lines;
+}
+
+function stripPythonStringsAndComment(line, state) {
+  let result = '';
+  let quote = null;
+  let escaped = false;
+  for (let index = 0; index < line.length; index += 1) {
+    if (state.tripleQuote) {
+      const closingIndex = line.indexOf(state.tripleQuote, index);
+      if (closingIndex < 0) return result;
+      index = closingIndex + state.tripleQuote.length - 1;
+      state.tripleQuote = null;
+      continue;
+    }
+    const triple = line.slice(index, index + 3);
+    if (!quote && (triple === '"""' || triple === "'''")) {
+      state.tripleQuote = triple;
+      index += 2;
+      continue;
+    }
+    const character = line[index];
+    if (escaped) {
+      escaped = false;
+      continue;
+    }
+    if (quote && character === '\\') {
+      escaped = true;
+      continue;
+    }
+    if (character === '"' || character === "'") {
+      quote = quote === character ? null : quote ?? character;
+      continue;
+    }
+    if (!quote && character === '#') break;
+    if (!quote) result += character;
+  }
+  return result;
+}
+
+function classifyPythonImport(
+  pythonImport,
+  file,
+  rootPath,
+  edges,
+  external,
+  unresolved,
+  ignore,
+) {
+  const moduleSpec = resolvePythonRelativeModule(
+    pythonImport.module,
+    file,
+    rootPath,
+  );
+  if (!moduleSpec) {
+    unresolved.push({
+      from: relative(rootPath, file),
+      spec: pythonImport.module,
+      reason: 'relative-not-found',
+    });
+    return;
+  }
+  const baseTarget = resolvePythonModule(moduleSpec, rootPath);
+  const targets = pythonImport.names.length > 0
+    ? pythonImport.names
+        .map(
+          (name) =>
+            resolvePythonModule(`${moduleSpec}.${name}`, rootPath) ?? baseTarget,
+        )
+        .filter(Boolean)
+    : baseTarget
+      ? [baseTarget]
+      : [];
+  if (targets.length > 0) {
+    for (const target of targets) {
+      const targetPath = relative(rootPath, target);
+      if (isIgnoredPath(targetPath, ignore)) continue;
+      if (
+        !edges.some(
+          (edge) =>
+            edge.from === relative(rootPath, file) &&
+            edge.to === targetPath &&
+            edge.kind === 'static',
+        )
+      ) {
+        edges.push({
+          from: relative(rootPath, file),
+          to: targetPath,
+          kind: 'static',
+        });
+      }
+    }
+    return;
+  }
+  const topLevel = moduleSpec.split('.')[0];
+  if (resolvePythonModule(topLevel, rootPath)) {
+    unresolved.push({
+      from: relative(rootPath, file),
+      spec: pythonImport.module,
+      reason: 'alias-not-found',
+    });
+  } else {
+    external.push({ from: relative(rootPath, file), spec: pythonImport.module });
+  }
+}
+
+function resolvePythonRelativeModule(spec, file, rootPath) {
+  if (!spec.startsWith('.')) return spec;
+  const leadingDots = spec.match(/^\.+/)?.[0].length ?? 0;
+  const suffix = spec.slice(leadingDots);
+  const fromParts = relative(rootPath, dirname(file)).split(/[\\/]/).filter(Boolean);
+  const keep = fromParts.length - Math.max(0, leadingDots - 1);
+  if (keep < 0) return null;
+  return [...fromParts.slice(0, keep), ...suffix.split('.').filter(Boolean)].join('.');
+}
+
+function resolvePythonModule(spec, rootPath) {
+  if (!spec || spec.startsWith('.')) return null;
+  const base = join(rootPath, ...spec.split('.'));
+  const file = `${base}.py`;
+  if (
+    existsSync(file) &&
+    !lstatSync(file).isSymbolicLink() &&
+    lstatSync(file).isFile()
+  ) return file;
+  const packageEntry = join(base, '__init__.py');
+  if (
+    existsSync(packageEntry) &&
+    !lstatSync(packageEntry).isSymbolicLink() &&
+    lstatSync(packageEntry).isFile()
+  ) {
+    return packageEntry;
+  }
+  return null;
+}
+
 /**
  * Enumerate repo source files (absolute paths) reusing the same walker +
  * ignore set as import inference — so callers (e.g. validate_vault's reconcile
@@ -244,8 +487,11 @@ function walk(dir, ignore, out, maxFiles) {
     const p = join(dir, name);
     let st;
     try {
-      st = statSync(p);
+      st = lstatSync(p);
     } catch {
+      continue;
+    }
+    if (st.isSymbolicLink()) {
       continue;
     }
     if (st.isDirectory()) {
@@ -472,6 +718,20 @@ function moduleOf(filePath, sourceFolders, rootPath) {
   // 이름만 슬러그에 싣고, basename 이 레이어를 넘어 겹칠 때만 레이어 단수형
   // 접미로 가른다 (같은 rootPath 를 보므로 두 도구의 판정이 일치한다).
   const parts = filePath.split(/[\\/]/);
+  if (
+    parts.length >= 2 &&
+    existsSync(join(rootPath, parts[0], '__init__.py'))
+  ) {
+    const modulePart = parts[1];
+    const rawName = modulePart === '__init__.py'
+      ? parts[0]
+      : stripSourceExtension(modulePart);
+    const flatName = rawName
+      .replace(/_/g, '-')
+      .replace(/[^A-Za-z0-9-]/g, '')
+      .toLowerCase();
+    return flatName ? `elements/${flatName}` : null;
+  }
   for (let i = 0; i < parts.length - 1; i += 1) {
     if (i !== 0) continue;
     if (sourceFolders.includes(parts[i])) {

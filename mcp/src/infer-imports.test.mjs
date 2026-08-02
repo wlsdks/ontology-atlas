@@ -1,7 +1,7 @@
 // R17 — inferImports unit tests.
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { mkdtempSync, mkdirSync, writeFileSync, rmSync } from 'node:fs';
+import { mkdtempSync, mkdirSync, writeFileSync, rmSync, symlinkSync } from 'node:fs';
 import { join } from 'node:path';
 import { tmpdir } from 'node:os';
 import { inferImports } from './infer-imports.mjs';
@@ -31,6 +31,156 @@ test('relative import resolved to file path', () => {
     assert.equal(e.kind, 'static');
   } finally {
     rmSync(root, { recursive: true, force: true });
+  }
+});
+
+test('root Python package imports resolve to internal file and flat element dependency evidence', () => {
+  const root = withRepo((r) => {
+    mkdirSync(join(r, 'diagnostic_client', 'services'), { recursive: true });
+    writeFileSync(join(r, 'diagnostic_client', '__init__.py'), '');
+    writeFileSync(join(r, 'diagnostic_client', 'Request.py'), '');
+    writeFileSync(join(r, 'diagnostic_client', 'connections.py'), '');
+    writeFileSync(join(r, 'diagnostic_client', 'services', '__init__.py'), '');
+    writeFileSync(
+      join(r, 'diagnostic_client', 'client.py'),
+      [
+        'from diagnostic_client import Request, services',
+        'from diagnostic_client.connections import BaseConnection',
+        'import logging',
+      ].join('\n'),
+    );
+  });
+  try {
+    const result = inferImports(root);
+
+    assert.equal(result.filesScanned, 5);
+    assert.ok(
+      result.edges.some(
+        (edge) =>
+          edge.from === 'diagnostic_client/client.py' &&
+          edge.to === 'diagnostic_client/Request.py' &&
+          edge.kind === 'static',
+      ),
+    );
+    assert.ok(
+      result.edges.some(
+        (edge) =>
+          edge.from === 'diagnostic_client/client.py' &&
+          edge.to === 'diagnostic_client/services/__init__.py',
+      ),
+    );
+    assert.ok(
+      result.edges.some(
+        (edge) =>
+          edge.from === 'diagnostic_client/client.py' &&
+          edge.to === 'diagnostic_client/connections.py',
+      ),
+    );
+    assert.ok(
+      result.externalImports.some(
+        (entry) =>
+          entry.from === 'diagnostic_client/client.py' &&
+          entry.spec === 'logging',
+      ),
+    );
+    assert.ok(
+      result.moduleEdges.some(
+        (edge) =>
+          edge.from === 'elements/client' &&
+          edge.to === 'elements/request',
+      ),
+    );
+    assert.ok(
+      result.moduleEdges.some(
+        (edge) =>
+          edge.from === 'elements/client' &&
+          edge.to === 'elements/services',
+      ),
+    );
+    assert.ok(
+      result.moduleEdges.some(
+        (edge) =>
+          edge.from === 'elements/client' &&
+          edge.to === 'elements/connections',
+      ),
+    );
+  } finally {
+    rmSync(root, { recursive: true, force: true });
+  }
+});
+
+test('Python import parsing handles package-relative multiline imports without docstring or test-package noise', () => {
+  const root = withRepo((r) => {
+    mkdirSync(join(r, 'protocol', 'sub'), { recursive: true });
+    mkdirSync(join(r, 'tests'), { recursive: true });
+    writeFileSync(join(r, 'protocol', '__init__.py'), '');
+    writeFileSync(join(r, 'protocol', 'helpers.py'), '');
+    writeFileSync(join(r, 'protocol', 'sub', '__init__.py'), '');
+    writeFileSync(join(r, 'protocol', 'sub', 'local.py'), '');
+    writeFileSync(
+      join(r, 'protocol', 'sub', 'consumer.py'),
+      [
+        'DOC = """',
+        'from protocol import ghost',
+        '"""',
+        'from . import (',
+        '    local,  # actual package module',
+        ')',
+        'from .. import helpers',
+      ].join('\n'),
+    );
+    writeFileSync(join(r, 'tests', '__init__.py'), '');
+    writeFileSync(join(r, 'tests', 'test_consumer.py'), 'from protocol import helpers\n');
+  });
+  try {
+    const result = inferImports(root);
+
+    assert.equal(result.filesScanned, 5);
+    assert.ok(
+      result.edges.some(
+        (edge) =>
+          edge.from === 'protocol/sub/consumer.py' &&
+          edge.to === 'protocol/sub/local.py',
+      ),
+    );
+    assert.ok(
+      result.edges.some(
+        (edge) =>
+          edge.from === 'protocol/sub/consumer.py' &&
+          edge.to === 'protocol/helpers.py',
+      ),
+    );
+    assert.equal(
+      result.edges.some(
+        (edge) =>
+          edge.from === 'protocol/sub/consumer.py' &&
+          edge.to === 'protocol/__init__.py',
+      ),
+      false,
+      'an import-shaped line inside a docstring must not become evidence',
+    );
+  } finally {
+    rmSync(root, { recursive: true, force: true });
+  }
+});
+
+test('repository-escaping Python package symlinks are not scanned', () => {
+  const outside = withRepo((r) => {
+    writeFileSync(join(r, '__init__.py'), '');
+    writeFileSync(join(r, 'client.py'), 'import logging\n');
+  });
+  const root = withRepo((r) => {
+    symlinkSync(outside, join(r, 'escaped_package'));
+  });
+  try {
+    const result = inferImports(root);
+
+    assert.equal(result.filesScanned, 0);
+    assert.deepEqual(result.edges, []);
+    assert.deepEqual(result.externalImports, []);
+  } finally {
+    rmSync(root, { recursive: true, force: true });
+    rmSync(outside, { recursive: true, force: true });
   }
 });
 

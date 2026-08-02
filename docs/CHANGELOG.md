@@ -7,6 +7,30 @@
 
 ---
 
+## 2026-08-02 — Python cold start가 의미 근거와 정적 import를 읽는다
+
+`analyze_repo_structure`와 `index_project`가 이제 `README.rst`, 실행하지 않는
+정적 `setup.py` package contract, 최상위 `__init__.py` package를 Python
+cold-start 근거로 읽는다. `setup.py`는 `name`·`description`·`python_requires`
+literal만 허용하며 동적 식·dependency·저장소 밖 symlink·256 KiB 초과 파일은
+실행하거나 추측하지 않는다. package 경로는 element 후보일 뿐 domain/capability로
+자동 승격되지 않는다.
+
+`infer_imports`는 최상위 Python package의 정적 `import`와
+`from ... import`를 상대·다중행 형태까지 읽고 file/module edge로 축약한다.
+저장소 코드를 import하거나 실행하지 않으며 test package·동적 import·namespace
+추측은 범위 밖이다. import는 구현 근거로만 반환되고 의미 `depends_on`은 사람이
+검토해 명시적으로 써야 한다.
+
+낯선 Python 저장소 blind trial에서는 54개 파일의 내부 import 254개를 43개
+module edge로 축약했고, 작성 graph는 3개에서 6개 노드로만 늘었다. source-hidden
+인계는 `answered / partial / unanswered`가 `0 / 3 / 3`에서 `0 / 4 / 2`로 개선됐지만
+request/response ownership과 service/transport 경계는 아직 답하지 못했다. 따라서
+이 변경은 Python ingress와 impact 관찰의 기반이며, 고신뢰 source symbol 의미
+추출의 완료를 주장하지 않는다.
+
+---
+
 ## 2026-08-02 — 노드에 영구 UID와 읽을 수 있는 slug를 같이 둔다
 
 Vault format v2부터 모든 온톨로지 노드에 한 번 발급하고 바꾸지 않는 lowercase UUIDv4
