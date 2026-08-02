@@ -16,7 +16,6 @@ import {
   type OntologyTreeBuildResult,
 } from "@/shared/lib/ontology-tree";
 import { FirstRunStarterModule } from "@/features/first-run-starter";
-import { BlockImportModule } from "@/features/ontology-blocks";
 import { computeMaxDomainDescendantCount } from "../lib/domain-subcounts";
 import {
   flattenVisibleRowIds,
@@ -336,6 +335,14 @@ export function TopologyIndexPanel({
           받아 어느 쪽을 그릴지 결정 — 위젯은 INDEX 본문만 넘긴다. */}
       <FirstRunStarterModule
         concepts={totalConcepts}
+        /*
+         * 위쪽 `lensActive` 변수가 아니라 **렌즈 상태 자체**를 넘긴다. 그 변수는
+         * `!isFiltering && recentChanges !== null` 까지 요구하는 «트리를 실제로
+         * 좁힐 수 있나»의 판정인데, 여기서 필요한 것은 «사용자가 렌즈를 눌렀나»
+         * 다 — 강조가 0개여도 카드는 접히고 INDEX 가 열려야, 누른 사람이
+         * 「아무 일도 안 일어났다」로 읽지 않는다.
+         */
+        lensActive={lens === "recent"}
         relations={totalRelations}
         domains={domainCount}
         onStartTour={onStartTour}
@@ -458,7 +465,30 @@ export function TopologyIndexPanel({
           role="radiogroup"
           aria-label={labels.windowChipsAria ?? labels.segmentRecentAria}
           data-testid="topology-index-window-chips"
-          className="mb-3 flex shrink-0 items-center gap-1"
+          /*
+           * 기간 칩이 **무엇을 고르는 줄인지 말한다** (2026-08-02, 소유자:
+           * *"버튼이 너무 작고 존재하는지도 잘 모르겠는데.. 여기서도 가이드가
+           * 있어야하려나?"*).
+           *
+           * 종전엔 라벨 없이 칩 넷만 떠 있어서, 「자동/1일/7일/30일」이 무엇에
+           * 걸리는 값인지 화면 어디에도 없었다. 앞에 한 단어를 세운다 — 새 문구가
+           * 아니라 이미 있는 「최근」 계열 라벨을 쓴다.
+           */
+          /*
+           * 보이는 라벨은 **두지 않는다** (2026-08-02, 소유자 확정 — 두 번
+           * 시도하고 뺐다).
+           *
+           * ① 칩과 같은 줄: 첫 칩이 27px 밀려 패널 왼쪽 정렬선(검색창·세그먼트
+           *    = 101px)에서 혼자 벗어났다 — 소유자가 그 어긋남을 먼저 짚었다.
+           * ② 칩 위 한 줄: 정렬은 되찾았지만 글자 하나가 한 줄을 통째로 쓰고,
+           *    이 패널은 이미 행이 많다.
+           *
+           * 라벨을 넣으려던 이유는 「존재하는지도 모르겠다」였는데, 그 원인은
+           * 이름이 없어서가 아니라 **치수**였다(높이 20px · 글자 9.5px). 그건
+           * 아래에서 고쳤다. 스크린리더에는 `aria-label` 이 이미 「최근 변경 창
+           * 선택」을 말한다 — 접근성은 잃지 않는다.
+           */
+          className="mb-3 flex shrink-0 flex-wrap items-center gap-1.5"
         >
           {([
             ["auto", labels.windowChipAuto],
@@ -473,7 +503,33 @@ export function TopologyIndexPanel({
               aria-checked={recentWindow === value}
               data-testid={`topology-index-window-chip-${value}`}
               onClick={() => onWindowChange(value)}
-              className={`rounded-full border px-2 py-0.5 text-caption transition-colors ${
+              /*
+               * 치수는 **같은 패널의 세그먼트와 한 방언**으로 간다
+               * (2026-08-02 실측 · 소유자: *"버튼이 너무 작고"* → 고친 뒤
+               * *"근데 좀 안예쁜데? 비율이나 그런게 맞아야하는데"*).
+               *
+               * | | 종전 | 1차 수정 | 지금 |
+               * |---|---|---|---|
+               * | 높이 | 20px | 28px | **24px** |
+               * | 글자 | 9.5px | 12.5px | **11px** |
+               * | 모서리 | 완전 원형 | 완전 원형 | **7px** |
+               * | 폭 | 글자 수 (편차 9.9px) | 글자 수 | **48px 균일** |
+               *
+               * 두 번 고친 이유: 1차는 **크기만** 봤다. 실측해 보니 진짜 결함이
+               * 둘 더 있었다 — ① 폭이 글자 수로 정해져 편차 9.9px(이 저장소가
+               * 「치수 규칙성」으로 금지한 그 패턴: *반복 세트에서 높이·폭이
+               * 내용물의 부산물이 되면 격자의 리듬이 아무도 고르지 않은 채
+               * 무너진다*) ② 모서리가 완전 원형인데 **바로 위 세그먼트 탭은
+               * 7px** — 한 패널 안에 두 방언.
+               *
+               * 그래서 값을 새로 정하지 않고 **위 세그먼트에서 가져온다**
+               * (24px · 11px · 7px). 9.5px 이 문제였던 것이지 11px 이 문제였던
+               * 게 아니다 — 「누르는 글자는 12.5px」 규칙은 설정 시트 스코프이고,
+               * 여기서는 같은 패널의 한 방언이 이긴다.
+               *
+               * 터치에서는 `--touch-target-min`(44px)까지 세운다.
+               */
+              className={`inline-flex h-6 min-w-12 items-center justify-center rounded-[var(--chrome-radius-inner)] border text-label transition-colors [@media(pointer:coarse)]:h-[var(--touch-target-min)] ${
                 recentWindow === value
                   ? "border-[color:var(--color-indigo-a46)] bg-[color:var(--color-indigo-a16)] text-[color:var(--topology-v2-panel-text-primary)]"
                   : "border-[color:var(--topology-v2-panel-border)] text-[color:var(--topology-v2-panel-text-tertiary)] hover:text-[color:var(--topology-v2-panel-text-primary)]"
@@ -584,11 +640,14 @@ export function TopologyIndexPanel({
         </Link>
       ) : null}
 
-      {/* 온톨로지 블록 Slice A — "블록 가져오기" (병합 프리뷰). 자립 모듈:
-          vault 로드 상태에서만 스스로 렌더(첫 실행 스타터는 vault 미로드
-          전용이라 동시 노출 없음), 라벨은 ontologyBlocks i18n 을 자급.
-          위 "지도에 없는 문서/먼지 앉은 노드" 행과 같은 조용한 행 문법. */}
-      <BlockImportModule />
+      {/* 「다른 폴더에서 노드 가져오기」는 **설정 → 작업 공간**으로 옮겼다
+          (2026-08-02, 소유자: *"이건 뭐임? 이 문구가 왜 있는거지..? 필요없는건가"*).
+
+          기능 자체는 로컬-퍼스트 제품에 맞다 — 다른 볼트의 `.md` 를 골라 병합
+          미리보기를 열고, 승인 전에는 폴더에 아무것도 안 쓴다. 자리가 틀렸다:
+          **평생 한두 번 쓸 일**이 지도를 읽을 때마다 INDEX 바닥에 상시 버튼으로
+          서 있었다. 「블록」이라는 말도 이 앱 어디에도 정의가 없어서, 처음 보는
+          사람에게는 무엇을 여는 버튼인지 알 길이 없었다. */}
 
       {/* v2.1 푸터 — 구 헤더의 "● 에이전트 동기화" 문구 + 성장 신호가
           여기로 이관. 단축키 캡은 장식(⇧⌘K 는 전역 팔레트가 이미 쓰는

@@ -23,6 +23,8 @@ interface MockVault {
   manifest: { docs: unknown[] } | null;
   errorMessage: string | null;
   restoreAttempted: boolean;
+  /** 「한 번이라도 연결했나」 — 샘플 안내 대상 판정의 입력(2026-08-02). */
+  recentVaults: unknown[];
   open: ReturnType<typeof vi.fn>;
   scaffoldOntology: ReturnType<typeof vi.fn>;
 }
@@ -57,6 +59,7 @@ function makeVault(): MockVault {
     manifest: null,
     errorMessage: null,
     restoreAttempted: true,
+    recentVaults: [],
     open: vi.fn(async () => undefined),
     scaffoldOntology: vi.fn(async () => ({ created: 8, skipped: 0 })),
   };

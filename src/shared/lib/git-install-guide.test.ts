@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 
-import { GIT_DOWNLOAD_URL, gitInstallGuide } from './git-install-guide';
+import { GIT_DOWNLOAD_URL, gitInstallGuide , gitHostPlatformFrom} from './git-install-guide';
 
 /**
  * 설치 명령은 **사용자 터미널에서** 실행되므로 오타가 나면 우리는 그 실패를
@@ -42,5 +42,33 @@ describe('gitInstallGuide', () => {
 
   it('알 수 없는 값은 macOS 로 떨어진다 (빈 화면보다 낫다)', () => {
     expect(gitInstallGuide('freebsd' as never).platform).toBe('macos');
+  });
+});
+
+/**
+ * 플랫폼 감지 — 순수 함수라 문자열만 넣어 본다.
+ *
+ * 이 함수가 생긴 이유: 설치 안내(`gitInstallGuide`)와 문구 13종이 **이미 다
+ * 있었는데 화면이 그걸 부르지 않았다**(2026-08-02 발견 — `AtlasGitPanel` 의
+ * `gitProbe` 호출 0회). 문을 다 지어놓고 안 뚫은 상태였고, 그 문을 뚫는 데
+ * 마지막으로 없던 조각이 「이 컴퓨터가 무슨 OS 인가」였다.
+ */
+describe('gitHostPlatformFrom', () => {
+  it.each([
+    ['MacIntel', 'macos'],
+    ['darwin', 'macos'],
+    ['iPhone', 'macos'],
+    ['Win32', 'windows'],
+    ['Windows NT 10.0', 'windows'],
+    ['Linux x86_64', 'linux'],
+  ])('%s → %s', (input, expected) => {
+    expect(gitHostPlatformFrom(input)).toBe(expected);
+  });
+
+  it('못 알아보면 linux 로 떨어진다 — 다운로드 링크는 세 안내 모두에 있다', () => {
+    expect(gitHostPlatformFrom('')).toBe('linux');
+    expect(gitHostPlatformFrom('SomethingNew')).toBe('linux');
+    const guide = gitInstallGuide(gitHostPlatformFrom(''));
+    expect(guide.alternatives.some((o) => o.href), '다운로드 링크가 없다').toBe(true);
   });
 });

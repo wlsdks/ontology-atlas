@@ -619,6 +619,26 @@ export function HomePage() {
   // 고정, "auto"/off 면 기존 적응 사다리 — 지도 침강과 INDEX 렌즈가 이 훅
   // 하나(단일 진실원)를 공유한다.
   const spotlightOn = recentWindow !== null;
+  /*
+   * 렌즈를 켜거나 기간을 바꾼 **순간**에만 카메라를 강조 노드로 맞춘다
+   * (2026-08-02 소유자 지적 — 창을 좁혀도 화면이 그대로였다).
+   *
+   * 값이 아니라 **사건**을 넘긴다: 지도는 `spotlightIds` 를 매 프레임 읽으므로
+   * 그것만으로는 "방금 바뀌었다"를 알 수 없고, 매 프레임 맞추면 사람이 그 뒤에
+   * 잡아둔 화면을 계속 뺏는다.
+   */
+  /*
+   * 사건 카운터 — 렌더 중 `Date.now()` 를 부르지 않는다. lint 가 잡았고
+   * 규칙이 맞다: 렌더는 순수해야 하고, 시계를 읽으면 같은 입력에 다른 출력이
+   * 나온다(React 가 렌더를 버리고 다시 할 수 있다).
+   *
+   * 필요한 성질은 「시각」이 아니라 **「달라졌다」** 뿐이므로 단조 증가 카운터로
+   * 충분하다. 렌즈·기간이 바뀐 렌더에서만 올라간다.
+   */
+  const [spotlightFitToken, setSpotlightFitToken] = useState(0);
+  useEffect(() => {
+    setSpotlightFitToken((n) => n + 1);
+  }, [recentWindow, spotlightOn]);
   const recentChanges = useAdaptiveRecentChanges(
     spotlightOn && recentWindow !== "auto" ? recentWindow : undefined,
   );
@@ -3489,11 +3509,20 @@ export function HomePage() {
                         </ChromeChip>
                       </Tooltip>
                     ) : null}
-                    <TopologyReviewLink
-                      changeset={ontologyChangeset}
-                      label={(count) => t('controls.reviewLabel', { count })}
-                      ariaLabel={(count) => t('controls.reviewAria', { count })}
-                    />
+                    {/*
+                        「변경점 N개」를 지웠다 (2026-08-02, 소유자 지적:
+                        *"(변경점 2개) 버튼을 누르면 지도 노드에서 표현이
+                        되어야지? 선택되면서.."*).
+
+                        그 버튼은 `/ontology/` 로 갔는데 **그 주소는 `/topology`
+                        로 되돌리는 리다이렉트**다 — 지도에서 눌러 지도로 돌아오는
+                        왕복이고, 그 사이 보고 있던 선택·펼침·카메라를 잃는다.
+                        아무 일도 안 일어나는 게 아니라 **상태만 잃는** 버튼이었다.
+
+                        숫자는 바로 옆 「최근 변경」 칩이 이미 badge 로 들고 있고,
+                        그쪽은 지도에서 **실제로 강조**한다. 숫자와 동작이 한자리에
+                        오면서 크롬이 하나 줄었다.
+                    */}
                     {/* 살아있는 그래프(물리) 토글은 제거됐다(#19, fable 판정
                         2026-07-25) — 상시 force 시뮬은 어느 청중의 과업에도
                         봉사하지 않고(읽기엔 위치 안정성이 생명) 공간 기억을
@@ -3502,9 +3531,36 @@ export function HomePage() {
                     {/* 최근 변경 스포트라이트 (협의회 설계 2026-07-23) — 렌즈
                         토글. 스포트라이트 칩의 ChromeChip 문법/축약 사다리.
                         상태는 URL `?recent=` 단일 진실원 (공유/에이전트 재현). */}
-                    <Tooltip content={t('controls.spotlightTooltip')} side="bottom" withProvider={false}>
+                    <Tooltip
+                      content={
+                        !spotlightOn && recentChanges.recentNodeIds.size === 0
+                          ? t('controls.spotlightEmptyTooltip')
+                          : t('controls.spotlightTooltip')
+                      }
+                      side="bottom"
+                      withProvider={false}
+                    >
                       <ChromeChip
                         onClick={handleToggleSpotlight}
+                        /*
+                         * 바뀐 게 없으면 **누를 수 없다** (2026-08-02, 소유자:
+                         * *"변경이 없을때는 그럼 버튼 클릭을 비활성화 하면 되는거
+                         * 아닌가? 누르면 팝업 나와서 변경된게 없다고 띄우거나"*).
+                         *
+                         * 팝업 안은 안 골랐다 — 아무것도 없다는 사실을 말하려고
+                         * 모달을 여는 것은 누른 사람에게 일을 두 번 시키는 것이고,
+                         * 이 저장소가 「popup soup」로 금지한 부류다.
+                         *
+                         * **숨기지도 않는다.** 사라지면 「최근 변경이라는 기능이
+                         * 있었나」가 되고, 그건 이 세션에서 이미 겪은 문제다(무라벨
+                         * 아이콘이라 못 찾았다). 자리는 남기고 이유는 툴팁이 말한다
+                         * — `BlockImportModule` 의 「disabled + 힌트로 존치, 완전
+                         * 은폐 금지」와 같은 규율.
+                         *
+                         * 켜져 있는 동안은 **끌 수 있어야** 하므로, 꺼져 있고
+                         * 강조가 0일 때만 비활성이다.
+                         */
+                        disabled={!spotlightOn && recentChanges.recentNodeIds.size === 0}
                         aria-pressed={spotlightOn}
                         aria-label={t('controls.spotlightAriaLabel')}
                         data-testid="topology-spotlight-toggle"
@@ -3519,8 +3575,19 @@ export function HomePage() {
                         compact={topologyUtilityChromeCompact}
                         icon={<HistoryIcon />}
                         active={spotlightOn}
-                        // 그래프 토글과 같은 <2xl 아이콘-only 사다리(위 주석).
-                        className="max-2xl:[&_[data-chip-label]]:hidden"
+                        /*
+                         * 이름을 **항상** 보인다 (2026-08-02, 소유자:
+                         * *"최근 변경이라는 버튼이 어디에있음? 없는데?"*).
+                         *
+                         * 종전 `max-2xl` 은 **1536px 미만에서 라벨을 숨겼다** —
+                         * 옆의 「작업공간」·「내 데이터로 전환」은 1280px 미만에서
+                         * 숨기므로, 1512px 창에서는 **이 버튼 하나만** 이름이
+                         * 사라져 무라벨 시계 아이콘이 됐다. 못 찾는 게 당연했다.
+                         *
+                         * 이제 이 칩이 「변경점 N개」가 하던 일까지 가져왔으므로
+                         * 상단 크롬에서 **변경을 말하는 유일한 자리**다 — 그 자리가
+                         * 이름 없이 설 이유가 없다.
+                         */
                         // P2 결함④ 후속 (소유자 실보고 2026-07-23, 상단 크롬
                         // 과밀) — 시간창/건수 카운트를 레인에 떠 있던 무라벨
                         // mono 텍스트 대신 칩 내부 badge 로 흡수한다(문서 칩의
@@ -4241,6 +4308,7 @@ export function HomePage() {
                     edges={topologyV2Graph.edges}
                     focus={{ selectedSlug: canvasSelectedSlug }}
                     fitViewToken={combinedFitToken}
+                    spotlightFitToken={spotlightFitToken}
                     relayoutToken={topologyRelayoutToken}
                     revealToken={mapRevealToken}
                     onSelectEdge={(edge) => {

@@ -1,3 +1,5 @@
+import { readFileSync } from 'node:fs';
+import { join } from 'node:path';
 import { act, fireEvent, render, screen, waitFor, within } from '@testing-library/react';
 import type { MouseEventHandler, ReactNode } from 'react';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
@@ -858,5 +860,34 @@ describe('AppSettingsMenu — vault 절대 경로 (#72)', () => {
     openSheet();
 
     expect(screen.queryByTestId('app-settings-vault-path')).not.toBeInTheDocument();
+  });
+});
+
+/**
+ * 「다른 폴더에서 노드 가져오기」는 **설정 → 작업 공간**에 있다 (2026-08-02
+ * 이관, INDEX 바닥에서 옮겨 옴).
+ *
+ * 양방향으로 잠근다 — `TopologyIndexPanel.test.tsx` 가 「INDEX 에는 없다」를,
+ * 이 케이스가 「설정에는 있다」를 본다. 한쪽만 잠그면 **아무 데도 없는 상태**를
+ * 통과시킨다(모듈이 자립형이라 호출 한 줄만 지우면 조용히 사라진다).
+ */
+describe('AppSettingsMenu — 가져오기 모듈의 자리', () => {
+  it('작업 공간 절이 가져오기 모듈을 싣는다', () => {
+    // 모듈은 **vault 가 로드된 상태에서만** 스스로 렌더하는 자립형이라, 이
+    // 테스트의 idle vault 목에서는 DOM 에 아무것도 안 남는다. 그래서 렌더 결과가
+    // 아니라 **배선 자체**를 본다 — 이 저장소가 다른 자립 모듈에도 쓰는 방식이다.
+    const source = readFileSync(
+      join(__dirname, 'AppSettingsMenu.tsx'),
+      'utf-8',
+    );
+    const workspaceBranch = source.slice(
+      source.indexOf("section === 'workspace' ?"),
+      source.indexOf("section === 'agent' ?"),
+    );
+    expect(workspaceBranch, '작업 공간 절이 없다').not.toBe('');
+    expect(
+      workspaceBranch,
+      '가져오기 모듈이 작업 공간 절에서 사라졌다 — INDEX 로 되돌아갔거나 통째로 없어졌다',
+    ).toContain('<BlockImportModule />');
   });
 });
