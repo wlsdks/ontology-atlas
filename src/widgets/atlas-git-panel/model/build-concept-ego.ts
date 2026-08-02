@@ -37,6 +37,16 @@ export interface ConceptEgo {
   domainLabel: string | null;
   /** 이 개념의 근거 문서(볼트 안 slug). 파생이 항상 하나는 보장한다. */
   docSlug: string | null;
+  /** 사람이 쓴 한 줄 설명. 이 카드에서 **사람이 가장 먼저 읽는 사실**이다. */
+  summary: string | null;
+  /**
+   * 에이전트에게 이 개념을 가리킬 때 쓰는 이름 — MCP/CLI 가 그대로 받는다.
+   * 이 제품의 사용자는 사람과 에이전트 둘이므로, 사람이 읽는 이름만 싣고
+   * 에이전트가 쓰는 이름을 빼면 절반만 보여 준 것이다.
+   */
+  agentSlug: string | null;
+  /** 속한 프로젝트 이름들 — 볼트에 여럿이면 여기서 갈린다. */
+  projectLabels: readonly string[];
   neighbors: Readonly<Record<EgoBearing, readonly EgoNeighbor[]>>;
   /** 네 방위를 합친 이웃 수 — 0 이면 그림을 그리지 않는다. */
   total: number;
@@ -107,6 +117,12 @@ export function buildConceptEgo(
     kind: self.kind,
     domainLabel: neighbors.belongsTo.find((n) => n.kind === "domain")?.label ?? null,
     docSlug: self.evidenceIds[0] ?? null,
+    summary: self.summary?.trim() || null,
+    agentSlug: self.agentSlug ?? self.evidenceIds[0] ?? null,
+    projectLabels: self.projectIds
+      .map((id) => byId.get(id))
+      .map((n) => (n ? n.display || n.title : null))
+      .filter((v): v is string => Boolean(v)),
     neighbors,
     total,
   };

@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useState, useSyncExternalStore } from "react";
+import { Fragment, useCallback, useEffect, useMemo, useState, useSyncExternalStore } from "react";
 import { useCopyFeedback, type CopyFeedbackState } from "@/shared/lib/use-copy-feedback";
 import { stepRowMotionClass, stepRowUsesStagger } from "../lib/step-row-motion";
 import { useTranslations } from "next-intl";
@@ -35,6 +35,7 @@ import {
 } from "@/shared/lib/atlas-git-record";
 import {
   gitDiff,
+  gitCommitDiff,
   gitFetch,
   gitErrorMessage,
   gitHistory,
@@ -454,6 +455,34 @@ export function AtlasGitPanel({
         ? { kind: "commit", hash: history[0].hash }
         : { kind: "pending" });
 
+  /*
+   * 고른 걸음의 patch. **선택이 바뀔 때만** 읽는다 — 목록을 그릴 때 전부
+   * 미리 읽으면 걸음 하나당 `git show` 한 번씩이라, 화면에 안 보이는 것에
+   * 값을 선불로 낸다(`architecture.md` "화면에 없는 표면의 모델은 만들지
+   * 않는다"). `null` 은 「아직 모름」이고 `""` 는 「없음」이다.
+   */
+  const [commitDiff, setCommitDiff] = useState<string | null>(null);
+  const diffHash = selection.kind === "commit" ? selection.hash : null;
+  useEffect(() => {
+    if (!vaultPath || !diffHash) {
+      setCommitDiff(null);
+      return;
+    }
+    let cancelled = false;
+    setCommitDiff(null);
+    void gitCommitDiff(vaultPath, diffHash)
+      .then((result) => {
+        if (!cancelled) setCommitDiff(result?.diff ?? "");
+      })
+      // 읽기 실패는 화면을 무너뜨리지 않는다 — 그 구획만 「없음」으로 는다.
+      .catch(() => {
+        if (!cancelled) setCommitDiff("");
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [vaultPath, diffHash]);
+
   const stage: GitStage = !bridgeAvailable
     ? "web"
     : !vaultPath
@@ -480,15 +509,30 @@ export function AtlasGitPanel({
             ? "workbench"
             : "not-initialized";
 
+  /**
+   * 사용자가 직접 쓴 커밋 제목. **빈 문자열이면 자동 문구**를 쓴다 —
+   * Rust 의 `git_snapshot(message: Option<String>)` 이 이미 그렇게 갈린다.
+   *
+   * 종전엔 자동 문구만 가능했다. 그 문구는 「무엇이 바뀌었나」는 잘 말하지만
+   * **왜 바꿨나**는 못 말하고, 그건 나중에 이력을 읽는 사람이 실제로 찾는
+   * 것이다(소유자: *"수동으로 커밋도 할 수도 있잖아"*).
+   */
+  const [snapshotMessage, setSnapshotMessage] = useState("");
+
   const confirmSnapshot = useCallback(async () => {
     if (!vaultPath) return;
     setSnapshotting(true);
     setSnapshotError(null);
     try {
-      const result = await gitSnapshot(vaultPath, { push: pushOptIn });
+      const trimmed = snapshotMessage.trim();
+      const result = await gitSnapshot(vaultPath, {
+        push: pushOptIn,
+        ...(trimmed ? { message: trimmed } : {}),
+      });
       setSnapshotResult(result);
       setConfirming(false);
       setPushOptIn(false);
+      setSnapshotMessage("");
       /*
        * 사용자의 명시 선택을 지운다 — 커밋 직후 화면은 기본값으로 돌아간다.
        * 남은 변경이 있으면 계속 「아직 커밋 안 한 변경」, 없으면 방금 만든
@@ -502,7 +546,7 @@ export function AtlasGitPanel({
     } finally {
       setSnapshotting(false);
     }
-  }, [vaultPath, pushOptIn, refresh]);
+  }, [vaultPath, pushOptIn, snapshotMessage, refresh]);
 
   /**
    * 복사 결과는 **성공도 실패도** 말한다 (2026-07-28 QA).
@@ -653,6 +697,9 @@ export function AtlasGitPanel({
         stage === "loading" ||
         stage === "error" ? (
           <DesktopBody
+            commitDiff={commitDiff}
+            snapshotMessage={snapshotMessage}
+            setSnapshotMessage={setSnapshotMessage}
             hostPlatformHint={
               typeof navigator === "undefined"
                 ? ""
@@ -707,6 +754,7 @@ export function AtlasGitPanel({
             onRemoteAction={(kind) => void runRemote(kind)}
             remoteActionNotice={remoteActionNotice}
             remoteActionError={remoteActionError}
+            sessionChangeset={sessionChangeset}
             concepts={conceptsByHash}
             egoFor={egoFor}
             kindLabel={kindLabel}
@@ -714,11 +762,12 @@ export function AtlasGitPanel({
             setFocusedConceptId={setFocusedConceptId}
           />
         ) : stage === "no-vault" ? (
-          <NoVaultSetup key={stage} t={t} />
+          <NoVaultSetup key={stage} t={t} kindLabel={kindLabel} />
         ) : (
           <WebSetup
             key={stage}
             t={t}
+            kindLabel={kindLabel}
             sessionChangeset={sessionChangeset}
             commandCopyState={commandCopyState}
             copyCliCommand={copyCliCommand}
@@ -792,21 +841,34 @@ function PageHeader({
 }
 
 /**
- * 연결 사다리 — "몇 걸음 남았나" 를 **크롬 없이** 말한다.
+ * 연결 사다리 — "지금 어디이고 무엇이 남았나".
  *
- * 소유자 요구("빠르게 연결")에 대한 응답이되, 원형+커넥터 스테퍼는 반려했다:
- * ① 그 위젯은 빈 화면을 채우려고 넣은 컴포넌트로 읽히고 ② 무엇보다 걸음 수를
- * 부풀린다 — 보낼 곳 등록은 **선택**이므로 사다리에 없다. 이 컴퓨터에만 쌓는
- * 것도 정당한 종착지고, 그걸 "미완료" 로 그리면 거짓말이다.
+ * 원형+커넥터 **스테퍼 위젯**은 여전히 반려다: 그건 걸음 수를 부풀린다 —
+ * 보낼 곳 등록은 **선택**이므로 사다리에 없다. 이 컴퓨터에만 쌓는 것도 정당한
+ * 종착지고, 그걸 "미완료" 로 그리면 거짓말이다. 그래서 걸음은 여전히 셋이다.
  *
- * 그래서 이건 위젯이 아니라 **라벨 한 줄**이다 (Tufte — 잉크는 데이터에):
- * 완료=체크+tertiary · 지금=인디고 점+primary semibold · 이후=quaternary.
- * 새 채색 0, 보더 0, 커넥터 0.
+ * 2026-08-02 — **한 줄에서 세 행으로.** 종전 형태는 11px 한 줄이었고, 실측하면
+ * 높이 16px 에 세 걸음이 다 들어간 화면에서 **가장 작은 원소**였다. 그런데 이
+ * 화면에서 사용자가 가장 알고 싶은 것이 바로 이것(내가 어디쯤인가)이다 —
+ * Tufte 의 "잉크는 데이터에" 는 잉크를 아끼라는 말이 아니라 **데이터에 쓰라는
+ * 말**이다. 지금은 각 걸음이 이름(`text-body`) + 설명(`text-label`) 두 줄을
+ * 갖고, 왼쪽 헤어라인 레일이 진행을 잇는다.
+ *
+ * 채색은 그대로 인디고 하나다: 완료=인디고 테두리 체크, 지금=인디고 채운 마크
+ * + 레일 하이라이트 + primary 라벨, 이후=중립 테두리 + tertiary 라벨.
+ *
+ * 치수 규칙성: 세 행 모두 두 줄을 쓴다(설명이 없는 걸음이 없다) — 행 높이가
+ * 내용의 유무로 흔들리지 않는다.
  */
+const LADDER_NOTE_KEY = ["stepAppNote", "stepFolderNote", "stepStartNote"] as const;
+
 function ConnectLadder({ t, current }: { t: Translator; current: SetupStep }) {
   const steps = [t("stepApp"), t("stepFolder"), t("stepStart")];
   return (
-    <ol data-testid="atlas-git-ladder" className="flex flex-wrap items-center gap-x-1.5 gap-y-1">
+    <ol
+      data-testid="atlas-git-ladder"
+      className="flex flex-col border-l border-[color:var(--color-divider)]"
+    >
       {steps.map((label, index) => {
         const step = index + 1;
         const done = step < current;
@@ -816,40 +878,49 @@ function ConnectLadder({ t, current }: { t: Translator; current: SetupStep }) {
             key={label}
             data-step-state={done ? "done" : active ? "current" : "todo"}
             aria-current={active ? "step" : undefined}
-            className="flex items-center gap-1.5"
+            className="relative grid grid-cols-[24px_minmax(0,1fr)] items-start gap-3 py-2 pl-4"
           >
-            {index > 0 ? (
+            {/* 진행 레일 — 지금 걸음만 부모 헤어라인 위에 인디고를 덮는다.
+                커넥터 도형이 아니라 이미 있는 선의 **한 구간**이라 새 잉크가
+                아니다. */}
+            {active ? (
               <span
                 aria-hidden
-                className="pr-1 text-label text-[color:var(--color-text-quaternary)]"
-              >
-                ·
-              </span>
+                className="absolute top-0 bottom-0 -left-px w-px bg-[color:var(--color-indigo-accent)]"
+              />
             ) : null}
-            <span aria-hidden className="flex h-3 w-3 shrink-0 items-center justify-center">
-              {done ? (
-                <Check size={11} className="text-[color:var(--color-text-tertiary)]" />
-              ) : active ? (
-                <span className="h-1.5 w-1.5 rounded-full bg-[color:var(--color-indigo-accent)]" />
-              ) : (
-                <span className="h-1 w-1 rounded-full bg-[color:var(--color-text-quaternary)]" />
-              )}
-            </span>
             <span
+              aria-hidden
               className={cn(
-                "text-label",
+                // 숫자는 `text-label`(11px) — `text-caption`(9.5px) 인디고는
+                // 캔버스 위 4.55:1 로 AA 문턱에 붙는다(실측). 24px 원 안에서
+                // 11px 은 여유가 있고, 램프 스텝이라 새 값이 아니다.
+                "grid size-6 shrink-0 place-items-center rounded-full border text-label tabular-nums",
                 done
-                  ? "text-[color:var(--color-text-tertiary)]"
+                  ? "border-[color:var(--color-indigo-a46)] text-[color:var(--color-indigo-accent)]"
                   : active
-                    ? "font-semibold text-[color:var(--color-text-primary)]"
-                    : "text-[color:var(--color-text-quaternary)]",
+                    ? "border-[color:var(--color-indigo-accent)] bg-[color:var(--color-indigo-a16)] text-[color:var(--color-indigo-accent)]"
+                    : "border-[color:var(--color-border-soft)] text-[color:var(--color-text-quaternary)]",
               )}
             >
-              {label}
+              {done ? <Check size={11} /> : step}
             </span>
-            {done || active ? (
-              <span className="sr-only">{done ? t("stepDoneA11y") : t("stepCurrentA11y")}</span>
-            ) : null}
+            <span className="flex min-w-0 flex-col">
+              <span
+                className={cn(
+                  "truncate text-body font-semibold",
+                  active
+                    ? "text-[color:var(--color-text-primary)]"
+                    : "text-[color:var(--color-text-tertiary)]",
+                )}
+              >
+                {label}
+              </span>
+              <span className="text-label text-[color:var(--color-text-quaternary)]">
+                {done ? t("stepDoneA11y") : t(LADDER_NOTE_KEY[index])}
+              </span>
+            </span>
+            {active ? <span className="sr-only">{t("stepCurrentA11y")}</span> : null}
           </li>
         );
       })}
@@ -858,13 +929,171 @@ function ConnectLadder({ t, current }: { t: Translator; current: SetupStep }) {
 }
 
 /**
- * 셋업 프레임 — "아직 자기 일을 못 하는" 모든 상태가 **같은 몸**을 쓴다.
+ * 미리보기 — **연결이 끝나면 이 화면이 무엇이 되는가**.
  *
- * 폭이 `--git-setup-measure` 하나로 고정된 이유: 사용자는 앱에서 열기 → 폴더
- * 고르기 → 기록 시작을 **연속으로** 통과하는데, 걸음마다 폭이 달라지면 매번
- * 다른 페이지로 튕긴 것처럼 읽힌다. 세로 중앙 정렬은 여백을 "채우는" 대신
- * **의도한 여백**으로 바꾼다 — 1920×1223 에서 짧은 과업 블록을 좌상단에 붙여
- * 두면 "나머지가 로드에 실패한 페이지" 로 읽혔다(소유자 실측 판정).
+ * 왜 이것이 장식이 아닌가: 이 상태의 화면은 사용자에게 한 가지를 시킨다
+ * ("앱을 받으세요" / "폴더를 고르세요"). 그런데 **무엇을 얻는지 말하지 않으면
+ * 그건 명령이지 제안이 아니다.** 처음 온 사람은 「기록」이라는 이름만으로
+ * 도착지를 상상할 수 없다. 그래서 도착지의 골격 — 왼쪽 시간축, 오른쪽 고른
+ * 걸음의 개념과 이웃 — 을 축소해 보여준다. 이 화면이 파는 것의 실물이다.
+ *
+ * **없는 데이터를 지어내지 않는다.** 이 순간 볼트는 없고, 그래서 여기에 가짜
+ * 개념 이름을 쓰면 화면이 거짓말을 한다. 이름 자리는 **가림 막대**로 두고,
+ * 정체를 나르는 자리(칩)만 실제 제품 어휘(`kinds` 네임스페이스)와 실제 글리프
+ * (`TopologyV2KindGlyph` — 단일 게이트웨이)를 쓴다. 도형은 kind→실루엣 계약을
+ * 그대로 따르므로 세 번째 도형 출처가 생기지 않는다.
+ *
+ * 무게: `opacity-45` + `aria-hidden` — 아직 당신의 것이 아니라는 뜻이고,
+ * 보조기술과 키보드는 여기에 착지하지 않는다. `filter: saturate()` 같은 두
+ * 번째 채널은 쓰지 않는다(무채색 + 인디고 하나).
+ */
+const PREVIEW_ROW_KINDS = [
+  "capability",
+  "domain",
+  "element",
+  "capability",
+  "element",
+  "capability",
+] as const;
+/**
+ * 이웃 스케치의 위성 좌표(%) — **네 방위**다. 임의의 별자리가 아니라
+ * `EGO_BEARINGS`(속한 곳 · 담고 있는 것 · 기대는 곳 · 이곳을 쓰는 곳)와 공방의
+ * 고정 방위(UP/DOWN/RIGHT/LEFT)가 이미 쓰는 문법이라, 이 그림이 도착지의 실제
+ * 배치를 말한다. 대각선 네 개는 큰 X 로 읽혀 아무 뜻도 없었다(첫 시안 실측).
+ */
+const PREVIEW_SATELLITES = [
+  { x: 50, y: 14, kind: "domain" },
+  { x: 86, y: 50, kind: "element" },
+  { x: 50, y: 86, kind: "capability" },
+  { x: 14, y: 50, kind: "element" },
+] as const;
+
+function SetupPreview({ t, kindLabel }: { t: Translator; kindLabel: (kind: string) => string }) {
+  return (
+    <div className="hidden min-w-0 flex-col gap-3 lg:flex">
+      <div
+        aria-hidden
+        data-testid="atlas-git-setup-preview"
+        className="overflow-hidden rounded-[var(--radius-panel)] border border-[color:var(--color-border-soft)] bg-[color:var(--color-panel)] opacity-45"
+      >
+        {/* 위치 줄 */}
+        <div className="flex items-center gap-2 border-b border-[color:var(--color-divider)] px-3 py-2">
+          <span className="h-1.5 w-24 rounded-full bg-[color:var(--color-overlay-3)]" />
+          <span className="ml-auto h-4 w-10 rounded-[var(--radius-chip)] border border-[color:var(--color-border-soft)]" />
+        </div>
+        {/* `lg`~`xl` 에서는 시간축만 남는다 — 좁은 폭에 두 칸을 욱여넣으면
+            축소된 도해가 아니라 뭉갠 도해가 된다. */}
+        <div className="grid grid-cols-1 xl:grid-cols-[minmax(0,1fr)_minmax(0,1.1fr)]">
+          {/* 시간축 */}
+          <div className="flex flex-col py-1.5 xl:border-r xl:border-[color:var(--color-divider)]">
+            <span className="flex h-[var(--git-row-h)] items-center gap-2 border-l-2 border-dashed border-l-[color:var(--color-indigo-a46)] pr-3 pl-2.5">
+              <span className="h-1.5 w-8 rounded-full bg-[color:var(--color-overlay-2)]" />
+              <span className="h-1.5 flex-1 rounded-full bg-[color:var(--color-overlay-3)]" />
+            </span>
+            {PREVIEW_ROW_KINDS.map((kind, index) => (
+              <span
+                key={`${kind}-${String(index)}`}
+                className={cn(
+                  "flex h-[var(--git-row-h)] items-center gap-2 border-l-2 pr-3 pl-2.5",
+                  index === 0
+                    ? "border-l-[color:var(--color-indigo-brand)] bg-[color:var(--color-overlay-2)]"
+                    : "border-l-transparent",
+                )}
+              >
+                <span className="h-1.5 w-6 rounded-full bg-[color:var(--color-overlay-2)]" />
+                <TopologyV2KindGlyph kind={kind} size={11} />
+                <span
+                  className="h-1.5 rounded-full bg-[color:var(--color-overlay-3)]"
+                  style={{ width: `${String(46 + index * 9)}%` }}
+                />
+              </span>
+            ))}
+          </div>
+          {/* 고른 걸음의 상세 */}
+          <div className="hidden min-w-0 flex-col gap-2.5 p-3 xl:flex">
+            <span className="h-1.5 w-2/3 rounded-full bg-[color:var(--color-overlay-3)]" />
+            <div className="flex flex-wrap gap-1.5">
+              {(["capability", "element"] as const).map((kind) => (
+                <span
+                  key={kind}
+                  className="inline-flex items-center gap-1.5 rounded-[var(--radius-chip)] border border-[color:var(--color-border-soft)] px-1.5 py-0.5 text-caption text-[color:var(--color-text-tertiary)]"
+                >
+                  <TopologyV2KindGlyph kind={kind} size={9} />
+                  {kindLabel(kind)}
+                </span>
+              ))}
+            </div>
+            <div className="relative h-32 rounded-[var(--radius-card)] border border-[color:var(--color-divider)] bg-[color:var(--color-canvas)]">
+              <svg
+                viewBox="0 0 100 100"
+                preserveAspectRatio="none"
+                className="absolute inset-0 h-full w-full"
+              >
+                {PREVIEW_SATELLITES.map((s) => (
+                  <line
+                    key={`${String(s.x)}-${String(s.y)}-${s.kind}`}
+                    x1="50"
+                    y1="50"
+                    x2={s.x}
+                    y2={s.y}
+                    stroke="var(--topology-v2-edge-contains)"
+                    strokeWidth={1}
+                    vectorEffect="non-scaling-stroke"
+                  />
+                ))}
+              </svg>
+              <span className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 rounded-full bg-[color:var(--color-canvas)] p-1">
+                <TopologyV2KindGlyph kind="capability" size={17} />
+              </span>
+              {PREVIEW_SATELLITES.map((s) => (
+                <span
+                  key={`g-${String(s.x)}-${String(s.y)}`}
+                  className="absolute -translate-x-1/2 -translate-y-1/2 rounded-full bg-[color:var(--color-canvas)] p-1"
+                  style={{ left: `${String(s.x)}%`, top: `${String(s.y)}%` }}
+                >
+                  <TopologyV2KindGlyph kind={s.kind} size={11} />
+                </span>
+              ))}
+            </div>
+          </div>
+        </div>
+      </div>
+      <p className="text-center text-label text-[color:var(--color-text-quaternary)]">
+        {t("previewCaption")}
+      </p>
+    </div>
+  );
+}
+
+/**
+ * 셋업 무대 — "아직 자기 일을 못 하는" 모든 상태가 **같은 몸**을 쓴다.
+ *
+ * ## 2026-08-02 재설계 — 기둥 하나에서 두 칸 무대로
+ *
+ * 소유자 판정: *"상단에 왜이렇게 붙어있고 내용도 작고 구성도 별로야"* →
+ * *"되돌리는 정도가 아니라 디자인 자체를 다시해줘"*.
+ *
+ * 실측이 그 판정을 그대로 설명한다(1512×806, `/ko/git/`): 520px 기둥이
+ * 520×464 = 화면의 **19.8%** 만 쓰고, 좌우로 348px 씩(패널 폭의 **57.2%**),
+ * 아래로 298px 이 아무것도 나르지 않았다. 그 안에서 가장 큰 시각 덩어리는
+ * **주 동작이 아니라** 터미널 탈출구였다 — 앱 받기 버튼 86×36 = 3,096px²,
+ * CLI 명령 상자 520×46 = 23,920px². 보조가 주보다 **7.7배** 컸다(Tufte
+ * data-ink 역전). 위 정렬이냐 가운데 정렬이냐는 이 결함의 **결과**였지 원인이
+ * 아니라서, 되돌리는 것도 유지하는 것도 답이 아니다.
+ *
+ * 그래서 무대는 두 칸이다:
+ *
+ * - **왼쪽(말하는 칸, `--git-setup-measure` 520px)** — 지금 뭘 해야 하는지.
+ *   제목이 `text-title`(16px)에서 `text-display`(23px)로 올라가고 「기록」은
+ *   눈썹 한 줄로 내려간다: 이 화면의 제목은 "기록" 이 아니라 **"먼저 폴더를
+ *   고르세요"** 다(Toss 공개 발표 — 한 화면에 한 가지). 본문은
+ *   `text-body`(12.5)에서 `text-body-lg`(14)로 한 단 — "내용도 작고" 의 실체다.
+ * - **오른쪽(보여주는 칸, `1fr`)** — 연결되면 이 화면이 무엇이 되는지
+ *   (`SetupPreview`). 명령을 약속으로 바꾸는 자리다.
+ *
+ * 세로는 가운데다. 이제 무대가 폭을 다 쓰므로, 가운데 정렬이 "떠 있는 대화
+ * 상자" 가 아니라 "이 화면의 내용" 으로 읽힌다. `xl` 미만에서는 미리보기가
+ * 빠지고 말하는 칸만 남는다(좁은 폭에서 축소된 도해는 도해가 아니다).
  *
  * 등장 모션은 기존 `.topology-chrome-in` 재사용 —
  * `--topology-motion-panel-duration`(180ms) + `--topology-motion-ease-out`.
@@ -873,48 +1102,66 @@ function ConnectLadder({ t, current }: { t: Translator; current: SetupStep }) {
  */
 function SetupFrame({
   t,
+  kindLabel,
   step,
   state,
+  title,
+  body,
+  note,
   children,
 }: {
   t: Translator;
+  kindLabel: (kind: string) => string;
   /** null 이면 사다리를 그리지 않는다 (로딩·오류 — 걸음이 아니라 사건이다). */
   step: SetupStep | null;
   state: string;
-  children: React.ReactNode;
+  /** 이 순간의 과업 한 문장 — 이 화면의 h1 이다. */
+  title: string;
+  body?: string;
+  /**
+   * 마지막 줄의 약속. 기본값은 기록 범위 고지 — 처음 쓰는 사람이 가장 걱정하는
+   * 것이 "내 폴더 밖을 건드리나" 이고, 그 답은 행동 **직전**에 있어야 한다.
+   */
+  note?: string;
+  children?: React.ReactNode;
 }) {
   return (
     <div
       data-testid="atlas-git-setup"
       data-setup-state={state}
-      className="topology-chrome-in mx-auto flex w-full max-w-[var(--git-setup-measure)] flex-col gap-4 pt-[var(--git-setup-top)]"
+      className="topology-chrome-in grid w-full flex-1 grid-cols-1 content-center items-center gap-9 py-[var(--git-setup-top)] lg:grid-cols-[minmax(0,var(--git-setup-measure))_minmax(0,1fr)] lg:gap-10 xl:gap-14"
     >
-      {/* 세로는 **위 정렬**이다. `m-auto` 로 정가운데에 두면 이 화면이 목적지가
-          아니라 대화상자로 읽힌다 — 실측: 1512×806 창에서 기둥이 화면의 17%
-          만 쓰고 위 209px · 아래 189px 이 균등하게 비어, 어디에도 매이지 않은
-          한 덩어리가 됐다. 레일이 있는 목적지는 페이지이므로 첫 줄이 위에서
-          시작한다.
-
-          헤더가 기둥의 첫 줄이다 — 셋업에서 이 화면은 "발자취 대시보드" 가
-          아니라 "기록을 시작하는 한 장" 이고, 제목·범위 고지·사다리·과업이
-          하나의 세로 리듬으로 읽혀야 한다. */}
-      <PageHeader t={t} inColumn />
-      {step ? <ConnectLadder t={t} current={step} /> : null}
-      {children}
-    </div>
-  );
-}
-
-/** 셋업 카드의 제목 + 본문 — 세 상태가 같은 리듬을 쓰게 묶어 둔다. */
-function SetupHeading({ title, body }: { title: string; body?: string }) {
-  return (
-    <div className="flex flex-col gap-1.5">
-      <h2 className="text-title font-semibold tracking-[-0.005em] text-[color:var(--color-text-primary)]">
-        {title}
-      </h2>
-      {body ? (
-        <p className="text-body leading-relaxed text-[color:var(--color-text-secondary)]">{body}</p>
-      ) : null}
+      {/* 말하는 칸은 **어느 폭에서도** 산문 측정폭을 넘지 않는다. 두 칸이
+          접히는 `<lg` 에서 이 상한이 없으면 구분선과 CLI 줄이 1,012px 까지
+          늘어나 `justify-between` 이 양끝을 700px 벌린다 — 설정 시트가 같은
+          병으로 한 번 앓았던 자리다(`--settings-content-measure` 주석). */}
+      <div className="flex min-w-0 max-w-[var(--git-setup-measure)] flex-col gap-5">
+        {/* 「기록」은 이 화면의 제목이 아니라 **어디에 있는지**다 — 목적지
+            이름은 눈썹으로 내리고, h1 은 지금 해야 할 일이 가진다. */}
+        <p className="flex items-center gap-2 text-label text-[color:var(--color-text-quaternary)]">
+          <HistoryIcon size={13} aria-hidden className="text-[color:var(--color-indigo-accent)]" />
+          {t("title")}
+        </p>
+        <div className="flex flex-col gap-2">
+          <h1 className="text-display font-semibold tracking-[-0.012em] text-[color:var(--color-text-primary)]">
+            {title}
+          </h1>
+          {body ? (
+            <p className="max-w-[34em] text-body-lg leading-relaxed text-[color:var(--color-text-secondary)]">
+              {body}
+            </p>
+          ) : null}
+        </div>
+        {step ? <ConnectLadder t={t} current={step} /> : null}
+        {children}
+        {note ? (
+          <p className="flex items-start gap-2 text-label leading-relaxed text-[color:var(--color-text-quaternary)]">
+            <ShieldCheck size={12} aria-hidden className="mt-0.5 shrink-0" />
+            <span>{note}</span>
+          </p>
+        ) : null}
+      </div>
+      <SetupPreview t={t} kindLabel={kindLabel} />
     </div>
   );
 }
@@ -925,33 +1172,86 @@ function SetupHeading({ title, body }: { title: string; body?: string }) {
  * 걸음(`앱 받기`)은 11px 텍스트 링크였고 그 위의 복사 버튼보다 작았다.
  * 지금은 앱 받기가 주 버튼이고, 터미널 경로는 아래 보조 탈출구다.
  */
+
+/**
+ * 이번 세션에 바뀐 것 — **git 과 무관하게** 안다.
+ *
+ * `change-baseline-store` 가 볼트별 기준점을 들고 있고 `computeOntologyChangeset`
+ * 이 그 기준 대비 추가·수정·삭제를 센다. 새로고침을 넘어 살아남는다.
+ *
+ * 종전에는 이 요약을 **웹 강등에서만** 그렸다. 그래서 git 을 아직 안 켠
+ * 데스크톱 사용자는 「기록 시작하기」만 권유받고 *지금 무엇이 바뀌었는지*는
+ * 한 글자도 못 봤다 — 웹보다 못한 상태였다(소유자 지적 2026-08-02).
+ * 아는 것을 안 보여주는 것은 강등이 아니라 누락이다.
+ */
+function SessionChangeSummary({
+  t,
+  changeset,
+  title,
+}: {
+  t: Translator;
+  changeset: OntologyChangeset | null;
+  /** 절 제목 — 웹과 데스크톱이 서로 다른 말을 쓴다. */
+  title: string;
+}) {
+  const rows = changeset
+    ? (
+        [
+          ["webNodesAdded", changeset.addedNodes.length],
+          ["webNodesChanged", changeset.changedNodes.length],
+          ["webNodesRemoved", changeset.removedNodes.length],
+          ["webEdgesAdded", changeset.addedEdges.length],
+          ["webEdgesRemoved", changeset.removedEdges.length],
+        ] as const
+      ).filter(([, count]) => count > 0)
+    : [];
+  return (
+    <div
+      data-testid="atlas-git-session-changes"
+      className="flex flex-col gap-1.5 border-t border-[color:var(--color-divider)] pt-4"
+    >
+      <SectionLabel>{title}</SectionLabel>
+      {rows.length > 0 ? (
+        <ul className="flex flex-wrap items-center gap-x-3 gap-y-1">
+          <li aria-hidden className="flex items-center">
+            <span className="h-1.5 w-1.5 rounded-full bg-[color:var(--color-status-warning)]" />
+          </li>
+          {rows.map(([key, count]) => (
+            <li key={key} className="text-body text-[color:var(--color-text-secondary)]">
+              {t(key, { count })}
+            </li>
+          ))}
+        </ul>
+      ) : (
+        <p className="text-body text-[color:var(--color-text-quaternary)]">{t("webNoChanges")}</p>
+      )}
+    </div>
+  );
+}
+
 function WebSetup({
   t,
+  kindLabel,
   sessionChangeset,
   commandCopyState,
   copyCliCommand,
 }: {
   t: Translator;
+  kindLabel: (kind: string) => string;
   sessionChangeset: OntologyChangeset | null;
   commandCopyState: CopyFeedbackState;
   copyCliCommand: () => void;
 }) {
-  const rows = sessionChangeset
-    ? (
-        [
-          ["webNodesAdded", sessionChangeset.addedNodes.length],
-          ["webNodesChanged", sessionChangeset.changedNodes.length],
-          ["webNodesRemoved", sessionChangeset.removedNodes.length],
-          ["webEdgesAdded", sessionChangeset.addedEdges.length],
-          ["webEdgesRemoved", sessionChangeset.removedEdges.length],
-        ] as const
-      ).filter(([, count]) => count > 0)
-    : [];
-
   return (
-    <SetupFrame t={t} step={1} state="web">
-      <SetupHeading title={t("webTitle")} body={t("webDesktopHint")} />
-
+    <SetupFrame
+      t={t}
+      kindLabel={kindLabel}
+      step={1}
+      state="web"
+      title={t("webTitle")}
+      body={t("webDesktopHint")}
+      note={t("scopeNotice")}
+    >
       <Link
         href="/download"
         data-testid="atlas-git-web-get-app"
@@ -961,28 +1261,8 @@ function WebSetup({
         {t("webGetApp")}
       </Link>
 
-      {/* 이번에 바뀐 것 — 행동의 **근거**라 주 동작 아래에 온다.
-          구 화면은 이 블록을 1176px 전폭 카드로 그렸는데, 담긴 건 24자 한
-          문장이었다(Tufte data-ink 역전: 보더 잉크 > 내용 잉크). 셋업 측정폭
-          안으로 들어오면서 카드 껍데기 자체가 필요 없어졌다 — 변경이 있을
-          때만 amber 신호점이 붙는다. */}
-      <div className="flex flex-col gap-1.5 border-t border-[color:var(--color-divider)] pt-4">
-        <SectionLabel>{t("webSummaryTitle")}</SectionLabel>
-        {rows.length > 0 ? (
-          <ul className="flex flex-wrap items-center gap-x-3 gap-y-1">
-            <li aria-hidden className="flex items-center">
-              <span className="h-1.5 w-1.5 rounded-full bg-[color:var(--color-status-warning)]" />
-            </li>
-            {rows.map(([key, count]) => (
-              <li key={key} className="text-body text-[color:var(--color-text-secondary)]">
-                {t(key, { count })}
-              </li>
-            ))}
-          </ul>
-        ) : (
-          <p className="text-body text-[color:var(--color-text-quaternary)]">{t("webNoChanges")}</p>
-        )}
-      </div>
+      {/* 이번에 바뀐 것 — 행동의 **근거**라 주 동작 아래에 온다. */}
+      <SessionChangeSummary t={t} changeset={sessionChangeset} title={t("webSummaryTitle")} />
 
       {/* 터미널 탈출구 — 이미 CLI 를 쓰는 사용자를 위해 남기되, 주 동작과 같은
           무게로 경쟁하지 않는다. `webCommandHint`("누르면 …복사돼요")는 버튼
@@ -991,7 +1271,15 @@ function WebSetup({
         <p className="text-label leading-relaxed text-[color:var(--color-text-quaternary)]">
           {t("webCommandLabel")}
         </p>
-        <div className="flex items-center justify-between gap-2 rounded-[var(--chrome-radius-inner)] border border-[color:var(--color-border-soft)] bg-[color:var(--color-overlay-1)] px-3 py-2">
+        {/*
+         * 상자를 걷어냈다 (2026-08-02, Tufte data-ink 역전 실측).
+         *
+         * 이 탈출구는 520×46 보더+면 상자였고 면적 23,920px² 였다. 같은 화면의
+         * **주 동작**(앱 받기)은 86×36 = 3,096px² — 보조가 주보다 **7.7배**
+         * 컸다. 담긴 것은 285px 짜리 문자열 하나다. 상자는 그 문자열이 명령임을
+         * 말하려던 것인데, 그건 mono 서체가 이미 말한다.
+         */}
+        <div className="flex items-center justify-between gap-2">
           <code className="min-w-0 truncate font-mono text-body text-[color:var(--color-text-secondary)]">
             {SNAPSHOT_CLI_COMMAND}
           </code>
@@ -1047,10 +1335,23 @@ function WebSetup({
  * 쓰는 사용자에게 앱을 받으라고 하는 **거짓 안내**였다. 이 걸음의 진짜 다음
  * 동작은 폴더를 고르는 것이고, 그 장소는 문서함이다.
  */
-function NoVaultSetup({ t }: { t: Translator }) {
+function NoVaultSetup({
+  t,
+  kindLabel,
+}: {
+  t: Translator;
+  kindLabel: (kind: string) => string;
+}) {
   return (
-    <SetupFrame t={t} step={2} state="no-vault">
-      <SetupHeading title={t("noVaultTitle")} body={t("noVaultBody")} />
+    <SetupFrame
+      t={t}
+      kindLabel={kindLabel}
+      step={2}
+      state="no-vault"
+      title={t("noVaultTitle")}
+      body={t("noVaultBody")}
+      note={t("scopeNotice")}
+    >
       <Link
         href="/docs"
         data-testid="atlas-git-pick-vault"
@@ -1100,7 +1401,19 @@ function RemoteActionButton({
       title={hint}
       disabled={disabled}
       onClick={() => onClick(id)}
-      className="rounded-[var(--radius-chip)] border border-[color:var(--color-border-soft)] px-2 py-0.5 text-label text-[color:var(--color-text-tertiary)] transition-colors hover:border-[color:var(--color-indigo-a46)] hover:text-[color:var(--color-text-primary)] disabled:cursor-default disabled:opacity-40 disabled:hover:border-[color:var(--color-border-soft)] disabled:hover:text-[color:var(--color-text-tertiary)]"
+      /*
+       * **누를 수 있게 생겨야 한다** (소유자 지적 2026-08-02: *"너무 작아서
+       * 누르는 버튼인지도 모르겠음"*).
+       *
+       * 종전은 24px 높이 · 투명 바탕 · quaternary 급 잉크였다. 24px 은 WCAG
+       * 2.2 §2.5.8 의 **최소**이지 «주 동작의 치수»가 아니고, 바탕이 없으면
+       * 테두리 하나만 남아 «칩(읽는 것)»과 구별이 안 된다 — 이 셋은 원격으로
+       * 나가는 동작이라 화면에서 가장 되돌리기 어려운 버튼들이다.
+       *
+       * 그래서 셋을 다: 높이 28px · `elevated` 바탕 · secondary 잉크. 새 값
+       * 0개(전부 램프·토큰).
+       */
+      className="inline-flex min-h-7 items-center rounded-[var(--radius-chip)] border border-[color:var(--color-border-strong)] bg-[color:var(--color-elevated)] px-3 text-label font-medium text-[color:var(--color-text-secondary)] transition-colors hover:border-[color:var(--color-indigo-a46)] hover:bg-[color:var(--color-overlay-2)] hover:text-[color:var(--color-text-primary)] disabled:cursor-default disabled:border-[color:var(--color-border-soft)] disabled:bg-transparent disabled:text-[color:var(--color-text-quaternary)] disabled:hover:border-[color:var(--color-border-soft)]"
     >
       {busy ? "…" : label}
     </button>
@@ -1146,34 +1459,50 @@ function LocationLine({
           터미널·저장소 페이지에서 그대로 다시 마주치는 문자열이다. 구
           `branchLabel`("브랜치") 라벨은 삭제: `main → origin/main` 이 이미
           무엇인지 말한다. */}
-      <span
-        className="truncate font-mono text-[color:var(--color-text-tertiary)]"
-        title={upstream ? t("locationChipHint", { branch, upstream }) : undefined}
-      >
-        {upstream ? t("locationChip", { branch, upstream }) : branch}
+      {/*
+        브랜치·원격 이름은 사용자가 정한 고유명사라 번역하지 않는다 — 터미널·
+        저장소 페이지에서 그대로 다시 마주치는 문자열이다.
+
+        **넷이 따로 떠 있던 것을 셋으로 줄였다** (소유자 지적 2026-08-02:
+        *"브랜치 표기 방식도 좀 별로"*). 종전엔 `main → origin/main` 옆에
+        「↑2 ↓0」 칩이 따로 앉아 있었는데, 그 숫자가 하는 일은 **어느 버튼을
+        누를지 정해 주는 것** 하나였다. 그러면 숫자는 버튼 위에 있어야 한다 —
+        읽고 나서 눈을 다시 옮길 이유가 없다.
+
+        그래서 칩을 없애고 `Push 2` · `Pull 3` 으로 옮겼다. 남은 것은
+        「지금 어디」(브랜치)와 「무엇을 할 수 있나」(동작 셋)뿐이다.
+      */}
+      <span className="flex min-w-0 items-center gap-1.5 font-mono">
+        <span className="truncate text-[color:var(--color-text-secondary)]">{branch}</span>
+        {upstream ? (
+          <>
+            {/* 화살표는 장식이 아니라 **추적 관계**다 — 왼쪽이 오른쪽을 따라간다. */}
+            <span aria-hidden className="shrink-0 text-[color:var(--color-text-quaternary)]">
+              →
+            </span>
+            <span className="truncate text-[color:var(--color-text-quaternary)]">
+              {upstream}
+            </span>
+          </>
+        ) : null}
       </span>
       {upstream ? (
         <>
-          {/* 갈라짐은 **마지막 확인 시점 기준**이라 그 사실을 툴팁으로 함께
-              말한다 — 숫자만 보이면 실시간으로 읽힌다. */}
-          <span
-            data-testid="atlas-git-divergence"
-            title={t("remoteStale")}
-            className="inline-flex items-center gap-1.5 rounded-[var(--radius-chip)] border border-[color:var(--color-border-soft)] px-2 py-0.5 tabular-nums"
-          >
-            {same ? (
-              <span>{t("divergeSame")}</span>
-            ) : (
-              <>
-                <span className="text-[color:var(--color-text-secondary)]">
-                  {t("divergeAhead", { ahead: ahead ?? 0 })}
-                </span>
-                <span className="text-[color:var(--color-text-secondary)]">
-                  {t("divergeBehind", { behind: behind ?? 0 })}
-                </span>
-              </>
-            )}
-          </span>
+          {/* 「같음」은 숫자가 없을 때만 뜬다 — 버튼 둘이 비활성인 이유를 말한다. */}
+          {same ? (
+            <span
+              data-testid="atlas-git-divergence"
+              title={t("remoteStale")}
+              className="shrink-0 text-[color:var(--color-text-quaternary)]"
+            >
+              {t("divergeSame")}
+            </span>
+          ) : (
+            <span data-testid="atlas-git-divergence" className="sr-only">
+              {t("divergeAhead", { ahead: ahead ?? 0 })}{" "}
+              {t("divergeBehind", { behind: behind ?? 0 })}
+            </span>
+          )}
           {/* Fetch·Pull·Push 는 **원어**로 둔다. 번역하면 무슨 일이 일어나는지가
               오히려 흐려진다(소유자 판정 2026-08-02). */}
           <RemoteActionButton
@@ -1186,18 +1515,18 @@ function LocationLine({
           />
           <RemoteActionButton
             id="pull"
-            label={t("remotePull")}
+            label={behind && behind > 0 ? `${t("remotePull")} ${behind}` : t("remotePull")}
             hint={behind && behind > 0 ? t("remotePullHint", { behind }) : t("remoteSameHint")}
             busy={remoteBusy === "pull"}
-            disabled={remoteBusy !== null || !known || behind === 0}
+            disabled={remoteBusy !== null}
             onClick={onRemoteAction}
           />
           <RemoteActionButton
             id="push"
-            label={t("remotePush")}
+            label={ahead && ahead > 0 ? `${t("remotePush")} ${ahead}` : t("remotePush")}
             hint={ahead && ahead > 0 ? t("remotePushHint", { ahead }) : t("remoteSameHint")}
             busy={remoteBusy === "push"}
-            disabled={remoteBusy !== null || !known || ahead === 0}
+            disabled={remoteBusy !== null}
             onClick={onRemoteAction}
           />
         </>
@@ -1210,28 +1539,44 @@ function LocationLine({
             data-testid="atlas-git-remote-toggle"
             aria-expanded={remoteOpen}
             onClick={() => setRemoteOpen(!remoteOpen)}
-            className="rounded-[var(--radius-chip)] border border-[color:var(--color-border-soft)] px-2 py-0.5 text-label text-[color:var(--color-text-tertiary)] transition-colors hover:border-[color:var(--color-indigo-a46)] hover:text-[color:var(--color-text-primary)]"
+            className="inline-flex min-h-6 items-center rounded-[var(--radius-chip)] border border-[color:var(--color-border-soft)] px-2 text-label text-[color:var(--color-text-tertiary)] transition-colors hover:border-[color:var(--color-indigo-a46)] hover:text-[color:var(--color-text-primary)]"
           >
             {remoteOpen ? t("remoteToggleClose") : t("remoteToggle")}
           </button>
         </>
       )}
-      {error ? (
-        <span
-          data-testid="atlas-git-remote-error"
-          className="basis-full text-label text-[color:var(--color-danger-text)]"
-        >
-          {error}
-        </span>
-      ) : notice ? (
-        <span
-          data-testid="atlas-git-remote-notice"
-          className="basis-full text-label text-[color:var(--color-text-tertiary)]"
-        >
-          {notice}
-        </span>
-      ) : null}
     </div>
+  );
+}
+
+/**
+ * 원격 동작의 결과 한 줄 — 성공도 실패도 **같은 자리**에서 말한다.
+ *
+ * 상단 바 **밖**에 있는 이유: 바 안에서 줄바꿈으로 붙이면 새 줄이 생기는 순간
+ * 바가 높아지고 Fetch·Pull·Push 세 버튼이 통째로 내려앉는다(소유자 지적
+ * 2026-08-03: *"fetch 누르니까 위치 이상하게 변경되고"*). 방금 누른 버튼이
+ * 손가락 밑에서 도망가는 것은 결과 표시의 부작용이 아니라 결함이다.
+ */
+function RemoteResultLine({
+  notice,
+  error,
+}: {
+  notice: string | null;
+  error: string | null;
+}) {
+  if (!error && !notice) return null;
+  return (
+    <p
+      data-testid={error ? "atlas-git-remote-error" : "atlas-git-remote-notice"}
+      className={cn(
+        "git-fade-in flex-none border-b border-[color:var(--color-divider)] px-4 py-2 text-label leading-relaxed",
+        error
+          ? "text-[color:var(--color-danger-text)]"
+          : "text-[color:var(--color-text-tertiary)]",
+      )}
+    >
+      {error ?? notice}
+    </p>
   );
 }
 
@@ -1422,8 +1767,17 @@ function ChangeRow({
       >
         <StatusMark t={t} status={status} />
         <span className="min-w-0 flex-1 truncate font-mono text-label">
+          {/*
+           * tertiary 이지 quaternary 가 아니다 — **누를 수 있는 행 위의 글자는
+           * 평면 토큰을 쓸 수 없다** (2026-08-02 실측, 알파 합성 기준).
+           * quaternary(#787c84)는 `--color-panel` 위에서 4.55:1 로 AA(4.5)를
+           * 0.05 차이로 겨우 넘긴다. 그래서 행이 hover(`--color-overlay-1`
+           * → rgb(20,21,22))나 선택(`--color-overlay-2` → rgb(29,30,31))으로
+           * 한 단 밝아지는 **순간 4.37:1 · 3.97:1 로 떨어져 기준 미달**이 된다.
+           * tertiary(#8a8f98)는 같은 두 바탕에서 5.86 / 5.12 로 여유가 있다.
+           */}
           {place ? (
-            <span className="text-[color:var(--color-text-quaternary)]">{place}/</span>
+            <span className="text-[color:var(--color-text-tertiary)]">{place}/</span>
           ) : null}
           <span
             className={
@@ -1436,7 +1790,7 @@ function ChangeRow({
           </span>
         </span>
         <span
-          className="shrink-0 font-mono text-caption text-[color:var(--color-text-quaternary)]"
+          className="shrink-0 font-mono text-caption text-[color:var(--color-text-tertiary)]"
           title={delta ? t("numHint", { added: delta.added, removed: delta.removed }) : undefined}
         >
           {delta ? `+${delta.added} −${delta.removed}` : ""}
@@ -1490,18 +1844,23 @@ function ChangeList({
   let rowIndex = 0;
 
   return (
-    <div
-      data-testid="atlas-git-change-groups"
-      className="flex min-w-0 flex-col gap-2 xl:min-h-0 xl:flex-1"
-    >
+    <div data-testid="atlas-git-change-groups" className="flex min-w-0 shrink-0 flex-col gap-2">
+      {/* 이 줄이 이 블록의 **유일한** 제목이다. 종전에는 증거 열 머리에도
+          같은 `changesTitle` 이 있어서 화면에 같은 문자열이 32px 간격으로
+          두 번(왼쪽 시간축의 「지금」 행까지 세면 세 번) 떴다 — 어느 쪽이
+          진실인지 사용자가 판단해야 했다. 고른 문서 경로는 이 줄의 오른쪽
+          끝으로 합쳤다. */}
       <div className="flex shrink-0 flex-wrap items-baseline gap-x-2 gap-y-0.5">
         <SectionLabel>{t("changesTitle")}</SectionLabel>
         <span className="text-label text-[color:var(--color-text-secondary)]">
           {summaryParts.join(" · ")}
         </span>
+        <span className="ml-auto min-w-0 truncate font-mono text-caption text-[color:var(--color-text-quaternary)]">
+          {selectedPath ?? t("diffAllLabel")}
+        </span>
       </div>
 
-      <div className="xl:min-h-0 xl:flex-1 xl:overflow-y-auto">
+      <div>
         {kindGroups.length > 0 ? (
           <ul className="flex flex-col">
             {kindGroups.map((group) => (
@@ -1542,7 +1901,7 @@ function ChangeList({
               data-testid="atlas-git-others-toggle"
               aria-expanded={othersOpen}
               onClick={() => setOthersOpen(!othersOpen)}
-              className="flex h-[var(--git-row-h)] shrink-0 items-center gap-1 rounded-[var(--radius-chip)] pr-2 pl-0.5 text-label text-[color:var(--color-text-quaternary)] transition-colors hover:text-[color:var(--color-text-secondary)]"
+              className="flex h-[var(--git-row-h)] shrink-0 items-center gap-1 rounded-[var(--radius-chip)] pr-2 pl-0.5 text-label text-[color:var(--color-text-tertiary)] transition-colors hover:text-[color:var(--color-text-secondary)]"
             >
               <ChevronRight
                 size={11}
@@ -1611,7 +1970,10 @@ function DiffView({
   return (
     <div
       data-testid="atlas-git-diff-pre"
-      className="git-fade-in flex min-h-0 flex-col gap-3 overflow-auto pr-1 max-xl:max-h-[var(--git-evidence-stack-max)] xl:flex-1"
+      // `<xl` 은 증거가 목록 아래로 쌓이므로 자기 상한 안에서 스크롤한다.
+      // `xl` 에서는 **증거 열 하나가 스크롤 주체**라 여기서 또 자르지 않는다
+      // (자르면 그 안의 줄이 조용히 사라진다 — 위 열 주석의 실측 사고).
+      className="git-fade-in flex shrink-0 flex-col gap-3 pr-1 max-xl:max-h-[var(--git-evidence-stack-max)] max-xl:overflow-auto"
     >
       {files.map((file) => {
         const { name, place } = describeChangePath(file.path, { isConcept: true });
@@ -1654,7 +2016,11 @@ function DiffView({
                       line.kind === "added"
                         ? "border-l-[color:var(--color-border-strong)] bg-[color:var(--color-overlay-2)] text-[color:var(--color-text-primary)]"
                         : line.kind === "removed"
-                          ? "border-l-[color:var(--color-border-soft)] bg-[color:var(--color-overlay-1)] text-[color:var(--color-text-quaternary)]"
+                          ? // 지운 줄은 가장 옅지만 **읽혀야 한다** — 실측
+                            // 4.37:1(quaternary on overlay-1)로 AA 미달이라
+                            // tertiary(5.86:1)로 올렸다. 휘도 순서(추가 >
+                            // 수정 > 이름 > 삭제)는 그대로 지켜진다.
+                            "border-l-[color:var(--color-border-soft)] bg-[color:var(--color-overlay-1)] text-[color:var(--color-text-tertiary)]"
                           : "border-l-transparent text-[color:var(--color-text-tertiary)]",
                     )}
                   >
@@ -1696,6 +2062,20 @@ function DiffView({
  */
 const STEP_CONCEPT_SLOTS = 2;
 
+/**
+ * 목록 행 하나의 문법 — **전폭 표의 한 줄**이지 카드가 아니다.
+ *
+ * 종전엔 `rounded-chip` 카드에 좌측 2px 인디고 막대를 붙였는데, 그건
+ * `design.md` 가 이름 붙여 금지한 «카드 안 full-height colored rail» 이다
+ * (AI SaaS callout 처럼 읽힌다 — 소유자 지적 2026-08-02). 같은 2px 이
+ * **컬럼 끝까지 닿는 행**에 붙으면 표의 선택 마커로 읽힌다. 달라진 것은
+ * 값이 아니라 **그 값이 앉은 자리**다.
+ *
+ * 3열(시각 · 이름 · 왜)은 시안 실측 그대로다.
+ */
+const STEP_ROW =
+  "grid w-full grid-cols-[var(--git-when-w)_minmax(0,1.7fr)_minmax(0,1fr)] min-h-[var(--git-row-h)] items-center gap-3 border-b border-l-2 border-b-[color:var(--color-divider)] px-4 py-2 text-left transition-colors hover:bg-[color:var(--color-overlay-1)]";
+
 function StepList({
   t,
   history,
@@ -1708,6 +2088,10 @@ function StepList({
   pendingCount,
   selection,
   setSelection,
+  ahead,
+  behind,
+  upstream,
+  onRemoteAction,
 }: {
   t: Translator;
   history: GitCommitInfo[];
@@ -1731,10 +2115,16 @@ function StepList({
   pendingCount: number;
   selection: WorkbenchSelection;
   setSelection: (v: WorkbenchSelection) => void;
+  /** 아직 안 보낸 걸음 수 — 목록 맨 위 N 개가 그것이다. */
+  ahead: number | null;
+  /** 원격에만 있는 걸음 수. 로컬 이력에 없으므로 **행이 아니라 안내**다. */
+  behind: number | null;
+  upstream: string | null;
+  onRemoteAction: (kind: "fetch" | "pull" | "push") => void;
 }) {
   if (history.length === 0) {
     return (
-      <div className="flex flex-col gap-1">
+      <div className="flex flex-col gap-1 px-4 py-3">
         <p className="text-label text-[color:var(--color-text-tertiary)]">{t("historyEmpty")}</p>
         <p className="text-caption leading-relaxed text-[color:var(--color-text-quaternary)]">
           {t("historyEmptyHint")}
@@ -1743,8 +2133,44 @@ function StepList({
     );
   }
 
+  /*
+   * **탭을 쓰지 않는다.** 「아직 안 보냄」·「받을 것」·「커밋 안 함」을 탭으로
+   * 가르면 각 탭이 나머지를 숨기고, 이 저장소에는 그러지 말자는 결정과 그것을
+   * 지키는 테스트가 이미 있다(「커밋 이력이 탭 뒤에 숨지 않는다」). 세 상태는
+   * **한 시간축 위의 서로 다른 구간**이라 순서가 이미 관계를 말한다 — 필요한
+   * 것은 칸막이가 아니라 **경계선**이다.
+   *
+   *   [원격에만 있음 ↓N]  ← 로컬에 없으니 행이 아니라 안내 + 받기
+   *   [지금 · 커밋 안 함]  ← 이름이 아직 없는 변경 묶음
+   *   ── 아직 안 보냄 N ──
+   *     걸음 · 걸음
+   *   ── origin/main 과 같은 지점 ──
+   *     걸음 · 걸음 …
+   */
+  const unpushed = Math.max(0, Math.min(ahead ?? 0, history.length));
+
   return (
     <ul data-testid="atlas-git-steps" className="flex flex-col">
+      {behind && behind > 0 ? (
+        <li>
+          <button
+            type="button"
+            data-testid="atlas-git-behind-row"
+            onClick={() => onRemoteAction("pull")}
+            className={cn(STEP_ROW, "border-l-transparent")}
+          >
+            <span className="truncate text-label text-[color:var(--color-text-tertiary)]">
+              {t("remoteOnlyWhen")}
+            </span>
+            <span className="truncate text-body-lg font-semibold text-[color:var(--color-text-primary)]">
+              {t("remoteOnlyTitle", { count: behind })}
+            </span>
+            <span className="truncate text-label text-[color:var(--color-text-tertiary)]">
+              {t("remoteOnlyHint")}
+            </span>
+          </button>
+        </li>
+      ) : null}
       {/*
         아직 커밋 안 한 변경도 **변경 묶음**이라는 점에서 커밋과 같다. 다른
         것은 아직 이름이 안 붙었다는 것뿐이라, 같은 행 문법을 쓰고 구별은
@@ -1757,21 +2183,18 @@ function StepList({
             data-testid="atlas-git-pending-row"
             aria-pressed={selection.kind === "pending"}
             onClick={() => setSelection({ kind: "pending" })}
-            className="flex h-[var(--git-step-h)] w-full items-center gap-3 rounded-[var(--radius-chip)] border-l-2 border-l-dashed border-l-[color:var(--color-indigo-a46)] pr-1.5 pl-1.5 text-left transition-colors hover:bg-[color:var(--color-overlay-1)] aria-pressed:border-l-[color:var(--color-indigo-brand)] aria-pressed:bg-[color:var(--color-overlay-2)]"
+            className={cn(STEP_ROW, "border-l-dashed border-l-[color:var(--color-indigo-a46)] aria-pressed:border-l-[color:var(--color-indigo-brand)] aria-pressed:bg-[color:var(--color-overlay-2)]")}
           >
-            <span className="w-20 shrink-0 truncate text-label text-[color:var(--color-text-tertiary)]">
+            <span className="truncate text-label tabular-nums text-[color:var(--color-text-tertiary)]">
               {t("pendingNow")}
             </span>
-            <span className="flex min-w-0 flex-1 flex-col">
-              <span className="truncate text-body font-medium text-[color:var(--color-text-primary)]">
-                {t("changesTitle")}
-              </span>
-              <span className="truncate text-label text-[color:var(--color-text-quaternary)]">
-                {t("pendingHint")}
-              </span>
+            <span className="truncate text-body-lg font-semibold text-[color:var(--color-text-primary)]">
+              {t("changesTitle")}
             </span>
-            <span className="shrink-0 tabular-nums text-label text-[color:var(--color-text-tertiary)]">
-              {pendingCount}
+            {/* 누를 수 있는 행 = tertiary (위 `ChangeRow` 주석의 알파 합성
+                근거). 이 줄은 선택 시 overlay-2 위에 올라 3.97:1 이었다. */}
+            <span className="truncate text-label text-[color:var(--color-text-tertiary)]">
+              {t("pendingHint", { count: pendingCount })}
             </span>
           </button>
         </li>
@@ -1793,9 +2216,26 @@ function StepList({
         const names = summary.slugs.join(", ");
         const trail = summary.overflow > 0 ? t("moreSlugs", { count: summary.overflow }) : "";
         const expanded = selection.kind === "commit" && selection.hash === commit.hash;
+        // 경계는 **두 곳**: 안 보낸 구간의 머리와, 원격과 같아지는 지점.
+        const boundary =
+          unpushed > 0 && index === 0
+            ? t("sectionUnpushed", { count: unpushed })
+            : unpushed > 0 && index === unpushed
+              ? t("sectionSynced", { upstream: upstream ?? "" })
+              : null;
         return (
+          <Fragment key={`row-${commit.hash}`}>
+          {boundary ? (
+            <li
+              aria-hidden
+              data-testid="atlas-git-section"
+              className="flex items-center gap-2.5 px-4 pt-3 pb-1.5 text-caption text-[color:var(--color-text-quaternary)]"
+            >
+              <span className="truncate">{boundary}</span>
+              <i className="h-px min-w-4 flex-1 bg-[color:var(--color-divider)]" />
+            </li>
+          ) : null}
           <li
-            key={commit.hash}
             // 방금 남긴 줄만 확정 서명을 받는다 — 이미 있던 역사가 다시
             // 태어나면 "무엇이 방금 일어났나" 라는 정보가 흐려진다.
             className={stepRowMotionClass(commit.hash, settledHash)}
@@ -1807,48 +2247,45 @@ function StepList({
               aria-expanded={expanded}
               title={t("stepSelectHint")}
               onClick={() => setSelection({ kind: "commit", hash: commit.hash })}
-              className="flex h-[var(--git-step-h)] w-full items-center gap-3 rounded-[var(--radius-chip)] border-l-2 border-l-transparent pr-1.5 pl-1.5 text-left transition-colors hover:bg-[color:var(--color-overlay-1)] aria-expanded:border-l-[color:var(--color-indigo-brand)] aria-expanded:bg-[color:var(--color-overlay-2)]"
+              className={cn(STEP_ROW, "border-l-transparent aria-expanded:border-l-[color:var(--color-indigo-brand)] aria-expanded:bg-[color:var(--color-overlay-2)]")}
             >
-              <span className="w-20 shrink-0 truncate text-label text-[color:var(--color-text-quaternary)]">
+              <span className="truncate text-label tabular-nums text-[color:var(--color-text-tertiary)]">
                 {commit.relativeTime}
               </span>
-              <span className="flex min-w-0 flex-1 flex-col">
-                {/* 주어는 **개념**이다. 개념을 안 건드린 걸음만 요약/원문이
-                    그 자리를 대신한다 — 빈 줄로 두면 무슨 걸음인지 알 수 없다. */}
-                <span className="flex min-w-0 items-center gap-2 truncate text-body text-[color:var(--color-text-primary)]">
-                  {stepConcepts.length > 0 ? (
-                    <>
-                      {stepConcepts.slice(0, STEP_CONCEPT_SLOTS).map((concept) => (
-                        <span key={concept.id} className="inline-flex shrink-0 items-center gap-1.5">
-                          <TopologyV2KindGlyph kind={concept.kind} size={11} />
-                          <span className="truncate font-medium">{concept.label}</span>
-                        </span>
-                      ))}
-                      {stepConcepts.length > STEP_CONCEPT_SLOTS ? (
-                        <span className="shrink-0 text-label text-[color:var(--color-text-quaternary)]">
-                          {t("moreSlugs", { count: stepConcepts.length - STEP_CONCEPT_SLOTS })}
-                        </span>
-                      ) : null}
-                    </>
-                  ) : (
-                    <span className="truncate">{headline}</span>
-                  )}
-                </span>
-                {/* 아래 줄은 비어도 자리를 지킨다 — 반복 세트의 행 높이가
-                    내용의 유무로 정해지지 않게(치수 규칙성). */}
-                <span className="truncate text-label text-[color:var(--color-text-quaternary)]">
-                  {stepConcepts.length > 0
-                    ? commit.subject
-                    : names && trail
-                      ? `${names} · ${trail}`
-                      : names || trail || " "}
-                </span>
+              {/* 주어는 **개념**이다. 개념을 안 건드린 걸음만 요약/원문이
+                  그 자리를 대신한다 — 빈 줄로 두면 무슨 걸음인지 알 수 없다. */}
+              <span className="flex min-w-0 items-center gap-2.5 truncate text-body-lg font-semibold text-[color:var(--color-text-primary)]">
+                {stepConcepts.length > 0 ? (
+                  <>
+                    {stepConcepts.slice(0, STEP_CONCEPT_SLOTS).map((concept) => (
+                      <span key={concept.id} className="inline-flex min-w-0 shrink items-center gap-1.5">
+                        <TopologyV2KindGlyph kind={concept.kind} size={12} />
+                        <span className="truncate">{concept.label}</span>
+                      </span>
+                    ))}
+                    {stepConcepts.length > STEP_CONCEPT_SLOTS ? (
+                      <span className="shrink-0 text-label font-normal text-[color:var(--color-text-quaternary)]">
+                        {t("moreSlugs", { count: stepConcepts.length - STEP_CONCEPT_SLOTS })}
+                      </span>
+                    ) : null}
+                  </>
+                ) : (
+                  <span className="truncate">{headline}</span>
+                )}
               </span>
-              <span className="shrink-0 font-mono text-caption text-[color:var(--color-text-quaternary)]">
-                {commit.shortHash}
+              {/* 세 번째 열은 **왜**다. 두 줄로 쌓지 않는 이유: 목록의 일은
+                  훑는 것이고, 한 줄 3열이면 시각·이름·이유가 세로로 정렬돼
+                  눈이 열을 따라 내려간다(시안 실측 행높이 36px). */}
+              <span className="truncate text-label text-[color:var(--color-text-tertiary)]">
+                {stepConcepts.length > 0
+                  ? commit.subject
+                  : names && trail
+                    ? `${names} · ${trail}`
+                    : names || trail || " "}
               </span>
             </button>
           </li>
+          </Fragment>
         );
       })}
     </ul>
@@ -1923,6 +2360,8 @@ function ActionDock({
   snapshotError,
   confirmSnapshot,
   upstream,
+  snapshotMessage,
+  setSnapshotMessage,
 }: {
   t: Translator;
   /** 원격이 없을 때 도크 마지막 줄이 여는 입력. */
@@ -1939,6 +2378,9 @@ function ActionDock({
   snapshotError: string | null;
   confirmSnapshot: () => void;
   upstream: string | null;
+  /** 사용자가 직접 쓴 제목. 비면 자동 문구를 쓴다. */
+  snapshotMessage: string;
+  setSnapshotMessage: (v: string) => void;
 }) {
   return (
     <div
@@ -1948,9 +2390,21 @@ function ActionDock({
       {confirming ? (
         <div className="git-fade-in flex flex-col gap-2" data-testid="atlas-git-confirm-step">
           <p className="text-caption text-[color:var(--color-text-tertiary)]">{t("confirmBody")}</p>
-          <p className="rounded-[var(--radius-chip)] bg-[color:var(--color-overlay-1)] px-2 py-1.5 font-mono text-label break-all text-[color:var(--color-text-primary)]">
-            {predictedSubject}
-          </p>
+          {/*
+            제목은 **고칠 수 있다.** 자동 문구는 「무엇이 바뀌었나」를 잘 말하지만
+            「왜 바꿨나」는 못 말하고, 나중에 이력을 읽는 사람이 찾는 것은 후자다.
+            비워 두면 종전대로 자동 문구가 들어가므로 아무것도 안 하던 사람의
+            경로는 그대로다(placeholder 가 그 값을 그대로 보여 준다).
+          */}
+          <input
+            type="text"
+            data-testid="atlas-git-message-input"
+            value={snapshotMessage}
+            onChange={(event) => setSnapshotMessage(event.target.value)}
+            placeholder={predictedSubject}
+            aria-label={t("messageLabel")}
+            className="min-h-8 w-full rounded-[var(--radius-chip)] border border-[color:var(--color-border-soft)] bg-[color:var(--color-overlay-1)] px-2.5 py-1.5 font-mono text-label break-all text-[color:var(--color-text-primary)] transition-colors placeholder:text-[color:var(--color-text-quaternary)] focus:border-[color:var(--color-indigo-a46)] focus:outline-none"
+          />
           <label className="flex items-center gap-2 text-label text-[color:var(--color-text-secondary)]">
             <input
               type="checkbox"
@@ -2035,7 +2489,7 @@ function ActionDock({
             type="button"
             data-testid="atlas-git-dock-connect-remote"
             onClick={onConnectRemote}
-            className="rounded-[var(--radius-chip)] border border-[color:var(--color-border-soft)] px-2 py-0.5 text-caption text-[color:var(--color-text-tertiary)] transition-colors hover:border-[color:var(--color-indigo-a46)] hover:text-[color:var(--color-text-primary)]"
+            className="inline-flex min-h-6 items-center rounded-[var(--radius-chip)] border border-[color:var(--color-border-soft)] px-2 text-caption text-[color:var(--color-text-tertiary)] transition-colors hover:border-[color:var(--color-indigo-a46)] hover:text-[color:var(--color-text-primary)]"
           >
             {t("dockConnectRemote")}
           </button>
@@ -2047,6 +2501,9 @@ function ActionDock({
 
 function DesktopBody({
   t,
+  commitDiff,
+  snapshotMessage,
+  setSnapshotMessage,
   stage,
   hostPlatformHint,
   onRecheckGit,
@@ -2092,12 +2549,17 @@ function DesktopBody({
   onRemoteAction,
   remoteActionNotice,
   remoteActionError,
+  sessionChangeset,
   concepts,
   egoFor,
   kindLabel,
   focusedConceptId,
   setFocusedConceptId,
 }: {
+  snapshotMessage: string;
+  setSnapshotMessage: (v: string) => void;
+  /** 고른 걸음의 patch — `null` 은 「아직 모름」, `""` 는 「없음」. */
+  commitDiff: string | null;
   /** `navigator.platform ?? userAgent` — 설치 안내를 플랫폼별로 고르는 힌트. */
   hostPlatformHint: string;
   /** 「다시 확인하기」 — git 을 방금 깐 사람이 앱을 안 껐다 켜도 되게. */
@@ -2146,6 +2608,7 @@ function DesktopBody({
   onRemoteAction: (kind: "fetch" | "pull" | "push") => void;
   remoteActionNotice: string | null;
   remoteActionError: string | null;
+  sessionChangeset: OntologyChangeset | null;
   /** 걸음 해시 → 그 걸음이 바꾼 볼트 개념. */
   concepts: ReadonlyMap<string, readonly { id: string; label: string; kind: string }[]>;
   egoFor: (nodeId: string) => ConceptEgo | null;
@@ -2167,9 +2630,14 @@ function DesktopBody({
 
   if (stage === "loading") {
     return (
-      <SetupFrame t={t} step={null} state="loading">
-        <p className="text-body text-[color:var(--color-text-tertiary)]">{t("loading")}</p>
-      </SetupFrame>
+      <SetupFrame
+        t={t}
+        kindLabel={kindLabel}
+        step={null}
+        state="loading"
+        title={t("loading")}
+        note={t("scopeNotice")}
+      />
     );
   }
   if (stage === "not-installed") {
@@ -2185,9 +2653,16 @@ function DesktopBody({
     const guide = gitInstallGuide(gitHostPlatformFrom(hostPlatformHint));
     const options = [guide.primary, ...guide.alternatives];
     return (
-      <SetupFrame t={t} step={null} state="error">
+      <SetupFrame
+        t={t}
+        kindLabel={kindLabel}
+        step={null}
+        state="error"
+        title={t("install.title")}
+        body={t("install.body")}
+        note={t("scopeNotice")}
+      >
         <div className="flex flex-col gap-3" data-testid="atlas-git-not-installed">
-          <SetupHeading title={t("install.title")} body={t("install.body")} />
           <ul className="flex flex-col gap-2">
             {options.map((option) => (
               <li key={option.labelKey} className="flex items-center gap-2">
@@ -2232,9 +2707,16 @@ function DesktopBody({
     // 오류도 막다른 길이 아니어야 한다 — 폴더가 되돌아왔을 때 사용자가 앱을
     // 떠나지 않고 다시 확인할 수 있는 버튼을 같은 자리에 둔다.
     return (
-      <SetupFrame t={t} step={null} state="error">
+      <SetupFrame
+        t={t}
+        kindLabel={kindLabel}
+        step={null}
+        state="error"
+        title={t("loadError")}
+        body={loadErrorText ?? undefined}
+        note={t("scopeNotice")}
+      >
         <div className="flex flex-col gap-3" data-testid="atlas-git-load-error">
-          <SetupHeading title={t("loadError")} body={loadErrorText ?? undefined} />
           <button
             type="button"
             data-testid="atlas-git-retry"
@@ -2261,9 +2743,16 @@ function DesktopBody({
     // 2026-07-26 — 좌상단 정렬 전폭에서 셋업 프레임으로. 이 순간 사용자의 일은
     // 하나뿐이고, 화면도 하나만 말해야 한다.
     return (
-      <SetupFrame t={t} step={3} state="not-initialized">
+      <SetupFrame
+        t={t}
+        kindLabel={kindLabel}
+        step={3}
+        state="not-initialized"
+        title={t("notInitialized")}
+        body={t("notInitializedHint")}
+        note={t("initEscape")}
+      >
         <div className="flex flex-col gap-4" data-testid="atlas-git-not-initialized">
-          <SetupHeading title={t("notInitialized")} body={t("notInitializedHint")} />
           {/* 무엇이 만들어지는지 **누르기 전에** 말한다. */}
           <p className="text-body leading-relaxed text-[color:var(--color-text-tertiary)]">
             {t("initWhatHappens")}
@@ -2302,11 +2791,22 @@ function DesktopBody({
               {initError}
             </p>
           ) : null}
+          {/* 되돌리는 방법(`initEscape`)은 무대의 마지막 줄(`note`)이 진다 —
+              처음 겪는 사용자가 가장 겁내는 지점이라 행동 **직전**에 있어야
+              하고, 여기서 또 쓰면 같은 말이 두 번 나온다. */}
 
-          {/* 되돌리는 방법을 **같은 화면에** — 처음 겪는 사용자가 가장 겁내는 지점. */}
-          <p className="border-t border-[color:var(--color-divider)] pt-3 text-label leading-relaxed text-[color:var(--color-text-quaternary)]">
-            {t("initEscape")}
-          </p>
+          {/*
+           * git 이 없어도 **이번에 바뀐 것은 안다.** 볼트별 기준점이 새로고침을
+           * 넘어 살아 있기 때문이다. 종전에는 이 요약을 웹 강등에서만 그려서,
+           * 아직 git 을 안 켠 사람은 「시작하기」만 권유받고 지금 무엇이
+           * 바뀌었는지는 못 봤다 — 아는 것을 안 보여주는 건 강등이 아니라
+           * 누락이다(소유자 지적 2026-08-02).
+           */}
+          <SessionChangeSummary
+            t={t}
+            changeset={sessionChangeset}
+            title={t("initSessionTitle")}
+          />
         </div>
       </SetupFrame>
     );
@@ -2354,6 +2854,8 @@ function DesktopBody({
       snapshotError={snapshotError}
       confirmSnapshot={confirmSnapshot}
       upstream={upstream}
+      snapshotMessage={snapshotMessage}
+      setSnapshotMessage={setSnapshotMessage}
     />
   );
 
@@ -2369,59 +2871,17 @@ function DesktopBody({
     />
   ) : null;
 
-  // `recall` — 남길 것이 없다. 이 순간의 일은 "되짚기" 하나뿐이므로 열을
-  // 만들지 않는다. 구 화면이 여기서도 2열을 선언해 우측이 한 줄만 담긴 채
-  // 세로 구분선만 화면 끝까지 그어져 있던 것이 소유자가 본 "절반이 빈 공간"
-  // 이다 — 빈 열은 채우는 게 아니라 안 만드는 것이 답이다.
-  if (!hasChanges) {
-    return (
-      <div
-        data-testid="atlas-git-workbench"
-        data-shape="recall"
-        className="git-fade-in mx-auto flex w-full max-w-[var(--git-single-measure)] flex-col gap-4 lg:min-h-0 lg:flex-1"
-      >
-        <PageHeader t={t} inColumn showScope={false} trailing={locationLine} />
-        {remotePanel}
-
-        {/* 같은 작업면 — 모양이 달라도 표면은 하나다. 상태 문장이 이 안에
-            있는 이유: 밖에 두면 헤더 블록과 작업면 사이가 벌어져(수직 중앙
-            정렬) 문장 하나가 허공에 뜬 것으로 읽힌다. */}
-        <div className="flex min-w-0 flex-col gap-3 rounded-[var(--radius-panel)] border border-[color:var(--color-border-soft)] bg-[color:var(--color-panel)] p-4 lg:my-auto lg:min-h-0">
-          <p className="shrink-0 text-body leading-relaxed text-[color:var(--color-text-tertiary)]">
-            {t("noChangesHint")}
-          </p>
-          <div className="flex shrink-0 flex-wrap items-baseline gap-x-2 gap-y-0.5">
-            <SectionLabel>{t("stepsTab")}</SectionLabel>
-            {history.length > 0 ? (
-              <>
-                <span aria-hidden className="text-label text-[color:var(--color-text-secondary)]">
-                  {history.length}
-                </span>
-                <span className="sr-only">{t("stepsCount", { count: history.length })}</span>
-              </>
-            ) : null}
-          </div>
-          <div className="lg:min-h-0 lg:flex-1 lg:overflow-y-auto">
-            <StepList
-              t={t}
-              history={history}
-              concepts={concepts}
-              egoFor={egoFor}
-              kindLabel={kindLabel}
-              focusedConceptId={focusedConceptId}
-              setFocusedConceptId={setFocusedConceptId}
-              settledHash={settledHash}
-              pendingCount={0}
-              selection={selection}
-              setSelection={setSelection}
-            />
-          </div>
-          {dock}
-        </div>
-      </div>
-    );
-  }
-
+  /*
+   * 구 `recall` 갈래(남길 것이 없으면 단일 기둥)를 제거했다.
+   *
+   * 그 갈래는 **2단 전환 전의 판단**이었다 — 그때는 오른쪽이 「증거」라서
+   * 미커밋이 0이면 정말 보여줄 게 없었다. 지금은 오른쪽이 **고른 것의 상세**
+   * 이고 커밋을 고르면 바뀐 개념·ego 그림·변경 내용이 찬다. 그래서 이 갈래가
+   * 남아 있는 동안, 커밋이 4개나 쌓인 볼트에서 화면 절반이 통째로 사라지고
+   * 시안과 완전히 다른 모양이 됐다(소유자 실측 2026-08-02).
+   *
+   * 모양은 하나다. 미커밋 유무는 **목록 맨 윗줄의 유무**로만 드러난다.
+   */
   // `decide` — 남길 것이 있다. 좌: 무엇이 바뀌었고 무엇을 남길까 / 우: 그 증거.
   // 증거 열 최소 폭이 `--git-evidence-min`(600px)인 이유: 11px mono 80칼럼
   // ≈ 528px + gutter + padding. 시안 v1 의 420px 는 모든 줄을 잘랐고 **잘린
@@ -2440,38 +2900,46 @@ function DesktopBody({
     <div
       data-testid="atlas-git-workbench"
       data-shape="decide"
-      className="git-fade-in flex min-h-0 flex-1 flex-col gap-4"
+      className="git-fade-in flex min-h-0 flex-1 flex-col"
     >
-      <PageHeader t={t} inColumn showScope={false} trailing={locationLine} />
+      {/*
+        시안 구조로 재구성(2026-08-02). 실측 대조에서 셋이 달랐다:
 
-      {/* 작업면 — **경계가 있는 하나의 표면**.
-          여백 자체는 없앨 수 없다(14개가 바뀐 날의 목록은 뷰포트보다 짧다).
-          없앨 수 있는 건 그 여백이 **무엇으로 읽히는가** 다: 경계 없는 캔버스
-          위에서 목록이 끊기면 "페이지가 거기서 끝났다" 로 읽히고, 경계 안에서
-          끊기면 "이 목록이 아직 안 찼다" 로 읽힌다. 잉크는 1px 보더 + 한 단
-          올린 surface 뿐이고, 표면은 라우트당 **하나**다(균일한 카드 나열이
-          아니라 작업면 하나 — 안의 위계는 헤더/목록/도크가 진다). */}
+        ① **카드 껍데기가 있었다.** 시안은 0개인데 실제는 작업면을
+           `border + surface + p-4` 로 감쌌다. 라우트 하나가 통째로 한 표면일
+           때 그 테두리는 경계가 아니라 **잉크**다 — 화면 안에 화면이 하나 더
+           있는 것으로 읽힌다.
+        ② **높이가 내용만큼만이었다.** 시안 본문은 749px(바닥까지)인데 실제는
+           목록이 짧으면 화면 절반이 통째로 비었다. 작업대는 **자리를 잡는**
+           표면이라 뷰포트를 채우고 안에서 스크롤한다.
+        ③ **헤더가 별도 블록이었다.** 시안은 높이 57px 한 줄 상단 바(제목 ·
+           위치 · 동작)이고 아래 구분선 하나로 본문과 갈린다.
+      */}
+      <div className="flex flex-none flex-wrap items-center gap-x-3 gap-y-2 border-b border-[color:var(--color-divider)] px-1 pb-3">
+        <PageHeader t={t} inColumn showScope={false} />
+        <div className="ml-auto flex min-w-0 items-center gap-3">{locationLine}</div>
+      </div>
+      <RemoteResultLine notice={remoteActionNotice} error={remoteActionError} />
+
+      {/* 본문 — 바닥까지. 두 열은 구분선으로 갈리고 각자 스크롤한다. */}
       <div
         className={cn(
-          // 높이는 `min(내용, 남은 공간)`. flex 자식의 기본값(`0 1 auto`) +
-          // `min-h-0` 이 그대로 그 뜻이다 — 내용만큼만 자라고, 뷰포트를 넘으면
-          // 줄어들며 안에서 스크롤한다. `flex-1` 로 늘려 두면 짧은 목록일 때
-          // 표면 안에 아무도 고르지 않은 500px 빈 칸이 생긴다.
-          "grid min-h-0 grid-cols-1 gap-5 rounded-[var(--radius-panel)] border border-[color:var(--color-border-soft)] bg-[color:var(--color-panel)] p-4 xl:my-auto xl:grid-rows-[minmax(0,1fr)]",
+          "grid min-h-0 flex-1 grid-cols-1",
           showEvidence
-            ? "xl:grid-cols-[minmax(0,1fr)_minmax(0,var(--git-evidence-min))]"
-            : // 증거 열이 없으면 전폭을 쓰지 않는다 — 한 줄짜리 목록을 1216px
-              // 상자에 담으면 상자가 내용보다 커진다.
-              "mx-auto w-full max-w-[var(--git-single-measure)]",
+            ? "xl:grid-cols-[minmax(0,var(--git-timeline-w))_minmax(0,1fr)]"
+            : "mx-auto w-full max-w-[var(--git-single-measure)]",
         )}
       >
-        {/*
-          왼쪽은 **시간축 하나**다. 맨 위가 아직 커밋 안 한 변경, 그 아래가
-          커밋 이력 — 시간순이라 "안 된 것 / 된 것" 이 위치로 이미 갈린다.
-          그래서 탭이 필요 없다(구 「변경 내용 / 커밋 이력」 탭 제거).
-        */}
-        <div className="flex min-w-0 flex-col gap-3 xl:min-h-0">
-          {remotePanel}
+        <div className="flex min-w-0 flex-col xl:min-h-0 xl:border-r xl:border-[color:var(--color-divider)]">
+          {remotePanel ? <div className="flex-none px-4 pt-3">{remotePanel}</div> : null}
+          {/* 목록 머리 — 시안의 `lhead`. 커밋할 게 없을 때 「모두 커밋했어요」
+              (도크)와 같은 말을 반복하지 않고 **그래서 지금 무슨 상태냐**를
+              말한다. */}
+          {!hasChanges ? (
+            <p className="flex-none border-b border-[color:var(--color-divider)] px-4 py-3 text-label leading-relaxed text-[color:var(--color-text-tertiary)]">
+              {t("noChangesHint")}
+            </p>
+          ) : null}
           <div className="min-h-0 xl:flex-1 xl:overflow-y-auto">
             <StepList
               t={t}
@@ -2485,15 +2953,32 @@ function DesktopBody({
               pendingCount={statusCounts.total}
               selection={selection}
               setSelection={setSelection}
+              ahead={status?.ahead ?? null}
+              behind={status?.behind ?? null}
+              upstream={upstream}
+              onRemoteAction={onRemoteAction}
             />
           </div>
-          {dock}
+          {dock ? <div className="flex-none px-4 pb-3">{dock}</div> : null}
         </div>
 
         {showEvidence ? (
           <div
             data-testid="atlas-git-evidence"
-            className="flex min-w-0 flex-col gap-2 xl:min-h-0 xl:border-l xl:border-[color:var(--color-divider)] xl:pl-5"
+            /*
+             * 스크롤 영역은 **이 열 하나**다 (2026-08-02 실측 정정).
+             *
+             * 종전에는 변경 목록과 바뀐 줄이 각각 `flex-1` 이라 열 높이를
+             * 내용과 무관하게 반씩 갈랐다. 1512×806 실측: 목록 내용 208px 가
+             * 180px 창에 들어가 **52px 이 조용히 잘렸고**, 잘린 것이 하필
+             * `domain` 그룹의 유일한 행과 「그 밖의 파일 N개」 토글이었다 —
+             * 화면은 "domain 1" 이라고 써 놓고 그 1을 안 보여줬고, 개념이
+             * 아닌 파일로 가는 유일한 문은 아예 없는 것이 됐다.
+             *
+             * 조용한 잘림은 빈 칸보다 나쁘다(사용자가 잃은 줄을 모른다).
+             * 한 열 = 한 스크롤이면 잘릴 곳이 없다.
+             */
+            className="flex min-w-0 flex-col xl:min-h-0 xl:overflow-y-auto"
           >
             {/*
               오른쪽은 **왼쪽에서 고른 것 하나**를 그린다. 탭이 아니라 선택이
@@ -2502,12 +2987,7 @@ function DesktopBody({
             */}
             {selection.kind === "pending" ? (
               <>
-                <div className="flex shrink-0 flex-wrap items-center justify-between gap-x-3 gap-y-1">
-                  <SectionLabel>{t("changesTitle")}</SectionLabel>
-                  <span className="min-w-0 truncate font-mono text-caption text-[color:var(--color-text-quaternary)]">
-                    {selectedPath ?? t("diffAllLabel")}
-                  </span>
-                </div>
+                <div className="flex flex-col gap-2 px-5 py-4">
                 <ChangeList
                   t={t}
                   kindGroups={kindGroups}
@@ -2531,25 +3011,27 @@ function DesktopBody({
                     {t("diffEmpty")}
                   </p>
                 )}
+                </div>
               </>
             ) : (
               (() => {
                 const picked = history.find((c) => c.hash === selection.hash);
                 if (!picked) return null;
                 return (
-                  <div className="git-fade-in overflow-y-auto xl:min-h-0 xl:flex-1">
-                    <CommitDetail
-                      t={t}
-                      hash={picked.hash}
-                      isoTime={picked.isoTime}
-                      subject={picked.subject}
-                      concepts={concepts.get(picked.hash) ?? []}
-                      focusedConceptId={focusedConceptId}
-                      setFocusedConceptId={setFocusedConceptId}
-                      egoFor={egoFor}
-                      kindLabel={kindLabel}
-                    />
-                  </div>
+                  <CommitDetail
+                    t={t}
+                    hash={picked.hash}
+                    isoTime={picked.isoTime}
+                    relativeTime={picked.relativeTime}
+                    subject={picked.subject}
+                    concepts={concepts.get(picked.hash) ?? []}
+                    files={picked.files ?? []}
+                    diff={commitDiff}
+                    focusedConceptId={focusedConceptId}
+                    setFocusedConceptId={setFocusedConceptId}
+                    egoFor={egoFor}
+                    kindLabel={kindLabel}
+                  />
                 );
               })()
             )}

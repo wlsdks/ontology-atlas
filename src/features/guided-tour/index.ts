@@ -39,7 +39,7 @@ export {
   resolveGuideAutoStart,
   useGuideAutoStart,
   writeGuideAutoStart,
-} from "./model/guide-auto-start";
+} from "@/shared/lib/guide-auto-start";
 export {
   resolveAnchorRect,
   computeCardPlacement,

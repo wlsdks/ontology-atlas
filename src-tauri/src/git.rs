@@ -466,6 +466,30 @@ fn classify_git_error(raw: &str, operation: &str) -> GitErrorInfo {
         };
     }
 
+    if text.contains("repository not found")
+        || text.contains("could not read from remote")
+        || text.contains("does not appear to be a git repository")
+    {
+        return GitErrorInfo {
+            reason: "remote-unreachable",
+            message: "원격 저장소에 닿지 못했어요 — 주소가 맞는지, 접근 권한이 있는지 확인하세요.".into(),
+            note: first_line,
+            guidance: Some("git remote -v   # 등록된 주소 확인".into()),
+        };
+    }
+
+    if text.contains("authentication failed")
+        || text.contains("permission denied")
+        || text.contains("could not read username")
+    {
+        return GitErrorInfo {
+            reason: "remote-auth",
+            message: "원격 인증에 실패했어요 — 자격 증명을 확인하세요.".into(),
+            note: first_line,
+            guidance: None,
+        };
+    }
+
     if text.contains("pre-commit") || text.contains("commit-msg") || text.contains("hook") {
         return GitErrorInfo {
             reason: "pre-commit-hook",
@@ -758,8 +782,10 @@ pub fn git_fetch(vault_path: String) -> Result<GitFetchResult, String> {
     };
     let out = run_git(&repo_root, &["fetch", "--prune"])?;
     if !out.success {
+        // `message` 만 돌려주면 git 이 말해 준 이유(`note`)와 다음 수(`guidance`)를
+        // 우리가 지우는 셈이다 — 「무엇이 잘못됐는지」 없는 실패는 못 고친다.
         let info = classify_git_error(&out.stderr, "fetch");
-        return Err(info.message);
+        return Err(classified_error_string(&info));
     }
     let (ahead, behind) = divergence_counts(&repo_root);
     Ok(GitFetchResult {
@@ -1048,6 +1074,46 @@ pub fn git_diff(vault_path: String) -> Result<GitDiffResult, String> {
     Ok(GitDiffResult {
         count: changes.len(),
         files: changes,
+        diff,
+    })
+}
+
+/// **한 커밋이 실제로 쓴 것** — 그 커밋의 vault 범위 patch.
+///
+/// `git_diff` 와 갈라 둔 이유: 저쪽은 «아직 커밋 안 된» 작업 트리를 보고,
+/// 이쪽은 «이미 이름이 붙은» 한 걸음을 본다. 인자도 결과도 다르므로 한
+/// 명령에 `Option` 을 달아 두 뜻을 겸하게 하면 호출부가 무엇을 묻는지
+/// 시그니처로 못 읽는다.
+#[tauri::command]
+pub fn git_commit_diff(vault_path: String, hash: String) -> Result<GitDiffResult, String> {
+    let vault_dir = validate_vault_dir(&vault_path)?;
+    let repo_root = require_repo_root(&vault_dir)?;
+    let pathspec = vault_pathspec(&repo_root, &vault_dir);
+
+    // 해시는 사용자 입력이 아니라 우리가 방금 `git log` 로 읽은 값이지만,
+    // 인자로 오는 이상 옵션으로 오해될 문자열은 거른다(`--upload-pack=…` 류).
+    let rev = hash.trim();
+    if rev.is_empty() || !rev.chars().all(|c| c.is_ascii_hexdigit()) {
+        return Err("commit hash must be hexadecimal".to_string());
+    }
+
+    let out = run_git(
+        &repo_root,
+        &[
+            "show",
+            "--format=",
+            "--no-color",
+            "--patch",
+            rev,
+            "--",
+            &pathspec,
+        ],
+    )?;
+    let diff = if out.success { out.stdout } else { String::new() };
+
+    Ok(GitDiffResult {
+        count: 0,
+        files: Vec::new(),
         diff,
     })
 }

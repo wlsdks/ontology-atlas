@@ -49,13 +49,17 @@ export function GitPage() {
       // 그 높이를 받고 스크롤은 안에서 처리한다 — 홈·문서함과 같은 문법이다.
       className="flex h-full flex-col overflow-hidden bg-[color:var(--color-canvas)]"
     >
-      {/* 페이지 프레임 — 모달의 560px 이 아니라 목적지 폭이다. 실측(2026-07-25)
-          에서 `max-w-[880px]` + 상단 정렬이 1200×1223 페이지의 상단 300px 만
-          채워 "미완성" 으로 읽혔다. 컨테이너를 1280 까지 열고 세로로 채운다 —
-          시안 v2 의 2열(좌 1fr + 우 ≥600px)을 담을 수 있는 폭이기도 하다.
-          연결 전 상태(셋업 모드)에서는 패널이 이 프레임 정중앙에 단일 컬럼으로
-          선다 — 폭을 좁히는 건 패널이 하고, 프레임은 그대로 목적지 폭이다. */}
-      <div className="mx-auto flex w-full max-w-[1280px] min-h-0 flex-1 flex-col overflow-hidden px-4 pt-5 sm:px-8">
+      {/* 페이지 프레임 — **폭 상한은 패널이 쓴다.**
+          2026-08-02 실측 정정: 이 프레임의 `max-w-[1280px]` 이 작업대를 조르고
+          있었다. 1512×806 에서 사용 가능한 1448 중 1216 만 쓰고(232px 놀림),
+          그 안에서 2열은 좌 522 / 우 600 으로 갈렸다 — **주목 승자(시간축)가
+          보조(증거)보다 좁았다**. 증거 열의 600px 최소(`--git-evidence-min`,
+          11px mono 80칼럼 근거)와 1280 상한은 좌열 우위와 동시에 성립할 수
+          없어서, 둘 중 하나를 놓아야 했고 놓을 것은 이 상한이다.
+          이 파일의 원래 주석이 이미 답을 적어 두었다 — *"폭을 좁히는 건 패널이
+          하고"*. 셋업은 `--git-setup-measure`, 단일 기둥은
+          `--git-single-measure` 로 패널이 스스로 좁힌다. */}
+      <div className="mx-auto flex w-full min-h-0 flex-1 flex-col overflow-hidden px-4 pt-5 sm:px-8">
         <AtlasGitPanel
           vaultPath={vaultPath}
           sessionChangeset={changeset}

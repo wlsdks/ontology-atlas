@@ -1,0 +1,236 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8" />
+<title>기록 — 아직 자기 일을 못 하는 두 상태 (시안)</title>
+<!--
+  위계석 판정(2026-08-02) 반영본.
+
+  ① `폴더 고르기 전` 상태를 **이 파일에서 뺐다.** 볼트가 없으면 지도·문서함·
+     공방·인사이트·프로젝트가 전부 같은 상태이고, 그 화면은 앱 관문
+     (`DesktopVaultWelcome`)이 이미 그린다. 기록 화면이 자기 랜딩을 또 그리면
+     같은 화면이 여섯 벌이 되고 여섯 번 드리프트한다.
+
+  ② 남은 상태(`git 연동 전`)는 **작업대 껍데기를 유지한다.** 이 화면은
+     존재하고 기능 하나만 꺼져 있다 — 상단 바가 살아 있는 것이 "지도는
+     됩니다"라는 문장의 증거다. 종전 시안은 말로는 그렇게 쓰고 구조로는
+     상단 바를 지워 반대를 말했다.
+
+  ③ 미리보기 제거. 실측 대비 2.38:1(11px 본문)이라 읽히지 않았고 내용이
+     전부 남의 커밋이었다 — 정보를 안 나르는 잉크.
+
+  ④ 타이포: 제목 30px : 리드 12.5px = 2.40. 종전 1.28 은 어느 밴드에도
+     없었고 h1 이 팩트 숫자와 동률이었다. 34px 은 관문 전용이라 앱 안
+     화면이 쓰면 위계가 뒤집힌다.
+
+  ⑤ 사다리·eyebrow·고스트 버튼 제거 — 같은 말 반복이거나 소비처 0.
+     인디고 발광체를 5개에서 **2개**(레일 활성 + 주 버튼)로 줄였다.
+-->
+<style>
+  :root{
+    /* 값은 전부 app/globals.css 토큰과 **같은 값**이다. 손으로 옮겨 적으면
+       오차가 난다 — 실측에서 border 가 램프에 없는 .10 이었다. */
+    --canvas:#08090a; --panel:#0f1011;
+    --ov1:rgba(255,255,255,.02); --ov2:rgba(255,255,255,.06);
+    --t1:#f7f8f8; --t2:#d0d6e0; --t3:#8a8f98; --t4:#787c84;
+    --divider:rgba(255,255,255,.08);
+    --border-soft:rgba(255,255,255,.06); --border-strong:rgba(255,255,255,.14);
+    --indigo:#5e6ad2; --indigo-accent:#7170ff; --indigo-hover:#828fff;
+    --indigo-a16:rgba(94,106,210,.16); --indigo-a46:rgba(94,106,210,.46);
+    --caption:9.5px;--lead-caption:14px; --label:11px;--lead-label:16px;
+    --body:12.5px;--lead-body:20px; --body-lg:14px;--lead-lg:22px;
+    --hero:30px;--lead-hero:34px;--track-hero:-0.028em;
+    --r-control:7px;
+    --fast:.12s; --ease:cubic-bezier(.25,.1,.25,1);
+    --rail:64px; --rail-logo:38px; --rail-logo-icon:26px;
+    --rail-icon:20px; --rail-tile-w:38px; --rail-tile-h:32px;
+  }
+  *{box-sizing:border-box}html,body{height:100%}
+  body{margin:0;background:var(--canvas);color:var(--t1);
+    font:400 var(--body)/var(--lead-body) -apple-system,"Pretendard Variable",system-ui,sans-serif;
+    -webkit-font-smoothing:antialiased;overflow:hidden}
+  button{font:inherit;color:inherit;background:none;border:0;padding:0;cursor:pointer}
+  :focus-visible{outline:none;box-shadow:0 0 0 2px var(--indigo-a46);border-radius:5px}
+  .app{display:flex;height:100vh}
+
+  /* ── 레일 — app/globals.css 의 --app-nav-rail-* 그대로 ── */
+  .rail{width:var(--rail);flex:none;border-right:1px solid var(--divider);
+    display:flex;flex-direction:column;align-items:center;padding:14px 0 12px;gap:2px}
+  .rail .brand{width:var(--rail-logo);height:var(--rail-logo);display:grid;place-items:center}
+  .rail .brand i{display:block;width:var(--rail-logo-icon);height:var(--rail-logo-icon);
+    border:1.5px solid var(--indigo-accent);clip-path:polygon(50% 0,100% 25%,100% 75%,50% 100%,0 75%,0 25%)}
+  .rail .bn{font-size:var(--caption);line-height:var(--lead-caption);color:var(--t4);margin:2px 0 14px}
+  .rail .item{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:4px;
+    width:var(--rail-tile-w);min-height:var(--rail-tile-h);padding:6px 0 5px;border-radius:9px;color:var(--t3);
+    transition:background var(--fast) var(--ease),color var(--fast) var(--ease)}
+  .rail .item:hover{color:var(--t2)}
+  .rail .item span{font-size:var(--caption);line-height:var(--lead-caption)}
+  .rail .item svg{width:var(--rail-icon);height:var(--rail-icon);stroke:currentColor;fill:none;stroke-width:1.6}
+  .rail .item.on{background:var(--indigo-a16);color:var(--indigo-accent)}
+  .rail .sp{flex:1}
+  .rail .util{display:flex;flex-direction:column;align-items:center;gap:6px;padding-top:8px}
+  .rail .util svg{width:var(--rail-icon);height:var(--rail-icon);stroke:var(--t4);fill:none;stroke-width:1.6}
+
+  .main{flex:1;min-width:0;display:flex;flex-direction:column;min-height:0}
+
+  /* ── 상단 바: **살아 있다.** 이 화면이 존재한다는 증거다 ────────────
+     브랜치는 안 그린다 — git 이 없으면 브랜치도 없다. 그 자리는 고른 폴더
+     이름이다. 동작 넷은 꺼진 채로 보인다: 무엇이 생길지 말하면서 아직 못
+     누른다는 것도 같이 말한다. */
+  .top{display:flex;align-items:center;gap:12px;padding:0 clamp(16px,2vw,22px);
+    height:56px;flex:none;border-bottom:1px solid var(--divider)}
+  .ttl{display:flex;align-items:center;gap:8px;font-size:var(--body-lg);line-height:var(--lead-lg);
+    font-weight:600;letter-spacing:-.01em;color:var(--t2)}
+  .ttl svg{width:16px;height:16px;stroke:var(--t3);fill:none;stroke-width:1.7}
+  .where{font-size:var(--label);line-height:var(--lead-label);color:var(--t4);font-family:ui-monospace,monospace}
+  .grow{flex:1}
+  .act{display:inline-flex;align-items:center;justify-content:center;height:28px;padding:0 11px;
+    border:1px solid var(--border-soft);border-radius:var(--r-control);
+    font-size:var(--body);line-height:var(--lead-body);color:var(--t3);opacity:.4;cursor:default}
+
+  /* ── 본문: 카드 하나 ────────────────────────────────────────────
+     `margin:auto` — 짧으면 가운데, 길면 위에서 스크롤. `align-items:center`
+     는 짧은 화면에서 위가 잘린다(DesktopVaultWelcome 이 같은 이유로 이 패턴). */
+  .body{flex:1;min-height:0;overflow:auto;display:flex;padding:clamp(20px,4vh,48px) clamp(16px,3vw,32px)}
+  .card{width:100%;max-width:640px;margin:auto;display:flex;flex-direction:column;gap:16px}
+  h1{margin:0;font-size:var(--hero);line-height:var(--lead-hero);font-weight:600;letter-spacing:var(--track-hero)}
+  .lede{margin:0;font-size:var(--body);line-height:var(--lead-body);color:var(--t2)}
+  .lede b{color:var(--t1);font-weight:600;font-variant-numeric:tabular-nums}
+  .cta{display:flex;flex-wrap:wrap;align-items:center;gap:14px;margin-top:2px}
+  .btn{display:inline-flex;align-items:center;gap:8px;height:36px;padding:0 16px;border-radius:var(--r-control);
+    background:var(--indigo);color:#fff;font-size:var(--body);line-height:var(--lead-body);font-weight:500;
+    transition:background var(--fast) var(--ease)}
+  .btn:hover{background:var(--indigo-hover)}
+  .btn svg{width:15px;height:15px;stroke:currentColor;fill:none;stroke-width:1.7}
+  /* 2차 행동은 버튼이 아니라 링크다 — 같은 높이·같은 라운드로 나란히 두면
+     1차/2차가 안 갈린다. */
+  .alt{font-size:var(--body);line-height:var(--lead-body);color:var(--t3);text-decoration:none;
+    border-bottom:1px solid var(--border-soft);padding-bottom:1px}
+  .alt:hover{color:var(--t1);border-color:var(--border-strong)}
+  .note{display:flex;align-items:flex-start;gap:8px;margin:0;
+    font-size:var(--label);line-height:var(--lead-label);color:var(--t4)}
+  .note svg{width:12px;height:12px;flex:none;margin-top:2px;stroke:currentColor;fill:none;stroke-width:1.7}
+
+  .switch{position:fixed;right:16px;bottom:16px;display:flex;align-items:center;gap:4px;background:var(--panel);
+    border:1px dashed var(--border-strong);border-radius:9px;padding:4px 4px 4px 10px;z-index:9}
+  .switch-tag{font-size:var(--caption);line-height:var(--lead-caption);color:var(--t4);margin-right:6px;white-space:nowrap}
+  .switch button,.switch-link{min-width:104px;height:26px;border-radius:var(--r-control);
+    display:inline-flex;align-items:center;justify-content:center;
+    font-size:var(--label);line-height:var(--lead-label);color:var(--t3);text-decoration:none}
+  .switch button.on{background:var(--indigo-a16);color:var(--indigo-accent)}
+  .switch-link:hover{color:var(--t1)}
+
+  @media (max-width:520px){
+    :root{--hero:23px;--lead-hero:28px;--track-hero:-0.022em}
+    .top{gap:8px}.top .act{display:none}
+  }
+  @media (prefers-reduced-motion:reduce){*{transition-duration:.01ms !important}}
+</style>
+</head>
+<body>
+<div class="app">
+  <nav class="rail">
+    <div class="brand"><i></i></div><div class="bn">Atlas</div>
+    <div class="item"><svg viewBox="0 0 24 24"><path d="M3 6l6-3 6 3 6-3v15l-6 3-6-3-6 3z"/><path d="M9 3v15M15 6v15"/></svg><span>지도</span></div>
+    <div class="item"><svg viewBox="0 0 24 24"><path d="M2 5h8a3 3 0 013 3v11a2.5 2.5 0 00-2.5-2.5H2z"/><path d="M22 5h-8a3 3 0 00-3 3v11a2.5 2.5 0 012.5-2.5H22z"/></svg><span>문서함</span></div>
+    <div class="item"><svg viewBox="0 0 24 24"><path d="M6 3h12l3 6-9 12L3 9z"/><path d="M3 9h18"/></svg><span>공방</span></div>
+    <div class="item"><svg viewBox="0 0 24 24"><path d="M3 21V10M9 21V4M15 21v-7M21 21V8"/></svg><span>인사이트</span></div>
+    <div class="item"><svg viewBox="0 0 24 24"><path d="M3 7h6l2 2h10v10H3z"/></svg><span>프로젝트</span></div>
+    <div class="item on"><svg viewBox="0 0 24 24"><path d="M3 12a9 9 0 109-9"/><path d="M3 4v5h5"/><path d="M12 8v4l3 2"/></svg><span>기록</span></div>
+    <span class="sp"></span>
+    <div class="util">
+      <svg viewBox="0 0 24 24"><path d="M3 12h4l3-8 4 16 3-8h4"/></svg>
+      <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M12 2v3M12 19v3M2 12h3M19 12h3M5 5l2 2M17 17l2 2M19 5l-2 2M7 17l-2 2"/></svg>
+    </div>
+  </nav>
+
+  <div class="main">
+    <div class="top">
+      <div class="ttl">
+        <svg viewBox="0 0 24 24"><path d="M3 12a9 9 0 109-9"/><path d="M3 4v5h5"/><path d="M12 8v4l3 2"/></svg>
+        기록
+      </div>
+      <span class="where" id="where"></span>
+      <span class="grow"></span>
+      <span class="act">Fetch</span>
+      <span class="act">Pull</span>
+      <span class="act">Push</span>
+      <span class="act">커밋</span>
+    </div>
+
+    <div class="body">
+      <div class="card">
+        <h1 id="h1"></h1>
+        <p class="lede" id="lede"></p>
+        <div class="cta">
+          <button class="btn" id="btn"></button>
+          <a class="alt" href="#" id="alt"></a>
+        </div>
+        <p class="note">
+          <svg viewBox="0 0 24 24"><path d="M12 3l7 3v6c0 4.5-3 7.5-7 9-4-1.5-7-4.5-7-9V6z"/></svg>
+          <span id="note"></span>
+        </p>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- 시안 전용 · 실제 화면에는 없다 -->
+<div class="switch" aria-label="시안 미리보기 조작기">
+  <span class="switch-tag">시안 · 상태 바꿔 보기</span>
+  <button data-s="no-vault" class="on">① 폴더 없음</button>
+  <button data-s="no-git">② 폴더만 있음</button>
+  <a class="switch-link" href="./git-workbench-2026-08-02.html#clean">③ 연동됨 →</a>
+</div>
+
+<script>
+/*
+ * **한 껍데기, 세 사유.** 상태마다 다른 레이아웃을 그리면 같은 화면이 세 벌이
+ * 되고 세 번 드리프트한다(실측: 저장소에 이미 서로 다른 답이 셋 있었다).
+ * 구조는 하나로 고정하고 사유만 바뀐다 — 위계석 처방 그대로.
+ */
+const GIT = '<svg viewBox="0 0 24 24"><circle cx="6" cy="6" r="2.6"/><circle cx="6" cy="18" r="2.6"/><circle cx="18" cy="9" r="2.6"/><path d="M6 8.6v6.8"/><path d="M18 11.6c0 3.4-3 4.4-6 4.4"/></svg>';
+const FOLDER = '<svg viewBox="0 0 24 24"><path d="M3 7h6l2 2h10v10H3z"/></svg>';
+
+const STATES = {
+  "no-vault": {
+    where: "폴더를 아직 안 골랐어요",
+    h1: "어느 폴더의 변경을 볼까요",
+    lede: "마크다운 폴더를 고르면 그 안의 문서가 지도가 되고, 이 화면에는 그 문서들이 어떻게 바뀌어 왔는지 쌓여요. 특별한 형식은 없어도 되고, 파일은 이 컴퓨터를 떠나지 않아요.",
+    btn: FOLDER + "폴더 고르기",
+    alt: "빈 폴더로 새로 시작",
+    note: "고른 폴더 안 문서만 다뤄요. 폴더 밖 파일은 그대로 둡니다.",
+  },
+  "no-git": {
+    where: "docs/ontology",
+    h1: "git 을 연동하면 변경이 쌓여요",
+    lede: "이 폴더는 이미 <b>문서 71 · 개념 63 · 관계 241</b> 로 읽혀 있어요. 지도 · 문서함 · 공방은 지금도 그대로 쓰실 수 있고, git 은 이 화면에만 필요해요. 연동하면 문서를 고칠 때마다 무엇이 어떻게 바뀌었는지 남고, 예전 내용으로 되돌릴 수 있어요.",
+    btn: GIT + "git 연동하기",
+    alt: "터미널에서 직접 하기",
+    note: "그만두려면 방금 생긴 .git 폴더를 지우면 돼요. 문서는 그대로 남아요.",
+  },
+};
+
+function render(key){
+  const s = STATES[key];
+  document.getElementById("where").textContent = s.where;
+  document.getElementById("h1").textContent = s.h1;
+  document.getElementById("lede").innerHTML = s.lede;
+  document.getElementById("btn").innerHTML = s.btn;
+  document.getElementById("alt").textContent = s.alt;
+  document.getElementById("note").textContent = s.note;
+  /* 폴더가 없으면 위치도 코드가 아니라 말이다 — 없는 경로를 mono 로 그리면
+     경로가 있는 것처럼 읽힌다. */
+  document.getElementById("where").style.fontFamily = key === "no-vault" ? "inherit" : "";
+}
+document.querySelectorAll(".switch button").forEach((b)=>b.addEventListener("click",()=>{
+  document.querySelectorAll(".switch button").forEach((x)=>x.classList.remove("on"));
+  b.classList.add("on"); render(b.dataset.s); location.hash = b.dataset.s;
+}));
+const init = location.hash.slice(1);
+const key = STATES[init] ? init : "no-vault";
+document.querySelectorAll(".switch button").forEach((x)=>x.classList.toggle("on", x.dataset.s===key));
+render(key);
+</script>
+</body>
+</html>

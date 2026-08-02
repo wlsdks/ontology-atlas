@@ -3,7 +3,7 @@
 import { useCallback, useEffect, useMemo, useRef } from "react";
 import { canAutoStartGuidedTour } from "../model/auto-start-guard";
 import { watchGuidedTourAutoStartCancel } from "../model/auto-start-interaction";
-import { readGuideAutoStart } from "../model/guide-auto-start";
+import { readGuideAutoStart } from "@/shared/lib/guide-auto-start";
 import { useRegisterGuideReplay } from "../model/guide-replay-context";
 import { resolveAnchorRect } from "../model/resolve-anchor-rect";
 import {
