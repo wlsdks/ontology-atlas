@@ -2409,7 +2409,7 @@ await test("index_project — repo analysis, import indexing, and vault validati
   }
 });
 
-await test("index_project — Python RST, static setup contract, and root package reach the public read-only plan", async () => {
+await test("index_project — Python package and import boundaries reach the public read-only plan", async () => {
   const vaultRoot = makeVault([]);
   const repoRoot = mkdtempSync(join(tmpdir(), "ontology-atlas-index-python-"));
   try {
@@ -2447,18 +2447,28 @@ await test("index_project — Python RST, static setup contract, and root packag
     const { responses } = await rpc(vaultRoot, [
       ...INIT_REQUESTS,
       callTool(2, "index_project", { rootPath: repoRoot }),
+      callTool(3, "analyze_repo_structure", { rootPath: repoRoot }),
+      callTool(4, "infer_imports", { rootPath: repoRoot, reconcile: false }),
     ]);
     const result = getCallParsed(responses, 2);
+    const analyze = getCallParsed(responses, 3);
+    const imports = getCallParsed(responses, 4);
 
     assert.deepEqual(getCallStructured(responses, 2), result);
+    assert.deepEqual(getCallStructured(responses, 3), analyze);
+    assert.deepEqual(getCallStructured(responses, 4), imports);
     assert.deepEqual(result.analyze.project, {
       slug: "protocol-client",
       title: "Protocol Client",
     });
-    assert.equal(result.analyze.elements, 1);
-    assert.equal(result.plan.concepts, 2);
+    assert.equal(result.analyze.elements, 5);
+    assert.equal(result.plan.concepts, 6);
     assert.deepEqual(result.plan.conceptDelta.sampleNewSlugs, [
+      "elements/client",
+      "elements/connections",
       "elements/diagnostic-client",
+      "elements/request",
+      "elements/services",
       "protocol-client",
     ]);
     assert.deepEqual(
@@ -2471,10 +2481,74 @@ await test("index_project — Python RST, static setup contract, and root packag
     assert.equal(result.imports.filesScanned, 5);
     assert.equal(result.imports.moduleEdges, 3);
     assert.equal(result.plan.importRelations, 3);
+    assert.deepEqual(
+      analyze.elements.map((row) => [row.slug, row.path]).sort(),
+      [
+        ["elements/client", "diagnostic_client/client.py"],
+        ["elements/connections", "diagnostic_client/connections.py"],
+        ["elements/diagnostic-client", "diagnostic_client"],
+        ["elements/request", "diagnostic_client/Request.py"],
+        ["elements/services", "diagnostic_client/services"],
+      ],
+    );
+    assert.equal(analyze.capabilities.length, 0);
+    assert.ok(
+      imports.edges.some(
+        (edge) =>
+          edge.from === "diagnostic_client/client.py" &&
+          edge.to === "diagnostic_client/services/__init__.py" &&
+          edge.kind === "static",
+      ),
+    );
     assert.equal(existsSync(join(vaultRoot, "protocol-client.md")), false);
   } finally {
     rmSync(vaultRoot, { recursive: true, force: true });
     rmSync(repoRoot, { recursive: true, force: true });
+  }
+});
+
+await test("infer_imports — Python package-internal symlink escape is rejected at the MCP boundary", async () => {
+  const vaultRoot = makeVault([]);
+  const repoRoot = mkdtempSync(join(tmpdir(), "ontology-atlas-index-python-symlink-"));
+  const outsideRoot = mkdtempSync(join(tmpdir(), "ontology-atlas-index-python-outside-"));
+  try {
+    mkdirSync(join(repoRoot, "pkg"), { recursive: true });
+    writeFileSync(join(repoRoot, "pkg", "__init__.py"), "", "utf-8");
+    writeFileSync(
+      join(repoRoot, "pkg", "client.py"),
+      "from pkg.escaped import Secret\n",
+      "utf-8",
+    );
+    writeFileSync(join(outsideRoot, "__init__.py"), "", "utf-8");
+    symlinkSync(outsideRoot, join(repoRoot, "pkg", "escaped"));
+
+    const { responses } = await rpc(vaultRoot, [
+      ...INIT_REQUESTS,
+      callTool(2, "infer_imports", { rootPath: repoRoot, reconcile: false }),
+    ]);
+    const result = getCallParsed(responses, 2);
+
+    assert.deepEqual(getCallStructured(responses, 2), result);
+    assert.equal(
+      result.edges.some((edge) => edge.to === "pkg/escaped/__init__.py"),
+      false,
+    );
+    assert.equal(
+      result.moduleEdges.some((edge) => edge.to === "elements/escaped"),
+      false,
+    );
+    assert.ok(
+      result.unresolved.some(
+        (row) =>
+          row.from === "pkg/client.py" &&
+          row.spec === "pkg.escaped" &&
+          row.reason === "alias-not-found",
+      ),
+    );
+  } finally {
+    rmSync(vaultRoot, { recursive: true, force: true });
+    rmSync(repoRoot, { recursive: true, force: true });
+    rmSync(outsideRoot, { recursive: true, force: true });
   }
 });
 

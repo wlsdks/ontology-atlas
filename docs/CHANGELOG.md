@@ -7,6 +7,38 @@
 
 ---
 
+## 2026-08-02 — Python import 근거가 검증 가능한 의미 경계로 이어진다
+
+`analyze_repo_structure`는 이제 최상위 Python package 하나만 보여주고 끝나지
+않는다. 실제 정적 import에 참여한 직접 module/package 경계를 중요도순 최대 12개
+element/path 후보로 함께 내보낸다. 사용되지 않은 파일은 노드 후보로 복제하지 않고,
+동일 flat slug가 여러 package 경로에 걸리면 추측 없이 제외하며, 상한 밖 후보 수는
+`skipped`에 남긴다. Import는 여전히 domain/capability나 확정 관계로 자동 승격되지
+않는다.
+
+Proposal이 이 Python 경로를 근거로 `depends_on`을 제안하면 validator가 실제 관측한
+import 방향과 대조한다. 반대 방향이나 존재하지 않는 관계는 write plan 전에 거부된다.
+첫 source-hidden 재시험은 전체 답변을 기준선 4/12에서 7~8/12까지 올리고 정확한
+`client.py` 시작점도 찾았지만, 직접 경계로 접힌 `services/` 아래
+`SecurityAccess.py` 소유 경로는 잃었다. 이 실패를 반영해 외부 LLM은 관측된 import
+file endpoint 중 실행·transport·security/policy·공유 표현처럼 서로 다른 탐색 역할을
+답하는 파일을 최대 4개까지 추가로 고를 수 있다. 이 선택은 자동 노드 생성이 아니며,
+validator가 정확 경로·선택 상한·실제 file-edge 방향을 모두 검사한다.
+두 번째 fresh builder도 긴 import payload에서 security endpoint를 선택하지 못했다.
+그래서 12개 자동 후보의 총상한은 늘리지 않고, 그 안에서 관측된 exact
+security/policy/risk endpoint가 최대 2개 자리를 예약한다. 이 휴리스틱은 element
+경로를 짧은 증거 packet에 올릴 뿐, 이름에서 capability나 행동 의미를 만들지 않는다.
+세 번째 fresh builder/handoff는 고정 여섯 질문에서 기준선 4/12를 11/12로 올렸다.
+정확한 `client.py` 시작점, `SecurityAccess.py` owner, service/transport 경계를 모두
+회복했고 인용 경로 12/12가 존재했다. SecurityAccess의 구체 dependency edge는 아직
+없어 그 영향 답은 `partial`로 남겼다. 한 저장소 통과를 다양한 Python 저장소 지원으로
+과장하지 않으며, 전체 노드 수에는 어떠한 상한도 두지 않는다.
+패키지 내부 symlink 부모를 통해 저장소 밖 Python 파일을 내부 근거로 받아들이던
+경계도 닫았다. `index_project`는 동일 import scan을 analyzer와 공유해 중복 walk를
+피한다.
+
+---
+
 ## 2026-08-02 — Python cold start가 의미 근거와 정적 import를 읽는다
 
 `analyze_repo_structure`와 `index_project`가 이제 `README.rst`, 실행하지 않는

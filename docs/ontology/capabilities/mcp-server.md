@@ -50,6 +50,14 @@ Python cold start에서는 `README.rst`, 실행하지 않는 정적 `setup.py` p
 contract, 최상위 `__init__.py` package를 bounded 근거로 읽는다. `infer_imports`는
 그 package의 정적 import를 file/module edge로 축약한다. 이 결과는 구현 증거이며,
 domain·capability·의미 `depends_on`으로 자동 승격하지 않는다.
+Analyzer는 실제 import에 참여한 Python 구현 경계를 최대 12개 element/path 후보로
+연결한다. 직접 module/package 경계를 기본으로 하되, 긴 import 응답에 위험 소유권이
+묻히지 않도록 security/policy/risk exact endpoint가 최대 2개 자리를 예약할 수 있다.
+사용하지 않는 파일과 충돌하는 flat slug는 제외한다. 이 경로를
+근거로 제안한 `depends_on`은 관측된 import 방향과 일치해야 proposal validation을
+통과한다. 모델은 자동 후보 밖의 정확한 import file endpoint도 서로 다른 탐색 역할에
+한해 최대 4개까지 선택할 수 있다. 서버는 이 파일들을 자동으로 노드화하지 않고,
+proposal의 정확 경로·상한·file-edge 방향만 fail closed로 검증한다.
 
 ## 포함 / 제외
 
