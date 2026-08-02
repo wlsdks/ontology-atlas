@@ -45,6 +45,20 @@ describe("pre-commit 훅 배선", () => {
     expect(source).not.toMatch(/^\s*git add/m);
   });
 
+  /**
+   * 이 훅의 첫 판은 **작업본**에서 `--check` 를 돌렸고, 그래서 자기 자신을
+   * 담은 PR(#834)을 통과시켰다 — 재생성은 했는데 산출물을 스테이지하지 않은
+   * 커밋이었고, 작업본은 깨끗했으므로 훅은 초록을 봤다. CI 는 커밋된 트리를
+   * 보므로 빨개졌다. 커밋이 남기는 것은 인덱스이니 인덱스를 재야 한다.
+   */
+  it("작업본이 아니라 인덱스를 잰다", () => {
+    const source = readFileSync(HOOK, "utf-8");
+    expect(source).toContain("git checkout-index");
+    // 인덱스를 펼친 곳에서 검사기가 돌아야 의미가 있다 — 저장소 루트에서
+    // 돌리면 다시 작업본을 재는 것이다.
+    expect(source).toMatch(/cd "\$staging_tree".*build-docs-vault\.mjs --check/s);
+  });
+
   it("볼트 입력과 산출물 양쪽을 사정거리에 둔다", () => {
     const source = readFileSync(HOOK, "utf-8");
     for (const path of [

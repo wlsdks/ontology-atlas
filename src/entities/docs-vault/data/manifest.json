@@ -7326,6 +7326,11 @@
         },
         {
           "depth": 2,
+          "text": "Pre-commit hook — generated vault freshness",
+          "slug": "pre-commit-hook-generated-vault-freshness"
+        },
+        {
+          "depth": 2,
           "text": "Quick Matrix",
           "slug": "quick-matrix"
         },
@@ -7370,9 +7375,9 @@
           "slug": "release-smoke"
         }
       ],
-      "excerpt": "Maintainer-only checks live here so the public README stays readable. Use this page when you touch mcp/, cli/, package manifests, release scripts, or the dogfood ontology. Run this before pushing broad docs, package, MCP, or web changes: For user-facing UI changes, add the relevant Playwright route check. · Area · Firs",
-      "wordCount": 7889,
-      "updatedAt": "2026-08-01",
+      "excerpt": "Maintainer-only checks live here so the public README stays readable. Use this page when you touch mcp/, cli/, package manifests, release scripts, or the dogfood ontology. Run this before pushing broad docs, package, MCP, or web changes: For user-facing UI changes, add the relevant Playwright route check. pnpm install ",
+      "wordCount": 8049,
+      "updatedAt": "2026-08-02",
       "linksOut": []
     },
     {
