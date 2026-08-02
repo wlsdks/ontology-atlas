@@ -184,6 +184,41 @@ test('repository-escaping Python package symlinks are not scanned', () => {
   }
 });
 
+test('Python import resolution rejects a package-internal symlink that escapes the repository', () => {
+  const outside = withRepo((r) => {
+    writeFileSync(join(r, '__init__.py'), '');
+  });
+  const root = withRepo((r) => {
+    mkdirSync(join(r, 'pkg'), { recursive: true });
+    writeFileSync(join(r, 'pkg', '__init__.py'), '');
+    writeFileSync(join(r, 'pkg', 'client.py'), 'from pkg.escaped import Secret\n');
+    symlinkSync(outside, join(r, 'pkg', 'escaped'));
+  });
+  try {
+    const result = inferImports(root);
+
+    assert.equal(
+      result.edges.some((edge) => edge.to === 'pkg/escaped/__init__.py'),
+      false,
+    );
+    assert.equal(
+      result.moduleEdges.some((edge) => edge.to === 'elements/escaped'),
+      false,
+    );
+    assert.ok(
+      result.unresolved.some(
+        (row) =>
+          row.from === 'pkg/client.py' &&
+          row.spec === 'pkg.escaped' &&
+          row.reason === 'alias-not-found',
+      ),
+    );
+  } finally {
+    rmSync(root, { recursive: true, force: true });
+    rmSync(outside, { recursive: true, force: true });
+  }
+});
+
 test('external (npm) import classified separately', () => {
   const root = withRepo((r) => {
     mkdirSync(join(r, 'src'), { recursive: true });

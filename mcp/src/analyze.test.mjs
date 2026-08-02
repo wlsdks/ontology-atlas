@@ -915,6 +915,351 @@ test('top-level Python package becomes implementation evidence without promoting
   }
 });
 
+test('Python import boundaries become bounded element evidence without mirroring unused files', () => {
+  const root = withRepo((r) => {
+    writeFileSync(
+      join(r, 'README.rst'),
+      'Diagnostic Client\n=================\n\nA diagnostic protocol client.\n',
+    );
+    writeFileSync(
+      join(r, 'setup.py'),
+      [
+        'setup(',
+        "    name='diagnostic-client',",
+        ')',
+      ].join('\n'),
+    );
+    mkdirSync(join(r, 'diagnostic_client/services'), { recursive: true });
+    writeFileSync(join(r, 'diagnostic_client/__init__.py'), '');
+    writeFileSync(
+      join(r, 'diagnostic_client/client.py'),
+      'from . import transport\nfrom .services import requests\nfrom .services import SecurityAccess\n',
+    );
+    writeFileSync(join(r, 'diagnostic_client/transport.py'), '');
+    writeFileSync(join(r, 'diagnostic_client/services/__init__.py'), '');
+    writeFileSync(join(r, 'diagnostic_client/services/requests.py'), '');
+    writeFileSync(join(r, 'diagnostic_client/services/SecurityAccess.py'), '');
+    writeFileSync(join(r, 'diagnostic_client/unused.py'), '');
+  });
+  try {
+    const result = analyzeRepoStructure(root);
+    const evidence = result.elements
+      .map(({ slug, path }) => ({ slug, path }))
+      .sort((a, b) => a.slug.localeCompare(b.slug));
+
+    assert.deepEqual(evidence, [
+      { slug: 'elements/client', path: 'diagnostic_client/client.py' },
+      { slug: 'elements/diagnostic-client', path: 'diagnostic_client' },
+      {
+        slug: 'elements/security-access',
+        path: 'diagnostic_client/services/SecurityAccess.py',
+      },
+      { slug: 'elements/services', path: 'diagnostic_client/services' },
+      { slug: 'elements/transport', path: 'diagnostic_client/transport.py' },
+    ]);
+    assert.equal(
+      result.elements.some((row) => row.path === 'diagnostic_client/unused.py'),
+      false,
+    );
+  } finally {
+    rmSync(root, { recursive: true, force: true });
+  }
+});
+
+test('Python import boundary paths can support a validated impact proposal', () => {
+  const root = withRepo((r) => {
+    writeFileSync(
+      join(r, 'README.rst'),
+      'Diagnostic Client\n=================\n\nA diagnostic protocol client for application developers.\n',
+    );
+    writeFileSync(
+      join(r, 'setup.py'),
+      [
+        'setup(',
+        "    name='diagnostic-client',",
+        ')',
+      ].join('\n'),
+    );
+    mkdirSync(join(r, 'diagnostic_client/services'), { recursive: true });
+    writeFileSync(join(r, 'diagnostic_client/__init__.py'), '');
+    writeFileSync(
+      join(r, 'diagnostic_client/client.py'),
+      [
+        'from .services import requests',
+        'from .services import detail_one',
+        'from .services import detail_two',
+        'from .services import detail_three',
+        'from .services import detail_four',
+      ].join('\n'),
+    );
+    writeFileSync(join(r, 'diagnostic_client/services/__init__.py'), '');
+    writeFileSync(join(r, 'diagnostic_client/services/requests.py'), '');
+    for (const name of ['detail_one', 'detail_two', 'detail_three', 'detail_four']) {
+      writeFileSync(join(r, `diagnostic_client/services/${name}.py`), '');
+    }
+  });
+  try {
+    const dependency = {
+      from: 'elements/client',
+      to: 'elements/services',
+      type: 'depends_on',
+    };
+    const containment = {
+      projectDomain: {
+        from: 'diagnostic-client',
+        to: 'domains/diagnostics',
+        type: 'contains',
+      },
+      domainCapability: {
+        from: 'domains/diagnostics',
+        to: 'capabilities/request-execution',
+        type: 'contains',
+      },
+    };
+    const relation = (edge, why, evidence) => ({
+      ...edge,
+      why,
+      evidence,
+      confidence: 0.9,
+    });
+    const answer = (text, witnesses) => ({
+      answer: text,
+      status: 'answered',
+      witnesses: {
+        concepts: witnesses.concepts ?? [],
+        relations: witnesses.relations ?? [],
+        evidence: witnesses.evidence ?? [],
+        paths: witnesses.paths ?? [],
+      },
+    });
+    const proposal = {
+      project: {
+        slug: 'diagnostic-client',
+        title: 'Diagnostic Client',
+        definition: 'A protocol client that lets applications issue diagnostic requests.',
+        evidence: ['README.rst'],
+        confidence: 0.9,
+      },
+      domains: [{
+        slug: 'domains/diagnostics',
+        title: 'Diagnostics',
+        definition: 'The responsibility boundary for diagnostic request behavior.',
+        evidence: ['README.rst'],
+        confidence: 0.8,
+      }],
+      capabilities: [{
+        slug: 'capabilities/request-execution',
+        title: 'Request Execution',
+        definition: 'Create diagnostic requests and interpret their responses.',
+        domain: 'domains/diagnostics',
+        evidence: ['README.rst'],
+        confidence: 0.8,
+      }],
+      elements: [
+        {
+          slug: 'elements/client',
+          title: 'Client',
+          definition: 'The concrete request execution entrypoint.',
+          domain: 'domains/diagnostics',
+          path: 'diagnostic_client/client.py',
+          evidence: ['diagnostic_client/client.py'],
+          confidence: 0.9,
+        },
+        {
+          slug: 'elements/services',
+          title: 'Services',
+          definition: 'The concrete service behavior package used by the client.',
+          domain: 'domains/diagnostics',
+          path: 'diagnostic_client/services',
+          evidence: ['diagnostic_client/services'],
+          confidence: 0.9,
+        },
+      ],
+      relations: [
+        relation(containment.projectDomain, 'The project contains the diagnostics responsibility.', ['README.rst']),
+        relation(containment.domainCapability, 'Diagnostics contains request execution.', ['README.rst']),
+        relation(dependency, 'The client statically imports the services package.', ['diagnostic_client/client.py']),
+      ],
+      competencyAnswers: {
+        scope: answer('Application developers use the client to issue diagnostic requests.', {
+          concepts: ['diagnostic-client'],
+          evidence: ['README.rst'],
+        }),
+        domains: answer('Diagnostics owns diagnostic request behavior.', {
+          concepts: ['domains/diagnostics'],
+          relations: [containment.projectDomain],
+          evidence: ['README.rst'],
+        }),
+        abilities: answer('Request execution creates requests and interprets responses.', {
+          concepts: ['capabilities/request-execution'],
+          relations: [containment.domainCapability],
+          evidence: ['README.rst'],
+        }),
+        evidence: answer('The client module is the concrete implementation entrypoint.', {
+          concepts: ['elements/client'],
+          evidence: ['diagnostic_client/client.py'],
+          paths: ['diagnostic_client/client.py'],
+        }),
+        impact: answer('Changing services can affect client request execution.', {
+          concepts: ['elements/client', 'elements/services'],
+          relations: [dependency],
+          evidence: ['diagnostic_client/client.py'],
+        }),
+      },
+    };
+
+    const result = analyzeRepoStructure(root, { proposal });
+
+    assert.equal(result.proposalValidation.canWrite, true);
+    assert.equal(result.proposalValidation.gates.competencyQuestionsAnswered, true);
+    assert.equal(
+      result.proposalValidation.findings.some((row) =>
+        ['unknown-citation', 'missing-impact-dependency-witness'].includes(row.code)),
+      false,
+    );
+
+    const exactNestedDependency = {
+      from: 'elements/client',
+      to: 'elements/service-requests',
+      type: 'depends_on',
+    };
+    const exactNested = structuredClone(proposal);
+    exactNested.elements.push({
+      slug: 'elements/service-requests',
+      title: 'Service requests',
+      definition: 'The selected service request implementation imported by the client.',
+      domain: 'domains/diagnostics',
+      path: 'diagnostic_client/services/requests.py',
+      evidence: ['diagnostic_client/services/requests.py'],
+      confidence: 0.9,
+    });
+    exactNested.relations[2] = relation(
+      exactNestedDependency,
+      'The client statically imports the selected service request module.',
+      ['diagnostic_client/client.py', 'diagnostic_client/services/requests.py'],
+    );
+    exactNested.competencyAnswers.impact.witnesses.concepts = [
+      'elements/client',
+      'elements/service-requests',
+    ];
+    exactNested.competencyAnswers.impact.witnesses.relations = [exactNestedDependency];
+    exactNested.competencyAnswers.impact.witnesses.evidence = [
+      'diagnostic_client/client.py',
+      'diagnostic_client/services/requests.py',
+    ];
+
+    const exactNestedResult = analyzeRepoStructure(root, { proposal: exactNested });
+    assert.equal(exactNestedResult.proposalValidation.canWrite, true);
+    assert.equal(
+      exactNestedResult.elements.some(
+        (row) => row.path === 'diagnostic_client/services/requests.py',
+      ),
+      false,
+    );
+
+    const reversedExactDependency = {
+      from: 'elements/service-requests',
+      to: 'elements/client',
+      type: 'depends_on',
+    };
+    const reversedExact = structuredClone(exactNested);
+    reversedExact.relations[2] = relation(
+      reversedExactDependency,
+      'The selected service request module statically imports the client.',
+      ['diagnostic_client/services/requests.py', 'diagnostic_client/client.py'],
+    );
+    reversedExact.competencyAnswers.impact.witnesses.relations = [
+      reversedExactDependency,
+    ];
+
+    const reversedExactResult = analyzeRepoStructure(root, {
+      proposal: reversedExact,
+    });
+    assert.equal(reversedExactResult.proposalValidation.canWrite, false);
+    assert.ok(
+      reversedExactResult.proposalValidation.findings.some(
+        (row) => row.code === 'unobserved-python-import-dependency',
+      ),
+    );
+
+    const overSelectedLimit = structuredClone(exactNested);
+    for (const name of ['detail-one', 'detail-two', 'detail-three', 'detail-four']) {
+      const path = `diagnostic_client/services/${name.replace('-', '_')}.py`;
+      overSelectedLimit.elements.push({
+        slug: `elements/${name}`,
+        title: name,
+        definition: 'A selectively proposed exact import endpoint.',
+        domain: 'domains/diagnostics',
+        path,
+        evidence: [path],
+        confidence: 0.7,
+      });
+    }
+    const overSelectedLimitResult = analyzeRepoStructure(root, {
+      proposal: overSelectedLimit,
+    });
+    assert.equal(overSelectedLimitResult.proposalValidation.canWrite, false);
+    assert.ok(
+      overSelectedLimitResult.proposalValidation.findings.some(
+        (row) => row.code === 'python-selected-import-element-limit',
+      ),
+    );
+
+    const reversedDependency = {
+      from: 'elements/services',
+      to: 'elements/client',
+      type: 'depends_on',
+    };
+    const unsupported = structuredClone(proposal);
+    unsupported.relations[2] = relation(
+      reversedDependency,
+      'The services package imports the client.',
+      ['diagnostic_client/services'],
+    );
+    unsupported.competencyAnswers.impact.witnesses.relations = [reversedDependency];
+    unsupported.competencyAnswers.impact.witnesses.evidence = ['diagnostic_client/services'];
+
+    const unsupportedResult = analyzeRepoStructure(root, { proposal: unsupported });
+    assert.equal(unsupportedResult.proposalValidation.canWrite, false);
+    assert.ok(
+      unsupportedResult.proposalValidation.findings.some(
+        (row) => row.code === 'unobserved-python-import-dependency',
+      ),
+    );
+  } finally {
+    rmSync(root, { recursive: true, force: true });
+  }
+});
+
+test('Python import element evidence is capped and reports omitted boundaries', () => {
+  const root = withRepo((r) => {
+    mkdirSync(join(r, 'pkg'), { recursive: true });
+    writeFileSync(join(r, 'pkg/__init__.py'), '');
+    const moduleNames = Array.from({ length: 14 }, (_, index) => `module_${index + 1}`);
+    writeFileSync(
+      join(r, 'pkg/hub.py'),
+      moduleNames.map((name) => `from . import ${name}`).join('\n'),
+    );
+    for (const name of moduleNames) {
+      writeFileSync(join(r, `pkg/${name}.py`), '');
+    }
+  });
+  try {
+    const result = analyzeRepoStructure(root);
+    const importBoundaries = result.elements.filter((row) => row.path !== 'pkg');
+
+    assert.equal(importBoundaries.length, 12);
+    assert.ok(importBoundaries.some((row) => row.slug === 'elements/hub'));
+    assert.ok(
+      result.skipped.some(
+        (row) => row.reason === 'python-import-element-limit: omitted 3 lower-ranked boundaries',
+      ),
+    );
+  } finally {
+    rmSync(root, { recursive: true, force: true });
+  }
+});
+
 test('repository-escaping Python package symlinks do not become implementation evidence', () => {
   const outside = withRepo((r) => {
     writeFileSync(join(r, '__init__.py'), '');

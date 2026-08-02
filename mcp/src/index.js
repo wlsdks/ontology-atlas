@@ -3852,6 +3852,9 @@ const TOOLS = [
       '  - src/features|entities|widgets|views/* (FSD) → capability/element candidates\n' +
       '  - src/* depth-1 folders (generic) → capability candidates + index entry → element\n' +
       '  - apps/* and packages/* members with package.json → implementation element candidates\n\n' +
+      '  - README.rst + bounded static setup.py → Python project/package evidence without execution\n' +
+      '  - root Python packages plus at most 12 import-connected implementation boundaries → direct modules plus up to 2 exact security/policy/risk file anchors; unused files are not mirrored and no capability is inferred from imports\n' +
+      '  - a complete proposal may select at most 4 additional exact Python file endpoints already observed by infer_imports for distinct navigation roles; exact dependency direction is validated and these files never become automatic candidates\n\n' +
       'Optionally pass a complete `proposal` to validate project/domain/capability/element definitions, ' +
       'typed relations, citations, risk controls, domain placement, implementation paths, confidence, ' +
       'and typed competency answers with resolvable concept/relation/evidence/path witnesses. Partial ' +
@@ -3887,7 +3890,7 @@ const TOOLS = [
         proposal: {
           ...MEANING_PROPOSAL_INPUT_SCHEMA,
           description:
-            'Optional business ontology proposal to validate against repository evidence before any write call.',
+            'Optional business ontology proposal to validate against repository evidence before any write call. Python proposals may select at most 4 exact observed import endpoints beyond the analyzer candidates.',
         },
       },
     },
@@ -3957,6 +3960,8 @@ const TOOLS = [
             properties: {
               slug: NON_BLANK_STRING_SCHEMA,
               title: NON_BLANK_STRING_SCHEMA,
+              domain: { type: 'string' },
+              path: NON_BLANK_STRING_SCHEMA,
               evidence: {
                 type: 'object',
                 properties: {
@@ -3966,7 +3971,7 @@ const TOOLS = [
                 additionalProperties: false,
               },
             },
-            required: ['slug', 'title', 'evidence'],
+            required: ['slug', 'title', 'path', 'evidence'],
             additionalProperties: false,
           },
         },
@@ -7234,10 +7239,14 @@ function indexProjectTool({ rootPath, maxDepth, maxFiles, threshold, skipImports
   requireOptionalBoolean(skipImports, 'skipImports');
 
   const target = rootPath ? resolve(rootPath) : REPO_ROOT;
-  const analyze = analyzeRepoStructure(target, { maxDepth });
   let imports = null;
+  let pythonImportAnalysis = null;
   if (!skipImports) {
     imports = inferImportsTool({ rootPath: target, maxFiles });
+    pythonImportAnalysis = {
+      ...imports,
+      moduleEdges: [...imports.moduleEdges],
+    };
     if (threshold && threshold > 1 && Array.isArray(imports.moduleEdges)) {
       const before = imports.moduleEdges.length;
       imports.moduleEdges = imports.moduleEdges.filter((edge) => Number(edge.count) >= threshold);
@@ -7247,6 +7256,10 @@ function indexProjectTool({ rootPath, maxDepth, maxFiles, threshold, skipImports
       };
     }
   }
+  const analyze = analyzeRepoStructure(target, {
+    maxDepth,
+    precomputedPythonImports: pythonImportAnalysis,
+  });
   const validation = validateVaultTool({ repoRoot: target });
 
   const conceptCount =

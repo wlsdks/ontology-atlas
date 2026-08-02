@@ -42,6 +42,168 @@
 
 ---
 
+## 2026-08-02 — 노드 총량에는 상한이 없고, 직접 연결 폭은 자격을 묻는 신호다
+
+**소집**: 소유자 직접 정정 · **트리거**: Python field trial의 “20개 이하” 표현이
+프로젝트 전체 노드 상한처럼 읽혔다. 소유자의 원래 질문은 한 노드에 직접 연결된
+이웃/자식의 폭이 대체로 10~20보다 작지 않겠느냐는 품질 질문이었다.
+
+**결정**: vault 전체와 project 전체의 노드 수에는 상한이 없다. 노드 수는 관측값이지
+목표·통과 조건이 아니다. `ontology-bootstrap`의 `20+ curated nodes`는 mature vault를
+`ontology-sync`로 보내는 **workflow routing threshold**일 뿐 저장·표현 제한이 아니다.
+Python 분석의 12개 자동 후보, 4개 exact 선택, 2개 risk 예약도 한 번의 evidence packet
+폭을 제한할 뿐 graph 크기를 제한하지 않는다.
+
+직접 fan-out은 2026-07-31 결정의 규격을 그대로 따른다. bootstrap 폴백
+`domain→capability 6~10(중심 8)`, `capability→element 5~7(중심 6)`과 live p90은
+hard cap이 아니라 review trigger다. 참조가 해소되고 역할이 배타적이며 provenance가
+분명한 project/domain hub는 넓을 수 있다. Bridge는 숫자를 줄이기 위해 만들지 않고,
+공유 행동을 한 문장으로 정의할 수 있고 다른 형제와 배타적이며 실제 자식을 재부모화할
+때만 정당하다. 지도에서 12개 초과 자식을 접는 density gate는 label-collision을 다루는
+렌더링 규칙으로, ontology 품질 규칙과 독립이다.
+
+**기록된 반대**: 총량·직접 폭을 막지 않으면 에이전트가 다시 의미 없는 평면 목록을
+늘릴 수 있다. **반증 조건**: 참조 해소·역할 배타성·provenance gate를 모두 통과한
+실노드 부모가 20+ 직접 자식으로 자라고 사람과 에이전트 모두 그 목록을 다루지 못하는
+사례가 관측되면 kind별 고정 상한이 아니라 degree 기반 review signal과 bridge 제안을
+재검토한다.
+
+**상태**: 유효 (소유자 정정).
+
+---
+
+## 2026-08-02 — Python source-hidden field trial이 고정 수용선을 통과한다
+
+**소집**: field-trial 결과 기록 · **트리거**: 아래 두 Python 선택 규격의 고정
+source-hidden 반증 시험 완료.
+
+**결과**: 같은 MIT Python 저장소와 같은 여섯 질문, fresh `gpt-5.6-sol/high`
+builder·handoff 조건에서 기준선 `P/P/U/U/P/P = 4/12`가 evaluator 기준
+`A/A/A/A/A/P = 11/12`로 올랐다. handoff agent는 Q5를 `partial`로 표시했지만,
+고정 anchor는 exact `udsoncan/client.py`와 supporting capability/dependency evidence가
+있으면 `answered`다. source-hidden root에서 파일을 열 수 없다는 사실은 path drift가
+아니므로 감점하지 않았다.
+
+필수 플래그는 `exact_client_entrypoint=true`, `security_owner=true`,
+`service_transport_boundary=true`, `source_backed_impact=false`다. Q6는
+`udsoncan/services/SecurityAccess.py` owner와 같은 capability의 review candidates를
+찾되 security-specific dependency edge가 없다고 정직하게 `partial`로 남겼다. 전체
+인용 경로 12/12가 source checkout에 존재했고, mission·client/service/connection import,
+Request/Response/BaseService class, SecurityAccess request/response 역할을 source로
+대조했다. hallucinated path와 unsupported confident claim은 0이다.
+
+Builder가 만든 의미 graph는 project 1·domain 1·capability 3·element 8이며, 이는
+시험 결과의 관측값이지 제품 상한이나 권장 총량이 아니다. starter 5개를 포함한 trial
+vault는 18개 노드였다. `finalize_project_meaning`은 `source_receipt_unavailable`로
+receipt를 쓰지 못했고 `pattern_walk`는 schema의 `seed` 대신 runtime `slug`를 요구했다.
+둘은 trial 성공에 숨겨 합치지 않고 후속 MCP operability 결함으로 남긴다.
+
+**기록된 반대**: risk basename 휴리스틱은 이 저장소의 질문에 맞춘 과적합일 수 있다.
+**반증 조건**: 서로 다른 외부 Python trial 두 곳에서 예약된 risk endpoint가 FDE의
+변경·영향 질문과 무관하거나, 더 중요한 direct boundary를 밀어내 Q1·Q2·Q5가 후퇴하면
+휴리스틱을 철회하고 source-symbol evidence row로 대체한다.
+
+**상태**: 조건부 통과 — 한 저장소 수용선 통과, 외부 다양성 검증은 남음.
+
+---
+
+## 2026-08-02 — Python 위험 소유 경계는 12개 후보 안에서 최대 2자리를 예약한다
+
+**소집**: 단독 패스 · **트리거**: 바로 아래 「모델이 최대 4개 선택」 규격을 적용한
+두 번째 fresh builder도 `client.py`·`Request.py`·`Response.py`·`connections.py`를
+선택했지만 긴 import payload 안의 `SecurityAccess.py`를 다시 놓쳤다. 모델에게 선택권만
+주는 것으로는 짧은 evidence packet 밖의 risk owner를 안정적으로 회복하지 못한다는
+반증이 관측됐다. · **루브릭**: 24/24 (치명적 0: 없음).
+
+**결정**: 자동 element 후보 총상한은 12로 유지한다. 직접 module/package 경계를
+기본으로 하되, 실제 static import endpoint 중 basename이 security, authentication,
+authorization, permission, credential, policy, encryption 역할을 명시하는 exact file은
+우선순위순 최대 2개 자리를 예약한다. 같은 flat slug가 여러 경로를 가리키면 제외하며,
+후보 수가 늘어나는 만큼 낮은 direct boundary가 빠진다. 즉 12+2가 아니라 **12 안의 2**다.
+
+이름 휴리스틱은 implementation element의 탐색 가시성에만 쓴다. domain/capability,
+행동 계약, 영향 관계는 자동 생성하지 않는다. `ontology-bootstrap`은 노출된 risk endpoint를
+선택하거나 빠뜨린 이유를 visible gap으로 남겨야 하며, exact `depends_on`은 여전히 관측한
+file-edge 방향만 통과한다.
+
+**기록된 반대**: 이름에 security가 들어간 파일이 반드시 핵심 위험 소유자는 아니며,
+일반 라이브러리에서는 두 자리가 더 중요한 direct boundary를 밀어낼 수 있다.
+**반증 조건**: fixed trial이 `security_owner`를 회복하지 못하거나, 서로 다른 외부 Python
+trial 두 곳에서 예약된 risk endpoint가 FDE 질문과 무관하거나, 빠진 direct boundary 때문에
+기존 Q1·Q2·Q5가 후퇴하면 이름 휴리스틱을 제거하고 별도 source-symbol evidence row로
+대체한다.
+
+**상태**: 재시험 대기.
+
+---
+
+## 2026-08-02 — 정확한 Python import endpoint는 모델이 최대 4개만 선택한다
+
+**소집**: 단독 패스 · **트리거**: 바로 아래 결정의 field-trial 반증 조건이 실제로
+발생했다. 첫 재시험은 source-hidden 점수가 4/12에서 7~8/12로 올랐고 정확한
+`client.py` 시작점도 회복했지만, `services/`로 접힌 `SecurityAccess.py` 소유 경로를
+답하지 못해 필수 `security_owner` gate를 실패했다. · **루브릭**: 24/24 (치명적 0:
+없음). 새 MCP tool·입력 shape·vault schema는 추가하지 않는다.
+
+**결정**: 자동 후보는 최대 12개 직접 module/package 경계로 유지한다. 대신 외부 LLM이
+`infer_imports`에서 이미 관측한 정확한 file endpoint 가운데 실행 시작점, 외부/transport
+경계, security/policy/risk 구현, 공유 request/response/schema처럼 서로 다른 탐색 질문을
+답하는 파일을 **최대 4개**까지 complete proposal의 element로 선택할 수 있다. 네 칸을
+채우는 것이 목표가 아니며, 의미가 겹치면 더 적게 고른다. Atlas validator는 선택 경로가
+실제 import endpoint인지, 저장소 내부에 존재하는지, 상한을 넘지 않는지, 제안한
+`depends_on` 방향이 exact file edge와 일치하는지를 write plan 전에 검사한다.
+
+선택 endpoint는 여전히 구조 근거다. domain/capability나 행동 의미로 자동 승격하지 않고,
+프론티어 모델은 경로가 증명하는 범위와 아직 source excerpt가 필요한 행동 주장을 구분한다.
+따라서 전체 service family를 30개 노드로 복제하지 않으면서도 FDE에게 필요한 정확한
+변경 시작점과 위험 경계를 보존한다.
+
+**기록된 반대**: 모델에게 세부 파일 선택권을 열면 중요해 보이는 이름을 과대평가하거나
+네 개를 의례적으로 채울 수 있다. **반증 조건**: 같은 fixed source-hidden trial에서
+`security_owner`와 exact client entrypoint를 함께 회복하지 못하거나, 선택 endpoint 중
+source-checkable 역할 주장이 하나라도 거짓이거나, 서로 다른 탐색 질문을 답하지 않는
+endpoint가 네 자리를 의례적으로 채우면 이 선택 규격을 철회하고 source-symbol 의미
+추출을 별도 evidence 계약으로 설계한다. 전체 vault/project 노드 수에는 상한이 없다.
+
+**상태**: 재시험 대기.
+
+---
+
+## 2026-08-02 — Python impact 근거는 import 참여 경계만 element 후보로 올린다
+
+**소집**: 단독 패스 · **트리거**: 앞선 Python 결정이 연 Slice 2의 source-hidden
+impact 공백. 새 tool·입력 시그니처·vault schema는 만들지 않고 기존 공개 응답의
+증거 연결을 완성한다. · **루브릭**: 24/24 (치명적 0: 없음).
+
+**선행 결정 관계**: 바로 아래 「Python cold-start는 의미 ingress와 import impact를
+두 계약으로 나눈다」는 유효하다. 그 기록의 반증 조건대로 Slice 1 뒤에도
+source-hidden agent가 실제 import 없이는 request/response 소유와 service/transport
+영향을 답하지 못했으므로 승인된 Slice 2의 남은 단절을 닫는다.
+
+**결정**: `analyze_repo_structure`는 최상위 Python package 전체를 파일 노드로
+복제하지 않는다. 대신 `infer_imports`가 관측한 module edge의 양 끝에 실제로 참여한
+직접 module/package 경계만 degree와 import 수로 정렬해 최대 12개 element/path
+후보로 노출한다. 사용되지 않은 파일은 제외하고, 여러 package가 같은 flat slug로
+접히면 추측하지 않고 제외하며, 상한 밖 후보 수는 `skipped`에 남긴다.
+
+Import endpoint는 domain/capability나 확정 관계가 아니다. 외부 LLM은 bounded
+semantic evidence와 이 구현 근거를 함께 읽어 의미 후보를 만들고, 사람의 승인 전에는
+아무것도 쓰지 않는다. 다만 admitted Python element 경로를 근거로 제안한
+`depends_on`은 실제 관측된 import 방향과 일치해야 하며, 반대 방향이나 존재하지 않는
+관계는 proposal validation에서 fail closed한다. package 내부 symlink 부모를 통한
+repository escape도 source evidence로 인정하지 않는다.
+
+**기록된 반대**: module import는 조건부 import·re-export·내부 구현 세부를 포함하므로
+중요도가 높은 경계라고 해서 곧 안정적인 온톨로지 element는 아니다.
+**반증 조건**: 같은 Python source-hidden field trial이 4/12 기준선에서 6/12 이상으로
+오르지 않거나, 정확 경로·security owner·source-backed impact 중 필수 근거를 회복하지
+못하면 이 선정 규칙은 가치가 증명되지 않은 것이다. 전체 vault/project 노드 수에는
+상한이 없고, direct degree 품질은 별도 graph-quality 질문이다.
+
+**상태**: 유효.
+
+---
+
 ## 2026-08-02 — Python cold-start는 의미 ingress와 import impact를 두 계약으로 나눈다
 
 ### 먼저 — 세 줄

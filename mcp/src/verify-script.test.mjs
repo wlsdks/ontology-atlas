@@ -1688,10 +1688,11 @@ describe('verify.mjs first-contact gates', () => {
               type: 'array',
               items: {
                 type: 'object',
-                required: ['slug', 'title', 'evidence'],
+                required: ['slug', 'title', 'path', 'evidence'],
                 properties: {
                   slug: { type: 'string' },
                   title: { type: 'string' },
+                  path: { type: 'string' },
                   evidence: {
                     type: 'object',
                     required: ['source'],
@@ -3299,6 +3300,47 @@ describe('verify.mjs first-contact gates', () => {
         },
       ]),
       'analyze_repo_structure outputSchema capabilities rows drift',
+    );
+    assert.equal(
+      toolsListSchemaFailure(withAnalyzeRepoTool({
+        ...analyzeRepoTool,
+        outputSchema: {
+          ...analyzeRepoTool.outputSchema,
+          properties: {
+            ...analyzeRepoTool.outputSchema.properties,
+            elements: {
+              ...analyzeRepoTool.outputSchema.properties.elements,
+              items: {
+                ...analyzeRepoTool.outputSchema.properties.elements.items,
+                required: ['slug', 'title', 'evidence'],
+              },
+            },
+          },
+        },
+      })),
+      'analyze_repo_structure outputSchema elements rows drift',
+    );
+    assert.equal(
+      toolsListSchemaFailure(withAnalyzeRepoTool({
+        ...analyzeRepoTool,
+        outputSchema: {
+          ...analyzeRepoTool.outputSchema,
+          properties: {
+            ...analyzeRepoTool.outputSchema.properties,
+            elements: {
+              ...analyzeRepoTool.outputSchema.properties.elements,
+              items: {
+                ...analyzeRepoTool.outputSchema.properties.elements.items,
+                properties: {
+                  ...analyzeRepoTool.outputSchema.properties.elements.items.properties,
+                  path: { type: 'number' },
+                },
+              },
+            },
+          },
+        },
+      })),
+      'analyze_repo_structure outputSchema elements path drift',
     );
     assert.equal(
       toolsListSchemaFailure([

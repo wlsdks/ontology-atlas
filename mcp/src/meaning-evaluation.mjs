@@ -18,6 +18,7 @@ const DEFAULT_THRESHOLDS = Object.freeze({
 export const COMPETENCY_QUESTION_CONTRACTS = MEANING_COMPETENCY_QUESTIONS;
 
 const COMPETENCY_STATUSES = new Set(['answered', 'partial', 'visible-gap']);
+const PYTHON_SELECTED_IMPORT_ELEMENT_LIMIT = 4;
 const COMPETENCY_WITNESS_KEYS = Object.freeze([
   'concepts',
   'relations',
@@ -239,7 +240,11 @@ export function candidateProposalFromAnalysis(analysis) {
   };
 }
 
-export function validateMeaningProposalAgainstAnalysis(analysis, proposal) {
+export function validateMeaningProposalAgainstAnalysis(
+  analysis,
+  proposal,
+  importEvidence = {},
+) {
   if (proposal == null) {
     return {
       status: 'not-provided',
@@ -274,11 +279,18 @@ export function validateMeaningProposalAgainstAnalysis(analysis, proposal) {
   const evidenceBySource = new Map(
     analysis.semanticEvidence.map((row) => [row.source, row]),
   );
+  const observedImportEdges = (importEvidence.observedImportEdges ?? []).filter(
+    (row) => nonEmpty(row?.from) && nonEmpty(row?.to),
+  );
+  const importEndpointSources = new Set(
+    observedImportEdges.flatMap((row) => [row.from, row.to]),
+  );
   const availableSources = new Set([
     ...evidenceBySource.keys(),
     ...analysis.domains.map((row) => row.evidence?.source),
     ...analysis.capabilities.map((row) => row.evidence?.source),
     ...analysis.elements.map((row) => row.evidence?.source),
+    ...importEndpointSources,
   ].filter(Boolean));
   const concepts = [
     proposal.project,
@@ -293,6 +305,36 @@ export function validateMeaningProposalAgainstAnalysis(analysis, proposal) {
     ...analysis.meaningGate.businessOntology.capabilities,
     ...(analysis.meaningGate.implementationEvidence.elements ?? []),
   ]);
+  const importBoundarySlugs = new Set(
+    (importEvidence.importBoundaryElements ?? []).map((row) => row.slug),
+  );
+  const importBoundarySources = new Set(
+    (importEvidence.importBoundaryElements ?? [])
+      .map((row) => row.evidence?.source)
+      .filter(nonEmpty),
+  );
+  const observedImportRelationKeys = new Set(
+    (importEvidence.observedImportRelations ?? [])
+      .map((row) => relationKey({ ...row, type: 'depends_on' })),
+  );
+  const observedImportPathKeys = new Set(
+    observedImportEdges.map((row) => `${row.from}\0${row.to}`),
+  );
+  const proposalElementPaths = new Map(
+    proposal.elements.map((row) => [row.slug, row.path]),
+  );
+  const selectedImportEndpointElements = proposal.elements.filter(
+    (row) => importEndpointSources.has(row.path) && !importBoundarySources.has(row.path),
+  );
+  if (selectedImportEndpointElements.length > PYTHON_SELECTED_IMPORT_ELEMENT_LIMIT) {
+    findings.push(finding(
+      'python-selected-import-element-limit',
+      'error',
+      'elements',
+      `Select at most ${PYTHON_SELECTED_IMPORT_ELEMENT_LIMIT} exact Python import endpoints beyond the analyzer boundaries; received ${selectedImportEndpointElements.length}.`,
+      selectedImportEndpointElements.map((row) => row.path),
+    ));
+  }
   const seenSlugs = new Set();
 
   for (const [index, concept] of concepts.entries()) {
@@ -403,6 +445,38 @@ export function validateMeaningProposalAgainstAnalysis(analysis, proposal) {
       findings,
       label: 'relation',
     });
+    if (
+      relation.type === 'depends_on' &&
+      importBoundarySlugs.has(relation.from) &&
+      importBoundarySlugs.has(relation.to) &&
+      relation.evidence?.some((source) => importBoundarySources.has(source)) &&
+      !observedImportRelationKeys.has(key)
+    ) {
+      findings.push(finding(
+        'unobserved-python-import-dependency',
+        'error',
+        path,
+        `Python import evidence does not support this dependency direction: ${relation.from} --depends_on--> ${relation.to}`,
+        relation.evidence,
+      ));
+    }
+    const fromPath = proposalElementPaths.get(relation.from);
+    const toPath = proposalElementPaths.get(relation.to);
+    if (
+      relation.type === 'depends_on' &&
+      importEndpointSources.has(fromPath) &&
+      importEndpointSources.has(toPath) &&
+      relation.evidence?.some((source) => importEndpointSources.has(source)) &&
+      !observedImportPathKeys.has(`${fromPath}\0${toPath}`)
+    ) {
+      findings.push(finding(
+        'unobserved-python-import-dependency',
+        'error',
+        path,
+        `Python import evidence does not support this exact file dependency direction: ${fromPath} -> ${toPath}`,
+        relation.evidence,
+      ));
+    }
   }
 
   const competencyAudit = validateCompetencyAnswers({
@@ -428,13 +502,15 @@ export function validateMeaningProposalAgainstAnalysis(analysis, proposal) {
       ['untrusted-citation', 'risky-citation-unconfirmed'].includes(row.code)),
     capabilityDomainsResolved: !findings.some((row) => row.code === 'unresolved-capability-domain'),
     elementDomainsResolved: !findings.some((row) => row.code === 'unresolved-element-domain'),
-    elementPathsResolved: !findings.some((row) => row.code === 'missing-element-path'),
+    elementPathsResolved: !findings.some((row) =>
+      ['missing-element-path', 'python-selected-import-element-limit'].includes(row.code)),
     relationsResolved: !findings.some((row) => [
       'duplicate-relation',
       'missing-relation-endpoint',
       'missing-relation-rationale',
       'relation-source-not-in-write-plan',
       'unsupported-relation-type',
+      'unobserved-python-import-dependency',
     ].includes(row.code)),
     confidenceValid: !findings.some((row) => row.code === 'invalid-confidence'),
     competencyQuestionsAnswered: competencyAudit.allAnswered,

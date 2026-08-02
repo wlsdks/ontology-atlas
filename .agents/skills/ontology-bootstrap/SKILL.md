@@ -1,6 +1,6 @@
 ---
 name: ontology-bootstrap
-description: Build a trustworthy first ontology from an empty or near-empty ontology-atlas vault using only Atlas MCP evidence. Use when the user asks to analyze a codebase, bootstrap/fill its ontology, extract product meaning from a repository, or when a requested ontology task finds only starter nodes. Separate observed implementation facts from proposed meanings, define and cite every domain/capability, answer competency questions, obtain user approval, then write with batch tools. Skip for mature vaults with 20+ curated nodes; use ontology-sync instead.
+description: Build a trustworthy first ontology from an empty or near-empty ontology-atlas vault using only Atlas MCP evidence. Use when the user asks to analyze a codebase, bootstrap/fill its ontology, extract product meaning from a repository, or when a requested ontology task finds only starter nodes. Separate observed implementation facts from proposed meanings, define and cite every domain/capability, answer competency questions, obtain user approval, then write with batch tools. Route mature vaults with 20+ curated nodes to ontology-sync instead; this is a workflow threshold, never a vault or project node limit.
 ---
 
 # Bootstrap a trustworthy ontology
@@ -41,7 +41,8 @@ list_kinds({})
 
 Continue when the vault is empty, contains only starter/example nodes, or the
 user explicitly requests a rebuild. If it has 20+ curated nodes, use
-`ontology-sync` unless the user explicitly asks for re-bootstrap.
+`ontology-sync` unless the user explicitly asks for re-bootstrap. This only
+chooses the safer workflow; Atlas has no whole-vault or per-project node cap.
 
 ### 2. Collect one read-only project packet
 
@@ -134,6 +135,26 @@ Rules:
   independent of its current implementation.
 - Model a concrete package, module, service, schema, or UI surface as an
   element, not a capability.
+- Do not stop at package buckets when the read-only import packet exposes an
+  exact file endpoint that materially improves change navigation. The model
+  may select at most four such endpoints beyond the analyzer's bounded element
+  candidates. Prefer meaning-dense roles: an execution entrypoint, an external
+  or transport boundary, a policy/security/risk implementation, and a shared
+  request/response/schema representation. Select only roles the packet actually
+  exposes; do not fill four slots for symmetry.
+- The four-endpoint limit applies only to selections beyond the analyzer's
+  bounded candidates; it is not a four-element ontology target. Preserve the
+  smallest set of analyzer candidates needed to answer distinct competency
+  questions. When the analyzer explicitly surfaces a security/policy/risk
+  endpoint, either include one risk anchor or record why it remains a visible
+  gap; never omit it silently.
+- A selected endpoint remains structural evidence, not automatic business
+  meaning. Cite its exact repo-relative path, state what the import proves, and
+  keep behavioral ownership partial when no semantic source establishes it.
+- Never mirror an entire directory or service family into elements. If more
+  than four exact endpoints look useful, choose the few that answer distinct
+  competency or impact questions and record the rest as a visible exploration
+  gap.
 - Prefer the repository's language, but normalize vague slogans and technical
   nouns into precise definitions.
 - Merge synonyms. Split overloaded concepts. Keep genuinely uncertain concepts
@@ -154,6 +175,9 @@ confidence:
 Use containment for ownership/scope and dependency for prerequisite or impact.
 Do not infer dependency merely because two folders import one another; import
 edges are implementation evidence and may justify element-level `depends_on`.
+For an exact file endpoint selected from the import packet, propose
+`depends_on` only in the observed file-edge direction. A plausible reverse
+impact is not an observed dependency and must remain a question or gap.
 
 ### 6. Answer the competency questions
 

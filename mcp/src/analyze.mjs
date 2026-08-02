@@ -58,6 +58,7 @@ import {
   COMPETENCY_QUESTION_CONTRACTS,
   validateMeaningProposalAgainstAnalysis,
 } from './meaning-evaluation.mjs';
+import { inferImports } from './infer-imports.mjs';
 
 /**
  * FSD 모드가 **실제로 훑는** 폴더. 판정 목록과 스캔 목록이 같아야 한다 —
@@ -88,6 +89,8 @@ const DEFAULT_IGNORE = new Set([
 const SOURCE_FOLDERS = ['src', 'lib', 'app'];
 const WORKSPACE_FOLDERS = ['apps', 'packages'];
 const PYTHON_NON_PRODUCT_PACKAGES = new Set(['test', 'tests']);
+const PYTHON_IMPORT_ELEMENT_LIMIT = 12;
+const PYTHON_IMPORT_RISK_ELEMENT_LIMIT = 2;
 const STARTER_ONTOLOGY_SLUGS = new Set([
   'domains/example-domain',
   'capabilities/example-capability',
@@ -142,7 +145,7 @@ const ELEMENT_ENTRY_FILES = [
  * 한 codebase 의 root 를 walk + README 분석 → ontology node 후보 list.
  *
  * @param {string} rootPath — 분석할 디렉토리 (보통 cwd 또는 user-provided).
- * @param {{ maxDepth?: number, ignore?: string[] }} options
+ * @param {{ maxDepth?: number, ignore?: string[], precomputedPythonImports?: object|null }} options
  * @returns analysis result
  */
 export function analyzeRepoStructure(rootPath, options = {}) {
@@ -151,9 +154,12 @@ export function analyzeRepoStructure(rootPath, options = {}) {
     throw new Error(`rootPath not a directory: ${rootPath}`);
   }
   const maxDepth = optionalNonNegativeInteger(options.maxDepth, 'maxDepth', { max: 10 }) ?? 2;
+  const extraIgnore = optionalStringArray(options.ignore, 'ignore', {
+    max: IGNORE_ARRAY_MAX_ITEMS,
+  });
   const ignore = new Set([
     ...DEFAULT_IGNORE,
-    ...optionalStringArray(options.ignore, 'ignore', { max: IGNORE_ARRAY_MAX_ITEMS }),
+    ...extraIgnore,
   ]);
 
   const skipped = [];
@@ -308,14 +314,29 @@ export function analyzeRepoStructure(rootPath, options = {}) {
       existingElements: elements,
     }),
   );
-  elements.push(
-    ...detectRootPythonPackages(rootPath, {
-      ignore,
-      domainForName,
-      existingElements: elements,
-      skipped,
-    }),
-  );
+  const rootPythonPackages = detectRootPythonPackages(rootPath, {
+    ignore,
+    domainForName,
+    existingElements: elements,
+    skipped,
+  });
+  elements.push(...rootPythonPackages);
+  const pythonImportAnalysis = Object.hasOwn(options, 'precomputedPythonImports')
+    ? options.precomputedPythonImports
+    : analyzePythonImportsForElementEvidence(rootPath, {
+        extraIgnore,
+        rootPythonPackages,
+        skipped,
+      });
+  const pythonImportBoundaryElements = detectPythonImportBoundaryElements(rootPath, {
+    ignore,
+    domainForName,
+    existingElements: elements,
+    rootPythonPackages,
+    imports: pythonImportAnalysis,
+    skipped,
+  });
+  elements.push(...pythonImportBoundaryElements);
 
   // Suggested relations form one coherent containment spine. A README-backed
   // domain sits under the project; matched capabilities/elements sit under
@@ -373,6 +394,11 @@ export function analyzeRepoStructure(rootPath, options = {}) {
     proposalValidation: validateMeaningProposalAgainstAnalysis(
       result,
       options.proposal,
+      {
+        observedImportEdges: pythonImportAnalysis?.edges ?? [],
+        observedImportRelations: pythonImportAnalysis?.moduleEdges ?? [],
+        importBoundaryElements: pythonImportBoundaryElements,
+      },
     ),
   };
 }
@@ -1597,6 +1623,195 @@ function detectRootPythonPackages(
     });
   }
   return out;
+}
+
+function detectPythonImportBoundaryElements(
+  rootPath,
+  {
+    ignore,
+    domainForName,
+    existingElements,
+    rootPythonPackages,
+    imports,
+    skipped,
+  },
+) {
+  if (rootPythonPackages.length === 0 || !imports) return [];
+
+  const scores = new Map();
+  const neighbors = new Map();
+  for (const edge of imports.moduleEdges) {
+    if (!edge.from.startsWith('elements/') || !edge.to.startsWith('elements/')) {
+      continue;
+    }
+    for (const [slug, neighbor] of [
+      [edge.from, edge.to],
+      [edge.to, edge.from],
+    ]) {
+      scores.set(slug, (scores.get(slug) ?? 0) + edge.count);
+      const adjacent = neighbors.get(slug) ?? new Set();
+      adjacent.add(neighbor);
+      neighbors.set(slug, adjacent);
+    }
+  }
+
+  const pathCandidates = new Map();
+  for (const packageElement of rootPythonPackages) {
+    const packagePath = join(rootPath, packageElement.path);
+    let entries;
+    try {
+      entries = readdirSync(packagePath).sort();
+    } catch {
+      continue;
+    }
+    for (const entry of entries) {
+      if (entry === '__init__.py' || ignore.has(entry) || entry.startsWith('.')) {
+        continue;
+      }
+      const path = join(packagePath, entry);
+      let isModuleBoundary = false;
+      try {
+        if (!pathResolvesInsideRoot(rootPath, path)) continue;
+        if (statSync(path).isFile() && entry.endsWith('.py')) {
+          isModuleBoundary = true;
+        } else if (
+          statSync(path).isDirectory() &&
+          existsSync(join(path, '__init__.py')) &&
+          pathResolvesInsideRoot(rootPath, join(path, '__init__.py'))
+        ) {
+          isModuleBoundary = true;
+        }
+      } catch {
+        continue;
+      }
+      if (!isModuleBoundary) continue;
+      const name = entry.endsWith('.py') ? entry.slice(0, -3) : entry;
+      const flatName = slugify(name.replace(/_/g, '-'));
+      if (!flatName) continue;
+      const slug = `elements/${flatName}`;
+      const candidates = pathCandidates.get(slug) ?? [];
+      candidates.push(relative(rootPath, path));
+      pathCandidates.set(slug, candidates);
+    }
+  }
+
+  const claimed = new Set(existingElements.map((element) => element.slug));
+  const riskPathCandidates = new Map();
+  for (const source of new Set(
+    imports.edges.flatMap((edge) => [edge.from, edge.to]),
+  )) {
+    if (!source.endsWith('.py') || source.endsWith('/__init__.py')) continue;
+    if (!rootPythonPackages.some((row) => source.startsWith(`${row.path}/`))) {
+      continue;
+    }
+    const relativeParts = source.split('/');
+    if (relativeParts.length < 3) continue;
+    const fileName = relativeParts.at(-1).slice(0, -3);
+    const priority = pythonRiskEndpointPriority(fileName);
+    if (priority === 0) continue;
+    const flatName = slugify(
+      fileName.replace(/([a-z0-9])([A-Z])/g, '$1-$2').replace(/_/g, '-'),
+    );
+    if (!flatName) continue;
+    const slug = `elements/${flatName}`;
+    const paths = riskPathCandidates.get(slug) ?? [];
+    paths.push({ path: source, priority });
+    riskPathCandidates.set(slug, paths);
+  }
+  const ranked = [...scores.keys()]
+    .filter((slug) => !claimed.has(slug))
+    .sort((a, b) => {
+      const degreeDelta = (neighbors.get(b)?.size ?? 0) - (neighbors.get(a)?.size ?? 0);
+      if (degreeDelta !== 0) return degreeDelta;
+      const weightDelta = (scores.get(b) ?? 0) - (scores.get(a) ?? 0);
+      return weightDelta !== 0 ? weightDelta : a.localeCompare(b);
+    });
+  const admissible = ranked.filter((slug) => {
+    const paths = pathCandidates.get(slug) ?? [];
+    if (paths.length === 1) return true;
+    if (paths.length > 1) {
+      pushSkippedOnce(skipped, {
+        path: paths.join(', '),
+        reason: `python-import-element-skip: ambiguous module slug ${slug}`,
+      });
+    }
+    return false;
+  });
+  const riskAdmissible = [...riskPathCandidates]
+    .filter(([slug, paths]) => {
+      if (claimed.has(slug)) return false;
+      const directPaths = pathCandidates.get(slug) ?? [];
+      if (paths.length === 1 && directPaths.length === 0) return true;
+      pushSkippedOnce(skipped, {
+        path: [...directPaths, ...paths.map((row) => row.path)].join(', '),
+        reason: `python-import-element-skip: ambiguous module slug ${slug}`,
+      });
+      return false;
+    })
+    .map(([slug, [candidate]]) => ({ slug, ...candidate }))
+    .sort((a, b) => b.priority - a.priority || a.slug.localeCompare(b.slug));
+  const selectedRisk = riskAdmissible.slice(0, PYTHON_IMPORT_RISK_ELEMENT_LIMIT);
+  const selectedRiskSlugs = new Set(selectedRisk.map((row) => row.slug));
+  const selected = [
+    ...selectedRisk,
+    ...admissible
+      .filter((slug) => !selectedRiskSlugs.has(slug))
+      .slice(0, PYTHON_IMPORT_ELEMENT_LIMIT - selectedRisk.length)
+      .map((slug) => ({ slug, path: pathCandidates.get(slug)[0] })),
+  ];
+  const candidateCount = new Set([
+    ...riskAdmissible.map((row) => row.slug),
+    ...admissible,
+  ]).size;
+  const omitted = Math.max(0, candidateCount - selected.length);
+  if (omitted > 0) {
+    pushSkippedOnce(skipped, {
+      path: rootPath,
+      reason: `python-import-element-limit: omitted ${omitted} lower-ranked boundaries`,
+    });
+  }
+  return selected
+    .map(({ slug, path }) => {
+      const name = slug.slice('elements/'.length);
+      claimed.add(slug);
+      return {
+        slug,
+        title: humanize(name),
+        ...(domainForName(name) ? { domain: domainForName(name) } : {}),
+        path,
+        evidence: { source: path },
+      };
+    });
+}
+
+function pythonRiskEndpointPriority(fileName) {
+  const normalized = fileName.replace(/[_-]/g, '').toLowerCase();
+  if (normalized.includes('security')) return 100;
+  if (normalized.includes('authorization') || normalized.includes('authentication')) {
+    return 90;
+  }
+  if (normalized.includes('permission') || normalized.includes('credential')) return 80;
+  if (normalized.includes('policy') || normalized.includes('encryption')) return 70;
+  return 0;
+}
+
+function analyzePythonImportsForElementEvidence(
+  rootPath,
+  { extraIgnore, rootPythonPackages, skipped },
+) {
+  if (rootPythonPackages.length === 0) return null;
+  try {
+    return inferImports(rootPath, {
+      sourceFolders: [],
+      ignore: extraIgnore,
+    });
+  } catch (error) {
+    pushSkippedOnce(skipped, {
+      path: rootPath,
+      reason: `python-import-evidence-skip: ${error.message}`,
+    });
+    return null;
+  }
 }
 
 function detectWorkspaceElements(rootPath, { ignore, domainForName, skipped }) {

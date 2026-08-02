@@ -1721,10 +1721,13 @@ export function toolsListSchemaFailure(tools) {
   }
   for (const propertyName of ['domains', 'capabilities', 'elements']) {
     const rowsSchema = outputPropertyAt(analyzeTool, ['properties', propertyName]);
+    const expectedRequired = propertyName === 'elements'
+      ? ['slug', 'title', 'path', 'evidence']
+      : ['slug', 'title', 'evidence'];
     if (
       rowsSchema?.type !== 'array' ||
       rowsSchema.items?.type !== 'object' ||
-      !sameArray(rowsSchema.items?.required, ['slug', 'title', 'evidence'])
+      !sameArray(rowsSchema.items?.required, expectedRequired)
     ) {
       return `analyze_repo_structure outputSchema ${propertyName} rows drift`;
     }
@@ -1735,6 +1738,12 @@ export function toolsListSchemaFailure(tools) {
       if (rowsSchema.items?.properties?.[rowPropertyName]?.type !== 'string') {
         return `analyze_repo_structure outputSchema ${propertyName} ${rowPropertyName} drift`;
       }
+    }
+    if (
+      propertyName === 'elements' &&
+      rowsSchema.items?.properties?.path?.type !== 'string'
+    ) {
+      return 'analyze_repo_structure outputSchema elements path drift';
     }
     if (
       rowsSchema.items?.properties?.evidence?.type !== 'object' ||

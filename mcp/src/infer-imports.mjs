@@ -21,8 +21,8 @@
 //     namespace-package 추측, 의미 관계 자동 승격은 하지 않음
 //   - 더 정교한 AST parsing 은 후속
 
-import { readFileSync, readdirSync, statSync, lstatSync, existsSync } from 'node:fs';
-import { join, dirname, resolve, relative, isAbsolute, extname } from 'node:path';
+import { readFileSync, readdirSync, statSync, lstatSync, existsSync, realpathSync } from 'node:fs';
+import { join, dirname, resolve, relative, isAbsolute, extname, sep } from 'node:path';
 
 const DEFAULT_IGNORE = new Set([
   'node_modules',
@@ -445,17 +445,32 @@ function resolvePythonModule(spec, rootPath) {
   if (
     existsSync(file) &&
     !lstatSync(file).isSymbolicLink() &&
-    lstatSync(file).isFile()
+    lstatSync(file).isFile() &&
+    pathResolvesInsideRoot(rootPath, file)
   ) return file;
   const packageEntry = join(base, '__init__.py');
   if (
     existsSync(packageEntry) &&
     !lstatSync(packageEntry).isSymbolicLink() &&
-    lstatSync(packageEntry).isFile()
+    lstatSync(packageEntry).isFile() &&
+    pathResolvesInsideRoot(rootPath, packageEntry)
   ) {
     return packageEntry;
   }
   return null;
+}
+
+function pathResolvesInsideRoot(rootPath, path) {
+  try {
+    const resolvedFromRoot = relative(realpathSync(rootPath), realpathSync(path));
+    return !(
+      resolvedFromRoot === '..' ||
+      resolvedFromRoot.startsWith(`..${sep}`) ||
+      isAbsolute(resolvedFromRoot)
+    );
+  } catch {
+    return false;
+  }
 }
 
 /**
