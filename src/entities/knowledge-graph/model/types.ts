@@ -102,6 +102,16 @@ export interface KnowledgeGraphNode {
   ref?: string;
   lastApprovedAt: Date;
   lastApprovedBy: string;
+  /**
+   * **누가 이 노드를 썼나** — `human` 또는 `agent:<name>` (2026-07-31 원장의
+   * 값 규약, `mcp/src/schema.mjs`).
+   *
+   * 부재는 결함이 아니라 **unknown** 이다. 소급 추론(「로그 없음 = 사람」·git
+   * blame)으로는 출처가 존재하지 않으므로, 어떤 경로도 부재를 `human` 으로
+   * 기본값 처리하지 않는다 — 화면은 값이 **정확히** `human` 일 때만 검수
+   * 표시를 그린다.
+   */
+  createdBy?: string;
 }
 
 export interface KnowledgeGraphEdge {

@@ -21,6 +21,11 @@ export type WorldNodeKind = "project" | "domain" | "capability" | "element";
 export interface WorldNode {
   id: string;
   kind: WorldNodeKind;
+  /**
+   * 저작 출처(`created_by`) 원문 — `human` · `agent:<name>` · 부재.
+   * 부재는 unknown 이지 사람이 아니다(2026-07-31 원장).
+   */
+  createdBy?: string;
   label: string;
   x: number;
   y: number;
@@ -400,6 +405,7 @@ export function buildTopologyWorld(
     return {
       id: n.id,
       kind: n.kind,
+      createdBy: n.createdBy,
       label: n.label,
       x,
       y,

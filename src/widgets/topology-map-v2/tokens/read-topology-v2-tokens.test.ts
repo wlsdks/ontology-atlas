@@ -42,6 +42,7 @@ const FIXTURE_VALUES: Record<string, string> = {
   "--topology-v2-project-pin-tick": "rgba(212, 180, 120, .5)",
   "--topology-v2-selection-ring-indigo": "#8890e0",
   "--topology-v2-selection-ring-hairline": "rgba(94, 106, 210, .45)",
+  "--topology-v2-review-ring": "rgba(255, 74, 122, .72)",
   "--topology-v2-hover-ring": "rgba(94, 106, 210, .55)",
   "--topology-v2-hover-shimmer-seg": "0.16",
   "--topology-v2-hover-shimmer-period-ms": "2400",

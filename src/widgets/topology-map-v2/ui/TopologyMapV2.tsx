@@ -30,6 +30,12 @@ export interface TopologyV2Node {
   isHub: boolean;
   ownerKey: string | null;
   recentlyUpdated: boolean;
+  /**
+   * 저작 출처(`created_by`) 원문 — `human` · `agent:<name>` · 부재.
+   * 값이 **정확히** `human` 일 때만 검수 대기 링을 그린다. 부재는 unknown 이지
+   * 사람이 아니다(2026-07-31 원장 — 소급 추론 금지).
+   */
+  createdBy?: string;
   /** 살아있는 지도 드리프트 — vault mtime 파생 dusty 판정(`views/home/lib/topology-dusty.ts`).
    *  true 면 기존 stale 채널(dash + 불투명 stale 토큰)로 렌더. 생략 = fresh. */
   stale?: boolean;

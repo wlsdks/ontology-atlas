@@ -2558,6 +2558,21 @@
        다름 — "둘 이상의 채색 시스템 금지" 위반 아님(단일 인디고 유지). */
     --topology-v2-selection-ring-indigo: var(--topology-v2-indigo-bright);
     --topology-v2-selection-ring-hairline: rgba(94, 106, 210, 0.45);
+    /*
+     * 사람이 쓴 노드의 **검수 대기** 링 (2026-08-03 소유자 지시: *"붉은색
+     * 테두리… 오류는 아니라도 이건 경고성으로"*).
+     *
+     * `--color-danger`(오류)와 **다른 값**이어야 한다 — 오류와 같은 비트를
+     * 쓰면 「사람이 썼다」가 「잘못됐다」로 읽힌다. 선홍(345°)은 danger 의
+     * 적색보다 밝고 채도가 높아 경고 계열 안에서 갈린다.
+     *
+     * ⚠️ **glow 가 아니다.** 헌장이 금지한 것은 halo/pulse 이고, 이것은
+     * kind-outline 을 따라 도는 **정적 파선 링**이다(발자국 트레일 예외처럼
+     * `shadowBlur` 를 쓰지 않는다). 회전도 없다 — 최근 변경 스포트라이트의
+     * 회전 파선은 «렌즈가 켜진 동안»의 한시적 표시지만, 이 링은 노드가 검수될
+     * 때까지 상주하므로 움직이면 지도 전체가 떨린다.
+     */
+    --topology-v2-review-ring: rgba(255, 74, 122, 0.72);
     --topology-v2-hover-ring: rgba(94, 106, 210, 0.55);
     /* Design Guardian 승인 처방 L — 호버 circuit-trace shimmer. 정지 호버
        링(위) 위에 저속 순회하는 밝은 아크 1개(글로우 0 — `strokeKindOutline`
