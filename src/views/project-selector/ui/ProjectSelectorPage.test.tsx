@@ -132,10 +132,16 @@ describe("ProjectSelectorPage", () => {
   // 레일 자체가 아니라, 페이지가 여전히 소유하는 settings/agent-status
   // 클러스터만 단언한다 — 레일 persistence 자체는 Playwright(프로덕션 정적
   // 서빙에서 rail DOM identity 유지)로 검증한다.
-  it("mounts the settings/agent-status cluster instead of OperationsNav", () => {
+  it("설정은 남고, 실시간 표시는 여기 없다", () => {
+    /*
+     * 「실시간 · 변경 N」은 **지도의 물건**이다 — 무엇이 바뀌었는지를 노드 위에
+     * 그려 주는 화면에서만 그 수가 다음 행동으로 이어진다. 목록 화면에서는 갈
+     * 곳이 없는 채로 우상단의 가장 센 잉크를 가져가고 자기 줄까지 예약해
+     * 아래 내용을 밀어냈다(소유자 실보고 2026-08-03).
+     */
     renderPage();
     expect(screen.getByTestId("app-settings-trigger-stub")).toBeInTheDocument();
-    expect(screen.getByTestId("live-activity-indicator-stub")).toBeInTheDocument();
+    expect(screen.queryByTestId("live-activity-indicator-stub")).toBeNull();
   });
 
   it("renders the workspace census (concepts/relations) from the unified formula", () => {
