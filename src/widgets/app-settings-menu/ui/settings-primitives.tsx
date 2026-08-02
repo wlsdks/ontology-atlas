@@ -2,12 +2,38 @@ import { type ReactNode } from 'react';
 import { cn } from '@/shared/lib/cn';
 
 /**
- * 설정 시트의 원시 요소 셋 — 그룹 · 행 · 2세그먼트 토글.
+ * 설정 시트의 원시 요소 셋 — 그룹 · 행 · 값 슬라이더 · 라디오 칩 · 2세그먼트 토글.
  *
  * `AppSettingsMenu` 안에 사적으로 살았는데, 절이 늘면서 두 번째 소비처
  * (`AgentActivitySettings`)가 생겼다. 사본을 만들면 그 순간부터 두 설정 칸이
  * 다른 높이·다른 캡션 색으로 자란다 — 규격이 두 곳에 적히면 이미 드리프트가
  * 시작된 것이다(Carbon). 그래서 한 파일로 내린다.
+ *
+ * ## 이 시트의 타입 방언은 하나다 (2026-08-02 실측)
+ *
+ * 한동안 둘이었다. 절별 폰트 센서스가 그것을 그대로 보여줬다 —
+ * 화면 `12.5×10 · 11×5`, 작업 공간 `12.5×5 · 11×1` 인데
+ * **확장 `9.5×10 · 11×4` (12.5 가 0개)**, 발자국 `9.5×1 · 11×4`.
+ * 같은 시트 안에서 같은 종류의 내용(라벨 + 컨트롤 + 한 줄 설명)이 절에 따라
+ * **램프 한 단 아래**로 그려지고 있었다.
+ *
+ * 아무도 그렇게 정하지 않았다. `Slider`/`Choice` 는 `FootprintSettings` 의
+ * **접힌 세부** 안에서 태어나 그 자리의 작은 치수를 갖고 있었고, 공용
+ * 프리미티브로 승격되며 `ExpandSettings` 의 **주 결정 컨트롤**이 될 때 그
+ * 치수를 그대로 데려왔다. 소유자가 본 것이 이것이다(*"이 버튼도 너무 작고?
+ * 뭔가 설정 자체가 좀 작아"*).
+ *
+ * 그래서 방언을 하나로 접는다. 이 시트의 규격:
+ *
+ * | 무엇 | 스텝 |
+ * |---|---|
+ * | 행·컨트롤 라벨, 누르는 글자 | `text-body` (12.5px) |
+ * | 한 줄 설명·보조 캡션·수치 읽기 | `text-label` (11px) |
+ * | `text-caption` (9.5px) | **쓰지 않는다** |
+ *
+ * 9.5px 을 뺀 이유는 크기 취향이 아니라 램프의 정의다 — `--text-caption` 은
+ * "마이크로 라벨·범례·타임스탬프" 의 단이다. 라디오 버튼의 이름은 그 셋 중
+ * 무엇도 아니다. 게이트: `settings-sheet-type-dialect.contract.test.ts`.
  */
 
 /** 그룹 헤더 + 행 컨테이너 — Toss 식 "그룹 헤더 + 즉시 조작 행" 문법의 뼈대. */
@@ -99,8 +125,8 @@ export function Slider({
 }) {
   const filled = ((value - range.min) / (range.max - range.min)) * 100;
   return (
-    <label className="flex items-center gap-3 px-1 py-1.5">
-      <span className="w-24 shrink-0 text-label text-[color:var(--color-text-secondary)]">{label}</span>
+    <label className="flex min-h-11 items-center gap-3 px-1 py-2">
+      <span className="w-28 shrink-0 text-body text-[color:var(--color-text-secondary)]">{label}</span>
       <input
         type="range"
         data-testid={testId}
@@ -114,14 +140,22 @@ export function Slider({
         }}
         className="h-1 min-w-0 flex-1 cursor-pointer appearance-none rounded-full focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--color-indigo-a46)] [&::-webkit-slider-thumb]:h-3.5 [&::-webkit-slider-thumb]:w-3.5 [&::-webkit-slider-thumb]:appearance-none [&::-webkit-slider-thumb]:rounded-full [&::-webkit-slider-thumb]:bg-[color:var(--color-indigo-accent)]"
       />
-      <span className="w-12 shrink-0 text-right font-mono text-caption text-[color:var(--color-text-tertiary)]">
+      <span className="w-12 shrink-0 text-right font-mono text-label text-[color:var(--color-text-tertiary)]">
         {format(value)}
       </span>
     </label>
   );
 }
 
-/** 값 몇 개 중 하나 고르기 — 라디오 칩 한 줄. `Slider` 와 같은 행 문법. */
+/**
+ * 값 몇 개 중 하나 고르기 — 라디오 칩 한 줄. `Slider` 와 같은 행 문법.
+ *
+ * 칩의 높이(32px)와 글자(12.5px)는 이 시트의 다른 주 컨트롤인 `SegmentSwitch`
+ * 와 **같은 값**이다 — 둘 다 "값 하나 고르기" 라서 다를 이유가 없다. 종전엔
+ * 24px / 9.5px 이라 자기 라벨(11px)보다 작았다: 누르는 것이 화면에서 가장
+ * 작은 글자였다(위계 역전). 24px 은 WCAG 2.5.8(AA) 최소 타깃 24×24 에 여유
+ * 0으로 걸쳐 있기도 했고, 「고리」·「기둥」은 폭 38.4px 이었다.
+ */
 export function Choice<T extends string | boolean>({
   label,
   value,
@@ -139,8 +173,8 @@ export function Choice<T extends string | boolean>({
   optionTestId?: (value: T) => string;
 }) {
   return (
-    <div className="flex items-center gap-3 px-1 py-1.5">
-      <span className="w-24 shrink-0 text-label text-[color:var(--color-text-secondary)]">{label}</span>
+    <div className="flex min-h-11 items-center gap-3 px-1 py-2">
+      <span className="w-28 shrink-0 text-body text-[color:var(--color-text-secondary)]">{label}</span>
       <div role="radiogroup" aria-label={label} data-testid={testId} className="flex flex-wrap gap-1.5">
         {options.map((option) => {
           const active = option.value === value;
@@ -153,7 +187,7 @@ export function Choice<T extends string | boolean>({
               data-testid={optionTestId?.(option.value)}
               onClick={() => onChange(option.value)}
               className={cn(
-                'rounded-chip border px-2.5 py-1 text-caption transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--color-indigo-a46)]',
+                'flex h-8 items-center rounded-chip border px-3 text-body transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--color-indigo-a46)]',
                 active
                   ? 'border-[color:var(--color-indigo-accent)] bg-[color:var(--color-indigo-line-a13)] text-[color:var(--color-indigo-accent)]'
                   : 'border-[color:var(--color-border-soft)] text-[color:var(--color-text-tertiary)] hover:border-[color:var(--color-border-strong)]',

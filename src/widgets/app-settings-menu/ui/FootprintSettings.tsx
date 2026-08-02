@@ -116,8 +116,8 @@ export function FootprintSettings() {
   const set = (patch: Partial<FootprintPreference>) => writeFootprint({ ...pref, ...patch });
 
   return (
-    <div className="grid gap-3" data-testid="app-settings-footprint">
-      <p className="break-keep text-caption leading-4 text-[color:var(--color-text-quaternary)]">
+    <div className="grid min-w-0 gap-3" data-testid="app-settings-footprint">
+      <p className="break-keep text-label text-[color:var(--color-text-quaternary)]">
         {t('caption')}
       </p>
       <FootprintPreview pref={pref} />
@@ -148,7 +148,7 @@ export function FootprintSettings() {
               data-testid={`app-settings-footprint-preset-${name}`}
               onClick={() => writeFootprint(applyFootprintPreset(pref, name))}
               className={cn(
-                'rounded-chip px-3.5 py-1.5 text-label transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--color-indigo-a46)]',
+                'flex h-8 items-center rounded-chip px-4 text-body transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--color-indigo-a46)]',
                 active
                   ? 'bg-[color:var(--color-indigo-line-a13)] text-[color:var(--color-indigo-accent)]'
                   : 'text-[color:var(--color-text-tertiary)] hover:text-[color:var(--color-text-primary)]',
@@ -165,10 +165,10 @@ export function FootprintSettings() {
         data-testid="app-settings-footprint-detail-toggle"
         aria-expanded={detailOpen}
         onClick={() => setDetailOpen((open) => !open)}
-        className="flex items-center gap-1.5 justify-self-start rounded-chip border border-[color:var(--color-border-soft)] px-2.5 py-1.5 text-label text-[color:var(--color-text-secondary)] transition-colors hover:border-[color:var(--color-border-strong)] hover:text-[color:var(--color-text-primary)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--color-indigo-a46)]"
+        className="flex h-8 items-center gap-1.5 justify-self-start rounded-chip border border-[color:var(--color-border-soft)] px-3 text-body text-[color:var(--color-text-secondary)] transition-colors hover:border-[color:var(--color-border-strong)] hover:text-[color:var(--color-text-primary)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--color-indigo-a46)]"
       >
         <ChevronDown
-          size={13}
+          size={14}
           aria-hidden
           className={detailOpen ? 'rotate-180 transition-transform' : 'transition-transform'}
         />
@@ -176,7 +176,7 @@ export function FootprintSettings() {
       </button>
 
       {detailOpen ? (
-        <div className="grid gap-0.5 rounded-lg border border-[color:var(--color-border-soft)] p-2">
+        <div className="grid min-w-0 gap-0.5 rounded-lg border border-[color:var(--color-border-soft)] p-2">
           <Slider
             label={t('size')}
             testId="app-settings-footprint-size"
