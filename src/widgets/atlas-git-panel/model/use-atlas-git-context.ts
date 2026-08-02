@@ -28,5 +28,14 @@ export function useAtlasGitContext() {
   // Tauri 데스크톱이면 vault 절대 경로(브리지 활성), 웹 FSA 핸들이면 null →
   // 목적지가 세션 changeset 기반으로 정직하게 강등한다.
   const vaultPath = localVault.handle ? (getTauriVaultRootPath(localVault.handle) ?? null) : null;
-  return { vaultPath, changeset };
+  /*
+   * 볼트 그래프도 함께 넘긴다 — 기록 화면이 걸음의 파일을 **개념**으로 옮기는
+   * 데 쓴다. 위젯이 훅을 직접 부르지 않는 이유는 `AtlasGitPanelProps.graph`
+   * 주석에 있다(테스트가 프로바이더를 요구하게 된다).
+   */
+  const graph = useMemo(
+    () => (insight ? { nodes: insight.nodes, edges: insight.edges } : null),
+    [insight],
+  );
+  return { vaultPath, changeset, graph };
 }

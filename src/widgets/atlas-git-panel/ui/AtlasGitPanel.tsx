@@ -35,9 +35,11 @@ import {
 } from "@/shared/lib/atlas-git-record";
 import {
   gitDiff,
+  gitFetch,
   gitErrorMessage,
   gitHistory,
   gitInit,
+  gitPull,
   gitProbe,
   gitSetRemote,
   gitSnapshot,
@@ -50,6 +52,10 @@ import {
 } from "@/shared/lib/tauri-git";
 import type { OntologyChangeset } from "@/shared/lib/ontology-tree";
 import { gitHostPlatformFrom, gitInstallGuide } from "@/shared/lib/git-install-guide";
+import { TopologyV2KindGlyph } from "@/shared/ui/topology-v2-kind-glyph";
+import type { KnowledgeGraphEdge, KnowledgeGraphNode } from "@/entities/knowledge-graph";
+import { buildConceptEgo, matchNodeId, type ConceptEgo } from "../model/build-concept-ego";
+import { CommitDetail } from "./CommitDetail";
 import { cn } from "@/shared/lib/cn";
 import { ATLAS_CLI } from "@/shared/config/cli-invocation";
 
@@ -152,6 +158,16 @@ export interface AtlasGitPanelProps {
   vaultPath?: string | null;
   /** 웹 강등 요약에 쓸 세션 changeset — HomePage 의 `ontologyChangeset`. */
   sessionChangeset?: OntologyChangeset | null;
+  /**
+   * 볼트 그래프 — 걸음이 바꾼 파일을 **개념**으로 옮기는 데 쓴다.
+   *
+   * 훅으로 안에서 읽지 않고 **밖에서 받는다**. `useOntologyInsight` 는 안에서
+   * `useLocalVault` 를 부르는데, 위젯이 그걸 직접 부르면 이 컴포넌트를 그리는
+   * 모든 테스트가 프로바이더를 요구하게 된다(실측: 33개가 한 번에 터졌다).
+   * 데이터를 밖에서 넣으면 위젯은 순수하게 남고 호출부가 그 결정을 진다 —
+   * `sessionChangeset` 이 이미 그 관례다.
+   */
+  graph?: { nodes: readonly KnowledgeGraphNode[]; edges: readonly KnowledgeGraphEdge[] } | null;
   className?: string;
 }
 
@@ -218,6 +234,12 @@ function SectionLabel({ children }: { children: React.ReactNode }) {
  * 다시 확인하는 것 하나뿐이라, 전폭 상단 정렬로 두면 "내용이 안 나온 페이지"
  * 로 읽힌다.
  */
+/**
+ * 작업대에서 지금 보고 있는 것. `pending` = 아직 커밋 안 한 변경,
+ * `commit` = 그 해시의 커밋.
+ */
+export type WorkbenchSelection = { kind: "pending" } | { kind: "commit"; hash: string };
+
 type GitStage = "web" | "no-vault" | "loading" | "not-installed" | "error" | "not-initialized" | "workbench";
 
 type SetupStep = 1 | 2 | 3;
@@ -225,9 +247,22 @@ type SetupStep = 1 | 2 | 3;
 export function AtlasGitPanel({
   vaultPath = null,
   sessionChangeset = null,
+  graph = null,
   className,
 }: AtlasGitPanelProps) {
   const t = useTranslations("atlasGit");
+  /*
+   * 종류 이름은 `kinds` 네임스페이스가 진실원이다 — 이 화면이 자기 키를 새로
+   * 만들면 같은 사실이 두 곳에 적히고 그 순간부터 드리프트가 시작된다.
+   */
+  const tKinds = useTranslations("kinds");
+  const kindLabel = useCallback(
+    (kind: string) => {
+      const known = ["project", "domain", "capability", "element", "document", "vault-readme"];
+      return tKinds(known.includes(kind) ? kind : "unknown");
+    },
+    [tKinds],
+  );
 
   // SSR/hydration 안전한 런타임 판별 — 서버 스냅샷은 false(웹), 클라이언트에서
   // Tauri 면 true 로 재렌더된다 (uSES 가 mismatch 를 스스로 정리).
@@ -248,6 +283,39 @@ export function AtlasGitPanel({
    * 읽기 전용 감지라 자동 호출이 헌장의 「자동 실행 금지」와 충돌하지 않는다:
    * `git_probe` 는 아무것도 설치하지 않고 실행 가능 여부만 본다.
    */
+  /*
+   * 걸음마다 「바꾼 개념」. 종전에는 커밋 **제목 문자열을 파싱해서 추측**했는데
+   * (`describeSnapshotSubject`), 그건 우리 도구가 쓴 제목에만 맞고 사람이 쓴
+   * 커밋에는 안 맞았다. #842 가 커밋별 파일 + kind/slug 를 실어 보내므로 이제
+   * 추측하지 않는다 — 볼트의 개념 노드에 실제로 맞는 것만 센다.
+   */
+  const conceptsByHash = useMemo(() => {
+    const nodes = graph?.nodes ?? [];
+    const map = new Map<string, { id: string; label: string; kind: string }[]>();
+    for (const commit of history) {
+      const seen = new Set<string>();
+      const list: { id: string; label: string; kind: string }[] = [];
+      for (const file of commit.files ?? []) {
+        const id = matchNodeId(file, nodes);
+        if (!id || seen.has(id)) continue;
+        const node = nodes.find((n) => n.id === id);
+        if (!node) continue;
+        seen.add(id);
+        list.push({ id, label: node.display || node.title, kind: node.kind });
+      }
+      map.set(commit.hash, list);
+    }
+    return map;
+  }, [history, graph]);
+
+  const egoFor = useCallback(
+    (nodeId: string) =>
+      graph ? buildConceptEgo(nodeId, graph.nodes, graph.edges) : null,
+    [graph],
+  );
+  /** 펼친 걸음 안에서 지금 보고 있는 개념. 걸음을 접으면 풀린다. */
+  const [focusedConceptId, setFocusedConceptId] = useState<string | null>(null);
+
   const [gitInstalled, setGitInstalled] = useState<boolean | null>(null);
   const probeGit = useCallback(async () => {
     try {
@@ -293,8 +361,17 @@ export function AtlasGitPanel({
    * 변경이 있어도 비교할 예전 내용이 없어서, 변경 수로 판정하면 사용자가
    * 요청하지도 않은 빈 칸에 착지한다(소유자 스크린샷의 그 한 줄).
    */
-  const [evidenceTabChoice, setEvidenceTabChoice] = useState<"diff" | "history" | null>(null);
-  const [expandedHash, setExpandedHash] = useState<string | null>(null);
+  /*
+   * 작업대의 선택 — **탭을 대신하는 축**이다.
+   *
+   * 종전에는 오른쪽 열이 「변경 내용 / 커밋 이력」 탭으로 갈렸는데, 그 둘은
+   * 사실 *"아직 커밋 안 된 것 vs 된 것"* 이라 **목록의 위치**가 이미 말한다
+   * (맨 위가 안 된 것, 아래가 된 것 — 시간순이니 자연스럽다). 탭이 있으면
+   * 커밋 이력이 그 뒤에 숨어서, 실제로 소유자가 새 화면을 못 봤다.
+   *
+   * `null` = 아직 안 골랐음 → 아래 `selection` 이 상태를 보고 정한다.
+   */
+  const [selectionChoice, setSelectionChoice] = useState<WorkbenchSelection | null>(null);
 
   /**
    * 목록에서 고른 문서의 경로. `null` = 안 골랐음 → 증거 열은 바뀐 개념
@@ -363,7 +440,19 @@ export function AtlasGitPanel({
   // 행별 줄 증감이 둘 다 이 값을 봐야 하는데, 자식에서 두 번 계산하면
   // 화면의 두 곳이 서로 다른 사실을 말할 수 있다.
   const diffFiles = useMemo(() => parseUnifiedDiff(diffText), [diffText]);
-  const evidenceTab = evidenceTabChoice ?? (diffFiles.length > 0 ? "diff" : "history");
+  /*
+   * 고르기 전 기본값: 아직 커밋 안 한 변경이 있으면 그것, 없으면 최근 커밋.
+   * 판정 기준이 "변경 수" 가 아니라 **파싱된 diff 파일 수** 인 이유는 종전
+   * 탭 판정과 같다 — 새로 만든 문서만 바뀐 순간에는 변경이 있어도 비교할
+   * 예전 내용이 없어서, 변경 수로 판정하면 요청하지도 않은 빈 칸에 착지한다.
+   */
+  const selection: WorkbenchSelection =
+    selectionChoice ??
+    (diffFiles.length > 0
+      ? { kind: "pending" }
+      : history.length > 0
+        ? { kind: "commit", hash: history[0].hash }
+        : { kind: "pending" });
 
   const stage: GitStage = !bridgeAvailable
     ? "web"
@@ -400,9 +489,12 @@ export function AtlasGitPanel({
       setSnapshotResult(result);
       setConfirming(false);
       setPushOptIn(false);
-      // 사용자의 명시 선택을 지운다 — 남긴 직후 화면은 `recall` 모양으로
-      // 넘어가고(지난 걸음이 본문), 변경이 남아 있으면 계속 `바뀐 줄`이다.
-      setEvidenceTabChoice(null);
+      /*
+       * 사용자의 명시 선택을 지운다 — 커밋 직후 화면은 기본값으로 돌아간다.
+       * 남은 변경이 있으면 계속 「아직 커밋 안 한 변경」, 없으면 방금 만든
+       * 커밋이 열린다. 방금 한 일의 결과를 보여주는 쪽이 옳다.
+       */
+      setSelectionChoice(null);
       setSelectedPath(null);
       await refresh();
     } catch (err) {
@@ -451,6 +543,54 @@ export function AtlasGitPanel({
       setInitRunning(false);
     }
   }, [vaultPath, refresh]);
+
+  /*
+   * 원격 세 동작 — Fetch · Pull · Push.
+   *
+   * 이 화면에는 **Pull 이 아예 없었고**(브리지에도 Rust 에도 있는데 호출부가
+   * 없었다), Push 는 「남기기」 확인 단계의 체크박스 안에만 있었다. 그래서
+   * 남길 변경이 0 이면 이미 쌓인 걸음을 보낼 방법이 화면에 없다 — 원격보다
+   * 앞서 있어도 그렇다(소유자 실측: ↑2 인데 보낼 길이 없었다).
+   *
+   * 셋 다 **명시 클릭 뒤에만** 돈다. 자동 호출 0 — 신뢰 헌장 그대로다.
+   */
+  const [remoteBusy, setRemoteBusy] = useState<null | "fetch" | "pull" | "push">(null);
+  const [remoteActionNotice, setRemoteActionNotice] = useState<string | null>(null);
+  const [remoteActionError, setRemoteActionError] = useState<string | null>(null);
+  const runRemote = useCallback(
+    async (kind: "fetch" | "pull" | "push") => {
+      if (!vaultPath) return;
+      setRemoteBusy(kind);
+      setRemoteActionError(null);
+      setRemoteActionNotice(null);
+      try {
+        if (kind === "fetch") {
+          const r = await gitFetch(vaultPath);
+          if (r) setRemoteActionNotice(t("remoteDoneFetch", { summary: r.summary }));
+        } else if (kind === "pull") {
+          const r = await gitPull(vaultPath);
+          if (r) setRemoteActionNotice(t("remoteDonePull", { summary: r.summary }));
+        } else {
+          /*
+           * Push 는 전용 명령이 없다 — `git_snapshot(push:true)` 가 그 일을
+           * 한다. 남길 변경이 0 이면 `committed:false/no-changes` 로 돌아오고
+           * **이미 쌓인 걸음만 전송된다**. 그래서 「남길 게 없어도 보낼 수
+           * 있다」가 성립한다.
+           */
+          const r = await gitSnapshot(vaultPath, { push: true });
+          if (r?.push?.pushed) setRemoteActionNotice(t("remoteDonePush"));
+          else if (r?.push?.guidance) setRemoteActionError(r.push.guidance);
+          else if (r?.push?.message) setRemoteActionError(r.push.message);
+        }
+        await refresh();
+      } catch (err) {
+        setRemoteActionError(gitErrorMessage(err));
+      } finally {
+        setRemoteBusy(null);
+      }
+    },
+    [vaultPath, refresh, t],
+  );
 
   /**
    * 보낼 곳 등록 — 주소만 등록하고 **보내지 않는다**. 전송은 사용자가 스냅샷
@@ -542,12 +682,10 @@ export function AtlasGitPanel({
             snapshotError={snapshotError}
             confirmSnapshot={confirmSnapshot}
             onRetry={refresh}
-            evidenceTab={evidenceTab}
-            setEvidenceTab={setEvidenceTabChoice}
+            selection={selection}
+            setSelection={setSelectionChoice}
             diffFiles={diffFiles}
             history={history}
-            expandedHash={expandedHash}
-            setExpandedHash={setExpandedHash}
             selectedPath={selectedPath}
             setSelectedPath={setSelectedPath}
             othersOpen={othersOpen}
@@ -565,6 +703,15 @@ export function AtlasGitPanel({
             remoteError={remoteError}
             remoteNotice={remoteNotice}
             onSetRemote={submitRemote}
+            remoteBusy={remoteBusy}
+            onRemoteAction={(kind) => void runRemote(kind)}
+            remoteActionNotice={remoteActionNotice}
+            remoteActionError={remoteActionError}
+            concepts={conceptsByHash}
+            egoFor={egoFor}
+            kindLabel={kindLabel}
+            focusedConceptId={focusedConceptId}
+            setFocusedConceptId={setFocusedConceptId}
           />
         ) : stage === "no-vault" ? (
           <NoVaultSetup key={stage} t={t} />
@@ -740,9 +887,15 @@ function SetupFrame({
     <div
       data-testid="atlas-git-setup"
       data-setup-state={state}
-      className="topology-chrome-in m-auto flex w-full max-w-[var(--git-setup-measure)] flex-col gap-4"
+      className="topology-chrome-in mx-auto flex w-full max-w-[var(--git-setup-measure)] flex-col gap-4 pt-[var(--git-setup-top)]"
     >
-      {/* 헤더가 기둥의 첫 줄이다 — 셋업에서 이 화면은 "발자취 대시보드" 가
+      {/* 세로는 **위 정렬**이다. `m-auto` 로 정가운데에 두면 이 화면이 목적지가
+          아니라 대화상자로 읽힌다 — 실측: 1512×806 창에서 기둥이 화면의 17%
+          만 쓰고 위 209px · 아래 189px 이 균등하게 비어, 어디에도 매이지 않은
+          한 덩어리가 됐다. 레일이 있는 목적지는 페이지이므로 첫 줄이 위에서
+          시작한다.
+
+          헤더가 기둥의 첫 줄이다 — 셋업에서 이 화면은 "발자취 대시보드" 가
           아니라 "기록을 시작하는 한 장" 이고, 제목·범위 고지·사다리·과업이
           하나의 세로 리듬으로 읽혀야 한다. */}
       <PageHeader t={t} inColumn />
@@ -910,38 +1063,6 @@ function NoVaultSetup({ t }: { t: Translator }) {
   );
 }
 
-/**
- * 증거 pane 탭 (#85). 활성은 인디고 언더라인 — 채색 시스템 증식 없이 `border-b`
- * 하나로 상태를 말한다(`design.md`: "카테고리 구분은 색이 아닌 보더 스타일").
- */
-function EvidenceTab({
-  active,
-  testId,
-  onClick,
-  children,
-}: {
-  active: boolean;
-  testId: string;
-  onClick: () => void;
-  children: React.ReactNode;
-}) {
-  return (
-    <button
-      type="button"
-      data-testid={testId}
-      aria-pressed={active}
-      onClick={onClick}
-      className={cn(
-        "border-b-2 px-1.5 pb-1.5 text-label transition-colors",
-        active
-          ? "border-[color:var(--color-indigo-brand)] font-semibold text-[color:var(--color-text-primary)]"
-          : "border-transparent text-[color:var(--color-text-quaternary)] hover:text-[color:var(--color-text-secondary)]",
-      )}
-    >
-      {children}
-    </button>
-  );
-}
 
 /**
  * 위치 줄 — 이 폴더의 걸음이 **어디에 쌓이는가**. 헤더 오른쪽, 한 줄.
@@ -956,20 +1077,66 @@ function EvidenceTab({
  * 그래서 **사실은 남기고 형태를 없앴다**: 사실은 크롬 한 줄(11px quaternary),
  * 행동은 그 옆의 조용한 버튼 하나. 입력칸은 누를 때만 온다.
  */
+/** 원격 동작 한 알 — 라벨은 원어, 무엇을 하는지는 툴팁이 진다. */
+function RemoteActionButton({
+  id,
+  label,
+  hint,
+  busy,
+  disabled,
+  onClick,
+}: {
+  id: "fetch" | "pull" | "push";
+  label: string;
+  hint: string;
+  busy: boolean;
+  disabled: boolean;
+  onClick: (kind: "fetch" | "pull" | "push") => void;
+}) {
+  return (
+    <button
+      type="button"
+      data-testid={`atlas-git-remote-${id}`}
+      title={hint}
+      disabled={disabled}
+      onClick={() => onClick(id)}
+      className="rounded-[var(--radius-chip)] border border-[color:var(--color-border-soft)] px-2 py-0.5 text-label text-[color:var(--color-text-tertiary)] transition-colors hover:border-[color:var(--color-indigo-a46)] hover:text-[color:var(--color-text-primary)] disabled:cursor-default disabled:opacity-40 disabled:hover:border-[color:var(--color-border-soft)] disabled:hover:text-[color:var(--color-text-tertiary)]"
+    >
+      {busy ? "…" : label}
+    </button>
+  );
+}
+
 function LocationLine({
   t,
   branch,
   upstream,
+  ahead,
+  behind,
   remoteOpen,
   setRemoteOpen,
+  remoteBusy,
+  onRemoteAction,
+  notice,
+  error,
 }: {
   t: Translator;
   branch: string | null;
   upstream: string | null;
+  /** upstream 이 없으면 둘 다 null — 0 이 아니라 「모름」이다. */
+  ahead: number | null;
+  behind: number | null;
   remoteOpen: boolean;
   setRemoteOpen: (v: boolean) => void;
+  remoteBusy: null | "fetch" | "pull" | "push";
+  onRemoteAction: (kind: "fetch" | "pull" | "push") => void;
+  /** 방금 한 일의 결과. 성공도 실패도 **같은 자리**에서 말한다. */
+  notice: string | null;
+  error: string | null;
 }) {
   if (!branch) return null;
+  const known = ahead !== null && behind !== null;
+  const same = known && ahead === 0 && behind === 0;
   return (
     <div
       data-testid="atlas-git-location"
@@ -985,7 +1152,56 @@ function LocationLine({
       >
         {upstream ? t("locationChip", { branch, upstream }) : branch}
       </span>
-      {upstream ? null : (
+      {upstream ? (
+        <>
+          {/* 갈라짐은 **마지막 확인 시점 기준**이라 그 사실을 툴팁으로 함께
+              말한다 — 숫자만 보이면 실시간으로 읽힌다. */}
+          <span
+            data-testid="atlas-git-divergence"
+            title={t("remoteStale")}
+            className="inline-flex items-center gap-1.5 rounded-[var(--radius-chip)] border border-[color:var(--color-border-soft)] px-2 py-0.5 tabular-nums"
+          >
+            {same ? (
+              <span>{t("divergeSame")}</span>
+            ) : (
+              <>
+                <span className="text-[color:var(--color-text-secondary)]">
+                  {t("divergeAhead", { ahead: ahead ?? 0 })}
+                </span>
+                <span className="text-[color:var(--color-text-secondary)]">
+                  {t("divergeBehind", { behind: behind ?? 0 })}
+                </span>
+              </>
+            )}
+          </span>
+          {/* Fetch·Pull·Push 는 **원어**로 둔다. 번역하면 무슨 일이 일어나는지가
+              오히려 흐려진다(소유자 판정 2026-08-02). */}
+          <RemoteActionButton
+            id="fetch"
+            label={t("remoteFetch")}
+            hint={t("remoteFetchHint")}
+            busy={remoteBusy === "fetch"}
+            disabled={remoteBusy !== null}
+            onClick={onRemoteAction}
+          />
+          <RemoteActionButton
+            id="pull"
+            label={t("remotePull")}
+            hint={behind && behind > 0 ? t("remotePullHint", { behind }) : t("remoteSameHint")}
+            busy={remoteBusy === "pull"}
+            disabled={remoteBusy !== null || !known || behind === 0}
+            onClick={onRemoteAction}
+          />
+          <RemoteActionButton
+            id="push"
+            label={t("remotePush")}
+            hint={ahead && ahead > 0 ? t("remotePushHint", { ahead }) : t("remoteSameHint")}
+            busy={remoteBusy === "push"}
+            disabled={remoteBusy !== null || !known || ahead === 0}
+            onClick={onRemoteAction}
+          />
+        </>
+      ) : (
         <>
           <span aria-hidden>·</span>
           <span>{t("noUpstream")}</span>
@@ -1000,6 +1216,21 @@ function LocationLine({
           </button>
         </>
       )}
+      {error ? (
+        <span
+          data-testid="atlas-git-remote-error"
+          className="basis-full text-label text-[color:var(--color-danger-text)]"
+        >
+          {error}
+        </span>
+      ) : notice ? (
+        <span
+          data-testid="atlas-git-remote-notice"
+          className="basis-full text-label text-[color:var(--color-text-tertiary)]"
+        >
+          {notice}
+        </span>
+      ) : null}
     </div>
   );
 }
@@ -1459,19 +1690,47 @@ function DiffView({
  * 치수 규칙성: 시각은 고정 폭 열, 요약과 이름은 각각 한 줄로 클램프되고
  * 이름이 없는 걸음도 그 줄의 자리를 지킨다(높이 `--git-step-h`).
  */
+/**
+ * 한 걸음 행에 이름을 몇 개까지 보일까. **고정 개수 + 나머지 캡션**이다 —
+ * "들어가는 만큼" 은 반복 세트의 리듬을 내용 길이가 정하게 만든다(치수 규칙성).
+ */
+const STEP_CONCEPT_SLOTS = 2;
+
 function StepList({
   t,
   history,
-  expandedHash,
-  setExpandedHash,
+  concepts,
+  egoFor,
+  kindLabel,
+  focusedConceptId,
+  setFocusedConceptId,
   settledHash,
+  pendingCount,
+  selection,
+  setSelection,
 }: {
   t: Translator;
   history: GitCommitInfo[];
-  expandedHash: string | null;
-  setExpandedHash: (v: string | null) => void;
+  /**
+   * 걸음 해시 → 그 걸음이 바꾼 **볼트 개념**. 커밋 제목을 파싱한 추측이
+   * 아니라 #842 가 실어 보낸 kind/slug 를 그래프에 맞춘 결과다.
+   */
+  concepts: ReadonlyMap<string, readonly { id: string; label: string; kind: string }[]>;
+  /** 노드 id → ego. 그래프가 없으면 항상 `null` 이고 카드는 안 그려진다. */
+  egoFor: (nodeId: string) => ConceptEgo | null;
+  /** 종류 이름 — `kinds` 네임스페이스가 진실원. */
+  kindLabel: (kind: string) => string;
+  focusedConceptId: string | null;
+  setFocusedConceptId: (id: string) => void;
   /** 방금 남긴 커밋의 해시 — 그 한 줄만 확정 램프로 정착시킨다. */
   settledHash?: string | null;
+  /**
+   * 아직 커밋 안 한 변경 수. 0 이면 그 줄을 안 그린다 — 없는 것을 자리로
+   * 남겨 두면 목록이 "무언가 비어 있다" 로 읽힌다.
+   */
+  pendingCount: number;
+  selection: WorkbenchSelection;
+  setSelection: (v: WorkbenchSelection) => void;
 }) {
   if (history.length === 0) {
     return (
@@ -1486,6 +1745,37 @@ function StepList({
 
   return (
     <ul data-testid="atlas-git-steps" className="flex flex-col">
+      {/*
+        아직 커밋 안 한 변경도 **변경 묶음**이라는 점에서 커밋과 같다. 다른
+        것은 아직 이름이 안 붙었다는 것뿐이라, 같은 행 문법을 쓰고 구별은
+        선 스타일(점선)과 시각(「지금」)이 진다. 새 색은 안 쓴다.
+      */}
+      {pendingCount > 0 ? (
+        <li>
+          <button
+            type="button"
+            data-testid="atlas-git-pending-row"
+            aria-pressed={selection.kind === "pending"}
+            onClick={() => setSelection({ kind: "pending" })}
+            className="flex h-[var(--git-step-h)] w-full items-center gap-3 rounded-[var(--radius-chip)] border-l-2 border-l-dashed border-l-[color:var(--color-indigo-a46)] pr-1.5 pl-1.5 text-left transition-colors hover:bg-[color:var(--color-overlay-1)] aria-pressed:border-l-[color:var(--color-indigo-brand)] aria-pressed:bg-[color:var(--color-overlay-2)]"
+          >
+            <span className="w-20 shrink-0 truncate text-label text-[color:var(--color-text-tertiary)]">
+              {t("pendingNow")}
+            </span>
+            <span className="flex min-w-0 flex-1 flex-col">
+              <span className="truncate text-body font-medium text-[color:var(--color-text-primary)]">
+                {t("changesTitle")}
+              </span>
+              <span className="truncate text-label text-[color:var(--color-text-quaternary)]">
+                {t("pendingHint")}
+              </span>
+            </span>
+            <span className="shrink-0 tabular-nums text-label text-[color:var(--color-text-tertiary)]">
+              {pendingCount}
+            </span>
+          </button>
+        </li>
+      ) : null}
       {history.map((commit, index) => {
         const summary = describeSnapshotSubject(commit.subject);
         const parts = [
@@ -1499,9 +1789,10 @@ function StepList({
             ? parts.join(" · ")
             : t("stepNoConcepts")
           : commit.subject;
+        const stepConcepts = concepts.get(commit.hash) ?? [];
         const names = summary.slugs.join(", ");
         const trail = summary.overflow > 0 ? t("moreSlugs", { count: summary.overflow }) : "";
-        const expanded = expandedHash === commit.hash;
+        const expanded = selection.kind === "commit" && selection.hash === commit.hash;
         return (
           <li
             key={commit.hash}
@@ -1515,40 +1806,48 @@ function StepList({
               data-testid="atlas-git-history-item"
               aria-expanded={expanded}
               title={t("stepSelectHint")}
-              onClick={() => setExpandedHash(expanded ? null : commit.hash)}
+              onClick={() => setSelection({ kind: "commit", hash: commit.hash })}
               className="flex h-[var(--git-step-h)] w-full items-center gap-3 rounded-[var(--radius-chip)] border-l-2 border-l-transparent pr-1.5 pl-1.5 text-left transition-colors hover:bg-[color:var(--color-overlay-1)] aria-expanded:border-l-[color:var(--color-indigo-brand)] aria-expanded:bg-[color:var(--color-overlay-2)]"
             >
               <span className="w-20 shrink-0 truncate text-label text-[color:var(--color-text-quaternary)]">
                 {commit.relativeTime}
               </span>
               <span className="flex min-w-0 flex-1 flex-col">
-                <span className="truncate text-body text-[color:var(--color-text-primary)]">
-                  {headline}
+                {/* 주어는 **개념**이다. 개념을 안 건드린 걸음만 요약/원문이
+                    그 자리를 대신한다 — 빈 줄로 두면 무슨 걸음인지 알 수 없다. */}
+                <span className="flex min-w-0 items-center gap-2 truncate text-body text-[color:var(--color-text-primary)]">
+                  {stepConcepts.length > 0 ? (
+                    <>
+                      {stepConcepts.slice(0, STEP_CONCEPT_SLOTS).map((concept) => (
+                        <span key={concept.id} className="inline-flex shrink-0 items-center gap-1.5">
+                          <TopologyV2KindGlyph kind={concept.kind} size={11} />
+                          <span className="truncate font-medium">{concept.label}</span>
+                        </span>
+                      ))}
+                      {stepConcepts.length > STEP_CONCEPT_SLOTS ? (
+                        <span className="shrink-0 text-label text-[color:var(--color-text-quaternary)]">
+                          {t("moreSlugs", { count: stepConcepts.length - STEP_CONCEPT_SLOTS })}
+                        </span>
+                      ) : null}
+                    </>
+                  ) : (
+                    <span className="truncate">{headline}</span>
+                  )}
                 </span>
-                {/* 이름 줄은 비어도 자리를 지킨다 — 반복 세트의 행 높이가
-                    이름의 유무로 정해지지 않게. */}
-                <span className="truncate font-mono text-caption text-[color:var(--color-text-quaternary)]">
-                  {names && trail ? `${names} · ${trail}` : names || trail || " "}
+                {/* 아래 줄은 비어도 자리를 지킨다 — 반복 세트의 행 높이가
+                    내용의 유무로 정해지지 않게(치수 규칙성). */}
+                <span className="truncate text-label text-[color:var(--color-text-quaternary)]">
+                  {stepConcepts.length > 0
+                    ? commit.subject
+                    : names && trail
+                      ? `${names} · ${trail}`
+                      : names || trail || " "}
                 </span>
               </span>
               <span className="shrink-0 font-mono text-caption text-[color:var(--color-text-quaternary)]">
                 {commit.shortHash}
               </span>
             </button>
-            {expanded ? (
-              <div
-                className="git-fade-in flex flex-col gap-0.5 pb-1.5 pl-1.5"
-                data-testid="atlas-git-history-detail"
-              >
-                <p className="font-mono text-caption break-all text-[color:var(--color-text-quaternary)]">
-                  {t("historyItemDetail", { hash: commit.hash, isoTime: commit.isoTime })}
-                </p>
-                {/* 원문 — 터미널·저장소 페이지에서 다시 마주칠 문자열이다. */}
-                <p className="font-mono text-caption break-all text-[color:var(--color-text-quaternary)]">
-                  {commit.subject}
-                </p>
-              </div>
-            ) : null}
           </li>
         );
       })}
@@ -1611,6 +1910,7 @@ function SnapshotResultLine({
  */
 function ActionDock({
   t,
+  onConnectRemote,
   hasChanges,
   changeCount,
   predictedSubject,
@@ -1625,6 +1925,8 @@ function ActionDock({
   upstream,
 }: {
   t: Translator;
+  /** 원격이 없을 때 도크 마지막 줄이 여는 입력. */
+  onConnectRemote: () => void;
   hasChanges: boolean;
   changeCount: number;
   predictedSubject: string;
@@ -1709,11 +2011,36 @@ function ActionDock({
         <SnapshotResultLine t={t} result={snapshotResult} fallbackCount={changeCount} />
       ) : null}
 
-      {/* 신뢰 문구는 쓰기가 일어나는 자리에서 읽힌다. */}
-      <p className="flex items-center gap-1.5 text-caption leading-relaxed text-[color:var(--color-text-quaternary)]">
-        <ShieldCheck size={11} aria-hidden className="shrink-0" />
-        {t("scopeNotice")}
-      </p>
+      {/*
+        쓰기 자리의 마지막 줄은 **지금 상태에서 다음 걸음**을 말한다.
+
+        원격이 없으면 남긴 걸음은 이 컴퓨터에만 있다 — 그게 지금 알아야 할
+        사실이고, 다음 걸음은 연결이다. 종전에는 이 자리가 언제나 범위 고지
+        하나였는데, 그 문장은 헤더에도 같이 떠서 같은 말이 두 번 나왔고
+        (소유자 지적) 정작 "그래서 이제 뭘 하나" 는 아무 데도 없었다.
+      */}
+      {upstream ? (
+        <p className="flex items-center gap-1.5 text-caption leading-relaxed text-[color:var(--color-text-quaternary)]">
+          <ShieldCheck size={11} aria-hidden className="shrink-0" />
+          {t("scopeNotice")}
+        </p>
+      ) : (
+        <p
+          data-testid="atlas-git-dock-no-remote"
+          className="flex flex-wrap items-center gap-x-2 gap-y-1 text-caption leading-relaxed text-[color:var(--color-text-quaternary)]"
+        >
+          <ShieldCheck size={11} aria-hidden className="shrink-0" />
+          <span>{t("dockNoRemote")}</span>
+          <button
+            type="button"
+            data-testid="atlas-git-dock-connect-remote"
+            onClick={onConnectRemote}
+            className="rounded-[var(--radius-chip)] border border-[color:var(--color-border-soft)] px-2 py-0.5 text-caption text-[color:var(--color-text-tertiary)] transition-colors hover:border-[color:var(--color-indigo-a46)] hover:text-[color:var(--color-text-primary)]"
+          >
+            {t("dockConnectRemote")}
+          </button>
+        </p>
+      )}
     </div>
   );
 }
@@ -1740,12 +2067,10 @@ function DesktopBody({
   snapshotError,
   confirmSnapshot,
   onRetry,
-  evidenceTab,
-  setEvidenceTab,
+  selection,
+  setSelection,
   diffFiles,
   history,
-  expandedHash,
-  setExpandedHash,
   selectedPath,
   setSelectedPath,
   othersOpen,
@@ -1763,6 +2088,15 @@ function DesktopBody({
   remoteError,
   remoteNotice,
   onSetRemote,
+  remoteBusy,
+  onRemoteAction,
+  remoteActionNotice,
+  remoteActionError,
+  concepts,
+  egoFor,
+  kindLabel,
+  focusedConceptId,
+  setFocusedConceptId,
 }: {
   /** `navigator.platform ?? userAgent` — 설치 안내를 플랫폼별로 고르는 힌트. */
   hostPlatformHint: string;
@@ -1787,12 +2121,10 @@ function DesktopBody({
   snapshotError: string | null;
   confirmSnapshot: () => void;
   onRetry: () => void;
-  evidenceTab: "diff" | "history";
-  setEvidenceTab: (v: "diff" | "history") => void;
+  selection: WorkbenchSelection;
+  setSelection: (v: WorkbenchSelection) => void;
   diffFiles: AtlasGitDiffFile[];
   history: GitCommitInfo[];
-  expandedHash: string | null;
-  setExpandedHash: (v: string | null) => void;
   selectedPath: string | null;
   setSelectedPath: (v: string | null) => void;
   othersOpen: boolean;
@@ -1810,6 +2142,16 @@ function DesktopBody({
   remoteError: string | null;
   remoteNotice: string | null;
   onSetRemote: () => void;
+  remoteBusy: null | "fetch" | "pull" | "push";
+  onRemoteAction: (kind: "fetch" | "pull" | "push") => void;
+  remoteActionNotice: string | null;
+  remoteActionError: string | null;
+  /** 걸음 해시 → 그 걸음이 바꾼 볼트 개념. */
+  concepts: ReadonlyMap<string, readonly { id: string; label: string; kind: string }[]>;
+  egoFor: (nodeId: string) => ConceptEgo | null;
+  kindLabel: (kind: string) => string;
+  focusedConceptId: string | null;
+  setFocusedConceptId: (id: string) => void;
 }) {
   /**
    * 방금 남긴 커밋의 해시 — 지난 걸음 목록에서 **그 한 줄만** 확정 램프로
@@ -1985,14 +2327,21 @@ function DesktopBody({
       t={t}
       branch={status?.branch ?? null}
       upstream={upstream}
+      ahead={status?.ahead ?? null}
+      behind={status?.behind ?? null}
       remoteOpen={remoteOpen}
       setRemoteOpen={setRemoteOpen}
+      remoteBusy={remoteBusy}
+      onRemoteAction={onRemoteAction}
+      notice={remoteActionNotice}
+      error={remoteActionError}
     />
   );
 
   const dock = (
     <ActionDock
       t={t}
+      onConnectRemote={() => setRemoteOpen(true)}
       hasChanges={hasChanges}
       changeCount={changeCount}
       predictedSubject={predictedSubject}
@@ -2056,9 +2405,15 @@ function DesktopBody({
             <StepList
               t={t}
               history={history}
-              expandedHash={expandedHash}
-              setExpandedHash={setExpandedHash}
+              concepts={concepts}
+              egoFor={egoFor}
+              kindLabel={kindLabel}
+              focusedConceptId={focusedConceptId}
+              setFocusedConceptId={setFocusedConceptId}
               settledHash={settledHash}
+              pendingCount={0}
+              selection={selection}
+              setSelection={setSelection}
             />
           </div>
           {dock}
@@ -2071,7 +2426,15 @@ function DesktopBody({
   // 증거 열 최소 폭이 `--git-evidence-min`(600px)인 이유: 11px mono 80칼럼
   // ≈ 528px + gutter + padding. 시안 v1 의 420px 는 모든 줄을 잘랐고 **잘린
   // diff 는 증거가 아니다**. `lg` 미만은 세로로 쌓인다(증거가 목록 아래).
-  const showEvidence = diffFiles.length > 0 || history.length > 0;
+  /*
+   * 오른쪽 열은 이제 「증거」가 아니라 **고른 것의 상세**다. 그래서 존재
+   * 조건도 바뀐다 — 종전에는 "보여줄 diff 나 이력이 있는가" 였는데, 지금은
+   * 변경 목록도 이 열에 살기 때문에 **커밋할 것이 있으면** 열이 있어야 한다.
+   *
+   * 구 규칙(`diffFiles.length > 0`)을 그대로 두면 새로 만든 문서만 바뀐
+   * 순간(비교할 예전 내용이 없어 diff 가 0줄)에 변경 목록이 통째로 사라진다.
+   */
+  const showEvidence = statusCounts.total > 0 || diffFiles.length > 0 || history.length > 0;
 
   return (
     <div
@@ -2102,20 +2465,28 @@ function DesktopBody({
               "mx-auto w-full max-w-[var(--git-single-measure)]",
         )}
       >
+        {/*
+          왼쪽은 **시간축 하나**다. 맨 위가 아직 커밋 안 한 변경, 그 아래가
+          커밋 이력 — 시간순이라 "안 된 것 / 된 것" 이 위치로 이미 갈린다.
+          그래서 탭이 필요 없다(구 「변경 내용 / 커밋 이력」 탭 제거).
+        */}
         <div className="flex min-w-0 flex-col gap-3 xl:min-h-0">
           {remotePanel}
-          <ChangeList
-            t={t}
-            kindGroups={kindGroups}
-            otherChanges={otherChanges}
-            statusCounts={statusCounts}
-            deltaByPath={deltaByPath}
-            selectedPath={selectedPath}
-            setSelectedPath={setSelectedPath}
-            othersOpen={othersOpen}
-            setOthersOpen={setOthersOpen}
-            stagedOutsideCount={status?.stagedOutsideVault.length ?? 0}
-          />
+          <div className="min-h-0 xl:flex-1 xl:overflow-y-auto">
+            <StepList
+              t={t}
+              history={history}
+              concepts={concepts}
+              egoFor={egoFor}
+              kindLabel={kindLabel}
+              focusedConceptId={focusedConceptId}
+              setFocusedConceptId={setFocusedConceptId}
+              settledHash={settledHash}
+              pendingCount={statusCounts.total}
+              selection={selection}
+              setSelection={setSelection}
+            />
+          </div>
           {dock}
         </div>
 
@@ -2124,53 +2495,63 @@ function DesktopBody({
             data-testid="atlas-git-evidence"
             className="flex min-w-0 flex-col gap-2 xl:min-h-0 xl:border-l xl:border-[color:var(--color-divider)] xl:pl-5"
           >
-            <div className="flex shrink-0 flex-wrap items-center justify-between gap-x-3 gap-y-1">
-              <div className="flex items-center gap-1.5">
-                <EvidenceTab
-                  active={evidenceTab === "diff"}
-                  testId="atlas-git-diff-toggle"
-                  onClick={() => setEvidenceTab("diff")}
-                >
-                  {t("diffTab")}
-                </EvidenceTab>
-                <EvidenceTab
-                  active={evidenceTab === "history"}
-                  testId="atlas-git-history-tab"
-                  onClick={() => setEvidenceTab("history")}
-                >
-                  {t("stepsTab")}
-                </EvidenceTab>
-              </div>
-              {/* 무엇의 증거인지 — 고른 것이 없으면 "전체" 라고 말한다. */}
-              {evidenceTab === "diff" ? (
-                <span className="min-w-0 truncate font-mono text-caption text-[color:var(--color-text-quaternary)]">
-                  {selectedPath ?? t("diffAllLabel")}
-                </span>
-              ) : null}
-            </div>
-
-            {evidenceTab === "diff" ? (
-              shownDiffFiles.length > 0 ? (
-                <DiffView
+            {/*
+              오른쪽은 **왼쪽에서 고른 것 하나**를 그린다. 탭이 아니라 선택이
+              무엇을 보여줄지 정한다 — 구조가 "지금 무엇을 보고 있나" 를 스스로
+              말하므로 탭 라벨을 읽어 알아낼 필요가 없다.
+            */}
+            {selection.kind === "pending" ? (
+              <>
+                <div className="flex shrink-0 flex-wrap items-center justify-between gap-x-3 gap-y-1">
+                  <SectionLabel>{t("changesTitle")}</SectionLabel>
+                  <span className="min-w-0 truncate font-mono text-caption text-[color:var(--color-text-quaternary)]">
+                    {selectedPath ?? t("diffAllLabel")}
+                  </span>
+                </div>
+                <ChangeList
                   t={t}
-                  files={shownDiffFiles}
-                  showFileHeads={!selectedPath && shownDiffFiles.length > 1}
+                  kindGroups={kindGroups}
+                  otherChanges={otherChanges}
+                  statusCounts={statusCounts}
+                  deltaByPath={deltaByPath}
+                  selectedPath={selectedPath}
+                  setSelectedPath={setSelectedPath}
+                  othersOpen={othersOpen}
+                  setOthersOpen={setOthersOpen}
+                  stagedOutsideCount={status?.stagedOutsideVault.length ?? 0}
                 />
-              ) : (
-                <p className="git-fade-in text-label leading-relaxed text-[color:var(--color-text-quaternary)]">
-                  {t("diffEmpty")}
-                </p>
-              )
+                {shownDiffFiles.length > 0 ? (
+                  <DiffView
+                    t={t}
+                    files={shownDiffFiles}
+                    showFileHeads={!selectedPath && shownDiffFiles.length > 1}
+                  />
+                ) : (
+                  <p className="git-fade-in text-label leading-relaxed text-[color:var(--color-text-quaternary)]">
+                    {t("diffEmpty")}
+                  </p>
+                )}
+              </>
             ) : (
-              <div className="git-fade-in overflow-y-auto max-xl:max-h-[var(--git-evidence-stack-max)] xl:min-h-0 xl:flex-1">
-                <StepList
-                  t={t}
-                  history={history}
-                  expandedHash={expandedHash}
-                  setExpandedHash={setExpandedHash}
-                  settledHash={settledHash}
-                />
-              </div>
+              (() => {
+                const picked = history.find((c) => c.hash === selection.hash);
+                if (!picked) return null;
+                return (
+                  <div className="git-fade-in overflow-y-auto xl:min-h-0 xl:flex-1">
+                    <CommitDetail
+                      t={t}
+                      hash={picked.hash}
+                      isoTime={picked.isoTime}
+                      subject={picked.subject}
+                      concepts={concepts.get(picked.hash) ?? []}
+                      focusedConceptId={focusedConceptId}
+                      setFocusedConceptId={setFocusedConceptId}
+                      egoFor={egoFor}
+                      kindLabel={kindLabel}
+                    />
+                  </div>
+                );
+              })()
             )}
           </div>
         ) : null}

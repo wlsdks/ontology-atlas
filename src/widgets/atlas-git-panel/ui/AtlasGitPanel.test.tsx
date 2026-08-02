@@ -35,6 +35,8 @@ const STATUS_WITH_CHANGES = {
   upstream: "origin/main",
   changedCount: 2,
   stagedOutsideVault: [],
+  ahead: 2,
+  behind: 1,
 };
 
 const DIFF_WITH_CHANGES = {
@@ -87,6 +89,8 @@ function installDesktopGit({
     replaced: null,
   },
   probe = { installed: true, version: "git version 2.49.0" },
+  fetch = { ok: true, upstream: "origin/main", ahead: 2, behind: 0, summary: "내 걸음 2개 · 원격 걸음 0개" },
+  pull = { ok: true, upstream: "origin/main", summary: "1개 받아옴" },
 }: {
   status?: unknown;
   diff?: unknown;
@@ -95,6 +99,8 @@ function installDesktopGit({
   init?: unknown;
   setRemote?: unknown;
   probe?: unknown;
+  fetch?: unknown;
+  pull?: unknown;
 } = {}) {
   tauriApiMock.runtimeAvailable = true;
   tauriApiMock.invoke.mockImplementation(async (command: string) => {
@@ -105,6 +111,8 @@ function installDesktopGit({
     if (command === "git_init") return init;
     if (command === "git_set_remote") return setRemote;
     if (command === "git_probe") return probe;
+    if (command === "git_fetch") return fetch;
+    if (command === "git_pull") return pull;
     throw new Error(`unexpected command: ${command}`);
   });
 }
@@ -167,7 +175,6 @@ describe("AtlasGitPanel — 데스크톱(Tauri)", () => {
     expect(groups).toHaveTextContent("capabilities/foo");
 
     // #85 — 이력은 증거 pane 의 두 번째 탭이다(좌: 무엇을 남길까 / 우: 증거).
-    fireEvent.click(screen.getByTestId("atlas-git-history-tab"));
     const step = screen.getByTestId("atlas-git-history-item");
     // 2026-07-27 — 걸음 요약은 **사람 말**로 읽힌다. 커밋 제목
     // `ontology snapshot: +1 concept (…)` 은 우리가 만든 문자열이고, 그걸
@@ -180,7 +187,7 @@ describe("AtlasGitPanel — 데스크톱(Tauri)", () => {
 
     // 다만 원문은 사라지지 않는다 — 펼치면 감사 흔적으로 그대로 있다.
     fireEvent.click(step);
-    expect(screen.getByTestId("atlas-git-history-detail")).toHaveTextContent(
+    expect(await screen.findByTestId("atlas-git-history-detail")).toHaveTextContent(
       "ontology snapshot: +1 concept (capabilities/foo)",
     );
   });
@@ -216,7 +223,7 @@ describe("AtlasGitPanel — 데스크톱(Tauri)", () => {
     expect(snapshotInvokeCalls()[0][1]).toMatchObject({ push: true });
   });
 
-  it("disables the snapshot button and says 모두 남겼어요 when there are no changes", async () => {
+  it("disables the snapshot button and says 모두 커밋했어요 when there are no changes", async () => {
     installDesktopGit({
       status: { ...STATUS_WITH_CHANGES, changedCount: 0 },
       diff: { count: 0, files: [], diff: "" },
@@ -226,7 +233,7 @@ describe("AtlasGitPanel — 데스크톱(Tauri)", () => {
 
     const button = await screen.findByTestId("atlas-git-snapshot-button");
     expect(button).toBeDisabled();
-    expect(button).toHaveTextContent("모두 남겼어요");
+    expect(button).toHaveTextContent("모두 커밋했어요");
   });
 
   it("offers a working start button — not a dead end — when the vault is outside a git repo", async () => {
@@ -311,7 +318,7 @@ describe("AtlasGitPanel — 데스크톱(Tauri)", () => {
     // 좌측 앰버 레일이 붙은 둥근 카드로 콘텐츠 **위에** 상주해, 기록을 보러
     // 온 사용자의 첫 인상이 설정 권유였다(헌장 금지 패턴 + 앰버 확장).
     const location = await screen.findByTestId("atlas-git-location");
-    expect(location).toHaveTextContent("지금은 이 컴퓨터에만 쌓이고 있어요");
+    expect(location).toHaveTextContent("원격 저장소가 아직 없어요");
     // 입력칸은 아직 없다 — 상주하지 않는다.
     expect(screen.queryByTestId("atlas-git-remote-setup")).not.toBeInTheDocument();
 
@@ -348,25 +355,41 @@ describe("AtlasGitPanel — 데스크톱(Tauri)", () => {
     expect(screen.queryByTestId("atlas-git-remote-setup")).not.toBeInTheDocument();
   });
 
-  it("바뀐 줄이 증거 pane 기본 탭으로 열려 있다 (#85)", async () => {
+  /*
+   * 탭이 사라졌다(2026-08-02). 「변경 내용 / 커밋 이력」은 사실 *안 된 것 vs
+   * 된 것* 이라 목록의 위치가 이미 말한다 — 맨 위가 미커밋, 아래가 커밋.
+   * 그래서 이 테스트는 이제 **기본 선택**을 잡는다: 커밋할 게 있으면 그것이
+   * 열려 있고 변경 내용이 바로 보인다.
+   */
+  it("커밋할 게 있으면 그 변경이 기본으로 열려 있다 — 탭을 눌러 찾지 않는다", async () => {
     installDesktopGit();
     renderPanel(<AtlasGitPanel vaultPath="/repo/vault" />);
 
-    // 토글이 아니라 탭이다 — 증거는 숨겨두는 게 아니라 목록 옆에 늘 있다.
     expect(await screen.findByTestId("atlas-git-diff-pre")).toHaveTextContent("+new line");
-    fireEvent.click(screen.getByTestId("atlas-git-history-tab"));
-    expect(screen.queryByTestId("atlas-git-diff-pre")).not.toBeInTheDocument();
-    fireEvent.click(screen.getByTestId("atlas-git-diff-toggle"));
-    expect(screen.getByTestId("atlas-git-diff-pre")).toHaveTextContent("+new line");
+    // 미커밋 줄이 목록 맨 위에 있고, 그것이 골라져 있다.
+    const pending = screen.getByTestId("atlas-git-pending-row");
+    expect(pending).toHaveAttribute("aria-pressed", "true");
+    // 탭 버튼은 더 이상 존재하지 않는다.
+    expect(screen.queryByTestId("atlas-git-diff-toggle")).toBeNull();
+    expect(screen.queryByTestId("atlas-git-history-tab")).toBeNull();
+  });
+
+  it("커밋 이력이 탭 뒤에 숨지 않는다 — 목록에 늘 있다", async () => {
+    installDesktopGit();
+    renderPanel(<AtlasGitPanel vaultPath="/repo/vault" />);
+    const steps = await screen.findByTestId("atlas-git-steps");
+    expect(steps).toHaveTextContent("abc1234");
   });
 
   it("expands a history item to its full hash + iso time on click", async () => {
     installDesktopGit();
     renderPanel(<AtlasGitPanel vaultPath="/repo/vault" />);
 
-    fireEvent.click(await screen.findByTestId("atlas-git-history-tab"));
+    await screen.findByTestId("atlas-git-steps");
     fireEvent.click(screen.getByTestId("atlas-git-history-item"));
-    expect(screen.getByTestId("atlas-git-history-detail")).toHaveTextContent("abc1234def5678");
+    expect(await screen.findByTestId("atlas-git-history-detail")).toHaveTextContent(
+      "abc1234def5678",
+    );
   });
 
   it("목적지에는 닫기가 없다 — 제목은 페이지 헤드라인이다", async () => {
@@ -531,11 +554,13 @@ describe("AtlasGitPanel — 작업대 빈 상태", () => {
     expect(screen.queryByTestId("atlas-git-evidence")).not.toBeInTheDocument();
   });
 
-  it("남길 것이 있으면 두 열이 되고, 증거 열은 보여줄 것이 있을 때만 온다", async () => {
-    // 소유자 스크린샷의 그 순간: 새로 만든 문서 하나 + 첫 걸음 전 → 바뀐 줄도
-    // 지난 걸음도 없다. 구 화면은 그래도 2열을 선언해 오른쪽에 한 줄
-    // ("새로 만든 문서라 비교할 예전 내용이 없어요")만 띄우고 세로 구분선을
-    // 화면 끝까지 그었다.
+  it("새로 만든 문서만 바뀐 순간에도 변경 목록이 살아 있다", async () => {
+    /*
+     * 소유자 스크린샷의 그 순간: 새로 만든 문서 하나 + 첫 커밋 전 → 비교할
+     * 예전 내용이 없어 diff 가 0줄이다. 2단 전환에서 변경 목록이 오른쪽 열로
+     * 옮겨갔으므로, 열의 존재 조건이 `diff 가 있는가` 로 남아 있으면 이
+     * 순간에 판단 대상이 **통째로 사라진다**. 그 회귀를 잡는다.
+     */
     installDesktopGit({
       status: { ...STATUS_WITH_CHANGES, changedCount: 1 },
       diff: { count: 1, files: [DIFF_WITH_CHANGES.files[0]], diff: "" },
@@ -545,7 +570,6 @@ describe("AtlasGitPanel — 작업대 빈 상태", () => {
 
     const workbench = await screen.findByTestId("atlas-git-workbench");
     expect(workbench).toHaveAttribute("data-shape", "decide");
-    expect(screen.queryByTestId("atlas-git-evidence")).not.toBeInTheDocument();
     // 판단 대상은 그대로 있다.
     expect(screen.getByTestId("atlas-git-change-groups")).toHaveTextContent("capabilities/foo");
   });
@@ -612,7 +636,7 @@ describe("AtlasGitPanel — 작업대 빈 상태", () => {
     expect(pane).not.toHaveTextContent("@@");
   });
 
-  it("`모두 남겼어요` 를 화면에 두 번 쓰지 않는다", async () => {
+  it("`모두 커밋했어요` 를 화면에 두 번 쓰지 않는다", async () => {
     installDesktopGit({
       status: { ...STATUS_WITH_CHANGES, changedCount: 0 },
       diff: { count: 0, files: [], diff: "" },
@@ -621,14 +645,14 @@ describe("AtlasGitPanel — 작업대 빈 상태", () => {
     renderPanel(<AtlasGitPanel vaultPath="/repo/vault" />);
 
     await screen.findByTestId("atlas-git-snapshot-button");
-    expect(screen.getAllByText("모두 남겼어요")).toHaveLength(1);
+    expect(screen.getAllByText("모두 커밋했어요")).toHaveLength(1);
     // 목록 자리는 같은 문장을 반복하는 대신 "그래서 지금 무슨 상태냐" 를 말한다.
     expect(
-      screen.getByText("지금 이 폴더와 마지막 걸음이 같아요. 문서를 고치면 여기에 나타나요."),
+      screen.getByText("지금 이 폴더와 마지막 커밋이 같아요. 문서를 고치면 여기에 나타나요."),
     ).toBeInTheDocument();
   });
 
-  it("남기기 버튼과 결과 문장이 키 경로가 아니라 문장을 그린다 (ICU 인자 계약)", async () => {
+  it("커밋 버튼과 결과 문장이 키 경로가 아니라 문장을 그린다 (ICU 인자 계약)", async () => {
     installDesktopGit({
       snapshot: {
         committed: true,
@@ -645,13 +669,294 @@ describe("AtlasGitPanel — 작업대 빈 상태", () => {
     renderPanel(<AtlasGitPanel vaultPath="/repo/vault" />);
 
     const button = await screen.findByTestId("atlas-git-snapshot-button");
-    expect(button).toHaveTextContent("2개 남기기");
+    expect(button).toHaveTextContent("2개 커밋");
     expect(button).not.toHaveTextContent("atlasGit");
 
     fireEvent.click(button);
     fireEvent.click(screen.getByTestId("atlas-git-confirm-button"));
     const result = await screen.findByTestId("atlas-git-snapshot-result");
-    expect(result).toHaveTextContent("2개 남겼어요");
+    expect(result).toHaveTextContent("2개 커밋했어요");
     expect(result).not.toHaveTextContent("atlasGit");
+  });
+});
+
+describe("AtlasGitPanel — 원격 세 동작 (Fetch · Pull · Push)", () => {
+  /*
+   * 이 화면에는 **Pull 이 아예 없었다** — 브리지에도 Rust 에도 있는데 호출부가
+   * 0회였다. Push 는 「남기기」 확인 단계의 체크박스 안에만 있어서, 남길 변경이
+   * 0 이면 이미 쌓인 걸음을 보낼 방법이 없었다(소유자 실측: ↑2 인데 보낼 길 없음).
+   * 아래 넷이 그 회귀를 잡는다.
+   */
+  it("갈라짐 수치를 위치 줄에 그린다 — 숫자가 있어야 무엇을 눌러야 할지 정해진다", async () => {
+    installDesktopGit();
+    renderPanel(<AtlasGitPanel vaultPath="/repo/vault" />);
+    const chip = await screen.findByTestId("atlas-git-divergence");
+    expect(chip).toHaveTextContent("2");
+    expect(chip).toHaveTextContent("1");
+  });
+
+  it("Fetch 를 누르면 git_fetch 를 부른다 — 그 전에는 0회", async () => {
+    installDesktopGit();
+    renderPanel(<AtlasGitPanel vaultPath="/repo/vault" />);
+    const btn = await screen.findByTestId("atlas-git-remote-fetch");
+    const before = tauriApiMock.invoke.mock.calls.filter(([c]) => c === "git_fetch");
+    expect(before).toHaveLength(0);
+    fireEvent.click(btn);
+    await waitFor(() =>
+      expect(
+        tauriApiMock.invoke.mock.calls.filter(([c]) => c === "git_fetch"),
+      ).toHaveLength(1),
+    );
+  });
+
+  it("Pull 을 누르면 git_pull 을 부른다 — 이 배선이 없던 것이 결함이었다", async () => {
+    installDesktopGit();
+    renderPanel(<AtlasGitPanel vaultPath="/repo/vault" />);
+    fireEvent.click(await screen.findByTestId("atlas-git-remote-pull"));
+    await waitFor(() =>
+      expect(
+        tauriApiMock.invoke.mock.calls.filter(([c]) => c === "git_pull"),
+      ).toHaveLength(1),
+    );
+  });
+
+  it("Push 는 남길 변경이 없어도 눌린다 — 이미 쌓인 걸음을 보내는 길", async () => {
+    installDesktopGit({
+      status: { ...STATUS_WITH_CHANGES, changedCount: 0, ahead: 2, behind: 0 },
+      diff: { count: 0, files: [], diff: "" },
+    });
+    renderPanel(<AtlasGitPanel vaultPath="/repo/vault" />);
+    const push = await screen.findByTestId("atlas-git-remote-push");
+    expect(push).not.toBeDisabled();
+    fireEvent.click(push);
+    await waitFor(() => {
+      const calls = tauriApiMock.invoke.mock.calls.filter(([c]) => c === "git_snapshot");
+      expect(calls).toHaveLength(1);
+      expect(calls[0][1]).toMatchObject({ push: true });
+    });
+  });
+
+  it("보낼 곳이 없으면 세 버튼을 아예 안 그린다 — 누를 수 없는 것을 보여주지 않는다", async () => {
+    installDesktopGit({
+      status: { ...STATUS_WITH_CHANGES, upstream: null, ahead: null, behind: null },
+    });
+    renderPanel(<AtlasGitPanel vaultPath="/repo/vault" />);
+    await screen.findByTestId("atlas-git-location");
+    expect(screen.queryByTestId("atlas-git-remote-fetch")).toBeNull();
+    expect(screen.queryByTestId("atlas-git-remote-pull")).toBeNull();
+    expect(screen.queryByTestId("atlas-git-remote-push")).toBeNull();
+  });
+});
+
+describe("AtlasGitPanel — 걸음의 주어는 개념이다", () => {
+  /*
+   * 종전에는 커밋 **제목 문자열을 파싱해서** 무엇이 바뀌었는지 추측했다. 그건
+   * 우리 도구가 쓴 제목에만 맞고 사람이 쓴 커밋에는 안 맞아서, 실제 화면은
+   * 개념을 하나도 안 보여주고 제목만 나열했다(소유자 실측). #842 가 커밋별
+   * kind/slug 를 실어 보내므로 이제 추측하지 않는다.
+   */
+  const GRAPH = {
+    nodes: [
+      {
+        id: "capability:foo",
+        title: "Foo Capability",
+        display: "첫 실행 안내",
+        kind: "capability",
+        projectIds: [],
+        evidenceIds: ["capabilities/foo"],
+        hasOwnDocument: true,
+        agentSlug: "capabilities/foo",
+        ref: null,
+        lastApprovedAt: "",
+        lastApprovedBy: "",
+        summary: null,
+      },
+    ],
+    edges: [],
+  } as unknown as NonNullable<Parameters<typeof AtlasGitPanel>[0]["graph"]>;
+
+  const HISTORY_WITH_FILES = [
+    {
+      shortHash: "abc1234",
+      hash: "abc1234def5678",
+      subject: "fix: 사람이 직접 쓴 커밋 제목이라 파싱으로는 못 읽는다",
+      relativeTime: "2 hours ago",
+      isoTime: "2026-07-23T10:00:00+09:00",
+      files: [
+        {
+          path: "docs/capabilities/foo.md",
+          status: "modified",
+          kind: "capability",
+          slug: "capabilities/foo",
+          renamedFrom: null,
+        },
+      ],
+    },
+  ];
+
+  it("걸음 행이 커밋 제목이 아니라 개념 이름을 주어로 그린다", async () => {
+    installDesktopGit({ history: HISTORY_WITH_FILES });
+    renderPanel(<AtlasGitPanel vaultPath="/repo/vault" graph={GRAPH} />);
+    await screen.findByTestId("atlas-git-steps");
+    const step = screen.getByTestId("atlas-git-history-item");
+    expect(step).toHaveTextContent("첫 실행 안내");
+    // 원문은 사라지지 않는다 — 아래 줄에서 그 걸음을 구별해 준다.
+    expect(step).toHaveTextContent("사람이 직접 쓴 커밋 제목");
+  });
+
+  it("볼트의 개념이 아닌 파일만 건드린 걸음은 개념을 지어내지 않는다", async () => {
+    installDesktopGit({
+      history: [
+        {
+          ...HISTORY_WITH_FILES[0],
+          files: [
+            {
+              path: "README.md",
+              status: "modified",
+              kind: null,
+              slug: "README",
+              renamedFrom: null,
+            },
+          ],
+        },
+      ],
+    });
+    renderPanel(<AtlasGitPanel vaultPath="/repo/vault" graph={GRAPH} />);
+    await screen.findByTestId("atlas-git-steps");
+    expect(screen.getByTestId("atlas-git-history-item")).not.toHaveTextContent("첫 실행 안내");
+  });
+});
+
+describe("AtlasGitPanel — 고른 개념의 성질과 이웃", () => {
+  /*
+   * 「이 걸음을 지도에서 보기」를 없앤 자리다(소유자 판정: 여기서 다 보이게
+   * 하려던 건데 나가는 버튼을 둘 이유가 없다). 그래서 개념을 눌렀을 때 이
+   * 자리가 비어 있으면 그건 기능이 사라진 것이다.
+   */
+  const EGO_GRAPH = {
+    nodes: [
+      {
+        id: "capability:foo",
+        title: "Foo",
+        display: "첫 실행 안내",
+        kind: "capability",
+        projectIds: [],
+        evidenceIds: ["capabilities/foo"],
+        hasOwnDocument: true,
+        agentSlug: "capabilities/foo",
+        ref: null,
+        lastApprovedAt: "",
+        lastApprovedBy: "",
+        summary: null,
+      },
+      {
+        id: "domain:shell",
+        title: "Shell",
+        display: "온보딩·배포·앱 셸",
+        kind: "domain",
+        projectIds: [],
+        evidenceIds: ["domains/shell"],
+        hasOwnDocument: true,
+        agentSlug: "domains/shell",
+        ref: null,
+        lastApprovedAt: "",
+        lastApprovedBy: "",
+        summary: null,
+      },
+    ],
+    edges: [
+      {
+        id: "e1",
+        from: "domain:shell",
+        to: "capability:foo",
+        type: "contains",
+        projectIds: [],
+        evidenceIds: [],
+        lastApprovedAt: "",
+        lastApprovedBy: "",
+      },
+    ],
+  } as unknown as NonNullable<Parameters<typeof AtlasGitPanel>[0]["graph"]>;
+
+  const HISTORY = [
+    {
+      shortHash: "abc1234",
+      hash: "abc1234def5678",
+      subject: "fix: 무언가 고쳤다",
+      relativeTime: "2 hours ago",
+      isoTime: "2026-07-23T10:00:00+09:00",
+      files: [
+        {
+          path: "docs/capabilities/foo.md",
+          status: "modified",
+          kind: "capability",
+          slug: "capabilities/foo",
+          renamedFrom: null,
+        },
+      ],
+    },
+  ];
+
+  it("걸음을 펼치면 그 개념의 성질과 이웃이 그 자리에 뜬다", async () => {
+    installDesktopGit({ history: HISTORY });
+    renderPanel(<AtlasGitPanel vaultPath="/repo/vault" graph={EGO_GRAPH} />);
+    await screen.findByTestId("atlas-git-steps");
+    fireEvent.click(screen.getByTestId("atlas-git-history-item"));
+    const ego = await screen.findByTestId("atlas-git-concept-ego");
+    expect(ego).toHaveTextContent("첫 실행 안내");
+    // 소속 도메인은 belongsTo 이웃에서 온다 — 「속한 곳」이 그려져야 한다.
+    expect(ego).toHaveTextContent("속한 곳");
+  });
+
+  it("그래프가 없으면 (웹·미로드) 카드를 아예 안 그린다 — 빈 상자를 두지 않는다", async () => {
+    installDesktopGit({ history: HISTORY });
+    renderPanel(<AtlasGitPanel vaultPath="/repo/vault" />);
+    await screen.findByTestId("atlas-git-steps");
+    fireEvent.click(screen.getByTestId("atlas-git-history-item"));
+    expect(screen.queryByTestId("atlas-git-concept-ego")).toBeNull();
+  });
+});
+
+describe("AtlasGitPanel — 2단 작업대의 선택", () => {
+  /*
+   * 탭을 없앤 자리는 **선택**이 진다. 그래서 "고르면 오른쪽이 바뀐다" 가
+   * 동작하지 않으면 화면은 멀쩡해 보이면서 아무것도 못 하게 된다 — 탭이
+   * 있던 시절에는 최소한 탭이 눈에 보였다.
+   */
+  it("커밋을 고르면 오른쪽이 그 커밋의 상세로 바뀐다", async () => {
+    installDesktopGit();
+    renderPanel(<AtlasGitPanel vaultPath="/repo/vault" />);
+
+    // 기본은 미커밋(변경이 있으므로) — 상세는 아직 없다.
+    await screen.findByTestId("atlas-git-pending-row");
+    expect(screen.queryByTestId("atlas-git-history-detail")).toBeNull();
+
+    fireEvent.click(screen.getByTestId("atlas-git-history-item"));
+    expect(await screen.findByTestId("atlas-git-history-detail")).toHaveTextContent(
+      "abc1234def5678",
+    );
+    // 커밋을 고르면 미커밋 줄은 눌린 상태가 풀린다 — 둘이 동시에 열리지 않는다.
+    expect(screen.getByTestId("atlas-git-pending-row")).toHaveAttribute("aria-pressed", "false");
+  });
+
+  it("미커밋 줄로 되돌아오면 변경 내용이 다시 보인다", async () => {
+    installDesktopGit();
+    renderPanel(<AtlasGitPanel vaultPath="/repo/vault" />);
+    fireEvent.click(await screen.findByTestId("atlas-git-history-item"));
+    await screen.findByTestId("atlas-git-history-detail");
+
+    fireEvent.click(screen.getByTestId("atlas-git-pending-row"));
+    expect(await screen.findByTestId("atlas-git-diff-pre")).toHaveTextContent("+new line");
+    expect(screen.queryByTestId("atlas-git-history-detail")).toBeNull();
+  });
+
+  it("커밋할 게 없으면 미커밋 줄을 안 그린다 — 없는 것에 자리를 주지 않는다", async () => {
+    installDesktopGit({
+      status: { ...STATUS_WITH_CHANGES, changedCount: 0 },
+      diff: { count: 0, files: [], diff: "" },
+    });
+    renderPanel(<AtlasGitPanel vaultPath="/repo/vault" />);
+    await screen.findByTestId("atlas-git-steps");
+    expect(screen.queryByTestId("atlas-git-pending-row")).toBeNull();
   });
 });

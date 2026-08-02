@@ -13,8 +13,8 @@
 //   node scripts/perf-graph.mjs --check --runs=5
 //   node scripts/perf-graph.mjs --json
 
-import { performance } from "node:perf_hooks";
 import { randomUUID } from "node:crypto";
+import { performance } from "node:perf_hooks";
 
 import { compileOntology } from "../mcp/src/ontology-compiler.mjs";
 import { queryCompiledOntology } from "../mcp/src/ontology-engine.mjs";
@@ -73,6 +73,12 @@ function parseSize(value, flag) {
   return size;
 }
 
+/*
+ * 컴파일러가 노드마다 불변 `uid` 를 요구한다(2026-08-02 정체성 규칙). 벤치
+ * 픽스처는 손으로 쓴 것이 아니라 여기서 만들어지므로, 실제 볼트가 쓰는 것과
+ * 같은 방식(`randomUUID`)으로 만들어 준다 — 안 그러면 벤치가 컴파일 단계에서
+ * 죽고, 재는 대상(질의 성능)에 닿지도 못한다.
+ */
 function doc(slug, frontmatter, mtime = 1) {
   // Benchmark fixtures are ephemeral but still exercise the v2 identity
   // contract. Mint once when the fixture is created; repeated measurements

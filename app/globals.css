@@ -435,6 +435,10 @@
    * 마커: `data-testid="atlas-git-setup"` — 세 상태 모두 이 프레임을 쓴다는
    * 것을 unit test 가 고정한다.
    */
+  /* 셋업 기둥의 위 여백 — 세로 가운데 정렬(구 `m-auto`)을 대체한다. 화면이
+     커질수록 조금만 내려가고, 좁으면 붙는다. 값은 spacing 램프의 정규 스텝
+     사이(24~72px)이고 새 사다리를 만들지 않는다. */
+  --git-setup-top: clamp(24px, 7vh, 72px);
   --git-setup-measure: 520px;
 
   /*
@@ -2360,6 +2364,31 @@
     --topology-v2-node-stroke-domain: var(--topology-v2-ink-depth-top);
     --topology-v2-node-stroke-capability: var(--topology-v2-ink-depth-mid);
     --topology-v2-node-stroke-element: var(--topology-v2-ink-depth-leaf);
+    /* ── 기록 화면의 ego 미리보기 (`--git-ego-*`) ───────────────────────
+       한 개념의 1-depth 이웃을 그 자리에서 보이는 작은 그림. **지도가 아니다**
+       — 3천 노드를 탐색하는 자리가 아니라 여덟 남짓을 조회하는 자리라, 지도
+       사다리(30·17·11·7 = 4.3:1)를 그대로 쓰면 요소가 점이 된다. 순서는
+       지키고 폭만 압축한다.
+
+       축척은 **고정**이다. 시안에서 상자를 내용에 맞췄더니 개념마다 축척이
+       달라져 같은 종류 노드가 21~37px 사이를 오갔다(실측) — 그 크기 변화는
+       아무 사실도 안 나른다. 크기는 종류가 정하고, 붐빔은 **고리 반지름**이
+       나른다. */
+    --git-ego-r-self-project: 25;
+    --git-ego-r-self-domain: 21;
+    --git-ego-r-self-capability: 16;
+    --git-ego-r-self-element: 13.5;
+    --git-ego-r-nb-project: 14;
+    --git-ego-r-nb-domain: 12;
+    --git-ego-r-nb-capability: 9.5;
+    --git-ego-r-nb-element: 8;
+    /* 고리 반지름의 위·아래 — 이웃이 둘이면 가깝게, 여덟이면 넓게. */
+    --git-ego-ring-min: 74;
+    --git-ego-ring-max: 126;
+    /* 타원 비 — 그림 칸이 가로로 길다. 원으로 놓으면 세로가 먼저 차서 전체가
+       73% 로 줄었다(실측 채움률 24% → 42%). */
+    --git-ego-ellipse-x: 1.52;
+    --git-ego-ellipse-y: 0.8;
     --topology-v2-node-fill-dim: #1a1a1e;
     --topology-v2-node-stroke-dim: #2b2b2f;
     /* 최근 변경 스포트라이트 rest 알파 (협의회 설계 2026-07-23). product
