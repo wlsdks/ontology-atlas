@@ -106,9 +106,26 @@ describe("TopologyEmptyState", () => {
   it("빈 상태 패널은 큰 카드 대신 작은 상태 패널로 렌더", () => {
     renderEmpty(0);
     const panel = screen.getByRole("status");
-    expect(panel.className).toContain("rounded-lg");
+    // 반지름은 **램프 토큰**이 정한다. 종전엔 `rounded-lg`(Tailwind 기본)를
+    // 못박고 있었는데, 그건 이 저장소의 radius 램프 밖 값이라 규격을 지키는
+    // 것처럼 보이면서 실제로는 램프를 벗어난 자리를 고정하고 있었다.
+    expect(panel.className).toContain("rounded-[var(--radius-panel)]");
     expect(panel.className).not.toContain("rounded-2xl");
     expect(panel.className).not.toContain("p-8");
+  });
+
+  it("복구 행동은 폭이 전부 같다 — 글자 수가 치수를 정하지 않는다", () => {
+    /*
+     * 종전은 `flex-wrap justify-center` 라 버튼 폭이 글자 수로 정해지고
+     * 줄바꿈 자리도 글자 수가 정했다(넷이 1·2·1 계단). 치수 규칙성 위반이고,
+     * 되돌리면 여기가 터진다.
+     */
+    renderEmpty(0);
+    const actions = [...screen.queryAllByRole("link"), ...screen.queryAllByRole("button")];
+    expect(actions.length).toBeGreaterThan(1);
+    for (const action of actions) {
+      expect(action.className).toContain("w-full");
+    }
   });
 
   it("모든 복구 CTA 는 키보드 focus 링을 가진다 (focus-visible, WCAG 2.4.7)", () => {

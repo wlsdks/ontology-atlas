@@ -1,18 +1,33 @@
 "use client";
 
+import { useEffect, useMemo, useState } from "react";
+import { cn } from "@/shared/lib/cn";
 import { TopologyV2KindGlyph } from "@/shared/ui/topology-v2-kind-glyph";
 import type { GitChangeEntry } from "@/shared/lib/tauri-git";
 import type { ConceptEgo } from "../model/build-concept-ego";
 import { ConceptEgoCard } from "./ConceptEgoCard";
 
 /**
- * 한 커밋이 **무엇을 바꿨나** — 제목/해시 → 바뀐 개념 → 고른 개념 → 바뀐 파일
- * → 바뀐 내용.
+ * 한 걸음이 **무엇을 바꿨나** — 정체(제목·해시)는 늘 위에, 나머지는 두 렌즈.
  *
- * 구획을 **전폭으로 쌓는다**(시안 실측: 76 / 82 / 386 / 100 / 428px, 카드 0개).
- * 종전엔 이 내용을 카드 한 장에 담았는데, 그러면 ① 열의 60%가 카드 밑에서
- * 비고 ② 라우트 하나가 통째로 한 표면인 자리에 테두리가 또 생겨 «화면 안의
- * 화면»으로 읽힌다. 구획의 경계는 테두리가 아니라 **구분선 하나**가 진다.
+ * ## 왜 여기는 탭인가 — 목록의 탭은 왜 거절했나 (2026-08-03)
+ *
+ * 두 자리에서 같은 낱말이 정반대 뜻을 갖는다. **목록**에 탭을 두자는 안은
+ * 거절했다: 거기 갈리는 것은 «저장소의 상태»(커밋 안 함 · 안 보냄 · 원격에만
+ * 있음)이고, 탭은 각 칸이 나머지를 **숨긴다** — 아직 안 보낸 게 있다는 사실이
+ * 다른 탭 뒤에 있으면 그건 없는 것과 같다. 이 저장소에 그러지 말자는 결정과
+ * 그것을 지키는 테스트가 이미 있다(「커밋 이력이 탭 뒤에 숨지 않는다」).
+ *
+ * **여기서 갈리는 것은 상태가 아니라 렌즈다.** 「개념」과 「파일」은 *이미 고른
+ * 걸음 하나*를 보는 두 방식이고, 정체는 탭 위에 남아 어느 렌즈에서도 안
+ * 사라진다. 숨는 것은 사실이 아니라 **표현**이다.
+ *
+ * 그리고 실측이 이 전환을 요구했다: 다섯 구획을 한 기둥에 쌓으니 오른쪽 열이
+ * 2,000px 스크롤이 됐고, 「바뀐 내용」은 파일 넷의 patch 를 통째로 이어 붙여
+ * 지금 어느 파일을 보고 있는지가 **스크롤 위치로만** 정해졌다(소유자 지적:
+ * *"너무 많은걸 스크롤로 다 표현하려는것같긴 해서"*).
+ *
+ * 그래서 파일 목록은 **고르는 것**이 됐다 — 누른 파일의 patch 만 아래에 선다.
  */
 export interface CommitConcept {
   id: string;
@@ -20,7 +35,9 @@ export interface CommitConcept {
   kind: string;
 }
 
-/** 구획 하나 — 라벨(+수/힌트) 위, 내용 아래, 아래 구분선. */
+type Lens = "concepts" | "files";
+
+/** 구획 하나 — 라벨(+수/힌트) 위, 내용 아래. */
 function Section({
   label,
   note,
@@ -31,7 +48,7 @@ function Section({
   children: React.ReactNode;
 }) {
   return (
-    <section className="flex flex-none flex-col gap-2.5 border-b border-[color:var(--color-divider)] px-5 py-4">
+    <section className="flex flex-none flex-col gap-2.5 px-5 py-4">
       <h3 className="flex items-baseline gap-2 text-label text-[color:var(--color-text-tertiary)]">
         {label}
         {note ? (
@@ -74,13 +91,34 @@ export function CommitDetail({
   kindLabel: (kind: string) => string;
 }) {
   const focused = focusedConceptId ?? concepts[0]?.id ?? null;
+
+  /*
+   * 기본 렌즈는 **개념**이다. 이 제품이 git 클라이언트와 갈리는 지점이 거기라서
+   * 다 — 파일 목록은 어느 도구에나 있고 「이 걸음이 어느 개념을 건드렸나」는
+   * 여기에만 있다. 개념이 하나도 없는 걸음(설정 파일만 고친 것 등)에서만 파일로
+   * 연다 — 기본값이 빈 칸이면 그건 기본값이 아니다.
+   */
+  const [lens, setLens] = useState<Lens>(concepts.length > 0 ? "concepts" : "files");
+  const [openFile, setOpenFile] = useState<string | null>(null);
+
+  // 걸음이 바뀌면 렌즈와 고른 파일이 따라온다 — 남의 걸음의 선택을 물려받으면
+  // 화면이 「왜 이걸 보고 있지」가 된다.
+  useEffect(() => {
+    setLens(concepts.length > 0 ? "concepts" : "files");
+    setOpenFile(null);
+  }, [hash, concepts.length]);
+
+  const perFile = useMemo(() => splitDiffByFile(diff ?? ""), [diff]);
+  const activeFile = openFile ?? files[0]?.path ?? null;
+  const activePatch = activeFile ? findPatch(perFile, activeFile) : null;
+
   return (
     <div
       className="git-fade-in flex min-h-0 flex-1 flex-col"
       data-testid="atlas-git-history-detail"
     >
-      {/* 머리 — 이 걸음의 이름이 주목 승자다. 해시·시각은 그 아래 캡션. */}
-      <header className="flex flex-none flex-col gap-1 border-b border-[color:var(--color-divider)] px-5 py-4">
+      {/* 정체 — 어느 렌즈에서도 안 사라진다. */}
+      <header className="flex flex-none flex-col gap-1 px-5 pt-4 pb-3">
         <p className="text-body-lg font-semibold text-[color:var(--color-text-primary)]">
           {subject}
         </p>
@@ -89,97 +127,130 @@ export function CommitDetail({
         </p>
       </header>
 
-      {concepts.length > 0 ? (
-        <Section label={t("changedConcepts")} note={String(concepts.length)}>
-          <div className="flex flex-wrap gap-1.5">
-            {concepts.map((concept) => (
-              <button
-                key={concept.id}
-                type="button"
-                data-testid="atlas-git-concept-chip"
-                aria-pressed={focused === concept.id}
-                onClick={() => setFocusedConceptId(concept.id)}
-                className="inline-flex min-h-7 items-center gap-1.5 rounded-[var(--radius-chip)] border border-[color:var(--color-border-soft)] px-2.5 py-0.5 text-label text-[color:var(--color-text-secondary)] transition-colors hover:border-[color:var(--color-indigo-a46)] hover:text-[color:var(--color-text-primary)] aria-pressed:border-[color:var(--color-indigo-a46)] aria-pressed:bg-[color:var(--color-indigo-a16)] aria-pressed:text-[color:var(--color-text-primary)]"
-              >
-                <TopologyV2KindGlyph kind={concept.kind} size={12} />
-                {concept.label}
-              </button>
-            ))}
-          </div>
-        </Section>
-      ) : null}
-
-      {focused ? (
-        <Section label={t("egoHeading")} note={t("egoHint")}>
-          <ConceptEgoCard
-            ego={egoFor(focused)}
-            t={t}
-            kindLabel={kindLabel}
-            onSelect={setFocusedConceptId}
-          />
-        </Section>
-      ) : null}
-
-      {files.length > 0 ? (
-        <Section label={t("changedFiles")} note={String(files.length)}>
-          <ul className="flex flex-col gap-1">
-            {files.map((file) => (
-              <li
-                key={file.path}
-                data-testid="atlas-git-commit-file"
-                className="flex min-w-0 items-center gap-2.5"
-              >
-                <span
-                  aria-hidden
-                  className="grid size-[18px] shrink-0 place-items-center rounded-[var(--radius-chip)] border border-[color:var(--color-border-soft)] font-mono text-caption text-[color:var(--color-text-tertiary)]"
-                >
-                  {statusMark(file.status)}
-                </span>
-                <span className="min-w-0 truncate font-mono text-caption text-[color:var(--color-text-secondary)]">
-                  {file.path}
-                </span>
-              </li>
-            ))}
-          </ul>
-        </Section>
-      ) : null}
-
-      {/* 바뀐 내용 — 이 걸음이 문서에 **실제로 쓴 것**. 요약이 아니라 원문이라
-          사용자가 터미널에서 보던 것과 같은 문자열이다. */}
-      <section className="flex flex-none flex-col gap-2.5 px-5 py-4">
-        <h3 className="text-label text-[color:var(--color-text-tertiary)]">
-          {t("changedLines")}
-        </h3>
-        {diff === null ? (
-          <p className="text-caption text-[color:var(--color-text-quaternary)]">
-            {t("diffLoading")}
-          </p>
-        ) : diff.trim() === "" ? (
-          <p className="text-caption text-[color:var(--color-text-quaternary)]">
-            {t("diffEmpty")}
-          </p>
-        ) : (
-          <div
-            data-testid="atlas-git-commit-diff"
-            className="max-h-[var(--git-commit-diff-max-h)] overflow-auto rounded-[var(--radius-panel)] border border-[color:var(--color-border-soft)] bg-[color:var(--color-canvas)] py-1.5 font-mono text-caption leading-relaxed"
+      {/* 렌즈 — 수를 라벨에 싣는다. 「개념」만 써 두면 몇 개인지 눌러 봐야 알고,
+          그러면 탭이 표현이 아니라 **사실**을 숨긴 것이 된다. */}
+      <div
+        role="tablist"
+        aria-label={t("lensLabel")}
+        className="flex flex-none items-center gap-1 border-b border-[color:var(--color-divider)] px-5"
+      >
+        {(["concepts", "files"] as const).map((id) => (
+          <button
+            key={id}
+            role="tab"
+            type="button"
+            data-testid={`atlas-git-lens-${id}`}
+            aria-selected={lens === id}
+            onClick={() => setLens(id)}
+            className="-mb-px inline-flex min-h-9 items-center gap-1.5 border-b-2 border-transparent px-2.5 text-label text-[color:var(--color-text-tertiary)] transition-colors hover:text-[color:var(--color-text-primary)] aria-selected:border-[color:var(--color-indigo-brand)] aria-selected:font-medium aria-selected:text-[color:var(--color-text-primary)]"
           >
-            {readDiff(diff).map((row, index) =>
-              row.kind === "file" ? (
-                <p
-                  key={index}
-                  className="mt-1.5 border-y border-[color:var(--color-divider)] bg-[color:var(--color-overlay-1)] px-3 py-1.5 text-[color:var(--color-text-secondary)] first:mt-0"
-                >
-                  {row.text}
+            {id === "concepts" ? t("changedConcepts") : t("changedFiles")}
+            <b className="font-normal tabular-nums text-[color:var(--color-text-quaternary)]">
+              {id === "concepts" ? concepts.length : files.length}
+            </b>
+          </button>
+        ))}
+      </div>
+
+      <div key={lens} className="git-fade-in flex min-h-0 flex-1 flex-col">
+        {lens === "concepts" ? (
+          concepts.length > 0 ? (
+            <>
+              {/* 탭이 이미 「바뀐 개념 N」이라고 말했다 — 바로 밑에서 같은 말을
+                  또 하면 두 번째 것은 잉크만 쓰고 아무것도 안 말한다. */}
+              <div className="flex flex-none flex-col gap-2.5 px-5 pt-4">
+                <div className="flex flex-wrap gap-1.5">
+                  {concepts.map((concept) => (
+                    <button
+                      key={concept.id}
+                      type="button"
+                      data-testid="atlas-git-concept-chip"
+                      aria-pressed={focused === concept.id}
+                      onClick={() => setFocusedConceptId(concept.id)}
+                      className="inline-flex min-h-7 items-center gap-1.5 rounded-[var(--radius-chip)] border border-[color:var(--color-border-soft)] px-2.5 py-0.5 text-label text-[color:var(--color-text-secondary)] transition-colors hover:border-[color:var(--color-indigo-a46)] hover:text-[color:var(--color-text-primary)] aria-pressed:border-[color:var(--color-indigo-a46)] aria-pressed:bg-[color:var(--color-indigo-a16)] aria-pressed:text-[color:var(--color-text-primary)]"
+                    >
+                      <TopologyV2KindGlyph kind={concept.kind} size={12} />
+                      {concept.label}
+                    </button>
+                  ))}
+                </div>
+              </div>
+              {focused ? (
+                <Section label={t("egoHeading")} note={t("egoHint")}>
+                  <ConceptEgoCard
+                    ego={egoFor(focused)}
+                    t={t}
+                    kindLabel={kindLabel}
+                    onSelect={setFocusedConceptId}
+                  />
+                </Section>
+              ) : null}
+            </>
+          ) : (
+            <p className="px-5 py-6 text-label text-[color:var(--color-text-quaternary)]">
+              {t("stepNoConcepts")}
+            </p>
+          )
+        ) : (
+          <>
+            {/* 파일은 **고르는 것**이다. 넷의 patch 를 이어 붙이면 지금 어느
+                파일을 보고 있는지가 스크롤 위치로만 정해진다. */}
+            <ul
+              data-testid="atlas-git-file-list"
+              className="flex flex-none flex-col border-b border-[color:var(--color-divider)]"
+            >
+              {files.map((file) => (
+                <li key={file.path}>
+                  <button
+                    type="button"
+                    data-testid="atlas-git-commit-file"
+                    aria-pressed={activeFile === file.path}
+                    onClick={() => setOpenFile(file.path)}
+                    className="flex min-h-8 w-full min-w-0 items-center gap-2.5 border-l-2 border-l-transparent px-5 text-left transition-colors hover:bg-[color:var(--color-overlay-1)] aria-pressed:border-l-[color:var(--color-indigo-brand)] aria-pressed:bg-[color:var(--color-overlay-2)]"
+                  >
+                    <span
+                      aria-hidden
+                      className="grid size-[18px] shrink-0 place-items-center rounded-[var(--radius-chip)] border border-[color:var(--color-border-soft)] font-mono text-caption text-[color:var(--color-text-tertiary)]"
+                    >
+                      {statusMark(file.status)}
+                    </span>
+                    <span className="min-w-0 truncate font-mono text-caption text-[color:var(--color-text-secondary)]">
+                      {file.path}
+                    </span>
+                  </button>
+                </li>
+              ))}
+            </ul>
+
+            <div className="flex min-h-0 flex-1 flex-col gap-2.5 px-5 py-4">
+              <h3 className="flex-none text-label text-[color:var(--color-text-tertiary)]">
+                {t("changedLines")}
+              </h3>
+              {diff === null ? (
+                <p className="text-caption text-[color:var(--color-text-quaternary)]">
+                  {t("diffLoading")}
+                </p>
+              ) : !activePatch || activePatch.length === 0 ? (
+                <p className="text-caption text-[color:var(--color-text-quaternary)]">
+                  {t("diffEmpty")}
                 </p>
               ) : (
-                <p key={index} className={diffRowClass(row.kind)}>
-                  {row.text === "" ? " " : row.text}
-                </p>
-              ),
-            )}
-          </div>
+                <div
+                  key={activeFile}
+                  data-testid="atlas-git-commit-diff"
+                  className="git-fade-in min-h-0 flex-1 overflow-auto rounded-[var(--radius-panel)] border border-[color:var(--color-border-soft)] bg-[color:var(--color-canvas)] py-1.5 font-mono text-caption leading-relaxed"
+                >
+                  {activePatch.map((row, index) => (
+                    <p key={index} className={diffRowClass(row.kind)}>
+                      {row.text === "" ? " " : row.text}
+                    </p>
+                  ))}
+                </div>
+              )}
+            </div>
+          </>
         )}
-      </section>
+      </div>
     </div>
   );
 }
@@ -198,30 +269,26 @@ function statusMark(status: string): string {
   }
 }
 
-type DiffRow = { kind: "file" | "hunk" | "add" | "del" | "ctx"; text: string };
+type DiffRow = { kind: "hunk" | "add" | "del" | "ctx"; text: string };
 
 /**
- * patch 원문 → 훑을 수 있는 행.
+ * patch 원문 → **파일별** 행 묶음.
  *
- * 소유자 지적(2026-08-02): *"바뀐 내용은 구분도 못하겠다"*. 원인 둘이었다 —
+ * 잡음을 걷는 이유(2026-08-02): `diff --git a/… b/…` · `index 05d74bf..e04bf82` ·
+ * `--- a/…` · `+++ b/…` 네 줄이 파일마다 붙는데, 이 넷이 말하는 것은 **파일
+ * 이름 하나**다. 그 이름은 이제 위 목록이 나르므로 여기서는 통째로 버린다.
  *
- * ① **잡음이 절반이었다.** `diff --git a/… b/…` · `index 05d74bf..e04bf82` ·
- *    `--- a/…` · `+++ b/…` 네 줄이 파일마다 붙는데, 이 넷이 말하는 것은 **파일
- *    이름 하나**다. 넷을 접어 머리 한 줄로 바꾼다.
- * ② **잉크만 있고 면이 없었다.** 추가/삭제가 글자색으로만 갈렸는데, 그 색은
- *    `+`/`-` 한 글자에만 붙어 훑는 눈에는 안 잡힌다. 행 전체에 얕은 면을 준다 —
- *    승인된 신호 램프의 알파이고 새 값은 아니다.
- *
- * 색은 여전히 **두 번째 채널**이다. 줄머리 부호가 그대로 남아 색약 사용자도
- * 같은 구분을 얻는다.
+ * 색은 **두 번째 채널**이다 — 줄머리 부호가 그대로 남아 색약 사용자도 같은
+ * 구분을 얻는다.
  */
-function readDiff(patch: string): DiffRow[] {
-  const rows: DiffRow[] = [];
+function splitDiffByFile(patch: string): { path: string; rows: DiffRow[] }[] {
+  const blocks: { path: string; rows: DiffRow[] }[] = [];
+  let current: { path: string; rows: DiffRow[] } | null = null;
   for (const line of patch.split("\n")) {
     if (line.startsWith("diff --git ")) {
-      // `a/경로 b/경로` 중 뒤쪽(현재 이름)만 남긴다.
       const to = line.slice(line.indexOf(" b/") + 3);
-      rows.push({ kind: "file", text: to || line });
+      current = { path: to || line, rows: [] };
+      blocks.push(current);
       continue;
     }
     if (
@@ -235,29 +302,46 @@ function readDiff(patch: string): DiffRow[] {
     ) {
       continue;
     }
-    if (line.startsWith("@@")) {
-      rows.push({ kind: "hunk", text: line });
-      continue;
-    }
-    if (line.startsWith("+")) rows.push({ kind: "add", text: line });
-    else if (line.startsWith("-")) rows.push({ kind: "del", text: line });
-    else rows.push({ kind: "ctx", text: line });
+    if (!current) continue;
+    if (line.startsWith("@@")) current.rows.push({ kind: "hunk", text: line });
+    else if (line.startsWith("+")) current.rows.push({ kind: "add", text: line });
+    else if (line.startsWith("-")) current.rows.push({ kind: "del", text: line });
+    else current.rows.push({ kind: "ctx", text: line });
   }
-  // 꼬리 빈 줄은 patch 의 끝 개행이지 내용이 아니다.
-  while (rows.length > 0 && rows[rows.length - 1].text.trim() === "") rows.pop();
-  return rows;
+  for (const block of blocks) {
+    while (block.rows.length > 0 && block.rows[block.rows.length - 1].text.trim() === "") {
+      block.rows.pop();
+    }
+  }
+  return blocks;
+}
+
+/**
+ * 파일 경로로 patch 를 찾는다. **꼬리 맞춤**으로도 무는 이유: 목록의 경로는
+ * vault 기준이고 patch 의 경로는 저장소 뿌리 기준이라, vault 가 하위 폴더면
+ * 앞이 다르다. 정확히 같은 것을 먼저 보고, 없으면 꼬리로 문다.
+ */
+function findPatch(
+  blocks: { path: string; rows: DiffRow[] }[],
+  path: string,
+): DiffRow[] | null {
+  const exact = blocks.find((b) => b.path === path);
+  if (exact) return exact.rows;
+  const tail = blocks.find((b) => b.path.endsWith(path) || path.endsWith(b.path));
+  return tail?.rows ?? null;
 }
 
 function diffRowClass(kind: DiffRow["kind"]): string {
   const base = "px-3 whitespace-pre-wrap break-all";
-  if (kind === "hunk") {
-    return `${base} mt-1 text-[color:var(--color-text-quaternary)]`;
-  }
+  if (kind === "hunk") return cn(base, "mt-1 text-[color:var(--color-text-quaternary)]");
   if (kind === "add") {
-    return `${base} bg-[color:var(--color-success-a12)] text-[color:var(--color-success-text-a90)]`;
+    return cn(
+      base,
+      "bg-[color:var(--color-success-a12)] text-[color:var(--color-success-text-a90)]",
+    );
   }
   if (kind === "del") {
-    return `${base} bg-[color:var(--color-danger-a10)] text-[color:var(--color-danger-text)]`;
+    return cn(base, "bg-[color:var(--color-danger-a10)] text-[color:var(--color-danger-text)]");
   }
-  return `${base} text-[color:var(--color-text-tertiary)]`;
+  return cn(base, "text-[color:var(--color-text-tertiary)]");
 }

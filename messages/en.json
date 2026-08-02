@@ -3261,6 +3261,7 @@
     "remoteOnlyTitle": "{count} step(s) only on the remote",
     "remoteOnlyHint": "Click to pull them in",
     "messageLabel": "Commit subject",
+    "lensLabel": "View",
     "pendingNow": "now",
     "pendingHint": "{count} file(s) · commit to add to the history",
     "ladderStart": "Connect git",
