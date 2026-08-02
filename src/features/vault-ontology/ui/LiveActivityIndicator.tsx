@@ -328,7 +328,7 @@ export function LiveActivityBadge({
         aria-controls={open ? popoverId : undefined}
         aria-expanded={open}
         onClick={() => setOpen((current) => !current)}
-        className="inline-flex h-8 cursor-pointer list-none items-center gap-1.5 rounded-md border border-[color:var(--color-indigo-a32)] bg-[color:var(--color-indigo-a10)] px-2.5 text-[11px] text-[color:var(--color-indigo-accent)] transition-colors hover:border-[color:var(--color-indigo-a50)] hover:bg-[color:var(--color-indigo-a14)]"
+        className="inline-flex h-8 cursor-pointer list-none items-center gap-1.5 rounded-chip border border-[color:var(--color-indigo-a32)] bg-[color:var(--color-indigo-a10)] px-2.5 text-[11px] text-[color:var(--color-indigo-accent)] transition-colors hover:border-[color:var(--color-indigo-a50)] hover:bg-[color:var(--color-indigo-a14)]"
       >
         <span aria-hidden className="inline-block h-1.5 w-1.5 rounded-full bg-[color:var(--color-status-success)]" />
         <span className="font-mono uppercase tracking-[0.10em]">{labels.live}</span>
@@ -356,7 +356,7 @@ export function LiveActivityBadge({
         id={popoverId}
         role="dialog"
         aria-label={labels.summaryTitle}
-        className="absolute right-0 top-9 z-50 w-64 rounded-lg border border-[color:var(--color-border-soft)] bg-[color:var(--color-panel)] p-3 text-left shadow-[var(--shadow-elevation-1)]"
+        className="absolute right-0 top-9 z-50 w-64 rounded-card border border-[color:var(--color-border-soft)] bg-[color:var(--color-panel)] p-3 text-left shadow-[var(--shadow-elevation-1)]"
       >
         <div className="flex items-start justify-between gap-3">
           <p className="font-mono text-[9px] uppercase tracking-[0.12em] text-[color:var(--color-indigo-accent)]">
@@ -409,7 +409,7 @@ export function LiveActivityBadge({
                 </span>
               </p>
               {agentActivityStatus.stale ? (
-                <div className="grid gap-1.5 rounded-md border border-[color:var(--color-amber-docs-a28)] bg-[color:var(--color-amber-docs-a08)] px-2 py-1.5">
+                <div className="grid gap-1.5 rounded-chip border border-[color:var(--color-amber-docs-a28)] bg-[color:var(--color-amber-docs-a08)] px-2 py-1.5">
                   <p className="break-keep text-[10px] leading-4 text-[color:var(--color-amber-docs-a95)]">
                     {labels.agentStaleAudit}
                   </p>
@@ -449,7 +449,7 @@ export function LiveActivityBadge({
                 </p>
               ) : null}
               {heartbeat.focus.ontologySlug ? (
-                <div className="grid gap-1 rounded-md border border-[color:var(--color-border-soft)] bg-[color:var(--color-overlay-1)] px-2 py-1.5">
+                <div className="grid gap-1 rounded-chip border border-[color:var(--color-border-soft)] bg-[color:var(--color-overlay-1)] px-2 py-1.5">
                   <p className="break-all font-mono text-[10px] text-[color:var(--color-text-tertiary)]">
                     {labels.agentSlug} {heartbeat.focus.ontologySlug}
                   </p>
@@ -517,7 +517,7 @@ export function LiveActivityBadge({
                   </div>
                   <div
                     aria-label={labels.agentProofTrail}
-                    className="grid gap-1 rounded-md border border-[color:var(--color-border-soft)] bg-[color:var(--color-overlay-1)] px-2 py-1.5"
+                    className="grid gap-1 rounded-chip border border-[color:var(--color-border-soft)] bg-[color:var(--color-overlay-1)] px-2 py-1.5"
                   >
                     <p className="font-mono text-[9px] uppercase tracking-[0.10em] text-[color:var(--color-text-quaternary)]">
                       {labels.agentProofTrail}
@@ -541,7 +541,7 @@ export function LiveActivityBadge({
                   무관) 항상 "이 신호 지우기" 안내 + 복사 가능한 CLI 명령을 노출한다
                   — 얕게(안내 카피만)도 허용되는 조건이라 실제 파일 삭제는 하지
                   않는다(로컬 쓰기는 CLI/에이전트의 역할). */}
-              <div className="grid gap-1 rounded-md border border-[color:var(--color-border-soft)] bg-[color:var(--color-overlay-1)] px-2 py-1.5">
+              <div className="grid gap-1 rounded-chip border border-[color:var(--color-border-soft)] bg-[color:var(--color-overlay-1)] px-2 py-1.5">
                 <p className="break-keep text-[10px] leading-4 text-[color:var(--color-text-tertiary)]">
                   {labels.clearSignalHint}
                 </p>

@@ -109,7 +109,7 @@ export function DependencyPicker({
   };
 
   return (
-    <div className="flex flex-col gap-3 rounded-lg border border-[color:var(--color-divider)] bg-[color:var(--color-panel)] p-3">
+    <div className="flex flex-col gap-3 rounded-card border border-[color:var(--color-divider)] bg-[color:var(--color-panel)] p-3">
       {/* 선택된 칩 */}
       {selected.length > 0 ? (
         <div className="flex flex-wrap gap-1.5">
@@ -120,7 +120,7 @@ export function DependencyPicker({
               type="button"
               onClick={() => removeOne(p.slug)}
               className={cn(
-                'group flex items-center gap-1.5 rounded-full border px-2.5 py-1 text-xs transition-colors',
+                'group flex items-center gap-1.5 rounded-full border px-2.5 py-1 text-body transition-colors',
                 p.isHub
                   ? 'border-[color:var(--color-indigo-brand)] bg-[color:var(--color-indigo-a20)] text-[color:var(--color-indigo-accent)]'
                   : 'border-[color:var(--color-indigo-brand)] bg-[color:var(--color-indigo-a12)] text-[color:var(--color-text-primary)]',
@@ -135,7 +135,7 @@ export function DependencyPicker({
           ))}
         </div>
       ) : (
-        <p className="text-xs text-[color:var(--color-text-quaternary)]">
+        <p className="text-body text-[color:var(--color-text-quaternary)]">
           {t('emptyHint')}
         </p>
       )}
@@ -143,7 +143,7 @@ export function DependencyPicker({
       {visibleSuggestions.length > 0 && (
         <div
           data-testid="dependency-suggestions-group"
-          className="flex flex-col gap-2 rounded-lg border border-dashed border-[color:var(--color-indigo-a34)] bg-[color:var(--color-indigo-a06)] p-3"
+          className="flex flex-col gap-2 rounded-card border border-dashed border-[color:var(--color-indigo-a34)] bg-[color:var(--color-indigo-a06)] p-3"
         >
           <div className="flex items-center gap-1.5">
             <Sparkles
@@ -160,10 +160,10 @@ export function DependencyPicker({
               <div
                 key={suggestion.slug}
                 data-testid={`dependency-suggestion-${suggestion.slug}`}
-                className="flex items-center justify-between gap-2 rounded-md border border-dashed border-[color:var(--color-indigo-a30)] bg-[color:var(--color-overlay-1)] px-2.5 py-1.5"
+                className="flex items-center justify-between gap-2 rounded-chip border border-dashed border-[color:var(--color-indigo-a30)] bg-[color:var(--color-overlay-1)] px-2.5 py-1.5"
               >
                 <div className="flex min-w-0 flex-1 flex-col gap-0.5">
-                  <span className="truncate text-xs text-[color:var(--color-text-primary)]">
+                  <span className="truncate text-body text-[color:var(--color-text-primary)]">
                     {suggestion.name}
                   </span>
                   <span className="truncate text-[10px] text-[color:var(--color-text-tertiary)]">
@@ -210,7 +210,7 @@ export function DependencyPicker({
       {missingSelected.length > 0 && (
         <div
           data-testid="dependency-missing-group"
-          className="flex flex-col gap-2 rounded-lg border border-[color:var(--color-amber-source-a25)] bg-[color:var(--color-amber-source-a08)] p-3"
+          className="flex flex-col gap-2 rounded-card border border-[color:var(--color-amber-source-a25)] bg-[color:var(--color-amber-source-a08)] p-3"
         >
           <p className="font-mono text-[10px] uppercase tracking-[0.1em] text-[color:var(--color-status-warning)]">
             {t('missingHeading')}
@@ -222,7 +222,7 @@ export function DependencyPicker({
                 data-testid={`dependency-missing-${slug}`}
                 type="button"
                 onClick={() => removeOne(slug)}
-                className="group flex items-center gap-1.5 rounded-full border border-[color:var(--color-amber-source-a35)] bg-[color:var(--color-amber-source-a12)] px-2.5 py-1 text-xs text-[color:var(--color-status-warning)]"
+                className="group flex items-center gap-1.5 rounded-full border border-[color:var(--color-amber-source-a35)] bg-[color:var(--color-amber-source-a12)] px-2.5 py-1 text-body text-[color:var(--color-status-warning)]"
               >
                 <span>{slug}</span>
                 <X
@@ -232,7 +232,7 @@ export function DependencyPicker({
               </button>
             ))}
           </div>
-          <p className="text-xs text-[color:var(--color-text-secondary)]">
+          <p className="text-body text-[color:var(--color-text-secondary)]">
             {t('missingHint')}
           </p>
         </div>
@@ -248,14 +248,14 @@ export function DependencyPicker({
           onChange={(e) => setQuery(e.target.value)}
           placeholder={t('searchPlaceholder')}
           aria-label={t('searchPlaceholder')}
-          className="flex-1 bg-transparent text-xs text-[color:var(--color-text-primary)] placeholder:text-[color:var(--color-text-quaternary)] focus:outline-none"
+          className="flex-1 bg-transparent text-body text-[color:var(--color-text-primary)] placeholder:text-[color:var(--color-text-quaternary)] focus:outline-none"
         />
       </div>
 
       {/* 미선택 목록 */}
       <div className="flex max-h-48 flex-wrap gap-1.5 overflow-y-auto">
         {filtered.length === 0 ? (
-          <p className="text-xs text-[color:var(--color-text-quaternary)]">{t('noMatch')}</p>
+          <p className="text-body text-[color:var(--color-text-quaternary)]">{t('noMatch')}</p>
         ) : (
           filtered.map((p) => (
             <button
@@ -265,7 +265,7 @@ export function DependencyPicker({
               onClick={() => toggle(p.slug)}
               disabled={invalidSlugSet.has(p.slug)}
               className={cn(
-                'flex items-center gap-1.5 rounded-full border border-[color:var(--color-divider)] bg-transparent px-2.5 py-1 text-xs text-[color:var(--color-text-tertiary)] transition-colors',
+                'flex items-center gap-1.5 rounded-full border border-[color:var(--color-divider)] bg-transparent px-2.5 py-1 text-body text-[color:var(--color-text-tertiary)] transition-colors',
                 'hover:border-[color:var(--color-border-strong)] hover:text-[color:var(--color-text-primary)]',
                 'disabled:cursor-not-allowed disabled:border-[color:var(--color-overlay-2)] disabled:text-[color:var(--color-text-quaternary)]',
               )}

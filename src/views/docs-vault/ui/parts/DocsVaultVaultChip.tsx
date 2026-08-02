@@ -49,7 +49,7 @@ export function DocsVaultVaultChip({
         aria-haspopup="menu"
         aria-expanded={open}
         aria-label={t("vaultChip.menuAriaLabel")}
-        className="inline-flex h-7 min-w-0 max-w-[200px] flex-none items-center gap-1.5 rounded-md border border-[color:var(--color-border-soft)] bg-[color:var(--color-overlay-1)] px-2 font-mono text-label text-[color:var(--color-text-tertiary)] transition-colors hover:border-[color:var(--color-indigo-line-a32)] hover:text-[color:var(--color-text-primary)]"
+        className="inline-flex h-7 min-w-0 max-w-[200px] flex-none items-center gap-1.5 rounded-chip border border-[color:var(--color-border-soft)] bg-[color:var(--color-overlay-1)] px-2 font-mono text-label text-[color:var(--color-text-tertiary)] transition-colors hover:border-[color:var(--color-indigo-line-a32)] hover:text-[color:var(--color-text-primary)]"
       >
         <HardDrive size={12} aria-hidden className="flex-none" />
         <span className="hidden min-w-0 truncate text-[color:var(--color-text-secondary)] sm:inline">

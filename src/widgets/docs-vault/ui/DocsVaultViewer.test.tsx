@@ -83,7 +83,7 @@ describe("DocsVaultViewer", () => {
 
     expect(cell.className).toContain("[&_a]:min-h-8");
     expect(cell.className).toContain("[&_a]:inline-flex");
-    expect(cell.className).toContain("[&_a]:rounded-md");
+    expect(cell.className).toContain("[&_a]:rounded-chip");
   });
 
   it("routes a vault-external relative .md link to GitHub blob instead of a dead app 404", async () => {

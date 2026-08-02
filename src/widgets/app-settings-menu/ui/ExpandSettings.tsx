@@ -76,7 +76,7 @@ export function ExpandSettings() {
         {t('caption')}
       </p>
 
-      <div className="grid min-w-0 gap-0.5 rounded-lg border border-[color:var(--color-border-soft)] p-2">
+      <div className="grid min-w-0 gap-0.5 rounded-card border border-[color:var(--color-border-soft)] p-2">
         <Choice
           label={t('affordanceLabel')}
           testId="app-settings-expand-affordance"
@@ -95,7 +95,7 @@ export function ExpandSettings() {
         </p>
       </div>
 
-      <div className="grid min-w-0 gap-0.5 rounded-lg border border-[color:var(--color-border-soft)] p-2">
+      <div className="grid min-w-0 gap-0.5 rounded-card border border-[color:var(--color-border-soft)] p-2">
         <Choice
           label={t('structureLabel')}
           testId="app-settings-expand-structure"
@@ -128,7 +128,7 @@ export function ExpandSettings() {
       </button>
 
       {detailOpen ? (
-      <div className="grid min-w-0 gap-0.5 rounded-lg border border-[color:var(--color-border-soft)] p-2">
+      <div className="grid min-w-0 gap-0.5 rounded-card border border-[color:var(--color-border-soft)] p-2">
         <Slider
           label={t('batchLabel')}
           testId="app-settings-expand-batch"

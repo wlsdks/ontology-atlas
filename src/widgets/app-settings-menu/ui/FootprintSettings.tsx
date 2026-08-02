@@ -104,7 +104,7 @@ function FootprintPreview({ pref }: { pref: FootprintPreference }) {
       data-testid="app-settings-footprint-preview"
       aria-hidden="true"
       style={{ height: PREVIEW_H }}
-      className="w-full rounded-lg border border-[color:var(--color-border-soft)] bg-[color:var(--topology-v2-canvas-bg-near)]"
+      className="w-full rounded-card border border-[color:var(--color-border-soft)] bg-[color:var(--topology-v2-canvas-bg-near)]"
     />
   );
 }
@@ -176,7 +176,7 @@ export function FootprintSettings() {
       </button>
 
       {detailOpen ? (
-        <div className="grid min-w-0 gap-0.5 rounded-lg border border-[color:var(--color-border-soft)] p-2">
+        <div className="grid min-w-0 gap-0.5 rounded-card border border-[color:var(--color-border-soft)] p-2">
           <Slider
             label={t('size')}
             testId="app-settings-footprint-size"

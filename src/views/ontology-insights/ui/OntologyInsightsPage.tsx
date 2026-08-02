@@ -935,7 +935,7 @@ export function OntologyInsightsPage() {
         {error ? (
           <div
             role="alert"
-            className="mt-6 rounded-lg border border-[color:var(--color-danger-a32)] bg-[color:var(--color-danger-a08)] px-5 py-4 text-sm text-[color:var(--color-status-danger)]"
+            className="mt-6 rounded-card border border-[color:var(--color-danger-a32)] bg-[color:var(--color-danger-a08)] px-5 py-4 text-body-lg text-[color:var(--color-status-danger)]"
           >
             {t("errorAlert", { message: error.message })}
           </div>
@@ -945,7 +945,7 @@ export function OntologyInsightsPage() {
           <div
             role="status"
             aria-live="polite"
-            className="mt-6 rounded-lg border border-[color:var(--color-divider)] bg-[color:var(--color-overlay-1)] px-6 py-10 text-center text-sm text-[color:var(--color-text-tertiary)]"
+            className="mt-6 rounded-card border border-[color:var(--color-divider)] bg-[color:var(--color-overlay-1)] px-6 py-10 text-center text-body-lg text-[color:var(--color-text-tertiary)]"
           >
             {t("loading")}
           </div>

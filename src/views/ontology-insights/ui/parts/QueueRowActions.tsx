@@ -97,7 +97,7 @@ export function HandoffCopyButton({
           if (candidate) onReviewStart?.(candidate);
           await copyHandoff(payload);
         }}
-        className={`inline-flex items-center gap-1 rounded-md border border-[color:var(--color-border-soft)] text-label text-[color:var(--color-text-tertiary)] transition-colors hover:border-[color:var(--color-indigo-a46)] hover:text-[color:var(--color-text-primary)] ${
+        className={`inline-flex items-center gap-1 rounded-chip border border-[color:var(--color-border-soft)] text-label text-[color:var(--color-text-tertiary)] transition-colors hover:border-[color:var(--color-indigo-a46)] hover:text-[color:var(--color-text-primary)] ${
           compact ? "min-h-7 px-2" : "min-h-8 px-2.5"
         }`}
       >
@@ -173,7 +173,7 @@ export function RowActionMenu({
   }, [open]);
 
   const menuItemClass =
-    "flex items-center gap-2 rounded-md px-2.5 py-1.5 text-left text-label text-[color:var(--color-text-secondary)] transition-colors hover:bg-[color:var(--color-overlay-2)] hover:text-[color:var(--color-text-primary)]";
+    "flex items-center gap-2 rounded-chip px-2.5 py-1.5 text-left text-label text-[color:var(--color-text-secondary)] transition-colors hover:bg-[color:var(--color-overlay-2)] hover:text-[color:var(--color-text-primary)]";
 
   return (
     <div ref={containerRef} className="relative">
@@ -185,7 +185,7 @@ export function RowActionMenu({
         aria-expanded={open}
         aria-label={labels.rowMenuTrigger}
         onClick={() => setOpen((value) => !value)}
-        className="inline-flex h-8 w-8 items-center justify-center rounded-md border border-[color:var(--color-border-soft)] text-[color:var(--color-text-tertiary)] transition-colors hover:border-[color:var(--color-indigo-a46)] hover:text-[color:var(--color-text-primary)]"
+        className="inline-flex h-8 w-8 items-center justify-center rounded-chip border border-[color:var(--color-border-soft)] text-[color:var(--color-text-tertiary)] transition-colors hover:border-[color:var(--color-indigo-a46)] hover:text-[color:var(--color-text-primary)]"
       >
         <MoreHorizontal size={14} aria-hidden />
       </button>
@@ -193,7 +193,7 @@ export function RowActionMenu({
         <div
           role="menu"
           data-testid="do-next-row-menu-popover"
-          className="absolute right-0 z-20 mt-1 flex min-w-[10rem] flex-col gap-0.5 rounded-md border border-[color:var(--color-border-soft)] bg-[color:var(--color-elevated)] p-1 shadow-[var(--shadow-elevation-1)]"
+          className="absolute right-0 z-20 mt-1 flex min-w-[10rem] flex-col gap-0.5 rounded-chip border border-[color:var(--color-border-soft)] bg-[color:var(--color-elevated)] p-1 shadow-[var(--shadow-elevation-1)]"
         >
           {sourceHref ? (
             <Link

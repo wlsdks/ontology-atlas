@@ -69,7 +69,7 @@ export function SampleWelcomeNote({
         <button
           type="button"
           onClick={onOpenFolder}
-          className="inline-flex w-fit flex-none items-center gap-1.5 rounded-md border border-[color:var(--color-indigo-line-a42)] bg-[color:var(--color-indigo-a18)] px-2.5 py-1.5 text-body font-medium text-[color:var(--color-text-primary)] transition-colors hover:border-[color:var(--color-indigo-line-a54)] hover:bg-[color:var(--color-indigo-a24)]"
+          className="inline-flex w-fit flex-none items-center gap-1.5 rounded-chip border border-[color:var(--color-indigo-line-a42)] bg-[color:var(--color-indigo-a18)] px-2.5 py-1.5 text-body font-medium text-[color:var(--color-text-primary)] transition-colors hover:border-[color:var(--color-indigo-line-a54)] hover:bg-[color:var(--color-indigo-a24)]"
         >
           <FolderOpen size={12} aria-hidden />
           {copy.openFolderCta}

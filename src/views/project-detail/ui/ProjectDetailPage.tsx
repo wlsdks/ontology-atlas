@@ -453,7 +453,7 @@ export function ProjectDetailPage({
     measure(70ch)는 한 행이 눈으로 좇을 수 있는 길이의 상한이다.
   */
   const storyMarkdownClassName =
-    "text-body-lg leading-prose text-[color:var(--color-text-secondary)] [&>*:first-child]:mt-0 [&_a]:text-[color:var(--color-indigo-accent)] [&_a]:underline-offset-2 [&_a:hover]:text-[color:var(--color-indigo-hover)] [&_blockquote]:my-4 [&_blockquote]:border-l-2 [&_blockquote]:border-[color:var(--color-border-strong)] [&_blockquote]:pl-3.5 [&_blockquote]:text-[color:var(--color-text-tertiary)] [&_code]:rounded [&_code]:border [&_code]:border-[color:var(--color-border-soft)] [&_code]:px-1.5 [&_code]:py-0.5 [&_code]:font-mono [&_code]:text-xs [&_code]:text-[color:var(--color-text-tertiary)] [&_h1]:mt-9 [&_h1]:mb-3 [&_h1]:text-title [&_h1]:font-[650] [&_h1]:tracking-title [&_h1]:text-[color:var(--color-text-primary)] [&_h2]:mt-9 [&_h2]:mb-3 [&_h2]:text-title [&_h2]:font-[650] [&_h2]:tracking-title [&_h2]:text-[color:var(--color-text-primary)] [&_h3]:mt-7 [&_h3]:mb-2 [&_h3]:text-body-lg [&_h3]:font-[650] [&_h3]:text-[color:var(--color-text-primary)] [&_hr]:my-7 [&_hr]:border-[color:var(--color-border-soft)] [&_li]:mb-1.5 [&_li]:list-disc [&_li]:pl-1 [&_li::marker]:text-[color:var(--color-text-quaternary)] [&_ol]:my-3 [&_ol]:pl-[22px] [&_p]:mb-3.5 [&_pre]:my-4 [&_pre]:overflow-x-auto [&_pre]:rounded-[var(--radius-card)] [&_pre]:border [&_pre]:border-[color:var(--color-border-soft)] [&_pre]:bg-[color:var(--color-overlay-1)] [&_pre]:p-3.5 [&_pre_code]:border-0 [&_pre_code]:bg-transparent [&_pre_code]:p-0 [&_pre_code]:text-body [&_strong]:font-semibold [&_strong]:text-[color:var(--color-text-primary)] [&_table]:my-4 [&_table]:w-full [&_table]:border-collapse [&_td]:border-t [&_td]:border-[color:var(--color-divider)] [&_td]:py-2 [&_td]:pr-4 [&_th]:pb-2 [&_th]:pr-4 [&_th]:text-left [&_th]:font-mono [&_th]:text-caption [&_th]:uppercase [&_th]:tracking-caption [&_th]:text-[color:var(--color-text-quaternary)] [&_ul]:my-3 [&_ul]:pl-[22px]";
+    "text-body-lg leading-prose text-[color:var(--color-text-secondary)] [&>*:first-child]:mt-0 [&_a]:text-[color:var(--color-indigo-accent)] [&_a]:underline-offset-2 [&_a:hover]:text-[color:var(--color-indigo-hover)] [&_blockquote]:my-4 [&_blockquote]:border-l-2 [&_blockquote]:border-[color:var(--color-border-strong)] [&_blockquote]:pl-3.5 [&_blockquote]:text-[color:var(--color-text-tertiary)] [&_code]:rounded [&_code]:border [&_code]:border-[color:var(--color-border-soft)] [&_code]:px-1.5 [&_code]:py-0.5 [&_code]:font-mono [&_code]:text-body [&_code]:text-[color:var(--color-text-tertiary)] [&_h1]:mt-9 [&_h1]:mb-3 [&_h1]:text-title [&_h1]:font-[650] [&_h1]:tracking-title [&_h1]:text-[color:var(--color-text-primary)] [&_h2]:mt-9 [&_h2]:mb-3 [&_h2]:text-title [&_h2]:font-[650] [&_h2]:tracking-title [&_h2]:text-[color:var(--color-text-primary)] [&_h3]:mt-7 [&_h3]:mb-2 [&_h3]:text-body-lg [&_h3]:font-[650] [&_h3]:text-[color:var(--color-text-primary)] [&_hr]:my-7 [&_hr]:border-[color:var(--color-border-soft)] [&_li]:mb-1.5 [&_li]:list-disc [&_li]:pl-1 [&_li::marker]:text-[color:var(--color-text-quaternary)] [&_ol]:my-3 [&_ol]:pl-[22px] [&_p]:mb-3.5 [&_pre]:my-4 [&_pre]:overflow-x-auto [&_pre]:rounded-[var(--radius-card)] [&_pre]:border [&_pre]:border-[color:var(--color-border-soft)] [&_pre]:bg-[color:var(--color-overlay-1)] [&_pre]:p-3.5 [&_pre_code]:border-0 [&_pre_code]:bg-transparent [&_pre_code]:p-0 [&_pre_code]:text-body [&_strong]:font-semibold [&_strong]:text-[color:var(--color-text-primary)] [&_table]:my-4 [&_table]:w-full [&_table]:border-collapse [&_td]:border-t [&_td]:border-[color:var(--color-divider)] [&_td]:py-2 [&_td]:pr-4 [&_th]:pb-2 [&_th]:pr-4 [&_th]:text-left [&_th]:font-mono [&_th]:text-caption [&_th]:uppercase [&_th]:tracking-caption [&_th]:text-[color:var(--color-text-quaternary)] [&_ul]:my-3 [&_ul]:pl-[22px]";
   const projectFullEditHref = getProjectEditHref(project.slug, {
     returnTo: getProjectRuntimeDetailHref(project.slug),
   });
@@ -546,7 +546,7 @@ export function ProjectDetailPage({
                   data-testid="project-detail-readonly-badge"
                   // flex-none 은 390px 에서 페이지 가로 overflow 를 만들었다
                   // (overflow-sweep 회귀) — 좁으면 배지 텍스트가 줄바꿈된다.
-                  className="inline-flex min-w-0 items-center gap-1.5 rounded-md border border-[color:var(--color-border-soft)] bg-[color:var(--color-overlay-1)] px-2.5 py-1.5 font-mono text-[11px] leading-snug text-[color:var(--color-text-tertiary)]"
+                  className="inline-flex min-w-0 items-center gap-1.5 rounded-chip border border-[color:var(--color-border-soft)] bg-[color:var(--color-overlay-1)] px-2.5 py-1.5 font-mono text-[11px] leading-snug text-[color:var(--color-text-tertiary)]"
                 >
                   {t("readOnlyBadge")}
                 </span>
@@ -576,7 +576,7 @@ export function ProjectDetailPage({
               {primaryMetrics.map((item) => (
                 <span
                   key={item.label}
-                  className="inline-flex items-baseline gap-1.5 rounded-md border border-[color:var(--color-border-soft)] bg-[color:var(--color-overlay-1)] px-2 py-1"
+                  className="inline-flex items-baseline gap-1.5 rounded-chip border border-[color:var(--color-border-soft)] bg-[color:var(--color-overlay-1)] px-2 py-1"
                 >
                   <span className="text-caption uppercase tracking-[0.1em] text-[color:var(--color-text-quaternary)]">
                     {item.label}
@@ -597,7 +597,7 @@ export function ProjectDetailPage({
 
         {domainComposition.domains.length > 0 ? (
           <div className="flex flex-none flex-col border-t border-[color:var(--color-divider)] pt-4 lg:w-[380px] lg:border-t-0 lg:border-l lg:pt-0 lg:pl-6">
-            <div className="flex items-baseline gap-2 font-mono text-[9.5px] uppercase tracking-[0.14em] text-[color:var(--color-text-quaternary)]">
+            <div className="flex items-baseline gap-2 font-mono text-caption uppercase tracking-[0.14em] text-[color:var(--color-text-quaternary)]">
               <span>{t("minimapLabel")}</span>
               <span className="normal-case tracking-[0.04em]">{t("minimapSublabel")}</span>
               <Link
@@ -700,13 +700,13 @@ export function ProjectDetailPage({
         ) : (
         <article
           data-tab-panel="overview"
-          className="rounded-[9px] border border-[color:var(--color-border-soft)] bg-[color:var(--color-panel)] p-[var(--card-pad)] shadow-[inset_0_1px_0_var(--color-overlay-1)] md:p-[16px_18px]"
+          className="rounded-card border border-[color:var(--color-border-soft)] bg-[color:var(--color-panel)] p-[var(--card-pad)] shadow-[inset_0_1px_0_var(--color-overlay-1)] md:p-[16px_18px]"
         >
           <div className="mb-2.5 flex items-baseline gap-2">
             <span className="text-[13px] font-[560] text-[color:var(--color-text-primary)]">
               {t("bodyCardTitle")}
             </span>
-            <span className="font-mono text-[9.5px] uppercase tracking-[0.12em] text-[color:var(--color-text-quaternary)]">
+            <span className="font-mono text-caption uppercase tracking-[0.12em] text-[color:var(--color-text-quaternary)]">
               {t("bodyCardGcap")}
             </span>
           </div>
@@ -734,13 +734,13 @@ export function ProjectDetailPage({
             "연결된 프로젝트" 는 프로젝트 간 관계를 온톨로지로 다루는 방향의
             첫 표면이라 탭 뒤에 숨기면 안 된다. */}
         <aside data-testid="project-detail-connected" className="flex flex-col gap-[var(--card-gap)]">
-          <section className="rounded-[9px] border border-[color:var(--color-border-soft)] bg-[color:var(--color-panel)] p-[var(--card-pad)] shadow-[inset_0_1px_0_var(--color-overlay-1)] md:p-[16px_18px]">
+          <section className="rounded-card border border-[color:var(--color-border-soft)] bg-[color:var(--color-panel)] p-[var(--card-pad)] shadow-[inset_0_1px_0_var(--color-overlay-1)] md:p-[16px_18px]">
             <div className="mb-2.5 flex items-baseline gap-2">
               <TopologyV2TraceMark containment={false} />
               <span className="text-[13px] font-[560] text-[color:var(--color-text-primary)]">
                 {t("connectedTitle")}
               </span>
-              <span className="font-mono text-[9.5px] uppercase tracking-[0.12em] text-[color:var(--color-text-quaternary)]">
+              <span className="font-mono text-caption uppercase tracking-[0.12em] text-[color:var(--color-text-quaternary)]">
                 {t("connectedRelation")}
               </span>
             </div>
@@ -750,7 +750,7 @@ export function ProjectDetailPage({
                   <Link
                     key={candidate.slug}
                     href={getProjectRuntimeDetailHref(candidate.slug)}
-                    className="flex items-center gap-3 rounded-[9px] border border-[color:var(--color-border-soft)] px-3 py-3 text-sm text-[color:var(--color-text-secondary)] transition-colors hover:border-[color:var(--color-indigo-a28)] hover:text-[color:var(--color-text-primary)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--color-indigo-a46)] focus-visible:ring-offset-2 focus-visible:ring-offset-[color:var(--color-panel)]"
+                    className="flex items-center gap-3 rounded-card border border-[color:var(--color-border-soft)] px-3 py-3 text-body-lg text-[color:var(--color-text-secondary)] transition-colors hover:border-[color:var(--color-indigo-a28)] hover:text-[color:var(--color-text-primary)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--color-indigo-a46)] focus-visible:ring-offset-2 focus-visible:ring-offset-[color:var(--color-panel)]"
                   >
                     {/* 라벨 뒤 장식 화살표 금지 — 이 링크는 앱 안에서 이동한다
                         (`target="_blank"` 아님). `↗` 는 앱을 **떠나는** 링크의
@@ -761,14 +761,14 @@ export function ProjectDetailPage({
                       <p className="truncate font-[var(--font-weight-signature)] text-[color:var(--color-text-primary)]">
                         {candidate.name}
                       </p>
-                      <p className="mt-1 truncate text-xs text-[color:var(--color-text-tertiary)]">
+                      <p className="mt-1 truncate text-body text-[color:var(--color-text-tertiary)]">
                         {candidate.description || candidate.slug}
                       </p>
                     </div>
                   </Link>
                 ))}
                 {connectedProjects.length > 1 ? (
-                  <p className="text-xs text-[color:var(--color-text-tertiary)]">
+                  <p className="text-body text-[color:var(--color-text-tertiary)]">
                     {t("connectedMoreNote", { count: connectedProjects.length - 1 })}
                   </p>
                 ) : null}
@@ -785,7 +785,7 @@ export function ProjectDetailPage({
             )}
           </section>
 
-          <section className="rounded-[9px] border border-[color:var(--color-border-soft)] bg-[color:var(--color-panel)] p-[var(--card-pad)] shadow-[inset_0_1px_0_var(--color-overlay-1)] md:p-[16px_18px]">
+          <section className="rounded-card border border-[color:var(--color-border-soft)] bg-[color:var(--color-panel)] p-[var(--card-pad)] shadow-[inset_0_1px_0_var(--color-overlay-1)] md:p-[16px_18px]">
             {/*
               이 카드가 실제로 하는 일은 "내 AI 에게 이 프로젝트를 이어서 읽힐
               시작 프롬프트 복사" 다. 그런데 이름이 "에이전트 핸드오프", 캡션이

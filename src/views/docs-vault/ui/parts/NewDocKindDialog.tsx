@@ -131,7 +131,7 @@ export function NewDocKindDialog({
               <button
                 type="button"
                 onClick={() => onSelect(kind)}
-                className="flex w-full items-center gap-2 rounded-md border border-[color:var(--color-border-soft)] bg-[color:var(--color-overlay-1)] px-2.5 py-2 text-left transition-colors hover:border-[color:var(--color-border-strong)]"
+                className="flex w-full items-center gap-2 rounded-chip border border-[color:var(--color-border-soft)] bg-[color:var(--color-overlay-1)] px-2.5 py-2 text-left transition-colors hover:border-[color:var(--color-border-strong)]"
               >
                 <TopologyV2KindGlyph kind={kind} size={16} />
                 <span className="text-body text-[color:var(--color-text-secondary)]">

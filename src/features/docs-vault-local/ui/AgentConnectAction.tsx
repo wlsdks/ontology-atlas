@@ -133,7 +133,7 @@ export function AgentConnectAction({ vaultPath, launch, onWritten, clientId }: A
           onClick={() => void startPreview()}
           disabled={busy}
           data-testid="agent-connect-preview"
-          className="inline-flex w-full items-center justify-center gap-1.5 rounded-md border border-[color:var(--color-indigo-a46)] bg-[color:var(--color-indigo-a16)] px-3 py-2 text-body font-medium text-[color:var(--color-text-primary)] transition-colors hover:bg-[color:var(--color-indigo-a26)] disabled:opacity-60"
+          className="inline-flex w-full items-center justify-center gap-1.5 rounded-chip border border-[color:var(--color-indigo-a46)] bg-[color:var(--color-indigo-a16)] px-3 py-2 text-body font-medium text-[color:var(--color-text-primary)] transition-colors hover:bg-[color:var(--color-indigo-a26)] disabled:opacity-60"
         >
           {phase === 'planning' ? (
             <Loader2 size={13} aria-hidden className="animate-spin" />
@@ -147,7 +147,7 @@ export function AgentConnectAction({ vaultPath, launch, onWritten, clientId }: A
       {plan && (phase === 'preview' || phase === 'writing') ? (
         <div
           data-testid="agent-connect-plan"
-          className="rounded-md border border-[color:var(--color-border-soft)] bg-[color:var(--color-overlay-1)] px-3 py-2.5"
+          className="rounded-chip border border-[color:var(--color-border-soft)] bg-[color:var(--color-overlay-1)] px-3 py-2.5"
         >
           <p className="text-label font-medium text-[color:var(--color-text-secondary)]">
             {plan.rootKind === 'repo-root'
@@ -183,7 +183,7 @@ export function AgentConnectAction({ vaultPath, launch, onWritten, clientId }: A
             onClick={() => void confirmWrite()}
             disabled={busy}
             data-testid="agent-connect-confirm"
-            className="mt-2.5 inline-flex w-full items-center justify-center gap-1.5 rounded-md border border-[color:var(--color-indigo-a46)] bg-[color:var(--color-indigo-a16)] px-3 py-2 text-body font-medium text-[color:var(--color-text-primary)] transition-colors hover:bg-[color:var(--color-indigo-a26)] disabled:opacity-60"
+            className="mt-2.5 inline-flex w-full items-center justify-center gap-1.5 rounded-chip border border-[color:var(--color-indigo-a46)] bg-[color:var(--color-indigo-a16)] px-3 py-2 text-body font-medium text-[color:var(--color-text-primary)] transition-colors hover:bg-[color:var(--color-indigo-a26)] disabled:opacity-60"
           >
             {phase === 'writing' ? <Loader2 size={13} aria-hidden className="animate-spin" /> : null}
             {t('connectConfirmCta')}
@@ -205,7 +205,7 @@ export function AgentConnectAction({ vaultPath, launch, onWritten, clientId }: A
         <div
           role="status"
           data-testid="agent-connect-verified"
-          className="rounded-md border border-[color:var(--color-success-a35)] bg-[color:var(--color-success-a10)] px-3 py-2.5"
+          className="rounded-chip border border-[color:var(--color-success-a35)] bg-[color:var(--color-success-a10)] px-3 py-2.5"
         >
           <p className="inline-flex items-center gap-1.5 text-body font-medium text-[color:var(--color-text-primary)]">
             <Check size={13} aria-hidden className="text-[color:var(--color-status-success)]" />
@@ -255,7 +255,7 @@ export function AgentConnectAction({ vaultPath, launch, onWritten, clientId }: A
         <div
           role="status"
           data-testid="agent-connect-failed"
-          className="rounded-md border border-[color:var(--color-danger-a32)] bg-[color:var(--color-danger-a10)] px-3 py-2.5"
+          className="rounded-chip border border-[color:var(--color-danger-a32)] bg-[color:var(--color-danger-a10)] px-3 py-2.5"
         >
           <p className="inline-flex items-center gap-1.5 text-body font-medium text-[color:var(--color-text-primary)]">
             <CircleAlert size={13} aria-hidden className="text-[color:var(--color-status-danger)]" />

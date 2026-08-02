@@ -728,7 +728,7 @@ export function VaultAgentSetupPanel({
   return (
     <section
       aria-label={t('agentSetup.ariaLabel')}
-      className="min-w-0 rounded-md border border-[color:var(--color-indigo-line-a22)] bg-[color:var(--color-indigo-a06)] p-2.5"
+      className="min-w-0 rounded-chip border border-[color:var(--color-indigo-line-a22)] bg-[color:var(--color-indigo-a06)] p-2.5"
     >
       <div className="flex items-start gap-2">
         <Bot
@@ -829,7 +829,7 @@ export function VaultAgentSetupPanel({
                   배선(`agentActivityStatus`)은 카피 통합과 한 묶음이라 다음이다.
                 */}
                 <StepRow n={3} testId="agent-setup-step-3" title={tc('step3Title')}>
-                  <div className="flex items-center gap-2 rounded-md border border-[color:var(--color-border-soft)] bg-[color:var(--color-overlay-1)] px-2.5 py-2">
+                  <div className="flex items-center gap-2 rounded-chip border border-[color:var(--color-border-soft)] bg-[color:var(--color-overlay-1)] px-2.5 py-2">
                     <span
                       aria-hidden
                       className="h-2 w-2 shrink-0 rounded-full"
@@ -1124,7 +1124,7 @@ export function VaultAgentSetupPanel({
               onClick={() => void handleEnsureAgentConfigs()}
               disabled={agentSetupBusy}
               title={t('agentSetup.repairTitle')}
-              className="mt-2 inline-flex w-full items-center justify-center gap-1.5 rounded-md border border-[color:var(--color-indigo-line-a35)] bg-[color:var(--color-indigo-a10)] px-2 py-1.5 text-label text-[color:var(--color-indigo-pale-a94)] transition-colors hover:border-[color:var(--color-indigo-line-a54)] hover:bg-[color:var(--color-indigo-a16)] disabled:opacity-60"
+              className="mt-2 inline-flex w-full items-center justify-center gap-1.5 rounded-chip border border-[color:var(--color-indigo-line-a35)] bg-[color:var(--color-indigo-a10)] px-2 py-1.5 text-label text-[color:var(--color-indigo-pale-a94)] transition-colors hover:border-[color:var(--color-indigo-line-a54)] hover:bg-[color:var(--color-indigo-a16)] disabled:opacity-60"
             >
               <Bot size={12} aria-hidden />
               {agentSetupBusy
@@ -1179,7 +1179,7 @@ export function VaultAgentSetupPanel({
             type="button"
             onClick={onOpenWorkflowGuide}
             title={t('agentSetup.openWorkflowGuideTitle')}
-            className="mt-2 inline-flex w-full items-center justify-center gap-1.5 rounded-md border border-[color:var(--color-indigo-line-a35)] bg-[color:var(--color-indigo-a08)] px-2 py-1.5 text-label text-[color:rgba(210,216,255,0.94)] transition-colors hover:border-[color:var(--color-indigo-line-a54)] hover:bg-[color:var(--color-indigo-a14)]"
+            className="mt-2 inline-flex w-full items-center justify-center gap-1.5 rounded-chip border border-[color:var(--color-indigo-line-a35)] bg-[color:var(--color-indigo-a08)] px-2 py-1.5 text-label text-[color:rgba(210,216,255,0.94)] transition-colors hover:border-[color:var(--color-indigo-line-a54)] hover:bg-[color:var(--color-indigo-a14)]"
           >
             <BookOpen size={12} aria-hidden />
             {t('agentSetup.openWorkflowGuide')}
@@ -1188,7 +1188,7 @@ export function VaultAgentSetupPanel({
             type="button"
             onClick={() => void handleCopyAgentSetupPacket()}
             title={t('agentSetup.copyPacketTitle')}
-            className="mt-2 inline-flex w-full items-center justify-center gap-1.5 rounded-md border border-[color:var(--color-indigo-a42)] bg-[color:var(--color-indigo-a10)] px-2 py-1.5 text-label text-[color:rgba(210,216,255,0.94)] transition-colors hover:border-[color:var(--color-indigo-a62)] hover:bg-[color:var(--color-indigo-a16)]"
+            className="mt-2 inline-flex w-full items-center justify-center gap-1.5 rounded-chip border border-[color:var(--color-indigo-a42)] bg-[color:var(--color-indigo-a10)] px-2 py-1.5 text-label text-[color:rgba(210,216,255,0.94)] transition-colors hover:border-[color:var(--color-indigo-a62)] hover:bg-[color:var(--color-indigo-a16)]"
           >
             <ClipboardCopy size={12} aria-hidden />
             {copyPacketLabel}
@@ -1197,7 +1197,7 @@ export function VaultAgentSetupPanel({
             type="button"
             onClick={() => void handleCopyAgentVerifyPrompt()}
             title={t('agentSetup.copyPromptTitle')}
-            className="mt-2 inline-flex w-full items-center justify-center gap-1.5 rounded-md border border-[color:var(--color-divider)] bg-[color:var(--color-overlay-1)] px-2 py-1.5 text-label text-[color:var(--color-text-secondary)] transition-colors hover:border-[color:var(--color-indigo-a46)] hover:text-[color:var(--color-text-primary)]"
+            className="mt-2 inline-flex w-full items-center justify-center gap-1.5 rounded-chip border border-[color:var(--color-divider)] bg-[color:var(--color-overlay-1)] px-2 py-1.5 text-label text-[color:var(--color-text-secondary)] transition-colors hover:border-[color:var(--color-indigo-a46)] hover:text-[color:var(--color-text-primary)]"
           >
             <ClipboardCopy size={12} aria-hidden />
             {copyPromptLabel}
@@ -1206,7 +1206,7 @@ export function VaultAgentSetupPanel({
             type="button"
             onClick={() => void handleCopyAgentVerifyCli()}
             title={t('agentSetup.copyCliTitle')}
-            className="mt-1.5 inline-flex w-full items-center justify-center gap-1.5 rounded-md border border-[color:var(--color-divider)] bg-[color:var(--color-overlay-1)] px-2 py-1.5 text-label text-[color:var(--color-text-secondary)] transition-colors hover:border-[color:var(--color-indigo-a46)] hover:text-[color:var(--color-text-primary)]"
+            className="mt-1.5 inline-flex w-full items-center justify-center gap-1.5 rounded-chip border border-[color:var(--color-divider)] bg-[color:var(--color-overlay-1)] px-2 py-1.5 text-label text-[color:var(--color-text-secondary)] transition-colors hover:border-[color:var(--color-indigo-a46)] hover:text-[color:var(--color-text-primary)]"
           >
             <Terminal size={12} aria-hidden />
             {copyCliLabel}
@@ -1215,7 +1215,7 @@ export function VaultAgentSetupPanel({
             type="button"
             onClick={() => void handleCopyAgentFirstContactProof()}
             title={t('agentSetup.copyFirstContactProofTitle')}
-            className="mt-1.5 inline-flex w-full items-center justify-center gap-1.5 rounded-md border border-[color:var(--color-divider)] bg-[color:var(--color-overlay-1)] px-2 py-1.5 text-label text-[color:var(--color-text-secondary)] transition-colors hover:border-[color:var(--color-indigo-a46)] hover:text-[color:var(--color-text-primary)]"
+            className="mt-1.5 inline-flex w-full items-center justify-center gap-1.5 rounded-chip border border-[color:var(--color-divider)] bg-[color:var(--color-overlay-1)] px-2 py-1.5 text-label text-[color:var(--color-text-secondary)] transition-colors hover:border-[color:var(--color-indigo-a46)] hover:text-[color:var(--color-text-primary)]"
           >
             <Terminal size={12} aria-hidden />
             {copyFirstContactProofLabel}
@@ -1224,7 +1224,7 @@ export function VaultAgentSetupPanel({
             type="button"
             onClick={() => void handleCopyAgentJsonGate()}
             title={t('agentSetup.copyJsonGateTitle')}
-            className="mt-1.5 inline-flex w-full items-center justify-center gap-1.5 rounded-md border border-[color:var(--color-success-a28)] bg-[color:var(--color-success-a07)] px-2 py-1.5 text-label text-[color:var(--color-success-text-a94)] transition-colors hover:border-[color:var(--color-success-a42)] hover:bg-[color:var(--color-success-a11)]"
+            className="mt-1.5 inline-flex w-full items-center justify-center gap-1.5 rounded-chip border border-[color:var(--color-success-a28)] bg-[color:var(--color-success-a07)] px-2 py-1.5 text-label text-[color:var(--color-success-text-a94)] transition-colors hover:border-[color:var(--color-success-a42)] hover:bg-[color:var(--color-success-a11)]"
           >
             <Terminal size={12} aria-hidden />
             {copyJsonGateLabel}
@@ -1290,7 +1290,7 @@ export function VaultAgentSetupPanel({
               type="button"
               onClick={() => void handleCopyAgentPostChangeSyncGate()}
               title={t('agentSetup.copyPostChangeSyncTitle')}
-              className="mt-2 inline-flex w-full items-center justify-center gap-1.5 rounded-md border border-[color:var(--color-indigo-line-a32)] bg-[color:var(--color-indigo-a08)] px-2 py-1.5 text-label text-[color:rgba(210,216,255,0.94)] transition-colors hover:border-[color:var(--color-indigo-line-a45)] hover:bg-[color:var(--color-indigo-a13)]"
+              className="mt-2 inline-flex w-full items-center justify-center gap-1.5 rounded-chip border border-[color:var(--color-indigo-line-a32)] bg-[color:var(--color-indigo-a08)] px-2 py-1.5 text-label text-[color:rgba(210,216,255,0.94)] transition-colors hover:border-[color:var(--color-indigo-line-a45)] hover:bg-[color:var(--color-indigo-a13)]"
             >
               <ClipboardCopy size={12} aria-hidden />
               {copyPostChangeSyncLabel}
@@ -1345,7 +1345,7 @@ export function VaultAgentSetupPanel({
             type="button"
             onClick={() => void handleCopyAgentSetupCheckCliCommand()}
             title={t('agentSetup.copySetupCheckCliTitle')}
-            className="mt-1.5 inline-flex w-full items-center justify-center gap-1.5 rounded-md border border-[color:var(--color-success-a28)] bg-[color:var(--color-success-a07)] px-2 py-1.5 text-label text-[color:var(--color-success-text-a94)] transition-colors hover:border-[color:var(--color-success-a42)] hover:bg-[color:var(--color-success-a11)]"
+            className="mt-1.5 inline-flex w-full items-center justify-center gap-1.5 rounded-chip border border-[color:var(--color-success-a28)] bg-[color:var(--color-success-a07)] px-2 py-1.5 text-label text-[color:var(--color-success-text-a94)] transition-colors hover:border-[color:var(--color-success-a42)] hover:bg-[color:var(--color-success-a11)]"
           >
             <Terminal size={12} aria-hidden />
             {copySetupCheckCliLabel}
@@ -1354,7 +1354,7 @@ export function VaultAgentSetupPanel({
             type="button"
             onClick={() => void handleCopyAgentSetupCliCommand()}
             title={t('agentSetup.copySetupCliTitle')}
-            className="mt-1.5 inline-flex w-full items-center justify-center gap-1.5 rounded-md border border-[color:var(--color-amber-source-a25)] bg-[color:var(--color-amber-source-a07)] px-2 py-1.5 text-label text-[color:var(--color-amber-source-text-a95)] transition-colors hover:border-[color:var(--color-amber-source-a42)] hover:bg-[color:var(--color-amber-source-a11)]"
+            className="mt-1.5 inline-flex w-full items-center justify-center gap-1.5 rounded-chip border border-[color:var(--color-amber-source-a25)] bg-[color:var(--color-amber-source-a07)] px-2 py-1.5 text-label text-[color:var(--color-amber-source-text-a95)] transition-colors hover:border-[color:var(--color-amber-source-a42)] hover:bg-[color:var(--color-amber-source-a11)]"
           >
             <Terminal size={12} aria-hidden />
             {copySetupCliLabel}
@@ -1363,7 +1363,7 @@ export function VaultAgentSetupPanel({
             type="button"
             onClick={() => void handleCopyAgentConfigTemplate()}
             title={t('agentSetup.copyTemplateTitle')}
-            className="mt-1.5 inline-flex w-full items-center justify-center gap-1.5 rounded-md border border-[color:var(--color-divider)] bg-[color:var(--color-overlay-1)] px-2 py-1.5 text-label text-[color:var(--color-text-secondary)] transition-colors hover:border-[color:var(--color-indigo-a46)] hover:text-[color:var(--color-text-primary)]"
+            className="mt-1.5 inline-flex w-full items-center justify-center gap-1.5 rounded-chip border border-[color:var(--color-divider)] bg-[color:var(--color-overlay-1)] px-2 py-1.5 text-label text-[color:var(--color-text-secondary)] transition-colors hover:border-[color:var(--color-indigo-a46)] hover:text-[color:var(--color-text-primary)]"
           >
             <ClipboardCopy size={12} aria-hidden />
             {copyTemplateLabel}
@@ -1372,7 +1372,7 @@ export function VaultAgentSetupPanel({
             type="button"
             onClick={() => void handleCopyCodexConfigTemplate()}
             title={t('agentSetup.copyCodexTemplateTitle')}
-            className="mt-1.5 inline-flex w-full items-center justify-center gap-1.5 rounded-md border border-[color:var(--color-divider)] bg-[color:var(--color-overlay-1)] px-2 py-1.5 text-label text-[color:var(--color-text-secondary)] transition-colors hover:border-[color:var(--color-indigo-a46)] hover:text-[color:var(--color-text-primary)]"
+            className="mt-1.5 inline-flex w-full items-center justify-center gap-1.5 rounded-chip border border-[color:var(--color-divider)] bg-[color:var(--color-overlay-1)] px-2 py-1.5 text-label text-[color:var(--color-text-secondary)] transition-colors hover:border-[color:var(--color-indigo-a46)] hover:text-[color:var(--color-text-primary)]"
           >
             <ClipboardCopy size={12} aria-hidden />
             {copyCodexTemplateLabel}
@@ -1381,7 +1381,7 @@ export function VaultAgentSetupPanel({
             type="button"
             onClick={() => void handleCopyCodexMcpAddCommand()}
             title={t('agentSetup.copyCodexCliTitle')}
-            className="mt-1.5 inline-flex w-full items-center justify-center gap-1.5 rounded-md border border-[color:var(--color-divider)] bg-[color:var(--color-overlay-1)] px-2 py-1.5 text-label text-[color:var(--color-text-secondary)] transition-colors hover:border-[color:var(--color-indigo-a46)] hover:text-[color:var(--color-text-primary)]"
+            className="mt-1.5 inline-flex w-full items-center justify-center gap-1.5 rounded-chip border border-[color:var(--color-divider)] bg-[color:var(--color-overlay-1)] px-2 py-1.5 text-label text-[color:var(--color-text-secondary)] transition-colors hover:border-[color:var(--color-indigo-a46)] hover:text-[color:var(--color-text-primary)]"
           >
             <Terminal size={12} aria-hidden />
             {copyCodexCliLabel}

@@ -153,7 +153,7 @@ export function ImpactRankingCard({
             onClick={() => setEvidenceOpen((open) => !open)}
             // 같은 탭의 다른 작은 컨트롤(행별 인계 복사)과 같은 min-h-7 —
             // 25px 짜리 글자 폭 히트영역은 이 카드에서 유일한 조작점이라 좁다.
-            className="-mx-1.5 flex min-h-7 w-full items-center gap-1.5 rounded-md px-1.5 text-left text-label text-[color:var(--color-text-tertiary)] transition-colors hover:bg-[color:var(--color-overlay-1)] hover:text-[color:var(--color-text-primary)]"
+            className="-mx-1.5 flex min-h-7 w-full items-center gap-1.5 rounded-chip px-1.5 text-left text-label text-[color:var(--color-text-tertiary)] transition-colors hover:bg-[color:var(--color-overlay-1)] hover:text-[color:var(--color-text-primary)]"
           >
             {evidenceOpen ? (
               <ChevronDown aria-hidden size={13} className="flex-none" />
@@ -242,7 +242,7 @@ function ImpactRow({
       aria-label={ariaLabel}
       data-testid={testId}
       className={cn(
-        "-mx-1.5 flex items-center gap-3 rounded-md border-t border-[color:var(--color-divider)] px-1.5 py-2.5 transition-colors hover:bg-[color:var(--color-overlay-1)]",
+        "-mx-1.5 flex items-center gap-3 rounded-chip border-t border-[color:var(--color-divider)] px-1.5 py-2.5 transition-colors hover:bg-[color:var(--color-overlay-1)]",
         // 각 칸의 첫 행은 구분선을 지운다 — 두 칸일 때 둘째 칸의
         // 첫 행(i=1)도 칸의 머리라 위에 선이 있으면 잘린 표로 읽힌다.
         index === 0 && "border-t-0",

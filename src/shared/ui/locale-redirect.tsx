@@ -56,7 +56,7 @@ export function LocaleRedirect() {
       }}
     >
       <p
-        className="text-sm text-[color:var(--color-text-tertiary)]"
+        className="text-body-lg text-[color:var(--color-text-tertiary)]"
         style={{
           display: 'flex',
           flexWrap: 'wrap',

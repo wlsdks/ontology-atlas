@@ -37,16 +37,16 @@ export function TopologyV2EdgeHoverCard({ sentence, typeLabel, why, clickHint, x
       className="pointer-events-none fixed z-40 flex max-w-[280px] flex-col gap-1 rounded-[var(--topology-v2-panel-radius)] border border-[color:var(--topology-v2-panel-border)] bg-[color:var(--topology-v2-panel-surface)] px-3 py-2 shadow-[var(--topology-v2-panel-shadow)]"
       style={{ left, top }}
     >
-      <p className="font-mono text-[9.5px] uppercase tracking-[0.12em] text-[color:var(--topology-v2-panel-text-tertiary)]">
+      <p className="font-mono text-caption uppercase tracking-[0.12em] text-[color:var(--topology-v2-panel-text-tertiary)]">
         {typeLabel}
       </p>
-      <p className="text-[12.5px] font-medium leading-snug text-[color:var(--topology-v2-panel-text-primary)]">
+      <p className="text-body font-medium leading-snug text-[color:var(--topology-v2-panel-text-primary)]">
         {sentence}
       </p>
       {why ? (
-        <p className="truncate text-[11px] leading-snug text-[color:var(--topology-v2-panel-text-secondary)]">{why}</p>
+        <p className="truncate text-label leading-snug text-[color:var(--topology-v2-panel-text-secondary)]">{why}</p>
       ) : null}
-      <p className="text-[10px] text-[color:var(--topology-v2-panel-text-quaternary)]">{clickHint}</p>
+      <p className="text-label text-[color:var(--topology-v2-panel-text-quaternary)]">{clickHint}</p>
     </div>
   );
 }

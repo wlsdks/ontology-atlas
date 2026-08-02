@@ -57,7 +57,7 @@ export function GestureHint({ disabled = false }: { disabled?: boolean }) {
           role="status"
           aria-live="polite"
         >
-          <span className="mt-0.5 flex h-7 w-7 shrink-0 items-center justify-center rounded-md border border-[color:rgba(113,112,255,0.32)] bg-[color:var(--color-indigo-a14)] text-[color:var(--color-indigo-accent)]">
+          <span className="mt-0.5 flex h-7 w-7 shrink-0 items-center justify-center rounded-chip border border-[color:rgba(113,112,255,0.32)] bg-[color:var(--color-indigo-a14)] text-[color:var(--color-indigo-accent)]">
             <Hand size={14} />
           </span>
           <div className="flex-1">
@@ -78,7 +78,7 @@ export function GestureHint({ disabled = false }: { disabled?: boolean }) {
             type="button"
             onClick={dismiss}
             aria-label={t("closeAriaLabel")}
-            className="flex h-7 w-7 shrink-0 items-center justify-center rounded-md text-[color:var(--color-text-tertiary)] transition-colors hover:bg-[color:var(--color-overlay-2)] hover:text-[color:var(--color-text-primary)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--color-border-strong)]"
+            className="flex h-7 w-7 shrink-0 items-center justify-center rounded-chip text-[color:var(--color-text-tertiary)] transition-colors hover:bg-[color:var(--color-overlay-2)] hover:text-[color:var(--color-text-primary)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--color-border-strong)]"
           >
             <X size={13} />
           </button>

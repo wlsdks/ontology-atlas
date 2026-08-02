@@ -76,7 +76,7 @@ export function AgentGlobalScopePanel({ vaultPath, launch }: AgentGlobalScopePan
             aria-selected={entry.id === client.id}
             onClick={() => setSelected(entry.id)}
             data-testid={`agent-global-scope-tool-${entry.id}`}
-            className={`rounded-md border px-2.5 py-1 text-label font-medium transition-colors ${
+            className={`rounded-chip border px-2.5 py-1 text-label font-medium transition-colors ${
               entry.id === client.id
                 ? 'border-[color:var(--color-indigo-a46)] bg-[color:var(--color-indigo-a16)] text-[color:var(--color-text-primary)]'
                 : 'border-[color:var(--color-border-soft)] text-[color:var(--color-text-tertiary)] hover:text-[color:var(--color-text-primary)]'
@@ -89,7 +89,7 @@ export function AgentGlobalScopePanel({ vaultPath, launch }: AgentGlobalScopePan
 
       <div
         data-testid={`agent-global-scope-${client.id}`}
-        className="rounded-md border border-[color:var(--color-border-soft)] bg-[color:var(--color-overlay-1)] px-3 py-2.5"
+        className="rounded-chip border border-[color:var(--color-border-soft)] bg-[color:var(--color-overlay-1)] px-3 py-2.5"
       >
         <p className="font-mono text-caption text-[color:var(--color-text-quaternary)]">
           {instruction.path}

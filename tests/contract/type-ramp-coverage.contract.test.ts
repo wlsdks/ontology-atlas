@@ -79,7 +79,6 @@ const ARBITRARY_SIZE = [
 // 0이 되어 `codexMigratedGlobs` 로 승격됐다. 여기서 빠졌다는 것은 "부채
 // 없음"이 아니라 **lint 가 error 로 막는다**는 뜻이다.
 const UNCOVERED_DEBT: ReadonlyArray<readonly [string, number]> = [
-  ["src/views/home", 45],
   ["src/views/ontology-studio", 45],
   ["src/entities/project", 33],
   ["src/features/project-edit", 26],

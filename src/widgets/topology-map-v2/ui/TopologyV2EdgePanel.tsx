@@ -91,7 +91,7 @@ export function TopologyV2EdgePanel({
       className={`topology-chrome-in flex w-[300px] flex-col gap-3 rounded-[var(--topology-v2-panel-radius)] outline-none focus-visible:outline-none border border-[color:var(--topology-v2-panel-border)] bg-[color:var(--topology-v2-panel-surface)] p-4 shadow-[var(--topology-v2-panel-shadow)] ${className ?? ""}`}
     >
       <div className="flex items-start justify-between gap-2">
-        <p className="font-mono text-[10px] uppercase tracking-[0.14em] text-[color:var(--topology-v2-panel-text-tertiary)]">
+        <p className="font-mono text-label uppercase tracking-[0.14em] text-[color:var(--topology-v2-panel-text-tertiary)]">
           {labels.kicker} · {typeLabel}
         </p>
         <button
@@ -108,14 +108,14 @@ export function TopologyV2EdgePanel({
       {/* 문장이 주인공 — 의미의 평문화 */}
       <p
         data-testid="topology-v2-edge-sentence"
-        className="text-[14px] font-medium leading-relaxed text-[color:var(--topology-v2-panel-text-primary)]"
+        className="text-body-lg font-medium leading-relaxed text-[color:var(--topology-v2-panel-text-primary)]"
       >
         {sentence}
       </p>
       {why ? (
         <p
           data-testid="topology-v2-edge-why"
-          className="text-[12px] leading-relaxed text-[color:var(--topology-v2-panel-text-secondary)]"
+          className="text-body leading-relaxed text-[color:var(--topology-v2-panel-text-secondary)]"
         >
           {why}
         </p>
@@ -131,7 +131,7 @@ export function TopologyV2EdgePanel({
             key={n.id}
             type="button"
             onClick={() => onSelectNode(n.id)}
-            className="rounded-[var(--topology-v2-panel-row-radius)] px-1.5 py-1 text-left text-[12.5px] text-[color:var(--topology-v2-panel-text-secondary)] transition-colors hover:bg-[color:var(--topology-v2-panel-row-hover)] hover:text-[color:var(--topology-v2-panel-text-primary)]"
+            className="rounded-[var(--topology-v2-panel-row-radius)] px-1.5 py-1 text-left text-body text-[color:var(--topology-v2-panel-text-secondary)] transition-colors hover:bg-[color:var(--topology-v2-panel-row-hover)] hover:text-[color:var(--topology-v2-panel-text-primary)]"
           >
             {n.title}
           </button>
@@ -140,14 +140,14 @@ export function TopologyV2EdgePanel({
 
       {declaredBy ? (
         <div className="flex flex-col gap-1 border-t border-[color:var(--topology-v2-panel-divider)] pt-2.5">
-          <span className="font-mono text-[9.5px] uppercase tracking-[0.12em] text-[color:var(--topology-v2-panel-text-quaternary)]">
+          <span className="font-mono text-caption uppercase tracking-[0.12em] text-[color:var(--topology-v2-panel-text-quaternary)]">
             {labels.declaredByLabel}
             {updatedAtLabel ? ` · ${updatedAtLabel}` : ""}
           </span>
           <Link
             href={declaredBy.href}
             data-testid="topology-v2-edge-declared-by"
-            className="truncate font-mono text-[11px] text-[color:var(--topology-v2-panel-text-secondary)] transition-colors hover:text-[color:var(--topology-v2-panel-text-primary)]"
+            className="truncate font-mono text-label text-[color:var(--topology-v2-panel-text-secondary)] transition-colors hover:text-[color:var(--topology-v2-panel-text-primary)]"
           >
             {declaredBy.slug}.md → {labels.openDoc}
           </Link>
@@ -158,7 +158,7 @@ export function TopologyV2EdgePanel({
         <Link
           href={studioEditHref}
           data-testid="topology-v2-edge-edit"
-          className="inline-flex h-8 items-center justify-center rounded-md border border-[color:var(--topology-v2-panel-action-border)] bg-[color:var(--topology-v2-panel-action-surface)] text-[11.5px] text-[color:var(--topology-v2-panel-text-secondary)] transition-colors hover:bg-[color:var(--topology-v2-panel-row-hover)] hover:text-[color:var(--topology-v2-panel-text-primary)]"
+          className="inline-flex h-8 items-center justify-center rounded-chip border border-[color:var(--topology-v2-panel-action-border)] bg-[color:var(--topology-v2-panel-action-surface)] text-label text-[color:var(--topology-v2-panel-text-secondary)] transition-colors hover:bg-[color:var(--topology-v2-panel-row-hover)] hover:text-[color:var(--topology-v2-panel-text-primary)]"
         >
           {labels.editRelation}
         </Link>

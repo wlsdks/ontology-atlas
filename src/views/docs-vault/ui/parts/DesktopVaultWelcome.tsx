@@ -110,14 +110,14 @@ export function DesktopVaultWelcome({
             </p>
             {showDogfoodHint ? (
               <div className="flex max-w-2xl flex-wrap items-center gap-2">
-                <code className="min-w-0 flex-1 truncate rounded-md border border-[color:var(--color-border-soft)] bg-[color:var(--color-overlay-1)] px-2.5 py-1.5 font-mono text-label text-[color:var(--color-text-secondary)]">
+                <code className="min-w-0 flex-1 truncate rounded-chip border border-[color:var(--color-border-soft)] bg-[color:var(--color-overlay-1)] px-2.5 py-1.5 font-mono text-label text-[color:var(--color-text-secondary)]">
                   {DOGFOOD_VAULT_PATH}
                 </code>
                 <button
                   type="button"
                   onClick={() => void copyDogfoodPath(DOGFOOD_VAULT_PATH)}
                   aria-label={dogfoodPathCopyAriaLabel}
-                  className="inline-flex min-h-8 shrink-0 items-center justify-center gap-1.5 rounded-md border border-[color:var(--color-indigo-line-a22)] bg-[color:var(--color-indigo-line-a06)] px-2.5 py-1.5 font-mono text-caption text-[color:var(--color-indigo-accent)] transition-colors hover:border-[color:var(--color-indigo-line-a42)] hover:bg-[color:var(--color-indigo-line-a13)]"
+                  className="inline-flex min-h-8 shrink-0 items-center justify-center gap-1.5 rounded-chip border border-[color:var(--color-indigo-line-a22)] bg-[color:var(--color-indigo-line-a06)] px-2.5 py-1.5 font-mono text-caption text-[color:var(--color-indigo-accent)] transition-colors hover:border-[color:var(--color-indigo-line-a42)] hover:bg-[color:var(--color-indigo-line-a13)]"
                 >
                   {dogfoodPathCopied ? <Check size={12} aria-hidden /> : <Clipboard size={12} aria-hidden />}
                   {t("desktopWelcome.copyDogfoodPath")}
@@ -126,7 +126,7 @@ export function DesktopVaultWelcome({
                   type="button"
                   onClick={() => void copyDogfoodLoop(DOGFOOD_VERIFICATION_LOOP)}
                   aria-label={dogfoodLoopCopyAriaLabel}
-                  className="inline-flex min-h-8 shrink-0 items-center justify-center gap-1.5 rounded-md border border-[color:var(--color-border-soft)] bg-[color:var(--color-overlay-1)] px-2.5 py-1.5 font-mono text-caption text-[color:var(--color-text-secondary)] transition-colors hover:border-[color:var(--color-indigo-a32)] hover:text-[color:var(--color-text-primary)]"
+                  className="inline-flex min-h-8 shrink-0 items-center justify-center gap-1.5 rounded-chip border border-[color:var(--color-border-soft)] bg-[color:var(--color-overlay-1)] px-2.5 py-1.5 font-mono text-caption text-[color:var(--color-text-secondary)] transition-colors hover:border-[color:var(--color-indigo-a32)] hover:text-[color:var(--color-text-primary)]"
                 >
                   {dogfoodLoopCopied ? <Check size={12} aria-hidden /> : <Terminal size={12} aria-hidden />}
                   {t("desktopWelcome.copyDogfoodLoop")}
@@ -138,7 +138,7 @@ export function DesktopVaultWelcome({
           <StaggeredFadeIn
             as="section"
             ariaLabel={t("desktopWelcome.contractAriaLabel")}
-            className="grid overflow-hidden rounded-md border border-[color:var(--color-border-soft)] bg-[color:var(--color-panel)] md:grid-cols-3"
+            className="grid overflow-hidden rounded-chip border border-[color:var(--color-border-soft)] bg-[color:var(--color-panel)] md:grid-cols-3"
           >
             {contractItems.map((item, index) => {
               const Icon = item.icon;
@@ -152,7 +152,7 @@ export function DesktopVaultWelcome({
                   }`}
                 >
                   <div className="flex items-start gap-3">
-                    <span className="mt-0.5 flex h-7 w-7 shrink-0 items-center justify-center rounded-md border border-[color:var(--color-divider)] text-[color:var(--color-text-tertiary)]">
+                    <span className="mt-0.5 flex h-7 w-7 shrink-0 items-center justify-center rounded-chip border border-[color:var(--color-divider)] text-[color:var(--color-text-tertiary)]">
                       <Icon size={14} aria-hidden />
                     </span>
                     <div className="min-w-0">
@@ -177,14 +177,14 @@ export function DesktopVaultWelcome({
           aria-label={t("desktopWelcome.actionsAriaLabel")}
           className="grid min-w-0 gap-5"
         >
-          <section className="overflow-hidden rounded-md border border-[color:var(--color-border-soft)] bg-[color:var(--color-panel)]">
+          <section className="overflow-hidden rounded-chip border border-[color:var(--color-border-soft)] bg-[color:var(--color-panel)]">
             <button
               type="button"
               onClick={showDogfoodHint && onOpenDogfoodPath ? onOpenDogfoodPath : onOpen}
               disabled={busy}
               className="flex w-full items-start gap-3 bg-[color:var(--color-indigo-a08)] px-4 py-4 text-left transition-colors hover:bg-[color:var(--color-indigo-a14)] disabled:opacity-60"
             >
-              <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-md border border-[color:var(--color-indigo-line-a32)] text-[color:var(--color-indigo-pale-a94)]">
+              <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-chip border border-[color:var(--color-indigo-line-a32)] text-[color:var(--color-indigo-pale-a94)]">
                 <FolderOpen size={17} aria-hidden />
               </span>
               <span className="min-w-0">
@@ -212,7 +212,7 @@ export function DesktopVaultWelcome({
                 disabled={busy}
                 className="flex w-full items-start gap-3 border-t border-[color:var(--color-indigo-line-a20)] bg-[color:var(--color-indigo-line-a06)] px-4 py-3.5 text-left transition-colors hover:bg-[color:var(--color-indigo-line-a06)] disabled:opacity-60"
               >
-                <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-md border border-[color:var(--color-indigo-line-a22)] text-[color:var(--color-indigo-accent)]">
+                <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-chip border border-[color:var(--color-indigo-line-a22)] text-[color:var(--color-indigo-accent)]">
                   <Bot size={15} aria-hidden />
                 </span>
                 <span className="min-w-0">
@@ -232,7 +232,7 @@ export function DesktopVaultWelcome({
               disabled={busy}
               className="flex w-full items-start gap-3 border-t border-[color:var(--color-border-soft)] px-4 py-3.5 text-left transition-colors hover:bg-[color:var(--color-overlay-1)] disabled:opacity-60"
             >
-              <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-md border border-[color:var(--color-divider)] text-[color:var(--color-text-secondary)]">
+              <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-chip border border-[color:var(--color-divider)] text-[color:var(--color-text-secondary)]">
                 <FilePlus size={15} aria-hidden />
               </span>
               <span className="min-w-0">
@@ -250,7 +250,7 @@ export function DesktopVaultWelcome({
               onClick={onOpenSample}
               className="flex w-full items-start gap-3 border-t border-[color:var(--color-border-soft)] px-4 py-3.5 text-left transition-colors hover:bg-[color:var(--color-overlay-1)]"
             >
-              <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-md border border-[color:var(--color-divider)] text-[color:var(--color-text-secondary)]">
+              <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-chip border border-[color:var(--color-divider)] text-[color:var(--color-text-secondary)]">
                 <Package size={15} aria-hidden />
               </span>
               <span className="min-w-0">
@@ -269,7 +269,7 @@ export function DesktopVaultWelcome({
               {t("desktopWelcome.recentTitle")}
             </h3>
             {recentVaults.length > 0 ? (
-              <div className="grid overflow-hidden rounded-md border border-[color:var(--color-border-soft)] bg-[color:var(--color-panel)]">
+              <div className="grid overflow-hidden rounded-chip border border-[color:var(--color-border-soft)] bg-[color:var(--color-panel)]">
                 {recentVaults.map((record, index) => (
                   <button
                     key={record.desktopRootPath ?? `${record.id}:${record.name}`}
@@ -280,7 +280,7 @@ export function DesktopVaultWelcome({
                       index > 0 ? "border-t border-[color:var(--color-border-soft)]" : ""
                     }`}
                   >
-                    <span className="flex h-7 w-7 items-center justify-center rounded-md border border-[color:var(--color-divider)] text-[color:var(--color-text-tertiary)]">
+                    <span className="flex h-7 w-7 items-center justify-center rounded-chip border border-[color:var(--color-divider)] text-[color:var(--color-text-tertiary)]">
                       <HardDrive size={13} aria-hidden />
                     </span>
                     <span className="min-w-0">

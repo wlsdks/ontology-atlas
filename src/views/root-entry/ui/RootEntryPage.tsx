@@ -90,7 +90,7 @@ function DesktopVaultRedirect() {
             {t('redirectBody')}
           </p>
         </div>
-        <div className="grid w-full overflow-hidden rounded-md border border-[color:var(--color-border-soft)] bg-[color:var(--color-panel)] sm:grid-cols-3">
+        <div className="grid w-full overflow-hidden rounded-chip border border-[color:var(--color-border-soft)] bg-[color:var(--color-panel)] sm:grid-cols-3">
           {proofItems.map((item, index) => {
             const Icon = item.icon;
             return (
@@ -102,7 +102,7 @@ function DesktopVaultRedirect() {
                     : ""
                 }`}
               >
-                <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-md border border-[color:var(--color-divider)] text-[color:var(--color-text-tertiary)]">
+                <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-chip border border-[color:var(--color-divider)] text-[color:var(--color-text-tertiary)]">
                   <Icon size={14} aria-hidden />
                 </span>
                 <span className="text-[11.5px] font-medium leading-5 text-[color:var(--color-text-secondary)]">

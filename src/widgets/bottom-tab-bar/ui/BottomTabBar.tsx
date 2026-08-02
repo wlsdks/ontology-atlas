@@ -114,8 +114,8 @@ export function BottomTabBar() {
             <span
               className={
                 active
-                  ? 'inline-flex h-6 w-6 items-center justify-center rounded-lg border border-[color:var(--color-indigo-a30)] bg-[color:var(--color-indigo-a10)] shadow-[0_0_0_1px_var(--color-indigo-line-a06)_inset]'
-                  : 'inline-flex h-6 w-6 items-center justify-center rounded-lg border border-transparent transition-colors'
+                  ? 'inline-flex h-6 w-6 items-center justify-center rounded-card border border-[color:var(--color-indigo-a30)] bg-[color:var(--color-indigo-a10)] shadow-[0_0_0_1px_var(--color-indigo-line-a06)_inset]'
+                  : 'inline-flex h-6 w-6 items-center justify-center rounded-card border border-transparent transition-colors'
               }
               data-tab-icon-shell={active ? 'active' : 'idle'}
             >
@@ -142,7 +142,7 @@ export function BottomTabBar() {
           data-testid="bottom-tab-get-app"
           className="relative flex min-h-[var(--topology-bottom-tab-min-height)] flex-1 flex-col items-center justify-center gap-0.5 text-[color:var(--color-text-quaternary)] transition-colors active:bg-[color:var(--color-overlay-1)] active:text-[color:var(--color-text-secondary)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--color-indigo-a50)] focus-visible:ring-inset"
         >
-          <span className="inline-flex h-6 w-6 items-center justify-center rounded-lg border border-transparent transition-colors">
+          <span className="inline-flex h-6 w-6 items-center justify-center rounded-card border border-transparent transition-colors">
             <Download size={17} aria-hidden />
           </span>
           <span className="text-caption font-[var(--font-weight-signature)] leading-none">

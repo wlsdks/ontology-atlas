@@ -43,7 +43,7 @@ export function CopyAgentTextButton({
         type="button"
         onClick={handleCopy}
         className={[
-          "inline-flex shrink-0 items-center justify-center gap-1.5 rounded-md border font-mono text-caption transition-[background-color,border-color,color,transform] duration-[var(--motion-base)] ease-[var(--motion-ease)] active:translate-y-[1px] motion-reduce:transition-none motion-reduce:transform-none",
+          "inline-flex shrink-0 items-center justify-center gap-1.5 rounded-chip border font-mono text-caption transition-[background-color,border-color,color,transform] duration-[var(--motion-base)] ease-[var(--motion-ease)] active:translate-y-[1px] motion-reduce:transition-none motion-reduce:transform-none",
           toneClass,
           compact ? "min-h-8 px-2.5 py-1.5" : "min-h-9 px-3 py-2",
         ].join(" ")}

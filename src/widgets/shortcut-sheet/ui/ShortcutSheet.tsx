@@ -371,7 +371,7 @@ export function ShortcutSheet({ open, onClose }: Props) {
                 data-testid="shortcut-sheet-close"
                 data-shortcut-sheet-close-contract="touch-visible"
                 data-shortcut-sheet-close-size-token="--topology-shortcut-sheet-close-size"
-                className="flex h-[var(--topology-shortcut-sheet-close-size)] w-[var(--topology-shortcut-sheet-close-size)] items-center justify-center rounded-md text-[color:var(--color-text-tertiary)] transition-colors hover:bg-[color:var(--color-overlay-2)] hover:text-[color:var(--color-text-primary)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--color-border-strong)]"
+                className="flex h-[var(--topology-shortcut-sheet-close-size)] w-[var(--topology-shortcut-sheet-close-size)] items-center justify-center rounded-chip text-[color:var(--color-text-tertiary)] transition-colors hover:bg-[color:var(--color-overlay-2)] hover:text-[color:var(--color-text-primary)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--color-border-strong)]"
               >
                 <X size={15} />
               </button>
@@ -394,7 +394,7 @@ export function ShortcutSheet({ open, onClose }: Props) {
                   data-testid={`shortcut-sheet-scope-${key}`}
                   onClick={() => setScope(key)}
                   className={cn(
-                    "h-[var(--control-h-sm)] rounded-md px-2.5 text-label transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--color-indigo-a46)]",
+                    "h-[var(--control-h-sm)] rounded-chip px-2.5 text-label transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--color-indigo-a46)]",
                     scope === key
                       ? "bg-[color:var(--color-indigo-a16)] text-[color:var(--color-text-primary)]"
                       : "text-[color:var(--color-text-tertiary)] hover:bg-[color:var(--color-overlay-2)] hover:text-[color:var(--color-text-secondary)]",
@@ -454,7 +454,7 @@ export function ShortcutSheet({ open, onClose }: Props) {
                             {row.keys.map((key, i) => (
                               <kbd
                                 key={`${row.labelKey}-${i}`}
-                                className="inline-flex h-6 min-w-[24px] items-center justify-center rounded-md border border-[color:var(--color-overlay-3)] bg-[color:var(--color-elevated)] px-1.5 font-mono text-label tabular-nums text-[color:var(--color-text-secondary)]"
+                                className="inline-flex h-6 min-w-[24px] items-center justify-center rounded-chip border border-[color:var(--color-overlay-3)] bg-[color:var(--color-elevated)] px-1.5 font-mono text-label tabular-nums text-[color:var(--color-text-secondary)]"
                               >
                                 {typeof key === "string" ? key : t(`keys.${key.i18nKey}`)}
                               </kbd>

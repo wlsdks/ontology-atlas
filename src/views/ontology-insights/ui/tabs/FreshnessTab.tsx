@@ -108,7 +108,7 @@ export function FreshnessTab({
               <div
                 key={row.domainId}
                 data-testid="insights-freshness-domain-row"
-                className="-mx-1.5 flex items-center gap-2 rounded-md px-1.5 transition-colors hover:bg-[color:var(--color-overlay-1)]"
+                className="-mx-1.5 flex items-center gap-2 rounded-chip px-1.5 transition-colors hover:bg-[color:var(--color-overlay-1)]"
               >
                 <span
                   className={
@@ -220,7 +220,7 @@ export function FreshnessTab({
               aria-expanded={evidenceOpen}
               data-testid="insights-freshness-evidence-toggle"
               onClick={() => setEvidenceOpen((open) => !open)}
-              className="-mx-1.5 flex min-h-7 w-full items-center gap-1.5 rounded-md px-1.5 text-left text-label text-[color:var(--color-text-tertiary)] transition-colors hover:bg-[color:var(--color-overlay-1)] hover:text-[color:var(--color-text-primary)]"
+              className="-mx-1.5 flex min-h-7 w-full items-center gap-1.5 rounded-chip px-1.5 text-left text-label text-[color:var(--color-text-tertiary)] transition-colors hover:bg-[color:var(--color-overlay-1)] hover:text-[color:var(--color-text-primary)]"
             >
               {evidenceOpen ? (
                 <ChevronDown aria-hidden size={13} className="flex-none" />

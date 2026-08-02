@@ -272,7 +272,7 @@ export function TopologyTrailChip({
           role="group"
           aria-label={labels.heading}
           data-testid="topology-trail-chip-popover"
-          className="absolute right-0 top-[calc(100%+8px)] z-30 w-[248px] rounded-md border border-[color:var(--topology-floating-panel-border)] bg-[color:var(--topology-floating-panel-surface)] shadow-[var(--topology-floating-panel-shadow)]"
+          className="absolute right-0 top-[calc(100%+8px)] z-30 w-[248px] rounded-chip border border-[color:var(--topology-floating-panel-border)] bg-[color:var(--topology-floating-panel-surface)] shadow-[var(--topology-floating-panel-shadow)]"
         >
           <div className="flex items-center justify-between gap-2 border-b border-[color:var(--topology-floating-panel-divider)] px-3 py-2 font-mono text-caption uppercase tracking-[0.14em] text-[color:var(--color-text-quaternary)]">
             {showPast ? (
@@ -303,7 +303,7 @@ export function TopologyTrailChip({
                     type="button"
                     onClick={() => setShowPast(true)}
                     data-testid="topology-trail-past-link"
-                    className="shrink-0 rounded-md px-1 py-0.5 text-[color:var(--color-text-quaternary)] transition-colors hover:text-[color:var(--color-text-primary)]"
+                    className="shrink-0 rounded-chip px-1 py-0.5 text-[color:var(--color-text-quaternary)] transition-colors hover:text-[color:var(--color-text-primary)]"
                   >
                     {labels.pastLinkLabel}
                   </button>
@@ -415,7 +415,7 @@ export function TopologyTrailChip({
                       onClearPastWalks();
                     }}
                     data-testid="topology-trail-past-clear-all"
-                    className={`rounded-md px-2 py-1 text-label transition-colors ${
+                    className={`rounded-chip px-2 py-1 text-label transition-colors ${
                       clearAllArmed
                         ? "text-[color:var(--color-text-primary)]"
                         : "text-[color:var(--color-text-quaternary)] hover:text-[color:var(--color-text-primary)]"
@@ -520,7 +520,7 @@ export function TopologyTrailChip({
               type="button"
               onClick={onClear}
               data-testid="topology-trail-clear-footer"
-              className="rounded-md px-2 py-1 text-label text-[color:var(--color-text-quaternary)] transition-colors hover:text-[color:var(--color-text-primary)]"
+              className="rounded-chip px-2 py-1 text-label text-[color:var(--color-text-quaternary)] transition-colors hover:text-[color:var(--color-text-primary)]"
             >
               {labels.clearLabel}
             </button>

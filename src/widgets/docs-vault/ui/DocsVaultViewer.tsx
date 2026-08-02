@@ -402,7 +402,7 @@ export function DocsVaultViewer({
       pre(props) {
         return (
           <pre
-            className="my-4 overflow-x-auto rounded-md border border-[color:var(--color-overlay-2)] bg-[color:var(--color-surface-deep-a80)] p-3 font-mono text-label leading-body text-[color:var(--color-indigo-pale-a92)] md:text-body"
+            className="my-4 overflow-x-auto rounded-chip border border-[color:var(--color-overlay-2)] bg-[color:var(--color-surface-deep-a80)] p-3 font-mono text-label leading-body text-[color:var(--color-indigo-pale-a92)] md:text-body"
             {...props}
           />
         );
@@ -450,7 +450,7 @@ export function DocsVaultViewer({
       td(props) {
         return (
           <td
-            className="border-b border-[color:var(--color-overlay-2)] px-2 py-1.5 align-top [&_a]:-mx-2 [&_a]:inline-flex [&_a]:min-h-8 [&_a]:items-center [&_a]:rounded-md [&_a]:px-2"
+            className="border-b border-[color:var(--color-overlay-2)] px-2 py-1.5 align-top [&_a]:-mx-2 [&_a]:inline-flex [&_a]:min-h-8 [&_a]:items-center [&_a]:rounded-chip [&_a]:px-2"
             {...props}
           />
         );
@@ -470,7 +470,7 @@ export function DocsVaultViewer({
               height={800}
               sizes="(max-width: 768px) 100vw, 760px"
               unoptimized
-              className="my-4 max-w-full rounded-md border border-[color:var(--color-border-soft)]"
+              className="my-4 max-w-full rounded-chip border border-[color:var(--color-border-soft)]"
               style={{ height: 'auto' }}
               title={title}
             />
@@ -486,7 +486,7 @@ export function DocsVaultViewer({
               height={800}
               sizes="(max-width: 768px) 100vw, 760px"
               unoptimized
-              className="my-4 max-w-full rounded-md border border-[color:var(--color-border-soft)]"
+              className="my-4 max-w-full rounded-chip border border-[color:var(--color-border-soft)]"
               style={{ height: 'auto' }}
               title={title}
             />
@@ -642,7 +642,7 @@ function CalloutBlock({
   const s = CALLOUT_STYLES[kind];
   return (
     <aside
-      className="my-4 rounded-md border-l-4 px-4 py-3"
+      className="my-4 rounded-chip border-l-4 px-4 py-3"
       style={{ borderLeftColor: s.border, backgroundColor: s.bg }}
     >
       <div
@@ -745,7 +745,7 @@ function VaultImage({
       height={800}
       sizes="(max-width: 768px) 100vw, 760px"
       unoptimized
-      className="my-4 max-w-full rounded-md border border-[color:var(--color-border-soft)]"
+      className="my-4 max-w-full rounded-chip border border-[color:var(--color-border-soft)]"
       style={{ height: 'auto' }}
     />
   );
@@ -783,7 +783,7 @@ function HeadingAnchor({
       onClick={onClick}
       aria-label={copied ? t('anchorCopiedAria') : t('anchorCopyAria')}
       title={copied ? t('anchorCopiedTitle') : t('anchorCopyTitle')}
-      className={`absolute right-0 top-1/2 flex h-8 w-8 -translate-y-1/2 items-center justify-center rounded-md transition-[background-color,color,opacity] sm:-left-9 sm:right-auto ${
+      className={`absolute right-0 top-1/2 flex h-8 w-8 -translate-y-1/2 items-center justify-center rounded-chip transition-[background-color,color,opacity] sm:-left-9 sm:right-auto ${
         copied
           ? 'text-[color:var(--color-indigo-line-a90)] opacity-100'
           : 'text-[color:var(--color-text-quaternary)] opacity-100 hover:bg-[color:var(--color-indigo-line-a06)] hover:text-[color:var(--color-indigo-line-a90)] sm:opacity-0 sm:group-hover:opacity-100 focus-visible:opacity-100'

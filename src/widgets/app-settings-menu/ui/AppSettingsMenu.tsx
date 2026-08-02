@@ -509,7 +509,7 @@ export function AppSettingsMenu({
               ? // <lg 상단 유틸리티 레인의 ChromeTile 계약 — 같은 행 타일들과
                 // 높이·radius·표면 일치.
                 'flex size-[var(--chrome-tile-size)] items-center justify-center rounded-[var(--chrome-radius)] border border-[color:var(--chrome-border)] bg-[color:var(--chrome-surface)] text-[color:var(--color-text-tertiary)] shadow-[var(--chrome-shadow)] hover:border-[color:var(--color-border-strong)] hover:bg-[color:var(--color-overlay-2)] hover:text-[color:var(--color-text-primary)]'
-              : 'inline-flex h-8 items-center justify-center gap-1.5 rounded-md border border-[color:var(--color-border-soft)] px-2 text-[color:var(--color-text-tertiary)] hover:border-[color:var(--color-border-strong)] hover:text-[color:var(--color-text-primary)]',
+              : 'inline-flex h-8 items-center justify-center gap-1.5 rounded-chip border border-[color:var(--color-border-soft)] px-2 text-[color:var(--color-text-tertiary)] hover:border-[color:var(--color-border-strong)] hover:text-[color:var(--color-text-primary)]',
         )}
       >
         <Settings
@@ -609,7 +609,7 @@ export function AppSettingsMenu({
            * 창에서 자기가 선언한 거터를 스스로 먹는다. 폭 880 은 그대로 —
            * 넓히면 라벨과 컨트롤 사이 빈 구간(실측 최대 541px)만 더 벌어진다.
            */
-          className={`${settingsExiting ? 'app-settings-panel-out' : 'app-settings-panel-in'} flex h-[672px] max-h-[calc(100dvh-1.5rem)] w-[880px] focus:outline-none max-w-[calc(100vw-1.5rem)] flex-col overflow-hidden rounded-xl border border-[color:var(--color-border-soft)] bg-[color:var(--color-panel)] text-body shadow-[var(--shadow-elevation-3)]`}
+          className={`${settingsExiting ? 'app-settings-panel-out' : 'app-settings-panel-in'} flex h-[672px] max-h-[calc(100dvh-1.5rem)] w-[880px] focus:outline-none max-w-[calc(100vw-1.5rem)] flex-col overflow-hidden rounded-panel border border-[color:var(--color-border-soft)] bg-[color:var(--color-panel)] text-body shadow-[var(--shadow-elevation-3)]`}
           data-testid="app-settings-popover"
         >
           <div className="flex shrink-0 items-center justify-between gap-3 border-b border-[color:var(--color-border-soft)] px-4 py-3">
@@ -632,7 +632,7 @@ export function AppSettingsMenu({
               type="button"
               aria-label={t('closeLabel')}
               onClick={() => closePanel()}
-              className="inline-flex h-7 w-7 shrink-0 items-center justify-center rounded-md border border-[color:var(--color-border-soft)] text-[color:var(--color-text-tertiary)] transition-colors hover:border-[color:var(--color-border-strong)] hover:text-[color:var(--color-text-primary)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--color-indigo-a46)] focus-visible:ring-inset"
+              className="inline-flex h-7 w-7 shrink-0 items-center justify-center rounded-chip border border-[color:var(--color-border-soft)] text-[color:var(--color-text-tertiary)] transition-colors hover:border-[color:var(--color-border-strong)] hover:text-[color:var(--color-text-primary)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--color-indigo-a46)] focus-visible:ring-inset"
             >
               <X size={13} aria-hidden />
             </button>
@@ -670,7 +670,7 @@ export function AppSettingsMenu({
                           data-testid={`app-settings-nav-${item}`}
                           aria-current={active ? 'page' : undefined}
                           onClick={() => setSection(item)}
-                          className={`flex w-full items-center gap-2.5 rounded-lg px-3 py-2 text-left text-body-lg transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--color-indigo-a46)] ${
+                          className={`flex w-full items-center gap-2.5 rounded-card px-3 py-2 text-left text-body-lg transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--color-indigo-a46)] ${
                             active
                               ? 'bg-[color:var(--color-indigo-line-a13)] text-[color:var(--color-indigo-accent)]'
                               : 'text-[color:var(--color-text-tertiary)] hover:bg-[color:var(--color-overlay-2)] hover:text-[color:var(--color-text-primary)]'
@@ -897,7 +897,7 @@ export function AppSettingsMenu({
                           <button
                             type="button"
                             onClick={() => localVault.requestPermission()}
-                            className="inline-flex h-8 shrink-0 items-center rounded-md border border-[color:var(--color-amber-source-a35)] px-2.5 text-body text-[color:var(--color-status-warning)] transition-colors hover:bg-[color:var(--color-amber-source-a12)]"
+                            className="inline-flex h-8 shrink-0 items-center rounded-chip border border-[color:var(--color-amber-source-a35)] px-2.5 text-body text-[color:var(--color-status-warning)] transition-colors hover:bg-[color:var(--color-amber-source-a12)]"
                           >
                             {t('workspaceFolderPermissionAction')}
                           </button>
@@ -907,7 +907,7 @@ export function AppSettingsMenu({
                             onClick={() => void localVault.open()}
                             disabled={vaultBusy}
                             data-testid="app-settings-open-folder"
-                            className="inline-flex h-8 shrink-0 items-center rounded-md border border-[color:var(--color-indigo-line-a32)] px-2.5 text-body text-[color:var(--color-indigo-accent)] transition-colors hover:border-[color:var(--color-indigo-line-a45)] hover:bg-[color:var(--color-indigo-line-a13)] disabled:opacity-60"
+                            className="inline-flex h-8 shrink-0 items-center rounded-chip border border-[color:var(--color-indigo-line-a32)] px-2.5 text-body text-[color:var(--color-indigo-accent)] transition-colors hover:border-[color:var(--color-indigo-line-a45)] hover:bg-[color:var(--color-indigo-line-a13)] disabled:opacity-60"
                           >
                             {vaultBusy
                               ? t('workspaceFolderOpening')
@@ -940,7 +940,7 @@ export function AppSettingsMenu({
                           data-testid="app-settings-copy-vault-path"
                           onClick={() => void copy(vaultRootPath)}
                           aria-label={tPicker('copyPathAriaLabel', { path: vaultRootPath })}
-                          className="inline-flex h-8 shrink-0 items-center rounded-md border border-[color:var(--color-border-soft)] px-2.5 text-body text-[color:var(--color-text-tertiary)] transition-colors hover:border-[color:var(--color-border-strong)] hover:text-[color:var(--color-text-secondary)]"
+                          className="inline-flex h-8 shrink-0 items-center rounded-chip border border-[color:var(--color-border-soft)] px-2.5 text-body text-[color:var(--color-text-tertiary)] transition-colors hover:border-[color:var(--color-border-strong)] hover:text-[color:var(--color-text-secondary)]"
                         >
                           {copyState === 'copied'
                             ? tPicker('copyPathCopied')
@@ -953,7 +953,7 @@ export function AppSettingsMenu({
                           data-testid="app-settings-reveal-vault-path"
                           onClick={() => void openTauriVaultInFinder(vaultRootPath)}
                           aria-label={tPicker('revealPathAriaLabel', { path: vaultRootPath })}
-                          className="inline-flex h-8 shrink-0 items-center rounded-md border border-[color:var(--color-indigo-line-a32)] px-2.5 text-body text-[color:var(--color-indigo-accent)] transition-colors hover:border-[color:var(--color-indigo-line-a45)] hover:bg-[color:var(--color-indigo-line-a13)]"
+                          className="inline-flex h-8 shrink-0 items-center rounded-chip border border-[color:var(--color-indigo-line-a32)] px-2.5 text-body text-[color:var(--color-indigo-accent)] transition-colors hover:border-[color:var(--color-indigo-line-a45)] hover:bg-[color:var(--color-indigo-line-a13)]"
                         >
                           {tPicker('revealPathLabel')}
                         </button>
@@ -978,7 +978,7 @@ export function AppSettingsMenu({
                           disabled={vaultBusy}
                           aria-label={t('workspaceRecentOpenAria', { name: record.name })}
                           title={record.desktopRootPath ?? record.name}
-                          className="flex min-w-0 flex-1 items-center gap-2 rounded-md px-1 py-1 text-left transition-colors hover:bg-[color:var(--color-overlay-2)] disabled:opacity-60"
+                          className="flex min-w-0 flex-1 items-center gap-2 rounded-chip px-1 py-1 text-left transition-colors hover:bg-[color:var(--color-overlay-2)] disabled:opacity-60"
                         >
                           <HardDrive
                             size={12}
@@ -1054,7 +1054,7 @@ export function AppSettingsMenu({
                     />
                   ) : (
                     <>
-                      <div className="rounded-lg border border-[color:var(--color-border-soft)] bg-[color:var(--color-overlay-1)] px-3 py-2.5">
+                      <div className="rounded-card border border-[color:var(--color-border-soft)] bg-[color:var(--color-overlay-1)] px-3 py-2.5">
                         <p className="text-body font-medium text-[color:var(--color-text-secondary)]">
                           {t('agentStatusNoVault')}
                         </p>
@@ -1062,7 +1062,7 @@ export function AppSettingsMenu({
                           {t('agentNoVaultHint')}
                         </p>
                       </div>
-                      <div className="rounded-lg border border-[color:var(--color-border-soft)] bg-[color:var(--color-overlay-1)] px-3 py-2.5">
+                      <div className="rounded-card border border-[color:var(--color-border-soft)] bg-[color:var(--color-overlay-1)] px-3 py-2.5">
                         <p className="text-body font-medium text-[color:var(--color-text-secondary)]">
                           {t('mcpProofTitle')}
                         </p>
@@ -1072,7 +1072,7 @@ export function AppSettingsMenu({
                         <button
                           type="button"
                           onClick={() => void copy(MCP_FIRST_CALLS_PACKET)}
-                          className="mt-2 inline-flex h-8 w-full items-center justify-center gap-1.5 rounded-md border border-[color:var(--color-indigo-line-a32)] px-2 font-mono text-label text-[color:var(--color-indigo-accent)] transition-colors hover:border-[color:var(--color-indigo-line-a45)] hover:bg-[color:var(--color-indigo-line-a13)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--color-indigo-a46)] focus-visible:ring-inset"
+                          className="mt-2 inline-flex h-8 w-full items-center justify-center gap-1.5 rounded-chip border border-[color:var(--color-indigo-line-a32)] px-2 font-mono text-label text-[color:var(--color-indigo-accent)] transition-colors hover:border-[color:var(--color-indigo-line-a45)] hover:bg-[color:var(--color-indigo-line-a13)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--color-indigo-a46)] focus-visible:ring-inset"
                         >
                           {copyState === 'copied' ? (
                             <Check size={12} aria-hidden />

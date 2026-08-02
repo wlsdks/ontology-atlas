@@ -814,13 +814,13 @@ export function ProjectForm({
           {existingSlugSet.has(values.slug) && values.slug.length > 0 && (
             <span
               role="alert"
-              className="text-xs text-[color:var(--color-status-danger)]"
+              className="text-body text-[color:var(--color-status-danger)]"
             >
               {t("fields.slugDuplicate")}
             </span>
           )}
           {initialProject && (
-            <span className="text-xs text-[color:var(--color-text-quaternary)]">
+            <span className="text-body text-[color:var(--color-text-quaternary)]">
               {t("fields.duplicateNotice")}
             </span>
           )}
@@ -1082,7 +1082,7 @@ export function ProjectForm({
         </FieldRow>
       </div>
 
-      <label className="flex items-center gap-2 text-sm text-[color:var(--color-text-secondary)]">
+      <label className="flex items-center gap-2 text-body-lg text-[color:var(--color-text-secondary)]">
         <input
           type="checkbox"
           name="isHub"
@@ -1104,7 +1104,7 @@ export function ProjectForm({
     <div
       role="status"
       data-testid="project-write-disabled-banner"
-      className="rounded-panel border border-[color:var(--color-amber-source-a34)] bg-[color:var(--color-amber-source-a08)] px-4 py-3 text-sm text-[color:var(--color-text-secondary)]"
+      className="rounded-panel border border-[color:var(--color-amber-source-a34)] bg-[color:var(--color-amber-source-a08)] px-4 py-3 text-body-lg text-[color:var(--color-text-secondary)]"
     >
       {t("validation.demoModeBanner")}
     </div>
@@ -1114,14 +1114,14 @@ export function ProjectForm({
     globalError || Object.keys(errors).length > 0 ? (
       <div
         role="alert"
-        className="rounded-card border border-[color:var(--color-danger-a32)] bg-[color:var(--color-danger-a08)] px-3 py-3 text-sm text-[color:var(--color-status-danger)]"
+        className="rounded-card border border-[color:var(--color-danger-a32)] bg-[color:var(--color-danger-a08)] px-3 py-3 text-body-lg text-[color:var(--color-status-danger)]"
       >
         <p className="font-[var(--font-weight-signature)]">
           {globalError ?? t("validation.globalErrorBanner")}
         </p>
         {Object.keys(errors).length > 0 ? (
           <>
-            <ul className="mt-2 space-y-1 text-xs">
+            <ul className="mt-2 space-y-1 text-body">
               {Object.entries(errors).slice(0, 4).map(([field, message]) => (
                 <li key={field}>{message}</li>
               ))}
@@ -1264,7 +1264,7 @@ export function ProjectForm({
               <p className="font-mono text-[10px] uppercase tracking-[0.12em] text-[color:var(--color-text-quaternary)]">
                 {editorModeLabel}
               </p>
-              <p className="mt-2 hidden text-sm text-[color:var(--color-text-secondary)] md:block">
+              <p className="mt-2 hidden text-body-lg text-[color:var(--color-text-secondary)] md:block">
                 {t("actions.headerHelpEdit")}
               </p>
               <span
@@ -1343,7 +1343,7 @@ export function ProjectForm({
               <a
                 key={section.id}
                 href={`#${section.id}`}
-                className="rounded-full border border-[color:var(--color-divider)] px-3 py-1.5 text-xs text-[color:var(--color-text-secondary)] transition-colors hover:border-[color:var(--color-indigo-brand)] hover:text-[color:var(--color-text-primary)]"
+                className="rounded-full border border-[color:var(--color-divider)] px-3 py-1.5 text-body text-[color:var(--color-text-secondary)] transition-colors hover:border-[color:var(--color-indigo-brand)] hover:text-[color:var(--color-text-primary)]"
               >
                 {section.label}
               </a>
@@ -1484,7 +1484,7 @@ export function ProjectForm({
               <p className="font-mono text-[10px] uppercase tracking-[0.12em] text-[color:var(--color-text-quaternary)]">
                 {t("preview.toggleEyebrow")}
               </p>
-              <p className="mt-2 text-sm text-[color:var(--color-text-secondary)]">
+              <p className="mt-2 text-body-lg text-[color:var(--color-text-secondary)]">
                 {mobilePreviewSummary}
               </p>
             </div>
@@ -1509,18 +1509,18 @@ export function ProjectForm({
                 {saveNotice ? (
                   <div
                     role="status"
-                    className="mt-3 rounded-card border border-[color:var(--color-indigo-a28)] bg-[color:var(--color-indigo-a10)] px-4 py-3 text-sm text-[color:var(--color-indigo-accent)]"
+                    className="mt-3 rounded-card border border-[color:var(--color-indigo-a28)] bg-[color:var(--color-indigo-a10)] px-4 py-3 text-body-lg text-[color:var(--color-indigo-accent)]"
                   >
                     {saveNotice}
                   </div>
                 ) : null}
                 {mode === "edit" ? (
                   <>
-                    <p className="mt-3 text-sm text-[color:var(--color-text-secondary)]">
+                    <p className="mt-3 text-body-lg text-[color:var(--color-text-secondary)]">
                       {t("preview.liveHint")}
                     </p>
                     {!saveNotice && changePreviewItems.length === 0 ? (
-                      <p className="mt-2 text-sm text-[color:var(--color-text-secondary)]">
+                      <p className="mt-2 text-body-lg text-[color:var(--color-text-secondary)]">
                         {t("preview.noChanges")}
                       </p>
                     ) : null}
@@ -1576,7 +1576,7 @@ export function ProjectForm({
                   <p className="font-mono text-[10px] uppercase tracking-[0.12em] text-[color:var(--color-text-quaternary)]">
                     {t("preview.publicStatusLabel")}
                   </p>
-                  <p className="mt-2 text-sm text-[color:var(--color-text-secondary)]">
+                  <p className="mt-2 text-body-lg text-[color:var(--color-text-secondary)]">
                     {isDirty ? t("preview.publicStatusDirty") : tFreshness(freshnessInsight.level)}
                   </p>
                 </div>
@@ -1628,12 +1628,12 @@ function CreateExtras({
         className="flex w-full items-center justify-between gap-3 text-left"
       >
         <span className="min-w-0">
-          <span className="block text-sm text-[color:var(--color-text-primary)]">{label}</span>
+          <span className="block text-body-lg text-[color:var(--color-text-primary)]">{label}</span>
           <span className="mt-1 block text-label text-[color:var(--color-text-quaternary)]">
             {caption}
           </span>
         </span>
-        <span className="inline-flex h-8 shrink-0 items-center gap-2 rounded-full border border-[color:var(--color-divider)] px-3 text-xs text-[color:var(--color-text-secondary)]">
+        <span className="inline-flex h-8 shrink-0 items-center gap-2 rounded-full border border-[color:var(--color-divider)] px-3 text-body text-[color:var(--color-text-secondary)]">
           {open ? closeLabel : openLabel}
           <ChevronDown
             size={14}
@@ -1701,7 +1701,7 @@ function FieldRow({
         <p
           role="alert"
           data-testid={errorTestId}
-          className="text-xs text-[color:var(--color-status-danger)]"
+          className="text-body text-[color:var(--color-status-danger)]"
         >
           {error}
         </p>
@@ -1738,7 +1738,7 @@ function FormSection({
   return (
     <section
       id={id}
-      className="scroll-mt-28 rounded-xl border border-[color:var(--color-border-soft)] bg-[color:var(--color-panel)] px-4 py-5 shadow-[inset_0_1px_0_var(--color-overlay-2)] md:px-5"
+      className="scroll-mt-28 rounded-panel border border-[color:var(--color-border-soft)] bg-[color:var(--color-panel)] px-4 py-5 shadow-[inset_0_1px_0_var(--color-overlay-2)] md:px-5"
     >
       <div className="mb-5">
         {/* engraved section label — mono uppercase caption + hairline
@@ -1754,7 +1754,7 @@ function FormSection({
         </div>
         <div className="flex items-start justify-between gap-3">
           <div>
-            <p className="text-sm text-[color:var(--color-text-secondary)]">
+            <p className="text-body-lg text-[color:var(--color-text-secondary)]">
               {description}
             </p>
           </div>
@@ -1770,7 +1770,7 @@ function FormSection({
                 onClick={onToggle}
                 aria-expanded={isOpen}
                 aria-controls={contentId}
-                className="inline-flex h-8 items-center gap-2 rounded-full border border-[color:var(--color-divider)] px-3 text-xs text-[color:var(--color-text-secondary)] transition-colors hover:border-[color:var(--color-indigo-a34)] hover:text-[color:var(--color-text-primary)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--color-indigo-a46)] focus-visible:ring-offset-2 focus-visible:ring-offset-[color:var(--color-panel)]"
+                className="inline-flex h-8 items-center gap-2 rounded-full border border-[color:var(--color-divider)] px-3 text-body text-[color:var(--color-text-secondary)] transition-colors hover:border-[color:var(--color-indigo-a34)] hover:text-[color:var(--color-text-primary)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--color-indigo-a46)] focus-visible:ring-offset-2 focus-visible:ring-offset-[color:var(--color-panel)]"
               >
                 {isOpen ? (collapseLabel ?? "Collapse") : (expandLabel ?? "Expand")}
                 <ChevronDown
@@ -1832,7 +1832,7 @@ function Input({
       placeholder={placeholder}
       disabled={disabled}
       className={cn(
-        "h-9 rounded-md border border-[color:var(--color-border-soft)] bg-[color:var(--color-canvas)] px-3 text-sm text-[color:var(--color-text-primary)]",
+        "h-9 rounded-chip border border-[color:var(--color-border-soft)] bg-[color:var(--color-canvas)] px-3 text-body-lg text-[color:var(--color-text-primary)]",
         "shadow-[inset_0_1px_2px_var(--color-shadow-a35)]",
         "placeholder:text-[color:var(--color-text-quaternary)]",
         "hover:border-[color:var(--color-border-strong)]",
@@ -1869,7 +1869,7 @@ function Textarea({
       placeholder={placeholder}
       rows={rows}
       className={cn(
-        "rounded-md border border-[color:var(--color-border-soft)] bg-[color:var(--color-canvas)] px-3 py-2 text-sm text-[color:var(--color-text-primary)]",
+        "rounded-chip border border-[color:var(--color-border-soft)] bg-[color:var(--color-canvas)] px-3 py-2 text-body-lg text-[color:var(--color-text-primary)]",
         "shadow-[inset_0_1px_2px_var(--color-shadow-a35)]",
         "placeholder:text-[color:var(--color-text-quaternary)]",
         "hover:border-[color:var(--color-border-strong)]",
@@ -1897,7 +1897,7 @@ function Select<T extends string>({
       value={value}
       onChange={(e) => onChange(e.target.value as T)}
       className={cn(
-        "h-9 rounded-md border border-[color:var(--color-border-soft)] bg-[color:var(--color-canvas)] px-3 text-sm text-[color:var(--color-text-primary)]",
+        "h-9 rounded-chip border border-[color:var(--color-border-soft)] bg-[color:var(--color-canvas)] px-3 text-body-lg text-[color:var(--color-text-primary)]",
         "shadow-[inset_0_1px_2px_var(--color-shadow-a35)]",
         "hover:border-[color:var(--color-border-strong)]",
         "focus:border-[color:var(--color-indigo-accent)] focus:outline-none",

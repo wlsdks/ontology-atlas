@@ -352,7 +352,7 @@ function TouchUpBand({
                 <Link
                   href={mapHref(item.nodeId, item.id)}
                   onClick={() => onReviewStart?.(candidate)}
-                  className="inline-flex min-h-8 items-center rounded-md border border-[color:var(--color-border-soft)] px-2.5 text-label text-[color:var(--color-text-tertiary)] transition-colors hover:border-[color:var(--color-indigo-a46)] hover:text-[color:var(--color-text-primary)]"
+                  className="inline-flex min-h-8 items-center rounded-chip border border-[color:var(--color-border-soft)] px-2.5 text-label text-[color:var(--color-text-tertiary)] transition-colors hover:border-[color:var(--color-indigo-a46)] hover:text-[color:var(--color-text-primary)]"
                 >
                   {labels.openMap}
                 </Link>
@@ -463,7 +463,7 @@ function QueueSection({
               <Link
                 href={mapHref(row.nodeId, row.id)}
                 onClick={() => onReviewStart?.(candidate)}
-                className="inline-flex min-h-8 items-center rounded-md border border-[color:var(--color-border-soft)] px-2.5 text-label text-[color:var(--color-text-tertiary)] transition-colors hover:text-[color:var(--color-text-primary)]"
+                className="inline-flex min-h-8 items-center rounded-chip border border-[color:var(--color-border-soft)] px-2.5 text-label text-[color:var(--color-text-tertiary)] transition-colors hover:text-[color:var(--color-text-primary)]"
               >
                 {labels.openMap}
               </Link>
@@ -559,7 +559,7 @@ function DuplicateSection({
           aria-expanded={restOpen}
           data-testid="do-next-duplicate-rest-toggle"
           onClick={() => setRestOpen((open) => !open)}
-          className="-mx-1.5 mt-1 flex min-h-7 w-full items-center gap-1.5 rounded-md px-1.5 text-left text-label text-[color:var(--color-text-tertiary)] transition-colors hover:bg-[color:var(--color-overlay-1)] hover:text-[color:var(--color-text-primary)]"
+          className="-mx-1.5 mt-1 flex min-h-7 w-full items-center gap-1.5 rounded-chip px-1.5 text-left text-label text-[color:var(--color-text-tertiary)] transition-colors hover:bg-[color:var(--color-overlay-1)] hover:text-[color:var(--color-text-primary)]"
         >
           {restOpen ? (
             <ChevronDown aria-hidden size={13} className="flex-none" />
@@ -625,7 +625,7 @@ function DuplicateRow({
       <span className="flex w-full items-center justify-end gap-1.5 sm:w-auto sm:shrink-0">
         <Link
           href={mapHref(pair.keepId)}
-          className="inline-flex min-h-7 items-center rounded-md border border-[color:var(--color-border-soft)] px-2 text-label text-[color:var(--color-text-tertiary)] transition-colors hover:text-[color:var(--color-text-primary)]"
+          className="inline-flex min-h-7 items-center rounded-chip border border-[color:var(--color-border-soft)] px-2 text-label text-[color:var(--color-text-tertiary)] transition-colors hover:text-[color:var(--color-text-primary)]"
         >
           {labels.openMap}
         </Link>
@@ -716,7 +716,7 @@ function CycleSection({
               <Link
                 href={mapHref(firstNodeId, reviewId)}
                 onClick={() => onReviewStart?.(candidate)}
-                className="inline-flex min-h-8 items-center rounded-md border border-[color:var(--color-border-soft)] px-2.5 text-label text-[color:var(--color-text-tertiary)] transition-colors hover:text-[color:var(--color-text-primary)]"
+                className="inline-flex min-h-8 items-center rounded-chip border border-[color:var(--color-border-soft)] px-2.5 text-label text-[color:var(--color-text-tertiary)] transition-colors hover:text-[color:var(--color-text-primary)]"
               >
                 {labels.openMap}
               </Link>
@@ -1028,7 +1028,7 @@ export function DoNextTab({
           aria-live="polite"
           aria-atomic="true"
           tabIndex={-1}
-          className="rounded-md border border-[color:var(--color-border-soft)] px-3 py-2 text-label text-[color:var(--color-text-secondary)] focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-inset focus-visible:ring-[color:var(--color-indigo-a42)]"
+          className="rounded-chip border border-[color:var(--color-border-soft)] px-3 py-2 text-label text-[color:var(--color-text-secondary)] focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-inset focus-visible:ring-[color:var(--color-indigo-a42)]"
         >
           {reviewStatus}
         </p>
@@ -1205,7 +1205,7 @@ export function DoNextTab({
                     aria-expanded={repairTargetsOpen}
                     data-testid="insights-repair-queue-rest-toggle"
                     onClick={() => setRepairTargetsOpen((open) => !open)}
-                    className="-mx-1.5 mt-1 flex min-h-7 w-full items-center gap-1.5 rounded-md px-1.5 text-left text-label text-[color:var(--color-text-tertiary)] transition-colors hover:bg-[color:var(--color-overlay-1)] hover:text-[color:var(--color-text-primary)]"
+                    className="-mx-1.5 mt-1 flex min-h-7 w-full items-center gap-1.5 rounded-chip px-1.5 text-left text-label text-[color:var(--color-text-tertiary)] transition-colors hover:bg-[color:var(--color-overlay-1)] hover:text-[color:var(--color-text-primary)]"
                   >
                     {repairTargetsOpen ? (
                       <ChevronDown aria-hidden size={13} className="flex-none" />
@@ -1345,13 +1345,13 @@ function RepairQueueTargetRow({
         <Link
           href={builderHref(target.slug)}
           data-testid="insights-repair-queue-builder-link"
-          className="inline-flex min-h-8 items-center justify-center rounded-md border border-[color:var(--color-border-soft)] bg-[color:var(--color-overlay-1)] px-2.5 text-label font-medium text-[color:var(--color-text-primary)] transition-colors hover:bg-[color:var(--color-overlay-2)]"
+          className="inline-flex min-h-8 items-center justify-center rounded-chip border border-[color:var(--color-border-soft)] bg-[color:var(--color-overlay-1)] px-2.5 text-label font-medium text-[color:var(--color-text-primary)] transition-colors hover:bg-[color:var(--color-overlay-2)]"
         >
           {labels.repairQueueOpenBuilder}
         </Link>
         <Link
           href={ontologyHref(target.slug)}
-          className="inline-flex min-h-8 items-center justify-center rounded-md border border-[color:var(--color-border-soft)] px-2.5 text-label text-[color:var(--color-text-tertiary)] transition-colors hover:text-[color:var(--color-text-primary)]"
+          className="inline-flex min-h-8 items-center justify-center rounded-chip border border-[color:var(--color-border-soft)] px-2.5 text-label text-[color:var(--color-text-tertiary)] transition-colors hover:text-[color:var(--color-text-primary)]"
         >
           {labels.repairQueueOpenOntology}
         </Link>

@@ -76,7 +76,7 @@ export function LocaleSwitch({ onSwitchStart }: LocaleSwitchProps = {}) {
     <div
       role="group"
       aria-label={t('switcher')}
-      className="inline-flex items-center gap-px rounded-md border border-[color:var(--color-border-soft)] bg-[color:var(--color-elevated)] p-px text-label"
+      className="inline-flex items-center gap-px rounded-chip border border-[color:var(--color-border-soft)] bg-[color:var(--color-elevated)] p-px text-label"
     >
       {LOCALES.map(({ code, label, nameKey }) => {
         const active = code === locale;

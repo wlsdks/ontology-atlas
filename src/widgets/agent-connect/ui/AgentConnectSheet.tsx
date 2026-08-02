@@ -98,7 +98,7 @@ function CopyBlock({ label, value, testId }: { label: string; value: string; tes
           {copyState === "copied" ? t("copied") : copyState === "failed" ? t("copyFailed") : t("copy")}
         </button>
       </div>
-      <pre className="max-h-36 overflow-auto rounded-md border border-[color:var(--color-border-soft)] bg-[color:var(--color-overlay-1)] px-3 py-2 font-mono text-label leading-relaxed text-[color:var(--color-text-secondary)]">
+      <pre className="max-h-36 overflow-auto rounded-chip border border-[color:var(--color-border-soft)] bg-[color:var(--color-overlay-1)] px-3 py-2 font-mono text-label leading-relaxed text-[color:var(--color-text-secondary)]">
         {value}
       </pre>
     </div>
@@ -277,7 +277,7 @@ export function AgentConnectSheet({
                     role="radiogroup"
                     aria-label={t("scopeLabel")}
                     data-testid="agent-scope-segment"
-                    className="inline-flex rounded-md border border-[color:var(--color-border-soft)] bg-[color:var(--color-overlay-1)] p-0.5"
+                    className="inline-flex rounded-chip border border-[color:var(--color-border-soft)] bg-[color:var(--color-overlay-1)] p-0.5"
                   >
                     {(["project", "global"] as const).map((option: AgentConfigScope) => (
                       <button
@@ -338,7 +338,7 @@ export function AgentConnectSheet({
                   <StepRow n={3} title={t("step3Title")} desc={t("step3Desc")}>
                     <div
                       data-testid="agent-connect-status"
-                      className="flex items-center gap-2 rounded-md border border-[color:var(--color-border-soft)] bg-[color:var(--color-overlay-1)] px-3 py-2.5"
+                      className="flex items-center gap-2 rounded-chip border border-[color:var(--color-border-soft)] bg-[color:var(--color-overlay-1)] px-3 py-2.5"
                     >
                       <span
                         aria-hidden
@@ -361,7 +361,7 @@ export function AgentConnectSheet({
                   </p>
                   <p
                     data-testid="agent-connect-preview"
-                    className="rounded-md border border-[color:var(--color-border-soft)] bg-[color:var(--color-overlay-1)] px-3 py-2.5 text-body leading-relaxed text-[color:var(--color-text-secondary)]"
+                    className="rounded-chip border border-[color:var(--color-border-soft)] bg-[color:var(--color-overlay-1)] px-3 py-2.5 text-body leading-relaxed text-[color:var(--color-text-secondary)]"
                   >
                     {t("previewSentence", { domains: domainsLabel })}
                   </p>
@@ -371,7 +371,7 @@ export function AgentConnectSheet({
                     onClick={async () => {
                       await copyHandoff(handoffText);
                     }}
-                    className="inline-flex h-8 w-fit items-center gap-1.5 rounded-md border border-[color:var(--color-border-soft)] px-3 text-label text-[color:var(--color-text-tertiary)] transition-colors hover:border-[color:var(--color-indigo-a46)] hover:text-[color:var(--color-text-primary)]"
+                    className="inline-flex h-8 w-fit items-center gap-1.5 rounded-chip border border-[color:var(--color-border-soft)] px-3 text-label text-[color:var(--color-text-tertiary)] transition-colors hover:border-[color:var(--color-indigo-a46)] hover:text-[color:var(--color-text-primary)]"
                   >
                     {handoffCopyState === "copied" ? (
                       <Check size={11} aria-hidden />

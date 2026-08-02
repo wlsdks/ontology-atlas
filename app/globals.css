@@ -2098,8 +2098,19 @@
        — 크롬 밀도 자체를 프로 툴바 급(32~36)으로. 단일 토큰이므로 전 크롬
        필/타일/상태 칩/플로팅 스택이 함께 내려간다. */
     --chrome-tile-size: 36px;
-    --chrome-radius: 10px;
-    --chrome-radius-inner: 7px;
+    /*
+     * ── 두 번째 램프를 접는다 (2026-08-03 전수조사) ──────────────────────────
+     *
+     * 이 둘은 헌장 램프(chip 6 · card 9 · panel 12)와 **평행한 4단 램프**
+     * (키캡4 · inner7 · 타일10 · 패널12)의 가운데 둘이었다. 한 화면 실측에서
+     * 33개 중 17개가 램프 밖이었고, 그 대부분이 여기서 나왔다 — 형제로 읽혀야
+     * 할 요소들이 서로 다른 모서리를 갖는 이유가 이 두 줄이다.
+     *
+     * 값이 1px 씩 움직인다(10→9 · 7→6). 소비처 20곳은 **코드 변경 0** —
+     * 토큰만 리다이렉트한다.
+     */
+    --chrome-radius: var(--radius-card);
+    --chrome-radius-inner: var(--radius-chip);
     --chrome-icon: 16px;
     --chrome-surface: rgba(16, 17, 24, 0.96);
     --chrome-border: var(--color-border-soft);
@@ -2914,8 +2925,9 @@
     /* 9→12px (feat/chrome-system §9, INDEX 패널 v2.1) — 데이터시트와
        INDEX 가 공유하는 패널 계층의 radius 를 크롬 시스템의 4계층 스텝
        (키캡4·inner7·타일/칩/필10·패널12) 마지막 단으로 승격. */
-    --topology-v2-panel-radius: 12px;
-    --topology-v2-panel-row-radius: 5px;
+    --topology-v2-panel-radius: var(--radius-panel);
+    /* 5px 은 램프 밖이었다 — 행은 칩과 같은 모서리를 갖는다. */
+    --topology-v2-panel-row-radius: var(--radius-chip);
     --topology-v2-panel-pad: 14px;
     --topology-v2-panel-surface: #17171c;
     --topology-v2-panel-border: #2a2a30;

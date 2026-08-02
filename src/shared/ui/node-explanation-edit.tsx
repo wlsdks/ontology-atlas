@@ -130,7 +130,7 @@ export function NodeExplanationEdit({
         }}
         aria-label={labels.heading}
         data-testid="node-explanation-input"
-        className="mt-2 w-full resize-y rounded-md border border-[color:var(--color-border-soft)] bg-[color:var(--color-overlay-1)] px-2 py-1.5 text-body leading-5 text-[color:var(--color-text-primary)] transition-colors focus-visible:border-[color:var(--color-indigo-a46)] focus-visible:outline-none"
+        className="mt-2 w-full resize-y rounded-chip border border-[color:var(--color-border-soft)] bg-[color:var(--color-overlay-1)] px-2 py-1.5 text-body leading-5 text-[color:var(--color-text-primary)] transition-colors focus-visible:border-[color:var(--color-indigo-a46)] focus-visible:outline-none"
       />
     </div>
   );

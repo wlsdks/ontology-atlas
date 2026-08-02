@@ -1209,7 +1209,7 @@ describe("TopologyV2DetailPanel — 시안 재설계 구조", () => {
     renderPanel();
     const name = screen.getByRole("heading", { level: 2 });
     expect(name).toHaveTextContent("Views");
-    expect(name.className).toContain("text-[20px]");
+    expect(name.className).toContain("text-title");
     expect(name.className).toContain("truncate");
   });
 

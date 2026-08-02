@@ -162,7 +162,7 @@ export function AgentClientButtons({
         <div
           role="status"
           data-testid="agent-server-unavailable"
-          className="rounded-md border border-[color:var(--color-border-soft)] bg-[color:var(--color-overlay-1)] px-3 py-2.5"
+          className="rounded-chip border border-[color:var(--color-border-soft)] bg-[color:var(--color-overlay-1)] px-3 py-2.5"
         >
           <div className="flex items-start gap-2">
             <Info
@@ -388,7 +388,7 @@ export function AgentClientButtons({
       {/* 핵심 평문 — stdio 를 로컬-퍼스트 장점으로 */}
       <p
         data-testid="agent-connect-server-line"
-        className="mt-1 rounded-md border border-[color:var(--color-border-soft)] bg-[color:var(--color-overlay-1)] px-3 py-2.5 text-label leading-relaxed text-[color:var(--color-text-tertiary)]"
+        className="mt-1 rounded-chip border border-[color:var(--color-border-soft)] bg-[color:var(--color-overlay-1)] px-3 py-2.5 text-label leading-relaxed text-[color:var(--color-text-tertiary)]"
       >
         {t("serverLine")}
       </p>
@@ -411,12 +411,12 @@ export function AgentClientButtons({
  * 인디고 링 토큰을 쓰고 있었다.
  *
  * 이 표면의 방언 셋만 덮는다 — 전폭(`w-full`) · 이 시트의 반지름
- * (`rounded-md`) · 설정 시트 타입 방언(`text-body`). 나머지(색 · 상태 · 눌림 ·
+ * (`rounded-chip`) · 설정 시트 타입 방언(`text-body`). 나머지(색 · 상태 · 눌림 ·
  * 비활성 · 포커스 링)는 프리미티브가 소유한다. `size="sm"` 의 `h-8` 이 곧
  * `--control-h-md`(32px)라 높이는 종전 값 그대로다.
  */
 function clientControlClass(extra?: string) {
-  return cn(buttonVariants({ variant: "outline", size: "sm" }), "w-full rounded-md text-body", extra);
+  return cn(buttonVariants({ variant: "outline", size: "sm" }), "w-full rounded-chip text-body", extra);
 }
 
 function ClientStatus({

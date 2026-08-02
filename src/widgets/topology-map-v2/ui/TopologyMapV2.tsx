@@ -468,7 +468,7 @@ export function TopologyMapV2(props: TopologyMapV2Props) {
           {realmEnterTooltip ? (
             <span
               role="tooltip"
-              className="pointer-events-none absolute left-1/2 top-full mt-2 hidden -translate-x-1/2 whitespace-nowrap rounded-[var(--topology-v2-panel-radius)] border border-[color:var(--topology-v2-panel-border)] bg-[color:var(--topology-v2-panel-surface)] px-2 py-1 text-[11.5px] font-medium text-[color:var(--topology-v2-panel-text-primary)] shadow-[var(--topology-v2-panel-shadow)] group-hover:block"
+              className="pointer-events-none absolute left-1/2 top-full mt-2 hidden -translate-x-1/2 whitespace-nowrap rounded-[var(--topology-v2-panel-radius)] border border-[color:var(--topology-v2-panel-border)] bg-[color:var(--topology-v2-panel-surface)] px-2 py-1 text-label font-medium text-[color:var(--topology-v2-panel-text-primary)] shadow-[var(--topology-v2-panel-shadow)] group-hover:block"
             >
               {realmEnterTooltip}
             </span>
