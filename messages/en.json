@@ -3245,7 +3245,9 @@
     "bearingDependsOn": "Depends on",
     "bearingUsedBy": "Used by",
     "dockNoRemote": "Still only on this machine — connect a remote repository to read it elsewhere and keep a backup.",
-    "dockConnectRemote": "Connect a remote"
+    "dockConnectRemote": "Connect a remote",
+    "pendingNow": "now",
+    "pendingHint": "Commit to add it to the history"
   },
   "agentFiles": {
     "header": "Agent files",

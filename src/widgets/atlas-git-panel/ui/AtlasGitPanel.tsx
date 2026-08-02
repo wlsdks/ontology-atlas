@@ -234,6 +234,12 @@ function SectionLabel({ children }: { children: React.ReactNode }) {
  * 다시 확인하는 것 하나뿐이라, 전폭 상단 정렬로 두면 "내용이 안 나온 페이지"
  * 로 읽힌다.
  */
+/**
+ * 작업대에서 지금 보고 있는 것. `pending` = 아직 커밋 안 한 변경,
+ * `commit` = 그 해시의 커밋.
+ */
+export type WorkbenchSelection = { kind: "pending" } | { kind: "commit"; hash: string };
+
 type GitStage = "web" | "no-vault" | "loading" | "not-installed" | "error" | "not-initialized" | "workbench";
 
 type SetupStep = 1 | 2 | 3;
@@ -355,7 +361,17 @@ export function AtlasGitPanel({
    * 변경이 있어도 비교할 예전 내용이 없어서, 변경 수로 판정하면 사용자가
    * 요청하지도 않은 빈 칸에 착지한다(소유자 스크린샷의 그 한 줄).
    */
-  const [evidenceTabChoice, setEvidenceTabChoice] = useState<"diff" | "history" | null>(null);
+  /*
+   * 작업대의 선택 — **탭을 대신하는 축**이다.
+   *
+   * 종전에는 오른쪽 열이 「변경 내용 / 커밋 이력」 탭으로 갈렸는데, 그 둘은
+   * 사실 *"아직 커밋 안 된 것 vs 된 것"* 이라 **목록의 위치**가 이미 말한다
+   * (맨 위가 안 된 것, 아래가 된 것 — 시간순이니 자연스럽다). 탭이 있으면
+   * 커밋 이력이 그 뒤에 숨어서, 실제로 소유자가 새 화면을 못 봤다.
+   *
+   * `null` = 아직 안 골랐음 → 아래 `selection` 이 상태를 보고 정한다.
+   */
+  const [selectionChoice, setSelectionChoice] = useState<WorkbenchSelection | null>(null);
   const [expandedHash, setExpandedHash] = useState<string | null>(null);
 
   /**
@@ -425,7 +441,19 @@ export function AtlasGitPanel({
   // 행별 줄 증감이 둘 다 이 값을 봐야 하는데, 자식에서 두 번 계산하면
   // 화면의 두 곳이 서로 다른 사실을 말할 수 있다.
   const diffFiles = useMemo(() => parseUnifiedDiff(diffText), [diffText]);
-  const evidenceTab = evidenceTabChoice ?? (diffFiles.length > 0 ? "diff" : "history");
+  /*
+   * 고르기 전 기본값: 아직 커밋 안 한 변경이 있으면 그것, 없으면 최근 커밋.
+   * 판정 기준이 "변경 수" 가 아니라 **파싱된 diff 파일 수** 인 이유는 종전
+   * 탭 판정과 같다 — 새로 만든 문서만 바뀐 순간에는 변경이 있어도 비교할
+   * 예전 내용이 없어서, 변경 수로 판정하면 요청하지도 않은 빈 칸에 착지한다.
+   */
+  const selection: WorkbenchSelection =
+    selectionChoice ??
+    (diffFiles.length > 0
+      ? { kind: "pending" }
+      : history.length > 0
+        ? { kind: "commit", hash: history[0].hash }
+        : { kind: "pending" });
 
   const stage: GitStage = !bridgeAvailable
     ? "web"
@@ -462,9 +490,12 @@ export function AtlasGitPanel({
       setSnapshotResult(result);
       setConfirming(false);
       setPushOptIn(false);
-      // 사용자의 명시 선택을 지운다 — 남긴 직후 화면은 `recall` 모양으로
-      // 넘어가고(지난 걸음이 본문), 변경이 남아 있으면 계속 `바뀐 줄`이다.
-      setEvidenceTabChoice(null);
+      /*
+       * 사용자의 명시 선택을 지운다 — 커밋 직후 화면은 기본값으로 돌아간다.
+       * 남은 변경이 있으면 계속 「아직 커밋 안 한 변경」, 없으면 방금 만든
+       * 커밋이 열린다. 방금 한 일의 결과를 보여주는 쪽이 옳다.
+       */
+      setSelectionChoice(null);
       setSelectedPath(null);
       await refresh();
     } catch (err) {
@@ -652,8 +683,8 @@ export function AtlasGitPanel({
             snapshotError={snapshotError}
             confirmSnapshot={confirmSnapshot}
             onRetry={refresh}
-            evidenceTab={evidenceTab}
-            setEvidenceTab={setEvidenceTabChoice}
+            selection={selection}
+            setSelection={setSelectionChoice}
             diffFiles={diffFiles}
             history={history}
             expandedHash={expandedHash}
@@ -1711,6 +1742,9 @@ function StepList({
   expandedHash,
   setExpandedHash,
   settledHash,
+  pendingCount,
+  selection,
+  setSelection,
 }: {
   t: Translator;
   history: GitCommitInfo[];
@@ -1729,6 +1763,13 @@ function StepList({
   setExpandedHash: (v: string | null) => void;
   /** 방금 남긴 커밋의 해시 — 그 한 줄만 확정 램프로 정착시킨다. */
   settledHash?: string | null;
+  /**
+   * 아직 커밋 안 한 변경 수. 0 이면 그 줄을 안 그린다 — 없는 것을 자리로
+   * 남겨 두면 목록이 "무언가 비어 있다" 로 읽힌다.
+   */
+  pendingCount: number;
+  selection: WorkbenchSelection;
+  setSelection: (v: WorkbenchSelection) => void;
 }) {
   if (history.length === 0) {
     return (
@@ -1743,6 +1784,37 @@ function StepList({
 
   return (
     <ul data-testid="atlas-git-steps" className="flex flex-col">
+      {/*
+        아직 커밋 안 한 변경도 **변경 묶음**이라는 점에서 커밋과 같다. 다른
+        것은 아직 이름이 안 붙었다는 것뿐이라, 같은 행 문법을 쓰고 구별은
+        선 스타일(점선)과 시각(「지금」)이 진다. 새 색은 안 쓴다.
+      */}
+      {pendingCount > 0 ? (
+        <li>
+          <button
+            type="button"
+            data-testid="atlas-git-pending-row"
+            aria-pressed={selection.kind === "pending"}
+            onClick={() => setSelection({ kind: "pending" })}
+            className="flex h-[var(--git-step-h)] w-full items-center gap-3 rounded-[var(--radius-chip)] border-l-2 border-l-dashed border-l-[color:var(--color-indigo-a46)] pr-1.5 pl-1.5 text-left transition-colors hover:bg-[color:var(--color-overlay-1)] aria-pressed:border-l-[color:var(--color-indigo-brand)] aria-pressed:bg-[color:var(--color-overlay-2)]"
+          >
+            <span className="w-20 shrink-0 truncate text-label text-[color:var(--color-text-tertiary)]">
+              {t("pendingNow")}
+            </span>
+            <span className="flex min-w-0 flex-1 flex-col">
+              <span className="truncate text-body font-medium text-[color:var(--color-text-primary)]">
+                {t("changesTitle")}
+              </span>
+              <span className="truncate text-label text-[color:var(--color-text-quaternary)]">
+                {t("pendingHint")}
+              </span>
+            </span>
+            <span className="shrink-0 tabular-nums text-label text-[color:var(--color-text-tertiary)]">
+              {pendingCount}
+            </span>
+          </button>
+        </li>
+      ) : null}
       {history.map((commit, index) => {
         const summary = describeSnapshotSubject(commit.subject);
         const parts = [
@@ -1759,7 +1831,7 @@ function StepList({
         const stepConcepts = concepts.get(commit.hash) ?? [];
         const names = summary.slugs.join(", ");
         const trail = summary.overflow > 0 ? t("moreSlugs", { count: summary.overflow }) : "";
-        const expanded = expandedHash === commit.hash;
+        const expanded = selection.kind === "commit" && selection.hash === commit.hash;
         return (
           <li
             key={commit.hash}
@@ -1773,7 +1845,7 @@ function StepList({
               data-testid="atlas-git-history-item"
               aria-expanded={expanded}
               title={t("stepSelectHint")}
-              onClick={() => setExpandedHash(expanded ? null : commit.hash)}
+              onClick={() => setSelection({ kind: "commit", hash: commit.hash })}
               className="flex h-[var(--git-step-h)] w-full items-center gap-3 rounded-[var(--radius-chip)] border-l-2 border-l-transparent pr-1.5 pl-1.5 text-left transition-colors hover:bg-[color:var(--color-overlay-1)] aria-expanded:border-l-[color:var(--color-indigo-brand)] aria-expanded:bg-[color:var(--color-overlay-2)]"
             >
               <span className="w-20 shrink-0 truncate text-label text-[color:var(--color-text-quaternary)]">
@@ -1815,19 +1887,6 @@ function StepList({
                 {commit.shortHash}
               </span>
             </button>
-            {expanded ? (
-              <CommitDetail
-                t={t}
-                hash={commit.hash}
-                isoTime={commit.isoTime}
-                subject={commit.subject}
-                concepts={stepConcepts}
-                focusedConceptId={focusedConceptId}
-                setFocusedConceptId={setFocusedConceptId}
-                egoFor={egoFor}
-                kindLabel={kindLabel}
-              />
-            ) : null}
           </li>
         );
       })}
@@ -2047,8 +2106,8 @@ function DesktopBody({
   snapshotError,
   confirmSnapshot,
   onRetry,
-  evidenceTab,
-  setEvidenceTab,
+  selection,
+  setSelection,
   diffFiles,
   history,
   expandedHash,
@@ -2103,8 +2162,8 @@ function DesktopBody({
   snapshotError: string | null;
   confirmSnapshot: () => void;
   onRetry: () => void;
-  evidenceTab: "diff" | "history";
-  setEvidenceTab: (v: "diff" | "history") => void;
+  selection: WorkbenchSelection;
+  setSelection: (v: WorkbenchSelection) => void;
   diffFiles: AtlasGitDiffFile[];
   history: GitCommitInfo[];
   expandedHash: string | null;
@@ -2394,9 +2453,12 @@ function DesktopBody({
               kindLabel={kindLabel}
               focusedConceptId={focusedConceptId}
               setFocusedConceptId={setFocusedConceptId}
-              expandedHash={expandedHash}
-              setExpandedHash={setExpandedHash}
+              expandedHash={null}
+              setExpandedHash={() => {}}
               settledHash={settledHash}
+              pendingCount={0}
+              selection={selection}
+              setSelection={setSelection}
             />
           </div>
           {dock}
@@ -2409,7 +2471,15 @@ function DesktopBody({
   // 증거 열 최소 폭이 `--git-evidence-min`(600px)인 이유: 11px mono 80칼럼
   // ≈ 528px + gutter + padding. 시안 v1 의 420px 는 모든 줄을 잘랐고 **잘린
   // diff 는 증거가 아니다**. `lg` 미만은 세로로 쌓인다(증거가 목록 아래).
-  const showEvidence = diffFiles.length > 0 || history.length > 0;
+  /*
+   * 오른쪽 열은 이제 「증거」가 아니라 **고른 것의 상세**다. 그래서 존재
+   * 조건도 바뀐다 — 종전에는 "보여줄 diff 나 이력이 있는가" 였는데, 지금은
+   * 변경 목록도 이 열에 살기 때문에 **커밋할 것이 있으면** 열이 있어야 한다.
+   *
+   * 구 규칙(`diffFiles.length > 0`)을 그대로 두면 새로 만든 문서만 바뀐
+   * 순간(비교할 예전 내용이 없어 diff 가 0줄)에 변경 목록이 통째로 사라진다.
+   */
+  const showEvidence = statusCounts.total > 0 || diffFiles.length > 0 || history.length > 0;
 
   return (
     <div
@@ -2440,20 +2510,30 @@ function DesktopBody({
               "mx-auto w-full max-w-[var(--git-single-measure)]",
         )}
       >
+        {/*
+          왼쪽은 **시간축 하나**다. 맨 위가 아직 커밋 안 한 변경, 그 아래가
+          커밋 이력 — 시간순이라 "안 된 것 / 된 것" 이 위치로 이미 갈린다.
+          그래서 탭이 필요 없다(구 「변경 내용 / 커밋 이력」 탭 제거).
+        */}
         <div className="flex min-w-0 flex-col gap-3 xl:min-h-0">
           {remotePanel}
-          <ChangeList
-            t={t}
-            kindGroups={kindGroups}
-            otherChanges={otherChanges}
-            statusCounts={statusCounts}
-            deltaByPath={deltaByPath}
-            selectedPath={selectedPath}
-            setSelectedPath={setSelectedPath}
-            othersOpen={othersOpen}
-            setOthersOpen={setOthersOpen}
-            stagedOutsideCount={status?.stagedOutsideVault.length ?? 0}
-          />
+          <div className="min-h-0 xl:flex-1 xl:overflow-y-auto">
+            <StepList
+              t={t}
+              history={history}
+              concepts={concepts}
+              egoFor={egoFor}
+              kindLabel={kindLabel}
+              focusedConceptId={focusedConceptId}
+              setFocusedConceptId={setFocusedConceptId}
+              expandedHash={null}
+              setExpandedHash={() => {}}
+              settledHash={settledHash}
+              pendingCount={statusCounts.total}
+              selection={selection}
+              setSelection={setSelection}
+            />
+          </div>
           {dock}
         </div>
 
@@ -2462,58 +2542,63 @@ function DesktopBody({
             data-testid="atlas-git-evidence"
             className="flex min-w-0 flex-col gap-2 xl:min-h-0 xl:border-l xl:border-[color:var(--color-divider)] xl:pl-5"
           >
-            <div className="flex shrink-0 flex-wrap items-center justify-between gap-x-3 gap-y-1">
-              <div className="flex items-center gap-1.5">
-                <EvidenceTab
-                  active={evidenceTab === "diff"}
-                  testId="atlas-git-diff-toggle"
-                  onClick={() => setEvidenceTab("diff")}
-                >
-                  {t("diffTab")}
-                </EvidenceTab>
-                <EvidenceTab
-                  active={evidenceTab === "history"}
-                  testId="atlas-git-history-tab"
-                  onClick={() => setEvidenceTab("history")}
-                >
-                  {t("stepsTab")}
-                </EvidenceTab>
-              </div>
-              {/* 무엇의 증거인지 — 고른 것이 없으면 "전체" 라고 말한다. */}
-              {evidenceTab === "diff" ? (
-                <span className="min-w-0 truncate font-mono text-caption text-[color:var(--color-text-quaternary)]">
-                  {selectedPath ?? t("diffAllLabel")}
-                </span>
-              ) : null}
-            </div>
-
-            {evidenceTab === "diff" ? (
-              shownDiffFiles.length > 0 ? (
-                <DiffView
+            {/*
+              오른쪽은 **왼쪽에서 고른 것 하나**를 그린다. 탭이 아니라 선택이
+              무엇을 보여줄지 정한다 — 구조가 "지금 무엇을 보고 있나" 를 스스로
+              말하므로 탭 라벨을 읽어 알아낼 필요가 없다.
+            */}
+            {selection.kind === "pending" ? (
+              <>
+                <div className="flex shrink-0 flex-wrap items-center justify-between gap-x-3 gap-y-1">
+                  <SectionLabel>{t("changesTitle")}</SectionLabel>
+                  <span className="min-w-0 truncate font-mono text-caption text-[color:var(--color-text-quaternary)]">
+                    {selectedPath ?? t("diffAllLabel")}
+                  </span>
+                </div>
+                <ChangeList
                   t={t}
-                  files={shownDiffFiles}
-                  showFileHeads={!selectedPath && shownDiffFiles.length > 1}
+                  kindGroups={kindGroups}
+                  otherChanges={otherChanges}
+                  statusCounts={statusCounts}
+                  deltaByPath={deltaByPath}
+                  selectedPath={selectedPath}
+                  setSelectedPath={setSelectedPath}
+                  othersOpen={othersOpen}
+                  setOthersOpen={setOthersOpen}
+                  stagedOutsideCount={status?.stagedOutsideVault.length ?? 0}
                 />
-              ) : (
-                <p className="git-fade-in text-label leading-relaxed text-[color:var(--color-text-quaternary)]">
-                  {t("diffEmpty")}
-                </p>
-              )
+                {shownDiffFiles.length > 0 ? (
+                  <DiffView
+                    t={t}
+                    files={shownDiffFiles}
+                    showFileHeads={!selectedPath && shownDiffFiles.length > 1}
+                  />
+                ) : (
+                  <p className="git-fade-in text-label leading-relaxed text-[color:var(--color-text-quaternary)]">
+                    {t("diffEmpty")}
+                  </p>
+                )}
+              </>
             ) : (
-              <div className="git-fade-in overflow-y-auto max-xl:max-h-[var(--git-evidence-stack-max)] xl:min-h-0 xl:flex-1">
-                <StepList
-                  t={t}
-                  history={history}
-                  concepts={concepts}
-                  egoFor={egoFor}
-                  kindLabel={kindLabel}
-                  focusedConceptId={focusedConceptId}
-                  setFocusedConceptId={setFocusedConceptId}
-                  expandedHash={expandedHash}
-                  setExpandedHash={setExpandedHash}
-                  settledHash={settledHash}
-                />
-              </div>
+              (() => {
+                const picked = history.find((c) => c.hash === selection.hash);
+                if (!picked) return null;
+                return (
+                  <div className="git-fade-in overflow-y-auto xl:min-h-0 xl:flex-1">
+                    <CommitDetail
+                      t={t}
+                      hash={picked.hash}
+                      isoTime={picked.isoTime}
+                      subject={picked.subject}
+                      concepts={concepts.get(picked.hash) ?? []}
+                      focusedConceptId={focusedConceptId}
+                      setFocusedConceptId={setFocusedConceptId}
+                      egoFor={egoFor}
+                      kindLabel={kindLabel}
+                    />
+                  </div>
+                );
+              })()
             )}
           </div>
         ) : null}
