@@ -175,7 +175,6 @@ describe("AtlasGitPanel — 데스크톱(Tauri)", () => {
     expect(groups).toHaveTextContent("capabilities/foo");
 
     // #85 — 이력은 증거 pane 의 두 번째 탭이다(좌: 무엇을 남길까 / 우: 증거).
-    fireEvent.click(screen.getByTestId("atlas-git-history-tab"));
     const step = screen.getByTestId("atlas-git-history-item");
     // 2026-07-27 — 걸음 요약은 **사람 말**로 읽힌다. 커밋 제목
     // `ontology snapshot: +1 concept (…)` 은 우리가 만든 문자열이고, 그걸
@@ -188,7 +187,7 @@ describe("AtlasGitPanel — 데스크톱(Tauri)", () => {
 
     // 다만 원문은 사라지지 않는다 — 펼치면 감사 흔적으로 그대로 있다.
     fireEvent.click(step);
-    expect(screen.getByTestId("atlas-git-history-detail")).toHaveTextContent(
+    expect(await screen.findByTestId("atlas-git-history-detail")).toHaveTextContent(
       "ontology snapshot: +1 concept (capabilities/foo)",
     );
   });
@@ -356,25 +355,41 @@ describe("AtlasGitPanel — 데스크톱(Tauri)", () => {
     expect(screen.queryByTestId("atlas-git-remote-setup")).not.toBeInTheDocument();
   });
 
-  it("바뀐 줄이 증거 pane 기본 탭으로 열려 있다 (#85)", async () => {
+  /*
+   * 탭이 사라졌다(2026-08-02). 「변경 내용 / 커밋 이력」은 사실 *안 된 것 vs
+   * 된 것* 이라 목록의 위치가 이미 말한다 — 맨 위가 미커밋, 아래가 커밋.
+   * 그래서 이 테스트는 이제 **기본 선택**을 잡는다: 커밋할 게 있으면 그것이
+   * 열려 있고 변경 내용이 바로 보인다.
+   */
+  it("커밋할 게 있으면 그 변경이 기본으로 열려 있다 — 탭을 눌러 찾지 않는다", async () => {
     installDesktopGit();
     renderPanel(<AtlasGitPanel vaultPath="/repo/vault" />);
 
-    // 토글이 아니라 탭이다 — 증거는 숨겨두는 게 아니라 목록 옆에 늘 있다.
     expect(await screen.findByTestId("atlas-git-diff-pre")).toHaveTextContent("+new line");
-    fireEvent.click(screen.getByTestId("atlas-git-history-tab"));
-    expect(screen.queryByTestId("atlas-git-diff-pre")).not.toBeInTheDocument();
-    fireEvent.click(screen.getByTestId("atlas-git-diff-toggle"));
-    expect(screen.getByTestId("atlas-git-diff-pre")).toHaveTextContent("+new line");
+    // 미커밋 줄이 목록 맨 위에 있고, 그것이 골라져 있다.
+    const pending = screen.getByTestId("atlas-git-pending-row");
+    expect(pending).toHaveAttribute("aria-pressed", "true");
+    // 탭 버튼은 더 이상 존재하지 않는다.
+    expect(screen.queryByTestId("atlas-git-diff-toggle")).toBeNull();
+    expect(screen.queryByTestId("atlas-git-history-tab")).toBeNull();
+  });
+
+  it("커밋 이력이 탭 뒤에 숨지 않는다 — 목록에 늘 있다", async () => {
+    installDesktopGit();
+    renderPanel(<AtlasGitPanel vaultPath="/repo/vault" />);
+    const steps = await screen.findByTestId("atlas-git-steps");
+    expect(steps).toHaveTextContent("abc1234");
   });
 
   it("expands a history item to its full hash + iso time on click", async () => {
     installDesktopGit();
     renderPanel(<AtlasGitPanel vaultPath="/repo/vault" />);
 
-    fireEvent.click(await screen.findByTestId("atlas-git-history-tab"));
+    await screen.findByTestId("atlas-git-steps");
     fireEvent.click(screen.getByTestId("atlas-git-history-item"));
-    expect(screen.getByTestId("atlas-git-history-detail")).toHaveTextContent("abc1234def5678");
+    expect(await screen.findByTestId("atlas-git-history-detail")).toHaveTextContent(
+      "abc1234def5678",
+    );
   });
 
   it("목적지에는 닫기가 없다 — 제목은 페이지 헤드라인이다", async () => {
@@ -539,11 +554,13 @@ describe("AtlasGitPanel — 작업대 빈 상태", () => {
     expect(screen.queryByTestId("atlas-git-evidence")).not.toBeInTheDocument();
   });
 
-  it("남길 것이 있으면 두 열이 되고, 증거 열은 보여줄 것이 있을 때만 온다", async () => {
-    // 소유자 스크린샷의 그 순간: 새로 만든 문서 하나 + 첫 걸음 전 → 바뀐 줄도
-    // 지난 걸음도 없다. 구 화면은 그래도 2열을 선언해 오른쪽에 한 줄
-    // ("새로 만든 문서라 비교할 예전 내용이 없어요")만 띄우고 세로 구분선을
-    // 화면 끝까지 그었다.
+  it("새로 만든 문서만 바뀐 순간에도 변경 목록이 살아 있다", async () => {
+    /*
+     * 소유자 스크린샷의 그 순간: 새로 만든 문서 하나 + 첫 커밋 전 → 비교할
+     * 예전 내용이 없어 diff 가 0줄이다. 2단 전환에서 변경 목록이 오른쪽 열로
+     * 옮겨갔으므로, 열의 존재 조건이 `diff 가 있는가` 로 남아 있으면 이
+     * 순간에 판단 대상이 **통째로 사라진다**. 그 회귀를 잡는다.
+     */
     installDesktopGit({
       status: { ...STATUS_WITH_CHANGES, changedCount: 1 },
       diff: { count: 1, files: [DIFF_WITH_CHANGES.files[0]], diff: "" },
@@ -553,7 +570,6 @@ describe("AtlasGitPanel — 작업대 빈 상태", () => {
 
     const workbench = await screen.findByTestId("atlas-git-workbench");
     expect(workbench).toHaveAttribute("data-shape", "decide");
-    expect(screen.queryByTestId("atlas-git-evidence")).not.toBeInTheDocument();
     // 판단 대상은 그대로 있다.
     expect(screen.getByTestId("atlas-git-change-groups")).toHaveTextContent("capabilities/foo");
   });
@@ -781,7 +797,7 @@ describe("AtlasGitPanel — 걸음의 주어는 개념이다", () => {
   it("걸음 행이 커밋 제목이 아니라 개념 이름을 주어로 그린다", async () => {
     installDesktopGit({ history: HISTORY_WITH_FILES });
     renderPanel(<AtlasGitPanel vaultPath="/repo/vault" graph={GRAPH} />);
-    fireEvent.click(await screen.findByTestId("atlas-git-history-tab"));
+    await screen.findByTestId("atlas-git-steps");
     const step = screen.getByTestId("atlas-git-history-item");
     expect(step).toHaveTextContent("첫 실행 안내");
     // 원문은 사라지지 않는다 — 아래 줄에서 그 걸음을 구별해 준다.
@@ -806,7 +822,7 @@ describe("AtlasGitPanel — 걸음의 주어는 개념이다", () => {
       ],
     });
     renderPanel(<AtlasGitPanel vaultPath="/repo/vault" graph={GRAPH} />);
-    fireEvent.click(await screen.findByTestId("atlas-git-history-tab"));
+    await screen.findByTestId("atlas-git-steps");
     expect(screen.getByTestId("atlas-git-history-item")).not.toHaveTextContent("첫 실행 안내");
   });
 });
@@ -884,7 +900,7 @@ describe("AtlasGitPanel — 고른 개념의 성질과 이웃", () => {
   it("걸음을 펼치면 그 개념의 성질과 이웃이 그 자리에 뜬다", async () => {
     installDesktopGit({ history: HISTORY });
     renderPanel(<AtlasGitPanel vaultPath="/repo/vault" graph={EGO_GRAPH} />);
-    fireEvent.click(await screen.findByTestId("atlas-git-history-tab"));
+    await screen.findByTestId("atlas-git-steps");
     fireEvent.click(screen.getByTestId("atlas-git-history-item"));
     const ego = await screen.findByTestId("atlas-git-concept-ego");
     expect(ego).toHaveTextContent("첫 실행 안내");
@@ -895,7 +911,7 @@ describe("AtlasGitPanel — 고른 개념의 성질과 이웃", () => {
   it("그래프가 없으면 (웹·미로드) 카드를 아예 안 그린다 — 빈 상자를 두지 않는다", async () => {
     installDesktopGit({ history: HISTORY });
     renderPanel(<AtlasGitPanel vaultPath="/repo/vault" />);
-    fireEvent.click(await screen.findByTestId("atlas-git-history-tab"));
+    await screen.findByTestId("atlas-git-steps");
     fireEvent.click(screen.getByTestId("atlas-git-history-item"));
     expect(screen.queryByTestId("atlas-git-concept-ego")).toBeNull();
   });

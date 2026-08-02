@@ -3245,7 +3245,9 @@
     "bearingDependsOn": "기대는 곳",
     "bearingUsedBy": "이곳을 쓰는 곳",
     "dockNoRemote": "아직 이 컴퓨터에만 쌓여요 — 원격 저장소를 연결하면 다른 기기에서도 보고 백업돼요.",
-    "dockConnectRemote": "원격 저장소 연결"
+    "dockConnectRemote": "원격 저장소 연결",
+    "pendingNow": "지금",
+    "pendingHint": "커밋하면 이력이 됩니다"
   },
   "agentFiles": {
     "header": "에이전트 파일",
