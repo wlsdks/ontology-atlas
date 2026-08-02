@@ -218,12 +218,12 @@ describe('i18n message catalog', () => {
   it('keeps Korean app settings MCP proof copy readable without internal client jargon', async () => {
     const ko = await readJson(path.join(MESSAGES_DIR, 'ko.json'));
     const settings = ko.nav.settingsMenu;
+    // 2026-08-02 — 세 이름이 전부 「AI」로 시작해 첫 글자로 안 갈렸다
+    // (「AI 에이전트」 절 · 「AI 에이전트 연결」 행 · 「AI 연결」 서브뷰). 복도가
+    // 사라지며 두 목적지가 LNB 로 올라왔고 이름이 「내」/「앱 안」으로 갈렸다.
+    // 얼린 문장 대신 **절 이름 전체**를 스캔한다.
     const visibleCopy = [
-      settings.groupAgent,
-      settings.agentTitle,
-      settings.agentBody,
-      settings.agentStatusReady,
-      settings.agentStatusRepair,
+      JSON.stringify(settings.section),
       settings.agentStatusNoVault,
       settings.agentNoVaultHint,
       settings.mcpProofTitle,
@@ -232,11 +232,11 @@ describe('i18n message catalog', () => {
       settings.mcpProofCopied,
     ].join('\n');
 
-    assert.equal(settings.groupAgent, 'AI 에이전트');
-    assert.equal(settings.agentTitle, 'AI 에이전트 연결');
     assert.equal(settings.mcpProofTitle, 'MCP 첫 호출');
     assert.match(visibleCopy, /에이전트/);
-    assert.match(visibleCopy, /검증/);
+    // 두 목적지의 이름이 **첫 글자로** 갈린다 — 같은 글자로 시작하면 눈이 못
+    // 가른다는 것이 이 개명의 근거였으므로, 그 성질을 그대로 잠근다.
+    assert.notEqual(settings.section.agent[0], settings.section.ai[0]);
     assert.doesNotMatch(visibleCopy, /\bAgent\b|\bFallback\b|\bclient\b|\bnamespace\b|\breload\b|\brestart\b|graph DB gate/);
   });
 
@@ -628,15 +628,16 @@ describe('i18n message catalog', () => {
     // 않는다" 는 규칙이다.
     const mixedLanguageCopy = [
       JSON.stringify(ko.download),
-      settings.agentBody,
+      // LNB 절 이름 — 2026-08-02 에 「AI 에이전트」 한 줄이 「내 에이전트 연결」·
+      // 「앱 안 에이전트」 두 목적지로 갈렸다. 문자열 하나를 얼리는 대신 절
+      // 이름 **전체**를 스캔에 넣는다(위 주석과 같은 이유다 — 얼린 문장은
+      // 사라지는 순간 게이트도 데려간다. 구 `settings.agentBody` 고정이 정확히
+      // 그 부류였고, 복도가 사라지며 함께 사라졌다).
+      JSON.stringify(settings.section),
       settings.agentNoVaultHint,
       settings.mcpProofBody,
     ].join('\n');
 
-    assert.equal(
-      settings.agentBody,
-      'MCP 설정 파일 상태 · 연결 증명 · 검증 게이트',
-    );
     assert.equal(
       settings.agentNoVaultHint,
       '작업공간 폴더를 열면 설정 파일 상태 확인과 수리를 여기서 할 수 있어요.',

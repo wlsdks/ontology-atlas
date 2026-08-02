@@ -115,7 +115,10 @@ vi.mock('next-intl', () => ({
  * 시트를 연다. 2026-07-29 에 설정이 **LNB 2단**이 되면서, 화면 절이 아닌 내용은
  * 왼쪽 목록을 눌러야 나온다 — 그래서 절을 인자로 받는다. 기본값은 첫 화면(화면 절).
  */
-function openSheet(ui?: ReactNode, section?: 'screen' | 'background' | 'expand' | 'footprint' | 'workspace' | 'agent') {
+function openSheet(
+  ui?: ReactNode,
+  section?: 'screen' | 'background' | 'expand' | 'footprint' | 'workspace' | 'agent' | 'ai',
+) {
   render(ui ?? <AppSettingsMenu mode="static" />);
   fireEvent.click(screen.getByTestId('app-settings-trigger'));
   if (section && section !== 'screen') fireEvent.click(screen.getByTestId(`app-settings-nav-${section}`));
@@ -213,15 +216,24 @@ describe('AppSettingsMenu single-sheet recomposition', () => {
     );
   });
 
-  it('keeps MCP proof long-form OFF the root sheet and behind the agent drill-in', () => {
-    openSheet(undefined, 'agent');
+  /**
+   * A-3 (2026-08-02) — 「내 에이전트 연결」은 **LNB 한 줄**이고 그 내용은 곧바로
+   * 오른쪽 칸에 선다. 종전엔 절 안에 요약 2행짜리 복도가 있고 그 행이 서브뷰로
+   * 드릴인했다(빈칸 82.5% · 설정 항목 0개 · 드릴인 중 LNB 소실).
+   *
+   * 이 검사가 잠그는 것 셋: ① MCP 증명 장문은 첫 화면에 없다 ② 한 번의 클릭으로
+   * 도착한다 ③ **도착해도 LNB 가 그대로 있다**(뒤로가기 계단 0).
+   */
+  it('lands the agent destination in one LNB click with the list still on screen', () => {
+    openSheet();
     expect(screen.queryByText('nav.settingsMenu.mcpProofTitle')).not.toBeInTheDocument();
-    fireEvent.click(screen.getByTestId('app-settings-agent-drillin'));
-    expect(screen.getByTestId('app-settings-agent-view')).toBeInTheDocument();
+    fireEvent.click(screen.getByTestId('app-settings-nav-agent'));
+    expect(screen.getByTestId('app-settings-pane-agent')).toBeInTheDocument();
     expect(screen.getByText('nav.settingsMenu.mcpProofTitle')).toBeInTheDocument();
-    // 뒤로가기 헤더 — 루트 시트로 복귀.
-    fireEvent.click(screen.getByTestId('app-settings-agent-back'));
-    expect(screen.getByTestId('app-settings-body')).toBeInTheDocument();
+    // 복도도, 뒤로가기도 없다.
+    expect(screen.queryByTestId('app-settings-agent-drillin')).toBeNull();
+    expect(screen.queryByTestId('app-settings-agent-back')).toBeNull();
+    expect(screen.getByTestId('app-settings-nav')).toBeInTheDocument();
   });
 
   it('targets the packaged Agent Graph Workflow instead of the active local README', () => {
@@ -230,25 +242,21 @@ describe('AppSettingsMenu single-sheet recomposition', () => {
     );
   });
 
-  it('summarizes agent state as a single row value while no vault is loaded', () => {
+  it('says the workspace is not connected instead of drawing an empty setup panel', () => {
     openSheet(undefined, 'agent');
-    expect(screen.getByTestId('app-settings-agent-summary')).toHaveTextContent(
-      'nav.settingsMenu.agentStatusNoVault',
-    );
+    expect(screen.getByText('nav.settingsMenu.agentStatusNoVault')).toBeInTheDocument();
   });
 
   /**
    * #80 — [AI 연결]은 새 라우트가 아니라 이 시트의 서브뷰다. 브라우저(브리지
    * 없음)에서는 키 입력 필드를 만들지 않고 이유를 설명한다.
    */
-  it('opens the AI connection subview from a single root row', () => {
-    openSheet(undefined, 'agent');
-    expect(screen.getByTestId('app-settings-ai-summary')).toHaveTextContent(
-      'settings.ai.chipDesktopOnly',
-    );
-    fireEvent.click(screen.getByTestId('app-settings-ai-drillin'));
-    expect(screen.getByTestId('app-settings-ai-view')).toBeInTheDocument();
-    expect(screen.queryByTestId('app-settings-body')).toBeNull();
+  it('opens the in-app agent destination from its own LNB row', () => {
+    openSheet(undefined, 'ai');
+    expect(screen.getByTestId('app-settings-pane-ai')).toBeInTheDocument();
+    expect(screen.getByTestId('ai-connection-view')).toBeInTheDocument();
+    // 서브뷰가 아니라 칸이다 — 목록은 그대로 있다.
+    expect(screen.getByTestId('app-settings-body')).toBeInTheDocument();
   });
 
   /**
@@ -268,12 +276,12 @@ describe('AppSettingsMenu single-sheet recomposition', () => {
     });
     try {
       render(<AppSettingsMenu mode="static" />);
-      expect(screen.queryByTestId('app-settings-ai-view')).toBeNull();
+      expect(screen.queryByTestId('app-settings-pane-ai')).toBeNull();
 
       act(() => requestSettingsView('ai'));
 
-      expect(screen.getByTestId('app-settings-ai-view')).toBeInTheDocument();
-      expect(screen.queryByTestId('app-settings-body')).toBeNull();
+      expect(screen.getByTestId('app-settings-pane-ai')).toBeInTheDocument();
+      expect(screen.getByTestId('app-settings-body')).toBeInTheDocument();
     } finally {
       if (visible) Object.defineProperty(HTMLElement.prototype, 'offsetParent', visible);
       else Reflect.deleteProperty(HTMLElement.prototype, 'offsetParent');
@@ -284,21 +292,31 @@ describe('AppSettingsMenu single-sheet recomposition', () => {
     // 숨은 인스턴스까지 응답하면 같은 시트가 두 겹으로 열린다.
     render(<AppSettingsMenu mode="static" />);
     act(() => requestSettingsView('ai'));
-    expect(screen.queryByTestId('app-settings-ai-view')).toBeNull();
+    expect(screen.queryByTestId('app-settings-pane-ai')).toBeNull();
   });
 
   it('renders the honest desktop-only card instead of a key field in the browser', () => {
-    openSheet(undefined, 'agent');
-    fireEvent.click(screen.getByTestId('app-settings-ai-drillin'));
+    openSheet(undefined, 'ai');
     expect(screen.getByTestId('ai-connection-web-degraded')).toBeInTheDocument();
     expect(screen.queryByTestId('ai-key-input-anthropic')).toBeNull();
   });
 
-  it('Escape from the AI subview returns to the root sheet, not to the map', () => {
-    openSheet(undefined, 'agent');
-    fireEvent.click(screen.getByTestId('app-settings-ai-drillin'));
-    fireEvent.keyDown(screen.getByTestId('app-settings-ai-view'), { key: 'Escape' });
-    expect(screen.getByTestId('app-settings-body')).toBeInTheDocument();
+  /**
+   * Esc 사다리가 한 칸이 됐다 — 서브뷰가 없으니 물러날 중간 층도 없다.
+   * (안쪽에 펼친 키 입력 카드가 있을 때 그것부터 접는 계약은 `AiConnectionPanel`
+   * 이 그대로 소유한다.)
+   */
+  it('Escape closes the sheet — there is no subview left to back out of', () => {
+    openSheet(undefined, 'ai');
+    fireEvent.keyDown(screen.getByTestId('app-settings-popover'), {
+      key: 'Escape',
+      bubbles: true,
+    });
+    // 퇴장 presence 동안 그림은 한 프레임 더 남으므로 **상태**로 잰다.
+    expect(screen.getByTestId('app-settings-trigger')).toHaveAttribute(
+      'aria-expanded',
+      'false',
+    );
   });
 
   /**
@@ -338,7 +356,12 @@ describe('AppSettingsMenu single-sheet recomposition', () => {
   it('모달이므로 Tab 이 창 안에 머문다', async () => {
     openSheet(undefined, 'agent');
     const panel = screen.getByTestId('app-settings-popover');
-    const last = screen.getByTestId('app-settings-ai-drillin');
+    // 마지막 초점 대상은 절마다 다르므로 **DOM 순서의 끝**을 그때그때 고른다 —
+    // 특정 컨트롤을 이름으로 박으면 절 구성이 바뀔 때마다 테스트가 거짓으로 깨진다.
+    const focusables = panel.querySelectorAll<HTMLElement>(
+      'button, a[href], input, select, textarea, [tabindex]:not([tabindex="-1"])',
+    );
+    const last = focusables[focusables.length - 1];
 
     await waitFor(() => expect(panel).toHaveFocus());
     last.focus();
@@ -489,25 +512,16 @@ describe('AppSettingsMenu controlled open (P3 결함⑥)', () => {
     expect(onOpenChange).toHaveBeenCalledWith(false);
   });
 
-  it('Escape inside the agent drill-in restores the root row before closing', async () => {
+  /**
+   * A-3 이후 이 시트의 Esc 사다리는 **한 칸**이다. 종전엔 드릴인 서브뷰가
+   * 있어서 첫 Esc 가 루트로 물러나고 둘째 Esc 가 닫았다 — 그 중간 층이
+   * 사라졌으므로 첫 Esc 가 곧 닫기다.
+   */
+  it('Escape from an agent section closes at once — no intermediate step remains', () => {
     const onOpenChange = vi.fn();
     render(<AppSettingsMenu mode="static" open onOpenChange={onOpenChange} />);
-    // 에이전트 드릴인은 이제 LNB 의 「AI 에이전트」 절 안에 있다.
     fireEvent.click(screen.getByTestId('app-settings-nav-agent'));
-    const drillIn = screen.getByTestId('app-settings-agent-drillin');
-    fireEvent.click(drillIn);
-    await waitFor(() => {
-      expect(screen.getByTestId('app-settings-agent-back')).toHaveFocus();
-    });
-    fireEvent.keyDown(screen.getByTestId('app-settings-popover'), {
-      key: 'Escape',
-      bubbles: true,
-    });
-    expect(onOpenChange).not.toHaveBeenCalledWith(false);
-    expect(screen.getByTestId('app-settings-body')).toBeInTheDocument();
-    await waitFor(() => {
-      expect(screen.getByTestId('app-settings-agent-drillin')).toHaveFocus();
-    });
+    expect(screen.getByTestId('app-settings-pane-agent')).toBeInTheDocument();
     fireEvent.keyDown(screen.getByTestId('app-settings-popover'), {
       key: 'Escape',
       bubbles: true,
@@ -554,7 +568,7 @@ describe('AppSettingsMenu appearance pickers (#20/#21)', () => {
     const baseline = sizeClasses();
     expect(baseline, '고정 높이가 없다 — 내용이 창 크기를 정하고 있다').toMatch(/h-\[\d+px\]/);
     expect(baseline, '고정 폭이 없다').toMatch(/w-\[\d+px\]/);
-    for (const item of ['background', 'expand', 'footprint', 'workspace', 'agent']) {
+    for (const item of ['background', 'expand', 'footprint', 'workspace', 'agent', 'ai']) {
       fireEvent.click(screen.getByTestId(`app-settings-nav-${item}`));
       expect(sizeClasses(), `${item} 절에서 창 크기가 바뀐다`).toBe(baseline);
     }
@@ -564,15 +578,15 @@ describe('AppSettingsMenu appearance pickers (#20/#21)', () => {
    * LNB 는 **묶음**을 가진다. 다섯 항목이 왜 그 순서인지를 말하는 것이 묶음의
    * 일이고, 그게 없으면 목록이 그냥 다섯 줄이다.
    */
-  it('LNB 는 두 묶음으로 나뉘고 4·2 로 갈린다', () => {
+  it('LNB 는 두 묶음으로 나뉘고 4·3 으로 갈린다', () => {
     openSheet();
     const nav = screen.getByTestId('app-settings-nav');
     // 문구가 아니라 **구조**로 잠근다 — 라벨을 다듬을 때마다 깨지면 안 된다.
     const groups = [...nav.children];
     expect(groups.length, '묶음이 둘이 아니다').toBe(2);
-    expect(groups.map((g) => g.querySelectorAll('button').length)).toEqual([4, 2]);
+    expect(groups.map((g) => g.querySelectorAll('button').length)).toEqual([4, 3]);
     for (const g of groups) {
-      expect(g.querySelector('p'), '묶음에 제목이 없다 — 그러면 그냥 여섯 줄이다').not.toBeNull();
+      expect(g.querySelector('p'), '묶음에 제목이 없다 — 그러면 그냥 일곱 줄이다').not.toBeNull();
     }
   });
 
@@ -582,15 +596,15 @@ describe('AppSettingsMenu appearance pickers (#20/#21)', () => {
    */
   it('LNB 항목마다 아이콘이 하나씩 있다', () => {
     openSheet();
-    for (const item of ['screen', 'background', 'expand', 'footprint', 'workspace', 'agent']) {
+    for (const item of ['screen', 'background', 'expand', 'footprint', 'workspace', 'agent', 'ai']) {
       const svgs = screen.getByTestId(`app-settings-nav-${item}`).querySelectorAll('svg');
       expect(svgs.length, `${item} 항목에 아이콘이 없다`).toBe(1);
     }
   });
 
-  it('LNB 여섯 절을 모두 싣는다', () => {
+  it('LNB 일곱 절을 모두 싣는다', () => {
     openSheet();
-    for (const item of ['screen', 'background', 'expand', 'footprint', 'workspace', 'agent']) {
+    for (const item of ['screen', 'background', 'expand', 'footprint', 'workspace', 'agent', 'ai']) {
       expect(screen.getByTestId(`app-settings-nav-${item}`)).toBeInTheDocument();
     }
   });
