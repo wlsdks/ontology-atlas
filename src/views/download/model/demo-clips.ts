@@ -59,7 +59,8 @@ export interface DemoClip {
  * 「무엇을 찍어야 하는가」가 코드에 남고, 촬영 후 게이트가 대조할 대상이 생긴다.
  */
 export const DEMO_CLIPS: readonly DemoClip[] = [
-  { id: 'atlas-tour', seconds: 45, basename: 'atlas-tour' },
+  // `seconds` 는 새 촬영본이 붙을 때 ffprobe 실측값으로 고친다(현재는 잠정 자산의 길이).
+  { id: 'atlas-tour', seconds: 24, basename: 'atlas-tour' },
 ];
 
 /**
@@ -72,15 +73,22 @@ export const DEMO_CLIPS: readonly DemoClip[] = [
  * 그대로 나간다).
  */
 /*
- * 아직 비어 있다 — **새 시나리오의 촬영본이 없다.** 구 2클립 자산
- * (`one-folder` · `one-button`)은 지난 시나리오의 것이라 이 표의 대상이 아니다.
- * 재생할 것 없는 플레이어는 죽은 UI 이고, 관문의 첫인상 자리에 죽은 UI 를 두는
- * 것은 「곧 됩니다는 강등이 아니라 거짓말」과 같은 결함이다.
+ * ⚠️ **지금 붙어 있는 것은 잠정 자산이다** (2026-08-03). 새 45초 시나리오
+ * (`docs/DEMO-SCENARIO.md`)의 촬영본이 아직 없어서, 지난 시나리오의 24초
+ * 영상을 새 이름으로 이어 두었다 — 두 로케일이 **같은 마스터**를 가리킨다.
  *
- * 켜는 절차: `public/demo/atlas-tour.{ko,en}.{webm,mp4}` +
- * `atlas-tour.{ko,en}-poster.png` 를 넣고 여기에 `'atlas-tour'` 를 더한다.
+ * 왜 비워 두지 않았나: 등록부를 비우면 관문에서 시연 절이 통째로 사라지는데,
+ * 그러면 첫인상이 나빠지는 것에 더해 그 아래 「설치 3단이 접히지 않는다」
+ * 시험이 **조용히 무의미해진다** — 절이 없으면 페이지가 짧아져 3단이 저절로
+ * 접힘 위에 오고, 아무것도 안 재면서 초록이 된다(그 시험 자신의 주석이 이
+ * 함정을 이름으로 적어 두었다).
+ *
+ * **교체 절차**: `public/demo/atlas-tour.{ko,en}.{webm,mp4}` 와
+ * `atlas-tour.{ko,en}-poster.png` 를 새 촬영본으로 덮고, `seconds` 를 ffprobe
+ * 실측값으로 고친다. 그때 구 자산(`one-folder.*` · `one-button.*`)을 지운다 —
+ * 먼저 지우면 되돌릴 자리가 없다.
  */
-export const AVAILABLE_DEMO_CLIP_IDS: readonly DemoClip['id'][] = [];
+export const AVAILABLE_DEMO_CLIP_IDS: readonly DemoClip['id'][] = ['atlas-tour'];
 
 /** 렌더할 클립 — 선언과 자산이 모두 있는 것만. */
 export function availableDemoClips(
