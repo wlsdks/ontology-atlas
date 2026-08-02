@@ -214,6 +214,7 @@ import {
 import { isLlmChatBridgeAvailable } from "@/shared/lib/tauri-llm";
 import { useAgentDockDefaultOpen } from "@/shared/lib/use-agent-dock-default";
 import { getTauriVaultRootPath, isTauriVaultRuntime } from "@/shared/lib/tauri-vault-fs";
+import { buildAgentAnalyzePrompt } from "@/shared/config/agent-prompts";
 
 import { computeUpdatedAgo } from "../lib/format-updated-ago";
 import { buildNavRailContextHrefs } from "../lib/nav-rail-context-hrefs";
@@ -4244,11 +4245,25 @@ export function HomePage() {
                     canvas. 빈 vault 는 Sigma 를 아예 마운트하지 않고 바로 빈
                     상태만 보여 WebGL/토폴로지 모양이 잠깐 보이는 회귀를 막는다. */}
                 {topologyOverlayState.kind === "structural-empty" && !createNodeOpen ? (
-                  // 2026-07-24 온보딩 라운드 — 쓰기 가능한 로컬 vault 가 열려
-                  // 있고 부트스트랩할 기존 문서도 없으면(진짜 빈 폴더) dead-end
-                  // 문구 대신 진행형 시작 체크리스트를 세운다. 문서가 있으면
-                  // 기존 "내 문서로 지도 만들기" 부트스트랩 브랜치가 우선.
-                  canCreateNode && (bootstrapPlan?.elements.length ?? 0) === 0 ? (
+                  /*
+                   * 2026-07-24 온보딩 라운드 — 쓰기 가능한 로컬 vault 를 연
+                   * 사람에게 dead-end 문구 대신 진행형 시작 체크리스트를 세운다.
+                   *
+                   * ⚠️ **2026-08-03 게이트 확장** (PO 5석 + 디자인 4석 평결).
+                   * 종전 조건은 `&& (bootstrapPlan?.elements.length ?? 0) === 0`
+                   * — 즉 **진짜 빈 폴더만** 체크리스트를 봤다. 그 한 줄 때문에
+                   * 문서가 한 장이라도 있는 폴더, 곧 **개발 저장소를 연 사람**은
+                   * 에이전트 연결과 「AI 에게 줄 지시 복사」로 가는 문이 통째로
+                   * 닫혀 있었다 — 정확히 이 흐름이 도우려던 그 사람이다.
+                   * `TopologyEmptyState` 의 docs-found 갈래는 「내 문서로 지도
+                   * 만들기」만 주고 에이전트 이야기를 한 마디도 안 한다.
+                   *
+                   * 그래서 판정을 「쓸 수 있는 볼트인가」 하나로 좁히고, 문서가
+                   * 있으면 **체크리스트의 1단이 부트스트랩으로 바뀐다**(아래
+                   * `docsFoundCount`). 화면을 새로 만든 게 아니라 이미 있던
+                   * 화면에 도달하게 한 것이다 — 팝업 신설 0.
+                   */
+                  canCreateNode ? (
                     <VaultStartChecklist
                       projectCount={checklistProjectCount}
                       relationCount={topologyTotalRelations}
@@ -4265,7 +4280,28 @@ export function HomePage() {
                           : null
                       }
                       scaffolding={starterScaffolding}
-                      analyzePrompt={t("startChecklist.analyzePrompt")}
+                      /*
+                       * 문서가 있는 폴더면 1단이 「내 문서 N개로 지도 만들기」로
+                       * 바뀐다 — 빈 폴더의 1순위(에이전트 연결)는 빈 폴더 맥락의
+                       * 지시였고, 여기서는 사용자가 이미 가진 것이 첫 걸음이다.
+                       */
+                      docsFoundCount={bootstrapPlan?.elements.length ?? 0}
+                      onStartFromDocs={
+                        bootstrapPlan && bootstrapPlan.elements.length > 0
+                          ? () => setBootstrapOpen(true)
+                          : undefined
+                      }
+                      /*
+                       * 지시문은 **볼트 경로를 아는 빌더**가 만든다. 종전엔 i18n
+                       * 문자열이라 경로가 없었고, 그래서 에이전트가 어느 폴더를
+                       * 보라는 것인지 문장만으로는 알 수 없었다.
+                       */
+                      analyzePrompt={buildAgentAnalyzePrompt({
+                        vaultPath:
+                          (vault.handle ? getTauriVaultRootPath(vault.handle) : null) ??
+                          vault.handle?.name ??
+                          null,
+                      })}
                       // C9 — 힌트가 실제 `.mcp.json` 존재를 반영하도록 실파일
                       // 상태를 넘긴다("이미 준비됨" 허위 단언 제거).
                       mcpConfigReady={vault.agentConfigStatus?.mcpJson ?? false}

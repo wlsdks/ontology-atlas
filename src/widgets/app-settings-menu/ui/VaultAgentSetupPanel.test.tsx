@@ -500,7 +500,7 @@ describe('VaultAgentSetupPanel', () => {
       expect.stringContaining('CLI-only: use validate, workspace-brief'),
     );
     expect(copyTextMock).toHaveBeenCalledWith(
-      expect.stringContaining('MCP-connected: let Claude Code, Codex, or Cursor call 33 tools'),
+      expect.stringContaining('call connection_info for the current toolCount'),
     );
     expect(copyTextMock).toHaveBeenCalledWith(
       expect.stringContaining('Graph DB pack: use bounded query plans'),
@@ -515,7 +515,7 @@ describe('VaultAgentSetupPanel', () => {
       expect.stringContaining('Config state: agent-setup --json reports root-specific'),
     );
     expect(copyTextMock).toHaveBeenCalledWith(
-      expect.stringContaining('MCP verify: mcp-verify can boot the local MCP server, list the 33 tools including finalize_project_meaning'),
+      expect.stringContaining('list the tools including finalize_project_meaning'),
     );
     expect(copyTextMock).toHaveBeenCalledWith(
       expect.stringContaining('JSON setup gate: agent-brief --verify-fallbacks --json returns ok/performanceOk'),
@@ -973,7 +973,7 @@ describe('VaultAgentSetupPanel', () => {
       expect.stringContaining('Config state: agent-setup --json reports root-specific'),
     );
     expect(copyTextMock).toHaveBeenCalledWith(
-      expect.stringContaining('MCP verify: mcp-verify can boot the local MCP server, list the 33 tools including finalize_project_meaning'),
+      expect.stringContaining('list the tools including finalize_project_meaning'),
     );
     expect(copyTextMock).toHaveBeenCalledWith(
       expect.stringContaining('JSON setup gate: agent-brief --verify-fallbacks --json returns ok/performanceOk'),

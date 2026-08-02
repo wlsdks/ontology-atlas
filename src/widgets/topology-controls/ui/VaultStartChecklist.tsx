@@ -1,7 +1,7 @@
 "use client";
 
 import { useTranslations } from "next-intl";
-import { Cable, Check, ClipboardCopy, Plus, Sparkles } from "lucide-react";
+import { Cable, Check, CircleAlert, ClipboardCopy, Map as MapIcon, Plus, Sparkles } from "lucide-react";
 import { useCopyFeedback } from "@/shared/lib/use-copy-feedback";
 
 /**
@@ -47,6 +47,14 @@ export interface VaultStartChecklistProps {
    * undefined 면(상태 미확인) 단언 대신 pending 문구로 안전하게 표기.
    */
   mcpConfigReady?: boolean;
+  /**
+   * 이 폴더에서 찾은, 아직 지도에 없는 문서 수 (2026-08-03 게이트 확장).
+   * 0 보다 크면 **1단이 부트스트랩으로 바뀐다** — 빈 폴더의 1순위(에이전트
+   * 연결)는 빈 폴더 맥락의 지시였고, 이미 문서를 가진 사람에게 첫 걸음은
+   * 그 문서다.
+   */
+  docsFoundCount?: number;
+  onStartFromDocs?: (() => void) | null;
 }
 
 export function VaultStartChecklist({
@@ -59,16 +67,46 @@ export function VaultStartChecklist({
   scaffolding = false,
   analyzePrompt,
   mcpConfigReady,
+  docsFoundCount = 0,
+  onStartFromDocs = null,
 }: VaultStartChecklistProps) {
   const t = useTranslations("topology.startChecklist");
+  // 문서 갈래의 제목·CTA 는 빈 상태가 이미 가진 문구를 **재사용**한다 —
+  // 같은 사실에 두 번째 문장을 만들면 그 순간부터 드리프트가 시작된다.
+  const tEmpty = useTranslations("topology.empty");
+  const hasDocs = docsFoundCount > 0 && onStartFromDocs !== null;
   const { state: copyState, copy: copyPrompt } = useCopyFeedback();
 
   const steps: ReadonlyArray<{
-    id: "agent" | "analyze" | "manual";
+    id: "docs" | "agent" | "analyze" | "manual";
     done: boolean;
     label: string;
     cta: React.ReactNode;
   }> = [
+    ...(hasDocs
+      ? [
+          {
+            id: "docs" as const,
+            done: false,
+            label: t("stepDocs", { count: docsFoundCount }),
+            /*
+             * 승격은 **하나뿐**이고 그 차이가 위계다 — 이 CTA 만 `h-9` ·
+             * `text-body` · 인디고 면이고 나머지 단은 무채색 `h-7` 그대로다.
+             */
+            cta: (
+              <button
+                type="button"
+                onClick={onStartFromDocs ?? undefined}
+                data-testid="checklist-cta-docs"
+                className="inline-flex h-9 shrink-0 items-center gap-1.5 rounded-[var(--radius-chip)] border border-[color:var(--color-indigo-a46)] bg-[color:var(--color-indigo-a16)] px-3 text-body font-[var(--font-weight-signature)] text-[color:var(--color-indigo-accent)] transition-colors hover:bg-[color:var(--color-indigo-a24)]"
+              >
+                <MapIcon size={13} aria-hidden />
+                {tEmpty("ctaStartFromDocs")}
+              </button>
+            ),
+          },
+        ]
+      : []),
     {
       id: "agent",
       done: agentConnected,
@@ -78,7 +116,16 @@ export function VaultStartChecklist({
           type="button"
           onClick={onOpenAgentConnect}
           data-testid="checklist-cta-agent"
-          className="inline-flex h-7 items-center gap-1 rounded-md border border-[color:var(--color-indigo-a46)] bg-[color:var(--color-indigo-a16)] px-2.5 text-label font-medium text-[color:var(--color-indigo-accent)] transition-colors hover:bg-[color:var(--color-indigo-a24)]"
+          /*
+           * 채움은 **한 화면에 하나**다. 문서가 있는 갈래에서는 1단(부트스트랩)이
+           * 승자라, 여기까지 인디고 면을 주면 눈이 둘 사이에서 갈린다 — 위계는
+           * 폭이 아니라 채움이 지는데 그 채움이 둘이면 위계가 없는 것이다.
+           */
+          className={
+            hasDocs
+              ? "inline-flex h-7 shrink-0 items-center gap-1 rounded-[var(--radius-chip)] border border-[color:var(--color-overlay-3)] px-2.5 text-label text-[color:var(--color-text-secondary)] transition-colors hover:border-[color:var(--color-indigo-line-a35)] hover:text-[color:var(--color-text-primary)]"
+              : "inline-flex h-7 shrink-0 items-center gap-1 rounded-[var(--radius-chip)] border border-[color:var(--color-indigo-a46)] bg-[color:var(--color-indigo-a16)] px-2.5 text-label font-medium text-[color:var(--color-indigo-accent)] transition-colors hover:bg-[color:var(--color-indigo-a24)]"
+          }
         >
           <Cable size={11} aria-hidden />
           {t("ctaAgent")}
@@ -89,15 +136,34 @@ export function VaultStartChecklist({
       id: "analyze",
       done: relationCount > 0,
       label: t("stepAnalyze"),
+      /*
+       * **done 이어도 CTA 를 지우지 않는다.** 완료 판정이 `relationCount > 0`
+       * 이라 손으로 관계 하나만 만들어도 참이 되는데, 그 순간 지시문을 복사할
+       * 유일한 문이 영구히 사라졌다 — 사용자가 한 번도 안 눌렀는데도.
+       * done 이면 보조 톤 「다시 복사」로 남는다.
+       *
+       * **복사 실패도 말한다.** 클립보드 권한은 조용히 거절될 수 있고, 그때
+       * 침묵은 성공처럼 읽힌다.
+       */
       cta: (
         <button
           type="button"
           onClick={() => void copyPrompt(analyzePrompt)}
           data-testid="checklist-cta-analyze"
-          className="inline-flex h-7 items-center gap-1 rounded-md border border-[color:var(--color-overlay-3)] px-2.5 text-label text-[color:var(--color-text-secondary)] transition-colors hover:border-[color:var(--color-indigo-line-a35)] hover:text-[color:var(--color-text-primary)]"
+          className="inline-flex h-7 shrink-0 items-center gap-1 rounded-[var(--radius-chip)] border border-[color:var(--color-overlay-3)] px-2.5 text-label text-[color:var(--color-text-secondary)] transition-colors hover:border-[color:var(--color-indigo-line-a35)] hover:text-[color:var(--color-text-primary)]"
         >
-          <ClipboardCopy size={11} aria-hidden />
-          {copyState === "copied" ? t("ctaAnalyzeCopied") : t("ctaAnalyze")}
+          {copyState === "failed" ? (
+            <CircleAlert size={11} aria-hidden />
+          ) : (
+            <ClipboardCopy size={11} aria-hidden />
+          )}
+          {copyState === "failed"
+            ? t("ctaAnalyzeFailed")
+            : copyState === "copied"
+              ? t("ctaAnalyzeCopied")
+              : relationCount > 0
+                ? t("ctaAnalyzeAgain")
+                : t("ctaAnalyze")}
         </button>
       ),
     },
@@ -158,7 +224,7 @@ export function VaultStartChecklist({
               data-done={step.done ? "true" : "false"}
               className="flex items-center justify-between gap-3"
             >
-              <span className="flex min-w-0 items-center gap-2.5">
+              <span className="flex min-w-0 flex-1 items-center gap-2.5">
                 <span
                   aria-hidden
                   className={`flex h-4 w-4 shrink-0 items-center justify-center rounded-full border ${
@@ -179,16 +245,46 @@ export function VaultStartChecklist({
                   {step.label}
                 </span>
               </span>
-              {step.done ? null : step.cta}
+              {/* 완료한 단은 CTA 를 접는다 — 다만 「지시 복사」는 완료 뒤에도
+                  다시 필요하다(위 주석). */}
+              {step.done && step.id !== "analyze" ? null : step.cta}
             </li>
           ))}
         </ol>
         {/* C9 — 실파일 상태 기반 정직한 문구. `.mcp.json` 이 실제로 있으면
             "준비됨", 없으면 "만들면 생김" — "이미 준비돼 있어요" 를 무조건
             단언하지 않는다. */}
-        <p className="mt-3 text-label leading-relaxed text-[color:var(--color-text-quaternary)]">
-          {t(mcpConfigReady ? "agentHintReady" : "agentHintPending")}
+        {/*
+         * `agentHintPending` 은 「'시작 문서 만들기'를 누르면…」이라고 **버튼
+         * 이름을 부른다.** 그 버튼은 빈 폴더에만 있으므로, 문서가 있는 갈래에서
+         * 이 줄을 그대로 두면 화면에 없는 것을 가리키는 안내가 된다(실측).
+         * 이미 준비됐다는 사실(`agentHintReady`)은 버튼과 무관하니 남는다.
+         */}
+        {mcpConfigReady || onScaffoldStarter ? (
+          <p className="mt-3 text-label leading-relaxed text-[color:var(--color-text-quaternary)]">
+            {t(mcpConfigReady ? "agentHintReady" : "agentHintPending")}
+          </p>
+        ) : null}
+        {/*
+         * 지시문이 **무엇을 약속하는지**를 사람에게도 말한다. 프롬프트 본문은
+         * 영어 한 벌이라(에이전트가 독자다) 사람이 읽는 창구는 이 한 줄뿐이고,
+         * 그 약속(승인 전에는 아무것도 안 쓴다)이 이 제품의 서명이다.
+         */}
+        <p className="mt-1 text-label leading-relaxed text-[color:var(--color-text-quaternary)]">
+          {t("analyzePromise")}
         </p>
+        {/*
+         * 아직 연결 안 한 사람에게 **막지 않고** 순서를 말한다 — 복사는 되지만
+         * 붙여넣을 곳이 없으면 그 복사는 아무 데도 안 간다.
+         */}
+        {agentConnected ? null : (
+          <p
+            data-testid="checklist-analyze-needs-agent"
+            className="mt-1 text-label leading-relaxed text-[color:var(--color-text-quaternary)]"
+          >
+            {t("analyzeNeedsAgent")}
+          </p>
+        )}
       </div>
     </div>
   );

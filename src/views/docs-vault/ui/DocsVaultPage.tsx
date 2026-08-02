@@ -34,8 +34,8 @@ import {
 } from 'lucide-react';
 import {
   OntologyStarterCta,
-  ONTOLOGY_STARTER_AGENT_VERIFY_PROMPT,
   VaultConflictError,
+  buildOntologyStarterAgentVerifyPrompt,
   useLocalVault,
 } from '@/features/docs-vault-local';
 import { AppSettingsMenu } from '@/widgets/app-settings-menu';
@@ -508,7 +508,16 @@ function DocsVaultContent() {
     [t, toast],
   );
   const handleCopyAgentVerifyPrompt = useCallback(async () => {
-    const copied = await copyText(ONTOLOGY_STARTER_AGENT_VERIFY_PROMPT);
+    /*
+     * 경로를 아는 빌더를 쓴다. 종전 상수는 폴더를 `.` 로 박아 둬서, 에이전트를
+     * **다른 작업 폴더에서 열면 그 `.` 이 남의 폴더를 가리켰다** — 사실과
+     * 분리된 복사는 복사가 아니라 오답이다.
+     */
+    const copied = await copyText(
+      buildOntologyStarterAgentVerifyPrompt(
+        (localVault.handle ? getTauriVaultRootPath(localVault.handle) : null) ?? '.',
+      ),
+    );
     toast.show(
       copied ? t('dialog.agentVerifyPromptCopied') : t('dialog.agentVerifyPromptCopyFailed'),
       copied ? 'success' : 'error',

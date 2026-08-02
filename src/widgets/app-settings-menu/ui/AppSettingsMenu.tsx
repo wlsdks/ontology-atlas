@@ -256,7 +256,7 @@ const MCP_FIRST_CALLS_PACKET = [
   '',
   'Direct MCP proof inside the current agent session:',
   '1. codex mcp list',
-  '2. tools/list -> 33 tools including finalize_project_meaning and query_ontology',
+  '2. tools/list -> read toolCount from connection_info for the current number; finalize_project_meaning and query_ontology must be present',
   '3. query_ontology({"operation":"agent_brief"})',
   '4. query_ontology({"operation":"workspace_brief"})',
   '5. query_ontology({"operation":"health"})',
