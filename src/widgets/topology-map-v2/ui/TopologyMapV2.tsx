@@ -69,6 +69,8 @@ export interface TopologyMapV2Props {
   focus: TopologyV2Focus;
   /** Increment to re-run fit-to-bounds (HomePage "지도 맞추기"). */
   fitViewToken: number;
+  /** 렌즈/기간 변경 시 강조 노드로 카메라를 맞추는 토큰. */
+  spotlightFitToken?: number;
   /** Increment to force a full relayout. */
   relayoutToken: number;
   /** P3d(E1) — 첫 지도 연출 트리거 (부트스트랩 완료 시 증가). */
@@ -274,7 +276,7 @@ export interface TopologyMapV2Props {
 }
 
 export function TopologyMapV2(props: TopologyMapV2Props) {
-  const { nodes, edges, focus, minimal, emphasizedNeighborSlug, fitViewToken, relayoutToken, revealToken, onSelectEdge, onSelect, onPaneClick, onVisibleCountChange, onGraphStatsChange, onZoomTierChange, onContextMenuNode, agentFocusNodeId, spotlightIds = null, onHoverEdge, selectedEdge = null, expandedParents, onToggleCluster, onHoverCluster, clusterHint, realmRootId = null, onEnterRealm, realmEnterLabel, realmEnterTooltip, realmCaption = null, clusterBarLabels = null, canvasLabel, visitedTrail, trailLensActiveRef, trailHoverNodeIdRef, tierReveal, tourAnchorNodeId = null, tourAnchorRef, overlayOpen = false, glyphSet = "geometric", canvasBackground = "dot", footprint = null, expand = DEFAULT_EXPAND, wheelIntent = "zoom", ambientSleepDelayMs } = props;
+  const { nodes, edges, focus, minimal, emphasizedNeighborSlug, fitViewToken, spotlightFitToken = 0, relayoutToken, revealToken, onSelectEdge, onSelect, onPaneClick, onVisibleCountChange, onGraphStatsChange, onZoomTierChange, onContextMenuNode, agentFocusNodeId, spotlightIds = null, onHoverEdge, selectedEdge = null, expandedParents, onToggleCluster, onHoverCluster, clusterHint, realmRootId = null, onEnterRealm, realmEnterLabel, realmEnterTooltip, realmCaption = null, clusterBarLabels = null, canvasLabel, visitedTrail, trailLensActiveRef, trailHoverNodeIdRef, tierReveal, tourAnchorNodeId = null, tourAnchorRef, overlayOpen = false, glyphSet = "geometric", canvasBackground = "dot", footprint = null, expand = DEFAULT_EXPAND, wheelIntent = "zoom", ambientSleepDelayMs } = props;
 
   const realmEnterButtonRef = useRef<HTMLButtonElement | null>(null);
 
@@ -336,6 +338,7 @@ export function TopologyMapV2(props: TopologyMapV2Props) {
       focusedSlug: focus.selectedSlug,
       emphasizedNeighborSlug,
       fitViewToken,
+      spotlightFitToken,
       relayoutToken,
       revealToken,
       onSelectEdge,

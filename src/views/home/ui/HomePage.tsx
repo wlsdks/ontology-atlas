@@ -613,6 +613,19 @@ export function HomePage() {
   // 고정, "auto"/off 면 기존 적응 사다리 — 지도 침강과 INDEX 렌즈가 이 훅
   // 하나(단일 진실원)를 공유한다.
   const spotlightOn = recentWindow !== null;
+  /*
+   * 렌즈를 켜거나 기간을 바꾼 **순간**에만 카메라를 강조 노드로 맞춘다
+   * (2026-08-02 소유자 지적 — 창을 좁혀도 화면이 그대로였다).
+   *
+   * 값이 아니라 **사건**을 넘긴다: 지도는 `spotlightIds` 를 매 프레임 읽으므로
+   * 그것만으로는 "방금 바뀌었다"를 알 수 없고, 매 프레임 맞추면 사람이 그 뒤에
+   * 잡아둔 화면을 계속 뺏는다.
+   */
+  const spotlightFitToken = useMemo(
+    () => Date.now(),
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- 사건 토큰: 이 둘이 바뀐 렌더에서만 새 값을 만든다.
+    [recentWindow, spotlightOn],
+  );
   const recentChanges = useAdaptiveRecentChanges(
     spotlightOn && recentWindow !== "auto" ? recentWindow : undefined,
   );
@@ -4167,6 +4180,7 @@ export function HomePage() {
                     edges={topologyV2Graph.edges}
                     focus={{ selectedSlug: canvasSelectedSlug }}
                     fitViewToken={combinedFitToken}
+                    spotlightFitToken={spotlightFitToken}
                     relayoutToken={topologyRelayoutToken}
                     revealToken={mapRevealToken}
                     onSelectEdge={(edge) => {

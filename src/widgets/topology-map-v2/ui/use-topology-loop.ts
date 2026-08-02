@@ -36,7 +36,7 @@ import { createAnimatedBackground, type AnimatedBackground } from "../render/ani
 import { buildDustPoints, buildRealmCosmosPoints, computeStarDustCount, type DustPoint } from "../render/starfield";
 import { DEFAULT_EXPAND } from "@/shared/lib/appearance-preferences";
 import type { CanvasBackground, ExpandPreference, FootprintPreference, GlyphSet } from "@/shared/lib/appearance-preferences";
-import { computeClusterFitTarget, computeFocusCameraTarget, computeOverviewCameraTarget, computeOverviewFitScale, hasAnyNodeOnScreen, worldToScreen } from "./topology-camera-math";
+import { computeClusterFitTarget, computeFocusCameraTarget, computeOverviewCameraTarget, computeOverviewFitScale, fitWorldTarget, hasAnyNodeOnScreen, worldToScreen } from "./topology-camera-math";
 import { drawTopologyFrame } from "./topology-frame-draw";
 import { relaxNewlyVisible } from "../model/layout";
 import { computeTopologyClusterState } from "./topology-cluster-state";
@@ -170,6 +170,8 @@ export interface UseTopologyLoopArgs {
    */
   emphasizedNeighborSlug?: string | null;
   fitViewToken: number;
+  /** 렌즈/기간이 바뀐 순간 강조 노드로 카메라를 맞추는 토큰(0 = 안 씀). */
+  spotlightFitToken?: number;
   relayoutToken: number;
   /**
    * P3d(E1) — "첫 지도 연출". 증가 시 전 노드가 스파인 중심(프로젝트
@@ -336,7 +338,7 @@ export type UseTopologyLoopResult = TopologyPointerHandlers & {
 };
 
 export function useTopologyLoop(args: UseTopologyLoopArgs): UseTopologyLoopResult {
-  const { nodes, edges, focusedSlug, emphasizedNeighborSlug = null, fitViewToken, relayoutToken, revealToken = 0, onSelectEdge, onHoverEdge, onSelect, onPaneClick, onVisibleCountChange, onGraphStatsChange, onZoomTierChange, onContextMenuNode, agentFocusNodeId = null, spotlightIds = null, selectedEdge = null, expandedParents = EMPTY_EXPANDED_SET, onToggleCluster, onHoverCluster, realmRootId = null, onEnterRealm, realmEnterButtonRef, realmCaption = null, visitedTrail = EMPTY_TRAIL, trailLensActiveRef, clusterBarLabels = null, trailHoverNodeIdRef, tierReveal = DEFAULT_TIER_REVEAL, tourAnchorNodeId = null, tourAnchorRef, glyphSet = "geometric", canvasBackground = "dot", footprint = null, expand = DEFAULT_EXPAND, wheelIntent = "zoom", ambientSleepDelayMs } = args;
+  const { nodes, edges, focusedSlug, emphasizedNeighborSlug = null, fitViewToken, spotlightFitToken = 0, relayoutToken, revealToken = 0, onSelectEdge, onHoverEdge, onSelect, onPaneClick, onVisibleCountChange, onGraphStatsChange, onZoomTierChange, onContextMenuNode, agentFocusNodeId = null, spotlightIds = null, selectedEdge = null, expandedParents = EMPTY_EXPANDED_SET, onToggleCluster, onHoverCluster, realmRootId = null, onEnterRealm, realmEnterButtonRef, realmCaption = null, visitedTrail = EMPTY_TRAIL, trailLensActiveRef, clusterBarLabels = null, trailHoverNodeIdRef, tierReveal = DEFAULT_TIER_REVEAL, tourAnchorNodeId = null, tourAnchorRef, glyphSet = "geometric", canvasBackground = "dot", footprint = null, expand = DEFAULT_EXPAND, wheelIntent = "zoom", ambientSleepDelayMs } = args;
 
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
   const containerRef = useRef<HTMLDivElement | null>(null);
@@ -564,6 +566,8 @@ export function useTopologyLoop(args: UseTopologyLoopArgs): UseTopologyLoopResul
   // The effect below skips whenever both tokens still equal their captured
   // mount-time values — i.e. no real "fit view"/relayout click happened yet.
   const initialFitTokensRef = useRef({ relayout: relayoutToken, fitView: fitViewToken });
+  // 마운트 시점 값 — 위 fit 들과 같은 이유로 첫 발화를 건너뛴다.
+  const initialSpotlightFitTokenRef = useRef(spotlightFitToken);
   // C1 B3 — same mount-skip pattern, but for the DEDICATED relayout-only
   // effect below (node-position homing), which must not fire on mount either.
   const initialRelayoutTokenRef = useRef(relayoutToken);
@@ -1312,6 +1316,60 @@ export function useTopologyLoop(args: UseTopologyLoopArgs): UseTopologyLoopResul
     cameraAngularFreqRef.current = tokens.cameraSpringAngFreqTransition;
     beginCameraTween(overviewTarget);
   }, [relayoutToken, fitViewToken, beginCameraTween]);
+
+  /*
+   * spotlightFitToken — 「최근 변경」 렌즈를 켜거나 기간을 바꾼 **그 순간**,
+   * 강조된 노드가 전부 화면에 들어오게 카메라를 맞춘다.
+   *
+   * 왜 필요한가 (2026-08-02 소유자 지적): 창을 30일에서 1일로 좁히면 강조가
+   * 15개에서 3개로 줄어드는데 **화면은 그대로**였다. 남은 셋이 화면 밖이면
+   * 사용자에게는 「아무 일도 안 일어났다」로 보인다. 이 앱의 다른 곳(검색 선택 ·
+   * 「이것만 보기」)은 전부 카메라가 따라가는데 렌즈만 안 갔다.
+   *
+   * **사람이 잡아둔 화면을 뺏지 않는다**: 토큰이 바뀐 그 순간에만 한 번 맞추고,
+   * 그 뒤 팬/줌 하면 다시 안 건드린다(위 fit 들과 같은 계약). 강조가 0개면 아예
+   * 움직이지 않는다 — 맞출 대상이 없는데 움직이면 길만 잃는다.
+   */
+  useEffect(() => {
+    if (spotlightFitToken === initialSpotlightFitTokenRef.current) return;
+    const ids = spotlightIdsRef.current;
+    if (ids === null || ids.size === 0) return;
+    const tokens = readTopologyV2TokensOrNull();
+    const world = worldRef.current;
+    const { width, height } = viewportRef.current;
+    if (!tokens || !world || width <= 0 || height <= 0 || !hasInitializedRef.current) return;
+
+    let minX = Infinity, minY = Infinity, maxX = -Infinity, maxY = -Infinity;
+    let hit = 0;
+    for (const node of world.nodes) {
+      if (!ids.has(node.id)) continue;
+      hit += 1;
+      if (node.x < minX) minX = node.x;
+      if (node.y < minY) minY = node.y;
+      if (node.x > maxX) maxX = node.x;
+      if (node.y > maxY) maxY = node.y;
+    }
+    // 강조 id 가 현재 월드에 하나도 없을 수 있다(접힌 클러스터 안 등) — 맞출
+    // bbox 가 없으므로 카메라를 건드리지 않는다.
+    if (hit === 0) return;
+
+    // 가장자리에 딱 붙지 않게 여백을 준다 — bbox 를 그대로 맞추면 라벨·링·자국이
+    // 잘린다.
+    const padX = Math.max(48, (maxX - minX) * 0.18);
+    const padY = Math.max(48, (maxY - minY) * 0.18);
+    const target = fitWorldTarget(
+      { minX: minX - padX, minY: minY - padY, maxX: maxX + padX, maxY: maxY + padY },
+      width,
+      height,
+      tokens.cameraScaleMax,
+      tokens.cameraScaleMin,
+    );
+    cameraTargetRef.current = target;
+    userDrivenCameraRef.current = false;
+    dampingRef.current = tokens.cameraDampingDefault;
+    cameraAngularFreqRef.current = tokens.cameraSpringAngFreqTransition;
+    beginCameraTween(target);
+  }, [spotlightFitToken, beginCameraTween]);
 
   // --- relayoutToken ONLY (not fitViewToken) — also restores every node's
   // position to its canonical (`homeX`/`homeY`) layout coordinate over a
