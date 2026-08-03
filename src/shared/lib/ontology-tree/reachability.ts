@@ -32,13 +32,7 @@ export interface BuildOntologyReachabilityOptions {
   depth?: number;
   limit?: number;
   types?: readonly string[];
-  /**
-   * 이 관계 타입들은 traversal 에서 제외한다. impact / blast-radius 처럼 *의존*
-   * 만 따라야 하는 질의에서 soft association(`related_to` / `describes`) 을 빼
-   * "변경 영향" 이 노드별로 변별력을 갖게 한다 — 안 빼면 related_to 웹이 거의
-   * 모든 노드를 연결해 incoming reach 가 비-discriminating(전부 ~동일) 해진다.
-   * `types`(include-list) 와 함께 쓰면 둘 다 적용(먼저 include, 그 다음 exclude).
-   */
+  /** 관계 타입 제외 목록. 구조 탐색에서 특정 관계를 숨길 때만 사용한다. */
   excludeTypes?: readonly string[];
 }
 
@@ -60,19 +54,11 @@ interface ReachabilityAdjacency {
 const DEFAULT_DEPTH = 3;
 const DEFAULT_LIMIT = 20;
 
-/**
- * impact / blast-radius reach 에서 제외하는 soft-association 관계 타입.
- * `related_to` / `describes` 는 "의존" 이 아니라 *연관* 이라 "이걸 바꾸면 무엇이
- * 영향받나" 에 들어가면 안 된다. 특히 `related_to` 웹은 거의 모든 노드를
- * 연결해(측정: dogfood incoming reach 가 leaf·hub 모두 ~27 로 비-discriminating)
- * 이걸 빼야 blast-radius 가 노드별 변별력을 갖는다(leaf 2 vs hub 9). 의존/
- * 구조 edge(`depends_on` / `contains`)는 그대로 둔다.
- */
-export const IMPACT_EXCLUDED_RELATION_TYPES: readonly string[] = ['related_to', 'describes'];
+export const IMPACT_RELATION_TYPES: readonly string[] = ['depends_on'];
 
 /**
  * blast-radius "dependents" 단일 source — 이 노드를 (직접·간접) 의존으로 가진
- * 노드 수 = incoming 전이 closure(soft association 제외). drawer(reach.dependents)
+ * 노드 수 = incoming `depends_on` 전이 closure. drawer(reach.dependents)
  * 와 변경점 diff(Self-Drawing Diff #2) 가 *이 함수* 를 호출해 **같은 수** 를 보장한다
  * (사람이 보는 수 == 에이전트 brief 의 수 — can't-drift graft).
  *
@@ -89,7 +75,7 @@ export function computeOntologyDependents(
     direction: "incoming",
     depth: Math.max(nodes.length, 1),
     limit: 1,
-    excludeTypes: IMPACT_EXCLUDED_RELATION_TYPES,
+    types: IMPACT_RELATION_TYPES,
   }).summary.reachableNodes;
 }
 

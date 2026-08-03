@@ -2877,7 +2877,6 @@ await test("query_ontology — compiled graph engine neighbors/path/all_paths/qu
       impact.nodes.map((row) => ({ slug: row.slug, distance: row.distance })),
       [
         { slug: "capabilities/login", distance: 1 },
-        { slug: "project", distance: 1 },
         { slug: "capabilities/session", distance: 2 },
       ],
     );
@@ -2885,15 +2884,25 @@ await test("query_ontology — compiled graph engine neighbors/path/all_paths/qu
     const blastRadius = getCallParsed(responses, 9);
     assert.equal(blastRadius.operation, "blast_radius");
     assert.equal(blastRadius.center, "domains/auth");
-    assert.equal(blastRadius.risk, "medium");
+    assert.equal(blastRadius.risk, "unknown");
+    assert.deepEqual(blastRadius.qualification, {
+      status: "review_required",
+      basis: "declared_dependencies",
+      completeness: "unknown",
+      sourceBacked: false,
+      declaredEdges: 2,
+      declaredWithRationaleEdges: 0,
+      reviewRequiredEdges: 2,
+      sourceBackedEdges: 0,
+    });
     assert.deepEqual(blastRadius.summary, {
-      affectedNodes: 3,
-      affectedEdges: 4,
-      affectedKinds: 2,
+      affectedNodes: 2,
+      affectedEdges: 2,
+      affectedKinds: 1,
       affectedDomains: 1,
       crossDomainEdges: 0,
     });
-    assert.deepEqual(blastRadius.byKind, { capability: 2, project: 1 });
+    assert.deepEqual(blastRadius.byKind, { capability: 2 });
     assert.deepEqual(blastRadius.byDomain, { "domains/auth": 1 });
 
     const subgraph = getCallParsed(responses, 10);

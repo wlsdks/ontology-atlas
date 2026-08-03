@@ -136,6 +136,7 @@ describe("buildTopologyOntologyDrawerModel", () => {
       edge("cap->elem", "capabilities/login", "elements/jwt", "elements"),
     ]);
     expect(model.ownerDomain).toEqual({ id: "domains/auth", title: "domains/auth" });
+    expect(model.reach).toEqual({ dependents: 0, dependencies: 0 });
   });
 
   it("ownerDomain null for a domain node (no owning domain)", () => {

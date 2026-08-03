@@ -1495,6 +1495,16 @@ describe('queryCompiledOntology', () => {
 
     assert.equal(result.center, 'domains/auth');
     assert.equal(result.direction, 'incoming');
+    assert.deepEqual(result.qualification, {
+      status: 'review_required',
+      basis: 'declared_dependencies',
+      completeness: 'unknown',
+      sourceBacked: false,
+      declaredEdges: 2,
+      declaredWithRationaleEdges: 0,
+      reviewRequiredEdges: 2,
+      sourceBackedEdges: 0,
+    });
     assert.deepEqual(
       result.nodes.map((row) => ({ slug: row.slug, distance: row.distance })),
       [
@@ -1541,6 +1551,9 @@ describe('queryCompiledOntology', () => {
           title: 'Login',
           domain: 'auth-domain',
           depends_on: ['capabilities/invoice'],
+          relation_notes: {
+            'capabilities/invoice': 'Login charges through invoice settlement.',
+          },
         }),
         doc('capabilities/session', {
           kind: 'capability',
@@ -1560,7 +1573,17 @@ describe('queryCompiledOntology', () => {
 
     assert.equal(result.operation, 'blast_radius');
     assert.equal(result.center, 'capabilities/invoice');
-    assert.equal(result.risk, 'medium');
+    assert.equal(result.risk, 'unknown');
+    assert.deepEqual(result.qualification, {
+      status: 'review_required',
+      basis: 'declared_dependencies',
+      completeness: 'unknown',
+      sourceBacked: false,
+      declaredEdges: 2,
+      declaredWithRationaleEdges: 1,
+      reviewRequiredEdges: 1,
+      sourceBackedEdges: 0,
+    });
     assert.deepEqual(result.summary, {
       affectedNodes: 2,
       affectedEdges: 2,
@@ -1579,6 +1602,28 @@ describe('queryCompiledOntology', () => {
       [
         { slug: 'capabilities/login', distance: 1, domain: 'domains/auth' },
         { slug: 'capabilities/session', distance: 2, domain: 'domains/auth' },
+      ],
+    );
+    assert.deepEqual(
+      result.edges.rows.map((edge) => ({
+        from: edge.from,
+        to: edge.to,
+        qualification: edge.qualification,
+        rationale: edge.rationale,
+      })),
+      [
+        {
+          from: 'capabilities/login',
+          to: 'capabilities/invoice',
+          qualification: 'declared_with_rationale',
+          rationale: 'Login charges through invoice settlement.',
+        },
+        {
+          from: 'capabilities/session',
+          to: 'capabilities/login',
+          qualification: 'review_required',
+          rationale: null,
+        },
       ],
     );
 
@@ -1630,6 +1675,54 @@ describe('queryCompiledOntology', () => {
         },
       ],
     );
+  });
+
+  it('never promotes containment reachability into dependency impact', () => {
+    const graph = compileOntology(
+      [
+        doc('project', {
+          kind: 'project',
+          title: 'Project',
+          contains: ['domains/core'],
+        }),
+        doc('domains/core', {
+          kind: 'domain',
+          title: 'Core',
+          contains: ['capabilities/target'],
+        }),
+        doc('capabilities/target', { kind: 'capability', title: 'Target' }),
+      ],
+      { includeIndexes: true },
+    );
+
+    const result = queryCompiledOntology(graph, {
+      operation: 'blast_radius',
+      slug: 'capabilities/target',
+      direction: 'incoming',
+      depth: 5,
+    });
+
+    assert.equal(result.risk, 'unknown');
+    assert.equal(result.summary.affectedNodes, 0);
+    assert.equal(result.summary.affectedEdges, 0);
+    assert.equal(result.qualification.status, 'unknown');
+    assert.equal(result.qualification.completeness, 'unknown');
+    assert.equal(result.qualification.sourceBacked, false);
+    assert.throws(
+      () => queryCompiledOntology(graph, {
+        operation: 'blast_radius',
+        slug: 'capabilities/target',
+        types: ['contains'],
+      }),
+      /dependency impact only accepts depends_on.*reachability or subgraph/,
+    );
+    const plan = queryCompiledOntology(graph, {
+      operation: 'query_plan',
+      targetOperation: 'blast_radius',
+      slug: 'capabilities/target',
+    });
+    assert.deepEqual(plan.normalized.types, ['dependencies']);
+    assert.equal(plan.estimate.reachableWithinDepth, 0);
   });
 
   it('returns a bounded resolved subgraph around a seed', () => {

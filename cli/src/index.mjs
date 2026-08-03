@@ -169,7 +169,7 @@ ${COLORS.bold}Graph-level commands${COLORS.reset} ${COLORS.dim}(R15 — wraps th
        --limit N --json                       ${COLORS.dim}허브 N 개 (default 10) · machine output${COLORS.reset}
   ontology-atlas hubs [vault]                 Centrality 4 rankings — PageRank / Bridges / Authorities / Hubs
        --limit N --json                       ${COLORS.dim}각 랭킹 N rows (default 10)${COLORS.reset}
-  ontology-atlas blast-radius <slug>          이 노드 변경 시 영향받는 노드/관계 (refactor safety)
+  ontology-atlas blast-radius <slug>          선언된 의존 영향 + 근거 자격 (구조 제외)
        --depth N --direction incoming|outgoing|both --json
   ontology-atlas cycles [vault]               depends_on dependency cycle 검출
        --max-hops N --json                    ${COLORS.dim}default maxDepth 8${COLORS.reset}

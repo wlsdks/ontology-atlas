@@ -752,7 +752,9 @@ export function createOntologyEngine(artifact, options = {}) {
   function queryPlan(options = {}) {
     const targetOperation = normalizePlanTargetOperation(options.targetOperation);
     const limit = normalizeLimit(options.limit, targetOperation === 'all_paths' ? 25 : DEFAULT_LIMIT);
-    const typeSet = normalizeTypes(options.types);
+    const typeSet = targetOperation === 'impact' || targetOperation === 'blast_radius'
+      ? normalizeDependencyImpactTypes(options.types)
+      : normalizeTypes(options.types);
     const normalized = {
       targetOperation,
       types: typeSet ? [...typeSet].sort() : null,
@@ -1262,7 +1264,7 @@ export function createOntologyEngine(artifact, options = {}) {
     const direction = normalizeDirection(options.direction, 'incoming');
     const depth = normalizeDepth(options.depth, 2);
     const limit = normalizeLimit(options.limit);
-    const typeSet = normalizeTypes(options.types);
+    const typeSet = normalizeDependencyImpactTypes(options.types);
     const discovered = new Map([[center, { slug: center, distance: 0 }]]);
     const collectedEdges = [];
     const queue = [{ slug: center, distance: 0 }];
@@ -1285,6 +1287,7 @@ export function createOntologyEngine(artifact, options = {}) {
     const nodeRows = [...discovered.values()]
       .filter((row) => row.slug !== center)
       .sort((a, b) => a.distance - b.distance || a.slug.localeCompare(b.slug));
+    const edgeRows = qualifyDeclaredDependencyEdges(uniqueEdges(collectedEdges));
 
     return {
       operation: 'impact',
@@ -1293,11 +1296,12 @@ export function createOntologyEngine(artifact, options = {}) {
       depth,
       total: nodeRows.length,
       limited: nodeRows.length > limit,
+      qualification: buildDependencyImpactQualification(edgeRows),
       nodes: nodeRows.slice(0, limit).map((row) => ({
         ...row,
         node: nodeBySlug.get(row.slug),
       })),
-      edges: uniqueEdges(collectedEdges).slice(0, limit),
+      edges: edgeRows.slice(0, limit),
     };
   }
 
@@ -1306,7 +1310,7 @@ export function createOntologyEngine(artifact, options = {}) {
     const direction = normalizeDirection(options.direction, 'incoming');
     const depth = normalizeDepth(options.depth, 2);
     const limit = normalizeLimit(options.limit);
-    const typeSet = normalizeTypes(options.types);
+    const typeSet = normalizeDependencyImpactTypes(options.types);
     const allSlugs = new Set(nodes.map((node) => node.slug));
     const discovered = new Map([[center, { slug: center, distance: 0 }]]);
     const collectedEdges = [];
@@ -1348,6 +1352,8 @@ export function createOntologyEngine(artifact, options = {}) {
           fromDomain,
           toDomain,
           crossDomain: Boolean(fromDomain && toDomain && fromDomain !== toDomain),
+          rationale: edge.rationale ?? null,
+          qualification: edge.rationale ? 'declared_with_rationale' : 'review_required',
         };
       })
       .sort((a, b) => edgeSortKey(a).localeCompare(edgeSortKey(b)));
@@ -1364,6 +1370,7 @@ export function createOntologyEngine(artifact, options = {}) {
       affectedDomains: Object.keys(byDomain).length,
       crossDomainEdges,
     };
+    const qualification = buildDependencyImpactQualification(edgeRows);
 
     return {
       operation: 'blast_radius',
@@ -1371,7 +1378,8 @@ export function createOntologyEngine(artifact, options = {}) {
       node: summarizeNode(nodeBySlug.get(center)),
       direction,
       depth,
-      risk: blastRadiusRisk(summary),
+      risk: 'unknown',
+      qualification,
       summary,
       byKind,
       byDomain,
@@ -5148,22 +5156,33 @@ function healthCheck({ id, status, count, message }) {
   return { id, status, count, message };
 }
 
-function blastRadiusRisk(summary) {
-  if (
-    summary.affectedNodes >= 10 ||
-    summary.affectedDomains >= 3 ||
-    summary.crossDomainEdges >= 5
-  ) {
-    return 'high';
-  }
-  if (
-    summary.affectedNodes >= 3 ||
-    summary.affectedDomains >= 2 ||
-    summary.crossDomainEdges > 0
-  ) {
-    return 'medium';
-  }
-  return 'low';
+function qualifyDeclaredDependencyEdges(edges) {
+  return edges.map((edge) => ({
+    ...edge,
+    rationale: edge.rationale ?? null,
+    qualification: edge.rationale ? 'declared_with_rationale' : 'review_required',
+  }));
+}
+
+function buildDependencyImpactQualification(edges) {
+  const declaredWithRationaleEdges = edges.filter(
+    (edge) => edge.qualification === 'declared_with_rationale',
+  ).length;
+  const reviewRequiredEdges = edges.length - declaredWithRationaleEdges;
+  return {
+    status: edges.length === 0
+      ? 'unknown'
+      : reviewRequiredEdges > 0
+        ? 'review_required'
+        : 'declared_with_rationale',
+    basis: 'declared_dependencies',
+    completeness: 'unknown',
+    sourceBacked: false,
+    declaredEdges: edges.length,
+    declaredWithRationaleEdges,
+    reviewRequiredEdges,
+    sourceBackedEdges: 0,
+  };
 }
 
 function countBy(items, key) {
@@ -5369,6 +5388,17 @@ function normalizeTypes(types, name = 'types') {
     normalized.push(normalizeRelationType(trimmed));
   }
   return new Set(normalized);
+}
+
+function normalizeDependencyImpactTypes(types) {
+  const normalized = normalizeTypes(types) ?? new Set(['dependencies']);
+  const unsupported = [...normalized].filter((type) => type !== 'dependencies');
+  if (unsupported.length > 0) {
+    throw new Error(
+      `dependency impact only accepts depends_on relations; use reachability or subgraph for structural relation types: ${unsupported.map(publicRelationType).join(', ')}`,
+    );
+  }
+  return normalized;
 }
 
 function normalizeMatchEdgesTypes(options = {}) {
@@ -5999,6 +6029,7 @@ function formatPathEdge(edge, traversedFrom, traversedTo) {
     from: edge.from,
     to: edge.to,
     via: edge.via,
+    ...(edge.rationale ? { rationale: edge.rationale } : {}),
     traversedFrom,
     traversedTo,
   };

@@ -13,12 +13,8 @@
 //          → computeOntologyDependents(node)
 //   agent: docs → compileOntology → queryCompiledOntology(blast_radius)
 //
-// `softRelations: true` marks the one vault that also carries the soft
-// association keys (`relates` / `describes`). The screen excludes those from
-// impact on purpose (`IMPACT_EXCLUDED_RELATION_TYPES`) — an agent reproduces the
-// same number by passing the `IMPACT_INCLUDED_GRAPH_KEYS` allow-list. Every
-// other vault holds only structure/dependency relations, so the two engines must
-// agree with NO filter at all — that is the strongest form of the parity claim.
+// Both surfaces follow only declared dependency relations. Structure and soft
+// association remain available to reachability/subgraph, never impact.
 //
 // Single source of truth: add a scenario here and both pipelines get it.
 
@@ -65,7 +61,6 @@ export const IMPACT_RANKING_CASES = [
   },
   {
     name: 'soft associations — 연관/설명은 파급이 아니다',
-    softRelations: true,
     docs: [
       {
         slug: 'domains/docs',
@@ -135,25 +130,12 @@ export const IMPACT_RANKING_CASES = [
 ];
 
 /**
- * MCP `blast_radius` 는 exclude-list 를 받지 않고 include-list(`types`)만 받는다.
- * 웹의 `IMPACT_EXCLUDED_RELATION_TYPES`(연관/설명 제외)와 같은 집합을 만들려면
- * 나머지 관계 키를 전부 열거해야 한다 — 아래 배열이 그 열거이고,
- * contract 의 마지막 테스트가 "엔진 어휘 == 이 배열 + 소프트 2종" 을 강제한다.
- * 엔진에 새 관계 키가 들어오면 그 테스트가 깨지고, 그때 새 키를 파급으로 볼지
- * 말지 사람이 결정하게 된다(조용한 drift 차단).
- *
- * 알려진 공백: 볼트 스키마의 `broader`(상위개념, is_a)는 아직 엔진의 `types`
- * 어휘에 없어 이 배열로 고를 수 없다. 그래서 broader 를 쓰는 케이스는
- * 필터 없이(엔진 기본값) 비교한다 — 아래 `softRelations: true` 가 아닌 케이스가
- * 그 경로다.
+ * 영향의 유일한 include-list. 공개 alias와 frontmatter key를 함께 적어 엔진
+ * 어휘 drift 계약에서 둘 다 빠지지 않게 한다.
  */
 export const IMPACT_INCLUDED_GRAPH_KEYS = [
-  'domains',
-  'capabilities',
-  'elements',
   'dependencies',
   'depends_on',
-  'contains',
 ];
 
 /**
@@ -171,6 +153,14 @@ export const IMPACT_INCLUDED_GRAPH_KEYS = [
  * 한쪽을 맞추면 그 테스트가 깨지고, 여기 include-list 로 옮기면 된다.
  */
 export const IMPACT_DIRECTION_DIVERGENT_GRAPH_KEYS = ['domain'];
+
+/** 구조 탐색에는 유효하지만 인과 영향에는 들어가지 않는 관계. */
+export const IMPACT_STRUCTURAL_GRAPH_KEYS = [
+  'domains',
+  'capabilities',
+  'elements',
+  'contains',
+];
 
 /** 엔진 어휘에서 파급으로 세지 않는 소프트 연관 — 웹의 제외 목록과 같은 뜻. */
 export const IMPACT_SOFT_GRAPH_KEYS = ['relates', 'describes'];

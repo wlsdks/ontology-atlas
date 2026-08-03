@@ -7,6 +7,19 @@
 
 ---
 
+## 2026-08-04 — 폴더 구조를 의존 영향이라고 부르지 않는다
+
+MCP/CLI의 `impact`와 `blast_radius`, 앱의 의존 영향 카드가 이제 오직 선언된
+`depends_on`만 따라간다. containment·domain·element 관계는 구조 탐색에는 남지만
+영향 수와 위험도에는 들어가지 않는다. 구조 타입을 영향 질의에 넘기면
+`reachability`/`subgraph`를 사용하라는 오류로 실패 닫힌다.
+
+선언된 의존은 숨기지 않되 이유가 없으면 `review_required`, `relation_notes`가 있으면
+`declared_with_rationale`로 구분한다. 현재는 관계 단위 source receipt가 없으므로
+source-backed completeness와 risk는 항상 `unknown`이며, 선언 0건을 저위험으로
+표시하지 않는다. 인사이트 첫 신호도 확정 숫자에서 「영향 범위 알 수 없음」과
+선언·이유·소스 근거 수로 바뀌고 구조 연결은 별도 지도 링크로 보낸다.
+
 ## 2026-08-04 — import 근거가 의미 관계로 자동 승격되지 않는다
 
 `infer_imports`의 module edge는 이제 `count`/`kindCounts`뿐 아니라 최대 5개의

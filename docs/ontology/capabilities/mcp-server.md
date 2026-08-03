@@ -86,6 +86,13 @@ Analyzer는 실제 import에 참여한 Python 구현 경계를 최대 12개 elem
 한해 최대 4개까지 선택할 수 있다. 서버는 이 파일들을 자동으로 노드화하지 않고,
 proposal의 정확 경로·상한·file-edge 방향만 fail closed로 검증한다.
 
+`impact`와 `blast_radius`는 선언된 `depends_on`만 따라간다. containment·domain·
+element 관계는 `reachability`/`subgraph`의 구조 근거이며 영향이나 위험으로 승격하지
+않는다. 선언된 의존에 `relation_notes`가 없으면 `review_required`, 있으면
+`declared_with_rationale`로 반환한다. 둘 다 관계 단위 current-source receipt가 없는
+현재는 source-backed가 아니므로 completeness와 risk를 `unknown`으로 유지한다.
+따라서 의존 선언 0건도 저위험이나 영향 없음으로 해석하지 않는다.
+
 ## 포함 / 제외
 
 - 포함: MCP 도구 등록과 입출력 계약, 볼트 parser/writer, deterministic compiler와

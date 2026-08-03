@@ -1,7 +1,7 @@
 import type { KnowledgeGraphEdge, KnowledgeGraphNode } from "@/entities/knowledge-graph";
 import { isEvidenceOnlyConcept } from "@/entities/knowledge-graph";
 import {
-  IMPACT_EXCLUDED_RELATION_TYPES,
+  IMPACT_RELATION_TYPES,
   buildOntologyReachability,
   computeOntologyDependents,
 } from "@/shared/lib/ontology-tree";
@@ -25,6 +25,10 @@ export interface ImpactRankingRow {
 }
 
 export interface ImpactRanking {
+  /** 사람이 frontmatter에 승인해 둔 depends_on 엣지 수. */
+  declaredDependencyEdges: number;
+  /** 그중 relation_notes 이유까지 함께 적힌 수. */
+  declaredWithRationaleEdges: number;
   /**
    * **개념 계층** — 자기 `.md` 를 가진 개념만. 결정 화면의 1급 시민이고,
    * 「바꾸면 멀리 퍼지는」이라는 위험도 질문이 성립하는 유일한 계층이다.
@@ -52,8 +56,8 @@ export interface ImpactRanking {
  * 제외)의 단일 진실원이라, 화면이 말하는 수와 에이전트가 답하는 수가 갈라질
  * 수 없다 — 갈라지면 `tests/contract/impact-ranking.contract.test.ts` 가 잡는다.
  *
- * `related_to` / `describes` 를 빼는 이유는 `IMPACT_EXCLUDED_RELATION_TYPES` 의
- * 주석에 있다: 연관 웹이 거의 모든 개념을 이어 랭킹이 변별력을 잃는다.
+ * `depends_on`만 포함한다. containment는 구조 탐색에는 유효하지만 변경의 인과
+ * 증거가 아니므로 영향 수에 들어가지 않는다.
  *
  * ## 계층은 계산 뒤에서 갈린다 (2026-07-26)
  *
@@ -82,6 +86,7 @@ export function buildImpactRanking(
    */
   evidenceLimit = 4,
 ): ImpactRanking {
+  const dependencyEdges = edges.filter((edge) => IMPACT_RELATION_TYPES.includes(edge.type));
   const scored: ImpactRankingRow[] = [];
   for (const node of nodes) {
     const total = computeOntologyDependents(node.id, nodes, edges);
@@ -92,7 +97,7 @@ export function buildImpactRanking(
       direction: "incoming",
       depth: 1,
       limit: 1,
-      excludeTypes: IMPACT_EXCLUDED_RELATION_TYPES,
+      types: IMPACT_RELATION_TYPES,
     }).summary.reachableNodes;
     scored.push({
       id: node.id,
@@ -113,6 +118,10 @@ export function buildImpactRanking(
   const evidence = scored.filter((row) => row.evidenceOnly);
 
   return {
+    declaredDependencyEdges: dependencyEdges.length,
+    declaredWithRationaleEdges: dependencyEdges.filter(
+      (edge) => typeof edge.label === "string" && edge.label.trim().length > 0,
+    ).length,
     rows: concepts.slice(0, Math.max(0, limit)),
     rankedCount: concepts.length,
     evidenceRows: evidence.slice(0, Math.max(0, evidenceLimit)),
