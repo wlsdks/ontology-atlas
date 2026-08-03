@@ -665,7 +665,24 @@ pnpm build && npx serve out -l 4173
 node scripts/perf-node-drag.mjs
 ```
 
-The observation surface it drives (`?e2e=1` → `window.__atlasMap`) and the
+Neither do they cover whether the map is *readable as a graph* — until 2026-08-03
+the node spec had contract tests, the type ramp had lint, and motion had frame
+measurement, while the layout occupying most of the screen was judged only by
+someone saying "looks busy". The same observation surface answers it:
+
+```bash
+node scripts/serve-static-export.mjs --port=4173 &   # after pnpm build
+node scripts/measure-graph-readability.mjs
+```
+
+It reports edge crossings and node overlap — and only those, because Purchase
+(Graph Drawing 1997) found crossing minimisation dominates human comprehension
+while angular resolution and grid snapping were not statistically significant.
+The metric maths live in `scripts/lib/graph-readability.mjs` as pure functions so
+they can be probed with known answers (`tests/contract/graph-readability.contract.test.ts`);
+a detector that only ever returns zero is indistinguishable from no detector.
+
+The observation surface both drive (`?e2e=1` → `window.__atlasMap`) and the
 measurement discipline are documented in
 [docs/MAP-TESTABILITY.md](docs/MAP-TESTABILITY.md).
 

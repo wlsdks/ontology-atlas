@@ -3356,6 +3356,7 @@ export function useTopologyLoop(args: UseTopologyLoopArgs): UseTopologyLoopResul
         const camera = cameraRef.current;
         const { width, height } = viewportRef.current;
         if (!world || !camera || width <= 0) return [];
+        const tokens = readTopologyV2TokensOrNull();
         const sim = simRef.current;
         const clustered = clusteredIdsRef.current;
         return world.nodes.map((n) => ({
@@ -3369,7 +3370,56 @@ export function useTopologyLoop(args: UseTopologyLoopArgs): UseTopologyLoopResul
           draggable: sim?.hasNode(n.id) ?? false,
           /** 접힌 서브트리는 칩으로 대체돼 화면에 없다. */
           hidden: clustered?.has(n.id) ?? false,
+          /**
+           * ★ 그래프 가독성 계기용 — 겹침은 반지름 없이 못 센다.
+           * 그리는 쪽과 **같은 식**을 쓴다(`topology-frame-draw.ts` 의
+           * `radiusForKind × magnitudeScale`, 화면 반지름은 여기에 카메라 배율).
+           * 식이 갈리면 계기가 화면이 아니라 자기 상상을 재게 된다.
+           */
+          radius: tokens ? radiusForKind(n.kind, tokens) * n.magnitudeScale * camera.scale.value : 0,
         }));
+      },
+      /**
+       * 화면에 그려진 **엣지** — 좌표는 노드와 같은 CSS 픽셀계다.
+       *
+       * 왜 이걸 노출하나 (2026-08-03): 이 앱의 주 표면이 노드-링크 그래프인데
+       * **엣지 교차를 한 번도 세 본 적이 없었다.** 노드 규격(형태·반지름·parity)
+       * 에는 게이트가 있고 지도가 그래프로서 읽히는지에는 수치가 0이었다.
+       *
+       * Purchase(1997, Graph Drawing) 실험이 우선순위를 정해 준다 — **엣지 교차를
+       * 줄이는 것이 인간 이해도에 압도적으로 가장 중요하고**, 각도 해상도 최대화와
+       * 격자 스냅은 통계적으로 유의하지 않았다. 그래서 교차와 겹침만 노출한다.
+       *
+       * `hidden` 인 노드에 붙은 엣지는 화면에 없으므로 제외한다 — 안 보이는 선의
+       * 교차를 세면 수치가 화면을 설명하지 못한다.
+       */
+      edges: () => {
+        const world = worldRef.current;
+        const camera = cameraRef.current;
+        const { width, height } = viewportRef.current;
+        if (!world || !camera || width <= 0) return [];
+        const clustered = clusteredIdsRef.current;
+        const toScreenX = (x: number) => (x - camera.x.value) * camera.scale.value + width / 2;
+        const toScreenY = (y: number) => (y - camera.y.value) * camera.scale.value + height / 2;
+        return world.edges
+          .filter((e) => !clustered?.has(e.sourceId) && !clustered?.has(e.targetId))
+          .map((e) => ({
+            sourceId: e.sourceId,
+            targetId: e.targetId,
+            kind: e.kind,
+            ax: toScreenX(e.ax),
+            ay: toScreenY(e.ay),
+            bx: toScreenX(e.bx),
+            by: toScreenY(e.by),
+            /**
+             * ★ 현선이 아니라 **그려지는 곡선**을 재기 위해서다. 드로우 경로는
+             * `quadraticCurveTo(control, b)` 인데(`topology-frame-draw.ts`),
+             * 계기가 끝점만 이으면 화면에 없는 교차를 세고 화면에 있는 교차를
+             * 놓친다 — 즉 지도가 아니라 자기 근사치를 재게 된다.
+             */
+            controlX: toScreenX(e.controlX),
+            controlY: toScreenY(e.controlY),
+          }));
       },
       /** 지금 무엇을 끌고 있나 — 「노드」와 「배경」이 화면에서 같아 보이므로. */
       interaction: () => {

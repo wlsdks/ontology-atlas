@@ -91,9 +91,21 @@ other. Every seat gets:
 
 **측정 자리는 자기 계기를 반드시 실행한다** — 호출자가 요청하지 않아도. 「모션」은
 `/motion-verify`(macOS 녹화 → 프레임 → 곡선), 「반응형」은 `/responsive-sweep`
-(밴드 매트릭스 rect 실측),
+(밴드 매트릭스 rect 실측), **「도해」는 지도가 걸리면
+`node scripts/measure-graph-readability.mjs`**(엣지 교차 · 노드 겹침 — 아래),
 그리고 구현이 끝난 화면이면 `/design-audit`(겹침 · 치수 편차 · 토큰 이탈을 재는
 마지막 관문). 계기 없는 판정은 무효다.
+
+**지도는 2026-08-03 까지 계기가 없던 표면이다.** 노드 규격에는 계약 테스트가,
+타입 램프에는 lint 가, 모션에는 프레임 실측이 있었는데 **화면 대부분을 차지하는
+배치**만 "복잡해 보인다" 로 판정되고 있었다. 이제 셋을 읽는다 — **교차 수**(원시.
+화면의 실제 부담) · **품질**(정규화. 규모가 다른 케이스 비교용) · **겹침**.
+
+⚠️ 「**교차 잴 수 없음**」이 나오면 그건 만점이 아니다. 밀도 게이트가 서브트리를
+접어 화면에 별 모양만 남아 교차가 원천적으로 불가능해진 상태다 — 이걸 만점으로
+읽으면 「가장 큰 볼트에서 가장 좋다」는 정반대 결론이 나온다.
+근거는 Purchase 1997(교차 최소화가 이해도에 압도적으로 가장 중요, 각도 해상도 ·
+격자 스냅은 유의하지 않음)이고, 그래서 이 계기는 **일부러 둘만 잰다.**
 
 A seat that could not open the real thing must say so and withhold its verdict.
 Reading a patch and judging craft from it is the failure this protocol replaces.
@@ -116,6 +128,7 @@ verdict. One round only.
 [기존 패스] <심사 대상 PO 패스를 원문 그대로. 없으면 "없음">
 [열어야 할 실물] <URL · 명령 · vault 경로. 전 자리가 실물을 연다 — diff 판정 금지.
                   「모션」은 `/motion-verify`, 「반응형」은 `/responsive-sweep`,
+                  「도해」는 지도가 걸리면 `measure-graph-readability.mjs`,
                   구현 완료 화면이면 `/design-audit` 을 **요청 없이** 실행한다>
 [출력] 네 파일의 출력 형식 그대로. 질의는 최대 1건.
 ```
