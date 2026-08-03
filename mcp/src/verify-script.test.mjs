@@ -5200,7 +5200,15 @@ describe('verify.mjs first-contact gates', () => {
       );
 
       assert.equal(result.status, 1);
-      assert.equal(result.stderr, '');
+      const stderrLines = result.stderr.trim().split('\n').filter(Boolean);
+      assert.ok(
+        stderrLines.length === 0 || (
+          stderrLines.length === 1
+          && stderrLines[0] === `[ontology-atlas-mcp] connected. vault=${root}`
+        ),
+        `unexpected verify stderr:\n${result.stderr}`,
+      );
+      assert.doesNotMatch(result.stderr, /MaxListenersExceededWarning/);
       assert.match(result.stdout, /list_concepts — vault total 0 nodes/);
       assert.match(result.stdout, /verify vault has 0 ontology nodes/);
       assert.match(result.stdout, /Point verify at a populated ontology vault/);
