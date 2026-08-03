@@ -258,25 +258,24 @@ coverage from how the documents link to each other.
 Cursor, Codex, and any MCP client. The point is not the tool count; it is that
 the answers are *typed*, so an agent can act on them.
 
-Ask *what breaks if I change this?* and Atlas traverses the same typed graph the
-map shows:
+Ask *what breaks if I change this?* and Atlas follows only approved dependency
+declarations. It does not turn folder structure into causal confidence:
 
 ```console
-$ node $ATLAS/cli/src/index.mjs blast-radius capabilities/payment-authorize ./storefront --depth 2
-capabilities/payment-authorize — blast radius (depth 2, incoming)
-  risk high · 22 노드 · 33 관계 · 6 cross-domain
-  capability 10 · element 9 · domain 2 · project 1
-  d1 capabilities/installment — Instalment Payment
-  d1 capabilities/order-placement — Order Placement
-  d2 capabilities/refund — Refund Processing
-  ...
+$ node $ATLAS/cli/src/index.mjs blast-radius capabilities/mcp-server docs/ontology --depth 2
+capabilities/mcp-server — blast radius (depth 2, incoming)
+  risk unknown · 1 노드 · 1 관계 · 0 cross-domain
+
+impact certainty unknown · declared 1 · rationale 0 · source-backed 0
+Counts below follow declared depends_on only. Use reachability/subgraph for structure;
+do not read unknown as low risk.
 ```
 
 - **Focused context, not a repository dump.** Briefs give an agent the project,
   domain, evidence, impact boundary, first tools, and stop conditions it needs.
-- **Graph questions with typed answers.** Paths, reachability, blast radius,
-  cycles, similarity, health, and backlinks are deterministic frontmatter
-  queries — no graph database or hosted memory is involved.
+- **Graph questions with typed answers.** Paths and reachability explain
+  structure; blast radius follows only declared dependencies and reports
+  qualification/completeness honestly. No graph database or hosted memory is involved.
 - **Writes that survive review.** Analysis is side-effect free by default;
   destructive operations dry-run first, renames repair backlinks, and mtime
   guards protect concurrent human edits.

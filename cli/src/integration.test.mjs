@@ -5159,7 +5159,7 @@ await test('overview/hubs/match/reachability/blast-radius --json — fail closed
       "            ? { operation: 'match_edges', filters: {}, totalMatches: 1, limited: false, edges: [{ from: 'capabilities/foo', to: 'capabilities/bar', via: 'relates', fromNode: { slug: 'capabilities/foo', kind: 'capability' }, toKind: 'capability' }] }",
       "            : operation === 'reachability'",
       "              ? { operation: 'reachability', start: 'capabilities/foo', node: { slug: 'capabilities/foo', kind: 'capability', title: 'Foo' }, direction: 'outgoing', depth: 2, summary: { reachableNodes: '1', traversedEdges: 0, layers: 0, terminalNodes: 0 }, byKind: {}, byRelation: {}, layers: [], paths: { total: 0, limited: false, rows: [] }, terminalNodes: [], edges: { total: 0, limited: false, rows: [] } }",
-      "              : { operation: 'blast_radius', center: 'domains/auth', risk: 'low', summary: { affectedNodes: 1, affectedEdges: '0', affectedKinds: 1, affectedDomains: 1, crossDomainEdges: 0 }, byKind: {}, byDomain: {}, nodes: { total: 0, limited: false, rows: [] }, edges: { total: 0, limited: false, rows: [] } };",
+      "              : { operation: 'blast_radius', center: 'domains/auth', risk: 'unknown', qualification: { status: 'unknown', basis: 'declared_dependencies', completeness: 'unknown', sourceBacked: false, declaredEdges: 0, declaredWithRationaleEdges: 0, reviewRequiredEdges: 0, sourceBackedEdges: 0 }, summary: { affectedNodes: 1, affectedEdges: '0', affectedKinds: 1, affectedDomains: 1, crossDomainEdges: 0 }, byKind: {}, byDomain: {}, nodes: { total: 0, limited: false, rows: [] }, edges: { total: 0, limited: false, rows: [] } };",
       "    console.log(JSON.stringify({ jsonrpc: '2.0', id: 2, result: { content: [{ text: JSON.stringify(payload) }], structuredContent: payload } }));",
       "  }",
       "});",
@@ -5202,14 +5202,22 @@ await test('overview/hubs/match/reachability/blast-radius --json — fail closed
 });
 
 await test('blast-radius — affected node rows include node titles for scanability', async () => {
-  const root = await buildGraphFixture();
+  const root = withVault([
+    {
+      slug: 'capabilities/foo',
+      content: '---\nkind: capability\nslug: capabilities/foo\ntitle: Foo\n---\n',
+    },
+    {
+      slug: 'capabilities/bar',
+      content: '---\nkind: capability\nslug: capabilities/bar\ntitle: Bar\ndependencies: [capabilities/foo]\nrelation_notes: { capabilities/foo: Bar calls Foo }\n---\n',
+    },
+  ]);
   try {
     const r = await run(['blast-radius', 'capabilities/foo', root, '--depth=1']);
     assert.equal(r.code, 0, `stdout: ${r.stdout}\nstderr: ${r.stderr}`);
     const clean = stripAnsi(r.stdout);
     assert.match(clean, /affected nodes/);
     assert.match(clean, /capabilities\/bar\s+— Bar/);
-    assert.match(clean, /domains\/auth\s+— Auth/);
     assert.match(clean, /next impact capabilities\/bar/);
     assert.match(clean, /impact rows are candidates, not proof; inspect backlinks and node detail before refactor decisions/);
     assert.match(clean, /ontology-atlas node capabilities\/bar \[vault\] --limit 20/);

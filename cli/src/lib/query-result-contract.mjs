@@ -2,7 +2,12 @@ const DIAGNOSIS_STATUSES = new Set(['healthy', 'needs_attention']);
 const HEALTH_CHECK_STATUSES = new Set(['pass', 'warn', 'fail', 'info']);
 const NEXT_ACTION_SEVERITIES = new Set(['info', 'warn', 'fail']);
 const MAINTENANCE_ACTION_SEVERITIES = new Set(['fail', 'warn', 'info']);
-const BLAST_RADIUS_RISKS = new Set(['low', 'medium', 'high']);
+const BLAST_RADIUS_RISKS = new Set(['unknown', 'low', 'medium', 'high']);
+const BLAST_RADIUS_QUALIFICATION_STATUSES = new Set([
+  'unknown',
+  'review_required',
+  'declared_with_rationale',
+]);
 const RELATION_CHECK_VERDICTS = new Set([
   'already_exists',
   'matches_existing_schema',
@@ -1315,6 +1320,25 @@ export function assertBlastRadiusShape(result) {
   if (!isPlainObject(result.summary)) {
     throw new Error('blast_radius summary must be an object');
   }
+  if (
+    !isPlainObject(result.qualification)
+    || !BLAST_RADIUS_QUALIFICATION_STATUSES.has(result.qualification.status)
+    || result.qualification.basis !== 'declared_dependencies'
+    || result.qualification.completeness !== 'unknown'
+    || result.qualification.sourceBacked !== false
+  ) {
+    throw new Error('blast_radius qualification must report declared dependency evidence and unknown completeness');
+  }
+  for (const field of [
+    'declaredEdges',
+    'declaredWithRationaleEdges',
+    'reviewRequiredEdges',
+    'sourceBackedEdges',
+  ]) {
+    if (!validCount(result.qualification[field])) {
+      throw new Error(`blast_radius qualification.${field} must be a non-negative integer`);
+    }
+  }
   for (const field of ['affectedNodes', 'affectedEdges', 'affectedKinds', 'affectedDomains', 'crossDomainEdges']) {
     if (!validCount(result.summary[field])) {
       throw new Error(`blast_radius summary.${field} must be a non-negative integer`);
@@ -2440,6 +2464,8 @@ function validBlastRadiusEdgeRow(row) {
     && (row.traversedFrom === undefined || hasNonEmptyString(row.traversedFrom))
     && (row.traversedTo === undefined || hasNonEmptyString(row.traversedTo))
     && (row.crossDomain === undefined || typeof row.crossDomain === 'boolean')
+    && (row.rationale === undefined || row.rationale === null || hasNonEmptyString(row.rationale))
+    && (row.qualification === undefined || BLAST_RADIUS_QUALIFICATION_STATUSES.has(row.qualification))
   );
 }
 

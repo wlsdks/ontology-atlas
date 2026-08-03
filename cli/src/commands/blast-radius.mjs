@@ -1,5 +1,5 @@
 // `ontology-atlas blast-radius <slug> [vault] [--depth N] [--direction]`
-// 이 노드를 바꾸면 무엇이 깨지나 — refactor safety 도구.
+// 이 노드를 바꾸면 무엇이 깨지나 — 선언된 depends_on만, 구조는 제외.
 // MCP `query_ontology({operation: 'blast_radius'})` thin wrapper.
 
 import { COLORS, KIND_COLORS } from '../lib/colors.mjs';
@@ -27,6 +27,7 @@ const ALLOWED_FLAGS = ['--vault', '--json', '--depth', '--direction', '--plan', 
 const DIRECTION_VALUES = Object.freeze(['incoming', 'outgoing', 'both']);
 
 const RISK_COLORS = {
+  unknown: COLORS.yellow,
   low: COLORS.green,
   medium: COLORS.yellow,
   high: COLORS.red,
@@ -105,6 +106,14 @@ function render(result, requestedSlug) {
       `  risk ${rc}${risk}${COLORS.reset}` +
       ` · ${sum.affectedNodes ?? 0} 노드 · ${sum.affectedEdges ?? 0} 관계` +
       ` · ${sum.crossDomainEdges ?? 0} cross-domain\n\n`,
+  );
+  const qualification = result?.qualification ?? {};
+  process.stdout.write(
+    `${COLORS.yellow}impact certainty unknown${COLORS.reset}` +
+      ` · declared ${qualification.declaredEdges ?? 0}` +
+      ` · rationale ${qualification.declaredWithRationaleEdges ?? 0}` +
+      ` · source-backed ${qualification.sourceBackedEdges ?? 0}\n` +
+      `${COLORS.dim}Counts below follow declared depends_on only. Use reachability/subgraph for structure; do not read unknown as low risk.${COLORS.reset}\n\n`,
   );
   const byKind = result?.byKind ?? {};
   if (Object.keys(byKind).length > 0) {

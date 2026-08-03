@@ -189,6 +189,16 @@ describe("computeOntologyDependents", () => {
     expect(computeOntologyDependents("x", nodes, edges)).toBe(1); // y
   });
 
+  it("contains/domain/elements 구조 엣지는 의존 영향으로 세지 않는다", () => {
+    const nodes = [node("project", "project"), node("domain", "domain"), node("target")];
+    const edges = [
+      edge("c1", "project", "domain", "contains"),
+      edge("c2", "domain", "target", "capabilities"),
+    ];
+    expect(computeOntologyDependents("target", nodes, edges)).toBe(0);
+    expect(computeOntologyDependents("domain", nodes, edges)).toBe(0);
+  });
+
   it("고립 노드 = 0", () => {
     expect(computeOntologyDependents("solo", [node("solo")], [])).toBe(0);
   });
@@ -200,7 +210,7 @@ describe("computeOntologyDependents", () => {
       direction: "incoming",
       depth: chain.length,
       limit: 1,
-      excludeTypes: ["related_to", "describes"],
+      types: ["depends_on"],
     }).summary.reachableNodes;
     expect(computeOntologyDependents("c", chain, chainEdges)).toBe(direct);
   });

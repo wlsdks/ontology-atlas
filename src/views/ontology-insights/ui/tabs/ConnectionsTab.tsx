@@ -244,6 +244,8 @@ export function ConnectionsTab({
         rankedCount={impact.rankedCount}
         evidenceRows={impact.evidenceRows}
         evidenceRankedCount={impact.evidenceRankedCount}
+        declaredDependencyEdges={impact.declaredDependencyEdges}
+        declaredWithRationaleEdges={impact.declaredWithRationaleEdges}
         kindLabel={kindLabel}
         nodeLink={impactLink}
         labels={impactLabels}

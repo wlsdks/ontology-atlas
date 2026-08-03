@@ -5,6 +5,7 @@ import {
   IMPACT_INCLUDED_GRAPH_KEYS,
   IMPACT_RANKING_CASES,
   IMPACT_SOFT_GRAPH_KEYS,
+  IMPACT_STRUCTURAL_GRAPH_KEYS,
 } from '../fixtures/impact-ranking-cases.mjs';
 import type { VaultDoc, VaultManifest } from '@/entities/docs-vault';
 import { deriveOntologyFromVault } from '@/entities/docs-vault';
@@ -75,7 +76,6 @@ function manifestOf(docs: { slug: string; frontmatter: Record<string, unknown> }
 function agentBlastRadius(
   docs: { slug: string; frontmatter: Record<string, unknown> }[],
   slug: string,
-  softRelations = false,
 ): number {
   const artifact = compileOntology(
     docs.map(withUid).map((doc, index) => ({ ...doc, body: '', mtime: index + 1 })),
@@ -87,7 +87,7 @@ function agentBlastRadius(
     direction: 'incoming',
     depth: MCP_DEPTH,
     limit: MCP_LIMIT,
-    ...(softRelations ? { types: IMPACT_INCLUDED_GRAPH_KEYS } : {}),
+    types: IMPACT_INCLUDED_GRAPH_KEYS,
   }) as { summary: { affectedNodes: number } };
   return result.summary.affectedNodes;
 }
@@ -102,7 +102,7 @@ describe('impact-ranking contract — 화면의 파급 수 == MCP blast_radius',
         expect(node, `${doc.slug} 가 웹 파생 그래프에 없습니다`).toBeDefined();
 
         const web = computeOntologyDependents(node!.id, insight.nodes, insight.edges);
-        const agent = agentBlastRadius(testCase.docs, doc.slug, testCase.softRelations);
+        const agent = agentBlastRadius(testCase.docs, doc.slug);
 
         expect(
           web,
@@ -124,7 +124,7 @@ describe('impact-ranking contract — 화면의 파급 수 == MCP blast_radius',
         const node = insight.nodes.find((candidate) => candidate.id === row.id);
         const slug = node?.evidenceIds[0];
         expect(slug, `${row.id} 의 근거 문서를 찾지 못했습니다`).toBeDefined();
-        expect(row.total).toBe(agentBlastRadius(testCase.docs, slug!, testCase.softRelations));
+        expect(row.total).toBe(agentBlastRadius(testCase.docs, slug!));
         // 「바로」는 「건너서 포함」의 부분집합 — 막대가 자기 자신을 넘칠 수 없다.
         expect(row.direct).toBeLessThanOrEqual(row.total);
       }
@@ -138,6 +138,7 @@ describe('impact-ranking contract — 화면의 파급 수 == MCP blast_radius',
     expect([...RELATION_TYPE_VALUES].sort()).toEqual(
       [
         ...IMPACT_INCLUDED_GRAPH_KEYS,
+        ...IMPACT_STRUCTURAL_GRAPH_KEYS,
         ...IMPACT_SOFT_GRAPH_KEYS,
         ...IMPACT_DIRECTION_DIVERGENT_GRAPH_KEYS,
       ].sort(),
@@ -149,7 +150,7 @@ describe('impact-ranking contract — 화면의 파급 수 == MCP blast_radius',
   // `역량 → 도메인`(belongs-to). 그래서 파급이 정확히 거울처럼 뒤집힌다.
   // 이 테스트는 버그를 축복하는 게 아니라 **좌표를 고정**한다 — 언젠가 방향을
   // 맞추면 여기가 깨지고, 그때 이 키를 include-list 로 옮기면 된다.
-  it('인라인 `domain:` 은 두 엔진이 반대 방향으로 읽는다 (좌표 고정)', () => {
+  it('인라인 `domain:` 은 방향 차이와 무관하게 영향에서 제외한다', () => {
     const docs = [
       { slug: 'domains/auth', frontmatter: { kind: 'domain', title: 'Auth' } },
       {
@@ -161,11 +162,9 @@ describe('impact-ranking contract — 화면의 파급 수 == MCP blast_radius',
     const nodeOf = (slug: string) =>
       insight.nodes.find((candidate) => candidate.evidenceIds[0] === slug)!;
 
-    // 화면: 역량을 바꾸면 그 역량을 담은 도메인을 다시 본다.
-    expect(computeOntologyDependents(nodeOf('capabilities/login').id, insight.nodes, insight.edges)).toBe(1);
+    expect(computeOntologyDependents(nodeOf('capabilities/login').id, insight.nodes, insight.edges)).toBe(0);
     expect(computeOntologyDependents(nodeOf('domains/auth').id, insight.nodes, insight.edges)).toBe(0);
-    // 에이전트: 정확히 반대.
     expect(agentBlastRadius(docs, 'capabilities/login')).toBe(0);
-    expect(agentBlastRadius(docs, 'domains/auth')).toBe(1);
+    expect(agentBlastRadius(docs, 'domains/auth')).toBe(0);
   });
 });
