@@ -466,7 +466,7 @@ const ACTION_TILE_LEADING = "leading-[1.1]";
  * 토큰들은 정의돼 있었고 이 타일만 안 쓰고 있었다.
  */
 const ACTION_TILE_CLASS =
-  `flex flex-1 flex-col items-center justify-start gap-1.5 rounded-[var(--topology-v2-panel-row-radius)] border border-[color:var(--topology-v2-panel-action-border)] bg-[color:var(--topology-v2-panel-action-surface)] px-1 py-1.5 text-center text-label font-medium ${ACTION_TILE_LEADING} [word-break:keep-all] text-[color:var(--topology-v2-panel-text-tertiary)] transition-colors hover:border-[color:var(--topology-v2-panel-domain-border-hover)] hover:bg-[color:var(--topology-v2-panel-row-hover)] hover:text-[color:var(--topology-v2-panel-text-secondary)] active:bg-[color:var(--topology-v2-panel-row-active)]`;
+  `flex flex-1 flex-col items-center justify-start gap-2 rounded-[var(--topology-v2-panel-row-radius)] border border-[color:var(--topology-v2-panel-action-border)] bg-[color:var(--topology-v2-panel-action-surface)] px-2 py-2.5 text-center text-label font-medium ${ACTION_TILE_LEADING} [word-break:keep-all] text-[color:var(--topology-v2-panel-text-tertiary)] transition-colors hover:border-[color:var(--topology-v2-panel-domain-border-hover)] hover:bg-[color:var(--topology-v2-panel-row-hover)] hover:text-[color:var(--topology-v2-panel-text-secondary)] active:bg-[color:var(--topology-v2-panel-row-active)]`;
 
 /**
  * 관계 그룹 헤더의 방향 글리프 — 승인된 시안(mockup-panel-detail)의 SVG 를
@@ -1095,11 +1095,11 @@ export function TopologyV2DetailPanel({
           data-testid="topology-v2-detail-panel-actions"
           data-inline-action-count={inlineActionCount}
           className={showProjectSource
-            ? "flex flex-col gap-0.5 border-t border-[color:var(--topology-v2-panel-zone-divider)] pt-2"
-            : "flex flex-col gap-0.5"}
+            ? "flex flex-col gap-1.5 border-t border-[color:var(--topology-v2-panel-zone-divider)] pt-3"
+            : "flex flex-col gap-1.5"}
         >
         {/* 1층 — 이 노드에 하는 일. 「관계 편집」이 무조건 있어 항상 렌더된다. */}
-        <div className="flex items-start gap-0.5" data-action-row="node">
+        <div className="flex items-start gap-1.5" data-action-row="node">
           {documentHref
             ? withActionTip(
                 labels.actionDocumentTip,
@@ -1151,7 +1151,7 @@ export function TopologyV2DetailPanel({
         </div>
         {/* 2층 — 지도를 이 노드 기준으로 바꾸는 일. 둘 다 없으면 층 자체가 없다. */}
         {showInlinePath || onEnterRealm ? (
-        <div className="flex items-start gap-0.5" data-action-row="map">
+        <div className="flex items-start gap-1.5" data-action-row="map">
           {showInlinePath
             ? withActionTip(
                 labels.actionPathTip,
@@ -1186,7 +1186,7 @@ export function TopologyV2DetailPanel({
         {/* 3층 — 에이전트에게 넘기는 일. 복사가 상수(두 표면 모두)이고
             물어보기는 브릿지가 있을 때만이라, 복사가 먼저 선다. */}
         {showInlineHandoff || (onAskAgent && labels.actionAskAgent) ? (
-        <div className="flex items-start gap-0.5" data-action-row="agent">
+        <div className="flex items-start gap-1.5" data-action-row="agent">
           {showInlineHandoff
             ? withActionTip(
                 labels.actionCopyHandoffTip,
