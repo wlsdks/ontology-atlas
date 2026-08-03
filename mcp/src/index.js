@@ -192,7 +192,13 @@ import {
   findNearTitleMatches,
 } from './growth-hint.mjs';
 
-const STDIO_MAX_LISTENERS = 50;
+// The v2 stdio transport attaches one temporary error listener (and, while
+// backpressured, one drain listener) per in-flight response. Atlas' installed
+// verifier deliberately sends a bounded first-contact burst that can exceed
+// Node's default and the old 50-listener ceiling. 128 keeps that supported
+// burst warning-free without making the emitter unlimited, so a real runaway
+// still trips Node's leak detector.
+const STDIO_MAX_LISTENERS = 128;
 process.stdout.setMaxListeners(Math.max(process.stdout.getMaxListeners(), STDIO_MAX_LISTENERS));
 process.stderr.setMaxListeners(Math.max(process.stderr.getMaxListeners(), STDIO_MAX_LISTENERS));
 
