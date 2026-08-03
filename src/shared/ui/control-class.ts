@@ -347,12 +347,15 @@ const control = cva(DISABLED, {
      * | primary | `#f7f8f8` | `#ececf0` |
      * | secondary | `#d0d6e0` | `#a3a3ac` |
      * | tertiary | `#8a8f98` | `#868690` |
-     * | quaternary | `#787c84` | `#82828a` |
+     * | quaternary | `#82828a` | `#82828a` |
      *
      * 우연이 아니다 — 패널 램프의 tertiary/quaternary 는 **패널 바탕
      * `#17171c` 위에서 대비를 재서** 넛지된 값이다(globals.css 주석: 4.02:1 →
      * ≈4.9:1, ~2.5:1 → ~4.7:1). 즉 두 램프는 두 개의 채색 시스템이 아니라
-     * **하나의 무채 램프가 두 바탕 위에서 갖는 두 해**다.
+     * **하나의 무채 램프가 두 바탕 위에서 갖는 두 해**다. (quaternary 는
+     * 2026-08-03 「체계」 판정으로 전역 값이 `#787c84` → `#82828a` 로 올라
+     * **두 해가 같은 값으로 수렴**했다 — 우연이 아니라 같은 제약(올라선 표면
+     * 위 AA)의 같은 답이다. 원장: docs/DECISIONS.md.)
      *
      * 원장이 센 것: features 라운드 11개 + 위젯 라운드 8개 = **19개**가 이
      * 이유로 구조적으로 값 층 밖이었다.
@@ -540,7 +543,14 @@ const control = cva(DISABLED, {
      * 인디고는 여기 없다 — 뜻으로 정해지는 색은 바탕을 안 탄다.
      */
     { scope: 'panel', tone: 'default', class: 'text-[color:var(--topology-v2-panel-text-tertiary)]' },
-    { scope: 'panel', tone: 'muted', class: 'text-[color:var(--topology-v2-panel-text-quaternary)]' },
+    /*
+     * `muted` 의 panel 컴파운드는 여기 **없다** (2026-08-03 삭제). 두 램프의
+     * quaternary 가 `#82828a` 로 수렴해(전역 상향, docs/DECISIONS.md) 재매핑이
+     * 같은 값을 내는 무노동 분기가 됐다 — 계약 시험의 처방대로 그 단은 tone
+     * 하나로 충분하다. 소비처는 그대로 `tone: 'muted', scope: 'panel'` 을 써도
+     * 된다(기본 muted 가 같은 값을 낸다, 픽셀 이동 0). 두 값이 다시 갈라지는
+     * 날은 계약 시험의 수렴 고정이 빨개져 이 컴파운드를 되살리라고 말한다.
+     */
     { scope: 'panel', tone: 'secondary', class: 'text-[color:var(--topology-v2-panel-text-secondary)]' },
     { scope: 'panel', tone: 'strong', class: 'text-[color:var(--topology-v2-panel-text-primary)]' },
     // 패널 안의 눌림도 패널 잉크를 쓴다 — 안 그러면 눌린 순간만 램프가 튄다.

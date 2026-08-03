@@ -610,7 +610,8 @@ function FullDetailCodeLocationRow({
         aria-label={state === "copied" ? copiedLabel : copyLabel}
         title={state === "copied" ? copiedLabel : copyLabel}
         data-testid="full-detail-a1-code-location-copy"
-        /* 잉크는 `scope: 'panel'` 이 정확히 낸다(패널 4차 #82828a). 상자는
+        /* 잉크는 `tone: 'muted'` 가 낸다(#82828a — 2026-08-03 quaternary 수렴
+           후 panel 재매핑 없이 전역 값이 곧 패널 값이다). 상자는
            `p-1`(20px) 대신 정사각 램프의 `sm`(24px) — 이 행이 이미
            `min-h-[32px]` 이라 커져도 행 높이가 안 밀린다. */
         className={controlClass({
