@@ -1148,7 +1148,7 @@ export function VaultAgentSetupPanel({
               onClick={() => void handleEnsureAgentConfigs()}
               disabled={agentSetupBusy}
               title={t('agentSetup.repairTitle')}
-              tone="accent"
+              tone="accentOnTint"
               className="mt-2 w-full justify-center border-[color:var(--color-indigo-line-a35)] bg-[color:var(--color-indigo-a10)] hover:border-[color:var(--color-indigo-line-a54)] hover:bg-[color:var(--color-indigo-a16)]"
             >
               <Bot size={12} aria-hidden />
@@ -1203,7 +1203,7 @@ export function VaultAgentSetupPanel({
           <Chip
             onClick={onOpenWorkflowGuide}
             title={t('agentSetup.openWorkflowGuideTitle')}
-            tone="accent"
+            tone="accentOnTint"
             className="mt-2 w-full justify-center border-[color:var(--color-indigo-line-a35)] bg-[color:var(--color-indigo-a08)] hover:border-[color:var(--color-indigo-line-a54)] hover:bg-[color:var(--color-indigo-a14)]"
           >
             <BookOpen size={12} aria-hidden />
@@ -1212,7 +1212,7 @@ export function VaultAgentSetupPanel({
           <Chip
             onClick={() => void handleCopyAgentSetupPacket()}
             title={t('agentSetup.copyPacketTitle')}
-            tone="accent"
+            tone="accentOnTint"
             className="mt-2 w-full justify-center border-[color:var(--color-indigo-a42)] bg-[color:var(--color-indigo-a10)] hover:border-[color:var(--color-indigo-a62)] hover:bg-[color:var(--color-indigo-a16)]"
           >
             <ClipboardCopy size={12} aria-hidden />
@@ -1314,7 +1314,7 @@ export function VaultAgentSetupPanel({
             <Chip
               onClick={() => void handleCopyAgentPostChangeSyncGate()}
               title={t('agentSetup.copyPostChangeSyncTitle')}
-              tone="accent"
+              tone="accentOnTint"
               className="mt-2 w-full justify-center border-[color:var(--color-indigo-line-a32)] bg-[color:var(--color-indigo-a08)] hover:border-[color:var(--color-indigo-line-a45)] hover:bg-[color:var(--color-indigo-a13)]"
             >
               <ClipboardCopy size={12} aria-hidden />

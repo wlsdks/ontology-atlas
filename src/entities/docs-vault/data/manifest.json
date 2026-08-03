@@ -6704,10 +6704,15 @@
           "depth": 2,
           "text": "2026-08-02 — 막대를 막대로 만드는 것은 「글자 버튼」이고, 「걸어온 길」은 노드와 선까지 물들인다",
           "slug": "2026-08-02-막대를-막대로-만드는-것은-글자-버튼이고-걸어온-길은-노드와-선까지-물들인다"
+        },
+        {
+          "depth": 2,
+          "text": "2026-08-03 — `tone: 'accent'` 는 잉크가 아니라 표식이었다: 톤을 둘로 가른다",
+          "slug": "2026-08-03-tone-accent-는-잉크가-아니라-표식이었다-톤을-둘로-가른다"
         }
       ],
       "excerpt": "이 파일은 결정과 그때 진 반대 의견을 남긴다. docs/CHANGELOG.md 는 무엇이 언제 바뀌었나를 답하고, 이 파일은 왜 그렇게 정했고, 무엇을 걸었나를 답한다. 최신이 위. 기록은 덧붙이기만 한다 — 지난 기록을 고치지 않는다. 판단이 바뀌었으면 새 기록을 쓰고 옛 기록을 뒤집힘 으로 표시한다. 틀린 기록도 자산이다. 1. 소집 전에 읽는다. 카운슬을 열기 전(그리고 단독 PO 패스를 쓰기 전) 같은 표면 · 같은 질문에 대한 선행 결정이 있는지 먼저 본다. 있으면 새 패스는 그것을 ① 여전히 유효하다고 인용하거나 ② 명시적으로 뒤집는다. 조용히 다시 결정",
-      "wordCount": 50694,
+      "wordCount": 51080,
       "updatedAt": "2026-08-03",
       "linksOut": [
         "slug"
@@ -7631,7 +7636,7 @@
         }
       ],
       "excerpt": "This document is maintained based on Section 3 of the design spec. For the original Linear specification, see design-references/DESIGN-linear.md. v2 (2026-07): topology-map-v2 에서 출하된 B2+ \"Circuit × Constellation\" 시각 언어가 페이지 롤아웃(랜딩 → docs/ontology 허브 → projects/insights → download)의 규범이 되었다 — 아래 v2 — \"Circuit × Constell",
-      "wordCount": 25826,
+      "wordCount": 26013,
       "updatedAt": "2026-08-03",
       "linksOut": [
         "design-references/DESIGN-linear",

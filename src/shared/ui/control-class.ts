@@ -220,8 +220,37 @@ const control = cva(DISABLED, {
        * 인디고 강조 — 「이 화면의 주 행동」. 같은 정규화가 찾은 두 번째 구멍으로,
        * 대응 톤이 없어 15개가 시스템 밖에 있었다. 헌장의 **단일 인디고**이고
        * 새 hue 가 아니다.
+       *
+       * ## 사정거리 — 맨 바탕 위에서만 (2026-08-03 체계석 판정)
+       *
+       * `--color-indigo-accent`(#7170ff)는 앱 전역 99줄이 쓰는 «링크·라벨
+       * 인디고» 관용구다. **단 그 라이선스는 맨 어두운 바탕까지다**: 합성
+       * 대비 실측이 canvas 5.18 · panel 4.96 · elevated 4.53 인데, 인디고
+       * 틴트 채움(`--color-indigo-a14+`·`line-a13`)이나 앰버 힌트가 깔리면
+       * 3.5~4.4 로 WCAG 1.4.3 AA(4.5)를 깬다 — 호버(`a24`)는 canvas 위에서도
+       * 4.13 이다. 틴트를 지는 컨트롤은 아래 `accentOnTint` 다. 게이트:
+       * `tests/contract/accent-ink-contrast.contract.test.ts` + eslint
+       * 페어링 셀렉터.
        */
       accent: 'text-[color:var(--color-indigo-accent)]',
+      /**
+       * **틴트 위의 인디고 강조** — 채움·호버 채움(인디고 a08~a24 · line-a13 ·
+       * 앰버 힌트)을 지는 「주 행동」의 잉크.
+       *
+       * ## 왜 둘로 갈랐나 — 이 앱에는 인디고 잉크의 해가 둘이다
+       *
+       * `scope` 축과 같은 문법이다: 하나의 인디고가 두 바탕 위에서 두 해를
+       * 갖는다. 표식 인디고(#7170ff)는 틴트가 깔리는 순간 AA 를 깨는데
+       * (전수 29곳 중 26곳이 실측 미달 상태였다), 글자용
+       * `--color-indigo-text-soft`(rgba 188,195,255,.92)는 이 앱의 모든
+       * 표면 합성에서 6.46:1 이상이다. 값은 새로 만들지 않았다 — 공방·지도
+       * 패널이 손으로 이미 쓰던 그 토큰의 램프 등재다.
+       *
+       * hue 는 같은 단일 인디고라 «주 행동» 의미는 유지되고, 잃는 것은
+       * 채도다 — 그 대가로 어떤 소비처도 자기 바탕의 대비 숙제를 다시 하지
+       * 않는다.
+       */
+      accentOnTint: 'text-[color:var(--color-indigo-text-soft)]',
       /** 신호 3종 — 헌장이 인정한 그 셋뿐이다(warning · error · success). 확장 금지. */
       warning: 'text-[color:var(--color-status-warning)]',
       danger: 'text-[color:var(--color-danger-text)]',

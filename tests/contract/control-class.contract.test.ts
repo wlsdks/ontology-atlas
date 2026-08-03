@@ -32,6 +32,7 @@ const TONES: ControlTone[] = [
   'secondary',
   'strong',
   'accent',
+  'accentOnTint',
   'warning',
   'danger',
   'success',
@@ -383,7 +384,7 @@ describe('controlClass — 여덟째 모양과 세 축', () => {
   });
 
   it('신호 3종과 인디고는 `scope` 를 안 탄다 — 뜻으로 정해지는 색은 바탕을 안 본다', () => {
-    for (const tone of ['accent', 'warning', 'danger', 'success'] as const) {
+    for (const tone of ['accent', 'accentOnTint', 'warning', 'danger', 'success'] as const) {
       expect(
         controlClass({ shape: 'chip', tone, scope: 'panel' }),
         `${tone} 가 패널에서 다른 색이 됐다`,

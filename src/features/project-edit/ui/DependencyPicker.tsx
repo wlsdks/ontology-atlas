@@ -188,7 +188,7 @@ export function DependencyPicker({
                     className={controlClass({
                       shape: 'pill',
                       size: 'sm',
-                      tone: 'accent',
+                      tone: 'accentOnTint',
                       className:
                         'gap-1 border-[color:var(--color-indigo-brand)] bg-[color:var(--color-indigo-a14)] hover:bg-[color:var(--color-indigo-a24)]',
                     })}

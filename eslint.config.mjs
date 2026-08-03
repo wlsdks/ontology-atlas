@@ -46,6 +46,28 @@ const scaleGradientSelectors = [
   },
 ];
 
+// ── 인디고 잉크 라이선스 (2026-08-03 체계석) ────────────────────────
+// `tone accent`(#7170ff, 표식 인디고)는 맨 어두운 바탕까지만 AA(4.5:1)다 —
+// 인디고/앰버 틴트 채움이 깔리면 합성 대비 3.5~4.4 로 떨어진다(실측:
+// tests/contract/accent-ink-contrast.contract.test.ts). 틴트를 지는 컨트롤의
+// 잉크는 `accentOnTint`(--color-indigo-text-soft, 전 표면 6.46+)다.
+// 이 셀렉터는 **같은 호출/원소 안의 리터럴 페어링**만 본다 — 파일 상수로
+// 우회된 className 은 위 계약 테스트의 소스 스캔이 맡는다.
+const accentTintPairingSelectors = [
+  {
+    selector:
+      'CallExpression[callee.name="controlClass"] ObjectExpression:has(Property[key.name="tone"] > Literal[value="accent"]):has(Property[key.name="className"] :matches(Literal[value=/bg-\\[color:var\\(--color-(indigo|amber)/], TemplateElement[value.raw=/bg-\\[color:var\\(--color-(indigo|amber)/]))',
+    message:
+      '인디고/앰버 틴트 채움 위 잉크는 tone accent(#7170ff, 합성 대비 3.5~4.4:1 — AA 미달)가 아니라 accentOnTint 다. 근거: tests/contract/accent-ink-contrast.contract.test.ts',
+  },
+  {
+    selector:
+      'JSXOpeningElement:has(JSXAttribute[name.name="tone"] > Literal[value="accent"]):has(JSXAttribute[name.name="className"] :matches(Literal[value=/bg-\\[color:var\\(--color-(indigo|amber)/], TemplateElement[value.raw=/bg-\\[color:var\\(--color-(indigo|amber)/]))',
+    message:
+      '인디고/앰버 틴트 채움 위 잉크는 tone="accent"(#7170ff, AA 미달)가 아니라 tone="accentOnTint" 다. 근거: tests/contract/accent-ink-contrast.contract.test.ts',
+  },
+];
+
 // ── Geometry & Type Codex (R5) 봉쇄 ─────────────────────────────────
 // text-[Npx] / rounded-[Npx] arbitrary 클래스 금지 — docs/DESIGN-SYSTEM.md
 // "Geometry & Type Codex" 램프(text-caption…text-hero / rounded-chip…panel)
@@ -671,7 +693,7 @@ const eslintConfig = defineConfig([
   {
     files: ['src/**/*.{ts,tsx,jsx,js}', 'app/**/*.{ts,tsx,jsx,js}'],
     rules: {
-      'no-restricted-syntax': ['error', ...scaleGradientSelectors],
+      'no-restricted-syntax': ['error', ...scaleGradientSelectors, ...accentTintPairingSelectors],
     },
   },
   // Codex 램프 봉쇄 — 마이그레이션 완료 디렉토리 = error. scale/gradient
@@ -684,6 +706,7 @@ const eslintConfig = defineConfig([
         'error',
         ...scaleGradientSelectors,
         ...arbitrarySizeSelectors,
+        ...accentTintPairingSelectors,
       ],
     },
   },
@@ -703,6 +726,7 @@ const eslintConfig = defineConfig([
         'warn',
         ...scaleGradientSelectors.filter((rule) => !rule.selector.includes('shadowBlur')),
         ...arbitrarySizeSelectors,
+        ...accentTintPairingSelectors,
       ],
     },
   },
@@ -733,6 +757,7 @@ const eslintConfig = defineConfig([
         'error',
         ...scaleGradientSelectors,
         ...arbitrarySizeSelectors,
+        ...accentTintPairingSelectors,
         {
           selector: 'Literal[value=/color-amber-docs-/]',
           message:

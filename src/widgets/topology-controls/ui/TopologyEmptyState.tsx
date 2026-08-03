@@ -73,7 +73,7 @@ export function TopologyEmptyState({
   const PRIMARY = controlClass({
     shape: 'chip',
     size: 'lg',
-    tone: 'accent',
+    tone: 'accentOnTint',
     className: `${ACTION} border-[color:var(--color-indigo-a46)] bg-[color:var(--color-indigo-a16)] font-[var(--font-weight-signature)] hover:border-[color:var(--color-indigo-a60)] hover:bg-[color:var(--color-indigo-a24)]`,
   });
   const SECONDARY = controlClass({

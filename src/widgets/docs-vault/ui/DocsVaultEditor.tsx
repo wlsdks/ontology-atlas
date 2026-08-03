@@ -629,7 +629,7 @@ export function DocsVaultEditor({
           </Chip>
           <Chip
             active
-            tone="accent"
+            tone="accentOnTint"
             onClick={() => void doSave()}
             disabled={saving || !dirty}
             className="hover:border-[color:var(--color-indigo-line-a54)]"

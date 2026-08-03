@@ -370,13 +370,13 @@ function MeaningGapRowView({
               aria-expanded={open}
               onClick={() => (open ? requestClose() : onOpen())}
               /* 이 칩은 **열림 여부와 무관하게 강조**다 — 선택(`active`)이 아니라
-                 disclosure 라서 램프의 눌림 잉크가 아니라 `tone: 'accent'` 를
+                 disclosure 라서 램프의 눌림 잉크가 아니라 `tone: 'accentOnTint'` 를
                  쓴다. 높이는 램프 기본이 곧 32px 이라 따로 고정하지 않는다
                  (2026-08-03 수렴 이전에는 `fixedHeight` 축이 필요했다). */
               className={controlClass({
                 shape: "chip",
                 size: "md",
-                tone: "accent",
+                tone: "accentOnTint",
                 className: open ? ACCENT_CHIP_OPEN : ACCENT_CHIP_IDLE,
               })}
             >
@@ -516,7 +516,7 @@ function MeaningGapRowView({
                       className={controlClass({
                         shape: "chip",
                         size: "md",
-                        tone: "accent",
+                        tone: "accentOnTint",
                         className: ACCENT_CHIP_FILLED,
                       })}
                     >

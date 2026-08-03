@@ -173,13 +173,13 @@ export function LinkListEditor({
                  * 손으로 쓰던 `rounded-chip`/`px-2 py-1`/`text-caption` 이
                  * 램프의 `chip`/`sm` 과 **바이트 단위로 같다** — 상자 치수는
                  * 한 픽셀도 안 바뀐다. 인디고 틴트(보더·바탕·호버)는 「이
-                 * 자리의 주 행동」이라 `tone: 'accent'` 가 잉크를 내고 나머지
+                 * 자리의 주 행동」이라 `tone: 'accentOnTint'` 가 잉크를 내고 나머지
                  * 알파는 소비처가 얹는다(값 층은 호버를 안 낸다).
                  */
                 className={controlClass({
                   shape: "chip",
                   size: "sm",
-                  tone: "accent",
+                  tone: "accentOnTint",
                   className:
                     "border-[color:var(--color-indigo-brand)] bg-[color:var(--color-indigo-a16)] uppercase tracking-[0.12em] hover:bg-[color:var(--color-indigo-a24)]",
                 })}

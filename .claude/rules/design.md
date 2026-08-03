@@ -273,6 +273,7 @@ particle·rarity(gold)·shimmer 를 `--studio-*` 토큰 + `.studio-stage` 안에
 | **행간 램프** | `leading-[N]` arbitrary 만 금지 (기존 named 199건은 제외) | 동일 |
 | **램프 우회** | 램프 토큰을 arbitrary length 로 참조하는 것만 금지 (램프 밖 크기 토큰은 정당) | 동일 (켤 때 위반 0) |
 | 금지 그라디언트 | `scaleGradientSelectors` | 동일 |
+| **accent×틴트 페어링** | `accentTintPairingSelectors` — `tone accent` 와 인디고/앰버 틴트 `bg-` 가 같은 호출/원소에 공존 금지 (상수 우회는 `accent-ink-contrast` 계약이 맡는다) | 전역 error (켤 때 위반 0 — 26곳 선치환) |
 
 ### lint 가 못 보는 층은 계약 테스트가 맡는다
 
