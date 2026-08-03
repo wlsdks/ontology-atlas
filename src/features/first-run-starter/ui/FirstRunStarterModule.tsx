@@ -234,7 +234,12 @@ export function FirstRunStarterModule({
           setCollapsed(false);
           undismiss();
         }}
-        className="flex min-w-0 items-center gap-1.5 text-label text-[color:var(--topology-v2-panel-text-tertiary)] transition-colors hover:text-[color:var(--topology-v2-panel-text-primary)]"
+        className={controlClass({
+          shape: "link",
+          scope: "panel",
+          inline: true,
+          className: "min-w-0 hover:text-[color:var(--topology-v2-panel-text-primary)]",
+        })}
       >
         <ChevronRight size={11} aria-hidden className="shrink-0 -rotate-180" />
         {t("reopenLabel")}
@@ -472,7 +477,13 @@ export function FirstRunStarterModule({
             onClick={() => setGuideOpen(true)}
             disabled={busy}
             data-testid="first-run-starter-create"
-            className="touch-hit-expand border-b border-transparent pb-px text-[color:var(--topology-v2-panel-text-tertiary)] transition-colors hover:border-[color:var(--topology-v2-panel-divider)] hover:text-[color:var(--topology-v2-panel-text-secondary)]"
+            className={controlClass({
+              shape: "link",
+              scope: "panel",
+              inline: true,
+              className:
+                "touch-hit-expand border-b border-transparent pb-px hover:border-[color:var(--topology-v2-panel-divider)] hover:text-[color:var(--topology-v2-panel-text-secondary)]",
+            })}
           >
             {scaffolding ? t("createBusy") : t("createLabel")}
           </button>
@@ -481,7 +492,13 @@ export function FirstRunStarterModule({
           type="button"
           onClick={dismiss}
           data-testid="first-run-starter-dismiss"
-          className="touch-hit-expand border-b border-transparent pb-px text-[color:var(--topology-v2-panel-text-tertiary)] transition-colors hover:border-[color:var(--topology-v2-panel-divider)] hover:text-[color:var(--topology-v2-panel-text-secondary)]"
+          className={controlClass({
+            shape: "link",
+            scope: "panel",
+            inline: true,
+            className:
+              "touch-hit-expand border-b border-transparent pb-px hover:border-[color:var(--topology-v2-panel-divider)] hover:text-[color:var(--topology-v2-panel-text-secondary)]",
+          })}
         >
           {t("dismissLabel")}
         </button>
@@ -633,7 +650,14 @@ export function FirstRunStarterModule({
           aria-expanded={cliOpen}
           aria-controls="first-run-starter-cli-bridge"
           data-testid="first-run-starter-cli-toggle"
-          className="touch-hit-expand flex items-center gap-1 text-label text-[color:var(--topology-v2-panel-text-quaternary)] transition-colors hover:text-[color:var(--topology-v2-panel-text-secondary)]"
+          className={controlClass({
+            shape: "link",
+            scope: "panel",
+            tone: "muted",
+            inline: true,
+            className:
+              "touch-hit-expand hover:text-[color:var(--topology-v2-panel-text-secondary)]",
+          })}
         >
           <ChevronRight
             size={11}

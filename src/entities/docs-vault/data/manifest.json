@@ -3890,6 +3890,11 @@
         },
         {
           "depth": 2,
+          "text": "2026-08-03 — 값 층이 「못 옮긴 사유」를 읽고 자기 구멍을 메웠다",
+          "slug": "2026-08-03-값-층이-못-옮긴-사유를-읽고-자기-구멍을-메웠다"
+        },
+        {
+          "depth": 2,
           "text": "2026-08-03 — 디자인 시스템이 「자산 + 게이트」로 서고, 계기가 생겼다",
           "slug": "2026-08-03-디자인-시스템이-자산-게이트로-서고-계기가-생겼다"
         },
@@ -6099,8 +6104,8 @@
           "slug": "2026-07-26-첫-만남은-쇼핑몰부터"
         }
       ],
-      "excerpt": "Major change history. Code commit messages answer why; this file answers when / which surface changed. Focused on user-visible changes, not PR-level granularity. Newest at the top. Entries stay date-based; the app version reached v1.0.0 on 2026-07-27, so a release tag now carries the semver promise instead. 지금까지 이 앱의 화",
-      "wordCount": 64578,
+      "excerpt": "Major change history. Code commit messages answer why; this file answers when / which surface changed. Focused on user-visible changes, not PR-level granularity. Newest at the top. Entries stay date-based; the app version reached v1.0.0 on 2026-07-27, so a release tag now carries the semver promise instead. 컨트롤 정규화가 41",
+      "wordCount": 64799,
       "updatedAt": "2026-08-03",
       "linksOut": [
         "audits/CASE-STUDY-AGENTS-MD-DRIFT",
@@ -7491,8 +7496,8 @@
         },
         {
           "depth": 3,
-          "text": "컨트롤 모양 여섯 — `controlClass()` (2026-08-03 소유자 확정)",
-          "slug": "컨트롤-모양-여섯-controlclass-2026-08-03-소유자-확정"
+          "text": "컨트롤 모양 — `controlClass()` (2026-08-03 소유자 확정)",
+          "slug": "컨트롤-모양-controlclass-2026-08-03-소유자-확정"
         },
         {
           "depth": 3,
@@ -7601,7 +7606,7 @@
         }
       ],
       "excerpt": "This document is maintained based on Section 3 of the design spec. For the original Linear specification, see design-references/DESIGN-linear.md. v2 (2026-07): topology-map-v2 에서 출하된 B2+ \"Circuit × Constellation\" 시각 언어가 페이지 롤아웃(랜딩 → docs/ontology 허브 → projects/insights → download)의 규범이 되었다 — 아래 v2 — \"Circuit × Constell",
-      "wordCount": 25153,
+      "wordCount": 25478,
       "updatedAt": "2026-08-03",
       "linksOut": [
         "design-references/DESIGN-linear",

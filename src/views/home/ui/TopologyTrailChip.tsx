@@ -254,7 +254,13 @@ export function TopologyTrailChip({
           aria-expanded={open}
           aria-label={labels.triggerAriaLabel}
           data-testid="topology-trail-chip-trigger"
-          className="min-w-0 truncate font-medium text-[color:var(--color-text-primary)]"
+          className={controlClass({
+            shape: "link",
+            tone: "strong",
+            inline: true,
+            truncate: true,
+            className: "min-w-0 font-medium",
+          })}
         >
           {label}
         </button>
@@ -531,7 +537,11 @@ export function TopologyTrailChip({
               type="button"
               onClick={onClear}
               data-testid="topology-trail-clear-footer"
-              className="rounded-chip px-2 py-1 text-label text-[color:var(--color-text-quaternary)] transition-colors hover:text-[color:var(--color-text-primary)]"
+              className={controlClass({
+                shape: "segment",
+                tone: "muted",
+                className: "hover:text-[color:var(--color-text-primary)]",
+              })}
             >
               {labels.clearLabel}
             </button>

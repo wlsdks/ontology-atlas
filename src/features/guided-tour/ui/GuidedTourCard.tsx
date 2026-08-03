@@ -196,7 +196,12 @@ export function GuidedTourCard({
           onClick={back}
           disabled={isFirst}
           data-testid="guided-tour-back"
-          className="h-8 rounded-[var(--chrome-radius-inner)] px-3 text-body text-[color:var(--color-text-tertiary)] transition-colors hover:text-[color:var(--color-text-primary)] disabled:opacity-40"
+          className={controlClass({
+            shape: "segment",
+            size: "lg",
+            fixedHeight: true,
+            className: "hover:text-[color:var(--color-text-primary)]",
+          })}
         >
           {t("prevLabel")}
         </button>
@@ -207,7 +212,13 @@ export function GuidedTourCard({
             type="button"
             onClick={isFinalStep ? finishAsDone : advance}
             data-testid={isFinalStep ? "guided-tour-finish" : "guided-tour-next"}
-            className="h-8 rounded-[var(--chrome-radius-inner)] bg-[color:var(--color-indigo-brand)] px-3 text-body font-medium text-white transition-colors hover:bg-[color:var(--color-indigo-accent)]"
+            className={controlClass({
+              shape: "segment",
+              size: "lg",
+              tone: "onAccent",
+              fixedHeight: true,
+              className: "hover:bg-[color:var(--color-indigo-accent)]",
+            })}
           >
             {isFinalStep ? t("finishLabel") : t("nextLabel")}
           </button>

@@ -342,11 +342,12 @@ export function BlockImportModule() {
                           aria-checked={resolution === "skip"}
                           data-testid="block-import-resolution-skip"
                           onClick={() => setResolution("skip")}
-                          className={`min-w-0 truncate rounded-[var(--chrome-radius-inner)] px-2 py-1 text-label transition-colors ${
-                            resolution === "skip"
-                              ? "bg-[color:var(--color-indigo-a16)] text-[color:var(--color-text-primary)]"
-                              : "text-[color:var(--color-text-tertiary)] hover:text-[color:var(--color-text-primary)]"
-                          }`}
+                          className={controlClass({
+                            shape: "segment",
+                            truncate: true,
+                            active: resolution === "skip",
+                            className: "min-w-0 hover:text-[color:var(--color-text-primary)]",
+                          })}
                         >
                           {t("resolutionSkip")}
                         </button>
@@ -356,11 +357,12 @@ export function BlockImportModule() {
                           aria-checked={resolution === "prefix"}
                           data-testid="block-import-resolution-prefix"
                           onClick={() => setResolution("prefix")}
-                          className={`min-w-0 truncate rounded-[var(--chrome-radius-inner)] px-2 py-1 text-label transition-colors ${
-                            resolution === "prefix"
-                              ? "bg-[color:var(--color-indigo-a16)] text-[color:var(--color-text-primary)]"
-                              : "text-[color:var(--color-text-tertiary)] hover:text-[color:var(--color-text-primary)]"
-                          }`}
+                          className={controlClass({
+                            shape: "segment",
+                            truncate: true,
+                            active: resolution === "prefix",
+                            className: "min-w-0 hover:text-[color:var(--color-text-primary)]",
+                          })}
                         >
                           {t("resolutionPrefix")}
                         </button>
@@ -387,7 +389,12 @@ export function BlockImportModule() {
                   type="button"
                   onClick={() => setPreview(null)}
                   data-testid="block-import-cancel"
-                  className="rounded-chip px-3 py-1.5 text-body text-[color:var(--color-text-tertiary)] transition-colors hover:bg-[color:var(--color-overlay-2)] hover:text-[color:var(--color-text-primary)]"
+                  className={controlClass({
+                    shape: "segment",
+                    size: "lg",
+                    className:
+                      "hover:bg-[color:var(--color-overlay-2)] hover:text-[color:var(--color-text-primary)]",
+                  })}
                 >
                   {t("cancel")}
                 </button>
@@ -396,7 +403,12 @@ export function BlockImportModule() {
                   onClick={() => void confirmImport()}
                   disabled={busy || plan.writes.length === 0}
                   data-testid="block-import-confirm"
-                  className="rounded-chip bg-[color:var(--color-indigo-brand)] px-3 py-1.5 text-body font-medium text-white transition-colors enabled:hover:bg-[color:var(--color-indigo-accent)] disabled:opacity-50"
+                  className={controlClass({
+                    shape: "segment",
+                    size: "lg",
+                    tone: "onAccent",
+                    className: "enabled:hover:bg-[color:var(--color-indigo-accent)]",
+                  })}
                 >
                   {busy ? t("confirmBusy") : t("confirm", { count: plan.writes.length })}
                 </button>

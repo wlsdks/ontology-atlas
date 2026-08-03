@@ -122,6 +122,42 @@ const control = cva(DISABLED, {
        * 하나만 본 것이다.
        */
       tile: 'flex flex-col items-center justify-start rounded-card border text-center transition-colors',
+      /**
+       * **보더 없는 인셋** — 세그먼트 항목 · 탭 · 고스트 버튼.
+       *
+       * ## 왜 여덟째 모양인가 — 네 라운드가 같은 결론에 다른 이름으로 닿았다
+       *
+       * 「일곱째를 감으로 추가하지 않는다」는 규율이 이 자리에서 요구하는 것은
+       * **반복 횟수**다. 래칫 원장(`control-adoption-ratchet`)이 네 라운드
+       * 연속으로 같은 구멍을 보고했다:
+       *
+       * | 라운드 | 원장이 쓴 이름 | 못 옮긴 수 |
+       * |---|---|---:|
+       * | 설정 시트 | 「보더 있는 컨테이너 안의 보더 없는 컨트롤」 | 1 파일 · 반복 3 |
+       * | 지도 두 위젯 | 「세그먼트 탭」 | 3 |
+       * | features | 「보더 없는 인셋(고스트) 모양이 없다」 | 9 |
+       * | 위젯 | 「보더 없는 세그먼트·탭」 | 6 |
+       *
+       * 네 번 같은 결론이 나오면 그건 취향이 아니라 **모양이 실재한다**는
+       * 신호다. `chip`·`pill`·`card`·`tile` 은 보더가 필수라 이미 보더를 두른
+       * 상자 안에서 「상자 속 상자」가 되고, `link` 는 인셋이 0이라 세그먼트의
+       * 히트 영역이 사라진다. 그 사이가 이 모양이다.
+       *
+       * ## 반경 — `--chrome-radius-inner` 는 새 값이 아니다
+       *
+       * 소비처 다섯이 `rounded-[var(--chrome-radius-inner)]` 를 쓰고 있는데,
+       * `app/globals.css` 에서 그 토큰은 **`var(--radius-chip)` 의 별칭**이다
+       * (6px, globals.css `--chrome-radius-inner: var(--radius-chip)`). 그래서
+       * `rounded-chip` 으로 옮기면 **바이트만 다르고 픽셀은 같다** — 램프 밖
+       * 반경을 새로 만들 이유가 없다.
+       *
+       * ## 크기 — 실측 최빈값이 `md` 다
+       *
+       * 남은 세그먼트/고스트 12개의 인셋 분포: `px-2 py-1`/`text-label` 6 ·
+       * `px-2.5 py-1`/`text-label` 2 · `px-2.5`+28px 고정 5 · `px-3` 계열 3.
+       * 최빈 하나를 `md` 에 정확히 앉혔다.
+       */
+      segment: 'inline-flex items-center justify-center rounded-chip text-center transition-colors',
     },
     size: {
       /** 실측 분포의 작은 쪽 — `text-caption`/`px-2`. */
@@ -158,7 +194,101 @@ const control = cva(DISABLED, {
       warning: 'text-[color:var(--color-status-warning)]',
       danger: 'text-[color:var(--color-danger-text)]',
       success: 'text-[color:var(--color-status-success)]',
+      /**
+       * **채워진 인디고 위의 전경** — 이 화면의 단 하나의 주 동작.
+       *
+       * ## 왜 톤이 바탕까지 내는가
+       *
+       * 두 라운드가 독립으로 같은 구멍을 보고했다(features 5 · 위젯 6):
+       * *"인디고를 배경으로 깔면 글자는 `text-white` 인데 tone 여덟에 그 자리가
+       * 없다."* 잉크만 내면 소비처가 `bg-…`/`font-semibold` 를 `className` 으로
+       * 계속 써야 하고, 그건 **모양을 className 으로 넘기는 것**이라 층이 있으나
+       * 마나다. 그래서 잉크와 바탕을 **한 쌍으로** 낸다 — `active: true` 가 이미
+       * 같은 문법(배경+보더+잉크를 함께)을 쓰고 있고, 채움은 「눌림」과 마찬가지로
+       * 잉크 혼자로는 성립하지 않는 상태라서다.
+       *
+       * `font-semibold` 를 포함한 이유도 실측이다: `--color-indigo-brand` 를
+       * 바탕으로 깐 컨트롤 중 무게를 명시한 **15개가 semibold 13 · medium 2**
+       * 였다(2026-08-03 전수). 무게가 이 톤의 정체성의 일부이고, 예외 2건은
+       * 규격이 아니라 편차다 — 옮기면서 semibold 로 정규화했다(500 → 600,
+       * 상자 치수는 패딩·행간이 정하므로 높이 변화 0).
+       *
+       * 호버(`hover:bg-[color:var(--color-indigo-hover)]`)는 여전히 소비처의
+       * 몫이다 — 이 파일이 호버를 안 내는 규율은 그대로다.
+       *
+       * 새 hue 0: 바탕은 헌장의 단일 인디고, 잉크는 무채(#fff). 대비 실측
+       * 4.71:1 로 WCAG AA(4.5) 위다.
+       */
+      onAccent:
+        'bg-[color:var(--color-indigo-brand)] font-semibold text-[color:var(--color-text-on-accent)]',
     },
+    /**
+     * **어느 잉크 램프 위에 서 있는가.**
+     *
+     * ## 왜 이 축이 필요한가 — 두 라운드가 독립으로 같은 결론에 닿았다
+     *
+     * 이 저장소에는 무채색 글자 램프가 **두 벌** 있고 값이 다르다:
+     *
+     * | 단 | `--color-text-*` | `--topology-v2-panel-text-*` |
+     * |---|---|---|
+     * | primary | `#f7f8f8` | `#ececf0` |
+     * | secondary | `#d0d6e0` | `#a3a3ac` |
+     * | tertiary | `#8a8f98` | `#868690` |
+     * | quaternary | `#787c84` | `#82828a` |
+     *
+     * 우연이 아니다 — 패널 램프의 tertiary/quaternary 는 **패널 바탕
+     * `#17171c` 위에서 대비를 재서** 넛지된 값이다(globals.css 주석: 4.02:1 →
+     * ≈4.9:1, ~2.5:1 → ~4.7:1). 즉 두 램프는 두 개의 채색 시스템이 아니라
+     * **하나의 무채 램프가 두 바탕 위에서 갖는 두 해**다.
+     *
+     * 원장이 센 것: features 라운드 11개 + 위젯 라운드 8개 = **19개**가 이
+     * 이유로 구조적으로 값 층 밖이었다.
+     *
+     * ## 왜 「소비처가 잉크만 얹는다」를 택하지 않았나
+     *
+     * 그러면 `className` 에 색이 실린다. 이 파일이 스스로 금지한 바로 그것이고
+     * (「모양·크기·색을 여기 넣으면 이 함수가 있으나 마나다」), 19개를 옮겨도
+     * 색은 여전히 손으로 쓴 값이니 **아무것도 안 옮긴 것과 같다**.
+     *
+     * ## 왜 CSS 변수 재정의를 택하지 않았나
+     *
+     * 패널 안에서 `--color-text-*` 를 통째로 덮으면 축 없이 19개가 그냥
+     * 풀린다. 그런데 그 패널 안에는 컨트롤이 아닌 소비처(제목 · 통계 · 힌트
+     * 문장)가 훨씬 많고, **그 전부의 출력이 같이 바뀐다**. 재지 않은 회귀를
+     * 무료로 사는 셈이라 기각했다. 축은 명시적이고, 켠 자리만 바뀌고,
+     * 계약으로 잠글 수 있다.
+     *
+     * ## 이 축이 열 수 없는 것
+     *
+     * 패널 램프에는 **신호 3종도 인디고도 없다.** `accent`/`warning`/`danger`/
+     * `success` 는 `scope` 와 무관하게 전역 토큰을 그대로 낸다 — 신호는 바탕이
+     * 아니라 뜻으로 정해지기 때문이다. 계약이 이걸 잠근다.
+     */
+    scope: {
+      /** 앱 전역 바탕(`--color-canvas` 계열) 위. 기본값이다. */
+      app: '',
+      /** 지도 패널(`--topology-v2-panel-surface`, `#17171c`) 위. */
+      panel: '',
+    },
+    /**
+     * **말줄임이 필요한가.**
+     *
+     * ## 왜 이 축이 필요한가 (2026-08-03 실측)
+     *
+     * 모양 일곱이 **전부 flex 계열**(`inline-flex`/`flex`)이라
+     * `text-overflow: ellipsis` 가 통하지 않는다. 실측: 같은 텍스트·같은 폭에서
+     * `inline-block` 은 `…` 를 그리고 `inline-flex` 는 **하드 클립**한다(글자가
+     * 잘린 자리에서 그냥 끊긴다). 그래서 「폭이 모자라면 줄여서라도 다 보여야
+     * 하는」 컨트롤 — 빵부스러기 · 발자국 행 · 세그먼트 탭 라벨 — 이 값 층 밖에
+     * 남았다(지도 뷰 라운드 3 + 세그먼트 5).
+     *
+     * `truncate` 유틸리티만 얹는 것으로는 못 고친다. **display 를 바꿔야
+     * 한다** — 그건 모양의 일이지 소비처의 일이 아니다.
+     *
+     * 켜면 `block` 이 된다(`inline-block` 이 아니라): flex 자식으로 놓였을 때
+     * `min-w-0`/`flex-1` 과 함께 줄어들어야 하는 자리가 실측 소비처의 전부다.
+     */
+    truncate: { true: 'block truncate', false: '' },
     /** 눌려 있는 상태(`aria-pressed` / `aria-selected` 와 **짝**이어야 한다). */
     active: { true: '', false: '' },
     /**
@@ -174,8 +304,26 @@ const control = cva(DISABLED, {
      * 높이를 램프의 기본값으로 만들지 않은 이유는 그대로 유효하다(칩 143개 중
      * 명시 높이는 38개뿐, 강제하면 70%의 키가 바뀐다). 그래서 **기본값은 여전히
      * 「패딩이 높이를 정한다」**이고, 계약이 치수를 소유한 자리만 이 축을 켠다.
+     *
+     * ## 왜 한 단이 아니라 세 단인가 (2026-08-03 원장이 센 것)
+     *
+     * `true` 한 단(32px)뿐이라 두 구멍이 동시에 막혀 있었다:
+     *
+     * - 뷰 라운드: **「28px 칩 스텝이 없다」** — `rounded-chip` + `h-7`/`min-h-7`
+     *   이 저장소에 **18곳**인데 칩 램프는 24/30/32 만 낸다.
+     * - 위젯 라운드: **「크롬 토큰이 치수를 소유한다」(15)** — `--git-row-h` ·
+     *   `--git-setup-action-height` 등 36/44/가변을 «32px 한 단» 이 못 받는다.
+     *
+     * 세 단은 지어낸 값이 아니라 **`app/globals.css` 에 이미 있는 컨트롤 높이
+     * 램프**다: `--control-h-sm: 28px` · `--control-h-md: 32px` ·
+     * `--control-h-lg: 40px`. Tailwind 스텝 `h-7`/`h-8`/`h-10` 이 정확히 그
+     * 셋이므로 arbitrary 값을 안 쓰고도 램프 위에 앉는다(계약 테스트가
+     * arbitrary 치수를 금지한다).
+     *
+     * **`true` 는 `md` 의 별칭으로 남는다** — 기존 소비처 출력이 한 바이트도
+     * 안 바뀐다.
      */
-    fixedHeight: { true: '', false: '' },
+    fixedHeight: { true: '', false: '', sm: '', md: '', lg: '' },
     /**
      * **문장 속에 있는가.** `link` 에만 뜻이 있다.
      *
@@ -220,6 +368,11 @@ const control = cva(DISABLED, {
     { shape: 'link', size: 'sm', class: 'text-caption' },
     { shape: 'link', size: 'md', class: 'text-label' },
     { shape: 'link', size: 'lg', class: 'text-body' },
+    // 세그먼트: `md` 가 실측 최빈(`px-2 py-1`/`text-label`, 24px)이라 6개가
+    // 픽셀 변화 0으로 들어온다. sm 은 같은 인셋에 한 단 작은 타입, lg 는 32px.
+    { shape: 'segment', size: 'sm', class: 'px-2 py-1 text-caption' },
+    { shape: 'segment', size: 'md', class: 'px-2 py-1 text-label' },
+    { shape: 'segment', size: 'lg', class: 'px-3 py-1.5 text-body' },
 
     // ── 테두리를 가진 모양의 기본 테두리색. `link`/`row`/`icon` 은 보더가 없다.
     { shape: 'chip', active: false, class: 'border-[color:var(--color-divider)]' },
@@ -235,13 +388,59 @@ const control = cva(DISABLED, {
     { shape: 'row', active: true, class: 'bg-[color:var(--color-overlay-2)] text-[color:var(--color-text-primary)]' },
     { shape: 'icon', active: true, class: 'bg-[color:var(--color-overlay-2)] text-[color:var(--color-text-primary)]' },
     { shape: 'link', active: true, class: 'text-[color:var(--color-text-primary)]' },
+    // 보더 없는 인셋의 눌림 — 상자 안에서 「지금 이것」을 인디고 틴트로만 말한다.
+    // 실측 소비처 12개 중 12개가 `--color-indigo-a16`/`a26` 틴트였다(보더 0).
+    { shape: 'segment', active: true, class: 'bg-[color:var(--color-indigo-a16)] text-[color:var(--color-text-primary)]' },
     // 홀로 선 글자 컨트롤만 타깃을 싣는다 — 문장 속은 WCAG 2.5.8 이 면제한다.
     { shape: 'link', inline: false, class: 'min-h-11' },
-    // 크롬 계약의 32px — `--chrome-tile-size` 와 같은 단이다.
+
+    /*
+     * ── 고정 높이 3단. 값은 `--control-h-{sm,md,lg}`(28/32/40) 이고 Tailwind
+     * 스텝이 정확히 그것이다. `true` 는 `md` 의 별칭 — 기존 출력 불변.
+     */
     { shape: 'chip', fixedHeight: true, class: 'h-8 py-0' },
     { shape: 'pill', fixedHeight: true, class: 'h-8 py-0' },
+    { shape: 'segment', fixedHeight: true, class: 'h-8 py-0' },
+    { shape: 'chip', fixedHeight: 'sm', class: 'h-7 py-0' },
+    { shape: 'pill', fixedHeight: 'sm', class: 'h-7 py-0' },
+    { shape: 'segment', fixedHeight: 'sm', class: 'h-7 py-0' },
+    { shape: 'chip', fixedHeight: 'md', class: 'h-8 py-0' },
+    { shape: 'pill', fixedHeight: 'md', class: 'h-8 py-0' },
+    { shape: 'segment', fixedHeight: 'md', class: 'h-8 py-0' },
+    { shape: 'chip', fixedHeight: 'lg', class: 'h-10 py-0' },
+    { shape: 'pill', fixedHeight: 'lg', class: 'h-10 py-0' },
+    { shape: 'segment', fixedHeight: 'lg', class: 'h-10 py-0' },
+
+    /*
+     * ── 두 번째 무채 램프. 패널 바탕(#17171c) 위에서 대비를 재서 넛지된 값이라
+     * 새 채색 시스템이 아니라 **같은 무채 램프의 두 번째 해**다. 신호 3종과
+     * 인디고는 여기 없다 — 뜻으로 정해지는 색은 바탕을 안 탄다.
+     */
+    { scope: 'panel', tone: 'default', class: 'text-[color:var(--topology-v2-panel-text-tertiary)]' },
+    { scope: 'panel', tone: 'muted', class: 'text-[color:var(--topology-v2-panel-text-quaternary)]' },
+    { scope: 'panel', tone: 'secondary', class: 'text-[color:var(--topology-v2-panel-text-secondary)]' },
+    { scope: 'panel', tone: 'strong', class: 'text-[color:var(--topology-v2-panel-text-primary)]' },
+    // 패널 안의 눌림도 패널 잉크를 쓴다 — 안 그러면 눌린 순간만 램프가 튄다.
+    { scope: 'panel', shape: 'segment', active: true, class: 'text-[color:var(--topology-v2-panel-text-primary)]' },
+    { scope: 'panel', shape: 'row', active: true, class: 'text-[color:var(--topology-v2-panel-text-primary)]' },
+    { scope: 'panel', shape: 'link', active: true, class: 'text-[color:var(--topology-v2-panel-text-primary)]' },
+
+    /*
+     * ── 채움 톤은 보더를 지운다. 여기 있어야 하는 이유는 순서다 — 위의
+     * `border-[…divider]` 컴파운드보다 **뒤**여야 tailwind-merge 에서 이긴다.
+     */
+    { tone: 'onAccent', class: 'border-transparent' },
   ],
-  defaultVariants: { shape: 'chip', size: 'md', tone: 'default', active: false, inline: false, fixedHeight: false },
+  defaultVariants: {
+    shape: 'chip',
+    size: 'md',
+    tone: 'default',
+    scope: 'app',
+    active: false,
+    inline: false,
+    fixedHeight: false,
+    truncate: false,
+  },
 });
 
 export type ControlShape = NonNullable<VariantProps<typeof control>['shape']>;

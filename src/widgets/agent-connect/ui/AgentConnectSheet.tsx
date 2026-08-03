@@ -294,11 +294,11 @@ export function AgentConnectSheet({
                         aria-checked={scope === option}
                         onClick={() => setAgentConfigScope(option)}
                         data-testid={`agent-scope-${option}`}
-                        className={`rounded px-2.5 py-1 text-label font-medium transition-colors ${
-                          scope === option
-                            ? "bg-[color:var(--color-indigo-a26)] text-[color:var(--color-text-primary)]"
-                            : "text-[color:var(--color-text-tertiary)] hover:text-[color:var(--color-text-primary)]"
-                        }`}
+                        className={controlClass({
+                          shape: "segment",
+                          active: scope === option,
+                          className: "font-medium hover:text-[color:var(--color-text-primary)]",
+                        })}
                       >
                         {option === "project" ? t("scopeProject") : t("scopeGlobal")}
                       </button>

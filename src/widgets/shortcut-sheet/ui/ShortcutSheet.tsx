@@ -8,6 +8,7 @@ import { MOTION, OVERLAY_SPRING_REDUCED } from "@/shared/motion";
 import { useBodyScrollLock } from "@/shared/lib/use-body-scroll-lock";
 import { usePathname } from "@/i18n/navigation";
 import { cn } from "@/shared/lib/cn";
+import { controlClass } from "@/shared/ui/control-class";
 import {
   SHORTCUT_SCOPES,
   sectionVisible,
@@ -393,12 +394,16 @@ export function ShortcutSheet({ open, onClose }: Props) {
                   aria-selected={scope === key}
                   data-testid={`shortcut-sheet-scope-${key}`}
                   onClick={() => setScope(key)}
-                  className={cn(
-                    "h-[var(--control-h-sm)] rounded-chip px-2.5 text-label transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--color-indigo-a46)]",
-                    scope === key
-                      ? "bg-[color:var(--color-indigo-a16)] text-[color:var(--color-text-primary)]"
-                      : "text-[color:var(--color-text-tertiary)] hover:bg-[color:var(--color-overlay-2)] hover:text-[color:var(--color-text-secondary)]",
-                  )}
+                  className={controlClass({
+                    shape: "segment",
+                    fixedHeight: "sm",
+                    active: scope === key,
+                    className: cn(
+                      "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--color-indigo-a46)]",
+                      scope !== key &&
+                        "hover:bg-[color:var(--color-overlay-2)] hover:text-[color:var(--color-text-secondary)]",
+                    ),
+                  })}
                 >
                   {t(`scope.${key}`)}
                 </button>
