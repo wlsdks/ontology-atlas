@@ -198,7 +198,12 @@ export function AgentProposalCard({
               data-testid="agent-proposal-apply"
               disabled={busy || selected.length === 0}
               onClick={onApply}
-              className="h-8 rounded-chip bg-[color:var(--color-indigo-brand)] px-3 text-label font-semibold tracking-label text-white transition-colors hover:bg-[color:var(--color-indigo-hover)] disabled:opacity-40 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--color-indigo-accent)]"
+              className={controlClass({
+                tone: 'onAccent',
+                fixedHeight: true,
+                className:
+                  'tracking-label hover:bg-[color:var(--color-indigo-hover)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--color-indigo-accent)]',
+              })}
             >
               {proposal.status === 'applying' ? labels.applying : labels.apply(selected.length)}
             </button>

@@ -3895,6 +3895,11 @@
         },
         {
           "depth": 2,
+          "text": "2026-08-03 — 값 층이 「못 옮긴 사유」를 읽고 자기 구멍을 메웠다",
+          "slug": "2026-08-03-값-층이-못-옮긴-사유를-읽고-자기-구멍을-메웠다"
+        },
+        {
+          "depth": 2,
           "text": "2026-08-03 — 디자인 시스템이 「자산 + 게이트」로 서고, 계기가 생겼다",
           "slug": "2026-08-03-디자인-시스템이-자산-게이트로-서고-계기가-생겼다"
         },
@@ -6105,7 +6110,7 @@
         }
       ],
       "excerpt": "Major change history. Code commit messages answer why; this file answers when / which surface changed. Focused on user-visible changes, not PR-level granularity. Newest at the top. Entries stay date-based; the app version reached v1.0.0 on 2026-07-27, so a release tag now carries the semver promise instead. README의 첫 화",
-      "wordCount": 64701,
+      "wordCount": 64922,
       "updatedAt": "2026-08-03",
       "linksOut": [
         "audits/CASE-STUDY-AGENTS-MD-DRIFT",
@@ -7506,8 +7511,48 @@
         },
         {
           "depth": 3,
-          "text": "컨트롤 모양 여섯 — `controlClass()` (2026-08-03 소유자 확정)",
-          "slug": "컨트롤-모양-여섯-controlclass-2026-08-03-소유자-확정"
+          "text": "컨트롤 모양 — `controlClass()` (2026-08-03 소유자 확정)",
+          "slug": "컨트롤-모양-controlclass-2026-08-03-소유자-확정"
+        },
+        {
+          "depth": 3,
+          "text": "시스템을 늘리는 규칙 (2026-08-03 소유자 지시)",
+          "slug": "시스템을-늘리는-규칙-2026-08-03-소유자-지시"
+        },
+        {
+          "depth": 4,
+          "text": "규칙 0 — 새 값을 만들기 전에 **이미 있는지 먼저 찾는다**",
+          "slug": "규칙-0-새-값을-만들기-전에-이미-있는지-먼저-찾는다"
+        },
+        {
+          "depth": 4,
+          "text": "규칙 1 — 축을 더하기 전에 슬롯을 먼저 본다",
+          "slug": "규칙-1-축을-더하기-전에-슬롯을-먼저-본다"
+        },
+        {
+          "depth": 4,
+          "text": "규칙 2 — 같은 겉모습의 두 태그를 만들지 않는다",
+          "slug": "규칙-2-같은-겉모습의-두-태그를-만들지-않는다"
+        },
+        {
+          "depth": 4,
+          "text": "규칙 3 — 규격을 바꾸려면 「체계」를 부른다",
+          "slug": "규칙-3-규격을-바꾸려면-체계를-부른다"
+        },
+        {
+          "depth": 4,
+          "text": "규칙 4 — 새 값을 더할 때는 「몇 개가 막혀 있나」를 먼저 센다",
+          "slug": "규칙-4-새-값을-더할-때는-몇-개가-막혀-있나를-먼저-센다"
+        },
+        {
+          "depth": 4,
+          "text": "규칙 5 — 규격을 문서에 쓰면 같은 PR 에 게이트를 넣는다",
+          "slug": "규칙-5-규격을-문서에-쓰면-같은-pr-에-게이트를-넣는다"
+        },
+        {
+          "depth": 4,
+          "text": "규칙 6 — 라이브러리를 바꾸는 것은 최후다",
+          "slug": "규칙-6-라이브러리를-바꾸는-것은-최후다"
         },
         {
           "depth": 3,
@@ -7576,7 +7621,7 @@
         }
       ],
       "excerpt": "This document is maintained based on Section 3 of the design spec. For the original Linear specification, see design-references/DESIGN-linear.md. v2 (2026-07): topology-map-v2 에서 출하된 B2+ \"Circuit × Constellation\" 시각 언어가 페이지 롤아웃(랜딩 → docs/ontology 허브 → projects/insights → download)의 규범이 되었다 — 아래 v2 — \"Circuit × Constell",
-      "wordCount": 23914,
+      "wordCount": 25478,
       "updatedAt": "2026-08-03",
       "linksOut": [
         "design-references/DESIGN-linear",

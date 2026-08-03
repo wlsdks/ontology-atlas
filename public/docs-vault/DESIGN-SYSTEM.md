@@ -652,6 +652,10 @@ Defined via Tailwind 4's CSS-based `@theme`. See `app/globals.css` for the actua
 - `--color-text-secondary`: `#d0d6e0`
 - `--color-text-tertiary`: `#8a8f98`
 - `--color-text-quaternary`: `#62666d`
+- `--color-text-on-accent`: `#ffffff` — **채운 인디고 «위»의 전경.** 위 넷은 전부
+  어두운 바탕용이라 채움 컨트롤 위에서는 하나도 못 쓴다. 새 hue 가 아니라 무채이고,
+  `--color-indigo-brand` 위 대비 **4.71:1** 로 WCAG AA(4.5:1) 통과. 값 층에서는
+  `controlClass({ tone: 'onAccent' })` 로만 나간다.
 
 ### Accent (the only color)
 
@@ -2686,7 +2690,7 @@ JSX 안에 44px 정사각 버튼이나 라벨 버튼을 인라인 클래스로 �
 위반**하고 있었다는 것이다 — `CardTitle` 이 타입 램프에 없는 `text-lg` 를 썼다.
 실패한 것은 컴포넌트가 아니라 **게이트 없는 컴포넌트**다.
 
-### 컨트롤 모양 여섯 — `controlClass()` (2026-08-03 소유자 확정)
+### 컨트롤 모양 — `controlClass()` (2026-08-03 소유자 확정)
 
 **이 표는 전수에서 나왔지 정해진 게 아니다.** 프로덕션 생 `<button>` 419개를
 분류한 결과:
@@ -2700,6 +2704,27 @@ JSX 안에 44px 정사각 버튼이나 라벨 버튼을 인라인 클래스로 �
 | `pill` | 32 | 상태·수치를 나르는 완전 둥근 것 |
 | `card` | 18 | 카드가 통째로 눌리는 큰 표면 |
 | **표준 버튼(h-10/11)** | **1** | 기존 `<Button>` 이 덮는 **유일한** 모양 |
+
+그 뒤 두 개가 더해졌고, **둘 다 감이 아니라 반복 횟수로 들어왔다** — 정규화
+라운드가 「못 옮겼다」고 적은 사유를 세어 같은 결론이 여러 번 나온 것만 승격한다:
+
+| 모양 | 언제 | 무엇이 없어서 생겼나 |
+|---|---|---|
+| `tile` | 2026-08-03 | 모양 여섯이 **전부 가로**였다. 아이콘 위·글자 아래의 세로 액션 타일 5개가 축 밖 |
+| `segment` | 2026-08-03 | 보더 없는 인셋(세그먼트 항목·탭·고스트 버튼). **네 라운드 연속** 같은 결론이 다른 이름으로 나왔다(설정 3 · 지도 3 · features 9 · 위젯 6). `chip`/`pill`/`card`/`tile` 은 보더 필수라 상자 속 상자가 되고, `link` 는 인셋 0이라 히트 영역이 사라진다 |
+
+축도 셋 늘었다(전부 같은 규율):
+
+| 축 | 무엇을 여나 | 근거 |
+|---|---|---|
+| `scope: 'app' \| 'panel'` | 지도 패널의 **두 번째 무채 잉크 램프**(`--topology-v2-panel-text-*`) | 두 라운드가 독립으로 같은 결론(11 + 8). 두 램프는 두 개의 채색 시스템이 아니라 **하나의 무채 램프가 두 바탕 위에서 갖는 두 해**다 — 패널 값은 `#17171c` 위 대비 실측으로 넛지됐다. 계약이 ① 두 램프가 단마다 실제로 다름을 globals.css 에서 읽어 단언하고 ② 패널 램프가 **잉크로만** 나가게 잠근다 |
+| `truncate` | 말줄임 | 모양 여덟이 전부 flex 계열이라 `text-overflow: ellipsis` 가 안 먹는다(실측: `inline-block` 은 `…`, `inline-flex` 는 하드 클립). 유틸리티만 얹어선 못 고치고 **display 를 바꿔야** 한다 |
+| `fixedHeight` 3단 | `--control-h-{sm,md,lg}`(28/32/40) | 한 단(32)뿐이라 「28px 칩 스텝」(18곳)과 「크롬 토큰이 치수를 소유한다」(15)가 동시에 막혀 있었다. `true` 는 `md` 의 별칭이라 기존 출력 불변 |
+
+톤도 하나 늘었다 — `onAccent`. 채운 인디고 위의 전경(`--color-text-on-accent`,
+#fff, 인디고 위 4.71:1 = AA)이 없어서 두 라운드 11개가 밖에 있었다. **잉크만이
+아니라 바탕·무게까지 한 쌍으로** 낸다(`active: true` 와 같은 문법) — 잉크만 내면
+소비처가 `bg-…` 를 계속 손으로 써서 층이 있으나 마나가 된다.
 
 **`<Button>` 채택률 5%는 게으름이 아니라 커버리지 구멍이었다** — 시스템에 컨트롤
 클래스가 하나뿐인데 앱은 여섯을 쓴다.
@@ -2715,7 +2740,173 @@ JSX 안에 44px 정사각 버튼이나 라벨 버튼을 인라인 클래스로 �
 합쳐도 23%였다. 즉 오늘의 크기는 램프가 아니라 임의값이고, 3단 램프는 «오늘의
 요약»이 아니라 «가야 할 규격»이다. 그래서 대량 전환은 **디자인 게이트**(「체계」)의
 일이고, 오늘 강제되는 것은 하나다 — **새로 쓰는 컨트롤은 50종을 51종으로 만들지
-않는다**(`tests/contract/control-adoption-ratchet.contract.test.ts`, 기준선 417).
+않는다**(`tests/contract/control-adoption-ratchet.contract.test.ts`. 기준선은 내려가기만 한다 — 417 에서 시작해 오늘 148).
+
+### 시스템을 늘리는 규칙 (2026-08-03 소유자 지시)
+
+`/design-build` 는 시스템을 **쓰는 법**이다. 이 절은 시스템을 **늘리는 법**이다 —
+없어서 실제로 값을 치렀다.
+
+> **확인 시도했으나 접근 불가 (2026-08-03)**: Material 3(`m3.material.io`)와
+> Spectrum(`spectrum.adobe.com`)은 본문이 JS 렌더 전용이라 원문 텍스트가 안 내려온다
+> (M3 는 전달 텍스트 전체가 *"This website requires JavaScript."* 69자). **그 둘을
+> 근거로 대는 문장을 넣지 마라** — 다음 사람이 같은 확인을 반복하거나, 더 나쁘게
+> 검색 요약으로 때우지 않게 여기 남긴다. Fluent 2 토큰 문서에는 「새 토큰을 언제
+> 만드는가」 절이 **없다**는 것도 확인했다.
+
+#### 규칙 0 — 새 값을 만들기 전에 **이미 있는지 먼저 찾는다**
+
+**이 규칙이 첫 번째인 이유는 2026-08-03 에 그걸 안 해서다.**
+
+이 앱에는 컨트롤 높이의 단일 진실원이 **이미 있었다** —
+`--control-h-{sm,md,lg}` = **28 / 32 / 40px** (`app/globals.css`, 2026-07-25
+「디자인 전면 정비 #13」이 세웠고 소비처 7파일). 그런데 컨트롤 값 층을 지으면서
+그것을 찾지 않고 패딩+행간의 부산물로 **24 / 30 / 34** 를 새로 발명했다.
+**30 과 34 는 이 앱의 높이 어휘(24·28·32·36·40·44) 어디에도 없는 값**이다.
+
+그 다음이 더 나빴다. 새 값이 계약(32px)과 부딪히자 **값을 고치는 대신 예외 축
+(`fixedHeight`)을 더했다.** 체계석 판정: *"그 축은 값이 틀렸다는 **증상**이지
+필요한 축이 아니다 — 값을 고치면 축이 죽는다."*
+
+결과가 화면에 나왔다: 칩 크기 50종을 3종으로 줄였는데 **한 화면에 컨트롤 높이가
+8~9종**. 규칙 1~6 을 다 지켰어도 이 하나를 안 지켜서 났다.
+
+**절차** — 새 치수·색·간격이 필요하다고 느끼면 그 자리에서 멈추고:
+
+1. `app/globals.css` 에서 그 역할의 토큰을 찾는다(`--control-h-*` ·
+   `--chrome-*` · `--text-*` · `--leading-*` · `--radius-*` · `--motion-*`).
+2. 이 문서의 **「컨트롤 높이 사다리」** 와 램프 절을 읽는다.
+3. `git log --oneline -- app/globals.css | head -20` 으로 그 값이 왜 그렇게
+   정해졌는지 본다 — 대개 이유가 있고, 그 이유가 아직 유효하다.
+4. 그래도 없으면 **그때 비로소** 규칙 4(몇 개가 막혔는지 센다)로 간다.
+
+> **찾지 않고 만든 값은 시스템이 아니라 두 번째 시스템이다.**
+
+**업계 발행본** — [Carbon 기여 심사](https://carbondesignsystem.com/contributing/product-development-lifecycle/)가
+이 질문을 문자 그대로 심사 항목으로 갖는다:
+
+> *"Does it replicate anything in the system already, or is there truly a gap?"*
+> *"If the proposal does replicate an existing asset, is there evidence to show that
+> the proposed solution is better?"*
+
+[W3C Design Tokens 초안](https://www.designtokens.org/tr/drafts/format/)은 목적 자체를
+단일 진실원으로 적는다 — *"Maintaining a 'single source of truth' for design tokens"* ·
+*"Eliminating repetition of values in token files"*.
+
+둘째 인용이 우리 사고의 정확한 반사실이다: **이미 있는 것을 다시 만들려면 새것이 더
+낫다는 증거를 대야 한다.** 우리는 `--control-h-*` 를 두고 24/30/34 를 발명하면서 그
+증거를 대지 않았다.
+
+#### 규칙 1 — 축을 더하기 전에 슬롯을 먼저 본다
+
+**이 조항의 근거는 산수이고, 슬롯이라는 도구는 업계에 있다.** 둘을 섞어 말하지
+않기 위해 출처를 갈라 적는다.
+
+**우리 근거(산수)**: 축이 3개면 조합이 8가지, 4개면 16가지다. **축은 곱해지고
+부품은 더해진다.** 우리는 `active` → `inline` → `fixedHeight` 로 축을 하나씩
+더했고 결과가 화면에 나왔다 — 칩 크기 50종을 3종으로 줄였는데 **한 화면에 컨트롤
+높이가 8~9종**이다.
+
+**업계 도구**: [tailwind-variants 의 slots](https://www.tailwind-variants.org/docs/slots)
+는 *"Slots allows you to separate a component into multiple parts."* 라고 정의한다.
+⚠️ **그 문서는 슬롯을 「변형 폭발의 해법」이라고 말하지 않는다** — 부품 분리
+기능으로 소개할 뿐이다. 그것을 축 폭발의 대안으로 쓰자는 것은 **우리 판단**이고,
+근거는 위 산수다. (원문 확인 2026-08-03. 처음엔 검색 요약만 보고 "문서가 명시한다"
+고 적었는데 원문에 그 문장이 없었다 — 인용은 원문을 열고 한다.)
+
+⚠️ **업계 발행본 근거는 없다.** Carbon · Fluent · Polaris · W3C 어디에도 「변형 축의
+조합 폭발 vs 부품 분해」를 말하는 문장이 없다(2026-08-03 원문 확인). 이 조항은 **우리
+산수와 실측만으로** 선다. tailwind-variants 는 도구 사용법 인용이지 업계 원칙 근거가
+아니며, 그 구분을 지우는 순간 이 조항은 지어낸 권위를 갖게 된다.
+
+판별: 새 변형이 필요할 때 「이 컨트롤의 **어느 부분**이 달라지는가」를 먼저 물어라.
+껍데기만이면 축, 글자·아이콘·배지 중 하나면 **부품**이다.
+
+#### 규칙 2 — 같은 겉모습의 두 태그를 만들지 않는다
+
+**우리 근거**: 버튼과 링크가 겉모습이 같으면 하나는 반드시 낡는다. 실측 — 이
+저장소에 바이트 동일한 `<button>`/`<Link>` 쌍둥이가 있었고 게이트가 없었다.
+
+**업계 발행본 — 왜 쌍둥이가 생기나**: 시맨틱이 목적을 따라 갈라지기 때문이다.
+[Carbon Button usage](https://carbondesignsystem.com/components/button/usage/):
+*"Do not use buttons as navigational elements. Instead, use links when the desired
+action is to take the user to a new page."*
+[Polaris Button](https://polaris-react.shopify.com/components/actions/button):
+*"Buttons are used primarily for actions… Links are used primarily for navigation."*
+
+**그리고 업계의 답도 「컴포넌트는 하나, 밑의 원소만 교체」다** — 같은 Polaris 문서:
+*"If navigation is required for the button component, use the `url` prop."* 우리
+`asChild` 탈출구와 같은 구조를 Polaris 는 **1급 API** 로 낸다.
+
+**업계 도구**: [Radix 의 `asChild`](https://www.radix-ui.com/primitives/docs/guides/composition)
+는 *"When `asChild` is set to `true`, Radix will not render a default DOM element,
+instead cloning the part's child and passing it the props and behavior required to
+make it functional."*
+
+⚠️ **그런데 Radix 자신이 이걸 흔한 길로 권하지 않는다.** 같은 문서:
+*"In the majority of cases you shouldn't need to modify the element type as Radix
+has been designed to provide the most appropriate defaults."* 그리고 조건이 셋이다 —
+자식이 **props 를 전부 퍼뜨려야** 하고(`If your component doesn't support those
+props, it will break.`), **ref 를 받아야** 하며(`If your component doesn't accept a
+ref, then it will break.`), *"it is your responsibility to ensure it remains
+accessible and functional."*
+
+**그래서 우리 규칙은 이렇다**: 쌍둥이가 생길 자리에서만 쓰는 **탈출구**이지 기본
+패턴이 아니다. 쓸 때는 위 세 조건을 계약 테스트로 못박는다. 그 부담을 못 지겠으면
+쌍둥이를 만들지 말고 **한쪽을 없애라** — 그게 이 조항의 제목이다.
+
+```tsx
+<RowButton asChild><Link href="…">문서 열기</Link></RowButton>
+```
+
+#### 규칙 3 — 규격을 바꾸려면 「체계」를 부른다
+
+트리거 목록과 근거는 `.claude/rules/design.md` 의 같은 이름 절에 있다. 요지 한 줄:
+**혼자 정한 규격은 규격이 아니라 취향이다.**
+
+#### 규칙 4 — 새 값을 더할 때는 「몇 개가 막혀 있나」를 먼저 센다
+
+이 시스템의 축·모양은 전부 **전수에서 나왔다**(칩 128 · 링크형 85 · 행 39 · 아이콘
+36 · pill 32 · 카드 18 · 표준 버튼 1). 감으로 더한 것은 하나도 없다.
+
+새 모양·톤·축을 제안할 때는 **그것 때문에 시스템 밖에 남은 컨트롤 수**를 세서
+근거로 대라. 못 세면 그건 아직 규격이 아니라 취향이다.
+
+**업계 발행본** — [Carbon 기여 심사](https://carbondesignsystem.com/contributing/product-development-lifecycle/)가
+수요 증거를 채택 조건으로 요구한다: *"Proposals need to show that the component or
+pattern would be useful to many teams and unique to the system."* 우리 「막힌 컨트롤
+수 세기」는 그 요구를 **1인 저장소 스케일로 번역한 계측**이다 — 절차를 복제한 게
+아니라 같은 원칙을 우리 단위로 잰다. 세는 법은
+`tests/contract/control-adoption-ratchet.contract.test.ts` 의 탐지기.
+
+#### 규칙 5 — 규격을 문서에 쓰면 같은 PR 에 게이트를 넣는다
+
+**업계 발행본은 절반만 받쳐 준다.** 「시스템이 강제 도구를 스스로 낸다」까지는
+공통이다 — [Polaris 는 stylelint 설정을 공식 도구로 발행](https://polaris-react.shopify.com/tools/stylelint-polaris)한다:
+*"A configuration of Stylelint rules that promote adoption of the Polaris design
+system in consuming apps."*
+
+⚠️ 그러나 **「같은 PR 에」 결합과 「켜기 전 전수 측정」은 어느 발행본에도 없다.** 그
+둘은 우리 실측이 유일한 근거다 — lint 가 144 → 548 로 뛴 소음 사고, 그리고 게이트
+자신의 결함이 세 번 드러난 일(램프 목록 하드코딩 · 접힌 `<details>` 미제외 · 공유
+상수에 벌점).
+
+이 저장소의 기존 규율 그대로다. 단 **켜기 전에 위반을 전수 측정한다**(`/gate-probe`).
+그리고 게이트를 넣었으면 **결함을 넣어 빨개지는지 증명**한다 — 이 시스템의 게이트는
+전부 그렇게 프로브됐고, 그 과정에서 게이트 자신의 결함이 세 번 드러났다(램프 목록
+하드코딩 · 접힌 `<details>` 미제외 · 공유 상수에 벌점).
+
+#### 규칙 6 — 라이브러리를 바꾸는 것은 최후다
+
+⚠️ **업계 발행본 근거 없음.** 여섯 발행사 누구도 소비자의 스타일링 라이브러리 교체
+시점을 말하지 않는다(그들이 말할 주제가 아니다). 이 조항은 `forbidden.md` 의 의존성
+규율과 **사용처 244개**라는 우리 수치만으로 선다. 그래서 오히려 반박이 쉽다 — 외부
+권위가 없으니 수치로만 다투면 된다.
+
+`cva` → `tailwind-variants` 같은 교체는 슬롯·`extend`·반응형 변형을 준다. 그러나
+`forbidden.md` 는 새 의존성에 **PR 본문의 이유**를 요구하고, 이 시스템은 이미 244개가
+쓰고 있다. 교체를 제안하려면 **슬롯을 `cva` 로는 못 한다는 근거**를 대라 — 「더
+편하다」는 이유가 아니다.
 
 ### 층이 둘이다 — 값과 행동
 

@@ -149,12 +149,16 @@ export function FootprintSettings() {
               aria-checked={active}
               data-testid={`app-settings-footprint-preset-${name}`}
               onClick={() => writeFootprint(applyFootprintPreset(pref, name))}
-              className={cn(
-                'flex h-8 items-center rounded-chip px-4 text-body transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--color-indigo-a46)]',
-                active
-                  ? 'bg-[color:var(--color-indigo-line-a13)] text-[color:var(--color-indigo-accent)]'
-                  : 'text-[color:var(--color-text-tertiary)] hover:text-[color:var(--color-text-primary)]',
-              )}
+              className={controlClass({
+                shape: 'segment',
+                size: 'lg',
+                fixedHeight: true,
+                active,
+                className: cn(
+                  'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--color-indigo-a46)]',
+                  !active && 'hover:text-[color:var(--color-text-primary)]',
+                ),
+              })}
             >
               {t(`preset.${name}`)}
             </button>

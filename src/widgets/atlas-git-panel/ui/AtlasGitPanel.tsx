@@ -1650,7 +1650,10 @@ function RemoteSetup({
           data-testid="atlas-git-remote-submit"
           disabled={remoteRunning || remoteUrl.trim() === ""}
           onClick={onSubmit}
-          className="rounded-[var(--radius-chip)] bg-[color:var(--color-indigo-brand)] px-3 py-1.5 text-label font-semibold text-white transition-colors hover:bg-[color:var(--color-indigo-hover)] disabled:opacity-50"
+          className={controlClass({
+            tone: "onAccent",
+            className: "hover:bg-[color:var(--color-indigo-hover)]",
+          })}
         >
           {remoteRunning ? t("remoteRunning") : t("remoteSubmit")}
         </button>

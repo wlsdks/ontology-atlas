@@ -285,6 +285,9 @@ particle·rarity(gold)·shimmer 를 `--studio-*` 토큰 + `.studio-stage` 안에
 | **`text-*`/`leading-*` 가 정의된 스텝을 가리킨다** | `tests/contract/type-ramp-step-defined.contract.test.ts` | 판정에 `app/globals.css` 의 토큰 목록이 필요. 스텝 이름을 룰에 복제하면 복제본이 램프와 드리프트해 게이트가 사각지대를 만든다 |
 | **셸 본문 슬롯이 자식을 압축하지 않는다** | `AppShell.test.tsx`(처방 위치) + `tests/e2e/scroll-end-gap.spec.ts`(실제 여백 px) | 결함이 **레이아웃 계산의 결과**. 클래스 문자열은 정상인 채로 픽셀만 틀린다 |
 | **조건부 크기가 행간 짝을 어긋내지 않는다** | `tests/contract/type-ramp-leading-pair.contract.test.ts` | 판정에 **한 원소의 클래스 전체**가 필요한데 `cn()` 인자로 쪼개지면 AST 셀렉터 하나에 안 담긴다. 램프 토큰을 arbitrary length 로 우회하는 **부분집합**만 lint 가 잡는다 |
+| **컨트롤 값 층이 램프 밖으로 못 샌다** | `tests/contract/control-class.contract.test.ts` | 판정 대상이 **cva 조합의 결과 문자열**이다. 소스에는 `chip`·`md` 같은 키만 있고 값은 런타임에 합쳐지므로 AST 셀렉터가 볼 것이 없다. 여덟 모양 × 3 크기 × 9 톤 × … 전수를 실제로 만들어 본다 |
+| **두 무채 잉크 램프가 실제로 다르다** | 같은 파일(`scope` 축 절) | 판정에 `app/globals.css` 의 **두 램프 8개 값**이 필요하다. 값이 수렴하면 `scope` 축은 아무것도 안 하면서 고를 것만 늘리므로, 그날 게이트가 축을 지우라고 말해야 한다 |
+| **손으로 쓴 컨트롤이 늘지 않는다** | `tests/contract/control-adoption-ratchet.contract.test.ts` | 래칫이라 **전수의 수**가 판정 기준이고, 그건 한 파일의 AST 로 셀 수 없다 |
 
 **미정의 스텝은 침묵한다 (2026-07-27 실측).** `text-large` 는 램프에 없는데
 tsc·eslint·전체 테스트를 전부 통과했다 — Tailwind 가 클래스를 아예 만들지 않아

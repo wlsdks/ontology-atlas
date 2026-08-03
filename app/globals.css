@@ -30,6 +30,15 @@
    * canvas #08090a 기준 ~4.8:1 로 한 단계 밝게 보정. 시각 리듬 유지.
    */
   --color-text-quaternary: #787c84;
+  /*
+   * 채워진 인디고 **위**의 전경. 램프 넷은 전부 어두운 바탕용이라 채움 컨트롤
+   * 위에서는 하나도 못 쓴다 — 그래서 저장소의 채운 인디고 버튼 9개가 전부
+   * `text-white` 리터럴을 손으로 쓰고 있었고, `controlClass` 의 `tone` 여덟에
+   * 그 자리가 없어 두 라운드(features 5 · 위젯 6)가 통째로 값 층 밖에 남았다.
+   * 새 hue 가 아니다(무채 #fff). `--color-indigo-brand`(#5e6ad2) 위 대비
+   * 4.71:1 로 WCAG AA(4.5:1) 통과 — 오늘 화면에 이미 나가 있는 조합의 등재다.
+   */
+  --color-text-on-accent: #ffffff;
 
   /* 인디고 악센트 (시스템 유일 채색) */
   --color-indigo-brand: #5e6ad2;
