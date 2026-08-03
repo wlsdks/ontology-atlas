@@ -299,7 +299,7 @@ export function AgentConnectAction({ vaultPath, launch, onWritten, clientId }: A
             data-testid="agent-connect-retry"
             className={controlClass({
               shape: 'link',
-              tone: 'accent',
+              tone: 'accentOnTint',
               className: 'mt-2 font-medium hover:text-[color:var(--color-text-primary)]',
             })}
           >

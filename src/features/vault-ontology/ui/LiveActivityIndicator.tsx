@@ -332,7 +332,7 @@ export function LiveActivityBadge({
         onClick={() => setOpen((current) => !current)}
         className={controlClass({
           shape: "chip",
-          tone: "accent",
+          tone: "accentOnTint",
           className:
             "cursor-pointer list-none border-[color:var(--color-indigo-a32)] bg-[color:var(--color-indigo-a10)] hover:border-[color:var(--color-indigo-a50)] hover:bg-[color:var(--color-indigo-a14)]",
         })}

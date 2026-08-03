@@ -464,7 +464,7 @@ function SearchPaletteDialog({
                   className={controlClass({
                     shape: 'pill',
                     size: 'md',
-                    tone: 'accent',
+                    tone: 'accentOnTint',
                     className:
                       'border-[color:var(--color-indigo-line-a22)] bg-[color:var(--color-indigo-a08)] hover:bg-[color:var(--color-indigo-a16)]',
                   })}

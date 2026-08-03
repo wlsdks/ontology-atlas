@@ -114,7 +114,7 @@ export function DesktopVaultWelcome({
                   {DOGFOOD_VAULT_PATH}
                 </code>
                 <Chip
-                  tone="accent"
+                  tone="accentOnTint"
                   onClick={() => void copyDogfoodPath(DOGFOOD_VAULT_PATH)}
                   aria-label={dogfoodPathCopyAriaLabel}
                   className="shrink-0 justify-center font-mono hover:border-[color:var(--color-indigo-line-a42)] hover:bg-[color:var(--color-indigo-line-a13)]"

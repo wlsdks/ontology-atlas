@@ -82,7 +82,7 @@ const NEUTRAL_CHIP_HOVER =
   'shrink-0 hover:border-[color:var(--color-border-strong)] hover:text-[color:var(--color-text-secondary)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--color-indigo-a46)] focus-visible:ring-inset';
 
 /**
- * 인디고 강조 칩의 **테두리와 호버** — 같은 이유로 한 벌이다. `tone: 'accent'`
+ * 인디고 강조 칩의 **테두리와 호버** — 같은 이유로 한 벌이다. `tone: 'accentOnTint'`
  * 는 글자색만 내고(램프가 소유하는 것이 그것이다), 테두리 틴트와 호버는 아직
  * 램프 밖이다. 네 자리(검증 ×2 · 저장 · 로컬 검증)가 손으로 같은 문자열을
  * 들고 있었다.
@@ -509,7 +509,7 @@ function ProviderCard({
               {stored ? (
                 <div className="flex flex-wrap items-center gap-2">
                   <Chip
-                    tone="accent"
+                    tone="accentOnTint"
                     data-testid={`ai-verify-${provider}`}
                     onClick={() => void handleVerify()}
                     disabled={verify.kind === 'checking' || !vaultRootPath}
@@ -741,7 +741,7 @@ function LocalEndpointCard({
                 </Chip>
               ) : null}
               <Chip
-                tone="accent"
+                tone="accentOnTint"
                 data-testid="ai-verify-local"
                 onClick={() => void handleVerify()}
                 disabled={verify.kind === 'checking' || !vaultRootPath || !draftUrl.trim()}
@@ -1006,7 +1006,7 @@ function KeyDraftForm({
         {t('cancel')}
       </Chip>
       <Chip
-        tone="accent"
+        tone="accentOnTint"
         data-testid={`ai-save-${provider}`}
         onClick={() => void handleSave()}
         disabled={!draftKey.trim() || saving}

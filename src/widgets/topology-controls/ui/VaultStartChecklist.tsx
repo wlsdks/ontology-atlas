@@ -97,7 +97,7 @@ export function VaultStartChecklist({
             cta: (
               <Chip
                 size="lg"
-                tone="accent"
+                tone="accentOnTint"
                 onClick={onStartFromDocs ?? undefined}
                 data-testid="checklist-cta-docs"
                 className="shrink-0 border-[color:var(--color-indigo-a46)] bg-[color:var(--color-indigo-a16)] font-[var(--font-weight-signature)] hover:bg-[color:var(--color-indigo-a24)]"

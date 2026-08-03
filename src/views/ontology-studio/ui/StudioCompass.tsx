@@ -1522,7 +1522,7 @@ export function StudioCompass(props: StudioCompassProps) {
                         className={controlClass({
                           shape: "chip",
                           size: "md",
-                          tone: "accent",
+                          tone: "accentOnTint",
                           className:
                             "flex-none hover:border-[color:var(--color-indigo-line-a45)] hover:bg-[color:var(--color-indigo-line-a13)]",
                         })}
