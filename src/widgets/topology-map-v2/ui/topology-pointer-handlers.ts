@@ -46,7 +46,7 @@ import {
 import { computeWheelZoomFactor, normalizeWheelDeltaY, shouldIgnoreWheelGlide } from "../interaction/wheel";
 import { computeEffectiveCameraScaleMax, computeEffectiveCameraScaleMin, computeUnfocusedPanBounds, hitTestWorld, screenToWorld, worldToScreen } from "./topology-camera-math";
 import { readTopologyV2TokensOrNull } from "./topology-read-tokens";
-import { radiusForKind, type TopologyWorld } from "./topology-world";
+import { radiusForKind, type TopologyWorld, type WorldEdge } from "./topology-world";
 
 /**
  * Sim warmth topped up while a node is actively pin-dragged, in MILLISECONDS
@@ -314,6 +314,11 @@ export interface TopologyPointerHandlers {
    * behavior is untouched.
    */
   handleContextMenu: (e: ReactMouseEvent<HTMLCanvasElement>) => void;
+  /**
+   * 검사용 — `(screenX, screenY)` 에서 **앱이 고를 엣지**. 히트 없으면 null.
+   * `__atlasMap.edgeAt()` 이 이걸 그대로 내보낸다.
+   */
+  probeEdgeAt: (screenX: number, screenY: number, thresholdPx?: number) => WorldEdge | null;
 }
 
 /** Builds the five pointer/wheel handlers, closing over the hook's refs (cheap — plain closures, no hook rules to satisfy). */
@@ -1254,5 +1259,23 @@ export function createTopologyPointerHandlers(refs: PointerHandlerRefs): Topolog
     onContextMenuNode(hitNodeId, { x: e.clientX, y: e.clientY });
   };
 
-  return { handlePointerDown, handlePointerMove, handlePointerUp, handlePointerCancel, handleWheel, handleContextMenu };
+  /**
+   * ★ **앱 자신의 엣지 판정을 밖에 그대로 내준다** (2026-08-03).
+   *
+   * 왜: 노드는 `__atlasMap.nodes()` 로 좌표·`draggable` 을 얻어 밖에서 몰 수
+   * 있는데 **엣지는 몰 수 없었다.** 실측 — 곡선 중점 101지점 × 오프셋 3종을
+   * 클릭해도 `selection().edge` 가 계속 null 이었다. 임계가 7px 이고 노드 몸통
+   * 안은 제외되므로, 밖에서 「어디를 눌러야 맞는지」를 추측으로는 못 찾는다.
+   *
+   * 그 결과 **엣지가 걸린 어떤 변경도 자동 검증이 불가능했다** — 엣지 패널에
+   * 등장/퇴장을 붙이려다 그 벽에 막혀 되돌렸다(2026-08-03).
+   *
+   * 좌표를 새로 계산해 주지 않고 **같은 함수**(`buildEdgeCandidates` +
+   * `hitTestEdges`)를 부른다. 계기가 앱과 다른 식을 쓰면 화면이 아니라 자기
+   * 상상을 재게 되기 때문이다.
+   */
+  const probeEdgeAt = (screenX: number, screenY: number, thresholdPx = 7) =>
+    hitTestEdges(buildEdgeCandidates(), screenX, screenY, thresholdPx);
+
+  return { handlePointerDown, handlePointerMove, handlePointerUp, handlePointerCancel, handleWheel, handleContextMenu, probeEdgeAt };
 }

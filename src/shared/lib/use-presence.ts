@@ -168,11 +168,27 @@ export function useSwapHeight<T>(token: T) {
  * 상태 조정» 패턴이고, 화면에 칠하기 전에 즉시 다시 렌더하므로 깜빡임이 없다.
  * 조건이 있어야 무한 루프가 안 난다 — 아래 `value !== held` 가 그것이다.
  */
-export function useHeldValue<T>(value: T | null | undefined): T | null {
-  const [held, setHeld] = useState<T | null>(value ?? null);
-  if (value != null && value !== held) {
+export function useHeldValue<T>(value: T | null | undefined, key?: string | number | null): T | null {
+  /*
+   * ★ **정체성이 아니라 키로 비교한다** (2026-08-03 실측으로 배웠다).
+   *
+   * 첫 판은 `value !== held` 로 비교했고, 지도 엣지 패널에 붙이자마자
+   * **React #301(무한 재렌더)로 지도가 통째로 죽었다.** 원인은 소비처의 모델이
+   * `useMemo` 인데 그 정체성이 매 렌더 새로 만들어진다는 것이었다 — 그러면
+   * 렌더마다 `setState` 가 돌아 루프가 끝나지 않는다.
+   *
+   * 그래서 **키를 요구한다.** 객체를 붙들 때는 그 표면을 식별하는 **원시값**을
+   * 함께 넘긴다(예: `` `${sourceId}→${targetId}` ``). 키가 없으면 값 자체를
+   * 키로 쓰므로, **원시값이 아닌 값에는 키를 반드시 넘겨야 한다.**
+   */
+  const identity = key ?? (value as unknown as string | number | null | undefined) ?? null;
+  const [state, setState] = useState<{ key: unknown; value: T | null }>({
+    key: value == null ? null : identity,
+    value: value ?? null,
+  });
+  if (value != null && identity !== state.key) {
     // 렌더 중 setState — React 가 즉시 재렌더하고 화면에는 한 번만 칠한다.
-    setHeld(value);
+    setState({ key: identity, value });
   }
-  return value ?? held;
+  return value ?? state.value;
 }

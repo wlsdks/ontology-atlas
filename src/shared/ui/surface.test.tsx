@@ -159,6 +159,34 @@ describe('useHeldValue — 퇴장 창 동안 내용이 비지 않는다', () => 
     expect(screen.queryByTestId('body')).toBeNull();
   });
 
+  it('★ 정체성이 매 렌더 바뀌는 객체를 키로 붙든다 — 안 그러면 무한 루프다', () => {
+    /*
+     * 첫 판은 `value !== held` 로 비교했고, 지도 엣지 패널에 붙이자마자
+     * **React #301(무한 재렌더)로 지도가 통째로 죽었다.** 소비처의 모델이
+     * `useMemo` 인데 정체성이 매 렌더 새로 만들어졌기 때문이다.
+     * 이 테스트가 그 형태를 그대로 재현한다 — 매 렌더 새 객체를 넘긴다.
+     */
+    function Unstable({ id }: { id: string | null }) {
+      const model = id ? { id, label: `모델 ${id}` } : null; // ← 매 렌더 새 객체
+      const held = useHeldValue(model, id);
+      return (
+        <Surface open={id !== null}>
+          <span data-testid="body">{held?.label ?? '(비어 있음)'}</span>
+        </Surface>
+      );
+    }
+    const { rerender } = render(<Unstable id="a" />);
+    // 같은 id 로 여러 번 재렌더해도 루프가 안 난다(났으면 여기서 터진다)
+    act(() => rerender(<Unstable id="a" />));
+    act(() => rerender(<Unstable id="a" />));
+    expect(screen.getByTestId('body')).toHaveTextContent('모델 a');
+
+    act(() => rerender(<Unstable id={null} />));
+    expect(screen.getByTestId('body'), '퇴장 중에도 직전 모델을 그린다').toHaveTextContent('모델 a');
+    act(() => void vi.advanceTimersByTime(EXIT_WINDOW_MS + 10));
+    expect(screen.queryByTestId('body')).toBeNull();
+  });
+
   it('새 값이 오면 즉시 바뀐다 — 붙드는 것이 갱신을 막지 않는다', () => {
     const { rerender } = render(<Holder model="첫째" />);
     act(() => rerender(<Holder model="둘째" />));

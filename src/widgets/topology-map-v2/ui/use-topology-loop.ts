@@ -3192,6 +3192,7 @@ export function useTopologyLoop(args: UseTopologyLoopArgs): UseTopologyLoopResul
   // render — `createTopologyPointerHandlers` is a plain closure factory, not
   // a render-time read; the lint rule can't see into the imported function body.
   /* eslint-disable react-hooks/refs */
+  const handlersRef = useRef<TopologyPointerHandlers | null>(null);
   const handlers = createTopologyPointerHandlers({
     wheelIntent,
     worldRef,
@@ -3254,6 +3255,12 @@ export function useTopologyLoop(args: UseTopologyLoopArgs): UseTopologyLoopResul
     },
   });
   /* eslint-enable react-hooks/refs */
+  // 검사 훅(`edgeAt`)이 deps [] 인 effect 안에서 최신 핸들러를 보게 한다.
+  // 렌더 중이 아니라 effect 에서 쓴다 — 렌더 중 ref 쓰기는 이 저장소의 lint 가
+  // 막고, 막는 이유가 정당하다(렌더는 순수해야 한다).
+  useEffect(() => {
+    handlersRef.current = handlers;
+  });
 
   // FIX (QA first-light pass — console error sweep): a JSX `onWheel` prop
   // binds to React's delegated listener, which is registered `passive` by
@@ -3420,6 +3427,22 @@ export function useTopologyLoop(args: UseTopologyLoopArgs): UseTopologyLoopResul
             controlX: toScreenX(e.controlX),
             controlY: toScreenY(e.controlY),
           }));
+      },
+      /**
+       * `(x, y)` 에서 **앱이 고를 엣지** — 히트 없으면 null.
+       *
+       * 왜 이게 있어야 하나 (2026-08-03): 노드는 `nodes()` 로 좌표를 얻어 밖에서
+       * 몰 수 있는데 **엣지는 몰 수 없었다.** 실측 — 곡선 중점 101지점 × 오프셋
+       * 3종을 클릭해도 `selection().edge` 가 계속 null 이었다(임계 7px, 노드 몸통
+       * 안은 제외). 그래서 **엣지가 걸린 어떤 변경도 자동 검증이 불가능**했고,
+       * 엣지 패널에 등장/퇴장을 붙이려다 그 벽에 막혀 되돌렸다.
+       *
+       * 좌표를 새로 계산하지 않고 **포인터 핸들러와 같은 함수**를 부른다 —
+       * 계기가 앱과 다른 식을 쓰면 화면이 아니라 자기 상상을 재게 된다.
+       */
+      edgeAt: (x: number, y: number, thresholdPx?: number) => {
+        const e = handlersRef.current?.probeEdgeAt(x, y, thresholdPx);
+        return e ? { sourceId: e.sourceId, targetId: e.targetId, kind: e.kind } : null;
       },
       /** 지금 무엇을 끌고 있나 — 「노드」와 「배경」이 화면에서 같아 보이므로. */
       interaction: () => {
