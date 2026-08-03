@@ -140,7 +140,13 @@ export function VaultOpenGuideSheet({
                 <Link
                   href="/download/"
                   data-testid="vault-guide-unsupported-cta"
-                  className="inline-flex h-9 w-full items-center justify-center gap-1.5 rounded-chip border border-[color:var(--color-indigo-line-a45)] bg-[color:var(--color-indigo-brand)] text-body font-semibold text-white transition-colors hover:bg-[color:var(--color-indigo-accent)]"
+                  className={controlClass({
+                    shape: "chip",
+                    size: "lg",
+                    tone: "onAccent",
+                    className:
+                      "w-full justify-center hover:bg-[color:var(--color-indigo-accent)]",
+                  })}
                 >
                   <HardDrive size={13} aria-hidden />
                   {tUnsupported("unsupportedCta")}
@@ -151,7 +157,16 @@ export function VaultOpenGuideSheet({
                 hidden={unsupported}
                 onClick={onPickExisting}
                 data-testid="vault-guide-pick-existing"
-                className="inline-flex h-9 w-full items-center justify-center gap-1.5 rounded-chip border border-[color:var(--color-indigo-line-a45)] bg-[color:var(--color-indigo-brand)] text-body font-semibold text-white transition-colors hover:bg-[color:var(--color-indigo-accent)]"
+                /* 세로 2연 버튼은 **한 벌**이라 같이 옮긴다 — 하나만 램프로
+                   보내면 둘의 키가 어긋난다(36 vs 34). 둘 다 `chip`/`lg` 라
+                   34px 로 나란히 내려온다. */
+                className={controlClass({
+                  shape: "chip",
+                  size: "lg",
+                  tone: "onAccent",
+                  className:
+                    "w-full justify-center hover:bg-[color:var(--color-indigo-accent)]",
+                })}
               >
                 <FolderOpen size={13} aria-hidden />
                 {t("actionPickExisting")}
@@ -161,7 +176,13 @@ export function VaultOpenGuideSheet({
                 hidden={unsupported}
                 onClick={onCreateNew}
                 data-testid="vault-guide-create-new"
-                className="inline-flex h-9 w-full items-center justify-center gap-1.5 rounded-chip border border-[color:var(--color-border-soft)] text-body text-[color:var(--color-text-secondary)] transition-colors hover:border-[color:var(--color-indigo-line-a35)] hover:text-[color:var(--color-text-primary)]"
+                className={controlClass({
+                  shape: "chip",
+                  size: "lg",
+                  tone: "secondary",
+                  className:
+                    "w-full justify-center hover:border-[color:var(--color-indigo-line-a35)] hover:text-[color:var(--color-text-primary)]",
+                })}
               >
                 <Sparkles size={13} aria-hidden />
                 {t("actionCreateNew")}

@@ -610,7 +610,17 @@ function FullDetailCodeLocationRow({
         aria-label={state === "copied" ? copiedLabel : copyLabel}
         title={state === "copied" ? copiedLabel : copyLabel}
         data-testid="full-detail-a1-code-location-copy"
-        className="shrink-0 rounded-chip p-1 text-[color:var(--topology-v2-panel-text-quaternary)] transition-colors hover:bg-[color:var(--topology-v2-panel-row-hover)] hover:text-[color:var(--topology-v2-panel-text-secondary)]"
+        /* 잉크는 `scope: 'panel'` 이 정확히 낸다(패널 4차 #82828a). 상자는
+           `p-1`(20px) 대신 정사각 램프의 `sm`(24px) — 이 행이 이미
+           `min-h-[32px]` 이라 커져도 행 높이가 안 밀린다. */
+        className={controlClass({
+          shape: "icon",
+          size: "sm",
+          tone: "muted",
+          scope: "panel",
+          className:
+            "shrink-0 hover:bg-[color:var(--topology-v2-panel-row-hover)] hover:text-[color:var(--topology-v2-panel-text-secondary)]",
+        })}
       >
         {state === "copied" ? <Check size={12} aria-hidden /> : <Clipboard size={12} aria-hidden />}
       </button>

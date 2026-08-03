@@ -382,11 +382,20 @@ export function FirstRunStarterModule({
               setSampleSource(source);
               setCollapsed(true);
             }}
-            className={`touch-hit-expand min-w-0 truncate rounded-[var(--chrome-radius-inner)] px-2 py-1 text-label transition-colors ${
-              sampleSource === source
-                ? "bg-[color:var(--color-indigo-a16)] text-[color:var(--topology-v2-panel-text-primary)]"
-                : "text-[color:var(--topology-v2-panel-text-tertiary)] hover:text-[color:var(--topology-v2-panel-text-primary)]"
-            }`}
+            /* 보더 없는 인셋 + 패널 잉크 + 말줄임 — 축 셋이 이 한 자리에서
+               정확히 맞는다. `--chrome-radius-inner` 는 `--radius-chip` 의
+               별칭이라 반경도 그대로다(픽셀 변화 0). */
+            className={controlClass({
+              shape: "segment",
+              scope: "panel",
+              truncate: true,
+              active: sampleSource === source,
+              className: `touch-hit-expand min-w-0 ${
+                sampleSource === source
+                  ? ""
+                  : "hover:text-[color:var(--topology-v2-panel-text-primary)]"
+              }`,
+            })}
           >
             {t(label)}
           </button>
