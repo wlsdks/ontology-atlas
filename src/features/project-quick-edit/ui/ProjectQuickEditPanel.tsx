@@ -10,7 +10,7 @@ import {
   type ProjectFrontmatterPatch,
   useProjectMutations,
 } from "@/features/project-data-source";
-import { Button } from "@/shared/ui";
+import { Button, Surface } from "@/shared/ui";
 
 interface Props {
   project: Project;
@@ -200,146 +200,163 @@ export function ProjectQuickEditPanel({
         {open ? t("closeLabel") : t("openLabel")}
       </Button>
 
-      {open ? (
-        <div className="fixed inset-0 z-50">
-          <button
-            type="button"
-            aria-label={t("ariaCloseOverlay")}
-            className="absolute inset-0 bg-[var(--color-scrim-a58)]"
-            onClick={() => setOpen(false)}
-          />
-          <section
-            role="dialog"
-            aria-modal="true"
-            aria-label={t("ariaDialog")}
-            className="absolute right-0 top-0 flex h-full w-full max-w-[30rem] flex-col border-l border-[color:var(--color-divider)] bg-[color:rgba(11,12,14,0.98)] shadow-[var(--shadow-elevation-dock-side)]"
-          >
-            <div className="flex items-start justify-between gap-4 border-b border-[color:var(--color-border-soft)] px-5 py-5">
-              <div>
-                <p className="font-mono text-caption uppercase tracking-[0.12em] text-[color:var(--color-indigo-accent)]">
-                  {t("headerEyebrow")}
-                </p>
-                <p className="mt-2 text-body-lg leading-6 text-[color:var(--color-text-secondary)]">
-                  {t("headerSubtitle")}
-                </p>
-              </div>
+      {/* 나가는 길을 갖는다 — 종전엔 `{open ? … : null}` 이라 딤과 서랍이 함께
+          **1프레임에** 나타나고 사라졌다(등장도 퇴장도 없음). `Surface` 가 퇴장
+          창(`EXIT_WINDOW_MS`) · 퇴장 클래스(`topology-chrome-out`) · `inert` 를
+          지므로 여기서 새로 챙길 것이 없다. 새 토큰/duration/색 0개 —
+          크롬 모션 패밀리를 그대로 탄다.
+
+          `origin` 은 **트리거 방향**이다. 이 서랍을 여는 버튼은 히어로 우상단에
+          있고 서랍도 오른쪽에서 산다 — 중앙에서 태어나면 누른 자리와 태어난
+          자리가 어긋난다(모션석 반려 사유).
+
+          폼 값은 이 컴포넌트가 소유한다(`values`/`baseline`/`notice`). 그래서
+          퇴장 창 동안 붙들 **외부 모델이 없다** — 사라지는 표면이 빈 상자가
+          되지 않는다(HomePage 엣지 패널이 `useHeldValue` 를 쓴 이유는 모델이
+          부모 소유였기 때문이다). */}
+      <Surface
+        open={open}
+        origin="top right"
+        data-testid="public-quick-edit-surface"
+        className="fixed inset-0 z-50"
+      >
+        <button
+          type="button"
+          aria-label={t("ariaCloseOverlay")}
+          className="absolute inset-0 bg-[var(--color-scrim-a58)]"
+          onClick={() => setOpen(false)}
+        />
+        <section
+          role="dialog"
+          aria-modal="true"
+          aria-label={t("ariaDialog")}
+          className="absolute right-0 top-0 flex h-full w-full max-w-[30rem] flex-col border-l border-[color:var(--color-divider)] bg-[color:rgba(11,12,14,0.98)] shadow-[var(--shadow-elevation-dock-side)]"
+        >
+          <div className="flex items-start justify-between gap-4 border-b border-[color:var(--color-border-soft)] px-5 py-5">
+            <div>
+              <p className="font-mono text-caption uppercase tracking-[0.12em] text-[color:var(--color-indigo-accent)]">
+                {t("headerEyebrow")}
+              </p>
+              <p className="mt-2 text-body-lg leading-6 text-[color:var(--color-text-secondary)]">
+                {t("headerSubtitle")}
+              </p>
+            </div>
+            <Button
+              type="button"
+              variant="ghost"
+              size="sm"
+              className="h-9 w-9 px-0"
+              onClick={() => setOpen(false)}
+            >
+              <X size={16} aria-hidden="true" />
+            </Button>
+          </div>
+
+          <div className="flex-1 space-y-4 overflow-y-auto px-5 py-5">
+            <label className="block">
+              <FieldLabel>{t("fieldName")}</FieldLabel>
+              <input
+                data-testid="public-quick-edit-name"
+                name="projectName"
+                autoComplete="off"
+                value={values.name}
+                onChange={(event) => handleChange("name", event.target.value)}
+                className={FIELD_INPUT_CLASS}
+                placeholder={t("fieldNamePlaceholder")}
+              />
+            </label>
+
+            <label className="block">
+              <FieldLabel>{t("fieldDescription")}</FieldLabel>
+              <textarea
+                data-testid="public-quick-edit-description"
+                name="projectDescription"
+                autoComplete="off"
+                value={values.description}
+                onChange={(event) => handleChange("description", event.target.value)}
+                rows={3}
+                className="mt-1.5 w-full rounded-chip border border-[color:var(--color-divider)] bg-[color:var(--color-overlay-1)] px-3 py-2 text-body leading-relaxed text-[color:var(--color-text-primary)] outline-none transition-[border-color,box-shadow] placeholder:text-[color:var(--color-text-quaternary)] focus:border-[color:var(--color-indigo-accent)] focus:ring-2 focus:ring-[color:var(--color-indigo-a24)]"
+                placeholder={t("fieldDescriptionPlaceholder")}
+              />
+            </label>
+
+            <div className="grid gap-4 sm:grid-cols-2">
+              <label className="block">
+                <FieldLabel optional={t("optionalHint")}>{t("fieldOwner")}</FieldLabel>
+                <input
+                  data-testid="public-quick-edit-owner"
+                  name="projectOwner"
+                  autoComplete="off"
+                  value={values.owner}
+                  onChange={(event) => handleChange("owner", event.target.value)}
+                  className={FIELD_INPUT_CLASS}
+                  placeholder={t("fieldOwnerPlaceholder")}
+                />
+              </label>
+
+              <label className="block">
+                <FieldLabel optional={t("optionalHint")}>{t("fieldTags")}</FieldLabel>
+                <input
+                  data-testid="public-quick-edit-tags"
+                  name="projectTags"
+                  autoComplete="off"
+                  value={values.tags}
+                  onChange={(event) => handleChange("tags", event.target.value)}
+                  className={FIELD_INPUT_CLASS}
+                  placeholder={t("fieldTagsPlaceholder")}
+                />
+              </label>
+            </div>
+
+            {error ? (
+              <p className="text-body text-[color:var(--color-status-danger)]">{error}</p>
+            ) : null}
+
+            {notice ? (
+              <p role="status" className="text-body text-[color:var(--color-text-primary)]">
+                {notice}
+              </p>
+            ) : null}
+          </div>
+
+          {/* #9 — footer: 주 액션 하나(변경 적용) + quiet 되돌리기 우측 정렬,
+              전체 편집/문서 등록은 링크형 3차 액션으로 아래에 조용히. */}
+          <div className="space-y-3 border-t border-[color:var(--color-border-soft)] px-5 py-4">
+            <div className="flex items-center justify-end gap-2">
               <Button
                 type="button"
                 variant="ghost"
                 size="sm"
-                className="h-9 w-9 px-0"
-                onClick={() => setOpen(false)}
+                onClick={handleReset}
+                disabled={!hasChanges || pending}
               >
-                <X size={16} aria-hidden="true" />
+                {t("reset")}
+              </Button>
+              <Button
+                type="button"
+                onClick={() => void handleSubmit()}
+                disabled={!hasChanges || pending}
+              >
+                {pending ? t("applying") : t("apply")}
               </Button>
             </div>
-
-            <div className="flex-1 space-y-4 overflow-y-auto px-5 py-5">
-              <label className="block">
-                <FieldLabel>{t("fieldName")}</FieldLabel>
-                <input
-                  data-testid="public-quick-edit-name"
-                  name="projectName"
-                  autoComplete="off"
-                  value={values.name}
-                  onChange={(event) => handleChange("name", event.target.value)}
-                  className={FIELD_INPUT_CLASS}
-                  placeholder={t("fieldNamePlaceholder")}
-                />
-              </label>
-
-              <label className="block">
-                <FieldLabel>{t("fieldDescription")}</FieldLabel>
-                <textarea
-                  data-testid="public-quick-edit-description"
-                  name="projectDescription"
-                  autoComplete="off"
-                  value={values.description}
-                  onChange={(event) => handleChange("description", event.target.value)}
-                  rows={3}
-                  className="mt-1.5 w-full rounded-chip border border-[color:var(--color-divider)] bg-[color:var(--color-overlay-1)] px-3 py-2 text-body leading-relaxed text-[color:var(--color-text-primary)] outline-none transition-[border-color,box-shadow] placeholder:text-[color:var(--color-text-quaternary)] focus:border-[color:var(--color-indigo-accent)] focus:ring-2 focus:ring-[color:var(--color-indigo-a24)]"
-                  placeholder={t("fieldDescriptionPlaceholder")}
-                />
-              </label>
-
-              <div className="grid gap-4 sm:grid-cols-2">
-                <label className="block">
-                  <FieldLabel optional={t("optionalHint")}>{t("fieldOwner")}</FieldLabel>
-                  <input
-                    data-testid="public-quick-edit-owner"
-                    name="projectOwner"
-                    autoComplete="off"
-                    value={values.owner}
-                    onChange={(event) => handleChange("owner", event.target.value)}
-                    className={FIELD_INPUT_CLASS}
-                    placeholder={t("fieldOwnerPlaceholder")}
-                  />
-                </label>
-
-                <label className="block">
-                  <FieldLabel optional={t("optionalHint")}>{t("fieldTags")}</FieldLabel>
-                  <input
-                    data-testid="public-quick-edit-tags"
-                    name="projectTags"
-                    autoComplete="off"
-                    value={values.tags}
-                    onChange={(event) => handleChange("tags", event.target.value)}
-                    className={FIELD_INPUT_CLASS}
-                    placeholder={t("fieldTagsPlaceholder")}
-                  />
-                </label>
+            {documentNewHref || settingsHref ? (
+              <div className="flex flex-wrap items-center gap-x-4 gap-y-1">
+                {documentNewHref ? (
+                  <Link href={documentNewHref} className={TERTIARY_LINK_CLASS}>
+                    {t("openDocument")}
+                  </Link>
+                ) : null}
+                {settingsHref ? (
+                  <Link href={settingsHref} className={TERTIARY_LINK_CLASS}>
+                    {t("openSettings")}
+                  </Link>
+                ) : null}
               </div>
-
-              {error ? (
-                <p className="text-body text-[color:var(--color-status-danger)]">{error}</p>
-              ) : null}
-
-              {notice ? (
-                <p role="status" className="text-body text-[color:var(--color-text-primary)]">
-                  {notice}
-                </p>
-              ) : null}
-            </div>
-
-            {/* #9 — footer: 주 액션 하나(변경 적용) + quiet 되돌리기 우측 정렬,
-                전체 편집/문서 등록은 링크형 3차 액션으로 아래에 조용히. */}
-            <div className="space-y-3 border-t border-[color:var(--color-border-soft)] px-5 py-4">
-              <div className="flex items-center justify-end gap-2">
-                <Button
-                  type="button"
-                  variant="ghost"
-                  size="sm"
-                  onClick={handleReset}
-                  disabled={!hasChanges || pending}
-                >
-                  {t("reset")}
-                </Button>
-                <Button
-                  type="button"
-                  onClick={() => void handleSubmit()}
-                  disabled={!hasChanges || pending}
-                >
-                  {pending ? t("applying") : t("apply")}
-                </Button>
-              </div>
-              {documentNewHref || settingsHref ? (
-                <div className="flex flex-wrap items-center gap-x-4 gap-y-1">
-                  {documentNewHref ? (
-                    <Link href={documentNewHref} className={TERTIARY_LINK_CLASS}>
-                      {t("openDocument")}
-                    </Link>
-                  ) : null}
-                  {settingsHref ? (
-                    <Link href={settingsHref} className={TERTIARY_LINK_CLASS}>
-                      {t("openSettings")}
-                    </Link>
-                  ) : null}
-                </div>
-              ) : null}
-            </div>
-          </section>
-        </div>
-      ) : null}
+            ) : null}
+          </div>
+        </section>
+      </Surface>
     </>
   );
 }
