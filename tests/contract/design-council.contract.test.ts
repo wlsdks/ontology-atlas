@@ -494,3 +494,38 @@ describe('근거 무결성 — data-ink 는 반려 근거가 아니다', () => {
     );
   });
 });
+
+/**
+ * 규격 변경 트리거 — **「체계」를 부르는 조건이 문서에 살아 있는가.**
+ *
+ * 2026-08-03: 컨트롤 244개를 정규화하는 동안 `design-system` 이 한 번도 소집되지
+ * 않았다. 값 층 설계를 짓는 쪽이 단독으로 정했고, 결과가 화면에 나왔다 — 칩 크기
+ * 50종을 3종으로 줄였는데 한 화면에 컨트롤 높이가 8~9종이다.
+ *
+ * ⚠️ **「소집했는가」는 기계가 못 본다.** 이 게이트가 잡는 것은 규칙이 존재하고
+ * 그 자리를 이름으로 가리키는가뿐이다. 그것만으로도 값이 있다 — 규칙이 사라지면
+ * 다음 사람은 규칙이 있었다는 사실조차 모른다.
+ */
+describe('규격 변경은 「체계」를 부른다', () => {
+  const TRIGGER_FILES = [
+    'src/shared/ui/control-class.ts',
+    'app/globals.css',
+  ] as const;
+
+  it.each(['.claude/rules/design.md', '.claude/skills/design-build/SKILL.md'])(
+    '%s 가 트리거와 자리를 함께 적는다',
+    (path) => {
+      const doc = read(path);
+      expect(doc, '소집 대상 자리를 이름으로 가리켜야 한다').toContain('design-system');
+      for (const file of TRIGGER_FILES) {
+        expect(doc, `트리거 목록에 ${file} 이 없다`).toContain(file);
+      }
+    },
+  );
+
+  it('왜 이 규칙이 생겼는지 실측으로 남긴다 — 없으면 다음 사람이 지운다', () => {
+    const rule = read('.claude/rules/design.md');
+    expect(rule).toMatch(/244/);
+    expect(rule, '혼자 정한 규격이 왜 안 되는지가 남아야 한다').toMatch(/취향/);
+  });
+});
