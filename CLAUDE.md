@@ -14,8 +14,17 @@
 |---|---|---|
 | `AGENTS.md` | 이 파일의 `@AGENTS.md` 임포트로 | **직접** — 단 `project_doc_max_bytes`(기본 32 KiB)까지만 |
 | `CLAUDE.md` · `.claude/**` | 읽는다 | **안 읽는다** |
-| `.agents/skills/**` | — | 읽는다 |
+| `.agents/skills/**` · `.agents/agents/**` | — | 읽는다 |
 | `.codex/**` | — | 읽는다 (`config.toml` · `hooks.json`) |
+
+**두 트리는 같은 모양이다** — `<루트>/skills/` 와 `<루트>/agents/` 가 양쪽에 있고
+짝끼리 바이트 동일하다. 그래서 스킬이 자리 브리프를 가리킬 때 **상대 경로 한 줄**
+(`../../agents/po-*.md`)이면 충분하다: `.claude/skills/…` 에서는 `.claude/agents/`
+로, `.agents/skills/…` 에서는 `.agents/agents/` 로 각자 풀린다. **스킬 본문에
+도구 이름을 적지 않는다** — 두 벌이 바이트 동일해야 하므로 사본마다 다른 경로를
+쓸 수 없고, 이름으로 분기하면 각 도구가 남의 경로를 읽게 된다. 분기가 필요하면
+**능력**으로 한다("서브에이전트를 병렬로 띄울 수 있나"). 게이트:
+`tests/contract/{po,design}-council.contract.test.ts`.
 
 여기서 나오는 규율 셋:
 
@@ -27,11 +36,16 @@
    (2026-07-31 실측). 그래서 여기 무엇을 더하면 **다른 무엇이 밀려난다**.
    `pnpm agents:check` 가 상한 초과를 막고, 여유가 10% 아래로 내려가면 넘기 전에
    경고한다.
-3. **스킬은 두 벌이고 같아야 한다.** `.claude/skills/<name>/` 과
-   `.agents/skills/<name>/` 은 바이트 동일해야 하며, 같은 게이트가 어긋남을
-   잡는다. 사본이 둘인데 게이트가 없으면 어긋나는 쪽이 기본값이다 — 실제로
+3. **스킬도 자리 브리프도 두 벌이고 같아야 한다.** `.claude/skills/<name>/` ↔
+   `.agents/skills/<name>/`, `.claude/agents/<seat>.md` ↔
+   `.agents/agents/<seat>.md` 는 바이트 동일해야 하며, `pnpm agents:check` 의
+   `skill-copy` · `agent-copy` 가 어긋남과 **한쪽에만 있는 파일**을 잡는다.
+   사본이 둘인데 게이트가 없으면 어긋나는 쪽이 기본값이다 — 실제로
    `?guides=off` 지시가 `.claude` 쪽에만 들어가 Codex 는 첫 방문 안내에 덮인
-   화면을 재고 있었다.
+   화면을 재고 있었고, 카운슬 자리 15개는 `.claude/agents/` 에만 있는데 두
+   카운슬 스킬이 그것들을 **이름으로만** 불러서 Codex 세션은 부를 수도 읽을 수도
+   없는 이름을 받고 즉흥으로 때웠다(2026-08-04 실측). **자리를 새로 만들면 두
+   트리에 같이 넣는다.** 셋째 사본은 만들지 않는다.
 
 ## Claude Code 전용
 

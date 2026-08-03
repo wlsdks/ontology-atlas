@@ -16,6 +16,8 @@ export const CODEX_PROJECT_DOC_CAP_BYTES = 32 * 1024;
 
 const CLAUDE_SKILLS_PREFIX = '.claude/skills/';
 const AGENTS_SKILLS_PREFIX = '.agents/skills/';
+const CLAUDE_AGENTS_PREFIX = '.claude/agents/';
+const AGENTS_AGENTS_PREFIX = '.agents/agents/';
 
 /**
  * Tool ids → human labels. Data, not code — when a tool renames or a new
@@ -41,6 +43,10 @@ export const AGENT_FILE_RULES = Object.freeze([
   Object.freeze({ id: 'claude-skills', kind: 'skill', tools: Object.freeze(['claude-code']), pattern: /^\.claude\/skills\/.+/ }),
   Object.freeze({ id: 'claude-agents', kind: 'agent', tools: Object.freeze(['claude-code']), pattern: /^\.claude\/agents\/.+/ }),
   Object.freeze({ id: 'agents-skills', kind: 'skill', tools: Object.freeze(['codex']), pattern: /^\.agents\/skills\/.+/ }),
+  // `.claude/agents` 는 Claude Code 의 **소환 등록부**(없으면 서브에이전트를 못
+  // 띄운다)이고, 이 짝은 서브에이전트가 없는 도구가 같은 브리프를 **열어서
+  // 읽는** 자리다. 목적은 달라도 내용은 같아야 하므로 agent-copy 가 지킨다.
+  Object.freeze({ id: 'agents-agents', kind: 'agent', tools: Object.freeze(['codex']), pattern: /^\.agents\/agents\/.+/ }),
   Object.freeze({ id: 'cursor-rules', kind: 'rules', tools: Object.freeze(['cursor']), pattern: /^\.cursor\/rules\/.+\.mdc$/ }),
   Object.freeze({ id: 'cursorrules', kind: 'rules', tools: Object.freeze(['cursor']), pattern: /^\.cursorrules$/ }),
   Object.freeze({ id: 'copilot-instructions', kind: 'instructions', tools: Object.freeze(['copilot']), pattern: /^\.github\/copilot-instructions\.md$/ }),
@@ -164,6 +170,80 @@ function checkClaudeAgentsBridge(recordByPath, existingPathSet, drift) {
     return { status: 'drift' };
   }
   return { status: 'not-applicable' };
+}
+
+/**
+ * `.claude/agents` ↔ `.agents/agents` — 자리 브리프의 교차 도구 짝.
+ *
+ * **왜 스킬과 따로 있나.** 스킬은 두 도구가 *같은 목적으로* 읽지만, 자리
+ * 브리프는 목적이 다르다: Claude Code 에게 `.claude/agents/*.md` 는 서브에이전트
+ * **등록부**(거기 없으면 소환 자체가 안 된다)이고, Codex 에게 `.agents/agents/*.md`
+ * 는 카운슬을 순차로 돌 때 **여는 참고 문서**다. 목적이 달라도 내용은 같아야
+ * 하므로 짝이 필요하고, 짝인데 게이트가 없으면 어긋나는 쪽이 기본값이 된다 —
+ * 이 저장소가 스킬 이중화에서 이미 겪은 실패다.
+ *
+ * 한쪽에만 있는 파일도 drift 다. Claude 전용 자리를 새로 만들면 Codex 세션은
+ * 그 자리를 **부를 수도 읽을 수도 없이** 이름만 받는다(2026-08-04 실측: 자리
+ * 15개 전부가 그 상태였다).
+ */
+function checkAgentCopy(records, drift) {
+  const claudeByName = new Map();
+  const agentsByName = new Map();
+  for (const record of records) {
+    if (record.path.startsWith(CLAUDE_AGENTS_PREFIX)) {
+      claudeByName.set(record.path.slice(CLAUDE_AGENTS_PREFIX.length), record);
+    } else if (record.path.startsWith(AGENTS_AGENTS_PREFIX)) {
+      agentsByName.set(record.path.slice(AGENTS_AGENTS_PREFIX.length), record);
+    }
+  }
+
+  let comparedFiles = 0;
+  let divergedFiles = 0;
+  let oneSidedFiles = 0;
+  const names = [...new Set([...claudeByName.keys(), ...agentsByName.keys()])].sort();
+  for (const name of names) {
+    const claude = claudeByName.get(name);
+    const agents = agentsByName.get(name);
+    if (claude && agents) {
+      comparedFiles += 1;
+      const bytesDiffer = claude.bytes !== agents.bytes;
+      const bothContents =
+        typeof claude.entry.content === 'string' && typeof agents.entry.content === 'string';
+      const contentDiffers = bothContents && claude.entry.content !== agents.entry.content;
+      if (bytesDiffer || contentDiffers) {
+        divergedFiles += 1;
+        drift.push({
+          check: 'agent-copy',
+          code: 'agent-copy-diverged',
+          path: name,
+          message: `duplicated agent brief diverged between .claude/agents and .agents/agents: ${name}`,
+          detail: {
+            claudePath: claude.path,
+            agentsPath: agents.path,
+            claudeBytes: claude.bytes,
+            agentsBytes: agents.bytes,
+          },
+        });
+        claude.drift.push('agent-copy-diverged');
+        agents.drift.push('agent-copy-diverged');
+      }
+    } else {
+      oneSidedFiles += 1;
+      const present = claude ?? agents;
+      drift.push({
+        check: 'agent-copy',
+        code: 'agent-copy-file-missing',
+        path: name,
+        message: `agent brief exists in only one of the duplicated trees: ${name}`,
+        detail: { presentIn: claude ? '.claude/agents' : '.agents/agents' },
+      });
+      present.drift.push('agent-copy-file-missing');
+    }
+  }
+
+  const status =
+    divergedFiles > 0 || oneSidedFiles > 0 ? 'drift' : comparedFiles > 0 ? 'ok' : 'not-applicable';
+  return { status, comparedFiles, divergedFiles, oneSidedFiles };
 }
 
 function checkSkillCopy(records, drift) {
@@ -362,6 +442,7 @@ export function analyzeAgentFiles({
   const checks = {
     claudeAgentsBridge: checkClaudeAgentsBridge(recordByPath, existingPathSet, drift),
     skillCopy: checkSkillCopy(records, drift),
+    agentCopy: checkAgentCopy(records, drift),
     atRefs: checkAtRefs(
       records,
       { existingPathSet, recordPathSet, unverifiablePrefixes, verifiableExtensions },

@@ -275,6 +275,51 @@ describe('Design council wiring', () => {
     expect(read(SKILL_MIRROR_PATH)).toBe(read(SKILL_PATH));
   });
 
+  /**
+   * 바이트 동일만으로는 부족하다 — 두 도구가 **같은 파일**을 읽어도, 그 파일이
+   * 자리 브리프를 이름으로만 부르면 Codex 는 부를 수도 읽을 수도 없는 이름을
+   * 받는다(`.claude/agents/` 는 Codex 가 자동 로드하지 않는다). 사본을 만드는
+   * 것은 답이 아니다. 정본이 하나임을 밝히고 명시적으로 열라고 적는 것이 답이고,
+   * 계측 자리가 브라우저를 못 여는 런타임에서 **눈으로 때우지 말고 보류**해야
+   * 한다는 것도 같이 적혀야 한다.
+   */
+  it('locates the seat briefs by a relative path that resolves inside each tool tree', () => {
+    for (const path of [SKILL_PATH, SKILL_MIRROR_PATH]) {
+      const skill = read(path).replace(/\s+/g, ' ');
+      // `.claude/skills/design-council/` 과 `.agents/skills/design-council/`
+      // 둘 다에서 `../../agents/` 는 그 트리의 자리 폴더로 풀린다.
+      expect(skill, `${path} 가 자리 브리프의 상대 경로를 밝히지 않는다`).toContain(
+        '../../agents/design-*.md',
+      );
+      expect(skill, `${path} 가 셋째 사본 금지를 적지 않는다`).toContain(
+        '셋째 사본은 만들지 않는다',
+      );
+      expect(skill, `${path} 가 순차 수행의 손실을 적지 않는다`).toContain(
+        '1라운드 독립성을 잃는다',
+      );
+      expect(skill, `${path} 가 계측 불가 런타임의 보류 규칙을 적지 않는다`).toContain(
+        '판정을 보류',
+      );
+    }
+  });
+
+  /**
+   * 도구 이름으로 분기하면 사본마다 다른 경로가 필요해지는데, 이 스킬은 두 벌이
+   * 바이트 동일해야 한다. 상대 경로 + 능력 기준 분기면 이름이 필요 없다 —
+   * 그리고 새 도구가 생겨도 문장이 안 늘어난다.
+   */
+  it('branches on capability, not on tool brand names', () => {
+    for (const path of [SKILL_PATH, SKILL_MIRROR_PATH]) {
+      const skill = read(path);
+      for (const brand of ['Claude Code', 'Codex', 'Cursor', 'Gemini']) {
+        expect(skill, `${path} 가 「${brand}」로 분기한다 — 능력으로 분기하라`).not.toContain(
+          brand,
+        );
+      }
+      expect(skill, `${path} 가 능력 기준 분기를 적지 않는다`).toContain('서브에이전트');
+    }
+  });
+
   it('names every seat agent in the design operating-system doc', () => {
     const doc = read(DESIGN_OS_PATH);
     for (const [, agent] of BENCH) {

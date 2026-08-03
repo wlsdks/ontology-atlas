@@ -39,6 +39,28 @@ critiques and prescribes; the guardian produces the single verdict and is the
 only one that may edit code. This mirrors the PO Council, where
 Accountable Value Owner is deliberately not an agent.
 
+### 자리 브리프는 어디 있고, 어떻게 부르나
+
+**자리 브리프는 이 파일 기준 `../../agents/design-*.md` 여덟 개 + `design-guardian.md`
+하나다.**
+
+이 스킬은 두 벌로 존재하고 바이트 동일한데, 그 상대 경로는 **양쪽에서 각자의
+트리로 풀린다** — 그래서 도구 이름을 적을 필요가 없고, 적으면 안 된다.
+`pnpm agents:check` 의 `agent-copy` 가 두 벌을 바이트로 묶고 한쪽에만 있는 파일도
+실패로 잡는다. **자리를 새로 만들면 양쪽 트리에 같이 넣는다. 셋째 사본은 만들지
+않는다** — 사본이 셋이면 어긋나는 쪽이 기본값이 된다.
+
+**부르는 법은 네 능력이 정한다:**
+
+- **서브에이전트를 병렬로 띄울 수 있으면** 1라운드를 **한 메시지에서 동시에** 띄운다.
+  이 프로토콜이 병렬을 요구하는 이유는 자리들이 서로를 못 봐야 하기 때문이다.
+- **못 띄우면** 소집할 자리의 파일을 **직접 열어** 그 브리프를 그대로 따르고
+  **순차로** 수행한다. 순차는 **1라운드 독립성을 잃는다** — 그 손실을 **숨기지 말고
+  평결 블록에 적는다**.
+- **브라우저 계측을 못 하면**(모션의 `/motion-verify`, 반응형의 `/responsive-sweep`)
+  그 자리는 **판정을 보류한다.** 눈으로 때우지 않는다 — 실물을 열지 못한 자리는
+  그렇게 말하고 물러나는 것이 이 벤치의 규칙이다.
+
 ## 이 카운슬 **앞에** 오는 단계 — 발산
 
 **이 카운슬은 serial 이다.** R1 비평 → R2 교차비평 → R3 평결이 전부 **이미
