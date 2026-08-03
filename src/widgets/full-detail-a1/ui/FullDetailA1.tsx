@@ -524,7 +524,13 @@ export function FullDetailA1({
         {documentHref ? (
           <Link
             href={documentHref}
-            className="shrink-0 text-body text-[color:var(--topology-v2-panel-text-tertiary)] transition-colors hover:text-[color:var(--topology-v2-panel-text-secondary)]"
+            className={controlClass({
+              shape: "link",
+              size: "lg",
+              scope: "panel",
+              className:
+                "shrink-0 hover:text-[color:var(--topology-v2-panel-text-secondary)]",
+            })}
           >
             {t("handoff.openDocument")}
           </Link>
@@ -533,7 +539,13 @@ export function FullDetailA1({
             href={mentionDocumentHref}
             title={t("handoff.openMentionDocumentTip")}
             data-testid="full-detail-a1-open-mention-document"
-            className="shrink-0 text-body text-[color:var(--topology-v2-panel-text-tertiary)] transition-colors hover:text-[color:var(--topology-v2-panel-text-secondary)]"
+            className={controlClass({
+              shape: "link",
+              size: "lg",
+              scope: "panel",
+              className:
+                "shrink-0 hover:text-[color:var(--topology-v2-panel-text-secondary)]",
+            })}
           >
             {t("handoff.openMentionDocument")}
           </Link>
@@ -541,7 +553,13 @@ export function FullDetailA1({
         <Link
           href={buildOntologyStudioNodeHrefFromGraphId(node.id)}
           data-testid="full-detail-a1-open-studio"
-          className="shrink-0 text-body text-[color:var(--topology-v2-panel-text-tertiary)] transition-colors hover:text-[color:var(--topology-v2-panel-text-secondary)]"
+          className={controlClass({
+            shape: "link",
+            size: "lg",
+            scope: "panel",
+            className:
+              "shrink-0 hover:text-[color:var(--topology-v2-panel-text-secondary)]",
+          })}
         >
           {t("handoff.openStudio")}
         </Link>
