@@ -11,6 +11,8 @@ import {
   isTauriVaultRuntime,
   pickTauriVaultDirectory,
 } from "@/shared/lib/tauri-vault-fs";
+import { controlClass } from "@/shared/ui/control-class";
+import { IconButton } from "@/shared/ui/controls";
 import { useLocalVault } from "@/features/docs-vault-local";
 import { parseBlockManifest, type BlockManifest } from "../model/block-manifest";
 import { readBlockDirectory, type BlockDirectoryHandleLike } from "../model/block-fsa";
@@ -197,7 +199,11 @@ export function BlockImportModule() {
               : t("exportUnsupportedHint")
         }
         data-testid="block-import-open"
-        className="mt-2 flex shrink-0 items-center gap-2 rounded-[var(--chrome-radius-inner)] border border-[color:var(--topology-v2-panel-border)] px-2 py-1.5 text-left text-label transition-colors enabled:hover:bg-[color:var(--topology-v2-panel-row-hover)] disabled:opacity-50"
+        className={controlClass({
+          shape: "chip",
+          className:
+            "mt-2 shrink-0 border-[color:var(--topology-v2-panel-border)] text-left enabled:hover:bg-[color:var(--topology-v2-panel-row-hover)]",
+        })}
       >
         <PackageOpen
           size={11}
@@ -259,15 +265,14 @@ export function BlockImportModule() {
                     {t("dialogSubtitle")}
                   </p>
                 </div>
-                <button
-                  type="button"
+                <IconButton
+                  label={t("closeAria")}
                   onClick={() => setPreview(null)}
-                  aria-label={t("closeAria")}
                   data-testid="block-import-close"
-                  className="flex size-7 shrink-0 items-center justify-center rounded-chip text-[color:var(--color-text-tertiary)] transition-colors hover:bg-[color:var(--color-overlay-2)] hover:text-[color:var(--color-text-primary)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--color-border-strong)]"
+                  className="hover:bg-[color:var(--color-overlay-2)] hover:text-[color:var(--color-text-primary)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--color-border-strong)]"
                 >
                   <X size={14} />
-                </button>
+                </IconButton>
               </header>
 
               <div className="min-h-0 flex-1 overflow-y-auto px-5 py-4">

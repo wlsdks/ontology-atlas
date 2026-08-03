@@ -7,6 +7,8 @@ import { Link } from "@/i18n/navigation";
 import { MOTION } from "@/shared/motion";
 import { useBodyScrollLock } from "@/shared/lib/use-body-scroll-lock";
 import { useDialogFocusTrap } from "@/shared/lib/use-dialog-focus-trap";
+import { controlClass } from "@/shared/ui/control-class";
+import { IconButton } from "@/shared/ui/controls";
 
 /**
  * 폴더 열기 사전 안내 시트 (2026-07-24 온보딩 라운드) — 첫 실행 카드의
@@ -103,15 +105,16 @@ export function VaultOpenGuideSheet({
                   {unsupported ? tUnsupported("unsupportedNotice") : t("subtitle")}
                 </p>
               </div>
-              <button
-                type="button"
+              <IconButton
+                label={t("actionCancel")}
                 onClick={onClose}
-                aria-label={t("actionCancel")}
                 data-testid="vault-guide-close"
-                className="rounded p-1 text-[color:var(--color-text-quaternary)] transition-colors hover:text-[color:var(--color-text-primary)]"
+                size="sm"
+                tone="muted"
+                className="hover:text-[color:var(--color-text-primary)]"
               >
                 <X size={14} aria-hidden />
-              </button>
+              </IconButton>
             </header>
 
             {/* 미지원일 때 4개 불릿은 전부 브라우저 픽커 흐름의 설명이라
@@ -167,7 +170,12 @@ export function VaultOpenGuideSheet({
                 type="button"
                 onClick={onClose}
                 data-testid="vault-guide-cancel"
-                className="mt-0.5 self-center text-label text-[color:var(--color-text-quaternary)] transition-colors hover:text-[color:var(--color-text-secondary)]"
+                className={controlClass({
+                  shape: "link",
+                  tone: "muted",
+                  className:
+                    "mt-0.5 self-center hover:text-[color:var(--color-text-secondary)]",
+                })}
               >
                 {t("actionCancel")}
               </button>

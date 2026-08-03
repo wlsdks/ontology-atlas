@@ -16,7 +16,7 @@ import { useTranslations } from "next-intl";
 import { ChevronDown } from "lucide-react";
 import { cn } from "@/shared/lib/cn";
 import { slugify } from "@/shared/lib/slugify";
-import { Button } from "@/shared/ui";
+import { Button, controlClass } from "@/shared/ui";
 import {
   ProjectCard,
   computeHubSlugs,
@@ -1216,7 +1216,15 @@ export function ProjectForm({
                 type="button"
                 data-testid="project-slug-disclosure"
                 onClick={() => setSlugFieldOpen(true)}
-                className="shrink-0 text-label text-[color:var(--color-indigo-accent)] underline underline-offset-2 transition-colors hover:text-[color:var(--color-text-primary)]"
+                /* 문장(캡션 행) 속 컨트롤 — `inline` 을 켜야 `min-h-11` 이
+                   줄 상자를 밀지 않는다(WCAG 2.5.8 인라인 면제). */
+                className={controlClass({
+                  shape: "link",
+                  tone: "accent",
+                  inline: true,
+                  className:
+                    "shrink-0 underline underline-offset-2 hover:text-[color:var(--color-text-primary)]",
+                })}
               >
                 {t("fields.slugEditToggle")}
               </button>
@@ -1770,7 +1778,14 @@ function FormSection({
                 onClick={onToggle}
                 aria-expanded={isOpen}
                 aria-controls={contentId}
-                className="inline-flex h-8 items-center gap-2 rounded-full border border-[color:var(--color-divider)] px-3 text-body text-[color:var(--color-text-secondary)] transition-colors hover:border-[color:var(--color-indigo-a34)] hover:text-[color:var(--color-text-primary)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--color-indigo-a46)] focus-visible:ring-offset-2 focus-visible:ring-offset-[color:var(--color-panel)]"
+                className={controlClass({
+                  shape: "pill",
+                  size: "lg",
+                  tone: "secondary",
+                  fixedHeight: true,
+                  className:
+                    "gap-2 hover:border-[color:var(--color-indigo-a34)] hover:text-[color:var(--color-text-primary)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--color-indigo-a46)] focus-visible:ring-offset-2 focus-visible:ring-offset-[color:var(--color-panel)]",
+                })}
               >
                 {isOpen ? (collapseLabel ?? "Collapse") : (expandLabel ?? "Expand")}
                 <ChevronDown

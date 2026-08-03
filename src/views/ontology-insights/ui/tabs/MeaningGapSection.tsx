@@ -6,6 +6,7 @@ import { Link } from "@/i18n/navigation";
 import { useRowDisclosure } from "@/shared/lib/use-row-disclosure";
 import { MtimeConflictBadge } from "@/shared/ui/mtime-conflict-badge";
 import { TopologyV2KindGlyph } from "@/shared/ui/topology-v2-kind-glyph";
+import { controlClass } from "@/shared/ui/control-class";
 import type { MeaningGapKind } from "@/entities/knowledge-graph";
 import type { DomainChoice, MeaningGapRow } from "../../lib/meaning-gap-rows";
 import {
@@ -36,6 +37,21 @@ import { InsightsSectionTitle } from "../parts/InsightsSectionTitle";
  * - **모션은 목록 행 펼침 문법 하나만 쓴다**(`.ai-row-disclosure`,
  *   `app/globals.css`) — 아래로만 자라고, 나가는 길이 들어온 길과 같다.
  */
+
+/**
+ * 이 섹션 인디고 칩들의 **잉크** — 값 층(`controlClass`)이 일부러 안 내는 층.
+ *
+ * 램프의 `tone` 은 **글자색만** 낸다(`control-class.ts`). 테두리·배경 틴트와
+ * 호버는 아직 램프에 없으므로 소비처가 갖는다. 같은 문자열이 세 자리에 흩어져
+ * 있었고, 손으로 세 번 쓰면 언젠가 한 벌이 갈린다 — 상수로 묶어 그 갈림을
+ * 없앤다. 값은 **한 글자도 새로 만들지 않았다**(기존 `--color-indigo-line-*`).
+ */
+const ACCENT_CHIP_IDLE =
+  "border-[color:var(--color-indigo-line-a22)] hover:border-[color:var(--color-indigo-line-a42)] hover:bg-[color:var(--color-indigo-line-a13)]";
+const ACCENT_CHIP_OPEN =
+  "border-[color:var(--color-indigo-line-a32)] bg-[color:var(--color-indigo-line-a13)]";
+const ACCENT_CHIP_FILLED =
+  "font-medium border-[color:var(--color-indigo-line-a32)] bg-[color:var(--color-indigo-line-a13)] hover:border-[color:var(--color-indigo-line-a45)]";
 
 export interface MeaningGapLabels extends QueueRowActionLabels {
   sectionTitle: string;
@@ -353,11 +369,17 @@ function MeaningGapRowView({
               data-testid="meaning-gap-write-toggle"
               aria-expanded={open}
               onClick={() => (open ? requestClose() : onOpen())}
-              className={`inline-flex min-h-8 items-center gap-1 rounded-chip border px-2.5 text-label transition-colors ${
-                open
-                  ? "border-[color:var(--color-indigo-line-a32)] bg-[color:var(--color-indigo-line-a13)] text-[color:var(--color-indigo-accent)]"
-                  : "border-[color:var(--color-indigo-line-a22)] text-[color:var(--color-indigo-accent)] hover:border-[color:var(--color-indigo-line-a42)] hover:bg-[color:var(--color-indigo-line-a13)]"
-              }`}
+              /* 이 칩은 **열림 여부와 무관하게 강조**다 — 선택(`active`)이 아니라
+                 disclosure 라서 램프의 눌림 잉크가 아니라 `tone: 'accent'` 를
+                 쓴다. 높이는 `fixedHeight` 로 32px 를 그대로 지킨다(램프 기본
+                 패딩은 30px 을 내고, 이 행은 옆 컨트롤들과 한 줄에 선다). */
+              className={controlClass({
+                shape: "chip",
+                size: "md",
+                tone: "accent",
+                fixedHeight: true,
+                className: open ? ACCENT_CHIP_OPEN : ACCENT_CHIP_IDLE,
+              })}
             >
               <Pencil size={11} aria-hidden />
               {open ? labels.writeHereClose : labels.writeHere}
@@ -460,11 +482,19 @@ function MeaningGapRowView({
                               onClick={() =>
                                 onPatch({ value: choice.value, cancelArmed: false })
                               }
-                              className={`inline-flex min-h-8 items-center rounded-chip border px-2.5 text-label transition-colors ${
-                                active
-                                  ? "border-[color:var(--color-indigo-line-a45)] bg-[color:var(--color-indigo-line-a13)] text-[color:var(--color-indigo-accent)]"
-                                  : "border-[color:var(--color-border-soft)] text-[color:var(--color-text-tertiary)] hover:border-[color:var(--color-indigo-line-a32)] hover:text-[color:var(--color-text-primary)]"
-                              }`}
+                              /* 여기는 **선택**이다(`aria-pressed` 와 짝) —
+                                 그래서 잉크를 손으로 쓰지 않고 램프의 `active`
+                                 를 쓴다. 눌림은 이 앱 전역에서 한 벌이어야
+                                 하고, 그 한 벌을 소유하는 곳이 값 층이다. */
+                              className={controlClass({
+                                shape: "chip",
+                                size: "md",
+                                active,
+                                fixedHeight: true,
+                                className: active
+                                  ? ""
+                                  : "hover:border-[color:var(--color-indigo-line-a32)] hover:text-[color:var(--color-text-primary)]",
+                              })}
                             >
                               {choice.label}
                             </button>
@@ -488,7 +518,15 @@ function MeaningGapRowView({
                       data-testid="meaning-gap-save"
                       onClick={() => onSave(ui.value.trim())}
                       disabled={!canSave}
-                      className="inline-flex min-h-8 items-center rounded-chip border border-[color:var(--color-indigo-line-a32)] bg-[color:var(--color-indigo-line-a13)] px-2.5 text-label font-medium text-[color:var(--color-indigo-accent)] transition-colors hover:border-[color:var(--color-indigo-line-a45)] disabled:opacity-50"
+                      /* 비활성 어포던스도 램프가 가져간다 — 손으로 쓴
+                         `disabled:opacity-50` 은 커서도 호버도 안 껐다. */
+                      className={controlClass({
+                        shape: "chip",
+                        size: "md",
+                        tone: "accent",
+                        fixedHeight: true,
+                        className: ACCENT_CHIP_FILLED,
+                      })}
                     >
                       {saving ? labels.saving : labels.save}
                     </button>
@@ -497,7 +535,12 @@ function MeaningGapRowView({
                       data-testid="meaning-gap-cancel"
                       onClick={requestClose}
                       disabled={saving}
-                      className="inline-flex min-h-8 items-center rounded-chip border border-[color:var(--color-border-soft)] px-2.5 text-label text-[color:var(--color-text-tertiary)] transition-colors hover:text-[color:var(--color-text-primary)] disabled:opacity-50"
+                      className={controlClass({
+                        shape: "chip",
+                        size: "md",
+                        fixedHeight: true,
+                        className: "hover:text-[color:var(--color-text-primary)]",
+                      })}
                     >
                       {labels.cancel}
                     </button>
