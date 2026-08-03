@@ -85,6 +85,18 @@ edge는 bounded sample이 아니라 전체 import에서 두 차원의 count와 �
 숨기지 않되 그 import만으로 제품 `depends_on` 승인을 묻지 않고 별도 제품 의미
 근거를 요구한다. 그 밖에도 에이전트는 양쪽 개념과 방향을 읽고 의미적 이유를 설명한
 뒤 사람에게 물어야 하며, 승인된 한 건만 비어 있지 않은 `why`와 함께 기록한다.
+
+Rust 저장소에서는 빈 import graph를 “의존 없음”으로 말하지 않는다.
+`infer_imports.coverage`는 Cargo 감지 시 `use`/`mod`/macro dependency scan이 아직
+지원되지 않음을 명시하고, 0 edge의 뜻을 지원 언어에서 관측된 정적 import가 없다는
+범위로 제한한다. 대신 `analyze_repo_structure.configurationEvidence`와
+`index_project.configurationEvidence`는 root package 또는 저장소 안 literal direct
+workspace member의 `[features]` 선언과 conventional Cargo target source의 literal
+`cfg`/`cfg_attr` feature predicate를
+path/line/form/polarity/source role로 보존한다. 이 receipt는 predicate를 평가하거나
+build script/macro를 실행하지 않고 runtime impact, import dependency, semantic
+`depends_on`을 주장하거나 쓰지 않는다. workspace/package/feature/mapping/source-file
+limit과 거절된 member/predicate도 숨기지 않는다.
 이때 `relation_check`의 schema match도 의미 승인이 아니다. 새 `depends_on`은
 실행 가능한 `proposedAction` 없이 `approvalGate.writeAllowed:false`를 반환하며,
 관측 가능한 능력·의미적 이유·정확한 방향에 대한 사람의 명시적 승인 뒤에만 쓴다.
@@ -114,8 +126,9 @@ element 관계는 `reachability`/`subgraph`의 구조 근거이며 영향이나 
 ## 구현 근거
 
 - `mcp/src/index.js` — 도구 registry, schema, handler, 첫 연결 지침
-- `mcp/src/analyze.mjs` · `mcp/src/infer-imports.mjs` — bounded repository 의미
-  ingress와 실행 없는 TS/JS/Python import 근거
+- `mcp/src/analyze.mjs` · `mcp/src/rust-feature-evidence.mjs` ·
+  `mcp/src/infer-imports.mjs` — bounded repository 의미 ingress, Rust 구성 provenance,
+  실행 없는 TS/JS/Python import 근거와 명시적 미지원 범위
 - `mcp/src/vault.mjs` · `mcp/src/schema.mjs` — 파일 읽기/쓰기와 UID/slug 규격
 - `mcp/src/ontology-compiler.mjs` · `mcp/src/ontology-engine.mjs` — compile/query
 - `mcp/src/competency-coverage.mjs` · `mcp/src/meaning-evaluation.mjs` — quantified
