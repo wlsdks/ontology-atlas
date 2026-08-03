@@ -654,6 +654,8 @@ export function HomePage() {
    * 「없음」이 아니라 「다음 행동」이면 다음 행동을 줘야 한다.
    */
   const [recentNeedsVaultOpen, setRecentNeedsVaultOpen] = useState(false);
+  /** 샘플에서 「이어서 새로 만들기」를 눌렀을 때 — 막다른 곳 대신 폴더로 가는 길. */
+  const [createNeedsVaultOpen, setCreateNeedsVaultOpen] = useState(false);
   const spotlightNeedsVault = vault.status !== 'loaded';
   const handleToggleSpotlight = useCallback(() => {
     if (spotlightNeedsVault) {
@@ -4719,6 +4721,15 @@ export function HomePage() {
                 onOpenVault={requestVaultOpen}
               />
 
+              {/* 같은 골격, 다른 사유 — 「예시라 고칠 수 없다」는 「날짜가 무관하다」와
+                  다른 문장이어야 한다. */}
+              <RecentChangesNeedsVaultDialog
+                open={createNeedsVaultOpen}
+                copyKey="createNeedsVault"
+                onClose={() => setCreateNeedsVaultOpen(false)}
+                onOpenVault={requestVaultOpen}
+              />
+
             </>
         </div>
         {projectsError ? (
@@ -4890,8 +4901,21 @@ export function HomePage() {
                  * 이 된다 — 그건 다른 일이고, 못 하는 자리에 문을 그리면 그게
                  * 거짓 어포던스다.
                  */
+                /*
+                 * 샘플에서도 **보인다** (2026-08-03 소유자 지시: *"샘플 모드에서도
+                 * 일단 보이게 하고 누르면 폴더 연결시키는 flow"*).
+                 *
+                 * 종전엔 `canCreateNode` 가 false 면 이 타일이 통째로 사라졌다.
+                 * 그래서 소유자가 *"여기서 바로 노드 등록하는거 왜 사라짐?"* 이라고
+                 * 물었다 — 잠긴 기능이 조용히 없어지면 「있었나?」가 된다. 같은
+                 * 패턴을 「최근 변경」에서 이미 한 번 고쳤다.
+                 *
+                 * 이제 자리를 지키고, 누르면 **폴더로 가는 길**을 준다.
+                 */
                 onCreateLinked={
-                  canCreateNode && canvasSelectedGraphNode?.kind === "domain"
+                  canvasSelectedGraphNode?.kind === "domain" && !canCreateNode
+                    ? () => setCreateNeedsVaultOpen(true)
+                    : canCreateNode && canvasSelectedGraphNode?.kind === "domain"
                     ? () => {
                         const tail = canvasSelectedGraphNode.id.includes(":")
                           ? canvasSelectedGraphNode.id.slice(canvasSelectedGraphNode.id.indexOf(":") + 1)

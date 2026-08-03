@@ -2501,6 +2501,13 @@
       "body": "You're looking at the sample map. Its dates are when this app last touched the sample, which has nothing to do with you. Open your folder and the map will point out what changed and when.",
       "action": "Open my folder",
       "close": "Close"
+    },
+    "createNeedsVault": {
+      "eyebrow": "Create an item",
+      "title": "Open your folder to create",
+      "body": "You're looking at the sample map, so it can't be edited. Open your folder and you can create items right here — each one lands as a markdown file in that folder.",
+      "action": "Open my folder",
+      "close": "Close"
     }
   },
   "fullDetailA1": {

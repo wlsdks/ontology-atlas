@@ -10,6 +10,14 @@ import { Button, controlClass } from '@/shared/ui';
 
 export interface RecentChangesNeedsVaultDialogProps {
   open: boolean;
+  /**
+   * 어느 기능이 폴더를 필요로 하는가 — 문구 묶음의 이름.
+   *
+   * 사유가 기능마다 다르므로 문장도 달라야 한다. 「최근 변경」은 *날짜가 당신과
+   * 무관하다* 이고 「항목 만들기」는 *예시라 고칠 수 없다* 다. 한 문장으로 뭉치면
+   * 둘 다 어색해진다.
+   */
+  copyKey?: 'recentChangesNeedsVault' | 'createNeedsVault';
   onClose: () => void;
   /** 「내 폴더 열기」 — 첫 실행 카드가 쓰는 것과 **같은** 핸들러여야 한다. */
   onOpenVault: () => void;
@@ -45,8 +53,9 @@ export function RecentChangesNeedsVaultDialog({
   open,
   onClose,
   onOpenVault,
+  copyKey = 'recentChangesNeedsVault',
 }: RecentChangesNeedsVaultDialogProps) {
-  const t = useTranslations('topology.recentChangesNeedsVault');
+  const t = useTranslations(`topology.${copyKey}`);
   const primaryRef = useRef<HTMLButtonElement>(null);
 
   useEffect(() => {
