@@ -90,7 +90,7 @@ export function AgentActivitySettings() {
                     }}
                     className={
                       on
-                        ? 'flex h-8 items-center rounded-chip border border-[color:var(--color-indigo-line-a45)] bg-[color:var(--color-indigo-a14)] px-2.5 text-body text-[color:var(--color-indigo-accent)] transition-colors'
+                        ? 'flex h-8 items-center rounded-chip border border-[color:var(--color-indigo-line-a45)] bg-[color:var(--color-indigo-a14)] px-2.5 text-body text-[color:var(--color-indigo-text-soft)] transition-colors'
                         : 'flex h-8 items-center rounded-chip border border-[color:var(--color-border-soft)] bg-[color:var(--color-elevated)] px-2.5 text-body text-[color:var(--color-text-quaternary)] transition-colors hover:text-[color:var(--color-text-secondary)]'
                     }
                   >

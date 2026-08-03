@@ -40,6 +40,14 @@
    *   해가 하나로 줄었다. 무채 명도만 이동, 새 hue 0.
    * ⚠️ hover/선택 표면(overlay-2 합성 4.36)에서는 여전히 미달이다 — 누를 수
    *   있는 행 위의 글자는 tertiary 부터 쓴다(AtlasGitPanel 의 규칙 그대로).
+   *   2026-08-04 열린 표면 계기가 이 산문을 화면에서 확인(글로벌 검색 4.38 ·
+   *   4.14 · 4.39)하면서 규격으로 승격됐다: **라이선스는 정지한 무채 바탕
+   *   (맨 3단 + canvas/panel 위 overlay-1)까지, 그보다 올라선 바탕(overlay-2
+   *   이상 · elevated+overlay · 틴트 합성) 위의 글자는 tertiary 부터.** 잉크를
+   *   또 올리는 노선은 기각 — 합성 깊이는 상한이 없고, 올릴수록 tertiary 와의
+   *   위계 간격(panel 스텝비 1.17, 수용 최소 1.06)을 판다. 게이트:
+   *   tests/contract/quaternary-ink-surface.contract.test.ts (값·자리) +
+   *   tests/e2e/a11y-open-surfaces.spec.ts (화면, color-contrast 기준선 0).
    */
   --color-text-quaternary: #82828a;
   /*
