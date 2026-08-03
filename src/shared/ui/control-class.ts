@@ -161,6 +161,26 @@ const control = cva(DISABLED, {
     },
     /** 눌려 있는 상태(`aria-pressed` / `aria-selected` 와 **짝**이어야 한다). */
     active: { true: '', false: '' },
+    /**
+     * **문장 속에 있는가.** `link` 에만 뜻이 있다.
+     *
+     * ## 왜 이 축이 필요한가 (2026-08-03 실측)
+     *
+     * `link` 에 터치 타깃(`min-h-11`)을 실었더니 **문장 속 컨트롤의 줄 상자가
+     * 21.3 → 44px 로 밀려 올라갔다.** 접근성을 지키려던 것이 인라인 자리에서는
+     * 레이아웃을 깨는 것이다 — 하나를 고치다 다른 하나를 깼다.
+     *
+     * 근거는 취향이 아니라 규격이다. **WCAG 2.5.8 은 인라인을 명시적으로
+     * 면제한다** — *"The target is in a sentence or its size is otherwise
+     * constrained by the line-height of non-target text."* 문장 속 링크는
+     * 24×24 를 요구받지 않는다.
+     *
+     * **기본값이 `false`(= 타깃을 실음)인 이유**: 반대로 두면 홀로 선 글자
+     * 컨트롤이 조용히 16px 히트 영역을 갖는다. 인라인에서 잘못 쓰면 줄이
+     * 벌어져 **눈에 보이지만**, 타깃이 작은 것은 **안 보인다.** 안 보이는
+     * 결함을 기본값으로 두지 않는다.
+     */
+    inline: { true: '', false: '' },
   },
   compoundVariants: [
     // ── 크기: 모양마다 «크다» 의 뜻이 다르다. 정사각에 px 를 주면 정사각이 아니게 된다.
@@ -182,9 +202,9 @@ const control = cva(DISABLED, {
     { shape: 'tile', size: 'sm', class: 'gap-1.5 px-2 py-2 text-caption' },
     { shape: 'tile', size: 'md', class: 'gap-2 px-2 py-2.5 text-label' },
     { shape: 'tile', size: 'lg', class: 'gap-2 px-3 py-3 text-body' },
-    { shape: 'link', size: 'sm', class: 'min-h-11 text-caption' },
-    { shape: 'link', size: 'md', class: 'min-h-11 text-label' },
-    { shape: 'link', size: 'lg', class: 'min-h-11 text-body' },
+    { shape: 'link', size: 'sm', class: 'text-caption' },
+    { shape: 'link', size: 'md', class: 'text-label' },
+    { shape: 'link', size: 'lg', class: 'text-body' },
 
     // ── 테두리를 가진 모양의 기본 테두리색. `link`/`row`/`icon` 은 보더가 없다.
     { shape: 'chip', active: false, class: 'border-[color:var(--color-divider)]' },
@@ -200,8 +220,10 @@ const control = cva(DISABLED, {
     { shape: 'row', active: true, class: 'bg-[color:var(--color-overlay-2)] text-[color:var(--color-text-primary)]' },
     { shape: 'icon', active: true, class: 'bg-[color:var(--color-overlay-2)] text-[color:var(--color-text-primary)]' },
     { shape: 'link', active: true, class: 'text-[color:var(--color-text-primary)]' },
+    // 홀로 선 글자 컨트롤만 타깃을 싣는다 — 문장 속은 WCAG 2.5.8 이 면제한다.
+    { shape: 'link', inline: false, class: 'min-h-11' },
   ],
-  defaultVariants: { shape: 'chip', size: 'md', tone: 'default', active: false },
+  defaultVariants: { shape: 'chip', size: 'md', tone: 'default', active: false, inline: false },
 });
 
 export type ControlShape = NonNullable<VariantProps<typeof control>['shape']>;

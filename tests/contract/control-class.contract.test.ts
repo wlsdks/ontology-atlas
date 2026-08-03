@@ -144,7 +144,33 @@ describe('controlClass — 모양이 실제로 서로 다르다', () => {
     expect(cls).toContain('text-center');
   });
 
-  it('글자 컨트롤도 손가락에 잡힌다 — 시각 크기와 히트 영역은 다른 축이다', () => {
+  it('문장 속 글자 컨트롤은 줄 상자를 밀지 않는다 — WCAG 2.5.8 인라인 면제', () => {
+    /*
+     * `link` 에 터치 타깃을 실었더니 **문장 속 컨트롤의 줄 상자가 21.3 → 44px 로
+     * 밀려 올라갔다**(2026-08-03 실측). 하나를 고치다 다른 하나를 깬 것이다.
+     *
+     * WCAG 2.5.8 은 인라인을 명시적으로 면제한다 — *"The target is in a sentence
+     * or its size is otherwise constrained by the line-height of non-target text."*
+     */
+    for (const size of SIZES) {
+      expect(
+        controlClass({ shape: 'link', size, inline: true }),
+        `link/${size}/inline 이 최소 높이를 실어 줄 상자를 민다`,
+      ).not.toMatch(/min-h-/);
+    }
+  });
+
+  it('인라인 면제는 `link` 에만 뜻이 있다 — 상자를 가진 모양은 타깃을 유지한다', () => {
+    // `inline` 을 아무 모양에나 넘겨 타깃을 벗기는 우회를 막는다.
+    for (const shape of SHAPES.filter((s) => s !== 'link')) {
+      expect(
+        controlClass({ shape, inline: true }),
+        `${shape} 가 inline 으로 규격을 잃는다`,
+      ).toBe(controlClass({ shape, inline: false }));
+    }
+  });
+
+  it('홀로 선 글자 컨트롤은 손가락에 잡힌다 — 기본값이 안전한 쪽이다', () => {
     /*
      * `link` 는 보더도 배경도 없어 시각적으로는 글자 그대로여야 하지만, 히트
      * 영역까지 글자 크기면 24 → 16px 로 내려가 WCAG 2.5.8(24×24) 아래가 된다.
