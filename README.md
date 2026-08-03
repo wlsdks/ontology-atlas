@@ -686,6 +686,20 @@ The observation surface both drive (`?e2e=1` → `window.__atlasMap`) and the
 measurement discipline are documented in
 [docs/MAP-TESTABILITY.md](docs/MAP-TESTABILITY.md).
 
+Contrast is a third thing lint cannot see. ESLint checks whether a colour came
+from a token; it cannot check whether the result is readable, and two legitimate
+tokens can fail to separate — in 2026-07 a pair of adjacent chart segments turned
+out to sit at 1.14:1 in luminance and differ only in hue, the axis red-green
+colour blindness cannot resolve:
+
+```bash
+node scripts/measure-contrast.mjs        # same static server as above
+```
+
+It sweeps the rendered DOM against WCAG 1.4.3, resolving alpha against ancestors
+first — the app's text and borders are alpha tokens, and skipping compositing
+reports numbers that are quietly better than the screen.
+
 ## Documentation
 
 | Document | Start here when you need… |
