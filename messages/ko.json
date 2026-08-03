@@ -2286,6 +2286,7 @@
       "relayoutToast": "지형도를 다시 정렬합니다",
       "spotlightTooltip": "최근 변경 스포트라이트 — 지난 N일 동안 바뀐 노드만 또렷하게, 나머지는 가라앉혀요",
       "spotlightEmptyTooltip": "최근에 바뀐 게 없어요 — 문서를 고치면 여기서 짚어드려요",
+      "spotlightSampleTooltip": "샘플에는 바뀐 기록이 없어요 — 내 폴더를 열면 바뀐 것을 여기서 짚어드려요",
       "spotlightAriaLabel": "최근 변경 스포트라이트 전환",
       "spotlightLabel": "최근 변경",
       "docsTooltip": "문서함 빠른 보기 (D)",

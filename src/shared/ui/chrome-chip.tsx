@@ -42,6 +42,25 @@ const CHIP_CLASS =
 export const CHROME_STATUS_CHIP_CLASS =
   'topology-chrome-in pointer-events-auto flex h-[var(--chrome-tile-size)] max-w-full items-center gap-1.5 rounded-[var(--chrome-radius)] border border-[color:var(--chrome-border)] bg-[color:var(--chrome-surface)] px-3.5 text-label tracking-label text-[color:var(--color-text-secondary)] shadow-[var(--chrome-shadow)]';
 
+/**
+ * 비활성 — **누를 수 없으면 누를 수 없어 보여야 한다.**
+ *
+ * 2026-08-03 소유자 실보고: *"일반 화면에서 '최근 변경' 누르니까 아무런 반응이
+ * 없는데?"*. 실측해 보니 그 칩은 `disabled` 였는데 **계산된 스타일이 옆의 활성 칩
+ * 셋과 완전히 동일**했다 — color `rgb(138,143,152)` · bg `rgba(16,17,24,.96)` ·
+ * border · opacity · cursor 전부 같은 값. `ChromeChip` 에 `disabled:` 처리가
+ * 아예 없었기 때문이고, 공유 프리미티브라 **모든 칩이 같은 구멍**을 갖고 있었다.
+ *
+ * 스포트라이트 칩의 코드 주석은 「자리는 남기고 이유는 툴팁이 말한다」였는데,
+ * 툴팁은 호버하고 기다려야 나온다 — **누르는 사람에게는 침묵**이었다. 규격이
+ * 주석에만 있고 화면에 없으면 없는 것이다.
+ *
+ * 값은 새로 정하지 않았다 — `Button` 이 이미 쓰는 비활성 문법 그대로다
+ * (`opacity-55` + `cursor-not-allowed` + hover 무력화).
+ */
+const DISABLED_CLASS =
+  'disabled:cursor-not-allowed disabled:opacity-55 disabled:shadow-none disabled:hover:border-[color:var(--chrome-border)] disabled:hover:bg-[color:var(--chrome-surface)]';
+
 const ACTIVE_CLASS =
   'border-[color:var(--chrome-active-border)] bg-[color:var(--chrome-active-surface)] text-[color:var(--color-text-primary)]';
 
@@ -52,7 +71,13 @@ export const ChromeChip = forwardRef<HTMLButtonElement, ChromeChipProps>(
     <button
       ref={ref}
       type="button"
-      className={cn(CHIP_CLASS, active && ACTIVE_CLASS, compact && COMPACT_CLASS, className)}
+      className={cn(
+        CHIP_CLASS,
+        DISABLED_CLASS,
+        active && ACTIVE_CLASS,
+        compact && COMPACT_CLASS,
+        className,
+      )}
       {...rest}
     >
       {icon}

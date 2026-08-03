@@ -2286,6 +2286,7 @@
       "relayoutToast": "Relaying out the topology",
       "spotlightTooltip": "Recent-changes spotlight — nodes changed in the last N days stay crisp, the rest sink back",
       "spotlightEmptyTooltip": "Nothing changed recently — edit a document and this will point it out",
+      "spotlightSampleTooltip": "The sample has no edit history — open your folder and changes show up here",
       "spotlightAriaLabel": "Toggle the recent-changes spotlight",
       "spotlightLabel": "Recent",
       "docsTooltip": "Quick view of the doc library (D)",

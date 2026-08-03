@@ -1,4 +1,15 @@
 export { Button, buttonVariants, type ButtonProps } from './button';
+/**
+ * `<Button>` 은 **표준 버튼 하나**만 덮는다 — 전수 419개 중 그 모양은 1개였다.
+ * 나머지 여섯 모양(칩 · 링크형 · 행 · 아이콘 · pill · 카드)은 이쪽이다.
+ */
+export {
+  controlClass,
+  type ControlClassOptions,
+  type ControlShape,
+  type ControlSize,
+  type ControlTone,
+} from './control-class';
 export {
   Card,
   CardHeader,

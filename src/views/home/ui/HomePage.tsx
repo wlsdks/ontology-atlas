@@ -3579,10 +3579,30 @@ export function HomePage() {
                         토글. 스포트라이트 칩의 ChromeChip 문법/축약 사다리.
                         상태는 URL `?recent=` 단일 진실원 (공유/에이전트 재현). */}
                     <Tooltip
+                      /*
+                       * 왜 세 갈래인가 (2026-08-03 소유자 실보고: *"'최근 변경'
+                       * 누르니까 아무런 반응이 없는데?"*).
+                       *
+                       * 종전 빈 상태 문구는 **「문서를 고치면 여기서 짚어드려요」**
+                       * 하나였는데, 샘플을 보는 사람에게 그건 **고칠 문서가 있다는
+                       * 전제**다. 실제 이유는 다르다 — 샘플의 날짜는 이 저장소가
+                       * 그 픽스처를 마지막으로 건드린 시각이라 사용자와 아무 상관이
+                       * 없고, 그래서 이 기능은 **폴더를 열기 전에는 뜻을 가질 수
+                       * 없다.** 이유가 다르면 문장도 달라야 한다.
+                       *
+                       * 팝업은 안 띄운다. 「아무것도 없다」를 말하려고 모달을 여는
+                       * 것은 누른 사람에게 일을 두 번 시키는 것이고, 이 저장소가
+                       * 「popup soup」로 금지한 부류다(아래 칩 주석의 2026-08-02
+                       * 판단 그대로 유효). 대신 **비활성이 비활성처럼 보이게** 했다
+                       * — 그게 없어서 눌러 보고 나서야 알게 됐던 것이다
+                       * (`chrome-chip.tsx` 의 `DISABLED_CLASS`).
+                       */
                       content={
-                        !spotlightOn && recentChanges.recentNodeIds.size === 0
-                          ? t('controls.spotlightEmptyTooltip')
-                          : t('controls.spotlightTooltip')
+                        spotlightOn || recentChanges.recentNodeIds.size > 0
+                          ? t('controls.spotlightTooltip')
+                          : vault.status === 'loaded'
+                            ? t('controls.spotlightEmptyTooltip')
+                            : t('controls.spotlightSampleTooltip')
                       }
                       side="bottom"
                       withProvider={false}
