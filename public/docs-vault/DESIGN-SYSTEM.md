@@ -2722,6 +2722,13 @@ JSX 안에 44px 정사각 버튼이나 라벨 버튼을 인라인 클래스로 �
 `/design-build` 는 시스템을 **쓰는 법**이다. 이 절은 시스템을 **늘리는 법**이다 —
 없어서 실제로 값을 치렀다.
 
+> **확인 시도했으나 접근 불가 (2026-08-03)**: Material 3(`m3.material.io`)와
+> Spectrum(`spectrum.adobe.com`)은 본문이 JS 렌더 전용이라 원문 텍스트가 안 내려온다
+> (M3 는 전달 텍스트 전체가 *"This website requires JavaScript."* 69자). **그 둘을
+> 근거로 대는 문장을 넣지 마라** — 다음 사람이 같은 확인을 반복하거나, 더 나쁘게
+> 검색 요약으로 때우지 않게 여기 남긴다. Fluent 2 토큰 문서에는 「새 토큰을 언제
+> 만드는가」 절이 **없다**는 것도 확인했다.
+
 #### 규칙 0 — 새 값을 만들기 전에 **이미 있는지 먼저 찾는다**
 
 **이 규칙이 첫 번째인 이유는 2026-08-03 에 그걸 안 해서다.**
@@ -2750,6 +2757,21 @@ JSX 안에 44px 정사각 버튼이나 라벨 버튼을 인라인 클래스로 �
 
 > **찾지 않고 만든 값은 시스템이 아니라 두 번째 시스템이다.**
 
+**업계 발행본** — [Carbon 기여 심사](https://carbondesignsystem.com/contributing/product-development-lifecycle/)가
+이 질문을 문자 그대로 심사 항목으로 갖는다:
+
+> *"Does it replicate anything in the system already, or is there truly a gap?"*
+> *"If the proposal does replicate an existing asset, is there evidence to show that
+> the proposed solution is better?"*
+
+[W3C Design Tokens 초안](https://www.designtokens.org/tr/drafts/format/)은 목적 자체를
+단일 진실원으로 적는다 — *"Maintaining a 'single source of truth' for design tokens"* ·
+*"Eliminating repetition of values in token files"*.
+
+둘째 인용이 우리 사고의 정확한 반사실이다: **이미 있는 것을 다시 만들려면 새것이 더
+낫다는 증거를 대야 한다.** 우리는 `--control-h-*` 를 두고 24/30/34 를 발명하면서 그
+증거를 대지 않았다.
+
 #### 규칙 1 — 축을 더하기 전에 슬롯을 먼저 본다
 
 **이 조항의 근거는 산수이고, 슬롯이라는 도구는 업계에 있다.** 둘을 섞어 말하지
@@ -2767,6 +2789,11 @@ JSX 안에 44px 정사각 버튼이나 라벨 버튼을 인라인 클래스로 �
 근거는 위 산수다. (원문 확인 2026-08-03. 처음엔 검색 요약만 보고 "문서가 명시한다"
 고 적었는데 원문에 그 문장이 없었다 — 인용은 원문을 열고 한다.)
 
+⚠️ **업계 발행본 근거는 없다.** Carbon · Fluent · Polaris · W3C 어디에도 「변형 축의
+조합 폭발 vs 부품 분해」를 말하는 문장이 없다(2026-08-03 원문 확인). 이 조항은 **우리
+산수와 실측만으로** 선다. tailwind-variants 는 도구 사용법 인용이지 업계 원칙 근거가
+아니며, 그 구분을 지우는 순간 이 조항은 지어낸 권위를 갖게 된다.
+
 판별: 새 변형이 필요할 때 「이 컨트롤의 **어느 부분**이 달라지는가」를 먼저 물어라.
 껍데기만이면 축, 글자·아이콘·배지 중 하나면 **부품**이다.
 
@@ -2774,6 +2801,17 @@ JSX 안에 44px 정사각 버튼이나 라벨 버튼을 인라인 클래스로 �
 
 **우리 근거**: 버튼과 링크가 겉모습이 같으면 하나는 반드시 낡는다. 실측 — 이
 저장소에 바이트 동일한 `<button>`/`<Link>` 쌍둥이가 있었고 게이트가 없었다.
+
+**업계 발행본 — 왜 쌍둥이가 생기나**: 시맨틱이 목적을 따라 갈라지기 때문이다.
+[Carbon Button usage](https://carbondesignsystem.com/components/button/usage/):
+*"Do not use buttons as navigational elements. Instead, use links when the desired
+action is to take the user to a new page."*
+[Polaris Button](https://polaris-react.shopify.com/components/actions/button):
+*"Buttons are used primarily for actions… Links are used primarily for navigation."*
+
+**그리고 업계의 답도 「컴포넌트는 하나, 밑의 원소만 교체」다** — 같은 Polaris 문서:
+*"If navigation is required for the button component, use the `url` prop."* 우리
+`asChild` 탈출구와 같은 구조를 Polaris 는 **1급 API** 로 낸다.
 
 **업계 도구**: [Radix 의 `asChild`](https://www.radix-ui.com/primitives/docs/guides/composition)
 는 *"When `asChild` is set to `true`, Radix will not render a default DOM element,
@@ -2807,10 +2845,26 @@ accessible and functional."*
 36 · pill 32 · 카드 18 · 표준 버튼 1). 감으로 더한 것은 하나도 없다.
 
 새 모양·톤·축을 제안할 때는 **그것 때문에 시스템 밖에 남은 컨트롤 수**를 세서
-근거로 대라. 못 세면 그건 아직 규격이 아니라 취향이다. 세는 법은
+근거로 대라. 못 세면 그건 아직 규격이 아니라 취향이다.
+
+**업계 발행본** — [Carbon 기여 심사](https://carbondesignsystem.com/contributing/product-development-lifecycle/)가
+수요 증거를 채택 조건으로 요구한다: *"Proposals need to show that the component or
+pattern would be useful to many teams and unique to the system."* 우리 「막힌 컨트롤
+수 세기」는 그 요구를 **1인 저장소 스케일로 번역한 계측**이다 — 절차를 복제한 게
+아니라 같은 원칙을 우리 단위로 잰다. 세는 법은
 `tests/contract/control-adoption-ratchet.contract.test.ts` 의 탐지기.
 
 #### 규칙 5 — 규격을 문서에 쓰면 같은 PR 에 게이트를 넣는다
+
+**업계 발행본은 절반만 받쳐 준다.** 「시스템이 강제 도구를 스스로 낸다」까지는
+공통이다 — [Polaris 는 stylelint 설정을 공식 도구로 발행](https://polaris-react.shopify.com/tools/stylelint-polaris)한다:
+*"A configuration of Stylelint rules that promote adoption of the Polaris design
+system in consuming apps."*
+
+⚠️ 그러나 **「같은 PR 에」 결합과 「켜기 전 전수 측정」은 어느 발행본에도 없다.** 그
+둘은 우리 실측이 유일한 근거다 — lint 가 144 → 548 로 뛴 소음 사고, 그리고 게이트
+자신의 결함이 세 번 드러난 일(램프 목록 하드코딩 · 접힌 `<details>` 미제외 · 공유
+상수에 벌점).
 
 이 저장소의 기존 규율 그대로다. 단 **켜기 전에 위반을 전수 측정한다**(`/gate-probe`).
 그리고 게이트를 넣었으면 **결함을 넣어 빨개지는지 증명**한다 — 이 시스템의 게이트는
@@ -2818,6 +2872,11 @@ accessible and functional."*
 하드코딩 · 접힌 `<details>` 미제외 · 공유 상수에 벌점).
 
 #### 규칙 6 — 라이브러리를 바꾸는 것은 최후다
+
+⚠️ **업계 발행본 근거 없음.** 여섯 발행사 누구도 소비자의 스타일링 라이브러리 교체
+시점을 말하지 않는다(그들이 말할 주제가 아니다). 이 조항은 `forbidden.md` 의 의존성
+규율과 **사용처 244개**라는 우리 수치만으로 선다. 그래서 오히려 반박이 쉽다 — 외부
+권위가 없으니 수치로만 다투면 된다.
 
 `cva` → `tailwind-variants` 같은 교체는 슬롯·`extend`·반응형 변형을 준다. 그러나
 `forbidden.md` 는 새 의존성에 **PR 본문의 이유**를 요구하고, 이 시스템은 이미 244개가
