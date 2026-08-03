@@ -21,23 +21,24 @@
 </p>
 
 <p align="center">
-  <strong>One download installs both surfaces.</strong> The desktop app carries a
-  compiled MCP server inside its own bundle, and one button writes your agent's
-  config and proves the connection.
+  <strong>Each desktop download includes the Atlas app and its MCP server.</strong>
+  One button writes your agent's config and proves the connection.
 </p>
 
 <p align="center">
   <a href="https://wlsdks.github.io/ontology-atlas/en/download/"><strong>Download for macOS</strong></a>
   ·
   <a href="https://wlsdks.github.io/ontology-atlas/en/download/"><strong>Windows x64 beta</strong></a>
+</p>
+
+<p align="center">
+  <a href="https://wlsdks.github.io/ontology-atlas/en/topology/">Live demo</a>
   ·
-  <a href="https://wlsdks.github.io/ontology-atlas/en/topology/"><strong>Live demo</strong></a>
+  <a href="https://wlsdks.github.io/ontology-atlas/en/guide/">Guide</a>
   ·
-  <a href="https://wlsdks.github.io/ontology-atlas/en/guide/"><strong>Guide</strong></a>
+  <a href="#the-journey">The journey</a>
   ·
-  <a href="#the-journey"><strong>The journey</strong></a>
-  ·
-  <a href="#status--read-this-before-installing"><strong>Status</strong></a>
+  <a href="#status--read-this-before-installing">Status</a>
 </p>
 
 <p align="center">
@@ -78,35 +79,6 @@ disconnected, what is stale.*
 
 Your agent asks those questions over MCP. You read the same answers as a map,
 and every write the agent makes lands as a line in a Markdown file you can diff.
-
-## Why not just use a notes tool
-
-Local Markdown plus MCP is not rare any more, and this README will not pretend
-otherwise. [Basic Memory](https://github.com/basicmachines-co/basic-memory)
-already gives an agent a human-readable Markdown store with an MCP server, and
-there are several mature Obsidian MCP bridges. **Markdown you own, git-diffable
-review, no login, no telemetry: treat all of that as table stakes.** Atlas has
-it, and so do they.
-
-The difference is what sits on top:
-
-| | Notes with MCP (Basic Memory, Obsidian bridges) | Graph stores for agents (Zep/Graphiti, Cognee, Mem0) | Ontology Atlas |
-|---|---|---|---|
-| Store | Markdown you own | A database you cannot read by hand | Markdown you own |
-| Structure | Freeform notes, freeform link labels | Typed, but vendor-defined | A four-layer product hierarchy, linked documents, and typed relations |
-| Graph reach | Traverse *N* hops from a note | Full graph engine | Blast radius, reachability, cycles, shortest path, centrality, health |
-| Derived from your repo | No — you write the notes | No — you feed it a corpus | Bounded, read-only proposals from supported source evidence; nothing lands until approval |
-| Reading surface | Obsidian, or a paid web app | A vendor console | A free local map, workshop, and maintenance board |
-
-Read the middle rows together, because that is the actual argument: **the typed
-hierarchy is not the feature — it is the price of admission for the graph
-queries.** Containment has to be computable before "blast radius" or "this
-project's coverage" can mean anything. If you only want an agent to remember
-your conversations, a notes tool is the lighter choice and you should take it.
-Atlas is for when you want a model of the system your code implements.
-
-The theory and prior art behind that position are cited in
-[docs/FOUNDATIONS.md](docs/FOUNDATIONS.md).
 
 ## Status — read this before installing
 
@@ -312,6 +284,26 @@ capabilities/payment-authorize — blast radius (depth 2, incoming)
 
 Connect and use it through the [MCP guide](mcp/README.md), or start from the
 [CLI reference](cli/README.md).
+
+## Why not just use a notes tool
+
+Local Markdown, git diffs, and MCP are table stakes. Notes tools such as
+[Basic Memory](https://github.com/basicmachines-co/basic-memory) already provide
+them; hosted graph-memory products provide typed traversal in a database. Atlas
+combines a human-readable local vault with a product ontology and a workbench
+where people and agents judge the same facts.
+
+| | Notes with MCP | Hosted graph memory | Ontology Atlas |
+|---|---|---|---|
+| Store | Markdown you own | Vendor database | Markdown you own |
+| Structure | Freeform notes and links | Vendor-defined types | Project → domain → capability → element, documents, typed relations |
+| Graph questions | Note traversal | Graph engine | Blast radius, reachability, cycles, paths, centrality, health |
+| Evidence from code | Hand-authored | Corpus ingestion | Bounded read-only proposals; nothing lands until approval |
+| Human surface | Notes app | Vendor console | Local map, Workshop, History, and Insights |
+
+If you only need an agent to remember conversations, a notes tool is lighter.
+Atlas is for modeling the product your code implements. The argument and its
+sources live in [Foundations](docs/FOUNDATIONS.md).
 
 ## A vault is just files
 
