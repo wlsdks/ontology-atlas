@@ -4,6 +4,7 @@ import { useState } from "react";
 import { ChevronDown, ChevronRight } from "lucide-react";
 import { formatDate } from "@/shared/lib/format-date";
 import { EvidenceOnlyBadge, TopologyV2KindGlyph } from "@/shared/ui";
+import { controlClass } from "@/shared/ui/control-class";
 import { RecentNodeRow } from "@/widgets/recent-node-row";
 import type { DomainFreshnessRow, RecentUpdateRow } from "../../lib/freshness";
 import { InsightsSectionTitle } from "../parts/InsightsSectionTitle";
@@ -220,7 +221,15 @@ export function FreshnessTab({
               aria-expanded={evidenceOpen}
               data-testid="insights-freshness-evidence-toggle"
               onClick={() => setEvidenceOpen((open) => !open)}
-              className="-mx-1.5 flex min-h-7 w-full items-center gap-1.5 rounded-chip px-1.5 text-left text-label text-[color:var(--color-text-tertiary)] transition-colors hover:bg-[color:var(--color-overlay-1)] hover:text-[color:var(--color-text-primary)]"
+              // 「할 일」·「연결」 탭의 조용한 토글과 **같은 램프 호출**이다 —
+              // 같은 종류의 절단은 같게 보여야 한다. 남는 것은 램프가 일부러
+              // 안 내는 호버 잉크와 인셋(`px-2`)의 짝인 음수 마진뿐이다.
+              className={controlClass({
+                shape: "row",
+                size: "sm",
+                className:
+                  "-mx-2 hover:bg-[color:var(--color-overlay-1)] hover:text-[color:var(--color-text-primary)]",
+              })}
             >
               {evidenceOpen ? (
                 <ChevronDown aria-hidden size={13} className="flex-none" />

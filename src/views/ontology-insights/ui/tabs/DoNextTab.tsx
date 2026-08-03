@@ -26,6 +26,26 @@ import {
 import type { MeaningGapKind } from "@/entities/knowledge-graph";
 import { MeaningGapSection, type MeaningGapLabels } from "./MeaningGapSection";
 import { InsightsSectionTitle } from "../parts/InsightsSectionTitle";
+import { controlClass } from "@/shared/ui/control-class";
+
+/**
+ * 「접어 둔 나머지」를 여는 **조용한 토글**의 완성 클래스.
+ *
+ * 이 탭에 두 자리(중복 나머지 · 수리 큐 나머지)가 있고, 같은 문법이
+ * 「연결」 탭 영향 랭킹과 「신선도」 탭 근거 계층에도 있다 — 같은 종류의
+ * 절단은 같게 보여야 하므로 값이 갈리면 안 된다. 모양·크기·색은 램프가
+ * 내고(`row`/`sm`/`default` = 28px · text-label · 3차), 여기 남는 것은
+ * 램프가 일부러 안 내는 **호버 잉크**와 이 자리의 **음수 마진**뿐이다.
+ *
+ * `-mx-2` 는 램프 인셋(`px-2`)과 짝이다 — 글자 x 좌표를 형제 행들과
+ * 맞춘 채 히트 영역만 좌우로 넓힌다.
+ */
+const QUIET_REST_TOGGLE = controlClass({
+  shape: "row",
+  size: "sm",
+  className:
+    "-mx-2 mt-1 hover:bg-[color:var(--color-overlay-1)] hover:text-[color:var(--color-text-primary)]",
+});
 
 /**
  * 탭1 "할 일" (S5, 전략 verdict B 채택) — 인사이트의 기본 탭. "무엇이
@@ -559,7 +579,7 @@ function DuplicateSection({
           aria-expanded={restOpen}
           data-testid="do-next-duplicate-rest-toggle"
           onClick={() => setRestOpen((open) => !open)}
-          className="-mx-1.5 mt-1 flex min-h-7 w-full items-center gap-1.5 rounded-chip px-1.5 text-left text-label text-[color:var(--color-text-tertiary)] transition-colors hover:bg-[color:var(--color-overlay-1)] hover:text-[color:var(--color-text-primary)]"
+          className={QUIET_REST_TOGGLE}
         >
           {restOpen ? (
             <ChevronDown aria-hidden size={13} className="flex-none" />
@@ -1205,7 +1225,7 @@ export function DoNextTab({
                     aria-expanded={repairTargetsOpen}
                     data-testid="insights-repair-queue-rest-toggle"
                     onClick={() => setRepairTargetsOpen((open) => !open)}
-                    className="-mx-1.5 mt-1 flex min-h-7 w-full items-center gap-1.5 rounded-chip px-1.5 text-left text-label text-[color:var(--color-text-tertiary)] transition-colors hover:bg-[color:var(--color-overlay-1)] hover:text-[color:var(--color-text-primary)]"
+                    className={QUIET_REST_TOGGLE}
                   >
                     {repairTargetsOpen ? (
                       <ChevronDown aria-hidden size={13} className="flex-none" />

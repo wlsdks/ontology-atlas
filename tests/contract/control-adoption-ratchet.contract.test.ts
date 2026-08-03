@@ -57,6 +57,7 @@ const ROOTS = ['src', 'app'];
  * | **303** | 문서함 · 빠른 서랍 · 공방(`views/docs-vault` · `widgets/docs-vault` · `widgets/docs-quick-drawer` · `views/ontology-studio`) 121개 중 86개 — 행 27 · 아이콘 24 · 칩 21 · 링크형 13 · pill 4 · 카드 2. 남긴 35개는 넷으로 갈린다: ① **크롬 토큰 계약**(`--chrome-tile-size` · `--docs-header-tile-size` · `--overlay-close-size`)을 지는 자리 4 — 램프가 아니라 크롬이 규격이다 ② **나침 무대의 절대배치 기하**(소켓 · 레인 접기 · 더 잇기 · 고정 높이 30/32 툴바) 15 — 이 표면의 문법이 따로 있고 `studio-navigation` 스펙이 그 치수를 계약으로 잡는다 ③ **한 벌로 읽혀야 하는 세트**(첫 실행 선택 행 4 + 최근 볼트 grid 행 1, 다중행 `items-start` 라 `row`(단행 `items-center`)에 안 맞는다) 11 ④ **문장·바 속 인라인 컨트롤** 5 — `link` 이 `min-h-11`(WCAG 2.5.8)을 실으면서 글줄 안에서는 줄 상자를 44px 로 밀어 올린다(실측 21.3 → 44). 시각 크기와 히트 영역이 다른 축이라는 상류 판단은 옳고, 다만 그 해법이 «문장 속» 이라는 세 번째 축을 아직 안 본다 |
  *
  * | **269** | 위 두 라운드가 「자리가 없어서」 남긴 48개의 회수 — 값 층의 구멍 넷을 메운(`a1f956ce9`) 직후다. 설정 시트 29(칩 24 · 타일 2 · 링크형 3) + 지도 액션 타일 5. `tone` 의 새 넷(secondary 6 · accent 11 · success 2 · warning 2 · danger 1)이 22개를, `shape: 'tile'` 이 7개를, `link` 의 `min-h-11` 이 3개를 열었다 |
+ * | **259** | 뷰 라운드 — `src/views/{ontology-insights,download,first-run,git,project-*,gateway-doc,root-entry}` 18개 중 10개. 행 6(조용한 「나머지 보기」 토글 4 + 케밥 메뉴 항목 1 + 그 항목을 쓰는 `<Link>` 3) · 칩 5(의미 공백 쓰기 토글 · 도메인 선택 · 저장 · 취소 · 인계 복사). **여기서 처음으로 `row`/`sm` 이 손으로 쓰던 높이와 정확히 같았다** — `py-1.5`+`--leading-label`(16px) = 28px = `min-h-7`. 램프가 오늘 화면을 맞힌 첫 자리다 |
  *
  * ## 남은 것을 왜 안 옮겼나 — 이 목록이 다음 라운드의 입력이다
  *
@@ -75,6 +76,26 @@ const ROOTS = ['src', 'app'];
  * 나머지 6(세그먼트 탭 3 · 창 선택 칩 · 세로 엣지 탭 · 캔버스 앵커 원형 버튼 ·
  * 트리 셰브론)은 일곱 모양 어디에도 없다.
  *
+ * 뷰 라운드가 남긴 8개(2026-08-03)는 **값 층의 새 구멍 셋**을 가리킨다:
+ *
+ * 1. **보더 있는 아이콘 정사각이 없다** — `icon` 은 정의상 보더가 없다
+ *    (`「link`/`row`/`icon` 은 보더가 없다」). 그런데 큐 행의 케밥 트리거는
+ *    `h-8 w-8` + `border` 다. 보더를 `className` 으로 넣으면 **모양을 넘기는
+ *    것**이라 층이 무력해진다(1 — `QueueRowActions` 케밥).
+ * 2. **28px 칩 스텝이 없다** — 칩 램프는 24(sm)/30(md)/32(fixedHeight)를 내는데
+ *    저장소에는 `rounded-chip` + `h-7`/`min-h-7` 이 18곳 있다. 이번에 옮긴
+ *    인계 복사 칩의 compact 도 28 → 30 으로 올라갔다. `row` 는 28 을 정확히
+ *    내는데 칩은 못 낸다 — 축이 갈린 것이지 값이 틀린 게 아니다
+ *    (1 — `/download` 체크섬 복사. 관문 표면이라 4px 을 옮기지 않았다).
+ * 3. **`card` 가 단행(`items-center`) 고정이다** — 아이콘 + 제목 + 설명 두 줄인
+ *    선택 카드는 `items-start` 여야 한다. 첫 실행 3개가 여기서 걸린다
+ *    (3 — `FirstRunPage`). 앞 라운드의 「한 벌로 읽혀야 하는 세트」와 같은 구멍이
+ *    두 번째로 나왔으니 다음 라운드는 이걸 먼저 본다.
+ *
+ * 나머지 3(에이전트 복사 칩의 `font-mono` + `active:translate-y` 방언 ·
+ * 데모 영상 위 전면 오버레이 재생 버튼 · 도메인 결합 히트맵의 `role="gridcell"`)
+ * 은 일곱 모양 어디에도 없다.
+ *
  * ## 이 수가 **과다 계상**이라는 것 — 알고 두는 한계
  *
  * 세는 것은 여는 태그 안의 **리터럴** `controlClass(` 다. 그래서 램프를 통과한
@@ -83,7 +104,7 @@ const ROOTS = ['src', 'app'];
  * **공유 상수로 뽑는 옳은 리팩터에 벌점을 준다.** 그래서 이 라운드는 잉크만
  * 상수로 공유하고 램프 호출은 자리마다 인라인으로 썼다.
  */
-const BASELINE_HAND_WRITTEN_CONTROLS = 269;
+const BASELINE_HAND_WRITTEN_CONTROLS = 259;
 
 function walk(dir: string, out: string[] = []): string[] {
   for (const name of readdirSync(dir)) {
