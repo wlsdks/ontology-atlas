@@ -129,6 +129,8 @@ This is normally a paragraph of setup instructions. Here it is a button.
 
 Claude Code, Cursor, VS Code and Codex each get a button. Any other MCP client
 can copy the snippet from **Advanced · detailed checks**.
+The bundled server exposes **33 tools — 19 read + 14 write**; the
+[agent guide](mcp/README.md) documents every tool and its contract.
 
 ### 3. Read the map
 

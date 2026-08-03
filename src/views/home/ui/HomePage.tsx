@@ -4001,7 +4001,6 @@ export function HomePage() {
                         shape: "pill",
                         size: "md",
                         tone: "accent",
-                        fixedHeight: true,
                         className:
                           "mt-3 justify-center border-[color:var(--color-indigo-a46)] bg-[color:var(--color-indigo-a16)] font-[var(--font-weight-signature)] hover:bg-[color:var(--color-indigo-a24)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--color-indigo-a46)] focus-visible:ring-inset",
                       })}
