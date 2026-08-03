@@ -71,6 +71,18 @@ export const IMPORT_EDGE_KIND_VALUES = Object.freeze([
   'side',
 ]);
 
+export const IMPORT_SOURCE_ROLE_VALUES = Object.freeze([
+  'production',
+  'test',
+  'unknown',
+]);
+
+export const IMPORT_USAGE_VALUES = Object.freeze([
+  'value',
+  'type_only',
+  'unknown',
+]);
+
 export const IMPORT_UNRESOLVED_REASON_VALUES = Object.freeze([
   'empty',
   'relative-not-found',
@@ -112,10 +124,10 @@ const SIDE_IMPORT_RE = /\bimport\s+['"]([^'"]+)['"]/g;
  * @returns {{
  *   rootPath: string,
  *   filesScanned: number,
- *   edges: Array<{ from: string, to: string, kind: 'static'|'dynamic'|'require'|'reexport'|'side' }>,
+ *   edges: Array<{ from: string, to: string, kind: 'static'|'dynamic'|'require'|'reexport'|'side', sourceRole:'production'|'test'|'unknown', importUsage:'value'|'type_only'|'unknown' }>,
  *   externalImports: Array<{ from: string, spec: string }>,
  *   unresolved: Array<{ from: string, spec: string, reason: string }>,
- *   moduleEdges: Array<{ from: string, to: string, count: number, kindCounts: Record<string, number>, evidence: Array<{from:string,to:string,kind:string}>, evidenceLimited: boolean }>,
+ *   moduleEdges: Array<{ from: string, to: string, count: number, kindCounts: Record<string, number>, sourceRoleCounts:Record<string,number>, importUsageCounts:Record<string,number>, productValueCount:number, evidence: Array<{from:string,to:string,kind:string,sourceRole:string,importUsage:string}>, evidenceLimited: boolean }>,
  * }}
  */
 export function inferImports(rootPath, options = {}) {
@@ -183,7 +195,19 @@ export function inferImports(rootPath, options = {}) {
 
     for (const match of content.matchAll(IMPORT_RE)) {
       const spec = match[1];
-      classify(spec, file, dir, rootPath, edges, externalImports, unresolved, importKindOf(match[0]), pathAliases, ignore);
+      classify(
+        spec,
+        file,
+        dir,
+        rootPath,
+        edges,
+        externalImports,
+        unresolved,
+        importKindOf(match[0]),
+        pathAliases,
+        ignore,
+        importUsageOf(match[0]),
+      );
     }
     for (const match of content.matchAll(SIDE_IMPORT_RE)) {
       // SIDE_IMPORT_RE matches a superset of IMPORT_RE in some cases —
@@ -210,13 +234,27 @@ export function inferImports(rootPath, options = {}) {
     const bucket = moduleCount.get(key) ?? {
       count: 0,
       kindCounts: new Map(),
+      sourceRoleCounts: zeroCounts(IMPORT_SOURCE_ROLE_VALUES),
+      importUsageCounts: zeroCounts(IMPORT_USAGE_VALUES),
+      productValueCount: 0,
       evidence: [],
     };
     bucket.count += 1;
     bucket.kindCounts.set(e.kind, (bucket.kindCounts.get(e.kind) ?? 0) + 1);
-    if (bucket.evidence.length < MODULE_EDGE_EVIDENCE_LIMIT) {
-      bucket.evidence.push({ from: e.from, to: e.to, kind: e.kind });
+    bucket.sourceRoleCounts[e.sourceRole] += 1;
+    bucket.importUsageCounts[e.importUsage] += 1;
+    if (e.sourceRole === 'production' && e.importUsage === 'value') {
+      bucket.productValueCount += 1;
     }
+    bucket.evidence.push({
+      from: e.from,
+      to: e.to,
+      kind: e.kind,
+      sourceRole: e.sourceRole,
+      importUsage: e.importUsage,
+    });
+    bucket.evidence.sort(compareImportEvidence);
+    bucket.evidence.splice(MODULE_EDGE_EVIDENCE_LIMIT);
     moduleCount.set(key, bucket);
   }
   const moduleEdges = [...moduleCount.entries()].map(([key, bucket]) => {
@@ -228,6 +266,9 @@ export function inferImports(rootPath, options = {}) {
       kindCounts: Object.fromEntries(
         [...bucket.kindCounts.entries()].sort(([a], [b]) => a.localeCompare(b)),
       ),
+      sourceRoleCounts: bucket.sourceRoleCounts,
+      importUsageCounts: bucket.importUsageCounts,
+      productValueCount: bucket.productValueCount,
       evidence: bucket.evidence,
       evidenceLimited: bucket.count > bucket.evidence.length,
     };
@@ -273,9 +314,21 @@ function discoverRootPythonPackages(rootPath, ignore) {
 
 function parsePythonImports(content) {
   const imports = [];
-  for (const rawLine of pythonLogicalLines(content)) {
-    const line = rawLine.trim();
+  let typeCheckingIndent = null;
+  for (const logicalLine of pythonLogicalLines(content)) {
+    const line = logicalLine.text;
     if (!line) continue;
+    if (typeCheckingIndent !== null && logicalLine.indent <= typeCheckingIndent) {
+      typeCheckingIndent = null;
+    }
+    if (/^if\s+\(?(?:typing\.)?TYPE_CHECKING\)?\s*:/.test(line)) {
+      typeCheckingIndent = logicalLine.indent;
+      continue;
+    }
+    const importUsage =
+      typeCheckingIndent !== null && logicalLine.indent > typeCheckingIndent
+        ? 'type_only'
+        : 'value';
     const fromMatch = line.match(
       /^from\s+([A-Za-z_][\w.]*|\.+[\w.]*)\s+import\s+(.+)$/,
     );
@@ -283,6 +336,7 @@ function parsePythonImports(content) {
       imports.push({
         module: fromMatch[1],
         names: pythonImportedNames(fromMatch[2]),
+        importUsage,
       });
       continue;
     }
@@ -290,7 +344,7 @@ function parsePythonImports(content) {
     if (!importMatch) continue;
     for (const item of importMatch[1].split(',')) {
       const moduleName = item.trim().split(/\s+as\s+/i)[0]?.trim();
-      if (moduleName) imports.push({ module: moduleName, names: [] });
+      if (moduleName) imports.push({ module: moduleName, names: [], importUsage });
     }
   }
   return imports;
@@ -307,6 +361,7 @@ function pythonImportedNames(value) {
 function pythonLogicalLines(content) {
   const lines = [];
   let buffer = '';
+  let bufferIndent = 0;
   let parenthesisDepth = 0;
   let tripleQuote = null;
   for (const rawLine of content.split(/\r?\n/)) {
@@ -316,19 +371,23 @@ function pythonLogicalLines(content) {
     });
     const continued = /\\\s*$/.test(code);
     const fragment = code.replace(/\\\s*$/, '').trim();
-    if (fragment) buffer = buffer ? `${buffer} ${fragment}` : fragment;
+    if (fragment) {
+      if (!buffer) bufferIndent = rawLine.match(/^[\t ]*/)?.[0].length ?? 0;
+      buffer = buffer ? `${buffer} ${fragment}` : fragment;
+    }
     parenthesisDepth += [...code].reduce(
       (depth, character) =>
         character === '(' ? depth + 1 : character === ')' ? depth - 1 : depth,
       0,
     );
     if (!tripleQuote && parenthesisDepth <= 0 && !continued) {
-      if (buffer) lines.push(buffer);
+      if (buffer) lines.push({ text: buffer, indent: bufferIndent });
       buffer = '';
+      bufferIndent = 0;
       parenthesisDepth = 0;
     }
   }
-  if (!tripleQuote && buffer) lines.push(buffer);
+  if (!tripleQuote && buffer) lines.push({ text: buffer, indent: bufferIndent });
   return lines;
 }
 
@@ -418,6 +477,8 @@ function classifyPythonImport(
           from: relative(rootPath, file),
           to: targetPath,
           kind: 'static',
+          sourceRole: sourceRoleOf(relative(rootPath, file)),
+          importUsage: pythonImport.importUsage ?? 'unknown',
         });
       }
     }
@@ -539,7 +600,47 @@ function importKindOf(rawMatch) {
   return 'static';
 }
 
-function classify(spec, file, dir, rootPath, edges, external, unresolved, kindOverride, pathAliases = [], ignore = DEFAULT_IGNORE) {
+function importUsageOf(rawMatch) {
+  const trimmed = rawMatch.trimStart();
+  if (/^(?:import|export)\s+type\b/.test(trimmed)) return 'type_only';
+  const clause = trimmed.match(/^(?:import|export)\s*\{([\s\S]*?)\}\s*from\b/)?.[1];
+  if (clause) {
+    const bindings = clause.split(',').map((binding) => binding.trim()).filter(Boolean);
+    if (bindings.length > 0 && bindings.every((binding) => /^type\b/.test(binding))) {
+      return 'type_only';
+    }
+  }
+  return 'value';
+}
+
+function sourceRoleOf(filePath) {
+  const normalized = filePath.replaceAll('\\', '/').toLowerCase();
+  const segments = normalized.split('/');
+  if (segments.some((segment) => ['test', 'tests', '__tests__'].includes(segment))) {
+    return 'test';
+  }
+  const fileName = segments.at(-1) ?? '';
+  const stem = fileName.replace(/\.(?:[cm]?[jt]sx?|py)$/i, '');
+  if (/\.(?:test|spec)$/.test(stem) || /^test_.+/.test(stem) || /.+_test$/.test(stem)) {
+    return 'test';
+  }
+  return 'production';
+}
+
+function zeroCounts(values) {
+  return Object.fromEntries(values.map((value) => [value, 0]));
+}
+
+function compareImportEvidence(a, b) {
+  const priority = (row) =>
+    row.sourceRole === 'production' && row.importUsage === 'value' ? 0 : 1;
+  return priority(a) - priority(b) ||
+    a.from.localeCompare(b.from) ||
+    a.to.localeCompare(b.to) ||
+    a.kind.localeCompare(b.kind);
+}
+
+function classify(spec, file, dir, rootPath, edges, external, unresolved, kindOverride, pathAliases = [], ignore = DEFAULT_IGNORE, importUsage = 'value') {
   const kind = kindOverride ?? 'static';
   if (!spec) {
     unresolved.push({ from: relative(rootPath, file), spec, reason: 'empty' });
@@ -554,6 +655,8 @@ function classify(spec, file, dir, rootPath, edges, external, unresolved, kindOv
         from: relative(rootPath, file),
         to: resolvedRelative,
         kind,
+        sourceRole: sourceRoleOf(relative(rootPath, file)),
+        importUsage,
       });
     } else {
       unresolved.push({
@@ -573,6 +676,8 @@ function classify(spec, file, dir, rootPath, edges, external, unresolved, kindOv
         from: relative(rootPath, file),
         to: resolvedRelative,
         kind,
+        sourceRole: sourceRoleOf(relative(rootPath, file)),
+        importUsage,
       });
       return;
     }

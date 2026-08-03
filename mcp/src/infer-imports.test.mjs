@@ -164,6 +164,42 @@ test('Python import parsing handles package-relative multiline imports without d
   }
 });
 
+test('Python TYPE_CHECKING imports stay type-only while value imports remain product evidence', () => {
+  const root = withRepo((r) => {
+    mkdirSync(join(r, 'pkg'), { recursive: true });
+    writeFileSync(join(r, 'pkg', '__init__.py'), '');
+    writeFileSync(join(r, 'pkg', 'models.py'), 'class Model: pass\n');
+    writeFileSync(join(r, 'pkg', 'runtime.py'), 'VALUE = 1\n');
+    writeFileSync(
+      join(r, 'pkg', 'client.py'),
+      [
+        'from typing import TYPE_CHECKING',
+        'if TYPE_CHECKING:',
+        '    from pkg import models',
+        'from pkg import runtime',
+      ].join('\n'),
+    );
+  });
+  try {
+    const result = inferImports(root);
+    const typeEdge = result.edges.find((edge) => edge.to === 'pkg/models.py');
+    const valueEdge = result.edges.find((edge) => edge.to === 'pkg/runtime.py');
+
+    assert.equal(typeEdge?.importUsage, 'type_only');
+    assert.equal(valueEdge?.importUsage, 'value');
+    assert.equal(
+      result.moduleEdges.find((edge) => edge.to === 'elements/models')?.productValueCount,
+      0,
+    );
+    assert.equal(
+      result.moduleEdges.find((edge) => edge.to === 'elements/runtime')?.productValueCount,
+      1,
+    );
+  } finally {
+    rmSync(root, { recursive: true, force: true });
+  }
+});
+
 test('repository-escaping Python package symlinks are not scanned', () => {
   const outside = withRepo((r) => {
     writeFileSync(join(r, '__init__.py'), '');
@@ -405,9 +441,9 @@ test('dynamic import + require + reexport detected', () => {
       require: 1,
     });
     assert.deepEqual(moduleEdge?.evidence, [
-      { from: 'src/a/index.ts', to: 'src/b/x.ts', kind: 'dynamic' },
-      { from: 'src/a/index.ts', to: 'src/b/x.ts', kind: 'require' },
-      { from: 'src/a/index.ts', to: 'src/b/x.ts', kind: 'reexport' },
+      { from: 'src/a/index.ts', to: 'src/b/x.ts', kind: 'dynamic', sourceRole: 'production', importUsage: 'value' },
+      { from: 'src/a/index.ts', to: 'src/b/x.ts', kind: 'reexport', sourceRole: 'production', importUsage: 'value' },
+      { from: 'src/a/index.ts', to: 'src/b/x.ts', kind: 'require', sourceRole: 'production', importUsage: 'value' },
     ]);
     assert.equal(moduleEdge?.evidenceLimited, false);
   } finally {
@@ -440,11 +476,15 @@ test('module-level edge collapse (FSD features/ — capability folder slug, anal
         from: 'src/features/auth/index.ts',
         to: 'src/features/billing/index.ts',
         kind: 'static',
+        sourceRole: 'production',
+        importUsage: 'value',
       },
       {
         from: 'src/features/auth/index.ts',
         to: 'src/features/billing/token.ts',
         kind: 'static',
+        sourceRole: 'production',
+        importUsage: 'value',
       },
     ]);
     assert.equal(e.evidenceLimited, false);
@@ -474,6 +514,60 @@ test('module edge evidence receipt is bounded and declares truncation', () => {
     assert.equal(edge?.count, 6);
     assert.equal(edge?.evidence.length, 5);
     assert.equal(edge?.evidenceLimited, true);
+  } finally {
+    rmSync(root, { recursive: true, force: true });
+  }
+});
+
+test('module edge qualifies product value evidence separately from test-only type evidence', () => {
+  const root = withRepo((r) => {
+    mkdirSync(join(r, 'src/features/source'), { recursive: true });
+    mkdirSync(join(r, 'src/features/target'), { recursive: true });
+    writeFileSync(join(r, 'src/features/target/index.ts'), 'export const target = true;\nexport type Target = boolean;\n');
+    writeFileSync(
+      join(r, 'src/features/source/index.ts'),
+      'import { target } from "../target/index";\nexport const source = target;\n',
+    );
+    writeFileSync(
+      join(r, 'src/features/source/index.test.ts'),
+      'import type { Target } from "../target/index";\nexport const fixture: Target = true;\n',
+    );
+  });
+  try {
+    const edge = inferImports(root).moduleEdges.find(
+      (row) =>
+        row.from === 'capabilities/source' &&
+        row.to === 'capabilities/target',
+    );
+
+    assert.equal(edge?.count, 2, 'fixture must exercise both product and test evidence');
+    assert.deepEqual(edge?.sourceRoleCounts, {
+      production: 1,
+      test: 1,
+      unknown: 0,
+    });
+    assert.deepEqual(edge?.importUsageCounts, {
+      value: 1,
+      type_only: 1,
+      unknown: 0,
+    });
+    assert.equal(edge?.productValueCount, 1);
+    assert.deepEqual(edge?.evidence, [
+      {
+        from: 'src/features/source/index.ts',
+        to: 'src/features/target/index.ts',
+        kind: 'static',
+        sourceRole: 'production',
+        importUsage: 'value',
+      },
+      {
+        from: 'src/features/source/index.test.ts',
+        to: 'src/features/target/index.ts',
+        kind: 'static',
+        sourceRole: 'test',
+        importUsage: 'type_only',
+      },
+    ]);
   } finally {
     rmSync(root, { recursive: true, force: true });
   }
@@ -523,11 +617,16 @@ test('module-level edge collapse (workspace packages — analyzer element slug p
         to: 'elements/shared',
         count: 1,
         kindCounts: { static: 1 },
+        sourceRoleCounts: { production: 1, test: 0, unknown: 0 },
+        importUsageCounts: { value: 1, type_only: 0, unknown: 0 },
+        productValueCount: 1,
         evidence: [
           {
             from: 'apps/api/src/index.ts',
             to: 'packages/shared/src/index.ts',
             kind: 'static',
+            sourceRole: 'production',
+            importUsage: 'value',
           },
         ],
         evidenceLimited: false,
@@ -537,11 +636,16 @@ test('module-level edge collapse (workspace packages — analyzer element slug p
         to: 'elements/shared',
         count: 1,
         kindCounts: { static: 1 },
+        sourceRoleCounts: { production: 1, test: 0, unknown: 0 },
+        importUsageCounts: { value: 1, type_only: 0, unknown: 0 },
+        productValueCount: 1,
         evidence: [
           {
             from: 'packages/memory/src/index.ts',
             to: 'packages/shared/src/index.ts',
             kind: 'static',
+            sourceRole: 'production',
+            importUsage: 'value',
           },
         ],
         evidenceLimited: false,

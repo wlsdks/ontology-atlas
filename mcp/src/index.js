@@ -130,7 +130,9 @@ import { analyzeRepoStructure } from './analyze.mjs';
 import { buildAbsorptionPlan, buildSlimPointer } from './absorb.mjs';
 import {
   IMPORT_EDGE_KIND_VALUES,
+  IMPORT_SOURCE_ROLE_VALUES,
   IMPORT_UNRESOLVED_REASON_VALUES,
+  IMPORT_USAGE_VALUES,
   inferImports,
   listSourceFiles,
 } from './infer-imports.mjs';
@@ -1469,7 +1471,7 @@ All node rows carry \`{uid, slug, ...}\`: UID is permanent identity, slug is the
 
 ## Import evidence is not an approved relation
 
-\`infer_imports.moduleEdges\` are observed source evidence only. Each row includes a bounded exact file-edge receipt. Never convert a row directly into \`depends_on\`, never fabricate missing endpoints from its folder slug, and never emit or execute a batch write merely because the import exists. First read both ontology concepts, verify the observed direction, explain why that code fact establishes a meaning-level dependency, and ask the user. Only after explicit approval may you write one relation with \`why\`. A missing rationale or approval remains \`rationale_review_required\`; unknown is preferable to invented dependency completeness.
+\`infer_imports.moduleEdges\` are observed source evidence only. Each row qualifies the whole edge with \`sourceRoleCounts\`, \`importUsageCounts\`, and the joint \`productValueCount\`; bounded receipts carry \`sourceRole\` and \`importUsage\`. \`value\` means “not explicit type-only syntax”, not proven runtime execution. If \`productValueCount\` is zero, keep test/type evidence visible but do not ask the person to approve a product \`depends_on\` from that import alone — require separate product meaning evidence. Never convert a row directly into \`depends_on\`, never fabricate missing endpoints from its folder slug, and never emit or execute a batch write merely because the import exists. First read both ontology concepts, verify the observed direction, explain why that code fact establishes a meaning-level dependency, and ask the user. Only after explicit approval may you write one relation with \`why\`. A missing rationale or approval remains \`rationale_review_required\`; unknown is preferable to invented dependency completeness.
 
 ## Impact truthfulness
 
@@ -3449,13 +3451,13 @@ const TOOLS = [
       'R17 (autonomous ingest deeper) — walk TS/JS files in a code repo and infer file-level + module-level import edges. It also walks bounded root Python packages. ' +
       'side effect 0 (vault frontmatter NOT modified). `moduleEdges` are source-backed review candidates, never self-approving semantic `depends_on` relations. ' +
       'For the approval workflow, start with `reviewMode:"next"`: it returns exactly one compact, non-writing `nextRelationReview:v1` packet plus a stateless cursor instead of the full import graph. ' +
-      'Each module edge includes `kindCounts` plus a bounded exact file-edge `evidence` receipt so the agent can inspect source direction before asking whether the semantic dependency is true. ' +
+      'Each module edge includes whole-edge source-role/import-usage counts, `productValueCount`, `kindCounts`, and a bounded exact file-edge `evidence` receipt. Test-only or type-only evidence stays visible but must not be framed as a product depends_on approval question without separate product meaning evidence. ' +
       'Detects:\n' +
       '  - relative imports (./, ../) → resolved to file paths\n' +
       '  - dynamic import() / require() / export ... from\n' +
       '  - bare side-effect imports (import "X")\n' +
       '  - apps/* and packages/* workspace imports collapse to analyzer-compatible element slugs\n' +
-      '  - bounded static Python import / from ... import statements in root packages with __init__.py; source is parsed as text and never executed\n' +
+      '  - bounded static Python import / from ... import statements in root packages with __init__.py; imports nested under an explicit TYPE_CHECKING guard are type_only; source is parsed as text and never executed\n' +
       '  - external package imports listed separately\n' +
       '  - tsconfig.json compilerOptions.paths aliases first, then fallback common @/* aliases → resolved to internal files when the target exists; otherwise unresolved as alias-not-found\n\n' +
       'Use after analyze_repo_structure to pull *real* dependency edges from the code, not just suggestedRelations heuristics. ' +
@@ -3524,8 +3526,10 @@ const TOOLS = [
                 type: 'string',
                 enum: IMPORT_EDGE_KIND_VALUES,
               },
+              sourceRole: { type: 'string', enum: IMPORT_SOURCE_ROLE_VALUES },
+              importUsage: { type: 'string', enum: IMPORT_USAGE_VALUES },
             },
-            required: ['from', 'to', 'kind'],
+            required: ['from', 'to', 'kind', 'sourceRole', 'importUsage'],
             additionalProperties: false,
           },
         },
@@ -3579,6 +3583,29 @@ const TOOLS = [
                 description:
                   `Import kind histogram for this collapsed module edge. Allowed keys: ${IMPORT_EDGE_KIND_DESCRIPTION}.`,
               },
+              sourceRoleCounts: {
+                type: 'object',
+                properties: Object.fromEntries(
+                  IMPORT_SOURCE_ROLE_VALUES.map((role) => [role, { type: 'integer', minimum: 0 }]),
+                ),
+                required: IMPORT_SOURCE_ROLE_VALUES,
+                additionalProperties: false,
+                description: 'Whole-edge importer role histogram using deterministic path conventions.',
+              },
+              importUsageCounts: {
+                type: 'object',
+                properties: Object.fromEntries(
+                  IMPORT_USAGE_VALUES.map((usage) => [usage, { type: 'integer', minimum: 0 }]),
+                ),
+                required: IMPORT_USAGE_VALUES,
+                additionalProperties: false,
+                description: 'Whole-edge import usage histogram. `value` means the import is not explicit type-only syntax; it does not claim runtime execution.',
+              },
+              productValueCount: {
+                type: 'integer',
+                minimum: 0,
+                description: 'Whole-edge joint count where sourceRole=production and importUsage=value. Never derive this intersection from marginal histograms.',
+              },
               evidence: {
                 type: 'array',
                 maxItems: 5,
@@ -3589,8 +3616,10 @@ const TOOLS = [
                     from: NON_BLANK_STRING_SCHEMA,
                     to: NON_BLANK_STRING_SCHEMA,
                     kind: { type: 'string', enum: IMPORT_EDGE_KIND_VALUES },
+                    sourceRole: { type: 'string', enum: IMPORT_SOURCE_ROLE_VALUES },
+                    importUsage: { type: 'string', enum: IMPORT_USAGE_VALUES },
                   },
-                  required: ['from', 'to', 'kind'],
+                  required: ['from', 'to', 'kind', 'sourceRole', 'importUsage'],
                   additionalProperties: false,
                 },
               },
@@ -3599,7 +3628,17 @@ const TOOLS = [
                 description: 'True when more file edges exist than the bounded evidence receipt includes.',
               },
             },
-            required: ['from', 'to', 'count', 'kindCounts', 'evidence', 'evidenceLimited'],
+            required: [
+              'from',
+              'to',
+              'count',
+              'kindCounts',
+              'sourceRoleCounts',
+              'importUsageCounts',
+              'productValueCount',
+              'evidence',
+              'evidenceLimited',
+            ],
             additionalProperties: false,
           },
         },
@@ -3707,12 +3746,49 @@ const TOOLS = [
                       from: NON_BLANK_STRING_SCHEMA,
                       to: NON_BLANK_STRING_SCHEMA,
                       kind: { type: 'string', enum: IMPORT_EDGE_KIND_VALUES },
+                      sourceRole: { type: 'string', enum: IMPORT_SOURCE_ROLE_VALUES },
+                      importUsage: { type: 'string', enum: IMPORT_USAGE_VALUES },
                     },
-                    required: ['from', 'to', 'kind'],
+                    required: ['from', 'to', 'kind', 'sourceRole', 'importUsage'],
                     additionalProperties: false,
                   },
                 },
                 sourceEvidenceLimited: { type: 'boolean' },
+                evidenceQualification: {
+                  type: 'object',
+                  properties: {
+                    basis: { type: 'string', enum: ['whole_module_edge'] },
+                    sourceRoleCounts: {
+                      type: 'object',
+                      properties: Object.fromEntries(
+                        IMPORT_SOURCE_ROLE_VALUES.map((role) => [role, { type: 'integer', minimum: 0 }]),
+                      ),
+                      required: IMPORT_SOURCE_ROLE_VALUES,
+                      additionalProperties: false,
+                    },
+                    importUsageCounts: {
+                      type: 'object',
+                      properties: Object.fromEntries(
+                        IMPORT_USAGE_VALUES.map((usage) => [usage, { type: 'integer', minimum: 0 }]),
+                      ),
+                      required: IMPORT_USAGE_VALUES,
+                      additionalProperties: false,
+                    },
+                    productValueCount: { type: 'integer', minimum: 0 },
+                    status: {
+                      type: 'string',
+                      enum: ['product_value_observed', 'product_value_not_observed'],
+                    },
+                  },
+                  required: [
+                    'basis',
+                    'sourceRoleCounts',
+                    'importUsageCounts',
+                    'productValueCount',
+                    'status',
+                  ],
+                  additionalProperties: false,
+                },
               },
               required: [
                 'from',
@@ -3721,6 +3797,7 @@ const TOOLS = [
                 'importCount',
                 'sourceEvidence',
                 'sourceEvidenceLimited',
+                'evidenceQualification',
               ],
               additionalProperties: false,
             },
@@ -3742,11 +3819,18 @@ const TOOLS = [
             decision: {
               type: 'object',
               properties: {
+                questionEligibility: {
+                  type: 'string',
+                  enum: [
+                    'eligible_after_semantic_review',
+                    'additional_product_meaning_evidence_required',
+                  ],
+                },
                 required: { type: 'array', items: NON_BLANK_STRING_SCHEMA, minItems: 1 },
                 ask: NON_BLANK_STRING_SCHEMA,
                 stopWhen: { type: 'array', items: NON_BLANK_STRING_SCHEMA, minItems: 1 },
               },
-              required: ['required', 'ask', 'stopWhen'],
+              required: ['questionEligibility', 'required', 'ask', 'stopWhen'],
               additionalProperties: false,
             },
             cursor: {
