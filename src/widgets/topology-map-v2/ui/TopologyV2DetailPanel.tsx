@@ -451,8 +451,22 @@ const ACTION_TILE_LEADING = "leading-[1.1]";
  * 데스크톱 능력이 칸을 하나 더 만들 때 이 스트립이 좁아진다는 사실이
  * `surfaces.md` 가 말하는 "설치 앱 실측만 인정" 의 실제 사례다.
  */
+/**
+ * 액션 타일 — **누를 수 있게 생겨야 한다** (2026-08-03 소유자 실보고:
+ * *"이런거는 버튼이 테두리가 예쁘게 있어야 구분이 되는거 아닐까?"*).
+ *
+ * 종전에는 테두리도 안정 배경도 없이 아이콘 + 글자만 떠 있었다. 그래서 바로
+ * 위의 「연결된 항목 19 · 근거 문서 1」 같은 **읽는 텍스트와 구분되지 않았다** —
+ * 호버해야만 배경이 생기니, 누를 수 있다는 사실을 마우스를 얹어 봐야 알았다.
+ *
+ * 앞선 정비에서 7칸을 3층으로 접었는데 **밀도만 보고 어포던스를 안 봤다.**
+ *
+ * 값은 새로 만들지 않았다 — 같은 패널의 엣지 버전(`TopologyV2EdgePanel`)이
+ * 이미 `--topology-v2-panel-action-{border,surface}` 로 테두리를 그린다. 그
+ * 토큰들은 정의돼 있었고 이 타일만 안 쓰고 있었다.
+ */
 const ACTION_TILE_CLASS =
-  `flex flex-1 flex-col items-center justify-start gap-1.5 rounded-[var(--topology-v2-panel-row-radius)] px-1 py-1.5 text-center text-label font-medium ${ACTION_TILE_LEADING} [word-break:keep-all] text-[color:var(--topology-v2-panel-text-tertiary)] transition-colors hover:bg-[color:var(--topology-v2-panel-row-hover)] hover:text-[color:var(--topology-v2-panel-text-secondary)] active:bg-[color:var(--topology-v2-panel-row-active)]`;
+  `flex flex-1 flex-col items-center justify-start gap-1.5 rounded-[var(--topology-v2-panel-row-radius)] border border-[color:var(--topology-v2-panel-action-border)] bg-[color:var(--topology-v2-panel-action-surface)] px-1 py-1.5 text-center text-label font-medium ${ACTION_TILE_LEADING} [word-break:keep-all] text-[color:var(--topology-v2-panel-text-tertiary)] transition-colors hover:border-[color:var(--topology-v2-panel-domain-border-hover)] hover:bg-[color:var(--topology-v2-panel-row-hover)] hover:text-[color:var(--topology-v2-panel-text-secondary)] active:bg-[color:var(--topology-v2-panel-row-active)]`;
 
 /**
  * 관계 그룹 헤더의 방향 글리프 — 승인된 시안(mockup-panel-detail)의 SVG 를
