@@ -3890,6 +3890,11 @@
         },
         {
           "depth": 2,
+          "text": "2026-08-03 — README가 실제 화면과 Windows 베타를 먼저 보여준다",
+          "slug": "2026-08-03-readme가-실제-화면과-windows-베타를-먼저-보여준다"
+        },
+        {
+          "depth": 2,
           "text": "2026-08-03 — 디자인 시스템이 「자산 + 게이트」로 서고, 계기가 생겼다",
           "slug": "2026-08-03-디자인-시스템이-자산-게이트로-서고-계기가-생겼다"
         },
@@ -6099,8 +6104,8 @@
           "slug": "2026-07-26-첫-만남은-쇼핑몰부터"
         }
       ],
-      "excerpt": "Major change history. Code commit messages answer why; this file answers when / which surface changed. Focused on user-visible changes, not PR-level granularity. Newest at the top. Entries stay date-based; the app version reached v1.0.0 on 2026-07-27, so a release tag now carries the semver promise instead. 지금까지 이 앱의 화",
-      "wordCount": 64578,
+      "excerpt": "Major change history. Code commit messages answer why; this file answers when / which surface changed. Focused on user-visible changes, not PR-level granularity. Newest at the top. Entries stay date-based; the app version reached v1.0.0 on 2026-07-27, so a release tag now carries the semver promise instead. README의 첫 화",
+      "wordCount": 64701,
       "updatedAt": "2026-08-03",
       "linksOut": [
         "audits/CASE-STUDY-AGENTS-MD-DRIFT",
@@ -6132,6 +6137,16 @@
         },
         {
           "depth": 2,
+          "text": "2026-08-03 — README는 실제 화면을 먼저 증명하고, 기술 계약은 짧은 경계와 권위 가이드로 나눈다",
+          "slug": "2026-08-03-readme는-실제-화면을-먼저-증명하고-기술-계약은-짧은-경계와-권위-가이드로-나눈다"
+        },
+        {
+          "depth": 3,
+          "text": "먼저 — 세 줄",
+          "slug": "먼저-세-줄"
+        },
+        {
+          "depth": 2,
           "text": "2026-08-03 — 같은 것을 여섯 이름으로 부르던 화면을 「폴더」 하나로 · 잠긴 기능을 고장으로 읽게 하던 신호를 연결 상태에 묶는다",
           "slug": "2026-08-03-같은-것을-여섯-이름으로-부르던-화면을-폴더-하나로-잠긴-기능을-고장으로-읽게-하던-신호를-연결-상태에-묶는다"
         },
@@ -6148,7 +6163,7 @@
         {
           "depth": 3,
           "text": "먼저 — 세 줄",
-          "slug": "먼저-세-줄"
+          "slug": "먼저-세-줄-2"
         },
         {
           "depth": 2,
@@ -6188,7 +6203,7 @@
         {
           "depth": 3,
           "text": "먼저 — 세 줄",
-          "slug": "먼저-세-줄-2"
+          "slug": "먼저-세-줄-3"
         },
         {
           "depth": 2,
@@ -6203,7 +6218,7 @@
         {
           "depth": 3,
           "text": "먼저 — 세 줄",
-          "slug": "먼저-세-줄-3"
+          "slug": "먼저-세-줄-4"
         },
         {
           "depth": 2,
@@ -6213,7 +6228,7 @@
         {
           "depth": 3,
           "text": "먼저 — 세 줄",
-          "slug": "먼저-세-줄-4"
+          "slug": "먼저-세-줄-5"
         },
         {
           "depth": 2,
@@ -6228,7 +6243,7 @@
         {
           "depth": 3,
           "text": "먼저 — 세 줄",
-          "slug": "먼저-세-줄-5"
+          "slug": "먼저-세-줄-6"
         },
         {
           "depth": 2,
@@ -6682,7 +6697,7 @@
         }
       ],
       "excerpt": "이 파일은 결정과 그때 진 반대 의견을 남긴다. docs/CHANGELOG.md 는 무엇이 언제 바뀌었나를 답하고, 이 파일은 왜 그렇게 정했고, 무엇을 걸었나를 답한다. 최신이 위. 기록은 덧붙이기만 한다 — 지난 기록을 고치지 않는다. 판단이 바뀌었으면 새 기록을 쓰고 옛 기록을 뒤집힘 으로 표시한다. 틀린 기록도 자산이다. 1. 소집 전에 읽는다. 카운슬을 열기 전(그리고 단독 PO 패스를 쓰기 전) 같은 표면 · 같은 질문에 대한 선행 결정이 있는지 먼저 본다. 있으면 새 패스는 그것을 ① 여전히 유효하다고 인용하거나 ② 명시적으로 뒤집는다. 조용히 다시 결정",
-      "wordCount": 49578,
+      "wordCount": 50043,
       "updatedAt": "2026-08-03",
       "linksOut": [
         "slug"
