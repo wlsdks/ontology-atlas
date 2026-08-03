@@ -13,18 +13,23 @@ export interface DocsHeaderTileProps
 }
 
 /**
- * 문서함 헤더 전용 34×34px 아이콘 타일 — design-prescription.md ③-2 "타일
- * 규격" 처방(34px · radius-inner 7px · border-soft · hover
- * var(--color-indigo-line-a32) · active = --chrome-active-surface/-border).
+ * 문서함 헤더의 정사각 아이콘 타일 — 크기는 `--chrome-tile-size`(36px),
+ * 반경은 `--chrome-radius-inner`, 보더/호버/active 는 chrome 토큰.
  *
- * `shared/ui/ChromeTile` 와 의도적으로 별개다 — 그 컴포넌트는
- * `--chrome-tile-size`(44px, topology 플로팅 컨트롤 전용)를 하드 고정해 헤더의
- * 밀도 요구(34px)에 맞지 않는다(implementation-contract.md §1 각주). 같은
- * chrome 시각 문법(라운드·보더·호버·active 토큰)만 공유하는 문서함 헤더
- * 로컬 variant.
+ * ## 왜 자기 크기 토큰이 없나 (2026-08-03)
  *
- * 크기는 `--docs-header-tile-size`(34px) 토큰 참조 — 이전엔 `h-[34px]
- * w-[34px]` 리터럴이었다(Guardian 이월 P3, 슬라이스 B 에서 토큰 승격).
+ * 있었다 — `--docs-header-tile-size`(34px). 그리고 그 34 는 **설계값이 아니라
+ * 화석**이었다. 이 주석의 옛 판이 근거를 그대로 적어 놨다: *"`ChromeTile` 은
+ * `--chrome-tile-size`(**44px**)를 하드 고정해 헤더의 밀도 요구(34px)에 맞지
+ * 않는다."* 그런데 크롬 타일은 2026-07-23 에 **36px 로 내려왔다**(소유자 3차
+ * 보고 *"딱봐도 크다"*). 34 의 유일한 근거가 사라진 날 34 를 다시 유도한
+ * 사람은 없었고, 같은 역할에 두 값 · 두 coarse 승격 규칙이 남았다.
+ *
+ * 그래서 이제 **정사각 아이콘 타일의 치수는 하나다**. 이 파일이 `ChromeTile`
+ * 과 여전히 별개인 이유는 크기가 아니라 **반경**이다 — 헤더 안에 앉는 타일은
+ * `--chrome-radius-inner`, 지도 위에 떠 있는 타일은 `--chrome-radius`.
+ *
+ * 원장(반증 조건 포함): `docs/DECISIONS.md` 2026-08-03 「타일 치수는 하나다」.
  */
 export const DocsHeaderTile = forwardRef<HTMLButtonElement, DocsHeaderTileProps>(
   function DocsHeaderTile(
@@ -38,7 +43,7 @@ export const DocsHeaderTile = forwardRef<HTMLButtonElement, DocsHeaderTileProps>
         title={title}
         aria-label={ariaLabelProp ?? title}
         className={cn(
-          "inline-flex h-[var(--docs-header-tile-size)] w-[var(--docs-header-tile-size)] flex-none items-center justify-center rounded-[var(--chrome-radius-inner)] border text-[color:var(--color-text-tertiary)] transition-colors disabled:cursor-not-allowed disabled:opacity-45",
+          "inline-flex size-[var(--chrome-tile-size)] flex-none items-center justify-center rounded-[var(--chrome-radius-inner)] border text-[color:var(--color-text-tertiary)] transition-colors disabled:cursor-not-allowed disabled:opacity-45",
           active
             ? "border-[color:var(--chrome-active-border)] bg-[color:var(--chrome-active-surface)] text-[color:var(--color-text-primary)]"
             : "border-[color:var(--color-border-soft)] hover:border-[color:var(--color-indigo-line-a32)] hover:text-[color:var(--color-text-primary)]",

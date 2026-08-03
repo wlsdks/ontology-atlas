@@ -35,8 +35,12 @@ export { EmptyState } from './empty-state';
 export { EvidenceOnlyBadge, type EvidenceOnlyBadgeProps } from './evidence-only-badge';
 export { Select, type SelectOption, type SelectProps } from './select';
 export { InlineEditable } from './inline-editable';
-export { ChipListEditor } from './chip-list-editor';
-export { LinkListEditor, type LinkItem } from './link-list-editor';
+/*
+ * (`ChipListEditor` · `LinkListEditor` 의 export 는 2026-08-03 에 지웠다 —
+ * 프로덕션 소비처가 0인 채로 `shared/ui` 의 공개 표면에 서 있었고, 이 저장소가
+ * 같은 실패를 겪은 `Card`/`Badge`/`DetailCard` 와 증상까지 같았다. 배경과
+ * 반증 조건: `docs/DECISIONS.md` 2026-08-03 「죽은 프리미티브 둘」.)
+ */
 export { Tooltip, TooltipProvider, TooltipContent } from './tooltip';
 export { StaggeredFadeIn } from './staggered-fade-in';
 export { HighlightedText } from './highlighted-text';
