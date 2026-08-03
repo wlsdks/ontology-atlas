@@ -2437,8 +2437,19 @@ pub fn run() {
                                     return true;
                                   };
                                   const openComposer = (attempt = 0) => {
-                                    const toggle = document.querySelector('[data-testid="topology-create-node-toggle"]');
+                                    /*
+                                     * 상단 「+ 개념」 필은 2026-08-03 에 제거됐다
+                                     * (빈 캔버스 우클릭이 그 자리를 대신한다).
+                                     * 프로브는 우클릭을 흉내 내지 않고 **딥링크**
+                                     * (`?create=concept`)로 연다 — 그 경로는
+                                     * `createNodeIntent` 로 이미 계약돼 있고,
+                                     * 캔버스 좌표에 의존하지 않아 창 크기와 무관하게
+                                     * 재현된다.
+                                     */
                                     const panel = document.querySelector('[data-testid="topology-create-node-panel"]');
+                                    if (!visible(panel)) {
+                                      requestCreateRouteIntent();
+                                    }
                                     if (visible(panel)) {
                                       if (!result.shortcutsAttempted) {
                                         result.shortcutsAttempted = true;
@@ -3102,7 +3113,6 @@ pub fn run() {
                               const topologySearchActionLaneStyle = topologySearchActionLane
                                 ? getComputedStyle(topologySearchActionLane)
                                 : null;
-                              const topologyTopCreateButton = document.querySelector('[data-testid="topology-create-node-toggle"]');
                               const topologySigmaControlsStack =
                                 document.querySelector('[data-testid="topology-sigma-controls-stack"]');
                               const topologySigmaControlsStackRect =
@@ -4914,8 +4924,6 @@ pub fn run() {
                                     topologySearchActionLaneRect?.width || 0,
                                   topologySearchActionLaneHeight:
                                     topologySearchActionLaneRect?.height || 0,
-                                  topologyTopCreateLabel:
-                                    topologyTopCreateButton?.textContent?.trim() || "",
                                   topologySigmaControlsStackVisible:
                                     Boolean(
                                       topologySigmaControlsStackRect &&

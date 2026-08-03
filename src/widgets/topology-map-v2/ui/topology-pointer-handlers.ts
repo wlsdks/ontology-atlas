@@ -273,6 +273,16 @@ export interface PointerHandlerRefs {
    * only — see that handler's own doc).
    */
   onContextMenuNode?: (slug: string, position: { x: number; y: number }) => void;
+  /**
+   * **빈 캔버스 우클릭** — 노드가 없는 자리에서 부른다 (2026-08-03).
+   *
+   * 종전엔 이 자리가 그냥 무시됐다(`if (!hitNodeId) return;`). 그런데 빈
+   * 캔버스 우클릭은 어느 도구에서나 «여기에 새로 만들기»의 관용구이고, 무엇보다
+   * **클릭한 좌표가 곧 새 노드의 자리**라 상단 크롬 버튼보다 뜻이 분명하다.
+   *
+   * 생략하면 종전처럼 no-op — 브라우저 기본 메뉴도 그대로 뜬다.
+   */
+  onContextMenuPane?: (position: { x: number; y: number }) => void;
 }
 
 export interface TopologyPointerHandlers {
@@ -351,6 +361,7 @@ export function createTopologyPointerHandlers(refs: PointerHandlerRefs): Topolog
     onHoverEdge,
     onPaneClick,
     onContextMenuNode,
+    onContextMenuPane,
     onToggleCluster,
     onHoverCluster,
     onExpandEgoNeighbors,
@@ -1227,11 +1238,18 @@ export function createTopologyPointerHandlers(refs: PointerHandlerRefs): Topolog
   const handleContextMenu = (e: ReactMouseEvent<HTMLCanvasElement>) => {
     const tokens = readTopologyV2TokensOrNull();
     const world = worldRef.current;
-    if (!tokens || !world || !onContextMenuNode) return;
+    if (!tokens || !world || (!onContextMenuNode && !onContextMenuPane)) return;
     const rect = currentRect(e.currentTarget);
     const point = { x: e.clientX - rect.left, y: e.clientY - rect.top };
     const hitNodeId = hitVisibleNode(world, cameraRef.current, tokens, point.x, point.y);
-    if (!hitNodeId) return;
+    if (!hitNodeId) {
+      // 빈 자리 — 「여기에 개념 만들기」. 소비처가 없으면 종전대로 no-op.
+      if (!onContextMenuPane) return;
+      e.preventDefault();
+      onContextMenuPane({ x: e.clientX, y: e.clientY });
+      return;
+    }
+    if (!onContextMenuNode) return;
     e.preventDefault();
     onContextMenuNode(hitNodeId, { x: e.clientX, y: e.clientY });
   };

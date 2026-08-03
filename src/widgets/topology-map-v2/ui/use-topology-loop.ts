@@ -200,6 +200,8 @@ export interface UseTopologyLoopArgs {
   onZoomTierChange?: (tier: ZoomTier) => void;
   /** W2-B node right-click context menu — see `topology-pointer-handlers.ts#createTopologyPointerHandlers`'s `onContextMenuNode` doc. */
   onContextMenuNode?: (slug: string, position: { x: number; y: number }) => void;
+  /** 빈 캔버스 우클릭 — 「여기에 개념 만들기」. */
+  onContextMenuPane?: (position: { x: number; y: number }) => void;
   /**
    * W6 agent visibility — the graph node id matching the agent heartbeat's
    * current focus (already resolved to `kind:slug` form upstream, or `null`
@@ -338,7 +340,7 @@ export type UseTopologyLoopResult = TopologyPointerHandlers & {
 };
 
 export function useTopologyLoop(args: UseTopologyLoopArgs): UseTopologyLoopResult {
-  const { nodes, edges, focusedSlug, emphasizedNeighborSlug = null, fitViewToken, spotlightFitToken = 0, relayoutToken, revealToken = 0, onSelectEdge, onHoverEdge, onSelect, onPaneClick, onVisibleCountChange, onGraphStatsChange, onZoomTierChange, onContextMenuNode, agentFocusNodeId = null, spotlightIds = null, selectedEdge = null, expandedParents = EMPTY_EXPANDED_SET, onToggleCluster, onHoverCluster, realmRootId = null, onEnterRealm, realmEnterButtonRef, realmCaption = null, visitedTrail = EMPTY_TRAIL, trailLensActiveRef, clusterBarLabels = null, trailHoverNodeIdRef, tierReveal = DEFAULT_TIER_REVEAL, tourAnchorNodeId = null, tourAnchorRef, glyphSet = "geometric", canvasBackground = "dot", footprint = null, expand = DEFAULT_EXPAND, wheelIntent = "zoom", ambientSleepDelayMs } = args;
+  const { nodes, edges, focusedSlug, emphasizedNeighborSlug = null, fitViewToken, spotlightFitToken = 0, relayoutToken, revealToken = 0, onSelectEdge, onHoverEdge, onSelect, onPaneClick, onVisibleCountChange, onGraphStatsChange, onZoomTierChange, onContextMenuNode, onContextMenuPane, agentFocusNodeId = null, spotlightIds = null, selectedEdge = null, expandedParents = EMPTY_EXPANDED_SET, onToggleCluster, onHoverCluster, realmRootId = null, onEnterRealm, realmEnterButtonRef, realmCaption = null, visitedTrail = EMPTY_TRAIL, trailLensActiveRef, clusterBarLabels = null, trailHoverNodeIdRef, tierReveal = DEFAULT_TIER_REVEAL, tourAnchorNodeId = null, tourAnchorRef, glyphSet = "geometric", canvasBackground = "dot", footprint = null, expand = DEFAULT_EXPAND, wheelIntent = "zoom", ambientSleepDelayMs } = args;
 
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
   const containerRef = useRef<HTMLDivElement | null>(null);
@@ -3233,6 +3235,7 @@ export function useTopologyLoop(args: UseTopologyLoopArgs): UseTopologyLoopResul
     onHoverEdge,
     onPaneClick,
     onContextMenuNode,
+    onContextMenuPane,
     onToggleCluster,
     onHoverCluster,
     // S2 파트 3a — `이웃 +N` 칩 클릭 → 다음 이웃 배치 점등(세션 임시). 클릭
