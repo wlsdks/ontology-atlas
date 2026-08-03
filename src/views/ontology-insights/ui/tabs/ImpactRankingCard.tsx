@@ -5,6 +5,7 @@ import { ChevronDown, ChevronRight, Radar } from "lucide-react";
 import { Link } from "@/i18n/navigation";
 import { cn } from "@/shared/lib/cn";
 import { EmptyState, EvidenceOnlyBadge, TopologyV2KindGlyph } from "@/shared/ui";
+import { controlClass } from "@/shared/ui/control-class";
 import type { ImpactRankingRow } from "../../lib/impact-ranking";
 import { InsightsBar } from "../parts/InsightsBar";
 import { InsightsSectionTitle } from "../parts/InsightsSectionTitle";
@@ -151,9 +152,15 @@ export function ImpactRankingCard({
             aria-expanded={evidenceOpen}
             data-testid="insights-impact-evidence-toggle"
             onClick={() => setEvidenceOpen((open) => !open)}
-            // 같은 탭의 다른 작은 컨트롤(행별 인계 복사)과 같은 min-h-7 —
-            // 25px 짜리 글자 폭 히트영역은 이 카드에서 유일한 조작점이라 좁다.
-            className="-mx-1.5 flex min-h-7 w-full items-center gap-1.5 rounded-chip px-1.5 text-left text-label text-[color:var(--color-text-tertiary)] transition-colors hover:bg-[color:var(--color-overlay-1)] hover:text-[color:var(--color-text-primary)]"
+            // 25px 짜리 글자 폭 히트영역은 이 카드에서 유일한 조작점이라 좁다 —
+            // 램프의 `row`/`sm` 이 같은 28px 를 내면서 인셋을 6 → 8 로 넓힌다.
+            // 「할 일」·「신선도」 탭의 조용한 토글과 같은 호출이다.
+            className={controlClass({
+              shape: "row",
+              size: "sm",
+              className:
+                "-mx-2 hover:bg-[color:var(--color-overlay-1)] hover:text-[color:var(--color-text-primary)]",
+            })}
           >
             {evidenceOpen ? (
               <ChevronDown aria-hidden size={13} className="flex-none" />

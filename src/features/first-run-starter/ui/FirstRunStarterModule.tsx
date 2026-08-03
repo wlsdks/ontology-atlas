@@ -15,7 +15,7 @@ import { useCopyFeedback } from "@/shared/lib/use-copy-feedback";
 import { useLatinEyebrow } from "@/shared/lib/latin-eyebrow";
 import { useSampleSource } from "@/features/vault-sample-source";
 import { VaultOpenGuideSheet } from "@/features/docs-vault-local";
-import { CompactCopyButton } from "@/shared/ui";
+import { CompactCopyButton, controlClass } from "@/shared/ui";
 
 import { useFirstRunStarter } from "../model/use-first-run-starter";
 import {
@@ -497,7 +497,15 @@ export function FirstRunStarterModule({
             type="button"
             data-testid="first-run-plain-toggle"
             onClick={onEnablePlainMode}
-            className="touch-hit-expand mt-1 text-label text-[color:var(--color-indigo-accent)] underline-offset-2 transition-colors hover:underline"
+            /* 히트 영역은 `touch-hit-expand`(coarse 전용 의사요소)가 이미 낸다 —
+               `inline` 을 켜 램프의 `min-h-11` 과 이중으로 걸리지 않게 한다.
+               둘 다 걸면 이 카드가 세로로 44px 씩 벌어진다. */
+            className={controlClass({
+              shape: "link",
+              tone: "accent",
+              inline: true,
+              className: "touch-hit-expand mt-1 underline-offset-2 hover:underline",
+            })}
           >
             {t("plainModeCta")}
           </button>

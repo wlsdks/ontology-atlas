@@ -6,6 +6,7 @@ import { Check, Copy } from 'lucide-react';
 
 import type { McpServerLaunch } from '@/shared/config';
 import { copyText } from '@/shared/lib/copy-text';
+import { controlClass } from '@/shared/ui/control-class';
 
 import { AGENT_CLIENTS, type AgentClientId } from '../lib/agent-clients';
 import { globalScopeInstruction } from '../lib/agent-global-scope';
@@ -76,11 +77,11 @@ export function AgentGlobalScopePanel({ vaultPath, launch }: AgentGlobalScopePan
             aria-selected={entry.id === client.id}
             onClick={() => setSelected(entry.id)}
             data-testid={`agent-global-scope-tool-${entry.id}`}
-            className={`rounded-chip border px-2.5 py-1 text-label font-medium transition-colors ${
-              entry.id === client.id
-                ? 'border-[color:var(--color-indigo-a46)] bg-[color:var(--color-indigo-a16)] text-[color:var(--color-text-primary)]'
-                : 'border-[color:var(--color-border-soft)] text-[color:var(--color-text-tertiary)] hover:text-[color:var(--color-text-primary)]'
-            }`}
+            className={controlClass({
+              shape: 'chip',
+              active: entry.id === client.id,
+              className: 'font-medium hover:text-[color:var(--color-text-primary)]',
+            })}
           >
             {entry.name}
           </button>
@@ -115,7 +116,12 @@ export function AgentGlobalScopePanel({ vaultPath, launch }: AgentGlobalScopePan
           type="button"
           onClick={() => void copy(client.id, instruction.text)}
           data-testid={`agent-global-scope-copy-${client.id}`}
-          className="mt-1.5 inline-flex items-center gap-1.5 rounded border border-[color:var(--color-border-soft)] px-2 py-1 text-label font-medium text-[color:var(--color-text-secondary)] transition-colors hover:border-[color:var(--color-border-strong)] hover:text-[color:var(--color-text-primary)]"
+          className={controlClass({
+            shape: 'chip',
+            tone: 'secondary',
+            className:
+              'mt-1.5 font-medium hover:border-[color:var(--color-border-strong)] hover:text-[color:var(--color-text-primary)]',
+          })}
         >
           {isCopied ? (
             <Check size={12} aria-hidden className="text-[color:var(--color-status-success)]" />

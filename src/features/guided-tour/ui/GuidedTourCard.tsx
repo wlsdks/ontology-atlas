@@ -3,6 +3,7 @@
 import { useEffect, useRef } from "react";
 import { useTranslations } from "next-intl";
 import { cn } from "@/shared/lib/cn";
+import { controlClass } from "@/shared/ui/control-class";
 import type { UseGuidedTourResult } from "../model/use-guided-tour";
 import type { CardPlacement } from "../model/resolve-anchor-rect";
 
@@ -94,7 +95,14 @@ export function GuidedTourCard({
           type="button"
           onClick={skip}
           data-testid="guided-tour-skip"
-          className="text-label tracking-label text-[color:var(--color-text-tertiary)] transition-colors hover:text-[color:var(--color-text-secondary)]"
+          /* 진행 캡션과 한 줄을 이루는 헤더 행 — `inline` 을 켜야 `min-h-11` 이
+             그 줄을 44px 로 밀지 않는다(WCAG 2.5.8 인라인 면제). */
+          className={controlClass({
+            shape: "link",
+            inline: true,
+            className:
+              "tracking-label hover:text-[color:var(--color-text-secondary)]",
+          })}
         >
           {t("skipLabel")}
         </button>

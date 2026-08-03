@@ -5,6 +5,7 @@ import { useCopyFeedback } from "@/shared/lib/use-copy-feedback";
 import { Check, Copy, FileText, GitBranch, MessageCircle, MoreHorizontal } from "lucide-react";
 import { Link } from "@/i18n/navigation";
 import { copyText } from "@/shared/lib/copy-text";
+import { controlClass } from "@/shared/ui/control-class";
 
 /**
  * 「할 일」 큐 행의 행동 — 주 액션(지도)만 밖에 두고 나머지는 케밥 안으로.
@@ -97,9 +98,19 @@ export function HandoffCopyButton({
           if (candidate) onReviewStart?.(candidate);
           await copyHandoff(payload);
         }}
-        className={`inline-flex items-center gap-1 rounded-chip border border-[color:var(--color-border-soft)] text-label text-[color:var(--color-text-tertiary)] transition-colors hover:border-[color:var(--color-indigo-a46)] hover:text-[color:var(--color-text-primary)] ${
-          compact ? "min-h-7 px-2" : "min-h-8 px-2.5"
-        }`}
+        /**
+         * `compact` 는 이제 **높이 축**만 고른다. 한 줄 행에 얹히는 자리는
+         * 램프 기본(패딩이 높이를 정한다 = 30px), 홀로 서는 자리는
+         * `fixedHeight`(크롬 계약의 32px). 손으로 쓰던 28/32 중 28은 램프에
+         * 스텝이 없어 30으로 올라간다 — 그게 이 정규화의 값이다.
+         */
+        className={controlClass({
+          shape: "chip",
+          size: "md",
+          fixedHeight: !compact,
+          className:
+            "hover:border-[color:var(--color-indigo-a46)] hover:text-[color:var(--color-text-primary)]",
+        })}
       >
         {copied ? <Check size={11} aria-hidden /> : <Copy size={11} aria-hidden />}
         {copyState === "failed"
@@ -172,8 +183,21 @@ export function RowActionMenu({
     };
   }, [open]);
 
-  const menuItemClass =
-    "flex items-center gap-2 rounded-chip px-2.5 py-1.5 text-left text-label text-[color:var(--color-text-secondary)] transition-colors hover:bg-[color:var(--color-overlay-2)] hover:text-[color:var(--color-text-primary)]";
+  /**
+   * 메뉴 한 항목 = 목록의 한 줄 → `row`. `<Link>` 와 `<button>` 이 같은
+   * 문자열을 쓰므로 상수 하나로 묶는다(둘이 갈리면 메뉴 안에서 항목마다
+   * 높이가 달라진다). 램프가 안 내는 호버 잉크만 여기 남는다.
+   *
+   * `row` 가 `w-full` 을 싣지만 이 메뉴는 이미 `flex-col`(= stretch)이라
+   * 폭은 바뀌지 않는다.
+   */
+  const menuItemClass = controlClass({
+    shape: "row",
+    size: "sm",
+    tone: "secondary",
+    className:
+      "hover:bg-[color:var(--color-overlay-2)] hover:text-[color:var(--color-text-primary)]",
+  });
 
   return (
     <div ref={containerRef} className="relative">

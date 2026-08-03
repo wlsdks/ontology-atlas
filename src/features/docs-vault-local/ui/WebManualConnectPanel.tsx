@@ -6,6 +6,7 @@ import { Check, Copy } from 'lucide-react';
 
 import { copyText } from '@/shared/lib/copy-text';
 import { useCopyFeedback } from '@/shared/lib/use-copy-feedback';
+import { controlClass } from '@/shared/ui/control-class';
 
 import { AGENT_CLIENTS, type AgentClientId } from '../lib/agent-clients';
 import {
@@ -99,6 +100,13 @@ function PathField({
   );
 }
 
+/**
+ * 복사 칩의 **호버.** 값 층은 호버 색을 일부러 안 낸다(호버 빈도가 모션 예산을
+ * 깎으므로 소비처가 정한다). 이 파일의 세 자리가 같은 문자열이라 한 벌로 둔다.
+ */
+const COPY_CHIP_SKIN =
+  'font-medium hover:border-[color:var(--color-border-strong)] hover:text-[color:var(--color-text-primary)]';
+
 function CommandRow({
   label,
   value,
@@ -126,7 +134,11 @@ function CommandRow({
         disabled={!ready}
         data-testid={testId}
         onClick={() => void copy(value)}
-        className="inline-flex w-fit items-center gap-1.5 rounded border border-[color:var(--color-border-soft)] px-2 py-1 text-label font-medium text-[color:var(--color-text-secondary)] transition-colors hover:border-[color:var(--color-border-strong)] hover:text-[color:var(--color-text-primary)] disabled:cursor-not-allowed disabled:opacity-45"
+        className={controlClass({
+          shape: 'chip',
+          tone: 'secondary',
+          className: `w-fit ${COPY_CHIP_SKIN}`,
+        })}
       >
         {state === 'copied' ? (
           <Check size={12} aria-hidden className="text-[color:var(--color-status-success)]" />
@@ -204,7 +216,12 @@ export function WebManualConnectPanel({
           onClick={async () => {
             if (await copyText(ATLAS_CLONE_COMMAND)) setCloneCopied(true);
           }}
-          className="inline-flex w-fit items-center gap-1.5 self-start rounded border border-[color:var(--color-border-soft)] px-2 py-1 text-caption text-[color:var(--color-text-tertiary)] transition-colors hover:border-[color:var(--color-border-strong)] hover:text-[color:var(--color-text-primary)]"
+          className={controlClass({
+            shape: 'chip',
+            size: 'sm',
+            className:
+              'w-fit self-start hover:border-[color:var(--color-border-strong)] hover:text-[color:var(--color-text-primary)]',
+          })}
         >
           {cloneCopied ? (
             <Check size={11} aria-hidden className="text-[color:var(--color-status-success)]" />
@@ -239,11 +256,11 @@ export function WebManualConnectPanel({
               aria-selected={entry.id === active.id}
               onClick={() => setClient(entry.id)}
               data-testid={`${testIdPrefix}-tool-${entry.id}`}
-              className={`rounded-chip border px-2.5 py-1 text-label font-medium transition-colors ${
-                entry.id === active.id
-                  ? 'border-[color:var(--color-indigo-a46)] bg-[color:var(--color-indigo-a16)] text-[color:var(--color-text-primary)]'
-                  : 'border-[color:var(--color-border-soft)] text-[color:var(--color-text-tertiary)] hover:text-[color:var(--color-text-primary)]'
-              }`}
+              className={controlClass({
+                shape: 'chip',
+                active: entry.id === active.id,
+                className: 'font-medium hover:text-[color:var(--color-text-primary)]',
+              })}
             >
               {entry.name}
             </button>
@@ -271,7 +288,11 @@ export function WebManualConnectPanel({
             disabled={!ready}
             data-testid={`${testIdPrefix}-copy-config`}
             onClick={() => void copyConfig(config.body)}
-            className="mt-1.5 inline-flex items-center gap-1.5 rounded border border-[color:var(--color-border-soft)] px-2 py-1 text-label font-medium text-[color:var(--color-text-secondary)] transition-colors hover:border-[color:var(--color-border-strong)] hover:text-[color:var(--color-text-primary)] disabled:cursor-not-allowed disabled:opacity-45"
+            className={controlClass({
+              shape: 'chip',
+              tone: 'secondary',
+              className: `mt-1.5 ${COPY_CHIP_SKIN}`,
+            })}
           >
             {configCopyState === 'copied' ? (
               <Check size={12} aria-hidden className="text-[color:var(--color-status-success)]" />

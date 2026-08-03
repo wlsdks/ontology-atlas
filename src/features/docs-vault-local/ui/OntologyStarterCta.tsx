@@ -5,6 +5,23 @@ import { CheckCircle2, ClipboardCopy, Sparkles } from 'lucide-react';
 import { useTranslations } from 'next-intl';
 import { copyText } from '@/shared/lib/copy-text';
 import { ATLAS_CLI } from '@/shared/config/cli-invocation';
+import { controlClass } from '@/shared/ui/control-class';
+
+/**
+ * 중립 칩의 **면과 호버.** 값 층(`controlClass`)은 모양·크기·글자색만 내고
+ * 배경 틴트와 호버는 일부러 소비처에 남긴다(호버 빈도가 모션 예산을 깎으므로).
+ * 이 표면에서 네 자리가 같은 문자열을 들고 있었다 — 한 벌로 묶는다.
+ */
+const NEUTRAL_CHIP_SKIN =
+  'bg-[color:var(--color-overlay-1)] hover:border-[color:var(--color-indigo-a46)] hover:text-[color:var(--color-text-primary)]';
+
+/** 인디고 틴트 칩 — 테두리·배경·호버가 아직 램프 밖이라 한 벌로 둔다. */
+const INDIGO_CHIP_SKIN =
+  'border-[color:var(--color-indigo-a28)] bg-[color:var(--color-indigo-a08)] hover:border-[color:var(--color-indigo-a46)] hover:text-[color:var(--color-text-primary)]';
+
+/** 주 행동(인디고 채움) — 같은 이유로 한 벌. */
+const INDIGO_SOLID_SKIN =
+  'border-[color:var(--color-indigo-brand)] bg-[color:var(--color-indigo-a18)] hover:bg-[color:var(--color-indigo-a28)]';
 
 export const ONTOLOGY_STARTER_AGENT_VERIFY_PROMPT =
   [
@@ -237,7 +254,11 @@ export function OntologyStarterCta({ onScaffold, docCount, vaultPath = null }: P
           <button
             type="button"
             onClick={handleCopyPrompt}
-            className="inline-flex items-center gap-2 rounded-chip border border-[color:var(--color-divider)] bg-[color:var(--color-overlay-1)] px-3 py-1.5 text-label text-[color:var(--color-text-secondary)] transition-colors hover:border-[color:var(--color-indigo-a46)] hover:text-[color:var(--color-text-primary)]"
+            className={controlClass({
+              shape: 'chip',
+              tone: 'secondary',
+              className: NEUTRAL_CHIP_SKIN,
+            })}
           >
             <ClipboardCopy size={12} aria-hidden />
             {copyPromptLabel}
@@ -245,11 +266,23 @@ export function OntologyStarterCta({ onScaffold, docCount, vaultPath = null }: P
           <button
             type="button"
             onClick={handleCopyCliVerify}
-            className="inline-flex items-center gap-2 rounded-chip border border-[color:var(--color-divider)] bg-[color:var(--color-overlay-1)] px-3 py-1.5 text-label text-[color:var(--color-text-secondary)] transition-colors hover:border-[color:var(--color-indigo-a46)] hover:text-[color:var(--color-text-primary)]"
+            className={controlClass({
+              shape: 'chip',
+              tone: 'secondary',
+              className: NEUTRAL_CHIP_SKIN,
+            })}
           >
             <ClipboardCopy size={12} aria-hidden />
             {copyCliLabel}
           </button>
+          {/*
+            램프 밖으로 **남긴다** — `tone: 'success'` 는 신호색
+            `--color-status-success`(#32b97d) 를 내는데, 이 자리(그리고 앱의 성공
+            틴트 전부)는 글자 역할 토큰 `--color-success-text-a94` 를 쓴다.
+            `tone: 'danger'` 만 글자 역할 토큰(`--color-danger-text`)을 쓰고
+            success/warning 은 신호 토큰을 써서 셋의 역할이 어긋나 있다.
+            억지로 맞추면 색이 바뀌므로 값 층이 먼저 정해야 한다.
+          */}
           <button
             type="button"
             onClick={handleCopyJsonGate}
@@ -263,7 +296,12 @@ export function OntologyStarterCta({ onScaffold, docCount, vaultPath = null }: P
           type="button"
           onClick={handleClick}
           disabled={busy}
-          className="mt-4 inline-flex items-center gap-2 rounded-chip border border-[color:var(--color-indigo-brand)] bg-[color:var(--color-indigo-a18)] px-4 py-2 text-body text-[color:var(--color-text-primary)] transition-colors hover:bg-[color:var(--color-indigo-a28)] disabled:opacity-60"
+          className={controlClass({
+            shape: 'chip',
+            size: 'lg',
+            tone: 'strong',
+            className: `mt-4 ${INDIGO_SOLID_SKIN}`,
+          })}
         >
           <Sparkles size={13} aria-hidden />
           {busy ? t('emptyBusy') : t('emptyCta')}
@@ -288,7 +326,11 @@ export function OntologyStarterCta({ onScaffold, docCount, vaultPath = null }: P
         onClick={handleClick}
         disabled={busy}
         title={t('secondaryTitle')}
-        className="inline-flex w-full items-center justify-center gap-1.5 rounded-chip border border-[color:var(--color-divider)] bg-[color:var(--color-overlay-1)] px-3 py-1.5 text-label text-[color:var(--color-text-secondary)] transition-colors hover:border-[color:var(--color-indigo-a46)] hover:text-[color:var(--color-text-primary)] disabled:opacity-60"
+        className={controlClass({
+          shape: 'chip',
+          tone: 'secondary',
+          className: `w-full justify-center ${NEUTRAL_CHIP_SKIN}`,
+        })}
       >
         <Sparkles size={12} aria-hidden />
         {busy ? t('secondaryBusy') : t('secondaryLabel')}
@@ -297,7 +339,11 @@ export function OntologyStarterCta({ onScaffold, docCount, vaultPath = null }: P
         type="button"
         onClick={handleCopyPrompt}
         title={t('secondaryCopyTitle')}
-        className="inline-flex w-full items-center justify-center gap-1.5 rounded-chip border border-[color:var(--color-indigo-a28)] bg-[color:var(--color-indigo-a08)] px-3 py-1.5 text-label text-[color:var(--color-text-secondary)] transition-colors hover:border-[color:var(--color-indigo-a46)] hover:text-[color:var(--color-text-primary)]"
+        className={controlClass({
+          shape: 'chip',
+          tone: 'secondary',
+          className: `w-full justify-center ${INDIGO_CHIP_SKIN}`,
+        })}
       >
         <ClipboardCopy size={12} aria-hidden />
         {copyPromptLabel}
@@ -306,7 +352,11 @@ export function OntologyStarterCta({ onScaffold, docCount, vaultPath = null }: P
         type="button"
         onClick={handleCopyCliVerify}
         title={t('secondaryCliTitle')}
-        className="inline-flex w-full items-center justify-center gap-1.5 rounded-chip border border-[color:var(--color-divider)] bg-[color:var(--color-overlay-1)] px-3 py-1.5 text-label text-[color:var(--color-text-secondary)] transition-colors hover:border-[color:var(--color-indigo-a46)] hover:text-[color:var(--color-text-primary)]"
+        className={controlClass({
+          shape: 'chip',
+          tone: 'secondary',
+          className: `w-full justify-center ${NEUTRAL_CHIP_SKIN}`,
+        })}
       >
         <ClipboardCopy size={12} aria-hidden />
         {copyCliLabel}
