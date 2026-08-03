@@ -1,0 +1,30 @@
+/*
+ * 프로브 픽스처 — **일부러 손으로 쓴 컨트롤**.
+ *
+ * `control-adoption-ratchet.contract.test.ts` 의 탐지기를 겨눠 보는 데만 쓴다.
+ * 렌더되지 않고 import 되지 않으므로 `.fixture` 확장자로 둔다 — 빌드·lint·
+ * 타입 검사의 대상이 아니고, 래칫의 워크(`.tsx` 만 센다)에도 안 잡힌다.
+ *
+ * ⚠️ 이 파일을 「고치지」 마라. 규격이 램프를 통과하는 순간 탐지기 증명이
+ * 사라진다 — 이건 부채가 아니라 **자를 재는 자**다.
+ */
+export function HandWrittenControl() {
+  return (
+    <button
+      type="button"
+      className="inline-flex h-[33px] items-center rounded-[7px] border px-[9px] text-[13px]"
+      onClick={() => undefined}
+    >
+      램프 밖 규격
+    </button>
+  );
+}
+
+/** 크롬 토큰이 치수를 소유하지만 **등재되지 않은** 자리 — 부채로 잡혀야 한다. */
+export function UnregisteredChromeTokenControl() {
+  return (
+    <button type="button" className="h-[var(--overlay-close-size)] w-[var(--overlay-close-size)]">
+      닫기
+    </button>
+  );
+}
