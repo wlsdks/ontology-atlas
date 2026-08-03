@@ -3,6 +3,7 @@
 import { motion } from "framer-motion";
 import { MOTION } from "@/shared/motion";
 import { cn } from "@/shared/lib/cn";
+import { controlClass } from "./control-class";
 
 export interface SimilarNodeWarningProps {
   /** 이미 보간된 메시지 — 예: `비슷한 노드가 이미 있어요 — 사용자 인증 흐름`.
@@ -56,7 +57,19 @@ export function SimilarNodeWarning({
       <button
         type="button"
         onClick={onOpen}
-        className="shrink-0 font-[var(--font-weight-signature)] text-[color:var(--color-text-primary)] underline decoration-[color:var(--color-border-strong)] underline-offset-2 transition-colors hover:text-[color:var(--color-indigo-accent)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--color-indigo-a46)] focus-visible:ring-inset"
+        /*
+         * 문장 속 컨트롤이다 — `inline: true` 가 `min-h-11`(WCAG 2.5.8 이
+         * 인라인을 면제한다)을 빼서 이 경고 줄(`text-label`/16px)이 44px 로
+         * 밀려 올라가지 않게 한다. 크기 기본값 `md` 가 부모와 같은 `text-label`
+         * 이라 상자 치수는 바뀌지 않는다.
+         */
+        className={controlClass({
+          shape: "link",
+          tone: "strong",
+          inline: true,
+          className:
+            "shrink-0 font-[var(--font-weight-signature)] underline decoration-[color:var(--color-border-strong)] underline-offset-2 hover:text-[color:var(--color-indigo-accent)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--color-indigo-a46)] focus-visible:ring-inset",
+        })}
       >
         {openLabel}
       </button>
@@ -66,7 +79,12 @@ export function SimilarNodeWarning({
       <button
         type="button"
         onClick={onCreateAnyway}
-        className="shrink-0 text-[color:var(--color-text-tertiary)] underline decoration-[color:var(--color-border-soft)] underline-offset-2 transition-colors hover:text-[color:var(--color-text-secondary)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--color-indigo-a46)] focus-visible:ring-inset"
+        className={controlClass({
+          shape: "link",
+          inline: true,
+          className:
+            "shrink-0 underline decoration-[color:var(--color-border-soft)] underline-offset-2 hover:text-[color:var(--color-text-secondary)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--color-indigo-a46)] focus-visible:ring-inset",
+        })}
       >
         {createAnywayLabel}
       </button>

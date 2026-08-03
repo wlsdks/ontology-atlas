@@ -63,6 +63,42 @@ const ROOTS = ['src', 'app'];
  * | **173** | 위젯 라운드 — `src/widgets/**` 중 이미 정규화된 다섯(설정 시트 · 지도 둘 · 문서함 · 빠른 서랍)을 뺀 84개에서 37개. 칩 21 · pill 4 · 아이콘 4 · 카드 5 · 행 2 · 링크형 1. 새 축 0개로 옮겼고, **남긴 47개가 값 층의 다음 구멍 목록**이다(아래). **210 − 37 = 173 이 전수 재측정으로 정확히 맞았다** — 앞선 두 정렬(227 − 37 = 190)과 마찬가지로, 이 라운드가 features·지도 뷰 라운드와 파일을 하나도 안 겹친다는 뜻이다. 세 라운드의 합산이 성립한다 |
  * | **136** | 공방·기록 라운드 — `views/ontology-studio` · `widgets/atlas-git-panel` 38개 중 12개. 카드 7(공방 헤더 6 + 저장) · 칩 2 · 세그먼트 2 · 온액센트 3(겹침). **새 축·모양·톤 0개**로 옮겼다. 기록 패널은 **15개 중 0개** — 이 위젯은 치수를 전부 `--git-*` 크롬 토큰과 3열 그리드가 소유해서 구조적으로 값 층 밖이다(아래) |
  * | **148** | 값 층 라운드 — 옮긴 25개는 새 표면이 아니라 **원장이 반복해서 센 구멍**을 메운 결과다. 세그먼트/고스트 12(지도 INDEX 렌즈 3 · 블록 가져오기 4 · 에이전트 범위 2 · 단축키 스코프 · 투어 뒤로 · 발자국 프리셋) · 패널 잉크 7(첫 실행 4 · 전체 상세 3) · 채운 인디고 3 · 말줄임 3. **새 축 셋 + 여덟째 모양 하나**로 열었고, 그 넷 전부가 원장에 두 번 이상 적혀 있던 것이다 |
+ * | **144** | 프리미티브·뷰 라운드(`shared/ui` 18 · `views/{docs-vault,first-run,ontology-insights}` 17 = 35) 중 **4개**. 링크형 2(근접중복 경고의 두 선택지 — `inline` 축이 열어 준 첫 자리) · 칩 2(링크 편집기의 확인·취소). **이 라운드는 옮긴 수보다 «왜 31개가 안 움직였나»가 산출물이다** — 셋 중 하나이고 셋 다 아래에 수를 세어 적었다 |
+ *
+ * ## 프리미티브·뷰 라운드(2026-08-03)가 남긴 31개 — 세 부류, 그리고 전수
+ *
+ * ⚠️ **이 라운드는 옮긴 수가 적은 것이 결과다.** `src/shared/ui` 는 시스템
+ * **자신의 집**이라 여기 있는 손 className `<button>` 은 대부분 값 층의
+ * 소비처가 아니라 **값 층과 같은 층의 계약**(크롬 토큰 · 프리미티브 자신)이다.
+ * 억지로 옮기면 계약을 깨거나 색·치수를 `className` 으로 넘겨 층을 무력화한다.
+ *
+ * | 부류 | 남은 수 | 무엇인가 |
+ * |---|---:|---|
+ * | **값 층과 같은 층** | 6 | `button.tsx`(값 층 자신) · `select.tsx` 트리거(`--control-h-*` 계약 + `rounded-card` + `w-full`) · `chrome-chip`/`chrome-tile`(`--chrome-tile-size` 44px 계약) · `DocsHeaderTile`(`--docs-header-tile-size`) · `tab-bar`(밑줄 탭 — 반경 0 · `items-baseline` · `pb-[11px]`) |
+ * | **이미 원장에 적힌 구멍** | 21 | 아래 census 참조 |
+ * | **렌더되지 않는 죽은 프리미티브** | 4 | `link-list-editor` 2(X 글리프 · `rounded-2xl` 추가 버튼) · `chip-list-editor` 2 — **둘 다 프로덕션 소비처 0**(아래) |
+ *
+ * ### 이번에 **전수로 센** 구멍 넷 — 다음 라운드의 입력
+ *
+ * 규칙 4(「몇 개가 막혔나 세라」)를 이 라운드가 저장소 전수로 실행했다. 감이
+ * 아니라 수다:
+ *
+ * | 구멍 | 전수 | 어디 |
+ * |---|---:|---|
+ * | **`sm` 아래 한 칸이 없다**(`px-1`/`px-1.5` 인셋) — 원장 features 라운드 구멍 4의 재측정 | **14** (9파일) | `LiveActivityIndicator` 4 · `TopologyTrailChip` 3 · `AgentActivityChip` · `RealmBlockExportAction` · `DocsSidebarBody` 필터 지우기 · `full-detail-a1` 2 · `TopologyRealmLedger` · `AgentTranscript`. **이 라운드에서 가장 큰 구멍이고, 세 라운드 연속으로 나왔다** |
+ * | **원형 아이콘 컨트롤이 없다** — `icon` 은 `rounded-chip` 고정 | **6** (4파일) | `node-explanation-edit` 3 · `info-hint` · `TopologyTrailChip` · `TopologyMapV2`(원장의 「캔버스 앵커 원형 버튼」). 24px 원을 6px 사각으로 바꾸는 것은 정규화가 아니라 **정체성 변경**이라 「체계」 소집 없이 혼자 정하지 않았다 |
+ * | **보더 있는 아이콘 정사각이 없다** — 원장 뷰 라운드 구멍 1의 재측정 | **2** | `QueueRowActions` 케밥 · `HubRail`. 수가 둘뿐이라 **아직 축이 아니다** — 규칙 4대로 수를 적어 두고 넘긴다 |
+ * | **`rounded-2xl`(16px)이 반경 램프 밖** | **2** | `link-list-editor` · `DocsVaultBacklinks`. 램프는 chip 6 / card 9 / panel 12 뿐이라 16px 은 어느 스텝도 아니다 |
+ *
+ * ### 💀 렌더되지 않는 프리미티브 둘 — 삭제 후보(소유자 판단)
+ *
+ * `LinkListEditor`·`ChipListEditor` 는 `shared/ui/index.ts` 가 export 하고
+ * 단위 테스트도 있는데 **프로덕션 소비처가 0**이다(전수 grep). 이 저장소는
+ * 같은 실패를 이미 겪었다 — `control-class.ts` 머리말의 `Card`/`Badge`/
+ * `DetailCard` 셋이고, 그때의 답은 **삭제**였다. 두 컴포넌트는 그때와 같은
+ * 증상까지 갖고 있다: 램프 밖 값(`rounded-2xl` 16px)을 쓴다. 이 라운드는
+ * 램프에 정확히 맞는 둘만 옮기고 삭제는 제안만 한다 — 공개 export 를 지우는
+ * 것은 리팩터가 아니라 API 변경이라서다.
  *
  * ## 공방·기록 라운드(2026-08-03)가 남긴 26개 — 값 층의 새 구멍
  *
@@ -218,7 +254,7 @@ const ROOTS = ['src', 'app'];
  * **공유 상수로 뽑는 옳은 리팩터에 벌점을 준다.** 그래서 이 라운드는 잉크만
  * 상수로 공유하고 램프 호출은 자리마다 인라인으로 썼다.
  */
-const BASELINE_HAND_WRITTEN_CONTROLS = 136;
+const BASELINE_HAND_WRITTEN_CONTROLS = 132;
 
 function walk(dir: string, out: string[] = []): string[] {
   for (const name of readdirSync(dir)) {
