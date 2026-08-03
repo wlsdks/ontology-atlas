@@ -2,186 +2,220 @@ import { existsSync, readFileSync } from 'node:fs';
 
 import { describe, expect, it } from 'vitest';
 
+import { censusAppearingSurfaces, censusHardCuts, MOTION_MECHANISMS } from './lib/surface-motion-census';
+
 /**
  * 등장·퇴장 래칫 — **하드컷 표면은 늘어날 수 없다.**
  *
- * ## 전수 (2026-08-03)
+ * ════════════════════════════════════════════════════════════════════
+ * ## 2026-08-04 — 이 게이트는 빈 목록 위에서 돌고 있었다
+ * ════════════════════════════════════════════════════════════════════
  *
- * 조건부로 나타나는 표면 **20개 중 10개가 하드컷**이었고, 그 10개는 무작위가
- * 아니라 **전부 「인라인 패널」 계열**이었다:
+ * 전날 이 파일은 `HARD_CUT_REGISTRY` **하나만** 순회했고, 그 등록부가 비어 있었다.
+ * 그래서 「하드컷 표면 0」은 제품에 대한 참이 아니라 **빈 목록에 대한 참**이었다.
+ * 소유자가 실측으로 증명했다 — 새 패널 파일에 `{open && <div className="fixed …">}`
+ * 를 넣고 돌렸더니 **5 passed**, 초록이었다.
  *
- * | 계열 | 개수 | 등장/퇴장 |
- * |---|---:|---|
- * | 모달(scrim + `aria-modal`) | 9 | 대부분 있음 |
- * | **인라인 패널** | 11 | **전부 없음** |
+ * 그때 남아 있던 「탐지기 프로브」는 판정 **함수**가 산다는 것만 증명했다. 그건
+ * 필요조건이지 충분조건이 아니다: 함수가 살아 있어도 **아무도 그 함수에 제품을
+ * 먹이지 않으면** 게이트는 없는 것과 같다. 이 라운드가 그 입력을 바꾼다 —
+ * 목록이 아니라 `src/`·`app/` **전수**가 입력이다(`lib/surface-motion-census.ts`).
  *
- * (손으로 센 첫 집계는 10이었고 **이 게이트가 11로 정정했다** — 컨트롤 래칫이
- * 419를 417로 정정한 것과 같다. 세는 일은 사람이 하면 틀린다.)
+ * ### 그런데 「전수로 바꾼다」가 곧 정답은 아니었다 — 오탐부터 쟀다
  *
- * 이유가 분명하다 — 모달은 `AgentConnectSheet` 의 `AnimatePresence` 패턴을 베낄
- * 수 있었고 인라인 패널은 **베낄 패턴이 없었다.** 규율이 아니라 자산의 문제였고,
- * 그래서 `Surface` 를 놓았다(`src/shared/ui/surface.tsx`).
+ * 구 등록부 머리말이 경고한 그대로다: *「부모가 조건부로 그린다」만 결함이고,
+ * 항상 렌더되는 것·부모가 이미 애니메이션하는 것은 아니다.* 접미사로 세면
+ * 과다 계수가 되고, 안 고쳐도 되는 자리를 결함으로 세면 다음 사람이 필요 없는
+ * 곳에 나가는 길을 붙인다 — 그건 강제가 아니라 소음이다.
  *
- * ## ⚠️ 첫 판은 파일명으로 셌고, 그건 과다 계수였다 (같은 날 정정)
+ * 그래서 켜기 전에 **오탐 census 를 실측**했고, 판별식을 셋 넣어 내렸다:
  *
- * 접미사(`Panel`/`Sheet`/…)로 세면 **조건부로 나타나지 않는 것까지** 잡힌다.
- * 실제로 첫 11개를 부모 렌더 게이트까지 따라가 보니 셋으로 갈렸다:
- *
- * | 부류 | 예 | 결함인가 |
+ * | 판별식 | 무엇이 걸러지나 | 실측 |
  * |---|---|---|
- * | 부모가 조건부로 그린다 | `TopologyV2EdgePanel` · `ProjectQuickEditPanel` | **그렇다** |
- * | 항상 렌더된다(라우트 내용·인라인) | `AtlasGitPanel` · `WebManualConnectPanel` | 아니다 |
- * | 부모가 이미 애니메이션한다 | `AiConnectionPanel`(설정 시트 안) | 아니다 |
+ * | **호출 자리만 본다** | 「항상 렌더된다」가 구조적으로 제외된다 | — |
+ * | **대안 가지가 무언가 그리면 «교체»** | 「부모가 이미 애니메이션한다」가 기계적으로 걸러진다 | 3자리 (`AgentGlobalScopePanel` · `VaultAgentSetupPanel` · `ProjectQuickEditPanel`) |
+ * | **못 눌리는 루트는 표면이 아니다** | 호버 판독물·투어 앵커 | 오탐률 약 40% → **11건 중 1건** |
  *
- * 「11개가 하드컷」은 그래서 **틀린 수**였다. 안 고쳐도 되는 것을 결함으로 세면
- * 다음 사람이 필요 없는 자리에 `Surface` 를 감싸고, 그건 노이즈다.
+ * 오탐 넷이 **탐지기 자신의 결함**이었고 값이 아니라 해석이 틀린 것이었다:
  *
- * 그래서 **등록부로 바꿨다** — 이 저장소가 `DEGRADED_SURFACES` 에서 쓰는 것과
- * 같은 패턴이다. 각 줄이 「이건 조건부로 나타나는데 등장/퇴장이 없다」를 **주장**
- * 하고, 그 주장에 이유가 붙는다. 파일명으로 자동 수집하는 편리함을 잃는 대신,
- * 수가 무엇을 뜻하는지가 분명해진다.
+ * | 오탐 | 원인 | 고침 |
+ * |---|---|---|
+ * | 표면 5종 | 배럴(`index.ts`)을 실물 정의 파일로 읽었다 | 재수출을 따라간다 |
+ * | `Tooltip` | 기제 목록에 Radix 퇴장(`animate-out`)이 없었다 | 목록에 등재 |
+ * | 호버 카드 2 | 루트가 `pointer-events-none` — 모션 예산이 0ms 를 **허용**하는 부류다 | 표면에서 제외 |
+ * | 투어 앵커 | `aria-hidden` + 못 눌림 | 같음 |
  *
- * ## 왜 lint 가 아니라 래칫인가
+ * 반대로 **거짓 음성도 하나 나왔다**: `DeltaPreviewModal`(진짜 하드컷 모달)이
+ * 「교체」로 분류돼 통째로 빠져 있었다. 원인은 여는 태그를 중괄호 깊이 없이 끊어
+ * `onSave={() => {` 의 `=>` 를 태그 끝으로 읽은 것 — **컨트롤 래칫 머리말이 이미
+ * 적어 둔 그 함정**이다. 판별을 JSX 워킹에서 괄호 깊이 스캔으로 바꿔 고쳤다.
+ * 잴 원소를 틀리면 수치가 나와도 틀린 수치다.
  *
- * 각각이 **자기 렌더 게이트의 모델을 퇴장 창 동안 붙들어야** 해서 기계적이지
- * 않다(`useSurfaceSwap` 이 그 일을 한다). 오늘 강제되는 것은 하나다 —
- * **등록부가 늘지 않는다.**
+ * ════════════════════════════════════════════════════════════════════
+ * ## 오늘의 전수 — 13
+ * ════════════════════════════════════════════════════════════════════
  *
- * ## 빈 등록부 (2026-08-03) — 그리고 그때 게이트가 죽지 않게 하는 법
+ * | 부류 | 수 | 무엇인가 |
+ * |---|---:|---|
+ * | **인라인 오버레이** | 11 | 이름 없는 `<div className="… fixed/absolute … z-N">`. 드롭다운 메뉴·팝오버·자동완성·서랍·토스트. **구 등록부에게는 통째로 안 보이던 부류다** |
+ * | **명명 표면** | 2 | `TopologyV2ContextMenu`(우클릭 메뉴) · `DeltaPreviewModal`(스크림 모달) |
  *
- * 남아 있던 두 줄이 이렇게 정리됐다:
+ * 인라인 11이 이 라운드의 진짜 발견이다. 구 게이트는 **표면 접미사를 가진
+ * 컴포넌트**만 알았고, 이 앱의 하드컷 다수는 그런 이름을 갖지 않은 채 부모 안에
+ * 직접 그려진다. 등록부 시절 「전수 20 중 10」이라 적힌 수는 그 부류를 한 번도
+ * 세지 않은 수였다.
  *
- * | 파일 | 판정 |
- * |---|---|
- * | `TopologyV2DetailPanel` | **고쳤다.** 부모가 계산해 내려주던 `presence` prop 을 걷고 패널이 자기 `<Surface>` 를 진다. 퇴장 창의 주인이 파일 안으로 들어왔다 |
- * | `VaultAgentPanel` | **오등재였다.** 부모의 삼항은 `llmBridgeAvailable`(= `isTauri()`) 이라 세션 중에 뒤집히지 않는 **환경 게이트**이고, 열고 닫기는 이미 폭 리플로우(`--agent-panel-reflow-duration`)로 애니메이션한다. 게다가 `Surface` 로 감싸면 닫을 때 언마운트되어 **전송 범위 동의와 대화 기록이 날아간다** — 고치는 게 아니라 회귀다. 위 표의 «부모가 이미 애니메이션한다» 부류. 다만 그 파일 **안**에 진짜 하드컷이 하나 있었다(곁가지 공개 상자, `{meta ? … : null}`) — 그건 `<Surface>` 로 갚았다 |
+ * ### 왜 0 이 아니라 13 에서 시작하나
  *
- * ⚠️ **등록부가 0 이 되면 위의 세 테스트는 전부 공집합 위에서 돈다.** 그때부터
- * "초록"은 «탐지기가 통과시켰다» 가 아니라 «탐지기가 아무것도 안 봤다» 는 뜻이고,
- * 둘은 화면에서 구별되지 않는다(`/gate-probe` 가 매번 묻는 그 질문).
+ * `/gate-probe` 1단계: **룰을 켜기 전에 위반을 전수 측정한다.** 13을 한 PR 로
+ * 갚으려면 열세 자리의 렌더 게이트를 각각 퇴장 창 동안 붙들게 고쳐야 하고
+ * (`useSurfaceSwap`/`useHeldValue` 가 자리마다 다르다), 그건 이 PR 이 아니라
+ * 디자인 패스다. 안 치운 채 0 을 요구하면 첫날부터 빨갛고, 빨간 게이트는 곧
+ * 꺼지거나 무시된다 — 이 저장소가 `shadow-[` 로 lint 를 144 → 548 로 띄운 그
+ * 전례다.
  *
- * 그래서 아래 「탐지기 프로브」가 **상주**한다 — 등록부와 무관하게 판정 함수
- * 자체를 양방향으로 겨눈다: 기제가 없는 픽스처는 잡아야 하고, 기제가 있는 실제
- * 파일은 놓아줘야 한다. 이 프로브가 초록이면 «등록부가 비었을 뿐 탐지기는 산다»
- * 가 참이 된다.
+ * **이 수는 내려가기만 한다.** 그리고 이제 새 하드컷은 **어디에 놓아도** 다음
+ * 실행에서 저절로 잡힌다 — 등록부에 줄을 더해야 보이던 종전과 반대다.
  */
 
 /**
- * **부모가 조건부로 그리는데 등장/퇴장이 없는 표면.** 각 줄이 주장이고, 그
- * 주장은 부모의 렌더 게이트를 열어 확인한 것이다.
+ * **리터럴이다 — 센서스에서 파생하지 않는다.**
  *
- * 여기 없는데 하드컷인 표면을 발견하면 **줄을 더하는 게 아니라 고친다** — 이
- * 등록부는 부채 목록이지 허가 목록이 아니다.
+ * 종전 `BASELINE = HARD_CUT_REGISTRY.length` 가 「늘지 않는다」를 **원리적으로
+ * 실패 불가**로 만들었다(줄을 더하면 기준선도 같이 올라간다). 컨트롤 래칫이
+ * 그 결함을 물려받지 않으려고 두 기준선을 리터럴로 못박았고, 여기도 같다 —
+ * 새 하드컷을 등재하려면 이 숫자를 **손으로** 올려야 하고 그 diff 가 곧 「왜」를
+ * 적을 자리다.
  */
-type Registry = ReadonlyArray<readonly [file: string, why: string]>;
-
-const HARD_CUT_REGISTRY: Registry = [
-  // 비어 있다 (2026-08-03). 마지막 두 줄이 어떻게 사라졌는지는 아래 「빈 등록부」 절.
-];
+const BASELINE_HARD_CUTS = 13;
 
 /**
- * **리터럴 0 이다 — 파생값이 아니다.**
+ * **열 수 있는 표면의 전수** — 나가는 길의 유무와 무관하게 조건부로 나타나는 것.
  *
- * 종전엔 `= HARD_CUT_REGISTRY.length` 였고, 그러면 아래 "늘지 않는다" 테스트가
- * **원리적으로 실패할 수 없다**: 줄을 더하면 baseline 도 같이 올라간다. 지우는
- * 쪽만 자동으로 따라 내려오면 되는데 더하는 쪽까지 따라 올라가서, 래칫의 멈춤쇠가
- * 양방향으로 헐거웠다. 0 에 도달한 김에 못을 박는다 — 새 하드컷을 등재하려면
- * 이 숫자를 **손으로** 올려야 하고, 그 diff 가 곧 «왜» 를 적을 자리다.
+ * 하드컷의 분모이고, 동시에 `tests/e2e/a11y-open-surfaces.spec.ts` 가 「5/19 를
+ * 잰다」고 말할 때의 19다. 리터럴인 이유는 위와 같다.
  */
-const BASELINE_HARD_CUT_SURFACES = 0;
+const BASELINE_APPEARING_SURFACES = 19;
 
-/** 등록부가 실재하는 파일만 가리키는지 볼 때 쓴다. */
-const SURFACE_SUFFIXES = ['Panel', 'Sheet', 'Modal', 'Drawer', 'Popover', 'Dialog'];
+const SELF = 'tests/contract/surface-motion-ratchet.contract.test.ts';
+const FIXTURES = 'tests/fixtures/surface-motion';
 
-/**
- * 표면에 등장/퇴장을 주는 **인정되는 기제**. 새 기제를 도입하면 여기 등재한다.
- *
- * ⚠️ 판정은 소스 **문자열 포함**이라 주석도 코드로 읽힌다 — 프로브를 돌리다
- * 실제로 두 번 걸렸다(픽스처의 «쓰지 마라» 경고문, 그리고 패널의 JSDoc). 이
- * 탐지기는 «기제의 이름이 이 파일에 등장하는가» 까지만 안다. 그 위의 «정말
- * 나가는 길이 있는가» 는 그 표면의 단위 테스트가 진다.
- */
-const MOTION_MECHANISMS = ['AnimatePresence', 'usePanelPresence', 'useSurfaceSwap', '<Surface'];
+const census = censusHardCuts(process.cwd());
 
-/**
- * 등록부를 **인자로 받는다** — 빈 등록부 위에서도 탐지기 자체를 겨눠 볼 수
- * 있어야 하기 때문이다(아래 「탐지기 프로브」).
- */
-function stillHardCut(registry: Registry = HARD_CUT_REGISTRY): string[] {
-  return registry
-    .filter(([file]) => {
-      const source = readFileSync(file, 'utf8');
-      return !MOTION_MECHANISMS.some((m) => source.includes(m));
-    })
-    .map(([file]) => file);
-}
-
-describe('등장·퇴장 래칫', () => {
-  const hardCut = stillHardCut();
-
-  it('등록부의 파일이 전부 실재한다 — 없는 파일을 세면 수가 거짓이 된다', () => {
-    for (const [file] of HARD_CUT_REGISTRY) {
-      expect(existsSync(file), `${file} 이 없다 — 옮겼거나 지웠으면 등록부도 고친다`).toBe(true);
-      const base = file.split('/').pop()!.replace('.tsx', '');
-      expect(
-        SURFACE_SUFFIXES.some((s) => base.endsWith(s)),
-        `${base} 는 표면 접미사 관례를 안 따른다`,
-      ).toBe(true);
-    }
+describe('등장·퇴장 래칫 — 소스 전수', () => {
+  it('하드컷이 늘지 않는다 — 새 표면은 나가는 길을 지고 태어난다', () => {
+    expect(
+      census.length,
+      `조건부로 나타나는데 나가는 길이 없는 표면이 ${BASELINE_HARD_CUTS} → ${census.length} 로 늘었다.\n` +
+        `\`<Surface open={…}>\` 로 감싸면 퇴장 창 · 퇴장 클래스 · inert · 포커스 복귀가 기본으로 딸려 온다.\n` +
+        `정말 갚을 수 없는 부채라면 BASELINE_HARD_CUTS 를 손으로 올리고 그 diff 에 «왜» 를 적어라.\n` +
+        census.map((c) => `  [${c.kind}] ${c.what} — ${c.at.join(' · ')}`).join('\n'),
+    ).toBeLessThanOrEqual(BASELINE_HARD_CUTS);
   });
 
-  it('등록부가 늘지 않는다 — 새 표면은 Surface 로 감싼다', () => {
+  it('갚았으면 기준선도 내린다 — 여유를 무료로 두지 않는다', () => {
     expect(
-      HARD_CUT_REGISTRY.length,
-      '새 하드컷을 등록부에 더하지 마라. `<Surface open={…}>` 로 감싸면 퇴장 창 · 퇴장 클래스 · ' +
-        'inert · 포커스 복귀가 기본으로 딸려 온다. 정말 갚을 수 없는 부채라면 ' +
-        '`BASELINE_HARD_CUT_SURFACES` 를 손으로 올리고 그 diff 에 «왜» 를 적어라.',
-    ).toBeLessThanOrEqual(BASELINE_HARD_CUT_SURFACES);
+      census.length,
+      `하드컷이 ${BASELINE_HARD_CUTS} → ${census.length} 로 줄었다. 이 파일의 BASELINE_HARD_CUTS 도 ` +
+        `${census.length} 로 내려라. 안 내리면 그 차이가 다시 나빠질 여유로 남는다.`,
+    ).toBeGreaterThanOrEqual(BASELINE_HARD_CUTS);
   });
 
-  it('고쳤으면 등록부에서 지운다 — 여유를 무료로 두지 않는다', () => {
+  it('기준선이 **리터럴**이다 — 센서스에서 파생되면 「늘지 않는다」가 실패 불가가 된다', () => {
     expect(
-      hardCut.length,
-      `등록부에 있는데 이미 등장/퇴장을 갖춘 파일이 있다. 부채를 갚았으면 줄을 지워라:\n` +
-        HARD_CUT_REGISTRY.filter(([f]) => !hardCut.includes(f))
-          .map(([f]) => `  ${f}`)
-          .join('\n'),
-    ).toBe(HARD_CUT_REGISTRY.length);
+      /const BASELINE_HARD_CUTS = \d+;/.test(readFileSync(SELF, 'utf8')),
+      'BASELINE_HARD_CUTS 를 `census.length` 로 두면 멈춤쇠가 양방향으로 헐거워진다(구 등록부의 실제 결함).',
+    ).toBe(true);
   });
 });
 
 /**
- * **등록부가 비어도 탐지기는 산다** — `/gate-probe` 규율.
+ * **탐지기 프로브** — `/gate-probe` 규율.
  *
- * 위 세 테스트는 이제 공집합 위에서 돌아 «통과» 와 «아무것도 안 봄» 이 구별되지
- * 않는다. 여기서 판정 함수를 **양방향으로** 겨눈다.
+ * 위 세 단언은 「오늘의 수」 위에서만 돈다. 그러면 탐지기가 조용히 죽어도 —
+ * 정규식 하나가 아무것도 안 잡게 되어도 — 전부 초록이다. 그 상태와 「위반이
+ * 없다」는 화면에서 구별되지 않는다. 여기서 판정을 **양방향으로** 겨눈다.
  *
- * ②의 대상이 픽스처가 아니라 **실물 두 개**인 것은 의도다: 이 프로브가 곧 그
- * 둘의 회귀 가드가 된다. `<Surface>` 를 걷어내면 등록부가 비어 있어도 여기서
- * 빨개진다 — 그게 없으면 «고쳤다» 는 사실을 아무도 안 지킨다.
+ * ⚠️ 이 라운드의 존재 이유가 정확히 이것이므로, 프로브는 「함수가 산다」가 아니라
+ * **「제품 전수를 실제로 먹고 있다」**까지 확인한다.
  */
-describe('탐지기 프로브 — 등록부가 비어도 이 게이트는 산다', () => {
-  const HARD_CUT_FIXTURE = 'tests/fixtures/surface-motion/HardCutPanel.tsx.fixture';
-  const CONVERTED = [
-    'src/widgets/topology-map-v2/ui/TopologyV2DetailPanel.tsx',
-    'src/widgets/vault-agent-panel/ui/VaultAgentPanel.tsx',
-  ];
+describe('탐지기 프로브 — 이 게이트가 실제로 무엇을 잡는가', () => {
+  const addOne = (fixture: string) => censusHardCuts(process.cwd(), ['src', 'app'], [`${FIXTURES}/${fixture}`]);
 
-  it('① 기제가 없는 파일을 실제로 잡는다', () => {
-    expect(existsSync(HARD_CUT_FIXTURE), '프로브 픽스처가 사라지면 탐지기 증명도 사라진다').toBe(
-      true,
-    );
-    expect(stillHardCut([[HARD_CUT_FIXTURE, '프로브 — 일부러 하드컷']])).toEqual([
-      HARD_CUT_FIXTURE,
-    ]);
+  it('① 소스 전수를 실제로 먹는다 — 빈 집합 위에서 놀지 않는다', () => {
+    // 파일 하나도 안 읽고 0을 돌려주는 탐지기와 「위반 없음」을 가른다.
+    expect(census.length, '한 건도 못 셌다면 스캐너나 경로가 깨진 것이다').toBeGreaterThan(0);
+    expect(
+      new Set(census.map((c) => c.file)).size,
+      '전부 한 파일에서 나왔다면 스캔 범위가 무너진 것이다',
+    ).toBeGreaterThan(3);
   });
 
-  it('② 기제가 있는 파일은 놓아준다 — 전환한 둘이 되돌아가면 여기서 걸린다', () => {
-    for (const file of CONVERTED) {
+  it('② 소유자가 심었던 그 모양 — 이름 없는 인라인 오버레이를 잡는다', () => {
+    const fixture = `${FIXTURES}/InlineOverlay.tsx.fixture`;
+    expect(existsSync(fixture), '프로브 픽스처가 사라지면 탐지기 증명도 사라진다').toBe(true);
+    const withProbe = addOne('InlineOverlay.tsx.fixture');
+    expect(
+      withProbe.length,
+      '`{open && <div className="fixed … z-50">}` 를 못 잡았다. 이게 구 게이트가 초록이던 바로 그 모양이다.',
+    ).toBe(census.length + 1);
+    expect(withProbe.some((c) => c.file.endsWith('InlineOverlay.tsx.fixture') && c.kind === 'inline')).toBe(true);
+  });
+
+  it('③ 부모가 조건부로 그리는 명명 표면을 잡는다', () => {
+    const withProbe = addOne('NamedHardCutHost.tsx.fixture');
+    expect(withProbe.length).toBe(census.length + 1);
+    expect(withProbe.some((c) => c.what === 'ProbeSurfacePanel' && c.kind === 'named')).toBe(true);
+  });
+
+  it('④ 내용 교체는 세지 않는다 — 이 판별식이 죽으면 게이트가 소음이 된다', () => {
+    const withProbe = addOne('ContentSwap.tsx.fixture');
+    expect(
+      withProbe.length,
+      '이미 마운트된 컨테이너 안의 내용 교체를 하드컷으로 셌다. 그러면 고칠 것 없는 자리에 ' +
+        '나가는 길을 붙이라고 요구하기 시작한다 — 실물 세 자리가 이 부류다.',
+    ).toBe(census.length);
+  });
+
+  it('⑤ 기제를 갖춘 표면은 놓아준다 — 전환한 것이 되돌아가면 여기서 걸린다', () => {
+    const converted = [
+      'src/widgets/topology-map-v2/ui/TopologyV2DetailPanel.tsx',
+      'src/widgets/vault-agent-panel/ui/VaultAgentPanel.tsx',
+      'src/widgets/project-drawer/ui/ProjectDrawer.tsx',
+      'src/widgets/search-palette/ui/SearchPalette.tsx',
+    ];
+    for (const file of converted) {
+      expect(existsSync(file), `${file} 이 사라졌다 — 회귀 가드도 같이 죽는다`).toBe(true);
       expect(
-        stillHardCut([[file, '프로브 — 이미 전환된 표면']]),
-        `${file} 에서 등장/퇴장 기제가 사라졌다 — 등록부가 비어 있어도 이건 회귀다`,
-      ).toEqual([]);
+        MOTION_MECHANISMS.some((m) => readFileSync(file, 'utf8').includes(m)),
+        `${file} 에서 등장/퇴장 기제가 사라졌다 — 센서스가 13 안이어도 이건 회귀다`,
+      ).toBe(true);
+      expect(census.some((c) => c.file === file && c.kind === 'named')).toBe(false);
     }
+  });
+
+  it('⑦ 열 수 있는 표면의 **분모**가 조용히 늘지 않는다 — 접근성 측정 목록의 입력', () => {
+    /*
+     * 이 수는 하드컷 센서스의 분모이자 `tests/e2e/a11y-open-surfaces.spec.ts` 가
+     * 「5/19 를 잰다」고 말할 때의 19다. 새 표면이 들어오면 여기가 먼저 빨개지고,
+     * 그때 **그 표면을 열어 재고 있나** 를 함께 묻는다. 분모가 없으면 「열린 표면
+     * 위반 0」은 몇 개를 안 열었는지 모르는 채로 하는 말이 된다.
+     */
+    const appearing = censusAppearingSurfaces(process.cwd());
+    expect(
+      appearing.length,
+      `조건부로 나타나는 표면이 ${BASELINE_APPEARING_SURFACES} → ${appearing.length} 로 늘었다.\n` +
+        `새 표면을 더했으면 a11y-open-surfaces.spec.ts 의 OPENERS 에 그것을 여는 길이 있는지 보고,\n` +
+        `그 뒤 이 리터럴을 손으로 올려라 — 분모가 조용히 커지면 「5/19」가 「5/30」이 되어 있어도 아무도 모른다.\n` +
+        appearing.map((c) => `  [${c.kind}] ${c.what} — ${c.at[0]}`).join('\n'),
+    ).toBeLessThanOrEqual(BASELINE_APPEARING_SURFACES);
+    expect(appearing.length, '하드컷은 등장 표면의 부분집합이다').toBeGreaterThanOrEqual(census.length);
+  });
+
+  it('⑥ 기제 목록이 살아 있다 — 목록이 비면 모든 표면이 하드컷이 된다', () => {
+    expect(MOTION_MECHANISMS.length).toBeGreaterThan(3);
+    // 등장 전용 클래스는 기제가 아니다 — 나가는 길이 없는 것이 이 게이트가 세는 부채다.
+    expect(MOTION_MECHANISMS).not.toContain('map-overlay-in');
+    expect(MOTION_MECHANISMS).not.toContain('animate-in');
   });
 });

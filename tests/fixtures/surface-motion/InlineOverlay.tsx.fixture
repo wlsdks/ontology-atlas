@@ -1,0 +1,25 @@
+/*
+ * 탐지기 프로브 — **소유자가 실제로 심었던 그 모양.**
+ *
+ * 2026-08-04: 새 패널 파일에 `{open && <div className="fixed …">}` 를 넣고
+ * 래칫을 돌렸더니 초록이었다. 등록부만 순회하는 탐지기에게는 이름 없는 인라인
+ * 오버레이가 통째로 안 보였기 때문이다. 이 픽스처가 그 사각지대의 상주 증거다.
+ *
+ * 확장자가 `.fixture` 인 이유: tsc·eslint·vitest 의 시야 밖에 두려는 것이다.
+ * 컴파일되는 순간 "고쳐야 할 코드" 로 오해받고, 누군가 친절하게 나가는 길을
+ * 붙여 주면 프로브가 조용히 죽는다.
+ *
+ * ⚠️ **인정되는 기제의 이름이 하나도 들어가면 안 된다** — 주석에도. 탐지기는
+ * 소스를 문자열로 훑으므로 «쓰지 말라» 고 적은 주석조차 기제를 쓴 것으로 읽힌다.
+ */
+export function InlineOverlayHost({ open, title }: { open: boolean; title: string }) {
+  return (
+    <>
+      {open && (
+        <div role="dialog" className="fixed inset-0 z-50 bg-black">
+          <p>{title}</p>
+        </div>
+      )}
+    </>
+  );
+}

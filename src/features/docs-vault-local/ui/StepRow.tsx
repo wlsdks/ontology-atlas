@@ -61,9 +61,24 @@ export function StepRow({ n, title, desc, testId, children }: StepRowProps) {
        * 번호를 제목 줄로 올리면 그 띠가 사라지고 내용이 폭을 다 쓴다.
        */}
       <p className="flex items-center gap-2">
+        {/*
+         * 잉크는 **틴트 위의 인디고**(`--color-indigo-text-soft`)다 —
+         * 표식 인디고(`--color-indigo-accent`)가 아니다.
+         *
+         * 2026-08-04 실측: accent(#7170ff)를 `indigo-a16`/panel 합성
+         * `rgb(28,30,48)` 위에 올리면 **4.27:1** 로 AA(4.5:1) 미달이다.
+         * text-soft 는 같은 자리에서 **8.39:1**. 이 저장소가 두 인디고를
+         * 가른 이유가 정확히 이것이고(`accent-ink-contrast.contract.test.ts`),
+         * 여기는 그 라이선스를 손글씨로 우회하고 있었다 — 값 층의 `tone` 을
+         * 안 쓰니 그 게이트의 소스 스캔에도 안 잡혔다.
+         *
+         * ⚠️ `aria-hidden` 이라 axe 의 `color-contrast` 도 이 자리를 건너뛴다.
+         * AT 에서 숨긴 것이지 눈에서 숨긴 것이 아니므로, 보는 사람에게는
+         * 그대로 저대비 글자다. 자동 검사 둘의 사각지대가 겹친 자리였다.
+         */}
         <span
           aria-hidden
-          className="inline-flex size-6 shrink-0 items-center justify-center rounded-full bg-[color:var(--color-indigo-a16)] font-mono text-label font-medium text-[color:var(--color-indigo-accent)]"
+          className="inline-flex size-6 shrink-0 items-center justify-center rounded-full bg-[color:var(--color-indigo-a16)] font-mono text-label font-medium text-[color:var(--color-indigo-text-soft)]"
         >
           {n}
         </span>
