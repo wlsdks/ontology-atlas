@@ -126,11 +126,29 @@ function countHandWrittenControls(): { total: number; byFile: Array<[string, num
   for (const root of ROOTS) {
     for (const file of walk(root)) {
       const source = readFileSync(file, 'utf8');
+      // `const X = controlClass({…})` / `const X = cn(controlClass({…}), …)` 의 이름들.
+      const systemConstants = [...source.matchAll(/const\s+([A-Za-z_$][\w$]*)\s*=[^;\n]*controlClass\s*\(/g)].map(
+        (m) => m[1],
+      );
       let n = 0;
       for (const m of source.matchAll(/<button\b/g)) {
         const tag = openingTag(source, m.index + m[0].length);
         if (!/className/.test(tag)) continue; // 클래스가 없으면 손으로 쓴 규격이 아니다
-        if (/controlClass\s*\(/.test(tag)) continue; // 시스템을 통과했다
+        /*
+         * 시스템을 통과했나. **여는 태그의 리터럴만 보는 것으로는 부족하다** —
+         * 완성된 클래스를 상수로 뽑아 여러 자리가 공유하면(`const INDIGO_CHIP =
+         * controlClass({…})`) 그 소비처들이 「손으로 쓴 것」으로 잡힌다.
+         *
+         * 2026-08-03 회수 라운드가 그 벌점을 실제로 맞았다: 인디고 강조 칩이
+         * 테두리·호버까지 있어야 완성이라 상수 4벌로 묶어야 했는데, 그러면 래칫이
+         * 나빠졌다고 말한다. **옳은 리팩터를 말리는 게이트는 게이트가 아니다.**
+         *
+         * 그래서 같은 파일 안에서 `controlClass(...)` 로 만든 상수의 이름을 모아,
+         * 그 이름을 쓰는 태그도 통과시킨다. 안전 방향(과소 계상)이 아니라 정확
+         * 방향이다 — 그 상수는 실제로 시스템을 통과한 값이다.
+         */
+        if (/controlClass\s*\(/.test(tag)) continue;
+        if (systemConstants.length > 0 && systemConstants.some((name) => new RegExp(`\\b${name}\\b`).test(tag))) continue;
         n += 1;
       }
       if (n > 0) {

@@ -162,6 +162,21 @@ const control = cva(DISABLED, {
     /** 눌려 있는 상태(`aria-pressed` / `aria-selected` 와 **짝**이어야 한다). */
     active: { true: '', false: '' },
     /**
+     * **높이를 고정한다** — 크롬 계약이 못박은 자리에서만.
+     *
+     * ## 왜 이 축이 필요한가 (2026-08-03 회수 라운드 실측)
+     *
+     * 칩 램프는 패딩으로 높이가 정해져 `md`=30 · `lg`=34 를 낸다. 그런데 설정
+     * 시트 계약(`settings-sheet-type-dialect.contract.test.ts`)은 **`h-8`(32)** 을
+     * 문자열로 못박는다. **어느 조합으로도 2px 이 남는다** — 램프를 쓰면 계약이
+     * 깨지고 계약을 지키면 램프 밖이다.
+     *
+     * 높이를 램프의 기본값으로 만들지 않은 이유는 그대로 유효하다(칩 143개 중
+     * 명시 높이는 38개뿐, 강제하면 70%의 키가 바뀐다). 그래서 **기본값은 여전히
+     * 「패딩이 높이를 정한다」**이고, 계약이 치수를 소유한 자리만 이 축을 켠다.
+     */
+    fixedHeight: { true: '', false: '' },
+    /**
      * **문장 속에 있는가.** `link` 에만 뜻이 있다.
      *
      * ## 왜 이 축이 필요한가 (2026-08-03 실측)
@@ -222,8 +237,11 @@ const control = cva(DISABLED, {
     { shape: 'link', active: true, class: 'text-[color:var(--color-text-primary)]' },
     // 홀로 선 글자 컨트롤만 타깃을 싣는다 — 문장 속은 WCAG 2.5.8 이 면제한다.
     { shape: 'link', inline: false, class: 'min-h-11' },
+    // 크롬 계약의 32px — `--chrome-tile-size` 와 같은 단이다.
+    { shape: 'chip', fixedHeight: true, class: 'h-8 py-0' },
+    { shape: 'pill', fixedHeight: true, class: 'h-8 py-0' },
   ],
-  defaultVariants: { shape: 'chip', size: 'md', tone: 'default', active: false, inline: false },
+  defaultVariants: { shape: 'chip', size: 'md', tone: 'default', active: false, inline: false, fixedHeight: false },
 });
 
 export type ControlShape = NonNullable<VariantProps<typeof control>['shape']>;

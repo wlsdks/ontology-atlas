@@ -126,6 +126,19 @@ describe('controlClass — 모양이 실제로 서로 다르다', () => {
     }
   });
 
+  it('계약이 치수를 소유한 자리는 높이를 고정할 수 있다 — 2px 이 남지 않게', () => {
+    /*
+     * 칩 램프는 패딩으로 높이가 정해져 md=30 · lg=34 다. 그런데 설정 시트 계약은
+     * `h-8`(32)을 문자열로 못박아, **어느 조합으로도 2px 이 남았다**(2026-08-03
+     * 회수 라운드 실측). 램프를 쓰면 계약이 깨지고 계약을 지키면 램프 밖이다.
+     */
+    expect(controlClass({ shape: 'chip', fixedHeight: true })).toContain('h-8');
+    expect(controlClass({ shape: 'pill', fixedHeight: true })).toContain('h-8');
+    // 기본값은 여전히 「패딩이 높이를 정한다」 — 칩 143개 중 명시 높이는 38개뿐이라
+    // 강제하면 70%의 키가 바뀐다.
+    expect(controlClass({ shape: 'chip' })).not.toMatch(/\bh-\d/);
+  });
+
   it('정사각 모양은 좌우 패딩을 받지 않는다 — 받으면 정사각이 아니다', () => {
     for (const size of SIZES) {
       const cls = controlClass({ shape: 'icon', size });
