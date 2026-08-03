@@ -39,6 +39,22 @@ critiques and prescribes; the guardian produces the single verdict and is the
 only one that may edit code. This mirrors the PO Council, where
 Accountable Value Owner is deliberately not an agent.
 
+## 이 카운슬 **앞에** 오는 단계 — 발산
+
+**이 카운슬은 serial 이다.** R1 비평 → R2 교차비평 → R3 평결이 전부 **이미
+만들어진 하나**를 평가한다. Dow et al.(ACM TOCHI 2010)이 실험으로 보인 것은 그
+반대다 — 여러 개를 만든 뒤 피드백을 받는 쪽이 결과 품질 · 발산 · 자기효능감
+**셋 다**에서 우월했다.
+
+그래서 비자명한 시각/레이아웃/상호작용/모션 변경은 **`/design-directions` 를
+먼저 돌린다**: `chief` 가 3~4개 갈래를 글과 ASCII 로 그리고(코드 0), 소유자가
+하나를 고르고, 그다음에 짓는다. **카운슬은 고른 갈래를 심사하지 갈래를 고르지
+않는다.**
+
+순서가 뒤집히면 카운슬이 갈래 탐색을 대신하게 된다 — 2026-08-03 에 실제로
+그랬고, 다섯 자리가 두 라운드를 돌아 나온 결론이 처음에 세 줄로 그릴 수 있는
+갈래였다.
+
 ## Which seats to convene
 
 Convening all eight for a label change is the process theater the design OS
@@ -75,8 +91,9 @@ other. Every seat gets:
 
 **측정 자리는 자기 계기를 반드시 실행한다** — 호출자가 요청하지 않아도. 「모션」은
 `/motion-verify`(macOS 녹화 → 프레임 → 곡선), 「반응형」은 `/responsive-sweep`
-(밴드 매트릭스 rect 실측), 그리고 구현이 끝난 화면이면 `/design-audit`(겹침 ·
-치수 편차 · 토큰 이탈을 재는 마지막 관문). 계기 없는 판정은 무효다.
+(밴드 매트릭스 rect 실측),
+그리고 구현이 끝난 화면이면 `/design-audit`(겹침 · 치수 편차 · 토큰 이탈을 재는
+마지막 관문). 계기 없는 판정은 무효다.
 
 A seat that could not open the real thing must say so and withhold its verdict.
 Reading a patch and judging craft from it is the failure this protocol replaces.

@@ -329,3 +329,61 @@ describe('카운슬 산출물은 평문 요약으로 시작한다', () => {
     expect(read(path).replace(/\s+/g, ' ')).toMatch(/생략할 수 없다/);
   });
 });
+
+/**
+ * 발산 단계 (`/design-directions`, 2026-08-03).
+ *
+ * 카운슬은 **serial** 이다 — R1 비평 → R2 교차비평 → R3 평결이 전부 이미
+ * 만들어진 하나를 평가한다. Dow et al.(ACM TOCHI 2010)이 실험으로 보인 것은
+ * 그 반대다: 여러 개를 만든 뒤 피드백을 받는 쪽이 결과 품질·발산·자기효능감
+ * **셋 다** 우월했다. 그 발산 단계가 통째로 없었다.
+ *
+ * 이 게이트가 지키는 것은 스킬의 **문장이 아니라 세 가지 구조**다 — 근거가
+ * 붙어 있는가, 발산 소유자가 짓는 쪽이 아닌가, 현행이 후보에 들어가는가.
+ */
+describe('발산 단계 — /design-directions', () => {
+  const DIRECTIONS_SKILL = '.claude/skills/design-directions/SKILL.md';
+  const DIRECTIONS_MIRROR = '.agents/skills/design-directions/SKILL.md';
+
+  it('스킬과 미러가 바이트 동일하다', () => {
+    expect(read(DIRECTIONS_SKILL)).toBe(read(DIRECTIONS_MIRROR));
+  });
+
+  it('학술 근거를 달고 있다 — 취향이 아니라 실험 결과다', () => {
+    const skill = read(DIRECTIONS_SKILL).replace(/\s+/g, ' ');
+    // 저자 목록 길이에 걸리지 않게 **두 사실을 따로** 본다 — 인용 형식이 바뀌어도
+    // 근거가 남아 있으면 통과해야 한다(문장 핀을 만들지 않는다).
+    expect(skill, '저자를 밝혀야 한다').toContain('Dow');
+    expect(skill, '발행처와 연도를 밝혀야 한다').toContain('TOCHI 2010');
+    expect(skill, 'serial 과 대비해야 근거가 우리 프로토콜에 붙는다').toContain('serial');
+  });
+
+  /*
+   * 이 단언이 이 파일에서 가장 중요하다. 짓고 싶어 하는 쪽이 선택지를 만들면
+   * 나머지 갈래가 허수아비가 되고, 그 순간 발산은 변경을 정당화하는 의식이 된다
+   * — 카운슬을 만든 이유와 같은 실패다.
+   */
+  it('갈래를 그리는 자리가 짓는 자리와 분리돼 있다', () => {
+    const skill = read(DIRECTIONS_SKILL).replace(/\s+/g, ' ');
+    expect(skill, '발산 소유자를 chief 로 명시해야 한다').toMatch(
+      /소유자는 [`*]*chief/,
+    );
+    expect(skill, `${DECIDER_AGENT}(짓는 쪽)이 소유자가 아님을 명시해야 한다`).toContain(
+      DECIDER_AGENT,
+    );
+  });
+
+  it('현행이 후보에 들어가는 것을 규율로 못박는다', () => {
+    // 현행이 없으면 「바꾸지 않는다」가 이길 수 없고, 그러면 절차가 아니라 의식이다.
+    expect(read(DIRECTIONS_SKILL).replace(/\s+/g, ' ')).toMatch(
+      /하나는 [「"']?지금 그대로[」"']?/,
+    );
+  });
+
+  it('카운슬 스킬이 이 단계를 자기 앞 순서로 가리킨다', () => {
+    // 순서가 뒤집히면 카운슬이 갈래 탐색을 대신하게 된다 — 2026-08-03 에 실제로 그랬다.
+    expect(read(SKILL_PATH), 'design-council 이 발산 단계를 앞 순서로 가리켜야 한다').toContain(
+      'design-directions',
+    );
+  });
+});
