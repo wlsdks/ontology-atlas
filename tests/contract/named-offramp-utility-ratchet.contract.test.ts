@@ -80,7 +80,7 @@ function measure(): Map<string, { count: number; files: Map<string, number> }> {
   expect(files.length, '스캔이 비었다 — 빈 집합 위의 래칫은 게이트가 아니다').toBeGreaterThan(150);
 
   const result = new Map<string, { count: number; files: Map<string, number> }>();
-  for (const [name, re] of FAMILIES) result.set(name, { count: 0, files: new Map() });
+  for (const [name] of FAMILIES) result.set(name, { count: 0, files: new Map() });
   for (const file of files) {
     const source = readFileSync(file, 'utf8');
     const rel = relative(process.cwd(), file);
