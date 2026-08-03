@@ -1458,6 +1458,10 @@ Every valid node has both identities: immutable \`uid\` is the permanent machine
 
 All node rows carry \`{uid, slug, ...}\`: UID is permanent identity, slug is the current readable address. Graph relation values and graph-operation inputs remain slug-based.
 
+## Import evidence is not an approved relation
+
+\`infer_imports.moduleEdges\` are observed source evidence only. Each row includes a bounded exact file-edge receipt. Never convert a row directly into \`depends_on\`, never fabricate missing endpoints from its folder slug, and never emit or execute a batch write merely because the import exists. First read both ontology concepts, verify the observed direction, explain why that code fact establishes a meaning-level dependency, and ask the user. Only after explicit approval may you write one relation with \`why\`. A missing rationale or approval remains \`rationale_review_required\`; unknown is preferable to invented dependency completeness.
+
 All tool input schemas are strict: unknown arguments are rejected instead of being ignored, unknown tool names are rejected with the closest tool-name hint, and invalid enum values are rejected too. Tool-level error responses include \`structuredContent: { ok: false, errorCode, error, ...repairFields }\`; \`unknown_tool\` means fix the reported tool name, \`unknown_argument\` means fix reported argument names, while \`invalid_arguments\` means fix reported enum/filter/type values. For repairable strict-input errors, read structured fields such as \`receivedTool\`, \`receivedArgument\`, \`unknownArguments\`, \`rowName\`, \`receivedField\`, \`unknownFields\`, \`allowedFields\`, \`receivedFields\`, \`firstSeenAt\`, \`receivedValue\`, \`suggestion\`, \`allowedTools\`, \`allowedArguments\`, \`allowedValues\` before retrying. For missing node errors, read \`missingUid\` for an exact UID miss or \`missingSlug\` / \`similarSlugs\` / \`recoveryTools\` / optional \`createTool\` for a slug miss instead of parsing prose. For slug conflicts, read \`conflictSlug\`, \`recoveryTools\`, and optional \`overwriteOption\`. Do not parse the human-readable text unless a client cannot read \`structuredContent\`. If you see an error like \`Unknown tool: list_concept. Did you mean "list_concepts"?\`, \`Unknown argument "lmit" for list_concepts. Did you mean "limit"?\`, \`Unknown arguments for list_concepts: "lmit" (did you mean "limit"?), "summry" (did you mean "summary"?)\`, or \`operation must be one of: ... Did you mean "overview"?\`, fix every reported key/value before retrying; do not assume the server fell back to a default.
 
 \`health\`, \`workspace_brief\`, and \`agent_brief\` can tune their internal graph probes with \`componentLimit\`, \`cycleLimit\`, \`recommendationLimit\`, \`orderLimit\`, \`nodeLimit\`, \`dependencyTypes\`, and \`componentTypes\`. \`dependencyTypes\` / \`componentTypes\` accept relation types ${RELATION_TYPE_UNION}; typoed values fail with nearest-value hints. Use these controls for large vaults or focused diagnostics instead of pulling the full compile artifact.
@@ -1475,7 +1479,7 @@ When the user says "이 codebase 분석해줘" or you find only starter nodes:
 5. Answer every \`extractionContract.competencyQuestions\` item with \`answer\`, \`status\` (\`answered\` / \`partial\` / \`visible-gap\`), and typed \`witnesses\` (concepts, exact proposal relations, evidence sources, attached paths). Use \`answered\` only when every \`requiredWitnesses\` kind is present; impact also requires a \`depends_on\` witness. If Atlas exposes a path but not its role, preserve that as partial/visible-gap instead of calling it canonical. Report unsupported assertions, citation gaps, implementation-name leakage, undefined/circular concepts, unresolved conflicts, and question coverage.
 6. Call \`analyze_repo_structure\` again with the complete \`proposal\`: project, domains, capabilities, elements, typed relations, citations, confidence, and every typed competency answer. Fix every error finding; inspect every partial/visible-gap warning. Do not call write tools unless \`proposalValidation.canWrite\` is true and a deterministic \`writePlan\` is present. \`canWrite:true\` with warnings means the gap is preserved, not fully answered.
 7. Show that exact validated graph and obtain explicit user approval. Unknown is a valid result; invented completeness is not. If the user selects a subset, remove rejected endpoints and revalidate the complete subset before writing.
-8. After approval, pass \`writePlan.concepts\` rows unchanged to \`add_concepts\` (chunks of 50). Only when every concept row succeeds, pass \`writePlan.relations\` rows unchanged to \`add_relations\`. \`canWrite\` proves evidence readiness, not approval, atomicity, or write success. Then run \`validate_vault\`, \`compile_ontology({summary:true})\`, and verify a project → domain → capability → element path.
+8. After approval, pass \`writePlan.concepts\` rows unchanged to \`add_concepts\` (chunks of 50). Only when every concept row succeeds, pass the proposal-validated \`writePlan.relations\` rows unchanged to \`add_relations\`. Raw \`infer_imports.moduleEdges\` are never this write plan and must pass the separate import evidence review above. \`canWrite\` proves evidence readiness, not approval, atomicity, or write success. Then run \`validate_vault\`, \`compile_ontology({summary:true})\`, and verify a project → domain → capability → element path.
 
 A non-object row, unknown row fields, missing endpoint, or duplicate slug fail independently with \`ok: false\`. Invalid-only batches return no row-level write metadata and no top-level \`postWriteMaintenance\`; treat them as dry validation evidence. For relation batches, Invalid-only batches return no row-level \`changed\` / \`alreadyExists\` write metadata and no top-level \`postWriteMaintenance\`; treat them as dry validation evidence. An unknown type row includes a closest-value hint such as \`Did you mean "depends_on"?\`. Duplicate slugs fail as \`concepts[n] duplicate slug in input batch; first seen at concepts[m]\`. Retry only corrected rows.
 
@@ -2066,7 +2070,7 @@ const TOOLS = [
     name: 'add_concepts',
     description:
       'Batch-create multiple nodes in one call — same per-row shape as `add_concept`. ' +
-      'Use after `analyze_repo_structure` / `infer_imports` (or any bootstrap flow) ' +
+      'Use after `analyze_repo_structure` or another reviewed proposal flow ' +
       'when the agent has K accepted candidates from the user — replaces K×`add_concept` ' +
       'round-trips. Each row is processed independently: existing-slug / invalid-kind / ' +
       'missing-required-fields / non-object row shape / unknown row fields surface as `{ slug, ok: false, error }` rows whose errors include a `concepts[n]` row label, single unknown-field rows include `receivedField` plus one-row `unknownFields`, multi unknown-field rows report every unknown field with nearest hints and `Received fields: ...`, and duplicate input slugs report the later `concepts[n]` row plus first-seen `concepts[m]` with structured `rowName` / `firstSeenAt`; the rest ' +
@@ -2167,7 +2171,7 @@ const TOOLS = [
       'so concurrent external edits throw VaultConflictError. ' +
       'Invalid relation `type` is rejected before endpoint slug resolution with a closest-value hint and structured `valueName` / `receivedValue` / `suggestion` / `allowedValues` repair fields in `structuredContent`, with no `changed`, `alreadyExists`, or `postWriteMaintenance` write metadata. ' +
       'Changed writes return ' + POST_WRITE_MAINTENANCE_GUIDANCE + ' so agents can immediately see graph cleanup / relation suggestions after the edge lands. ' +
-      '**For multiple edges (e.g. all suggestedRelations from analyze, or all moduleEdges from infer_imports) use `add_relations({relations: [...]})` (batch, idempotent, max 50).**',
+      '**For multiple already-approved semantic edges use `add_relations({relations: [...]})` (batch, idempotent, max 50). `infer_imports.moduleEdges` require exact-evidence review, a semantic rationale, and human approval first.**',
     inputSchema: {
       type: 'object',
       properties: {
@@ -2215,8 +2219,7 @@ const TOOLS = [
     name: 'add_relations',
     description:
       'Batch-add multiple relations in one call — same per-row shape as `add_relation`. ' +
-      'Use after `analyze_repo_structure` (suggestedRelations) / `infer_imports` (moduleEdges) ' +
-      'when the agent has K accepted edges from the user — replaces K×`add_relation` round-trips. ' +
+      'Use after `analyze_repo_structure` or another review flow when the agent has K semantic edges accepted by the user — replaces K×`add_relation` round-trips. Inferred module edges are not accepted merely because imports exist; review exact evidence and include `why`. ' +
       'Each row is processed independently and idempotently: existing edges return `{ok: true, alreadyExists: true}`; ' +
       'missing source/target slugs / unknown type / non-object row shape / unknown row fields surface as `{ok: false, error}` with a `relations[n]` row label and structured `rowName`; unknown type rows include a closest-value hint with structured `valueName` / `receivedValue` / `suggestion` / `allowedValues`; single unknown-field rows include `receivedField` plus one-row `unknownFields`; multi unknown-field rows report every unknown field with nearest hints, `allowedFields`, `receivedFields`, and `Received fields: ...`. ' +
       '`relations[]` order in the response matches the input. Cap = 50 per call. ' +
@@ -3429,8 +3432,8 @@ const TOOLS = [
     name: 'infer_imports',
     description:
       'R17 (autonomous ingest deeper) — walk TS/JS files in a code repo and infer file-level + module-level import edges. It also walks bounded root Python packages. ' +
-      'side effect 0 (vault frontmatter NOT modified). The agent reviews moduleEdges (capability A → capability B from import count) and selectively passes accepted edges to add_relation as `depends_on`. ' +
-      'Each module edge includes `kindCounts` so the agent can distinguish static-heavy edges from dynamic/require/reexport/side-effect evidence before writing. ' +
+      'side effect 0 (vault frontmatter NOT modified). `moduleEdges` are source-backed review candidates, never self-approving semantic `depends_on` relations. ' +
+      'Each module edge includes `kindCounts` plus a bounded exact file-edge `evidence` receipt so the agent can inspect source direction before asking whether the semantic dependency is true. ' +
       'Detects:\n' +
       '  - relative imports (./, ../) → resolved to file paths\n' +
       '  - dynamic import() / require() / export ... from\n' +
@@ -3440,8 +3443,8 @@ const TOOLS = [
       '  - external package imports listed separately\n' +
       '  - tsconfig.json compilerOptions.paths aliases first, then fallback common @/* aliases → resolved to internal files when the target exists; otherwise unresolved as alias-not-found\n\n' +
       'Use after analyze_repo_structure to pull *real* dependency edges from the code, not just suggestedRelations heuristics. ' +
-      'Unless reconcile:false, also returns `reconciliation` (+ `reconciliationSummary` counts): the module edges diffed against the vault\'s compiled depends_on edges into `inBoth` / `inCodeMissingFromVault` (each with an add_relation `proposedAction`) / `inVaultNotInCode` (possibly-stale vault edges) — i.e. EXACTLY what to sync toward code↔vault drift 0, not a raw firehose. ' +
-      'Single source of truth preserved — only the user (via your subsequent add_relation calls) writes to the vault.',
+      'Unless reconcile:false, also returns `reconciliation` (+ `reconciliationSummary` counts): the module edges diffed against the vault\'s compiled depends_on edges into `inBoth` / review-required missing edges / `inVaultNotInCode` (possibly-stale vault edges). Missing edges carry source evidence and a `rationale_review_required` gate, never a write action. ' +
+      'Single source of truth preserved — inspect both concepts, explain why the semantic dependency holds, and ask the user before one explicit add_relation call with `why`.',
     inputSchema: {
       type: 'object',
       properties: {
@@ -3549,8 +3552,27 @@ const TOOLS = [
                 description:
                   `Import kind histogram for this collapsed module edge. Allowed keys: ${IMPORT_EDGE_KIND_DESCRIPTION}.`,
               },
+              evidence: {
+                type: 'array',
+                maxItems: 5,
+                description: 'Bounded exact file-level import receipts supporting this collapsed module edge.',
+                items: {
+                  type: 'object',
+                  properties: {
+                    from: NON_BLANK_STRING_SCHEMA,
+                    to: NON_BLANK_STRING_SCHEMA,
+                    kind: { type: 'string', enum: IMPORT_EDGE_KIND_VALUES },
+                  },
+                  required: ['from', 'to', 'kind'],
+                  additionalProperties: false,
+                },
+              },
+              evidenceLimited: {
+                type: 'boolean',
+                description: 'True when more file edges exist than the bounded evidence receipt includes.',
+              },
             },
-            required: ['from', 'to', 'count', 'kindCounts'],
+            required: ['from', 'to', 'count', 'kindCounts', 'evidence', 'evidenceLimited'],
             additionalProperties: false,
           },
         },
@@ -3562,12 +3584,12 @@ const TOOLS = [
             inBoth: { type: 'array', items: { type: 'object' } },
             inCodeMissingFromVault: {
               type: 'array',
-              description: 'depends_on edges present in the code import graph but missing from the vault, with BOTH endpoints already existing vault nodes (directly landable). Each has a `proposedAction` for add_relations.',
+              description: 'Import-backed review candidates missing from the vault whose endpoints already exist. Each carries exact source evidence plus `rationale_review_required`; no write action is emitted.',
               items: { type: 'object' },
             },
             inCodeMissingEndpointAbsent: {
               type: 'array',
-              description: 'code import edges whose from/to includes a slug that is not yet a vault node (`absentEndpoints`) — create the node(s) before adding the relation.',
+              description: 'Import-backed review candidates whose from/to includes a slug not yet modelled as a vault node (`absentEndpoints`). Model endpoints, inspect evidence, supply semantic rationale, and obtain human approval before any relation write.',
               items: { type: 'object' },
             },
             inVaultNotInCode: {
@@ -3601,7 +3623,7 @@ const TOOLS = [
       'Use for large or already-existing projects where the agent needs a resumable ontology indexing checkpoint before writing. ' +
       'Its extractionContract treats source facts as observed evidence, README/folder meanings as proposals, and only persisted ontology meanings as shared; it also returns competency questions, uncertainty, approval gates, and whether active-vault validation actually applies to the analyzed project. ' +
       'The plan distinguishes raw candidates into existing, ambiguous-alias review, and genuinely new buckets, then returns exact reviewCalls for retrieving full rows. ' +
-      'side effect 0: this tool never writes markdown. To land accepted candidates, use add_concepts/add_relations explicitly or the CLI `ontology-atlas index --apply` command.',
+      'side effect 0: this tool never writes markdown. CLI `index --apply` may write analyzer-proposed concepts and containment, but inferred imports remain review-only and are never auto-promoted to depends_on.',
     inputSchema: {
       type: 'object',
       properties: {
@@ -6044,8 +6066,8 @@ function resolveExistingVaultUid(uid, docs = null) {
   return mergedMatches[0]?.slug ?? null;
 }
 
-// R+ — add_relation 의 batch 변종. analyze_repo_structure (suggestedRelations)
-// / infer_imports (moduleEdges) 의 출력을 한 호출에 land. 각 row 는
+// R+ — add_relation 의 batch 변종. 이미 의미 검토와 승인을 마친 relation을
+// 한 호출에 land. 각 row 는
 // addRelation 으로 직렬 호출 — 같은 from 슬러그가 여러 row 에 등장해도
 // readDoc 이 매번 디스크를 다시 읽어 누락 없이 누적 됨 (단, expected_mtime
 // 을 같이 넘기면 첫 row 후 stale 이라 fail — tool description 에 명시).
@@ -7174,8 +7196,8 @@ function analyzeRepoStructureTool({ rootPath, maxDepth, ignore, proposal } = {})
   });
 }
 
-// R17 — infer_imports thin wrapper. side effect 0. 결과 moduleEdges 가
-// agent 의 add_relation depends_on 후보.
+// R17 — infer_imports thin wrapper. side effect 0. 결과 moduleEdges 는
+// exact source evidence가 붙은 rationale-review 후보다.
 function inferImportsTool({ rootPath, sourceFolders, ignore, maxFiles, reconcile = true } = {}) {
   requireOptionalNonBlankString(rootPath, 'rootPath');
   requireOptionalStringArray(sourceFolders, 'sourceFolders', { max: SOURCE_FOLDER_ARRAY_MAX_ITEMS });
@@ -7191,7 +7213,7 @@ function inferImportsTool({ rootPath, sourceFolders, ignore, maxFiles, reconcile
 
   // Atlas roadmap Track A #1 — reconcile the code-derived module edges against
   // the vault's compiled depends_on edges so the agent gets "exactly what to
-  // sync", not a raw firehose. Read-only; the agent still lands via add_relation.
+  // review", not a raw firehose. Read-only; raw imports never land directly.
   // Guarded: a missing/unreadable vault must never fail the import scan.
   if (reconcile !== false) {
     try {
@@ -7210,12 +7232,12 @@ function inferImportsTool({ rootPath, sourceFolders, ignore, maxFiles, reconcile
       const parts = [];
       if (r.inCodeMissingFromVault.length > 0) {
         parts.push(
-          `${r.inCodeMissingFromVault.length} depends_on edge(s) in the code import graph are missing from the vault with both endpoints already nodes — each carries a proposedAction; land with add_relations (batch)`,
+          `${r.inCodeMissingFromVault.length} import-backed candidate(s) are missing from the vault with both endpoints already nodes — inspect exact evidence, supply semantic rationale, and obtain human approval before one explicit write`,
         );
       }
       if (r.inCodeMissingEndpointAbsent.length > 0) {
         parts.push(
-          `${r.inCodeMissingEndpointAbsent.length} code edge(s) reference a slug that is not yet a vault node (create the node first)`,
+          `${r.inCodeMissingEndpointAbsent.length} import-backed candidate(s) reference a slug that is not yet a vault node (model endpoints before semantic review)`,
         );
       }
       if (r.inVaultNotInCode.length > 0) {
@@ -7407,7 +7429,7 @@ function indexProjectTool({ rootPath, maxDepth, maxFiles, threshold, skipImports
         'analyze_repo_structure',
         imports ? 'infer_imports' : 'infer_imports skipped',
         'validate_vault',
-        'write only through explicit add_concepts/add_relations or CLI index --apply',
+        'CLI index --apply may write analyzer concepts/containment; inferred imports remain rationale-review-required',
       ],
     },
     validation: {
@@ -7452,9 +7474,9 @@ function indexProjectTool({ rootPath, maxDepth, maxFiles, threshold, skipImports
     extractionContract: analyze.extractionContract,
     semanticEvidence: analyze.semanticEvidence,
     next: {
-      applyTool: 'add_concepts + add_relations',
+      applyTool: 'add_concepts; add_relation only after semantic rationale + human approval',
       cliApply: 'ontology-atlas index [rootPath] --apply --vault [vault]',
-      review: 'plan.concepts counts raw candidates, not accepted ontology claims; inspect extractionContract and proposedBusinessOntology, manually resolve ambiguous aliases, answer the competency questions, then run reviewCalls before applying.',
+      review: 'plan.concepts counts raw candidates, not accepted ontology claims; inspect extractionContract and proposedBusinessOntology, manually resolve ambiguous aliases, answer the competency questions, then run reviewCalls. CLI apply never promotes inferred imports to depends_on.',
       reviewCalls,
     },
   };

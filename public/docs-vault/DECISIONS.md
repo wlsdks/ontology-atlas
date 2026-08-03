@@ -42,6 +42,51 @@
 
 ---
 
+## 2026-08-04 — import는 의존성의 증거이지 스스로 승인되는 온톨로지 관계가 아니다
+
+**소집**: PO 카운슬 5인 전원(근거·결·지킴이·해자·지렛대), 독립 1라운드 +
+상호 반박 1라운드 + chief 판정 · **트리거**: dogfood 154개 관계 중 152개가
+containment이고 실제 `depends_on`은 2개뿐인데, `blast_radius`가 구조 경로까지
+영향으로 합쳐 확실한 답처럼 반환했다. Rust/Python source-hidden field trial도 같은
+질문에서 source-backed impact를 만들지 못했다.
+**루브릭**: 23/24 (Problem insight 4 · User moment 4 · Differentiation 3 ·
+Ontology value 4 · Agent value 4 · Verification 4, 치명적 0: 없음)
+**선행 결정 관계**: 2026-08-03 「typed CQ가 불완전한 프로젝트 의미를 완성으로
+오인하지 않는다」와 2026-07-30 Python/Rust field-trial 기록의 `unknown` 원칙을
+유지한다. import가 구현 근거일 뿐 자동 의미 관계가 아니라는 기존 계약도 유지하고,
+그와 모순되던 CLI 자동 적용 경로를 제거한다.
+**결정**: 두 PR을 순서대로 낸다. 첫째, `infer_imports`의 module edge마다 최대 5개의
+정확한 파일 근거를 붙이고 `rationale_review_required`로 반환한다. `proposedAction`,
+`infer-imports --apply`, bootstrap/index의 import endpoint 및 `depends_on` 자동 쓰기를
+차단한다. 둘째, MCP·CLI·앱의 impact/blast 의미를 통일해 containment를 영향·위험에서
+제외하고 구조 탐색은 reachability/subgraph로 보낸다. 선언된 dependency는 보이되
+source receipt·방향·이유·사람 승인이 모두 없으면 source-backed completeness와 risk는
+`unknown`이다.
+**적용 규칙**: frontmatter `depends_on`은 인간이 승인한 선언으로 존중한다. `why`가
+없으면 숨기지 않고 `reviewRequired`, 있으면 `declaredWithRationale`다. 둘 다 현재
+source receipt가 없는 한 `sourceBacked`라고 부르지 않는다. import 후보를 쓰려면
+양쪽 개념, 정확한 방향, 근거 파일, 의미적 이유를 검토하고 사람에게 묻고 한 건씩
+`why`와 함께 기록한다. Sourcegraph가 compiler-accurate navigation을 코드 사실의
+영역으로, GitHub가 manifest/lockfile 기반 dependency graph를 명시적 근거 계약으로
+구분하는 것과 같은 경계다. 추가 속성을 가진 관계는 W3C PROV-O의 qualified
+relationship 원칙처럼 선언과 근거 상태를 분리한다.
+**서명**: stark (소유자)
+
+**기록된 반대**: 구조 edge를 impact에서 모두 빼고 근거가 부족한 결과를 unknown으로
+두면 초기에 recall과 즉시 유용성이 떨어져, 사용자가 “아무 답도 못 한다”고 느낄 수
+있다(po-leverage).
+**반증 조건**: 사람이 승인한 실제 영향 관계가 반복해서 unknown에 갇히거나, 세 번의
+서로 다른 field trial에서 structural-only 경로가 유일한 유용한 인과 witness였음이
+관측되면 구조 신호를 별도의 비인과 보조 섹션으로 재도입한다. 영향·위험 판정에는
+합치지 않는다.
+**재검토**: dogfood + Rust + Python source-hidden trial에서 같은 질문을 재실행한 뒤.
+
+**상태**: 유효
+
+원칙 근거: [Sourcegraph code navigation](https://sourcegraph.com/docs/code-navigation) ·
+[GitHub dependency graph](https://docs.github.com/en/code-security/concepts/supply-chain-security/dependency-graph) ·
+[W3C PROV-O qualified relationships](https://www.w3.org/TR/prov-o/)
+
 ## 2026-08-04 — 의미 수리의 첫 읽기는 파생 지시가 아니라 실행 가능한 20개 단위 호출이다
 
 **소집**: PO 카운슬 5인 전원(근거·결·지킴이·해자·지렛대), 독립 1라운드 +

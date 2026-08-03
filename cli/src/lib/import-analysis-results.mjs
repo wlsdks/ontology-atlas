@@ -49,6 +49,18 @@ function assertModuleEdge(row, path) {
   if (total !== row.count) {
     throw new Error(`${path}.kindCounts total must equal count: count ${row.count}, kindCounts ${total}`);
   }
+  if (row.evidence !== undefined || row.evidenceLimited !== undefined) {
+    assertArray(row.evidence, `${path}.evidence`);
+    if (row.evidence.length > 5) {
+      throw new Error(`${path}.evidence must contain at most 5 rows`);
+    }
+    row.evidence.forEach((evidence, index) =>
+      assertFileEdge(evidence, `${path}.evidence[${index}]`),
+    );
+    if (typeof row.evidenceLimited !== 'boolean') {
+      throw new Error(`${path}.evidenceLimited must be a boolean`);
+    }
+  }
 }
 
 function assertObject(value, path) {

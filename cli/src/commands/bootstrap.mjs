@@ -1,12 +1,12 @@
 // R+ — `ontology-atlas bootstrap [rootPath]`
 //
-// 1줄 full bootstrap. analyze --apply (노드) → infer-imports --apply (depends_on
-// 엣지) 를 한 명령으로 묶는다. agent-less 환경 (CI · plain shell) 또는 새 repo
-// 진입 직후 가장 자주 쓰는 흐름이라 명령으로 승격.
+// 1줄 full bootstrap. analyzer가 제안한 노드/containment를 쓰고 import는
+// source-backed review 후보로 남긴다. agent-less 환경 (CI · plain shell) 또는
+// 새 repo 진입 직후 가장 자주 쓰는 흐름이라 명령으로 승격.
 //
 // 흐름:
 //   1. analyze_repo_structure → add_concepts + add_relations (cycle 29)
-//   2. infer_imports → add_relations (depends_on, cycle 30)
+//   2. infer_imports → exact evidence + rationale review required (write 0)
 //   3. 통합 summary 출력 (concepts landed/existing/errors + relations)
 //
 // 옵션:
@@ -123,11 +123,13 @@ export async function runBootstrap(args) {
   const analyzeRelationsRows = await applyRelations(vaultRoot, suggested);
   if (analyzeRelationsRows === null) return 2;
 
-  // Stage 2 — infer-imports + apply (--skip-imports 면 생략).
+  // Stage 2 — infer-imports review only (--skip-imports 면 생략). Source imports
+  // are evidence, not self-approving semantic dependencies or ontology nodes.
   let importsResult = null;
   let importEndpointRows = [];
   let importContainmentRows = [];
   let importsRows = [];
+  let importReviewCandidates = [];
   if (!parsed.skipImports) {
     try {
       importsResult = await callMcpTool(vaultRoot, 'infer_imports', {
@@ -154,44 +156,7 @@ export async function runBootstrap(args) {
         filteredOut,
       };
     }
-    const importRelations = edges.map((e) => ({
-      from: e.from,
-      to: e.to,
-      type: 'depends_on',
-    }));
-    const importEndpointConcepts = collectImportEndpointConcepts(
-      edges,
-      concepts,
-      analyzeResult,
-    );
-    if (importEndpointConcepts.length > 0) {
-      try {
-        importEndpointRows = await callConceptBatches(
-          vaultRoot,
-          importEndpointConcepts,
-          {
-            context: 'add_concepts(import endpoints)',
-          },
-        );
-      } catch (err) {
-        process.stderr.write(
-          `${COLORS.red}error${COLORS.reset}  add_concepts(import endpoints): ${err instanceof Error ? err.message : String(err)}\n`,
-        );
-        return 2;
-      }
-    }
-    const importContainmentRelations = collectImportContainmentRelations(
-      analyzeResult,
-      importEndpointConcepts,
-    );
-    importContainmentRows = await applyRelations(
-      vaultRoot,
-      importContainmentRelations,
-    );
-    if (importContainmentRows === null) return 2;
-    const rows = await applyRelations(vaultRoot, importRelations);
-    if (rows === null) return 2;
-    importsRows = rows;
+    importReviewCandidates = buildImportReviewCandidates(edges, concepts);
   }
 
   const summary = combineSummary(
@@ -203,7 +168,7 @@ export async function runBootstrap(args) {
   );
 
   // R+ — 마지막 census. 사용자가 \"방금 뭐 land 됐나?\" 를 1줄로 인지.
-  // analyze --apply / infer-imports --apply 와 같은 helper 공유 (cycle 38).
+  // analyzer apply 흐름의 마무리 census (cycle 38 shared helper).
   const vaultCensus = await getVaultCensus(vaultRoot);
 
   if (parsed.json) {
@@ -226,6 +191,8 @@ export async function runBootstrap(args) {
                 endpointConcepts: importEndpointRows,
                 containmentRelations: importContainmentRows,
                 relations: importsRows,
+                reviewCandidates: importReviewCandidates,
+                writeBlocked: 'rationale_review_required',
               },
           prunedStarters: summarizePrunedStarterNodes(prunedStarters),
           summary,
@@ -261,22 +228,9 @@ export async function runBootstrap(args) {
   } else {
     const thr = importsResult?.thresholdApplied;
     process.stdout.write(
-      `  ${COLORS.bold}2) imports${COLORS.reset}    endpoints: ` +
-        `${COLORS.green}${summary.importEndpointConceptsLanded}${COLORS.reset} landed · ` +
-        `${COLORS.dim}${summary.importEndpointConceptsExisting}${COLORS.reset} already existed · ` +
-        `${summary.importEndpointConceptsErrors > 0 ? COLORS.red : COLORS.dim}${summary.importEndpointConceptsErrors}${COLORS.reset} errors\n`,
-    );
-    process.stdout.write(
-      `                containment: ` +
-        `${COLORS.green}${summary.importContainmentLanded}${COLORS.reset} landed · ` +
-        `${COLORS.dim}${summary.importContainmentExisting}${COLORS.reset} already existed · ` +
-        `${summary.importContainmentErrors > 0 ? COLORS.red : COLORS.dim}${summary.importContainmentErrors}${COLORS.reset} errors\n`,
-    );
-    process.stdout.write(
-      `                depends_on:  ` +
-        `${COLORS.green}${summary.importsLanded}${COLORS.reset} landed · ` +
-        `${COLORS.dim}${summary.importsExisting}${COLORS.reset} already existed · ` +
-        `${summary.importsErrors > 0 ? COLORS.red : COLORS.dim}${summary.importsErrors}${COLORS.reset} errors` +
+      `  ${COLORS.bold}2) imports${COLORS.reset}    ` +
+        `${COLORS.yellow}${importReviewCandidates.length}${COLORS.reset} review candidates · ` +
+        `${COLORS.dim}0 automatic semantic writes — rationale review required${COLORS.reset}` +
         (thr
           ? ` ${COLORS.dim}(--threshold ${thr.threshold} filtered ${thr.filteredOut})${COLORS.reset}`
           : '') +
@@ -349,6 +303,33 @@ export async function runBootstrap(args) {
   return summary.errors === 0 ? 0 : 1;
 }
 
+function buildImportReviewCandidates(edges, analyzeConcepts) {
+  const known = new Set((analyzeConcepts ?? []).map((concept) => concept.slug));
+  return (edges ?? []).map((edge) => {
+    const absentEndpoints = [edge.from, edge.to].filter((slug) => !known.has(slug));
+    const required = [];
+    if (absentEndpoints.length > 0) required.push('vault_endpoints');
+    if ((edge.evidence?.length ?? 0) === 0) required.push('source_evidence');
+    required.push('semantic_rationale', 'human_approval');
+    return {
+      from: edge.from,
+      to: edge.to,
+      count: edge.count,
+      kindCounts: edge.kindCounts,
+      sourceEvidence: edge.evidence ?? [],
+      sourceEvidenceLimited: Boolean(edge.evidenceLimited),
+      ...(absentEndpoints.length > 0 ? { absentEndpoints } : {}),
+      review: {
+        status: 'rationale_review_required',
+        writeAllowed: false,
+        required,
+        next:
+          'Review the exact import evidence and both ontology concepts, explain why the semantic dependency holds, ask the user, then write one explicit depends_on relation with why.',
+      },
+    };
+  });
+}
+
 function printPrunedStarters(prunedStarters) {
   if (
     !prunedStarters ||
@@ -394,117 +375,6 @@ function collectConcepts(analyzeResult) {
     });
   }
   return out;
-}
-
-function collectImportEndpointConcepts(edges, analyzeConcepts, analyzeResult) {
-  if (!Array.isArray(edges) || edges.length === 0) return [];
-  const known = new Set(analyzeConcepts.map((c) => c.slug));
-  const out = [];
-  const seen = new Set();
-  const missing = [];
-  for (const edge of edges) {
-    for (const slug of [edge.from, edge.to]) {
-      if (!slug || known.has(slug) || seen.has(slug)) continue;
-      const kind = kindFromOntologySlug(slug);
-      if (!kind) continue;
-      missing.push({ slug, kind });
-      seen.add(slug);
-    }
-  }
-  if (missing.length === 0) return [];
-
-  const needsDomain = missing.some(
-    (m) => m.kind === 'capability' || m.kind === 'element',
-  );
-  const fallbackDomain = needsDomain
-    ? firstDomainSlug(analyzeConcepts, analyzeResult) ?? 'domains/codebase-structure'
-    : null;
-
-  if (fallbackDomain && !known.has(fallbackDomain)) {
-    out.push({
-      slug: fallbackDomain,
-      kind: 'domain',
-      title: titleFromSlug(fallbackDomain),
-    });
-    known.add(fallbackDomain);
-  }
-
-  for (const { slug, kind } of missing) {
-    out.push({
-      slug,
-      kind,
-      title: titleFromSlug(slug),
-      ...(fallbackDomain && (kind === 'capability' || kind === 'element')
-        ? { domain: fallbackDomain }
-        : {}),
-    });
-  }
-  return out;
-}
-
-function collectImportContainmentRelations(analyzeResult, importEndpointConcepts) {
-  const projectSlug = analyzeResult.project?.slug;
-  if (!projectSlug || !Array.isArray(importEndpointConcepts)) return [];
-  const relations = [];
-  const seen = new Set();
-  for (const concept of importEndpointConcepts) {
-    if (concept.kind !== 'capability' && concept.kind !== 'element') continue;
-    if (concept.domain) {
-      const projectDomainKey = `${projectSlug}→${concept.domain}`;
-      if (!seen.has(projectDomainKey)) {
-        relations.push({
-          from: projectSlug,
-          to: concept.domain,
-          type: 'contains',
-        });
-        seen.add(projectDomainKey);
-      }
-      const domainConceptKey = `${concept.domain}→${concept.slug}`;
-      if (!seen.has(domainConceptKey)) {
-        relations.push({
-          from: concept.domain,
-          to: concept.slug,
-          type: 'contains',
-        });
-        seen.add(domainConceptKey);
-      }
-      continue;
-    }
-    const projectConceptKey = `${projectSlug}→${concept.slug}`;
-    if (!seen.has(projectConceptKey)) {
-      relations.push({
-        from: projectSlug,
-        to: concept.slug,
-        type: 'contains',
-      });
-      seen.add(projectConceptKey);
-    }
-  }
-  return relations;
-}
-
-function firstDomainSlug(analyzeConcepts, analyzeResult) {
-  const fromConcepts = analyzeConcepts.find((c) => c.kind === 'domain')?.slug;
-  if (fromConcepts) return fromConcepts;
-  return analyzeResult.domains?.[0]?.slug ?? null;
-}
-
-function kindFromOntologySlug(slug) {
-  if (slug.startsWith('projects/')) return 'project';
-  if (slug.startsWith('domains/')) return 'domain';
-  if (slug.startsWith('capabilities/')) return 'capability';
-  if (slug.startsWith('elements/')) return 'element';
-  return null;
-}
-
-function titleFromSlug(slug) {
-  const tail = String(slug).split('/').filter(Boolean).at(-1) ?? slug;
-  return tail
-    .replace(/\.[^.]+$/, '')
-    .replace(/[-_]+/g, ' ')
-    .replace(/\s+/g, ' ')
-    .trim()
-    .replace(/\b\w/g, (c) => c.toUpperCase());
 }
 
 // add_relations 의 50-row chunk 분할. 호출 실패 (mcp throw) 시 null 리턴.
@@ -641,8 +511,8 @@ function printUsage(stream = process.stderr) {
       `                           [--skip-imports] [--reapply] [--json]\n` +
       `                           [--max-depth N] [--max-files N]\n\n` +
       `${COLORS.bold}What it does:${COLORS.reset}\n` +
-      `  1줄 full bootstrap. analyze --apply (노드 + suggested relations) +\n` +
-      `  infer-imports --apply (depends_on edges) 를 합친 적용 명령.\n` +
+      `  1줄 full bootstrap. analyzer 노드 + suggested relations를 적용하고\n` +
+      `  import는 exact evidence가 붙은 검토 후보로만 반환합니다 (write 0).\n` +
       `  agent-less 환경 (CI · plain shell) 또는 새 repo 진입 직후 흐름.\n\n` +
       `  이미 성장한 vault는 기본적으로 plan-only. 다시 쓰려면 --reapply.\n` +
       `  --max-depth N: analyze folder walk default 2, range 0-${MAX_DEPTH_CAP}.\n` +
@@ -721,7 +591,7 @@ async function printGrownVaultPlan({ parsed, target, vaultRoot, analyzeResult, c
         `               vault=${vaultRoot}${COLORS.reset}\n\n` +
         `  ${COLORS.yellow}protected${COLORS.reset} vault already has ${vaultState.total} nodes; no files were changed.\n` +
         `  candidates: ${concepts.length} concepts · ${payload.plan.suggestedRelations} suggested relations · ` +
-        `${payload.plan.importRelations} import relations\n` +
+        `${payload.plan.importRelations} import review candidates\n` +
         `  ${COLORS.dim}Review the plan and use --reapply only for an intentional merge.${COLORS.reset}\n`,
     );
   }

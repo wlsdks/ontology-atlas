@@ -38,6 +38,7 @@ const DEFAULT_IGNORE = new Set([
 ]);
 const IGNORE_ARRAY_MAX_ITEMS = 200;
 const SOURCE_FOLDER_ARRAY_MAX_ITEMS = 50;
+const MODULE_EDGE_EVIDENCE_LIMIT = 5;
 
 const SOURCE_EXT = new Set([
   '.ts',
@@ -114,7 +115,7 @@ const SIDE_IMPORT_RE = /\bimport\s+['"]([^'"]+)['"]/g;
  *   edges: Array<{ from: string, to: string, kind: 'static'|'dynamic'|'require'|'reexport'|'side' }>,
  *   externalImports: Array<{ from: string, spec: string }>,
  *   unresolved: Array<{ from: string, spec: string, reason: string }>,
- *   moduleEdges: Array<{ from: string, to: string, count: number, kindCounts: Record<string, number> }>,
+ *   moduleEdges: Array<{ from: string, to: string, count: number, kindCounts: Record<string, number>, evidence: Array<{from:string,to:string,kind:string}>, evidenceLimited: boolean }>,
  * }}
  */
 export function inferImports(rootPath, options = {}) {
@@ -209,9 +210,13 @@ export function inferImports(rootPath, options = {}) {
     const bucket = moduleCount.get(key) ?? {
       count: 0,
       kindCounts: new Map(),
+      evidence: [],
     };
     bucket.count += 1;
     bucket.kindCounts.set(e.kind, (bucket.kindCounts.get(e.kind) ?? 0) + 1);
+    if (bucket.evidence.length < MODULE_EDGE_EVIDENCE_LIMIT) {
+      bucket.evidence.push({ from: e.from, to: e.to, kind: e.kind });
+    }
     moduleCount.set(key, bucket);
   }
   const moduleEdges = [...moduleCount.entries()].map(([key, bucket]) => {
@@ -223,6 +228,8 @@ export function inferImports(rootPath, options = {}) {
       kindCounts: Object.fromEntries(
         [...bucket.kindCounts.entries()].sort(([a], [b]) => a.localeCompare(b)),
       ),
+      evidence: bucket.evidence,
+      evidenceLimited: bucket.count > bucket.evidence.length,
     };
   });
   moduleEdges.sort((a, b) => b.count - a.count);
@@ -726,7 +733,7 @@ function moduleOf(filePath, sourceFolders, rootPath) {
   //
   // R+ — slug parity with analyze_repo_structure. The analyzer emits
   // folder-prefixed ontology slugs (`capabilities/X`, `elements/<flat-name>`)
-  // so import-derived edges can be applied directly after bootstrap.
+  // so import evidence can be reconciled against analyzer concepts.
   //
   // 슬러그는 평평한 식별자다 (2026-08-01 판정 — docs/DECISIONS.md). 종전의
   // `elements/src/entities/foo` path-style 은 폐기 — analyze 와 같은 규칙으로

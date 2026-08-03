@@ -6287,7 +6287,7 @@ await test('health/agent-brief/workspace-brief --json — fail closed on malform
       "    const operation = msg.params.arguments.operation;",
       "    let payload;",
       "    if (operation === 'health') payload = { operation: 'health', status: 'healthy', summary: { nodes: 1, edges: 0 }, checks: [{ id: 'compile_issues', status: 'pass' }] };",
-      "    else if (operation === 'agent_brief') payload = { operation: 'agent_brief', sideEffect: false, status: 'healthy', projectSlug: 'project', projectSource: { contractVersion: 1, projectSlug: 'project', status: 'not_measured', currentness: 'unavailable', measuredAt: null, topGap: { id: 'source_unbound' }, nextAction: { id: 'connect_source' }, bindingCardinality: 0, receipt: null }, meaningAssessment: { contract: 'meaningAssessment:v1', projectSlug: 'project', status: 'invalid', dimensions: { structure: { status: 'ready', basis: 'structure_only' }, competency: { status: 'needs_evidence', questions: ['scope', 'domains', 'abilities', 'evidence', 'impact'].map((id) => ({ id, status: 'unassessed', witnessStatus: 'unavailable' })) }, source: { status: 'not_measured', currentness: 'unavailable' } }, topGap: { dimension: 'assessment', id: 'assessment_input_invalid' }, nextAction: { id: 'repair_assessment_input' }, provenance: { evaluator: 'meaningAssessment:v1', graphHash: null, competencyContract: null, competencyEvaluator: null, competencyGraphHash: null, witnessInventoryContract: null, witnessInventoryGraphHash: null, witnessInventorySourceFingerprint: null, sourceGraphHash: null, sourceReceiptContractVersion: null, sourceId: null, sourceRevision: null, sourceFingerprint: null, sourceMeasuredAt: null, sourceGapId: 'source_unbound' } }, readiness: { status: 'ready', score: 100, meaningfulNodes: 3, relationCount: 2, projects: 1, domains: 1, capabilities: 1, elements: 0, unresolvedEdges: 0, externalEdges: 0, growthActions: 0, healthChecks: 1 }, graph: { nodes: 3, edges: 2 }, docs: { workflowGuide: { path: 'docs/AGENT-GRAPH-WORKFLOW.md', title: 'Agent Graph Workflow', description: 'CLI-only use, MCP-connected use, graph DB differences, graph query packs, and verification checks.' }, modeComparison: [{ id: 'cli_only', label: 'CLI-only', when: 'terminal-only inspection.', gives: 'graph DB pack.' }, { id: 'mcp_connected', label: 'MCP-connected', when: 'registered.', gives: 'structured repair fields and write guardrails.' }, { id: 'graph_db_pack', label: 'Graph DB pack', when: 'database-style graph exploration.', gives: 'proof follow-ups.' }, { id: 'setup_gate', label: 'Setup gate', when: 'unclear setup.', gives: 'JSON readiness and restart guidance.' }], graphScanProofChecklist: [{ id: 'report_scan_scope', label: 'Report scan scope', evidence: ['totalMatches', 'limited'] }, { id: 'prove_node_rows', label: 'Prove node rows', evidence: ['node_profile', 'blast_radius'] }, { id: 'prove_edge_rows', label: 'Prove edge rows', evidence: ['explain_relation', 'path', 'relation_check'] }, { id: 'prove_path_completeness', label: 'Prove path completeness', evidence: ['evidence.pathsComplete'] }] }, businessOntologyLens: { policy: 'business-first', readOrder: ['outcome', 'domain', 'capability', 'element'], businessDomains: [], capabilityOutcomes: [], implementationEvidence: [], decisionQuestions: ['What business outcome should this ontology explain or improve?', 'Which business/product domain boundary does this code change?', 'What capability claim can a planner, marketer, or leader discuss?', 'Which implementation evidence proves or disproves that capability?'], guidance: ['Read the business outcome first, then business/product domains, capabilities, and implementation evidence.', 'Do not treat paths, APIs, routes, or commands as the ontology root.'] }, handoffPrompt: 'Use the ontology-atlas MCP server. Run these first-contact MCP calls in order. CLI fallback commands when the MCP connector is unavailable. Graph DB query pack. Kind classification contract before writing frontmatter. Do not classify from the label alone. domain: shared vocabulary boundary. capability: user-visible behavior. element: concrete implementation part. unknown: temporary review signal. High-confidence gate. Containment spine. Color contract. source path, symbol, route, command, or MCP tool evidence. why not the nearest adjacent kind. similar_nodes. Investigation playbooks. Traversal strategy. plan_before_enumeration. Write guardrails. Result contracts. totalPathsExact. relation_check before add_relation.', cliFallbackCommands: ['ontology-atlas health [vault]'], health: { checks: [{ id: 'compile_issues', status: 'pass', count: 0 }] }, nextActions: [], entrypoints: [], firstCalls: [{ tool: 'query_ontology', arguments: {} }], playbooks: [{ id: 'refactor_impact', goal: 'Impact.', calls: [{ tool: 'query_ontology', arguments: { operation: 'health' } }] }], writePolicy: ['Read first.'] };",
+      "    else if (operation === 'agent_brief') payload = { operation: 'agent_brief', sideEffect: false, status: 'healthy', projectSlug: 'project', projectSource: { contractVersion: 1, projectSlug: 'project', status: 'not_measured', currentness: 'unavailable', measuredAt: null, topGap: { id: 'source_unbound' }, nextAction: { id: 'connect_source' }, bindingCardinality: 0, receipt: null }, meaningAssessment: { contract: 'meaningAssessment:v1', projectSlug: 'project', status: 'invalid', dimensions: { structure: { status: 'ready', basis: 'structure_only' }, competency: { status: 'needs_evidence', questions: ['scope', 'domains', 'abilities', 'evidence', 'impact'].map((id) => ({ id, status: 'unassessed', witnessStatus: 'unavailable' })) }, source: { status: 'not_measured', currentness: 'unavailable' } }, topGap: { dimension: 'assessment', id: 'assessment_input_invalid' }, nextAction: { id: 'repair_assessment_input' }, provenance: { evaluator: 'meaningAssessment:v1', graphHash: null, competencyContract: null, competencyEvaluator: null, competencyGraphHash: null, witnessInventoryContract: null, witnessInventoryGraphHash: null, witnessInventorySourceFingerprint: null, sourceGraphHash: null, sourceReceiptContractVersion: null, sourceId: null, sourceRevision: null, sourceFingerprint: null, sourceMeasuredAt: null, sourceGapId: 'source_unbound' } }, meaningRepair: { contract: 'meaningRepair:v1', status: 'blocked', projectSlug: 'project', blockedBy: 'source_not_current', primaryQuestion: null, questionsNeedingReview: [], provenance: null, questions: null, workflow: [], stopWhen: ['source_currentness_required'], writePolicy: { humanApprovalRequired: true, automaticWrite: false, automaticFinalize: false } }, readiness: { status: 'ready', score: 100, meaningfulNodes: 3, relationCount: 2, projects: 1, domains: 1, capabilities: 1, elements: 0, unresolvedEdges: 0, externalEdges: 0, growthActions: 0, healthChecks: 1 }, graph: { nodes: 3, edges: 2 }, docs: { workflowGuide: { path: 'docs/AGENT-GRAPH-WORKFLOW.md', title: 'Agent Graph Workflow', description: 'CLI-only use, MCP-connected use, graph DB differences, graph query packs, and verification checks.' }, modeComparison: [{ id: 'cli_only', label: 'CLI-only', when: 'terminal-only inspection.', gives: 'graph DB pack.' }, { id: 'mcp_connected', label: 'MCP-connected', when: 'registered.', gives: 'structured repair fields and write guardrails.' }, { id: 'graph_db_pack', label: 'Graph DB pack', when: 'database-style graph exploration.', gives: 'proof follow-ups.' }, { id: 'setup_gate', label: 'Setup gate', when: 'unclear setup.', gives: 'JSON readiness and restart guidance.' }], graphScanProofChecklist: [{ id: 'report_scan_scope', label: 'Report scan scope', evidence: ['totalMatches', 'limited'] }, { id: 'prove_node_rows', label: 'Prove node rows', evidence: ['node_profile', 'blast_radius'] }, { id: 'prove_edge_rows', label: 'Prove edge rows', evidence: ['explain_relation', 'path', 'relation_check'] }, { id: 'prove_path_completeness', label: 'Prove path completeness', evidence: ['evidence.pathsComplete'] }] }, businessOntologyLens: { policy: 'business-first', readOrder: ['outcome', 'domain', 'capability', 'element'], businessDomains: [], capabilityOutcomes: [], implementationEvidence: [], decisionQuestions: ['What business outcome should this ontology explain or improve?', 'Which business/product domain boundary does this code change?', 'What capability claim can a planner, marketer, or leader discuss?', 'Which implementation evidence proves or disproves that capability?'], guidance: ['Read the business outcome first, then business/product domains, capabilities, and implementation evidence.', 'Do not treat paths, APIs, routes, or commands as the ontology root.'] }, handoffPrompt: 'Use the ontology-atlas MCP server. Run these first-contact MCP calls in order. CLI fallback commands when the MCP connector is unavailable. Graph DB query pack. Kind classification contract before writing frontmatter. Do not classify from the label alone. domain: shared vocabulary boundary. capability: user-visible behavior. element: concrete implementation part. unknown: temporary review signal. High-confidence gate. Containment spine. Color contract. source path, symbol, route, command, or MCP tool evidence. why not the nearest adjacent kind. similar_nodes. Investigation playbooks. Traversal strategy. plan_before_enumeration. Write guardrails. Result contracts. totalPathsExact. relation_check before add_relation.', cliFallbackCommands: ['ontology-atlas health [vault]'], health: { checks: [{ id: 'compile_issues', status: 'pass', count: 0 }] }, nextActions: [], entrypoints: [], firstCalls: [{ tool: 'query_ontology', arguments: {} }], playbooks: [{ id: 'refactor_impact', goal: 'Impact.', calls: [{ tool: 'query_ontology', arguments: { operation: 'health' } }] }], writePolicy: ['Read first.'] };",
       "    else payload = { operation: 'workspace_brief', status: 'healthy', summary: { nodes: 1, edges: 0 }, nextActions: [{ kind: 'cleanup', severity: 'fatal' }], health: { checks: [{ id: 'compile_issues', status: 'pass', count: 0 }] } };",
       "    console.log(JSON.stringify({ jsonrpc: '2.0', id: 2, result: { content: [{ text: JSON.stringify(payload) }], structuredContent: payload } }));",
       "  }",
@@ -7611,7 +7611,7 @@ function makeImportKindRepo() {
   return repo;
 }
 
-await test('infer-imports --apply — depends_on 관계 land (endpoints 존재 시)', async () => {
+await test('infer-imports --apply — raw import를 semantic depends_on으로 자동 승격하지 않는다', async () => {
   const vault = withVault([
     {
       slug: 'capabilities/a',
@@ -7631,13 +7631,14 @@ await test('infer-imports --apply — depends_on 관계 land (endpoints 존재 �
       vault,
       '--apply',
     ]);
-    assert.equal(r.code, 0, `stdout: ${r.stdout}\nstderr: ${r.stderr}`);
-    const clean = stripAnsi(r.stdout);
-    assert.match(clean, /infer-imports --apply/);
-    assert.match(clean, /landed|already existed/);
-    // a.md 의 frontmatter 에 dependencies (inline 또는 list) 에 b 포함.
+    assert.equal(r.code, 1, `stdout: ${r.stdout}\nstderr: ${r.stderr}`);
+    assert.equal(r.stdout, '');
+    assert.match(
+      stripAnsi(r.stderr),
+      /--apply.*disabled.*import.*evidence.*semantic rationale.*human approval/i,
+    );
     const aDoc = readFileSync(join(vault, 'capabilities', 'a.md'), 'utf-8');
-    assert.match(aDoc, /dependencies:.*\bb\b/s);
+    assert.doesNotMatch(aDoc, /dependencies:/);
   } finally {
     rmSync(vault, { recursive: true, force: true });
     rmSync(repo, { recursive: true, force: true });
@@ -7683,7 +7684,7 @@ await test('infer-imports (default) — vault 변경 0', async () => {
   }
 });
 
-await test('infer-imports --apply — endpoint 없으면 row-level error, batch 살아남음', async () => {
+await test('infer-imports --apply — endpoint 유무와 무관하게 자동 승격을 먼저 차단한다', async () => {
   // vault 에 a 만 있고 b 가 없음 — a → b edge 는 fail 행, batch 자체는 OK.
   const vault = withVault([
     {
@@ -7700,18 +7701,16 @@ await test('infer-imports --apply — endpoint 없으면 row-level error, batch 
       vault,
       '--apply',
     ]);
-    // 적어도 한 row 가 fail → exit 1.
     assert.equal(r.code, 1, `expected exit 1; stdout: ${r.stdout}`);
-    const clean = stripAnsi(r.stdout);
-    // 에러 행 노출.
-    assert.match(clean, /✗|does not exist|errors/);
+    assert.equal(r.stdout, '');
+    assert.match(stripAnsi(r.stderr), /--apply.*disabled/i);
   } finally {
     rmSync(vault, { recursive: true, force: true });
     rmSync(repo, { recursive: true, force: true });
   }
 });
 
-await test('infer-imports --apply — 마지막 vault census 라인 (R+ cycle 38)', async () => {
+await test('infer-imports --apply — 차단된 쓰기는 성공 census를 내지 않는다', async () => {
   const vault = withVault([
     { slug: 'capabilities/a', content: '---\nkind: capability\ntitle: A\ndomain: x\n---\n' },
     { slug: 'capabilities/b', content: '---\nkind: capability\ntitle: B\ndomain: x\n---\n' },
@@ -7725,17 +7724,17 @@ await test('infer-imports --apply — 마지막 vault census 라인 (R+ cycle 38
       vault,
       '--apply',
     ]);
-    assert.equal(r.code, 0);
-    const clean = stripAnsi(r.stdout);
-    assert.match(clean, /vault now has \d+ nodes/);
-    assert.match(clean, /capability=2/);
+    assert.equal(r.code, 1);
+    assert.equal(r.stdout, '');
+    assert.doesNotMatch(stripAnsi(r.stderr), /vault now has/);
+    assert.match(stripAnsi(r.stderr), /--apply.*disabled/i);
   } finally {
     rmSync(vault, { recursive: true, force: true });
     rmSync(repo, { recursive: true, force: true });
   }
 });
 
-await test('infer-imports --apply --json — applied / summary 필드 노출', async () => {
+await test('infer-imports --apply --json — JSON 모드도 raw write를 우회하지 못한다', async () => {
   const vault = withVault([
     {
       slug: 'capabilities/a',
@@ -7756,19 +7755,16 @@ await test('infer-imports --apply --json — applied / summary 필드 노출', a
       '--apply',
       '--json',
     ]);
-    assert.equal(r.code, 0);
-    const data = JSON.parse(r.stdout);
-    assert.ok(data.applied, 'applied 필드');
-    assert.ok(Array.isArray(data.applied.relations), 'applied.relations 배열');
-    assert.ok(data.summary, 'summary 필드');
-    assert.equal(typeof data.summary.errors, 'number');
+    assert.equal(r.code, 1);
+    assert.equal(r.stdout, '');
+    assert.match(stripAnsi(r.stderr), /--apply.*disabled/i);
   } finally {
     rmSync(vault, { recursive: true, force: true });
     rmSync(repo, { recursive: true, force: true });
   }
 });
 
-await test('infer-imports --apply — labels row-level relation failures without relation shape', async () => {
+await test('infer-imports --apply — MCP writer를 호출하기 전에 차단한다', async () => {
   const vault = withVault([
     {
       slug: 'capabilities/a',
@@ -7810,16 +7806,15 @@ await test('infer-imports --apply — labels row-level relation failures without
       env: { OATLAS_MCP_PATH: fakeMcp },
     });
     assert.equal(r.code, 1, `stdout: ${r.stdout}\nstderr: ${r.stderr}`);
-    const clean = stripAnsi(r.stdout);
-    assert.match(clean, /✗ relations\[0\] — relations\[0\] missing target/);
-    assert.doesNotMatch(clean, /undefined/);
+    assert.equal(r.stdout, '');
+    assert.match(stripAnsi(r.stderr), /--apply.*disabled/i);
   } finally {
     rmSync(vault, { recursive: true, force: true });
     rmSync(repo, { recursive: true, force: true });
   }
 });
 
-await test('infer-imports --apply — fails closed when add_relations response rows drift', async () => {
+await test('infer-imports --apply — add_relations 응답 계약보다 앞에서 차단한다', async () => {
   const vault = withVault([
     {
       slug: 'capabilities/a',
@@ -7860,9 +7855,9 @@ await test('infer-imports --apply — fails closed when add_relations response r
     const r = await run(['infer-imports', repo, '--vault', vault, '--apply'], {
       env: { OATLAS_MCP_PATH: fakeMcp },
     });
-    assert.equal(r.code, 2, `stdout: ${r.stdout}\nstderr: ${r.stderr}`);
+    assert.equal(r.code, 1, `stdout: ${r.stdout}\nstderr: ${r.stderr}`);
     assert.equal(r.stdout, '');
-    assert.match(stripAnsi(r.stderr), /add_relations chunk @0\.relations\[0\]\.to must be a non-empty string/);
+    assert.match(stripAnsi(r.stderr), /--apply.*disabled/i);
   } finally {
     rmSync(vault, { recursive: true, force: true });
     rmSync(repo, { recursive: true, force: true });
@@ -8071,7 +8066,7 @@ await test('infer-imports --threshold 3 — count < 3 edges 필터 (preview 모�
   }
 });
 
-await test('infer-imports --threshold 3 --apply — 약한 edge 는 land 안 됨', async () => {
+await test('infer-imports --threshold 3 --apply — count threshold도 semantic 승격 권한이 아니다', async () => {
   // vault 에 a, b, c 모두 존재 — threshold 없으면 a→b, a→c 둘 다 land.
   // threshold 3 면 a→b 만 land, a→c 는 filtered out (depend on c 안 생김).
   const vault = withVault([
@@ -8090,12 +8085,10 @@ await test('infer-imports --threshold 3 --apply — 약한 edge 는 land 안 됨
       '--threshold',
       '3',
     ]);
-    assert.equal(r.code, 0, `stdout: ${r.stdout}\nstderr: ${r.stderr}`);
+    assert.equal(r.code, 1, `stdout: ${r.stdout}\nstderr: ${r.stderr}`);
     const aDoc = readFileSync(join(vault, 'capabilities', 'a.md'), 'utf-8');
-    // a 는 b 의존 (count=3, ≥ threshold).
-    assert.match(aDoc, /dependencies:.*\bb\b/s);
-    // a 는 c 의존 *없음* (count=1, < threshold) — filter out.
-    assert.doesNotMatch(aDoc, /\bc\b/);
+    assert.doesNotMatch(aDoc, /dependencies:/);
+    assert.match(stripAnsi(r.stderr), /--apply.*disabled/i);
   } finally {
     rmSync(vault, { recursive: true, force: true });
     rmSync(repo, { recursive: true, force: true });
@@ -8238,7 +8231,7 @@ function makeSingleFileLayeredRepo() {
   return repo;
 }
 
-await test('bootstrap — analyze + infer-imports 한 명령으로 land (FSD slug parity, cycle 35)', async () => {
+await test('bootstrap — analyze 결과만 쓰고 import dependency는 검토 후보로 남긴다', async () => {
   const vault = withVault([]);
   const repo = makeFullRepo();
   try {
@@ -8255,15 +8248,9 @@ await test('bootstrap — analyze + infer-imports 한 명령으로 land (FSD slu
       true,
       'billing capability',
     );
-    // R+ — FSD slug parity 확인. analyze 가 "capabilities/auth" /
-    // "capabilities/billing" 으로 capability 만들고, infer_imports 의 module slug 도 일치해야
-    // depends_on 에지가 진짜 land 됨. cycle 34 known issue 의 회귀 차단.
     const authDoc = readFileSync(join(vault, 'capabilities', 'auth.md'), 'utf-8');
-    assert.match(
-      authDoc,
-      /dependencies:.*\bbilling\b/s,
-      `auth.md should depend_on billing — got: ${authDoc}`,
-    );
+    assert.doesNotMatch(authDoc, /dependencies:/);
+    assert.match(clean, /rationale review required/i);
   } finally {
     rmSync(vault, { recursive: true, force: true });
     rmSync(repo, { recursive: true, force: true });
@@ -8326,7 +8313,7 @@ await test('bootstrap --skip-imports — 50개를 넘는 concept 후보를 MCP b
   }
 });
 
-await test('bootstrap — single-file layered repo import endpoints 먼저 생성 후 depends_on land', async () => {
+await test('bootstrap — import endpoint와 depends_on을 자동 생성하지 않고 검토 후보만 반환한다', async () => {
   const vault = withVault([]);
   const repo = makeSingleFileLayeredRepo();
   try {
@@ -8343,45 +8330,23 @@ await test('bootstrap — single-file layered repo import endpoints 먼저 생�
     const data = JSON.parse(r.stdout);
     assert.equal(data.summary.errors, 0);
     assert.ok(Array.isArray(data.imports.endpointConcepts));
+    assert.deepEqual(data.imports.endpointConcepts, []);
+    assert.deepEqual(data.imports.relations, []);
+    assert.deepEqual(data.imports.containmentRelations, []);
     assert.ok(
-      data.imports.endpointConcepts.some(
-        (row) => row.ok === true && row.slug === 'capabilities/check-in',
-      ),
-      `expected bootstrap-created check-in endpoint, got: ${JSON.stringify(data.imports.endpointConcepts)}`,
-    );
-    assert.ok(
-      data.imports.relations.some(
+      data.imports.reviewCandidates.some(
         (row) =>
-          row.ok === true &&
           row.from === 'capabilities/check-in' &&
-          row.to === 'elements/json-store',
+          row.to === 'elements/json-store' &&
+          row.review?.status === 'rationale_review_required',
       ),
-      `expected check-in → storage element relation, got: ${JSON.stringify(data.imports.relations)}`,
+      `expected check-in → storage review candidate, got: ${JSON.stringify(data.imports.reviewCandidates)}`,
     );
-    assert.ok(
-      data.imports.containmentRelations.some(
-        (row) =>
-          row.ok === true &&
-          row.from === 'habit-ledger-pro' &&
-          row.to === 'domains/writing-habit-tracking',
-      ),
-      `expected project → domain containment, got: ${JSON.stringify(data.imports.containmentRelations)}`,
+    assert.equal(
+      existsSyncTest(join(vault, 'capabilities', 'check-in.md')),
+      false,
+      'raw import endpoint must not become a concept',
     );
-    assert.ok(
-      data.imports.containmentRelations.some(
-        (row) =>
-          row.ok === true &&
-          row.from === 'domains/writing-habit-tracking' &&
-          row.to === 'capabilities/check-in',
-      ),
-      `expected domain → check-in containment, got: ${JSON.stringify(data.imports.containmentRelations)}`,
-    );
-    const checkInDoc = readFileSync(
-      join(vault, 'capabilities', 'check-in.md'),
-      'utf-8',
-    );
-    assert.match(checkInDoc, /domain: domains\/writing-habit-tracking/);
-    assert.match(checkInDoc, /dependencies:.*elements\/json-store/s);
     assert.equal(
       existsSyncTest(join(vault, 'capabilities', 'domain.md')),
       false,
@@ -8392,11 +8357,7 @@ await test('bootstrap — single-file layered repo import endpoints 먼저 생�
       false,
       'support layer should not become capabilities/storage',
     );
-    assert.equal(
-      existsSyncTest(join(vault, 'elements', 'json-store.md')),
-      true,
-      'storage implementation should become an element',
-    );
+    assert.equal(existsSyncTest(join(vault, 'elements', 'json-store.md')), false);
   } finally {
     rmSync(vault, { recursive: true, force: true });
     rmSync(repo, { recursive: true, force: true });
@@ -8477,6 +8438,9 @@ await test('bootstrap --json — analyze / imports / summary 모두 단일 JSON'
     assert.ok(Array.isArray(data.analyze.relations));
     assert.ok(data.imports, 'imports 필드');
     assert.ok(Array.isArray(data.imports.relations));
+    assert.ok(Array.isArray(data.imports.reviewCandidates));
+    assert.ok(data.imports.reviewCandidates.length > 0);
+    assert.deepEqual(data.imports.relations, []);
     assert.ok(data.summary, 'summary 필드');
     assert.equal(typeof data.summary.errors, 'number');
   } finally {
@@ -8504,8 +8468,9 @@ await test('bootstrap --threshold 3 — 약한 import (count<3) 안 land', async
     // imports 의 thresholdApplied 메타데이터.
     assert.ok(data.imports.thresholdApplied);
     assert.equal(data.imports.thresholdApplied.threshold, 3);
-    // import relations 거의 0 (모두 약함).
+    // 자동 relation write는 항상 0이고, threshold는 review 후보에만 적용된다.
     assert.equal(data.imports.relations.length, 0);
+    assert.ok(Array.isArray(data.imports.reviewCandidates));
   } finally {
     rmSync(vault, { recursive: true, force: true });
     rmSync(repo, { recursive: true, force: true });
@@ -8642,7 +8607,9 @@ await test('index --apply --json — applies the same ontology indexing pipeline
     assert.equal(existsSyncTest(join(vault, 'bs-app.md')), true);
     assert.equal(existsSyncTest(join(vault, 'capabilities', 'auth.md')), true);
     const authDoc = readFileSync(join(vault, 'capabilities', 'auth.md'), 'utf-8');
-    assert.match(authDoc, /dependencies:.*\bbilling\b/s);
+    assert.doesNotMatch(authDoc, /dependencies:/);
+    assert.ok(data.apply.imports.reviewCandidates.length > 0);
+    assert.deepEqual(data.apply.imports.relations, []);
   } finally {
     rmSync(vault, { recursive: true, force: true });
     rmSync(repo, { recursive: true, force: true });

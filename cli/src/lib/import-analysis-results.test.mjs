@@ -117,3 +117,42 @@ describe('import-analysis-results', () => {
     );
   });
 });
+
+it('infer_imports module evidence는 bounded exact file edge 계약을 지킨다', () => {
+  assert.doesNotThrow(() =>
+    assertInferImportsResult({
+      rootPath: '/repo',
+      filesScanned: 2,
+      edges: [],
+      externalImports: [],
+      unresolved: [],
+      moduleEdges: [{
+        from: 'capabilities/a',
+        to: 'capabilities/b',
+        count: 1,
+        kindCounts: { static: 1 },
+        evidence: [{ from: 'src/a.ts', to: 'src/b.ts', kind: 'static' }],
+        evidenceLimited: false,
+      }],
+    }),
+  );
+  assert.throws(
+    () =>
+      assertInferImportsResult({
+        rootPath: '/repo',
+        filesScanned: 2,
+        edges: [],
+        externalImports: [],
+        unresolved: [],
+        moduleEdges: [{
+          from: 'capabilities/a',
+          to: 'capabilities/b',
+          count: 1,
+          kindCounts: { static: 1 },
+          evidence: [{ from: '', to: 'src/b.ts', kind: 'static' }],
+          evidenceLimited: false,
+        }],
+      }),
+    /moduleEdges\[0\]\.evidence\[0\]\.from must be a non-empty string/,
+  );
+});

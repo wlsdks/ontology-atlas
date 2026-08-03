@@ -1812,7 +1812,7 @@ describe('verify.mjs first-contact gates', () => {
       {
         name: 'infer_imports',
         description:
-          'R17 (autonomous ingest deeper) — walk TS/JS files in a code repo and infer file-level + module-level import edges. side effect 0 (vault frontmatter NOT modified). The agent reviews moduleEdges with kindCounts and selectively passes accepted edges to add_relation as `depends_on`. Use after analyze_repo_structure to pull real dependency edges from the code, not just suggestedRelations heuristics. Single source of truth preserved — only the user writes to the vault.',
+          'R17 (autonomous ingest deeper) — walk TS/JS files in a code repo and infer file-level + module-level import edges. side effect 0 (vault frontmatter NOT modified). moduleEdges are source-backed review candidates with kindCounts and a bounded exact file-edge `evidence` receipt. Missing edges are rationale_review_required. Ask the user before add_relation and include `why`. Use after analyze_repo_structure to pull real dependency edges from the code, not just suggestedRelations heuristics. Single source of truth preserved — only the user writes to the vault.',
         inputSchema: {
           additionalProperties: false,
           properties: {
@@ -1875,7 +1875,7 @@ describe('verify.mjs first-contact gates', () => {
               type: 'array',
               items: {
                 type: 'object',
-                required: ['from', 'to', 'count', 'kindCounts'],
+                required: ['from', 'to', 'count', 'kindCounts', 'evidence', 'evidenceLimited'],
                 properties: {
                   from: { type: 'string' },
                   to: { type: 'string' },
@@ -1890,6 +1890,21 @@ describe('verify.mjs first-contact gates', () => {
                     additionalProperties: false,
                     minProperties: 1,
                   },
+                  evidence: {
+                    type: 'array',
+                    maxItems: 5,
+                    items: {
+                      type: 'object',
+                      required: ['from', 'to', 'kind'],
+                      properties: {
+                        from: { type: 'string' },
+                        to: { type: 'string' },
+                        kind: { enum: IMPORT_EDGE_KIND_VALUES },
+                      },
+                      additionalProperties: false,
+                    },
+                  },
+                  evidenceLimited: { type: 'boolean' },
                 },
                 additionalProperties: false,
               },
@@ -3554,6 +3569,34 @@ describe('verify.mjs first-contact gates', () => {
         },
       ]),
       'infer_imports outputSchema moduleEdges kindCounts drift',
+    );
+    assert.equal(
+      toolsListSchemaFailure([
+        ...tools.filter((tool) => tool.name !== 'infer_imports'),
+        {
+          ...tools.find((tool) => tool.name === 'infer_imports'),
+          outputSchema: {
+            ...tools.find((tool) => tool.name === 'infer_imports').outputSchema,
+            properties: {
+              ...tools.find((tool) => tool.name === 'infer_imports').outputSchema.properties,
+              moduleEdges: {
+                ...tools.find((tool) => tool.name === 'infer_imports').outputSchema.properties.moduleEdges,
+                items: {
+                  ...tools.find((tool) => tool.name === 'infer_imports').outputSchema.properties.moduleEdges.items,
+                  properties: {
+                    ...tools.find((tool) => tool.name === 'infer_imports').outputSchema.properties.moduleEdges.items.properties,
+                    evidence: {
+                      ...tools.find((tool) => tool.name === 'infer_imports').outputSchema.properties.moduleEdges.items.properties.evidence,
+                      maxItems: 50,
+                    },
+                  },
+                },
+              },
+            },
+          },
+        },
+      ]),
+      'infer_imports outputSchema moduleEdges evidence drift',
     );
     assert.equal(
       toolsListSchemaFailure(withQueryTool(
