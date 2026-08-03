@@ -62,7 +62,7 @@
 - `.claude/hooks/` — npm publish 차단 · SessionStart 볼트 census.
 
 스킬(`/po-pass` · `/po-council` · `/design-council` · `/design-audit` ·
-`/design-system-audit` ·
+`/design-system-audit` · `/design-build` ·
 `/user-walkthrough` · `/motion-verify` · `/responsive-sweep` · `/gate-probe` ·
 `/ontology-sync` · `/ontology-bootstrap` · `/ontology-extract` ·
 `/ontology-absorb-confluence` · `/ontology-field-trial`)은 **양쪽 다 읽으므로** 전용이 아니다 — 위 3번

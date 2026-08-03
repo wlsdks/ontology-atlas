@@ -211,6 +211,12 @@ The detailed rules live in `.claude/rules/*.md` and Claude Code auto-loads them.
   violation census before switching a rule on, revert the defect to prove it turns red, and
   assert the detector is not idling on an empty set. 2026-08 lost a release to a smoke gate
   whose markers had outlived their components — it had never once checked what it claimed.
+- **Design build** — `@.claude/skills/design-build/SKILL.md` is the order of operations for
+  writing UI: which primitive to reach for, which ramp owns each value, how a surface appears
+  and leaves, which instrument proves it, and which ratchet will stop you. It exists because
+  the 2026-08-03 census found the gap was assets, not taste — the button primitive covered
+  **1 of 419** raw controls, **11 of 20** appearing surfaces were hard cuts, and one chip size
+  had **50 distinct combinations**. Read it before building, not after.
 - **Design audit** — `@.claude/skills/design-audit/SKILL.md` runs after a front-end change,
   before calling it done. It **measures** the rendered DOM (rect intersections, dimension
   variance across repeated sets, computed styles vs the ramps) and uses screenshots only as
