@@ -401,8 +401,19 @@ describe('VaultAgentPanel', () => {
     expect(screen.queryByTestId('agent-prompt-disclosure')).not.toBeInTheDocument();
 
     // 같은 버튼을 다시 누르면 닫힌다 — 열어 둔 것을 닫을 길이 항상 있다.
+    //
+    // 닫힘은 **1프레임이 아니다** (2026-08-03): 상자는 퇴장 창 동안 남아 접히고,
+    // 그 동안 `inert` + `pointer-events-none` 이라 사라지는 중인 표면이 클릭을
+    // 먹지 않는다. 열림은 리플로우로 자라는데 닫힘만 하드컷이면 같은 입력의 두
+    // 방향이 다른 문법이 된다.
     fireEvent.click(screen.getByTestId('agent-meta-handoff'));
-    expect(screen.queryByTestId('agent-handoff-card')).not.toBeInTheDocument();
+    const exiting = screen.getByTestId('agent-meta-disclosure');
+    expect(exiting).toHaveAttribute('data-surface-state', 'exiting');
+    expect(exiting).toHaveAttribute('inert');
+    expect(exiting, '나가는 프레임은 못 눌린다').toHaveClass('pointer-events-none');
+    await waitFor(() =>
+      expect(screen.queryByTestId('agent-handoff-card')).not.toBeInTheDocument(),
+    );
   });
 
   it('아직 아무 말도 안 한 사람에게는 이어갈 것이 없다 — 자리표시가 다르다', async () => {
