@@ -146,3 +146,33 @@ export function useSwapHeight<T>(token: T) {
 
   return { hostRef, capture };
 }
+
+/**
+ * 퇴장 창 동안 **직전 값을 붙든다.**
+ *
+ * ## 왜 필요한가
+ *
+ * `<Surface open={Boolean(model)}>` 로 감싸면 표면은 퇴장 창 동안 남는다. 그런데
+ * **내용은 부모가 준다** — `model` 이 `null` 이 되는 순간 자식이 빈 채로 그려져,
+ * 표면은 예쁘게 사라지는데 그 안이 텅 빈다. 등장/퇴장을 붙이려던 것이 오히려
+ * 더 나쁜 화면이 된다.
+ *
+ * 그래서 값도 함께 붙들어야 한다. 이게 「부모의 렌더 게이트가 퇴장 창 동안 모델을
+ * 붙들어야 해서 기계적이지 않다」의 정체이고, 그래서 훅으로 만든다 — 표면마다
+ * 다시 발명하면 어느 하나는 틀린다.
+ *
+ * ## 왜 effect 가 아니라 렌더 중 조정인가
+ *
+ * `useEffect` 로 붙들면 **한 프레임 늦다** — 그 한 프레임 동안 자식이 `null` 을
+ * 받아 깜빡인다. 렌더 중 `setState` 는 React 가 문서에서 권하는 «prop 이 바뀔 때
+ * 상태 조정» 패턴이고, 화면에 칠하기 전에 즉시 다시 렌더하므로 깜빡임이 없다.
+ * 조건이 있어야 무한 루프가 안 난다 — 아래 `value !== held` 가 그것이다.
+ */
+export function useHeldValue<T>(value: T | null | undefined): T | null {
+  const [held, setHeld] = useState<T | null>(value ?? null);
+  if (value != null && value !== held) {
+    // 렌더 중 setState — React 가 즉시 재렌더하고 화면에는 한 번만 칠한다.
+    setHeld(value);
+  }
+  return value ?? held;
+}

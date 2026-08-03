@@ -1,7 +1,7 @@
 import { act, render, screen } from '@testing-library/react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
-import { EXIT_WINDOW_MS } from '@/shared/lib/use-presence';
+import { EXIT_WINDOW_MS, useHeldValue } from '@/shared/lib/use-presence';
 import { Surface } from './surface';
 
 /**
@@ -100,6 +100,20 @@ describe('Surface', () => {
     expect(screen.getByText('내용')).toHaveStyle({ transformOrigin: 'top right' });
   });
 
+  it('data-* 를 통과시킨다 — 밖에서 이 표면을 집을 수 있어야 한다', () => {
+    /*
+     * ⚠️ 이 단언이 없으면 **타입이 조용히 통과시킨다.** TypeScript 는 하이픈이 든
+     * JSX 속성을 검사하지 않아서, `Surface` 가 안 받아도 `tsc` 는 아무 말 없고
+     * 값만 버려진다. 2026-08-03 에 엣지 패널을 전환하면서 실제로 그럴 뻔했다.
+     */
+    render(
+      <Surface open data-testid="the-surface">
+        내용
+      </Surface>,
+    );
+    expect(screen.getByTestId('the-surface')).toBeInTheDocument();
+  });
+
   it('소비처 className 이 덧붙는다 — 모양은 소비처가 정한다', () => {
     render(
       <Surface open className="w-[300px]">
@@ -109,5 +123,54 @@ describe('Surface', () => {
     const el = screen.getByText('내용');
     expect(el).toHaveClass('w-[300px]');
     expect(el, '모션 문법은 그대로 남아야 한다').toHaveClass('topology-chrome-in');
+  });
+
+});
+
+describe('useHeldValue — 퇴장 창 동안 내용이 비지 않는다', () => {
+  beforeEach(() => vi.useFakeTimers());
+  afterEach(() => {
+    vi.runOnlyPendingTimers();
+    vi.useRealTimers();
+  });
+
+  function Holder({ model }: { model: string | null }) {
+    const held = useHeldValue(model);
+    return (
+      <Surface open={model !== null}>
+        <span data-testid="body">{held ?? '(비어 있음)'}</span>
+      </Surface>
+    );
+  }
+
+  it('값이 사라져도 퇴장 창 동안 직전 값을 그린다', () => {
+    // 이게 없으면 표면은 예쁘게 사라지는데 그 안이 텅 빈다 — 등장/퇴장을 붙이려던
+    // 것이 오히려 더 나쁜 화면이 된다.
+    const { rerender } = render(<Holder model="엣지 A→B" />);
+    expect(screen.getByTestId('body')).toHaveTextContent('엣지 A→B');
+
+    act(() => rerender(<Holder model={null} />));
+    expect(
+      screen.getByTestId('body'),
+      '퇴장 중에 내용이 비면 사라지는 표면이 빈 상자로 보인다',
+    ).toHaveTextContent('엣지 A→B');
+
+    act(() => void vi.advanceTimersByTime(EXIT_WINDOW_MS + 10));
+    expect(screen.queryByTestId('body')).toBeNull();
+  });
+
+  it('새 값이 오면 즉시 바뀐다 — 붙드는 것이 갱신을 막지 않는다', () => {
+    const { rerender } = render(<Holder model="첫째" />);
+    act(() => rerender(<Holder model="둘째" />));
+    expect(screen.getByTestId('body')).toHaveTextContent('둘째');
+  });
+
+  it('값이 바뀌는 동안 한 프레임도 비지 않는다', () => {
+    // effect 로 붙들면 한 프레임 늦어 그 사이 자식이 null 을 받는다.
+    // 렌더 중 조정이라 그 프레임이 존재하지 않는다.
+    const { rerender } = render(<Holder model="A" />);
+    act(() => rerender(<Holder model={null} />));
+    act(() => rerender(<Holder model="B" />));
+    expect(screen.getByTestId('body')).toHaveTextContent('B');
   });
 });
