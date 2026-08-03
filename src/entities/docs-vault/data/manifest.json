@@ -7546,8 +7546,8 @@
         }
       ],
       "excerpt": "This document is maintained based on Section 3 of the design spec. For the original Linear specification, see design-references/DESIGN-linear.md. v2 (2026-07): topology-map-v2 에서 출하된 B2+ \"Circuit × Constellation\" 시각 언어가 페이지 롤아웃(랜딩 → docs/ontology 허브 → projects/insights → download)의 규범이 되었다 — 아래 v2 — \"Circuit × Constell",
-      "wordCount": 23359,
-      "updatedAt": "2026-08-02",
+      "wordCount": 23409,
+      "updatedAt": "2026-08-03",
       "linksOut": [
         "design-references/DESIGN-linear",
         "TOPOLOGY-V2-DESIGN",
@@ -8292,8 +8292,8 @@
         }
       ],
       "excerpt": "이 문서는 제품을 느낌이 아니라 공개·인용 가능한 학술/표준/craft 레퍼런스에 묶어 둔다. \"온톨로지가 뭔지도 모르면서 만드는\" 것을 막기 위한 근거 모음 — 무엇이 이미 있고, 우리가 그 위에서 우리만의 것을 어디서 어떻게 다르게 만드는지. 인용 규율: 여기 실린 레퍼런스는 전부 공개 논문 / W3C 표준 / 공개 서적 / 공개 블로그이며, 2026-06-01 자동 리서치 워크플로(6 facet × research→adversarial fact-check)에서 각 출처의 제목·저자·URL 을 독립 웹 확인(25/25 verified) 한 것만 실었다. 링크/인용",
-      "wordCount": 2722,
-      "updatedAt": "2026-08-02",
+      "wordCount": 3104,
+      "updatedAt": "2026-08-03",
       "linksOut": []
     },
     {

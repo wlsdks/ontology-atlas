@@ -276,9 +276,11 @@ observe if it was right>
 
 ## Non-negotiables every seat inherits
 
-- **공개 발행 원칙만 인용한다.** Apple HIG · Rams · Tufte · Bertin ·
-  Cleveland & McGill · Shneiderman · Munzner · Norman · Nielsen · Disney 12 ·
-  Material motion · Carbon · Fluent · W3C · WCAG · Toss 공개 발표.
+- **공개 발행 원칙만 인용한다.** Apple HIG · Rams · Mackinlay · Tufte · Bertin ·
+  Cleveland & McGill · Purchase · Shneiderman · Munzner · Norman · Nielsen ·
+  Disney 12 · Material motion · Carbon · Fluent · W3C · WCAG · Toss 공개 발표.
+  **단 data-ink 는 반려 근거가 아니다** — Inbar 2007 · Bateman 2010 이 반박했다.
+  마크를 반려할 때 대는 것은 Mackinlay expressiveness 다(`docs/FOUNDATIONS.md`).
 - **타사 자산 모방 절대 금지.** Reference products are things to *observe a
   principle in*, never to copy — no assets, no wording, no styling, no palettes.
   `docs/PRODUCT-DESIGN-OPERATING-SYSTEM.md` 의 Reference Permission Test 를
