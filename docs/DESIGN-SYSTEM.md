@@ -2769,13 +2769,13 @@ JSX 안에 44px 정사각 버튼이나 라벨 버튼을 인라인 클래스로 �
 
 | px | 토큰 / 단 | 누가 서 있나 | 왜 이 값인가 |
 |---:|---|---|---|
-| **24** | (토큰 없음 — 규격 상수) | `chip`/`pill`/`icon` 의 `sm`, `segment` 의 `md` | **WCAG 2.5.8 (AA, Target Size Minimum) 24×24** — 사다리의 바닥이다. 이 아래는 규격 미달이지 「작은 단」이 아니다 |
+| **24** | (토큰 없음 — 규격 상수) | `chip`/`pill`/`icon` 의 `sm`, `segment` 의 `sm`·`md` | **WCAG 2.5.8 (AA, Target Size Minimum) 24×24** — 사다리의 바닥이다. 이 아래는 규격 미달이지 「작은 단」이 아니다 |
 | **28** | `--control-h-sm` | `row` 의 `sm`, `icon` 의 `md`(`h-7 w-7`) | 한 줄 목록 행과 28px 정사각 아이콘 |
-| **32** | `--control-h-md` | `chip`/`pill` 의 `md`·`lg`, `segment` 의 `lg`, `icon` 의 `lg`, `--app-nav-rail-tile-height` | **이 앱의 기본 컨트롤 높이.** 값 층은 `min-h-8` 로 이 값에 선다 |
+| **32** | `--control-h-md` | `chip`/`pill` 의 `md`·`lg`, `segment` 의 `lg`, `card` 의 `sm`, `icon` 의 `lg`, `--app-nav-rail-tile-height` | **이 앱의 기본 컨트롤 높이.** 값 층은 `min-h-8` 로 이 값에 선다 |
 | **34** | `--docs-header-tile-size` | 문서함 헤더 타일 | 크롬 잠금 — 그 표면이 소유한 치수다 |
-| **36** | `--chrome-tile-size` | 크롬 필·타일, `row` 의 `md` | 「스케일 고정 계약」이 못박은 워크벤치 크롬 치수 |
-| **40** | `--control-h-lg` | Select, 큰 폼 컨트롤 | 글자를 입력받는 상자 |
-| **44** | `--touch-target-min` | `link`(비인라인)의 `min-h-11`, `--control-row-h`, `pointer: coarse` 승격 | Apple HIG / Material 의 최소 터치 타깃 |
+| **36** | `--chrome-tile-size` | 크롬 필·타일, `row` 의 `md`, `card` 의 `md` | 「스케일 고정 계약」이 못박은 워크벤치 크롬 치수 |
+| **40** | `--control-h-lg` | Select, 큰 폼 컨트롤, `card` 의 `lg` | 글자를 입력받는 상자 |
+| **44** | `--touch-target-min` | `link`(비인라인)의 `min-h-11`, `row` 의 `lg`, `--control-row-h`, `pointer: coarse` 승격 | Apple HIG / Material 의 최소 터치 타깃 |
 
 **규율 셋:**
 
@@ -2789,10 +2789,25 @@ JSX 안에 44px 정사각 버튼이나 라벨 버튼을 인라인 클래스로 �
    이 자리에서 요구하는 것이다. 2026-08-03 의 `fixedHeight` 축이 정확히 그
    반대를 했다.
 
+**2차 정정 (2026-08-03, 체계석 · #884 의 남은 절반)**: 위 복원이 칩·필에서 멈춰
+있었다 — 2차 전수가 segment/sm **22px**(바닥 미달, 소비처 0) · row/lg **42px**
+(어휘 밖, 소비처 0) · card/sm **30px**(어휘 밖, 15곳) · card/md **34px**(문서함
+헤더 크롬 잠금 단의 우연 점유, 5곳)를 찾았다. 그래서 규율 1을 값으로 인코딩했다:
+**가로 한 줄 모양(chip·pill·segment·row·card)은 전 조합이 명시 `min-h-*` 플로어를
+선언한다.** 플로어가 자연높이와 같은 조합은 픽셀 이동 0이고, 위 네 조합만
+24/44/32/36 으로 올라섰다(칩·필 `md`=`lg`=32 는 그대로 — `lg` 가 키우는 것은
+글자·인셋이지 높이가 아니라는 소유자 확정 유효). `tile` 은 세로 2축 표면이라
+내용이 높이를 정하고, `link` 는 비인라인 44 / 인라인 면제 — 둘은 이 표의 대상이
+아니다.
+
 **게이트**: `tests/contract/control-class.contract.test.ts` 가 ① `chip`/`pill` 의
 `md`·`lg` 가 `min-h-8` 을 내고 `sm` 은 안 낸다 ② `min-h-8` 의 픽셀값이
 `app/globals.css` 의 `--control-h-md` 파싱값과 **같다**(사다리 토큰이 움직이면
-램프가 즉시 빨개진다) ③ `fixedHeight` 축이 되살아나지 않는다 — 셋을 단언한다.
+램프가 즉시 빨개진다) ③ `fixedHeight` 축이 되살아나지 않는다 ④ **가로 한 줄
+모양 전 조합(5×3)+정사각(3)이 명시 높이를 선언하고 그 값이 높이 어휘 —
+`--control-h-*`·`--chrome-tile-size`·`--touch-target-min` 파싱값 + WCAG 바닥
+24 — 안이다**(34 는 크롬 잠금이라 일부러 어휘 밖: 컨트롤이 서면 빨개진다)
+⑤ `min-h-[...]` arbitrary 로 어휘를 우회할 수 없다 — 다섯을 단언한다.
 
 ### 시스템을 늘리는 규칙 (2026-08-03 소유자 지시)
 

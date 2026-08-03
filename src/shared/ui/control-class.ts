@@ -176,13 +176,29 @@ const control = cva(DISABLED, {
      * 필요한 축이 아니었다 — 값을 고치니 축이 죽었다(2026-08-03 소유자 결정,
      * `docs/DECISIONS.md`).
      *
-     * 그래서 오늘의 규격은 이렇다 — **누르는 상자는 사다리 위에 선다**:
+     * ## 2026-08-03 2차 정정: 사다리 복원이 칩·필에서 멈춰 있었다
      *
-     * | 단 | 높이 | 근거 |
-     * |---|---:|---|
-     * | `sm` | 24px | WCAG 2.5.8 (AA) 최소 타깃. 사다리의 바닥이다 |
-     * | `md` | 32px | `--control-h-md` — 이 앱의 기본 컨트롤 높이 |
-     * | `lg` | 32px | 같은 32. `lg` 가 키우는 것은 **글자와 좌우 인셋**이지 높이가 아니다 |
+     * 위 정정(#884)이 세운 것은 `chip`/`pill` 뿐이었다. 같은 날 2차 전수가
+     * 나머지 모양에서 같은 부류의 결함을 찾았다 — segment/sm **22px**(WCAG
+     * 2.5.8 바닥 미달, 소비처 0) · row/lg **42px**(어휘 밖, 소비처 0) ·
+     * card/sm **30px**(어휘 밖, 15곳) · card/md **34px**(크롬 잠금 단
+     * `--docs-header-tile-size` 를 패딩 산수로 우연 점유, 5곳). 넷 다
+     * 「패딩이 높이를 정한」 부산물이다.
+     *
+     * 그래서 오늘의 규격은 이렇다 — **가로 한 줄 모양은 전 조합이 명시
+     * 플로어(`min-h-*`)로 사다리 위에 선다**. 플로어가 자연높이와 같은 조합은
+     * 픽셀 이동 0이고, 규격이 산수의 부산물이 아니라 선언이 된다:
+     *
+     * | 모양 | sm | md | lg |
+     * |---|---:|---:|---:|
+     * | `chip`/`pill` | 24 | 32 | 32 — `lg` 가 키우는 것은 **글자와 좌우 인셋**이지 높이가 아니다(2026-08-03 소유자 확정, 소비처 26곳) |
+     * | `segment` | 24 | 24 | 32 |
+     * | `row` | 28 | 36 | 44 |
+     * | `card` | 32 | 36 | 40 |
+     * | `icon` | 24 | 28 | 32 — 정사각이라 하드 `h-*` |
+     *
+     * `link` 는 비인라인 44(`min-h-11`) / 인라인은 WCAG 2.5.8 면제. `tile` 은
+     * 세로 2축 표면이라 내용이 높이를 정한다 — 사다리 이탈이 아니라 축이 다르다.
      *
      * 하드 `h-8` 이 아니라 **`min-h-8`** 인 이유: 하드 높이는 줄바꿈한 칩을
      * 잘라 내용을 숨기지만, `min-h` 는 단행 칩을 32로 세우면서 넘치는 내용은
@@ -392,15 +408,21 @@ const control = cva(DISABLED, {
      * `lg` 는 `py` 를 한 단 줄여(1.5→1) 자연 30 을 만든 뒤 같은 32 에 세운다.
      * `min-h` 는 **올리기만** 하므로 `py-1.5` 그대로면 34 가 남는다.
      */
-    { shape: 'chip', size: 'sm', class: 'px-2 py-1 text-caption' },
+    { shape: 'chip', size: 'sm', class: 'min-h-6 px-2 py-1 text-caption' },
     { shape: 'chip', size: 'md', class: 'min-h-8 px-2.5 py-1.5 text-label' },
     { shape: 'chip', size: 'lg', class: 'min-h-8 px-3 py-1 text-body' },
     { shape: 'icon', size: 'sm', class: 'h-6 w-6' },
     { shape: 'icon', size: 'md', class: 'h-7 w-7' },
     { shape: 'icon', size: 'lg', class: 'h-8 w-8' },
-    { shape: 'row', size: 'sm', class: 'gap-1.5 px-2 py-1.5 text-label' },
-    { shape: 'row', size: 'md', class: 'gap-2 px-2.5 py-2 text-body' },
-    { shape: 'row', size: 'lg', class: 'gap-2.5 px-3 py-2.5 text-body-lg' },
+    /*
+     * 행 — 28 / 36 / 44. 셋 다 자연높이가 이미 그 값이라(행간+패딩) 플로어는
+     * 픽셀 이동 0이다. `lg` 만 예외 — 자연 42는 어휘에 없는 값이라 `min-h-11`
+     * (`--touch-target-min` = `--control-row-h` 44)로 올린다. 소비처 0이라
+     * 이동도 0. 42를 쓰는 소비처가 생기기 전에 단을 사다리에 세웠다.
+     */
+    { shape: 'row', size: 'sm', class: 'min-h-7 gap-1.5 px-2 py-1.5 text-label' },
+    { shape: 'row', size: 'md', class: 'min-h-9 gap-2 px-2.5 py-2 text-body' },
+    { shape: 'row', size: 'lg', class: 'min-h-11 gap-2.5 px-3 py-2.5 text-body-lg' },
     /*
      * 필 — 같은 24 / 32 / 32. **여기가 실측이 소유자 가설과 갈린 자리다.**
      * 필의 옛 자연 높이는 칩과 같은 24/30/34 가 아니라 **20 / 22 / 30** 이었다
@@ -409,12 +431,19 @@ const control = cva(DISABLED, {
      * 소비처 9개(`sm`)·3개(`md`)의 실이동은 PR 본문의 표에 그대로 적혀 있다 —
      * 「±2px 안」이라는 예상과 다른 값이라 숨기지 않는다.
      */
-    { shape: 'pill', size: 'sm', class: 'px-2 py-1 text-caption' },
+    { shape: 'pill', size: 'sm', class: 'min-h-6 px-2 py-1 text-caption' },
     { shape: 'pill', size: 'md', class: 'min-h-8 px-2.5 py-0.5 text-label' },
     { shape: 'pill', size: 'lg', class: 'min-h-8 px-3 py-1 text-body' },
-    { shape: 'card', size: 'sm', class: 'gap-1.5 px-2.5 py-1.5 text-label' },
-    { shape: 'card', size: 'md', class: 'gap-1.5 px-3 py-1.5 text-body' },
-    { shape: 'card', size: 'lg', class: 'gap-2 px-3.5 py-2 text-body-lg' },
+    /*
+     * 카드 — 32 / 36 / 40 (+4 등차, 전부 높이 어휘 안). 2차 전수가 찾은 자리:
+     * 자연높이가 sm 30 · md 34 로, 30은 어휘 밖이고 34는 크롬 잠금 단
+     * (`--docs-header-tile-size`)의 우연 점유였다. 플로어로 32/36에 세운다 —
+     * 한 줄짜리 카드만 +2px 움직이고(전수 표는 PR), 여러 줄 카드는 내용이
+     * 이미 플로어 위라 이동 0이다. `lg` 는 자연 40 = `--control-h-lg` 그대로.
+     */
+    { shape: 'card', size: 'sm', class: 'min-h-8 gap-1.5 px-2.5 py-1.5 text-label' },
+    { shape: 'card', size: 'md', class: 'min-h-9 gap-1.5 px-3 py-1.5 text-body' },
+    { shape: 'card', size: 'lg', class: 'min-h-10 gap-2 px-3.5 py-2 text-body-lg' },
     { shape: 'tile', size: 'sm', class: 'gap-1.5 px-2 py-2 text-caption' },
     { shape: 'tile', size: 'md', class: 'gap-2 px-2 py-2.5 text-label' },
     { shape: 'tile', size: 'lg', class: 'gap-2 px-3 py-3 text-body' },
@@ -423,9 +452,11 @@ const control = cva(DISABLED, {
     { shape: 'link', size: 'lg', class: 'text-body' },
     // 세그먼트: `md` 가 실측 최빈(`px-2 py-1`/`text-label`, 24px)이라 6개가
     // 픽셀 변화 0으로 들어온다. sm 은 같은 인셋에 한 단 작은 타입, lg 는 32px.
-    { shape: 'segment', size: 'sm', class: 'px-2 py-1 text-caption' },
-    { shape: 'segment', size: 'md', class: 'px-2 py-1 text-label' },
-    { shape: 'segment', size: 'lg', class: 'px-3 py-1.5 text-body' },
+    // 보더가 없어 caption 자연높이가 22 — `min-h-6` 이 WCAG 2.5.8 바닥(24)에
+    // 세운다(소비처 0이라 이동 0). md 도 같은 플로어를 선언만 한다(자연 24).
+    { shape: 'segment', size: 'sm', class: 'min-h-6 px-2 py-1 text-caption' },
+    { shape: 'segment', size: 'md', class: 'min-h-6 px-2 py-1 text-label' },
+    { shape: 'segment', size: 'lg', class: 'min-h-8 px-3 py-1.5 text-body' },
 
     // ── 테두리를 가진 모양의 기본 테두리색. `link`/`row`/`icon` 은 보더가 없다.
     { shape: 'chip', active: false, class: 'border-[color:var(--color-divider)]' },
