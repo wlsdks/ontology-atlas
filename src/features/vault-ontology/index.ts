@@ -10,4 +10,5 @@ export {
 export { useAdaptiveRecentChanges } from './model/use-recent-changes';
 export { OntologyLiveBaselineInit } from './ui/OntologyLiveBaselineInit';
 export { LiveActivityIndicator } from './ui/LiveActivityIndicator';
+export { RecentChangesNeedsVaultDialog } from './ui/RecentChangesNeedsVaultDialog';
 export { formatActivityAge } from './lib/format-activity-age';

@@ -2494,6 +2494,13 @@
       "ctaScaffold": "Create for me",
       "ctaScaffoldBusy": "Creating…",
       "scaffoldToast": "Created {concepts} ontology concepts and {configs} agent config files"
+    },
+    "recentChangesNeedsVault": {
+      "eyebrow": "Recent changes",
+      "title": "Open your folder to turn this on",
+      "body": "You're looking at the sample map. Its dates are when this app last touched the sample, which has nothing to do with you. Open your folder and the map will point out what changed and when.",
+      "action": "Open my folder",
+      "close": "Close"
     }
   },
   "fullDetailA1": {

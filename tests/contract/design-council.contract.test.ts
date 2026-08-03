@@ -41,21 +41,37 @@ const DECIDER_AGENT = 'design-guardian';
 const ALWAYS_ATTENDING = ['design-lead', 'design-system'];
 
 /**
- * Tier is a decision, not a default. Judgment seats get the stronger model;
- * measurement seats are scaffolded enough that a cheaper one suffices. No haiku
- * anywhere — a council is a judgment body, and a haiku seat produces checklist
- * parroting that reads like a verdict, which is worse than an absent one.
+ * 티어는 기본값이 아니라 결정이다. haiku 는 어디에도 없다 — 카운슬은 판정 기구이고
+ * haiku 자리는 평결처럼 읽히는 체크리스트 앵무새를 낸다(부재보다 나쁘다).
+ *
+ * **2026-08-03 개정 — 소유자 지시** *"다 opus가 해도됨! 가장 높은 결정 필요한건
+ * fable로"*. 그 지시는 PO 5석에만 적용되고 디자인 벤치는 8석 중 6석이 sonnet 으로
+ * 남아 있었다. 같은 규칙으로 맞춘다.
+ *
+ * **fable 은 「항상 참석하는 두 자리」다.** 스킬이 *위계와 체계는 빠질 수 없다* 고
+ * 못박은 그 둘이고, 이유가 티어와 같다 — 「위계」는 **무엇이 주목을 이기는가**를
+ * 정하고 나머지 판정이 전부 그 뒤에 온다. 「체계」는 결정을 **토큰·lint·계약
+ * 테스트**로 굳혀서 되돌리기가 가장 비싸다. PO 가 5석 중 2석에 fable 을 둔 것과
+ * 같은 비율이고 같은 논거다.
+ *
+ * ⚠️ **단일 계열로 되돌리지 않는다.** PO 쪽 실측이 여기에도 적용된다 — 원장 7회 ·
+ * 좌석 판정 35건에서 평균 쌍별 일치율 65.7%(우연 기대 36.8%). 한 계열로 통일하면
+ * 여덟 자리가 아니라 「여덟 번 다르게 프롬프트한 심판 하나」다
+ * (Verga et al. arXiv:2404.18796 · Panickssery et al. NeurIPS 2024).
  */
 const TIERS: Record<string, string> = {
-  'design-lead': 'opus',
+  'design-lead': 'fable',
+  'design-system': 'fable',
   'design-motion': 'opus',
-  'design-system': 'sonnet',
-  'design-interaction': 'sonnet',
-  'design-infoviz': 'sonnet',
-  'design-workbench': 'sonnet',
-  'design-responsive': 'sonnet',
-  'design-handoff': 'sonnet',
+  'design-interaction': 'opus',
+  'design-infoviz': 'opus',
+  'design-workbench': 'opus',
+  'design-responsive': 'opus',
+  'design-handoff': 'opus',
 };
+
+/** 계열이 최소 둘 — 위 ⚠️. 없으면 다음 사람이 「일관성」을 이유로 통일해 버린다. */
+const MIN_MODEL_FAMILIES = 2;
 
 /** Measuring seats must run their instrument; the skill has to say so. */
 const INSTRUMENTS = ['motion-verify', 'responsive-sweep', 'design-audit'];
@@ -378,6 +394,16 @@ describe('발산 단계 — /design-directions', () => {
    * 나머지 갈래가 허수아비가 되고, 그 순간 발산은 변경을 정당화하는 의식이 된다
    * — 카운슬을 만든 이유와 같은 실패다.
    */
+  it('벤치가 한 모델 계열로 수렴하지 않는다', () => {
+    // 이 단언이 없으면 다음 사람이 「일관성」을 이유로 한 줄씩 통일해 이질성이
+    // 조용히 사라진다 — PO 카운슬에서 실제로 그렇게 될 뻔했다.
+    expect(
+      new Set(Object.values(TIERS)).size,
+      '여덟 자리가 한 계열이면 배심원 여덟이 아니라 여덟 번 다르게 프롬프트한 심판 하나다 ' +
+        '(실측: 좌석 판정 35건 평균 쌍별 일치율 65.7% · Verga et al. arXiv:2404.18796)',
+    ).toBeGreaterThanOrEqual(MIN_MODEL_FAMILIES);
+  });
+
   it('갈래를 그리는 자리가 짓는 자리와 분리돼 있다', () => {
     const skill = read(DIRECTIONS_SKILL).replace(/\s+/g, ' ');
     expect(skill, '발산 소유자를 chief 로 명시해야 한다').toMatch(

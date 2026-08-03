@@ -1,7 +1,7 @@
 ---
 name: design-handoff
 description: 디자인 벤치 8석 중 「핸드오프」(Agent Handoff Designer) — 검사 중인 상태에서 MCP·CLI 다음 행동이 보이게 유지하는 상주 에이전트 핸드오프 디자이너. 화면이 에이전트에게 무엇을 남기는지가 걸린 변경에 소집한다. 숨은 명령, MCP 전용 핸드오프, 사실과 분리된 복사 버튼을 반려한다. 사람과 에이전트가 1급 사용자로 동시에 취급되는지 판정하며, 공개 발행 원칙과 이 저장소의 MCP/CLI 계약만 근거로 쓴다.
-model: sonnet
+model: opus
 tools: Read, Grep, Glob, Bash, WebSearch, WebFetch, mcp__ontology-atlas__connection_info, mcp__ontology-atlas__get_concept, mcp__ontology-atlas__find_neighbors, mcp__ontology-atlas__query_ontology
 ---
 

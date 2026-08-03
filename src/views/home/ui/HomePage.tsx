@@ -21,7 +21,7 @@ import { useLocale, useTranslations } from "next-intl";
 import { Compass, FolderOpen, HelpCircle, History as HistoryIcon, MessageCircle, Plus, X } from "lucide-react";
 import { useTypingShortcuts } from "@/shared/lib/use-typing-shortcut";
 import { useProjects } from "@/features/project-data-source";
-import { useAdaptiveRecentChanges, useOntologyInsight, useVaultConceptFacts, useVaultDocFreshnessIndex } from "@/features/vault-ontology";
+import { RecentChangesNeedsVaultDialog, useAdaptiveRecentChanges, useOntologyInsight, useVaultConceptFacts, useVaultDocFreshnessIndex } from "@/features/vault-ontology";
 import {
   useAgentServer,
   useLocalVault,
@@ -641,12 +641,30 @@ export function HomePage() {
   const recentChanges = useAdaptiveRecentChanges(
     spotlightOn && recentWindow !== "auto" ? recentWindow : undefined,
   );
+  /*
+   * 샘플에서 이 칩을 누르면 **막다른 곳 대신 길**을 준다 (2026-08-03 소유자 지시:
+   * *"칩 누르면 뭔가 화면에서 팝업 띄워줘야 하지 않을까? … 화면 중앙에 예쁜 팝업
+   * 띄워서 폴더 세팅 유도하던지?"*).
+   *
+   * **두 빈 상태를 가른다.** 내 폴더를 연 사람에게 최근 변경이 0이면 그건 진짜로
+   * 보여줄 게 없는 것이라 비활성 + 툴팁 그대로다 — 「아무것도 없다」를 말하려고
+   * 모달을 여는 것은 여전히 기각이다(2026-08-02, popup soup). 샘플은 다르다:
+   * 여기서 0인 이유는 **샘플의 날짜가 이 저장소가 픽스처를 마지막으로 건드린
+   * 시각**이라 사용자와 무관하다는 것이고, 기다린다고 켜지지 않는다. 사유가
+   * 「없음」이 아니라 「다음 행동」이면 다음 행동을 줘야 한다.
+   */
+  const [recentNeedsVaultOpen, setRecentNeedsVaultOpen] = useState(false);
+  const spotlightNeedsVault = vault.status !== 'loaded';
   const handleToggleSpotlight = useCallback(() => {
+    if (spotlightNeedsVault) {
+      setRecentNeedsVaultOpen(true);
+      return;
+    }
     setRouteState((current) => ({
       ...current,
       recentWindow: current.recentWindow === null ? "auto" : null,
     }));
-  }, [setRouteState]);
+  }, [spotlightNeedsVault, setRouteState]);
   // 소유자 지시 (Image #14): "전체 변경점을 보여주는 거면 아예 zoom out 을
   // 크게" — 렌즈가 켜지는 순간 카메라를 전체 fit 으로 물러나 변경 지점
   // 전부(자동 전개 포함)가 한 화면에 들어오게 한다. off→on 전이에서만 1회
@@ -3627,7 +3645,14 @@ export function HomePage() {
                          * 켜져 있는 동안은 **끌 수 있어야** 하므로, 꺼져 있고
                          * 강조가 0일 때만 비활성이다.
                          */
-                        disabled={!spotlightOn && recentChanges.recentNodeIds.size === 0}
+                        /*
+                         * 샘플에서는 **비활성이 아니다** — 누르면 폴더 안내가 열린다.
+                         * 비활성은 「내 폴더를 열었는데 최근 변경이 0」일 때만이고,
+                         * 그때는 정말로 보여줄 게 없다.
+                         */
+                        disabled={
+                          !spotlightNeedsVault && !spotlightOn && recentChanges.recentNodeIds.size === 0
+                        }
                         aria-pressed={spotlightOn}
                         aria-label={t('controls.spotlightAriaLabel')}
                         data-testid="topology-spotlight-toggle"
@@ -4683,6 +4708,15 @@ export function HomePage() {
                 open={unsupportedGuideOpen}
                 unsupported
                 onClose={() => setUnsupportedGuideOpen(false)}
+              />
+
+              {/* 샘플에서 「최근 변경」을 눌렀을 때 — 막다른 곳 대신 폴더로 가는 길.
+                  `requestVaultOpen` 을 그대로 쓴다: 첫 실행 카드의 「내 폴더 열기」와
+                  **같은 핸들러**여야 미지원 브라우저 분기도 한 번만 존재한다. */}
+              <RecentChangesNeedsVaultDialog
+                open={recentNeedsVaultOpen}
+                onClose={() => setRecentNeedsVaultOpen(false)}
+                onOpenVault={requestVaultOpen}
               />
 
             </>

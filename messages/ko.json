@@ -2494,6 +2494,13 @@
       "ctaScaffold": "만들어 주기",
       "ctaScaffoldBusy": "만드는 중…",
       "scaffoldToast": "온톨로지 개념 {concepts}개 · 에이전트 설정 파일 {configs}개를 만들었어요"
+    },
+    "recentChangesNeedsVault": {
+      "eyebrow": "최근 변경",
+      "title": "내 폴더를 열면 켜져요",
+      "body": "지금 보는 건 예시 지도예요. 여기 날짜는 이 앱이 예시를 마지막으로 손본 시각이라 당신과 관계가 없어요. 내 폴더를 열면 무엇이 언제 바뀌었는지 지도 위에서 바로 짚어드려요.",
+      "action": "내 폴더 열기",
+      "close": "닫기"
     }
   },
   "fullDetailA1": {
