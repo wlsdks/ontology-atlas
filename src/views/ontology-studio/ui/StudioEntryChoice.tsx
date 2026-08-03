@@ -159,13 +159,10 @@ const EntryCard = ({
     data-testid={testId}
     onClick={onClick}
     style={{ ["--studio-stagger" as string]: `${staggerMs}ms` }}
-    // 16px 은 radius 램프(6/9/12) 밖이다. 이 두 카드는 무대 전체를 차지하는
-    // 진입 결정 표면이라 패널 단(12)보다 한 단 더 부드러운 값을 쓰고 있고,
-    // 소유자가 그 화면을 보고 승인했다. 값을 조용히 12로 스냅하면 승인된
-    // 화면이 바뀌므로, 램프에 `--radius-surface`(16) 를 등재할지는 다음
-    // 디자인 패스에서 정한다 — 그때까지 이 예외를 **보이게** 남긴다.
-    // eslint-disable-next-line no-restricted-syntax -- 램프 밖 16px, 등재 대기
-    className="studio-stage-in group flex flex-col items-start gap-3 rounded-[16px] border border-[color:var(--color-border-soft)] bg-[color:var(--color-elevated)] px-5 py-6 text-left transition-colors hover:border-[color:var(--color-indigo-a46)] hover:bg-[color:var(--color-indigo-a06)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--color-indigo-a46)] focus-visible:ring-inset"
+    /* 2026-08-04 체계석 판정 — 「등재 대기」의 답: 이 카드는 인플로우 콘텐츠라
+     * 새 스텝(16)이 아니라 panel(12)이다. 시트 단(18)은 떠 있는 표면의 것이고,
+     * 드로어 라운드가 같은 판정(16 전부 → panel)을 먼저 확정했다. */
+    className="studio-stage-in group flex flex-col items-start gap-3 rounded-panel border border-[color:var(--color-border-soft)] bg-[color:var(--color-elevated)] px-5 py-6 text-left transition-colors hover:border-[color:var(--color-indigo-a46)] hover:bg-[color:var(--color-indigo-a06)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--color-indigo-a46)] focus-visible:ring-inset"
   >
     <span className="grid h-12 w-12 place-items-center rounded-panel border border-[color:var(--color-border-soft)] bg-[color:var(--color-overlay-1)] text-[color:var(--color-text-tertiary)] transition-colors group-hover:border-[color:var(--color-indigo-a46)] group-hover:text-[color:var(--color-indigo-text-soft)]">
       {illustration}

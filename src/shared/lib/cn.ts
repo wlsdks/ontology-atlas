@@ -63,7 +63,7 @@ export const LEADING_RAMP_STEPS = [
  * `app/globals.css` 의 `--radius-*` 램프와 반드시 동기 — 스텝을 추가하면
  * 여기도 추가할 것 (계약 테스트: cn.test.ts).
  */
-export const RADIUS_RAMP_STEPS = ['micro', 'chip', 'card', 'panel'] as const;
+export const RADIUS_RAMP_STEPS = ['micro', 'chip', 'card', 'panel', 'sheet'] as const;
 
 const twMerge = extendTailwindMerge({
   extend: {

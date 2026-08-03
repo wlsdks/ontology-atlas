@@ -113,13 +113,22 @@ const arbitrarySizeSelectors = [
     message:
       'Geometry Codex — Tailwind 기본 타입 스텝 금지 (template literal). text-* 램프로.',
   },
+  /*
+   * 2026-08-04 — 방향 접미 꼴(`rounded-t-*` 등)을 사정거리에 넣었다. 종전
+   * 패턴은 `rounded-(sm|…)` 만 봐서 `rounded-r-md`(HubRail) · `rounded-t-[28px]`
+   * (ProjectDrawer 모바일 시트)가 **아무 룰도 안 거치고** 살아 있었다 — 룰이
+   * 있어도 사정거리가 짧으면 룰이 없는 것과 같다(화살표 게이트 전례). 켜기 전
+   * 전수: 방향 이름 스텝 1건 + 방향 arbitrary 2건, 전부 같은 PR 에서 치환.
+   */
   {
-    selector: 'Literal[value=/(^|[^-\\w])rounded-(sm|md|lg|xl)([^-\\w]|$)/]',
+    selector:
+      'Literal[value=/(^|[^-\\w])rounded-((t|b|l|r|s|e|tl|tr|bl|br|ss|se|es|ee)-)?(sm|md|lg|xl)([^-\\w]|$)/]',
     message:
-      'Geometry Codex — Tailwind 기본 radius 스텝 금지(램프 우회). rounded-micro/chip/card/panel 로.',
+      'Geometry Codex — Tailwind 기본 radius 스텝 금지(램프 우회). rounded-micro/chip/card/panel/sheet 로.',
   },
   {
-    selector: 'TemplateElement[value.raw=/(^|[^-\\w])rounded-(sm|md|lg|xl)([^-\\w]|$)/]',
+    selector:
+      'TemplateElement[value.raw=/(^|[^-\\w])rounded-((t|b|l|r|s|e|tl|tr|bl|br|ss|se|es|ee)-)?(sm|md|lg|xl)([^-\\w]|$)/]',
     message:
       'Geometry Codex — Tailwind 기본 radius 스텝 금지 (template literal). rounded-* 램프로.',
   },
@@ -150,12 +159,14 @@ const arbitrarySizeSelectors = [
       'Geometry Codex — text-[Npx] 하드코딩 금지 (template literal). text-* 램프로.',
   },
   {
-    selector: 'Literal[value=/rounded-\\[[0-9.]+px\\]/]',
+    selector:
+      'Literal[value=/rounded-((t|b|l|r|s|e|tl|tr|bl|br|ss|se|es|ee)-)?\\[[0-9.]+px\\]/]',
     message:
-      'Geometry Codex — rounded-[Npx] 하드코딩 금지. rounded-chip/card/panel 램프로. 램프 밖이면 eslint-disable + 사유.',
+      'Geometry Codex — rounded-[Npx] 하드코딩 금지(방향 접미 포함). rounded-chip/card/panel/sheet 램프로. 램프 밖이면 eslint-disable + 사유.',
   },
   {
-    selector: 'TemplateElement[value.raw=/rounded-\\[[0-9.]+px\\]/]',
+    selector:
+      'TemplateElement[value.raw=/rounded-((t|b|l|r|s|e|tl|tr|bl|br|ss|se|es|ee)-)?\\[[0-9.]+px\\]/]',
     message:
       'Geometry Codex — rounded-[Npx] 하드코딩 금지 (template literal). rounded-* 램프로.',
   },

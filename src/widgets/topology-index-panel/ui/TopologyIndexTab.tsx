@@ -26,7 +26,7 @@ export function TopologyIndexTab({ onExpand, labels, className }: TopologyIndexT
       onClick={onExpand}
       aria-label={labels.expandAria}
       data-testid="topology-index-tab"
-      className={`flex flex-col items-center gap-2.5 rounded-r-[7px] border border-l-0 border-[color:var(--topology-v2-panel-border)] bg-[color:var(--topology-v2-panel-surface)] py-2.5 shadow-[var(--topology-v2-panel-shadow)] ${className ?? ""}`}
+      className={`flex flex-col items-center gap-2.5 rounded-r-chip border border-l-0 border-[color:var(--topology-v2-panel-border)] bg-[color:var(--topology-v2-panel-surface)] py-2.5 shadow-[var(--topology-v2-panel-shadow)] ${className ?? ""}`}
       style={{ width: "var(--topology-index-tab-width)" }}
     >
       <span

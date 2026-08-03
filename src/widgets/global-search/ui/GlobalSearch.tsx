@@ -216,7 +216,7 @@ export function GlobalSearch({
           data-overlay-spring="true"
           data-global-search-responsive-contract="mobile-sheet-md-floating"
           data-global-search-floating-width-token="--topology-search-sheet-floating-width"
-          data-global-search-radius-token="--topology-search-sheet-radius"
+          data-global-search-radius-token="--radius-sheet"
           data-global-search-mobile-bottom-reserve-token="--topology-mobile-bottom-tab-reserve"
           // 애니메이션 클래스는 Dialog.Content 자신에 건다 — Radix Presence
           // 는 자신이 렌더한 노드(target === node)의 animationend 만 듣고
@@ -256,7 +256,7 @@ export function GlobalSearch({
           <Command
             label={t('commandLabel')}
             shouldFilter={false}
-            className="flex h-[calc(100dvh-var(--topology-mobile-bottom-tab-reserve))] w-full flex-col overflow-hidden border border-[color:var(--color-overlay-3)] bg-[color:var(--color-panel)] shadow-[var(--shadow-elevation-2)] md:h-auto md:max-w-[var(--topology-search-sheet-floating-width)] md:rounded-[var(--topology-search-sheet-radius)]"
+            className="flex h-[calc(100dvh-var(--topology-mobile-bottom-tab-reserve))] w-full flex-col overflow-hidden border border-[color:var(--color-divider)] bg-[color:var(--color-panel)] shadow-[var(--shadow-elevation-2)] md:h-auto md:max-w-[var(--topology-search-sheet-floating-width)] md:rounded-sheet"
             onClick={(event) => event.stopPropagation()}
           >
         <div className="flex items-center gap-2 border-b border-[color:var(--color-divider)] px-4 py-3">

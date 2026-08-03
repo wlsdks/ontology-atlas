@@ -376,7 +376,7 @@ export function ProjectDrawer({
               onClose();
             }
           }}
-          className="fixed inset-x-0 bottom-0 top-[38%] z-30 flex w-full flex-col overflow-y-auto overscroll-y-contain rounded-t-[28px] border-t border-[color:var(--color-divider)] bg-[color:var(--color-panel)] shadow-[var(--shadow-elevation-3)] lg:inset-y-0 lg:right-0 lg:left-auto lg:top-0 lg:max-w-md lg:rounded-none lg:border-t-0 lg:border-l"
+          className="fixed inset-x-0 bottom-0 top-[38%] z-30 flex w-full flex-col overflow-y-auto overscroll-y-contain rounded-t-sheet border-t border-[color:var(--color-divider)] bg-[color:var(--color-panel)] shadow-[var(--shadow-elevation-3)] lg:inset-y-0 lg:right-0 lg:left-auto lg:top-0 lg:max-w-md lg:rounded-none lg:border-t-0 lg:border-l"
         >
           <header className="sticky top-0 border-b border-[color:var(--color-overlay-2)] bg-[color:var(--color-panel)] px-4 py-3 md:px-6 md:py-4">
             {/*
@@ -438,8 +438,11 @@ export function ProjectDrawer({
                 initial={{ opacity: 0, y: 8 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={MOTION.base}
-                // eslint-disable-next-line no-restricted-syntax -- 드로어 히어로 카드(20px)는 overlay sheet 반경으로 panel(12px) 램프 밖 의도적 예외.
-                className="overflow-hidden rounded-[20px] border border-[color:var(--color-divider)] bg-[linear-gradient(180deg,var(--color-overlay-1)_0%,transparent_100%)]"
+                /* 히어로는 드로어 안을 스크롤하는 인플로우 콘텐츠 카드다 — 시트 단
+                 * (rounded-sheet)은 떠 있는 표면의 것이라 여기 못 쓴다. 20px 시절엔
+                 * 자식 아이콘 타일(12px)보다 컨테이너가 더 둥글어 중첩 문법도
+                 * 뒤집혀 있었다. */
+                className="overflow-hidden rounded-panel border border-[color:var(--color-divider)] bg-[linear-gradient(180deg,var(--color-overlay-1)_0%,transparent_100%)]"
               >
               <div className="relative px-5 py-5">
                 <div
