@@ -78,7 +78,19 @@ import { cn } from '@/shared/lib/cn';
  *   접근 이름은 **별도 lint 룰**이 강제한다. 이게 갈래 D 의 명시된 대가였다.
  */
 
-const control = cva('', {
+/**
+ * 비활성 — **누를 수 없으면 누를 수 없어 보여야 한다.**
+ *
+ * 값 층에 두는 이유: 컴포넌트마다 챙기면 하나는 빠진다. 실제로 2026-08-03 에
+ * `ChromeChip` 과 `ChromeTile` 이 둘 다 빠져 있었고, 소유자가 *"'최근 변경'
+ * 누르니까 아무런 반응이 없는데?"* 로 발견했다. 값은 `Button` 이 이미 쓰는
+ * 문법 그대로다(`tests/contract/disabled-affordance.contract.test.ts` 가
+ * 프리미티브 간 값이 갈리는 것을 막는다).
+ */
+const DISABLED =
+  'disabled:cursor-not-allowed disabled:opacity-55 disabled:shadow-none disabled:hover:border-inherit disabled:hover:bg-inherit disabled:hover:text-inherit';
+
+const control = cva(DISABLED, {
   variants: {
     /**
      * 무엇처럼 눌리는가. 위 표의 여섯이 전부이고, **일곱째를 추가하려면 전수를

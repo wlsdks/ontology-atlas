@@ -2677,7 +2677,14 @@ JSX 안에 44px 정사각 버튼이나 라벨 버튼을 인라인 클래스로 �
 | `Select` (다크 Listbox) | `src/shared/ui/select.tsx` | 네이티브 `<select>` 대체 — macOS 회색 시스템 드롭다운을 다크 앱 문법으로 |
 | `EmptyState` | `src/shared/ui/empty-state.tsx` | 빈 리스트/차트/페이지 — 스켈레톤 자리표시 + 아이콘 + 한 줄 안내 |
 | `ChromeTile` / `ChromeChip` | `src/shared/ui/chrome-tile.tsx` · `chrome-chip.tsx` | 크롬 타일/칩 (별도 "크롬 문법" 절) |
-| `controlClass()` | `src/shared/ui/control-class.ts` | **눌리는 것들의 단일 클래스 출처** — 아래 절 |
+| `controlClass()` | `src/shared/ui/control-class.ts` | **값 층** — 눌리는 것들의 단일 클래스 출처 (아래 절) |
+| `Chip` · `IconButton` · `RowButton` | `src/shared/ui/controls.tsx` | **행동 층** — `type="button"` 기본 · 접근 이름 강제 · 버튼 시맨틱 |
+| `Surface` | `src/shared/ui/surface.tsx` | 조건부로 나타나는 표면의 등장·퇴장 |
+
+⚠️ **`Card` · `Badge` · `DetailCard` 는 2026-08-03 에 삭제됐다.** 2026-04-30 생성,
+3개월간 프로덕션 사용처 0. 이유는 게으름이 아니라 그 컴포넌트가 **시스템을
+위반**하고 있었다는 것이다 — `CardTitle` 이 타입 램프에 없는 `text-lg` 를 썼다.
+실패한 것은 컴포넌트가 아니라 **게이트 없는 컴포넌트**다.
 
 ### 컨트롤 모양 여섯 — `controlClass()` (2026-08-03 소유자 확정)
 
@@ -2709,6 +2716,24 @@ JSX 안에 44px 정사각 버튼이나 라벨 버튼을 인라인 클래스로 �
 요약»이 아니라 «가야 할 규격»이다. 그래서 대량 전환은 **디자인 게이트**(「체계」)의
 일이고, 오늘 강제되는 것은 하나다 — **새로 쓰는 컨트롤은 50종을 51종으로 만들지
 않는다**(`tests/contract/control-adoption-ratchet.contract.test.ts`, 기준선 417).
+
+### 층이 둘이다 — 값과 행동
+
+`controlClass()` 가 컴포넌트를 **대체하지 않는다.** 업계 표준은 명백히 컴포넌트고
+(Carbon · Fluent · Material · Polaris · shadcn), 이 저장소도 컴포넌트를 낸다.
+가른 것은 **무엇을 나누느냐**다:
+
+| 층 | 형태 | 나르는 것 | 왜 |
+|---|---|---|---|
+| 값 | `controlClass()` | 모양 · 크기 · 색 · 비활성 | 문자열이면 충분하고, 계약 테스트가 램프 밖 값을 **못 내게** 막는다 |
+| 행동 | `Chip`/`IconButton`/`RowButton` | `type="button"` 기본 · 접근 이름 강제 · 버튼 시맨틱 | **문자열이 원리적으로 나를 수 없다** |
+
+구체적으로 문자열이 못 하는 것 셋: ① 폼 안에서 `<button>` 의 기본은 `submit` 이라
+칩 하나가 폼을 보낼 수 있다 ② 아이콘 컨트롤에는 읽을 글자가 없어 접근 이름이
+필요한데 그건 속성이다 ③ 목록 행은 넓어서 `div+onClick` 으로 만들고 싶어지는데
+그러면 키보드로 못 간다. `IconButton` 의 `label` 은 **필수 prop** 이라 타입이
+쓰는 순간 막는다 — lint 와 계약 테스트는 「빠뜨렸다」를 나중에 알려 주지만 타입은
+그 자리에서 막는다.
 
 높이는 램프에 넣지 않았다. 칩 143개 중 명시 높이를 가진 것이 38개(30%)뿐이라,
 넣으면 나머지 70%가 전환되는 순간 키가 바뀐다. 정사각(`icon`)만 예외 —

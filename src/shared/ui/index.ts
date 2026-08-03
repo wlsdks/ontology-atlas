@@ -8,6 +8,11 @@ export { Surface, type SurfaceProps } from './surface';
  * `<Button>` 은 **표준 버튼 하나**만 덮는다 — 전수 419개 중 그 모양은 1개였다.
  * 나머지 여섯 모양(칩 · 링크형 · 행 · 아이콘 · pill · 카드)은 이쪽이다.
  */
+/**
+ * 컨트롤 컴포넌트 — `controlClass` 위에 **행동**을 얹는 층.
+ * 값은 아래 함수가, `type="button"`·접근 이름 강제·버튼 시맨틱은 이쪽이 진다.
+ */
+export { Chip, IconButton, RowButton, type IconButtonProps } from './controls';
 export {
   controlClass,
   type ControlClassOptions,
