@@ -13,6 +13,7 @@ import {
 import { buildBlockManifest, type BlockCensus } from "../model/block-manifest";
 import { writeBlockToDirectory, type BlockDirectoryHandleLike } from "../model/block-fsa";
 import { collectSubtreeNodeIds, selectRealmBlockDocs } from "../model/collect-realm-block";
+import { controlClass } from '@/shared/ui/control-class';
 
 export interface RealmBlockExportActionProps {
   /** 영역 루트 제목 — 블록 이름이 된다. */
@@ -143,7 +144,14 @@ export function RealmBlockExportAction({
               : t("exportUnsupportedHint")
         }
         data-testid="realm-block-export"
-        className="inline-flex shrink-0 items-center gap-1 rounded-[var(--chrome-radius-inner)] px-1 py-0.5 text-label text-[color:var(--topology-v2-panel-text-quaternary)] transition-colors enabled:hover:text-[color:var(--topology-v2-panel-text-primary)] disabled:opacity-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--color-indigo-a46)] focus-visible:ring-inset"
+        className={controlClass({
+          shape: "segment",
+          size: "sm",
+          tone: "muted",
+          scope: "panel",
+          className:
+            "shrink-0 enabled:hover:text-[color:var(--topology-v2-panel-text-primary)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--color-indigo-a46)] focus-visible:ring-inset",
+        })}
       >
         <PackagePlus size={11} aria-hidden="true" />
         {phase === "exporting" ? t("exportBusy") : t("exportAction")}

@@ -161,8 +161,9 @@ The detailed rules live in `.claude/rules/*.md` and Claude Code auto-loads them.
   and escalate to `/po-council` mechanically when the total is under 18, a fatal zero
   appears, or a trigger is hit. Declaring "해당 없음" on ontology or agent value is **not
   an exemption the author may grant** — that is the steward's review, and it requires the
-  council. `pnpm decisions:check` fails any PR that adds or removes a route, or edits the
-  MCP/CLI public contract, without appending to the ledger in the same change.
+  council. `pnpm decisions:check` fails any PR that adds or removes a route, edits the
+  MCP/CLI public contract, or moves a design-system axis/ramp, without appending to the
+  ledger in the same change.
 - **User walkthrough** — `@.claude/skills/user-walkthrough/SKILL.md` walks one journey end
   to end against the running build. Its authority is **pattern recognition**, and its
   discipline is naming the pattern — "이 사람은 답답할 것" is invention, "이건 막다른

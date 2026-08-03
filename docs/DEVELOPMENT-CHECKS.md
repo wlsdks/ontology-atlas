@@ -57,6 +57,32 @@ pnpm docs-vault:build && git add src/entities/docs-vault/data public/docs-vault
 | Graph hot-path perf | `pnpm perf:graph:check` | `pnpm perf:graph:scale` |
 | Dogfood MCP smoke | `pnpm dogfood:status` | `pnpm dogfood:verify` |
 | Packed CLI release | `pnpm smoke:packed-cli` | `pnpm test:mcp:package` |
+| Decision ledger triggers | `pnpm decisions:check` | `pnpm exec vitest run tests/contract/design-spec-ledger.contract.test.ts` |
+
+### Decision-ledger gate (`pnpm decisions:check`)
+
+Fails when a change trips a mechanical council trigger without appending to
+`docs/DECISIONS.md` in the same change. Three triggers:
+
+1. **새 표면 / 표면 제거** — `app/[locale]/**/page.tsx` added or deleted.
+2. **공개 계약 변경** — `cli/src/lib/cli-commands.mjs` or `mcp/src/index.js` edited.
+3. **규격 변경** (2026-08-03) — the design system's vocabulary or ramps moved.
+
+Trigger 3 does **not** fire on «the file appears in the diff». Those files are
+among the most frequently touched in the repo (79 of the last 300 commits), so a
+path-only rule produced 63 false positives. It compares a *census* instead —
+cva axes/options/defaults, ramp token names and values, exported primitives, and
+the scale-contract numbers in `.claude/rules/design.md` — and 16 of those 79
+survive. Class-string edits, comments, whitespace and reordering do not count.
+Reasoning in full: `scripts/lib/design-spec-census.mjs`.
+
+The trigger file list lives **only** in `.claude/rules/design.md` («규격을
+바꾸려면 「체계」를 부른다»); the gate parses it from there, so adding a bullet
+there extends the gate the same day.
+`tests/contract/design-spec-ledger.contract.test.ts` asserts the list is not
+duplicated in code, that every listed path exists, and that every listed file
+still yields a non-empty census — a detector idling on an empty set is
+indistinguishable from no gate.
 
 `pnpm test:mcp:docs` also guards
 the tracked `.mcp.json`, `.mcp.json.example`, and `.codex/config.toml`

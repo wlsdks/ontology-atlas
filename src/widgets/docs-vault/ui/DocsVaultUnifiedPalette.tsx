@@ -85,7 +85,7 @@ function Highlight({
   return (
     <>
       {text.slice(0, hit.start)}
-      <mark className="rounded-sm bg-[color:var(--color-indigo-line-a22)] px-0.5 text-[color:rgba(210,218,255,0.98)]">
+      <mark className="rounded-micro bg-[color:var(--color-indigo-line-a22)] px-0.5 text-[color:rgba(210,218,255,0.98)]">
         {text.slice(hit.start, hit.end)}
       </mark>
       {text.slice(hit.end)}
@@ -571,7 +571,7 @@ export function DocsVaultUnifiedPalette({
                         href={githubBlobUrl(link.repoPath)}
                         target="_blank"
                         rel="noreferrer noopener"
-                        className="inline-flex items-center gap-1.5 rounded-sm py-1 text-body text-[color:var(--color-indigo-line-a90)] underline underline-offset-2 decoration-[color:var(--color-indigo-line-a32)] hover:decoration-[color:var(--color-indigo-accent)]"
+                        className="inline-flex items-center gap-1.5 rounded-micro py-1 text-body text-[color:var(--color-indigo-line-a90)] underline underline-offset-2 decoration-[color:var(--color-indigo-line-a32)] hover:decoration-[color:var(--color-indigo-accent)]"
                       >
                         <FileText size={11} aria-hidden />
                         {t(link.labelKey)}
@@ -624,25 +624,25 @@ export function DocsVaultUnifiedPalette({
         <LiveAnnouncer message={resultAnnouncement} />
         <div className="flex items-center gap-3 border-t border-[color:var(--color-overlay-2)] px-3 py-2 font-mono text-caption uppercase tracking-[0.12em] text-[color:var(--color-text-quaternary)]">
           <span>
-            <kbd className="rounded border border-[color:var(--color-divider)] px-1">
+            <kbd className="rounded-micro border border-[color:var(--color-divider)] px-1">
               ↑↓
             </kbd>{' '}
             {t('footerMove')}
           </span>
           <span>
-            <kbd className="rounded border border-[color:var(--color-divider)] px-1">
+            <kbd className="rounded-micro border border-[color:var(--color-divider)] px-1">
               ↵
             </kbd>{' '}
             {t('footerRun')}
           </span>
           <span>
-            <kbd className="rounded border border-[color:var(--color-divider)] px-1">
+            <kbd className="rounded-micro border border-[color:var(--color-divider)] px-1">
               Tab
             </kbd>{' '}
             {t('footerSwitch')}
           </span>
           <span>
-            <kbd className="rounded border border-[color:var(--color-divider)] px-1">
+            <kbd className="rounded-micro border border-[color:var(--color-divider)] px-1">
               Esc
             </kbd>{' '}
             {t('footerClose')}

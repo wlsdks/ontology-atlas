@@ -196,7 +196,7 @@ export function OntologyStarterCta({ onScaffold, docCount, vaultPath = null }: P
         <p className="mt-2 break-keep text-body leading-6 text-[color:var(--color-text-secondary)]">
           {t.rich('emptyBodyLine1', {
             code: (chunks) => (
-              <code className="rounded bg-[color:var(--color-overlay-2)] px-1 font-mono text-label">
+              <code className="rounded-micro bg-[color:var(--color-overlay-2)] px-1 font-mono text-label">
                 {chunks}
               </code>
             ),
@@ -276,17 +276,20 @@ export function OntologyStarterCta({ onScaffold, docCount, vaultPath = null }: P
             {copyCliLabel}
           </button>
           {/*
-            램프 밖으로 **남긴다** — `tone: 'success'` 는 신호색
-            `--color-status-success`(#32b97d) 를 내는데, 이 자리(그리고 앱의 성공
-            틴트 전부)는 글자 역할 토큰 `--color-success-text-a94` 를 쓴다.
-            `tone: 'danger'` 만 글자 역할 토큰(`--color-danger-text`)을 쓰고
-            success/warning 은 신호 토큰을 써서 셋의 역할이 어긋나 있다.
-            억지로 맞추면 색이 바뀌므로 값 층이 먼저 정해야 한다.
+            2026-08-03 체계석이 `tone: 'success'` 를 글자 역할 토큰(a94)으로
+            재지정하면서 이 자리가 램프로 돌아왔다. 틴트 표면·보더는 신호
+            사다리의 자리 고유 값이라 className 이 진다(DependencyPicker 의
+            warning 필과 같은 문법).
           */}
           <button
             type="button"
             onClick={handleCopyJsonGate}
-            className="inline-flex items-center gap-2 rounded-chip border border-[color:var(--color-success-a28)] bg-[color:var(--color-success-a07)] px-3 py-1.5 text-label text-[color:var(--color-success-text-a94)] transition-colors hover:border-[color:var(--color-success-a42)] hover:bg-[color:var(--color-success-a11)]"
+            className={controlClass({
+              shape: 'chip',
+              tone: 'success',
+              className:
+                'gap-2 border-[color:var(--color-success-a28)] bg-[color:var(--color-success-a07)] hover:border-[color:var(--color-success-a42)] hover:bg-[color:var(--color-success-a11)]',
+            })}
           >
             <ClipboardCopy size={12} aria-hidden />
             {copyJsonGateLabel}

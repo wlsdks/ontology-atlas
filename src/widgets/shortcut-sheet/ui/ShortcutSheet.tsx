@@ -516,7 +516,7 @@ export function ShortcutSheet({ open, onClose }: Props) {
                 ))}
               </dl>
               <p className="mt-2.5 font-mono text-caption uppercase tracking-[0.14em] text-[color:var(--color-text-quaternary)]">
-                <kbd className="rounded border border-[color:var(--color-overlay-3)] px-1 py-0.5 tabular-nums">
+                <kbd className="rounded-micro border border-[color:var(--color-overlay-3)] px-1 py-0.5 tabular-nums">
                   ?
                 </kbd>{" "}
                 {t("footer")}

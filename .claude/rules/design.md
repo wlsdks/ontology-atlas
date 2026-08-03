@@ -239,9 +239,16 @@ particle·rarity(gold)·shimmer 를 `--studio-*` 토큰 + `.studio-stage` 안에
 **아래를 고치는 변경은 `design-system` 자리를 소집한다.** 회의를 열지 말지를
 고르는 게 아니라, **이 목록에 걸리면 부른다**:
 
-`src/shared/ui/control-class.ts` · `controls.tsx` · `surface.tsx` ·
-`app/globals.css` 의 램프(타입 · 행간 · 반경 · 그림자 · 색) · 이 파일의 스케일
-고정 계약.
+- `src/shared/ui/control-class.ts` — 값 층의 축·선택지·기본값
+- `src/shared/ui/controls.tsx` — 행동 층 프리미티브
+- `src/shared/ui/surface.tsx` — 등장/퇴장 프리미티브
+- `app/globals.css` — 램프(타입 · 행간 · 반경 · 그림자 · 컨트롤 높이 · 팔레트 뿌리)
+- `.claude/rules/design.md` — 이 파일의 「스케일 고정 계약」 절
+
+> 위 목록은 **정본이자 게이트의 입력**이다. `pnpm decisions:check` 가 이 절의
+> 백틱 경로를 **읽어서** 트리거를 만든다(`scripts/lib/design-spec-census.mjs`) —
+> 코드에 복제본이 없으므로 여기 한 줄을 더하면 게이트가 그날부터 그 파일을
+> 본다. 어긋남 방지 계약: `tests/contract/design-spec-ledger.contract.test.ts`.
 
 **왜**: 컨트롤 244개를 정규화하는 동안 이 자리가 한 번도 소집되지 않았고, 값 층
 설계(톤 8단 · 모양 7종 · 축 3개 · 램프 값)를 **짓는 쪽이 단독으로** 정했다.
@@ -250,9 +257,19 @@ particle·rarity(gold)·shimmer 를 `--studio-*` 토큰 + `.studio-stage` 안에
 
 > **혼자 정한 규격은 규격이 아니라 취향이다.**
 
-⚠️ 「소집했는가」는 기계가 못 본다. 게이트가 잡는 것은 **규칙이 존재하고 그
-자리를 이름으로 가리키는가**뿐이다(`tests/contract/design-council.contract.test.ts`).
-나머지는 사람이 지킨다 — 그래서 이 문단이 있다.
+⚠️ 「소집했는가」는 여전히 기계가 못 본다. 기계가 보는 것은 **규격이 실제로
+움직였는데 원장이 비었는가**다 — `pnpm decisions:check` 가 위 목록의 파일에서
+**어휘와 램프 값**(축 · 선택지 · 기본값 · 램프 토큰 · export 되는 프리미티브 ·
+스케일 계약 수치)의 증감을 세고, 하나라도 움직였는데 `docs/DECISIONS.md` 가
+그대로면 빨개진다. **파일이 diff 에 있는지로 보지 않는다** — 이 파일들은 이
+저장소에서 가장 자주 만져져서(최근 300 커밋 중 79개) 그렇게 걸면 오탐 63건이
+나오고, 그건 강제가 아니라 소음이다. 좁힌 이유의 전문은
+`scripts/lib/design-spec-census.mjs` 머리 주석.
+
+게이트 둘: `tests/contract/design-council.contract.test.ts`(자리가 이름으로
+존재하는가) + `tests/contract/design-spec-ledger.contract.test.ts`(위 목록이
+실재하고 탐지기가 공회전하지 않는가). 「누구를 불렀는가」는 사람이 지킨다 —
+그래서 이 문단이 있다.
 
 ## 규격은 lint 로 강제된다 (md 만으로는 안 지켜진다)
 

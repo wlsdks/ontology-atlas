@@ -6152,6 +6152,16 @@
         },
         {
           "depth": 2,
+          "text": "2026-08-03 — 「규격을 바꾸려면 「체계」를 부른다」에 게이트를 단다: 판정은 파일 이름이 아니라 규격 센서스",
+          "slug": "2026-08-03-규격을-바꾸려면-체계를-부른다에-게이트를-단다-판정은-파일-이름이-아니라-규격-센서스"
+        },
+        {
+          "depth": 2,
+          "text": "2026-08-03 — 값 층의 반복 구멍 셋을 메운다: 마이크로 티어(반경 `micro` + 칩 `xs`) · 기본 보더 다수 정합 · `tone: 'success'` 글자 역할 재지정",
+          "slug": "2026-08-03-값-층의-반복-구멍-셋을-메운다-마이크로-티어반경-micro-칩-xs-기본-보더-다수-정합-tone-success-글자-역할-재지정"
+        },
+        {
+          "depth": 2,
           "text": "2026-08-03 — 높이 사다리 2차 정정: 복원은 칩·필에서 멈춰 있었다 — 가로 모양 전 조합에 명시 플로어",
           "slug": "2026-08-03-높이-사다리-2차-정정-복원은-칩필에서-멈춰-있었다-가로-모양-전-조합에-명시-플로어"
         },
@@ -6727,7 +6737,7 @@
         }
       ],
       "excerpt": "이 파일은 결정과 그때 진 반대 의견을 남긴다. docs/CHANGELOG.md 는 무엇이 언제 바뀌었나를 답하고, 이 파일은 왜 그렇게 정했고, 무엇을 걸었나를 답한다. 최신이 위. 기록은 덧붙이기만 한다 — 지난 기록을 고치지 않는다. 판단이 바뀌었으면 새 기록을 쓰고 옛 기록을 뒤집힘 으로 표시한다. 틀린 기록도 자산이다. 1. 소집 전에 읽는다. 카운슬을 열기 전(그리고 단독 PO 패스를 쓰기 전) 같은 표면 · 같은 질문에 대한 선행 결정이 있는지 먼저 본다. 있으면 새 패스는 그것을 ① 여전히 유효하다고 인용하거나 ② 명시적으로 뒤집는다. 조용히 다시 결정",
-      "wordCount": 52469,
+      "wordCount": 53289,
       "updatedAt": "2026-08-03",
       "linksOut": [
         "slug"
@@ -7441,8 +7451,8 @@
         },
         {
           "depth": 3,
-          "text": "Radius ramp — 3단 (일반 표면)",
-          "slug": "radius-ramp-3단-일반-표면"
+          "text": "Radius ramp — 4단 (일반 표면)",
+          "slug": "radius-ramp-4단-일반-표면"
         },
         {
           "depth": 3,
@@ -7656,7 +7666,7 @@
         }
       ],
       "excerpt": "This document is maintained based on Section 3 of the design spec. For the original Linear specification, see design-references/DESIGN-linear.md. v2 (2026-07): topology-map-v2 에서 출하된 B2+ \"Circuit × Constellation\" 시각 언어가 페이지 롤아웃(랜딩 → docs/ontology 허브 → projects/insights → download)의 규범이 되었다 — 아래 v2 — \"Circuit × Constell",
-      "wordCount": 26528,
+      "wordCount": 26996,
       "updatedAt": "2026-08-03",
       "linksOut": [
         "design-references/DESIGN-linear",
@@ -7811,6 +7821,11 @@
           "slug": "quick-matrix"
         },
         {
+          "depth": 3,
+          "text": "Decision-ledger gate (`pnpm decisions:check`)",
+          "slug": "decision-ledger-gate-pnpm-decisionscheck"
+        },
+        {
           "depth": 2,
           "text": "Vault Checks",
           "slug": "vault-checks"
@@ -7852,7 +7867,7 @@
         }
       ],
       "excerpt": "Maintainer-only checks live here so the public README stays readable. Use this page when you touch mcp/, cli/, package manifests, release scripts, or the dogfood ontology. Run this before pushing broad docs, package, MCP, or web changes: For user-facing UI changes, add the relevant Playwright route check. pnpm install ",
-      "wordCount": 8377,
+      "wordCount": 8591,
       "updatedAt": "2026-08-03",
       "linksOut": []
     },

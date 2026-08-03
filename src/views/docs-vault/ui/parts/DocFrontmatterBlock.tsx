@@ -501,7 +501,7 @@ export function DocFrontmatterBlock({
                   value={draftKind}
                   onChange={(event) => setDraftKind(event.target.value)}
                   disabled={saving}
-                  className="rounded-sm border border-[color:var(--color-border-soft)] bg-[color:var(--color-overlay-1)] px-2 py-1 text-body text-[color:var(--color-text-primary)]"
+                  className="rounded-micro border border-[color:var(--color-border-soft)] bg-[color:var(--color-overlay-1)] px-2 py-1 text-body text-[color:var(--color-text-primary)]"
                 >
                   {EDITABLE_KINDS.map((kind) => (
                     <option key={kind} value={kind}>
@@ -516,7 +516,7 @@ export function DocFrontmatterBlock({
                   value={draftDomain}
                   onChange={(event) => setDraftDomain(event.target.value)}
                   disabled={saving}
-                  className="rounded-sm border border-[color:var(--color-border-soft)] bg-[color:var(--color-overlay-1)] px-2 py-1 text-body text-[color:var(--color-text-primary)]"
+                  className="rounded-micro border border-[color:var(--color-border-soft)] bg-[color:var(--color-overlay-1)] px-2 py-1 text-body text-[color:var(--color-text-primary)]"
                 >
                   <option value="">{t("editDomainNone")}</option>
                   {domainOptions.map((option) => (
@@ -533,7 +533,7 @@ export function DocFrontmatterBlock({
                   value={draftTitle}
                   onChange={(event) => setDraftTitle(event.target.value)}
                   disabled={saving}
-                  className="rounded-sm border border-[color:var(--color-border-soft)] bg-[color:var(--color-overlay-1)] px-2 py-1 text-body text-[color:var(--color-text-primary)]"
+                  className="rounded-micro border border-[color:var(--color-border-soft)] bg-[color:var(--color-overlay-1)] px-2 py-1 text-body text-[color:var(--color-text-primary)]"
                 />
               </label>
               {error ? (
@@ -622,7 +622,7 @@ export function DocFrontmatterBlock({
           {validationWarnings.map((issue, index) => (
             <p
               key={`${issue.code}-${index}`}
-              className="rounded-sm border border-[color:var(--color-amber-docs-a18)] bg-[color:var(--color-amber-source-a08)] px-2 py-1.5 text-label leading-4 text-[color:var(--color-amber-docs-a92)]"
+              className="rounded-micro border border-[color:var(--color-amber-docs-a18)] bg-[color:var(--color-amber-source-a08)] px-2 py-1.5 text-label leading-4 text-[color:var(--color-amber-docs-a92)]"
             >
               {mapVaultIssueCodeToPlainMessage(issue.code, issueMessageDict)}
             </p>

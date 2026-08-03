@@ -109,7 +109,7 @@ function BacklinkItem({
   const [open, setOpen] = useState(false);
   if (!doc) return null;
   return (
-    <li className="rounded-sm border border-transparent transition-colors hover:border-[color:var(--color-overlay-2)]">
+    <li className="rounded-micro border border-transparent transition-colors hover:border-[color:var(--color-overlay-2)]">
       <div className="flex items-stretch">
         <IconButton
           label={open ? t('collapse') : t('expand')}
@@ -124,7 +124,7 @@ function BacklinkItem({
         <button
           type="button"
           onClick={() => onNavigate(doc.slug)}
-          className="group flex min-w-0 flex-1 items-center gap-1.5 rounded-sm py-0.5 text-left transition-colors hover:text-[color:var(--color-text-primary)]"
+          className="group flex min-w-0 flex-1 items-center gap-1.5 rounded-micro py-0.5 text-left transition-colors hover:text-[color:var(--color-text-primary)]"
         >
           <FileText
             size={10}
@@ -138,7 +138,7 @@ function BacklinkItem({
       </div>
       {open ? (
         <p
-          className="mt-1 whitespace-normal rounded-sm bg-[color:var(--color-overlay-1)] px-2 py-1.5 text-label leading-label text-[color:var(--color-text-quaternary)]"
+          className="mt-1 whitespace-normal rounded-micro bg-[color:var(--color-overlay-1)] px-2 py-1.5 text-label leading-label text-[color:var(--color-text-quaternary)]"
           dangerouslySetInnerHTML={{
             __html: formatContext(entry.context),
           }}
@@ -159,6 +159,6 @@ function formatContext(raw: string): string {
   return escaped.replace(
     /\*\*\[([^\]]+)\]\*\*/g,
     (_, text) =>
-      `<span class="rounded-sm bg-[color:var(--color-indigo-line-a15)] px-1 text-[color:var(--color-indigo-pale-a92)]">${text}</span>`,
+      `<span class="rounded-micro bg-[color:var(--color-indigo-line-a15)] px-1 text-[color:var(--color-indigo-pale-a92)]">${text}</span>`,
   );
 }

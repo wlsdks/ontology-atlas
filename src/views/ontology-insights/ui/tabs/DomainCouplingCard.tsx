@@ -323,7 +323,7 @@ function CouplingGrid({
             // 파선 테두리 = "이 칸은 다른 척도" 를 색이 아닌 채널로 말한다
             // (헌장: 카테고리 구분은 색이 아닌 보더 스타일). 값이 0인 대각선도
             // 파선이라 「교차 없음」 빈칸과 「안쪽 연결 없음」 빈칸이 구별된다.
-            const shared = `flex h-[var(--coupling-cell)] items-center justify-center rounded-sm border font-mono text-body tabular-nums ${
+            const shared = `flex h-[var(--coupling-cell)] items-center justify-center rounded-micro border font-mono text-body tabular-nums ${
               isDiagonal
                 ? "border-dashed border-[color:var(--color-border-strong)]"
                 : "border-[color:var(--color-divider)]"
@@ -413,7 +413,7 @@ function SelectedPairDetail({
               href={nodeLink.href(example.fromId)}
               aria-label={nodeLink.ariaLabel(example.fromTitle)}
               data-testid="domain-coupling-example-link"
-              className="min-w-0 truncate rounded-sm text-[color:var(--color-text-tertiary)] transition-colors hover:text-[color:var(--color-text-primary)] hover:underline"
+              className="min-w-0 truncate rounded-micro text-[color:var(--color-text-tertiary)] transition-colors hover:text-[color:var(--color-text-primary)] hover:underline"
             >
               {example.fromTitle}
             </Link>
@@ -422,7 +422,7 @@ function SelectedPairDetail({
               href={nodeLink.href(example.toId)}
               aria-label={nodeLink.ariaLabel(example.toTitle)}
               data-testid="domain-coupling-example-link"
-              className="min-w-0 truncate rounded-sm text-[color:var(--color-text-tertiary)] transition-colors hover:text-[color:var(--color-text-primary)] hover:underline"
+              className="min-w-0 truncate rounded-micro text-[color:var(--color-text-tertiary)] transition-colors hover:text-[color:var(--color-text-primary)] hover:underline"
             >
               {example.toTitle}
             </Link>
