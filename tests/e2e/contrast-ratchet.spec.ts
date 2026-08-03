@@ -1,4 +1,5 @@
 import { expect, test } from '@playwright/test';
+import { AUDITED_ROUTES } from './audited-routes';
 
 // eslint-disable-next-line @typescript-eslint/no-require-imports -- Playwright 스펙은 CJS 로 로드된다(`import.meta` 를 쓰면 파일이 아예 안 실린다).
 const { judgeText } = require('../../scripts/lib/contrast.mjs');
@@ -25,7 +26,9 @@ const { judgeText } = require('../../scripts/lib/contrast.mjs');
  * 채집과 판정만 한다.
  */
 
-const ROUTES = ['/ko/', '/ko/topology/', '/ko/docs/', '/ko/ontology/studio/', '/ko/projects/'];
+// axe 래칫과 **같은 목록**을 쓴다. 종전 이쪽은 5개, 저쪽은 8개였고 둘 다
+// 이유가 안 적혀 있었다 — 그 사각지대의 대가는 `audited-routes.ts` 머리에.
+const ROUTES = AUDITED_ROUTES;
 
 /**
  * 2026-08-03 전수 (1512×900, 위 5개 라우트, 조합 109):
@@ -41,6 +44,23 @@ const ROUTES = ['/ko/', '/ko/topology/', '/ko/docs/', '/ko/ontology/studio/', '/
  * **이 수는 내려가기만 한다.**
  */
 const BASELINE_FAILING_COMBINATIONS = 0;
+
+/**
+ * 라우트 하나가 내용에 적용해 **실제로 잰 (전경·배경·크기) 조합**의 바닥.
+ *
+ * 실측 2026-08-04(17 라우트): 가장 마른 자리가 404 두 벌의 **6** 이고 — 카드
+ * 하나짜리 화면이라 원래 적다 — 그다음이 `/ko/guide/` 15, 대부분 16~30 이다.
+ *
+ * 바닥 4 는 **프로브로 잡았다**: `<div />` 만 그리는 임시 라우트를 만들어
+ * 목록에 넣었더니 **3** 이 나왔고(셸 크롬만 남은 값), 이 단언이 그 자리에서
+ * 빨개졌다. 그래서 4 는 «셸만 남은 화면 3» 과 «가장 마른 진짜 화면 6» 사이에
+ * 서 있다. 진짜 빈 문서는 0 이라 여유는 훨씬 크다.
+ *
+ * axe 래칫의 `MIN_RULES_PASSED_PER_ROUTE` 와 같은 일을 하는 가드다: 기준선이
+ * 0 이면 «미달 없음» 과 «아무것도 안 쟀다» 가 같은 초록이라, 둘을 가르는 것이
+ * 이 단언 하나뿐이다.
+ */
+const MIN_COMBINATIONS_PER_ROUTE = 4;
 
 /** 페이지에서 색·폰트만 꺼내 온다. 판정은 순수 함수가 한다. */
 const COLLECT = `(() => {
@@ -82,8 +102,11 @@ const COLLECT = `(() => {
 })()`;
 
 test('대비 래칫 — WCAG 1.4.3 미달 조합이 늘지 않는다', async ({ page }) => {
+  // 라우트가 5 → 17 로 늘었다. 라우트당 2.5초 수렴 대기가 있어 기본 60초를 넘는다.
+  test.setTimeout(240_000);
   await page.setViewportSize({ width: 1512, height: 900 });
   const failures: string[] = [];
+  const thinRuns: string[] = [];
   let measured = 0;
 
   for (const route of ROUTES) {
@@ -96,17 +119,31 @@ test('대비 래칫 — WCAG 1.4.3 미달 조합이 늘지 않는다', async ({ 
       fontWeight: string;
       sample: string;
     }>;
+    let routeMeasured = 0;
     for (const s of samples) {
       const judged = judgeText(s);
       if (!judged) continue; // 못 읽은 색은 «통과» 가 아니라 미측정이다
       measured += 1;
+      routeMeasured += 1;
       if (!judged.passes) {
         failures.push(`${route} ${judged.ratio}:1 < ${judged.required} · ${s.fontSizePx}px · ${s.fg} on ${s.bg} — «${s.sample}»`);
       }
     }
+    if (routeMeasured < MIN_COMBINATIONS_PER_ROUTE) {
+      thinRuns.push(`  ${route}: 잰 조합 ${routeMeasured}`);
+    }
   }
 
   // 탐지기가 놀고 있으면 위 판정이 «항상 통과» 가 된다 — 그건 게이트가 없는 것과 같다.
+  //
+  // ⚠️ 종전엔 **총합** `> 50` 이었다. 라우트가 5개일 때도 느슨했고(한 라우트가
+  // 50을 넘기면 나머지 4개가 빈 화면이어도 초록), 17개가 된 지금은 총합 326 이라
+  // 사실상 아무것도 안 막는다. 가드는 **라우트마다** 서야 한다.
+  expect(
+    thinRuns,
+    `라우트당 조합 ${MIN_COMBINATIONS_PER_ROUTE}개도 못 쟀다 — 미달이 없는 게 아니라 ` +
+      `화면이 안 떴거나 채집이 깨진 것이다.\n${thinRuns.join('\n')}`,
+  ).toEqual([]);
   expect(measured, '조합을 한 개도 못 쟀다면 채집이 깨진 것이다').toBeGreaterThan(50);
 
   expect(
