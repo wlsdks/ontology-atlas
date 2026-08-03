@@ -44,9 +44,9 @@ test('builds an inventory only from the complete scoped graph and supported path
     projectSlug: 'project',
     graphHash: GRAPH_HASH,
     projectScope: scope([
-      { slug: 'project' },
-      { slug: 'domains/core' },
-      { slug: 'capabilities/search' },
+      { slug: 'project', kind: 'project' },
+      { slug: 'domains/core', kind: 'domain' },
+      { slug: 'capabilities/search', kind: 'capability' },
     ]),
     artifactEdges: [
       { from: 'project', to: 'domains/core', via: 'domains', resolved: true, external: false },
@@ -66,11 +66,20 @@ test('builds an inventory only from the complete scoped graph and supported path
 
   assert.deepEqual(result, {
     status: 'ready',
+    evidenceClaims: [
+      { concept: 'capabilities/search', path: 'src/search.ts' },
+      { concept: 'project', path: 'README.md' },
+    ],
     inventory: {
       contract: 'meaningWitnessInventory:v1',
       graphHash: GRAPH_HASH,
       sourceFingerprint: 'git:abc123:clean',
       concepts: ['capabilities/search', 'domains/core', 'project'],
+      kinds: {
+        project: 'project',
+        'domains/core': 'domain',
+        'capabilities/search': 'capability',
+      },
       relations: [
         { from: 'capabilities/search', to: 'domains/core', type: 'depends_on' },
         { from: 'domains/core', to: 'capabilities/search', type: 'capabilities' },
@@ -147,6 +156,7 @@ test('keeps the current graph inventory but drops source evidence when the recei
   assert.equal(result.status, 'ready');
   assert.deepEqual(result.inventory.evidence, []);
   assert.deepEqual(result.inventory.paths, []);
+  assert.deepEqual(result.evidenceClaims, []);
   assert.equal(result.inventory.sourceFingerprint, 'git:abc123:clean');
   assert.deepEqual(result.inventory.relations, [
     { from: 'project', to: 'capabilities/search', type: 'contains' },
@@ -205,6 +215,9 @@ test('excludes body-only, ghost, unsupported, and probe-wide file claims', () =>
   assert.equal(result.status, 'ready');
   assert.deepEqual(result.inventory.evidence, ['src/search.ts']);
   assert.deepEqual(result.inventory.paths, ['src/search.ts']);
+  assert.deepEqual(result.evidenceClaims, [
+    { concept: 'capabilities/search', path: 'src/search.ts' },
+  ]);
   assert.doesNotMatch(JSON.stringify(result), /private|body-only|ghost|unsupported|not-a-witness/);
 });
 

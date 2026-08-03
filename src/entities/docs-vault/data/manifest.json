@@ -1,6 +1,6 @@
 {
   "version": "2026-04-23",
-  "generatedAt": "2026-08-03",
+  "generatedAt": "2026-08-04",
   "docs": [
     {
       "slug": "AGENT-GRAPH-WORKFLOW",
@@ -3890,6 +3890,11 @@
         },
         {
           "depth": 2,
+          "text": "2026-08-03 — 에이전트 인수인계가 의미 수리의 첫 결정을 바로 보여준다",
+          "slug": "2026-08-03-에이전트-인수인계가-의미-수리의-첫-결정을-바로-보여준다"
+        },
+        {
+          "depth": 2,
           "text": "2026-08-03 — README가 실제 화면과 Windows 베타를 먼저 보여준다",
           "slug": "2026-08-03-readme가-실제-화면과-windows-베타를-먼저-보여준다"
         },
@@ -6109,9 +6114,9 @@
           "slug": "2026-07-26-첫-만남은-쇼핑몰부터"
         }
       ],
-      "excerpt": "Major change history. Code commit messages answer why; this file answers when / which surface changed. Focused on user-visible changes, not PR-level granularity. Newest at the top. Entries stay date-based; the app version reached v1.0.0 on 2026-07-27, so a release tag now carries the semver promise instead. README의 첫 화",
-      "wordCount": 64922,
-      "updatedAt": "2026-08-03",
+      "excerpt": "Major change history. Code commit messages answer why; this file answers when / which surface changed. Focused on user-visible changes, not PR-level granularity. Newest at the top. Entries stay date-based; the app version reached v1.0.0 on 2026-07-27, so a release tag now carries the semver promise instead. project sou",
+      "wordCount": 65068,
+      "updatedAt": "2026-08-04",
       "linksOut": [
         "audits/CASE-STUDY-AGENTS-MD-DRIFT",
         "domains/catalog",
@@ -6142,8 +6147,33 @@
         },
         {
           "depth": 2,
+          "text": "2026-08-04 — 의미 수리의 첫 읽기는 파생 지시가 아니라 실행 가능한 20개 단위 호출이다",
+          "slug": "2026-08-04-의미-수리의-첫-읽기는-파생-지시가-아니라-실행-가능한-20개-단위-호출이다"
+        },
+        {
+          "depth": 2,
+          "text": "2026-08-03 — 의미 수리는 더 긴 인수인계가 아니라 첫 행동에 걸린 증거 분리 패킷이다",
+          "slug": "2026-08-03-의미-수리는-더-긴-인수인계가-아니라-첫-행동에-걸린-증거-분리-패킷이다"
+        },
+        {
+          "depth": 2,
+          "text": "2026-08-03 — 새 MCP 인수인계가 사람의 소스 연결을 스스로 재검증한다",
+          "slug": "2026-08-03-새-mcp-인수인계가-사람의-소스-연결을-스스로-재검증한다"
+        },
+        {
+          "depth": 2,
           "text": "2026-08-03 — 높이 사다리 2차 정정: 복원은 칩·필에서 멈춰 있었다 — 가로 모양 전 조합에 명시 플로어",
           "slug": "2026-08-03-높이-사다리-2차-정정-복원은-칩필에서-멈춰-있었다-가로-모양-전-조합에-명시-플로어"
+        },
+        {
+          "depth": 2,
+          "text": "2026-08-03 — 온톨로지 구축의 첫 최고수준 기준은 「더 긴 프롬프트」가 아니라 CQ의 `each`를 거짓 통과시키지 않는 자격 판정이다",
+          "slug": "2026-08-03-온톨로지-구축의-첫-최고수준-기준은-더-긴-프롬프트가-아니라-cq의-each를-거짓-통과시키지-않는-자격-판정이다"
+        },
+        {
+          "depth": 3,
+          "text": "먼저 — 세 줄",
+          "slug": "먼저-세-줄"
         },
         {
           "depth": 2,
@@ -6158,7 +6188,7 @@
         {
           "depth": 3,
           "text": "먼저 — 세 줄",
-          "slug": "먼저-세-줄"
+          "slug": "먼저-세-줄-2"
         },
         {
           "depth": 2,
@@ -6178,7 +6208,7 @@
         {
           "depth": 3,
           "text": "먼저 — 세 줄",
-          "slug": "먼저-세-줄-2"
+          "slug": "먼저-세-줄-3"
         },
         {
           "depth": 2,
@@ -6218,7 +6248,7 @@
         {
           "depth": 3,
           "text": "먼저 — 세 줄",
-          "slug": "먼저-세-줄-3"
+          "slug": "먼저-세-줄-4"
         },
         {
           "depth": 2,
@@ -6233,7 +6263,7 @@
         {
           "depth": 3,
           "text": "먼저 — 세 줄",
-          "slug": "먼저-세-줄-4"
+          "slug": "먼저-세-줄-5"
         },
         {
           "depth": 2,
@@ -6243,7 +6273,7 @@
         {
           "depth": 3,
           "text": "먼저 — 세 줄",
-          "slug": "먼저-세-줄-5"
+          "slug": "먼저-세-줄-6"
         },
         {
           "depth": 2,
@@ -6258,7 +6288,7 @@
         {
           "depth": 3,
           "text": "먼저 — 세 줄",
-          "slug": "먼저-세-줄-6"
+          "slug": "먼저-세-줄-7"
         },
         {
           "depth": 2,
@@ -6717,8 +6747,8 @@
         }
       ],
       "excerpt": "이 파일은 결정과 그때 진 반대 의견을 남긴다. docs/CHANGELOG.md 는 무엇이 언제 바뀌었나를 답하고, 이 파일은 왜 그렇게 정했고, 무엇을 걸었나를 답한다. 최신이 위. 기록은 덧붙이기만 한다 — 지난 기록을 고치지 않는다. 판단이 바뀌었으면 새 기록을 쓰고 옛 기록을 뒤집힘 으로 표시한다. 틀린 기록도 자산이다. 1. 소집 전에 읽는다. 카운슬을 열기 전(그리고 단독 PO 패스를 쓰기 전) 같은 표면 · 같은 질문에 대한 선행 결정이 있는지 먼저 본다. 있으면 새 패스는 그것을 ① 여전히 유효하다고 인용하거나 ② 명시적으로 뒤집는다. 조용히 다시 결정",
-      "wordCount": 51453,
-      "updatedAt": "2026-08-03",
+      "wordCount": 53546,
+      "updatedAt": "2026-08-04",
       "linksOut": [
         "slug"
       ]
@@ -10153,8 +10183,8 @@
         }
       ],
       "excerpt": "로컬 마크다운 볼트를 AI 코딩 에이전트가 읽고 안전하게 갱신하도록 제공하는 stdio JSON-RPC 인터페이스다. 사람과 에이전트가 같은 파일을 진실원으로 사용하며, 서버는 별도 데이터베이스나 모델 실행 루프를 소유하지 않는다. 에이전트는 프로젝트의 의미 노드를 정확히 찾고, 관계·근거·영향 범위를 함께 읽는다. 연결 직후 실제 vault/repository 좌표와 도구 인벤토리를 확인해 잘못된 폴더나 오래된 클라이언트 상태를 발견한다. 쓰기 전에는 현재 문서를 읽고, 동시 편집·중복·끊어진 관계·파괴적 변경을 구조화된 오류와 dry-run으로 차단한다. uid는",
-      "wordCount": 429,
-      "updatedAt": "2026-08-03",
+      "wordCount": 658,
+      "updatedAt": "2026-08-04",
       "linksOut": []
     },
     {
@@ -10379,8 +10409,8 @@
         }
       ],
       "excerpt": "project 노드 하나에 Git 저장소 또는 로컬 폴더 하나를 연결하고, 온톨로지가 선언한 capability/element 구현 경로를 실제 소스 목록과 대조해 버전이 붙은 범주형 영수증으로 남기는 능력. 지도 데이터시트·전체 상세·CLI·MCP agentbrief가 같은 상태·현재성·첫 빈틈·다음 행동을 읽는다. Git 저장소 표시는 선택한 소스의 종류이며 GitHub 계정이나 원격 저장소 연결을 뜻하지 않는다. 절대 경로는 vault-local .ontology-atlas/project-sources.json sidecar에만 보관하고, 복사 인계와 MCP에는",
-      "wordCount": 215,
-      "updatedAt": "2026-08-02",
+      "wordCount": 292,
+      "updatedAt": "2026-08-03",
       "linksOut": []
     },
     {
@@ -10499,8 +10529,8 @@
         }
       ],
       "excerpt": "AI 에이전트가 볼트를 발견·인증하고 읽고 쓸 수 있게 하는 앱 내 connect 플로우와 MCP 대면 표면. 앱 안의 대화형 에이전트는 실제 볼트 도구 근거를 수집한다. 절대 경로와 읽힌 manifest가 함께 있을 때만 활성화하여 화면의 개념, 모델이 읽는 본문, 볼트 안 감사 로그가 한 출처를 가리킨다. 로컬 러너에서는 제한된 읽기 순서와 왕복 시간 상한을 적용한다. 필수 읽기, 상세 payload에 남은 정확한 인용, 한국어 질문의 한국어 응답 중 하나를 생략하면 한 번 교정하고, 두 번째에도 따르지 않은 답은 사용자에게 싣지 않는다. 구조 감사는 census",
-      "wordCount": 211,
-      "updatedAt": "2026-08-02",
+      "wordCount": 257,
+      "updatedAt": "2026-08-03",
       "linksOut": []
     },
     {
@@ -11844,13 +11874,13 @@
         },
         {
           "depth": 3,
-          "text": "abilities — answered",
-          "slug": "abilities-answered"
+          "text": "abilities — partial",
+          "slug": "abilities-partial"
         },
         {
           "depth": 3,
-          "text": "evidence — answered",
-          "slug": "evidence-answered"
+          "text": "evidence — partial",
+          "slug": "evidence-partial"
         },
         {
           "depth": 3,
@@ -11859,7 +11889,7 @@
         }
       ],
       "excerpt": "로컬 마크다운 볼트의 frontmatter를 타입이 있는 계산 가능 그래프(도메인·능력·구현 증거·의존·영향)로 바꾸는 로컬-퍼스트 온톨로지 워크벤치. 개발자는 CLI/웹으로, AI 코딩 에이전트는 MCP로 같은 파일을 읽고 쓴다. README.md — \"Your AI coding agent forgets your codebase between sessions... turns the Markdown in your repository into a graph of your product\" AGENTS.md — Project overview (\"a local-first o",
-      "wordCount": 376,
+      "wordCount": 416,
       "updatedAt": "2026-08-03",
       "linksOut": []
     },
@@ -11910,8 +11940,8 @@
         }
       ],
       "excerpt": "This folder is Ontology Atlas described in its own data format (dogfooding). Every .md file here is one node of the product's meaning model — the same project / domain / capability / element graph the app draws and the MCP server serves to AI agents. If you are an agent reading this: this vault is the shared mental mod",
-      "wordCount": 606,
-      "updatedAt": "2026-08-02",
+      "wordCount": 619,
+      "updatedAt": "2026-08-03",
       "linksOut": []
     },
     {

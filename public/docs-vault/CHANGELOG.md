@@ -7,6 +7,25 @@
 
 ---
 
+## 2026-08-03 — 에이전트 인수인계가 의미 수리의 첫 결정을 바로 보여준다
+
+project source가 현재인데 competency 답이 일부만 채워진 경우, MCP/CLI
+`agent_brief`의 첫 `nextActions`가 이제 generic health가 아니라 사람의 의미 검토다.
+`meaningRepair:v1`은 현재 Markdown 선언, typed containment로 찾은 구조 후보,
+현재 source receipt가 직접 지지하는 canonical-path 후보, 아직 근거 없는 대상을
+분리해 준다. 구조와 path가 있다는 이유만으로 `answered`를 자동 승인하거나 쓰지는
+않는다.
+
+패킷은 기존 `get_concepts` → 사람 승인 → 충돌 방지 `patch_concept` → vault 검증과
+compile → 재읽기 → `finalize_project_meaning` 순서를 그대로 재사용한다. source가
+stale/unavailable이거나 provenance·scope·validation·mtime이 흔들리면 수리 행동을
+내놓지 않고 차단하며, private source root와 raw inventory는 응답에 포함하지 않는다.
+첫 읽기는 `project_and_all_review_targets`를 에이전트가 다시 계산하게 하지 않는다.
+프로젝트와 두 질문의 현재 선언·후보·미해결·witness slug를 정확한 합집합으로 만든 뒤,
+공개 full-body 읽기 상한에 맞춘 최대 20개짜리 literal `get_concepts` 호출로 제공한다.
+현재 dogfood 27개 대상은 20+7이며, 누락·중복·순서 변경·상한 초과와 5 KiB 초과는
+CLI와 설치 MCP verifier가 실패 닫힘으로 거부한다.
+
 ## 2026-08-03 — README가 실제 화면과 Windows 베타를 먼저 보여준다
 
 README의 첫 화면에서 macOS와 Windows x64 beta를 함께 고를 수 있다. Windows는

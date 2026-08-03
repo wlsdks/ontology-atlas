@@ -1,9 +1,11 @@
 import assert from 'node:assert/strict';
+import { execFileSync } from 'node:child_process';
 import { mkdtempSync, mkdirSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import test from 'node:test';
 import { buildProjectSourceGraphHash } from './project-source-graph-hash.mjs';
+import { inspectProjectSource } from './project-source-inspection.mjs';
 import {
   PROJECT_SOURCE_RECEIPT_VERSION,
   readProjectSourceView,
@@ -19,6 +21,35 @@ function writeState(root, bindings) {
     contractVersion: PROJECT_SOURCE_RECEIPT_VERSION,
     bindings,
   }));
+}
+
+function gitSource() {
+  const root = mkdtempSync(join(tmpdir(), 'atlas-project-source-git-'));
+  mkdirSync(join(root, 'src'), { recursive: true });
+  writeFileSync(join(root, 'src', 'player.ts'), 'export const player = true;\n');
+  execFileSync('git', ['init', '-q'], { cwd: root });
+  execFileSync('git', ['add', '.'], { cwd: root });
+  execFileSync('git', [
+    '-c', 'user.name=Atlas Test',
+    '-c', 'user.email=atlas@example.invalid',
+    'commit', '-q', '-m', 'fixture',
+  ], { cwd: root });
+  return root;
+}
+
+function boundInspection(sourceRoot, inspection) {
+  return binding({
+    sourceId: inspection.sourceId,
+    rootPath: sourceRoot,
+    kind: inspection.kind,
+    receipt: receipt({
+      sourceId: inspection.sourceId,
+      sourceKind: inspection.kind,
+      sourceRevision: inspection.revision,
+      sourceFingerprint: inspection.fingerprint,
+      diagnostics: { dirty: inspection.dirty, truncated: inspection.truncated },
+    }),
+  });
 }
 
 const receipt = (overrides = {}) => ({
@@ -74,6 +105,56 @@ test('readProjectSourceView returns one saved receipt without leaking its privat
   assert.equal(result.bindingCardinality, 1);
   assert.equal(result.receipt.contractVersion, PROJECT_SOURCE_RECEIPT_VERSION);
   assert.doesNotMatch(JSON.stringify(result), /\/private\/work\/music/);
+});
+
+test('readProjectSourceView independently verifies a matching bound Git source as current', () => {
+  const root = vault();
+  const sourceRoot = gitSource();
+  const inspection = inspectProjectSource(sourceRoot);
+  writeState(root, [boundInspection(sourceRoot, inspection)]);
+
+  const result = readProjectSourceView(root, 'music-streaming', 'graph-a');
+
+  assert.equal(result.status, 'verified_current');
+  assert.equal(result.currentness, 'current');
+  assert.equal(result.topGap, null);
+  assert.doesNotMatch(JSON.stringify(result), new RegExp(sourceRoot));
+});
+
+test('readProjectSourceView marks a changed bound Git source stale instead of restamping it', () => {
+  const root = vault();
+  const sourceRoot = gitSource();
+  const inspection = inspectProjectSource(sourceRoot);
+  assert.ok(inspection.files.length > 0, 'the source probe must inspect a non-empty file set');
+  writeState(root, [boundInspection(sourceRoot, inspection)]);
+  writeFileSync(join(sourceRoot, 'src', 'player.ts'), 'export const player = false;\n');
+
+  const result = readProjectSourceView(root, 'music-streaming', 'graph-a');
+
+  assert.equal(result.status, 'review_required');
+  assert.equal(result.currentness, 'stale');
+  assert.deepEqual(result.topGap, { id: 'source_changed' });
+  assert.deepEqual(result.nextAction, { id: 'remeasure_source' });
+});
+
+test('readProjectSourceView verifies and invalidates a bound non-Git folder source', () => {
+  const root = vault();
+  const sourceRoot = mkdtempSync(join(tmpdir(), 'atlas-project-source-folder-'));
+  writeFileSync(join(sourceRoot, 'product.txt'), 'first\n');
+  const inspection = inspectProjectSource(sourceRoot);
+  assert.equal(inspection.kind, 'folder');
+  assert.deepEqual(inspection.files, ['product.txt']);
+  writeState(root, [boundInspection(sourceRoot, inspection)]);
+
+  assert.equal(
+    readProjectSourceView(root, 'music-streaming', 'graph-a').currentness,
+    'current',
+  );
+  writeFileSync(join(sourceRoot, 'product.txt'), 'second\n');
+  const changed = readProjectSourceView(root, 'music-streaming', 'graph-a');
+  assert.equal(changed.status, 'review_required');
+  assert.equal(changed.currentness, 'stale');
+  assert.deepEqual(changed.topGap, { id: 'source_changed' });
 });
 
 test('browser and MCP share one project-scoped graph hash contract', () => {

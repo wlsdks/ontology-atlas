@@ -36,6 +36,80 @@ import {
   workspaceBriefExitCode,
 } from './query-result-contract.mjs';
 
+function humanMeaningRepair(projectSlug) {
+  const domains = Array.from({ length: 6 }, (_, index) => `domains/d${index + 1}`);
+  const capabilities = Array.from(
+    { length: 20 },
+    (_, index) => `capabilities/c${String(index + 1).padStart(2, '0')}`,
+  );
+  const abilityRows = domains.map((slug, index) => ({
+    slug,
+    witnessCapabilities: capabilities.filter((_, capabilityIndex) => (
+      capabilityIndex % domains.length === index
+    )),
+  }));
+  const targets = [projectSlug, ...domains, ...capabilities];
+  return {
+    contract: 'meaningRepair:v1',
+    status: 'human_review_required',
+    projectSlug,
+    blockedBy: null,
+    primaryQuestion: 'abilities',
+    questionsNeedingReview: ['abilities', 'evidence'],
+    provenance: {
+      graphHash: 'project-graph-v1:a1b2c3d4',
+      sourceFingerprint: 'git:abc123:clean',
+      sourceMeasuredAt: '2026-08-04T00:00:00.000Z',
+      sourceCurrentness: 'current',
+    },
+    questions: {
+      abilities: {
+        basis: 'typed_containment',
+        targetCount: domains.length,
+        review: {
+          state: 'structural_candidates_only',
+          alreadyDeclared: abilityRows.slice(0, 1),
+          candidateAdditions: abilityRows.slice(1),
+          declaredWithoutSupport: [],
+          unresolved: [],
+        },
+      },
+      evidence: {
+        basis: 'current_source_canonical_path',
+        targetCount: capabilities.length,
+        review: {
+          state: 'source_path_candidates_only',
+          alreadyDeclared: capabilities.slice(0, 2),
+          candidateAdditions: capabilities.slice(2, 11),
+          declaredWithoutSupport: [],
+          unresolved: capabilities.slice(11),
+        },
+      },
+    },
+    workflow: [
+      {
+        step: 'read_review_inputs',
+        derivation: { slugs: 'project_and_all_review_targets' },
+        calls: [
+          { tool: 'get_concepts', arguments: { slugs: targets.slice(0, 20), body: 'full' } },
+          { tool: 'get_concepts', arguments: { slugs: targets.slice(20), body: 'full' } },
+        ],
+      },
+      { step: 'human_semantic_approval', calls: [] },
+      { step: 'write_approved_project_body', calls: [] },
+      { step: 'verify', calls: [] },
+      { step: 'refresh_conflict_guard', calls: [] },
+      { step: 'finalize', calls: [] },
+    ],
+    stopWhen: ['source_not_current'],
+    writePolicy: {
+      humanApprovalRequired: true,
+      automaticWrite: false,
+      automaticFinalize: false,
+    },
+  };
+}
+
 describe('query-result-contract', () => {
   it('returns the result when the operation matches', () => {
     const result = { operation: 'health', status: 'healthy' };
@@ -620,6 +694,31 @@ describe('query-result-contract', () => {
           sourceGapId: null,
         },
       },
+      meaningRepair: {
+        contract: 'meaningRepair:v1',
+        status: 'blocked',
+        projectSlug: 'project/app',
+        blockedBy: 'source_not_current',
+        primaryQuestion: null,
+        questionsNeedingReview: [],
+        provenance: null,
+        questions: null,
+        workflow: [],
+        stopWhen: [
+          'source_not_current',
+          'graph_or_source_provenance_changed',
+          'scope_or_receipt_limited',
+          'validation_or_compile_error',
+          'human_approval_missing',
+          'unresolved_evidence_marked_answered',
+          'mtime_conflict',
+        ],
+        writePolicy: {
+          humanApprovalRequired: true,
+          automaticWrite: false,
+          automaticFinalize: false,
+        },
+      },
       readiness: {
         status: 'ready',
         score: 100,
@@ -988,6 +1087,37 @@ describe('query-result-contract', () => {
 
     assert.equal(assertAgentBriefShape(valid), valid);
     assert.equal(agentBriefExitCode(valid), 0);
+    const executableRepair = humanMeaningRepair(valid.projectSlug);
+    assert.equal(assertAgentBriefShape({ ...valid, meaningRepair: executableRepair }).meaningRepair, executableRepair);
+    const oldPseudoRead = structuredClone(executableRepair);
+    oldPseudoRead.workflow[0] = {
+      step: 'read_review_inputs',
+      calls: [{
+        tool: 'get_concepts',
+        arguments: { body: 'full' },
+        deriveArguments: { slugs: 'project_and_all_review_targets' },
+      }],
+    };
+    const overCapRead = structuredClone(executableRepair);
+    const overCapTargets = overCapRead.workflow[0].calls.flatMap((call) => call.arguments.slugs);
+    overCapRead.workflow[0].calls = [
+      { tool: 'get_concepts', arguments: { slugs: overCapTargets.slice(0, 21), body: 'full' } },
+      { tool: 'get_concepts', arguments: { slugs: overCapTargets.slice(21), body: 'full' } },
+    ];
+    const omittedTarget = structuredClone(executableRepair);
+    omittedTarget.workflow[0].calls[1].arguments.slugs.pop();
+    const duplicatedTarget = structuredClone(executableRepair);
+    duplicatedTarget.workflow[0].calls[1].arguments.slugs.push(
+      duplicatedTarget.workflow[0].calls[0].arguments.slugs[0],
+    );
+    const oversizedPacket = structuredClone(executableRepair);
+    oversizedPacket.provenance.sourceFingerprint = `git:${'x'.repeat(5_000)}`;
+    for (const malformed of [oldPseudoRead, overCapRead, omittedTarget, duplicatedTarget, oversizedPacket]) {
+      assert.throws(
+        () => assertAgentBriefShape({ ...valid, meaningRepair: malformed }),
+        /agent_brief meaningRepair must contain the action-first human review packet/,
+      );
+    }
     assert.equal(agentBriefExitCode({ ...valid, readiness: { ...valid.readiness, status: 'needs_attention' } }), 1);
     assert.throws(
       () => assertAgentBriefShape({ ...valid, projectSource: { ...valid.projectSource, status: 'ready' } }),
@@ -1007,6 +1137,24 @@ describe('query-result-contract', () => {
         meaningAssessment: { ...valid.meaningAssessment, confidence: 0.99 },
       }),
       /agent_brief meaningAssessment must contain the categorical fail-closed project meaning view/,
+    );
+    assert.throws(
+      () => {
+        const withoutRepair = { ...valid };
+        delete withoutRepair.meaningRepair;
+        return assertAgentBriefShape(withoutRepair);
+      },
+      /agent_brief meaningRepair must contain the action-first human review packet/,
+    );
+    assert.throws(
+      () => assertAgentBriefShape({
+        ...valid,
+        meaningRepair: {
+          ...valid.meaningRepair,
+          provenance: { rootPath: '/private/work/app' },
+        },
+      }),
+      /agent_brief meaningRepair must contain the action-first human review packet/,
     );
     assert.throws(
       () => assertAgentBriefShape({

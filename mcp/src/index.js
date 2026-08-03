@@ -74,6 +74,7 @@ import { SERVER_VERSION } from './server-version.mjs';
 import { readProjectSourceView } from './project-source-receipt.mjs';
 import { buildProjectSourceGraphHash } from './project-source-graph-hash.mjs';
 import { buildProjectMeaningInventory } from './project-meaning-inventory.mjs';
+import { attachMeaningRepair, buildMeaningRepair } from './meaning-repair.mjs';
 import {
   finalizeProjectMeaningReceipt,
   parseProjectCompetencyMarkdown,
@@ -91,6 +92,7 @@ import {
   VaultConflictError,
   collectNeighborRefs,
   FULL_BODY_MAX_CHARS,
+  GET_CONCEPTS_FULL_BODY_MAX,
   deleteDoc,
   describeBodyDelivery,
   drainNodeEligibilityFindings,
@@ -856,7 +858,6 @@ const OUTGOING_EDGE_OUTPUT_SCHEMA = Object.freeze({
  */
 const BODY_DELIVERY_MODES = Object.freeze(['excerpt', 'full']);
 /** `get_concepts({ body: 'full' })` 한 호출의 행 상한. 발췌 모드는 그대로 50. */
-const GET_CONCEPTS_FULL_BODY_MAX = 20;
 
 /**
  * 본문을 얼마나 실었는지 — 그리고 **무엇을 안 실었는지**.
@@ -6489,6 +6490,21 @@ function projectMeaningContext(artifact, projectSlug, structureStatus) {
     source: meaningSourceFromProjectSource(projectSource),
     inventory: inventoryResult.status === 'ready' ? inventoryResult.inventory : null,
   };
+  const meaningAssessment = readProjectMeaningAssessment(assessmentInput);
+  let competency = null;
+  try {
+    competency = parseProjectCompetencyMarkdown(projectDoc?.body);
+  } catch {
+    // The repair projection fails closed when the human-editable competency block is unavailable.
+  }
+  const meaningRepair = buildMeaningRepair({
+    projectSlug,
+    graphHash,
+    meaningAssessment,
+    competency,
+    inventoryResult,
+    scopedDocs: docs,
+  });
   return {
     scope,
     docs,
@@ -6497,7 +6513,8 @@ function projectMeaningContext(artifact, projectSlug, structureStatus) {
     projectSource,
     inventoryResult,
     assessmentInput,
-    meaningAssessment: readProjectMeaningAssessment(assessmentInput),
+    meaningAssessment,
+    meaningRepair,
   };
 }
 
@@ -6507,11 +6524,11 @@ function attachProjectMeaning(agentBrief, artifact) {
     agentBrief.projectSlug,
     agentBrief.readiness?.status,
   );
-  return {
+  return attachMeaningRepair({
     ...agentBrief,
     projectSource: context.projectSource,
     meaningAssessment: context.meaningAssessment,
-  };
+  }, context.meaningRepair);
 }
 
 function finalizeProjectMeaningTool({ projectSlug, expected_mtime } = {}) {

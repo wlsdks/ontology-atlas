@@ -1,4 +1,8 @@
 import type { AgentProposal, ProposalChange } from './types';
+import {
+  changesCompetencyQualification,
+  SOURCE_BACKED_COMPETENCY_MESSAGE,
+} from './competency-qualification-boundary';
 
 /**
  * 동의된 제안을 디스크에 쓰는 **유일한** 모듈.
@@ -45,6 +49,10 @@ function slugOf(path: string): string {
   return path.replace(/\.md$/, '');
 }
 
+function proposalChangesCompetencyQualification(change: ProposalChange): boolean {
+  return change.files.some((file) => changesCompetencyQualification(file.before, file.after));
+}
+
 export async function applyProposal(
   proposal: AgentProposal,
   port: VaultWritePort,
@@ -53,6 +61,9 @@ export async function applyProposal(
   const selected = proposal.changes.filter((change) => change.selected);
   if (selected.length === 0) {
     return { status: 'applied', snapshotSha: null, writtenPaths: [] };
+  }
+  if (selected.some(proposalChangesCompetencyQualification)) {
+    return { status: 'failed', message: SOURCE_BACKED_COMPETENCY_MESSAGE };
   }
 
   // ── 1. 쓰기 전에 전부 검사한다 ──────────────────────────────────────

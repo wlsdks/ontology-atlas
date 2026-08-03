@@ -1,5 +1,6 @@
 import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
+import { inspectProjectSource } from './project-source-inspection.mjs';
 
 export const PROJECT_SOURCE_RECEIPT_VERSION = 1;
 export const PROJECT_SOURCE_STATE_RELATIVE_PATH = '.ontology-atlas/project-sources.json';
@@ -165,10 +166,10 @@ function sanitizeReceipt(value, projectSlug) {
 
 /**
  * Reads the local sidecar and returns the exact public view used by agent_brief.
- * Source currentness is deliberately `unavailable`: this reader does not
- * independently rescan the private root, so it must not restamp a saved receipt
- * as current. Graph currentness is checked only when the caller could derive a
- * complete project-scoped hash; a bounded/unknown scope is not evidence of drift.
+ * A bound private root is used only to reproduce the app's bounded source probe;
+ * neither the root nor raw inspection data crosses this public boundary. Graph
+ * currentness is checked only when the caller could derive a complete
+ * project-scoped hash; a bounded/unknown scope is not evidence of drift.
  */
 export function readProjectSourceView(vaultRoot, projectSlug, graphHash) {
   let parsed;
@@ -237,11 +238,45 @@ export function readProjectSourceView(vaultRoot, projectSlug, graphHash) {
       receipt,
     );
   }
+  let probe = null;
+  try {
+    probe = inspectProjectSource(binding.rootPath);
+  } catch {
+    // A transient permission, filesystem, or Git failure must not erase a
+    // previously valid receipt. It stays usable with unavailable currentness.
+  }
+  if (!probe) {
+    return base(
+      projectSlug,
+      1,
+      receipt.status,
+      'unavailable',
+      receipt.topGap,
+      receipt.nextAction,
+      receipt,
+    );
+  }
+  if (
+    probe.kind !== receipt.sourceKind
+    || probe.sourceId !== receipt.sourceId
+    || probe.fingerprint !== receipt.sourceFingerprint
+    || probe.revision !== receipt.sourceRevision
+  ) {
+    return base(
+      projectSlug,
+      1,
+      'review_required',
+      'stale',
+      { id: 'source_changed' },
+      { id: 'remeasure_source' },
+      receipt,
+    );
+  }
   return base(
     projectSlug,
     1,
     receipt.status,
-    'unavailable',
+    'current',
     receipt.topGap,
     receipt.nextAction,
     receipt,

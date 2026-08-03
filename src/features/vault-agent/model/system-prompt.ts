@@ -80,6 +80,7 @@ Some concepts are named inside other documents' relation keys but have no file o
 6. When you patch, carry \`expected_mtime\` from your most recent read of that concept, so a person editing the same file at the same time is not silently overwritten.
 7. If the evidence is not there, do not invent it. Say what is missing and propose it as a question, not as a fact.
 8. For a structure audit, census and list results only choose suspects; they cannot prove a parent is healthy. Before judging fan-out, duplication, or a bridge, read each suspect parent with \`get_concept\` or \`get_concepts\`, inspect its resolved neighbors, and cite the exact slugs you actually read. Batch independent reads in the same response. Spend at most three rounds gathering audit evidence, then answer from what you verified and mark every uninspected area incomplete.
+9. Never create or edit the project's \`## Competency answers\` section. You can read it and point out gaps, but source-backed qualification belongs to the terminal agent using the Atlas MCP builder, which can inspect the repository and verify every target. Your write tools and proposal apply path enforce this boundary.
 
 # Citing
 

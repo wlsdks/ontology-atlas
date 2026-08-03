@@ -116,6 +116,22 @@ describe('tool-executor — 쓰기 무접촉', () => {
     expect(fsSpy).not.toHaveBeenCalled();
   });
 
+  it('vault-only 에이전트는 competency 자격 서명을 제안으로 우회할 수 없다', async () => {
+    const execute = createToolExecutor(makePort());
+
+    const result = await execute(call('patch_concept', {
+      slug: 'sample-product',
+      body: '## Competency answers\n\n### abilities — answered\n\nOnly one domain is covered.',
+    }));
+
+    expect(result.outcome).toBe('error');
+    expect(result.isError).toBe(true);
+    expect(result.writeIntent).toBeUndefined();
+    expect(result.content).toBe(
+      'Source-backed competency qualification must be created through the MCP builder.',
+    );
+  });
+
   it('목록에 없는 도구는 실행 0 + 오류 반환', async () => {
     const execute = createToolExecutor(makePort());
     const result = await execute(call('delete_concept', { slug: 'x' }));

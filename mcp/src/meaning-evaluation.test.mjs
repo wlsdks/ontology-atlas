@@ -210,6 +210,49 @@ test('repository proposal requires typed competency witnesses before claiming a 
   assert.match(project.body, /capabilities\/checkout.*depends_on.*capabilities\/inventory-sync/);
 });
 
+test('an answered abilities competency cannot cover only a strict subset of its domain targets', () => {
+  const analysis = analyzeRepoStructure(fixtureRoot);
+  const proposal = completeTypedRepositoryProposal();
+  proposal.competencyAnswers.abilities.witnesses.concepts = ['capabilities/checkout'];
+  proposal.competencyAnswers.abilities.witnesses.relations = [
+    relationWitness(proposal.relations[2]),
+  ];
+
+  assert.equal(proposal.domains.length, 2, 'the target set must be non-empty and plural');
+
+  const result = validateMeaningProposalAgainstAnalysis(analysis, proposal);
+
+  assert.equal(result.status, 'fail');
+  assert.equal(result.canWrite, false);
+  assert.equal(result.gates.competencyQuestionsAnswered, false);
+  assert.equal(result.gates.competencyWitnessesResolved, false);
+  assert.ok(result.findings.some((row) =>
+    row.code === 'incomplete-competency-coverage'
+      && row.path === 'competencyAnswers.abilities'
+      && row.sources.includes('domains/inventory')));
+});
+
+test('an answered evidence competency cannot cover only a strict subset of its ability targets', () => {
+  const analysis = analyzeRepoStructure(fixtureRoot);
+  const proposal = completeTypedRepositoryProposal();
+  proposal.competencyAnswers.evidence.witnesses.concepts = ['capabilities/checkout'];
+  proposal.competencyAnswers.evidence.witnesses.evidence = ['src/features/checkout'];
+  proposal.competencyAnswers.evidence.witnesses.paths = ['src/features/checkout'];
+
+  assert.equal(proposal.capabilities.length, 2, 'the target set must be non-empty and plural');
+
+  const result = validateMeaningProposalAgainstAnalysis(analysis, proposal);
+
+  assert.equal(result.status, 'fail');
+  assert.equal(result.canWrite, false);
+  assert.equal(result.gates.competencyQuestionsAnswered, false);
+  assert.equal(result.gates.competencyWitnessesResolved, false);
+  assert.ok(result.findings.some((row) =>
+    row.code === 'incomplete-competency-coverage'
+      && row.path === 'competencyAnswers.evidence'
+      && row.sources.includes('capabilities/inventory-sync')));
+});
+
 test('repository proposal preserves an honest visible competency gap without reporting findings zero', () => {
   const analysis = analyzeRepoStructure(fixtureRoot);
   const proposal = completeTypedRepositoryProposal();
