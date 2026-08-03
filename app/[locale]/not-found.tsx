@@ -4,6 +4,8 @@ import { useEffect } from "react";
 import { useTranslations } from "next-intl";
 import { ArrowLeft, Compass, Search } from "lucide-react";
 import { Link, useRouter } from "@/i18n/navigation";
+import { Button, buttonVariants } from "@/shared/ui/button";
+import { cn } from "@/shared/lib/cn";
 
 /**
  * 로케일 segment 안에서 404. NextIntlClientProvider 가 layout.tsx 에 마운트되어
@@ -67,28 +69,23 @@ export default function LocaleNotFound() {
           {t("body")}
         </p>
         <div className="mt-5 flex flex-col gap-2">
-          <button
-            type="button"
-            onClick={openSearchOnHome}
-            className="inline-flex h-10 items-center justify-center gap-2 rounded-full bg-[color:var(--color-indigo-brand)] px-4 text-body font-[var(--font-weight-signature)] text-[color:var(--color-text-primary)] transition-opacity hover:opacity-90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--color-indigo-a50)]"
-          >
+          {/* 세 출구 = 표준 버튼의 3변형(primary/outline/ghost). 손으로 쓴
+              rounded-full 방언은 채운 인디고 위 잉크가 `--color-text-primary`
+              (합성 4.42:1, AA 미달)였고 호버가 opacity 방언이었다 — 관문이 이미
+              쓰는 `<Button>` 문법으로 정규화 (2026-08-04 체계석). */}
+          <Button type="button" variant="primary" onClick={openSearchOnHome}>
             <Search size={14} />
             {t("findByProject")}
-          </button>
-          <Link
-            href="/"
-            className="inline-flex h-10 items-center justify-center rounded-full border border-[color:var(--color-divider)] px-4 text-body text-[color:var(--color-text-secondary)] transition-colors hover:text-[color:var(--color-text-primary)]"
-          >
+          </Button>
+          {/* raw buttonVariants 는 base 의 border-transparent 와 변형 보더가 둘 다 남아
+              CSS 소스 순서가 투명을 이긴다(실측) — Button 컴포넌트처럼 cn 으로 병합한다. */}
+          <Link href="/" className={cn(buttonVariants({ variant: "outline" }))}>
             {t("home")}
           </Link>
-          <button
-            type="button"
-            onClick={goBack}
-            className="inline-flex h-10 items-center justify-center gap-1.5 rounded-full text-label text-[color:var(--color-text-tertiary)] transition-colors hover:text-[color:var(--color-text-primary)]"
-          >
+          <Button type="button" variant="ghost" onClick={goBack}>
             <ArrowLeft size={13} />
             {t("previous")}
-          </button>
+          </Button>
         </div>
       </div>
     </main>

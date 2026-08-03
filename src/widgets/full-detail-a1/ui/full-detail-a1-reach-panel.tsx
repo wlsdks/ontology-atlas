@@ -81,8 +81,9 @@ export function FullDetailA1ReachPanel({
               data-active={candidate === step ? "true" : "false"}
               onClick={() => onChangeStep(candidate)}
               className={[
-                // eslint-disable-next-line no-restricted-syntax -- 작은 인라인 스텝 칩의 4px 반경은 chip(6px)로 올리면 pill 처럼 읽혀 램프 밖 예외 유지.
-                "rounded-[4px] border px-1 py-0.5 transition-colors",
+                // 4px 는 더 이상 램프 밖 예외가 아니다 — `--radius-micro` 등재(2026-08-03)로
+                // 이 자리의 eslint-disable 사유가 소멸했다. 바이트만 바뀌고 픽셀은 같다.
+                "rounded-micro border px-1 py-0.5 transition-colors",
                 candidate === step
                   ? "border-[color:var(--topology-v2-indigo-border)] text-[color:var(--topology-v2-indigo-bright)]"
                   : "border-transparent hover:border-[color:var(--topology-v2-panel-text-quaternary)]",

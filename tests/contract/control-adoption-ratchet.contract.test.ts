@@ -129,6 +129,7 @@ const ROOTS = ['src', 'app'];
  * (`card/sm` = `text-label`) 계약이 재지 않던 자리가 자동으로 계약값이 됐다 —
  * **값 층이 계약의 사정거리를 넓힌 첫 사례**다.
  * | **123** | 잔여 라운드 — `src/features/**` + `src/widgets/**` 의 남은 57개(`atlas-git-panel` 15 제외) 중 9개. 칩 6(폴더 열기 시트 2 + 투어 분기 2 + 에이전트 중지/보내기 2) · 세그먼트 2 · 아이콘 1. **새 축·새 값 0개**. 옮긴 칩 넷이 `h-9`(36) → **`--control-h-md`(32)** 로 앉았다 — #884 가 되돌린 사다리가 실제로 작동한 첫 실측이다. 채택률이 낮은 것 자체가 산출물이다 — 남긴 48개를 사유별로 세어 보니 **한 자리씩 다른 이유가 아니라 네 부류**였고, 그중 셋은 이미 원장에 적혀 있던 것이 이번에 정량화된 것이다(아래 「잔여 라운드」 절) |
+ * | **108** | 값 층 라운드 3(체계석, 2026-08-04) — 잔여 113 중 값-층-밖 3부류(git 크롬 15 · shared/ui 10 · 공방 11)를 뺀 **77을 전수 분류**하고(부류표는 PR/원장), 그중 깨끗이 옮겨지는 5만 옮겼다: 404 두 파일의 주 CTA·뒤로 4개 → `<Button>` primary/ghost(채운 인디고 위 `--color-text-primary` 잉크가 합성 4.42:1 AA 미달이던 것을 on-accent 로 정정 + opacity 호버 방언 제거 — 세 출구가 표준 버튼 3변형 구조를 rounded-full 방언으로 재작성한 것이었고, 관문(DownloadPage)이 이미 `<Button>` 소비처라 방언 판정) · 트레일 「모두 지우기」 1개 → `segment`/md(바이트 대조 픽셀 0). 곁가지: reach 스텝 칩의 `rounded-[4px]` eslint-disable 사유가 `--radius-micro` 등재로 소멸해 `rounded-micro` 로 전환(바이트-온리). **새 축·모양·톤 0.** 남긴 72의 핵심 관측: 남은 자리 대부분이 **구멍 2개 이상에 동시에 걸려** 단일 축 신설의 회수량이 0에 수렴한다 — 그래서 이 라운드는 축을 만들지 않았다(원장 2026-08-04) |
  * | **117** | 값 층 라운드 2(체계석) — 원장이 세 라운드 연속 센 「sm 아래 한 칸」 구멍을 **마이크로 티어**로 메웠다: 반경 `--radius-micro`(4px — 등재 전 rounded-sm 59 + 무접미 rounded 37 = 96곳이 이미 그 값) + 칩 `size: 'xs'`(min-h-6 · px-1.5 py-0.5 · caption · micro 반경, 칩 밖은 sm 별칭) + `segment/sm` 재정의(소비처 0이던 px-2/caption → 실측 최빈 px-1 py-0.5/label). 옮긴 6: 마이크로 명령 태그 3(`LiveActivityIndicator`) · 알림 벨 1(`AgentActivityChip`) · 패널 내보내기 1(`RealmBlockExportAction`, segment+panel 첫 결합) · 성공 칩 1(`OntologyStarterCta` — `tone: 'success'` 를 신호색에서 글자 역할 a94 로 재지정해 소비처 0 톤이 처음 소비처를 얻었다). 함께: chip/pill 기본 보더를 divider(0.08)→border-soft(0.06)로 — 전수 74:18 의 다수 정정. 남긴 것: 트레일 「지난 길」(부모 caption-mono **상속** 자리 — 타입 상속 구멍 ⓑ가 3번째로 나왔다) · 문서함 필터 지우기(상속 잉크 indigo-pale-a90) · 경계 토글(row 인셋 바닥, 전수 2 — 아직 축 아님) |
  *
  * ## features 라운드(2026-08-03)가 찾은 구멍 — 값 층의 다음 입력
@@ -340,7 +341,7 @@ const ROOTS = ['src', 'app'];
  * **공유 상수로 뽑는 옳은 리팩터에 벌점을 준다.** 그래서 이 라운드는 잉크만
  * 상수로 공유하고 램프 호출은 자리마다 인라인으로 썼다.
  */
-const BASELINE_HAND_WRITTEN_CONTROLS = 113;
+const BASELINE_HAND_WRITTEN_CONTROLS = 108;
 
 function walk(dir: string, out: string[] = []): string[] {
   for (const name of readdirSync(dir)) {
