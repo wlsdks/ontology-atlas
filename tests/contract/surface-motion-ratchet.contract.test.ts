@@ -1,5 +1,4 @@
-import { readdirSync, readFileSync, statSync } from 'node:fs';
-import { join } from 'node:path';
+import { existsSync, readFileSync } from 'node:fs';
 
 import { describe, expect, it } from 'vitest';
 
@@ -23,81 +22,90 @@ import { describe, expect, it } from 'vitest';
  * 수 있었고 인라인 패널은 **베낄 패턴이 없었다.** 규율이 아니라 자산의 문제였고,
  * 그래서 `Surface` 를 놓았다(`src/shared/ui/surface.tsx`).
  *
+ * ## ⚠️ 첫 판은 파일명으로 셌고, 그건 과다 계수였다 (같은 날 정정)
+ *
+ * 접미사(`Panel`/`Sheet`/…)로 세면 **조건부로 나타나지 않는 것까지** 잡힌다.
+ * 실제로 첫 11개를 부모 렌더 게이트까지 따라가 보니 셋으로 갈렸다:
+ *
+ * | 부류 | 예 | 결함인가 |
+ * |---|---|---|
+ * | 부모가 조건부로 그린다 | `TopologyV2EdgePanel` · `ProjectQuickEditPanel` | **그렇다** |
+ * | 항상 렌더된다(라우트 내용·인라인) | `AtlasGitPanel` · `WebManualConnectPanel` | 아니다 |
+ * | 부모가 이미 애니메이션한다 | `AiConnectionPanel`(설정 시트 안) | 아니다 |
+ *
+ * 「11개가 하드컷」은 그래서 **틀린 수**였다. 안 고쳐도 되는 것을 결함으로 세면
+ * 다음 사람이 필요 없는 자리에 `Surface` 를 감싸고, 그건 노이즈다.
+ *
+ * 그래서 **등록부로 바꿨다** — 이 저장소가 `DEGRADED_SURFACES` 에서 쓰는 것과
+ * 같은 패턴이다. 각 줄이 「이건 조건부로 나타나는데 등장/퇴장이 없다」를 **주장**
+ * 하고, 그 주장에 이유가 붙는다. 파일명으로 자동 수집하는 편리함을 잃는 대신,
+ * 수가 무엇을 뜻하는지가 분명해진다.
+ *
  * ## 왜 lint 가 아니라 래칫인가
  *
- * 컨트롤 채택 래칫과 같은 이유다. 남은 10개를 전부 고치는 것은 한 PR 이 아니고,
- * 각각이 **자기 렌더 게이트의 모델을 퇴장 창 동안 붙들어야** 해서 기계적이지도
- * 않다. 오늘 강제되는 것은 하나다 — **11번째 하드컷은 못 들어온다.**
+ * 각각이 **자기 렌더 게이트의 모델을 퇴장 창 동안 붙들어야** 해서 기계적이지
+ * 않다(`useSurfaceSwap` 이 그 일을 한다). 오늘 강제되는 것은 하나다 —
+ * **등록부가 늘지 않는다.**
  */
 
-const BASELINE_HARD_CUT_SURFACES = 11;
+/**
+ * **부모가 조건부로 그리는데 등장/퇴장이 없는 표면.** 각 줄이 주장이고, 그
+ * 주장은 부모의 렌더 게이트를 열어 확인한 것이다.
+ *
+ * 여기 없는데 하드컷인 표면을 발견하면 **줄을 더하는 게 아니라 고친다** — 이
+ * 등록부는 부채 목록이지 허가 목록이 아니다.
+ */
+const HARD_CUT_REGISTRY: ReadonlyArray<readonly [file: string, why: string]> = [
+  ['src/widgets/topology-map-v2/ui/TopologyV2EdgePanel.tsx', '엣지 클릭으로 뜬다 — HomePage 의 `edgePanelModel && …` 게이트'],
+  ['src/widgets/topology-map-v2/ui/TopologyV2DetailPanel.tsx', '노드 클릭으로 뜬다 — 이 앱에서 가장 자주 열리는 표면'],
+  ['src/features/project-quick-edit/ui/ProjectQuickEditPanel.tsx', 'ProjectDetailPage 의 삼항으로 뜬다'],
+  ['src/widgets/vault-agent-panel/ui/VaultAgentPanel.tsx', 'HomePage 의 삼항으로 뜬다'],
+];
 
-/** 조건부로 나타나는 표면의 파일명 관례. 새 관례가 생기면 여기도 넓힌다. */
+const BASELINE_HARD_CUT_SURFACES = HARD_CUT_REGISTRY.length;
+
+/** 등록부가 실재하는 파일만 가리키는지 볼 때 쓴다. */
 const SURFACE_SUFFIXES = ['Panel', 'Sheet', 'Modal', 'Drawer', 'Popover', 'Dialog'];
 
 /** 표면에 등장/퇴장을 주는 **인정되는 기제**. 새 기제를 도입하면 여기 등재한다. */
 const MOTION_MECHANISMS = ['AnimatePresence', 'usePanelPresence', 'useSurfaceSwap', '<Surface'];
 
-function walk(dir: string, out: string[] = []): string[] {
-  for (const name of readdirSync(dir)) {
-    const p = join(dir, name);
-    if (statSync(p).isDirectory()) {
-      if (name === 'node_modules' || name === '.next') continue;
-      walk(p, out);
-    } else if (name.endsWith('.tsx') && !name.endsWith('.test.tsx')) {
-      out.push(p);
-    }
-  }
-  return out;
-}
-
-function findHardCutSurfaces(): string[] {
-  return walk('src')
-    .filter((f) => {
-      const base = f.split('/').pop()!.replace('.tsx', '');
-      return SURFACE_SUFFIXES.some((s) => base.endsWith(s));
-    })
-    .filter((f) => {
-      const source = readFileSync(f, 'utf8');
-      /*
-       * ★ **자기 파일만 보지 않는다.** 표면의 등장/퇴장은 자기 파일이 아니라
-       *   **부모의 렌더 게이트**가 소유할 수 있다(`{open && <X/>}`). 그런데 그
-       *   경우에도 이 파일이 `Surface` 로 자기를 감싸면 여기서 보인다. 부모가
-       *   `AnimatePresence` 로 감싸는 경우를 놓치는 것은 **알려진 한계**이고,
-       *   그래서 이 게이트는 「전수를 다시 세라」가 아니라 「늘지 마라」만 한다.
-       */
-      return !MOTION_MECHANISMS.some((m) => source.includes(m));
-    })
-    .sort();
+function stillHardCut(): string[] {
+  return HARD_CUT_REGISTRY.filter(([file]) => {
+    const source = readFileSync(file, 'utf8');
+    return !MOTION_MECHANISMS.some((m) => source.includes(m));
+  }).map(([file]) => file);
 }
 
 describe('등장·퇴장 래칫', () => {
-  const hardCut = findHardCutSurfaces();
+  const hardCut = stillHardCut();
 
-  it('하드컷 표면이 늘지 않는다 — 새 표면은 Surface 로 감싼다', () => {
+  it('등록부의 파일이 전부 실재한다 — 없는 파일을 세면 수가 거짓이 된다', () => {
+    for (const [file] of HARD_CUT_REGISTRY) {
+      expect(existsSync(file), `${file} 이 없다 — 옮겼거나 지웠으면 등록부도 고친다`).toBe(true);
+      const base = file.split('/').pop()!.replace('.tsx', '');
+      expect(
+        SURFACE_SUFFIXES.some((s) => base.endsWith(s)),
+        `${base} 는 표면 접미사 관례를 안 따른다`,
+      ).toBe(true);
+    }
+  });
+
+  it('등록부가 늘지 않는다 — 새 표면은 Surface 로 감싼다', () => {
     expect(
-      hardCut.length,
-      `하드컷 표면이 ${BASELINE_HARD_CUT_SURFACES} → ${hardCut.length} 로 늘었다.\n` +
-        `조건부로 나타나는 표면은 \`<Surface open={…}>\` 로 감싼다 — 퇴장 창 · 퇴장 클래스 · ` +
-        `inert · 포커스 복귀가 기본으로 딸려 온다.\n${hardCut.map((f) => `  ${f}`).join('\n')}`,
+      HARD_CUT_REGISTRY.length,
+      '새 하드컷을 등록부에 더하지 마라. `<Surface open={…}>` 로 감싸면 퇴장 창 · 퇴장 클래스 · ' +
+        'inert · 포커스 복귀가 기본으로 딸려 온다.',
     ).toBeLessThanOrEqual(BASELINE_HARD_CUT_SURFACES);
   });
 
-  it('줄었으면 기준선도 내린다 — 여유를 무료로 두지 않는다', () => {
+  it('고쳤으면 등록부에서 지운다 — 여유를 무료로 두지 않는다', () => {
     expect(
       hardCut.length,
-      `하드컷이 ${BASELINE_HARD_CUT_SURFACES} → ${hardCut.length} 로 줄었다. ` +
-        `BASELINE_HARD_CUT_SURFACES 도 ${hardCut.length} 로 내려라.`,
-    ).toBeGreaterThanOrEqual(BASELINE_HARD_CUT_SURFACES);
-  });
-
-  it('탐지기가 실제로 세고 있다 — 0을 통과로 읽지 않는다', () => {
-    // 접미사 관례가 바뀌면 이 워크가 조용히 빈 집합을 돌고, 그러면 위 둘이
-    // «항상 통과» 가 된다. 그건 게이트가 없는 것과 구별되지 않는다.
-    const all = walk('src').filter((f) => {
-      const base = f.split('/').pop()!.replace('.tsx', '');
-      return SURFACE_SUFFIXES.some((s) => base.endsWith(s));
-    });
-    expect(all.length, '표면 파일을 한 개도 못 찾았다면 접미사 관례가 바뀐 것이다').toBeGreaterThan(15);
+      `등록부에 있는데 이미 등장/퇴장을 갖춘 파일이 있다. 부채를 갚았으면 줄을 지워라:\n` +
+        HARD_CUT_REGISTRY.filter(([f]) => !hardCut.includes(f))
+          .map(([f]) => `  ${f}`)
+          .join('\n'),
+    ).toBe(HARD_CUT_REGISTRY.length);
   });
 });
