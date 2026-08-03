@@ -2122,6 +2122,8 @@
       "actionsGroupLabel": "Node actions",
       "actionDocument": "Document",
       "actionMentionDocument": "Mentioned in",
+      "actionCreateLinked": "Create linked",
+      "actionCreateLinkedTip": "Creates a new capability inside this domain — without leaving the map",
       "actionEditRelations": "Edit relations",
       "actionCopyHandoff": "Copy handoff",
       "actionAskAgent": "Ask the agent",

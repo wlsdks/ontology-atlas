@@ -2122,6 +2122,8 @@
       "actionsGroupLabel": "선택한 항목에서 할 일",
       "actionDocument": "문서 열기",
       "actionMentionDocument": "언급 문서 열기",
+      "actionCreateLinked": "이어서 새로 만들기",
+      "actionCreateLinkedTip": "이 도메인 안에 새 역량을 만들어요 — 지도를 떠나지 않아요",
       "actionEditRelations": "관계 편집",
       "actionCopyHandoff": "AI에게 줄 항목 정보 복사",
       "actionAskAgent": "AI에게 물어보기",
