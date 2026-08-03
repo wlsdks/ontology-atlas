@@ -1,6 +1,7 @@
 import { Link } from "@/i18n/navigation";
 import { Bot, Network, PanelLeftOpen } from "lucide-react";
 import { useTranslations } from "next-intl";
+import { controlClass } from "@/shared/ui";
 
 /**
  * 문서 미선택 상태 — 항상 보이는 트리를 없앤 뒤의 Source Vault 시작점.
@@ -33,7 +34,13 @@ export function EmptyState({
           <button
             type="button"
             onClick={onOpenTree}
-            className="inline-flex min-h-10 items-center justify-center gap-2 rounded-chip border border-[color:var(--color-indigo-line-a32)] bg-[color:var(--color-indigo-a10)] px-3 text-body font-medium text-[color:rgba(220,225,255,0.94)] transition-colors hover:border-[color:var(--color-indigo-line-a54)] hover:bg-[color:var(--color-indigo-a16)]"
+            className={controlClass({
+              shape: "chip",
+              size: "lg",
+              active: true,
+              className:
+                "justify-center gap-2 font-medium hover:border-[color:var(--color-indigo-line-a54)] hover:bg-[color:var(--color-indigo-a16)]",
+            })}
           >
             <PanelLeftOpen size={14} aria-hidden />
             {t("openTree")}
@@ -41,14 +48,26 @@ export function EmptyState({
           <button
             type="button"
             onClick={onOpenAgentWorkflow}
-            className="inline-flex min-h-10 items-center justify-center gap-2 rounded-chip border border-[color:var(--color-border-soft)] px-3 text-body text-[color:var(--color-text-secondary)] transition-colors hover:border-[color:var(--color-indigo-line-a32)] hover:text-[color:var(--color-text-primary)]"
+            className={controlClass({
+              shape: "chip",
+              size: "lg",
+              tone: "secondary",
+              className:
+                "justify-center gap-2 hover:border-[color:var(--color-indigo-line-a32)] hover:text-[color:var(--color-text-primary)]",
+            })}
           >
             <Bot size={14} aria-hidden />
             {t("openAgent")}
           </button>
           <Link
             href="/topology/"
-            className="inline-flex min-h-10 items-center justify-center gap-2 rounded-chip border border-[color:var(--color-border-soft)] px-3 text-body text-[color:var(--color-text-secondary)] transition-colors hover:border-[color:var(--color-indigo-line-a32)] hover:text-[color:var(--color-text-primary)]"
+            className={controlClass({
+              shape: "chip",
+              size: "lg",
+              tone: "secondary",
+              className:
+                "justify-center gap-2 hover:border-[color:var(--color-indigo-line-a32)] hover:text-[color:var(--color-text-primary)]",
+            })}
           >
             <Network size={14} aria-hidden />
             {t("openTopology")}

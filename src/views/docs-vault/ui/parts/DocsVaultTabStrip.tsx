@@ -4,6 +4,7 @@ import { useCallback, useEffect, useLayoutEffect, useRef, useState } from "react
 import type { useTranslations } from "next-intl";
 import { FileText, X } from "lucide-react";
 import { cn } from "@/shared/lib/cn";
+import { IconButton } from "@/shared/ui";
 import type { DocTab } from "../../lib/doc-tabs";
 
 export interface DocsVaultTabStripProps {
@@ -195,9 +196,9 @@ export function DocsVaultTabStrip({
               <FileText size={14} aria-hidden className="flex-none" />
               <span className="min-w-0 flex-1 truncate text-left">{tab.title}</span>
             </button>
-            <button
-              type="button"
-              aria-label={t("tabs.closeAria", { title: tab.title })}
+            <IconButton
+              size="sm"
+              label={t("tabs.closeAria", { title: tab.title })}
               onClick={(event) => {
                 event.stopPropagation();
                 // 키보드 activation(click.detail=0)으로 ×를 누르면 해당 버튼은
@@ -210,14 +211,14 @@ export function DocsVaultTabStrip({
                 onClose(tab.slug);
               }}
               className={cn(
-                "my-auto mr-1.5 flex h-5 w-5 flex-none items-center justify-center rounded-sm text-[color:var(--color-text-tertiary)] transition-colors hover:bg-[color:var(--color-overlay-3)] hover:text-[color:var(--color-text-primary)]",
+                "my-auto mr-1.5 flex-none hover:bg-[color:var(--color-overlay-3)] hover:text-[color:var(--color-text-primary)]",
                 active
                   ? "opacity-100"
                   : "opacity-0 group-hover:opacity-100 focus-visible:opacity-100",
               )}
             >
               <X size={14} aria-hidden />
-            </button>
+            </IconButton>
             {active ? (
               <span
                 aria-hidden

@@ -1,6 +1,7 @@
 "use client";
 
 import { practiceStepIndex, PRACTICE_STEP_ORDER, type PracticeStep } from "../lib/studio-practice-guide";
+import { controlClass } from "@/shared/ui";
 
 /**
  * 실습 안내 띠 — 나침 무대 **위에 얹는 한 줄**이다.
@@ -107,7 +108,11 @@ export function StudioPracticeRail({
         type="button"
         data-testid="studio-practice-quit"
         onClick={onQuit}
-        className="flex-none touch-hit-expand rounded-chip px-2 py-1 text-label text-[color:var(--color-text-tertiary)] transition-colors hover:bg-[color:var(--color-overlay-1)] hover:text-[color:var(--color-text-secondary)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--color-indigo-a46)]"
+        className={controlClass({
+          shape: "link",
+          className:
+            "flex-none px-2 hover:bg-[color:var(--color-overlay-1)] hover:text-[color:var(--color-text-secondary)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--color-indigo-a46)]",
+        })}
       >
         {labels.quit}
       </button>

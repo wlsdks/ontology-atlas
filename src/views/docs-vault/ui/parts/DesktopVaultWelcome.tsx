@@ -3,7 +3,7 @@ import { useTranslations } from "next-intl";
 import type { LocalFsHandleRecord } from "@/entities/local-fs-handle";
 import { AGENT_GRAPH_DB_RUNTIME_GATE_CHECK_COUNT } from "@/shared/lib/ontology-tree";
 import { useCopyFeedback } from "@/shared/lib/use-copy-feedback";
-import { StaggeredFadeIn } from "@/shared/ui";
+import { Chip, StaggeredFadeIn } from "@/shared/ui";
 import { DOGFOOD_VAULT_PATH } from "../../lib/dogfood-vault-path";
 
 const DOGFOOD_VERIFICATION_LOOP = [
@@ -113,24 +113,24 @@ export function DesktopVaultWelcome({
                 <code className="min-w-0 flex-1 truncate rounded-chip border border-[color:var(--color-border-soft)] bg-[color:var(--color-overlay-1)] px-2.5 py-1.5 font-mono text-label text-[color:var(--color-text-secondary)]">
                   {DOGFOOD_VAULT_PATH}
                 </code>
-                <button
-                  type="button"
+                <Chip
+                  tone="accent"
                   onClick={() => void copyDogfoodPath(DOGFOOD_VAULT_PATH)}
                   aria-label={dogfoodPathCopyAriaLabel}
-                  className="inline-flex min-h-8 shrink-0 items-center justify-center gap-1.5 rounded-chip border border-[color:var(--color-indigo-line-a22)] bg-[color:var(--color-indigo-line-a06)] px-2.5 py-1.5 font-mono text-caption text-[color:var(--color-indigo-accent)] transition-colors hover:border-[color:var(--color-indigo-line-a42)] hover:bg-[color:var(--color-indigo-line-a13)]"
+                  className="shrink-0 justify-center font-mono hover:border-[color:var(--color-indigo-line-a42)] hover:bg-[color:var(--color-indigo-line-a13)]"
                 >
                   {dogfoodPathCopied ? <Check size={12} aria-hidden /> : <Clipboard size={12} aria-hidden />}
                   {t("desktopWelcome.copyDogfoodPath")}
-                </button>
-                <button
-                  type="button"
+                </Chip>
+                <Chip
+                  tone="secondary"
                   onClick={() => void copyDogfoodLoop(DOGFOOD_VERIFICATION_LOOP)}
                   aria-label={dogfoodLoopCopyAriaLabel}
-                  className="inline-flex min-h-8 shrink-0 items-center justify-center gap-1.5 rounded-chip border border-[color:var(--color-border-soft)] bg-[color:var(--color-overlay-1)] px-2.5 py-1.5 font-mono text-caption text-[color:var(--color-text-secondary)] transition-colors hover:border-[color:var(--color-indigo-a32)] hover:text-[color:var(--color-text-primary)]"
+                  className="shrink-0 justify-center font-mono hover:border-[color:var(--color-indigo-a32)] hover:text-[color:var(--color-text-primary)]"
                 >
                   {dogfoodLoopCopied ? <Check size={12} aria-hidden /> : <Terminal size={12} aria-hidden />}
                   {t("desktopWelcome.copyDogfoodLoop")}
-                </button>
+                </Chip>
               </div>
             ) : null}
           </section>

@@ -5,6 +5,7 @@ import { motion, useReducedMotion } from "framer-motion";
 import { FileText, Sparkles } from "lucide-react";
 import { OVERLAY_SPRING, OVERLAY_SPRING_REDUCED, SCRIM_FADE, SCRIM_FADE_REDUCED } from "@/shared/motion";
 import type { PracticeCleanupPlan } from "../lib/studio-practice-guide";
+import { controlClass } from "@/shared/ui";
 
 /**
  * 실습 마무리 — **"이거 지울까요?"** 를 묻는 자리.
@@ -236,7 +237,12 @@ export function StudioPracticeCleanup({
                   type="button"
                   data-testid="studio-practice-agent"
                   onClick={onAgentAction}
-                  className="rounded-chip font-medium text-[color:var(--color-indigo-text-soft)] underline underline-offset-2 transition-colors hover:text-[color:var(--color-text-primary)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--color-indigo-a46)]"
+                  className={controlClass({
+            shape: "link",
+            tone: "accent",
+            className:
+              "font-medium underline underline-offset-2 hover:text-[color:var(--color-text-primary)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--color-indigo-a46)]",
+          })}
                 >
                   {labels.agentAction}
                 </button>

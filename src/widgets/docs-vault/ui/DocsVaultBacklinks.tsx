@@ -9,6 +9,7 @@ import type {
 } from '@/entities/docs-vault';
 import { TopologyV2KindGlyph, isTopologyV2RenderableKind } from '@/shared/ui/topology-v2-kind-glyph';
 import { resolveLocaleDisplayName } from '@/shared/lib/locale-display-name';
+import { Chip, IconButton } from '@/shared/ui';
 
 interface Props {
   entries: VaultBacklinkEntry[];
@@ -52,11 +53,12 @@ export function DocsVaultBacklinks({
           const kind = doc.frontmatter?.kind;
           const kindStr = typeof kind === 'string' ? kind : '';
           return (
-            <button
+            <Chip
               key={entry.fromSlug}
-              type="button"
+              size="lg"
+              tone="secondary"
               onClick={() => onNavigate(doc.slug)}
-              className="inline-flex flex-none items-center gap-1.5 rounded-chip border border-[color:var(--color-border-soft)] bg-[color:var(--color-overlay-1)] px-2.5 py-1 text-body text-[color:var(--color-text-secondary)] transition-colors hover:border-[color:var(--color-indigo-line-a40)] hover:text-[color:var(--color-text-primary)]"
+              className="flex-none hover:border-[color:var(--color-indigo-line-a40)] hover:text-[color:var(--color-text-primary)]"
             >
               {kindStr && isTopologyV2RenderableKind(kindStr) ? (
                 <TopologyV2KindGlyph kind={kindStr} size={11} />
@@ -66,7 +68,7 @@ export function DocsVaultBacklinks({
               <span className="max-w-[160px] truncate">
                 {resolveLocaleDisplayName(doc.frontmatter, locale, doc.title)}
               </span>
-            </button>
+            </Chip>
           );
         })}
       </div>
@@ -109,15 +111,16 @@ function BacklinkItem({
   return (
     <li className="rounded-sm border border-transparent transition-colors hover:border-[color:var(--color-overlay-2)]">
       <div className="flex items-stretch">
-        <button
-          type="button"
+        <IconButton
+          label={open ? t('collapse') : t('expand')}
+          size="sm"
+          tone="muted"
           onClick={() => setOpen((v) => !v)}
           aria-expanded={open}
-          aria-label={open ? t('collapse') : t('expand')}
-          className="flex w-5 flex-none items-center justify-center text-[color:var(--color-text-quaternary)] transition-colors hover:text-[color:var(--color-text-secondary)]"
+          className="hover:text-[color:var(--color-text-secondary)]"
         >
           {open ? <ChevronDown size={11} /> : <ChevronRight size={11} />}
-        </button>
+        </IconButton>
         <button
           type="button"
           onClick={() => onNavigate(doc.slug)}

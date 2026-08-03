@@ -18,6 +18,7 @@ import {
   type DocsTreeSort,
 } from '../lib/tree-order';
 import { resolveLocaleDisplayName } from '@/shared/lib/locale-display-name';
+import { RowButton } from '@/shared/ui';
 
 interface Props {
   tree: VaultTreeNode;
@@ -147,15 +148,11 @@ function TreeNode({
     if (!matchesQuery(node, query)) return null;
     const active = selectedSlug === node.slug;
     return (
-      <button
-        type="button"
+      <RowButton
+        active={active}
         onClick={() => onSelect(node.slug!)}
         aria-current={active ? 'page' : undefined}
-        className={`group relative flex w-full items-center gap-2 rounded-sm px-2 py-1 text-left text-body transition-[background-color,color,transform] motion-safe:hover:-translate-y-px motion-safe:active:translate-y-0 motion-safe:active:scale-[0.99] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--color-indigo-a50)] focus-visible:ring-inset ${
-          active
-            ? 'bg-[color:var(--color-indigo-a12)] text-[color:var(--color-text-primary)]'
-            : 'text-[color:var(--color-text-tertiary)] hover:bg-[color:var(--color-overlay-1)] hover:text-[color:var(--color-text-primary)]'
-        }`}
+        className="group relative transition-[background-color,color,transform] motion-safe:hover:-translate-y-px motion-safe:active:translate-y-0 motion-safe:active:scale-[0.99] hover:bg-[color:var(--color-overlay-1)] hover:text-[color:var(--color-text-primary)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--color-indigo-a50)] focus-visible:ring-inset"
         style={{ paddingLeft: `${16 + depth * 12}px` }}
       >
         {active ? (
@@ -175,7 +172,7 @@ function TreeNode({
             node.title ?? node.name,
           )}
         </span>
-      </button>
+      </RowButton>
     );
   }
 
@@ -183,11 +180,11 @@ function TreeNode({
   const docCount = countDocs(node);
   return (
     <div>
-      <button
-        type="button"
+      <RowButton
+        tone="muted"
         onClick={() => setOpen((v) => !v)}
         aria-expanded={open}
-        className="flex w-full items-center gap-1.5 rounded-sm px-2 py-1 text-left text-body font-medium text-[color:var(--color-text-quaternary)] transition-[background-color,color,transform] motion-safe:hover:-translate-y-px motion-safe:active:translate-y-0 motion-safe:active:scale-[0.99] hover:bg-[color:var(--color-overlay-1)] hover:text-[color:var(--color-text-secondary)]"
+        className="font-medium transition-[background-color,color,transform] motion-safe:hover:-translate-y-px motion-safe:active:translate-y-0 motion-safe:active:scale-[0.99] hover:bg-[color:var(--color-overlay-1)] hover:text-[color:var(--color-text-secondary)]"
         style={{ paddingLeft: `${16 + depth * 12}px` }}
       >
         {open ? (
@@ -205,7 +202,7 @@ function TreeNode({
             {docCount}
           </span>
         ) : null}
-      </button>
+      </RowButton>
       {(open || activeTagSlugs || query) && node.children ? (
         <div>
           {sortDocsTreeNodes(node.children, order).map((child) => (

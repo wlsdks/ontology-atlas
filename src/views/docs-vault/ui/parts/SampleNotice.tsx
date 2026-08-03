@@ -1,6 +1,7 @@
 import { Download, FolderOpen } from "lucide-react";
 import { useTranslations } from "next-intl";
 import { Link } from "@/i18n/navigation";
+import { controlClass } from "@/shared/ui";
 
 export interface SampleNoticeProps {
   /** P1b — 게이트는 런타임이 아니라 능력: FSA 지원이면 웹에서도 폴더 열기. */
@@ -38,7 +39,13 @@ export function SampleNotice({ canOpenLocalVault, onOpenFolder }: SampleNoticePr
         <button
           type="button"
           onClick={onOpenFolder}
-          className="inline-flex flex-none items-center gap-1.5 rounded-chip border border-[color:var(--color-indigo-line-a42)] bg-[color:var(--color-indigo-a18)] px-2.5 py-1.5 text-body font-medium text-[color:var(--color-text-primary)] transition-colors hover:border-[color:var(--color-indigo-line-a54)] hover:bg-[color:var(--color-indigo-a24)]"
+          className={controlClass({
+            shape: "chip",
+            size: "lg",
+            active: true,
+            className:
+              "flex-none font-medium hover:border-[color:var(--color-indigo-line-a54)] hover:bg-[color:var(--color-indigo-a24)]",
+          })}
         >
           <FolderOpen size={12} aria-hidden />
           {t("sampleNotice.openFolderCta")}

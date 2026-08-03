@@ -7,7 +7,7 @@ import { Bot, Check, Clipboard, GitCompareArrows, HardDrive, Network, X } from "
 import { MOTION } from "@/shared/motion";
 import { Link } from "@/i18n/navigation";
 import { useCopyFeedback } from "@/shared/lib/use-copy-feedback";
-import { useToast } from "@/shared/ui";
+import { IconButton, controlClass, useToast } from "@/shared/ui";
 import {
   AGENT_GRAPH_DB_RUNTIME_GATE_CHECK_COUNT,
   AGENT_GRAPH_DB_RUNTIME_GATE_COMMAND,
@@ -255,15 +255,14 @@ export function DocsVaultAuditModal({
                   {t("sourceContract.modalSubtitle")}
                 </p>
               </div>
-              <button
-                type="button"
+              <IconButton
+                label={t("header.contractToggleHide")}
                 onClick={onClose}
                 title={t("sourceContract.closeTitle")}
-                aria-label={t("header.contractToggleHide")}
-                className="inline-flex h-7 w-7 flex-none items-center justify-center rounded-[var(--chrome-radius-inner)] border border-[color:var(--color-border-soft)] text-[color:var(--color-text-tertiary)] transition-colors hover:border-[color:var(--color-indigo-line-a32)] hover:text-[color:var(--color-text-primary)]"
+                className="flex-none hover:text-[color:var(--color-text-primary)]"
               >
                 <X size={14} aria-hidden />
-              </button>
+              </IconButton>
             </div>
 
             {cells.map((cell) => {
@@ -316,7 +315,12 @@ export function DocsVaultAuditModal({
                         type="button"
                         aria-label={cell.copyAriaLabel}
                         onClick={() => void handleCopyGate(cell.copyText, cell.copySuccess)}
-                        className="inline-flex h-6 min-w-0 items-center gap-1 rounded-sm border border-[color:var(--color-indigo-line-a20)] bg-[color:var(--color-indigo-a06)] px-1.5 font-mono text-caption uppercase tracking-[0.06em] text-[color:var(--color-text-tertiary)] transition-colors hover:border-[color:var(--color-indigo-line-a40)] hover:text-[color:var(--color-text-primary)]"
+                        className={controlClass({
+                          shape: "chip",
+                          size: "sm",
+                          className:
+                            "min-w-0 gap-1 font-mono uppercase tracking-[0.06em] hover:border-[color:var(--color-indigo-line-a40)] hover:text-[color:var(--color-text-primary)]",
+                        })}
                       >
                         {copiedGate ? <Check size={10} aria-hidden /> : <Clipboard size={10} aria-hidden />}
                         <span className="truncate">{cell.copyCta}</span>
@@ -389,7 +393,12 @@ export function DocsVaultAuditModal({
                       type="button"
                       data-testid="docs-audit-skill-parity-copy"
                       onClick={() => onCopySkillParityHandoff(disagreeing)}
-                      className="inline-flex h-6 min-w-0 items-center gap-1 rounded-sm border border-[color:var(--color-indigo-line-a20)] bg-[color:var(--color-indigo-a06)] px-1.5 font-mono text-caption uppercase tracking-[0.06em] text-[color:var(--color-text-tertiary)] transition-colors hover:border-[color:var(--color-indigo-line-a40)] hover:text-[color:var(--color-text-primary)]"
+                      className={controlClass({
+                          shape: "chip",
+                          size: "sm",
+                          className:
+                            "min-w-0 gap-1 font-mono uppercase tracking-[0.06em] hover:border-[color:var(--color-indigo-line-a40)] hover:text-[color:var(--color-text-primary)]",
+                        })}
                     >
                       <Clipboard size={10} aria-hidden />
                       <span className="truncate">{tSkillParity("copyHandoff")}</span>

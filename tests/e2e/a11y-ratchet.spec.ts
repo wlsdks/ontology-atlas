@@ -53,14 +53,18 @@ const ROUTES = [
  * |---|---|---|
  * | `color-contrast` | 12 | 인디고 면 위 흰 글자 4.42:1 · `text-quaternary` 4.31:1 등. `scripts/measure-contrast.mjs` 가 독립적으로 같은 결함군을 지목한다 |
  * | `aria-required-children` | 1 | `role="tablist"` 가 `role="tab"` 자식을 안 갖는다 |
- * | `target-size` | 1 | WCAG 2.2 §2.5.8 — 24px 미만이고 여백도 부족 |
+ * | ~~`target-size`~~ | ~~1~~ → **0** | WCAG 2.2 §2.5.8 — 24px 미만이고 여백도 부족.
+ *   2026-08-03 문서함/서랍 컨트롤 정규화로 사라졌다: `p-1`/`p-0.5` 로 크기를
+ *   내용에 맡기던 아이콘 컨트롤들이 `IconButton`(24/28/32 고정)으로 넘어가면서
+ *   가장 작은 것이 24px 바닥을 갖게 됐다. **값 층이 바닥을 소유하면 자리마다
+ *   빠뜨릴 수 없다** — 이 항목이 그 증거다 |
  *
  * **이 숫자는 내려가기만 한다.**
  */
 const BASELINE: Readonly<Record<string, number>> = {
   "color-contrast": 12,
   "aria-required-children": 1,
-  "target-size": 1,
+  "target-size": 0,
 };
 
 test("접근성 래칫 — 새 룰 위반 0, 기존 개수는 늘지 않는다", async ({ page }) => {

@@ -16,7 +16,7 @@ import {
   X,
 } from 'lucide-react';
 import { buildDocsVaultHref, type VaultDoc } from '@/entities/docs-vault';
-import { LiveAnnouncer } from '@/shared/ui';
+import { IconButton, LiveAnnouncer, controlClass } from '@/shared/ui';
 import { searchDocs, type DocsSearchMatch } from '../lib/search';
 import type { DocsBodyIndex } from '../lib/body-index';
 import { githubBlobUrl } from '../lib/resolve-doc-link';
@@ -531,14 +531,15 @@ export function DocsVaultUnifiedPalette({
             }
             className="min-w-0 flex-1 bg-transparent text-body text-[color:var(--color-text-primary)] placeholder:text-[color:var(--color-text-quaternary)] focus:outline-none"
           />
-          <button
-            type="button"
+          <IconButton
+            label={t('closeAriaLabel')}
+            size="sm"
+            tone="muted"
             onClick={onClose}
-            aria-label={t('closeAriaLabel')}
-            className="flex h-6 w-6 items-center justify-center rounded-sm text-[color:var(--color-text-quaternary)] transition-colors hover:bg-[color:var(--color-overlay-2)] hover:text-[color:var(--color-text-primary)]"
+            className="hover:bg-[color:var(--color-overlay-2)] hover:text-[color:var(--color-text-primary)]"
           >
             <X size={12} />
-          </button>
+          </IconButton>
         </div>
         <ul
           ref={listRef}
@@ -666,11 +667,14 @@ function ResultRow({
   onClose: () => void;
   getDocHref: (slug: string) => string;
 }) {
-  const base = `group relative flex w-full items-center gap-2 px-3 py-1.5 text-left transition-colors ${
-    active
-      ? 'bg-[color:var(--color-indigo-a14)]'
-      : 'hover:bg-[color:var(--color-overlay-1)]'
-  }`;
+  // 같은 행이 문서면 <Link>, 아니면 <button> 으로 난다 — 둘 다 같은 값 층을
+  // 통과해야 팔레트 안에서 행 높이가 갈리지 않는다.
+  const base = controlClass({
+    shape: 'row',
+    active,
+    className:
+      'group relative hover:bg-[color:var(--color-overlay-1)]',
+  });
   const inner = (
     <>
       {active ? (
@@ -727,7 +731,12 @@ function ResultRow({
         row.onRun();
         onClose();
       }}
-      className={base}
+      className={controlClass({
+        shape: 'row',
+        active,
+        className:
+          'group relative hover:bg-[color:var(--color-overlay-1)]',
+      })}
     >
       {inner}
     </button>

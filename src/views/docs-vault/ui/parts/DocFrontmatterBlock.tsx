@@ -14,7 +14,13 @@ import {
   type VaultIssueCode,
 } from "@/shared/lib/validate-vault-document";
 import { mapVaultIssueCodeToPlainMessage } from "@/shared/lib/vault-issue-plain-message";
-import { CompactCopyButton, LastEditSubjectRow, MtimeConflictBadge } from "@/shared/ui";
+import {
+  CompactCopyButton,
+  IconButton,
+  LastEditSubjectRow,
+  MtimeConflictBadge,
+  controlClass,
+} from "@/shared/ui";
 import { hasDocMtimeConflict, resolveDocLastEditSubject } from "../../lib/resolve-doc-edit-subject";
 
 /**
@@ -431,7 +437,11 @@ export function DocFrontmatterBlock({
                               type="button"
                               onClick={() => onNavigate!(target)}
                               data-testid={`doc-frontmatter-ref-${tok}`}
-                              className="rounded-sm text-[color:var(--color-indigo-pale-a90)] underline decoration-[color:var(--color-indigo-line-a35)] underline-offset-2 transition-colors hover:text-[color:var(--color-text-primary)] hover:decoration-[color:var(--color-indigo-line-a45)] focus-visible:outline focus-visible:outline-1 focus-visible:outline-[color:var(--color-indigo-line-a45)]"
+                              // 인라인 참조/문장 속 컨트롤이다 — `link` 은 이제 `min-h-11`(44px, WCAG 2.5.8)을 싣는데,
+                              // 글줄 안에서는 그 높이가 줄 상자를 통째로 밀어 올린다(실측 21.3 → 44px).
+                              // 시각 크기와 히트 영역이 다른 축이라는 상류 판단은 옳지만, 그 해법이
+                              // 문장 속 컨트롤에는 안 맞는다 — 값 층에 «인라인» 축이 하나 더 필요하다.
+                              className="rounded-chip text-[color:var(--color-indigo-pale-a90)] underline decoration-[color:var(--color-indigo-line-a35)] underline-offset-2 transition-colors hover:text-[color:var(--color-text-primary)] hover:decoration-[color:var(--color-indigo-line-a45)] focus-visible:outline focus-visible:outline-1 focus-visible:outline-[color:var(--color-indigo-line-a45)]"
                             >
                               {tok}
                             </button>
@@ -536,7 +546,11 @@ export function DocFrontmatterBlock({
                   type="button"
                   onClick={() => void handleSave()}
                   disabled={saving}
-                  className="rounded-sm border border-[color:var(--color-indigo-a42)] bg-[color:var(--color-indigo-a10)] px-2.5 py-1 text-label text-[color:var(--color-text-primary)] transition-colors hover:bg-[color:var(--color-indigo-a16)] disabled:opacity-60"
+                  className={controlClass({
+                    shape: "chip",
+                    tone: "accent",
+                    className: "hover:bg-[color:var(--color-indigo-a16)]",
+                  })}
                 >
                   {saving ? t("editSaving") : t("editSave")}
                 </button>
@@ -544,7 +558,11 @@ export function DocFrontmatterBlock({
                   type="button"
                   onClick={() => setEditing(false)}
                   disabled={saving}
-                  className="text-label text-[color:var(--color-text-quaternary)] transition-colors hover:text-[color:var(--color-text-secondary)]"
+                  className={controlClass({
+                    shape: "link",
+                    tone: "muted",
+                    className: "hover:text-[color:var(--color-text-secondary)]",
+                  })}
                 >
                   {t("editCancel")}
                 </button>
@@ -554,7 +572,11 @@ export function DocFrontmatterBlock({
             <button
               type="button"
               onClick={startEditing}
-              className="mt-2 inline-flex items-center gap-1.5 font-sans text-label text-[color:var(--color-text-tertiary)] transition-colors hover:text-[color:var(--color-text-primary)]"
+              className={controlClass({
+                shape: "link",
+                className:
+                  "mt-2 font-sans hover:text-[color:var(--color-text-primary)]",
+              })}
             >
               <Pencil size={11} aria-hidden />
               {t("editAction")}
@@ -615,7 +637,11 @@ export function DocFrontmatterBlock({
             aria-expanded={exampleOpen}
             aria-controls="doc-frontmatter-example"
             data-testid="doc-frontmatter-example-toggle"
-            className="flex items-center gap-1 text-label text-[color:var(--color-text-quaternary)] transition-colors hover:text-[color:var(--color-text-secondary)]"
+            className={controlClass({
+              shape: "link",
+              tone: "muted",
+              className: "hover:text-[color:var(--color-text-secondary)]",
+            })}
           >
             <ChevronRight
               size={11}
@@ -676,16 +702,17 @@ function CodeLocationRow({
       >
         {truncateMiddlePath(path)}
       </span>
-      <button
-        type="button"
+      <IconButton
+        label={copyAriaLabel}
+        size="sm"
+        tone="muted"
         onClick={() => void copy(path)}
-        aria-label={copyAriaLabel}
         title={state === "copied" ? copiedLabel : copyLabel}
         data-testid="doc-frontmatter-code-location-copy"
-        className="shrink-0 rounded-sm p-1 text-[color:var(--color-text-quaternary)] transition-colors hover:bg-[color:var(--color-overlay-1)] hover:text-[color:var(--color-text-secondary)]"
+        className="hover:bg-[color:var(--color-overlay-1)] hover:text-[color:var(--color-text-secondary)]"
       >
         {state === "copied" ? <Check size={11} aria-hidden /> : <Clipboard size={11} aria-hidden />}
-      </button>
+      </IconButton>
     </li>
   );
 }

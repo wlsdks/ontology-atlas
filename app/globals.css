@@ -136,7 +136,6 @@
   --color-indigo-line-a90: rgba(139, 151, 255, 0.9);
 
   --color-danger-a12: rgba(229, 72, 77, 0.12);
-  --color-danger-a42: rgba(229, 72, 77, 0.42);
   --color-danger-text-strong: rgba(236, 116, 116, 0.95);
 
   /* 저장 연결 상태(getBuilderSourceStatus) amber — 위 amber-muted(197,122,43)
@@ -1755,7 +1754,6 @@
     --color-indigo-line-a54: rgba(139, 151, 255, 0.54);
     --color-indigo-line-a90: rgba(139, 151, 255, 0.9);
     --color-danger-a12: rgba(229, 72, 77, 0.12);
-    --color-danger-a42: rgba(229, 72, 77, 0.42);
     --color-danger-text-strong: rgba(236, 116, 116, 0.95);
     --color-amber-source-a07: rgba(244, 183, 49, 0.07);
     --color-amber-source-a30: rgba(244, 183, 49, 0.3);

@@ -54,8 +54,9 @@ const ROOTS = ['src', 'app'];
  * | 417 | 2026-08-03 최초 실측 |
  * | **406** | 설정 시트(`src/widgets/app-settings-menu/**`) 11개 — 칩 6 · 아이콘 2 · 행 1 · 링크형 1 (+ 그중 하나는 눌림 상태를 `active` 로 넘김) |
  * | **389** | 지도 두 위젯(`topology-map-v2` · `topology-index-panel`) 31개 중 17개 — 행 8 · 링크형 5 · 아이콘 3 · 카드 2 · 칩 1. 남긴 14개는 여섯 분류에 **없는** 모양(세로 액션 타일 5 · 세그먼트 탭 3 · 창 선택 칩 · 세로 엣지 탭 · 캔버스 앵커 원형 버튼 · 트리 셰브론)이거나, 램프의 최소 인셋(8px)이 이 패널의 4px 인셋과 어긋나 헤더가 자기 행들과 어긋나는 자리(2)다 |
+ * | **303** | 문서함 · 빠른 서랍 · 공방(`views/docs-vault` · `widgets/docs-vault` · `widgets/docs-quick-drawer` · `views/ontology-studio`) 121개 중 86개 — 행 27 · 아이콘 24 · 칩 21 · 링크형 13 · pill 4 · 카드 2. 남긴 35개는 넷으로 갈린다: ① **크롬 토큰 계약**(`--chrome-tile-size` · `--docs-header-tile-size` · `--overlay-close-size`)을 지는 자리 4 — 램프가 아니라 크롬이 규격이다 ② **나침 무대의 절대배치 기하**(소켓 · 레인 접기 · 더 잇기 · 고정 높이 30/32 툴바) 15 — 이 표면의 문법이 따로 있고 `studio-navigation` 스펙이 그 치수를 계약으로 잡는다 ③ **한 벌로 읽혀야 하는 세트**(첫 실행 선택 행 4 + 최근 볼트 grid 행 1, 다중행 `items-start` 라 `row`(단행 `items-center`)에 안 맞는다) 11 ④ **문장·바 속 인라인 컨트롤** 5 — `link` 이 `min-h-11`(WCAG 2.5.8)을 실으면서 글줄 안에서는 줄 상자를 44px 로 밀어 올린다(실측 21.3 → 44). 시각 크기와 히트 영역이 다른 축이라는 상류 판단은 옳고, 다만 그 해법이 «문장 속» 이라는 세 번째 축을 아직 안 본다 |
  */
-const BASELINE_HAND_WRITTEN_CONTROLS = 389;
+const BASELINE_HAND_WRITTEN_CONTROLS = 303;
 
 function walk(dir: string, out: string[] = []): string[] {
   for (const name of readdirSync(dir)) {

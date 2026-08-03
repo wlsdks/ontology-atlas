@@ -50,7 +50,15 @@ import {
   getTauriVaultRootPath,
   isTauriVaultRuntime,
 } from '@/shared/lib/tauri-vault-fs';
-import { RouteLoadingFallback, SimilarNodeWarning, Tooltip, useToast } from '@/shared/ui';
+import {
+  Chip,
+  IconButton,
+  RouteLoadingFallback,
+  SimilarNodeWarning,
+  Tooltip,
+  controlClass,
+  useToast,
+} from '@/shared/ui';
 import {
   findSimilarNodeByTitle,
   type SimilarNodeMatch,
@@ -1848,22 +1856,29 @@ function DocsVaultContent() {
             <Link
               href={workspaceHref}
               aria-label={t('header.backToReviewAriaLabel')}
-              className="inline-flex h-8 flex-none items-center justify-center gap-1.5 rounded-chip border border-[color:var(--color-divider)] px-2 text-body text-[color:var(--color-text-tertiary)] transition-colors hover:border-[color:var(--color-indigo-line-a35)] hover:text-[color:var(--color-text-primary)]"
+              // 이 Link 는 바로 아래 「트리 열기」 칩과 나란히 선다. `<button>` 이
+              // 아니라 래칫에는 안 잡히지만, 한쪽만 정규화하면 둘의 높이가 갈린다.
+              className={controlClass({
+                shape: 'chip',
+                size: 'lg',
+                className:
+                  'flex-none justify-center hover:border-[color:var(--color-indigo-line-a35)] hover:text-[color:var(--color-text-primary)]',
+              })}
             >
               <ArrowLeft size={14} aria-hidden />
               <span className="hidden sm:inline">{t('header.reviewBack')}</span>
             </Link>
           ) : null}
-          <button
-            type="button"
+          <Chip
+            size="lg"
             onClick={() => setSourceTreeOpen(true)}
-            className="inline-flex h-8 flex-none items-center justify-center gap-1.5 rounded-chip border border-[color:var(--color-divider)] px-2 text-body text-[color:var(--color-text-tertiary)] transition-colors hover:border-[color:var(--color-indigo-line-a35)] hover:text-[color:var(--color-text-primary)] lg:hidden"
+            className="flex-none justify-center hover:border-[color:var(--color-indigo-line-a35)] hover:text-[color:var(--color-text-primary)] lg:hidden"
             aria-label={t('header.openTreeAriaLabel')}
             title={t('header.openTreeTitle')}
           >
             <Menu size={14} aria-hidden />
             <span className="hidden sm:inline">{t('header.openTreeTitle')}</span>
-          </button>
+          </Chip>
           <DocsHeaderTile
             icon={<PanelLeft size={16} aria-hidden />}
             title={docListCollapsed ? t('header.docListExpand') : t('header.docListCollapse')}
@@ -1939,20 +1954,16 @@ function DocsVaultContent() {
             role="radiogroup"
             aria-label={t('header.sourceAriaLabel')}
           >
-            <button
-              type="button"
+            <Chip
               role="radio"
               aria-checked={source === 'server'}
+              active={source === 'server'}
               onClick={() => handleSourceChange('server')}
-              className={`inline-flex min-h-8 items-center gap-1 rounded-chip px-3 transition-colors ${
-                source === 'server'
-                  ? 'bg-[color:var(--color-indigo-a16)] text-[color:var(--color-text-primary)]'
-                  : 'text-[color:var(--color-text-tertiary)] hover:text-[color:var(--color-text-primary)]'
-              }`}
+              className="hover:text-[color:var(--color-text-primary)]"
             >
               <Package size={11} aria-hidden />
               {t('advanced.sourceServer')}
-            </button>
+            </Chip>
             <Tooltip
               content={
                 localVault.status === 'unsupported'
@@ -1961,10 +1972,10 @@ function DocsVaultContent() {
               }
               withProvider={false}
             >
-              <button
-                type="button"
+              <Chip
                 role="radio"
                 aria-checked={source === 'local'}
+                active={source === 'local'}
                 disabled={localSourceDisabled}
                 aria-describedby={
                   localSourceDisabled
@@ -1972,15 +1983,11 @@ function DocsVaultContent() {
                     : undefined
                 }
                 onClick={() => handleSourceChange('local')}
-                className={`inline-flex min-h-8 items-center gap-1 rounded-chip px-3 transition-colors disabled:cursor-not-allowed disabled:opacity-45 ${
-                  source === 'local'
-                    ? 'bg-[color:var(--color-indigo-a16)] text-[color:var(--color-text-primary)]'
-                    : 'text-[color:var(--color-text-tertiary)] hover:text-[color:var(--color-text-primary)]'
-                }`}
+                className="hover:text-[color:var(--color-text-primary)]"
               >
                 <HardDrive size={11} aria-hidden />
                 {t('advanced.sourceLocal')}
-              </button>
+              </Chip>
             </Tooltip>
             {/* unsupported 상태일 때 sr-only hint 노출 — 시각적으론 disabled
                 opacity 와 tooltip 만으로 신호. 스크린리더 사용자는 disabled
@@ -2071,7 +2078,11 @@ function DocsVaultContent() {
                 ? localVault.requestPermission()
                 : void openLocalVault()
             }
-            className="rounded-sm border border-[color:var(--color-danger-a32)] px-2 py-0.5 text-label transition-colors hover:bg-[color:var(--color-danger-a12)]"
+            className={controlClass({
+              shape: 'chip',
+              tone: 'danger',
+              className: 'hover:bg-[color:var(--color-danger-a12)]',
+            })}
           >
             {t('vaultStatus.openPicker')}
           </button>
@@ -2146,14 +2157,13 @@ function DocsVaultContent() {
                 <span className="font-mono text-caption uppercase tracking-[0.14em] text-[color:var(--color-text-quaternary)]">
                   {t('mobileDrawer.title')}
                 </span>
-                <button
-                  type="button"
+                <IconButton
+                  label={t('mobileDrawer.closeAriaLabel')}
                   onClick={() => setSourceTreeOpen(false)}
-                  className="flex h-7 w-7 items-center justify-center rounded-sm text-[color:var(--color-text-tertiary)] transition-colors hover:bg-[color:var(--color-overlay-2)] hover:text-[color:var(--color-text-primary)]"
-                  aria-label={t('mobileDrawer.closeAriaLabel')}
+                  className="hover:bg-[color:var(--color-overlay-2)] hover:text-[color:var(--color-text-primary)]"
                 >
                   <X size={14} aria-hidden />
-                </button>
+                </IconButton>
               </div>
               <div className="flex flex-1 flex-col overflow-auto">
                 {sidebarBody}
@@ -2243,32 +2253,26 @@ function DocsVaultContent() {
                     aria-label={`${t('editorHeader.previewTab')} / ${t('editorHeader.editTab')}`}
                     className="inline-flex flex-none items-stretch gap-0.5 rounded-chip border border-[color:var(--color-border-soft)] bg-[color:var(--color-canvas)] p-0.5 shadow-[inset_0_1px_2px_var(--color-shadow-a35)]"
                   >
-                    <button
-                      type="button"
+                    <Chip
                       role="tab"
                       aria-selected={!editing}
+                      active={!editing}
+                      tone={!editing ? 'strong' : 'muted'}
                       onClick={() => setEditing(false)}
-                      className={`rounded-sm px-2.5 py-1 font-mono text-label transition-colors ${
-                        !editing
-                          ? 'border border-[color:var(--color-indigo-a55)] bg-[color:var(--color-indigo-a14)] text-[color:var(--color-text-primary)]'
-                          : 'border border-transparent text-[color:var(--color-text-quaternary)] hover:text-[color:var(--color-text-secondary)]'
-                      }`}
+                      className="font-mono hover:text-[color:var(--color-text-secondary)]"
                     >
                       {t('editorHeader.previewTab')}
-                    </button>
-                    <button
-                      type="button"
+                    </Chip>
+                    <Chip
                       role="tab"
                       aria-selected={editing}
+                      active={editing}
+                      tone={editing ? 'strong' : 'muted'}
                       onClick={() => setEditing(true)}
-                      className={`rounded-sm px-2.5 py-1 font-mono text-label transition-colors ${
-                        editing
-                          ? 'border border-[color:var(--color-indigo-a55)] bg-[color:var(--color-indigo-a14)] text-[color:var(--color-text-primary)]'
-                          : 'border border-transparent text-[color:var(--color-text-quaternary)] hover:text-[color:var(--color-text-secondary)]'
-                      }`}
+                      className="font-mono hover:text-[color:var(--color-text-secondary)]"
                     >
                       {t('editorHeader.editTab')}
-                    </button>
+                    </Chip>
                   </div>
                 ) : null}
                 <span className="flex-none font-mono text-label text-[color:var(--color-text-quaternary)]">
