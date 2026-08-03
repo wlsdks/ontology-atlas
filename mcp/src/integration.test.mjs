@@ -591,7 +591,7 @@ await test("tools/list — 단일 도구 description 이 batch 짝을 cross-refe
     );
     assert.equal(analyzeRepo?.inputSchema?.properties?.ignore?.maxItems, 200);
     assert.equal(analyzeRepo?.outputSchema?.type, "object");
-    assert.deepEqual(analyzeRepo?.outputSchema?.required, ["rootPath", "framework", "domains", "capabilities", "elements", "meaningGate", "extractionContract", "semanticEvidence", "proposalValidation", "suggestedRelations", "skipped"]);
+    assert.deepEqual(analyzeRepo?.outputSchema?.required, ["rootPath", "framework", "domains", "capabilities", "elements", "meaningGate", "extractionContract", "semanticEvidence", "configurationEvidence", "proposalValidation", "suggestedRelations", "skipped"]);
     assert.equal(analyzeRepo?.outputSchema?.additionalProperties, false);
     assert.deepEqual(analyzeRepo?.outputSchema?.properties?.project?.required, ["slug", "title"]);
     assert.equal(analyzeRepo?.outputSchema?.properties?.project?.additionalProperties, false);
@@ -609,6 +609,14 @@ await test("tools/list — 단일 도구 description 이 batch 짝을 cross-refe
     assert.deepEqual(competencyAnswerSchema?.properties?.witnesses?.required, ["concepts", "relations", "evidence", "paths"]);
     assert.deepEqual(analyzeRepo?.outputSchema?.properties?.proposalValidation?.required, ["status", "canWrite", "summary", "gates", "findings", "nextStep"]);
     assert.equal(analyzeRepo?.outputSchema?.properties?.proposalValidation?.additionalProperties, false);
+    const rustConfigurationSchema = analyzeRepo?.outputSchema?.properties?.configurationEvidence;
+    assert.deepEqual(rustConfigurationSchema?.properties?.contract?.enum, ["rustFeatureConfigurationEvidence:v1"]);
+    assert.deepEqual(rustConfigurationSchema?.properties?.status?.enum, ["not_present", "unsupported", "observed", "limited"]);
+    assert.deepEqual(rustConfigurationSchema?.properties?.writePolicy?.properties?.writeAllowed?.enum, [false]);
+    assert.deepEqual(rustConfigurationSchema?.properties?.packages?.items?.properties?.features?.items?.properties?.references?.items?.properties?.meaning?.enum, ["conditional_inclusion", "conditional_attribute"]);
+    assert.deepEqual(rustConfigurationSchema?.properties?.packages?.items?.properties?.features?.items?.properties?.references?.items?.properties?.polarity?.enum, ["positive", "negative", "compound", "unknown"]);
+    assert.equal(rustConfigurationSchema?.properties?.coverage?.properties?.predicateEvaluation?.enum?.[0], false);
+    assert.equal(rustConfigurationSchema?.additionalProperties, false);
     assert.deepEqual(analyzeRepo?.outputSchema?.properties?.proposalValidation?.properties?.summary?.required, ["concepts", "relations", "findings", "errors", "warnings"]);
     assert.deepEqual(analyzeRepo?.outputSchema?.properties?.proposalValidation?.properties?.writePlan?.required, ["concepts", "relations", "competencyAnswers"]);
     assert.deepEqual(analyzeRepo?.outputSchema?.properties?.proposalValidation?.properties?.writePlan?.properties?.relations?.items?.required, ["from", "to", "type", "why"]);
@@ -632,11 +640,14 @@ await test("tools/list — 단일 도구 description 이 batch 짝을 cross-refe
     assert.equal(inferImports?.inputSchema?.properties?.ignore?.maxItems, 200);
     assert.deepEqual(inferImports?.inputSchema?.properties?.reviewMode?.enum, ["full", "next"]);
     assert.match(inferImports?.inputSchema?.properties?.afterReviewId?.description ?? "", /cursor\.nextAfterReviewId/);
-    assert.deepEqual(inferImports?.outputSchema?.required, ["rootPath", "filesScanned"]);
+    assert.deepEqual(inferImports?.outputSchema?.required, ["rootPath", "filesScanned", "coverage"]);
     assert.deepEqual(inferImports?.outputSchema?.oneOf?.[0]?.required, ["edges", "externalImports", "unresolved", "moduleEdges"]);
     assert.deepEqual(inferImports?.outputSchema?.oneOf?.[1]?.required, ["contract", "scanSummary", "reconciliationSummary", "reviewQueue", "nextReview"]);
     assert.equal(inferImports?.outputSchema?.additionalProperties, false);
     assert.equal(inferImports?.outputSchema?.properties?.filesScanned?.type, "integer");
+    assert.deepEqual(inferImports?.outputSchema?.properties?.coverage?.properties?.contract?.enum, ["importScanCoverage:v1"]);
+    assert.deepEqual(inferImports?.outputSchema?.properties?.coverage?.properties?.zeroEdgesMeaning?.enum, ["no_supported_static_import_edges_observed"]);
+    assert.equal(inferImports?.outputSchema?.properties?.coverage?.additionalProperties, false);
     assert.deepEqual(inferImports?.outputSchema?.properties?.edges?.items?.required, ["from", "to", "kind", "sourceRole", "importUsage"]);
     assert.equal(inferImports?.outputSchema?.properties?.edges?.items?.additionalProperties, false);
     assert.deepEqual(inferImports?.outputSchema?.properties?.edges?.items?.properties?.kind?.enum, IMPORT_EDGE_KIND_VALUES);
@@ -2318,6 +2329,74 @@ await test("infer_imports — import graph exposes structuredContent", async () 
     assert.equal(result.reconciliationSummary.unresolvedImports, 1);
     assert.match(result.reconciliationSummary.hint, /unresolved import/i);
     assert.doesNotMatch(result.reconciliationSummary.hint, /are in sync/i);
+  } finally {
+    rmSync(vaultRoot, { recursive: true, force: true });
+    rmSync(repoRoot, { recursive: true, force: true });
+  }
+});
+
+await test("Rust MCP evidence — analyze, infer, and index preserve configuration provenance and unsupported import coverage", async () => {
+  const vaultRoot = makeVault();
+  const repoRoot = mkdtempSync(join(tmpdir(), "ontology-atlas-rust-evidence-"));
+  try {
+    mkdirSync(join(repoRoot, "src"), { recursive: true });
+    writeFileSync(
+      join(repoRoot, "Cargo.toml"),
+      [
+        "[package]",
+        'name = "conditional-engine"',
+        "",
+        "[features]",
+        "portable = []",
+        "",
+      ].join("\n"),
+      "utf-8",
+    );
+    writeFileSync(
+      join(repoRoot, "src", "lib.rs"),
+      '#[cfg(feature = "portable")]\nmod portable;\nuse crate::portable::run;\n',
+      "utf-8",
+    );
+    writeFileSync(join(repoRoot, "src", "portable.rs"), "pub fn run() {}\n", "utf-8");
+
+    const { responses } = await rpc(vaultRoot, [
+      ...INIT_REQUESTS,
+      callTool(2, "analyze_repo_structure", { rootPath: repoRoot }),
+      callTool(3, "infer_imports", { rootPath: repoRoot }),
+      callTool(4, "index_project", { rootPath: repoRoot }),
+    ]);
+    const analyze = getCallParsed(responses, 2);
+    const imports = getCallParsed(responses, 3);
+    const index = getCallParsed(responses, 4);
+
+    assert.deepEqual(getCallStructured(responses, 2), analyze);
+    assert.equal(analyze.configurationEvidence.contract, "rustFeatureConfigurationEvidence:v1");
+    assert.equal(analyze.configurationEvidence.writePolicy.writeAllowed, false);
+    assert.equal(analyze.configurationEvidence.claimBoundary.semanticDependency, false);
+    assert.deepEqual(
+      analyze.configurationEvidence.packages[0].features[0].references[0],
+      {
+        path: "src/lib.rs",
+        line: 1,
+        form: "cfg",
+        meaning: "conditional_inclusion",
+        polarity: "positive",
+        predicate: 'feature = "portable"',
+        sourceRole: "production",
+      },
+    );
+
+    assert.deepEqual(getCallStructured(responses, 3), imports);
+    assert.equal(imports.filesScanned, 0);
+    assert.deepEqual(imports.edges, []);
+    assert.deepEqual(imports.coverage.detectedUnsupportedLanguages, ["rust"]);
+    assert.equal(imports.coverage.allDetectedLanguagesSupported, false);
+    assert.equal(imports.coverage.zeroEdgesMeaning, "no_supported_static_import_edges_observed");
+
+    assert.deepEqual(getCallStructured(responses, 4), index);
+    assert.equal(index.sideEffect, 0);
+    assert.equal(index.configurationEvidence.contract, "rustFeatureConfigurationEvidence:v1");
+    assert.deepEqual(index.imports.coverage, imports.coverage);
   } finally {
     rmSync(vaultRoot, { recursive: true, force: true });
     rmSync(repoRoot, { recursive: true, force: true });

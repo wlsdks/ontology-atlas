@@ -107,6 +107,73 @@ globals.css 실값으로 라이선스 안/밖을 계산(경계가 실재한다�
 것.
 
 **서명 (accountable)**: design-system 석 (소유자 서명 대기)
+## 2026-08-04 — Rust의 첫 근거는 의존 화살표가 아니라 feature 조건의 정본 provenance다
+
+### 먼저 — 세 줄
+
+- **정한 것**: Cargo feature 선언과 실제 Rust 조건 위치를 정확한 읽기 전용 근거로
+  잇고, Rust import graph가 아직 지원되지 않는다는 범위를 응답 첫머리에서 밝힌다.
+- **네 말과 다르게 한 것**: `use/mod`와 macro consumer를 곧바로 의존 화살표 후보로
+  만들지 않는다. 이름 바인딩·module tree·macro scope를 runtime 의존으로 오인할 수
+  있기 때문이다.
+- **네가 할 일**: 없음 — 실제 관계는 이후에도 정확한 근거와 의미 이유를 보여 준 뒤
+  명시적 승인 전까지 쓰지 않는다.
+
+**소집**: PO 카운슬 5인 전원, 독립 1라운드 + 상호 반박 1라운드 · **트리거**:
+공개 MCP 응답 의미 계약 변경 + Rust source-hidden field trial의 반복 partial. 동시 실행
+상한 때문에 독립 라운드는 2+2+1 파동으로 실행했고 앞선 자리의 출력을 다음 파동에
+주지 않았다. · **루브릭**: 21/24 (Problem insight 4 · User moment 4 ·
+Differentiation 3 · Ontology value 4 · Agent value 4 · Verification 2, 치명적 0:
+없음). Verification 2는 아직 구현·source bundle parity가 없다는 현재 상태 점수다.
+
+**선행 결정 관계**: 2026-08-04 「import는 의존성의 증거이지 스스로 승인되는
+온톨로지 관계가 아니다」와 「제품 코드 값 사용 근거가 있을 때만 승인 질문 자격」은
+유효하다. 2026-08-02 「Rust package 계약은 bounded `package-contract` 한 행」도
+원칙은 유효하지만, 당시 재검토 조건이었던 virtual-workspace field trial에서 실제
+feature 선언이 direct member manifest에 있어 root-only packet이 비는 관측이 생겼다.
+이번 결정은 임의 manifest 재귀가 아니라 root `[workspace].members`의 repo-contained
+literal direct member만 상한 안에서 읽도록 그 범위를 명시적으로 확장한다.
+
+**관측**: 기존 Rust field trial은 path 7/7과 claim 16/16을 지켰지만 optional-feature
+구현 위치와 macro/runtime/import/test 영향은 partial이었다. 현재 `infer_imports`는 같은
+종류의 실제 저장소에서 Rust 파일이 존재해도 `filesScanned:0`, `edges:[]`,
+`moduleEdges:[]`를 반환한다. 별도 실물 census에서는 positive·negative·compound
+`cfg`와 `cfg_attr`가 함께 관측돼 feature 문자열→파일 단순 연결도 거짓 안심이 됐다.
+수동 bounded receipt만 받은 fresh source-hidden FDE는 원본 재열기 없이 첫 구현 위치와
+양성/부정 조건을 정확히 답하고 runtime·macro·import·관계는 unknown으로 보류했다.
+
+**결정 (accountable: stark)**: 새 도구를 만들지 않는다. 기존
+`analyze_repo_structure`와 `index_project`가 bounded Rust feature-configuration
+evidence를 반환한다. package/feature 선언, exact repo-relative path와 line, `cfg`의
+conditional inclusion과 `cfg_attr`의 conditional attribute를 분리하고, predicate 원문·
+polarity·source role·전체 count·bounded sample·잘림/미지원 상태를 보존한다. predicate를
+평가하거나 현재 활성 feature를 주장하지 않는다. `infer_imports`는 구조화된 coverage로
+Rust `use/mod` graph가 unsupported이며 0 edge가 의존 없음의 증거가 아님을 밝힌다.
+모든 출력은 side effect 0이고 relation eligibility와 write permission은 false다.
+
+**적용 규칙**: **근거의 종류와 사정거리를 먼저 말한다**. IN — root package와
+repo-contained literal direct workspace member, conventional Cargo target source
+(`src`/`tests`/`examples`/`benches`/`build.rs`), manifest/source/file/receipt 상한, feature별
+정확한 조건 위치, positive/negative/compound/conditional-attribute 구분, unsupported와
+coverage, source/bundled stdio parity, fresh source-hidden field trial. OUT — workspace glob·
+중첩 재귀, 일반 `use/mod` graph, cfg boolean evaluator, target 조합, build script·compiler·
+proc-macro 실행, macro producer→consumer, runtime/test blast radius, 새 node/kind/schema/UI,
+자동 relation 질문·rationale·write. appetite는 수동 proof를 포함해 최대 1 working day,
+8시간이며 검증에 4시간을 남기지 못하면 시작하지 않는다.
+
+**서명**: stark (소유자 요청에 따른 실행)
+
+**기록된 반대**: 사용자가 요구한 것은 승인 가능한 의존 화살표인데 feature/cfg receipt는
+화살표를 하나도 만들지 않는다. optional-feature 하위 질문만 좋아지고 source 재열기나
+실제 변경 영향 판단이 줄지 않으면, 이는 commodity Rust scanner를 늘린 우회다.
+**반증 조건**: 서로 다른 fresh Rust field trial 두 번에서 source-hidden 에이전트가 새
+receipt를 받고도 optional-feature 구현 시작점을 정확히 답하지 못하거나 원본 재열기를
+요구하거나, unsupported를 완전한 영향으로 오인하면 이 투자를 중단한다. 반대로
+compiler-resolved module/macro graph만이 같은 질문을 false edge 0으로 답한다는 비교
+증거가 생기면 별도 Rust dependency resolver 결정을 연다.
+**재검토**: source stdio·설치 앱 bundled stdio·다음 두 외부 Rust field trial에서 위
+관측이 생길 때.
+
 **상태**: 유효
 
 ## 2026-08-04 — import 승인 질문은 제품 코드의 값 사용 근거가 있을 때만 자격을 얻는다

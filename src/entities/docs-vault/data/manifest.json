@@ -3890,6 +3890,11 @@
         },
         {
           "depth": 2,
+          "text": "2026-08-04 — Rust의 조건부 구성 근거와 의존 그래프의 빈칸을 구분한다",
+          "slug": "2026-08-04-rust의-조건부-구성-근거와-의존-그래프의-빈칸을-구분한다"
+        },
+        {
+          "depth": 2,
           "text": "2026-08-04 — 테스트 import를 제품 의존 승인 질문으로 가장하지 않는다",
           "slug": "2026-08-04-테스트-import를-제품-의존-승인-질문으로-가장하지-않는다"
         },
@@ -6139,8 +6144,8 @@
           "slug": "2026-07-26-첫-만남은-쇼핑몰부터"
         }
       ],
-      "excerpt": "Major change history. Code commit messages answer why; this file answers when / which surface changed. Focused on user-visible changes, not PR-level granularity. Newest at the top. Entries stay date-based; the app version reached v1.0.0 on 2026-07-27, so a release tag now carries the semver promise instead. MCP inferim",
-      "wordCount": 65512,
+      "excerpt": "Major change history. Code commit messages answer why; this file answers when / which surface changed. Focused on user-visible changes, not PR-level granularity. Newest at the top. Entries stay date-based; the app version reached v1.0.0 on 2026-07-27, so a release tag now carries the semver promise instead. MCP analyze",
+      "wordCount": 65637,
       "updatedAt": "2026-08-04",
       "linksOut": [
         "audits/CASE-STUDY-AGENTS-MD-DRIFT",
@@ -6177,13 +6182,23 @@
         },
         {
           "depth": 2,
+          "text": "2026-08-04 — Rust의 첫 근거는 의존 화살표가 아니라 feature 조건의 정본 provenance다",
+          "slug": "2026-08-04-rust의-첫-근거는-의존-화살표가-아니라-feature-조건의-정본-provenance다"
+        },
+        {
+          "depth": 3,
+          "text": "먼저 — 세 줄",
+          "slug": "먼저-세-줄"
+        },
+        {
+          "depth": 2,
           "text": "2026-08-04 — import 승인 질문은 제품 코드의 값 사용 근거가 있을 때만 자격을 얻는다",
           "slug": "2026-08-04-import-승인-질문은-제품-코드의-값-사용-근거가-있을-때만-자격을-얻는다"
         },
         {
           "depth": 3,
           "text": "먼저 — 세 줄",
-          "slug": "먼저-세-줄"
+          "slug": "먼저-세-줄-2"
         },
         {
           "depth": 2,
@@ -6193,7 +6208,7 @@
         {
           "depth": 3,
           "text": "먼저 — 세 줄",
-          "slug": "먼저-세-줄-2"
+          "slug": "먼저-세-줄-3"
         },
         {
           "depth": 2,
@@ -6258,7 +6273,7 @@
         {
           "depth": 3,
           "text": "먼저 — 세 줄",
-          "slug": "먼저-세-줄-3"
+          "slug": "먼저-세-줄-4"
         },
         {
           "depth": 2,
@@ -6273,7 +6288,7 @@
         {
           "depth": 3,
           "text": "먼저 — 세 줄",
-          "slug": "먼저-세-줄-4"
+          "slug": "먼저-세-줄-5"
         },
         {
           "depth": 2,
@@ -6293,7 +6308,7 @@
         {
           "depth": 3,
           "text": "먼저 — 세 줄",
-          "slug": "먼저-세-줄-5"
+          "slug": "먼저-세-줄-6"
         },
         {
           "depth": 2,
@@ -6333,7 +6348,7 @@
         {
           "depth": 3,
           "text": "먼저 — 세 줄",
-          "slug": "먼저-세-줄-6"
+          "slug": "먼저-세-줄-7"
         },
         {
           "depth": 2,
@@ -6348,7 +6363,7 @@
         {
           "depth": 3,
           "text": "먼저 — 세 줄",
-          "slug": "먼저-세-줄-7"
+          "slug": "먼저-세-줄-8"
         },
         {
           "depth": 2,
@@ -6358,7 +6373,7 @@
         {
           "depth": 3,
           "text": "먼저 — 세 줄",
-          "slug": "먼저-세-줄-8"
+          "slug": "먼저-세-줄-9"
         },
         {
           "depth": 2,
@@ -6373,7 +6388,7 @@
         {
           "depth": 3,
           "text": "먼저 — 세 줄",
-          "slug": "먼저-세-줄-9"
+          "slug": "먼저-세-줄-10"
         },
         {
           "depth": 2,
@@ -6867,7 +6882,7 @@
         }
       ],
       "excerpt": "이 파일은 결정과 그때 진 반대 의견을 남긴다. docs/CHANGELOG.md 는 무엇이 언제 바뀌었나를 답하고, 이 파일은 왜 그렇게 정했고, 무엇을 걸었나를 답한다. 최신이 위. 기록은 덧붙이기만 한다 — 지난 기록을 고치지 않는다. 판단이 바뀌었으면 새 기록을 쓰고 옛 기록을 뒤집힘 으로 표시한다. 틀린 기록도 자산이다. 1. 소집 전에 읽는다. 카운슬을 열기 전(그리고 단독 PO 패스를 쓰기 전) 같은 표면 · 같은 질문에 대한 선행 결정이 있는지 먼저 본다. 있으면 새 패스는 그것을 ① 여전히 유효하다고 인용하거나 ② 명시적으로 뒤집는다. 조용히 다시 결정",
-      "wordCount": 60222,
+      "wordCount": 60776,
       "updatedAt": "2026-08-04",
       "linksOut": [
         "slug"
@@ -8490,7 +8505,7 @@
         }
       ],
       "excerpt": "Complete inventory of features users can actually use right now. Last updated: 2026-08-02 (현재 route와 installed-app 계약 및 project meaning receipt 계약 재검증 — /ontology은 /topology?index=expanded, /ontology/edit은 /ontology/studio 호환 redirect이며, Insights는 할 일·구성·연결·경계·신선도 5개 질문 탭의 maintenance board다. desktop static smoke와 inst",
-      "wordCount": 17359,
+      "wordCount": 17443,
       "updatedAt": "2026-08-04",
       "linksOut": [
         "slug",
@@ -10313,7 +10328,7 @@
         }
       ],
       "excerpt": "로컬 마크다운 볼트를 AI 코딩 에이전트가 읽고 안전하게 갱신하도록 제공하는 stdio JSON-RPC 인터페이스다. 사람과 에이전트가 같은 파일을 진실원으로 사용하며, 서버는 별도 데이터베이스나 모델 실행 루프를 소유하지 않는다. 에이전트는 프로젝트의 의미 노드를 정확히 찾고, 관계·근거·영향 범위를 함께 읽는다. 연결 직후 실제 vault/repository 좌표와 도구 인벤토리를 확인해 잘못된 폴더나 오래된 클라이언트 상태를 발견한다. 쓰기 전에는 현재 문서를 읽고, 동시 편집·중복·끊어진 관계·파괴적 변경을 구조화된 오류와 dry-run으로 차단한다. uid는",
-      "wordCount": 861,
+      "wordCount": 948,
       "updatedAt": "2026-08-04",
       "linksOut": []
     },

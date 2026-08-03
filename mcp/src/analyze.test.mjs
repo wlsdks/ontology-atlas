@@ -487,6 +487,470 @@ test('virtual Cargo workspace is reported as skipped instead of becoming package
   }
 });
 
+test('root Cargo feature declarations retain typed Rust cfg provenance without claiming runtime impact', () => {
+  const root = withRepo((r) => {
+    mkdirSync(join(r, 'src'), { recursive: true });
+    writeFileSync(join(r, 'README.md'), '# Conditional Package\n');
+    writeFileSync(
+      join(r, 'Cargo.toml'),
+      [
+        '[package]',
+        'name = "conditional-package"',
+        '',
+        '[features]',
+        'zero-copy = []',
+        'portable = []',
+        '',
+      ].join('\n'),
+    );
+    writeFileSync(
+      join(r, 'src', 'lib.rs'),
+      [
+        '#[cfg(feature = "zero-copy")]',
+        'mod enabled;',
+        '#[cfg(not(feature = "zero-copy"))]',
+        'mod fallback;',
+        '#[cfg(all(feature = "zero-copy", target_os = "linux"))]',
+        'mod linux_only;',
+        '#[cfg_attr(feature = "zero-copy", doc(hidden))]',
+        'pub struct Conditional;',
+        '#[cfg(feature = "portable")]',
+        'mod portable;',
+        '',
+      ].join('\n'),
+    );
+  });
+  try {
+    const result = analyzeRepoStructure(root);
+    const evidence = result.configurationEvidence;
+    assert.equal(evidence.contract, 'rustFeatureConfigurationEvidence:v1');
+    assert.equal(evidence.status, 'observed');
+    assert.equal(evidence.writePolicy.writeAllowed, false);
+    assert.equal(evidence.claimBoundary.runtimeImpact, false);
+    assert.equal(evidence.claimBoundary.semanticDependency, false);
+    assert.equal(evidence.coverage.predicateEvaluation, false);
+
+    const pkg = evidence.packages.find((row) => row.manifest === 'Cargo.toml');
+    assert.equal(pkg.packageName, 'conditional-package');
+    const feature = pkg.features.find((row) => row.name === 'zero-copy');
+    assert.deepEqual(feature.directMappings, []);
+    assert.equal(feature.referenceCount, 4);
+    assert.deepEqual(feature.byForm, { cfg: 3, cfg_attr: 1 });
+    assert.deepEqual(feature.byPolarity, {
+      positive: 2,
+      negative: 1,
+      compound: 1,
+      unknown: 0,
+    });
+    assert.deepEqual(
+      feature.references.map((row) => ({
+        line: row.line,
+        form: row.form,
+        meaning: row.meaning,
+        polarity: row.polarity,
+        predicate: row.predicate,
+      })),
+      [
+        {
+          line: 1,
+          form: 'cfg',
+          meaning: 'conditional_inclusion',
+          polarity: 'positive',
+          predicate: 'feature = "zero-copy"',
+        },
+        {
+          line: 3,
+          form: 'cfg',
+          meaning: 'conditional_inclusion',
+          polarity: 'negative',
+          predicate: 'not(feature = "zero-copy")',
+        },
+        {
+          line: 5,
+          form: 'cfg',
+          meaning: 'conditional_inclusion',
+          polarity: 'compound',
+          predicate: 'all(feature = "zero-copy", target_os = "linux")',
+        },
+        {
+          line: 7,
+          form: 'cfg_attr',
+          meaning: 'conditional_attribute',
+          polarity: 'positive',
+          predicate: 'feature = "zero-copy"',
+        },
+      ],
+    );
+    assert.ok(feature.references.every((row) => row.path === 'src/lib.rs'));
+    assert.ok(feature.references.every((row) => row.sourceRole === 'production'));
+    assert.equal(feature.referencesLimited, false);
+  } finally {
+    rmSync(root, { recursive: true, force: true });
+  }
+});
+
+test('Rust crate-level inner cfg attributes retain the same typed feature provenance', () => {
+  const root = withRepo((r) => {
+    mkdirSync(join(r, 'src'), { recursive: true });
+    writeFileSync(
+      join(r, 'Cargo.toml'),
+      '[package]\nname = "inner-attributes"\n\n[features]\nportable = []\n',
+    );
+    writeFileSync(
+      join(r, 'src', 'lib.rs'),
+      '#![cfg(feature = "portable")]\n#![cfg_attr(feature = "portable", no_std)]\npub fn portable() {}\n',
+    );
+  });
+  try {
+    const feature = analyzeRepoStructure(root)
+      .configurationEvidence.packages[0].features[0];
+    assert.equal(feature.referenceCount, 2);
+    assert.deepEqual(feature.byForm, { cfg: 1, cfg_attr: 1 });
+    assert.deepEqual(feature.references.map((row) => row.line), [1, 2]);
+  } finally {
+    rmSync(root, { recursive: true, force: true });
+  }
+});
+
+test('virtual Cargo workspace admits only repo-contained literal direct members and reports rejected scope', () => {
+  const root = withRepo((r) => {
+    mkdirSync(join(r, 'crates', 'core', 'src'), { recursive: true });
+    writeFileSync(join(r, 'README.md'), '# Bounded Workspace\n');
+    writeFileSync(
+      join(r, 'Cargo.toml'),
+      [
+        '[workspace]',
+        'members = [',
+        '  "crates/core",',
+        '  "crates/*",',
+        '  "../outside",',
+        ']',
+        '',
+      ].join('\n'),
+    );
+    writeFileSync(
+      join(r, 'crates', 'core', 'Cargo.toml'),
+      [
+        '[package]',
+        'name = "workspace-core"',
+        '',
+        '[features]',
+        'fast = []',
+        '',
+      ].join('\n'),
+    );
+    writeFileSync(
+      join(r, 'crates', 'core', 'src', 'lib.rs'),
+      '#[cfg(feature = "fast")]\npub fn fast() {}\n',
+    );
+  });
+  try {
+    const result = analyzeRepoStructure(root);
+    assert.equal(result.configurationEvidence.status, 'limited');
+    assert.equal(result.configurationEvidence.coverage.workspaceMode, 'literal_direct_members');
+    assert.equal(result.configurationEvidence.coverage.workspaceMembersDeclared, 3);
+    assert.equal(result.configurationEvidence.coverage.workspaceMembersEligible, 1);
+    assert.equal(result.configurationEvidence.coverage.workspaceMembersSkipped, 2);
+    assert.deepEqual(result.configurationEvidence.unsupportedWorkspaceMembers, [
+      { member: '../outside', reason: 'outside-root' },
+      { member: 'crates/*', reason: 'glob-not-supported' },
+    ]);
+    assert.deepEqual(
+      result.configurationEvidence.packages.map((row) => row.manifest),
+      ['crates/core/Cargo.toml'],
+    );
+    const feature = result.configurationEvidence.packages[0].features.find(
+      (row) => row.name === 'fast',
+    );
+    assert.equal(feature.referenceCount, 1);
+    assert.equal(feature.references[0].path, 'crates/core/src/lib.rs');
+    assert.equal(feature.references[0].line, 1);
+  } finally {
+    rmSync(root, { recursive: true, force: true });
+  }
+});
+
+test('Cargo workspace member symlink escape is reported as outside-root', () => {
+  const outside = mkdtempSync(join(tmpdir(), 'ontology-atlas-rust-member-outside-'));
+  const root = withRepo((r) => {
+    mkdirSync(join(outside, 'src'), { recursive: true });
+    writeFileSync(join(outside, 'Cargo.toml'), '[package]\nname = "outside-member"\n');
+    writeFileSync(join(outside, 'src', 'lib.rs'), 'pub fn outside() {}\n');
+    mkdirSync(join(r, 'crates'), { recursive: true });
+    symlinkSync(outside, join(r, 'crates', 'escaped'));
+    writeFileSync(join(r, 'Cargo.toml'), '[workspace]\nmembers = ["crates/escaped"]\n');
+  });
+  try {
+    const evidence = analyzeRepoStructure(root).configurationEvidence;
+    assert.deepEqual(evidence.unsupportedWorkspaceMembers, [
+      { member: 'crates/escaped', reason: 'outside-root' },
+    ]);
+    assert.equal(evidence.packages.length, 0);
+  } finally {
+    rmSync(root, { recursive: true, force: true });
+    rmSync(outside, { recursive: true, force: true });
+  }
+});
+
+test('root Cargo package does not absorb cfg evidence owned by a workspace member', () => {
+  const root = withRepo((r) => {
+    mkdirSync(join(r, 'src'), { recursive: true });
+    mkdirSync(join(r, 'crates', 'member', 'src'), { recursive: true });
+    writeFileSync(
+      join(r, 'Cargo.toml'),
+      [
+        '[package]',
+        'name = "workspace-root"',
+        '',
+        '[features]',
+        'root-only = []',
+        'member-only = []',
+        '',
+        '[workspace]',
+        'members = ["crates/member"]',
+        '',
+      ].join('\n'),
+    );
+    writeFileSync(
+      join(r, 'src', 'lib.rs'),
+      '#[cfg(feature = "root-only")]\npub fn root() {}\n',
+    );
+    writeFileSync(
+      join(r, 'crates', 'member', 'Cargo.toml'),
+      '[package]\nname = "workspace-member"\n\n[features]\nmember-only = []\n',
+    );
+    writeFileSync(
+      join(r, 'crates', 'member', 'src', 'lib.rs'),
+      '#[cfg(feature = "member-only")]\npub fn member() {}\n',
+    );
+  });
+  try {
+    const evidence = analyzeRepoStructure(root).configurationEvidence;
+    const rootPackage = evidence.packages.find((row) => row.packageName === 'workspace-root');
+    const memberPackage = evidence.packages.find((row) => row.packageName === 'workspace-member');
+    assert.equal(
+      rootPackage.features.find((row) => row.name === 'member-only').referenceCount,
+      0,
+    );
+    assert.equal(
+      memberPackage.features.find((row) => row.name === 'member-only').referenceCount,
+      1,
+    );
+  } finally {
+    rmSync(root, { recursive: true, force: true });
+  }
+});
+
+test('workspace root listed as a member is counted once without duplicate package evidence', () => {
+  const root = withRepo((r) => {
+    mkdirSync(join(r, 'src'), { recursive: true });
+    writeFileSync(
+      join(r, 'Cargo.toml'),
+      [
+        '[package]',
+        'name = "single-root"',
+        '',
+        '[features]',
+        'only = []',
+        '',
+        '[workspace]',
+        'members = ["."]',
+        '',
+      ].join('\n'),
+    );
+    writeFileSync(join(r, 'src', 'lib.rs'), '#[cfg(feature = "only")]\npub fn only() {}\n');
+  });
+  try {
+    const evidence = analyzeRepoStructure(root).configurationEvidence;
+    assert.equal(evidence.coverage.workspaceMembersDeclared, 1);
+    assert.equal(evidence.coverage.workspaceMembersEligible, 1);
+    assert.equal(evidence.coverage.workspaceMembersSkipped, 0);
+    assert.equal(evidence.packages.length, 1);
+    assert.equal(evidence.packages[0].features[0].referenceCount, 1);
+  } finally {
+    rmSync(root, { recursive: true, force: true });
+  }
+});
+
+test('Rust feature and workspace evidence stays explicitly bounded', () => {
+  const root = withRepo((r) => {
+    mkdirSync(join(r, 'src'), { recursive: true });
+    const features = Array.from({ length: 60 }, (_, index) =>
+      `feature-${String(index).padStart(2, '0')} = [${Array.from(
+        { length: 110 },
+        (__, mappingIndex) => `"dep:${index}-${mappingIndex}"`,
+      ).join(', ')}]`,
+    );
+    const members = Array.from(
+      { length: 130 },
+      (_, index) => `"missing/member-${String(index).padStart(3, '0')}"`,
+    );
+    writeFileSync(
+      join(r, 'Cargo.toml'),
+      [
+        '[package]',
+        'name = "bounded-root"',
+        '',
+        '[features]',
+        ...features,
+        '',
+        '[workspace]',
+        `members = [${members.join(', ')}]`,
+        '',
+      ].join('\n'),
+    );
+    writeFileSync(join(r, 'src', 'lib.rs'), 'pub fn bounded() {}\n');
+  });
+  try {
+    const evidence = analyzeRepoStructure(root).configurationEvidence;
+    assert.equal(evidence.status, 'limited');
+    assert.equal(evidence.coverage.workspaceMembersDeclared, 130);
+    assert.equal(evidence.coverage.workspaceMembersConsidered, 100);
+    assert.equal(evidence.coverage.workspaceMembersLimited, true);
+    assert.equal(evidence.unsupportedWorkspaceMembers.length, 50);
+    assert.equal(evidence.unsupportedWorkspaceMembersLimited, true);
+    assert.equal(evidence.packages[0].featuresDeclared, 60);
+    assert.equal(evidence.packages[0].features.length, 48);
+    assert.equal(evidence.packages[0].featuresLimited, true);
+    assert.equal(evidence.packages[0].features[0].directMappingsCount, 110);
+    assert.equal(evidence.packages[0].features[0].directMappings.length, 100);
+    assert.equal(evidence.packages[0].features[0].directMappingsLimited, true);
+  } finally {
+    rmSync(root, { recursive: true, force: true });
+  }
+});
+
+test('Rust source inventory stops at the declared repository-wide file budget', () => {
+  const root = withRepo((r) => {
+    mkdirSync(join(r, 'src'), { recursive: true });
+    writeFileSync(
+      join(r, 'Cargo.toml'),
+      '[package]\nname = "source-budget"\n\n[features]\nbounded = []\n',
+    );
+    for (let index = 0; index < 5002; index += 1) {
+      writeFileSync(join(r, 'src', `unit-${String(index).padStart(4, '0')}.rs`), 'pub fn item() {}\n');
+    }
+  });
+  try {
+    const evidence = analyzeRepoStructure(root).configurationEvidence;
+    assert.equal(evidence.status, 'limited');
+    assert.equal(evidence.coverage.sourceFileLimit, 5000);
+    assert.equal(evidence.coverage.sourceFilesScanned, 5000);
+    assert.equal(evidence.coverage.sourceFilesDiscovered, 5001);
+    assert.equal(evidence.coverage.sourceFilesLimited, true);
+  } finally {
+    rmSync(root, { recursive: true, force: true });
+  }
+});
+
+test('Rust feature evidence ignores comment and string lookalikes while surfacing unsupported predicates', () => {
+  const root = withRepo((r) => {
+    mkdirSync(join(r, 'src'), { recursive: true });
+    writeFileSync(
+      join(r, 'Cargo.toml'),
+      '[package]\nname = "lexical-safety"\n\n[features]\nsafe = []\n',
+    );
+    writeFileSync(
+      join(r, 'src', 'lib.rs'),
+      [
+        '// #[cfg(feature = "safe")]',
+        '/* #[cfg(feature = "safe")] */',
+        'const LOOKALIKE: &str = r#"#[cfg(feature = "safe")]"#;',
+        '#[cfg(feature = "safe\\u{2d}")]',
+        'mod unsupported;',
+        '#[cfg(feature = "safe")]',
+        'mod real;',
+        '#[cfg_attr(docsrs, doc(cfg(feature = "safe")))]',
+        'pub struct DocsOnly;',
+        '',
+      ].join('\n'),
+    );
+  });
+  try {
+    const evidence = analyzeRepoStructure(root).configurationEvidence;
+    assert.equal(evidence.status, 'limited');
+    const feature = evidence.packages[0].features.find((row) => row.name === 'safe');
+    assert.equal(feature.referenceCount, 1);
+    assert.equal(feature.references[0].line, 6);
+    assert.deepEqual(evidence.unsupportedPredicates, {
+      count: 1,
+      samples: [
+        {
+          path: 'src/lib.rs',
+          line: 4,
+          form: 'cfg',
+          predicate: 'feature = "safe\\u{2d}"',
+          reason: 'non-literal-feature-name',
+        },
+      ],
+      limited: false,
+    });
+  } finally {
+    rmSync(root, { recursive: true, force: true });
+  }
+});
+
+test('Rust cfg evidence ignores .rs fixtures outside conventional Cargo target roots', () => {
+  const root = withRepo((r) => {
+    mkdirSync(join(r, 'src'), { recursive: true });
+    mkdirSync(join(r, 'fixtures'), { recursive: true });
+    writeFileSync(
+      join(r, 'Cargo.toml'),
+      '[package]\nname = "target-roots"\n\n[features]\nreal = []\n',
+    );
+    writeFileSync(join(r, 'src', 'lib.rs'), '#[cfg(feature = "real")]\npub fn real() {}\n');
+    writeFileSync(
+      join(r, 'fixtures', 'lookalike.rs'),
+      '#[cfg(feature = "real")]\npub fn fixture() {}\n',
+    );
+  });
+  try {
+    const evidence = analyzeRepoStructure(root).configurationEvidence;
+    assert.equal(
+      evidence.coverage.scope,
+      'literal_cfg_feature_attributes_in_conventional_cargo_targets',
+    );
+    assert.equal(evidence.packages[0].features[0].referenceCount, 1);
+    assert.equal(evidence.packages[0].features[0].references[0].path, 'src/lib.rs');
+  } finally {
+    rmSync(root, { recursive: true, force: true });
+  }
+});
+
+test('Rust cfg evidence surfaces literal feature predicates absent from the package declaration', () => {
+  const root = withRepo((r) => {
+    mkdirSync(join(r, 'src'), { recursive: true });
+    writeFileSync(
+      join(r, 'Cargo.toml'),
+      '[package]\nname = "undeclared-feature"\n\n[features]\ndeclared = []\n',
+    );
+    writeFileSync(
+      join(r, 'src', 'lib.rs'),
+      '#[cfg(feature = "missing")]\nmod missing;\n#[cfg(feature = "declared")]\nmod declared;\n',
+    );
+  });
+  try {
+    const evidence = analyzeRepoStructure(root).configurationEvidence;
+    assert.equal(evidence.status, 'limited');
+    assert.equal(evidence.packages[0].features[0].referenceCount, 1);
+    assert.deepEqual(evidence.unsupportedPredicates, {
+      count: 1,
+      samples: [
+        {
+          path: 'src/lib.rs',
+          line: 1,
+          form: 'cfg',
+          predicate: 'feature = "missing"',
+          reason: 'feature-not-declared-in-scanned-table',
+        },
+      ],
+      limited: false,
+    });
+  } finally {
+    rmSync(root, { recursive: true, force: true });
+  }
+});
+
 test('oversized Cargo manifest is skipped before it enters semantic evidence', () => {
   const root = withRepo((r) => {
     writeFileSync(join(r, 'README.md'), '# Oversized\n\nA bounded packet.\n');

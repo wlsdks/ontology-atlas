@@ -59,6 +59,7 @@ import {
   validateMeaningProposalAgainstAnalysis,
 } from './meaning-evaluation.mjs';
 import { inferImports } from './infer-imports.mjs';
+import { collectRustFeatureConfigurationEvidence } from './rust-feature-evidence.mjs';
 
 /**
  * FSD 모드가 **실제로 훑는** 폴더. 판정 목록과 스캔 목록이 같아야 한다 —
@@ -167,6 +168,7 @@ export function analyzeRepoStructure(rootPath, options = {}) {
   const { domains, readmePath } = detectDomainsFromReadme(rootPath);
   const existingOntologyEvidence = detectExistingOntologyEvidence(rootPath, skipped);
   const semanticEvidence = collectSemanticEvidence(rootPath, skipped);
+  const configurationEvidence = collectRustFeatureConfigurationEvidence(rootPath);
   const domainForName = (name) => matchDomainSlug(name, domains);
 
   // SOURCE_FOLDERS 중 첫 번째 존재하는 것을 src dir 로
@@ -386,6 +388,7 @@ export function analyzeRepoStructure(rootPath, options = {}) {
       semanticEvidence,
     }),
     semanticEvidence,
+    configurationEvidence,
     suggestedRelations,
     skipped,
   };
