@@ -33,19 +33,14 @@ const ROUTES = ['/ko/', '/ko/topology/', '/ko/docs/', '/ko/ontology/studio/', '/
  * | 라우트 | 미달 | 무엇 |
  * |---|---:|---|
  * | ~~`/ko`~~ | ~~2~~ → **0** | 주 CTA 의 인디고 면 위 잉크가 `--color-text-primary`(#f7f8f8, **4.42:1**)였다. 그 표면 전용으로 이미 있던 `--color-text-on-accent`(#ffffff, **4.70:1**)로 옮겼다 — `button.tsx` 의 `primary` 변형과 `DownloadPage` 의 크기 배지 두 곳. 새 값 0개 |
- * | `/ko/projects` | 2 | `--color-text-quaternary`(#787c84) **4.31:1** |
+ * | ~~`/ko/projects`~~ | ~~2~~ → **0** | `--color-text-quaternary` 가 한 단 올라선 표면(overlay-1 합성 **4.37** · elevated **4.16**)에서만 뚫리는 값이었다. 2026-08-03 「체계」 판정으로 `#787c84` → `#82828a` — 네 정지 표면 전부 AA(5.23 / 5.00 / 4.81 / 4.57), 위계 스텝비 1.17 보존, 지도 패널 quaternary 와 값 수렴. 원장: docs/DECISIONS.md |
  * | 지도 · 문서함 · 공방 | 0 | |
  *
- * 남은 둘은 **토큰 한 개**다. 이 잉크는 캔버스(4.76)/패널(4.55)에서만 AA 를
- * 넘고 한 단 올라선 표면 — 패널+`--color-overlay-1`(**4.33**) ·
- * `--color-elevated`(**4.16**) — 에서 뚫린다. 소비처 652곳이라 자리별 치환은
- * 오늘 보이는 곳만 지우고 나머지를 장전된 채 남긴다. 값 하나(`#82828a`)를
- * 올리면 네 바탕 전부 통과하고 명도 순서도 보존되지만, 그건 `app/globals.css`
- * 의 램프라 「체계」석의 자리다. 그래서 0이 아니라 래칫이다.
- * 자리별 실측과 근거는 `tests/e2e/a11y-ratchet.spec.ts` 의 `BASELINE` 주석.
+ * 기준선이 0 이므로 이 게이트의 생사는 아래 `measured > 50` 채집 가드가 쥔다 —
+ * 빈 화면과 미달 없음은 그것 없이는 같은 초록이다.
  * **이 수는 내려가기만 한다.**
  */
-const BASELINE_FAILING_COMBINATIONS = 2;
+const BASELINE_FAILING_COMBINATIONS = 0;
 
 /** 페이지에서 색·폰트만 꺼내 온다. 판정은 순수 함수가 한다. */
 const COLLECT = `(() => {

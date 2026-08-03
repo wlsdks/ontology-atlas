@@ -26,10 +26,22 @@
   --color-text-secondary: #d0d6e0;
   --color-text-tertiary: #8a8f98;
   /*
-   * Linear 원본 은 #62666d(3.45:1) 이지만 WCAG AA (4.5:1) 미달이라
-   * canvas #08090a 기준 ~4.8:1 로 한 단계 밝게 보정. 시각 리듬 유지.
+   * 가장 약한 잉크. 두 번 보정됐다:
+   * ① #62666d(canvas 3.45:1, AA 미달) → #787c84 — canvas/panel 은 넘겼지만
+   *   **한 단 올라선 표면에서만 뚫리는 값**이었다(panel+overlay-1 4.37 ·
+   *   elevated 4.16). 화면의 axe 위반 8건이 전부 이 토큰이었고 소비처는
+   *   584곳이라 자리별 치환은 수를 내릴 뿐 고치는 게 아니었다.
+   * ② #787c84 → #82828a (2026-08-03, 「체계」 판정 — docs/DECISIONS.md) —
+   *   네 정지 표면 전부 AA 통과(canvas 5.23 · panel 5.00 · panel+overlay-1
+   *   4.81 · elevated 4.57). elevated 4.5 를 넘는 사실상 최소 명도라
+   *   (#828282 가 4.54 하한) tertiary(#8a8f98)와의 위계 간격을 최대한
+   *   보존하고, 지도 패널의 같은 단(--topology-v2-panel-text-quaternary)이
+   *   2026-07 에 같은 사유로 이미 도착한 값과 수렴한다 — 시스템의 quaternary
+   *   해가 하나로 줄었다. 무채 명도만 이동, 새 hue 0.
+   * ⚠️ hover/선택 표면(overlay-2 합성 4.36)에서는 여전히 미달이다 — 누를 수
+   *   있는 행 위의 글자는 tertiary 부터 쓴다(AtlasGitPanel 의 규칙 그대로).
    */
-  --color-text-quaternary: #787c84;
+  --color-text-quaternary: #82828a;
   /*
    * 채워진 인디고 **위**의 전경. 램프 넷은 전부 어두운 바탕용이라 채움 컨트롤
    * 위에서는 하나도 못 쓴다 — 그래서 저장소의 채운 인디고 버튼 9개가 전부

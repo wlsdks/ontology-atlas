@@ -5478,3 +5478,55 @@ globals.css 실값으로 두 톤의 라이선스를 계산 + **accent 가 틴트
 
 **서명 (accountable)**: design-system 석 (소유자 서명 대기)
 **상태**: 유효
+
+## 2026-08-03 — quaternary 잉크는 「한 단 올라선 표면에서만 뚫리는 값」이었다: #787c84 → #82828a
+
+**맥락**: 접근성 래칫 라운드(PR #896)가 부채 14건 중 6건을 갚고 남긴 8건이
+전부 `--color-text-quaternary` 한 토큰으로 수렴했다(`/ko/ontology/insights/` 4
+· `/ko/projects/` 4). 램프 값 변경이라 「체계」석 소집(`design.md` "규격을
+바꾸려면 「체계」를 부른다"). 수치는 전부 `scripts/lib/contrast.mjs` 알파 합성
+실측이다.
+
+**측정**: ① 네 정지 표면 대비 — #787c84 는 canvas 4.76 · panel 4.55 ·
+panel+overlay-1 **4.37** · elevated **4.16**. 캔버스/패널만 넘고 올라선
+표면에서 AA(4.5) 미달. ② 소비처 전수 — `var(--color-text-quaternary)`
+**584곳**(views 249 · widgets 237 · features 64 · shared 19 · entities 9 ·
+app 오류표면 6; 브리핑의 652 는 과대집계였으나 결론 불변). 화면의 axe 위반은
+8곳뿐이라 자리별 치환은 수를 내릴 뿐 나머지 576곳을 장전된 채 남긴다.
+③ 위계 실측 — tertiary(#8a8f98) 대비 quaternary 의 panel 위 휘도 스텝비는
+1.29 → **1.17** 로 줄지만, 이 저장소가 이미 수용한 같은 단의 선례
+(`--topology-v2-panel-text-quaternary` #82828a vs tertiary #868690)의 스텝비
+**1.06** 보다 넓다 — 램프 자신의 스텝 범위(1.06~2.22) 안이다. ④ 최소성 —
+elevated 4.5 를 넘는 균일 무채 하한이 #828282(4.54)이므로 #82828a(4.57)는
+사실상 최소 상향이다. 더 어두운 값은 없고, 더 밝은 값은 위계를 공짜로 판다.
+
+**결정**: `--color-text-quaternary` 를 `#82828a` 로 상향. 네 정지 표면 전부
+통과(canvas 5.23 · panel 5.00 · panel+overlay-1 4.81 · elevated 4.57). 무채
+명도만 이동, 새 hue 0, 새 토큰 0. 부수 효과로 전역 램프와 지도 패널 램프의
+quaternary 해가 **한 값으로 수렴**한다 — 2026-07 에 지도 패널이 같은 사유
+(#55555d, 다크 패널 위 ~2.5:1)로 먼저 도착한 값이다. `prefers-contrast: more`
+오버라이드(#8f95a0)는 여전히 더 밝아 고대비 방향 보존. **경계는 남는다**:
+hover/선택 표면(overlay-2 합성)에서는 4.36 으로 여전히 미달이므로 「누를 수
+있는 행 위의 글자는 tertiary 부터」(AtlasGitPanel 2026-08-02 규칙)는 값 상향
+후에도 유효하다 — 주석의 수치만 재실측으로 갱신했다.
+
+**게이트**: `tests/e2e/a11y-ratchet.spec.ts` `color-contrast` 8 → **0** ·
+`tests/e2e/contrast-ratchet.spec.ts` `BASELINE_FAILING_COMBINATIONS` 2 → **0**.
+기준선이 0 이 되면 탐지기가 빈 집합 위에서 놀 수 있다 — 그 가드는 이미 상주한다
+(a11y: 라우트당 `passes ≥ 15` 채집 하한 · contrast: `measured > 50`). 프로브:
+빌드 산출 CSS 의 값을 #787c84 로 되돌려 두 래칫이 실제로 적색이 되는 것을 확인.
+
+**진 대안 ① (자리별 치환)**: 미달 8곳만 tertiary 로 올린다. 진 이유: 소비처
+584 중 8 을 고치는 것은 수를 내리는 것이지 결함(값 자체가 올라선 표면에서
+성립 안 함)을 고치는 게 아니다 — 다음 elevated 위 quaternary 가 그대로 다시
+뚫린다. **이 관점이 이겼다는 관측이 될 반증**: 상향 후 quaternary 가 「너무
+밝아 tertiary 와 구분이 안 된다」는 위계 결함 보고가 실제 화면에서 나오는 것
+— 그러면 값을 되돌리고 「quaternary 는 canvas/panel 전용」이라는 표면 제약을
+lint 로 강제하는 자리별 노선이 옳았던 것이다.
+
+**진 대안 ② (지금 그대로 + 래칫 유지)**: 8건을 기준선으로 안고 간다. 진
+이유: 「지금 그대로」가 이기는 조건(위반이 소수·광학 보정·강제 비용 과다)이
+성립하지 않는다 — 위반이 규격(WCAG AA) 위반이고, 정정 비용이 값 한 줄이다.
+
+**서명 (accountable)**: design-system 석 (소유자 서명 대기)
+**상태**: 유효

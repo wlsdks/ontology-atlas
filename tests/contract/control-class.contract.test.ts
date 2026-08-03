@@ -339,32 +339,69 @@ describe('controlClass — 여덟째 모양과 세 축', () => {
      * 이 축은 아무것도 안 하면서 고를 것만 늘리는 축이 되므로, 그날 이 시험이
      * 빨개져 지우라고 말해야 한다.
      */
-    const STEPS = ['primary', 'secondary', 'tertiary', 'quaternary'] as const;
+    /*
+     * 2026-08-03 까지는 넷이었다. 전역 quaternary 상향(#787c84 → #82828a,
+     * docs/DECISIONS.md)으로 quaternary 가 두 램프에서 **같은 값으로 수렴**했고,
+     * 이 시험이 설계대로 빨개져 그 단의 panel 컴파운드를 지웠다 — 그래서 축이
+     * 재매핑하는 단은 이제 셋이고, 셋 각각이 근거(값이 실제로 다름)를 가진다.
+     */
+    const DIVERGING_STEPS = ['primary', 'secondary', 'tertiary'] as const;
     const pairs: Array<[string, string]> = [];
-    for (const step of STEPS) {
+    for (const step of DIVERGING_STEPS) {
       const app = cssVar(`--color-text-${step}`);
       const panel = cssVar(`--topology-v2-panel-text-${step}`);
       expect(app, `--color-text-${step} 를 못 읽었다`).toBeTruthy();
       expect(panel, `--topology-v2-panel-text-${step} 를 못 읽었다`).toBeTruthy();
       pairs.push([app as string, panel as string]);
     }
-    // 공회전 차단 — 4단을 다 못 읽었으면 아래 단언은 빈 집합을 통과한다.
-    expect(pairs.length, '두 램프의 단을 하나도 못 짝지었다').toBe(4);
+    // 공회전 차단 — 3단을 다 못 읽었으면 아래 단언은 빈 집합을 통과한다.
+    expect(pairs.length, '두 램프의 단을 하나도 못 짝지었다').toBe(3);
     /*
      * ⚠️ 처음엔 「하나라도 다르면 통과」였고, `/gate-probe` 가 그게 **게이트가
-     * 아님**을 잡았다: 4단 중 하나를 같은 값으로 되돌려도 초록이었다. 축이
-     * 재매핑하는 단은 **넷 다** 각자 근거가 있어야 한다 — 한 단이 수렴하면 그
-     * 단의 컴파운드는 아무것도 안 하면서 자리만 차지한다.
+     * 아님**을 잡았다: 재매핑 단 중 하나를 같은 값으로 되돌려도 초록이었다.
+     * 축이 재매핑하는 단은 **전부** 각자 근거가 있어야 한다 — 한 단이 수렴하면
+     * 그 단의 컴파운드는 아무것도 안 하면서 자리만 차지한다.
      */
     const same = pairs
-      .map(([a, b], i) => (a === b ? `${STEPS[i]}: ${a}` : null))
+      .map(([a, b], i) => (a === b ? `${DIVERGING_STEPS[i]}: ${a}` : null))
       .filter((x): x is string => x !== null);
     expect(
       same,
       `두 무채 램프의 이 단이 같아졌다 — 그 단의 \`scope: 'panel'\` 컴파운드는 근거가 없다.\n` +
-        `수렴한 단을 값 층에서 지우거나(그 단은 tone 하나로 충분하다), 넷 다 수렴했으면 축 자체를 지워라.\n` +
+        `수렴한 단을 값 층에서 지우거나(그 단은 tone 하나로 충분하다), 전부 수렴했으면 축 자체를 지워라.\n` +
         same.join('\n'),
     ).toEqual([]);
+  });
+
+  it('quaternary 는 수렴 상태로 고정한다 — 다시 갈라지면 panel 컴파운드를 되살려야 한다', () => {
+    /*
+     * 위 시험의 대칭이다. 2026-08-03 에 quaternary 가 두 램프에서 `#82828a` 로
+     * 수렴해 panel 컴파운드를 지웠다(값이 두 곳에 적혀 있으나 **이 고정이
+     * 드리프트를 기계적으로 잡는다** — 별칭 var() 로 합치지 않은 이유는
+     * `prefers-contrast: more` 가 전역 quaternary 만 #8f95a0 로 올리는데, 별칭이면
+     * 그 순간 패널 사다리에서 quaternary 가 tertiary(#868690) **위로 역전**되기
+     * 때문이다. 실측 근거: docs/DECISIONS.md 2026-08-03 quaternary 항목).
+     *
+     * 이 시험 없이는 두 실패가 조용하다: ① 한쪽 값만 움직여 다시 갈라졌는데
+     * 재매핑 없이 패널 위 muted 가 틀린 잉크를 낸다. ② 컴파운드를 근거 없이
+     * 되살린다. 둘 다 여기서 빨개진다.
+     */
+    const app = cssVar('--color-text-quaternary');
+    const panel = cssVar('--topology-v2-panel-text-quaternary');
+    expect(app, '--color-text-quaternary 를 못 읽었다').toBeTruthy();
+    expect(panel, '--topology-v2-panel-text-quaternary 를 못 읽었다').toBeTruthy();
+    expect(
+      panel,
+      `quaternary 가 두 램프에서 다시 갈라졌다(전역 ${app} · 패널 ${panel}) — ` +
+        `panel 위 muted 잉크가 근거를 잃었다. \`scope: 'panel', tone: 'muted'\` 컴파운드를 되살리고 이 고정을 갱신하라.`,
+    ).toBe(app);
+    // 컴파운드가 실제로 없다 — muted 는 scope 와 무관하게 전역 토큰 하나를 낸다.
+    const onPanel = controlClass({ shape: 'chip', size: 'md', tone: 'muted', scope: 'panel' });
+    expect(
+      onPanel.includes('--topology-v2-panel-text-quaternary'),
+      '수렴 상태인데 panel 컴파운드가 되살아나 있다 — 같은 값을 내는 무노동 분기다. 지워라.',
+    ).toBe(false);
+    expect(onPanel).toContain('text-[color:var(--color-text-quaternary)]');
   });
 
   it('`scope: panel` 은 잉크만 바꾼다 — 바탕·보더로 새면 두 번째 채색 시스템이다', () => {
@@ -392,10 +429,12 @@ describe('controlClass — 여덟째 모양과 세 축', () => {
     }
   });
 
-  it('`scope` 가 실제로 무언가를 바꾼다 — 무채 4단은 패널에서 다른 잉크다', () => {
+  it('`scope` 가 실제로 무언가를 바꾼다 — 값이 갈리는 무채 단은 패널에서 다른 잉크다', () => {
     // 위 시험이 「안 바뀐다」만 보므로, 이 시험이 없으면 축을 통째로 no-op 으로
-    // 만들어도 둘 다 초록이다.
-    for (const tone of ['default', 'muted', 'secondary', 'strong'] as const) {
+    // 만들어도 둘 다 초록이다. `muted` 는 여기 없다 — 2026-08-03 quaternary
+    // 수렴으로 재매핑이 삭제됐고, 그 상태는 위 「quaternary 는 수렴 상태로
+    // 고정한다」가 반대 방향으로 잡는다.
+    for (const tone of ['default', 'secondary', 'strong'] as const) {
       expect(
         controlClass({ shape: 'chip', tone, scope: 'panel' }),
         `${tone} 가 패널에서 그대로다 — scope 축이 공회전한다`,

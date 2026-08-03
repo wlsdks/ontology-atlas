@@ -651,7 +651,12 @@ Defined via Tailwind 4's CSS-based `@theme`. See `app/globals.css` for the actua
 - `--color-text-primary`: `#f7f8f8`
 - `--color-text-secondary`: `#d0d6e0`
 - `--color-text-tertiary`: `#8a8f98`
-- `--color-text-quaternary`: `#62666d`
+- `--color-text-quaternary`: `#82828a` — 두 번 상향된 값이다(#62666d →
+  #787c84 → #82828a). 마지막 상향(2026-08-03)은 한 단 올라선 표면
+  (panel+overlay-1 · elevated)에서만 AA 가 뚫리던 결함의 정정으로, 네 정지
+  표면 전부 4.5:1 이상이고 지도 패널의 `--topology-v2-panel-text-quaternary`
+  와 값이 수렴한다. **hover/선택(overlay-2) 위에서는 여전히 미달(4.36)** —
+  누를 수 있는 행 위의 글자는 tertiary 부터 쓴다. 원장: `docs/DECISIONS.md`
 - `--color-text-on-accent`: `#ffffff` — **채운 인디고 «위»의 전경.** 위 넷은 전부
   어두운 바탕용이라 채움 컨트롤 위에서는 하나도 못 쓴다. 새 hue 가 아니라 무채이고,
   `--color-indigo-brand` 위 대비 **4.71:1** 로 WCAG AA(4.5:1) 통과. 값 층에서는

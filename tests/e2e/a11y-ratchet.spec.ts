@@ -16,10 +16,12 @@ import { expect, test } from "@playwright/test";
  * `/gate-probe`: **룰을 켜기 전에 위반을 전수 측정한다.** 안 치운 채 0 을 요구하면
  * 그 게이트는 첫날부터 빨갛고, 빨간 게이트는 곧 꺼지거나 무시된다.
  *
- * 처음 등재한 14건 중 **6건이 갚였다** — `target-size` 1(컨트롤 정규화),
+ * 처음 등재한 14건은 **전부 갚였다** — `target-size` 1(컨트롤 정규화),
  * `aria-required-children` 1(role 반납), `color-contrast` 4(채운 인디고 위
- * 잉크 토큰). 남은 8건은 **토큰 값 한 개**라 이 파일이 단독으로 못 고친다 —
- * 처방은 `/design-council` 의 「체계」로 간다(아래 `BASELINE` 주석).
+ * 잉크 토큰), 그리고 마지막 8건은 「체계」 판정으로 `--color-text-quaternary`
+ * 값 자체가 `#82828a` 로 올라가며 사라졌다(아래 `BASELINE` 주석 · 원장
+ * 2026-08-03). 기준선 셋이 전부 0 이므로 **채집 가드(`passes` 하한)가 이
+ * 게이트의 생사를 쥔다** — 빈 화면과 위반 없음을 가르는 것이 그것뿐이다.
  *
  * 그래서 계약은 셋이다:
  *   1. **채집이 살아 있다** — 라우트마다 axe 가 내용에 적용한 룰이 바닥 위여야
@@ -88,30 +90,29 @@ const ROUTES = [
  * `control-class.ts` 가 쓰고 있었고, `button.tsx` 의 `primary` 만 이관에서
  * 빠져 있었다. 새 값 0개.
  *
- * **남은 8건은 전부 `--color-text-quaternary`(#787c84) 한 토큰이다.**
- * 자리: `/ko/ontology/insights/` 4 · `/ko/projects/` 4.
+ * **마지막 8건(`/ko/ontology/insights/` 4 · `/ko/projects/` 4)은 전부
+ * `--color-text-quaternary` 한 토큰이었고, 2026-08-03 「체계」 판정으로 값이
+ * `#787c84` → `#82828a` 로 올라가며 갚였다** (원장: docs/DECISIONS.md).
  *
- * | 바탕 | 현재 | 필요 |
+ * | 바탕 | before | after |
  * |---|---:|---:|
- * | `--color-canvas` #08090a | 4.76 | — |
- * | `--color-panel` #0f1011 | 4.55 | — |
- * | panel + `--color-overlay-1` #151617 | **4.33** | 4.5 |
- * | `--color-elevated` #191a1b | **4.16** | 4.5 |
+ * | `--color-canvas` #08090a | 4.76 | 5.23 |
+ * | `--color-panel` #0f1011 | 4.55 | 5.00 |
+ * | panel + `--color-overlay-1` | **4.37** | 4.81 |
+ * | `--color-elevated` #191a1b | **4.16** | 4.57 |
  *
- * 즉 이 잉크는 **캔버스/패널에서만 AA 를 넘고, 한 단 올라선 표면에서 뚫린다.**
- * 소비처는 652곳이라 자리별 치환은 오늘 보이는 8곳만 지우고 644곳을 장전된
- * 채로 남긴다 — 그건 수를 내리는 것이지 고치는 것이 아니다. 값 하나를
- * **`#82828a`** 로 올리면 네 바탕 전부 통과하고(5.23 / 5.00 / 4.75 / 4.57)
- * tertiary(#8a8f98)와의 명도 순서도 보존된다. 무채 명도만 움직이므로 새 hue 는
- * 없다 — 지도 패널의 같은 이름 잉크(`--topology-v2-panel-text-quaternary`)가
- * 2026-07 에 `#55555d` → `#82828a` 로 **정확히 같은 사유로** 이미 올라갔다.
- * 그 처방은 `app/globals.css` 의 램프라 「체계」석의 자리다(`design.md`
- * "규격을 바꾸려면 「체계」를 부른다").
+ * (수치는 `scripts/lib/contrast.mjs` 알파 합성 기준.) 자리별 치환이 아니라
+ * 값을 올린 이유: 화면의 위반은 8곳이지만 소비처는 584곳이라, 보이는 8곳만
+ * 치우면 나머지가 장전된 채 남는다. `#82828a` 는 elevated 4.5 를 넘는 사실상
+ * 최소 명도(#828282 하한 4.54)라 tertiary(#8a8f98, 스텝비 1.17)와의 위계를
+ * 최대한 보존하고, 지도 패널의 같은 단이 2026-07 에 도착한 값과 수렴한다.
+ * ⚠️ hover/선택(overlay-2, 4.36)에서는 여전히 미달 — 누를 수 있는 행 위의
+ * 글자는 tertiary 부터다.
  *
  * **이 숫자는 내려가기만 한다.**
  */
 const BASELINE: Readonly<Record<string, number>> = {
-  "color-contrast": 8,
+  "color-contrast": 0,
   "aria-required-children": 0,
   "target-size": 0,
 };
