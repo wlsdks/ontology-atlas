@@ -232,7 +232,12 @@ export function StudioMaterializeDialog({
             ref={confirmRef}
             data-testid="studio-materialize-confirm"
             onClick={() => onConfirm(kind)}
-            className={`flex h-8 items-center rounded-chip bg-[color:var(--color-indigo-brand)] px-4 text-body tracking-body font-semibold text-white transition-colors hover:bg-[color:var(--color-indigo-hover)] ${FOCUS_RING}`}
+            className={controlClass({
+              shape: "chip",
+              size: "lg",
+              tone: "onAccent",
+              className: `tracking-body hover:bg-[color:var(--color-indigo-hover)] ${FOCUS_RING}`,
+            })}
           >
             {labels.confirm}
           </button>

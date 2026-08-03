@@ -953,7 +953,12 @@ export function StudioCompass(props: StudioCompassProps) {
             onClick={() => guardedOpen(props.backTo!.id)}
             aria-label={labels.walkBackAria(props.backTo.label)}
             title={labels.walkBackAria(props.backTo.label)}
-            className="flex h-[30px] max-w-[180px] items-center gap-1.5 rounded-card border border-[color:var(--color-border-soft)] px-2.5 text-caption text-[color:var(--color-text-tertiary)] transition-colors hover:border-[color:var(--color-indigo-a46)] hover:text-[color:var(--color-text-secondary)]"
+            className={controlClass({
+              shape: "card",
+              size: "sm",
+              className:
+                "max-w-[180px] hover:border-[color:var(--color-indigo-a46)] hover:text-[color:var(--color-text-secondary)]",
+            })}
           >
             <ArrowLeft size={13} aria-hidden className="flex-none text-[color:var(--color-text-quaternary)]" />
             <span className="min-w-0 truncate [word-break:keep-all]">{props.backTo.label}</span>
@@ -992,7 +997,12 @@ export function StudioCompass(props: StudioCompassProps) {
                 setDraftsOpen(false);
                 setPreviewOpen(true);
               }}
-              className="flex h-[30px] items-center gap-1.5 rounded-card border border-[color:var(--color-border-soft)] px-3 text-caption text-[color:var(--color-text-tertiary)] transition-colors hover:border-[color:var(--color-border-strong)] hover:text-[color:var(--color-text-secondary)]"
+              className={controlClass({
+                shape: "card",
+                size: "sm",
+                className:
+                  "hover:border-[color:var(--color-border-strong)] hover:text-[color:var(--color-text-secondary)]",
+              })}
             >
               <Eye size={13} aria-hidden className="text-[color:var(--color-text-quaternary)]" />
               {labels.previewOpen}
@@ -1011,12 +1021,14 @@ export function StudioCompass(props: StudioCompassProps) {
                 setOpenEdit(null);
                 setDraftsOpen((v) => !v);
               }}
-              className={cn(
-                "flex h-[30px] items-center gap-1.5 rounded-card border px-3 text-caption transition-colors",
-                draftsOpen
-                  ? "border-[color:var(--color-indigo-line-a45)] bg-[color:var(--color-indigo-a12)] text-[color:var(--color-indigo-accent)]"
-                  : "border-[color:var(--color-border-soft)] text-[color:var(--color-text-tertiary)] hover:border-[color:var(--color-border-strong)] hover:text-[color:var(--color-text-secondary)]",
-              )}
+              className={controlClass({
+                shape: "card",
+                size: "sm",
+                active: draftsOpen,
+                className: draftsOpen
+                  ? undefined
+                  : "hover:border-[color:var(--color-border-strong)] hover:text-[color:var(--color-text-secondary)]",
+              })}
             >
               <FilePen size={13} aria-hidden className="text-[color:var(--color-text-quaternary)]" />
               {labels.draftsOpen(drafts.length)}
@@ -1034,12 +1046,14 @@ export function StudioCompass(props: StudioCompassProps) {
               onClick={onToggleAgentDock}
               aria-pressed={agentDockOpen}
               data-testid="studio-agent-dock-toggle"
-              className={cn(
-                "flex h-8 items-center gap-1.5 rounded-card border px-3 text-label transition-colors",
-                agentDockOpen
-                  ? "border-[color:var(--color-indigo-line-a45)] bg-[color:var(--color-indigo-a12)] text-[color:var(--color-indigo-accent)]"
-                  : "border-[color:var(--color-border-soft)] text-[color:var(--color-text-tertiary)] hover:border-[color:var(--color-border-strong)] hover:text-[color:var(--color-text-secondary)]",
-              )}
+              className={controlClass({
+                shape: "card",
+                size: "sm",
+                active: agentDockOpen,
+                className: agentDockOpen
+                  ? undefined
+                  : "hover:border-[color:var(--color-border-strong)] hover:text-[color:var(--color-text-secondary)]",
+              })}
             >
               <MessageCircle size={13} aria-hidden />
               {labels.agentDock}
@@ -1051,7 +1065,11 @@ export function StudioCompass(props: StudioCompassProps) {
             // 나가도 초안은 남고, 돌아오면 그대로다.
             onClick={onExit}
             data-testid="studio-exit"
-            className="flex h-8 items-center gap-1.5 rounded-card border border-[color:var(--color-border-soft)] px-3 text-label text-[color:var(--color-text-tertiary)] transition-colors hover:text-[color:var(--color-text-secondary)]"
+            className={controlClass({
+              shape: "card",
+              size: "sm",
+              className: "hover:text-[color:var(--color-text-secondary)]",
+            })}
           >
             <span className="text-[color:var(--color-text-quaternary)]">✕</span> {labels.exit}
           </button>
@@ -1393,7 +1411,12 @@ export function StudioCompass(props: StudioCompassProps) {
             data-testid="studio-summary-toggle"
             aria-expanded={summaryOpen}
             onClick={() => setSummaryOpen((v) => !v)}
-            className="flex h-8 items-center gap-1.5 rounded-card border border-[color:var(--color-border-soft)] px-3 text-label text-[color:var(--color-text-tertiary)] transition-colors hover:border-[color:var(--color-border-strong)] hover:text-[color:var(--color-text-secondary)]"
+            className={controlClass({
+              shape: "card",
+              size: "sm",
+              className:
+                "hover:border-[color:var(--color-border-strong)] hover:text-[color:var(--color-text-secondary)]",
+            })}
           >
             {effectiveSummary.collapsed}
             <ChevronDown size={12} aria-hidden className={cn("text-[color:var(--color-text-quaternary)] transition-transform", summaryOpen && "rotate-180")} />
@@ -1429,7 +1452,12 @@ export function StudioCompass(props: StudioCompassProps) {
             data-testid="studio-save"
             disabled={props.canSave === false}
             onClick={runSave}
-            className="flex h-8 items-center gap-2 rounded-card bg-[color:var(--color-indigo-brand)] px-4 text-label font-semibold text-white transition-colors hover:bg-[color:var(--color-indigo-hover)] disabled:opacity-40"
+            className={controlClass({
+              shape: "card",
+              size: "sm",
+              tone: "onAccent",
+              className: "hover:bg-[color:var(--color-indigo-hover)]",
+            })}
           >
             {mode === "create" ? <Check size={15} aria-hidden /> : null}
             {labels.save}
@@ -1491,7 +1519,13 @@ export function StudioCompass(props: StudioCompassProps) {
                           setDraftsOpen(false);
                           props.onOpenDraft?.(draft.focalId);
                         }}
-                        className="flex h-7 flex-none items-center rounded-chip border border-[color:var(--color-indigo-line-a32)] px-2 text-label text-[color:var(--color-indigo-accent)] transition-colors hover:border-[color:var(--color-indigo-line-a45)] hover:bg-[color:var(--color-indigo-line-a13)]"
+                        className={controlClass({
+                          shape: "chip",
+                          size: "md",
+                          tone: "accent",
+                          className:
+                            "flex-none hover:border-[color:var(--color-indigo-line-a45)] hover:bg-[color:var(--color-indigo-line-a13)]",
+                        })}
                       >
                         {labels.draftsResume}
                       </button>
@@ -1610,12 +1644,15 @@ function CenterCard(
                 data-testid={`studio-create-kind-${k.value}`}
                 aria-pressed={props.createKind === k.value}
                 onClick={() => props.onCreateKind?.(k.value)}
-                className={cn(
-                  "rounded-[5px] px-2 py-1 text-label transition-colors",
-                  props.createKind === k.value
-                    ? "bg-[color:var(--color-indigo-a16)] text-[color:var(--color-indigo-text-soft)] font-semibold"
-                    : "text-[color:var(--color-text-tertiary)] hover:text-[color:var(--color-text-secondary)]",
-                )}
+                className={controlClass({
+                  shape: "segment",
+                  size: "md",
+                  active: props.createKind === k.value,
+                  className:
+                    props.createKind === k.value
+                      ? undefined
+                      : "hover:text-[color:var(--color-text-secondary)]",
+                })}
               >
                 {k.label}
               </button>
@@ -3112,7 +3149,11 @@ function DeltaPreviewModal({
             type="button"
             data-testid="studio-preview-dismiss"
             onClick={onClose}
-            className="rounded-card px-3 py-2 text-caption text-[color:var(--color-text-tertiary)] transition-colors hover:text-[color:var(--color-text-secondary)]"
+            className={controlClass({
+              shape: "segment",
+              size: "lg",
+              className: "hover:text-[color:var(--color-text-secondary)]",
+            })}
           >
             {labels.previewClose}
           </button>
@@ -3121,7 +3162,12 @@ function DeltaPreviewModal({
             data-testid="studio-preview-save"
             disabled={!canSave}
             onClick={onSave}
-            className="flex h-[34px] items-center gap-2 rounded-card bg-[color:var(--color-indigo-brand)] px-4 text-caption font-semibold text-white transition-colors hover:bg-[color:var(--color-indigo-hover)] disabled:opacity-40"
+            className={controlClass({
+              shape: "card",
+              size: "md",
+              tone: "onAccent",
+              className: "hover:bg-[color:var(--color-indigo-hover)]",
+            })}
           >
             {labels.save}
           </button>
