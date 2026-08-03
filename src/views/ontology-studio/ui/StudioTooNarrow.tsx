@@ -50,18 +50,32 @@ export function StudioTooNarrow() {
         tone="solid"
         align="center"
         action={
+          /*
+           * 높이는 **선언**이지 패딩의 부산물이 아니다.
+           *
+           * 2026-08-04 실측: 이 두 CTA 가 `py-1.5` 산수로 **30px** 로 렌더되고
+           * 있었다 — `docs/DESIGN-SYSTEM.md` 「컨트롤 높이 사다리」가 어휘
+           * (24·28·32·36·40·44) 밖이라고 이름까지 지목한 값이고, 값 층이
+           * `card/sm` 30→32 · `card/md` 34→36 으로 걷어낸 바로 그 부산물이다.
+           * 이 화면은 손으로 쓴 컨트롤이라 그 라운드의 사정거리 밖에 있었다.
+           *
+           * `<lg` 강등 화면의 **유일한 두 컨트롤**이라 더 그렇다 — 여기서
+           * 나가는 길이 이 라우트의 전부인데 그 길만 사다리 밖이었다.
+           * `min-h-8`(32px = `--control-h-md`)로 바닥을 선언하면 반경·인셋·
+           * 타입은 그대로고 움직이는 픽셀은 높이 2px 뿐이다.
+           */
           <div className="flex flex-wrap items-center justify-center gap-2">
             <Link
               href="/topology/"
               data-testid="studio-too-narrow-map"
-              className="rounded-card border border-[color:var(--color-border-strong)] px-3 py-1.5 text-label font-semibold text-[color:var(--color-text-secondary)] transition-colors hover:text-[color:var(--color-text-primary)]"
+              className="inline-flex min-h-8 items-center rounded-card border border-[color:var(--color-border-strong)] px-3 text-label font-semibold text-[color:var(--color-text-secondary)] transition-colors hover:text-[color:var(--color-text-primary)]"
             >
               {t("openMap")}
             </Link>
             <Link
               href="/download/"
               data-testid="studio-too-narrow-get-app"
-              className="rounded-card border border-[color:var(--color-border-strong)] px-3 py-1.5 text-label font-semibold text-[color:var(--color-text-secondary)] transition-colors hover:text-[color:var(--color-text-primary)]"
+              className="inline-flex min-h-8 items-center rounded-card border border-[color:var(--color-border-strong)] px-3 text-label font-semibold text-[color:var(--color-text-secondary)] transition-colors hover:text-[color:var(--color-text-primary)]"
             >
               {t("getApp")}
             </Link>
