@@ -46,8 +46,15 @@ const ROOTS = ['src', 'app'];
  * 전수는 419였고 그중 **className 자체가 없는 2건**은 제외했다 — 손으로 쓴 규격이
  * 아니라 래퍼라서다. 이 2를 뺀 **417**이 기준선이고, 이 정정은 래칫이 스스로
  * 잡았다(첫 실행이 «419 → 417 로 줄었다» 로 빨개졌다).
+ *
+ * ## 내려온 기록 — 이 표가 곧 정규화의 진도다
+ *
+ * | 값 | 무엇이 옮겨졌나 |
+ * |---:|---|
+ * | 417 | 2026-08-03 최초 실측 |
+ * | **406** | 설정 시트(`src/widgets/app-settings-menu/**`) 11개 — 칩 6 · 아이콘 2 · 행 1 · 링크형 1 (+ 그중 하나는 눌림 상태를 `active` 로 넘김) |
  */
-const BASELINE_HAND_WRITTEN_CONTROLS = 417;
+const BASELINE_HAND_WRITTEN_CONTROLS = 406;
 
 function walk(dir: string, out: string[] = []): string[] {
   for (const name of readdirSync(dir)) {

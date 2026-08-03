@@ -33,6 +33,7 @@ import { summarizeVaultValidation } from '@/shared/lib/validate-vault-document';
 import { useCopyFeedback } from '@/shared/lib/use-copy-feedback';
 import { useDialogFocusTrap } from '@/shared/lib/use-dialog-focus-trap';
 import { cn } from '@/shared/lib/cn';
+import { Chip, IconButton, RowButton } from '@/shared/ui/controls';
 import { subscribeSettingsViewIntent } from '@/shared/lib/settings-view-intent';
 
 import {
@@ -628,14 +629,18 @@ export function AppSettingsMenu({
                 {t('title')}
               </h2>
             </div>
-            <button
-              type="button"
-              aria-label={t('closeLabel')}
+            {/* 정사각 아이콘 컨트롤이라 `IconButton` 이 제자리다 — 접근 이름은
+                타입이 강제하고, 크기(h-7 w-7)·톤(3차)은 램프가 낸다. 테두리가
+                빠진 것은 이 전환의 대가다: 실측 36개의 아이콘 컨트롤에서 뽑은
+                모양에 테두리가 없다(`control-class.ts`). 호버·포커스는 규율대로
+                소비처가 낸다. */}
+            <IconButton
+              label={t('closeLabel')}
               onClick={() => closePanel()}
-              className="inline-flex h-7 w-7 shrink-0 items-center justify-center rounded-chip border border-[color:var(--color-border-soft)] text-[color:var(--color-text-tertiary)] transition-colors hover:border-[color:var(--color-border-strong)] hover:text-[color:var(--color-text-primary)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--color-indigo-a46)] focus-visible:ring-inset"
+              className="hover:text-[color:var(--color-text-primary)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--color-indigo-a46)] focus-visible:ring-inset"
             >
               <X size={13} aria-hidden />
-            </button>
+            </IconButton>
           </div>
 
           {
@@ -935,19 +940,19 @@ export function AppSettingsMenu({
                     caption={vaultRootPath}
                     control={
                       <>
-                        <button
-                          type="button"
+                        <Chip
+                          size="lg"
                           data-testid="app-settings-copy-vault-path"
                           onClick={() => void copy(vaultRootPath)}
                           aria-label={tPicker('copyPathAriaLabel', { path: vaultRootPath })}
-                          className="inline-flex h-8 shrink-0 items-center rounded-chip border border-[color:var(--color-border-soft)] px-2.5 text-body text-[color:var(--color-text-tertiary)] transition-colors hover:border-[color:var(--color-border-strong)] hover:text-[color:var(--color-text-secondary)]"
+                          className="shrink-0 hover:border-[color:var(--color-border-strong)] hover:text-[color:var(--color-text-secondary)]"
                         >
                           {copyState === 'copied'
                             ? tPicker('copyPathCopied')
                             : copyState === 'failed'
                               ? tPicker('copyPathFailed')
                               : tPicker('copyPathTooltip')}
-                        </button>
+                        </Chip>
                         <button
                           type="button"
                           data-testid="app-settings-reveal-vault-path"
@@ -972,13 +977,17 @@ export function AppSettingsMenu({
                         className="flex min-h-11 items-center gap-2 px-3 py-1.5"
                         data-testid="app-settings-recent-vault"
                       >
-                        <button
-                          type="button"
+                        {/* 목록의 한 줄 전체가 눌리는 것 = `row`(실측 39).
+                            `disabled:opacity-60` 을 지운 이유는 값 층이 이미
+                            비활성 어포던스를 싣기 때문이다 — 두 벌이면 하나는
+                            언젠가 빠진다. */}
+                        <RowButton
+                          size="sm"
                           onClick={() => void localVault.openRecent(record)}
                           disabled={vaultBusy}
                           aria-label={t('workspaceRecentOpenAria', { name: record.name })}
                           title={record.desktopRootPath ?? record.name}
-                          className="flex min-w-0 flex-1 items-center gap-2 rounded-chip px-1 py-1 text-left transition-colors hover:bg-[color:var(--color-overlay-2)] disabled:opacity-60"
+                          className="min-w-0 flex-1 hover:bg-[color:var(--color-overlay-2)]"
                         >
                           <HardDrive
                             size={12}
@@ -995,15 +1004,16 @@ export function AppSettingsMenu({
                               </span>
                             ) : null}
                           </span>
-                        </button>
-                        <button
-                          type="button"
+                        </RowButton>
+                        <IconButton
+                          size="sm"
+                          tone="muted"
                           onClick={() => void localVault.forgetRecent(record)}
-                          aria-label={t('workspaceRecentForgetAria', { name: record.name })}
-                          className="inline-flex h-6 w-6 shrink-0 items-center justify-center rounded-sm text-[color:var(--color-text-quaternary)] transition-colors hover:bg-[color:var(--color-danger-a10)] hover:text-[color:var(--color-status-danger)]"
+                          label={t('workspaceRecentForgetAria', { name: record.name })}
+                          className="hover:bg-[color:var(--color-danger-a10)] hover:text-[color:var(--color-status-danger)]"
                         >
                           <X size={12} aria-hidden />
-                        </button>
+                        </IconButton>
                       </div>
                     ))
                   : null}
