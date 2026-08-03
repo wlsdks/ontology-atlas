@@ -83,4 +83,40 @@ describe('컨트롤 컴포넌트 — className 이 못 나르는 것들', () => 
     expect(el).toHaveClass('absolute');
     expect(el).toHaveClass('rounded-chip');
   });
+
+  it.each([
+    ['chip', <Chip key="c">칩</Chip>],
+    [
+      'icon',
+      <IconButton key="i" label="닫기">
+        <span>×</span>
+      </IconButton>,
+    ],
+    ['row', <RowButton key="r">행</RowButton>],
+  ])('%s 는 밖에서 질의된다 — data-control', (shape, element) => {
+    /*
+     * **밖에서 구분할 수 없는 것은 밖에서 검사할 수 없다.** 이 속성이 없으면
+     * 「이 화면의 모든 아이콘 컨트롤이 44px 히트 영역을 갖는가」에 답하려고
+     * 테스트가 셀렉터를 손으로 나열해야 하고, 그 목록은 화면이 바뀌면 조용히
+     * 낡는다. `data-testid` 가 «한 자리» 라면 이건 «한 부류» 다.
+     */
+    const { container } = render(element);
+    expect(container.querySelector(`[data-control="${shape}"]`)).toBeInTheDocument();
+  });
+
+  it('한 화면의 컨트롤을 부류로 셀 수 있다 — 계기가 쓰는 형태', () => {
+    render(
+      <div>
+        <Chip>가</Chip>
+        <Chip>나</Chip>
+        <IconButton label="닫기">
+          <span>×</span>
+        </IconButton>
+        <RowButton>행</RowButton>
+      </div>,
+    );
+    expect(document.querySelectorAll('[data-control="chip"]')).toHaveLength(2);
+    expect(document.querySelectorAll('[data-control="icon"]')).toHaveLength(1);
+    expect(document.querySelectorAll('[data-control]')).toHaveLength(4);
+  });
 });

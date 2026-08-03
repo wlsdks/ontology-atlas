@@ -29,6 +29,21 @@ import { controlClass, type ControlSize, type ControlTone } from './control-clas
  *
  * 그래서 여기 셋은 전부 `controlClass()` 를 통과해 값을 받고
  * (`controls.test.tsx` 가 그걸 단언한다), 램프 밖 값을 낼 방법이 없다.
+ *
+ * ## 밖에서 질의 가능하다 — `data-control`
+ *
+ * 셋 다 `data-control="chip|icon|row"` 를 낸다. **밖에서 구분할 수 없는 것은
+ * 밖에서 검사할 수 없다**(지도 훅이 여섯 번 틀리고 배운 그것). 이 한 속성이
+ * 없으면 「이 화면의 모든 아이콘 컨트롤이 44px 히트 영역을 갖는가」 같은 질문에
+ * 테스트가 **셀렉터를 손으로 나열**해야 하고, 그 목록은 화면이 바뀌면 조용히
+ * 낡는다. 실제 소비처:
+ *
+ * - `tests/e2e/touch-target-contract.spec.ts` — 아이콘 컨트롤 전수 히트 영역
+ * - `scripts/measure-contrast.mjs` — 컨트롤만 좁혀 대비 측정
+ * - `/design-audit` — 화면당 컨트롤 센서스
+ *
+ * `data-testid` 와 역할이 다르다: testid 는 **한 자리**를 가리키고, 이건
+ * **한 부류**를 가리킨다.
  */
 
 type BaseProps = Omit<ButtonHTMLAttributes<HTMLButtonElement>, 'className' | 'type'> & {
@@ -53,6 +68,7 @@ export const Chip = forwardRef<HTMLButtonElement, BaseProps>(
       // ★ 폼 안에서 `<button>` 의 기본은 `submit` 이다. 칩 하나가 폼을 보내는
       //   사고는 className 으로는 막을 수 없다 — 이 줄이 이 컴포넌트의 존재 이유다.
       type="button"
+      data-control="chip"
       className={controlClass({ shape: 'chip', size, tone, active, className })}
       {...rest}
     />
@@ -79,6 +95,7 @@ export const IconButton = forwardRef<HTMLButtonElement, IconButtonProps>(
       type="button"
       aria-label={label}
       title={label}
+      data-control="icon"
       className={controlClass({ shape: 'icon', size, tone, active, className })}
       {...rest}
     >
@@ -100,6 +117,7 @@ export const RowButton = forwardRef<HTMLButtonElement, BaseProps>(
     <button
       ref={ref}
       type="button"
+      data-control="row"
       className={controlClass({ shape: 'row', size, tone, active, className })}
       {...rest}
     />
