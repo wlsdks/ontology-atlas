@@ -5285,7 +5285,7 @@ describe('verify.mjs first-contact gates', () => {
     try {
       const result = spawnSync(
         process.execPath,
-        [VERIFY_SCRIPT, root, '--timeout-ms', '3000'],
+        [VERIFY_SCRIPT, root, '--timeout-ms', '1000'],
         { cwd: join(__dirname, '..'), encoding: 'utf8' },
       );
 
@@ -5302,6 +5302,7 @@ describe('verify.mjs first-contact gates', () => {
       assert.match(result.stdout, /list_concepts — vault total 0 nodes/);
       assert.match(result.stdout, /verify vault has 0 ontology nodes/);
       assert.match(result.stdout, /Point verify at a populated ontology vault/);
+      assert.doesNotMatch(result.stdout, /verify timed out/);
       assert.doesNotMatch(result.stdout, /find_evidence response missing match kind/);
     } finally {
       rmSync(root, { recursive: true, force: true });

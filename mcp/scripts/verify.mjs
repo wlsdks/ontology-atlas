@@ -8457,6 +8457,7 @@ async function step2BootAndCall() {
     let sentDestructiveDryRunSmoke = false;
     let sentMaintenanceResumeSmoke = false;
     let destructiveDryRunExpectedResponses = [];
+    let earlyEmptyVaultPayload = null;
     const expectedFirstContactIds = initialExpectedFirstContactIds();
     let limitedQueryConceptsSmoke = null;
     let timer = null;
@@ -8480,6 +8481,13 @@ async function step2BootAndCall() {
             listPayload = JSON.parse(listResponse.result.content?.[0]?.text || '{}');
           } catch {
             listPayload = null;
+          }
+          if (listPayload && emptyVerifyVaultFailure(listPayload)) {
+            earlyEmptyVaultPayload = listPayload;
+            completed = true;
+            if (timer) clearTimeout(timer);
+            stopServer();
+            return;
           }
           if (projectResponse) {
             try {
@@ -8717,6 +8725,31 @@ async function step2BootAndCall() {
 
       if (signal && !completed && missingLabels.length > 0) {
         log('fail', serverSignalFailure(signal, stderr, verifyRetryEnvForVault(VAULT)));
+        return res(false);
+      }
+
+      if (earlyEmptyVaultPayload) {
+        if (!initRes || !initRes.result) {
+          log('fail', serverStartupFailure(stderr, verifyRetryEnvForVault(VAULT)));
+          return res(false);
+        }
+        log('ok', `initialize OK — server ${initRes.result.serverInfo?.name}@${initRes.result.serverInfo?.version}`);
+        if (!callRes || !callRes.result) {
+          log('fail', 'no list_concepts response');
+          return res(false);
+        }
+        const listFailure = listConceptsFailure(earlyEmptyVaultPayload);
+        if (listFailure) {
+          log('fail', listFailure);
+          return res(false);
+        }
+        const structuredFailure = structuredContentFailure(callRes, earlyEmptyVaultPayload, 'list_concepts');
+        if (structuredFailure) {
+          log('fail', structuredFailure);
+          return res(false);
+        }
+        log('ok', `list_concepts — vault total ${earlyEmptyVaultPayload.total} nodes (vaultRoot ${earlyEmptyVaultPayload.vaultRoot})`);
+        log('fail', emptyVerifyVaultFailure(earlyEmptyVaultPayload));
         return res(false);
       }
 
