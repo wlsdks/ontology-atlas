@@ -57,6 +57,7 @@ const ROOTS = ['src', 'app'];
  * | **303** | 문서함 · 빠른 서랍 · 공방(`views/docs-vault` · `widgets/docs-vault` · `widgets/docs-quick-drawer` · `views/ontology-studio`) 121개 중 86개 — 행 27 · 아이콘 24 · 칩 21 · 링크형 13 · pill 4 · 카드 2. 남긴 35개는 넷으로 갈린다: ① **크롬 토큰 계약**(`--chrome-tile-size` · `--docs-header-tile-size` · `--overlay-close-size`)을 지는 자리 4 — 램프가 아니라 크롬이 규격이다 ② **나침 무대의 절대배치 기하**(소켓 · 레인 접기 · 더 잇기 · 고정 높이 30/32 툴바) 15 — 이 표면의 문법이 따로 있고 `studio-navigation` 스펙이 그 치수를 계약으로 잡는다 ③ **한 벌로 읽혀야 하는 세트**(첫 실행 선택 행 4 + 최근 볼트 grid 행 1, 다중행 `items-start` 라 `row`(단행 `items-center`)에 안 맞는다) 11 ④ **문장·바 속 인라인 컨트롤** 5 — `link` 이 `min-h-11`(WCAG 2.5.8)을 실으면서 글줄 안에서는 줄 상자를 44px 로 밀어 올린다(실측 21.3 → 44). 시각 크기와 히트 영역이 다른 축이라는 상류 판단은 옳고, 다만 그 해법이 «문장 속» 이라는 세 번째 축을 아직 안 본다 |
  *
  * | **269** | 위 두 라운드가 「자리가 없어서」 남긴 48개의 회수 — 값 층의 구멍 넷을 메운(`a1f956ce9`) 직후다. 설정 시트 29(칩 24 · 타일 2 · 링크형 3) + 지도 액션 타일 5. `tone` 의 새 넷(secondary 6 · accent 11 · success 2 · warning 2 · danger 1)이 22개를, `shape: 'tile'` 이 7개를, `link` 의 `min-h-11` 이 3개를 열었다 |
+ * | **252** | 지도 뷰(`src/views/home/**`) 31개 중 17개 — 아이콘 9 · pill 4 · 칩 1 · 링크형 1(그 외 2는 인디고 강조 아이콘/pill). 남긴 14개는 다섯으로 갈린다: ① **컨트롤이 아닌 것** 3 — `absolute inset-0` 전면 백드롭은 스크림이지 눌리는 원소가 아니다 ② **크롬 토큰 계약** 2 — 투어·단축키 타일은 `--chrome-tile-size`/`--chrome-radius` 를 진다 ③ **말줄임이 필요한 텍스트 컨트롤** 3 — 모양 일곱이 전부 flex 계열이라 `text-overflow: ellipsis` 가 통하지 않는다(실측: `inline-block` 은 `…`, `inline-flex` 는 하드 클립) ④ **패딩을 가진 텍스트 링크** 3 — `link` 는 패딩이 0이라 `px-1 py-0.5`/`px-2 py-1` 히트 영역이 사라진다 ⑤ **램프에 스텝이 없는 것** 3 — 20px 아이콘 · 40px(`--control-h-lg`) 인디고 pill · 2줄 세로 목록 행 |
  *
  * ## 남은 것을 왜 안 옮겼나 — 이 목록이 다음 라운드의 입력이다
  *
@@ -83,7 +84,7 @@ const ROOTS = ['src', 'app'];
  * **공유 상수로 뽑는 옳은 리팩터에 벌점을 준다.** 그래서 이 라운드는 잉크만
  * 상수로 공유하고 램프 호출은 자리마다 인라인으로 썼다.
  */
-const BASELINE_HAND_WRITTEN_CONTROLS = 269;
+const BASELINE_HAND_WRITTEN_CONTROLS = 252;
 
 function walk(dir: string, out: string[] = []): string[] {
   for (const name of readdirSync(dir)) {

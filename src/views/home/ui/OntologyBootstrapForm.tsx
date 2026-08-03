@@ -7,6 +7,7 @@ import {
   selectedElements,
   type BootstrapPlan,
 } from "@/features/docs-vault-local";
+import { controlClass } from "@/shared/ui/control-class";
 
 /**
  * "내 문서로 지도 만들기" — 기존 .md 폴더(frontmatter 없음)를 연 사용자의
@@ -106,7 +107,13 @@ export function OntologyBootstrapForm({
           onClick={onCancel}
           aria-label={labels.cancel}
           data-testid="ontology-bootstrap-cancel"
-          className="inline-flex h-6 w-6 items-center justify-center rounded-full text-[color:var(--color-text-quaternary)] transition-colors hover:text-[color:var(--color-text-primary)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--color-indigo-a46)] focus-visible:ring-inset"
+          className={controlClass({
+            shape: "icon",
+            size: "sm",
+            tone: "muted",
+            className:
+              "hover:text-[color:var(--color-text-primary)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--color-indigo-a46)] focus-visible:ring-inset",
+          })}
         >
           <X size={12} aria-hidden />
         </button>
@@ -190,7 +197,14 @@ export function OntologyBootstrapForm({
           onClick={() => void submit()}
           disabled={!canConfirm}
           data-testid="ontology-bootstrap-confirm"
-          className="inline-flex h-8 items-center justify-center gap-1.5 rounded-full border border-[color:var(--color-indigo-a46)] bg-[color:var(--color-indigo-a16)] px-3 text-label font-[var(--font-weight-signature)] text-[color:var(--color-indigo-accent)] transition-colors hover:bg-[color:var(--color-indigo-a24)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--color-indigo-a46)] focus-visible:ring-inset disabled:opacity-50"
+          className={controlClass({
+            shape: "pill",
+            size: "md",
+            tone: "accent",
+            fixedHeight: true,
+            className:
+              "justify-center gap-1.5 border-[color:var(--color-indigo-a46)] bg-[color:var(--color-indigo-a16)] font-[var(--font-weight-signature)] hover:bg-[color:var(--color-indigo-a24)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--color-indigo-a46)] focus-visible:ring-inset",
+          })}
         >
           <MapIcon size={12} aria-hidden />
           {busy ? "…" : labels.confirm}

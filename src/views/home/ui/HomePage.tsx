@@ -117,7 +117,7 @@ const MountedGlobalSearch = dynamic(
 const importFullDetailA1 = () => import("@/widgets/full-detail-a1");
 type FullDetailA1Component = Awaited<ReturnType<typeof importFullDetailA1>>["FullDetailA1"];
 import { GestureHint } from "@/widgets/gesture-hint";
-import { ChromeChip, LiveAnnouncer, Surface, Tooltip, useToast } from "@/shared/ui";
+import { ChromeChip, LiveAnnouncer, Surface, Tooltip, controlClass, useToast } from "@/shared/ui";
 import { resolveToastBottomOffsetForStack } from "@/shared/ui/toast-position";
 import {
   detectOrphanProjects,
@@ -3979,7 +3979,13 @@ export function HomePage() {
                         type="button"
                         onClick={closeCreateNode}
                         aria-label={t('createNode.cancel')}
-                        className="inline-flex h-6 w-6 shrink-0 items-center justify-center rounded-full text-[color:var(--color-text-quaternary)] transition-colors hover:text-[color:var(--color-text-primary)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--color-indigo-a46)] focus-visible:ring-inset"
+                        className={controlClass({
+                          shape: "icon",
+                          size: "sm",
+                          tone: "muted",
+                          className:
+                            "hover:text-[color:var(--color-text-primary)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--color-indigo-a46)] focus-visible:ring-inset",
+                        })}
                       >
                         <X size={12} aria-hidden />
                       </button>
@@ -3991,7 +3997,14 @@ export function HomePage() {
                         setDocsDrawerOpen(true);
                       }}
                       data-testid="topology-create-node-open-workspace"
-                      className="mt-3 inline-flex h-8 items-center justify-center rounded-full border border-[color:var(--color-indigo-a46)] bg-[color:var(--color-indigo-a16)] px-3 text-label font-[var(--font-weight-signature)] text-[color:var(--color-indigo-accent)] transition-colors hover:bg-[color:var(--color-indigo-a24)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--color-indigo-a46)] focus-visible:ring-inset"
+                      className={controlClass({
+                        shape: "pill",
+                        size: "md",
+                        tone: "accent",
+                        fixedHeight: true,
+                        className:
+                          "mt-3 justify-center border-[color:var(--color-indigo-a46)] bg-[color:var(--color-indigo-a16)] font-[var(--font-weight-signature)] hover:bg-[color:var(--color-indigo-a24)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--color-indigo-a46)] focus-visible:ring-inset",
+                      })}
                     >
                       {t('createNode.unavailableAction')}
                     </button>
@@ -4600,7 +4613,13 @@ export function HomePage() {
                   <button
                     type="button"
                     onClick={() => setLocalGraphStack([])}
-                    className="font-mono text-label uppercase tracking-[0.12em] text-[color:var(--color-text-tertiary)] transition-colors hover:text-[color:var(--color-text-primary)]"
+                    className={controlClass({
+                      shape: "link",
+                      size: "md",
+                      inline: true,
+                      className:
+                        "font-mono uppercase tracking-[0.12em] hover:text-[color:var(--color-text-primary)]",
+                    })}
                   >
                     Root
                   </button>
@@ -4626,7 +4645,12 @@ export function HomePage() {
                   <button
                     type="button"
                     onClick={() => setLocalGraphStack((stack) => stack.slice(0, -1))}
-                    className="ml-2 rounded-full border border-[color:var(--color-divider)] px-2 py-0.5 font-mono text-caption uppercase tracking-[0.14em] text-[color:var(--color-text-tertiary)] transition-colors hover:bg-[color:var(--color-overlay-2)]"
+                    className={controlClass({
+                      shape: "pill",
+                      size: "sm",
+                      className:
+                        "ml-2 font-mono uppercase tracking-[0.14em] hover:bg-[color:var(--color-overlay-2)]",
+                    })}
                   >
                     Esc
                   </button>
@@ -4758,7 +4782,12 @@ export function HomePage() {
               onClick={() => {
                 if (typeof window !== "undefined") window.location.reload();
               }}
-              className="ml-2 rounded-full border border-[color:var(--color-divider)] px-2.5 py-0.5 font-mono text-caption uppercase tracking-[0.14em] text-[color:var(--color-text-tertiary)] transition-colors hover:bg-[color:var(--color-overlay-2)] hover:text-[color:var(--color-text-primary)]"
+              className={controlClass({
+                shape: "pill",
+                size: "sm",
+                className:
+                  "ml-2 font-mono uppercase tracking-[0.14em] hover:bg-[color:var(--color-overlay-2)] hover:text-[color:var(--color-text-primary)]",
+              })}
             >
               {t('errorBanner.retry')}
             </button>
