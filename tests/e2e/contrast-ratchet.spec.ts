@@ -28,19 +28,24 @@ const { judgeText } = require('../../scripts/lib/contrast.mjs');
 const ROUTES = ['/ko/', '/ko/topology/', '/ko/docs/', '/ko/ontology/studio/', '/ko/projects/'];
 
 /**
- * 2026-08-03 전수 (1512×900, 위 5개 라우트, 조합 110):
+ * 2026-08-03 전수 (1512×900, 위 5개 라우트, 조합 109):
  *
  * | 라우트 | 미달 | 무엇 |
  * |---|---:|---|
- * | `/ko` | 2 | 주 CTA 인디고 면 위 흰 글자 **4.42:1** (요구 4.5) |
- * | `/ko/projects` | 2 | `--color-text-quaternary` **4.31:1** |
+ * | ~~`/ko`~~ | ~~2~~ → **0** | 주 CTA 의 인디고 면 위 잉크가 `--color-text-primary`(#f7f8f8, **4.42:1**)였다. 그 표면 전용으로 이미 있던 `--color-text-on-accent`(#ffffff, **4.70:1**)로 옮겼다 — `button.tsx` 의 `primary` 변형과 `DownloadPage` 의 크기 배지 두 곳. 새 값 0개 |
+ * | `/ko/projects` | 2 | `--color-text-quaternary`(#787c84) **4.31:1** |
  * | 지도 · 문서함 · 공방 | 0 | |
  *
- * 넷 다 **헌장 색이 걸린 사안**이라 계기를 켠 쪽이 단독으로 못 고친다 — 처방은
- * 디자인 게이트(「체계」·「도해」)로 간다. 그래서 0이 아니라 래칫이다.
+ * 남은 둘은 **토큰 한 개**다. 이 잉크는 캔버스(4.76)/패널(4.55)에서만 AA 를
+ * 넘고 한 단 올라선 표면 — 패널+`--color-overlay-1`(**4.33**) ·
+ * `--color-elevated`(**4.16**) — 에서 뚫린다. 소비처 652곳이라 자리별 치환은
+ * 오늘 보이는 곳만 지우고 나머지를 장전된 채 남긴다. 값 하나(`#82828a`)를
+ * 올리면 네 바탕 전부 통과하고 명도 순서도 보존되지만, 그건 `app/globals.css`
+ * 의 램프라 「체계」석의 자리다. 그래서 0이 아니라 래칫이다.
+ * 자리별 실측과 근거는 `tests/e2e/a11y-ratchet.spec.ts` 의 `BASELINE` 주석.
  * **이 수는 내려가기만 한다.**
  */
-const BASELINE_FAILING_COMBINATIONS = 4;
+const BASELINE_FAILING_COMBINATIONS = 2;
 
 /** 페이지에서 색·폰트만 꺼내 온다. 판정은 순수 함수가 한다. */
 const COLLECT = `(() => {

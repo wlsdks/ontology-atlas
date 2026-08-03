@@ -602,11 +602,17 @@ function AssetSize({ bytes, onFill = false }: { bytes: number; onFill?: boolean 
       className={cn(
         'hidden font-mono text-label leading-label sm:inline',
         // 채운 버튼 위에서는 **약화도 하지 않는다**. `opacity-80` 을 얹어 봤더니
-        // 합성 대비가 3.45:1 로 떨어졌다(11px 텍스트, 실측 2026-07-29) — 라벨
-        // 자신이 4.42:1 인 표면이라 여기서 한 단만 낮춰도 바로 밑으로 뚫린다.
-        // 크기와 라벨을 가르는 것은 이미 mono 페이스와 간격이 한다.
+        // 합성 대비가 3.45:1 로 떨어졌다(11px 텍스트, 실측 2026-07-29) — 한 단만
+        // 낮춰도 바로 밑으로 뚫린다. 크기와 라벨을 가르는 것은 이미 mono
+        // 페이스와 간격이 한다.
+        //
+        // 잉크는 라벨과 **같은 토큰**이어야 한다. 2026-08-03 까지 이 자리는
+        // `--color-text-primary` 였고 채운 인디고 위에서 4.42:1 이라 AA 미달
+        // 이었다(위 주석의 «라벨 자신이 4.42:1» 이 그 값이다). 라벨이
+        // `--color-text-on-accent`(4.70:1)로 올라갔으므로 크기 배지도 같이
+        // 간다 — 한 버튼 안에서 잉크가 둘로 갈리면 그게 다음 회귀다.
         onFill
-          ? 'text-[color:var(--color-text-primary)]'
+          ? 'text-[color:var(--color-text-on-accent)]'
           : 'text-[color:var(--engraved-numeral-face)] [text-shadow:var(--engraved-numeral-text-shadow)]',
       )}
     >
