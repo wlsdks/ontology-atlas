@@ -2,7 +2,7 @@
 
 import Image from "next/image";
 import { withBasePath } from "@/shared/lib/base-path";
-import { usePanelPresence, useSurfaceSwap } from "@/shared/lib/use-presence";
+import { useHeldValue, usePanelPresence, useSurfaceSwap } from "@/shared/lib/use-presence";
 import { cn } from "@/shared/lib/cn";
 import {
   type KeyboardEvent as ReactKeyboardEvent,
@@ -117,7 +117,7 @@ const MountedGlobalSearch = dynamic(
 const importFullDetailA1 = () => import("@/widgets/full-detail-a1");
 type FullDetailA1Component = Awaited<ReturnType<typeof importFullDetailA1>>["FullDetailA1"];
 import { GestureHint } from "@/widgets/gesture-hint";
-import { ChromeChip, LiveAnnouncer, Tooltip, useToast } from "@/shared/ui";
+import { ChromeChip, LiveAnnouncer, Surface, Tooltip, useToast } from "@/shared/ui";
 import { resolveToastBottomOffsetForStack } from "@/shared/ui/toast-position";
 import {
   detectOrphanProjects,
@@ -984,6 +984,18 @@ export function HomePage() {
       why,
     };
   }, [selectedEdge, ontologyInsight, docFreshnessIndex, updatedAgoNowMs, t, relationVocabulary, relationRegister]);
+
+  /**
+   * 엣지 패널의 **열림**과 **내용**을 가른다 — 그래야 퇴장이 성립한다.
+   * `open` 은 지금 열려야 하는가, `held` 는 퇴장 창 동안에도 그릴 내용이다.
+   *
+   * ★ `useHeldValue` 에 **키**를 넘긴다. 첫 시도에서 키 없이 넘겼다가 React
+   * #301(무한 재렌더)로 지도가 죽었다 — `edgePanelModel` 은 `useMemo` 인데
+   * 정체성이 매 렌더 새로 만들어져 정체성 비교가 끝없이 돌았다.
+   */
+  const edgePanelOpen = Boolean(edgePanelModel) && !selectedOntologyNode && !createNodeOpen;
+  const edgePanelKey = selectedEdge ? `${selectedEdge.sourceId}→${selectedEdge.targetId}` : null;
+  const heldEdgePanelModel = useHeldValue(edgePanelOpen ? edgePanelModel : null, edgePanelKey);
   // P3c — 엣지 호버 마이크로카드 (클릭 팝오버의 가벼운 전신).
   const [hoverEdge, setHoverEdge] = useState<{
     edge: { sourceId: string; targetId: string; relationType: string; declaredBySlug: string | null };
@@ -4981,22 +4993,26 @@ export function HomePage() {
             y={clusterHoverCardModel.y}
           />
         ) : null}
-        {edgePanelModel && !selectedOntologyNode && !createNodeOpen ? (
-          <div
+        {/* 퇴장을 갖는다 — 종전엔 닫는 순간 1프레임에 사라졌다(등장만 있고
+            나가는 길이 없었다). `Surface` 가 퇴장 창·퇴장 클래스·`inert` 를 지고
+            `useHeldValue` 가 그 창 동안 모델을 붙든다. */}
+        {heldEdgePanelModel ? (
+          <Surface
+            open={edgePanelOpen}
             data-testid="topology-edge-popover-positioner"
             className="topology-ui-scale fixed inset-x-3 top-[72px] z-50 flex justify-center lg:inset-x-auto lg:right-[var(--topology-node-popover-right-inset)] lg:top-[var(--topology-node-popover-top)] lg:block"
           >
             <TopologyV2EdgePanel
-              sentence={edgePanelModel.sentence}
-              typeLabel={edgePanelModel.typeLabel}
-              fromId={edgePanelModel.fromId}
-              toId={edgePanelModel.toId}
-              fromTitle={edgePanelModel.fromTitle}
-              toTitle={edgePanelModel.toTitle}
-              why={edgePanelModel.why}
-              declaredBy={edgePanelModel.declaredBy}
-              updatedAtLabel={edgePanelModel.updatedAtLabel}
-              studioEditHref={edgePanelModel.studioEditHref}
+              sentence={heldEdgePanelModel.sentence}
+              typeLabel={heldEdgePanelModel.typeLabel}
+              fromId={heldEdgePanelModel.fromId}
+              toId={heldEdgePanelModel.toId}
+              fromTitle={heldEdgePanelModel.fromTitle}
+              toTitle={heldEdgePanelModel.toTitle}
+              why={heldEdgePanelModel.why}
+              declaredBy={heldEdgePanelModel.declaredBy}
+              updatedAtLabel={heldEdgePanelModel.updatedAtLabel}
+              studioEditHref={heldEdgePanelModel.studioEditHref}
               labels={{
                 kicker: t("edgePanel.kicker"),
                 declaredByLabel: t("edgePanel.declaredBy"),
@@ -5011,7 +5027,7 @@ export function HomePage() {
               onClose={() => setSelectedEdge(null)}
               className="pointer-events-auto max-lg:w-[min(400px,calc(100vw-1.5rem))]"
             />
-          </div>
+          </Surface>
         ) : null}
         {contextMenuNode && contextMenuModel ? (
           <TopologyV2ContextMenu

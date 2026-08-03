@@ -56,7 +56,6 @@ import { describe, expect, it } from 'vitest';
  * 등록부는 부채 목록이지 허가 목록이 아니다.
  */
 const HARD_CUT_REGISTRY: ReadonlyArray<readonly [file: string, why: string]> = [
-  ['src/widgets/topology-map-v2/ui/TopologyV2EdgePanel.tsx', '엣지 클릭으로 뜬다 — HomePage 의 `edgePanelModel && …` 게이트'],
   ['src/widgets/topology-map-v2/ui/TopologyV2DetailPanel.tsx', '노드 클릭으로 뜬다 — 이 앱에서 가장 자주 열리는 표면'],
   ['src/features/project-quick-edit/ui/ProjectQuickEditPanel.tsx', 'ProjectDetailPage 의 삼항으로 뜬다'],
   ['src/widgets/vault-agent-panel/ui/VaultAgentPanel.tsx', 'HomePage 의 삼항으로 뜬다'],
