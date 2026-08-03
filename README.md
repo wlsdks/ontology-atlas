@@ -588,6 +588,7 @@ environments without a supported installed app.
 # Keep the tool outside the project you are describing.
 git clone https://github.com/wlsdks/ontology-atlas ~/tools/ontology-atlas
 cd ~/tools/ontology-atlas && pnpm install
+pnpm --dir mcp install   # mcp/ carries its own lockfile — the line above skips it
 ATLAS=~/tools/ontology-atlas/cli/src/index.mjs
 
 cd /path/to/your/repo
@@ -604,6 +605,14 @@ node $ATLAS index . --vault ./ontology --apply
 # 3. The compact packet a person or coding agent starts from.
 node $ATLAS agent-brief ./ontology
 ```
+
+Both installs are load-bearing, and so is repeating the second one. `mcp/` is
+not in the root pnpm workspace, so the first `pnpm install` never reaches it and
+a `git pull` that bumps `mcp/package.json` leaves it behind. A stale
+`mcp/node_modules` does not fail loudly, and it does not fail first: step 1
+scaffolds happily, because `init` only writes files. Step 2 and everything after
+it exit with `ERR_MODULE_NOT_FOUND` instead, because those spawn the MCP server
+to answer. Re-run the `--dir mcp` line after every pull.
 
 Restart your agent in your repository and the 33 MCP tools register from the
 generated config. `node $ATLAS mcp-verify ./ontology` proves the actual server
