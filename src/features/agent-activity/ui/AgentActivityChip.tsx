@@ -174,7 +174,7 @@ export function AgentActivityChip({ suppressed = false }: { suppressed?: boolean
               {feed.unreadCount > 0 ? (
                 <span
                   data-testid="agent-activity-unread"
-                  className="inline-flex h-4 min-w-4 items-center justify-center rounded-full bg-[color:var(--color-indigo-a32)] px-1 font-mono text-caption tabular-nums text-[color:var(--color-indigo-accent)]"
+                  className="inline-flex h-4 min-w-4 items-center justify-center rounded-full bg-[color:var(--color-indigo-a32)] px-1 font-mono text-caption tabular-nums text-[color:var(--color-indigo-text-soft)]"
                 >
                   {feed.unreadCount}
                 </span>

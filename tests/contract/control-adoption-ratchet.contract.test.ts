@@ -10,15 +10,17 @@ import { describe, expect, it } from 'vitest';
  * ## 오늘의 목록 (2026-08-04) — 이 파일에서 먼저 읽을 것
  * ════════════════════════════════════════════════════════════════════
  *
- * 세는 수는 **셋**이다. 종전엔 113 이 한 덩어리였고, 그래서 무엇이 진전인지
+ * 세는 수는 **넷**이다. 종전엔 113 이 한 덩어리였고, 그래서 무엇이 진전인지
  * 알 수 없었다 — 옮길 수 없는 자리와 아직 안 옮긴 자리가 같은 칸에 있었다.
+ * 앵커도 같은 이유로 등재/부채로 갈랐다(2026-08-04 두 번째 라운드).
  *
  * | 수 | 뜻 | 어느 방향으로 움직이나 |
  * |---:|---|---|
- * | **등재 23** | 값 층 밖이라고 **검증되어 등재된** `<button>` 자리(`OUTSIDE_VALUE_LAYER`) | 늘리려면 `BASELINE_REGISTERED` 를 **손으로** 올린다. 그 diff 가 「왜」를 적을 자리다 |
+ * | **버튼 등재 23** | 값 층 밖이라고 **검증되어 등재된** `<button>` 자리(`OUTSIDE_VALUE_LAYER`) | 늘리려면 `BASELINE_REGISTERED` 를 **손으로** 올린다. 그 diff 가 「왜」를 적을 자리다 |
  * | **버튼 부채 85** | 아직 안 옮긴 `<button>` | **줄어야 한다.** 버튼 진도는 여기서 읽는다 |
- * | **앵커 부채 109** | 손으로 규격을 쓴 `<Link>` 85 · `<a>` 24 | **줄어야 한다.** 2026-08-04 신설 — 아래 「세 번째 수」 절 |
- * | 버튼 전수 108 | 등재 + 버튼 부채 | 파생값이다. 이 수를 보고 판단하지 않는다 |
+ * | **앵커 등재 19** | 값 층 밖이라고 검증되어 등재된 앵커(`OUTSIDE_VALUE_LAYER_ANCHORS`) | 같은 규율. `BASELINE_ANCHOR_REGISTERED` 를 손으로 올린다 |
+ * | **앵커 부채 83** | 아직 안 옮긴 `<Link>` 78 · `<a>` 24 중 미등재분 | **줄어야 한다.** 아래 「앵커 전수 분류」 절 |
+ * | 버튼 전수 108 · 앵커 전수 102 | 등재 + 부채 | 파생값이다. 이 수를 보고 판단하지 않는다 |
  *
  * ⚠️ **2026-08-04 이전 이 게이트는 `<button>` 만 셌다.** 그래서 「부채 85」는
  * 한 번도 *컨트롤 전체*의 수였던 적이 없다 — 앵커 109 는 게이트의 시야 밖에서
@@ -53,6 +55,9 @@ import { describe, expect, it } from 'vitest';
  * | `chrome-token` | 크롬 토큰이 치수를 소유한다. 값 층의 높이 어휘는 **고정 단**뿐인데 이 토큰들은 `clamp(38px, 4.2vh, 48px)` 이거나 좁은 폭·coarse 포인터에서 **다른 값으로 재정의**된다. 고정 단 램프는 뷰포트 함수도 포인터 승격도 표현할 수 없다 |
  * | `stage-geometry` | 치수가 className 이 아니라 **JS 가 계산한 `style`** 에서 온다(절대배치 무대 좌표). 램프는 style 을 못 낸다 |
  * | `value-layer-peer` | 값 층 **자신의 집**. 프리미티브가 자기 규격을 스스로 선언하는 자리다. 억지로 옮기면 계약을 깨거나 색·치수를 `className` 으로 넘겨 층을 무력화한다 — 층이 자기를 소비할 수는 없다 |
+ * | `standard-button` *(앵커, 2026-08-04)* | **값 층이 명시적으로 양보한 유일한 모양.** `control-class.ts` 가 자기 머리말에 *"표준 버튼(`<Button>`)을 대체하지 않는다 … 겹치는 자리를 만들면 «어느 쪽이 규격인가»가 흐려진다"* 고 적어 뒀다. 그러니 `buttonVariants()` 를 지나는 앵커는 **다른 값 층을 이미 지난 것**이고, `controlClass` 로 옮기는 것은 준수가 아니라 그 규칙 위반이다 |
+ * | `no-spec` *(앵커, 2026-08-04)* | 이 태그가 **모양·크기·색을 하나도 선언하지 않는다** — `className={className}` 순수 패스스루이거나 `"inline-flex"` 자리잡기 한 개다. 값 층이 낼 것이 0인 자리이고, 자리잡기는 값 층 자신이 `className` 의 몫이라고 정의한 층이다 |
+ * | `state-scoped` *(앵커, 2026-08-04)* | 규격 전체가 **변형 접두 아래에만** 존재한다(`focus:` 건너뛰기 링크 — 평상시에는 `sr-only`). `controlClass()` 는 무변형 클래스 문자열을 내므로 접두를 붙일 수 없다 |
  *
  * 반대로 **「값 층에 그 모양이 아직 없다」는 등재 사유가 아니다.** 그건 「체계」가
  * 부품을 더하면 열리는 자리이므로 **부채**다. 이 구분이 이 라운드의 전부다.
@@ -159,6 +164,62 @@ import { describe, expect, it } from 'vitest';
  * `cn` 병합이 필수다.
  *
  * ════════════════════════════════════════════════════════════════════
+ * ## 2026-08-04 앵커 라운드 — 110 을 **전수로 갈랐다**
+ * ════════════════════════════════════════════════════════════════════
+ *
+ * 앵커 게이트를 켠 날의 110 을 자리마다 열어 분류했다. **이 라운드의 산출물은
+ * 옮긴 8건이 아니라 「나머지 102 가 왜 안 움직이나」의 전수다** — 버튼 쪽이
+ * 417 → 85 를 만든 방식이 정확히 그것이었다.
+ *
+ * ### 옮긴 8 — 두 부류뿐이고 둘 다 근거가 실측이다
+ *
+ * | 부류 | 수 | 실이동 |
+ * |---|---:|---|
+ * | `chip`/`md` **정확 일치** | 5 | **0px.** 손 클래스가 `min-h-8 px-2.5 text-label`+`border-soft`+`rounded-chip` 였고 램프가 내는 것이 같은 값이다. 램프가 더하는 `py-1.5` 는 자연높이를 16+12+2=30 으로 만들 뿐 `min-h-8`(32)이 여전히 이긴다 |
+ * | `link`/`lg`/`scope:panel` | 3 | **+10px** (FullDetailA1 핸드오프 행). 이건 정규화가 아니라 **접근성 정정**이다 — 그 자리는 글자 높이 20px 짜리 타깃이었고 WCAG 2.5.8 의 24px 바닥 **미달**이었다(문장 속 면제에 해당하지 않는 홀로 선 컨트롤). `link` 의 `min-h-11` 이 정확히 이 결함을 막으려고 기본값인 축이다 |
+ *
+ * ### 남은 102 — 등재 19 · 부채 83
+ *
+ * | 부류 | 수 | 무엇이 없나 / 왜 밖인가 |
+ * |---|---:|---|
+ * | **[등재] `standard-button`** | 10 | 값 층이 양보한 모양. DownloadPage 7 · AgentClientButtons 1 · 404 두 파일 2 |
+ * | **[등재] `chrome-token`** | 4 | AtlasGitPanel 2(`--git-setup-action-height`) · AppNavRail 1(`--app-nav-rail-tile-height`) · TopologyReviewLink 1(`--chrome-tile-size`). 셋 다 선언이 둘 이상이라 토큰 검사를 통과한다 |
+ * | **[등재] `no-spec`** | 3 | MacosDownloadLink(패스스루) · PublicQuickActions 2(`inline-flex` 래퍼) |
+ * | **[등재] `value-layer-peer`** | 1 | `ChromeTile` 의 `<Link>` 갈래 |
+ * | **[등재] `state-scoped`** | 1 | 건너뛰기 링크 |
+ * | 타입 스텝을 **안 내는** 자리가 없다 | 13 | 모양 여덟이 전부 크기를 강제하므로 **부모 크기를 상속해야 하는** 앵커가 구조적으로 못 들어온다. 버튼 원장이 「2」로 세던 구멍인데 앵커에서 **13** 이다 — 이 라운드 최대 부류이고 다음 판정 1순위 |
+ * | 밀집 행·문장 속 글자 링크 | 12 | `link` 의 `min-h-11`(WCAG 2.5.8)이 상단 바·칩 안·2연 링크 행을 2~3배로 만든다. `inline` 축은 「**문장** 속」만 면제한다 |
+ * | **상시 밑줄 + `decoration-*`** | 12 | 값 층에 밑줄·decoration 축이 **아예 없다**. 절반이 마크다운 본문 링크(문서함 5 · 관문 2)라 컨트롤이 아니라 **산문**이다 — 축을 만들지, 이 부류를 컨트롤에서 빼는 게 맞는지가 「체계」의 판정이다 |
+ * | 인셋과 타입이 한 단으로 묶인다 | 9 | 버튼 원장이 「9」로 센 그 구멍. 앵커에서도 정확히 9다 |
+ * | 무게 축이 없다(`font-medium`/`semibold`) | 4 | `onAccent` 만 semibold 를 고정으로 싣는다 |
+ * | 보더 없는 **세로** 타일 | 4 | 레일 2 · 하단 탭 2. `tile` 은 보더·반경·인셋이 필수다. ⚠️ 하단 탭의 `--topology-bottom-tab-min-height` 로 `chrome-token` 을 주장했다가 **기각**했다 — 56px 고정 선언 하나라 토큰 검사가 거절한다(게이트가 등재 도피를 실제로 막은 사례) |
+ * | 사다리 밖 높이 | 3+2+2+1+2 | 36px 3 · 28px 2 · 40px 칩 2 · 48px 시트 행 1 · 40px `rounded-full` 방언 2 |
+ * | 틴트/오버레이 채움 | 3 | |
+ * | 모노 대문자 마이크로 | 3 | 버튼 쪽과 **같은 부류**. 합치면 8이고 4라운드 연속이다 |
+ * | 다행·그리드 카드 | 3 | 선행 「축 안 만듦」 결정 유효 |
+ * | `border-t` 목록 행 | 3 | `row` 에 구분선이 없다 |
+ * | 패널 보더·액션 표면 | 2 | `scope: 'panel'` 이 잉크만 연다 — 버튼 쪽 5라운드 연속 |
+ * | 단발(같은 사유가 하나뿐) | 6 | 누름/부상 방언 · 세로 밑줄 선택 표시 · ChromeTile 인라인 재구현 · 보더색 축 · `link` 에 `body-lg` 단 없음 · (위 사다리 밖에 포함되지 않은 잔여) |
+ *
+ * **왜 이번에도 새 축이 0인가**: 최대 부류 둘(타입 상속 13 · 밀집 행 12)이
+ * **정반대 방향의 요구**다 — 하나는 "크기를 내지 마라", 하나는 "높이는 내되
+ * 44 는 빼라". 둘 다 `link` 를 건드리고 서로의 해를 무효화한다. 어느 쪽이
+ * 규격인지는 「체계」의 일이지 이 라운드가 혼자 정할 것이 아니다.
+ *
+ * ### 다음 라운드의 입력 — 회수량 순, 전수와 함께
+ *
+ * | 순위 | 무엇 | 회수 | 왜 이번에 안 했나 |
+ * |---:|---|---:|---|
+ * | 1 | `link` 의 **타입/타깃 두 축** 판정 | 25 | 타입 상속 13 + 밀집 행 12 를 한 번에 여는 유일한 결정. 「체계」 소집 사안이고, 이 라운드가 그 파일을 고치지 않기로 한 이유다 |
+ * | 2 | 밑줄·decoration 축 — **혹은 산문 링크를 컨트롤에서 빼기** | 12 | 절반이 마크다운 본문이라 「누르는 것」이 아닐 수 있다. 축을 만들지 분류를 바꿀지가 먼저다 |
+ * | 3 | 인셋·타입 결합 해제 | 9 | 버튼 쪽 9 와 **같은 결정**이다 — 두 수가 한 라운드에서 같이 내려간다 |
+ * | 4 | 무게 축 | 4 | `onAccent` 만 semibold 를 싣는 지금이 비대칭이다 |
+ * | 5 | 보더 없는 세로 타일 | 4 | 레일 2 + 하단 탭 2. `tile` 에 「보더 0」 갈래가 필요하다 |
+ * | 6 | `app/error.tsx` · `app/global-error.tsx` 의 `rounded-full` 방언 | 2(+버튼 2) | 404 두 파일이 어제 `<Button>` 으로 정규화한 **그 방언의 형제**를 이번에 놓친 것이 아니라, 옆의 `<button>` 과 **함께** 옮겨야 해서 남겼다. 실측 예상 이동: 반경 9999→12 · px 16→18 · 타입 12.5→14 · 잉크 secondary→primary + 배경 채움. 값 층 이동이 아니라 **디자인 판정**이라 게이트가 다르다 |
+ * | 7 | ChromeTile 인라인 재구현 1(`HomePage`) | 1 | 프리미티브로 옮기는 것이 답인데 아이콘 토큰이 다르고(`--topology-chrome-icon-size` vs `--chrome-icon`) 배지 자식이 있어 드롭인이 아니다 |
+ * | — | 모노 대문자 마이크로 3 | 3 | 버튼 쪽 5와 **합쳐서 8**. 4라운드 연속이므로 축이 아니라 **부품**으로 검토한다 |
+ *
+ * ════════════════════════════════════════════════════════════════════
  * ## 역사 — 라운드별 기록 (417 → 108). **지우지 않는다**
  * ════════════════════════════════════════════════════════════════════
  *
@@ -257,7 +318,13 @@ import { describe, expect, it } from 'vitest';
  */
 
 /** 값 층 밖이라는 **주장의 종류**. 새 종류를 더하려면 위 「등재의 기준」 표에도 적는다. */
-type OutsideClaim = 'chrome-token' | 'stage-geometry' | 'value-layer-peer';
+type OutsideClaim =
+  | 'chrome-token'
+  | 'stage-geometry'
+  | 'value-layer-peer'
+  | 'standard-button'
+  | 'no-spec'
+  | 'state-scoped';
 
 interface OutsideEntry {
   /** 저장소 상대 경로. 실재해야 한다. */
@@ -512,7 +579,7 @@ const globalsCss = readFileSync(GLOBALS_CSS, 'utf8');
 
 /**
  * ════════════════════════════════════════════════════════════════════
- * ## 앵커 컨트롤 — **세 번째 수** (2026-08-04)
+ * ## 앵커 컨트롤 — **세 번째·네 번째 수** (2026-08-04)
  * ════════════════════════════════════════════════════════════════════
  *
  * ### 왜 부채 85 에 더하지 않고 수를 새로 만드나
@@ -521,7 +588,7 @@ const globalsCss = readFileSync(GLOBALS_CSS, 'utf8');
  * 그래서 무엇이 진전인지 알 수 없었다 — 옮길 수 없는 자리와 아직 안 옮긴 자리가
  * 같은 칸에 있었다."* 그 교훈을 여기 그대로 적용한다.
  *
- * 앵커 109를 부채 85에 더하면 **194** 가 되고, 그 수가 내려갈 때 버튼이 옮겨진
+ * 앵커를 부채 85에 더하면 **194** 가 되고, 그 수가 내려갈 때 버튼이 옮겨진
  * 것인지 앵커가 옮겨진 것인지 알 수 없다. 두 부류는 **작업 단위가 다르다** —
  * 버튼은 `controlClass({ shape })` 한 줄이면 대개 끝나는데, 앵커는 `<Link>` 가
  * `cn` 병합을 강제하고(이 파일이 실측해 둔 곳: raw `buttonVariants()` 는 base 의
@@ -533,32 +600,141 @@ const globalsCss = readFileSync(GLOBALS_CSS, 'utf8');
  * 반대로 이 둘은 **가르지 않는다**. `<Link>` 가 렌더하는 것이 `<a>` 이고, 값 층에서
  * 둘의 목적지가 같은 `shape: 'link'` 다. 처방이 같은 것을 두 칸에 두면 그건 진도를
  * 읽는 눈금이 아니라 장부질이다. 대신 태그별 내역을 여기 적어 둔다 —
- * **`<Link>` 85 · `<a>` 24**(2026-08-04 실측, 이 파일의 파서 기준).
+ * **`<Link>` 78 · `<a>` 24**(2026-08-04 앵커 라운드 후 실측).
  *
  * ⚠️ 감사 보고서의 수는 **77** 이었다. 그 차이는 드리프트이거나 다른 필터이고,
  * 게이트가 쓰는 수는 **이 파일의 파서가 실제로 센 것**이어야 한다 — 남이 센 수를
  * 기준선에 적으면 첫 실행이 빨개지고, 그때 사람은 게이트가 아니라 수를 고친다.
  *
- * ### 등재는 오늘 0 이다
+ * ### 등재는 하루 뒤 19 가 됐다 — 게이트를 켠 날의 0 은 「검증 전」이었다
  *
- * 버튼 쪽 `OUTSIDE_VALUE_LAYER` 같은 「값 층 밖」 주장이 앵커에는 **아직 하나도
- * 검증되지 않았다**. 규율 1대로 열어 보고 확인한 자리만 등재하므로, 검증 전에는
- * 전부 부채다 — 안전한 방향의 오차다.
+ * 신설 당일에는 「값 층 밖」 주장이 하나도 검증되지 않아 110 이 전부 부채였다.
+ * 규율 1대로 자리마다 열어 보니 **19 가 참**이었고, 그중 하나(하단 탭바의
+ * `--topology-bottom-tab-min-height`)는 **게이트가 직접 기각했다** — 56px 고정
+ * 선언 하나라 `tokenIsBeyondFixedSteps` 가 거절한다. 등재가 도피처가 되지
+ * 않는다는 것을 이 라운드가 실측으로 증명한 자리다.
  */
-// 85 → 86: 이 게이트가 브랜치에서 재는 동안 main 이 앵커를 하나 더 들였다
-// (#907 오버레이 반경 라운드). 게이트가 없던 시점에 쓰인 자리라 회귀가 아니라
-// **신설 시점의 실측**이다 — 다음 라운드부터 이 수는 내려가기만 한다.
-const ANCHOR_TAG_SPLIT: Readonly<Record<string, number>> = { Link: 86, a: 24 };
+const ANCHOR_TAG_SPLIT: Readonly<Record<string, number>> = { Link: 78, a: 24 };
 
 /**
- * **리터럴이다.** 버튼 쪽 두 기준선과 같은 이유 — 파생값으로 두면 멈춤쇠가
- * 양방향으로 헐거워진다(하드컷 래칫이 실제로 그렇게 죽었다).
+ * **검증된 「값 층 밖」 앵커 등록부.**
  *
- * **이 수만 줄어야 한다.**
+ * 버튼 쪽 `OUTSIDE_VALUE_LAYER` 와 같은 규율이다 — 여기 없는데 값 층 밖인 자리를
+ * 발견하면 **줄을 더하기 전에 열어서 확인한다**. 확인 못 하면 부채로 둔다.
  */
-const BASELINE_ANCHOR_DEBT = 110;
+const OUTSIDE_VALUE_LAYER_ANCHORS: readonly OutsideEntry[] = [
+  {
+    file: 'src/views/download/ui/DownloadPage.tsx',
+    count: 7,
+    claim: 'standard-button',
+    proof: 'buttonVariants',
+    why:
+      '주 CTA · Intel · GitHub · 웹 진입 2 · Windows 2. 전부 `cn(buttonVariants({…}), …)` 로 ' +
+      '**표준 버튼 프리미티브**를 지난다. `control-class.ts` 가 스스로 "표준 버튼을 대체하지 ' +
+      '않는다" 고 선언했으므로 여기를 `controlClass` 로 옮기는 것은 그 규칙 위반이다.',
+    conditional:
+      '⚠️ 이 중 둘은 `className` 이 프리미티브의 반경·인셋을 덮는다(`rounded-chip px-4 sm:px-6`). ' +
+      '그건 이 게이트가 아니라 다음 디자인 라운드의 일이다 — 등재가 그 결함을 승인하지는 않는다.',
+  },
+  {
+    file: 'src/features/docs-vault-local/ui/AgentClientButtons.tsx',
+    count: 1,
+    claim: 'standard-button',
+    proof: 'buttonVariants',
+    why: '`clientControlClass()` = `buttonVariants({ variant: "outline", size: "sm" })` + 폭·반경.',
+  },
+  {
+    file: 'app/[locale]/not-found.tsx',
+    count: 1,
+    claim: 'standard-button',
+    proof: 'buttonVariants',
+    why: '2026-08-04 버튼 라운드가 손 `rounded-full` 방언에서 정규화한 그 자리. `cn` 병합까지 되어 있다.',
+  },
+  {
+    file: 'app/not-found.tsx',
+    count: 1,
+    claim: 'standard-button',
+    proof: 'buttonVariants',
+    why: '같음(루트 404).',
+  },
+  {
+    file: 'src/widgets/atlas-git-panel/ui/AtlasGitPanel.tsx',
+    count: 2,
+    claim: 'chrome-token',
+    proof: '--git-setup-action-height',
+    why:
+      '「앱 받기」·「볼트 고르기」 — `PRIMARY_ACTION_CLASS` 가 버튼 형제 7개와 **같은 상수**다. ' +
+      '데스크톱 36px 인데 coarse 포인터에서 --touch-target-min 으로 승격한다.',
+    conditional: '값 층이 포인터 승격 축을 얻으면 다시 연다 — 버튼 쪽 같은 줄과 함께 내려온다.',
+  },
+  {
+    file: 'src/widgets/app-nav-rail/ui/AppNavRail.tsx',
+    count: 1,
+    claim: 'chrome-token',
+    proof: '--app-nav-rail-tile-height',
+    why:
+      '레일 하단 「앱 받기」 타일. 높이가 calc(32px * --topology-ui-scale-factor) 이고 coarse ' +
+      '포인터에서 max() 로 재정의된다 — 램프는 스케일 계수도 포인터 승격도 못 낸다.',
+    conditional: '값 층이 포인터 승격 축을 얻으면 다시 연다. 누름 방언(active:translate-y-px)은 별개 부채다.',
+  },
+  {
+    file: 'src/views/home/ui/TopologyReviewLink.tsx',
+    count: 1,
+    claim: 'chrome-token',
+    proof: '--chrome-tile-size',
+    why:
+      '지도 우상단 유틸 레인의 검수 칩. 높이가 크롬 잠금 단(36px, coarse 에서 max(36,44))이고 ' +
+      '표면·보더·그림자·포커스링이 `--topology-utility-lane-*` 계약이다 — 원소가 그 계약을 ' +
+      '`data-utility-action-token-contract` 로 스스로 선언한다.',
+  },
+  {
+    file: 'src/shared/ui/chrome-tile.tsx',
+    count: 1,
+    claim: 'value-layer-peer',
+    proof: '--chrome-tile-size',
+    why:
+      '`ChromeTile` 프리미티브의 **`<Link>` 갈래**. 같은 파일의 `<button>` 갈래가 이미 버튼 쪽에 ' +
+      '등재돼 있다 — 한 프리미티브가 두 태그를 내므로 두 등록부에 한 줄씩 선다.',
+  },
+  {
+    file: 'src/features/macos-download-link/ui/MacosDownloadLink.tsx',
+    count: 1,
+    claim: 'no-spec',
+    proof: 'className={className}',
+    why:
+      '이 파일이 선언하는 규격이 **0**이다 — href·rel 만 고정하고 클래스는 호출자 것을 그대로 ' +
+      '넘긴다. 값 층이 낼 것이 없다.',
+  },
+  {
+    file: 'src/widgets/public-quick-actions/ui/PublicQuickActions.tsx',
+    count: 2,
+    claim: 'no-spec',
+    proof: 'className="inline-flex"',
+    why:
+      '`<Button>` 을 감싸 shrink-wrap 시키는 자리잡기 래퍼 둘. `inline-flex` 하나뿐이고 그건 값 ' +
+      '층 자신이 `className` 의 몫이라고 정의한 층이다(자리잡기·폭·순서).',
+  },
+  {
+    file: 'app/[locale]/layout.tsx',
+    count: 1,
+    claim: 'state-scoped',
+    proof: 'focus:not-sr-only',
+    why:
+      '본문 건너뛰기 링크. 평상시 `sr-only` 이고 규격(반경·보더·인셋·타입·색) **전부가 `focus:` ' +
+      '접두 아래**에 있다. `controlClass()` 는 무변형 문자열을 내므로 접두를 붙일 수 없다.',
+  },
+];
 
-const anchorCensus = census(scannedFiles, [], ANCHOR_TAGS);
+/**
+ * **리터럴이다.** 버튼 쪽 기준선들과 같은 이유 — 파생값으로 두면 멈춤쇠가
+ * 양방향으로 헐거워진다(하드컷 래칫이 실제로 그렇게 죽었다).
+ */
+const BASELINE_ANCHOR_REGISTERED = 19;
+
+/** **이 수만 줄어야 한다.** 앵커 전수(102)에서 등재(19)를 뺀 나머지. */
+const BASELINE_ANCHOR_DEBT = 83;
+
+const anchorCensus = census(scannedFiles, OUTSIDE_VALUE_LAYER_ANCHORS, ANCHOR_TAGS);
 
 describe('컨트롤 채택 래칫 — 등재된 「값 층 밖」', () => {
   it('등재된 파일이 전부 실재한다 — 없는 파일을 세면 수가 거짓이 된다', () => {
@@ -618,14 +794,74 @@ describe('컨트롤 채택 래칫 — 등재된 「값 층 밖」', () => {
 });
 
 describe('컨트롤 채택 래칫 — 앵커(`<Link>` · `<a>`)', () => {
+  it('등재된 앵커 파일이 전부 실재한다', () => {
+    for (const entry of OUTSIDE_VALUE_LAYER_ANCHORS) {
+      expect(existsSync(entry.file), `${entry.file} 이 없다 — 옮겼거나 지웠으면 등록부도 고친다`).toBe(true);
+    }
+  });
+
+  it('각 줄의 근거가 아직 파일에 있다 — 근거가 사라지면 주장도 죽는다', () => {
+    for (const entry of OUTSIDE_VALUE_LAYER_ANCHORS) {
+      expect(
+        readFileSync(entry.file, 'utf8').includes(entry.proof),
+        `${entry.file} 에서 «${entry.proof}» 가 사라졌다. 이 줄의 주장(${entry.claim})은 그 근거 위에 ` +
+          `서 있다 — 자리가 바뀌었으면 등록부를 다시 쓰고, 값 층으로 옮겼으면 줄을 지워라.`,
+      ).toBe(true);
+    }
+  });
+
+  it('`chrome-token` 앵커 줄의 토큰이 정말 고정 단 밖이다', () => {
+    const chromeTokens = OUTSIDE_VALUE_LAYER_ANCHORS.filter((e) => e.claim === 'chrome-token');
+    expect(chromeTokens.length, '`chrome-token` 줄이 없으면 이 검사는 공집합 위에서 논다').toBeGreaterThan(0);
+    for (const entry of chromeTokens) {
+      expect(
+        tokenIsBeyondFixedSteps(globalsCss, entry.proof),
+        `${entry.proof} 가 globals.css 에서 **고정 단 하나**가 됐다 — 값 층이 낼 수 있으므로 ` +
+          `${entry.file} 를 등록부에서 지우고 부채로 갚아라.`,
+      ).toBe(true);
+    }
+  });
+
+  it('등재 수가 그 파일의 실측을 넘지 않는다 — 있지도 않은 것을 등재할 수 없다', () => {
+    for (const [file, claimed] of anchorCensus.registeredByFile) {
+      const actual = anchorCensus.byFile.get(file) ?? 0;
+      expect(
+        claimed,
+        `${file}: 앵커 등재 ${claimed} 인데 실측 손 앵커는 ${actual} 뿐이다. 자리를 값 층으로 옮겼으면 ` +
+          `등록부의 수도 함께 내려라.`,
+      ).toBeLessThanOrEqual(actual);
+    }
+  });
+
+  it('앵커 등재가 늘지 않는다 — 늘리려면 리터럴을 손으로 올리고 diff 에 왜를 적는다', () => {
+    expect(
+      anchorCensus.registered,
+      `앵커 등재가 ${BASELINE_ANCHOR_REGISTERED} → ${anchorCensus.registered} 로 늘었다. ` +
+        `**등록부는 허가 목록이 아니라 부채 목록이다** — 「모양이 아직 없다」는 등재 사유가 아니다.`,
+    ).toBeLessThanOrEqual(BASELINE_ANCHOR_REGISTERED);
+  });
+
+  it('앵커 등재가 줄었으면 기준선도 내린다', () => {
+    expect(
+      anchorCensus.registered,
+      `앵커 등재가 ${BASELINE_ANCHOR_REGISTERED} → ${anchorCensus.registered} 로 줄었다. ` +
+        `BASELINE_ANCHOR_REGISTERED 도 ${anchorCensus.registered} 로 내려라.`,
+    ).toBeGreaterThanOrEqual(BASELINE_ANCHOR_REGISTERED);
+  });
+
   it('앵커 부채가 늘지 않는다 — 누를 수 있는 것은 전부 값 층을 지난다', () => {
-    const worst = [...anchorCensus.byFile.entries()].sort((a, b) => b[1] - a[1]).slice(0, 3);
+    const worst = [...anchorCensus.byFile.entries()]
+      .filter(([f]) => !anchorCensus.registeredByFile.has(f))
+      .sort((a, b) => b[1] - a[1])
+      .slice(0, 3);
     expect(
       anchorCensus.debt,
-      `손으로 규격을 쓴 앵커가 ${BASELINE_ANCHOR_DEBT} → ${anchorCensus.debt} 로 늘었다.\n` +
+      `손으로 규격을 쓴 앵커가 ${BASELINE_ANCHOR_DEBT} → ${anchorCensus.debt} 로 늘었다 ` +
+        `(전수 ${anchorCensus.total} − 등재 ${anchorCensus.registered}).\n` +
         `\`controlClass({ shape: 'link' })\` 가 이 자리를 위해 있다. \`<Link>\` 는 \`cn\` 병합이 필수다 — ` +
         `raw 변형은 base 의 border-transparent 가 소스 순서로 이긴다(이 파일 실측).\n` +
-        `가장 많은 파일: ${worst.map(([f, n]) => `${f}(${n})`).join(' · ')}`,
+        `등재된 파일이라도 면제가 아니다: 거기 손 앵커를 더하면 등재 수는 그대로고 이 수가 오른다.\n` +
+        `미등재 중 가장 많은 파일: ${worst.map(([f, n]) => `${f}(${n})`).join(' · ')}`,
     ).toBeLessThanOrEqual(BASELINE_ANCHOR_DEBT);
   });
 
@@ -635,6 +871,10 @@ describe('컨트롤 채택 래칫 — 앵커(`<Link>` · `<a>`)', () => {
       `앵커 부채가 ${BASELINE_ANCHOR_DEBT} → ${anchorCensus.debt} 로 줄었다. ` +
         `BASELINE_ANCHOR_DEBT 도 ${anchorCensus.debt} 로 내려라.`,
     ).toBeGreaterThanOrEqual(BASELINE_ANCHOR_DEBT);
+  });
+
+  it('두 수의 합이 앵커 전수와 맞는다', () => {
+    expect(anchorCensus.registered + anchorCensus.debt).toBe(anchorCensus.total);
   });
 
   it('태그 내역이 전수와 맞는다 — 두 태그가 서로를 잃지 않는다', () => {
@@ -768,7 +1008,9 @@ describe('탐지기 프로브 — 이 게이트가 실제로 무엇을 잡는가
   });
 
   it('⑧ 앵커를 하나 더 쓰면 **앵커 부채로** 잡힌다 — 버튼 수는 안 움직인다', () => {
-    const withFixture = census([...scannedFiles, FIXTURE], [], ANCHOR_TAGS);
+    const withFixture = census([...scannedFiles, FIXTURE], OUTSIDE_VALUE_LAYER_ANCHORS, ANCHOR_TAGS);
+    // 픽스처는 등록부에 없으므로 2건이 전부 **부채**로 간다.
+    expect(withFixture.registered).toBe(anchorCensus.registered);
     expect(withFixture.debt).toBe(anchorCensus.debt + 2);
     expect(
       withFixture.debt,
@@ -778,8 +1020,57 @@ describe('탐지기 프로브 — 이 게이트가 실제로 무엇을 잡는가
     expect(census([...scannedFiles, FIXTURE]).debt, '앵커 픽스처가 버튼 부채를 움직였다').toBe(debt + 2);
   });
 
-  it('⑨ 앵커 기준선이 **리터럴**이다', () => {
-    expect(/const BASELINE_ANCHOR_DEBT = \d+;/.test(readFileSync(SELF, 'utf8'))).toBe(true);
+  it('⑨ 앵커 기준선 둘이 **리터럴**이다', () => {
+    const source = readFileSync(SELF, 'utf8');
+    expect(/const BASELINE_ANCHOR_DEBT = \d+;/.test(source)).toBe(true);
+    expect(
+      /const BASELINE_ANCHOR_REGISTERED = \d+;/.test(source),
+      '앵커 등재 기준선이 리터럴이 아니다. `OUTSIDE_VALUE_LAYER_ANCHORS.length` 로 두면 줄을 더할 때 ' +
+        '기준선도 같이 올라가 「등재가 늘지 않는다」가 원리적으로 실패 불가가 된다.',
+    ).toBe(true);
+  });
+
+  it('⑪ 앵커 등록부에서 줄을 지우면 그 자리가 **부채로 돌아온다**', () => {
+    for (const entry of OUTSIDE_VALUE_LAYER_ANCHORS) {
+      const without = census(
+        scannedFiles,
+        OUTSIDE_VALUE_LAYER_ANCHORS.filter((e) => e !== entry),
+        ANCHOR_TAGS,
+      );
+      expect(without.registered).toBe(anchorCensus.registered - entry.count);
+      expect(
+        without.debt,
+        `${entry.file}(${entry.proof}) 줄을 지웠는데 앵커 부채가 안 늘었다 — 그 줄은 아무것도 등재하고 있지 않다`,
+      ).toBe(anchorCensus.debt + entry.count);
+    }
+  });
+
+  it('⑫ 앵커 등재도 **파일 면제가 아니다** — DownloadPage 의 미등재 앵커가 부채로 살아 있다', () => {
+    const file = 'src/views/download/ui/DownloadPage.tsx';
+    const actual = anchorCensus.byFile.get(file) ?? 0;
+    const claimed = anchorCensus.registeredByFile.get(file) ?? 0;
+    expect(claimed, '이 프로브는 그 파일이 실제로 등재돼 있을 때만 뜻이 있다').toBeGreaterThan(0);
+    expect(
+      actual - claimed,
+      'DownloadPage 의 릴리스노트 링크는 표준 버튼을 안 지난다 — 등재 7 은 그 자리를 면제하지 않는다',
+    ).toBeGreaterThan(0);
+  });
+
+  it('⑬ 기각된 주장이 실제로 기각된다 — 하단 탭바의 56px 은 크롬 토큰 면제가 아니다', () => {
+    /*
+     * 이 라운드가 `--topology-bottom-tab-min-height` 로 `chrome-token` 을 주장했다가
+     * 스스로 기각한 자리다. 그 기각이 **의견이 아니라 게이트의 판정**이었음을 여기서
+     * 못박는다 — 값이 조건부가 되는 날 이 프로브가 빨개지고, 그때 등재를 다시 본다.
+     */
+    expect(
+      tokenIsBeyondFixedSteps(globalsCss, '--topology-bottom-tab-min-height'),
+      '이 토큰이 조건부가 됐다 — BottomTabBar 2건의 `chrome-token` 등재를 다시 심사하라',
+    ).toBe(false);
+    expect(
+      (anchorCensus.byFile.get('src/widgets/bottom-tab-bar/ui/BottomTabBar.tsx') ?? 0) > 0 &&
+        !anchorCensus.registeredByFile.has('src/widgets/bottom-tab-bar/ui/BottomTabBar.tsx'),
+      'BottomTabBar 는 등재되지 않았다 — 보더 없는 세로 타일이라 부채다',
+    ).toBe(true);
   });
 
   it('⑩ 값 층을 지난 앵커는 안 센다 — 램프를 통과해도 세면 옮길 이유가 사라진다', () => {

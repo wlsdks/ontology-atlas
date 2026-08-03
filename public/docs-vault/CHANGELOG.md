@@ -7,6 +7,36 @@
 
 ---
 
+## 2026-08-04 — 현재 source를 다시 측정하라는 잘못된 의미 수리 루프를 끊는다
+
+MCP/CLI `agent_brief`에서 source receipt 자체가 stale인 경우와, source는 이미
+`verified_current/current`지만 competency receipt가 이전 source fingerprint에 묶인
+경우를 분리한다. 전자는 기존처럼 `source_changed → remeasure_source`이고, 후자는
+`competency_source_changed → reevaluate_competency`다.
+
+후자의 전체 의미 상태는 계속 `review_required`로 실패 닫지만 source 차원은 current로
+보존한다. 따라서 새 에이전트가 이미 끝난 source 측정을 반복하지 않고, 현재 근거로
+abilities/evidence를 다시 검토하는 사람 승인 흐름으로 바로 이동한다. 구조 readiness를
+의미 완성으로 승격하거나 자동으로 쓰고 finalize하는 동작은 추가하지 않았다.
+
+## 2026-08-04 — Rust의 조건부 구성 근거와 의존 그래프의 빈칸을 구분한다
+
+MCP `analyze_repo_structure`와 `index_project`가 root Cargo package 또는 저장소 안의
+literal direct workspace member의 conventional Cargo target source에서 `[features]` 선언과 `#[cfg(feature = "...")]` /
+`#[cfg_attr(...)]` 위치를 typed provenance로 반환한다. 긍정·부정·복합 predicate,
+production/test source role, 정확한 path/line, bounded sample과 제한 도달 여부를
+보존한다. workspace member의 근거를 root package가 중복 소유하지 않으며 glob,
+repository escape, symlink escape, 과대 manifest와 비문자 feature predicate는
+명시적으로 제한하거나 거절한다.
+
+이 근거는 compile-time 조건의 출처일 뿐이다. predicate를 평가하거나 build script와
+macro를 실행하지 않고, `use`/`mod`/macro consumer·runtime impact·semantic
+`depends_on`을 주장하거나 쓰지 않는다. `infer_imports.coverage`는 Cargo가 보이면 Rust
+import graph가 아직 지원되지 않는다고 답한다. 따라서 edge 0건은 “Rust 의존 없음”이
+아니라 `no_supported_static_import_edges_observed`다. source MCP 검증기는 이
+fail-closed write/claim boundary와 세 도구의 동일 응답을 실제 first-contact에서
+검사한다.
+
 ## 2026-08-04 — 테스트 import를 제품 의존 승인 질문으로 가장하지 않는다
 
 MCP `infer_imports`가 각 파일 근거의 `sourceRole`(production/test/unknown)과

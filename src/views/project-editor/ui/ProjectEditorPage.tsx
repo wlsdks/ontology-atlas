@@ -344,7 +344,7 @@ function EditorContent({
         {savedNotice && mode === "edit" ? (
           <div
             role="status"
-            className="mt-6 rounded-panel border border-[color:var(--color-indigo-a28)] bg-[color:var(--color-indigo-a10)] px-5 py-4 text-body-lg text-[color:var(--color-indigo-accent)]"
+            className="mt-6 rounded-panel border border-[color:var(--color-indigo-a28)] bg-[color:var(--color-indigo-a10)] px-5 py-4 text-body-lg text-[color:var(--color-indigo-text-soft)]"
           >
             {t("savedNotice")}
           </div>

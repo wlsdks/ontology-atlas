@@ -1517,7 +1517,7 @@ export function ProjectForm({
                 {saveNotice ? (
                   <div
                     role="status"
-                    className="mt-3 rounded-card border border-[color:var(--color-indigo-a28)] bg-[color:var(--color-indigo-a10)] px-4 py-3 text-body-lg text-[color:var(--color-indigo-accent)]"
+                    className="mt-3 rounded-card border border-[color:var(--color-indigo-a28)] bg-[color:var(--color-indigo-a10)] px-4 py-3 text-body-lg text-[color:var(--color-indigo-text-soft)]"
                   >
                     {saveNotice}
                   </div>

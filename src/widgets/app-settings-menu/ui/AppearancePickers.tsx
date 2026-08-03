@@ -173,8 +173,13 @@ export function CanvasBackgroundPicker() {
               <span
                 className={cn(
                   'text-label',
+                  /* 활성 타일은 부모가 line-a13 틴트를 진다 — 그 합성 위 표식
+                     인디고는 4.12:1 로 AA 미달(열린 표면 계기 실측). 틴트를
+                     지는 잉크는 soft 다. 잉크·틴트가 부모/자식으로 갈라져
+                     같은-태그 센서스가 못 보던 자리라 여기 주석이 게이트다 —
+                     런타임 판정은 a11y-open-surfaces 가 맡는다. */
                   active
-                    ? 'text-[color:var(--color-indigo-accent)]'
+                    ? 'text-[color:var(--color-indigo-text-soft)]'
                     : 'text-[color:var(--color-text-tertiary)]',
                 )}
               >
@@ -222,8 +227,13 @@ export function GlyphSetPicker() {
               <span
                 className={cn(
                   'text-label',
+                  /* 활성 타일은 부모가 line-a13 틴트를 진다 — 그 합성 위 표식
+                     인디고는 4.12:1 로 AA 미달(열린 표면 계기 실측). 틴트를
+                     지는 잉크는 soft 다. 잉크·틴트가 부모/자식으로 갈라져
+                     같은-태그 센서스가 못 보던 자리라 여기 주석이 게이트다 —
+                     런타임 판정은 a11y-open-surfaces 가 맡는다. */
                   active
-                    ? 'text-[color:var(--color-indigo-accent)]'
+                    ? 'text-[color:var(--color-indigo-text-soft)]'
                     : 'text-[color:var(--color-text-tertiary)]',
                 )}
               >

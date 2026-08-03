@@ -152,6 +152,46 @@ import {
   workspaceBriefSummary,
 } from '../scripts/verify.mjs';
 
+function verifiedRustConfigurationEvidence() {
+  return {
+    contract: 'rustFeatureConfigurationEvidence:v1',
+    status: 'not_present',
+    claimBoundary: {
+      compileTimePredicateLocations: false,
+      predicateEvaluation: false,
+      runtimeImpact: false,
+      importDependency: false,
+      macroConsumers: false,
+      semanticDependency: false,
+    },
+    coverage: {
+      predicateEvaluation: false,
+      macroExpansion: false,
+      buildScriptsExecuted: false,
+    },
+    packages: [],
+    unsupportedWorkspaceMembers: [],
+    writePolicy: {
+      automaticRelation: false,
+      writeAllowed: false,
+      humanApprovalRequired: true,
+    },
+    limitations: ['No Cargo manifest was observed.'],
+  };
+}
+
+function verifiedImportScanCoverage({ rust = false } = {}) {
+  return {
+    contract: 'importScanCoverage:v1',
+    supportedLanguages: ['javascript', 'python', 'typescript'],
+    supportedExtensions: ['.js', '.py', '.ts'],
+    detectedUnsupportedLanguages: rust ? ['rust'] : [],
+    allDetectedLanguagesSupported: !rust,
+    zeroEdgesMeaning: 'no_supported_static_import_edges_observed',
+    limitations: ['Static source evidence is not semantic dependency approval.'],
+  };
+}
+
 function humanMeaningRepair(projectSlug) {
   const domains = Array.from({ length: 6 }, (_, index) => `domains/d${index + 1}`);
   const capabilities = Array.from(
@@ -1714,7 +1754,7 @@ describe('verify.mjs first-contact gates', () => {
         },
         outputSchema: {
           type: 'object',
-          required: ['rootPath', 'framework', 'domains', 'capabilities', 'elements', 'meaningGate', 'extractionContract', 'semanticEvidence', 'proposalValidation', 'suggestedRelations', 'skipped'],
+          required: ['rootPath', 'framework', 'domains', 'capabilities', 'elements', 'meaningGate', 'extractionContract', 'semanticEvidence', 'configurationEvidence', 'proposalValidation', 'suggestedRelations', 'skipped'],
           properties: {
             rootPath: { type: 'string' },
             project: {
@@ -1727,6 +1767,21 @@ describe('verify.mjs first-contact gates', () => {
               additionalProperties: false,
             },
             framework: { enum: ['fsd', 'next', 'generic'] },
+            configurationEvidence: {
+              type: 'object',
+              properties: {
+                contract: { enum: ['rustFeatureConfigurationEvidence:v1'] },
+                writePolicy: {
+                  type: 'object',
+                  required: ['automaticRelation', 'writeAllowed', 'humanApprovalRequired'],
+                  properties: {
+                    automaticRelation: { enum: [false] },
+                    writeAllowed: { enum: [false] },
+                    humanApprovalRequired: { enum: [true] },
+                  },
+                },
+              },
+            },
             domains: {
               type: 'array',
               items: {
@@ -1840,7 +1895,7 @@ describe('verify.mjs first-contact gates', () => {
         },
         outputSchema: {
           type: 'object',
-          required: ['rootPath', 'filesScanned'],
+          required: ['rootPath', 'filesScanned', 'coverage'],
           oneOf: [
             { required: ['edges', 'externalImports', 'unresolved', 'moduleEdges'] },
             {
@@ -1856,6 +1911,16 @@ describe('verify.mjs first-contact gates', () => {
           properties: {
             rootPath: { type: 'string' },
             filesScanned: { type: 'integer', minimum: 0 },
+            coverage: {
+              type: 'object',
+              properties: {
+                contract: { enum: ['importScanCoverage:v1'] },
+                allDetectedLanguagesSupported: { type: 'boolean' },
+                zeroEdgesMeaning: {
+                  enum: ['no_supported_static_import_edges_observed'],
+                },
+              },
+            },
             edges: {
               type: 'array',
               items: {
@@ -8214,6 +8279,7 @@ describe('verify.mjs first-contact gates', () => {
         elements: [{ slug: 'elements/src/app/page.tsx', title: 'page.tsx', evidence: { source: 'app/page.tsx' } }],
         suggestedRelations: [{ from: 'project', to: 'domains/app', type: 'domains' }],
         skipped: [{ path: 'node_modules', reason: 'ignored' }],
+        configurationEvidence: verifiedRustConfigurationEvidence(),
       }),
       null,
     );
@@ -8235,8 +8301,42 @@ describe('verify.mjs first-contact gates', () => {
           evidence: [{ from: 'src/a.ts', to: 'src/b.ts', kind: 'static', sourceRole: 'production', importUsage: 'value' }],
           evidenceLimited: false,
         }],
+        coverage: verifiedImportScanCoverage(),
       }),
       null,
+    );
+  });
+
+  it('rejects Rust evidence that permits writes or hides unsupported import coverage', () => {
+    const unsafeConfiguration = verifiedRustConfigurationEvidence();
+    unsafeConfiguration.writePolicy.writeAllowed = true;
+    assert.equal(
+      analyzeRepoStructureFailure({
+        rootPath: '/repo',
+        framework: 'generic',
+        domains: [],
+        capabilities: [],
+        elements: [],
+        suggestedRelations: [],
+        skipped: [],
+        configurationEvidence: unsafeConfiguration,
+      }),
+      'analyze_repo_structure Rust configuration evidence write policy is not fail-closed',
+    );
+
+    const lyingCoverage = verifiedImportScanCoverage({ rust: true });
+    lyingCoverage.allDetectedLanguagesSupported = true;
+    assert.equal(
+      inferImportsFailure({
+        rootPath: '/repo',
+        filesScanned: 0,
+        edges: [],
+        externalImports: [],
+        unresolved: [],
+        moduleEdges: [],
+        coverage: lyingCoverage,
+      }),
+      'infer_imports import scan coverage overclaims Rust support',
     );
   });
 

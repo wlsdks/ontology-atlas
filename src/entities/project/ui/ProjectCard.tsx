@@ -134,7 +134,7 @@ export function ProjectCard({
           className={cn(
             'relative flex items-center justify-center rounded-full border shadow-[var(--shadow-elevation-1)] transition-[transform,background-color,border-color,box-shadow] duration-[var(--motion-fast)] group-hover:-translate-y-0.5 group-hover:shadow-[var(--shadow-elevation-1)]',
             isHub
-              ? 'border-[color:var(--color-indigo-brand)] bg-[color:var(--color-indigo-a18)] text-[color:var(--color-indigo-accent)]'
+              ? 'border-[color:var(--color-indigo-brand)] bg-[color:var(--color-indigo-a18)] text-[color:var(--color-indigo-text-soft)]'
               : 'border-[color:var(--color-border-strong)] bg-[color:rgba(20,21,23,0.96)] text-[color:var(--color-text-primary)] group-hover:border-[color:var(--color-indigo-a26)] group-hover:bg-[color:var(--color-indigo-a08)]',
             selected
               ? 'h-11 w-11 text-body-lg ring-2 ring-[color:var(--color-indigo-a50)] ring-offset-2 ring-offset-[color:var(--color-canvas)] shadow-[var(--shadow-elevation-1)]'
@@ -221,7 +221,7 @@ export function ProjectCard({
       )}
 
       {!isHub && shared && (
-        <span className="absolute -top-2 left-3 rounded-full border border-[color:rgba(113,112,255,0.5)] bg-[color:var(--color-indigo-a26)] px-2 py-0.5 font-mono text-[8px] uppercase tracking-[0.1em] text-[color:var(--color-indigo-accent)] md:left-4 md:text-[9px]">
+        <span className="absolute -top-2 left-3 rounded-full border border-[color:rgba(113,112,255,0.5)] bg-[color:var(--color-indigo-a26)] px-2 py-0.5 font-mono text-[8px] uppercase tracking-[0.1em] text-[color:var(--color-indigo-text-soft)] md:left-4 md:text-[9px]">
           공유
         </span>
       )}

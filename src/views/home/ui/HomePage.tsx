@@ -4011,7 +4011,7 @@ export function HomePage() {
                       <div className="min-w-0">
                         <p
                           id="topology-create-node-unavailable-title"
-                          className="font-mono text-label uppercase tracking-[0.14em] text-[color:var(--color-indigo-accent)]"
+                          className="font-mono text-label uppercase tracking-[0.14em] text-[color:var(--color-indigo-text-soft)]"
                         >
                           {t('createNode.unavailableHeading')}
                         </p>

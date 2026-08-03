@@ -42,6 +42,198 @@
 
 ---
 
+## 2026-08-04 — 현재 source와 오래된 competency receipt를 같은 `source_changed`로 부르지 않는다
+
+### 먼저 — 세 줄
+
+- **정한 것**: source 자체는 현재인데 그 source로 재평가되지 않은 competency
+  receipt만 남았으면, source 재측정이 아니라 competency 재평가를 첫 행동으로 준다.
+- **네 말과 다르게 한 것**: 구조 readiness와 의미 상태를 하나로 합치거나 새 도구를
+  만들지 않는다. 잘못 분류된 기존 공개 판정 한 경우만 더 정확히 나눈다.
+- **네가 할 일**: 없음 — source·bundled MCP와 설치 앱에서 같은 행동인지 검증한다.
+
+**소집**: PO 카운슬 5인 전원, 독립 1라운드 + 상호 반박 1라운드 · **트리거**:
+공개 MCP `meaningAssessment:v1`의 범주와 다음 행동 변경. 동시 슬롯 상한 때문에
+1라운드는 3+2 두 파동으로 실행했다. 두 번째 파동은 앞선 자리의 평결을 받지 않았지만
+재사용한 격리 스레드가 직전 한 자리의 맥락을 보유했으므로 완전한 5인 동시 독립은
+아니다. · **루브릭**: 23/24 (Problem insight 4 · User moment 4 · Differentiation 3 ·
+Ontology value 4 · Agent value 4 · Verification 4, 치명적 0: 없음).
+
+**선행 결정 관계**: 2026-08-02 「의미 평가는 구조 readiness와 분리한 순수 계약부터
+연다」와 「typed competency read-back을 receipt와 현재 graph/source에 다시 대조한다」,
+2026-08-03 「fresh current source의 incomplete competency는 `meaningRepair:v1`로 사람
+검토한다」는 모두 유효하다. source가 실제 stale일 때의 `source_changed →
+remeasure_source`도 유지한다. 이번 기록은 current source와 그 source보다 오래된
+competency provenance를 같은 source 결함으로 분류한 구현 오류만 바로잡는다.
+
+**관측**: 설치 앱의 `Measure again` 뒤 dogfood `agent_brief`는 `projectSource`와
+`meaningAssessment.dimensions.source`를 모두 `verified_current/current`로 냈다. 현재
+source fingerprint는 `sha256:ffac…`, 저장된 competency receipt fingerprint는 이전
+`sha256:ecc8…`였고 graph hash는 같았다. 그런데 같은 `meaningAssessment`의 top gap은
+`source/source_changed`, 다음 행동은 `remeasure_source`였다. 최상위 행동과
+`meaningRepair:v1`은 이미 abilities/evidence 사람 검토를 가리켜 한 응답 안에서 서로
+반대되는 행동이 공존했다. source 재측정은 competency receipt를 갱신하지 않으므로
+그 지시는 같은 불일치를 반복한다.
+
+**결정 (accountable: stark)**: `meaningAssessment:v1`에서 현재 source fingerprint와
+competency inventory가 인용한 fingerprint가 다르면 전체 상태는 계속 fail-closed
+`review_required`로 둔다. 다만 source 차원은 `verified_current/current`로 보존하고,
+top gap을 `{dimension:"competency", id:"competency_source_changed"}`, 다음 행동을
+`{id:"reevaluate_competency"}`로 낸다. source receipt 자체가 stale인 선행 분기는 기존
+`{dimension:"source", id:"source_changed"}`와 `remeasure_source`를 유지한다.
+
+**적용 규칙**: IN — fingerprint mismatch 분기 한 곳, exact public receipt test,
+공개 문서·dogfood ontology 동기화, source/CLI/bundled stdio와 설치 앱 fresh-process
+검증. OUT — receipt version·schema migration, 새 MCP tool·CLI command·UI, source probe
+변경, meaningRepair 재설계, 자동 write/finalize, 구조 readiness와 의미 status 결합.
+최대 2시간이며 schema/version 변경이 필요하거나 새 행동이 fresh agent를 competency
+검토로 보내지 못하면 중단하고 재조사한다.
+
+**기록된 반대**: 최상위 `nextActions[0]`가 이미 `review_competency_repair`라 강한
+에이전트는 잘못된 nested `remeasure_source`를 무시할 수 있고, 새 id는 소비자 유지비만
+늘릴 수 있다.
+**반증 조건**: 서로 다른 fresh MCP 소비자가 기존 응답만으로 source 재측정을 반복하지
+않고 모두 competency 검토를 첫 행동으로 선택하거나, 새 범주 뒤에도 에이전트 행동이
+달라지지 않고 소비자 parity만 깨지면 반대가 옳다. 그때는 top-level action 하나를
+정본으로 만드는 별도 계약을 검토한다.
+**재검토**: source stdio·설치 앱 bundled stdio와 fresh-agent walkthrough 직후.
+
+**상태**: 유효
+
+## 2026-08-04 — 열린 표면이 확인한 잉크 램프의 경계: 값을 또 올리는 대신 라이선스를 명문화한다
+
+**맥락**: 신설된 열린 표면 접근성 계기(`tests/e2e/a11y-open-surfaces.spec.ts`)의
+첫 전수가 color-contrast 5건을 냈다 — 설정 시트의 표식 인디고 2건(#7170ff 가
+line-a13 틴트 합성 위 4.12 · 3.91)과 글로벌 검색의 quaternary 3건(#82828a 가
+panel+overlay-2 위 4.38, overlay-1∘indigo-a14∘panel 위 4.14, indigo-a14∘panel
+위 4.39). 잉크 램프 판정이라 「체계」석 소집(`design.md` "규격을 바꾸려면
+「체계」를 부른다"). 수치는 전부 `scripts/lib/contrast.mjs` 알파 합성 실측이다.
+
+**선행 결정 관계**: 2026-08-03 두 건을 **모두 유지한다**. ① 「`tone: 'accent'`
+는 잉크가 아니라 표식이었다」의 톤 분리(accent = 맨 바탕만, accentOnTint =
+어디서나)는 그대로이고, 이번 5건 중 인디고 2건은 그 결정이 만든 라이선스를
+**`tone` 을 안 지나는 손글씨 층이 어기고 있던 것**이다(같은 날 등재된 손글씨
+래칫 기준선 23). ② 「quaternary #787c84 → #82828a」의 값 상향도 유지 — 그
+결정이 산문으로 남겨 둔 경계("hover/선택 표면에서는 여전히 미달")를 이번
+계기가 처음으로 화면에서 확인했고, 그 산문을 규격으로 승격하는 것이 이번
+결정이다.
+
+**측정**: ① 오버레이 스택 전수 — quaternary 는 canvas 5.23 · panel 5.00 ·
+elevated 4.57 · canvas/panel+overlay-1 5.07/4.81 로 라이선스 안이고,
+panel+overlay-2 4.36 · elevated+overlay-1 4.35 · 모든 인디고 틴트 합성(a14/
+panel 4.40 등)에서 미달. tertiary 는 이번에 실측된 올라선 바탕 전부에서 통과
+(panel+overlay-2 5.12 · a14/panel 5.16 · overlay-1∘a14∘panel 4.86)하되
+elevated+overlay-3 급(4.02)에서는 못 넘는다. ② 손글씨 accent×틴트 전수 —
+23곳(18파일), 틴트 a06~a32 · line-a13. `--color-indigo-text-soft` 는 그 전
+조합에서 6.30:1 이상(최저 a32/elevated). ③ 위계 — tertiary/quaternary panel
+스텝비 1.17 로 선행 라운드 실측과 동일(수용 최소 1.06). ④ 같은-태그
+quaternary×올라선 배경 정적 페어링은 18쌍인데 다수가 `active ? 틴트+밝은 잉크
+: quaternary` **분기**라 런타임에 공존하지 않는 오탐이다.
+
+**결정 (자리별 치환 + 라이선스 명문화 — 값 이동 0)**:
+① 손글씨 accent×틴트 23곳 전수를 `--color-indigo-text-soft` 로 이관(잉크만,
+치수·보더 변화 0) — `accent-ink-contrast` 손글씨 래칫 기준선 23 → **0**.
+② 글로벌 검색 6자리(kbd + 선택 행 자식 5)를 tertiary 로 치환 — AtlasGitPanel
+2026-08-02 「누를 수 있는 행 위의 글자는 tertiary 부터」의 적용이다.
+③ 규격 승격: **quaternary 의 라이선스는 정지한 무채 바탕(맨 3단 +
+canvas/panel 위 overlay-1)까지. 올라선 바탕(overlay-2 이상 · elevated+overlay
+· 틴트 합성) 위의 글자는 tertiary 부터, tertiary 도 못 넘는 깊이(elevated+
+overlay-3 급)는 secondary 부터.** 새 토큰 0 · 새 hue 0 · 램프 값 이동 0.
+
+**게이트**: `tests/contract/quaternary-ink-surface.contract.test.ts` —
+globals.css 실값으로 라이선스 안/밖을 계산(경계가 실재한다는 반대 단언 포함 —
+빈 집합 공회전 금지, quaternary 가 올라선 바탕까지 통과하게 되는 날 이 경계를
+접는다) + 위계 스텝비 하한(1.06) + 글로벌 검색 자리 단언. 프로브 3종 적색
+확인(자리 되돌리기 · 토큰 #787c84 되돌리기 · 손글씨 위반 재도입).
+`a11y-open-surfaces` color-contrast 기준선 5 → **0**(target-size 2 는 겹침
+레이아웃이라 잉크 소관 밖 — 잔존). 정적 lint 룰은 **추가하지 않는다** — 판정이
+호스트 바탕 합성에 달렸고 같은-태그 휴리스틱은 분기 오탐(위 ④)이라 강제가
+아니라 소음이다.
+
+**진 대안 ① (잉크 재상향)**: quaternary 를 한 번 더 올려 overlay-2 까지
+통과시킨다. 진 이유: 오버레이 합성은 겹수 상한이 없어 한 값으로 전 깊이를 못
+이기고(elevated+overlay-3 은 tertiary 도 미달), 올릴수록 위계 간격(1.17 →
+1.06 미만)을 판다. **이 관점이 이겼다는 관측이 될 반증**: 라이선스 밖 표면
+치환이 반복돼 tertiary 치환 자리가 quaternary 총 소비처의 두 자릿수 %를
+넘는 날 — 그때는 램프 전체(4단 값 자체)의 재설계가 맞다.
+
+**진 대안 ② (표면별 잉크 scope 축 확장)**: `scope` 축으로 표면별 quaternary
+해를 둔다. 진 이유: 소비처 근거가 3자리뿐이라 축이 이름값을 못 하고(어제
+`white/35` 소비처-1 기각과 같은 문법), 지도 패널 램프와 이제 막 수렴한 값을
+다시 가른다. **반증**: 올라선 표면 전용 4단 위계가 실제로 필요한 화면(한
+표면 안에서 quaternary 급 위계가 tertiary 치환으로 뭉개졌다는 실측)이 나오는
+것.
+
+**서명 (accountable)**: design-system 석 (소유자 서명 대기)
+## 2026-08-04 — Rust의 첫 근거는 의존 화살표가 아니라 feature 조건의 정본 provenance다
+
+### 먼저 — 세 줄
+
+- **정한 것**: Cargo feature 선언과 실제 Rust 조건 위치를 정확한 읽기 전용 근거로
+  잇고, Rust import graph가 아직 지원되지 않는다는 범위를 응답 첫머리에서 밝힌다.
+- **네 말과 다르게 한 것**: `use/mod`와 macro consumer를 곧바로 의존 화살표 후보로
+  만들지 않는다. 이름 바인딩·module tree·macro scope를 runtime 의존으로 오인할 수
+  있기 때문이다.
+- **네가 할 일**: 없음 — 실제 관계는 이후에도 정확한 근거와 의미 이유를 보여 준 뒤
+  명시적 승인 전까지 쓰지 않는다.
+
+**소집**: PO 카운슬 5인 전원, 독립 1라운드 + 상호 반박 1라운드 · **트리거**:
+공개 MCP 응답 의미 계약 변경 + Rust source-hidden field trial의 반복 partial. 동시 실행
+상한 때문에 독립 라운드는 2+2+1 파동으로 실행했고 앞선 자리의 출력을 다음 파동에
+주지 않았다. · **루브릭**: 21/24 (Problem insight 4 · User moment 4 ·
+Differentiation 3 · Ontology value 4 · Agent value 4 · Verification 2, 치명적 0:
+없음). Verification 2는 아직 구현·source bundle parity가 없다는 현재 상태 점수다.
+
+**선행 결정 관계**: 2026-08-04 「import는 의존성의 증거이지 스스로 승인되는
+온톨로지 관계가 아니다」와 「제품 코드 값 사용 근거가 있을 때만 승인 질문 자격」은
+유효하다. 2026-08-02 「Rust package 계약은 bounded `package-contract` 한 행」도
+원칙은 유효하지만, 당시 재검토 조건이었던 virtual-workspace field trial에서 실제
+feature 선언이 direct member manifest에 있어 root-only packet이 비는 관측이 생겼다.
+이번 결정은 임의 manifest 재귀가 아니라 root `[workspace].members`의 repo-contained
+literal direct member만 상한 안에서 읽도록 그 범위를 명시적으로 확장한다.
+
+**관측**: 기존 Rust field trial은 path 7/7과 claim 16/16을 지켰지만 optional-feature
+구현 위치와 macro/runtime/import/test 영향은 partial이었다. 현재 `infer_imports`는 같은
+종류의 실제 저장소에서 Rust 파일이 존재해도 `filesScanned:0`, `edges:[]`,
+`moduleEdges:[]`를 반환한다. 별도 실물 census에서는 positive·negative·compound
+`cfg`와 `cfg_attr`가 함께 관측돼 feature 문자열→파일 단순 연결도 거짓 안심이 됐다.
+수동 bounded receipt만 받은 fresh source-hidden FDE는 원본 재열기 없이 첫 구현 위치와
+양성/부정 조건을 정확히 답하고 runtime·macro·import·관계는 unknown으로 보류했다.
+
+**결정 (accountable: stark)**: 새 도구를 만들지 않는다. 기존
+`analyze_repo_structure`와 `index_project`가 bounded Rust feature-configuration
+evidence를 반환한다. package/feature 선언, exact repo-relative path와 line, `cfg`의
+conditional inclusion과 `cfg_attr`의 conditional attribute를 분리하고, predicate 원문·
+polarity·source role·전체 count·bounded sample·잘림/미지원 상태를 보존한다. predicate를
+평가하거나 현재 활성 feature를 주장하지 않는다. `infer_imports`는 구조화된 coverage로
+Rust `use/mod` graph가 unsupported이며 0 edge가 의존 없음의 증거가 아님을 밝힌다.
+모든 출력은 side effect 0이고 relation eligibility와 write permission은 false다.
+
+**적용 규칙**: **근거의 종류와 사정거리를 먼저 말한다**. IN — root package와
+repo-contained literal direct workspace member, conventional Cargo target source
+(`src`/`tests`/`examples`/`benches`/`build.rs`), manifest/source/file/receipt 상한, feature별
+정확한 조건 위치, positive/negative/compound/conditional-attribute 구분, unsupported와
+coverage, source/bundled stdio parity, fresh source-hidden field trial. OUT — workspace glob·
+중첩 재귀, 일반 `use/mod` graph, cfg boolean evaluator, target 조합, build script·compiler·
+proc-macro 실행, macro producer→consumer, runtime/test blast radius, 새 node/kind/schema/UI,
+자동 relation 질문·rationale·write. appetite는 수동 proof를 포함해 최대 1 working day,
+8시간이며 검증에 4시간을 남기지 못하면 시작하지 않는다.
+
+**서명**: stark (소유자 요청에 따른 실행)
+
+**기록된 반대**: 사용자가 요구한 것은 승인 가능한 의존 화살표인데 feature/cfg receipt는
+화살표를 하나도 만들지 않는다. optional-feature 하위 질문만 좋아지고 source 재열기나
+실제 변경 영향 판단이 줄지 않으면, 이는 commodity Rust scanner를 늘린 우회다.
+**반증 조건**: 서로 다른 fresh Rust field trial 두 번에서 source-hidden 에이전트가 새
+receipt를 받고도 optional-feature 구현 시작점을 정확히 답하지 못하거나 원본 재열기를
+요구하거나, unsupported를 완전한 영향으로 오인하면 이 투자를 중단한다. 반대로
+compiler-resolved module/macro graph만이 같은 질문을 false edge 0으로 답한다는 비교
+증거가 생기면 별도 Rust dependency resolver 결정을 연다.
+**재검토**: source stdio·설치 앱 bundled stdio·다음 두 외부 Rust field trial에서 위
+관측이 생길 때.
+
+**상태**: 유효
+
 ## 2026-08-04 — import 승인 질문은 제품 코드의 값 사용 근거가 있을 때만 자격을 얻는다
 
 ### 먼저 — 세 줄

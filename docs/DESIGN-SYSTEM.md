@@ -657,6 +657,24 @@ Defined via Tailwind 4's CSS-based `@theme`. See `app/globals.css` for the actua
   표면 전부 4.5:1 이상이고 지도 패널의 `--topology-v2-panel-text-quaternary`
   와 값이 수렴한다. **hover/선택(overlay-2) 위에서는 여전히 미달(4.36)** —
   누를 수 있는 행 위의 글자는 tertiary 부터 쓴다. 원장: `docs/DECISIONS.md`
+
+  **표면 라이선스 (2026-08-04 규격 승격)** — 열린 표면 계기가 위 산문을 실제
+  화면에서 확인(글로벌 검색 4.38 · 4.14 · 4.39)하면서 경계가 규격이 됐다:
+
+  | 바탕 | quaternary | 처방 |
+  |---|---:|---|
+  | canvas / panel / elevated (맨 3단) | 5.23 / 5.00 / 4.57 | 라이선스 안 |
+  | canvas/panel + overlay-1 | 5.07 / 4.81 | 라이선스 안 |
+  | panel + overlay-2 (hover/선택) | **4.36** | tertiary 부터 (5.12) |
+  | elevated + overlay-1 이상 | **4.35↓** | tertiary 부터 (5.10) |
+  | 인디고·앰버 틴트 합성 (a14/panel 등) | **4.40↓** | tertiary 부터 (5.16) |
+
+  잉크를 또 올리는 노선은 기각 — 오버레이 합성 깊이는 상한이 없어 한 값으로 전
+  깊이를 못 이기고, 올릴수록 tertiary 와의 위계 간격(panel 스텝비 1.17, 수용
+  최소 1.06)을 판다. tertiary 도 못 넘는 더 깊은 합성(elevated+overlay-3 급)이
+  화면에 생기면 그 자리는 secondary 부터다. 게이트:
+  `tests/contract/quaternary-ink-surface.contract.test.ts`(값·자리) +
+  `tests/e2e/a11y-open-surfaces.spec.ts`(화면, color-contrast 기준선 0).
 - `--color-text-on-accent`: `#ffffff` — **채운 인디고 «위»의 전경.** 위 넷은 전부
   어두운 바탕용이라 채움 컨트롤 위에서는 하나도 못 쓴다. 새 hue 가 아니라 무채이고,
   `--color-indigo-brand` 위 대비 **4.71:1** 로 WCAG AA(4.5:1) 통과. 값 층에서는

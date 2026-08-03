@@ -468,7 +468,7 @@ export function LiveActivityBadge({
                     <div className="flex flex-wrap gap-1.5">
                       <a
                         href={focusHref}
-                        className="inline-flex w-fit items-center rounded-micro border border-[color:var(--color-indigo-line-a22)] px-1.5 py-0.5 font-mono text-[9px] uppercase tracking-[0.08em] text-[color:var(--color-indigo-accent)] transition-colors hover:border-[color:var(--color-indigo-line-a45)] hover:bg-[color:var(--color-indigo-a10)]"
+                        className="inline-flex w-fit items-center rounded-micro border border-[color:var(--color-indigo-line-a22)] px-1.5 py-0.5 font-mono text-[9px] uppercase tracking-[0.08em] text-[color:var(--color-indigo-text-soft)] transition-colors hover:border-[color:var(--color-indigo-line-a45)] hover:bg-[color:var(--color-indigo-a10)]"
                       >
                         {labels.agentFocusAction}
                       </a>

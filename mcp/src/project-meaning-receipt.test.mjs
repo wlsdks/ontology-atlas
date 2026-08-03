@@ -314,6 +314,41 @@ test('missing, changed, drifted, malformed, or future receipts stay fail closed'
   assert.notEqual(readProjectMeaningAssessment(input).status, 'verified_current');
 }));
 
+test('a current source with an older competency receipt asks to reevaluate competency', () => withVault((root) => {
+  const body = competencyBody();
+  finalizeProjectMeaningReceipt({
+    vaultRoot: root,
+    projectSlug: 'projects/demo',
+    projectBody: body,
+    graphHash: GRAPH_HASH,
+    sourceFingerprint: SOURCE_FINGERPRINT,
+    measuredAt: MEASURED_AT,
+  });
+
+  const currentSourceFingerprint = 'source-fingerprint:v2';
+  assert.notEqual(currentSourceFingerprint, SOURCE_FINGERPRINT);
+  const assessment = readProjectMeaningAssessment({
+    vaultRoot: root,
+    projectSlug: 'projects/demo',
+    projectBody: body,
+    graphHash: GRAPH_HASH,
+    structure: { status: 'ready' },
+    source: source({ sourceFingerprint: currentSourceFingerprint }),
+    inventory: inventory({ sourceFingerprint: currentSourceFingerprint }),
+  });
+
+  assert.equal(assessment.status, 'review_required');
+  assert.deepEqual(assessment.dimensions.source, {
+    status: 'verified_current',
+    currentness: 'current',
+  });
+  assert.deepEqual(assessment.topGap, {
+    dimension: 'competency',
+    id: 'competency_source_changed',
+  });
+  assert.deepEqual(assessment.nextAction, { id: 'reevaluate_competency' });
+}));
+
 test('malformed competency rows fail closed', () => {
   assert.throws(() => parseProjectCompetencyMarkdown(
     competencyBody().replace('### impact — answered', '### unknown — answered'),

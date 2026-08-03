@@ -388,7 +388,11 @@ function MeaningGapRowView({
           )}
           <Link
             href={mapHref(row.nodeId)}
-            className="inline-flex min-h-8 items-center rounded-chip border border-[color:var(--color-border-soft)] px-2.5 text-label text-[color:var(--color-text-tertiary)] transition-colors hover:text-[color:var(--color-text-primary)]"
+            className={controlClass({
+              shape: "chip",
+              size: "md",
+              className: "hover:text-[color:var(--color-text-primary)]",
+            })}
           >
             {labels.openMap}
           </Link>
