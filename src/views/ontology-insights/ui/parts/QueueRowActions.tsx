@@ -71,15 +71,12 @@ export function HandoffCopyButton({
   abilities,
   candidate,
   onReviewStart,
-  compact = false,
 }: {
   payload: string;
   labels: QueueRowActionLabels;
   abilities: QueueRowAbilities;
   candidate?: { id: string; title: string };
   onReviewStart?: (candidate: { id: string; title: string }) => void;
-  /** 한 줄 행에 얹히는 자리 — 높이만 한 단 낮추고 라벨/동작은 같다. */
-  compact?: boolean;
 }) {
   /**
    * 복사 결과는 **성공도 실패도** 말한다 (2026-07-28 QA). 클립보드 권한은
@@ -99,15 +96,13 @@ export function HandoffCopyButton({
           await copyHandoff(payload);
         }}
         /**
-         * `compact` 는 이제 **높이 축**만 고른다. 한 줄 행에 얹히는 자리는
-         * 램프 기본(패딩이 높이를 정한다 = 30px), 홀로 서는 자리는
-         * `fixedHeight`(크롬 계약의 32px). 손으로 쓰던 28/32 중 28은 램프에
-         * 스텝이 없어 30으로 올라간다 — 그게 이 정규화의 값이다.
+         * **`compact` 프롭은 2026-08-03 에 사라졌다.** 그 프롭이 고르던 것은
+         * 높이 하나(30 vs 32)였고, 칩 램프가 32 로 수렴하면서 두 값이 같아졌다.
+         * 아무것도 안 고르는 축은 «고를 것만 늘리는 것» 이라 지웠다.
          */
         className={controlClass({
           shape: "chip",
           size: "md",
-          fixedHeight: !compact,
           className:
             "hover:border-[color:var(--color-indigo-a46)] hover:text-[color:var(--color-text-primary)]",
         })}

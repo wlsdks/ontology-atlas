@@ -72,7 +72,6 @@ export function AgentScopeSheet({
             shape: 'chip',
             size: 'md',
             tone: 'secondary',
-            fixedHeight: true,
             className:
               'tracking-label border-[color:var(--color-border-soft)] hover:border-[color:var(--color-border-strong)] hover:text-[color:var(--color-text-primary)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--color-indigo-accent)]',
           })}
@@ -86,7 +85,6 @@ export function AgentScopeSheet({
           onClick={onAccept}
           className={controlClass({
             tone: 'onAccent',
-            fixedHeight: true,
             className:
               'tracking-label hover:bg-[color:var(--color-indigo-hover)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--color-indigo-accent)]',
           })}

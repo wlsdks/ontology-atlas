@@ -394,9 +394,17 @@ export function ShortcutSheet({ open, onClose }: Props) {
                   aria-selected={scope === key}
                   data-testid={`shortcut-sheet-scope-${key}`}
                   onClick={() => setScope(key)}
+                  /**
+                   * **이 자리가 2026-08-03 수렴의 유일한 미흡수 소비처였다.**
+                   * 삭제된 `fixedHeight: "sm"` 이 여기서만 28px 을 냈는데, 28은
+                   * 사다리에는 있어도(`--control-h-sm`) **세그먼트 단**에는
+                   * 없다 — 다른 세그먼트 탭 8개가 전부 24px(`md`)이다. 혼자
+                   * 28을 지키려면 축이 다시 필요하고, 그건 이 정리가 없앤 바로
+                   * 그 축이다. 그래서 다수와 같은 24로 내렸다(−4px). 24는 WCAG
+                   * 2.5.8 (AA) 최소 타깃이라 바닥 아래로 내려간 것이 아니다.
+                   */
                   className={controlClass({
                     shape: "segment",
-                    fixedHeight: "sm",
                     active: scope === key,
                     className: cn(
                       "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--color-indigo-a46)]",
