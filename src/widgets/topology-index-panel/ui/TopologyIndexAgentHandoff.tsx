@@ -75,7 +75,7 @@ export function TopologyIndexAgentHandoff({
       <summary
         aria-label={labels.menuAria}
         data-testid="topology-index-agent-handoff-summary"
-        className="inline-flex min-h-[26px] cursor-pointer list-none items-center gap-1 rounded border border-[color:var(--topology-v2-panel-border)] px-1.5 py-0.5 font-mono text-caption uppercase tracking-[0.1em] text-[color:var(--topology-v2-panel-text-tertiary)] transition-colors hover:border-[color:var(--topology-v2-panel-action-border)] hover:text-[color:var(--topology-v2-panel-text-primary)]"
+        className="inline-flex min-h-[26px] cursor-pointer list-none items-center gap-1 rounded-micro border border-[color:var(--topology-v2-panel-border)] px-1.5 py-0.5 font-mono text-caption uppercase tracking-[0.1em] text-[color:var(--topology-v2-panel-text-tertiary)] transition-colors hover:border-[color:var(--topology-v2-panel-action-border)] hover:text-[color:var(--topology-v2-panel-text-primary)]"
       >
         {labels.menuLabel}
         <ChevronUp

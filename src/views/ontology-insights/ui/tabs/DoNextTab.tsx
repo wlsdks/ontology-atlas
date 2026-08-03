@@ -1356,7 +1356,7 @@ function RepairQueueTargetRow({
       className="flex min-w-0 items-center justify-between gap-2 py-1 first:pt-0"
     >
       <span className="flex min-w-0 items-center gap-1.5 text-body text-[color:var(--color-text-secondary)]">
-        <span className="shrink-0 rounded border border-[color:var(--color-border-soft)] bg-[color:var(--color-overlay-1)] px-1.5 py-0.5 text-caption leading-none text-[color:var(--color-text-tertiary)]">
+        <span className="shrink-0 rounded-micro border border-[color:var(--color-border-soft)] bg-[color:var(--color-overlay-1)] px-1.5 py-0.5 text-caption leading-none text-[color:var(--color-text-tertiary)]">
           {kindLabel}
         </span>
         <span className="min-w-0 truncate">{target.title}</span>

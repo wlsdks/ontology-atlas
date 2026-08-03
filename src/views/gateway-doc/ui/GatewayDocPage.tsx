@@ -327,7 +327,7 @@ const PROSE_COMPONENTS: Components = {
     if (!isBlock) {
       return (
         <code
-          className="rounded-sm bg-[color:var(--color-indigo-line-a06)] px-1 py-0.5 font-mono text-label text-[color:var(--color-indigo-pale-a95)] md:text-body"
+          className="rounded-micro bg-[color:var(--color-indigo-line-a06)] px-1 py-0.5 font-mono text-label text-[color:var(--color-indigo-pale-a95)] md:text-body"
           {...rest}
         >
           {children}

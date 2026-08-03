@@ -300,12 +300,12 @@ export function DependencyPicker({
             >
               <span>{p.name}</span>
               {invalidSlugSet.has(p.slug) && (
-                <span className="rounded-sm border border-[color:var(--color-divider)] px-1 font-mono text-[8px] uppercase tracking-[0.08em] text-[color:var(--color-text-quaternary)]">
+                <span className="rounded-micro border border-[color:var(--color-divider)] px-1 font-mono text-[8px] uppercase tracking-[0.08em] text-[color:var(--color-text-quaternary)]">
                   cycle
                 </span>
               )}
               {p.isHub && (
-                <span className="rounded-sm bg-[color:var(--color-indigo-brand)] px-1 font-mono text-[8px] uppercase tracking-[0.08em] text-[color:var(--color-text-primary)]">
+                <span className="rounded-micro bg-[color:var(--color-indigo-brand)] px-1 font-mono text-[8px] uppercase tracking-[0.08em] text-[color:var(--color-text-primary)]">
                   HUB
                 </span>
               )}
