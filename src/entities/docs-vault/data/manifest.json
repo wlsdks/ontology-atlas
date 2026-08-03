@@ -3895,6 +3895,11 @@
         },
         {
           "depth": 2,
+          "text": "2026-08-04 — 떠 있는 시트·팔레트의 모서리가 한 값으로 모인다",
+          "slug": "2026-08-04-떠-있는-시트팔레트의-모서리가-한-값으로-모인다"
+        },
+        {
+          "depth": 2,
           "text": "2026-08-04 — 폴더 구조를 의존 영향이라고 부르지 않는다",
           "slug": "2026-08-04-폴더-구조를-의존-영향이라고-부르지-않는다"
         },
@@ -6130,7 +6135,7 @@
         }
       ],
       "excerpt": "Major change history. Code commit messages answer why; this file answers when / which surface changed. Focused on user-visible changes, not PR-level granularity. Newest at the top. Entries stay date-based; the app version reached v1.0.0 on 2026-07-27, so a release tag now carries the semver promise instead. MCP inferim",
-      "wordCount": 65353,
+      "wordCount": 65413,
       "updatedAt": "2026-08-04",
       "linksOut": [
         "audits/CASE-STUDY-AGENTS-MD-DRIFT",
@@ -6814,10 +6819,35 @@
           "depth": 2,
           "text": "2026-08-04 — 컨트롤 채택 래칫을 「등재된 값 층 밖」과 「아직 안 옮긴 부채」로 가른다",
           "slug": "2026-08-04-컨트롤-채택-래칫을-등재된-값-층-밖과-아직-안-옮긴-부채로-가른다"
+        },
+        {
+          "depth": 2,
+          "text": "2026-08-04 — 공회전하던 게이트 셋을 소스 전수 위에 다시 세운다",
+          "slug": "2026-08-04-공회전하던-게이트-셋을-소스-전수-위에-다시-세운다"
+        },
+        {
+          "depth": 3,
+          "text": "전수 — 켜기 전에 셌다",
+          "slug": "전수-켜기-전에-셌다"
+        },
+        {
+          "depth": 3,
+          "text": "왜 앵커를 버튼 부채에 더하지 않았나",
+          "slug": "왜-앵커를-버튼-부채에-더하지-않았나"
+        },
+        {
+          "depth": 3,
+          "text": "색 판정은 하지 않았다",
+          "slug": "색-판정은-하지-않았다"
+        },
+        {
+          "depth": 2,
+          "text": "2026-08-04 — 오버레이 반경을 `sheet`(18) 한 단으로 등재하고, 행간 이름 유틸리티를 래칫에 넣는다",
+          "slug": "2026-08-04-오버레이-반경을-sheet18-한-단으로-등재하고-행간-이름-유틸리티를-래칫에-넣는다"
         }
       ],
       "excerpt": "이 파일은 결정과 그때 진 반대 의견을 남긴다. docs/CHANGELOG.md 는 무엇이 언제 바뀌었나를 답하고, 이 파일은 왜 그렇게 정했고, 무엇을 걸었나를 답한다. 최신이 위. 기록은 덧붙이기만 한다 — 지난 기록을 고치지 않는다. 판단이 바뀌었으면 새 기록을 쓰고 옛 기록을 뒤집힘 으로 표시한다. 틀린 기록도 자산이다. 1. 소집 전에 읽는다. 카운슬을 열기 전(그리고 단독 PO 패스를 쓰기 전) 같은 표면 · 같은 질문에 대한 선행 결정이 있는지 먼저 본다. 있으면 새 패스는 그것을 ① 여전히 유효하다고 인용하거나 ② 명시적으로 뒤집는다. 조용히 다시 결정",
-      "wordCount": 57992,
+      "wordCount": 59179,
       "updatedAt": "2026-08-04",
       "linksOut": [
         "slug"
@@ -7531,8 +7561,8 @@
         },
         {
           "depth": 3,
-          "text": "Radius ramp — 4단 (일반 표면)",
-          "slug": "radius-ramp-4단-일반-표면"
+          "text": "Radius ramp — 5단 (일반 표면)",
+          "slug": "radius-ramp-5단-일반-표면"
         },
         {
           "depth": 3,
@@ -7746,7 +7776,7 @@
         }
       ],
       "excerpt": "This document is maintained based on Section 3 of the design spec. For the original Linear specification, see design-references/DESIGN-linear.md. v2 (2026-07): topology-map-v2 에서 출하된 B2+ \"Circuit × Constellation\" 시각 언어가 페이지 롤아웃(랜딩 → docs/ontology 허브 → projects/insights → download)의 규범이 되었다 — 아래 v2 — \"Circuit × Constell",
-      "wordCount": 27225,
+      "wordCount": 27432,
       "updatedAt": "2026-08-04",
       "linksOut": [
         "design-references/DESIGN-linear",

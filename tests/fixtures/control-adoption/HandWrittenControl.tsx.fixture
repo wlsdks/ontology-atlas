@@ -28,3 +28,26 @@ export function UnregisteredChromeTokenControl() {
     </button>
   );
 }
+
+/**
+ * **앵커 컨트롤** — 2026-08-04 에 이 게이트의 시야에 들어왔다.
+ *
+ * 그 전까지 래칫은 `<button>` 만 셌다. 컨트롤은 `<button>` 만이 아니고, 손으로
+ * 규격을 쓴 `<Link>`·`<a>` 가 **109곳** 있었는데 게이트는 한 번도 그것을 본 적이
+ * 없다. 아래 둘이 그 부류의 자(尺)다.
+ */
+export function HandWrittenAnchorControl() {
+  return (
+    <Link href="/topology" className="inline-flex h-[33px] items-center rounded-[7px] px-[9px] text-[13px]">
+      램프 밖 앵커
+    </Link>
+  );
+}
+
+export function HandWrittenExternalAnchor() {
+  return (
+    <a href="https://example.com" className="inline-flex h-[29px] items-center rounded-[5px] px-[7px]">
+      램프 밖 외부 앵커
+    </a>
+  );
+}

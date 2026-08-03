@@ -1,0 +1,22 @@
+/*
+ * 탐지기 프로브 — **세면 안 되는 것.**
+ *
+ * 이미 마운트된 컨테이너 안에서 내용만 바뀌는 자리(설정 시트의 절, 연결 시트의
+ * 단계 갈래)는 «등장» 이 아니라 «교체» 다. 실물에서 세 자리가 이 부류였고,
+ * 구 등록부는 그것을 사람이 손으로 «부모가 이미 애니메이션한다» 고 적어 걸러야
+ * 했다. 센서스는 대안 가지가 무언가를 그리는지로 **기계적으로** 가른다.
+ *
+ * 이 픽스처가 세어지기 시작하면 그 판별식이 죽은 것이고, 그때 센서스는 고쳐야
+ * 할 것 없는 자리에 나가는 길을 붙이라고 요구하기 시작한다 — 소음이다.
+ */
+function ProbeLeftPanel() {
+  return <div className="fixed inset-0 z-50">left</div>;
+}
+
+function ProbeRightPanel() {
+  return <div className="fixed inset-0 z-50">right</div>;
+}
+
+export function ContentSwapHost({ which }: { which: boolean }) {
+  return <>{which ? <ProbeLeftPanel /> : <ProbeRightPanel />}</>;
+}

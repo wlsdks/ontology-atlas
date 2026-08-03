@@ -283,11 +283,11 @@ particle·rarity(gold)·shimmer 를 `--studio-*` 토큰 + `.studio-stage` 안에
 | 규격 | 셀렉터 | 레벨 |
 |---|---|---|
 | 타입 램프 | `text-[Npx]` 금지 | 완료 디렉토리 error / 미완 warn |
-| radius 램프 | `rounded-[Npx]` 금지 | 동일 |
+| radius 램프 | `rounded-[Npx]` 금지 — 방향 접미(`rounded-t-[Npx]`·`rounded-r-md`) 포함 (2026-08-04 확장) | 동일 |
 | **그림자 사다리** | `shadow-[…]` 의 **기하 허용목록** — elevation-1/2/3 · dock-bottom/side · control-press · 표면 전용 토큰 · inset 만 통과 | 동일 |
 | **hex 색상** | Tailwind **arbitrary value 안**의 hex 만 금지 | 동일 (현재 위반 0 — 예방 게이트) |
 | **모션 duration** | `duration-<숫자>` 금지 (토큰 참조형은 문법상 안 걸림) | 동일 |
-| **행간 램프** | `leading-[N]` arbitrary 만 금지 (기존 named 199건은 제외) | 동일 |
+| **행간 램프** | `leading-[N]` arbitrary 금지 + 이름 유틸리티(`leading-relaxed` 등 208건)는 `named-offramp-utility-ratchet` 기준선이 붙든다 (2026-08-04) | 동일 |
 | **램프 우회** | 램프 토큰을 arbitrary length 로 참조하는 것만 금지 (램프 밖 크기 토큰은 정당) | 동일 (켤 때 위반 0) |
 | 금지 그라디언트 | `scaleGradientSelectors` | 동일 |
 | **accent×틴트 페어링** | `accentTintPairingSelectors` — `tone accent` 와 인디고/앰버 틴트 `bg-` 가 같은 호출/원소에 공존 금지 (상수 우회는 `accent-ink-contrast` 계약이 맡는다) | 전역 error (켤 때 위반 0 — 26곳 선치환) |

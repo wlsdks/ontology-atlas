@@ -84,6 +84,33 @@ const FAMILIES: ReadonlyArray<readonly [name: string, re: RegExp, budget: number
   ['text-2xl', /(?<![-\w])text-2xl(?![-\w])/g, 0],
   ['text-3xl', /(?<![-\w])text-3xl(?![-\w])/g, 0],
   ['text-4xl', /(?<![-\w])text-4xl(?![-\w])/g, 0],
+  /*
+   * ## 2026-08-04: 행간 패밀리 — 세 램프 중 마지막 무게이트 구멍을 닫는다
+   *
+   * 타입·반경은 이 래칫 + eslint 이름 스텝 셀렉터가 붙드는데 **행간만 아무
+   * 게이트가 없었다** — eslint 는 `leading-[N]`(대괄호)만 보고, 이름 유틸리티
+   * (`leading-relaxed` 71 · `leading-snug` 17 …)는 어떤 룰도 안 거쳤다.
+   * `text-sm`/`rounded-md` 268건이 램프를 통째로 우회하던 것과 같은 모양이다.
+   *
+   * 켜기 전 전수(이 스캐너와 동일 조건, 2026-08-04): relaxed 71 · 숫자꼴 103 ·
+   * snug 17 · none 9 · tight 8 · normal 0 · loose 0 = **208곳 / 40여 파일**.
+   * 한 PR 로 못 치우는 규모다 — 값 층 정본이 「행간은 크기의 짝」이라 못박아서
+   * 치환이 기계적이지 않다: `leading-relaxed`(×1.625)를 짝 스텝으로 옮기면
+   * 픽셀이 움직이고(실측 22.75→22 등), `leading-4/5/6`(16/20/24px)은 픽셀
+   * 동일 치환이 가능하지만 **어느 크기와 짝인지**는 자리마다 봐야 한다.
+   * 그래서 shadow-\[ 전례(켜자마자 144→548 소음)를 따르지 않고 래칫으로
+   * 붙들고 단계를 나눈다 — 재유입은 오늘부터 0, 상환은 per-site 판정 라운드로.
+   * 치환 목적지는 `--leading-*` 램프(caption…hero-lg · display-tight · prose)다.
+   */
+  ['leading-none', /(?<![-\w])leading-none(?![-\w])/g, 9],
+  ['leading-tight', /(?<![-\w])leading-tight(?![-\w])/g, 8],
+  ['leading-snug', /(?<![-\w])leading-snug(?![-\w])/g, 17],
+  ['leading-normal', /(?<![-\w])leading-normal(?![-\w])/g, 0],
+  ['leading-relaxed', /(?<![-\w])leading-relaxed(?![-\w])/g, 71],
+  ['leading-loose', /(?<![-\w])leading-loose(?![-\w])/g, 0],
+  // 숫자꼴(leading-4/5/6/7 …)은 px 고정이라 램프 스텝과 값이 겹치지만
+  // (16/20/24/28 = label/body/title/display) 짝 판정 없는 이름이다.
+  ['leading-<number>', /(?<![-\w])leading-\d+(?![-\w])/g, 103],
 ];
 
 const ROOTS = ['src', 'app'] as const;
@@ -164,12 +191,12 @@ describe('이름 있는 off-ramp 유틸리티 래칫', () => {
 
   it('탐지기가 실제로 잡는다 — 위반 1줄 + 정상 1줄 프로브', () => {
     const violating =
-      'className="rounded-sm rounded rounded-2xl text-xl text-sm md:text-3xl"';
+      'className="rounded-sm rounded rounded-2xl text-xl text-sm md:text-3xl leading-relaxed leading-none leading-5"';
     const clean =
-      'className="rounded-micro rounded-chip rounded-card rounded-panel rounded-full text-caption text-label text-body-lg text-left"';
+      'className="rounded-micro rounded-chip rounded-card rounded-panel rounded-sheet rounded-full text-caption text-label text-body-lg text-left leading-body leading-display-tight leading-prose"';
     const count = (s: string) =>
       FAMILIES.reduce((sum, [, re]) => sum + (s.match(re)?.length ?? 0), 0);
-    expect(count(violating)).toBe(6);
+    expect(count(violating)).toBe(9);
     expect(count(clean)).toBe(0);
   });
 });
