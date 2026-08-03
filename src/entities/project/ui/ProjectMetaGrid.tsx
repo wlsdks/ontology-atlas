@@ -25,7 +25,7 @@ export function ProjectMetaGrid({
   return (
     <dl
       className={cn(
-        "grid gap-px overflow-hidden rounded-2xl border border-[color:var(--color-divider)] bg-[color:var(--color-divider)]",
+        "grid gap-px overflow-hidden rounded-panel border border-[color:var(--color-divider)] bg-[color:var(--color-divider)]",
         columns === 1 ? "grid-cols-1" : "grid-cols-1 sm:grid-cols-2",
         className,
       )}

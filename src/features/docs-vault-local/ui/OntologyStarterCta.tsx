@@ -185,12 +185,12 @@ export function OntologyStarterCta({ onScaffold, docCount, vaultPath = null }: P
     return (
       <section
         aria-label={t('emptyAriaLabel')}
-        className="rounded-2xl border border-dashed border-[color:var(--color-indigo-a46)] bg-[color:var(--color-indigo-a06)] px-5 py-6 text-center"
+        className="rounded-panel border border-dashed border-[color:var(--color-indigo-a46)] bg-[color:var(--color-indigo-a06)] px-5 py-6 text-center"
       >
         <p className="font-mono text-caption uppercase tracking-[0.16em] text-[color:var(--color-indigo-accent)]">
           {t('emptyEyebrow')}
         </p>
-        <h2 className="mt-2 break-keep text-lg font-[var(--font-weight-signature)] text-[color:var(--color-text-primary)]">
+        <h2 className="mt-2 break-keep text-title font-[var(--font-weight-signature)] text-[color:var(--color-text-primary)]">
           {t('emptyTitle')}
         </h2>
         <p className="mt-2 break-keep text-body leading-6 text-[color:var(--color-text-secondary)]">

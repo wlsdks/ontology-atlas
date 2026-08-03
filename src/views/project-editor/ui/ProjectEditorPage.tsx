@@ -279,7 +279,7 @@ function EditorContent({
             </p>
           )}
           <div className="mt-2 flex flex-col gap-2 md:flex-row md:items-baseline md:justify-between">
-            <h1 className="text-2xl font-[var(--font-weight-signature)] tracking-[var(--tracking-section)] text-[color:var(--color-text-primary)] md:text-3xl">
+            <h1 className="text-display font-[var(--font-weight-signature)] tracking-[var(--tracking-section)] text-[color:var(--color-text-primary)] md:text-hero">
               {mode === "create"
                 ? duplicateFromSlug
                   ? t("titleDuplicate", { name: project?.name ?? duplicateFromSlug })

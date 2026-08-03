@@ -32,25 +32,57 @@ import { describe, expect, it } from 'vitest';
 /**
  * 패밀리별 기준선 — **내려가기만 한다.**
  *
- * 0 인 패밀리는 "없음"이 아니라 "재유입 차단"이다. 0 이 아닌 패밀리는 아직
- * per-site 디자인 판정이 안 끝난 부채다(`rounded-2xl` 16px 은 card(9)로 내릴지
- * panel(12)로 올릴지 자리마다 다르다 — 체계석 판정 대기).
+ * 0 인 패밀리는 "없음"이 아니라 "재유입 차단"이다.
+ *
+ * ## 2026-08-04: 마지막 24건을 자리마다 판정해 전부 램프로 들였다
+ *
+ * 남아 있던 것은 값이 없어서가 아니라 **자리마다 디자인 판정이 필요해서**였다.
+ * 빌드된 화면에서 재고 나서야 무엇을 고를지가 정해졌다:
+ *
+ * - **`rounded-2xl`(16px) 16건 → 전부 `rounded-panel`(12px).** 실측 근거는
+ *   드로어 한 칸 안의 반경 센서스였다 — 399px 폭 한 열에 20 / 18 / 16 / 12 /
+ *   9 / 6 **여섯 종**이 동시에 살아 있었고, 그중 `completeness`/`freshness`
+ *   짝만 이미 `rounded-panel` 이라 **같은 줄의 형제가 어긋나 있었다**. 16 을
+ *   12 로 내리면 시트 단(문서화된 예외 18·20)과 콘텐츠 단(12)이 갈리고,
+ *   16/18/20 이 세 가지 일을 하면서 거의 같아 보이던 평평함이 사라진다.
+ *   `card`(9)가 아니라 `panel`(12)인 이유: 이 상자들은 폭 365~399px 의 절
+ *   컨테이너이고, 이미 그 자리를 고른 형제 둘과 `TopologyEmptyState` 의
+ *   덮어쓰기(`rounded-[var(--radius-panel)]`)가 같은 답을 냈다.
+ * - **`text-xl`(20px) 2건** — 드로어 아이콘 타일의 이모지는 `text-display`(23)
+ *   로. 44px 타일에서 20px 는 채움률 54.5% 였고 램프 이웃은 16(36%)과
+ *   23(52%)뿐이라 광학적으로 가까운 쪽을 골랐다. 마크다운 미리보기 `h1` 도
+ *   같은 스텝 — 행간 짝이 28px 로 종전과 같아 줄 높이가 안 움직인다.
+ * - **`text-lg`(18) 1건 · `text-base`(16) 1건** — 마크다운 미리보기의 h2/h3.
+ *   본문이 `text-body-lg`(14)라 **머리말이 쓸 수 있는 램프 스텝은 16 과 23
+ *   둘뿐**이다(그 아래는 본문보다 작아져 위계가 뒤집힌다). 그래서 사다리는
+ *   display 23 / title 16 / body-lg 14(굵게)로 확정.
+ * - **`text-2xl`+`text-3xl` 각 1건** — 편집기 h1 의 `text-2xl md:text-3xl` 을
+ *   `text-display md:text-hero` 로. 24→23 은 1px, 30→30 은 0px 이고, 대신
+ *   두 크기가 **행간 짝을 얻는다**(32→28 · 36→34).
+ *
+ * **`text-lg` 만 1 로 남는다** — `src/shared/ui/controls.tsx` 의 **산문 주석**
+ * 이다(삭제된 `CardTitle` 이 램프 밖 `text-lg` 를 썼다는 사고 기록). 렌더되는
+ * 값이 아니고, 게다가 `control-class.contract.test.ts` 가
+ * `expect(SOURCE).toContain('text-lg')` 로 **그 문장을 붙들고 있다**. 이 래칫이
+ * `.tsx` 만 스캔하는 이유가 "클래스 문자열은 컴포넌트 파일에 산다" 인데,
+ * 주석도 같은 파일에 산다는 예외가 여기 하나 있다. 1 은 그 한 문장이다.
  */
 const FAMILIES: ReadonlyArray<readonly [name: string, re: RegExp, budget: number]> = [
   ['rounded (무접미, 4px)', /(?<![-\w])rounded(?![-\w])/g, 0],
   ['rounded-xs', /(?<![-\w])rounded-xs(?![-\w])/g, 0],
   ['rounded-sm', /(?<![-\w])rounded-sm(?![-\w])/g, 0],
-  // 19 → 16: 죽은 프리미티브 둘(`link-list-editor`·`chip-list-editor`)이 3건을
-  // 지고 있었다. 코드를 지우자 부채도 같이 사라진 자리라 판정이 필요 없었다.
-  ['rounded-2xl', /(?<![-\w])rounded-2xl(?![-\w])/g, 16],
+  // 19 → 16 → 0. 16 → 0 은 2026-08-04 per-site 판정(위 주석) — 전부 panel(12).
+  ['rounded-2xl', /(?<![-\w])rounded-2xl(?![-\w])/g, 0],
   ['rounded-3xl', /(?<![-\w])rounded-3xl(?![-\w])/g, 0],
   ['text-xs', /(?<![-\w])text-xs(?![-\w])/g, 0],
   ['text-sm', /(?<![-\w])text-sm(?![-\w])/g, 0],
-  ['text-base', /(?<![-\w])text-base(?![-\w])/g, 1],
-  ['text-lg', /(?<![-\w])text-lg(?![-\w])/g, 3],
-  ['text-xl', /(?<![-\w])text-xl(?![-\w])/g, 2],
-  ['text-2xl', /(?<![-\w])text-2xl(?![-\w])/g, 1],
-  ['text-3xl', /(?<![-\w])text-3xl(?![-\w])/g, 1],
+  ['text-base', /(?<![-\w])text-base(?![-\w])/g, 0],
+  // 3 → 1. 남은 1 은 `controls.tsx` 의 산문 주석이고 계약 테스트가 그 문장을
+  // 고정한다 — 렌더되는 값이 아니라 내릴 수 없는 바닥이다.
+  ['text-lg', /(?<![-\w])text-lg(?![-\w])/g, 1],
+  ['text-xl', /(?<![-\w])text-xl(?![-\w])/g, 0],
+  ['text-2xl', /(?<![-\w])text-2xl(?![-\w])/g, 0],
+  ['text-3xl', /(?<![-\w])text-3xl(?![-\w])/g, 0],
   ['text-4xl', /(?<![-\w])text-4xl(?![-\w])/g, 0],
 ];
 
