@@ -344,11 +344,31 @@ describe('카운슬 산출물은 평문 요약으로 시작한다', () => {
   it.each(PLAIN_SUMMARY_FILES)('%s 가 평문 요약 절을 싣는다', (path) => {
     const text = read(path);
     expect(text, `${path} must open its output with a plain-language summary`).toContain(
-      '사람에게 — 평문 요약',
+      '사람에게 —',
     );
     expect(text).toContain('먼저 — 세 줄');
     for (const banned of BANNED_SAMPLE) {
       expect(text, `${path} must ban "${banned}" from the plain section`).toContain(banned);
+    }
+  });
+
+  /**
+   * 2026-08-03: 위 단언들은 **전부 통과하는 중에** 사고가 났다(PO 카운슬에서
+   * 났지만 이 절의 문장은 두 카운슬이 공유하므로 구멍도 공유였다). 소집자는 세
+   * 줄 요약을 정확히 썼고 그 아래 평결 블록을 통째로 붙였으며, 소유자는 두 번
+   * 되물었다. 절의 존재만 검사하는 게이트는 **표지를 얹는 것과 번역하는 것을
+   * 구별하지 못한다.** 그래서 구멍을 막은 세 규칙을 각각 못박는다.
+   */
+  const HOLE_CLOSING_RULES = [
+    ['대화창이 아니다', '평결 블록의 목적지가 파일임을 못박는 문장'],
+    ['답 전체에 적용된다', '금지어가 맨 앞 세 줄에만 적용되지 않음을 못박는 문장'],
+    ['되물음은 실패 신호다', '되물으면 겹쳐 쓰지 말고 다시 쓰라는 문장'],
+  ] as const;
+
+  it.each(PLAIN_SUMMARY_FILES)('%s 가 세 줄을 표지로 쓰지 못하게 막는다', (path) => {
+    const text = read(path).replace(/\s+/g, ' ');
+    for (const [rule, why] of HOLE_CLOSING_RULES) {
+      expect(text, `${path} 에 ${why}("${rule}")이 없다`).toContain(rule);
     }
   });
 
