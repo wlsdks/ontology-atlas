@@ -6,6 +6,7 @@ import { useEffect, useRef } from 'react';
 import { useTranslations } from 'next-intl';
 
 import { MOTION } from '@/shared/motion';
+import { Button, controlClass } from '@/shared/ui';
 
 export interface RecentChangesNeedsVaultDialogProps {
   open: boolean;
@@ -100,7 +101,12 @@ export function RecentChangesNeedsVaultDialog({
                 onClick={onClose}
                 aria-label={t('close')}
                 data-testid="recent-changes-needs-vault-close"
-                className="shrink-0 rounded p-1 text-[color:var(--color-text-quaternary)] transition-colors hover:text-[color:var(--color-text-primary)]"
+                className={controlClass({
+                  shape: 'icon',
+                  size: 'sm',
+                  tone: 'muted',
+                  className: 'hover:text-[color:var(--color-text-primary)]',
+                })}
               >
                 <X size={15} aria-hidden />
               </button>
@@ -108,19 +114,24 @@ export function RecentChangesNeedsVaultDialog({
 
             <div className="px-5 py-4">
               <p className="text-body text-[color:var(--color-text-secondary)]">{t('body')}</p>
-              <button
+              {/*
+                여기가 `<Button>` 이 덮는 **바로 그 한 모양**이다 — 전수 419개 중
+                표준 버튼 높이(h-10/11)는 1개였고, 새로 짓는 주 행동이 그 자리다.
+                손으로 쓰지 않는 이유는 규율이 아니라 계기다: 채택 래칫이 이
+                파일의 손 className 두 개를 커밋 전에 잡았다.
+              */}
+              <Button
                 ref={primaryRef}
-                type="button"
                 onClick={() => {
                   onClose();
                   onOpenVault();
                 }}
                 data-testid="recent-changes-needs-vault-open"
-                className="mt-4 inline-flex h-10 w-full items-center justify-center gap-2 rounded-[var(--radius-card)] border border-[color:var(--color-indigo-brand)] bg-[color:var(--color-indigo-brand)] px-4 text-body text-[color:var(--color-text-primary)] transition-colors hover:bg-[color:var(--color-indigo-hover)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--color-indigo-accent)] focus-visible:ring-offset-2 focus-visible:ring-offset-[color:var(--color-panel)]"
+                className="mt-4 w-full"
               >
                 <FolderOpen size={14} aria-hidden />
                 {t('action')}
-              </button>
+              </Button>
               {/*
                 두 번째 행동을 안 준다. 이 표면의 일은 하나이고, 두 번째 버튼은
                 「닫기」인데 그건 헤더의 X 와 scrim 이 이미 두 경로로 준다.
