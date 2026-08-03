@@ -1783,9 +1783,13 @@ export function toolsListSchemaFailure(tools) {
   if (
     !/walk TS\/JS files in a code repo and infer file-level \+ module-level import edges/i.test(inferImportsTool.description || '') ||
     !/side effect 0 \(vault frontmatter NOT modified\)/i.test(inferImportsTool.description || '') ||
-    !/reviews moduleEdges/i.test(inferImportsTool.description || '') ||
+    !/source-backed review candidates/i.test(inferImportsTool.description || '') ||
     !/kindCounts/i.test(inferImportsTool.description || '') ||
-    !/selectively passes accepted edges to add_relation as `depends_on`/i.test(inferImportsTool.description || '') ||
+    !/bounded exact file-edge `evidence` receipt/i.test(inferImportsTool.description || '') ||
+    !/rationale_review_required/i.test(inferImportsTool.description || '') ||
+    !/ask the user/i.test(inferImportsTool.description || '') ||
+    !/add_relation/i.test(inferImportsTool.description || '') ||
+    !/`why`/i.test(inferImportsTool.description || '') ||
     !/Use after analyze_repo_structure/i.test(inferImportsTool.description || '') ||
     !/not just suggestedRelations heuristics/i.test(inferImportsTool.description || '') ||
     !/Single source of truth preserved/i.test(inferImportsTool.description || '')
@@ -1862,7 +1866,7 @@ export function toolsListSchemaFailure(tools) {
   if (
     moduleEdgesSchema?.type !== 'array' ||
     moduleEdgesSchema.items?.type !== 'object' ||
-    !sameArray(moduleEdgesSchema.items?.required, ['from', 'to', 'count', 'kindCounts'])
+    !sameArray(moduleEdgesSchema.items?.required, ['from', 'to', 'count', 'kindCounts', 'evidence', 'evidenceLimited'])
   ) {
     return 'infer_imports outputSchema moduleEdges drift';
   }
@@ -1885,6 +1889,18 @@ export function toolsListSchemaFailure(tools) {
     ))
   ) {
     return 'infer_imports outputSchema moduleEdges kindCounts drift';
+  }
+  const moduleEvidenceSchema = moduleEdgesSchema.items?.properties?.evidence;
+  if (
+    moduleEvidenceSchema?.type !== 'array' ||
+    moduleEvidenceSchema.maxItems !== 5 ||
+    moduleEvidenceSchema.items?.type !== 'object' ||
+    !sameArray(moduleEvidenceSchema.items?.required, ['from', 'to', 'kind']) ||
+    moduleEvidenceSchema.items?.additionalProperties !== false ||
+    !sameArray(moduleEvidenceSchema.items?.properties?.kind?.enum, IMPORT_EDGE_KIND_VALUES) ||
+    moduleEdgesSchema.items?.properties?.evidenceLimited?.type !== 'boolean'
+  ) {
+    return 'infer_imports outputSchema moduleEdges evidence drift';
   }
 
   const queryTool = tools.find((tool) => tool?.name === 'query_ontology');

@@ -1,4 +1,4 @@
-// R+ — analyze --apply / infer-imports --apply / bootstrap 셋이 공유하는
+// R+ — analyze --apply / bootstrap / index --apply 가 공유하는
 // vault census 출력 helper. 사용자가 명령 한 번 후 *방금 vault 에 뭐가
 // land 됐는지* 한 줄로 인지 — \"→ vault now has N nodes (...)\".
 //

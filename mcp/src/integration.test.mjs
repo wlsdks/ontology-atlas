@@ -639,7 +639,7 @@ await test("tools/list — 단일 도구 description 이 batch 짝을 cross-refe
     assert.equal(inferImports?.outputSchema?.properties?.externalImports?.items?.additionalProperties, false);
     assert.deepEqual(inferImports?.outputSchema?.properties?.unresolved?.items?.properties?.reason?.enum, IMPORT_UNRESOLVED_REASON_VALUES);
     assert.equal(inferImports?.outputSchema?.properties?.unresolved?.items?.additionalProperties, false);
-    assert.deepEqual(inferImports?.outputSchema?.properties?.moduleEdges?.items?.required, ["from", "to", "count", "kindCounts"]);
+    assert.deepEqual(inferImports?.outputSchema?.properties?.moduleEdges?.items?.required, ["from", "to", "count", "kindCounts", "evidence", "evidenceLimited"]);
     assert.equal(inferImports?.outputSchema?.properties?.moduleEdges?.items?.additionalProperties, false);
     assert.equal(inferImports?.outputSchema?.properties?.moduleEdges?.items?.properties?.count?.minimum, 1);
     const kindCountsSchema = inferImports?.outputSchema?.properties?.moduleEdges?.items?.properties?.kindCounts;
@@ -648,9 +648,14 @@ await test("tools/list — 단일 도구 description 이 batch 짝을 cross-refe
     assert.deepEqual(Object.keys(kindCountsSchema?.properties ?? {}), IMPORT_EDGE_KIND_VALUES);
     assert.equal(kindCountsSchema?.properties?.static?.type, "integer");
     assert.equal(kindCountsSchema?.properties?.static?.minimum, 1);
+    const moduleEvidenceSchema = inferImports?.outputSchema?.properties?.moduleEdges?.items?.properties?.evidence;
+    assert.equal(moduleEvidenceSchema?.maxItems, 5);
+    assert.deepEqual(moduleEvidenceSchema?.items?.required, ["from", "to", "kind"]);
+    assert.equal(moduleEvidenceSchema?.items?.additionalProperties, false);
+    assert.equal(inferImports?.outputSchema?.properties?.moduleEdges?.items?.properties?.evidenceLimited?.type, "boolean");
     assert.match(
       inferImports?.description ?? "",
-      /walk TS\/JS files in a code repo and infer file-level \+ module-level import edges[\s\S]*bounded root Python packages[\s\S]*side effect 0 \(vault frontmatter NOT modified\)[\s\S]*reviews moduleEdges[\s\S]*accepted edges to add_relation as `depends_on`[\s\S]*Use after analyze_repo_structure[\s\S]*not just suggestedRelations heuristics[\s\S]*Single source of truth preserved/i,
+      /walk TS\/JS files in a code repo and infer file-level \+ module-level import edges[\s\S]*bounded root Python packages[\s\S]*side effect 0 \(vault frontmatter NOT modified\)[\s\S]*source-backed review candidates[\s\S]*bounded exact file-edge `evidence` receipt[\s\S]*rationale_review_required[\s\S]*ask the user[\s\S]*add_relation[\s\S]*`why`/i,
       "infer_imports description documents dependency-ingest safety workflow",
     );
     assert.match(
@@ -2391,7 +2396,8 @@ await test("index_project — repo analysis, import indexing, and vault validati
     assert.equal(result.extractionContract.assertionPolicy.humanApprovalRequired, true);
     assert.match(result.meaningGate.reviewQuestions[0], /business\/product/);
     assert.equal(result.validation.problemFiles, 0);
-    assert.equal(result.next.applyTool, "add_concepts + add_relations");
+    assert.equal(result.next.applyTool, "add_concepts; add_relation only after semantic rationale + human approval");
+    assert.match(result.next.review, /CLI apply never promotes inferred imports to depends_on/);
     assert.deepEqual(result.next.reviewCalls, [
       {
         tool: "analyze_repo_structure",

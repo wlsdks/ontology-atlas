@@ -404,6 +404,12 @@ test('dynamic import + require + reexport detected', () => {
       reexport: 1,
       require: 1,
     });
+    assert.deepEqual(moduleEdge?.evidence, [
+      { from: 'src/a/index.ts', to: 'src/b/x.ts', kind: 'dynamic' },
+      { from: 'src/a/index.ts', to: 'src/b/x.ts', kind: 'require' },
+      { from: 'src/a/index.ts', to: 'src/b/x.ts', kind: 'reexport' },
+    ]);
+    assert.equal(moduleEdge?.evidenceLimited, false);
   } finally {
     rmSync(root, { recursive: true, force: true });
   }
@@ -411,7 +417,7 @@ test('dynamic import + require + reexport detected', () => {
 
 test('module-level edge collapse (FSD features/ — capability folder slug, analyze 와 일관)', () => {
   // features/X · entities/X 는 capabilities/X 로 맞춘다. analyze_repo_structure
-  // 후보와 같은 slug 라 bootstrap 의 add_relations endpoint 가 매치된다.
+  // 후보와 같은 slug 라 semantic review에서 양쪽 개념을 정확히 대조할 수 있다.
   const root = withRepo((r) => {
     mkdirSync(join(r, 'src/features/auth'), { recursive: true });
     mkdirSync(join(r, 'src/features/billing'), { recursive: true });
@@ -429,6 +435,45 @@ test('module-level edge collapse (FSD features/ — capability folder slug, anal
     );
     assert.ok(e, `expected module edge capabilities/auth → capabilities/billing, got: ${JSON.stringify(r.moduleEdges)}`);
     assert.equal(e.count, 2, '두 import 합산');
+    assert.deepEqual(e.evidence, [
+      {
+        from: 'src/features/auth/index.ts',
+        to: 'src/features/billing/index.ts',
+        kind: 'static',
+      },
+      {
+        from: 'src/features/auth/index.ts',
+        to: 'src/features/billing/token.ts',
+        kind: 'static',
+      },
+    ]);
+    assert.equal(e.evidenceLimited, false);
+  } finally {
+    rmSync(root, { recursive: true, force: true });
+  }
+});
+
+test('module edge evidence receipt is bounded and declares truncation', () => {
+  const root = withRepo((r) => {
+    mkdirSync(join(r, 'src/a'), { recursive: true });
+    mkdirSync(join(r, 'src/b'), { recursive: true });
+    for (let index = 0; index < 6; index += 1) {
+      writeFileSync(join(r, 'src/b', `dep-${index}.ts`), `export const v${index} = ${index};\n`);
+    }
+    writeFileSync(
+      join(r, 'src/a/index.ts'),
+      Array.from({ length: 6 }, (_, index) =>
+        `import { v${index} } from "../b/dep-${index}";`,
+      ).join('\n'),
+    );
+  });
+  try {
+    const edge = inferImports(root).moduleEdges.find(
+      (row) => row.from === 'capabilities/a' && row.to === 'capabilities/b',
+    );
+    assert.equal(edge?.count, 6);
+    assert.equal(edge?.evidence.length, 5);
+    assert.equal(edge?.evidenceLimited, true);
   } finally {
     rmSync(root, { recursive: true, force: true });
   }
@@ -478,12 +523,28 @@ test('module-level edge collapse (workspace packages — analyzer element slug p
         to: 'elements/shared',
         count: 1,
         kindCounts: { static: 1 },
+        evidence: [
+          {
+            from: 'apps/api/src/index.ts',
+            to: 'packages/shared/src/index.ts',
+            kind: 'static',
+          },
+        ],
+        evidenceLimited: false,
       },
       {
         from: 'elements/memory',
         to: 'elements/shared',
         count: 1,
         kindCounts: { static: 1 },
+        evidence: [
+          {
+            from: 'packages/memory/src/index.ts',
+            to: 'packages/shared/src/index.ts',
+            kind: 'static',
+          },
+        ],
+        evidenceLimited: false,
       },
     ]);
     assert.deepEqual(

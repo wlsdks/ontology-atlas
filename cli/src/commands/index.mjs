@@ -2,7 +2,8 @@
 //
 // Long-running ontology indexing entrypoint. Default is read-only: analyze the
 // repo, infer import edges, validate the target vault, and return an indexing
-// plan. `--apply` delegates to the existing bootstrap writer pipeline.
+// plan. `--apply` delegates to bootstrap for analyzer concepts/containment;
+// inferred imports remain review-only.
 
 import { COLORS } from '../lib/colors.mjs';
 import { resolve } from 'node:path';
@@ -18,7 +19,6 @@ import {
   resolveSingleRootPathArg,
 } from '../lib/cli-args.mjs';
 import { runBootstrap } from './bootstrap.mjs';
-import { cliInvocation } from '../lib/self-invocation.mjs';
 
 const MAX_DEPTH_CAP = 10;
 const MAX_FILES_CAP = 50000;
@@ -121,7 +121,7 @@ export async function runIndex(args) {
     meaningGate: summarizeMeaningGate(analyzeResult.meaningGate),
     next: {
       apply: 'ontology-atlas index [rootPath] --apply --vault [vault]',
-      review: 'Review candidates before applying on large or noisy repos.',
+      review: 'Review analyzer candidates before applying. Inferred imports are never auto-promoted: inspect evidence and both concepts, explain the semantic dependency, and obtain human approval.',
     },
   };
 
@@ -142,7 +142,7 @@ async function runApply(parsed) {
   if (parsed.threshold !== undefined) bootstrapArgs.push('--threshold', String(parsed.threshold));
 
   if (!parsed.json) {
-    process.stdout.write(`${COLORS.bold}index --apply${COLORS.reset} ${COLORS.dim}delegating to bootstrap pipeline${COLORS.reset}\n\n`);
+    process.stdout.write(`${COLORS.bold}index --apply${COLORS.reset} ${COLORS.dim}delegating analyzer writes to bootstrap; inferred imports stay review-only${COLORS.reset}\n\n`);
     return runBootstrap(bootstrapArgs);
   }
 
@@ -235,7 +235,7 @@ function buildPlan(analyzeResult, importsResult) {
       'analyze_repo_structure',
       importsResult ? 'infer_imports' : 'infer_imports skipped',
       'validate_vault',
-      'apply with add_concepts/add_relations only when --apply is explicit',
+      'apply analyzer concepts/containment only when --apply is explicit; review imports separately',
     ],
   };
 }
@@ -339,13 +339,13 @@ function printPlan(payload) {
     : '';
   process.stdout.write(
     `${COLORS.bold}index${COLORS.reset} ${COLORS.dim}repo=${payload.rootPath}\n      vault=${payload.vaultRoot}${COLORS.reset}\n\n` +
-      `  ${COLORS.bold}plan${COLORS.reset}      ${payload.plan.concepts} concepts · ${payload.plan.suggestedRelations} suggested relations · ${payload.plan.importRelations} import relations\n` +
+      `  ${COLORS.bold}plan${COLORS.reset}      ${payload.plan.concepts} concepts · ${payload.plan.suggestedRelations} suggested relations · ${payload.plan.importRelations} import review candidates\n` +
       `  ${COLORS.bold}validate${COLORS.reset}  ${payload.validation.scanned} files · ${payload.validation.problemFiles} problem files · ${payload.validation.pathDrift} path drift\n\n` +
       `  ${COLORS.bold}meaning${COLORS.reset}   ${payload.meaningGate.businessOntology.domains} domains · ${payload.meaningGate.businessOntology.capabilities} capabilities · ${payload.meaningGate.businessOntology.evidence} business evidence rows · ${payload.meaningGate.implementationEvidence.elements} evidence elements · ${payload.meaningGate.implementationEvidence.reviewRequiredCapabilities} review-required capabilities\n` +
       `            report business/product domain + capability first; use code rows as implementation evidence\n\n` +
       evidenceBlock +
       reviewBlock +
-      `${COLORS.dim}side effect 0 — run ${COLORS.reset}${COLORS.bold}${cliInvocation()} index ${payload.rootPath} --vault ${payload.vaultRoot} --apply${COLORS.reset}${COLORS.dim} to land candidates.${COLORS.reset}\n`,
+      `${COLORS.dim}side effect 0 — --apply can land analyzer concepts/containment. Import evidence always remains rationale-review-required.${COLORS.reset}\n`,
   );
 }
 
@@ -358,6 +358,7 @@ function printUsage(stream = process.stderr) {
       `${COLORS.bold}What it does:${COLORS.reset}\n` +
       `  Long-running project ontology indexing entrypoint. Default mode is\n` +
       `  side-effect 0: analyze repo structure, infer import edges, validate\n` +
-      `  the vault, and print a plan. --apply uses the bootstrap writer pipeline.\n`,
+      `  the vault, and print a plan. --apply uses the bootstrap writer pipeline\n` +
+      `  for analyzer concepts/containment only; inferred imports are never auto-written.\n`,
   );
 }

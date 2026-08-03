@@ -1,16 +1,11 @@
 // R17 — `ontology-atlas infer-imports [rootPath]`
-// MCP infer_imports wrapper. moduleEdges (capability A → B) 가 add_relation
-// depends_on 후보. side effect 0.
+// MCP infer_imports wrapper. moduleEdges (capability A → B) are source-backed
+// review candidates, never self-approving semantic depends_on relations.
 
 import { COLORS } from '../lib/colors.mjs';
 import { resolve } from 'node:path';
 import { callMcpTool } from '../lib/mcp-call.mjs';
-import {
-  assertRelationBatchResult,
-  formatRelationBatchFailureLabel,
-} from '../lib/batch-results.mjs';
 import { assertInferImportsResult } from '../lib/import-analysis-results.mjs';
-import { getVaultCensus, writeVaultCensus } from '../lib/vault-census.mjs';
 import {
   formatUnknownFlagError,
   parseBoundedPositiveIntegerFlag,
@@ -33,6 +28,15 @@ export async function runInferImports(args) {
   if (error) {
     process.stderr.write(`${COLORS.red}error${COLORS.reset}  ${error}\n`);
     printUsage();
+    return 1;
+  }
+  if (apply) {
+    process.stderr.write(
+      `${COLORS.red}error${COLORS.reset}  --apply is disabled for inferred imports: ` +
+        'an import is source evidence, not a self-approving semantic depends_on. ' +
+        'Preview the exact evidence, inspect both ontology concepts, write a semantic rationale, ' +
+        'obtain human approval, then add one explicit relation with why.\n',
+    );
     return 1;
   }
 
@@ -66,12 +70,6 @@ export async function runInferImports(args) {
     result.thresholdApplied = { threshold, filteredOut };
   }
 
-  // R+ — --apply 분기. moduleEdges 를 depends_on 관계로 batch land.
-  // analyze --apply (cycle 29) 와 짝 — agent-less full bootstrap pair.
-  if (apply) {
-    return await runApply(vaultRoot, result, json);
-  }
-
   if (json) {
     process.stdout.write(JSON.stringify(result, null, 2) + '\n');
     return 0;
@@ -102,7 +100,7 @@ export async function runInferImports(args) {
 
   if (modEdges.length > 0) {
     process.stdout.write(
-      `  ${COLORS.bold}module edges${COLORS.reset} ${COLORS.dim}(${modEdges.length}) — depends_on candidates${COLORS.reset}\n`,
+      `  ${COLORS.bold}module edges${COLORS.reset} ${COLORS.dim}(${modEdges.length}) — rationale review required${COLORS.reset}\n`,
     );
     for (const m of modEdges.slice(0, 16)) {
       const kindSummary = formatKindCounts(m.kindCounts);
@@ -110,6 +108,12 @@ export async function runInferImports(args) {
       process.stdout.write(
         `    ${COLORS.cyan}${m.from}${COLORS.reset} ${COLORS.dim}—depends_on→${COLORS.reset} ${COLORS.cyan}${m.to}${COLORS.reset} ${COLORS.dim}× ${m.count}${COLORS.reset}${kindSuffix}\n`,
       );
+      const receipt = m.evidence?.[0];
+      if (receipt) {
+        process.stdout.write(
+          `      ${COLORS.dim}evidence: ${receipt.from} —${receipt.kind}→ ${receipt.to}${COLORS.reset}\n`,
+        );
+      }
     }
     if (modEdges.length > 16)
       process.stdout.write(
@@ -119,9 +123,8 @@ export async function runInferImports(args) {
   }
 
   process.stdout.write(
-    `${COLORS.dim}side effect 0 — vault 변경 안 함. 채택 module edges 는 ${COLORS.reset}` +
-      `${COLORS.bold}add_relation${COLORS.reset}` +
-      `${COLORS.dim} (mcp) 또는 vault 의 frontmatter dependencies: 에 명시.${COLORS.reset}\n`,
+    `${COLORS.dim}side effect 0 — vault 변경 안 함. import는 코드 근거일 뿐 의미 관계를 자동 승인하지 않습니다. ` +
+      `양쪽 개념과 근거를 검토하고 이유를 설명한 뒤 사용자 승인을 받아 한 건씩 기록하세요.${COLORS.reset}\n`,
   );
   return 0;
 }
@@ -167,99 +170,6 @@ function parseArgs(args) {
   };
 }
 
-// R+ — moduleEdges → depends_on 관계 batch land. analyze --apply 의 짝.
-// 50 cap 초과시 자동 chunk 분할 — moduleEdges 는 큰 codebase 면 100+ 도 쉽게.
-async function runApply(vaultRoot, result, json) {
-  const moduleEdges = result.moduleEdges ?? [];
-  const relations = moduleEdges.map((m) => ({
-    from: m.from,
-    to: m.to,
-    type: 'depends_on',
-  }));
-
-  // chunk in batches of 50 (add_relations cap).
-  const allRows = [];
-  for (let i = 0; i < relations.length; i += 50) {
-    const chunk = relations.slice(i, i + 50);
-    let res;
-    try {
-      res = await callMcpTool(vaultRoot, 'add_relations', { relations: chunk });
-      assertRelationBatchResult(res, `add_relations chunk @${i}`, { expectedCount: chunk.length });
-    } catch (err) {
-      process.stderr.write(
-        `${COLORS.red}error${COLORS.reset}  add_relations chunk @${i}: ` +
-          `${err instanceof Error ? err.message : String(err)}\n`,
-      );
-      return 2;
-    }
-    for (const row of res.relations ?? []) allRows.push(row);
-  }
-
-  const summary = summarizeRelations(allRows);
-  // R+ — apply 흐름 마무리 census (cycle 38, shared helper).
-  const vaultCensus = await getVaultCensus(vaultRoot);
-
-  if (json) {
-    process.stdout.write(
-      JSON.stringify(
-        {
-          rootPath: result.rootPath,
-          filesScanned: result.filesScanned,
-          applied: { relations: allRows },
-          summary,
-          vaultCensus,
-        },
-        null,
-        2,
-      ) + '\n',
-    );
-    return summary.errors === 0 ? 0 : 1;
-  }
-
-  process.stdout.write(
-    `${COLORS.bold}infer-imports --apply${COLORS.reset} ${COLORS.dim}vault=${vaultRoot}${COLORS.reset}\n\n`,
-  );
-  process.stdout.write(
-    `  ${COLORS.bold}depends_on relations${COLORS.reset}  ` +
-      `${COLORS.green}${summary.landed}${COLORS.reset} landed · ` +
-      `${COLORS.dim}${summary.existing}${COLORS.reset} already existed · ` +
-      `${summary.errors > 0 ? COLORS.red : COLORS.dim}${summary.errors}${COLORS.reset} errors ` +
-      `${COLORS.dim}(of ${allRows.length} edges)${COLORS.reset}\n\n`,
-  );
-  // 에러 행만 노출 (성공/idempotent 는 noise). 큰 codebase 면 모두 missing
-  // slug 일 수 있어 first 12 만 표시.
-  let errCount = 0;
-  allRows.forEach((row, index) => {
-    if (row.ok === false) {
-      if (errCount < 12) {
-        process.stdout.write(
-          `  ${COLORS.red}✗${COLORS.reset} ${formatRelationBatchFailureLabel(row, index)} ${COLORS.dim}— ${row.error}${COLORS.reset}\n`,
-        );
-      }
-      errCount += 1;
-    }
-  });
-  if (errCount > 12) {
-    process.stdout.write(
-      `  ${COLORS.dim}… ${errCount - 12} more errors${COLORS.reset}\n`,
-    );
-  }
-  writeVaultCensus(vaultCensus);
-  return summary.errors === 0 ? 0 : 1;
-}
-
-function summarizeRelations(rows) {
-  let landed = 0;
-  let existing = 0;
-  let errors = 0;
-  for (const r of rows) {
-    if (r.ok === true && r.alreadyExists) existing += 1;
-    else if (r.ok === true) landed += 1;
-    else errors += 1;
-  }
-  return { landed, existing, errors };
-}
-
 function formatEdgeKindSummary(edges) {
   const counts = new Map();
   for (const edge of edges) {
@@ -296,8 +206,7 @@ function printUsage(stream = process.stderr) {
       `  classify external (npm) separately and unresolved aliases explicitly,\n` +
       `  collapse to module edges (capability A → B with import count).\n\n` +
       `  Default: ${COLORS.bold}side effect 0${COLORS.reset} — vault 변경 안 함, moduleEdges 만 출력.\n` +
-      `  ${COLORS.bold}--apply${COLORS.reset}: moduleEdges 를 depends_on 관계로 batch land\n` +
-      `  (50 단위 chunk, partial — 없는 endpoint 는 row-level error).\n` +
+      `  ${COLORS.bold}--apply${COLORS.reset}: disabled — import evidence cannot self-approve a semantic relation.\n` +
       `  ${COLORS.bold}--threshold N${COLORS.reset}: count < N 인 약한 module edge 를 필터.\n` +
       `  큰 codebase 의 accidental cross-feature import 가 ontology 에\n` +
       `  들어가는 걸 차단. preview / --apply / --json 모두 적용.\n` +
@@ -305,7 +214,6 @@ function printUsage(stream = process.stderr) {
       `${COLORS.bold}Examples:${COLORS.reset}\n` +
       `  ontology-atlas infer-imports                       # preview only\n` +
       `  ontology-atlas infer-imports ~/my-app --json       # machine output\n` +
-      `  ontology-atlas infer-imports --apply               # land depends_on edges\n` +
-      `  ontology-atlas infer-imports --apply --threshold 3 # only count ≥ 3 edges\n`,
+      `  ontology-atlas infer-imports --threshold 3         # review count ≥ 3 evidence\n`,
   );
 }

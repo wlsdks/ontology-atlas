@@ -7,6 +7,18 @@
 
 ---
 
+## 2026-08-04 — import 근거가 의미 관계로 자동 승격되지 않는다
+
+`infer_imports`의 module edge는 이제 `count`/`kindCounts`뿐 아니라 최대 5개의
+정확한 file-edge 근거와 나머지 근거 존재 여부를 반환한다. vault와의 차이도
+`proposedAction` 대신 `rationale_review_required`로 답한다. import 방향은 강한 코드
+증거지만, 두 온톨로지 개념 사이의 의미적 의존을 스스로 승인하지는 않는다.
+
+따라서 CLI `infer-imports --apply`는 실패 닫힘으로 차단된다. `bootstrap`과
+`index --apply`도 analyzer가 제안한 개념·containment만 쓸 수 있고, import endpoint나
+`depends_on`은 만들지 않는다. 후보는 정확한 근거와 함께 남아 에이전트가 양쪽 개념과
+방향을 검토하고 이유를 설명한 뒤 사용자 승인을 받아 한 건씩 `why`와 기록한다.
+
 ## 2026-08-03 — 에이전트 인수인계가 의미 수리의 첫 결정을 바로 보여준다
 
 project source가 현재인데 competency 답이 일부만 채워진 경우, MCP/CLI

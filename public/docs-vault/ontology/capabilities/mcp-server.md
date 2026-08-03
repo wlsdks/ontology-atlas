@@ -72,7 +72,11 @@ domain, capability의 정확한 합집합을 공개 full-body 상한인 최대 2
 Python cold start에서는 `README.rst`, 실행하지 않는 정적 `setup.py` package
 contract, 최상위 `__init__.py` package를 bounded 근거로 읽는다. `infer_imports`는
 그 package의 정적 import를 file/module edge로 축약한다. 이 결과는 구현 증거이며,
-domain·capability·의미 `depends_on`으로 자동 승격하지 않는다.
+domain·capability·의미 `depends_on`으로 자동 승격하지 않는다. 각 module edge에는
+최대 5개의 정확한 file-edge 영수증과 나머지 근거 존재 여부가 붙는다. vault에 없는
+edge도 실행 가능한 `proposedAction` 대신 `rationale_review_required`로 반환한다.
+에이전트는 양쪽 개념과 방향을 읽고 의미적 이유를 설명한 뒤 사람에게 물어야 하며,
+승인된 한 건만 `why`와 함께 기록한다.
 Analyzer는 실제 import에 참여한 Python 구현 경계를 최대 12개 element/path 후보로
 연결한다. 직접 module/package 경계를 기본으로 하되, 긴 import 응답에 위험 소유권이
 묻히지 않도록 security/policy/risk exact endpoint가 최대 2개 자리를 예약할 수 있다.

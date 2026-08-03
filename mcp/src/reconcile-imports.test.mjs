@@ -11,7 +11,16 @@ import { compileOntology } from './ontology-compiler.mjs';
 // In-memory fixtures (no fs) — matches the lightweight contract-test style.
 const moduleEdges = [
   { from: 'capabilities/a', to: 'capabilities/b', count: 3, kindCounts: { static: 3 } }, // in both
-  { from: 'capabilities/a', to: 'elements/src/x', count: 1, kindCounts: { static: 1 } }, // code-only → candidate add_relation
+  {
+    from: 'capabilities/a',
+    to: 'elements/src/x',
+    count: 1,
+    kindCounts: { static: 1 },
+    evidence: [
+      { from: 'src/features/a/index.ts', to: 'src/entities/x/index.ts', kind: 'static' },
+    ],
+    evidenceLimited: false,
+  }, // code-only → semantic review candidate, never an executable write
   { from: 'alias-src', to: 'b', count: 2, kindCounts: { static: 2 } }, // alias-src→capabilities/a, b→capabilities/b ⇒ normalizes to a→b (dupe of inBoth)
 ];
 // `via: 'dependencies'` is what the compiler ACTUALLY emits for a depends_on
@@ -37,16 +46,22 @@ test('reconcileImportEdges — three buckets, depends_on only', () => {
     ['capabilities/a→capabilities/b'],
   );
 
-  // inCodeMissingFromVault: a→elements/src/x, with an actionable add_relation proposedAction
+  // inCodeMissingFromVault: a→elements/src/x stays a read-only promotion candidate.
   assert.equal(r.inCodeMissingFromVault.length, 1);
   const miss = r.inCodeMissingFromVault[0];
   assert.equal(miss.from, 'capabilities/a');
   assert.equal(miss.to, 'elements/src/x');
-  assert.deepEqual(miss.proposedAction, {
-    tool: 'add_relation',
-    from: 'capabilities/a',
-    to: 'elements/src/x',
-    type: 'depends_on',
+  assert.equal(miss.proposedAction, undefined);
+  assert.deepEqual(miss.sourceEvidence, [
+    { from: 'src/features/a/index.ts', to: 'src/entities/x/index.ts', kind: 'static' },
+  ]);
+  assert.equal(miss.sourceEvidenceLimited, false);
+  assert.deepEqual(miss.review, {
+    status: 'rationale_review_required',
+    writeAllowed: false,
+    required: ['semantic_rationale', 'human_approval'],
+    next:
+      'Review the exact import evidence and both ontology concepts, explain why the semantic dependency holds, ask the user, then write one explicit depends_on relation with why.',
   });
 
   // inVaultNotInCode: a→c (depends_on edge with no matching import); belongs_to ignored
@@ -103,10 +118,10 @@ test('reconcileImportEdges — empty inputs are safe', () => {
   assert.deepEqual(r, { inBoth: [], inCodeMissingFromVault: [], inCodeMissingEndpointAbsent: [], inVaultNotInCode: [] });
 });
 
-test('reconcileImportEdges — nodeSlugs splits landable vs endpoint-absent (firehose→actionable)', () => {
+test('reconcileImportEdges — nodeSlugs splits reviewable vs endpoint-absent without making either executable', () => {
   const r = reconcileImportEdges({
     moduleEdges: [
-      { from: 'capabilities/a', to: 'capabilities/b', count: 2 }, // both real nodes → landable
+      { from: 'capabilities/a', to: 'capabilities/b', count: 2 }, // both real nodes → reviewable
       { from: 'capabilities/a', to: 'capabilities/[locale]', count: 9 }, // to is not a node → endpoint-absent
     ],
     compiledEdges: [],
@@ -114,9 +129,22 @@ test('reconcileImportEdges — nodeSlugs splits landable vs endpoint-absent (fir
     nodeSlugs: new Set(['capabilities/a', 'capabilities/b']),
   });
   assert.deepEqual(r.inCodeMissingFromVault.map((e) => `${e.from}→${e.to}`), ['capabilities/a→capabilities/b']);
-  assert.equal(r.inCodeMissingFromVault[0].proposedAction.tool, 'add_relation');
+  assert.equal(r.inCodeMissingFromVault[0].proposedAction, undefined);
+  assert.equal(r.inCodeMissingFromVault[0].review.writeAllowed, false);
+  assert.deepEqual(r.inCodeMissingFromVault[0].review.required, [
+    'source_evidence',
+    'semantic_rationale',
+    'human_approval',
+  ]);
   assert.equal(r.inCodeMissingEndpointAbsent.length, 1);
   assert.deepEqual(r.inCodeMissingEndpointAbsent[0].absentEndpoints, ['capabilities/[locale]']);
+  assert.equal(r.inCodeMissingEndpointAbsent[0].review.writeAllowed, false);
+  assert.deepEqual(r.inCodeMissingEndpointAbsent[0].review.required, [
+    'vault_endpoints',
+    'source_evidence',
+    'semantic_rationale',
+    'human_approval',
+  ]);
 });
 
 test('reconcileImportEdges — self-edges (A→A) are dropped (no self-dependency noise)', () => {
