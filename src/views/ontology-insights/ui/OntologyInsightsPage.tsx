@@ -671,6 +671,10 @@ export function OntologyInsightsPage() {
       t("evidenceTruncated", { shown, total }),
     evidenceBadge: t("evidenceBadge"),
     evidenceBadgeHint: t("evidenceBadgeHint"),
+    unknownTitle: t("impactUnknownTitle"),
+    unknownDetail: (declared: number, rationale: number) =>
+      t("impactUnknownDetail", { declared, rationale }),
+    structureLink: t("impactStructureLink"),
   };
   const domainCouplingLabels = {
     title: t("domainCouplingTitle"),

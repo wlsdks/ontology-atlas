@@ -28,6 +28,9 @@ export interface ImpactRankingLabels {
   /** 행 배지 라벨 + 마우스오버 한 줄(승격 경로 포함). */
   evidenceBadge: string;
   evidenceBadgeHint: string;
+  unknownTitle: string;
+  unknownDetail: (declared: number, rationale: number) => string;
+  structureLink: string;
 }
 
 export interface ImpactRankingLink {
@@ -42,6 +45,8 @@ export interface ImpactRankingCardProps {
   rankedCount: number;
   evidenceRows: ImpactRankingRow[];
   evidenceRankedCount: number;
+  declaredDependencyEdges?: number;
+  declaredWithRationaleEdges?: number;
   kindLabel: (kind: string) => string;
   nodeLink: ImpactRankingLink;
   labels: ImpactRankingLabels;
@@ -79,6 +84,8 @@ export function ImpactRankingCard({
   rankedCount,
   evidenceRows,
   evidenceRankedCount,
+  declaredDependencyEdges = 0,
+  declaredWithRationaleEdges = 0,
   kindLabel,
   nodeLink,
   labels,
@@ -110,6 +117,24 @@ export function ImpactRankingCard({
           <SegmentKey color="var(--color-indigo-a66)" label={labels.directLabel} />
           <SegmentKey color="var(--color-indigo-a32)" label={labels.transitiveLabel} />
         </span>
+      </div>
+
+      <div
+        data-testid="insights-impact-qualification"
+        className="mt-2 flex flex-wrap items-center gap-x-3 gap-y-1 rounded-card border border-dashed border-[color:var(--color-border-soft)] bg-[color:var(--color-overlay-1)] px-3 py-2"
+      >
+        <span className="font-medium text-body text-[color:var(--color-text-primary)]">
+          {labels.unknownTitle}
+        </span>
+        <span className="text-label text-[color:var(--color-text-quaternary)]">
+          {labels.unknownDetail(declaredDependencyEdges, declaredWithRationaleEdges)}
+        </span>
+        <Link
+          href="/topology/"
+          className="ml-auto text-label text-[color:var(--color-text-secondary)] underline decoration-[color:var(--color-border-soft)] underline-offset-4 hover:text-[color:var(--color-text-primary)]"
+        >
+          {labels.structureLink}
+        </Link>
       </div>
 
       {/* 두 칸 격자 — 이 카드는 나란한 두 카드를 합친 폭에 산다. 한 칸으로

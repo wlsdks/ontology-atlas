@@ -25,6 +25,9 @@ const labels: ImpactRankingLabels = {
   evidenceTruncated: (shown, total) => `Top ${shown} / ${total} without a document`,
   evidenceBadge: "No document",
   evidenceBadgeHint: "Another document wrote this name down.",
+  unknownTitle: "Impact range unknown",
+  unknownDetail: (declared, rationale) => `${declared} declared · ${rationale} with rationale`,
+  structureLink: "Explore structural connections",
 };
 
 const nodeLink = {

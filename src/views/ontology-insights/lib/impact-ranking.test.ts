@@ -58,17 +58,11 @@ describe("buildImpactRanking", () => {
     expect(buildImpactRanking(nodes, edges, 6).rows).toEqual([]);
   });
 
-  it("담는 관계(contains)는 파급에 포함한다 — 부모를 바꾸면 자식도 다시 본다", () => {
+  it("담는 관계(contains)는 구조이지 인과가 아니므로 파급에서 제외한다", () => {
     const nodes = [node("d", "domain"), node("x"), node("y")];
     const edges = [edge("d", "x", "contains"), edge("x", "y", "contains")];
 
-    // contains 는 부모 → 자식 방향이라, 역방향으로 훑으면 잎(y)이 자기를
-    // 담은 x·d 를 되짚게 한다.
-    const { rows } = buildImpactRanking(nodes, edges, 6);
-    expect(rows.map((r) => [r.id, r.direct, r.total])).toEqual([
-      ["y", 1, 2],
-      ["x", 1, 1],
-    ]);
+    expect(buildImpactRanking(nodes, edges, 6).rows).toEqual([]);
   });
 
   it("표시 상한을 넘으면 잘라내되 전체 개수는 그대로 보고한다", () => {
@@ -87,6 +81,8 @@ describe("buildImpactRanking", () => {
 
   it("관계가 없는 볼트는 빈 랭킹을 돌려준다 — 카드가 빈 상태를 그릴 수 있게", () => {
     expect(buildImpactRanking([node("a"), node("b")], [], 6)).toEqual({
+      declaredDependencyEdges: 0,
+      declaredWithRationaleEdges: 0,
       rows: [],
       rankedCount: 0,
       evidenceRows: [],
@@ -112,9 +108,9 @@ describe("buildImpactRanking", () => {
     const edges = [
       edge("capability:pay", "capability:login", "depends_on"),
       edge("domain:auth", "capability:login", "depends_on"),
-      edge("capability:login", "element:integration-test", "contains"),
-      edge("capability:pay", "element:integration-test", "contains"),
-      edge("domain:auth", "element:integration-test", "contains"),
+      edge("capability:login", "element:integration-test", "depends_on"),
+      edge("capability:pay", "element:integration-test", "depends_on"),
+      edge("domain:auth", "element:integration-test", "depends_on"),
     ];
 
     it("문서 없는 개념은 개념 계층에서 빠지고 근거 계층으로 내려간다", () => {

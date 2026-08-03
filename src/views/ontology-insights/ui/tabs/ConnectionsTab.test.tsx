@@ -49,6 +49,9 @@ const impactLabels: ImpactRankingLabels = {
   evidenceTruncated: (shown, total) => `Top ${shown} / ${total} without a document`,
   evidenceBadge: "No document",
   evidenceBadgeHint: "Another document wrote this name down.",
+  unknownTitle: "Impact range unknown",
+  unknownDetail: (declared, rationale) => `${declared} declared · ${rationale} with rationale`,
+  structureLink: "Explore structural connections",
 };
 
 const impactLink = {
@@ -57,7 +60,14 @@ const impactLink = {
   evidenceAriaLabel: ({ title }: { title: string }) => `${title} — view on the map`,
 };
 
-const emptyImpact = { rows: [], rankedCount: 0, evidenceRows: [], evidenceRankedCount: 0 };
+const emptyImpact = {
+  declaredDependencyEdges: 0,
+  declaredWithRationaleEdges: 0,
+  rows: [],
+  rankedCount: 0,
+  evidenceRows: [],
+  evidenceRankedCount: 0,
+};
 
 describe("ConnectionsTab", () => {
   it("does not render the moved readiness/repair instruments", () => {

@@ -2390,7 +2390,7 @@ Tailwind v4 `--leading-*` 네임스페이스가 `leading-<step>` 유틸리티를
 원소의 클래스 전체가 필요한데 `cn()` 인자로 쪼개지면 AST 셀렉터 하나에 안
 담기기 때문이다.
 
-### Radius ramp — 4단 (일반 표면)
+### Radius ramp — 5단 (일반 표면)
 
 Tailwind v4 `--radius-*` 네임스페이스가 `rounded-<step>` 를 생성한다.
 
@@ -2400,6 +2400,7 @@ Tailwind v4 `--radius-*` 네임스페이스가 `rounded-<step>` 를 생성한다
 | chip | `--radius-chip` (`rounded-chip`) | 6 | 칩·배지·작은 버튼 |
 | card | `--radius-card` (`rounded-card`) | 9 | 카드·인풋·중형 서피스 |
 | panel | `--radius-panel` (`rounded-panel`) | 12 | 패널·모달·큰 서피스 |
+| sheet | `--radius-sheet` (`rounded-sheet`) | 18 | 플로팅 시트·팔레트 — 화면 위에 떠서 아래를 가리는 큰 일시 표면 |
 
 **`micro` 는 2026-08-03 체계석 등재다.** 램프가 3단이던 동안 화면에는 4px 반경이
 **96곳**(Tailwind 기본 `rounded-sm` 59 + 무접미 `rounded` 37) 살아 있었다 —
@@ -2416,8 +2417,10 @@ Tailwind v4 `--radius-*` 네임스페이스가 `rounded-<step>` 를 생성한다
 것은 문서가 아니라 **빌드된 화면의 반경 센서스**였다: 프로젝트 드로어 한
 열(폭 399px) 안에 **20 / 18 / 16 / 12 / 9 / 6 여섯 종**이 동시에 살아 있었고,
 그중 `completeness`/`freshness` 짝만 이미 `rounded-panel` 이라 **같은 줄의
-형제가 어긋나** 있었다. 16 을 12 로 내리면 남는 것은 두 단이다 — **시트 단**
-(드로어 히어로 20 · 퀵액션 18, 둘 다 등재된 명시 예외)과 **콘텐츠 단**(12).
+형제가 어긋나** 있었다. 16 을 12 로 내리면 남는 것은 두 단이다 — **시트 단**과 **콘텐츠 단**(12).
+(이 문단의 초판은 드로어 히어로 20 을 시트 단의 명시 예외로 등재했는데, 같은
+날 오버레이 전수 판정이 **뒤집었다** — 히어로는 드로어 안을 스크롤하는 인플로우
+콘텐츠라 시트 자격이 없고 panel 로 내려갔다. 아래 `sheet` 등재 문단 참조.)
 종전의 16/18/20 은 세 가지 일을 하면서 서로 2px 밖에 안 달라 위계를 만들지
 못했다. `card`(9)가 아닌 이유는 이 상자들이 폭 365~399px 의 **절 컨테이너**
 이고, 이미 그 자리를 고른 형제 둘 + `TopologyEmptyState` 의 덮어쓰기
@@ -2427,6 +2430,23 @@ Tailwind v4 `--radius-*` 네임스페이스가 `rounded-<step>` 를 생성한다
 등록처 짝: `app/globals.css` + `src/shared/lib/cn.ts` `RADIUS_RAMP_STEPS`
 (tailwind-merge radius 그룹 — 미등록이면 `rounded-chip` 뒤에 온 `rounded-micro`
 가 병합되지 않고 둘 다 살아남아 CSS 소스 순서가 승자를 정한다).
+
+**`sheet`(18px)는 2026-08-04 체계석 등재다.** 위 드로어 판정이 콘텐츠 단을 12
+로 수렴시키자, 같은 병이 한 층 위에 그대로 드러났다 — 1512px 실측에서 **오버레이
+반경이 여섯 값**(12 · 9 · 22 · 16 · 18 · 20, 소스에는 모바일 28 까지)이었고,
+그중 16/18/20 은 서로 2px 차라 위계를 만들지 못했다. 출처도 갈라져 있었다:
+컴포넌트 전용 토큰 2개(`--topology-shortcut-sheet-radius` 22 ·
+`--topology-search-sheet-radius` 16, 폐지) + eslint-disable 4개(그중 하나는
+문자 그대로 「등재 대기」) + 방향 접미 lint 사각 1개(`rounded-t-[28px]`).
+**다섯 값이 한 가지 일 — 플로팅 시트/팔레트 — 을 하고 있었다.** 값이 18 인
+이유: 현행 최빈값이고 램프의 공비를 잇는다(4→6→9→12→18, ≈1.5×). 사정거리
+규칙 — **떠서 아래를 가리는 큰 일시 표면**(단축키/검색/에이전트 연결/볼트 안내
+시트, 퀵액션·제스처 힌트, 모바일 바텀시트 상단)만 sheet. 앵커 팝오버·메뉴는
+card/panel, 소형 확인 다이얼로그는 panel, **인플로우 콘텐츠는 크기와 무관하게
+sheet 금지**(공방 진입 카드 16 → panel, 드로어 히어로 20 → panel 이 그 판정).
+시트 단의 보더 짝은 `--color-divider`(0.08) — 종전 `--color-overlay-3`(0.10)
+1건도 수렴했다. 게이트: eslint radius 셀렉터(방향 접미 포함으로 확장) +
+`RADIUS_RAMP_STEPS` 동기 계약(`cn.test.ts`).
 
 > **크롬 radius 사다리와의 관계.** 아래 "크롬 문법" 절의 `--chrome-radius`
 > (10px) · `--chrome-radius-inner`(7px) · 키캡(4px) 사다리는 **컴포넌트에
