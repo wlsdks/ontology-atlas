@@ -106,7 +106,7 @@ export async function runInferImports(args) {
       const kindSummary = formatKindCounts(m.kindCounts);
       const kindSuffix = kindSummary ? ` ${COLORS.dim}(${kindSummary})${COLORS.reset}` : '';
       process.stdout.write(
-        `    ${COLORS.cyan}${m.from}${COLORS.reset} ${COLORS.dim}—depends_on→${COLORS.reset} ${COLORS.cyan}${m.to}${COLORS.reset} ${COLORS.dim}× ${m.count}${COLORS.reset}${kindSuffix}\n`,
+        `    ${COLORS.cyan}${m.from}${COLORS.reset} ${COLORS.dim}—imports→${COLORS.reset} ${COLORS.cyan}${m.to}${COLORS.reset} ${COLORS.dim}× ${m.count}${COLORS.reset}${kindSuffix}\n`,
       );
       const receipt = m.evidence?.[0];
       if (receipt) {

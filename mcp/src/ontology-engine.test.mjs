@@ -2038,13 +2038,12 @@ describe('queryCompiledOntology', () => {
     assert.equal(schemaMatch.verdict, 'matches_existing_schema');
     assert.equal(schemaMatch.recommendation.decision, 'safe_to_add');
     assert.equal(schemaMatch.schemaPattern.toKind, 'domain');
-    assert.deepEqual(schemaMatch.proposedAction, {
-      tool: 'add_relation',
-      args: {
-        from: 'capabilities/session',
-        to: 'domains/auth',
-        type: 'depends_on',
-      },
+    assert.equal(schemaMatch.proposedAction, null);
+    assert.deepEqual(schemaMatch.approvalGate, {
+      status: 'semantic_approval_required',
+      writeAllowed: false,
+      required: ['observable_ability', 'semantic_rationale', 'explicit_human_approval', 'why'],
+      next: 'Explain which observable ability fails without the target, ask for approval of the exact direction and rationale, then call add_relation with a nonblank why.',
     });
     assert.ok(
       schemaMatch.nearbyPatterns.some(
@@ -2071,6 +2070,7 @@ describe('queryCompiledOntology', () => {
         type: 'relates',
       },
     });
+    assert.equal(newPattern.approvalGate, null);
     assert.ok(newPattern.nearbyPatterns.every((pattern) => pattern.similarity > 0));
   });
 

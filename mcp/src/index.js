@@ -135,7 +135,10 @@ import {
   listSourceFiles,
 } from './infer-imports.mjs';
 import { compileOntology } from './ontology-compiler.mjs';
-import { reconcileImportEdges } from './reconcile-imports.mjs';
+import {
+  buildNextImportRelationReview,
+  reconcileImportEdges,
+} from './reconcile-imports.mjs';
 import { detectVaultPathDrift, suggestPathReconciliations } from './detect-drift.mjs';
 import { scoreEvidence } from './evidence-rank.mjs';
 import {
@@ -2170,7 +2173,8 @@ const TOOLS = [
     description:
       'Add a semantic relation between two nodes. Appends to the matching ' +
       'frontmatter graph key (domains / capabilities / elements / dependencies / relates / contains / describes); ' +
-      '`domain` sets the source node\'s inline parent domain. The relation type picks which key receives the entry. **R11**: optional ' +
+      '`domain` sets the source node\'s inline parent domain. The relation type picks which key receives the entry. ' +
+      'A new `depends_on` relation requires a nonblank `why`; an already-existing edge remains an idempotent read even if legacy data has no rationale. **R11**: optional ' +
       '`expected_mtime` — pass the source-side `mtime` from a prior get_concept ' +
       'so concurrent external edits throw VaultConflictError. ' +
       'Invalid relation `type` is rejected before endpoint slug resolution with a closest-value hint and structured `valueName` / `receivedValue` / `suggestion` / `allowedValues` repair fields in `structuredContent`, with no `changed`, `alreadyExists`, or `postWriteMaintenance` write metadata. ' +
@@ -2223,7 +2227,7 @@ const TOOLS = [
     name: 'add_relations',
     description:
       'Batch-add multiple relations in one call — same per-row shape as `add_relation`. ' +
-      'Use after `analyze_repo_structure` or another review flow when the agent has K semantic edges accepted by the user — replaces K×`add_relation` round-trips. Inferred module edges are not accepted merely because imports exist; review exact evidence and include `why`. ' +
+      'Use after `analyze_repo_structure` or another review flow when the agent has K semantic edges accepted by the user — replaces K×`add_relation` round-trips. Inferred module edges are not accepted merely because imports exist; review exact evidence and include the required nonblank `why` for every new `depends_on`. ' +
       'Each row is processed independently and idempotently: existing edges return `{ok: true, alreadyExists: true}`; ' +
       'missing source/target slugs / unknown type / non-object row shape / unknown row fields surface as `{ok: false, error}` with a `relations[n]` row label and structured `rowName`; unknown type rows include a closest-value hint with structured `valueName` / `receivedValue` / `suggestion` / `allowedValues`; single unknown-field rows include `receivedField` plus one-row `unknownFields`; multi unknown-field rows report every unknown field with nearest hints, `allowedFields`, `receivedFields`, and `Received fields: ...`. ' +
       '`relations[]` order in the response matches the input. Cap = 50 per call. ' +
@@ -2245,7 +2249,7 @@ const TOOLS = [
               why: {
                 type: 'string',
                 maxLength: 300,
-                description: 'One-line rationale stored with the relation in relation_notes.',
+                description: 'One-line rationale stored with the relation in relation_notes. Required at runtime for every new depends_on row.',
               },
               expected_mtime: { type: 'number', minimum: 0 },
             },
@@ -3034,7 +3038,7 @@ const TOOLS = [
     name: 'query_ontology',
     description:
       'Run graph-engine queries over the freshly compiled ontology artifact. Operations: `neighbors` (local graph neighborhood), `path` (one compiled-edge route between two nodes with aligned `nodes[]` summaries), `all_paths` (bounded simple paths between two nodes with per-path `nodes[]` summaries plus limit/searchBudget/exhaustive/truncatedByBudget/totalPathsExact metadata and evidence guidance), `query_plan` (EXPLAIN-style side-effect-free cost/index estimate plus execution advice before a target operation, filter-preserving suggestedQuery, and filter-aware estimate.totalMatches for match_nodes/match_edges), `centrality` (PageRank-style core-node ranking plus bridge/authority/hub lists), `communities` (label-propagation clusters inside the graph), `similar_nodes` (duplicate/overlap candidates before writes), `explain_relation` (direct edges, shortest path, and shared-neighbor explanation between two nodes), `reachability` (transitive graph closure from a start node), `pattern_walk` (explicit relation-sequence paths such as project → domains → capabilities), `impact` (incoming by default: what depends on this node), `blast_radius` (impact grouped by kind/domain with cross-domain edge risk), `subgraph` (bounded N-hop graph slice for UI/agent views), `builder_context` (persisted Workshop focus, layout positions, direct graph slice, and safe write handoff; unsaved UI drafts are explicitly excluded; operation name retained for compatibility), `overview` (counts, relation distribution, and hubs), `schema` (kind-relation-kind patterns), `facets` (filter/dashboard aggregates), `match_nodes` (graph DB-style node rows with degree filters plus a followUp packet for the first returned row), `match_edges` (graph DB-style edge pattern rows plus a followUp packet for the first returned real edge), `node_profile` (single node detail dashboard), `domain_profile` (domain detail dashboard), `domain_matrix` (domain-to-domain coupling), `project_scope` (project-contained graph slice), `project_map` (domain-by-domain project map), `relation_check` (schema-aware preflight before add_relation), `components` (connected graph islands), `lineage` and `containment_tree` (project/domain/capability containment), `cycles` (directed dependency-cycle checks), `topological_order` (prerequisite-first dependency ordering), `recommend_relations` (safe domain-containment suggestions), `growth_plan` (side-effect-free ontology expansion candidates), `maintenance_plan` (ordered post-write graph cleanup/repair actions with stable action `id`, count-safe summary fields, `byPhase` / `bySeverity` / `byKind` remaining-queue buckets, ready cursor `cursor.found=true` / `cursor.reason=null`, cursor `nextAfterActionId`/`hasMore` pagination metadata, afterActionId resume, unknown-cursor empty page with `cursor.nextAfterActionId=null` / `cursor.hasMore=false`, kind filters, executable graph-array canonicalization, `executable` flags, and current-page `nextExecutableAction` / `nextReviewAction` pointers), `agent_brief` (Claude Code/Codex handoff prompt, structured businessOntologyLens with business-first outcome → domain → capability → element read order, graphDbQueryPack for facets, schema, match_nodes, match_edges, domain_matrix, centrality, all_paths, explain_relation, and business_questions scans for outcome / domain boundary / capability claim nodes / implementation evidence edges, structured cliFallbackCommands, recipes, graph entrypoints, graph_traversal playbook, traversalStrategy plan_before_enumeration/bounded_path_evidence/containment_cross_check guidance, playbook evidence/stopWhen checklists, write guardrails, relationDecisionGuide, resultContracts for all_paths completeness and match_nodes/match_edges followUp evidence, and read-first write policy), `workspace_brief` (first-contact status + next actions), and `health` (one-shot graph integrity dashboard). ' +
-      'For `impact` and `blast_radius`, only declared `depends_on` is allowed; use reachability/subgraph for structure. Blast radius reports unknown risk/completeness plus review_required or declared_with_rationale edge qualification until relation-level source receipts exist. ' +
+      'For `impact` and `blast_radius`, only declared `depends_on` is allowed; use reachability/subgraph for structure. Blast radius reports unknown risk/completeness plus review_required or declared_with_rationale edge qualification until relation-level source receipts exist. A missing `depends_on` preflight is schema-only: `relation_check` returns `proposedAction:null` plus a non-writing `approvalGate` until the agent explains the observable ability and semantic rationale and receives explicit human approval. ' +
       'Accepts canonical slugs or unique aliases. side effect 0. Use this when you need graph-database-like answers without pulling the full compile_ontology payload.',
     inputSchema: {
       type: 'object',
@@ -3438,6 +3442,7 @@ const TOOLS = [
     description:
       'R17 (autonomous ingest deeper) — walk TS/JS files in a code repo and infer file-level + module-level import edges. It also walks bounded root Python packages. ' +
       'side effect 0 (vault frontmatter NOT modified). `moduleEdges` are source-backed review candidates, never self-approving semantic `depends_on` relations. ' +
+      'For the approval workflow, start with `reviewMode:"next"`: it returns exactly one compact, non-writing `nextRelationReview:v1` packet plus a stateless cursor instead of the full import graph. ' +
       'Each module edge includes `kindCounts` plus a bounded exact file-edge `evidence` receipt so the agent can inspect source direction before asking whether the semantic dependency is true. ' +
       'Detects:\n' +
       '  - relative imports (./, ../) → resolved to file paths\n' +
@@ -3483,6 +3488,17 @@ const TOOLS = [
           type: 'boolean',
           description:
             'Default true. When true, diff the inferred module edges against the vault\'s compiled depends_on edges and include `reconciliation` + `reconciliationSummary`. Set false to skip (raw scan only / no vault).',
+        },
+        reviewMode: {
+          type: 'string',
+          enum: ['full', 'next'],
+          description:
+            '`full` (default) returns the complete scan. `next` returns one compact, non-writing semantic-relation review packet and requires reconciliation.',
+        },
+        afterReviewId: {
+          ...NON_BLANK_STRING_SCHEMA,
+          description:
+            '`reviewMode:"next"` only. Pass the prior packet cursor.nextAfterReviewId to advance deterministically; omit to start at the first current candidate.',
         },
       },
     },
@@ -3615,9 +3631,159 @@ const TOOLS = [
             unresolvedImports: { type: 'integer', minimum: 0 },
             hint: { type: 'string' },
           },
+          required: [
+            'inBoth',
+            'inCodeMissingFromVault',
+            'inCodeMissingEndpointAbsent',
+            'inVaultNotInCode',
+            'unresolvedImports',
+            'hint',
+          ],
+          additionalProperties: false,
+        },
+        contract: { type: 'string', enum: ['inferImportsReview:v1'] },
+        scanSummary: {
+          type: 'object',
+          properties: {
+            fileEdges: { type: 'integer', minimum: 0 },
+            externalImports: { type: 'integer', minimum: 0 },
+            unresolvedImports: { type: 'integer', minimum: 0 },
+            moduleEdges: { type: 'integer', minimum: 0 },
+          },
+          required: ['fileEdges', 'externalImports', 'unresolvedImports', 'moduleEdges'],
+          additionalProperties: false,
+        },
+        reviewQueue: {
+          type: 'object',
+          properties: {
+            total: { type: 'integer', minimum: 0 },
+            returned: { type: 'integer', enum: [0, 1] },
+            exhausted: { type: 'boolean' },
+            afterReviewId: { type: ['string', 'null'] },
+          },
+          required: ['total', 'returned', 'exhausted', 'afterReviewId'],
+          additionalProperties: false,
+        },
+        nextReview: {
+          type: ['object', 'null'],
+          properties: {
+            contract: { type: 'string', enum: ['nextRelationReview:v1'] },
+            reviewId: NON_BLANK_STRING_SCHEMA,
+            status: { type: 'string', enum: ['rationale_review_required'] },
+            writeAllowed: { type: 'boolean', enum: [false] },
+            sourceQualification: {
+              type: 'string',
+              enum: ['observed_this_call_not_relation_receipt'],
+            },
+            ordering: {
+              type: 'object',
+              properties: {
+                basis: { type: 'string', enum: ['canonical_from_to'] },
+                meaningConfidence: { type: 'boolean', enum: [false] },
+                note: NON_BLANK_STRING_SCHEMA,
+              },
+              required: ['basis', 'meaningConfidence', 'note'],
+              additionalProperties: false,
+            },
+            candidate: {
+              type: 'object',
+              properties: {
+                from: NON_BLANK_STRING_SCHEMA,
+                to: NON_BLANK_STRING_SCHEMA,
+                relationType: { type: 'string', enum: ['depends_on'] },
+                importCount: { type: 'integer', minimum: 0 },
+                sourceEvidence: {
+                  type: 'array',
+                  maxItems: 5,
+                  items: {
+                    type: 'object',
+                    properties: {
+                      from: NON_BLANK_STRING_SCHEMA,
+                      to: NON_BLANK_STRING_SCHEMA,
+                      kind: { type: 'string', enum: IMPORT_EDGE_KIND_VALUES },
+                    },
+                    required: ['from', 'to', 'kind'],
+                    additionalProperties: false,
+                  },
+                },
+                sourceEvidenceLimited: { type: 'boolean' },
+              },
+              required: [
+                'from',
+                'to',
+                'relationType',
+                'importCount',
+                'sourceEvidence',
+                'sourceEvidenceLimited',
+              ],
+              additionalProperties: false,
+            },
+            nextCalls: {
+              type: 'array',
+              minItems: 2,
+              maxItems: 2,
+              items: {
+                type: 'object',
+                properties: {
+                  tool: { type: 'string', enum: ['get_concepts', 'query_ontology'] },
+                  arguments: { type: 'object' },
+                  purpose: NON_BLANK_STRING_SCHEMA,
+                },
+                required: ['tool', 'arguments', 'purpose'],
+                additionalProperties: false,
+              },
+            },
+            decision: {
+              type: 'object',
+              properties: {
+                required: { type: 'array', items: NON_BLANK_STRING_SCHEMA, minItems: 1 },
+                ask: NON_BLANK_STRING_SCHEMA,
+                stopWhen: { type: 'array', items: NON_BLANK_STRING_SCHEMA, minItems: 1 },
+              },
+              required: ['required', 'ask', 'stopWhen'],
+              additionalProperties: false,
+            },
+            cursor: {
+              type: 'object',
+              properties: {
+                afterReviewId: { type: ['string', 'null'] },
+                total: { type: 'integer', minimum: 1 },
+                remaining: { type: 'integer', minimum: 0 },
+                hasMore: { type: 'boolean' },
+                nextAfterReviewId: NON_BLANK_STRING_SCHEMA,
+              },
+              required: ['afterReviewId', 'total', 'remaining', 'hasMore', 'nextAfterReviewId'],
+              additionalProperties: false,
+            },
+          },
+          required: [
+            'contract',
+            'reviewId',
+            'status',
+            'writeAllowed',
+            'sourceQualification',
+            'ordering',
+            'candidate',
+            'nextCalls',
+            'decision',
+            'cursor',
+          ],
+          additionalProperties: false,
         },
       },
-      required: ['rootPath', 'filesScanned', 'edges', 'externalImports', 'unresolved', 'moduleEdges'],
+      required: ['rootPath', 'filesScanned'],
+      oneOf: [
+        { required: ['edges', 'externalImports', 'unresolved', 'moduleEdges'] },
+        {
+          required: [
+            'contract',
+            'scanSummary',
+            'reconciliationSummary',
+            'reviewQueue',
+            'nextReview',
+          ],
+        },
+      ],
       additionalProperties: false,
     },
   },
@@ -5863,6 +6029,12 @@ function addRelation({ from, to, type, why, expected_mtime }, options = {}) {
   if (existing.some((ref) => relationRefMatches(ref, canonicalTo))) {
     return { ok: true, alreadyExists: true, changed: false, from: canonicalFrom, to: canonicalTo, type };
   }
+  if (type === 'depends_on' && (typeof why !== 'string' || !why.trim())) {
+    throw new Error(
+      'why is required and must be nonblank for a new depends_on relation. ' +
+      'Explain the stable semantic dependency after explicit human approval.',
+    );
+  }
   const next = normalizeRelationRefs([...existing, canonicalTo]);
   // P6 — 관계 + 근거(why)를 한 번의 frontmatter 쓰기로 (원자 쓰기 게이트 ③:
   // 둘이 따로 쓰이면 중간 실패 시 근거 없는 관계/관계 없는 근거가 남는다).
@@ -7203,12 +7375,28 @@ function analyzeRepoStructureTool({ rootPath, maxDepth, ignore, proposal } = {})
 
 // R17 — infer_imports thin wrapper. side effect 0. 결과 moduleEdges 는
 // exact source evidence가 붙은 rationale-review 후보다.
-function inferImportsTool({ rootPath, sourceFolders, ignore, maxFiles, reconcile = true } = {}) {
+function inferImportsTool({
+  rootPath,
+  sourceFolders,
+  ignore,
+  maxFiles,
+  reconcile = true,
+  reviewMode = 'full',
+  afterReviewId,
+} = {}) {
   requireOptionalNonBlankString(rootPath, 'rootPath');
   requireOptionalStringArray(sourceFolders, 'sourceFolders', { max: SOURCE_FOLDER_ARRAY_MAX_ITEMS });
   requireOptionalStringArray(ignore, 'ignore', { max: IGNORE_ARRAY_MAX_ITEMS });
   requireOptionalPositiveInteger(maxFiles, 'maxFiles', { max: 50000 });
   requireOptionalBoolean(reconcile, 'reconcile');
+  requireOptionalEnum(reviewMode, 'reviewMode', ['full', 'next']);
+  requireOptionalNonBlankString(afterReviewId, 'afterReviewId');
+  if (afterReviewId !== undefined && reviewMode !== 'next') {
+    throw new Error('afterReviewId is only valid with reviewMode "next".');
+  }
+  if (reviewMode === 'next' && reconcile === false) {
+    throw new Error('reviewMode "next" requires reconcile:true because the review queue is a vault diff.');
+  }
   const target = rootPath ? resolve(rootPath) : REPO_ROOT;
   const result = inferImports(target, {
     sourceFolders,
@@ -7270,6 +7458,36 @@ function inferImportsTool({ rootPath, sourceFolders, ignore, maxFiles, reconcile
       // No loadable vault (e.g. scanning a foreign repo) — skip reconciliation silently.
       result.reconciliation = null;
     }
+  }
+
+  if (reviewMode === 'next') {
+    if (!result.reconciliation || !result.reconciliationSummary) {
+      throw new Error(
+        'reviewMode "next" requires a loadable active vault so import candidates can be reconciled against existing ontology nodes.',
+      );
+    }
+    const nextReview = buildNextImportRelationReview(result.reconciliation, {
+      afterReviewId: afterReviewId ?? null,
+    });
+    return {
+      contract: 'inferImportsReview:v1',
+      rootPath: result.rootPath,
+      filesScanned: result.filesScanned,
+      scanSummary: {
+        fileEdges: result.edges.length,
+        externalImports: result.externalImports.length,
+        unresolvedImports: result.unresolved.length,
+        moduleEdges: result.moduleEdges.length,
+      },
+      reconciliationSummary: result.reconciliationSummary,
+      reviewQueue: {
+        total: result.reconciliation.inCodeMissingFromVault.length,
+        returned: nextReview ? 1 : 0,
+        exhausted: nextReview === null,
+        afterReviewId: afterReviewId ?? null,
+      },
+      nextReview,
+    };
   }
 
   return result;

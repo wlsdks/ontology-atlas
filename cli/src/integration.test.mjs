@@ -3497,16 +3497,17 @@ await test('explain --json — unrelated verdict exits non-zero with evidence pa
   }
 });
 
-await test('relate — depends_on 관계를 from 문서 frontmatter 에 쓴다', async () => {
+await test('relate — depends_on 신규 쓰기는 why 없이 실패 닫힌다', async () => {
   const root = withVault([
     { slug: 'a', content: '---\nkind: capability\ntitle: A\n---\n' },
     { slug: 'b', content: '---\nkind: capability\ntitle: B\n---\n' },
   ]);
   try {
     const r = await run(['relate', 'a', 'b', 'depends_on', root]);
-    assert.equal(r.code, 0, `stdout: ${r.stdout}\nstderr: ${r.stderr}`);
+    assert.equal(r.code, 1, `stdout: ${r.stdout}\nstderr: ${r.stderr}`);
+    assert.match(r.stderr, /why is required.*depends_on/i);
     const doc = readFileSync(join(root, 'a.md'), 'utf-8');
-    assert.match(doc, /dependencies: \[b\]/);
+    assert.doesNotMatch(doc, /dependencies/);
     assert.doesNotMatch(doc, /relation_notes/);
   } finally {
     rmSync(root, { recursive: true, force: true });
@@ -3936,6 +3937,23 @@ await test('relation-check --json — exposes raw MCP relation_check contract', 
   }
 });
 
+await test('relation-check depends_on — shows semantic approval gate instead of executable write args', async () => {
+  const root = withVault([
+    { slug: 'a', content: '---\nkind: capability\ntitle: A\n---\n' },
+    { slug: 'b', content: '---\nkind: capability\ntitle: B\n---\n' },
+  ]);
+  try {
+    const r = await run(['relation-check', 'a', 'b', 'depends_on', root]);
+    assert.equal(r.code, 0, `stdout: ${r.stdout}\nstderr: ${r.stderr}`);
+    const clean = stripAnsi(r.stdout);
+    assert.match(clean, /semantic approval required/i);
+    assert.match(clean, /writeAllowed=false/);
+    assert.doesNotMatch(clean, /proposed add_relation/);
+  } finally {
+    rmSync(root, { recursive: true, force: true });
+  }
+});
+
 await test('relation-check --json — fails closed on malformed relation_check payloads before output', async () => {
   const root = withVault();
   const fakeMcp = join(root, 'fake-mcp-relation-check-malformed.mjs');
@@ -3948,7 +3966,7 @@ await test('relation-check --json — fails closed on malformed relation_check p
       "  const msg = JSON.parse(line);",
       "  if (msg.id === 1) console.log(JSON.stringify({ jsonrpc: '2.0', id: 1, result: {} }));",
       "  if (msg.id === 2) {",
-      "    const payload = { operation: 'relation_check', from: 'a', to: 'b', relation: 'depends_on', fromKind: 'capability', toKind: 'capability', exists: false, verdict: 'matches_existing_schema', recommendation: { decision: 'safe_to_add', severity: 'info', reason: 'ok' }, matchingEdges: [], inverseEdges: [], schemaPattern: null, nearbyPatterns: [] };",
+      "    const payload = { operation: 'relation_check', from: 'a', to: 'b', relation: 'dependencies', fromKind: 'capability', toKind: 'capability', exists: false, verdict: 'matches_existing_schema', recommendation: { decision: 'safe_to_add', severity: 'info', reason: 'ok' }, matchingEdges: [], inverseEdges: [], schemaPattern: null, nearbyPatterns: [], proposedAction: null };",
       "    console.log(JSON.stringify({ jsonrpc: '2.0', id: 2, result: { content: [{ text: JSON.stringify(payload) }], structuredContent: payload } }));",
       "  }",
       "});",
@@ -3959,7 +3977,7 @@ await test('relation-check --json — fails closed on malformed relation_check p
     const r = await run(['relation-check', 'a', 'b', 'depends_on', root, '--json'], { env: { OATLAS_MCP_PATH: fakeMcp } });
     assert.equal(r.code, 2, `stdout: ${r.stdout}\nstderr: ${r.stderr}`);
     assert.equal(r.stdout, '');
-    assert.match(stripAnsi(r.stderr), /relation_check missing edge must include add_relation proposedAction/);
+    assert.match(stripAnsi(r.stderr), /relation_check pending depends_on must include the non-writing semantic approvalGate/);
   } finally {
     rmSync(root, { recursive: true, force: true });
   }
@@ -7666,6 +7684,8 @@ await test('infer-imports preview — file edge kind summary exposed', async () 
     assert.match(clean, /require=1/);
     assert.match(clean, /reexport=1/);
     assert.match(clean, /capabilities\/a.*capabilities\/b.*static=1.*dynamic=1.*require=1.*reexport=1/s);
+    assert.match(clean, /capabilities\/a.*—imports→.*capabilities\/b/s);
+    assert.doesNotMatch(clean, /—depends_on→/);
   } finally {
     rmSync(vault, { recursive: true, force: true });
     rmSync(repo, { recursive: true, force: true });

@@ -5,7 +5,10 @@
 // a follow-up — so it is fixture #1 below.
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { reconcileImportEdges } from './reconcile-imports.mjs';
+import {
+  buildNextImportRelationReview,
+  reconcileImportEdges,
+} from './reconcile-imports.mjs';
 import { compileOntology } from './ontology-compiler.mjs';
 
 // In-memory fixtures (no fs) — matches the lightweight contract-test style.
@@ -154,4 +157,94 @@ test('reconcileImportEdges — self-edges (A→A) are dropped (no self-dependenc
     aliasToSlug: new Map(),
   });
   assert.deepEqual(r, { inBoth: [], inCodeMissingFromVault: [], inCodeMissingEndpointAbsent: [], inVaultNotInCode: [] });
+});
+
+test('buildNextImportRelationReview — returns one non-executable review packet and a stateless cursor', () => {
+  const reconciliation = {
+    inBoth: [],
+    inCodeMissingFromVault: [
+      {
+        from: 'capabilities/a',
+        to: 'capabilities/b',
+        count: 3,
+        sourceEvidence: [
+          { from: 'src/a.ts', to: 'src/b.ts', kind: 'static' },
+        ],
+        sourceEvidenceLimited: false,
+        review: {
+          status: 'rationale_review_required',
+          writeAllowed: false,
+          required: ['semantic_rationale', 'human_approval'],
+        },
+      },
+      {
+        from: 'capabilities/c',
+        to: 'capabilities/d',
+        count: 1,
+        sourceEvidence: [
+          { from: 'src/c.ts', to: 'src/d.ts', kind: 'dynamic' },
+        ],
+        sourceEvidenceLimited: false,
+        review: {
+          status: 'rationale_review_required',
+          writeAllowed: false,
+          required: ['semantic_rationale', 'human_approval'],
+        },
+      },
+    ],
+    inCodeMissingEndpointAbsent: [{ from: 'capabilities/a', to: 'elements/missing' }],
+    inVaultNotInCode: [],
+  };
+
+  const first = buildNextImportRelationReview(reconciliation);
+  assert.equal(first.contract, 'nextRelationReview:v1');
+  assert.equal(first.writeAllowed, false);
+  assert.equal(first.proposedAction, undefined);
+  assert.deepEqual(first.candidate, {
+    from: 'capabilities/a',
+    to: 'capabilities/b',
+    relationType: 'depends_on',
+    importCount: 3,
+    sourceEvidence: [{ from: 'src/a.ts', to: 'src/b.ts', kind: 'static' }],
+    sourceEvidenceLimited: false,
+  });
+  assert.deepEqual(first.nextCalls, [
+    {
+      tool: 'get_concepts',
+      arguments: { slugs: ['capabilities/a', 'capabilities/b'], body: 'full' },
+      purpose: 'Read both ontology meanings before deciding whether the code fact is a semantic dependency.',
+    },
+    {
+      tool: 'query_ontology',
+      arguments: {
+        operation: 'relation_check',
+        from: 'capabilities/a',
+        to: 'capabilities/b',
+        type: 'depends_on',
+      },
+      purpose: 'Check graph shape only; safe_to_add is not semantic approval.',
+    },
+  ]);
+  assert.equal(first.cursor.total, 2);
+  assert.equal(first.cursor.remaining, 1);
+  assert.equal(first.cursor.hasMore, true);
+  assert.equal(first.cursor.afterReviewId, null);
+  assert.equal(first.cursor.nextAfterReviewId, first.reviewId);
+
+  const second = buildNextImportRelationReview(reconciliation, {
+    afterReviewId: first.reviewId,
+  });
+  assert.equal(second.candidate.from, 'capabilities/c');
+  assert.equal(second.candidate.to, 'capabilities/d');
+  assert.equal(second.cursor.remaining, 0);
+  assert.equal(second.cursor.hasMore, false);
+});
+
+test('buildNextImportRelationReview — unknown cursor fails closed instead of restarting silently', () => {
+  assert.throws(
+    () => buildNextImportRelationReview({
+      inCodeMissingFromVault: [{ from: 'capabilities/a', to: 'capabilities/b' }],
+    }, { afterReviewId: 'missing-review-id' }),
+    /afterReviewId.*not found.*omit/i,
+  );
 });

@@ -7,6 +7,21 @@
 
 ---
 
+## 2026-08-04 — import 후보를 한 건씩 의미 검토한다
+
+MCP `infer_imports({ reviewMode: "next" })`가 전체 import 그래프 대신 정확히 한 건의
+`nextRelationReview:v1` 패킷과 stateless cursor를 반환한다. 패킷은 양쪽 개념 읽기와
+`relation_check` 호출, 코드 근거, 중단 조건을 담지만 `proposedAction`과 쓰기 인자는
+내놓지 않으며 `writeAllowed:false`다. 순서는 결정적 검토 순서일 뿐 의미 신뢰도 순위가
+아니다.
+
+새 `depends_on` 관계는 이제 MCP 단건·배치 writer 모두에서 비어 있지 않은 `why`가
+필수다. 기존의 이유 없는 관계는 읽기와 idempotent 재호출을 막지 않고
+`review_required` 부채로 남긴다. CLI import 미리보기의 선도 `depends_on`이 아니라
+`imports`로 표시해, 코드 사용 사실을 승인된 온톨로지 의존처럼 보이지 않게 했다.
+`relation_check` 역시 신규 `depends_on`에는 실행 인자를 내지 않고
+`approvalGate.writeAllowed:false`를 반환해, schema 적합성을 의미 승인으로 오해하지 않는다.
+
 ## 2026-08-04 — 폴더 구조를 의존 영향이라고 부르지 않는다
 
 MCP/CLI의 `impact`와 `blast_radius`, 앱의 의존 영향 카드가 이제 오직 선언된

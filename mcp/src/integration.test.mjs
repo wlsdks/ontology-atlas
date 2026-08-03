@@ -630,7 +630,11 @@ await test("tools/list — 단일 도구 description 이 batch 짝을 cross-refe
     assert.equal(inferImports?.outputSchema?.type, "object");
     assert.equal(inferImports?.inputSchema?.properties?.sourceFolders?.maxItems, 50);
     assert.equal(inferImports?.inputSchema?.properties?.ignore?.maxItems, 200);
-    assert.deepEqual(inferImports?.outputSchema?.required, ["rootPath", "filesScanned", "edges", "externalImports", "unresolved", "moduleEdges"]);
+    assert.deepEqual(inferImports?.inputSchema?.properties?.reviewMode?.enum, ["full", "next"]);
+    assert.match(inferImports?.inputSchema?.properties?.afterReviewId?.description ?? "", /cursor\.nextAfterReviewId/);
+    assert.deepEqual(inferImports?.outputSchema?.required, ["rootPath", "filesScanned"]);
+    assert.deepEqual(inferImports?.outputSchema?.oneOf?.[0]?.required, ["edges", "externalImports", "unresolved", "moduleEdges"]);
+    assert.deepEqual(inferImports?.outputSchema?.oneOf?.[1]?.required, ["contract", "scanSummary", "reconciliationSummary", "reviewQueue", "nextReview"]);
     assert.equal(inferImports?.outputSchema?.additionalProperties, false);
     assert.equal(inferImports?.outputSchema?.properties?.filesScanned?.type, "integer");
     assert.deepEqual(inferImports?.outputSchema?.properties?.edges?.items?.required, ["from", "to", "kind"]);
@@ -653,9 +657,12 @@ await test("tools/list — 단일 도구 description 이 batch 짝을 cross-refe
     assert.deepEqual(moduleEvidenceSchema?.items?.required, ["from", "to", "kind"]);
     assert.equal(moduleEvidenceSchema?.items?.additionalProperties, false);
     assert.equal(inferImports?.outputSchema?.properties?.moduleEdges?.items?.properties?.evidenceLimited?.type, "boolean");
+    assert.deepEqual(inferImports?.outputSchema?.properties?.contract?.enum, ["inferImportsReview:v1"]);
+    assert.deepEqual(inferImports?.outputSchema?.properties?.nextReview?.properties?.writeAllowed?.enum, [false]);
+    assert.deepEqual(inferImports?.outputSchema?.properties?.nextReview?.properties?.cursor?.required, ["afterReviewId", "total", "remaining", "hasMore", "nextAfterReviewId"]);
     assert.match(
       inferImports?.description ?? "",
-      /walk TS\/JS files in a code repo and infer file-level \+ module-level import edges[\s\S]*bounded root Python packages[\s\S]*side effect 0 \(vault frontmatter NOT modified\)[\s\S]*source-backed review candidates[\s\S]*bounded exact file-edge `evidence` receipt[\s\S]*rationale_review_required[\s\S]*ask the user[\s\S]*add_relation[\s\S]*`why`/i,
+      /walk TS\/JS files in a code repo and infer file-level \+ module-level import edges[\s\S]*bounded root Python packages[\s\S]*side effect 0 \(vault frontmatter NOT modified\)[\s\S]*source-backed review candidates[\s\S]*reviewMode:"next"[\s\S]*exactly one compact, non-writing `nextRelationReview:v1` packet[\s\S]*bounded exact file-edge `evidence` receipt[\s\S]*rationale_review_required[\s\S]*ask the user[\s\S]*add_relation[\s\S]*`why`/i,
       "infer_imports description documents dependency-ingest safety workflow",
     );
     assert.match(
@@ -2309,6 +2316,65 @@ await test("infer_imports — import graph exposes structuredContent", async () 
   }
 });
 
+await test("infer_imports reviewMode next — one bounded non-writing relation review advances by cursor", async () => {
+  const vaultRoot = makeVault([
+    { slug: "capabilities/auth", content: "---\nkind: capability\ntitle: Auth\n---\n\nAuthenticates a user.\n" },
+    { slug: "elements/client", content: "---\nkind: element\ntitle: API Client\n---\n\nCalls the remote API.\n" },
+    { slug: "elements/user", content: "---\nkind: element\ntitle: User Entity\n---\n\nRepresents the signed-in user.\n" },
+  ]);
+  const repoRoot = mkdtempSync(join(tmpdir(), "ontology-atlas-infer-review-"));
+  try {
+    mkdirSync(join(repoRoot, "src", "features", "auth"), { recursive: true });
+    mkdirSync(join(repoRoot, "src", "entities", "user"), { recursive: true });
+    mkdirSync(join(repoRoot, "src", "shared", "api"), { recursive: true });
+    writeFileSync(
+      join(repoRoot, "src", "features", "auth", "index.ts"),
+      'import { user } from "../../entities/user";\nimport "@/shared/api/client";\nexport const auth = user;\n',
+      "utf-8",
+    );
+    writeFileSync(join(repoRoot, "src", "entities", "user", "index.ts"), "export const user = true;\n", "utf-8");
+    writeFileSync(join(repoRoot, "src", "shared", "api", "client.ts"), "export const client = true;\n", "utf-8");
+    const readReviewVault = () => [
+      readFileSync(join(vaultRoot, "capabilities", "auth.md"), "utf-8"),
+      readFileSync(join(vaultRoot, "elements", "client.md"), "utf-8"),
+      readFileSync(join(vaultRoot, "elements", "user.md"), "utf-8"),
+    ];
+    const before = readReviewVault();
+
+    const { responses: firstResponses } = await rpc(vaultRoot, [
+      ...INIT_REQUESTS,
+      callTool(2, "infer_imports", { rootPath: repoRoot, reviewMode: "next" }),
+    ]);
+    const first = getCallParsed(firstResponses, 2);
+    assert.deepEqual(getCallStructured(firstResponses, 2), first);
+    assert.equal(first.contract, "inferImportsReview:v1");
+    assert.equal(JSON.stringify(first).length < 5_120, true);
+    assert.equal(first.nextReview.contract, "nextRelationReview:v1");
+    assert.equal(first.nextReview.writeAllowed, false);
+    assert.equal(first.nextReview.proposedAction, undefined);
+    assert.equal(first.edges, undefined);
+    assert.equal(first.moduleEdges, undefined);
+    assert.equal(first.reconciliation, undefined);
+    assert.deepEqual(readReviewVault(), before, "review must write zero vault bytes");
+
+    const { responses: secondResponses } = await rpc(vaultRoot, [
+      ...INIT_REQUESTS,
+      callTool(2, "infer_imports", {
+        rootPath: repoRoot,
+        reviewMode: "next",
+        afterReviewId: first.nextReview.reviewId,
+      }),
+    ]);
+    const second = getCallParsed(secondResponses, 2);
+    assert.notEqual(second.nextReview.reviewId, first.nextReview.reviewId);
+    assert.equal(second.nextReview.cursor.hasMore, false);
+    assert.deepEqual(readReviewVault(), before, "cursor reads must remain side-effect free");
+  } finally {
+    rmSync(vaultRoot, { recursive: true, force: true });
+    rmSync(repoRoot, { recursive: true, force: true });
+  }
+});
+
 await test("index_project — repo analysis, import indexing, and vault validation expose one read-only plan", async () => {
   const vaultRoot = makeVault([
     {
@@ -3009,13 +3075,12 @@ await test("query_ontology — compiled graph engine neighbors/path/all_paths/qu
     assert.equal(relationCheck.recommendation.decision, "safe_to_add");
     assert.equal(relationCheck.schemaPattern.toKind, "domain");
     assert.ok(Array.isArray(relationCheck.inverseEdges));
-    assert.deepEqual(relationCheck.proposedAction, {
-      tool: "add_relation",
-      args: {
-        from: "capabilities/session",
-        to: "domains/auth",
-        type: "depends_on",
-      },
+    assert.equal(relationCheck.proposedAction, null);
+    assert.deepEqual(relationCheck.approvalGate, {
+      status: "semantic_approval_required",
+      writeAllowed: false,
+      required: ["observable_ability", "semantic_rationale", "explicit_human_approval", "why"],
+      next: "Explain which observable ability fails without the target, ask for approval of the exact direction and rationale, then call add_relation with a nonblank why.",
     });
     assert.ok(Array.isArray(relationCheck.nearbyPatterns));
 
@@ -6684,6 +6749,92 @@ await test("get_concept — dangling outgoing graph reference 를 warnings 에 �
   }
 });
 
+await test("add_relation — a new depends_on requires a nonblank rationale before any write", async () => {
+  const root = makeVault([
+    { slug: "capabilities/a", content: "---\nkind: capability\ntitle: A\n---\n" },
+    { slug: "capabilities/b", content: "---\nkind: capability\ntitle: B\n---\n" },
+  ]);
+  try {
+    const before = readFileSync(join(root, "capabilities", "a.md"), "utf-8");
+    const { responses } = await rpc(root, [
+      ...INIT_REQUESTS,
+      callTool(2, "add_relation", {
+        from: "capabilities/a",
+        to: "capabilities/b",
+        type: "depends_on",
+      }),
+      callTool(3, "add_relations", {
+        relations: [{
+          from: "capabilities/a",
+          to: "capabilities/b",
+          type: "depends_on",
+          why: "   ",
+        }],
+      }),
+    ]);
+    assert.match(responses.find((row) => row.id === 2).result.content[0].text, /why.*required.*depends_on/i);
+    const batch = getCallParsed(responses, 3);
+    assert.equal(batch.relations[0].ok, false);
+    assert.match(batch.relations[0].error, /why.*required.*depends_on/i);
+    assert.equal(readFileSync(join(root, "capabilities", "a.md"), "utf-8"), before);
+  } finally {
+    rmSync(root, { recursive: true, force: true });
+  }
+});
+
+await test("add_relation approved fixture — why, validate, compile, and impact stay one truthful flow", async () => {
+  const root = makeVault([
+    { slug: "capabilities/a", content: "---\nkind: capability\ntitle: A\n---\n" },
+    { slug: "capabilities/b", content: "---\nkind: capability\ntitle: B\n---\n" },
+  ]);
+  const why = "A cannot provide its approved observable ability without B.";
+  try {
+    const { responses } = await rpc(root, [
+      ...INIT_REQUESTS,
+      callTool(2, "add_relation", {
+        from: "capabilities/a",
+        to: "capabilities/b",
+        type: "depends_on",
+        why,
+      }),
+      callTool(3, "validate_vault"),
+      callTool(4, "compile_ontology"),
+      callTool(5, "query_ontology", {
+        operation: "impact",
+        slug: "capabilities/b",
+        depth: 1,
+      }),
+    ], 3000);
+
+    const write = getCallParsed(responses, 2);
+    const validation = getCallParsed(responses, 3);
+    const compile = getCallParsed(responses, 4);
+    const impact = getCallParsed(responses, 5);
+    assert.equal(write.changed, true);
+    assert.equal(validation.summary.errorFiles, 0);
+    assert.equal(compile.nodeCount, 2);
+    assert.equal(compile.edgeCount, 1);
+    assert.equal(compile.resolvedEdgeCount, 1);
+    assert.deepEqual(impact.nodes.map((row) => row.slug), ["capabilities/a"]);
+    assert.deepEqual(impact.qualification, {
+      status: "declared_with_rationale",
+      basis: "declared_dependencies",
+      completeness: "unknown",
+      sourceBacked: false,
+      declaredEdges: 1,
+      declaredWithRationaleEdges: 1,
+      reviewRequiredEdges: 0,
+      sourceBackedEdges: 0,
+    });
+    const source = readFileSync(join(root, "capabilities", "a.md"), "utf-8");
+    assert.match(source, /dependencies: \[capabilities\/b\]/);
+    assert.match(source, /relation_notes:/);
+    assert.match(source, /capabilities\/b: A cannot provide its approved observable ability without B\./);
+  } finally {
+    rmSync(root, { recursive: true, force: true });
+  }
+});
+
 await test("add_relation — missing endpoints include recovery and create hints", async () => {
   const root = makeVault([
     { slug: "project", content: "---\nkind: project\ntitle: Project\n---\n" },
@@ -6750,7 +6901,12 @@ await test("add_relation — 같은 edge 두번 추가 시 alreadyExists:true (i
   try {
     const { responses } = await rpc(root, [
       ...INIT_REQUESTS,
-      callTool(2, "add_relation", { from: "a", to: "b", type: "depends_on" }),
+      callTool(2, "add_relation", {
+        from: "a",
+        to: "b",
+        type: "depends_on",
+        why: "A cannot provide its observable ability without B.",
+      }),
       callTool(3, "add_relation", { from: "a", to: "b", type: "depends_on" }),
     ]);
     const first = getCallParsed(responses, 2);
@@ -6783,7 +6939,12 @@ await test("add_relation — 기존 relation 배열도 중복 제거 + 정렬", 
   try {
     const { responses } = await rpc(root, [
       ...INIT_REQUESTS,
-      callTool(2, "add_relation", { from: "a", to: "m", type: "depends_on" }),
+      callTool(2, "add_relation", {
+        from: "a",
+        to: "m",
+        type: "depends_on",
+        why: "A requires M to preserve its observable project behavior.",
+      }),
       callTool(3, "get_concept", { slug: "a" }),
     ]);
     const first = getCallParsed(responses, 2);

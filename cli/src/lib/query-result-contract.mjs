@@ -1404,7 +1404,17 @@ export function assertRelationCheckShape(result) {
   if (result.exists && result.proposedAction !== null && result.proposedAction !== undefined) {
     throw new Error('relation_check existing edge must not include proposedAction');
   }
-  if (!result.exists && !validRelationCheckProposedAction(result)) {
+  if (result.exists && result.approvalGate !== null && result.approvalGate !== undefined) {
+    throw new Error('relation_check existing edge must not include approvalGate');
+  }
+  if (!result.exists && result.relation === 'dependencies') {
+    if (result.proposedAction !== null) {
+      throw new Error('relation_check pending depends_on must not include proposedAction before semantic approval');
+    }
+    if (!validRelationCheckApprovalGate(result.approvalGate)) {
+      throw new Error('relation_check pending depends_on must include the non-writing semantic approvalGate');
+    }
+  } else if (!result.exists && !validRelationCheckProposedAction(result)) {
     throw new Error('relation_check missing edge must include add_relation proposedAction with matching args');
   }
   return result;
@@ -2612,6 +2622,18 @@ function validRelationCheckProposedAction(result) {
     && action.args.from === result.from
     && action.args.to === result.to
     && relationTypesMatch(action.args.type, result.relation)
+  );
+}
+
+function validRelationCheckApprovalGate(gate) {
+  return Boolean(
+    isPlainObject(gate)
+    && gate.status === 'semantic_approval_required'
+    && gate.writeAllowed === false
+    && Array.isArray(gate.required)
+    && ['observable_ability', 'semantic_rationale', 'explicit_human_approval', 'why']
+      .every((item) => gate.required.includes(item))
+    && hasNonEmptyString(gate.next)
   );
 }
 
