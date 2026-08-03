@@ -64,6 +64,14 @@ export interface SurfaceProps {
   as?: 'div' | 'section' | 'aside';
   /** 퇴장이 **끝난 뒤** 한 번. 포커스 복귀처럼 언마운트에 붙는 일에 쓴다. */
   onExited?: () => void;
+  /**
+   * `data-*` 통과 — **밖에서 이 표면을 집을 수 있어야** 계기와 테스트가 산다.
+   *
+   * ⚠️ 이걸 안 받으면 **타입이 조용히 통과시킨다.** TypeScript 는 하이픈이 든 JSX
+   * 속성을 검사하지 않아서, `data-testid` 를 넘겨도 `tsc` 는 아무 말 없고 값은
+   * 그냥 버려진다. 2026-08-03 에 엣지 패널을 전환하면서 실제로 그럴 뻔했다.
+   */
+  [dataAttribute: `data-${string}`]: unknown;
 }
 
 export function Surface({
@@ -73,6 +81,7 @@ export function Surface({
   origin,
   as: Tag = 'div',
   onExited,
+  ...rest
 }: SurfaceProps) {
   const { mounted, exiting } = usePanelPresence(open);
   const wasMounted = useRef(mounted);
@@ -90,6 +99,7 @@ export function Surface({
       //   사용자는 「눌렀는데 엉뚱한 게 됐다」를 겪는다.
       // React 19 는 `inert` 를 불리언 속성으로 안다 — 빈 문자열을 넣으면 false 로
       // 읽혀 조용히 안 붙는다(이 테스트가 그걸 잡았다).
+      {...rest}
       inert={exiting}
       data-surface-state={exiting ? 'exiting' : 'entered'}
       style={origin ? { transformOrigin: origin } : undefined}
