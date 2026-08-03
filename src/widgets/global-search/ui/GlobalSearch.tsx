@@ -16,7 +16,7 @@ import {
   MEANINGFUL_ONTOLOGY_KINDS,
   type MeaningfulOntologyKind,
 } from "@/shared/lib/ontology-tree";
-import { HighlightedText } from "@/shared/ui";
+import { controlClass, HighlightedText } from "@/shared/ui";
 import { isPathLikeTitle, matchOntologyNodes, matchProjects } from "../lib/match";
 
 export interface GlobalSearchProps {
@@ -310,11 +310,16 @@ export function GlobalSearch({
                   type="button"
                   onClick={() => toggleKind(kind)}
                   aria-pressed={active}
-                  className={
-                    active
-                      ? "shrink-0 rounded-full border border-[color:var(--color-indigo-a50)] bg-[color:var(--color-indigo-a16)] px-2 py-0.5 text-caption uppercase tracking-[0.10em] text-[color:var(--color-indigo-accent)]"
-                      : "shrink-0 rounded-full border border-[color:var(--color-divider)] bg-transparent px-2 py-0.5 text-caption uppercase tracking-[0.10em] text-[color:var(--color-text-tertiary)] transition-colors hover:border-[color:var(--color-border-strong)] hover:text-[color:var(--color-text-secondary)]"
-                  }
+                  className={controlClass({
+                    shape: "pill",
+                    size: "sm",
+                    active,
+                    className: cn(
+                      "shrink-0 uppercase tracking-[0.10em]",
+                      !active &&
+                        "hover:border-[color:var(--color-border-strong)] hover:text-[color:var(--color-text-secondary)]",
+                    ),
+                  })}
                 >
                   {kindLabel(kind)}
                 </button>
@@ -376,11 +381,16 @@ export function GlobalSearch({
                           top: 0,
                           transform: `translateX(${virtualItem.start}px)`,
                         }}
-                        className={
-                          active
-                            ? "rounded-full border border-[color:var(--color-indigo-a50)] bg-[color:var(--color-indigo-a16)] px-2 py-0.5 text-caption text-[color:var(--color-indigo-accent)] mr-1.5 whitespace-nowrap"
-                            : "rounded-full border border-[color:var(--color-divider)] bg-transparent px-2 py-0.5 text-caption text-[color:var(--color-text-tertiary)] transition-colors hover:border-[color:var(--color-border-strong)] hover:text-[color:var(--color-text-secondary)] mr-1.5 whitespace-nowrap"
-                        }
+                        className={controlClass({
+                          shape: "pill",
+                          size: "sm",
+                          active,
+                          className: cn(
+                            "mr-1.5 whitespace-nowrap",
+                            !active &&
+                              "hover:border-[color:var(--color-border-strong)] hover:text-[color:var(--color-text-secondary)]",
+                          ),
+                        })}
                       >
                         {label}
                       </button>

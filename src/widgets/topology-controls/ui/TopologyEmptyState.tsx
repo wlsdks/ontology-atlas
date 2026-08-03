@@ -4,6 +4,7 @@ import { Link } from '@/i18n/navigation';
 import { useTranslations } from 'next-intl';
 import { FolderOpen, GitBranch, Map as MapIcon, Network, Plus } from 'lucide-react';
 import { isTauriVaultRuntime } from '@/shared/lib/tauri-vault-fs';
+import { controlClass } from '@/shared/ui';
 
 /**
  * Topology empty-state — explains whether the current vault lacks project
@@ -68,9 +69,19 @@ export function TopologyEmptyState({
    * 폭이 아니라 **채움**이 진다(주 행동만 인디고 면).
    */
   const ACTION =
-    "inline-flex h-9 w-full items-center gap-2 rounded-[var(--radius-chip)] px-3.5 text-body transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--color-indigo-a46)] focus-visible:ring-offset-2 focus-visible:ring-offset-[color:var(--color-panel)]";
-  const PRIMARY = `${ACTION} border border-[color:var(--color-indigo-a46)] bg-[color:var(--color-indigo-a16)] font-[var(--font-weight-signature)] text-[color:var(--color-indigo-accent)] hover:border-[color:var(--color-indigo-a60)] hover:bg-[color:var(--color-indigo-a24)]`;
-  const SECONDARY = `${ACTION} border border-[color:var(--color-border-soft)] text-[color:var(--color-text-secondary)] hover:border-[color:var(--color-indigo-a46)] hover:text-[color:var(--color-text-primary)]`;
+    "w-full focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--color-indigo-a46)] focus-visible:ring-offset-2 focus-visible:ring-offset-[color:var(--color-panel)]";
+  const PRIMARY = controlClass({
+    shape: 'chip',
+    size: 'lg',
+    tone: 'accent',
+    className: `${ACTION} border-[color:var(--color-indigo-a46)] bg-[color:var(--color-indigo-a16)] font-[var(--font-weight-signature)] hover:border-[color:var(--color-indigo-a60)] hover:bg-[color:var(--color-indigo-a24)]`,
+  });
+  const SECONDARY = controlClass({
+    shape: 'chip',
+    size: 'lg',
+    tone: 'secondary',
+    className: `${ACTION} border-[color:var(--color-border-soft)] hover:border-[color:var(--color-indigo-a46)] hover:text-[color:var(--color-text-primary)]`,
+  });
 
   return (
     <div className="pointer-events-none absolute inset-0 z-20 flex items-center justify-center px-4">

@@ -5,6 +5,7 @@ import { FileText } from 'lucide-react';
 
 import type { AgentProposal, ProposalChange } from '@/features/vault-agent';
 import { summarizeChangeVolume } from '@/features/vault-agent/model/proposal-applier';
+import { controlClass } from '@/shared/ui';
 
 /**
  * 제안 카드 — #688 동의 문법의 일반화.
@@ -180,7 +181,14 @@ export function AgentProposalCard({
             data-testid="agent-proposal-cancel"
             disabled={busy}
             onClick={onCancel}
-            className="h-8 rounded-chip border border-[color:var(--color-border-soft)] px-3 text-label tracking-label text-[color:var(--color-text-secondary)] transition-colors hover:border-[color:var(--color-border-strong)] hover:text-[color:var(--color-text-primary)] disabled:opacity-40 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--color-indigo-accent)]"
+            className={controlClass({
+              shape: 'chip',
+              size: 'md',
+              tone: 'secondary',
+              fixedHeight: true,
+              className:
+                'tracking-label border-[color:var(--color-border-soft)] hover:border-[color:var(--color-border-strong)] hover:text-[color:var(--color-text-primary)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--color-indigo-accent)]',
+            })}
           >
             {labels.cancel}
           </button>
@@ -202,7 +210,14 @@ export function AgentProposalCard({
                 onCopy();
                 setCopied(true);
               }}
-              className="h-8 rounded-chip border border-[color:var(--color-indigo-accent)] px-3 text-label font-semibold tracking-label text-[color:var(--color-text-primary)] transition-colors hover:bg-[color:var(--color-indigo-a16)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--color-indigo-accent)]"
+              className={controlClass({
+                shape: 'chip',
+                size: 'md',
+                tone: 'strong',
+                fixedHeight: true,
+                className:
+                  'font-semibold tracking-label border-[color:var(--color-indigo-accent)] hover:bg-[color:var(--color-indigo-a16)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--color-indigo-accent)]',
+              })}
             >
               {copied ? labels.copied : labels.copy}
             </button>

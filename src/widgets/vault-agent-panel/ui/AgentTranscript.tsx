@@ -6,6 +6,7 @@ import { AGENT_ROUND_CAP } from '@/features/vault-agent';
 import type { AgentEvent, AgentTurn, CitedParagraph } from '@/features/vault-agent';
 
 import { AgentToolLine } from './AgentToolLine';
+import { controlClass } from '@/shared/ui';
 
 export interface AgentTranscriptLabels {
   you: string;
@@ -181,7 +182,15 @@ export function AgentTranscript({
                 type="button"
                 data-testid="agent-retry-chip"
                 onClick={() => onPrefill(asked)}
-                className="flex min-h-11 w-full items-center rounded-card border border-[color:var(--color-border-soft)] bg-[color:var(--color-panel)] px-2.5 py-2 text-left text-caption leading-caption text-[color:var(--color-text-secondary)] transition-colors hover:border-[color:var(--color-indigo-accent)] hover:text-[color:var(--color-text-primary)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--color-indigo-accent)]"
+                className={controlClass({
+                  shape: 'card',
+                  size: 'sm',
+                  tone: 'secondary',
+                  /* `min-h-11` 은 WCAG 2.5.8 터치 타깃 — 값 층은 아직 `link` 에만
+                     그 축을 갖고 있어 여기서는 자리마다 싣는다. */
+                  className:
+                    'w-full min-h-11 text-left border-[color:var(--color-border-soft)] bg-[color:var(--color-panel)] hover:border-[color:var(--color-indigo-accent)] hover:text-[color:var(--color-text-primary)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--color-indigo-accent)]',
+                })}
               >
                 <span className="line-clamp-2 [word-break:keep-all]">{asked}</span>
               </button>
@@ -320,7 +329,15 @@ function renderEvent(
                 type="button"
                 data-testid="agent-next-step-chip"
                 onClick={() => onPrefill(event.nextStep ?? '')}
-                className="flex min-h-11 w-full items-center rounded-card border border-[color:var(--color-border-soft)] bg-[color:var(--color-panel)] px-2.5 py-2 text-left text-caption leading-caption text-[color:var(--color-text-secondary)] transition-colors hover:border-[color:var(--color-indigo-accent)] hover:text-[color:var(--color-text-primary)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--color-indigo-accent)]"
+                className={controlClass({
+                  shape: 'card',
+                  size: 'sm',
+                  tone: 'secondary',
+                  /* `min-h-11` 은 WCAG 2.5.8 터치 타깃 — 값 층은 아직 `link` 에만
+                     그 축을 갖고 있어 여기서는 자리마다 싣는다. */
+                  className:
+                    'w-full min-h-11 text-left border-[color:var(--color-border-soft)] bg-[color:var(--color-panel)] hover:border-[color:var(--color-indigo-accent)] hover:text-[color:var(--color-text-primary)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--color-indigo-accent)]',
+                })}
               >
                 <span className="line-clamp-2 [word-break:keep-all]">{event.nextStep}</span>
               </button>

@@ -4,7 +4,7 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 import { useMediaQuery } from 'usehooks-ts';
 import { useTranslations } from 'next-intl';
 import { ChevronLeft, ChevronRight } from 'lucide-react';
-import { Tooltip } from '@/shared/ui';
+import { controlClass, Tooltip } from '@/shared/ui';
 import type { Project } from '@/entities/project';
 
 // 첫 진입 사용자에게 21개 hub 목록이 즉시 펼쳐져 있으면 중앙 토폴로지로
@@ -136,7 +136,15 @@ export function HubRail({
             type="button"
             onClick={() => setOpenPersisted(false)}
             aria-label={t('collapseAriaLabel')}
-            className="rounded-sm text-[color:var(--color-text-quaternary)] transition-colors hover:text-[color:var(--color-text-primary)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--color-border-strong)]"
+            /* Tooltip 이 이 컨트롤의 이름을 이미 말하므로 `IconButton`(자체
+               `title` 부여) 대신 값 층만 쓴다 — 둘을 겹치면 툴팁이 두 벌이 된다. */
+            className={controlClass({
+              shape: 'icon',
+              size: 'sm',
+              tone: 'muted',
+              className:
+                'hover:text-[color:var(--color-text-primary)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--color-border-strong)]',
+            })}
           >
             <ChevronLeft className="h-3 w-3" />
           </button>
@@ -179,11 +187,16 @@ export function HubRail({
               }
             }}
             title={t('itemTitle', { name: hub.name, degree })}
-            className={`relative flex items-center gap-2 rounded-sm px-2 py-1.5 text-left text-label transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--color-border-strong)] focus-visible:ring-inset ${
-              active
-                ? 'bg-[color:var(--color-overlay-2)] text-[color:var(--color-text-primary)]'
-                : 'text-[color:var(--color-text-tertiary)] hover:bg-[color:var(--color-overlay-1)] hover:text-[color:var(--color-text-primary)]'
-            }`}
+            className={controlClass({
+              shape: 'row',
+              size: 'sm',
+              active,
+              className: `relative focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--color-border-strong)] focus-visible:ring-inset ${
+                active
+                  ? ''
+                  : 'hover:bg-[color:var(--color-overlay-1)] hover:text-[color:var(--color-text-primary)]'
+              }`,
+            })}
           >
             {active ? (
               <span

@@ -3,6 +3,7 @@
 import { useTranslations } from "next-intl";
 import { Cable, Check, CircleAlert, ClipboardCopy, Map as MapIcon, Plus, Sparkles } from "lucide-react";
 import { useCopyFeedback } from "@/shared/lib/use-copy-feedback";
+import { Chip } from "@/shared/ui";
 
 /**
  * 빈 vault 시작 체크리스트 (2026-07-24 온보딩 라운드, 같은 날 소유자 지시로
@@ -90,19 +91,20 @@ export function VaultStartChecklist({
             done: false,
             label: t("stepDocs", { count: docsFoundCount }),
             /*
-             * 승격은 **하나뿐**이고 그 차이가 위계다 — 이 CTA 만 `h-9` ·
-             * `text-body` · 인디고 면이고 나머지 단은 무채색 `h-7` 그대로다.
+             * 승격은 **하나뿐**이고 그 차이가 위계다 — 이 CTA 만 칩 램프의
+             * `lg`(`text-body`) · 인디고 면이고 나머지 단은 무채색 `md` 다.
              */
             cta: (
-              <button
-                type="button"
+              <Chip
+                size="lg"
+                tone="accent"
                 onClick={onStartFromDocs ?? undefined}
                 data-testid="checklist-cta-docs"
-                className="inline-flex h-9 shrink-0 items-center gap-1.5 rounded-[var(--radius-chip)] border border-[color:var(--color-indigo-a46)] bg-[color:var(--color-indigo-a16)] px-3 text-body font-[var(--font-weight-signature)] text-[color:var(--color-indigo-accent)] transition-colors hover:bg-[color:var(--color-indigo-a24)]"
+                className="shrink-0 border-[color:var(--color-indigo-a46)] bg-[color:var(--color-indigo-a16)] font-[var(--font-weight-signature)] hover:bg-[color:var(--color-indigo-a24)]"
               >
                 <MapIcon size={13} aria-hidden />
                 {tEmpty("ctaStartFromDocs")}
-              </button>
+              </Chip>
             ),
           },
         ]
@@ -112,8 +114,9 @@ export function VaultStartChecklist({
       done: agentConnected,
       label: t("stepAgent"),
       cta: onOpenAgentConnect ? (
-        <button
-          type="button"
+        <Chip
+          size="md"
+          tone={hasDocs ? "secondary" : "accent"}
           onClick={onOpenAgentConnect}
           data-testid="checklist-cta-agent"
           /*
@@ -123,13 +126,13 @@ export function VaultStartChecklist({
            */
           className={
             hasDocs
-              ? "inline-flex h-7 shrink-0 items-center gap-1 rounded-[var(--radius-chip)] border border-[color:var(--color-overlay-3)] px-2.5 text-label text-[color:var(--color-text-secondary)] transition-colors hover:border-[color:var(--color-indigo-line-a35)] hover:text-[color:var(--color-text-primary)]"
-              : "inline-flex h-7 shrink-0 items-center gap-1 rounded-[var(--radius-chip)] border border-[color:var(--color-indigo-a46)] bg-[color:var(--color-indigo-a16)] px-2.5 text-label font-medium text-[color:var(--color-indigo-accent)] transition-colors hover:bg-[color:var(--color-indigo-a24)]"
+              ? "shrink-0 border-[color:var(--color-overlay-3)] hover:border-[color:var(--color-indigo-line-a35)] hover:text-[color:var(--color-text-primary)]"
+              : "shrink-0 border-[color:var(--color-indigo-a46)] bg-[color:var(--color-indigo-a16)] font-medium hover:bg-[color:var(--color-indigo-a24)]"
           }
         >
           <Cable size={11} aria-hidden />
           {t("ctaAgent")}
-        </button>
+        </Chip>
       ) : null,
     },
     {
@@ -146,11 +149,12 @@ export function VaultStartChecklist({
        * 침묵은 성공처럼 읽힌다.
        */
       cta: (
-        <button
-          type="button"
+        <Chip
+          size="md"
+          tone="secondary"
           onClick={() => void copyPrompt(analyzePrompt)}
           data-testid="checklist-cta-analyze"
-          className="inline-flex h-7 shrink-0 items-center gap-1 rounded-[var(--radius-chip)] border border-[color:var(--color-overlay-3)] px-2.5 text-label text-[color:var(--color-text-secondary)] transition-colors hover:border-[color:var(--color-indigo-line-a35)] hover:text-[color:var(--color-text-primary)]"
+          className="shrink-0 border-[color:var(--color-overlay-3)] hover:border-[color:var(--color-indigo-line-a35)] hover:text-[color:var(--color-text-primary)]"
         >
           {copyState === "failed" ? (
             <CircleAlert size={11} aria-hidden />
@@ -164,7 +168,7 @@ export function VaultStartChecklist({
               : relationCount > 0
                 ? t("ctaAnalyzeAgain")
                 : t("ctaAnalyze")}
-        </button>
+        </Chip>
       ),
     },
     {
@@ -172,26 +176,28 @@ export function VaultStartChecklist({
       done: projectCount > 0,
       label: onScaffoldStarter ? t("stepScaffold") : t("stepManual"),
       cta: onScaffoldStarter ? (
-        <button
-          type="button"
+        <Chip
+          size="md"
+          tone="secondary"
           onClick={onScaffoldStarter}
           disabled={scaffolding}
           data-testid="checklist-cta-scaffold"
-          className="inline-flex h-7 items-center gap-1 rounded-chip border border-[color:var(--color-overlay-3)] px-2.5 text-label text-[color:var(--color-text-secondary)] transition-colors hover:border-[color:var(--color-indigo-line-a35)] hover:text-[color:var(--color-text-primary)] disabled:opacity-60"
+          className="border-[color:var(--color-overlay-3)] hover:border-[color:var(--color-indigo-line-a35)] hover:text-[color:var(--color-text-primary)]"
         >
           <Sparkles size={11} aria-hidden />
           {scaffolding ? t("ctaScaffoldBusy") : t("ctaScaffold")}
-        </button>
+        </Chip>
       ) : (
-        <button
-          type="button"
+        <Chip
+          size="md"
+          tone="secondary"
           onClick={() => onCreateNode("project")}
           data-testid="checklist-cta-project"
-          className="inline-flex h-7 items-center gap-1 rounded-chip border border-[color:var(--color-overlay-3)] px-2.5 text-label text-[color:var(--color-text-secondary)] transition-colors hover:border-[color:var(--color-indigo-line-a35)] hover:text-[color:var(--color-text-primary)]"
+          className="border-[color:var(--color-overlay-3)] hover:border-[color:var(--color-indigo-line-a35)] hover:text-[color:var(--color-text-primary)]"
         >
           <Plus size={11} aria-hidden />
           {t("ctaCreate")}
-        </button>
+        </Chip>
       ),
     },
   ];

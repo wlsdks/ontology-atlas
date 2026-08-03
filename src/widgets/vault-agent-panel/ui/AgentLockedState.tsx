@@ -1,6 +1,7 @@
 'use client';
 
 import type { FirstWordsChip } from '@/features/vault-agent';
+import { controlClass } from '@/shared/ui';
 
 import { AgentFirstWords } from './AgentFirstWords';
 
@@ -157,8 +158,12 @@ export function AgentLockedComposer({
   );
   // 파선 = 아직 안 채워진 자리. 채워진 테두리로 그리면 입력할 수 있는 칸으로
   // 읽히고, 그러면 누르고 타이핑하려는 사람이 생긴다.
-  const shell =
-    'flex min-h-14 w-full items-center gap-2 rounded-card border border-dashed border-[color:var(--color-border-soft)] bg-[color:var(--color-panel)] px-2.5 py-2 text-left transition-colors hover:border-[color:var(--color-indigo-accent)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--color-indigo-accent)]';
+  const shell = controlClass({
+    shape: 'card',
+    size: 'sm',
+    className:
+      'min-h-14 w-full gap-2 text-left border-dashed border-[color:var(--color-border-soft)] bg-[color:var(--color-panel)] hover:border-[color:var(--color-indigo-accent)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--color-indigo-accent)]',
+  });
 
   return (
     // 실제 입력칸 띠와 **같은 등장 곡선**을 쓴다 — 이 자리가 그대로 입력칸이

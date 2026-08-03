@@ -54,6 +54,7 @@ import {
 import type { OntologyChangeset } from "@/shared/lib/ontology-tree";
 import { gitHostPlatformFrom, gitInstallGuide } from "@/shared/lib/git-install-guide";
 import { TopologyV2KindGlyph } from "@/shared/ui/topology-v2-kind-glyph";
+import { controlClass } from "@/shared/ui";
 import type { KnowledgeGraphEdge, KnowledgeGraphNode } from "@/entities/knowledge-graph";
 import { buildConceptEgo, matchNodeId, type ConceptEgo } from "../model/build-concept-ego";
 import { CommitDetail } from "./CommitDetail";
@@ -1288,7 +1289,12 @@ function WebSetup({
             data-testid="atlas-git-web-copy"
             title={t("webCommandHint")}
             onClick={copyCliCommand}
-            className="inline-flex h-7 shrink-0 items-center gap-1.5 rounded-[var(--chrome-radius-inner)] border border-[color:var(--color-border-soft)] px-2.5 text-label text-[color:var(--color-text-tertiary)] transition-colors hover:border-[color:var(--color-indigo-a46)] hover:text-[color:var(--color-text-primary)]"
+            className={controlClass({
+              shape: "chip",
+              size: "md",
+              className:
+                "shrink-0 border-[color:var(--color-border-soft)] hover:border-[color:var(--color-indigo-a46)] hover:text-[color:var(--color-text-primary)]",
+            })}
           >
             {commandCopyState === "copied" ? (
               <Check size={11} aria-hidden />
@@ -1413,7 +1419,13 @@ function RemoteActionButton({
        * 그래서 셋을 다: 높이 28px · `elevated` 바탕 · secondary 잉크. 새 값
        * 0개(전부 램프·토큰).
        */
-      className="inline-flex min-h-7 items-center rounded-[var(--radius-chip)] border border-[color:var(--color-border-strong)] bg-[color:var(--color-elevated)] px-3 text-label font-medium text-[color:var(--color-text-secondary)] transition-colors hover:border-[color:var(--color-indigo-a46)] hover:bg-[color:var(--color-overlay-2)] hover:text-[color:var(--color-text-primary)] disabled:cursor-default disabled:border-[color:var(--color-border-soft)] disabled:bg-transparent disabled:text-[color:var(--color-text-quaternary)] disabled:hover:border-[color:var(--color-border-soft)]"
+      className={controlClass({
+        shape: "chip",
+        size: "md",
+        tone: "secondary",
+        className:
+          "font-medium border-[color:var(--color-border-strong)] bg-[color:var(--color-elevated)] hover:border-[color:var(--color-indigo-a46)] hover:bg-[color:var(--color-overlay-2)] hover:text-[color:var(--color-text-primary)] disabled:border-[color:var(--color-border-soft)] disabled:bg-transparent disabled:text-[color:var(--color-text-quaternary)]",
+      })}
     >
       {busy ? "…" : label}
     </button>
@@ -1539,7 +1551,12 @@ function LocationLine({
             data-testid="atlas-git-remote-toggle"
             aria-expanded={remoteOpen}
             onClick={() => setRemoteOpen(!remoteOpen)}
-            className="inline-flex min-h-6 items-center rounded-[var(--radius-chip)] border border-[color:var(--color-border-soft)] px-2 text-label text-[color:var(--color-text-tertiary)] transition-colors hover:border-[color:var(--color-indigo-a46)] hover:text-[color:var(--color-text-primary)]"
+            className={controlClass({
+              shape: "chip",
+              size: "md",
+              className:
+                "border-[color:var(--color-border-soft)] hover:border-[color:var(--color-indigo-a46)] hover:text-[color:var(--color-text-primary)]",
+            })}
           >
             {remoteOpen ? t("remoteToggleClose") : t("remoteToggle")}
           </button>
@@ -2489,7 +2506,12 @@ function ActionDock({
             type="button"
             data-testid="atlas-git-dock-connect-remote"
             onClick={onConnectRemote}
-            className="inline-flex min-h-6 items-center rounded-[var(--radius-chip)] border border-[color:var(--color-border-soft)] px-2 text-caption text-[color:var(--color-text-tertiary)] transition-colors hover:border-[color:var(--color-indigo-a46)] hover:text-[color:var(--color-text-primary)]"
+            className={controlClass({
+              shape: "chip",
+              size: "sm",
+              className:
+                "border-[color:var(--color-border-soft)] hover:border-[color:var(--color-indigo-a46)] hover:text-[color:var(--color-text-primary)]",
+            })}
           >
             {t("dockConnectRemote")}
           </button>

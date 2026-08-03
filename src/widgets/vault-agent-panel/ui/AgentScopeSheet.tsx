@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect, useRef } from 'react';
+import { controlClass } from '@/shared/ui';
 
 /**
  * 첫 턴 전 범위 시트 — 보내기 전에 **무엇이 어디로 가는지** 한 번 말한다.
@@ -67,7 +68,14 @@ export function AgentScopeSheet({
           type="button"
           data-testid="agent-scope-cancel"
           onClick={onCancel}
-          className="h-8 rounded-chip border border-[color:var(--color-border-soft)] px-3 text-label tracking-label text-[color:var(--color-text-secondary)] transition-colors hover:border-[color:var(--color-border-strong)] hover:text-[color:var(--color-text-primary)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--color-indigo-accent)]"
+          className={controlClass({
+            shape: 'chip',
+            size: 'md',
+            tone: 'secondary',
+            fixedHeight: true,
+            className:
+              'tracking-label border-[color:var(--color-border-soft)] hover:border-[color:var(--color-border-strong)] hover:text-[color:var(--color-text-primary)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--color-indigo-accent)]',
+          })}
         >
           {labels.cancel}
         </button>
