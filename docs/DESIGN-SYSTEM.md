@@ -2752,30 +2752,49 @@ JSX 안에 44px 정사각 버튼이나 라벨 버튼을 인라인 클래스로 �
 
 #### 규칙 1 — 축을 더하기 전에 슬롯을 먼저 본다
 
-**변형이 늘 때 불리언 축을 추가하는 것은 정석의 반대 방향이다.** tailwind-variants
-문서가 명시적으로 다중 파트 컴포넌트는 **슬롯**으로 나누라고 한다(축을 곱하지 말고
-부품을 나눠라). 우리는 반대로 갔다 — `active` → `inline` → `fixedHeight` 로 축을
-하나씩 더했고, 그 결과가 화면에 나왔다: 칩 크기 50종을 3종으로 줄였는데 **한 화면에
-컨트롤 높이가 8~9종**이다.
+**이 조항의 근거는 산수이고, 슬롯이라는 도구는 업계에 있다.** 둘을 섞어 말하지
+않기 위해 출처를 갈라 적는다.
 
-축이 3개면 조합이 8가지, 4개면 16가지다. **축은 곱해지고 슬롯은 더해진다.**
+**우리 근거(산수)**: 축이 3개면 조합이 8가지, 4개면 16가지다. **축은 곱해지고
+부품은 더해진다.** 우리는 `active` → `inline` → `fixedHeight` 로 축을 하나씩
+더했고 결과가 화면에 나왔다 — 칩 크기 50종을 3종으로 줄였는데 **한 화면에 컨트롤
+높이가 8~9종**이다.
+
+**업계 도구**: [tailwind-variants 의 slots](https://www.tailwind-variants.org/docs/slots)
+는 *"Slots allows you to separate a component into multiple parts."* 라고 정의한다.
+⚠️ **그 문서는 슬롯을 「변형 폭발의 해법」이라고 말하지 않는다** — 부품 분리
+기능으로 소개할 뿐이다. 그것을 축 폭발의 대안으로 쓰자는 것은 **우리 판단**이고,
+근거는 위 산수다. (원문 확인 2026-08-03. 처음엔 검색 요약만 보고 "문서가 명시한다"
+고 적었는데 원문에 그 문장이 없었다 — 인용은 원문을 열고 한다.)
 
 판별: 새 변형이 필요할 때 「이 컨트롤의 **어느 부분**이 달라지는가」를 먼저 물어라.
-껍데기만이면 축, 글자·아이콘·배지 중 하나면 **슬롯**이다.
+껍데기만이면 축, 글자·아이콘·배지 중 하나면 **부품**이다.
 
 #### 규칙 2 — 같은 겉모습의 두 태그를 만들지 않는다
 
-버튼과 링크가 겉모습이 같으면 **하나는 반드시 낡는다.** 실측: 이 저장소에 바이트
-동일한 `<button>`/`<Link>` 쌍둥이가 있었고 게이트가 없었다.
+**우리 근거**: 버튼과 링크가 겉모습이 같으면 하나는 반드시 낡는다. 실측 — 이
+저장소에 바이트 동일한 `<button>`/`<Link>` 쌍둥이가 있었고 게이트가 없었다.
 
-정석은 Radix 의 **`asChild`** 다 — 겉모습은 프리미티브가, 렌더되는 태그는 자식이
-정한다:
+**업계 도구**: [Radix 의 `asChild`](https://www.radix-ui.com/primitives/docs/guides/composition)
+는 *"When `asChild` is set to `true`, Radix will not render a default DOM element,
+instead cloning the part's child and passing it the props and behavior required to
+make it functional."*
+
+⚠️ **그런데 Radix 자신이 이걸 흔한 길로 권하지 않는다.** 같은 문서:
+*"In the majority of cases you shouldn't need to modify the element type as Radix
+has been designed to provide the most appropriate defaults."* 그리고 조건이 셋이다 —
+자식이 **props 를 전부 퍼뜨려야** 하고(`If your component doesn't support those
+props, it will break.`), **ref 를 받아야** 하며(`If your component doesn't accept a
+ref, then it will break.`), *"it is your responsibility to ensure it remains
+accessible and functional."*
+
+**그래서 우리 규칙은 이렇다**: 쌍둥이가 생길 자리에서만 쓰는 **탈출구**이지 기본
+패턴이 아니다. 쓸 때는 위 세 조건을 계약 테스트로 못박는다. 그 부담을 못 지겠으면
+쌍둥이를 만들지 말고 **한쪽을 없애라** — 그게 이 조항의 제목이다.
 
 ```tsx
 <RowButton asChild><Link href="…">문서 열기</Link></RowButton>
 ```
-
-새 컨트롤이 「링크로도 쓰일 수 있다」면 상수를 공유하지 말고 이 패턴을 쓴다.
 
 #### 규칙 3 — 규격을 바꾸려면 「체계」를 부른다
 
