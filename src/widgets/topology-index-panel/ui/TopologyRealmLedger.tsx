@@ -15,6 +15,7 @@ import {
 } from "@/shared/lib/ontology-tree";
 import { RealmBlockExportAction } from "@/features/ontology-blocks";
 import { TopologyV2KindGlyph } from "@/shared/ui/topology-v2-kind-glyph";
+import { controlClass } from "@/shared/ui";
 import {
   flattenVisibleRowIds,
   nextRovingId,
@@ -201,7 +202,13 @@ export function TopologyRealmLedger({
             onClick={onExit}
             aria-label={labels.exitAria}
             data-testid="topology-realm-exit"
-            className="shrink-0 rounded-[var(--chrome-radius-inner)] px-1 py-0.5 text-label text-[color:var(--topology-v2-panel-text-quaternary)] transition-colors hover:text-[color:var(--topology-v2-panel-text-primary)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--color-indigo-a46)] focus-visible:ring-inset"
+            className={controlClass({
+              shape: "link",
+              size: "md",
+              tone: "muted",
+              className:
+                "shrink-0 text-[color:var(--topology-v2-panel-text-quaternary)] hover:text-[color:var(--topology-v2-panel-text-primary)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--color-indigo-a46)] focus-visible:ring-inset",
+            })}
           >
             {labels.exit}
           </button>
@@ -346,7 +353,12 @@ export function TopologyRealmLedger({
                       aria-label={labels.boundaryJumpAria}
                       title={labels.boundaryJump}
                       data-testid="topology-realm-boundary-jump"
-                      className="inline-flex shrink-0 items-center gap-1 rounded-[var(--chrome-radius-inner)] px-1.5 py-0.5 text-label text-[color:var(--color-indigo-accent)] opacity-0 transition-opacity focus-visible:opacity-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--color-indigo-a46)] focus-visible:ring-inset group-hover:opacity-100 motion-reduce:transition-none"
+                      className={controlClass({
+                        shape: "link",
+                        size: "md",
+                        className:
+                          "shrink-0 text-[color:var(--color-indigo-accent)] opacity-0 transition-opacity focus-visible:opacity-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--color-indigo-a46)] focus-visible:ring-inset group-hover:opacity-100 motion-reduce:transition-none",
+                      })}
                     >
                       <CornerUpRight size={11} aria-hidden="true" />
                       {labels.boundaryJump}

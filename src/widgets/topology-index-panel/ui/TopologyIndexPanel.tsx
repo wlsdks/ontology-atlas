@@ -9,6 +9,7 @@ import {
 } from "react";
 import { ChevronLeft, Search } from "lucide-react";
 import { Link } from "@/i18n/navigation";
+import { controlClass } from "@/shared/ui";
 import {
   filterTreeByNodeIds,
   filterTreeByQuery,
@@ -651,7 +652,12 @@ export function TopologyIndexPanel({
           type="button"
           onClick={onPromoteUncatalogedDocs}
           data-testid="topology-index-uncataloged-docs"
-          className="mt-2 flex shrink-0 items-center gap-2 rounded-[var(--chrome-radius-inner)] border border-[color:var(--topology-v2-panel-border)] px-2 py-1.5 text-left text-label transition-colors hover:bg-[color:var(--topology-v2-panel-row-hover)]"
+          className={controlClass({
+            shape: "card",
+            size: "sm",
+            className:
+              "mt-2 shrink-0 text-left border-[color:var(--topology-v2-panel-border)] hover:bg-[color:var(--topology-v2-panel-row-hover)]",
+          })}
         >
           <span className="min-w-0 flex-1 truncate text-[color:var(--topology-v2-panel-text-tertiary)]">
             {labels.uncatalogedDocsLabel}
@@ -742,7 +748,12 @@ export function TopologyIndexPanel({
               onClick={onOpenAgentConnect ?? undefined}
               disabled={!onOpenAgentConnect}
               data-testid="topology-index-agent-connect"
-              className="inline-flex shrink-0 items-center gap-1.5 rounded-[var(--chrome-radius-inner)] px-0.5 text-left transition-colors enabled:cursor-pointer enabled:hover:bg-[color:var(--topology-v2-panel-row-hover)] enabled:hover:text-[color:var(--topology-v2-panel-text-primary)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--color-indigo-a46)] focus-visible:ring-inset"
+              className={controlClass({
+                shape: "link",
+                size: "md",
+                className:
+                  "shrink-0 enabled:cursor-pointer enabled:hover:bg-[color:var(--topology-v2-panel-row-hover)] enabled:hover:text-[color:var(--topology-v2-panel-text-primary)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--color-indigo-a46)] focus-visible:ring-inset",
+              })}
             >
               {/* C11 — 미연결 상태: power-on(인디고) 점 + "AI가 함께 갱신 중"
                   진행형이 heartbeat 없이도 활동을 암시했다. 중립 muted 점 +
