@@ -92,7 +92,8 @@ and every write the agent makes lands as a line in a Markdown file you can diff.
   carry the compiled MCP server. There is no npm package; unsupported platforms
   can use the browser app or run the CLI and MCP server from a source checkout.
 - **Screenshots demonstrate the product journey, not release availability.**
-  The download page and GitHub Release remain the authority for shipped assets.
+  The download page and [GitHub Releases](https://github.com/wlsdks/ontology-atlas/releases)
+  remain the authority for shipped assets.
 
 ## The journey
 
@@ -417,9 +418,9 @@ own dogfood vault in [`docs/ontology/`](docs/ontology/); run
   scoped to the vault.
 - **No backend, no account, no telemetry.** The web app is a static export.
   Nothing is transmitted anywhere unless you explicitly ask for it.
-- **Two ways in, one folder.** The hosted app uses the browser's local-folder
-  access; the desktop app uses a native bridge to keep the same vault open as a
-  workspace.
+- **Two ways in, one folder.** The hosted web app can open a local folder through the File System Access API. The desktop app uses a Tauri bridge to your selected folder and keeps the same vault open as a workspace.
+- **The Tauri macOS shell is a shell, not a silo.** MCP and CLI still read the
+  selected folder directly; the app does not move it into a private store.
 - **The bundled MCP server is a file, not a service.** It sits inside the app
   bundle and keeps working when the app is closed, because your agent launches
   it itself.

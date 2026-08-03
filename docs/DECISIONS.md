@@ -78,7 +78,7 @@ Ontology value 3 · Agent value 4 · Verification 3, 치명적 0: 없음)
 5. 4열 비교표는 Journey와 agent workflow 뒤로 내린다. 다운로드만 굵은 첫 행,
    보조 탐색은 보통 굵기의 둘째 행으로 분리하며 새 스타일·토큰·자산은 만들지 않는다.
 
-**검증**: README는 732줄·5,527단어에서 504줄·3,660단어로 줄었고 기존 공개 캡처
+**검증**: README는 732줄·5,527단어에서 505줄·3,701단어로 줄었고 기존 공개 캡처
 8장을 유지했다. GitHub 브랜치 렌더에서 390×844는 Windows 경고 y≈436–493,
 지도 y≈512–715로 전체가 보였고, 1512×900은 경고 y≈376–388 뒤 지도가 y≈405부터
 약 495px 보였다. 현재 prerelease의 Windows EXE·SHA256과 hosted download verifier,
