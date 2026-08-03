@@ -78,7 +78,7 @@ describe('controlClass — 램프 밖 값을 낼 수 없다', () => {
     all((shape, size, tone, active) => {
       for (const c of controlClass({ shape, size, tone, active }).split(' ')) {
         // `text-[color:var(--color-…)]` 는 색이라 정당하다. 금지는 **치수**의 arbitrary 다.
-        if (/^(text|rounded|leading)-\[(?!color:)/.test(c) || /^(h|w|p[xy]?|gap)-\[/.test(c)) {
+        if (/^(text|rounded|leading)-\[(?!color:)/.test(c) || /^(min-h|min-w|h|w|p[xy]?|gap)-\[/.test(c)) {
           offenders.push(`${shape}/${size}/${tone}/${active}: ${c}`);
         }
       }
@@ -469,6 +469,83 @@ describe('controlClass — 여덟째 모양과 세 축', () => {
     expect(checked, '사다리에 선 조합을 하나도 못 쟀다').toBe(4);
   });
 
+  it('가로 한 줄 모양 전 조합이 명시 높이를 선언하고, 그 값은 높이 어휘 안이다', () => {
+    /*
+     * ## #884 의 남은 절반 (2026-08-03 2차 전수 · 체계석)
+     *
+     * 사다리 복원이 칩·필에서 멈춰 있었다. 2차 전수가 찾은 것:
+     *
+     * | 조합 | 값 | 소비처 |
+     * |---|---:|---:|
+     * | segment/sm | 22px — WCAG 2.5.8(24×24) 바닥 미달 | 0 |
+     * | row/lg | 42px — 높이 어휘 밖 | 0 |
+     * | card/sm | 30px — 어휘 밖 | 15 |
+     * | card/md | 34px — 크롬 잠금 단(`--docs-header-tile-size`)의 우연 점유 | 5 |
+     *
+     * 넷 다 「패딩이 높이를 정한」 부산물이다. 조합을 하나씩 단언하면 다음
+     * 모양이 또 빠지므로, 판정을 **부류 전체의 게이트**로 올린다: 가로 한 줄
+     * 모양(chip·pill·segment·row·card)은 전 조합이 명시 `min-h-*` 를,
+     * 정사각(icon)은 `h-*` 를 선언하고, 그 픽셀값은 높이 어휘 안이어야 한다.
+     *
+     * 어휘는 손으로 적지 않는다 — `--control-h-{sm,md,lg}` ·
+     * `--chrome-tile-size` · `--touch-target-min` 을 CSS 에서 읽고 WCAG 바닥
+     * 24 를 더해 파생한다. 토큰이 움직이면 여기가 같이 빨개진다.
+     * `--docs-header-tile-size`(34)는 **일부러 안 넣는다** — 그 단은 문서함
+     * 헤더 크롬이 소유한 치수라, 컨트롤이 거기 서면 그게 결함이다.
+     *
+     * `link`(비인라인 min-h-11 / 인라인 면제)와 `tile`(세로 2축 — 내용이
+     * 높이를 정한다)은 이 게이트의 대상이 아니다 — 각자 위의 시험이 잠근다.
+     */
+    const WCAG_TARGET_FLOOR_PX = 24;
+    const tokenPx = (name: string): number => {
+      const px = Number(/^(\d+)px$/.exec(cssVar(name) ?? '')?.[1]);
+      expect(px, `\`${name}\` 을 px 로 못 읽었다 — 어휘를 파생할 수 없다`).toBeGreaterThan(0);
+      return px;
+    };
+    const vocabulary = new Set([
+      WCAG_TARGET_FLOOR_PX,
+      tokenPx('--control-h-sm'),
+      tokenPx('--control-h-md'),
+      tokenPx('--chrome-tile-size'),
+      tokenPx('--control-h-lg'),
+      tokenPx('--touch-target-min'),
+    ]);
+    // 토큰이 서로 수렴해 어휘가 쪼그라들면 파생 자체가 신호를 잃는다.
+    expect([...vocabulary].sort((a, b) => a - b), '높이 어휘가 6단이 아니다').toEqual([24, 28, 32, 36, 40, 44]);
+
+    const offenders: string[] = [];
+    let checked = 0;
+    for (const shape of ['chip', 'pill', 'segment', 'row', 'card'] as const) {
+      for (const size of SIZES) {
+        const cls = controlClass({ shape, size });
+        const step = Number(/\bmin-h-(\d+)\b/.exec(cls)?.[1]);
+        if (!step) {
+          offenders.push(`${shape}/${size}: 명시 min-h 없음 — 높이가 패딩의 부산물이다 (${cls})`);
+          continue;
+        }
+        if (!vocabulary.has(step * 4)) {
+          offenders.push(`${shape}/${size}: min-h-${step}(${step * 4}px) 는 높이 어휘 밖이다`);
+        }
+        if (step * 4 < WCAG_TARGET_FLOOR_PX) {
+          offenders.push(`${shape}/${size}: ${step * 4}px — WCAG 2.5.8 바닥(24px) 미달`);
+        }
+        checked += 1;
+      }
+    }
+    for (const size of SIZES) {
+      const cls = controlClass({ shape: 'icon', size });
+      const step = Number(/\bh-(\d+)\b/.exec(cls)?.[1]);
+      if (!step || !vocabulary.has(step * 4)) {
+        offenders.push(`icon/${size}: 정사각 높이가 어휘 밖이다 (${cls})`);
+      } else {
+        checked += 1;
+      }
+    }
+    expect(offenders, `사다리 밖 조합:\n${offenders.join('\n')}`).toEqual([]);
+    // 공회전 차단 — 5모양×3 + icon 3 = 18 조합을 실제로 다 쟀는가.
+    expect(checked, '어휘 판정을 전 조합에 돌리지 못했다').toBe(18);
+  });
+
   it('삭제된 `fixedHeight` 축이 되살아나지 않는다 — 값이 아니라 축으로 되돌리는 것이 그때의 실수였다', () => {
     const source = readFileSync(join(process.cwd(), 'src/shared/ui/control-class.ts'), 'utf8');
     const live = source
@@ -509,7 +586,7 @@ describe('controlClass — 여덟째 모양과 세 축', () => {
     allScoped((cls, label) => {
       counted += 1;
       for (const c of cls.split(' ')) {
-        if (/^(text|rounded|leading)-\[(?!color:)/.test(c) || /^(h|w|p[xy]?|gap)-\[/.test(c)) {
+        if (/^(text|rounded|leading)-\[(?!color:)/.test(c) || /^(min-h|min-w|h|w|p[xy]?|gap)-\[/.test(c)) {
           offenders.push(`${label}: ${c}`);
         }
         const m = /^text-([a-z-]+)$/.exec(c);
