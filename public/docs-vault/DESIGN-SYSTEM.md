@@ -2154,24 +2154,28 @@ The header on each operations page (currently `/ontology/insights`) follows a **
 ### Pattern
 
 ```
-[English category caption — 9~10px / mono / uppercase / tracking 0.14em / quaternary color]
-[Korean h1 — text-2xl / signature weight / primary color]
-[Subtitle — Korean / sm / secondary color (optional)]
+[English category caption — text-caption / mono / uppercase / tracking-caption / quaternary color]
+[Korean h1 — text-display / signature weight / primary color]
+[Subtitle — Korean / text-body-lg / secondary color (optional)]
 ```
 
 Example: `/ontology` page
 
 ```tsx
-<p className="font-mono text-[10px] uppercase tracking-[0.18em] text-[color:var(--color-text-quaternary)]">
+<p className="font-mono text-caption uppercase tracking-[0.18em] text-[color:var(--color-text-quaternary)]">
   Ontology
 </p>
-<h1 className="text-2xl font-[var(--font-weight-signature)]">
+<h1 className="text-display font-[var(--font-weight-signature)]">
   온톨로지 트리
 </h1>
-<p className="text-sm leading-7 text-[color:var(--color-text-secondary)]">
+<p className="text-body-lg text-[color:var(--color-text-secondary)]">
   승인된 노드와 관계를 …
 </p>
 ```
+
+> 이 스니펫은 2026-08-04 에 램프 유틸리티로 정정됐다. 종전 예제는
+> `text-2xl`/`text-sm`/`text-[10px]` 를 그대로 보여 줬는데, 코드에서 그 값들을
+> 0으로 만드는 동안 **문서가 다음 사람에게 램프 밖 값을 가르치고** 있었다.
 
 ### Intent
 
@@ -2402,10 +2406,24 @@ Tailwind v4 `--radius-*` 네임스페이스가 `rounded-<step>` 를 생성한다
 마이크로 배지·명령 태그·kbd 급, 즉 칩(6px) 아래에 실재하는 한 층이 램프에 이름이
 없어 기본 스케일로 새고 있던 것이다. 96번 반복되는 값은 명시 예외가 아니라
 빠진 스텝이다. 등재와 함께 전량을 `rounded-micro` 로 기계 치환했으므로 픽셀
-이동은 0이고, 그 뒤로 `rounded-sm`·무접미 `rounded` 는 eslint 셀렉터가, 남은
-이름 스텝(`rounded-2xl` 19 · `text-lg` 계열 8)은 per-family 래칫
+이동은 0이고, 그 뒤로 `rounded-sm`·무접미 `rounded` 는 eslint 셀렉터가, 이름
+있는 Tailwind 기본 스텝 전체는 per-family 래칫
 (`tests/contract/named-offramp-utility-ratchet.contract.test.ts`)이 막는다.
 크롬 사다리의 「키캡 4px」도 같은 값이다 — 크롬 쪽 수렴(별칭화)은 미결.
+
+**`rounded-2xl`(16px) 16건은 2026-08-04 에 전부 `panel`(12px)로 내려갔다.**
+`micro` 때와 달리 이건 픽셀이 움직이는 판정이라 자리마다 봐야 했고, 답을 준
+것은 문서가 아니라 **빌드된 화면의 반경 센서스**였다: 프로젝트 드로어 한
+열(폭 399px) 안에 **20 / 18 / 16 / 12 / 9 / 6 여섯 종**이 동시에 살아 있었고,
+그중 `completeness`/`freshness` 짝만 이미 `rounded-panel` 이라 **같은 줄의
+형제가 어긋나** 있었다. 16 을 12 로 내리면 남는 것은 두 단이다 — **시트 단**
+(드로어 히어로 20 · 퀵액션 18, 둘 다 등재된 명시 예외)과 **콘텐츠 단**(12).
+종전의 16/18/20 은 세 가지 일을 하면서 서로 2px 밖에 안 달라 위계를 만들지
+못했다. `card`(9)가 아닌 이유는 이 상자들이 폭 365~399px 의 **절 컨테이너**
+이고, 이미 그 자리를 고른 형제 둘 + `TopologyEmptyState` 의 덮어쓰기
+(`rounded-[var(--radius-panel)]`)가 같은 답을 냈기 때문이다. 아이콘 타일
+(44px)만 별도 판정인데 결론은 같다 — 이 앱의 타일 비율은 36px/9px = 4.0 이라
+44px 의 짝은 11px, 램프에서 가장 가까운 스텝이 12 다.
 등록처 짝: `app/globals.css` + `src/shared/lib/cn.ts` `RADIUS_RAMP_STEPS`
 (tailwind-merge radius 그룹 — 미등록이면 `rounded-chip` 뒤에 온 `rounded-micro`
 가 병합되지 않고 둘 다 살아남아 CSS 소스 순서가 승자를 정한다).

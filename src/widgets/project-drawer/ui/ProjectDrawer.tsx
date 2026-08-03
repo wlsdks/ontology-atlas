@@ -456,7 +456,7 @@ export function ProjectDrawer({
                   {project.icon && (
                     <span
                       data-testid="project-drawer-icon"
-                      className="mt-0.5 inline-flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl border border-[color:var(--color-divider)] bg-[color:var(--color-overlay-1)] text-xl"
+                      className="mt-0.5 inline-flex h-11 w-11 shrink-0 items-center justify-center rounded-panel border border-[color:var(--color-divider)] bg-[color:var(--color-overlay-1)] text-display"
                       aria-hidden="true"
                     >
                       {project.icon}
@@ -621,7 +621,7 @@ export function ProjectDrawer({
                       {t("connectionsTitle")}
                     </h3>
                   </div>
-                  <div className="mt-3 rounded-2xl border border-[color:var(--color-border-soft)] bg-[color:var(--color-overlay-1)] px-4 py-4">
+                  <div className="mt-3 rounded-panel border border-[color:var(--color-border-soft)] bg-[color:var(--color-overlay-1)] px-4 py-4">
                     <p className="text-body-lg leading-6 text-[color:var(--color-text-secondary)]">
                       {relationshipSummary}
                     </p>
@@ -654,7 +654,7 @@ export function ProjectDrawer({
               {/* Container 는 태그·링크·상태 모두 비어 있어 "기본 정보 더 보기"
                   expander 가 열어도 빈 칸만 노출. Hub/Node 에만 표시. */}
               {!isContainerNode && (
-              <details className="mt-5 overflow-hidden rounded-2xl border border-[color:var(--color-border-soft)] bg-[color:var(--color-overlay-1)]">
+              <details className="mt-5 overflow-hidden rounded-panel border border-[color:var(--color-border-soft)] bg-[color:var(--color-overlay-1)]">
                 <summary
                   data-testid="project-drawer-more-info-summary"
                   className="group flex cursor-pointer list-none items-center justify-between gap-3 px-4 py-3 text-body-lg font-[var(--font-weight-signature)] text-[color:var(--color-text-primary)] transition-colors hover:bg-[color:var(--color-overlay-1)]"
@@ -675,7 +675,7 @@ export function ProjectDrawer({
                   {integrityIssueLabels.length > 0 && (
                     <section
                       data-testid="project-drawer-integrity"
-                      className="rounded-2xl border border-[color:var(--color-amber-source-a25)] bg-[color:var(--color-amber-source-a08)] px-4 py-3.5"
+                      className="rounded-panel border border-[color:var(--color-amber-source-a25)] bg-[color:var(--color-amber-source-a08)] px-4 py-3.5"
                     >
                       <h3 className="font-mono text-caption uppercase tracking-[0.12em] text-[color:var(--color-status-warning)]">
                         {t("integrityTitle")}
@@ -803,7 +803,7 @@ export function ProjectDrawer({
                       <h3 className="font-mono text-caption uppercase tracking-[0.12em] text-[color:var(--color-text-quaternary)]">
                         {t("tagsAndStack")}
                       </h3>
-                      <div className="mt-3 rounded-2xl border border-[color:var(--color-border-soft)] bg-[color:var(--color-overlay-1)] px-4 py-4">
+                      <div className="mt-3 rounded-panel border border-[color:var(--color-border-soft)] bg-[color:var(--color-overlay-1)] px-4 py-4">
                         {project.tags.length > 0 && (
                           <div>
                             <p className="font-mono text-caption uppercase tracking-[0.12em] text-[color:var(--color-text-quaternary)]">
@@ -853,7 +853,7 @@ export function ProjectDrawer({
                       <div className="mt-3 grid gap-3">
                         {(project.dependencies.length > 0 ||
                           missingDependencyIssues.length > 0) && (
-                          <div className="rounded-2xl border border-[color:var(--color-border-soft)] bg-[color:var(--color-overlay-1)] px-4 py-4">
+                          <div className="rounded-panel border border-[color:var(--color-border-soft)] bg-[color:var(--color-overlay-1)] px-4 py-4">
                             <p className="font-mono text-caption uppercase tracking-[0.12em] text-[color:var(--color-text-quaternary)]">
                               {t("dependsOn")}
                             </p>
@@ -891,7 +891,7 @@ export function ProjectDrawer({
                         )}
 
                         {referencedBy.length > 0 && (
-                          <div className="rounded-2xl border border-[color:var(--color-border-soft)] bg-[color:var(--color-overlay-1)] px-4 py-4">
+                          <div className="rounded-panel border border-[color:var(--color-border-soft)] bg-[color:var(--color-overlay-1)] px-4 py-4">
                             <p className="font-mono text-caption uppercase tracking-[0.12em] text-[color:var(--color-text-quaternary)]">
                               {t("usedBy")}
                             </p>
@@ -915,7 +915,7 @@ export function ProjectDrawer({
                           </div>
                         )}
                         {relatedDocs.length > 0 && (
-                          <div className="rounded-2xl border border-[color:var(--color-border-soft)] bg-[color:var(--color-overlay-1)] px-4 py-4">
+                          <div className="rounded-panel border border-[color:var(--color-border-soft)] bg-[color:var(--color-overlay-1)] px-4 py-4">
                             <p className="flex items-center gap-1.5 font-mono text-caption uppercase tracking-[0.12em] text-[color:var(--color-text-quaternary)]">
                               <BookOpen size={11} aria-hidden />
                               {t("relatedDocs", { count: relatedDocs.length })}
@@ -960,7 +960,7 @@ export function ProjectDrawer({
                     project.timeline?.startedAt ||
                     project.timeline?.launchedAt ||
                     project.links.length > 0) && (
-                    <details className="rounded-2xl border border-[color:var(--color-border-soft)] bg-[color:var(--color-overlay-1)] px-4 py-3">
+                    <details className="rounded-panel border border-[color:var(--color-border-soft)] bg-[color:var(--color-overlay-1)] px-4 py-3">
                       <summary className="cursor-pointer list-none text-body-lg font-[var(--font-weight-signature)] text-[color:var(--color-text-primary)]">
                         {t("moreScreensAndRecords")}
                       </summary>
@@ -970,7 +970,7 @@ export function ProjectDrawer({
                             <h3 className="font-mono text-caption uppercase tracking-[0.12em] text-[color:var(--color-text-quaternary)]">
                               {t("screenshotsTitle")}
                             </h3>
-                            <div className="mt-3 overflow-hidden rounded-2xl border border-[color:var(--color-border-soft)] bg-[color:var(--color-elevated)]">
+                            <div className="mt-3 overflow-hidden rounded-panel border border-[color:var(--color-border-soft)] bg-[color:var(--color-elevated)]">
                               <Image
                                 src={project.screenshots[0]}
                                 alt={t("screenshotAlt", { name: project.name })}
@@ -989,7 +989,7 @@ export function ProjectDrawer({
                             <h3 className="font-mono text-caption uppercase tracking-[0.12em] text-[color:var(--color-text-quaternary)]">
                               {t("timelineTitle")}
                             </h3>
-                            <dl className="mt-3 space-y-2 rounded-2xl border border-[color:var(--color-border-soft)] bg-[color:var(--color-overlay-1)] px-4 py-4 text-body-lg text-[color:var(--color-text-secondary)]">
+                            <dl className="mt-3 space-y-2 rounded-panel border border-[color:var(--color-border-soft)] bg-[color:var(--color-overlay-1)] px-4 py-4 text-body-lg text-[color:var(--color-text-secondary)]">
                               {project.timeline?.startedAt && (
                                 <div className="flex items-baseline justify-between gap-4">
                                   <dt className="text-[color:var(--color-text-tertiary)]">
@@ -1019,7 +1019,7 @@ export function ProjectDrawer({
                             <h3 className="font-mono text-caption uppercase tracking-[0.12em] text-[color:var(--color-text-quaternary)]">
                               {t("linksTitle")}
                             </h3>
-                            <ul className="mt-3 space-y-2 rounded-2xl border border-[color:var(--color-border-soft)] bg-[color:var(--color-overlay-1)] px-4 py-4">
+                            <ul className="mt-3 space-y-2 rounded-panel border border-[color:var(--color-border-soft)] bg-[color:var(--color-overlay-1)] px-4 py-4">
                               {project.links.map((link, idx) => (
                                 <li key={`${link.url}-${idx}`}>
                                   <a

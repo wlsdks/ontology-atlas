@@ -56,9 +56,9 @@ export function MarkdownField({ id, value, onChange, placeholder, rows = 8 }: Pr
           className={cn(
             'min-h-[160px] rounded-chip px-2 py-1.5 text-body-lg leading-relaxed text-[color:var(--color-text-secondary)]',
             // 간단한 마크다운 스타일
-            '[&>h1]:mt-3 [&>h1]:mb-2 [&>h1]:text-xl [&>h1]:font-[var(--font-weight-signature)] [&>h1]:text-[color:var(--color-text-primary)]',
-            '[&>h2]:mt-3 [&>h2]:mb-1.5 [&>h2]:text-lg [&>h2]:font-[var(--font-weight-signature)] [&>h2]:text-[color:var(--color-text-primary)]',
-            '[&>h3]:mt-2 [&>h3]:mb-1 [&>h3]:text-base [&>h3]:font-[var(--font-weight-signature)] [&>h3]:text-[color:var(--color-text-primary)]',
+            '[&>h1]:mt-3 [&>h1]:mb-2 [&>h1]:text-display [&>h1]:font-[var(--font-weight-signature)] [&>h1]:text-[color:var(--color-text-primary)]',
+            '[&>h2]:mt-3 [&>h2]:mb-1.5 [&>h2]:text-title [&>h2]:font-[var(--font-weight-signature)] [&>h2]:text-[color:var(--color-text-primary)]',
+            '[&>h3]:mt-2 [&>h3]:mb-1 [&>h3]:text-body-lg [&>h3]:font-[var(--font-weight-signature)] [&>h3]:text-[color:var(--color-text-primary)]',
             '[&>p]:my-1.5',
             '[&>ul]:my-1.5 [&>ul]:list-disc [&>ul]:pl-5',
             '[&>ol]:my-1.5 [&>ol]:list-decimal [&>ol]:pl-5',

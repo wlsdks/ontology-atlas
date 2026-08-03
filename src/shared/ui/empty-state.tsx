@@ -156,7 +156,7 @@ export function EmptyState({
   return (
     <div
       className={cn(
-        'rounded-2xl border',
+        'rounded-panel border',
         borderClass,
         centerPadOverride ?? padClass,
         isCenter && 'text-center',
