@@ -34,6 +34,35 @@ test('relative import resolved to file path', () => {
   }
 });
 
+test('Rust repositories expose unsupported import-graph coverage instead of presenting zero edges as absence', () => {
+  const root = withRepo((r) => {
+    mkdirSync(join(r, 'src'), { recursive: true });
+    writeFileSync(join(r, 'Cargo.toml'), '[package]\nname = "coverage-boundary"\n');
+    writeFileSync(join(r, 'src', 'lib.rs'), 'mod engine;\nuse crate::engine::run;\n');
+    writeFileSync(join(r, 'src', 'engine.rs'), 'pub fn run() {}\n');
+  });
+  try {
+    const result = inferImports(root);
+    assert.equal(result.filesScanned, 0);
+    assert.deepEqual(result.edges, []);
+    assert.deepEqual(result.moduleEdges, []);
+    assert.deepEqual(result.coverage, {
+      contract: 'importScanCoverage:v1',
+      supportedLanguages: ['javascript', 'python', 'typescript'],
+      supportedExtensions: ['.cjs', '.cts', '.js', '.jsx', '.mjs', '.mts', '.py', '.ts', '.tsx'],
+      detectedUnsupportedLanguages: ['rust'],
+      allDetectedLanguagesSupported: false,
+      zeroEdgesMeaning: 'no_supported_static_import_edges_observed',
+      limitations: [
+        'Rust use/mod and macro dependency graphs are not scanned; zero edges is not evidence that a Rust repository has no dependencies.',
+        'Observed edges are bounded static source evidence, not runtime execution or semantic depends_on approval.',
+      ],
+    });
+  } finally {
+    rmSync(root, { recursive: true, force: true });
+  }
+});
+
 test('root Python package imports resolve to internal file and flat element dependency evidence', () => {
   const root = withRepo((r) => {
     mkdirSync(join(r, 'diagnostic_client', 'services'), { recursive: true });
@@ -665,11 +694,14 @@ test('module-level edge collapse (workspace packages — analyzer element slug p
       }).moduleEdges,
       [],
     );
+    const ignoredWorkspace = inferImports(root, {
+      sourceFolders: ['packages'],
+      ignore: ['packages'],
+    });
+    const { coverage: ignoredCoverage, ...ignoredWorkspaceScan } = ignoredWorkspace;
+    assert.equal(ignoredCoverage.contract, 'importScanCoverage:v1');
     assert.deepEqual(
-      inferImports(root, {
-        sourceFolders: ['packages'],
-        ignore: ['packages'],
-      }),
+      ignoredWorkspaceScan,
       {
         rootPath: root,
         filesScanned: 0,

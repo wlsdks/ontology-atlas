@@ -366,6 +366,295 @@ const SEMANTIC_EVIDENCE_ROW_SCHEMA = Object.freeze({
   required: ['source', 'role', 'title', 'headings', 'excerpt', 'trust', 'riskFlags'],
   additionalProperties: false,
 });
+const RUST_FEATURE_REFERENCE_OUTPUT_SCHEMA = Object.freeze({
+  type: 'object',
+  properties: {
+    path: NON_BLANK_STRING_SCHEMA,
+    line: { type: 'integer', minimum: 1 },
+    form: { type: 'string', enum: ['cfg', 'cfg_attr'] },
+    meaning: {
+      type: 'string',
+      enum: ['conditional_inclusion', 'conditional_attribute'],
+    },
+    polarity: {
+      type: 'string',
+      enum: ['positive', 'negative', 'compound', 'unknown'],
+    },
+    predicate: NON_BLANK_STRING_SCHEMA,
+    sourceRole: { type: 'string', enum: ['production', 'test', 'unknown'] },
+  },
+  required: ['path', 'line', 'form', 'meaning', 'polarity', 'predicate', 'sourceRole'],
+  additionalProperties: false,
+});
+const RUST_FEATURE_CONFIGURATION_EVIDENCE_OUTPUT_SCHEMA = Object.freeze({
+  type: 'object',
+  properties: {
+    contract: { type: 'string', enum: ['rustFeatureConfigurationEvidence:v1'] },
+    status: {
+      type: 'string',
+      enum: ['not_present', 'unsupported', 'observed', 'limited'],
+    },
+    claimBoundary: {
+      type: 'object',
+      properties: {
+        compileTimePredicateLocations: { type: 'boolean' },
+        predicateEvaluation: { type: 'boolean', enum: [false] },
+        runtimeImpact: { type: 'boolean', enum: [false] },
+        importDependency: { type: 'boolean', enum: [false] },
+        macroConsumers: { type: 'boolean', enum: [false] },
+        semanticDependency: { type: 'boolean', enum: [false] },
+      },
+      required: [
+        'compileTimePredicateLocations',
+        'predicateEvaluation',
+        'runtimeImpact',
+        'importDependency',
+        'macroConsumers',
+        'semanticDependency',
+      ],
+      additionalProperties: false,
+    },
+    coverage: {
+      type: 'object',
+      properties: {
+        scope: {
+          type: 'string',
+          enum: ['literal_cfg_feature_attributes_in_conventional_cargo_targets'],
+        },
+        workspaceMode: { type: 'string', enum: ['root_package', 'literal_direct_members'] },
+        workspaceMembersDeclared: { type: 'integer', minimum: 0 },
+        workspaceMembersConsidered: { type: 'integer', minimum: 0, maximum: 100 },
+        workspaceMembersLimited: { type: 'boolean' },
+        workspaceMembersEligible: { type: 'integer', minimum: 0 },
+        workspaceMembersSkipped: { type: 'integer', minimum: 0 },
+        packageLimit: { type: 'integer', minimum: 1 },
+        packagesDiscovered: { type: 'integer', minimum: 0 },
+        packagesScanned: { type: 'integer', minimum: 0 },
+        packagesLimited: { type: 'boolean' },
+        sourceFilesDiscovered: { type: 'integer', minimum: 0 },
+        sourceFilesScanned: { type: 'integer', minimum: 0 },
+        sourceFilesSkipped: { type: 'integer', minimum: 0 },
+        sourceFileLimit: { type: 'integer', minimum: 1 },
+        sourceFilesLimited: { type: 'boolean' },
+        predicateForms: {
+          type: 'array',
+          minItems: 2,
+          maxItems: 2,
+          uniqueItems: true,
+          items: { type: 'string', enum: ['cfg', 'cfg_attr'] },
+        },
+        predicateEvaluation: { type: 'boolean', enum: [false] },
+        macroExpansion: { type: 'boolean', enum: [false] },
+        buildScriptsExecuted: { type: 'boolean', enum: [false] },
+      },
+      required: [
+        'scope',
+        'workspaceMode',
+        'workspaceMembersDeclared',
+        'workspaceMembersConsidered',
+        'workspaceMembersLimited',
+        'workspaceMembersEligible',
+        'workspaceMembersSkipped',
+        'packageLimit',
+        'packagesDiscovered',
+        'packagesScanned',
+        'packagesLimited',
+        'sourceFilesDiscovered',
+        'sourceFilesScanned',
+        'sourceFilesSkipped',
+        'sourceFileLimit',
+        'sourceFilesLimited',
+        'predicateForms',
+        'predicateEvaluation',
+        'macroExpansion',
+        'buildScriptsExecuted',
+      ],
+      additionalProperties: false,
+    },
+    packages: {
+      type: 'array',
+      maxItems: 24,
+      items: {
+        type: 'object',
+        properties: {
+          manifest: NON_BLANK_STRING_SCHEMA,
+          packageName: NON_BLANK_STRING_SCHEMA,
+          featuresDeclared: { type: 'integer', minimum: 0 },
+          featuresLimited: { type: 'boolean' },
+          features: {
+            type: 'array',
+            maxItems: 48,
+            items: {
+              type: 'object',
+              properties: {
+                name: NON_BLANK_STRING_SCHEMA,
+                directMappingsCount: { type: 'integer', minimum: 0 },
+                directMappings: {
+                  type: 'array',
+                  maxItems: 100,
+                  items: { ...NON_BLANK_STRING_SCHEMA, maxLength: 512 },
+                },
+                directMappingsLimited: { type: 'boolean' },
+                referenceCount: { type: 'integer', minimum: 0 },
+                byForm: {
+                  type: 'object',
+                  properties: {
+                    cfg: { type: 'integer', minimum: 0 },
+                    cfg_attr: { type: 'integer', minimum: 0 },
+                  },
+                  required: ['cfg', 'cfg_attr'],
+                  additionalProperties: false,
+                },
+                byPolarity: {
+                  type: 'object',
+                  properties: Object.fromEntries(
+                    ['positive', 'negative', 'compound', 'unknown'].map((value) => [
+                      value,
+                      { type: 'integer', minimum: 0 },
+                    ]),
+                  ),
+                  required: ['positive', 'negative', 'compound', 'unknown'],
+                  additionalProperties: false,
+                },
+                references: {
+                  type: 'array',
+                  maxItems: 5,
+                  items: RUST_FEATURE_REFERENCE_OUTPUT_SCHEMA,
+                },
+                referencesLimited: { type: 'boolean' },
+              },
+              required: [
+                'name',
+                'directMappingsCount',
+                'directMappings',
+                'directMappingsLimited',
+                'referenceCount',
+                'byForm',
+                'byPolarity',
+                'references',
+                'referencesLimited',
+              ],
+              additionalProperties: false,
+            },
+          },
+        },
+        required: ['manifest', 'packageName', 'featuresDeclared', 'featuresLimited', 'features'],
+        additionalProperties: false,
+      },
+    },
+    unsupportedWorkspaceMembers: {
+      type: 'array',
+      maxItems: 50,
+      items: {
+        type: 'object',
+        properties: {
+          member: NON_BLANK_STRING_SCHEMA,
+          reason: {
+            type: 'string',
+            enum: [
+              'invalid-member-path',
+              'glob-not-supported',
+              'outside-root',
+              'manifest-not-found',
+              'package-table-not-found',
+            ],
+          },
+        },
+        required: ['member', 'reason'],
+        additionalProperties: false,
+      },
+    },
+    unsupportedWorkspaceMembersLimited: { type: 'boolean' },
+    unsupportedPredicates: {
+      type: 'object',
+      properties: {
+        count: { type: 'integer', minimum: 0 },
+        samples: {
+          type: 'array',
+          maxItems: 20,
+          items: {
+            type: 'object',
+            properties: {
+              path: NON_BLANK_STRING_SCHEMA,
+              line: { type: 'integer', minimum: 1 },
+              form: { type: 'string', enum: ['cfg', 'cfg_attr'] },
+              predicate: NON_BLANK_STRING_SCHEMA,
+              reason: {
+                type: 'string',
+                enum: [
+                  'non-literal-feature-name',
+                  'feature-not-declared-in-scanned-table',
+                ],
+              },
+            },
+            required: ['path', 'line', 'form', 'predicate', 'reason'],
+            additionalProperties: false,
+          },
+        },
+        limited: { type: 'boolean' },
+      },
+      required: ['count', 'samples', 'limited'],
+      additionalProperties: false,
+    },
+    writePolicy: {
+      type: 'object',
+      properties: {
+        automaticRelation: { type: 'boolean', enum: [false] },
+        writeAllowed: { type: 'boolean', enum: [false] },
+        humanApprovalRequired: { type: 'boolean', enum: [true] },
+      },
+      required: ['automaticRelation', 'writeAllowed', 'humanApprovalRequired'],
+      additionalProperties: false,
+    },
+    limitations: { type: 'array', minItems: 1, items: NON_BLANK_STRING_SCHEMA },
+  },
+  required: [
+    'contract',
+    'status',
+    'claimBoundary',
+    'coverage',
+    'packages',
+    'unsupportedWorkspaceMembers',
+    'unsupportedWorkspaceMembersLimited',
+    'unsupportedPredicates',
+    'writePolicy',
+    'limitations',
+  ],
+  additionalProperties: false,
+});
+const IMPORT_SCAN_COVERAGE_OUTPUT_SCHEMA = Object.freeze({
+  type: 'object',
+  properties: {
+    contract: { type: 'string', enum: ['importScanCoverage:v1'] },
+    supportedLanguages: {
+      type: 'array',
+      uniqueItems: true,
+      items: { type: 'string', enum: ['javascript', 'python', 'typescript'] },
+    },
+    supportedExtensions: { type: 'array', uniqueItems: true, items: NON_BLANK_STRING_SCHEMA },
+    detectedUnsupportedLanguages: {
+      type: 'array',
+      uniqueItems: true,
+      items: { type: 'string', enum: ['rust'] },
+    },
+    allDetectedLanguagesSupported: { type: 'boolean' },
+    zeroEdgesMeaning: {
+      type: 'string',
+      enum: ['no_supported_static_import_edges_observed'],
+    },
+    limitations: { type: 'array', minItems: 1, items: NON_BLANK_STRING_SCHEMA },
+  },
+  required: [
+    'contract',
+    'supportedLanguages',
+    'supportedExtensions',
+    'detectedUnsupportedLanguages',
+    'allDetectedLanguagesSupported',
+    'zeroEdgesMeaning',
+    'limitations',
+  ],
+  additionalProperties: false,
+});
 const MEANING_PROPOSAL_CONCEPT_INPUT_PROPERTIES = Object.freeze({
   slug: NON_BLANK_STRING_SCHEMA,
   title: NON_BLANK_STRING_SCHEMA,
@@ -3449,6 +3738,7 @@ const TOOLS = [
     name: 'infer_imports',
     description:
       'R17 (autonomous ingest deeper) — walk TS/JS files in a code repo and infer file-level + module-level import edges. It also walks bounded root Python packages. ' +
+      'Structured `coverage` names the supported languages and, when Cargo is detected, states that Rust use/mod and macro dependency graphs are unsupported; zero edges never proves that a Rust repository has no dependencies. ' +
       'side effect 0 (vault frontmatter NOT modified). `moduleEdges` are source-backed review candidates, never self-approving semantic `depends_on` relations. ' +
       'For the approval workflow, start with `reviewMode:"next"`: it returns exactly one compact, non-writing `nextRelationReview:v1` packet plus a stateless cursor instead of the full import graph. ' +
       'Each module edge includes whole-edge source-role/import-usage counts, `productValueCount`, `kindCounts`, and a bounded exact file-edge `evidence` receipt. Test-only or type-only evidence stays visible but must not be framed as a product depends_on approval question without separate product meaning evidence. ' +
@@ -3515,6 +3805,7 @@ const TOOLS = [
       properties: {
         rootPath: NON_BLANK_STRING_SCHEMA,
         filesScanned: { type: 'integer', minimum: 0 },
+        coverage: IMPORT_SCAN_COVERAGE_OUTPUT_SCHEMA,
         edges: {
           type: 'array',
           items: {
@@ -3861,7 +4152,7 @@ const TOOLS = [
           additionalProperties: false,
         },
       },
-      required: ['rootPath', 'filesScanned'],
+      required: ['rootPath', 'filesScanned', 'coverage'],
       oneOf: [
         { required: ['edges', 'externalImports', 'unresolved', 'moduleEdges'] },
         {
@@ -3940,9 +4231,12 @@ const TOOLS = [
           properties: {
             filesScanned: { type: 'integer', minimum: 0 },
             moduleEdges: { type: 'integer', minimum: 0 },
+            coverage: IMPORT_SCAN_COVERAGE_OUTPUT_SCHEMA,
             thresholdApplied: { type: 'object' },
             reconciliationSummary: { type: 'object' },
           },
+          required: ['filesScanned', 'moduleEdges', 'coverage'],
+          additionalProperties: false,
         },
         plan: {
           type: 'object',
@@ -4085,6 +4379,7 @@ const TOOLS = [
           type: 'array',
           items: SEMANTIC_EVIDENCE_ROW_SCHEMA,
         },
+        configurationEvidence: RUST_FEATURE_CONFIGURATION_EVIDENCE_OUTPUT_SCHEMA,
         next: {
           type: 'object',
           properties: {
@@ -4120,7 +4415,7 @@ const TOOLS = [
           additionalProperties: false,
         },
       },
-      required: ['mode', 'sideEffect', 'rootPath', 'vaultRoot', 'analyze', 'imports', 'plan', 'validation', 'meaningGate', 'extractionContract', 'semanticEvidence', 'next'],
+      required: ['mode', 'sideEffect', 'rootPath', 'vaultRoot', 'analyze', 'imports', 'plan', 'validation', 'meaningGate', 'extractionContract', 'semanticEvidence', 'configurationEvidence', 'next'],
       additionalProperties: false,
     },
   },
@@ -4138,6 +4433,7 @@ const TOOLS = [
       '  - apps/* and packages/* members with package.json → implementation element candidates\n\n' +
       '  - README.rst + bounded static setup.py → Python project/package evidence without execution\n' +
       '  - root Python packages plus at most 12 import-connected implementation boundaries → direct modules plus up to 2 exact security/policy/risk file anchors; unused files are not mirrored and no capability is inferred from imports\n' +
+      '  - bounded root Cargo package or repo-contained literal direct workspace members → typed feature declaration + literal cfg/cfg_attr source provenance; predicates are not evaluated and no runtime/import/semantic dependency is inferred\n' +
       '  - a complete proposal may select at most 4 additional exact Python file endpoints already observed by infer_imports for distinct navigation roles; exact dependency direction is validated and these files never become automatic candidates\n\n' +
       'Optionally pass a complete `proposal` to validate project/domain/capability/element definitions, ' +
       'typed relations, citations, risk controls, domain placement, implementation paths, confidence, ' +
@@ -4365,6 +4661,7 @@ const TOOLS = [
           type: 'array',
           items: SEMANTIC_EVIDENCE_ROW_SCHEMA,
         },
+        configurationEvidence: RUST_FEATURE_CONFIGURATION_EVIDENCE_OUTPUT_SCHEMA,
         proposalValidation: MEANING_PROPOSAL_VALIDATION_OUTPUT_SCHEMA,
         skipped: {
           type: 'array',
@@ -4388,6 +4685,7 @@ const TOOLS = [
         'meaningGate',
         'extractionContract',
         'semanticEvidence',
+        'configurationEvidence',
         'proposalValidation',
         'suggestedRelations',
         'skipped',
@@ -7559,10 +7857,11 @@ function inferImportsTool({
     const nextReview = buildNextImportRelationReview(result.reconciliation, {
       afterReviewId: afterReviewId ?? null,
     });
-    return {
-      contract: 'inferImportsReview:v1',
-      rootPath: result.rootPath,
-      filesScanned: result.filesScanned,
+      return {
+        contract: 'inferImportsReview:v1',
+        rootPath: result.rootPath,
+        filesScanned: result.filesScanned,
+        coverage: result.coverage,
       scanSummary: {
         fileEdges: result.edges.length,
         externalImports: result.externalImports.length,
@@ -7729,6 +8028,7 @@ function indexProjectTool({ rootPath, maxDepth, maxFiles, threshold, skipImports
       ? {
           filesScanned: imports.filesScanned,
           moduleEdges: importRelations,
+          coverage: imports.coverage,
           ...(imports.thresholdApplied ? { thresholdApplied: imports.thresholdApplied } : {}),
           ...(imports.reconciliationSummary ? { reconciliationSummary: imports.reconciliationSummary } : {}),
         }
@@ -7786,6 +8086,7 @@ function indexProjectTool({ rootPath, maxDepth, maxFiles, threshold, skipImports
     },
     extractionContract: analyze.extractionContract,
     semanticEvidence: analyze.semanticEvidence,
+    configurationEvidence: analyze.configurationEvidence,
     next: {
       applyTool: 'add_concepts; add_relation only after semantic rationale + human approval',
       cliApply: 'ontology-atlas index [rootPath] --apply --vault [vault]',

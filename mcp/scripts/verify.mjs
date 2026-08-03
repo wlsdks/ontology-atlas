@@ -1703,7 +1703,7 @@ export function toolsListSchemaFailure(tools) {
   if (analyzeTool.outputSchema?.type !== 'object') {
     return 'analyze_repo_structure outputSchema root drift';
   }
-  if (!sameArray(analyzeTool.outputSchema?.required, ['rootPath', 'framework', 'domains', 'capabilities', 'elements', 'meaningGate', 'extractionContract', 'semanticEvidence', 'proposalValidation', 'suggestedRelations', 'skipped'])) {
+  if (!sameArray(analyzeTool.outputSchema?.required, ['rootPath', 'framework', 'domains', 'capabilities', 'elements', 'meaningGate', 'extractionContract', 'semanticEvidence', 'configurationEvidence', 'proposalValidation', 'suggestedRelations', 'skipped'])) {
     return 'analyze_repo_structure outputSchema required drift';
   }
   if (analyzeTool.outputSchema?.additionalProperties !== false) {
@@ -1781,6 +1781,35 @@ export function toolsListSchemaFailure(tools) {
   if (skippedSchema.items?.additionalProperties !== false) {
     return 'analyze_repo_structure outputSchema skipped row openness drift';
   }
+  const rustConfigurationSchema = outputPropertyAt(
+    analyzeTool,
+    ['properties', 'configurationEvidence'],
+  );
+  if (
+    rustConfigurationSchema?.type !== 'object' ||
+    !sameArray(rustConfigurationSchema.properties?.contract?.enum, [
+      'rustFeatureConfigurationEvidence:v1',
+    ]) ||
+    !sameArray(rustConfigurationSchema.properties?.writePolicy?.required, [
+      'automaticRelation',
+      'writeAllowed',
+      'humanApprovalRequired',
+    ]) ||
+    !sameArray(
+      rustConfigurationSchema.properties?.writePolicy?.properties?.automaticRelation?.enum,
+      [false],
+    ) ||
+    !sameArray(
+      rustConfigurationSchema.properties?.writePolicy?.properties?.writeAllowed?.enum,
+      [false],
+    ) ||
+    !sameArray(
+      rustConfigurationSchema.properties?.writePolicy?.properties?.humanApprovalRequired?.enum,
+      [true],
+    )
+  ) {
+    return 'analyze_repo_structure Rust configuration outputSchema safety drift';
+  }
 
   const inferImportsTool = tools.find((tool) => tool?.name === 'infer_imports');
   if (!inferImportsTool) return 'tools/list response missing infer_imports tool';
@@ -1833,7 +1862,7 @@ export function toolsListSchemaFailure(tools) {
   if (inferImportsTool.outputSchema?.type !== 'object') {
     return 'infer_imports outputSchema root drift';
   }
-  if (!sameArray(inferImportsTool.outputSchema?.required, ['rootPath', 'filesScanned'])) {
+  if (!sameArray(inferImportsTool.outputSchema?.required, ['rootPath', 'filesScanned', 'coverage'])) {
     return 'infer_imports outputSchema required drift';
   }
   const inferOutputBranches = inferImportsTool.outputSchema?.oneOf;
@@ -1860,6 +1889,18 @@ export function toolsListSchemaFailure(tools) {
   const filesScannedSchema = outputPropertyAt(inferImportsTool, ['properties', 'filesScanned']);
   if (filesScannedSchema?.type !== 'integer' || filesScannedSchema.minimum !== 0) {
     return 'infer_imports outputSchema filesScanned drift';
+  }
+  const importCoverageSchema = outputPropertyAt(inferImportsTool, ['properties', 'coverage']);
+  if (
+    importCoverageSchema?.type !== 'object' ||
+    !sameArray(importCoverageSchema.properties?.contract?.enum, ['importScanCoverage:v1']) ||
+    importCoverageSchema.properties?.allDetectedLanguagesSupported?.type !== 'boolean' ||
+    Object.hasOwn(importCoverageSchema.properties ?? {}, 'completeForDetectedLanguages') ||
+    !sameArray(importCoverageSchema.properties?.zeroEdgesMeaning?.enum, [
+      'no_supported_static_import_edges_observed',
+    ])
+  ) {
+    return 'infer_imports outputSchema coverage safety drift';
   }
   const importEdgeSchema = outputPropertyAt(inferImportsTool, ['properties', 'edges']);
   if (
@@ -5593,6 +5634,12 @@ export function analyzeRepoStructureFailure(parsed) {
       return `analyze_repo_structure response missing skipped reason: ${skipped.path}`;
     }
   }
+  const configurationFailure = rustConfigurationEvidenceFailure(
+    parsed.configurationEvidence,
+  );
+  if (configurationFailure) {
+    return `analyze_repo_structure ${configurationFailure}`;
+  }
   return null;
 }
 
@@ -5725,6 +5772,82 @@ export function inferImportsFailure(parsed) {
       }
     }
   }
+  const coverageFailure = importScanCoverageFailure(parsed.coverage);
+  if (coverageFailure) return `infer_imports ${coverageFailure}`;
+  return null;
+}
+
+function rustConfigurationEvidenceFailure(evidence) {
+  if (!evidence || typeof evidence !== 'object' || Array.isArray(evidence)) {
+    return 'response missing Rust configuration evidence';
+  }
+  if (evidence.contract !== 'rustFeatureConfigurationEvidence:v1') {
+    return `Rust configuration evidence contract drift: ${evidence.contract}`;
+  }
+  if (!['not_present', 'unsupported', 'observed', 'limited'].includes(evidence.status)) {
+    return `Rust configuration evidence status drift: ${evidence.status}`;
+  }
+  if (
+    evidence.writePolicy?.automaticRelation !== false ||
+    evidence.writePolicy?.writeAllowed !== false ||
+    evidence.writePolicy?.humanApprovalRequired !== true
+  ) {
+    return 'Rust configuration evidence write policy is not fail-closed';
+  }
+  for (const propertyName of [
+    'predicateEvaluation',
+    'runtimeImpact',
+    'importDependency',
+    'macroConsumers',
+    'semanticDependency',
+  ]) {
+    if (evidence.claimBoundary?.[propertyName] !== false) {
+      return `Rust configuration evidence overclaims ${propertyName}`;
+    }
+  }
+  if (
+    evidence.coverage?.predicateEvaluation !== false ||
+    evidence.coverage?.macroExpansion !== false ||
+    evidence.coverage?.buildScriptsExecuted !== false
+  ) {
+    return 'Rust configuration evidence execution boundary drift';
+  }
+  if (
+    !Array.isArray(evidence.packages) ||
+    !Array.isArray(evidence.unsupportedWorkspaceMembers) ||
+    !Array.isArray(evidence.limitations) ||
+    evidence.limitations.length === 0
+  ) {
+    return 'Rust configuration evidence bounded rows drift';
+  }
+  return null;
+}
+
+function importScanCoverageFailure(coverage) {
+  if (!coverage || typeof coverage !== 'object' || Array.isArray(coverage)) {
+    return 'response missing import scan coverage';
+  }
+  if (coverage.contract !== 'importScanCoverage:v1') {
+    return `import scan coverage contract drift: ${coverage.contract}`;
+  }
+  if (
+    !Array.isArray(coverage.supportedLanguages) ||
+    !Array.isArray(coverage.supportedExtensions) ||
+    !Array.isArray(coverage.detectedUnsupportedLanguages) ||
+    typeof coverage.allDetectedLanguagesSupported !== 'boolean' ||
+    Object.hasOwn(coverage, 'completeForDetectedLanguages') ||
+    coverage.zeroEdgesMeaning !== 'no_supported_static_import_edges_observed' ||
+    !Array.isArray(coverage.limitations) ||
+    coverage.limitations.length === 0
+  ) {
+    return 'import scan coverage boundary drift';
+  }
+  if (
+    coverage.detectedUnsupportedLanguages.includes('rust') &&
+    coverage.allDetectedLanguagesSupported !== false
+  ) {
+    return 'import scan coverage overclaims Rust support';
+  }
   return null;
 }
 
@@ -5778,6 +5901,12 @@ export function indexProjectFailure(parsed) {
   if (!Number.isInteger(parsed.imports.moduleEdges) || parsed.imports.moduleEdges < 0) {
     return 'index_project response missing imports.moduleEdges count';
   }
+  const importCoverageFailure = importScanCoverageFailure(parsed.imports.coverage);
+  if (importCoverageFailure) return `index_project imports ${importCoverageFailure}`;
+  const configurationFailure = rustConfigurationEvidenceFailure(
+    parsed.configurationEvidence,
+  );
+  if (configurationFailure) return `index_project ${configurationFailure}`;
   if (!parsed.plan || typeof parsed.plan !== 'object' || Array.isArray(parsed.plan)) {
     return 'index_project response missing plan summary';
   }

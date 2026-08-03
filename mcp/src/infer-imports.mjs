@@ -127,6 +127,7 @@ const SIDE_IMPORT_RE = /\bimport\s+['"]([^'"]+)['"]/g;
  *   edges: Array<{ from: string, to: string, kind: 'static'|'dynamic'|'require'|'reexport'|'side', sourceRole:'production'|'test'|'unknown', importUsage:'value'|'type_only'|'unknown' }>,
  *   externalImports: Array<{ from: string, spec: string }>,
  *   unresolved: Array<{ from: string, spec: string, reason: string }>,
+ *   coverage: object,
  *   moduleEdges: Array<{ from: string, to: string, count: number, kindCounts: Record<string, number>, sourceRoleCounts:Record<string,number>, importUsageCounts:Record<string,number>, productValueCount:number, evidence: Array<{from:string,to:string,kind:string,sourceRole:string,importUsage:string}>, evidenceLimited: boolean }>,
  * }}
  */
@@ -278,10 +279,29 @@ export function inferImports(rootPath, options = {}) {
   return {
     rootPath,
     filesScanned: files.length,
+    coverage: importScanCoverage(rootPath),
     edges,
     externalImports,
     unresolved,
     moduleEdges,
+  };
+}
+
+function importScanCoverage(rootPath) {
+  const detectedUnsupportedLanguages = existsSync(join(rootPath, 'Cargo.toml'))
+    ? ['rust']
+    : [];
+  return {
+    contract: 'importScanCoverage:v1',
+    supportedLanguages: ['javascript', 'python', 'typescript'],
+    supportedExtensions: [...SOURCE_EXT].sort(),
+    detectedUnsupportedLanguages,
+    allDetectedLanguagesSupported: detectedUnsupportedLanguages.length === 0,
+    zeroEdgesMeaning: 'no_supported_static_import_edges_observed',
+    limitations: [
+      'Rust use/mod and macro dependency graphs are not scanned; zero edges is not evidence that a Rust repository has no dependencies.',
+      'Observed edges are bounded static source evidence, not runtime execution or semantic depends_on approval.',
+    ],
   };
 }
 
