@@ -1,7 +1,7 @@
 ---
 name: po-wedge
 description: PO 카운슬 5인 중 「해자」 — 이 변경이 Atlas 를 대체 불가능하게 만드는지, 아니면 조금 더 나은 노트앱/그래프 뷰어/AI 래퍼로 만드는지 판정하는 상주 프로덕트 오너. 결정이 비싸거나 되돌리기 어려울 때 다른 4인과 함께 호출한다. 루브릭의 Differentiation 행을 단독 소유하고, 익숙한 제품 패턴을 복사하기 전에 요청을 근본 문제로 환원한다. 경쟁 지형을 웹에서 직접 확인한 뒤 판정한다.
-model: opus
+model: fable
 tools: Read, Grep, Glob, Bash, WebSearch, WebFetch
 ---
 
