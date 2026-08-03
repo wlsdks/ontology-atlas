@@ -3,6 +3,7 @@
 import { type KeyboardEvent, useEffect, useRef, useState } from "react";
 import { Plus, X } from "lucide-react";
 import { cn } from "@/shared/lib/cn";
+import { controlClass } from "./control-class";
 
 export interface LinkItem {
   label: string;
@@ -168,14 +169,34 @@ export function LinkListEditor({
               <button
                 type="button"
                 onClick={commit}
-                className="rounded-chip border border-[color:var(--color-indigo-brand)] bg-[color:var(--color-indigo-a16)] px-2 py-1 text-caption uppercase tracking-[0.12em] text-[color:var(--color-indigo-accent)] hover:bg-[color:var(--color-indigo-a24)]"
+                /*
+                 * 손으로 쓰던 `rounded-chip`/`px-2 py-1`/`text-caption` 이
+                 * 램프의 `chip`/`sm` 과 **바이트 단위로 같다** — 상자 치수는
+                 * 한 픽셀도 안 바뀐다. 인디고 틴트(보더·바탕·호버)는 「이
+                 * 자리의 주 행동」이라 `tone: 'accent'` 가 잉크를 내고 나머지
+                 * 알파는 소비처가 얹는다(값 층은 호버를 안 낸다).
+                 */
+                className={controlClass({
+                  shape: "chip",
+                  size: "sm",
+                  tone: "accent",
+                  className:
+                    "border-[color:var(--color-indigo-brand)] bg-[color:var(--color-indigo-a16)] uppercase tracking-[0.12em] hover:bg-[color:var(--color-indigo-a24)]",
+                })}
               >
                 {commitLabel}
               </button>
               <button
                 type="button"
                 onClick={cancel}
-                className="rounded-chip border border-[color:var(--color-divider)] px-2 py-1 text-caption uppercase tracking-[0.12em] text-[color:var(--color-text-tertiary)] hover:text-[color:var(--color-text-primary)]"
+                /* `chip`/`sm` 의 기본 톤이 그대로 `text-tertiary` + 보더
+                   `--color-divider` 다 — 값이 하나도 안 바뀐다. */
+                className={controlClass({
+                  shape: "chip",
+                  size: "sm",
+                  className:
+                    "uppercase tracking-[0.12em] hover:text-[color:var(--color-text-primary)]",
+                })}
               >
                 {cancelLabel}
               </button>
