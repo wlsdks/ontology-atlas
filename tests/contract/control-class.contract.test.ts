@@ -64,10 +64,10 @@ const allScoped = (fn: (cls: string, label: string) => void) => {
         for (const a of [true, false])
           for (const sc of SCOPES)
             for (const tr of [true, false])
-              for (const fh of [false, true, 'sm', 'md', 'lg'] as const)
+              for (const inl of [true, false])
                 fn(
-                  controlClass({ shape: s, size: z, tone: t, active: a, scope: sc, truncate: tr, fixedHeight: fh }),
-                  `${s}/${z}/${t}/${a}/${sc}/trunc=${tr}/fh=${fh}`,
+                  controlClass({ shape: s, size: z, tone: t, active: a, scope: sc, truncate: tr, inline: inl }),
+                  `${s}/${z}/${t}/${a}/${sc}/trunc=${tr}/inline=${inl}`,
                 );
 };
 
@@ -164,17 +164,41 @@ describe('controlClass — 모양이 실제로 서로 다르다', () => {
     }
   });
 
-  it('계약이 치수를 소유한 자리는 높이를 고정할 수 있다 — 2px 이 남지 않게', () => {
+  it('칩·필의 `md`·`lg` 는 사다리 위에 선다 — `sm` 만 24px 바닥에 남는다', () => {
     /*
-     * 칩 램프는 패딩으로 높이가 정해져 md=30 · lg=34 다. 그런데 설정 시트 계약은
-     * `h-8`(32)을 문자열로 못박아, **어느 조합으로도 2px 이 남았다**(2026-08-03
-     * 회수 라운드 실측). 램프를 쓰면 계약이 깨지고 계약을 지키면 램프 밖이다.
+     * ## 뒤집힌 단언 (2026-08-03 소유자 결정 · `docs/DECISIONS.md`)
+     *
+     * 여기 있던 단언은 **「기본값은 패딩이 높이를 정한다」**
+     * (`expect(controlClass({ shape: 'chip' })).not.toMatch(/\bh-\d/)`) 였다.
+     * 그 규칙이 만든 값이 칩 24/30/34 · 필 20/22/30 이고, **30 · 34 · 22 · 20
+     * 은 이 앱의 높이 어휘에 없는 값**이다. 그 값이 계약(32)과 부딪히자 값을
+     * 고치는 대신 예외 축(`fixedHeight`)이 붙었다 — 축은 증상이었다.
+     *
+     * 그래서 규칙을 뒤집는다: **높이는 사다리가 정하고, 패딩은 그 안에서
+     * 결정된다.** `md`·`lg` 는 `--control-h-md`(32px)에 서고, `sm` 만 WCAG
+     * 2.5.8 최소 타깃 24px 에 남는다.
      */
-    expect(controlClass({ shape: 'chip', fixedHeight: true })).toContain('h-8');
-    expect(controlClass({ shape: 'pill', fixedHeight: true })).toContain('h-8');
-    // 기본값은 여전히 「패딩이 높이를 정한다」 — 칩 143개 중 명시 높이는 38개뿐이라
-    // 강제하면 70%의 키가 바뀐다.
-    expect(controlClass({ shape: 'chip' })).not.toMatch(/\bh-\d/);
+    for (const shape of ['chip', 'pill'] as const) {
+      for (const size of ['md', 'lg'] as const) {
+        expect(
+          controlClass({ shape, size }),
+          `${shape}/${size} 가 사다리(32px)에 안 선다 — 패딩의 부산물로 되돌아갔다`,
+        ).toContain('min-h-8');
+      }
+      expect(
+        controlClass({ shape, size: 'sm' }),
+        `${shape}/sm 이 32px 로 올라갔다 — 24px 바닥이 사라지면 밀도가 통째로 바뀐다`,
+      ).not.toContain('min-h-8');
+    }
+    // 하드 높이는 쓰지 않는다 — 줄바꿈한 칩을 잘라 내용을 숨긴다.
+    for (const shape of ['chip', 'pill'] as const) {
+      for (const size of SIZES) {
+        expect(
+          controlClass({ shape, size }),
+          `${shape}/${size} 가 하드 높이를 쓴다 — 넘치는 내용이 잘린다`,
+        ).not.toMatch(/(^| )h-\d/);
+      }
+    }
   });
 
   it('정사각 모양은 좌우 패딩을 받지 않는다 — 받으면 정사각이 아니다', () => {
@@ -414,35 +438,45 @@ describe('controlClass — 여덟째 모양과 세 축', () => {
     expect(cssVar('--color-text-on-accent'), '`--color-text-on-accent` 가 globals.css 에 없다').toBeTruthy();
   });
 
-  it('고정 높이 3단은 `--control-h-*` 램프와 같은 값이다', () => {
+  it('`min-h-8` 은 `--control-h-md` 와 같은 값이다 — 사다리 토큰이 움직이면 여기가 먼저 빨개진다', () => {
     /*
-     * 값을 손으로 등재하지 않는다 — CSS 에서 읽어 Tailwind 스텝(1 = 4px)으로
-     * 환산해 맞춘다. 램프가 움직이면 이 시험이 먼저 말한다.
+     * **이 시험이 이 정리의 핵심 게이트다.** 값 층은 Tailwind 스텝(`min-h-8`)을
+     * 내고 토큰(`--control-h-md`)은 CSS 에 산다. 둘이 같은 값이라는 것은 아무
+     * 코드도 강제하지 않으므로, 여기서 **CSS 를 직접 읽어** 잠근다.
+     *
+     * 값을 손으로 등재하지 않는다 — Tailwind spacing 은 1 = 4px 이므로 스텝에
+     * 4를 곱해 토큰의 px 와 맞춘다. 누가 `--control-h-md` 를 33px 로 옮기면
+     * 램프의 32px 은 그날부터 사다리 밖인데, 그 사실을 말해 주는 것이 이 줄이다.
      */
-    const steps: Array<['sm' | 'md' | 'lg', string]> = [
-      ['sm', '--control-h-sm'],
-      ['md', '--control-h-md'],
-      ['lg', '--control-h-lg'],
-    ];
+    const px = Number(/^(\d+)px$/.exec(cssVar('--control-h-md') ?? '')?.[1]);
+    expect(px, '`--control-h-md` 를 px 로 못 읽었다').toBeGreaterThan(0);
+
     let checked = 0;
-    for (const [step, token] of steps) {
-      const px = Number(/^(\d+)px$/.exec(cssVar(token) ?? '')?.[1]);
-      expect(px, `${token} 를 px 로 못 읽었다`).toBeGreaterThan(0);
-      const cls = controlClass({ shape: 'chip', fixedHeight: step });
-      const tw = Number(/\bh-(\d+)\b/.exec(cls)?.[1]);
-      expect(tw * 4, `chip/fixedHeight=${step} 가 ${token}(${px}px) 와 다르다: h-${tw}`).toBe(px);
-      checked += 1;
+    for (const shape of ['chip', 'pill'] as const) {
+      for (const size of ['md', 'lg'] as const) {
+        const cls = controlClass({ shape, size });
+        const step = Number(/\bmin-h-(\d+)\b/.exec(cls)?.[1]);
+        expect(step, `${shape}/${size} 에서 min-h 스텝을 못 읽었다: ${cls}`).toBeGreaterThan(0);
+        expect(
+          step * 4,
+          `${shape}/${size} 의 min-h-${step}(${step * 4}px) 이 --control-h-md(${px}px) 와 다르다`,
+        ).toBe(px);
+        checked += 1;
+      }
     }
-    expect(checked, '고정 높이 단을 하나도 못 쟀다').toBe(3);
+    // 공회전 차단 — 조합을 하나도 안 돌고 통과하는 게이트는 게이트가 아니다.
+    expect(checked, '사다리에 선 조합을 하나도 못 쟀다').toBe(4);
   });
 
-  it('`fixedHeight: true` 는 `md` 의 별칭이다 — 기존 소비처 출력이 안 바뀐다', () => {
-    for (const shape of SHAPES) {
-      expect(
-        controlClass({ shape, fixedHeight: true }),
-        `${shape} 에서 true 와 md 가 갈렸다 — 기존 소비처가 조용히 움직인다`,
-      ).toBe(controlClass({ shape, fixedHeight: 'md' }));
-    }
+  it('삭제된 `fixedHeight` 축이 되살아나지 않는다 — 값이 아니라 축으로 되돌리는 것이 그때의 실수였다', () => {
+    const source = readFileSync(join(process.cwd(), 'src/shared/ui/control-class.ts'), 'utf8');
+    const live = source
+      .split('\n')
+      .filter((l) => !/^\s*(\*|\/\*|\/\/)/.test(l))
+      .join('\n');
+    expect(live, '`fixedHeight` 축이 돌아왔다 — 사다리에 이미 있는 값이면 그건 축이 아니라 `size` 다').not.toMatch(
+      /fixedHeight/,
+    );
   });
 
   it('새 축 셋의 기본값은 오늘 출력과 바이트 동일하다 — 축을 더한 것이 회귀가 아니게', () => {

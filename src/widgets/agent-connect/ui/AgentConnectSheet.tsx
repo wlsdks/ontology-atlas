@@ -381,7 +381,6 @@ export function AgentConnectSheet({
                     className={controlClass({
                       shape: "chip",
                       size: "md",
-                      fixedHeight: true,
                       className:
                         "w-fit border-[color:var(--color-border-soft)] hover:border-[color:var(--color-indigo-a46)] hover:text-[color:var(--color-text-primary)]",
                     })}

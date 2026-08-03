@@ -649,7 +649,7 @@ function DuplicateRow({
         >
           {labels.openMap}
         </Link>
-        <HandoffCopyButton payload={handoff(pair)} labels={labels} abilities={abilities} compact />
+        <HandoffCopyButton payload={handoff(pair)} labels={labels} abilities={abilities} />
       </span>
     </div>
   );
