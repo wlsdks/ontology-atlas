@@ -1,0 +1,16 @@
+/*
+ * 탐지기 프로브 — **부모가 조건부로 그리는 명명 표면.**
+ *
+ * 구 등록부 시절의 `HardCutPanel.tsx.fixture` 는 «파일에 기제가 있나» 만 재면
+ * 됐다. 센서스가 호출 자리에서 판정하도록 바뀐 뒤로는 **부모까지** 있어야
+ * 프로브가 성립한다 — 그래서 이 픽스처는 한 파일 안에 부모와 표면을 함께 둔다.
+ *
+ * ⚠️ 인정되는 기제의 이름이 하나도 들어가면 안 된다 — 주석에도.
+ */
+function ProbeSurfacePanel({ title }: { title: string }) {
+  return <div className="fixed inset-0 z-50">{title}</div>;
+}
+
+export function NamedHardCutHost({ open, title }: { open: boolean; title: string }) {
+  return <>{open && <ProbeSurfacePanel title={title} />}</>;
+}

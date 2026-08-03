@@ -10,14 +10,20 @@ import { describe, expect, it } from 'vitest';
  * ## 오늘의 목록 (2026-08-04) — 이 파일에서 먼저 읽을 것
  * ════════════════════════════════════════════════════════════════════
  *
- * 세는 수는 **둘**이다. 종전엔 113 이 한 덩어리였고, 그래서 무엇이 진전인지
+ * 세는 수는 **셋**이다. 종전엔 113 이 한 덩어리였고, 그래서 무엇이 진전인지
  * 알 수 없었다 — 옮길 수 없는 자리와 아직 안 옮긴 자리가 같은 칸에 있었다.
  *
  * | 수 | 뜻 | 어느 방향으로 움직이나 |
  * |---:|---|---|
- * | **등재 23** | 값 층 밖이라고 **검증되어 등재된** 자리(`OUTSIDE_VALUE_LAYER`) | 늘리려면 `BASELINE_REGISTERED` 를 **손으로** 올린다. 그 diff 가 「왜」를 적을 자리다 |
- * | **부채 90** | 아직 안 옮긴 것 | **이 수만 줄어야 한다.** 진도는 여기서 읽는다 |
- * | 전수 113 | 둘의 합 | 파생값이다. 이 수를 보고 판단하지 않는다 |
+ * | **등재 23** | 값 층 밖이라고 **검증되어 등재된** `<button>` 자리(`OUTSIDE_VALUE_LAYER`) | 늘리려면 `BASELINE_REGISTERED` 를 **손으로** 올린다. 그 diff 가 「왜」를 적을 자리다 |
+ * | **버튼 부채 85** | 아직 안 옮긴 `<button>` | **줄어야 한다.** 버튼 진도는 여기서 읽는다 |
+ * | **앵커 부채 109** | 손으로 규격을 쓴 `<Link>` 85 · `<a>` 24 | **줄어야 한다.** 2026-08-04 신설 — 아래 「세 번째 수」 절 |
+ * | 버튼 전수 108 | 등재 + 버튼 부채 | 파생값이다. 이 수를 보고 판단하지 않는다 |
+ *
+ * ⚠️ **2026-08-04 이전 이 게이트는 `<button>` 만 셌다.** 그래서 「부채 85」는
+ * 한 번도 *컨트롤 전체*의 수였던 적이 없다 — 앵커 109 는 게이트의 시야 밖에서
+ * 자유롭게 늘 수 있었다. 수가 갑자기 194 로 뛴 것이 아니라, **그만큼이 내내
+ * 안 세어지고 있었다.**
  *
  * ### ⚠️ 등록부는 허가 목록이 아니라 부채 목록이다
  *
@@ -426,14 +432,25 @@ function openingTag(source: string, from: number): string {
   return source.slice(from, from + 2000);
 }
 
-function countInFile(file: string): number {
+/**
+ * **컨트롤은 `<button>` 만이 아니다** (2026-08-04).
+ *
+ * 이 래칫은 하루 동안 `<button>` 만 셌고, 그래서 손으로 규격을 쓴 앵커
+ * **109곳**(`<Link>` 85 · `<a>` 24)이 게이트의 시야 밖에 있었다. 누를 수 있고
+ * 자기 높이·인셋·반경을 손으로 쓰는 원소라는 점에서 버튼과 다르지 않다 —
+ * 값 층의 `link` 모양이 정확히 그 자리를 위해 있다.
+ */
+const BUTTON_TAGS = ['button'] as const;
+const ANCHOR_TAGS = ['Link', 'a'] as const;
+
+function countInFile(file: string, tags: readonly string[] = BUTTON_TAGS): number {
   const source = readFileSync(file, 'utf8');
   // `const X = controlClass({…})` / `const X = cn(controlClass({…}), …)` 의 이름들.
   const systemConstants = [...source.matchAll(/const\s+([A-Za-z_$][\w$]*)\s*=[^;\n]*controlClass\s*\(/g)].map(
     (m) => m[1],
   );
   let n = 0;
-  for (const m of source.matchAll(/<button\b/g)) {
+  for (const m of source.matchAll(new RegExp(`<(?:${tags.join('|')})\\b`, 'g'))) {
     const tag = openingTag(source, m.index + m[0].length);
     if (!/className/.test(tag)) continue; // 클래스가 없으면 손으로 쓴 규격이 아니다
     /*
@@ -456,11 +473,11 @@ function countInFile(file: string): number {
  * 등록부를 **인자로 받는다** — 프로브가 줄을 빼거나 파일을 얹어 탐지기 자체를
  * 겨눌 수 있어야 한다(하드컷 래칫의 `stillHardCut(registry)` 와 같은 이유).
  */
-function census(scanned: string[], registry: readonly OutsideEntry[] = OUTSIDE_VALUE_LAYER) {
+function census(scanned: string[], registry: readonly OutsideEntry[] = OUTSIDE_VALUE_LAYER, tags: readonly string[] = BUTTON_TAGS) {
   const byFile = new Map<string, number>();
   let total = 0;
   for (const file of scanned) {
-    const n = countInFile(file);
+    const n = countInFile(file, tags);
     if (n > 0) {
       byFile.set(file, n);
       total += n;
@@ -492,6 +509,53 @@ function tokenIsBeyondFixedSteps(css: string, token: string): boolean {
 const scannedFiles = ROOTS.flatMap((root) => walk(root));
 const { total, registered, debt, byFile, registeredByFile } = census(scannedFiles);
 const globalsCss = readFileSync(GLOBALS_CSS, 'utf8');
+
+/**
+ * ════════════════════════════════════════════════════════════════════
+ * ## 앵커 컨트롤 — **세 번째 수** (2026-08-04)
+ * ════════════════════════════════════════════════════════════════════
+ *
+ * ### 왜 부채 85 에 더하지 않고 수를 새로 만드나
+ *
+ * 이 파일 머리말이 이미 그 판단을 적어 뒀다: *"종전엔 113 이 한 덩어리였고,
+ * 그래서 무엇이 진전인지 알 수 없었다 — 옮길 수 없는 자리와 아직 안 옮긴 자리가
+ * 같은 칸에 있었다."* 그 교훈을 여기 그대로 적용한다.
+ *
+ * 앵커 109를 부채 85에 더하면 **194** 가 되고, 그 수가 내려갈 때 버튼이 옮겨진
+ * 것인지 앵커가 옮겨진 것인지 알 수 없다. 두 부류는 **작업 단위가 다르다** —
+ * 버튼은 `controlClass({ shape })` 한 줄이면 대개 끝나는데, 앵커는 `<Link>` 가
+ * `cn` 병합을 강제하고(이 파일이 실측해 둔 곳: raw `buttonVariants()` 는 base 의
+ * `border-transparent` 와 변형 보더가 둘 다 남아 소스 순서가 투명을 이긴다)
+ * 외부 링크는 `↗` 선행 표식 규칙까지 걸린다.
+ *
+ * ### `<Link>` 와 `<a>` 는 왜 한 수인가
+ *
+ * 반대로 이 둘은 **가르지 않는다**. `<Link>` 가 렌더하는 것이 `<a>` 이고, 값 층에서
+ * 둘의 목적지가 같은 `shape: 'link'` 다. 처방이 같은 것을 두 칸에 두면 그건 진도를
+ * 읽는 눈금이 아니라 장부질이다. 대신 태그별 내역을 여기 적어 둔다 —
+ * **`<Link>` 85 · `<a>` 24**(2026-08-04 실측, 이 파일의 파서 기준).
+ *
+ * ⚠️ 감사 보고서의 수는 **77** 이었다. 그 차이는 드리프트이거나 다른 필터이고,
+ * 게이트가 쓰는 수는 **이 파일의 파서가 실제로 센 것**이어야 한다 — 남이 센 수를
+ * 기준선에 적으면 첫 실행이 빨개지고, 그때 사람은 게이트가 아니라 수를 고친다.
+ *
+ * ### 등재는 오늘 0 이다
+ *
+ * 버튼 쪽 `OUTSIDE_VALUE_LAYER` 같은 「값 층 밖」 주장이 앵커에는 **아직 하나도
+ * 검증되지 않았다**. 규율 1대로 열어 보고 확인한 자리만 등재하므로, 검증 전에는
+ * 전부 부채다 — 안전한 방향의 오차다.
+ */
+const ANCHOR_TAG_SPLIT: Readonly<Record<string, number>> = { Link: 85, a: 24 };
+
+/**
+ * **리터럴이다.** 버튼 쪽 두 기준선과 같은 이유 — 파생값으로 두면 멈춤쇠가
+ * 양방향으로 헐거워진다(하드컷 래칫이 실제로 그렇게 죽었다).
+ *
+ * **이 수만 줄어야 한다.**
+ */
+const BASELINE_ANCHOR_DEBT = 109;
+
+const anchorCensus = census(scannedFiles, [], ANCHOR_TAGS);
 
 describe('컨트롤 채택 래칫 — 등재된 「값 층 밖」', () => {
   it('등재된 파일이 전부 실재한다 — 없는 파일을 세면 수가 거짓이 된다', () => {
@@ -547,6 +611,39 @@ describe('컨트롤 채택 래칫 — 등재된 「값 층 밖」', () => {
       registered,
       `등재가 ${BASELINE_REGISTERED} → ${registered} 로 줄었다. BASELINE_REGISTERED 도 ${registered} 로 내려라.`,
     ).toBeGreaterThanOrEqual(BASELINE_REGISTERED);
+  });
+});
+
+describe('컨트롤 채택 래칫 — 앵커(`<Link>` · `<a>`)', () => {
+  it('앵커 부채가 늘지 않는다 — 누를 수 있는 것은 전부 값 층을 지난다', () => {
+    const worst = [...anchorCensus.byFile.entries()].sort((a, b) => b[1] - a[1]).slice(0, 3);
+    expect(
+      anchorCensus.debt,
+      `손으로 규격을 쓴 앵커가 ${BASELINE_ANCHOR_DEBT} → ${anchorCensus.debt} 로 늘었다.\n` +
+        `\`controlClass({ shape: 'link' })\` 가 이 자리를 위해 있다. \`<Link>\` 는 \`cn\` 병합이 필수다 — ` +
+        `raw 변형은 base 의 border-transparent 가 소스 순서로 이긴다(이 파일 실측).\n` +
+        `가장 많은 파일: ${worst.map(([f, n]) => `${f}(${n})`).join(' · ')}`,
+    ).toBeLessThanOrEqual(BASELINE_ANCHOR_DEBT);
+  });
+
+  it('앵커 부채를 갚았으면 기준선도 내린다 — 여유를 무료로 두지 않는다', () => {
+    expect(
+      anchorCensus.debt,
+      `앵커 부채가 ${BASELINE_ANCHOR_DEBT} → ${anchorCensus.debt} 로 줄었다. ` +
+        `BASELINE_ANCHOR_DEBT 도 ${anchorCensus.debt} 로 내려라.`,
+    ).toBeGreaterThanOrEqual(BASELINE_ANCHOR_DEBT);
+  });
+
+  it('태그 내역이 전수와 맞는다 — 두 태그가 서로를 잃지 않는다', () => {
+    const perTag = Object.fromEntries(
+      ANCHOR_TAGS.map((tag) => [tag, census(scannedFiles, [], [tag]).total]),
+    );
+    expect(
+      perTag,
+      '머리말의 태그 내역이 실측과 어긋난다. 수가 움직였으면 내역도 같이 고쳐라 — ' +
+        '내역이 낡으면 다음 사람이 어느 쪽이 움직였는지 못 읽는다.',
+    ).toEqual(ANCHOR_TAG_SPLIT);
+    expect(Object.values(perTag).reduce((a, b) => a + b, 0)).toBe(anchorCensus.total);
   });
 });
 
@@ -654,6 +751,41 @@ describe('탐지기 프로브 — 이 게이트가 실제로 무엇을 잡는가
     expect(tokenIsBeyondFixedSteps(globalsCss, '--radius-chip')).toBe(false);
     // 없는 토큰은 근거가 아니다.
     expect(tokenIsBeyondFixedSteps(globalsCss, '--not-a-real-token-xyz')).toBe(false);
+  });
+
+  it('⑦ 앵커 탐지기가 실제로 센다 — `<button>` 만 세던 사각지대의 자(尺)', () => {
+    // 픽스처의 앵커 둘(`<Link>` 하나 · `<a>` 하나)을 세야 한다.
+    expect(
+      countInFile(FIXTURE, ANCHOR_TAGS),
+      '픽스처의 손 앵커 2건을 못 셌다면 앵커 탐지기가 죽은 것이다',
+    ).toBe(2);
+    // 실물 위에서도 살아 있다 — 이게 없으면 「앵커 부채 0」과 「안 셌다」가 같은 초록이다.
+    expect(anchorCensus.total, '앵커를 한 건도 못 셌다면 태그 정규식이 깨진 것이다').toBeGreaterThan(0);
+    expect(anchorCensus.byFile.size, '앵커 파일별 집계가 비었다').toBeGreaterThan(10);
+  });
+
+  it('⑧ 앵커를 하나 더 쓰면 **앵커 부채로** 잡힌다 — 버튼 수는 안 움직인다', () => {
+    const withFixture = census([...scannedFiles, FIXTURE], [], ANCHOR_TAGS);
+    expect(withFixture.debt).toBe(anchorCensus.debt + 2);
+    expect(
+      withFixture.debt,
+      '앵커가 늘었는데 기준선을 안 넘었다면 이 게이트는 아무것도 안 막는다',
+    ).toBeGreaterThan(BASELINE_ANCHOR_DEBT);
+    // 두 수는 서로를 오염시키지 않는다.
+    expect(census([...scannedFiles, FIXTURE]).debt, '앵커 픽스처가 버튼 부채를 움직였다').toBe(debt + 2);
+  });
+
+  it('⑨ 앵커 기준선이 **리터럴**이다', () => {
+    expect(/const BASELINE_ANCHOR_DEBT = \d+;/.test(readFileSync(SELF, 'utf8'))).toBe(true);
+  });
+
+  it('⑩ 값 층을 지난 앵커는 안 센다 — 램프를 통과해도 세면 옮길 이유가 사라진다', () => {
+    // 소비처가 실재해야 이 프로브가 뜻이 있다: 이미 `controlClass` 를 쓰는 앵커.
+    const adopted = scannedFiles.filter((f) => {
+      const src = readFileSync(f, 'utf8');
+      return /<(Link|a)\b[^>]*controlClass\s*\(/.test(src.replace(/\n/g, ' '));
+    });
+    expect(adopted.length, '값 층을 지난 앵커 소비처가 0이면 이 면제는 검증된 적이 없다').toBeGreaterThan(0);
   });
 
   it('⑥ 등재는 **파일 면제가 아니다** — 같은 위젯의 미등재 파일이 부채로 살아 있다', () => {

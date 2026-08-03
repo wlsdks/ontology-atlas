@@ -145,6 +145,113 @@ describe("accent × 틴트 페어링 금지 — lint 가 못 보는 상수 우�
     return acc;
   };
 
+  /**
+   * ## 손글씨 층 — 이 게이트가 못 보던 자리 (2026-08-04)
+   *
+   * 위 스캔은 **값 층의 `tone` 표기**를 찾는다. 그래서 `tone` 을 아예 안 쓰고
+   * 잉크와 틴트를 **손으로 나란히 쓴** 자리는 통째로 시야 밖이었다:
+   *
+   * ```
+   * className="… bg-[color:var(--color-indigo-a16)] text-[color:var(--color-indigo-accent)]"
+   * ```
+   *
+   * 2026-08-04 시스템 감사가 그런 자리 하나(에이전트 연결 단계 번호 배지)를
+   * **4.27:1** 로 실측했는데, 이 파일도 `a11y-ratchet` 도 그것을 본 적이 없다 —
+   * 전자는 `tone` 만 봤고 후자는 첫 화면만 쟀으며, 게다가 그 배지는
+   * `aria-hidden` 이라 axe 의 `color-contrast` 는 원리적으로 건너뛴다.
+   * **자동 검사 셋의 사각지대가 한 자리에서 겹쳤다.**
+   *
+   * ### 왜 0 이 아니라 래칫인가
+   *
+   * 켜기 전 전수: **24곳**. 잉크를 바꾸면 픽셀이 바뀌고, 픽셀을 바꾸는 결정은
+   * 값 규칙이 아니라 디자인 게이트의 일이다(`design.md`). 게다가 판정이
+   * **호스트 배경에 달렸다** — accent 는 `a16`/panel 에서 4.27(미달)이지만
+   * `a16`/canvas 에서는 4.55(통과)다. 정적 스캔은 그 자리가 어느 바탕 위에
+   * 그려지는지 모른다. 그래서 여기서는 **늘지 못하게만** 잠그고, 실제 판정은
+   * 열린 표면을 여는 런타임 계기(`a11y-ratchet`)가 맡는다.
+   *
+   * 감사가 지목한 1건은 이 라운드에서 갚았다(`StepRow`, 8.39:1). 남은 23은
+   * 「체계」의 잉크 라운드 몫이고, 그때 이 수가 내려간다.
+   */
+  const HAND_WRITTEN_INK = /text-\[color:var\(--color-indigo-accent\)\]/;
+  const HAND_WRITTEN_TINT = /bg-\[color:var\(--color-(indigo|amber)[a-z-]*-a\d+\)\]/;
+  const BASELINE_HAND_WRITTEN_ACCENT_ON_TINT = 23;
+
+  /** 여는 태그를 **중괄호 깊이**로 끊는다 — `onClick={() => …}` 의 `=>` 가 태그 끝이 아니다. */
+  const openingTags = (src: string): string[] => {
+    const tags: string[] = [];
+    for (const m of src.matchAll(/<[A-Za-z][\w.]*/g)) {
+      let depth = 0;
+      let quote: string | null = null;
+      let i = m.index! + m[0].length;
+      let closed = false;
+      for (; i < src.length; i += 1) {
+        const c = src[i];
+        if (quote) {
+          if (c === quote && src[i - 1] !== "\\") quote = null;
+          continue;
+        }
+        if (c === '"' || c === "'" || c === "`") quote = c;
+        else if (c === "{") depth += 1;
+        else if (c === "}") depth -= 1;
+        else if (c === ">" && depth === 0) {
+          closed = true;
+          break;
+        }
+      }
+      // ★ 닫히지 않은 것은 태그가 아니다. 이 가드 없이 파일 끝까지 슬라이스하면
+      //   «태그» 안에 뒤따르는 원소 전부가 들어와 30 을 세게 된다(실측 24 → 30).
+      if (closed) tags.push(src.slice(m.index!, i));
+    }
+    return tags;
+  };
+
+  const handWritten = (): string[] => {
+    const hits: string[] = [];
+    for (const file of walk(join(process.cwd(), "src"))) {
+      const src = readFileSync(file, "utf8");
+      if (!HAND_WRITTEN_INK.test(src)) continue;
+      for (const tag of openingTags(src)) {
+        if (HAND_WRITTEN_INK.test(tag) && HAND_WRITTEN_TINT.test(tag)) {
+          hits.push(`${file.replace(process.cwd(), ".")}`);
+        }
+      }
+    }
+    return hits;
+  };
+
+  it("손글씨 accent × 틴트가 늘지 않는다 — `tone` 을 안 쓰면 이 게이트가 못 보던 층", () => {
+    const hits = handWritten();
+    expect(
+      hits.length,
+      `잉크와 틴트를 손으로 나란히 쓴 자리가 ${BASELINE_HAND_WRITTEN_ACCENT_ON_TINT} → ${hits.length} 로 늘었다.\n` +
+        `틴트를 지는 잉크는 --color-indigo-text-soft 다(같은 자리 4.27 → 8.39:1).\n` +
+        hits.join("\n"),
+    ).toBeLessThanOrEqual(BASELINE_HAND_WRITTEN_ACCENT_ON_TINT);
+  });
+
+  it("갚았으면 기준선도 내린다 — 여유를 무료로 두지 않는다", () => {
+    expect(
+      handWritten().length,
+      "손글씨 accent×틴트가 줄었다 — BASELINE_HAND_WRITTEN_ACCENT_ON_TINT 도 같이 내려라.",
+    ).toBeGreaterThanOrEqual(BASELINE_HAND_WRITTEN_ACCENT_ON_TINT);
+  });
+
+  it("탐지기가 공회전하지 않는다 — 합성 프로브를 실제로 잡고, 정상 짝은 놓아준다", () => {
+    const offender = `<span className="rounded-full bg-[color:var(--color-indigo-a16)] text-[color:var(--color-indigo-accent)]">1</span>`;
+    const fixed = `<span className="rounded-full bg-[color:var(--color-indigo-a16)] text-[color:var(--color-indigo-text-soft)]">1</span>`;
+    const bare = `<span className="text-[color:var(--color-indigo-accent)]">1</span>`;
+    const hit = (s: string) =>
+      openingTags(s).some((t) => HAND_WRITTEN_INK.test(t) && HAND_WRITTEN_TINT.test(t));
+    expect(hit(offender), "일부러 만든 위반을 못 잡는다 — 탐지기가 죽었다").toBe(true);
+    expect(hit(fixed), "고친 짝을 위반으로 센다 — 그러면 고칠 이유가 사라진다").toBe(false);
+    expect(hit(bare), "맨 바탕 위 accent 는 라이선스 안이다").toBe(false);
+    // 감사가 지목한 그 자리는 실제로 갚였다.
+    expect(
+      readFileSync(join(process.cwd(), "src/features/docs-vault-local/ui/StepRow.tsx"), "utf8"),
+    ).toContain("--color-indigo-text-soft");
+  });
+
   it("위반 0 — 틴트를 지는 주 행동 잉크는 accentOnTint 다", () => {
     const offenders: string[] = [];
     for (const file of walk(join(process.cwd(), "src"))) {
