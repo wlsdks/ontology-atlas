@@ -746,7 +746,21 @@ const eslintConfig = defineConfig([
     files: ['src/shared/lib/footprint-glyph.ts'],
     rules: {
       'no-restricted-syntax': [
-        'warn',
+        /*
+         * ⚠️ **`error` 다 — 종전엔 `warn` 이었고 그건 게이트가 아니었다.**
+         *
+         * 예외는 이미 아래 `.filter(…shadowBlur)` 한 줄이 정확히 낸다. 그런데
+         * 레벨까지 `warn` 으로 내려 두면 **남은 셀렉터 전부**(arbitrary 크기 ·
+         * accent 틴트 · scale/gradient)가 이 파일에서만 무력해진다. 게다가
+         * `pnpm lint` 는 `--max-warnings` 가 없어 경고가 몇 개든 exit 0 이다.
+         *
+         * 2026-08-04 감사 실측: 이 파일에 `text-[13px] rounded-[7px]` 를 심고
+         * `pnpm lint` 를 돌리니 «94 problems (0 errors, 94 warnings)» 로
+         * **통과했다.** 예외 하나를 여느라 문 전체를 열어 둔 것이다.
+         *
+         * 켜기 전 전수: 이 파일의 위반은 **0** 이라 승격 비용이 0이다.
+         */
+        'error',
         ...scaleGradientSelectors.filter((rule) => !rule.selector.includes('shadowBlur')),
         ...arbitrarySizeSelectors,
         ...accentTintPairingSelectors,

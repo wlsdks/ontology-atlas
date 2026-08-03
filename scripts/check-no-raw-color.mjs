@@ -98,8 +98,27 @@ export const ALLOWLIST = new Set([
   "entities/ontology-class/model/tone.ts",
 ]);
 
+/**
+ * **디렉터리째 면제는 이 저장소의 규격이 아니다** — 면제는 «파일 단위 + 사유
+ * 주석»이고, 그것이 `ALLOWLIST` 다.
+ *
+ * 종전엔 `topology-map-v2`(캔버스 엔진) 전체를 건너뛰었다. 이유는 정당했다 —
+ * canvas `fillStyle` 은 `var()` 를 못 먹는다. 하지만 **디렉터리 하나를 통째로
+ * 면제하면 그 안에서 무엇이 자라는지 아무도 모른다**: 59개 파일이 이 검사를
+ * 한 번도 받은 적이 없었고, 게이트가 «깨끗해서 0» 인지 «안 봐서 0» 인지 구별할
+ * 방법이 없었다.
+ *
+ * ⚠️ **켜기 전 전수 측정**(`/gate-probe` · `design-system-audit` §4): 이 스킵을
+ * 걷어낸 뒤 그 디렉터리의 위반은 **0** 이다(2026-08-04 실측 — 비-테스트 파일의
+ * rgba 리터럴은 `rgba(3,3,4)` 2건과 `rgba(236,236,240)` 2건뿐이고 넷 다 어느
+ * `HUE_FAMILIES` 에도 없다). 그래서 이 변경은 픽셀도 0, 위반도 0이고, 막는 것은
+ * **앞으로의 재유입**뿐이다.
+ *
+ * 캔버스가 정말 raw 리터럴을 요구하는 파일이 생기면 `ALLOWLIST` 에 **파일 하나
+ * + 그 파일 상단 docstring 의 사유**로 등재한다 — `tone.ts` 가 그 선례다.
+ */
 function shouldSkipDir(name) {
-  return name === "node_modules" || name === "topology-map-v2";
+  return name === "node_modules";
 }
 
 function isTargetFile(name) {

@@ -124,12 +124,25 @@ test("skips .test. files", () => {
   );
 });
 
-test("skips the topology-map-v2 canvas engine directory", () => {
+/*
+ * 종전 이 자리에는 «topology-map-v2 디렉터리를 건너뛴다» 는 테스트가 있었다.
+ * 그 디렉터리째 면제를 2026-08-04 감사가 걷어냈다 (`check-no-raw-color.mjs` 의
+ * `shouldSkipDir` 주석 — 걷어낸 시점의 그 디렉터리 위반 전수는 0 이다).
+ * 면제는 이제 파일 단위 `ALLOWLIST` 로만 존재한다.
+ *
+ * **이 테스트는 반대 방향을 못박는다** — 디렉터리 스킵이 되살아나면 여기가
+ * 빨개진다. 이 단언이 없으면 「깨끗해서 0」과 「안 봐서 0」이 다시 같은 초록이
+ * 된다.
+ */
+test("scans the topology-map-v2 canvas engine directory — no directory-wide exemption", () => {
   withTempSrc({}, (dir) => {
     const nested = join(dir, "widgets", "topology-map-v2", "lib");
     mkdirSync(nested, { recursive: true });
     writeFileSync(join(nested, "colors.ts"), `const c = "rgba(94,106,210,0.24)";\n`, "utf8");
-    assert.deepEqual(findRawColorLiterals(dir), []);
+    const found = findRawColorLiterals(dir);
+    assert.equal(found.length, 1, "캔버스 디렉터리가 다시 통째로 면제됐다");
+    assert.equal(found[0].family, "indigo");
+    assert.match(found[0].file, /topology-map-v2/);
   });
 });
 
