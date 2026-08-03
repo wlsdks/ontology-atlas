@@ -183,6 +183,9 @@ export function buildProjectMeaningInventory({
   }
 
   const scope = new Set(concepts);
+  const kinds = Object.fromEntries(projectScope.nodes.rows
+    .filter((row) => safeSlug(row?.slug) && nonBlank(row?.kind, 100))
+    .map((row) => [row.slug, row.kind]));
   const relationsByKey = new Map();
   for (const edge of artifactEdges) {
     const type = normalizeRelationType(edge?.via);
@@ -205,6 +208,7 @@ export function buildProjectMeaningInventory({
     }
   }
   const evidence = new Set();
+  const evidenceClaims = new Map();
   const sourceGraphCurrent = receipt.graphHash === graphHash;
   for (const witness of sourceGraphCurrent ? receipt.witnesses : []) {
     if (
@@ -212,16 +216,24 @@ export function buildProjectMeaningInventory({
       && scope.has(witness.nodeSlug)
       && safeRelativePath(witness.path)
       && claims.has(`${witness.nodeSlug}\0${witness.path}`)
-    ) evidence.add(witness.path);
+    ) {
+      evidence.add(witness.path);
+      const key = `${witness.nodeSlug}\0${witness.path}`;
+      evidenceClaims.set(key, { concept: witness.nodeSlug, path: witness.path });
+    }
   }
 
   return {
     status: 'ready',
+    evidenceClaims: [...evidenceClaims.entries()]
+      .sort(([left], [right]) => left.localeCompare(right))
+      .map(([, claim]) => claim),
     inventory: {
       contract: MEANING_WITNESS_INVENTORY_CONTRACT,
       graphHash,
       sourceFingerprint: receipt.sourceFingerprint,
       concepts: [...concepts].sort((a, b) => a.localeCompare(b)),
+      ...(Object.keys(kinds).length > 0 ? { kinds } : {}),
       relations: [...relationsByKey.values()].sort((a, b) => relationKey(a).localeCompare(relationKey(b))),
       evidence: [...evidence].sort((a, b) => a.localeCompare(b)),
       paths: [...evidence].sort((a, b) => a.localeCompare(b)),

@@ -2,6 +2,25 @@
 
 ## Unreleased
 
+### Added — action-first competency repair handoff
+
+- `agent_brief.nextActions[0]` now points to a compact `meaningRepair:v1`
+  packet when current graph/source evidence can narrow incomplete abilities or
+  evidence answers.
+- The packet separates the Markdown's current declarations, typed-containment
+  review candidates, current-source canonical-path candidates, and unresolved
+  targets. Candidates stay human-review-only and never trigger automatic write
+  or finalization.
+- Non-current source, provenance/scope drift, validation errors, missing human
+  approval, unresolved evidence promoted to answered, and mtime conflicts are
+  explicit stops. Private source roots and raw inventories remain outside the
+  public response.
+- The first review read derives one deduplicated project/domain/capability
+  target set from every review bucket and now emits executable literal
+  `get_concepts(body:"full")` calls in deterministic batches of at most 20.
+  CLI and MCP verification reject over-cap batches, target omissions,
+  duplicates, ordering drift, and packets over the explicit 5 KiB budget.
+
 ### Added — post-write project meaning receipt and fresh-process read-back
 
 - MCP now exposes 33 tools (19 read and 14 write). The new non-destructive

@@ -11,6 +11,10 @@ import { findAgentTool } from './tool-catalog';
 import type { NormalizedToolCall } from './provider-adapter';
 import { AGENT_TOOL_RESULT_CHAR_CAP } from './types';
 import type { VaultReadDoc, VaultReadPort } from './vault-read-port';
+import {
+  containsCompetencyQualification,
+  SOURCE_BACKED_COMPETENCY_MESSAGE,
+} from './competency-qualification-boundary';
 
 export { GRAPH_FRONTMATTER_KEYS, wrapUntrusted } from './concept-evidence-pack';
 
@@ -277,6 +281,20 @@ export function createToolExecutor(port: VaultReadPort) {
 
     // ── 쓰기: 실행하지 않는다. 제안으로만 나간다. ────────────────────────
     if (tool.effect === 'write') {
+      const bodies = call.name === 'add_concepts' && Array.isArray(args.concepts)
+        ? args.concepts.map((row) => asArgs(row).body)
+        : [args.body];
+      if (bodies.some(containsCompetencyQualification)) {
+        return {
+          content: SOURCE_BACKED_COMPETENCY_MESSAGE,
+          isError: true,
+          outcome: 'error',
+          target: str(args.slug) ?? call.name,
+          summary: '소스 근거 자격은 MCP에서만 가능',
+          readSlugs: [],
+          vaultChars: 0,
+        };
+      }
       return {
         content:
           'Recorded as a proposal. Nothing was written — the person reviews the exact files and content and decides. Continue explaining your reasoning; do not repeat this call.',

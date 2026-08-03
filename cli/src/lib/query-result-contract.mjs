@@ -46,6 +46,8 @@ const MEANING_STRUCTURE_STATUSES = new Set(['ready', 'needs_structure', 'invalid
 const MEANING_QUESTION_STATUSES = new Set(['answered', 'partial', 'visible-gap', 'unassessed']);
 const MEANING_WITNESS_STATUSES = new Set(['resolved', 'missing', 'unavailable']);
 const MEANING_QUESTION_IDS = ['scope', 'domains', 'abilities', 'evidence', 'impact'];
+const MEANING_REPAIR_PACKET_MAX_BYTES = 5 * 1024;
+const GET_CONCEPTS_FULL_BODY_MAX = 20;
 
 export function assertQueryOperation(result, expectedOperation) {
   if (!result || typeof result !== 'object' || Array.isArray(result)) {
@@ -284,6 +286,9 @@ export function assertAgentBriefShape(result) {
   }
   if (!validMeaningAssessment(result.meaningAssessment, result.projectSlug)) {
     throw new Error('agent_brief meaningAssessment must contain the categorical fail-closed project meaning view');
+  }
+  if (!validMeaningRepair(result.meaningRepair, result.projectSlug)) {
+    throw new Error('agent_brief meaningRepair must contain the action-first human review packet');
   }
   if (!validAgentBriefDocs(result.docs)) {
     throw new Error('agent_brief docs must include workflowGuide and graphScanProofChecklist guidance');
@@ -560,6 +565,192 @@ function validMeaningAssessment(value, projectSlug) {
       .filter((field) => !['evaluator', 'sourceReceiptContractVersion'].includes(field))
       .every((field) => provenance[field] === null || hasNonEmptyString(provenance[field]))
     && (provenance.sourceReceiptContractVersion === null || provenance.sourceReceiptContractVersion === 1);
+}
+
+function validMeaningRepair(value, projectSlug) {
+  const rootKeys = [
+    'contract',
+    'status',
+    'projectSlug',
+    'blockedBy',
+    'primaryQuestion',
+    'questionsNeedingReview',
+    'provenance',
+    'questions',
+    'workflow',
+    'stopWhen',
+    'writePolicy',
+  ];
+  if (
+    !isPlainObject(value)
+    || !hasExactKeys(value, rootKeys)
+    || value.contract !== 'meaningRepair:v1'
+    || value.projectSlug !== projectSlug
+    || new TextEncoder().encode(JSON.stringify(value)).byteLength > MEANING_REPAIR_PACKET_MAX_BYTES
+    || !['blocked', 'human_review_required', 'not_needed'].includes(value.status)
+    || containsPrivateSourceField(value)
+    || !Array.isArray(value.questionsNeedingReview)
+    || value.questionsNeedingReview.some((id) => !['abilities', 'evidence'].includes(id))
+    || new Set(value.questionsNeedingReview).size !== value.questionsNeedingReview.length
+    || !Array.isArray(value.workflow)
+    || !Array.isArray(value.stopWhen)
+    || value.stopWhen.length === 0
+    || value.stopWhen.some((id) => !hasNonEmptyString(id))
+    || !isPlainObject(value.writePolicy)
+    || !hasExactKeys(value.writePolicy, ['humanApprovalRequired', 'automaticWrite', 'automaticFinalize'])
+    || value.writePolicy.humanApprovalRequired !== true
+    || value.writePolicy.automaticWrite !== false
+    || value.writePolicy.automaticFinalize !== false
+  ) return false;
+  if (value.status === 'blocked') {
+    return hasNonEmptyString(value.blockedBy)
+      && value.primaryQuestion === null
+      && value.questionsNeedingReview.length === 0
+      && value.provenance === null
+      && value.questions === null
+      && value.workflow.length === 0;
+  }
+  if (
+    value.blockedBy !== null
+    || !(value.primaryQuestion === null || ['abilities', 'evidence'].includes(value.primaryQuestion))
+    || !isPlainObject(value.provenance)
+    || !hasExactKeys(value.provenance, [
+      'graphHash', 'sourceFingerprint', 'sourceMeasuredAt', 'sourceCurrentness',
+    ])
+    || !hasNonEmptyString(
+      value.provenance.graphHash,
+      value.provenance.sourceFingerprint,
+      value.provenance.sourceMeasuredAt,
+    )
+    || value.provenance.sourceCurrentness !== 'current'
+    || !isPlainObject(value.questions)
+    || !hasExactKeys(value.questions, ['abilities', 'evidence'])
+  ) return false;
+  const abilities = value.questions.abilities;
+  const evidence = value.questions.evidence;
+  if (
+    !validMeaningRepairQuestion(abilities, 'typed_containment', 'structural_candidates_only')
+    || !validMeaningRepairQuestion(evidence, 'current_source_canonical_path', 'source_path_candidates_only')
+  ) return false;
+  if (value.status === 'not_needed') {
+    return value.primaryQuestion === null
+      && value.questionsNeedingReview.length === 0
+      && value.workflow.length === 0;
+  }
+  return value.questionsNeedingReview.length > 0
+    && value.primaryQuestion === value.questionsNeedingReview[0]
+    && validMeaningRepairWorkflow(value.workflow, value.questions, projectSlug);
+}
+
+function validMeaningRepairQuestion(value, basis, state) {
+  if (
+    !isPlainObject(value)
+    || !hasExactKeys(value, ['basis', 'targetCount', 'review'])
+    || value.basis !== basis
+    || !validCount(value.targetCount)
+    || !isPlainObject(value.review)
+    || value.review.state !== state
+    || !Array.isArray(value.review.alreadyDeclared)
+    || !Array.isArray(value.review.candidateAdditions)
+    || !Array.isArray(value.review.declaredWithoutSupport)
+    || !Array.isArray(value.review.unresolved)
+  ) return false;
+  if (basis === 'typed_containment') {
+    return hasExactKeys(value.review, [
+        'state', 'alreadyDeclared', 'candidateAdditions', 'declaredWithoutSupport', 'unresolved',
+      ])
+      && [...value.review.alreadyDeclared, ...value.review.candidateAdditions].every((row) => (
+        isPlainObject(row)
+        && hasExactKeys(row, ['slug', 'witnessCapabilities'])
+        && hasNonEmptyString(row.slug)
+        && Array.isArray(row.witnessCapabilities)
+        && row.witnessCapabilities.length > 0
+        && row.witnessCapabilities.every((slug) => hasNonEmptyString(slug))
+      ));
+  }
+  return hasExactKeys(value.review, [
+      'state', 'alreadyDeclared', 'candidateAdditions', 'declaredWithoutSupport', 'unresolved',
+    ])
+    && [
+      ...value.review.alreadyDeclared,
+      ...value.review.candidateAdditions,
+      ...value.review.declaredWithoutSupport,
+      ...value.review.unresolved,
+    ].every((slug) => hasNonEmptyString(slug));
+}
+
+function meaningRepairReviewTargets(questions, projectSlug) {
+  const abilities = questions.abilities.review;
+  const evidence = questions.evidence.review;
+  const abilityRows = [...abilities.alreadyDeclared, ...abilities.candidateAdditions];
+  const domains = [
+    ...abilityRows.map((row) => row.slug),
+    ...abilities.declaredWithoutSupport,
+    ...abilities.unresolved,
+  ];
+  const capabilities = [
+    ...abilityRows.flatMap((row) => row.witnessCapabilities),
+    ...evidence.alreadyDeclared,
+    ...evidence.candidateAdditions,
+    ...evidence.declaredWithoutSupport,
+    ...evidence.unresolved,
+  ];
+  const domainSlugs = [...new Set(domains)].sort((left, right) => left.localeCompare(right));
+  const capabilitySlugs = [...new Set(capabilities)].sort((left, right) => left.localeCompare(right));
+  if (
+    domainSlugs.length !== questions.abilities.targetCount
+    || capabilitySlugs.length !== questions.evidence.targetCount
+  ) return null;
+  return [...new Set([projectSlug, ...domainSlugs, ...capabilitySlugs])];
+}
+
+function validMeaningRepairWorkflow(workflow, questions, projectSlug) {
+  const steps = [
+    'read_review_inputs',
+    'human_semantic_approval',
+    'write_approved_project_body',
+    'verify',
+    'refresh_conflict_guard',
+    'finalize',
+  ];
+  const shapeValid = workflow.length === steps.length && workflow.every((row, index) => (
+    isPlainObject(row)
+    && row.step === steps[index]
+    && Array.isArray(row.calls)
+    && row.calls.every((call) => (
+      isPlainObject(call)
+      && hasNonEmptyString(call.tool)
+      && isPlainObject(call.arguments)
+    ))
+  ));
+  if (!shapeValid) return false;
+  const expectedTargets = meaningRepairReviewTargets(questions, projectSlug);
+  const readStep = workflow[0];
+  if (
+    expectedTargets === null
+    || !hasExactKeys(readStep, ['step', 'derivation', 'calls'])
+    || !isPlainObject(readStep.derivation)
+    || !hasExactKeys(readStep.derivation, ['slugs'])
+    || readStep.derivation.slugs !== 'project_and_all_review_targets'
+    || readStep.calls.length === 0
+  ) return false;
+  const emittedTargets = [];
+  for (const call of readStep.calls) {
+    if (
+      !hasExactKeys(call, ['tool', 'arguments'])
+      || call.tool !== 'get_concepts'
+      || !hasExactKeys(call.arguments, ['slugs', 'body'])
+      || call.arguments.body !== 'full'
+      || !Array.isArray(call.arguments.slugs)
+      || call.arguments.slugs.length === 0
+      || call.arguments.slugs.length > GET_CONCEPTS_FULL_BODY_MAX
+      || call.arguments.slugs.some((slug) => !hasNonEmptyString(slug))
+    ) return false;
+    emittedTargets.push(...call.arguments.slugs);
+  }
+  return new Set(emittedTargets).size === emittedTargets.length
+    && emittedTargets.length === expectedTargets.length
+    && emittedTargets.every((slug, index) => slug === expectedTargets[index]);
 }
 
 function validProjectSourceGap(value) {
