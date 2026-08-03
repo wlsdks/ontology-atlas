@@ -1,4 +1,4 @@
-import { fireEvent, render, screen } from "@testing-library/react";
+import { fireEvent, render, screen, waitFor } from "@testing-library/react";
 import type React from "react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import type { ProjectSourceView } from "@/shared/lib/project-source-receipt";
@@ -109,6 +109,7 @@ function renderPanel(
 ) {
   render(
     <TopologyV2DetailPanel
+      open
       nodeId="domain:views"
       slug="domains/views"
       title="Views"
@@ -647,6 +648,7 @@ describe("TopologyV2DetailPanel — sticky 푸터 slug 평문화 (Toss C2)", () 
   it("shows only the slug's last segment in visible text, with the full slug as a hover title", () => {
     render(
       <TopologyV2DetailPanel
+        open
         nodeId="capability:mcp-server"
         slug="ontology/capabilities/mcp-server"
         title="MCP Server"
@@ -748,6 +750,7 @@ describe("TopologyV2DetailPanel — M-2 typed containment split", () => {
   it("renders a 담는 것(contains) group with the parent's children (not folded into 기대는 곳)", () => {
     render(
       <TopologyV2DetailPanel
+        open
         nodeId="domain:ai-agent-partner"
         slug="domains/ai-agent-partner"
         title="AI Agent Partner"
@@ -838,6 +841,7 @@ describe("TopologyV2DetailPanel — 부모만 있는 노드의 이어진 곳", (
   function renderParentOnly(onSelectConnection: (id: string) => void = () => {}) {
     render(
       <TopologyV2DetailPanel
+        open
         nodeId="element:src/entities/docs-vault/lib/derive-ontology-from-vault.ts"
         slug="src/entities/docs-vault/lib/derive-ontology-from-vault.ts"
         title="Derive Ontology From Vault"
@@ -890,6 +894,7 @@ describe("TopologyV2DetailPanel — 부모만 있는 노드의 이어진 곳", (
   it("keeps the aggregate equal to the sum of the four rendered group totals", () => {
     render(
       <TopologyV2DetailPanel
+        open
         nodeId="capability:mcp-server"
         slug="ontology/capabilities/mcp-server"
         title="MCP Server"
@@ -930,6 +935,7 @@ describe("TopologyV2DetailPanel — P3-① 미기록 관계 empty-state (0 vs �
     // "아직 기록 안 됨" 임을 UI 가 정직하게 말해야 한다.
     render(
       <TopologyV2DetailPanel
+        open
         nodeId="element:src/widgets/global-search"
         slug="src/widgets/global-search"
         title="global-search"
@@ -1039,6 +1045,7 @@ describe("TopologyV2DetailPanel — W2-A action row", () => {
     }));
     render(
       <TopologyV2DetailPanel
+        open
         nodeId="domain:cli"
         slug="domains/cli"
         title="CLI"
@@ -1098,6 +1105,7 @@ describe("TopologyV2DetailPanel — W2-A action row", () => {
     }));
     render(
       <TopologyV2DetailPanel
+        open
         nodeId="domain:small"
         slug="domains/small"
         title="Small"
@@ -1139,6 +1147,7 @@ describe("TopologyV2DetailPanel — W2-A action row", () => {
     }));
     render(
       <TopologyV2DetailPanel
+        open
         nodeId="domain:flat"
         slug="domains/flat"
         title="Flat"
@@ -1245,6 +1254,7 @@ describe("TopologyV2DetailPanel — 시안 재설계 구조", () => {
   it("renders each relation group header with an underline divider + directional glyph + count chip", () => {
     render(
       <TopologyV2DetailPanel
+        open
         nodeId="domain:ai-agent-partner"
         slug="domains/ai-agent-partner"
         title="AI Agent Partner"
@@ -1291,6 +1301,7 @@ describe("TopologyV2DetailPanel — 시안 재설계 구조", () => {
   it("renders the relation zone with the enlarged between-group gap token (28px rhythm)", () => {
     render(
       <TopologyV2DetailPanel
+        open
         nodeId="domain:ai-agent-partner"
         slug="domains/ai-agent-partner"
         title="AI Agent Partner"
@@ -1340,5 +1351,57 @@ describe("TopologyV2DetailPanel — 시안 재설계 구조", () => {
     expect(chip).toHaveAttribute("aria-label", expect.stringContaining("AI Agent Partner"));
     // a chevron (svg) affordance is present
     expect(chip.querySelector("svg")).not.toBeNull();
+  });
+
+  /**
+   * 이 패널은 **자기 퇴장 창을 스스로 진다** (2026-08-03). 종전엔 부모가
+   * `usePanelPresence` 로 창을 열고 `presence` prop 으로 클래스만 지시했다 —
+   * 그러면 «이 표면에 나가는 길이 있는가» 가 이 파일 밖의 사실이 되고, 부모가
+   * 즉시 언마운트로 되돌아가면 여기서는 아무도 못 잡는다.
+   *
+   * HomePage 가 기대는 계약이 정확히 이 둘이다: 닫아도 창 동안 남고, 창이
+   * 끝나면 한 번 알린다(그 통보로 포지셔너를 내린다).
+   */
+  it("닫아도 1프레임에 사라지지 않고, 퇴장이 끝나면 한 번 알린다", async () => {
+    const onExited = vi.fn();
+    const panel = (open: boolean) => (
+      <TopologyV2DetailPanel
+        open={open}
+        onExited={onExited}
+        nodeId="domain:views"
+        slug="domains/views"
+        title="Views"
+        kind="domain"
+        domain={null}
+        powered={false}
+        groups={{
+          contains: { rows: [], total: 0 },
+          usedBy: { rows: [], total: 0 },
+          dependsOn: { rows: [], total: 0 },
+          belongsTo: { rows: [], total: 0 },
+        }}
+        evidence={{ rows: [], total: 0 }}
+        codeLocations={[]}
+        handoffText="node: domains/views"
+        documentHref={null}
+        studioEditHref="/ontology/studio/?node=domains%2Fviews"
+        labels={labels}
+        onSelectConnection={() => {}}
+        onCopyHandoff={() => {}}
+        onClose={() => {}}
+        onSetPathSource={() => {}}
+      />
+    );
+
+    const { rerender } = render(panel(true));
+    expect(screen.getByTestId("topology-v2-detail-panel")).toBeInTheDocument();
+
+    rerender(panel(false));
+    // 퇴장 «중» 이다 — 아직 화면에 있고, 그 프레임은 못 눌린다.
+    expect(screen.getByTestId("topology-v2-detail-panel")).toBeInTheDocument();
+    expect(onExited, "퇴장 중에 부르면 포지셔너가 애니 도중에 사라진다").not.toHaveBeenCalled();
+
+    await waitFor(() => expect(onExited).toHaveBeenCalledTimes(1));
+    expect(screen.queryByTestId("topology-v2-detail-panel")).not.toBeInTheDocument();
   });
 });

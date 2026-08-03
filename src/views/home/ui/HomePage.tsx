@@ -2,7 +2,7 @@
 
 import Image from "next/image";
 import { withBasePath } from "@/shared/lib/base-path";
-import { useHeldValue, usePanelPresence, useSurfaceSwap } from "@/shared/lib/use-presence";
+import { useHeldValue, useSurfaceSwap } from "@/shared/lib/use-presence";
 import { cn } from "@/shared/lib/cn";
 import {
   type KeyboardEvent as ReactKeyboardEvent,
@@ -2275,8 +2275,19 @@ export function HomePage() {
   // 언마운트하지 않고 퇴장 애니(≈120ms) 동안 유지한다. 퇴장 중엔 선택 파생
   // 값(v2DatasheetModel)이 null 로 사라지므로 마지막 모델을 ref 로 잡아 그 창
   // 동안 같은 내용을 계속 그린다(내용이 바뀌지 않고 접혀 사라지게).
+  //
+  // 2026-08-03 — **퇴장 창은 이제 패널이 진다**(`TopologyV2DetailPanel` 안의
+  // `<Surface>`). 여기 있던 `usePanelPresence` + `presence` prop 조합은 창을
+  // 부모에 두고 클래스만 자식에게 지시하는 형태라, «이 표면에 나가는 길이
+  // 있는가» 가 패널 파일 밖의 사실이었다(하드컷 래칫의 탐지기가 못 보는 자리).
+  // 남는 것은 **포지셔너를 언제 내리는가** 하나뿐이고, 그 답은 퇴장이 끝났다는
+  // 패널의 통보(`onExited`)다 — 한 표면에 퇴장 타이머가 둘이면 어느 쪽이
+  // 진실인지 알 수 없다.
   const panelOpen = nodePopoverVisible && Boolean(v2DatasheetModel);
-  const nodePanelPresence = usePanelPresence(panelOpen);
+  const [nodePanelMounted, setNodePanelMounted] = useState(false);
+  // 렌더 중 조정 — effect 로 올리면 열린 첫 프레임에 포지셔너가 없어 등장이
+  // 한 프레임 늦는다(`useHeldValue` 가 같은 이유로 렌더 중에 붙든다).
+  if (panelOpen && !nodePanelMounted) setNodePanelMounted(true);
   const retainedDatasheetRef = useRef(v2DatasheetModel);
   if (v2DatasheetModel) retainedDatasheetRef.current = v2DatasheetModel;
   const panelDatasheetModel = v2DatasheetModel ?? retainedDatasheetRef.current;
@@ -4812,8 +4823,9 @@ export function HomePage() {
         {/* rank2 — presence 게이트: `panelOpen` 이 꺼져도 퇴장 애니가 끝날
             때까지(≈140ms) mounted 유지. 그 동안 `panelDatasheetModel`(마지막
             모델 retain)로 같은 내용을 계속 그리며 `.topology-chrome-out` 으로
-            접힌다. */}
-        {nodePanelPresence.mounted && panelDatasheetModel ? (
+            접힌다. 창의 주인은 패널 안의 `<Surface>` 이고, 이 게이트는 그
+            창이 끝났다는 통보(`onExited`)에 맞춰 포지셔너를 내린다. */}
+        {nodePanelMounted && panelDatasheetModel ? (
           <div
             ref={nodePopoverPositionerRef}
             data-testid="topology-node-popover-positioner"
@@ -4833,7 +4845,8 @@ export function HomePage() {
             {panelDatasheetModel ? (
               <TopologyV2DetailPanel
                 key={panelDatasheetModel.slug}
-                presence={nodePanelPresence.exiting ? "exiting" : "entering"}
+                open={panelOpen}
+                onExited={() => setNodePanelMounted(false)}
                 nodeId={panelDatasheetModel.nodeId}
                 slug={panelDatasheetModel.slug}
                 title={panelDatasheetModel.title}

@@ -22,6 +22,8 @@ import {
   subscribeLocalEndpointChange,
   type LocalEndpointSettings,
 } from '@/shared/lib/local-endpoint';
+import { useHeldValue } from '@/shared/lib/use-presence';
+import { Surface } from '@/shared/ui';
 import { controlClass } from '@/shared/ui/control-class';
 import { LLM_AUDIT_LOG_RELATIVE_PATH } from '@/shared/lib/llm-audit-log';
 import { requestSettingsView } from '@/shared/lib/settings-view-intent';
@@ -109,6 +111,15 @@ export function VaultAgentPanel({
    * 제한한다(겹쳐 열리는 임시 표면 0).
    */
   const [meta, setMeta] = useState<'prompt' | 'handoff' | null>(null);
+  /**
+   * 곁가지가 **접히는 길**을 갖는다. 여는 것은 사용자가 누른 일이고, 닫는 것도
+   * 같은 사건인데 종전에는 `{meta ? … : null}` 이라 열림은 리플로우로 자라고
+   * 닫힘만 1프레임에 사라졌다 — 같은 입력의 두 방향이 다른 문법이면 결함이다.
+   *
+   * `meta` 는 원시값이라 `useHeldValue` 에 키를 따로 줄 필요가 없다(객체였다면
+   * 필수다 — 키 없는 객체는 렌더마다 정체성이 바뀌어 React #301 을 낸다).
+   */
+  const heldMeta = useHeldValue(meta);
   const inputRef = useRef<HTMLTextAreaElement>(null);
   /**
    * 자람을 재는 **오프스크린 미러**. 보이는 입력칸의 높이를 `''` 로 되돌려
@@ -826,29 +837,37 @@ export function VaultAgentPanel({
               ) : null}
             </div>
 
-            {meta ? (
-              <div className="mt-2 rounded-card border border-[color:var(--color-border-soft)] bg-[color:var(--color-panel)] p-2.5">
-                {meta === 'prompt' ? (
-                  <AgentPromptText
-                    systemPrompt={agent.systemPrompt}
-                    note={t('promptDisclosure.note')}
-                  />
-                ) : readableVaultPath ? (
-                  // 경계 문장은 **넘기는 자리**에서만 값을 한다 — 대화 내내
-                  // 입력칸 아래 상주하며 두 줄을 먹던 문장이 여기로 내려왔다.
-                  <AgentHandoffPacket
-                    vaultPath={readableVaultPath}
-                    focusedSlug={screenContext.focusedSlug}
-                    labels={{
-                      boundary: t('boundary'),
-                      note: t('handoffNote'),
-                      copy: t('handoffCopy'),
-                      copied: t('handoffCopied'),
-                    }}
-                  />
-                ) : null}
-              </div>
-            ) : null}
+            {/* `origin` 은 트리거 방향이다 — 이 상자를 여는 토글은 바로 위
+                왼쪽에 있고, 상자는 그 아래에서 자란다. 중앙에서 태어나면 누른
+                자리와 태어난 자리가 어긋난다(모션석 반려 사유).
+                내용은 `heldMeta` 로 붙든다: `meta` 가 null 이 되는 순간 자식이
+                비면 상자가 «빈 채로» 접힌다. */}
+            <Surface
+              open={meta !== null}
+              origin="top left"
+              data-testid="agent-meta-disclosure"
+              className="mt-2 rounded-card border border-[color:var(--color-border-soft)] bg-[color:var(--color-panel)] p-2.5"
+            >
+              {heldMeta === 'prompt' ? (
+                <AgentPromptText
+                  systemPrompt={agent.systemPrompt}
+                  note={t('promptDisclosure.note')}
+                />
+              ) : readableVaultPath ? (
+                // 경계 문장은 **넘기는 자리**에서만 값을 한다 — 대화 내내
+                // 입력칸 아래 상주하며 두 줄을 먹던 문장이 여기로 내려왔다.
+                <AgentHandoffPacket
+                  vaultPath={readableVaultPath}
+                  focusedSlug={screenContext.focusedSlug}
+                  labels={{
+                    boundary: t('boundary'),
+                    note: t('handoffNote'),
+                    copy: t('handoffCopy'),
+                    copied: t('handoffCopied'),
+                  }}
+                />
+              ) : null}
+            </Surface>
           </footer>
         ) : null}
       </div>
