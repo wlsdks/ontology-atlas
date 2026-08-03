@@ -15,6 +15,7 @@ import {
 import { useCopyFeedback } from "@/shared/lib/use-copy-feedback";
 import { controlClass } from "@/shared/ui/control-class";
 import { IconButton } from "@/shared/ui/controls";
+import { Surface } from "@/shared/ui/surface";
 import { formatActivityAge } from "../lib/format-activity-age";
 import { useOntologyInsight } from "../model/use-ontology-insight";
 import { ATLAS_CLI } from "@/shared/config/cli-invocation";
@@ -358,9 +359,12 @@ export function LiveActivityBadge({
             : "text-[color:var(--color-text-tertiary)] transition-transform"}
         />
       </button>
-      {open ? (
-      <div
+      {/* 칩 바로 아래 오른쪽 정렬로 열린다 — 등장 원점도 그 모서리다. */}
+      <Surface
+        open={open}
+        origin="top right"
         id={popoverId}
+        data-testid="live-activity-popover-surface"
         role="dialog"
         aria-label={labels.summaryTitle}
         className="absolute right-0 top-9 z-50 w-64 rounded-card border border-[color:var(--color-border-soft)] bg-[color:var(--color-panel)] p-3 text-left shadow-[var(--shadow-elevation-1)]"
@@ -583,8 +587,7 @@ export function LiveActivityBadge({
             </div>
           ) : null}
         </div>
-      </div>
-      ) : null}
+      </Surface>
     </div>
   );
 }

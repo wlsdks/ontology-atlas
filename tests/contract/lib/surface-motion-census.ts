@@ -293,6 +293,22 @@ function collect(root: string, roots: readonly string[], extraFiles: readonly st
       imports.set(m[1], resolveImport(root, file, m[2]));
     }
 
+    // ── 탐지기 ⓪ `<Surface open={…}>` — **전환된 표면 자신**
+    //
+    // ★ 이게 없으면 갚을수록 분모가 줄어든다. 전환하면 호출 자리가
+    //   `{cond && <div className="fixed … z-50">}` 에서 `<Surface open={cond}>`
+    //   로 바뀌는데, ①②는 **조건부 호출 자리**만 보므로 그 표면이 통째로
+    //   시야에서 사라진다. 실측: 13건을 갚자 분모가 19 → 8 로 내려앉았다 —
+    //   「위반 0」과 「안 보고 있음」이 다시 구별되지 않는 그 상태다.
+    if (!opts.onlyHardCuts) {
+      for (const m of src.matchAll(/<Surface[\s>]/g)) {
+        const tag = openingTag(src, m.index!);
+        if (!/\bopen[=\s]/.test(tag)) continue;
+        const line = src.slice(0, m.index!).split('\n').length;
+        inline.push({ what: '<Surface>', file: rel(file), at: [`${rel(file)}:${line}`], kind: 'named' });
+      }
+    }
+
     // ── 탐지기 ① 명명된 표면 컴포넌트
     for (const m of src.matchAll(/(&&|\?)\s*\(?\s*<([A-Z][\w$]*)/g)) {
       const name = m[2];
@@ -316,7 +332,11 @@ function collect(root: string, roots: readonly string[], extraFiles: readonly st
       // 나가는 길은 **이 가지 안**에 있어야 한다 — 파일 어딘가에 있는
       // `AnimatePresence` 는 이 원소의 것이 아니고, 반대로 자식이 지고 있으면
       // 이 래퍼는 포지셔너이지 표면이 아니다.
-      if (opts.onlyHardCuts && EXIT_DELEGATED.some((x) => branchSource(src, ltIndex).includes(x))) continue;
+      //
+      // ⚠️ 이 제외는 **분모에도** 걸어야 한다(2026-08-04). 안 걸면 포지셔너와
+      //    그 안의 `<Surface>` 가 **한 표면을 두 번** 센다 — 실측 전례 그대로
+      //    「잴 원소를 틀리면 수치가 나와도 틀린 수치」다.
+      if (EXIT_DELEGATED.some((x) => branchSource(src, ltIndex).includes(x))) continue;
       const line = src.slice(0, ltIndex).split('\n').length;
       inline.push({ what: `<${m[2]}>`, file: rel(file), at: [`${rel(file)}:${line}`], kind: 'inline' });
     }
@@ -327,6 +347,8 @@ function collect(root: string, roots: readonly string[], extraFiles: readonly st
     if (!def || !existsSync(def)) continue;
     const defSrc = readFileSync(def, 'utf8');
     if (opts.onlyHardCuts && MOTION_MECHANISMS.some((x) => defSrc.includes(x))) continue;
+    // 같은 이유의 중복 제거 — 정의 안의 `<Surface>` 가 이미 세어졌다.
+    if (!opts.onlyHardCuts && /<Surface[\s>]/.test(defSrc)) continue;
     // 루트가 못 눌리는 수동 판독물(호버 카드)은 표면이 아니다.
     const rootLt = defSrc.search(/<(div|section|aside|nav)\s/);
     if (rootLt >= 0 && notASurface(openingTag(defSrc, rootLt))) continue;

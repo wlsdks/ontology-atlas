@@ -1,7 +1,7 @@
 import type { RefObject } from "react";
 import { ChevronDown, HardDrive } from "lucide-react";
 import type { useTranslations } from "next-intl";
-import { Chip, RowButton } from "@/shared/ui";
+import { Chip, RowButton, Surface } from "@/shared/ui";
 
 export interface DocsVaultVaultChipProps {
   /** vault 짧은 이름 — local=폴더명, server=샘플 라벨. */
@@ -64,12 +64,14 @@ export function DocsVaultVaultChip({
           className={`flex-none transition-transform ${open ? "rotate-180" : ""}`}
         />
       </Chip>
-      {open ? (
-        <div
-          role="menu"
-          aria-label={t("vaultChip.menuAriaLabel")}
-          className="absolute left-0 top-[calc(100%+6px)] z-50 w-72 max-w-[84vw] rounded-[var(--chrome-radius-inner)] border border-[color:var(--color-border-soft)] bg-[color:var(--color-elevated)] p-2 shadow-[var(--chrome-shadow)]"
-        >
+      {/* 칩 왼쪽 모서리에 앵커한 메뉴 — 등장도 그 모서리에서 자란다. */}
+      <Surface
+        open={open}
+        origin="top left"
+        role="menu"
+        aria-label={t("vaultChip.menuAriaLabel")}
+        className="absolute left-0 top-[calc(100%+6px)] z-50 w-72 max-w-[84vw] rounded-[var(--chrome-radius-inner)] border border-[color:var(--color-border-soft)] bg-[color:var(--color-elevated)] p-2 shadow-[var(--chrome-shadow)]"
+      >
           <p className="truncate rounded-micro px-1.5 py-1 font-mono text-label text-[color:var(--color-text-tertiary)]">
             {path}
           </p>
@@ -95,8 +97,7 @@ export function DocsVaultVaultChip({
               {toolsMovedHint}
             </p>
           ) : null}
-        </div>
-      ) : null}
+      </Surface>
     </div>
   );
 }

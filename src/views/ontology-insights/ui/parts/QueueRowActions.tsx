@@ -6,6 +6,7 @@ import { Check, Copy, FileText, GitBranch, MessageCircle, MoreHorizontal } from 
 import { Link } from "@/i18n/navigation";
 import { copyText } from "@/shared/lib/copy-text";
 import { controlClass } from "@/shared/ui/control-class";
+import { Surface } from "@/shared/ui/surface";
 
 /**
  * 「할 일」 큐 행의 행동 — 주 액션(지도)만 밖에 두고 나머지는 케밥 안으로.
@@ -208,12 +209,14 @@ export function RowActionMenu({
       >
         <MoreHorizontal size={14} aria-hidden />
       </button>
-      {open ? (
-        <div
-          role="menu"
-          data-testid="do-next-row-menu-popover"
-          className="absolute right-0 z-20 mt-1 flex min-w-[10rem] flex-col gap-0.5 rounded-chip border border-[color:var(--color-border-soft)] bg-[color:var(--color-elevated)] p-1 shadow-[var(--shadow-elevation-1)]"
-        >
+      {/* 행 끝의 «⋯» 아래 오른쪽 정렬 — 등장 원점도 그 모서리다. */}
+      <Surface
+        open={open}
+        origin="top right"
+        role="menu"
+        data-testid="do-next-row-menu-popover"
+        className="absolute right-0 z-20 mt-1 flex min-w-[10rem] flex-col gap-0.5 rounded-chip border border-[color:var(--color-border-soft)] bg-[color:var(--color-elevated)] p-1 shadow-[var(--shadow-elevation-1)]"
+      >
           {sourceHref ? (
             <Link
               href={sourceHref}
@@ -280,8 +283,7 @@ export function RowActionMenu({
                 ? labels.handoffCopyFailed
                 : resolveHandoffLabel(labels, abilities)}
           </button>
-        </div>
-      ) : null}
+      </Surface>
     </div>
   );
 }

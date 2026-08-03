@@ -1,8 +1,14 @@
 import { existsSync, readFileSync } from 'node:fs';
+import { join } from 'node:path';
 
 import { describe, expect, it } from 'vitest';
 
-import { censusAppearingSurfaces, censusHardCuts, MOTION_MECHANISMS } from './lib/surface-motion-census';
+import {
+  censusAppearingSurfaces,
+  censusHardCuts,
+  MOTION_MECHANISMS,
+  walkTsx,
+} from './lib/surface-motion-census';
 
 /**
  * 등장·퇴장 래칫 — **하드컷 표면은 늘어날 수 없다.**
@@ -52,30 +58,48 @@ import { censusAppearingSurfaces, censusHardCuts, MOTION_MECHANISMS } from './li
  * 잴 원소를 틀리면 수치가 나와도 틀린 수치다.
  *
  * ════════════════════════════════════════════════════════════════════
- * ## 오늘의 전수 — 13
+ * ## 2026-08-04 (같은 날, 두 번째) — 13 을 갚았다. 0 이다.
  * ════════════════════════════════════════════════════════════════════
  *
- * | 부류 | 수 | 무엇인가 |
- * |---|---:|---|
- * | **인라인 오버레이** | 11 | 이름 없는 `<div className="… fixed/absolute … z-N">`. 드롭다운 메뉴·팝오버·자동완성·서랍·토스트. **구 등록부에게는 통째로 안 보이던 부류다** |
- * | **명명 표면** | 2 | `TopologyV2ContextMenu`(우클릭 메뉴) · `DeltaPreviewModal`(스크림 모달) |
+ * 아침의 전수는 13(인라인 11 + 명명 2)이었고, 그날 안에 열세 자리를 전부
+ * `<Surface>` 로 옮겼다. 자리별 표는 PR 본문에 있다. 값진 것은 **왜 하루 만에
+ * 가능했나** 인데, 답이 이 저장소가 두 번째로 배우는 그것이다:
  *
- * 인라인 11이 이 라운드의 진짜 발견이다. 구 게이트는 **표면 접미사를 가진
- * 컴포넌트**만 알았고, 이 앱의 하드컷 다수는 그런 이름을 갖지 않은 채 부모 안에
- * 직접 그려진다. 등록부 시절 「전수 20 중 10」이라 적힌 수는 그 부류를 한 번도
- * 세지 않은 수였다.
+ * > 없던 것은 규율이 아니라 **자산**이었다.
  *
- * ### 왜 0 이 아니라 13 에서 시작하나
+ * 열세 자리 중 열 자리는 `<Surface open={…} origin="…">` 한 줄이 끝이었다.
+ * 나머지 셋만 실제 설계가 필요했고, 그 셋이 프리미티브의 구멍을 드러냈다:
  *
- * `/gate-probe` 1단계: **룰을 켜기 전에 위반을 전수 측정한다.** 13을 한 PR 로
- * 갚으려면 열세 자리의 렌더 게이트를 각각 퇴장 창 동안 붙들게 고쳐야 하고
- * (`useSurfaceSwap`/`useHeldValue` 가 자리마다 다르다), 그건 이 PR 이 아니라
- * 디자인 패스다. 안 치운 채 0 을 요구하면 첫날부터 빨갛고, 빨간 게이트는 곧
- * 꺼지거나 무시된다 — 이 저장소가 `shadow-[` 로 lint 를 144 → 548 로 띄운 그
- * 전례다.
+ * | 막힌 것 | 왜 | 무엇을 더했나 |
+ * |---|---|---|
+ * | 전면 상세 · 문서함 서랍 · 공방 미리보기 | 화면을 덮는 큰 표면인데 프리미티브에는 **이동+스케일 문법 한 벌뿐**이었다. `globals.css` 는 밝기 전용(`map-overlay-in/out`)을 이미 갖고 있었는데 `Surface` 가 그걸 못 입혔다 | `motion="overlay"` 축 |
+ * | 메뉴·대화상자 9자리 | 루트의 `role`/`aria-label`/`id` 를 넘길 데가 없어, 감싸면 **접근성 이름을 잃는** 교환이 됐다 | `role`·`id`·`aria-*`·`style`·`ref`·`onClick` 통과 |
  *
- * **이 수는 내려가기만 한다.** 그리고 이제 새 하드컷은 **어디에 놓아도** 다음
- * 실행에서 저절로 잡힌다 — 등록부에 줄을 더해야 보이던 종전과 반대다.
+ * 전면 상세는 특히 **한쪽 날개만 달려 있었다** — `map-overlay-in` 을 손으로
+ * 붙여 등장은 180ms 인데 퇴장 클래스는 없어서, 닫으면 전체 화면이 1프레임에
+ * 사라졌다. 값 lint 를 무결점 통과하는 부류(전이가 아예 없는 원소는 리터럴도
+ * 없다) 그대로다.
+ *
+ * ### 갚으면서 **게이트 자신의 결함 둘**이 나왔다
+ *
+ * 1. **갚을수록 분모가 줄었다.** 전환하면 호출 자리가
+ *    `{cond && <div className="fixed … z-50">}` → `<Surface open={cond}>` 로
+ *    바뀌는데, 종전 탐지기는 **조건부 호출 자리**만 봐서 그 표면이 통째로
+ *    시야에서 사라진다. 실측: 13을 갚자 등장 표면 전수가 **19 → 8**. 「위반
+ *    0」과 「안 보고 있음」이 다시 구별되지 않는 그 상태다. → 탐지기 ⓪
+ *    (`<Surface open=`)을 넣었고, 포지셔너/정의 중복은 `EXIT_DELEGATED` 로
+ *    지웠다. 고친 뒤 전수 **20** — 종전 19에 없던 것은 엣지 패널이다
+ *    (`<Surface>` 는 표면 접미사가 없어 ①이 못 봤고 `<div>` 가 아니라 ②도
+ *    못 봤다. **이미 전환된 표면은 처음부터 분모 밖이었다**).
+ * 2. **프로브 ①이 「위반이 있다」를 요구했다.** `census.length > 0` 이라
+ *    부채를 다 갚는 순간 빨개진다 — 게이트가 자기를 고치는 것을 막는 모양이다.
+ *    프로브의 일은 「위반이 있다」가 아니라 **「제품을 실제로 먹는다」**이므로,
+ *    스캔한 파일 수와 **등장 표면 전수**(하드컷이 0이어도 20)로 겨눈다.
+ *
+ * ### 이 수는 이제 0 이고, 새 하드컷은 어디에 놓아도 잡힌다
+ *
+ * 0 은 「빈 목록에 대한 참」이 아니다 — 아래 프로브 다섯이 매 실행마다 픽스처
+ * 셋을 실제로 잡아 보이고, 전수 스캔이 파일 수와 분모로 살아 있음을 증명한다.
  */
 
 /**
@@ -87,15 +111,15 @@ import { censusAppearingSurfaces, censusHardCuts, MOTION_MECHANISMS } from './li
  * 새 하드컷을 등재하려면 이 숫자를 **손으로** 올려야 하고 그 diff 가 곧 「왜」를
  * 적을 자리다.
  */
-const BASELINE_HARD_CUTS = 13;
+const BASELINE_HARD_CUTS = 0;
 
 /**
  * **열 수 있는 표면의 전수** — 나가는 길의 유무와 무관하게 조건부로 나타나는 것.
  *
- * 하드컷의 분모이고, 동시에 `tests/e2e/a11y-open-surfaces.spec.ts` 가 「5/19 를
- * 잰다」고 말할 때의 19다. 리터럴인 이유는 위와 같다.
+ * 하드컷의 분모이고, 동시에 `tests/e2e/a11y-open-surfaces.spec.ts` 가 「5/20 을
+ * 잰다」고 말할 때의 20이다. 리터럴인 이유는 위와 같다.
  */
-const BASELINE_APPEARING_SURFACES = 19;
+const BASELINE_APPEARING_SURFACES = 20;
 
 const SELF = 'tests/contract/surface-motion-ratchet.contract.test.ts';
 const FIXTURES = 'tests/fixtures/surface-motion';
@@ -143,12 +167,45 @@ describe('탐지기 프로브 — 이 게이트가 실제로 무엇을 잡는가
   const addOne = (fixture: string) => censusHardCuts(process.cwd(), ['src', 'app'], [`${FIXTURES}/${fixture}`]);
 
   it('① 소스 전수를 실제로 먹는다 — 빈 집합 위에서 놀지 않는다', () => {
-    // 파일 하나도 안 읽고 0을 돌려주는 탐지기와 「위반 없음」을 가른다.
-    expect(census.length, '한 건도 못 셌다면 스캐너나 경로가 깨진 것이다').toBeGreaterThan(0);
+    /*
+     * ⚠️ **이 단언은 2026-08-04 에 겨냥을 바꿨다.** 종전에는
+     * `census.length > 0` — 「하드컷이 하나는 있어야 탐지기가 산 것」이었다.
+     * 부채가 13이던 날에는 성립했지만, 그건 **게이트가 자기를 다 갚는 것을
+     * 막는 모양**이다: 0 이 되는 순간 빨개진다.
+     *
+     * 프로브의 일은 「위반이 있다」가 아니라 **「제품을 실제로 먹는다」**다.
+     * 그래서 하드컷 수와 무관한 둘로 겨눈다 — 스캔한 파일 수와, 하드컷이
+     * 0이어도 20인 **등장 표면 전수**. 파일 하나도 안 읽고 0을 돌려주는
+     * 탐지기는 둘 다 통과하지 못한다.
+     */
+    const scanned = [...walkTsx(join(process.cwd(), 'src')), ...walkTsx(join(process.cwd(), 'app'))];
+    expect(scanned.length, '스캐너가 제품 트리를 못 걸었다면 모든 수가 거짓이다').toBeGreaterThan(200);
+
+    const appearing = censusAppearingSurfaces(process.cwd());
+    expect(appearing.length, '등장 표면이 0이면 스캐너나 경로가 깨진 것이다').toBeGreaterThan(0);
     expect(
-      new Set(census.map((c) => c.file)).size,
+      new Set(appearing.map((c) => c.file)).size,
       '전부 한 파일에서 나왔다면 스캔 범위가 무너진 것이다',
     ).toBeGreaterThan(3);
+  });
+
+  it('①-b 전환된 표면이 분모에서 사라지지 않는다 — 갚을수록 눈이 머는 결함', () => {
+    /*
+     * 실측(2026-08-04): 13건을 `<Surface>` 로 옮기자 등장 표면 전수가
+     * **19 → 8** 로 내려앉았다. 탐지기가 조건부 호출 자리만 봐서, 전환된
+     * 표면(`<Surface open={cond}>`)이 통째로 시야 밖으로 나간 것이다.
+     * 그러면 「하드컷 0」은 다시 **안 보고 있음**과 구별되지 않는다.
+     */
+    const appearing = censusAppearingSurfaces(process.cwd());
+    const converted = appearing.filter((c) => c.what === '<Surface>');
+    expect(
+      converted.length,
+      '`<Surface>` 로 전환한 표면이 한 건도 안 세어졌다 — 탐지기 ⓪ 가 죽었다',
+    ).toBeGreaterThan(10);
+    expect(
+      new Set(converted.map((c) => c.file)).size,
+      '전환된 표면이 한 파일에만 있다면 스캔이 무너진 것이다',
+    ).toBeGreaterThan(5);
   });
 
   it('② 소유자가 심었던 그 모양 — 이름 없는 인라인 오버레이를 잡는다', () => {

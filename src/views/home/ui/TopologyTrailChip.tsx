@@ -6,6 +6,7 @@ import { ChevronLeft, Footprints, X } from "lucide-react";
 import {
   CHROME_STATUS_CHIP_CLASS,
   CompactCopyButton,
+  Surface,
   TopologyV2KindGlyph,
   controlClass,
 } from "@/shared/ui";
@@ -279,13 +280,15 @@ export function TopologyTrailChip({
           <X size={13} aria-hidden />
         </button>
       </div>
-      {open ? (
-        <div
-          role="group"
-          aria-label={labels.heading}
-          data-testid="topology-trail-chip-popover"
-          className="absolute right-0 top-[calc(100%+8px)] z-30 w-[248px] rounded-chip border border-[color:var(--topology-floating-panel-border)] bg-[color:var(--topology-floating-panel-surface)] shadow-[var(--topology-floating-panel-shadow)]"
-        >
+      {/* 칩의 오른쪽 아래에 매달린다 — 등장도 그 모서리에서 자란다. */}
+      <Surface
+        open={open}
+        origin="top right"
+        role="group"
+        aria-label={labels.heading}
+        data-testid="topology-trail-chip-popover"
+        className="absolute right-0 top-[calc(100%+8px)] z-30 w-[248px] rounded-chip border border-[color:var(--topology-floating-panel-border)] bg-[color:var(--topology-floating-panel-surface)] shadow-[var(--topology-floating-panel-shadow)]"
+      >
           <div className="flex items-center justify-between gap-2 border-b border-[color:var(--topology-floating-panel-divider)] px-3 py-2 font-mono text-caption uppercase tracking-[0.14em] text-[color:var(--color-text-quaternary)]">
             {showPast ? (
               <>
@@ -551,8 +554,7 @@ export function TopologyTrailChip({
           </div>
           </>
           )}
-        </div>
-      ) : null}
+      </Surface>
     </div>
   );
 }

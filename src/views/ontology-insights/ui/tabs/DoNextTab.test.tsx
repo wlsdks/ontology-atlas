@@ -759,7 +759,14 @@ describe("DoNextTab — 오늘의 손질 밴드 (③)", () => {
     fireEvent.click(trigger);
     expect(screen.getByTestId("do-next-row-menu-popover")).toBeInTheDocument();
     fireEvent.keyDown(document, { key: "Escape" });
-    expect(screen.queryByTestId("do-next-row-menu-popover")).toBeNull();
+    // ★ 「닫혔다」는 즉시 언마운트가 아니다 (2026-08-04) — 이 메뉴는 `Surface`
+    //   위에 살아서 퇴장 창(≈140ms) 동안 남고, 그동안 `inert` +
+    //   `pointer-events-none` 이라 키보드에도 포인터에도 잡히지 않는다.
+    //   즉시 소멸을 요구하는 단언은 하드컷을 요구하는 것이다.
+    //   포커스 복귀는 퇴장과 무관하게 **닫는 즉시** 일어나야 한다(아래).
+    const menu = screen.getByTestId("do-next-row-menu-popover");
+    expect(menu).toHaveAttribute("data-surface-state", "exiting");
+    expect(menu).toHaveAttribute("inert");
     expect(trigger).toHaveFocus();
   });
 });

@@ -3,7 +3,7 @@ export { Button, buttonVariants, type ButtonProps } from './button';
  * 조건부로 나타나는 표면은 **이걸로 감싼다** — 등장·퇴장이 기본으로 딸려 온다.
  * 전수: 그런 표면 20개 중 10개가 하드컷이었고, 그 10개가 전부 인라인 패널이었다.
  */
-export { Surface, type SurfaceProps } from './surface';
+export { Surface, type SurfaceMotion, type SurfaceProps } from './surface';
 /**
  * `<Button>` 은 **표준 버튼 하나**만 덮는다 — 전수 419개 중 그 모양은 1개였다.
  * 나머지 여섯 모양(칩 · 링크형 · 행 · 아이콘 · pill · 카드)은 이쪽이다.

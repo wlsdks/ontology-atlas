@@ -50,13 +50,13 @@ import { expect, test, type Page } from "@playwright/test";
  * ## 열 수 있는 표면은 몇 개인가 — 분모
  * ════════════════════════════════════════════════════════════════════
  *
- * 소스 전수로 **19개**다(`censusAppearingSurfaces`, 조건부로 나타나는 표면).
+ * 소스 전수로 **20개**다(`censusAppearingSurfaces`, 조건부로 나타나는 표면).
  * 이 파일은 그중 **5개**를 연다. 나머지가 안 열리는 이유는 대부분 **볼트가
  * 필요**하거나(문서 편집기 자동완성 · 에이전트 패널) 캔버스 좌표를 짚어야 해서다
  * (지도 노드 팝오버 · 우클릭 메뉴 — `?e2e=1` 의 `window.__atlasMap` 으로 여는
  * 경로는 이 라운드에서 좌표 변환까지 갔으나 클릭이 노드에 안 닿아 보류했다).
  *
- * **분모를 코드에 적어 두는 이유**: 5/19 라고 쓰면 다음 사람이 «나머지 14는
+ * **분모를 코드에 적어 두는 이유**: 5/20 이라고 쓰면 다음 사람이 «나머지 15는
  * 왜 안 재나» 를 물을 수 있다. 그냥 5개를 열고 말면 그 질문 자체가 사라진다.
  * 분모가 늘어나면 `surface-motion-ratchet` 의 「열 수 있는 표면이 늘지 않는다」가
  * 먼저 빨개진다 — 그때 이 목록도 같이 본다.
@@ -82,7 +82,7 @@ const WCAG_TAGS = ["wcag2a", "wcag2aa", "wcag21a", "wcag21aa", "wcag22aa"];
 const MIN_RULES_PASSED = 15;
 
 /** 소스 전수 — `censusAppearingSurfaces()` 가 낸 수. 위 「분모」 절. */
-const APPEARING_SURFACES_IN_SOURCE = 19;
+const APPEARING_SURFACES_IN_SOURCE = 20;
 
 interface Opener {
   readonly name: string;
@@ -223,7 +223,7 @@ test("접근성 래칫(열린 표면) — 새 룰 위반 0, 기존 개수는 늘
   ).toEqual([]);
 });
 
-test("측정 목록이 분모를 잃지 않는다 — 5/19 라고 말할 수 있어야 한다", async () => {
+test("측정 목록이 분모를 잃지 않는다 — 5/20 이라고 말할 수 있어야 한다", async () => {
   expect(OPENERS.length, "열 표면 목록이 비면 위 시험은 공집합 위에서 전부 초록이다").toBeGreaterThanOrEqual(5);
   expect(
     new Set(OPENERS.map((o) => o.route)).size,
