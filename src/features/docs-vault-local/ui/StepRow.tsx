@@ -13,11 +13,16 @@
  * 그 한 겹이 설정 패널에서 **보더 4단 중첩**을 만들었다:
  *
  * ```
- * app-settings-popover       1px rgba(255,255,255,0.06)  r12
- *  └ section (인디고 패널)    1px rgba(139,151,255,0.22)  r6
- *     └ agent-setup-step-N   1px rgba(255,255,255,0.06)  r6   ← 이 겹
- *        └ agent-client-…    1px rgba(139,151,255,0.54)  r6
+ * app-settings-popover       1px --color-border-soft        r12
+ *  └ section (인디고 패널)    1px --color-indigo-line-a22    r6
+ *     └ agent-setup-step-N   1px --color-border-soft        r6   ← 이 겹
+ *        └ agent-client-…    1px --color-indigo-line-a54    r6
  * ```
+ *
+ * ⚠️ 이 도해는 **토큰 이름으로 적는다** — 값을 적으면 토큰이 움직였을 때 산문만
+ * 조용히 낡고, 게다가 `check-no-raw-color` 가 주석 속 리터럴을 위반으로 세서
+ * 게이트가 붉은 채로 굳는다(2026-08-04 감사 실측: 이 두 줄이 그 게이트의
+ * 유일한 위반이었고, 그 게이트는 CI 에 안 걸려 있어 아무도 몰랐다).
  *
  * 카드 크롬을 뺀 쪽으로 합치면 3단이 되고, 「2단계가 내용 한 줄인데 카드
  * 크롬을 다 갖는다」는 결함도 함께 사라진다 — 보더/배경이 없으면 「내용 0줄
