@@ -656,7 +656,7 @@ function SearchPaletteDialog({
                             {statusLabel(r.project.status)}
                           </span>
                           {query.trim() && (
-                            <span className="rounded-full border border-[color:var(--color-indigo-a30)] bg-[color:var(--color-indigo-a08)] px-2 py-0.5 font-mono text-caption uppercase tracking-[0.08em] text-[color:var(--color-indigo-accent)]">
+                            <span className="rounded-full border border-[color:var(--color-indigo-a30)] bg-[color:var(--color-indigo-a08)] px-2 py-0.5 font-mono text-caption uppercase tracking-[0.08em] text-[color:var(--color-indigo-text-soft)]">
                               {t(MATCH_FIELD_KEYS[r.matchedField])}
                             </span>
                           )}

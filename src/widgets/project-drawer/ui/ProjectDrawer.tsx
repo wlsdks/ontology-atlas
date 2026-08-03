@@ -405,7 +405,7 @@ export function ProjectDrawer({
                     {t("containerBadge")}
                   </span>
                 ) : project.isHub ? (
-                  <span className="rounded-full border border-[color:rgba(113,112,255,0.5)] bg-[color:var(--color-indigo-a16)] px-2 py-0.5 font-mono text-caption uppercase tracking-[0.12em] text-[color:var(--color-indigo-accent)]">
+                  <span className="rounded-full border border-[color:rgba(113,112,255,0.5)] bg-[color:var(--color-indigo-a16)] px-2 py-0.5 font-mono text-caption uppercase tracking-[0.12em] text-[color:var(--color-indigo-text-soft)]">
                     {t("hubBadge")}
                   </span>
                 ) : (
@@ -583,7 +583,7 @@ export function ProjectDrawer({
                             ? t("openDocsVaultTitleWithDoc", { name: project.name })
                             : t("openDocsVaultTitleEmpty")
                         }
-                        className="inline-flex h-10 items-center justify-center gap-1.5 rounded-chip border border-[color:var(--color-indigo-a28)] bg-[color:var(--color-indigo-a06)] px-3 text-body-lg text-[color:var(--color-indigo-accent)] transition-colors hover:border-[color:var(--color-indigo-a55)] hover:text-[color:var(--color-text-primary)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--color-indigo-a46)] focus-visible:ring-offset-2 focus-visible:ring-offset-[color:var(--color-panel)]"
+                        className="inline-flex h-10 items-center justify-center gap-1.5 rounded-chip border border-[color:var(--color-indigo-a28)] bg-[color:var(--color-indigo-a06)] px-3 text-body-lg text-[color:var(--color-indigo-text-soft)] transition-colors hover:border-[color:var(--color-indigo-a55)] hover:text-[color:var(--color-text-primary)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--color-indigo-a46)] focus-visible:ring-offset-2 focus-visible:ring-offset-[color:var(--color-panel)]"
                       >
                         <BookOpen size={13} />
                         {t("openDocsVault")}

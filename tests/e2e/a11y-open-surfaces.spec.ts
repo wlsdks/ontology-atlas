@@ -25,7 +25,13 @@ import { expect, test, type Page } from "@playwright/test";
  * | 다음 할 일 행 메뉴 | `target-size` | 2 | 메뉴가 행 액션을 **가려서** 남는 자리가 81.8×17 · 32×17 (요구 24×24) |
  * | 단축키 시트 · 문서 정렬 메뉴 | — | 0 | |
  *
- * **셋 다 이 라운드가 고치지 않는다 — 규격의 일이기 때문이다.**
+ * **셋 다 그 라운드가 고치지 않았다 — 규격의 일이기 때문이다.** 그리고 규격
+ * 라운드(2026-08-04 「체계」 잉크 라운드)가 둘을 갚았다: 인디고 5건은 손글씨
+ * accent×틴트 23곳 전수 이관(`accent-ink-contrast` 기준선 23 → 0)에 포함됐고,
+ * `#82828a` 3건은 「올라선 바탕 위의 글자는 tertiary 부터」 라이선스로 치환됐다
+ * (`tests/contract/quaternary-ink-surface.contract.test.ts`). 그래서 아래
+ * `color-contrast` 기준선이 5 → 0 이다. `target-size` 2건은 잉크가 아니라
+ * 겹침 레이아웃이라 그대로 남아 있다.
  *
  * - 인디고 5건은 **잉크 램프 판정**이다. `--color-indigo-accent` 는 「맨 어두운
  *   바탕만」이 라이선스인데(`accent-ink-contrast.contract.test.ts`) 여기서는 틴트
@@ -125,7 +131,7 @@ const OPENERS: readonly Opener[] = [
  * 원리적으로 실패 불가가 된다(하드컷 래칫이 정확히 그렇게 죽었다).
  */
 const BASELINE: Readonly<Record<string, number>> = {
-  "color-contrast": 5,
+  "color-contrast": 0,
   "target-size": 2,
 };
 

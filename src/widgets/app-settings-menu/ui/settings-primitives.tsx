@@ -218,7 +218,7 @@ export function Choice<T extends string | boolean>({
               className={cn(
                 'flex h-8 items-center rounded-chip border px-3 text-body transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--color-indigo-a46)]',
                 active
-                  ? 'border-[color:var(--color-indigo-accent)] bg-[color:var(--color-indigo-line-a13)] text-[color:var(--color-indigo-accent)]'
+                  ? 'border-[color:var(--color-indigo-accent)] bg-[color:var(--color-indigo-line-a13)] text-[color:var(--color-indigo-text-soft)]'
                   : 'border-[color:var(--color-border-soft)] text-[color:var(--color-text-tertiary)] hover:border-[color:var(--color-border-strong)]',
               )}
             >

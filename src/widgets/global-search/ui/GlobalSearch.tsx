@@ -272,7 +272,7 @@ export function GlobalSearch({
             }
             className="flex-1 bg-transparent text-body-lg text-[color:var(--color-text-primary)] placeholder:text-[color:var(--color-text-quaternary)] focus:outline-none"
           />
-          <kbd className="hidden shrink-0 rounded-micro border border-[color:var(--color-overlay-3)] bg-[color:var(--color-overlay-2)] px-1.5 py-0.5 font-mono text-caption text-[color:var(--color-text-quaternary)] sm:inline-block">
+          <kbd className="hidden shrink-0 rounded-micro border border-[color:var(--color-overlay-3)] bg-[color:var(--color-overlay-2)] px-1.5 py-0.5 font-mono text-caption text-[color:var(--color-text-tertiary)] sm:inline-block">
             ESC
           </kbd>
           <button
@@ -449,7 +449,7 @@ export function GlobalSearch({
                     }}
                     className="flex cursor-pointer items-center gap-2 rounded-chip px-3 py-2 text-body-lg text-[color:var(--color-text-secondary)] aria-selected:bg-[color:var(--color-indigo-a14)] aria-selected:text-[color:var(--color-text-primary)]"
                   >
-                    <span className="inline-flex shrink-0 items-center rounded-full border border-[color:var(--color-overlay-3)] bg-[color:var(--color-overlay-1)] px-1.5 py-[1px] font-mono text-caption uppercase tracking-[0.10em] text-[color:var(--color-text-quaternary)]">
+                    <span className="inline-flex shrink-0 items-center rounded-full border border-[color:var(--color-overlay-3)] bg-[color:var(--color-overlay-1)] px-1.5 py-[1px] font-mono text-caption uppercase tracking-[0.10em] text-[color:var(--color-text-tertiary)]">
                       {kindLabel(node.kind)}
                     </span>
                     <span
@@ -457,14 +457,14 @@ export function GlobalSearch({
                       className={cn(
                         "min-w-0 flex-1 truncate",
                         pathLike
-                          ? "font-mono text-body text-[color:var(--color-text-quaternary)]"
+                          ? "font-mono text-body text-[color:var(--color-text-tertiary)]"
                           : "text-[color:var(--color-text-primary)]",
                       )}
                     >
                       <HighlightedText text={label} query={isEmptyQuery ? undefined : query} />
                     </span>
                     {node.summary ? (
-                      <span className="hidden min-w-0 max-w-[14rem] truncate text-body text-[color:var(--color-text-quaternary)] md:block">
+                      <span className="hidden min-w-0 max-w-[14rem] truncate text-body text-[color:var(--color-text-tertiary)] md:block">
                         {node.summary}
                       </span>
                     ) : null}
@@ -499,10 +499,10 @@ export function GlobalSearch({
                   <span className="min-w-0 flex-1 truncate text-[color:var(--color-text-primary)]">
                     {project.name}
                   </span>
-                  <span className="hidden shrink-0 font-mono text-caption uppercase tracking-[0.10em] text-[color:var(--color-text-quaternary)] md:inline">
+                  <span className="hidden shrink-0 font-mono text-caption uppercase tracking-[0.10em] text-[color:var(--color-text-tertiary)] md:inline">
                     {project.slug}
                   </span>
-                  <span className="shrink-0 font-mono text-caption uppercase tracking-[0.10em] text-[color:var(--color-text-quaternary)]">
+                  <span className="shrink-0 font-mono text-caption uppercase tracking-[0.10em] text-[color:var(--color-text-tertiary)]">
                     {project.status}
                   </span>
                 </Command.Item>
