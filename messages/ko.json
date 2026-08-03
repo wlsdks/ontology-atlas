@@ -2360,6 +2360,7 @@
       "agentHandoffAria": "AI 작업 메뉴 열기 (프로젝트 정보 복사 · 다시 분석 · 최신 상태 확인)",
       "segmentAll": "전체",
       "segmentRecent": "최근 {days}일 · {count}",
+      "segmentHuman": "사람이 쓴 것 {count}",
       "segmentRecentAria": "최근 변경 노드로 지도 좁히기",
       "windowChipAuto": "자동",
       "windowChipDays": "{days}일",

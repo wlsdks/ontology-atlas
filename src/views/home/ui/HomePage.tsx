@@ -1393,6 +1393,19 @@ export function HomePage() {
     ontologyLoaded: ontologyInsight !== null,
   });
   /** 지금 고른 노드의 그래프 원본 — 「이어서 새로 만들기」가 kind 를 본다. */
+  /**
+   * `created_by: human` 인 노드 집합 — INDEX 렌즈가 쓴다. 하나도 없으면 `null`
+   * 이라 세그먼트 자체가 안 뜬다(볼트에 없는 것을 거를 칸은 만들지 않는다).
+   */
+  const humanAuthoredLens = useMemo(() => {
+    const ids = new Set(
+      (ontologyInsight?.nodes ?? [])
+        .filter((node) => node.createdBy === "human")
+        .map((node) => node.id),
+    );
+    return ids.size > 0 ? { ids } : null;
+  }, [ontologyInsight]);
+
   const canvasSelectedGraphNode = useMemo(
     () =>
       canvasSelectedSlug
@@ -4095,6 +4108,12 @@ export function HomePage() {
                     onWindowChange={(next) =>
                       setRouteState((current) => ({ ...current, recentWindow: next }))
                     }
+                    /*
+                     * 「사람이 쓴 것」 렌즈 — 지도의 검수 대기 링과 같은 사실을
+                     * 세는 자리. 하나도 없으면 `null` 이라 세그먼트가 안 뜬다:
+                     * 빈 렌즈는 누르면 아무 일도 안 일어나는 죽은 컨트롤이다.
+                     */
+                    humanAuthored={humanAuthoredLens}
                     // P4c — "지도에 없는 문서 N개 · 올리기". `bootstrapPlan` 은
                     // vault 가 로드되기만 하면(빈 지도든 아니든) 항상 계산돼
                     // 있으므로 새 파생 없이 그 카운트를 그대로 노출한다 —
@@ -4167,6 +4186,9 @@ export function HomePage() {
                         days: recentChanges.windowDays,
                       }),
                       segmentRecentAria: t("index.segmentRecentAria"),
+                      segmentHuman: humanAuthoredLens
+                        ? t("index.segmentHuman", { count: humanAuthoredLens.ids.size })
+                        : undefined,
                       recentEmptyHint: t("index.recentEmptyHint", { days: recentChanges.windowDays }),
                       // 스포트라이트 창 프리셋 칩 라벨 (협의회 §②).
                       windowChipAuto: t("index.windowChipAuto"),

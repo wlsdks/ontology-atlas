@@ -51,3 +51,26 @@ describe("「이어서 새로 만들기」 — 어포던스 계약", () => {
     expect(panel).toMatch(/onCreateLinked && labels\.actionCreateLinked/);
   });
 });
+
+describe("「사람이 쓴 것」 렌즈 — 지도의 링과 같은 사실", () => {
+  /*
+   * 검수 대기 링은 «어디에 있나»를, 이 렌즈는 «전부 몇 개인가»를 답한다. 둘이
+   * **같은 판정식**(`created_by === "human"`)을 써야 한 화면 안에서 수가 갈리지
+   * 않는다 — 지도가 셋을 붉게 그렸는데 렌즈가 다섯을 세면 사용자는 어느 쪽을
+   * 믿을지 모른다.
+   */
+  it("렌즈와 링이 같은 판정식을 쓴다", () => {
+    const home = read("src/views/home/ui/HomePage.tsx");
+    expect(home).toMatch(/node\.createdBy === "human"/);
+    expect(read("src/widgets/topology-map-v2/ui/topology-frame-draw.ts")).toMatch(
+      /node\.createdBy === "human"/,
+    );
+  });
+
+  it("하나도 없으면 세그먼트를 안 그린다 — 빈 렌즈는 죽은 컨트롤이다", () => {
+    const home = read("src/views/home/ui/HomePage.tsx");
+    expect(home).toMatch(/ids\.size > 0 \? \{ ids \} : null/);
+    const panel = read("src/widgets/topology-index-panel/ui/TopologyIndexPanel.tsx");
+    expect(panel).toMatch(/humanAuthored && labels\.segmentHuman/);
+  });
+});

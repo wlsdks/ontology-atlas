@@ -2360,6 +2360,7 @@
       "agentHandoffAria": "Open AI work menu (copy project info, re-analyze, check latest status)",
       "segmentAll": "All",
       "segmentRecent": "Last {days}d · {count}",
+      "segmentHuman": "By a person · {count}",
       "segmentRecentAria": "Narrow the map to recently changed nodes",
       "windowChipAuto": "Auto",
       "windowChipDays": "{days}d",
