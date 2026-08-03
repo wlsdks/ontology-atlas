@@ -30,6 +30,7 @@ import type { VaultManifest } from '@/entities/docs-vault';
 import type { AgentClientId } from '@/features/docs-vault-local';
 import { copyText } from '@/shared/lib/copy-text';
 import { controlClass } from '@/shared/ui/control-class';
+import { Chip } from '@/shared/ui/controls';
 import { getTauriVaultRootPath } from '@/shared/lib/tauri-vault-fs';
 import type { LocalFsHandleRecord } from '@/entities/local-fs-handle';
 import type { AgentServerAvailability } from '@/shared/config';
@@ -47,6 +48,21 @@ import { ATLAS_CLI } from '@/shared/config/cli-invocation';
  * 받아 절대경로를 채운다. 번역 네임스페이스는 원본 그대로 `docsVault` 를
  * 재사용해 i18n 이관 0.
  */
+
+/**
+ * 이 패널의 복사 칩 잉크 — **값 층이 일부러 안 내는 층**만 여기 산다.
+ *
+ * `controlClass` 는 호버를 안 낸다(빈도가 모션 예산을 깎으므로 소비처가 정한다).
+ * 테두리·배경 틴트도 아직 램프에 없다 — 톤은 **글자색만** 낸다. 그래서 같은
+ * 문자열이 여섯 자리에 흩어져 있었고, 손으로 여섯 번 쓰면 언젠가 한 벌이
+ * 갈린다. 상수 하나로 묶어 그 갈림을 없앤다.
+ */
+const NEUTRAL_COPY_CHIP =
+  'w-full justify-center border-[color:var(--color-divider)] bg-[color:var(--color-overlay-1)] hover:border-[color:var(--color-indigo-a46)] hover:text-[color:var(--color-text-primary)]';
+
+/** 게이트 명령(검증이 통과했음을 알리는 초록) 복사 칩의 잉크. */
+const GATE_COPY_CHIP =
+  'w-full justify-center border-[color:var(--color-success-a28)] bg-[color:var(--color-success-a07)] hover:border-[color:var(--color-success-a42)] hover:bg-[color:var(--color-success-a11)]';
 
 function buildAgentVerifyCliCommand(vaultPath?: string | null): string {
   const target = vaultPath ? shellQuoteForPacket(vaultPath) : '.';
@@ -1128,18 +1144,18 @@ export function VaultAgentSetupPanel({
             })}
           </div>
           {hasMissingAgentConfig && canEditCurrent ? (
-            <button
-              type="button"
+            <Chip
               onClick={() => void handleEnsureAgentConfigs()}
               disabled={agentSetupBusy}
               title={t('agentSetup.repairTitle')}
-              className="mt-2 inline-flex w-full items-center justify-center gap-1.5 rounded-chip border border-[color:var(--color-indigo-line-a35)] bg-[color:var(--color-indigo-a10)] px-2 py-1.5 text-label text-[color:var(--color-indigo-pale-a94)] transition-colors hover:border-[color:var(--color-indigo-line-a54)] hover:bg-[color:var(--color-indigo-a16)] disabled:opacity-60"
+              tone="accent"
+              className="mt-2 w-full justify-center border-[color:var(--color-indigo-line-a35)] bg-[color:var(--color-indigo-a10)] hover:border-[color:var(--color-indigo-line-a54)] hover:bg-[color:var(--color-indigo-a16)]"
             >
               <Bot size={12} aria-hidden />
               {agentSetupBusy
                 ? t('agentSetup.repairing')
                 : t('agentSetup.repair')}
-            </button>
+            </Chip>
           ) : null}
           {hasInvalidAgentConfig ? (
             <p className="mt-2 break-keep rounded-sm border border-[color:var(--color-amber-source-a14)] bg-[color:var(--color-amber-source-a08)] px-2 py-1.5 text-label leading-4 text-[color:var(--color-amber-source-text-a95)]">
@@ -1184,60 +1200,60 @@ export function VaultAgentSetupPanel({
               </div>
             ))}
           </dl>
-          <button
-            type="button"
+          <Chip
             onClick={onOpenWorkflowGuide}
             title={t('agentSetup.openWorkflowGuideTitle')}
-            className="mt-2 inline-flex w-full items-center justify-center gap-1.5 rounded-chip border border-[color:var(--color-indigo-line-a35)] bg-[color:var(--color-indigo-a08)] px-2 py-1.5 text-label text-[color:rgba(210,216,255,0.94)] transition-colors hover:border-[color:var(--color-indigo-line-a54)] hover:bg-[color:var(--color-indigo-a14)]"
+            tone="accent"
+            className="mt-2 w-full justify-center border-[color:var(--color-indigo-line-a35)] bg-[color:var(--color-indigo-a08)] hover:border-[color:var(--color-indigo-line-a54)] hover:bg-[color:var(--color-indigo-a14)]"
           >
             <BookOpen size={12} aria-hidden />
             {t('agentSetup.openWorkflowGuide')}
-          </button>
-          <button
-            type="button"
+          </Chip>
+          <Chip
             onClick={() => void handleCopyAgentSetupPacket()}
             title={t('agentSetup.copyPacketTitle')}
-            className="mt-2 inline-flex w-full items-center justify-center gap-1.5 rounded-chip border border-[color:var(--color-indigo-a42)] bg-[color:var(--color-indigo-a10)] px-2 py-1.5 text-label text-[color:rgba(210,216,255,0.94)] transition-colors hover:border-[color:var(--color-indigo-a62)] hover:bg-[color:var(--color-indigo-a16)]"
+            tone="accent"
+            className="mt-2 w-full justify-center border-[color:var(--color-indigo-a42)] bg-[color:var(--color-indigo-a10)] hover:border-[color:var(--color-indigo-a62)] hover:bg-[color:var(--color-indigo-a16)]"
           >
             <ClipboardCopy size={12} aria-hidden />
             {copyPacketLabel}
-          </button>
-          <button
-            type="button"
+          </Chip>
+          <Chip
             onClick={() => void handleCopyAgentVerifyPrompt()}
             title={t('agentSetup.copyPromptTitle')}
-            className="mt-2 inline-flex w-full items-center justify-center gap-1.5 rounded-chip border border-[color:var(--color-divider)] bg-[color:var(--color-overlay-1)] px-2 py-1.5 text-label text-[color:var(--color-text-secondary)] transition-colors hover:border-[color:var(--color-indigo-a46)] hover:text-[color:var(--color-text-primary)]"
+            tone="secondary"
+            className={NEUTRAL_COPY_CHIP + ' mt-2'}
           >
             <ClipboardCopy size={12} aria-hidden />
             {copyPromptLabel}
-          </button>
-          <button
-            type="button"
+          </Chip>
+          <Chip
             onClick={() => void handleCopyAgentVerifyCli()}
             title={t('agentSetup.copyCliTitle')}
-            className="mt-1.5 inline-flex w-full items-center justify-center gap-1.5 rounded-chip border border-[color:var(--color-divider)] bg-[color:var(--color-overlay-1)] px-2 py-1.5 text-label text-[color:var(--color-text-secondary)] transition-colors hover:border-[color:var(--color-indigo-a46)] hover:text-[color:var(--color-text-primary)]"
+            tone="secondary"
+            className={NEUTRAL_COPY_CHIP + ' mt-1.5'}
           >
             <Terminal size={12} aria-hidden />
             {copyCliLabel}
-          </button>
-          <button
-            type="button"
+          </Chip>
+          <Chip
             onClick={() => void handleCopyAgentFirstContactProof()}
             title={t('agentSetup.copyFirstContactProofTitle')}
-            className="mt-1.5 inline-flex w-full items-center justify-center gap-1.5 rounded-chip border border-[color:var(--color-divider)] bg-[color:var(--color-overlay-1)] px-2 py-1.5 text-label text-[color:var(--color-text-secondary)] transition-colors hover:border-[color:var(--color-indigo-a46)] hover:text-[color:var(--color-text-primary)]"
+            tone="secondary"
+            className={NEUTRAL_COPY_CHIP + ' mt-1.5'}
           >
             <Terminal size={12} aria-hidden />
             {copyFirstContactProofLabel}
-          </button>
-          <button
-            type="button"
+          </Chip>
+          <Chip
             onClick={() => void handleCopyAgentJsonGate()}
             title={t('agentSetup.copyJsonGateTitle')}
-            className="mt-1.5 inline-flex w-full items-center justify-center gap-1.5 rounded-chip border border-[color:var(--color-success-a28)] bg-[color:var(--color-success-a07)] px-2 py-1.5 text-label text-[color:var(--color-success-text-a94)] transition-colors hover:border-[color:var(--color-success-a42)] hover:bg-[color:var(--color-success-a11)]"
+            tone="success"
+            className={GATE_COPY_CHIP + ' mt-1.5'}
           >
             <Terminal size={12} aria-hidden />
             {copyJsonGateLabel}
-          </button>
+          </Chip>
           <div
             aria-label={t('agentSetup.mcpVerifyPreviewAriaLabel')}
             className="mt-1.5 rounded-sm border border-[color:var(--color-indigo-a20)] bg-[color:var(--color-overlay-recessed)] px-2 py-1.5"
@@ -1295,15 +1311,15 @@ export function VaultAgentSetupPanel({
             <p className="mt-1 break-keep text-caption leading-4 text-[color:var(--color-text-tertiary)]">
               {t('agentSetup.syncAfterChangeDesc')}
             </p>
-            <button
-              type="button"
+            <Chip
               onClick={() => void handleCopyAgentPostChangeSyncGate()}
               title={t('agentSetup.copyPostChangeSyncTitle')}
-              className="mt-2 inline-flex w-full items-center justify-center gap-1.5 rounded-chip border border-[color:var(--color-indigo-line-a32)] bg-[color:var(--color-indigo-a08)] px-2 py-1.5 text-label text-[color:rgba(210,216,255,0.94)] transition-colors hover:border-[color:var(--color-indigo-line-a45)] hover:bg-[color:var(--color-indigo-a13)]"
+              tone="accent"
+              className="mt-2 w-full justify-center border-[color:var(--color-indigo-line-a32)] bg-[color:var(--color-indigo-a08)] hover:border-[color:var(--color-indigo-line-a45)] hover:bg-[color:var(--color-indigo-a13)]"
             >
               <ClipboardCopy size={12} aria-hidden />
               {copyPostChangeSyncLabel}
-            </button>
+            </Chip>
           </div>
           <ol className="mt-1.5 grid gap-1" aria-label={t('agentSetup.cliPreviewAriaLabel')}>
             {AGENT_VERIFY_CLI_PREVIEW.map((command, index) => (
@@ -1350,51 +1366,51 @@ export function VaultAgentSetupPanel({
               </div>
             ))}
           </dl>
-          <button
-            type="button"
+          <Chip
             onClick={() => void handleCopyAgentSetupCheckCliCommand()}
             title={t('agentSetup.copySetupCheckCliTitle')}
-            className="mt-1.5 inline-flex w-full items-center justify-center gap-1.5 rounded-chip border border-[color:var(--color-success-a28)] bg-[color:var(--color-success-a07)] px-2 py-1.5 text-label text-[color:var(--color-success-text-a94)] transition-colors hover:border-[color:var(--color-success-a42)] hover:bg-[color:var(--color-success-a11)]"
+            tone="success"
+            className={GATE_COPY_CHIP + ' mt-1.5'}
           >
             <Terminal size={12} aria-hidden />
             {copySetupCheckCliLabel}
-          </button>
-          <button
-            type="button"
+          </Chip>
+          <Chip
             onClick={() => void handleCopyAgentSetupCliCommand()}
             title={t('agentSetup.copySetupCliTitle')}
-            className="mt-1.5 inline-flex w-full items-center justify-center gap-1.5 rounded-chip border border-[color:var(--color-amber-source-a25)] bg-[color:var(--color-amber-source-a07)] px-2 py-1.5 text-label text-[color:var(--color-amber-source-text-a95)] transition-colors hover:border-[color:var(--color-amber-source-a42)] hover:bg-[color:var(--color-amber-source-a11)]"
+            tone="warning"
+            className="mt-1.5 w-full justify-center border-[color:var(--color-amber-source-a25)] bg-[color:var(--color-amber-source-a07)] hover:border-[color:var(--color-amber-source-a42)] hover:bg-[color:var(--color-amber-source-a11)]"
           >
             <Terminal size={12} aria-hidden />
             {copySetupCliLabel}
-          </button>
-          <button
-            type="button"
+          </Chip>
+          <Chip
             onClick={() => void handleCopyAgentConfigTemplate()}
             title={t('agentSetup.copyTemplateTitle')}
-            className="mt-1.5 inline-flex w-full items-center justify-center gap-1.5 rounded-chip border border-[color:var(--color-divider)] bg-[color:var(--color-overlay-1)] px-2 py-1.5 text-label text-[color:var(--color-text-secondary)] transition-colors hover:border-[color:var(--color-indigo-a46)] hover:text-[color:var(--color-text-primary)]"
+            tone="secondary"
+            className={NEUTRAL_COPY_CHIP + ' mt-1.5'}
           >
             <ClipboardCopy size={12} aria-hidden />
             {copyTemplateLabel}
-          </button>
-          <button
-            type="button"
+          </Chip>
+          <Chip
             onClick={() => void handleCopyCodexConfigTemplate()}
             title={t('agentSetup.copyCodexTemplateTitle')}
-            className="mt-1.5 inline-flex w-full items-center justify-center gap-1.5 rounded-chip border border-[color:var(--color-divider)] bg-[color:var(--color-overlay-1)] px-2 py-1.5 text-label text-[color:var(--color-text-secondary)] transition-colors hover:border-[color:var(--color-indigo-a46)] hover:text-[color:var(--color-text-primary)]"
+            tone="secondary"
+            className={NEUTRAL_COPY_CHIP + ' mt-1.5'}
           >
             <ClipboardCopy size={12} aria-hidden />
             {copyCodexTemplateLabel}
-          </button>
-          <button
-            type="button"
+          </Chip>
+          <Chip
             onClick={() => void handleCopyCodexMcpAddCommand()}
             title={t('agentSetup.copyCodexCliTitle')}
-            className="mt-1.5 inline-flex w-full items-center justify-center gap-1.5 rounded-chip border border-[color:var(--color-divider)] bg-[color:var(--color-overlay-1)] px-2 py-1.5 text-label text-[color:var(--color-text-secondary)] transition-colors hover:border-[color:var(--color-indigo-a46)] hover:text-[color:var(--color-text-primary)]"
+            tone="secondary"
+            className={NEUTRAL_COPY_CHIP + ' mt-1.5'}
           >
             <Terminal size={12} aria-hidden />
             {copyCodexCliLabel}
-          </button>
+          </Chip>
           </div>
           ) : null}
           {agentSetupError ? (

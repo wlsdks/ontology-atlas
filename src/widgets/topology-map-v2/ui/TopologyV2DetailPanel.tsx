@@ -395,7 +395,7 @@ function ProjectSourceStatusIcon({ status }: { status: ProjectSourceStatus }) {
 // 데이터시트 내부 정제 (2026-07-23) — `justify-start` + 고정 상단 패딩: 라벨이
 // 로케일에 따라 1줄/2줄로 갈려도 네 타일의 아이콘이 같은 y 에 정렬된다
 // (grid 가 높이는 이미 균등화하므로, 남는 공백은 아래로만 빠진다). 2줄 라벨의
-// 행간은 아래 ACTION_TILE_CLASS 가 램프 예외로 조인다.
+// 행간은 아래 ACTION_TILE_INK 가 램프 예외로 조인다.
 // rank3 — press(active) 촉각: hover 위에 한 단 진한 `panel-row-active` 표면을
 // pointer-down 동안만 얹어 "누르는 순간"을 색만으로 알린다(Toss press-state).
 // transition-colors(150ms)로 하드 토글 방지 — transform/scale 없음.
@@ -464,9 +464,21 @@ const ACTION_TILE_LEADING = "leading-[1.1]";
  * 값은 새로 만들지 않았다 — 같은 패널의 엣지 버전(`TopologyV2EdgePanel`)이
  * 이미 `--topology-v2-panel-action-{border,surface}` 로 테두리를 그린다. 그
  * 토큰들은 정의돼 있었고 이 타일만 안 쓰고 있었다.
+ *
+ * **2026-08-03 — 값 층 위로 올렸다.** 이 다섯(+링크 둘)은 앞선 정규화가
+ * 「모양 여섯이 전부 가로라 자리가 없다」며 남긴 것이고, `shape: "tile"` 이
+ * 생기면서 자리가 났다. 치수는 이미 램프와 같았다 —
+ * `gap-2 px-2 py-2.5 text-label` 은 `tile/md` 와 바이트 동일이다. 바뀐 것은
+ * **반경 하나**(6 → 9px): 램프의 세로 타일은 `rounded-card` 를 쓴다.
+ *
+ * 여기 남는 것은 **잉크뿐**이다 — 스코프 토큰
+ * (`--topology-v2-panel-action-{border,surface}`)과 호버·누름은 값 층이
+ * 일부러 안 내는 층이라서다. 램프 호출은 **자리마다 인라인**이다: 완성
+ * 문자열을 상수로 뽑으면 채택 래칫이 그것을 손으로 쓴 컨트롤로 센다(래칫은
+ * 여는 태그 안의 **리터럴** `controlClass(` 만 본다).
  */
-const ACTION_TILE_CLASS =
-  `flex flex-1 flex-col items-center justify-start gap-2 rounded-[var(--topology-v2-panel-row-radius)] border border-[color:var(--topology-v2-panel-action-border)] bg-[color:var(--topology-v2-panel-action-surface)] px-2 py-2.5 text-center text-label font-medium ${ACTION_TILE_LEADING} [word-break:keep-all] text-[color:var(--topology-v2-panel-text-tertiary)] transition-colors hover:border-[color:var(--topology-v2-panel-domain-border-hover)] hover:bg-[color:var(--topology-v2-panel-row-hover)] hover:text-[color:var(--topology-v2-panel-text-secondary)] active:bg-[color:var(--topology-v2-panel-row-active)]`;
+const ACTION_TILE_INK =
+  `flex-1 border-[color:var(--topology-v2-panel-action-border)] bg-[color:var(--topology-v2-panel-action-surface)] font-medium ${ACTION_TILE_LEADING} [word-break:keep-all] text-[color:var(--topology-v2-panel-text-tertiary)] hover:border-[color:var(--topology-v2-panel-domain-border-hover)] hover:bg-[color:var(--topology-v2-panel-row-hover)] hover:text-[color:var(--topology-v2-panel-text-secondary)] active:bg-[color:var(--topology-v2-panel-row-active)]`;
 
 /**
  * 관계 그룹 헤더의 방향 글리프 — 승인된 시안(mockup-panel-detail)의 SVG 를
@@ -1123,7 +1135,7 @@ export function TopologyV2DetailPanel({
                 <Link
                   href={documentHref}
                   data-testid="topology-v2-detail-panel-action-document"
-                  className={ACTION_TILE_CLASS}
+                  className={controlClass({ shape: "tile", size: "md", className: ACTION_TILE_INK })}
                 >
                   <FileText size={16} aria-hidden="true" />
                   <span>{labels.actionDocument}</span>
@@ -1147,7 +1159,7 @@ export function TopologyV2DetailPanel({
                   type="button"
                   onClick={onCreateLinked}
                   data-testid="topology-v2-detail-panel-action-create-linked"
-                  className={ACTION_TILE_CLASS}
+                  className={controlClass({ shape: "tile", size: "md", className: ACTION_TILE_INK })}
                 >
                   <Plus size={16} aria-hidden="true" />
                   <span>{labels.actionCreateLinked}</span>
@@ -1159,7 +1171,7 @@ export function TopologyV2DetailPanel({
             <Link
               href={studioEditHref}
               data-testid="topology-v2-detail-panel-action-edit"
-              className={ACTION_TILE_CLASS}
+              className={controlClass({ shape: "tile", size: "md", className: ACTION_TILE_INK })}
             >
               <GitBranch size={16} aria-hidden="true" />
               <span>{labels.actionEditRelations}</span>
@@ -1176,7 +1188,7 @@ export function TopologyV2DetailPanel({
                   type="button"
                   onClick={onSetPathSource}
                   data-testid="topology-v2-detail-panel-action-path"
-                  className={ACTION_TILE_CLASS}
+                  className={controlClass({ shape: "tile", size: "md", className: ACTION_TILE_INK })}
                 >
                   <Route size={16} aria-hidden="true" />
                   <span>{labels.actionPath}</span>
@@ -1191,7 +1203,7 @@ export function TopologyV2DetailPanel({
                   type="button"
                   onClick={onEnterRealm}
                   data-testid="topology-v2-detail-panel-action-realm"
-                  className={ACTION_TILE_CLASS}
+                  className={controlClass({ shape: "tile", size: "md", className: ACTION_TILE_INK })}
                 >
                   <Orbit size={16} aria-hidden="true" />
                   <span>{labels.actionRealm}</span>
@@ -1212,7 +1224,7 @@ export function TopologyV2DetailPanel({
                   onClick={() => onCopyHandoff(handoffText)}
                   aria-label={labels.handoff}
                   data-testid="topology-v2-detail-panel-action-handoff"
-                  className={ACTION_TILE_CLASS}
+                  className={controlClass({ shape: "tile", size: "md", className: ACTION_TILE_INK })}
                 >
                   <Copy size={16} aria-hidden="true" />
                   <span>{labels.actionCopyHandoff}</span>
@@ -1227,7 +1239,7 @@ export function TopologyV2DetailPanel({
                   onClick={onAskAgent}
                   aria-label={labels.actionAskAgent}
                   data-testid="topology-v2-detail-panel-action-ask-agent"
-                  className={ACTION_TILE_CLASS}
+                  className={controlClass({ shape: "tile", size: "md", className: ACTION_TILE_INK })}
                 >
                   <MessageCircle size={16} aria-hidden="true" />
                   <span>{labels.actionAskAgent}</span>

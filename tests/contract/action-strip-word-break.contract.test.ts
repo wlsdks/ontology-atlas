@@ -36,16 +36,21 @@ describe("노드 상세 액션 스트립 — CJK 라벨 줄바꿈", () => {
   const source = readFileSync(FILE, "utf8");
 
   it("probe: 액션 타일 클래스가 실재한다", () => {
-    expect(source).toContain("const ACTION_TILE_CLASS");
+    expect(source).toContain("const ACTION_TILE_INK");
   });
 
   it("액션 타일이 `keep-all` 을 싣는다", () => {
-    const line = source
-      .split("\n")
-      .find((l) => l.includes("flex flex-1 flex-col items-center justify-start"));
-    expect(line, "액션 타일 클래스 문자열을 못 찾았다 — 셀렉터가 낡았다").toBeDefined();
+    /*
+     * 셀렉터가 한 번 낡았다 — 종전에는 `flex flex-1 flex-col items-center
+     * justify-start` 라는 **손으로 쓴 모양 문자열**을 찾았는데, 2026-08-03 에
+     * 타일이 `controlClass({ shape: "tile" })` 로 올라가며 그 문자열이 값 층
+     * 안으로 사라졌다. 이제는 **잉크 상수의 선언**을 잡는다 — 모양이 어느
+     * 층에서 오든 `keep-all` 은 램프 밖이라 여기 남기 때문이다.
+     */
+    const declaration = /const ACTION_TILE_INK =[\s\S]*?;\n/.exec(source)?.[0];
+    expect(declaration, "액션 타일 잉크 선언을 못 찾았다 — 셀렉터가 낡았다").toBeDefined();
     expect(
-      line!.includes("[word-break:keep-all]"),
+      declaration!.includes("[word-break:keep-all]"),
       `여섯 칸으로 좁아지면 한국어 라벨이 음절에서 잘린다 —\n` +
         `「AI 요약 복 / 사」 처럼. 웹(다섯 칸)에서는 재현되지 않으므로\n` +
         `이 규격이 빠지면 설치 앱에서만 조용히 깨진다.`,
