@@ -763,12 +763,11 @@ export function AtlasGitPanel({
             setFocusedConceptId={setFocusedConceptId}
           />
         ) : stage === "no-vault" ? (
-          <NoVaultSetup key={stage} t={t} kindLabel={kindLabel} />
+          <NoVaultSetup key={stage} t={t} />
         ) : (
           <WebSetup
             key={stage}
             t={t}
-            kindLabel={kindLabel}
             sessionChangeset={sessionChangeset}
             commandCopyState={commandCopyState}
             copyCliCommand={copyCliCommand}
@@ -969,7 +968,7 @@ const PREVIEW_SATELLITES = [
   { x: 14, y: 50, kind: "element" },
 ] as const;
 
-function SetupPreview({ t, kindLabel }: { t: Translator; kindLabel: (kind: string) => string }) {
+function SetupPreview({ t }: { t: Translator }) {
   return (
     <div className="hidden min-w-0 flex-col gap-3 lg:flex">
       <div
@@ -1013,14 +1012,23 @@ function SetupPreview({ t, kindLabel }: { t: Translator; kindLabel: (kind: strin
           {/* 고른 걸음의 상세 */}
           <div className="hidden min-w-0 flex-col gap-2.5 p-3 xl:flex">
             <span className="h-1.5 w-2/3 rounded-full bg-[color:var(--color-overlay-3)]" />
+            {/* 이 스케치의 문법은 **글자 대신 회색 막대**다 — 나머지 스무 남짓
+                자리가 전부 그렇다. 이 두 칩만 진짜 낱말(`역량`·`요소`)을 들고
+                있었고, 그래서 `opacity-45` 아래에서 **2.09:1** 로 읽혔다.
+                잉크로는 못 고친다: 이 불투명도에서 램프의 가장 밝은 잉크
+                (`--color-text-primary`)도 4.30 이라 AA 에 못 미친다(순백이
+                정확히 4.50). 고칠 수 있는 축은 색이 아니라 **글자의 존재**이고,
+                막대로 바꾸면 스케치가 자기 문법과 같아진다. 종류는 글리프가
+                이미 말하고, 무엇을 보는 그림인지는 아래 캡션이 말한다.
+                `text-caption` 은 남긴다 — 칩의 높이를 그 행간이 잡고 있다. */}
             <div className="flex flex-wrap gap-1.5">
               {(["capability", "element"] as const).map((kind) => (
                 <span
                   key={kind}
-                  className="inline-flex items-center gap-1.5 rounded-[var(--radius-chip)] border border-[color:var(--color-border-soft)] px-1.5 py-0.5 text-caption text-[color:var(--color-text-tertiary)]"
+                  className="inline-flex items-center gap-1.5 rounded-[var(--radius-chip)] border border-[color:var(--color-border-soft)] px-1.5 py-0.5 text-caption"
                 >
                   <TopologyV2KindGlyph kind={kind} size={9} />
-                  {kindLabel(kind)}
+                  <span className="h-1.5 w-4 rounded-full bg-[color:var(--color-overlay-3)]" />
                 </span>
               ))}
             </div>
@@ -1103,7 +1111,6 @@ function SetupPreview({ t, kindLabel }: { t: Translator; kindLabel: (kind: strin
  */
 function SetupFrame({
   t,
-  kindLabel,
   step,
   state,
   title,
@@ -1112,7 +1119,6 @@ function SetupFrame({
   children,
 }: {
   t: Translator;
-  kindLabel: (kind: string) => string;
   /** null 이면 사다리를 그리지 않는다 (로딩·오류 — 걸음이 아니라 사건이다). */
   step: SetupStep | null;
   state: string;
@@ -1162,7 +1168,7 @@ function SetupFrame({
           </p>
         ) : null}
       </div>
-      <SetupPreview t={t} kindLabel={kindLabel} />
+      <SetupPreview t={t} />
     </div>
   );
 }
@@ -1232,13 +1238,11 @@ function SessionChangeSummary({
 
 function WebSetup({
   t,
-  kindLabel,
   sessionChangeset,
   commandCopyState,
   copyCliCommand,
 }: {
   t: Translator;
-  kindLabel: (kind: string) => string;
   sessionChangeset: OntologyChangeset | null;
   commandCopyState: CopyFeedbackState;
   copyCliCommand: () => void;
@@ -1246,7 +1250,6 @@ function WebSetup({
   return (
     <SetupFrame
       t={t}
-      kindLabel={kindLabel}
       step={1}
       state="web"
       title={t("webTitle")}
@@ -1341,17 +1344,10 @@ function WebSetup({
  * 쓰는 사용자에게 앱을 받으라고 하는 **거짓 안내**였다. 이 걸음의 진짜 다음
  * 동작은 폴더를 고르는 것이고, 그 장소는 문서함이다.
  */
-function NoVaultSetup({
-  t,
-  kindLabel,
-}: {
-  t: Translator;
-  kindLabel: (kind: string) => string;
-}) {
+function NoVaultSetup({ t }: { t: Translator }) {
   return (
     <SetupFrame
       t={t}
-      kindLabel={kindLabel}
       step={2}
       state="no-vault"
       title={t("noVaultTitle")}
@@ -2658,7 +2654,6 @@ function DesktopBody({
     return (
       <SetupFrame
         t={t}
-        kindLabel={kindLabel}
         step={null}
         state="loading"
         title={t("loading")}
@@ -2681,7 +2676,6 @@ function DesktopBody({
     return (
       <SetupFrame
         t={t}
-        kindLabel={kindLabel}
         step={null}
         state="error"
         title={t("install.title")}
@@ -2735,7 +2729,6 @@ function DesktopBody({
     return (
       <SetupFrame
         t={t}
-        kindLabel={kindLabel}
         step={null}
         state="error"
         title={t("loadError")}
@@ -2771,7 +2764,6 @@ function DesktopBody({
     return (
       <SetupFrame
         t={t}
-        kindLabel={kindLabel}
         step={3}
         state="not-initialized"
         title={t("notInitialized")}
