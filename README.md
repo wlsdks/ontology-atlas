@@ -13,22 +13,35 @@
 </p>
 
 <p align="center">
-  Ontology Atlas turns the Markdown in your repository into a graph of your
-  product — domains, capabilities, implementation evidence, dependencies,
-  impact — and runs real graph queries over it: blast radius, reachability,
-  cycles, shortest path. Your agent reads and maintains it over MCP. You judge
-  every change as a plain git diff.
+  <a href="https://wlsdks.github.io/ontology-atlas/en/download/"><strong>Download for macOS</strong></a>
+  ·
+  <a href="https://wlsdks.github.io/ontology-atlas/en/download/"><strong>Windows x64 beta</strong></a>
+</p>
+
+<p align="center">
+  <sub>Windows is a public, unsigned beta. Microsoft Defender SmartScreen may
+  warn about an unknown publisher, and managed work PCs may block it.</sub>
+</p>
+
+![The Ontology Atlas macOS app showing the example storefront vault: a project hexagon at the centre, six domains around it, solid contains edges and dashed depends-on edges, and an INDEX panel listing each domain with its capability and element counts](docs/assets/readme/topology-overview.png)
+
+<p align="center">
+  <sub>The installed macOS app reading the example vault in
+  <a href="samples/storefront"><code>samples/storefront</code></a> — an online
+  store, written as nothing but Markdown files in a folder. The interface moves
+  quickly; the live demo and <a href="docs/FEATURES.md">feature inventory</a>
+  are the current behavior contract.</sub>
+</p>
+
+<p align="center">
+  Ontology Atlas turns repository Markdown into a typed graph of the product:
+  domains, capabilities, evidence, dependencies, and impact. People judge the
+  map and git diffs; AI agents query and maintain the same vault over MCP.
 </p>
 
 <p align="center">
   <strong>Each desktop download includes the Atlas app and its MCP server.</strong>
   One button writes your agent's config and proves the connection.
-</p>
-
-<p align="center">
-  <a href="https://wlsdks.github.io/ontology-atlas/en/download/"><strong>Download for macOS</strong></a>
-  ·
-  <a href="https://wlsdks.github.io/ontology-atlas/en/download/"><strong>Windows x64 beta</strong></a>
 </p>
 
 <p align="center">
@@ -42,25 +55,10 @@
 </p>
 
 <p align="center">
-  <sub>Windows is a public, unsigned beta. Microsoft Defender SmartScreen may
-  warn about an unknown publisher, and managed work PCs may block it.</sub>
-</p>
-
-<p align="center">
   <a href="LICENSE"><img alt="MIT license" src="https://img.shields.io/badge/license-MIT-5e6ad2.svg" /></a>
   <a href="mcp/README.md"><img alt="33 MCP tools" src="https://img.shields.io/badge/MCP-33_tools-5e6ad2.svg" /></a>
   <a href="cli/README.md"><img alt="52 CLI commands" src="https://img.shields.io/badge/CLI-52_commands-5e6ad2.svg" /></a>
   <img alt="Local-first" src="https://img.shields.io/badge/storage-local--first-17181f.svg" />
-</p>
-
-![The Ontology Atlas macOS app showing the example storefront vault: a project hexagon at the centre, six domains around it, solid contains edges and dashed depends-on edges, and an INDEX panel listing each domain with its capability and element counts](docs/assets/readme/topology-overview.png)
-
-<p align="center">
-  <sub>The installed macOS app reading the example vault in
-  <a href="samples/storefront"><code>samples/storefront</code></a> — an online
-  store, written as nothing but Markdown files in a folder. The interface moves
-  quickly; the live demo and <a href="docs/FEATURES.md">feature inventory</a>
-  are the current behavior contract.</sub>
 </p>
 
 ---
