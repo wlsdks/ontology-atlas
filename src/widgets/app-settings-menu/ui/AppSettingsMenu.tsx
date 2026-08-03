@@ -168,6 +168,16 @@ type SettingsTriggerVariant = 'header-pill' | 'rail-tile' | 'chrome-tile';
 
 const SETTINGS_LOCALE_FOCUS_KEY = 'ontology-atlas:settings-locale-focus';
 const SETTINGS_LOCALE_FOCUS_MAX_AGE_MS = 10_000;
+
+/**
+ * 인디고 강조 칩의 **테두리와 호버** — 값 층이 안 내는 두 층이다.
+ *
+ * `tone: 'accent'` 는 글자색만 낸다(그게 램프가 소유하는 것이다). 테두리 틴트와
+ * 호버 색은 아직 램프 밖이라 세 자리가 같은 문자열을 손으로 들고 있었다.
+ * 한 벌로 묶어 갈림을 없앤다 — 램프가 이 층을 갖게 되면 지울 자리도 하나다.
+ */
+const INDIGO_ACTION_CHIP =
+  'shrink-0 border-[color:var(--color-indigo-line-a32)] hover:border-[color:var(--color-indigo-line-a45)] hover:bg-[color:var(--color-indigo-line-a13)]';
 // 값의 단일 출처는 `@/shared/config` 다 — 여기 다시 적으면 시트 쪽과
 // 갈라진다(그게 2026-08-01 에 실제로 일어난 일이다). 이 파일은 쓰기만 하고
 // 기존 소비처를 위해 이름만 다시 내보낸다.
@@ -781,17 +791,18 @@ export function AppSettingsMenu({
                     label={t('replayGuideLabel')}
                     caption={t('replayGuideCaption')}
                     control={
-                      <button
-                        type="button"
+                      <Chip
+                        size="lg"
+                        tone="secondary"
                         data-testid="app-settings-replay-guide-button"
                         onClick={() => {
                           closePanel(false);
                           replayGuide();
                         }}
-                        className="flex h-8 items-center rounded-chip border border-[color:var(--color-border-soft)] bg-[color:var(--color-elevated)] px-2.5 text-body font-medium text-[color:var(--color-text-secondary)] transition-colors hover:bg-[color:var(--color-overlay-2)] hover:text-[color:var(--color-text-primary)]"
+                        className="border-[color:var(--color-border-soft)] bg-[color:var(--color-elevated)] font-medium hover:bg-[color:var(--color-overlay-2)] hover:text-[color:var(--color-text-primary)]"
                       >
                         {t('replayGuideAction')}
-                      </button>
+                      </Chip>
                     }
                   />
                 ) : null}
@@ -899,27 +910,29 @@ export function AppSettingsMenu({
                               : t('workspaceFolderEmpty')}
                         </span>
                         {localVault.status === 'permission-needed' ? (
-                          <button
-                            type="button"
+                          <Chip
+                            size="lg"
+                            tone="warning"
                             onClick={() => localVault.requestPermission()}
-                            className="inline-flex h-8 shrink-0 items-center rounded-chip border border-[color:var(--color-amber-source-a35)] px-2.5 text-body text-[color:var(--color-status-warning)] transition-colors hover:bg-[color:var(--color-amber-source-a12)]"
+                            className="shrink-0 border-[color:var(--color-amber-source-a35)] hover:bg-[color:var(--color-amber-source-a12)]"
                           >
                             {t('workspaceFolderPermissionAction')}
-                          </button>
+                          </Chip>
                         ) : (
-                          <button
-                            type="button"
+                          <Chip
+                            size="lg"
+                            tone="accent"
                             onClick={() => void localVault.open()}
                             disabled={vaultBusy}
                             data-testid="app-settings-open-folder"
-                            className="inline-flex h-8 shrink-0 items-center rounded-chip border border-[color:var(--color-indigo-line-a32)] px-2.5 text-body text-[color:var(--color-indigo-accent)] transition-colors hover:border-[color:var(--color-indigo-line-a45)] hover:bg-[color:var(--color-indigo-line-a13)] disabled:opacity-60"
+                            className={INDIGO_ACTION_CHIP}
                           >
                             {vaultBusy
                               ? t('workspaceFolderOpening')
                               : isLocalVaultLoaded || localVault.status === 'error'
                                 ? t('workspaceFolderChange')
                                 : t('workspaceFolderOpen')}
-                          </button>
+                          </Chip>
                         )}
                       </>
                     }
@@ -953,15 +966,16 @@ export function AppSettingsMenu({
                               ? tPicker('copyPathFailed')
                               : tPicker('copyPathTooltip')}
                         </Chip>
-                        <button
-                          type="button"
+                        <Chip
+                          size="lg"
+                          tone="accent"
                           data-testid="app-settings-reveal-vault-path"
                           onClick={() => void openTauriVaultInFinder(vaultRootPath)}
                           aria-label={tPicker('revealPathAriaLabel', { path: vaultRootPath })}
-                          className="inline-flex h-8 shrink-0 items-center rounded-chip border border-[color:var(--color-indigo-line-a32)] px-2.5 text-body text-[color:var(--color-indigo-accent)] transition-colors hover:border-[color:var(--color-indigo-line-a45)] hover:bg-[color:var(--color-indigo-line-a13)]"
+                          className={INDIGO_ACTION_CHIP}
                         >
                           {tPicker('revealPathLabel')}
-                        </button>
+                        </Chip>
                       </>
                     }
                   />
@@ -1079,10 +1093,10 @@ export function AppSettingsMenu({
                         <p className="mt-1 break-keep text-label leading-4 text-[color:var(--color-text-tertiary)]">
                           {t('mcpProofBody')}
                         </p>
-                        <button
-                          type="button"
+                        <Chip
+                          tone="accent"
                           onClick={() => void copy(MCP_FIRST_CALLS_PACKET)}
-                          className="mt-2 inline-flex h-8 w-full items-center justify-center gap-1.5 rounded-chip border border-[color:var(--color-indigo-line-a32)] px-2 font-mono text-label text-[color:var(--color-indigo-accent)] transition-colors hover:border-[color:var(--color-indigo-line-a45)] hover:bg-[color:var(--color-indigo-line-a13)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--color-indigo-a46)] focus-visible:ring-inset"
+                          className={`mt-2 w-full justify-center font-mono ${INDIGO_ACTION_CHIP} focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--color-indigo-a46)] focus-visible:ring-inset`}
                         >
                           {copyState === 'copied' ? (
                             <Check size={12} aria-hidden />
@@ -1090,7 +1104,7 @@ export function AppSettingsMenu({
                             <Copy size={12} aria-hidden />
                           )}
                           {copyState === 'copied' ? t('mcpProofCopied') : t('mcpProofCopy')}
-                        </button>
+                        </Chip>
                       </div>
                     </>
                   )

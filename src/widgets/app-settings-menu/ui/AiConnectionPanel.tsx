@@ -29,6 +29,7 @@ import {
 } from '@/shared/lib/local-endpoint';
 import type { LlmAuditEntry } from '@/shared/lib/llm-audit-log';
 import { openTauriVaultInFinder } from '@/shared/lib/tauri-vault-fs';
+import { controlClass } from '@/shared/ui/control-class';
 import { Chip } from '@/shared/ui/controls';
 import { Select } from '@/shared/ui/select';
 import { useToast } from '@/shared/ui/toast';
@@ -79,6 +80,15 @@ const CLEAR_ARM_MS = 3000;
  */
 const NEUTRAL_CHIP_HOVER =
   'shrink-0 hover:border-[color:var(--color-border-strong)] hover:text-[color:var(--color-text-secondary)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--color-indigo-a46)] focus-visible:ring-inset';
+
+/**
+ * 인디고 강조 칩의 **테두리와 호버** — 같은 이유로 한 벌이다. `tone: 'accent'`
+ * 는 글자색만 내고(램프가 소유하는 것이 그것이다), 테두리 틴트와 호버는 아직
+ * 램프 밖이다. 네 자리(검증 ×2 · 저장 · 로컬 검증)가 손으로 같은 문자열을
+ * 들고 있었다.
+ */
+const INDIGO_CHIP =
+  'shrink-0 border-[color:var(--color-indigo-line-a32)] hover:border-[color:var(--color-indigo-line-a45)] hover:bg-[color:var(--color-indigo-line-a13)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--color-indigo-a46)] focus-visible:ring-inset';
 
 /** 감사 기록 파일의 볼트 상대 경로 — 경로만 mono, 곁의 한국어는 본문 서체. */
 const LLM_AUDIT_RELATIVE_PATH = '.ontology-atlas/llm-audit.jsonl';
@@ -498,28 +508,30 @@ function ProviderCard({
             <div key={stored ? 'stored' : 'draft'} className="ai-row-swap grid gap-2">
               {stored ? (
                 <div className="flex flex-wrap items-center gap-2">
-                  <button
-                    type="button"
+                  <Chip
+                    tone="accent"
                     data-testid={`ai-verify-${provider}`}
                     onClick={() => void handleVerify()}
                     disabled={verify.kind === 'checking' || !vaultRootPath}
-                    className="inline-flex h-8 items-center rounded-chip border border-[color:var(--color-indigo-line-a32)] px-2.5 text-label text-[color:var(--color-indigo-accent)] transition-colors hover:border-[color:var(--color-indigo-line-a45)] hover:bg-[color:var(--color-indigo-line-a13)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--color-indigo-a46)] focus-visible:ring-inset disabled:opacity-60"
+                    className={INDIGO_CHIP}
                   >
                     {verify.kind === 'checking' ? t('verifying') : t('verify')}
-                  </button>
-                  <button
-                    type="button"
+                  </Chip>
+                  <Chip
+                    // 무장하면 톤이 바뀐다 — 되돌릴 수 없는 삭제라는 사실을
+                    // 색으로 먼저 말한다. 손으로 쓴 위험색 대신 램프의 `danger`.
+                    tone={clearArmed ? 'danger' : 'default'}
                     data-testid={`ai-clear-${provider}`}
                     onClick={() => void handleClear()}
                     className={cn(
-                      'inline-flex h-8 items-center rounded-chip border px-2.5 text-label transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--color-indigo-a46)] focus-visible:ring-inset',
+                      'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--color-indigo-a46)] focus-visible:ring-inset',
                       clearArmed
-                        ? 'border-[color:var(--color-danger-a32)] text-[color:var(--color-status-danger)] hover:bg-[color:var(--color-danger-a10)]'
-                        : 'border-[color:var(--color-border-soft)] text-[color:var(--color-text-tertiary)] hover:border-[color:var(--color-border-strong)] hover:text-[color:var(--color-text-secondary)]',
+                        ? 'border-[color:var(--color-danger-a32)] hover:bg-[color:var(--color-danger-a10)]'
+                        : 'border-[color:var(--color-border-soft)] hover:border-[color:var(--color-border-strong)] hover:text-[color:var(--color-text-secondary)]',
                     )}
                   >
                     {clearArmed ? t('clearConfirm') : t('clear')}
-                  </button>
+                  </Chip>
                 </div>
               ) : (
                 // `key` 가 초안의 수명이다. 접히기 시작하는 커밋에 키가 바뀌어
@@ -728,15 +740,15 @@ function LocalEndpointCard({
                   {t('cancel')}
                 </Chip>
               ) : null}
-              <button
-                type="button"
+              <Chip
+                tone="accent"
                 data-testid="ai-verify-local"
                 onClick={() => void handleVerify()}
                 disabled={verify.kind === 'checking' || !vaultRootPath || !draftUrl.trim()}
-                className="inline-flex h-8 shrink-0 items-center rounded-chip border border-[color:var(--color-indigo-line-a32)] px-2.5 text-label text-[color:var(--color-indigo-accent)] transition-colors hover:border-[color:var(--color-indigo-line-a45)] hover:bg-[color:var(--color-indigo-line-a13)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--color-indigo-a46)] focus-visible:ring-inset disabled:opacity-60"
+                className={INDIGO_CHIP}
               >
                 {verify.kind === 'checking' ? t('verifying') : t('verify')}
-              </button>
+              </Chip>
             </div>
 
             {/* 모델 칸은 **고를 것이 생겼을 때만** 나타난다. 빈 셀렉트를 미리
@@ -993,15 +1005,15 @@ function KeyDraftForm({
       >
         {t('cancel')}
       </Chip>
-      <button
-        type="button"
+      <Chip
+        tone="accent"
         data-testid={`ai-save-${provider}`}
         onClick={() => void handleSave()}
         disabled={!draftKey.trim() || saving}
-        className="inline-flex h-8 shrink-0 items-center rounded-chip border border-[color:var(--color-indigo-line-a32)] px-2.5 text-label text-[color:var(--color-indigo-accent)] transition-colors hover:border-[color:var(--color-indigo-line-a45)] hover:bg-[color:var(--color-indigo-line-a13)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--color-indigo-a46)] focus-visible:ring-inset disabled:opacity-60"
+        className={INDIGO_CHIP}
       >
         {saving ? t('saving') : t('save')}
-      </button>
+      </Chip>
     </div>
   );
 }
@@ -1113,7 +1125,20 @@ function AuditTail({
             type="button"
             data-testid="ai-audit-open"
             onClick={() => void openTauriVaultInFinder(vaultRootPath)}
-            className="-mr-1 inline-flex h-6 items-center rounded-sm px-1 text-caption text-[color:var(--color-text-tertiary)] transition-colors hover:text-[color:var(--color-text-secondary)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--color-indigo-a46)] focus-visible:ring-inset"
+            /*
+             * 글자만으로 눌리는 것 = `link`(실측 85). 값 층이 이 모양에
+             * `min-h-11` 을 갖게 되면서(2026-08-03) 히트 영역이 24 → 44px 로
+             * 올라간다 — 이 시트가 자기 계약에서 인용한 WCAG 2.5.8 을 이제
+             * 실제로 만족한다. 글자 크기는 그대로다(시각 크기와 히트 영역은
+             * 다른 축). `px-1`/`-mr-1` 은 그 24px 상자를 만들던 값이라 함께
+             * 사라진다 — 이제 글자가 섹션 오른쪽 끝에 맞는다.
+             */
+            className={controlClass({
+              shape: 'link',
+              size: 'sm',
+              className:
+                'hover:text-[color:var(--color-text-secondary)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--color-indigo-a46)] focus-visible:ring-inset',
+            })}
           >
             {t('auditOpen')}
           </button>

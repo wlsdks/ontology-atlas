@@ -5,7 +5,9 @@ import { ChevronDown } from 'lucide-react';
 import { useTranslations } from 'next-intl';
 
 import { cn } from '@/shared/lib/cn';
-import { Choice, Slider } from './settings-primitives';
+import { controlClass } from '@/shared/ui/control-class';
+import { Chip } from '@/shared/ui/controls';
+import { Choice, DETAIL_TOGGLE_CHIP, RESET_LINK_INK, Slider } from './settings-primitives';
 import {
   DEFAULT_FOOTPRINT,
   FOOTPRINT_PRESETS,
@@ -160,12 +162,13 @@ export function FootprintSettings() {
         })}
       </div>
 
-      <button
-        type="button"
+      <Chip
+        size="lg"
+        tone="secondary"
         data-testid="app-settings-footprint-detail-toggle"
         aria-expanded={detailOpen}
         onClick={() => setDetailOpen((open) => !open)}
-        className="flex h-8 items-center gap-1.5 justify-self-start rounded-chip border border-[color:var(--color-border-soft)] px-3 text-body text-[color:var(--color-text-secondary)] transition-colors hover:border-[color:var(--color-border-strong)] hover:text-[color:var(--color-text-primary)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--color-indigo-a46)]"
+        className={DETAIL_TOGGLE_CHIP}
       >
         <ChevronDown
           size={14}
@@ -173,7 +176,7 @@ export function FootprintSettings() {
           className={detailOpen ? 'rotate-180 transition-transform' : 'transition-transform'}
         />
         {detailOpen ? t('detailHide') : t('detailShow')}
-      </button>
+      </Chip>
 
       {detailOpen ? (
         <div className="grid min-w-0 gap-0.5 rounded-card border border-[color:var(--color-border-soft)] p-2">
@@ -279,7 +282,12 @@ export function FootprintSettings() {
             type="button"
             data-testid="app-settings-footprint-reset"
             onClick={() => writeFootprint(DEFAULT_FOOTPRINT)}
-            className="mt-1 justify-self-start rounded-chip px-1 py-1 text-label text-[color:var(--color-text-quaternary)] transition-colors hover:text-[color:var(--color-text-primary)]"
+            className={controlClass({
+              shape: 'link',
+              size: 'md',
+              tone: 'muted',
+              className: `${RESET_LINK_INK} mt-1`,
+            })}
           >
             {t('reset')}
           </button>

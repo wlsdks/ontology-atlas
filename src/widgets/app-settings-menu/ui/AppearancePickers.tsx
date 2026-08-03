@@ -12,7 +12,40 @@ import {
   type CanvasBackground,
   type GlyphSet,
 } from '@/shared/lib/appearance-preferences';
+import { controlClass } from '@/shared/ui/control-class';
 import { TopologyV2KindGlyph } from '@/shared/ui/topology-v2-kind-glyph';
+
+/**
+ * 두 피커의 **선택 잉크** — 라디오 그룹이라 값 층의 `active` 를 쓰지 않는다.
+ *
+ * `active` 는 **눌림**(pressed)의 표현이라 테두리가 `--color-indigo-pale-a28`
+ * 로 옅다. 여기 필요한 것은 눌림이 아니라 **선택**이고, 넷 중 하나를 고르는
+ * 격자에서 옅은 테두리는 「어느 것이 지금 값인가」를 약하게 만든다. 값을 새로
+ * 만들지 않고 지금 잉크를 그대로 둔다 — 값 층에 «선택» 축이 생기면 그때
+ * 여기가 지워질 자리다.
+ */
+const PICKER_TILE_INK = (active: boolean) =>
+  active
+    ? 'border-[color:var(--color-indigo-accent)] bg-[color:var(--color-indigo-line-a13)]'
+    : 'border-[color:var(--color-border-soft)] hover:border-[color:var(--color-border-strong)]';
+
+/** 격자 칸을 채우는 자리잡기 + 포커스 링 — 값 층이 안 내는 층. */
+const PICKER_TILE_FRAME =
+  'w-full focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--color-indigo-a46)]';
+
+/*
+ * **`size: 'md'` 인 이유 — 실측이 잡았다.**
+ *
+ * 처음엔 `sm` 을 골랐다. 종전 인셋(`p-1.5`/`p-2`)에 가장 가까웠기 때문이다.
+ * 그런데 빌드를 재 보니 타일의 계산된 `font-size` 가 12.5 → **9.5px** 로
+ * 내려가 있었다 — `tile/sm` 이 `text-caption` 을 싣는다.
+ *
+ * 화면에 보이는 글자는 안 바뀐다(라벨 `<span>` 이 자기 `text-label` 을 갖는다).
+ * 그래도 되돌린 이유는 **이 파일이 루트 시트**라서다:
+ * `settings-sheet-type-dialect.contract.test.ts` 가 9.5px 을 여기서 금지하는데,
+ * 그 게이트는 소스의 리터럴 `text-caption` 만 본다. 값 층을 통해 들여오면
+ * **게이트를 통과하면서 규격을 어긴다.** 그건 준수가 아니라 우회다.
+ */
 
 /**
  * 개인화 피커 (Phase 5 #20/#21, `docs/plans/DESIGN-OVERHAUL-2026-07-25.md`) — 설정
@@ -130,12 +163,11 @@ export function CanvasBackgroundPicker() {
               aria-checked={active}
               data-testid={`app-settings-canvas-bg-${variant}`}
               onClick={() => writeCanvasBackground(variant)}
-              className={cn(
-                'flex flex-col items-stretch gap-1 rounded-card border p-1.5 text-center transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--color-indigo-a46)]',
-                active
-                  ? 'border-[color:var(--color-indigo-accent)] bg-[color:var(--color-indigo-line-a13)]'
-                  : 'border-[color:var(--color-border-soft)] hover:border-[color:var(--color-border-strong)]',
-              )}
+              className={controlClass({
+                shape: 'tile',
+                size: 'md',
+                className: cn(PICKER_TILE_FRAME, PICKER_TILE_INK(active)),
+              })}
             >
               <CanvasBgSwatch variant={variant} />
               <span
@@ -176,12 +208,11 @@ export function GlyphSetPicker() {
               aria-checked={active}
               data-testid={`app-settings-glyph-set-${set}`}
               onClick={() => writeGlyphSet(set)}
-              className={cn(
-                'flex flex-col items-center gap-1.5 rounded-card border p-2 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--color-indigo-a46)]',
-                active
-                  ? 'border-[color:var(--color-indigo-accent)] bg-[color:var(--color-indigo-line-a13)]'
-                  : 'border-[color:var(--color-border-soft)] hover:border-[color:var(--color-border-strong)]',
-              )}
+              className={controlClass({
+                shape: 'tile',
+                size: 'md',
+                className: cn(PICKER_TILE_FRAME, PICKER_TILE_INK(active)),
+              })}
             >
               <span className="flex items-center gap-1.5">
                 {PREVIEW_KINDS.map((kind) => (

@@ -36,6 +36,35 @@ import { cn } from '@/shared/lib/cn';
  * 무엇도 아니다. 게이트: `settings-sheet-type-dialect.contract.test.ts`.
  */
 
+/**
+ * 「자세히」 토글의 잉크 — `FootprintSettings` 와 `ExpandSettings` 가 **같은
+ * 컨트롤을 두 벌** 갖고 있었다(문자열 바이트 동일). 사본이 둘이면 한쪽만
+ * 고쳐지는 날이 온다 — 이 파일이 존재하는 바로 그 이유라 여기로 내린다.
+ * 모양·크기·톤은 값 층(`Chip size="lg" tone="secondary"`)이 내고, 여기 남는
+ * 것은 램프가 안 내는 층(테두리색 · 호버 · 포커스 · 그리드 자리잡기)뿐이다.
+ */
+export const DETAIL_TOGGLE_CHIP =
+  'justify-self-start border-[color:var(--color-border-soft)] hover:border-[color:var(--color-border-strong)] hover:text-[color:var(--color-text-primary)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--color-indigo-a46)]';
+
+/**
+ * 「초기화」 — 글자만으로 눌리는 것 = `link`(실측 85). 같은 두 파일이 역시
+ * 두 벌 갖고 있었다.
+ *
+ * **`size: 'md'` 인 이유**는 이 시트의 방언이다. `link/sm` 은 `text-caption`
+ * (9.5px)이고 위 표가 그것을 루트 시트에서 금지한다 — 히트 영역을 고치자고
+ * 타입 방언을 되돌리지 않는다.
+ *
+ * 히트 영역은 값 층이 2026-08-03 에 `min-h-11` 을 갖게 되며 24 → 44px 로
+ * 올라간다(WCAG 2.5.8). 글자 크기는 그대로다. 종전의 `px-1 py-1` 은 그 24px
+ * 상자를 만들던 값이라 함께 사라진다.
+ *
+ * **호출은 자리마다 인라인이다** — 완성 문자열을 상수로 뽑아 `className={RESET_LINK}`
+ * 로 쓰면 채택 래칫이 그것을 손으로 쓴 컨트롤로 센다. 래칫은 여는 태그 안의
+ * 리터럴 `controlClass(` 만 보기 때문이다(상수·헬퍼 함수는 못 본다). 그래서
+ * 여기서는 **잉크만** 공유하고 램프 호출은 소비처가 쓴다.
+ */
+export const RESET_LINK_INK = 'justify-self-start hover:text-[color:var(--color-text-primary)]';
+
 /** 그룹 헤더 + 행 컨테이너 — Toss 식 "그룹 헤더 + 즉시 조작 행" 문법의 뼈대. */
 /**
  * 한 무리의 설정 행. `label` 은 **선택**이다 — LNB 가 이미 그 칸의 이름을 말하는
