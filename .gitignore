@@ -121,3 +121,7 @@ cli/.mcp.json.example
 # `sweep-2026-07-28` 3.3M · `sweepA2` 11M). 지식은 `.qa-scratch/*.md` 에 남기고
 # 이미지는 남기지 않는다.
 sweep*/
+
+# 에이전트 워크트리 — 저장소 안에 살지만 저장소의 일부가 아니다.
+# (2026-08-03: `git add -A` 가 이걸 gitlink 로 커밋해 main 에 들어간 적이 있다)
+.claude/worktrees/
