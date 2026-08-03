@@ -7,6 +7,7 @@ import { Check, CircleAlert, ClipboardCopy, FileText, Loader2 } from 'lucide-rea
 import type { McpServerLaunch } from '@/shared/config';
 import { buildAgentAnalyzePrompt } from '@/shared/config/agent-prompts';
 import { useCopyFeedback } from '@/shared/lib/use-copy-feedback';
+import { controlClass } from '@/shared/ui/control-class';
 import { type AgentClientId, filesForClient } from '../lib/agent-clients';
 import {
   planAgentConfig,
@@ -55,6 +56,14 @@ export interface AgentConnectActionProps {
    */
   clientId: AgentClientId;
 }
+
+/**
+ * 인디고 채움 주 행동의 **면과 호버.** 값 층(`controlClass`)은 모양·크기·글자색
+ * 까지만 내고 틴트/호버는 소비처에 남긴다 — 이 표면의 두 자리(미리보기 · 확인)가
+ * 같은 문자열이라 한 벌로 묶는다.
+ */
+const INDIGO_SOLID_SKIN =
+  'w-full justify-center border-[color:var(--color-indigo-a46)] bg-[color:var(--color-indigo-a16)] font-medium hover:bg-[color:var(--color-indigo-a26)]';
 
 export function AgentConnectAction({ vaultPath, launch, onWritten, clientId }: AgentConnectActionProps) {
   const t = useTranslations('agentConnect');
@@ -133,7 +142,12 @@ export function AgentConnectAction({ vaultPath, launch, onWritten, clientId }: A
           onClick={() => void startPreview()}
           disabled={busy}
           data-testid="agent-connect-preview"
-          className="inline-flex w-full items-center justify-center gap-1.5 rounded-chip border border-[color:var(--color-indigo-a46)] bg-[color:var(--color-indigo-a16)] px-3 py-2 text-body font-medium text-[color:var(--color-text-primary)] transition-colors hover:bg-[color:var(--color-indigo-a26)] disabled:opacity-60"
+          className={controlClass({
+            shape: 'chip',
+            size: 'lg',
+            tone: 'strong',
+            className: INDIGO_SOLID_SKIN,
+          })}
         >
           {phase === 'planning' ? (
             <Loader2 size={13} aria-hidden className="animate-spin" />
@@ -183,7 +197,12 @@ export function AgentConnectAction({ vaultPath, launch, onWritten, clientId }: A
             onClick={() => void confirmWrite()}
             disabled={busy}
             data-testid="agent-connect-confirm"
-            className="mt-2.5 inline-flex w-full items-center justify-center gap-1.5 rounded-chip border border-[color:var(--color-indigo-a46)] bg-[color:var(--color-indigo-a16)] px-3 py-2 text-body font-medium text-[color:var(--color-text-primary)] transition-colors hover:bg-[color:var(--color-indigo-a26)] disabled:opacity-60"
+            className={controlClass({
+              shape: 'chip',
+              size: 'lg',
+              tone: 'strong',
+              className: `mt-2.5 ${INDIGO_SOLID_SKIN}`,
+            })}
           >
             {phase === 'writing' ? <Loader2 size={13} aria-hidden className="animate-spin" /> : null}
             {t('connectConfirmCta')}
@@ -235,7 +254,12 @@ export function AgentConnectAction({ vaultPath, launch, onWritten, clientId }: A
             type="button"
             data-testid="agent-connect-copy-analyze"
             onClick={() => void copyAnalyze(buildAgentAnalyzePrompt({ vaultPath }))}
-            className="mt-2.5 inline-flex h-7 items-center gap-1.5 rounded-[var(--radius-chip)] border border-[color:var(--color-overlay-3)] px-2.5 text-label text-[color:var(--color-text-secondary)] transition-colors hover:border-[color:var(--color-indigo-line-a35)] hover:text-[color:var(--color-text-primary)]"
+            className={controlClass({
+              shape: 'chip',
+              tone: 'secondary',
+              className:
+                'mt-2.5 border-[color:var(--color-overlay-3)] hover:border-[color:var(--color-indigo-line-a35)] hover:text-[color:var(--color-text-primary)]',
+            })}
           >
             {analyzeCopy === 'failed' ? (
               <CircleAlert size={11} aria-hidden />
@@ -273,7 +297,11 @@ export function AgentConnectAction({ vaultPath, launch, onWritten, clientId }: A
               setError(null);
             }}
             data-testid="agent-connect-retry"
-            className="mt-2 text-label font-medium text-[color:var(--color-indigo-accent)] transition-colors hover:text-[color:var(--color-text-primary)]"
+            className={controlClass({
+              shape: 'link',
+              tone: 'accent',
+              className: 'mt-2 font-medium hover:text-[color:var(--color-text-primary)]',
+            })}
           >
             {t('connectRetry')}
           </button>
