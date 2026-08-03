@@ -39,6 +39,22 @@ critiques and prescribes; the guardian produces the single verdict and is the
 only one that may edit code. This mirrors the PO Council, where
 Accountable Value Owner is deliberately not an agent.
 
+## 이 카운슬 **앞에** 오는 단계 — 발산
+
+**이 카운슬은 serial 이다.** R1 비평 → R2 교차비평 → R3 평결이 전부 **이미
+만들어진 하나**를 평가한다. Dow et al.(ACM TOCHI 2010)이 실험으로 보인 것은 그
+반대다 — 여러 개를 만든 뒤 피드백을 받는 쪽이 결과 품질 · 발산 · 자기효능감
+**셋 다**에서 우월했다.
+
+그래서 비자명한 시각/레이아웃/상호작용/모션 변경은 **`/design-directions` 를
+먼저 돌린다**: `chief` 가 3~4개 갈래를 글과 ASCII 로 그리고(코드 0), 소유자가
+하나를 고르고, 그다음에 짓는다. **카운슬은 고른 갈래를 심사하지 갈래를 고르지
+않는다.**
+
+순서가 뒤집히면 카운슬이 갈래 탐색을 대신하게 된다 — 2026-08-03 에 실제로
+그랬고, 다섯 자리가 두 라운드를 돌아 나온 결론이 처음에 세 줄로 그릴 수 있는
+갈래였다.
+
 ## Which seats to convene
 
 Convening all eight for a label change is the process theater the design OS
@@ -75,8 +91,21 @@ other. Every seat gets:
 
 **측정 자리는 자기 계기를 반드시 실행한다** — 호출자가 요청하지 않아도. 「모션」은
 `/motion-verify`(macOS 녹화 → 프레임 → 곡선), 「반응형」은 `/responsive-sweep`
-(밴드 매트릭스 rect 실측), 그리고 구현이 끝난 화면이면 `/design-audit`(겹침 ·
-치수 편차 · 토큰 이탈을 재는 마지막 관문). 계기 없는 판정은 무효다.
+(밴드 매트릭스 rect 실측), **「도해」는 지도가 걸리면
+`node scripts/measure-graph-readability.mjs`**(엣지 교차 · 노드 겹침 — 아래),
+그리고 구현이 끝난 화면이면 `/design-audit`(겹침 · 치수 편차 · 토큰 이탈을 재는
+마지막 관문). 계기 없는 판정은 무효다.
+
+**지도는 2026-08-03 까지 계기가 없던 표면이다.** 노드 규격에는 계약 테스트가,
+타입 램프에는 lint 가, 모션에는 프레임 실측이 있었는데 **화면 대부분을 차지하는
+배치**만 "복잡해 보인다" 로 판정되고 있었다. 이제 셋을 읽는다 — **교차 수**(원시.
+화면의 실제 부담) · **품질**(정규화. 규모가 다른 케이스 비교용) · **겹침**.
+
+⚠️ 「**교차 잴 수 없음**」이 나오면 그건 만점이 아니다. 밀도 게이트가 서브트리를
+접어 화면에 별 모양만 남아 교차가 원천적으로 불가능해진 상태다 — 이걸 만점으로
+읽으면 「가장 큰 볼트에서 가장 좋다」는 정반대 결론이 나온다.
+근거는 Purchase 1997(교차 최소화가 이해도에 압도적으로 가장 중요, 각도 해상도 ·
+격자 스냅은 유의하지 않음)이고, 그래서 이 계기는 **일부러 둘만 잰다.**
 
 A seat that could not open the real thing must say so and withhold its verdict.
 Reading a patch and judging craft from it is the failure this protocol replaces.
@@ -99,6 +128,7 @@ verdict. One round only.
 [기존 패스] <심사 대상 PO 패스를 원문 그대로. 없으면 "없음">
 [열어야 할 실물] <URL · 명령 · vault 경로. 전 자리가 실물을 연다 — diff 판정 금지.
                   「모션」은 `/motion-verify`, 「반응형」은 `/responsive-sweep`,
+                  「도해」는 지도가 걸리면 `measure-graph-readability.mjs`,
                   구현 완료 화면이면 `/design-audit` 을 **요청 없이** 실행한다>
 [출력] 네 파일의 출력 형식 그대로. 질의는 최대 1건.
 ```
@@ -246,9 +276,11 @@ observe if it was right>
 
 ## Non-negotiables every seat inherits
 
-- **공개 발행 원칙만 인용한다.** Apple HIG · Rams · Tufte · Bertin ·
-  Cleveland & McGill · Shneiderman · Munzner · Norman · Nielsen · Disney 12 ·
-  Material motion · Carbon · Fluent · W3C · WCAG · Toss 공개 발표.
+- **공개 발행 원칙만 인용한다.** Apple HIG · Rams · Mackinlay · Tufte · Bertin ·
+  Cleveland & McGill · Purchase · Shneiderman · Munzner · Norman · Nielsen ·
+  Disney 12 · Material motion · Carbon · Fluent · W3C · WCAG · Toss 공개 발표.
+  **단 data-ink 는 반려 근거가 아니다** — Inbar 2007 · Bateman 2010 이 반박했다.
+  마크를 반려할 때 대는 것은 Mackinlay expressiveness 다(`docs/FOUNDATIONS.md`).
 - **타사 자산 모방 절대 금지.** Reference products are things to *observe a
   principle in*, never to copy — no assets, no wording, no styling, no palettes.
   `docs/PRODUCT-DESIGN-OPERATING-SYSTEM.md` 의 Reference Permission Test 를

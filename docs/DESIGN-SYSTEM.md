@@ -487,7 +487,8 @@ Full grounding + verified links in [`FOUNDATIONS.md` §4](./FOUNDATIONS.md#4-des
 | Our rule | Descends from |
 |---|---|
 | Neutral greys + single indigo; ban glow/neon/gradients/glassmorphism | **Dieter Rams**, *Ten Principles* — "unobtrusive / honest / as little design as possible" ("Less, but better") |
-| Topology & insights = maximal signal, minimal chrome; honest, proportional relation rendering | **Edward Tufte** — data-ink ratio + graphical integrity |
+| Every visual mark encodes a typed fact and asserts no fact the data lacks | **Jock Mackinlay** (ACM TOG 1986) — expressiveness + effectiveness. This is the bench's rejection rule |
+| Honest, proportional relation rendering; a legend means the mark cannot explain itself | **Edward Tufte** — graphical integrity + direct labelling. **Not** data-ink as a rule: Inbar 2007 and Bateman 2010 tested it and it did not hold ([FOUNDATIONS](FOUNDATIONS.md#4-design-lineage--restraint-as-craft-cited)) |
 | `@theme` token scale; constrained spacing; "no second coloring system"; hierarchy by de-emphasis | **Wathan & Schoger**, *Refactoring UI* (also the Tailwind authors) |
 | Kind hierarchy + typed relations as the organizing device; lean high-signal vault | **John Maeda**, *Laws of Simplicity* — Reduce / Organize; "subtract the obvious, add the meaningful" |
 | Restraint as a *quality* decision (not decoration) that wins against AI-UI clichés | **Karri Saarinen / Linear**, "Why is quality so rare?" |

@@ -211,8 +211,22 @@ export function FirstRunStarterModule({
   // 되돌아오기 (소유자 실사용 지적 2026-07-24) — "여기서 둘러볼게요"로
   // 카드를 닫고 예시 비즈니스를 구경하다 보면 세션 내 처음으로 돌아갈
   // 길이 없었다. 카드가 있던 자리에 조용한 1행을 남긴다.
+  /*
+   * **상태 신호는 카드가 아니라 연결 상태를 따라 산다** (PO 카운슬 평결 ③,
+   * 2026-08-03). 종전엔 「지금은 샘플」이 카드 **안에만** 있어서, 샘플 소스 탭을
+   * 누르면(`setCollapsed(true)`) 카드와 함께 사라졌다. 그 순간 화면은 실제로
+   * 볼트를 연 상태와 **레이아웃·라벨·카운트가 구조적으로 구분 불가**가 됐고,
+   * 소유자가 「이 앱의 코드」 탭을 **연결의 증거로 읽는** 사고가 났다.
+   *
+   * 이 모듈 자체가 `sampleModeSettled` 일 때만 렌더되므로, 이 행에 신호를 두면
+   * 신호의 수명이 곧 **샘플 모드의 수명**이 된다 — 카드를 접든 dismiss 하든
+   * 샘플인 동안은 남고, 폴더를 열면 모듈과 함께 사라진다.
+   *
+   * 새 문자열 0 — 카드가 쓰던 `sampleLabel` 과 같은 앰버 점 클러스터를 그대로
+   * 재사용한다. 한 화면에서 같은 사실을 두 문법으로 말하지 않는다.
+   */
   const reopenRow = (
-    <div className="shrink-0 border-b border-[color:var(--topology-v2-panel-divider)] px-4 py-2">
+    <div className="flex shrink-0 items-center gap-2 border-b border-[color:var(--topology-v2-panel-divider)] px-4 py-2">
       <button
         type="button"
         data-testid="first-run-starter-reopen"
@@ -220,11 +234,21 @@ export function FirstRunStarterModule({
           setCollapsed(false);
           undismiss();
         }}
-        className="flex w-full items-center gap-1.5 text-label text-[color:var(--topology-v2-panel-text-tertiary)] transition-colors hover:text-[color:var(--topology-v2-panel-text-primary)]"
+        className="flex min-w-0 items-center gap-1.5 text-label text-[color:var(--topology-v2-panel-text-tertiary)] transition-colors hover:text-[color:var(--topology-v2-panel-text-primary)]"
       >
         <ChevronRight size={11} aria-hidden className="shrink-0 -rotate-180" />
         {t("reopenLabel")}
       </button>
+      <span
+        data-testid="first-run-starter-sample-signal"
+        className="ml-auto inline-flex shrink-0 items-center gap-1.5 text-caption text-[color:var(--color-status-warning)]"
+      >
+        <span className="relative h-2 w-2 shrink-0" aria-hidden>
+          <span className="absolute inset-0 rounded-full bg-[color:var(--color-status-warning)]" />
+          <span className="absolute -inset-[3px] rounded-full border border-[color:var(--color-amber-source-a42)]" />
+        </span>
+        {t("sampleLabel")}
+      </span>
     </div>
   );
 

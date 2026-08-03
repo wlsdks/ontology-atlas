@@ -109,6 +109,6 @@ responsive rule · proof — PRODUCT-DESIGN-OPERATING-SYSTEM.md 형식]
 
 - **Apple Human Interface Guidelines** (developer.apple.com/design — 따르라고 발행된 문서) → **가장 강한 시각 요소가 콘텐츠가 아니면 결함이다.**
 - **Dieter Rams, 좋은 디자인 10원칙** → **지도 도구의 다운로드 페이지에 지도가 없으면 그건 미완이 아니라 오설계다.**
-- **Edward Tufte, data-ink ratio** → **정보를 안 나르는 mono 캡션 · 장식 보더 · 빈 배지를 반려한다.**
+- **Jock Mackinlay, expressiveness (ACM TOG 1986)** → **정보를 안 나르는 mono 캡션 · 장식 보더 · 빈 배지를 반려한다** — 근거는 「타입 사실을 안 나른다」다(data-ink 는 반박됐다).
 - **Toss 공개 발표** (toss.tech 블로그 · Simplicity 컨퍼런스 공개 세션) → **비개발자가 소리 내어 읽다 막히면 그 문장은 결함이다.**
 - **Shneiderman, overview first, zoom and filter, details on demand** (1996)

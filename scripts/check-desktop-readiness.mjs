@@ -807,22 +807,51 @@ if (
   );
 }
 
+/*
+ * 이 블록은 **문장 핀이었다** — `openLabel === "Open vault folder"` 처럼 정확한
+ * 문자열 여섯 개를 고정했다. 위 README 블록이 이미 배운 교훈("표 마크업을 문자
+ * 그대로 검사했더니 재작성 한 번에 통째로 stale")을 이 블록만 안 배운 것이다.
+ *
+ * 2026-08-03 에 그 값을 치렀다: PO 카운슬이 화면에서 「볼트/vault」를 은퇴시키자
+ * (원장 참조) 이 핀이 즉시 빨개졌다. **문구가 나아졌는데 게이트가 막은 것**이고,
+ * 그건 `documentation.md` 가 금지한 실패 방향이다 —
+ *
+ *   "도구 동작이 바뀌고 문서가 안 바뀌면 문장이 그대로라 **통과**하고,
+ *    문서를 더 나은 말로 고치면 **빨개진다.**"
+ *
+ * 그래서 문장이 아니라 **사실**을 검사한다. 이 게이트가 실제로 지키려는 계약은
+ * 하나다: **로컬 폴더 작업의 안내가 설치된 앱을 가리키고, 브라우저 File System
+ * Access 를 능력처럼 광고하지 않는다.** 어떤 단어로 그러는지는 카피의 자유다.
+ */
+const desktopRoutingCopy = [
+  enMessages.searchWidgets.shortcuts.rows.localVault,
+  koMessages.searchWidgets.shortcuts.rows.localVault,
+  enMessages.docsVault.vaultStatus.unsupportedTooltip,
+  koMessages.docsVault.vaultStatus.unsupportedTooltip,
+  enMessages.featuresMisc.localVaultPicker.unsupported,
+  koMessages.featuresMisc.localVaultPicker.unsupported,
+];
+// 「설치된 앱」을 각 로케일이 자기 말로 가리키는가.
+const namesInstalledApp = (text, locale) =>
+  locale === "ko"
+    ? /설치(된|해)/.test(text) && /앱/.test(text)
+    : /installed|install the/i.test(text) && /app/i.test(text);
+// 브라우저 FSA 를 **능력으로 광고**하면 안 된다. 정직한 강등 고지에서 이름을
+// 대는 것까지 막지는 않는다 — 그래서 「할 수 있다」 쪽 문장에서만 본다.
+const advertisesBrowserFsa = desktopRoutingCopy.some(
+  (text) => text.includes("File System Access") && !/desktop|설치/i.test(text),
+);
 if (
-  enMessages.searchWidgets.shortcuts.rows.localVault ===
-    "Open a local ontology folder in the installed app" &&
-  koMessages.searchWidgets.shortcuts.rows.localVault ===
-    "설치된 앱에서 로컬 온톨로지 폴더 열기" &&
-  enMessages.docsVault.vaultStatus.unsupportedTooltip ===
-    "Local ontology folder editing is available in the installed desktop app." &&
-  koMessages.docsVault.vaultStatus.unsupportedTooltip ===
-    "로컬 온톨로지 폴더 편집은 설치된 데스크톱 앱에서 사용할 수 있습니다." &&
-  enMessages.featuresMisc.localVaultPicker.openLabel === "Open vault folder" &&
-  koMessages.featuresMisc.localVaultPicker.openLabel === "vault 폴더 열기" &&
-  enMessages.featuresMisc.localVaultPicker.unsupported.includes("Install the desktop app") &&
-  koMessages.featuresMisc.localVaultPicker.unsupported.includes("데스크톱 앱을 설치") &&
-  !enMessages.searchWidgets.shortcuts.rows.localVault.includes("File System Access") &&
-  !koMessages.searchWidgets.shortcuts.rows.localVault.includes("File System Access") &&
-  !enMessages.featuresMisc.localVaultPicker.openLabel.includes("markdown folder")
+  namesInstalledApp(enMessages.searchWidgets.shortcuts.rows.localVault, "en") &&
+  namesInstalledApp(koMessages.searchWidgets.shortcuts.rows.localVault, "ko") &&
+  namesInstalledApp(enMessages.docsVault.vaultStatus.unsupportedTooltip, "en") &&
+  namesInstalledApp(koMessages.docsVault.vaultStatus.unsupportedTooltip, "ko") &&
+  namesInstalledApp(enMessages.featuresMisc.localVaultPicker.unsupported, "en") &&
+  namesInstalledApp(koMessages.featuresMisc.localVaultPicker.unsupported, "ko") &&
+  !advertisesBrowserFsa &&
+  // 열기 라벨은 **여는 대상**을 말해야 한다. 어느 단어를 쓰는지는 안 고정한다.
+  /folder/i.test(enMessages.featuresMisc.localVaultPicker.openLabel) &&
+  /폴더/.test(koMessages.featuresMisc.localVaultPicker.openLabel)
 ) {
   pass("local vault picker and shortcut copy describe the installed app path, not browser File System Access");
 } else {

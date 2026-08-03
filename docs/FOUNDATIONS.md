@@ -160,10 +160,27 @@ applied reading of public, citable design thinking — not arbitrary taste.
   thorough to the last detail,* and *"as little design as possible"* ("Less, but better").
   → The rationale for neutral greys + a single indigo and the bans on glow/neon/gradients/glassmorphism.
   Our whole forbidden-pattern list is applied Rams.
-- **Edward Tufte, *The Visual Display of Quantitative Information*** — the **data-ink ratio** (erase
-  non-data ink / chartjunk) and **graphical integrity** (representation proportional to the quantities).
-  → Grounds the live topology + insights surfaces: maximal signal, minimal chrome; honest, proportional
-  rendering of relations so agent and developer read the *same true* model.
+- **Edward Tufte, *The Visual Display of Quantitative Information*** — **graphical integrity**
+  (representation proportional to the quantities) and **direct labelling** (a legend means the mark
+  cannot explain itself). → Grounds honest, proportional rendering of relations so agent and developer
+  read the *same true* model.
+  ⚠️ **The data-ink ratio is cited here as an aesthetic, not as our judgment rule** — it has been
+  tested and did not survive as one. Inbar, Tractinsky & Meyer (ECCE 2007) had 87 participants rate a
+  standard bar graph against its Tufte-minimalist twin and found a clear preference for the
+  non-minimalist version; Bateman et al. (CHI 2010) found embellished charts were described no less
+  accurately than plain ones and were recalled *significantly better* after two to three weeks.
+  Neither study touches graphical integrity, which is why that half stands. When a seat needs to
+  reject a mark, the rule it must cite is Mackinlay's expressiveness, below — "this ink is not data"
+  is an assertion those two papers can be pointed at, while "this mark encodes no typed fact" is not.
+- **Jock D. Mackinlay, "Automating the Design of Graphical Presentations of Relational Information"
+  (ACM TOG 5(2), 1986)** — **expressiveness** (a graphical language must encode the facts in the set,
+  *and no additional facts*) and **effectiveness** (given several expressive encodings, prefer the one
+  the human visual system reads best, ranking channels after Cleveland & McGill). → **This is the rule
+  the design bench actually runs**, and it is what the 「도해」 seat's mark → typed-fact table is: a
+  mark that maps to no fact fails expressiveness, and a mark that asserts a fact the data does not
+  contain (a decorative rail implying a category) fails it in the other direction. Effectiveness is
+  why `.claude/rules/design.md` sends bar identity to position/length/order/label rather than hue, and
+  why hue-only separation is a defect rather than a preference.
 - **Wathan & Schoger, *Refactoring UI*** (also the Tailwind authors) — establish hierarchy by
   **de-emphasizing**, use a constrained spacing/type scale, **limit the palette deliberately**.
   → The concrete how-to behind our `@theme` token scale, the per-screen gutter/spacing consistency
@@ -201,7 +218,7 @@ holds all of at once:
    diff, versioned by git, no backend / no DB. (Zep/Graphiti = graph DB; GraphRAG = generated store;
    mem0 = service. We = files in your repo.)
 3. **Live topology as the surface** — the same graph is the *human comprehension surface*: you watch it
-   grow as the agent edits, and you edit it back. (Tufte's data-ink + Linear's craft applied to a KG.)
+   grow as the agent edits, and you edit it back. (Mackinlay expressiveness + Linear's craft, applied to a KG.)
 4. **Codebase-scoped meaning layer** — not conversation memory (Zep/mem0) and not structural code facts
    (tree-sitter/Glean), but the *why/owns/impacts* layer **on top of** structure, curated by developer +
    agent.
@@ -251,6 +268,10 @@ agent, read by the human as a live map. That is the thing to make excellent.
 **Design**
 - Rams, D. *Ten Principles for Good Design.* Vitsœ. https://www.vitsoe.com/us/about/good-design — *public*
 - Tufte, E. R. (1983/2001). *The Visual Display of Quantitative Information.* Graphics Press. https://www.edwardtufte.com/book/the-visual-display-of-quantitative-information/ — *book*
+- Mackinlay, J. D. (1986). *Automating the design of graphical presentations of relational information.* ACM Transactions on Graphics 5(2), 110–141. https://dl.acm.org/doi/10.1145/22949.22950 — *peer-reviewed*
+- Inbar, O., Tractinsky, N., & Meyer, J. (2007). *Minimalism in information visualization: attitudes towards maximizing the data-ink ratio.* ECCE 2007, 185–188. https://dl.acm.org/doi/10.1145/1362550.1362587 — *peer-reviewed* (data-ink preference did not replicate)
+- Bateman, S., Mandryk, R. L., Gutwin, C., Genest, A., McDine, D., & Brooks, C. (2010). *Useful junk? The effects of visual embellishment on comprehension and memorability of charts.* CHI 2010, 2573–2582. https://dl.acm.org/doi/10.1145/1753326.1753716 — *peer-reviewed* (embellishment: equal accuracy, better long-term recall)
+- Purchase, H. C. (1997). *Which aesthetic has the greatest effect on human understanding?* Graph Drawing 1997, LNCS 1353, 248–261. https://link.springer.com/chapter/10.1007/3-540-63938-1_67 — *peer-reviewed* (edge crossings dominate; angular resolution and orthogonality not significant)
 - Wathan, A., & Schoger, S. (2018). *Refactoring UI.* https://www.refactoringui.com/ — *book*
 - Maeda, J. (2006). *The Laws of Simplicity.* MIT Press. https://mitpress.mit.edu/9780262539470/the-laws-of-simplicity/ — *book*
 - Saarinen, K. (2025). *Why is quality so rare?* Linear. https://linear.app/now/why-is-quality-so-rare — *public blog*

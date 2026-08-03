@@ -41,14 +41,34 @@ http://localhost:4173/ko/topology?synth=3000&t=freeze&guides=off&e2e=1
 ### `nodes()` — 무엇이 어디에 있고, 무엇을 끌 수 있나
 
 ```js
-[{ id, kind, label, x, y, draggable, hidden }]
+[{ id, kind, label, x, y, radius, draggable, hidden }]
 ```
 
 - `x`/`y` — **CSS 픽셀**(마우스 좌표계). `screenToWorld` 의 역함수를 같은
   카메라로 계산하므로 어긋날 수 없다.
+- `radius` — **화면 반지름.** 그리는 쪽과 같은 식(`radiusForKind ×
+  magnitudeScale × 카메라 배율`)이다. 식이 갈리면 계기가 화면이 아니라 자기
+  상상을 재게 된다. 겹침은 이 값 없이 셀 수 없다.
 - `draggable` — **시뮬에 있는가.** 잡기는 `sim.hasNode()` 를 통과해야 성립하고,
   실패하면 조용히 팬으로 흘러간다. **이걸 안 봐서 여섯 번 틀렸다.**
 - `hidden` — 밀도 게이트로 접혀 화면에 없는가.
+
+### `edges()` — 선이 어디로 지나가나
+
+```js
+[{ sourceId, targetId, kind, ax, ay, bx, by, controlX, controlY }]
+```
+
+2026-08-03 에 추가됐다. 그전까지 **지도가 그래프로서 읽히는지에 대한 수치가
+하나도 없었다** — 노드 규격에는 계약 테스트가, 타입 램프에는 lint 가, 모션에는
+프레임 실측이 있는데 화면 대부분을 차지하는 배치만 "복잡해 보인다" 로
+판정되고 있었다.
+
+- **컨트롤 포인트가 왜 필요한가**: 이 엣지들은 직선이 아니라 2차 베지어다
+  (`quadraticCurveTo`). 끝점만 이어서 교차를 세면 **화면에 없는 교차를 세고
+  화면에 있는 교차를 놓친다** — 숫자는 나오므로 그 오차는 조용하다.
+- 접힌 서브트리에 닿는 엣지는 제외된다. 드로우 루프의 첫 게이트와 같은 조건이다.
+- 소비처: `scripts/measure-graph-readability.mjs`.
 
 ### `interaction()` — 지금 끄는 것이 노드인가 배경인가
 
@@ -100,6 +120,33 @@ node scripts/perf-node-drag.mjs
 ```
 
 출력에 `노드 잡음 ✓` 가 없으면 그 수치는 버린다 — 하네스가 스스로 판정한다.
+
+**가독성**(교차 · 겹침)은 별도 하네스이고 진짜 입력이 필요 없어 헤드리스다:
+
+```bash
+node scripts/serve-static-export.mjs --port=4173 &
+node scripts/measure-graph-readability.mjs
+```
+
+배치가 결정론적이라 같은 조건의 두 실행은 **바이트 동일**하다(실측). 그래서
+이 수치는 회귀 판정에 쓸 수 있다. 2026-08-03 기준선(1512×900, 수렴 후):
+
+| 케이스 | 보이는 노드/엣지 | 교차 | 품질 | 겹침 |
+|---|---|---|---|---|
+| 도그푸드 볼트 | 31 / 66 | 89 | 0.9508 | 0 |
+| 합성 300 | 72 / 80 | 23 | 0.9920 | 0 |
+| 합성 3000 | 86 / 18 | — | 잴 수 없음(접힘) | 0 |
+
+⚠️ **「잴 수 없음」을 만점으로 읽지 마라.** 밀도 게이트가 서브트리를 접어 남은
+엣지가 전부 끝점을 공유하면 교차가 원천적으로 불가능해진다 — 그걸 품질 1 로
+내면 「큰 볼트일수록 좋다」는 정반대 결론이 나온다. 그래서 계기가 `null` 을
+내고 그 사유를 함께 출력한다.
+
+**겹침 0 은 왜 믿을 수 있나** — 탐지기가 놀고 있는 것과 구별되기 때문이다.
+계산이 페이지 밖 순수 함수(`scripts/lib/graph-readability.mjs`)라 아는 답을
+넣어 볼 수 있고, `tests/contract/graph-readability.contract.test.ts` 가 그걸
+한다. 결함 4종(현선 회귀 · 스윕 축 반전 · 끝점 공유 쌍 오계수 · 겹침 임계
+약화)을 넣어 전부 빨개지는 것까지 확인했다.
 
 전체 절차와 함정은 `/map-perf` 스킬
 (`.claude/skills/map-perf/SKILL.md` · `.agents/skills/map-perf/SKILL.md`).

@@ -18,7 +18,7 @@ import { Link, useRouter } from "@/i18n/navigation";
 import { useLocale, useTranslations } from "next-intl";
 // `History as HistoryIcon` — 전역 DOM History 생성자와의 충돌 원천 차단
 // (사용성 검수 P0, AtlasGitPanel 과 동일 처방).
-import { BookOpen, Compass, FolderOpen, HelpCircle, History as HistoryIcon, MessageCircle, Plus, X } from "lucide-react";
+import { Compass, FolderOpen, HelpCircle, History as HistoryIcon, MessageCircle, Plus, X } from "lucide-react";
 import { useTypingShortcuts } from "@/shared/lib/use-typing-shortcut";
 import { useProjects } from "@/features/project-data-source";
 import { useAdaptiveRecentChanges, useOntologyInsight, useVaultConceptFacts, useVaultDocFreshnessIndex } from "@/features/vault-ontology";
@@ -117,7 +117,6 @@ const MountedGlobalSearch = dynamic(
 const importFullDetailA1 = () => import("@/widgets/full-detail-a1");
 type FullDetailA1Component = Awaited<ReturnType<typeof importFullDetailA1>>["FullDetailA1"];
 import { GestureHint } from "@/widgets/gesture-hint";
-import { PINNED_DOCS_STORAGE_PREFIX } from "@/widgets/docs-vault";
 import { ChromeChip, LiveAnnouncer, Tooltip, useToast } from "@/shared/ui";
 import { resolveToastBottomOffsetForStack } from "@/shared/ui/toast-position";
 import {
@@ -442,7 +441,6 @@ export function HomePage() {
     return false;
   });
   const [docsDrawerOpen, setDocsDrawerOpen] = useState(false);
-  const [docsPinnedCount, setDocsPinnedCount] = useState(0);
   // SSR 과 첫 클라이언트 렌더가 같아야 한다 — useState 초기화에서
   // localStorage 를 읽으면 hydration mismatch (서버/클라 className 불일치).
   // 저장된 선호는 useSyncExternalStore 의 server snapshot 으로 SSR 기본값을
@@ -1109,14 +1107,37 @@ export function HomePage() {
          */
         const { slug, markdown } = buildNewNodeDoc({ ...input, createdBy: "human" });
         await vault.createDoc(slug, markdown);
-        toast.show(t("createNode.toastSaved", { slug }), "success");
+        /*
+         * **1일차의 싼 시험** (PO 카운슬 평결 ⑤, 2026-08-03).
+         *
+         * 소유자는 「노드가 지도에 나오면서 위치를 정하고 확대되는」 생성을
+         * 원했다. 근거석이 그보다 싼 가설을 냈다 — 문제가 「모션이 없다」가
+         * 아니라 **「만든 게 어디 갔는지 모른다」** 일 수 있다. 해자석이 2라운드
+         * 에서 승복하며 *"싼 시험을 슬라이스 밖이 아니라 **앞**에 넣어라"* 고
+         * 했고, 그래서 이 링크가 1일차다.
+         *
+         * **누르는지가 관측이다.** 자동 포커스로 만들면 훨씬 싸지만 시험 자체가
+         * 사라진다 — 필요했는지 아무도 모르게 된다.
+         *
+         * 반증 조건: 이 링크를 눌러 보고도 「무엇에 붙었는지 모르겠다」가 나오면
+         * 부착 표시가 필요했던 것이고, 안 나오면 나머지 날은 반납한다.
+         */
+        const tail = slug.includes("/") ? slug.slice(slug.lastIndexOf("/") + 1) : slug;
+        toast.show(t("createNode.toastSaved", { slug }), "success", {
+          label: t("createNode.toastSavedAction"),
+          onClick: () =>
+            setRouteState((current) => ({
+              ...current,
+              selectedSlug: `${input.kind}:${tail}`,
+            })),
+        });
         closeCreateNode();
       } catch (err) {
         const exists = err instanceof Error && err.message.includes("already exists");
         toast.show(exists ? t("createNode.toastExists") : t("createNode.toastError"), "error");
       }
     },
-    [closeCreateNode, vault, toast, t],
+    [closeCreateNode, vault, toast, t, setRouteState],
   );
   // #8 평문화 — "개념 추가" 도메인 피커 옵션. 자유 입력 slug 대신 기존 도메인
   // 노드를 이름으로 고른다. value = bare tail-slug(`domain:auth` → `auth`),
@@ -2668,27 +2689,11 @@ export function HomePage() {
     [setRouteState],
   );
 
-  // '문서' 버튼에 띄울 pinned 뱃지 카운트 — 드로어 닫힐 때 localStorage 에서
-  // 갱신. 드로어 내부에서 pin 토글하고 닫으면 즉시 버튼에 반영.
-  useEffect(() => {
-    if (typeof window === "undefined") return;
-    try {
-      const raw = window.localStorage.getItem(
-        `${PINNED_DOCS_STORAGE_PREFIX}server`,
-      );
-      if (!raw) {
-        queueMicrotask(() => setDocsPinnedCount(0));
-        return;
-      }
-      const parsed: unknown = JSON.parse(raw);
-      const nextCount = Array.isArray(parsed)
-        ? parsed.filter((s): s is string => typeof s === "string").length
-        : 0;
-      queueMicrotask(() => setDocsPinnedCount(nextCount));
-    } catch {
-      queueMicrotask(() => setDocsPinnedCount(0));
-    }
-  }, [docsDrawerOpen]);
+  // 「작업공간」 칩과 함께 **고정 문서 수 계산도 걷어냈다** (2026-08-03).
+  // 이 effect 는 드로어를 여닫을 때마다 localStorage 를 읽고 JSON 을 파싱해서
+  // 오직 그 칩의 뱃지 하나를 먹였다. 칩이 없으면 읽는 곳이 0이므로, 남겨 두면
+  // 화면에 없는 표면을 위해 매번 값을 치르는 꼴이다 —
+  // `architecture.md` 「화면에 없는 표면의 모델은 만들지 않는다」.
 
   // #62 — 블로킹 표면이 열려 있는 동안 전역 단축키는 죽는다. 예전엔 표면마다
   // `if (createNodeOpen) return;` 을 손으로 달아서 **투어가 빠져 있었고**,
@@ -3664,41 +3669,26 @@ export function HomePage() {
                         {t('controls.spotlightLabel')}
                       </ChromeChip>
                     </Tooltip>
-                    <Tooltip content={t('controls.docsTooltip')} side="bottom" withProvider={false}>
-                    <ChromeChip
-                      onClick={() => setDocsDrawerOpen((v) => !v)}
-                      aria-expanded={docsDrawerOpen}
-                      aria-label={t('controls.docsAriaLabel')}
-                      data-utility-action-token-contract="support-surface-family"
-                      data-utility-action-surface-token="--chrome-surface"
-                      data-utility-action-border-token="--chrome-border"
-                      data-utility-action-shadow-token="--chrome-shadow"
-                      data-utility-action-focus-ring-token="--color-indigo-accent"
-                      compact={topologyUtilityChromeCompact}
-                      icon={<BookOpen className="text-[color:var(--color-indigo-accent)]" />}
-                      kbd="D"
-                      // 레인 축약 사다리(겹침 소탕 2026-07-23): <2xl kbd 접기 ·
-                      // <xl 라벨 접기. 고정 문서 수 badge 는 compact 규칙과
-                      // 동일하게 항상 남는다.
-                      className="max-2xl:[&_[data-chip-kbd]]:hidden max-xl:[&_[data-chip-label]]:hidden"
-                      badge={
-                        docsPinnedCount > 0 ? (
-                          <span
-                            data-utility-count-badge="pinned-docs"
-                            data-surface-token="--topology-utility-lane-count-surface"
-                            data-text-token="--topology-utility-lane-count-text"
-                            className="inline-flex h-[18px] min-w-[18px] items-center justify-center rounded-full bg-[color:var(--topology-utility-lane-count-surface)] px-1.5 font-mono text-label tabular-nums text-[color:var(--topology-utility-lane-count-text)]"
-                            aria-label={t('controls.pinnedDocsCount', { count: docsPinnedCount })}
-                            title={t('controls.pinnedDocsCount', { count: docsPinnedCount })}
-                          >
-                            {docsPinnedCount}
-                          </span>
-                        ) : null
-                      }
-                    >
-                      {t('controls.docsLabel')}
-                    </ChromeChip>
-                    </Tooltip>
+                    {/*
+                      ⚠️ **「작업공간」 칩을 뺐다** (2026-08-03, PO 카운슬 평결 ⑥ ·
+                      소유자 지시 *"이것도 그냥 lnb에서 문서함 누르면 나오는거 아닌가"*).
+
+                      채택된 규칙: **지도 위 칩은 지도를 바꿀 때만 그 자리에 설
+                      자격이 있다.** 이 칩은 드로어를 열 뿐 지도를 안 바꿨다 —
+                      LNB 의 일이다. 게다가 자기 라벨(`docsLabel: "작업공간"`)과
+                      자기 툴팁(`docsTooltip: "문서함 빠른 보기"`)이 **한 컨트롤
+                      안에서 서로 다른 이름**을 쓰고 있었고, LNB 에는 이미 「문서함」이
+                      있어 같은 화면에 같은 말이 둘이었다.
+
+                      **드로어는 살아 있다** — `D` 단축키(단축키 시트에 등재)와
+                      INDEX 푸터 경로가 그대로 연다. 없앤 것은 칩 하나지 표면이
+                      아니다.
+
+                      이건 재발견이다: 2026-08-02 에 「변경점 N개」가 **같은 이유**
+                      (왕복만 하고 지도 상태를 안 바꾼다)로 이미 지워졌다. 규칙이
+                      없어서 매번 한 개씩 손으로 발견하고 있었다 — 그래서 이번엔
+                      규칙을 원장에 등재했다.
+                    */}
                     {/*
                       ⚠️ **「+ 개념」 크롬 필을 뺐다** (2026-08-03, 소유자 지시).
                       *"이거좀 이상해 없어져도 될듯?"*

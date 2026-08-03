@@ -6,9 +6,27 @@ import { toast as sonnerToast, Toaster } from 'sonner';
 
 type ToastTone = 'success' | 'info' | 'error';
 
+/**
+ * 토스트가 **하나만** 달 수 있는 후속 동작 (2026-08-03, PO 카운슬 평결 ⑤).
+ *
+ * 왜 하나인가 — 토스트는 스스로 사라지는 표면이라 **선택을 물을 자격이 없다.**
+ * 둘 이상이면 사용자는 사라지기 전에 고르라는 압박을 받는다. 하나면 그건
+ * 선택이 아니라 「방금 한 일로 가는 길」이다.
+ *
+ * 왜 필수가 아닌가 — 이 동작을 놓쳐도 사용자가 잃는 것이 없어야 한다. 놓치면
+ * 곤란한 일은 토스트가 아니라 상주 표면이 맡는다.
+ */
+export interface ToastAction {
+  label: string;
+  onClick: () => void;
+}
+
 interface ToastApi {
-  /** 기존 API 보존 — `useToast()` 호출자가 그대로 작동. */
-  show: (message: string, tone?: ToastTone) => void;
+  /**
+   * 기존 API 보존 — `useToast()` 호출자 ~50곳이 그대로 작동한다.
+   * `action` 은 **옵션**이라 기존 호출부는 한 글자도 안 바뀐다.
+   */
+  show: (message: string, tone?: ToastTone, action?: ToastAction) => void;
 }
 
 /**
@@ -73,6 +91,12 @@ export function ToastProvider({ children }: { children: ReactNode }) {
             // never sonner's default light chip.
             closeButton:
               'border-[color:var(--color-border-soft)] bg-[color:var(--color-elevated)] text-[color:var(--color-text-secondary)] hover:text-[color:var(--color-text-primary)]',
+            // 후속 동작 버튼 — 닫기와 같은 이유로 토큰을 입힌다(sonner 기본은
+            // 라이트 칩이라 다크 단일 계약을 깬다). **채워진 인디고가 아니다**:
+            // 토스트는 사라지는 표면이고, 여기서 주목을 가져가면 화면의 진짜
+            // 주목 승자와 경쟁한다. 조용한 ghost 로 두고 라벨이 일하게 한다.
+            actionButton:
+              'border border-[color:var(--color-indigo-line-a35)] bg-transparent text-[color:var(--color-indigo-accent)] hover:bg-[color:var(--color-indigo-a16)]',
           },
         }}
       />
@@ -90,17 +114,22 @@ export function ToastProvider({ children }: { children: ReactNode }) {
  */
 export function useToast(): ToastApi {
   return {
-    show: (message: string, tone: ToastTone = 'success') => {
+    show: (message: string, tone: ToastTone = 'success', action?: ToastAction) => {
+      // `action` 이 없으면 sonner 에 옵션 객체 자체를 넘기지 않는다 — 기존
+      // 호출부의 동작을 한 톨도 바꾸지 않기 위해서다.
+      const options = action
+        ? { action: { label: action.label, onClick: action.onClick } }
+        : undefined;
       switch (tone) {
         case 'error':
-          sonnerToast.error(message);
+          sonnerToast.error(message, options);
           return;
         case 'info':
-          sonnerToast.info(message);
+          sonnerToast.info(message, options);
           return;
         case 'success':
         default:
-          sonnerToast.success(message);
+          sonnerToast.success(message, options);
       }
     },
   };

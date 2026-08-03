@@ -61,6 +61,21 @@ const TIERS: Record<string, string> = {
 const INSTRUMENTS = ['motion-verify', 'responsive-sweep', 'design-audit'];
 
 /**
+ * 반려 근거로 쓰면 안 되는 원칙, 그리고 그 자리를 대신하는 것.
+ *
+ * data-ink 는 이 벤치에서 오랫동안 「이 잉크는 데이터가 아니다 → 반려」 로 쓰였다.
+ * 그런데 그 규칙은 실험이 안 받쳐 준다 — Inbar 외(ECCE 2007)의 87명은 Tufte
+ * 미니멀 판보다 표준 막대를 뚜렷이 선호했고, Bateman 외(CHI 2010)의 장식 차트는
+ * 서술 정확도가 안 떨어지고 2~3주 뒤 회상은 오히려 유의하게 나았다.
+ *
+ * 이 저장소가 **실제로 쓰던 규칙**은 처음부터 Mackinlay expressiveness 였다
+ * (「마크 → 사실 대응표」가 정확히 그 판정이다). 인용만 틀렸던 것이다.
+ * 그래픽 정직성과 직접 라벨링은 저 두 논문이 건드리지 않았으므로 Tufte 로 남는다.
+ */
+const REFUTED_RULE = 'data-ink';
+const REPLACEMENT_RULE = 'Mackinlay';
+
+/**
  * The diet has to be enforced, or it decays back into manifestos. Byte budget,
  * not line count: these briefs are Korean, where one character costs 3 bytes,
  * so 9,000B is roughly 3,000 characters — enough for a dense operating
@@ -327,5 +342,129 @@ describe('카운슬 산출물은 평문 요약으로 시작한다', () => {
    */
   it.each(PLAIN_SUMMARY_FILES)('%s 가 "다르게 한 것" 줄을 생략 불가로 못박는다', (path) => {
     expect(read(path).replace(/\s+/g, ' ')).toMatch(/생략할 수 없다/);
+  });
+});
+
+/**
+ * 발산 단계 (`/design-directions`, 2026-08-03).
+ *
+ * 카운슬은 **serial** 이다 — R1 비평 → R2 교차비평 → R3 평결이 전부 이미
+ * 만들어진 하나를 평가한다. Dow et al.(ACM TOCHI 2010)이 실험으로 보인 것은
+ * 그 반대다: 여러 개를 만든 뒤 피드백을 받는 쪽이 결과 품질·발산·자기효능감
+ * **셋 다** 우월했다. 그 발산 단계가 통째로 없었다.
+ *
+ * 이 게이트가 지키는 것은 스킬의 **문장이 아니라 세 가지 구조**다 — 근거가
+ * 붙어 있는가, 발산 소유자가 짓는 쪽이 아닌가, 현행이 후보에 들어가는가.
+ */
+describe('발산 단계 — /design-directions', () => {
+  const DIRECTIONS_SKILL = '.claude/skills/design-directions/SKILL.md';
+  const DIRECTIONS_MIRROR = '.agents/skills/design-directions/SKILL.md';
+
+  it('스킬과 미러가 바이트 동일하다', () => {
+    expect(read(DIRECTIONS_SKILL)).toBe(read(DIRECTIONS_MIRROR));
+  });
+
+  it('학술 근거를 달고 있다 — 취향이 아니라 실험 결과다', () => {
+    const skill = read(DIRECTIONS_SKILL).replace(/\s+/g, ' ');
+    // 저자 목록 길이에 걸리지 않게 **두 사실을 따로** 본다 — 인용 형식이 바뀌어도
+    // 근거가 남아 있으면 통과해야 한다(문장 핀을 만들지 않는다).
+    expect(skill, '저자를 밝혀야 한다').toContain('Dow');
+    expect(skill, '발행처와 연도를 밝혀야 한다').toContain('TOCHI 2010');
+    expect(skill, 'serial 과 대비해야 근거가 우리 프로토콜에 붙는다').toContain('serial');
+  });
+
+  /*
+   * 이 단언이 이 파일에서 가장 중요하다. 짓고 싶어 하는 쪽이 선택지를 만들면
+   * 나머지 갈래가 허수아비가 되고, 그 순간 발산은 변경을 정당화하는 의식이 된다
+   * — 카운슬을 만든 이유와 같은 실패다.
+   */
+  it('갈래를 그리는 자리가 짓는 자리와 분리돼 있다', () => {
+    const skill = read(DIRECTIONS_SKILL).replace(/\s+/g, ' ');
+    expect(skill, '발산 소유자를 chief 로 명시해야 한다').toMatch(
+      /소유자는 [`*]*chief/,
+    );
+    expect(skill, `${DECIDER_AGENT}(짓는 쪽)이 소유자가 아님을 명시해야 한다`).toContain(
+      DECIDER_AGENT,
+    );
+  });
+
+  it('현행이 후보에 들어가는 것을 규율로 못박는다', () => {
+    // 현행이 없으면 「바꾸지 않는다」가 이길 수 없고, 그러면 절차가 아니라 의식이다.
+    expect(read(DIRECTIONS_SKILL).replace(/\s+/g, ' ')).toMatch(
+      /하나는 [「"']?지금 그대로[」"']?/,
+    );
+  });
+
+  it('카운슬 스킬이 이 단계를 자기 앞 순서로 가리킨다', () => {
+    // 순서가 뒤집히면 카운슬이 갈래 탐색을 대신하게 된다 — 2026-08-03 에 실제로 그랬다.
+    expect(read(SKILL_PATH), 'design-council 이 발산 단계를 앞 순서로 가리켜야 한다').toContain(
+      'design-directions',
+    );
+  });
+});
+
+/**
+ * 근거의 무결성 — **반박된 규칙이 반려 근거로 돌아오는 것**을 막는다.
+ *
+ * 이 게이트가 없으면 다음 사람이 "Tufte data-ink → 반려" 를 아무 저항 없이 다시
+ * 쓴다. 그게 더 익숙한 문장이고, 반박이 문서 한 곳에만 적혀 있으면 그 문서를 안
+ * 읽은 사람에게는 존재하지 않기 때문이다. 이 저장소의 반복 교훈: **문서에만 있는
+ * 규격은 지켜지지 않는다.**
+ */
+describe('근거 무결성 — data-ink 는 반려 근거가 아니다', () => {
+  const CITING_FILES = [
+    ...BENCH.map(([, agent]) => join('.claude/agents', `${agent}.md`)),
+    join('.claude/agents', `${DECIDER_AGENT}.md`),
+    SKILL_PATH,
+    SKILL_MIRROR_PATH,
+    'docs/DESIGN-SYSTEM.md',
+  ];
+
+  /**
+   * ★ 판정은 **줄 단위**여야 한다.
+   *
+   * 첫 판은 「파일이 data-ink 를 언급하면 파일 어딘가에 Mackinlay 도 있어야 한다」
+   * 였는데, 프로브를 걸어 보니 **빨개지지 않았다** — 출처 목록에 이름만 남기고
+   * 규칙은 옛것으로 되돌리면 그대로 통과했다. 이 저장소가 이미 이름 붙여 둔
+   * 실패다: **면제는 방향이 있다.** 「정상 사용을 살린다」는 면제가 「비정상
+   * 사용도 살린다」가 되는지 켤 때 함께 물어야 한다.
+   *
+   * 그래서 지금은 **data-ink 가 등장하는 줄 자체**가 그것을 부정해야 한다.
+   */
+  const NEGATION = /반박|쓰지 마라|아니다|\bnot\b|\bNot\b/;
+
+  it.each(CITING_FILES)('%s — data-ink 가 나오는 줄은 그것을 부정한다', (path) => {
+    const offenders = read(path)
+      .split('\n')
+      .map((line, i) => [i + 1, line] as const)
+      .filter(([, line]) => line.includes(REFUTED_RULE) && !NEGATION.test(line));
+    expect(
+      offenders,
+      `${path}: data-ink 를 부정 없이 쓰는 줄이 있다 — 다음 사람은 이걸 반려 근거로 읽는다. ` +
+        `대체 규칙은 ${REPLACEMENT_RULE} expressiveness 다.\n` +
+        offenders.map(([n, l]) => `  ${n}: ${l.trim().slice(0, 100)}`).join('\n'),
+    ).toEqual([]);
+  });
+
+  it('FOUNDATIONS 가 반박 근거를 인용으로 들고 있다', () => {
+    // 반박이 «우리 의견» 이면 다음 소집에서 취향 다툼이 된다. 논문이어야 끝난다.
+    const foundations = read('docs/FOUNDATIONS.md');
+    expect(foundations, 'Inbar 외(ECCE 2007) — data-ink 선호가 재현되지 않았다').toContain('Inbar');
+    expect(foundations, 'Bateman 외(CHI 2010) — 장식이 회상을 오히려 높였다').toContain('Bateman');
+    expect(foundations, '대체 규칙의 원전').toContain(REPLACEMENT_RULE);
+    // 그래픽 정직성과 직접 라벨링은 반박되지 않았다 — 통째로 버리면 그것도 틀렸다.
+    expect(foundations, 'Tufte 를 통째로 버리지 않는다').toContain('graphical integrity');
+  });
+
+  it('도해석이 반려 근거로 대체 규칙을 지목한다', () => {
+    // 이 자리가 마크를 반려하는 유일한 자리다. 여기가 옛 근거를 쓰면 나머지는 무의미하다.
+    const seat = agentFile('design-infoviz').replace(/\s+/g, ' ');
+    expect(seat).toMatch(/반려할 때 대는 근거/);
+    expect(seat).toContain(REPLACEMENT_RULE);
+    // 그리고 옛 근거를 **금지**로 못박는다. 위 줄 단위 검사만으로는 부족하다 —
+    // 반박 문단 안에서 「쓰지 마라」만 「쓴다」로 뒤집는 반쪽 편집이 통과했다(프로브 실측).
+    expect(seat, '도해석은 data-ink 를 반려 근거로 쓰지 말라고 명시해야 한다').toMatch(
+      new RegExp(`${REFUTED_RULE}[^.]{0,40}반려 근거로 쓰지 마라`),
+    );
   });
 });

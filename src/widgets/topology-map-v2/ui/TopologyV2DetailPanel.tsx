@@ -1054,16 +1054,38 @@ export function TopologyV2DetailPanel({
         )}
 
         {/* 액션 스트립 — 조용한 ghost 아이콘+라벨(무거운 박스 아님). 핸들러/
-            href 가 없는 항목은 렌더하지 않는다(죽은 어포던스 금지). */}
+            href 가 없는 항목은 렌더하지 않는다(죽은 어포던스 금지).
+
+            **3층이다** (2026-08-03, PO 카운슬 평결 ④). 종전엔 7칸이 한 행에서
+            `flex-1` 로 나뉘어 **칸당 42.6px** 였고(패널 352px · 액션 영역 322px),
+            그 폭에서 「AI에게 줄 항목 정보 복사」가 **4줄**로 감겼다. `items-stretch`
+            가 행 높이를 최댓값에 맞추므로 **주목 승자를 중요도가 아니라 글자 수가
+            정하고 있었다** — 2줄짜리 네 칸이 4줄 높이의 빈 공간을 떠안았다.
+
+            그리고 이건 1회 관측이 아니다: 아래 440행 주석이 **6칸 시점에 이
+            붕괴를 이미 예견**했고, 그 예견을 읽을 수 있는 상태에서 7번째가
+            추가됐다(#862).
+
+            **자르는 기준은 빈도가 아니라 자격이다.** 개수를 줄이려면 「누가 안
+            쓰는지」를 알아야 하는데 그 관측은 0이다. 대신 **하는 일의 종류**로
+            묶는다 — 이 노드에 하는 일 / 지도를 이 노드 기준으로 바꾸는 일 /
+            에이전트에게 넘기는 일. 실측: 3칸 104px(2줄) · 2칸 159px(1줄).
+
+            **삭제 0 · 병합 0.** 두 AI 타일은 겉보기엔 중복이나 **대상 런타임이
+            다르다** — 복사는 볼트 밖 에이전트(Claude Code·Codex)로 나가는 문이고
+            물어보기는 앱 안 LLM 브릿지다. 웹은 `llmBridgeAvailable` 이 false 라
+            병합하면 그 표면의 에이전트 핸드오프가 **0이 된다**. */}
         <div
           role="group"
           aria-label={labels.actionsGroupLabel}
           data-testid="topology-v2-detail-panel-actions"
           data-inline-action-count={inlineActionCount}
           className={showProjectSource
-            ? "flex items-stretch gap-0.5 border-t border-[color:var(--topology-v2-panel-zone-divider)] pt-2"
-            : "flex items-stretch gap-0.5"}
+            ? "flex flex-col gap-0.5 border-t border-[color:var(--topology-v2-panel-zone-divider)] pt-2"
+            : "flex flex-col gap-0.5"}
         >
+        {/* 1층 — 이 노드에 하는 일. 「관계 편집」이 무조건 있어 항상 렌더된다. */}
+        <div className="flex items-start gap-0.5" data-action-row="node">
           {documentHref
             ? withActionTip(
                 labels.actionDocumentTip,
@@ -1112,6 +1134,45 @@ export function TopologyV2DetailPanel({
               <span>{labels.actionEditRelations}</span>
             </Link>,
           )}
+        </div>
+        {/* 2층 — 지도를 이 노드 기준으로 바꾸는 일. 둘 다 없으면 층 자체가 없다. */}
+        {showInlinePath || onEnterRealm ? (
+        <div className="flex items-start gap-0.5" data-action-row="map">
+          {showInlinePath
+            ? withActionTip(
+                labels.actionPathTip,
+                <button
+                  type="button"
+                  onClick={onSetPathSource}
+                  data-testid="topology-v2-detail-panel-action-path"
+                  className={ACTION_TILE_CLASS}
+                >
+                  <Route size={16} aria-hidden="true" />
+                  <span>{labels.actionPath}</span>
+                </button>,
+              )
+            : null}
+          {/* S4 "영역 전개" 2차 발견 경로 — 컨테이너 노드에서만(HomePage 주입). */}
+          {onEnterRealm
+            ? withActionTip(
+                labels.actionRealmTip,
+                <button
+                  type="button"
+                  onClick={onEnterRealm}
+                  data-testid="topology-v2-detail-panel-action-realm"
+                  className={ACTION_TILE_CLASS}
+                >
+                  <Orbit size={16} aria-hidden="true" />
+                  <span>{labels.actionRealm}</span>
+                </button>,
+              )
+            : null}
+        </div>
+        ) : null}
+        {/* 3층 — 에이전트에게 넘기는 일. 복사가 상수(두 표면 모두)이고
+            물어보기는 브릿지가 있을 때만이라, 복사가 먼저 선다. */}
+        {showInlineHandoff || (onAskAgent && labels.actionAskAgent) ? (
+        <div className="flex items-start gap-0.5" data-action-row="agent">
           {showInlineHandoff
             ? withActionTip(
                 labels.actionCopyHandoffTip,
@@ -1142,35 +1203,8 @@ export function TopologyV2DetailPanel({
                 </button>,
               )
             : null}
-          {showInlinePath
-            ? withActionTip(
-                labels.actionPathTip,
-                <button
-                  type="button"
-                  onClick={onSetPathSource}
-                  data-testid="topology-v2-detail-panel-action-path"
-                  className={ACTION_TILE_CLASS}
-                >
-                  <Route size={16} aria-hidden="true" />
-                  <span>{labels.actionPath}</span>
-                </button>,
-              )
-            : null}
-          {/* S4 "영역 전개" 2차 발견 경로 — 컨테이너 노드에서만(HomePage 주입). */}
-          {onEnterRealm
-            ? withActionTip(
-                labels.actionRealmTip,
-                <button
-                  type="button"
-                  onClick={onEnterRealm}
-                  data-testid="topology-v2-detail-panel-action-realm"
-                  className={ACTION_TILE_CLASS}
-                >
-                  <Orbit size={16} aria-hidden="true" />
-                  <span>{labels.actionRealm}</span>
-                </button>,
-              )
-            : null}
+        </div>
+        ) : null}
         </div>
       </div>
 
