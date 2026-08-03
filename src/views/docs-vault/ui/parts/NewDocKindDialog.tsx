@@ -5,7 +5,7 @@ import { motion, useReducedMotion } from "framer-motion";
 import { useTranslations } from "next-intl";
 import { useOntologyKindLabel } from "@/entities/ontology-class";
 import { OVERLAY_SPRING, OVERLAY_SPRING_REDUCED, SCRIM_FADE, SCRIM_FADE_REDUCED } from "@/shared/motion";
-import { TopologyV2KindGlyph } from "@/shared/ui";
+import { TopologyV2KindGlyph, controlClass } from "@/shared/ui";
 
 /**
  * P5c — "새 문서" 가 generic `title:` 템플릿 대신 kind 선택을 먼저 받는다.
@@ -131,7 +131,11 @@ export function NewDocKindDialog({
               <button
                 type="button"
                 onClick={() => onSelect(kind)}
-                className="flex w-full items-center gap-2 rounded-chip border border-[color:var(--color-border-soft)] bg-[color:var(--color-overlay-1)] px-2.5 py-2 text-left transition-colors hover:border-[color:var(--color-border-strong)]"
+                className={controlClass({
+                  shape: "card",
+                  className:
+                    "w-full text-left hover:border-[color:var(--color-border-strong)]",
+                })}
               >
                 <TopologyV2KindGlyph kind={kind} size={16} />
                 <span className="text-body text-[color:var(--color-text-secondary)]">
@@ -144,7 +148,11 @@ export function NewDocKindDialog({
         <button
           type="button"
           onClick={onClose}
-          className="mt-3 text-label text-[color:var(--color-text-quaternary)] transition-colors hover:text-[color:var(--color-text-secondary)]"
+          className={controlClass({
+            shape: "link",
+            tone: "muted",
+            className: "mt-3 hover:text-[color:var(--color-text-secondary)]",
+          })}
         >
           {t("cancel")}
         </button>

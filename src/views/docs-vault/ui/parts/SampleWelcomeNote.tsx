@@ -1,5 +1,6 @@
 import { FolderOpen, X } from "lucide-react";
 import { useLocale } from "next-intl";
+import { IconButton, controlClass } from "@/shared/ui";
 
 export interface SampleWelcomeNoteProps {
   /** P1b — FSA 지원이면 웹에서도 폴더 열기(SampleNotice 와 동일 능력 계약). */
@@ -51,14 +52,15 @@ export function SampleWelcomeNote({
       data-testid="docs-vault-sample-welcome-note"
       className="relative flex flex-none flex-col gap-2 border-b border-l-2 border-b-[color:var(--color-divider)] border-l-[color:var(--color-indigo-brand)] bg-[color:var(--color-elevated)] px-6 py-4 md:px-10"
     >
-      <button
-        type="button"
+      <IconButton
+        label={copy.dismissAria}
+        size="sm"
+        tone="muted"
         onClick={onDismiss}
-        aria-label={copy.dismissAria}
-        className="absolute right-3 top-3 rounded-sm p-1 text-[color:var(--color-text-quaternary)] transition-colors hover:text-[color:var(--color-text-primary)]"
+        className="absolute right-3 top-3 hover:text-[color:var(--color-text-primary)]"
       >
         <X size={13} aria-hidden />
-      </button>
+      </IconButton>
       <p className="max-w-[560px] pr-6 text-body leading-body text-[color:var(--color-text-secondary)]">
         <span className="block font-semibold text-[color:var(--color-text-primary)]">
           {copy.title}
@@ -69,7 +71,13 @@ export function SampleWelcomeNote({
         <button
           type="button"
           onClick={onOpenFolder}
-          className="inline-flex w-fit flex-none items-center gap-1.5 rounded-chip border border-[color:var(--color-indigo-line-a42)] bg-[color:var(--color-indigo-a18)] px-2.5 py-1.5 text-body font-medium text-[color:var(--color-text-primary)] transition-colors hover:border-[color:var(--color-indigo-line-a54)] hover:bg-[color:var(--color-indigo-a24)]"
+          className={controlClass({
+          shape: "chip",
+          size: "lg",
+          active: true,
+          className:
+            "w-fit flex-none font-medium hover:border-[color:var(--color-indigo-line-a54)] hover:bg-[color:var(--color-indigo-a24)]",
+        })}
         >
           <FolderOpen size={12} aria-hidden />
           {copy.openFolderCta}

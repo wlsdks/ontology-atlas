@@ -24,6 +24,7 @@ import {
   X,
 } from 'lucide-react';
 import type { VaultDoc } from '@/entities/docs-vault';
+import { Chip, IconButton, RowButton } from '@/shared/ui';
 
 interface Props {
   doc: VaultDoc;
@@ -486,13 +487,12 @@ export function DocsVaultEditor({
         <div className="font-mono text-label text-[color:var(--color-text-quaternary)]">
           {error}
         </div>
-        <button
-          type="button"
+        <Chip
           onClick={requestClose}
-          className="mt-2 rounded-sm border border-[color:var(--color-divider)] px-2 py-1 text-label text-[color:var(--color-text-tertiary)] transition-colors hover:border-[color:var(--color-indigo-line-a32)] hover:text-[color:var(--color-text-primary)]"
+          className="mt-2 hover:border-[color:var(--color-indigo-line-a32)] hover:text-[color:var(--color-text-primary)]"
         >
           {t('close')}
-        </button>
+        </Chip>
       </div>
     );
   }
@@ -613,14 +613,10 @@ export function DocsVaultEditor({
           </span>
         </span>
         <div className="ml-auto flex items-center gap-1.5">
-          <button
-            type="button"
+          <Chip
+            active={preview}
             onClick={() => setPreview((v) => !v)}
-            className={`inline-flex items-center gap-1.5 rounded-sm border px-2 py-1 text-label transition-colors ${
-              preview
-                ? 'border-[color:var(--color-indigo-line-a45)] bg-[color:var(--color-indigo-a08)] text-[color:var(--color-indigo-pale-a92)]'
-                : 'border-[color:var(--color-divider)] text-[color:var(--color-text-tertiary)] hover:border-[color:var(--color-indigo-line-a32)] hover:text-[color:var(--color-text-primary)]'
-            }`}
+            className="hover:border-[color:var(--color-indigo-line-a32)] hover:text-[color:var(--color-text-primary)]"
             aria-pressed={preview}
             title={t('previewTooltip')}
           >
@@ -630,12 +626,13 @@ export function DocsVaultEditor({
               <Eye size={11} aria-hidden />
             )}
             {t('preview')}
-          </button>
-          <button
-            type="button"
+          </Chip>
+          <Chip
+            active
+            tone="accent"
             onClick={() => void doSave()}
             disabled={saving || !dirty}
-            className="inline-flex items-center gap-1.5 rounded-sm border border-[color:var(--color-indigo-line-a35)] bg-[color:var(--color-indigo-a14)] px-2 py-1 text-label text-[color:var(--color-indigo-pale-a95)] transition-colors hover:border-[color:var(--color-indigo-line-a54)] disabled:cursor-not-allowed disabled:opacity-50"
+            className="hover:border-[color:var(--color-indigo-line-a54)]"
             title={t('saveTooltip')}
           >
             {saving ? (
@@ -649,17 +646,16 @@ export function DocsVaultEditor({
                 {t('save')}
               </>
             )}
-          </button>
-          <button
-            type="button"
+          </Chip>
+          <Chip
             onClick={requestClose}
             disabled={saving}
-            className="inline-flex items-center gap-1 rounded-sm border border-transparent px-2 py-1 text-label text-[color:var(--color-text-tertiary)] transition-colors hover:border-[color:var(--color-overlay-3)] hover:text-[color:var(--color-text-primary)] disabled:cursor-not-allowed disabled:opacity-50"
+            className="hover:border-[color:var(--color-overlay-3)] hover:text-[color:var(--color-text-primary)]"
             title={dirty ? t('closeUnsavedTooltip') : t('closeTooltip')}
           >
             <X size={11} aria-hidden />
             {dirty ? t('cancel') : t('closeAction')}
-          </button>
+          </Chip>
         </div>
       </div>
       {error ? (
@@ -807,19 +803,15 @@ export function DocsVaultEditor({
               <ul className="max-h-[220px] overflow-auto py-0.5">
                 {acMatches.map((d, idx) => (
                   <li key={d.slug}>
-                    <button
-                      type="button"
+                    <RowButton
+                      active={idx === autocomplete.active}
                       onMouseEnter={() =>
                         setAutocomplete((ac) =>
                           ac ? { ...ac, active: idx } : ac,
                         )
                       }
                       onClick={() => applyWikilink(d.slug)}
-                      className={`flex w-full items-center gap-2 px-2 py-1 text-left transition-colors ${
-                        idx === autocomplete.active
-                          ? 'bg-[color:var(--color-indigo-a14)]'
-                          : 'hover:bg-[color:var(--color-overlay-1)]'
-                      }`}
+                      className="hover:bg-[color:var(--color-overlay-1)]"
                     >
                       <span className="truncate text-body text-[color:var(--color-text-primary)]">
                         {d.title}
@@ -827,7 +819,7 @@ export function DocsVaultEditor({
                       <span className="ml-auto truncate font-mono text-caption text-[color:var(--color-text-quaternary)]">
                         {d.slug}
                       </span>
-                    </button>
+                    </RowButton>
                   </li>
                 ))}
               </ul>
@@ -931,14 +923,12 @@ function ToolbarButton({
   onClick: () => void;
 }) {
   return (
-    <button
-      type="button"
+    <IconButton
+      label={label}
       onClick={onClick}
-      title={label}
-      aria-label={label}
-      className="flex h-7 w-7 items-center justify-center rounded-sm transition-colors hover:bg-[color:var(--color-overlay-2)] hover:text-[color:var(--color-text-primary)]"
+      className="hover:bg-[color:var(--color-overlay-2)] hover:text-[color:var(--color-text-primary)]"
     >
       {icon}
-    </button>
+    </IconButton>
   );
 }

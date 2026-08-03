@@ -6,6 +6,7 @@ import { FileText, X } from "lucide-react";
 import { OVERLAY_SPRING, OVERLAY_SPRING_REDUCED, SCRIM_FADE, SCRIM_FADE_REDUCED } from "@/shared/motion";
 import type { CreateNodeKind } from "../lib/build-create-node";
 import type { StudioWriteTarget } from "../lib/resolve-write-target";
+import { controlClass } from "@/shared/ui";
 
 /**
  * "이 개념은 아직 문서가 없어요" — 문서를 만들어도 되는지 묻는 동의 표면.
@@ -188,11 +189,12 @@ export function StudioMaterializeDialog({
                       data-testid={`studio-materialize-kind-${option}`}
                       aria-pressed={on}
                       onClick={() => setKind(option)}
-                      className={
-                        on
-                          ? `flex h-8 flex-1 items-center justify-center rounded-chip border border-[color:var(--color-indigo-line-a45)] bg-[color:var(--color-indigo-a16)] text-body tracking-body font-semibold text-[color:var(--color-indigo-text-soft)] transition-colors ${FOCUS_RING}`
-                          : `flex h-8 flex-1 items-center justify-center rounded-chip border border-[color:var(--color-border-soft)] text-body tracking-body text-[color:var(--color-text-tertiary)] transition-colors hover:border-[color:var(--color-border-strong)] hover:text-[color:var(--color-text-secondary)] ${FOCUS_RING}`
-                      }
+                      className={controlClass({
+                        shape: "chip",
+                        size: "lg",
+                        active: on,
+                        className: `flex-1 justify-center tracking-body hover:border-[color:var(--color-border-strong)] hover:text-[color:var(--color-text-secondary)] ${FOCUS_RING}`,
+                      })}
                     >
                       {labels.kindOptionLabel(option)}
                     </button>
@@ -217,7 +219,11 @@ export function StudioMaterializeDialog({
             type="button"
             data-testid="studio-materialize-cancel"
             onClick={onCancel}
-            className={`flex h-8 items-center rounded-chip border border-[color:var(--color-border-soft)] px-3.5 text-body tracking-body text-[color:var(--color-text-secondary)] transition-colors hover:border-[color:var(--color-border-strong)] ${FOCUS_RING}`}
+            className={controlClass({
+              shape: "chip",
+              size: "lg",
+              className: `tracking-body hover:border-[color:var(--color-border-strong)] ${FOCUS_RING}`,
+            })}
           >
             {labels.cancel}
           </button>

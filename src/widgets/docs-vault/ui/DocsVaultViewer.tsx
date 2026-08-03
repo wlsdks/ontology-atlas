@@ -12,6 +12,7 @@ import {
   type VaultDoc,
 } from '@/entities/docs-vault';
 import { useStaticVaultSource } from '@/features/vault-sample-source';
+import { IconButton } from '@/shared/ui';
 import { splitHighlightSegments } from '@/shared/lib/highlight-match';
 import { useCopyFeedback } from '@/shared/lib/use-copy-feedback';
 import { fetchServerDocContent } from '../lib/server-doc-content';
@@ -778,20 +779,22 @@ function HeadingAnchor({
     await copy(url.toString());
   };
   return (
-    <button
-      type="button"
+    <IconButton
+      label={copied ? t('anchorCopiedAria') : t('anchorCopyAria')}
+      size="lg"
+      tone="muted"
+      active={copied}
       onClick={onClick}
-      aria-label={copied ? t('anchorCopiedAria') : t('anchorCopyAria')}
       title={copied ? t('anchorCopiedTitle') : t('anchorCopyTitle')}
-      className={`absolute right-0 top-1/2 flex h-8 w-8 -translate-y-1/2 items-center justify-center rounded-chip transition-[background-color,color,opacity] sm:-left-9 sm:right-auto ${
+      className={`absolute right-0 top-1/2 -translate-y-1/2 transition-[background-color,color,opacity] sm:-left-9 sm:right-auto ${
         copied
-          ? 'text-[color:var(--color-indigo-line-a90)] opacity-100'
-          : 'text-[color:var(--color-text-quaternary)] opacity-100 hover:bg-[color:var(--color-indigo-line-a06)] hover:text-[color:var(--color-indigo-line-a90)] sm:opacity-0 sm:group-hover:opacity-100 focus-visible:opacity-100'
+          ? 'opacity-100'
+          : 'opacity-100 hover:bg-[color:var(--color-indigo-line-a06)] hover:text-[color:var(--color-indigo-line-a90)] sm:opacity-0 sm:group-hover:opacity-100 focus-visible:opacity-100'
       }`}
       contentEditable={false}
     >
       <Hash size={11} aria-hidden />
-    </button>
+    </IconButton>
   );
 }
 

@@ -39,6 +39,7 @@ import { MOTION } from "@/shared/motion";
 import { useBodyScrollLock } from "@/shared/lib/use-body-scroll-lock";
 import { cn } from "@/shared/lib/cn";
 import { resolveLocaleDisplayName } from "@/shared/lib/locale-display-name";
+import { IconButton, RowButton, controlClass } from "@/shared/ui";
 
 function readStoredSlugs(key: string, limit: number): string[] {
   if (typeof window === "undefined") return [];
@@ -168,10 +169,11 @@ function TreeBranch({
   return (
     <div>
       {depth > 0 ? (
-        <button
-          type="button"
+        <RowButton
+          size="sm"
+          tone="muted"
           onClick={() => setOpen((v) => !v)}
-          className="flex w-full items-center gap-1.5 rounded-card px-2 py-1.5 text-left font-mono text-caption uppercase tracking-[0.08em] text-[color:var(--color-text-quaternary)] transition-colors hover:bg-[color:var(--color-overlay-1)]"
+          className="rounded-card font-mono uppercase tracking-[0.08em] hover:bg-[color:var(--color-overlay-1)]"
           style={{ paddingLeft: `${depth * 12 + 4}px` }}
           aria-expanded={effectiveOpen}
         >
@@ -185,7 +187,7 @@ function TreeBranch({
           <span className="ml-auto font-mono text-caption text-[color:var(--color-text-quaternary)]">
             {node.children.filter((c) => c.type === "doc" || (c.children?.length ?? 0) > 0).length}
           </span>
-        </button>
+        </RowButton>
       ) : null}
       {effectiveOpen
         ? node.children.map((child) => (
@@ -241,28 +243,29 @@ function DocRow({
             </span>
           ) : null}
         </Link>
-        <button
-          type="button"
+        <IconButton
+          size="sm"
+          tone="muted"
           onClick={(e) => {
             e.preventDefault();
             e.stopPropagation();
             onTogglePin(doc.slug);
           }}
-          aria-label={
+          label={
             pinned
               ? t("togglePinOff", { title: doc.title })
               : t("togglePinOn", { title: doc.title })
           }
           title={pinned ? t("pinTooltipOn") : t("pinTooltipOff")}
           className={cn(
-            "mr-1 flex h-6 w-6 shrink-0 items-center justify-center rounded transition-opacity",
+            "mr-1 transition-opacity",
             pinned
               ? "text-[color:var(--color-indigo-accent)] opacity-100"
-              : "text-[color:var(--color-text-quaternary)] opacity-0 hover:text-[color:var(--color-indigo-accent)] group-hover:opacity-100 focus-visible:opacity-100",
+              : "opacity-0 hover:text-[color:var(--color-indigo-accent)] group-hover:opacity-100 focus-visible:opacity-100",
           )}
         >
           <Star size={12} fill={pinned ? "currentColor" : "none"} />
-        </button>
+        </IconButton>
       </div>
       {hasExcerpt && (
         // hover 시에만 렌더되는 본문 첫 단락 프리뷰. 터치 기기 (hover: none)
@@ -544,14 +547,14 @@ export function DocsQuickDrawer({
                     <BookOpen size={11} />
                     {t("openAllLabel")}
                   </Link>
-                  <button
-                    type="button"
+                  <IconButton
+                    label={t("closeAriaLabel")}
+                    size="lg"
                     onClick={onClose}
-                    aria-label={t("closeAriaLabel")}
-                    className="flex h-8 w-8 items-center justify-center rounded-chip text-[color:var(--color-text-tertiary)] transition-colors hover:bg-[color:var(--color-overlay-2)] hover:text-[color:var(--color-text-primary)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--color-border-strong)]"
+                    className="hover:bg-[color:var(--color-overlay-2)] hover:text-[color:var(--color-text-primary)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--color-border-strong)]"
                   >
                     <X size={14} />
-                  </button>
+                  </IconButton>
                 </div>
               </div>
 
@@ -593,14 +596,15 @@ export function DocsQuickDrawer({
                   aria-label={t("filterAriaLabel")}
                 />
                 {query ? (
-                  <button
-                    type="button"
+                  <IconButton
+                    label={t("filterClearAriaLabel")}
+                    size="sm"
+                    tone="muted"
                     onClick={() => setQuery("")}
-                    aria-label={t("filterClearAriaLabel")}
-                    className="text-[color:var(--color-text-quaternary)] hover:text-[color:var(--color-text-primary)]"
+                    className="hover:text-[color:var(--color-text-primary)]"
                   >
                     <X size={13} aria-hidden />
-                  </button>
+                  </IconButton>
                 ) : null}
               </form>
 
@@ -614,7 +618,12 @@ export function DocsQuickDrawer({
                     <button
                       type="button"
                       onClick={() => setActiveTag(null)}
-                      className="inline-flex shrink-0 items-center gap-1 rounded-full border border-[color:var(--color-overlay-3)] bg-[color:var(--color-overlay-1)] px-2 py-1 text-caption text-[color:var(--color-text-secondary)] transition-colors hover:border-[color:var(--color-border-strong)] hover:text-[color:var(--color-text-primary)]"
+                      className={controlClass({
+                        shape: "pill",
+                        size: "sm",
+                        className:
+                          "shrink-0 gap-1 hover:border-[color:var(--color-border-strong)] hover:text-[color:var(--color-text-primary)]",
+                      })}
                       aria-label={t("tagClearAriaLabel")}
                     >
                       <X size={10} />
@@ -631,12 +640,13 @@ export function DocsQuickDrawer({
                           setActiveTag((current) => (current === tag ? null : tag))
                         }
                         aria-pressed={selected}
-                        className={cn(
-                          "inline-flex shrink-0 items-center gap-1 rounded-full border px-2 py-1 text-caption transition-colors",
-                          selected
-                            ? "border-[color:var(--color-indigo-a55)] bg-[color:var(--color-indigo-a16)] text-[color:var(--color-text-primary)]"
-                            : "border-[color:var(--color-divider)] bg-[color:var(--color-overlay-1)] text-[color:var(--color-text-tertiary)] hover:border-[color:var(--color-indigo-a34)] hover:text-[color:var(--color-text-primary)]",
-                        )}
+                        className={controlClass({
+                          shape: "pill",
+                          size: "sm",
+                          active: selected,
+                          className:
+                            "shrink-0 gap-1 hover:border-[color:var(--color-indigo-a34)] hover:text-[color:var(--color-text-primary)]",
+                        })}
                       >
                         <Hash size={9} />
                         <span className="max-w-[96px] truncate">{tag}</span>
@@ -781,7 +791,11 @@ export function DocsQuickDrawer({
                             setActiveTag(null);
                             searchRef.current?.focus();
                           }}
-                          className="inline-flex items-center gap-1 rounded-full border border-[color:var(--color-overlay-3)] px-2.5 py-1 text-label text-[color:var(--color-text-secondary)] transition-colors hover:border-[color:var(--color-indigo-a40)] hover:text-[color:var(--color-text-primary)]"
+                          className={controlClass({
+                            shape: "pill",
+                            className:
+                              "gap-1 hover:border-[color:var(--color-indigo-a40)] hover:text-[color:var(--color-text-primary)]",
+                          })}
                         >
                           {t("clearFilters")}
                         </button>

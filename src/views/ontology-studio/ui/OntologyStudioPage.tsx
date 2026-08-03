@@ -24,7 +24,7 @@ import type { ScreenContextSnapshot } from "@/features/vault-agent";
 import { VaultAgentPanel } from "@/widgets/vault-agent-panel";
 import { STUDIO_AGENT_DOCK_MIN_VIEWPORT_PX } from "../lib/studio-agent-dock";
 import { josa } from "@/shared/lib/ko-josa";
-import { EmptyState, useToast } from "@/shared/ui";
+import { EmptyState, controlClass, useToast } from "@/shared/ui";
 import {
   buildStudioItem,
   selectDefaultStudioNodeId,
@@ -1140,14 +1140,22 @@ function StudioStage({
               <button
                 type="button"
                 onClick={exit}
-                className="rounded-card border border-[color:var(--color-border-strong)] px-3 py-1.5 text-label font-semibold text-[color:var(--color-text-secondary)] transition-colors hover:text-[color:var(--color-text-primary)]"
+                className={controlClass({
+                  shape: "card",
+                  className:
+                    "font-semibold hover:text-[color:var(--color-text-primary)]",
+                })}
               >
                 {t("notFound.openMap")}
               </button>
               <button
                 type="button"
                 onClick={enterCreate}
-                className="rounded-card border border-[color:var(--color-border-strong)] px-3 py-1.5 text-label font-semibold text-[color:var(--color-text-secondary)] transition-colors hover:text-[color:var(--color-text-primary)]"
+                className={controlClass({
+                  shape: "card",
+                  className:
+                    "font-semibold hover:text-[color:var(--color-text-primary)]",
+                })}
               >
                 {t("notFound.create")}
               </button>
@@ -1174,7 +1182,11 @@ function StudioStage({
             <button
               type="button"
               onClick={enterCreate}
-              className="rounded-card border border-[color:var(--color-border-strong)] px-3 py-1.5 text-label font-semibold text-[color:var(--color-text-secondary)] transition-colors hover:text-[color:var(--color-text-primary)]"
+              className={controlClass({
+                  shape: "card",
+                  className:
+                    "font-semibold hover:text-[color:var(--color-text-primary)]",
+                })}
             >
               {t("empty.create")}
             </button>

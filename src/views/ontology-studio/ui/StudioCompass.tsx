@@ -20,7 +20,7 @@ import { cn } from "@/shared/lib/cn";
 import { candidateMatches } from "../lib/match-candidate";
 import { studioBoardScale } from "../lib/board-scale";
 import { usePrefersReducedMotion } from "@/shared/lib/use-prefers-reduced-motion";
-import { Select } from "@/shared/ui";
+import { IconButton, RowButton, Select, controlClass } from "@/shared/ui";
 import type {
   StudioBearing,
   StudioRelation,
@@ -1347,15 +1347,16 @@ export function StudioCompass(props: StudioCompassProps) {
                   <span aria-hidden className="mt-1.5 h-1 w-1 flex-none rounded-full bg-[color:var(--color-indigo-brand)]" />
                   <span className="min-w-0 flex-1 [word-break:keep-all]">{line}</span>
                   {props.onUndoChange ? (
-                    <button
-                      type="button"
+                    <IconButton
+                      size="sm"
+                      tone="muted"
                       data-testid={`studio-summary-undo-${i}`}
-                      aria-label={labels.summaryUndo}
+                      label={labels.summaryUndo}
                       onClick={() => props.onUndoChange?.(i)}
-                      className="flex-none text-[color:var(--color-text-quaternary)] transition-colors hover:text-[color:var(--color-text-secondary)]"
+                      className="flex-none hover:text-[color:var(--color-text-secondary)]"
                     >
                       <X size={12} aria-hidden />
-                    </button>
+                    </IconButton>
                   ) : null}
                 </li>
               ))}
@@ -1458,14 +1459,15 @@ export function StudioCompass(props: StudioCompassProps) {
                 {labels.draftsHint}
               </p>
             </div>
-            <button
-              type="button"
+            <IconButton
+              size="sm"
+              tone="muted"
               onClick={() => setDraftsOpen(false)}
-              aria-label={labels.draftsCloseAria}
-              className="-mr-1 flex h-6 w-6 flex-none items-center justify-center rounded-chip text-[color:var(--color-text-quaternary)] transition-colors hover:text-[color:var(--color-text-secondary)]"
+              label={labels.draftsCloseAria}
+              className="-mr-1 flex-none hover:text-[color:var(--color-text-secondary)]"
             >
               <X size={13} aria-hidden />
-            </button>
+            </IconButton>
           </div>
           <ul className="mt-2.5 min-h-0 flex-1 overflow-y-auto px-2 pb-2">
             {drafts.map((draft) => {
@@ -1495,16 +1497,16 @@ export function StudioCompass(props: StudioCompassProps) {
                       </button>
                     ) : null}
                     {props.onDiscardDraft ? (
-                      <button
-                        type="button"
+                      <IconButton
+                        tone="muted"
                         data-testid={`studio-draft-discard-${draft.focalId}`}
                         onClick={() => props.onDiscardDraft?.(draft.focalId)}
-                        aria-label={labels.draftsDiscardAria(draft.title)}
+                        label={labels.draftsDiscardAria(draft.title)}
                         title={labels.draftsDiscard}
-                        className="flex h-7 w-7 flex-none items-center justify-center rounded-chip text-[color:var(--color-text-quaternary)] transition-colors hover:bg-[color:var(--color-danger-a12)] hover:text-[color:var(--color-danger-text)]"
+                        className="flex-none hover:bg-[color:var(--color-danger-a12)] hover:text-[color:var(--color-danger-text)]"
                       >
                         <X size={12} aria-hidden />
-                      </button>
+                      </IconButton>
                     ) : null}
                   </div>
                 </li>
@@ -1714,7 +1716,11 @@ function CenterCard(
               type="button"
               data-testid="studio-def-more"
               onClick={() => setDefExpanded((v) => !v)}
-              className="mt-1 text-label font-medium text-[color:var(--color-text-quaternary)] transition-colors hover:text-[color:var(--color-text-secondary)]"
+              className={controlClass({
+                shape: "link",
+                tone: "muted",
+                className: "mt-1 font-medium hover:text-[color:var(--color-text-secondary)]",
+              })}
             >
               {defExpanded ? props.labels.defLess : props.labels.defMore}
             </button>
@@ -1757,7 +1763,8 @@ function CenterCard(
             <button
               type="button"
               onClick={() => props.onOpenSimilar?.(props.createSimilarHit!.slug)}
-              className="font-semibold text-[color:var(--color-indigo-text-soft)]"
+              // 문장 속 컨트롤 — `link` 의 `min-h-11` 이 힌트 줄을 44px 로 밀어 올린다.
+              className="rounded-chip font-semibold text-[color:var(--color-indigo-text-soft)]"
             >
               {props.labels.createSimilarOpen}
             </button>
@@ -1767,6 +1774,7 @@ function CenterCard(
                 <button
                   type="button"
                   onClick={() => props.onDismissSimilar?.()}
+                  // 같은 줄의 형제라 위와 같은 이유로 남긴다.
                   className="text-[color:var(--color-text-quaternary)]"
                 >
                   {props.labels.createSimilarAnyway}
@@ -1910,16 +1918,17 @@ function LaneRender({
               </span>
             </Tag>
             {onEditNeighbor ? (
-              <button
-                type="button"
+              <IconButton
+                size="sm"
+                tone="muted"
                 data-testid={`studio-edit-${view.bearing}`}
-                aria-label={labels.edit}
+                label={labels.edit}
                 title={labels.edit}
                 onClick={() => onEditNeighbor(sat)}
-                className="absolute right-1.5 top-1.5 grid h-5 w-5 place-items-center rounded-chip text-[color:var(--color-text-quaternary)] opacity-70 transition-opacity transition-colors hover:bg-[color:var(--color-overlay-1)] hover:text-[color:var(--color-text-secondary)] group-hover:opacity-100 motion-reduce:transition-none"
+                className="absolute right-1.5 top-1.5 opacity-70 transition-opacity hover:bg-[color:var(--color-overlay-1)] hover:text-[color:var(--color-text-secondary)] group-hover:opacity-100 motion-reduce:transition-none"
               >
                 <MoreHorizontal size={14} aria-hidden />
-              </button>
+              </IconButton>
             ) : null}
             {/* arrival orientation (#3) — where you walked from. Indigo border
                 emphasis (color/opacity only, no glow), holds ~1.5s then fades. */}
@@ -2112,14 +2121,15 @@ function LaneOverflowList({
         <span className="min-w-0 truncate text-caption font-semibold text-[color:var(--color-text-secondary)] [word-break:keep-all]">
           {labels.foldTitle(view.laneLabel, view.neighbors.length)}
         </span>
-        <button
-          type="button"
-          aria-label={labels.close}
+        <IconButton
+          size="sm"
+          tone="muted"
+          label={labels.close}
           onClick={onClose}
-          className="ml-auto flex-none text-[color:var(--color-text-quaternary)] hover:text-[color:var(--color-text-secondary)]"
+          className="ml-auto flex-none hover:text-[color:var(--color-text-secondary)]"
         >
           <X size={13} aria-hidden />
-        </button>
+        </IconButton>
       </div>
       <div className="max-h-[260px] overflow-y-auto p-1.5">
         {view.neighbors.map((sat) => {
@@ -2140,16 +2150,17 @@ function LaneOverflowList({
                 </span>
               </Tag>
               {onEditNeighbor ? (
-                <button
-                  type="button"
+                <IconButton
+                  size="sm"
+                  tone="muted"
                   data-testid={`studio-lane-edit-${sat.id}`}
-                  aria-label={labels.edit}
+                  label={labels.edit}
                   title={labels.edit}
                   onClick={() => onEditNeighbor(sat)}
-                  className="mr-1.5 grid h-6 w-6 flex-none place-items-center rounded-chip text-[color:var(--color-text-quaternary)] opacity-70 transition-colors hover:bg-[color:var(--color-overlay-1)] hover:text-[color:var(--color-text-secondary)] group-hover:opacity-100"
+                  className="mr-1.5 flex-none opacity-70 hover:bg-[color:var(--color-overlay-1)] hover:text-[color:var(--color-text-secondary)] group-hover:opacity-100"
                 >
                   <MoreHorizontal size={14} aria-hidden />
-                </button>
+                </IconButton>
               ) : null}
             </div>
           );
@@ -2221,14 +2232,15 @@ function InlineEditCard({
         <span className="min-w-0 flex-1 truncate text-caption font-semibold text-[color:var(--color-text-secondary)] [word-break:keep-all]">
           {labels.editTitle}
         </span>
-        <button
-          type="button"
-          aria-label={labels.close}
+        <IconButton
+          size="sm"
+          tone="muted"
+          label={labels.close}
           onClick={onClose}
-          className="flex-none text-[color:var(--color-text-quaternary)] hover:text-[color:var(--color-text-secondary)]"
+          className="flex-none hover:text-[color:var(--color-text-secondary)]"
         >
           <X size={13} aria-hidden />
-        </button>
+        </IconButton>
       </div>
       <div className="flex items-center gap-2 px-3.5 pt-2.5">
         <KindGlyph kind={neighbor.kind} />
@@ -2244,16 +2256,15 @@ function InlineEditCard({
           </div>
           <div className="flex flex-col gap-1 px-2 pb-1.5">
             {otherRelations.map((to) => (
-              <button
+              <RowButton
                 key={to}
-                type="button"
                 data-testid={`studio-edit-retype-${to}`}
                 onClick={() => onRetype(to)}
-                className="flex items-center gap-2 rounded-[8px] px-2.5 py-2 text-left text-body text-[color:var(--color-text-secondary)] transition-colors hover:bg-[color:var(--color-indigo-a08)] hover:text-[color:var(--color-text-primary)]"
+                className="hover:bg-[color:var(--color-indigo-a08)] hover:text-[color:var(--color-text-primary)]"
               >
                 <span className="text-[color:var(--color-text-quaternary)]">→</span>
                 {labels.editMoveTo(bearingLabelFor(to))}
-              </button>
+              </RowButton>
             ))}
           </div>
           <div className="border-t border-[color:var(--color-divider)] p-2">
@@ -2265,7 +2276,10 @@ function InlineEditCard({
                 <button
                   type="button"
                   onClick={() => setConfirmDelete(false)}
-                  className="flex-none rounded-chip px-2 py-1 text-label text-[color:var(--color-text-tertiary)] hover:text-[color:var(--color-text-secondary)]"
+                  className={controlClass({
+                    shape: "link",
+                    className: "flex-none hover:text-[color:var(--color-text-secondary)]",
+                  })}
                 >
                   {labels.editDeleteCancel}
                 </button>
@@ -2273,21 +2287,25 @@ function InlineEditCard({
                   type="button"
                   data-testid="studio-edit-delete-confirm"
                   onClick={onRemove}
-                  className="flex-none rounded-chip border border-[color:var(--color-danger-a42)] bg-[color:var(--color-danger-a12)] px-2 py-1 text-label font-semibold text-[color:var(--color-danger-text)] transition-colors hover:bg-[color:var(--color-danger-a32)]"
+                  className={controlClass({
+                    shape: "chip",
+                    tone: "danger",
+                    className:
+                      "flex-none font-semibold hover:bg-[color:var(--color-danger-a32)]",
+                  })}
                 >
                   {labels.editDeleteYes}
                 </button>
               </div>
             ) : (
-              <button
-                type="button"
+              <RowButton
                 data-testid="studio-edit-delete"
                 onClick={() => setConfirmDelete(true)}
-                className="flex w-full items-center gap-2 rounded-[8px] px-2.5 py-2 text-left text-body text-[color:var(--color-text-tertiary)] transition-colors hover:bg-[color:var(--color-overlay-1)] hover:text-[color:var(--color-text-secondary)]"
+                className="hover:bg-[color:var(--color-overlay-1)] hover:text-[color:var(--color-text-secondary)]"
               >
                 <X size={13} aria-hidden className="text-[color:var(--color-text-quaternary)]" />
                 {labels.editDelete}
-              </button>
+              </RowButton>
             )}
           </div>
         </>
@@ -2300,7 +2318,12 @@ function InlineEditCard({
             type="button"
             data-testid="studio-edit-open-other"
             onClick={onOpenOther}
-            className="mt-2.5 flex items-center gap-1.5 rounded-card border border-[color:var(--color-border-soft)] px-2.5 py-1.5 text-label font-medium text-[color:var(--color-text-secondary)] transition-colors hover:border-[color:var(--color-indigo-a46)] hover:text-[color:var(--color-text-primary)]"
+            className={controlClass({
+              shape: "card",
+              size: "sm",
+              className:
+                "mt-2.5 font-medium hover:border-[color:var(--color-indigo-a46)] hover:text-[color:var(--color-text-primary)]",
+            })}
           >
             {labels.editElsewhereGo}
           </button>
@@ -2483,14 +2506,15 @@ function InlinePicker({
       <div className="flex items-baseline gap-2 border-b border-[color:var(--color-divider)] px-3.5 py-2.5">
         <span className="text-caption font-semibold text-[color:var(--color-text-secondary)]">{labels.pickerTitle(question)}</span>
         <span className="text-label text-[color:var(--color-text-quaternary)]">{labels.pickerSub}</span>
-        <button
-          type="button"
-          aria-label={labels.close}
+        <IconButton
+          size="sm"
+          tone="muted"
+          label={labels.close}
           onClick={onClose}
-          className="ml-auto text-[color:var(--color-text-quaternary)] hover:text-[color:var(--color-text-secondary)]"
+          className="ml-auto hover:text-[color:var(--color-text-secondary)]"
         >
           <X size={13} aria-hidden />
-        </button>
+        </IconButton>
       </div>
       <div className="flex items-center gap-2 border-b border-[color:var(--color-divider)] px-3 py-2">
         <Search size={13} aria-hidden className="flex-none text-[color:var(--color-text-quaternary)]" />
@@ -2530,7 +2554,11 @@ function InlinePicker({
                       type="button"
                       data-testid={`studio-suggest-row-${s.candidate.id}`}
                       onClick={() => onPick(s.candidate)}
-                      className="flex w-full items-center gap-2.5 rounded-[8px] px-2.5 py-2 text-left transition-colors hover:bg-[color:var(--color-indigo-a08)]"
+                      className={controlClass({
+                        shape: "row",
+                        className:
+                          "hover:bg-[color:var(--color-indigo-a08)]",
+                      })}
                     >
                       <KindGlyph kind={s.candidate.kind} />
                       <span className="min-w-0 truncate text-body text-[color:var(--color-text-primary)]">{s.candidate.title}</span>
@@ -2550,7 +2578,11 @@ function InlinePicker({
                       type="button"
                       data-testid={`studio-browse-domain-${d.key}`}
                       onClick={() => setBrowseKey(d.key)}
-                      className="flex w-full items-center gap-2.5 rounded-[8px] px-2.5 py-2 text-left transition-colors hover:bg-[color:var(--color-indigo-a08)]"
+                      className={controlClass({
+                        shape: "row",
+                        className:
+                          "hover:bg-[color:var(--color-indigo-a08)]",
+                      })}
                     >
                       <span className="min-w-0 truncate text-body text-[color:var(--color-text-secondary)]">
                         {d.title ?? labels.browseNoDomain}
@@ -2567,7 +2599,12 @@ function InlinePicker({
                       type="button"
                       data-testid="studio-browse-back"
                       onClick={() => setBrowseKey(null)}
-                      className="flex w-full items-center gap-1.5 rounded-[8px] px-2.5 py-1.5 text-left text-label text-[color:var(--color-text-tertiary)] transition-colors hover:text-[color:var(--color-text-secondary)]"
+                      className={controlClass({
+                        shape: "row",
+                        size: "sm",
+                        className:
+                          "hover:text-[color:var(--color-text-secondary)]",
+                      })}
                     >
                       {labels.browseBack}
                     </button>
@@ -2577,7 +2614,11 @@ function InlinePicker({
                         type="button"
                         data-testid={`studio-browse-node-${c.id}`}
                         onClick={() => onPick(c)}
-                        className="flex w-full items-center gap-2.5 rounded-[8px] px-2.5 py-2 text-left transition-colors hover:bg-[color:var(--color-indigo-a08)]"
+                        className={controlClass({
+                        shape: "row",
+                        className:
+                          "hover:bg-[color:var(--color-indigo-a08)]",
+                      })}
                       >
                         <KindGlyph kind={c.kind} />
                         <span className="min-w-0 truncate text-body text-[color:var(--color-text-primary)]">{c.title}</span>
@@ -2598,7 +2639,11 @@ function InlinePicker({
               type="button"
               data-testid={`studio-picker-row-${c.id}`}
               onClick={() => onPick(c)}
-              className="flex w-full items-center gap-2.5 rounded-[8px] px-2.5 py-2 text-left transition-colors hover:bg-[color:var(--color-indigo-a08)]"
+              className={controlClass({
+                        shape: "row",
+                        className:
+                          "hover:bg-[color:var(--color-indigo-a08)]",
+                      })}
             >
               <KindGlyph kind={c.kind} />
               <span className="truncate text-body text-[color:var(--color-text-primary)]">{c.title}</span>
@@ -2620,7 +2665,8 @@ function InlinePicker({
               type="button"
               data-testid="studio-picker-similar-accept"
               onClick={() => onPick(similarHit)}
-              className="font-semibold text-[color:var(--color-indigo-text-soft)]"
+              // 문장 속 컨트롤 — `link` 의 `min-h-11` 이 힌트 줄을 44px 로 밀어 올린다.
+              className="rounded-chip font-semibold text-[color:var(--color-indigo-text-soft)]"
             >
               {labels.similarAccept}
             </button>
@@ -2732,7 +2778,11 @@ function NodeSearch({
                   type="button"
                   data-testid={`studio-node-search-row-${n.id}`}
                   onClick={() => pick(n.id)}
-                  className="flex w-full items-center gap-2.5 rounded-[8px] px-2.5 py-2 text-left transition-colors hover:bg-[color:var(--color-indigo-a08)]"
+                  className={controlClass({
+                        shape: "row",
+                        className:
+                          "hover:bg-[color:var(--color-indigo-a08)]",
+                      })}
                 >
                   <KindGlyph kind={n.kind} />
                   <span className="min-w-0 truncate text-body text-[color:var(--color-text-primary)] [word-break:keep-all]">{n.title}</span>
@@ -2931,15 +2981,16 @@ function DeltaPreviewModal({
           <span className="min-w-0 flex-1 truncate text-body-lg font-semibold text-[color:var(--color-text-primary)] [word-break:keep-all]">
             {labels.previewTitle}
           </span>
-          <button
-            type="button"
+          <IconButton
+            size="sm"
+            tone="muted"
             data-testid="studio-preview-close"
-            aria-label={labels.previewCloseAria}
+            label={labels.previewCloseAria}
             onClick={onClose}
-            className="flex-none text-[color:var(--color-text-quaternary)] transition-colors hover:text-[color:var(--color-text-secondary)]"
+            className="flex-none hover:text-[color:var(--color-text-secondary)]"
           >
             <X size={15} aria-hidden />
-          </button>
+          </IconButton>
         </div>
 
         <div className="min-h-0 flex-1 overflow-y-auto">

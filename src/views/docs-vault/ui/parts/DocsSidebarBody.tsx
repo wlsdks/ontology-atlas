@@ -32,7 +32,7 @@ import {
   type DocsTreeSort,
 } from "@/widgets/docs-vault/lib/tree-order";
 import { resolveLocaleDisplayName } from "@/shared/lib/locale-display-name";
-import { Tooltip } from "@/shared/ui";
+import { IconButton, RowButton, Tooltip, controlClass } from "@/shared/ui";
 
 /**
  * DocsVaultPage 의 사이드바 본문 — machined 파일 트리 (docs-vault-final spec).
@@ -124,21 +124,18 @@ function RailIconButton({
 }) {
   return (
     <Tooltip content={label}>
-      <button
-        type="button"
+      <IconButton
+        label={label}
+        size="lg"
+        active={active}
         onClick={onClick}
         disabled={disabled}
-        aria-label={label}
         aria-pressed={active}
         data-testid={testId}
-        className={`inline-flex h-8 w-8 flex-none items-center justify-center rounded-chip border transition-colors disabled:cursor-not-allowed disabled:opacity-40 ${
-          active
-            ? "border-[color:var(--color-indigo-line-a45)] bg-[color:var(--color-indigo-a16)] text-[color:var(--color-indigo-pale-a95)]"
-            : "border-[color:var(--color-overlay-2)] text-[color:var(--color-text-tertiary)] hover:border-[color:var(--color-indigo-line-a35)] hover:text-[color:var(--color-text-primary)]"
-        }`}
+        className="flex-none hover:text-[color:var(--color-text-primary)]"
       >
         {icon}
-      </button>
+      </IconButton>
     </Tooltip>
   );
 }
@@ -160,17 +157,14 @@ function OrderOption({
   testId: string;
 }) {
   return (
-    <button
-      type="button"
+    <RowButton
+      size="sm"
+      active={checked}
       role="menuitemradio"
       aria-checked={checked}
       data-testid={testId}
       onClick={onSelect}
-      className={`flex w-full items-center gap-2 rounded-sm px-1.5 py-1.5 text-left text-label transition-colors ${
-        checked
-          ? "text-[color:var(--color-indigo-pale-a95)]"
-          : "text-[color:var(--color-text-secondary)] hover:bg-[color:var(--color-overlay-2)] hover:text-[color:var(--color-text-primary)]"
-      }`}
+      className="hover:bg-[color:var(--color-overlay-2)] hover:text-[color:var(--color-text-primary)]"
     >
       <Check
         size={11}
@@ -178,7 +172,7 @@ function OrderOption({
         className={`flex-none ${checked ? "opacity-100" : "opacity-0"}`}
       />
       <span className="min-w-0 flex-1 truncate">{label}</span>
-    </button>
+    </RowButton>
   );
 }
 
@@ -425,14 +419,15 @@ export function DocsSidebarBody({
             autoComplete="off"
           />
           {treeQuery ? (
-            <button
-              type="button"
+            <IconButton
+              label={t("clearSearch")}
+              size="sm"
+              tone="muted"
               onClick={() => setTreeQuery("")}
-              className="rounded-sm p-0.5 text-[color:var(--color-text-quaternary)] transition-colors hover:text-[color:var(--color-text-primary)]"
-              aria-label={t("clearSearch")}
+              className="hover:text-[color:var(--color-text-primary)]"
             >
               <X size={11} aria-hidden />
-            </button>
+            </IconButton>
           ) : null}
         </label>
       ) : null}
@@ -447,7 +442,9 @@ export function DocsSidebarBody({
               setTreeQuery("");
               onTagSelect(null);
             }}
-            className="flex-none rounded-sm px-1.5 py-0.5 transition-colors hover:text-[color:var(--color-text-primary)]"
+            // 이 필터 바는 `py-1`(28px)이다 — `link` 의 44px 최소 높이가 바를
+            // 그만큼 부풀린다. 문장/바 속 컨트롤에는 이 모양이 아직 안 맞는다.
+            className="flex-none rounded-chip px-1.5 py-0.5 transition-colors hover:text-[color:var(--color-text-primary)]"
           >
             {t("clearFilter")}
           </button>
@@ -492,21 +489,17 @@ export function DocsSidebarBody({
                       const active = selectedSlug === doc.slug;
                       return (
                         <li key={doc.slug}>
-                          <button
-                            type="button"
+                          <RowButton
+                            active={active}
                             onClick={() => onSelect(doc.slug)}
-                            className={`group relative flex w-full items-center gap-2 rounded-sm px-2 py-1 text-left text-body transition-colors ${
-                              active
-                                ? "bg-[color:var(--color-indigo-a14)] text-[color:var(--color-text-primary)]"
-                                : "text-[color:var(--color-text-tertiary)] hover:bg-[color:var(--color-overlay-1)] hover:text-[color:var(--color-text-primary)]"
-                            }`}
+                            className="group relative hover:bg-[color:var(--color-overlay-1)] hover:text-[color:var(--color-text-primary)]"
                           >
                             <FileText size={11} className="flex-none opacity-60" aria-hidden />
                             {/* 트리·검색·지도와 같은 이름 규칙. */}
                             <span className="min-w-0 flex-1 truncate">
                               {resolveLocaleDisplayName(doc.frontmatter, locale, doc.title)}
                             </span>
-                          </button>
+                          </RowButton>
                         </li>
                       );
                     })}
@@ -555,16 +548,12 @@ export function DocsSidebarBody({
                   .join("\n");
                 return (
                   <li key={record.path}>
-                    <button
-                      type="button"
+                    <RowButton
+                      active={active}
                       onClick={() => onSelect(record.slug)}
                       title={driftTitle || undefined}
                       aria-current={active ? "true" : undefined}
-                      className={`group relative flex w-full items-center gap-2 rounded-sm px-2 py-1 text-left text-body transition-colors ${
-                        active
-                          ? "bg-[color:var(--color-indigo-a14)] text-[color:var(--color-text-primary)]"
-                          : "text-[color:var(--color-text-tertiary)] hover:bg-[color:var(--color-overlay-1)] hover:text-[color:var(--color-text-primary)]"
-                      }`}
+                      className="group relative hover:bg-[color:var(--color-overlay-1)] hover:text-[color:var(--color-text-primary)]"
                     >
                       <FileText size={11} className="flex-none opacity-60" aria-hidden />
                       <span className="min-w-0 flex-1 truncate">{record.path}</span>
@@ -579,7 +568,7 @@ export function DocsSidebarBody({
                           {tAgentFiles("driftBadge")}
                         </span>
                       ) : null}
-                    </button>
+                    </RowButton>
                   </li>
                 );
               })}
@@ -598,14 +587,10 @@ export function DocsSidebarBody({
                 return (
                   <li key={slug} className="group">
                     <div className="relative flex items-stretch">
-                      <button
-                        type="button"
+                      <RowButton
+                        active={active}
                         onClick={() => onSelect(slug)}
-                        className={`flex min-w-0 flex-1 items-center gap-2 rounded-sm px-2 py-1 pr-7 text-left text-body transition-colors ${
-                          active
-                            ? "bg-[color:var(--color-indigo-a14)] text-[color:var(--color-text-primary)]"
-                            : "text-[color:var(--color-text-tertiary)] hover:bg-[color:var(--color-overlay-1)] hover:text-[color:var(--color-text-primary)]"
-                        }`}
+                        className="min-w-0 flex-1 pr-7 hover:bg-[color:var(--color-overlay-1)] hover:text-[color:var(--color-text-primary)]"
                       >
                         <Star
                           size={11}
@@ -616,19 +601,20 @@ export function DocsSidebarBody({
                         <span className="truncate">
                           {resolveLocaleDisplayName(d.frontmatter, locale, d.title)}
                         </span>
-                      </button>
+                      </RowButton>
                       <Tooltip content={t("unpinTooltip")} withProvider={false}>
-                        <button
-                          type="button"
+                        <IconButton
+                          label={t("unpinTooltip")}
+                          size="sm"
+                          tone="muted"
                           onClick={(e) => {
                             e.stopPropagation();
                             onTogglePin(slug);
                           }}
-                          aria-label={t("unpinTooltip")}
-                          className="absolute right-1 top-1/2 -translate-y-1/2 rounded-sm p-1 text-[color:var(--color-text-quaternary)] opacity-0 transition-opacity hover:text-[color:var(--color-text-primary)] group-hover:opacity-100"
+                          className="absolute right-1 top-1/2 -translate-y-1/2 opacity-0 transition-opacity hover:text-[color:var(--color-text-primary)] group-hover:opacity-100"
                         >
                           <PinOff size={10} aria-hidden />
-                        </button>
+                        </IconButton>
                       </Tooltip>
                     </div>
                   </li>
@@ -663,14 +649,10 @@ export function DocsSidebarBody({
                 const active = selectedSlug === slug;
                 return (
                   <li key={slug}>
-                    <button
-                      type="button"
+                    <RowButton
+                      active={active}
                       onClick={() => onSelect(slug)}
-                      className={`group relative flex w-full items-center gap-2 rounded-sm px-2 py-1 text-left text-body transition-colors ${
-                        active
-                          ? "bg-[color:var(--color-indigo-a14)] text-[color:var(--color-text-primary)]"
-                          : "text-[color:var(--color-text-tertiary)] hover:bg-[color:var(--color-overlay-1)] hover:text-[color:var(--color-text-primary)]"
-                      }`}
+                      className="group relative hover:bg-[color:var(--color-overlay-1)] hover:text-[color:var(--color-text-primary)]"
                     >
                       <FileText
                         size={11}
@@ -680,7 +662,7 @@ export function DocsSidebarBody({
                       <span className="truncate">
                         {resolveLocaleDisplayName(d.frontmatter, locale, d.title)}
                       </span>
-                    </button>
+                    </RowButton>
                   </li>
                 );
               })}
@@ -713,11 +695,12 @@ export function DocsSidebarBody({
                     type="button"
                     onClick={() => onTagSelect(active ? null : tag)}
                     aria-pressed={active}
-                    className={`inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-label transition-colors ${
-                      active
-                        ? "bg-[color:var(--color-indigo-a16)] text-[color:var(--color-indigo-pale-a95)]"
-                        : "bg-[color:var(--color-overlay-1)] text-[color:var(--color-text-tertiary)] hover:bg-[color:var(--color-indigo-line-a06)] hover:text-[color:var(--color-text-primary)]"
-                    }`}
+                    className={controlClass({
+                      shape: "pill",
+                      active,
+                      className:
+                        "gap-1 hover:bg-[color:var(--color-indigo-line-a06)] hover:text-[color:var(--color-text-primary)]",
+                    })}
                     title={t("tagTitle", { tag, count: slugs.length })}
                   >
                     {active ? <X size={9} aria-hidden /> : null}
