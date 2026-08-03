@@ -108,7 +108,7 @@ export function AgentGlobalScopePanel({ vaultPath, launch }: AgentGlobalScopePan
           */}
         <pre
           data-testid={`agent-global-scope-body-${client.id}`}
-          className="mt-1.5 whitespace-pre-wrap break-all rounded border border-[color:var(--color-divider)] bg-[color:var(--color-canvas)] px-2 py-1.5 font-mono text-caption leading-relaxed text-[color:var(--color-text-secondary)]"
+          className="mt-1.5 whitespace-pre-wrap break-all rounded-micro border border-[color:var(--color-divider)] bg-[color:var(--color-canvas)] px-2 py-1.5 font-mono text-caption leading-relaxed text-[color:var(--color-text-secondary)]"
         >
           {instruction.text.trimEnd()}
         </pre>

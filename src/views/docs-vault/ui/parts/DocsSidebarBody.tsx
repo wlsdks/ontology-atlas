@@ -432,7 +432,7 @@ export function DocsSidebarBody({
         </label>
       ) : null}
       {(activeTag || normalizedTreeQuery) ? (
-        <div className="mx-3 mt-2 flex flex-none items-center justify-between gap-2 rounded-sm border border-[color:var(--color-indigo-line-a22)] bg-[color:var(--color-indigo-a06)] px-2 py-1 text-label text-[color:var(--color-indigo-pale-a90)]">
+        <div className="mx-3 mt-2 flex flex-none items-center justify-between gap-2 rounded-micro border border-[color:var(--color-indigo-line-a22)] bg-[color:var(--color-indigo-a06)] px-2 py-1 text-label text-[color:var(--color-indigo-pale-a90)]">
           <span className="truncate">
             {activeTag ? t("activeTagSummary", { tag: activeTag }) : t("treeSearchCount", { count: queryMatchCount })}
           </span>
@@ -563,7 +563,7 @@ export function DocsSidebarBody({
                       {record.drift.length > 0 ? (
                         <span
                           data-testid={`docs-sidebar-agent-file-drift-${record.slug}`}
-                          className="flex-none rounded-sm border border-[color:var(--color-amber-source-a35)] bg-[color:var(--color-amber-source-a12)] px-1 font-mono text-caption text-[color:var(--color-amber-source-a90)]"
+                          className="flex-none rounded-micro border border-[color:var(--color-amber-source-a35)] bg-[color:var(--color-amber-source-a12)] px-1 font-mono text-caption text-[color:var(--color-amber-source-a90)]"
                         >
                           {tAgentFiles("driftBadge")}
                         </span>

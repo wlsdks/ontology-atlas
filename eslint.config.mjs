@@ -89,26 +89,19 @@ const arbitrarySizeSelectors = [
    * `rounded-full` 은 제외한다 — 완전 원형(점·아바타·필)은 선형 3단 램프가
    * 답할 질문이 아니다.
    *
-   * ⚠️ **넷은 아직 사정거리 밖이고, 그 넷을 붙드는 게이트는 없다.**
-   * 실측 2026-08-03(규칙 준수 감사): `rounded-sm`(4px, **59**건) ·
-   * `rounded-2xl`(16px, **19**건) · `text-xl`(20px, 2건) ·
-   * `text-2xl`(24px, 1건 — 이 목록에 **없던** 넷째다).
+   * 2026-08-03 체계석 처방으로 위 구멍의 게이트가 섰다:
    *
-   * 이 문단은 오래 "래칫(`type-ramp-coverage.contract.test.ts`)이 늘지 않게
-   * 붙든다" 고 적어 왔는데 **거짓이었다.** 그 래칫의 `ARBITRARY_SIZE` 는
-   * 대괄호 arbitrary 패턴만 갖고 있어 이름 있는 유틸리티(`rounded-sm|2xl` ·
-   * `text-xl|2xl`)를 **한 건도 세지 않는다**. 게다가 래칫은 eslint 가 덮는
-   * 디렉토리를 통째로 건너뛰는데, `rounded-2xl` 19건 중 **18건이 그 커버된
-   * 디렉토리 안**이다 — 즉 lint 도 래칫도 안 보는 자리다.
-   *
-   * 증거는 수 자체다: 이 주석이 `rounded-2xl` 12건이라 적은 뒤 **19건으로
-   * 자랐고 아무것도 빨개지지 않았다.** 항상 통과만 하는 게이트는 게이트가
-   * 없는 것과 구별되지 않는다.
-   *
-   * 값의 치환은 여전히 **픽셀을 움직이므로**(4→6 은 작은 칩에서 눈에 보인다)
-   * 한 PR 로 못 치운다 — 그건 「체계」의 판정 사항이다. 하지만 **자라지 못하게
-   * 붙드는 일**은 디자인 판정을 기다릴 이유가 없다. 사정거리를 넓히기 전까지
-   * 이 문단은 «가드가 없다» 고 정직하게 적는다.
+   * - `rounded-sm`(4px, 59건)과 무접미 `rounded`(4px, 37건)는 **드리프트가
+   *   아니라 램프에 없던 스텝**이었다 — 96번 반복되는 값은 예외가 아니다.
+   *   `--radius-micro`(4px) 등재 + 전량 기계 치환(픽셀 이동 0) 후 아래
+   *   셀렉터를 켰다(켤 때 위반 0).
+   * - `rounded-2xl`(19) · `text-base|lg|xl|2xl|3xl`(계 8)은 치환이 픽셀을
+   *   움직여 자리마다 판정이 필요하다 — per-family 래칫
+   *   (`tests/contract/named-offramp-utility-ratchet.contract.test.ts`)이
+   *   기준선 아래로만 움직이게 붙든다. 이 래칫은 이름 유틸리티를 세고
+   *   **eslint 커버 디렉토리를 건너뛰지 않는다** — `ARBITRARY_SIZE` 래칫이
+   *   대괄호 패턴만 보고 커버 디렉토리를 건너뛰어 이 문단이 오래 거짓이었던
+   *   (12건이라 적은 뒤 20건으로 자라도 아무것도 안 빨개진) 구멍의 정정이다.
    */
   {
     selector: 'Literal[value=/(^|[^-\\w])text-(xs|sm)([^-\\w]|$)/]',
@@ -121,14 +114,30 @@ const arbitrarySizeSelectors = [
       'Geometry Codex — Tailwind 기본 타입 스텝 금지 (template literal). text-* 램프로.',
   },
   {
-    selector: 'Literal[value=/(^|[^-\\w])rounded-(md|lg|xl)([^-\\w]|$)/]',
+    selector: 'Literal[value=/(^|[^-\\w])rounded-(sm|md|lg|xl)([^-\\w]|$)/]',
     message:
-      'Geometry Codex — Tailwind 기본 radius 스텝 금지(램프 우회). rounded-chip/card/panel 로.',
+      'Geometry Codex — Tailwind 기본 radius 스텝 금지(램프 우회). rounded-micro/chip/card/panel 로.',
   },
   {
-    selector: 'TemplateElement[value.raw=/(^|[^-\\w])rounded-(md|lg|xl)([^-\\w]|$)/]',
+    selector: 'TemplateElement[value.raw=/(^|[^-\\w])rounded-(sm|md|lg|xl)([^-\\w]|$)/]',
     message:
       'Geometry Codex — Tailwind 기본 radius 스텝 금지 (template literal). rounded-* 램프로.',
+  },
+  /*
+   * 무접미 `rounded`(4px) — Tailwind v4 가 살려 둔 별칭이라 이름 스텝 셀렉터에
+   * 안 걸린다. 2026-08-03 `--radius-micro` 등재와 함께 37건 전량 치환 후 켬
+   * (켤 때 위반 0). 변형 접두 꼴(`[&_code]:rounded`)까지 잡도록 `:` 를
+   * 구획자에 포함한다.
+   */
+  {
+    selector: 'Literal[value=/(^|[^-\\w])rounded([^-\\w]|$)/]',
+    message:
+      'Geometry Codex — 무접미 rounded(4px) 금지(램프 우회). 같은 4px 은 rounded-micro 다.',
+  },
+  {
+    selector: 'TemplateElement[value.raw=/(^|[^-\\w])rounded([^-\\w]|$)/]',
+    message:
+      'Geometry Codex — 무접미 rounded(4px) 금지 (template literal). rounded-micro 로.',
   },
   {
     selector: 'Literal[value=/text-\\[[0-9.]+px\\]/]',

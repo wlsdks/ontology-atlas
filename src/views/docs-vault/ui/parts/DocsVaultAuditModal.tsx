@@ -280,7 +280,7 @@ export function DocsVaultAuditModal({
                       <span className="font-mono text-caption uppercase tracking-[0.14em] text-[color:var(--color-indigo-pale-a82)]">
                         {cell.label}
                       </span>
-                      <span className="rounded-sm border border-[color:var(--color-indigo-line-a20)] bg-[color:var(--color-indigo-a06)] px-1.5 py-0.5 font-mono text-caption uppercase tracking-[0.08em] text-[color:var(--color-text-quaternary)]">
+                      <span className="rounded-micro border border-[color:var(--color-indigo-line-a20)] bg-[color:var(--color-indigo-a06)] px-1.5 py-0.5 font-mono text-caption uppercase tracking-[0.08em] text-[color:var(--color-text-quaternary)]">
                         {cell.chip}
                       </span>
                     </div>
@@ -295,7 +295,7 @@ export function DocsVaultAuditModal({
                         {cell.proofMarkers.map((marker) => (
                           <span
                             key={marker}
-                            className="rounded-sm border border-[color:var(--color-indigo-line-a15)] bg-[color:var(--color-indigo-a06)] px-1.5 py-0.5 font-mono text-caption text-[color:var(--color-text-quaternary)]"
+                            className="rounded-micro border border-[color:var(--color-indigo-line-a15)] bg-[color:var(--color-indigo-a06)] px-1.5 py-0.5 font-mono text-caption text-[color:var(--color-text-quaternary)]"
                           >
                             {marker}
                           </span>
@@ -306,7 +306,7 @@ export function DocsVaultAuditModal({
                   <div className="col-span-2 ml-[48px] flex min-w-0 flex-wrap items-center gap-1.5 sm:col-span-1 sm:ml-0 sm:flex-col sm:items-end">
                     <Link
                       href={cell.href}
-                      className="inline-flex h-7 min-w-0 items-center rounded-sm border border-[color:var(--color-divider)] px-2 text-label text-[color:var(--color-text-secondary)] transition-colors hover:border-[color:var(--color-indigo-line-a40)] hover:text-[color:var(--color-text-primary)]"
+                      className="inline-flex h-7 min-w-0 items-center rounded-micro border border-[color:var(--color-divider)] px-2 text-label text-[color:var(--color-text-secondary)] transition-colors hover:border-[color:var(--color-indigo-line-a40)] hover:text-[color:var(--color-text-primary)]"
                     >
                       {cell.cta}
                     </Link>
@@ -344,7 +344,7 @@ export function DocsVaultAuditModal({
                     <span className="font-mono text-caption uppercase tracking-[0.14em] text-[color:var(--color-indigo-pale-a82)]">
                       {tSkillParity("header")}
                     </span>
-                    <span className="rounded-sm border border-[color:var(--color-indigo-line-a20)] bg-[color:var(--color-indigo-a06)] px-1.5 py-0.5 font-mono text-caption uppercase tracking-[0.08em] text-[color:var(--color-text-quaternary)]">
+                    <span className="rounded-micro border border-[color:var(--color-indigo-line-a20)] bg-[color:var(--color-indigo-a06)] px-1.5 py-0.5 font-mono text-caption uppercase tracking-[0.08em] text-[color:var(--color-text-quaternary)]">
                       {tSkillParity("chip")}
                     </span>
                   </div>
@@ -379,7 +379,7 @@ export function DocsVaultAuditModal({
                           // 이름이 다른 `--color-amber-docs-*` 쪽이다.
                           // (카운슬 「위계」가 둘을 혼동해 교체를 처방했고,
                           // 「체계」가 바로잡았다. 게이트도 없는 토큰을 잡았다.)
-                          className="rounded-sm border border-[color:var(--color-amber-source-a35)] bg-[color:var(--color-amber-source-a12)] px-1.5 py-0.5 font-mono text-caption text-[color:var(--color-amber-source-a90)]"
+                          className="rounded-micro border border-[color:var(--color-amber-source-a35)] bg-[color:var(--color-amber-source-a12)] px-1.5 py-0.5 font-mono text-caption text-[color:var(--color-amber-source-a90)]"
                         >
                           {row.name}
                         </span>

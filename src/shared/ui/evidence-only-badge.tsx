@@ -27,7 +27,7 @@ export function EvidenceOnlyBadge({ label, hint, className }: EvidenceOnlyBadgeP
       data-testid="evidence-only-badge"
       title={hint}
       className={cn(
-        "inline-flex flex-none items-center rounded-sm border border-[color:var(--color-border-soft)] px-1 text-label leading-4 text-[color:var(--color-text-quaternary)]",
+        "inline-flex flex-none items-center rounded-micro border border-[color:var(--color-border-soft)] px-1 text-label leading-4 text-[color:var(--color-text-quaternary)]",
         className,
       )}
     >
