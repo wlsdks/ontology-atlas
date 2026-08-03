@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { Plus, X } from "lucide-react";
-import { Select } from "@/shared/ui";
+import { Select, controlClass } from "@/shared/ui";
 
 /**
  * S2.1a — 토폴로지에서 새 온톨로지 노드를 만드는 작은 form (presentational).
@@ -150,7 +150,13 @@ export function CreateNodeForm({
             onClick={onCancel}
             aria-label={labels.cancel}
             data-testid="create-node-cancel"
-            className="inline-flex h-6 w-6 items-center justify-center rounded-full text-[color:var(--color-text-quaternary)] transition-colors hover:text-[color:var(--color-text-primary)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--color-indigo-a46)] focus-visible:ring-inset"
+            className={controlClass({
+              shape: "icon",
+              size: "sm",
+              tone: "muted",
+              className:
+                "hover:text-[color:var(--color-text-primary)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--color-indigo-a46)] focus-visible:ring-inset",
+            })}
           >
             <X size={12} aria-hidden />
           </button>

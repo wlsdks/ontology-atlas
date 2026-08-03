@@ -3,6 +3,7 @@
 import { ArrowLeft, X } from "lucide-react";
 import { Link } from "@/i18n/navigation";
 import { CHROME_STATUS_CHIP_CLASS } from "@/shared/ui/chrome-chip";
+import { controlClass } from "@/shared/ui/control-class";
 
 export interface TopologyInsightsReturnChipProps {
   /** 복귀 목적지 — 원래 보던 인사이트 탭 (`buildOntologyInsightsReturnHref`). */
@@ -56,7 +57,12 @@ export function TopologyInsightsReturnChip({
         onClick={onDismiss}
         aria-label={dismissAriaLabel}
         data-testid="topology-insights-return-chip-dismiss"
-        className="-mr-1 flex h-6 w-6 shrink-0 items-center justify-center rounded-full text-[color:var(--color-text-quaternary)] transition-colors hover:text-[color:var(--color-text-primary)]"
+        className={controlClass({
+          shape: "icon",
+          size: "sm",
+          tone: "muted",
+          className: "-mr-1 hover:text-[color:var(--color-text-primary)]",
+        })}
       >
         <X size={13} aria-hidden />
       </button>

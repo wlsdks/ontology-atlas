@@ -2,6 +2,8 @@
 
 import { useTranslations } from "next-intl";
 
+import { controlClass } from "@/shared/ui/control-class";
+
 export function TopologyNoMatchesState({
   onClearFilters,
   variant = "empty",
@@ -28,7 +30,13 @@ export function TopologyNoMatchesState({
       <button
         type="button"
         onClick={onClearFilters}
-        className="rounded-chip border border-[color:var(--color-indigo-line-a32)] bg-[color:var(--color-indigo-a10)] px-3 py-1 font-mono text-label uppercase tracking-[0.14em] text-[color:var(--color-indigo-line-a90)] transition-colors hover:bg-[color:var(--color-indigo-a18)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--color-indigo-a46)] focus-visible:ring-offset-2 focus-visible:ring-offset-[color:var(--color-panel)]"
+        className={controlClass({
+          shape: "chip",
+          size: "md",
+          active: true,
+          className:
+            "font-mono uppercase tracking-[0.14em] hover:bg-[color:var(--color-indigo-a24)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--color-indigo-a46)] focus-visible:ring-offset-2 focus-visible:ring-offset-[color:var(--color-panel)]",
+        })}
       >
         {t("clearFilters")}
       </button>
