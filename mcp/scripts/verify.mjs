@@ -98,6 +98,8 @@ const VERIFY_TIMEOUT_MS_RAW = VERIFY_ARGS.timeoutMsRaw;
 const DIAGNOSIS_STATUSES = new Set(['healthy', 'needs_attention']);
 const HEALTH_CHECK_STATUSES = new Set(['pass', 'warn', 'fail', 'info']);
 const NEXT_ACTION_SEVERITIES = new Set(['info', 'warn', 'fail']);
+const MEANING_REPAIR_PACKET_MAX_BYTES = 5 * 1024;
+const GET_CONCEPTS_FULL_BODY_MAX = 20;
 export const TOOLS_LIST_SCHEMA_CONTRACT_SUMMARY = 'strict arguments + annotations + graph-query enums + graph kind enums/descriptions + write relation enums + health tuning + post-write maintenance schema';
 const ADD_CONCEPT_KIND_VALUES = Object.freeze(['project', 'domain', 'capability', 'element', 'document']);
 const NODE_KIND_DESCRIPTION = NODE_KIND_VALUES.join(', ');
@@ -7469,6 +7471,157 @@ function validAgentBriefMeaningAssessment(value, projectSlug) {
     && (provenance.sourceReceiptContractVersion === null || provenance.sourceReceiptContractVersion === 1);
 }
 
+function validAgentBriefMeaningRepair(value, projectSlug) {
+  const rootFields = [
+    'contract', 'status', 'projectSlug', 'blockedBy', 'primaryQuestion',
+    'questionsNeedingReview', 'provenance', 'questions', 'workflow',
+    'stopWhen', 'writePolicy',
+  ];
+  if (
+    !agentBriefExactKeys(value, rootFields)
+    || value.contract !== 'meaningRepair:v1'
+    || value.projectSlug !== projectSlug
+    || new TextEncoder().encode(JSON.stringify(value)).byteLength > MEANING_REPAIR_PACKET_MAX_BYTES
+    || !['blocked', 'human_review_required', 'not_needed'].includes(value.status)
+    || agentBriefPrivateSourceCoordinate(value)
+    || !Array.isArray(value.questionsNeedingReview)
+    || value.questionsNeedingReview.some((id) => !['abilities', 'evidence'].includes(id))
+    || !Array.isArray(value.workflow)
+    || !Array.isArray(value.stopWhen)
+    || value.stopWhen.length === 0
+    || value.stopWhen.some((id) => !hasNonEmptyString(id))
+    || !agentBriefExactKeys(value.writePolicy, [
+      'humanApprovalRequired', 'automaticWrite', 'automaticFinalize',
+    ])
+    || value.writePolicy.humanApprovalRequired !== true
+    || value.writePolicy.automaticWrite !== false
+    || value.writePolicy.automaticFinalize !== false
+  ) return false;
+  if (value.status === 'blocked') {
+    return hasNonEmptyString(value.blockedBy)
+      && value.primaryQuestion === null
+      && value.questionsNeedingReview.length === 0
+      && value.provenance === null
+      && value.questions === null
+      && value.workflow.length === 0;
+  }
+  if (
+    value.blockedBy !== null
+    || !(value.primaryQuestion === null || ['abilities', 'evidence'].includes(value.primaryQuestion))
+    || !agentBriefExactKeys(value.provenance, [
+      'graphHash', 'sourceFingerprint', 'sourceMeasuredAt', 'sourceCurrentness',
+    ])
+    || !hasNonEmptyString(
+      value.provenance.graphHash,
+      value.provenance.sourceFingerprint,
+      value.provenance.sourceMeasuredAt,
+    )
+    || value.provenance.sourceCurrentness !== 'current'
+    || !agentBriefExactKeys(value.questions, ['abilities', 'evidence'])
+  ) return false;
+  const abilities = value.questions.abilities;
+  const evidence = value.questions.evidence;
+  if (
+    !agentBriefExactKeys(abilities, ['basis', 'targetCount', 'review'])
+    || abilities.basis !== 'typed_containment'
+    || !Number.isInteger(abilities.targetCount)
+    || !agentBriefExactKeys(abilities.review, [
+      'state', 'alreadyDeclared', 'candidateAdditions', 'declaredWithoutSupport', 'unresolved',
+    ])
+    || abilities.review.state !== 'structural_candidates_only'
+    || !agentBriefExactKeys(evidence, ['basis', 'targetCount', 'review'])
+    || evidence.basis !== 'current_source_canonical_path'
+    || !Number.isInteger(evidence.targetCount)
+    || !agentBriefExactKeys(evidence.review, [
+      'state', 'alreadyDeclared', 'candidateAdditions', 'declaredWithoutSupport', 'unresolved',
+    ])
+    || evidence.review.state !== 'source_path_candidates_only'
+    || ![
+      abilities.review.alreadyDeclared,
+      abilities.review.candidateAdditions,
+      abilities.review.declaredWithoutSupport,
+      abilities.review.unresolved,
+      evidence.review.alreadyDeclared,
+      evidence.review.candidateAdditions,
+      evidence.review.declaredWithoutSupport,
+      evidence.review.unresolved,
+    ].every(Array.isArray)
+  ) return false;
+  if (value.status === 'not_needed') {
+    return value.primaryQuestion === null
+      && value.questionsNeedingReview.length === 0
+      && value.workflow.length === 0;
+  }
+  if (
+    value.questionsNeedingReview.length === 0
+    || value.primaryQuestion !== value.questionsNeedingReview[0]
+    || value.workflow.length !== 6
+  ) return false;
+  const abilityRows = [...abilities.review.alreadyDeclared, ...abilities.review.candidateAdditions];
+  if (!abilityRows.every((row) => (
+    agentBriefExactKeys(row, ['slug', 'witnessCapabilities'])
+    && hasNonEmptyString(row.slug)
+    && Array.isArray(row.witnessCapabilities)
+    && row.witnessCapabilities.length > 0
+    && row.witnessCapabilities.every((slug) => hasNonEmptyString(slug))
+  ))) return false;
+  const domains = [
+    ...abilityRows.map((row) => row.slug),
+    ...abilities.review.declaredWithoutSupport,
+    ...abilities.review.unresolved,
+  ];
+  const capabilities = [
+    ...abilityRows.flatMap((row) => row.witnessCapabilities),
+    ...evidence.review.alreadyDeclared,
+    ...evidence.review.candidateAdditions,
+    ...evidence.review.declaredWithoutSupport,
+    ...evidence.review.unresolved,
+  ];
+  if ([
+    ...abilities.review.declaredWithoutSupport,
+    ...abilities.review.unresolved,
+    ...evidence.review.alreadyDeclared,
+    ...evidence.review.candidateAdditions,
+    ...evidence.review.declaredWithoutSupport,
+    ...evidence.review.unresolved,
+  ].some((slug) => !hasNonEmptyString(slug))) return false;
+  const domainSlugs = [...new Set(domains)].sort((left, right) => left.localeCompare(right));
+  const capabilitySlugs = [...new Set(capabilities)].sort((left, right) => left.localeCompare(right));
+  if (
+    domainSlugs.length !== abilities.targetCount
+    || capabilitySlugs.length !== evidence.targetCount
+  ) return false;
+  const expectedTargets = [...new Set([projectSlug, ...domainSlugs, ...capabilitySlugs])];
+  const readStep = value.workflow[0];
+  if (
+    !agentBriefExactKeys(readStep, ['step', 'derivation', 'calls'])
+    || readStep.step !== 'read_review_inputs'
+    || !agentBriefExactKeys(readStep.derivation, ['slugs'])
+    || readStep.derivation.slugs !== 'project_and_all_review_targets'
+    || !Array.isArray(readStep.calls)
+    || readStep.calls.length === 0
+  ) return false;
+  const emittedTargets = [];
+  for (const call of readStep.calls) {
+    if (
+      !agentBriefExactKeys(call, ['tool', 'arguments'])
+      || call.tool !== 'get_concepts'
+      || !agentBriefExactKeys(call.arguments, ['slugs', 'body'])
+      || call.arguments.body !== 'full'
+      || !Array.isArray(call.arguments.slugs)
+      || call.arguments.slugs.length === 0
+      || call.arguments.slugs.length > GET_CONCEPTS_FULL_BODY_MAX
+      || call.arguments.slugs.some((slug) => !hasNonEmptyString(slug))
+    ) return false;
+    emittedTargets.push(...call.arguments.slugs);
+  }
+  return value.questionsNeedingReview.length > 0
+    && value.primaryQuestion === value.questionsNeedingReview[0]
+    && new Set(emittedTargets).size === emittedTargets.length
+    && emittedTargets.length === expectedTargets.length
+    && emittedTargets.every((slug, index) => slug === expectedTargets[index]);
+}
+
 export function agentBriefFailure(parsed) {
   if (parsed?.operation !== 'agent_brief') {
     return `agent_brief returned unexpected operation: ${parsed?.operation}`;
@@ -7506,6 +7659,19 @@ export function agentBriefFailure(parsed) {
   if (!validAgentBriefMeaningAssessment(parsed.meaningAssessment, parsed.projectSlug)) {
     return 'agent_brief response malformed categorical meaningAssessment';
   }
+  if (!agentBriefPlainObject(parsed.meaningRepair)) {
+    return 'agent_brief response missing meaningRepair review packet';
+  }
+  if (agentBriefPrivateSourceCoordinate(parsed.meaningRepair)) {
+    return 'agent_brief meaningRepair exposes private source coordinates';
+  }
+  if (!validAgentBriefMeaningRepair(parsed.meaningRepair, parsed.projectSlug)) {
+    return 'agent_brief response malformed meaningRepair review packet';
+  }
+  if (parsed.meaningRepair.status === 'human_review_required' && (
+    parsed.nextActions?.[0]?.id !== 'review_competency_repair'
+    || parsed.nextActions[0].detailContract !== parsed.meaningRepair.contract
+  )) return 'agent_brief meaningRepair action must be first in nextActions';
   const readinessCountFailure = numericFieldsFailure('agent_brief readiness', parsed.readiness, [
     'meaningfulNodes',
     'relationCount',

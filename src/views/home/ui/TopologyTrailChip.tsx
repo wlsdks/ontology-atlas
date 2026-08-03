@@ -432,11 +432,14 @@ export function TopologyTrailChip({
                       onClearPastWalks();
                     }}
                     data-testid="topology-trail-past-clear-all"
-                    className={`rounded-chip px-2 py-1 text-label transition-colors ${
-                      clearAllArmed
-                        ? "text-[color:var(--color-text-primary)]"
-                        : "text-[color:var(--color-text-quaternary)] hover:text-[color:var(--color-text-primary)]"
-                    }`}
+                    className={controlClass({
+                      shape: "segment",
+                      tone: clearAllArmed ? "strong" : "muted",
+                      // 호버는 소비처 몫 — 무장 전에만 잉크가 깨어난다.
+                      className: clearAllArmed
+                        ? undefined
+                        : "hover:text-[color:var(--color-text-primary)]",
+                    })}
                   >
                     {clearAllArmed ? labels.pastClearAllConfirmLabel : labels.pastClearAllLabel}
                   </button>

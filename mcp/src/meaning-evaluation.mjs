@@ -3,6 +3,7 @@ import { isAbsolute, relative, resolve, sep } from 'node:path';
 
 import { WRITE_RELATION_TYPE_VALUES } from './ontology-engine.mjs';
 import { MEANING_COMPETENCY_QUESTIONS } from './meaning-assessment.mjs';
+import { evaluateQuantifiedCompetencyCoverage } from './competency-coverage.mjs';
 import { renderProjectCompetencyMarkdown } from './project-meaning-receipt.mjs';
 
 const DEFAULT_THRESHOLDS = Object.freeze({
@@ -709,6 +710,23 @@ function validateCompetencyAnswers({
           'error',
           `${path}.witnesses.relations`,
           `An answered impact competency requires a depends_on relation witness.`,
+        ));
+      }
+      const coverage = evaluateQuantifiedCompetencyCoverage({
+        id: contract.id,
+        domains: proposal.domains,
+        capabilities: proposal.capabilities,
+        witnesses,
+        requireCapabilityPaths: true,
+      });
+      if (coverage && coverage.uncovered.length > 0) {
+        complete = false;
+        findings.push(finding(
+          'incomplete-competency-coverage',
+          'error',
+          path,
+          `Answered competency "${contract.id}" covers ${coverage.covered.length} of ${coverage.targetSet.length} required targets.`,
+          coverage.uncovered,
         ));
       }
       if (complete) answered += 1;

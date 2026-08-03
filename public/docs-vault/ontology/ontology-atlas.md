@@ -49,7 +49,7 @@ Six stable responsibility boundaries cover agent integration, graph modeling, lo
 - Relations: `ontology-atlas` --contains--> `domains/agent-integration`, `ontology-atlas` --contains--> `domains/graph-modeling`, `ontology-atlas` --contains--> `domains/local-vault-management`, `ontology-atlas` --contains--> `domains/onboarding-and-shell`, `ontology-atlas` --contains--> `domains/project-portfolio`, `ontology-atlas` --contains--> `domains/topology-navigation`
 - Evidence: `README.md`
 
-### abilities — answered
+### abilities — partial
 
 Which observable abilities realize those outcomes inside each domain?
 
@@ -58,8 +58,9 @@ The agent-integration domain exposes an MCP server and terminal workflow that le
 - Concepts: `domains/agent-integration`, `capabilities/mcp-server`, `capabilities/cli-developer-entry`
 - Relations: `domains/agent-integration` --capabilities--> `capabilities/mcp-server`, `domains/agent-integration` --capabilities--> `capabilities/cli-developer-entry`
 - Evidence: `mcp/src`, `cli/src`
+- Gap: This answer covers only the agent-integration domain; the other contained domains still need typed capability witnesses here.
 
-### evidence — answered
+### evidence — partial
 
 Which source artifacts provide implementation evidence for each ability?
 
@@ -68,6 +69,7 @@ The MCP and CLI source entrypoints are exact repository witnesses for the agent-
 - Concepts: `capabilities/mcp-server`, `capabilities/cli-developer-entry`
 - Evidence: `mcp/src`, `cli/src`
 - Paths: `mcp/src`, `cli/src`
+- Gap: This answer covers only the MCP and CLI abilities; the remaining contained capabilities still need canonical path witnesses here.
 
 ### impact — answered
 

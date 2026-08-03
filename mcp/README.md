@@ -443,14 +443,16 @@ private absolute `rootPath` stays in the local binding envelope and
 is never returned; the public receipt contains only the source identity/revision/
 fingerprint and source-relative witness paths.
 
-MCP deliberately does not rescan that private source root. A valid saved receipt can
-therefore keep `status:"verified_current"` while the MCP view reports
-`currentness:"unavailable"`: unavailable means “not rechecked by this process,” not
-“known stale.” The installed-app UI may report `current` after it has re-inspected the
-bound folder and matched the receipt. MCP reports `stale` when a complete current
-project graph hash is available and differs from the receipt; a bounded/unknown graph
-scope degrades to `unavailable` instead of inventing drift. `projectSource` augments
-the handoff and does not replace `agent_brief.readiness`.
+A fresh MCP process locally repeats the installed app's bounded source probe against
+that human-bound private root. If source kind, identity, revision, and fingerprint all
+match the saved receipt, it reports `current`; if any differ, it fails closed as
+`review_required` / `source_changed` and asks the app to remeasure. The root and raw
+inspection inventory never cross the public MCP boundary. A permission, filesystem,
+or Git failure preserves the last valid receipt but reports
+`currentness:"unavailable"`: unavailable means “could not recheck,” not “known stale.”
+MCP also reports `stale` when a complete current project graph hash differs from the
+receipt; a bounded/unknown graph scope does not invent ontology drift. `projectSource`
+augments the handoff and does not replace `agent_brief.readiness`.
 
 `health`, `workspace_brief`, and `agent_brief` also attach whole-vault
 validation. A validator warning/failure inserts an actionable
@@ -466,6 +468,33 @@ inconsistent; no numeric confidence is synthesized. Pass `project` to
 `query_ontology({ operation: "agent_brief", project: "..." })`, or use
 `ontology-atlas agent-brief <vault> --project SLUG`, to select one project in a
 multi-project vault.
+
+When current graph/source evidence can narrow an incomplete `abilities` or
+`evidence` answer, `agent_brief.nextActions[0]` is
+`review_competency_repair` and points to `agent_brief.meaningRepair`
+(`meaningRepair:v1`). The packet keeps four facts separate: what the project
+Markdown currently declares, typed-containment candidates that are ready only
+for human semantic review, canonical-path candidates supported by the current
+source receipt, and unresolved targets. It never upgrades a candidate to
+`answered`, never writes or finalizes automatically, and never exposes a
+private source root or raw inspection inventory. The typed workflow reuses
+`get_concepts`/`get_concept` → explicit human approval →
+`patch_concept(expected_mtime)` → `validate_vault` →
+`compile_ontology({summary:true})` → reread →
+`finalize_project_meaning(expected_mtime)`. Non-current source, provenance
+change, incomplete scope/receipt, validation or compile errors, human
+non-approval, unresolved evidence promoted to answered, and mtime conflict are
+hard stops. If those prerequisites are unavailable, the packet is present as
+`status:"blocked"` and does not replace the existing source/health action queue.
+The first workflow step already materializes one stable, deduplicated union of
+`projectSlug`, sorted domain slugs, and sorted capability slugs named anywhere
+in both questions' `review` buckets, including `witnessCapabilities`. It emits
+literal `get_concepts({slugs:[...], body:"full"})` calls in deterministic
+batches of at most 20, the public full-body tool limit; a 27-target review is
+therefore executable as 20+7 without agent-authored batching or omissions.
+`derivation.slugs:"project_and_all_review_targets"` remains on the workflow
+step only as audit metadata. CLI/MCP verification rejects a missing, duplicate,
+reordered, oversized batch or a repair packet over 5 KiB.
 | `validate_vault` | **R+** Validate every doc in the vault, return `{ scanned, problems: [{slug, issues}], summary: { problemFiles, errorFiles, warningFiles, byCode }, pathDrift }`. The public `outputSchema` is the machine-owned canonical issue-code set and restricts both `issues[].code` and `summary.byCode`; identity errors include missing/invalid UID, invalid or non-canonical merge history, and duplicate UID claims. `pathDrift` = vault→code path drift: frontmatter `path:` / `elements:` source paths missing on disk, resolved against `repoRoot` (input param, default active resolved repository root from `connection_info`) → `{ repoRoot, checked, nodesScanned, pathsChecked, drifts: [{slug, kind, key, missingPath, suggestedPath?}], hint }`. **`checked: false` (2026-08-01) means nothing was measured** — the vault is not inside a git repository and no `repoRoot` was given, so the repository it describes is unknown and any number would be noise rather than drift; `drifts` is then empty because it was not looked at, not because it is clean; ontology-slug refs are never flagged; fix via `patch_concept` or remove the stale entry. `suggestedPath` (optional, Track A #3) appears when exactly one existing repo source file shares the missing file's basename — a likely reconcile target ("the source moved here"); ambiguous (>1) or absent matches yield no suggestion. One round-trip whole-vault health check — use for first-contact before writes, before / after a batch write, or to surface issues. Replaces the K-roundtrip pattern of `list_concepts` then per-doc `get_concept` (whose `warnings: [...]` is per-file). |
 | `analyze_repo_structure` | **R16** Analyze a code repository (default active resolved repository root) and propose ontology node candidates from package metadata, README evidence, and source layout. **side effect 0** — vault NOT modified. Emits schema-folder-prefixed flat slugs while source locations stay in `path`/evidence, so candidates match the starter layout and CLI `add` defaults. Semantic evidence includes `trust` and `riskFlags` for instructions, future/negated claims, and deprecated state. A root Rust package `Cargo.toml` contributes one bounded `role:"package-contract"` row containing only allowlisted `[package]` identity/description and `[features]` names/mappings. Python cold starts likewise accept `README.rst`, a non-executed root `setup.py` with only static `name` / `description` / `python_requires` literals, and top-level packages identified by `__init__.py` as implementation elements. For Python packages it exposes at most 12 implementation boundaries that participate in observed imports as element/path candidates. Direct module/package boundaries remain the base; up to two exact nested security/policy/risk endpoints may reserve slots so risk ownership is not buried in a large import payload. Unused files are not mirrored, ambiguous flat slugs fail closed, and omitted lower-ranked boundaries are reported in `skipped`. A complete proposal may additionally select at most four exact file endpoints already exposed by the observed import graph when they materially improve change navigation; this never adds those files to the analyzer's automatic candidate list. Package contracts, package folders, and import endpoints are evidence, never automatic domains or capabilities. Repository-escaping symlinks—including package-internal symlink parents—files over 256 KiB, malformed contracts, and virtual-workspace-only roots are skipped rather than guessed. A second call may include the complete project/domain/capability/element/typed-relation `proposal`; `proposalValidation` checks definitions, citations, risk controls, domain/path placement, relation endpoints/types/rationales, confidence, and five typed competency answers. A Python `depends_on` backed by an admitted boundary or selectively proposed exact endpoint must match the observed module/file import direction or validation fails. Each answer carries `answered` / `partial` / `visible-gap` status plus concept, relation, evidence, and path witnesses. Unsupported `answered` claims fail closed; honest gaps remain visible in findings and quality gates without blocking an otherwise writable graph. A pass returns deterministic `writePlan.concepts` / `writePlan.relations` rows matching the batch writers and preserves `writePlan.competencyAnswers`; the project body records the same packet. `canWrite:true` means the submitted graph is writable, not that every competency is settled. Do not write unless `canWrite:true` and the user approves; write relations only after every concept row succeeds. Detects FSD vs generic layout. |
 | `infer_imports` | **R17** Walk TS/JS files plus root Python packages and parse imports → file-level + module-level dependency edges. **side effect 0**. Python support is deliberately static and bounded: it reads `import` / `from ... import`, package-relative and parenthesized multiline statements as text, ignores import-shaped docstring content, and never imports or executes repository code. Test packages, dynamic imports, and namespace-package guessing stay out. TS/JS resolves relative imports, `tsconfig.json` `compilerOptions.paths` aliases, then fallback common `@/*` aliases; unresolved imports use schema-bound `reason` values: `empty`, `relative-not-found`, or `alias-not-found`. External packages are classified separately. Internal imports collapse to module edges (folder-prefixed capability/element slug A → B with import count plus `kindCounts`). The agent reviews `moduleEdges` and selectively passes accepted edges to `add_relation` as `depends_on`; import edges are implementation evidence and never auto-promote a domain, capability, or semantic relation. Unless `reconcile:false`, `reconciliation` diffs module edges against compiled vault `depends_on` edges and separates directly landable rows, absent endpoints, and possibly stale vault edges. Use after `analyze_repo_structure` to pull observed dependency evidence from code. |

@@ -1,3 +1,5 @@
+import { evaluateQuantifiedCompetencyCoverage } from "./competency-coverage.mjs";
+
 /**
  * Deterministic project-meaning assessment.
  *
@@ -143,6 +145,9 @@ function relationKey(value) {
 }
 
 function normalizeInventory(value) {
+  const kindEntries = value?.kinds && typeof value.kinds === "object" && !Array.isArray(value.kinds)
+    ? Object.entries(value.kinds)
+    : [];
   const valid = value
     && value.contract === MEANING_WITNESS_INVENTORY_CONTRACT
     && safeGraphHash(value.graphHash)
@@ -158,19 +163,21 @@ function normalizeInventory(value) {
     && new Set(value.evidence).size === value.evidence.length
     && Array.isArray(value.paths)
     && value.paths.every(safeRelativePath)
-    && new Set(value.paths).size === value.paths.length;
+    && new Set(value.paths).size === value.paths.length
+    && kindEntries.every(([slug, kind]) => safeConceptSlug(slug) && safeOpaque(kind));
   return {
     valid,
     graphHash: valid ? value.graphHash : null,
     sourceFingerprint: valid ? value.sourceFingerprint : null,
     concepts: new Set(valid ? value.concepts : []),
+    kinds: new Map(valid ? kindEntries : []),
     relations: new Set(valid ? value.relations.map(relationKey) : []),
     evidence: new Set(valid ? value.evidence : []),
     paths: new Set(valid ? value.paths : []),
   };
 }
 
-function normalizeQuestions(competency) {
+function normalizeQuestions(competency, projectSlug) {
   const rows = Array.isArray(competency?.questions) ? competency.questions : [];
   const inventory = normalizeInventory(competency?.inventory);
   const byId = new Map();
@@ -214,9 +221,16 @@ function normalizeQuestions(competency) {
       && witnesses.relations.every((relation) => inventory.relations.has(relationKey(relation)))
       && witnesses.evidence.every((path) => inventory.evidence.has(path))
       && witnesses.paths.every((path) => inventory.paths.has(path));
+    const quantifiedCoverage = competencyCoverage({
+      id: contract.id,
+      projectSlug,
+      inventory,
+      witnesses,
+    });
     const witnessStatus = requiredWitnessesPresent
       && impactDependencyPresent
       && witnessesResolve
+      && (!quantifiedCoverage || quantifiedCoverage.uncovered.length === 0)
       && row.unresolvedWitnesses.length === 0
       ? "resolved"
       : "missing";
@@ -230,6 +244,33 @@ function normalizeQuestions(competency) {
       byId.get(id) ?? { id, status: "unassessed", witnessStatus: "unavailable" }
     )),
   };
+}
+
+function competencyCoverage({ id, projectSlug, inventory, witnesses }) {
+  if (!safeProjectSlug(projectSlug)) return null;
+  const relations = [...inventory.relations].map((key) => {
+    const [from, to, type] = key.split("\0");
+    return { from, to, type };
+  });
+  const hasKindInventory = inventory.kinds.size > 0;
+  const capabilityParents = new Set(relations
+    .filter((row) => row.type === "capabilities" || row.type === "contains")
+    .map((row) => row.from));
+  const domains = relations.filter((row) =>
+    row.from === projectSlug
+    && (row.type === "domains" || row.type === "contains")
+    && (hasKindInventory
+      ? inventory.kinds.get(row.to) === "domain"
+      : capabilityParents.has(row.to)))
+    .map((row) => ({ slug: row.to }));
+  const domainSlugs = new Set(domains.map((row) => row.slug));
+  const capabilities = relations
+    .filter((row) =>
+      domainSlugs.has(row.from)
+      && (row.type === "capabilities" || row.type === "contains")
+      && (!hasKindInventory || inventory.kinds.get(row.to) === "capability"))
+    .map((row) => ({ slug: row.to, domain: row.from }));
+  return evaluateQuantifiedCompetencyCoverage({ id, domains, capabilities, witnesses });
 }
 
 function sourceReceiptMalformed(source) {
@@ -324,7 +365,7 @@ function result(input, normalized, status, topGap, nextAction) {
  */
 export function deriveMeaningAssessment(input) {
   const safeInput = input && typeof input === "object" ? input : {};
-  const normalized = normalizeQuestions(safeInput.competency);
+  const normalized = normalizeQuestions(safeInput.competency, safeInput.projectSlug);
   const sourceStatus = safeInput.source?.status;
   const currentness = safeInput.source?.currentness;
   const rawStructureStatus = safeInput.structure?.status;
