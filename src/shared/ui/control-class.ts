@@ -102,13 +102,26 @@ const control = cva(DISABLED, {
       /** 정사각 아이콘 컨트롤. 라벨이 없으므로 접근 이름이 **필수**다(36). */
       icon: 'inline-flex shrink-0 items-center justify-center rounded-chip transition-colors',
       /** 목록의 한 줄 전체가 눌리는 것. 좌정렬이 정체성이다(39). */
-      row: 'flex w-full items-center text-left transition-colors',
+      /**
+       * ⚠️ `rounded-chip` 이 **처음엔 빠져 있었다.** 그래서 정규화된 목록 행의
+       * 호버 배경이 각지게 나왔다(반경 6 → 0). 모양을 정의하면서 반경을 안 준 것이
+       * 원인이고, 실측이 잡았다.
+       */
+      row: 'flex w-full items-center rounded-chip text-left transition-colors',
       /** 상태·수치를 나르는 완전 둥근 컨트롤(32). */
       pill: 'inline-flex items-center rounded-full border transition-colors',
       /** 카드 하나가 통째로 눌리는 큰 표면(18). */
       card: 'flex items-center rounded-card border transition-colors',
       /** 글자만으로 눌리는 것. 보더도 배경도 없다(85). */
       link: 'inline-flex items-center gap-1 rounded-chip transition-colors',
+      /**
+       * 아이콘 위, 글자 아래의 **세로** 타일.
+       *
+       * 2026-08-03 정규화가 찾은 세 번째 구멍 — 모양 여섯이 **전부 가로**라
+       * 세로 액션 타일 5개가 시스템 밖에 있었다. 전수에서 「모양」을 셀 때 축을
+       * 하나만 본 것이다.
+       */
+      tile: 'flex flex-col items-center justify-start rounded-card border text-center transition-colors',
     },
     size: {
       /** 실측 분포의 작은 쪽 — `text-caption`/`px-2`. */
@@ -127,8 +140,24 @@ const control = cva(DISABLED, {
       default: 'text-[color:var(--color-text-tertiary)]',
       /** 더 물러난 것 — 4차. 아이콘 컨트롤의 최빈값이다. */
       muted: 'text-[color:var(--color-text-quaternary)]',
+      /**
+       * 3차와 1차 사이 — **2026-08-03 정규화가 찾은 구멍.** 톤을 3단으로 냈는데
+       * 설정 시트만 해도 `text-secondary` 컨트롤이 7개였다. 모양은 전수에서 셌으면서
+       * **톤은 안 셌다.** 그 7개가 시스템 밖에 남아 있었다.
+       */
+      secondary: 'text-[color:var(--color-text-secondary)]',
       /** 지금 이겨야 하는 것 — 1차. 한 화면에 여럿이면 위계가 없는 것이다. */
       strong: 'text-[color:var(--color-text-primary)]',
+      /**
+       * 인디고 강조 — 「이 화면의 주 행동」. 같은 정규화가 찾은 두 번째 구멍으로,
+       * 대응 톤이 없어 15개가 시스템 밖에 있었다. 헌장의 **단일 인디고**이고
+       * 새 hue 가 아니다.
+       */
+      accent: 'text-[color:var(--color-indigo-accent)]',
+      /** 신호 3종 — 헌장이 인정한 그 셋뿐이다(warning · error · success). 확장 금지. */
+      warning: 'text-[color:var(--color-status-warning)]',
+      danger: 'text-[color:var(--color-danger-text)]',
+      success: 'text-[color:var(--color-status-success)]',
     },
     /** 눌려 있는 상태(`aria-pressed` / `aria-selected` 와 **짝**이어야 한다). */
     active: { true: '', false: '' },
@@ -150,14 +179,19 @@ const control = cva(DISABLED, {
     { shape: 'card', size: 'sm', class: 'gap-1.5 px-2.5 py-1.5 text-label' },
     { shape: 'card', size: 'md', class: 'gap-1.5 px-3 py-1.5 text-body' },
     { shape: 'card', size: 'lg', class: 'gap-2 px-3.5 py-2 text-body-lg' },
-    { shape: 'link', size: 'sm', class: 'text-caption' },
-    { shape: 'link', size: 'md', class: 'text-label' },
-    { shape: 'link', size: 'lg', class: 'text-body' },
+    { shape: 'tile', size: 'sm', class: 'gap-1.5 px-2 py-2 text-caption' },
+    { shape: 'tile', size: 'md', class: 'gap-2 px-2 py-2.5 text-label' },
+    { shape: 'tile', size: 'lg', class: 'gap-2 px-3 py-3 text-body' },
+    { shape: 'link', size: 'sm', class: 'min-h-11 text-caption' },
+    { shape: 'link', size: 'md', class: 'min-h-11 text-label' },
+    { shape: 'link', size: 'lg', class: 'min-h-11 text-body' },
 
     // ── 테두리를 가진 모양의 기본 테두리색. `link`/`row`/`icon` 은 보더가 없다.
     { shape: 'chip', active: false, class: 'border-[color:var(--color-divider)]' },
     { shape: 'pill', active: false, class: 'border-[color:var(--color-divider)]' },
     { shape: 'card', active: false, class: 'border-[color:var(--color-border-soft)]' },
+    { shape: 'tile', active: false, class: 'border-[color:var(--color-border-soft)]' },
+    { shape: 'tile', active: true, class: 'border-[color:var(--color-indigo-pale-a28)] bg-[color:var(--color-indigo-a16)] text-[color:var(--color-text-primary)]' },
 
     // ── 눌려 있음: **인디고 하나**로만 표현한다. 새 hue 는 헌장 위반이다.
     { shape: 'chip', active: true, class: 'border-[color:var(--color-indigo-pale-a28)] bg-[color:var(--color-indigo-a16)] text-[color:var(--color-text-primary)]' },

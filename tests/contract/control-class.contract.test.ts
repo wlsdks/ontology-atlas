@@ -24,9 +24,9 @@ import {
  * 없어서 손으로 쓴» 자리에서 나왔다.
  */
 
-const SHAPES: ControlShape[] = ['chip', 'icon', 'row', 'pill', 'card', 'link'];
+const SHAPES: ControlShape[] = ['chip', 'icon', 'row', 'pill', 'card', 'link', 'tile'];
 const SIZES: ControlSize[] = ['sm', 'md', 'lg'];
-const TONES: ControlTone[] = ['default', 'muted', 'strong'];
+const TONES: ControlTone[] = ['default', 'muted', 'secondary', 'strong', 'accent', 'warning', 'danger', 'success'];
 
 /** `app/globals.css` 의 radius 램프 3단. 여기 없는 반경은 이탈이다. */
 const RADIUS_STEPS = ['chip', 'card', 'panel'];
@@ -99,8 +99,16 @@ describe('controlClass — 램프 밖 값을 낼 수 없다', () => {
         tokens.add(m[1]);
       }
     });
-    const hued = [...tokens].filter((t) => !/^(text|divider|border|overlay|canvas|panel|elevated|secondary)/.test(t));
-    expect(hued.sort(), `인디고 계열만 허용된다: ${hued.join(', ')}`).toEqual(
+    /*
+     * 헌장은 무채색 + 단일 인디고 **+ 신호 3종**(warning · error · success)이다.
+     * 신호는 「연결됨 / 실패 / 경고」 같은 상태에만 쓰고 장식으로 확장하지 않는다.
+     * 그 셋 밖의 hue 가 나오면 두 번째 채색 시스템이다.
+     */
+    const SIGNAL = /^(status-warning|status-success|danger-text|success-text)/;
+    const hued = [...tokens].filter(
+      (t) => !/^(text|divider|border|overlay|canvas|panel|elevated|secondary)/.test(t) && !SIGNAL.test(t),
+    );
+    expect(hued.sort(), `인디고 계열과 신호 3종만 허용된다: ${hued.join(', ')}`).toEqual(
       hued.filter((t) => t.startsWith('indigo')).sort(),
     );
   });
@@ -125,6 +133,34 @@ describe('controlClass — 모양이 실제로 서로 다르다', () => {
       const [, h] = /\bh-(\d+)\b/.exec(cls) ?? [];
       const [, w] = /\bw-(\d+)\b/.exec(cls) ?? [];
       expect(h, `icon/${size} 의 높이·너비가 다르다`).toBe(w);
+    }
+  });
+
+  it('세로 타일은 아이콘 위·글자 아래다 — 가로 모양들과 축이 다르다', () => {
+    // 2026-08-03 정규화가 찾은 구멍: 모양 여섯이 전부 가로라 세로 액션 타일 5개가
+    // 시스템 밖에 있었다. 전수에서 「모양」을 셀 때 축을 하나만 봤다.
+    const cls = controlClass({ shape: 'tile' });
+    expect(cls).toContain('flex-col');
+    expect(cls).toContain('text-center');
+  });
+
+  it('글자 컨트롤도 손가락에 잡힌다 — 시각 크기와 히트 영역은 다른 축이다', () => {
+    /*
+     * `link` 는 보더도 배경도 없어 시각적으로는 글자 그대로여야 하지만, 히트
+     * 영역까지 글자 크기면 24 → 16px 로 내려가 WCAG 2.5.8(24×24) 아래가 된다.
+     * 실제로 설정 시트 컨트롤 3개가 이 이유로 시스템 밖에 남았다.
+     */
+    for (const size of SIZES) {
+      expect(controlClass({ shape: 'link', size }), `link/${size} 에 최소 높이가 없다`).toMatch(
+        /min-h-/,
+      );
+    }
+  });
+
+  it('모든 모양이 반경을 갖는다 — 안 주면 호버 배경이 각진다', () => {
+    // `row` 가 처음에 반경 없이 나가 정규화된 목록 행의 호버가 각지게 됐다.
+    for (const shape of SHAPES) {
+      expect(controlClass({ shape }), `${shape} 에 반경이 없다`).toMatch(/rounded-/);
     }
   });
 
