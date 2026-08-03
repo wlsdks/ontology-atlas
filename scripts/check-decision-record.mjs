@@ -9,20 +9,43 @@
  * rows the doc calls fatal, self-certified, and shipped.
  *
  * Most of that trigger list is semantic ("positioning", "the words a stranger
- * reads first") and no script can see intent. Two rows are mechanical, and this
- * gate holds those two:
+ * reads first") and no script can see intent. Three rows are mechanical, and
+ * this gate holds those three:
  *
  *   1. a user-facing route is added or removed  → "new or removed surface"
  *   2. the MCP tool set or CLI command set changes → "public contract change"
+ *   3. the design system's vocabulary or ramps move → "규격 변경"
  *
- * When either fires, the same change must append to `docs/DECISIONS.md`. The
+ * When any fires, the same change must append to `docs/DECISIONS.md`. The
  * gate does not judge the record's quality — it makes the decision *exist*,
  * with its dissent and falsifier, where the next pass will read it.
  *
  * Same idea as this repo's lint rules: 룰 없는 규격은 지켜지지 않는다.
+ *
+ * ## 3번은 2026-08-03 에 추가됐다 — 「문서에만 있는 규칙」이었다
+ *
+ * `docs/DESIGN-SYSTEM.md` 의 「시스템을 늘리는 규칙」 3번(*규격을 바꾸려면
+ * 「체계」를 부른다*)과 그 트리거 목록(`.claude/rules/design.md`)은 있었는데
+ * **강제가 없었다.** 실측: 값 층 램프를 넓힌 커밋 다섯 중 자기 원장 기록이
+ * 있는 것은 하나뿐이었다. 이 저장소가 반복해서 실패한 바로 그 모양이다.
+ *
+ * 판정은 파일 이름이 아니라 **센서스**로 한다 —
+ * `scripts/lib/design-spec-census.mjs` 가 왜 그렇게 좁혔는지를 설명한다.
+ * 요약: 트리거 파일들은 이 저장소에서 가장 자주 만져지는 축에 들어서(최근 300
+ * 커밋 중 79개가 건드렸다) 「diff 에 있으면 원장」은 오탐 63건을 만든다. 어휘와
+ * 램프 값만 보면 그 79 중 16 만 남는다.
  */
 
+import { readFileSync } from "node:fs";
 import { execFileSync } from "node:child_process";
+
+import {
+  censusFor,
+  describeChange,
+  diffCensus,
+  parseTriggerFiles,
+  SPEC_RULE_DOC,
+} from "./lib/design-spec-census.mjs";
 
 const LEDGER = "docs/DECISIONS.md";
 
@@ -35,8 +58,12 @@ const CONTRACT_FILES = ["cli/src/lib/cli-commands.mjs", "mcp/src/index.js"];
 function printHelp() {
   console.log(`Usage: pnpm decisions:check [-- --base=<ref>]
 
-Fails when a change adds or removes a user-facing route, or edits the MCP/CLI
-public contract, without appending to ${LEDGER} in the same change.
+Fails when a change adds or removes a user-facing route, edits the MCP/CLI
+public contract, or moves the design system's vocabulary/ramps, without
+appending to ${LEDGER} in the same change.
+
+The design-spec trigger files are read from ${SPEC_RULE_DOC} — that document
+is the single source of the list, and this script never copies it.
 
 The record is where the next pass reads what was already decided and what the
 losing argument bet on. A decision that exists only in a PR description is a
@@ -109,7 +136,47 @@ const contractChanges = entries
   .filter((entry) => CONTRACT_FILES.includes(entry.path))
   .map((entry) => `공개 계약 변경: ${entry.path}`);
 
-const triggers = [...surfaceChanges, ...contractChanges];
+/**
+ * 디자인 규격 — **파일이 만져졌는가가 아니라 규격이 움직였는가**를 본다.
+ *
+ * 트리거 파일 목록은 `.claude/rules/design.md` 에서 읽는다. HEAD 쪽 문서를 쓰는
+ * 이유: 이번 변경이 목록에 파일을 **더했다면** 그 파일도 이번부터 감시 대상이다.
+ */
+function designSpecChanges() {
+  let triggerFiles;
+  try {
+    triggerFiles = parseTriggerFiles(readFileSync(SPEC_RULE_DOC, "utf8"));
+  } catch (error) {
+    // 목록을 못 읽으면 조용히 통과시키지 않는다 — 침묵하는 게이트가 이 규칙이
+    // 생긴 이유 그 자체다.
+    console.error(`[decisions] ${error.message}`);
+    process.exit(1);
+  }
+
+  const showAt = (ref, path) => {
+    try {
+      return execFileSync("git", ["show", `${ref}:${path}`], {
+        encoding: "utf8",
+        stdio: ["ignore", "pipe", "ignore"],
+      });
+    } catch {
+      return null; // 그 시점에 없던 파일 = 빈 센서스
+    }
+  };
+
+  const found = [];
+  for (const path of triggerFiles) {
+    if (!changedPaths.has(path)) continue;
+    const before = censusFor(path, showAt(base, path));
+    const after = censusFor(path, showAt("HEAD", path));
+    for (const change of diffCensus(before, after)) found.push(describeChange(path, change));
+  }
+  return found;
+}
+
+const specChanges = designSpecChanges();
+
+const triggers = [...surfaceChanges, ...contractChanges, ...specChanges];
 
 if (triggers.length === 0) {
   console.log("[decisions] no council trigger in this change ✓");
@@ -129,6 +196,9 @@ console.error(`
 [decisions]   1. /po-council 을 소집하고 그 평결을 ${LEDGER} 최상단에 덧붙인다
 [decisions]   2. 이미 결정된 사안이면, 선행 기록을 인용하고 이번 변경을 그 기록에 덧붙인다
 [decisions]   3. 트리거가 오탐이면 (예: 라우트 파일 이동), 그 사실을 기록에 한 줄로 남긴다
+[decisions]
+[decisions] «규격 …» 트리거라면 소집할 자리는 /design-council 의 「체계」다
+[decisions] (.claude/rules/design.md 「규격을 바꾸려면 「체계」를 부른다」).
 [decisions]
 [decisions] 기록은 품질 심사가 아니라 존재 확인이다 — 다음 패스가 읽을 자리에
 [decisions] 결정과 그때 진 반대 의견이 남아 있어야 같은 논쟁을 다시 하지 않는다.`);
