@@ -13,38 +13,14 @@
 </p>
 
 <p align="center">
-  Ontology Atlas turns the Markdown in your repository into a graph of your
-  product — domains, capabilities, implementation evidence, dependencies,
-  impact — and runs real graph queries over it: blast radius, reachability,
-  cycles, shortest path. Your agent reads and maintains it over MCP. You judge
-  every change as a plain git diff.
+  <a href="https://wlsdks.github.io/ontology-atlas/en/download/"><strong>Download for macOS</strong></a>
+  ·
+  <a href="https://wlsdks.github.io/ontology-atlas/en/download/"><strong>Windows x64 beta</strong></a>
 </p>
 
 <p align="center">
-  <strong>One download installs both surfaces.</strong> The desktop app carries a
-  compiled MCP server inside its own bundle, and one button writes your agent's
-  config and proves the connection.
-</p>
-
-<p align="center">
-  <a href="https://wlsdks.github.io/ontology-atlas/"><strong>Download for macOS</strong></a>
-  ·
-  <a href="https://wlsdks.github.io/ontology-atlas/en/topology/"><strong>Live demo</strong></a>
-  ·
-  <a href="#the-journey"><strong>The journey</strong></a>
-  ·
-  <a href="#status--read-this-before-installing"><strong>Status</strong></a>
-  ·
-  <a href="mcp/README.md"><strong>MCP setup</strong></a>
-  ·
-  <a href="cli/README.md"><strong>CLI reference</strong></a>
-</p>
-
-<p align="center">
-  <a href="LICENSE"><img alt="MIT license" src="https://img.shields.io/badge/license-MIT-5e6ad2.svg" /></a>
-  <a href="mcp/README.md"><img alt="33 MCP tools" src="https://img.shields.io/badge/MCP-33_tools-5e6ad2.svg" /></a>
-  <a href="cli/README.md"><img alt="52 CLI commands" src="https://img.shields.io/badge/CLI-52_commands-5e6ad2.svg" /></a>
-  <img alt="Local-first" src="https://img.shields.io/badge/storage-local--first-17181f.svg" />
+  <sub>Windows is a public, unsigned beta. Microsoft Defender SmartScreen may
+  warn about an unknown publisher, and managed work PCs may block it.</sub>
 </p>
 
 ![The Ontology Atlas macOS app showing the example storefront vault: a project hexagon at the centre, six domains around it, solid contains edges and dashed depends-on edges, and an INDEX panel listing each domain with its capability and element counts](docs/assets/readme/topology-overview.png)
@@ -55,6 +31,34 @@
   store, written as nothing but Markdown files in a folder. The interface moves
   quickly; the live demo and <a href="docs/FEATURES.md">feature inventory</a>
   are the current behavior contract.</sub>
+</p>
+
+<p align="center">
+  Ontology Atlas turns repository Markdown into a typed graph of the product:
+  domains, capabilities, evidence, dependencies, and impact. People judge the
+  map and git diffs; AI agents query and maintain the same vault over MCP.
+</p>
+
+<p align="center">
+  <strong>Each desktop download includes the Atlas app and its MCP server.</strong>
+  One button writes your agent's config and proves the connection.
+</p>
+
+<p align="center">
+  <a href="https://wlsdks.github.io/ontology-atlas/en/topology/">Live demo</a>
+  ·
+  <a href="https://wlsdks.github.io/ontology-atlas/en/guide/">Guide</a>
+  ·
+  <a href="#the-journey">The journey</a>
+  ·
+  <a href="#status--read-this-before-installing">Status</a>
+</p>
+
+<p align="center">
+  <a href="LICENSE"><img alt="MIT license" src="https://img.shields.io/badge/license-MIT-5e6ad2.svg" /></a>
+  <a href="mcp/README.md"><img alt="33 MCP tools" src="https://img.shields.io/badge/MCP-33_tools-5e6ad2.svg" /></a>
+  <a href="cli/README.md"><img alt="52 CLI commands" src="https://img.shields.io/badge/CLI-52_commands-5e6ad2.svg" /></a>
+  <img alt="Local-first" src="https://img.shields.io/badge/storage-local--first-17181f.svg" />
 </p>
 
 ---
@@ -74,60 +78,22 @@ disconnected, what is stale.*
 Your agent asks those questions over MCP. You read the same answers as a map,
 and every write the agent makes lands as a line in a Markdown file you can diff.
 
-## Why not just use a notes tool
-
-Local Markdown plus MCP is not rare any more, and this README will not pretend
-otherwise. [Basic Memory](https://github.com/basicmachines-co/basic-memory)
-already gives an agent a human-readable Markdown store with an MCP server, and
-there are several mature Obsidian MCP bridges. **Markdown you own, git-diffable
-review, no login, no telemetry: treat all of that as table stakes.** Atlas has
-it, and so do they.
-
-The difference is what sits on top:
-
-| | Notes with MCP (Basic Memory, Obsidian bridges) | Graph stores for agents (Zep/Graphiti, Cognee, Mem0) | Ontology Atlas |
-|---|---|---|---|
-| Store | Markdown you own | A database you cannot read by hand | Markdown you own |
-| Structure | Freeform notes, freeform link labels | Typed, but vendor-defined | A four-layer product hierarchy, linked documents, and typed relations |
-| Graph reach | Traverse *N* hops from a note | Full graph engine | Blast radius, reachability, cycles, shortest path, centrality, health |
-| Derived from your repo | No — you write the notes | No — you feed it a corpus | Bounded, read-only proposals from supported source evidence; nothing lands until approval |
-| Reading surface | Obsidian, or a paid web app | A vendor console | A free local map, workshop, and maintenance board |
-
-Read the middle rows together, because that is the actual argument: **the typed
-hierarchy is not the feature — it is the price of admission for the graph
-queries.** Containment has to be computable before "blast radius" or "this
-project's coverage" can mean anything. If you only want an agent to remember
-your conversations, a notes tool is the lighter choice and you should take it.
-Atlas is for when you want a model of the system your code implements.
-
-The theory and prior art behind that position are cited in
-[docs/FOUNDATIONS.md](docs/FOUNDATIONS.md).
-
 ## Status — read this before installing
 
-*Last updated 2026-08-02.*
+*Last updated 2026-08-03.*
 
-- **Check [GitHub Releases](https://github.com/wlsdks/ontology-atlas/releases)
-  for a build.** If that page is empty, or only lists release candidates,
-  treat it as beta software; everything below also runs from a source checkout.
-  The screenshots here were captured from local builds and are not release
-  verification evidence.
-- **macOS releases are signed with a Developer ID certificate and notarized by
-  Apple.** Update packages use a separate project key the app verifies before
-  replacing anything — see [SECURITY.md](SECURITY.md). The Windows x64 beta is
-  intentionally unsigned, so Microsoft Defender SmartScreen may show an
-  unknown-publisher warning and managed work PCs may block it.
-- **There is no npm channel, and there will not be one.** Earlier drafts of this
-  README pointed at unpublished packages. That plan was retired on 2026-07-27:
-  the MCP server is compiled into the app bundle instead, so installing the app
-  installs the agent surface too. From source, the CLI and MCP server run
-  directly out of the checkout.
-- **The desktop app ships for macOS and as an unsigned Windows x64 beta.** Both
-  bundles carry the MCP server. The source-checkout CLI and browser app remain
-  available anywhere their runtimes are supported.
-- **The screenshots below are illustrative local builds.** Download names,
-  checksums, signing state, and availability come from the current GitHub
-  Release rather than from screenshots or hand-written placeholders.
+- **The current public builds are prerelease software.** Use the stable
+  [download page](https://wlsdks.github.io/ontology-atlas/en/download/) for the
+  current macOS and Windows x64 assets, checksums, sizes, and signing state.
+- **macOS builds are Developer ID signed and Apple-notarized.** The Windows x64
+  beta is intentionally unsigned, so SmartScreen may show an unknown-publisher
+  warning and managed work PCs may block it. See [Security](SECURITY.md).
+- **Installing the desktop app also installs the agent surface.** Both bundles
+  carry the compiled MCP server. There is no npm package; unsupported platforms
+  can use the browser app or run the CLI and MCP server from a source checkout.
+- **Screenshots demonstrate the product journey, not release availability.**
+  The download page and [GitHub Releases](https://github.com/wlsdks/ontology-atlas/releases)
+  remain the authority for shipped assets.
 
 ## The journey
 
@@ -290,85 +256,53 @@ coverage from how the documents link to each other.
 Cursor, Codex, and any MCP client. The point is not the tool count; it is that
 the answers are *typed*, so an agent can act on them.
 
-The server runs on the **MCP SDK v2** (`@modelcontextprotocol/server` 2.0). That
-migration is deliberately invisible to you: a contract test still handshakes at
-the oldest supported protocol version (`2024-11-05`) and asserts that an older
-client can still list and call tools, so moving to v2 did not quietly drop
-anyone's editor.
-
-Here is a real question — *what breaks if I change this?* — answered against the
-same example vault the screenshots use:
+Ask *what breaks if I change this?* and Atlas traverses the same typed graph the
+map shows:
 
 ```console
 $ node $ATLAS/cli/src/index.mjs blast-radius capabilities/payment-authorize ./storefront --depth 2
-
 capabilities/payment-authorize — blast radius (depth 2, incoming)
   risk high · 22 노드 · 33 관계 · 6 cross-domain
-
-affected by kind
-  capability     10
-  element        9
-  domain         2
-  project        1
-
-affected by domain
-  domains/payment                          15
-  domains/order                            3
-  domains/catalog                          1
-  domains/customer                         1
-  domains/marketing                        1
-
-affected nodes (distance 별)
+  capability 10 · element 9 · domain 2 · project 1
   d1 capabilities/installment — Instalment Payment
   d1 capabilities/order-placement — Order Placement
-  d1 capabilities/payment-cancel — Payment Void
-  d1 capabilities/tax-receipt — Tax Receipt Issuing
-  d1 capabilities/wallet-payment — One-Tap Wallet Payment
-  d1 domains/payment — Payments
   d2 capabilities/refund — Refund Processing
-  d2 elements/kakao-pay — KakaoPay Integration
   ...
-
-next impact capabilities/installment — impact rows are candidates, not proof;
-inspect backlinks and node detail before refactor decisions
-  node $ATLAS/cli/src/index.mjs node capabilities/installment [vault] --limit 20
-  node $ATLAS/cli/src/index.mjs backlinks capabilities/payment-authorize [vault]
-  node $ATLAS/cli/src/index.mjs reachability capabilities/payment-authorize [vault] --plan --depth 2 --direction both --limit 20
 ```
 
-*Verbatim, apart from the elided `...` rows and the runnable prefix — the CLI
-shortens its own follow-up hints to `ontology-atlas <command>`, which is not a
-command that exists on your machine, so they are spelled out here. Every node in
-the example vault carries a `display_ko` / `display_en` pair, so the same graph reads "Payments" in
-English and "결제" in Korean without the file changing; `title` stays one value
-because search and matching need a single truth. The CLI's own labels are still
-partly Korean and are on the list to translate.*
+- **Focused context, not a repository dump.** Briefs give an agent the project,
+  domain, evidence, impact boundary, first tools, and stop conditions it needs.
+- **Graph questions with typed answers.** Paths, reachability, blast radius,
+  cycles, similarity, health, and backlinks are deterministic frontmatter
+  queries — no graph database or hosted memory is involved.
+- **Writes that survive review.** Analysis is side-effect free by default;
+  destructive operations dry-run first, renames repair backlinks, and mtime
+  guards protect concurrent human edits.
+- **The same authority without MCP.** The CLI exposes the same local folder to
+  sessions that cannot attach a connector.
 
-No graph database is involved. `compile_ontology` builds the graph
-deterministically from frontmatter, and `query_ontology` runs paths,
-reachability, blast radius, cycles, centrality, similarity, and health over it.
+Connect and use it through the [MCP guide](mcp/README.md), or start from the
+[CLI reference](cli/README.md).
 
-Three properties make this usable by an agent rather than merely printable:
+## Why not just use a notes tool
 
-- **Focused starting context, not a repo dump.** `agent_brief` returns reading
-  order, graph entry points, first tool calls, investigation playbooks, write
-  guardrails, and stop conditions; CLI sessions use `agent-brief --project SLUG`
-  when a vault contains more than one project. `workspace-brief` is the cheap first-contact dashboard:
-  per-project node counts (`project_scope`), health-check coverage as
-  `id:status:count`, and growth counts before the agent chooses where to read
-  deeper — so the first call is a summary, not a download.
-- **Writes that survive review.** Analysis tools are side-effect free by
-  default; destructive changes return a complete dry-run before confirmation;
-  renames and merges redirect backlinks atomically; optimistic `mtime` guards
-  stop an agent from overwriting a concurrent human edit. After accepted graph
-  writes, validation, and a complete compile, `finalize_project_meaning` stores
-  a small project-meaning provenance receipt—not raw answers or a private source
-  root. Its `ok: true` means the receipt was written; the categorical,
-  fail-closed verdict remains `agent_brief.meaningAssessment`.
-- **The same authority without a connector.** The CLI's 52 commands cover the
-  same ground for sessions with no MCP client attached.
+Local Markdown, git diffs, and MCP are table stakes. Notes tools such as
+[Basic Memory](https://github.com/basicmachines-co/basic-memory) already provide
+them; hosted graph-memory products provide typed traversal in a database. Atlas
+combines a human-readable local vault with a product ontology and a workbench
+where people and agents judge the same facts.
 
-Full contracts: [MCP guide](mcp/README.md) · [CLI reference](cli/README.md).
+| | Notes with MCP | Hosted graph memory | Ontology Atlas |
+|---|---|---|---|
+| Store | Markdown you own | Vendor database | Markdown you own |
+| Structure | Freeform notes and links | Vendor-defined types | Project → domain → capability → element, documents, typed relations |
+| Graph questions | Note traversal | Graph engine | Blast radius, reachability, cycles, paths, centrality, health |
+| Evidence from code | Hand-authored | Corpus ingestion | Bounded read-only proposals; nothing lands until approval |
+| Human surface | Notes app | Vendor console | Local map, Workshop, History, and Insights |
+
+If you only need an agent to remember conversations, a notes tool is lighter.
+Atlas is for modeling the product your code implements. The argument and its
+sources live in [Foundations](docs/FOUNDATIONS.md).
 
 ## A vault is just files
 
@@ -440,123 +374,41 @@ question is worth asking.
 
 ## How relations are stored
 
-There is no database, DB schema migration, sync button, or server. **A relation
-is one line of frontmatter**, and the graph is derived from those files every
-time they are read — never queried out of a prebuilt store. The one explicit
-file-format migration is v1→v2 UID issuance; it is dry-run first through
-`pnpm vault:migrate 2026-08-02-add-node-uids --vault <dir>`.
-
-That has one consequence worth stating plainly: **the hierarchy is not a
-ceiling.** Containment (`project → domain → capability → element`) is only the
-structural layer. Meaning relations sit on top of it and cross it freely — a
-domain can point straight at another domain, and a capability can depend on one
-several branches away.
-
-Only the side that declares the relation writes anything:
+There is no relation database or sync step. The declaring Markdown file owns one
+frontmatter line, and Atlas derives the edge and its backlink when it reads the
+vault:
 
 ```yaml
-# capabilities/vault-live-updates.md — the declaring side
 ---
 slug: capabilities/vault-live-updates
 kind: capability
 domain: domains/local-vault-management
 dependencies:
-  - capabilities/topology-canvas-render   # directed: this leans on that
+  - capabilities/topology-canvas-render   # directed: this depends on that
 relates:
   - capabilities/mcp-conflict-guard       # symmetric: read these together
 ---
 ```
 
-```yaml
-# capabilities/topology-canvas-render.md — the receiving side writes nothing
----
-slug: capabilities/topology-canvas-render
-kind: capability
-domain: views
----
-```
-
-The target picks the edge up as a backlink. Writing it on both sides is allowed
-— the map folds the round trip into a single line.
-
-Two domains linking directly is ordinary, not a special case — write the other
-domain's slug and you are done:
-
-```yaml
-# domains/onboarding-and-shell.md
----
-slug: domains/onboarding-and-shell
-kind: domain
-relates: [domains/topology-navigation]   # a domain pointing at another domain
----
-```
-
-| Frontmatter key | Relation | Direction |
-|---|---|---|
-| `capabilities:` · `elements:` · `contains:` | `contains` | directed (parent → child) |
-| `domain:` · `domains:` | `contains` | directed |
-| `dependencies:` | `depends_on` | **directed** |
-| `relates:` | `related_to` | **symmetric — no direction** |
-| `broader:` | `is_a` | directed (SKOS `skos:broader`) |
-| `describes:` | `describes` | directed |
-
-Direction is not decorative: the map draws a width taper on directed edges and a
-uniform stroke on symmetric ones, so `relates` never claims a causality it does
-not have. `src/shared/lib/ontology-tree/relations.ts` is the single source for
-that decision, and `derive-ontology-from-vault.ts` is where frontmatter becomes
-edges.
-
-Because the file *is* the record, adding a relation shows up as a one-line
-`git diff` — including when an agent is the one who added it:
-
-```diff
-- dependencies: [capabilities/topology-canvas-render]
-+ dependencies: [capabilities/topology-canvas-render, capabilities/vault-validator]
-```
-
-Count them in any vault with the CLI — `overview` breaks relations down by type,
-`domain-matrix` shows which domains actually touch each other:
-
-```bash
-node $ATLAS/cli/src/index.mjs overview --vault docs/ontology
-node $ATLAS/cli/src/index.mjs domain-matrix --vault docs/ontology
-```
-
-The [guide chapter on relations](docs/guide/relations.md) walks through the same
-model with diagrams, and covers how the map keeps thousands of them legible
-(concentric rings, phyllotaxis packing, density gating, semantic zoom).
+Containment is the structural layer, not a ceiling; typed meaning relations can
+cross domains and branches. `dependencies` is directed, while `relates` is
+symmetric, so the map never turns similarity into causality. See the
+[relations guide](docs/guide/relations.md) for every relation type, direction,
+writing rule, and map behavior, and the [vault specification](docs/ONTOLOGY-ATLAS-SPEC.md)
+for the complete frontmatter contract.
 
 ## Product destinations, one vault
 
-The journey above moves through them in order. Every surface reads and writes the
-same `.md` files — the interface changes, the authority does not. The MCP server
-is listed here on purpose: to this product an agent is a surface, not an add-on.
+Map, Docs, Workshop, Insights, Projects, History, MCP, and CLI all read the same
+Markdown folder. The installed app is the full workbench; the hosted web app is
+the no-install gateway and a second-best workbench where native bridges are not
+available. MCP and CLI skip the screens and operate on the same files directly.
 
-| Surface | What it is for |
-|---|---|
-| **Front door** (`/`, `/download`) | What this is, and the two ways in — install the app, or open the map in the browser. Only shown to a visitor who has not opened a folder yet; once you have a vault, `/` is the map |
-| **Map** (`/topology`) | Overview-first topology, semantic zoom, typed relation inspection, focus and path modes, impact, agent handoff |
-| **Docs** (`/docs`) | Read and edit the Markdown source, frontmatter evidence, backlinks, search |
-| **Workshop** (`/ontology/studio`) | Complete one node's meaning against four fixed relation bearings, behind a visible write-confirm boundary |
-| **Insights** (`/ontology/insights`) | The maintenance board — what to do next, composition, connections, boundaries, freshness |
-| **Projects** (`/projects`) | Project cards and coverage derived from containment |
-| **History** (`/git`) | Vault-scoped changes, history, and local snapshots — nothing outside the vault is ever committed |
-| **MCP server** (33 tools, 19 read + 14 write) | The agent's surface — the same graph over stdio JSON-RPC, with dry-runs and write guardrails |
-
-The installed app is the vault's full workbench. The hosted web surface is the
-no-install gateway and a second-best workbench where the native bridge is not
-available; it does **not** promise every desktop screen. CLI and MCP do not render
-these routes at all — they read and write the same folder directly. The
-[live demo](https://wlsdks.github.io/ontology-atlas/en/topology/) opens with this
-repository's own vault, while the site's
-[`/`](https://wlsdks.github.io/ontology-atlas/) remains the download gateway.
-
-| | |
-|---|---|
-| **Dogfooding** | This product describes itself — domains, capabilities, and elements living in [`docs/ontology/`](docs/ontology/). Run `node cli/src/index.mjs overview` for the current census; the map's number reads higher than the file count because it also draws the source paths those files cite as evidence. |
-
-No document pins that census. Run the command when you need the current number;
-the app derives its displayed facts from the graph it renders.
+See the [feature inventory](docs/FEATURES.md) for every current surface and the
+[architecture guide](docs/ARCHITECTURE.md) for the desktop/web boundary. The
+[live demo](https://wlsdks.github.io/ontology-atlas/en/topology/) opens Atlas's
+own dogfood vault in [`docs/ontology/`](docs/ontology/); run
+`node cli/src/index.mjs overview docs/ontology` when you need its current census.
 
 ## Local-first, by construction
 
@@ -566,15 +418,9 @@ the app derives its displayed facts from the graph it renders.
   scoped to the vault.
 - **No backend, no account, no telemetry.** The web app is a static export.
   Nothing is transmitted anywhere unless you explicitly ask for it.
-- **Two ways in, one folder.** The hosted web app can open a local folder
-  through the File System Access API, so the live demo works on your own files
-  without installing anything. The desktop app uses a Tauri bridge to your
-  selected folder instead, which lifts the browser's limits and lets the same
-  vault stay open as a real desktop workspace.
-- **The Tauri macOS shell is a shell, not a silo.** It is granted a deliberately
-  short permission list; broad filesystem, shell, HTTP, and opener grants are
-  refused by a build gate. The MCP server and CLI read that same directory
-  directly.
+- **Two ways in, one folder.** The hosted web app can open a local folder through the File System Access API. The desktop app uses a Tauri bridge to your selected folder and keeps the same vault open as a workspace.
+- **The Tauri macOS shell is a shell, not a silo.** MCP and CLI still read the
+  selected folder directly; the app does not move it into a private store.
 - **The bundled MCP server is a file, not a service.** It sits inside the app
   bundle and keeps working when the app is closed, because your agent launches
   it itself.
@@ -593,128 +439,55 @@ ATLAS=~/tools/ontology-atlas/cli/src/index.mjs
 
 cd /path/to/your/repo
 
-# 1. Scaffold a vault in *your* repo. Also writes .mcp.json (Claude Code /
-#    Cursor) and .codex/config.toml (Codex), wired to this vault.
+# Scaffold a vault in your repo and generate its agent config.
 node $ATLAS init ./ontology
 
-# 2. Analyze the repository. The default run is side-effect free;
-#    --apply is the explicit write boundary.
+# Analyze without writing; --apply is the explicit write boundary.
 node $ATLAS index . --vault ./ontology
 node $ATLAS index . --vault ./ontology --apply
 
-# 3. The compact packet a person or coding agent starts from.
+# Give a person or coding agent a compact starting packet.
 node $ATLAS agent-brief ./ontology
 ```
 
-Both installs are load-bearing, and so is repeating the second one. `mcp/` is
-not in the root pnpm workspace, so the first `pnpm install` never reaches it and
-a `git pull` that bumps `mcp/package.json` leaves it behind. A stale
-`mcp/node_modules` does not fail loudly, and it does not fail first: step 1
-scaffolds happily, because `init` only writes files. Step 2 and everything after
-it exit with `ERR_MODULE_NOT_FOUND` instead, because those spawn the MCP server
-to answer. Re-run the `--dir mcp` line after every pull.
-
-Restart your agent in your repository and the 33 MCP tools register from the
-generated config. `node $ATLAS mcp-verify ./ontology` proves the actual server
-process and its contracts at any time.
+Both install commands are required: `mcp/` owns a separate lockfile, so rerun
+`pnpm --dir mcp install` after each pull. Restart your agent in your repository,
+then use `node $ATLAS mcp-verify ./ontology` to prove the real server process and
+vault contract.
 
 > Run `init` in your own repository, not inside the Atlas clone. This clone
 > already ships a committed `.mcp.json` pointing at Atlas's own vault, and
 > `init` refuses to overwrite it — your agent would silently answer from
 > *our* ontology instead of yours.
 
-To run the desktop shell from the same checkout:
-
-```bash
-pnpm desktop:dev
-```
+Continue with the [CLI reference](cli/README.md), [MCP setup](mcp/README.md), or
+run the desktop shell with `pnpm desktop:dev`.
 
 ## Verifying a change
 
-The gates a contributor runs before opening a pull request:
+Start with the repository-aware gate selector:
 
 ```bash
-pnpm exec tsc --noEmit    # types
-pnpm lint                 # 0 errors (warnings are tracked, not zero)
-pnpm test:run             # unit + contract suites
-pnpm docs-vault:check     # committed app sample matches docs/
-pnpm docs:check           # generated MCP/CLI surface + broken doc links
-pnpm package:check        # MCP/CLI/docs/performance contracts
-pnpm vault:validate       # frontmatter integrity
+pnpm checks:changed
 ```
 
-`pnpm docs:check` is two gates. `docs:surface:check` regenerates
-`docs/.generated/mcp-surface.json` from the live MCP tool registry and the CLI
-command registry, fails on any diff, and then checks that `mcp/README.md` and
-`cli/README.md` name every registered tool and command — run
-`pnpm docs:surface:build` and commit the diff after adding either. `docs:links`
-resolves repo-relative links and cited file paths (external URLs are opt-in:
-`pnpm docs:links:external`). The rule they enforce — *only check what a machine
-can generate* — is recorded in [docs/DECISIONS.md](docs/DECISIONS.md).
-
-`pnpm checks:changed` picks the smallest sufficient subset for what you touched;
-[CONTRIBUTING.md](CONTRIBUTING.md) explains when to escalate to the full set.
-
-Map interaction cost is not covered by those gates — the canvas has no DOM, so a
-run that silently pans the background instead of dragging a node reports "fast"
-and is wrong. Measure it with the deterministic harness, which proves it grabbed
-a real node before quoting a number:
-
-```bash
-pnpm build && npx serve out -l 4173
-node scripts/perf-node-drag.mjs
-```
-
-Neither do they cover whether the map is *readable as a graph* — until 2026-08-03
-the node spec had contract tests, the type ramp had lint, and motion had frame
-measurement, while the layout occupying most of the screen was judged only by
-someone saying "looks busy". The same observation surface answers it:
-
-```bash
-node scripts/serve-static-export.mjs --port=4173 &   # after pnpm build
-node scripts/measure-graph-readability.mjs
-```
-
-It reports edge crossings and node overlap — and only those, because Purchase
-(Graph Drawing 1997) found crossing minimisation dominates human comprehension
-while angular resolution and grid snapping were not statistically significant.
-The metric maths live in `scripts/lib/graph-readability.mjs` as pure functions so
-they can be probed with known answers (`tests/contract/graph-readability.contract.test.ts`);
-a detector that only ever returns zero is indistinguishable from no detector.
-
-The observation surface both drive (`?e2e=1` → `window.__atlasMap`) and the
-measurement discipline are documented in
-[docs/MAP-TESTABILITY.md](docs/MAP-TESTABILITY.md).
-
-Contrast is a third thing lint cannot see. ESLint checks whether a colour came
-from a token; it cannot check whether the result is readable, and two legitimate
-tokens can fail to separate — in 2026-07 a pair of adjacent chart segments turned
-out to sit at 1.14:1 in luminance and differ only in hue, the axis red-green
-colour blindness cannot resolve:
-
-```bash
-node scripts/measure-contrast.mjs        # same static server as above
-```
-
-It sweeps the rendered DOM against WCAG 1.4.3, resolving alpha against ancestors
-first — the app's text and borders are alpha tokens, and skipping compositing
-reports numbers that are quietly better than the screen.
+It chooses the focused checks for the files you changed and is also the last
+command to run before a pull request. The [contributor guide](CONTRIBUTING.md)
+explains the workflow; [development checks](docs/DEVELOPMENT-CHECKS.md) owns the
+full gate reference, and [map testability](docs/MAP-TESTABILITY.md) owns canvas
+performance, readability, contrast, and browser instrumentation.
 
 ## Documentation
 
-| Document | Start here when you need… |
-|---|---|
-| [Product direction](docs/PRODUCT-DIRECTION.md) | Mission, audience, and boundaries |
-| [Foundations](docs/FOUNDATIONS.md) | The cited theory and prior art behind the positioning |
-| [Ontology quality](docs/ONTOLOGY-QUALITY.md) | Which rules are hard, advisory, human judgment, or evidence protocol — and who owns each one |
-| [Vault specification](docs/ONTOLOGY-ATLAS-SPEC.md) | The public v2 Markdown/frontmatter format |
-| [Features](docs/FEATURES.md) | The complete current inventory — app, MCP, CLI, desktop |
-| [Architecture](docs/ARCHITECTURE.md) | Local-first data flow and runtime contracts |
-| [MCP guide](mcp/README.md) | Registration and all 33 tool contracts |
-| [CLI reference](cli/README.md) | All 52 commands with examples |
-| [Decisions](docs/DECISIONS.md) | What was decided, what lost the argument, and what would overturn it |
-| [Brand](docs/BRAND.md) | What the mark means, and which asset to use where |
-| [Security](SECURITY.md) | Threat model, release-credential protection, reporting |
+- **Use the product:** [hosted guide](https://wlsdks.github.io/ontology-atlas/en/guide/) ·
+  [features](docs/FEATURES.md) · [MCP setup](mcp/README.md) ·
+  [CLI reference](cli/README.md)
+- **Model a vault:** [what becomes a node?](docs/guide/what-becomes-a-node.md) ·
+  [relations](docs/guide/relations.md) · [v2 specification](docs/ONTOLOGY-ATLAS-SPEC.md) ·
+  [quality authority map](docs/ONTOLOGY-QUALITY.md)
+- **Understand and contribute:** [product direction](docs/PRODUCT-DIRECTION.md) ·
+  [foundations](docs/FOUNDATIONS.md) · [architecture](docs/ARCHITECTURE.md) ·
+  [security](SECURITY.md) · [decisions](docs/DECISIONS.md)
 
 ## Contributing
 
