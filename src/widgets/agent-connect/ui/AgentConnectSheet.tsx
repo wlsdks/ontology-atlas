@@ -8,6 +8,7 @@ import { Cable, Check, ChevronDown, Copy, X } from "lucide-react";
 import { MOTION } from "@/shared/motion";
 import { useBodyScrollLock } from "@/shared/lib/use-body-scroll-lock";
 import { copyText } from "@/shared/lib/copy-text";
+import { controlClass, IconButton } from "@/shared/ui";
 import type { AgentServerAvailability } from "@/shared/config";
 import {
   type AgentClientId,
@@ -92,7 +93,12 @@ function CopyBlock({ label, value, testId }: { label: string; value: string; tes
           onClick={async () => {
             await copyValue(value);
           }}
-          className="inline-flex items-center gap-1 rounded border border-[color:var(--color-border-soft)] px-1.5 py-0.5 text-caption text-[color:var(--color-text-tertiary)] transition-colors hover:border-[color:var(--color-indigo-a46)] hover:text-[color:var(--color-text-primary)]"
+          className={controlClass({
+            shape: "chip",
+            size: "sm",
+            className:
+              "border-[color:var(--color-border-soft)] hover:border-[color:var(--color-indigo-a46)] hover:text-[color:var(--color-text-primary)]",
+          })}
         >
           {copyState === "copied" ? <Check size={10} aria-hidden /> : <Copy size={10} aria-hidden />}
           {copyState === "copied" ? t("copied") : copyState === "failed" ? t("copyFailed") : t("copy")}
@@ -242,15 +248,16 @@ export function AgentConnectSheet({
                 </p>
                 <p className="mt-1 text-body text-[color:var(--color-text-secondary)]">{t("subtitle")}</p>
               </div>
-              <button
-                type="button"
+              <IconButton
                 onClick={onClose}
-                aria-label={t("close")}
+                label={t("close")}
+                size="sm"
+                tone="muted"
                 data-testid="agent-connect-close"
-                className="rounded p-1 text-[color:var(--color-text-quaternary)] transition-colors hover:text-[color:var(--color-text-primary)]"
+                className="hover:text-[color:var(--color-text-primary)]"
               >
                 <X size={15} aria-hidden />
-              </button>
+              </IconButton>
             </header>
 
             <div className="flex min-h-0 flex-1 flex-col gap-5 overflow-y-auto px-5 py-4">
@@ -371,7 +378,13 @@ export function AgentConnectSheet({
                     onClick={async () => {
                       await copyHandoff(handoffText);
                     }}
-                    className="inline-flex h-8 w-fit items-center gap-1.5 rounded-chip border border-[color:var(--color-border-soft)] px-3 text-label text-[color:var(--color-text-tertiary)] transition-colors hover:border-[color:var(--color-indigo-a46)] hover:text-[color:var(--color-text-primary)]"
+                    className={controlClass({
+                      shape: "chip",
+                      size: "md",
+                      fixedHeight: true,
+                      className:
+                        "w-fit border-[color:var(--color-border-soft)] hover:border-[color:var(--color-indigo-a46)] hover:text-[color:var(--color-text-primary)]",
+                    })}
                   >
                     {handoffCopyState === "copied" ? (
                       <Check size={11} aria-hidden />
@@ -395,7 +408,13 @@ export function AgentConnectSheet({
                   onClick={() => setAdvancedOpen((v) => !v)}
                   aria-expanded={advancedOpen}
                   data-testid="agent-connect-advanced-toggle"
-                  className="flex items-center gap-1.5 self-start font-mono text-caption uppercase tracking-[0.12em] text-[color:var(--color-text-quaternary)] transition-colors hover:text-[color:var(--color-text-secondary)]"
+                  className={controlClass({
+                    shape: "link",
+                    size: "sm",
+                    tone: "muted",
+                    className:
+                      "gap-1.5 self-start font-mono uppercase tracking-[0.12em] hover:text-[color:var(--color-text-secondary)]",
+                  })}
                 >
                   <ChevronDown
                     size={11}

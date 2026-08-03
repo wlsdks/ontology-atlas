@@ -6,6 +6,7 @@ import { AnimatePresence, motion } from "framer-motion";
 import { useTranslations } from "next-intl";
 import { Hand, Pointer, X } from "lucide-react";
 import { MOTION } from "@/shared/motion";
+import { IconButton } from "@/shared/ui";
 
 const STORAGE_KEY = "demo:gesture-hint:dismissed:v1";
 
@@ -74,14 +75,14 @@ export function GestureHint({ disabled = false }: { disabled?: boolean }) {
               </span>
             </div>
           </div>
-          <button
-            type="button"
+          <IconButton
             onClick={dismiss}
-            aria-label={t("closeAriaLabel")}
-            className="flex h-7 w-7 shrink-0 items-center justify-center rounded-chip text-[color:var(--color-text-tertiary)] transition-colors hover:bg-[color:var(--color-overlay-2)] hover:text-[color:var(--color-text-primary)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--color-border-strong)]"
+            label={t("closeAriaLabel")}
+            size="md"
+            className="hover:bg-[color:var(--color-overlay-2)] hover:text-[color:var(--color-text-primary)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--color-border-strong)]"
           >
             <X size={13} />
-          </button>
+          </IconButton>
         </motion.div>
       )}
     </AnimatePresence>

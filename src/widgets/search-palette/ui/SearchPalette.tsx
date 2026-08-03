@@ -6,6 +6,7 @@ import { useTranslations } from 'next-intl';
 import { AnimatePresence, motion, useReducedMotion } from 'framer-motion';
 import { BookOpen, Search, X } from 'lucide-react';
 import { cn } from '@/shared/lib/cn';
+import { controlClass } from '@/shared/ui';
 import { OVERLAY_SPRING, OVERLAY_SPRING_REDUCED, SCRIM_FADE, SCRIM_FADE_REDUCED } from "@/shared/motion";
 import { useBodyScrollLock } from '@/shared/lib/use-body-scroll-lock';
 import type { Project } from '@/entities/project';
@@ -429,11 +430,16 @@ function SearchPaletteDialog({
                   setLayerFilter(option.value);
                   setActiveIndex(0);
                 }}
-                className={`rounded-full border px-2.5 py-1 font-mono text-caption uppercase tracking-[0.14em] transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--color-indigo-a50)] ${
-                  active
-                    ? 'border-[color:var(--color-indigo-a46)] bg-[color:var(--color-indigo-a16)] text-[color:var(--color-indigo-line-a90)]'
-                    : 'border-[color:var(--color-divider)] bg-[color:var(--color-overlay-1)] text-[color:var(--color-text-tertiary)] hover:border-[color:var(--color-border-strong)] hover:text-[color:var(--color-text-primary)]'
-                }`}
+                className={controlClass({
+                  shape: 'pill',
+                  size: 'sm',
+                  active,
+                  className: cn(
+                    'font-mono uppercase tracking-[0.14em] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--color-indigo-a50)]',
+                    !active &&
+                      'bg-[color:var(--color-overlay-1)] hover:border-[color:var(--color-border-strong)] hover:text-[color:var(--color-text-primary)]',
+                  ),
+                })}
               >
                 {t(option.labelKey)}
               </button>
@@ -455,7 +461,13 @@ function SearchPaletteDialog({
                     onSelect(p.slug);
                     onClose();
                   }}
-                  className="rounded-full border border-[color:var(--color-indigo-line-a22)] bg-[color:var(--color-indigo-a08)] px-2.5 py-1 text-label text-[color:var(--color-indigo-line-a90)] transition-colors hover:bg-[color:var(--color-indigo-a16)]"
+                  className={controlClass({
+                    shape: 'pill',
+                    size: 'md',
+                    tone: 'accent',
+                    className:
+                      'border-[color:var(--color-indigo-line-a22)] bg-[color:var(--color-indigo-a08)] hover:bg-[color:var(--color-indigo-a16)]',
+                  })}
                 >
                   {p.name}
                 </button>

@@ -13,6 +13,7 @@ import {
 import { MOTION, OVERLAY_SPRING } from "@/shared/motion";
 import { ArrowUpRight, BookOpen, ChevronDown, X } from "lucide-react";
 import { cn } from "@/shared/lib/cn";
+import { Chip, controlClass, IconButton } from "@/shared/ui";
 import { buildDocsVaultHref, findRelatedDocs } from "@/entities/docs-vault";
 import { useStaticVaultSource } from "@/features/vault-sample-source";
 import { formatDate } from "@/shared/lib/format-date";
@@ -413,14 +414,14 @@ export function ProjectDrawer({
                   </span>
                 )}
               </div>
-              <button
-                type="button"
+              <IconButton
                 onClick={onClose}
-                className="flex h-8 w-8 items-center justify-center rounded-chip text-[color:var(--color-text-tertiary)] transition-colors hover:bg-[color:var(--color-overlay-2)] hover:text-[color:var(--color-text-primary)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--color-indigo-a46)] focus-visible:ring-offset-2 focus-visible:ring-offset-[color:var(--color-panel)]"
-                aria-label={t("closeAriaLabel")}
+                size="lg"
+                className="hover:bg-[color:var(--color-overlay-2)] hover:text-[color:var(--color-text-primary)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--color-indigo-a46)] focus-visible:ring-offset-2 focus-visible:ring-offset-[color:var(--color-panel)]"
+                label={t("closeAriaLabel")}
               >
                 <X size={16} />
-              </button>
+              </IconButton>
             </div>
           </header>
 
@@ -519,7 +520,13 @@ export function ProjectDrawer({
                         onEnterContainer?.(project.slug);
                         onClose();
                       }}
-                      className="inline-flex h-10 w-full items-center justify-center gap-1.5 rounded-chip border border-[color:var(--color-amber-docs-a45)] bg-[color:var(--color-amber-docs-a10)] px-3 text-body-lg font-[var(--font-weight-signature)] text-[color:var(--color-text-primary)] transition-colors hover:border-[color:var(--color-amber-docs-a65)] hover:bg-[color:var(--color-amber-docs-a16)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--color-amber-docs-a50)] focus-visible:ring-offset-2 focus-visible:ring-offset-[color:var(--color-panel)]"
+                      className={controlClass({
+                        shape: "card",
+                        size: "lg",
+                        tone: "strong",
+                        className:
+                          "w-full justify-center border-[color:var(--color-amber-docs-a45)] bg-[color:var(--color-amber-docs-a10)] font-[var(--font-weight-signature)] hover:border-[color:var(--color-amber-docs-a65)] hover:bg-[color:var(--color-amber-docs-a16)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--color-amber-docs-a50)] focus-visible:ring-offset-2 focus-visible:ring-offset-[color:var(--color-panel)]",
+                      })}
                     >
                       {t("openContainerTopology")}
                     </button>
@@ -533,7 +540,13 @@ export function ProjectDrawer({
                         onEnterContainer(project.slug);
                         onClose();
                       }}
-                      className="inline-flex h-10 w-full items-center justify-center gap-1.5 rounded-chip border border-[color:var(--color-indigo-a38)] bg-[color:var(--color-indigo-a12)] px-3 text-body-lg font-[var(--font-weight-signature)] text-[color:var(--color-text-primary)] transition-colors hover:border-[color:var(--color-indigo-brand)] hover:bg-[color:var(--color-indigo-a16)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--color-indigo-a46)] focus-visible:ring-offset-2 focus-visible:ring-offset-[color:var(--color-panel)]"
+                      className={controlClass({
+                        shape: "card",
+                        size: "lg",
+                        tone: "strong",
+                        className:
+                          "w-full justify-center border-[color:var(--color-indigo-a38)] bg-[color:var(--color-indigo-a12)] font-[var(--font-weight-signature)] hover:border-[color:var(--color-indigo-brand)] hover:bg-[color:var(--color-indigo-a16)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--color-indigo-a46)] focus-visible:ring-offset-2 focus-visible:ring-offset-[color:var(--color-panel)]",
+                      })}
                     >
                       {t("openHubTopology")}
                     </button>
@@ -550,7 +563,13 @@ export function ProjectDrawer({
                         href={detailHref}
                         prefetch
                         onClick={handleDetailClick}
-                        className="inline-flex h-10 w-full items-center justify-center gap-1.5 rounded-chip border border-[color:var(--color-indigo-a38)] bg-[color:var(--color-indigo-a12)] px-3 text-body-lg font-[var(--font-weight-signature)] text-[color:var(--color-text-primary)] transition-colors hover:border-[color:var(--color-indigo-brand)] hover:bg-[color:var(--color-indigo-a16)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--color-indigo-a46)] focus-visible:ring-offset-2 focus-visible:ring-offset-[color:var(--color-panel)]"
+                        className={controlClass({
+                        shape: "card",
+                        size: "lg",
+                        tone: "strong",
+                        className:
+                          "w-full justify-center border-[color:var(--color-indigo-a38)] bg-[color:var(--color-indigo-a12)] font-[var(--font-weight-signature)] hover:border-[color:var(--color-indigo-brand)] hover:bg-[color:var(--color-indigo-a16)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--color-indigo-a46)] focus-visible:ring-offset-2 focus-visible:ring-offset-[color:var(--color-panel)]",
+                      })}
                       >
                         {t("openProjectDetail")}
                       </Link>
@@ -612,13 +631,14 @@ export function ProjectDrawer({
                           {t("nextProjects")}
                         </p>
                         <div className="mt-2 flex flex-col items-start gap-2">
-                          <button
-                            type="button"
+                          <Chip
+                            size="lg"
+                            tone="secondary"
                             onClick={() => onSelectProject(relatedProjects[0]!.slug)}
-                            className="inline-flex items-center gap-2 rounded-chip border border-[color:var(--color-divider)] px-2.5 py-1.5 text-body text-[color:var(--color-text-secondary)] transition-colors hover:border-[color:var(--color-indigo-brand)] hover:text-[color:var(--color-text-primary)]"
+                            className="hover:border-[color:var(--color-indigo-brand)] hover:text-[color:var(--color-text-primary)]"
                           >
                             <span>{relatedProjects[0]!.name}</span>
-                          </button>
+                          </Chip>
                           {relatedProjects.length > 1 ? (
                             <p className="text-body text-[color:var(--color-text-tertiary)]">
                               {t("moreRelated", { count: relatedProjects.length - 1 })}
@@ -842,15 +862,17 @@ export function ProjectDrawer({
                                 if (!item) return null;
                                 return (
                                   <li key={item.project.slug}>
-                                    <button
+                                    <Chip
+                                      size="lg"
+                                      tone="secondary"
                                       onClick={() => onSelectProject(item.project.slug)}
-                                      className="inline-flex items-center gap-2 rounded-chip border border-[color:var(--color-divider)] px-2.5 py-1 text-body text-[color:var(--color-text-secondary)] transition-colors hover:border-[color:var(--color-indigo-brand)] hover:text-[color:var(--color-text-primary)]"
+                                      className="hover:border-[color:var(--color-indigo-brand)] hover:text-[color:var(--color-text-primary)]"
                                     >
                                       <span className="font-mono text-caption uppercase tracking-[0.08em] text-[color:var(--color-text-quaternary)]">
                                         {item.relationship.label}
                                       </span>
                                       <span>{item.project.name}</span>
-                                    </button>
+                                    </Chip>
                                   </li>
                                 );
                               })}
@@ -876,15 +898,17 @@ export function ProjectDrawer({
                             <ul className="mt-3 flex flex-wrap gap-1.5">
                               {referencedByItems.map((item) => (
                                 <li key={item.project.slug}>
-                                  <button
+                                  <Chip
+                                    size="lg"
+                                    tone="secondary"
                                     onClick={() => onSelectProject(item.project.slug)}
-                                    className="inline-flex items-center gap-2 rounded-chip border border-[color:var(--color-divider)] px-2.5 py-1 text-body text-[color:var(--color-text-secondary)] transition-colors hover:border-[color:var(--color-indigo-brand)] hover:text-[color:var(--color-text-primary)]"
+                                    className="hover:border-[color:var(--color-indigo-brand)] hover:text-[color:var(--color-text-primary)]"
                                   >
                                     <span className="font-mono text-caption uppercase tracking-[0.08em] text-[color:var(--color-text-quaternary)]">
                                       {item.relationship.label}
                                     </span>
                                     <span>{item.project.name}</span>
-                                  </button>
+                                  </Chip>
                                 </li>
                               ))}
                             </ul>

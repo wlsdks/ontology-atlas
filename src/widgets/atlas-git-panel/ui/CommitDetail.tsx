@@ -3,6 +3,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { cn } from "@/shared/lib/cn";
 import { TopologyV2KindGlyph } from "@/shared/ui/topology-v2-kind-glyph";
+import { controlClass } from "@/shared/ui";
 import type { GitChangeEntry } from "@/shared/lib/tauri-git";
 import type { ConceptEgo } from "../model/build-concept-ego";
 import { ConceptEgoCard } from "./ConceptEgoCard";
@@ -167,7 +168,18 @@ export function CommitDetail({
                       data-testid="atlas-git-concept-chip"
                       aria-pressed={focused === concept.id}
                       onClick={() => setFocusedConceptId(concept.id)}
-                      className="inline-flex min-h-7 items-center gap-1.5 rounded-[var(--radius-chip)] border border-[color:var(--color-border-soft)] px-2.5 py-0.5 text-label text-[color:var(--color-text-secondary)] transition-colors hover:border-[color:var(--color-indigo-a46)] hover:text-[color:var(--color-text-primary)] aria-pressed:border-[color:var(--color-indigo-a46)] aria-pressed:bg-[color:var(--color-indigo-a16)] aria-pressed:text-[color:var(--color-text-primary)]"
+                      className={controlClass({
+                        shape: "chip",
+                        size: "md",
+                        tone: "secondary",
+                        active: focused === concept.id,
+                        // 눌린 칩의 인디고 테두리는 램프가 낸다 — 여기서 무조건
+                        // 덮으면 그 신호가 조용히 사라진다(전/후 실측이 잡았다).
+                        className: cn(
+                          focused !== concept.id &&
+                            "border-[color:var(--color-border-soft)] hover:border-[color:var(--color-indigo-a46)] hover:text-[color:var(--color-text-primary)]",
+                        ),
+                      })}
                     >
                       <TopologyV2KindGlyph kind={concept.kind} size={12} />
                       {concept.label}

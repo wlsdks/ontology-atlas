@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect, useState } from 'react';
+import { controlClass } from '@/shared/ui';
 
 /**
  * 경계 카드 — "여기서 못 하는 일" 을 정직하게 말하고, 할 수 있는 곳으로
@@ -78,7 +79,13 @@ export function AgentHandoffPacket({
           void navigator.clipboard?.writeText(packet);
           setCopied(true);
         }}
-        className="mt-2 h-7 rounded-chip border border-[color:var(--color-border-soft)] px-2.5 text-label tracking-label text-[color:var(--color-text-secondary)] transition-colors hover:border-[color:var(--color-border-strong)] hover:text-[color:var(--color-text-primary)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--color-indigo-accent)]"
+        className={controlClass({
+          shape: 'chip',
+          size: 'md',
+          tone: 'secondary',
+          className:
+            'mt-2 tracking-label border-[color:var(--color-border-soft)] hover:border-[color:var(--color-border-strong)] hover:text-[color:var(--color-text-primary)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--color-indigo-accent)]',
+        })}
       >
         {copied ? labels.copied : labels.copy}
       </button>

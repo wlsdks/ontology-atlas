@@ -57,10 +57,23 @@ const ROOTS = ['src', 'app'];
  * | **303** | 문서함 · 빠른 서랍 · 공방(`views/docs-vault` · `widgets/docs-vault` · `widgets/docs-quick-drawer` · `views/ontology-studio`) 121개 중 86개 — 행 27 · 아이콘 24 · 칩 21 · 링크형 13 · pill 4 · 카드 2. 남긴 35개는 넷으로 갈린다: ① **크롬 토큰 계약**(`--chrome-tile-size` · `--docs-header-tile-size` · `--overlay-close-size`)을 지는 자리 4 — 램프가 아니라 크롬이 규격이다 ② **나침 무대의 절대배치 기하**(소켓 · 레인 접기 · 더 잇기 · 고정 높이 30/32 툴바) 15 — 이 표면의 문법이 따로 있고 `studio-navigation` 스펙이 그 치수를 계약으로 잡는다 ③ **한 벌로 읽혀야 하는 세트**(첫 실행 선택 행 4 + 최근 볼트 grid 행 1, 다중행 `items-start` 라 `row`(단행 `items-center`)에 안 맞는다) 11 ④ **문장·바 속 인라인 컨트롤** 5 — `link` 이 `min-h-11`(WCAG 2.5.8)을 실으면서 글줄 안에서는 줄 상자를 44px 로 밀어 올린다(실측 21.3 → 44). 시각 크기와 히트 영역이 다른 축이라는 상류 판단은 옳고, 다만 그 해법이 «문장 속» 이라는 세 번째 축을 아직 안 본다 |
  *
  * | **269** | 위 두 라운드가 「자리가 없어서」 남긴 48개의 회수 — 값 층의 구멍 넷을 메운(`a1f956ce9`) 직후다. 설정 시트 29(칩 24 · 타일 2 · 링크형 3) + 지도 액션 타일 5. `tone` 의 새 넷(secondary 6 · accent 11 · success 2 · warning 2 · danger 1)이 22개를, `shape: 'tile'` 이 7개를, `link` 의 `min-h-11` 이 3개를 열었다 |
+ * | **232** | 위젯 라운드 — `src/widgets/**` 중 이미 정규화된 다섯(설정 시트 · 지도 둘 · 문서함 · 빠른 서랍)을 뺀 84개에서 37개. 칩 21 · pill 4 · 아이콘 4 · 카드 5 · 행 2 · 링크형 1. 새 축 0개로 옮겼고, **남긴 47개가 값 층의 다음 구멍 목록**이다(아래) |
  *
- * ## 남은 것을 왜 안 옮겼나 — 이 목록이 다음 라운드의 입력이다
+ * ## 위젯 라운드가 남긴 47개 — 값 층에 자리가 없다
  *
- * 이 스코프에 남은 14개(설정 5 · 지도 9)는 셋 중 하나다:
+ * | 구멍 | 남은 수 | 무엇이 없나 |
+ * |---|---:|---|
+ * | **크롬 토큰이 치수를 소유한다** | 15 | `--overlay-close-size` · `--topology-search-sheet-close-size` · `--topology-shortcut-sheet-close-size` · `--git-row-h` · `--git-setup-action-height` · `--app-nav-rail-tile-*`. 램프의 `fixedHeight` 는 32px 한 단뿐이라 36/44/가변 토큰을 못 받는다 |
+ * | **별도 잉크 계열** | 8 | `full-detail-a1` 전체가 `--topology-v2-panel-text-*`(#a3a3ac …) 로 산다. tone 8종은 전부 `--color-text-*` 이라, 옮기면 잉크가 바뀌거나 tone 을 className 으로 덮어야 한다 = 층 무력화 |
+ * | **밀집 행 속 보조 토글** | 5 | `link` 의 `min-h-11` 은 홀로 선 컨트롤엔 옳지만 체크박스 행·컴포저 메타 줄·이고 카드 이웃 목록에 실으면 행이 2~3배가 된다. `inline` 축은 「문장 속」만 면제하고 「밀집 행 속」을 못 말한다 |
+ * | **보더 없는 세그먼트·탭** | 6 | 이미 보더를 두른 상자 안의 라디오(에이전트 범위 · 단축키 스코프), 밑줄 탭(커밋 렌즈), 보더 없는 pill(필터 지우기). `chip`/`pill` 은 보더가 필수라 상자 속 상자가 된다 |
+ * | **채운 인디고 주 동작** | 6 | 테두리 없음 + 흰 글자. `chip`/`pill`/`card` 는 보더 필수이고 `<Button>` 은 h-10·`text-body-lg` 로 훨씬 크다. 그 사이가 비어 있다 |
+ * | **그리드 행** | 3 | `STEP_ROW` 는 3열 그리드(`grid-cols-[…]`)로 정렬이 정체성이다. `row` 는 flex 전용 |
+ * | **문장 속 칩** | 1 | 인용 칩은 `align-baseline`·`py-px` 로 글줄 안에 산다. `inline` 축이 `link` 에만 있다 |
+ * | **pill 의 얕은 세로 인셋** | 2 | 램프는 2·2·4px 인데 실제 필터 pill 은 6~10px 을 쓴다. 위 크기로 올리면 타입까지 함께 커진다(caption→body) |
+ * | **깊은 인셋 목록 행** | 1 | 커밋 파일 행의 `px-5`(20px) 들여쓰기가 위계를 나른다. `row` 의 최대는 `px-3` |
+ *
+ * ## 이전 라운드가 남긴 것(설정 5 · 지도 9) — 셋 중 하나다:
  *
  * 1. **소유자 판정이 문자열로 못박혀 있다** —
  *    `settings-sheet-type-dialect.contract.test.ts` 가 `Choice`·`SegmentSwitch`·
@@ -83,7 +96,7 @@ const ROOTS = ['src', 'app'];
  * **공유 상수로 뽑는 옳은 리팩터에 벌점을 준다.** 그래서 이 라운드는 잉크만
  * 상수로 공유하고 램프 호출은 자리마다 인라인으로 썼다.
  */
-const BASELINE_HAND_WRITTEN_CONTROLS = 269;
+const BASELINE_HAND_WRITTEN_CONTROLS = 232;
 
 function walk(dir: string, out: string[] = []): string[] {
   for (const name of readdirSync(dir)) {
