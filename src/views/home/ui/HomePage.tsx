@@ -1101,7 +1101,13 @@ export function HomePage() {
       localeLabels?: Record<string, string>;
     }) => {
       try {
-        const { slug, markdown } = buildNewNodeDoc(input);
+        /*
+         * **사람이 만든 노드**라고 적는다. 이 경로는 화면의 「개념 만들기」
+         * 하나뿐이라 호출 경로가 행위자를 증명한다 — 원장이 요구하는
+         * 「쓰기 시점 스탬프」의 조건이다. 이 한 줄이 없으면 방금 만든 노드가
+         * 지도에서 검수 대기 링을 못 받는다(2026-08-03 실측).
+         */
+        const { slug, markdown } = buildNewNodeDoc({ ...input, createdBy: "human" });
         await vault.createDoc(slug, markdown);
         toast.show(t("createNode.toastSaved", { slug }), "success");
         closeCreateNode();
@@ -1386,6 +1392,27 @@ export function HomePage() {
     projectsLoaded: projectsQuery.loaded,
     ontologyLoaded: ontologyInsight !== null,
   });
+  /** 지금 고른 노드의 그래프 원본 — 「이어서 새로 만들기」가 kind 를 본다. */
+  /**
+   * `created_by: human` 인 노드 집합 — INDEX 렌즈가 쓴다. 하나도 없으면 `null`
+   * 이라 세그먼트 자체가 안 뜬다(볼트에 없는 것을 거를 칸은 만들지 않는다).
+   */
+  const humanAuthoredLens = useMemo(() => {
+    const ids = new Set(
+      (ontologyInsight?.nodes ?? [])
+        .filter((node) => node.createdBy === "human")
+        .map((node) => node.id),
+    );
+    return ids.size > 0 ? { ids } : null;
+  }, [ontologyInsight]);
+
+  const canvasSelectedGraphNode = useMemo(
+    () =>
+      canvasSelectedSlug
+        ? (ontologyInsight?.nodes.find((n) => n.id === canvasSelectedSlug) ?? null)
+        : null,
+    [canvasSelectedSlug, ontologyInsight],
+  );
   const drawerProject = selectedProject;
 
   // S7 realm slug 해석(패널3-S7) — URL 의 `?realm=` 은 사용자가 손으로 bare
@@ -1793,6 +1820,11 @@ export function HomePage() {
   // 의도를 전달할 수 있게 컴포저 초기 kind 를 상태로 둔다. 일반 진입
   // (+ 개념 버튼 등)은 종전 기본값(역량) 유지.
   const [createNodeDefaultKind, setCreateNodeDefaultKind] = useState<CreateNodeKind>("capability");
+  /**
+   * 「이어서 새로 만들기」가 미리 고르는 도메인 — 지도의 도메인 노드에서 열면
+   * 그 도메인이 이미 골라져 있다. 빈 문자열이면 종전대로 「도메인 없음」.
+   */
+  const [createNodeSeedDomain, setCreateNodeSeedDomain] = useState("");
   const openCreateNode = useCallback(() => {
     setCreateNodeDefaultKind("capability");
     setOntologySearchOpen(false);
@@ -3843,6 +3875,7 @@ export function HomePage() {
                       primaryLocaleRequired: t('createNode.primaryLocaleRequired'),
                     }}
                     defaultKind={createNodeDefaultKind}
+                    defaultDomain={createNodeSeedDomain}
                     // 어권별 이름 — 지금 화면 언어가 필수 칸, 나머지가 선택
                     // 칸(소유자 지시 2026-07-24).
                     localeNames={{
@@ -4075,6 +4108,12 @@ export function HomePage() {
                     onWindowChange={(next) =>
                       setRouteState((current) => ({ ...current, recentWindow: next }))
                     }
+                    /*
+                     * 「사람이 쓴 것」 렌즈 — 지도의 검수 대기 링과 같은 사실을
+                     * 세는 자리. 하나도 없으면 `null` 이라 세그먼트가 안 뜬다:
+                     * 빈 렌즈는 누르면 아무 일도 안 일어나는 죽은 컨트롤이다.
+                     */
+                    humanAuthored={humanAuthoredLens}
                     // P4c — "지도에 없는 문서 N개 · 올리기". `bootstrapPlan` 은
                     // vault 가 로드되기만 하면(빈 지도든 아니든) 항상 계산돼
                     // 있으므로 새 파생 없이 그 카운트를 그대로 노출한다 —
@@ -4147,6 +4186,9 @@ export function HomePage() {
                         days: recentChanges.windowDays,
                       }),
                       segmentRecentAria: t("index.segmentRecentAria"),
+                      segmentHuman: humanAuthoredLens
+                        ? t("index.segmentHuman", { count: humanAuthoredLens.ids.size })
+                        : undefined,
                       recentEmptyHint: t("index.recentEmptyHint", { days: recentChanges.windowDays }),
                       // 스포트라이트 창 프리셋 칩 라벨 (협의회 §②).
                       windowChipAuto: t("index.windowChipAuto"),
@@ -4764,6 +4806,8 @@ export function HomePage() {
                   actionsGroupLabel: t("nodeDatasheet.actionsGroupLabel"),
                   actionDocument: t("nodeDatasheet.actionDocument"),
                   actionEditRelations: t("nodeDatasheet.actionEditRelations"),
+                  actionCreateLinked: t("nodeDatasheet.actionCreateLinked"),
+                  actionCreateLinkedTip: t("nodeDatasheet.actionCreateLinkedTip"),
                   actionCopyHandoff: t("nodeDatasheet.actionCopyHandoff"),
                   actionAskAgent: llmBridgeAvailable
                     ? t("nodeDatasheet.actionAskAgent")
@@ -4793,6 +4837,27 @@ export function HomePage() {
                 }}
                 onSelectConnection={(id) => handleSelect(id)}
                 onCopyHandoff={copyV2NodeHandoff}
+                /*
+                 * 「이어서 새로 만들기」 — **도메인 노드에서만** 넘긴다.
+                 *
+                 * 도메인→역량은 새 문서의 `domain:` 키 하나로 이어지므로 쓰기
+                 * 의미를 새로 만들 필요가 없다. 다른 조합(역량→요소 등)은 부모
+                 * 문서의 목록을 고쳐야 해서 «만들기»가 아니라 «남의 문서 수정»
+                 * 이 된다 — 그건 다른 일이고, 못 하는 자리에 문을 그리면 그게
+                 * 거짓 어포던스다.
+                 */
+                onCreateLinked={
+                  canCreateNode && canvasSelectedGraphNode?.kind === "domain"
+                    ? () => {
+                        const tail = canvasSelectedGraphNode.id.includes(":")
+                          ? canvasSelectedGraphNode.id.slice(canvasSelectedGraphNode.id.indexOf(":") + 1)
+                          : canvasSelectedGraphNode.id;
+                        setCreateNodeSeedDomain(tail);
+                        setCreateNodeDefaultKind("capability");
+                        openCreateNode();
+                      }
+                    : undefined
+                }
                 // 에이전트 표면이 없는 환경(웹)에서는 주입하지 않는다 — 타일도
                 // 함께 사라진다. 열리지 않을 문을 그리지 않는다.
                 onAskAgent={llmBridgeAvailable ? askAgentAboutSelectedNode : undefined}

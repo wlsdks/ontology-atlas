@@ -19,6 +19,7 @@ import {
   GitBranch,
   MessageCircle,
   Orbit,
+  Plus,
   Route,
   X,
 } from "lucide-react";
@@ -169,6 +170,8 @@ export interface TopologyV2DetailPanelLabels {
   actionsGroupLabel: string;
   actionDocument: string;
   actionEditRelations: string;
+  /** 이 개념에 **이어서 새 개념**을 만든다 — 지도를 떠나지 않는다. */
+  actionCreateLinked?: string;
   actionCopyHandoff: string;
   /**
    * S7 이음새 — 이 개념을 그대로 에이전트에게 말로 시키는 자리. optional 인
@@ -187,6 +190,7 @@ export interface TopologyV2DetailPanelLabels {
    */
   actionDocumentTip?: string;
   actionEditRelationsTip?: string;
+  actionCreateLinkedTip?: string;
   actionCopyHandoffTip?: string;
   actionAskAgentTip?: string;
   actionPathTip?: string;
@@ -304,6 +308,11 @@ export interface TopologyV2DetailPanelProps {
   labels: TopologyV2DetailPanelLabels;
   onSelectConnection: (id: string) => void;
   onCopyHandoff: (text: string) => void;
+  /**
+   * 「이어서 새로 만들기」 — 이 개념에 붙는 새 노드를 만든다. 없으면 타일 자체가
+   * 안 그려진다(못 하는 자리에 문을 그리지 않는다).
+   */
+  onCreateLinked?: () => void;
   /**
    * S7 이음새 — 「에이전트에게 말로 시키기」. 문장은 여기서 짓지 않는다:
    * 첫 마디 생성기(`buildFirstWords` 와 같은 함수)가 이 개념의 빈칸을 보고
@@ -587,6 +596,7 @@ export function TopologyV2DetailPanel({
   labels,
   onSelectConnection,
   onCopyHandoff,
+  onCreateLinked,
   onAskAgent,
   onClose,
   onSetPathSource,
@@ -1065,6 +1075,30 @@ export function TopologyV2DetailPanel({
                   <FileText size={16} aria-hidden="true" />
                   <span>{labels.actionDocument}</span>
                 </Link>,
+              )
+            : null}
+          {/*
+            **이어서 새로 만들기** — 「관계 편집」이 공방으로 나가는 것과 달리
+            이 자리는 지도에 남는다. 소유자 지시 2026-08-03: *"노드 클릭하면…
+            여기서 내가 하고싶은게 바로 신규노드 연결하기(생성하기)"*.
+
+            버튼 자리를 패널로 잡은 이유: 이미 「관계 편집」이 여기 있어 형제로
+            읽히고, 노드 주변 아이콘은 지도가 붐비는 데다 작은 표적이 된다.
+
+            핸들러가 없으면 타일 자체가 없다 — 못 하는 자리에 문을 그리지 않는다.
+          */}
+          {onCreateLinked && labels.actionCreateLinked
+            ? withActionTip(
+                labels.actionCreateLinkedTip,
+                <button
+                  type="button"
+                  onClick={onCreateLinked}
+                  data-testid="topology-v2-detail-panel-action-create-linked"
+                  className={ACTION_TILE_CLASS}
+                >
+                  <Plus size={16} aria-hidden="true" />
+                  <span>{labels.actionCreateLinked}</span>
+                </button>,
               )
             : null}
           {withActionTip(

@@ -127,6 +127,15 @@ export function buildNewNodeDoc(args: {
   kind: string;
   domain?: string;
   localeLabels?: Record<string, string>;
+  /**
+   * 저작 출처 — 화면에서 **사람이 손으로 만든 노드**는 `human` 이다
+   * (2026-07-31 원장의 값 규약, 2026-08-03 배선).
+   *
+   * 스탬프는 **쓰기 시점에, 호출 경로가 증명하는 행위자에게만** 찍는다.
+   * 이 함수는 화면의 「개념 만들기」에서만 불리므로 그 경로가 사람을 증명한다.
+   * 생략하면 안 찍는다 — 부재는 unknown 이고, 그게 원장의 계약이다.
+   */
+  createdBy?: string;
 }): { slug: string; markdown: string } {
   const title = args.title.trim();
   if (!title) throw new Error("title must not be empty");
@@ -140,6 +149,7 @@ export function buildNewNodeDoc(args: {
     slug,
     domain: args.domain,
     localeLabels: args.localeLabels,
+    createdBy: args.createdBy,
   });
   return { slug, markdown };
 }

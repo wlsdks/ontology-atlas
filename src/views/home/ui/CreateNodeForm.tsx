@@ -51,6 +51,7 @@ export function CreateNodeForm({
   localeNames,
   labels,
   defaultKind = "capability",
+  defaultDomain = "",
   domainOptions = [],
 }: {
   onCreate: (input: {
@@ -63,6 +64,12 @@ export function CreateNodeForm({
   onCancel?: () => void;
   labels: CreateNodeFormLabels;
   defaultKind?: CreateNodeKind;
+  /**
+   * 미리 고른 도메인 (2026-08-03) — 지도의 도메인 노드에서 「이어서 새로
+   * 만들기」로 열면 그 도메인이 이미 골라져 있다. 사람이 방금 누른 노드를
+   * 다시 고르게 하는 것은 물어볼 필요 없는 것을 묻는 것이다.
+   */
+  defaultDomain?: string;
   /**
    * #8 평문화 — 기존 도메인 목록(값 = bare tail-slug, 라벨 = 표시 이름).
    * 자유 입력 slug 대신 이 목록 + "도메인 없음" 에서 고른다(비개발자가
@@ -83,7 +90,7 @@ export function CreateNodeForm({
 }) {
   const [title, setTitle] = useState("");
   const [kind, setKind] = useState<CreateNodeKind>(defaultKind);
-  const [domain, setDomain] = useState("");
+  const [domain, setDomain] = useState(defaultDomain);
   const [secondaryName, setSecondaryName] = useState("");
   const [creating, setCreating] = useState(false);
 
