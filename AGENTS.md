@@ -58,8 +58,16 @@ Markdown frontmatter is the graph. The git repo is the source of truth. No backe
 
 ```bash
 pnpm install && pnpm dev          # localhost:3000 — pick a markdown folder and you're in
+pnpm --dir mcp install            # mcp/ carries its own lockfile — root install skips it
 pnpm checks:changed               # start here: the focused checks for what you touched
 ```
+
+**Re-run the `--dir mcp` line after any pull that touches `mcp/package.json`.**
+It is the only way `mcp/node_modules` reaches the version that file names, and a
+stale one fails in the worst shape available: the web build stays green, `init`
+still scaffolds, and every CLI/MCP path that spawns the server dies with
+`ERR_MODULE_NOT_FOUND`. The SDK v1→v2 bump did exactly that (2026-08-03). CI
+installs it as its own step, so green CI is no evidence your checkout is current.
 
 **There is no setup step.** No `.env`, no auth provider, no backend, no seed data —
 if a task seems to need one, the design is wrong (Round 10 removed the optional
