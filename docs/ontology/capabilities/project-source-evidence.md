@@ -31,6 +31,10 @@ fingerprint·측정 시각과 현재성을 함께 검증한다. 원시 witness�
 categorical 판정과 inventory provenance만 남긴다.
 구조가 ready여도 의미 witness가 비거나 source를 현재 재확인할 수 없으면
 `verified_current`로 승격하지 않는다.
+source receipt 자체가 stale이면 `source_changed → remeasure_source`지만, source는
+`verified_current/current`이고 저장된 competency receipt만 이전 source fingerprint에
+묶였으면 `competency_source_changed → reevaluate_competency`다. 이 경우 source
+차원은 current로 보존하고 전체 의미 상태만 `review_required`로 실패 닫는다.
 
 `abilities`와 `evidence`처럼 질문에 `each`가 들어간 자격은 witness 종류가 한 번
 등장했다는 이유만으로 통과하지 않는다. 현재 project→domain→capability containment에서
@@ -54,5 +58,5 @@ categorical 판정과 inventory provenance만 남긴다.
 - 저장소 전체 정답률이나 숫자형 confidence를 주장하지 않는다.
 - 한 project에 활성 소스는 최대 하나이며 중복 binding은 명시적 교체로만 복구한다.
 - 폴더 선택 취소·측정 실패·저장 실패는 기존 binding과 receipt를 보존한다.
-- 저장된 typed competency를 다시 읽는 계약 전에는 의미 판정을 UI·CLI·MCP 공개
-  필드로 노출하지 않는다.
+- 현재 source와 오래된 competency provenance를 같은 source 결함으로 합치지 않는다.
+- 재평가는 기존 typed witness를 자동 승인하거나 write/finalize하지 않으며 사람 승인을 유지한다.
