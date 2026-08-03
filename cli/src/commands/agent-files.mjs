@@ -1,7 +1,7 @@
 // `ontology-atlas agent-files [--root path]` — read-only detection of which
-// AI tool reads which instruction file, plus four drift checks (CLAUDE.md ↔
-// AGENTS.md bridge · duplicated skill trees byte diff · @reference existence
-// · AGENTS.md Codex 32 KiB cap). Never converts, syncs, or repairs — this is
+// AI tool reads which instruction file, plus five drift checks (CLAUDE.md ↔
+// AGENTS.md bridge · duplicated skill trees byte diff · duplicated agent-brief
+// byte diff · @reference existence · AGENTS.md Codex 32 KiB cap). Never converts, syncs, or repairs — this is
 // a workbench readout, not a rulesync-style converter (strategy-audit no-go).
 
 import { COLORS } from '../lib/colors.mjs';
@@ -35,6 +35,7 @@ const SCAN_DIRS = Object.freeze([
   '.claude/skills',
   '.claude/agents',
   '.agents/skills',
+  '.agents/agents',
   '.cursor/rules',
   '.codex',
 ]);
@@ -214,6 +215,11 @@ function render(result) {
       `.claude/skills ↔ .agents/skills byte diff (${result.checks.skillCopy.comparedFiles} compared · ${result.checks.skillCopy.divergedFiles} diverged · ${result.checks.skillCopy.oneSidedFiles} one-sided)`,
     ],
     [
+      'agent-copy',
+      result.checks.agentCopy.status,
+      `.claude/agents ↔ .agents/agents byte diff (${result.checks.agentCopy.comparedFiles} compared · ${result.checks.agentCopy.divergedFiles} diverged · ${result.checks.agentCopy.oneSidedFiles} one-sided)`,
+    ],
+    [
       'at-refs',
       result.checks.atRefs.status,
       `@reference existence (${result.checks.atRefs.refsChecked} checked · ${result.checks.atRefs.missingRefs} missing · ${result.checks.atRefs.unverifiedRefs} unverified)`,
@@ -278,9 +284,11 @@ function printUsage(stream = process.stderr) {
       `  ontology-atlas agent-files [--root path] [--json]\n\n` +
       `Read-only detection of AI agent instruction files at the repo root:\n` +
       `which tool reads which file (CLAUDE.md, AGENTS.md, GEMINI.md,\n` +
-      `.claude/rules|skills|agents, .agents/skills, .cursor, .cursorrules,\n` +
-      `.github/copilot-instructions.md, .codex, .mcp.json) plus four drift\n` +
+      `.claude/rules|skills|agents, .agents/skills|agents, .cursor,\n` +
+      `.cursorrules,\n` +
+      `.github/copilot-instructions.md, .codex, .mcp.json) plus five drift\n` +
       `checks: CLAUDE.md ↔ AGENTS.md import bridge, duplicated skill-tree\n` +
+      `byte diff, duplicated agent-brief byte diff,\n` +
       `byte diff, @reference existence, and the AGENTS.md 32 KiB Codex cap.\n\n` +
       `Exit code 0 = no drift, 1 = drift found, 2 = error. Nothing is written.\n`,
   );

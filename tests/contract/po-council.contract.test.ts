@@ -267,6 +267,52 @@ describe('PO council wiring', () => {
     expect(skill).toContain('무응답 시 가정');
   });
 
+  /**
+   * 이 스킬은 **두 도구가 다 읽는다**(`.claude/skills` ↔ `.agents/skills` 바이트
+   * 동일). 그런데 자리 브리프는 `.claude/agents/` 한 곳에만 있고 Codex 는 그
+   * 디렉터리를 자동 로드하지 않는다 — 스킬이 다섯 자리를 **이름으로만** 부르던
+   * 동안, Codex 세션은 부를 수도 읽을 수도 없는 이름 다섯 개를 받고 즉흥으로
+   * 때웠다. 사본을 만드는 것은 답이 아니다(어긋나는 쪽이 기본값이 된다).
+   * 정본이 하나임을 밝히고 **명시적으로 열라**고 적는 것이 답이며, 그 문장이
+   * 사라지면 구멍이 그대로 돌아온다.
+   */
+  it('locates the seat briefs by a relative path that resolves inside each tool tree', () => {
+    for (const path of [SKILL_PATH, SKILL_MIRROR_PATH]) {
+      const skill = read(path).replace(/\s+/g, ' ');
+      // `.claude/skills/po-council/` 과 `.agents/skills/po-council/` 둘 다에서
+      // `../../agents/` 는 그 트리의 자리 폴더로 풀린다. 그래서 **한 문장이 두
+      // 도구에 맞고**, 바이트 동일 규칙과 충돌하지 않는다.
+      expect(skill, `${path} 가 자리 브리프의 상대 경로를 밝히지 않는다`).toContain(
+        '../../agents/po-*.md',
+      );
+      expect(skill, `${path} 가 셋째 사본 금지를 적지 않는다`).toContain(
+        '셋째 사본은 만들지 않는다',
+      );
+      expect(skill, `${path} 가 순차 수행의 손실을 적지 않는다`).toContain(
+        '1라운드 독립성을 잃는다',
+      );
+    }
+  });
+
+  /**
+   * **도구 이름으로 분기하면 안 된다.** 이 스킬은 두 벌이 바이트 동일해야 하므로
+   * 사본마다 다른 경로를 적을 수 없고, 그래서 한때 «Claude Code 는 여기, Codex 는
+   * 저기» 표를 실었다. 그 표는 ① 새 도구가 생길 때마다 행이 늘고 ② 각 도구에게
+   * **남의 경로**를 읽히며 ③ 상대 경로 한 줄이면 없어도 되는 것이었다.
+   * 능력(«서브에이전트를 병렬로 띄울 수 있나»)으로 분기하면 이름이 필요 없다.
+   */
+  it('branches on capability, not on tool brand names', () => {
+    for (const path of [SKILL_PATH, SKILL_MIRROR_PATH]) {
+      const skill = read(path);
+      for (const brand of ['Claude Code', 'Codex', 'Cursor', 'Gemini']) {
+        expect(skill, `${path} 가 「${brand}」로 분기한다 — 능력으로 분기하라`).not.toContain(
+          brand,
+        );
+      }
+      expect(skill, `${path} 가 능력 기준 분기를 적지 않는다`).toContain('서브에이전트');
+    }
+  });
+
   it('makes the decision ledger readable, not just writable', () => {
     const ledger = read(LEDGER_PATH);
     // A dissent nobody re-reads is a checklist entry. The falsifier is what
@@ -364,11 +410,32 @@ describe('카운슬 산출물은 평문 요약으로 시작한다', () => {
   it.each(PLAIN_SUMMARY_FILES)('%s 가 평문 요약 절을 싣는다', (path) => {
     const text = read(path);
     expect(text, `${path} must open its output with a plain-language summary`).toContain(
-      '사람에게 — 평문 요약',
+      '사람에게 —',
     );
     expect(text).toContain('먼저 — 세 줄');
     for (const banned of BANNED_SAMPLE) {
       expect(text, `${path} must ban "${banned}" from the plain section`).toContain(banned);
+    }
+  });
+
+  /**
+   * 2026-08-03: 위 단언들은 **전부 통과하는 중에** 사고가 났다. 소집자는 세 줄
+   * 요약을 정확히 썼고 그 아래 평결 블록을 통째로 붙였으며, 소유자는 두 번
+   * 되물었다("뭔말이야" · "더 쉽게 설명해줘"). 절의 존재만 검사하는 게이트는
+   * **표지를 얹는 것과 번역하는 것을 구별하지 못한다.** 그래서 구멍을 막은 세
+   * 규칙을 각각 못박는다 — 이 셋 중 하나가 문장에서 사라지면 같은 사고가 다시
+   * 가능해진다.
+   */
+  const HOLE_CLOSING_RULES = [
+    ['대화창이 아니다', '평결 블록의 목적지가 파일임을 못박는 문장'],
+    ['답 전체에 적용된다', '금지어가 맨 앞 세 줄에만 적용되지 않음을 못박는 문장'],
+    ['되물음은 실패 신호다', '되물으면 겹쳐 쓰지 말고 다시 쓰라는 문장'],
+  ] as const;
+
+  it.each(PLAIN_SUMMARY_FILES)('%s 가 세 줄을 표지로 쓰지 못하게 막는다', (path) => {
+    const text = read(path).replace(/\s+/g, ' ');
+    for (const [rule, why] of HOLE_CLOSING_RULES) {
+      expect(text, `${path} 에 ${why}("${rule}")이 없다`).toContain(rule);
     }
   });
 

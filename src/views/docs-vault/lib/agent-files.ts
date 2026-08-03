@@ -17,6 +17,8 @@ export const CODEX_PROJECT_DOC_CAP_BYTES = 32 * 1024;
 
 const CLAUDE_SKILLS_PREFIX = '.claude/skills/';
 const AGENTS_SKILLS_PREFIX = '.agents/skills/';
+const CLAUDE_AGENTS_PREFIX = '.claude/agents/';
+const AGENTS_AGENTS_PREFIX = '.agents/agents/';
 
 export type AgentFileKind =
   | 'instructions'
@@ -58,6 +60,7 @@ export const AGENT_FILE_RULES: readonly AgentFileRule[] = Object.freeze([
   { id: 'claude-skills', kind: 'skill', tools: ['claude-code'], pattern: /^\.claude\/skills\/.+/ },
   { id: 'claude-agents', kind: 'agent', tools: ['claude-code'], pattern: /^\.claude\/agents\/.+/ },
   { id: 'agents-skills', kind: 'skill', tools: ['codex'], pattern: /^\.agents\/skills\/.+/ },
+  { id: 'agents-agents', kind: 'agent', tools: ['codex'], pattern: /^\.agents\/agents\/.+/ },
   { id: 'cursor-rules', kind: 'rules', tools: ['cursor'], pattern: /^\.cursor\/rules\/.+\.mdc$/ },
   { id: 'cursorrules', kind: 'rules', tools: ['cursor'], pattern: /^\.cursorrules$/ },
   { id: 'copilot-instructions', kind: 'instructions', tools: ['copilot'], pattern: /^\.github\/copilot-instructions\.md$/ },
@@ -100,6 +103,12 @@ export interface AgentFilesAnalysis {
       sharedSkills: string[];
       claudeOnlySkills: string[];
       agentsOnlySkills: string[];
+    };
+    agentCopy: {
+      status: AgentDriftCheckStatus;
+      comparedFiles: number;
+      divergedFiles: number;
+      oneSidedFiles: number;
     };
     atRefs: {
       status: AgentDriftCheckStatus;
@@ -352,6 +361,73 @@ export function analyzeAgentFiles({
     };
   })();
 
+  // ②-b duplicated agent-brief byte diff
+  //
+  // 스킬과 따로 있는 이유: `.claude/agents/*.md` 는 서브에이전트 **소환 등록부**
+  // (없으면 자리를 못 띄운다)이고, 그 짝은 서브에이전트가 없는 도구가 카운슬을
+  // 순차로 돌 때 **여는 참고 문서**다. 목적이 달라도 내용은 같아야 한다.
+  // 한쪽에만 있는 자리는 스킬과 달리 informational 이 아니라 **drift** 다 —
+  // 그 도구에서는 프로토콜 자체가 성립하지 않기 때문이다.
+  const agentCopy = (() => {
+    const claudeByName = new Map<string, InternalRecord>();
+    const agentsByName = new Map<string, InternalRecord>();
+    for (const record of records) {
+      if (record.path.startsWith(CLAUDE_AGENTS_PREFIX)) {
+        claudeByName.set(record.path.slice(CLAUDE_AGENTS_PREFIX.length), record);
+      } else if (record.path.startsWith(AGENTS_AGENTS_PREFIX)) {
+        agentsByName.set(record.path.slice(AGENTS_AGENTS_PREFIX.length), record);
+      }
+    }
+
+    let comparedFiles = 0;
+    let divergedFiles = 0;
+    let oneSidedFiles = 0;
+    const names = [...new Set([...claudeByName.keys(), ...agentsByName.keys()])].sort();
+    for (const name of names) {
+      const claude = claudeByName.get(name);
+      const agents = agentsByName.get(name);
+      if (claude && agents) {
+        comparedFiles += 1;
+        const bytesDiffer = claude.bytes !== agents.bytes;
+        const bothContents =
+          typeof claude.entry.content === 'string' && typeof agents.entry.content === 'string';
+        const contentDiffers = bothContents && claude.entry.content !== agents.entry.content;
+        if (bytesDiffer || contentDiffers) {
+          divergedFiles += 1;
+          drift.push({
+            check: 'agent-copy',
+            code: 'agent-copy-diverged',
+            path: name,
+            message: `duplicated agent brief diverged between .claude/agents and .agents/agents: ${name}`,
+            detail: {
+              claudePath: claude.path,
+              agentsPath: agents.path,
+              claudeBytes: claude.bytes,
+              agentsBytes: agents.bytes,
+            },
+          });
+          claude.drift.push('agent-copy-diverged');
+          agents.drift.push('agent-copy-diverged');
+        }
+      } else {
+        oneSidedFiles += 1;
+        const present = (claude ?? agents)!;
+        drift.push({
+          check: 'agent-copy',
+          code: 'agent-copy-file-missing',
+          path: name,
+          message: `agent brief exists in only one of the duplicated trees: ${name}`,
+          detail: { presentIn: claude ? '.claude/agents' : '.agents/agents' },
+        });
+        present.drift.push('agent-copy-file-missing');
+      }
+    }
+
+    const status: AgentDriftCheckStatus =
+      divergedFiles > 0 || oneSidedFiles > 0 ? 'drift' : comparedFiles > 0 ? 'ok' : 'not-applicable';
+    return { status, comparedFiles, divergedFiles, oneSidedFiles };
+  })();
+
   // ③ @reference existence
   const atRefs = (() => {
     let refsChecked = 0;
@@ -441,7 +517,7 @@ export function analyzeAgentFiles({
     for (const tool of record.tools) byTool[tool] = (byTool[tool] ?? 0) + 1;
   }
 
-  const checks = { claudeAgentsBridge, skillCopy, atRefs, codexSizeCap };
+  const checks = { claudeAgentsBridge, skillCopy, agentCopy, atRefs, codexSizeCap };
   const publicRecords: AgentFileRecord[] = records.map((record) => ({
     path: record.path,
     ruleId: record.ruleId,

@@ -195,6 +195,60 @@ describe('agent-files — drift check ② duplicated skill trees byte diff', () 
   });
 });
 
+/**
+ * 자리 브리프 짝 — 스킬과 **다른 이유로** 존재한다. Claude Code 에게
+ * `.claude/agents/*.md` 는 서브에이전트 소환 등록부이고(없으면 못 띄운다),
+ * 서브에이전트가 없는 도구에게 `.agents/agents/*.md` 는 카운슬을 순차로 돌 때
+ * 여는 참고 문서다. 목적이 달라도 내용은 같아야 한다.
+ *
+ * 2026-08-04 실측: 자리 15개가 `.claude/agents/` 에만 있었고, 두 카운슬 스킬은
+ * 그 자리들을 **이름으로만** 불렀다. Codex 세션은 부를 수도 읽을 수도 없는
+ * 이름 다섯(PO)/아홉(디자인) 개를 받고 즉흥으로 때웠다 — 조용히.
+ *
+ * 「한쪽에만 있는 자리」를 스킬처럼 informational 로 두지 **않는** 이유: 스킬은
+ * 한 도구만 쓰는 것이 있을 수 있지만, 카운슬 자리는 두 도구가 같은 프로토콜을
+ * 돌기 위한 것이라 한쪽에만 있으면 그 도구에서 프로토콜이 성립하지 않는다.
+ */
+describe('agent-files — drift check: .claude/agents ↔ .agents/agents', () => {
+  const claudeAgent = (name, content) => ({ path: `.claude/agents/${name}`, content });
+  const agentsAgent = (name, content) => ({ path: `.agents/agents/${name}`, content });
+
+  it('reports an in-sync pair as ok', () => {
+    const result = analyze([
+      claudeAgent('po-evidence.md', 'same bytes'),
+      agentsAgent('po-evidence.md', 'same bytes'),
+    ]);
+    assert.equal(result.checks.agentCopy.status, 'ok');
+    assert.equal(result.checks.agentCopy.comparedFiles, 1);
+    assert.equal(result.checks.agentCopy.divergedFiles, 0);
+    assert.deepEqual(result.drift, []);
+  });
+
+  it('flags byte divergence and marks both physical files', () => {
+    const result = analyze([
+      claudeAgent('design-lead.md', 'version A'),
+      agentsAgent('design-lead.md', 'version B — drifted'),
+    ]);
+    assert.equal(result.checks.agentCopy.status, 'drift');
+    assert.ok(driftCodes(result).includes('agent-copy:agent-copy-diverged:design-lead.md'));
+    const byPath = new Map(result.records.map((r) => [r.path, r.drift]));
+    assert.deepEqual(byPath.get('.claude/agents/design-lead.md'), ['agent-copy-diverged']);
+    assert.deepEqual(byPath.get('.agents/agents/design-lead.md'), ['agent-copy-diverged']);
+  });
+
+  it('flags a seat that exists in only one tree', () => {
+    const result = analyze([claudeAgent('po-wedge.md', 'claude only')]);
+    assert.equal(result.checks.agentCopy.status, 'drift');
+    assert.equal(result.checks.agentCopy.oneSidedFiles, 1);
+    assert.ok(driftCodes(result).includes('agent-copy:agent-copy-file-missing:po-wedge.md'));
+  });
+
+  it('stays not-applicable when neither tree has seats', () => {
+    const result = analyze([{ path: '.claude/skills/ontology-sync/SKILL.md', content: 'x' }]);
+    assert.equal(result.checks.agentCopy.status, 'not-applicable');
+  });
+});
+
 describe('agent-files — drift check ③ @reference existence', () => {
   it('accepts refs that resolve against existingPaths or scanned files', () => {
     const result = analyze(
