@@ -247,6 +247,33 @@ describe('FirstRunStarterModule', () => {
     expect(window.sessionStorage.getItem(FIRST_RUN_STARTER_DISMISSED_KEY)).toBeNull();
   });
 
+  /*
+   * PO 카운슬 평결 ③ (2026-08-03) — 「지금은 샘플」 신호가 **카드 수명이 아니라
+   * 연결 상태 수명**을 따라야 한다.
+   *
+   * 이 게이트가 막는 실제 사고: 샘플 소스 탭을 누르면 카드가 접히는데
+   * (`setCollapsed(true)`), 신호가 카드 **안에만** 있어서 함께 사라졌다. 그
+   * 순간 화면이 실제 볼트 연결 상태와 구조적으로 구분되지 않게 되고, 소유자가
+   * 「이 앱의 코드」 탭을 **연결의 증거로 읽었다.**
+   *
+   * 두 경로를 다 잠근다 — dismiss 로 접힌 경우와 탭 전환으로 접힌 경우.
+   */
+  it('keeps the sample signal alive after the card collapses — both ways', () => {
+    render(<FirstRunStarterModule concepts={1} relations={1} domains={1} />);
+    expect(screen.getByTestId('first-run-starter')).toBeInTheDocument();
+
+    // ① dismiss 로 접기
+    fireEvent.click(screen.getByTestId('first-run-starter-dismiss'));
+    expect(screen.queryByTestId('first-run-starter')).not.toBeInTheDocument();
+    expect(screen.getByTestId('first-run-starter-sample-signal')).toBeInTheDocument();
+
+    // ② 되돌린 뒤 샘플 소스 탭 전환으로 접기 — 사고가 났던 바로 그 경로
+    fireEvent.click(screen.getByTestId('first-run-starter-reopen'));
+    fireEvent.click(screen.getByTestId('first-run-starter-sample-source-dogfood'));
+    expect(screen.queryByTestId('first-run-starter')).not.toBeInTheDocument();
+    expect(screen.getByTestId('first-run-starter-sample-signal')).toBeInTheDocument();
+  });
+
   // 폴더-우선 첫 방문 (소유자 지시 2026-07-24) — 첫 화면을 열자마자 폴더
   // 지정 유도 시트가 1회 자동으로 열리고, 플래그가 있으면 다시 안 뜬다.
   it('auto-opens the folder guide sheet once on the very first visit', () => {
