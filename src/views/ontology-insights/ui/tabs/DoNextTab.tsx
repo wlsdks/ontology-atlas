@@ -372,7 +372,12 @@ function TouchUpBand({
                 <Link
                   href={mapHref(item.nodeId, item.id)}
                   onClick={() => onReviewStart?.(candidate)}
-                  className="inline-flex min-h-8 items-center rounded-chip border border-[color:var(--color-border-soft)] px-2.5 text-label text-[color:var(--color-text-tertiary)] transition-colors hover:border-[color:var(--color-indigo-a46)] hover:text-[color:var(--color-text-primary)]"
+                  className={controlClass({
+                    shape: "chip",
+                    size: "md",
+                    className:
+                      "hover:border-[color:var(--color-indigo-a46)] hover:text-[color:var(--color-text-primary)]",
+                  })}
                 >
                   {labels.openMap}
                 </Link>
@@ -483,7 +488,11 @@ function QueueSection({
               <Link
                 href={mapHref(row.nodeId, row.id)}
                 onClick={() => onReviewStart?.(candidate)}
-                className="inline-flex min-h-8 items-center rounded-chip border border-[color:var(--color-border-soft)] px-2.5 text-label text-[color:var(--color-text-tertiary)] transition-colors hover:text-[color:var(--color-text-primary)]"
+                className={controlClass({
+                  shape: "chip",
+                  size: "md",
+                  className: "hover:text-[color:var(--color-text-primary)]",
+                })}
               >
                 {labels.openMap}
               </Link>
@@ -736,7 +745,11 @@ function CycleSection({
               <Link
                 href={mapHref(firstNodeId, reviewId)}
                 onClick={() => onReviewStart?.(candidate)}
-                className="inline-flex min-h-8 items-center rounded-chip border border-[color:var(--color-border-soft)] px-2.5 text-label text-[color:var(--color-text-tertiary)] transition-colors hover:text-[color:var(--color-text-primary)]"
+                className={controlClass({
+                  shape: "chip",
+                  size: "md",
+                  className: "hover:text-[color:var(--color-text-primary)]",
+                })}
               >
                 {labels.openMap}
               </Link>
@@ -1371,7 +1384,11 @@ function RepairQueueTargetRow({
         </Link>
         <Link
           href={ontologyHref(target.slug)}
-          className="inline-flex min-h-8 items-center justify-center rounded-chip border border-[color:var(--color-border-soft)] px-2.5 text-label text-[color:var(--color-text-tertiary)] transition-colors hover:text-[color:var(--color-text-primary)]"
+          className={controlClass({
+            shape: "chip",
+            size: "md",
+            className: "justify-center hover:text-[color:var(--color-text-primary)]",
+          })}
         >
           {labels.repairQueueOpenOntology}
         </Link>
