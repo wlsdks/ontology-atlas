@@ -46,6 +46,29 @@ stdio JSON-RPC 인터페이스다. 사람과 에이전트가 같은 파일을 �
    작업은 preview 후 명시 확인한다.
 5. 변경 뒤 `validate_vault`, compile, health/maintenance 흐름으로 그래프를 재검증한다.
 
+설치 앱이 사람이 선택한 소스 루트를 sidecar에 묶은 뒤에는 새 MCP 프로세스도 앱과
+같은 bounded fingerprint를 로컬에서 재현한다. 저장 영수증과 정확히 일치할 때만
+source currentness를 `current`로 읽고, 변경은 `source_changed`로 실패 닫는다. 비공개
+절대 경로와 원시 source inventory는 MCP 응답에 포함하지 않는다.
+
+repository proposal이 competency를 `answered`로 서명할 때는 필요한 witness 배열이
+비어 있지 않은지만 보지 않는다. `abilities`는 제안된 모든 domain을 typed
+domain→capability witness가 덮는지, `evidence`는 모든 capability slug와 canonical
+path가 함께 인용됐는지 검사한다. 일부만 덮으면 누락 target slug를 구조화된 오류로
+돌려주며 write plan을 만들지 않는다. 정직한 `partial`/`visible-gap` proposal은 계속
+검토·저장할 수 있다.
+
+fresh `agent_brief`가 current source와 incomplete competency를 함께 읽으면 첫
+`nextActions`를 `review_competency_repair`로 올린다. 연결된 `meaningRepair:v1`은
+현재 project Markdown의 선언, typed containment가 만든 구조 검토 후보, current
+source receipt가 직접 지지한 canonical-path 후보, 아직 미해결인 대상을 분리한다.
+containment와 path 존재는 사람의 의미 승인이나 행동 증명이 아니므로 후보를 자동으로
+`answered`로 바꾸거나 쓰지 않는다. source/provenance/scope/validation/mtime이 흔들리면
+기존 source·health 행동을 보존한 채 repair를 차단한다. 첫 review read는 project,
+domain, capability의 정확한 합집합을 공개 full-body 상한인 최대 20개 단위의 literal
+`get_concepts` 호출로 제공한다. 따라서 현재 dogfood 27개 검토 대상도 FDE가 batching을
+추측하지 않고 20+7로 실행하며, verifier는 누락·중복·순서·5 KiB 상한을 함께 검사한다.
+
 Python cold start에서는 `README.rst`, 실행하지 않는 정적 `setup.py` package
 contract, 최상위 `__init__.py` package를 bounded 근거로 읽는다. `infer_imports`는
 그 package의 정적 import를 file/module edge로 축약한다. 이 결과는 구현 증거이며,
@@ -73,6 +96,12 @@ proposal의 정확 경로·상한·file-edge 방향만 fail closed로 검증한�
   ingress와 실행 없는 TS/JS/Python import 근거
 - `mcp/src/vault.mjs` · `mcp/src/schema.mjs` — 파일 읽기/쓰기와 UID/slug 규격
 - `mcp/src/ontology-compiler.mjs` · `mcp/src/ontology-engine.mjs` — compile/query
+- `mcp/src/competency-coverage.mjs` · `mcp/src/meaning-evaluation.mjs` — quantified
+  competency coverage와 source-backed proposal write gate
+- `mcp/src/project-source-inspection.mjs` · `mcp/src/project-source-receipt.mjs` —
+  설치 앱과 같은 bounded source currentness 재검증과 public receipt 경계
+- `mcp/src/meaning-repair.mjs` · `mcp/src/project-meaning-inventory.mjs` — 현재 선언,
+  구조/source 후보, 미해결 대상을 분리하는 action-first 사람 승인 패킷
 - `mcp/scripts/verify.mjs` · `scripts/dogfood-mcp-walk.mjs` — 설치·실사용 검증
 - `mcp/README.md` — 현재 공개 도구 계약의 상세 단일 진실원
 

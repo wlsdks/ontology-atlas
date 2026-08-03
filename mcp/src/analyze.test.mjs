@@ -1052,6 +1052,7 @@ test('Python import boundary paths can support a validated impact proposal', () 
         title: 'Request Execution',
         definition: 'Create diagnostic requests and interpret their responses.',
         domain: 'domains/diagnostics',
+        path: 'diagnostic_client/client.py',
         evidence: ['README.rst'],
         confidence: 0.8,
       }],
@@ -1096,7 +1097,7 @@ test('Python import boundary paths can support a validated impact proposal', () 
           evidence: ['README.rst'],
         }),
         evidence: answer('The client module is the concrete implementation entrypoint.', {
-          concepts: ['elements/client'],
+          concepts: ['capabilities/request-execution', 'elements/client'],
           evidence: ['diagnostic_client/client.py'],
           paths: ['diagnostic_client/client.py'],
         }),
@@ -1110,8 +1111,16 @@ test('Python import boundary paths can support a validated impact proposal', () 
 
     const result = analyzeRepoStructure(root, { proposal });
 
-    assert.equal(result.proposalValidation.canWrite, true);
-    assert.equal(result.proposalValidation.gates.competencyQuestionsAnswered, true);
+    assert.equal(
+      result.proposalValidation.canWrite,
+      true,
+      JSON.stringify(result.proposalValidation.findings),
+    );
+    assert.equal(
+      result.proposalValidation.gates.competencyQuestionsAnswered,
+      true,
+      JSON.stringify(result.proposalValidation.findings),
+    );
     assert.equal(
       result.proposalValidation.findings.some((row) =>
         ['unknown-citation', 'missing-impact-dependency-witness'].includes(row.code)),

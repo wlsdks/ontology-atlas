@@ -149,6 +149,80 @@ import {
   vaultWarningsFailure,
   workspaceBriefSummary,
 } from '../scripts/verify.mjs';
+
+function humanMeaningRepair(projectSlug) {
+  const domains = Array.from({ length: 6 }, (_, index) => `domains/d${index + 1}`);
+  const capabilities = Array.from(
+    { length: 20 },
+    (_, index) => `capabilities/c${String(index + 1).padStart(2, '0')}`,
+  );
+  const abilityRows = domains.map((slug, index) => ({
+    slug,
+    witnessCapabilities: capabilities.filter((_, capabilityIndex) => (
+      capabilityIndex % domains.length === index
+    )),
+  }));
+  const targets = [projectSlug, ...domains, ...capabilities];
+  return {
+    contract: 'meaningRepair:v1',
+    status: 'human_review_required',
+    projectSlug,
+    blockedBy: null,
+    primaryQuestion: 'abilities',
+    questionsNeedingReview: ['abilities', 'evidence'],
+    provenance: {
+      graphHash: 'project-graph-v1:a1b2c3d4',
+      sourceFingerprint: 'git:abc123:clean',
+      sourceMeasuredAt: '2026-08-04T00:00:00.000Z',
+      sourceCurrentness: 'current',
+    },
+    questions: {
+      abilities: {
+        basis: 'typed_containment',
+        targetCount: domains.length,
+        review: {
+          state: 'structural_candidates_only',
+          alreadyDeclared: abilityRows.slice(0, 1),
+          candidateAdditions: abilityRows.slice(1),
+          declaredWithoutSupport: [],
+          unresolved: [],
+        },
+      },
+      evidence: {
+        basis: 'current_source_canonical_path',
+        targetCount: capabilities.length,
+        review: {
+          state: 'source_path_candidates_only',
+          alreadyDeclared: capabilities.slice(0, 2),
+          candidateAdditions: capabilities.slice(2, 11),
+          declaredWithoutSupport: [],
+          unresolved: capabilities.slice(11),
+        },
+      },
+    },
+    workflow: [
+      {
+        step: 'read_review_inputs',
+        derivation: { slugs: 'project_and_all_review_targets' },
+        calls: [
+          { tool: 'get_concepts', arguments: { slugs: targets.slice(0, 20), body: 'full' } },
+          { tool: 'get_concepts', arguments: { slugs: targets.slice(20), body: 'full' } },
+        ],
+      },
+      { step: 'human_semantic_approval', calls: [] },
+      { step: 'write_approved_project_body', calls: [] },
+      { step: 'verify', calls: [] },
+      { step: 'refresh_conflict_guard', calls: [] },
+      { step: 'finalize', calls: [] },
+    ],
+    stopWhen: ['source_not_current'],
+    writePolicy: {
+      humanApprovalRequired: true,
+      automaticWrite: false,
+      automaticFinalize: false,
+    },
+  };
+}
 import { expectedResponseIds, missingResponseLabels } from '../scripts/json-rpc-lines.mjs';
 import { GRAPH_ARRAY_KEYS } from './vault.mjs';
 import { NODE_UID_PATTERN } from './schema.mjs';
@@ -210,11 +284,14 @@ describe('verify.mjs first-contact gates', () => {
   });
 
   it('packages project-meaning runtime modules and runs their source-checkout proofs', () => {
+    assert.ok(MCP_PKG.files.includes('src/project-source-inspection.mjs'));
     assert.ok(MCP_PKG.files.includes('src/project-meaning-inventory.mjs'));
+    assert.ok(MCP_PKG.files.includes('src/meaning-repair.mjs'));
     assert.ok(MCP_PKG.files.includes('src/project-meaning-receipt.mjs'));
 
     const fullTestCommand = MCP_PKG.scripts['test:all'];
     assert.match(fullTestCommand, /(?:^|\s)src\/project-meaning-inventory\.test\.mjs(?:\s|$)/);
+    assert.match(fullTestCommand, /(?:^|\s)src\/meaning-repair\.test\.mjs(?:\s|$)/);
     assert.match(fullTestCommand, /(?:^|\s)src\/project-meaning-receipt\.test\.mjs(?:\s|$)/);
     assert.match(fullTestCommand, /(?:^|\s)src\/project-meaning-restart\.test\.mjs(?:\s|$)/);
   });
@@ -9779,6 +9856,31 @@ describe('verify.mjs first-contact gates', () => {
           sourceGapId: 'source_unbound',
         },
       },
+      meaningRepair: {
+        contract: 'meaningRepair:v1',
+        status: 'blocked',
+        projectSlug: 'project:app',
+        blockedBy: 'source_not_current',
+        primaryQuestion: null,
+        questionsNeedingReview: [],
+        provenance: null,
+        questions: null,
+        workflow: [],
+        stopWhen: [
+          'source_not_current',
+          'graph_or_source_provenance_changed',
+          'scope_or_receipt_limited',
+          'validation_or_compile_error',
+          'human_approval_missing',
+          'unresolved_evidence_marked_answered',
+          'mtime_conflict',
+        ],
+        writePolicy: {
+          humanApprovalRequired: true,
+          automaticWrite: false,
+          automaticFinalize: false,
+        },
+      },
       readiness: {
         status: 'ready',
         score: 100,
@@ -10041,6 +10143,64 @@ describe('verify.mjs first-contact gates', () => {
     };
 
     assert.equal(agentBriefFailure(payload), null);
+    const executableRepair = humanMeaningRepair(payload.projectSlug);
+    const repairPayload = {
+      ...payload,
+      meaningRepair: executableRepair,
+      nextActions: [{
+        id: 'review_competency_repair',
+        kind: 'competency_repair',
+        severity: 'warn',
+        count: 2,
+        target: 'abilities',
+        detailContract: executableRepair.contract,
+        message: 'Review current competency claims with explicit human approval.',
+      }],
+    };
+    assert.equal(agentBriefFailure(repairPayload), null);
+    const oldPseudoRead = structuredClone(executableRepair);
+    oldPseudoRead.workflow[0] = {
+      step: 'read_review_inputs',
+      calls: [{
+        tool: 'get_concepts',
+        arguments: { body: 'full' },
+        deriveArguments: { slugs: 'project_and_all_review_targets' },
+      }],
+    };
+    const overCapRead = structuredClone(executableRepair);
+    const overCapTargets = overCapRead.workflow[0].calls.flatMap((call) => call.arguments.slugs);
+    overCapRead.workflow[0].calls = [
+      { tool: 'get_concepts', arguments: { slugs: overCapTargets.slice(0, 21), body: 'full' } },
+      { tool: 'get_concepts', arguments: { slugs: overCapTargets.slice(21), body: 'full' } },
+    ];
+    const omittedTarget = structuredClone(executableRepair);
+    omittedTarget.workflow[0].calls[1].arguments.slugs.pop();
+    const duplicatedTarget = structuredClone(executableRepair);
+    duplicatedTarget.workflow[0].calls[1].arguments.slugs.push(
+      duplicatedTarget.workflow[0].calls[0].arguments.slugs[0],
+    );
+    const oversizedPacket = structuredClone(executableRepair);
+    oversizedPacket.provenance.sourceFingerprint = `git:${'x'.repeat(5_000)}`;
+    for (const malformed of [oldPseudoRead, overCapRead, omittedTarget, duplicatedTarget, oversizedPacket]) {
+      assert.equal(
+        agentBriefFailure({ ...repairPayload, meaningRepair: malformed }),
+        'agent_brief response malformed meaningRepair review packet',
+      );
+    }
+    assert.equal(
+      agentBriefFailure({ ...payload, meaningRepair: undefined }),
+      'agent_brief response missing meaningRepair review packet',
+    );
+    assert.equal(
+      agentBriefFailure({
+        ...payload,
+        meaningRepair: {
+          ...payload.meaningRepair,
+          provenance: { rootPath: '/private/work/app' },
+        },
+      }),
+      'agent_brief meaningRepair exposes private source coordinates',
+    );
     assert.equal(
       agentBriefFailure({ ...payload, projectSource: undefined }),
       'agent_brief response missing categorical projectSource',

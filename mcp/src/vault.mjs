@@ -309,6 +309,15 @@ export function extractSummaryExcerpt(body, maxLen = 800) {
 export const FULL_BODY_MAX_CHARS = 40_000;
 
 /**
+ * `get_concepts({ body: "full" })` 한 호출의 selector 상한.
+ *
+ * 전체 본문은 행당 페이로드가 커서 일반 batch 50개보다 좁다. 의미 수선처럼
+ * 실행 가능한 read workflow를 만드는 코드도 같은 값을 사용해야, 서버가 거절할
+ * 호출을 handoff에 내보내지 않는다.
+ */
+export const GET_CONCEPTS_FULL_BODY_MAX = 20;
+
+/**
  * **본문을 얼마나 돌려줬고 무엇을 안 돌려줬는지**를 같이 실어 보낸다.
  *
  * ## 왜 이게 따로 있나 (2026-08-01 실측)

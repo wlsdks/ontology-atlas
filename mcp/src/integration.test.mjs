@@ -5417,13 +5417,13 @@ await test("MCP write tools — finalize project meaning survives a fresh MCP pr
       },
     },
     evidence: {
-      answer: "The search module is the implementation entrypoint.",
+      answer: "The search and checkout modules are the implementation entrypoints.",
       status: "answered",
       witnesses: {
-        concepts: ["capabilities/search"],
+        concepts: ["capabilities/checkout", "capabilities/search"],
         relations: [],
-        evidence: ["src/search.ts"],
-        paths: ["src/search.ts"],
+        evidence: ["src/checkout.ts", "src/search.ts"],
+        paths: ["src/checkout.ts", "src/search.ts"],
       },
     },
     impact: {

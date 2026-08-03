@@ -160,6 +160,51 @@ describe('proposal-applier', () => {
     expect(port.createDoc).toHaveBeenCalledWith('elements/refund-api', '# x');
     expect(port.saveDoc).not.toHaveBeenCalled();
   });
+
+  it('vault-only 에이전트는 project competency 자격을 직접 서명해 적용할 수 없다', async () => {
+    const port = makePort();
+    const target = proposal({
+      changes: [
+        {
+          id: 'c1',
+          tool: 'patch_concept',
+          summary: '고치기 sample-product.md',
+          selected: true,
+          expectedMtime: 100,
+          files: [
+            {
+              path: 'sample-product.md',
+              kind: 'modify',
+              before: '---\nkind: project\n---\n\n# Sample\n',
+              after: [
+                '---',
+                'kind: project',
+                '---',
+                '',
+                '# Sample',
+                '',
+                '## Competency answers',
+                '',
+                '### abilities — answered',
+                '',
+                'Only one domain is covered.',
+              ].join('\n'),
+            },
+          ],
+        },
+      ],
+    });
+
+    const result = await applyProposal(target, port, { snapshotLabel: 'x' });
+
+    expect(result).toEqual({
+      status: 'failed',
+      message: 'Source-backed competency qualification must be created through the MCP builder.',
+    });
+    expect(port.snapshot).not.toHaveBeenCalled();
+    expect(port.saveDoc).not.toHaveBeenCalled();
+    expect(port.refresh).not.toHaveBeenCalled();
+  });
 });
 
 describe('summarizeChangeVolume — 접힌 diff 에 도장 찍기 방지', () => {

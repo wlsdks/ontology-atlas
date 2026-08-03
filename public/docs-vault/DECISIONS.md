@@ -42,6 +42,128 @@
 
 ---
 
+## 2026-08-04 — 의미 수리의 첫 읽기는 파생 지시가 아니라 실행 가능한 20개 단위 호출이다
+
+**소집**: PO 카운슬 5인 전원(근거·결·지킴이·해자·지렛대), 독립 1라운드 +
+상호 반박 1라운드 · **트리거**: source-hidden FDE dogfood가 선행 결정의
+`project_and_all_review_targets`를 실제 27개 slug로 복원했지만, 공개
+`get_concepts(body:"full")` 상한 20 때문에 제공된 첫 호출이 실행 불가능했다.
+**루브릭**: 23/24 (Problem insight 4 · User moment 4 · Differentiation 3 ·
+Ontology value 4 · Agent value 4 · Verification 4, 치명적 0: 없음)
+**선행 결정 관계**: 2026-08-03 「의미 수리는 더 긴 인수인계가 아니라 첫 행동에
+걸린 증거 분리 패킷이다」의 반증 조건이 실제로 관측됐다. 분류·사람 승인·근거 분리
+원칙은 유지하되, 4 KiB 상한과 실행 전에 slug를 스스로 materialize하라는 부분만
+명시적으로 뒤집는다.
+**결정**: `meaningRepair:v1.workflow[0]`은
+`[projectSlug, ...sorted(domainSlugs), ...sorted(capabilitySlugs)]`의 정확한 중복 제거
+합집합을 만들고, 공개 도구 상한과 같은 최대 20개씩 잘라 literal
+`get_concepts({slugs:[...], body:"full"})` 호출로 제공한다. 현재 dogfood의 27개
+대상은 20+7 두 호출이다. `derivation`은 감사 가능한 산출 규칙으로 step에 남지만
+실행 인자 자리는 차지하지 않는다. `witnessCapabilities`는 도메인 판단의 typed
+evidence이므로 줄이지 않는다.
+**적용 규칙**: 새 MCP tool·tool signature·vault schema·UI·workflow executor는 만들지
+않는다. CLI result contract와 설치 MCP verifier가 정확한 합집합, 순서, 중복·누락
+없음, 호출별 1..20개, `body:"full"`, private coordinate 부재를 실패 닫힘으로 검증한다.
+패킷 상한은 5 KiB로 한 번만 올리고 실제 byte 수를 gate로 둔다. 사람의 의미 승인,
+충돌 방지 write, validate/compile/finalize 순서는 바꾸지 않는다.
+**서명**: stark (소유자)
+
+**기록된 반대**: concrete slug를 응답에 담는 방식은 vault가 커질수록 배치 수와
+payload가 함께 커진다. 5 KiB를 넘거나 첫 읽기 배치가 계속 늘어나면 materialized
+workflow 자체가 확장 한계이며, 그때 typed evidence를 삭제하거나 상한을 다시 올리는
+것은 문제를 숨길 뿐이다.
+**반증 조건**: 정상적인 단일 프로젝트 수리 패킷이 5 KiB를 넘거나, 첫 읽기가 3개
+이상 배치가 되어 FDE의 첫 결정 비용을 다시 키우거나, literal 호출을 그대로 실행한
+source-hidden FDE가 누락·중복·도구 거부를 관측하면 반대가 옳다. 그때 pagination 또는
+별도 bounded review-read 계약을 새 PO 결정으로 설계한다.
+**재검토**: 위 세 조건 중 하나를 dogfood·설치 앱 번들·외부 field trial에서 관측할 때.
+
+**상태**: 유효
+
+## 2026-08-03 — 의미 수리는 더 긴 인수인계가 아니라 첫 행동에 걸린 증거 분리 패킷이다
+
+**소집**: PO 카운슬 5인 전원(근거·결·지킴이·해자·지렛대), 독립 1라운드 +
+상호 반박 1라운드 · **트리거**: 설치 앱의 fresh MCP `agent_brief`가 source
+`verified_current/current`와 competency `partial`을 함께 알고도 top-level
+`nextActions`를 비워 두어, FDE가 이미 계산된 graph/source 근거를 다시 탐색해야 했다.
+**루브릭**: 23/24 (Problem insight 4 · User moment 4 · Differentiation 3 ·
+Ontology value 4 · Agent value 4 · Verification 4, 치명적 0: 없음)
+**선행 결정 관계**: 같은 날 「CQ quantifier integrity」와 「fresh MCP source
+currentness」 결정은 모두 유효하고 반증 조건도 관측되지 않았다. 이번 결정은 그 두
+판정이 정확히 만든 `partial`을 사람이 승인 가능한 다음 행동으로 잇되, 선행 결정의
+Goodhart 경고대로 containment나 path 존재를 의미 완성으로 승격하지 않는다.
+**결정**: 기존 `agent_brief`의 `nextActions[0]`에 `review_competency_repair`를 두고,
+그 행동이 compact `meaningRepair:v1` 읽기 전용 패킷을 가리킨다. 패킷은 현재 선언,
+typed containment가 만든 **structural review candidate**, current source receipt가 만든
+**source-path candidate**, 아직 미해결인 대상을 서로 다른 집합으로 보고한다. 현재
+dogfood에서는 abilities가 선언 1/6 · 추가 구조 후보 5 · 구조 미해결 0이고, evidence가
+선언 2/20 · 추가 source-path 후보 9 · 미해결 9다. 후보는 사람이 의미를 승인하기 전
+`answered`가 아니며, canonical path 존재도 body의 행동 주장을 자동 증명하지 않는다.
+**적용 규칙**: 1 working day 상한의 최소 슬라이스. 기존 project scope/docs/compiled
+edges/source receipt/inventory만 투영하고 새 I/O·MCP tool·CLI·UI·vault schema·자동
+write/finalize·system prompt 전면 개편은 만들지 않는다. 응답 증가분은 4 KiB 이하이고
+private root/raw source inventory는 내보내지 않는다. 첫 행동 뒤에는 기존
+`get_concepts/get_concept → 명시적 사람 승인 → patch_concept(expected_mtime) →
+validate_vault → compile_ontology → 재읽기 → finalize_project_meaning` 순서와 source
+non-current, hash/fingerprint 변화, limited/truncated, validation/compile 오류, 충돌,
+미해결 evidence를 answered로 올리려는 시도를 stop condition으로 준다.
+**서명**: stark (소유자)
+
+**기록된 반대**: 설치 MCP 응답은 이미 약 75 KiB이고 handoff prompt만 약 22 KiB다.
+상세 repair 목록을 더하면 실제 첫 행동이 다시 묻히며, counts + unresolved slugs만 든
+얇은 action으로도 같은 결정을 만들 수 있다면 별도 패킷은 과잉이다.
+**반증 조건**: fresh source-hidden FDE가 패킷만 받고도 5회 이하 추가 조회·2분 이내에
+6/6을 구조 검토 후보로만, 11/20을 current source-path 후보로만, evidence 9건을
+미해결로 복원하지 못하거나 후보를 자동 승인하거나, 패킷 증가분이 4 KiB를 넘거나,
+첫 행동보다 generic health/readiness를 따라 멈추면 반대가 옳다. 그때 packet detail을
+count/slugs-only action으로 줄이고, 그래도 attention이 실패하면 aggregate readiness를
+별도 결정으로 재검토한다.
+**재검토**: source stdio·설치 앱 번들·fresh source-hidden dogfood 중 하나가 위
+반증을 관측할 때.
+
+**상태**: 유효
+
+**구현·실측 결과**: 실제 dogfood 패킷은 3,533 bytes이고 private source coordinate는
+0건이었다. 분류는 abilities 선언 1 · 후보 5 · 미해결 0, evidence 선언 2 · 후보 9 ·
+미해결 9로 재현됐다. 최초 source-hidden FDE는 candidate-only 읽기 목록이 기존 선언·
+미해결·domain 입력을 빠뜨린다고 거부했다. 이를 중복 slug 나열 대신
+`project_and_all_review_targets` 결정적 인자 파생으로 고친 뒤, 두 번째 fresh FDE가
+project 1 + domain 6 + capability 20 = 27개 대상을 정확히 복원하고 사람 판단까지
+1회 read로 도달했으며 자동 승인·사전 쓰기 0건으로 승인했다. 잘못된 파생 토큰,
+action 후순위, path-only 증거 승격, private root 누출은 각각 gate probe에서 RED였다.
+소스 MCP 33/33, 내부 curator 26/26, 최신 `/Applications/Ontology Atlas.app`의 WebView
+실행과 내장 stdio MCP가 같은 첫 행동·counts·3,533-byte 계약을 통과했다.
+
+## 2026-08-03 — 새 MCP 인수인계가 사람의 소스 연결을 스스로 재검증한다
+
+**소집**: 단독 PO 패스 · **트리거**: 설치 앱에서 source를 연결·재측정한 뒤 실제
+stdio MCP로 `finalize_project_meaning`하고 새 프로세스의 `agent_brief`를 읽은 결과,
+저장 영수증은 `verified_current`인데 현재성은 항상 `unavailable`이라 다음 행동
+`verify_source_currentness`를 에이전트가 실행할 수 없었다.
+**루브릭**: 24/24 (Problem insight 4 · User moment 4 · Differentiation 4 ·
+Ontology value 4 · Agent value 4 · Verification 4, 치명적 0: 없음)
+**선행 결정 관계**: 2026-08-02 「source receipt read-back은 현재 graph/source
+inventory와 재비교」 결정은 유효하다. 이번 기록은 source 재비교가 앱 프로세스에만
+있어서 fresh handoff가 끝나지 못한 반증을 관측하고 그 미완성 경로를 닫는다.
+**결정**: 사람이 설치 앱에서 명시적으로 연결한 private root에 한해 새 MCP 프로세스도
+앱과 동일한 bounded inventory fingerprint를 로컬에서 재현한다. kind·source ID·revision·
+fingerprint가 모두 영수증과 같을 때만 `current`, 하나라도 다르면 `review_required /
+source_changed`다. 권한·파일시스템·Git 실패는 영수증을 지우거나 current로 추정하지 않고
+`unavailable`로 실패 닫는다. private root와 raw inventory는 MCP 응답에 절대 내보내지
+않는다. 공개 도구·vault schema·UI는 추가하지 않는다.
+**적용 규칙**: 기존 receipt reader 완성만 하는 최소 슬라이스. TDD로 matching Git,
+changed Git, changed folder, private-root 비노출을 고정하고, gate-probe로 재검증과 stale
+분기를 각각 제거했을 때 RED인지 확인한다. 설치 앱이 만든 실제 receipt와 Node probe의
+fingerprint byte parity를 확인한 뒤 fresh stdio MCP 인수인계로 재현한다.
+**서명**: stark (소유자)
+
+**기록된 반대**: MCP가 private source를 다시 읽기 시작하면 큰 저장소에서 매 인수인계의
+I/O 비용이 커지고, 앱만 소스를 읽는 기존 privacy 경계가 흐려질 수 있다.
+**반증 조건**: bounded probe가 일반 저장소에서 handoff를 눈에 띄게 지연시키거나, 응답·
+로그·오류 중 하나에 absolute root/raw inventory가 노출되거나, 앱과 MCP fingerprint가
+같은 파일 상태에서 달라지면 반대가 옳다. 그때 자동 재검증을 철회하고 별도 명시적
+local verification action 또는 공유 native probe로 바꾼다.
+**재검토**: 실제 외부 저장소 field trial에서 위 관측이 생길 때.
 ## 2026-08-04 — 값 층 라운드 3: 남은 77을 전수 분류하니 «단일 구멍»이 아니라 «겹친 구멍»이었다 — 축 0개, 방언 판정 1건(404 표준 버튼), 회수 5
 
 **소집**: 디자인 카운슬 「체계」석 단독 (소집 사유: `control-class.ts`·`app/globals.css` 램프 목록 소집 규칙 — 단, 이번 라운드는 그 파일들을 **안 고쳤다**. 고치지 않은 것 자체가 판정이다) · **트리거**: 컨트롤 래칫 113 정체. 값-층-밖 3부류(git 크롬 15 · shared/ui 10 · 공방 절대배치 11 = 36, 병렬 등재 진행)를 뺀 **77의 전수 분류** 지시
@@ -150,6 +272,117 @@
 **기록된 반대**: 「chip/pill 은 크기 축이 세 단인데 높이는 두 종 — 축이 이름값을 못 한다. 사다리(28/32/40)에 맞춰야 한다」(소집문). 기각 근거: ① `lg`=32 는 2026-08-03 소유자 확정으로 원장·정본 표·소스 주석에 이미 등재 ② `lg` 는 글자(label→body)와 인셋을 키우는 실재하는 단(소비처 26곳) ③ 3토큰(28/32/40)은 사다리의 부분집합이지 사다리 전체가 아니다 — 정본 어휘는 24·28·32·36·40·44 7단(34 는 크롬 잠금).
 **반증 조건**: chip/pill `lg` 소비처에서 「md 와 구분이 안 된다」는 소유자/사용자 관측이 나오거나, 32 초과 높이의 칩 수요(새 소비처)가 실제로 등장하면 — 그때는 `lg` 를 40 으로 올리는 재판정을 연다. 반대로, 이번에 세운 플로어 탓에 한 줄 card 가 두 줄로 접히는 회귀가 관측되면 플로어 값이 아니라 그 자리의 폭 예산을 본다(`min-h` 는 자라게만 두므로 사다리 자체는 무죄다).
 **재검토**: 위 관측 발생 시. 기한 없음.
+
+**상태**: 유효
+
+## 2026-08-03 — 온톨로지 구축의 첫 최고수준 기준은 「더 긴 프롬프트」가 아니라 CQ의 `each`를 거짓 통과시키지 않는 자격 판정이다
+
+### 먼저 — 세 줄
+
+- **정한 것**: 자기 볼트에서 이미 재현된 의미 자격의 거짓 통과부터 닫고, 같은 실패를 MCP·내부 에이전트·새 인수인계 과정에서 다시 시험한다.
+- **네 말과 다르게 한 것**: 시스템 프롬프트 전면 재작성과 MCP 도구 증설은 먼저 하지 않는다 — 현재 실패는 도구 부족이 아니라 기존 판정기가 불완전한 근거를 완전 답변으로 서명하는 데서 재현됐다.
+- **네가 할 일**: 없음 — 소유자가 장기 목표와 첫 슬라이스를 승인했다.
+
+**소집**: PO 카운슬 5인 전원(근거·결·지킴이·해자·지렛대), 독립 1라운드 +
+상호 반박 1라운드. 동시 슬롯 한계로 3인→2인 두 파동을 사용했고 2라운드 전까지
+다른 자리의 출력을 공유하지 않았다. · **트리거**: 제품 방향 + 온톨로지/MCP/내부
+에이전트 구축 계약 + 소유자 직접 요청 (*"dogfooding하면서 이 아틀라스의 온톨로지
+구축 실력을 최고수준급으로"*, *"시스템 프롬프트 수준이 엄청나야 ... MCP도구는
+최고수준"*).
+**루브릭**: 22/24 (Problem insight 4 · User moment 4 · Differentiation 4 ·
+Ontology value 4 · Agent value 4 · Verification 2, 치명적 0: 없음).
+
+**선행 결정 관계**: 2026-07-31 「팬아웃 상한이 아니라 노드 자격 게이트」와
+2026-08-02 「typed competency witness + visible gap」·「source-hidden field trial」은
+모두 유효하다. 이번 기록은 그 계약을 넓히기 전에, 기존 competency evaluator가 질문의
+범위를 실제로 지키는지 dogfood한 결과다. 고정 노드 수·kind별 상한·종합 confidence는
+다시 만들지 않는다.
+
+**결정적 실측**: `docs/ontology`는 71 nodes · 154 relations · source path 55/55 ·
+validator issue 0이고 MCP stdio verifier도 33/33 도구를 통과한다. 동시에 explicit-project
+`agent_brief`의 `meaningAssessment`는 source `not_measured`, 다섯 질문 `unassessed`,
+전체 `invalid`다. 더 직접적인 결함은 project Markdown 안에 있다. `abilities`는
+*"inside each domain"*을 묻지만 6개 domain 중 `agent-integration` 하나와 capability
+2개만 witness로 두고 `answered`다. `evidence`는 *"for each ability"*를 묻지만 전체
+20개 capability 중 같은 2개만 다루고 `answered`다. 현재 evaluator는 질문별 필요한
+witness **종류의 배열이 비어 있지 않은지**만 검사한다(`length > 0`). 대상 집합의
+의무 coverage는 검사하지 않는다. 구조 health는 맞지만 이를 의미 자격으로 읽으면
+거짓 양성이다.
+
+| PO | 1라운드 → 2라운드 | 소유 행/처방 |
+|---|---|---|
+| 근거 | Investigate → **Shape** | 재현된 1/6·2/20을 correctness defect로 수용; target/obligation RED 후 고정 dogfood |
+| 결 | Investigate → **Shape** | 같은 fixture를 MCP proposal·내부 proposal/apply·fresh receipt에서 검사; appetite 2일 |
+| 지킴이 | Shape → Investigate | 내부 prompt/tool 불일치와 semantic bypass 때문에 shared shadow proof를 구현 전 조건으로 둠 |
+| 해자 | Investigate → **Shape** | `answered`만 quantifier 충족을 요구하고 partial/visible-gap은 보존; 새 도구·UI 없음 |
+| 지렛대 | Investigate → **Shape** | 결의 2일 검증비를 상한으로 채택; 세 표면 중 하나라도 불일치하면 조사로 복귀 |
+
+**갈린 지점**: 같은 구체적 false-green 앞에서 ① 먼저 evaluator를 고칠지 ② 내부
+에이전트가 다른 도구·적용 경로를 쓰는 만큼 shared shadow proof부터 할지였다. 합집합을
+만들지 않고 **자격 판정 한 조각**을 본체로 고르되, 동일 fixture의 세 경로 RED를
+구현보다 먼저 두었다. 내부 에이전트는 계속 vault-only curator이고 MCP coding agent는
+source-backed builder다. 두 표면에 같은 거대 프롬프트나 같은 도구 수를 강요하지 않는다;
+공유하는 것은 결과 계약과 거짓 통과 금지다.
+
+**결정 (accountable: stark)**: `Construction Qualification v2 — CQ
+quantifier integrity`를 첫 슬라이스로 권고한다. 기존 다섯 CQ마다 질문이 지칭하는
+`targetSet`과 `obligations`를 결정적으로 파생하고 `covered`·`uncovered`를 보고한다.
+`answered`는 의무가 모두 해소됐을 때만 유지한다. 일부만 증명됐거나 정당한 미확인이
+있으면 write 자체를 거짓으로 막지 않고 기존 `partial`/`visible-gap`과 typed witness를
+보존한다. operability 33/33과 construction qualification은 별도 판정으로 남긴다.
+
+**적용 규칙**: 최소 슬라이스 · 합집합 금지 · appetite 최대 2일. IN — 현재 dogfood의
+1/6·2/20 RED, 순수 quantifier-aware evaluator, MCP proposal validation·내부 proposal/apply·
+fresh-process receipt의 적용 가능한 동일 판정 fixture, current stdio MCP → vault-only audit →
+source-hidden 재채점. OUT — 새 public MCP tool·kind·vault schema·UI, system prompt 전면
+재작성, 범용 source index/AST, provider/model 행렬, RDF/OWL/SHACL 포맷 도입, 종합 점수.
+반나절 안에 RED를 재현하지 못하거나 public schema 변경이 필요하거나 세 경로가 같은
+판정을 낼 수 없거나 기존 Rust/Python path·claim 정확도가 한 건이라도 후퇴하거나 2일을
+넘으면 구현을 멈추고 `Investigate first`로 복귀한다.
+
+**기록된 반대**: 질문의 `each`를 현재 project containment 전체로 곧장 해석하면,
+의도적으로 성장 중인 작은 온톨로지까지 형식적 완전성 게임으로 몰 수 있다. 모든
+capability를 한 답에 열거하는 것이 실제 handoff utility보다 우선되는 Goodhart 규칙이
+될 수 있다.
+**반증 조건**: honest `partial`/`visible-gap` proposal이 write 불가로 바뀌거나, 기존
+Python 11/12·Rust 16/16 claim/path 기준이 후퇴하거나, source-hidden 인수인계 질문의
+정확도는 그대로인데 노드·witness 열거량만 증가하면 반대가 옳다. 그때 universal target
+coverage를 철회하고 project-specific motivating scenario/CQ obligation으로 좁힌다.
+**재검토**: 첫 구현 RED→GREEN과 같은 dogfood chain 재실행 직후.
+**서명**: stark (소유자 — 최고 수준의 사용자 친화적 온톨로지 시스템을 장기 목표로
+승인하고, 개방형 포맷을 유지한 채 쉬움·의미 정확도·누적 운용 품질로 FDE가 자발적으로
+Atlas를 계속 선택하게 한다.)
+
+**구현·재검토 결과**: 첫 슬라이스를 구현했다. proposal 판정과 fresh receipt 판정은
+`abilities`의 project-scope domain 전부, `evidence`의 capability 전부를 결정적 target
+set으로 만들고 strict subset을 `incomplete-competency-coverage`로 거절한다. 내부
+vault-only curator는 competency 답을 읽고 gap을 밝힐 수 있지만 생성·수정은 tool
+executor와 proposal applier 두 문에서 막고 source-backed MCP builder로 보낸다. 이
+경계는 prompt 문구만의 약속이 아니다. 구현 전에는 proposal 2건·fresh receipt 1건·
+내부 write/apply 2건이 모두 거짓 통과했고, 게이트를 잠시 제거한 프로브에서 같은 다섯
+RED가 다시 났으며 복원 후 GREEN이었다. 실제 `contains` containment도 별도 제거
+프로브로 RED를 확인했다. MCP 단위 회귀는 **539/539**, 실제 stdio verifier와 dogfood
+verify는 **33/33**이다. 이 과정에서 Python import-boundary fixture의 capability에
+canonical `path`가 없던 약한 증거가 새 게이트에 잡혔고, 증거를 바로잡은 뒤 기존
+Python 테스트가 복구됐다.
+
+현재 자기 볼트 재측정은 구조 health **71 nodes · 154/154 resolved edges · source path
+55/55 · issue 0**을 유지하면서, 문제의 두 답을 정직하게 `partial`로 내린다.
+`abilities`는 6개 target 중 1개 covered/5개 uncovered, `evidence`는 20개 중 2개
+covered/18개 uncovered다. source를 보지 못하게 한 새 에이전트가 볼트만 27회 집중
+조회해 여섯 고정 질문을 다시 답하는 데 약 500초가 걸렸고 결과는 **complete 3 ·
+partial 3 · unanswered 0 (9/12)**였다. 6 domains와 20 capabilities는 모두 복원했지만,
+20 capability 중 9개는 frontmatter canonical `path`가 없고, qualification chain에서
+vault-agent/project-source-evidence를 잇는 typed dependency도 부족하다고 정확히
+남겼다. source를 보지 않았으므로 body의 구현 주장을 코드 사실로 승격하지 않았다.
+
+**첫 재검토 판정**: 기록된 반증은 관측되지 않았다. honest partial은 여전히 보존·쓰기
+가능했고 Python 기준은 회복됐으며, 단순 witness 열거량만 늘린 것이 아니라 source-hidden
+handoff가 남은 증거 경계를 구체적으로 분리했다. 다만 project source가 아직 unbound라
+`agent_brief.meaningAssessment`가 `invalid`이고 다섯 CQ가 `unassessed`인 사실은 그대로다.
+다음 슬라이스는 새 도구나 노드 수가 아니라, 9개 capability의 canonical evidence와
+source binding/qualification을 사용자가 가장 짧은 동선으로 닫는 문제에서 다시 PO
+패스를 시작한다.
 
 **상태**: 유효
 

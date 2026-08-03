@@ -81,10 +81,11 @@ node cli/src/index.mjs agent-brief docs/ontology --project <project-slug> --json
 
 After accepted concept/relation writes and validation, MCP
 `finalize_project_meaning` binds the human-editable project Markdown competency
-section to current graph/source provenance. A later `agent_brief` re-derives
-categorical `meaningAssessment`; it never stores raw answers or private source
-roots in the receipt, and source currentness `unavailable` remains
-`review_required` rather than becoming `verified_current`.
+section to current graph/source provenance. A later `agent_brief` locally repeats the
+installed app's bounded probe against the human-bound source root, without returning
+that root or raw inventory. A matching fingerprint is `current`; a changed source is
+`review_required`; an unavailable recheck remains `review_required` rather than
+becoming `verified_current`.
 
 ## Relations (frontmatter keys)
 
