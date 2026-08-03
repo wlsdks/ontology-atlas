@@ -1,7 +1,7 @@
 // `ontology-atlas relation-check <from> <to> <type> [vault]`
 // Schema-aware preflight before add_relation. Thin wrapper over MCP
 // query_ontology({ operation: 'relation_check' }) so developer CLI and AI
-// agents see the same proposedAction contract.
+// agents see the same proposedAction / semantic approval-gate contract.
 
 import { COLORS } from '../lib/colors.mjs';
 import { runRelationCheckQuery, renderRelationCheckResult } from '../lib/relation-preflight.mjs';
@@ -58,6 +58,13 @@ function render(result) {
         `  args ${JSON.stringify(result.proposedAction.args)}\n`,
     );
   }
+  if (result.approvalGate) {
+    process.stdout.write(
+      `\n${COLORS.yellow}semantic approval required${COLORS.reset}\n` +
+        `  ${result.approvalGate.next}\n` +
+        `  ${COLORS.dim}writeAllowed=false · ${result.approvalGate.required.join(', ')}${COLORS.reset}\n`,
+    );
+  }
 }
 
 function parseArgs(args) {
@@ -95,7 +102,7 @@ function printUsage(stream = process.stderr) {
   stream.write(
     `\n${COLORS.bold}Usage:${COLORS.reset}\n` +
       `  ontology-atlas relation-check <from> <to> <type> [vault] [--vault path] [--json]\n\n` +
-      `Schema-aware preflight before add_relation. Prints verdict, schema pattern, nearby patterns, and proposedAction.\n\n` +
+      `Schema-aware preflight before add_relation. Prints verdict, schema pattern, nearby patterns, and either a proposedAction or a non-writing semantic approval gate.\n\n` +
       `${COLORS.bold}Example:${COLORS.reset}\n` +
       `  ontology-atlas relation-check capabilities/foo domains/auth domain docs/ontology\n` +
       `  ontology-atlas relation-check capabilities/foo capabilities/bar depends_on --json\n`,

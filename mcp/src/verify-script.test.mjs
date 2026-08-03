@@ -1812,7 +1812,7 @@ describe('verify.mjs first-contact gates', () => {
       {
         name: 'infer_imports',
         description:
-          'R17 (autonomous ingest deeper) — walk TS/JS files in a code repo and infer file-level + module-level import edges. side effect 0 (vault frontmatter NOT modified). moduleEdges are source-backed review candidates with kindCounts and a bounded exact file-edge `evidence` receipt. Missing edges are rationale_review_required. Ask the user before add_relation and include `why`. Use after analyze_repo_structure to pull real dependency edges from the code, not just suggestedRelations heuristics. Single source of truth preserved — only the user writes to the vault.',
+          'R17 (autonomous ingest deeper) — walk TS/JS files in a code repo and infer file-level + module-level import edges. side effect 0 (vault frontmatter NOT modified). moduleEdges are source-backed review candidates with kindCounts and a bounded exact file-edge `evidence` receipt. For approval start with reviewMode:"next": exactly one compact, non-writing `nextRelationReview:v1` packet. Missing edges are rationale_review_required. Ask the user before add_relation and include `why`. Use after analyze_repo_structure to pull real dependency edges from the code, not just suggestedRelations heuristics. Single source of truth preserved — only the user writes to the vault.',
         inputSchema: {
           additionalProperties: false,
           properties: {
@@ -1825,11 +1825,32 @@ describe('verify.mjs first-contact gates', () => {
               maximum: 50000,
               description: 'Positive integer cap on files walked (default 5000, max 50000). Hard stop to avoid pathological monorepos.',
             },
+            reviewMode: {
+              type: 'string',
+              enum: ['full', 'next'],
+              description: '`full` (default) or compact, non-writing review.',
+            },
+            afterReviewId: {
+              type: 'string',
+              description: '`reviewMode:"next"` cursor.nextAfterReviewId.',
+            },
           },
         },
         outputSchema: {
           type: 'object',
-          required: ['rootPath', 'filesScanned', 'edges', 'externalImports', 'unresolved', 'moduleEdges'],
+          required: ['rootPath', 'filesScanned'],
+          oneOf: [
+            { required: ['edges', 'externalImports', 'unresolved', 'moduleEdges'] },
+            {
+              required: [
+                'contract',
+                'scanSummary',
+                'reconciliationSummary',
+                'reviewQueue',
+                'nextReview',
+              ],
+            },
+          ],
           properties: {
             rootPath: { type: 'string' },
             filesScanned: { type: 'integer', minimum: 0 },
@@ -1908,6 +1929,40 @@ describe('verify.mjs first-contact gates', () => {
                 },
                 additionalProperties: false,
               },
+            },
+            contract: { enum: ['inferImportsReview:v1'] },
+            scanSummary: { type: 'object' },
+            reconciliationSummary: { type: 'object' },
+            reviewQueue: { type: 'object' },
+            nextReview: {
+              type: ['object', 'null'],
+              required: [
+                'contract',
+                'reviewId',
+                'status',
+                'writeAllowed',
+                'sourceQualification',
+                'ordering',
+                'candidate',
+                'nextCalls',
+                'decision',
+                'cursor',
+              ],
+              properties: {
+                writeAllowed: { enum: [false] },
+                cursor: {
+                  type: 'object',
+                  required: [
+                    'afterReviewId',
+                    'total',
+                    'remaining',
+                    'hasMore',
+                    'nextAfterReviewId',
+                  ],
+                  additionalProperties: false,
+                },
+              },
+              additionalProperties: false,
             },
           },
           additionalProperties: false,
@@ -3465,6 +3520,41 @@ describe('verify.mjs first-contact gates', () => {
         description: 'Infer imports.',
       })),
       'infer_imports description missing dependency-ingest safety guidance',
+    );
+    assert.equal(
+      toolsListSchemaFailure(withInferImportsTool({
+        ...inferImportsTool,
+        inputSchema: {
+          ...inferImportsTool.inputSchema,
+          properties: {
+            ...inferImportsTool.inputSchema.properties,
+            reviewMode: {
+              ...inferImportsTool.inputSchema.properties.reviewMode,
+              enum: ['full'],
+            },
+          },
+        },
+      })),
+      'infer_imports reviewMode contract drift',
+    );
+    assert.equal(
+      toolsListSchemaFailure(withInferImportsTool({
+        ...inferImportsTool,
+        outputSchema: {
+          ...inferImportsTool.outputSchema,
+          properties: {
+            ...inferImportsTool.outputSchema.properties,
+            nextReview: {
+              ...inferImportsTool.outputSchema.properties.nextReview,
+              properties: {
+                ...inferImportsTool.outputSchema.properties.nextReview.properties,
+                writeAllowed: { enum: [true] },
+              },
+            },
+          },
+        },
+      })),
+      'infer_imports compact review approval gate drift',
     );
     assert.equal(
       toolsListSchemaFailure(withInferImportsTool({
@@ -5110,7 +5200,15 @@ describe('verify.mjs first-contact gates', () => {
       );
 
       assert.equal(result.status, 1);
-      assert.equal(result.stderr, '');
+      const stderrLines = result.stderr.trim().split('\n').filter(Boolean);
+      assert.ok(
+        stderrLines.length === 0 || (
+          stderrLines.length === 1
+          && stderrLines[0] === `[ontology-atlas-mcp] connected. vault=${root}`
+        ),
+        `unexpected verify stderr:\n${result.stderr}`,
+      );
+      assert.doesNotMatch(result.stderr, /MaxListenersExceededWarning/);
       assert.match(result.stdout, /list_concepts — vault total 0 nodes/);
       assert.match(result.stdout, /verify vault has 0 ontology nodes/);
       assert.match(result.stdout, /Point verify at a populated ontology vault/);

@@ -541,9 +541,9 @@ ${COLORS.bold}Next steps:${COLORS.reset}
   ${COLORS.dim}2.${COLORS.reset} ${COLORS.bold}Bootstrap from your codebase${COLORS.reset} (recommended — agent-less, 1 line):
        ${COLORS.cyan}${analyzeCommand}${COLORS.reset}     ${COLORS.dim}# preview candidates only${COLORS.reset}
        ${COLORS.cyan}${bootstrapCommand}${COLORS.reset}   ${COLORS.dim}# apply nodes + edges${COLORS.reset}
-       ${COLORS.dim}analyze (project + domains + capabilities + elements) + infer-imports${COLORS.reset}
-       ${COLORS.dim}(depends_on edges) batch land in 3 round-trips. --threshold N filters${COLORS.reset}
-       ${COLORS.dim}weak imports.${COLORS.reset}
+       ${COLORS.dim}analyze can apply reviewed concepts + containment; infer-imports stays read-only${COLORS.reset}
+       ${COLORS.dim}and asks for semantic review before one approved dependency write.${COLORS.reset}
+       ${COLORS.dim}--threshold N filters weak import signals from the preview.${COLORS.reset}
 
   ${COLORS.dim}3.${COLORS.reset} ${COLORS.bold}Or add your first node by hand:${COLORS.reset}
        ${COLORS.cyan}${CLI} add capability auth/token-issue --title="Token issue" --domain=auth${COLORS.reset}

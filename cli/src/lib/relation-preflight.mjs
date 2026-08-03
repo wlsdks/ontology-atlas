@@ -1,7 +1,8 @@
 // Shared MCP `query_ontology({operation:'relation_check'})` preflight call +
 // human-readable render — single source for the `relation-check` (read-only)
 // and `relate` (writer, R+ agent-persona-2026-07 QA wishlist #1) commands so
-// both show the identical verdict/schema/recommendation/proposedAction view
+// both show the identical verdict/schema/recommendation plus executable-action
+// or non-writing semantic-approval view
 // before `relate` decides whether to touch the vault.
 
 import { COLORS } from './colors.mjs';

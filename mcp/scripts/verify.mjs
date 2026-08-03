@@ -1784,6 +1784,8 @@ export function toolsListSchemaFailure(tools) {
     !/walk TS\/JS files in a code repo and infer file-level \+ module-level import edges/i.test(inferImportsTool.description || '') ||
     !/side effect 0 \(vault frontmatter NOT modified\)/i.test(inferImportsTool.description || '') ||
     !/source-backed review candidates/i.test(inferImportsTool.description || '') ||
+    !/reviewMode:"next"/i.test(inferImportsTool.description || '') ||
+    !/exactly one compact, non-writing `nextRelationReview:v1` packet/i.test(inferImportsTool.description || '') ||
     !/kindCounts/i.test(inferImportsTool.description || '') ||
     !/bounded exact file-edge `evidence` receipt/i.test(inferImportsTool.description || '') ||
     !/rationale_review_required/i.test(inferImportsTool.description || '') ||
@@ -1807,11 +1809,43 @@ export function toolsListSchemaFailure(tools) {
   ) {
     return 'infer_imports maxFiles hard-stop guidance drift';
   }
+  const inferReviewModeSchema = propertyAt(inferImportsTool, ['properties', 'reviewMode']);
+  if (
+    inferReviewModeSchema?.type !== 'string' ||
+    !sameArray(inferReviewModeSchema.enum, ['full', 'next']) ||
+    !/default/i.test(inferReviewModeSchema.description || '') ||
+    !/compact, non-writing/i.test(inferReviewModeSchema.description || '')
+  ) {
+    return 'infer_imports reviewMode contract drift';
+  }
+  const inferAfterReviewIdSchema = propertyAt(inferImportsTool, ['properties', 'afterReviewId']);
+  if (
+    inferAfterReviewIdSchema?.type !== 'string' ||
+    !/reviewMode:"next"/i.test(inferAfterReviewIdSchema.description || '') ||
+    !/cursor\.nextAfterReviewId/i.test(inferAfterReviewIdSchema.description || '')
+  ) {
+    return 'infer_imports afterReviewId cursor drift';
+  }
   if (inferImportsTool.outputSchema?.type !== 'object') {
     return 'infer_imports outputSchema root drift';
   }
-  if (!sameArray(inferImportsTool.outputSchema?.required, ['rootPath', 'filesScanned', 'edges', 'externalImports', 'unresolved', 'moduleEdges'])) {
+  if (!sameArray(inferImportsTool.outputSchema?.required, ['rootPath', 'filesScanned'])) {
     return 'infer_imports outputSchema required drift';
+  }
+  const inferOutputBranches = inferImportsTool.outputSchema?.oneOf;
+  if (
+    !Array.isArray(inferOutputBranches) ||
+    inferOutputBranches.length !== 2 ||
+    !sameArray(inferOutputBranches[0]?.required, ['edges', 'externalImports', 'unresolved', 'moduleEdges']) ||
+    !sameArray(inferOutputBranches[1]?.required, [
+      'contract',
+      'scanSummary',
+      'reconciliationSummary',
+      'reviewQueue',
+      'nextReview',
+    ])
+  ) {
+    return 'infer_imports outputSchema full/review branch drift';
   }
   if (inferImportsTool.outputSchema?.additionalProperties !== false) {
     return 'infer_imports outputSchema root openness drift';
@@ -1901,6 +1935,39 @@ export function toolsListSchemaFailure(tools) {
     moduleEdgesSchema.items?.properties?.evidenceLimited?.type !== 'boolean'
   ) {
     return 'infer_imports outputSchema moduleEdges evidence drift';
+  }
+  const importReviewContractSchema = outputPropertyAt(inferImportsTool, ['properties', 'contract']);
+  const importNextReviewSchema = outputPropertyAt(inferImportsTool, ['properties', 'nextReview']);
+  const importReviewWriteAllowedSchema = importNextReviewSchema?.properties?.writeAllowed;
+  const importReviewCursorSchema = importNextReviewSchema?.properties?.cursor;
+  if (
+    !sameArray(importReviewContractSchema?.enum, ['inferImportsReview:v1']) ||
+    !sameArray(importNextReviewSchema?.type, ['object', 'null']) ||
+    !sameArray(importNextReviewSchema?.required, [
+      'contract',
+      'reviewId',
+      'status',
+      'writeAllowed',
+      'sourceQualification',
+      'ordering',
+      'candidate',
+      'nextCalls',
+      'decision',
+      'cursor',
+    ]) ||
+    importNextReviewSchema?.additionalProperties !== false ||
+    !sameArray(importReviewWriteAllowedSchema?.enum, [false]) ||
+    importReviewCursorSchema?.type !== 'object' ||
+    !sameArray(importReviewCursorSchema?.required, [
+      'afterReviewId',
+      'total',
+      'remaining',
+      'hasMore',
+      'nextAfterReviewId',
+    ]) ||
+    importReviewCursorSchema?.additionalProperties !== false
+  ) {
+    return 'infer_imports compact review approval gate drift';
   }
 
   const queryTool = tools.find((tool) => tool?.name === 'query_ontology');

@@ -140,6 +140,12 @@ function writeRelation(rootPath, { from, to, relation, why = null }) {
     return writeFrontmatterKey(rootPath, from, 'domain', to);
   }
   const existing = Array.isArray(frontmatter[key]) ? frontmatter[key] : [];
+  if (key === 'dependencies' && (typeof why !== 'string' || !why.trim())) {
+    throw new Error(
+      'why is required and must be nonblank for a new depends_on relation. ' +
+      'Explain the stable semantic dependency after explicit human approval.',
+    );
+  }
   const next = normalizeRelationRefs([...existing, to]);
   // P6 — --why: 관계와 근거를 같은 쓰기로 (MCP add_relation why 미러).
   if (typeof why === 'string' && why.trim()) {

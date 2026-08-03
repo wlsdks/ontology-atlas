@@ -262,9 +262,11 @@
         "name": "infer_imports",
         "mode": "read",
         "arguments": [
+          "afterReviewId",
           "ignore",
           "maxFiles",
           "reconcile",
+          "reviewMode",
           "rootPath",
           "sourceFolders"
         ],

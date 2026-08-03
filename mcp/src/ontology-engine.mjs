@@ -1748,6 +1748,7 @@ export function createOntologyEngine(artifact, options = {}) {
       relation,
       toKind,
     });
+    const semanticDependencyPending = existing.length === 0 && relation === 'dependencies';
 
     return {
       operation: 'relation_check',
@@ -1763,7 +1764,7 @@ export function createOntologyEngine(artifact, options = {}) {
       inverseEdges: inverse.map(formatCompiledEdge),
       schemaPattern: matchedPattern || null,
       nearbyPatterns,
-      proposedAction: existing.length > 0
+      proposedAction: existing.length > 0 || semanticDependencyPending
         ? null
         : {
             tool: 'add_relation',
@@ -1773,6 +1774,20 @@ export function createOntologyEngine(artifact, options = {}) {
               type: writeRelationType(relation),
             },
           },
+      approvalGate: semanticDependencyPending
+        ? {
+            status: 'semantic_approval_required',
+            writeAllowed: false,
+            required: [
+              'observable_ability',
+              'semantic_rationale',
+              'explicit_human_approval',
+              'why',
+            ],
+            next:
+              'Explain which observable ability fails without the target, ask for approval of the exact direction and rationale, then call add_relation with a nonblank why.',
+          }
+        : null,
     };
   }
 
@@ -3774,7 +3789,7 @@ export function createOntologyEngine(artifact, options = {}) {
       {
         decision: 'safe_to_add',
         severity: 'info',
-        meaning: 'Schema pattern is familiar; add only when path evidence still supports the edge.',
+        meaning: 'Schema pattern is familiar, not semantically approved; depends_on still requires observable ability, rationale, explicit human approval, and why.',
       },
       {
         decision: 'review_new_schema',
@@ -4028,10 +4043,10 @@ export function createOntologyEngine(artifact, options = {}) {
       writePolicy: [
         'Use uid as the permanent node identity and slug as its current human-readable address; graph relations and graph-operation inputs remain slug-based.',
         'Run read tools first and cite returned slugs/edges before editing.',
-        'Run relation_check before add_relation to confirm matchingEdges, inverseEdges, schema pattern, and proposedAction args.',
+        'Run relation_check before add_relation to confirm matchingEdges, inverseEdges, and schema pattern. For a new depends_on, require approvalGate.writeAllowed=false until observable ability, rationale, explicit human approval, and why are present; do not expect proposedAction args.',
         'For all_paths, report limit/searchBudget/expandedStates/exhaustive/truncatedByBudget/totalPathsExact plus evidence.status/evidence.reason/evidence.pathsComplete and treat incomplete paths as partial evidence.',
         'For match_nodes and match_edges, report totalMatches/limited plus followUp details, then run the followUp calls before treating scan rows as evidence.',
-        'Follow relationDecisionGuide: skip_existing blocks duplicate writes; review_inverse and review_new_schema require explicit justification before writing.',
+        'Follow relationDecisionGuide: skip_existing blocks duplicate writes; safe_to_add is schema-only; review_inverse and review_new_schema require explicit justification before writing.',
         'Run find_backlinks before rename_concept or merge_concepts so backlink rewrites are intentional.',
         'Run health, cycles, growth_plan, maintenance_plan, and validate_vault after code changes or vault writes before handing the graph to another agent.',
         'Use add_concept/add_relation/patch_concept/merge_concepts only after the intended ontology change is clear.',

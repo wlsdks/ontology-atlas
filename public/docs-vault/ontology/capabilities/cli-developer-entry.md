@@ -42,7 +42,8 @@ display_en: Terminal Commands
 3. `find`, `show`, graph query 명령으로 필요한 노드·경로·영향만 좁혀 본다.
 4. `add` / `import` / `bootstrap`과 명시적 apply 명령으로 승인한 변경만 쓴다.
    단 `infer-imports --apply`는 차단되고 bootstrap/index도 import endpoint나 의미
-   `depends_on`을 자동 작성하지 않는다. import는 정확한 근거가 붙은 검토 후보다.
+   `depends_on`을 자동 작성하지 않는다. 미리보기의 선은 `imports`로 표시되며,
+   import는 정확한 근거가 붙은 검토 후보이지 승인된 의존 관계가 아니다.
 5. `mcp-verify`, `preflight`, `snapshot`으로 연결·영향·로컬 Git 체크포인트를 검증한다.
 
 ## 포함 / 제외

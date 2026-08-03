@@ -2377,12 +2377,15 @@ describe('query-result-contract', () => {
       assertRelationCheckShape({
         ...missing,
         relation: 'dependencies',
-        proposedAction: {
-          tool: 'add_relation',
-          args: { from: 'capabilities/bar', to: 'domains/auth', type: 'depends_on' },
+        proposedAction: null,
+        approvalGate: {
+          status: 'semantic_approval_required',
+          writeAllowed: false,
+          required: ['observable_ability', 'semantic_rationale', 'explicit_human_approval', 'why'],
+          next: 'Explain the ability, ask for approval, then write with why.',
         },
-      }).proposedAction.args.type,
-      'depends_on',
+      }).approvalGate.writeAllowed,
+      false,
     );
     assert.equal(assertRelationCheckShape(existing), existing);
     assert.throws(
@@ -2410,8 +2413,8 @@ describe('query-result-contract', () => {
       /relation_check inverseEdges\[0\] has an invalid edge shape/,
     );
     assert.throws(
-      () => assertRelationCheckShape({ ...missing, proposedAction: null }),
-      /relation_check missing edge must include add_relation proposedAction/,
+      () => assertRelationCheckShape({ ...missing, relation: 'dependencies', proposedAction: null }),
+      /relation_check pending depends_on must include the non-writing semantic approvalGate/,
     );
     assert.throws(
       () => assertRelationCheckShape({ ...existing, proposedAction: missing.proposedAction }),

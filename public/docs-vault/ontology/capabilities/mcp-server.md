@@ -75,8 +75,13 @@ contract, 최상위 `__init__.py` package를 bounded 근거로 읽는다. `infer
 domain·capability·의미 `depends_on`으로 자동 승격하지 않는다. 각 module edge에는
 최대 5개의 정확한 file-edge 영수증과 나머지 근거 존재 여부가 붙는다. vault에 없는
 edge도 실행 가능한 `proposedAction` 대신 `rationale_review_required`로 반환한다.
-에이전트는 양쪽 개념과 방향을 읽고 의미적 이유를 설명한 뒤 사람에게 물어야 하며,
-승인된 한 건만 `why`와 함께 기록한다.
+`reviewMode:"next"`는 전체 import graph 대신 검토 후보 한 건, 정확한 근거,
+양쪽 개념·relation preflight 호출, 중단 조건, stateless cursor만 5 KiB 이하로
+반환한다. 에이전트는 양쪽 개념과 방향을 읽고 의미적 이유를 설명한 뒤
+사람에게 물어야 하며, 승인된 한 건만 비어 있지 않은 `why`와 함께 기록한다.
+이때 `relation_check`의 schema match도 의미 승인이 아니다. 새 `depends_on`은
+실행 가능한 `proposedAction` 없이 `approvalGate.writeAllowed:false`를 반환하며,
+관측 가능한 능력·의미적 이유·정확한 방향에 대한 사람의 명시적 승인 뒤에만 쓴다.
 Analyzer는 실제 import에 참여한 Python 구현 경계를 최대 12개 element/path 후보로
 연결한다. 직접 module/package 경계를 기본으로 하되, 긴 import 응답에 위험 소유권이
 묻히지 않도록 security/policy/risk exact endpoint가 최대 2개 자리를 예약할 수 있다.

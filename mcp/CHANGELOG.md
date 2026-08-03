@@ -2,6 +2,19 @@
 
 ## Unreleased
 
+### Added — one-candidate import relation review
+
+- `infer_imports({ reviewMode: "next", afterReviewId? })` returns one bounded
+  `nextRelationReview:v1` packet, exact source evidence, literal concept and
+  preflight reads, and a stateless cursor. It omits the full edge arrays and
+  every write action; `writeAllowed` is always false before human approval.
+- New `depends_on` writes now require a nonblank `why` in both `add_relation`
+  and `add_relations`. Existing legacy edges remain readable and idempotent.
+- A missing `depends_on` from `relation_check` now returns
+  `proposedAction: null` plus a non-writing `approvalGate`; schema compatibility
+  no longer looks like semantic approval or an executable write suggestion.
+- The default `reviewMode: "full"` response stays backward compatible.
+
 ### Added — action-first competency repair handoff
 
 - `agent_brief.nextActions[0]` now points to a compact `meaningRepair:v1`

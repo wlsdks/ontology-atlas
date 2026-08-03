@@ -42,6 +42,77 @@
 
 ---
 
+## 2026-08-04 — import 후보의 첫 출력은 180개 목록이 아니라 승인 가능한 관계 질문 한 건이다
+
+### 먼저 — 세 줄
+
+- **정한 것**: 기존 `infer_imports`가 정확한 근거를 가진 관계 후보 한 건과 다음 읽기만
+  돌려주고, 사람의 명시적 승인 뒤에만 이유가 붙은 화살표를 기록한다.
+- **네 말과 다르게 한 것**: 새 MCP 도구·승인 UI·관계 단위 source receipt는 한 번에
+  만들지 않는다. 먼저 현재 도구로 질문부터 저장·지도 검증까지 한 번 완주한다.
+- **네가 할 일**: 없음 — 구현과 임시 볼트 검증 뒤 실제 dogfood 후보는 근거와 이유를
+  따로 보여 주고 승인받는다.
+
+**소집**: PO 카운슬 5인 전원(근거·결·지킴이·해자·지렛대), 독립 1라운드 +
+상호 반박 1라운드. 동시 슬롯 한계로 독립 출력을 공유하지 않는 파동으로 실행했다. ·
+**트리거**: 공개 MCP 응답 계약 변경 + 소유자의 직접 요청(*“import를 읽어서 이 둘
+의존 관계 맞죠? 하고 물어보고, OK 하면 지도에 화살표를 그린다. 자동으로 안 쓴다”*). ·
+**루브릭**: 24/24 (Problem insight 4 · User moment 4 · Differentiation 4 ·
+Ontology value 4 · Agent value 4 · Verification 4, 치명적 0: 없음).
+
+**선행 결정 관계**: 바로 아래 「import는 의존성의 증거이지 스스로 승인되는 온톨로지
+관계가 아니다」와 「영향의 첫 답은 숫자가 아니라 근거 자격이다」는 모두 유효하다.
+이번 기록은 자동 승격 금지를 뒤집지 않고, 그 결정 뒤에 남은
+`후보 → 두 개념 읽기 → 의미 이유 → 사람 승인 → 한 건 쓰기` 단절만 닫는다.
+
+**결정 (accountable: stark)**: 기존 33개 도구를 유지한다. `infer_imports`에 호환 가능한
+compact review mode와 stateless cursor를 추가하고, 그 모드는
+`nextRelationReview:v1` 한 건만 반환한다. packet은 summary count, stable review id,
+`from`/`to`, import count, 최대 5개의 정확한 file receipt,
+`rationale_review_required`, `writeAllowed:false`, literal
+`get_concepts({slugs:[from,to],body:"full"})`와 schema-only `relation_check` 읽기,
+중단 조건을 포함한다. 정렬은 결정적 검토 순서일 뿐 의미 확률이나 confidence가 아니다.
+승인 전 `proposedAction`·write args·자동 rationale은 절대 내지 않는다.
+이 계약은 packet 안에서만 유효한 척하지 않는다. 후속 `relation_check`도 신규
+`depends_on`에는 `proposedAction:null`과 `approvalGate.writeAllowed:false`를 내어
+schema compatibility가 의미 승인으로 둘어쓰이지 않게 한다.
+
+에이전트는 두 개념과 exact source direction을 읽고 “A의 어떤 관찰 가능한 능력이 B
+없이는 성립하지 않는가”를 설명할 수 있을 때만 `(from,to,type,why)`가 명시된 질문 한
+건을 사람에게 묻는다. 명시적 yes 뒤에만 기존 `add_relation` 한 건을 실행한다. 새
+`depends_on` write는 nonblank `why` 없이는 실패 닫되, 기존 rationale 없는 관계는
+삭제하지 않고 계속 `review_required`로 읽는다. CLI도 승인 전 후보를
+`depends_on` 화살표로 부르지 않고 import/code-use 근거로 표시하며 batch land 암시를
+제거한다.
+
+**적용 규칙**: IN — compact mode + cursor, 한 후보 5 KiB 이하, exact receipt와 두 read
+handoff, stop condition, 신규 dependency의 rationale write gate, CLI 미승인 표기 교정,
+source stdio와 앱 번들 stdio의 동일 계약. OUT — 새 MCP tool/route/panel, 내부 vault-only
+에이전트의 repo scan, MCP Elicitation, LLM ranking/종합 confidence, 자동 endpoint/rationale/
+write, batch 승인, 거절 영속 로그, 관계 단위 source receipt, impact의 `sourceBacked`
+승격. appetite는 구현 0.5일 + 검증 0.5일, 총 1일이다. 검증만 0.5일을 넘기면 구현을
+넓히지 않고 `Shape a slice`로 되돌린다.
+
+**검증 계약**: source와 bundled stdio가 fixture repo에서 5 KiB 이하 한 후보와 cursor를
+동일하게 반환하고 승인 전 파일 변경 0건이어야 한다. `get_concepts` + `relation_check`
+뒤 사람이 승인한 fixture에서만 한 relation을 쓰고, 같은 Markdown write에
+`dependencies`와 `relation_notes`가 남아야 한다. 이후 validate/compile/impact가
+`declared_with_rationale`를 보고하고, 같은 임시 vault를 연 설치 앱에 새 화살표가 보여야
+한다. 실제 dogfood vault에는 소유자의 관계별 승인 전 아무것도 쓰지 않는다.
+
+**기록된 반대**: 현재 server instructions와 후보별 `review.next`만으로도 유능한 FDE는
+두 호출 안에 같은 질문을 만들 수 있다. compact cursor는 흔한 review queue이며 승인·
+거절의 장기 연속성도 해결하지 못하므로 공개 schema 유지비만 늘릴 수 있다.
+**반증 조건**: 서로 다른 세 실제 repo의 fresh Atlas-only FDE 중 두 회 이상이 현 계약
+그대로 10초·두 호출 안에 방향·파일 근거·의미 이유를 갖춘 질문을 만들거나, 새 packet
+뒤에도 두 회 이상 full 응답을 다시 요구하거나, 두 fresh trial에서 재탐색이 줄지 않고
+승인된 `why` 관계가 한 건도 늘지 않으면 반대가 옳다. 그때 queue 투자를 멈추고 CLI
+표기만 남긴다. 반대로 승인 뒤 후보·근거·why 연속성이 두 경로 이상에서 끊길 때만
+client capability가 있는 MCP Elicitation을 재검토한다.
+**재검토**: source stdio·설치 앱 bundle·서로 다른 외부 field trial 중 위 관측이 생길 때.
+
+**상태**: 유효
+
 ## 2026-08-04 — 영향의 첫 답은 숫자가 아니라 근거 자격이다
 
 **소집**: 기존 PO 카운슬 결정의 두 번째 실행 단위 + chief 디자인 방향 4안 비교 ·
