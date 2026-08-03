@@ -37,7 +37,7 @@ import {
   type V2DatasheetConnection,
   type V2EvidenceRow,
 } from "./topology-v2-datasheet";
-import { LastEditSubjectRow, MtimeConflictBadge } from "@/shared/ui";
+import { controlClass, IconButton, LastEditSubjectRow, MtimeConflictBadge, RowButton } from "@/shared/ui";
 import { TopologyV2KindGlyph } from "@/shared/ui/topology-v2-kind-glyph";
 import { Tooltip } from "@/shared/ui/tooltip";
 
@@ -703,7 +703,12 @@ export function TopologyV2DetailPanel({
           type="button"
           onClick={() => setShowAllContains((v) => !v)}
           data-testid="topology-v2-contains-summary-toggle"
-          className="ml-auto shrink-0 text-label text-[color:var(--topology-v2-panel-text-tertiary)] transition-colors hover:text-[color:var(--topology-v2-panel-text-secondary)] active:text-[color:var(--topology-v2-panel-text-primary)]"
+          className={controlClass({
+            shape: "link",
+            size: "md",
+            className:
+              "ml-auto shrink-0 text-[color:var(--topology-v2-panel-text-tertiary)] hover:text-[color:var(--topology-v2-panel-text-secondary)] active:text-[color:var(--topology-v2-panel-text-primary)]",
+          })}
         >
           {showAllContains ? labels.containsShowSummary : labels.containsShowAll}
         </button>
@@ -753,17 +758,17 @@ export function TopologyV2DetailPanel({
               // 시안: 행의 왼쪽 마크는 캔버스와 같은 kind 글리프(무엇인지) —
               // 관계 타입은 그룹 자체(담는 것/기대는 곳)가 이미 인코딩한다.
               <li key={`${group}:${row.id}`}>
-                <button
-                  type="button"
+                <RowButton
+                  size="md"
                   onClick={() => onSelectConnection(row.id)}
                   data-datasheet-connection={row.id}
-                  className="flex min-h-[33px] w-full items-center gap-2.5 rounded-[var(--topology-v2-panel-row-radius)] px-2 py-1.5 text-left transition-colors hover:bg-[color:var(--topology-v2-panel-row-hover)] active:bg-[color:var(--topology-v2-panel-row-active)]"
+                  className="rounded-chip hover:bg-[color:var(--topology-v2-panel-row-hover)] active:bg-[color:var(--topology-v2-panel-row-active)]"
                 >
                   <TopologyV2KindGlyph kind={row.kind} />
                   <span className="min-w-0 flex-1 truncate text-body text-[color:var(--topology-v2-panel-text-secondary)]">
                     {row.title}
                   </span>
-                </button>
+                </RowButton>
               </li>
             ))}
           </ul>
@@ -811,7 +816,14 @@ export function TopologyV2DetailPanel({
                 href={buildDocsVaultHref({ slug: row.id })}
                 data-datasheet-evidence={row.id}
                 title={row.id}
-                className="flex min-h-[33px] w-full items-center gap-2.5 rounded-[var(--topology-v2-panel-row-radius)] px-2 py-1.5 transition-colors hover:bg-[color:var(--topology-v2-panel-row-hover)] active:bg-[color:var(--topology-v2-panel-row-active)]"
+                // 연결 행(`RowButton`)과 **같은 램프 스텝**이어야 한다 — 한 패널
+                // 안에서 행 높이가 갈리면 「치수 규칙성」이 깨진다.
+                className={controlClass({
+                  shape: "row",
+                  size: "md",
+                  className:
+                    "rounded-chip hover:bg-[color:var(--topology-v2-panel-row-hover)] active:bg-[color:var(--topology-v2-panel-row-active)]",
+                })}
               >
                 <FileText
                   size={14}
@@ -906,15 +918,15 @@ export function TopologyV2DetailPanel({
             <TopologyV2KindGlyph kind={kind} size={12} />
             {labels.kindLabel}
           </span>
-          <button
-            type="button"
+          <IconButton
+            label={labels.close}
+            size="sm"
             onClick={onClose}
-            aria-label={labels.close}
             data-testid="topology-v2-detail-panel-close"
-            className="-mr-1 shrink-0 rounded-[var(--topology-v2-panel-row-radius)] p-1 text-[color:var(--topology-v2-panel-text-tertiary)] transition-colors hover:bg-[color:var(--topology-v2-panel-row-hover)] hover:text-[color:var(--topology-v2-panel-text-secondary)] active:bg-[color:var(--topology-v2-panel-row-active)]"
+            className="-mr-1 text-[color:var(--topology-v2-panel-text-tertiary)] hover:bg-[color:var(--topology-v2-panel-row-hover)] hover:text-[color:var(--topology-v2-panel-text-secondary)] active:bg-[color:var(--topology-v2-panel-row-active)]"
           >
             <X size={15} />
-          </button>
+          </IconButton>
         </div>
         {showSourcePath && sourceTitle && sourceTitle !== title ? (
           <div
@@ -955,7 +967,12 @@ export function TopologyV2DetailPanel({
                 onClick={() => onSelectConnection(domain.id)}
                 aria-label={`${labels.domainLabel} ${domain.title}`}
                 data-testid="topology-v2-detail-panel-domain"
-                className="flex min-w-0 items-center gap-1.5 rounded-card border border-[color:var(--topology-v2-panel-domain-border)] bg-[color:var(--topology-v2-panel-domain-surface)] py-1.5 pl-2.5 pr-2 text-left transition-colors hover:border-[color:var(--topology-v2-panel-domain-border-hover)] hover:bg-[color:var(--topology-v2-panel-domain-surface-hover)]"
+                className={controlClass({
+                  shape: "card",
+                  size: "sm",
+                  className:
+                    "min-w-0 text-left border-[color:var(--topology-v2-panel-domain-border)] bg-[color:var(--topology-v2-panel-domain-surface)] hover:border-[color:var(--topology-v2-panel-domain-border-hover)] hover:bg-[color:var(--topology-v2-panel-domain-surface-hover)]",
+                })}
               >
                 <span className="shrink-0 text-label text-[color:var(--topology-v2-panel-text-tertiary)]">
                   {labels.domainLabel}
@@ -1270,7 +1287,12 @@ export function TopologyV2DetailPanel({
               type="button"
               onClick={() => setShowProjectRelations((value) => !value)}
               aria-expanded={showProjectRelations}
-              className="ml-auto shrink-0 text-[color:var(--topology-v2-panel-text-tertiary)] transition-colors hover:text-[color:var(--topology-v2-panel-text-secondary)] active:text-[color:var(--topology-v2-panel-text-primary)]"
+              className={controlClass({
+                shape: "link",
+                size: "md",
+                className:
+                  "ml-auto shrink-0 text-[color:var(--topology-v2-panel-text-tertiary)] hover:text-[color:var(--topology-v2-panel-text-secondary)] active:text-[color:var(--topology-v2-panel-text-primary)]",
+              })}
             >
               {showProjectRelations
                 ? labels.sourceRelationsHide ?? labels.containsShowSummary
@@ -1326,8 +1348,18 @@ export function TopologyV2DetailPanel({
             onClick={onOpenFullDetail}
             data-testid="topology-v2-detail-panel-open-full-detail"
             className={showProjectSource
-              ? "shrink-0 rounded-[var(--topology-v2-panel-row-radius)] px-1.5 py-[7px] text-body leading-body text-[color:var(--topology-v2-panel-text-tertiary)] transition-colors hover:text-[color:var(--topology-v2-panel-text-secondary)]"
-              : "shrink-0 rounded-card border border-[color:var(--topology-v2-panel-primary-border)] bg-[color:var(--topology-v2-panel-primary-surface)] px-3 py-[7px] text-label leading-label font-semibold text-[color:var(--topology-v2-panel-primary-text)] transition-colors hover:border-[color:var(--topology-v2-panel-primary-border-hover)] hover:bg-[color:var(--topology-v2-panel-primary-surface-hover)]"}
+              ? controlClass({
+                  shape: "link",
+                  size: "lg",
+                  className:
+                    "shrink-0 text-[color:var(--topology-v2-panel-text-tertiary)] hover:text-[color:var(--topology-v2-panel-text-secondary)]",
+                })
+              : controlClass({
+                  shape: "card",
+                  size: "sm",
+                  className:
+                    "shrink-0 font-semibold border-[color:var(--topology-v2-panel-primary-border)] bg-[color:var(--topology-v2-panel-primary-surface)] text-[color:var(--topology-v2-panel-primary-text)] hover:border-[color:var(--topology-v2-panel-primary-border-hover)] hover:bg-[color:var(--topology-v2-panel-primary-surface-hover)]",
+                })}
           >
             {labels.openFullDetail}
           </button>
@@ -1340,7 +1372,12 @@ export function TopologyV2DetailPanel({
               disabled={projectSourceBusy}
               aria-busy={projectSourceBusy}
               data-testid="topology-v2-project-source-action"
-              className="shrink-0 rounded-[var(--topology-v2-panel-row-radius)] border border-[color:var(--topology-v2-panel-primary-border)] bg-[color:var(--topology-v2-panel-primary-surface)] px-3 py-[7px] text-body font-semibold text-[color:var(--topology-v2-panel-primary-text)] transition-colors hover:border-[color:var(--topology-v2-panel-primary-border-hover)] hover:bg-[color:var(--topology-v2-panel-primary-surface-hover)] disabled:cursor-wait disabled:opacity-60"
+              className={controlClass({
+                shape: "chip",
+                size: "lg",
+                className:
+                  "shrink-0 font-semibold border-[color:var(--topology-v2-panel-primary-border)] bg-[color:var(--topology-v2-panel-primary-surface)] text-[color:var(--topology-v2-panel-primary-text)] hover:border-[color:var(--topology-v2-panel-primary-border-hover)] hover:bg-[color:var(--topology-v2-panel-primary-surface-hover)] disabled:cursor-wait",
+              })}
             >
               {projectSourceBusy ? labels.sourceBusy ?? labels.sourceAction : labels.sourceAction}
             </button>
@@ -1382,16 +1419,15 @@ function CodeLocationRow({
       >
         {truncateMiddlePath(path)}
       </span>
-      <button
-        type="button"
+      <IconButton
+        label={state === "copied" ? copiedLabel : copyLabel}
+        size="sm"
         onClick={() => void copy(path)}
-        aria-label={state === "copied" ? copiedLabel : copyLabel}
-        title={state === "copied" ? copiedLabel : copyLabel}
         data-testid="topology-v2-detail-panel-code-location-copy"
-        className="shrink-0 rounded-[var(--topology-v2-panel-row-radius)] p-1 text-[color:var(--topology-v2-panel-text-quaternary)] transition-colors hover:bg-[color:var(--topology-v2-panel-row-hover)] hover:text-[color:var(--topology-v2-panel-text-secondary)]"
+        className="text-[color:var(--topology-v2-panel-text-quaternary)] hover:bg-[color:var(--topology-v2-panel-row-hover)] hover:text-[color:var(--topology-v2-panel-text-secondary)]"
       >
         {state === "copied" ? <Check size={11} aria-hidden /> : <Clipboard size={11} aria-hidden />}
-      </button>
+      </IconButton>
     </li>
   );
 }

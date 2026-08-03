@@ -3,6 +3,7 @@
 import { useEffect, useRef } from "react";
 import { X } from "lucide-react";
 import { Link } from "@/i18n/navigation";
+import { IconButton, RowButton } from "@/shared/ui";
 
 /**
  * P3b — 엣지 팝오버. 노드 데이터시트와 같은 재질(panel 토큰)로, 관계
@@ -94,15 +95,15 @@ export function TopologyV2EdgePanel({
         <p className="font-mono text-label uppercase tracking-[0.14em] text-[color:var(--topology-v2-panel-text-tertiary)]">
           {labels.kicker} · {typeLabel}
         </p>
-        <button
-          type="button"
+        <IconButton
+          label={labels.close}
+          size="sm"
           onClick={onClose}
-          aria-label={labels.close}
           data-testid="topology-v2-edge-panel-close"
-          className="-mr-1 -mt-1 rounded p-1 text-[color:var(--topology-v2-panel-text-tertiary)] transition-colors hover:text-[color:var(--topology-v2-panel-text-primary)]"
+          className="-mr-1 -mt-1 text-[color:var(--topology-v2-panel-text-tertiary)] hover:text-[color:var(--topology-v2-panel-text-primary)]"
         >
           <X size={13} aria-hidden />
-        </button>
+        </IconButton>
       </div>
 
       {/* 문장이 주인공 — 의미의 평문화 */}
@@ -127,14 +128,14 @@ export function TopologyV2EdgePanel({
           { id: fromId, title: fromTitle },
           { id: toId, title: toTitle },
         ].map((n) => (
-          <button
+          <RowButton
             key={n.id}
-            type="button"
+            size="md"
             onClick={() => onSelectNode(n.id)}
-            className="rounded-[var(--topology-v2-panel-row-radius)] px-1.5 py-1 text-left text-body text-[color:var(--topology-v2-panel-text-secondary)] transition-colors hover:bg-[color:var(--topology-v2-panel-row-hover)] hover:text-[color:var(--topology-v2-panel-text-primary)]"
+            className="rounded-chip text-[color:var(--topology-v2-panel-text-secondary)] hover:bg-[color:var(--topology-v2-panel-row-hover)] hover:text-[color:var(--topology-v2-panel-text-primary)]"
           >
             {n.title}
-          </button>
+          </RowButton>
         ))}
       </div>
 

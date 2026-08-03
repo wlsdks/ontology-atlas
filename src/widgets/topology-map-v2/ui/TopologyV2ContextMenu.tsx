@@ -3,6 +3,7 @@
 import { useEffect, useRef } from "react";
 import { Copy, FileText, GitBranch, Maximize2, Route } from "lucide-react";
 import { Link } from "@/i18n/navigation";
+import { controlClass, RowButton } from "@/shared/ui";
 
 /**
  * W2-B — node right-click context menu (`use-topology-loop.ts`'s
@@ -75,8 +76,17 @@ export function clampContextMenuPosition(
   };
 }
 
-const MENU_ITEM_CLASS =
-  "flex w-full items-center gap-2 rounded-[var(--topology-v2-panel-row-radius)] px-2.5 py-1.5 text-left text-body text-[color:var(--topology-v2-panel-text-secondary)] transition-colors hover:bg-[color:var(--topology-v2-panel-row-hover)]";
+/**
+ * 이 메뉴 항목의 **한 자리에만 참인 것** — 지도 패널 스코프 토큰(모서리·잉크·
+ * 호버 표면)뿐이다. 모양·크기·정렬은 아래 `controlClass({ shape: "row" })` 가
+ * 낸다. `row` 는 램프에 모서리가 없어서(패널 밖 행은 각지게 산다) 반경만
+ * 여기서 얹는다 — 값은 `--topology-v2-panel-row-radius` 와 같은 `--radius-chip`
+ * 이라 전역 램프 유틸리티로 적는다.
+ */
+const MENU_ITEM_LOCAL =
+  "rounded-chip text-[color:var(--topology-v2-panel-text-secondary)] hover:bg-[color:var(--topology-v2-panel-row-hover)]";
+/** `<Link>`/`<span>` 형제용 — `<RowButton>` 이 내는 것과 바이트 동일해야 한다. */
+const MENU_ITEM_CLASS = controlClass({ shape: "row", size: "md", className: MENU_ITEM_LOCAL });
 const MENU_ITEM_DISABLED_CLASS = "pointer-events-none opacity-40";
 
 export function TopologyV2ContextMenu({
@@ -168,37 +178,37 @@ export function TopologyV2ContextMenu({
         <GitBranch size={14} aria-hidden="true" />
         {labels.actionEditRelations}
       </Link>
-      <button
-        type="button"
+      <RowButton
         role="menuitem"
+        size="md"
         onClick={onCopyHandoff}
         data-testid="topology-v2-context-menu-handoff"
-        className={MENU_ITEM_CLASS}
+        className={MENU_ITEM_LOCAL}
       >
         <Copy size={14} aria-hidden="true" />
         {labels.actionCopyHandoff}
-      </button>
-      <button
-        type="button"
+      </RowButton>
+      <RowButton
         role="menuitem"
+        size="md"
         onClick={onSetPathSource}
         data-testid="topology-v2-context-menu-path"
-        className={MENU_ITEM_CLASS}
+        className={MENU_ITEM_LOCAL}
       >
         <Route size={14} aria-hidden="true" />
         {labels.actionPath}
-      </button>
+      </RowButton>
       <div className="my-0.5 border-t border-[color:var(--topology-v2-panel-divider)]" />
-      <button
-        type="button"
+      <RowButton
         role="menuitem"
+        size="md"
         onClick={onOpenFullDetail}
         data-testid="topology-v2-context-menu-full-detail"
-        className={MENU_ITEM_CLASS}
+        className={MENU_ITEM_LOCAL}
       >
         <Maximize2 size={14} aria-hidden="true" />
         {labels.openFullDetail}
-      </button>
+      </RowButton>
     </div>
   );
 }
