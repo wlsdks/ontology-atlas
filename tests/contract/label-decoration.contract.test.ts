@@ -198,21 +198,55 @@ describe("라벨 장식 — 화살표는 정보를 나를 때만", () => {
     ).toEqual([]);
   });
 
+  /**
+   * ── 허용 열을 죽은 코드가 떠받치고 있었다 (2026-08-03 실측) ──────────────
+   *
+   * 이 시험은 원래 `expect(declared.length).toBeGreaterThan(0)` 로 시작했다 —
+   * *"표식이 사라지면 허용 열이 검증되지 않은 채 남는다"* 는 이유였다. 그런데
+   * 실측하니 그 표식을 가진 `.tsx` 는 **`shared/ui/link-list-editor.tsx` 하나뿐**
+   * 이었고, 그 파일은 **프로덕션 소비처가 0인 죽은 프리미티브**였다. 프로덕션에서
+   * `target="_blank"` 를 쓰는 파일 13개 중 표식을 쓰는 건 0개. 즉 **아무도
+   * 렌더하지 않는 컴포넌트가 규칙의 허용 조항을 떠받치고** 있었고, 그 파일을
+   * 지우는 순간 이 단언이 빨개진다 — 규칙과 무관한 이유로.
+   *
+   * 진단: 공회전 방지의 대상을 잘못 골랐다. **비어 있으면 안 되는 집합은
+   * 「스캔한 파일」이지 「예외를 쓴 파일」이 아니다.** 스캔 집합은 위 두 시험이
+   * `files.length > 100` 으로 이미 잠그고, 탐지기가 실제로 작동하는지는 아래
+   * 합성 프로브가 잠근다. 소비처 0인 조건부 규칙은 **고장난 게이트가 아니라
+   * 첫 사례를 기다리는 규칙**이다.
+   *
+   * 판정과 반증 조건: `docs/DECISIONS.md` 2026-08-03 「죽은 프리미티브 둘」.
+   */
+  /** 파일 단위 판정 — 선언이 없으면 이 규칙의 대상이 아니라 통과다. */
+  function externalMarkerSitsOnExternalLink(source: string): boolean {
+    if (!source.includes(EXTERNAL_MARKER)) return true;
+    return source.includes('target="_blank"');
+  }
+
   it("선언된 외부 링크 표식은 실제로 앱을 떠나는 링크 위에만 있다", () => {
     const files: string[] = [];
     for (const root of ["src", "app"]) collectSourceFiles(join(process.cwd(), root), files);
+    // 공회전 차단은 **스캔 집합**에 건다 — 예외 사용자가 0인 것은 결함이 아니다.
+    expect(files.length).toBeGreaterThan(100);
 
-    const declared = files.filter((file) => readFileSync(file, "utf8").includes(EXTERNAL_MARKER));
-    // 표식은 존재해야 한다 — 사라지면 위 테스트가 "예외 없음" 으로 통과해버려
-    // 규칙의 허용 열(선행 ↗)이 검증되지 않은 채 남는다.
-    expect(declared.length).toBeGreaterThan(0);
+    const offences = files.filter((file) => !externalMarkerSitsOnExternalLink(readFileSync(file, "utf8")));
+    expect(
+      offences.map((f) => f.replace(process.cwd() + "/", "")),
+      `외부 링크 표식(${EXTERNAL_MARKER})은 target="_blank" 링크에만 붙는다.`,
+    ).toEqual([]);
+  });
 
-    for (const file of declared) {
-      const source = readFileSync(file, "utf8");
-      expect(source, `${file}: 외부 링크 표식은 target="_blank" 링크에만`).toContain(
-        'target="_blank"',
-      );
-    }
+  it("표식 범위 게이트가 실제로 위반을 잡는다 — 소비처가 0이어도 탐지기는 살아 있다", () => {
+    // 위반 — 앱 안에서 이동하는 링크에 표식을 달아 장식 화살표를 통과시키려 한다.
+    expect(
+      externalMarkerSitsOnExternalLink('<Link href="/topology"><span data-external-link-marker>↗</span>{label}</Link>'),
+    ).toBe(false);
+    // 정상 — 앱을 떠나는 링크.
+    expect(
+      externalMarkerSitsOnExternalLink('<a href="https://x" target="_blank"><span data-external-link-marker>↗</span>{label}</a>'),
+    ).toBe(true);
+    // 표식을 아예 안 쓰는 파일은 이 규칙의 대상이 아니다.
+    expect(externalMarkerSitsOnExternalLink('<Link href="/topology">{label}</Link>')).toBe(true);
   });
 
   it("JSX 게이트가 실제로 위반을 잡는다", () => {

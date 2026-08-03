@@ -74,9 +74,9 @@ const ROOTS = ['src', 'app'];
  *
  * | 부류 | 남은 수 | 무엇인가 |
  * |---|---:|---|
- * | **값 층과 같은 층** | 6 | `button.tsx`(값 층 자신) · `select.tsx` 트리거(`--control-h-*` 계약 + `rounded-card` + `w-full`) · `chrome-chip`/`chrome-tile`(`--chrome-tile-size` 44px 계약) · `DocsHeaderTile`(`--docs-header-tile-size`) · `tab-bar`(밑줄 탭 — 반경 0 · `items-baseline` · `pb-[11px]`) |
+ * | **값 층과 같은 층** | 6 | `button.tsx`(값 층 자신) · `select.tsx` 트리거(`--control-h-*` 계약 + `rounded-card` + `w-full`) · `chrome-chip`/`chrome-tile`(`--chrome-tile-size` 계약) · `DocsHeaderTile`(**2026-08-03 부터 같은 `--chrome-tile-size`** — 구 `--docs-header-tile-size` 34px 삭제) · `tab-bar`(밑줄 탭 — 반경 0 · `items-baseline` · `pb-[11px]`) |
  * | **이미 원장에 적힌 구멍** | 21 | 아래 census 참조 |
- * | **렌더되지 않는 죽은 프리미티브** | 4 | `link-list-editor` 2(X 글리프 · `rounded-2xl` 추가 버튼) · `chip-list-editor` 2 — **둘 다 프로덕션 소비처 0**(아래) |
+ * | **렌더되지 않는 죽은 프리미티브** | 4 | `link-list-editor` 2(X 글리프 · `rounded-2xl` 추가 버튼) · `chip-list-editor` 2 — **둘 다 프로덕션 소비처 0**. 2026-08-03 에 **삭제**됐고 기준선이 123 → 119 로 내려갔다(아래) |
  *
  * ### 이번에 **전수로 센** 구멍 넷 — 다음 라운드의 입력
  *
@@ -88,17 +88,26 @@ const ROOTS = ['src', 'app'];
  * | **`sm` 아래 한 칸이 없다**(`px-1`/`px-1.5` 인셋) — 원장 features 라운드 구멍 4의 재측정 | **14** (9파일) | `LiveActivityIndicator` 4 · `TopologyTrailChip` 3 · `AgentActivityChip` · `RealmBlockExportAction` · `DocsSidebarBody` 필터 지우기 · `full-detail-a1` 2 · `TopologyRealmLedger` · `AgentTranscript`. **이 라운드에서 가장 큰 구멍이고, 세 라운드 연속으로 나왔다** |
  * | **원형 아이콘 컨트롤이 없다** — `icon` 은 `rounded-chip` 고정 | **6** (4파일) | `node-explanation-edit` 3 · `info-hint` · `TopologyTrailChip` · `TopologyMapV2`(원장의 「캔버스 앵커 원형 버튼」). 24px 원을 6px 사각으로 바꾸는 것은 정규화가 아니라 **정체성 변경**이라 「체계」 소집 없이 혼자 정하지 않았다 |
  * | **보더 있는 아이콘 정사각이 없다** — 원장 뷰 라운드 구멍 1의 재측정 | **2** | `QueueRowActions` 케밥 · `HubRail`. 수가 둘뿐이라 **아직 축이 아니다** — 규칙 4대로 수를 적어 두고 넘긴다 |
- * | **`rounded-2xl`(16px)이 반경 램프 밖** | **2** | `link-list-editor` · `DocsVaultBacklinks`. 램프는 chip 6 / card 9 / panel 12 뿐이라 16px 은 어느 스텝도 아니다 |
+ * | **`rounded-2xl`(16px)이 반경 램프 밖** | 2 → **1** | `link-list-editor`(삭제됨) · `DocsVaultBacklinks`(남음). 램프는 chip 6 / card 9 / panel 12 뿐이라 16px 은 어느 스텝도 아니다 |
  *
- * ### 💀 렌더되지 않는 프리미티브 둘 — 삭제 후보(소유자 판단)
+ * ### 💀 렌더되지 않는 프리미티브 둘 — **삭제됨 (2026-08-03)**
  *
  * `LinkListEditor`·`ChipListEditor` 는 `shared/ui/index.ts` 가 export 하고
- * 단위 테스트도 있는데 **프로덕션 소비처가 0**이다(전수 grep). 이 저장소는
+ * 단위 테스트도 있는데 **프로덕션 소비처가 0**이었다(전수 grep). 이 저장소는
  * 같은 실패를 이미 겪었다 — `control-class.ts` 머리말의 `Card`/`Badge`/
  * `DetailCard` 셋이고, 그때의 답은 **삭제**였다. 두 컴포넌트는 그때와 같은
- * 증상까지 갖고 있다: 램프 밖 값(`rounded-2xl` 16px)을 쓴다. 이 라운드는
- * 램프에 정확히 맞는 둘만 옮기고 삭제는 제안만 한다 — 공개 export 를 지우는
- * 것은 리팩터가 아니라 API 변경이라서다.
+ * 증상까지 갖고 있었다: 램프 밖 값(`rounded-2xl` 16px). 위 라운드는 삭제를
+ * 제안만 했고(공개 export 를 지우는 것은 리팩터가 아니라 API 변경이라서),
+ * 소유자 확정으로 **지웠다** — 기준선 **123 → 119**(정확히 그 4건).
+ *
+ * ⚠️ 지우면서 하나가 딸려 나왔다: `link-list-editor` 는 이 저장소에서
+ * `data-external-link-marker`(라벨 앞 `↗` 허용 열의 선언)를 **쓰는 유일한
+ * `.tsx`** 였고, `label-decoration.contract.test.ts` 가 *"표식을 쓴 파일이
+ * 0이면 안 된다"* 로 그 사실에 기대고 있었다. **아무도 렌더하지 않는
+ * 컴포넌트가 규칙의 허용 조항을 떠받치고 있었다.** 허용 열은 유지하고
+ * (WCAG G201 — 새 창으로 나가기 전 경고), 게이트의 공회전 방지를 「예외를 쓴
+ * 파일 수」에서 「스캔한 파일 수 + 합성 프로브」로 옮겼다. 원장:
+ * `docs/DECISIONS.md` 2026-08-03 「죽은 프리미티브 둘」.
  *
  * ## 공방·기록 라운드(2026-08-03)가 남긴 26개 — 값 층의 새 구멍
  *
@@ -331,7 +340,7 @@ const ROOTS = ['src', 'app'];
  * **공유 상수로 뽑는 옳은 리팩터에 벌점을 준다.** 그래서 이 라운드는 잉크만
  * 상수로 공유하고 램프 호출은 자리마다 인라인으로 썼다.
  */
-const BASELINE_HAND_WRITTEN_CONTROLS = 117;
+const BASELINE_HAND_WRITTEN_CONTROLS = 113;
 
 function walk(dir: string, out: string[] = []): string[] {
   for (const name of readdirSync(dir)) {
