@@ -98,7 +98,14 @@ const control = cva(DISABLED, {
      */
     shape: {
       /** 라벨을 가진 작은 알약형 컨트롤. 이 앱에서 가장 많다(128). */
-      chip: 'inline-flex items-center gap-1.5 rounded-chip border transition-colors',
+      /*
+       * 반경이 여기 없는 유일한 모양 — 크기 컴파운드가 낸다(`xs`=micro,
+       * `sm`~`lg`=chip). 마이크로 티어(24px 아래가 아니라 **칩 아래** 한 층)는
+       * 반경도 한 단 작다: 전수 96곳의 4px(`rounded-micro`)이 그 증거다.
+       * 두 반경이 한 출력에 공존하지 않도록 base 에서 뺐다 — cn 의 radius
+       * 그룹 병합(`RADIUS_RAMP_STEPS`)이 있어도 출력은 한 클래스가 정직하다.
+       */
+      chip: 'inline-flex items-center gap-1.5 border transition-colors',
       /** 정사각 아이콘 컨트롤. 라벨이 없으므로 접근 이름이 **필수**다(36). */
       icon: 'inline-flex shrink-0 items-center justify-center rounded-chip transition-colors',
       /** 목록의 한 줄 전체가 눌리는 것. 좌정렬이 정체성이다(39). */
@@ -189,13 +196,18 @@ const control = cva(DISABLED, {
      * 플로어(`min-h-*`)로 사다리 위에 선다**. 플로어가 자연높이와 같은 조합은
      * 픽셀 이동 0이고, 규격이 산수의 부산물이 아니라 선언이 된다:
      *
-     * | 모양 | sm | md | lg |
-     * |---|---:|---:|---:|
-     * | `chip`/`pill` | 24 | 32 | 32 — `lg` 가 키우는 것은 **글자와 좌우 인셋**이지 높이가 아니다(2026-08-03 소유자 확정, 소비처 26곳) |
-     * | `segment` | 24 | 24 | 32 |
-     * | `row` | 28 | 36 | 44 |
-     * | `card` | 32 | 36 | 40 |
-     * | `icon` | 24 | 28 | 32 — 정사각이라 하드 `h-*` |
+     * | 모양 | xs | sm | md | lg |
+     * |---|---:|---:|---:|---:|
+     * | `chip`/`pill` | 24 | 24 | 32 | 32 — `lg` 가 키우는 것은 **글자와 좌우 인셋**이지 높이가 아니다(2026-08-03 소유자 확정, 소비처 26곳) |
+     * | `segment` | 24 | 24 | 24 | 32 |
+     * | `row` | 28 | 28 | 36 | 44 |
+     * | `card` | 32 | 32 | 36 | 40 |
+     * | `icon` | 24 | 24 | 28 | 32 — 정사각이라 하드 `h-*` |
+     *
+     * `xs` 는 **높이의 단이 아니다** — 24 바닥은 그대로 두고 인셋·타입·반경만
+     * 마이크로 티어로 내린다(칩에서만 sm 과 다르고, 나머지 모양에서는 sm 의
+     * 별칭이다). 24 아래 단을 만들지 않는 이유는 사다리 표의 첫 줄이다:
+     * WCAG 2.5.8 바닥 아래는 «작은 단»이 아니라 규격 미달이다.
      *
      * `link` 는 비인라인 44(`min-h-11`) / 인라인은 WCAG 2.5.8 면제. `tile` 은
      * 세로 2축 표면이라 내용이 높이를 정한다 — 사다리 이탈이 아니라 축이 다르다.
@@ -208,6 +220,18 @@ const control = cva(DISABLED, {
      * `docs/DESIGN-SYSTEM.md` 「컨트롤 높이 사다리」 절이 정본이다.
      */
     size: {
+      /**
+       * 마이크로 티어 — 명령 태그·마이크로 배지·kbd 급. **칩에서만 `sm` 과
+       * 다르다**(인셋 px-1.5 · caption · 반경 micro). 높이는 그대로 24 바닥
+       * (`min-h-6`)이다 — 사다리는 "24 아래는 규격 미달"이라 말하고, 이 단이
+       * 여는 것은 높이가 아니라 **인셋·타입·반경**이다. 다른 모양에서는 `sm`
+       * 의 별칭이다(소비처 0 값의 발명 금지 — 계약이 별칭임을 단언한다).
+       *
+       * 근거: 「sm 아래 한 칸이 없다」가 래칫 원장에 **세 라운드 연속**
+       * (features 4 · 잔여 재측정 14 · 프리미티브 라운드 재확인) 기록된 뒤의
+       * 승격이다. 감이 아니라 반복 횟수다.
+       */
+      xs: '',
       /** 사다리 바닥 24px — WCAG 2.5.8 최소 타깃. `text-caption`/`px-2`. */
       sm: '',
       /** `--control-h-md` 32px — 실측 최빈. `px-2.5`/`text-label`. */
@@ -270,7 +294,19 @@ const control = cva(DISABLED, {
       /** 신호 3종 — 헌장이 인정한 그 셋뿐이다(warning · error · success). 확장 금지. */
       warning: 'text-[color:var(--color-status-warning)]',
       danger: 'text-[color:var(--color-danger-text)]',
-      success: 'text-[color:var(--color-status-success)]',
+      /*
+       * ⚠️ success 만 신호 토큰이 아니라 **글자 역할 토큰**이다 (2026-08-03
+       * 체계석 정정). 셋의 역할이 어긋나 있었다 — danger 는 글자 역할
+       * (`--color-danger-text`)인데 success 는 신호색(#32b97d)을 내서, 성공
+       * 틴트 위 글자(창백한 민트 a94)를 쓰는 소비처가 램프 밖에 남기를 택했고
+       * 실측 소비처가 **0**이었다(소비처 0 = fixedHeight 를 죽인 그 기준).
+       * 값을 앱의 실제 관용구(a94)로 맞추니 소비처가 돌아왔다. 기존 소비처
+       * 0이라 이 재지정으로 바뀐 픽셀·색도 0이다.
+       * warning 은 신호 토큰을 유지한다 — 유일 소비처(DependencyPicker)가
+       * 그 값 위에서 이미 옳고, 앰버 글자 관용구(amber-source-a90)와의 수렴
+       * 여부는 전수와 함께 다음 판정으로 넘겼다(래칫 원장 참조).
+       */
+      success: 'text-[color:var(--color-success-text-a94)]',
       /**
        * **채워진 인디고 위의 전경** — 이 화면의 단 하나의 주 동작.
        *
@@ -311,12 +347,15 @@ const control = cva(DISABLED, {
      * | primary | `#f7f8f8` | `#ececf0` |
      * | secondary | `#d0d6e0` | `#a3a3ac` |
      * | tertiary | `#8a8f98` | `#868690` |
-     * | quaternary | `#787c84` | `#82828a` |
+     * | quaternary | `#82828a` | `#82828a` |
      *
      * 우연이 아니다 — 패널 램프의 tertiary/quaternary 는 **패널 바탕
      * `#17171c` 위에서 대비를 재서** 넛지된 값이다(globals.css 주석: 4.02:1 →
      * ≈4.9:1, ~2.5:1 → ~4.7:1). 즉 두 램프는 두 개의 채색 시스템이 아니라
-     * **하나의 무채 램프가 두 바탕 위에서 갖는 두 해**다.
+     * **하나의 무채 램프가 두 바탕 위에서 갖는 두 해**다. (quaternary 는
+     * 2026-08-03 「체계」 판정으로 전역 값이 `#787c84` → `#82828a` 로 올라
+     * **두 해가 같은 값으로 수렴**했다 — 우연이 아니라 같은 제약(올라선 표면
+     * 위 AA)의 같은 답이다. 원장: docs/DECISIONS.md.)
      *
      * 원장이 센 것: features 라운드 11개 + 위젯 라운드 8개 = **19개**가 이
      * 이유로 구조적으로 값 층 밖이었다.
@@ -408,10 +447,17 @@ const control = cva(DISABLED, {
      * `lg` 는 `py` 를 한 단 줄여(1.5→1) 자연 30 을 만든 뒤 같은 32 에 세운다.
      * `min-h` 는 **올리기만** 하므로 `py-1.5` 그대로면 34 가 남는다.
      */
+    /*
+     * 칩 반경 — xs 만 micro(4px), 나머지는 chip(6px). 소비처 바이트가 근거다:
+     * 마이크로 태그 전수가 `rounded`(4px)를 입고 있었고, 옮기며 반경이 움직인
+     * 자리는 0이다.
+     */
+    { shape: 'chip', size: 'xs', class: 'rounded-micro min-h-6 gap-1 px-1.5 py-0.5 text-caption' },
+    { shape: 'chip', size: ['sm', 'md', 'lg'], class: 'rounded-chip' },
     { shape: 'chip', size: 'sm', class: 'min-h-6 px-2 py-1 text-caption' },
     { shape: 'chip', size: 'md', class: 'min-h-8 px-2.5 py-1.5 text-label' },
     { shape: 'chip', size: 'lg', class: 'min-h-8 px-3 py-1 text-body' },
-    { shape: 'icon', size: 'sm', class: 'h-6 w-6' },
+    { shape: 'icon', size: ['xs', 'sm'], class: 'h-6 w-6' },
     { shape: 'icon', size: 'md', class: 'h-7 w-7' },
     { shape: 'icon', size: 'lg', class: 'h-8 w-8' },
     /*
@@ -420,7 +466,7 @@ const control = cva(DISABLED, {
      * (`--touch-target-min` = `--control-row-h` 44)로 올린다. 소비처 0이라
      * 이동도 0. 42를 쓰는 소비처가 생기기 전에 단을 사다리에 세웠다.
      */
-    { shape: 'row', size: 'sm', class: 'min-h-7 gap-1.5 px-2 py-1.5 text-label' },
+    { shape: 'row', size: ['xs', 'sm'], class: 'min-h-7 gap-1.5 px-2 py-1.5 text-label' },
     { shape: 'row', size: 'md', class: 'min-h-9 gap-2 px-2.5 py-2 text-body' },
     { shape: 'row', size: 'lg', class: 'min-h-11 gap-2.5 px-3 py-2.5 text-body-lg' },
     /*
@@ -431,7 +477,7 @@ const control = cva(DISABLED, {
      * 소비처 9개(`sm`)·3개(`md`)의 실이동은 PR 본문의 표에 그대로 적혀 있다 —
      * 「±2px 안」이라는 예상과 다른 값이라 숨기지 않는다.
      */
-    { shape: 'pill', size: 'sm', class: 'min-h-6 px-2 py-1 text-caption' },
+    { shape: 'pill', size: ['xs', 'sm'], class: 'min-h-6 px-2 py-1 text-caption' },
     { shape: 'pill', size: 'md', class: 'min-h-8 px-2.5 py-0.5 text-label' },
     { shape: 'pill', size: 'lg', class: 'min-h-8 px-3 py-1 text-body' },
     /*
@@ -441,26 +487,39 @@ const control = cva(DISABLED, {
      * 한 줄짜리 카드만 +2px 움직이고(전수 표는 PR), 여러 줄 카드는 내용이
      * 이미 플로어 위라 이동 0이다. `lg` 는 자연 40 = `--control-h-lg` 그대로.
      */
-    { shape: 'card', size: 'sm', class: 'min-h-8 gap-1.5 px-2.5 py-1.5 text-label' },
+    { shape: 'card', size: ['xs', 'sm'], class: 'min-h-8 gap-1.5 px-2.5 py-1.5 text-label' },
     { shape: 'card', size: 'md', class: 'min-h-9 gap-1.5 px-3 py-1.5 text-body' },
     { shape: 'card', size: 'lg', class: 'min-h-10 gap-2 px-3.5 py-2 text-body-lg' },
-    { shape: 'tile', size: 'sm', class: 'gap-1.5 px-2 py-2 text-caption' },
+    { shape: 'tile', size: ['xs', 'sm'], class: 'gap-1.5 px-2 py-2 text-caption' },
     { shape: 'tile', size: 'md', class: 'gap-2 px-2 py-2.5 text-label' },
     { shape: 'tile', size: 'lg', class: 'gap-2 px-3 py-3 text-body' },
-    { shape: 'link', size: 'sm', class: 'text-caption' },
+    { shape: 'link', size: ['xs', 'sm'], class: 'text-caption' },
     { shape: 'link', size: 'md', class: 'text-label' },
     { shape: 'link', size: 'lg', class: 'text-body' },
     // 세그먼트: `md` 가 실측 최빈(`px-2 py-1`/`text-label`, 24px)이라 6개가
-    // 픽셀 변화 0으로 들어온다. sm 은 같은 인셋에 한 단 작은 타입, lg 는 32px.
-    // 보더가 없어 caption 자연높이가 22 — `min-h-6` 이 WCAG 2.5.8 바닥(24)에
-    // 세운다(소비처 0이라 이동 0). md 도 같은 플로어를 선언만 한다(자연 24).
-    { shape: 'segment', size: 'sm', class: 'min-h-6 px-2 py-1 text-caption' },
+    // 픽셀 변화 0으로 들어온다. lg 는 32px. 보더가 없어 자연높이가 바닥을
+    // 뚫을 수 있다 — `min-h-6` 이 WCAG 2.5.8 바닥(24)에 세운다.
+    //
+    // `sm` 은 2026-08-03 재정의됐다. 구 값(px-2 py-1 caption)은 소비처 0인
+    // 채 한 라운드를 다 돌았고, 실측 소비처(px-1 인셋의 마이크로 토글 —
+    // 트레일 「지난 길」· 알림 벨 · 패널 내보내기, 전수 4)의 최빈은
+    // `px-1 py-0.5`/`text-label`(md 와 같은 타입, 한 칸 좁은 인셋)이었다.
+    // caption 이던 옛 sm 을 지키면 xs 아래에 sm 이 서는 역전이 생긴다 —
+    // 소비처 0 값은 지키는 것이 아니라 고치는 것이다(#884 의 기준 그대로).
+    { shape: 'segment', size: ['xs', 'sm'], class: 'min-h-6 gap-1 px-1 py-0.5 text-label' },
     { shape: 'segment', size: 'md', class: 'min-h-6 px-2 py-1 text-label' },
     { shape: 'segment', size: 'lg', class: 'min-h-8 px-3 py-1.5 text-body' },
 
     // ── 테두리를 가진 모양의 기본 테두리색. `link`/`row`/`icon` 은 보더가 없다.
-    { shape: 'chip', active: false, class: 'border-[color:var(--color-divider)]' },
-    { shape: 'pill', active: false, class: 'border-[color:var(--color-divider)]' },
+    //
+    // chip/pill 이 `--color-divider`(0.08)에서 `--color-border-soft`(0.06)로
+    // 온 이유 (2026-08-03 체계석): 칩 반경 원소의 손 보더 전수가
+    // **border-soft/chrome-border 74 대 divider 18**(4:1)이었다. 램프 기본이
+    // 소수파(0.08)라서 칩을 옮길 때마다 보더가 조용히 한 단 진해졌다 —
+    // 다수를 찾지 않고 기본값을 정한 규칙 0 위반의 정정이다. card/tile 은
+    // 처음부터 border-soft 였으니 이제 네 모양이 같은 기본 위에 선다.
+    { shape: 'chip', active: false, class: 'border-[color:var(--color-border-soft)]' },
+    { shape: 'pill', active: false, class: 'border-[color:var(--color-border-soft)]' },
     { shape: 'card', active: false, class: 'border-[color:var(--color-border-soft)]' },
     { shape: 'tile', active: false, class: 'border-[color:var(--color-border-soft)]' },
     { shape: 'tile', active: true, class: 'border-[color:var(--color-indigo-pale-a28)] bg-[color:var(--color-indigo-a16)] text-[color:var(--color-text-primary)]' },
@@ -484,7 +543,14 @@ const control = cva(DISABLED, {
      * 인디고는 여기 없다 — 뜻으로 정해지는 색은 바탕을 안 탄다.
      */
     { scope: 'panel', tone: 'default', class: 'text-[color:var(--topology-v2-panel-text-tertiary)]' },
-    { scope: 'panel', tone: 'muted', class: 'text-[color:var(--topology-v2-panel-text-quaternary)]' },
+    /*
+     * `muted` 의 panel 컴파운드는 여기 **없다** (2026-08-03 삭제). 두 램프의
+     * quaternary 가 `#82828a` 로 수렴해(전역 상향, docs/DECISIONS.md) 재매핑이
+     * 같은 값을 내는 무노동 분기가 됐다 — 계약 시험의 처방대로 그 단은 tone
+     * 하나로 충분하다. 소비처는 그대로 `tone: 'muted', scope: 'panel'` 을 써도
+     * 된다(기본 muted 가 같은 값을 낸다, 픽셀 이동 0). 두 값이 다시 갈라지는
+     * 날은 계약 시험의 수렴 고정이 빨개져 이 컴파운드를 되살리라고 말한다.
+     */
     { scope: 'panel', tone: 'secondary', class: 'text-[color:var(--topology-v2-panel-text-secondary)]' },
     { scope: 'panel', tone: 'strong', class: 'text-[color:var(--topology-v2-panel-text-primary)]' },
     // 패널 안의 눌림도 패널 잉크를 쓴다 — 안 그러면 눌린 순간만 램프가 튄다.

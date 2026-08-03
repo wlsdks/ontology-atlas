@@ -340,7 +340,7 @@ export function LiveActivityBadge({
         <span aria-hidden className="inline-block h-1.5 w-1.5 rounded-full bg-[color:var(--color-status-success)]" />
         <span className="font-mono uppercase tracking-[0.10em]">{labels.live}</span>
         <span
-          className="rounded border border-[color:var(--color-indigo-line-a22)] px-1.5 py-0.5 font-mono text-[9px] uppercase tracking-[0.08em] text-[color:var(--color-text-secondary)]"
+          className="rounded-micro border border-[color:var(--color-indigo-line-a22)] px-1.5 py-0.5 font-mono text-[9px] uppercase tracking-[0.08em] text-[color:var(--color-text-secondary)]"
           data-testid="live-agent-state-chip"
         >
           {agentStateChip}
@@ -424,7 +424,7 @@ export function LiveActivityBadge({
                     <button
                       type="button"
                       onClick={() => void copyFocusCheck(staleRefreshPacket)}
-                      className="inline-flex w-fit items-center gap-1 rounded border border-[color:var(--color-amber-docs-a34)] px-1.5 py-0.5 font-mono text-[9px] uppercase tracking-[0.08em] text-[color:var(--color-amber-docs-a95)] transition-colors hover:border-[color:var(--color-amber-docs-a54)] hover:bg-[color:var(--color-amber-docs-a10)]"
+                      className="inline-flex w-fit items-center gap-1 rounded-micro border border-[color:var(--color-amber-docs-a34)] px-1.5 py-0.5 font-mono text-[9px] uppercase tracking-[0.08em] text-[color:var(--color-amber-docs-a95)] transition-colors hover:border-[color:var(--color-amber-docs-a54)] hover:bg-[color:var(--color-amber-docs-a10)]"
                     >
                       <Clipboard size={10} aria-hidden />
                       {staleRefreshCopyLabel}
@@ -464,7 +464,7 @@ export function LiveActivityBadge({
                     <div className="flex flex-wrap gap-1.5">
                       <a
                         href={focusHref}
-                        className="inline-flex w-fit items-center rounded border border-[color:var(--color-indigo-line-a22)] px-1.5 py-0.5 font-mono text-[9px] uppercase tracking-[0.08em] text-[color:var(--color-indigo-accent)] transition-colors hover:border-[color:var(--color-indigo-line-a45)] hover:bg-[color:var(--color-indigo-a10)]"
+                        className="inline-flex w-fit items-center rounded-micro border border-[color:var(--color-indigo-line-a22)] px-1.5 py-0.5 font-mono text-[9px] uppercase tracking-[0.08em] text-[color:var(--color-indigo-accent)] transition-colors hover:border-[color:var(--color-indigo-line-a45)] hover:bg-[color:var(--color-indigo-a10)]"
                       >
                         {labels.agentFocusAction}
                       </a>
@@ -472,7 +472,13 @@ export function LiveActivityBadge({
                         <button
                           type="button"
                           onClick={() => void copyFocusCheck(focusCheckPacket)}
-                          className="inline-flex w-fit items-center gap-1 rounded border border-[color:var(--color-border-soft)] px-1.5 py-0.5 font-mono text-[9px] uppercase tracking-[0.08em] text-[color:var(--color-text-secondary)] transition-colors hover:border-[color:var(--color-indigo-line-a40)] hover:text-[color:var(--color-text-primary)]"
+                          className={controlClass({
+                            shape: "chip",
+                            size: "xs",
+                            tone: "secondary",
+                            className:
+                              "w-fit font-mono uppercase tracking-[0.08em] hover:border-[color:var(--color-indigo-line-a40)] hover:text-[color:var(--color-text-primary)]",
+                          })}
                         >
                           <Clipboard size={10} aria-hidden />
                           {focusCopyLabel}
@@ -492,7 +498,13 @@ export function LiveActivityBadge({
                     <button
                       type="button"
                       onClick={() => void copyFocusCheck(businessExtractionPacket)}
-                      className="inline-flex w-fit items-center gap-1 rounded border border-[color:var(--color-border-soft)] px-1.5 py-0.5 font-mono text-[9px] uppercase tracking-[0.08em] text-[color:var(--color-text-secondary)] transition-colors hover:border-[color:var(--color-indigo-line-a40)] hover:text-[color:var(--color-text-primary)]"
+                      className={controlClass({
+                            shape: "chip",
+                            size: "xs",
+                            tone: "secondary",
+                            className:
+                              "w-fit font-mono uppercase tracking-[0.08em] hover:border-[color:var(--color-indigo-line-a40)] hover:text-[color:var(--color-text-primary)]",
+                          })}
                     >
                       <Clipboard size={10} aria-hidden />
                       {businessExtractionCopyLabel}
@@ -515,7 +527,7 @@ export function LiveActivityBadge({
                       count > 0 ? (
                         <span
                           key={label}
-                          className="rounded border border-[color:var(--color-border-soft)] px-1.5 py-0.5 font-mono text-[9px] uppercase tracking-[0.08em] text-[color:var(--color-text-quaternary)]"
+                          className="rounded-micro border border-[color:var(--color-border-soft)] px-1.5 py-0.5 font-mono text-[9px] uppercase tracking-[0.08em] text-[color:var(--color-text-quaternary)]"
                         >
                           {label} · {count}
                         </span>
@@ -556,7 +568,13 @@ export function LiveActivityBadge({
                   type="button"
                   onClick={() => void copyFocusCheck(CLEAR_SIGNAL_COMMAND)}
                   data-testid="live-agent-clear-signal-copy"
-                  className="inline-flex w-fit items-center gap-1 rounded border border-[color:var(--color-border-soft)] px-1.5 py-0.5 font-mono text-[9px] uppercase tracking-[0.08em] text-[color:var(--color-text-secondary)] transition-colors hover:border-[color:var(--color-indigo-line-a40)] hover:text-[color:var(--color-text-primary)]"
+                  className={controlClass({
+                            shape: "chip",
+                            size: "xs",
+                            tone: "secondary",
+                            className:
+                              "w-fit font-mono uppercase tracking-[0.08em] hover:border-[color:var(--color-indigo-line-a40)] hover:text-[color:var(--color-text-primary)]",
+                          })}
                 >
                   <Clipboard size={10} aria-hidden />
                   {clearSignalCopyLabel}

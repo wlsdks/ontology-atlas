@@ -480,7 +480,7 @@ export function AgentConnectSheet({
                                                 /
                                               </span>
                                             ) : null}
-                                            <code className="rounded bg-[color:var(--color-overlay-1)] px-1 py-0.5 font-mono text-[color:var(--color-text-secondary)]">
+                                            <code className="rounded-micro bg-[color:var(--color-overlay-1)] px-1 py-0.5 font-mono text-[color:var(--color-text-secondary)]">
                                               {loc}
                                             </code>
                                           </span>

@@ -651,7 +651,12 @@ Defined via Tailwind 4's CSS-based `@theme`. See `app/globals.css` for the actua
 - `--color-text-primary`: `#f7f8f8`
 - `--color-text-secondary`: `#d0d6e0`
 - `--color-text-tertiary`: `#8a8f98`
-- `--color-text-quaternary`: `#62666d`
+- `--color-text-quaternary`: `#82828a` — 두 번 상향된 값이다(#62666d →
+  #787c84 → #82828a). 마지막 상향(2026-08-03)은 한 단 올라선 표면
+  (panel+overlay-1 · elevated)에서만 AA 가 뚫리던 결함의 정정으로, 네 정지
+  표면 전부 4.5:1 이상이고 지도 패널의 `--topology-v2-panel-text-quaternary`
+  와 값이 수렴한다. **hover/선택(overlay-2) 위에서는 여전히 미달(4.36)** —
+  누를 수 있는 행 위의 글자는 tertiary 부터 쓴다. 원장: `docs/DECISIONS.md`
 - `--color-text-on-accent`: `#ffffff` — **채운 인디고 «위»의 전경.** 위 넷은 전부
   어두운 바탕용이라 채움 컨트롤 위에서는 하나도 못 쓴다. 새 hue 가 아니라 무채이고,
   `--color-indigo-brand` 위 대비 **4.71:1** 로 WCAG AA(4.5:1) 통과. 값 층에서는
@@ -2381,15 +2386,29 @@ Tailwind v4 `--leading-*` 네임스페이스가 `leading-<step>` 유틸리티를
 원소의 클래스 전체가 필요한데 `cn()` 인자로 쪼개지면 AST 셀렉터 하나에 안
 담기기 때문이다.
 
-### Radius ramp — 3단 (일반 표면)
+### Radius ramp — 4단 (일반 표면)
 
 Tailwind v4 `--radius-*` 네임스페이스가 `rounded-<step>` 를 생성한다.
 
 | 단 | 토큰 (유틸) | px | 대상 |
 |---|---|---|---|
+| micro | `--radius-micro` (`rounded-micro`) | 4 | 마이크로 배지·명령 태그·kbd — 칩 아래 한 층 |
 | chip | `--radius-chip` (`rounded-chip`) | 6 | 칩·배지·작은 버튼 |
 | card | `--radius-card` (`rounded-card`) | 9 | 카드·인풋·중형 서피스 |
 | panel | `--radius-panel` (`rounded-panel`) | 12 | 패널·모달·큰 서피스 |
+
+**`micro` 는 2026-08-03 체계석 등재다.** 램프가 3단이던 동안 화면에는 4px 반경이
+**96곳**(Tailwind 기본 `rounded-sm` 59 + 무접미 `rounded` 37) 살아 있었다 —
+마이크로 배지·명령 태그·kbd 급, 즉 칩(6px) 아래에 실재하는 한 층이 램프에 이름이
+없어 기본 스케일로 새고 있던 것이다. 96번 반복되는 값은 명시 예외가 아니라
+빠진 스텝이다. 등재와 함께 전량을 `rounded-micro` 로 기계 치환했으므로 픽셀
+이동은 0이고, 그 뒤로 `rounded-sm`·무접미 `rounded` 는 eslint 셀렉터가, 남은
+이름 스텝(`rounded-2xl` 19 · `text-lg` 계열 8)은 per-family 래칫
+(`tests/contract/named-offramp-utility-ratchet.contract.test.ts`)이 막는다.
+크롬 사다리의 「키캡 4px」도 같은 값이다 — 크롬 쪽 수렴(별칭화)은 미결.
+등록처 짝: `app/globals.css` + `src/shared/lib/cn.ts` `RADIUS_RAMP_STEPS`
+(tailwind-merge radius 그룹 — 미등록이면 `rounded-chip` 뒤에 온 `rounded-micro`
+가 병합되지 않고 둘 다 살아남아 CSS 소스 순서가 승자를 정한다).
 
 > **크롬 radius 사다리와의 관계.** 아래 "크롬 문법" 절의 `--chrome-radius`
 > (10px) · `--chrome-radius-inner`(7px) · 키캡(4px) 사다리는 **컴포넌트에
@@ -2744,6 +2763,13 @@ JSX 안에 44px 정사각 버튼이나 라벨 버튼을 인라인 클래스로 �
 페어링까지 ③ eslint `accentTintPairingSelectors` — 같은 호출/원소 안의
 리터럴 페어링을 편집기에서 즉시.
 
+값 둘이 2026-08-03 체계석에서 정정됐다 — 축이 아니라 **값의 다수 정합**이다:
+
+| 정정 | 이전 → 이후 | 근거(전수) |
+|---|---|---|
+| chip/pill 기본 보더 | `--color-divider`(0.08) → `--color-border-soft`(0.06) | 칩 반경 원소의 손 보더 74(0.06) 대 18(0.08) — 램프 기본이 소수파라 정규화가 곧 «조용히 한 단 진해짐»이었다. card/tile 은 처음부터 0.06 — 이제 보더 있는 네 모양이 같은 기본이다 |
+| `tone: 'success'` 잉크 | 신호색 `--color-status-success`(#32b97d) → 글자 역할 `--color-success-text-a94`(창백한 민트) | 신호색이던 동안 실소비처 **0**(#884 가 `fixedHeight` 를 죽인 그 기준). danger 는 이미 글자 역할(`--color-danger-text`)이라 셋의 역할이 어긋나 있었다. warning 의 수렴(status-warning vs amber-source-a90)은 전수와 함께 미결 |
+
 **`<Button>` 채택률 5%는 게으름이 아니라 커버리지 구멍이었다** — 시스템에 컨트롤
 클래스가 하나뿐인데 앱은 여섯을 쓴다.
 
@@ -2772,10 +2798,56 @@ JSX 안에 44px 정사각 버튼이나 라벨 버튼을 인라인 클래스로 �
 | **24** | (토큰 없음 — 규격 상수) | `chip`/`pill`/`icon` 의 `sm`, `segment` 의 `sm`·`md` | **WCAG 2.5.8 (AA, Target Size Minimum) 24×24** — 사다리의 바닥이다. 이 아래는 규격 미달이지 「작은 단」이 아니다 |
 | **28** | `--control-h-sm` | `row` 의 `sm`, `icon` 의 `md`(`h-7 w-7`) | 한 줄 목록 행과 28px 정사각 아이콘 |
 | **32** | `--control-h-md` | `chip`/`pill` 의 `md`·`lg`, `segment` 의 `lg`, `card` 의 `sm`, `icon` 의 `lg`, `--app-nav-rail-tile-height` | **이 앱의 기본 컨트롤 높이.** 값 층은 `min-h-8` 로 이 값에 선다 |
-| **34** | `--docs-header-tile-size` | 문서함 헤더 타일 | 크롬 잠금 — 그 표면이 소유한 치수다 |
-| **36** | `--chrome-tile-size` | 크롬 필·타일, `row` 의 `md`, `card` 의 `md` | 「스케일 고정 계약」이 못박은 워크벤치 크롬 치수 |
+| **36** | `--chrome-tile-size` | 크롬 필·타일, **문서함 헤더 타일**, `row` 의 `md`, `card` 의 `md` | 「스케일 고정 계약」이 못박은 워크벤치 크롬 치수 |
 | **40** | `--control-h-lg` | Select, 큰 폼 컨트롤, `card` 의 `lg` | 글자를 입력받는 상자 |
 | **44** | `--touch-target-min` | `link`(비인라인)의 `min-h-11`, `row` 의 `lg`, `--control-row-h`, `pointer: coarse` 승격 | Apple HIG / Material 의 최소 터치 타깃 |
+
+**34 는 2026-08-03 에 이 표에서 사라졌다.** 한 줄짜리 「크롬 잠금」으로
+등재돼 있었지만, 그 등재는 34 를 **정당화한 게 아니라 기록만** 하고 있었다.
+근거를 따라가면 `DocsHeaderTile` 의 주석 한 줄이 나온다 — *"`ChromeTile` 은
+`--chrome-tile-size`(**44px**)를 고정해 헤더 밀도(34px)에 안 맞는다."*
+크롬 타일은 2026-07-23 에 **36px 로 내려왔고**(소유자 *"딱봐도 크다"*), 그날
+34 의 유일한 근거가 사라졌는데 아무도 34 를 다시 유도하지 않았다. 같은 역할
+(정사각 아이콘 타일)에 값 둘 · coarse 승격 규칙 둘이 남아 있었을 뿐이다.
+지금은 하나다: `--chrome-tile-size`. 원장: `docs/DECISIONS.md` 2026-08-03
+「타일 치수는 하나다」.
+
+### 이 사다리는 **어느 모양에** 적용되나 (2026-08-03 — 범위 명시)
+
+위 문장(*"이 표 밖의 컨트롤 높이는 이탈이다"*)은 사정거리를 안 적어서, 실제로
+**이탈로도 준수로도 판정할 수 없는 자리**를 남겼다: 나브레일 항목은 전 라우트에서
+**62px** 로 렌더되는데(실측 1440×900), 그 62 는 아무도 고른 값이 아니라
+`py-1.5`(12) + 타일 32 + `gap-1`(4) + 라벨 줄상자 14 의 **합**이다. 이 표에
+없지만 결함도 아니다 — 규칙이 범위를 안 말해서 생긴 공백이었다.
+
+| 부류 | 사다리가 무엇을 잡나 | 예 |
+|---|---|---|
+| **가로 한 줄 컨트롤** — 내용이 한 줄이고 높이를 축이 정한다 | **바깥 높이 자체.** 전 조합이 명시 `min-h-*` 를 선언하고 그 값은 표 안이어야 한다 | `chip` · `pill` · `segment` · `row` · `card` |
+| **정사각 아이콘 컨트롤** | **변(邊) 자체.** `h-*` 또는 크기 토큰이 표 안이어야 한다 | `icon` · `ChromeTile` · `DocsHeaderTile` |
+| **세로로 쌓는 컨트롤** — 아이콘 위 · 라벨 아래처럼 두 줄 이상이 쌓인다 | **바깥 높이가 아니라 안쪽 정사각 타일.** 바깥은 내용의 합이라 사다리가 정하지 않는다 | `tile` · 나브레일 항목(`--app-nav-rail-tile-height` = 32 = `--control-h-md`) |
+| **인라인 텍스트 링크** | 면제. `min-h` 를 실으면 글줄 상자를 밀어 올린다(실측 21.3 → 44) | `link`(인라인). 비인라인 `link` 는 44 |
+
+**한 줄로**: 사다리는 «한 줄짜리 상자의 높이»와 «정사각의 변»을 잡는다. 세로로
+쌓는 것은 **그 안의 타일**로 잡고, 바깥 합계는 잡지 않는다 — 잡으려 들면 라벨
+글자 수가 규격을 정하게 되어 사다리가 자기 규율 1(*"패딩이 높이를 정하면 안
+된다"*)을 스스로 어긴다.
+**사정거리 — 이 표는 «가로 한 줄» 컨트롤의 것이다 (2026-08-03 체계석).**
+적용 대상은 가로 한 줄 모양(`chip`·`pill`·`segment`·`row`·`card`)과 정사각
+(`icon`)뿐이다. **세로 2축 표면은 이 표의 대상이 아니다** — `tile` 모양, 그리고
+나브레일 아이템처럼 아이콘 위·라벨 아래로 쌓이는 컨트롤은 내용과 크롬 지오메트리
+토큰(`--app-nav-rail-tile-*`)이 높이를 정한다. 나브레일 아이템이 62px 로
+렌더되는 것은 사다리 이탈이 아니라 **판정 대상 아님**이다(타일 32px + 라벨 +
+간격의 합). 규칙 감사가 지적한 대로, «이 표 밖은 이탈»이라는 문장은 어느 모양에
+적용되는지 없이는 판정 불능이었다 — 이 문단이 그 사정거리 선언이다. 밑줄 탭
+(`tab-bar`)도 상자가 아니라 베이스라인 정렬 표면이라 대상 밖이되, 그 높이(실측
+29px)가 어휘 밖이라는 지적은 미결로 남긴다(아래 「다음」).
+
+**`xs`(마이크로 티어)는 높이의 단이 아니다 (2026-08-03).** 값 층의 `size: 'xs'`
+는 24 바닥(`min-h-6`)을 그대로 두고 **인셋·타입·반경**만 마이크로 티어로 내린다
+(칩: `px-1.5 py-0.5`/caption/`rounded-micro`. 칩 밖 모양에서는 `sm` 의 별칭 —
+소비처 0 값은 발명하지 않는다). 24 아래 단을 만들지 않는 이유는 위 표의 첫
+줄이다: WCAG 2.5.8 바닥 아래는 «작은 단»이 아니라 규격 미달이다. 근거는 래칫
+원장에 세 라운드 연속 기록된 「sm 아래 한 칸이 없다」(전수 14 · 9파일)다.
 
 **규율 셋:**
 
@@ -2806,8 +2878,15 @@ JSX 안에 44px 정사각 버튼이나 라벨 버튼을 인라인 클래스로 �
 램프가 즉시 빨개진다) ③ `fixedHeight` 축이 되살아나지 않는다 ④ **가로 한 줄
 모양 전 조합(5×3)+정사각(3)이 명시 높이를 선언하고 그 값이 높이 어휘 —
 `--control-h-*`·`--chrome-tile-size`·`--touch-target-min` 파싱값 + WCAG 바닥
-24 — 안이다**(34 는 크롬 잠금이라 일부러 어휘 밖: 컨트롤이 서면 빨개진다)
+24 — 안이다**
 ⑤ `min-h-[...]` arbitrary 로 어휘를 우회할 수 없다 — 다섯을 단언한다.
+
+**범위 게이트**: 위 표가 말로만 남지 않게, `tests/contract/control-height-ladder-scope.contract.test.ts`
+가 값 층 **밖**의 두 부류를 잡는다 — ① `app/globals.css` 의 모든 타일 치수
+토큰(`--*-tile-size` / `--*-tile-height`)의 기본값이 높이 어휘 안이다
+(`max()`/`calc(× 스케일)` 형태는 기본 px 를 꺼내 판정) ② 세로로 쌓는 컨트롤의
+안쪽 타일이 사다리에 선다(`--app-nav-rail-tile-height` = `--control-h-md`).
+①이 없어서 34 가 태어난 날 아무 게이트도 안 울렸다.
 
 ### 시스템을 늘리는 규칙 (2026-08-03 소유자 지시)
 
@@ -2930,6 +3009,14 @@ accessible and functional."*
 
 트리거 목록과 근거는 `.claude/rules/design.md` 의 같은 이름 절에 있다. 요지 한 줄:
 **혼자 정한 규격은 규격이 아니라 취향이다.**
+
+**게이트 (2026-08-03 추가)**: `pnpm decisions:check` 가 규격이 실제로 움직인
+변경에 `docs/DECISIONS.md` 기록을 요구한다. 그 전까지 이 규칙은 **문서에만 있는
+규칙**이었다 — 값 층 램프를 넓힌 커밋 다섯 중 원장 기록이 있는 것은 하나였다.
+판정은 파일 이름이 아니라 **센서스**로 한다(축·선택지·기본값·램프 토큰 값의
+증감; 클래스 문자열과 주석은 제외) — 최근 300 커밋 소급 적용 시 트리거 파일을
+만진 79 커밋 중 16 만 남는다. 상세: `scripts/lib/design-spec-census.mjs`,
+계약: `tests/contract/design-spec-ledger.contract.test.ts`.
 
 #### 규칙 4 — 새 값을 더할 때는 「몇 개가 막혀 있나」를 먼저 센다
 

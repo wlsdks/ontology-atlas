@@ -26,10 +26,22 @@
   --color-text-secondary: #d0d6e0;
   --color-text-tertiary: #8a8f98;
   /*
-   * Linear 원본 은 #62666d(3.45:1) 이지만 WCAG AA (4.5:1) 미달이라
-   * canvas #08090a 기준 ~4.8:1 로 한 단계 밝게 보정. 시각 리듬 유지.
+   * 가장 약한 잉크. 두 번 보정됐다:
+   * ① #62666d(canvas 3.45:1, AA 미달) → #787c84 — canvas/panel 은 넘겼지만
+   *   **한 단 올라선 표면에서만 뚫리는 값**이었다(panel+overlay-1 4.37 ·
+   *   elevated 4.16). 화면의 axe 위반 8건이 전부 이 토큰이었고 소비처는
+   *   584곳이라 자리별 치환은 수를 내릴 뿐 고치는 게 아니었다.
+   * ② #787c84 → #82828a (2026-08-03, 「체계」 판정 — docs/DECISIONS.md) —
+   *   네 정지 표면 전부 AA 통과(canvas 5.23 · panel 5.00 · panel+overlay-1
+   *   4.81 · elevated 4.57). elevated 4.5 를 넘는 사실상 최소 명도라
+   *   (#828282 가 4.54 하한) tertiary(#8a8f98)와의 위계 간격을 최대한
+   *   보존하고, 지도 패널의 같은 단(--topology-v2-panel-text-quaternary)이
+   *   2026-07 에 같은 사유로 이미 도착한 값과 수렴한다 — 시스템의 quaternary
+   *   해가 하나로 줄었다. 무채 명도만 이동, 새 hue 0.
+   * ⚠️ hover/선택 표면(overlay-2 합성 4.36)에서는 여전히 미달이다 — 누를 수
+   *   있는 행 위의 글자는 tertiary 부터 쓴다(AtlasGitPanel 의 규칙 그대로).
    */
-  --color-text-quaternary: #787c84;
+  --color-text-quaternary: #82828a;
   /*
    * 채워진 인디고 **위**의 전경. 램프 넷은 전부 어두운 바탕용이라 채움 컨트롤
    * 위에서는 하나도 못 쓴다 — 그래서 저장소의 채운 인디고 버튼 9개가 전부
@@ -818,9 +830,19 @@
   --text-hero--line-height: var(--leading-hero);
   --text-hero-lg--line-height: var(--leading-hero-lg);
 
-  /* Radius ramp — 3단. Tailwind v4 `--radius-*` 네임스페이스가 rounded-<step>
-     를 생성한다. 이 밖(sub-chip 헤어라인 1~4px, overlay sheet/card 18~28px)은
-     코덱스 표의 명시 예외로만 — eslint-disable + 사유 주석 필수. */
+  /* Radius ramp — 4단. Tailwind v4 `--radius-*` 네임스페이스가 rounded-<step>
+     를 생성한다. 이 밖(헤어라인 1~2px, overlay sheet/card 18~28px)은
+     코덱스 표의 명시 예외로만 — eslint-disable + 사유 주석 필수.
+
+     `micro`(4px)는 2026-08-03 체계석 등재다. 이 절이 "1~4px 은 명시 예외"라고
+     적는 동안 실제 화면에는 4px 반경이 **96곳**(rounded-sm 59 + 무접미 rounded
+     37) 살아 있었다 — 마이크로 배지·명령 태그·kbd 급, 즉 칩(6px) 아래에 실재하는
+     한 층이다. 96번 반복되는 값은 예외가 아니라 램프에 없는 스텝이다. 등재
+     당시 전량을 `rounded-micro` 로 기계 치환했으므로 픽셀 이동은 0이고, 이름
+     있는 Tailwind 기본 스텝은 eslint 셀렉터 + named-off-ramp 래칫이 막는다.
+     스텝 등록의 짝: `src/shared/lib/cn.ts` `RADIUS_RAMP_STEPS`(tailwind-merge
+     충돌 병합), `tests/contract/control-class.contract.test.ts` RADIUS_STEPS. */
+  --radius-micro: 4px; /* 마이크로 배지·명령 태그·kbd — 칩 아래 한 층 */
   --radius-chip: 6px; /* 칩·배지·작은 버튼 */
   --radius-card: 9px; /* 카드·인풋·중형 서피스 */
   --radius-panel: 12px; /* 패널·모달·큰 서피스 */
@@ -2384,10 +2406,15 @@
     /* drawer/점검 모달 공용 scrim 단일 출처 — 기존 sourceTreeOpen drawer 와
        동일 값. 다크 단일(라이트 분기 없음). */
     --docs-scrim: rgba(0, 0, 0, 0.5);
-    /* 문서함 헤더 아이콘 타일 규격(DocsHeaderTile) — Guardian 이월 P3:
-       h-[34px]/w-[34px] 하드코드 리터럴을 토큰으로 승격(슬라이스 B). 값은
-       기존 밀도 그대로 유지(회귀 아님, 리팩터만). */
-    --docs-header-tile-size: 34px;
+    /*
+     * (구 `--docs-header-tile-size`(34px)는 2026-08-03 에 삭제됐다 —
+     * `DocsHeaderTile` 은 이제 `--chrome-tile-size`(36px)를 읽는다. 34 는
+     * 설계값이 아니라 **화석**이었다: 그 토큰이 태어날 때 크롬 타일은 44px
+     * 이었고 *"44 는 헤더 밀도에 안 맞는다"* 가 34 의 근거였는데,
+     * 2026-07-23 에 크롬이 36 으로 내려온 뒤 아무도 34 를 다시 유도하지
+     * 않았다. 같은 역할(정사각 아이콘 타일)에 두 값이 남아 있었을 뿐이다.
+     * 원장: `docs/DECISIONS.md` 2026-08-03 「타일 치수는 하나다」.)
+     */
   }
 
   /*
@@ -3145,12 +3172,12 @@
          를 쓰고 있어 해당 토큰이 같은 media 블록에서 이미 커버됨. */
       --overlay-close-size: var(--touch-target-min);
       /*
-       * 2026-07-29 — 같은 종류의 사각지대 하나 더. 문서함 헤더 타일은
-       * `--chrome-tile-size` 가 아니라 자기 토큰을 읽어서, 위 승격이 이
-       * 트리거들에 닿지 않았다(실측 34×34). 문서함은 `<lg` 에서도 열리므로
-       * 태블릿·분할창의 실제 인구가 있다.
+       * (2026-07-29 에 여기 있던 `--docs-header-tile-size` 승격은 2026-08-03
+       * 에 **필요 없어졌다** — 문서함 헤더 타일이 위 `--chrome-tile-size` 를
+       * 직접 읽으므로 coarse 승격을 자동으로 상속한다. 승격 규칙이 둘이면
+       * 하나가 뒤처지는 것이 기본값이고, 실제로 그래서 2026-07-29 에 이
+       * 줄을 따로 추가해야 했다.)
        */
-      --docs-header-tile-size: max(34px, var(--touch-target-min));
       /* 기록 목적지의 연결 셋업 동작(앱 받기 · 폴더 고르기 · 기록 시작하기).
          이 페이지가 하는 유일한 일이 그 버튼이라, 터치에서 36px 로 남으면
          페이지 전체가 목적을 잃는다. */

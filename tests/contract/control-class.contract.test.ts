@@ -25,7 +25,7 @@ import {
  */
 
 const SHAPES: ControlShape[] = ['chip', 'icon', 'row', 'pill', 'card', 'link', 'tile', 'segment'];
-const SIZES: ControlSize[] = ['sm', 'md', 'lg'];
+const SIZES: ControlSize[] = ['xs', 'sm', 'md', 'lg'];
 const TONES: ControlTone[] = [
   'default',
   'muted',
@@ -50,8 +50,8 @@ const SCOPES = ['app', 'panel'] as const;
  */
 const TOKEN_NAMESPACES = ['--color-', '--topology-v2-panel-text-'];
 
-/** `app/globals.css` 의 radius 램프 3단. 여기 없는 반경은 이탈이다. */
-const RADIUS_STEPS = ['chip', 'card', 'panel'];
+/** `app/globals.css` 의 radius 램프 4단. 여기 없는 반경은 이탈이다. */
+const RADIUS_STEPS = ['micro', 'chip', 'card', 'panel'];
 
 const all = (fn: (s: ControlShape, z: ControlSize, t: ControlTone, a: boolean) => void) => {
   for (const s of SHAPES) for (const z of SIZES) for (const t of TONES) for (const a of [true, false]) fn(s, z, t, a);
@@ -104,7 +104,7 @@ describe('controlClass — 램프 밖 값을 낼 수 없다', () => {
     expect(offenders, `타입 램프에 없는 스텝:\n${offenders.join('\n')}`).toEqual([]);
   });
 
-  it('반경은 3단 램프 안이다', () => {
+  it('반경은 4단 램프 안이다', () => {
     const offenders: string[] = [];
     all((shape, size, tone, active) => {
       for (const c of controlClass({ shape, size, tone, active }).split(' ')) {
@@ -339,32 +339,69 @@ describe('controlClass — 여덟째 모양과 세 축', () => {
      * 이 축은 아무것도 안 하면서 고를 것만 늘리는 축이 되므로, 그날 이 시험이
      * 빨개져 지우라고 말해야 한다.
      */
-    const STEPS = ['primary', 'secondary', 'tertiary', 'quaternary'] as const;
+    /*
+     * 2026-08-03 까지는 넷이었다. 전역 quaternary 상향(#787c84 → #82828a,
+     * docs/DECISIONS.md)으로 quaternary 가 두 램프에서 **같은 값으로 수렴**했고,
+     * 이 시험이 설계대로 빨개져 그 단의 panel 컴파운드를 지웠다 — 그래서 축이
+     * 재매핑하는 단은 이제 셋이고, 셋 각각이 근거(값이 실제로 다름)를 가진다.
+     */
+    const DIVERGING_STEPS = ['primary', 'secondary', 'tertiary'] as const;
     const pairs: Array<[string, string]> = [];
-    for (const step of STEPS) {
+    for (const step of DIVERGING_STEPS) {
       const app = cssVar(`--color-text-${step}`);
       const panel = cssVar(`--topology-v2-panel-text-${step}`);
       expect(app, `--color-text-${step} 를 못 읽었다`).toBeTruthy();
       expect(panel, `--topology-v2-panel-text-${step} 를 못 읽었다`).toBeTruthy();
       pairs.push([app as string, panel as string]);
     }
-    // 공회전 차단 — 4단을 다 못 읽었으면 아래 단언은 빈 집합을 통과한다.
-    expect(pairs.length, '두 램프의 단을 하나도 못 짝지었다').toBe(4);
+    // 공회전 차단 — 3단을 다 못 읽었으면 아래 단언은 빈 집합을 통과한다.
+    expect(pairs.length, '두 램프의 단을 하나도 못 짝지었다').toBe(3);
     /*
      * ⚠️ 처음엔 「하나라도 다르면 통과」였고, `/gate-probe` 가 그게 **게이트가
-     * 아님**을 잡았다: 4단 중 하나를 같은 값으로 되돌려도 초록이었다. 축이
-     * 재매핑하는 단은 **넷 다** 각자 근거가 있어야 한다 — 한 단이 수렴하면 그
-     * 단의 컴파운드는 아무것도 안 하면서 자리만 차지한다.
+     * 아님**을 잡았다: 재매핑 단 중 하나를 같은 값으로 되돌려도 초록이었다.
+     * 축이 재매핑하는 단은 **전부** 각자 근거가 있어야 한다 — 한 단이 수렴하면
+     * 그 단의 컴파운드는 아무것도 안 하면서 자리만 차지한다.
      */
     const same = pairs
-      .map(([a, b], i) => (a === b ? `${STEPS[i]}: ${a}` : null))
+      .map(([a, b], i) => (a === b ? `${DIVERGING_STEPS[i]}: ${a}` : null))
       .filter((x): x is string => x !== null);
     expect(
       same,
       `두 무채 램프의 이 단이 같아졌다 — 그 단의 \`scope: 'panel'\` 컴파운드는 근거가 없다.\n` +
-        `수렴한 단을 값 층에서 지우거나(그 단은 tone 하나로 충분하다), 넷 다 수렴했으면 축 자체를 지워라.\n` +
+        `수렴한 단을 값 층에서 지우거나(그 단은 tone 하나로 충분하다), 전부 수렴했으면 축 자체를 지워라.\n` +
         same.join('\n'),
     ).toEqual([]);
+  });
+
+  it('quaternary 는 수렴 상태로 고정한다 — 다시 갈라지면 panel 컴파운드를 되살려야 한다', () => {
+    /*
+     * 위 시험의 대칭이다. 2026-08-03 에 quaternary 가 두 램프에서 `#82828a` 로
+     * 수렴해 panel 컴파운드를 지웠다(값이 두 곳에 적혀 있으나 **이 고정이
+     * 드리프트를 기계적으로 잡는다** — 별칭 var() 로 합치지 않은 이유는
+     * `prefers-contrast: more` 가 전역 quaternary 만 #8f95a0 로 올리는데, 별칭이면
+     * 그 순간 패널 사다리에서 quaternary 가 tertiary(#868690) **위로 역전**되기
+     * 때문이다. 실측 근거: docs/DECISIONS.md 2026-08-03 quaternary 항목).
+     *
+     * 이 시험 없이는 두 실패가 조용하다: ① 한쪽 값만 움직여 다시 갈라졌는데
+     * 재매핑 없이 패널 위 muted 가 틀린 잉크를 낸다. ② 컴파운드를 근거 없이
+     * 되살린다. 둘 다 여기서 빨개진다.
+     */
+    const app = cssVar('--color-text-quaternary');
+    const panel = cssVar('--topology-v2-panel-text-quaternary');
+    expect(app, '--color-text-quaternary 를 못 읽었다').toBeTruthy();
+    expect(panel, '--topology-v2-panel-text-quaternary 를 못 읽었다').toBeTruthy();
+    expect(
+      panel,
+      `quaternary 가 두 램프에서 다시 갈라졌다(전역 ${app} · 패널 ${panel}) — ` +
+        `panel 위 muted 잉크가 근거를 잃었다. \`scope: 'panel', tone: 'muted'\` 컴파운드를 되살리고 이 고정을 갱신하라.`,
+    ).toBe(app);
+    // 컴파운드가 실제로 없다 — muted 는 scope 와 무관하게 전역 토큰 하나를 낸다.
+    const onPanel = controlClass({ shape: 'chip', size: 'md', tone: 'muted', scope: 'panel' });
+    expect(
+      onPanel.includes('--topology-v2-panel-text-quaternary'),
+      '수렴 상태인데 panel 컴파운드가 되살아나 있다 — 같은 값을 내는 무노동 분기다. 지워라.',
+    ).toBe(false);
+    expect(onPanel).toContain('text-[color:var(--color-text-quaternary)]');
   });
 
   it('`scope: panel` 은 잉크만 바꾼다 — 바탕·보더로 새면 두 번째 채색 시스템이다', () => {
@@ -392,10 +429,12 @@ describe('controlClass — 여덟째 모양과 세 축', () => {
     }
   });
 
-  it('`scope` 가 실제로 무언가를 바꾼다 — 무채 4단은 패널에서 다른 잉크다', () => {
+  it('`scope` 가 실제로 무언가를 바꾼다 — 값이 갈리는 무채 단은 패널에서 다른 잉크다', () => {
     // 위 시험이 「안 바뀐다」만 보므로, 이 시험이 없으면 축을 통째로 no-op 으로
-    // 만들어도 둘 다 초록이다.
-    for (const tone of ['default', 'muted', 'secondary', 'strong'] as const) {
+    // 만들어도 둘 다 초록이다. `muted` 는 여기 없다 — 2026-08-03 quaternary
+    // 수렴으로 재매핑이 삭제됐고, 그 상태는 위 「quaternary 는 수렴 상태로
+    // 고정한다」가 반대 방향으로 잡는다.
+    for (const tone of ['default', 'secondary', 'strong'] as const) {
       expect(
         controlClass({ shape: 'chip', tone, scope: 'panel' }),
         `${tone} 가 패널에서 그대로다 — scope 축이 공회전한다`,
@@ -490,8 +529,11 @@ describe('controlClass — 여덟째 모양과 세 축', () => {
      * 어휘는 손으로 적지 않는다 — `--control-h-{sm,md,lg}` ·
      * `--chrome-tile-size` · `--touch-target-min` 을 CSS 에서 읽고 WCAG 바닥
      * 24 를 더해 파생한다. 토큰이 움직이면 여기가 같이 빨개진다.
-     * `--docs-header-tile-size`(34)는 **일부러 안 넣는다** — 그 단은 문서함
-     * 헤더 크롬이 소유한 치수라, 컨트롤이 거기 서면 그게 결함이다.
+     *
+     * (위 표의 card/md 가 점유했던 34 는 당시 `--docs-header-tile-size` 라는
+     * 별도 토큰이었다. 그 토큰은 2026-08-03 에 삭제됐고 문서함 헤더 타일은
+     * `--chrome-tile-size`(36)에 섰다 — 34 는 이제 어느 토큰의 값도 아니라
+     * 그냥 어휘 밖이다. 원장: 2026-08-03 「타일 치수는 하나다」.)
      *
      * `link`(비인라인 min-h-11 / 인라인 면제)와 `tile`(세로 2축 — 내용이
      * 높이를 정한다)은 이 게이트의 대상이 아니다 — 각자 위의 시험이 잠근다.
@@ -542,8 +584,93 @@ describe('controlClass — 여덟째 모양과 세 축', () => {
       }
     }
     expect(offenders, `사다리 밖 조합:\n${offenders.join('\n')}`).toEqual([]);
-    // 공회전 차단 — 5모양×3 + icon 3 = 18 조합을 실제로 다 쟀는가.
-    expect(checked, '어휘 판정을 전 조합에 돌리지 못했다').toBe(18);
+    // 공회전 차단 — 5모양×4 + icon 4 = 24 조합을 실제로 다 쟀는가.
+    expect(checked, '어휘 판정을 전 조합에 돌리지 못했다').toBe(5 * SIZES.length + SIZES.length);
+  });
+
+  it('마이크로 티어는 칩에서만 실재한다 — 다른 모양의 `xs` 는 `sm` 의 별칭이다', () => {
+    /*
+     * ## 왜 별칭인가 (2026-08-03 체계석)
+     *
+     * 「sm 아래 한 칸이 없다」는 래칫 원장에 세 라운드 연속 기록된 구멍이고,
+     * 실측 소비처(마이크로 명령 태그 · px-1.5 py-0.5 · 9px mono · 반경 4px)는
+     * **칩꼴**이었다. cva 크기 축은 모양 간 공유 타입이라 단을 더하면 여덟
+     * 모양 전부가 그 단을 받는데, 칩 밖의 `xs` 에 소비처가 없다 — 소비처 0인
+     * 값을 발명하는 대신 `sm` 별칭으로 둔다(#884 가 남긴 `true`=`md` 별칭과
+     * 같은 문법). 칩 밖에서 마이크로 티어 소비처가 실측되면 그때 별칭을 풀고
+     * 값을 세운다 — 이 시험이 그 순간을 명시적 결정으로 만든다.
+     */
+    for (const shape of SHAPES.filter((sh) => sh !== 'chip')) {
+      expect(
+        controlClass({ shape, size: 'xs' }),
+        `${shape}/xs 가 sm 과 갈라졌다 — 소비처 전수와 함께 별칭을 푼 결정인가?`,
+      ).toBe(controlClass({ shape, size: 'sm' }));
+    }
+    // 칩에서는 실재한다 — 별칭이면 이 단은 고를 것만 늘리는 축이다.
+    expect(controlClass({ shape: 'chip', size: 'xs' })).not.toBe(controlClass({ shape: 'chip', size: 'sm' }));
+  });
+
+  it('칩 마이크로 티어 — 반경은 micro, 높이는 그대로 24 바닥이다', () => {
+    /*
+     * 마이크로 티어가 여는 것은 **인셋·타입·반경**이지 높이가 아니다.
+     * 24(WCAG 2.5.8) 아래 단을 만들지 않는 것이 사다리의 첫 규율이다.
+     * 반경 4px 는 발명이 아니라 전수다 — 등재 시점에 `rounded-sm`(59) +
+     * 무접미 `rounded`(37) = 96곳이 이미 4px 위에 있었다.
+     */
+    const cls = controlClass({ shape: 'chip', size: 'xs' });
+    expect(cls).toContain('rounded-micro');
+    expect(cls).toContain('min-h-6');
+    expect(cls).toContain('text-caption');
+    expect(cls, 'chip/xs 의 인셋은 sm(px-2) 한 칸 아래다').toContain('px-1.5');
+  });
+
+  it('어느 조합도 반경 클래스를 정확히 하나 낸다 — 둘이면 CSS 소스 순서가 승자다', () => {
+    /*
+     * 칩 반경이 base 에서 크기 컴파운드로 옮겨진 대가를 잠근다. cn 의 radius
+     * 그룹 병합(`RADIUS_RAMP_STEPS`)이 있어도, 출력에 반경이 0개거나 2개인
+     * 조합이 생기면 그건 컴파운드 누락/중복이다.
+     */
+    let counted = 0;
+    all((shape, size, tone, active) => {
+      const n = controlClass({ shape, size, tone, active })
+        .split(' ')
+        .filter((c) => /^rounded-/.test(c)).length;
+      expect(n, `${shape}/${size}/${tone}/${active}: 반경 클래스가 ${n}개다`).toBe(1);
+      counted += 1;
+    });
+    expect(counted, '조합을 하나도 안 돌렸다').toBeGreaterThan(500);
+  });
+
+  it('칩·필의 기본 보더는 앱 다수(border-soft)다 — 옮길 때마다 진해지던 문을 닫는다', () => {
+    /*
+     * 등재 시점 전수: 칩 반경 원소의 손 보더 **border-soft/chrome-border 74
+     * 대 divider 18**(4:1). 램프 기본이 소수파(0.08)면 정규화가 곧 «조용히
+     * 한 단 진해짐»이 된다 — 다수를 먼저 세는 규칙 0 의 값 층 버전이다.
+     * card/tile 은 처음부터 border-soft — 이제 보더 있는 네 모양이 같은 기본
+     * 위에 선다.
+     */
+    for (const shape of ['chip', 'pill', 'card', 'tile'] as const) {
+      expect(
+        controlClass({ shape }),
+        `${shape} 의 기본 보더가 다수(0.06)에서 벗어났다`,
+      ).toContain('border-[color:var(--color-border-soft)]');
+      expect(controlClass({ shape })).not.toContain('border-[color:var(--color-divider)]');
+    }
+  });
+
+  it('신호 톤의 잉크는 글자 역할 토큰이다 — success 가 신호색이면 소비처가 램프 밖에 남는다', () => {
+    /*
+     * 2026-08-03 정정의 잠금. danger(`--color-danger-text`)와 success
+     * (`--color-success-text-a94`)는 글자 역할이다 — 신호색(#32b97d 등)은
+     * 점·보더의 것이지 문장 속 잉크가 아니다. success 가 신호 토큰이던 동안
+     * 이 톤의 실소비처는 0이었다.
+     * warning 은 아직 신호 토큰(`--color-status-warning`)이다 — 유일 소비처가
+     * 그 값 위에서 옳고, 앰버 글자 관용구(amber-source-a90)와의 수렴은 전수와
+     * 함께 별도 판정으로 남겼다. 수렴이 결정되면 이 시험도 같이 고쳐라.
+     */
+    expect(controlClass({ shape: 'chip', tone: 'success' })).toContain('--color-success-text-a94');
+    expect(controlClass({ shape: 'chip', tone: 'danger' })).toContain('--color-danger-text');
+    expect(controlClass({ shape: 'chip', tone: 'warning' })).toContain('--color-status-warning');
   });
 
   it('삭제된 `fixedHeight` 축이 되살아나지 않는다 — 값이 아니라 축으로 되돌리는 것이 그때의 실수였다', () => {

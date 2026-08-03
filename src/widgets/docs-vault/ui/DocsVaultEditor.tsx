@@ -499,9 +499,9 @@ export function DocsVaultEditor({
   if (loading || content === null) {
     return (
       <div className="flex flex-col gap-3 p-8" role="status" aria-label={t('loadingLabel')}>
-        <div className="h-3 w-2/3 animate-pulse rounded bg-[color:var(--color-border-soft)]" aria-hidden />
-        <div className="h-3 w-5/6 animate-pulse rounded bg-[color:var(--color-overlay-2)]" aria-hidden />
-        <div className="h-3 w-1/2 animate-pulse rounded bg-[color:var(--color-overlay-2)]" aria-hidden />
+        <div className="h-3 w-2/3 animate-pulse rounded-micro bg-[color:var(--color-border-soft)]" aria-hidden />
+        <div className="h-3 w-5/6 animate-pulse rounded-micro bg-[color:var(--color-overlay-2)]" aria-hidden />
+        <div className="h-3 w-1/2 animate-pulse rounded-micro bg-[color:var(--color-overlay-2)]" aria-hidden />
       </div>
     );
   }
@@ -515,10 +515,10 @@ export function DocsVaultEditor({
         <span
           className={
             saveState.tone === 'dirty'
-              ? "inline-flex items-center gap-1.5 rounded-sm border border-[color:var(--color-amber-docs-a25)] bg-[color:var(--color-amber-docs-a08)] px-2 py-1 font-mono text-caption uppercase tracking-[0.10em] text-[color:var(--color-amber-docs-a95)]"
+              ? "inline-flex items-center gap-1.5 rounded-micro border border-[color:var(--color-amber-docs-a25)] bg-[color:var(--color-amber-docs-a08)] px-2 py-1 font-mono text-caption uppercase tracking-[0.10em] text-[color:var(--color-amber-docs-a95)]"
               : saveState.tone === 'saved'
-                ? "inline-flex items-center gap-1.5 rounded-sm border border-[color:var(--color-indigo-line-a22)] bg-[color:var(--color-indigo-a08)] px-2 py-1 font-mono text-caption uppercase tracking-[0.10em] text-[color:var(--color-indigo-line-a90)]"
-                : "inline-flex items-center gap-1.5 rounded-sm border border-[color:var(--color-overlay-2)] bg-[color:var(--color-overlay-1)] px-2 py-1 font-mono text-caption uppercase tracking-[0.10em] text-[color:var(--color-text-tertiary)]"
+                ? "inline-flex items-center gap-1.5 rounded-micro border border-[color:var(--color-indigo-line-a22)] bg-[color:var(--color-indigo-a08)] px-2 py-1 font-mono text-caption uppercase tracking-[0.10em] text-[color:var(--color-indigo-line-a90)]"
+                : "inline-flex items-center gap-1.5 rounded-micro border border-[color:var(--color-overlay-2)] bg-[color:var(--color-overlay-1)] px-2 py-1 font-mono text-caption uppercase tracking-[0.10em] text-[color:var(--color-text-tertiary)]"
           }
           aria-live="polite"
         >
@@ -529,7 +529,7 @@ export function DocsVaultEditor({
           </span>
         </span>
         <span
-          className="hidden min-w-0 items-center gap-1.5 rounded-sm border border-[color:var(--color-overlay-2)] bg-[color:var(--color-overlay-1)] px-2 py-1 text-label text-[color:var(--color-text-tertiary)] lg:inline-flex"
+          className="hidden min-w-0 items-center gap-1.5 rounded-micro border border-[color:var(--color-overlay-2)] bg-[color:var(--color-overlay-1)] px-2 py-1 text-label text-[color:var(--color-text-tertiary)] lg:inline-flex"
           aria-label={t('saveContractAriaLabel')}
         >
           <Check size={11} className="text-[color:var(--color-text-quaternary)]" aria-hidden />
@@ -569,7 +569,7 @@ export function DocsVaultEditor({
           </span>
         </span>
         <span
-          className="hidden min-w-0 items-center gap-1.5 rounded-sm border border-[color:var(--color-overlay-2)] bg-[color:var(--color-overlay-1)] px-2 py-1 text-label text-[color:var(--color-text-tertiary)] 2xl:inline-flex"
+          className="hidden min-w-0 items-center gap-1.5 rounded-micro border border-[color:var(--color-overlay-2)] bg-[color:var(--color-overlay-1)] px-2 py-1 text-label text-[color:var(--color-text-tertiary)] 2xl:inline-flex"
           aria-label={t('saveWorkflowAriaLabel')}
         >
           <CheckSquare
@@ -876,7 +876,7 @@ export function DocsVaultEditor({
                     if (!isBlock) {
                       return (
                         <code
-                          className="rounded-sm bg-[color:var(--color-indigo-line-a06)] px-1 py-0.5 font-mono text-label text-[color:var(--color-indigo-pale-a95)]"
+                          className="rounded-micro bg-[color:var(--color-indigo-line-a06)] px-1 py-0.5 font-mono text-label text-[color:var(--color-indigo-pale-a95)]"
                           {...rest}
                         >
                           {children}

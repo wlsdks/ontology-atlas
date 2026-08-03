@@ -1789,12 +1789,13 @@ function ChangeRow({
         <span className="min-w-0 flex-1 truncate font-mono text-label">
           {/*
            * tertiary 이지 quaternary 가 아니다 — **누를 수 있는 행 위의 글자는
-           * 평면 토큰을 쓸 수 없다** (2026-08-02 실측, 알파 합성 기준).
-           * quaternary(#787c84)는 `--color-panel` 위에서 4.55:1 로 AA(4.5)를
-           * 0.05 차이로 겨우 넘긴다. 그래서 행이 hover(`--color-overlay-1`
-           * → rgb(20,21,22))나 선택(`--color-overlay-2` → rgb(29,30,31))으로
-           * 한 단 밝아지는 **순간 4.37:1 · 3.97:1 로 떨어져 기준 미달**이 된다.
-           * tertiary(#8a8f98)는 같은 두 바탕에서 5.86 / 5.12 로 여유가 있다.
+           * 평면 토큰을 쓸 수 없다** (2026-08-02 실측, 알파 합성 기준 ·
+           * 2026-08-03 quaternary #82828a 상향 후 재실측).
+           * quaternary(#82828a)는 `--color-panel` 위 5.00:1, hover
+           * (`--color-overlay-1` 합성) 4.81:1 까지는 넘지만, 선택
+           * (`--color-overlay-2` 합성)에서 **4.36:1 로 여전히 기준 미달**이다.
+           * 값 상향은 정지 표면 네 단을 통과시켰을 뿐, 이 규칙은 안 바뀌었다.
+           * tertiary(#8a8f98)는 같은 두 바탕에서 5.64 / 5.12 로 여유가 있다.
            */}
           {place ? (
             <span className="text-[color:var(--color-text-tertiary)]">{place}/</span>

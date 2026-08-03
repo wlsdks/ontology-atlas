@@ -51,11 +51,26 @@ export const LEADING_RAMP_STEPS = [
   'prose',
 ] as const;
 
+/**
+ * 반경 램프 스텝 — 위 두 램프와 같은 규율.
+ *
+ * tailwind-merge 는 자기 스케일에 없는 `rounded-<step>` 을 radius 그룹으로
+ * 인식하지 못한다. 그러면 `cn('rounded-chip', cond && 'rounded-micro')` 에서
+ * **둘 다 살아남아** CSS 소스 순서가 승자를 정한다 — 행간 램프와 같은 «충돌
+ * 병합 실패» 부류다. 값 층(`control-class.ts`)이 모양 기본 반경 위에 크기별
+ * 반경(chip/xs 의 micro)을 컴파운드로 얹으면서 이 병합이 실제로 필요해졌다.
+ *
+ * `app/globals.css` 의 `--radius-*` 램프와 반드시 동기 — 스텝을 추가하면
+ * 여기도 추가할 것 (계약 테스트: cn.test.ts).
+ */
+export const RADIUS_RAMP_STEPS = ['micro', 'chip', 'card', 'panel'] as const;
+
 const twMerge = extendTailwindMerge({
   extend: {
     classGroups: {
       'font-size': [{ text: [...TYPE_RAMP_STEPS] }],
       leading: [{ leading: [...LEADING_RAMP_STEPS] }],
+      rounded: [{ rounded: [...RADIUS_RAMP_STEPS] }],
     },
   },
 });

@@ -120,7 +120,7 @@ export function FreshnessTab({
                   <TopologyV2KindGlyph kind="domain" size={12} />
                   <span className="truncate">{row.domainTitle}</span>
                   {row.stale ? (
-                    <span className="flex-none rounded border border-dashed border-[color:var(--color-border-strong)] px-1 text-caption text-[color:var(--color-text-quaternary)]">
+                    <span className="flex-none rounded-micro border border-dashed border-[color:var(--color-border-strong)] px-1 text-caption text-[color:var(--color-text-quaternary)]">
                       {labels.stale}
                     </span>
                   ) : null}
@@ -165,10 +165,10 @@ export function FreshnessTab({
         <div className="mt-2.5 flex items-center justify-end gap-1.5 border-t border-[color:var(--color-divider)] pt-2.5 text-caption text-[color:var(--color-text-quaternary)]">
           <span>{labels.older}</span>
           {([0, 1, 2, 3] as const).map((level) => (
-            <i key={level} className="h-2.5 w-2.5 flex-none rounded-sm" style={{ backgroundColor: LEVEL_BACKGROUND[level] }} />
+            <i key={level} className="h-2.5 w-2.5 flex-none rounded-micro" style={{ backgroundColor: LEVEL_BACKGROUND[level] }} />
           ))}
           <span>·</span>
-          <i className="h-2.5 w-2.5 flex-none rounded-sm" style={{ backgroundColor: "var(--color-indigo-brand)" }} />
+          <i className="h-2.5 w-2.5 flex-none rounded-micro" style={{ backgroundColor: "var(--color-indigo-brand)" }} />
           <span>{labels.currentWeek}</span>
         </div>
         <div className="mt-3 border-t border-[color:var(--color-divider)] pt-3">

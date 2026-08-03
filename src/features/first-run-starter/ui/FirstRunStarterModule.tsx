@@ -456,7 +456,7 @@ export function FirstRunStarterModule({
           <FolderOpen size={14} aria-hidden />
           {busy && !scaffolding ? t("openBusy") : t("openLabel")}
           {applePlatform ? (
-            <span className="rounded border border-b-2 border-white/35 px-1.5 py-px font-mono text-caption font-medium opacity-80">
+            <span className="rounded-micro border border-b-2 border-white/35 px-1.5 py-px font-mono text-caption font-medium opacity-80">
               ⌘O
             </span>
           ) : null}

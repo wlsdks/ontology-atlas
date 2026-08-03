@@ -6162,6 +6162,26 @@
         },
         {
           "depth": 2,
+          "text": "2026-08-03 — 죽은 프리미티브 둘을 지운다. `↗` 허용 열은 남기되, 게이트가 소비처 없이 서게 고친다",
+          "slug": "2026-08-03-죽은-프리미티브-둘을-지운다-허용-열은-남기되-게이트가-소비처-없이-서게-고친다"
+        },
+        {
+          "depth": 2,
+          "text": "2026-08-03 — 타일 치수는 하나다: `--docs-header-tile-size`(34) 삭제, 정사각 아이콘 타일은 전부 36",
+          "slug": "2026-08-03-타일-치수는-하나다---docs-header-tile-size34-삭제-정사각-아이콘-타일은-전부-36"
+        },
+        {
+          "depth": 2,
+          "text": "2026-08-03 — 「규격을 바꾸려면 「체계」를 부른다」에 게이트를 단다: 판정은 파일 이름이 아니라 규격 센서스",
+          "slug": "2026-08-03-규격을-바꾸려면-체계를-부른다에-게이트를-단다-판정은-파일-이름이-아니라-규격-센서스"
+        },
+        {
+          "depth": 2,
+          "text": "2026-08-03 — 값 층의 반복 구멍 셋을 메운다: 마이크로 티어(반경 `micro` + 칩 `xs`) · 기본 보더 다수 정합 · `tone: 'success'` 글자 역할 재지정",
+          "slug": "2026-08-03-값-층의-반복-구멍-셋을-메운다-마이크로-티어반경-micro-칩-xs-기본-보더-다수-정합-tone-success-글자-역할-재지정"
+        },
+        {
+          "depth": 2,
           "text": "2026-08-03 — 높이 사다리 2차 정정: 복원은 칩·필에서 멈춰 있었다 — 가로 모양 전 조합에 명시 플로어",
           "slug": "2026-08-03-높이-사다리-2차-정정-복원은-칩필에서-멈춰-있었다-가로-모양-전-조합에-명시-플로어"
         },
@@ -6744,10 +6764,15 @@
           "depth": 2,
           "text": "2026-08-03 — `tone: 'accent'` 는 잉크가 아니라 표식이었다: 톤을 둘로 가른다",
           "slug": "2026-08-03-tone-accent-는-잉크가-아니라-표식이었다-톤을-둘로-가른다"
+        },
+        {
+          "depth": 2,
+          "text": "2026-08-03 — quaternary 잉크는 「한 단 올라선 표면에서만 뚫리는 값」이었다: #787c84 → #82828a",
+          "slug": "2026-08-03-quaternary-잉크는-한-단-올라선-표면에서만-뚫리는-값이었다-787c84-82828a"
         }
       ],
       "excerpt": "이 파일은 결정과 그때 진 반대 의견을 남긴다. docs/CHANGELOG.md 는 무엇이 언제 바뀌었나를 답하고, 이 파일은 왜 그렇게 정했고, 무엇을 걸었나를 답한다. 최신이 위. 기록은 덧붙이기만 한다 — 지난 기록을 고치지 않는다. 판단이 바뀌었으면 새 기록을 쓰고 옛 기록을 뒤집힘 으로 표시한다. 틀린 기록도 자산이다. 1. 소집 전에 읽는다. 카운슬을 열기 전(그리고 단독 PO 패스를 쓰기 전) 같은 표면 · 같은 질문에 대한 선행 결정이 있는지 먼저 본다. 있으면 새 패스는 그것을 ① 여전히 유효하다고 인용하거나 ② 명시적으로 뒤집는다. 조용히 다시 결정",
-      "wordCount": 53546,
+      "wordCount": 55838,
       "updatedAt": "2026-08-04",
       "linksOut": [
         "slug"
@@ -7461,8 +7486,8 @@
         },
         {
           "depth": 3,
-          "text": "Radius ramp — 3단 (일반 표면)",
-          "slug": "radius-ramp-3단-일반-표면"
+          "text": "Radius ramp — 4단 (일반 표면)",
+          "slug": "radius-ramp-4단-일반-표면"
         },
         {
           "depth": 3,
@@ -7563,6 +7588,11 @@
           "depth": 3,
           "text": "컨트롤 높이 사다리 (2026-08-03 소유자 확정)",
           "slug": "컨트롤-높이-사다리-2026-08-03-소유자-확정"
+        },
+        {
+          "depth": 3,
+          "text": "이 사다리는 **어느 모양에** 적용되나 (2026-08-03 — 범위 명시)",
+          "slug": "이-사다리는-어느-모양에-적용되나-2026-08-03-범위-명시"
         },
         {
           "depth": 3,
@@ -7671,8 +7701,8 @@
         }
       ],
       "excerpt": "This document is maintained based on Section 3 of the design spec. For the original Linear specification, see design-references/DESIGN-linear.md. v2 (2026-07): topology-map-v2 에서 출하된 B2+ \"Circuit × Constellation\" 시각 언어가 페이지 롤아웃(랜딩 → docs/ontology 허브 → projects/insights → download)의 규범이 되었다 — 아래 v2 — \"Circuit × Constell",
-      "wordCount": 26173,
-      "updatedAt": "2026-08-03",
+      "wordCount": 27047,
+      "updatedAt": "2026-08-04",
       "linksOut": [
         "design-references/DESIGN-linear",
         "TOPOLOGY-V2-DESIGN",
@@ -7826,6 +7856,11 @@
           "slug": "quick-matrix"
         },
         {
+          "depth": 3,
+          "text": "Decision-ledger gate (`pnpm decisions:check`)",
+          "slug": "decision-ledger-gate-pnpm-decisionscheck"
+        },
+        {
           "depth": 2,
           "text": "Vault Checks",
           "slug": "vault-checks"
@@ -7867,8 +7902,8 @@
         }
       ],
       "excerpt": "Maintainer-only checks live here so the public README stays readable. Use this page when you touch mcp/, cli/, package manifests, release scripts, or the dogfood ontology. Run this before pushing broad docs, package, MCP, or web changes: For user-facing UI changes, add the relevant Playwright route check. pnpm install ",
-      "wordCount": 8377,
-      "updatedAt": "2026-08-03",
+      "wordCount": 8591,
+      "updatedAt": "2026-08-04",
       "linksOut": []
     },
     {
@@ -10410,7 +10445,7 @@
       ],
       "excerpt": "project 노드 하나에 Git 저장소 또는 로컬 폴더 하나를 연결하고, 온톨로지가 선언한 capability/element 구현 경로를 실제 소스 목록과 대조해 버전이 붙은 범주형 영수증으로 남기는 능력. 지도 데이터시트·전체 상세·CLI·MCP agentbrief가 같은 상태·현재성·첫 빈틈·다음 행동을 읽는다. Git 저장소 표시는 선택한 소스의 종류이며 GitHub 계정이나 원격 저장소 연결을 뜻하지 않는다. 절대 경로는 vault-local .ontology-atlas/project-sources.json sidecar에만 보관하고, 복사 인계와 MCP에는",
       "wordCount": 292,
-      "updatedAt": "2026-08-03",
+      "updatedAt": "2026-08-04",
       "linksOut": []
     },
     {
@@ -10530,7 +10565,7 @@
       ],
       "excerpt": "AI 에이전트가 볼트를 발견·인증하고 읽고 쓸 수 있게 하는 앱 내 connect 플로우와 MCP 대면 표면. 앱 안의 대화형 에이전트는 실제 볼트 도구 근거를 수집한다. 절대 경로와 읽힌 manifest가 함께 있을 때만 활성화하여 화면의 개념, 모델이 읽는 본문, 볼트 안 감사 로그가 한 출처를 가리킨다. 로컬 러너에서는 제한된 읽기 순서와 왕복 시간 상한을 적용한다. 필수 읽기, 상세 payload에 남은 정확한 인용, 한국어 질문의 한국어 응답 중 하나를 생략하면 한 번 교정하고, 두 번째에도 따르지 않은 답은 사용자에게 싣지 않는다. 구조 감사는 census",
       "wordCount": 257,
-      "updatedAt": "2026-08-03",
+      "updatedAt": "2026-08-04",
       "linksOut": []
     },
     {
@@ -11890,7 +11925,7 @@
       ],
       "excerpt": "로컬 마크다운 볼트의 frontmatter를 타입이 있는 계산 가능 그래프(도메인·능력·구현 증거·의존·영향)로 바꾸는 로컬-퍼스트 온톨로지 워크벤치. 개발자는 CLI/웹으로, AI 코딩 에이전트는 MCP로 같은 파일을 읽고 쓴다. README.md — \"Your AI coding agent forgets your codebase between sessions... turns the Markdown in your repository into a graph of your product\" AGENTS.md — Project overview (\"a local-first o",
       "wordCount": 416,
-      "updatedAt": "2026-08-03",
+      "updatedAt": "2026-08-04",
       "linksOut": []
     },
     {
@@ -11941,7 +11976,7 @@
       ],
       "excerpt": "This folder is Ontology Atlas described in its own data format (dogfooding). Every .md file here is one node of the product's meaning model — the same project / domain / capability / element graph the app draws and the MCP server serves to AI agents. If you are an agent reading this: this vault is the shared mental mod",
       "wordCount": 619,
-      "updatedAt": "2026-08-03",
+      "updatedAt": "2026-08-04",
       "linksOut": []
     },
     {

@@ -62,7 +62,7 @@ export function MarkdownField({ id, value, onChange, placeholder, rows = 8 }: Pr
             '[&>p]:my-1.5',
             '[&>ul]:my-1.5 [&>ul]:list-disc [&>ul]:pl-5',
             '[&>ol]:my-1.5 [&>ol]:list-decimal [&>ol]:pl-5',
-            '[&_code]:rounded [&_code]:bg-[color:var(--color-elevated)] [&_code]:px-1 [&_code]:py-0.5 [&_code]:font-mono [&_code]:text-[13px]',
+            '[&_code]:rounded-micro [&_code]:bg-[color:var(--color-elevated)] [&_code]:px-1 [&_code]:py-0.5 [&_code]:font-mono [&_code]:text-[13px]',
             '[&>pre]:rounded-chip [&>pre]:bg-[color:var(--color-elevated)] [&>pre]:p-3 [&>pre]:my-2 [&>pre]:font-mono [&>pre]:text-[12px] [&>pre>code]:bg-transparent [&>pre>code]:px-0',
             '[&_a]:text-[color:var(--color-indigo-accent)] [&_a]:underline',
             '[&>blockquote]:border-l-2 [&>blockquote]:border-[color:var(--color-border-strong)] [&>blockquote]:pl-3 [&>blockquote]:text-[color:var(--color-text-tertiary)]',

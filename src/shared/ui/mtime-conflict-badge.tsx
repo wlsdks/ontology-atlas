@@ -25,7 +25,7 @@ export function MtimeConflictBadge({ message, className }: MtimeConflictBadgePro
       data-testid="mtime-conflict-badge"
       role="status"
       className={[
-        "rounded-sm border border-[color:var(--color-amber-signal-a30)] bg-[color:var(--color-amber-signal-a07)] px-2 py-1.5 text-label leading-4 text-[color:var(--color-text-primary)]",
+        "rounded-micro border border-[color:var(--color-amber-signal-a30)] bg-[color:var(--color-amber-signal-a07)] px-2 py-1.5 text-label leading-4 text-[color:var(--color-text-primary)]",
         "motion-safe:animate-[atlasStatusIn_var(--motion-base)_var(--motion-ease)]",
         className ?? "",
       ]

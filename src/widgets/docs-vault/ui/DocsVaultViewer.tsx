@@ -146,7 +146,7 @@ export function DocsVaultViewer({
           seg.match ? (
             <mark
               key={`${key}-${i}`}
-              className="docs-match rounded-sm bg-[color:var(--color-indigo-line-a22)] px-0.5 text-[color:rgba(210,218,255,0.98)]"
+              className="docs-match rounded-micro bg-[color:var(--color-indigo-line-a22)] px-0.5 text-[color:rgba(210,218,255,0.98)]"
             >
               {seg.text}
             </mark>
@@ -387,7 +387,7 @@ export function DocsVaultViewer({
         if (!isBlock) {
           return (
             <code
-              className="rounded-sm bg-[color:var(--color-indigo-line-a06)] px-1 py-0.5 font-mono text-label text-[color:var(--color-indigo-pale-a95)] md:text-body"
+              className="rounded-micro bg-[color:var(--color-indigo-line-a06)] px-1 py-0.5 font-mono text-label text-[color:var(--color-indigo-pale-a95)] md:text-body"
               {...rest}
             >
               {children}
@@ -519,9 +519,9 @@ export function DocsVaultViewer({
   if (raw === null) {
     return (
       <div className="flex flex-col gap-3 p-8" role="status" aria-label={t('loadingLabel')}>
-        <div className="h-3 w-2/3 animate-pulse rounded bg-[color:var(--color-border-soft)]" aria-hidden />
-        <div className="h-3 w-1/2 animate-pulse rounded bg-[color:var(--color-overlay-2)]" aria-hidden />
-        <div className="h-3 w-5/6 animate-pulse rounded bg-[color:var(--color-overlay-2)]" aria-hidden />
+        <div className="h-3 w-2/3 animate-pulse rounded-micro bg-[color:var(--color-border-soft)]" aria-hidden />
+        <div className="h-3 w-1/2 animate-pulse rounded-micro bg-[color:var(--color-overlay-2)]" aria-hidden />
+        <div className="h-3 w-5/6 animate-pulse rounded-micro bg-[color:var(--color-overlay-2)]" aria-hidden />
       </div>
     );
   }
@@ -723,7 +723,7 @@ function VaultImage({
   if (error) {
     return (
       <span
-        className="my-3 inline-block rounded-sm border border-dashed border-[color:var(--color-amber-source-a50)] px-2 py-1 font-mono text-caption text-[color:var(--color-amber-source-text-a80)]"
+        className="my-3 inline-block rounded-micro border border-dashed border-[color:var(--color-amber-source-a50)] px-2 py-1 font-mono text-caption text-[color:var(--color-amber-source-text-a80)]"
         title={t('imageMissing', { src })}
       >
         🖼 {alt || src}
@@ -733,7 +733,7 @@ function VaultImage({
   if (!blobUrl) {
     return (
       <span
-        className="my-3 inline-block h-5 w-24 animate-pulse rounded bg-[color:var(--color-overlay-2)]"
+        className="my-3 inline-block h-5 w-24 animate-pulse rounded-micro bg-[color:var(--color-overlay-2)]"
         aria-label={alt}
       />
     );

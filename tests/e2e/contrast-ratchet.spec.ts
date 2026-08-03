@@ -28,19 +28,19 @@ const { judgeText } = require('../../scripts/lib/contrast.mjs');
 const ROUTES = ['/ko/', '/ko/topology/', '/ko/docs/', '/ko/ontology/studio/', '/ko/projects/'];
 
 /**
- * 2026-08-03 전수 (1512×900, 위 5개 라우트, 조합 110):
+ * 2026-08-03 전수 (1512×900, 위 5개 라우트, 조합 109):
  *
  * | 라우트 | 미달 | 무엇 |
  * |---|---:|---|
- * | `/ko` | 2 | 주 CTA 인디고 면 위 흰 글자 **4.42:1** (요구 4.5) |
- * | `/ko/projects` | 2 | `--color-text-quaternary` **4.31:1** |
+ * | ~~`/ko`~~ | ~~2~~ → **0** | 주 CTA 의 인디고 면 위 잉크가 `--color-text-primary`(#f7f8f8, **4.42:1**)였다. 그 표면 전용으로 이미 있던 `--color-text-on-accent`(#ffffff, **4.70:1**)로 옮겼다 — `button.tsx` 의 `primary` 변형과 `DownloadPage` 의 크기 배지 두 곳. 새 값 0개 |
+ * | ~~`/ko/projects`~~ | ~~2~~ → **0** | `--color-text-quaternary` 가 한 단 올라선 표면(overlay-1 합성 **4.37** · elevated **4.16**)에서만 뚫리는 값이었다. 2026-08-03 「체계」 판정으로 `#787c84` → `#82828a` — 네 정지 표면 전부 AA(5.23 / 5.00 / 4.81 / 4.57), 위계 스텝비 1.17 보존, 지도 패널 quaternary 와 값 수렴. 원장: docs/DECISIONS.md |
  * | 지도 · 문서함 · 공방 | 0 | |
  *
- * 넷 다 **헌장 색이 걸린 사안**이라 계기를 켠 쪽이 단독으로 못 고친다 — 처방은
- * 디자인 게이트(「체계」·「도해」)로 간다. 그래서 0이 아니라 래칫이다.
+ * 기준선이 0 이므로 이 게이트의 생사는 아래 `measured > 50` 채집 가드가 쥔다 —
+ * 빈 화면과 미달 없음은 그것 없이는 같은 초록이다.
  * **이 수는 내려가기만 한다.**
  */
-const BASELINE_FAILING_COMBINATIONS = 4;
+const BASELINE_FAILING_COMBINATIONS = 0;
 
 /** 페이지에서 색·폰트만 꺼내 온다. 판정은 순수 함수가 한다. */
 const COLLECT = `(() => {
