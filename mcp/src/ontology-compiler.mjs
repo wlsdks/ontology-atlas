@@ -125,6 +125,13 @@ export function compileOntology(docs, options = {}) {
         resolved: Boolean(resolved),
         external,
       };
+      const relationNotes = doc.frontmatter?.relation_notes;
+      if (relationNotes && typeof relationNotes === 'object' && !Array.isArray(relationNotes)) {
+        const rawRationale = relationNotes[ref] ?? relationNotes[to];
+        if (typeof rawRationale === 'string' && rawRationale.trim()) {
+          edge.rationale = rawRationale.trim();
+        }
+      }
       edges.push(edge);
       if (!resolved && !external) {
         issues.push({

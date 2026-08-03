@@ -2262,7 +2262,17 @@ describe('query-result-contract', () => {
     const blastRadius = {
       operation: 'blast_radius',
       center: 'domains/auth',
-      risk: 'low',
+      risk: 'unknown',
+      qualification: {
+        status: 'review_required',
+        basis: 'declared_dependencies',
+        completeness: 'unknown',
+        sourceBacked: false,
+        declaredEdges: 1,
+        declaredWithRationaleEdges: 0,
+        reviewRequiredEdges: 1,
+        sourceBackedEdges: 0,
+      },
       summary: {
         affectedNodes: 1,
         affectedEdges: 0,
@@ -2296,8 +2306,8 @@ describe('query-result-contract', () => {
       /centrality rankings\.pageRank\[0\] has an invalid ranking shape/,
     );
     assert.throws(
-      () => assertBlastRadiusShape({ ...blastRadius, risk: 'unknown' }),
-      /blast_radius risk must be one of: low, medium, high/,
+      () => assertBlastRadiusShape({ ...blastRadius, risk: 'certain' }),
+      /blast_radius risk must be one of: unknown, low, medium, high/,
     );
     assert.throws(
       () => assertBlastRadiusShape({ ...blastRadius, nodes: { total: 1, limited: false, rows: [{}] } }),

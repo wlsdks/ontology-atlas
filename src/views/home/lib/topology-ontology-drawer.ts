@@ -1,7 +1,7 @@
 import {
   buildOntologyReachability,
   computeOntologyDependents,
-  IMPACT_EXCLUDED_RELATION_TYPES,
+  IMPACT_RELATION_TYPES,
 } from "@/shared/lib/ontology-tree";
 import {
   classifyTopologyRelationQuality,
@@ -132,9 +132,8 @@ export function buildTopologyOntologyDrawerModel(
   // 사이클·긴 체인 모두 full closure 보장(discovered set 이 중복 차단).
   // limit:1 — summary.reachableNodes 는 limit 과 무관하게 *전체* 카운트라
   // 가시 layer 만 1개로 줄여 할당 최소화.
-  // excludeTypes: soft association(related_to/describes)은 의존이 아니라 blast
-  // radius 에서 제외 — 안 빼면 related_to 웹이 거의 모든 노드를 연결해 "Affected"
-  // 가 노드별 변별력을 잃는다(측정: leaf·hub 모두 ~27 → 제외 시 2 vs 9). iter 27.
+  // depends_on만 인과 영향이다. containment/domain/element는 구조 탐색에서만
+  // 사용하고 Affected/Dependencies 숫자에는 섞지 않는다.
   const fullDepth = Math.max(nodes.length, 1);
   const reach: TopologyOntologyDrawerReach = {
     // dependents 는 shared computeOntologyDependents 단일 source — 변경점 diff
@@ -144,7 +143,7 @@ export function buildTopologyOntologyDrawerModel(
       direction: "outgoing",
       depth: fullDepth,
       limit: 1,
-      excludeTypes: IMPACT_EXCLUDED_RELATION_TYPES,
+      types: IMPACT_RELATION_TYPES,
     }).summary.reachableNodes,
   };
 
