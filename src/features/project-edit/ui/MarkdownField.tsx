@@ -5,6 +5,7 @@ import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 import { useTranslations } from 'next-intl';
 import { cn } from '@/shared/lib/cn';
+import { controlClass } from '@/shared/ui/control-class';
 
 interface Props {
   id?: string;
@@ -91,12 +92,22 @@ function TabButton({
     <button
       type="button"
       onClick={onClick}
-      className={cn(
-        'rounded-chip px-2.5 py-1 font-mono text-[10px] uppercase tracking-[0.1em] transition-colors',
-        active
-          ? 'bg-[color:var(--color-indigo-a14)] text-[color:var(--color-indigo-accent)]'
-          : 'text-[color:var(--color-text-tertiary)] hover:text-[color:var(--color-text-primary)]',
-      )}
+      /*
+       * 보더 없는 인셋 세그먼트다. `text-[10px]` 은 램프에 없는 스텝이라
+       * **짝인 행간이 없어 상속 1.5(15px)로 떨어져 있었다** — 램프 밖 크기의
+       * 조용한 실패 모드 그 자체다(`design.md` "크기 스텝이 자기 행간을
+       * 싣는다"). `text-label`(11px/16px)로 올리면 짝이 붙는다.
+       * 눌림 표현도 램프의 다수(a16 + 1차 잉크)로 맞춘다 — 발자국 프리셋에서
+       * 이미 같은 방언 정규화를 했다.
+       */
+      className={controlClass({
+        shape: 'segment',
+        active,
+        className: cn(
+          'font-mono uppercase tracking-[0.1em]',
+          active ? '' : 'hover:text-[color:var(--color-text-primary)]',
+        ),
+      })}
     >
       {children}
     </button>

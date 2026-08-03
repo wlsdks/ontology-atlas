@@ -170,7 +170,17 @@ export function GuidedTourCard({
             type="button"
             onClick={finishAsDone}
             data-testid="guided-tour-finish-tour"
-            className="h-9 rounded-[var(--chrome-radius-inner)] border border-[color:var(--chrome-border)] text-body font-medium text-[color:var(--color-text-primary)] transition-colors hover:bg-[color:var(--color-overlay-2)]"
+            /* 분기 두 버튼은 세로로 붙은 **한 벌**이라 같이 옮긴다. 둘 다
+               `chip`/`lg` 로 36 → 34px 이 되어 나란함이 유지된다. */
+            className={controlClass({
+              shape: "chip",
+              size: "lg",
+              tone: "strong",
+              /* 무게는 값 층이 `onAccent` 에서만 낸다 — 중립 칩의 `font-medium`
+                 은 원래 값 그대로 유지한다(무게를 바꾸는 것은 이 라운드의 일이
+                 아니다). */
+              className: "justify-center font-medium hover:bg-[color:var(--color-overlay-2)]",
+            })}
           >
             {t("finishTourAction")}
           </button>
@@ -182,7 +192,12 @@ export function GuidedTourCard({
               type="button"
               onClick={chooseDevBranch}
               data-testid="guided-tour-dev-branch"
-              className="h-9 rounded-[var(--chrome-radius-inner)] bg-[color:var(--color-indigo-brand)] text-body font-semibold text-white transition-colors hover:bg-[color:var(--color-indigo-accent)]"
+              className={controlClass({
+                shape: "chip",
+                size: "lg",
+                tone: "onAccent",
+                className: "justify-center hover:bg-[color:var(--color-indigo-accent)]",
+              })}
             >
               {t("devBranchAction")}
             </button>

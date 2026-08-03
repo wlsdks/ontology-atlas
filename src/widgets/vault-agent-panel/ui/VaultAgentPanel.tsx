@@ -22,6 +22,7 @@ import {
   subscribeLocalEndpointChange,
   type LocalEndpointSettings,
 } from '@/shared/lib/local-endpoint';
+import { controlClass } from '@/shared/ui/control-class';
 import { LLM_AUDIT_LOG_RELATIVE_PATH } from '@/shared/lib/llm-audit-log';
 import { requestSettingsView } from '@/shared/lib/settings-view-intent';
 import { gitHistory, isGitBridgeAvailable } from '@/shared/lib/tauri-git';
@@ -763,7 +764,17 @@ export function VaultAgentPanel({
                   type="button"
                   data-testid="vault-agent-stop"
                   onClick={agent.stop}
-                  className="h-9 shrink-0 rounded-chip border border-[color:var(--color-border-strong)] px-3 text-label font-semibold tracking-label text-[color:var(--color-text-primary)] transition-colors hover:bg-[color:var(--color-overlay-2)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--color-indigo-accent)]"
+                  /* 중지/보내기는 서로를 대체하는 **한 자리**라 같은 단으로
+                     간다. `px-3` 은 램프에서 `lg` 의 인셋이고 `lg` 의 짝은
+                     `text-body` 다 — 손으로 쓴 `px-3`+`text-label` 은 두 단을
+                     가로지른 조합이었다. */
+                  className={controlClass({
+                    shape: 'chip',
+                    size: 'lg',
+                    tone: 'strong',
+                    className:
+                      'shrink-0 justify-center font-semibold tracking-body hover:bg-[color:var(--color-overlay-2)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--color-indigo-accent)]',
+                  })}
                 >
                   {t('stop')}
                 </button>
@@ -773,7 +784,13 @@ export function VaultAgentPanel({
                   data-testid="vault-agent-send"
                   disabled={!canSend}
                   onClick={submit}
-                  className="h-9 shrink-0 rounded-chip bg-[color:var(--color-indigo-brand)] px-3 text-label font-semibold tracking-label text-white transition-colors hover:bg-[color:var(--color-indigo-hover)] disabled:opacity-40 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--color-indigo-accent)]"
+                  className={controlClass({
+                    shape: 'chip',
+                    size: 'lg',
+                    tone: 'onAccent',
+                    className:
+                      'shrink-0 justify-center tracking-body hover:bg-[color:var(--color-indigo-hover)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--color-indigo-accent)]',
+                  })}
                 >
                   {t('send')}
                 </button>
