@@ -90,4 +90,23 @@ describe('design-build 레시피 — 참조 무결성', () => {
   it('발산 단계를 앞에 둔다 — 카운슬이 갈래 탐색을 대신하지 않게', () => {
     expect(recipe).toContain('design-directions');
   });
+
+  it('새 값을 만들기 전에 이미 있는지 찾으라고 말한다', () => {
+    /*
+     * 2026-08-03 의 실제 실패다 — `--control-h-*`(28/32/40)가 이미 있었는데
+     * 찾지 않고 24/30/34 를 발명했고, 그 값이 계약과 부딪히자 값을 고치는 대신
+     * 예외 축을 더했다. 규칙 여섯 개를 다 지켰어도 이 하나를 안 지켜서 났다.
+     */
+    expect(recipe, '기존 토큰을 먼저 찾으라는 절이 있어야 한다').toContain('--control-h-');
+    expect(recipe).toContain('app/globals.css');
+    expect(recipe, '늘리는 규칙 문서를 가리켜야 한다').toMatch(/시스템을 늘리는 규칙/);
+  });
+
+  it('그 규칙 문서가 실재하고 여섯 조항을 담는다', () => {
+    const ds = read('docs/DESIGN-SYSTEM.md');
+    expect(ds).toMatch(/시스템을 늘리는 규칙/);
+    for (const n of [0, 1, 2, 3, 4, 5, 6]) {
+      expect(ds, `규칙 ${n} 이 없다`).toMatch(new RegExp(`규칙 ${n} —`));
+    }
+  });
 });
