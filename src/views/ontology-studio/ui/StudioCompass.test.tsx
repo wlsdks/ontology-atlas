@@ -725,6 +725,20 @@ describe("StudioCompass — 나침반 산책 (compass walk)", () => {
   });
 });
 
+/**
+ * 「닫혔다」의 판정 — **없어졌다가 아니라 나가는 중이고 못 눌린다.**
+ *
+ * `Surface` 로 옮긴 뒤 닫힘은 퇴장 창(≈140ms) 동안 DOM 에 남는다. 그동안
+ * `inert` + `pointer-events-none` 이라 입력을 못 먹으므로 사용자에게는 닫힌
+ * 것이다. 즉시 소멸을 단언하면 그건 **하드컷을 요구하는 테스트**가 된다.
+ */
+function expectExiting(testId: string) {
+  const el = screen.getByTestId(testId);
+  expect(el).toHaveAttribute("data-surface-state", "exiting");
+  expect(el).toHaveAttribute("inert");
+  expect(el).toHaveClass("pointer-events-none");
+}
+
 describe("StudioCompass — 그래프 델타 미니뷰 (save preview)", () => {
   const emptyBase = (): Record<StudioRelation, CreateCandidate[]> => ({
     isA: [],
@@ -794,6 +808,7 @@ describe("StudioCompass — 그래프 델타 미니뷰 (save preview)", () => {
   it("opens the scrim modal from the affordance and marks the added node indigo", () => {
     renderPreview(addDelta());
     expect(screen.queryByTestId("studio-preview-modal")).not.toBeInTheDocument();
+
     fireEvent.click(screen.getByTestId("studio-preview-open"));
     const modal = screen.getByTestId("studio-preview-modal");
     expect(modal).toBeInTheDocument();
@@ -811,7 +826,13 @@ describe("StudioCompass — 그래프 델타 미니뷰 (save preview)", () => {
     fireEvent.click(screen.getByTestId("studio-preview-save"));
     expect(onSave).toHaveBeenCalledTimes(1);
     // committing closes the preview.
-    expect(screen.queryByTestId("studio-preview-modal")).not.toBeInTheDocument();
+    //
+    // ★ 「닫혔다」는 이제 **즉시 언마운트가 아니다** (2026-08-04). 이 모달은
+    //   `Surface` 위에 살아서 퇴장 창(≈140ms) 동안 화면에 남고, 그동안
+    //   `inert` + `pointer-events-none` 이라 아무 입력도 못 먹는다. 그래서
+    //   판정을 「없다」가 아니라 **「나가는 중이고 못 눌린다」** 로 겨눈다 —
+    //   즉시 소멸을 요구하면 그건 하드컷을 요구하는 것이다.
+    expectExiting("studio-preview-modal");
   });
 
   it("closes on the scrim, the ✕, and Esc — nothing else moves", () => {
@@ -819,16 +840,16 @@ describe("StudioCompass — 그래프 델타 미니뷰 (save preview)", () => {
     // scrim click
     fireEvent.click(screen.getByTestId("studio-preview-open"));
     fireEvent.click(screen.getByTestId("studio-preview-modal"));
-    expect(screen.queryByTestId("studio-preview-modal")).not.toBeInTheDocument();
+    expectExiting("studio-preview-modal");
     // ✕ button
     fireEvent.click(screen.getByTestId("studio-preview-open"));
     fireEvent.click(screen.getByTestId("studio-preview-close"));
-    expect(screen.queryByTestId("studio-preview-modal")).not.toBeInTheDocument();
+    expectExiting("studio-preview-modal");
     // Esc key
     fireEvent.click(screen.getByTestId("studio-preview-open"));
-    expect(screen.getByTestId("studio-preview-modal")).toBeInTheDocument();
+    expect(screen.getByTestId("studio-preview-modal")).toHaveAttribute("data-surface-state", "entered");
     fireEvent.keyDown(window, { key: "Escape" });
-    expect(screen.queryByTestId("studio-preview-modal")).not.toBeInTheDocument();
+    expectExiting("studio-preview-modal");
   });
 
   it("shows the create-mode new node in the center with its 'new' chip", () => {

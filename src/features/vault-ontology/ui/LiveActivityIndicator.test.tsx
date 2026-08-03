@@ -64,6 +64,19 @@ const labels = {
 const liveTriggerName =
   "Live: changed ontology nodes and agent heartbeat — 3 ontology nodes changed since the current baseline";
 
+/**
+ * 「닫혔다」의 판정 — **없어졌다가 아니라 나가는 중이고 못 눌린다.**
+ *
+ * 이 팝오버는 `Surface` 위에 산다(2026-08-04). 닫으면 퇴장 창(≈140ms) 동안
+ * DOM 에 남고 그동안 `inert` + `pointer-events-none` 이라 입력을 못 먹는다.
+ * 즉시 소멸을 단언하면 그건 **하드컷을 요구하는 테스트**다.
+ */
+function expectPopoverClosed() {
+  const el = screen.getByTestId("live-activity-popover-surface");
+  expect(el).toHaveAttribute("data-surface-state", "exiting");
+  expect(el).toHaveAttribute("inert");
+}
+
 describe("LiveActivityBadge", () => {
   it("변경 0 — LIVE 만, 카운트 없음", () => {
     render(<LiveActivityBadge changedCount={0} labels={labels} />);
@@ -111,7 +124,7 @@ describe("LiveActivityBadge", () => {
     fireEvent.click(trigger);
 
     expect(trigger).toHaveAttribute("aria-expanded", "false");
-    expect(screen.queryByText("Live change baseline")).not.toBeInTheDocument();
+    expectPopoverClosed();
   });
 
   it("명시적인 닫기 버튼으로 Live popover를 닫는다", () => {
@@ -123,7 +136,7 @@ describe("LiveActivityBadge", () => {
     fireEvent.click(screen.getByRole("button", { name: "Close live activity popover" }));
 
     expect(screen.getByRole("button", { name: liveTriggerName })).toHaveAttribute("aria-expanded", "false");
-    expect(screen.queryByRole("dialog", { name: "Live change baseline" })).not.toBeInTheDocument();
+    expectPopoverClosed();
   });
 
   it("Escape와 바깥 클릭으로 Live popover를 닫는다", () => {
@@ -138,13 +151,13 @@ describe("LiveActivityBadge", () => {
     expect(screen.getByRole("dialog", { name: "Live change baseline" })).toBeVisible();
 
     fireEvent.keyDown(document, { key: "Escape" });
-    expect(screen.queryByRole("dialog", { name: "Live change baseline" })).not.toBeInTheDocument();
+    expectPopoverClosed();
 
     fireEvent.click(screen.getByRole("button", { name: liveTriggerName }));
     expect(screen.getByRole("dialog", { name: "Live change baseline" })).toBeVisible();
 
     fireEvent.pointerDown(screen.getByRole("button", { name: "outside" }));
-    expect(screen.queryByRole("dialog", { name: "Live change baseline" })).not.toBeInTheDocument();
+    expectPopoverClosed();
   });
 
   it("heartbeat가 없고 변경 기준만 있으면 agent 상태가 아니라 tracking 상태로 표시한다", () => {

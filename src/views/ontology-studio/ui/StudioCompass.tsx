@@ -20,7 +20,7 @@ import { cn } from "@/shared/lib/cn";
 import { candidateMatches } from "../lib/match-candidate";
 import { studioBoardScale } from "../lib/board-scale";
 import { usePrefersReducedMotion } from "@/shared/lib/use-prefers-reduced-motion";
-import { IconButton, RowButton, Select, controlClass } from "@/shared/ui";
+import { IconButton, RowButton, Select, Surface, controlClass } from "@/shared/ui";
 import type {
   StudioBearing,
   StudioRelation,
@@ -1560,8 +1560,11 @@ export function StudioCompass(props: StudioCompassProps) {
           neighborhood achromatic + only the staged delta in indigo, then the
           same plain sentence list. Commits directly from the footer (one-click
           save contract preserved) or closes. ✕ / scrim / Esc all close it. */}
-      {previewOpen && previewAvailable && props.deltaPreview ? (
+      {previewAvailable && props.deltaPreview ? (
         <DeltaPreviewModal
+          // 열림/닫힘은 이제 모달 **안**의 `Surface` 가 진다 — 렌더 게이트에서
+          // `previewOpen` 을 빼야 퇴장 창 동안 내용이 살아 있다.
+          open={previewOpen}
           layout={props.deltaPreview}
           labels={labels}
           kindLabelFor={kindLabelFor}
@@ -2967,6 +2970,7 @@ const DELTA_STRUT_STROKE: Record<DeltaSatelliteState, string> = {
 };
 
 function DeltaPreviewModal({
+  open,
   layout,
   labels,
   kindLabelFor,
@@ -2975,6 +2979,8 @@ function DeltaPreviewModal({
   onSave,
   onClose,
 }: {
+  /** 닫힘은 즉시 언마운트가 아니다 — `Surface` 가 퇴장 창을 진다. */
+  open: boolean;
   layout: DeltaPreviewLayout;
   labels: StudioCompassLabels;
   kindLabelFor: (kind: string) => string;
@@ -3000,7 +3006,12 @@ function DeltaPreviewModal({
 
   const center = layout.center;
   return (
-    <div
+    // 스크림이 화면을 덮는 **큰 표면**이라 밝기 전용 문법을 쓴다
+    // (`motion="overlay"`) — 이동/스케일을 걸면 무대 전체가 흔들린 것으로
+    // 읽힌다. 스크림과 카드가 한 표면으로 같이 들어오고 같이 나간다.
+    <Surface
+      open={open}
+      motion="overlay"
       data-testid="studio-preview-modal"
       role="dialog"
       aria-modal="true"
@@ -3173,7 +3184,7 @@ function DeltaPreviewModal({
           </button>
         </div>
       </div>
-    </div>
+    </Surface>
   );
 }
 

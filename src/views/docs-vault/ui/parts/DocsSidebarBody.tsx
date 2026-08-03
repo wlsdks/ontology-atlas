@@ -32,7 +32,7 @@ import {
   type DocsTreeSort,
 } from "@/widgets/docs-vault/lib/tree-order";
 import { resolveLocaleDisplayName } from "@/shared/lib/locale-display-name";
-import { IconButton, RowButton, Tooltip, controlClass } from "@/shared/ui";
+import { IconButton, RowButton, Surface, Tooltip, controlClass } from "@/shared/ui";
 
 /**
  * DocsVaultPage 의 사이드바 본문 — machined 파일 트리 (docs-vault-final spec).
@@ -341,8 +341,11 @@ export function DocsSidebarBody({
             active={orderMenuOpen || !orderIsDefault}
             onClick={() => setOrderMenuOpen((open) => !open)}
           />
-          {orderMenuOpen ? (
-            <div
+          <Surface
+              open={orderMenuOpen}
+              // 앵커가 오른쪽 위이므로 등장도 거기서 자란다 — 아래 주석의
+              // "그 가장자리를 기준으로 자란다" 를 배치만이 아니라 모션도 지킨다.
+              origin="top right"
               role="menu"
               aria-label={t("orderMenuLabel")}
               data-testid="docs-sidebar-order-menu"
@@ -382,8 +385,7 @@ export function DocsSidebarBody({
                   }}
                 />
               ))}
-            </div>
-          ) : null}
+          </Surface>
         </div>
         <span className="flex-1" />
         {/* [D-4] "새 문서" 진입점 — 샘플(읽기 전용) 모드에서도 버튼 + 툴팁으로

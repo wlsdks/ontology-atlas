@@ -8,6 +8,7 @@ import { Link } from '@/i18n/navigation';
 import { buildOntologyNodeHref } from '@/entities/knowledge-graph';
 import { CHROME_STATUS_CHIP_CLASS } from '@/shared/ui/chrome-chip';
 import { controlClass } from '@/shared/ui/control-class';
+import { Surface } from '@/shared/ui/surface';
 import { cn } from '@/shared/lib/cn';
 import type { AgentNotification, AgentNotificationKind } from '@/shared/lib/agent-notifications';
 import { useAgentActivityFeed } from '../model/use-agent-activity-feed';
@@ -182,16 +183,19 @@ export function AgentActivityChip({ suppressed = false }: { suppressed?: boolean
           </>
         ) : null}
       </div>
-      {open ? (
-        <div
-          role="group"
-          aria-label={t('inboxTitle')}
-          data-testid="agent-activity-inbox"
-          // `whitespace-normal` 은 필수다 — 이 패널이 사는 판독 스택은 컨테이너에
-          // `whitespace-nowrap` 을 걸어 두므로(범례·판독은 한 줄짜리 문구다),
-          // 상속을 끊지 않으면 푸터 문장이 패널 밖으로 흘러나간다(1512 실측).
-          className="absolute bottom-[calc(100%+8px)] right-0 z-30 w-[280px] overflow-hidden whitespace-normal rounded-chip border border-[color:var(--topology-floating-panel-border)] bg-[color:var(--topology-floating-panel-surface)] shadow-[var(--topology-floating-panel-shadow)]"
-        >
+      {/* 알림함은 종 버튼 **위**로 자란다 — 등장 원점을 트리거 방향(오른쪽
+          아래)에 맞춘다. 중앙에서 태어나면 누른 자리와 나타나는 자리가 끊긴다. */}
+      <Surface
+        open={open}
+        origin="bottom right"
+        role="group"
+        aria-label={t('inboxTitle')}
+        data-testid="agent-activity-inbox"
+        // `whitespace-normal` 은 필수다 — 이 패널이 사는 판독 스택은 컨테이너에
+        // `whitespace-nowrap` 을 걸어 두므로(범례·판독은 한 줄짜리 문구다),
+        // 상속을 끊지 않으면 푸터 문장이 패널 밖으로 흘러나간다(1512 실측).
+        className="absolute bottom-[calc(100%+8px)] right-0 z-30 w-[280px] overflow-hidden whitespace-normal rounded-chip border border-[color:var(--topology-floating-panel-border)] bg-[color:var(--topology-floating-panel-surface)] shadow-[var(--topology-floating-panel-shadow)]"
+      >
           <div className="flex items-center justify-between gap-2 border-b border-[color:var(--topology-floating-panel-divider)] px-3 py-2 font-mono text-caption uppercase tracking-[0.14em] text-[color:var(--color-text-quaternary)]">
             <span className="min-w-0 flex-1 truncate">{t('inboxTitle')}</span>
           </div>
@@ -217,8 +221,7 @@ export function AgentActivityChip({ suppressed = false }: { suppressed?: boolean
           <p className="border-t border-[color:var(--topology-floating-panel-divider)] px-3 py-2 text-caption leading-relaxed text-[color:var(--color-text-quaternary)]">
             {t('inboxFooter')}
           </p>
-        </div>
-      ) : null}
+      </Surface>
     </div>
   );
 }

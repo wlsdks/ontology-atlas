@@ -372,6 +372,11 @@ describe("DocsSidebarBody — 목록 순서 메뉴", () => {
     fireEvent.click(screen.getByTestId("docs-sidebar-order-sort-recent"));
     expect(onSortChange).toHaveBeenCalledWith("recent");
     expect(onGroupChange).not.toHaveBeenCalled();
-    expect(screen.queryByTestId("docs-sidebar-order-menu")).not.toBeInTheDocument();
+    // ★ 「닫혔다」는 즉시 언마운트가 아니다 (2026-08-04) — 이 메뉴는 `Surface`
+    //   위에 살아서 퇴장 창(≈140ms) 동안 남고, 그동안 `inert` 라 아무 입력도
+    //   못 먹는다. 즉시 소멸을 요구하는 단언은 하드컷을 요구하는 것이다.
+    const menu = screen.getByTestId("docs-sidebar-order-menu");
+    expect(menu).toHaveAttribute("data-surface-state", "exiting");
+    expect(menu).toHaveAttribute("inert");
   });
 });

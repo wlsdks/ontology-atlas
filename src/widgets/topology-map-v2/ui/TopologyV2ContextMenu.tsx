@@ -3,7 +3,7 @@
 import { useEffect, useRef } from "react";
 import { Copy, FileText, GitBranch, Maximize2, Route } from "lucide-react";
 import { Link } from "@/i18n/navigation";
-import { controlClass, RowButton } from "@/shared/ui";
+import { controlClass, RowButton, Surface } from "@/shared/ui";
 
 /**
  * W2-B — node right-click context menu (`use-topology-loop.ts`'s
@@ -39,6 +39,13 @@ export interface TopologyV2ContextMenuLabels {
 }
 
 export interface TopologyV2ContextMenuProps {
+  /**
+   * 열려 있는가. **닫힘은 즉시 언마운트가 아니다** — `Surface` 가 퇴장 창을
+   * 열고, 그동안 부모는 마지막 모델을 붙들어 준다.
+   */
+  open: boolean;
+  /** 퇴장이 끝난 뒤 한 번. 포커스 복귀처럼 언마운트에 붙는 일에만 쓴다. */
+  onExited?: () => void;
   /** Viewport-space anchor (the right-click's `clientX`/`clientY`). */
   position: { x: number; y: number };
   /** **이 노드 자신의** 문서. 자기 `.md` 가 없으면 null. */
@@ -90,6 +97,8 @@ const MENU_ITEM_CLASS = controlClass({ shape: "row", size: "md", className: MENU
 const MENU_ITEM_DISABLED_CLASS = "pointer-events-none opacity-40";
 
 export function TopologyV2ContextMenu({
+  open,
+  onExited,
   position,
   documentHref,
   mentionDocumentHref = null,
@@ -100,12 +109,16 @@ export function TopologyV2ContextMenu({
   onOpenFullDetail,
   onClose,
 }: TopologyV2ContextMenuProps) {
-  const menuRef = useRef<HTMLDivElement | null>(null);
+  const menuRef = useRef<HTMLElement | null>(null);
 
   // Outside-click closes — Esc is owned by the window-level ladder
   // (`HomePage.tsx`'s keydown effect + `close-context-menu` tier) so both
   // dismissal paths route through the same `onClose`.
+  //
+  // ★ 퇴장 창 동안에는 다시 닫지 않는다 — 이미 닫히는 중인 메뉴가 바깥 클릭을
+  //   또 `onClose` 로 흘리면 부모의 «다음» 우클릭이 같은 프레임에 취소된다.
   useEffect(() => {
+    if (!open) return;
     const handlePointerDown = (event: PointerEvent) => {
       if (menuRef.current && !menuRef.current.contains(event.target as Node)) {
         onClose();
@@ -117,7 +130,7 @@ export function TopologyV2ContextMenu({
     // ancestor `stopPropagation` elsewhere can never swallow the dismiss.
     document.addEventListener("pointerdown", handlePointerDown, true);
     return () => document.removeEventListener("pointerdown", handlePointerDown, true);
-  }, [onClose]);
+  }, [onClose, open]);
 
   const anchor =
     typeof window === "undefined"
@@ -128,12 +141,17 @@ export function TopologyV2ContextMenu({
         });
 
   return (
-    <div
+    // 커서에서 자란다 — 앵커가 메뉴의 좌상단이므로 등장 원점도 거기다.
+    // (중앙에서 태어나는 메뉴는 «어디서 왔는지» 를 잃는다.)
+    <Surface
+      open={open}
+      onExited={onExited}
+      origin="top left"
       ref={menuRef}
       role="menu"
       data-testid="topology-v2-context-menu"
-      style={{ position: "fixed", left: anchor.x, top: anchor.y, zIndex: 50 }}
-      className="flex w-[200px] flex-col gap-0.5 rounded-[var(--topology-v2-panel-row-radius)] border border-[color:var(--topology-v2-panel-border)] bg-[color:var(--topology-v2-panel-surface)] p-1 shadow-[var(--topology-v2-panel-shadow)]"
+      className="fixed z-50 flex w-[200px] flex-col gap-0.5 rounded-[var(--topology-v2-panel-row-radius)] border border-[color:var(--topology-v2-panel-border)] bg-[color:var(--topology-v2-panel-surface)] p-1 shadow-[var(--topology-v2-panel-shadow)]"
+      style={{ left: anchor.x, top: anchor.y }}
     >
       {documentHref ? (
         <Link
@@ -209,6 +227,6 @@ export function TopologyV2ContextMenu({
         <Maximize2 size={14} aria-hidden="true" />
         {labels.openFullDetail}
       </RowButton>
-    </div>
+    </Surface>
   );
 }

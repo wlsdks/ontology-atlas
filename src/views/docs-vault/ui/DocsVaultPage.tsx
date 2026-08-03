@@ -55,6 +55,7 @@ import {
   IconButton,
   RouteLoadingFallback,
   SimilarNodeWarning,
+  Surface,
   Tooltip,
   controlClass,
   useToast,
@@ -2145,8 +2146,14 @@ function DocsVaultContent() {
           <div className="flex min-h-0 flex-1">
         {/* Source tree drawer — tree navigation is intentionally opt-in so the
             document/work surface stays primary on desktop and mobile. */}
-        {sourceTreeOpen ? (
-          <div className="fixed inset-0 z-40 flex">
+        {/* 화면 전체를 덮는 서랍이라 **밝기 전용** 문법을 쓴다(`motion="overlay"`)
+            — 큰 표면에 이동/스케일을 걸면 화면 자체가 흔들린 것으로 읽힌다.
+            스크림과 서랍이 한 표면으로 같이 들어오고 같이 나간다. */}
+        <Surface
+          open={sourceTreeOpen}
+          motion="overlay"
+          className="fixed inset-0 z-40 flex"
+        >
             <div
               className="absolute inset-0 bg-[color:var(--color-scrim-a50)]"
               onClick={() => setSourceTreeOpen(false)}
@@ -2169,8 +2176,7 @@ function DocsVaultContent() {
                 {sidebarBody}
               </div>
             </aside>
-          </div>
-        ) : null}
+        </Surface>
 
         {/* Persistent left pane — --docs-list-width(280px) machined 파일
             트리 (docs-vault-final 2-pane spec). lg+ 에서 항상 보임; 그 아래

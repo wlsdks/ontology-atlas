@@ -31,6 +31,8 @@ function renderMenu(overrides: {
 } = {}) {
   render(
     <TopologyV2ContextMenu
+      open
+      onExited={() => {}}
       position={{ x: 100, y: 200 }}
       documentHref={overrides.documentHref !== undefined ? overrides.documentHref : "/docs/domains/views"}
       mentionDocumentHref={overrides.mentionDocumentHref ?? null}

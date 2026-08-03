@@ -349,6 +349,15 @@ export function HomePage() {
   // 데이터시트와 같은 plain 레지스터로 통일.
   const relationRegister: "formal" | "plain" = audiencePlain ? "plain" : "formal";
   const [localGraphStack, setLocalGraphStack] = useState<string[]>([]);
+  /*
+   * 빵부스러기가 **퇴장 창 동안에도 자기 내용을 그리게** 붙든다 — 안 붙들면
+   * 스택이 비는 순간 필(pill)만 남고 안이 텅 빈 채로 사라진다(등장/퇴장을
+   * 붙이려던 것이 더 나쁜 화면이 되는 그 실패). 키는 스택 자체다 — 배열은
+   * 매 렌더 정체성이 바뀌므로 원시값으로 눌러 둔다.
+   */
+  const heldLocalGraphStack =
+    useHeldValue(localGraphStack.length > 0 ? localGraphStack : null, localGraphStack.join('>')) ??
+    [];
   const localGraphRoot =
     localGraphStack.length > 0 ? localGraphStack[localGraphStack.length - 1] : null;
   const [fitViewToken, setFitViewToken] = useState(0);
@@ -370,6 +379,8 @@ export function HomePage() {
   const projectsQuery = useProjects();
   const projects = projectsQuery.projects;
   const projectsError = projectsQuery.error;
+  /* 경보 문구도 퇴장 창 동안 붙든다 — 원시값이라 키가 필요 없다. */
+  const heldProjectsError = useHeldValue(projectsError);
   // R6 — 브랜드 pill 의 SAMPLE 배지(census 필의 일부)는 제거됐다. 정적 샘플
   // 여부는 이제 INDEX 패널의 "시작하기" 모듈(FirstRunStarterModule)과 우하단
   // 판독(FirstRunReadout)이 각자 판정해 표시한다 — pill 은 census 를 담지 않는다.
@@ -2238,6 +2249,21 @@ export function HomePage() {
       handoffText,
     };
   }, [contextMenuNode, handoffSource, ontologyInsight]);
+  /*
+   * 우클릭 메뉴도 퇴장 창을 갖는다 — 그동안 위치와 모델을 붙들어야 «닫히는
+   * 중에 빈 메뉴» 가 되지 않는다. 키는 슬러그+좌표: 같은 노드를 다른 자리에서
+   * 다시 우클릭하면 새 값이다.
+   */
+  const contextMenuKey = contextMenuNode
+    ? `${contextMenuNode.slug}@${contextMenuNode.x},${contextMenuNode.y}`
+    : null;
+  const heldContextMenu = useHeldValue(
+    contextMenuNode && contextMenuModel
+      ? { anchor: { x: contextMenuNode.x, y: contextMenuNode.y }, model: contextMenuModel }
+      : null,
+    contextMenuKey,
+  );
+
   // A1 "데이터시트 확장판" 전체 상세 — TopologyOntologyDrawer(배지 수프 +
   // reach 쿼리빌더 + collaborator brief)를 대체. groups/reach 는 compact
   // datasheet 와 동일 소스(buildV2Connections 파생, buildOntologyReachability
@@ -2254,6 +2280,13 @@ export function HomePage() {
     onSaveExplanation: saveNodeExplanation,
     datasheet: v2DatasheetModel,
   });
+  /*
+   * 전체 상세는 **닫히는 순간 모델이 null 이 된다**(「화면에 없는 표면의 모델은
+   * 만들지 않는다」 게이트 그대로) — 그래서 퇴장 창을 열려면 값도 붙들어야 한다.
+   * 키는 슬러그: 이 모델은 `useMemo` 라 정체성이 매 렌더 바뀌고, 키 없이 넘기면
+   * React #301 로 지도가 통째로 죽는다(엣지 패널 실측).
+   */
+  const heldFullDetailA1Model = useHeldValue(fullDetailA1Model, fullDetailSlug);
   const selectedNodeFocusActive =
     Boolean(
       selectedOntologyNode &&
@@ -4615,8 +4648,12 @@ export function HomePage() {
                 // (pill) 이거나 drawer 상태면 Hub Rail 이 정상 노출.
                 suppressed={!leftPanelCollapsed && !drawerOpen}
               />
-              {localGraphStack.length > 0 ? (
-                <div className="pointer-events-auto absolute left-1/2 top-[96px] z-30 flex max-w-[70vw] -translate-x-1/2 items-center gap-2 rounded-full border border-[color:var(--color-indigo-line-a32)] bg-[color:var(--color-panel)] px-3 py-1.5 shadow-[var(--shadow-elevation-1)]">
+              {/* 지도 위 상단 중앙에서 아래로 내려앉는 빵부스러기 —
+                  등장 원점은 그 위쪽 가장자리다. */}
+              <Surface
+                open={localGraphStack.length > 0}
+                origin="top center"
+                className="pointer-events-auto absolute left-1/2 top-[96px] z-30 flex max-w-[70vw] -translate-x-1/2 items-center gap-2 rounded-full border border-[color:var(--color-indigo-line-a32)] bg-[color:var(--color-panel)] px-3 py-1.5 shadow-[var(--shadow-elevation-1)]">
                   <span className="font-mono text-label uppercase tracking-[0.16em] text-[color:var(--color-text-quaternary)]">
                     Local
                   </span>
@@ -4633,7 +4670,7 @@ export function HomePage() {
                   >
                     Root
                   </button>
-                  {localGraphStack.map((slug, idx) => (
+                  {heldLocalGraphStack.map((slug, idx) => (
                     <span key={slug} className="flex items-center gap-2">
                       <span className="text-[color:var(--color-text-quaternary)]">▸</span>
                       <button
@@ -4646,7 +4683,7 @@ export function HomePage() {
                           size: "lg",
                           inline: true,
                           truncate: true,
-                          active: idx === localGraphStack.length - 1,
+                          active: idx === heldLocalGraphStack.length - 1,
                           className: "hover:text-[color:var(--color-text-primary)]",
                         })}
                         title={slug}
@@ -4667,8 +4704,7 @@ export function HomePage() {
                   >
                     Esc
                   </button>
-                </div>
-              ) : null}
+              </Surface>
 
               {/* 필터 컨텍스트 — 현재 visible 노드 수가 전체보다 적으면 표시.
                   로컬 그래프/카테고리 필터가 노드를 줄였을 때 컨텍스트를 주는 칩. */}
@@ -4781,15 +4817,18 @@ export function HomePage() {
 
             </>
         </div>
-        {projectsError ? (
-          <div
-            role="alert"
-            className="pointer-events-auto absolute left-1/2 top-[52px] z-40 flex -translate-x-1/2 items-center gap-3 rounded-full border border-[color:var(--color-danger-a32)] bg-[color:rgba(18,20,26,0.98)] px-4 py-2 text-body text-[color:var(--color-text-primary)] shadow-[var(--shadow-elevation-1)]"
-          >
+        {/* 상단에서 내려앉는 경보 띠 — 문구는 퇴장 창 동안 붙들어야 «사라지는
+            중에 빈 띠» 가 되지 않는다. */}
+        <Surface
+          open={Boolean(projectsError)}
+          origin="top center"
+          role="alert"
+          className="pointer-events-auto absolute left-1/2 top-[52px] z-40 flex -translate-x-1/2 items-center gap-3 rounded-full border border-[color:var(--color-danger-a32)] bg-[color:rgba(18,20,26,0.98)] px-4 py-2 text-body text-[color:var(--color-text-primary)] shadow-[var(--shadow-elevation-1)]"
+        >
             <span className="font-mono text-label uppercase tracking-[0.16em] text-[color:var(--color-danger-text)]">
               Error
             </span>
-            <span>{projectsError}</span>
+            <span>{heldProjectsError}</span>
             <button
               type="button"
               onClick={() => {
@@ -4804,8 +4843,7 @@ export function HomePage() {
             >
               {t('errorBanner.retry')}
             </button>
-          </div>
-        ) : null}
+        </Surface>
         {!createNodeOpen ? (
           <ProjectDrawer
             project={drawerProject}
@@ -5073,12 +5111,17 @@ export function HomePage() {
             />
           </Surface>
         ) : null}
-        {contextMenuNode && contextMenuModel ? (
+        {/* 엣지 패널과 같은 골격 — 붙든 모델이 한 번 생기면 자리를 지키고,
+            보이는지는 `Surface` 의 `open` 이 정한다(닫혀 있으면 `null` 을
+            그리므로 DOM 비용 0). 별도 마운트 플래그를 두면 effect 안에서
+            setState 를 하게 되고 그건 연쇄 렌더다. */}
+        {heldContextMenu ? (
           <TopologyV2ContextMenu
-            position={{ x: contextMenuNode.x, y: contextMenuNode.y }}
-            documentHref={contextMenuModel.documentHref}
-            mentionDocumentHref={contextMenuModel.mentionDocumentHref}
-            studioEditHref={contextMenuModel.studioEditHref}
+            open={Boolean(contextMenuNode && contextMenuModel)}
+            position={heldContextMenu.anchor}
+            documentHref={heldContextMenu.model.documentHref}
+            mentionDocumentHref={heldContextMenu.model.mentionDocumentHref}
+            studioEditHref={heldContextMenu.model.studioEditHref}
             labels={{
               actionDocument: t("nodeDatasheet.actionDocument"),
               actionMentionDocument: t("nodeDatasheet.actionMentionDocument"),
@@ -5089,37 +5132,43 @@ export function HomePage() {
               openFullDetail: t("nodeDatasheet.openFullDetail"),
             }}
             onCopyHandoff={() => {
-              copyV2NodeHandoff(contextMenuModel.handoffText);
+              copyV2NodeHandoff(heldContextMenu.model.handoffText);
               closeContextMenu();
             }}
             onSetPathSource={() => {
-              handleSetPathSource(contextMenuModel.nodeId);
+              handleSetPathSource(heldContextMenu.model.nodeId);
               closeContextMenu();
             }}
             onOpenFullDetail={() => {
-              handleSelect(contextMenuModel.nodeId);
-              setFullDetailSlug(contextMenuModel.nodeId);
+              handleSelect(heldContextMenu.model.nodeId);
+              setFullDetailSlug(heldContextMenu.model.nodeId);
               closeContextMenu();
             }}
             onClose={closeContextMenu}
           />
         ) : null}
-        {fullDetailOpen && fullDetailA1Model && FullDetailCard ? (
-          <div
+        {/* 전면 표면 — **밝기 전용**(`motion="overlay"`). 종전엔 `map-overlay-in`
+            을 손으로 붙여 들어오는 길만 있었고, 닫으면 화면 전체가 1프레임에
+            사라졌다(지도가 200ms 를 받는 동안 주인공이 0프레임). `Surface` 가
+            같은 문법의 나가는 길(`map-overlay-out`)·`inert`·퇴장 창을 진다. */}
+        {heldFullDetailA1Model && FullDetailCard ? (
+          <Surface
+            open={fullDetailOpen && fullDetailA1Model !== null}
+            motion="overlay"
             data-testid="topology-full-detail-a1-positioner"
             data-full-detail-motion-token="--topology-motion-panel-duration"
-            className="map-overlay-in fixed inset-0 z-50 overflow-y-auto bg-[color:var(--color-canvas)]"
+            className="fixed inset-0 z-50 overflow-y-auto bg-[color:var(--color-canvas)]"
           >
             <FullDetailCard
-              node={fullDetailA1Model.node}
-              groups={fullDetailA1Model.groups}
-              reach={fullDetailA1Model.reach}
-              breadcrumb={fullDetailA1Model.breadcrumb}
-              bodyMarkdown={fullDetailA1Model.bodyMarkdown}
-              explanationEdit={fullDetailA1Model.explanationEdit}
-              documentHref={fullDetailA1Model.documentHref}
-              mentionDocumentHref={fullDetailA1Model.mentionDocumentHref}
-              codeLocations={fullDetailA1Model.codeLocations}
+              node={heldFullDetailA1Model.node}
+              groups={heldFullDetailA1Model.groups}
+              reach={heldFullDetailA1Model.reach}
+              breadcrumb={heldFullDetailA1Model.breadcrumb}
+              bodyMarkdown={heldFullDetailA1Model.bodyMarkdown}
+              explanationEdit={heldFullDetailA1Model.explanationEdit}
+              documentHref={heldFullDetailA1Model.documentHref}
+              mentionDocumentHref={heldFullDetailA1Model.mentionDocumentHref}
+              codeLocations={heldFullDetailA1Model.codeLocations}
               projectSource={projectSource.view}
               projectSourceLabels={projectSourceLabels}
               projectSourceBusy={projectSource.busy}
@@ -5131,7 +5180,7 @@ export function HomePage() {
               onClose={handleClose}
               onBackToMap={handleClose}
             />
-          </div>
+          </Surface>
         ) : null}
         {/* 헤더 "Concept search" 버튼 · ⌘K · ⇧⌘K 공용 단일 팔레트 —
             ontology 노드 + 프로젝트 통합 검색 (persona-P1). 노드 선택도

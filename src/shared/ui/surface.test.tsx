@@ -114,6 +114,38 @@ describe('Surface', () => {
     expect(screen.getByTestId('the-surface')).toBeInTheDocument();
   });
 
+  it('⑤ 큰 표면은 밝기만 쓴다 — `motion="overlay"`', () => {
+    /*
+     * `globals.css` 의 `.map-overlay-in` 주석이 이유를 적어 뒀다: **화면의 큰
+     * 부분을 차지하는 표면이 움직이면 화면 자체가 흔들린 것으로 읽힌다.** 이
+     * 문법이 프리미티브에 없어서 전면 상세는 `map-overlay-in` 을 손으로 붙이고
+     * 나가는 길은 못 붙였고, 전폭 서랍·스크림 모달은 아무것도 못 붙였다.
+     */
+    const { rerender } = render(
+      <Surface open motion="overlay">
+        내용
+      </Surface>,
+    );
+    const entered = screen.getByText('내용');
+    expect(entered).toHaveClass('map-overlay-in');
+    expect(entered, '큰 표면에 이동/스케일 문법이 붙으면 화면이 흔들린다').not.toHaveClass(
+      'topology-chrome-in',
+    );
+
+    act(() => rerender(
+      <Surface open={false} motion="overlay">
+        내용
+      </Surface>,
+    ));
+    const exiting = screen.getByText('내용');
+    expect(exiting, '나가는 길도 같은 문법이어야 한다').toHaveClass('map-overlay-out');
+    expect(exiting).not.toHaveClass('map-overlay-in');
+    expect(exiting, '퇴장 창의 계약 셋은 문법과 무관하게 산다').toHaveAttribute('inert');
+
+    act(() => void vi.advanceTimersByTime(EXIT_WINDOW_MS + 10));
+    expect(screen.queryByText('내용')).toBeNull();
+  });
+
   it('소비처 className 이 덧붙는다 — 모양은 소비처가 정한다', () => {
     render(
       <Surface open className="w-[300px]">
