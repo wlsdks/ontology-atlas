@@ -39,13 +39,24 @@ export type ChromeTileProps = ChromeTileButtonProps | ChromeTileLinkProps;
 const TILE_CLASS =
   'inline-flex size-[var(--chrome-tile-size)] shrink-0 items-center justify-center rounded-[var(--chrome-radius)] border border-[color:var(--chrome-border)] bg-[color:var(--chrome-surface)] text-[color:var(--color-text-tertiary)] shadow-[var(--chrome-shadow)] transition-colors hover:border-[color:var(--color-border-strong)] hover:bg-[color:var(--color-overlay-2)] hover:text-[color:var(--color-text-primary)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--color-indigo-accent)] focus-visible:ring-offset-2 focus-visible:ring-offset-[color:var(--color-canvas)] [&>svg]:size-[var(--chrome-icon)]';
 
+/**
+ * 비활성 — **누를 수 없으면 누를 수 없어 보여야 한다.**
+ *
+ * `ChromeChip` 과 같은 값·같은 문법이다. 2026-08-03 에 칩 쪽 구멍이 소유자 실보고
+ * (*"'최근 변경' 누르니까 아무런 반응이 없는데?"*)로 드러났고, 그때 새로 건
+ * 게이트(`tests/contract/disabled-affordance.contract.test.ts`)가 **이 파일의
+ * 같은 구멍을 함께 잡았다** — 아무도 실보고하기 전에.
+ */
+const DISABLED_CLASS =
+  'disabled:cursor-not-allowed disabled:opacity-55 disabled:shadow-none disabled:hover:border-[color:var(--chrome-border)] disabled:hover:bg-[color:var(--chrome-surface)] disabled:hover:text-[color:var(--color-text-tertiary)]';
+
 const ACTIVE_CLASS =
   'border-[color:var(--chrome-active-border)] text-[color:var(--color-text-primary)]';
 
 export const ChromeTile = forwardRef<HTMLButtonElement | HTMLAnchorElement, ChromeTileProps>(
   ({ icon, title, active, className, href, 'aria-label': ariaLabelProp, ...rest }, ref) => {
     const ariaLabel = ariaLabelProp ?? title;
-    const resolvedClassName = cn(TILE_CLASS, active && ACTIVE_CLASS, className);
+    const resolvedClassName = cn(TILE_CLASS, DISABLED_CLASS, active && ACTIVE_CLASS, className);
 
     if (href) {
       return (
