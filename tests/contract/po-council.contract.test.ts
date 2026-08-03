@@ -46,12 +46,21 @@ const RUBRIC_ROWS = [
   'Verification',
 ] as const;
 
+/*
+ * 2026-08-03 — 다섯 자리 전부 opus. 소유자 지시("너무 크게 작업하는 게 아니면
+ * 다 opus 가 해도 됨")이자, 그 전에 측정된 역전을 바로잡는다: PO OS 가 **치명적**
+ * 이라 선언한 네 행(Problem insight · Ontology value · Agent value · Verification)을
+ * 전부 sonnet 이 서명하고 있었고, 유일한 비치명 행(Differentiation)에만 opus 가
+ * 붙어 있었다. 특히 지킴이는 2026-07-27 사고(두 치명 행에 「없음」을 쓰고 통과)
+ * **때문에 생긴 자리**인데 sonnet 이었다.
+ * 팀장(chief)은 fable — 소집 여부·자리·순서·평결 기록을 지는 최상위 결정자다.
+ */
 const TIERS: Record<string, string> = {
-  'po-evidence': 'sonnet',
-  'po-craft': 'sonnet',
-  'po-steward': 'sonnet',
+  'po-evidence': 'opus',
+  'po-craft': 'opus',
+  'po-steward': 'opus',
   'po-wedge': 'opus',
-  'po-leverage': 'sonnet',
+  'po-leverage': 'opus',
 };
 
 const MAX_AGENT_BYTES = 9_000;
@@ -164,6 +173,29 @@ describe('PO council wiring', () => {
       const frontmatter = agentFile(agent).split('---')[1] ?? '';
       expect(frontmatter, `${agent} must declare a model tier`).toContain(`model: ${TIERS[agent]}`);
       expect(frontmatter, `${agent} must not be a haiku seat`).not.toContain('model: haiku');
+    }
+  });
+
+  /*
+   * 2026-08-03 — 지킴이가 `npx ontology-atlas init` 을 「진짜 에이전트 핸드오프」의
+   * 예시로 들고 있었다. AGENTS.md 는 그 명령을 **404 로 선언**한다(npm 발행이 없다).
+   * Agent value 를 단독 소유하고 거짓 면제를 기각하는 자리가, 없는 명령을 처방하고
+   * 있었던 것이다.
+   *
+   * **왜 아무도 못 잡았나**: 원문이 `npx` 와 `ontology-atlas` 사이에서 줄바꿈돼
+   * 있어서 한 줄 grep 이 통과시켰다. 그래서 이 게이트는 **공백을 접고** 본다 —
+   * 줄바꿈으로 숨는 인용을 잡는 것이 이 단언의 존재 이유다.
+   */
+  it('never cites the retired npm entrypoint as a real handoff', () => {
+    for (const agent of COUNCIL_AGENTS) {
+      const folded = agentFile(agent).replace(/\s+/g, ' ');
+      const cited = folded.match(/npx ontology-atlas/g) ?? [];
+      // 404 라고 **가르치는** 문장은 허용한다 — 금지되는 것은 처방으로 쓰는 것이다.
+      const taughtAsDead = folded.match(/npx ontology-atlas [^.]{0,40}(404|아니다|없는)/g) ?? [];
+      expect(
+        cited.length,
+        `${agent} cites npx ontology-atlas as if it worked — AGENTS.md declares it a 404`,
+      ).toBe(taughtAsDead.length);
     }
   });
 
