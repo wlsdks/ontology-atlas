@@ -57,6 +57,47 @@ http://localhost:3000/ko/topology/?guides=reset    ← 되돌리기(안내 자�
 
 ## 1. 겹침 — rect 교집합
 
+### ⚠️ 표본부터 정한다 — 오탐의 전부가 여기서 나온다
+
+**`getBoundingClientRect()` 는 「화면에 있다」를 뜻하지 않는다.** 2026-08-03 실측:
+`/ko/docs` 에서 겹침 1건·도달 불가 1건이 잡혔는데, 열어 보니 그 버튼은 **닫힌
+`<details>` 안**에 있었다. 원소 자신은 `visibility: visible` · `opacity: 1` ·
+`display: block` 이고 rect 도 121×21 로 멀쩡했다. 화면에는 없는데 전부 통과한 것이다.
+
+표본에서 **반드시** 빼는 것:
+
+```js
+const painted = (el) => {
+  const c = getComputedStyle(el), b = el.getBoundingClientRect();
+  if (b.width < 1 || b.height < 1) return false;
+  if (c.visibility === 'hidden' || c.display === 'none' || Number(c.opacity) < 0.05) return false;
+  // ★ 접힌 디스클로저 — 자식은 스타일도 rect 도 멀쩡한 채 화면에만 없다
+  if (el.closest('details:not([open])')) return false;
+  // ★ 조상이 클리핑하는데 내가 그 밖 — 스크롤 컨테이너의 화면 밖 내용
+  for (let n = el.parentElement; n && n !== document.body; n = n.parentElement) {
+    const cc = getComputedStyle(n), r = n.getBoundingClientRect();
+    if (cc.overflow !== 'visible' && (b.bottom < r.top || b.top > r.bottom)) return false;
+    if (cc.contentVisibility === 'hidden' || n.hasAttribute('inert')) return false;
+  }
+  // ★ 뷰포트 밖은 사용자가 못 본다
+  return b.top < innerHeight && b.bottom > 0 && b.left < innerWidth && b.right > 0;
+};
+```
+
+**이 필터가 없으면 계기가 앱을 고발한다.** 그날 세 지적 중 셋 다 오탐이었고
+(램프 밖 34px = 정당한 `--text-hero-lg`, 겹침·도달 불가 = 접힌 `<details>`),
+그걸 그대로 올렸으면 멀쩡한 코드를 고치게 됐을 것이다. 이 저장소의 경고 그대로다:
+**잴 원소를 틀리면 수치가 나와도 틀린 수치다.**
+
+**램프 목록은 기억으로 쓰지 말고 `app/globals.css` 에서 읽는다:**
+
+```js
+// 하드코딩한 램프는 스텝이 추가되는 순간 낡고, 낡은 목록은 정상 값을 결함이라 부른다
+const ramp = [...css.matchAll(/--text-([a-z0-9-]+):\s*([0-9.]+px)/g)];
+```
+
+### 그다음 교집합
+
 같은 스태킹 문맥에서 독립이라고 믿는 요소들의 rect 를 전수로 잡아 **쌍별 교집합
 넓이**를 구한다. 0 이 아니면 결함이다. 폭 하나에서만 겹치는 경우가 흔하므로
 `/responsive-sweep` 의 밴드마다 반복한다.
