@@ -46,13 +46,43 @@ const RUBRIC_ROWS = [
   'Verification',
 ] as const;
 
+/*
+ * 2026-08-03 — 티어는 **두 가지를 동시에** 만족해야 한다. 하나만 보면 둘 다 는친다.
+ *
+ * ① **치명 행은 최상위가 서명한다.** PO OS 가 치명적이라 선언한 네 행(Problem
+ *    insight · User moment · Ontology value · Agent value · Verification)을 전부
+ *    sonnet 이 서명하고 있었고, 유일한 비치명 행(Differentiation)에만 opus 가
+ *    붙어 있었다 — 정확히 뒤집혀 있었다. 특히 지킴이는 2026-07-27 사고(두 치명
+ *    행에 「없음」을 쓰고 통과) **때문에 생긴 자리**인데 sonnet 이었다.
+ *
+ * ② **계열이 갈려 있어야 한다.** ①만 보고 다섯을 전부 opus 로 만들면 카운슬의
+ *    **유일한 모델 이질성이 사라진다.** 그건 배심원 다섯이 아니라 「다섯 번 다르게
+ *    프롬프트한 심판 하나」다. 실측이 이미 그 방향을 가리켰다 — 원장 7회 · 좌석
+ *    판정 35건에서 **평균 쌍별 일치율 65.7%**(우연 기대 36.8%), 7회 중 2회 만장일치.
+ *    Verga et al.(arXiv:2404.18796): 이질 3인 패널이 인간과 κ 0.763, 단일 최상위
+ *    모델은 0.627 — 게다가 각 모델의 최고 가점은 **자기가 자기를 심사할 때** 나온다.
+ *    Panickssery et al.(NeurIPS 2024): 자기 인식과 자기 선호 편향이 선형 상관이라
+ *    같은 계열은 같은 편향을 공유한다.
+ *
+ * 그래서 배치는 **opus 3 · fable 2** 이고, 이종을 받는 둘은 치명 행을 안 가진
+ * 자리다(해자=Differentiation 하나, 지렛대=루브릭 행 없음). ①과 ② 를 둘 다
+ * 만족하는 유일한 조합이다. 팀장(chief)도 fable — 소집·순서·기록을 지는 결정자다.
+ *
+ * ⚠️ 이 표를 단일 계열로 되돌리려면 위 ②의 실측부터 반박해야 한다.
+ */
 const TIERS: Record<string, string> = {
-  'po-evidence': 'sonnet',
-  'po-craft': 'sonnet',
-  'po-steward': 'sonnet',
-  'po-wedge': 'opus',
-  'po-leverage': 'sonnet',
+  'po-evidence': 'opus',
+  'po-craft': 'opus',
+  'po-steward': 'opus',
+  'po-wedge': 'fable',
+  'po-leverage': 'fable',
 };
+
+/**
+ * 계열이 최소 둘이어야 한다 — 위 ②. 이 단언이 없으면 다음 사람이 "일관성"을
+ * 이유로 한 줄씩 통일해 이질성이 조용히 사라진다(오늘 실제로 그렇게 될 뻔했다).
+ */
+const MIN_MODEL_FAMILIES = 2;
 
 const MAX_AGENT_BYTES = 9_000;
 
@@ -164,6 +194,61 @@ describe('PO council wiring', () => {
       const frontmatter = agentFile(agent).split('---')[1] ?? '';
       expect(frontmatter, `${agent} must declare a model tier`).toContain(`model: ${TIERS[agent]}`);
       expect(frontmatter, `${agent} must not be a haiku seat`).not.toContain('model: haiku');
+    }
+  });
+
+  it('keeps the bench on more than one model family', () => {
+    const families = new Set(Object.values(TIERS));
+    expect(
+      families.size,
+      'the council must span at least two model families — a single-family bench is not five ' +
+        'jurors, it is one judge prompted five ways (measured: 65.7% mean pairwise verdict ' +
+        'agreement over 7 councils, 2 of them unanimous). Verga et al. arXiv:2404.18796.',
+    ).toBeGreaterThanOrEqual(MIN_MODEL_FAMILIES);
+  });
+
+  it('keeps every fatal rubric row on the top tier', () => {
+    /*
+     * 이질성을 사는 대가로 치명 행을 약한 자리에 넘기면 2026-07-27 사고가
+     * 재발한다. 두 요구를 **한 테스트로 묶지 않는 이유**: 따로 두어야 어느 쪽이
+     * 깨졌는지 실패 메시지가 말해 준다.
+     */
+    const FATAL_ROWS = ['Problem insight', 'User moment', 'Ontology value', 'Agent value', 'Verification'];
+    for (const row of FATAL_ROWS) {
+      const signer = COUNCIL_AGENTS.find((agent) => {
+        const body = agentFile(agent);
+        const start = body.indexOf('## 네가 소유하는 루브릭 행');
+        if (start === -1) return false;
+        return body.slice(start, body.indexOf('\n## ', start + 1)).includes(row);
+      });
+      expect(signer, `fatal rubric row "${row}" must have a signer`).toBeDefined();
+      expect(
+        TIERS[signer as string],
+        `"${row}" is a fatal row — its signer ${signer} must stay on opus`,
+      ).toBe('opus');
+    }
+  });
+
+  /*
+   * 2026-08-03 — 지킴이가 `npx ontology-atlas init` 을 「진짜 에이전트 핸드오프」의
+   * 예시로 들고 있었다. AGENTS.md 는 그 명령을 **404 로 선언**한다(npm 발행이 없다).
+   * Agent value 를 단독 소유하고 거짓 면제를 기각하는 자리가, 없는 명령을 처방하고
+   * 있었던 것이다.
+   *
+   * **왜 아무도 못 잡았나**: 원문이 `npx` 와 `ontology-atlas` 사이에서 줄바꿈돼
+   * 있어서 한 줄 grep 이 통과시켰다. 그래서 이 게이트는 **공백을 접고** 본다 —
+   * 줄바꿈으로 숨는 인용을 잡는 것이 이 단언의 존재 이유다.
+   */
+  it('never cites the retired npm entrypoint as a real handoff', () => {
+    for (const agent of COUNCIL_AGENTS) {
+      const folded = agentFile(agent).replace(/\s+/g, ' ');
+      const cited = folded.match(/npx ontology-atlas/g) ?? [];
+      // 404 라고 **가르치는** 문장은 허용한다 — 금지되는 것은 처방으로 쓰는 것이다.
+      const taughtAsDead = folded.match(/npx ontology-atlas [^.]{0,40}(404|아니다|없는)/g) ?? [];
+      expect(
+        cited.length,
+        `${agent} cites npx ontology-atlas as if it worked — AGENTS.md declares it a 404`,
+      ).toBe(taughtAsDead.length);
     }
   });
 
