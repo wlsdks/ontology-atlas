@@ -239,7 +239,16 @@ describe("TopologyV2DetailPanel — project source receipt", () => {
 
     const actions = screen.getByTestId("topology-v2-detail-panel-actions");
     expect(actions).toHaveAttribute("data-inline-action-count", "4");
-    expect(actions.children).toHaveLength(4);
+    /*
+     * 2026-08-03 — 종전엔 `actions.children` 을 셌다. 그때는 타일이 그룹의
+     * **직접 자식**이었기 때문인데, 액션 스트립이 3층이 되면서(평결 ④) 직접
+     * 자식은 이제 **층**이다. 이 단언의 의도는 "타일 4개가 그려진다" 였으므로
+     * 층을 건너뛰고 타일을 센다 — 층 수가 바뀌어도 살아남고, 타일이 하나
+     * 사라지면 여전히 빨개진다.
+     */
+    expect(
+      actions.querySelectorAll('[data-testid^="topology-v2-detail-panel-action-"]'),
+    ).toHaveLength(4);
     expect(screen.queryByTestId("topology-v2-detail-panel-action-handoff")).not.toBeInTheDocument();
     expect(screen.queryByTestId("topology-v2-detail-panel-action-path")).not.toBeInTheDocument();
     expect(screen.getByTestId("topology-v2-project-source-action")).toBeInTheDocument();
