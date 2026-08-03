@@ -545,7 +545,10 @@ const globalsCss = readFileSync(GLOBALS_CSS, 'utf8');
  * 검증되지 않았다**. 규율 1대로 열어 보고 확인한 자리만 등재하므로, 검증 전에는
  * 전부 부채다 — 안전한 방향의 오차다.
  */
-const ANCHOR_TAG_SPLIT: Readonly<Record<string, number>> = { Link: 85, a: 24 };
+// 85 → 86: 이 게이트가 브랜치에서 재는 동안 main 이 앵커를 하나 더 들였다
+// (#907 오버레이 반경 라운드). 게이트가 없던 시점에 쓰인 자리라 회귀가 아니라
+// **신설 시점의 실측**이다 — 다음 라운드부터 이 수는 내려가기만 한다.
+const ANCHOR_TAG_SPLIT: Readonly<Record<string, number>> = { Link: 86, a: 24 };
 
 /**
  * **리터럴이다.** 버튼 쪽 두 기준선과 같은 이유 — 파생값으로 두면 멈춤쇠가
@@ -553,7 +556,7 @@ const ANCHOR_TAG_SPLIT: Readonly<Record<string, number>> = { Link: 85, a: 24 };
  *
  * **이 수만 줄어야 한다.**
  */
-const BASELINE_ANCHOR_DEBT = 109;
+const BASELINE_ANCHOR_DEBT = 110;
 
 const anchorCensus = census(scannedFiles, [], ANCHOR_TAGS);
 
