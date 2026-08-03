@@ -3890,6 +3890,11 @@
         },
         {
           "depth": 2,
+          "text": "2026-08-03 — 디자인 시스템이 「자산 + 게이트」로 서고, 계기가 생겼다",
+          "slug": "2026-08-03-디자인-시스템이-자산-게이트로-서고-계기가-생겼다"
+        },
+        {
+          "depth": 2,
           "text": "2026-08-03 — README가 최근 변경을 맥락과 함께 보여준다",
           "slug": "2026-08-03-readme가-최근-변경을-맥락과-함께-보여준다"
         },
@@ -6094,8 +6099,8 @@
           "slug": "2026-07-26-첫-만남은-쇼핑몰부터"
         }
       ],
-      "excerpt": "Major change history. Code commit messages answer why; this file answers when / which surface changed. Focused on user-visible changes, not PR-level granularity. Newest at the top. Entries stay date-based; the app version reached v1.0.0 on 2026-07-27, so a release tag now carries the semver promise instead. README의 지도 ",
-      "wordCount": 64326,
+      "excerpt": "Major change history. Code commit messages answer why; this file answers when / which surface changed. Focused on user-visible changes, not PR-level granularity. Newest at the top. Entries stay date-based; the app version reached v1.0.0 on 2026-07-27, so a release tag now carries the semver promise instead. 지금까지 이 앱의 화",
+      "wordCount": 64578,
       "updatedAt": "2026-08-03",
       "linksOut": [
         "audits/CASE-STUDY-AGENTS-MD-DRIFT",
