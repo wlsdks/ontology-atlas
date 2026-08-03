@@ -29,6 +29,7 @@ import {
 } from '@/shared/lib/local-endpoint';
 import type { LlmAuditEntry } from '@/shared/lib/llm-audit-log';
 import { openTauriVaultInFinder } from '@/shared/lib/tauri-vault-fs';
+import { Chip } from '@/shared/ui/controls';
 import { Select } from '@/shared/ui/select';
 import { useToast } from '@/shared/ui/toast';
 import { cn } from '@/shared/lib/cn';
@@ -70,6 +71,14 @@ import type { AiConnectionState } from '../model/use-ai-connection';
  */
 
 const CLEAR_ARM_MS = 3000;
+
+/**
+ * 중립 칩의 **호버·포커스**. 값 층(`controlClass`)이 일부러 안 내는 층이라
+ * (빈도가 모션 예산을 깎으므로 호버 색은 소비처가 정한다) 여기 한 번만 적고
+ * 네 자리가 같은 문자열을 쓴다 — 손으로 네 번 쓰면 언젠가 한 벌이 갈린다.
+ */
+const NEUTRAL_CHIP_HOVER =
+  'shrink-0 hover:border-[color:var(--color-border-strong)] hover:text-[color:var(--color-text-secondary)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--color-indigo-a46)] focus-visible:ring-inset';
 
 /** 감사 기록 파일의 볼트 상대 경로 — 경로만 mono, 곁의 한국어는 본문 서체. */
 const LLM_AUDIT_RELATIVE_PATH = '.ontology-atlas/llm-audit.jsonl';
@@ -448,8 +457,7 @@ function ProviderCard({
             <span className="font-mono">···· {status?.last4 ?? ''}</span>
           </span>
         ) : (
-          <button
-            type="button"
+          <Chip
             data-testid={`ai-register-${provider}`}
             // `aria-expanded` 를 달았으면 다시 눌렀을 때 접혀야 한다 — 안 접히면
             // 스크린 리더에게 한 약속이 거짓말이 된다. 그래서 이 버튼도 [취소]·
@@ -458,16 +466,18 @@ function ProviderCard({
             aria-expanded={expanded}
             // 펼친 동안에도 사라지지 않고 **눌린 상태**로 남는다. 사라지면
             // 카드가 어디서 나왔는지 가리키는 것이 화면에서 없어져, 접힐 때
-            // 돌아갈 자리도 같이 사라진다.
+            // 돌아갈 자리도 같이 사라진다. 눌림은 이제 값 층의 `active` 가 낸다 —
+            // 손으로 쓴 인디고 3종 대신 램프의 눌림 한 벌이다.
+            active={expanded}
             className={cn(
-              'inline-flex h-8 shrink-0 items-center rounded-chip border px-2.5 text-label transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--color-indigo-a46)] focus-visible:ring-inset',
+              'shrink-0 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--color-indigo-a46)] focus-visible:ring-inset',
               expanded
-                ? 'border-[color:var(--color-indigo-line-a32)] bg-[color:var(--color-indigo-line-a13)] text-[color:var(--color-indigo-accent)]'
-                : 'border-[color:var(--color-border-soft)] text-[color:var(--color-text-tertiary)] hover:border-[color:var(--color-indigo-line-a32)] hover:text-[color:var(--color-indigo-accent)]',
+                ? null
+                : 'hover:border-[color:var(--color-indigo-line-a32)] hover:text-[color:var(--color-indigo-accent)]',
             )}
           >
             {t('keyRegister')}
-          </button>
+          </Chip>
         )}
       </div>
 
@@ -667,20 +677,20 @@ function LocalEndpointCard({
             <span className="truncate font-mono">{settings.model}</span>
           </span>
         ) : (
-          <button
-            type="button"
+          <Chip
             data-testid="ai-register-local"
             onClick={expanded ? onCancel : onExpand}
             aria-expanded={expanded}
+            active={expanded}
             className={cn(
-              'inline-flex h-8 shrink-0 items-center rounded-chip border px-2.5 text-label transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--color-indigo-a46)] focus-visible:ring-inset',
+              'shrink-0 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--color-indigo-a46)] focus-visible:ring-inset',
               expanded
-                ? 'border-[color:var(--color-indigo-line-a32)] bg-[color:var(--color-indigo-line-a13)] text-[color:var(--color-indigo-accent)]'
-                : 'border-[color:var(--color-border-soft)] text-[color:var(--color-text-tertiary)] hover:border-[color:var(--color-indigo-line-a32)] hover:text-[color:var(--color-indigo-accent)]',
+                ? null
+                : 'hover:border-[color:var(--color-indigo-line-a32)] hover:text-[color:var(--color-indigo-accent)]',
             )}
           >
             {t('localConnect')}
-          </button>
+          </Chip>
         )}
       </div>
 
@@ -710,14 +720,13 @@ function LocalEndpointCard({
                 className="h-8 min-w-0 flex-1 rounded-chip border border-[color:var(--color-border-soft)] bg-[color:var(--color-elevated)] px-2 font-mono text-caption text-[color:var(--color-text-primary)] transition-colors placeholder:font-sans placeholder:text-[color:var(--color-text-quaternary)] focus-visible:border-[color:var(--color-indigo-line-a45)] focus-visible:outline-none"
               />
               {!connected ? (
-                <button
-                  type="button"
+                <Chip
                   data-testid="ai-cancel-local"
                   onClick={onCancel}
-                  className="inline-flex h-8 shrink-0 items-center rounded-chip border border-[color:var(--color-border-soft)] px-2.5 text-label text-[color:var(--color-text-tertiary)] transition-colors hover:border-[color:var(--color-border-strong)] hover:text-[color:var(--color-text-secondary)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--color-indigo-a46)] focus-visible:ring-inset"
+                  className={NEUTRAL_CHIP_HOVER}
                 >
                   {t('cancel')}
-                </button>
+                </Chip>
               ) : null}
               <button
                 type="button"
@@ -756,14 +765,13 @@ function LocalEndpointCard({
                   data-testid="ai-local-model"
                 />
                 {connected ? (
-                  <button
-                    type="button"
+                  <Chip
                     data-testid="ai-local-disconnect"
                     onClick={handleDisconnect}
-                    className="inline-flex h-8 shrink-0 items-center rounded-chip border border-[color:var(--color-border-soft)] px-2.5 text-label text-[color:var(--color-text-tertiary)] transition-colors hover:border-[color:var(--color-border-strong)] hover:text-[color:var(--color-text-secondary)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--color-indigo-a46)] focus-visible:ring-inset"
+                    className={NEUTRAL_CHIP_HOVER}
                   >
                     {t('localDisconnect')}
-                  </button>
+                  </Chip>
                 ) : null}
               </div>
             ) : connected ? (
@@ -771,14 +779,13 @@ function LocalEndpointCard({
                 <span className="min-w-0 flex-1 truncate font-mono text-caption text-[color:var(--color-text-tertiary)]">
                   {settings.model}
                 </span>
-                <button
-                  type="button"
+                <Chip
                   data-testid="ai-local-disconnect"
                   onClick={handleDisconnect}
-                  className="inline-flex h-8 shrink-0 items-center rounded-chip border border-[color:var(--color-border-soft)] px-2.5 text-label text-[color:var(--color-text-tertiary)] transition-colors hover:border-[color:var(--color-border-strong)] hover:text-[color:var(--color-text-secondary)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--color-indigo-a46)] focus-visible:ring-inset"
+                  className={NEUTRAL_CHIP_HOVER}
                 >
                   {t('localDisconnect')}
-                </button>
+                </Chip>
               </div>
             ) : null}
 
@@ -979,14 +986,13 @@ function KeyDraftForm({
       {/* 저장 왼쪽의 중립 컨트롤 — 눌러 보고 마음이 바뀐 사람의 출구다.
           Esc 로도 같은 일이 일어나지만 그건 보이지 않는다. 되돌릴 길이 화면에
           없는 펼침은 함정이라, 발견 가능한 컨트롤이 있어야 계약이 성립한다. */}
-      <button
-        type="button"
+      <Chip
         data-testid={`ai-cancel-${provider}`}
         onClick={onCancel}
-        className="inline-flex h-8 shrink-0 items-center rounded-chip border border-[color:var(--color-border-soft)] px-2.5 text-label text-[color:var(--color-text-tertiary)] transition-colors hover:border-[color:var(--color-border-strong)] hover:text-[color:var(--color-text-secondary)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--color-indigo-a46)] focus-visible:ring-inset"
+        className={NEUTRAL_CHIP_HOVER}
       >
         {t('cancel')}
-      </button>
+      </Chip>
       <button
         type="button"
         data-testid={`ai-save-${provider}`}

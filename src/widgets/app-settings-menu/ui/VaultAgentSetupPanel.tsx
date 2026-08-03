@@ -29,6 +29,7 @@ import { formatAgentPostChangeSyncPacket } from '@/shared/lib/ontology-tree';
 import type { VaultManifest } from '@/entities/docs-vault';
 import type { AgentClientId } from '@/features/docs-vault-local';
 import { copyText } from '@/shared/lib/copy-text';
+import { controlClass } from '@/shared/ui/control-class';
 import { getTauriVaultRootPath } from '@/shared/lib/tauri-vault-fs';
 import type { LocalFsHandleRecord } from '@/entities/local-fs-handle';
 import type { AgentServerAvailability } from '@/shared/config';
@@ -853,14 +854,22 @@ export function VaultAgentSetupPanel({
             ) : null}
           </div>
 
-          {/* 고급 · 자세한 검증 — 연결 파일 상태·수리·모드·게이트·CLI·복사 패킷 */}
+          {/* 고급 · 자세한 검증 — 연결 파일 상태·수리·모드·게이트·CLI·복사 패킷.
+              토글은 글자만으로 눌리는 것 = `link`(실측 85). 서체·자간·자리잡기만
+              이 한 자리의 것이라 className 에 남고, 크기·색은 램프가 낸다. */}
           {publicPackagesReady ? (
             <button
             type="button"
             onClick={() => setAdvancedOpen((v) => !v)}
             aria-expanded={advancedOpen}
             data-testid="agent-setup-advanced-toggle"
-            className="mt-3 flex items-center gap-1.5 self-start font-mono text-caption uppercase tracking-[0.12em] text-[color:var(--color-text-quaternary)] transition-colors hover:text-[color:var(--color-text-secondary)]"
+            className={controlClass({
+              shape: 'link',
+              size: 'sm',
+              tone: 'muted',
+              className:
+                'mt-3 self-start font-mono uppercase tracking-[0.12em] hover:text-[color:var(--color-text-secondary)]',
+            })}
           >
             <ChevronDown
               size={11}
