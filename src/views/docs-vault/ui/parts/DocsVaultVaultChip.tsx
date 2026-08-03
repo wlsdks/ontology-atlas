@@ -70,7 +70,7 @@ export function DocsVaultVaultChip({
           aria-label={t("vaultChip.menuAriaLabel")}
           className="absolute left-0 top-[calc(100%+6px)] z-50 w-72 max-w-[84vw] rounded-[var(--chrome-radius-inner)] border border-[color:var(--color-border-soft)] bg-[color:var(--color-elevated)] p-2 shadow-[var(--chrome-shadow)]"
         >
-          <p className="truncate rounded-sm px-1.5 py-1 font-mono text-label text-[color:var(--color-text-tertiary)]">
+          <p className="truncate rounded-micro px-1.5 py-1 font-mono text-label text-[color:var(--color-text-tertiary)]">
             {path}
           </p>
           <p className="px-1.5 py-1 text-label text-[color:var(--color-text-secondary)]">

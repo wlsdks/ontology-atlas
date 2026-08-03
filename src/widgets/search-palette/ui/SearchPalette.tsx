@@ -93,7 +93,7 @@ function highlightMatch(text: string, query: string): React.ReactNode {
   return (
     <>
       {text.slice(0, idx)}
-      <mark className="rounded bg-[color:var(--color-indigo-line-a22)] px-0.5 text-[color:var(--color-text-primary)]">
+      <mark className="rounded-micro bg-[color:var(--color-indigo-line-a22)] px-0.5 text-[color:var(--color-text-primary)]">
         {text.slice(idx, idx + q.length)}
       </mark>
       {text.slice(idx + q.length)}
@@ -328,7 +328,7 @@ function SearchPaletteDialog({
         onClick={onClose}
       />
 
-      {/* 모바일은 풀스크린 시트 (rounded 없이 inset-0 가득 채움), md+ 는
+      {/* 모바일은 풀스크린 시트 (반경 없이 inset-0 가득 채움), md+ 는
           기존 floating 카드 (max-w-xl, rounded-[22px], 위에서 슬라이드).
           rank2 — 3종 오버레이 공용 임계감쇠 스프링(OVERLAY_SPRING, 오버슈트
           0). 진입은 opacity 0→1 + translateY 8px→0 만 — scale 없음
@@ -377,7 +377,7 @@ function SearchPaletteDialog({
             }
             className="flex-1 bg-transparent text-title text-[color:var(--color-text-primary)] placeholder:text-[color:var(--color-text-quaternary)] focus:outline-none"
           />
-          <kbd className="hidden rounded border border-[color:var(--color-divider)] px-1.5 py-0.5 font-mono text-caption uppercase tracking-wider text-[color:var(--color-text-quaternary)] sm:inline-block">
+          <kbd className="hidden rounded-micro border border-[color:var(--color-divider)] px-1.5 py-0.5 font-mono text-caption uppercase tracking-wider text-[color:var(--color-text-quaternary)] sm:inline-block">
             ESC
           </kbd>
           <button
@@ -517,7 +517,7 @@ function SearchPaletteDialog({
                         onClick={onClose}
                         onMouseEnter={() => setActiveIndex(idx)}
                         className={cn(
-                          "flex items-center gap-2 rounded-sm px-2 py-1 text-left text-body transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--color-indigo-a46)] focus-visible:ring-inset",
+                          "flex items-center gap-2 rounded-micro px-2 py-1 text-left text-body transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--color-indigo-a46)] focus-visible:ring-inset",
                           isActive
                             ? "bg-[color:var(--color-indigo-a14)] text-[color:var(--color-text-primary)]"
                             : "text-[color:var(--color-text-tertiary)] hover:bg-[color:var(--color-overlay-1)] hover:text-[color:var(--color-text-primary)]",

@@ -794,7 +794,7 @@ export function TopologyIndexPanel({
           ) : null}
           <span
             aria-hidden="true"
-            className="shrink-0 rounded border border-[color:var(--topology-v2-panel-border)] px-1 py-0.5 font-mono text-caption uppercase tracking-[0.08em] text-[color:var(--topology-v2-panel-text-quaternary)]"
+            className="shrink-0 rounded-micro border border-[color:var(--topology-v2-panel-border)] px-1 py-0.5 font-mono text-caption uppercase tracking-[0.08em] text-[color:var(--topology-v2-panel-text-quaternary)]"
           >
             ⇧⌘K
           </span>

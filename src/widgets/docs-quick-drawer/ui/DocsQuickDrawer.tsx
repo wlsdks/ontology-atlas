@@ -105,7 +105,7 @@ function highlightMatch(text: string, needle: string) {
   return (
     <>
       {text.slice(0, idx)}
-      <mark className="rounded bg-[color:var(--color-indigo-a28)] px-0.5 text-[color:var(--color-text-primary)]">
+      <mark className="rounded-micro bg-[color:var(--color-indigo-a28)] px-0.5 text-[color:var(--color-text-primary)]">
         {text.slice(idx, idx + needle.length)}
       </mark>
       {text.slice(idx + needle.length)}
@@ -820,11 +820,11 @@ export function DocsQuickDrawer({
               )}
             >
               <p className={`text-caption text-[color:var(--color-text-quaternary)] ${eyebrow14}`}>
-                <kbd className="rounded border border-[color:var(--color-overlay-3)] px-1 py-0.5 tabular-nums">↑↓</kbd>
+                <kbd className="rounded-micro border border-[color:var(--color-overlay-3)] px-1 py-0.5 tabular-nums">↑↓</kbd>
                 {" "}{t("footerMove")} ·{" "}
-                <kbd className="rounded border border-[color:var(--color-overlay-3)] px-1 py-0.5 tabular-nums">↵</kbd>
+                <kbd className="rounded-micro border border-[color:var(--color-overlay-3)] px-1 py-0.5 tabular-nums">↵</kbd>
                 {" "}{t("footerOpen")} ·{" "}
-                <kbd className="rounded border border-[color:var(--color-overlay-3)] px-1 py-0.5 tabular-nums">Esc</kbd>
+                <kbd className="rounded-micro border border-[color:var(--color-overlay-3)] px-1 py-0.5 tabular-nums">Esc</kbd>
                 {" "}{t("footerClose")} · {t("footerSwipe")}
               </p>
             </footer>

@@ -2,7 +2,7 @@ import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
 
 import { describe, it, expect } from 'vitest';
-import { cn, LEADING_RAMP_STEPS, TYPE_RAMP_STEPS } from './cn';
+import { cn, LEADING_RAMP_STEPS, RADIUS_RAMP_STEPS, TYPE_RAMP_STEPS } from './cn';
 
 /**
  * `app/globals.css` 에 실제로 선언된 램프 스텝을 읽는다.
@@ -17,7 +17,7 @@ import { cn, LEADING_RAMP_STEPS, TYPE_RAMP_STEPS } from './cn';
  * 순간 자동으로 검사 대상이 되고, 등록을 빠뜨리면 **여기서 먼저 터진다.**
  * `--text-body--line-height` 류 companion 은 스텝이 아니라 짝이라 제외한다.
  */
-function rampStepsFromCss(prefix: 'text' | 'leading'): string[] {
+function rampStepsFromCss(prefix: 'text' | 'leading' | 'radius'): string[] {
   const css = readFileSync(join(process.cwd(), 'app/globals.css'), 'utf8');
   const found = new Set<string>();
   const re = new RegExp(`^\\s*--${prefix}-([a-z0-9-]+):`, 'gm');
@@ -136,6 +136,38 @@ describe('cn — 행간 램프 충돌 병합', () => {
  *
  * 이 테스트는 그 정합을 고정한다 — companion 을 되돌리면 여기서 먼저 깨진다.
  */
+/**
+ * 반경 램프 × tailwind-merge 충돌 병합 가드 (2026-08-03 `--radius-micro` 등재).
+ *
+ * 실패 모드는 행간과 같은 부류다: tailwind-merge 가 커스텀 `rounded-<step>` 을
+ * radius 그룹으로 인식하지 못하면 `cn('rounded-chip', 'rounded-micro')` 에서
+ * **둘 다 살아남아** CSS 소스 순서가 승자를 정한다. 값 층이 chip/xs 에서
+ * 모양 기본 반경을 컴파운드로 덮으면서 이 병합이 실제 경로가 됐다.
+ */
+describe('cn — 반경 램프 충돌 병합', () => {
+  it('**등록 목록이 램프와 일치한다** — 누락은 충돌 병합 실패가 된다', () => {
+    expect([...RADIUS_RAMP_STEPS].sort()).toEqual(rampStepsFromCss('radius'));
+  });
+
+  it('램프를 실제로 읽는다 — 스캔이 비면 통과가 아니라 결함이다', () => {
+    expect(rampStepsFromCss('radius').length).toBeGreaterThanOrEqual(4);
+  });
+
+  it.each([
+    ['rounded-chip', 'rounded-micro'],
+    ['rounded-micro', 'rounded-chip'],
+    ['rounded-card', 'rounded-panel'],
+  ])('%s 뒤에 %s 가 오면 뒤가 이긴다', (first, second) => {
+    expect(cn(first, second)).toBe(second);
+  });
+
+  it('기본 스케일 유틸리티와도 한 그룹으로 병합된다', () => {
+    // 소비처가 `rounded-full` 로 필화(化)하는 관용 오버라이드가 실제로 이긴다.
+    expect(cn('rounded-chip', 'rounded-full')).toBe('rounded-full');
+    expect(cn('rounded-full', 'rounded-micro')).toBe('rounded-micro');
+  });
+});
+
 describe('cn — 크기 뒤에 오면 행간을 흡수한다 (companion 결합 전제)', () => {
   it('뒤따르는 램프 크기가 앞선 램프 행간을 흡수한다', () => {
     expect(cn('leading-body', 'text-body')).toBe('text-body');

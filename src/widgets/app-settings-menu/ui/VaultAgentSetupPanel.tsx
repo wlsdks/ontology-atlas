@@ -909,7 +909,7 @@ export function VaultAgentSetupPanel({
               return (
                 <li
                   key={key}
-                  className="grid grid-cols-[14px_1fr] gap-1.5 rounded-sm border border-[color:var(--color-indigo-line-a13)] bg-[color:var(--color-overlay-recessed-a12)] px-1.5 py-1"
+                  className="grid grid-cols-[14px_1fr] gap-1.5 rounded-micro border border-[color:var(--color-indigo-line-a13)] bg-[color:var(--color-overlay-recessed-a12)] px-1.5 py-1"
                 >
                   {ready ? (
                     <CheckCircle2
@@ -930,7 +930,7 @@ export function VaultAgentSetupPanel({
                         {label}
                       </span>
                       <span
-                        className={`shrink-0 rounded-sm px-1.5 py-0.5 text-caption ${
+                        className={`shrink-0 rounded-micro px-1.5 py-0.5 text-caption ${
                           ready
                             ? 'bg-[color:var(--color-success-a10)] text-[color:var(--color-success-text-a92)]'
                             : 'bg-[color:var(--color-amber-source-a10)] text-[color:var(--color-amber-source-text-a95)]'
@@ -952,7 +952,7 @@ export function VaultAgentSetupPanel({
           <p className="mt-1.5 break-keep text-caption leading-4 text-[color:var(--color-text-tertiary)]">
             {t('agentSetup.connectionHint')}
           </p>
-          <p className="mt-2 break-keep rounded-sm border border-[color:var(--color-indigo-line-a14)] bg-[color:var(--color-overlay-recessed-a12)] px-2 py-1.5 text-label leading-4 text-[color:var(--color-text-tertiary)]">
+          <p className="mt-2 break-keep rounded-micro border border-[color:var(--color-indigo-line-a14)] bg-[color:var(--color-overlay-recessed-a12)] px-2 py-1.5 text-label leading-4 text-[color:var(--color-text-tertiary)]">
             <span className="font-medium text-[color:var(--color-text-secondary)]">
               {t('agentSetup.boundaryTitle')}
             </span>{' '}
@@ -961,7 +961,7 @@ export function VaultAgentSetupPanel({
           <div
             role="status"
             aria-label={t('agentSetup.validationGateAriaLabel')}
-            className={`mt-2 grid grid-cols-[14px_1fr] gap-1.5 rounded-sm border px-2 py-1.5 ${
+            className={`mt-2 grid grid-cols-[14px_1fr] gap-1.5 rounded-micro border px-2 py-1.5 ${
               validationGateTone === 'ready'
                 ? 'border-[color:var(--color-success-a20)] bg-[color:var(--color-success-a055)]'
                 : validationGateTone === 'blocked'
@@ -992,7 +992,7 @@ export function VaultAgentSetupPanel({
                   {t('agentSetup.validationGateTitle')}
                 </span>
                 <span
-                  className={`shrink-0 rounded-sm px-1.5 py-0.5 font-mono text-caption uppercase ${
+                  className={`shrink-0 rounded-micro px-1.5 py-0.5 font-mono text-caption uppercase ${
                     validationGateTone === 'ready'
                       ? 'bg-[color:var(--color-success-a10)] text-[color:var(--color-success-text-a92)]'
                       : validationGateTone === 'blocked'
@@ -1011,7 +1011,7 @@ export function VaultAgentSetupPanel({
               </span>
             </span>
           </div>
-          <details className="mt-2 rounded-sm border border-[color:var(--color-overlay-2)] bg-[color:var(--color-overlay-recessed-a12)] px-2 py-1.5">
+          <details className="mt-2 rounded-micro border border-[color:var(--color-overlay-2)] bg-[color:var(--color-overlay-recessed-a12)] px-2 py-1.5">
             <summary className="cursor-pointer select-none text-label font-medium text-[color:var(--color-text-secondary)] marker:text-[color:var(--color-text-quaternary)]">
               {t('agentSetup.nextStepsSummary')}
             </summary>
@@ -1022,10 +1022,10 @@ export function VaultAgentSetupPanel({
               {agentSetupSteps.map((step, index) => (
                 <li
                   key={step.key}
-                  className="grid grid-cols-[18px_1fr] items-start gap-1.5 rounded-sm border border-[color:var(--color-overlay-2)] bg-[color:var(--color-overlay-1)] px-1.5 py-1"
+                  className="grid grid-cols-[18px_1fr] items-start gap-1.5 rounded-micro border border-[color:var(--color-overlay-2)] bg-[color:var(--color-overlay-1)] px-1.5 py-1"
                 >
                   <span
-                    className={`inline-flex h-4 w-4 items-center justify-center rounded-sm font-mono text-caption ${
+                    className={`inline-flex h-4 w-4 items-center justify-center rounded-micro font-mono text-caption ${
                       step.complete
                         ? 'bg-[color:var(--color-success-a12)] text-[color:var(--color-success-text-a90)]'
                         : 'bg-[color:var(--color-indigo-a14)] text-[color:var(--color-indigo-pale-a90)]'
@@ -1047,7 +1047,7 @@ export function VaultAgentSetupPanel({
             {agentSetupProofRows.map((row) => (
               <div
                 key={row.key}
-                className="grid grid-cols-[14px_76px_1fr] items-start gap-1.5 rounded-sm border border-[color:var(--color-overlay-2)] bg-[color:var(--color-overlay-recessed-a12)] px-1.5 py-1"
+                className="grid grid-cols-[14px_76px_1fr] items-start gap-1.5 rounded-micro border border-[color:var(--color-overlay-2)] bg-[color:var(--color-overlay-recessed-a12)] px-1.5 py-1"
               >
                 {row.state === 'ready' ? (
                   <CheckCircle2
@@ -1090,9 +1090,9 @@ export function VaultAgentSetupPanel({
             {agentFirstContactProofRows.map((row, index) => (
               <div
                 key={row.key}
-                className="grid grid-cols-[18px_88px_1fr] items-start gap-1.5 rounded-sm border border-[color:var(--color-indigo-line-a13)] bg-[color:var(--color-indigo-a06)] px-1.5 py-1"
+                className="grid grid-cols-[18px_88px_1fr] items-start gap-1.5 rounded-micro border border-[color:var(--color-indigo-line-a13)] bg-[color:var(--color-indigo-a06)] px-1.5 py-1"
               >
-                <span className="inline-flex h-4 w-4 items-center justify-center rounded-sm bg-[color:var(--color-indigo-a14)] font-mono text-caption text-[color:var(--color-indigo-pale-a90)]">
+                <span className="inline-flex h-4 w-4 items-center justify-center rounded-micro bg-[color:var(--color-indigo-a14)] font-mono text-caption text-[color:var(--color-indigo-pale-a90)]">
                   {index + 1}
                 </span>
                 <dt className="truncate font-mono text-caption uppercase tracking-[0.08em] text-[color:var(--color-indigo-pale-a82)]">
@@ -1158,7 +1158,7 @@ export function VaultAgentSetupPanel({
             </Chip>
           ) : null}
           {hasInvalidAgentConfig ? (
-            <p className="mt-2 break-keep rounded-sm border border-[color:var(--color-amber-source-a14)] bg-[color:var(--color-amber-source-a08)] px-2 py-1.5 text-label leading-4 text-[color:var(--color-amber-source-text-a95)]">
+            <p className="mt-2 break-keep rounded-micro border border-[color:var(--color-amber-source-a14)] bg-[color:var(--color-amber-source-a08)] px-2 py-1.5 text-label leading-4 text-[color:var(--color-amber-source-text-a95)]">
               {t('agentSetup.invalidRepairHint')}
             </p>
           ) : null}
@@ -1189,7 +1189,7 @@ export function VaultAgentSetupPanel({
             ].map((mode) => (
               <div
                 key={mode.term}
-                className="rounded-sm border border-[color:var(--color-overlay-2)] bg-[color:var(--color-overlay-recessed-a12)] px-2 py-1"
+                className="rounded-micro border border-[color:var(--color-overlay-2)] bg-[color:var(--color-overlay-recessed-a12)] px-2 py-1"
               >
                 <dt className="text-label font-medium text-[color:var(--color-text-secondary)]">
                   {mode.term}
@@ -1256,7 +1256,7 @@ export function VaultAgentSetupPanel({
           </Chip>
           <div
             aria-label={t('agentSetup.mcpVerifyPreviewAriaLabel')}
-            className="mt-1.5 rounded-sm border border-[color:var(--color-indigo-a20)] bg-[color:var(--color-overlay-recessed)] px-2 py-1.5"
+            className="mt-1.5 rounded-micro border border-[color:var(--color-indigo-a20)] bg-[color:var(--color-overlay-recessed)] px-2 py-1.5"
           >
             <div className="text-caption font-medium uppercase tracking-[0.12em] text-[color:var(--color-indigo-pale-a82)]">
               {t('agentSetup.mcpVerifyLabel')}
@@ -1265,7 +1265,7 @@ export function VaultAgentSetupPanel({
               {agentMcpVerifyPreview}
             </code>
           </div>
-          <div className="mt-1.5 rounded-sm border border-[color:var(--color-success-a18)] bg-[color:var(--color-overlay-recessed)] px-2 py-1.5">
+          <div className="mt-1.5 rounded-micro border border-[color:var(--color-success-a18)] bg-[color:var(--color-overlay-recessed)] px-2 py-1.5">
             <div className="text-caption font-medium uppercase tracking-[0.12em] text-[color:var(--color-success-text-a78)]">
               {t('agentSetup.jsonGateLabel')}
             </div>
@@ -1293,7 +1293,7 @@ export function VaultAgentSetupPanel({
             ].map((rule) => (
               <div
                 key={rule.term}
-                className="grid grid-cols-[92px_1fr] gap-2 rounded-sm border border-[color:var(--color-success-a12)] bg-[color:var(--color-success-a035)] px-2 py-1"
+                className="grid grid-cols-[92px_1fr] gap-2 rounded-micro border border-[color:var(--color-success-a12)] bg-[color:var(--color-success-a035)] px-2 py-1"
               >
                 <dt className="truncate font-mono text-caption text-[color:var(--color-success-text-a94)]">
                   {rule.term}
@@ -1304,7 +1304,7 @@ export function VaultAgentSetupPanel({
               </div>
             ))}
           </dl>
-          <div className="mt-1.5 rounded-sm border border-[color:var(--color-indigo-line-a20)] bg-[color:var(--color-indigo-a06)] px-2 py-1.5">
+          <div className="mt-1.5 rounded-micro border border-[color:var(--color-indigo-line-a20)] bg-[color:var(--color-indigo-a06)] px-2 py-1.5">
             <p className="text-caption font-medium uppercase tracking-[0.12em] text-[color:var(--color-indigo-pale-a82)]">
               {t('agentSetup.syncAfterChangeTitle')}
             </p>
@@ -1325,9 +1325,9 @@ export function VaultAgentSetupPanel({
             {AGENT_VERIFY_CLI_PREVIEW.map((command, index) => (
               <li
                 key={command}
-                className="grid grid-cols-[18px_1fr] items-center gap-1.5 rounded-sm border border-[color:var(--color-overlay-2)] bg-[color:var(--color-overlay-recessed-a14)] px-1.5 py-1"
+                className="grid grid-cols-[18px_1fr] items-center gap-1.5 rounded-micro border border-[color:var(--color-overlay-2)] bg-[color:var(--color-overlay-recessed-a14)] px-1.5 py-1"
               >
-                <span className="inline-flex h-4 w-4 items-center justify-center rounded-sm bg-[color:var(--color-indigo-a14)] font-mono text-caption text-[color:var(--color-indigo-pale-a90)]">
+                <span className="inline-flex h-4 w-4 items-center justify-center rounded-micro bg-[color:var(--color-indigo-a14)] font-mono text-caption text-[color:var(--color-indigo-pale-a90)]">
                   {index + 1}
                 </span>
                 <code className="truncate font-mono text-caption text-[color:var(--color-text-tertiary)]">
@@ -1355,7 +1355,7 @@ export function VaultAgentSetupPanel({
             ].map((rootMode) => (
               <div
                 key={rootMode.term}
-                className="rounded-sm border border-[color:var(--color-indigo-line-a13)] bg-[color:var(--color-indigo-a06)] px-2 py-1"
+                className="rounded-micro border border-[color:var(--color-indigo-line-a13)] bg-[color:var(--color-indigo-a06)] px-2 py-1"
               >
                 <dt className="font-mono text-caption uppercase tracking-[0.08em] text-[color:var(--color-indigo-pale-a82)]">
                   {rootMode.term}

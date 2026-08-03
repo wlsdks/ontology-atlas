@@ -125,7 +125,7 @@ function CommandRow({
       <p className="text-caption text-[color:var(--color-text-quaternary)]">{label}</p>
       <pre
         data-testid={`${testId}-body`}
-        className="whitespace-pre-wrap break-all rounded border border-[color:var(--color-divider)] bg-[color:var(--color-canvas)] px-2 py-1.5 font-mono text-caption leading-relaxed text-[color:var(--color-text-secondary)]"
+        className="whitespace-pre-wrap break-all rounded-micro border border-[color:var(--color-divider)] bg-[color:var(--color-canvas)] px-2 py-1.5 font-mono text-caption leading-relaxed text-[color:var(--color-text-secondary)]"
       >
         {value.trimEnd()}
       </pre>
@@ -279,7 +279,7 @@ export function WebManualConnectPanel({
           </p>
           <pre
             data-testid={`${testIdPrefix}-config-body`}
-            className="mt-1.5 whitespace-pre-wrap break-all rounded border border-[color:var(--color-divider)] bg-[color:var(--color-canvas)] px-2 py-1.5 font-mono text-caption leading-relaxed text-[color:var(--color-text-secondary)]"
+            className="mt-1.5 whitespace-pre-wrap break-all rounded-micro border border-[color:var(--color-divider)] bg-[color:var(--color-canvas)] px-2 py-1.5 font-mono text-caption leading-relaxed text-[color:var(--color-text-secondary)]"
           >
             {config.body.trimEnd()}
           </pre>

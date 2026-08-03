@@ -818,9 +818,19 @@
   --text-hero--line-height: var(--leading-hero);
   --text-hero-lg--line-height: var(--leading-hero-lg);
 
-  /* Radius ramp — 3단. Tailwind v4 `--radius-*` 네임스페이스가 rounded-<step>
-     를 생성한다. 이 밖(sub-chip 헤어라인 1~4px, overlay sheet/card 18~28px)은
-     코덱스 표의 명시 예외로만 — eslint-disable + 사유 주석 필수. */
+  /* Radius ramp — 4단. Tailwind v4 `--radius-*` 네임스페이스가 rounded-<step>
+     를 생성한다. 이 밖(헤어라인 1~2px, overlay sheet/card 18~28px)은
+     코덱스 표의 명시 예외로만 — eslint-disable + 사유 주석 필수.
+
+     `micro`(4px)는 2026-08-03 체계석 등재다. 이 절이 "1~4px 은 명시 예외"라고
+     적는 동안 실제 화면에는 4px 반경이 **96곳**(rounded-sm 59 + 무접미 rounded
+     37) 살아 있었다 — 마이크로 배지·명령 태그·kbd 급, 즉 칩(6px) 아래에 실재하는
+     한 층이다. 96번 반복되는 값은 예외가 아니라 램프에 없는 스텝이다. 등재
+     당시 전량을 `rounded-micro` 로 기계 치환했으므로 픽셀 이동은 0이고, 이름
+     있는 Tailwind 기본 스텝은 eslint 셀렉터 + named-off-ramp 래칫이 막는다.
+     스텝 등록의 짝: `src/shared/lib/cn.ts` `RADIUS_RAMP_STEPS`(tailwind-merge
+     충돌 병합), `tests/contract/control-class.contract.test.ts` RADIUS_STEPS. */
+  --radius-micro: 4px; /* 마이크로 배지·명령 태그·kbd — 칩 아래 한 층 */
   --radius-chip: 6px; /* 칩·배지·작은 버튼 */
   --radius-card: 9px; /* 카드·인풋·중형 서피스 */
   --radius-panel: 12px; /* 패널·모달·큰 서피스 */

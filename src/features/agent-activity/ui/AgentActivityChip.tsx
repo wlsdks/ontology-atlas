@@ -7,6 +7,7 @@ import { Bell } from 'lucide-react';
 import { Link } from '@/i18n/navigation';
 import { buildOntologyNodeHref } from '@/entities/knowledge-graph';
 import { CHROME_STATUS_CHIP_CLASS } from '@/shared/ui/chrome-chip';
+import { controlClass } from '@/shared/ui/control-class';
 import { cn } from '@/shared/lib/cn';
 import type { AgentNotification, AgentNotificationKind } from '@/shared/lib/agent-notifications';
 import { useAgentActivityFeed } from '../model/use-agent-activity-feed';
@@ -161,7 +162,12 @@ export function AgentActivityChip({ suppressed = false }: { suppressed?: boolean
                   : t('bellAria')
               }
               data-testid="agent-activity-bell"
-              className="-mr-1 flex h-6 shrink-0 items-center gap-1 rounded-chip px-1 text-[color:var(--color-text-tertiary)] transition-colors hover:text-[color:var(--color-text-primary)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--color-indigo-accent)]"
+              className={controlClass({
+                shape: "segment",
+                size: "sm",
+                className:
+                  "-mr-1 shrink-0 hover:text-[color:var(--color-text-primary)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--color-indigo-accent)]",
+              })}
             >
               <Bell size={13} aria-hidden />
               {feed.unreadCount > 0 ? (
