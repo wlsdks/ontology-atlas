@@ -13,6 +13,8 @@ import {
   useChangeBaseline,
 } from "@/shared/lib/ontology-tree";
 import { useCopyFeedback } from "@/shared/lib/use-copy-feedback";
+import { controlClass } from "@/shared/ui/control-class";
+import { IconButton } from "@/shared/ui/controls";
 import { formatActivityAge } from "../lib/format-activity-age";
 import { useOntologyInsight } from "../model/use-ontology-insight";
 import { ATLAS_CLI } from "@/shared/config/cli-invocation";
@@ -328,7 +330,13 @@ export function LiveActivityBadge({
         aria-controls={open ? popoverId : undefined}
         aria-expanded={open}
         onClick={() => setOpen((current) => !current)}
-        className="inline-flex h-8 cursor-pointer list-none items-center gap-1.5 rounded-chip border border-[color:var(--color-indigo-a32)] bg-[color:var(--color-indigo-a10)] px-2.5 text-[11px] text-[color:var(--color-indigo-accent)] transition-colors hover:border-[color:var(--color-indigo-a50)] hover:bg-[color:var(--color-indigo-a14)]"
+        className={controlClass({
+          shape: "chip",
+          tone: "accent",
+          fixedHeight: true,
+          className:
+            "cursor-pointer list-none border-[color:var(--color-indigo-a32)] bg-[color:var(--color-indigo-a10)] hover:border-[color:var(--color-indigo-a50)] hover:bg-[color:var(--color-indigo-a14)]",
+        })}
       >
         <span aria-hidden className="inline-block h-1.5 w-1.5 rounded-full bg-[color:var(--color-status-success)]" />
         <span className="font-mono uppercase tracking-[0.10em]">{labels.live}</span>
@@ -362,14 +370,14 @@ export function LiveActivityBadge({
           <p className="font-mono text-[9px] uppercase tracking-[0.12em] text-[color:var(--color-indigo-accent)]">
             {labels.summaryTitle}
           </p>
-          <button
-            type="button"
-            aria-label={labels.close}
+          <IconButton
+            label={labels.close}
             onClick={() => setOpen(false)}
-            className="-mr-1 -mt-1 inline-flex h-6 w-6 shrink-0 items-center justify-center rounded border border-transparent text-[color:var(--color-text-tertiary)] transition-colors hover:border-[color:var(--color-border-soft)] hover:text-[color:var(--color-text-primary)]"
+            size="sm"
+            className="-mr-1 -mt-1 border border-transparent hover:border-[color:var(--color-border-soft)] hover:text-[color:var(--color-text-primary)]"
           >
             <X size={12} aria-hidden />
-          </button>
+          </IconButton>
         </div>
         <p className="mt-2 break-keep text-[11px] leading-4 text-[color:var(--color-text-secondary)]">
           {labels.summaryBody}

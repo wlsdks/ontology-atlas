@@ -4,6 +4,7 @@ import { useMemo, useState } from 'react';
 import { useTranslations } from 'next-intl';
 import { Check, Search, Sparkles, X } from 'lucide-react';
 import { cn } from '@/shared/lib/cn';
+import { controlClass } from '@/shared/ui/control-class';
 import {
   findMissingDependencySlugs,
   type Project,
@@ -119,12 +120,17 @@ export function DependencyPicker({
               data-testid={`dependency-selected-${p.slug}`}
               type="button"
               onClick={() => removeOne(p.slug)}
-              className={cn(
-                'group flex items-center gap-1.5 rounded-full border px-2.5 py-1 text-body transition-colors',
-                p.isHub
-                  ? 'border-[color:var(--color-indigo-brand)] bg-[color:var(--color-indigo-a20)] text-[color:var(--color-indigo-accent)]'
-                  : 'border-[color:var(--color-indigo-brand)] bg-[color:var(--color-indigo-a12)] text-[color:var(--color-text-primary)]',
-              )}
+              className={controlClass({
+                shape: 'pill',
+                size: 'lg',
+                tone: p.isHub ? 'accent' : 'strong',
+                className: cn(
+                  'group gap-1.5 border-[color:var(--color-indigo-brand)]',
+                  p.isHub
+                    ? 'bg-[color:var(--color-indigo-a20)]'
+                    : 'bg-[color:var(--color-indigo-a12)]',
+                ),
+              })}
             >
               <span>{p.name}</span>
               <X
@@ -179,7 +185,13 @@ export function DependencyPicker({
                         onChange([...value, suggestion.slug]);
                       }
                     }}
-                    className="flex items-center gap-1 rounded-full border border-[color:var(--color-indigo-brand)] bg-[color:var(--color-indigo-a14)] px-2 py-0.5 text-[10px] text-[color:var(--color-indigo-accent)] hover:bg-[color:var(--color-indigo-a24)]"
+                    className={controlClass({
+                      shape: 'pill',
+                      size: 'sm',
+                      tone: 'accent',
+                      className:
+                        'gap-1 border-[color:var(--color-indigo-brand)] bg-[color:var(--color-indigo-a14)] hover:bg-[color:var(--color-indigo-a24)]',
+                    })}
                     aria-label={t('suggestionAcceptLabel', { name: suggestion.name })}
                   >
                     <Check size={10} />
@@ -195,7 +207,13 @@ export function DependencyPicker({
                         return next;
                       });
                     }}
-                    className="flex items-center rounded-full border border-[color:var(--color-divider)] px-1.5 py-0.5 text-[color:var(--color-text-quaternary)] hover:border-[color:var(--color-border-strong)] hover:text-[color:var(--color-text-primary)]"
+                    className={controlClass({
+                      shape: 'pill',
+                      size: 'sm',
+                      tone: 'muted',
+                      className:
+                        'hover:border-[color:var(--color-border-strong)] hover:text-[color:var(--color-text-primary)]',
+                    })}
                     aria-label={t('suggestionRejectLabel', { name: suggestion.name })}
                   >
                     <X size={10} />
@@ -222,7 +240,13 @@ export function DependencyPicker({
                 data-testid={`dependency-missing-${slug}`}
                 type="button"
                 onClick={() => removeOne(slug)}
-                className="group flex items-center gap-1.5 rounded-full border border-[color:var(--color-amber-source-a35)] bg-[color:var(--color-amber-source-a12)] px-2.5 py-1 text-body text-[color:var(--color-status-warning)]"
+                className={controlClass({
+                  shape: 'pill',
+                  size: 'lg',
+                  tone: 'warning',
+                  className:
+                    'group gap-1.5 border-[color:var(--color-amber-source-a35)] bg-[color:var(--color-amber-source-a12)]',
+                })}
               >
                 <span>{slug}</span>
                 <X
@@ -264,11 +288,14 @@ export function DependencyPicker({
               data-testid={`dependency-option-${p.slug}`}
               onClick={() => toggle(p.slug)}
               disabled={invalidSlugSet.has(p.slug)}
-              className={cn(
-                'flex items-center gap-1.5 rounded-full border border-[color:var(--color-divider)] bg-transparent px-2.5 py-1 text-body text-[color:var(--color-text-tertiary)] transition-colors',
-                'hover:border-[color:var(--color-border-strong)] hover:text-[color:var(--color-text-primary)]',
-                'disabled:cursor-not-allowed disabled:border-[color:var(--color-overlay-2)] disabled:text-[color:var(--color-text-quaternary)]',
-              )}
+              className={controlClass({
+                shape: 'pill',
+                size: 'lg',
+                className: cn(
+                  'gap-1.5 bg-transparent',
+                  'hover:border-[color:var(--color-border-strong)] hover:text-[color:var(--color-text-primary)]',
+                ),
+              })}
               title={p.slug}
             >
               <span>{p.name}</span>

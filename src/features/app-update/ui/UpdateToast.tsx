@@ -3,6 +3,7 @@
 import { useTranslations } from 'next-intl';
 import { Button } from '@/shared/ui/button';
 import { cn } from '@/shared/lib/cn';
+import { controlClass } from '@/shared/ui/control-class';
 import {
   formatDownloadProgress,
   summarizeNotes,
@@ -93,7 +94,16 @@ export function UpdateToast({ phase, onInstall, onRestart, onDismiss }: UpdateTo
           type="button"
           onClick={onDismiss}
           data-testid="app-update-dismiss"
-          className="-m-1 shrink-0 rounded-chip p-1 text-label leading-label text-[color:var(--color-text-quaternary)] transition-colors hover:text-[color:var(--color-text-secondary)]"
+          /* 제목과 한 줄을 이루는 토스트 헤더 행 — `inline` 을 켜야 `min-h-11`
+             이 토스트를 세로로 밀지 않는다. 히트 영역은 `-m-1 p-1` 이 낸다
+             (`link` 은 램프에 인셋이 없어 이 패딩이 램프 값을 덮지 않는다). */
+          className={controlClass({
+            shape: 'link',
+            tone: 'muted',
+            inline: true,
+            className:
+              '-m-1 shrink-0 p-1 leading-label hover:text-[color:var(--color-text-secondary)]',
+          })}
         >
           {t('dismiss')}
         </button>
