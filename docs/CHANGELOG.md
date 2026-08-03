@@ -7,6 +7,18 @@
 
 ---
 
+## 2026-08-04 — 현재 source를 다시 측정하라는 잘못된 의미 수리 루프를 끊는다
+
+MCP/CLI `agent_brief`에서 source receipt 자체가 stale인 경우와, source는 이미
+`verified_current/current`지만 competency receipt가 이전 source fingerprint에 묶인
+경우를 분리한다. 전자는 기존처럼 `source_changed → remeasure_source`이고, 후자는
+`competency_source_changed → reevaluate_competency`다.
+
+후자의 전체 의미 상태는 계속 `review_required`로 실패 닫지만 source 차원은 current로
+보존한다. 따라서 새 에이전트가 이미 끝난 source 측정을 반복하지 않고, 현재 근거로
+abilities/evidence를 다시 검토하는 사람 승인 흐름으로 바로 이동한다. 구조 readiness를
+의미 완성으로 승격하거나 자동으로 쓰고 finalize하는 동작은 추가하지 않았다.
+
 ## 2026-08-04 — Rust의 조건부 구성 근거와 의존 그래프의 빈칸을 구분한다
 
 MCP `analyze_repo_structure`와 `index_project`가 root Cargo package 또는 저장소 안의

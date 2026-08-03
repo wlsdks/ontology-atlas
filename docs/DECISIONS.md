@@ -42,6 +42,64 @@
 
 ---
 
+## 2026-08-04 — 현재 source와 오래된 competency receipt를 같은 `source_changed`로 부르지 않는다
+
+### 먼저 — 세 줄
+
+- **정한 것**: source 자체는 현재인데 그 source로 재평가되지 않은 competency
+  receipt만 남았으면, source 재측정이 아니라 competency 재평가를 첫 행동으로 준다.
+- **네 말과 다르게 한 것**: 구조 readiness와 의미 상태를 하나로 합치거나 새 도구를
+  만들지 않는다. 잘못 분류된 기존 공개 판정 한 경우만 더 정확히 나눈다.
+- **네가 할 일**: 없음 — source·bundled MCP와 설치 앱에서 같은 행동인지 검증한다.
+
+**소집**: PO 카운슬 5인 전원, 독립 1라운드 + 상호 반박 1라운드 · **트리거**:
+공개 MCP `meaningAssessment:v1`의 범주와 다음 행동 변경. 동시 슬롯 상한 때문에
+1라운드는 3+2 두 파동으로 실행했다. 두 번째 파동은 앞선 자리의 평결을 받지 않았지만
+재사용한 격리 스레드가 직전 한 자리의 맥락을 보유했으므로 완전한 5인 동시 독립은
+아니다. · **루브릭**: 23/24 (Problem insight 4 · User moment 4 · Differentiation 3 ·
+Ontology value 4 · Agent value 4 · Verification 4, 치명적 0: 없음).
+
+**선행 결정 관계**: 2026-08-02 「의미 평가는 구조 readiness와 분리한 순수 계약부터
+연다」와 「typed competency read-back을 receipt와 현재 graph/source에 다시 대조한다」,
+2026-08-03 「fresh current source의 incomplete competency는 `meaningRepair:v1`로 사람
+검토한다」는 모두 유효하다. source가 실제 stale일 때의 `source_changed →
+remeasure_source`도 유지한다. 이번 기록은 current source와 그 source보다 오래된
+competency provenance를 같은 source 결함으로 분류한 구현 오류만 바로잡는다.
+
+**관측**: 설치 앱의 `Measure again` 뒤 dogfood `agent_brief`는 `projectSource`와
+`meaningAssessment.dimensions.source`를 모두 `verified_current/current`로 냈다. 현재
+source fingerprint는 `sha256:ffac…`, 저장된 competency receipt fingerprint는 이전
+`sha256:ecc8…`였고 graph hash는 같았다. 그런데 같은 `meaningAssessment`의 top gap은
+`source/source_changed`, 다음 행동은 `remeasure_source`였다. 최상위 행동과
+`meaningRepair:v1`은 이미 abilities/evidence 사람 검토를 가리켜 한 응답 안에서 서로
+반대되는 행동이 공존했다. source 재측정은 competency receipt를 갱신하지 않으므로
+그 지시는 같은 불일치를 반복한다.
+
+**결정 (accountable: stark)**: `meaningAssessment:v1`에서 현재 source fingerprint와
+competency inventory가 인용한 fingerprint가 다르면 전체 상태는 계속 fail-closed
+`review_required`로 둔다. 다만 source 차원은 `verified_current/current`로 보존하고,
+top gap을 `{dimension:"competency", id:"competency_source_changed"}`, 다음 행동을
+`{id:"reevaluate_competency"}`로 낸다. source receipt 자체가 stale인 선행 분기는 기존
+`{dimension:"source", id:"source_changed"}`와 `remeasure_source`를 유지한다.
+
+**적용 규칙**: IN — fingerprint mismatch 분기 한 곳, exact public receipt test,
+공개 문서·dogfood ontology 동기화, source/CLI/bundled stdio와 설치 앱 fresh-process
+검증. OUT — receipt version·schema migration, 새 MCP tool·CLI command·UI, source probe
+변경, meaningRepair 재설계, 자동 write/finalize, 구조 readiness와 의미 status 결합.
+최대 2시간이며 schema/version 변경이 필요하거나 새 행동이 fresh agent를 competency
+검토로 보내지 못하면 중단하고 재조사한다.
+
+**기록된 반대**: 최상위 `nextActions[0]`가 이미 `review_competency_repair`라 강한
+에이전트는 잘못된 nested `remeasure_source`를 무시할 수 있고, 새 id는 소비자 유지비만
+늘릴 수 있다.
+**반증 조건**: 서로 다른 fresh MCP 소비자가 기존 응답만으로 source 재측정을 반복하지
+않고 모두 competency 검토를 첫 행동으로 선택하거나, 새 범주 뒤에도 에이전트 행동이
+달라지지 않고 소비자 parity만 깨지면 반대가 옳다. 그때는 top-level action 하나를
+정본으로 만드는 별도 계약을 검토한다.
+**재검토**: source stdio·설치 앱 bundled stdio와 fresh-agent walkthrough 직후.
+
+**상태**: 유효
+
 ## 2026-08-04 — 열린 표면이 확인한 잉크 램프의 경계: 값을 또 올리는 대신 라이선스를 명문화한다
 
 **맥락**: 신설된 열린 표면 접근성 계기(`tests/e2e/a11y-open-surfaces.spec.ts`)의

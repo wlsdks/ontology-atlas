@@ -475,6 +475,14 @@ inconsistent; no numeric confidence is synthesized. Pass `project` to
 `ontology-atlas agent-brief <vault> --project SLUG`, to select one project in a
 multi-project vault.
 
+Source currentness and competency provenance have different repair actions.
+When the source receipt itself is stale, the gap remains
+`source_changed` and the action is `remeasure_source`. When source is already
+`verified_current` / `current` but the stored competency receipt cites an older
+source fingerprint, the source dimension stays current while the overall
+assessment fails closed as `review_required`; the gap is
+`competency_source_changed` and the action is `reevaluate_competency`.
+
 When current graph/source evidence can narrow an incomplete `abilities` or
 `evidence` answer, `agent_brief.nextActions[0]` is
 `review_competency_repair` and points to `agent_brief.meaningRepair`

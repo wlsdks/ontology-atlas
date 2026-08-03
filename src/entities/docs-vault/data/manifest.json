@@ -3890,6 +3890,11 @@
         },
         {
           "depth": 2,
+          "text": "2026-08-04 — 현재 source를 다시 측정하라는 잘못된 의미 수리 루프를 끊는다",
+          "slug": "2026-08-04-현재-source를-다시-측정하라는-잘못된-의미-수리-루프를-끊는다"
+        },
+        {
+          "depth": 2,
           "text": "2026-08-04 — Rust의 조건부 구성 근거와 의존 그래프의 빈칸을 구분한다",
           "slug": "2026-08-04-rust의-조건부-구성-근거와-의존-그래프의-빈칸을-구분한다"
         },
@@ -6144,8 +6149,8 @@
           "slug": "2026-07-26-첫-만남은-쇼핑몰부터"
         }
       ],
-      "excerpt": "Major change history. Code commit messages answer why; this file answers when / which surface changed. Focused on user-visible changes, not PR-level granularity. Newest at the top. Entries stay date-based; the app version reached v1.0.0 on 2026-07-27, so a release tag now carries the semver promise instead. MCP analyze",
-      "wordCount": 65637,
+      "excerpt": "Major change history. Code commit messages answer why; this file answers when / which surface changed. Focused on user-visible changes, not PR-level granularity. Newest at the top. Entries stay date-based; the app version reached v1.0.0 on 2026-07-27, so a release tag now carries the semver promise instead. MCP/CLI age",
+      "wordCount": 65718,
       "updatedAt": "2026-08-04",
       "linksOut": [
         "audits/CASE-STUDY-AGENTS-MD-DRIFT",
@@ -6177,6 +6182,16 @@
         },
         {
           "depth": 2,
+          "text": "2026-08-04 — 현재 source와 오래된 competency receipt를 같은 `source_changed`로 부르지 않는다",
+          "slug": "2026-08-04-현재-source와-오래된-competency-receipt를-같은-source_changed로-부르지-않는다"
+        },
+        {
+          "depth": 3,
+          "text": "먼저 — 세 줄",
+          "slug": "먼저-세-줄"
+        },
+        {
+          "depth": 2,
           "text": "2026-08-04 — 열린 표면이 확인한 잉크 램프의 경계: 값을 또 올리는 대신 라이선스를 명문화한다",
           "slug": "2026-08-04-열린-표면이-확인한-잉크-램프의-경계-값을-또-올리는-대신-라이선스를-명문화한다"
         },
@@ -6188,7 +6203,7 @@
         {
           "depth": 3,
           "text": "먼저 — 세 줄",
-          "slug": "먼저-세-줄"
+          "slug": "먼저-세-줄-2"
         },
         {
           "depth": 2,
@@ -6198,7 +6213,7 @@
         {
           "depth": 3,
           "text": "먼저 — 세 줄",
-          "slug": "먼저-세-줄-2"
+          "slug": "먼저-세-줄-3"
         },
         {
           "depth": 2,
@@ -6208,7 +6223,7 @@
         {
           "depth": 3,
           "text": "먼저 — 세 줄",
-          "slug": "먼저-세-줄-3"
+          "slug": "먼저-세-줄-4"
         },
         {
           "depth": 2,
@@ -6273,7 +6288,7 @@
         {
           "depth": 3,
           "text": "먼저 — 세 줄",
-          "slug": "먼저-세-줄-4"
+          "slug": "먼저-세-줄-5"
         },
         {
           "depth": 2,
@@ -6288,7 +6303,7 @@
         {
           "depth": 3,
           "text": "먼저 — 세 줄",
-          "slug": "먼저-세-줄-5"
+          "slug": "먼저-세-줄-6"
         },
         {
           "depth": 2,
@@ -6308,7 +6323,7 @@
         {
           "depth": 3,
           "text": "먼저 — 세 줄",
-          "slug": "먼저-세-줄-6"
+          "slug": "먼저-세-줄-7"
         },
         {
           "depth": 2,
@@ -6348,7 +6363,7 @@
         {
           "depth": 3,
           "text": "먼저 — 세 줄",
-          "slug": "먼저-세-줄-7"
+          "slug": "먼저-세-줄-8"
         },
         {
           "depth": 2,
@@ -6363,7 +6378,7 @@
         {
           "depth": 3,
           "text": "먼저 — 세 줄",
-          "slug": "먼저-세-줄-8"
+          "slug": "먼저-세-줄-9"
         },
         {
           "depth": 2,
@@ -6373,7 +6388,7 @@
         {
           "depth": 3,
           "text": "먼저 — 세 줄",
-          "slug": "먼저-세-줄-9"
+          "slug": "먼저-세-줄-10"
         },
         {
           "depth": 2,
@@ -6388,7 +6403,7 @@
         {
           "depth": 3,
           "text": "먼저 — 세 줄",
-          "slug": "먼저-세-줄-10"
+          "slug": "먼저-세-줄-11"
         },
         {
           "depth": 2,
@@ -6882,7 +6897,7 @@
         }
       ],
       "excerpt": "이 파일은 결정과 그때 진 반대 의견을 남긴다. docs/CHANGELOG.md 는 무엇이 언제 바뀌었나를 답하고, 이 파일은 왜 그렇게 정했고, 무엇을 걸었나를 답한다. 최신이 위. 기록은 덧붙이기만 한다 — 지난 기록을 고치지 않는다. 판단이 바뀌었으면 새 기록을 쓰고 옛 기록을 뒤집힘 으로 표시한다. 틀린 기록도 자산이다. 1. 소집 전에 읽는다. 카운슬을 열기 전(그리고 단독 PO 패스를 쓰기 전) 같은 표면 · 같은 질문에 대한 선행 결정이 있는지 먼저 본다. 있으면 새 패스는 그것을 ① 여전히 유효하다고 인용하거나 ② 명시적으로 뒤집는다. 조용히 다시 결정",
-      "wordCount": 60776,
+      "wordCount": 61219,
       "updatedAt": "2026-08-04",
       "linksOut": [
         "slug"
@@ -10554,7 +10569,7 @@
         }
       ],
       "excerpt": "project 노드 하나에 Git 저장소 또는 로컬 폴더 하나를 연결하고, 온톨로지가 선언한 capability/element 구현 경로를 실제 소스 목록과 대조해 버전이 붙은 범주형 영수증으로 남기는 능력. 지도 데이터시트·전체 상세·CLI·MCP agentbrief가 같은 상태·현재성·첫 빈틈·다음 행동을 읽는다. Git 저장소 표시는 선택한 소스의 종류이며 GitHub 계정이나 원격 저장소 연결을 뜻하지 않는다. 절대 경로는 vault-local .ontology-atlas/project-sources.json sidecar에만 보관하고, 복사 인계와 MCP에는",
-      "wordCount": 292,
+      "wordCount": 331,
       "updatedAt": "2026-08-04",
       "linksOut": []
     },

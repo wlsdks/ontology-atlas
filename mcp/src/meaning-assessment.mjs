@@ -463,8 +463,8 @@ export function deriveMeaningAssessment(input) {
       safeInput,
       normalized,
       "review_required",
-      { dimension: "source", id: "source_changed" },
-      { id: "remeasure_source" },
+      { dimension: "competency", id: "competency_source_changed" },
+      { id: "reevaluate_competency" },
     );
   }
 
