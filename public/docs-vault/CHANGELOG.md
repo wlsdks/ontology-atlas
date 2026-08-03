@@ -7,6 +7,23 @@
 
 ---
 
+## 2026-08-03 — README가 실제 화면과 Windows 베타를 먼저 보여준다
+
+README의 첫 화면에서 macOS와 Windows x64 beta를 함께 고를 수 있다. Windows는
+버전이 박힌 설치 파일로 바로 보내지 않고 최신 자산·체크섬·서명 상태를 소유하는
+다운로드 페이지로 연결하며, 미서명·SmartScreen 경고와 관리형 PC 차단 가능성을
+버튼 바로 아래에서 숨김없이 알린다.
+
+기존 설치 앱 Journey 이미지 8장은 모두 남겼다. 대신 이미지보다 앞서던 비교표를
+여정 뒤로 옮기고, MCP SDK 이행 설명·긴 CLI 출력·관계표·라우트 목록·개발 검증
+런북을 짧은 제품 계약과 MCP·CLI·관계·개발 가이드 링크로 정리했다. UID/slug/path,
+typed relation, 전체 graph 상한 없음, local-first, desktop/web/MCP/CLI 경계, no npm과
+source fallback은 공개 신뢰 경계라 README 본문에 유지했다.
+
+GitHub 렌더를 README 시작점에서 다시 측정해 390×844에서도 Windows 경고 뒤에 실제
+topology 이미지 전체가 첫 화면 안에 들어오고, 1512×900에서는 지도와 INDEX가 충분히
+판독되는 것을 확인했다.
+
 ## 2026-08-03 — 값 층이 「못 옮긴 사유」를 읽고 자기 구멍을 메웠다
 
 컨트롤 정규화가 417 → 148 까지 왔는데, 남은 것 중 상당수는 게으름이 아니라
