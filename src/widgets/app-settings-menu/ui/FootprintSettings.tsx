@@ -152,7 +152,6 @@ export function FootprintSettings() {
               className={controlClass({
                 shape: 'segment',
                 size: 'lg',
-                fixedHeight: true,
                 active,
                 className: cn(
                   'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--color-indigo-a46)]',

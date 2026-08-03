@@ -199,7 +199,6 @@ export function GuidedTourCard({
           className={controlClass({
             shape: "segment",
             size: "lg",
-            fixedHeight: true,
             className: "hover:text-[color:var(--color-text-primary)]",
           })}
         >
@@ -216,7 +215,6 @@ export function GuidedTourCard({
               shape: "segment",
               size: "lg",
               tone: "onAccent",
-              fixedHeight: true,
               className: "hover:bg-[color:var(--color-indigo-accent)]",
             })}
           >

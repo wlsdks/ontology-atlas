@@ -159,12 +159,44 @@ const control = cva(DISABLED, {
        */
       segment: 'inline-flex items-center justify-center rounded-chip text-center transition-colors',
     },
+    /**
+     * 크기 — **높이는 사다리가 정하고, 패딩은 그 안에서 결정된다.**
+     *
+     * ## 2026-08-03 정정: 패딩의 부산물을 램프라고 부르지 않는다
+     *
+     * 처음 이 램프는 높이를 **아무도 안 고른 채** 냈다 — 패딩+행간+보더의 합이
+     * 곧 높이였고, 그 결과가 칩 24/30/34 · 필 20/22/30 이었다(실측). **30 · 34 ·
+     * 22 · 20 은 이 앱의 높이 어휘(24 · 28 · 32 · 36 · 40 · 44) 어디에도 없는
+     * 값**이고, 그때 이미 `app/globals.css` 에 `--control-h-{sm,md,lg}`
+     * (28/32/40)라는 단일 진실원이 **있었다**. 찾지 않고 만든 값은 시스템이
+     * 아니라 두 번째 시스템이다.
+     *
+     * 더 나빴던 것은 그 다음이다. 새 값이 계약(32px)과 부딪히자 값을 고치는
+     * 대신 **예외 축(`fixedHeight`)을 더했다.** 축은 값이 틀렸다는 **증상**이지
+     * 필요한 축이 아니었다 — 값을 고치니 축이 죽었다(2026-08-03 소유자 결정,
+     * `docs/DECISIONS.md`).
+     *
+     * 그래서 오늘의 규격은 이렇다 — **누르는 상자는 사다리 위에 선다**:
+     *
+     * | 단 | 높이 | 근거 |
+     * |---|---:|---|
+     * | `sm` | 24px | WCAG 2.5.8 (AA) 최소 타깃. 사다리의 바닥이다 |
+     * | `md` | 32px | `--control-h-md` — 이 앱의 기본 컨트롤 높이 |
+     * | `lg` | 32px | 같은 32. `lg` 가 키우는 것은 **글자와 좌우 인셋**이지 높이가 아니다 |
+     *
+     * 하드 `h-8` 이 아니라 **`min-h-8`** 인 이유: 하드 높이는 줄바꿈한 칩을
+     * 잘라 내용을 숨기지만, `min-h` 는 단행 칩을 32로 세우면서 넘치는 내용은
+     * 자라게 둔다.
+     *
+     * 사다리 전체(24 · 28 · 32 · 34 · 36 · 40 · 44)와 각 단의 소유자는
+     * `docs/DESIGN-SYSTEM.md` 「컨트롤 높이 사다리」 절이 정본이다.
+     */
     size: {
-      /** 실측 분포의 작은 쪽 — `text-caption`/`px-2`. */
+      /** 사다리 바닥 24px — WCAG 2.5.8 최소 타깃. `text-caption`/`px-2`. */
       sm: '',
-      /** 실측 최빈 — `h-8`/`px-2.5`/`text-label`. */
+      /** `--control-h-md` 32px — 실측 최빈. `px-2.5`/`text-label`. */
       md: '',
-      /** 실측 분포의 큰 쪽 — `px-3`/`text-body`. */
+      /** 같은 32px 인데 글자와 인셋이 한 단 크다. `px-3`/`text-body`. */
       lg: '',
     },
     /**
@@ -291,39 +323,18 @@ const control = cva(DISABLED, {
     truncate: { true: 'block truncate', false: '' },
     /** 눌려 있는 상태(`aria-pressed` / `aria-selected` 와 **짝**이어야 한다). */
     active: { true: '', false: '' },
-    /**
-     * **높이를 고정한다** — 크롬 계약이 못박은 자리에서만.
+    /*
+     * ── **삭제된 축: `fixedHeight`** (2026-08-03 소유자 결정)
      *
-     * ## 왜 이 축이 필요한가 (2026-08-03 회수 라운드 실측)
+     * 여기 「높이를 고정한다」는 축이 있었다. 칩 램프가 30/34 를 내는데 계약이
+     * 32 를 못박아 «어느 조합으로도 2px 이 남는다» 는 것이 그 축의 근거였다.
+     * 그 진단이 한 칸 얕았다 — 남은 2px 은 **램프 값이 틀렸다는 신호**였지
+     * 축이 필요하다는 신호가 아니었다. 값을 32로 수렴시키자 축이 할 일이
+     * 없어졌고, 19개 소비처 중 18개가 **픽셀 이동 0** 으로 기본값에 흡수됐다.
      *
-     * 칩 램프는 패딩으로 높이가 정해져 `md`=30 · `lg`=34 를 낸다. 그런데 설정
-     * 시트 계약(`settings-sheet-type-dialect.contract.test.ts`)은 **`h-8`(32)** 을
-     * 문자열로 못박는다. **어느 조합으로도 2px 이 남는다** — 램프를 쓰면 계약이
-     * 깨지고 계약을 지키면 램프 밖이다.
-     *
-     * 높이를 램프의 기본값으로 만들지 않은 이유는 그대로 유효하다(칩 143개 중
-     * 명시 높이는 38개뿐, 강제하면 70%의 키가 바뀐다). 그래서 **기본값은 여전히
-     * 「패딩이 높이를 정한다」**이고, 계약이 치수를 소유한 자리만 이 축을 켠다.
-     *
-     * ## 왜 한 단이 아니라 세 단인가 (2026-08-03 원장이 센 것)
-     *
-     * `true` 한 단(32px)뿐이라 두 구멍이 동시에 막혀 있었다:
-     *
-     * - 뷰 라운드: **「28px 칩 스텝이 없다」** — `rounded-chip` + `h-7`/`min-h-7`
-     *   이 저장소에 **18곳**인데 칩 램프는 24/30/32 만 낸다.
-     * - 위젯 라운드: **「크롬 토큰이 치수를 소유한다」(15)** — `--git-row-h` ·
-     *   `--git-setup-action-height` 등 36/44/가변을 «32px 한 단» 이 못 받는다.
-     *
-     * 세 단은 지어낸 값이 아니라 **`app/globals.css` 에 이미 있는 컨트롤 높이
-     * 램프**다: `--control-h-sm: 28px` · `--control-h-md: 32px` ·
-     * `--control-h-lg: 40px`. Tailwind 스텝 `h-7`/`h-8`/`h-10` 이 정확히 그
-     * 셋이므로 arbitrary 값을 안 쓰고도 램프 위에 앉는다(계약 테스트가
-     * arbitrary 치수를 금지한다).
-     *
-     * **`true` 는 `md` 의 별칭으로 남는다** — 기존 소비처 출력이 한 바이트도
-     * 안 바뀐다.
+     * 이 자리에 다시 높이 축을 세우고 싶어지면 그 전에 물어라: **사다리에
+     * 이미 있는 값인가?** 있으면 그건 축이 아니라 `size` 다.
      */
-    fixedHeight: { true: '', false: '', sm: '', md: '', lg: '' },
     /**
      * **문장 속에 있는가.** `link` 에만 뜻이 있다.
      *
@@ -347,18 +358,31 @@ const control = cva(DISABLED, {
   },
   compoundVariants: [
     // ── 크기: 모양마다 «크다» 의 뜻이 다르다. 정사각에 px 를 주면 정사각이 아니게 된다.
+    /*
+     * 칩 — 24 / 32 / 32. `md` 는 자연 높이 30 을 `min-h-8` 이 32 로 올리고,
+     * `lg` 는 `py` 를 한 단 줄여(1.5→1) 자연 30 을 만든 뒤 같은 32 에 세운다.
+     * `min-h` 는 **올리기만** 하므로 `py-1.5` 그대로면 34 가 남는다.
+     */
     { shape: 'chip', size: 'sm', class: 'px-2 py-1 text-caption' },
-    { shape: 'chip', size: 'md', class: 'px-2.5 py-1.5 text-label' },
-    { shape: 'chip', size: 'lg', class: 'px-3 py-1.5 text-body' },
+    { shape: 'chip', size: 'md', class: 'min-h-8 px-2.5 py-1.5 text-label' },
+    { shape: 'chip', size: 'lg', class: 'min-h-8 px-3 py-1 text-body' },
     { shape: 'icon', size: 'sm', class: 'h-6 w-6' },
     { shape: 'icon', size: 'md', class: 'h-7 w-7' },
     { shape: 'icon', size: 'lg', class: 'h-8 w-8' },
     { shape: 'row', size: 'sm', class: 'gap-1.5 px-2 py-1.5 text-label' },
     { shape: 'row', size: 'md', class: 'gap-2 px-2.5 py-2 text-body' },
     { shape: 'row', size: 'lg', class: 'gap-2.5 px-3 py-2.5 text-body-lg' },
-    { shape: 'pill', size: 'sm', class: 'px-2 py-0.5 text-caption' },
-    { shape: 'pill', size: 'md', class: 'px-2.5 py-0.5 text-label' },
-    { shape: 'pill', size: 'lg', class: 'px-3 py-1 text-body' },
+    /*
+     * 필 — 같은 24 / 32 / 32. **여기가 실측이 소유자 가설과 갈린 자리다.**
+     * 필의 옛 자연 높이는 칩과 같은 24/30/34 가 아니라 **20 / 22 / 30** 이었다
+     * (`py-0.5` 라서). 그래서 `sm` 은 20 → 24 로 **올려야** 사다리 바닥이자
+     * WCAG 2.5.8 최소 타깃(24×24)에 닿고, `md` 는 22 → 32 로 10px 이 움직인다.
+     * 소비처 9개(`sm`)·3개(`md`)의 실이동은 PR 본문의 표에 그대로 적혀 있다 —
+     * 「±2px 안」이라는 예상과 다른 값이라 숨기지 않는다.
+     */
+    { shape: 'pill', size: 'sm', class: 'px-2 py-1 text-caption' },
+    { shape: 'pill', size: 'md', class: 'min-h-8 px-2.5 py-0.5 text-label' },
+    { shape: 'pill', size: 'lg', class: 'min-h-8 px-3 py-1 text-body' },
     { shape: 'card', size: 'sm', class: 'gap-1.5 px-2.5 py-1.5 text-label' },
     { shape: 'card', size: 'md', class: 'gap-1.5 px-3 py-1.5 text-body' },
     { shape: 'card', size: 'lg', class: 'gap-2 px-3.5 py-2 text-body-lg' },
@@ -395,23 +419,6 @@ const control = cva(DISABLED, {
     { shape: 'link', inline: false, class: 'min-h-11' },
 
     /*
-     * ── 고정 높이 3단. 값은 `--control-h-{sm,md,lg}`(28/32/40) 이고 Tailwind
-     * 스텝이 정확히 그것이다. `true` 는 `md` 의 별칭 — 기존 출력 불변.
-     */
-    { shape: 'chip', fixedHeight: true, class: 'h-8 py-0' },
-    { shape: 'pill', fixedHeight: true, class: 'h-8 py-0' },
-    { shape: 'segment', fixedHeight: true, class: 'h-8 py-0' },
-    { shape: 'chip', fixedHeight: 'sm', class: 'h-7 py-0' },
-    { shape: 'pill', fixedHeight: 'sm', class: 'h-7 py-0' },
-    { shape: 'segment', fixedHeight: 'sm', class: 'h-7 py-0' },
-    { shape: 'chip', fixedHeight: 'md', class: 'h-8 py-0' },
-    { shape: 'pill', fixedHeight: 'md', class: 'h-8 py-0' },
-    { shape: 'segment', fixedHeight: 'md', class: 'h-8 py-0' },
-    { shape: 'chip', fixedHeight: 'lg', class: 'h-10 py-0' },
-    { shape: 'pill', fixedHeight: 'lg', class: 'h-10 py-0' },
-    { shape: 'segment', fixedHeight: 'lg', class: 'h-10 py-0' },
-
-    /*
      * ── 두 번째 무채 램프. 패널 바탕(#17171c) 위에서 대비를 재서 넛지된 값이라
      * 새 채색 시스템이 아니라 **같은 무채 램프의 두 번째 해**다. 신호 3종과
      * 인디고는 여기 없다 — 뜻으로 정해지는 색은 바탕을 안 탄다.
@@ -438,7 +445,6 @@ const control = cva(DISABLED, {
     scope: 'app',
     active: false,
     inline: false,
-    fixedHeight: false,
     truncate: false,
   },
 });
