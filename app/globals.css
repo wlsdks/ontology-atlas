@@ -830,9 +830,10 @@
   --text-hero--line-height: var(--leading-hero);
   --text-hero-lg--line-height: var(--leading-hero-lg);
 
-  /* Radius ramp — 4단. Tailwind v4 `--radius-*` 네임스페이스가 rounded-<step>
-     를 생성한다. 이 밖(헤어라인 1~2px, overlay sheet/card 18~28px)은
-     코덱스 표의 명시 예외로만 — eslint-disable + 사유 주석 필수.
+  /* Radius ramp — 5단. Tailwind v4 `--radius-*` 네임스페이스가 rounded-<step>
+     를 생성한다. 이 밖(헤어라인 1~3px)은 코덱스 표의 명시 예외로만 —
+     eslint-disable + 사유 주석 필수. (구 "overlay sheet 18~28px 예외" 는
+     2026-08-04 `sheet` 등재로 폐지 — 등재 안 된 예외는 예외가 아니라 구멍이다.)
 
      `micro`(4px)는 2026-08-03 체계석 등재다. 이 절이 "1~4px 은 명시 예외"라고
      적는 동안 실제 화면에는 4px 반경이 **96곳**(rounded-sm 59 + 무접미 rounded
@@ -846,6 +847,17 @@
   --radius-chip: 6px; /* 칩·배지·작은 버튼 */
   --radius-card: 9px; /* 카드·인풋·중형 서피스 */
   --radius-panel: 12px; /* 패널·모달·큰 서피스 */
+  /* `sheet`(18px)는 2026-08-04 체계석 등재다. 화면 위에 떠서 아래를 가리는
+     **플로팅 시트·팔레트**(단축키/검색/에이전트 연결 시트, 모바일 바텀시트,
+     플로팅 힌트) 한 단 — 1512px 실측에서 이 한 가지 일이 16/18/20/22/28
+     **다섯 값**으로 갈라져 있었고(토큰 2개 + eslint-disable 4개 + lint 사각
+     1개), 서로 2~4px 차라 위계를 만들지 못했다. 다섯 번 반복되는 값은 예외가
+     아니라 램프에 없는 스텝이다. 18 인 이유: 현행 최빈값이고 램프의 공비를
+     잇는다(4→6→9→12→18, ≈1.5×). panel(12)과 6px 차라 단으로 읽힌다.
+     사정거리 규칙 — 앵커 팝오버·메뉴는 card/panel, 소형 확인 다이얼로그는
+     panel, **인플로우 콘텐츠는 크기와 무관하게 sheet 금지**(카드가 시트로
+     읽힌다). 보더 짝: 시트 단은 `--color-divider`(0.08). */
+  --radius-sheet: 18px; /* 플로팅 시트·팔레트 — 패널 위 한 단 */
 
   /* Tailwind 기본 전이 = 모션 램프의 "확인" 스텝.
      프레임워크 공장값(150ms + 자체 커브)은 아무도 고른 적 없는 숫자인데
@@ -2212,11 +2224,12 @@
       0 0 0 6px rgba(94, 106, 210, 0.10);
     --topology-search-lane-compact-width: clamp(84px, 6vw, 96px);
     --topology-search-sheet-floating-width: 36rem;
-    --topology-search-sheet-radius: 16px;
     --topology-search-sheet-close-size: 32px;
     --topology-shortcut-sheet-floating-width: 45rem;
-    --topology-shortcut-sheet-radius: 22px;
     --topology-shortcut-sheet-close-size: 32px;
+    /* 구 --topology-search-sheet-radius(16) · --topology-shortcut-sheet-radius(22)
+       는 2026-08-04 `--radius-sheet`(18) 등재로 폐지 — 같은 일(플로팅 시트
+       반경)을 하는 값이 램프 밖에 둘로 갈라져 있었다. 시트 반경은 rounded-sheet. */
     /* #67 — 스크롤 가능 신호(scroll edge). 목록이 잘려 보일 때 "여기서 끝" 이
        아니라 "아래 더 있다" 로 읽히게 하는 아래쪽 페이드. 패널색 → 투명 한
        단계뿐이라 장식 그라디언트가 아니며, 움직이지 않는다. */

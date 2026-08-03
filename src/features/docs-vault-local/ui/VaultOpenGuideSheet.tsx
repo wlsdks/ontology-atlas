@@ -91,7 +91,7 @@ export function VaultOpenGuideSheet({
             aria-modal="true"
             aria-label={t("title")}
             data-testid="vault-guide-sheet"
-            className="flex w-full max-w-[420px] flex-col overflow-hidden rounded-[var(--topology-shortcut-sheet-radius)] border border-[color:var(--color-divider)] bg-[color:var(--color-panel)] shadow-[var(--shadow-elevation-3)]"
+            className="flex w-full max-w-[420px] flex-col overflow-hidden rounded-sheet border border-[color:var(--color-divider)] bg-[color:var(--color-panel)] shadow-[var(--shadow-elevation-3)]"
           >
             <header className="flex shrink-0 items-start justify-between gap-3 border-b border-[color:var(--color-border-soft)] px-5 py-4">
               <div>

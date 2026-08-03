@@ -335,7 +335,7 @@ export function ShortcutSheet({ open, onClose }: Props) {
           transition={reducedMotion ? OVERLAY_SPRING_REDUCED : MOTION.base}
           data-shortcut-sheet-responsive-contract="mobile-sheet-sm-floating"
           data-shortcut-sheet-floating-width-token="--topology-shortcut-sheet-floating-width"
-          data-shortcut-sheet-radius-token="--topology-shortcut-sheet-radius"
+          data-shortcut-sheet-radius-token="--radius-sheet"
           data-shortcut-sheet-mobile-bottom-reserve-token="--topology-mobile-bottom-tab-reserve"
           className="pointer-events-auto fixed inset-0 z-50 flex items-stretch justify-center bg-[color:var(--color-backdrop-medium)] sm:items-center sm:p-6"
           onClick={onClose}
@@ -351,7 +351,7 @@ export function ShortcutSheet({ open, onClose }: Props) {
             aria-label={t("dialogAriaLabel")}
             aria-modal="true"
             aria-describedby="shortcut-sheet-help"
-            className="flex h-[calc(100dvh-var(--topology-mobile-bottom-tab-reserve))] w-full flex-col overflow-hidden border border-[color:var(--color-divider)] bg-[color:var(--color-panel)] shadow-[var(--shadow-elevation-3)] sm:h-auto sm:max-h-[calc(100vh-3rem)] sm:max-w-[var(--topology-shortcut-sheet-floating-width)] sm:rounded-[var(--topology-shortcut-sheet-radius)]"
+            className="flex h-[calc(100dvh-var(--topology-mobile-bottom-tab-reserve))] w-full flex-col overflow-hidden border border-[color:var(--color-divider)] bg-[color:var(--color-panel)] shadow-[var(--shadow-elevation-3)] sm:h-auto sm:max-h-[calc(100vh-3rem)] sm:max-w-[var(--topology-shortcut-sheet-floating-width)] sm:rounded-sheet"
           >
             <header className="flex shrink-0 items-center justify-between border-b border-[color:var(--color-border-soft)] px-5 py-4">
               <div>
