@@ -40,7 +40,9 @@ const FAMILIES: ReadonlyArray<readonly [name: string, re: RegExp, budget: number
   ['rounded (무접미, 4px)', /(?<![-\w])rounded(?![-\w])/g, 0],
   ['rounded-xs', /(?<![-\w])rounded-xs(?![-\w])/g, 0],
   ['rounded-sm', /(?<![-\w])rounded-sm(?![-\w])/g, 0],
-  ['rounded-2xl', /(?<![-\w])rounded-2xl(?![-\w])/g, 19],
+  // 19 → 16: 죽은 프리미티브 둘(`link-list-editor`·`chip-list-editor`)이 3건을
+  // 지고 있었다. 코드를 지우자 부채도 같이 사라진 자리라 판정이 필요 없었다.
+  ['rounded-2xl', /(?<![-\w])rounded-2xl(?![-\w])/g, 16],
   ['rounded-3xl', /(?<![-\w])rounded-3xl(?![-\w])/g, 0],
   ['text-xs', /(?<![-\w])text-xs(?![-\w])/g, 0],
   ['text-sm', /(?<![-\w])text-sm(?![-\w])/g, 0],
