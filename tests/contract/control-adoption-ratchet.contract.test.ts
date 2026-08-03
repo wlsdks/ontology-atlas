@@ -59,6 +59,8 @@ const ROOTS = ['src', 'app'];
  * | **269** | 위 두 라운드가 「자리가 없어서」 남긴 48개의 회수 — 값 층의 구멍 넷을 메운(`a1f956ce9`) 직후다. 설정 시트 29(칩 24 · 타일 2 · 링크형 3) + 지도 액션 타일 5. `tone` 의 새 넷(secondary 6 · accent 11 · success 2 · warning 2 · danger 1)이 22개를, `shape: 'tile'` 이 7개를, `link` 의 `min-h-11` 이 3개를 열었다 |
  * | **259** | 뷰 라운드 — `src/views/{ontology-insights,download,first-run,git,project-*,gateway-doc,root-entry}` 18개 중 10개. 행 6(조용한 「나머지 보기」 토글 4 + 케밥 메뉴 항목 1 + 그 항목을 쓰는 `<Link>` 3) · 칩 5(의미 공백 쓰기 토글 · 도메인 선택 · 저장 · 취소 · 인계 복사). **여기서 처음으로 `row`/`sm` 이 손으로 쓰던 높이와 정확히 같았다** — `py-1.5`+`--leading-label`(16px) = 28px = `min-h-7`. 램프가 오늘 화면을 맞힌 첫 자리다 |
  * | **227** | features 라운드 — `src/features/**` 63개 중 32개. 칩 15 · pill 6 · 링크형 6 · 아이콘 3 · 나머지 2(도구 탭이 눌림을 `active` 로 넘긴다). 축 사용: `fixedHeight` 2 · `inline` 5 |
+ * | **210** | 지도 뷰(`src/views/home/**`) 31개 중 17개 — 아이콘 9 · pill 4 · 칩 1 · 링크형 1(그 외 2는 인디고 강조 아이콘/pill). 남긴 14개는 다섯으로 갈린다: ① **컨트롤이 아닌 것** 3 — `absolute inset-0` 전면 백드롭은 스크림이지 눌리는 원소가 아니다 ② **크롬 토큰 계약** 2 — 투어·단축키 타일은 `--chrome-tile-size`/`--chrome-radius` 를 진다 ③ **말줄임이 필요한 텍스트 컨트롤** 3 — 모양 일곱이 전부 flex 계열이라 `text-overflow: ellipsis` 가 통하지 않는다(실측: `inline-block` 은 `…`, `inline-flex` 는 하드 클립) ④ **패딩을 가진 텍스트 링크** 3 — `link` 는 패딩이 0이라 `px-1 py-0.5`/`px-2 py-1` 히트 영역이 사라진다 ⑤ **램프에 스텝이 없는 것** 3 — 20px 아이콘 · 40px(`--control-h-lg`) 인디고 pill · 2줄 세로 목록 행 |
+ * | **173** | 위젯 라운드 — `src/widgets/**` 중 이미 정규화된 다섯(설정 시트 · 지도 둘 · 문서함 · 빠른 서랍)을 뺀 84개에서 37개. 칩 21 · pill 4 · 아이콘 4 · 카드 5 · 행 2 · 링크형 1. 새 축 0개로 옮겼고, **남긴 47개가 값 층의 다음 구멍 목록**이다(아래). **210 − 37 = 173 이 전수 재측정으로 정확히 맞았다** — 앞선 두 정렬(227 − 37 = 190)과 마찬가지로, 이 라운드가 features·지도 뷰 라운드와 파일을 하나도 안 겹친다는 뜻이다. 세 라운드의 합산이 성립한다 |
  *
  * ## features 라운드(2026-08-03)가 찾은 구멍 — 값 층의 다음 입력
  *
@@ -96,13 +98,12 @@ const ROOTS = ['src', 'app'];
  * `min-h-11` 은 이 저장소가 이미 가진 `touch-hit-expand`(coarse 전용 의사요소,
  * 레이아웃 0)와 **경쟁**한다. 둘 다 걸면 카드가 44px 씩 벌어져서, 실제로는
  * 「`touch-hit-expand` 를 이미 쓰는가」가 `inline` 의 진짜 판정 기준이 됐다.
- * | **190** | 위젯 라운드 — `src/widgets/**` 중 이미 정규화된 다섯(설정 시트 · 지도 둘 · 문서함 · 빠른 서랍)을 뺀 84개에서 37개. 칩 21 · pill 4 · 아이콘 4 · 카드 5 · 행 2 · 링크형 1. 새 축 0개로 옮겼고, **남긴 47개가 값 층의 다음 구멍 목록**이다(아래). 227 − 37 = 190 이 정확히 맞았다 — features 라운드와 파일이 하나도 안 겹쳐 두 라운드의 합산이 성립한다 |
  *
  * ## 위젯 라운드가 남긴 47개 — 값 층에 자리가 없다
  *
  * | 구멍 | 남은 수 | 무엇이 없나 |
  * |---|---:|---|
- * | **크롬 토큰이 치수를 소유한다** | 15 | `--overlay-close-size` · `--topology-search-sheet-close-size` · `--topology-shortcut-sheet-close-size` · `--git-row-h` · `--git-setup-action-height` · `--app-nav-rail-tile-*`. 램프의 `fixedHeight` 는 32px 한 단뿐이라 36/44/가변 토큰을 못 받는다 |
+ * | **크롬 토큰이 치수를 소유한다**(= 지도 뷰 라운드의 구멍 ②) | 15 | `--overlay-close-size` · `--topology-search-sheet-close-size` · `--topology-shortcut-sheet-close-size` · `--git-row-h` · `--git-setup-action-height` · `--app-nav-rail-tile-*`. 램프의 `fixedHeight` 는 32px 한 단뿐이라 36/44/가변 토큰을 못 받는다 |
  * | **별도 잉크 계열** | 8 | `full-detail-a1` 전체가 `--topology-v2-panel-text-*`(#a3a3ac …) 로 산다. tone 8종은 전부 `--color-text-*` 이라, 옮기면 잉크가 바뀌거나 tone 을 className 으로 덮어야 한다 = 층 무력화. **features 라운드의 구멍 1과 같은 것**이고, 두 라운드가 독립으로 같은 결론에 닿았다(그쪽 11 + 여기 8) |
  * | **밀집 행 속 보조 토글** | 5 | `link` 의 `min-h-11` 은 홀로 선 컨트롤엔 옳지만 체크박스 행·컴포저 메타 줄·이고 카드 이웃 목록에 실으면 행이 2~3배가 된다. `inline` 축은 「문장 속」만 면제하고 「밀집 행 속」을 못 말한다 |
  * | **보더 없는 세그먼트·탭**(= features 라운드의 구멍 3, 네 라운드 연속) | 6 | 이미 보더를 두른 상자 안의 라디오(에이전트 범위 · 단축키 스코프), 밑줄 탭(커밋 렌즈), 보더 없는 pill(필터 지우기). `chip`/`pill` 은 보더가 필수라 상자 속 상자가 된다 |
@@ -155,7 +156,7 @@ const ROOTS = ['src', 'app'];
  * **공유 상수로 뽑는 옳은 리팩터에 벌점을 준다.** 그래서 이 라운드는 잉크만
  * 상수로 공유하고 램프 호출은 자리마다 인라인으로 썼다.
  */
-const BASELINE_HAND_WRITTEN_CONTROLS = 190;
+const BASELINE_HAND_WRITTEN_CONTROLS = 173;
 
 function walk(dir: string, out: string[] = []): string[] {
   for (const name of readdirSync(dir)) {

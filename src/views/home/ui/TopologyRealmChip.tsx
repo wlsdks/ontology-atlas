@@ -3,6 +3,7 @@
 import { Orbit, X } from "lucide-react";
 
 import { CHROME_STATUS_CHIP_CLASS } from "@/shared/ui/chrome-chip";
+import { controlClass } from "@/shared/ui/control-class";
 
 // 사용자 어휘는 "이것만 보기"(2026-07-23 소유자 결정) — 내부명 realm 은 유지.
 export interface TopologyRealmChipProps {
@@ -63,7 +64,12 @@ export function TopologyRealmChip({
         onClick={onClear}
         aria-label={clearAriaLabel}
         data-testid="topology-realm-chip-clear"
-        className="-mr-1 flex h-6 w-6 shrink-0 items-center justify-center rounded-full text-[color:var(--color-text-quaternary)] transition-colors hover:text-[color:var(--color-text-primary)]"
+        className={controlClass({
+          shape: "icon",
+          size: "sm",
+          tone: "muted",
+          className: "-mr-1 hover:text-[color:var(--color-text-primary)]",
+        })}
       >
         <X size={13} aria-hidden />
       </button>

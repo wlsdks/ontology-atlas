@@ -1,7 +1,7 @@
 "use client";
 
 import { Route, X } from "lucide-react";
-import { CHROME_STATUS_CHIP_CLASS, CompactCopyButton } from "@/shared/ui";
+import { CHROME_STATUS_CHIP_CLASS, CompactCopyButton, controlClass } from "@/shared/ui";
 
 export interface TopologyPathChipProps {
   /** Pre-formatted status line — "경로: {source} → 대상 선택" before a target
@@ -66,7 +66,12 @@ export function TopologyPathChip({
         onClick={onClear}
         aria-label={clearAriaLabel}
         data-testid="topology-path-chip-clear"
-        className="-mr-1 flex h-6 w-6 shrink-0 items-center justify-center rounded-full text-[color:var(--color-text-quaternary)] transition-colors hover:text-[color:var(--color-text-primary)]"
+        className={controlClass({
+          shape: "icon",
+          size: "sm",
+          tone: "muted",
+          className: "-mr-1 hover:text-[color:var(--color-text-primary)]",
+        })}
       >
         <X size={13} aria-hidden />
       </button>
