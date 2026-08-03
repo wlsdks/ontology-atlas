@@ -2201,6 +2201,7 @@
       "kindCapability": "역량",
       "kindElement": "요소",
       "toastSaved": "{slug} 생성됨",
+      "toastSavedAction": "지도에서 보기",
       "toastExists": "같은 slug 의 노드가 이미 있어요.",
       "toastError": "노드를 만들지 못했어요.",
       "unavailableHeading": "워크스페이스 필요",

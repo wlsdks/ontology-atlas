@@ -1107,14 +1107,37 @@ export function HomePage() {
          */
         const { slug, markdown } = buildNewNodeDoc({ ...input, createdBy: "human" });
         await vault.createDoc(slug, markdown);
-        toast.show(t("createNode.toastSaved", { slug }), "success");
+        /*
+         * **1일차의 싼 시험** (PO 카운슬 평결 ⑤, 2026-08-03).
+         *
+         * 소유자는 「노드가 지도에 나오면서 위치를 정하고 확대되는」 생성을
+         * 원했다. 근거석이 그보다 싼 가설을 냈다 — 문제가 「모션이 없다」가
+         * 아니라 **「만든 게 어디 갔는지 모른다」** 일 수 있다. 해자석이 2라운드
+         * 에서 승복하며 *"싼 시험을 슬라이스 밖이 아니라 **앞**에 넣어라"* 고
+         * 했고, 그래서 이 링크가 1일차다.
+         *
+         * **누르는지가 관측이다.** 자동 포커스로 만들면 훨씬 싸지만 시험 자체가
+         * 사라진다 — 필요했는지 아무도 모르게 된다.
+         *
+         * 반증 조건: 이 링크를 눌러 보고도 「무엇에 붙었는지 모르겠다」가 나오면
+         * 부착 표시가 필요했던 것이고, 안 나오면 나머지 날은 반납한다.
+         */
+        const tail = slug.includes("/") ? slug.slice(slug.lastIndexOf("/") + 1) : slug;
+        toast.show(t("createNode.toastSaved", { slug }), "success", {
+          label: t("createNode.toastSavedAction"),
+          onClick: () =>
+            setRouteState((current) => ({
+              ...current,
+              selectedSlug: `${input.kind}:${tail}`,
+            })),
+        });
         closeCreateNode();
       } catch (err) {
         const exists = err instanceof Error && err.message.includes("already exists");
         toast.show(exists ? t("createNode.toastExists") : t("createNode.toastError"), "error");
       }
     },
-    [closeCreateNode, vault, toast, t],
+    [closeCreateNode, vault, toast, t, setRouteState],
   );
   // #8 평문화 — "개념 추가" 도메인 피커 옵션. 자유 입력 slug 대신 기존 도메인
   // 노드를 이름으로 고른다. value = bare tail-slug(`domain:auth` → `auth`),

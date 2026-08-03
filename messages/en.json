@@ -2201,6 +2201,7 @@
       "kindCapability": "Capability",
       "kindElement": "Element",
       "toastSaved": "Created {slug}",
+      "toastSavedAction": "View on map",
       "toastExists": "A node with that slug already exists.",
       "toastError": "Could not create the node.",
       "unavailableHeading": "Workspace required",
