@@ -27,8 +27,16 @@ const buttonVariants = cva(
         // 눈에 띄는 컨트롤의 색을 무채색으로 바꾸는 것은 취향 판단이라 소유자
         // 몫이다. 착색 그림자는 광원이 둘이라는 뜻이므로, 정리하기로 하면
         // `--shadow-control-press` 로 흡수하면 된다.
+        //
+        // 잉크는 `--color-text-on-accent`(#ffffff) 다 — **`--color-text-primary`
+        // 가 아니다.** 채운 인디고(`#5e6ad2`) 위에서 `#f7f8f8` 은 합성 대비
+        // **4.42:1** 로 WCAG 1.4.3 AA(4.5) 밑이고, `#ffffff` 는 **4.70:1** 로
+        // 통과한다. 이 토큰은 2026-08-03 에 「채운 인디고 위의 잉크」 라는
+        // 이름으로 이미 만들어져 `control-class.ts` 의 `accentSolid` 가 쓰고
+        // 있었는데, 이 프리미티브만 이관에서 빠져 있었다 — 관문의 주 CTA 가
+        // 앱에서 가장 눈에 띄는 컨트롤인데 유일하게 AA 미달이던 이유다.
         primary:
-          'bg-[color:var(--color-indigo-brand)] text-[color:var(--color-text-primary)] shadow-[inset_0_1px_0_var(--color-border-strong),0_10px_24px_var(--color-indigo-a22)] hover:border-[color:var(--color-indigo-pale-a28)] hover:bg-[color:var(--color-indigo-hover)] active:shadow-[inset_0_1px_0_var(--color-divider),0_6px_14px_var(--color-indigo-a20)]',
+          'bg-[color:var(--color-indigo-brand)] text-[color:var(--color-text-on-accent)] shadow-[inset_0_1px_0_var(--color-border-strong),0_10px_24px_var(--color-indigo-a22)] hover:border-[color:var(--color-indigo-pale-a28)] hover:bg-[color:var(--color-indigo-hover)] active:shadow-[inset_0_1px_0_var(--color-divider),0_6px_14px_var(--color-indigo-a20)]',
         ghost:
           'bg-transparent text-[color:var(--color-text-primary)] hover:border-[color:var(--color-border-soft)] hover:bg-[color:var(--color-overlay-2)] active:bg-[color:var(--color-border-soft)] active:shadow-[var(--shadow-control-press)]',
         outline:

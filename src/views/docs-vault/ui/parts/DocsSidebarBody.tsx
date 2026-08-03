@@ -285,23 +285,39 @@ export function DocsSidebarBody({
       {/* #22 — 옵시디언식 단일 아이콘 행: 전체/가이드/지도 문서 뷰 전환 +
           검색 토글 + 새 문서. 큰 헤더·세그먼트·상시 검색창을 걷어내 밀도를
           낮춘다. active 는 인디고, hover 툴팁이 평문으로 뜻을 설명한다. */}
-      <div
-        role="tablist"
-        aria-label={t("collectionAriaLabel")}
-        className="flex flex-none items-center gap-1 border-b border-[color:var(--color-overlay-2)] px-2 py-2"
-      >
-        {collectionOptions.map((option) => (
-          <RailIconButton
-            key={option}
-            testId={`docs-sidebar-collection-${option}`}
-            icon={collectionIcons[option]}
-            label={t(`collection.${option}.tooltip`, {
-              count: collectionCounts[option],
-            })}
-            active={collection === option}
-            onClick={() => onCollectionChange(option)}
-          />
-        ))}
+      {/*
+        a11y: 이 줄은 `role="tablist"` 가 **아니다**. 2026-08-03 axe 전수에서
+        `aria-required-children`(WCAG 4.1.2) 위반 1건이 여기였다 — 줄 안에
+        컬렉션 3개 말고 검색 토글 · 정렬 메뉴 · 새 문서가 같이 있어서
+        `tablist` 가 허용하지 않는 자식(`button[aria-label]`)을 이고 있었다.
+
+        고침은 **자식을 `role="tab"` 으로 바꾸는 쪽이 아니라 role 을 반납하는
+        쪽**이다. 형제인 `DocsVaultTabStrip` 이 같은 이유로 이미 그렇게 적어
+        뒀다: `tabpanel`·`aria-controls`·roving tabindex 가 없는데 role 만
+        빌리면 AT 는 «탭 n/N» 과 화살표키 이동을 약속하고 아무 일도 일어나지
+        않는다. 여기 세 버튼은 아래 트리를 **거르는 토글**이고 진실원은
+        `collection` 상태다 — 정직한 계약은 `group` + `aria-pressed` 다.
+        `toolbar` 도 안 쓴다: 그건 다시 화살표키 이동 약속이다.
+      */}
+      <div className="flex flex-none items-center gap-1 border-b border-[color:var(--color-overlay-2)] px-2 py-2">
+        <div
+          role="group"
+          aria-label={t("collectionAriaLabel")}
+          className="flex flex-none items-center gap-1"
+        >
+          {collectionOptions.map((option) => (
+            <RailIconButton
+              key={option}
+              testId={`docs-sidebar-collection-${option}`}
+              icon={collectionIcons[option]}
+              label={t(`collection.${option}.tooltip`, {
+                count: collectionCounts[option],
+              })}
+              active={collection === option}
+              onClick={() => onCollectionChange(option)}
+            />
+          ))}
+        </div>
         <span aria-hidden className="mx-0.5 h-5 w-px bg-[color:var(--color-overlay-2)]" />
         <RailIconButton
           testId="docs-sidebar-search-toggle"
