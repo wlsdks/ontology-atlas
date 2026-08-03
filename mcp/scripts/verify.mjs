@@ -63,14 +63,18 @@ import {
 } from '../src/ontology-engine.mjs';
 import {
   IMPORT_EDGE_KIND_VALUES,
+  IMPORT_SOURCE_ROLE_VALUES,
   IMPORT_UNRESOLVED_REASON_VALUES,
+  IMPORT_USAGE_VALUES,
 } from '../src/infer-imports.mjs';
 import { VAULT_ISSUE_CODE_VALUES } from '../src/validate.mjs';
 import { GRAPH_ARRAY_KEYS } from '../src/vault.mjs';
 import { NODE_UID_PATTERN } from '../src/schema.mjs';
 export {
   IMPORT_EDGE_KIND_VALUES,
+  IMPORT_SOURCE_ROLE_VALUES,
   IMPORT_UNRESOLVED_REASON_VALUES,
+  IMPORT_USAGE_VALUES,
 } from '../src/infer-imports.mjs';
 export { VAULT_ISSUE_CODE_VALUES } from '../src/validate.mjs';
 
@@ -1861,7 +1865,7 @@ export function toolsListSchemaFailure(tools) {
   if (
     importEdgeSchema?.type !== 'array' ||
     importEdgeSchema.items?.type !== 'object' ||
-    !sameArray(importEdgeSchema.items?.required, ['from', 'to', 'kind'])
+    !sameArray(importEdgeSchema.items?.required, ['from', 'to', 'kind', 'sourceRole', 'importUsage'])
   ) {
     return 'infer_imports outputSchema edges drift';
   }
@@ -1870,6 +1874,12 @@ export function toolsListSchemaFailure(tools) {
   }
   if (!sameArray(importEdgeSchema.items?.properties?.kind?.enum, IMPORT_EDGE_KIND_VALUES)) {
     return 'infer_imports outputSchema edge kind drift';
+  }
+  if (
+    !sameArray(importEdgeSchema.items?.properties?.sourceRole?.enum, IMPORT_SOURCE_ROLE_VALUES) ||
+    !sameArray(importEdgeSchema.items?.properties?.importUsage?.enum, IMPORT_USAGE_VALUES)
+  ) {
+    return 'infer_imports outputSchema edge provenance drift';
   }
   const externalImportsSchema = outputPropertyAt(inferImportsTool, ['properties', 'externalImports']);
   if (
@@ -1900,7 +1910,17 @@ export function toolsListSchemaFailure(tools) {
   if (
     moduleEdgesSchema?.type !== 'array' ||
     moduleEdgesSchema.items?.type !== 'object' ||
-    !sameArray(moduleEdgesSchema.items?.required, ['from', 'to', 'count', 'kindCounts', 'evidence', 'evidenceLimited'])
+    !sameArray(moduleEdgesSchema.items?.required, [
+      'from',
+      'to',
+      'count',
+      'kindCounts',
+      'sourceRoleCounts',
+      'importUsageCounts',
+      'productValueCount',
+      'evidence',
+      'evidenceLimited',
+    ])
   ) {
     return 'infer_imports outputSchema moduleEdges drift';
   }
@@ -1924,14 +1944,30 @@ export function toolsListSchemaFailure(tools) {
   ) {
     return 'infer_imports outputSchema moduleEdges kindCounts drift';
   }
+  if (
+    fixedZeroCountSchemaFailure(
+      moduleEdgesSchema.items?.properties?.sourceRoleCounts,
+      IMPORT_SOURCE_ROLE_VALUES,
+    ) ||
+    fixedZeroCountSchemaFailure(
+      moduleEdgesSchema.items?.properties?.importUsageCounts,
+      IMPORT_USAGE_VALUES,
+    ) ||
+    moduleEdgesSchema.items?.properties?.productValueCount?.type !== 'integer' ||
+    moduleEdgesSchema.items?.properties?.productValueCount?.minimum !== 0
+  ) {
+    return 'infer_imports outputSchema moduleEdges evidence qualification drift';
+  }
   const moduleEvidenceSchema = moduleEdgesSchema.items?.properties?.evidence;
   if (
     moduleEvidenceSchema?.type !== 'array' ||
     moduleEvidenceSchema.maxItems !== 5 ||
     moduleEvidenceSchema.items?.type !== 'object' ||
-    !sameArray(moduleEvidenceSchema.items?.required, ['from', 'to', 'kind']) ||
+    !sameArray(moduleEvidenceSchema.items?.required, ['from', 'to', 'kind', 'sourceRole', 'importUsage']) ||
     moduleEvidenceSchema.items?.additionalProperties !== false ||
     !sameArray(moduleEvidenceSchema.items?.properties?.kind?.enum, IMPORT_EDGE_KIND_VALUES) ||
+    !sameArray(moduleEvidenceSchema.items?.properties?.sourceRole?.enum, IMPORT_SOURCE_ROLE_VALUES) ||
+    !sameArray(moduleEvidenceSchema.items?.properties?.importUsage?.enum, IMPORT_USAGE_VALUES) ||
     moduleEdgesSchema.items?.properties?.evidenceLimited?.type !== 'boolean'
   ) {
     return 'infer_imports outputSchema moduleEdges evidence drift';
@@ -1940,6 +1976,9 @@ export function toolsListSchemaFailure(tools) {
   const importNextReviewSchema = outputPropertyAt(inferImportsTool, ['properties', 'nextReview']);
   const importReviewWriteAllowedSchema = importNextReviewSchema?.properties?.writeAllowed;
   const importReviewCursorSchema = importNextReviewSchema?.properties?.cursor;
+  const importReviewCandidateSchema = importNextReviewSchema?.properties?.candidate;
+  const importReviewQualificationSchema = importReviewCandidateSchema?.properties?.evidenceQualification;
+  const importReviewDecisionSchema = importNextReviewSchema?.properties?.decision;
   if (
     !sameArray(importReviewContractSchema?.enum, ['inferImportsReview:v1']) ||
     !sameArray(importNextReviewSchema?.type, ['object', 'null']) ||
@@ -1957,6 +1996,26 @@ export function toolsListSchemaFailure(tools) {
     ]) ||
     importNextReviewSchema?.additionalProperties !== false ||
     !sameArray(importReviewWriteAllowedSchema?.enum, [false]) ||
+    !sameArray(importReviewCandidateSchema?.required, [
+      'from',
+      'to',
+      'relationType',
+      'importCount',
+      'sourceEvidence',
+      'sourceEvidenceLimited',
+      'evidenceQualification',
+    ]) ||
+    !sameArray(importReviewQualificationSchema?.required, [
+      'basis',
+      'sourceRoleCounts',
+      'importUsageCounts',
+      'productValueCount',
+      'status',
+    ]) ||
+    !sameArray(importReviewDecisionSchema?.properties?.questionEligibility?.enum, [
+      'eligible_after_semantic_review',
+      'additional_product_meaning_evidence_required',
+    ]) ||
     importReviewCursorSchema?.type !== 'object' ||
     !sameArray(importReviewCursorSchema?.required, [
       'afterReviewId',
@@ -5550,6 +5609,8 @@ export function inferImportsFailure(parsed) {
     }
   }
   const edgeKinds = new Set(IMPORT_EDGE_KIND_VALUES);
+  const sourceRoles = new Set(IMPORT_SOURCE_ROLE_VALUES);
+  const importUsages = new Set(IMPORT_USAGE_VALUES);
   const unresolvedReasons = new Set(IMPORT_UNRESOLVED_REASON_VALUES);
   for (const [index, edge] of parsed.edges.entries()) {
     if (!edge || typeof edge !== 'object' || Array.isArray(edge)) {
@@ -5562,6 +5623,9 @@ export function inferImportsFailure(parsed) {
     }
     if (!edgeKinds.has(edge.kind)) {
       return `infer_imports response unknown edge kind: ${edge.kind}`;
+    }
+    if (!sourceRoles.has(edge.sourceRole) || !importUsages.has(edge.importUsage)) {
+      return `infer_imports response malformed edge provenance at index ${index}`;
     }
   }
   for (const [index, externalImport] of parsed.externalImports.entries()) {
@@ -5620,8 +5684,71 @@ export function inferImportsFailure(parsed) {
     if (kindTotal !== moduleEdge.count) {
       return `infer_imports response module edge kindCounts mismatch at index ${index}`;
     }
+    const sourceRoleTotal = fixedCountTotal(moduleEdge.sourceRoleCounts, IMPORT_SOURCE_ROLE_VALUES);
+    if (sourceRoleTotal === null) {
+      return `infer_imports response malformed module edge sourceRoleCounts at index ${index}`;
+    }
+    if (sourceRoleTotal !== moduleEdge.count) {
+      return `infer_imports response module edge sourceRoleCounts mismatch at index ${index}`;
+    }
+    const importUsageTotal = fixedCountTotal(moduleEdge.importUsageCounts, IMPORT_USAGE_VALUES);
+    if (importUsageTotal === null) {
+      return `infer_imports response malformed module edge importUsageCounts at index ${index}`;
+    }
+    if (importUsageTotal !== moduleEdge.count) {
+      return `infer_imports response module edge importUsageCounts mismatch at index ${index}`;
+    }
+    if (
+      !Number.isInteger(moduleEdge.productValueCount) ||
+      moduleEdge.productValueCount < 0 ||
+      moduleEdge.productValueCount > moduleEdge.sourceRoleCounts.production ||
+      moduleEdge.productValueCount > moduleEdge.importUsageCounts.value
+    ) {
+      return `infer_imports response impossible productValueCount at index ${index}`;
+    }
+    if (!Array.isArray(moduleEdge.evidence) || moduleEdge.evidence.length > 5) {
+      return `infer_imports response malformed module edge evidence at index ${index}`;
+    }
+    if (typeof moduleEdge.evidenceLimited !== 'boolean') {
+      return `infer_imports response missing module edge evidenceLimited at index ${index}`;
+    }
+    for (const evidence of moduleEdge.evidence) {
+      if (
+        !evidence ||
+        typeof evidence.from !== 'string' ||
+        typeof evidence.to !== 'string' ||
+        !edgeKinds.has(evidence.kind) ||
+        !sourceRoles.has(evidence.sourceRole) ||
+        !importUsages.has(evidence.importUsage)
+      ) {
+        return `infer_imports response malformed module edge evidence at index ${index}`;
+      }
+    }
   }
   return null;
+}
+
+function fixedZeroCountSchemaFailure(schema, values) {
+  return !schema ||
+    schema.type !== 'object' ||
+    schema.additionalProperties !== false ||
+    !sameArray(schema.required, values) ||
+    values.some(
+      (value) =>
+        schema.properties?.[value]?.type !== 'integer' ||
+        schema.properties?.[value]?.minimum !== 0,
+    );
+}
+
+function fixedCountTotal(counts, values) {
+  if (!counts || typeof counts !== 'object' || Array.isArray(counts)) return null;
+  if (!sameArray(Object.keys(counts), values)) return null;
+  let total = 0;
+  for (const value of values) {
+    if (!Number.isInteger(counts[value]) || counts[value] < 0) return null;
+    total += counts[value];
+  }
+  return total;
 }
 
 export function indexProjectFailure(parsed) {
@@ -8330,6 +8457,7 @@ async function step2BootAndCall() {
     let sentDestructiveDryRunSmoke = false;
     let sentMaintenanceResumeSmoke = false;
     let destructiveDryRunExpectedResponses = [];
+    let earlyEmptyVaultPayload = null;
     const expectedFirstContactIds = initialExpectedFirstContactIds();
     let limitedQueryConceptsSmoke = null;
     let timer = null;
@@ -8353,6 +8481,13 @@ async function step2BootAndCall() {
             listPayload = JSON.parse(listResponse.result.content?.[0]?.text || '{}');
           } catch {
             listPayload = null;
+          }
+          if (listPayload && emptyVerifyVaultFailure(listPayload)) {
+            earlyEmptyVaultPayload = listPayload;
+            completed = true;
+            if (timer) clearTimeout(timer);
+            stopServer();
+            return;
           }
           if (projectResponse) {
             try {
@@ -8590,6 +8725,31 @@ async function step2BootAndCall() {
 
       if (signal && !completed && missingLabels.length > 0) {
         log('fail', serverSignalFailure(signal, stderr, verifyRetryEnvForVault(VAULT)));
+        return res(false);
+      }
+
+      if (earlyEmptyVaultPayload) {
+        if (!initRes || !initRes.result) {
+          log('fail', serverStartupFailure(stderr, verifyRetryEnvForVault(VAULT)));
+          return res(false);
+        }
+        log('ok', `initialize OK — server ${initRes.result.serverInfo?.name}@${initRes.result.serverInfo?.version}`);
+        if (!callRes || !callRes.result) {
+          log('fail', 'no list_concepts response');
+          return res(false);
+        }
+        const listFailure = listConceptsFailure(earlyEmptyVaultPayload);
+        if (listFailure) {
+          log('fail', listFailure);
+          return res(false);
+        }
+        const structuredFailure = structuredContentFailure(callRes, earlyEmptyVaultPayload, 'list_concepts');
+        if (structuredFailure) {
+          log('fail', structuredFailure);
+          return res(false);
+        }
+        log('ok', `list_concepts — vault total ${earlyEmptyVaultPayload.total} nodes (vaultRoot ${earlyEmptyVaultPayload.vaultRoot})`);
+        log('fail', emptyVerifyVaultFailure(earlyEmptyVaultPayload));
         return res(false);
       }
 

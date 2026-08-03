@@ -77,8 +77,14 @@ domain·capability·의미 `depends_on`으로 자동 승격하지 않는다. 각
 edge도 실행 가능한 `proposedAction` 대신 `rationale_review_required`로 반환한다.
 `reviewMode:"next"`는 전체 import graph 대신 검토 후보 한 건, 정확한 근거,
 양쪽 개념·relation preflight 호출, 중단 조건, stateless cursor만 5 KiB 이하로
-반환한다. 에이전트는 양쪽 개념과 방향을 읽고 의미적 이유를 설명한 뒤
-사람에게 물어야 하며, 승인된 한 건만 비어 있지 않은 `why`와 함께 기록한다.
+반환한다. 각 근거는 제품/테스트 코드와 값/타입 전용 사용을 분리하고, module
+edge는 bounded sample이 아니라 전체 import에서 두 차원의 count와 교집합인
+`productValueCount`를 계산한다. JS/TS의 명시적 type import와 Python의 명시적
+`TYPE_CHECKING` guard 안 import는 type-only다. `value`는 그 밖의 정적 import라는
+뜻이지 runtime 실행을 주장하지 않는다. 제품 코드의 값 사용이 0건이면 테스트·타입 근거를
+숨기지 않되 그 import만으로 제품 `depends_on` 승인을 묻지 않고 별도 제품 의미
+근거를 요구한다. 그 밖에도 에이전트는 양쪽 개념과 방향을 읽고 의미적 이유를 설명한
+뒤 사람에게 물어야 하며, 승인된 한 건만 비어 있지 않은 `why`와 함께 기록한다.
 이때 `relation_check`의 schema match도 의미 승인이 아니다. 새 `depends_on`은
 실행 가능한 `proposedAction` 없이 `approvalGate.writeAllowed:false`를 반환하며,
 관측 가능한 능력·의미적 이유·정확한 방향에 대한 사람의 명시적 승인 뒤에만 쓴다.

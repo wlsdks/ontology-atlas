@@ -19,8 +19,11 @@ const moduleEdges = [
     to: 'elements/src/x',
     count: 1,
     kindCounts: { static: 1 },
+    sourceRoleCounts: { production: 1, test: 0, unknown: 0 },
+    importUsageCounts: { value: 1, type_only: 0, unknown: 0 },
+    productValueCount: 1,
     evidence: [
-      { from: 'src/features/a/index.ts', to: 'src/entities/x/index.ts', kind: 'static' },
+      { from: 'src/features/a/index.ts', to: 'src/entities/x/index.ts', kind: 'static', sourceRole: 'production', importUsage: 'value' },
     ],
     evidenceLimited: false,
   }, // code-only → semantic review candidate, never an executable write
@@ -56,7 +59,7 @@ test('reconcileImportEdges — three buckets, depends_on only', () => {
   assert.equal(miss.to, 'elements/src/x');
   assert.equal(miss.proposedAction, undefined);
   assert.deepEqual(miss.sourceEvidence, [
-    { from: 'src/features/a/index.ts', to: 'src/entities/x/index.ts', kind: 'static' },
+    { from: 'src/features/a/index.ts', to: 'src/entities/x/index.ts', kind: 'static', sourceRole: 'production', importUsage: 'value' },
   ]);
   assert.equal(miss.sourceEvidenceLimited, false);
   assert.deepEqual(miss.review, {
@@ -72,6 +75,48 @@ test('reconcileImportEdges — three buckets, depends_on only', () => {
     r.inVaultNotInCode.map((e) => `${e.from}→${e.to}`).sort(),
     ['capabilities/a→capabilities/c'],
   );
+});
+
+test('test-only type evidence is retained but is not eligible for a product dependency approval question', () => {
+  const r = reconcileImportEdges({
+    moduleEdges: [{
+      from: 'capabilities/a',
+      to: 'capabilities/b',
+      count: 1,
+      kindCounts: { static: 1 },
+      sourceRoleCounts: { production: 0, test: 1, unknown: 0 },
+      importUsageCounts: { value: 0, type_only: 1, unknown: 0 },
+      productValueCount: 0,
+      evidence: [{
+        from: 'src/features/a/index.test.ts',
+        to: 'src/features/b/index.ts',
+        kind: 'static',
+        sourceRole: 'test',
+        importUsage: 'type_only',
+      }],
+      evidenceLimited: false,
+    }],
+    compiledEdges: [],
+    aliasToSlug: new Map(),
+    nodeSlugs: new Set(['capabilities/a', 'capabilities/b']),
+  });
+
+  assert.equal(r.inCodeMissingFromVault.length, 1, 'test evidence stays visible');
+  assert.deepEqual(r.inCodeMissingFromVault[0].evidenceQualification, {
+    basis: 'whole_module_edge',
+    sourceRoleCounts: { production: 0, test: 1, unknown: 0 },
+    importUsageCounts: { value: 0, type_only: 1, unknown: 0 },
+    productValueCount: 0,
+    status: 'product_value_not_observed',
+  });
+
+  const packet = buildNextImportRelationReview(r);
+  assert.equal(
+    packet.decision.questionEligibility,
+    'additional_product_meaning_evidence_required',
+  );
+  assert.match(packet.decision.ask, /do not ask.*approve.*depends_on.*import alone/i);
+  assert.equal(packet.writeAllowed, false);
 });
 
 test('reconcileImportEdges — accepts aliasToSlug as plain object too', () => {
@@ -124,8 +169,22 @@ test('reconcileImportEdges — empty inputs are safe', () => {
 test('reconcileImportEdges — nodeSlugs splits reviewable vs endpoint-absent without making either executable', () => {
   const r = reconcileImportEdges({
     moduleEdges: [
-      { from: 'capabilities/a', to: 'capabilities/b', count: 2 }, // both real nodes → reviewable
-      { from: 'capabilities/a', to: 'capabilities/[locale]', count: 9 }, // to is not a node → endpoint-absent
+      {
+        from: 'capabilities/a',
+        to: 'capabilities/b',
+        count: 2,
+        sourceRoleCounts: { production: 2, test: 0, unknown: 0 },
+        importUsageCounts: { value: 2, type_only: 0, unknown: 0 },
+        productValueCount: 2,
+      }, // both real nodes → reviewable
+      {
+        from: 'capabilities/a',
+        to: 'capabilities/[locale]',
+        count: 9,
+        sourceRoleCounts: { production: 9, test: 0, unknown: 0 },
+        importUsageCounts: { value: 9, type_only: 0, unknown: 0 },
+        productValueCount: 9,
+      }, // to is not a node → endpoint-absent
     ],
     compiledEdges: [],
     aliasToSlug: new Map(),
@@ -171,6 +230,13 @@ test('buildNextImportRelationReview — returns one non-executable review packet
           { from: 'src/a.ts', to: 'src/b.ts', kind: 'static' },
         ],
         sourceEvidenceLimited: false,
+        evidenceQualification: {
+          basis: 'whole_module_edge',
+          sourceRoleCounts: { production: 3, test: 0, unknown: 0 },
+          importUsageCounts: { value: 3, type_only: 0, unknown: 0 },
+          productValueCount: 3,
+          status: 'product_value_observed',
+        },
         review: {
           status: 'rationale_review_required',
           writeAllowed: false,
@@ -207,6 +273,13 @@ test('buildNextImportRelationReview — returns one non-executable review packet
     importCount: 3,
     sourceEvidence: [{ from: 'src/a.ts', to: 'src/b.ts', kind: 'static' }],
     sourceEvidenceLimited: false,
+    evidenceQualification: {
+      basis: 'whole_module_edge',
+      sourceRoleCounts: { production: 3, test: 0, unknown: 0 },
+      importUsageCounts: { value: 3, type_only: 0, unknown: 0 },
+      productValueCount: 3,
+      status: 'product_value_observed',
+    },
   });
   assert.deepEqual(first.nextCalls, [
     {

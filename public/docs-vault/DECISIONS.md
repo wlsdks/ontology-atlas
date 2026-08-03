@@ -42,6 +42,64 @@
 
 ---
 
+## 2026-08-04 — import 승인 질문은 제품 코드의 값 사용 근거가 있을 때만 자격을 얻는다
+
+### 먼저 — 세 줄
+
+- **정한 것**: import 근거를 제품/테스트와 값/타입 전용으로 나누고, 전체 근거 중
+  제품 코드의 값 사용이 한 건 이상 있을 때만 제품 `depends_on` 승인 질문으로 넘긴다.
+- **네 말과 다르게 한 것**: 테스트 근거를 삭제하거나 뒤로 보내지 않고, 자동 승인·
+  자동 거절·confidence도 만들지 않는다.
+- **네가 할 일**: 없음 — 실제 dogfood 관계는 후보별 근거와 의미 이유를 따로 보여 준
+  뒤 명시적 승인 전까지 쓰지 않는다.
+
+**소집**: PO 카운슬 5인 전원(근거·결·지킴이·해자·지렛대), 독립 1라운드 + 상호
+반박 1라운드 · **트리거**: 공개 MCP 응답 계약 변경. source stdio로 전체 queue를
+순회했더니 180개 후보/472개 import 중 139개 production-only, 5개 test-only, 36개
+mixed였고 두 번째 후보가 test-only + `import type` 한 건뿐이었다. · **루브릭**:
+24/24 (치명적 0: 없음).
+
+**선행 결정 관계**: 바로 아래 세 기록 — import는 자동 승인 관계가 아님, 영향은 근거
+자격을 먼저 말함, 한 번에 승인 가능한 질문 한 건 — 은 모두 유효하다. 이번 결정은
+그 packet이 정확한 파일 경로는 보여 주면서도 파일 역할과 타입 전용 여부를 구조화하지
+않아 매번 경로를 임의 해석하거나 소스를 다시 열게 하던 공백만 닫는다. 실제 오승인이
+이미 관측됐다고 주장하지 않는다.
+
+**결정**: 기존 `infer_imports`와 canonical cursor 순서를 유지한다. 모든 file edge에
+결정적 path-convention `sourceRole: production|test|unknown`과 명시 구문 기반
+`importUsage: value|type_only|unknown`을 붙인다. `value`는 “명시적 type-only가 아님”이지
+runtime 실행을 주장하지 않는다. module edge는 bounded receipt가 아니라 전체 edge에서
+`sourceRoleCounts`, `importUsageCounts`, 두 차원의 교집합인 `productValueCount`를 계산한다.
+`reviewMode:"next"` packet은 같은 qualification을 내고, `productValueCount > 0`일 때만
+`eligible_after_semantic_review`다. 0이면 test/type 근거를 숨기지 않되 그 import만으로
+제품 `depends_on` 승인을 묻지 않고 별도 product meaning evidence를 요구한다. mixed
+receipt는 product-value 근거를 bounded sample에서 먼저 보여 준다. 그 뒤에도 양쪽 개념,
+관찰 가능한 능력, 비어 있지 않은 why, 사람의 명시적 승인은 그대로 필요하다.
+
+**적용 규칙**: **근거 자격 우선, 의미 순위 금지 + 합집합 금지**. IN — additive
+provenance/whole-edge count/joint count/질문 자격, strict schema와 verifier, source·bundled
+stdio parity, 승인 전 0-byte write. OUT — 후보 삭제·재정렬, 새 도구/UI/route/vault schema,
+자동 rationale/승인/쓰기, LLM confidence, 관계 receipt 영속화. JS/TS의 명시적
+`import type`/`export type`와 Python의 명시적 `TYPE_CHECKING` guard 안 import만
+type-only로 닫고, 정적 스캐너가 runtime을 안다고 말하지 않는다. appetite는 구현
+0.5일 + 검증 0.5일, 총 1일이다.
+
+**서명**: stark (소유자 요청에 따른 실행)
+
+**기록된 반대**: exact `.test.ts` 경로가 이미 보이고 test-only는 5/180뿐이므로 fresh
+agent가 추가 source read 없이 정확히 보류할 수 있다면, path classifier와 영구 public
+schema 비용만 늘어난다. 또한 canonical 순서를 보존하면 test-only 후보를 여는 마찰은
+남는다.
+**반증 조건**: 서로 다른 fresh Atlas-only agent 3/3이 기존 packet만으로 test-only와
+mixed를 두 호출 안에 정확히 구분하고 원본을 다시 열지 않거나, 새 qualification 뒤에도
+재탐색·잘못 프레이밍된 질문이 줄지 않거나, 실제 repo 관례에서 `unknown`/오분류가
+반복되면 schema 확장을 되돌리고 instructions-only 경계로 축소한다. 반대로 표지가 있어도
+test-only를 반복해서 열어 검토 비용이 남는 관측이 생길 때만 별도 priority 계약을 다시
+검토한다.
+**재검토**: source stdio, 설치 앱 bundle stdio, fresh FDE trial에서 위 관측이 생길 때.
+
+**상태**: 유효
+
 ## 2026-08-04 — import 후보의 첫 출력은 180개 목록이 아니라 승인 가능한 관계 질문 한 건이다
 
 ### 먼저 — 세 줄

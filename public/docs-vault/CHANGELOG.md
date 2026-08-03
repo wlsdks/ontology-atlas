@@ -7,6 +7,20 @@
 
 ---
 
+## 2026-08-04 — 테스트 import를 제품 의존 승인 질문으로 가장하지 않는다
+
+MCP `infer_imports`가 각 파일 근거의 `sourceRole`(production/test/unknown)과
+`importUsage`(value/type_only/unknown)를 표시한다. module edge와 한 건짜리 review packet은
+보이는 최대 5개 sample이 아니라 전체 import에서 역할·용도 수와 두 조건의 교집합인
+`productValueCount`를 계산한다. JS/TS의 명시적 type import와 Python의 명시적
+`TYPE_CHECKING` guard 안 import는 type-only다. `value`는 그 밖의 정적 import라는
+뜻이며 runtime 실행을 주장하지 않는다.
+
+제품 코드의 값 사용 근거가 0건이면 테스트·타입 근거는 숨기지 않지만, 그 import만으로
+제품 `depends_on` 승인을 묻지 않고 별도 제품 의미 근거를 요구한다. 기존 canonical
+순서, 한 질문씩 검토, `writeAllowed:false`, 의미 이유와 사람 승인 뒤 한 건 쓰기 계약은
+그대로다.
+
 ## 2026-08-04 — import 후보를 한 건씩 의미 검토한다
 
 MCP `infer_imports({ reviewMode: "next" })`가 전체 import 그래프 대신 정확히 한 건의

@@ -76,7 +76,9 @@ import {
   inferImportsFailure,
   importModuleEdgeKindOutputSummary,
   IMPORT_EDGE_KIND_VALUES,
+  IMPORT_SOURCE_ROLE_VALUES,
   IMPORT_UNRESOLVED_REASON_VALUES,
+  IMPORT_USAGE_VALUES,
   initializeInstructionsFailure,
   listConceptsFailure,
   listKindsFailure,
@@ -1858,11 +1860,13 @@ describe('verify.mjs first-contact gates', () => {
               type: 'array',
               items: {
                 type: 'object',
-                required: ['from', 'to', 'kind'],
+                required: ['from', 'to', 'kind', 'sourceRole', 'importUsage'],
                 properties: {
                   from: { type: 'string' },
                   to: { type: 'string' },
                   kind: { enum: IMPORT_EDGE_KIND_VALUES },
+                  sourceRole: { enum: IMPORT_SOURCE_ROLE_VALUES },
+                  importUsage: { enum: IMPORT_USAGE_VALUES },
                 },
                 additionalProperties: false,
               },
@@ -1896,7 +1900,17 @@ describe('verify.mjs first-contact gates', () => {
               type: 'array',
               items: {
                 type: 'object',
-                required: ['from', 'to', 'count', 'kindCounts', 'evidence', 'evidenceLimited'],
+                required: [
+                  'from',
+                  'to',
+                  'count',
+                  'kindCounts',
+                  'sourceRoleCounts',
+                  'importUsageCounts',
+                  'productValueCount',
+                  'evidence',
+                  'evidenceLimited',
+                ],
                 properties: {
                   from: { type: 'string' },
                   to: { type: 'string' },
@@ -1911,16 +1925,35 @@ describe('verify.mjs first-contact gates', () => {
                     additionalProperties: false,
                     minProperties: 1,
                   },
+                  sourceRoleCounts: {
+                    type: 'object',
+                    properties: Object.fromEntries(
+                      IMPORT_SOURCE_ROLE_VALUES.map((role) => [role, { type: 'integer', minimum: 0 }]),
+                    ),
+                    required: IMPORT_SOURCE_ROLE_VALUES,
+                    additionalProperties: false,
+                  },
+                  importUsageCounts: {
+                    type: 'object',
+                    properties: Object.fromEntries(
+                      IMPORT_USAGE_VALUES.map((usage) => [usage, { type: 'integer', minimum: 0 }]),
+                    ),
+                    required: IMPORT_USAGE_VALUES,
+                    additionalProperties: false,
+                  },
+                  productValueCount: { type: 'integer', minimum: 0 },
                   evidence: {
                     type: 'array',
                     maxItems: 5,
                     items: {
                       type: 'object',
-                      required: ['from', 'to', 'kind'],
+                      required: ['from', 'to', 'kind', 'sourceRole', 'importUsage'],
                       properties: {
                         from: { type: 'string' },
                         to: { type: 'string' },
                         kind: { enum: IMPORT_EDGE_KIND_VALUES },
+                        sourceRole: { enum: IMPORT_SOURCE_ROLE_VALUES },
+                        importUsage: { enum: IMPORT_USAGE_VALUES },
                       },
                       additionalProperties: false,
                     },
@@ -1950,6 +1983,41 @@ describe('verify.mjs first-contact gates', () => {
               ],
               properties: {
                 writeAllowed: { enum: [false] },
+                candidate: {
+                  type: 'object',
+                  required: [
+                    'from',
+                    'to',
+                    'relationType',
+                    'importCount',
+                    'sourceEvidence',
+                    'sourceEvidenceLimited',
+                    'evidenceQualification',
+                  ],
+                  properties: {
+                    evidenceQualification: {
+                      type: 'object',
+                      required: [
+                        'basis',
+                        'sourceRoleCounts',
+                        'importUsageCounts',
+                        'productValueCount',
+                        'status',
+                      ],
+                    },
+                  },
+                },
+                decision: {
+                  type: 'object',
+                  properties: {
+                    questionEligibility: {
+                      enum: [
+                        'eligible_after_semantic_review',
+                        'additional_product_meaning_evidence_required',
+                      ],
+                    },
+                  },
+                },
                 cursor: {
                   type: 'object',
                   required: [
@@ -3661,6 +3729,28 @@ describe('verify.mjs first-contact gates', () => {
       'infer_imports outputSchema moduleEdges kindCounts drift',
     );
     assert.equal(
+      toolsListSchemaFailure(withInferImportsTool({
+        ...inferImportsTool,
+        outputSchema: {
+          ...inferImportsTool.outputSchema,
+          properties: {
+            ...inferImportsTool.outputSchema.properties,
+            moduleEdges: {
+              ...inferImportsTool.outputSchema.properties.moduleEdges,
+              items: {
+                ...inferImportsTool.outputSchema.properties.moduleEdges.items,
+                properties: {
+                  ...inferImportsTool.outputSchema.properties.moduleEdges.items.properties,
+                  productValueCount: { type: 'integer', minimum: 1 },
+                },
+              },
+            },
+          },
+        },
+      })),
+      'infer_imports outputSchema moduleEdges evidence qualification drift',
+    );
+    assert.equal(
       toolsListSchemaFailure([
         ...tools.filter((tool) => tool.name !== 'infer_imports'),
         {
@@ -5195,7 +5285,7 @@ describe('verify.mjs first-contact gates', () => {
     try {
       const result = spawnSync(
         process.execPath,
-        [VERIFY_SCRIPT, root, '--timeout-ms', '3000'],
+        [VERIFY_SCRIPT, root, '--timeout-ms', '15000'],
         { cwd: join(__dirname, '..'), encoding: 'utf8' },
       );
 
@@ -5212,6 +5302,9 @@ describe('verify.mjs first-contact gates', () => {
       assert.match(result.stdout, /list_concepts — vault total 0 nodes/);
       assert.match(result.stdout, /verify vault has 0 ontology nodes/);
       assert.match(result.stdout, /Point verify at a populated ontology vault/);
+      assert.doesNotMatch(result.stdout, /verify timed out/);
+      assert.doesNotMatch(result.stdout, /tools\/list \d+\/\d+/);
+      assert.doesNotMatch(result.stdout, /strict arguments —/);
       assert.doesNotMatch(result.stdout, /find_evidence response missing match kind/);
     } finally {
       rmSync(root, { recursive: true, force: true });
@@ -8128,10 +8221,20 @@ describe('verify.mjs first-contact gates', () => {
       inferImportsFailure({
         rootPath: '/repo',
         filesScanned: 1,
-        edges: [{ from: 'src/a.ts', to: 'src/b.ts', kind: 'static' }],
+        edges: [{ from: 'src/a.ts', to: 'src/b.ts', kind: 'static', sourceRole: 'production', importUsage: 'value' }],
         externalImports: [{ from: 'src/a.ts', spec: 'react' }],
         unresolved: [{ from: 'src/a.ts', spec: '@/missing', reason: 'alias-not-found' }],
-        moduleEdges: [{ from: 'capabilities/a', to: 'capabilities/b', count: 1, kindCounts: { static: 1 } }],
+        moduleEdges: [{
+          from: 'capabilities/a',
+          to: 'capabilities/b',
+          count: 1,
+          kindCounts: { static: 1 },
+          sourceRoleCounts: { production: 1, test: 0, unknown: 0 },
+          importUsageCounts: { value: 1, type_only: 0, unknown: 0 },
+          productValueCount: 1,
+          evidence: [{ from: 'src/a.ts', to: 'src/b.ts', kind: 'static', sourceRole: 'production', importUsage: 'value' }],
+          evidenceLimited: false,
+        }],
       }),
       null,
     );
@@ -8630,6 +8733,27 @@ describe('verify.mjs first-contact gates', () => {
     assert.equal(
       inferImportsFailure({ rootPath: '/repo', filesScanned: 1, edges: [], externalImports: [], unresolved: [], moduleEdges: [{ from: 'capabilities/a', to: 'capabilities/b', count: 1, kindCounts: { unknown: 1 } }] }),
       'infer_imports response malformed module edge kindCounts at index 0',
+    );
+    assert.equal(
+      inferImportsFailure({
+        rootPath: '/repo',
+        filesScanned: 1,
+        edges: [],
+        externalImports: [],
+        unresolved: [],
+        moduleEdges: [{
+          from: 'capabilities/a',
+          to: 'capabilities/b',
+          count: 1,
+          kindCounts: { static: 1 },
+          sourceRoleCounts: { production: 0, test: 1, unknown: 0 },
+          importUsageCounts: { value: 0, type_only: 1, unknown: 0 },
+          productValueCount: 1,
+          evidence: [],
+          evidenceLimited: true,
+        }],
+      }),
+      'infer_imports response impossible productValueCount at index 0',
     );
   });
 

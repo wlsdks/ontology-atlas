@@ -637,13 +637,13 @@ await test("tools/list — 단일 도구 description 이 batch 짝을 cross-refe
     assert.deepEqual(inferImports?.outputSchema?.oneOf?.[1]?.required, ["contract", "scanSummary", "reconciliationSummary", "reviewQueue", "nextReview"]);
     assert.equal(inferImports?.outputSchema?.additionalProperties, false);
     assert.equal(inferImports?.outputSchema?.properties?.filesScanned?.type, "integer");
-    assert.deepEqual(inferImports?.outputSchema?.properties?.edges?.items?.required, ["from", "to", "kind"]);
+    assert.deepEqual(inferImports?.outputSchema?.properties?.edges?.items?.required, ["from", "to", "kind", "sourceRole", "importUsage"]);
     assert.equal(inferImports?.outputSchema?.properties?.edges?.items?.additionalProperties, false);
     assert.deepEqual(inferImports?.outputSchema?.properties?.edges?.items?.properties?.kind?.enum, IMPORT_EDGE_KIND_VALUES);
     assert.equal(inferImports?.outputSchema?.properties?.externalImports?.items?.additionalProperties, false);
     assert.deepEqual(inferImports?.outputSchema?.properties?.unresolved?.items?.properties?.reason?.enum, IMPORT_UNRESOLVED_REASON_VALUES);
     assert.equal(inferImports?.outputSchema?.properties?.unresolved?.items?.additionalProperties, false);
-    assert.deepEqual(inferImports?.outputSchema?.properties?.moduleEdges?.items?.required, ["from", "to", "count", "kindCounts", "evidence", "evidenceLimited"]);
+    assert.deepEqual(inferImports?.outputSchema?.properties?.moduleEdges?.items?.required, ["from", "to", "count", "kindCounts", "sourceRoleCounts", "importUsageCounts", "productValueCount", "evidence", "evidenceLimited"]);
     assert.equal(inferImports?.outputSchema?.properties?.moduleEdges?.items?.additionalProperties, false);
     assert.equal(inferImports?.outputSchema?.properties?.moduleEdges?.items?.properties?.count?.minimum, 1);
     const kindCountsSchema = inferImports?.outputSchema?.properties?.moduleEdges?.items?.properties?.kindCounts;
@@ -654,11 +654,19 @@ await test("tools/list — 단일 도구 description 이 batch 짝을 cross-refe
     assert.equal(kindCountsSchema?.properties?.static?.minimum, 1);
     const moduleEvidenceSchema = inferImports?.outputSchema?.properties?.moduleEdges?.items?.properties?.evidence;
     assert.equal(moduleEvidenceSchema?.maxItems, 5);
-    assert.deepEqual(moduleEvidenceSchema?.items?.required, ["from", "to", "kind"]);
+    assert.deepEqual(moduleEvidenceSchema?.items?.required, ["from", "to", "kind", "sourceRole", "importUsage"]);
     assert.equal(moduleEvidenceSchema?.items?.additionalProperties, false);
     assert.equal(inferImports?.outputSchema?.properties?.moduleEdges?.items?.properties?.evidenceLimited?.type, "boolean");
     assert.deepEqual(inferImports?.outputSchema?.properties?.contract?.enum, ["inferImportsReview:v1"]);
     assert.deepEqual(inferImports?.outputSchema?.properties?.nextReview?.properties?.writeAllowed?.enum, [false]);
+    assert.deepEqual(
+      inferImports?.outputSchema?.properties?.nextReview?.properties?.candidate?.properties?.evidenceQualification?.required,
+      ["basis", "sourceRoleCounts", "importUsageCounts", "productValueCount", "status"],
+    );
+    assert.deepEqual(
+      inferImports?.outputSchema?.properties?.nextReview?.properties?.decision?.properties?.questionEligibility?.enum,
+      ["eligible_after_semantic_review", "additional_product_meaning_evidence_required"],
+    );
     assert.deepEqual(inferImports?.outputSchema?.properties?.nextReview?.properties?.cursor?.required, ["afterReviewId", "total", "remaining", "hasMore", "nextAfterReviewId"]);
     assert.match(
       inferImports?.description ?? "",
@@ -2369,6 +2377,44 @@ await test("infer_imports reviewMode next — one bounded non-writing relation r
     assert.notEqual(second.nextReview.reviewId, first.nextReview.reviewId);
     assert.equal(second.nextReview.cursor.hasMore, false);
     assert.deepEqual(readReviewVault(), before, "cursor reads must remain side-effect free");
+  } finally {
+    rmSync(vaultRoot, { recursive: true, force: true });
+    rmSync(repoRoot, { recursive: true, force: true });
+  }
+});
+
+await test("infer_imports reviewMode next — test-only type evidence stays visible without a product dependency approval question", async () => {
+  const vaultRoot = makeVault([
+    { slug: "capabilities/a", content: "---\nkind: capability\ntitle: A\n---\n\nA product ability.\n" },
+    { slug: "capabilities/b", content: "---\nkind: capability\ntitle: B\n---\n\nA supporting ability.\n" },
+  ]);
+  const repoRoot = mkdtempSync(join(tmpdir(), "ontology-atlas-infer-test-scope-"));
+  try {
+    mkdirSync(join(repoRoot, "src", "features", "a"), { recursive: true });
+    mkdirSync(join(repoRoot, "src", "features", "b"), { recursive: true });
+    writeFileSync(
+      join(repoRoot, "src", "features", "a", "index.test.ts"),
+      'import type { B } from "../b/index";\nexport const fixture: B = { ok: true };\n',
+      "utf-8",
+    );
+    writeFileSync(
+      join(repoRoot, "src", "features", "b", "index.ts"),
+      'export type B = { ok: boolean };\n',
+      "utf-8",
+    );
+
+    const { responses } = await rpc(vaultRoot, [
+      ...INIT_REQUESTS,
+      callTool(2, "infer_imports", { rootPath: repoRoot, reviewMode: "next" }),
+    ]);
+    const result = getCallParsed(responses, 2);
+    assert.equal(result.nextReview.candidate.evidenceQualification.status, "product_value_not_observed");
+    assert.equal(result.nextReview.candidate.evidenceQualification.productValueCount, 0);
+    assert.equal(result.nextReview.candidate.sourceEvidence[0].sourceRole, "test");
+    assert.equal(result.nextReview.candidate.sourceEvidence[0].importUsage, "type_only");
+    assert.equal(result.nextReview.decision.questionEligibility, "additional_product_meaning_evidence_required");
+    assert.match(result.nextReview.decision.ask, /do not ask.*approve.*depends_on.*import alone/i);
+    assert.equal(result.nextReview.writeAllowed, false);
   } finally {
     rmSync(vaultRoot, { recursive: true, force: true });
     rmSync(repoRoot, { recursive: true, force: true });
