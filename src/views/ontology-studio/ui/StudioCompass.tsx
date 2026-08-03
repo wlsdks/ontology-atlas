@@ -1436,7 +1436,7 @@ export function StudioCompass(props: StudioCompassProps) {
             <span
               aria-hidden
               data-testid="studio-commit-converge"
-              className="studio-summary-converge pointer-events-none absolute right-[128px] top-1/2 z-[7] -translate-y-1/2 whitespace-nowrap rounded-chip border border-[color:var(--color-indigo-line-a32)] bg-[color:var(--color-indigo-a12)] px-2 py-1 text-label font-medium text-[color:var(--color-indigo-accent)]"
+              className="studio-summary-converge pointer-events-none absolute right-[128px] top-1/2 z-[7] -translate-y-1/2 whitespace-nowrap rounded-chip border border-[color:var(--color-indigo-line-a32)] bg-[color:var(--color-indigo-a12)] px-2 py-1 text-label font-medium text-[color:var(--color-indigo-text-soft)]"
               style={
                 {
                   "--studio-converge-x": "104px",

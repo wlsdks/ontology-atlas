@@ -60,11 +60,16 @@ const BASES = {
  * 올리려면 이 목록을 넓히고 아래 라이선스로 증명해야 한다.
  */
 const TINTS = {
+  "indigo-a06": cssToken(css, "--color-indigo-a06"),
   "indigo-a08": cssToken(css, "--color-indigo-a08"),
   "indigo-a10": cssToken(css, "--color-indigo-a10"),
+  "indigo-a12": cssToken(css, "--color-indigo-a12"),
   "indigo-a14": cssToken(css, "--color-indigo-a14"),
   "indigo-a16": cssToken(css, "--color-indigo-a16"),
+  "indigo-a18": cssToken(css, "--color-indigo-a18"),
   "indigo-a24": cssToken(css, "--color-indigo-a24"),
+  "indigo-a26": cssToken(css, "--color-indigo-a26"),
+  "indigo-a32": cssToken(css, "--color-indigo-a32"),
   "indigo-line-a13": cssToken(css, "--color-indigo-line-a13"),
   "amber-signal-a07": cssToken(css, "--color-amber-signal-a07"),
   "amber-signal-a16": cssToken(css, "--color-amber-signal-a16"),
@@ -170,12 +175,16 @@ describe("accent × 틴트 페어링 금지 — lint 가 못 보는 상수 우�
    * 그려지는지 모른다. 그래서 여기서는 **늘지 못하게만** 잠그고, 실제 판정은
    * 열린 표면을 여는 런타임 계기(`a11y-ratchet`)가 맡는다.
    *
-   * 감사가 지목한 1건은 이 라운드에서 갚았다(`StepRow`, 8.39:1). 남은 23은
-   * 「체계」의 잉크 라운드 몫이고, 그때 이 수가 내려간다.
+   * 감사가 지목한 1건은 그 라운드에서 갚았고(`StepRow`, 8.39:1), 남은 23은
+   * 2026-08-04 「체계」 잉크 라운드(열린 표면 오버레이 대비)가 전수 이관했다 —
+   * 잉크만 `--color-indigo-text-soft` 로 바뀌었고 치수·보더 변화 0. 이관 후
+   * 전 자리 합성 대비 6.30:1 이상(최저는 a32/elevated). 그래서 기준선이 0 이다:
+   * 이제 이 층의 라이선스는 「틴트를 지는 잉크는 soft」 하나이고, 새 위반은
+   * 첫 건부터 빨갛다. 탐지기 자체는 아래 프로브 시험이 계속 증명한다.
    */
   const HAND_WRITTEN_INK = /text-\[color:var\(--color-indigo-accent\)\]/;
   const HAND_WRITTEN_TINT = /bg-\[color:var\(--color-(indigo|amber)[a-z-]*-a\d+\)\]/;
-  const BASELINE_HAND_WRITTEN_ACCENT_ON_TINT = 23;
+  const BASELINE_HAND_WRITTEN_ACCENT_ON_TINT = 0;
 
   /** 여는 태그를 **중괄호 깊이**로 끊는다 — `onClick={() => …}` 의 `=>` 가 태그 끝이 아니다. */
   const openingTags = (src: string): string[] => {

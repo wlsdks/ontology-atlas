@@ -42,6 +42,71 @@
 
 ---
 
+## 2026-08-04 — 열린 표면이 확인한 잉크 램프의 경계: 값을 또 올리는 대신 라이선스를 명문화한다
+
+**맥락**: 신설된 열린 표면 접근성 계기(`tests/e2e/a11y-open-surfaces.spec.ts`)의
+첫 전수가 color-contrast 5건을 냈다 — 설정 시트의 표식 인디고 2건(#7170ff 가
+line-a13 틴트 합성 위 4.12 · 3.91)과 글로벌 검색의 quaternary 3건(#82828a 가
+panel+overlay-2 위 4.38, overlay-1∘indigo-a14∘panel 위 4.14, indigo-a14∘panel
+위 4.39). 잉크 램프 판정이라 「체계」석 소집(`design.md` "규격을 바꾸려면
+「체계」를 부른다"). 수치는 전부 `scripts/lib/contrast.mjs` 알파 합성 실측이다.
+
+**선행 결정 관계**: 2026-08-03 두 건을 **모두 유지한다**. ① 「`tone: 'accent'`
+는 잉크가 아니라 표식이었다」의 톤 분리(accent = 맨 바탕만, accentOnTint =
+어디서나)는 그대로이고, 이번 5건 중 인디고 2건은 그 결정이 만든 라이선스를
+**`tone` 을 안 지나는 손글씨 층이 어기고 있던 것**이다(같은 날 등재된 손글씨
+래칫 기준선 23). ② 「quaternary #787c84 → #82828a」의 값 상향도 유지 — 그
+결정이 산문으로 남겨 둔 경계("hover/선택 표면에서는 여전히 미달")를 이번
+계기가 처음으로 화면에서 확인했고, 그 산문을 규격으로 승격하는 것이 이번
+결정이다.
+
+**측정**: ① 오버레이 스택 전수 — quaternary 는 canvas 5.23 · panel 5.00 ·
+elevated 4.57 · canvas/panel+overlay-1 5.07/4.81 로 라이선스 안이고,
+panel+overlay-2 4.36 · elevated+overlay-1 4.35 · 모든 인디고 틴트 합성(a14/
+panel 4.40 등)에서 미달. tertiary 는 이번에 실측된 올라선 바탕 전부에서 통과
+(panel+overlay-2 5.12 · a14/panel 5.16 · overlay-1∘a14∘panel 4.86)하되
+elevated+overlay-3 급(4.02)에서는 못 넘는다. ② 손글씨 accent×틴트 전수 —
+23곳(18파일), 틴트 a06~a32 · line-a13. `--color-indigo-text-soft` 는 그 전
+조합에서 6.30:1 이상(최저 a32/elevated). ③ 위계 — tertiary/quaternary panel
+스텝비 1.17 로 선행 라운드 실측과 동일(수용 최소 1.06). ④ 같은-태그
+quaternary×올라선 배경 정적 페어링은 18쌍인데 다수가 `active ? 틴트+밝은 잉크
+: quaternary` **분기**라 런타임에 공존하지 않는 오탐이다.
+
+**결정 (자리별 치환 + 라이선스 명문화 — 값 이동 0)**:
+① 손글씨 accent×틴트 23곳 전수를 `--color-indigo-text-soft` 로 이관(잉크만,
+치수·보더 변화 0) — `accent-ink-contrast` 손글씨 래칫 기준선 23 → **0**.
+② 글로벌 검색 6자리(kbd + 선택 행 자식 5)를 tertiary 로 치환 — AtlasGitPanel
+2026-08-02 「누를 수 있는 행 위의 글자는 tertiary 부터」의 적용이다.
+③ 규격 승격: **quaternary 의 라이선스는 정지한 무채 바탕(맨 3단 +
+canvas/panel 위 overlay-1)까지. 올라선 바탕(overlay-2 이상 · elevated+overlay
+· 틴트 합성) 위의 글자는 tertiary 부터, tertiary 도 못 넘는 깊이(elevated+
+overlay-3 급)는 secondary 부터.** 새 토큰 0 · 새 hue 0 · 램프 값 이동 0.
+
+**게이트**: `tests/contract/quaternary-ink-surface.contract.test.ts` —
+globals.css 실값으로 라이선스 안/밖을 계산(경계가 실재한다는 반대 단언 포함 —
+빈 집합 공회전 금지, quaternary 가 올라선 바탕까지 통과하게 되는 날 이 경계를
+접는다) + 위계 스텝비 하한(1.06) + 글로벌 검색 자리 단언. 프로브 3종 적색
+확인(자리 되돌리기 · 토큰 #787c84 되돌리기 · 손글씨 위반 재도입).
+`a11y-open-surfaces` color-contrast 기준선 5 → **0**(target-size 2 는 겹침
+레이아웃이라 잉크 소관 밖 — 잔존). 정적 lint 룰은 **추가하지 않는다** — 판정이
+호스트 바탕 합성에 달렸고 같은-태그 휴리스틱은 분기 오탐(위 ④)이라 강제가
+아니라 소음이다.
+
+**진 대안 ① (잉크 재상향)**: quaternary 를 한 번 더 올려 overlay-2 까지
+통과시킨다. 진 이유: 오버레이 합성은 겹수 상한이 없어 한 값으로 전 깊이를 못
+이기고(elevated+overlay-3 은 tertiary 도 미달), 올릴수록 위계 간격(1.17 →
+1.06 미만)을 판다. **이 관점이 이겼다는 관측이 될 반증**: 라이선스 밖 표면
+치환이 반복돼 tertiary 치환 자리가 quaternary 총 소비처의 두 자릿수 %를
+넘는 날 — 그때는 램프 전체(4단 값 자체)의 재설계가 맞다.
+
+**진 대안 ② (표면별 잉크 scope 축 확장)**: `scope` 축으로 표면별 quaternary
+해를 둔다. 진 이유: 소비처 근거가 3자리뿐이라 축이 이름값을 못 하고(어제
+`white/35` 소비처-1 기각과 같은 문법), 지도 패널 램프와 이제 막 수렴한 값을
+다시 가른다. **반증**: 올라선 표면 전용 4단 위계가 실제로 필요한 화면(한
+표면 안에서 quaternary 급 위계가 tertiary 치환으로 뭉개졌다는 실측)이 나오는
+것.
+
+**서명 (accountable)**: design-system 석 (소유자 서명 대기)
 ## 2026-08-04 — Rust의 첫 근거는 의존 화살표가 아니라 feature 조건의 정본 provenance다
 
 ### 먼저 — 세 줄

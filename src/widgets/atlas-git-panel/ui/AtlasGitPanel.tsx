@@ -821,7 +821,7 @@ function PageHeader({
             행간은 아래 단 것이 그대로 남아, 아무도 고른 적 없는 비율이 만들어진다
             — 여기가 그랬다(23px 글자에 title 짝인 24px 행간, 1.04). */}
         <h1 className="flex items-center gap-2 text-title font-semibold tracking-[-0.005em] text-[color:var(--color-text-primary)] sm:text-display">
-          <HistoryIcon size={18} aria-hidden className="text-[color:var(--color-indigo-accent)]" />
+          <HistoryIcon size={18} aria-hidden className="text-[color:var(--color-indigo-text-soft)]" />
           {t("title")}
         </h1>
         {/* 구 `subtitle`("vault 의 변경을 git 스냅샷으로 남깁니다")은 12글자에
@@ -897,9 +897,9 @@ function ConnectLadder({ t, current }: { t: Translator; current: SetupStep }) {
                 // 11px 은 여유가 있고, 램프 스텝이라 새 값이 아니다.
                 "grid size-6 shrink-0 place-items-center rounded-full border text-label tabular-nums",
                 done
-                  ? "border-[color:var(--color-indigo-a46)] text-[color:var(--color-indigo-accent)]"
+                  ? "border-[color:var(--color-indigo-a46)] text-[color:var(--color-indigo-text-soft)]"
                   : active
-                    ? "border-[color:var(--color-indigo-accent)] bg-[color:var(--color-indigo-a16)] text-[color:var(--color-indigo-accent)]"
+                    ? "border-[color:var(--color-indigo-accent)] bg-[color:var(--color-indigo-a16)] text-[color:var(--color-indigo-text-soft)]"
                     : "border-[color:var(--color-border-soft)] text-[color:var(--color-text-quaternary)]",
               )}
             >
@@ -1146,7 +1146,7 @@ function SetupFrame({
         {/* 「기록」은 이 화면의 제목이 아니라 **어디에 있는지**다 — 목적지
             이름은 눈썹으로 내리고, h1 은 지금 해야 할 일이 가진다. */}
         <p className="flex items-center gap-2 text-label text-[color:var(--color-text-quaternary)]">
-          <HistoryIcon size={13} aria-hidden className="text-[color:var(--color-indigo-accent)]" />
+          <HistoryIcon size={13} aria-hidden className="text-[color:var(--color-indigo-text-soft)]" />
           {t("title")}
         </p>
         <div className="flex flex-col gap-2">
