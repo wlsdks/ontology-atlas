@@ -16,7 +16,7 @@ import {
   formatProjectSourceHandoff,
   type ProjectSourceView,
 } from "@/shared/lib/project-source-receipt";
-import { LastEditSubjectRow, MtimeConflictBadge, useToast } from "@/shared/ui";
+import { controlClass, LastEditSubjectRow, MtimeConflictBadge, useToast } from "@/shared/ui";
 import {
   NodeExplanationEdit,
   type NodeExplanationEditLabels,
@@ -251,7 +251,13 @@ export function FullDetailA1({
           <button
             type="button"
             onClick={onBackToMap}
-            className="text-[color:var(--topology-v2-panel-text-secondary)] transition-colors hover:text-[color:var(--topology-v2-panel-text-primary)]"
+            className={controlClass({
+              shape: "link",
+              scope: "panel",
+              tone: "secondary",
+              inline: true,
+              className: "hover:text-[color:var(--topology-v2-panel-text-primary)]",
+            })}
           >
             {t("backToMap")}
           </button>
@@ -344,7 +350,13 @@ export function FullDetailA1({
             aria-label={t("copyLink")}
             title={t("copyLink")}
             data-testid="full-detail-a1-copy-link"
-            className="rounded-chip p-1 text-[color:var(--topology-v2-panel-text-tertiary)] transition-colors hover:bg-[color:var(--topology-v2-panel-row-hover)] hover:text-[color:var(--topology-v2-panel-text-secondary)]"
+            className={controlClass({
+              shape: "icon",
+              size: "sm",
+              scope: "panel",
+              className:
+                "hover:bg-[color:var(--topology-v2-panel-row-hover)] hover:text-[color:var(--topology-v2-panel-text-secondary)]",
+            })}
           >
             <Link2 size={14} />
           </button>
@@ -353,7 +365,13 @@ export function FullDetailA1({
             onClick={onClose}
             aria-label={t("close")}
             data-testid="full-detail-a1-close"
-            className="rounded-chip p-1 text-[color:var(--topology-v2-panel-text-tertiary)] transition-colors hover:bg-[color:var(--topology-v2-panel-row-hover)] hover:text-[color:var(--topology-v2-panel-text-secondary)]"
+            className={controlClass({
+              shape: "icon",
+              size: "sm",
+              scope: "panel",
+              className:
+                "hover:bg-[color:var(--topology-v2-panel-row-hover)] hover:text-[color:var(--topology-v2-panel-text-secondary)]",
+            })}
           >
             <X size={16} />
           </button>

@@ -462,11 +462,12 @@ export function TopologyIndexPanel({
             aria-selected={!lensActive}
             data-testid="topology-index-segment-all"
             onClick={() => setLens("all")}
-            className={`min-w-0 rounded-[var(--chrome-radius-inner)] px-2 py-1 text-label transition-colors ${
-              !lensActive
-                ? "bg-[color:var(--color-indigo-a16)] text-[color:var(--topology-v2-panel-text-primary)]"
-                : "text-[color:var(--topology-v2-panel-text-tertiary)] hover:text-[color:var(--topology-v2-panel-text-primary)]"
-            }`}
+            className={controlClass({
+              shape: "segment",
+              scope: "panel",
+              active: !lensActive,
+              className: "min-w-0 hover:text-[color:var(--topology-v2-panel-text-primary)]",
+            })}
           >
             {labels.segmentAll}
           </button>
@@ -476,11 +477,13 @@ export function TopologyIndexPanel({
             aria-selected={lensActive}
             data-testid="topology-index-segment-recent"
             onClick={() => setLens("recent")}
-            className={`min-w-0 truncate rounded-[var(--chrome-radius-inner)] px-2 py-1 text-label transition-colors ${
-              lensActive
-                ? "bg-[color:var(--color-indigo-a16)] text-[color:var(--topology-v2-panel-text-primary)]"
-                : "text-[color:var(--topology-v2-panel-text-tertiary)] hover:text-[color:var(--topology-v2-panel-text-primary)]"
-            }`}
+            className={controlClass({
+              shape: "segment",
+              scope: "panel",
+              truncate: true,
+              active: lensActive,
+              className: "min-w-0 hover:text-[color:var(--topology-v2-panel-text-primary)]",
+            })}
           >
             {labels.segmentRecent}
           </button>
@@ -492,11 +495,13 @@ export function TopologyIndexPanel({
               aria-selected={humanLensActive}
               data-testid="topology-index-segment-human"
               onClick={() => setLens("human")}
-              className={`min-w-0 truncate rounded-[var(--chrome-radius-inner)] px-2 py-1 text-label transition-colors ${
-                humanLensActive
-                  ? "bg-[color:var(--color-indigo-a16)] text-[color:var(--topology-v2-panel-text-primary)]"
-                  : "text-[color:var(--topology-v2-panel-text-tertiary)] hover:text-[color:var(--topology-v2-panel-text-primary)]"
-              }`}
+              className={controlClass({
+                shape: "segment",
+                scope: "panel",
+                truncate: true,
+                active: humanLensActive,
+                className: "min-w-0 hover:text-[color:var(--topology-v2-panel-text-primary)]",
+              })}
             >
               {labels.segmentHuman}
             </button>

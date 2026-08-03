@@ -84,7 +84,12 @@ export function AgentScopeSheet({
           type="button"
           data-testid="agent-scope-accept"
           onClick={onAccept}
-          className="h-8 rounded-chip bg-[color:var(--color-indigo-brand)] px-3 text-label font-semibold tracking-label text-white transition-colors hover:bg-[color:var(--color-indigo-hover)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--color-indigo-accent)]"
+          className={controlClass({
+            tone: 'onAccent',
+            fixedHeight: true,
+            className:
+              'tracking-label hover:bg-[color:var(--color-indigo-hover)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--color-indigo-accent)]',
+          })}
         >
           {labels.accept}
         </button>

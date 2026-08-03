@@ -4631,11 +4631,14 @@ export function HomePage() {
                         onClick={() =>
                           setLocalGraphStack((stack) => stack.slice(0, idx + 1))
                         }
-                        className={`truncate text-body transition-colors ${
-                          idx === localGraphStack.length - 1
-                            ? 'text-[color:var(--color-text-primary)]'
-                            : 'text-[color:var(--color-text-tertiary)] hover:text-[color:var(--color-text-primary)]'
-                        }`}
+                        className={controlClass({
+                          shape: "link",
+                          size: "lg",
+                          inline: true,
+                          truncate: true,
+                          active: idx === localGraphStack.length - 1,
+                          className: "hover:text-[color:var(--color-text-primary)]",
+                        })}
                         title={slug}
                       >
                         {slug}

@@ -24,15 +24,51 @@ import {
  * 없어서 손으로 쓴» 자리에서 나왔다.
  */
 
-const SHAPES: ControlShape[] = ['chip', 'icon', 'row', 'pill', 'card', 'link', 'tile'];
+const SHAPES: ControlShape[] = ['chip', 'icon', 'row', 'pill', 'card', 'link', 'tile', 'segment'];
 const SIZES: ControlSize[] = ['sm', 'md', 'lg'];
-const TONES: ControlTone[] = ['default', 'muted', 'secondary', 'strong', 'accent', 'warning', 'danger', 'success'];
+const TONES: ControlTone[] = [
+  'default',
+  'muted',
+  'secondary',
+  'strong',
+  'accent',
+  'warning',
+  'danger',
+  'success',
+  'onAccent',
+];
+const SCOPES = ['app', 'panel'] as const;
+
+/**
+ * 값 층이 **읽어도 되는 토큰 네임스페이스**.
+ *
+ * 하나뿐이었다가 둘이 됐다. 늘린 이유는 취향이 아니라 실측이다 — 아래
+ * 「두 무채 램프는 실제로 다르다」가 두 램프의 값이 갈린다는 것을 `globals.css`
+ * 에서 직접 읽어 단언한다. 그 시험이 초록인 한 이 목록은 정당하고, 값이 같아지면
+ * 그 시험이 빨개져 **이 목록을 줄이라고 말한다**.
+ */
+const TOKEN_NAMESPACES = ['--color-', '--topology-v2-panel-text-'];
 
 /** `app/globals.css` 의 radius 램프 3단. 여기 없는 반경은 이탈이다. */
 const RADIUS_STEPS = ['chip', 'card', 'panel'];
 
 const all = (fn: (s: ControlShape, z: ControlSize, t: ControlTone, a: boolean) => void) => {
   for (const s of SHAPES) for (const z of SIZES) for (const t of TONES) for (const a of [true, false]) fn(s, z, t, a);
+};
+
+/** 위와 같은 전수에 `scope` 축을 더한 것. 새 축이 램프 밖으로 새지 않는지 볼 때 쓴다. */
+const allScoped = (fn: (cls: string, label: string) => void) => {
+  for (const s of SHAPES)
+    for (const z of SIZES)
+      for (const t of TONES)
+        for (const a of [true, false])
+          for (const sc of SCOPES)
+            for (const tr of [true, false])
+              for (const fh of [false, true, 'sm', 'md', 'lg'] as const)
+                fn(
+                  controlClass({ shape: s, size: z, tone: t, active: a, scope: sc, truncate: tr, fixedHeight: fh }),
+                  `${s}/${z}/${t}/${a}/${sc}/trunc=${tr}/fh=${fh}`,
+                );
 };
 
 describe('controlClass — 램프 밖 값을 낼 수 없다', () => {
@@ -84,8 +120,10 @@ describe('controlClass — 램프 밖 값을 낼 수 없다', () => {
       const cls = controlClass({ shape, size, tone, active });
       for (const c of cls.split(' ')) {
         if (/#[0-9a-f]{3,8}\b/i.test(c) || /rgba?\(/.test(c)) offenders.push(`${shape}: ${c}`);
-        // 색 유틸리티는 반드시 `var(--color-…)` 를 통과해야 한다.
-        if (/^(text|bg|border)-\[/.test(c) && !c.includes('var(--color-')) offenders.push(`${shape}: ${c}`);
+        // 색 유틸리티는 반드시 등재된 토큰 네임스페이스를 통과해야 한다.
+        if (/^(text|bg|border)-\[/.test(c) && !TOKEN_NAMESPACES.some((ns) => c.includes(`var(${ns}`))) {
+          offenders.push(`${shape}: ${c}`);
+        }
       }
     });
     expect(offenders, `토큰을 안 거친 색:\n${offenders.join('\n')}`).toEqual([]);
@@ -222,6 +260,235 @@ describe('controlClass — 모양이 실제로 서로 다르다', () => {
     // `cn()` 이 tailwind-merge 라 같은 축의 클래스는 뒤가 이긴다. 자리잡기만 넘기라는
     // 규율이 문서에만 있으면 안 지켜지므로, 최소한 «덧붙는다»는 계약은 못박는다.
     expect(controlClass({ shape: 'chip', className: 'absolute right-2' })).toContain('absolute');
+  });
+});
+
+/**
+ * 값 층의 구멍을 메운 축들 — **원장이 반복해서 센 것만** 들어왔다.
+ *
+ * 여기 있는 시험은 전부 「이 축이 실재하는 이유」를 잠근다. 축은 공짜가 아니다:
+ * 하나 늘 때마다 다음 사람이 고를 것이 늘고, 근거 없이 늘어난 축은 그 자체로
+ * 두 번째 시스템이 된다. 그래서 각 축마다 **근거가 사라지면 빨개지는** 시험을
+ * 하나씩 둔다.
+ */
+describe('controlClass — 여덟째 모양과 세 축', () => {
+  const GLOBALS = readFileSync(join(process.cwd(), 'app/globals.css'), 'utf8');
+  const cssVar = (name: string): string | undefined =>
+    new RegExp(`^\\s*${name}:\\s*([^;]+);`, 'm').exec(GLOBALS)?.[1].trim();
+
+  it('여덟째 모양은 보더가 없고 인셋이 있다 — 그 사이가 비어 있어서 생겼다', () => {
+    /*
+     * `chip`/`pill`/`card`/`tile` 은 보더가 필수라 이미 보더를 두른 상자 안에서
+     * 「상자 속 상자」가 되고, `link` 는 인셋이 0이라 세그먼트의 히트 영역이
+     * 사라진다. 그 둘 다 아니어야 이 모양이 존재할 이유가 있다.
+     */
+    for (const size of SIZES) {
+      const cls = controlClass({ shape: 'segment', size });
+      // ⚠️ 변형 접두(`disabled:hover:border-inherit`)를 걸러야 한다 — 안 거르면 이
+      // 시험이 **모든 모양에 대해** 빨개진다. 첫 실행이 실제로 그랬다.
+      const base = cls.split(' ').filter((c) => !c.includes(':') || c.startsWith('border-[color:'));
+      expect(base.join(' '), `segment/${size} 에 보더가 붙었다 — 상자 속 상자가 된다`).not.toMatch(
+        /(^| )border(-|$| )/,
+      );
+      expect(cls, `segment/${size} 에 좌우 인셋이 없다 — 그러면 link 와 같다`).toMatch(/\bpx-/);
+    }
+  });
+
+  it('세그먼트 반경은 `--chrome-radius-inner` 와 같은 값이다 — 별칭이라 픽셀이 안 바뀐다', () => {
+    /*
+     * 소비처 다섯이 `rounded-[var(--chrome-radius-inner)]` 를 쓰고 있었다. 옮겨도
+     * 되는 근거는 그 토큰이 `--radius-chip` 의 **별칭**이라는 사실 하나뿐이므로,
+     * 그 사실을 CSS 에서 직접 읽어 잠근다. 누가 `--chrome-radius-inner` 를 7px
+     * 로 갈라 놓으면 이 시험이 빨개지고, 그때는 옮긴 다섯 자리가 1px 틀어진다.
+     */
+    expect(
+      cssVar('--chrome-radius-inner'),
+      '`--chrome-radius-inner` 가 `--radius-chip` 의 별칭이 아니게 됐다 — segment 가 rounded-chip 을 쓰면 안 된다',
+    ).toBe('var(--radius-chip)');
+    expect(controlClass({ shape: 'segment' })).toContain('rounded-chip');
+  });
+
+  it('두 무채 램프는 실제로 값이 다르다 — 같아지면 `scope` 축은 폐기 대상이다', () => {
+    /*
+     * `scope` 축이 존재하는 **유일한** 근거다. 두 램프가 같은 값이 되는 날
+     * 이 축은 아무것도 안 하면서 고를 것만 늘리는 축이 되므로, 그날 이 시험이
+     * 빨개져 지우라고 말해야 한다.
+     */
+    const STEPS = ['primary', 'secondary', 'tertiary', 'quaternary'] as const;
+    const pairs: Array<[string, string]> = [];
+    for (const step of STEPS) {
+      const app = cssVar(`--color-text-${step}`);
+      const panel = cssVar(`--topology-v2-panel-text-${step}`);
+      expect(app, `--color-text-${step} 를 못 읽었다`).toBeTruthy();
+      expect(panel, `--topology-v2-panel-text-${step} 를 못 읽었다`).toBeTruthy();
+      pairs.push([app as string, panel as string]);
+    }
+    // 공회전 차단 — 4단을 다 못 읽었으면 아래 단언은 빈 집합을 통과한다.
+    expect(pairs.length, '두 램프의 단을 하나도 못 짝지었다').toBe(4);
+    /*
+     * ⚠️ 처음엔 「하나라도 다르면 통과」였고, `/gate-probe` 가 그게 **게이트가
+     * 아님**을 잡았다: 4단 중 하나를 같은 값으로 되돌려도 초록이었다. 축이
+     * 재매핑하는 단은 **넷 다** 각자 근거가 있어야 한다 — 한 단이 수렴하면 그
+     * 단의 컴파운드는 아무것도 안 하면서 자리만 차지한다.
+     */
+    const same = pairs
+      .map(([a, b], i) => (a === b ? `${STEPS[i]}: ${a}` : null))
+      .filter((x): x is string => x !== null);
+    expect(
+      same,
+      `두 무채 램프의 이 단이 같아졌다 — 그 단의 \`scope: 'panel'\` 컴파운드는 근거가 없다.\n` +
+        `수렴한 단을 값 층에서 지우거나(그 단은 tone 하나로 충분하다), 넷 다 수렴했으면 축 자체를 지워라.\n` +
+        same.join('\n'),
+    ).toEqual([]);
+  });
+
+  it('`scope: panel` 은 잉크만 바꾼다 — 바탕·보더로 새면 두 번째 채색 시스템이다', () => {
+    /*
+     * 이 축을 여는 대가는 「두 번째 램프를 값 층이 인정한다」는 것뿐이어야 한다.
+     * 패널 네임스페이스가 `bg-`/`border-` 로도 나가기 시작하면 그때는 진짜로
+     * 두 벌의 채색 시스템이 되고, 헌장 위반이다.
+     */
+    const offenders: string[] = [];
+    allScoped((cls, label) => {
+      for (const c of cls.split(' ')) {
+        if (!c.includes('--topology-v2-panel-text-')) continue;
+        if (!/^text-\[color:/.test(c)) offenders.push(`${label}: ${c}`);
+      }
+    });
+    expect(offenders, `패널 램프가 잉크 밖으로 샜다:\n${offenders.join('\n')}`).toEqual([]);
+  });
+
+  it('신호 3종과 인디고는 `scope` 를 안 탄다 — 뜻으로 정해지는 색은 바탕을 안 본다', () => {
+    for (const tone of ['accent', 'warning', 'danger', 'success'] as const) {
+      expect(
+        controlClass({ shape: 'chip', tone, scope: 'panel' }),
+        `${tone} 가 패널에서 다른 색이 됐다`,
+      ).toBe(controlClass({ shape: 'chip', tone, scope: 'app' }));
+    }
+  });
+
+  it('`scope` 가 실제로 무언가를 바꾼다 — 무채 4단은 패널에서 다른 잉크다', () => {
+    // 위 시험이 「안 바뀐다」만 보므로, 이 시험이 없으면 축을 통째로 no-op 으로
+    // 만들어도 둘 다 초록이다.
+    for (const tone of ['default', 'muted', 'secondary', 'strong'] as const) {
+      expect(
+        controlClass({ shape: 'chip', tone, scope: 'panel' }),
+        `${tone} 가 패널에서 그대로다 — scope 축이 공회전한다`,
+      ).not.toBe(controlClass({ shape: 'chip', tone, scope: 'app' }));
+    }
+  });
+
+  it('`truncate` 는 display 를 flex 밖으로 뺀다 — 안 그러면 `…` 가 안 그려진다', () => {
+    /*
+     * 실측: 같은 텍스트·같은 폭에서 `inline-block` 은 `…`, `inline-flex` 는
+     * 하드 클립. `truncate` 유틸리티만 얹는 것으로는 못 고친다.
+     */
+    for (const shape of SHAPES) {
+      const cls = controlClass({ shape, truncate: true });
+      expect(cls, `${shape}/truncate 에 truncate 가 없다`).toContain('truncate');
+      expect(cls, `${shape}/truncate 가 여전히 flex 다 — 말줄임이 하드 클립된다`).not.toMatch(
+        /(^| )(inline-)?flex( |$)/,
+      );
+      // 끄면 오늘 그대로다.
+      expect(controlClass({ shape, truncate: false })).toBe(controlClass({ shape }));
+    }
+  });
+
+  it('채움 톤은 바탕과 잉크를 한 쌍으로 내고 보더를 지운다', () => {
+    /*
+     * 잉크만 내면 소비처가 `bg-…` 를 계속 손으로 쓴다 = 모양을 className 으로
+     * 넘기는 것 = 층이 있으나 마나. 그래서 쌍으로 낸다.
+     */
+    for (const shape of SHAPES) {
+      const cls = controlClass({ shape, tone: 'onAccent' });
+      expect(cls, `${shape}/onAccent 에 채움이 없다`).toContain('bg-[color:var(--color-indigo-brand)]');
+      expect(cls, `${shape}/onAccent 에 전경 토큰이 없다`).toContain(
+        'text-[color:var(--color-text-on-accent)]',
+      );
+      expect(cls, `${shape}/onAccent 에 보더가 남았다 — 채운 주 동작은 테두리가 없다`).not.toMatch(
+        /border-\[color:/,
+      );
+    }
+    // 전경 토큰은 실재해야 한다. 없으면 브라우저가 색을 통째로 무시하고 상속색이
+    // 나오는데, 그건 화면에서 「조금 어두운 글자」로 보일 뿐 아무도 못 짚는다.
+    expect(cssVar('--color-text-on-accent'), '`--color-text-on-accent` 가 globals.css 에 없다').toBeTruthy();
+  });
+
+  it('고정 높이 3단은 `--control-h-*` 램프와 같은 값이다', () => {
+    /*
+     * 값을 손으로 등재하지 않는다 — CSS 에서 읽어 Tailwind 스텝(1 = 4px)으로
+     * 환산해 맞춘다. 램프가 움직이면 이 시험이 먼저 말한다.
+     */
+    const steps: Array<['sm' | 'md' | 'lg', string]> = [
+      ['sm', '--control-h-sm'],
+      ['md', '--control-h-md'],
+      ['lg', '--control-h-lg'],
+    ];
+    let checked = 0;
+    for (const [step, token] of steps) {
+      const px = Number(/^(\d+)px$/.exec(cssVar(token) ?? '')?.[1]);
+      expect(px, `${token} 를 px 로 못 읽었다`).toBeGreaterThan(0);
+      const cls = controlClass({ shape: 'chip', fixedHeight: step });
+      const tw = Number(/\bh-(\d+)\b/.exec(cls)?.[1]);
+      expect(tw * 4, `chip/fixedHeight=${step} 가 ${token}(${px}px) 와 다르다: h-${tw}`).toBe(px);
+      checked += 1;
+    }
+    expect(checked, '고정 높이 단을 하나도 못 쟀다').toBe(3);
+  });
+
+  it('`fixedHeight: true` 는 `md` 의 별칭이다 — 기존 소비처 출력이 안 바뀐다', () => {
+    for (const shape of SHAPES) {
+      expect(
+        controlClass({ shape, fixedHeight: true }),
+        `${shape} 에서 true 와 md 가 갈렸다 — 기존 소비처가 조용히 움직인다`,
+      ).toBe(controlClass({ shape, fixedHeight: 'md' }));
+    }
+  });
+
+  it('새 축 셋의 기본값은 오늘 출력과 바이트 동일하다 — 축을 더한 것이 회귀가 아니게', () => {
+    /*
+     * 244개가 이미 이 값들을 쓰고 있다. 기본값이 한 글자라도 움직이면 그
+     * 전부가 조용히 바뀐다 — 이 시험이 그 문을 잠근다.
+     */
+    for (const shape of SHAPES) {
+      for (const size of SIZES) {
+        for (const tone of TONES) {
+          const explicit = controlClass({
+            shape,
+            size,
+            tone,
+            scope: 'app',
+            truncate: false,
+          });
+          expect(controlClass({ shape, size, tone }), `${shape}/${size}/${tone} 의 기본값이 움직였다`).toBe(
+            explicit,
+          );
+        }
+      }
+    }
+  });
+
+  it('새 축을 다 켜도 램프 밖 값이 안 나온다 — 축은 구멍이지 뒷문이 아니다', () => {
+    const offenders: string[] = [];
+    let counted = 0;
+    allScoped((cls, label) => {
+      counted += 1;
+      for (const c of cls.split(' ')) {
+        if (/^(text|rounded|leading)-\[(?!color:)/.test(c) || /^(h|w|p[xy]?|gap)-\[/.test(c)) {
+          offenders.push(`${label}: ${c}`);
+        }
+        const m = /^text-([a-z-]+)$/.exec(c);
+        const ALIGNMENT = ['left', 'center', 'right', 'justify', 'start', 'end'];
+        if (m && !ALIGNMENT.includes(m[1]) && !TYPE_RAMP_STEPS.includes(m[1] as never)) {
+          offenders.push(`${label}: ${c}`);
+        }
+        const r = /^rounded-([a-z0-9-]+)$/.exec(c);
+        if (r && !RADIUS_STEPS.includes(r[1]) && r[1] !== 'full') offenders.push(`${label}: ${c}`);
+      }
+    });
+    // 공회전 차단 — 조합이 실제로 만들어졌는지.
+    expect(counted, '축 조합을 하나도 안 돌렸다').toBeGreaterThan(1000);
+    expect(offenders, `축을 켰더니 램프 밖으로 샜다:\n${offenders.slice(0, 20).join('\n')}`).toEqual([]);
   });
 });
 
