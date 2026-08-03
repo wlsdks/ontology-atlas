@@ -38,6 +38,13 @@ const PRESSABLE_PRIMITIVES = [
   'src/shared/ui/button.tsx',
   'src/shared/ui/chrome-chip.tsx',
   'src/shared/ui/chrome-tile.tsx',
+  /*
+   * `Chip`/`IconButton`/`RowButton` 은 자기 파일에 `disabled:` 를 안 쓴다 —
+   * **값 층(`control-class.ts`)에서 받는다.** 컴포넌트마다 챙기면 하나는 빠지고,
+   * 실제로 위 둘이 동시에 빠져 있었다. 그래서 등재 대상은 컴포넌트가 아니라
+   * 그 값을 내는 파일이다.
+   */
+  'src/shared/ui/control-class.ts',
 ] as const;
 
 describe('비활성 어포던스', () => {
