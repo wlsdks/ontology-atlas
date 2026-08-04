@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, type ReactNode } from 'react';
 import {
   Bot,
   BookOpen,
@@ -20,11 +20,9 @@ import {
   buildMcpConfigJson,
   buildOntologyStarterAgentVerifyPrompt,
   buildOntologyStarterJsonGateCommand,
-  buildVsCodeMcpDeeplink,
   ONTOLOGY_STARTER_AGENT_VERIFY_PROMPT,
   ONTOLOGY_STARTER_JSON_GATE_COMMAND,
   ONTOLOGY_POST_CHANGE_SYNC_LINES,
-  StepRow,
 } from '@/features/docs-vault-local';
 import { formatAgentPostChangeSyncPacket } from '@/shared/lib/ontology-tree';
 import type { VaultManifest } from '@/entities/docs-vault';
@@ -32,10 +30,13 @@ import type { AgentClientId } from '@/features/docs-vault-local';
 import { copyText } from '@/shared/lib/copy-text';
 import { controlClass } from '@/shared/ui/control-class';
 import { Chip } from '@/shared/ui/controls';
+import { Surface } from '@/shared/ui/surface';
 import { getTauriVaultRootPath } from '@/shared/lib/tauri-vault-fs';
 import type { LocalFsHandleRecord } from '@/entities/local-fs-handle';
 import type { AgentServerAvailability } from '@/shared/config';
 import { ATLAS_CLI } from '@/shared/config/cli-invocation';
+
+import { AgentSetupStep, type AgentSetupStepState } from './AgentSetupStep';
 
 /**
  * B2 병합 (feat/settings-vault-merge) — 이전 `VaultToolsMenu` (문서함 헤더
@@ -59,11 +60,17 @@ import { ATLAS_CLI } from '@/shared/config/cli-invocation';
  * 갈린다. 상수 하나로 묶어 그 갈림을 없앤다.
  */
 const NEUTRAL_COPY_CHIP =
-  'w-full justify-center border-[color:var(--color-divider)] bg-[color:var(--color-overlay-1)] hover:border-[color:var(--color-indigo-a46)] hover:text-[color:var(--color-text-primary)]';
+  'border-[color:var(--color-divider)] bg-[color:var(--color-overlay-1)] hover:border-[color:var(--color-indigo-a46)] hover:text-[color:var(--color-text-primary)]';
 
-/** 게이트 명령(검증이 통과했음을 알리는 초록) 복사 칩의 잉크. */
-const GATE_COPY_CHIP =
-  'w-full justify-center border-[color:var(--color-success-a28)] bg-[color:var(--color-success-a07)] hover:border-[color:var(--color-success-a42)] hover:bg-[color:var(--color-success-a11)]';
+/**
+ * 이 절의 **주 행동** 하나만 인디고 틴트를 받는다.
+ *
+ * 2026-08-04 이전엔 복사 칩 11개가 전부 전폭 32px 로 세로로 쌓여 있었다 —
+ * 「그룹의 주 행동」과 「그 옆의 보조」가 같은 무게라, 어느 것을 눌러야 하는지를
+ * 화면이 말해 주지 않았다. 폭도 다시 내용에 맡긴다(`w-full` 제거).
+ */
+const ACCENT_ACTION_CHIP =
+  'border-[color:var(--color-indigo-line-a35)] bg-[color:var(--color-indigo-a10)] hover:border-[color:var(--color-indigo-line-a54)] hover:bg-[color:var(--color-indigo-a16)]';
 
 function buildAgentVerifyCliCommand(vaultPath?: string | null): string {
   const target = vaultPath ? shellQuoteForPacket(vaultPath) : '.';
@@ -310,6 +317,15 @@ export function VaultAgentSetupPanel({
   // 두 표면이 어긋나지 않게 한다.
   const tc = useTranslations('agentConnect');
   const [advancedOpen, setAdvancedOpen] = useState(false);
+  /**
+   * 펼친 단계 — `null` 이면 **지금 할 일을 따라간다.**
+   *
+   * 파생값 하나로 두면 사용자가 3단계를 열어 놓고 1단계 버튼을 눌렀을 때 화면이
+   * 제멋대로 접힌다. 상태 하나로 두면 연결이 끝나도 1단계가 계속 열려 있다.
+   * 그래서 「따라가기(null)」와 「사용자가 골랐다(숫자)」를 구분한다 — `0` 은
+   * 「셋 다 접음」이다.
+   */
+  const [openStepOverride, setOpenStepOverride] = useState<number | null>(null);
   const [agentSetupBusy, setAgentSetupBusy] = useState(false);
   const [agentSetupError, setAgentSetupError] = useState<string | null>(null);
   const [agentPromptCopyState, setAgentPromptCopyState] = useState<
@@ -456,24 +472,26 @@ export function VaultAgentSetupPanel({
     : agentStatus.codexConfigValid === false
       ? 'invalid'
       : 'ready';
+  /**
+   * 파일 셋 — **역할 라벨을 뺐다** (2026-08-04). 「Claude Code · Cursor 연결 파일」
+   * 은 바로 옆의 도구 이름 + 경로 + 「연결 파일 상태」 묶음 제목이 이미 세 번
+   * 말하는 것이라, 넷째 진술이었다.
+   */
   const agentSetupFiles = [
     {
       key: 'mcpJson',
       validKey: 'mcpJsonValid',
       path: '.mcp.json',
-      label: t('agentSetup.mcpJson'),
     },
     {
       key: 'codexConfig',
       validKey: 'codexConfigValid',
       path: '.codex/config.toml',
-      label: t('agentSetup.codexConfig'),
     },
     {
       key: 'mcpExample',
       validKey: 'mcpExampleValid',
       path: '.mcp.json.example',
-      label: t('agentSetup.mcpExample'),
     },
   ] as const;
   const agentSetupConnections = [
@@ -508,37 +526,19 @@ export function VaultAgentSetupPanel({
   const hasInvalidAgentConfig = agentSetupFiles.some(
     (file) => agentStatus[file.key] && agentStatus[file.validKey] === false,
   );
-  const agentSetupSteps = [
-    {
-      key: 'configs',
-      label: t('agentSetup.stepConfigs'),
-      complete: agentSetupReadyCount === agentSetupFiles.length,
-    },
-    {
-      key: 'restart',
-      label: t('agentSetup.stepRestart'),
-      complete: agentSetupReady,
-    },
-    {
-      key: 'connectionCheck',
-      label: t('agentSetup.stepConnectionCheck'),
-      complete: false,
-    },
-    {
-      key: 'gate',
-      label: t('agentSetup.stepGate'),
-      complete: false,
-    },
-    {
-      key: 'mcpVerify',
-      label: t('agentSetup.stepMcpVerify'),
-      complete: false,
-    },
-    {
-      key: 'graphProof',
-      label: t('agentSetup.stepGraphProof'),
-      complete: false,
-    },
+  /**
+   * 접기 뒤의 **더 확인할 것** — 3단계 뒤에 오는 것만.
+   *
+   * 종전에는 여기가 6줄이었고 앞 셋(설정 파일 · 재시작 · 연결 확인)이 위
+   * 3단계와 **같은 말을 번호만 바꿔** 다시 했다. 그래서 이 화면에는 번호 배지가
+   * 네 벌(단계 3 · 흐름 6 · 증거 4 · 명령 6) 있었고 어느 것도 「지금 할 일」을
+   * 못 가리켰다. 앞 셋은 단계로 승격됐으니 여기서는 뒤 셋만 남는다 —
+   * 사라진 것이 아니라 **올라간 것**이라 도달 가능성은 그대로다.
+   */
+  const agentDeeperChecks = [
+    { key: 'gate', label: t('agentSetup.stepGate') },
+    { key: 'mcpVerify', label: t('agentSetup.stepMcpVerify') },
+    { key: 'graphProof', label: t('agentSetup.stepGraphProof') },
   ];
   const validationState = validationSummary
     ? validationSummary.errorCount > 0
@@ -623,18 +623,14 @@ export function VaultAgentSetupPanel({
           : null,
     },
     {
-      key: 'configs',
-      label: t('agentSetup.proofConfigs'),
-      value: agentSetupReady
-        ? t('agentSetup.proofConfigsReady')
-        : t('agentSetup.proofConfigsMissing', {
-            ready: agentSetupReadyCount,
-            total: agentSetupFiles.length,
-      }),
-      state: agentSetupReady ? 'ready' : 'warning',
-      href: null,
-    },
-    {
+      /*
+       * ⚠️ 여기 있던 「연결 파일 {ready}/{total}」 행은 뺐다 (2026-08-04).
+       * 같은 수를 화면이 **세 번** 말하고 있었다 — 머리 요약 · 이 행 · 3단계의
+       * 상태 줄. 2026-08-02 디자인 카운슬이 「누락」 배지를 뺀 것과 정확히 같은
+       * 사유이고(그때는 세 번째 진술이 색으로 소리쳤다), 그 판정이 여기서
+       * 되살아난 것이다. 머리 요약은 **항상 보이므로** 남는 둘 중 하나는
+       * 언제나 화면에 있다.
+       */
       key: 'agentRoot',
       label: t('agentSetup.proofAgentRoot'),
       value: agentSetupReady
@@ -755,174 +751,236 @@ export function VaultAgentSetupPanel({
   } --timeout-ms 15000`;
   const agentJsonGatePreview = buildOntologyStarterJsonGateCommand(vaultRootPath);
 
+
+  /**
+   * 지금 할 일은 하나다 — **앱이 실제로 아는 것만으로** 정한다.
+   *
+   * 1단계(연결 파일)는 디스크를 봐서 안다. 2단계(다시 켜기)와 3단계(연결 확인)는
+   * 원리적으로 알 수 없다 — Atlas 는 에이전트에 접속하지 않는다(`connectionHint`
+   * 가 이미 그렇게 말한다). 그래서 둘은 **자동으로 완료가 되지 않고**, 대신
+   * 사용자가 직접 열 수 있다. 모르는 것을 아는 척하는 대신 순서만 안내한다.
+   */
+  const stepOneDone = agentSetupReadyCount === agentSetupFiles.length;
+  const currentStep = stepOneDone ? 2 : 1;
+  const openStep = openStepOverride ?? currentStep;
+  const toggleStep = (n: number) => setOpenStepOverride(openStep === n ? 0 : n);
+  const stepState = (n: number): AgentSetupStepState => {
+    if (n === 1) return stepOneDone ? 'done' : 'now';
+    return n === currentStep ? 'now' : 'todo';
+  };
+
   return (
-    <section
-      aria-label={t('agentSetup.ariaLabel')}
-      className="min-w-0 rounded-chip border border-[color:var(--color-indigo-line-a22)] bg-[color:var(--color-indigo-a06)] p-2.5"
-    >
-      <div className="flex items-start gap-2">
-        <Bot
-          size={14}
-          aria-hidden
-          className="mt-0.5 text-[color:var(--color-indigo-accent)]"
-        />
-        <div className="min-w-0 flex-1">
-          {/*
-            **배지가 없다 (2026-08-02, 디자인 카운슬 S2).** 「누락」 앰버 배지는
-            같은 사실의 **세 번째 진술**이었다: y=195 「누락」 · y≈214 「설정
-            파일 0/3개 준비됨」 · y=721 「연결 파일 0/3 준비됨…」. 셋 다 같은
-            수를 말하는데 첫째만 색으로 소리쳤다. 바로 아래 줄이 그 수를 이미
-            말하므로 배지는 잉크만 쓰고 정보를 안 나른다.
-          */}
-          <h3 className="text-label font-medium text-[color:var(--color-text-primary)]">
-            {t('agentSetup.title')}
-          </h3>
-          <p className="mt-1 text-label leading-4 text-[color:var(--color-text-tertiary)]">
-            {publicPackagesReady
-              ? t('agentSetup.statusSummary', {
-                  ready: agentSetupReadyCount,
-                  total: agentSetupFiles.length,
-                })
-              : t('agentSetup.serverStatusSummary')}
-            {publicPackagesReady && nextMissingAgentConfig ? (
-              <span className="block font-mono text-caption text-[color:var(--color-amber-source-text-a95)]">
-                {agentStatus[nextMissingAgentConfig.key]
-                  ? t('agentSetup.nextInvalid', {
-                      path: nextMissingAgentConfig.path,
-                    })
-                  : t('agentSetup.nextMissing', {
-                      path: nextMissingAgentConfig.path,
-                })}
-              </span>
-            ) : null}
-          </p>
-          <p className="mt-1 text-label leading-4 text-[color:var(--color-indigo-pale-a82)]">
-            {publicPackagesReady
-              ? agentSetupReady
-                ? t('agentSetup.rootSummaryReady')
-                : t('agentSetup.rootSummaryMissing')
-              : t('agentSetup.rootSummaryBlocked')}
-          </p>
+    <section aria-label={t('agentSetup.ariaLabel')} className="min-w-0">
+      {/*
+        **머리는 두 줄이다** (2026-08-04). 종전에는 여기에 제목 `<h3>` 이 하나 더
+        있었는데, 왼쪽 LNB 가 같은 눈높이에서 「내 에이전트 연결」을 이미 말하고
+        있었다 — 같은 이름을 두 번 쓰는 대신 한 번만 쓴다. 이름은 region 의
+        접근 이름으로 남으므로 보조기술에서도 잃지 않는다.
+      */}
+      <p className="break-keep text-label text-[color:var(--color-text-tertiary)]">
+        {publicPackagesReady
+          ? t('agentSetup.statusSummary', {
+              ready: agentSetupReadyCount,
+              total: agentSetupFiles.length,
+            })
+          : t('agentSetup.serverStatusSummary')}
+        {publicPackagesReady && nextMissingAgentConfig ? (
+          <span className="font-mono text-[color:var(--color-amber-source-text-a95)]">
+            {' · '}
+            {agentStatus[nextMissingAgentConfig.key]
+              ? t('agentSetup.nextInvalid', { path: nextMissingAgentConfig.path })
+              : t('agentSetup.nextMissing', { path: nextMissingAgentConfig.path })}
+          </span>
+        ) : null}
+      </p>
+      <p className="mt-1 break-keep text-label text-[color:var(--color-text-quaternary)]">
+        {publicPackagesReady
+          ? agentSetupReady
+            ? t('agentSetup.rootSummaryReady')
+            : t('agentSetup.rootSummaryMissing')
+          : t('agentSetup.rootSummaryBlocked')}
+      </p>
 
-          {/* 첫 화면 = 3단계만 (C13). 나머지 검증·스니펫·게이트는 아래 고급 접기. */}
-          <div className="mt-3 grid gap-2">
-            <StepRow
-              n={1}
-              testId="agent-setup-step-1"
-              title={tc('step1Title')}
-              desc={publicPackagesReady ? tc('step1Desc') : undefined}
-            >
-              <AgentClientButtons
-                serverAvailability={serverAvailability}
-                /* 도구를 그대로 넘긴다 — `() => void handleEnsureAgentConfigs()` 는
-                   인자를 삼켜서, 어느 버튼을 눌러도 같은 파일들이 나갔다. */
-                onWriteConfigs={
-                  publicPackagesReady && canEditCurrent
-                    ? (client) => void handleEnsureAgentConfigs(client)
-                    : null
-                }
-                cursorDeeplink={cursorDeeplink}
-                mcpJsonSnippet={buildMcpConfigJson(vaultNameForConfig, vaultRootPath)}
-                replacementMcpJsonSnippet={buildMcpConfigJson(
-                  vaultNameForConfig,
-                  '.',
-                )}
-                codexCommand={buildCodexMcpAddCommandTemplate(
-                  vaultNameForConfig,
-                  vaultRootPath,
-                )}
-                mcpJsonState={mcpJsonState}
-                codexConfigState={codexConfigState}
-                codexConfigSnippet={buildCodexConfigTomlTemplate(
-                  vaultNameForConfig,
-                  '.',
-                )}
-                needsManualPath={vaultRootPath === null}
-              />
-            </StepRow>
-            {publicPackagesReady ? (
-              <>
-                <StepRow
-                  n={2}
-                  testId="agent-setup-step-2"
-                  title={tc('step2Title')}
-                  desc={tc('step2Desc')}
-                />
-                {/*
-                  **`step3Desc` 를 여기서는 안 쓴다** (2026-08-02, 디자인 카운슬).
-                  그 문장은 「에이전트가 이 지도를 읽기 시작하면 여기에 표시돼요」
-                  인데, 그 약속을 지키는 heartbeat 신호는 **지도 시트만** 갖고
-                  있다(`use-agent-connect-model.ts`). 이 화면이 아래에 그리는 것은
-                  1단계와 같은 값(설정 파일 유효성)을 라벨만 바꿔 다시 말한 것이라,
-                  문장을 그대로 두면 지키지 않는 약속이 된다.
-                  아래 줄이 이 화면이 실제로 아는 것을 말하므로 설명은 뺀다 —
-                  배선(`agentActivityStatus`)은 카피 통합과 한 묶음이라 다음이다.
-                */}
-                <StepRow n={3} testId="agent-setup-step-3" title={tc('step3Title')}>
-                  <div className="flex items-center gap-2 rounded-chip border border-[color:var(--color-border-soft)] bg-[color:var(--color-overlay-1)] px-2.5 py-2">
-                    <span
-                      aria-hidden
-                      className="h-2 w-2 shrink-0 rounded-full"
-                      style={{
-                        backgroundColor: agentSetupReady
-                          ? 'var(--color-status-success)'
-                          : 'var(--color-text-quaternary)',
-                      }}
-                    />
-                    <span className="min-w-0 flex-1 break-keep text-caption leading-4 text-[color:var(--color-text-secondary)]">
-                      {agentSetupReady
-                        ? t('agentSetup.connectionCheckReady')
-                        : t('agentSetup.connectionCheckPending', {
-                            ready: agentSetupReadyCount,
-                            total: agentSetupFiles.length,
-                          })}
-                    </span>
-                  </div>
-                </StepRow>
-              </>
-            ) : null}
-          </div>
-
-          {/* 고급 · 자세한 검증 — 연결 파일 상태·수리·모드·게이트·CLI·복사 패킷.
-              토글은 글자만으로 눌리는 것 = `link`(실측 85). 서체·자간·자리잡기만
-              이 한 자리의 것이라 className 에 남고, 크기·색은 램프가 낸다. */}
-          {publicPackagesReady ? (
-            <button
-            type="button"
-            onClick={() => setAdvancedOpen((v) => !v)}
-            aria-expanded={advancedOpen}
-            data-testid="agent-setup-advanced-toggle"
-            className={controlClass({
-              shape: 'link',
-              size: 'sm',
-              tone: 'muted',
-              className:
-                'touch-hit-expand mt-3 self-start font-mono uppercase tracking-[0.12em] hover:text-[color:var(--color-text-secondary)]',
-            })}
-          >
-            <ChevronDown
-              size={11}
-              aria-hidden
-              className="transition-transform"
-              style={{ transform: advancedOpen ? 'rotate(0deg)' : 'rotate(-90deg)' }}
+      {/*
+        ── 3단계 ────────────────────────────────────────────────────────
+        한 번에 하나만 펼친다. 웹(서버를 띄울 방법을 모르는 자리)에서는 1단계가
+        곧 강등 카드라서 2·3단계가 성립하지 않는다 — 없는 단계를 회색으로
+        보여 주는 것은 안내가 아니라 막다른 길이다.
+      */}
+      <ol
+        aria-label={t('agentSetup.stepListAriaLabel')}
+        data-testid="agent-setup-steps"
+        className="mt-3 divide-y divide-[color:var(--color-divider)] overflow-hidden rounded-card border border-[color:var(--color-border-soft)] bg-[color:var(--color-overlay-1)]"
+      >
+        <AgentSetupStep
+          n={1}
+          testId="agent-setup-step-1"
+          title={tc('step1Title')}
+          desc={publicPackagesReady ? tc('step1Desc') : undefined}
+          state={publicPackagesReady ? stepState(1) : 'now'}
+          trailing={
+            publicPackagesReady && stepOneDone ? t('agentSetup.stepStateDone') : undefined
+          }
+          open={publicPackagesReady ? openStep === 1 : true}
+          onToggle={() => toggleStep(1)}
+        >
+          <AgentClientButtons
+            serverAvailability={serverAvailability}
+            /* 도구를 그대로 넘긴다 — `() => void handleEnsureAgentConfigs()` 는
+               인자를 삼켜서, 어느 버튼을 눌러도 같은 파일들이 나갔다. */
+            onWriteConfigs={
+              publicPackagesReady && canEditCurrent
+                ? (client) => void handleEnsureAgentConfigs(client)
+                : null
+            }
+            /* 넷은 「정답 하나」가 아니라 **하나 고르는 것**이다 — 세로 전폭 넷은
+               각각이 큰 결정처럼 읽혔다(소유자 지적 2026-08-04). 2열이면 한 벌로
+               읽히고 세로 152px 이 76px 이 된다. */
+            layout="grid"
+            cursorDeeplink={cursorDeeplink}
+            mcpJsonSnippet={buildMcpConfigJson(vaultNameForConfig, vaultRootPath)}
+            replacementMcpJsonSnippet={buildMcpConfigJson(vaultNameForConfig, '.')}
+            codexCommand={buildCodexMcpAddCommandTemplate(vaultNameForConfig, vaultRootPath)}
+            mcpJsonState={mcpJsonState}
+            codexConfigState={codexConfigState}
+            codexConfigSnippet={buildCodexConfigTomlTemplate(vaultNameForConfig, '.')}
+            needsManualPath={vaultRootPath === null}
+          />
+        </AgentSetupStep>
+        {publicPackagesReady ? (
+          <>
+            <AgentSetupStep
+              n={2}
+              testId="agent-setup-step-2"
+              title={tc('step2Title')}
+              desc={tc('step2Desc')}
+              state={stepState(2)}
+              open={openStep === 2}
+              onToggle={() => toggleStep(2)}
             />
-            {tc('advancedToggle')}
-            </button>
-          ) : null}
-          {publicPackagesReady && advancedOpen ? (
-          <div className="mt-2" data-testid="agent-setup-advanced">
-          <ul
-            aria-label={t('agentSetup.connectionAriaLabel')}
-            className="mt-2 grid gap-1"
-          >
-            {agentSetupConnections.map(({ key, file, label, check }) => {
+            {/*
+              **`step3Desc` 를 여기서는 안 쓴다** (2026-08-02, 디자인 카운슬).
+              그 문장은 「에이전트가 이 지도를 읽기 시작하면 여기에 표시돼요」
+              인데, 그 약속을 지키는 heartbeat 신호는 **지도 시트만** 갖고
+              있다(`use-agent-connect-model.ts`). 이 화면이 아는 것은 연결
+              파일의 유효성까지라, 문장을 그대로 두면 지키지 않는 약속이 된다.
+              대신 이 화면이 **실제로 아는 것**(파일 상태)과 사람이 직접 확인할
+              방법(도구별 확인 명령)을 준다.
+            */}
+            <AgentSetupStep
+              n={3}
+              testId="agent-setup-step-3"
+              title={tc('step3Title')}
+              state={stepState(3)}
+              open={openStep === 3}
+              onToggle={() => toggleStep(3)}
+            >
+              {/*
+                단계 하나 = 상자 하나. 상태 줄과 도구별 확인 방법이 따로 떠 있으면
+                「이 단계가 무엇인가」가 두 덩어리로 읽힌다 — 이 화면이 고치려던
+                바로 그 평평함이다. 하나로 묶고 안에서 헤어라인으로 가른다.
+                (확인 방법은 종전 고급 접기 안에만 있었다. 「연결 확인」 단계의
+                내용이 곧 이것이라 여기가 제자리다.)
+              */}
+              <div className="divide-y divide-[color:var(--color-divider)] rounded-chip border border-[color:var(--color-border-soft)] bg-[color:var(--color-overlay-recessed-a12)]">
+                <div className="flex items-center gap-2 px-2.5 py-2">
+                  <span
+                    aria-hidden
+                    className="h-2 w-2 shrink-0 rounded-full"
+                    style={{
+                      backgroundColor: agentSetupReady
+                        ? 'var(--color-status-success)'
+                        : 'var(--color-text-quaternary)',
+                    }}
+                  />
+                  <span className="min-w-0 flex-1 break-keep text-label text-[color:var(--color-text-secondary)]">
+                    {agentSetupReady
+                      ? t('agentSetup.connectionCheckReady')
+                      : t('agentSetup.connectionCheckPending', {
+                          ready: agentSetupReadyCount,
+                          total: agentSetupFiles.length,
+                        })}
+                  </span>
+                </div>
+                <dl className="grid gap-1 px-2.5 py-2">
+                  {agentSetupConnections.map(({ key, label, check }) => (
+                    <div key={key} className="flex items-baseline justify-between gap-2">
+                      <dt className="min-w-0 truncate text-label text-[color:var(--color-text-secondary)]">
+                        {label}
+                      </dt>
+                      <dd className="shrink-0 font-mono text-caption text-[color:var(--color-text-tertiary)]">
+                        {check}
+                      </dd>
+                    </div>
+                  ))}
+                </dl>
+              </div>
+            </AgentSetupStep>
+          </>
+        ) : null}
+      </ol>
+
+      {/*
+        ── 잘 안 되나요? ────────────────────────────────────────────────
+        고급·검증·CLI·다른 폴더 연결이 전부 이 뒤에 있다. **지운 것이 아니라
+        접은 것**이라, 접힌 것에는 전부 도달할 수 있어야 한다.
+      */}
+      {publicPackagesReady ? (
+        <button
+          type="button"
+          onClick={() => setAdvancedOpen((v) => !v)}
+          aria-expanded={advancedOpen}
+          aria-controls="agent-setup-advanced"
+          data-testid="agent-setup-advanced-toggle"
+          className={controlClass({
+            shape: 'link',
+            size: 'md',
+            tone: 'muted',
+            className: 'touch-hit-expand mt-3 hover:text-[color:var(--color-text-secondary)]',
+          })}
+        >
+          <ChevronDown
+            size={12}
+            aria-hidden
+            className="transition-transform"
+            style={{ transform: advancedOpen ? 'rotate(0deg)' : 'rotate(-90deg)' }}
+          />
+          {t('agentSetup.troubleshootToggle')}
+        </button>
+      ) : null}
+      <Surface
+        open={publicPackagesReady && advancedOpen}
+        as="section"
+        id="agent-setup-advanced"
+        aria-label={t('agentSetup.troubleshootAriaLabel')}
+        data-testid="agent-setup-advanced"
+        className="mt-2 flex flex-col gap-4"
+      >
+        {/*
+          ── 검사 묶음 ──────────────────────────────────────────────────
+          ⚠️ **이 한 덩어리는 곧 「손볼 곳」 탭으로 옮겨간다** (소유자 확정
+          2026-08-04 — 검사·수리·삭제가 그리로 간다). 이번 라운드에서 옮기지
+          않는 대신 **옮기기 쉬운 형태**로 한 노드 아래 모아 둔다. 흩어 두면
+          그때 다시 여덟 자리를 찾아다녀야 한다.
+        */}
+        <div data-testid="agent-setup-inspection" className="flex flex-col gap-2">
+          <SectionLabel>{t('agentSetup.groupFiles')}</SectionLabel>
+          {/*
+            **목록이 하나다** (2026-08-04). 종전에는 같은 세 파일을 두 번 그렸다 —
+            위는 「도구 이름 + 확인 방법 + 배지」, 아래는 「경로 + 역할」. 두 목록의
+            행 수도 순서도 같았고, 다른 것은 어느 쪽이 경로를 말하느냐뿐이었다.
+            같은 사실을 두 자리에서 말하면 어느 쪽이 최신인지 아무도 모른다.
+            확인 방법(`/mcp` 등)은 3단계로 올라갔으므로 여기 남는 것은
+            **이름 · 경로 · 상태** 셋이다.
+          */}
+          <ul aria-label={t('agentSetup.connectionAriaLabel')} className="grid gap-1">
+            {agentSetupConnections.map(({ key, file, label }) => {
               const present = Boolean(agentStatus[file.key]);
-              const valid = agentStatus[file.validKey] !== false;
-              const ready = present && valid;
+              const ready = present && agentStatus[file.validKey] !== false;
               return (
                 <li
                   key={key}
-                  className="grid grid-cols-[14px_1fr] gap-1.5 rounded-micro border border-[color:var(--color-indigo-line-a13)] bg-[color:var(--color-overlay-recessed-a12)] px-1.5 py-1"
+                  className="grid grid-cols-[14px_1fr] gap-1.5 rounded-micro border border-[color:var(--color-border-soft)] bg-[color:var(--color-overlay-recessed-a12)] px-2 py-1.5"
                 >
                   {ready ? (
                     <CheckCircle2
@@ -937,44 +995,68 @@ export function VaultAgentSetupPanel({
                       className="mt-0.5 text-[color:var(--color-amber-source-text-a95)]"
                     />
                   )}
-                  <span className="min-w-0">
-                    <span className="flex items-center justify-between gap-2">
-                      <span className="truncate text-label font-medium text-[color:var(--color-text-secondary)]">
-                        {label}
-                      </span>
-                      <span
-                        className={`shrink-0 rounded-micro px-1.5 py-0.5 text-caption ${
-                          ready
-                            ? 'bg-[color:var(--color-success-a10)] text-[color:var(--color-success-text-a92)]'
-                            : 'bg-[color:var(--color-amber-source-a10)] text-[color:var(--color-amber-source-text-a95)]'
-                        }`}
-                      >
-                        {ready
-                          ? t('agentSetup.connectionReady')
-                          : t('agentSetup.connectionNeedsReview')}
-                      </span>
+                  <span className="flex min-w-0 items-baseline gap-2">
+                    <span className="shrink-0 text-label text-[color:var(--color-text-secondary)]">
+                      {label}
                     </span>
-                    <span className="mt-0.5 block truncate font-mono text-caption text-[color:var(--color-text-tertiary)]">
-                      {check}
+                    <code className="min-w-0 flex-1 truncate font-mono text-caption text-[color:var(--color-text-quaternary)]">
+                      {file.path}
+                    </code>
+                    <span
+                      className={`shrink-0 text-caption ${
+                        ready
+                          ? 'text-[color:var(--color-success-text-a92)]'
+                          : 'text-[color:var(--color-amber-source-text-a95)]'
+                      }`}
+                    >
+                      {ready
+                        ? t('agentSetup.connectionReady')
+                        : present
+                          ? t('agentSetup.needsReview')
+                          : t('agentSetup.connectionNeedsReview')}
                     </span>
                   </span>
                 </li>
               );
             })}
           </ul>
-          <p className="mt-1.5 break-keep text-caption leading-4 text-[color:var(--color-text-tertiary)]">
+          {hasMissingAgentConfig && canEditCurrent ? (
+            <Chip
+              size="sm"
+              onClick={() => void handleEnsureAgentConfigs()}
+              disabled={agentSetupBusy}
+              title={t('agentSetup.repairTitle')}
+              tone="accentOnTint"
+              className={`self-start ${ACCENT_ACTION_CHIP}`}
+            >
+              <Bot size={12} aria-hidden />
+              {agentSetupBusy ? t('agentSetup.repairing') : t('agentSetup.repair')}
+            </Chip>
+          ) : null}
+          {hasInvalidAgentConfig ? (
+            <p className="break-keep rounded-micro border border-[color:var(--color-amber-source-a14)] bg-[color:var(--color-amber-source-a08)] px-2 py-1.5 text-label text-[color:var(--color-amber-source-text-a95)]">
+              {t('agentSetup.invalidRepairHint')}
+            </p>
+          ) : null}
+          <p className="break-keep text-label text-[color:var(--color-text-quaternary)]">
             {t('agentSetup.connectionHint')}
           </p>
-          <p className="mt-2 break-keep rounded-micro border border-[color:var(--color-indigo-line-a14)] bg-[color:var(--color-overlay-recessed-a12)] px-2 py-1.5 text-label leading-4 text-[color:var(--color-text-tertiary)]">
-            <span className="font-medium text-[color:var(--color-text-secondary)]">
-              {t('agentSetup.boundaryTitle')}
-            </span>{' '}
-            {t('agentSetup.boundaryDesc')}
-          </p>
+
+          {/*
+            ── 폴더 상태 ────────────────────────────────────────────────
+            ⚠️ **2026-08-04 정정 — 이 상자는 거짓말을 하고 있었다.**
+            빨간 「HANDOFF BLOCKED」 배지와 *"에이전트가 ontology를 수정하기 전에
+            vault validation 오류를 먼저 해결해야 합니다"* 라는 문장을 달고
+            있었는데, **막지 않는다**. MCP 쓰기 경로(`add_concept` ·
+            `patch_concept` …)에 그 게이트가 없다. 오류가 실제로 거절하는 것은
+            `git_snapshot({confirm:true})` 하나뿐이다(`mcp/src/index.js` —
+            *"git_snapshot blocked: validate_vault found N file(s) with errors"*).
+            화면이 근거 없는 사실을 주장하면 사용자는 되는 일을 포기한다.
+          */}
           <div
             role="status"
             aria-label={t('agentSetup.validationGateAriaLabel')}
-            className={`mt-2 grid grid-cols-[14px_1fr] gap-1.5 rounded-micro border px-2 py-1.5 ${
+            className={`grid grid-cols-[14px_1fr] gap-1.5 rounded-micro border px-2 py-1.5 ${
               validationGateTone === 'ready'
                 ? 'border-[color:var(--color-success-a20)] bg-[color:var(--color-success-a055)]'
                 : validationGateTone === 'blocked'
@@ -1000,68 +1082,36 @@ export function VaultAgentSetupPanel({
               />
             )}
             <span className="min-w-0">
-              <span className="flex items-center justify-between gap-2">
+              <span className="flex items-baseline justify-between gap-2">
                 <span className="text-label font-medium text-[color:var(--color-text-secondary)]">
                   {t('agentSetup.validationGateTitle')}
                 </span>
                 <span
-                  className={`shrink-0 rounded-micro px-1.5 py-0.5 font-mono text-caption uppercase ${
+                  className={`shrink-0 text-caption ${
                     validationGateTone === 'ready'
-                      ? 'bg-[color:var(--color-success-a10)] text-[color:var(--color-success-text-a92)]'
+                      ? 'text-[color:var(--color-success-text-a92)]'
                       : validationGateTone === 'blocked'
-                        ? 'bg-[color:var(--color-danger-a12)] text-[color:var(--color-status-danger)]'
-                        : 'bg-[color:var(--color-amber-source-a10)] text-[color:var(--color-amber-source-text-a95)]'
+                        ? 'text-[color:var(--color-status-danger)]'
+                        : 'text-[color:var(--color-amber-source-text-a95)]'
                   }`}
                 >
                   {validationGateStatus}
                 </span>
               </span>
-              <span className="mt-0.5 block text-label leading-4 text-[color:var(--color-text-secondary)]">
+              <span className="mt-0.5 block text-label text-[color:var(--color-text-secondary)]">
                 {validationGateSummary}
               </span>
-              <span className="mt-0.5 block break-keep text-caption leading-4 text-[color:var(--color-text-tertiary)]">
+              <span className="mt-0.5 block break-keep text-label text-[color:var(--color-text-tertiary)]">
                 {validationGateDesc}
               </span>
             </span>
           </div>
-          <details className="mt-2 rounded-micro border border-[color:var(--color-overlay-2)] bg-[color:var(--color-overlay-recessed-a12)] px-2 py-1.5">
-            <summary className="cursor-pointer select-none text-label font-medium text-[color:var(--color-text-secondary)] marker:text-[color:var(--color-text-quaternary)]">
-              {t('agentSetup.nextStepsSummary')}
-            </summary>
-            <ol
-              aria-label={t('agentSetup.nextStepsAriaLabel')}
-              className="mt-1.5 grid gap-1"
-            >
-              {agentSetupSteps.map((step, index) => (
-                <li
-                  key={step.key}
-                  className="grid grid-cols-[18px_1fr] items-start gap-1.5 rounded-micro border border-[color:var(--color-overlay-2)] bg-[color:var(--color-overlay-1)] px-1.5 py-1"
-                >
-                  <span
-                    className={`inline-flex h-4 w-4 items-center justify-center rounded-micro font-mono text-caption ${
-                      step.complete
-                        ? 'bg-[color:var(--color-success-a12)] text-[color:var(--color-success-text-a90)]'
-                        : 'bg-[color:var(--color-indigo-a14)] text-[color:var(--color-indigo-pale-a90)]'
-                    }`}
-                  >
-                    {step.complete ? '✓' : index + 1}
-                  </span>
-                  <span className="break-keep text-label leading-4 text-[color:var(--color-text-secondary)]">
-                    {step.label}
-                  </span>
-                </li>
-              ))}
-            </ol>
-          </details>
-          <dl
-            aria-label={t('agentSetup.proofAriaLabel')}
-            className="mt-2 grid gap-1"
-          >
+          <dl aria-label={t('agentSetup.proofAriaLabel')} className="grid gap-1">
             {agentSetupProofRows.map((row) => (
               <div
                 key={row.key}
                 data-testid={`agent-setup-proof-${row.key}`}
-                className="grid grid-cols-[14px_76px_1fr] items-start gap-1.5 rounded-micro border border-[color:var(--color-overlay-2)] bg-[color:var(--color-overlay-recessed-a12)] px-1.5 py-1"
+                className="grid grid-cols-[14px_72px_1fr] items-start gap-1.5 rounded-micro border border-[color:var(--color-overlay-2)] bg-[color:var(--color-overlay-recessed-a12)] px-1.5 py-1"
               >
                 {row.state === 'ready' ? (
                   <CheckCircle2
@@ -1088,10 +1138,10 @@ export function VaultAgentSetupPanel({
                     className="mt-0.5 text-[color:var(--color-amber-source-text-a95)]"
                   />
                 )}
-                <dt className="truncate font-mono text-caption uppercase tracking-[0.08em] text-[color:var(--color-text-quaternary)]">
+                <dt className="truncate text-caption text-[color:var(--color-text-quaternary)]">
                   {row.label}
                 </dt>
-                <dd className="break-keep text-label leading-4 text-[color:var(--color-text-secondary)]">
+                <dd className="break-keep text-label text-[color:var(--color-text-secondary)]">
                   {row.value}
                   {row.href ? (
                     <>
@@ -1112,346 +1162,292 @@ export function VaultAgentSetupPanel({
               </div>
             ))}
           </dl>
-          <dl
-            aria-label={t('agentSetup.proofContractAriaLabel')}
-            className="mt-1.5 grid gap-1"
-          >
-            {agentFirstContactProofRows.map((row, index) => (
-              <div
-                key={row.key}
-                className="grid grid-cols-[18px_88px_1fr] items-start gap-1.5 rounded-micro border border-[color:var(--color-indigo-line-a13)] bg-[color:var(--color-indigo-a06)] px-1.5 py-1"
-              >
-                <span className="inline-flex h-4 w-4 items-center justify-center rounded-micro bg-[color:var(--color-indigo-a14)] font-mono text-caption text-[color:var(--color-indigo-pale-a90)]">
-                  {index + 1}
-                </span>
-                <dt className="truncate font-mono text-caption uppercase tracking-[0.08em] text-[color:var(--color-indigo-pale-a82)]">
-                  {row.label}
-                </dt>
-                <dd className="break-keep text-label leading-4 text-[color:var(--color-text-secondary)]">
-                  {row.value}
-                </dd>
-              </div>
-            ))}
-          </dl>
-          <div className="mt-2 grid gap-1.5">
-            {agentSetupFiles.map(({ key, validKey, path, label }) => {
-              const present = Boolean(agentStatus[key]);
-              const valid = agentStatus[validKey] !== false;
-              return (
-                <div
-                  key={key}
-                  className="grid grid-cols-[14px_1fr] items-start gap-1.5 text-label leading-4 text-[color:var(--color-text-secondary)]"
-                >
-                  {present && valid ? (
-                    <CheckCircle2
-                      size={12}
-                      aria-hidden
-                      className="mt-0.5 text-[color:var(--color-success-text-a90)]"
-                    />
-                  ) : (
-                    <CircleAlert
-                      size={12}
-                      aria-hidden
-                      className="mt-0.5 text-[color:var(--color-amber-source-text-a95)]"
-                    />
-                  )}
-                  <span>
-                    <code className="font-mono text-label text-[color:var(--color-text-primary)]">
-                      {path}
-                    </code>{' '}
-                    <span className="text-[color:var(--color-text-tertiary)]">
-                      {label}
-                    </span>
-                    {present && !valid ? (
-                      <span className="ml-1 text-[color:var(--color-amber-source-text-a95)]">
-                        {t('agentSetup.needsReview')}
-                      </span>
-                    ) : null}
-                  </span>
-                </div>
-              );
-            })}
-          </div>
-          {hasMissingAgentConfig && canEditCurrent ? (
-            <Chip
-              onClick={() => void handleEnsureAgentConfigs()}
-              disabled={agentSetupBusy}
-              title={t('agentSetup.repairTitle')}
-              tone="accentOnTint"
-              className="mt-2 w-full justify-center border-[color:var(--color-indigo-line-a35)] bg-[color:var(--color-indigo-a10)] hover:border-[color:var(--color-indigo-line-a54)] hover:bg-[color:var(--color-indigo-a16)]"
-            >
-              <Bot size={12} aria-hidden />
-              {agentSetupBusy
-                ? t('agentSetup.repairing')
-                : t('agentSetup.repair')}
-            </Chip>
-          ) : null}
-          {hasInvalidAgentConfig ? (
-            <p className="mt-2 break-keep rounded-micro border border-[color:var(--color-amber-source-a14)] bg-[color:var(--color-amber-source-a08)] px-2 py-1.5 text-label leading-4 text-[color:var(--color-amber-source-text-a95)]">
-              {t('agentSetup.invalidRepairHint')}
-            </p>
-          ) : null}
-          <div className="mt-2 text-caption font-medium uppercase tracking-[0.12em] text-[color:var(--color-text-tertiary)]">
-            {t('agentSetup.verifyGroup')}
-          </div>
-          <dl
-            aria-label={t('agentSetup.modeChooserAriaLabel')}
-            className="mt-1.5 grid gap-1"
-          >
+        </div>
+
+        {/* ── 에이전트가 이 폴더를 쓰는 방식 ──────────────────────────── */}
+        <div className="flex flex-col gap-2">
+          <SectionLabel>{t('agentSetup.groupHowAgentsUse')}</SectionLabel>
+          <p className="break-keep rounded-micro border border-[color:var(--color-border-soft)] bg-[color:var(--color-overlay-recessed-a12)] px-2 py-1.5 text-label text-[color:var(--color-text-tertiary)]">
+            <span className="font-medium text-[color:var(--color-text-secondary)]">
+              {t('agentSetup.boundaryTitle')}
+            </span>{' '}
+            {t('agentSetup.boundaryDesc')}
+          </p>
+          <dl aria-label={t('agentSetup.modeChooserAriaLabel')} className="grid gap-1">
             {[
-              {
-                term: t('agentSetup.modeCliTerm'),
-                desc: t('agentSetup.modeCliDesc'),
-              },
-              {
-                term: t('agentSetup.modeMcpTerm'),
-                desc: t('agentSetup.modeMcpDesc'),
-              },
-              {
-                term: t('agentSetup.modeGraphTerm'),
-                desc: t('agentSetup.modeGraphDesc'),
-              },
-              {
-                term: t('agentSetup.modeGateTerm'),
-                desc: t('agentSetup.modeGateDesc'),
-              },
+              { term: t('agentSetup.modeCliTerm'), desc: t('agentSetup.modeCliDesc') },
+              { term: t('agentSetup.modeMcpTerm'), desc: t('agentSetup.modeMcpDesc') },
+              { term: t('agentSetup.modeGraphTerm'), desc: t('agentSetup.modeGraphDesc') },
+              { term: t('agentSetup.modeGateTerm'), desc: t('agentSetup.modeGateDesc') },
             ].map((mode) => (
-              <div
-                key={mode.term}
-                className="rounded-micro border border-[color:var(--color-overlay-2)] bg-[color:var(--color-overlay-recessed-a12)] px-2 py-1"
-              >
+              <div key={mode.term} className="grid grid-cols-[84px_1fr] gap-2">
                 <dt className="text-label font-medium text-[color:var(--color-text-secondary)]">
                   {mode.term}
                 </dt>
-                <dd className="mt-0.5 break-keep text-caption leading-4 text-[color:var(--color-text-tertiary)]">
+                <dd className="break-keep text-label text-[color:var(--color-text-tertiary)]">
                   {mode.desc}
                 </dd>
               </div>
             ))}
           </dl>
-          <Chip
-            onClick={onOpenWorkflowGuide}
-            title={t('agentSetup.openWorkflowGuideTitle')}
-            tone="accentOnTint"
-            className="mt-2 w-full justify-center border-[color:var(--color-indigo-line-a35)] bg-[color:var(--color-indigo-a08)] hover:border-[color:var(--color-indigo-line-a54)] hover:bg-[color:var(--color-indigo-a14)]"
-          >
-            <BookOpen size={12} aria-hidden />
-            {t('agentSetup.openWorkflowGuide')}
-          </Chip>
-          <Chip
-            onClick={() => void handleCopyAgentSetupPacket()}
-            title={t('agentSetup.copyPacketTitle')}
-            tone="accentOnTint"
-            className="mt-2 w-full justify-center border-[color:var(--color-indigo-a42)] bg-[color:var(--color-indigo-a10)] hover:border-[color:var(--color-indigo-a62)] hover:bg-[color:var(--color-indigo-a16)]"
-          >
-            <ClipboardCopy size={12} aria-hidden />
-            {copyPacketLabel}
-          </Chip>
-          <Chip
-            onClick={() => void handleCopyAgentVerifyPrompt()}
-            title={t('agentSetup.copyPromptTitle')}
-            tone="secondary"
-            className={NEUTRAL_COPY_CHIP + ' mt-2'}
-          >
-            <ClipboardCopy size={12} aria-hidden />
-            {copyPromptLabel}
-          </Chip>
-          <Chip
-            onClick={() => void handleCopyAgentVerifyCli()}
-            title={t('agentSetup.copyCliTitle')}
-            tone="secondary"
-            className={NEUTRAL_COPY_CHIP + ' mt-1.5'}
-          >
-            <Terminal size={12} aria-hidden />
-            {copyCliLabel}
-          </Chip>
-          <Chip
-            onClick={() => void handleCopyAgentFirstContactProof()}
-            title={t('agentSetup.copyFirstContactProofTitle')}
-            tone="secondary"
-            className={NEUTRAL_COPY_CHIP + ' mt-1.5'}
-          >
-            <Terminal size={12} aria-hidden />
-            {copyFirstContactProofLabel}
-          </Chip>
-          <Chip
-            onClick={() => void handleCopyAgentJsonGate()}
-            title={t('agentSetup.copyJsonGateTitle')}
-            tone="success"
-            className={GATE_COPY_CHIP + ' mt-1.5'}
-          >
-            <Terminal size={12} aria-hidden />
-            {copyJsonGateLabel}
-          </Chip>
+          <details className="rounded-micro border border-[color:var(--color-overlay-2)] bg-[color:var(--color-overlay-recessed-a12)] px-2 py-1.5">
+            <summary className="cursor-pointer select-none text-label font-medium text-[color:var(--color-text-secondary)] marker:text-[color:var(--color-text-quaternary)]">
+              {t('agentSetup.nextStepsSummary')}
+            </summary>
+            <ul aria-label={t('agentSetup.nextStepsAriaLabel')} className="mt-1.5 grid gap-1">
+              {agentDeeperChecks.map((step) => (
+                <li
+                  key={step.key}
+                  className="break-keep text-label text-[color:var(--color-text-secondary)]"
+                >
+                  {step.label}
+                </li>
+              ))}
+            </ul>
+            <dl
+              aria-label={t('agentSetup.proofContractAriaLabel')}
+              className="mt-2 grid gap-1"
+            >
+              {agentFirstContactProofRows.map((row) => (
+                <div key={row.key} className="grid grid-cols-[92px_1fr] gap-2">
+                  <dt className="text-caption text-[color:var(--color-text-quaternary)]">
+                    {row.label}
+                  </dt>
+                  <dd className="break-keep text-label text-[color:var(--color-text-tertiary)]">
+                    {row.value}
+                  </dd>
+                </div>
+              ))}
+            </dl>
+          </details>
+          <div className="flex flex-wrap gap-1.5">
+            <Chip
+              size="sm"
+              onClick={onOpenWorkflowGuide}
+              title={t('agentSetup.openWorkflowGuideTitle')}
+              tone="accentOnTint"
+              className={ACCENT_ACTION_CHIP}
+            >
+              <BookOpen size={12} aria-hidden />
+              {t('agentSetup.openWorkflowGuide')}
+            </Chip>
+            <Chip
+              size="sm"
+              onClick={() => void handleCopyAgentSetupPacket()}
+              title={t('agentSetup.copyPacketTitle')}
+              tone="secondary"
+              className={NEUTRAL_COPY_CHIP}
+            >
+              <ClipboardCopy size={12} aria-hidden />
+              {copyPacketLabel}
+            </Chip>
+            <Chip
+              size="sm"
+              onClick={() => void handleCopyAgentVerifyPrompt()}
+              title={t('agentSetup.copyPromptTitle')}
+              tone="secondary"
+              className={NEUTRAL_COPY_CHIP}
+            >
+              <ClipboardCopy size={12} aria-hidden />
+              {copyPromptLabel}
+            </Chip>
+          </div>
+        </div>
+
+        {/* ── 명령으로 확인하기 ──────────────────────────────────────── */}
+        <div className="flex flex-col gap-2">
+          <SectionLabel>{t('agentSetup.verifyGroup')}</SectionLabel>
           <div
             aria-label={t('agentSetup.mcpVerifyPreviewAriaLabel')}
-            className="mt-1.5 rounded-micro border border-[color:var(--color-indigo-a20)] bg-[color:var(--color-overlay-recessed)] px-2 py-1.5"
+            className="rounded-micro border border-[color:var(--color-border-soft)] bg-[color:var(--color-overlay-recessed)] px-2 py-1.5"
           >
-            <div className="text-caption font-medium uppercase tracking-[0.12em] text-[color:var(--color-indigo-pale-a82)]">
+            <div className="text-caption text-[color:var(--color-text-quaternary)]">
               {t('agentSetup.mcpVerifyLabel')}
             </div>
             <code className="mt-1 block truncate font-mono text-caption text-[color:var(--color-text-tertiary)]">
               {agentMcpVerifyPreview}
             </code>
           </div>
-          <div className="mt-1.5 rounded-micro border border-[color:var(--color-success-a18)] bg-[color:var(--color-overlay-recessed)] px-2 py-1.5">
-            <div className="text-caption font-medium uppercase tracking-[0.12em] text-[color:var(--color-success-text-a78)]">
+          <div className="rounded-micro border border-[color:var(--color-border-soft)] bg-[color:var(--color-overlay-recessed)] px-2 py-1.5">
+            <div className="text-caption text-[color:var(--color-text-quaternary)]">
               {t('agentSetup.jsonGateLabel')}
             </div>
             <code className="mt-1 block truncate font-mono text-caption text-[color:var(--color-text-tertiary)]">
               {agentJsonGatePreview}
             </code>
           </div>
-          <dl
-            aria-label={t('agentSetup.gateRulesAriaLabel')}
-            className="mt-1.5 grid gap-1"
-          >
+          <dl aria-label={t('agentSetup.gateRulesAriaLabel')} className="grid gap-1">
             {[
-              {
-                term: t('agentSetup.gateBrokenTerm'),
-                desc: t('agentSetup.gateBrokenDesc'),
-              },
-              {
-                term: t('agentSetup.gateSlowTerm'),
-                desc: t('agentSetup.gateSlowDesc'),
-              },
-              {
-                term: t('agentSetup.gateReadyTerm'),
-                desc: t('agentSetup.gateReadyDesc'),
-              },
+              { term: t('agentSetup.gateBrokenTerm'), desc: t('agentSetup.gateBrokenDesc') },
+              { term: t('agentSetup.gateSlowTerm'), desc: t('agentSetup.gateSlowDesc') },
+              { term: t('agentSetup.gateReadyTerm'), desc: t('agentSetup.gateReadyDesc') },
             ].map((rule) => (
-              <div
-                key={rule.term}
-                className="grid grid-cols-[92px_1fr] gap-2 rounded-micro border border-[color:var(--color-success-a12)] bg-[color:var(--color-success-a035)] px-2 py-1"
-              >
-                <dt className="truncate font-mono text-caption text-[color:var(--color-success-text-a94)]">
+              <div key={rule.term} className="grid grid-cols-[52px_1fr] gap-2">
+                <dt className="text-label text-[color:var(--color-text-secondary)]">
                   {rule.term}
                 </dt>
-                <dd className="break-keep text-caption leading-4 text-[color:var(--color-text-tertiary)]">
+                <dd className="break-keep text-label text-[color:var(--color-text-tertiary)]">
                   {rule.desc}
                 </dd>
               </div>
             ))}
           </dl>
-          <div className="mt-1.5 rounded-micro border border-[color:var(--color-indigo-line-a20)] bg-[color:var(--color-indigo-a06)] px-2 py-1.5">
-            <p className="text-caption font-medium uppercase tracking-[0.12em] text-[color:var(--color-indigo-pale-a82)]">
-              {t('agentSetup.syncAfterChangeTitle')}
-            </p>
-            <p className="mt-1 break-keep text-caption leading-4 text-[color:var(--color-text-tertiary)]">
-              {t('agentSetup.syncAfterChangeDesc')}
-            </p>
-            <Chip
-              onClick={() => void handleCopyAgentPostChangeSyncGate()}
-              title={t('agentSetup.copyPostChangeSyncTitle')}
-              tone="accentOnTint"
-              className="mt-2 w-full justify-center border-[color:var(--color-indigo-line-a32)] bg-[color:var(--color-indigo-a08)] hover:border-[color:var(--color-indigo-line-a45)] hover:bg-[color:var(--color-indigo-a13)]"
-            >
-              <ClipboardCopy size={12} aria-hidden />
-              {copyPostChangeSyncLabel}
-            </Chip>
-          </div>
-          <ol className="mt-1.5 grid gap-1" aria-label={t('agentSetup.cliPreviewAriaLabel')}>
-            {AGENT_VERIFY_CLI_PREVIEW.map((command, index) => (
-              <li
-                key={command}
-                className="grid grid-cols-[18px_1fr] items-center gap-1.5 rounded-micro border border-[color:var(--color-overlay-2)] bg-[color:var(--color-overlay-recessed-a14)] px-1.5 py-1"
-              >
-                <span className="inline-flex h-4 w-4 items-center justify-center rounded-micro bg-[color:var(--color-indigo-a14)] font-mono text-caption text-[color:var(--color-indigo-pale-a90)]">
-                  {index + 1}
-                </span>
-                <code className="truncate font-mono text-caption text-[color:var(--color-text-tertiary)]">
+          <ol
+            className="grid gap-0.5 rounded-micro border border-[color:var(--color-border-soft)] bg-[color:var(--color-overlay-recessed)] px-2 py-1.5"
+            aria-label={t('agentSetup.cliPreviewAriaLabel')}
+          >
+            {AGENT_VERIFY_CLI_PREVIEW.map((command) => (
+              <li key={command}>
+                <code className="block truncate font-mono text-caption text-[color:var(--color-text-tertiary)]">
                   {ATLAS_CLI} {command}
                 </code>
               </li>
             ))}
           </ol>
-          <div className="mt-2 text-caption font-medium uppercase tracking-[0.12em] text-[color:var(--color-text-tertiary)]">
-            {t('agentSetup.connectGroup')}
+          <div className="flex flex-wrap gap-1.5">
+            <Chip
+              size="sm"
+              onClick={() => void handleCopyAgentJsonGate()}
+              title={t('agentSetup.copyJsonGateTitle')}
+              tone="secondary"
+              className={NEUTRAL_COPY_CHIP}
+            >
+              <Terminal size={12} aria-hidden />
+              {copyJsonGateLabel}
+            </Chip>
+            <Chip
+              size="sm"
+              onClick={() => void handleCopyAgentVerifyCli()}
+              title={t('agentSetup.copyCliTitle')}
+              tone="secondary"
+              className={NEUTRAL_COPY_CHIP}
+            >
+              <Terminal size={12} aria-hidden />
+              {copyCliLabel}
+            </Chip>
+            <Chip
+              size="sm"
+              onClick={() => void handleCopyAgentFirstContactProof()}
+              title={t('agentSetup.copyFirstContactProofTitle')}
+              tone="secondary"
+              className={NEUTRAL_COPY_CHIP}
+            >
+              <Terminal size={12} aria-hidden />
+              {copyFirstContactProofLabel}
+            </Chip>
           </div>
-          <dl
-            aria-label={t('agentSetup.rootContractAriaLabel')}
-            className="mt-1.5 grid gap-1"
-          >
+          <div className="rounded-micro border border-[color:var(--color-border-soft)] bg-[color:var(--color-overlay-recessed-a12)] px-2 py-1.5">
+            <p className="text-label font-medium text-[color:var(--color-text-secondary)]">
+              {t('agentSetup.syncAfterChangeTitle')}
+            </p>
+            <p className="mt-1 break-keep text-label text-[color:var(--color-text-tertiary)]">
+              {t('agentSetup.syncAfterChangeDesc')}
+            </p>
+            <Chip
+              size="sm"
+              onClick={() => void handleCopyAgentPostChangeSyncGate()}
+              title={t('agentSetup.copyPostChangeSyncTitle')}
+              tone="secondary"
+              className={`mt-2 ${NEUTRAL_COPY_CHIP}`}
+            >
+              <ClipboardCopy size={12} aria-hidden />
+              {copyPostChangeSyncLabel}
+            </Chip>
+          </div>
+        </div>
+
+        {/* ── 다른 코드 폴더에서 열 때 ───────────────────────────────── */}
+        <div className="flex flex-col gap-2">
+          <SectionLabel>{t('agentSetup.connectGroup')}</SectionLabel>
+          <dl aria-label={t('agentSetup.rootContractAriaLabel')} className="grid gap-1">
             {[
-              {
-                term: t('agentSetup.rootVaultTerm'),
-                desc: t('agentSetup.rootVaultDesc'),
-              },
-              {
-                term: t('agentSetup.rootCodebaseTerm'),
-                desc: t('agentSetup.rootCodebaseDesc'),
-              },
+              { term: t('agentSetup.rootVaultTerm'), desc: t('agentSetup.rootVaultDesc') },
+              { term: t('agentSetup.rootCodebaseTerm'), desc: t('agentSetup.rootCodebaseDesc') },
             ].map((rootMode) => (
-              <div
-                key={rootMode.term}
-                className="rounded-micro border border-[color:var(--color-indigo-line-a13)] bg-[color:var(--color-indigo-a06)] px-2 py-1"
-              >
-                <dt className="font-mono text-caption uppercase tracking-[0.08em] text-[color:var(--color-indigo-pale-a82)]">
+              <div key={rootMode.term} className="grid grid-cols-[92px_1fr] gap-2">
+                <dt className="text-label font-medium text-[color:var(--color-text-secondary)]">
                   {rootMode.term}
                 </dt>
-                <dd className="mt-0.5 break-keep text-caption leading-4 text-[color:var(--color-text-tertiary)]">
+                <dd className="break-keep text-label text-[color:var(--color-text-tertiary)]">
                   {rootMode.desc}
                 </dd>
               </div>
             ))}
           </dl>
-          <Chip
-            onClick={() => void handleCopyAgentSetupCheckCliCommand()}
-            title={t('agentSetup.copySetupCheckCliTitle')}
-            tone="success"
-            className={GATE_COPY_CHIP + ' mt-1.5'}
-          >
-            <Terminal size={12} aria-hidden />
-            {copySetupCheckCliLabel}
-          </Chip>
-          <Chip
-            onClick={() => void handleCopyAgentSetupCliCommand()}
-            title={t('agentSetup.copySetupCliTitle')}
-            tone="warning"
-            className="mt-1.5 w-full justify-center border-[color:var(--color-amber-source-a25)] bg-[color:var(--color-amber-source-a07)] hover:border-[color:var(--color-amber-source-a42)] hover:bg-[color:var(--color-amber-source-a11)]"
-          >
-            <Terminal size={12} aria-hidden />
-            {copySetupCliLabel}
-          </Chip>
-          <Chip
-            onClick={() => void handleCopyAgentConfigTemplate()}
-            title={t('agentSetup.copyTemplateTitle')}
-            tone="secondary"
-            className={NEUTRAL_COPY_CHIP + ' mt-1.5'}
-          >
-            <ClipboardCopy size={12} aria-hidden />
-            {copyTemplateLabel}
-          </Chip>
-          <Chip
-            onClick={() => void handleCopyCodexConfigTemplate()}
-            title={t('agentSetup.copyCodexTemplateTitle')}
-            tone="secondary"
-            className={NEUTRAL_COPY_CHIP + ' mt-1.5'}
-          >
-            <ClipboardCopy size={12} aria-hidden />
-            {copyCodexTemplateLabel}
-          </Chip>
-          <Chip
-            onClick={() => void handleCopyCodexMcpAddCommand()}
-            title={t('agentSetup.copyCodexCliTitle')}
-            tone="secondary"
-            className={NEUTRAL_COPY_CHIP + ' mt-1.5'}
-          >
-            <Terminal size={12} aria-hidden />
-            {copyCodexCliLabel}
-          </Chip>
-          </div>
-          ) : null}
-          {agentSetupError ? (
-            <p
-              role="alert"
-              className="mt-2 text-label leading-4 text-[color:var(--color-status-danger)]"
+          <div className="flex flex-wrap gap-1.5">
+            <Chip
+              size="sm"
+              onClick={() => void handleCopyAgentSetupCheckCliCommand()}
+              title={t('agentSetup.copySetupCheckCliTitle')}
+              tone="secondary"
+              className={NEUTRAL_COPY_CHIP}
             >
-              {agentSetupError}
-            </p>
-          ) : null}
+              <Terminal size={12} aria-hidden />
+              {copySetupCheckCliLabel}
+            </Chip>
+            <Chip
+              size="sm"
+              onClick={() => void handleCopyAgentSetupCliCommand()}
+              title={t('agentSetup.copySetupCliTitle')}
+              tone="secondary"
+              className={NEUTRAL_COPY_CHIP}
+            >
+              <Terminal size={12} aria-hidden />
+              {copySetupCliLabel}
+            </Chip>
+            <Chip
+              size="sm"
+              onClick={() => void handleCopyAgentConfigTemplate()}
+              title={t('agentSetup.copyTemplateTitle')}
+              tone="secondary"
+              className={NEUTRAL_COPY_CHIP}
+            >
+              <ClipboardCopy size={12} aria-hidden />
+              {copyTemplateLabel}
+            </Chip>
+            <Chip
+              size="sm"
+              onClick={() => void handleCopyCodexConfigTemplate()}
+              title={t('agentSetup.copyCodexTemplateTitle')}
+              tone="secondary"
+              className={NEUTRAL_COPY_CHIP}
+            >
+              <ClipboardCopy size={12} aria-hidden />
+              {copyCodexTemplateLabel}
+            </Chip>
+            <Chip
+              size="sm"
+              onClick={() => void handleCopyCodexMcpAddCommand()}
+              title={t('agentSetup.copyCodexCliTitle')}
+              tone="secondary"
+              className={NEUTRAL_COPY_CHIP}
+            >
+              <Terminal size={12} aria-hidden />
+              {copyCodexCliLabel}
+            </Chip>
+          </div>
         </div>
-      </div>
+      </Surface>
+      {agentSetupError ? (
+        <p role="alert" className="mt-2 text-label text-[color:var(--color-status-danger)]">
+          {agentSetupError}
+        </p>
+      ) : null}
     </section>
+  );
+}
+
+/**
+ * 접기 안의 묶음 제목 — **아이브로우 한 단**.
+ *
+ * 이 자리의 `text-caption`(9.5px)은 설정 루트 시트에서 금지된 그 쓰임이 아니다.
+ * 램프 정의가 말하는 「마이크로 라벨」이고, 누르는 글자도 설명도 아니다
+ * (`settings-sheet-type-dialect` 계약이 이 파일을 사정거리 밖에 두는 이유와 같다).
+ */
+function SectionLabel({ children }: { children: ReactNode }) {
+  return (
+    <h4 className="text-caption font-medium uppercase tracking-[0.12em] text-[color:var(--color-text-quaternary)]">
+      {children}
+    </h4>
   );
 }

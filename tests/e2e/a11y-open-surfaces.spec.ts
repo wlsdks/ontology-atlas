@@ -81,8 +81,14 @@ const WCAG_TAGS = ["wcag2a", "wcag2aa", "wcag21a", "wcag21aa", "wcag22aa"];
 /** `a11y-ratchet.spec.ts` 와 같은 바닥. 빈 문서는 2, 실제 화면은 25~30. */
 const MIN_RULES_PASSED = 15;
 
-/** 소스 전수 — `censusAppearingSurfaces()` 가 낸 수. 위 「분모」 절. */
-const APPEARING_SURFACES_IN_SOURCE = 20;
+/**
+ * 소스 전수 — `censusAppearingSurfaces()` 가 낸 수. 위 「분모」 절.
+ *
+ * 20 → 22 (2026-08-04): 「내 에이전트 연결」이 단계 진행형이 되면서 접힘 두
+ * 갈래(단계 본문 · 「잘 안 되나요?」 서랍)가 생겼다. 둘 다 볼트가 있어야 열리는
+ * 부류라 이 파일이 여는 5개에는 아직 안 들어간다 — 그 사실을 분모가 말한다.
+ */
+const APPEARING_SURFACES_IN_SOURCE = 22;
 
 interface Opener {
   readonly name: string;

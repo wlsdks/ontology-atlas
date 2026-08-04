@@ -137,7 +137,6 @@ const OFF_RAMP_DEBT: ReadonlyArray<readonly [string, number]> = [
   ['src/views/docs-vault/ui/DocsVaultPage.tsx', 2],
   ['src/views/download/ui/DownloadPage.tsx', 6],
   ['src/widgets/app-settings-menu/ui/AppSettingsMenu.tsx', 3],
-  ['src/widgets/app-settings-menu/ui/VaultAgentSetupPanel.tsx', 1],
   ['src/widgets/bottom-tab-bar/ui/BottomTabBar.tsx', 1],
   ['src/widgets/docs-vault/ui/DocsVaultBacklinks.tsx', 4],
   ['src/widgets/docs-vault/ui/DocsVaultEditor.tsx', 10],

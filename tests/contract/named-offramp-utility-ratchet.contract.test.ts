@@ -110,7 +110,11 @@ const FAMILIES: ReadonlyArray<readonly [name: string, re: RegExp, budget: number
   ['leading-loose', /(?<![-\w])leading-loose(?![-\w])/g, 0],
   // 숫자꼴(leading-4/5/6/7 …)은 px 고정이라 램프 스텝과 값이 겹치지만
   // (16/20/24/28 = label/body/title/display) 짝 판정 없는 이름이다.
-  ['leading-<number>', /(?<![-\w])leading-\d+(?![-\w])/g, 103],
+  // 103 → 86: 「내 에이전트 연결」 재구성(2026-08-04)이 이 한 파일에서 17건을
+  // 갚았다. 갚는 법은 치환이 아니라 **삭제**였다 — 크기 스텝이 자기 행간을
+  // 이미 싣고 있어서(companion 결합) `text-label leading-4` 의 뒤 절반은
+  // 램프가 내는 값을 손으로 다시 적은 것이었다.
+  ['leading-<number>', /(?<![-\w])leading-\d+(?![-\w])/g, 86],
 ];
 
 const ROOTS = ['src', 'app'] as const;
