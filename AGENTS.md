@@ -287,6 +287,14 @@ mechanism this budget assumes.)
   is not that. The councils are the deliberate exception, and their point is
   **independence** (whoever builds it must not be the one who passes it), not extra
   verification passes.
+- **When you do delegate, six lines go in every brief** — leaving one out has cost a
+  real accident each (2026-08-03~04): ① its own e2e port (`reuseExistingServer` will
+  otherwise measure another agent's server) ② which files are read-only right now
+  ③ no `git stash`, remove the worktree, never `git add -A` (it commits worktrees as
+  empty gitlinks) ④ scratch files outside the repo (eslint reads what git ignores)
+  ⑤ which baselines must not break, and run them ⑥ read the primary sources, not my
+  summary — eight relayed premises were rejected in one day. Full rationale and the
+  per-seat file ownership table: `/parallel-brief`.
 - Use memory as an index, not a transcript: search the registry, open only the one or two relevant notes, and verify drift-prone facts live.
 - Do not run or add hooks that inject long dynamic context. SessionStart hooks must stay concise; PreToolUse hooks should block risky actions only, not record routine activity.
 - Mention residual uncertainty instead of loading more context reflexively.

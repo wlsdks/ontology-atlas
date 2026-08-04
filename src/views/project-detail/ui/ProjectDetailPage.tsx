@@ -632,6 +632,11 @@ export function ProjectDetailPage({
           인사이트·기록 증거 pane 과 같은 문법이라 새 관용구가 안 생긴다. */}
       <div className="mt-[var(--section-gap)]">
         <TabBar
+          /* 이 탭바는 인사이트와 **공유**한다. 접두사를 안 주면 `aria-controls`
+             가 인사이트의 패널 id 를 가리켜 여기서는 해석되지 않는다 — 실측
+             위반(axe `aria-valid-attr-value`)이었고, 아래 두 패널이 이 접두사로
+             `role="tabpanel"` 을 그린다. */
+          idPrefix="project-detail"
           ariaLabel={t("tabs.ariaLabel")}
           activeKey={activeTab}
           onSelect={selectTab}
@@ -661,7 +666,14 @@ export function ProjectDetailPage({
             트랙으로 당겨져 늘어났다(실측 결함). 좌측이 **항상 무언가를 그리면**
             트랙이 무너질 수 없다. */}
         {activeTab === "composition" ? (
-          <section data-tab-panel="composition" className="min-w-0">
+          <section
+            data-tab-panel="composition"
+            id="project-detail-tabpanel-composition"
+            role="tabpanel"
+            aria-labelledby="project-detail-tab-composition"
+            tabIndex={0}
+            className="min-w-0"
+          >
             {domainComposition.domains.length > 0 ? (
               /*
                 섹션 헤더("도메인 구성 · 포함 · 6")를 뺐다. 탭 라벨이 이미
@@ -706,6 +718,10 @@ export function ProjectDetailPage({
         ) : (
         <article
           data-tab-panel="overview"
+          id="project-detail-tabpanel-overview"
+          role="tabpanel"
+          aria-labelledby="project-detail-tab-overview"
+          tabIndex={0}
           className="rounded-card border border-[color:var(--color-border-soft)] bg-[color:var(--color-panel)] p-[var(--card-pad)] shadow-[inset_0_1px_0_var(--color-overlay-1)] md:p-[16px_18px]"
         >
           <div className="mb-2.5 flex items-baseline gap-2">
