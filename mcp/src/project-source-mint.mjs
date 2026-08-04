@@ -15,9 +15,9 @@ function normalizedRelativePath(value) {
 
 /**
  * Mint a receipt from a bounded probe and the project's declared source-role
- * claims. Port of the browser implementation in
- * `src/shared/lib/project-source-receipt.ts`, pinned by
- * `tests/contract/project-source-receipt.contract.test.ts`.
+ * claims. `src/shared/lib/project-source-receipt.ts` delegates here rather than
+ * carrying a second copy; `tests/contract/project-source-connect.contract.test.ts`
+ * pins the two entry points to byte-identical output.
  */
 export function buildProjectSourceReceipt(input) {
   const files = new Set();
