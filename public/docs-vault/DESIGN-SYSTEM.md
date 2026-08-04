@@ -2851,12 +2851,12 @@ JSX 안에 44px 정사각 버튼이나 라벨 버튼을 인라인 클래스로 �
 
 | px | 토큰 / 단 | 누가 서 있나 | 왜 이 값인가 |
 |---:|---|---|---|
-| **24** | (토큰 없음 — 규격 상수) | `chip`/`pill`/`icon` 의 `sm`, `segment` 의 `sm`·`md` | **WCAG 2.5.8 (AA, Target Size Minimum) 24×24** — 사다리의 바닥이다. 이 아래는 규격 미달이지 「작은 단」이 아니다 |
+| **24** | (토큰 없음 — 규격 상수) | `chip`/`pill`/`icon` 의 `sm`, `segment` 의 `sm`·`md`, **`link` 전 크기(`min-h-6`, 2026-08-04)** | **WCAG 2.5.8 (AA, Target Size Minimum) 24×24** — 사다리의 바닥이다. 이 아래는 규격 미달이지 「작은 단」이 아니다 |
 | **28** | `--control-h-sm` | `row` 의 `sm`, `icon` 의 `md`(`h-7 w-7`) | 한 줄 목록 행과 28px 정사각 아이콘 |
 | **32** | `--control-h-md` | `chip`/`pill` 의 `md`·`lg`, `segment` 의 `lg`, `card` 의 `sm`, `icon` 의 `lg`, `--app-nav-rail-tile-height` | **이 앱의 기본 컨트롤 높이.** 값 층은 `min-h-8` 로 이 값에 선다 |
 | **36** | `--chrome-tile-size` | 크롬 필·타일, **문서함 헤더 타일**, `row` 의 `md`, `card` 의 `md` | 「스케일 고정 계약」이 못박은 워크벤치 크롬 치수 |
 | **40** | `--control-h-lg` | Select, 큰 폼 컨트롤, `card` 의 `lg` | 글자를 입력받는 상자 |
-| **44** | `--touch-target-min` | `link`(비인라인)의 `min-h-11`, `row` 의 `lg`, `--control-row-h`, `pointer: coarse` 승격 | Apple HIG / Material 의 최소 터치 타깃 |
+| **44** | `--touch-target-min` | `row` 의 `lg`, `--control-row-h`, `pointer: coarse` 승격(토큰 재정의 + `.touch-hit-expand`) | Apple HIG / Material / WCAG **2.5.5(AAA)** 의 터치 값 — **coarse 단일 출처**다. `link` 의 fine 전면 44(`min-h-11`)는 2026-08-04 에 24 로 재설정됐다(아래 「link 바닥」 절) |
 
 **34 는 2026-08-03 에 이 표에서 사라졌다.** 한 줄짜리 「크롬 잠금」으로
 등재돼 있었지만, 그 등재는 34 를 **정당화한 게 아니라 기록만** 하고 있었다.
@@ -2867,6 +2867,33 @@ JSX 안에 44px 정사각 버튼이나 라벨 버튼을 인라인 클래스로 �
 (정사각 아이콘 타일)에 값 둘 · coarse 승격 규칙 둘이 남아 있었을 뿐이다.
 지금은 하나다: `--chrome-tile-size`. 원장: `docs/DECISIONS.md` 2026-08-03
 「타일 치수는 하나다」.
+
+### link 바닥 24 · 산문 링크 계약 (2026-08-04)
+
+**`link` 의 바닥은 24(`min-h-6`)다 — 44 가 아니다.** 종전 값 층은 WCAG
+2.5.8(AA, 24×24)을 인용하면서 2.5.5(AAA)/HIG 의 값 44(`min-h-11`)를 실었고,
+그 잘못된 바닥이 `inline` 탈출구를 낳아 오설정 4건(16~18px 히트)이 어떤 정적
+검사에도 안 걸린 채 살았다. 재설정의 세 조각:
+
+- **fine 포인터 = 24.** 값 층 `link` base 가 `min-h-6` 을 싣는다. 게이트:
+  `tests/contract/control-class.contract.test.ts` 「link 의 바닥은 24」 +
+  `tests/e2e/touch-target-contract.spec.ts` fine-pointer 감사(24×24 ∨ 인라인
+  면제 ∨ 24원 간격 예외 — WCAG 2.5.8 판정식 그대로).
+- **coarse 포인터 = 44.** 높이가 아니라 `.touch-hit-expand`(coarse 전용
+  의사요소, 레이아웃 이동 0)가 낸다. **부착 자격은 이웃 타깃 여유 ≥12px** —
+  밀집 행에 무조건 붙이면 DOM 순서상 뒤 원소의 ::after 가 앞 원소의 탭을
+  훔친다. 44 는 `--touch-target-min` 하나에서만 나온다(coarse 단일 출처).
+- **`inline` 축은 삭제됐다.** 「문장 속인가」는 정적으로 판정 불가라(형제
+  글자의 출처 · used display · reflow 전부 여는 태그 밖) 런타임 계기가 맡는다.
+
+**산문 링크는 컨트롤이 아니다.** 마크다운 본문 흐름 속 링크(문서함 뷰어 5 ·
+관문 읽을거리 1)는 형제가 글이고 줄 상자를 부모 `--leading-prose` 가 소유한다
+— 값 층의 모양 여덟은 전부 flex 계열이라 이 자리를 원리적으로 못 낸다
+(inline-flex 는 320px 에서 줄바꿈을 죽인다 — 실측 rect 1 vs 대조군 2). 목적지는
+`app/globals.css` 의 **`.prose-link`** 한 벌: 밑줄 기하(offset 2px)와 기본
+장식색만 소유하고, ① display ② 행간·글자 크기 ③ 포커스(UA 기본 존치)는 얹지
+않는다. 게이트: `tests/contract/prose-link.contract.test.ts`. 컨트롤 원장에서는
+`prose` 청구로 등재된다(`control-adoption-ratchet`).
 
 ### 이 사다리는 **어느 모양에** 적용되나 (2026-08-03 — 범위 명시)
 

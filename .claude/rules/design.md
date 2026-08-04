@@ -306,6 +306,7 @@ particle·rarity(gold)·shimmer 를 `--studio-*` 토큰 + `.studio-stage` 안에
 | **컨트롤 값 층이 램프 밖으로 못 샌다** | `tests/contract/control-class.contract.test.ts` | 판정 대상이 **cva 조합의 결과 문자열**이다. 소스에는 `chip`·`md` 같은 키만 있고 값은 런타임에 합쳐지므로 AST 셀렉터가 볼 것이 없다. 여덟 모양 × 3 크기 × 9 톤 × … 전수를 실제로 만들어 본다 |
 | **두 무채 잉크 램프가 실제로 다르다** | 같은 파일(`scope` 축 절) | 판정에 `app/globals.css` 의 **두 램프 8개 값**이 필요하다. 값이 수렴하면 `scope` 축은 아무것도 안 하면서 고를 것만 늘리므로, 그날 게이트가 축을 지우라고 말해야 한다 |
 | **손으로 쓴 컨트롤이 늘지 않는다** | `tests/contract/control-adoption-ratchet.contract.test.ts` | 래칫이라 **전수의 수**가 판정 기준이고, 그건 한 파일의 AST 로 셀 수 없다 |
+| **산문 링크는 컨트롤이 아니라 산문이다** — `.prose-link` 가 밑줄 기하만 소유하고 display·행간·크기·포커스는 산문 부모의 것 | `tests/contract/prose-link.contract.test.ts` + `tests/e2e/touch-target-contract.spec.ts` fine-pointer 감사(WCAG 2.5.8 인라인 면제 판정) | 판정에 「이 앵커가 산문 흐름 속인가」(렌더 트리)와 computed display 가 필요하다 — 「문장 속」을 정하는 셋(형제 글자 출처 · 부모가 정하는 used display · reflow)이 전부 여는 태그 밖이라, 정적 `inline` 축은 오설정 4건을 못 본 채 죽었다(2026-08-04) |
 | **무채 잉크의 표면 라이선스** — quaternary 는 정지한 무채 바탕(맨 3단 + canvas/panel 위 overlay-1)까지, 올라선 바탕(overlay-2+ · elevated+overlay · 틴트 합성) 위 글자는 tertiary 부터 | `tests/contract/quaternary-ink-surface.contract.test.ts`(값·자리) + `tests/e2e/a11y-open-surfaces.spec.ts`(화면) | 판정이 잉크가 아니라 **호스트 바탕의 합성**에 달렸다 — 같은 클래스가 panel 위에선 5.00, overlay-2 위에선 4.36 이다. 게다가 이 층의 지배 관용구가 `active ? 틴트+밝은 잉크 : quaternary` 분기라 같은-태그 페어링 휴리스틱도 오탐을 낸다(2026-08-04 전수 18쌍 중 다수가 분기) — 그래서 정적 래칫 대신 값 계약 + 열린 표면 런타임 계기다 |
 
 **미정의 스텝은 침묵한다 (2026-07-27 실측).** `text-large` 는 램프에 없는데

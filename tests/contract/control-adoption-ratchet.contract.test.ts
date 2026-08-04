@@ -310,8 +310,9 @@ import { describe, expect, it } from 'vitest';
  *   계상이었다(이 파일의 중괄호-깊이 파서와 같은 로직으로 재전수). 자리별
  *   before→after 전수 표는 PR 본문과 원장에 있다.
  * - `link` 바닥 `min-h-11`(44) → **`min-h-6`(24, WCAG 2.5.8 AA)**. coarse 의
- *   44 는 `.touch-hit-expand` 가 낸다 — 부착 22곳, **미부착 9곳은 이웃 타깃
- *   여유 <12px** (탭 훔침: DOM 순서상 뒤 원소의 ::after 가 앞 원소를 덮는다).
+ *   44 는 `.touch-hit-expand` 가 낸다 — 부착 25(신규 21), **미부착 15 는 이웃
+ *   타깃 여유 <12px** (탭 훔침: DOM 순서상 뒤 원소의 ::after 가 앞 원소를
+ *   덮는다) 또는 진짜 문장·캡션 행 속이다. 자리별 판정은 원장 표.
  * - `inline` 축 **삭제** — 14곳 전수 중 진짜 문장 속은 3곳뿐이었고, 판정
  *   재료(형제 글자 출처 · used display · reflow)가 전부 정적 시야 밖이다.
  *   인라인 면제 판정은 런타임 계기(touch-target-contract 의 fine-pointer
