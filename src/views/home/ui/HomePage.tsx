@@ -1969,6 +1969,9 @@ export function HomePage() {
     vaultHandle: vault.status === "loaded" ? vault.handle : null,
     nodes: ontologyInsight?.nodes ?? [],
     docs: vault.manifest?.docs ?? [],
+    // OS 폴더 선택창의 제목까지 화면 언어여야 한다 — 설치 앱에서 한국어 화면
+    // 위에 영어 제목의 창이 열리고 있었다(실측 2026-08-04).
+    pickerTitle: t("nodeDatasheet.sourcePickerTitle"),
   });
   const projectSourceMeasuredAtLabel = useMemo(() => {
     const measuredAt = projectSource.view?.measuredAt;

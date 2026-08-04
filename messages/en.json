@@ -2202,6 +2202,7 @@
       "sourceDegradedWhy": "A browser cannot tell where the folder sits on your disk, so connecting is not possible on this screen.",
       "sourceDegradedCta": "Get the macOS app",
       "sourceDegradedStillWorks": "Reading the map, editing documents, and copying the AI handoff all still work here.",
+      "sourcePickerTitle": "Choose the project code folder",
       "sourceRelationsShow": "Show relations",
       "sourceRelationsHide": "Hide relations",
       "sourceOntologyDocument": "Concept document",
