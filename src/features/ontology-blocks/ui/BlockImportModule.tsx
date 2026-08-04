@@ -252,7 +252,7 @@ export function BlockImportModule() {
             >
               <header className="flex shrink-0 items-start justify-between gap-3 border-b border-[color:var(--color-border-soft)] px-5 py-4">
                 <div className="min-w-0">
-                  <p className="font-mono text-caption uppercase tracking-[0.14em] text-[color:var(--color-indigo-accent)]">
+                  <p className="font-mono text-caption uppercase tracking-[var(--tracking-caps-14)] text-[color:var(--color-indigo-accent)]">
                     {t("dialogTitle")}
                   </p>
                   <p className="mt-1 truncate text-body text-[color:var(--color-text-secondary)]">
@@ -277,7 +277,7 @@ export function BlockImportModule() {
 
               <div className="min-h-0 flex-1 overflow-y-auto px-5 py-4">
                 <section data-testid="block-import-new">
-                  <p className="font-mono text-caption uppercase tracking-[0.14em] text-[color:var(--color-text-quaternary)]">
+                  <p className="font-mono text-caption uppercase tracking-[var(--tracking-caps-14)] text-[color:var(--color-text-quaternary)]">
                     {t("newHeading", { count: newEntries.length })}
                   </p>
                   <ul className="mt-1.5 space-y-1">
@@ -301,7 +301,7 @@ export function BlockImportModule() {
                 </section>
 
                 <section data-testid="block-import-conflicts" className="mt-4">
-                  <p className="font-mono text-caption uppercase tracking-[0.14em] text-[color:var(--color-text-quaternary)]">
+                  <p className="font-mono text-caption uppercase tracking-[var(--tracking-caps-14)] text-[color:var(--color-text-quaternary)]">
                     {t("conflictHeading", { count: conflictEntries.length })}
                   </p>
                   {conflictEntries.length === 0 ? (
@@ -407,7 +407,7 @@ export function BlockImportModule() {
                     shape: "segment",
                     size: "lg",
                     tone: "onAccent",
-                    className: "enabled:hover:bg-[color:var(--color-indigo-accent)]",
+                    className: "enabled:hover:bg-[color:var(--color-indigo-brand-hover)]",
                   })}
                 >
                   {busy ? t("confirmBusy") : t("confirm", { count: plan.writes.length })}

@@ -140,7 +140,7 @@ export function CreateNodeForm({
       <div className="flex items-center justify-between gap-2">
         <p
           id={labels.headingId}
-          className="font-mono text-label uppercase tracking-[0.14em] text-[color:var(--color-indigo-accent)]"
+          className="font-mono text-label uppercase tracking-[var(--tracking-caps-14)] text-[color:var(--color-indigo-accent)]"
         >
           {labels.heading}
         </p>
@@ -212,7 +212,7 @@ export function CreateNodeForm({
         ) : null}
         {/* 종류 — 한 줄 라벨 + 캐노니컬 Select(#4). */}
         <label className="flex flex-col gap-1.5">
-          <span className="font-mono text-label uppercase tracking-[0.10em] text-[color:var(--color-text-quaternary)]">
+          <span className="font-mono text-label uppercase tracking-[var(--tracking-caps-10)] text-[color:var(--color-text-quaternary)]">
             {labels.kind}
           </span>
           <Select
@@ -229,7 +229,7 @@ export function CreateNodeForm({
             없음" 을 캐노니컬 Select 로 고른다. 비개발자가 slug 를 알 필요가
             없고, 값은 저장 시 canonicalizeDomainRef 를 지난다(HomePage 글루). */}
         <div className="flex flex-col gap-1.5">
-          <span className="font-mono text-label uppercase tracking-[0.10em] text-[color:var(--color-text-quaternary)]">
+          <span className="font-mono text-label uppercase tracking-[var(--tracking-caps-10)] text-[color:var(--color-text-quaternary)]">
             {labels.domainQuestion}
           </span>
           <Select

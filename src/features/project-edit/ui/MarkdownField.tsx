@@ -33,7 +33,7 @@ export function MarkdownField({ id, value, onChange, placeholder, rows = 8 }: Pr
         <TabButton active={mode === 'preview'} onClick={() => setMode('preview')}>
           {t('tabPreview')}
         </TabButton>
-        <span className="ml-auto font-mono text-caption uppercase tracking-[0.1em] text-[color:var(--color-text-quaternary)]">
+        <span className="ml-auto font-mono text-caption uppercase tracking-[var(--tracking-caps-10)] text-[color:var(--color-text-quaternary)]">
           {t('footer')}
         </span>
       </div>
@@ -104,7 +104,7 @@ function TabButton({
         shape: 'segment',
         active,
         className: cn(
-          'font-mono uppercase tracking-[0.1em]',
+          'font-mono uppercase tracking-[var(--tracking-caps-10)]',
           active ? '' : 'hover:text-[color:var(--color-text-primary)]',
         ),
       })}

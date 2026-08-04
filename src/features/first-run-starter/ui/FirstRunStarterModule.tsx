@@ -136,9 +136,9 @@ export function FirstRunStarterModule({
   // 진입 검수 E-10 — 「첫  실행」·「지금은  샘플」·「지도에서  쓰는  말」. i18n
   // 문자열의 공백은 하나였다. 벌어진 것은 라틴 전용 장식(mono + uppercase +
   // wide tracking)을 한글에 얹은 자리의 공백 글리프다(실측 자간 1.36~2.09px).
-  const eyebrowWide = useLatinEyebrow("tracking-[0.22em]");
-  const eyebrow = useLatinEyebrow("tracking-[0.18em]");
-  const eyebrowTight = useLatinEyebrow("tracking-[0.16em]");
+  const eyebrowWide = useLatinEyebrow("tracking-[var(--tracking-caps-16)]");
+  const eyebrow = useLatinEyebrow("tracking-[var(--tracking-caps-16)]");
+  const eyebrowTight = useLatinEyebrow("tracking-[var(--tracking-caps-16)]");
   // P0 공감형 샘플 vault (2026-07) — 비개발자가 dogfood(이 도구 자기 설명)
   // 대신 즉시 알아볼 수 있는 예시 비즈니스를 고를 수 있는 첫 실행 선택.
   // static 모드에서만 소비(local 모드는 useOntologyInsight 가 이 값을
@@ -296,7 +296,7 @@ export function FirstRunStarterModule({
           판단해 넣지 않는다. */}
       <p
         data-testid="first-run-starter-brand"
-        className="mb-1 text-caption font-medium tracking-[0.01em] text-[color:var(--topology-v2-panel-text-quaternary)]"
+        className="mb-1 text-caption font-medium tracking-[var(--tracking-label)] text-[color:var(--topology-v2-panel-text-quaternary)]"
       >
         {t("brand")}
       </p>
@@ -451,12 +451,12 @@ export function FirstRunStarterModule({
           onClick={() => setGuideOpen(true)}
           disabled={busy}
           data-testid="first-run-starter-open"
-          className="touch-hit-expand relative flex h-10 w-full items-center justify-center gap-2 rounded-card border border-[color:var(--color-indigo-line-a45)] bg-[color:var(--color-indigo-brand)] text-body font-semibold text-white shadow-[inset_0_1px_0_var(--color-overlay-3)] transition-colors hover:bg-[color:var(--color-indigo-accent)] disabled:opacity-60"
+          className="touch-hit-expand relative flex h-10 w-full items-center justify-center gap-2 rounded-card border border-[color:var(--color-indigo-line-a45)] bg-[color:var(--color-indigo-brand)] text-body font-semibold text-[color:var(--color-text-on-accent)] shadow-[inset_0_1px_0_var(--color-overlay-3)] transition-colors hover:bg-[color:var(--color-indigo-brand-hover)] disabled:opacity-60"
         >
           <FolderOpen size={14} aria-hidden />
           {busy && !scaffolding ? t("openBusy") : t("openLabel")}
           {applePlatform ? (
-            <span className="rounded-micro border border-b-2 border-white/35 px-1.5 py-px font-mono text-caption font-medium opacity-80">
+            <span className="rounded-micro border border-b-2 border-[color:var(--color-keycap-edge-on-accent)] px-1.5 py-px font-mono text-caption font-medium opacity-80">
               ⌘O
             </span>
           ) : null}

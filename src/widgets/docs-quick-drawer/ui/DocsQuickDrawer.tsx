@@ -173,7 +173,7 @@ function TreeBranch({
           size="sm"
           tone="muted"
           onClick={() => setOpen((v) => !v)}
-          className="rounded-card font-mono uppercase tracking-[0.08em] hover:bg-[color:var(--color-overlay-1)]"
+          className="rounded-card font-mono uppercase tracking-[var(--tracking-caps-08)] hover:bg-[color:var(--color-overlay-1)]"
           style={{ paddingLeft: `${depth * 12 + 4}px` }}
           aria-expanded={effectiveOpen}
         >
@@ -292,8 +292,8 @@ export function DocsQuickDrawer({
   // 진입 검수 E-10 — 문서함/작업공간 드로어의 한국어 섹션 라벨에 얹힌 라틴
   // 아이브로. 「폴더별  ·  31」처럼 공백만 벌어졌다. 폴더 이름 행(TreeBranch)은
   // 기계 문자열이라 mono 를 유지한다 — 금지는 한글 문장에 얹는 것이다.
-  const eyebrow14 = useLatinEyebrow("tracking-[0.14em]");
-  const eyebrow08 = useLatinEyebrow("tracking-[0.08em]");
+  const eyebrow14 = useLatinEyebrow("tracking-[var(--tracking-caps-14)]");
+  const eyebrow08 = useLatinEyebrow("tracking-[var(--tracking-caps-08)]");
   const locale = useLocale();
   const router = useRouter();
 

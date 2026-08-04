@@ -93,7 +93,7 @@ export function TopologyIndexTreeRow({
   const selected = selectedId === node.id;
   const fresh = changedSlugs.has(node.id);
   const agentAttributed = agentAttributedNodeId !== null && agentAttributedNodeId === node.id;
-  const eyebrow = useLatinEyebrow("tracking-[0.06em]");
+  const eyebrow = useLatinEyebrow("tracking-[var(--tracking-caps-08)]");
   const isDomain = node.kind === "domain";
   const censusRow = isDomain ? (domainCensus?.get(node.id) ?? null) : null;
   const subcounts = isDomain

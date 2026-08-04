@@ -974,7 +974,7 @@ export function StudioCompass(props: StudioCompassProps) {
             {focal.name || "—"}
           </h1>
           <span className="text-[color:var(--color-text-quaternary)]">·</span>
-          <span className="rounded-chip border border-[color:var(--color-border-soft)] px-1.5 py-px text-label tracking-[0.02em]">
+          <span className="rounded-chip border border-[color:var(--color-border-soft)] px-1.5 py-px text-label tracking-[var(--tracking-label)]">
             {focal.kindLabel}
           </span>
           {focal.domainLabel ? (
@@ -1096,7 +1096,7 @@ export function StudioCompass(props: StudioCompassProps) {
         <div className="absolute left-5 top-8 z-[4] flex items-center gap-3" data-testid="studio-flow-cue">
           <MiniRose bearings={bearings} />
           <div className="flex flex-col gap-1">
-            <span className="text-label uppercase tracking-[0.05em] text-[color:var(--color-text-quaternary)]">
+            <span className="text-label uppercase tracking-[var(--tracking-caption)] text-[color:var(--color-text-quaternary)]">
               {labels.flowEyebrow}
             </span>
             <span className="text-body text-[color:var(--color-text-secondary)]">
@@ -1134,7 +1134,7 @@ export function StudioCompass(props: StudioCompassProps) {
         <div className="absolute left-1/2 top-4 z-[4] flex -translate-x-1/2 flex-col items-center gap-1 text-center">
           {/* #6 — was `text-callout` (unregistered ramp step → root 16px). Pin to
               the nearest real step so it stays the calm largest label, no drift. */}
-          <div className="whitespace-nowrap text-body-lg tracking-[-0.006em] text-[color:var(--color-text-secondary)]">
+          <div className="whitespace-nowrap text-body-lg tracking-[var(--tracking-title)] text-[color:var(--color-text-secondary)]">
             {labels.framePrompt(focal.name || "…")}
           </div>
           {/* C2 — quiet origin context: this new node continues A's bearing. */}
@@ -1456,7 +1456,7 @@ export function StudioCompass(props: StudioCompassProps) {
               shape: "card",
               size: "sm",
               tone: "onAccent",
-              className: "hover:bg-[color:var(--color-indigo-hover)]",
+              className: "hover:bg-[color:var(--color-indigo-brand-hover)]",
             })}
           >
             {mode === "create" ? <Check size={15} aria-hidden /> : null}
@@ -1664,7 +1664,7 @@ function CenterCard(
           </>
         ) : (
           <>
-            <span className="rounded-chip border border-[color:var(--color-indigo-a24)] bg-[color:var(--color-indigo-a12)] px-1.5 py-px text-label tracking-[0.03em] text-[color:var(--color-indigo-text-soft)]">
+            <span className="rounded-chip border border-[color:var(--color-indigo-a24)] bg-[color:var(--color-indigo-a12)] px-1.5 py-px text-label tracking-[var(--tracking-caption)] text-[color:var(--color-indigo-text-soft)]">
               {focal.kindLabel}
             </span>
             {focal.domainLabel ? (
@@ -1935,7 +1935,7 @@ function LaneRender({
       {/* lane head label for a filled lane */}
       {view.filled ? (
         <div
-          className="studio-stage-in absolute z-[3] flex items-center gap-1.5 whitespace-nowrap text-label tracking-[0.01em] text-[color:var(--color-text-tertiary)]"
+          className="studio-stage-in absolute z-[3] flex items-center gap-1.5 whitespace-nowrap text-label tracking-[var(--tracking-label)] text-[color:var(--color-text-tertiary)]"
           style={{ ...laneHeadPos(view, layout), ...stageStyle }}
         >
           <span className="h-1 w-1 flex-none rounded-full bg-[color:var(--color-indigo-brand)]" />
@@ -2133,7 +2133,7 @@ function LaneRender({
           }}
         >
           {view.recommended ? (
-            <span className="inline-flex items-center gap-1 rounded-chip bg-[color:var(--color-indigo-a16)] px-1.5 py-0.5 text-label font-semibold tracking-[0.02em] text-[color:var(--color-indigo-text-soft)]">
+            <span className="inline-flex items-center gap-1 rounded-chip bg-[color:var(--color-indigo-a16)] px-1.5 py-0.5 text-label font-semibold tracking-[var(--tracking-label)] text-[color:var(--color-indigo-text-soft)]">
               ◈ {labels.guideBadge}
             </span>
           ) : view.expected ? (
@@ -2501,7 +2501,7 @@ export function placePicker(
 /** Quiet section eyebrow inside the discovery picker (추천 / 둘러보기). */
 function PickerSectionHeading({ label }: { label: string }) {
   return (
-    <div className="px-2.5 pb-1 pt-1.5 text-label uppercase tracking-[0.05em] text-[color:var(--color-text-quaternary)]">
+    <div className="px-2.5 pb-1 pt-1.5 text-label uppercase tracking-[var(--tracking-caption)] text-[color:var(--color-text-quaternary)]">
       {label}
     </div>
   );
@@ -3132,7 +3132,7 @@ function DeltaPreviewModal({
                 }}
               >
                 {center.isNew ? (
-                  <span className="mb-0.5 inline-flex w-fit items-center rounded-micro bg-[color:var(--color-indigo-a16)] px-1 py-px text-label font-semibold tracking-[0.02em] text-[color:var(--color-indigo-text-soft)]">
+                  <span className="mb-0.5 inline-flex w-fit items-center rounded-micro bg-[color:var(--color-indigo-a16)] px-1 py-px text-label font-semibold tracking-[var(--tracking-label)] text-[color:var(--color-indigo-text-soft)]">
                     {labels.previewCenterNew}
                   </span>
                 ) : null}
@@ -3224,7 +3224,7 @@ function DeltaPreviewModal({
               shape: "card",
               size: "md",
               tone: "onAccent",
-              className: "hover:bg-[color:var(--color-indigo-hover)]",
+              className: "hover:bg-[color:var(--color-indigo-brand-hover)]",
             })}
           >
             {labels.save}

@@ -1469,7 +1469,7 @@ export function VaultAgentSetupPanel({
  */
 function SectionLabel({ children }: { children: ReactNode }) {
   return (
-    <h4 className="text-caption font-medium uppercase tracking-[0.12em] text-[color:var(--color-text-quaternary)]">
+    <h4 className="text-caption font-medium uppercase tracking-[var(--tracking-caps-12)] text-[color:var(--color-text-quaternary)]">
       {children}
     </h4>
   );

@@ -152,7 +152,7 @@ export function OverviewTab({
 function CardHead({ label, count }: { label: string; count: number }) {
   return (
     <div className="flex items-baseline gap-2.5">
-      <InsightsSectionTitle level={2} className="text-body-lg font-medium tracking-[-0.01em] text-[color:var(--color-text-primary)]">{label}</InsightsSectionTitle>
+      <InsightsSectionTitle level={2} className="text-body-lg font-medium tracking-[var(--tracking-title)] text-[color:var(--color-text-primary)]">{label}</InsightsSectionTitle>
       <span className="ml-auto font-mono text-body tabular-nums text-[color:var(--topology-v2-numeral-face)]">
         {count}
       </span>

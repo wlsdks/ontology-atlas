@@ -147,6 +147,67 @@ const cursorAffordanceSelectors = [
   },
 ];
 
+/*
+ * 자간 · 무게 · Tailwind 팔레트 — 2026-08-05 에 닫은 세 축.
+ *
+ * ## 자간 (`tracking-[…em]`)
+ *
+ * 램프는 **있었는데 아무도 안 썼다.** 실측: 토큰 9종을 13개 파일이 쓰는 동안
+ * 146개 파일이 `tracking-[Nem]` 을 손으로 적었고, 값은 21종이었다 — `0.1em` 과
+ * `0.10em` 처럼 **같은 값을 두 표기로** 적은 것만 31건이다. 원인은 취향이
+ * 아니라 **없는 층**이었다: 자간이 실제로 필요한 자리는 거의 전부 `uppercase`
+ * 마이크로 라벨(실측 194건)인데, 램프의 caption/label(0.04/0.02em)은 본문용
+ * 값이라 그 자리에 줄 스텝이 없었다. `--tracking-caps-08~16` 다섯을 등재해
+ * 213곳이 픽셀 0으로 옮겨갔다.
+ *
+ * ## 무게 (`font-[NNN]`)
+ *
+ * 토큰은 `--font-weight-signature`(510) 하나뿐인데 `560`·`650` 이 13곳에 손으로
+ * 적혀 있었다. 가변 폰트라 Tailwind 기본 3단(500/600/700)을 안 쓰는 것이 의도지만,
+ * 그 의도가 **이름 없이** 살고 있었다. 둘 다 값 그대로 등재했다.
+ *
+ * ## Tailwind 팔레트 유틸리티
+ *
+ * `text-white` 3곳 + `border-white/35` 1곳. 적은 수지만 **무채색+인디고 하나**
+ * 헌장의 정확한 반대다. 그리고 여기엔 함정이 있었다 — `text-white` 를 «토큰이
+ * 아니니까» `--color-text-primary` 로 바꿨다면 인디고 면 위 대비가 4.70 → 4.42
+ * 로 **AA 미달이 됐을 것**이다. 올바른 목적지는 이미 있던
+ * `--color-text-on-accent`(#ffffff) 였다. 값이 아니라 **자리**가 토큰을 정한다.
+ *
+ * ⚠️ 켜기 전 전수: 세 축 모두 먼저 0으로 만들고 켰다(lint 총계 불변).
+ */
+const typographyAxisSelectors = [
+  {
+    selector: 'Literal[value=/tracking-\\[-?[0-9.]+(em|px|rem)\\]/]',
+    message:
+      '자간도 램프다. 대문자 마이크로 라벨은 --tracking-caps-08/10/12/14/16, 본문 짝은 --tracking-caption/label/body/body-lg/title, 큰 제목은 --tracking-display/hero/section/card 를 쓴다. 램프 밖 값이 필요하면 스텝을 등재하는 PR 을 먼저 낸다.',
+  },
+  {
+    selector: 'TemplateElement[value.raw=/tracking-\\[-?[0-9.]+(em|px|rem)\\]/]',
+    message: '자간도 램프다 (template literal). --tracking-* 토큰을 쓴다.',
+  },
+  {
+    selector: 'Literal[value=/font-\\[[0-9]+\\]/]',
+    message:
+      '글자 무게도 램프다. --font-weight-signature(510) · -emphasis(560) · -strong(650) 셋뿐이다. 숫자를 직접 적으면 그 의도가 이름 없이 산다.',
+  },
+  {
+    selector: 'TemplateElement[value.raw=/font-\\[[0-9]+\\]/]',
+    message: '글자 무게도 램프다 (template literal). --font-weight-* 를 쓴다.',
+  },
+  {
+    selector:
+      'Literal[value=/(^|[^-\\w])(?:text|bg|border|ring|fill|stroke|from|to|via)-(?:white|black|slate|gray|zinc|neutral|stone|red|orange|amber|yellow|lime|green|emerald|teal|cyan|sky|blue|indigo|violet|purple|fuchsia|pink|rose)(?:-\\d{2,3})?(?:\\/\\d+)?([^-\\w]|$)/]',
+    message:
+      'Tailwind 기본 팔레트 금지 — 헌장은 무채색 + 인디고 하나다. --color-* 토큰을 쓴다. ⚠️ 값이 아니라 **자리**가 토큰을 정한다: 인디고 면 위 흰 글자는 --color-text-primary 가 아니라 --color-text-on-accent 다(전자는 4.42:1 로 AA 미달).',
+  },
+  {
+    selector:
+      'TemplateElement[value.raw=/(^|[^-\\w])(?:text|bg|border|ring|fill|stroke|from|to|via)-(?:white|black|slate|gray|zinc|neutral|stone|red|orange|amber|yellow|lime|green|emerald|teal|cyan|sky|blue|indigo|violet|purple|fuchsia|pink|rose)(?:-\\d{2,3})?(?:\\/\\d+)?([^-\\w]|$)/]',
+    message: 'Tailwind 기본 팔레트 금지 (template literal). --color-* 토큰을 쓴다.',
+  },
+];
+
 const accentTintPairingSelectors = [
   {
     selector:
@@ -845,6 +906,7 @@ const eslintConfig = defineConfig([
         ...accentTintPairingSelectors,
         ...inlineShadowSelectors,
         ...cursorAffordanceSelectors,
+        ...typographyAxisSelectors,
       ],
     },
   },

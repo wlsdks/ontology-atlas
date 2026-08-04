@@ -108,7 +108,7 @@ export function ImpactRankingCard({
       )}
     >
       <div className="flex flex-wrap items-baseline gap-x-3 gap-y-1">
-        <InsightsSectionTitle level={2} className="text-body-lg font-medium tracking-[-0.01em] text-[color:var(--color-text-primary)]">
+        <InsightsSectionTitle level={2} className="text-body-lg font-medium tracking-[var(--tracking-title)] text-[color:var(--color-text-primary)]">
           {labels.title}
         </InsightsSectionTitle>
         {/* 두 세그먼트가 무슨 뜻인지 머리에서 한 번만 말한다 — 행마다

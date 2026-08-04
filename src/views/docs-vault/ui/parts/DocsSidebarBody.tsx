@@ -97,7 +97,7 @@ const RECENTLY_CHANGED_STRIP_MAX = 5;
 
 function SectionLabel({ children }: { children: ReactNode }) {
   return (
-    <h3 className="flex-none px-3 pb-1.5 pt-3 font-mono text-caption uppercase tracking-[0.16em] text-[color:var(--color-text-quaternary)]">
+    <h3 className="flex-none px-3 pb-1.5 pt-3 font-mono text-caption uppercase tracking-[var(--tracking-caps-16)] text-[color:var(--color-text-quaternary)]">
       {children}
     </h3>
   );
@@ -355,7 +355,7 @@ export function DocsSidebarBody({
               // 가장자리 근처의 메뉴는 그 가장자리를 기준으로 자란다.
               className="absolute right-0 top-[calc(100%+6px)] z-50 w-48 rounded-[var(--chrome-radius-inner)] border border-[color:var(--color-border-soft)] bg-[color:var(--color-elevated)] p-2 shadow-[var(--chrome-shadow)]"
             >
-              <p className="px-1.5 pb-1 font-mono text-caption uppercase tracking-[0.16em] text-[color:var(--color-text-quaternary)]">
+              <p className="px-1.5 pb-1 font-mono text-caption uppercase tracking-[var(--tracking-caps-16)] text-[color:var(--color-text-quaternary)]">
                 {t("orderSortHeader")}
               </p>
               {DOCS_TREE_SORTS.map((option) => (
@@ -370,7 +370,7 @@ export function DocsSidebarBody({
                   }}
                 />
               ))}
-              <p className="mt-1 border-t border-[color:var(--color-border-soft)] px-1.5 pb-1 pt-2 font-mono text-caption uppercase tracking-[0.16em] text-[color:var(--color-text-quaternary)]">
+              <p className="mt-1 border-t border-[color:var(--color-border-soft)] px-1.5 pb-1 pt-2 font-mono text-caption uppercase tracking-[var(--tracking-caps-16)] text-[color:var(--color-text-quaternary)]">
                 {t("orderGroupHeader")}
               </p>
               {DOCS_TREE_GROUPS.map((option) => (
@@ -486,7 +486,7 @@ export function DocsSidebarBody({
               className="flex w-full items-center gap-1.5 px-3 pb-1.5 pt-3 text-left transition-colors hover:text-[color:var(--color-text-secondary)]"
             >
               <Clock size={10} className="flex-none text-[color:var(--color-text-quaternary)]" aria-hidden />
-              <span className="flex-1 font-mono text-caption uppercase tracking-[0.16em] text-[color:var(--color-text-quaternary)]">
+              <span className="flex-1 font-mono text-caption uppercase tracking-[var(--tracking-caps-16)] text-[color:var(--color-text-quaternary)]">
                 {t("recentlyChangedHeader", { count: recentlyChangedDocs.length })}
               </span>
               <ChevronDown
@@ -546,7 +546,7 @@ export function DocsSidebarBody({
           >
             <div className="flex items-center gap-1.5 px-3 pb-1.5 pt-3" title={tAgentFiles("headerHint")}>
               <Bot size={10} className="flex-none text-[color:var(--color-text-quaternary)]" aria-hidden />
-              <span className="flex-1 font-mono text-caption uppercase tracking-[0.16em] text-[color:var(--color-text-quaternary)]">
+              <span className="flex-1 font-mono text-caption uppercase tracking-[var(--tracking-caps-16)] text-[color:var(--color-text-quaternary)]">
                 {tAgentFiles("header")}
               </span>
               {agentFiles.driftCount > 0 ? (

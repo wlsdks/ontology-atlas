@@ -42,7 +42,7 @@ export function TopologyRelationLegend({
   const relationVocabulary = useRelationVocabulary();
   // 진입 검수 E-10 — 범례 낱말은 ko 에서 「포  함」·「의  존」·「큰  줄기  보기」로
   // 벌어졌다. 라틴 범례에서는 아이브로가 정상 신호라 로케일 조건으로만 끈다.
-  const eyebrow = useLatinEyebrow("tracking-[0.2em]");
+  const eyebrow = useLatinEyebrow("tracking-[var(--tracking-caps-16)]");
 
   return (
     <div

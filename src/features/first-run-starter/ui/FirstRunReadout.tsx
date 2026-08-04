@@ -56,7 +56,7 @@ export function FirstRunReadout({
   // 진입 검수 E-10 — 이 계기 판독 문법(mono + uppercase + wide tracking)은
   // 라틴에서는 정상 신호지만 한글에서는 공백 글리프만 벌려 「큰  줄기  보기」로
   // 읽혔다(실측 자간 1.8px). 로케일로 조건을 내린다 — 영문은 종전 그대로.
-  const eyebrow = useLatinEyebrow("tracking-[0.2em]");
+  const eyebrow = useLatinEyebrow("tracking-[var(--tracking-caps-16)]");
 
   if (!visible) return null;
 

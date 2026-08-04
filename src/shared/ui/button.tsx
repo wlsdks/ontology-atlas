@@ -36,7 +36,7 @@ const buttonVariants = cva(
         // 있었는데, 이 프리미티브만 이관에서 빠져 있었다 — 관문의 주 CTA 가
         // 앱에서 가장 눈에 띄는 컨트롤인데 유일하게 AA 미달이던 이유다.
         primary:
-          'bg-[color:var(--color-indigo-brand)] text-[color:var(--color-text-on-accent)] shadow-[inset_0_1px_0_var(--color-border-strong),0_10px_24px_var(--color-indigo-a22)] hover:border-[color:var(--color-indigo-pale-a28)] hover:bg-[color:var(--color-indigo-hover)] active:shadow-[inset_0_1px_0_var(--color-divider),0_6px_14px_var(--color-indigo-a20)]',
+          'bg-[color:var(--color-indigo-brand)] text-[color:var(--color-text-on-accent)] shadow-[inset_0_1px_0_var(--color-border-strong),0_10px_24px_var(--color-indigo-a22)] hover:border-[color:var(--color-indigo-pale-a28)] hover:bg-[color:var(--color-indigo-brand-hover)] active:shadow-[inset_0_1px_0_var(--color-divider),0_6px_14px_var(--color-indigo-a20)]',
         ghost:
           'bg-transparent text-[color:var(--color-text-primary)] hover:border-[color:var(--color-border-soft)] hover:bg-[color:var(--color-overlay-2)] active:bg-[color:var(--color-border-soft)] active:shadow-[var(--shadow-control-press)]',
         outline:

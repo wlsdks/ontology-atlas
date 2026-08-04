@@ -244,7 +244,7 @@ export function DocsVaultAuditModal({
               <div className="min-w-0 flex-1">
                 <p
                   id="docs-audit-modal-title"
-                  className="text-title font-[650] text-[color:var(--color-text-primary)]"
+                  className="text-title font-[var(--font-weight-strong)] text-[color:var(--color-text-primary)]"
                 >
                   {t("header.contractToggleLabel")}
                 </p>
@@ -277,10 +277,10 @@ export function DocsVaultAuditModal({
                   </span>
                   <div className="min-w-0">
                     <div className="flex min-w-0 flex-wrap items-center gap-x-2 gap-y-1">
-                      <span className="font-mono text-caption uppercase tracking-[0.14em] text-[color:var(--color-indigo-pale-a82)]">
+                      <span className="font-mono text-caption uppercase tracking-[var(--tracking-caps-14)] text-[color:var(--color-indigo-pale-a82)]">
                         {cell.label}
                       </span>
-                      <span className="rounded-micro border border-[color:var(--color-indigo-line-a20)] bg-[color:var(--color-indigo-a06)] px-1.5 py-0.5 font-mono text-caption uppercase tracking-[0.08em] text-[color:var(--color-text-quaternary)]">
+                      <span className="rounded-micro border border-[color:var(--color-indigo-line-a20)] bg-[color:var(--color-indigo-a06)] px-1.5 py-0.5 font-mono text-caption uppercase tracking-[var(--tracking-caps-08)] text-[color:var(--color-text-quaternary)]">
                         {cell.chip}
                       </span>
                     </div>
@@ -319,7 +319,7 @@ export function DocsVaultAuditModal({
                           shape: "chip",
                           size: "sm",
                           className:
-                            "min-w-0 gap-1 font-mono uppercase tracking-[0.06em] hover:border-[color:var(--color-indigo-line-a40)] hover:text-[color:var(--color-text-primary)]",
+                            "min-w-0 gap-1 font-mono uppercase tracking-[var(--tracking-caps-08)] hover:border-[color:var(--color-indigo-line-a40)] hover:text-[color:var(--color-text-primary)]",
                         })}
                       >
                         {copiedGate ? <Check size={10} aria-hidden /> : <Clipboard size={10} aria-hidden />}
@@ -341,10 +341,10 @@ export function DocsVaultAuditModal({
                 </span>
                 <div className="min-w-0">
                   <div className="flex min-w-0 flex-wrap items-center gap-x-2 gap-y-1">
-                    <span className="font-mono text-caption uppercase tracking-[0.14em] text-[color:var(--color-indigo-pale-a82)]">
+                    <span className="font-mono text-caption uppercase tracking-[var(--tracking-caps-14)] text-[color:var(--color-indigo-pale-a82)]">
                       {tSkillParity("header")}
                     </span>
-                    <span className="rounded-micro border border-[color:var(--color-indigo-line-a20)] bg-[color:var(--color-indigo-a06)] px-1.5 py-0.5 font-mono text-caption uppercase tracking-[0.08em] text-[color:var(--color-text-quaternary)]">
+                    <span className="rounded-micro border border-[color:var(--color-indigo-line-a20)] bg-[color:var(--color-indigo-a06)] px-1.5 py-0.5 font-mono text-caption uppercase tracking-[var(--tracking-caps-08)] text-[color:var(--color-text-quaternary)]">
                       {tSkillParity("chip")}
                     </span>
                   </div>
@@ -397,7 +397,7 @@ export function DocsVaultAuditModal({
                           shape: "chip",
                           size: "sm",
                           className:
-                            "min-w-0 gap-1 font-mono uppercase tracking-[0.06em] hover:border-[color:var(--color-indigo-line-a40)] hover:text-[color:var(--color-text-primary)]",
+                            "min-w-0 gap-1 font-mono uppercase tracking-[var(--tracking-caps-08)] hover:border-[color:var(--color-indigo-line-a40)] hover:text-[color:var(--color-text-primary)]",
                         })}
                     >
                       <Clipboard size={10} aria-hidden />

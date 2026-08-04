@@ -561,7 +561,7 @@ export function DocsVaultUnifiedPalette({
                     {t('bodyIndexingNotice')}
                   </p>
                 ) : null}
-                <p className="mt-4 font-mono text-caption uppercase tracking-[0.16em] text-[color:var(--color-text-quaternary)]">
+                <p className="mt-4 font-mono text-caption uppercase tracking-[var(--tracking-caps-16)] text-[color:var(--color-text-quaternary)]">
                   {t('canonicalDocsLabel')}
                 </p>
                 <ul className="mt-1.5 flex flex-col gap-0.5">
@@ -595,7 +595,7 @@ export function DocsVaultUnifiedPalette({
                   {sectionHeader ? (
                     <li
                       key={`h-${sectionHeader.title}`}
-                      className="mb-0.5 mt-1.5 flex items-center gap-1.5 px-3 pb-0.5 font-mono text-caption uppercase tracking-[0.16em] text-[color:var(--color-text-quaternary)]"
+                      className="mb-0.5 mt-1.5 flex items-center gap-1.5 px-3 pb-0.5 font-mono text-caption uppercase tracking-[var(--tracking-caps-16)] text-[color:var(--color-text-quaternary)]"
                     >
                       {sectionHeader.icon}
                       {sectionHeader.title}
@@ -622,7 +622,7 @@ export function DocsVaultUnifiedPalette({
           )}
         </ul>
         <LiveAnnouncer message={resultAnnouncement} />
-        <div className="flex items-center gap-3 border-t border-[color:var(--color-overlay-2)] px-3 py-2 font-mono text-caption uppercase tracking-[0.12em] text-[color:var(--color-text-quaternary)]">
+        <div className="flex items-center gap-3 border-t border-[color:var(--color-overlay-2)] px-3 py-2 font-mono text-caption uppercase tracking-[var(--tracking-caps-12)] text-[color:var(--color-text-quaternary)]">
           <span>
             <kbd className="rounded-micro border border-[color:var(--color-divider)] px-1">
               ↑↓
@@ -697,7 +697,7 @@ function ResultRow({
         ) : null}
       </span>
       {row.meta ? (
-        <span className="truncate font-mono text-caption uppercase tracking-[0.1em] text-[color:var(--color-text-quaternary)]">
+        <span className="truncate font-mono text-caption uppercase tracking-[var(--tracking-caps-10)] text-[color:var(--color-text-quaternary)]">
           {row.meta}
         </span>
       ) : null}

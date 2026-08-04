@@ -118,7 +118,7 @@ export function NewDocKindDialog({
       >
         <p
           id="new-doc-kind-dialog-title"
-          className="text-body-lg font-[650] text-[color:var(--color-text-primary)]"
+          className="text-body-lg font-[var(--font-weight-strong)] text-[color:var(--color-text-primary)]"
         >
           {t("title")}
         </p>

@@ -107,7 +107,7 @@ export function FirstRunPage() {
             </span>
           </div>
           <div className="grid gap-1.5">
-            <p className="font-mono text-caption uppercase tracking-[0.18em] text-[color:var(--color-text-quaternary)]">
+            <p className="font-mono text-caption uppercase tracking-[var(--tracking-caps-16)] text-[color:var(--color-text-quaternary)]">
               {t("eyebrow")}
             </p>
             <h1 className="break-keep text-display font-[var(--font-weight-signature)] leading-tight text-[color:var(--color-text-primary)]">
@@ -228,7 +228,7 @@ export function FirstRunPage() {
 
         <p
           data-token="engraved-numeral"
-          className="text-center font-mono text-caption uppercase tracking-[0.16em]"
+          className="text-center font-mono text-caption uppercase tracking-[var(--tracking-caps-16)]"
           style={{
             color: "var(--engraved-numeral-face)",
             textShadow: "var(--engraved-numeral-text-shadow)",

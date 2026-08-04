@@ -92,7 +92,7 @@ export function DesktopVaultWelcome({
       <div className="mx-auto my-auto grid w-full max-w-6xl content-start gap-8 px-5 py-8 md:px-8 md:py-12 lg:grid-cols-[minmax(0,1fr)_360px] lg:items-start lg:gap-12">
         <div className="grid min-w-0 gap-7">
           <section className="grid max-w-3xl gap-3">
-            <p className="font-mono text-caption uppercase tracking-[0.16em] text-[color:var(--color-text-quaternary)]">
+            <p className="font-mono text-caption uppercase tracking-[var(--tracking-caps-16)] text-[color:var(--color-text-quaternary)]">
               {t("desktopWelcome.eyebrow")}
             </p>
             {/* 34px 은 이제 램프 스텝이다 (`--text-hero-lg`, 2026-07-29 승격) —
@@ -156,7 +156,7 @@ export function DesktopVaultWelcome({
                       <Icon size={14} aria-hidden />
                     </span>
                     <div className="min-w-0">
-                      <p className="font-mono text-caption uppercase tracking-[0.14em] text-[color:var(--color-text-quaternary)]">
+                      <p className="font-mono text-caption uppercase tracking-[var(--tracking-caps-14)] text-[color:var(--color-text-quaternary)]">
                         {item.label}
                       </p>
                       <p className="mt-0.5 text-body font-semibold text-[color:var(--color-text-primary)]">
@@ -265,7 +265,7 @@ export function DesktopVaultWelcome({
           </section>
 
           <section className="grid gap-2">
-            <h3 className="font-mono text-caption uppercase tracking-[0.16em] text-[color:var(--color-text-quaternary)]">
+            <h3 className="font-mono text-caption uppercase tracking-[var(--tracking-caps-16)] text-[color:var(--color-text-quaternary)]">
               {t("desktopWelcome.recentTitle")}
             </h3>
             {recentVaults.length > 0 ? (

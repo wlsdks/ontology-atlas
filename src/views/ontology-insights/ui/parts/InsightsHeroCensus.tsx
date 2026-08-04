@@ -94,14 +94,14 @@ function BigNum({ value, unit, suffix }: { value: number | string; unit?: string
   return (
     <div
       // eslint-disable-next-line no-restricted-syntax -- 센서스 시그니처 대형 숫자(40px)는 type 램프 상단(hero 30px)을 넘는 의도적 display 예외.
-      className="font-mono text-[40px] font-semibold leading-none tabular-nums tracking-[0.01em] text-[color:var(--topology-v2-numeral-face)]"
+      className="font-mono text-[40px] font-semibold leading-none tabular-nums tracking-[var(--tracking-label)] text-[color:var(--topology-v2-numeral-face)]"
       style={{ textShadow: "0 2px 0 var(--topology-v2-numeral-shadow)" }}
       data-testid="insights-bignum"
     >
       {display}
       {suffix ?? ""}
       {unit ? (
-        <span className="ml-1.5 text-body tracking-[0.06em] text-[color:var(--color-text-quaternary)]" style={{ textShadow: "none" }}>
+        <span className="ml-1.5 text-body tracking-[var(--tracking-caps-08)] text-[color:var(--color-text-quaternary)]" style={{ textShadow: "none" }}>
           {unit}
         </span>
       ) : null}

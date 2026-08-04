@@ -92,7 +92,7 @@ export function TopologyV2EdgePanel({
       className={`topology-chrome-in flex w-[300px] flex-col gap-3 rounded-[var(--topology-v2-panel-radius)] outline-none focus-visible:outline-none border border-[color:var(--topology-v2-panel-border)] bg-[color:var(--topology-v2-panel-surface)] p-4 shadow-[var(--topology-v2-panel-shadow)] ${className ?? ""}`}
     >
       <div className="flex items-start justify-between gap-2">
-        <p className="font-mono text-label uppercase tracking-[0.14em] text-[color:var(--topology-v2-panel-text-tertiary)]">
+        <p className="font-mono text-label uppercase tracking-[var(--tracking-caps-14)] text-[color:var(--topology-v2-panel-text-tertiary)]">
           {labels.kicker} · {typeLabel}
         </p>
         <IconButton
@@ -141,7 +141,7 @@ export function TopologyV2EdgePanel({
 
       {declaredBy ? (
         <div className="flex flex-col gap-1 border-t border-[color:var(--topology-v2-panel-divider)] pt-2.5">
-          <span className="font-mono text-caption uppercase tracking-[0.12em] text-[color:var(--topology-v2-panel-text-quaternary)]">
+          <span className="font-mono text-caption uppercase tracking-[var(--tracking-caps-12)] text-[color:var(--topology-v2-panel-text-quaternary)]">
             {labels.declaredByLabel}
             {updatedAtLabel ? ` · ${updatedAtLabel}` : ""}
           </span>

@@ -535,7 +535,7 @@ export function AppSettingsMenu({
           }
         />
         {triggerVariant === 'header-pill' ? (
-          <span className="hidden font-mono text-label uppercase tracking-[0.08em] sm:inline">
+          <span className="hidden font-mono text-label uppercase tracking-[var(--tracking-caps-08)] sm:inline">
             {t('settingsLabel')}
           </span>
         ) : null}
@@ -672,7 +672,7 @@ export function AppSettingsMenu({
               >
                 {SETTINGS_GROUPS.map((group) => (
                   <div key={group.key} className="mb-3 last:mb-0">
-                    <p className="px-2.5 pb-1 font-mono text-label uppercase tracking-[0.14em] text-[color:var(--color-text-quaternary)]">
+                    <p className="px-2.5 pb-1 font-mono text-label uppercase tracking-[var(--tracking-caps-14)] text-[color:var(--color-text-quaternary)]">
                       {t(`sectionGroup.${group.key}`)}
                     </p>
                     {group.items.map((item) => {

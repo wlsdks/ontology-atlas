@@ -35,7 +35,7 @@ export function ProjectMetaGrid({
           key={item.label}
           className={cn("bg-[color:var(--color-overlay-1)] px-3.5 py-3.5", cellClassName)}
         >
-          <dt className="font-mono text-caption uppercase tracking-[0.12em] text-[color:var(--color-text-quaternary)]">
+          <dt className="font-mono text-caption uppercase tracking-[var(--tracking-caps-12)] text-[color:var(--color-text-quaternary)]">
             {item.label}
           </dt>
           <dd className="mt-1.5 text-body-lg leading-6 tabular-nums font-[var(--font-weight-signature)] text-[color:var(--color-text-primary)]">

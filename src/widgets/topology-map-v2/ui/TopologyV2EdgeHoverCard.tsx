@@ -37,7 +37,7 @@ export function TopologyV2EdgeHoverCard({ sentence, typeLabel, why, clickHint, x
       className="pointer-events-none fixed z-40 flex max-w-[280px] flex-col gap-1 rounded-[var(--topology-v2-panel-radius)] border border-[color:var(--topology-v2-panel-border)] bg-[color:var(--topology-v2-panel-surface)] px-3 py-2 shadow-[var(--topology-v2-panel-shadow)]"
       style={{ left, top }}
     >
-      <p className="font-mono text-caption uppercase tracking-[0.12em] text-[color:var(--topology-v2-panel-text-tertiary)]">
+      <p className="font-mono text-caption uppercase tracking-[var(--tracking-caps-12)] text-[color:var(--topology-v2-panel-text-tertiary)]">
         {typeLabel}
       </p>
       <p className="text-body font-medium leading-snug text-[color:var(--topology-v2-panel-text-primary)]">

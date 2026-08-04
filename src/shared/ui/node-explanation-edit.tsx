@@ -62,7 +62,7 @@ export function NodeExplanationEdit({
     return (
       <div data-testid="node-explanation-read">
         <div className="flex items-center justify-between gap-2">
-          <span className="font-mono text-caption uppercase tracking-[0.14em] text-[color:var(--color-text-quaternary)]">
+          <span className="font-mono text-caption uppercase tracking-[var(--tracking-caps-14)] text-[color:var(--color-text-quaternary)]">
             {labels.heading}
           </span>
           <button
@@ -91,7 +91,7 @@ export function NodeExplanationEdit({
   return (
     <div data-testid="node-explanation-edit">
       <div className="flex items-center justify-between gap-2">
-        <span className="font-mono text-caption uppercase tracking-[0.14em] text-[color:var(--color-text-quaternary)]">
+        <span className="font-mono text-caption uppercase tracking-[var(--tracking-caps-14)] text-[color:var(--color-text-quaternary)]">
           {labels.heading}
         </span>
         <div className="flex items-center gap-1.5">

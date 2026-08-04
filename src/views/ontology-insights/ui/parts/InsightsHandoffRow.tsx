@@ -33,7 +33,7 @@ export function InsightsHandoffRow({
       data-testid="insights-handoff-row"
       className="mt-[var(--section-gap)] flex items-center gap-3 rounded-card border border-[color:var(--color-border-soft)] bg-[color:var(--color-panel)] px-4 py-2.5"
     >
-      <span className="flex-none font-mono text-caption uppercase tracking-[0.1em] text-[color:var(--color-text-quaternary)]">
+      <span className="flex-none font-mono text-caption uppercase tracking-[var(--tracking-caps-10)] text-[color:var(--color-text-quaternary)]">
         {caption}
       </span>
       <span className="min-w-0 flex-1 truncate font-mono text-label text-[color:var(--color-text-tertiary)]">

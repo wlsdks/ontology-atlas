@@ -99,7 +99,7 @@ export function RecentChangesNeedsVaultDialog({
           >
             <header className="flex items-start justify-between gap-3 border-b border-[color:var(--color-border-soft)] px-5 py-4">
               <div>
-                <p className="flex items-center gap-1.5 font-mono text-caption uppercase tracking-[0.14em] text-[color:var(--color-indigo-accent)]">
+                <p className="flex items-center gap-1.5 font-mono text-caption uppercase tracking-[var(--tracking-caps-14)] text-[color:var(--color-indigo-accent)]">
                   <History size={11} aria-hidden />
                   {t('eyebrow')}
                 </p>

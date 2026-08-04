@@ -63,7 +63,7 @@ export function InlineFieldEdit({
   if (!editing) {
     return (
       <div className="flex items-center gap-2" data-testid="inline-field-read">
-        <span className="font-mono text-label uppercase tracking-[0.12em] text-[color:var(--color-text-quaternary)]">
+        <span className="font-mono text-label uppercase tracking-[var(--tracking-caps-12)] text-[color:var(--color-text-quaternary)]">
           {labels.field}
         </span>
         <span
@@ -96,7 +96,7 @@ export function InlineFieldEdit({
 
   return (
     <div className="flex items-center gap-1.5" data-testid="inline-field-edit">
-      <span className="font-mono text-label uppercase tracking-[0.12em] text-[color:var(--color-text-quaternary)]">
+      <span className="font-mono text-label uppercase tracking-[var(--tracking-caps-12)] text-[color:var(--color-text-quaternary)]">
         {labels.field}
       </span>
       <input

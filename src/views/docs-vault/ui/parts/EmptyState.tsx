@@ -21,10 +21,10 @@ export function EmptyState({
   return (
     <div className="flex h-full flex-col items-center justify-center p-8 text-center">
       <div className="w-full max-w-[560px] rounded-card border border-[color:var(--color-border-soft)] bg-[color:var(--color-overlay-1)] p-5 shadow-[var(--shadow-elevation-1)]">
-        <p className="font-mono text-caption uppercase tracking-[0.14em] text-[color:var(--color-text-quaternary)]">
+        <p className="font-mono text-caption uppercase tracking-[var(--tracking-caps-14)] text-[color:var(--color-text-quaternary)]">
           {t("eyebrow", { count: docCount })}
         </p>
-        <h2 className="mt-3 text-display font-semibold tracking-[-0.01em] text-[color:var(--color-text-primary)]">
+        <h2 className="mt-3 text-display font-semibold tracking-[var(--tracking-title)] text-[color:var(--color-text-primary)]">
           {t("title")}
         </h2>
         <p className="mx-auto mt-2 max-w-[440px] text-body leading-prose text-[color:var(--color-text-tertiary)]">

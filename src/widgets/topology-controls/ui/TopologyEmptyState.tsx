@@ -93,7 +93,7 @@ export function TopologyEmptyState({
       >
         {/* 산문은 **왼쪽 맞춤**이다. 380px 상자에서 3줄짜리 문단을 가운데
             맞추면 양끝이 다 들쭉날쭉해지고, 그건 버튼 계단과 같은 병이다. */}
-        <p className="font-mono text-caption tracking-[0.14em] uppercase text-[color:var(--color-text-quaternary)]">
+        <p className="font-mono text-caption tracking-[var(--tracking-caps-14)] uppercase text-[color:var(--color-text-quaternary)]">
           {kicker}
         </p>
         <h2 className="mt-2 text-title font-[var(--font-weight-signature)] text-[color:var(--color-text-primary)]">

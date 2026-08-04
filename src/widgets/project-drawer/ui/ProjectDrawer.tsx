@@ -392,24 +392,24 @@ export function ProjectDrawer({
             </div>
             <div className="flex items-center justify-between gap-3">
               <div className="flex items-center gap-2">
-                <span className="font-mono text-caption uppercase tracking-[0.12em] text-[color:var(--color-text-tertiary)]">
+                <span className="font-mono text-caption uppercase tracking-[var(--tracking-caps-12)] text-[color:var(--color-text-tertiary)]">
                   {isContainerNode ? t("categoryProject") : categoryLabel(project.category)}
                 </span>
                 {containerLabel && !isContainerNode ? (
-                  <span className="rounded-full border border-[color:var(--color-indigo-line-a32)] bg-[color:var(--color-indigo-a12)] px-2 py-0.5 font-mono text-caption uppercase tracking-[0.12em] text-[color:var(--color-indigo-line-a90)]">
+                  <span className="rounded-full border border-[color:var(--color-indigo-line-a32)] bg-[color:var(--color-indigo-a12)] px-2 py-0.5 font-mono text-caption uppercase tracking-[var(--tracking-caps-12)] text-[color:var(--color-indigo-line-a90)]">
                     Project · {containerLabel}
                   </span>
                 ) : null}
                 {isContainerNode ? (
-                  <span className="rounded-full border border-[color:var(--color-amber-docs-a45)] bg-[color:var(--color-amber-docs-a12)] px-2 py-0.5 font-mono text-caption uppercase tracking-[0.12em] text-[color:var(--color-amber-docs-a95)]">
+                  <span className="rounded-full border border-[color:var(--color-amber-docs-a45)] bg-[color:var(--color-amber-docs-a12)] px-2 py-0.5 font-mono text-caption uppercase tracking-[var(--tracking-caps-12)] text-[color:var(--color-amber-docs-a95)]">
                     {t("containerBadge")}
                   </span>
                 ) : project.isHub ? (
-                  <span className="rounded-full border border-[color:var(--color-indigo-accent-a50)] bg-[color:var(--color-indigo-a16)] px-2 py-0.5 font-mono text-caption uppercase tracking-[0.12em] text-[color:var(--color-indigo-text-soft)]">
+                  <span className="rounded-full border border-[color:var(--color-indigo-accent-a50)] bg-[color:var(--color-indigo-a16)] px-2 py-0.5 font-mono text-caption uppercase tracking-[var(--tracking-caps-12)] text-[color:var(--color-indigo-text-soft)]">
                     {t("hubBadge")}
                   </span>
                 ) : (
-                  <span className="rounded-full border border-[color:var(--color-divider)] bg-[color:var(--color-overlay-2)] px-2 py-0.5 font-mono text-caption uppercase tracking-[0.12em] text-[color:var(--color-text-tertiary)]">
+                  <span className="rounded-full border border-[color:var(--color-divider)] bg-[color:var(--color-overlay-2)] px-2 py-0.5 font-mono text-caption uppercase tracking-[var(--tracking-caps-12)] text-[color:var(--color-text-tertiary)]">
                     {t("serviceBadge")}
                   </span>
                 )}
@@ -472,11 +472,11 @@ export function ProjectDrawer({
                         Container 일 땐 eyebrow 라인 자체를 숨긴다. */}
                     {!isContainerNode && (
                       <div className="flex flex-wrap items-center gap-x-2 gap-y-1">
-                        <span className="font-mono text-caption uppercase tracking-[0.12em] text-[color:var(--color-text-quaternary)]">
+                        <span className="font-mono text-caption uppercase tracking-[var(--tracking-caps-12)] text-[color:var(--color-text-quaternary)]">
                           {statusLabel(project.status)}
                         </span>
                         {project.progress !== undefined && (
-                          <span className="font-mono text-caption uppercase tracking-[0.12em] text-[color:var(--color-text-quaternary)]">
+                          <span className="font-mono text-caption uppercase tracking-[var(--tracking-caps-12)] text-[color:var(--color-text-quaternary)]">
                             {project.progress}%
                           </span>
                         )}
@@ -620,7 +620,7 @@ export function ProjectDrawer({
                   className="mt-5 md:mt-6"
                 >
                   <div className="flex items-center justify-between gap-4">
-                    <h3 className="font-mono text-caption uppercase tracking-[0.12em] text-[color:var(--color-text-quaternary)]">
+                    <h3 className="font-mono text-caption uppercase tracking-[var(--tracking-caps-12)] text-[color:var(--color-text-quaternary)]">
                       {t("connectionsTitle")}
                     </h3>
                   </div>
@@ -630,7 +630,7 @@ export function ProjectDrawer({
                     </p>
                     {relatedProjects.length > 0 && (
                       <div className="mt-4">
-                        <p className="font-mono text-caption uppercase tracking-[0.12em] text-[color:var(--color-text-quaternary)]">
+                        <p className="font-mono text-caption uppercase tracking-[var(--tracking-caps-12)] text-[color:var(--color-text-quaternary)]">
                           {t("nextProjects")}
                         </p>
                         <div className="mt-2 flex flex-col items-start gap-2">
@@ -680,7 +680,7 @@ export function ProjectDrawer({
                       data-testid="project-drawer-integrity"
                       className="rounded-panel border border-[color:var(--color-amber-source-a25)] bg-[color:var(--color-amber-source-a08)] px-4 py-3.5"
                     >
-                      <h3 className="font-mono text-caption uppercase tracking-[0.12em] text-[color:var(--color-status-warning)]">
+                      <h3 className="font-mono text-caption uppercase tracking-[var(--tracking-caps-12)] text-[color:var(--color-status-warning)]">
                         {t("integrityTitle")}
                       </h3>
                       <ul className="mt-2 space-y-1.5 text-body leading-5 text-[color:var(--color-text-secondary)]">
@@ -692,7 +692,7 @@ export function ProjectDrawer({
                   )}
                   <section>
                     <div className="flex items-center justify-between gap-4">
-                      <h3 className="font-mono text-caption uppercase tracking-[0.12em] text-[color:var(--color-text-quaternary)]">
+                      <h3 className="font-mono text-caption uppercase tracking-[var(--tracking-caps-12)] text-[color:var(--color-text-quaternary)]">
                         {t("basicInfo")}
                       </h3>
                       {impactInsight ? (
@@ -734,7 +734,7 @@ export function ProjectDrawer({
                       <div className="mt-3 grid gap-2 sm:grid-cols-2">
                         {completenessInsight ? (
                           <div className="rounded-panel border border-[color:var(--color-border-soft)] bg-[color:var(--color-overlay-1)] px-3.5 py-3">
-                            <p className="font-mono text-caption uppercase tracking-[0.12em] text-[color:var(--color-text-quaternary)]">
+                            <p className="font-mono text-caption uppercase tracking-[var(--tracking-caps-12)] text-[color:var(--color-text-quaternary)]">
                               {t("completeness")}
                             </p>
                             <p className="mt-1 text-body-lg font-[var(--font-weight-signature)] text-[color:var(--color-text-primary)]">
@@ -744,7 +744,7 @@ export function ProjectDrawer({
                         ) : null}
                         {freshnessInsight ? (
                           <div className="rounded-panel border border-[color:var(--color-border-soft)] bg-[color:var(--color-overlay-1)] px-3.5 py-3">
-                            <p className="font-mono text-caption uppercase tracking-[0.12em] text-[color:var(--color-text-quaternary)]">
+                            <p className="font-mono text-caption uppercase tracking-[var(--tracking-caps-12)] text-[color:var(--color-text-quaternary)]">
                               {t("freshness")}
                             </p>
                             <p className="mt-1 text-body-lg font-[var(--font-weight-signature)] text-[color:var(--color-text-primary)]">
@@ -779,7 +779,7 @@ export function ProjectDrawer({
                               title={help}
                               aria-label={`${label} — ${help}`}
                               className={cn(
-                                "rounded-full border px-3 py-2 font-mono text-caption uppercase tracking-[0.08em] transition-colors",
+                                "rounded-full border px-3 py-2 font-mono text-caption uppercase tracking-[var(--tracking-caps-08)] transition-colors",
                                 active
                                   ? "border-[color:var(--color-indigo-brand)] bg-[color:var(--color-indigo-a12)] text-[color:var(--color-text-primary)]"
                                   : "border-[color:var(--color-divider)] text-[color:var(--color-text-tertiary)] hover:border-[color:var(--color-border-strong)] hover:text-[color:var(--color-text-secondary)]",
@@ -803,13 +803,13 @@ export function ProjectDrawer({
 
                   {(project.tags.length > 0 || project.stack.length > 0) && (
                     <section>
-                      <h3 className="font-mono text-caption uppercase tracking-[0.12em] text-[color:var(--color-text-quaternary)]">
+                      <h3 className="font-mono text-caption uppercase tracking-[var(--tracking-caps-12)] text-[color:var(--color-text-quaternary)]">
                         {t("tagsAndStack")}
                       </h3>
                       <div className="mt-3 rounded-panel border border-[color:var(--color-border-soft)] bg-[color:var(--color-overlay-1)] px-4 py-4">
                         {project.tags.length > 0 && (
                           <div>
-                            <p className="font-mono text-caption uppercase tracking-[0.12em] text-[color:var(--color-text-quaternary)]">
+                            <p className="font-mono text-caption uppercase tracking-[var(--tracking-caps-12)] text-[color:var(--color-text-quaternary)]">
                               {t("tags")}
                             </p>
                             <div className="mt-2 flex flex-wrap gap-1.5">
@@ -827,7 +827,7 @@ export function ProjectDrawer({
 
                         {project.stack.length > 0 && (
                           <div className={cn(project.tags.length > 0 && "mt-4")}>
-                            <p className="font-mono text-caption uppercase tracking-[0.12em] text-[color:var(--color-text-quaternary)]">
+                            <p className="font-mono text-caption uppercase tracking-[var(--tracking-caps-12)] text-[color:var(--color-text-quaternary)]">
                               {t("stack")}
                             </p>
                             <div className="mt-2 flex flex-wrap gap-1.5">
@@ -850,14 +850,14 @@ export function ProjectDrawer({
                     referencedBy.length > 0 ||
                     missingDependencyIssues.length > 0) && (
                     <section>
-                      <h3 className="font-mono text-caption uppercase tracking-[0.12em] text-[color:var(--color-text-quaternary)]">
+                      <h3 className="font-mono text-caption uppercase tracking-[var(--tracking-caps-12)] text-[color:var(--color-text-quaternary)]">
                         {t("connections")}
                       </h3>
                       <div className="mt-3 grid gap-3">
                         {(project.dependencies.length > 0 ||
                           missingDependencyIssues.length > 0) && (
                           <div className="rounded-panel border border-[color:var(--color-border-soft)] bg-[color:var(--color-overlay-1)] px-4 py-4">
-                            <p className="font-mono text-caption uppercase tracking-[0.12em] text-[color:var(--color-text-quaternary)]">
+                            <p className="font-mono text-caption uppercase tracking-[var(--tracking-caps-12)] text-[color:var(--color-text-quaternary)]">
                               {t("dependsOn")}
                             </p>
                             <ul className="mt-3 flex flex-wrap gap-1.5">
@@ -871,7 +871,7 @@ export function ProjectDrawer({
                                       onClick={() => onSelectProject(item.project.slug)}
                                       className="hover:border-[color:var(--color-indigo-brand)] hover:text-[color:var(--color-text-primary)]"
                                     >
-                                      <span className="font-mono text-caption uppercase tracking-[0.08em] text-[color:var(--color-text-quaternary)]">
+                                      <span className="font-mono text-caption uppercase tracking-[var(--tracking-caps-08)] text-[color:var(--color-text-quaternary)]">
                                         {item.relationship.label}
                                       </span>
                                       <span>{item.project.name}</span>
@@ -895,7 +895,7 @@ export function ProjectDrawer({
 
                         {referencedBy.length > 0 && (
                           <div className="rounded-panel border border-[color:var(--color-border-soft)] bg-[color:var(--color-overlay-1)] px-4 py-4">
-                            <p className="font-mono text-caption uppercase tracking-[0.12em] text-[color:var(--color-text-quaternary)]">
+                            <p className="font-mono text-caption uppercase tracking-[var(--tracking-caps-12)] text-[color:var(--color-text-quaternary)]">
                               {t("usedBy")}
                             </p>
                             <ul className="mt-3 flex flex-wrap gap-1.5">
@@ -907,7 +907,7 @@ export function ProjectDrawer({
                                     onClick={() => onSelectProject(item.project.slug)}
                                     className="hover:border-[color:var(--color-indigo-brand)] hover:text-[color:var(--color-text-primary)]"
                                   >
-                                    <span className="font-mono text-caption uppercase tracking-[0.08em] text-[color:var(--color-text-quaternary)]">
+                                    <span className="font-mono text-caption uppercase tracking-[var(--tracking-caps-08)] text-[color:var(--color-text-quaternary)]">
                                       {item.relationship.label}
                                     </span>
                                     <span>{item.project.name}</span>
@@ -919,7 +919,7 @@ export function ProjectDrawer({
                         )}
                         {relatedDocs.length > 0 && (
                           <div className="rounded-panel border border-[color:var(--color-border-soft)] bg-[color:var(--color-overlay-1)] px-4 py-4">
-                            <p className="flex items-center gap-1.5 font-mono text-caption uppercase tracking-[0.12em] text-[color:var(--color-text-quaternary)]">
+                            <p className="flex items-center gap-1.5 font-mono text-caption uppercase tracking-[var(--tracking-caps-12)] text-[color:var(--color-text-quaternary)]">
                               <BookOpen size={11} aria-hidden />
                               {t("relatedDocs", { count: relatedDocs.length })}
                             </p>
@@ -937,7 +937,7 @@ export function ProjectDrawer({
                                           {m.doc.title}
                                         </span>
                                         <span
-                                          className="font-mono text-caption uppercase tracking-[0.1em] text-[color:var(--color-text-quaternary)]"
+                                          className="font-mono text-caption uppercase tracking-[var(--tracking-caps-10)] text-[color:var(--color-text-quaternary)]"
                                           title={m.reasons.join(', ')}
                                         >
                                           {m.reasons[0]}
@@ -970,7 +970,7 @@ export function ProjectDrawer({
                       <div className="mt-4 space-y-5 border-t border-[color:var(--color-border-soft)] pt-4">
                         {project.screenshots[0] && (
                           <section>
-                            <h3 className="font-mono text-caption uppercase tracking-[0.12em] text-[color:var(--color-text-quaternary)]">
+                            <h3 className="font-mono text-caption uppercase tracking-[var(--tracking-caps-12)] text-[color:var(--color-text-quaternary)]">
                               {t("screenshotsTitle")}
                             </h3>
                             <div className="mt-3 overflow-hidden rounded-panel border border-[color:var(--color-border-soft)] bg-[color:var(--color-elevated)]">
@@ -989,7 +989,7 @@ export function ProjectDrawer({
 
                         {(project.timeline?.startedAt || project.timeline?.launchedAt) && (
                           <section>
-                            <h3 className="font-mono text-caption uppercase tracking-[0.12em] text-[color:var(--color-text-quaternary)]">
+                            <h3 className="font-mono text-caption uppercase tracking-[var(--tracking-caps-12)] text-[color:var(--color-text-quaternary)]">
                               {t("timelineTitle")}
                             </h3>
                             <dl className="mt-3 space-y-2 rounded-panel border border-[color:var(--color-border-soft)] bg-[color:var(--color-overlay-1)] px-4 py-4 text-body-lg text-[color:var(--color-text-secondary)]">
@@ -1019,7 +1019,7 @@ export function ProjectDrawer({
 
                         {project.links.length > 0 && (
                           <section>
-                            <h3 className="font-mono text-caption uppercase tracking-[0.12em] text-[color:var(--color-text-quaternary)]">
+                            <h3 className="font-mono text-caption uppercase tracking-[var(--tracking-caps-12)] text-[color:var(--color-text-quaternary)]">
                               {t("linksTitle")}
                             </h3>
                             <ul className="mt-3 space-y-2 rounded-panel border border-[color:var(--color-border-soft)] bg-[color:var(--color-overlay-1)] px-4 py-4">
@@ -1055,7 +1055,7 @@ export function ProjectDrawer({
               </div>
 
               <footer className="mt-6 border-t border-[color:var(--color-overlay-2)] pt-4 md:mt-8">
-                <p className="font-mono text-caption uppercase tracking-[0.1em] text-[color:var(--color-text-quaternary)]">
+                <p className="font-mono text-caption uppercase tracking-[var(--tracking-caps-10)] text-[color:var(--color-text-quaternary)]">
                   {t("footerUpdated", { slug: project.slug, date: formatDate(project.updatedAt) })}
                 </p>
               </footer>

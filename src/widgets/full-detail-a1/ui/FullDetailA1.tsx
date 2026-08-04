@@ -275,7 +275,7 @@ export function FullDetailA1({
         </span>
         <span>{getKindLabel(node.kind)}</span>
         {breadcrumb?.totalConcepts != null && breadcrumb?.totalRelations != null ? (
-          <span className="ml-auto font-mono text-label tracking-[0.08em] text-[color:var(--engraved-numeral-face)] [text-shadow:var(--engraved-numeral-text-shadow)]">
+          <span className="ml-auto font-mono text-label tracking-[var(--tracking-caps-08)] text-[color:var(--engraved-numeral-face)] [text-shadow:var(--engraved-numeral-text-shadow)]">
             {t("census", {
               concepts: breadcrumb.totalConcepts,
               relations: breadcrumb.totalRelations,
@@ -289,7 +289,7 @@ export function FullDetailA1({
           <TopologyV2KindGlyph kind={node.kind} size={22} />
         </span>
         <div className="min-w-0 flex-1">
-          <h1 className="text-display font-semibold tracking-[-0.015em] text-[color:var(--topology-v2-panel-text-primary)]">
+          <h1 className="text-display font-semibold tracking-[var(--tracking-card)] text-[color:var(--topology-v2-panel-text-primary)]">
             {node.title}
           </h1>
           {/* 과제 ⑩ — 표시명이 원본 title 을 축약한 경우, 전체 title 을
@@ -380,7 +380,7 @@ export function FullDetailA1({
 
       <div
         data-fulldetail-metric="engraved"
-        className="mt-4.5 flex flex-wrap items-baseline gap-x-4.5 gap-y-1 rounded-chip border border-[color:var(--topology-v2-panel-border)] bg-[color:var(--topology-v2-panel-metric-surface)] px-3.5 py-2.5 font-mono text-body tracking-[0.01em] text-[color:var(--topology-v2-panel-metric-text)]"
+        className="mt-4.5 flex flex-wrap items-baseline gap-x-4.5 gap-y-1 rounded-chip border border-[color:var(--topology-v2-panel-border)] bg-[color:var(--topology-v2-panel-metric-surface)] px-3.5 py-2.5 font-mono text-body tracking-[var(--tracking-label)] text-[color:var(--topology-v2-panel-metric-text)]"
       >
         {metricLine}
       </div>
@@ -399,7 +399,7 @@ export function FullDetailA1({
           className="mt-5.5 grid gap-2 border-y border-[color:var(--topology-v2-panel-border)] py-3.5 sm:grid-cols-[minmax(0,1fr)_auto] sm:items-end"
         >
           <div className="min-w-0">
-            <p className="text-label font-medium uppercase tracking-[0.08em] text-[color:var(--topology-v2-panel-text-quaternary)]">
+            <p className="text-label font-medium uppercase tracking-[var(--tracking-caps-08)] text-[color:var(--topology-v2-panel-text-quaternary)]">
               {projectSourceLabels.heading}
               {projectSourceLabels.sourceKind ? (
                 <span className="ml-2 font-mono normal-case tracking-normal">

@@ -32,10 +32,16 @@ export function CopyAgentTextButton({
   // 텍스트 색은 indigo-accent / status-danger 토큰으로 — 앱은 다크 단일이라
   // (design.md, 2026-07-19) light-on-dark 회귀 우려 없음. border/bg 의
   // 인디고·레드 alpha 는 은은하게 유지.
+  // 잉크가 `accent`(#7170ff)가 아니라 `accentOnTint` 계열인 이유: 이 버튼은
+  // 인디고 틴트를 지고 있고, 호버에서 틴트가 한 단 올라간다(a06 → a13).
+  // 실측 — accent 잉크는 쉴 때 4.56 으로 겨우 통과하다가 **호버에서 4.41 로
+  // AA 를 깼다**(2026-08-05). `--color-indigo-text-soft` 로 바꾸면 8.92 / 8.66.
+  // design.md 「틴트를 지는 컨트롤의 잉크는 accentOnTint 다」가 이미 처방해 둔
+  // 규칙이고, 기존 lint 셀렉터는 **쉬는 상태의 짝만** 봐서 이 자리를 못 봤다.
   const toneClass =
     copyState === "failed"
       ? "border-[color:var(--color-danger-a32)] bg-[color:var(--color-danger-a08)] text-[color:var(--color-status-danger)] hover:border-[color:var(--color-danger-a50)] hover:bg-[color:var(--color-danger-a12)]"
-      : "border-[color:var(--color-indigo-line-a22)] bg-[color:var(--color-indigo-line-a06)] text-[color:var(--color-indigo-accent)] hover:border-[color:var(--color-indigo-line-a42)] hover:bg-[color:var(--color-indigo-line-a13)]";
+      : "border-[color:var(--color-indigo-line-a22)] bg-[color:var(--color-indigo-line-a06)] text-[color:var(--color-indigo-text-soft)] hover:border-[color:var(--color-indigo-line-a42)] hover:bg-[color:var(--color-indigo-line-a13)]";
 
   return (
     <>
