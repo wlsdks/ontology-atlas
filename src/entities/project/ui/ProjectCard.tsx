@@ -165,7 +165,7 @@ export function ProjectCard({
           <p
             className={cn(
               'line-clamp-2 leading-caption font-[var(--font-weight-signature)] tracking-[var(--tracking-card)]',
-              selected || related ? 'text-[12px]' : dense ? 'text-[10px]' : 'text-[11px]',
+              selected || related ? 'text-body' : dense ? 'text-caption' : 'text-label',
               isHub
                 ? 'text-[color:var(--color-indigo-accent)]'
                 : selected || related
@@ -195,7 +195,7 @@ export function ProjectCard({
             }
       }
       className={cn(
-        'group relative flex flex-col rounded-[16px] border bg-[color:var(--color-panel)] shadow-[var(--shadow-elevation-1)] md:rounded-[18px]',
+        'group relative flex flex-col rounded-sheet border bg-[color:var(--color-panel)] shadow-[var(--shadow-elevation-1)] md:rounded-sheet',
         dense
           ? 'h-[84px] w-[156px] px-3 py-2 md:h-[92px] md:w-[168px] md:px-3 md:py-2.5'
           : 'h-[120px] w-[192px] px-3.5 py-3 md:h-[140px] md:w-[220px] md:px-4 md:py-3.5',
@@ -209,19 +209,19 @@ export function ProjectCard({
       }}
     >
       {borderStyle === 'sideLabel' && !isHub && sideLabelText && (
-        <span className="absolute -left-2 top-3 font-mono text-[9px] uppercase tracking-[0.08em] text-[color:var(--color-text-quaternary)] [writing-mode:vertical-rl]">
+        <span className="absolute -left-2 top-3 font-mono text-caption uppercase tracking-[0.08em] text-[color:var(--color-text-quaternary)] [writing-mode:vertical-rl]">
           {sideLabelText}
         </span>
       )}
 
       {isHub && (
-        <span className="absolute -top-2 left-3 rounded-full bg-[color:var(--color-indigo-brand)] px-2 py-0.5 font-mono text-[8px] uppercase tracking-[0.1em] text-[color:var(--color-text-primary)] md:left-4 md:text-[9px]">
+        <span className="absolute -top-2 left-3 rounded-full bg-[color:var(--color-indigo-brand)] px-2 py-0.5 font-mono text-caption uppercase tracking-[0.1em] text-[color:var(--color-text-primary)] md:left-4 md:text-caption">
           허브
         </span>
       )}
 
       {!isHub && shared && (
-        <span className="absolute -top-2 left-3 rounded-full border border-[color:var(--color-indigo-accent-a50)] bg-[color:var(--color-indigo-a26)] px-2 py-0.5 font-mono text-[8px] uppercase tracking-[0.1em] text-[color:var(--color-indigo-text-soft)] md:left-4 md:text-[9px]">
+        <span className="absolute -top-2 left-3 rounded-full border border-[color:var(--color-indigo-accent-a50)] bg-[color:var(--color-indigo-a26)] px-2 py-0.5 font-mono text-caption uppercase tracking-[0.1em] text-[color:var(--color-indigo-text-soft)] md:left-4 md:text-caption">
           공유
         </span>
       )}
@@ -237,7 +237,7 @@ export function ProjectCard({
       <div className="flex items-start gap-2.5 pr-4">
         {project.icon && (
           <span
-            className="mt-0.5 inline-flex h-4.5 w-4.5 shrink-0 items-center justify-center rounded-chip border border-[color:var(--color-border-soft)] bg-[color:var(--color-overlay-1)] text-[11px] md:h-5 md:w-5 md:text-[12px]"
+            className="mt-0.5 inline-flex h-4.5 w-4.5 shrink-0 items-center justify-center rounded-chip border border-[color:var(--color-border-soft)] bg-[color:var(--color-overlay-1)] text-label md:h-5 md:w-5 md:text-body"
             aria-hidden="true"
           >
             {project.icon}
@@ -245,7 +245,7 @@ export function ProjectCard({
         )}
         <div className="min-w-0">
           {!dense && eyebrow && (
-            <div className="mb-1 font-mono text-[8px] uppercase tracking-[0.12em] text-[color:var(--color-text-quaternary)] md:text-[9px]">
+            <div className="mb-1 font-mono text-caption uppercase tracking-[0.12em] text-[color:var(--color-text-quaternary)] md:text-caption">
               {eyebrow}
             </div>
           )}
@@ -258,8 +258,8 @@ export function ProjectCard({
           <p
             className={cn(
               dense
-                ? 'text-[13px] leading-display-tight font-[var(--font-weight-signature)] tracking-[var(--tracking-card)] md:text-body-lg'
-                : 'text-body-lg leading-display-tight font-[var(--font-weight-signature)] tracking-[var(--tracking-card)] md:text-[15px]',
+                ? 'text-body leading-display-tight font-[var(--font-weight-signature)] tracking-[var(--tracking-card)] md:text-body-lg'
+                : 'text-body-lg leading-display-tight font-[var(--font-weight-signature)] tracking-[var(--tracking-card)] md:text-body-lg',
               isHub
                 ? 'text-[color:var(--color-indigo-accent)]'
                 : 'text-[color:var(--color-text-primary)]',
@@ -279,12 +279,12 @@ export function ProjectCard({
 
       {!dense ? (
         <div className="mt-2 flex-1" data-topology-card-detail="true">
-          <p className="line-clamp-2 text-[10px] leading-label text-[color:var(--color-text-tertiary)] md:text-[11px]">
+          <p className="line-clamp-2 text-caption leading-label text-[color:var(--color-text-tertiary)] md:text-label">
             {description || (
               // 카드 높이를 유지하되 placeholder 문장이 실제 설명으로 읽히지 않도록
               // 형식·톤을 약하게 해 "설명이 비었다" 는 상태임을 명시한다.
               // 문구는 호출자가 화면 언어로 넘긴다 (hubEyebrow 와 같은 계약).
-              <span className="font-mono text-[9px] uppercase tracking-[0.1em] text-[color:var(--color-text-quaternary)]">
+              <span className="font-mono text-caption uppercase tracking-[0.1em] text-[color:var(--color-text-quaternary)]">
                 {descriptionEmptyLabel}
               </span>
             )}
@@ -304,7 +304,7 @@ export function ProjectCard({
             <span
               key={tag}
               className={cn(
-                "font-mono text-[8px] uppercase tracking-[0.08em] text-[color:var(--color-text-quaternary)] md:text-[9px]",
+                "font-mono text-caption uppercase tracking-[0.08em] text-[color:var(--color-text-quaternary)] md:text-caption",
                 index > 0 && "hidden md:inline",
               )}
             >
@@ -312,7 +312,7 @@ export function ProjectCard({
             </span>
           ))
         ) : (
-          <span className="font-mono text-[8px] uppercase tracking-[0.08em] text-[color:var(--color-text-quaternary)] md:text-[9px]">
+          <span className="font-mono text-caption uppercase tracking-[0.08em] text-[color:var(--color-text-quaternary)] md:text-caption">
             {dense ? project.slug : fallbackMeta}
           </span>
         )}
@@ -320,7 +320,7 @@ export function ProjectCard({
 
       <div
         className={cn(
-          'pointer-events-none absolute inset-0 rounded-[16px] border border-[color:var(--color-indigo-accent)] transition-opacity duration-[var(--motion-base)] md:rounded-[18px]',
+          'pointer-events-none absolute inset-0 rounded-sheet border border-[color:var(--color-indigo-accent)] transition-opacity duration-[var(--motion-base)] md:rounded-sheet',
           selected ? 'opacity-100' : 'opacity-0 group-hover:opacity-40',
         )}
         aria-hidden

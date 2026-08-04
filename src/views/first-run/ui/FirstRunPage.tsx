@@ -102,18 +102,18 @@ export function FirstRunPage() {
             <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-chip border border-[color:var(--color-border-soft)] bg-[color:var(--color-elevated)] text-[color:var(--color-indigo-accent)]">
               <Orbit size={13} aria-hidden />
             </span>
-            <span className="text-[13px] font-[var(--font-weight-signature)] text-[color:var(--color-text-secondary)]">
+            <span className="text-body font-[var(--font-weight-signature)] text-[color:var(--color-text-secondary)]">
               Ontology Atlas
             </span>
           </div>
           <div className="grid gap-1.5">
-            <p className="font-mono text-[10px] uppercase tracking-[0.18em] text-[color:var(--color-text-quaternary)]">
+            <p className="font-mono text-caption uppercase tracking-[0.18em] text-[color:var(--color-text-quaternary)]">
               {t("eyebrow")}
             </p>
-            <h1 className="break-keep text-[22px] font-[var(--font-weight-signature)] leading-tight text-[color:var(--color-text-primary)]">
+            <h1 className="break-keep text-display font-[var(--font-weight-signature)] leading-tight text-[color:var(--color-text-primary)]">
               {t("title")}
             </h1>
-            <p className="mx-auto max-w-[360px] break-keep text-[12px] leading-5 text-[color:var(--color-text-tertiary)]">
+            <p className="mx-auto max-w-[360px] break-keep text-body leading-5 text-[color:var(--color-text-tertiary)]">
               {t("subtitle")}
             </p>
           </div>
@@ -132,14 +132,14 @@ export function FirstRunPage() {
                 <Zap size={14} aria-hidden />
               </span>
               <span className="min-w-0">
-                <span className="block text-[13px] font-[var(--font-weight-signature)] text-[color:var(--color-text-primary)]">
+                <span className="block text-body font-[var(--font-weight-signature)] text-[color:var(--color-text-primary)]">
                   {justStartScaffolding
                     ? t("scaffolding")
                     : justStartBusy
                       ? t("justStartBusy")
                       : t("justStartTitle")}
                 </span>
-                <span className="mt-0.5 block break-keep text-[11.5px] leading-5 text-[color:var(--color-text-tertiary)]">
+                <span className="mt-0.5 block break-keep text-label leading-5 text-[color:var(--color-text-tertiary)]">
                   {t("justStartBody")}
                 </span>
               </span>
@@ -167,12 +167,12 @@ export function FirstRunPage() {
               <FolderOpen size={14} aria-hidden />
             </span>
             <span className="min-w-0">
-              <span className="block text-[13px] font-[var(--font-weight-signature)] text-[color:var(--color-text-primary)]">
+              <span className="block text-body font-[var(--font-weight-signature)] text-[color:var(--color-text-primary)]">
                 {(vault.status === "opening" || vault.status === "loading") && !scaffolding
                   ? t("busy")
                   : t("openTitle")}
               </span>
-              <span className="mt-0.5 block break-keep text-[11.5px] leading-5 text-[color:var(--color-text-tertiary)]">
+              <span className="mt-0.5 block break-keep text-label leading-5 text-[color:var(--color-text-tertiary)]">
                 {t("openBody")}
               </span>
             </span>
@@ -189,10 +189,10 @@ export function FirstRunPage() {
               <Sparkles size={14} aria-hidden />
             </span>
             <span className="min-w-0">
-              <span className="block text-[13px] font-[var(--font-weight-signature)] text-[color:var(--color-text-primary)]">
+              <span className="block text-body font-[var(--font-weight-signature)] text-[color:var(--color-text-primary)]">
                 {scaffolding ? t("scaffolding") : t("createTitle")}
               </span>
-              <span className="mt-0.5 block break-keep text-[11.5px] leading-5 text-[color:var(--color-text-tertiary)]">
+              <span className="mt-0.5 block break-keep text-label leading-5 text-[color:var(--color-text-tertiary)]">
                 {t("createBody")}
               </span>
             </span>
@@ -207,10 +207,10 @@ export function FirstRunPage() {
               <Compass size={14} aria-hidden />
             </span>
             <span className="min-w-0">
-              <span className="block text-[13px] font-[var(--font-weight-signature)] text-[color:var(--color-text-primary)]">
+              <span className="block text-body font-[var(--font-weight-signature)] text-[color:var(--color-text-primary)]">
                 {t("demoTitle")}
               </span>
-              <span className="mt-0.5 block break-keep text-[11.5px] leading-5 text-[color:var(--color-text-tertiary)]">
+              <span className="mt-0.5 block break-keep text-label leading-5 text-[color:var(--color-text-tertiary)]">
                 {t("demoBody")}
               </span>
             </span>
@@ -220,7 +220,7 @@ export function FirstRunPage() {
         {errorText ? (
           <p
             role="alert"
-            className="break-keep text-center text-[11.5px] text-[color:var(--color-status-danger)]"
+            className="break-keep text-center text-label text-[color:var(--color-status-danger)]"
           >
             {errorText}
           </p>
@@ -228,7 +228,7 @@ export function FirstRunPage() {
 
         <p
           data-token="engraved-numeral"
-          className="text-center font-mono text-[10px] uppercase tracking-[0.16em]"
+          className="text-center font-mono text-caption uppercase tracking-[0.16em]"
           style={{
             color: "var(--engraved-numeral-face)",
             textShadow: "var(--engraved-numeral-text-shadow)",

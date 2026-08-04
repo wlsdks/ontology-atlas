@@ -556,18 +556,16 @@ export const rampCoveredGlobs = ['src/**/*.{ts,tsx}', 'app/**/*.{ts,tsx}'];
  * 빼면 그 안의 새 파일까지 같이 빠지고, 그게 이 블록이 뒤집힌 원인이다.
  */
 export const rampDebtExemptions = [
-  'src/entities/project/ui/ProjectCard.tsx', // 16
-  'src/entities/project/ui/ProjectMetaGrid.tsx', // 2
-  'src/features/vault-ontology/ui/LiveActivityIndicator.tsx', // 23
-  'src/views/first-run/ui/FirstRunPage.tsx', // 14
-  // 2026-08-04: 24 → 21. `rounded-[4px]` 3건은 `--radius-micro`(4px)와 **바이트
-  // 동일**이라 픽셀 0으로 옮겼다. 남은 21건은 8종(3·5·8·10·13·14·16px)이 5단
-  // 램프(4·6·9·12·18)로 접히면서 자리마다 ±1~2px 움직이므로 **디자인 판정**이
-  // 필요하다 — 이 파일 위 「커버리지는 거부목록이다」 절이 못박은 그대로,
-  // 그건 lint PR 이 아니라 디자인 작업의 몫이고 「체계」 자리가 정한다.
-  'src/views/ontology-studio/ui/StudioCompass.tsx', // 21
-  'src/views/project-editor/ui/ProjectEditorPage.tsx', // 2
-  'src/views/root-entry/ui/RootEntryPage.tsx', // 5
+  // **2026-08-05: 비었다.** 이 목록은 «램프가 생기기 전에 쓰인 파일» 의 한시적
+  // 유예였고, 마지막 7개 파일 93건(text 68 · radius 25)을 램프로 옮기면서 0이
+  // 됐다. 이제 `rampCoveredGlobs` 가 정말로 전부를 덮는다.
+  //
+  // ⚠️ **여기에 파일을 다시 넣는 것은 규격을 끄는 것이다.** 새 값이 필요하면
+  // 예외를 만들지 말고 램프에 스텝을 등재하고(「체계」 소집) 같은 PR 에 lint 도
+  // 넣는다 — 그것이 이 저장소가 `--radius-micro` 로 이미 한 번 한 일이다.
+  // 목록이 비어 있어도 계약은 헛돌지 않는다: `type-ramp-coverage` 가
+  // ESLint 자신을 돌려 «존재하지 않는 새 경로도 램프 셀렉터를 전부 받는가» 를
+  // 잰다.
 ];
 
 // 테스트는 렌더된 className 문자열을 assert 하므로 램프 룰에서 제외.
