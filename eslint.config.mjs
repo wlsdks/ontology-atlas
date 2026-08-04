@@ -208,6 +208,32 @@ const typographyAxisSelectors = [
   },
 ];
 
+/*
+ * 층위(z-index) — **20 이상은 앱 전역 계약이다.**
+ *
+ * 실측(2026-08-05): 11단이 규칙적으로 쓰이고 있었는데 어느 것이 어느 것 위인지
+ * 코드 어디에도 적혀 있지 않았다. z-index 충돌은 «안 보이니까 숫자를 올린다»로
+ * 번지는 대표적 버그원이고, 이름이 없으면 다음 사람은 또 올린다.
+ * `--z-*` 로 사다리를 등재하고(값은 쓰이던 그대로) 전역 대역 17곳을 옮겼다.
+ *
+ * ⚠️ **사정거리를 20 이상으로 좁혔다.** 공방 나침 무대 안의 1~13 처럼 «한 표면
+ * 안에서만 유효한 지역 쌓임»까지 막으면, 지역 문맥이 전역 계약인 척하게 되고
+ * 룰은 소음이 된다. 그 11곳은 그대로 둔다.
+ *
+ * ⚠️ 켜기 전 전수: 20 이상 arbitrary 는 17곳이었고 전부 선치환했다(위반 0).
+ */
+const layerSelectors = [
+  {
+    selector: 'Literal[value=/z-\\[(?:[2-9][0-9]|[1-9][0-9]{2,})\\]/]',
+    message:
+      '층위 20 이상은 앱 전역 계약이다 — 숫자를 직접 적지 말고 --z-* 사다리를 쓴다(surface-sticky < map-hint < map-scrim < map-popover < overlay-chrome < dialog-scrim < dialog < tour < tour-card < tooltip < skip-link). 한 표면 안에서만 유효한 지역 쌓임은 20 미만으로 쓴다.',
+  },
+  {
+    selector: 'TemplateElement[value.raw=/z-\\[(?:[2-9][0-9]|[1-9][0-9]{2,})\\]/]',
+    message: '층위 20 이상은 --z-* 사다리를 쓴다 (template literal).',
+  },
+];
+
 const accentTintPairingSelectors = [
   {
     selector:
@@ -907,6 +933,7 @@ const eslintConfig = defineConfig([
         ...inlineShadowSelectors,
         ...cursorAffordanceSelectors,
         ...typographyAxisSelectors,
+        ...layerSelectors,
       ],
     },
   },

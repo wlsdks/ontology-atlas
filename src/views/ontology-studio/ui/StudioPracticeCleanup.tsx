@@ -137,7 +137,7 @@ export function StudioPracticeCleanup({
       initial={{ opacity: 0 }}
       animate={{ opacity: 1 }}
       transition={reducedMotion ? SCRIM_FADE_REDUCED : SCRIM_FADE}
-      className="fixed inset-0 z-[60] flex items-center justify-center bg-[color:var(--overlay-scrim)] px-6"
+      className="fixed inset-0 z-[var(--z-dialog)] flex items-center justify-center bg-[color:var(--overlay-scrim)] px-6"
     >
       <motion.div
         ref={cardRef}

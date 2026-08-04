@@ -3939,7 +3939,7 @@ export function HomePage() {
                 <button
                   type="button"
                   aria-label={t('bootstrap.cancel')}
-                  className="absolute inset-0 z-[25] cursor-default bg-[color:var(--topology-blocking-backdrop-surface)] transition-opacity duration-[var(--motion-base)] ease-[var(--motion-ease)] motion-reduce:transition-none"
+                  className="absolute inset-0 z-[var(--z-map-scrim)] cursor-default bg-[color:var(--topology-blocking-backdrop-surface)] transition-opacity duration-[var(--motion-base)] ease-[var(--motion-ease)] motion-reduce:transition-none"
                   data-interactive-overlay="true"
                   data-testid="ontology-bootstrap-backdrop"
                   data-backdrop-contract="blocks-map-and-closes-composer"
@@ -3988,7 +3988,7 @@ export function HomePage() {
                 <button
                   type="button"
                   aria-label={t('createNode.cancel')}
-                  className="absolute inset-0 z-[25] cursor-default bg-[color:var(--topology-blocking-backdrop-surface)] transition-opacity duration-[var(--motion-base)] ease-[var(--motion-ease)] motion-reduce:transition-none"
+                  className="absolute inset-0 z-[var(--z-map-scrim)] cursor-default bg-[color:var(--topology-blocking-backdrop-surface)] transition-opacity duration-[var(--motion-base)] ease-[var(--motion-ease)] motion-reduce:transition-none"
                   data-interactive-overlay="true"
                   data-testid="topology-create-node-backdrop"
                   data-backdrop-contract="blocks-map-and-closes-composer"
@@ -4060,7 +4060,7 @@ export function HomePage() {
                 <button
                   type="button"
                   aria-label={t('createNode.cancel')}
-                  className="absolute inset-0 z-[25] cursor-default bg-[color:var(--topology-blocking-backdrop-surface)] transition-opacity duration-[var(--motion-base)] ease-[var(--motion-ease)] motion-reduce:transition-none"
+                  className="absolute inset-0 z-[var(--z-map-scrim)] cursor-default bg-[color:var(--topology-blocking-backdrop-surface)] transition-opacity duration-[var(--motion-base)] ease-[var(--motion-ease)] motion-reduce:transition-none"
                   data-interactive-overlay="true"
                   data-testid="topology-create-node-pending-backdrop"
                   data-backdrop-contract="blocks-map-and-clears-create-intent"
