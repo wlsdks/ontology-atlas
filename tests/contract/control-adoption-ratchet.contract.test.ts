@@ -16,8 +16,8 @@ import { describe, expect, it } from 'vitest';
  *
  * | 수 | 뜻 | 어느 방향으로 움직이나 |
  * |---:|---|---|
- * | **버튼 등재 23** | 값 층 밖이라고 **검증되어 등재된** `<button>` 자리(`OUTSIDE_VALUE_LAYER`) | 늘리려면 `BASELINE_REGISTERED` 를 **손으로** 올린다. 그 diff 가 「왜」를 적을 자리다 |
- * | **버튼 부채 85** | 아직 안 옮긴 `<button>` | **줄어야 한다.** 버튼 진도는 여기서 읽는다 |
+ * | **버튼 등재 30** | 값 층 밖이라고 **검증되어 등재된** `<button>` 자리(`OUTSIDE_VALUE_LAYER`) | 늘리려면 `BASELINE_REGISTERED` 를 **손으로** 올린다. 그 diff 가 「왜」를 적을 자리다 |
+ * | **버튼 부채 78** | 아직 안 옮긴 `<button>` | **줄어야 한다.** 버튼 진도는 여기서 읽는다 |
  * | **앵커 등재 19** | 값 층 밖이라고 검증되어 등재된 앵커(`OUTSIDE_VALUE_LAYER_ANCHORS`) | 같은 규율. `BASELINE_ANCHOR_REGISTERED` 를 손으로 올린다 |
  * | **앵커 부채 83** | 아직 안 옮긴 `<Link>` 78 · `<a>` 24 중 미등재분 | **줄어야 한다.** 아래 「앵커 전수 분류」 절 |
  * | 버튼 전수 108 · 앵커 전수 102 | 등재 + 부채 | 파생값이다. 이 수를 보고 판단하지 않는다 |
@@ -111,15 +111,16 @@ import { describe, expect, it } from 'vitest';
  * | **램프 밖 16px 반경** | 1 | 진입 선택 카드 — 소유자 승인 + `eslint-disable` 로 **이미 보이게 등재된** 예외. `--radius-surface`(16) 등재는 다음 디자인 패스 |
  * | **누름 방언(`active:translate-y`)** | 1 | `compact-copy-button`. 값 층에 누름 축이 없다 |
  *
- * ### 등재 후보이지만 **이 라운드가 검증하지 않은** 자리 — 다음 등재 라운드
+ * ### 등재 후보 검증 — 2026-08-04 통합 라운드가 7 을 확인해 등재했다
  *
- * 위 세 디렉터리 밖에도 같은 `chrome-token` 주장을 할 만한 자리가 있다:
- * `SearchPalette`(`--overlay-close-size`) · `GlobalSearch`
- * (`--topology-search-sheet-close-size`) · `ShortcutSheet`
- * (`--topology-shortcut-sheet-close-size`) · `DocsHeaderTile`
- * (`--chrome-tile-size`) · `AppNavRail`/`GitStatusTile`(`--app-nav-rail-tile-*`).
- * **지금은 전부 부채로 둔다** — 규율 1대로 열어 보고 검증한 자리만 등재한다.
- * 부채 90 이 그만큼 낙관적이지 않다는 뜻이고, 그건 안전한 방향의 오차다.
+ * 위 문단이 「다음 등재 라운드」로 미뤘던 크롬 토큰 후보를 자리마다 열었다:
+ * `SearchPalette` · `GlobalSearch` · `ShortcutSheet` · `DocsHeaderTile` ·
+ * `BackToTopButton` · `GitStatusTile` · `AppNavRail`(버튼 갈래) = **7 등재**.
+ * 검증이 결함 하나를 잡았다 — GlobalSearch 의 전용 토큰은 32px **단독 고정
+ * 선언**이라 `tokenIsBeyondFixedSteps` 가 기각했고(그동안 coarse 승격 블록
+ * 주석은 «이미 커버됨»이라 주장), `--overlay-close-size` 로 수렴시킨 뒤에야
+ * 등재됐다. **아직 검증 안 된 후보**: 스크림/전면 오버레이 5(청구 유형 신설
+ * 필요) · 설정 시트 계약 문자열 고정 4 — 여전히 부채로 둔다(안전한 방향).
  *
  * ### 이 수가 **과다 계상**이라는 것 — 알고 두는 한계
  *
@@ -218,6 +219,84 @@ import { describe, expect, it } from 'vitest';
  * | 6 | `app/error.tsx` · `app/global-error.tsx` 의 `rounded-full` 방언 | 2(+버튼 2) | 404 두 파일이 어제 `<Button>` 으로 정규화한 **그 방언의 형제**를 이번에 놓친 것이 아니라, 옆의 `<button>` 과 **함께** 옮겨야 해서 남겼다. 실측 예상 이동: 반경 9999→12 · px 16→18 · 타입 12.5→14 · 잉크 secondary→primary + 배경 채움. 값 층 이동이 아니라 **디자인 판정**이라 게이트가 다르다 |
  * | 7 | ChromeTile 인라인 재구현 1(`HomePage`) | 1 | 프리미티브로 옮기는 것이 답인데 아이콘 토큰이 다르고(`--topology-chrome-icon-size` vs `--chrome-icon`) 배지 자식이 있어 드롭인이 아니다 |
  * | — | 모노 대문자 마이크로 3 | 3 | 버튼 쪽 5와 **합쳐서 8**. 4라운드 연속이므로 축이 아니라 **부품**으로 검토한다 |
+ *
+ * ════════════════════════════════════════════════════════════════════
+ * ## 2026-08-04 통합 라운드 — 버튼 85 + 앵커 83 을 한 표로 재고, 조합으로 판정했다
+ * ════════════════════════════════════════════════════════════════════
+ *
+ * 세 라운드 연속 「새 축 0」의 이유가 «남은 자리가 구멍 둘 이상에 동시에
+ * 걸린다»였으므로, 이번엔 부류를 하나씩이 아니라 **조합으로** 쟀다. 전수
+ * 재측정은 이 파일의 파서와 같은 로직(중괄호 깊이)으로 했고 85 · 83 이
+ * 기준선과 정확히 일치했다.
+ *
+ * ### 통합 부류표 (버튼 B / 앵커 A — 한 자리가 여러 부류에 겹친다)
+ *
+ * | 부류 | B | A | 합 | 상태 |
+ * |---|---:|---:|---:|---|
+ * | 타입 스텝을 안 내는 자리(상속 필요) | 52* | 38* | 90* | `link` 재설계 대기(아래 판정) — *휴리스틱 과다 계상: 라벨이 자식 span 에 있는 자리·아이콘 전용이 섞인다. 선별 전수는 앵커 라운드의 13 이 정본 |
+ * | 인셋·타입 결합(램프 밖 (px,py,type)) | 19 | 24 | 43 | 축이 아니라 **정체 셋으로 분해**(아래 판정) |
+ * | 틴트 채움(인디고/성공 a-단 배경) | 15 | 9 | 24 | 모노 부품·panel 표면과 동반 |
+ * | 사다리 밖 높이(h-5/7/9/10/12/16) | 10 | 10 | 20 | 부분적으로 크롬 토큰·표준 버튼 방언 |
+ * | 상시 밑줄·decoration | 2 | 13 | 15 | 상호작용 판정: 산문 5 + 가짜 산문 2 는 컨트롤이 아니다 — 산문 계약 라운드로 |
+ * | 무게(font-medium/semibold) | 8 | 7 | 15 | 축 후보, 소비처 전수 완료 |
+ * | rounded-full 방언(pill 밖) | 9 | 5 | 14 | 다수가 모노 CTA 와 겹침 |
+ * | **모노 대문자 마이크로 CTA** | 8 | 4 | 12 | **5라운드 연속 — 부품 승격 판정(아래)** |
+ * | 다행·그리드 | 4 | 6 | 10 | 「축 안 만듦」 결정 유효 |
+ * | panel 표면(보더·divider·indigo-bright) | 7 | 1 | 8 | 소비처 있음 — 인셋·타입 분해와 같은 라운드 |
+ * | 원형 아이콘 | 6 | 0 | 6 | 축 후보(icon 원형 갈래), 소비처 6 |
+ * | border-t 목록 행 | 4 | 2 | 6 | row 구분선 갈래 후보 |
+ * | 전폭 중앙정렬 | 6 | 0 | 6 | |
+ * | 스크림/전면 오버레이 | 5 | 0 | 5 | 등재 청구 유형 신설 대기 |
+ * | 누름 방언(active:translate) | 4 | 0 | 4 | |
+ * | 점선 2 · 밑줄 탭 1 · 9px 타입 2 | 5 | 0 | 5 | 단발 |
+ *
+ * ### 조합 분석 — 「축 A 혼자 N, A+B 로 M」 (이 소집의 목적)
+ *
+ * 처방 후보별로 «그 처방만으로 자리가 통째로 열리는가»를 셌다:
+ *
+ * | 처방 | 혼자 여는 자리 | 조합으로 여는 자리 |
+ * |---|---:|---|
+ * | 밑줄/산문 재단 | 17 | — (상호작용 판정 수신, 산문 계약 라운드로) |
+ * | 크롬 토큰 등재 검증 | 15 | **이번에 7 실행** (나머지는 스크림 유형·설정 시트 계약) |
+ * | 인셋·타입 해제(단일 축 가정) | 13 | +18 (모노·틴트와 함께) — 단 축으로 풀지 않는다(판정 ②) |
+ * | 모노 부품 혼자 | 3 | **+9~12** (틴트 채움·인셋 결합과 함께 — 三構멍 동시가 이 부류의 정체) |
+ * | 원형 아이콘 갈래 | 3 | +3 (크롬 토큰·틴트와 함께) |
+ * | panel 표면 | 3 | +5 (인셋·타입과 함께 — 4라운드 연속 관측과 일치) |
+ * | border-t 행 갈래 | 5 | +2 |
+ *
+ * 수치가 소집 전제를 확인한다: **최대 회수는 단일 축이 아니라 «모노 부품 +
+ * 틴트 톤 + 인셋 분해» 묶음(≈31)과 «link 재설계»(타입 상속 + 밀집 행 + 산문
+ * 재단, ≈37)다.** 전자는 부품 스펙이 필요하고 후자는 아래 판정을 받았다.
+ *
+ * ### 판정 (체계석, 2026-08-04)
+ *
+ * ① **`link` 는 잘못된 바닥 위에 서 있다 — 사실 오류.** 값 층은 WCAG 2.5.8
+ *    (AA, 24×24)을 인용하면서 2.5.5(AAA)/HIG 의 값(44, `min-h-11`)을 싣는다.
+ *    44 는 `--touch-target-min`이고 design.md 가 «coarse 단일 출처»로 못박은
+ *    값이다 — fine 포인터 전면 44 는 이 저장소 자신의 터치 계약 위반이다.
+ *    `inline` 탈출구는 바닥이 잘못돼서 필요해진 축이다. **재설정(바닥 24 +
+ *    coarse 승격 + `inline` 축 삭제 + 산문 재단)은 채택 소비처 43호출/28파일의
+ *    픽셀을 움직이므로 자리별 전수 표와 함께 자체 라운드로 간다** — 이 라운드는
+ *    판정과 주석 정정(잘못된 인용 제거)까지만 한다.
+ * ② **인셋·타입 결합은 축이 아니다.** 43 자리의 (px,py,type) 분포가 한 구멍이
+ *    아니라 세 정체다: 모노 명령 태그(부품) · 표준 버튼 방언(px-4/body/h-10) ·
+ *    ±1단 이내 행/칩. 인셋 축을 신설하면 8모양×4크기에 곱해져 두 번째
+ *    시스템이 된다(규칙 1 산수).
+ * ③ **모노 명령 태그는 부품으로 승격한다** (5라운드 연속 = 최다 반복 부류).
+ *    voice(font-mono·uppercase·tracking 1토큰·caption)를 소유하는 행동 층
+ *    프리미티브 + 게이트를 같은 PR 에 — 다음 라운드 1순위. tracking 은 전수
+ *    0.08×3 / 0.10 / 0.12 / 0.14×3 으로 갈라져 있어 값 확정에 화면 실측 필요.
+ *
+ * ### 다음 라운드 — 회수량 순
+ *
+ * | 순위 | 무엇 | 회수(예상) | 선행 조건 |
+ * |---:|---|---:|---|
+ * | 1 | `link` 재설정: 바닥 24(min-h-6) + coarse 승격 + inline 축 삭제 + 산문 재단(산문 5 · 가짜 산문 2 → 산문 계약: display:inline 강제·밑줄 토큰·UA 포커스) | 부채 ≈37 + 채택 43호출 정합 | 자리별 전수 표 · touch-target 계기에 Inline 예외 선탑재(안 하면 산문 5 가 거짓 빨강) · 밀집 행은 touch-hit-expand 금지(탭 훔침) — gap 처방(gap-1→2.5, 높이 불변) 우선 |
+ * | 2 | 모노 명령 태그 부품(+ 틴트 채움 톤) | ≈12 | tracking 1값 확정(화면 실측) · 앰버-격리 1자리는 강등 판정 뒤 |
+ * | 3 | 밀집 행 AA 즉시 수리 — DomainCouplingCard 세로 gap-1→gap-2.5(중심거리 21→26, 행 높이 불변) | AA 위반 1면 해소 | 상호작용 실측 수신 완료 — 적용만 남음 |
+ * | 4 | panel 표면(보더·divider·indigo-bright) + 인셋 분해 잔여 | ≈8 | scope 계약(「신호는 scope 무관」) 명시 개정 필요 |
+ * | 5 | 원형 아이콘 갈래 / border-t 행 갈래 / 무게 축 | 6 / 6 / 15 | 각각 소비처 전수 재확인 |
+ * | 6 | 스크림 등재 청구 유형 · 설정 시트 계약 4 | 9 | 등재 기준 표 확장 |
  *
  * ════════════════════════════════════════════════════════════════════
  * ## 역사 — 라운드별 기록 (417 → 108). **지우지 않는다**
@@ -440,6 +519,79 @@ const OUTSIDE_VALUE_LAYER: readonly OutsideEntry[] = [
       'border-b-[length:var(--tabbar-underline)] 로 **다른 표기법**을 소유한다. ' +
       'segment 는 「보더 0」이 정의라 이 표기법을 못 그린다.',
   },
+  /*
+   * ── 2026-08-04 통합 라운드의 등재 검증 7 — 머리말이 「다음 등재 라운드」로
+   * 미뤄 둔 크롬 토큰 후보를 자리마다 열어 확인했다. 전부 fine 32~36px 이
+   * coarse 에서 44 로 승격하거나 스케일 계수를 타는 토큰이라, 고정 단 램프는
+   * 원리적으로 표현할 수 없다(tokenIsBeyondFixedSteps 가 기계 확인).
+   */
+  {
+    file: 'src/widgets/search-palette/ui/SearchPalette.tsx',
+    count: 1,
+    claim: 'chrome-token',
+    proof: '--overlay-close-size',
+    why: '팔레트 닫기 — 32px 이고 coarse 포인터에서 --touch-target-min(44)으로 승격한다.',
+    conditional: '값 층이 포인터 승격 축을 얻으면 다시 연다.',
+  },
+  {
+    file: 'src/widgets/shortcut-sheet/ui/ShortcutSheet.tsx',
+    count: 1,
+    claim: 'chrome-token',
+    proof: '--topology-shortcut-sheet-close-size',
+    why: '단축키 시트 닫기 — 같은 32 → coarse 44 승격 계약.',
+    conditional: '값 층이 포인터 승격 축을 얻으면 다시 연다.',
+  },
+  {
+    file: 'src/widgets/global-search/ui/GlobalSearch.tsx',
+    count: 1,
+    claim: 'chrome-token',
+    proof: '--overlay-close-size',
+    why:
+      '검색 시트 닫기. ⚠️ 검증이 결함을 잡은 자리다 — 전용 토큰 ' +
+      '(--topology-search-sheet-close-size)은 32px **단독 고정 선언**이라 이 ' +
+      '게이트가 기각했고(승격 블록 주석은 «이미 커버됨»이라 거짓말하고 있었다), ' +
+      '같은 일을 하는 --overlay-close-size 로 수렴시킨 뒤에야 등재 자격이 생겼다. ' +
+      'fine 32 → 32(이동 0), coarse 32 → 44(형제 오버레이와 같은 계약).',
+    conditional: '값 층이 포인터 승격 축을 얻으면 다시 연다.',
+  },
+  {
+    file: 'src/views/docs-vault/ui/parts/DocsHeaderTile.tsx',
+    count: 1,
+    claim: 'chrome-token',
+    proof: '--chrome-tile-size',
+    why:
+      '문서함 헤더 타일 프리미티브 — size-[var(--chrome-tile-size)] 로 크롬 잠금 단' +
+      '(36, coarse 에서 max(36,44))을 그대로 진다. ChromeTile 의 문서함 형제.',
+  },
+  {
+    file: 'src/views/docs-vault/ui/parts/BackToTopButton.tsx',
+    count: 1,
+    claim: 'chrome-token',
+    proof: '--chrome-tile-size',
+    why:
+      '문서함 「맨 위로」 부유 컨트롤 — h-[var(--chrome-tile-size)] 크롬 계약. ' +
+      'rounded-full 원형 방언은 별개 부채로 남는다(원형 아이콘 구멍) — 등재는 치수 주장만 승인한다.',
+  },
+  {
+    file: 'src/widgets/app-nav-rail/ui/GitStatusTile.tsx',
+    count: 1,
+    claim: 'chrome-token',
+    proof: '--app-nav-rail-tile-height',
+    why:
+      '레일 git 타일 — calc(32px × --topology-ui-scale-factor) + coarse max() 승격. ' +
+      '램프는 스케일 계수도 포인터 승격도 못 낸다.',
+    conditional: '값 층이 포인터 승격 축을 얻으면 다시 연다. 누름 방언(active:translate-y-px)은 별개 부채다.',
+  },
+  {
+    file: 'src/widgets/app-nav-rail/ui/AppNavRail.tsx',
+    count: 1,
+    claim: 'chrome-token',
+    proof: '--app-nav-rail-tile-height',
+    why:
+      '레일 에이전트 타일(버튼 갈래) — 같은 파일의 <Link> 갈래가 이미 앵커 등록부에 ' +
+      '있다. 한 파일이 두 태그를 내므로 두 등록부에 한 줄씩 선다.',
+    conditional: '값 층이 포인터 승격 축을 얻으면 다시 연다. 누름 방언은 별개 부채다.',
+  },
 ];
 
 /**
@@ -450,7 +602,7 @@ const OUTSIDE_VALUE_LAYER: readonly OutsideEntry[] = [
  * 올라가 멈춤쇠가 양방향으로 헐거워진다. 등재를 늘리려면 이 수를 **손으로**
  * 올려야 하고, 그 diff 가 곧 「왜」를 적을 자리다.
  */
-const BASELINE_REGISTERED = 23;
+const BASELINE_REGISTERED = 30;
 
 /**
  * **이 수만 줄어야 한다.** 전수(113)에서 등재(23)를 뺀 나머지.
@@ -458,7 +610,7 @@ const BASELINE_REGISTERED = 23;
  * 등재된 파일에 손 컨트롤을 하나 더 써도 등재 수는 안 오르므로 이 수가 오른다 —
  * 등재는 면제가 아니다.
  */
-const BASELINE_HAND_WRITTEN_DEBT = 85;
+const BASELINE_HAND_WRITTEN_DEBT = 78;
 
 const ROOTS = ['src', 'app'];
 const GLOBALS_CSS = 'app/globals.css';
