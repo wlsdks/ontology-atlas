@@ -158,8 +158,16 @@ const RULES = [
   },
   {
     command: 'pnpm test:contracts',
-    reason: 'cross-package parser/schema/validator contract changed',
+    reason:
+      'cross-package parser/schema contract, or a UI file the design-system and a11y contracts scan from disk',
     matches: [
+      // 2026-08-04 — 새 `.tsx` 뷰와 새 라우트에 이 advisor 가 tsc·i18n 말고는
+      // 아무것도 안 권했다. 그런데 `tests/contract/` 의 여러 게이트는 **파일
+      // 시스템을 직접 읽는다** — 램프 커버리지, 이름 유틸리티 래칫, 컨트롤
+      // 채택 래칫, 금지 클래스, 인라인 hex, 표면 모션, 라벨 장식, 그리고
+      // 라우트를 분류하는 `audited-route-coverage`. 새로 만든 UI 파일은
+      // 그것들의 입력이지 남의 일이 아니다.
+      /^(?:src|app)\/.*\.tsx$/,
       /^tests\/contract\//,
       /^tests\/fixtures\/(?:frontmatter|frontmatter-writer|validate-vault|vault-schema)-cases\.mjs$/,
       /^mcp\/src\/(?:parser|schema|validate)\.mjs$/,
@@ -372,6 +380,23 @@ const RULES = [
     command: 'pnpm lint',
     reason: 'ESLint boundary or style rules changed',
     matches: [/^eslint\.config\.mjs$/],
+  },
+  {
+    // 2026-08-04 — 라우트를 새로 놓은 사람에게 이 advisor 는 tsc 만 권했다.
+    // 라우트는 세 게이트의 입력이다: 원장(`decisions:check`), 접근성 분류
+    // (`audited-route-coverage` → `pnpm test:contracts`), 그리고 실제 측정
+    // (두 래칫). 셋째가 여기 없으면 새 화면의 대비 미달이 **아무 목록에도
+    // 없는 채로** 통과한다 — 2026-08-03 에 404 두 장이 그렇게 AA 4.42:1 을
+    // 들고 있었다.
+    command:
+      'pnpm exec playwright test tests/e2e/a11y-ratchet.spec.ts tests/e2e/contrast-ratchet.spec.ts',
+    reason: 'a route was added or changed — it must be classified into the a11y/contrast ratchets',
+    matches: [/^app\/(?:.+\/)?(?:page|not-found|error|global-error)\.tsx$/],
+  },
+  {
+    command: 'pnpm decisions:check',
+    reason: 'a route or design-spec surface moved — the decision ledger must move with it',
+    matches: [/^app\/(?:.+\/)?(?:page|not-found)\.tsx$/],
   },
   {
     command: 'pnpm build',
@@ -651,8 +676,12 @@ export function suggestFocusedChecks(paths = []) {
     withVitestDirect,
     directPlaywrightTestSuggestions(normalizedPaths),
   );
-  const withMcpDirect = insertBeforeCommand(
+  const withLintDirect = prependSuggestions(
     withPlaywrightDirect,
+    directLintSuggestions(normalizedPaths),
+  );
+  const withMcpDirect = insertBeforeCommand(
+    withLintDirect,
     directMcpUnitTestSuggestions(normalizedPaths),
     'pnpm test:mcp:unit',
   );
@@ -690,6 +719,30 @@ function directVitestTestSuggestions(paths) {
     byTestFile.set(testFile, row);
   }
   return [...byTestFile.values()];
+}
+
+/**
+ * 바뀐 `src/**` · `app/**` 소스에 **ESLint 를 직접** 건다.
+ *
+ * 이 저장소에서 디자인 시스템 규격(타입·반경·행간·모션·그림자 램프, 금지
+ * 그라디언트, accent×틴트 페어링, FSD 경계)은 문서가 아니라 `no-restricted-syntax`
+ * 가 강제한다. 그런데 2026-08-04 실사용 시험에서 이 advisor 는 새 `.tsx` 뷰에
+ * tsc·contracts·i18n 만 권하고 **lint 를 한 번도 권하지 않았다** — 규격을 지고
+ * 있는 게이트가 추천 목록에 없었다.
+ *
+ * `pnpm lint` 전체가 아니라 **바뀐 파일만** 건다. 전체는 escalation 이고,
+ * 여기서 필요한 것은 "방금 쓴 화면이 규격 안에 있나" 라는 즉답이다.
+ */
+function directLintSuggestions(paths) {
+  const lintable = paths.filter((path) => /^(?:src|app)\/.+\.(?:ts|tsx)$/.test(path));
+  if (lintable.length === 0) return [];
+  return [
+    {
+      command: `pnpm exec eslint ${lintable.join(' ')}`,
+      reason: 'design-system ramps and FSD boundaries are lint-enforced on changed source',
+      paths: lintable,
+    },
+  ];
 }
 
 function directPlaywrightTestSuggestions(paths) {
