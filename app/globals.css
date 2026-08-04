@@ -985,6 +985,39 @@
     outline: none;
   }
 
+  /*
+   * **누를 수 있는 것은 전부 같은 커서를 쓴다** (2026-08-05, 소유자 확정).
+   *
+   * 실측(1512, 7개 라우트): 링크 `a` 75개는 `pointer`, 버튼 58개는 `default`.
+   * 브라우저 기본값이 태그마다 다른 것을 아무도 정하지 않은 채 그대로 쓰고
+   * 있었던 것이고, 그 결과 **같은 «누르면 된다»가 태그에 따라 다르게 답했다.**
+   * 그 위에 손으로 적은 `cursor-pointer` 가 10개 파일 22곳에 흩뿌려져 있었다 —
+   * 버튼끼리도 5:56 으로 서로 모순이었으니, 정책이 있어서 갈린 게 아니라
+   * 작성자마다 그때그때 적은 것이다.
+   *
+   * 방향을 «전부 pointer» 로 고른 이유: ① 이미 다수(127 중 71)가 그렇고
+   * ② 웹에서 pointer 는 «누를 수 있다» 의 사실상 표준 신호다. 되돌리려면 이
+   * 블록 하나만 지우면 된다.
+   *
+   * ⚠️ 비활성은 제외한다. `disabled:cursor-not-allowed`(7곳)·`disabled:cursor-wait`
+   * (5곳)이 이미 «누를 수 없다»를 말하고 있고, 여기서 pointer 를 덮으면 그
+   * 신호를 지운다 — 「누를 수 없으면 누를 수 없어 보여야 한다」(chrome-chip.tsx
+   * 2026-08-03 실보고)를 되돌리는 셈이다.
+   *
+   * ⚠️ 여기 없는 것: `[role="button"]` 은 이 저장소에 **0건**이라 셀렉터를 쓰지
+   * 않는다(빈 집합 위에서 도는 검출기를 만들지 않는다 — `/gate-probe`).
+   * `role="tab"`·`role="radio"` 는 전부 `<button>` 위에 있어 아래 규칙이 이미
+   * 덮는다. 스크림(`cursor-default`, HomePage 3곳)은 누르면 닫히지만 «표면»
+   * 이지 컨트롤이 아니라서 그대로 둔다.
+   *
+   * 게이트 둘: `tests/e2e/cursor-affordance.spec.ts`(렌더된 커서를 잰다) +
+   * `eslint.config.mjs` 의 중복 `cursor-pointer` 셀렉터.
+   */
+  button:not(:disabled):not([aria-disabled="true"]),
+  summary {
+    cursor: pointer;
+  }
+
   @keyframes atlasStatusIn {
     from {
       opacity: 0;

@@ -831,7 +831,7 @@ export function ProjectDetailPage({
               {handoffCopyLabel}
             </Button>
             <details className="mt-3">
-              <summary className="cursor-pointer select-none text-body leading-body text-[color:var(--color-text-tertiary)] transition-colors hover:text-[color:var(--color-text-secondary)]">
+              <summary className=" select-none text-body leading-body text-[color:var(--color-text-tertiary)] transition-colors hover:text-[color:var(--color-text-secondary)]">
                 {t("handoffHumanCaption")}
               </summary>
               <pre className="mt-2 overflow-x-auto font-mono text-body leading-prose whitespace-pre-wrap text-[color:var(--color-text-quaternary)]">

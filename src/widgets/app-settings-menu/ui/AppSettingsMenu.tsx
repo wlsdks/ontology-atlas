@@ -511,7 +511,7 @@ export function AppSettingsMenu({
           setOpen(!open);
         }}
         className={cn(
-          'cursor-pointer list-none transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--color-indigo-a46)] focus-visible:ring-inset [&::-webkit-details-marker]:hidden',
+          ' list-none transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--color-indigo-a46)] focus-visible:ring-inset [&::-webkit-details-marker]:hidden',
           triggerVariant === 'rail-tile'
             ? // 나브레일 유틸리티 타일 계약 — 활동(AppNavRail)·발자취
               // (GitStatusTile)와 같은 지오메트리·상태 안무.

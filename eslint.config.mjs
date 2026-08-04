@@ -105,6 +105,48 @@ const inlineShadowSelectors = [
   },
 ];
 
+/*
+ * 중복 `cursor-pointer` — 중앙 규칙이 이미 정한 것을 다시 적는 것.
+ *
+ * ## 왜 (2026-08-05 소유자 확정)
+ *
+ * `app/globals.css` 의 base 레이어가 «비활성이 아닌 `button` 과 `summary` 는
+ * pointer» 를 정한다. 그 뒤로 `<button className="… cursor-pointer">` 는
+ * **아무것도 바꾸지 않는 중복**이고, 중복이 쌓이면 다음 사람이 «여기만 특별한가»
+ * 를 매번 다시 판단해야 한다. 실제로 그렇게 22곳이 쌓였고 버튼끼리 5:56 으로
+ * 서로 모순이었다.
+ *
+ * ## 사정거리를 일부러 좁혔다
+ *
+ * `cursor-pointer` 를 통째로 금지하지 **않는다**. 중앙 규칙이 안 닿는 자리가
+ * 실제로 8곳 있다(`li[role=option]` · `label` · cmdk 항목 · 클릭되는 카드 ·
+ * SVG `<g>` · 체크박스). 그것까지 막으면 정상 사용을 죽이는 룰이 된다.
+ * `cursor-default` 도 마찬가지로 안 막는다 — 스크림 3곳이 정당하게 쓴다
+ * (누르면 닫히지만 컨트롤이 아니라 표면이다).
+ *
+ * 그래서 판정은 **«태그가 button/summary 인데 그 위에 또 적었는가»** 하나다.
+ * 이 셀렉터는 리터럴 태그 + 리터럴 className 조합만 본다 — `cn()` 으로 조립된
+ * 것이나 컴포넌트 래퍼는 못 본다. 그쪽은 **렌더 결과를 재는**
+ * `tests/e2e/cursor-affordance.spec.ts` 가 맡는다(lint 가 못 보는 층은 계약이
+ * 맡는다는 이 저장소의 분업 그대로).
+ *
+ * ⚠️ 켜기 전 전수: 13건을 먼저 걷어내고 켰다(위반 0 · lint 총계 불변).
+ */
+const cursorAffordanceSelectors = [
+  {
+    selector:
+      'JSXOpeningElement[name.name=/^(button|summary)$/] JSXAttribute[name.name="className"] Literal[value=/(^|[^-\\w])(enabled:)?cursor-pointer([^-\\w]|$)/]',
+    message:
+      'button/summary 의 pointer 커서는 app/globals.css 의 base 규칙이 이미 정한다 — 여기 다시 적으면 중복이고, 중복이 쌓이면 다음 사람이 «여기만 특별한가» 를 매번 다시 판단한다. 지워라. 중앙 규칙이 안 닿는 원소(li[role=option] · label · 클릭되는 카드 등)에서는 정당하다.',
+  },
+  {
+    selector:
+      'JSXOpeningElement[name.name=/^(button|summary)$/] JSXAttribute[name.name="className"] TemplateElement[value.raw=/(^|[^-\\w])(enabled:)?cursor-pointer([^-\\w]|$)/]',
+    message:
+      'button/summary 의 pointer 커서는 base 규칙이 정한다 (template literal). 중복을 지워라.',
+  },
+];
+
 const accentTintPairingSelectors = [
   {
     selector:
@@ -782,6 +824,7 @@ const eslintConfig = defineConfig([
         // 램프 부채 파일도 이 블록은 받는다 — 인라인 그림자는 램프가 아니라
         // 사다리 문제라 부채 면제와 함께 빠지면 안 된다.
         ...inlineShadowSelectors,
+        ...cursorAffordanceSelectors,
       ],
     },
   },
@@ -803,6 +846,7 @@ const eslintConfig = defineConfig([
         ...arbitrarySizeSelectors,
         ...accentTintPairingSelectors,
         ...inlineShadowSelectors,
+        ...cursorAffordanceSelectors,
       ],
     },
   },

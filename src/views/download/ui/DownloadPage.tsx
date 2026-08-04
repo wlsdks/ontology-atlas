@@ -965,7 +965,7 @@ function VerifyDetails({
 
   return (
     <details data-testid="download-trust" className="group min-w-0">
-      <summary className="touch-hit-expand inline-flex cursor-pointer list-none items-center gap-1.5 text-label leading-label text-[color:var(--color-text-tertiary)] transition-colors hover:text-[color:var(--color-text-primary)] [&::-webkit-details-marker]:hidden">
+      <summary className="touch-hit-expand inline-flex list-none items-center gap-1.5 text-label leading-label text-[color:var(--color-text-tertiary)] transition-colors hover:text-[color:var(--color-text-primary)] [&::-webkit-details-marker]:hidden">
         <ChevronRight
           size={13}
           aria-hidden

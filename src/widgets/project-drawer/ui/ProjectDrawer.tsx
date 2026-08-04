@@ -660,7 +660,7 @@ export function ProjectDrawer({
               <details className="mt-5 overflow-hidden rounded-panel border border-[color:var(--color-border-soft)] bg-[color:var(--color-overlay-1)]">
                 <summary
                   data-testid="project-drawer-more-info-summary"
-                  className="group flex cursor-pointer list-none items-center justify-between gap-3 px-4 py-3 text-body-lg font-[var(--font-weight-signature)] text-[color:var(--color-text-primary)] transition-colors hover:bg-[color:var(--color-overlay-1)]"
+                  className="group flex list-none items-center justify-between gap-3 px-4 py-3 text-body-lg font-[var(--font-weight-signature)] text-[color:var(--color-text-primary)] transition-colors hover:bg-[color:var(--color-overlay-1)]"
                 >
                   <div className="min-w-0">
                     <p>{t("moreInfoSummary")}</p>
@@ -964,7 +964,7 @@ export function ProjectDrawer({
                     project.timeline?.launchedAt ||
                     project.links.length > 0) && (
                     <details className="rounded-panel border border-[color:var(--color-border-soft)] bg-[color:var(--color-overlay-1)] px-4 py-3">
-                      <summary className="cursor-pointer list-none text-body-lg font-[var(--font-weight-signature)] text-[color:var(--color-text-primary)]">
+                      <summary className=" list-none text-body-lg font-[var(--font-weight-signature)] text-[color:var(--color-text-primary)]">
                         {t("moreScreensAndRecords")}
                       </summary>
                       <div className="mt-4 space-y-5 border-t border-[color:var(--color-border-soft)] pt-4">

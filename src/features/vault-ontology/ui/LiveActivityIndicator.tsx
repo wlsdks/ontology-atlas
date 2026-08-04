@@ -335,7 +335,7 @@ export function LiveActivityBadge({
           shape: "chip",
           tone: "accentOnTint",
           className:
-            "cursor-pointer list-none border-[color:var(--color-indigo-a32)] bg-[color:var(--color-indigo-a10)] hover:border-[color:var(--color-indigo-a50)] hover:bg-[color:var(--color-indigo-a14)]",
+            " list-none border-[color:var(--color-indigo-a32)] bg-[color:var(--color-indigo-a10)] hover:border-[color:var(--color-indigo-a50)] hover:bg-[color:var(--color-indigo-a14)]",
         })}
       >
         <span aria-hidden className="inline-block h-1.5 w-1.5 rounded-full bg-[color:var(--color-status-success)]" />

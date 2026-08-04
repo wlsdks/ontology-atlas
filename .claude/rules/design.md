@@ -336,6 +336,7 @@ particle·rarity(gold)·shimmer 를 `--studio-*` 토큰과 `.studio-stage` 안�
 | **행간 램프** | `leading-[N]` 처럼 값을 직접 적는 것 금지 + 이름 붙은 유틸리티(`leading-relaxed` 등 208건)는 `named-offramp-utility-ratchet` 의 기준선이 붙든다 (2026-08-04) | 동일 |
 | **램프 우회** | 램프 토큰을 대괄호 안에서 길이로 돌려 참조하는 것만 금지 (램프 밖 크기 토큰은 정당) | 동일 (켤 때 위반 0) |
 | **인라인 그림자** | JSX `style={{ boxShadow }}` 의 값이 사다리·도킹·눌림·표면 토큰 중 하나를 참조하지 않으면 금지 (2026-08-04) | `src/**`+`app/**` 전역 error — **램프 부채 예외 파일도 받는다** |
+| **중복 커서** | `<button>`·`<summary>` 의 className 에 `cursor-pointer` 를 다시 적는 것 금지 — 정책은 `globals.css` base 한 곳 (2026-08-05) | 동일 (켤 때 위반 0 — 13곳 선정리) |
 | 금지 그라디언트 | `scaleGradientSelectors` | 동일 |
 | **accent×틴트 페어링** | `accentTintPairingSelectors` — `tone accent` 와 인디고/앰버 틴트 `bg-` 가 같은 호출/원소에 공존 금지 (상수 우회는 `accent-ink-contrast` 계약이 맡는다) | 전역 error (켤 때 위반 0 — 26곳 선치환) |
 
@@ -361,6 +362,7 @@ particle·rarity(gold)·shimmer 를 `--studio-*` 토큰과 `.studio-stage` 안�
 | **두 무채색 글자색 램프가 실제로 서로 다르다** | 같은 파일(`scope` 축 절) | 판정하려면 `app/globals.css` 의 **두 램프 8개 값**을 봐야 한다. 두 램프 값이 같아져 버리면 `scope` 는 아무 차이도 안 내면서 고를 것만 늘리는 셈이라, 그날 검사가 그걸 지우라고 말해 줘야 한다 |
 | **손으로 쓴 컨트롤이 늘지 않는다** | `tests/contract/control-adoption-ratchet.contract.test.ts` | 래칫이라 **저장소 전체의 개수**가 판정 기준인데, 그건 파일 하나만 봐서는 셀 수 없다 |
 | **글 속의 링크는 컨트롤이 아니라 글이다** — `.prose-link` 는 밑줄 모양만 정하고 display·행간·크기·포커스는 그 링크를 감싼 글의 것을 따른다 | `tests/contract/prose-link.contract.test.ts` + `tests/e2e/touch-target-contract.spec.ts` 의 fine-pointer 감사(WCAG 2.5.8 인라인 면제 판정) | 판정하려면 「이 링크가 문장 흐름 속에 있는가」(실제로 그려진 결과)와 브라우저가 계산한 display 값을 봐야 한다 — 「문장 속인가」를 정하는 세 가지(옆에 오는 글자가 어디서 왔는지 · 부모가 정하는 실제 display · 줄바꿈)가 전부 여는 태그 바깥에 있어서, 코드만 보고 판정하던 `inline` 축은 잘못 설정된 4건을 못 본 채 무용지물이었다(2026-08-04) |
+| **누를 수 있는 것은 전부 pointer** — 활성 `button`·`summary`·`a[href]` 는 렌더된 커서가 pointer 여야 한다 | `tests/e2e/cursor-affordance.spec.ts`(감사 대상 17개 라우트 전부 + 자기검증 프로브) | 위반이 **코드에 아무 값도 안 남긴다** — 새 컴포넌트가 그냥 `<button>` 을 쓰면 클래스도 인라인 스타일도 없이 브라우저 기본값으로 떨어져서 볼 문자열이 없다. lint 셀렉터는 «중복해서 적은 것» 만 볼 수 있고, «중앙 규칙이 사라졌거나 안 닿는 것» 은 렌더 결과를 재야 안다 |
 | **어느 바탕 위에 어느 글자색까지 쓸 수 있나** — quaternary 는 겹치지 않은 무채색 바탕(맨 아래 3단 + canvas/panel 위 overlay-1)까지, 그보다 올라선 바탕(overlay-2 이상 · elevated+overlay · 색이 섞인 바탕) 위의 글자는 tertiary 부터 | `tests/contract/quaternary-ink-surface.contract.test.ts`(값·자리) + `tests/e2e/a11y-open-surfaces.spec.ts`(화면) | 판정이 글자색이 아니라 **그 글자가 얹힌 바탕이 어떻게 겹쳐졌는지**에 달렸다 — 같은 클래스가 panel 위에서는 대비 5.00, overlay-2 위에서는 4.36 이다. 게다가 이 층에서 가장 흔한 코드 모양이 `active ? 틴트+밝은 글자색 : quaternary` 같은 분기라, 같은 태그에 붙은 클래스만 보고 짝을 맞추면 엉뚱하게 걸린다(2026-08-04 전수 18쌍 중 다수가 분기였다) — 그래서 코드만 보는 래칫 대신 값 자체를 고정하는 계약 + 실제로 화면을 열어서 재는 검사를 쓴다 |
 
 **램프에 없는 칸은 아무 소리도 안 낸다 (2026-07-27 실측).** `text-large` 는

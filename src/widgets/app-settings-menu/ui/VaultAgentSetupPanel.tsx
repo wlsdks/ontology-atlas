@@ -1212,7 +1212,7 @@ export function VaultAgentSetupPanel({
             ))}
           </dl>
           <details className="rounded-micro border border-[color:var(--color-overlay-2)] bg-[color:var(--color-overlay-recessed-a12)] px-2 py-1.5">
-            <summary className="cursor-pointer select-none text-label font-medium text-[color:var(--color-text-secondary)] marker:text-[color:var(--color-text-quaternary)]">
+            <summary className=" select-none text-label font-medium text-[color:var(--color-text-secondary)] marker:text-[color:var(--color-text-quaternary)]">
               {t('agentSetup.nextStepsSummary')}
             </summary>
             <ul aria-label={t('agentSetup.nextStepsAriaLabel')} className="mt-1.5 grid gap-1">
