@@ -14,6 +14,7 @@ import {
   type ProjectSourceView,
   type ProjectSourceWitnessInput,
 } from "@/shared/lib/project-source-receipt";
+import { proposeProjectSourceFromInspection } from "@/shared/lib/project-source-proposal";
 import {
   createVaultFileProjectSourceStore,
   type ProjectSourceStore,
@@ -45,8 +46,28 @@ export interface ProjectSourceRuntime {
    */
   pickRoot(title?: string): Promise<string | null>;
   inspect(rootPath: string): Promise<ProjectSourceInspection | null>;
+  /**
+   * 볼트 폴더의 **절대 경로**. 추정의 유일한 입력이고, 이것이 없는 표면(웹)에서는
+   * 추정 자체가 성립하지 않는다 — 브라우저는 고른 폴더가 디스크 어디에 있는지
+   * 모른다.
+   */
+  rootPathOf(handle: FileSystemDirectoryHandle): string | null;
   now(): string;
   restoreFocus(element: HTMLElement): void;
+}
+
+/**
+ * **「이 폴더 맞나요?」의 데이터.** 화면이 그릴 자격이 있는 제안만 여기 담긴다 —
+ * 확신이 낮거나(`low`) 후보가 없으면 `null` 이고, 그때 화면은 종전처럼 폴더
+ * 선택창 하나만 그린다. 회색 버튼을 두지 않는다는 계약이 여기서 지켜진다.
+ */
+export interface ProjectSourceProposedRoot {
+  rootPath: string;
+  /** 오늘 앱이 낼 수 있는 유일한 근거 — 볼트를 감싸는 git 저장소. */
+  marker: "enclosing_git_repository";
+  confidence: "high" | "medium";
+  /** 후보를 **실제로 재서** 나온 값. 없으면(선언된 경로 0개) 비율을 주장하지 않는다. */
+  witnessSummary: { total: number; supported: number; missing: number } | null;
 }
 
 const defaultRuntime: ProjectSourceRuntime = {
@@ -59,6 +80,7 @@ const defaultRuntime: ProjectSourceRuntime = {
     return rootPath;
   },
   inspect: inspectTauriProjectSource,
+  rootPathOf: (handle) => getTauriVaultRootPath(handle) ?? null,
   now: () => new Date().toISOString(),
   restoreFocus: (element) => {
     window.requestAnimationFrame(() => {
@@ -183,6 +205,10 @@ export function useProjectSourceModel(input: {
     [input.projectSlug, input.nodes, input.docs],
   );
   const [snapshot, setSnapshot] = useState<ProjectSourceSnapshot | null>(null);
+  const [proposal, setProposal] = useState<{
+    key: string;
+    value: ProjectSourceProposedRoot | null;
+  } | null>(null);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<ProjectSourceModelError | null>(null);
   const generation = useRef(0);
@@ -213,7 +239,102 @@ export function useProjectSourceModel(input: {
     return () => { cancelled = true; };
   }, [store, input.projectSlug, graphHash, runtime, runtimeAvailable]);
 
-  const runNextAction = useCallback(async () => {
+  /**
+   * **「이 폴더 맞나요?」 — 새 파일시스템 순회는 없다.**
+   *
+   * 볼트 루트로 `inspect_project_source` 를 한 번 부르면 그 명령이 이미 감싸는
+   * git 저장소까지 올라간다(`src-tauri/src/lib.rs`). 그러니 그 결과가 곧 후보다.
+   * 앱이 폴더를 따로 훑을 이유가 없고, 훑어서도 안 된다(local-first 계약).
+   *
+   * ⚠️ **조건이 화면과 같아야 한다** (`architecture.md` D4). 이 측정은 제안이
+   * 실제로 그려지는 순간 — 즉 다음 행동이 `connect_source` 일 때 — 에만 돈다.
+   * 이미 연결된 프로젝트는 스냅샷 쪽이 자기 폴더를 재고 있으므로, 여기서 한 번
+   * 더 재면 같은 클릭이 실측을 두 번 내게 된다.
+   *
+   * 「선언된 경로 N개 중 M개」는 **주장이 아니라 측정**이다 — 후보의 파일 목록에
+   * 실제 증인을 대조해서 나온다. 그래서 영수증을 한 장 메모리에서 찍어 요약만
+   * 꺼내 쓴다(디스크에는 아무것도 쓰지 않는다 — 확정은 사람이 누를 때다).
+   */
+  const vaultRootPath = useMemo(
+    () => runtimeAvailable && input.vaultHandle ? runtime.rootPathOf(input.vaultHandle) : null,
+    [runtimeAvailable, input.vaultHandle, runtime],
+  );
+  const proposalWanted = Boolean(
+    vaultRootPath
+    && graphHash
+    && input.projectSlug
+    && snapshot
+    && snapshot.view.projectSlug === input.projectSlug
+    && snapshot.view.nextAction.id === "connect_source",
+  );
+  const proposalKey = `${input.projectSlug ?? ""}::${proposalWanted ? "want" : "skip"}`;
+  useEffect(() => {
+    /*
+     * 못 재는 경우에는 **아무 상태도 안 바꾼다.** 읽은 값에 무엇을 읽고 나온
+     * 값인지(`key`)를 함께 담아 두었으므로, 「아직 못 읽음」과 「읽었더니
+     * 없음」이 아래 `proposalSettled` 하나로 갈린다 — 그 둘을 구분하려고 효과
+     * 안에서 곧바로 setState 하면 렌더가 한 번 더 돈다.
+     */
+    if (!proposalWanted || !vaultRootPath || !input.projectSlug || !graphHash) return;
+    const projectSlug = input.projectSlug;
+    let cancelled = false;
+    void (async () => {
+      let inspection: ProjectSourceInspection | null;
+      try {
+        inspection = await runtime.inspect(vaultRootPath);
+      } catch {
+        // 추정 실패는 진단이 아니다 — 제안이 없으면 화면은 폴더 선택창으로 간다.
+        inspection = null;
+      }
+      if (cancelled) return;
+      const witnessSummary = inspection && inspection.kind === "git"
+        ? buildProjectSourceReceipt({
+            projectSlug,
+            graphHash,
+            probe: probeFromInspection(inspection),
+            witnesses,
+          }).witnessSummary
+        : null;
+      const inferred = proposeProjectSourceFromInspection({
+        vaultRootPath,
+        inspection,
+        witnessSummary,
+      });
+      if (cancelled) return;
+      setProposal({
+        key: proposalKey,
+        value:
+          inferred.status === "proposed"
+          && inferred.candidate?.marker === "enclosing_git_repository"
+          && inferred.confidence !== "low"
+            ? {
+                rootPath: inferred.candidate.rootPath,
+                marker: "enclosing_git_repository",
+                confidence: inferred.confidence,
+                witnessSummary,
+              }
+            : null,
+      });
+    })();
+    return () => { cancelled = true; };
+  }, [
+    proposalWanted,
+    proposalKey,
+    vaultRootPath,
+    input.projectSlug,
+    graphHash,
+    witnesses,
+    runtime,
+  ]);
+  const proposalSettled = !proposalWanted || proposal?.key === proposalKey;
+
+  /**
+   * @param options `rootPath` 를 주면 **폴더 선택창을 건너뛴다** — 추정 확정용
+   *   갈래다. 재는 코드와 저장하는 코드는 폴더를 고른 경우와 **한 벌**이다:
+   *   경로가 어디서 왔든 영수증을 찍는 절차가 갈리면 그 순간 둘 중 하나가
+   *   거짓말을 시작한다.
+   */
+  const runNextAction = useCallback(async (options?: { rootPath?: string }) => {
     if (
       !store
       || !input.projectSlug
@@ -230,13 +351,17 @@ export function useProjectSourceModel(input: {
     try {
       let rootPath: string | null = null;
       if (sourceActionUsesPicker(snapshot.view)) {
-        try {
-          rootPath = await runtime.pickRoot(input.pickerTitle);
-        } catch {
-          setError("picker_failed");
-          return;
+        if (typeof options?.rootPath === "string" && options.rootPath.length > 0) {
+          rootPath = options.rootPath;
+        } else {
+          try {
+            rootPath = await runtime.pickRoot(input.pickerTitle);
+          } catch {
+            setError("picker_failed");
+            return;
+          }
+          if (rootPath === null) return;
         }
-        if (rootPath === null) return;
       } else if (sourceActionRemeasures(snapshot.view) && snapshot.bindings.length === 1) {
         rootPath = snapshot.bindings[0].rootPath;
       } else {
@@ -329,5 +454,23 @@ export function useProjectSourceModel(input: {
     runtimeAvailable,
     canRunSourceAction,
     runNextAction,
+    /**
+     * 「이 폴더 맞나요?」 — 없으면 화면은 종전 그대로(폴더 선택창 하나)다.
+     * 읽고 나온 값에 **무엇을 읽고 나온 값인지**를 함께 담아, 프로젝트를 갈아탄
+     * 직후 한 프레임 동안 남의 추정이 그려지지 않게 한다.
+     */
+    proposedRoot:
+      proposal && proposal.key === proposalKey && canRunSourceAction
+        ? proposal.value
+        : null,
+    /**
+     * **처방을 두 번 그리지 않기 위한 신호.**
+     *
+     * 추정은 비동기라, 이것 없이 그리면 사용자는 먼저 「코드 폴더 연결하기」
+     * 버튼 하나를 보고 300ms 뒤에 그 버튼이 「다른 폴더 고르기」로 바뀌면서
+     * 위로 밀려나는 것을 본다 — 마우스가 이미 가 있던 자리다. 무엇을 처방할지
+     * 아직 모르는 동안에는 **처방하지 않는다**(진단은 그대로 보인다).
+     */
+    proposalSettled,
   };
 }

@@ -105,6 +105,8 @@ function renderPanel(
     projectSourceBusy?: boolean;
     projectSourceError?: string | null;
     projectSourceDegraded?: TopologyV2DetailPanelProps["projectSourceDegraded"];
+    projectSourceProposal?: TopologyV2DetailPanelProps["projectSourceProposal"];
+    onProjectSourceConfirmProposal?: () => void | Promise<void>;
     updatedAtLabel?: string | null;
     groups?: TopologyV2DetailPanelProps["groups"];
   } = {},
@@ -150,6 +152,8 @@ function renderPanel(
       projectSourceBusy={overrides.projectSourceBusy}
       projectSourceError={overrides.projectSourceError}
       projectSourceDegraded={overrides.projectSourceDegraded}
+      projectSourceProposal={overrides.projectSourceProposal}
+      onProjectSourceConfirmProposal={overrides.onProjectSourceConfirmProposal}
       showHandoff={overrides.showHandoff}
       showSourcePath={overrides.showSourcePath}
     />,
@@ -420,6 +424,102 @@ describe("TopologyV2DetailPanel — project source receipt", () => {
       "data-remedy-mode",
       "actionable",
     );
+  });
+
+  it("asks about the inferred folder so connecting is one click, with an escape next to it", () => {
+    const onProjectSourceAction = vi.fn();
+    const onProjectSourceConfirmProposal = vi.fn();
+    const projectSource: ProjectSourceView = {
+      contractVersion: 1,
+      projectSlug: "views",
+      status: "not_measured",
+      currentness: "unavailable",
+      measuredAt: null,
+      topGap: { id: "source_unbound" },
+      nextAction: { id: "connect_source" },
+      bindingCardinality: 0,
+      receipt: null,
+    };
+
+    renderPanel(vi.fn(), undefined, {
+      kind: "project",
+      projectSource,
+      onProjectSourceAction,
+      onProjectSourceConfirmProposal,
+      projectSourceProposal: {
+        question: "Is this the right folder?",
+        rootPath: "/Users/stark/dev/oh-my-ontology",
+        reason: "It is the git repository around this vault · 55 of 55 declared paths were found here",
+        confirmLabel: "Connect this folder",
+        pickOtherLabel: "Choose another folder",
+        confidence: "high",
+      },
+    });
+
+    const remedy = screen.getByTestId("topology-v2-project-source-remedy");
+    expect(remedy).toHaveAttribute("data-remedy-mode", "proposed");
+
+    // ① 무엇을 제안하는지 — 경로 하나. ② 왜 그렇게 추정했는지 — 한 줄.
+    const proposal = screen.getByTestId("topology-v2-project-source-proposal");
+    expect(proposal).toHaveAttribute("data-proposal-confidence", "high");
+    expect(screen.getByTestId("topology-v2-project-source-proposal-path")).toHaveAttribute(
+      "title",
+      "/Users/stark/dev/oh-my-ontology",
+    );
+    expect(
+      screen.getByTestId("topology-v2-project-source-proposal-reason"),
+    ).toHaveTextContent("55 of 55 declared paths were found here");
+
+    // ③ 한 번 눌러 확정 — 폴더 선택창을 거치지 않는다.
+    const confirm = screen.getByTestId("topology-v2-project-source-confirm");
+    fireEvent.click(confirm);
+    expect(onProjectSourceConfirmProposal).toHaveBeenCalledTimes(1);
+    expect(onProjectSourceAction).not.toHaveBeenCalled();
+
+    // ④ 추정은 틀릴 수 있다 — 탈출구가 바로 옆에 있고, 그것이 종전의 선택창이다.
+    const pickOther = screen.getByTestId("topology-v2-project-source-action");
+    expect(pickOther).toHaveTextContent("Choose another folder");
+    fireEvent.click(pickOther);
+    expect(onProjectSourceAction).toHaveBeenCalledTimes(1);
+
+    // 한 상자에 인디고 주 행동은 하나 — 탈출구는 조용한 스킨으로 물러난다.
+    expect(confirm.className).toContain("--topology-v2-panel-primary-surface");
+    expect(pickOther.className).not.toContain("--topology-v2-panel-primary-surface");
+  });
+
+  it("falls back to the picker when nothing can be inferred — never a dead button", () => {
+    const projectSource: ProjectSourceView = {
+      contractVersion: 1,
+      projectSlug: "views",
+      status: "not_measured",
+      currentness: "unavailable",
+      measuredAt: null,
+      topGap: { id: "source_unbound" },
+      nextAction: { id: "connect_source" },
+      bindingCardinality: 0,
+      receipt: null,
+    };
+
+    renderPanel(vi.fn(), undefined, {
+      kind: "project",
+      projectSource,
+      onProjectSourceAction: vi.fn(),
+      projectSourceProposal: null,
+    });
+
+    expect(screen.getByTestId("topology-v2-project-source-remedy")).toHaveAttribute(
+      "data-remedy-mode",
+      "actionable",
+    );
+    expect(
+      screen.queryByTestId("topology-v2-project-source-proposal"),
+    ).not.toBeInTheDocument();
+    expect(
+      screen.queryByTestId("topology-v2-project-source-confirm"),
+    ).not.toBeInTheDocument();
+    const action = screen.getByTestId("topology-v2-project-source-action");
+    expect(action).toHaveTextContent("Use current evidence");
+    expect(action.className).toContain("--topology-v2-panel-primary-surface");
   });
 
   it("degrades honestly where the action cannot run: why, where, and what still works", () => {

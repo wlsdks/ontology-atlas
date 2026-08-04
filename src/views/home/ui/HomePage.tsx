@@ -2156,11 +2156,14 @@ export function HomePage() {
   }, [projectSource, v2DatasheetModel, copyV2NodeHandoff, projectAwareHandoffText]);
   const projectSourceNextAction = projectSource.view?.nextAction.id ?? null;
   const projectSourceNextActionAvailable = Boolean(
-    projectSource.canRunSourceAction
+    // 추정이 아직 안 끝났으면 **아무 처방도 안 그린다.** 먼저 그리면 그 버튼이
+    // 300ms 뒤에 라벨과 스킨이 바뀌면서 위로 밀린다 — 마우스가 이미 가 있던 자리다.
+    projectSource.proposalSettled
+    && (projectSource.canRunSourceAction
     || projectSourceNextAction === "use_current_evidence"
     || projectSourceNextAction === "record_source_role"
     || projectSourceNextAction === "repair_source_path"
-    || projectSourceNextAction === "review_inventory_limit",
+    || projectSourceNextAction === "review_inventory_limit"),
   );
   const projectSourceNeedsNativeRuntime = Boolean(
     projectSourceNextAction === "connect_source"
@@ -2217,6 +2220,42 @@ export function HomePage() {
   const projectSourceErrorLabel = projectSource.error
     ? t(`nodeDatasheet.sourceError_${projectSource.error}`)
     : null;
+  /**
+   * **「이 폴더 맞나요?」 — 연결을 두 단계에서 한 단계로.**
+   *
+   * 종전에는 「코드 폴더 연결하기」를 누르면 무조건 OS 폴더 선택창이 열렸고,
+   * 사람은 자기 저장소를 트리에서 다시 찾아야 했다. 앱은 그 답을 이미 안다 —
+   * 볼트 루트를 한 번 재면 그것을 감싸는 git 저장소까지 올라가기 때문이다.
+   *
+   * 근거 한 줄은 **잰 것만** 말한다: git 저장소라는 사실 + 선언된 경로 중 몇
+   * 개가 실제로 거기 있었는지. 선언된 경로가 0개면 비율을 지어내지 않고 그렇게
+   * 적는다. 추정이 없거나 확신이 낮으면 이 값 자체가 `null` 이고, 그때 화면은
+   * 종전대로 폴더 선택창 하나만 그린다(죽은 CTA 0).
+   */
+  const projectSourceProposal = useMemo(() => {
+    const proposed = projectSource.proposedRoot;
+    if (!proposed) return null;
+    const summary = proposed.witnessSummary;
+    const support = summary && summary.total > 0
+      ? t("nodeDatasheet.sourceProposeSupport", {
+          total: summary.total,
+          supported: summary.supported,
+        })
+      : t("nodeDatasheet.sourceProposeSupportNone");
+    return {
+      question: t("nodeDatasheet.sourceProposeQuestion"),
+      rootPath: proposed.rootPath,
+      reason: `${t("nodeDatasheet.sourceProposeReasonGit")} · ${support}`,
+      confirmLabel: t("nodeDatasheet.sourceProposeConfirm"),
+      pickOtherLabel: t("nodeDatasheet.sourceProposePickOther"),
+      confidence: proposed.confidence,
+    };
+  }, [projectSource.proposedRoot, t]);
+  const handleProjectSourceConfirmProposal = useCallback(async () => {
+    const rootPath = projectSource.proposedRoot?.rootPath;
+    if (!rootPath) return;
+    await projectSource.runNextAction({ rootPath });
+  }, [projectSource]);
   // W2-A "경로" action tile — sets this node as the path-analysis source and
   // enters path mode. Reuses `selectTopologyPathRouteState` (already defined
   // in `model/url-state.ts` for the URL-driven path deep link, but never
@@ -5070,6 +5109,10 @@ export function HomePage() {
                 projectSourceBusy={projectSource.busy}
                 projectSourceError={projectSourceErrorLabel}
                 projectSourceDegraded={projectSourceDegraded}
+                projectSourceProposal={projectSourceProposal}
+                onProjectSourceConfirmProposal={projectSourceProposal
+                  ? handleProjectSourceConfirmProposal
+                  : undefined}
                 onProjectSourceAction={projectSourceNextActionAvailable
                   ? handleProjectSourceAction
                   : undefined}
