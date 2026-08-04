@@ -75,7 +75,10 @@ interface IconScan {
 }
 
 function scanSource(rel: string, source: string, ramp: Set<number>, acc: IconScan): void {
-  const importMatch = /import\s*\{([^}]*)\}\s*from\s*'lucide-react'/s.exec(source);
+  // [^}] 는 개행도 포함하므로 /s 플래그가 필요 없다. [\s\S]*? 로 쓰면 안 된다 —
+  // 게으른 수량자가 앞선 다른 모듈의 import 를 건너 삼켜 아이콘 이름 집합이 오염된다
+  // (전수 스캔에서 실제로 그랬다: 파일 9개의 분류가 조용히 틀어졌다).
+  const importMatch = /import\s*\{([^}]*)\}\s*from\s*'lucide-react'/.exec(source);
   if (!importMatch) return;
   const lucide = new Set(
     importMatch[1]
