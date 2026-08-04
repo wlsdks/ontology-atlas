@@ -26,6 +26,7 @@ import {
 import { Link } from "@/i18n/navigation";
 import { buildDocsVaultHref } from "@/entities/docs-vault";
 import type { ProjectSourceStatus, ProjectSourceView } from "@/shared/lib/project-source-receipt";
+import { useRowDisclosure } from "@/shared/lib/use-row-disclosure";
 import { useViewportBelow } from "@/shared/lib/use-viewport-below";
 import { truncateMiddlePath } from "@/shared/lib/truncate-middle-path";
 import { useCopyFeedback } from "@/shared/lib/use-copy-feedback";
@@ -396,6 +397,26 @@ export interface TopologyV2DetailPanelProps {
     href: string;
     stillWorks: string;
   } | null;
+  /**
+   * **「이 폴더 맞나요?」** — 연결을 두 단계(누르기 → 폴더 고르기)에서 한 단계로
+   * 줄이는 자리다. 앱은 볼트 루트를 한 번 재는 것만으로 감싸는 git 저장소를
+   * 알므로, 사람에게 폴더 트리를 뒤지게 할 이유가 없다.
+   *
+   * `reason` 은 **왜 이 폴더인지**를 사람 말로 적은 한 줄이고, 그 근거는 지어낸
+   * 것이 아니라 잰 것이다(git 저장소 여부 + 선언된 경로가 실제로 거기 있는 수).
+   * 추정이 없거나 확신이 낮으면 호출자가 이 prop 자체를 안 넘긴다 — 그때 화면은
+   * 종전대로 폴더 선택창 하나만 그린다. **회색 버튼을 두지 않는다.**
+   */
+  projectSourceProposal?: {
+    question: string;
+    rootPath: string;
+    reason: string;
+    confirmLabel: string;
+    pickOtherLabel: string;
+    confidence: "high" | "medium";
+  } | null;
+  /** 추정된 폴더를 **선택창 없이** 그대로 확정한다(클릭 1회). */
+  onProjectSourceConfirmProposal?: () => void | Promise<void>;
 }
 
 /**
@@ -417,6 +438,8 @@ function ProjectSourceRemedy({
   busy,
   onAction,
   degraded,
+  proposal,
+  onConfirmProposal,
 }: {
   why?: string;
   actionLabel?: string;
@@ -424,12 +447,27 @@ function ProjectSourceRemedy({
   busy: boolean;
   onAction?: () => void | Promise<void>;
   degraded?: TopologyV2DetailPanelProps["projectSourceDegraded"];
+  proposal?: TopologyV2DetailPanelProps["projectSourceProposal"];
+  onConfirmProposal?: () => void | Promise<void>;
 }) {
+  /**
+   * 제안이 있으면 **주목 승자가 바뀐다** — 「연결하기」라는 일반 행동에서
+   * 「이 폴더 맞나요? <경로>」라는 구체적인 질문으로. 그래서 원래의 단일 버튼은
+   * 이 자리에서 「다른 폴더 고르기」라는 **탈출구**로 강등되고, 인디고는 확정
+   * 버튼 하나만 갖는다(한 상자에 주 행동은 하나).
+   */
+  const showProposal = Boolean(onAction && proposal && onConfirmProposal);
   return (
     <div
       data-testid="topology-v2-project-source-remedy"
-      data-remedy-mode={onAction ? "actionable" : "degraded"}
-      className="mt-0.5 flex flex-col gap-2 rounded-chip border border-[color:var(--topology-v2-panel-action-border)] bg-[color:var(--topology-v2-panel-action-surface)] px-2.5 py-2"
+      data-remedy-mode={
+        onAction ? (showProposal ? "proposed" : "actionable") : "degraded"
+      }
+      // `keep-all` — 한국어는 아무 글자에서나 끊긴다. 이 상자의 문장 셋은
+      // 좁은 패널 폭에서 반드시 두 줄이 되는데, 기본 줄바꿈이면 「여기 / 서
+      // 찾았어요」처럼 단어 가운데가 갈린다(액션 스트립이 같은 이유로 이미
+      // 쓰는 문법 — 값 0개 추가).
+      className="mt-0.5 flex flex-col gap-2 rounded-chip border border-[color:var(--topology-v2-panel-action-border)] bg-[color:var(--topology-v2-panel-action-surface)] px-2.5 py-2 [word-break:keep-all]"
     >
       {why ? (
         <p
@@ -439,22 +477,71 @@ function ProjectSourceRemedy({
           {why}
         </p>
       ) : null}
-      {onAction ? (
-        <button
-          type="button"
-          onClick={() => { void onAction(); }}
-          disabled={busy}
-          aria-busy={busy}
-          data-testid="topology-v2-project-source-action"
-          className={controlClass({
-            shape: "chip",
-            size: "lg",
-            className:
-              "w-fit shrink-0 font-semibold border-[color:var(--topology-v2-panel-primary-border)] bg-[color:var(--topology-v2-panel-primary-surface)] text-[color:var(--topology-v2-panel-primary-text)] hover:border-[color:var(--topology-v2-panel-primary-border-hover)] hover:bg-[color:var(--topology-v2-panel-primary-surface-hover)] disabled:cursor-wait",
-          })}
+      {showProposal && proposal ? (
+        <div
+          data-testid="topology-v2-project-source-proposal"
+          data-proposal-confidence={proposal.confidence}
+          className="flex flex-col gap-1"
         >
-          {busy ? busyLabel ?? actionLabel : actionLabel}
-        </button>
+          <p className="text-body font-semibold text-[color:var(--topology-v2-panel-text-secondary)]">
+            {proposal.question}
+          </p>
+          {/* 경로는 **긴 문자열이 아니라 답**이다 — 앞의 폴더 맥락과 마지막
+              폴더 이름이 둘 다 남아야 「내 저장소가 맞다」를 눈으로 확인한다.
+              그래서 꼬리만 자르지 않고 가운데를 접는다(코드 위치 행과 같은 함수). */}
+          <p
+            data-testid="topology-v2-project-source-proposal-path"
+            title={proposal.rootPath}
+            className="font-mono text-label text-[color:var(--topology-v2-panel-text-primary)]"
+          >
+            {truncateMiddlePath(proposal.rootPath)}
+          </p>
+          <p
+            data-testid="topology-v2-project-source-proposal-reason"
+            className="text-label text-[color:var(--topology-v2-panel-text-tertiary)]"
+          >
+            {proposal.reason}
+          </p>
+        </div>
+      ) : null}
+      {onAction ? (
+        <div className="flex flex-wrap items-center gap-2">
+          {showProposal && proposal && onConfirmProposal ? (
+            <button
+              type="button"
+              onClick={() => { void onConfirmProposal(); }}
+              disabled={busy}
+              aria-busy={busy}
+              data-testid="topology-v2-project-source-confirm"
+              className={controlClass({
+                shape: "chip",
+                size: "lg",
+                className:
+                  "shrink-0 font-semibold border-[color:var(--topology-v2-panel-primary-border)] bg-[color:var(--topology-v2-panel-primary-surface)] text-[color:var(--topology-v2-panel-primary-text)] hover:border-[color:var(--topology-v2-panel-primary-border-hover)] hover:bg-[color:var(--topology-v2-panel-primary-surface-hover)] disabled:cursor-wait",
+              })}
+            >
+              {busy ? busyLabel ?? proposal.confirmLabel : proposal.confirmLabel}
+            </button>
+          ) : null}
+          <button
+            type="button"
+            onClick={() => { void onAction(); }}
+            disabled={busy}
+            aria-busy={busy}
+            data-testid="topology-v2-project-source-action"
+            className={controlClass({
+              shape: "chip",
+              size: "lg",
+              className: showProposal
+                ? "shrink-0 border-[color:var(--topology-v2-panel-action-border)] bg-[color:var(--topology-v2-panel-action-surface)] text-[color:var(--topology-v2-panel-text-tertiary)] hover:border-[color:var(--topology-v2-panel-domain-border-hover)] hover:bg-[color:var(--topology-v2-panel-row-hover)] hover:text-[color:var(--topology-v2-panel-text-secondary)] disabled:cursor-wait"
+                : "shrink-0 font-semibold border-[color:var(--topology-v2-panel-primary-border)] bg-[color:var(--topology-v2-panel-primary-surface)] text-[color:var(--topology-v2-panel-primary-text)] hover:border-[color:var(--topology-v2-panel-primary-border-hover)] hover:bg-[color:var(--topology-v2-panel-primary-surface-hover)] disabled:cursor-wait",
+            })}
+          >
+            {showProposal && proposal
+              ? proposal.pickOtherLabel
+              : busy ? busyLabel ?? actionLabel : actionLabel}
+          </button>
+        </div>
       ) : degraded ? (
         <>
           {/* ① 왜 이 화면에서는 안 되나 — 사과문이 아니라 이유. */}
@@ -761,6 +848,8 @@ export function TopologyV2DetailPanel({
   projectSourceBusy = false,
   projectSourceError = null,
   projectSourceDegraded = null,
+  projectSourceProposal = null,
+  onProjectSourceConfirmProposal,
 }: TopologyV2DetailPanelProps) {
   const isProject = kind === "project";
   const showProjectSource = isProject && projectSource !== null;
@@ -782,6 +871,20 @@ export function TopologyV2DetailPanel({
     && labels.sourceAction
     && (onProjectSourceAction || projectSourceDegraded),
   );
+  /**
+   * **처방 상자는 자리를 밀며 들어온다 — 그러니 밀리는 것이 보여야 한다.**
+   *
+   * 이 상자가 뜨는 시점은 패널이 열리는 시점과 다르다: 볼트 루트 실측이 끝나야
+   * 「폴더 선택창」인지 「이 폴더 맞나요?」인지 정해진다. 조건부 렌더만 쓰면 그
+   * 순간 아래 내용이 툭 밀려나고, 확정 뒤 사라질 때는 나가는 길이 아예 없다.
+   * 그래서 흐름 안에서 형제를 밀어내는 접기의 공용 문법을 그대로 쓴다 —
+   * 값(커브·시간)은 `.ai-row-disclosure` 한 곳에서만 나온다.
+   */
+  const {
+    mounted: remedyMounted,
+    boxRef: remedyBoxRef,
+    contentRef: remedyContentRef,
+  } = useRowDisclosure(showSourceRemedy);
   const showInlineHandoff = showHandoff && !(
     showProjectSource && projectSource.nextAction.id === "use_current_evidence"
   );
@@ -1234,16 +1337,29 @@ export function TopologyV2DetailPanel({
                   {projectSourceError}
                 </span>
               ) : null}
-              {showSourceRemedy ? (
-                <ProjectSourceRemedy
-                  why={labels.sourceWhy}
-                  actionLabel={labels.sourceAction}
-                  busyLabel={labels.sourceBusy}
-                  busy={projectSourceBusy}
-                  onAction={onProjectSourceAction}
-                  degraded={projectSourceDegraded}
-                />
-              ) : null}
+              <div
+                ref={remedyBoxRef}
+                className="ai-row-disclosure"
+                data-state={showSourceRemedy ? "open" : "closed"}
+                // 접히는 동안에도 DOM 에 남으므로, 보이지 않는 버튼이 탭 순서와
+                // 스크린 리더에 남지 않게 즉시 비활성화한다.
+                inert={!showSourceRemedy}
+              >
+                {remedyMounted ? (
+                  <div ref={remedyContentRef} className="ai-row-disclosure-body">
+                    <ProjectSourceRemedy
+                      why={labels.sourceWhy}
+                      actionLabel={labels.sourceAction}
+                      busyLabel={labels.sourceBusy}
+                      busy={projectSourceBusy}
+                      onAction={onProjectSourceAction}
+                      degraded={projectSourceDegraded}
+                      proposal={projectSourceProposal}
+                      onConfirmProposal={onProjectSourceConfirmProposal}
+                    />
+                  </div>
+                ) : null}
+              </div>
             </div>
           ) : (
             <div

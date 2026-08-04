@@ -3890,6 +3890,11 @@
         },
         {
           "depth": 2,
+          "text": "2026-08-04 — 「연결」이 두 단계에서 한 단계로 — 「이 폴더 맞나요?」",
+          "slug": "2026-08-04-연결이-두-단계에서-한-단계로-이-폴더-맞나요"
+        },
+        {
+          "depth": 2,
           "text": "2026-08-04 — 「코드 폴더를 연결하세요」가 연결하는 방법을 준다",
           "slug": "2026-08-04-코드-폴더를-연결하세요가-연결하는-방법을-준다"
         },
@@ -6169,8 +6174,8 @@
           "slug": "2026-07-26-첫-만남은-쇼핑몰부터"
         }
       ],
-      "excerpt": "Major change history. Code commit messages answer why; this file answers when / which surface changed. Focused on user-visible changes, not PR-level granularity. Newest at the top. Entries stay date-based; the app version reached v1.0.0 on 2026-07-27, so a release tag now carries the semver promise instead. 화면이 진단은 하는데",
-      "wordCount": 66702,
+      "excerpt": "Major change history. Code commit messages answer why; this file answers when / which surface changed. Focused on user-visible changes, not PR-level granularity. Newest at the top. Entries stay date-based; the app version reached v1.0.0 on 2026-07-27, so a release tag now carries the semver promise instead. 「코드 폴더 연결하기",
+      "wordCount": 66964,
       "updatedAt": "2026-08-04",
       "linksOut": [
         "audits/CASE-STUDY-AGENTS-MD-DRIFT",

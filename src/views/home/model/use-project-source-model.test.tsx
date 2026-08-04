@@ -114,6 +114,7 @@ function runtime(overrides: Partial<ProjectSourceRuntime> = {}): ProjectSourceRu
     available: () => true,
     pickRoot: async () => inspection.rootPath,
     inspect: async () => inspection,
+    rootPathOf: () => null,
     now: () => "2026-08-02T12:00:00.000Z",
     restoreFocus: vi.fn(),
     ...overrides,
@@ -198,6 +199,129 @@ describe("project source model", () => {
     expect(JSON.stringify(result.current.view)).not.toContain(inspection.rootPath);
   });
 
+  /**
+   * 「이 폴더 맞나요?」 — 이 넷이 이 기능의 계약이다.
+   *
+   * ① 추정에 **새 파일시스템 순회가 없다**(볼트 루트 실측 한 번). ② 확정이
+   * **폴더 선택창을 건너뛴다**. ③ 근거가 잰 값이다. ④ 못 재면 조용하다 —
+   * 회색 버튼이 생기지 않고 종전의 폴더 선택창으로 간다.
+   */
+  const vaultRootPath = "/private/work/music/docs/ontology";
+
+  it("proposes the enclosing repository from one vault-root probe", async () => {
+    const vault = createFakeVaultHandle();
+    const inspect = vi.fn(async () => inspection);
+    const sourceRuntime = runtime({ inspect, rootPathOf: () => vaultRootPath });
+    const { result } = renderHook(() => useProjectSourceModel({
+      projectSlug: "music",
+      vaultHandle: vault.handle,
+      nodes,
+      docs,
+      runtime: sourceRuntime,
+    }));
+
+    await waitFor(() => expect(result.current.proposedRoot).not.toBeNull());
+    // 볼트 루트 한 번뿐 — 후보를 찾겠다고 폴더를 훑지 않는다.
+    expect(inspect).toHaveBeenCalledTimes(1);
+    expect(inspect).toHaveBeenCalledWith(vaultRootPath);
+    expect(result.current.proposedRoot).toEqual({
+      rootPath: inspection.rootPath,
+      marker: "enclosing_git_repository",
+      confidence: "high",
+      // 근거는 주장이 아니라 측정이다 — 선언된 경로 1개가 실제로 거기 있었다.
+      witnessSummary: { total: 1, supported: 1, missing: 0 },
+    });
+  });
+
+  it("confirms the proposed root without opening the picker", async () => {
+    const vault = createFakeVaultHandle();
+    const pickRoot = vi.fn(async () => inspection.rootPath);
+    const sourceRuntime = runtime({ pickRoot, rootPathOf: () => vaultRootPath });
+    const { result } = renderHook(() => useProjectSourceModel({
+      projectSlug: "music",
+      vaultHandle: vault.handle,
+      nodes,
+      docs,
+      runtime: sourceRuntime,
+    }));
+    await waitFor(() => expect(result.current.proposedRoot).not.toBeNull());
+    const proposed = result.current.proposedRoot!.rootPath;
+
+    await act(async () => { await result.current.runNextAction({ rootPath: proposed }); });
+
+    expect(pickRoot).not.toHaveBeenCalled();
+    expect(result.current.view).toMatchObject({
+      status: "verified_current",
+      currentness: "current",
+      bindingCardinality: 1,
+    });
+    expect(vault.files.get(".ontology-atlas/project-sources.json") ?? "").toContain(proposed);
+    // 확정되면 질문도 사라진다 — 같은 자리에 물음과 답이 함께 남지 않는다.
+    expect(result.current.proposedRoot).toBeNull();
+  });
+
+  it("holds the prescription until the inference settles", async () => {
+    const vault = createFakeVaultHandle();
+    let release: (() => void) | null = null;
+    const inspect = vi.fn(
+      () => new Promise<ProjectSourceInspection | null>((resolve) => {
+        release = () => resolve(inspection);
+      }),
+    );
+    const sourceRuntime = runtime({ inspect, rootPathOf: () => vaultRootPath });
+    const { result } = renderHook(() => useProjectSourceModel({
+      projectSlug: "music",
+      vaultHandle: vault.handle,
+      nodes,
+      docs,
+      runtime: sourceRuntime,
+    }));
+
+    await waitFor(() => expect(inspect).toHaveBeenCalled());
+    // 아직 무엇을 처방할지 모른다 — 「폴더 고르기」인지 「이 폴더 맞나요?」인지.
+    // 이 순간에 그리면 300ms 뒤 같은 자리의 버튼이 라벨과 스킨을 갈아입는다.
+    expect(result.current.proposalSettled).toBe(false);
+
+    await act(async () => { release?.(); });
+    await waitFor(() => expect(result.current.proposalSettled).toBe(true));
+    expect(result.current.proposedRoot?.rootPath).toBe(inspection.rootPath);
+  });
+
+  it("stays silent when the vault has no enclosing repository", async () => {
+    const vault = createFakeVaultHandle();
+    const inspect = vi.fn(async () => ({ ...inspection, kind: "folder" as const }));
+    const sourceRuntime = runtime({ inspect, rootPathOf: () => vaultRootPath });
+    const { result } = renderHook(() => useProjectSourceModel({
+      projectSlug: "music",
+      vaultHandle: vault.handle,
+      nodes,
+      docs,
+      runtime: sourceRuntime,
+    }));
+
+    await waitFor(() => expect(inspect).toHaveBeenCalledWith(vaultRootPath));
+    await waitFor(() => expect(result.current.canRunSourceAction).toBe(true));
+    expect(result.current.proposedRoot).toBeNull();
+  });
+
+  it("stays silent when the declared paths do not land in the candidate", async () => {
+    const vault = createFakeVaultHandle();
+    const inspect = vi.fn(async () => ({ ...inspection, files: ["README.md"] }));
+    const sourceRuntime = runtime({ inspect, rootPathOf: () => vaultRootPath });
+    const { result } = renderHook(() => useProjectSourceModel({
+      projectSlug: "music",
+      vaultHandle: vault.handle,
+      nodes,
+      docs,
+      runtime: sourceRuntime,
+    }));
+
+    await waitFor(() => expect(inspect).toHaveBeenCalledWith(vaultRootPath));
+    await waitFor(() => expect(result.current.canRunSourceAction).toBe(true));
+    // 선언된 경로 1개 중 0개 → 확신 low. 틀릴 수 있는 추정을 확정 버튼으로 팔지 않는다.
+    expect(result.current.proposedRoot).toBeNull();
+  });
+
   it("degrades honestly on web without probing a private root", async () => {
     const vault = createFakeVaultHandle();
     const inspect = vi.fn(async () => inspection);
@@ -214,5 +338,8 @@ describe("project source model", () => {
     expect(result.current.runtimeAvailable).toBe(false);
     expect(result.current.canRunSourceAction).toBe(false);
     expect(inspect).not.toHaveBeenCalled();
+    // 잴 수 없는 표면은 **기다리지도 않는다** — 강등 안내가 첫 프레임에 나온다.
+    expect(result.current.proposalSettled).toBe(true);
+    expect(result.current.proposedRoot).toBeNull();
   });
 });
