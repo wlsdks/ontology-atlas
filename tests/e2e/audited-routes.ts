@@ -27,9 +27,14 @@
  *
  * `[slug]`·`[segment]` 같은 동적 라우트는 **실재하는 값**으로 연다 — 존재하지
  * 않는 슬러그로 열면 404 로 떨어져 그 라우트가 아니라 404 를 재게 된다.
- * `ontology-atlas` 와 `what-is-atlas` 는 각각 도그푸드 볼트와
- * `src/views/gateway-doc/model/guide-pages.ts` 가 내는 값이고, 빌드 산출물
- * (`out/ko/project/*`)에 그대로 있다.
+ *
+ * ⚠️ **«실재한다» 는 빌드 산출물이 아니라 실행 중인 데이터 소스 기준이다.**
+ * 정적 export 에 `out/ko/project/<slug>/` 가 있어도, 앱이 그 순간 읽고 있는
+ * 볼트(볼트 미선택이면 `samples/storefront/`)에 그 프로젝트가 없으면 화면은
+ * 강등 카드이거나 아예 비어 있다. 아래 프로젝트 두 줄의 주석이 그 대가를
+ * 실측으로 적어 뒀다. `what-is-atlas` 는
+ * `src/views/gateway-doc/model/guide-pages.ts` 가 내는 값이라 데이터 소스와
+ * 무관하게 항상 실재한다.
  */
 export const AUDITED_ROUTES = [
   "/ko/",
@@ -38,8 +43,27 @@ export const AUDITED_ROUTES = [
   "/ko/ontology/studio/",
   "/ko/ontology/insights/",
   "/ko/projects/",
-  "/ko/project/ontology-atlas/",
-  "/ko/project/ontology-atlas/edit/",
+  // ⚠️ 슬러그는 **빌드 산출물이 아니라 실행 중인 데이터 소스**에 있어야 한다
+  // (2026-08-04 실측 정정). 종전 값은 `ontology-atlas` 였고 그 근거는 «정적
+  // export 에 `out/ko/project/ontology-atlas/` 가 있다» 였는데, 라우트가
+  // 존재하는 것과 그 주소가 내용을 그리는 것은 다른 사실이다. 앱이 볼트 없이
+  // 읽는 기본 데이터는 **`samples/storefront/`** 이고 거기에 `ontology-atlas`
+  // 프로젝트는 없다. 그래서 두 URL 이 실제로 그리던 것은:
+  //
+  //   /ko/project/ontology-atlas/       → 「이 프로젝트가 지금 폴더에 없어요」
+  //                                       강등 카드 (main 안 요소 40)
+  //   /ko/project/ontology-atlas/edit/  → 「프로젝트를 찾을 수 없습니다」,
+  //                                       **`<main>` 자체가 없음 (요소 0)**
+  //
+  // 즉 두 래칫이 프로젝트 상세와 편집 화면을 **한 번도 안 봤다**. 슬러그를
+  // 데이터 소스에 있는 것으로 바꾸자 상세 149 · 편집 227 요소가 처음 렌더됐고
+  // 그 자리에서 axe 위반 1건(`aria-valid-attr-value`)이 나왔다.
+  //
+  // 이 부류가 다시 조용히 돌아오지 못하게, `a11y-ratchet` 이 라우트마다
+  // **`<main>` 안 요소 수 바닥**을 건다 — 셸 크롬만으로도 axe 룰 25개와 대비
+  // 조합 6개가 나와서, 종전 채집 가드 둘은 «본문 0» 을 통과시킨다.
+  "/ko/project/storefront/",
+  "/ko/project/storefront/edit/",
   "/ko/project/new/",
   "/ko/project/fallback/",
   "/ko/git/",

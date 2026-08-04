@@ -1898,6 +1898,31 @@ function LaneRender({
   // by stageDelayMs. transform-critical satellites are excluded (FLIP owns their
   // transform); the head/socket/chip/fold carry the stagger cue.
   const stageStyle = { "--studio-stagger": `${stageDelayMs}ms` } as React.CSSProperties;
+  /**
+   * 빈 소켓의 보조 잉크 — **바탕이 올라서면 tertiary 부터**다.
+   *
+   * quaternary 라이선스는 «정지한 무채 바탕»까지이고, 인디고·앰버 틴트 합성
+   * 위는 명시적으로 그 밖이다(`tests/contract/quaternary-ink-surface.contract.test.ts`).
+   * 이 소켓은 그 라이선스 밖에 있었다 — 실측(2026-08-04, 볼트 물린 감사):
+   *
+   * | 소켓 | 바탕 | quaternary | tertiary |
+   * |---|---|---:|---:|
+   * | expected | canvas ∘ `amber-muted-a18` = #2a1d10 | **4.29** ✗ | 5.03 ✓ |
+   * | recommended | canvas ∘ `indigo-a12` = #121522 | 4.77 ✓ | 5.60 ✓ |
+   * | 그 외 | canvas #08090a | 5.23 ✓ | 6.24 ✓ |
+   *
+   * 미달은 앰버 하나지만 **틴트 둘 다** 올린다. 4.77 은 여유 0.27 이라 램프가
+   * 한 눈금만 움직여도 빨개지고, 자리마다 다른 판단을 남기면 다음 사람이
+   * 그 표를 다시 만들어야 한다. 라이선스는 «틴트면 tertiary» 한 줄이다.
+   *
+   * 이 결함이 여태 안 잡힌 이유는 색이 아니라 **경로**다: 공방의 첫 화면은
+   * 「무엇을 할까요?」 선택지(요소 24개)이고, 래칫은 라우트의 첫 화면만 잰다.
+   * 소켓은 거기서 한 번 더 눌러야 태어난다.
+   */
+  const socketInk =
+    view.recommended || view.expected
+      ? "text-[color:var(--color-text-tertiary)]"
+      : "text-[color:var(--color-text-quaternary)]";
   return (
     <>
       {/* lane head label for a filled lane */}
@@ -2091,12 +2116,12 @@ function LaneRender({
               ◈ {labels.guideBadge}
             </span>
           ) : view.expected ? (
-            <span className="flex w-full items-start gap-1.5 text-label text-[color:var(--color-text-quaternary)]">
+            <span className={`flex w-full items-start gap-1.5 text-label ${socketInk}`}>
               <span className="mt-[3px] h-1.5 w-1.5 flex-none rounded-full bg-[color:var(--color-amber-signal-a60)]" />
               <span className="min-w-0 [overflow-wrap:anywhere]">{view.emptyHint}</span>
             </span>
           ) : (
-            <span className="block w-full text-label text-[color:var(--color-text-quaternary)] [overflow-wrap:anywhere]">{view.emptyHint}</span>
+            <span className={`block w-full text-label ${socketInk} [overflow-wrap:anywhere]`}>{view.emptyHint}</span>
           )}
           {/* #6 — question is text-body(12.5); `text-callout` was an unregistered
               ramp step that silently rendered at the root 16px (the "billboard"
@@ -2106,7 +2131,7 @@ function LaneRender({
               so English wraps to fewer lines. The box height grows (minHeight)
               to hold the wrap. */}
           <span className="flex max-w-full items-start gap-1.5 text-body font-medium text-[color:var(--color-text-secondary)] [word-break:keep-all] [overflow-wrap:anywhere]">
-            <span className="mt-px flex-none text-[color:var(--color-text-quaternary)]">＋</span>
+            <span className={`mt-px flex-none ${socketInk}`}>＋</span>
             <span className="min-w-0">{view.question}</span>
           </span>
         </button>

@@ -3890,6 +3890,11 @@
         },
         {
           "depth": 2,
+          "text": "2026-08-04 — 접근성 게이트가 빈 화면을 재던 자리를 닫는다",
+          "slug": "2026-08-04-접근성-게이트가-빈-화면을-재던-자리를-닫는다"
+        },
+        {
+          "depth": 2,
           "text": "2026-08-04 — 현재 source를 다시 측정하라는 잘못된 의미 수리 루프를 끊는다",
           "slug": "2026-08-04-현재-source를-다시-측정하라는-잘못된-의미-수리-루프를-끊는다"
         },
@@ -6149,8 +6154,8 @@
           "slug": "2026-07-26-첫-만남은-쇼핑몰부터"
         }
       ],
-      "excerpt": "Major change history. Code commit messages answer why; this file answers when / which surface changed. Focused on user-visible changes, not PR-level granularity. Newest at the top. Entries stay date-based; the app version reached v1.0.0 on 2026-07-27, so a release tag now carries the semver promise instead. MCP/CLI age",
-      "wordCount": 65718,
+      "excerpt": "Major change history. Code commit messages answer why; this file answers when / which surface changed. Focused on user-visible changes, not PR-level granularity. Newest at the top. Entries stay date-based; the app version reached v1.0.0 on 2026-07-27, so a release tag now carries the semver promise instead. 두 래칫(a11y-r",
+      "wordCount": 65936,
       "updatedAt": "2026-08-04",
       "linksOut": [
         "audits/CASE-STUDY-AGENTS-MD-DRIFT",
@@ -8052,8 +8057,8 @@
         }
       ],
       "excerpt": "Maintainer-only checks live here so the public README stays readable. Use this page when you touch mcp/, cli/, package manifests, release scripts, or the dogfood ontology. Run this before pushing broad docs, package, MCP, or web changes: For user-facing UI changes, add the relevant Playwright route check. pnpm install ",
-      "wordCount": 8591,
-      "updatedAt": "2026-08-03",
+      "wordCount": 8688,
+      "updatedAt": "2026-08-04",
       "linksOut": []
     },
     {
