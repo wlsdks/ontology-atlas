@@ -6,10 +6,12 @@ tags: [architecture, infra, overview]
 # Architecture
 
 > 2026-07-27 update — the current architecture is a local-first, git-backed
-> meaning layer shared by people and AI coding agents. Round 10 permanently
-> removed all auth + cloud data surfaces; the current route model converges
-> browsing on Topology, writing on Workshop, maintenance on five-question
-> Insights, and keeps old ontology URLs only as compatibility redirects.
+> **meaning layer**: a folder of markdown files that records what each part of
+> the product is, who owns it, what it depends on, and what proves it. People
+> and AI coding agents read and write that same folder. Round 10 permanently
+> removed every login and cloud-data screen. In today's route model, browsing
+> happens on Topology, writing on Workshop, and upkeep on the five-question
+> Insights page; the old `/ontology*` URLs stay only so old links still work.
 > Earlier cloud and retired-workbench design notes are in `docs/archive/`.
 
 ## High-level shape
@@ -82,19 +84,22 @@ tags: [architecture, infra, overview]
 └────────────────────────────────────────────────────────┘
 ```
 
-There is no backend, no server database, no auth provider. The user's markdown
-folder is the single source of truth. Both the MCP server (AI agent) and the
-CLI (developer) read/write that single source.
+There is no backend, no server database, no login provider. The user's markdown
+folder — called the **vault** everywhere in this repo — is the single source of
+truth. Both the MCP server (used by the AI agent) and the CLI (used by the
+developer) read and write that same folder.
 
 The public app/website brand is **Ontology Atlas**. The macOS app bundle,
 bundle identifier, and DMG assets use the Ontology Atlas identity, while the
 repo, CLI binary, and MCP package remain under `ontology-atlas`, so product
 naming does not imply a backend, Firebase data dependency, or package rename.
 
-The graph-database behavior is runtime computation, not a separate persistence
-layer. `compile_ontology` turns markdown frontmatter into a deterministic graph
-artifact; `query_ontology` runs graph operations over that artifact; confirmed
-write tools persist changes back to markdown.
+Atlas answers graph-database questions by computing the answer when asked. It
+never keeps a second copy of the data. `compile_ontology` reads the frontmatter
+(the `key: value` block at the top of each `.md` file) and builds one graph file
+in memory — the same vault always produces byte-identical output, which is what
+"deterministic" means here. `query_ontology` runs its graph operations over that
+file, and write tools save confirmed changes back into the markdown.
 
 ## Surface contract — web and app
 
@@ -105,17 +110,19 @@ Decided 2026-07-27 (`docs/DECISIONS.md`); the working rule agents load is
 same static export into a WebView (`src-tauri/tauri.conf.json` →
 `frontendDist: "../out"`). Nothing is forked, and nothing should be.
 
-**What each surface is for.** The app is the vault's home — the workbench where
-a person judges the map and connects the agents. The web has two jobs, in this
-order: (1) the **gateway**, opening the map with no install, for a demo, a first
-five minutes, or a shared link; (2) a **second-best workbench** where no app
-exists yet — which in practice means Chromium on Windows and Linux, since the
-File System Access API is the capability the whole surface rests on. The order
-matters: every observed visitor so far arrived through the web, so demoting the
-gateway to "the Windows stand-in" would demote the only inbound path. A Windows
-app would retire job 2 on that OS; job 1 has no expiry.
+**What each surface is for.** The app is where the vault lives day to day: the
+place a person reads the map, judges it, and connects their AI agents. The web
+has two jobs, in this order. (1) It is the **gateway** — it opens the map with
+no install, for a demo, someone's first five minutes, or a shared link. (2) It
+is a **second-best workbench** where no app exists yet, which in practice means
+Chromium on Windows and Linux, because the whole web surface needs the browser's
+File System Access API to work at all. The order matters: every visitor we have
+observed so far arrived through the web, so treating the gateway as merely "the
+Windows stand-in" would downgrade the only way people currently arrive. A
+Windows app would end job 2 on that operating system; job 1 never expires.
 
-**The split is four capability bridges, not a branch in the router.**
+**The two surfaces differ in four small modules — we call them bridges — not in
+the router.** Each bridge is the single file that calls a desktop-only ability.
 
 | Bridge | Module | Web behaviour |
 |---|---|---|
@@ -124,38 +131,46 @@ app would retire job 2 on that OS; job 1 has no expiry.
 | Keychain | `src/shared/lib/tauri-secrets.ts` | Impossible by design → degraded card |
 | LLM calls | `src/shared/lib/tauri-llm.ts` | Impossible by design → action not rendered |
 
-Every bridge follows one convention: `getInvoke()` → `null` when `isTauri()` is
-false → the screen degrades honestly. A degraded surface owes the reader two
-things — **why** it cannot work here and **where** it can. New desktop
-capabilities attach the same way; they do not get a web equivalent backfilled,
-and that is a stated decision rather than a backlog item.
+Every bridge follows one convention: `getInvoke()` returns `null` when
+`isTauri()` is false, and the screen then says plainly that it cannot do this
+here. Such a screen must tell the reader two things: **why** it cannot work here
+and **where** it can. New desktop abilities attach the same way. They do not get
+a web version added later — that is a decision we have made, not a task waiting
+in a backlog.
 
 **What "the same data" actually guarantees.** The folder on disk is the single
 source of truth, and both surfaces open the *physically same folder* — the web
-through an FSA handle, the app through an absolute path. Interpretation cannot
-drift because the frontmatter parser is pinned by a 3-way contract test and the
-schema lives once in `mcp/src/schema.mjs`. Anything that must cross the surface
-boundary is written **inside the vault** as plain text —
-`.ontology-atlas/activity.jsonl` and `llm-audit.jsonl` — which is the rule this
-contract promotes: *data that crosses surfaces lives in the vault folder.*
-Concurrent edits are held by `patch_concept(expected_mtime)`.
+through an FSA handle, the app through an absolute path. The two surfaces cannot
+end up reading the same file differently, because one contract test runs the
+same file through all three parsers (web, MCP, scripts) and the schema is
+written in exactly one place, `mcp/src/schema.mjs`. Anything that has to pass
+between the two surfaces is written **inside the vault** as plain text —
+`.ontology-atlas/activity.jsonl` and `llm-audit.jsonl`. That is the rule this
+contract sets: *anything shared between surfaces lives in the vault folder.* If
+two people (or an agent and a person) edit at once,
+`patch_concept(expected_mtime)` stops the second write from silently erasing the
+first.
 
-Deliberately **not** shared: the "last opened vault" handle (each surface keeps
-its own IndexedDB — you pick the folder once per surface, and `/download`'s
-install step 02 says so), API keys (operating-system credential store, app only), and UI
-preferences (localStorage). Secrets and taste do not belong in a vault.
+Three things are deliberately **not** shared. The "last opened vault" handle:
+each surface keeps its own IndexedDB, so you pick the folder once per surface,
+and `/download`'s install step 02 says so. API keys: they live in the operating
+system's credential store, app only. UI preferences: localStorage. API keys and
+personal display settings are not part of the shared model, so they stay out of
+the vault.
 
 **Verification is split three ways** (this replaced the old web↔app round-trip
-check, which the same decision abolished): shared surfaces are proved once in
-the browser and counted as proof for the app, because it is the same bundle —
-except for font rasterisation, scrolling, and window chrome, which still need
-the installed app; desktop capabilities are proved *only* in the installed app;
-and the web surface itself is held by `tests/e2e/web-surface-smoke.spec.ts`,
+check, which the same decision abolished). First, screens that both surfaces
+share are tested once in the browser, and that counts as proof for the app too,
+because it is literally the same bundle — the exceptions are font rendering,
+scrolling, and the window frame, which still have to be checked in the installed
+app. Second, desktop-only abilities are proved *only* in the installed app.
+Third, the web surface has its own test, `tests/e2e/web-surface-smoke.spec.ts`,
 wired into `.github/workflows/e2e.yml` on a deliberately wider condition than
-the rest of the suite. The web is an unattended surface with no other watcher.
+the rest of the suite — nobody watches the web by hand, so that test is its only
+guard.
 
-Cross-surface deep links are not guaranteed to reproduce a screen. Where they
-exist they are a convenience, not a contract.
+A deep link built on one surface is not guaranteed to rebuild the same screen on
+the other. Where such links work, treat it as a convenience, not a promise.
 
 ## FSD layers
 
@@ -178,29 +193,39 @@ The directory layout is enforced by `eslint-plugin-boundaries` in `eslint.config
 ### Vault graph lifecycle
 
 1. Markdown files are loaded from the vault folder.
-2. Frontmatter is parsed into typed nodes and graph relations.
-3. `compile_ontology` canonicalizes nodes/edges, aliases, issues,
-   graph-array canonicalization actions, stable `graphHash`, and optional
-   query indexes.
+2. Each file's frontmatter becomes one **node** (a thing in the model: a
+   project, a domain, a capability, or an element), and the lists inside that
+   frontmatter become **relations** (typed links between two nodes).
+3. `compile_ontology` puts those nodes and relations into one fixed order,
+   resolves aliases, collects the problems it found, lists the frontmatter
+   arrays it would tidy up, computes a stable `graphHash` (one fingerprint for
+   the meaning of the whole graph), and optionally builds query indexes.
 4. `query_ontology` serves graph operations such as `neighbors`, `path`,
    `project_scope`, `blast_radius`, `cycles`, `maintenance_plan`,
    `workspace_brief`, and `health`. `agent_brief` accepts an explicit project
    in multi-project vaults and derives a fresh categorical `meaningAssessment`
    for that project; it does not reuse a saved score.
-5. Write tools mutate markdown only after explicit add/patch/relation/rename/
-   merge/delete calls. Analysis tools such as `analyze_repo_structure` and
-   `infer_imports` are side-effect-free candidate generators.
-6. `finalize_project_meaning` is the post-write boundary: after current vault
-   validation and complete project scope, it stores a versioned competency
-   receipt bound to graph and source provenance. A successful receipt write is
-   not a claim that the source is current. Structure, competency witnesses, and
-   source currentness remain separate; missing, stale, or unresolved evidence
-   closes the assessment as a categorical review/evidence state.
+5. Write tools change the markdown only when someone explicitly calls
+   add/patch/relation/rename/merge/delete. Analysis tools such as
+   `analyze_repo_structure` and `infer_imports` only propose candidates; they
+   never change a file.
+6. `finalize_project_meaning` runs after the writes are done. Once the vault
+   validates and the project's scope is complete, it saves a versioned record —
+   a *receipt* — of the competency answers, tied to the current graph and to
+   where the source code came from. Writing that receipt successfully does
+   **not** mean the source is still current. Three things stay separate and are
+   never added up into one number: whether the structure is complete, whether
+   each competency answer has evidence behind it, and whether the source has
+   been rechecked. If evidence is missing, out of date, or unresolved, the
+   assessment closes in one of the named review/evidence states instead of a
+   score.
 
 ### Dual node identity
 
-Every frontmatter node has an immutable lowercase UUIDv4 `uid` and a mutable,
-human-readable `slug`. The compiler requires UID validity and uniqueness,
+Every node carries two names. The `uid` is a lowercase UUIDv4 that never
+changes — it is the node's permanent identity. The `slug` is the short readable
+name in the file path and the URL, and it can be renamed at any time. The
+compiler requires UID validity and uniqueness,
 includes UID and merge-owned `merged_uids` in the semantic hash, and exposes
 `uidToSlug`, `slugToUid`, and `mergedUidToSlug`. Compiled nodes and agent-facing
 node summaries carry both values. Relations, adjacency maps, edge endpoints,
@@ -241,19 +266,21 @@ filesystem (Node.js `fs`), not the WebView bridge. AI agents and the installed a
    by `pnpm docs-vault:build`).
 4. Mutations are blocked with a toast pointing to the vault picker.
 
-This is the "first impression" state — visitors see a real ontology
-(this project's own dogfood) immediately, before they pick a folder.
+This is what a first-time visitor sees: a real, filled-in ontology — this
+project's own — before they have picked any folder of their own.
 
 ## Routes
 
 ```
-/                          who is asking decides — a web visitor with no vault gets the gateway
-                           face (the same view /download renders); a web user with a vault, and
-                           the installed app, get the map / first-run unchanged. The installed
-                           app must never offer "download this app" to someone already running
-                           it. Single source: isGatewaySurface() in shared/lib/nav-destination
-/topology                  the map — canvas-2D hub (map + INDEX + datasheet). Links that say
-                           "map" point here, not at / (gate:
+/                          shows a different screen depending on who opens it. A web visitor
+                           with no vault gets the gateway — the install-free intro page, the
+                           same view /download renders. A web user who has a vault, and anyone
+                           in the installed app, gets the map (or first run) unchanged. The
+                           installed app must never offer "download this app" to someone who is
+                           already running it. One function decides: isGatewaySurface() in
+                           shared/lib/nav-destination
+/topology                  the map — canvas-2D hub (map + INDEX + datasheet). Any link labelled
+                           "map" points here, not at / (gate:
                            tests/contract/map-destination-route.contract.test.ts)
 /docs                      vault picker / editor / unified palette
 /ontology                  thin redirect → /topology?index=expanded (old tree/ego hub retired, B3)
@@ -266,8 +293,8 @@ This is the "first impression" state — visitors see a real ontology
 /project/[slug]/edit       full project editor
 /project/new               new project form
 /project/fallback          fallback page for missing slugs
-/download                  the gateway view as an explicit deep link — keeps the breadcrumb and
-                           the back-to-map link that / drops
+/download                  the same gateway page at its own address — it keeps the breadcrumb
+                           and the back-to-map link that / leaves out
 /guide                     the project guide, several chapters rendering docs/guide/*.md vault
                            docs. Named `guide` and not `docs` because /docs is already the
                            vault workbench (2026-07-30 ledger). Order and slugs live once in
@@ -282,25 +309,27 @@ All routes are wrapped under `/[locale]/` by next-intl (en, ko).
 > `/knowledge/*`. Removed in Round 10: `/login`, `/signup`, `/account`,
 > `/reset-password`, `/settings/*`.
 
-**One navigation ownership model, responsive inventories.** The desktop rail
-exposes six destinations: Map, Docs, Workshop, Insights, Projects, and Git.
-The mobile bottom bar exposes four core destinations: Map, Docs, Insights, and
-Projects; Workshop remains an immersive desktop write destination and Git is
-desktop-only. Both use the same active-destination ladder in
-`src/shared/lib/nav-destination.ts`, so a route has one semantic destination
-even when a breakpoint intentionally omits its button. The retired
+**One piece of code decides which nav item is active; each screen size shows a
+different list of buttons.** The desktop rail shows six destinations: Map, Docs,
+Workshop, Insights, Projects, and Git. The mobile bottom bar shows four: Map,
+Docs, Insights, and Projects — Workshop is a full-screen desktop writing
+destination and Git is desktop-only. Both read the same rules in
+`src/shared/lib/nav-destination.ts`, so every route belongs to exactly one
+destination even on a screen size that deliberately hides that button. The
+retired
 `OperationsNav` and `OntologySubNav` are deleted. `AppSettingsMenu` and
 `LiveActivityIndicator` mount through the current shell/page slots rather than
 being treated as navigation destinations.
 
 ## URL contract (query-param + node id grammar)
 
-Deep links are the app's shared address space — a copied URL, an agent
-handoff, and a browser-back all rebuild the same view. So one node must have
-one identity across every screen. The **canonical node id grammar is
-`<kind>:<slug>`** (singular kind + colon, e.g. `capability:mcp-server`,
-`domain:views`, `project:ontology-atlas`). This is the value that travels in
-`?node=` / `?p=` / `?realm=` and the id used inside agent packets.
+A URL is how this app shares a view. A copied link, a handoff to an AI agent,
+and the browser's back button must all rebuild the same screen, so one node has
+to be written the same way everywhere. The **standard way to write a node id is
+`<kind>:<slug>`** — the kind in singular, a colon, then the slug, for example
+`capability:mcp-server`, `domain:views`, `project:ontology-atlas`. That is the
+value carried in `?node=` / `?p=` / `?realm=` and the id used in the text handed
+to an agent.
 
 ### Query params
 
@@ -322,10 +351,11 @@ one identity across every screen. The **canonical node id grammar is
 | `slug` | `/docs` | vault file to open | vault file path (`ontology/capabilities/foo`), not a node id — file paths are the docs vault's own address space |
 | `tab` | `/ontology/insights` | active maintenance question | `do-next` \| `composition` \| `connections` \| `boundaries` \| `freshness` |
 
-### id grammar single source of truth
+### One place builds node ids, one place reads them
 
-- **Emit** (map · Insights · popover "관계 편집"/datasheet →
-  Workshop): `buildOntologyStudioNodeHrefFromGraphId` in
+- **Building a link** (map · Insights · the popover's "관계 편집" and the
+  datasheet, all pointing at Workshop):
+  `buildOntologyStudioNodeHrefFromGraphId` in
   `src/entities/knowledge-graph/lib/ontology-node-href.ts`. It normalizes any
   input to canonical via `translateOntologyDeeplinkToTopologyParam`
   (`capabilities/foo` → `capability:foo`; already-canonical / bare /
@@ -333,16 +363,18 @@ one identity across every screen. The **canonical node id grammar is
 - **Compatibility redirect**: `OntologyEditRedirectPage` normalizes a legacy
   `/ontology/edit?node=...` value and replaces the route with
   `/ontology/studio?node=...`.
-- **Receive** (Workshop `?node=`): `resolveStudioFocalId` in
-  `src/views/ontology-studio/lib/resolve-studio-focal.ts` accepts canonical,
-  plural-folder, unique bare-tail, and NFC/NFD-equivalent ids. Ambiguous bare
-  tails fail closed; a requested missing node does not silently open a
-  different default node.
-- **Node id → docs file slug** conversion lives in one pure place: the
-  popover/datasheet carry the focus model's `sourceSlug` (a vault file path)
-  straight into `buildDocsVaultHref({ slug })`. `/docs` addresses files, not
-  nodes, so `?slug=` intentionally stays a file path.
-- Emit/receive behavior is pinned by `ontology-node-href.test.ts`,
+- **Reading a link** (Workshop's `?node=`): `resolveStudioFocalId` in
+  `src/views/ontology-studio/lib/resolve-studio-focal.ts` accepts the standard
+  form, the plural-folder form, a bare tail when only one node matches it, and
+  ids that differ only by Unicode normalization (NFC/NFD). If a bare tail
+  matches more than one node, Workshop opens nothing rather than guessing, and
+  a link to a node that no longer exists never quietly opens some other node
+  instead.
+- **Turning a node id into a docs file path** happens in exactly one place: the
+  popover and the datasheet pass the focus model's `sourceSlug` (a path to a
+  file in the vault) straight into `buildDocsVaultHref({ slug })`. `/docs`
+  addresses files, not nodes, so its `?slug=` deliberately stays a file path.
+- Both the building and the reading side are pinned by `ontology-node-href.test.ts`,
   `translate-ontology-deeplink.test.ts`, and
   `resolve-studio-focal.test.ts`. Insights tab serialization is separately
   pinned by `insights-tab-state.test.ts`.

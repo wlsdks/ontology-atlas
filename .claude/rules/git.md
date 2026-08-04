@@ -13,7 +13,7 @@
   - `docs: 라이트 모드 토글 가이드 추가`
   - `refactor: vault-ontology 를 mode-aware 어댑터 hook 으로 통합`
 
-본문은 변경의 **왜** 를 적는다. 무엇은 diff 가 알려준다. 줄당 80자 안.
+본문에는 **왜 고쳤는지**를 적는다. 무엇을 고쳤는지는 diff 를 보면 안다. 한 줄 80자 안.
 
 ## 브랜치
 
@@ -23,20 +23,22 @@
 
 ## 커밋 단위
 
-- 작은 단위로 자주. 한 commit 에 두 가지 이상의 작업 단위가 섞이지 않게.
-- 회귀 fix 와 리팩터링은 분리.
-- Docs-first — 스키마 / 라우트 / 운영 모델 변경은 같은 commit 또는 그 이전 commit 에 docs 를 갱신.
+- 작은 단위로 자주. 한 commit 에 두 가지 이상의 작업이 섞이지 않게.
+- 되돌아온 버그를 고치는 커밋과 구조를 정리하는 커밋은 따로 만든다.
+- 문서를 먼저 — 스키마 / 라우트 / 운영 방식이 바뀌면 문서를 같은 commit 이나 그 앞 commit 에서 갱신한다.
 
 ### 코드를 이렇게 고치면 이 문서도 같이 고친다
 
-**이 표가 왜 여기(상주) 있고 `documentation.md`(조건부)에 없는가** — 이 표가
-필요한 사람은 **코드를 고치는 사람**이다. `documentation.md` 는 `.md` 를 열
-때만 실리므로, 거기 두면 *이미 문서를 고치기로 한 사람에게만* "문서를 고쳐라"가
-실린다. 정작 짝을 빠뜨릴 사람에게는 안 실린다 (2026-07-31 감사 지적).
+**이 표가 왜 `documentation.md` 가 아니라 여기 있나** — 이 표가 필요한 사람은
+**코드를 고치는 사람**이다. `.claude/rules/` 의 규칙 중 일부는 매 턴 항상 읽히고
+(git · forbidden · local-first), 나머지는 관련 파일을 열 때만 읽힌다.
+`documentation.md` 는 `.md` 파일을 열 때만 읽히므로, 이 표를 거기 두면 *이미
+문서를 고치기로 마음먹은 사람에게만* "문서를 고쳐라"가 도착한다. 정작 짝지은
+문서를 빠뜨릴 사람은 못 본다 (2026-07-31 감사에서 지적됨).
 
 | 코드 변경 | 함께 수정해야 할 문서 |
 |---|---|
-| 새 라우트 추가·제거 | `docs/ARCHITECTURE.md`(인벤토리 정본) + `docs/FEATURES.md` + `docs/DECISIONS.md`(`decisions:check` 가 강제) |
+| 새 라우트 추가·제거 | `docs/ARCHITECTURE.md`(라우트 목록의 정본) + `docs/FEATURES.md` + `docs/DECISIONS.md`(`decisions:check` 가 검사한다) |
 | 새 커맨드 / 스크립트 | `README.md` |
 | 아키텍처 재구성 | `docs/ARCHITECTURE.md` + `AGENTS.md` |
 | 디자인 토큰 추가 | `docs/DESIGN-SYSTEM.md` + `app/globals.css` (램프 스텝이면 `cn.ts` 등록도) |
@@ -46,22 +48,24 @@
 
 ## PR
 
-- title 은 conventional prefix 로 시작. 본문은 `Summary` + `Test plan` 두 섹션.
-- 검증: `pnpm exec tsc --noEmit` · `pnpm lint` · `pnpm test:run` 통과를 PR 본문에 명시.
-- 디자인 변경 PR 은 before/after 스크린샷 첨부 (다크 — 앱은 다크 단일).
+- 제목은 위의 영문 prefix 로 시작. 본문은 `Summary` 와 `Test plan` 두 섹션.
+- `pnpm exec tsc --noEmit` · `pnpm lint` · `pnpm test:run` 을 돌려서 통과했다고 PR 본문에 적는다.
+- 화면이 달라지는 PR 은 고치기 전/후 스크린샷을 붙인다 (다크 모드로 — 앱에는 다크 모드밖에 없다).
 
 ## 함부로 하지 말 것
 
-- `--no-verify` 로 hook 우회 금지. **훅은 실재한다** — `pnpm install` 이
-  `core.hooksPath` 를 `.githooks/` 로 걸고, 거기 `pre-commit` 이 볼트 생성물
-  드리프트를 커밋 자리에서 막는다(이틀에 세 번 난 CI 사고를 앞으로 당긴 것 —
-  `docs/DEVELOPMENT-CHECKS.md`). 막히면 시키는 명령을 돌려라.
-- `git reset --hard` / `git push --force` 는 user 명시 명령 후만.
+- `--no-verify` 로 hook 을 건너뛰지 말 것. **이 저장소의 hook 은 실제로 돌아간다**
+  — `pnpm install` 이 git 의 hook 위치를 `.githooks/` 로 바꿔 두고, 거기 있는
+  `pre-commit` 이 "생성된 파일이 원본과 어긋난 채 커밋되는 것"을 커밋하는 순간
+  막는다. 예전에는 이 어긋남이 CI 에서야 터져서 이틀에 세 번 실패했고, 그걸
+  커밋 시점으로 앞당긴 것이다 (`docs/DEVELOPMENT-CHECKS.md`). 막히면 hook 이
+  시키는 명령을 그대로 돌린다.
+- `git reset --hard` / `git push --force` 는 사용자가 직접 시켰을 때만.
 - main 에 force push 절대 금지.
-- **생성물 JSON 충돌을 손으로 편집하지 말 것.** `src/entities/docs-vault/data/*`
-  와 `public/docs-vault/**` 는 `pnpm docs-vault:build` 산출물이다. 충돌 마커를
-  손으로 지우다 JSON 안에 남겨 타입 검사가 깨진 전례가 있다. 어느 쪽을 취해도
-  되니 **다시 생성**한다:
+- **자동 생성된 JSON 의 충돌을 손으로 고치지 말 것.** `src/entities/docs-vault/data/*`
+  와 `public/docs-vault/**` 는 `pnpm docs-vault:build` 가 만들어 내는 파일이다.
+  충돌 표시(`<<<<<<<` 같은 줄)를 손으로 지우다 JSON 안에 남겨서 타입 검사가
+  깨진 적이 있다. 어느 쪽을 골라도 상관없으니 **다시 생성**한다:
   `git checkout --ours src/entities/docs-vault/data public/docs-vault && pnpm docs-vault:build`.
-  (결정성 계약 덕에 재생성 결과는 어느 머신에서나 같은 바이트다 —
+  (같은 입력이면 어느 컴퓨터에서 돌려도 똑같은 결과가 나오도록 보장돼 있다 —
   `docs/DEVELOPMENT-CHECKS.md` "Generated manifest determinism".)
