@@ -432,7 +432,7 @@ export function FirstRunStarterModule({
            강등: 미지원 고지 한 줄 + macOS 앱(/download) 링크로 치환. */
         <div
           data-testid="first-run-starter-unsupported"
-          className="rounded-card border border-[color:var(--topology-v2-panel-divider)] bg-[color:rgba(6,6,9,0.45)] px-3 py-2.5"
+          className="rounded-card border border-[color:var(--topology-v2-panel-divider)] bg-[color:var(--topology-v2-panel-recess-a45)] px-3 py-2.5"
         >
           <p className="text-label leading-label text-[color:var(--topology-v2-panel-text-tertiary)]">
             {t("unsupportedNotice")}
@@ -680,7 +680,7 @@ export function FirstRunStarterModule({
           <div
             id="first-run-starter-cli-bridge"
             data-testid="first-run-starter-cli-bridge"
-            className="mt-2 rounded-chip border border-[color:var(--topology-v2-panel-divider)] bg-[color:rgba(6,6,9,0.35)] px-2.5 py-2"
+            className="mt-2 rounded-chip border border-[color:var(--topology-v2-panel-divider)] bg-[color:var(--topology-v2-panel-recess-a35)] px-2.5 py-2"
           >
             <div className="flex items-center justify-between gap-2">
               <p className="min-w-0 break-keep text-caption leading-tight text-[color:var(--topology-v2-panel-text-quaternary)]">

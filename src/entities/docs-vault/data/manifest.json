@@ -1,6 +1,6 @@
 {
   "version": "2026-04-23",
-  "generatedAt": "2026-08-04",
+  "generatedAt": "2026-08-05",
   "docs": [
     {
       "slug": "AGENT-GRAPH-WORKFLOW",
@@ -3890,6 +3890,11 @@
         },
         {
           "depth": 2,
+          "text": "2026-08-04 — 디자인 감사: 게이트가 못 보던 색 28건 · 공방의 평행 그림자 사다리 · 첫 화면 모달의 OS 포커스 링",
+          "slug": "2026-08-04-디자인-감사-게이트가-못-보던-색-28건-공방의-평행-그림자-사다리-첫-화면-모달의-os-포커스-링"
+        },
+        {
+          "depth": 2,
           "text": "2026-08-04 — 「연결」이 두 단계에서 한 단계로 — 「이 폴더 맞나요?」",
           "slug": "2026-08-04-연결이-두-단계에서-한-단계로-이-폴더-맞나요"
         },
@@ -6174,8 +6179,8 @@
           "slug": "2026-07-26-첫-만남은-쇼핑몰부터"
         }
       ],
-      "excerpt": "Major change history. Code commit messages answer why; this file answers when / which surface changed. Focused on user-visible changes, not PR-level granularity. Newest at the top. Entries stay date-based; the app version reached v1.0.0 on 2026-07-27, so a release tag now carries the semver promise instead. 「코드 폴더 연결하기",
-      "wordCount": 66964,
+      "excerpt": "Major change history. Code commit messages answer why; this file answers when / which surface changed. Focused on user-visible changes, not PR-level granularity. Newest at the top. Entries stay date-based; the app version reached v1.0.0 on 2026-07-27, so a release tag now carries the semver promise instead. 디자인 시스템을 세운",
+      "wordCount": 67154,
       "updatedAt": "2026-08-04",
       "linksOut": [
         "audits/CASE-STUDY-AGENTS-MD-DRIFT",
@@ -6204,6 +6209,26 @@
           "depth": 2,
           "text": "기록 형식",
           "slug": "기록-형식"
+        },
+        {
+          "depth": 2,
+          "text": "2026-08-05 — 램프 부채 예외를 0으로: 마지막 93건을 디자인 시스템으로 옮긴다",
+          "slug": "2026-08-05-램프-부채-예외를-0으로-마지막-93건을-디자인-시스템으로-옮긴다"
+        },
+        {
+          "depth": 2,
+          "text": "2026-08-05 — 누를 수 있는 것은 전부 `pointer` 커서를 쓴다",
+          "slug": "2026-08-05-누를-수-있는-것은-전부-pointer-커서를-쓴다"
+        },
+        {
+          "depth": 2,
+          "text": "2026-08-04 — 공방의 평행 그림자 사다리를 정본 사다리로 접는다 + 인라인 `boxShadow` 게이트",
+          "slug": "2026-08-04-공방의-평행-그림자-사다리를-정본-사다리로-접는다-인라인-boxshadow-게이트"
+        },
+        {
+          "depth": 2,
+          "text": "2026-08-04 — 색 게이트를 「등록된 튜플 거부」에서 「무채색만 통과」로 뒤집는다 + 첫 실행 시트의 OS 포커스 링 제거",
+          "slug": "2026-08-04-색-게이트를-등록된-튜플-거부에서-무채색만-통과로-뒤집는다-첫-실행-시트의-os-포커스-링-제거"
         },
         {
           "depth": 2,
@@ -7042,8 +7067,8 @@
         }
       ],
       "excerpt": "이 파일은 결정과 그때 진 반대 의견을 남긴다. docs/CHANGELOG.md 는 무엇이 언제 바뀌었나를 답하고, 이 파일은 왜 그렇게 정했고, 무엇을 걸었나를 답한다. 최신이 위. 기록은 덧붙이기만 한다 — 지난 기록을 고치지 않는다. 판단이 바뀌었으면 새 기록을 쓰고 옛 기록을 뒤집힘 으로 표시한다. 틀린 기록도 자산이다. 1. 소집 전에 읽는다. 카운슬을 열기 전(그리고 단독 PO 패스를 쓰기 전) 같은 표면 · 같은 질문에 대한 선행 결정이 있는지 먼저 본다. 있으면 새 패스는 그것을 ① 여전히 유효하다고 인용하거나 ② 명시적으로 뒤집는다. 조용히 다시 결정",
-      "wordCount": 69222,
-      "updatedAt": "2026-08-04",
+      "wordCount": 71181,
+      "updatedAt": "2026-08-05",
       "linksOut": [
         "slug"
       ]
@@ -7986,7 +8011,7 @@
         }
       ],
       "excerpt": "This document is maintained based on Section 3 of the design spec. For the original Linear specification, see design-references/DESIGN-linear.md. v2 (2026-07): topology-map-v2 에서 출하된 B2+ \"Circuit × Constellation\" 시각 언어가 페이지 롤아웃(랜딩 → docs/ontology 허브 → projects/insights → download)의 규범이 되었다 — 아래 v2 — \"Circuit × Constell",
-      "wordCount": 28639,
+      "wordCount": 28780,
       "updatedAt": "2026-08-04",
       "linksOut": [
         "design-references/DESIGN-linear",

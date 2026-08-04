@@ -328,13 +328,15 @@ particle·rarity(gold)·shimmer 를 `--studio-*` 토큰과 `.studio-stage` 안�
 
 | 규격 | 셀렉터 | 레벨 |
 |---|---|---|
-| 글자 크기 램프 | `text-[Npx]` 금지 | `src/**`+`app/**` 전역 error / 예전부터 빚이 남은 파일 12개만 예외 |
+| 글자 크기 램프 | `text-[Npx]` 금지 | `src/**`+`app/**` 전역 error · **예외 0** (2026-08-05 마지막 7파일 93건 전환 완료) |
 | 모서리 반경 램프 | `rounded-[Npx]` 금지 — 방향이 붙은 것(`rounded-t-[Npx]`·`rounded-r-md`) 포함 (2026-08-04 확장) | 동일 |
 | **그림자 사다리** | `shadow-[…]` 는 **모양이 허용목록에 있는 것만** 통과 — elevation-1/2/3 · dock-bottom/side · control-press · 표면 전용 토큰 · inset | 동일 |
 | **hex 색상** | 대괄호에 값을 직접 적는 자리(arbitrary value) 안의 hex 만 금지 | 동일 (지금 위반 0 — 미리 막는 검사) |
 | **모션 duration** | `duration-<숫자>` 금지 (토큰을 참조하는 형태는 문법상 안 걸린다) | 동일 |
 | **행간 램프** | `leading-[N]` 처럼 값을 직접 적는 것 금지 + 이름 붙은 유틸리티(`leading-relaxed` 등 208건)는 `named-offramp-utility-ratchet` 의 기준선이 붙든다 (2026-08-04) | 동일 |
 | **램프 우회** | 램프 토큰을 대괄호 안에서 길이로 돌려 참조하는 것만 금지 (램프 밖 크기 토큰은 정당) | 동일 (켤 때 위반 0) |
+| **인라인 그림자** | JSX `style={{ boxShadow }}` 의 값이 사다리·도킹·눌림·표면 토큰 중 하나를 참조하지 않으면 금지 (2026-08-04) | `src/**`+`app/**` 전역 error — **램프 부채 예외 파일도 받는다** |
+| **중복 커서** | `<button>`·`<summary>` 의 className 에 `cursor-pointer` 를 다시 적는 것 금지 — 정책은 `globals.css` base 한 곳 (2026-08-05) | 동일 (켤 때 위반 0 — 13곳 선정리) |
 | 금지 그라디언트 | `scaleGradientSelectors` | 동일 |
 | **accent×틴트 페어링** | `accentTintPairingSelectors` — `tone accent` 와 인디고/앰버 틴트 `bg-` 가 같은 호출/원소에 공존 금지 (상수 우회는 `accent-ink-contrast` 계약이 맡는다) | 전역 error (켤 때 위반 0 — 26곳 선치환) |
 
@@ -360,6 +362,7 @@ particle·rarity(gold)·shimmer 를 `--studio-*` 토큰과 `.studio-stage` 안�
 | **두 무채색 글자색 램프가 실제로 서로 다르다** | 같은 파일(`scope` 축 절) | 판정하려면 `app/globals.css` 의 **두 램프 8개 값**을 봐야 한다. 두 램프 값이 같아져 버리면 `scope` 는 아무 차이도 안 내면서 고를 것만 늘리는 셈이라, 그날 검사가 그걸 지우라고 말해 줘야 한다 |
 | **손으로 쓴 컨트롤이 늘지 않는다** | `tests/contract/control-adoption-ratchet.contract.test.ts` | 래칫이라 **저장소 전체의 개수**가 판정 기준인데, 그건 파일 하나만 봐서는 셀 수 없다 |
 | **글 속의 링크는 컨트롤이 아니라 글이다** — `.prose-link` 는 밑줄 모양만 정하고 display·행간·크기·포커스는 그 링크를 감싼 글의 것을 따른다 | `tests/contract/prose-link.contract.test.ts` + `tests/e2e/touch-target-contract.spec.ts` 의 fine-pointer 감사(WCAG 2.5.8 인라인 면제 판정) | 판정하려면 「이 링크가 문장 흐름 속에 있는가」(실제로 그려진 결과)와 브라우저가 계산한 display 값을 봐야 한다 — 「문장 속인가」를 정하는 세 가지(옆에 오는 글자가 어디서 왔는지 · 부모가 정하는 실제 display · 줄바꿈)가 전부 여는 태그 바깥에 있어서, 코드만 보고 판정하던 `inline` 축은 잘못 설정된 4건을 못 본 채 무용지물이었다(2026-08-04) |
+| **누를 수 있는 것은 전부 pointer** — 활성 `button`·`summary`·`a[href]` 는 렌더된 커서가 pointer 여야 한다 | `tests/e2e/cursor-affordance.spec.ts`(감사 대상 17개 라우트 전부 + 자기검증 프로브) | 위반이 **코드에 아무 값도 안 남긴다** — 새 컴포넌트가 그냥 `<button>` 을 쓰면 클래스도 인라인 스타일도 없이 브라우저 기본값으로 떨어져서 볼 문자열이 없다. lint 셀렉터는 «중복해서 적은 것» 만 볼 수 있고, «중앙 규칙이 사라졌거나 안 닿는 것» 은 렌더 결과를 재야 안다 |
 | **어느 바탕 위에 어느 글자색까지 쓸 수 있나** — quaternary 는 겹치지 않은 무채색 바탕(맨 아래 3단 + canvas/panel 위 overlay-1)까지, 그보다 올라선 바탕(overlay-2 이상 · elevated+overlay · 색이 섞인 바탕) 위의 글자는 tertiary 부터 | `tests/contract/quaternary-ink-surface.contract.test.ts`(값·자리) + `tests/e2e/a11y-open-surfaces.spec.ts`(화면) | 판정이 글자색이 아니라 **그 글자가 얹힌 바탕이 어떻게 겹쳐졌는지**에 달렸다 — 같은 클래스가 panel 위에서는 대비 5.00, overlay-2 위에서는 4.36 이다. 게다가 이 층에서 가장 흔한 코드 모양이 `active ? 틴트+밝은 글자색 : quaternary` 같은 분기라, 같은 태그에 붙은 클래스만 보고 짝을 맞추면 엉뚱하게 걸린다(2026-08-04 전수 18쌍 중 다수가 분기였다) — 그래서 코드만 보는 래칫 대신 값 자체를 고정하는 계약 + 실제로 화면을 열어서 재는 검사를 쓴다 |
 
 **램프에 없는 칸은 아무 소리도 안 낸다 (2026-07-27 실측).** `text-large` 는
@@ -399,6 +402,28 @@ particle·rarity(gold)·shimmer 를 `--studio-*` 토큰과 `.studio-stage` 안�
 "어느 토큰을 썼는가"** 로 바꿨다 — 허용하는 것은 사다리(elevation-*/dock-*) ·
 눌림(control-press) · 표면 전용 토큰 · inset 머리카락선(빛이 아니라 재질을
 나타낸다)뿐이다.
+
+### 클래스가 아니라 문법으로 빠져나간 경우 (2026-08-04)
+
+위의 기하 허용목록은 `shadow-[…]` 라는 **클래스 문자열**을 본다. 그림자를 JSX
+인라인 스타일(`style={{ boxShadow: "…" }}`)로 쓰면 클래스가 아예 안 생기므로
+셀렉터에 걸릴 것이 없다. 그 틈에서 공방(`StudioCompass.tsx`)이 **평행 사다리**를
+돌리고 있었다 — 손으로 쓴 그림자 8건, 모양 3종, 그리고 셋 다 **이미 이름이 있는
+층**이었다(하단 도킹 → `-dock-bottom` · 앵커된 팝오버 6곳 → `elevation-2` ·
+스크림 동반 중앙 모달 → `elevation-3`).
+
+두 가지가 이 사건의 교훈이다:
+
+1. **값이 아니라 문법이 게이트를 피할 수 있다.** 같은 규격을 표현하는 두 번째
+   문법이 있으면 룰도 두 벌이어야 한다.
+2. **면제 목록의 사정거리를 확인한다.** 이 셀렉터를 램프 배열에만 넣었으면
+   `rampDebtExemptions` 에 있는 `StudioCompass.tsx` — **정작 위반이 사는
+   파일** — 만 면제됐을 것이다. 그래서 전역 블록과 램프 블록 **양쪽**에 싣는다.
+
+허용 판정은 클래스 쪽과 같은 목록이다. 프로브로 확인한 것: 손으로 쓴 rgba 는
+잡히고, **색만 토큰이고 기하는 손으로 쓴 것**(`0 3px 7px var(--color-shadow-a35)`)
+도 잡히며, `var(--shadow-elevation-2)` 와 거대 spread 스크림
+(`0 0 0 9999px var(--topology-tour-scrim-surface)`)은 통과한다.
 
 교훈: **면제에는 방향이 있다.** "정상 사용을 살린다" 는 면제가 "비정상 사용까지
 살린다" 가 되는지, 룰을 켤 때 같이 물어야 한다.
@@ -448,6 +473,18 @@ flat config 는 룰 옵션 배열을 **합치지 않고 통째로 갈아치우�
 
 **현행**: `rampCoveredGlobs = ['src/**/*.{ts,tsx}', 'app/**/*.{ts,tsx}']` —
 전부 덮고, 예전부터 빚이 있는 **파일**만 `rampDebtExemptions` 로 뺀다.
+
+> **2026-08-05: 그 예외가 0이 됐다.** 마지막 7개 파일 93건(text 68 · radius 25)을
+> 램프로 옮겼다. 매핑은 최근접 스텝이고 동점은 자리의 역할이 갈랐다 — `text-[5px]`
+> 계열 칩은 `chip`, 떠 있는 패널은 `panel`, 스크림 동반 모달은 `sheet`. 그중
+> `text-[11px]`×9 와 `rounded-[18px]`×2 는 램프 값과 **바이트 동일**이라 픽셀이
+> 0으로 움직였고, 나머지는 0.5~2px(최대 −3px, `text-[26px]`→`display`) 움직였다.
+> 실측: 8개 라우트에서 문서 높이 변화 0 · testid 마크 2px 이상 이동 0 ·
+> 공방 나침 무대의 폰트(9.5/11/14/16)와 반경(6/9/12) 전부 램프 위.
+>
+> ⚠️ **이 목록에 파일을 다시 넣는 것은 규격을 끄는 것이다.** 새 값이 필요하면
+> 예외가 아니라 램프에 스텝을 등재하고(「체계」 소집) 같은 PR 에 lint 도 넣는다 —
+> `--radius-micro` 가 그 선례다.
 
 - 켜기 전 전부 세기(아래 절차대로): 모든 경로에 강제로 걸어 재니 위반
   **125건**이었고, 그 125건은 **파일 12개**에 몰려 있었다. 디렉터리 8곳이

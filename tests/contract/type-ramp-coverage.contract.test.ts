@@ -54,16 +54,33 @@ import {
  * 갈라진다. 그래서 여기서는 **ESLint 자신을 돌린다**.
  */
 
-/** 예외 파일의 현재 부채(2026-08-04 실측). 이 수는 **내려가기만 한다.** */
-const EXEMPT_DEBT: ReadonlyArray<readonly [string, number]> = [
-  ["src/entities/project/ui/ProjectCard.tsx", 16],
-  ["src/entities/project/ui/ProjectMetaGrid.tsx", 2],
-  ["src/features/vault-ontology/ui/LiveActivityIndicator.tsx", 23],
-  ["src/views/first-run/ui/FirstRunPage.tsx", 14],
-  ["src/views/ontology-studio/ui/StudioCompass.tsx", 24],
-  ["src/views/project-editor/ui/ProjectEditorPage.tsx", 2],
-  ["src/views/root-entry/ui/RootEntryPage.tsx", 5],
-];
+/**
+ * 예외 파일의 부채 장부 — **2026-08-05 에 비었다.**
+ *
+ * 마지막까지 남아 있던 7개 파일 93건(text 68 · radius 25)을 램프로 옮기면서
+ * 목록이 0이 됐다. 그때까지의 기록을 여기 남겨 둔다 — 되돌아갈 때 무엇이
+ * 얼마였는지 알아야 하기 때문이다:
+ *
+ *   ProjectCard 16 · ProjectMetaGrid 2 · LiveActivityIndicator 23 ·
+ *   FirstRunPage 14 · StudioCompass 24 · ProjectEditorPage 2 · RootEntryPage 5
+ *
+ * ⚠️ 이 배열이 비었다고 아래 검사들이 **공짜 초록**이 되면 안 된다. 그래서
+ * 비었을 때는 판정을 **뒤집는다** — 「예외가 진짜 예외인가」 대신 「예전에
+ * 예외였던 파일이 이제 정말로 램프 셀렉터를 받는가」 를 잰다.
+ */
+const EXEMPT_DEBT: ReadonlyArray<readonly [string, number]> = [];
+
+/**
+ * 한때 예외였던 파일들. 목록이 빈 지금, 이 경로들이 **실제로 램프 셀렉터를
+ * 받는지** 확인하는 데 쓴다 — 예외를 지웠는데 다른 이유로 여전히 안 걸리면
+ * 목록만 깨끗하고 규격은 그대로 없는 것이다.
+ */
+const FORMERLY_EXEMPT = [
+  "src/entities/project/ui/ProjectCard.tsx",
+  "src/features/vault-ontology/ui/LiveActivityIndicator.tsx",
+  "src/views/ontology-studio/ui/StudioCompass.tsx",
+  "src/views/root-entry/ui/RootEntryPage.tsx",
+] as const;
 
 /**
  * **아직 없는 경로**들. FSD 다섯 층 + 라우팅 루트를 하나씩 짚는다 — 다음 사람이
@@ -206,16 +223,38 @@ describe("램프 부채 예외 장부", () => {
     expect([...exemptions].sort()).toEqual(EXEMPT_DEBT.map(([file]) => file).sort());
   });
 
-  it("예외 파일에서는 램프 셀렉터가 실제로 빠져 있다", async () => {
-    // 예외가 「이름만 예외」면 장부가 거짓말을 한다. 동시에 **scale/gradient ·
-    // accent 틴트 가드는 남아 있는지** 본다 — 예외의 사정거리는 램프뿐이다.
-    const config = await eslint.calculateConfigForFile(exemptions[0]);
-    const applied = new Set(selectorsFor(config));
-    expect(rampSelectors.some((selector) => applied.has(selector))).toBe(false);
-    expect(applied.has('MemberExpression[property.name="shadowBlur"]')).toBe(true);
+  it("예외 목록이 비었으면 «예전에 예외였던 파일» 이 램프 셀렉터를 전부 받는다", async () => {
+    // 예외가 있을 때는 «이름만 예외가 아닌가» 를 물었다. 목록이 빈 지금은
+    // 반대를 묻는다 — 예외를 지웠는데 다른 이유(글롭 오타·블록 순서)로 여전히
+    // 안 걸리면, 목록만 깨끗하고 규격은 그대로 없는 것이다.
+    if (exemptions.length > 0) {
+      const config = await eslint.calculateConfigForFile(exemptions[0]);
+      const applied = new Set(selectorsFor(config));
+      expect(rampSelectors.some((selector) => applied.has(selector))).toBe(false);
+      expect(applied.has('MemberExpression[property.name="shadowBlur"]')).toBe(true);
+      return;
+    }
+    for (const file of FORMERLY_EXEMPT) {
+      const applied = new Set(selectorsFor(await eslint.calculateConfigForFile(file)));
+      const missing = rampSelectors.filter((selector) => !applied.has(selector));
+      expect(missing, `${file} 가 램프 셀렉터를 못 받는다: ${missing.length}종`).toEqual([]);
+    }
   });
 
   it("예외 파일의 부채가 장부를 넘지 않고, 0이 된 파일은 예외에서 뺀다", async () => {
+    // 목록이 비었으면 래칫할 것이 없다. 대신 **정말로 0인지**를 실측한다 —
+    // 「예외를 지웠다」와 「위반이 없다」는 다른 사실이고, 후자만이 규격이다.
+    if (EXEMPT_DEBT.length === 0) {
+      const results = await eslint.lintFiles([...FORMERLY_EXEMPT]);
+      const left = results
+        .map((r) => [
+          path.relative(REPO_ROOT, r.filePath),
+          r.messages.filter((m) => m.ruleId === "no-restricted-syntax").length,
+        ] as const)
+        .filter(([, n]) => n > 0);
+      expect(left, `예외를 지웠는데 위반이 남아 있다: ${JSON.stringify(left)}`).toEqual([]);
+      return;
+    }
     const actual = await measureExemptDebt();
     const grown: string[] = [];
     const cleared: string[] = [];

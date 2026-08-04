@@ -543,7 +543,7 @@ const KIND_LETTER: Record<string, string> = {
 
 function KindGlyph({ kind }: { kind: string }) {
   return (
-    <span className="grid h-[18px] w-[18px] flex-none place-items-center rounded-[5px] border border-[color:var(--color-border-soft)] bg-[color:var(--color-overlay-1)] text-label font-semibold text-[color:var(--color-text-tertiary)]">
+    <span className="grid h-[18px] w-[18px] flex-none place-items-center rounded-chip border border-[color:var(--color-border-soft)] bg-[color:var(--color-overlay-1)] text-label font-semibold text-[color:var(--color-text-tertiary)]">
       {KIND_LETTER[kind] ?? "•"}
     </span>
   );
@@ -974,7 +974,7 @@ export function StudioCompass(props: StudioCompassProps) {
             {focal.name || "—"}
           </h1>
           <span className="text-[color:var(--color-text-quaternary)]">·</span>
-          <span className="rounded-[5px] border border-[color:var(--color-border-soft)] px-1.5 py-px text-label tracking-[0.02em]">
+          <span className="rounded-chip border border-[color:var(--color-border-soft)] px-1.5 py-px text-label tracking-[0.02em]">
             {focal.kindLabel}
           </span>
           {focal.domainLabel ? (
@@ -1349,7 +1349,7 @@ export function StudioCompass(props: StudioCompassProps) {
         <div
           data-testid="studio-summary-panel"
           className="pointer-events-auto absolute bottom-16 left-0 right-0 z-[9] border-t border-[color:var(--color-divider)] bg-[color:var(--color-elevated)] px-5 py-3"
-          style={{ boxShadow: "0 -12px 30px rgba(0,0,0,.35)" }}
+          style={{ boxShadow: "var(--shadow-elevation-dock-bottom)" }}
         >
           <p className="text-caption font-medium text-[color:var(--color-text-secondary)] [word-break:keep-all]">
             {effectiveSummary.headline}
@@ -1393,7 +1393,7 @@ export function StudioCompass(props: StudioCompassProps) {
         <div className="flex items-center gap-2.5">
           <span
             aria-hidden
-            className="h-4 w-4 flex-none rounded-[3px]"
+            className="h-4 w-4 flex-none rounded-micro"
             style={{
               borderTop: "1.4px dashed var(--color-border-strong)",
               borderBottom: "1.4px dashed var(--color-border-strong)",
@@ -1476,7 +1476,7 @@ export function StudioCompass(props: StudioCompassProps) {
           role="dialog"
           aria-label={labels.draftsTitle}
           className="studio-fade-in absolute right-3 top-[52px] z-[11] flex w-[288px] flex-col rounded-panel border border-[color:var(--color-border-strong)] bg-[color:var(--color-elevated)]"
-          style={{ boxShadow: "0 12px 34px rgba(0,0,0,.5)", maxHeight: "min(420px, calc(100% - 96px))" }}
+          style={{ boxShadow: "var(--shadow-elevation-2)", maxHeight: "min(420px, calc(100% - 96px))" }}
         >
           <div className="flex items-start gap-2 px-3.5 pt-3">
             <div className="min-w-0 flex-1">
@@ -1607,7 +1607,7 @@ function CenterCard(
   };
   return (
     <div
-      className="studio-stage-in absolute flex flex-col rounded-[14px] bg-[color:var(--color-elevated)] px-[22px] py-[18px] transition-[border-color] duration-[var(--motion-base)] motion-reduce:transition-none"
+      className="studio-stage-in absolute flex flex-col rounded-panel bg-[color:var(--color-elevated)] px-[22px] py-[18px] transition-[border-color] duration-[var(--motion-base)] motion-reduce:transition-none"
       data-testid="studio-center-card"
       style={{
         left: cardLeft,
@@ -1664,7 +1664,7 @@ function CenterCard(
           </>
         ) : (
           <>
-            <span className="rounded-[5px] border border-[color:var(--color-indigo-a24)] bg-[color:var(--color-indigo-a12)] px-1.5 py-px text-label tracking-[0.03em] text-[color:var(--color-indigo-text-soft)]">
+            <span className="rounded-chip border border-[color:var(--color-indigo-a24)] bg-[color:var(--color-indigo-a12)] px-1.5 py-px text-label tracking-[0.03em] text-[color:var(--color-indigo-text-soft)]">
               {focal.kindLabel}
             </span>
             {focal.domainLabel ? (
@@ -1768,8 +1768,8 @@ function CenterCard(
           ) : null}
           {defExpanded ? (
             <div
-              className="absolute left-0 top-full z-[5] mt-1 max-h-[220px] w-[calc(100%+8px)] overflow-y-auto rounded-[10px] border border-[color:var(--color-border-strong)] bg-[color:var(--color-elevated)] p-3 text-caption leading-caption text-[color:var(--color-text-secondary)] [word-break:keep-all]"
-              style={{ boxShadow: "0 12px 34px rgba(0,0,0,.5)" }}
+              className="absolute left-0 top-full z-[5] mt-1 max-h-[220px] w-[calc(100%+8px)] overflow-y-auto rounded-card border border-[color:var(--color-border-strong)] bg-[color:var(--color-elevated)] p-3 text-caption leading-caption text-[color:var(--color-text-secondary)] [word-break:keep-all]"
+              style={{ boxShadow: "var(--shadow-elevation-2)" }}
             >
               {definition}
             </div>
@@ -1783,7 +1783,7 @@ function CenterCard(
           data-testid="studio-create-similar"
           aria-live="polite"
           aria-atomic="true"
-          className="mt-2 flex items-start gap-2 rounded-[8px] border px-2.5 py-1.5 text-label leading-label text-[color:var(--color-text-tertiary)]"
+          className="mt-2 flex items-start gap-2 rounded-card border px-2.5 py-1.5 text-label leading-label text-[color:var(--color-text-tertiary)]"
           style={{ borderColor: "var(--color-amber-muted-a34)", background: "var(--color-amber-muted-a18)" }}
         >
           <TriangleAlert
@@ -1975,7 +1975,7 @@ function LaneRender({
               {...(onClick ? { type: "button" as const, onClick, title: labels.walkTo } : {})}
               data-testid={`studio-satellite-${view.bearing}`}
               className={cn(
-                "flex h-full w-full items-center gap-2.5 rounded-[10px] border bg-[color:var(--color-panel)] px-3 text-left transition-colors",
+                "flex h-full w-full items-center gap-2.5 rounded-card border bg-[color:var(--color-panel)] px-3 text-left transition-colors",
                 pending
                   ? "border-[color:var(--color-indigo-a46)] bg-[color:var(--color-indigo-a08)]"
                   : "border-[color:var(--color-border-soft)]",
@@ -2009,7 +2009,7 @@ function LaneRender({
               <span
                 aria-hidden
                 data-testid={`studio-arrival-${view.bearing}`}
-                className="pointer-events-none absolute inset-0 rounded-[10px] border-[1.5px] border-[color:var(--color-indigo-brand)] transition-opacity duration-[var(--motion-settle)] motion-reduce:transition-none"
+                className="pointer-events-none absolute inset-0 rounded-card border-[1.5px] border-[color:var(--color-indigo-brand)] transition-opacity duration-[var(--motion-settle)] motion-reduce:transition-none"
                 style={{ opacity: arrivalLit ? 1 : 0 }}
               />
             ) : null}
@@ -2025,7 +2025,7 @@ function LaneRender({
           aria-expanded={foldOpen}
           onClick={onToggleFold}
           className={cn(
-            "absolute z-[2] flex items-center gap-2 rounded-[10px] border px-3 text-caption text-[color:var(--color-text-tertiary)] transition-colors hover:text-[color:var(--color-text-secondary)]",
+            "absolute z-[2] flex items-center gap-2 rounded-card border px-3 text-caption text-[color:var(--color-text-tertiary)] transition-colors hover:text-[color:var(--color-text-secondary)]",
             foldOpen
               ? "border-[color:var(--color-indigo-a46)] bg-[color:var(--color-indigo-a08)]"
               : "border-[color:var(--color-border-soft)]",
@@ -2133,7 +2133,7 @@ function LaneRender({
           }}
         >
           {view.recommended ? (
-            <span className="inline-flex items-center gap-1 rounded-[5px] bg-[color:var(--color-indigo-a16)] px-1.5 py-0.5 text-label font-semibold tracking-[0.02em] text-[color:var(--color-indigo-text-soft)]">
+            <span className="inline-flex items-center gap-1 rounded-chip bg-[color:var(--color-indigo-a16)] px-1.5 py-0.5 text-label font-semibold tracking-[0.02em] text-[color:var(--color-indigo-text-soft)]">
               ◈ {labels.guideBadge}
             </span>
           ) : view.expected ? (
@@ -2201,8 +2201,8 @@ function LaneOverflowList({
   return (
     <div
       data-testid={`studio-lane-list-${view.bearing}`}
-      className="absolute z-[8] rounded-[13px] border border-[color:var(--color-border-strong)] bg-[color:var(--color-elevated)]"
-      style={{ left, top, width: W, boxShadow: "0 12px 34px rgba(0,0,0,.5)" }}
+      className="absolute z-[8] rounded-panel border border-[color:var(--color-border-strong)] bg-[color:var(--color-elevated)]"
+      style={{ left, top, width: W, boxShadow: "var(--shadow-elevation-2)" }}
     >
       <div className="flex items-center gap-2 border-b border-[color:var(--color-divider)] px-3.5 py-2.5">
         <span className="min-w-0 truncate text-caption font-semibold text-[color:var(--color-text-secondary)] [word-break:keep-all]">
@@ -2224,7 +2224,7 @@ function LaneOverflowList({
           const Tag = onClick ? "button" : "div";
           const pending = pendingNeighborIds?.has(sat.id) ?? false;
           return (
-            <div key={sat.id} className="group flex items-center rounded-[8px] transition-colors hover:bg-[color:var(--color-indigo-a08)]">
+            <div key={sat.id} className="group flex items-center rounded-card transition-colors hover:bg-[color:var(--color-indigo-a08)]">
               <Tag
                 {...(onClick ? { type: "button" as const, onClick } : {})}
                 data-testid={`studio-lane-row-${sat.id}`}
@@ -2312,8 +2312,8 @@ function InlineEditCard({
     <div
       data-testid="studio-edit-card"
       data-relation={relation}
-      className="absolute z-[9] flex flex-col rounded-[13px] border border-[color:var(--color-border-strong)] bg-[color:var(--color-elevated)]"
-      style={{ left, top, width: W, boxShadow: "0 12px 34px rgba(0,0,0,.5)" }}
+      className="absolute z-[9] flex flex-col rounded-panel border border-[color:var(--color-border-strong)] bg-[color:var(--color-elevated)]"
+      style={{ left, top, width: W, boxShadow: "var(--shadow-elevation-2)" }}
     >
       <div className="flex items-center gap-2 border-b border-[color:var(--color-divider)] px-3.5 py-2.5">
         <span className="min-w-0 flex-1 truncate text-caption font-semibold text-[color:var(--color-text-secondary)] [word-break:keep-all]">
@@ -2578,14 +2578,14 @@ function InlinePicker({
     <div
       data-testid="studio-picker"
       data-relation={relation}
-      className="studio-picker-pop absolute z-[8] flex flex-col rounded-[13px] border border-[color:var(--color-border-strong)] bg-[color:var(--color-elevated)]"
+      className="studio-picker-pop absolute z-[8] flex flex-col rounded-panel border border-[color:var(--color-border-strong)] bg-[color:var(--color-elevated)]"
       style={
         {
           left,
           top,
           width: W,
           maxHeight,
-          boxShadow: "0 12px 34px rgba(0,0,0,.5)",
+          boxShadow: "var(--shadow-elevation-2)",
           "--studio-picker-origin": `${originX}px ${originY}px`,
         } as React.CSSProperties
       }
@@ -2674,7 +2674,7 @@ function InlinePicker({
                       <span className="min-w-0 truncate text-body text-[color:var(--color-text-secondary)]">
                         {d.title ?? labels.browseNoDomain}
                       </span>
-                      <span className="ml-auto flex-none rounded-[5px] border border-[color:var(--color-border-soft)] px-1.5 py-px text-label text-[color:var(--color-text-quaternary)]">
+                      <span className="ml-auto flex-none rounded-chip border border-[color:var(--color-border-soft)] px-1.5 py-px text-label text-[color:var(--color-text-quaternary)]">
                         {d.count}
                       </span>
                       <ChevronDown size={13} aria-hidden className="-rotate-90 flex-none text-[color:var(--color-text-quaternary)]" />
@@ -2853,7 +2853,7 @@ function NodeSearch({
         <div
           data-testid="studio-node-search-results"
           className="absolute left-0 top-[calc(100%+6px)] z-[9] w-[340px] overflow-hidden rounded-panel border border-[color:var(--color-border-strong)] bg-[color:var(--color-elevated)]"
-          style={{ boxShadow: "0 12px 34px rgba(0,0,0,.5)" }}
+          style={{ boxShadow: "var(--shadow-elevation-2)" }}
         >
           <div className="max-h-[320px] overflow-y-auto p-1.5">
             {rows.length === 0 ? (
@@ -3067,8 +3067,8 @@ function DeltaPreviewModal({
       onClick={onClose}
     >
       <div
-        className="flex max-h-[92dvh] w-[560px] max-w-full flex-col overflow-hidden rounded-[16px] border border-[color:var(--color-border-strong)] bg-[color:var(--color-elevated)]"
-        style={{ boxShadow: "0 18px 48px rgba(0,0,0,.55)" }}
+        className="flex max-h-[92dvh] w-[560px] max-w-full flex-col overflow-hidden rounded-sheet border border-[color:var(--color-border-strong)] bg-[color:var(--color-elevated)]"
+        style={{ boxShadow: "var(--shadow-elevation-3)" }}
         onClick={(e) => e.stopPropagation()}
       >
         {/* header */}
@@ -3121,7 +3121,7 @@ function DeltaPreviewModal({
               {/* center focal / new node */}
               <div
                 data-testid="studio-preview-center"
-                className="absolute flex flex-col justify-center rounded-[10px] px-3"
+                className="absolute flex flex-col justify-center rounded-card px-3"
                 style={{
                   left: MCX - MC.w / 2,
                   top: MCY - MC.h / 2,
@@ -3132,7 +3132,7 @@ function DeltaPreviewModal({
                 }}
               >
                 {center.isNew ? (
-                  <span className="mb-0.5 inline-flex w-fit items-center rounded-[4px] bg-[color:var(--color-indigo-a16)] px-1 py-px text-label font-semibold tracking-[0.02em] text-[color:var(--color-indigo-text-soft)]">
+                  <span className="mb-0.5 inline-flex w-fit items-center rounded-micro bg-[color:var(--color-indigo-a16)] px-1 py-px text-label font-semibold tracking-[0.02em] text-[color:var(--color-indigo-text-soft)]">
                     {labels.previewCenterNew}
                   </span>
                 ) : null}
@@ -3157,7 +3157,7 @@ function DeltaPreviewModal({
                   <span
                     key={`overflow-${p.bearing}`}
                     data-testid={`studio-preview-overflow-${p.bearing}`}
-                    className="absolute -translate-x-1/2 whitespace-nowrap rounded-[5px] border border-[color:var(--color-border-soft)] bg-[color:var(--color-panel)] px-1.5 py-px text-label text-[color:var(--color-text-quaternary)]"
+                    className="absolute -translate-x-1/2 whitespace-nowrap rounded-chip border border-[color:var(--color-border-soft)] bg-[color:var(--color-panel)] px-1.5 py-px text-label text-[color:var(--color-text-quaternary)]"
                     style={{ left: p.overflowAnchor.x, top: p.overflowAnchor.y }}
                   >
                     {labels.previewOverflow(p.overflow)}
@@ -3245,7 +3245,7 @@ function DeltaSatChip({ placed, labels }: { placed: PlacedDeltaSat; labels: Stud
     <div
       data-testid={`studio-preview-sat-${state}`}
       data-node-id={sat.node.id}
-      className="absolute flex items-center gap-1.5 rounded-[8px] px-2"
+      className="absolute flex items-center gap-1.5 rounded-card px-2"
       style={{
         left: x,
         top: y,
@@ -3277,11 +3277,11 @@ function DeltaSatChip({ placed, labels }: { placed: PlacedDeltaSat; labels: Stud
         {sat.node.title}
       </span>
       {state === "moved" ? (
-        <span className="flex-none rounded-[4px] bg-[color:var(--color-indigo-a16)] px-1 text-label font-medium text-[color:var(--color-indigo-text-soft)]">
+        <span className="flex-none rounded-micro bg-[color:var(--color-indigo-a16)] px-1 text-label font-medium text-[color:var(--color-indigo-text-soft)]">
           {labels.previewMovedChip}
         </span>
       ) : removed ? (
-        <span className="flex-none rounded-[4px] border border-[color:var(--color-border-soft)] px-1 text-label text-[color:var(--color-text-quaternary)]">
+        <span className="flex-none rounded-micro border border-[color:var(--color-border-soft)] px-1 text-label text-[color:var(--color-text-quaternary)]">
           {labels.previewRemovedChip}
         </span>
       ) : null}
@@ -3297,7 +3297,7 @@ function LegendItem({ swatch, label }: { swatch: DeltaSatelliteState; label: str
     <span className="flex items-center gap-1.5">
       <span
         aria-hidden
-        className="h-2.5 w-2.5 flex-none rounded-[3px]"
+        className="h-2.5 w-2.5 flex-none rounded-micro"
         style={{
           border: indigo
             ? "1.5px solid var(--color-indigo-brand)"

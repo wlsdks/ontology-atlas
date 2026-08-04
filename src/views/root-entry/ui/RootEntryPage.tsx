@@ -79,14 +79,14 @@ function DesktopVaultRedirect() {
       className="flex min-h-full items-center justify-center bg-[color:var(--color-canvas)] px-6 py-10"
     >
       <section className="grid w-full max-w-2xl justify-items-center gap-5 text-center">
-        <p className="font-mono text-[10px] uppercase tracking-[0.16em] text-[color:var(--color-text-quaternary)]">
+        <p className="font-mono text-caption uppercase tracking-[0.16em] text-[color:var(--color-text-quaternary)]">
           {t('redirectEyebrow')}
         </p>
         <div className="grid gap-2">
-          <h1 className="text-[26px] font-semibold leading-tight text-[color:var(--color-text-primary)] md:text-[32px]">
+          <h1 className="text-display font-semibold leading-tight text-[color:var(--color-text-primary)] md:text-hero">
             {t('redirectTitle')}
           </h1>
-          <p className="mx-auto max-w-xl text-[13px] leading-6 text-[color:var(--color-text-tertiary)]">
+          <p className="mx-auto max-w-xl text-body leading-6 text-[color:var(--color-text-tertiary)]">
             {t('redirectBody')}
           </p>
         </div>
@@ -105,14 +105,14 @@ function DesktopVaultRedirect() {
                 <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-chip border border-[color:var(--color-divider)] text-[color:var(--color-text-tertiary)]">
                   <Icon size={14} aria-hidden />
                 </span>
-                <span className="text-[11.5px] font-medium leading-5 text-[color:var(--color-text-secondary)]">
+                <span className="text-label font-medium leading-5 text-[color:var(--color-text-secondary)]">
                   {item.label}
                 </span>
               </div>
             );
           })}
         </div>
-        <p className="font-mono text-[10px] uppercase tracking-[0.18em] text-[color:var(--color-text-quaternary)]">
+        <p className="font-mono text-caption uppercase tracking-[0.18em] text-[color:var(--color-text-quaternary)]">
           {t('openingLocalVaultPicker')}
         </p>
       </section>

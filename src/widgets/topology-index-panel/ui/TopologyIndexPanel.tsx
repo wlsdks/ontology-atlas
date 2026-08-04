@@ -403,7 +403,7 @@ export function TopologyIndexPanel({
         aria-label={labels.foldAria}
         title={labels.fold}
         data-testid="topology-index-fold"
-        className="group mb-3 flex w-full cursor-pointer items-center gap-1.5 rounded-[var(--chrome-radius-inner)] px-0.5 text-left transition-colors hover:bg-[color:var(--topology-v2-panel-row-hover)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--color-indigo-a46)] focus-visible:ring-inset"
+        className="group mb-3 flex w-full items-center gap-1.5 rounded-[var(--chrome-radius-inner)] px-0.5 text-left transition-colors hover:bg-[color:var(--topology-v2-panel-row-hover)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--color-indigo-a46)] focus-visible:ring-inset"
       >
         <span className="font-mono text-caption uppercase tracking-[0.16em] text-[color:var(--topology-v2-panel-text-tertiary)]">
           {labels.label}
@@ -794,7 +794,7 @@ export function TopologyIndexPanel({
                 shape: "link",
                 size: "md",
                 className:
-                  "shrink-0 enabled:cursor-pointer enabled:hover:bg-[color:var(--topology-v2-panel-row-hover)] enabled:hover:text-[color:var(--topology-v2-panel-text-primary)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--color-indigo-a46)] focus-visible:ring-inset",
+                  "shrink-0 enabled: enabled:hover:bg-[color:var(--topology-v2-panel-row-hover)] enabled:hover:text-[color:var(--topology-v2-panel-text-primary)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--color-indigo-a46)] focus-visible:ring-inset",
               })}
             >
               {/* C11 — 미연결 상태: power-on(인디고) 점 + "AI가 함께 갱신 중"

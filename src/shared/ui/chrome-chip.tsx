@@ -47,7 +47,7 @@ export const CHROME_STATUS_CHIP_CLASS =
  *
  * 2026-08-03 소유자 실보고: *"일반 화면에서 '최근 변경' 누르니까 아무런 반응이
  * 없는데?"*. 실측해 보니 그 칩은 `disabled` 였는데 **계산된 스타일이 옆의 활성 칩
- * 셋과 완전히 동일**했다 — color `rgb(138,143,152)` · bg `rgba(16,17,24,.96)` ·
+ * 셋과 완전히 동일**했다 — color `rgb(138,143,152)` · bg `var(--chrome-surface)` ·
  * border · opacity · cursor 전부 같은 값. `ChromeChip` 에 `disabled:` 처리가
  * 아예 없었기 때문이고, 공유 프리미티브라 **모든 칩이 같은 구멍**을 갖고 있었다.
  *

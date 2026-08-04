@@ -53,6 +53,100 @@ const scaleGradientSelectors = [
 // 잉크는 `accentOnTint`(--color-indigo-text-soft, 전 표면 6.46+)다.
 // 이 셀렉터는 **같은 호출/원소 안의 리터럴 페어링**만 본다 — 파일 상수로
 // 우회된 className 은 위 계약 테스트의 소스 스캔이 맡는다.
+/*
+ * 인라인 `style={{ boxShadow }}` — className 셀렉터가 **원리적으로 못 보는** 층.
+ *
+ * ## 왜 필요했나 (2026-08-04 디자인 감사)
+ *
+ * 위의 고도 사다리 가드는 `shadow-[…]` 라는 **클래스 문자열**을 본다. 그런데
+ * 그림자를 JSX 인라인 스타일로 쓰면 클래스가 아예 안 생기므로 셀렉터에 걸릴
+ * 것이 없다. 그 틈에서 공방(`StudioCompass.tsx`)이 **평행 사다리**를 돌리고
+ * 있었다 — 손으로 쓴 그림자 8건, 모양 3종:
+ *
+ *   0 -12px 30px  ×1  하단 도킹 패널      → 이미 `-dock-bottom` 이 있다 (0 -12px 32px)
+ *   0 12px 34px   ×6  앵커된 팝오버들      → 이미 `elevation-2`(popover) 가 있다
+ *   0 18px 48px   ×1  스크림 동반 중앙 모달 → 이미 `elevation-3`(dialog) 가 있다
+ *
+ * 셋 다 **없던 층이 아니라 이름이 이미 있는 층**이었다. 사다리 정의부 주석이
+ * 기록한 "등재되지 않은 6번째 층" 사건과 같은 모양이고, 다른 점은 이번엔
+ * 값이 아니라 **문법**이 게이트를 피했다는 것뿐이다.
+ *
+ * ## 왜 램프 블록이 아니라 전역 블록에 싣나
+ *
+ * `StudioCompass.tsx` 는 `rampDebtExemptions` 에 있어서 램프 블록에서 빠진다.
+ * 이 셀렉터를 램프 배열에 넣으면 **정작 위반이 사는 파일만 면제된다.** 그래서
+ * 전역 블록(`src/**`+`app/**`)과 램프 블록 **양쪽**에 싣는다 — flat config 는
+ * 룰 옵션을 병합하지 않고 교체하므로 한쪽만 넣으면 다른 쪽에서 유실된다.
+ *
+ * ## 허용 판정은 className 쪽과 **같은 목록**이다
+ *
+ * 색만 토큰이고 기하는 손으로 쓰는 것이 사다리를 무너뜨린 방식이었으므로,
+ * 여기서도 «var( 가 있으면 통과» 로 하지 않는다. 사다리·도킹·눌림·표면 전용
+ * 토큰·inset 중 하나를 참조해야 한다.
+ *
+ * ⚠️ 켜기 전 전수: 인라인 boxShadow 9건 중 위반 8건(전부 한 파일) · 정상 1건
+ * (`GuidedTourOverlay` 의 `0 0 0 9999px var(--topology-tour-scrim-surface)` —
+ * 거대 spread 로 만든 스크림이라 고도 그림자가 아니고, 표면 전용 토큰을 쓴다).
+ * 8건을 먼저 수렴시키고 켰다.
+ */
+const ALLOWED_SHADOW_TOKEN =
+  'var\\(--shadow-elevation-|var\\(--shadow-control-press|var\\(--topology|var\\(--chrome|var\\(--git|inset';
+
+const inlineShadowSelectors = [
+  {
+    selector: `Property[key.name="boxShadow"] > Literal[value=/^(?!.*(?:${ALLOWED_SHADOW_TOKEN})).+/]`,
+    message:
+      '고도 사다리 이탈 (인라인 style) — 그림자의 **기하**도 토큰이 정한다. --shadow-elevation-1/2/3 (coach-mark < popover < dialog), 가장자리 도킹은 -dock-bottom/-dock-side, 눌린 컨트롤은 --shadow-control-press. 인라인 스타일은 클래스 셀렉터에 안 걸리므로 여기서 막는다.',
+  },
+  {
+    selector: `Property[key.name="boxShadow"] TemplateElement[value.raw=/^(?!.*(?:${ALLOWED_SHADOW_TOKEN})).+/]`,
+    message:
+      '고도 사다리 이탈 (인라인 style, template literal) — --shadow-elevation-* / -dock-* / --shadow-control-press 를 참조한다.',
+  },
+];
+
+/*
+ * 중복 `cursor-pointer` — 중앙 규칙이 이미 정한 것을 다시 적는 것.
+ *
+ * ## 왜 (2026-08-05 소유자 확정)
+ *
+ * `app/globals.css` 의 base 레이어가 «비활성이 아닌 `button` 과 `summary` 는
+ * pointer» 를 정한다. 그 뒤로 `<button className="… cursor-pointer">` 는
+ * **아무것도 바꾸지 않는 중복**이고, 중복이 쌓이면 다음 사람이 «여기만 특별한가»
+ * 를 매번 다시 판단해야 한다. 실제로 그렇게 22곳이 쌓였고 버튼끼리 5:56 으로
+ * 서로 모순이었다.
+ *
+ * ## 사정거리를 일부러 좁혔다
+ *
+ * `cursor-pointer` 를 통째로 금지하지 **않는다**. 중앙 규칙이 안 닿는 자리가
+ * 실제로 8곳 있다(`li[role=option]` · `label` · cmdk 항목 · 클릭되는 카드 ·
+ * SVG `<g>` · 체크박스). 그것까지 막으면 정상 사용을 죽이는 룰이 된다.
+ * `cursor-default` 도 마찬가지로 안 막는다 — 스크림 3곳이 정당하게 쓴다
+ * (누르면 닫히지만 컨트롤이 아니라 표면이다).
+ *
+ * 그래서 판정은 **«태그가 button/summary 인데 그 위에 또 적었는가»** 하나다.
+ * 이 셀렉터는 리터럴 태그 + 리터럴 className 조합만 본다 — `cn()` 으로 조립된
+ * 것이나 컴포넌트 래퍼는 못 본다. 그쪽은 **렌더 결과를 재는**
+ * `tests/e2e/cursor-affordance.spec.ts` 가 맡는다(lint 가 못 보는 층은 계약이
+ * 맡는다는 이 저장소의 분업 그대로).
+ *
+ * ⚠️ 켜기 전 전수: 13건을 먼저 걷어내고 켰다(위반 0 · lint 총계 불변).
+ */
+const cursorAffordanceSelectors = [
+  {
+    selector:
+      'JSXOpeningElement[name.name=/^(button|summary)$/] JSXAttribute[name.name="className"] Literal[value=/(^|[^-\\w])(enabled:)?cursor-pointer([^-\\w]|$)/]',
+    message:
+      'button/summary 의 pointer 커서는 app/globals.css 의 base 규칙이 이미 정한다 — 여기 다시 적으면 중복이고, 중복이 쌓이면 다음 사람이 «여기만 특별한가» 를 매번 다시 판단한다. 지워라. 중앙 규칙이 안 닿는 원소(li[role=option] · label · 클릭되는 카드 등)에서는 정당하다.',
+  },
+  {
+    selector:
+      'JSXOpeningElement[name.name=/^(button|summary)$/] JSXAttribute[name.name="className"] TemplateElement[value.raw=/(^|[^-\\w])(enabled:)?cursor-pointer([^-\\w]|$)/]',
+    message:
+      'button/summary 의 pointer 커서는 base 규칙이 정한다 (template literal). 중복을 지워라.',
+  },
+];
+
 const accentTintPairingSelectors = [
   {
     selector:
@@ -462,13 +556,16 @@ export const rampCoveredGlobs = ['src/**/*.{ts,tsx}', 'app/**/*.{ts,tsx}'];
  * 빼면 그 안의 새 파일까지 같이 빠지고, 그게 이 블록이 뒤집힌 원인이다.
  */
 export const rampDebtExemptions = [
-  'src/entities/project/ui/ProjectCard.tsx', // 16
-  'src/entities/project/ui/ProjectMetaGrid.tsx', // 2
-  'src/features/vault-ontology/ui/LiveActivityIndicator.tsx', // 23
-  'src/views/first-run/ui/FirstRunPage.tsx', // 14
-  'src/views/ontology-studio/ui/StudioCompass.tsx', // 24
-  'src/views/project-editor/ui/ProjectEditorPage.tsx', // 2
-  'src/views/root-entry/ui/RootEntryPage.tsx', // 5
+  // **2026-08-05: 비었다.** 이 목록은 «램프가 생기기 전에 쓰인 파일» 의 한시적
+  // 유예였고, 마지막 7개 파일 93건(text 68 · radius 25)을 램프로 옮기면서 0이
+  // 됐다. 이제 `rampCoveredGlobs` 가 정말로 전부를 덮는다.
+  //
+  // ⚠️ **여기에 파일을 다시 넣는 것은 규격을 끄는 것이다.** 새 값이 필요하면
+  // 예외를 만들지 말고 램프에 스텝을 등재하고(「체계」 소집) 같은 PR 에 lint 도
+  // 넣는다 — 그것이 이 저장소가 `--radius-micro` 로 이미 한 번 한 일이다.
+  // 목록이 비어 있어도 계약은 헛돌지 않는다: `type-ramp-coverage` 가
+  // ESLint 자신을 돌려 «존재하지 않는 새 경로도 램프 셀렉터를 전부 받는가» 를
+  // 잰다.
 ];
 
 // 테스트는 렌더된 className 문자열을 assert 하므로 램프 룰에서 제외.
@@ -718,7 +815,15 @@ const eslintConfig = defineConfig([
   {
     files: ['src/**/*.{ts,tsx,jsx,js}', 'app/**/*.{ts,tsx,jsx,js}'],
     rules: {
-      'no-restricted-syntax': ['error', ...scaleGradientSelectors, ...accentTintPairingSelectors],
+      'no-restricted-syntax': [
+        'error',
+        ...scaleGradientSelectors,
+        ...accentTintPairingSelectors,
+        // 램프 부채 파일도 이 블록은 받는다 — 인라인 그림자는 램프가 아니라
+        // 사다리 문제라 부채 면제와 함께 빠지면 안 된다.
+        ...inlineShadowSelectors,
+        ...cursorAffordanceSelectors,
+      ],
     },
   },
   // 램프 봉쇄 — `src/**` + `app/**` **전부** error, 유산 부채 파일만 제외.
@@ -738,6 +843,8 @@ const eslintConfig = defineConfig([
         ...scaleGradientSelectors,
         ...arbitrarySizeSelectors,
         ...accentTintPairingSelectors,
+        ...inlineShadowSelectors,
+        ...cursorAffordanceSelectors,
       ],
     },
   },

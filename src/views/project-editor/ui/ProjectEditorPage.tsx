@@ -279,7 +279,7 @@ function EditorContent({
             아래 필수 칸 4개를 가리키므로 안내가 한 자리에 모인다. */}
         <header className={mode === "create" ? "mt-6" : "mt-8"}>
           {mode === "edit" && (
-            <p className="font-mono text-[10px] uppercase tracking-[0.15em] text-[color:var(--color-text-quaternary)]">
+            <p className="font-mono text-caption uppercase tracking-[0.15em] text-[color:var(--color-text-quaternary)]">
               {t("eyebrowEdit")}
             </p>
           )}
@@ -365,7 +365,7 @@ function EditorContent({
         <section className={mode === "create" ? "mt-6" : "mt-10"}>
           {mode === "edit" && slug && (
             <div className="mb-6 rounded-panel border border-[color:var(--color-indigo-a18)] bg-[color:var(--color-indigo-a06)] px-5 py-4">
-              <p className="font-mono text-[10px] uppercase tracking-[0.12em] text-[color:var(--color-indigo-accent)]">
+              <p className="font-mono text-caption uppercase tracking-[0.12em] text-[color:var(--color-indigo-accent)]">
                 {t("publicCompanionEyebrow")}
               </p>
               <p className="mt-2 text-body-lg leading-6 text-[color:var(--color-text-secondary)]">

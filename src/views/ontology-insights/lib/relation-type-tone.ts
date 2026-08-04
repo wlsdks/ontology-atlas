@@ -1,3 +1,5 @@
+import { indigoRgba } from "@/shared/config/indigo-tokens";
+
 /**
  * Indigo-intensity scale for relation TYPE distribution (탭2 관계 — insights
  * visual diversity pass). Same hue as `--color-indigo-brand` (#5e6ad2 =
@@ -33,7 +35,13 @@ export function relationTypeAlpha(type: string): number {
   return Math.min(MAX_ALPHA, Math.max(MIN_ALPHA, alpha));
 }
 
-/** `rgba(94, 106, 210, alpha)` for a relation type — indigo hue, type-scaled alpha. */
+/**
+ * 관계 종류별 인디고 — 색조는 브랜드 인디고 고정, 알파만 종류가 정한다.
+ *
+ * rgb 삼중항을 여기 손으로 적지 않는다. 값의 단일 진실원은
+ * `shared/config/indigo-tokens.ts` 이고, 여기서 베끼면 브랜드 색이 움직일 때
+ * 이 파일만 안 따라간다(2026-08-04 감사: 색 게이트가 이 줄을 못 보고 있었다).
+ */
 export function relationTypeIndigo(type: string): string {
-  return `rgba(94, 106, 210, ${relationTypeAlpha(type)})`;
+  return indigoRgba("brand", relationTypeAlpha(type));
 }

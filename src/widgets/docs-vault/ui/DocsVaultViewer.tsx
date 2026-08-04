@@ -146,7 +146,7 @@ export function DocsVaultViewer({
           seg.match ? (
             <mark
               key={`${key}-${i}`}
-              className="docs-match rounded-micro bg-[color:var(--color-indigo-line-a22)] px-0.5 text-[color:rgba(210,218,255,0.98)]"
+              className="docs-match rounded-micro bg-[color:var(--color-indigo-line-a22)] px-0.5 text-[color:var(--color-search-mark-text)]"
             >
               {seg.text}
             </mark>

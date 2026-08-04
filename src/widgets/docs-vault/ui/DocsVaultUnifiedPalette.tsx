@@ -85,7 +85,7 @@ function Highlight({
   return (
     <>
       {text.slice(0, hit.start)}
-      <mark className="rounded-micro bg-[color:var(--color-indigo-line-a22)] px-0.5 text-[color:rgba(210,218,255,0.98)]">
+      <mark className="rounded-micro bg-[color:var(--color-indigo-line-a22)] px-0.5 text-[color:var(--color-search-mark-text)]">
         {text.slice(hit.start, hit.end)}
       </mark>
       {text.slice(hit.end)}

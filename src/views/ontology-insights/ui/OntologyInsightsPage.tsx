@@ -975,7 +975,7 @@ export function OntologyInsightsPage() {
               title={
                 <>
                   {t("emptyTitleBefore")}
-                  <Link href={"/docs/"} className="text-[color:rgba(159,170,235,0.95)] underline">
+                  <Link href={"/docs/"} className="text-[color:var(--color-indigo-text-strong)] underline">
                     {t("emptyTitleLink")}
                   </Link>
                   {t("emptyTitleAfter")}

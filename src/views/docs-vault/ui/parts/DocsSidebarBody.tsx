@@ -695,7 +695,7 @@ export function DocsSidebarBody({
             className="group"
             open={activeTag !== null ? true : undefined}
           >
-            <summary className="flex cursor-pointer list-none items-center gap-2 px-3 py-2 text-label text-[color:var(--color-text-quaternary)] transition-colors hover:bg-[color:var(--color-overlay-1)] hover:text-[color:var(--color-text-secondary)]">
+            <summary className="flex list-none items-center gap-2 px-3 py-2 text-label text-[color:var(--color-text-quaternary)] transition-colors hover:bg-[color:var(--color-overlay-1)] hover:text-[color:var(--color-text-secondary)]">
               <Hash size={11} aria-hidden />
               <span className="font-medium">{t("tagsHeader", { count: tagEntries.length })}</span>
               <ChevronDown

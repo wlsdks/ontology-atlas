@@ -238,7 +238,7 @@ export function ProjectQuickEditPanel({
           role="dialog"
           aria-modal="true"
           aria-label={t("ariaDialog")}
-          className="absolute right-0 top-0 flex h-full w-full max-w-[30rem] flex-col border-l border-[color:var(--color-divider)] bg-[color:rgba(11,12,14,0.98)] shadow-[var(--shadow-elevation-dock-side)]"
+          className="absolute right-0 top-0 flex h-full w-full max-w-[30rem] flex-col border-l border-[color:var(--color-divider)] bg-[color:var(--color-surface-deep-a98)] shadow-[var(--shadow-elevation-dock-side)]"
         >
           <div className="flex items-start justify-between gap-4 border-b border-[color:var(--color-border-soft)] px-5 py-5">
             <div>

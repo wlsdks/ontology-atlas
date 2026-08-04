@@ -91,7 +91,13 @@ export function VaultOpenGuideSheet({
             aria-modal="true"
             aria-label={t("title")}
             data-testid="vault-guide-sheet"
-            className="flex w-full max-w-[420px] flex-col overflow-hidden rounded-sheet border border-[color:var(--color-divider)] bg-[color:var(--color-panel)] shadow-[var(--shadow-elevation-3)]"
+            // 열릴 때 이 컨테이너로 포커스를 옮긴다(스크린리더가 제목부터 읽게).
+            // 그 포커스는 **알리는 용도**이지 누를 수 있다는 표시가 아니므로 링을
+            // 지운다 — 안 지우면 브라우저 기본 포커스 링(시스템 하늘색)이 그려져,
+            // 앱 첫 화면에서 가장 먼저 보이는 모달 둘레에 인디고 아닌 색이 얹힌다
+            // (2026-08-04 감사 실측: 앱·웹 양쪽 재현. 게이트는
+            //  tests/e2e/dialog-focus-ring.spec.ts).
+            className="flex w-full max-w-[420px] flex-col overflow-hidden rounded-sheet border border-[color:var(--color-divider)] bg-[color:var(--color-panel)] shadow-[var(--shadow-elevation-3)] focus-visible:outline-none"
           >
             <header className="flex shrink-0 items-start justify-between gap-3 border-b border-[color:var(--color-border-soft)] px-5 py-4">
               <div>

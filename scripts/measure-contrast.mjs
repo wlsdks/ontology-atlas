@@ -26,15 +26,114 @@
 import { chromium } from "@playwright/test";
 import { rmSync } from "node:fs";
 
-import { judgeText } from "./lib/contrast.mjs";
+import { judgeText, judgeAdjacentMarks } from "./lib/contrast.mjs";
+
+/**
+ * 붙어 있는 데이터 마크(진행바 세그먼트 · 스택 막대 · 범례 스와치)를 채집한다.
+ *
+ * ## 왜 여기 붙나 (2026-08-04)
+ *
+ * `/design-audit` §3c 와 「도해」 자리 브리프는 **인접 마크 3:1**(WCAG 1.4.11)
+ * 을 판정 전 필수로 건다. 그런데 `judgeAdjacentMarks` 는 만들어진 이래
+ * `tests/contract/contrast.contract.test.ts` 의 **고정 색 두 쌍**에만 돌았고
+ * **실제 화면에는 한 번도 안 돌았다.** 계산기는 있는데 계기가 없었던 것이다 —
+ * 2026-07-26 에 1.14:1 짜리 인접 쌍을 놓친 그 구멍과 같은 모양이다.
+ *
+ * 판정은 하지 않는다(이 파일의 다른 부분과 같다). 여기서는 **무엇이 인접한
+ * 마크인지**를 화면에서 정하고 합성 전 색을 넘길 뿐이다: 같은 부모의 형제
+ * 중에서 ① 배경색이 있고 ② 자기 글자가 없고 ③ 가로로 **틈 없이 이어붙은**
+ * 것들. 트랙 색까지 함께 넘겨야 알파가 있는 세그먼트가 실제로 무엇 위에
+ * 얹히는지 맞는다.
+ */
+function collectAdjacentMarks() {
+  const out = [];
+  for (const parent of document.querySelectorAll("body *")) {
+    const kids = [...parent.children].filter((k) => {
+      const r = k.getBoundingClientRect();
+      const c = getComputedStyle(k);
+      if (r.width < 2 || r.height < 2 || r.height > 40) return false;
+      if (c.visibility === "hidden" || c.display === "none" || Number(c.opacity) < 0.05) return false;
+      if (c.backgroundColor === "rgba(0, 0, 0, 0)") return false;
+      return !(k.textContent || "").trim();
+    });
+    if (kids.length < 2) continue;
+    const track = getComputedStyle(parent).backgroundColor;
+    const segs = kids
+      .map((k) => ({ el: k, r: k.getBoundingClientRect(), bg: getComputedStyle(k).backgroundColor }))
+      .sort((x, y) => x.r.left - y.r.left);
+    for (let i = 1; i < segs.length; i++) {
+      if (segs[i - 1].bg === segs[i].bg) continue;
+      /**
+       * ⚠️ **틈이 있으면 인접이 아니다.**
+       *
+       * `design.md`: *"두 계열의 경계는 색이 아니라 **1px 틈**(트랙 색이 드러나는
+       * 간격)이 가른다"* — 그 틈이 바로 WCAG 1.4.11 이 요구하는 색-무관
+       * 구분자다. 처음 이 수집기를 붙였을 때 인접 판정을 «틈 2px 이하» 로
+       * 잡았더니, 도메인 용량 막대의 `gap-px`(정확히 1px)를 삼켜서 **헌장을
+       * 지키고 있는 16쌍을 전부 미달로 신고했다**(2026-08-04 실측). 계기가
+       * 처방과 반대로 말하면 멀쩡한 화면을 고치게 된다.
+       *
+       * 그래서 «맞닿은 것»만 인접으로 센다. 틈이 있는 쌍은 버리지 않고
+       * `separated` 로 세어 둔다 — 조용히 빠지면 «잰 것»과 «안 잰 것»이 다시
+       * 같은 초록이 된다.
+       */
+      const gap = segs[i].r.left - segs[i - 1].r.right;
+      if (gap >= 0.5) {
+        out.push({ separated: true, gapPx: +gap.toFixed(2) });
+        continue;
+      }
+      out.push({
+        a: segs[i - 1].bg,
+        b: segs[i].bg,
+        over: track === "rgba(0, 0, 0, 0)" ? "rgb(15,16,17)" : track,
+        selector:
+          parent.tagName.toLowerCase() +
+          (typeof parent.className === "string"
+            ? `.${parent.className.trim().split(/\s+/).slice(0, 3).join(".")}`
+            : ""),
+      });
+    }
+  }
+  return out;
+}
 
 const [, , maybeBase, ...maybeRoutes] = process.argv;
 const BASE = maybeBase?.startsWith("http") ? maybeBase : "http://localhost:4173";
 const ROUTES = (maybeBase?.startsWith("http") ? maybeRoutes : [maybeBase, ...maybeRoutes]).filter(
   Boolean,
 );
-/** 기본 스윕 — 사람이 실제로 오래 보는 표면들. */
-const DEFAULT_ROUTES = ["/ko", "/ko/topology", "/ko/docs", "/ko/ontology/studio", "/ko/projects"];
+/**
+ * 기본 스윕 — **사람이 도달할 수 있는 화면 전부**.
+ *
+ * 2026-08-04 감사 전까지 이 목록은 다섯 줄이었고, 빠진 여섯 화면 중에는
+ * `/ko/ontology/insights` — **데이터 마크가 가장 조밀한 화면** — 이 있었다.
+ * 재 보니 미달은 0이었지만 그건 통과가 아니라 **미측정**이었다. 목록이
+ * 「오래 보는 화면」이라는 주관으로 좁혀져 있으면, 안 잰 화면과 깨끗한 화면이
+ * 같은 초록으로 보인다. 라우트를 더하면 여기에도 더한다
+ * (게이트: tests/contract/contrast-sweep-coverage.contract.test.ts).
+ */
+export const DEFAULT_ROUTES = [
+  "/ko/",
+  "/ko/topology/",
+  "/ko/docs/",
+  "/ko/ontology/studio/",
+  "/ko/ontology/insights/",
+  "/ko/projects/",
+  "/ko/project/storefront/",
+  "/ko/project/storefront/edit/",
+  "/ko/project/new/",
+  "/ko/project/fallback/",
+  "/ko/download/",
+  "/ko/changelog/",
+  "/ko/guide/",
+  "/ko/guide/what-is-atlas/",
+  "/ko/git/",
+  // 404 는 **두 페이지**다 — 로케일이 붙은 것과 안 붙은 것. 2026-08-03 에
+  // AA 미달 4.42:1 이 숨어 있던 자리가 정확히 여기고, 그때 두 래칫 모두 이
+  // 자리를 한 번도 안 봤다. 하나만 넣으면 그 사고의 절반만 막는다.
+  "/ko/this-route-does-not-exist/",
+  "/this-route-does-not-exist/",
+];
 const VIEWPORT = { width: 1512, height: 900 };
 const PROFILE = `/tmp/atlas-contrast-${process.pid}`;
 
@@ -115,6 +214,9 @@ for (const route of ROUTES.length > 0 ? ROUTES : DEFAULT_ROUTES) {
   await page.goto(`${BASE}${route}?guides=off`, { waitUntil: "networkidle" });
   await page.waitForTimeout(2500);
   const samples = await page.evaluate(collectInPage);
+  const rawMarks = await page.evaluate(collectAdjacentMarks);
+  const marks = rawMarks.filter((m) => !m.separated).map((m) => ({ ...m, ...judgeAdjacentMarks(m) }));
+  const separated = rawMarks.filter((m) => m.separated);
   const judged = samples
     .map((s) => ({ ...s, ...judgeText(s) }))
     .filter((s) => s.ratio !== undefined);
@@ -124,6 +226,9 @@ for (const route of ROUTES.length > 0 ? ROUTES : DEFAULT_ROUTES) {
     failures: judged.filter((s) => !s.passes).sort((a, b) => a.ratio - b.ratio),
     /** 파싱 실패는 **통과가 아니라 미측정**이다 — 침묵시키면 계기가 낙관한다. */
     unmeasured: samples.length - judged.length,
+    marks,
+    separated,
+    markFailures: marks.filter((m) => !m.passes),
   });
 }
 
@@ -144,3 +249,22 @@ for (const r of report) {
   }
 }
 console.log(`\n  합계 미달 ${totalFail}건\n`);
+
+// ── 인접 데이터 마크 (WCAG 1.4.11 비텍스트 3:1)
+const markTotal = report.reduce((n, r) => n + r.marks.length, 0);
+const markFail = report.reduce((n, r) => n + r.markFailures.length, 0);
+const sepTotal = report.reduce((n, r) => n + r.separated.length, 0);
+console.log(
+  `  인접 데이터 마크 — WCAG 1.4.11 (3:1) · 맞닿은 쌍 ${markTotal} · 미달 ${markFail}` +
+    `  (1px 틈으로 이미 갈린 쌍 ${sepTotal} 은 색-무관 구분자가 있어 판정 대상 아님)\n`,
+);
+for (const r of report) {
+  if (r.marks.length === 0 && r.separated.length === 0) continue;
+  console.log(`  ${r.route.padEnd(22)} 맞닿음 ${String(r.marks.length).padStart(3)}  미달 ${String(r.markFailures.length).padStart(3)}  틈있음 ${String(r.separated.length).padStart(3)}`);
+  for (const m of r.markFailures) {
+    console.log(`      ${String(m.ratio).padStart(5)}:1 < 3   ${m.a} ↔ ${m.b}  on ${m.over}`);
+    console.log(`              ${m.selector}  ← 색-무관 구분자(심·라벨·패턴·순서)가 있어야 한다`);
+  }
+}
+if (markFail > 0) process.exitCode = 1;
+console.log("");
