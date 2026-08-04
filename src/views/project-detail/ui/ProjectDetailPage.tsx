@@ -496,7 +496,7 @@ export function ProjectDetailPage({
 
       {/* zone 1 — hero band: 글리프+타이틀+설명 + 음각 메트릭 스트립 + 정직한
           미니 도메인 지도(실카운트 비례) + topology/편집 액션. */}
-      <header className="mt-6 flex flex-col gap-6 rounded-[11px] border border-[color:var(--color-border-soft)] bg-[color:var(--color-panel)] p-[18px_20px] shadow-[inset_0_1px_0_var(--color-overlay-1)] lg:flex-row lg:items-stretch lg:gap-[30px] lg:p-[18px_26px]">
+      <header className="mt-6 flex flex-col gap-6 rounded-panel border border-[color:var(--color-border-soft)] bg-[color:var(--color-panel)] p-[18px_20px] shadow-[inset_0_1px_0_var(--color-overlay-1)] lg:flex-row lg:items-stretch lg:gap-[30px] lg:p-[18px_26px]">
         <div className="flex min-w-0 flex-1 flex-col">
           <div className="flex flex-wrap items-start gap-3.5 sm:flex-nowrap">
             <TopologyV2KindGlyph kind="project" size={30} className="mt-1 shrink-0" />
@@ -507,7 +507,7 @@ export function ProjectDetailPage({
                 editable={canManageProject}
                 onSave={(next) => saveProjectField("name", next)}
                 ariaLabel={t("inlineNameAria")}
-                className="text-[27px] leading-display-tight font-[650] tracking-[-0.015em] text-pretty text-[color:var(--color-text-primary)]"
+                className="text-display leading-display-tight font-[650] tracking-[-0.015em] text-pretty text-[color:var(--color-text-primary)]"
               />
               {/*
                 메타 행은 여기서 끝난다. 예전엔 설명이 이 점-행 **안으로**
@@ -515,7 +515,7 @@ export function ProjectDetailPage({
                 "답답하다" 는 인상의 절반이 그것이었다. 정의는 메타보다 중요하니
                 한 단계 위 톤(secondary)으로 독립 블록에 둔다.
               */}
-              <div className="mt-1.5 flex flex-wrap items-center gap-x-2 gap-y-1 text-[13px] text-[color:var(--color-text-tertiary)]">
+              <div className="mt-1.5 flex flex-wrap items-center gap-x-2 gap-y-1 text-body text-[color:var(--color-text-tertiary)]">
                 <span>{heroMeta}</span>
                 <span aria-hidden className="text-[color:var(--color-text-quaternary)]">
                   ·
@@ -552,7 +552,7 @@ export function ProjectDetailPage({
                   data-testid="project-detail-readonly-badge"
                   // flex-none 은 390px 에서 페이지 가로 overflow 를 만들었다
                   // (overflow-sweep 회귀) — 좁으면 배지 텍스트가 줄바꿈된다.
-                  className="inline-flex min-w-0 items-center gap-1.5 rounded-chip border border-[color:var(--color-border-soft)] bg-[color:var(--color-overlay-1)] px-2.5 py-1.5 font-mono text-[11px] leading-snug text-[color:var(--color-text-tertiary)]"
+                  className="inline-flex min-w-0 items-center gap-1.5 rounded-chip border border-[color:var(--color-border-soft)] bg-[color:var(--color-overlay-1)] px-2.5 py-1.5 font-mono text-label text-[color:var(--color-text-tertiary)]"
                 >
                   {t("readOnlyBadge")}
                 </span>
@@ -725,7 +725,7 @@ export function ProjectDetailPage({
           className="rounded-card border border-[color:var(--color-border-soft)] bg-[color:var(--color-panel)] p-[var(--card-pad)] shadow-[inset_0_1px_0_var(--color-overlay-1)] md:p-[16px_18px]"
         >
           <div className="mb-2.5 flex items-baseline gap-2">
-            <span className="text-[13px] font-[560] text-[color:var(--color-text-primary)]">
+            <span className="text-body-lg font-[560] text-[color:var(--color-text-primary)]">
               {t("bodyCardTitle")}
             </span>
             <span className="font-mono text-caption uppercase tracking-[0.12em] text-[color:var(--color-text-quaternary)]">
@@ -759,7 +759,7 @@ export function ProjectDetailPage({
           <section className="rounded-card border border-[color:var(--color-border-soft)] bg-[color:var(--color-panel)] p-[var(--card-pad)] shadow-[inset_0_1px_0_var(--color-overlay-1)] md:p-[16px_18px]">
             <div className="mb-2.5 flex items-baseline gap-2">
               <TopologyV2TraceMark containment={false} />
-              <span className="text-[13px] font-[560] text-[color:var(--color-text-primary)]">
+              <span className="text-body-lg font-[560] text-[color:var(--color-text-primary)]">
                 {t("connectedTitle")}
               </span>
               <span className="font-mono text-caption uppercase tracking-[0.12em] text-[color:var(--color-text-quaternary)]">
@@ -820,21 +820,21 @@ export function ProjectDetailPage({
               말하고, 코드는 보고 싶은 사람만 편다.
             */}
             <div className="mb-2">
-              <span className="text-[13px] font-[560] text-[color:var(--color-text-primary)]">
+              <span className="text-body-lg font-[560] text-[color:var(--color-text-primary)]">
                 {t("handoffTitle")}
               </span>
             </div>
-            <p className="mb-3 text-[12px] leading-body text-[color:var(--color-text-tertiary)]">
+            <p className="mb-3 text-body leading-body text-[color:var(--color-text-tertiary)]">
               {t("handoffDesc")}
             </p>
             <Button type="button" variant="outline" size="sm" onClick={handleCopyHandoff}>
               {handoffCopyLabel}
             </Button>
             <details className="mt-3">
-              <summary className="cursor-pointer select-none text-[12px] leading-body text-[color:var(--color-text-tertiary)] transition-colors hover:text-[color:var(--color-text-secondary)]">
+              <summary className="cursor-pointer select-none text-body leading-body text-[color:var(--color-text-tertiary)] transition-colors hover:text-[color:var(--color-text-secondary)]">
                 {t("handoffHumanCaption")}
               </summary>
-              <pre className="mt-2 overflow-x-auto font-mono text-[11.5px] leading-prose whitespace-pre-wrap text-[color:var(--color-text-quaternary)]">
+              <pre className="mt-2 overflow-x-auto font-mono text-body leading-prose whitespace-pre-wrap text-[color:var(--color-text-quaternary)]">
                 {handoffSnippet}
               </pre>
             </details>
@@ -843,7 +843,7 @@ export function ProjectDetailPage({
       </section>
 
       <footer className="mt-[var(--section-gap)] border-t border-[color:var(--color-overlay-2)] pt-6 pb-[var(--page-bottom-breath)]">
-        <p className="font-mono text-[10px] uppercase tracking-[0.1em] text-[color:var(--color-text-quaternary)]">
+        <p className="font-mono text-caption uppercase tracking-[0.1em] text-[color:var(--color-text-quaternary)]">
           {t("footerSummary", { slug: project.slug, date: formatDate(project.updatedAt) })}
         </p>
       </footer>
