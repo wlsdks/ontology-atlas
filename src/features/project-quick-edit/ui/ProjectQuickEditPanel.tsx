@@ -10,7 +10,7 @@ import {
   type ProjectFrontmatterPatch,
   useProjectMutations,
 } from "@/features/project-data-source";
-import { Button, Surface } from "@/shared/ui";
+import { Button, Surface, controlClass } from "@/shared/ui";
 
 interface Props {
   project: Project;
@@ -29,8 +29,16 @@ interface QuickEditValues {
 const FIELD_INPUT_CLASS =
   "mt-1.5 h-[var(--control-h-lg)] w-full rounded-chip border border-[color:var(--color-divider)] bg-[color:var(--color-overlay-1)] px-3 text-body text-[color:var(--color-text-primary)] outline-none transition-[border-color,box-shadow] placeholder:text-[color:var(--color-text-quaternary)] focus:border-[color:var(--color-indigo-accent)] focus:ring-2 focus:ring-[color:var(--color-indigo-a24)]";
 
-const TERTIARY_LINK_CLASS =
-  "text-label text-[color:var(--color-text-tertiary)] underline-offset-2 transition-colors hover:text-[color:var(--color-indigo-accent)] hover:underline";
+/*
+ * rest 규격이 link/md 와 바이트 동일(text-label · 3차 잉크)이라 값 층으로 옮겼다.
+ * 밑줄은 rest 가 아니라 hover 에만 있다 — 호버는 소비처 몫(값 층 규율)이라 className.
+ * min-h-6(24) 는 WCAG 2.5.8 바닥: 종전 16px 글줄 상자가 히트박스였다.
+ */
+const TERTIARY_LINK_CLASS = controlClass({
+  shape: "link",
+  className:
+    "touch-hit-expand underline-offset-2 hover:text-[color:var(--color-indigo-accent)] hover:underline",
+});
 
 /** 캐노니컬 폼 라벨 — 평범한 텍스트 라벨 + 선택 필드의 muted "(선택)" 힌트. */
 function FieldLabel({

@@ -17,6 +17,7 @@ import { useOntologyKindLabel } from "@/entities/ontology-class";
 import { formatDate } from "@/shared/lib/format-date";
 import { buildContainmentParents } from "@/shared/lib/ontology-tree";
 import { TopologyV2KindGlyph } from "@/shared/ui/topology-v2-kind-glyph";
+import { controlClass } from "@/shared/ui/control-class";
 import { HexMark } from "@/shared/ui/hex-mark";
 import { AppSettingsMenu } from "@/widgets/app-settings-menu";
 import { useNavRailSettingsSlot } from "@/widgets/app-nav-rail";
@@ -129,7 +130,12 @@ export function ProjectSelectorPage() {
           <Link
             href="/topology"
             data-testid="projects-back-to-map"
-            className="text-[color:var(--color-text-secondary)] transition-colors hover:text-[color:var(--color-text-primary)]"
+            className={controlClass({
+              shape: "link",
+              size: "lg",
+              tone: "secondary",
+              className: "touch-hit-expand hover:text-[color:var(--color-text-primary)]",
+            })}
           >
             {t("crumbBack")}
           </Link>

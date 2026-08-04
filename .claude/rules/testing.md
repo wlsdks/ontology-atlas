@@ -56,54 +56,56 @@ pnpm exec playwright test --update-snapshots        # baseline 재생성
 
 ## Focused-first 검증 원칙
 
-기본값은 전체 suite 가 아니라 변경 범위의 가장 작은 신뢰 가능한 검증이다. 먼저 `pnpm checks:changed` 또는 `pnpm checks:changed -- <path...>` 로 추천된 직접 테스트 / contract / integration subset 을 실행한다. 변경 파일 옆에 명확한 test 파일이 있으면 그 파일을 먼저 돌린다.
+기본은 전체 suite 를 돌리는 게 아니라, 내가 바꾼 범위를 믿을 수 있는 가장 작은 검증이다. 먼저 `pnpm checks:changed` 또는 `pnpm checks:changed -- <path...>` 를 돌려서 이 도구가 추천하는 테스트(그 파일의 직접 테스트 · contract · integration)를 실행한다. 바꾼 파일 옆에 짝이 되는 test 파일이 있으면 그 파일부터 돌린다.
 
-전체 검증은 다음 조건에서만 escalation 한다:
+아래 경우에만 전체 검증까지 범위를 넓힌다:
 
-- `pnpm exec tsc --noEmit` — shared 타입, public API, route boundary, Next/TS config, 광범위 refactor 변경.
-- `pnpm lint` — ESLint config, import boundary, 다수 파일의 구조 이동, lint rule 에 닿는 변경.
-- `pnpm test:run` — shared primitive / global provider / test setup 변경, focused mapping 이 없지만 영향 범위가 넓은 변경.
-- `pnpm exec playwright test <spec>` — route, navigation, browser workflow, visual interaction 변경. 전체 Playwright 는 여러 route/workflow 를 동시에 건드릴 때만.
-- `pnpm build` / desktop packaging checks — static export, Next config, bundle/release/download/macOS packaging surface 변경.
+- `pnpm exec tsc --noEmit` — shared 타입, public API, 라우트 경계, Next/TS 설정을 바꿨거나, 여러 곳에 걸친 리팩터를 했을 때.
+- `pnpm lint` — ESLint 설정, import 경계, 여러 파일을 옮기는 구조 변경, lint 룰에 닿는 변경.
+- `pnpm test:run` — shared primitive · 전역 provider · 테스트 설정을 바꿨을 때, 또는 짝이 되는 테스트는 없는데 영향 범위가 넓을 때.
+- `pnpm exec playwright test <spec>` — 라우트, 화면 이동, 브라우저 workflow, 눈에 보이는 상호작용을 바꿨을 때. Playwright 전체는 여러 라우트/workflow 를 동시에 건드릴 때만.
+- `pnpm build` / 데스크톱 패키징 검사 — 정적 export, Next 설정, 번들 · 릴리스 · 다운로드 · macOS 패키징을 건드렸을 때.
 
-최종 보고에는 실행한 검증과 왜 그 범위가 충분한지 짧게 남긴다. "습관적으로 전체 test" 는 하지 않는다.
+최종 보고에는 무엇을 돌렸고 왜 그 범위면 충분한지 짧게 적는다. 습관적으로 전체 테스트를 돌리지는 않는다.
 
-## 표면 이원 검증 (2026-07-27 — 구 웹↔앱 왕복 검증 폐지)
+## 웹과 앱은 따로 검증한다 (2026-07-27 — 옛 웹↔앱 왕복 검증 폐지)
 
-웹과 앱은 더 이상 같은 화면을 약속하지 않는다(`.claude/rules/surfaces.md`).
-그래서 **한쪽에서 간 길을 다른 쪽에서 재현하는 왕복 검증은 하지 않는다** —
-동등성이 계약이 아니게 됐으므로 검증할 대상이 없다. 대신 셋으로 나뉜다:
+웹과 앱은 더 이상 같은 화면을 보여주겠다고 약속하지 않는다
+(`.claude/rules/surfaces.md`). 그래서 **한쪽에서 확인한 길을 다른 쪽에서 똑같이
+따라가 보는 왕복 검증은 하지 않는다** — 두 쪽이 같아야 한다는 약속 자체가
+없어졌으니 확인할 것이 없다. 대신 셋으로 나뉜다:
 
-| 대상 | 증명 |
+| 대상 | 무엇으로 증명하나 |
 |---|---|
-| 공유 표면(지도·문서함·공방·인사이트·프로젝트) | 웹 검증 = 앱 통과 간주 (같은 번들). 폰트 래스터·스크롤·창 크롬을 건드리면 설치 앱 실측 추가 |
-| 데스크톱 능력(키체인·git·업데이터·절대 경로) | 설치 앱 실측만 인정 — 브라우저 증명은 증명이 아니다 |
-| 웹 표면 자체 | `pnpm exec playwright test tests/e2e/web-surface-smoke.spec.ts` 3종 |
+| 웹과 앱이 함께 쓰는 화면(지도·문서함·공방·인사이트·프로젝트) | 같은 번들을 쓰므로 웹에서 확인했으면 앱도 통과로 본다. 단 폰트가 그려지는 모양·스크롤·창 테두리를 건드렸으면 설치한 앱에서 한 번 더 재 본다 |
+| 데스크톱에서만 되는 것(키체인·git·업데이터·절대 경로) | 설치한 앱에서 잰 것만 인정한다 — 브라우저에서 됐다는 것은 증명이 아니다 |
+| 웹 화면 자체 | `pnpm exec playwright test tests/e2e/web-surface-smoke.spec.ts` 3종 |
 
-웹은 무인 표면이라 스모크가 유일한 눈이다. **데스크톱 브리지
-(`src/shared/lib/tauri-*.ts` · `src-tauri/**`)를 건드렸으면 앱만 확인하고
-넘어가지 않는다** — `pnpm checks:changed` 가 이 세트에서 웹 스모크를 함께
-권하고, CI 는 `runtime` 변경만으로도 스모크를 돌린다.
+웹에는 아무도 붙어서 지켜보지 않으므로, 이 스모크 테스트가 웹이 살아 있는지
+확인하는 유일한 수단이다. **데스크톱 브리지(`src/shared/lib/tauri-*.ts` ·
+`src-tauri/**`)를 건드렸으면 앱만 확인하고 넘어가지 않는다** —
+`pnpm checks:changed` 가 이 파일들에 대해 웹 스모크도 같이 권하고, CI 는
+`runtime` 이 바뀌기만 해도 스모크를 돌린다.
 
 ## 회귀 차단
 
-- 회귀 fix 한 commit 에는 **그 회귀를 잡는 단위 test** 를 같이 추가한다.
-- E2E 는 시각 회귀 (visual regression) 까지 다룰 때만 baseline 갱신 — 운영 환경에서 한 번 캡처 후 commit.
-- **UI 표면/렌더러를 삭제하면 같은 PR 에서 e2e spec 도 함께 스윕한다.** Playwright 가 CI 에 안 물려 있으면 삭제된 testid/heading 을 기다리는 spec 이 조용히 썩는다 (2026-07 e2e 정리 — 139개 중 108개가 이미 삭제된 Sigma 렌더러/구 `/ontology` 트리 페이지를 겨냥해 실패, 제품 결함 0건).
+- 회귀를 고친 commit 에는 **그 회귀를 잡아내는 단위 test** 를 같이 넣는다.
+- E2E 는 화면 그림이 바뀌었는지까지 볼 때만 baseline 을 갱신한다 — 운영 환경에서 한 번 캡처한 뒤 commit.
+- **화면이나 렌더러를 삭제하면 같은 PR 에서 e2e spec 도 같이 훑어 지운다.** Playwright 가 CI 에 안 걸려 있으면, 이미 삭제된 testid 나 제목을 기다리는 spec 이 아무 신호 없이 남아 썩는다 (2026-07 e2e 정리 — 139개 중 108개가 이미 삭제된 Sigma 렌더러와 옛 `/ontology` 트리 페이지를 겨냥해 실패하고 있었고, 그중 실제 제품 결함은 0건이었다).
 
 ## Cross-package contract test (R11 패턴)
 
-**언제 쓰나**: `mcp/` 같은 *별도 npm package* 와 `src/` 의 모듈이 *같은 동작* 을 보장해야 할 때. mcp 가 publish 의도라 물리적 단일 모듈 통합 불가능 → 같은 fixture 매트릭스 + 양 측 import 후 동일 결과 강제.
+**언제 쓰나**: `mcp/` 같은 *별도 package* 와 `src/` 의 모듈이 *똑같이 동작해야* 할 때. mcp 는 따로 배포하는 것이라 하나의 모듈로 합칠 수가 없다. 그래서 같은 입력/기댓값 표를 두고 양쪽에서 각각 import 해 돌린 뒤, 결과가 같은지 강제한다.
 
 **현재 적용 사례**:
 - `tests/contract/parse-frontmatter.contract.test.ts` — `src/shared/lib` (런타임) · `mcp/src/parser.mjs` · `scripts/lib` (빌드+CLI) **3-way** parser drift 차단. 12 fixture × 3 parser = 36 case.
 - `tests/contract/validate-vault-document.contract.test.ts` — `src/shared/lib` (런타임+UI) · `mcp/src/validate.mjs` (AI agent surface) **2-way** validator drift 차단. 8 fixture × 2 validator = 16 case.
 
 **패턴**:
-1. `tests/fixtures/<topic>-cases.mjs` — input/expected 매트릭스. 단일 진실원.
-2. `tests/contract/<topic>.contract.test.ts` — 같은 fixture 를 양 측 함수에 적용해 동일 결과 비교. 정확한 message phrasing 차이는 허용, 핵심 contract (codes/structure) 는 strict.
-3. `vitest.config.ts` 의 `include` 에 `tests/contract/**/*.test.ts` 포함 (이미 등록).
+1. `tests/fixtures/<topic>-cases.mjs` — 입력과 기댓값의 표. 이 표 하나만 진실원이다.
+2. `tests/contract/<topic>.contract.test.ts` — 같은 표를 양쪽 함수에 넣고 결과가 같은지 비교한다. 에러 메시지의 문장이 서로 다른 것은 봐주고, 핵심 계약(에러 코드와 자료 구조)은 정확히 같아야 한다.
+3. `vitest.config.ts` 의 `include` 에 `tests/contract/**/*.test.ts` 가 들어 있다 (이미 등록됨).
 
 **원칙**:
-- 한 쪽 코드 추가/변경/제거 시 contract test 가 즉시 차단 → 의도적 contract 변경이면 fixture 도 같이 갱신, 의도 안 했으면 drift 회귀.
-- 관련 파일 수정 시 contract test 도 함께 review.
+- 한쪽 코드를 더하거나 고치거나 지우면 contract test 가 바로 막는다. 계약을 일부러 바꾼 것이면 표도 같이 고치고, 그럴 의도가 없었다면 그건 양쪽이 어긋난 회귀다.
+- 관련 파일을 고칠 때는 contract test 도 같이 살펴본다.

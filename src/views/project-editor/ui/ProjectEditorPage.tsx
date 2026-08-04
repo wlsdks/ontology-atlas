@@ -19,7 +19,7 @@ import {
   type ProjectInput,
 } from "@/entities/project";
 import { useDocumentTitle } from "@/shared/lib/use-document-title";
-import { useToast } from "@/shared/ui";
+import { controlClass, useToast } from "@/shared/ui";
 
 interface Props {
   mode: "create" | "edit";
@@ -260,7 +260,12 @@ function EditorContent({
           href={safeReturnTo}
           data-testid="project-editor-back-link"
           onClick={(event) => handleNavigateWithGuard(event, safeReturnTo)}
-          className="inline-flex items-center gap-1.5 break-keep text-body text-[color:var(--color-text-tertiary)] transition-colors hover:text-[color:var(--color-text-primary)]"
+          className={controlClass({
+            shape: "link",
+            size: "lg",
+            className:
+              "touch-hit-expand gap-1.5 break-keep hover:text-[color:var(--color-text-primary)]",
+          })}
         >
           <ArrowLeft size={14} />
           {safeReturnLabel}
