@@ -2408,6 +2408,61 @@ Tailwind v4 `--leading-*` 네임스페이스가 `leading-<step>` 유틸리티를
 원소의 클래스 전체가 필요한데 `cn()` 인자로 쪼개지면 AST 셀렉터 하나에 안
 담기기 때문이다.
 
+### 콘텐츠 아이콘 램프 — 3단 (2026-08-04 체계석)
+
+본문·라벨 옆에 앉는 **콘텐츠 아이콘 글리프**(lucide)의 크기 어휘. 정본 값은
+`app/globals.css` 의 `--icon-*`, prop 채널용 JS 거울은
+`src/shared/ui/icon-size.ts` 의 `ICON_SIZE`(MOTION 거울과 같은 구조 — lucide 의
+`size={N}` 숫자 prop 은 `var()` 를 못 읽는다).
+
+| 단 | 토큰 / 거울 | px | 옆에 앉는 타입 | 용도 |
+|---|---|---:|---|---|
+| sm | `--icon-sm` / `ICON_SIZE.sm` | 12 | `text-label`(11) · `text-body`(12.5) | **기본.** 행·칩·버튼 속 글리프 (실측 최빈 77곳) |
+| md | `--icon-md` / `ICON_SIZE.md` | 14 | `text-body-lg`(14) | 강조 본문·부제 옆 |
+| lg | `--icon-lg` / `ICON_SIZE.lg` | 16 | `text-title`(16) | 제목 옆 · 홀로 서는 아이콘 |
+
+**왜 이 램프가 생겼나.** 2026-08-04 실사용 시험(이 시스템으로 새 화면을 처음부터
+지은 첫 시도)이 구멍을 실측했다: 콘텐츠 아이콘 전수 **167 콜사이트가 px 값
+9종**(10·11·12·13·14·15·16·17 + 무지정 24)으로 갈라져 있었고, 같은 파일 안에
+4값이 섞인 표면이 둘이었다(문서함 팔레트 10/11/12/14 · 의존 피커 10/11/12/13) —
+역할 분화가 아니라 드리프트다. 소비 채널이 className 이 아니라 **JSX 숫자
+prop**(`size={N}`)이라 값 lint 의 사정거리 밖이었다(framer duration 이 갈라졌던
+그 병). 시험자는 형제 컴포넌트를 베끼며 *"아무것도 나에게 다른 값을 알려주지
+않았다"* 고 적었다.
+
+**단은 실측 최빈 + 타입 짝으로 골랐다.** 새 값 0 — 셋 다 오늘 화면의 지배값이라
+등재 자체는 픽셀을 한 개도 안 움직인다. 타입 짝 원칙의 출처는 Carbon(원문 확인
+2026-08-04, [Icons usage](https://carbondesignsystem.com/elements/icons/usage/)):
+*"16px and 20px icons are optimized to feel balanced when paired with 14px and
+16px IBM Plex"* — 아이콘 단은 독립 눈금이 아니라 **타입 크기와 짝**으로 서고,
+*"Be sure icon size is consistent throughout your product."* 하한의 출처는
+Fluent 2(원문 확인, [Iconography](https://fluent2.microsoft.design/iconography)):
+*"Smaller icons can give information or reinforce an idea, but should not be
+used for interaction"* (12px 은 정보 전달용 하한). Material 3 · Apple HIG(SF
+Symbols) · Polaris · Primer 는 본문이 JS 렌더 전용이라 원문 확인 불가 —
+「시스템을 늘리는 규칙」 0번의 선례(2026-08-03 M3/Spectrum)와 같은 처분으로,
+그 넷을 근거로 대는 문장을 넣지 않는다.
+
+**사정거리 — 콘텐츠 아이콘뿐이다.** 크롬·레일 아이콘은 각자의 표면 계약이
+계속 소유한다: `--topology-chrome-icon-size`(12) · `--chrome-icon`(16) ·
+`--app-nav-rail-icon-size`(20, 로고만 26 — 스케일 고정 계약). 값이 겹치는 것은
+같은 타입 짝의 같은 답이지만, 크롬 밀도 결정은 독립적으로 움직여야 하므로 묶지
+않는다.
+
+**게이트 — lint 가 아니라 래칫이다**
+(`tests/contract/icon-size-ramp.contract.test.ts`): ① CSS ↔ JS 거울 일치
+② 램프 밖 크기 리터럴(`size={N}` prop + `size-N`/`h-N w-N` class)의 파일별
+장부 — **새 파일은 첫날부터 0**, 기존 부채 64건/17파일은 내려가기만 ③ 무지정
+(기본 24px 렌더) 3건/2파일 래칫 ④ 합성 프로브 + 공회전 방지 분모. lint 로 안
+건 이유: 부채 64건의 치환이 곧 ±1~2px 렌더 변경이라 자리마다 디자인 판정이
+필요하고(래칫 창립 판단), 아이콘 전용 예외 블록은 flat config 다중 블록 함정
+때문에 그 파일들의 램프 셀렉터까지 교체해 버린다.
+
+**부채 상환은 자리별 before→after 표를 갖는 디자인 패스다.** 10·11(44곳)의
+목적지가 sm(12)인지 — 마이크로 단(10 또는 11)이 따로 필요한지 — 는 화면 실측
+후 판정한다(모노 명령 태그 tracking 확정과 같은 대기열). 그 전까지 이 램프가
+보장하는 것은 하나다: **새로 쓰는 아이콘은 9종을 10종으로 만들지 않는다.**
+
 ### Radius ramp — 5단 (일반 표면)
 
 Tailwind v4 `--radius-*` 네임스페이스가 `rounded-<step>` 를 생성한다.
@@ -2556,6 +2611,46 @@ sheet 금지**(공방 진입 카드 16 → panel, 드로어 히어로 20 → pan
 스텝만. 남아 있는 arbitrary px 패딩 27건은 전수 분류 결과 3·11·18px 를 빼면
 전부 1~2회짜리 **광학 보정**이라, 램프에 스냅시키면 오히려 정렬이 깨진다 —
 그래서 패딩에는 lint 룰을 걸지 않는다.
+
+### 패널 폭·측정폭 — 램프를 두지 않는다 (2026-08-04 체계석)
+
+폭에는 공유 단이 **없고, 그것이 규격이다.** 이 저장소의 폭은 전부 **유도값**이다
+— 내용 제약이나 기하에서 계산된 값이지, 눈금에서 고른 값이 아니다:
+
+| 토큰 | 값 | 유도 근거 |
+|---|---|---|
+| `--git-setup-measure` | 520px | 단일 과업 기둥 (산문 측정폭 재사용처) |
+| `--git-evidence-min` | 600px | 11px mono 80칼럼 ≈ 528 + gutter + padding |
+| `--git-single-measure` | 920px | 증거 열 부재 시 단일 기둥 |
+| `--settings-content-measure` | 658px | 시트 880 − 보더 2 − LNB 180 − p-5 40 (계약 테스트가 유도식을 지킨다) |
+| `--agent-panel-width` | `clamp(320px, 26vw, 420px)` | 뷰포트 함수 |
+| `--topology-v2-panel-width` | `min(352px, calc(100vw − 28px))` | 뷰포트 함수 |
+| `--docs-list-width` | 280px | 문서함 목록 레일 |
+
+고정 단 램프는 이것들을 **원리적으로 표현할 수 없다** — `clamp()`/`min()` 은
+눈금이 아니고(컨트롤 래칫의 `chrome-token` 등재 사유와 같은 논리), 658 을
+「640 단」으로 스냅하면 유도가 끊겨 시트 기하가 바뀔 때 따라오지 못한다.
+업계도 같다(원문 확인 2026-08-04, [Carbon 2x Grid](https://carbondesignsystem.com/elements/2x-grid/overview/)):
+*"Boxes are sized by applying a sizing scale based on either fixed mini units
+or fluid column widths"* — 폭은 램프 스텝이 아니라 그리드·내용에서 **파생**된다.
+
+**새 표면의 폭이 필요할 때 — 이 경로는 소집·원장이 필요 없다:**
+
+1. 위 표에서 같은 성격의 측정폭을 먼저 찾는다(산문이면 `--git-setup-measure`
+   재사용 선례).
+2. 없으면 **표면 전용 토큰**을 유도식 주석과 함께 그 표면의 토큰 블록에
+   신설한다. ⚠️ 이것은 「체계」 소집 대상도 원장 대상도 **아니다** —
+   `design.md` 의 소집 트리거와 `pnpm decisions:check` 의 센서스는 **램프
+   토큰만** 본다(`scripts/lib/design-spec-census.mjs` `RAMP_TOKEN_PATTERN`,
+   표면 전용 토큰은 명시 제외). 2026-08-04 실사용 시험이 *"게이트가 램프 한
+   줄보다 `w-96` 을 싸게 만든다"* 고 관측했는데, 그 비용 모델은 **사실
+   오류였다** — 표면 토큰 경로는 처음부터 자유였고, 그것을 아는 사람이
+   없었던 것이 진짜 구멍이라 이 절이 생겼다.
+3. 일회성 `max-w-*` 는 광학 보정과 같은 지위다 — 패딩처럼 강제하지 않는다.
+
+**폭 «램프»를 만들려면** 그때는 램프 등재라 「체계」 소집 + 원장이다. 반증
+관측: 같은 값의 표면 폭 토큰이 셋 이상 **유도 없이** 반복되면(눈금 수요의
+증거) 이 판정을 재심한다.
 
 ### 박스별 규격 표
 
