@@ -119,132 +119,132 @@ describe('VaultAgentSetupPanel', () => {
     const localVault = renderPanel();
 
     expect(
-      screen.getByRole('region', { name: 'AI 에이전트 설정 상태' }),
+      screen.getByRole('region', { name: '내 에이전트 연결' }),
     ).toBeInTheDocument();
     // 같은 사실을 세 번 말하던 앰버 배지는 사라졌다 (2026-08-02 디자인 카운슬
     // S2) — 수를 말하는 줄이 바로 아래에 그대로 있고, 그것이 유일한 진술이다.
     expect(screen.queryByText('누락')).toBeNull();
-    expect(screen.getByText('설정 파일 1/3개 준비됨')).toBeInTheDocument();
-    expect(screen.getByText('다음: .mcp.json 만들기')).toBeInTheDocument();
+    expect(screen.getByText('연결 파일 1/3개 준비됨')).toBeInTheDocument();
+    expect(screen.getByText('· 다음: .mcp.json 만들기')).toBeInTheDocument();
     expect(
-      screen.getByText('vault 폴더 기준 설정 · 다른 codebase root는 절대경로 연결 필요'),
+      screen.getByText('이 폴더 기준으로 설정돼요 · 다른 코드 폴더에서 열려면 절대경로가 필요해요'),
     ).toBeInTheDocument();
-    expect(screen.getByText('외부 에이전트 연결')).toBeInTheDocument();
+    expect(screen.getByText('밖의 도구를 잇는 자리예요')).toBeInTheDocument();
     expect(
       screen.getByText(
-        'Ontology Atlas 안에서 Claude Code, Codex, Cursor 채팅을 직접 여는 흐름이 아닙니다. 로컬 MCP 설정, 재시작 안내, 검증 gate를 준비해 각 에이전트가 자기 앱이나 터미널에서 같은 vault를 읽고 쓰게 합니다.',
+        'Ontology Atlas 안에서 Claude Code·Codex·Cursor 대화를 여는 게 아니에요. 연결 파일과 다시 켜는 안내, 확인 방법을 준비해 두면 각 도구가 자기 앱이나 터미널에서 이 폴더를 읽고 씁니다.',
       ),
     ).toBeInTheDocument();
-    expect(screen.getByText('설정 흐름 보기')).toBeInTheDocument();
+    expect(screen.getByText('더 확인하려면')).toBeInTheDocument();
     expect(
-      screen.getByRole('list', { name: 'AI 에이전트 설정 다음 단계' }),
+      screen.getByRole('list', { name: '더 확인할 것' }),
     ).not.toBeVisible();
 
-    fireEvent.click(screen.getByText('설정 흐름 보기'));
+    fireEvent.click(screen.getByText('더 확인하려면'));
 
     expect(
-      screen.getByRole('list', { name: 'AI 에이전트 설정 다음 단계' }),
+      screen.getByRole('list', { name: '더 확인할 것' }),
     ).toBeVisible();
+    // 앞 셋(설정 파일 · 다시 켜기 · 연결 확인)은 **3단계로 승격**됐다 — 여기
+    // 남는 것은 그 뒤에 오는 셋뿐이다. 번호 배지가 네 벌이던 화면의 정리다.
     expect(
-      screen.getByText('이 vault 안의 MCP / Codex 설정 파일을 만들거나 점검합니다.'),
+      screen.getByText('고치기 전에 확인 명령을 돌려 「되나」와 「빠른가」를 따로 봅니다.'),
     ).toBeInTheDocument();
     expect(
-      screen.getByText('Claude Code, Cursor, Codex를 vault 폴더 또는 codebase root에서 다시 시작합니다.'),
+      screen.getByText('에이전트를 연 폴더에서 mcp-verify 를 돌려 도구 33개가 잡히는지 봅니다.'),
     ).toBeInTheDocument();
     expect(
-      screen.getByText('Claude Code는 /mcp, Codex는 codex mcp list로 연결 상태를 확인합니다.'),
+      screen.getByText('처음 고치기 전에 폴더 요약(workspace-brief · agent-brief)을 먼저 읽습니다.'),
     ).toBeInTheDocument();
+    // 승격된 셋은 사라진 게 아니라 위로 올라갔다 — 3단계가 이름으로 실재한다.
+    expect(screen.getByTestId('agent-setup-step-1')).toBeInTheDocument();
+    expect(screen.getByTestId('agent-setup-step-2')).toBeInTheDocument();
+    expect(screen.getByTestId('agent-setup-step-3')).toBeInTheDocument();
     expect(
-      screen.getByText('수정 전에 JSON gate를 실행하고 ok와 performanceOk를 따로 확인합니다.'),
+      screen.getByLabelText('지금 확인된 것'),
     ).toBeInTheDocument();
+    expect(screen.getByText('폴더')).toBeInTheDocument();
+    expect(screen.getByText('이 폴더에서 문서 1개를 읽었어요')).toBeInTheDocument();
+    expect(screen.getByText('상태')).toBeInTheDocument();
+    expect(screen.getByText('아직 검사 결과가 없어요')).toBeInTheDocument();
+    // 「연결 파일 {ready}/{total}」 행은 뺐다 — 머리 요약이 같은 수를 항상 말한다.
+    expect(screen.getByText('여는 자리')).toBeInTheDocument();
     expect(
-      screen.getByText('에이전트 root에서 mcp-verify를 실행해 finalize_project_meaning 포함 로컬 33개 tool 연결을 증명합니다.'),
+      screen.getByText('다른 코드 폴더에서 열기 전에 연결 설정을 복사하세요'),
     ).toBeInTheDocument();
-    expect(
-      screen.getByText('첫 ontology write 전에 workspace-brief와 agent-brief를 읽습니다.'),
-    ).toBeInTheDocument();
-    expect(
-      screen.getByLabelText('AI 에이전트 설정 점검 증거'),
-    ).toBeInTheDocument();
-    expect(screen.getByText('vault')).toBeInTheDocument();
-    expect(screen.getByText('이 로컬 vault에서 문서 1개 로드됨')).toBeInTheDocument();
-    expect(screen.getByText('health')).toBeInTheDocument();
-    expect(screen.getByText('이 패널에 validation 결과가 아직 없습니다')).toBeInTheDocument();
-    expect(screen.getByText('configs')).toBeInTheDocument();
-    expect(screen.getByText('agent root')).toBeInTheDocument();
-    expect(
-      screen.getByText('다른 codebase root에서 Claude Code나 Codex를 열기 전 연결 설정을 복사'),
-    ).toBeInTheDocument();
-    expect(screen.getByText('json gate')).toBeInTheDocument();
-    expect(screen.getByText('수정 전 에이전트 root에서 JSON gate를 복사해 실행')).toBeInTheDocument();
-    expect(screen.getByLabelText('첫 연결 증거 계약')).toBeInTheDocument();
-    expect(screen.getByText('config_state')).toBeInTheDocument();
+    expect(screen.getByText('확인 명령')).toBeInTheDocument();
+    expect(screen.getByText('자체 점검')).toBeInTheDocument();
+    expect(screen.getByText('고치기 전에 아래 명령을 복사해 실행하세요')).toBeInTheDocument();
+    expect(screen.getByLabelText('첫 연결에서 확인되는 것')).toBeInTheDocument();
+    // 「연결 파일 상태」는 두 자리에 있다 — 접기의 묶음 제목과 첫 연결 증거의
+    // 항목 이름. 둘 다 같은 것을 가리키므로 존재만 본다.
+    expect(screen.getAllByText('연결 파일 상태').length).toBeGreaterThan(0);
     expect(
       screen.getByText(
-        'agent-setup --json 으로 root별 Claude Code / Cursor / Codex 설정 준비 상태를 repair 전에 확인합니다.',
+        'agent-setup --json 이 고치기 전에 도구별 연결 파일이 준비됐는지 알려줘요.',
       ),
     ).toBeInTheDocument();
-    expect(screen.getByText('mcp_verify')).toBeInTheDocument();
+    expect(screen.getByText('서버 연결')).toBeInTheDocument();
     expect(
-      screen.getByText('mcp-verify 로 local MCP server boot, finalize_project_meaning 포함 33개 tool 목록, target vault 읽기를 증명합니다.'),
+      screen.getByText('mcp-verify 가 로컬 서버를 띄우고 도구 33개를 세고, 이 폴더를 실제로 읽어 봅니다.'),
     ).toBeInTheDocument();
-    expect(screen.getByText('json_gate')).toBeInTheDocument();
+    expect(screen.getByText('확인 명령')).toBeInTheDocument();
     expect(
-      screen.getByText('agent-brief --verify-fallbacks --json 이 수정 전 ok와 performanceOk를 보고합니다.'),
+      screen.getByText('agent-brief --verify-fallbacks --json 이 고치기 전에 「되나」와 「빠른가」를 알려줘요.'),
     ).toBeInTheDocument();
-    expect(screen.getByText('graph_briefs')).toBeInTheDocument();
+    expect(screen.getByText('폴더 요약')).toBeInTheDocument();
     expect(
-      screen.getByText('workspace-brief 와 agent-brief --graph-db-pack 이 같은 local vault 를 설명합니다.'),
-    ).toBeInTheDocument();
-    expect(
-      screen.getByLabelText('AI 에이전트 사용 모드 선택 기준'),
-    ).toBeInTheDocument();
-    expect(screen.getByText('CLI만 사용')).toBeInTheDocument();
-    expect(screen.getByText('MCP 연결')).toBeInTheDocument();
-    expect(screen.getByText('Graph DB pack')).toBeInTheDocument();
-    expect(screen.getByText('Setup gate')).toBeInTheDocument();
-    expect(
-      screen.getByText('Claude Code, Codex, Cursor가 finalize_project_meaning 포함 33개 tool을 직접 호출하고 구조화된 오류 복구와 write guardrail을 받습니다.'),
+      screen.getByText('workspace-brief 와 agent-brief --graph-db-pack 이 같은 폴더를 각각 설명해요.'),
     ).toBeInTheDocument();
     expect(
-      screen.getByLabelText('MCP verify 명령 미리보기'),
+      screen.getByLabelText('쓰는 방식'),
+    ).toBeInTheDocument();
+    expect(screen.getByText('터미널만')).toBeInTheDocument();
+    expect(screen.getByText('도구에 연결')).toBeInTheDocument();
+    expect(screen.getByText('그래프 묶음')).toBeInTheDocument();
+    expect(screen.getByText('먼저 확인')).toBeInTheDocument();
+    expect(
+      screen.getByText('Claude Code·Codex·Cursor 가 도구 33개를 직접 부르고, 고칠 때 안전장치를 받아요.'),
+    ).toBeInTheDocument();
+    expect(
+      screen.getByLabelText('서버 연결 확인 명령 미리보기'),
     ).toHaveTextContent('node $ATLAS/cli/src/index.mjs mcp-verify . --timeout-ms 15000');
     expect(
-      screen.getByText('설정이 애매하거나 codebase root에서 에이전트를 열었을 때 JSON readiness와 performanceOk를 먼저 확인합니다.'),
+      screen.getByText('설정이 애매하거나 다른 코드 폴더에서 열었을 때, 고치기 전에 「되나」와 「빠른가」를 먼저 봐요.'),
     ).toBeInTheDocument();
     expect(
-      screen.getByLabelText('자동화 JSON gate 결과 해석'),
+      screen.getByLabelText('확인 명령 결과 읽는 법'),
     ).toBeInTheDocument();
-    expect(screen.getByText('ok=false')).toBeInTheDocument();
-    expect(screen.getByText('perf=false')).toBeInTheDocument();
-    expect(screen.getByText('ready')).toBeInTheDocument();
-    expect(screen.getByText('코드 변경 후')).toBeInTheDocument();
+    expect(screen.getByText('안 됨')).toBeInTheDocument();
+    expect(screen.getByText('느림')).toBeInTheDocument();
+    expect(screen.getByText('준비됨')).toBeInTheDocument();
+    expect(screen.getByText('코드를 고친 뒤')).toBeInTheDocument();
     expect(
       screen.getByText(
-        'non-trivial 변경이 domain, capability, element, relation을 도입하거나 이름을 바꾸면 끝내기 전에 docs/ontology를 sync합니다. 오타, 주석, style-only, lint config, fixture-only 변경은 건너뜁니다.',
+        '도메인·역량·요소·관계가 새로 생기거나 이름이 바뀌었으면 끝내기 전에 이 폴더를 맞춰 주세요. 오타·주석·서식·설정·픽스처만 바뀐 변경은 건너뜁니다.',
       ),
     ).toBeInTheDocument();
     expect(
-      screen.getByRole('button', { name: 'sync gate 복사' }),
+      screen.getByRole('button', { name: '맞추기 절차 복사' }),
     ).toBeInTheDocument();
     expect(
-      screen.getByRole('button', { name: '설정 상태 확인 명령 복사' }),
+      screen.getByRole('button', { name: '상태 확인 명령 복사' }),
     ).toBeInTheDocument();
-    expect(screen.getByLabelText('AI 에이전트 root 실행 계약')).toBeInTheDocument();
-    expect(screen.getByText('vault folder')).toBeInTheDocument();
+    expect(screen.getByLabelText('어느 폴더에서 여느냐')).toBeInTheDocument();
+    expect(screen.getByText('이 폴더에서')).toBeInTheDocument();
     expect(
-      screen.getByText('이 vault 폴더 자체를 에이전트 root로 열면 verify와 graph brief 명령은 `.`을 vault로 사용합니다.'),
+      screen.getByText('이 폴더 자체를 열면 확인·요약 명령이 현재 폴더(.)를 그대로 씁니다.'),
     ).toBeInTheDocument();
-    expect(screen.getByText('codebase root')).toBeInTheDocument();
+    expect(screen.getByText('다른 코드 폴더에서')).toBeInTheDocument();
     expect(
-      screen.getByText('별도 제품 코드베이스에서 에이전트를 열면 설정 상태 확인, repair, mcp-verify, JSON gate 모두 이 vault의 절대경로를 명시합니다.'),
+      screen.getByText('제품 코드 폴더에서 열면 상태 확인·수리·서버 확인 명령 모두 이 폴더의 절대경로를 적어야 합니다.'),
     ).toBeInTheDocument();
     expect(screen.getByText('.mcp.json')).toBeInTheDocument();
     expect(screen.getByText('.codex/config.toml')).toBeInTheDocument();
     expect(screen.getByText('.mcp.json.example')).toBeInTheDocument();
 
     fireEvent.click(
-      screen.getByRole('button', { name: '누락된 에이전트 설정 만들기' }),
+      screen.getByRole('button', { name: '빠진 연결 파일 만들기' }),
     );
 
     await waitFor(() => expect(localVault.ensureAgentConfigs).toHaveBeenCalledTimes(1));
@@ -259,7 +259,7 @@ describe('VaultAgentSetupPanel', () => {
     });
 
     expect(
-      screen.getByLabelText('MCP verify 명령 미리보기'),
+      screen.getByLabelText('서버 연결 확인 명령 미리보기'),
     ).toHaveTextContent(
       "node $ATLAS/cli/src/index.mjs mcp-verify '/Users/dana/side-project/ontology-atlas/docs/ontology' --timeout-ms 15000",
     );
@@ -276,10 +276,10 @@ describe('VaultAgentSetupPanel', () => {
 
     // 같은 사실을 세 번 말하던 앰버 배지는 사라졌다 (2026-08-02 디자인 카운슬
     // S2) — 수를 말하는 줄이 바로 아래에 그대로 있고, 그것이 유일한 진술이다.
-    expect(screen.queryByText('준비됨')).toBeNull();
-    expect(screen.getByText('설정 파일 3/3개 준비됨')).toBeInTheDocument();
+    expect(screen.queryByText('누락')).toBeNull();
+    expect(screen.getByText('연결 파일 3/3개 준비됨')).toBeInTheDocument();
     expect(
-      screen.queryByRole('button', { name: '누락된 에이전트 설정 만들기' }),
+      screen.queryByRole('button', { name: '빠진 연결 파일 만들기' }),
     ).not.toBeInTheDocument();
   });
 
@@ -292,19 +292,25 @@ describe('VaultAgentSetupPanel', () => {
       },
     });
 
+    // 파일 상태는 「잘 안 되나요?」 안의 한 목록이 소유한다 — 이름 · 경로 · 상태.
     const connections = screen.getByRole('list', {
-      name: 'AI 에이전트별 연결 상태',
+      name: '도구별 연결 파일 상태',
     });
-
-    expect(within(connections).getByText('Claude Code / Cursor')).toBeInTheDocument();
-    expect(within(connections).getByText('/mcp로 확인')).toBeInTheDocument();
+    expect(within(connections).getByText('Claude Code · Cursor')).toBeInTheDocument();
+    expect(within(connections).getByText('.mcp.json')).toBeInTheDocument();
     expect(within(connections).getByText('Codex')).toBeInTheDocument();
-    expect(within(connections).getByText('codex mcp list로 확인')).toBeInTheDocument();
-    expect(within(connections).getByText('다른 codebase root')).toBeInTheDocument();
-    expect(within(connections).getAllByText('설정 준비 · 연결 확인 필요')).toHaveLength(3);
+    expect(within(connections).getByText('.codex/config.toml')).toBeInTheDocument();
+    expect(within(connections).getByText('다른 코드 폴더')).toBeInTheDocument();
+    expect(within(connections).getAllByText('파일 준비됨')).toHaveLength(3);
     expect(
-      screen.getByText('준비는 설정 파일 상태입니다. Ontology Atlas는 에이전트에 직접 접속하지 않으므로, 재시작 후 각 에이전트에서 실제 MCP 연결을 확인합니다.'),
+      screen.getByText('여기서 아는 것은 연결 파일이 있는지까지예요. Ontology Atlas 는 에이전트에 직접 접속하지 않으니, 다시 켠 뒤 각 도구에서 실제 연결을 확인하세요.'),
     ).toBeInTheDocument();
+
+    // 도구별 «어떻게 확인하나» 는 3단계의 내용이다 — 「연결 확인」을 열면 나온다.
+    fireEvent.click(screen.getByTestId('agent-setup-step-3-toggle'));
+    const step3 = screen.getByTestId('agent-setup-step-3');
+    expect(within(step3).getByText('/mcp 로 확인')).toBeInTheDocument();
+    expect(within(step3).getByText('codex mcp list 로 확인')).toBeInTheDocument();
   });
 
   it('AI agent setup gate proof에 validation 결과를 반영한다', () => {
@@ -319,15 +325,15 @@ describe('VaultAgentSetupPanel', () => {
       { validationSummary: { errorCount: 0, warningCount: 2 } },
     );
 
-    expect(screen.getByText('validation 경고 2개 점검 필요')).toBeInTheDocument();
+    expect(screen.getByText('경고 2개 — 훑어보면 좋아요')).toBeInTheDocument();
     expect(
-      screen.getByText('Claude Code / Cursor / Codex 설정 파일 준비됨'),
+      screen.getByText('이 폴더에서 다시 켜거나, 다른 코드 폴더에서는 본보기를 복사해 쓰세요'),
     ).toBeInTheDocument();
     expect(
-      screen.getByText('이 vault의 .mcp.json / .codex는 OATLAS_VAULT=. 로 준비됨'),
+      screen.getByText('이 폴더의 연결 파일은 폴더 자신을 가리키도록 준비됐어요'),
     ).toBeInTheDocument();
     expect(
-      screen.getByText('vault 폴더에서 재시작하거나, 다른 codebase root에서는 템플릿을 복사해 사용'),
+      screen.getByText('이 폴더에서 다시 켜거나, 다른 코드 폴더에서는 본보기를 복사해 쓰세요'),
     ).toBeInTheDocument();
   });
 
@@ -343,7 +349,7 @@ describe('VaultAgentSetupPanel', () => {
       { validationSummary: { errorCount: 1, warningCount: 0 } },
     );
 
-    expect(screen.getByText('validation 오류 1개가 에이전트 수정을 막음')).toBeInTheDocument();
+    expect(screen.getByText('오류 1개 — 커밋을 남길 수 없어요')).toBeInTheDocument();
   });
 
   it('AI agent handoff 전에 vault validation gate를 별도 상태로 보여준다', () => {
@@ -359,16 +365,16 @@ describe('VaultAgentSetupPanel', () => {
     );
 
     const validationGate = screen.getByRole('status', {
-      name: 'Vault validation gate',
+      name: '폴더 상태',
     });
 
-    expect(within(validationGate).getByText('handoff blocked')).toBeInTheDocument();
+    expect(within(validationGate).getByText('오류 있음')).toBeInTheDocument();
     expect(
-      within(validationGate).getByText('validation 오류 2개 · 경고 1개'),
+      within(validationGate).getByText('오류 2개 · 경고 1개'),
     ).toBeInTheDocument();
     expect(
       within(validationGate).getByText(
-        '에이전트가 ontology를 수정하기 전에 vault validation 오류를 먼저 해결해야 합니다.',
+        '오류가 있으면 커밋(되돌릴 지점 남기기)이 거절돼요. 읽기와 고치기는 그대로 되지만, 되돌릴 자리를 못 만듭니다.',
       ),
     ).toBeInTheDocument();
   });
@@ -388,18 +394,18 @@ describe('VaultAgentSetupPanel', () => {
     // 같은 사실을 세 번 말하던 앰버 배지는 사라졌다 (2026-08-02 디자인 카운슬
     // S2) — 수를 말하는 줄이 바로 아래에 그대로 있고, 그것이 유일한 진술이다.
     expect(screen.queryByText('누락')).toBeNull();
-    expect(screen.getByText('설정 파일 2/3개 준비됨')).toBeInTheDocument();
+    expect(screen.getByText('연결 파일 2/3개 준비됨')).toBeInTheDocument();
     expect(
-      screen.getByText('점검: .codex/config.toml 가 ontology-atlas MCP 설정이 아닙니다'),
+      screen.getByText('· 점검: .codex/config.toml 는 Ontology Atlas 연결 설정이 아니에요'),
     ).toBeInTheDocument();
     expect(screen.getByText('점검 필요')).toBeInTheDocument();
     expect(
       screen.getByText(
-        '기존 설정 파일은 자동으로 덮어쓰지 않습니다. 연결 설정이나 codebase-root 템플릿을 복사해 점검 대상 파일을 직접 교체하세요.',
+        '이미 있는 파일은 덮어쓰지 않아요. 연결 설정이나 본보기를 복사해 점검 대상 파일을 직접 바꿔주세요.',
       ),
     ).toBeInTheDocument();
     expect(
-      screen.queryByRole('button', { name: '누락된 에이전트 설정 만들기' }),
+      screen.queryByRole('button', { name: '빠진 연결 파일 만들기' }),
     ).not.toBeInTheDocument();
   });
 
@@ -413,7 +419,7 @@ describe('VaultAgentSetupPanel', () => {
       },
     });
 
-    fireEvent.click(screen.getByRole('button', { name: '검증 프롬프트 복사' }));
+    fireEvent.click(screen.getByRole('button', { name: '확인 프롬프트 복사' }));
 
     await waitFor(() => expect(copyTextMock).toHaveBeenCalledTimes(1));
     expect(copyTextMock).toHaveBeenCalledWith(
@@ -435,7 +441,7 @@ describe('VaultAgentSetupPanel', () => {
       expect.stringContaining('After any non-trivial code change, sync docs/ontology before finishing'),
     );
     expect(
-      await screen.findByRole('button', { name: '검증 프롬프트 복사됨' }),
+      await screen.findByRole('button', { name: '확인 프롬프트 복사됨' }),
     ).toBeInTheDocument();
   });
 
@@ -475,7 +481,7 @@ describe('VaultAgentSetupPanel', () => {
       },
     });
 
-    fireEvent.click(screen.getByRole('button', { name: '연결 설정 복사' }));
+    fireEvent.click(screen.getByRole('button', { name: '연결 설정 한 번에 복사' }));
 
     await waitFor(() => expect(copyTextMock).toHaveBeenCalledTimes(1));
     expect(copyTextMock).toHaveBeenCalledWith(
@@ -661,7 +667,7 @@ describe('VaultAgentSetupPanel', () => {
       },
     });
 
-    fireEvent.click(screen.getByRole('button', { name: '연결 설정 복사' }));
+    fireEvent.click(screen.getByRole('button', { name: '연결 설정 한 번에 복사' }));
 
     await waitFor(() => expect(copyTextMock).toHaveBeenCalledTimes(1));
     expect(copyTextMock).toHaveBeenCalledWith(
@@ -704,7 +710,7 @@ describe('VaultAgentSetupPanel', () => {
     });
 
     fireEvent.click(
-      screen.getByRole('button', { name: 'agent-setup 명령 복사' }),
+      screen.getByRole('button', { name: '설정 만들기 명령 복사' }),
     );
 
     await waitFor(() => expect(copyTextMock).toHaveBeenCalledTimes(1));
@@ -713,7 +719,7 @@ describe('VaultAgentSetupPanel', () => {
     );
     expect(
       await screen.findByRole('button', {
-        name: 'agent-setup 명령 복사됨',
+        name: '설정 만들기 명령 복사됨',
       }),
     ).toBeInTheDocument();
   });
@@ -733,7 +739,7 @@ describe('VaultAgentSetupPanel', () => {
     });
 
     fireEvent.click(
-      screen.getByRole('button', { name: 'agent-setup 명령 복사' }),
+      screen.getByRole('button', { name: '설정 만들기 명령 복사' }),
     );
 
     await waitFor(() => expect(copyTextMock).toHaveBeenCalledTimes(1));
@@ -754,7 +760,7 @@ describe('VaultAgentSetupPanel', () => {
     });
 
     fireEvent.click(
-      screen.getByRole('button', { name: '설정 상태 확인 명령 복사' }),
+      screen.getByRole('button', { name: '상태 확인 명령 복사' }),
     );
 
     await waitFor(() => expect(copyTextMock).toHaveBeenCalledTimes(1));
@@ -763,7 +769,7 @@ describe('VaultAgentSetupPanel', () => {
     );
     expect(
       await screen.findByRole('button', {
-        name: '설정 상태 확인 명령 복사됨',
+        name: '상태 확인 명령 복사됨',
       }),
     ).toBeInTheDocument();
   });
@@ -783,7 +789,7 @@ describe('VaultAgentSetupPanel', () => {
     });
 
     fireEvent.click(
-      screen.getByRole('button', { name: '설정 상태 확인 명령 복사' }),
+      screen.getByRole('button', { name: '상태 확인 명령 복사' }),
     );
 
     await waitFor(() => expect(copyTextMock).toHaveBeenCalledTimes(1));
@@ -803,7 +809,7 @@ describe('VaultAgentSetupPanel', () => {
     });
 
     fireEvent.click(
-      screen.getByRole('button', { name: 'CLI 그래프 runbook 복사' }),
+      screen.getByRole('button', { name: '터미널 명령 모음 복사' }),
     );
 
     await waitFor(() => expect(copyTextMock).toHaveBeenCalledTimes(1));
@@ -837,13 +843,13 @@ describe('VaultAgentSetupPanel', () => {
       expect.stringContaining('node $ATLAS/cli/src/index.mjs mcp-verify . --timeout-ms 15000'),
     );
     expect(
-      screen.getByRole('list', { name: '복사되는 CLI 그래프 runbook 미리보기' }),
+      screen.getByRole('list', { name: '복사되는 터미널 명령 미리보기' }),
     ).toBeInTheDocument();
     expect(screen.getByText('node $ATLAS/cli/src/index.mjs agent-brief . --graph-db-pack')).toBeInTheDocument();
     expect(screen.getByText('node $ATLAS/cli/src/index.mjs agent-brief . --verify-fallbacks')).toBeInTheDocument();
     expect(screen.getByText('node $ATLAS/cli/src/index.mjs agent-brief . --verify-fallbacks --json')).toBeInTheDocument();
     expect(
-      await screen.findByRole('button', { name: 'CLI 그래프 runbook 복사됨' }),
+      await screen.findByRole('button', { name: '터미널 명령 모음 복사됨' }),
     ).toBeInTheDocument();
   });
 
@@ -862,7 +868,7 @@ describe('VaultAgentSetupPanel', () => {
     });
 
     fireEvent.click(
-      screen.getByRole('button', { name: 'CLI 그래프 runbook 복사' }),
+      screen.getByRole('button', { name: '터미널 명령 모음 복사' }),
     );
 
     await waitFor(() => expect(copyTextMock).toHaveBeenCalledTimes(1));
@@ -895,7 +901,7 @@ describe('VaultAgentSetupPanel', () => {
     });
 
     fireEvent.click(
-      screen.getByRole('button', { name: '첫 연결 증거 복사' }),
+      screen.getByRole('button', { name: '첫 연결 확인 절차 복사' }),
     );
 
     await waitFor(() => expect(copyTextMock).toHaveBeenCalledTimes(1));
@@ -985,7 +991,7 @@ describe('VaultAgentSetupPanel', () => {
       expect.stringContaining('Post-change ontology sync:'),
     );
     expect(
-      await screen.findByRole('button', { name: '첫 연결 증거 복사됨' }),
+      await screen.findByRole('button', { name: '첫 연결 확인 절차 복사됨' }),
     ).toBeInTheDocument();
   });
 
@@ -1004,7 +1010,7 @@ describe('VaultAgentSetupPanel', () => {
     });
 
     fireEvent.click(
-      screen.getByRole('button', { name: '첫 연결 증거 복사' }),
+      screen.getByRole('button', { name: '첫 연결 확인 절차 복사' }),
     );
 
     await waitFor(() => expect(copyTextMock).toHaveBeenCalledTimes(1));
@@ -1047,23 +1053,23 @@ describe('VaultAgentSetupPanel', () => {
       },
     });
 
-    const agentSetup = screen.getByRole('region', { name: 'AI 에이전트 설정 상태' });
+    const agentSetup = screen.getByRole('region', { name: '내 에이전트 연결' });
     fireEvent.click(
-      within(agentSetup).getByRole('button', { name: '자동화 JSON gate 복사' }),
+      within(agentSetup).getByRole('button', { name: '확인 명령 복사' }),
     );
 
     await waitFor(() => expect(copyTextMock).toHaveBeenCalledTimes(1));
     expect(copyTextMock).toHaveBeenCalledWith(
       "node $ATLAS/cli/src/index.mjs agent-brief '/Users/dana/Team Vault/docs/ontology' --verify-fallbacks --json --fallback-timeout-ms 15000 --fallback-slow-ms 5000 --fallback-concurrency 4",
     );
-    expect(screen.getByText('자동화 gate')).toBeInTheDocument();
+    expect(screen.getByText('상태 확인')).toBeInTheDocument();
     expect(
       screen.getByText(
         "node $ATLAS/cli/src/index.mjs agent-brief '/Users/dana/Team Vault/docs/ontology' --verify-fallbacks --json --fallback-timeout-ms 15000 --fallback-slow-ms 5000 --fallback-concurrency 4",
       ),
     ).toBeInTheDocument();
     expect(
-      await screen.findByRole('button', { name: 'JSON gate 복사됨' }),
+      await screen.findByRole('button', { name: '확인 명령 복사됨' }),
     ).toBeInTheDocument();
   });
 
@@ -1077,9 +1083,9 @@ describe('VaultAgentSetupPanel', () => {
       },
     });
 
-    const agentSetup = screen.getByRole('region', { name: 'AI 에이전트 설정 상태' });
+    const agentSetup = screen.getByRole('region', { name: '내 에이전트 연결' });
     fireEvent.click(
-      within(agentSetup).getByRole('button', { name: 'sync gate 복사' }),
+      within(agentSetup).getByRole('button', { name: '맞추기 절차 복사' }),
     );
 
     await waitFor(() => expect(copyTextMock).toHaveBeenCalledTimes(1));
@@ -1105,7 +1111,7 @@ describe('VaultAgentSetupPanel', () => {
       expect.stringContaining('node $ATLAS/cli/src/index.mjs validate [vault]'),
     );
     expect(
-      await screen.findByRole('button', { name: 'sync gate 복사됨' }),
+      await screen.findByRole('button', { name: '맞추기 절차 복사됨' }),
     ).toBeInTheDocument();
   });
 
@@ -1121,7 +1127,7 @@ describe('VaultAgentSetupPanel', () => {
     });
 
     fireEvent.click(
-      screen.getByRole('button', { name: 'codebase-root MCP JSON 복사' }),
+      screen.getByRole('button', { name: '다른 폴더용 MCP 설정 복사' }),
     );
 
     await waitFor(() => expect(copyTextMock).toHaveBeenCalledTimes(1));
@@ -1136,7 +1142,7 @@ describe('VaultAgentSetupPanel', () => {
     );
     expect(
       await screen.findByRole('button', {
-        name: 'MCP JSON 복사됨',
+        name: 'MCP 설정 복사됨',
       }),
     ).toBeInTheDocument();
   });
@@ -1153,7 +1159,7 @@ describe('VaultAgentSetupPanel', () => {
     });
 
     fireEvent.click(
-      screen.getByRole('button', { name: 'codebase-root Codex TOML 복사' }),
+      screen.getByRole('button', { name: '다른 폴더용 Codex 설정 복사' }),
     );
 
     await waitFor(() => expect(copyTextMock).toHaveBeenCalledTimes(1));
@@ -1170,7 +1176,7 @@ describe('VaultAgentSetupPanel', () => {
     );
     expect(
       await screen.findByRole('button', {
-        name: 'Codex TOML 복사됨',
+        name: 'Codex 설정 복사됨',
       }),
     ).toBeInTheDocument();
   });
@@ -1187,7 +1193,7 @@ describe('VaultAgentSetupPanel', () => {
     });
 
     fireEvent.click(
-      screen.getByRole('button', { name: 'Codex mcp add 명령 복사' }),
+      screen.getByRole('button', { name: 'Codex 등록 명령 복사' }),
     );
 
     await waitFor(() => expect(copyTextMock).toHaveBeenCalledTimes(1));
@@ -1326,6 +1332,10 @@ describe('VaultAgentSetupPanel', () => {
         onOpenWorkflowGuide={vi.fn()}
       />,
     );
+
+    // 셋 다 준비된 상태라 1단계는 「완료」로 접혀 있다 — 도구 열을 보려면 연다.
+    // (접은 것이지 지운 것이 아니라는 증명이 이 한 줄이다.)
+    fireEvent.click(screen.getByTestId('agent-setup-step-1-toggle'));
 
     expect(screen.getByRole('status', { name: '.mcp.json 준비됨' })).toBeInTheDocument();
     expect(screen.getByRole('status', { name: 'Codex 설정 준비됨' })).toBeInTheDocument();

@@ -119,7 +119,14 @@ const BASELINE_HARD_CUTS = 0;
  * 하드컷의 분모이고, 동시에 `tests/e2e/a11y-open-surfaces.spec.ts` 가 「5/20 을
  * 잰다」고 말할 때의 20이다. 리터럴인 이유는 위와 같다.
  */
-const BASELINE_APPEARING_SURFACES = 20;
+/*
+ * 20 → 22 (2026-08-04, 「내 에이전트 연결」 단계 진행형).
+ * 늘어난 둘은 **접힘 두 갈래**다: 단계 본문(`AgentSetupStep`)과 「잘 안 되나요?」
+ * 서랍. 둘 다 처음부터 `<Surface>` 로 태어나 하드컷은 그대로 0 이다 — 분모가
+ * 느는 것 자체는 결함이 아니고, 여기 손으로 올린 diff 가 「무엇이 늘었나」를
+ * 적는 자리다.
+ */
+const BASELINE_APPEARING_SURFACES = 22;
 
 const SELF = 'tests/contract/surface-motion-ratchet.contract.test.ts';
 const FIXTURES = 'tests/fixtures/surface-motion';
