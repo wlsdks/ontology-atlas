@@ -110,7 +110,19 @@ export function AgentSetupStep({
     <li className="min-w-0" data-testid={testId} data-step-state={state}>
       <RowButton
         size="md"
-        tone={state === 'todo' ? 'muted' : 'strong'}
+        /*
+         * 물러나는 것은 **안 온 단계 중 접혀 있는 것**까지다 (2026-08-04 설치 앱
+         * 실측 정정). 종전 식은 `state === 'todo'` 만 봐서, 사용자가 아직 안 온
+         * 단계를 직접 열면 **펼친 행이 그 화면에서 가장 흐린 줄**이 됐다 —
+         * 앱에서 잰 값으로 3단계를 펼친 순간 그 제목이 `quaternary`
+         * rgb(130,130,137), 접힌 1단계 제목이 `primary` rgb(247,248,248) 이었다.
+         * 읽고 있는 것이 안 읽는 것보다 흐린 것은 위계가 뒤집힌 것이다.
+         *
+         * 배지는 그대로 흐름의 사실만 진다(위 `BADGE` 주석) — 여기서 바뀌는
+         * 것은 **펼침이 이미 가진 채널**(셰브론 회전)에 잉크를 한 단 얹는 것뿐이라
+         * 새 채널도 새 톤도 늘지 않는다.
+         */
+        tone={state === 'todo' && !open ? 'muted' : 'strong'}
         data-testid={`${testId}-toggle`}
         aria-expanded={open}
         aria-controls={bodyId}
