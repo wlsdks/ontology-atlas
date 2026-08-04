@@ -1,4 +1,22 @@
-@import "tailwindcss";
+@import "tailwindcss" source(none);
+
+/*
+ * ⚠️ 문서는 스캔하지 않는다 (2026-08-04).
+ *
+ * Tailwind v4 는 `@source` 선언이 없으면 저장소를 자동으로 훑는다. 그래서
+ * **마크다운 산문 안에 적힌 클래스 모양의 글자**까지 후보로 읽는다. 실제로
+ * `.claude/rules/design.md` 가 규칙을 설명하며 적어 둔 `text-[var(…)]` 한 줄이
+ * `.text-\[var\(…\)\] { color: var(…) }` 를 만들었고, Turbopack 의 CSS 파서가
+ * 그걸 거절해 **`pnpm dev` 가 통째로 500** 이 됐다.
+ *
+ * 프로덕션 빌드는 멀쩡해서 CI 는 초록이었다 — 깨지는 것은 로컬 dev 뿐이라
+ * 아무도 못 봤다. 규칙을 설명하는 문서가 그 규칙을 쓰는 코드를 깨뜨린 것이다.
+ *
+ * 그래서 스캔 범위를 **코드로 한정**한다. 문서에 클래스 예시를 적는 것은
+ * 앞으로도 옳고, 그것이 빌드에 새어 들어오지 않는 것도 옳다.
+ */
+@source "../app/**/*.{ts,tsx}";
+@source "../src/**/*.{ts,tsx}";
 
 /*
  * ontology-atlas — Design Tokens
