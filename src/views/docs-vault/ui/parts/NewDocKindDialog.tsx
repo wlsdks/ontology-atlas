@@ -151,7 +151,7 @@ export function NewDocKindDialog({
           className={controlClass({
             shape: "link",
             tone: "muted",
-            className: "mt-3 hover:text-[color:var(--color-text-secondary)]",
+            className: "touch-hit-expand mt-3 hover:text-[color:var(--color-text-secondary)]",
           })}
         >
           {t("cancel")}

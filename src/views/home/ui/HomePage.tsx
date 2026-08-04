@@ -4663,9 +4663,8 @@ export function HomePage() {
                     className={controlClass({
                       shape: "link",
                       size: "md",
-                      inline: true,
                       className:
-                        "font-mono uppercase tracking-[0.12em] hover:text-[color:var(--color-text-primary)]",
+                        "touch-hit-expand font-mono uppercase tracking-[0.12em] hover:text-[color:var(--color-text-primary)]",
                     })}
                   >
                     Root
@@ -4681,10 +4680,9 @@ export function HomePage() {
                         className={controlClass({
                           shape: "link",
                           size: "lg",
-                          inline: true,
                           truncate: true,
                           active: idx === heldLocalGraphStack.length - 1,
-                          className: "hover:text-[color:var(--color-text-primary)]",
+                          className: "touch-hit-expand hover:text-[color:var(--color-text-primary)]",
                         })}
                         title={slug}
                       >

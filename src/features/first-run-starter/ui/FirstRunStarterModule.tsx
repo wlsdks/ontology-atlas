@@ -237,8 +237,8 @@ export function FirstRunStarterModule({
         className={controlClass({
           shape: "link",
           scope: "panel",
-          inline: true,
-          className: "min-w-0 hover:text-[color:var(--topology-v2-panel-text-primary)]",
+          className:
+            "touch-hit-expand min-w-0 hover:text-[color:var(--topology-v2-panel-text-primary)]",
         })}
       >
         <ChevronRight size={11} aria-hidden className="shrink-0 -rotate-180" />
@@ -489,7 +489,6 @@ export function FirstRunStarterModule({
             className={controlClass({
               shape: "link",
               scope: "panel",
-              inline: true,
               className:
                 "touch-hit-expand border-b border-transparent pb-px hover:border-[color:var(--topology-v2-panel-divider)] hover:text-[color:var(--topology-v2-panel-text-secondary)]",
             })}
@@ -504,7 +503,6 @@ export function FirstRunStarterModule({
           className={controlClass({
             shape: "link",
             scope: "panel",
-            inline: true,
             className:
               "touch-hit-expand border-b border-transparent pb-px hover:border-[color:var(--topology-v2-panel-divider)] hover:text-[color:var(--topology-v2-panel-text-secondary)]",
           })}
@@ -523,13 +521,11 @@ export function FirstRunStarterModule({
             type="button"
             data-testid="first-run-plain-toggle"
             onClick={onEnablePlainMode}
-            /* 히트 영역은 `touch-hit-expand`(coarse 전용 의사요소)가 이미 낸다 —
-               `inline` 을 켜 램프의 `min-h-11` 과 이중으로 걸리지 않게 한다.
-               둘 다 걸면 이 카드가 세로로 44px 씩 벌어진다. */
+            /* 램프 바닥 24(`min-h-6`) + coarse 히트는 `touch-hit-expand` —
+               44 를 상자 높이로 실으면 이 카드가 세로로 44px 씩 벌어진다. */
             className={controlClass({
               shape: "link",
               tone: "accent",
-              inline: true,
               className: "touch-hit-expand mt-1 underline-offset-2 hover:underline",
             })}
           >
@@ -663,7 +659,6 @@ export function FirstRunStarterModule({
             shape: "link",
             scope: "panel",
             tone: "muted",
-            inline: true,
             className:
               "touch-hit-expand hover:text-[color:var(--topology-v2-panel-text-secondary)]",
           })}

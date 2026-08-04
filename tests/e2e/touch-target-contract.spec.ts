@@ -26,6 +26,22 @@ import { test, expect } from "@playwright/test";
  * 인라인 텍스트 컨트롤은 박스를 키우면 그 줄의 레이아웃이 통째로 바뀐다.
  * 그래서 `.touch-hit-expand` 가 의사요소로 히트만 넓힌다 — 이 검사는 보이는
  * rect 가 아니라 **유효 히트 박스**(자기 rect ∪ ::after rect)를 잰다.
+ *
+ * ## 두 층이다 — coarse 44 는 이 저장소의 터치 계약, fine 24 는 WCAG 2.5.8(AA)
+ *
+ * 2026-08-04 link 바닥 재설정(원장 「link 바닥 24」)이 fine 층을 추가했다.
+ * 값 층이 44 를 fine 전면에 싣던 시절엔 fine 검사가 무의미했지만, 바닥이
+ * 24 로 서면 **24 미만이 실제 결함**이 된다. 판정식:
+ *
+ *   PASS(a) := hitBox ≥ 24×24
+ *           || INLINE_EXEMPT(a)   — display:inline && 비타깃 형제 글자 존재
+ *           || SPACING_CLEAR(a)   — 24 원(사각 근사)이 다른 타깃과 안 겹침
+ *
+ * 인라인 면제가 계기에 **먼저** 들어간 이유: 없이 켜면 산문 링크(prose-link,
+ * 줄 상자를 부모가 소유)가 거짓 빨강이 되고, 게이트가 틀리면 게이트를 끄는
+ * 것이 기본값이 된다. 「문장 속인가」는 정적으로 판정 불가라(형제 글자 출처 ·
+ * used display · reflow 전부 여는 태그 밖) 여기 런타임 계기가 정본이다 —
+ * 삭제된 `inline` 축의 후임이다.
  */
 
 const MIN = 44;
@@ -138,5 +154,108 @@ test.describe("터치 타깃 계약 (pointer: coarse)", () => {
     }, MIN);
 
     expect(short, `44px 미만 히트 영역: ${JSON.stringify(short)}`).toEqual([]);
+  });
+});
+
+interface Audit258Result {
+  scanned: number;
+  failures: { id: string; w: number; h: number }[];
+}
+
+/** fine-pointer 2.5.8 감사 — 브라우저 안에서 실행되는 판정기. */
+const AUDIT_258 = `(() => {
+  const MIN = 24;
+  const targets = Array.from(document.querySelectorAll('button:not([disabled]), a[href]')).filter((el) => {
+    const r = el.getBoundingClientRect();
+    const cs = getComputedStyle(el);
+    return r.width > 0 && r.height > 0 && cs.visibility !== 'hidden' && !el.closest('.sr-only') && !el.closest('[aria-hidden="true"]');
+  });
+  const hit = (el) => {
+    const r = el.getBoundingClientRect();
+    const a = getComputedStyle(el, '::after');
+    if (a.content && a.content !== 'none' && a.position === 'absolute') {
+      return { w: Math.max(r.width, parseFloat(a.width) || 0), h: Math.max(r.height, parseFloat(a.height) || 0) };
+    }
+    return { w: r.width, h: r.height };
+  };
+  const inlineExempt = (el) => {
+    if (getComputedStyle(el).display !== 'inline') return false;
+    let p = el.parentElement;
+    while (p && getComputedStyle(p).display === 'inline') p = p.parentElement;
+    if (!p) return false;
+    let targetChars = 0;
+    p.querySelectorAll('button, a[href]').forEach((t) => { targetChars += (t.textContent || '').length; });
+    return (p.textContent || '').length - targetChars > 0;
+  };
+  const box24 = (el) => {
+    const r = el.getBoundingClientRect();
+    const cx = r.left + r.width / 2, cy = r.top + r.height / 2;
+    return { l: cx - MIN / 2, r: cx + MIN / 2, t: cy - MIN / 2, b: cy + MIN / 2 };
+  };
+  const meets = (b) => b.w >= MIN && b.h >= MIN;
+  const intersects = (a, b) => a.l < b.r && b.l < a.r && a.t < b.b && b.t < a.b;
+  const spacingClear = (el) => {
+    const mine = box24(el);
+    for (const other of targets) {
+      if (other === el || el.contains(other) || other.contains(el)) continue;
+      const or = other.getBoundingClientRect();
+      const orect = { l: or.left, r: or.right, t: or.top, b: or.bottom };
+      if (intersects(mine, meets(hit(other)) ? orect : box24(other))) return false;
+    }
+    return true;
+  };
+  const id = (el) => el.getAttribute('data-testid') || (el.textContent || '').trim().slice(0, 24) || el.tagName;
+  const failures = [];
+  for (const el of targets) {
+    const b = hit(el);
+    if (meets(b)) continue;
+    if (inlineExempt(el)) continue;
+    if (spacingClear(el)) continue;
+    failures.push({ id: id(el), w: Math.round(b.w), h: Math.round(b.h) });
+  }
+  return { scanned: targets.length, failures };
+})()`;
+
+/**
+ * WCAG 2.5.8(AA) — fine 포인터의 24×24 바닥.
+ *
+ * 사정거리는 아래 라우트 전수의 **모든** \`button\`/\`a[href]\` 다. 라우트를
+ * 더할 때는 먼저 위반을 전수 측정하고(게이트가 켜진 날부터 빨간 게이트는
+ * 소음이다), 남는 위반은 고치거나 여기 주석에 측정치와 함께 남긴다.
+ */
+test.describe("최소 타깃 계약 (pointer: fine — WCAG 2.5.8 AA)", () => {
+  test.use({ hasTouch: false, isMobile: false, viewport: { width: 1280, height: 860 } });
+
+  for (const route of ["/ko/topology/?guides=off", "/ko/download/?guides=off", "/ko/docs/?guides=off", "/ko/guide/?guides=off"]) {
+    test(`${route} 의 타깃이 24×24 미달이면 인라인 면제·간격 예외 중 하나를 증명해야 한다`, async ({ page }) => {
+      await page.goto(route);
+      await page.waitForLoadState("networkidle");
+      const { scanned, failures } = (await page.evaluate(AUDIT_258)) as Audit258Result;
+      // 공회전 방지 — 타깃이 안 잡히면 셀렉터가 죽은 것이지 화면이 완벽한 게 아니다.
+      expect(scanned, `${route} 에서 스캔된 타깃이 너무 적다(${scanned})`).toBeGreaterThan(5);
+      expect(failures, `2.5.8 미달: ${JSON.stringify(failures)}`).toEqual([]);
+    });
+  }
+
+  test("계기 프로브 — 24 미만 밀집 타깃을 실제로 잡고, 간격 확보 타깃은 지나보낸다", async ({ page }) => {
+    await page.goto("/ko/download/?guides=off");
+    await page.evaluate(() => {
+      // 위반 프로브: 16px 타깃 둘이 8px 간격 — 24 원이 서로 겹친다.
+      // 통과 프로브: 16px 타깃이지만 사방 12px 이상 비어 spacing 예외가 성립.
+      document.body.insertAdjacentHTML(
+        "beforeend",
+        `<div style="position:fixed;left:0;top:0;z-index:9999;background:#000;width:400px;height:200px">
+           <button type="button" data-testid="probe-dense-a" style="position:absolute;left:20px;top:20px;width:60px;height:16px">a</button>
+           <button type="button" data-testid="probe-dense-b" style="position:absolute;left:20px;top:40px;width:60px;height:16px">b</button>
+           <button type="button" data-testid="probe-spaced" style="position:absolute;left:200px;top:90px;width:60px;height:16px">c</button>
+         </div>`,
+      );
+    });
+    const { failures } = (await page.evaluate(AUDIT_258)) as Audit258Result;
+    const ids = failures.map((f: { id: string }) => f.id);
+    expect(ids, "밀집 프로브를 못 잡았다 — 탐지기가 죽어 있다").toEqual(
+      expect.arrayContaining(["probe-dense-a", "probe-dense-b"]),
+    );
+    expect(ids, "간격 확보 프로브를 오탐했다 — spacing 예외가 죽어 있다").not.toContain("probe-spaced");
   });
 });

@@ -379,7 +379,7 @@ const PROSE_COMPONENTS: Components = {
       <a
         href={href}
         {...(external ? { target: '_blank', rel: 'noreferrer noopener' } : {})}
-        className="text-[color:var(--color-indigo-line-a90)] underline underline-offset-2 decoration-[color:var(--color-indigo-line-a32)] transition-colors hover:decoration-[color:var(--color-indigo-accent)]"
+        className="prose-link text-[color:var(--color-indigo-line-a90)] transition-colors hover:decoration-[color:var(--color-indigo-accent)]"
         {...rest}
       >
         {children}

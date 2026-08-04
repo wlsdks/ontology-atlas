@@ -1759,7 +1759,8 @@ function CenterCard(
               className={controlClass({
                 shape: "link",
                 tone: "muted",
-                className: "mt-1 font-medium hover:text-[color:var(--color-text-secondary)]",
+                className:
+                  "touch-hit-expand mt-1 font-medium hover:text-[color:var(--color-text-secondary)]",
               })}
             >
               {defExpanded ? props.labels.defLess : props.labels.defMore}

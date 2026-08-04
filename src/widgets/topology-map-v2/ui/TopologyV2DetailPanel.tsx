@@ -1387,7 +1387,7 @@ export function TopologyV2DetailPanel({
                     shape: "link",
                     size: "lg",
                     className:
-                      "shrink-0 text-[color:var(--topology-v2-panel-text-tertiary)] hover:text-[color:var(--topology-v2-panel-text-secondary)]",
+                      "touch-hit-expand shrink-0 text-[color:var(--topology-v2-panel-text-tertiary)] hover:text-[color:var(--topology-v2-panel-text-secondary)]",
                   })
                 : controlClass({
                     shape: "card",
