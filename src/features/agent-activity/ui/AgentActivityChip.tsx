@@ -129,7 +129,13 @@ export function AgentActivityChip({ suppressed = false }: { suppressed?: boolean
                   href={buildOntologyNodeHref(feed.lastNode.slug)}
                   data-testid="agent-activity-target"
                   aria-label={t('openOnMap', { name: feed.lastNode.name })}
-                  className="min-w-0 max-w-40 truncate rounded-chip text-[color:var(--color-indigo-accent)] transition-colors hover:text-[color:var(--color-text-primary)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--color-indigo-accent)]"
+                  className={controlClass({
+                    shape: 'link',
+                    tone: 'accent',
+                    truncate: true,
+                    className:
+                      'min-w-0 max-w-40 hover:text-[color:var(--color-text-primary)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--color-indigo-accent)]',
+                  })}
                 >
                   {feed.lastNode.name}
                 </Link>
@@ -288,7 +294,13 @@ function NotificationRow({ item, age }: { item: AgentNotification; age: string }
           <Link
             href={buildOntologyNodeHref(item.node.slug)}
             aria-label={t('openOnMap', { name: item.node.name })}
-            className="min-w-0 truncate rounded-chip text-label text-[color:var(--color-indigo-accent)] transition-colors hover:text-[color:var(--color-text-primary)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--color-indigo-accent)]"
+            className={controlClass({
+              shape: 'link',
+              tone: 'accent',
+              truncate: true,
+              className:
+                'min-w-0 hover:text-[color:var(--color-text-primary)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--color-indigo-accent)]',
+            })}
           >
             {item.node.name}
           </Link>

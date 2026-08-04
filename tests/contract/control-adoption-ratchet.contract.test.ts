@@ -1020,7 +1020,7 @@ const globalsCss = readFileSync(GLOBALS_CSS, 'utf8');
  * 반대로 이 둘은 **가르지 않는다**. `<Link>` 가 렌더하는 것이 `<a>` 이고, 값 층에서
  * 둘의 목적지가 같은 `shape: 'link'` 다. 처방이 같은 것을 두 칸에 두면 그건 진도를
  * 읽는 눈금이 아니라 장부질이다. 대신 태그별 내역을 여기 적어 둔다 —
- * **`<Link>` 78 · `<a>` 24**(2026-08-04 앵커 라운드 후 실측).
+ * **`<Link>` 71 · `<a>` 21**(2026-08-04 타입-분리 반려 라운드의 배당 회수 10 후 실측).
  *
  * ⚠️ 감사 보고서의 수는 **77** 이었다. 그 차이는 드리프트이거나 다른 필터이고,
  * 게이트가 쓰는 수는 **이 파일의 파서가 실제로 센 것**이어야 한다 — 남이 센 수를
@@ -1034,7 +1034,7 @@ const globalsCss = readFileSync(GLOBALS_CSS, 'utf8');
  * 선언 하나라 `tokenIsBeyondFixedSteps` 가 거절한다. 등재가 도피처가 되지
  * 않는다는 것을 이 라운드가 실측으로 증명한 자리다.
  */
-const ANCHOR_TAG_SPLIT: Readonly<Record<string, number>> = { Link: 78, a: 24 };
+const ANCHOR_TAG_SPLIT: Readonly<Record<string, number>> = { Link: 71, a: 21 };
 
 /**
  * **검증된 「값 층 밖」 앵커 등록부.**
@@ -1177,8 +1177,8 @@ const OUTSIDE_VALUE_LAYER_ANCHORS: readonly OutsideEntry[] = [
  */
 const BASELINE_ANCHOR_REGISTERED = 25;
 
-/** **이 수만 줄어야 한다.** 앵커 전수(102)에서 등재(25)를 뺀 나머지. */
-const BASELINE_ANCHOR_DEBT = 77;
+/** **이 수만 줄어야 한다.** 앵커 전수(92)에서 등재(25)를 뺀 나머지. */
+const BASELINE_ANCHOR_DEBT = 67;
 
 const anchorCensus = census(scannedFiles, OUTSIDE_VALUE_LAYER_ANCHORS, ANCHOR_TAGS, NO_BASIS_ANCHORS);
 
