@@ -3890,6 +3890,11 @@
         },
         {
           "depth": 2,
+          "text": "2026-08-04 — 검사 결과에 대해 화면이 거짓을 말하는 것을 멈춘다",
+          "slug": "2026-08-04-검사-결과에-대해-화면이-거짓을-말하는-것을-멈춘다"
+        },
+        {
+          "depth": 2,
           "text": "2026-08-04 — 접근성 게이트가 빈 화면을 재던 자리를 닫는다",
           "slug": "2026-08-04-접근성-게이트가-빈-화면을-재던-자리를-닫는다"
         },
@@ -6154,8 +6159,8 @@
           "slug": "2026-07-26-첫-만남은-쇼핑몰부터"
         }
       ],
-      "excerpt": "Major change history. Code commit messages answer why; this file answers when / which surface changed. Focused on user-visible changes, not PR-level granularity. Newest at the top. Entries stay date-based; the app version reached v1.0.0 on 2026-07-27, so a release tag now carries the semver promise instead. 두 래칫(a11y-r",
-      "wordCount": 65936,
+      "excerpt": "Major change history. Code commit messages answer why; this file answers when / which surface changed. Focused on user-visible changes, not PR-level granularity. Newest at the top. Entries stay date-based; the app version reached v1.0.0 on 2026-07-27, so a release tag now carries the semver promise instead. 오류 5 · 경고 4",
+      "wordCount": 66213,
       "updatedAt": "2026-08-04",
       "linksOut": [
         "audits/CASE-STUDY-AGENTS-MD-DRIFT",

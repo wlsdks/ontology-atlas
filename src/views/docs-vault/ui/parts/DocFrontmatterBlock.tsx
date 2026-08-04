@@ -215,10 +215,14 @@ export function DocFrontmatterBlock({
   const [draftDomain, setDraftDomain] = useState(currentDomain);
   const [draftTitle, setDraftTitle] = useState(currentTitle);
 
-  // ② validator warning 인라인 — 편집 중이면 draft(kind/domain), 아니면
-  // 저장된 frontmatter 를 대상으로 debounce(400ms) 후 검증. "missing-expected-
-  // field" 같은 warning 만 조용한 인라인 행으로 보여준다(error 는 별개 —
-  // 이 슬라이스는 validator *warning* 만 다룬다).
+  // ② validator 진단 인라인 — 편집 중이면 draft(kind/domain), 아니면 저장된
+  // frontmatter 를 대상으로 debounce(400ms) 후 검증.
+  //
+  // **오류도 보여 준다** (2026-08-04 정정). 종전엔 `severity === "warning"` 으로
+  // 걸러서, `missing-uid`·`invalid-uid`·`empty-kind` 같은 **오류는 감추고 경고만**
+  // 보여 주고 있었다 — 정확히 거꾸로다. 실측: 오류 5건짜리 폴더에서 파일 옆에
+  // 뜬 것은 경고 3건뿐이었고, 노드를 지도에서 지우는 바로 그 오류들은 화면
+  // 어디에도 없었다.
   const activeKind = editing ? draftKind : currentKind ?? "";
   const activeDomain = editing ? draftDomain : currentDomain;
   const [debouncedValidation, setDebouncedValidation] = useState({
@@ -232,16 +236,20 @@ export function DocFrontmatterBlock({
     return () => window.clearTimeout(handle);
   }, [activeKind, activeDomain]);
 
-  const validationWarnings = useMemo<VaultDocumentIssue[]>(() => {
-    if (!debouncedValidation.kind) return [];
-    const frontmatterForValidation: Record<string, unknown> = {
-      ...(doc.frontmatter ?? {}),
-      kind: debouncedValidation.kind,
-      domain: debouncedValidation.domain,
-    };
-    return validateVaultDocFrontmatter(frontmatterForValidation).issues.filter(
-      (issue) => issue.severity === "warning",
-    );
+  const validationIssues = useMemo<VaultDocumentIssue[]>(() => {
+    const stored = doc.frontmatter ?? {};
+    // kind 가 아직 없으면 **저장된 frontmatter 를 그대로** 검사한다. 종전엔
+    // `if (!kind) return []` 로 빠져나가서, kind 없음/빔이 노드가 사라지는 가장
+    // 흔한 두 경로인데도 그 두 경우에만 화면이 침묵했다.
+    const frontmatterForValidation: Record<string, unknown> = debouncedValidation.kind
+      ? { ...stored, kind: debouncedValidation.kind, domain: debouncedValidation.domain }
+      : stored;
+    const issues = validateVaultDocFrontmatter(frontmatterForValidation).issues;
+    // 오류 먼저 — 읽는 순서가 곧 손볼 순서다.
+    return [
+      ...issues.filter((issue) => issue.severity === "error"),
+      ...issues.filter((issue) => issue.severity !== "error"),
+    ];
   }, [doc.frontmatter, debouncedValidation]);
 
   const issueMessageDict = useMemo<Partial<Record<VaultIssueCode, string>>>(
@@ -253,6 +261,13 @@ export function DocFrontmatterBlock({
       "missing-expected-field": t("validatorIssues.missingExpectedField"),
       "non-canonical-graph-array": t("validatorIssues.nonCanonicalGraphArray"),
       "parse-zero-keys": t("validatorIssues.parseZeroKeys"),
+      // 오류 코드 넷 — 종전엔 사전에 없었다. 화면이 오류를 걸러 내고 있었으니
+      // 평문도 필요 없었던 것이고, 그게 이 결함의 크기를 말해 준다.
+      "missing-uid": t("validatorIssues.missingUid"),
+      "invalid-uid": t("validatorIssues.invalidUid"),
+      "duplicate-uid": t("validatorIssues.duplicateUid"),
+      "invalid-merged-uids": t("validatorIssues.invalidMergedUids"),
+      "non-canonical-merged-uids": t("validatorIssues.nonCanonicalMergedUids"),
     }),
     [t],
   );
@@ -321,12 +336,30 @@ export function DocFrontmatterBlock({
   // meaning without expanding the frontmatter or hunting the body.
   const definitionValue = formatValue(doc.frontmatter?.definition);
 
-  if (fields.length === 0 && codeLocations.length === 0 && !definitionValue) return null;
-
   const kindValue = currentKind;
+
+  // **kind 가 없는 문서도 자기 문제를 말한다** (2026-08-04).
+  //
+  // 종전에는 호출부(`DocsVaultPage`)가 `typeof kind === 'string' && kind` 로 막아
+  // 블록 자체를 안 그렸다. 그런데 kind 없음/빔이 **노드가 지도에서 사라지는 가장
+  // 흔한 두 경로**다 — 즉 설명이 가장 필요한 두 경우에만 화면이 침묵했다.
+  //
+  // 그렇다고 아무 문서에나 그리지는 않는다. 판정은 validator 가 이미 갖고 있는
+  // 휴리스틱을 그대로 쓴다: `validateVaultDocFrontmatter` 는 ontology 의도가
+  // 없는 문서(kind 도 없고 domain/capabilities/… 같은 시그널 키도 없는 안내
+  // 문서)에는 이슈를 하나도 내지 않는다. 그래서 «이슈가 있다» 가 곧 «이 문서는
+  // 노드가 되려다 실패했다» 다. 판정을 복제하지 않고 빌려 쓴다.
+  const diagnosticOnly = !kindValue;
+  if (diagnosticOnly && validationIssues.length === 0) return null;
+  if (!diagnosticOnly && fields.length === 0 && codeLocations.length === 0 && !definitionValue) {
+    return null;
+  }
+
   const slugValue = formatValue(doc.frontmatter?.slug) ?? doc.slug;
+  // kind 가 비어 있을 때도 고칠 수 있어야 한다 — 진단만 보여 주고 고칠 길이
+  // 없으면 그건 막다른 문장이다.
   const canQuickPatch =
-    canEdit && Boolean(onPatch) && kindValue != null && isEditableKind(kindValue);
+    canEdit && Boolean(onPatch) && (kindValue == null || isEditableKind(kindValue));
 
   function startEditing() {
     setDraftKind(currentKind ?? "");
@@ -362,10 +395,169 @@ export function DocFrontmatterBlock({
     }
   }
 
+  /**
+   * 진단 행 — 심각도가 **색과 데이터 속성 둘 다**로 나온다.
+   *
+   * 색만으로 갈리면 색이 유일한 구분 채널이 되므로(헌장 위반), 오류 행은
+   * 아이콘 자리의 `!` 와 라벨(「오류」/「경고」)을 함께 싣는다.
+   */
+  const issueRows =
+    validationIssues.length > 0 ? (
+      <div
+        data-testid="doc-frontmatter-validator-warnings"
+        aria-label={t("validatorWarningsAriaLabel")}
+        className="mt-2 flex flex-col gap-1 font-sans"
+      >
+        {validationIssues.map((issue, index) => (
+          <p
+            key={`${issue.code}-${index}`}
+            data-testid="doc-frontmatter-issue"
+            data-severity={issue.severity}
+            // 공통 기하는 한 줄로 — 심각도로 갈리는 것은 **톤뿐**이다.
+            // (분기마다 클래스를 통째로 복사하면 off-ramp 유틸리티 래칫이 오른다.)
+            className={`rounded-micro border px-2 py-1.5 text-label leading-4 ${
+              issue.severity === "error"
+                ? "border-[color:var(--color-danger-a32)] bg-[color:var(--color-danger-a08)] text-[color:var(--color-status-danger)]"
+                : "border-[color:var(--color-amber-docs-a18)] bg-[color:var(--color-amber-source-a08)] text-[color:var(--color-amber-docs-a92)]"
+            }`}
+          >
+            <span className="mr-1.5 font-mono text-caption uppercase tracking-[0.08em]">
+              {issue.severity === "error" ? t("issueSeverityError") : t("issueSeverityWarning")}
+            </span>
+            {mapVaultIssueCodeToPlainMessage(issue.code, issueMessageDict)}
+          </p>
+        ))}
+      </div>
+    ) : null;
+
+  const quickPatchSection = canQuickPatch ? (
+    editing ? (
+      <div className="mt-3 flex flex-col gap-2 border-t border-[color:var(--color-divider)] pt-3 font-sans">
+        <label className="flex flex-col gap-1 text-label text-[color:var(--color-text-tertiary)]">
+          {t("editKindLabel")}
+          <select
+            value={draftKind}
+            onChange={(event) => setDraftKind(event.target.value)}
+            disabled={saving}
+            data-testid="doc-frontmatter-kind-select"
+            className="rounded-micro border border-[color:var(--color-border-soft)] bg-[color:var(--color-overlay-1)] px-2 py-1 text-body text-[color:var(--color-text-primary)]"
+          >
+            {/* kind 가 아직 없는 문서는 draft 도 "" 다 — 자리표시자가 없으면
+                브라우저가 첫 항목을 고른 것처럼 보여 «이미 정해졌다» 고
+                거짓말한다. */}
+            {draftKind === "" ? <option value="">{t("editKindUnset")}</option> : null}
+            {EDITABLE_KINDS.map((kind) => (
+              <option key={kind} value={kind}>
+                {kindLabel(kind)}
+              </option>
+            ))}
+          </select>
+        </label>
+        <label className="flex flex-col gap-1 text-label text-[color:var(--color-text-tertiary)]">
+          {t("editDomainLabel")}
+          <select
+            value={draftDomain}
+            onChange={(event) => setDraftDomain(event.target.value)}
+            disabled={saving}
+            className="rounded-micro border border-[color:var(--color-border-soft)] bg-[color:var(--color-overlay-1)] px-2 py-1 text-body text-[color:var(--color-text-primary)]"
+          >
+            <option value="">{t("editDomainNone")}</option>
+            {domainOptions.map((option) => (
+              <option key={option.slug} value={option.slug}>
+                {option.title}
+              </option>
+            ))}
+          </select>
+        </label>
+        <label className="flex flex-col gap-1 text-label text-[color:var(--color-text-tertiary)]">
+          {t("editTitleLabel")}
+          <input
+            type="text"
+            value={draftTitle}
+            onChange={(event) => setDraftTitle(event.target.value)}
+            disabled={saving}
+            className="rounded-micro border border-[color:var(--color-border-soft)] bg-[color:var(--color-overlay-1)] px-2 py-1 text-body text-[color:var(--color-text-primary)]"
+          />
+        </label>
+        {error ? (
+          <p role="alert" className="text-label text-[color:var(--color-status-danger)]">
+            {error}
+          </p>
+        ) : null}
+        <div className="flex items-center gap-2">
+          <button
+            type="button"
+            onClick={() => void handleSave()}
+            disabled={saving}
+            className={controlClass({
+              shape: "chip",
+              tone: "accentOnTint",
+              className: "hover:bg-[color:var(--color-indigo-a16)]",
+            })}
+          >
+            {saving ? t("editSaving") : t("editSave")}
+          </button>
+          <button
+            type="button"
+            onClick={() => setEditing(false)}
+            disabled={saving}
+            className={controlClass({
+              shape: "link",
+              tone: "muted",
+              className: "hover:text-[color:var(--color-text-secondary)]",
+            })}
+          >
+            {t("editCancel")}
+          </button>
+        </div>
+      </div>
+    ) : (
+      <button
+        type="button"
+        onClick={startEditing}
+        data-testid="doc-frontmatter-edit-action"
+        className={controlClass({
+          shape: "link",
+          className: "touch-hit-expand mt-2 font-sans hover:text-[color:var(--color-text-primary)]",
+        })}
+      >
+        <Pencil size={11} aria-hidden />
+        {diagnosticOnly ? t("setKindAction") : t("editAction")}
+      </button>
+    )
+  ) : null;
+
+  // 축약 진단 블록 — 각인 frontmatter 를 통째로 그리지 않는다. 이 문서는 아직
+  // 노드가 아니라서 보여 줄 그래프 사실이 없고, 필요한 것은 «왜 지도에 없는가»
+  // 한 줄과 «어디서 고치는가» 하나다.
+  if (diagnosticOnly) {
+    return (
+      <section
+        aria-label={t("diagnosticAriaLabel")}
+        data-testid="doc-frontmatter-block"
+        data-variant="diagnostic"
+        className="mx-auto mt-4 max-w-[760px] px-6 md:px-10"
+      >
+        <div className="rounded-chip border border-[color:var(--color-border-soft)] bg-[color:var(--color-canvas)] px-4 py-3">
+          <p className="text-body font-medium text-[color:var(--color-text-primary)]">
+            {t("notOnMapTitle")}
+          </p>
+          {/* `leading-*` 없음 — `text-label` 이 자기 행간을 싣는다. */}
+          <p className="mt-1 text-label text-[color:var(--color-text-tertiary)]">
+            {t("notOnMapBody")}
+          </p>
+          {issueRows}
+          {quickPatchSection}
+        </div>
+      </section>
+    );
+  }
+
   return (
     <section
       aria-label={t("ariaLabel")}
       data-testid="doc-frontmatter-block"
+      data-variant="full"
       className="mx-auto mt-4 max-w-[760px] px-6 md:px-10"
     >
       {definitionValue ? (
@@ -494,97 +686,7 @@ export function DocFrontmatterBlock({
             </ul>
           </div>
         ) : null}
-        {canQuickPatch ? (
-          editing ? (
-            <div className="mt-3 flex flex-col gap-2 border-t border-[color:var(--color-divider)] pt-3 font-sans">
-              <label className="flex flex-col gap-1 text-label text-[color:var(--color-text-tertiary)]">
-                {t("editKindLabel")}
-                <select
-                  value={draftKind}
-                  onChange={(event) => setDraftKind(event.target.value)}
-                  disabled={saving}
-                  className="rounded-micro border border-[color:var(--color-border-soft)] bg-[color:var(--color-overlay-1)] px-2 py-1 text-body text-[color:var(--color-text-primary)]"
-                >
-                  {EDITABLE_KINDS.map((kind) => (
-                    <option key={kind} value={kind}>
-                      {kindLabel(kind)}
-                    </option>
-                  ))}
-                </select>
-              </label>
-              <label className="flex flex-col gap-1 text-label text-[color:var(--color-text-tertiary)]">
-                {t("editDomainLabel")}
-                <select
-                  value={draftDomain}
-                  onChange={(event) => setDraftDomain(event.target.value)}
-                  disabled={saving}
-                  className="rounded-micro border border-[color:var(--color-border-soft)] bg-[color:var(--color-overlay-1)] px-2 py-1 text-body text-[color:var(--color-text-primary)]"
-                >
-                  <option value="">{t("editDomainNone")}</option>
-                  {domainOptions.map((option) => (
-                    <option key={option.slug} value={option.slug}>
-                      {option.title}
-                    </option>
-                  ))}
-                </select>
-              </label>
-              <label className="flex flex-col gap-1 text-label text-[color:var(--color-text-tertiary)]">
-                {t("editTitleLabel")}
-                <input
-                  type="text"
-                  value={draftTitle}
-                  onChange={(event) => setDraftTitle(event.target.value)}
-                  disabled={saving}
-                  className="rounded-micro border border-[color:var(--color-border-soft)] bg-[color:var(--color-overlay-1)] px-2 py-1 text-body text-[color:var(--color-text-primary)]"
-                />
-              </label>
-              {error ? (
-                <p role="alert" className="text-label text-[color:var(--color-status-danger)]">
-                  {error}
-                </p>
-              ) : null}
-              <div className="flex items-center gap-2">
-                <button
-                  type="button"
-                  onClick={() => void handleSave()}
-                  disabled={saving}
-                  className={controlClass({
-                    shape: "chip",
-                    tone: "accentOnTint",
-                    className: "hover:bg-[color:var(--color-indigo-a16)]",
-                  })}
-                >
-                  {saving ? t("editSaving") : t("editSave")}
-                </button>
-                <button
-                  type="button"
-                  onClick={() => setEditing(false)}
-                  disabled={saving}
-                  className={controlClass({
-                    shape: "link",
-                    tone: "muted",
-                    className: "hover:text-[color:var(--color-text-secondary)]",
-                  })}
-                >
-                  {t("editCancel")}
-                </button>
-              </div>
-            </div>
-          ) : (
-            <button
-              type="button"
-              onClick={startEditing}
-              className={controlClass({
-                shape: "link",
-                className:
-                  "touch-hit-expand mt-2 font-sans hover:text-[color:var(--color-text-primary)]",
-              })}
-            >
-              <Pencil size={11} aria-hidden />
-              {t("editAction")}
-            </button>
-          )
-        ) : null}
+        {quickPatchSection}
         <p className="mt-2 flex items-center gap-1.5 text-label text-[color:var(--color-text-quaternary)]">
           <svg width="16" height="6" viewBox="0 0 16 6" aria-hidden="true" className="shrink-0">
             <line
@@ -615,22 +717,7 @@ export function DocFrontmatterBlock({
           <MtimeConflictBadge message={tProvenance("conflictMessage")} />
         </div>
       ) : null}
-      {validationWarnings.length > 0 ? (
-        <div
-          data-testid="doc-frontmatter-validator-warnings"
-          aria-label={t("validatorWarningsAriaLabel")}
-          className="mt-2 flex flex-col gap-1 font-sans"
-        >
-          {validationWarnings.map((issue, index) => (
-            <p
-              key={`${issue.code}-${index}`}
-              className="rounded-micro border border-[color:var(--color-amber-docs-a18)] bg-[color:var(--color-amber-source-a08)] px-2 py-1.5 text-label leading-4 text-[color:var(--color-amber-docs-a92)]"
-            >
-              {mapVaultIssueCodeToPlainMessage(issue.code, issueMessageDict)}
-            </p>
-          ))}
-        </div>
-      ) : null}
+      {issueRows}
       {exampleDoc ? (
         <div className="mt-2 font-sans">
           <button
