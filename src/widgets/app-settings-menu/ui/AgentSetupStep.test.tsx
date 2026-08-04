@@ -117,4 +117,47 @@ describe('AgentSetupStep — 흐름 안 접기 문법 계약', () => {
     const closedChevron = closedC.querySelector('button svg.transition-transform');
     expect((closedChevron as SVGElement).style.transform).toBe('rotate(-90deg)');
   });
+
+  /**
+   * ⑤ 위계 — **펼친 행은 흐린 잉크를 받지 않는다.**
+   *
+   * 되돌리면 여기가 빨개진다: `tone={state === 'todo' ? 'muted' : 'strong'}` 로
+   * 되돌리면 아직 안 온 단계를 펼쳤을 때 그 제목이 `quaternary` 로 떨어진다.
+   * 설치 앱 실측(2026-08-04, 1512×900): 3단계를 펼친 화면에서 펼친 행 제목
+   * rgb(130,130,137) < 접힌 1단계 제목 rgb(247,248,248) — 읽고 있는 줄이 가장
+   * 흐렸다.
+   */
+  const renderTodoStep = (open: boolean) =>
+    render(
+      <ol>
+        <AgentSetupStep
+          n={3}
+          title="연결 확인"
+          state="todo"
+          open={open}
+          onToggle={() => {}}
+          testId="probe-todo"
+        >
+          <button type="button">내용 컨트롤</button>
+        </AgentSetupStep>
+      </ol>,
+    );
+
+  it('⑤ 위계 — 안 온 단계라도 펼쳐 두면 흐린 잉크(quaternary)를 안 받는다', () => {
+    const closed = renderTodoStep(false);
+    expect(
+      closed.getByTestId('probe-todo-toggle').className,
+      '접힌 미래 단계가 물러나지 않는다 — 흐름의 사실이 지워졌다',
+    ).toContain('--color-text-quaternary');
+    closed.unmount();
+
+    const opened = renderTodoStep(true);
+    expect(
+      opened.getByTestId('probe-todo-toggle').className,
+      '펼친 행이 흐린 잉크를 받았다 — 읽고 있는 줄이 화면에서 가장 흐려진다',
+    ).not.toContain('--color-text-quaternary');
+    expect(opened.getByTestId('probe-todo-toggle').className).toContain(
+      '--color-text-primary',
+    );
+  });
 });
