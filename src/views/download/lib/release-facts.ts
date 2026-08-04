@@ -36,7 +36,7 @@ export { CLI_COMMAND_COUNT } from "../../../../cli/src/lib/cli-commands.mjs";
  * 값은 여기 두고 **드리프트는 테스트가 잡는다** — CLI 쪽과 같은 규율이다.
  * 도구를 추가/삭제하면 `release-facts.test.ts` 가 먼저 빨개진다.
  */
-export const MCP_TOOL_COUNT = 33;
+export const MCP_TOOL_COUNT = 35;
 
 export const RELEASE_VERSION = "1.0.0-rc.6";
 export const RELEASE_MIN_MACOS = "macOS 12";

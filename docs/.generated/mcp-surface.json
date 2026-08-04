@@ -2,9 +2,9 @@
   "_generatedBy": "pnpm docs:surface:build",
   "_contract": "Derived from the MCP tool registry and the CLI command registry. Never hand-edit — run `pnpm docs:surface:build` and commit the diff.",
   "mcp": {
-    "toolCount": 33,
+    "toolCount": 35,
     "readToolCount": 19,
-    "writeToolCount": 14,
+    "writeToolCount": 16,
     "tools": [
       {
         "name": "absorb_document",
@@ -99,6 +99,19 @@
         "required": []
       },
       {
+        "name": "connect_project_source",
+        "mode": "write",
+        "arguments": [
+          "confirm",
+          "projectSlug",
+          "repair",
+          "rootPath"
+        ],
+        "required": [
+          "projectSlug"
+        ]
+      },
+      {
         "name": "connection_info",
         "mode": "read",
         "arguments": [],
@@ -115,6 +128,17 @@
         ],
         "required": [
           "slug"
+        ]
+      },
+      {
+        "name": "disconnect_project_source",
+        "mode": "write",
+        "arguments": [
+          "confirm",
+          "projectSlug"
+        ],
+        "required": [
+          "projectSlug"
         ]
       },
       {
@@ -466,7 +490,7 @@
     ]
   },
   "cli": {
-    "commandCount": 52,
+    "commandCount": 54,
     "commands": [
       "absorb",
       "add",
@@ -481,8 +505,10 @@
       "bootstrap",
       "compile",
       "components",
+      "connect-source",
       "cycles",
       "delete",
+      "disconnect-source",
       "domain-matrix",
       "explain",
       "export",

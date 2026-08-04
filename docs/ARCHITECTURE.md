@@ -57,7 +57,7 @@ tags: [architecture, infra, overview]
 │ ├─ 19 read tools  connection/git proof · list/get/find ·│
 │ │                  compile_ontology · query_ontology ·  │
 │ │                  analyze_repo_structure · infer_imports│
-│ └─ 14 write tools add_concept · add_concepts ·          │
+│ └─ 16 write tools add_concept · add_concepts ·          │
 │                    add_relation · add_relations ·       │
 │                    remove/replace relation · patch ·    │
 │                    reclassify · delete/rename/merge ·   │
@@ -74,7 +74,7 @@ tags: [architecture, infra, overview]
        ↑ stdio JSON-RPC (separate process)
 
 ┌────────────────────────────────────────────────────────┐
-│ CLI (cli/, v0.11.0 — 52 commands)                      │
+│ CLI (cli/, v0.11.0 — 54 commands)                      │
 │ ├─ init/agent-activity/add/import/list/find/validate/query│
 │ ├─ mcp-verify/analyze/infer-imports/bootstrap/compile  │
 │ ├─ preflight (commit preflight + pre-commit hook)      │

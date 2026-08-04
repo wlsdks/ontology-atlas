@@ -363,7 +363,7 @@ the explicit CLI wrapper arguments without changing into `mcp/`; use
 
 ### 2. Restart the agent
 
-The server connects over stdio. You should now see 33 tools under the `ontology-atlas` namespace.
+The server connects over stdio. You should now see 35 tools under the `ontology-atlas` namespace.
 
 ### 3. Call the tools
 
@@ -375,7 +375,7 @@ The server connects over stdio. You should now see 33 tools under the `ontology-
 → mcp__ontology-atlas__get_concept({ slug: 'capabilities/mcp-server' })
 ```
 
-## The 33 tools
+## The 35 tools
 
 ### Node identity contract
 
@@ -420,6 +420,8 @@ real element-node slugs; a raw file path is evidence, not a graph child.
 | `get_concepts` | **R+** Batch reader — accepts exactly one of `slugs[]` or `uids[]` (max 50; max 20 with `body: 'full'`), returns `concepts[]` with both `uid` and current `slug` plus the same per-row shape as `get_concept` (frontmatter + `excerpt`\|`body` + `bodyInfo` + neighbors + mtime + warnings?). `body` takes the same `'excerpt'` / `'full'` values as `get_concept` and applies to every row. Output order matches the selected input array. Missing or invalid rows return `{ uid|slug, ok: false, error }` rather than aborting the batch, so later valid identities still resolve. Replaces N×`get_concept` round-trips when an agent already has K specific identities (e.g. from `list_concepts` / `find_path` / `find_orphans`) and needs full bodies for all of them. |
 | `find_evidence` | Partial-match search by `title` — scans frontmatter title/capabilities/elements as well as body content. Each match row includes `uid, slug, kind, title, domain, mtime, matchedIn, score, excerpt` (same identity shape as `list_concepts` / `find_backlinks` / `find_orphans` / `query_concepts` plus the `excerpt` is a prose preview, max 200 chars, heading/표/코드/리스트/인용 skip — same `extractSummaryExcerpt` helper as `get_concept`) so agents see *what the matching doc says* without a follow-up get_concept call. When the body holds more than the excerpt shows, the row carries `excerptTruncated: true` + `bodyChars` and the response carries a `bodyHint` naming the `get_concepts({ body: 'full' })` call that returns the rest — the matched text can sit past the excerpt, so a silent cut here hides the very thing that matched. Matches are **ranked** by a deterministic relevance `score` (title match > frontmatter ref > body, + a title token-overlap tiebreaker) and returned best-first, so `matches[0]` is the most relevant node instead of walk-order; pass `limit` for the top-N. Inclusion is unchanged (a node matches iff a substring hit, exactly as before) — ranking only reorders. **Ask-to-Grow**: when `matches` is empty, the response includes `growthHint` — near-titled vault node(s) found by token overlap, or an `add_concept` scaffold when nothing close exists. |
 | `finalize_project_meaning` | Post-write boundary for one project's accepted competency Markdown. Call it only after the concept/relation writes, `validate_vault`, and a complete compile; pass `projectSlug` and the project node's current `expected_mtime`. The server derives the body digest, project graph hash, source fingerprint, and witness inventory itself, then writes only a small receipt to `.ontology-atlas/project-meaning.json`. It never stores raw answers, witness text, an absolute/private source root, or remote coordinates. The flat response includes categorical `meaningAssessment`; `ok: true` means the receipt was written, **not** that source currentness or project meaning is verified. Each call refreshes `measuredAt`, so the tool is intentionally non-idempotent. |
+| `connect_project_source` | Binds one project node to the local code folder it describes, measures it with the same bounded probe the macOS app uses, and writes the source receipt. This is the tool `nextAction: connect_source` (and `repair_source_binding` / `measure_source` / `remeasure_source`) has always been asking for. Omit `rootPath` and the server infers it — the git repository enclosing the vault wins, otherwise the nearest ancestor folder carrying a project manifest. **Dry-run by default**: without `confirm: true` you get the proposed folder, the inference confidence, and how many declared `path:` claims actually resolve inside it, and nothing is written. Re-running with a different `rootPath` replaces the binding. Blocks on an incomplete project scope (a receipt that cannot stamp a project graph hash could never detect later ontology drift) and refuses to overwrite a malformed sidecar unless `repair: true`. The absolute root lives only in the gitignored `.ontology-atlas/project-sources.json`; it never enters the receipt, the markdown, or any handoff. |
+| `disconnect_project_source` | Removes one project's source binding and receipt — the reversal of `connect_project_source`, for a folder bound by mistake or a measurement you want to stop trusting. Dry-run by default; `confirm:true` writes. Other projects' bindings are untouched and no ontology markdown changes; the diagnosis returns to `source_unbound` / `connect_source`. |
 | `find_backlinks` | Finds every node that points to a given `slug`. Inspects all frontmatter array keys (capabilities / elements / dependencies / relates / …) plus body wikilinks/markdown links. Each match row includes `uid`, current `slug`, `kind`, `title`, `domain`, and `mtime` (same shape as `list_concepts`) — agents can retain stable referrer identity and sort/filter "which referrer is in domain X" or "which referrer was touched recently" without follow-up `get_concept` calls. |
 | `find_neighbors` | **R+** One-hop graph neighborhood around a node. Accepts `slug`, optional `direction` (`outgoing` / `incoming` / `both`, default both), optional enum-validated `types` relation filter (`depends_on` is normalized to stored `dependencies`; typos fail with nearest-value hints), `includeNodes`, and `limit`. Returns canonical `edges[]` (`{direction, from, to, via, ref, resolved}`) plus neighbor node summaries carrying `{uid, slug}` so agents can retain stable node identity while inspecting a local graph subview without combining `get_concept` + `find_backlinks` manually. |
 | `find_path` | Shortest path between two slugs (BFS, undirected). Returns `{ from, to, hops, nodes, edges, hopCount, found }` where `nodes[i] = { uid, slug, kind, title, domain? }`, `edges[i] = { from, to, via }`, and `via` is the frontmatter key (`domains` / `domain` / `capabilities` / `elements` / `dependencies` / `relates` / `contains` / `describes`) that linked the pair — so the agent sees stable identity, the current path, and why the nodes connect. Option: `maxHops` (default 5, max 20). **Ask-to-Grow**: when `found:false`, the response includes `growthHint` — an `add_concept` example when an endpoint doesn't resolve, or an `add_relation` example when both endpoints exist but no path connects them. |
@@ -796,7 +798,7 @@ colons. Nodes with no stamp match neither side; that is what unknown means.
 
 Every kind also accepts an optional `display` field, right after `title` in
 `preferredOrder`. It exists for nodes whose real `title` carries a long
-parenthetical qualifier — e.g. `title: CLI Developer Entry (52 commands —
+parenthetical qualifier — e.g. `title: CLI Developer Entry (54 commands —
 vault + MCP verify + ...)`. The topology canvas label, INDEX panel row, node
 popover header, and full-detail header all render the *display name*, not
 the raw `title`:
@@ -954,7 +956,7 @@ verifier itself and change only when the tool contract changes.
 · step 2 — server boot + tools/list + list_concepts/project probe/get_concept/get_concepts/find_evidence/find_backlinks/query_concepts/limited query_concepts/analyze_repo_structure/infer_imports/index_project/find_neighbors/find_path/find_orphans/list_kinds/destructive dry-runs (vault=/path/to/docs/ontology, timeout=20000ms)
 ✓ initialize OK — server ontology-atlas-mcp@0.13.0
 ✓ initialize instructions — tool inventory plus first-contact safety and recovery guidance present
-✓ tools/list 33/33 (33/33 titled; 19/19 read; 14/14 write; 8/8 destructive; 3/3 idempotent; 33/33 local-only) — absorb_document · add_concept · add_concepts · add_relation · add_relations · analyze_repo_structure · compile_ontology · connection_info · delete_concept · finalize_project_meaning · find_backlinks · find_evidence · find_neighbors · find_orphans · find_path · get_concept · get_concepts · git_history · git_snapshot · git_status · index_project · infer_imports · list_concepts · list_kinds · merge_concepts · patch_concept · query_concepts · query_ontology · reclassify_concept · remove_relation · rename_concept · replace_relation · validate_vault
+✓ tools/list 35/35 (35/35 titled; 19/19 read; 16/16 write; 9/9 destructive; 3/3 idempotent; 35/35 local-only) — absorb_document · add_concept · add_concepts · add_relation · add_relations · analyze_repo_structure · compile_ontology · connect_project_source · connection_info · delete_concept · disconnect_project_source · finalize_project_meaning · find_backlinks · find_evidence · find_neighbors · find_orphans · find_path · get_concept · get_concepts · git_history · git_snapshot · git_status · index_project · infer_imports · list_concepts · list_kinds · merge_concepts · patch_concept · query_concepts · query_ontology · reclassify_concept · remove_relation · rename_concept · replace_relation · validate_vault
 ✓ tools/list inventory names — missing/extra/duplicate/invalid checks passed
 ✓ tools/list schema contract — strict arguments + annotations + graph-query enums + graph kind enums/descriptions + write relation enums + health tuning + post-write maintenance + project-meaning receipt/assessment schemas
 ✓ strict arguments — unknown tool argument rejected at runtime
@@ -1016,7 +1018,7 @@ verifier itself and change only when the tool contract changes.
 ✓ read census consistency — <N> nodes across list_kinds/list_concepts/compile_ontology/overview, <N> kinds
 ✓ structuredContent — direct 16/16, write 5/5 (batch row-isolation 2/2, batch no-write metadata 2/2, destructive dry-run 3/3), maintenance 2/2 (resume skipped: no actions), graph 13/13
 
-All passed — register .mcp.json with your MCP client and restart to use the 33 tools.
+All passed — register .mcp.json with your MCP client and restart to use the 35 tools.
 
 ```
 
@@ -1234,7 +1236,7 @@ After you add `.mcp.json` / `.codex/config.toml` and restart the agent, try the 
 > 7. Call `query_ontology({ operation: "overview", limit: 5 })` to confirm graph-query summaries work without fetching the full compile artifact.
 > 8. Call `query_ontology({ operation: "query_plan", targetOperation: "overview" })` and `query_ontology({ operation: "query_plan", targetOperation: "project_map" })` before heavier graph exploration so the agent sees the cost/index contract across more than one operation.
 
-If those read-only calls respond cleanly, the agent can see the vault and its graph health. Once an agent starts *committing* its analysis of your codebase to the ontology through these 33 tools (19 read + 14 write), the human + AI co-authoring loop is officially open.
+If those read-only calls respond cleanly, the agent can see the vault and its graph health. Once an agent starts *committing* its analysis of your codebase to the ontology through these 35 tools (19 read + 16 write), the human + AI co-authoring loop is officially open.
 
 ## Design principles
 

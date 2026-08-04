@@ -67,11 +67,23 @@
  */
 import { Server } from '@modelcontextprotocol/server';
 import { StdioServerTransport } from '@modelcontextprotocol/server/stdio';
-import { basename, relative, resolve, sep } from 'node:path';
+import { basename, isAbsolute, relative, resolve, sep } from 'node:path';
 import { createHash } from 'node:crypto';
 
 import { SERVER_VERSION } from './server-version.mjs';
-import { readProjectSourceView } from './project-source-receipt.mjs';
+import {
+  PROJECT_SOURCE_STATE_RELATIVE_PATH,
+  buildProjectSourceReceipt,
+  readProjectSourceBindings,
+  readProjectSourceView,
+  removeProjectSourceBindings,
+  writeProjectSourceBinding,
+} from './project-source-receipt.mjs';
+import { inspectProjectSource } from './project-source-inspection.mjs';
+import { collectProjectSourceCandidates } from './project-source-discovery.mjs';
+import { inferProjectSourceProposal } from './project-source-inference.mjs';
+import { deriveProjectSourceWitnessesFromDocs } from './project-source-witnesses.mjs';
+import { projectSourceRemedy, undoPlan } from './project-source-remedy.mjs';
 import { buildProjectSourceGraphHash } from './project-source-graph-hash.mjs';
 import { buildProjectMeaningInventory } from './project-meaning-inventory.mjs';
 import { attachMeaningRepair, buildMeaningRepair } from './meaning-repair.mjs';
@@ -1723,7 +1735,7 @@ Every valid node has both identities: immutable \`uid\` is the permanent machine
 ## Tool inventory (33 tools = read 19 + write 14)
 
 **read** — \`connection_info\` · \`git_status\` · \`git_history\` · \`list_concepts\` · \`get_concept\` · \`get_concepts\` · \`find_evidence\` · \`find_backlinks\` · \`find_neighbors\` · \`find_path\` · \`list_kinds\` · \`find_orphans\` · \`query_concepts\` · \`compile_ontology\` · \`query_ontology\` · \`validate_vault\` · \`analyze_repo_structure\` · \`infer_imports\` · \`index_project\`.
-**write** — \`add_concept\` · \`add_concepts\` · \`add_relation\` · \`add_relations\` · \`remove_relation\` · \`replace_relation\` · \`patch_concept\` · \`reclassify_concept\` · \`delete_concept\` · \`rename_concept\` · \`merge_concepts\` · \`absorb_document\` · \`git_snapshot\` · \`finalize_project_meaning\`.
+**write** — \`add_concept\` · \`add_concepts\` · \`add_relation\` · \`add_relations\` · \`remove_relation\` · \`replace_relation\` · \`patch_concept\` · \`reclassify_concept\` · \`delete_concept\` · \`rename_concept\` · \`merge_concepts\` · \`absorb_document\` · \`git_snapshot\` · \`finalize_project_meaning\` · \`connect_project_source\` · \`disconnect_project_source\`.
 
 ## Kind hierarchy (top → leaf)
 
@@ -1800,6 +1812,7 @@ The user is the single source of truth. Never auto-write generated proposals.
 - **\`absorb_document\`** (Slice 0 — the "absorption tool") converts a CLAUDE.md/AGENTS.md-style file into typed vault nodes. Dry-run by default (plan only); \`confirm: true\` writes rule/policy sections as \`kind: document\` (\`role: policy\`) nodes, backs up the source to \`<file>.pre-absorb.bak\`, and rewrites it into a slim pointer that preserves every non-absorbed section (architecture/component suggestions, unclassified prose, and injection-suspect sections) verbatim. If the canonical source path is outside \`repoRoot\` (including an inside-repo symlink that resolves outside), confirmation is blocked until the caller explicitly passes \`allowOutsideRepo:true\` after reviewing the absolute path. Architecture/component sections are reported as candidates only — never auto-written; land them yourself with \`add_concept\` if useful.
 - **\`expected_mtime\` (existing-node write tools)** — to guard against concurrent edits by the human or another agent: capture \`mtime\` from \`get_concept\`, pass it as \`expected_mtime\` on the next write. If the file changed in between, the call throws \`VaultConflictError\` instead of silently overwriting. For \`merge_concepts\`, also pass the survivor's mtime as \`expected_into_mtime\`; both identities can otherwise race.
 - **\`finalize_project_meaning\`** is the post-write boundary for project competency answers. Call it only after accepted concept/relation writes, \`validate_vault\`, and a complete compile. It derives current body/graph/source provenance itself and stores no raw answers or private source coordinates; \`ok:true\` means the receipt was written, while the returned categorical \`meaningAssessment\` remains fail-closed when source currentness cannot be checked.
+- **\`connect_project_source\` / \`disconnect_project_source\`** bind and unbind the local code folder a project node describes. When \`agent_brief.projectSource.nextAction\` says \`connect_source\`, \`repair_source_binding\`, \`measure_source\`, or \`remeasure_source\`, this is the call that performs it — \`agent_brief.projectSourceRemedy\` hands you the exact arguments. Omit \`rootPath\` and the server infers the folder (the git repository enclosing the vault, else the nearest ancestor project manifest); the default dry-run reports the candidate and how many declared \`path:\` claims resolve inside it before you pass \`confirm:true\`. Never guess an absolute path for the user — run the dry-run and let them see the folder. The absolute root stays in the gitignored vault sidecar and never enters a receipt or handoff.
 
 ## When a tool throws — read the error suffix
 
@@ -2302,6 +2315,90 @@ const TOOLS = [
         'meaningAssessment',
       ],
       additionalProperties: false,
+    },
+  },
+  {
+    name: 'connect_project_source',
+    description:
+      'Bind a project node to the local code folder it describes, measure it, and write the source receipt. '
+      + 'This is what `nextAction: connect_source` (and `repair_source_binding` / `measure_source` / `remeasure_source`) asks for. '
+      + 'Omit `rootPath` and the server infers it: the git repository enclosing the vault wins, otherwise the nearest ancestor folder carrying a project manifest. '
+      + 'Without `confirm: true` nothing is written — you get the proposed folder, how many declared `path:` claims actually land in it, and the exact confirming call. '
+      + 'Re-running with a different `rootPath` replaces the binding; `disconnect_project_source` removes it. '
+      + 'The absolute root stays in the local gitignored sidecar `.ontology-atlas/project-sources.json` and never enters the receipt, the graph markdown, or any handoff.',
+    inputSchema: {
+      type: 'object',
+      properties: {
+        projectSlug: nonBlankStringSchema(
+          'Exact project node slug (or an unambiguous vault alias) to bind.',
+        ),
+        rootPath: nonBlankStringSchema(
+          'Absolute local folder holding the code. Omit to auto-infer, or to re-measure an existing binding.',
+        ),
+        confirm: {
+          type: 'boolean',
+          description: 'Required to write. Default false returns the proposal and changes nothing.',
+        },
+        repair: {
+          type: 'boolean',
+          description:
+            'Discard a malformed .ontology-atlas/project-sources.json instead of refusing to write over it.',
+        },
+      },
+      required: ['projectSlug'],
+    },
+    outputSchema: {
+      type: 'object',
+      properties: {
+        ok: { type: 'boolean' },
+        changed: { type: 'boolean' },
+        confirmed: { type: 'boolean' },
+        contract: { type: 'string', enum: ['projectSourceConnect:v1'] },
+        projectSlug: NON_BLANK_STRING_SCHEMA,
+        mode: { type: 'string', enum: ['connect', 'replace', 'remeasure'] },
+        binding: { type: 'object' },
+        inference: { type: ['object', 'null'] },
+        previewReceipt: { type: 'object' },
+        projectSource: { type: 'object' },
+        remedy: { type: 'object' },
+        previousBindingCount: { type: 'number' },
+        nextCall: { type: 'object' },
+        undo: { type: ['object', 'null'] },
+      },
+      required: ['ok', 'changed', 'confirmed', 'contract', 'projectSlug', 'mode', 'binding'],
+    },
+  },
+  {
+    name: 'disconnect_project_source',
+    description:
+      'Remove a project node\'s local source binding and its receipt. The reversal of connect_project_source — use it when the wrong folder was bound, or to stop measuring. '
+      + 'Without `confirm: true` it only reports what would be removed. Other projects\' bindings are never touched, and no ontology markdown changes.',
+    inputSchema: {
+      type: 'object',
+      properties: {
+        projectSlug: nonBlankStringSchema('Project node slug whose source binding should be removed.'),
+        confirm: {
+          type: 'boolean',
+          description: 'Required to write. Default false lists the binding that would be removed.',
+        },
+      },
+      required: ['projectSlug'],
+    },
+    outputSchema: {
+      type: 'object',
+      properties: {
+        ok: { type: 'boolean' },
+        changed: { type: 'boolean' },
+        confirmed: { type: 'boolean' },
+        contract: { type: 'string', enum: ['projectSourceDisconnect:v1'] },
+        projectSlug: NON_BLANK_STRING_SCHEMA,
+        removed: { type: 'number' },
+        bindings: { type: 'array' },
+        projectSource: { type: 'object' },
+        remedy: { type: 'object' },
+        nextCall: { type: 'object' },
+      },
+      required: ['ok', 'changed', 'confirmed', 'contract', 'projectSlug', 'removed', 'bindings'],
     },
   },
   {
@@ -5032,6 +5129,8 @@ const READ_TOOL_NAMES = new Set([
 
 const DESTRUCTIVE_TOOL_NAMES = new Set([
   'git_snapshot',
+  // Removes a measured binding + its receipt. Reversible only by re-measuring.
+  'disconnect_project_source',
   'delete_concept',
   'merge_concepts',
   'rename_concept',
@@ -5124,6 +5223,14 @@ function summarizeWrite(name, args, result) {
     }
     case 'patch_concept':
       return { target: args.slug, summary: `patch_concept ${args.slug}` };
+    case 'connect_project_source':
+      return result?.changed
+        ? { target: result.projectSlug, summary: `connect_project_source ${result.mode} ${result.binding?.kind ?? ''}`.trim() }
+        : null;
+    case 'disconnect_project_source':
+      return result?.changed
+        ? { target: result.projectSlug, summary: `disconnect_project_source ${result.removed}건` }
+        : null;
     case 'rename_concept':
       return result?.dryRun ? null : { target: args.newSlug, summary: `rename ${args.oldSlug} → ${args.newSlug}` };
     case 'reclassify_concept':
@@ -5197,6 +5304,10 @@ server.setRequestHandler('tools/call', async (request) => {
         // The receipt is the complete durable write. Appending activity after
         // it would immediately create a second, non-atomic vault mutation.
         return ok(finalizeProjectMeaningTool(args));
+      case 'connect_project_source':
+        return ok(logWrite(name, args, connectProjectSourceTool(args)));
+      case 'disconnect_project_source':
+        return ok(logWrite(name, args, disconnectProjectSourceTool(args)));
       case 'add_concept':
         return ok(logWrite(name, args, addConcept(args)));
       case 'add_concepts':
@@ -7040,7 +7151,15 @@ function meaningSourceFromProjectSource(projectSource) {
   };
 }
 
-function projectMeaningContext(artifact, projectSlug, structureStatus) {
+/**
+ * One project's containment scope, its documents, and its graph hash.
+ * Shared by the meaning assessment and the source connect tools so the two can
+ * never disagree about what "this project" contains — the hash stamped into a
+ * receipt and the witnesses checked against the source must come from the same
+ * boundary. A bounded/partial scope yields `graphHash: null`, which every
+ * caller treats as fail-closed.
+ */
+function projectSourceScope(artifact, projectSlug, allDocs = null) {
   let scope = null;
   let docs = [];
   let graphHash = null;
@@ -7052,12 +7171,17 @@ function projectMeaningContext(artifact, projectSlug, structureStatus) {
     });
     if (!scope.nodes.limited && scope.nodes.total === scope.nodes.rows.length) {
       const scopedSlugs = new Set(scope.nodes.rows.map((node) => node.slug));
-      docs = loadVaultDocs(VAULT_ROOT).filter((doc) => scopedSlugs.has(doc.slug));
+      docs = (allDocs ?? loadVaultDocs(VAULT_ROOT)).filter((doc) => scopedSlugs.has(doc.slug));
       graphHash = buildProjectSourceGraphHash(projectSlug, docs);
     }
   } catch {
     // A partial or invalid scope is represented by the fail-closed assessment.
   }
+  return { scope, docs, graphHash };
+}
+
+function projectMeaningContext(artifact, projectSlug, structureStatus) {
+  const { scope, docs, graphHash } = projectSourceScope(artifact, projectSlug);
   const projectSource = readProjectSourceView(VAULT_ROOT, projectSlug, graphHash);
   const inventoryResult = buildProjectMeaningInventory({
     projectSlug,
@@ -7114,8 +7238,229 @@ function attachProjectMeaning(agentBrief, artifact) {
   return attachMeaningRepair({
     ...agentBrief,
     projectSource: context.projectSource,
+    // The diagnosis has always named an action. This is the same name turned
+    // into a call an agent can make and a screen can render as one button.
+    projectSourceRemedy: projectSourceRemedy(context.projectSource),
     meaningAssessment: context.meaningAssessment,
   }, context.meaningRepair);
+}
+
+// ── Project source connect / disconnect ───────────────────────────────────
+
+const PROJECT_SOURCE_CONNECT_CONTRACT = 'projectSourceConnect:v1';
+const PROJECT_SOURCE_DISCONNECT_CONTRACT = 'projectSourceDisconnect:v1';
+
+function resolveProjectNodeSlug(projectSlug, allDocs) {
+  const canonicalSlug = resolveExistingVaultSlug(projectSlug, allDocs);
+  if (!canonicalSlug) {
+    throw new Error(
+      `Project slug does not exist in vault: "${projectSlug}". Use list_concepts({kind:"project"}) to choose an exact project slug.`,
+    );
+  }
+  const projectDoc = allDocs.find((doc) => doc.slug === canonicalSlug);
+  if (projectDoc?.frontmatter?.kind !== 'project') {
+    throw new Error(
+      `connect_project_source requires a kind: project node; received "${canonicalSlug}".`,
+    );
+  }
+  return canonicalSlug;
+}
+
+function connectProjectSourceTool({ projectSlug, rootPath, confirm, repair } = {}) {
+  requireOptionalNonBlankString(projectSlug, 'projectSlug');
+  requireOptionalNonBlankString(rootPath, 'rootPath');
+  if (typeof projectSlug !== 'string') throw new Error('projectSlug is required.');
+  if (typeof rootPath === 'string' && !isAbsolute(rootPath)) {
+    throw new Error(`rootPath must be an absolute local path; received "${rootPath}".`);
+  }
+
+  const allDocs = loadVaultDocs(VAULT_ROOT);
+  const canonicalSlug = resolveProjectNodeSlug(projectSlug, allDocs);
+  const artifact = COMPILED_ONTOLOGY_CACHE.get({ includeIndexes: true });
+  const { docs, graphHash } = projectSourceScope(artifact, canonicalSlug, allDocs);
+  if (!graphHash) {
+    throw new Error(
+      `connect_project_source blocked: the project scope for "${canonicalSlug}" is incomplete, so no receipt could detect later ontology drift. Repair the project containment first (query_ontology({operation:"project_scope", project:"${canonicalSlug}"})).`,
+    );
+  }
+  const witnesses = deriveProjectSourceWitnessesFromDocs({ projectSlug: canonicalSlug, docs });
+
+  const sidecar = readProjectSourceBindings(VAULT_ROOT);
+  if (sidecar.status === 'malformed' && repair !== true) {
+    throw new Error(
+      `connect_project_source blocked: ${PROJECT_SOURCE_STATE_RELATIVE_PATH} is malformed. Inspect it, then re-run with repair: true to discard and rewrite it.`,
+    );
+  }
+  const bound = sidecar.status === 'ok'
+    ? sidecar.bindings.filter((binding) => binding.projectSlug === canonicalSlug)
+    : [];
+
+  let inference = null;
+  let selectedRoot = null;
+  let mode = bound.length > 0 ? 'replace' : 'connect';
+  if (typeof rootPath === 'string') {
+    selectedRoot = rootPath;
+  } else if (bound.length === 1) {
+    selectedRoot = bound[0].rootPath;
+    mode = 'remeasure';
+  } else {
+    const { vaultRootPath, candidates } = collectProjectSourceCandidates(VAULT_ROOT);
+    inference = inferProjectSourceProposal({ vaultRootPath, candidates });
+    if (inference.status !== 'proposed') {
+      throw new Error(
+        'connect_project_source found no enclosing code folder for this vault (no git repository and no project manifest above it). '
+        + 'Pass rootPath with the absolute folder that holds the code this ontology describes.',
+      );
+    }
+    selectedRoot = inference.candidate.rootPath;
+    inference = { ...inference, candidates };
+  }
+
+  let probe;
+  try {
+    probe = inspectProjectSource(selectedRoot);
+  } catch (err) {
+    throw new Error(
+      `connect_project_source could not measure "${selectedRoot}": ${err instanceof Error ? err.message : String(err)}`,
+    );
+  }
+
+  const measuredAt = new Date().toISOString();
+  const receipt = buildProjectSourceReceipt({
+    projectSlug: canonicalSlug,
+    graphHash,
+    probe,
+    witnesses,
+    measuredAt,
+  });
+  if (inference) {
+    inference = inferProjectSourceProposal({
+      vaultRootPath: VAULT_ROOT,
+      candidates: inference.candidates,
+      witnessSummary: receipt.witnessSummary,
+    });
+  }
+
+  const binding = {
+    projectSlug: canonicalSlug,
+    sourceId: probe.sourceId,
+    rootPath: probe.rootPath,
+    kind: probe.kind,
+    boundAt: measuredAt,
+  };
+  const bindingView = {
+    rootPath: probe.rootPath,
+    kind: probe.kind,
+    sourceId: probe.sourceId,
+    dirty: probe.dirty,
+    truncated: probe.truncated,
+    inventoryFiles: probe.files.length,
+  };
+
+  if (confirm !== true) {
+    return {
+      ok: true,
+      changed: false,
+      confirmed: false,
+      contract: PROJECT_SOURCE_CONNECT_CONTRACT,
+      projectSlug: canonicalSlug,
+      mode,
+      binding: bindingView,
+      inference,
+      previewReceipt: receipt,
+      previousBindingCount: bound.length,
+      nextCall: {
+        tool: 'connect_project_source',
+        arguments: { projectSlug: canonicalSlug, rootPath: probe.rootPath, confirm: true },
+      },
+      undo: undoPlan(canonicalSlug),
+    };
+  }
+
+  const written = writeProjectSourceBinding(VAULT_ROOT, { ...binding, receipt }, { repair: repair === true });
+  if (written.status === 'blocked_malformed') {
+    throw new Error(
+      `connect_project_source blocked: ${PROJECT_SOURCE_STATE_RELATIVE_PATH} is malformed. Re-run with repair: true to discard and rewrite it.`,
+    );
+  }
+  if (written.status !== 'written') {
+    throw new Error(
+      `connect_project_source could not persist the binding (${written.status}).`,
+    );
+  }
+  const projectSource = readProjectSourceView(VAULT_ROOT, canonicalSlug, graphHash);
+  return {
+    ok: true,
+    changed: true,
+    confirmed: true,
+    contract: PROJECT_SOURCE_CONNECT_CONTRACT,
+    projectSlug: canonicalSlug,
+    mode,
+    binding: bindingView,
+    inference,
+    projectSource,
+    remedy: projectSourceRemedy(projectSource),
+    previousBindingCount: bound.length,
+    undo: undoPlan(canonicalSlug),
+  };
+}
+
+function disconnectProjectSourceTool({ projectSlug, confirm } = {}) {
+  requireOptionalNonBlankString(projectSlug, 'projectSlug');
+  if (typeof projectSlug !== 'string') throw new Error('projectSlug is required.');
+
+  const allDocs = loadVaultDocs(VAULT_ROOT);
+  // A binding can outlive its project node. Disconnect must still be able to
+  // clear it, so an unresolvable slug falls back to the literal value.
+  const canonicalSlug = resolveExistingVaultSlug(projectSlug, allDocs) ?? projectSlug;
+  const sidecar = readProjectSourceBindings(VAULT_ROOT);
+  if (sidecar.status === 'malformed') {
+    throw new Error(
+      `disconnect_project_source blocked: ${PROJECT_SOURCE_STATE_RELATIVE_PATH} is malformed. Inspect it by hand, or re-connect with repair: true to rewrite it.`,
+    );
+  }
+  const bound = sidecar.status === 'ok'
+    ? sidecar.bindings.filter((binding) => binding.projectSlug === canonicalSlug)
+    : [];
+  const removable = bound.map((binding) => ({
+    rootPath: binding.rootPath,
+    kind: binding.kind,
+    boundAt: binding.boundAt,
+    measuredAt: binding.receipt?.measuredAt ?? null,
+  }));
+
+  if (confirm !== true) {
+    return {
+      ok: true,
+      changed: false,
+      confirmed: false,
+      contract: PROJECT_SOURCE_DISCONNECT_CONTRACT,
+      projectSlug: canonicalSlug,
+      removed: 0,
+      bindings: removable,
+      nextCall: {
+        tool: 'disconnect_project_source',
+        arguments: { projectSlug: canonicalSlug, confirm: true },
+      },
+    };
+  }
+
+  const result = removeProjectSourceBindings(VAULT_ROOT, canonicalSlug);
+  if (result.status === 'persistence_failed') {
+    throw new Error('disconnect_project_source could not persist the sidecar update.');
+  }
+  const projectSource = readProjectSourceView(VAULT_ROOT, canonicalSlug, undefined);
+  return {
+    ok: true,
+    changed: result.removed > 0,
+    confirmed: true,
+    contract: PROJECT_SOURCE_DISCONNECT_CONTRACT,
+    projectSlug: canonicalSlug,
+    removed: result.removed,
+    bindings: removable,
+    projectSource,
+    remedy: projectSourceRemedy(projectSource),
+  };
 }
 
 function finalizeProjectMeaningTool({ projectSlug, expected_mtime } = {}) {

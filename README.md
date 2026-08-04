@@ -56,7 +56,7 @@
 
 <p align="center">
   <a href="LICENSE"><img alt="MIT license" src="https://img.shields.io/badge/license-MIT-5e6ad2.svg" /></a>
-  <a href="mcp/README.md"><img alt="33 MCP tools" src="https://img.shields.io/badge/MCP-33_tools-5e6ad2.svg" /></a>
+  <a href="mcp/README.md"><img alt="35 MCP tools" src="https://img.shields.io/badge/MCP-33_tools-5e6ad2.svg" /></a>
   <a href="cli/README.md"><img alt="52 CLI commands" src="https://img.shields.io/badge/CLI-52_commands-5e6ad2.svg" /></a>
   <img alt="Local-first" src="https://img.shields.io/badge/storage-local--first-17181f.svg" />
 </p>
@@ -129,7 +129,7 @@ This is normally a paragraph of setup instructions. Here it is a button.
 
 Claude Code, Cursor, VS Code and Codex each get a button. Any other MCP client
 can copy the snippet from **Advanced · detailed checks**.
-The bundled server exposes **33 tools — 19 read + 14 write**; the
+The bundled server exposes **35 tools — 19 read + 16 write**; the
 [agent guide](mcp/README.md) documents every tool and its contract.
 
 ### 3. Read the map
@@ -254,7 +254,7 @@ coverage from how the documents link to each other.
 
 ## What your agent gets
 
-**33 MCP tools — 19 read, 14 write** — over stdio JSON-RPC, for Claude Code,
+**35 MCP tools — 19 read, 16 write** — over stdio JSON-RPC, for Claude Code,
 Cursor, Codex, and any MCP client. The point is not the tool count; it is that
 the answers are *typed*, so an agent can act on them.
 
