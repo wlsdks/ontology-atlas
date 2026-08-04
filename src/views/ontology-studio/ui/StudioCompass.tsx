@@ -1923,6 +1923,13 @@ function LaneRender({
     view.recommended || view.expected
       ? "text-[color:var(--color-text-tertiary)]"
       : "text-[color:var(--color-text-quaternary)]";
+  /**
+   * 좌·우 소켓은 **중심선이 고정점**이다 — 점선 연결선이 상자의 세로 한가운데
+   * (CY)로 들어오기 때문이다(`layoutLane` 의 `struts`/`anchor`). 위·아래는
+   * 반대로 **카드에서 먼 쪽 모서리**가 고정점이라(연결선이 상자의 아래/위
+   * 모서리로 들어온다) 자랄 때 바깥으로 밀려야 한다.
+   */
+  const centerAnchored = view.bearing === "left" || view.bearing === "right";
   return (
     <>
       {/* lane head label for a filled lane */}
@@ -2090,13 +2097,27 @@ function LaneRender({
           )}
           style={{
             left: layout.socket.x,
-            top: layout.socket.y,
+            // 좌·우 소켓은 **중심선으로** 앉힌다 (2026-08-04). 나머지 둘은
+            // 바깥 모서리가 고정점이라 지금까지대로 top 으로 앉힌다.
+            top: centerAnchored
+              ? layout.socket.y + layout.socket.h / 2
+              : layout.socket.y,
+            // `translate` 는 `transform` 과 **다른 속성**이라 .studio-stage-in
+            // 의 transform 키프레임(6px 상승)과 겹쳐 쓸 수 있다 — transform 에
+            // 적으면 애니메이션이 덮어써서 중심 고정이 사라진다.
+            translate: centerAnchored ? "0 -50%" : undefined,
             width: layout.socket.w,
-            // #94/#95 — grow to wrapped text instead of clipping. The layout
-            // height is Korean-tuned; longer English questions/eyebrows wrap to
-            // more lines, so the dashed box must expand (minHeight) rather than
-            // let the text bleed past its border. `justify-center` keeps short
-            // (Korean) content vertically centered in the base height.
+            // #94/#95 — grow to wrapped text instead of clipping. 상자는 감긴
+            // 글자만큼 자란다(minHeight).
+            //
+            // ⚠️ 2026-08-04 정정 — 예전 주석은 이 성장을 「영어처럼 긴 문장일
+            // 때를 위한 것」이라고 적었지만 **한글 기본 화면에서 이미
+            // 발동한다**: LEFT 질문(「비슷하거나 대체할 수 있는 것은?」)이
+            // 1512×900 에서 두 줄로 감겨 64 → 82px 이 된다(영어는 98px).
+            // 그때 `top` 고정이면 상자는 아래로만 자라고, 점선이 닿는 자리
+            // (CY)가 상자 중심에서 ko 9px · en 8px 빗나갔다 — 좌우 대칭이 이
+            // 그림의 뜻 전부인데 도해가 자기 문법을 어긴 것이다.
+            // 그래서 좌·우는 자란 만큼을 위아래로 나눠 갖는다(위 `top`).
             minHeight: layout.socket.h,
             ...stageStyle,
             border: view.recommended
