@@ -22,6 +22,7 @@ import {
   InlineEditable,
   TopologyV2KindGlyph,
   TopologyV2TraceMark,
+  controlClass,
   useToast,
 } from "@/shared/ui";
 import {
@@ -125,7 +126,12 @@ function ProjectDetailTopBar({
     <nav className="flex flex-wrap items-center gap-3">
       <Link
         href={workspaceHref}
-        className="inline-flex items-center gap-1.5 break-keep text-body text-[color:var(--color-text-tertiary)] transition-colors hover:text-[color:var(--color-text-primary)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--color-indigo-a46)] focus-visible:ring-offset-2 focus-visible:ring-offset-[color:var(--color-canvas)]"
+        className={controlClass({
+          shape: "link",
+          size: "lg",
+          className:
+            "touch-hit-expand gap-1.5 break-keep hover:text-[color:var(--color-text-primary)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--color-indigo-a46)] focus-visible:ring-offset-2 focus-visible:ring-offset-[color:var(--color-canvas)]",
+        })}
         aria-label={t("topBarBackToWorkspaceAria")}
       >
         <ArrowLeft size={14} />

@@ -1351,7 +1351,15 @@ export function ProjectForm({
               <a
                 key={section.id}
                 href={`#${section.id}`}
-                className="rounded-full border border-[color:var(--color-divider)] px-3 py-1.5 text-body text-[color:var(--color-text-secondary)] transition-colors hover:border-[color:var(--color-indigo-brand)] hover:text-[color:var(--color-text-primary)]"
+                // pill/lg — 자연높이 32 는 종전(py-1.5)과 같고, 보더는 램프 기본
+                // border-soft(0.06)로 다수 정합(구 divider 0.08 — 2026-08-03 선례).
+                className={controlClass({
+                  shape: "pill",
+                  size: "lg",
+                  tone: "secondary",
+                  className:
+                    "hover:border-[color:var(--color-indigo-brand)] hover:text-[color:var(--color-text-primary)]",
+                })}
               >
                 {section.label}
               </a>
