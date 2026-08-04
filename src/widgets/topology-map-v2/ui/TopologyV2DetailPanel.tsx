@@ -215,6 +215,12 @@ export interface TopologyV2DetailPanelLabels {
   sourceGap?: string;
   sourceGapLabel?: string;
   sourceAction?: string;
+  /**
+   * 진단 바로 옆에 붙는 **왜** 한 문장. 다음 행동이 무엇을 되게 하는지 평이한
+   * 말로 적는다("코드 폴더" · "코드 위치" — 「소스 바인딩」 같은 말은 안 쓴다).
+   * 호출자가 `nextAction.id` 로 고른다 — 여덟 행동 전부에 짝이 있다.
+   */
+  sourceWhy?: string;
   sourceRelationsShow?: string;
   sourceRelationsHide?: string;
   sourceOntologyDocument?: string;
@@ -375,6 +381,115 @@ export interface TopologyV2DetailPanelProps {
   projectSourceBusy?: boolean;
   /** Localized explicit-action failure; never used for picker cancellation. */
   projectSourceError?: string | null;
+  /**
+   * **정직한 강등** — 이 표면에서 그 행동을 실행할 수 없을 때만 넘긴다(웹:
+   * 브라우저가 고른 폴더의 절대 경로를 모른다). `surfaces.md` 가 요구하는
+   * 세 가지를 전부 갖는다: 왜 안 되는지 · 어디서 되는지 · **여기서도 되는 것**.
+   *
+   * 종전에는 이 자리가 「설치 앱에서 코드 폴더를 연결할 수 있어요」라는 회색
+   * 문장 하나였다 — 링크도 아니고, 왜인지도 없고, 이 화면에서 무엇이 되는지도
+   * 말하지 않았다. 진단만 하고 처방이 없는 화면이 그렇게 생긴다.
+   */
+  projectSourceDegraded?: {
+    why: string;
+    ctaLabel: string;
+    href: string;
+    stillWorks: string;
+  } | null;
+}
+
+/**
+ * **진단 바로 밑의 처방.** 「왜 필요한지」한 문장 + 그 자리에서 누르는 것 하나.
+ *
+ * 이 자리에 상자를 두르는 이유는 장식이 아니라 **묶기**다 — 위의 상태 세 줄은
+ * 사실이고, 이 상자 안은 「그래서 지금 무엇을 하면 되는가」다. 상자가 뜨는
+ * 조건이 곧 「고칠 것이 있다」이므로(호출부 `showSourceRemedy`), 상자 자체가
+ * 타입 있는 사실 하나(`topGap !== null`)를 나른다.
+ *
+ * 값은 전부 기존 토큰이다 — 바탕/테두리는 바로 아래 액션 스트립이 쓰는
+ * `--topology-v2-panel-action-*`, 버튼은 종전 푸터 액션과 **글자 하나 안 바뀐**
+ * 같은 스킨. 새 토큰 0개.
+ */
+function ProjectSourceRemedy({
+  why,
+  actionLabel,
+  busyLabel,
+  busy,
+  onAction,
+  degraded,
+}: {
+  why?: string;
+  actionLabel?: string;
+  busyLabel?: string;
+  busy: boolean;
+  onAction?: () => void | Promise<void>;
+  degraded?: TopologyV2DetailPanelProps["projectSourceDegraded"];
+}) {
+  return (
+    <div
+      data-testid="topology-v2-project-source-remedy"
+      data-remedy-mode={onAction ? "actionable" : "degraded"}
+      className="mt-0.5 flex flex-col gap-2 rounded-chip border border-[color:var(--topology-v2-panel-action-border)] bg-[color:var(--topology-v2-panel-action-surface)] px-2.5 py-2"
+    >
+      {why ? (
+        <p
+          data-testid="topology-v2-project-source-why"
+          className="text-label text-[color:var(--topology-v2-panel-text-tertiary)]"
+        >
+          {why}
+        </p>
+      ) : null}
+      {onAction ? (
+        <button
+          type="button"
+          onClick={() => { void onAction(); }}
+          disabled={busy}
+          aria-busy={busy}
+          data-testid="topology-v2-project-source-action"
+          className={controlClass({
+            shape: "chip",
+            size: "lg",
+            className:
+              "w-fit shrink-0 font-semibold border-[color:var(--topology-v2-panel-primary-border)] bg-[color:var(--topology-v2-panel-primary-surface)] text-[color:var(--topology-v2-panel-primary-text)] hover:border-[color:var(--topology-v2-panel-primary-border-hover)] hover:bg-[color:var(--topology-v2-panel-primary-surface-hover)] disabled:cursor-wait",
+          })}
+        >
+          {busy ? busyLabel ?? actionLabel : actionLabel}
+        </button>
+      ) : degraded ? (
+        <>
+          {/* ① 왜 이 화면에서는 안 되나 — 사과문이 아니라 이유. */}
+          <p
+            data-testid="topology-v2-project-source-degraded-why"
+            className="text-label text-[color:var(--topology-v2-panel-text-tertiary)]"
+          >
+            {degraded.why}
+          </p>
+          {/* ② 어디로 가면 되나 — 문장이 아니라 실제로 열리는 목적지. */}
+          <Link
+            href={degraded.href}
+            data-testid="topology-v2-project-source-degraded-cta"
+            className={controlClass({
+              shape: "chip",
+              size: "lg",
+              className:
+                "w-fit shrink-0 font-semibold border-[color:var(--topology-v2-panel-primary-border)] bg-[color:var(--topology-v2-panel-primary-surface)] text-[color:var(--topology-v2-panel-primary-text)] hover:border-[color:var(--topology-v2-panel-primary-border-hover)] hover:bg-[color:var(--topology-v2-panel-primary-surface-hover)]",
+            })}
+          >
+            {degraded.ctaLabel}
+          </Link>
+          {/* ③ 그래도 여기서 되는 것 — 되는 일까지 못 한다고 말하지 않는다.
+              색이 섞인 바탕 위라 quaternary 가 아니라 tertiary 부터다
+              (`quaternary-ink-surface` 계약). */}
+          <p
+            data-testid="topology-v2-project-source-degraded-still-works"
+            className="text-label text-[color:var(--topology-v2-panel-text-tertiary)]"
+          >
+            {degraded.stillWorks}
+          </p>
+        </>
+      ) : null}
+    </div>
+  );
 }
 
 function ProjectSourceStatusIcon({ status }: { status: ProjectSourceStatus }) {
@@ -645,9 +760,28 @@ export function TopologyV2DetailPanel({
   onProjectSourceAction,
   projectSourceBusy = false,
   projectSourceError = null,
+  projectSourceDegraded = null,
 }: TopologyV2DetailPanelProps) {
   const isProject = kind === "project";
   const showProjectSource = isProject && projectSource !== null;
+  /**
+   * **처방은 진단 옆에 붙는다.** 종전엔 진단(「연결된 코드 폴더가 없습니다」)이
+   * 패널 위쪽 y=234 에, 그 처방(「코드 폴더 연결하기」)이 맨 아랫줄 y=647 에
+   * 있었다 — 393px 떨어진 채, 사이에 액션 타일 넷과 근거 목록이 끼어 있었다.
+   * 웹에서는 그 자리가 아예 버튼이 아니라 회색 문장 한 줄이었다(실측
+   * 2026-08-04). 진단만 하고 처방을 못 주는 화면이 그렇게 생긴다.
+   *
+   * **틈(gap)이 있을 때만** 이 블록이 뜬다. 아무 문제가 없는 상태
+   * (`use_current_evidence`)까지 상자로 감싸면 상자가 「여기 고칠 것이 있다」는
+   * 뜻을 잃는다 — 그 상태의 행동은 지금처럼 푸터에 남는다. 그래서 어느 순간에도
+   * 같은 컨트롤이 두 곳에 그려지지 않는다.
+   */
+  const showSourceRemedy = Boolean(
+    showProjectSource
+    && projectSource.topGap
+    && labels.sourceAction
+    && (onProjectSourceAction || projectSourceDegraded),
+  );
   const showInlineHandoff = showHandoff && !(
     showProjectSource && projectSource.nextAction.id === "use_current_evidence"
   );
@@ -1100,6 +1234,16 @@ export function TopologyV2DetailPanel({
                   {projectSourceError}
                 </span>
               ) : null}
+              {showSourceRemedy ? (
+                <ProjectSourceRemedy
+                  why={labels.sourceWhy}
+                  actionLabel={labels.sourceAction}
+                  busyLabel={labels.sourceBusy}
+                  busy={projectSourceBusy}
+                  onAction={onProjectSourceAction}
+                  degraded={projectSourceDegraded}
+                />
+              ) : null}
             </div>
           ) : (
             <div
@@ -1399,7 +1543,9 @@ export function TopologyV2DetailPanel({
               {labels.openFullDetail}
             </button>
           ) : null}
-          {showProjectSource && labels.sourceAction ? (
+          {/* 틈이 있을 때의 행동은 위 처방 블록이 가져갔다 — 여기 남는 것은
+              「할 일 없음」 상태의 조용한 행동 하나뿐이다. */}
+          {showProjectSource && labels.sourceAction && !showSourceRemedy ? (
             onProjectSourceAction ? (
               <button
                 type="button"

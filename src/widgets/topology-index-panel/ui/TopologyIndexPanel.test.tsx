@@ -106,6 +106,8 @@ const labels = {
   uncatalogedDocsAction: "Promote",
   dustyNodesLabel: "0 nodes gathering dust",
   dustyNodesAction: "See freshness",
+  sourceUnboundLabel: "1 project with no code folder",
+  sourceUnboundAction: "Connect",
 };
 
 function buildFixtureTree() {
@@ -832,6 +834,55 @@ describe("TopologyIndexPanel", () => {
       expect(screen.getByTestId("topology-index-dusty-nodes")).toBeInTheDocument();
       expect(screen.getByTestId("topology-index-agent-handoff")).toBeInTheDocument();
       expect(screen.getByTestId("topology-index-uncataloged-docs")).toBeInTheDocument();
+    });
+
+    it("surfaces the unbound-code-folder fact without anyone clicking the project node", () => {
+      /*
+       * 이 행이 왜 있는가 — 실측(2026-08-04): 「이 프로젝트에 연결된 코드 폴더가
+       * 없습니다」는 첫 화면에 **0회** 나타나고, 프로젝트 노드를 정확히 그 하나
+       * 클릭해야만 보였다(픽스처 15노드 · 도그푸드 100+ 노드). 진단이 안 보이면
+       * 처방은 있으나 마나다.
+       */
+      const onSelect = vi.fn();
+      render(
+        <TopologyIndexPanel
+          treeResult={buildFixtureTree()}
+          totalConcepts={4}
+          totalRelations={3}
+          domainCount={1}
+          changedSlugs={new Set()}
+          selectedId={null}
+          onSelect={onSelect}
+          onCollapse={() => {}}
+          labels={labels}
+          unboundProjectNodeId="project:root"
+          vaultLoaded
+        />,
+      );
+      const row = screen.getByTestId("topology-index-source-unbound");
+      expect(row).toHaveTextContent("1 project with no code folder");
+      // 이 행은 폴더 선택기를 열지 않는다 — 처방은 한 곳(프로젝트 패널)에만 산다.
+      fireEvent.click(row);
+      expect(onSelect).toHaveBeenCalledWith("project:root");
+    });
+
+    it("hides the unbound row when every project already has a code folder", () => {
+      render(
+        <TopologyIndexPanel
+          treeResult={buildFixtureTree()}
+          totalConcepts={4}
+          totalRelations={3}
+          domainCount={1}
+          changedSlugs={new Set()}
+          selectedId={null}
+          onSelect={() => {}}
+          onCollapse={() => {}}
+          labels={labels}
+          unboundProjectNodeId={null}
+          vaultLoaded
+        />,
+      );
+      expect(screen.queryByTestId("topology-index-source-unbound")).not.toBeInTheDocument();
     });
 
     it("defaults to shown (vaultLoaded omitted) for backward compatibility with existing callers", () => {

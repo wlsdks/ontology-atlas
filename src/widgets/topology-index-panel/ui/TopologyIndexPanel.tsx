@@ -82,6 +82,13 @@ export interface TopologyIndexPanelLabels {
   dustyNodesLabel: string;
   dustyNodesAction: string;
   /**
+   * 「이 프로젝트에 연결된 코드 폴더가 없다」 — 종전에는 **그 프로젝트 노드를
+   * 정확히 클릭했을 때만** 보이던 사실이다(실측 2026-08-04: 첫 화면 0회).
+   * 위 두 행과 같은 모양의 조용한 한 줄로, 누르면 그 프로젝트가 열려 처방이
+   * 나온다. 여기서 폴더를 고르지는 않는다 — 같은 행동을 두 곳에 두지 않는다. */
+  sourceUnboundLabel: string;
+  sourceUnboundAction: string;
+  /**
    * P1 결함①a (사용성 전수 검수 2026-07-23) — 일반(비개발) 모드에서 element
    * 행이 트리에서 빠졌다는 사실을 설명하는 조용한 한 줄 힌트. `plainMode`
    * 와 함께 있을 때만 렌더 — 생략하면 힌트 자체가 없다(하위호환).
@@ -158,6 +165,8 @@ export interface TopologyIndexPanelProps {
   uncatalogedDocCount?: number;
   /** ④ 살아있는 지도 드리프트 — 먼지 앉은(dusty) 노드 수. 0 이면 행 숨김. */
   dustyNodeCount?: number;
+  /** 코드 폴더가 하나도 안 묶인 프로젝트의 노드 id. null 이면 행 자체가 없다. */
+  unboundProjectNodeId?: string | null;
   /** P4c — 위 행 클릭 → "내 문서로 지도 만들기" 다이얼로그(`bootstrapOpen`). */
   onPromoteUncatalogedDocs?: (() => void) | null;
   /**
@@ -233,6 +242,7 @@ export function TopologyIndexPanel({
   humanAuthored = null,
   uncatalogedDocCount,
   dustyNodeCount,
+  unboundProjectNodeId = null,
   onPromoteUncatalogedDocs = null,
   onOpenAgentConnect = null,
   agentActivityHref = null,
@@ -694,6 +704,33 @@ export function TopologyIndexPanel({
             {labels.dustyNodesAction}
           </span>
         </Link>
+      ) : null}
+
+      {/* ⑤ 코드 폴더 미연결 — 위 두 행과 **같은 모양·같은 무게**다. 새 시각
+          형태를 만들지 않는다: 사실 한 줄 + 인디고 행동어 하나, 조건이 참일
+          때만. 여기서 폴더 선택기를 열지 않는 이유는 처방이 한 곳에만 있어야
+          하기 때문이다 — 이 행은 진단을 눈에 보이게 하고, 처방은 열린
+          프로젝트 패널이 준다(웹에서도 그 자리가 왜·어디서·여기서 되는 것을
+          말한다). 그래서 이 행은 어느 표면에서도 죽은 CTA 가 아니다. */}
+      {vaultLoaded && unboundProjectNodeId ? (
+        <button
+          type="button"
+          onClick={() => onSelect(unboundProjectNodeId)}
+          data-testid="topology-index-source-unbound"
+          className={controlClass({
+            shape: "card",
+            size: "sm",
+            className:
+              "mt-2 shrink-0 text-left border-[color:var(--topology-v2-panel-border)] hover:bg-[color:var(--topology-v2-panel-row-hover)]",
+          })}
+        >
+          <span className="min-w-0 flex-1 truncate text-[color:var(--topology-v2-panel-text-tertiary)]">
+            {labels.sourceUnboundLabel}
+          </span>
+          <span className="shrink-0 text-[color:var(--color-indigo-accent)]">
+            {labels.sourceUnboundAction}
+          </span>
+        </button>
       ) : null}
 
       {/* 「다른 폴더에서 노드 가져오기」는 **설정 → 작업 공간**으로 옮겼다

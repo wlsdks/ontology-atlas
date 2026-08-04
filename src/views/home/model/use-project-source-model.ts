@@ -38,7 +38,12 @@ export type ProjectSourceModelError =
 
 export interface ProjectSourceRuntime {
   available(): boolean;
-  pickRoot(): Promise<string | null>;
+  /**
+   * `title` 은 **OS 폴더 선택창의 제목**이다. 화면 언어로 넘긴다 — 설치 앱에서
+   * 실측(2026-08-04)해 보니 한국어 화면에서 열린 창의 제목만 영어였다
+   * (`Connect project code folder`). 앱이 갑자기 다른 사람 말투로 말하는 자리다.
+   */
+  pickRoot(title?: string): Promise<string | null>;
   inspect(rootPath: string): Promise<ProjectSourceInspection | null>;
   now(): string;
   restoreFocus(element: HTMLElement): void;
@@ -46,8 +51,8 @@ export interface ProjectSourceRuntime {
 
 const defaultRuntime: ProjectSourceRuntime = {
   available: isTauriVaultRuntime,
-  pickRoot: async () => {
-    const handle = await pickTauriVaultDirectory("Connect project code folder");
+  pickRoot: async (title) => {
+    const handle = await pickTauriVaultDirectory(title ?? "Connect project code folder");
     if (!handle) return null;
     const rootPath = getTauriVaultRootPath(handle);
     if (!rootPath) throw new Error("Native folder picker did not return a local root.");
@@ -147,6 +152,8 @@ export function useProjectSourceModel(input: {
   vaultHandle: FileSystemDirectoryHandle | null;
   nodes: readonly KnowledgeGraphNode[];
   docs: readonly VaultDoc[];
+  /** OS 폴더 선택창 제목 — 호출자가 화면 언어로 넘긴다. */
+  pickerTitle?: string;
   runtime?: ProjectSourceRuntime;
 }) {
   const runtime = input.runtime ?? defaultRuntime;
@@ -224,7 +231,7 @@ export function useProjectSourceModel(input: {
       let rootPath: string | null = null;
       if (sourceActionUsesPicker(snapshot.view)) {
         try {
-          rootPath = await runtime.pickRoot();
+          rootPath = await runtime.pickRoot(input.pickerTitle);
         } catch {
           setError("picker_failed");
           return;
@@ -300,6 +307,7 @@ export function useProjectSourceModel(input: {
     busy,
     runtime,
     witnesses,
+    input.pickerTitle,
   ]);
 
   const snapshotMatchesProject = Boolean(
