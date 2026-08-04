@@ -35,6 +35,14 @@ stdio JSON-RPC 인터페이스다. 사람과 에이전트가 같은 파일을 �
 - rename/reclassify는 UID를 보존한다. merge는 대상 UID를 보존하고 흡수한 UID를
   `merged_uids`에 기록한다. 일반 patch는 `uid`와 `merged_uids`를 바꿀 수 없다.
 
+## 소스 연결
+
+`connect_project_source` / `disconnect_project_source`는 project 노드를 그것이
+설명하는 로컬 코드 폴더에 묶고 푼다. 이전에는 `agent_brief`가 `connect_source`를
+다음 행동으로 내놓으면서 그것을 실행할 도구가 없었다 — 설치된 macOS 앱의 폴더
+선택기가 유일한 경로였다. 두 도구 모두 `confirm: true` 전에는 아무것도 쓰지 않고,
+절대 루트는 gitignore된 `.ontology-atlas/project-sources.json`에만 남는다.
+
 ## 핵심 흐름
 
 1. `connection_info` → `list_kinds` / `list_concepts` → `validate_vault`로 연결과

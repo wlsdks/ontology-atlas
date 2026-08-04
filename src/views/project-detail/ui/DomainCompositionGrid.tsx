@@ -73,12 +73,12 @@ export function DomainCompositionGrid({
           >
             <div className="flex items-center gap-2">
               <TopologyV2KindGlyph kind="domain" size={16} />
-              <span className="min-w-0 flex-1 truncate text-[13.5px] font-[560] tracking-[-0.01em] text-[color:var(--color-text-primary)]">
+              <span className="min-w-0 flex-1 truncate text-body-lg font-[560] tracking-[-0.01em] text-[color:var(--color-text-primary)]">
                 {domain.title}
               </span>
               <span
                 data-token="engraved-numeral"
-                className="shrink-0 font-mono text-[13px] text-[color:var(--engraved-numeral-face)] [text-shadow:var(--engraved-numeral-text-shadow)]"
+                className="shrink-0 font-mono text-body-lg text-[color:var(--engraved-numeral-face)] [text-shadow:var(--engraved-numeral-text-shadow)]"
               >
                 {domain.total}
               </span>
@@ -95,7 +95,7 @@ export function DomainCompositionGrid({
                   }}
                 />
               </span>
-              <span className="shrink-0 font-mono text-[10.5px] whitespace-nowrap text-[color:var(--color-text-quaternary)]">
+              <span className="shrink-0 font-mono text-label whitespace-nowrap text-[color:var(--color-text-quaternary)]">
                 {capabilityLabel}{" "}
                 <b
                   data-token="engraved-numeral"
@@ -132,7 +132,7 @@ export function DomainCompositionGrid({
               ))}
               {/* 발줄은 비어도 자리를 지킨다 — 사라지면 카드 높이가 흔들린다. */}
               <span
-                className="mt-auto pt-1 text-[11px] text-[color:var(--color-text-quaternary)]"
+                className="mt-auto pt-1 text-label text-[color:var(--color-text-quaternary)]"
                 aria-hidden={domain.moreCapabilityCount === 0}
               >
                 {domain.moreCapabilityCount > 0 ? moreLine(domain.moreCapabilityCount) : " "}

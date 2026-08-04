@@ -32,6 +32,33 @@
 
 새 토큰 0개(패널의 기존 `--topology-v2-panel-action-*` · `--topology-v2-panel-primary-*`
 재사용). 폴더를 실제로 고르는 코드는 손대지 않았다.
+## 2026-08-04 — 「코드 폴더를 연결하세요」라고 말했으면 연결할 방법을 준다
+
+앱은 「이 프로젝트에 연결된 코드 폴더가 없습니다」라고 말하고 다음 행동으로
+`connect_source` 를 내놓는데, **그 이름을 실행하는 것이 MCP 에도 CLI 에도
+없었다.** 실행 경로는 설치된 macOS 앱의 폴더 선택기 하나뿐이었다.
+
+- **`connect_project_source` / `disconnect_project_source`** (MCP) 와
+  **`connect-source` / `disconnect-source`** (CLI). 하나가 연결·교체·재측정을
+  모두 하고, 다른 하나가 되돌린다. 새 어휘는 만들지 않았다 — 네 동작의 이름은
+  이미 영수증 계약 안에 있었다.
+- **폴더를 타이핑하지 않는다.** `rootPath` 를 생략하면 볼트를 감싸는 git
+  저장소를, 없으면 가장 가까운 조상 매니페스트 폴더(`package.json` ·
+  `Cargo.toml` · `go.mod` …)를 후보로 내놓는다. 노드들이 선언한 `path:` 는
+  후보를 **고르는** 데 쓰지 않고(저장소 상대 경로라 절대 루트를 지목할 수
+  없다) 후보 안에서 몇 개가 실재하는지로 **신뢰도**를 매기는 데 쓴다. 이
+  저장소 실측: 55개 중 55개 → `high`.
+- **자동으로 확정하지 않는다.** `confirm: true` 전에는 아무것도 쓰지 않고,
+  제안이 확정 호출을 통째로 들고 온다. 틀린 폴더는 `verified_current` 라고
+  **거짓말하는 영수증**을 찍고 `finalize_project_meaning` 이 그것을 믿는다.
+- **진단이 처방으로 이어진다.** `agent_brief` 가 `projectSourceRemedy` 를
+  같이 준다 — 8개 다음 행동 이름 전부가 «도구 + 인자 + CLI 명령 + 되돌리기»
+  로 옮겨진다. CLI readout 에는 `run <명령>` 한 줄이 붙었다.
+- 절대 경로는 gitignore 된 `.ontology-atlas/project-sources.json` 에만 남는다.
+  영수증·핸드오프·마크다운 어디에도 안 들어간다. 전송 0.
+- MCP 도구 33 → 35 (읽기 19 + 쓰기 16), CLI 명령 52 → 54.
+
+배경과 진 반대 의견: `docs/DECISIONS.md` 2026-08-04.
 
 ## 2026-08-04 — 검사 결과에 대해 화면이 거짓을 말하는 것을 멈춘다
 

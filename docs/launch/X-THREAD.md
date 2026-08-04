@@ -50,7 +50,7 @@ dependencies: [capabilities/signup]
 ## Tweet 4 (AI fits in)
 
 ```
-AI agents (Claude Code, Cursor, Codex) read it via MCP — 33 tools:
+AI agents (Claude Code, Cursor, Codex) read it via MCP — 35 tools:
 list_concepts, validate_vault, compile_ontology, query_ontology,
 analyze_repo_structure, infer_imports, add_concepts, patch_concept …
 

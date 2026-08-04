@@ -104,7 +104,7 @@ const FAMILIES: ReadonlyArray<readonly [name: string, re: RegExp, budget: number
    */
   ['leading-none', /(?<![-\w])leading-none(?![-\w])/g, 9],
   ['leading-tight', /(?<![-\w])leading-tight(?![-\w])/g, 8],
-  ['leading-snug', /(?<![-\w])leading-snug(?![-\w])/g, 17],
+  ['leading-snug', /(?<![-\w])leading-snug(?![-\w])/g, 16],
   ['leading-normal', /(?<![-\w])leading-normal(?![-\w])/g, 0],
   ['leading-relaxed', /(?<![-\w])leading-relaxed(?![-\w])/g, 71],
   ['leading-loose', /(?<![-\w])leading-loose(?![-\w])/g, 0],

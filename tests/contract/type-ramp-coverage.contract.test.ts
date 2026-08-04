@@ -58,14 +58,9 @@ import {
 const EXEMPT_DEBT: ReadonlyArray<readonly [string, number]> = [
   ["src/entities/project/ui/ProjectCard.tsx", 16],
   ["src/entities/project/ui/ProjectMetaGrid.tsx", 2],
-  ["src/features/project-edit/ui/DependencyPicker.tsx", 6],
-  ["src/features/project-edit/ui/MarkdownField.tsx", 3],
-  ["src/features/project-edit/ui/ProjectForm.tsx", 15],
   ["src/features/vault-ontology/ui/LiveActivityIndicator.tsx", 23],
   ["src/views/first-run/ui/FirstRunPage.tsx", 14],
   ["src/views/ontology-studio/ui/StudioCompass.tsx", 24],
-  ["src/views/project-detail/ui/DomainCompositionGrid.tsx", 4],
-  ["src/views/project-detail/ui/ProjectDetailPage.tsx", 11],
   ["src/views/project-editor/ui/ProjectEditorPage.tsx", 2],
   ["src/views/root-entry/ui/RootEntryPage.tsx", 5],
 ];

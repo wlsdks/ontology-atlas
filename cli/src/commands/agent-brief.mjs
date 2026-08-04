@@ -612,7 +612,7 @@ function render(result) {
       ` · ${readiness.healthChecks} health checks${COLORS.reset}\n\n`,
   );
 
-  const projectSourceLines = formatProjectSourceSummary(result.projectSource);
+  const projectSourceLines = formatProjectSourceSummary(result.projectSource, result.projectSourceRemedy);
   if (projectSourceLines.length > 0) {
     process.stdout.write(`${COLORS.dim}PROJECT SOURCE${COLORS.reset} ${COLORS.dim}(receipt v${result.projectSource.contractVersion} · ${result.projectSlug})${COLORS.reset}\n`);
     for (const line of projectSourceLines) {
@@ -766,7 +766,11 @@ function render(result) {
   }
 }
 
-export function formatProjectSourceSummary(projectSource) {
+/**
+ * The diagnosis and the command that resolves it, on the same block. A named
+ * `nextAction` with nothing to run is what this readout used to print.
+ */
+export function formatProjectSourceSummary(projectSource, remedy = null) {
   if (!projectSource || typeof projectSource !== 'object') return [];
   const gap = projectSource.topGap?.id
     ? `${projectSource.topGap.id}${projectSource.topGap.nodeSlug ? `:${projectSource.topGap.nodeSlug}` : ''}`
@@ -774,12 +778,16 @@ export function formatProjectSourceSummary(projectSource) {
   const action = projectSource.nextAction?.id
     ? `${projectSource.nextAction.id}${projectSource.nextAction.target ? `:${projectSource.nextAction.target}` : ''}`
     : 'none';
-  return [
+  const lines = [
     `status       ${projectSource.status} (${projectSource.currentness})`,
     `measuredAt   ${projectSource.measuredAt ?? 'not measured'}`,
     `topGap       ${gap}`,
     `nextAction   ${action}`,
   ];
+  if (remedy?.resolvable && remedy.cli?.command) {
+    lines.push(`run          ${cliInvocation()} ${remedy.cli.command} ${(remedy.cli.args ?? []).join(' ')}`.trimEnd());
+  }
+  return lines;
 }
 
 export function formatMeaningAssessmentSummary(assessment) {

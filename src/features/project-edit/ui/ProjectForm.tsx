@@ -1269,7 +1269,7 @@ export function ProjectForm({
         <div className="flex flex-col gap-3">
           <div className="flex items-start justify-between gap-3">
             <div className="min-w-0">
-              <p className="font-mono text-[10px] uppercase tracking-[0.12em] text-[color:var(--color-text-quaternary)]">
+              <p className="font-mono text-caption uppercase tracking-[0.12em] text-[color:var(--color-text-quaternary)]">
                 {editorModeLabel}
               </p>
               <p className="mt-2 hidden text-body-lg text-[color:var(--color-text-secondary)] md:block">
@@ -1277,7 +1277,7 @@ export function ProjectForm({
               </p>
               <span
                 className={cn(
-                  "mt-2 inline-flex rounded-full border px-3 py-1 font-mono text-[10px] uppercase tracking-[0.08em] md:hidden",
+                  "mt-2 inline-flex rounded-full border px-3 py-1 font-mono text-caption uppercase tracking-[0.08em] md:hidden",
                   isDirty
                     ? "border-[color:var(--color-indigo-a30)] bg-[color:var(--color-indigo-a12)] text-[color:var(--color-text-primary)]"
                     : "border-[color:var(--color-divider)] text-[color:var(--color-text-tertiary)]",
@@ -1288,7 +1288,7 @@ export function ProjectForm({
             </div>
             <span
               className={cn(
-                "hidden rounded-full border px-3 py-1 font-mono text-[10px] uppercase tracking-[0.08em] md:inline-flex",
+                "hidden rounded-full border px-3 py-1 font-mono text-caption uppercase tracking-[0.08em] md:inline-flex",
                 isDirty
                   ? "border-[color:var(--color-indigo-a30)] bg-[color:var(--color-indigo-a12)] text-[color:var(--color-text-primary)]"
                   : "border-[color:var(--color-divider)] text-[color:var(--color-text-tertiary)]",
@@ -1343,7 +1343,7 @@ export function ProjectForm({
 
       <div className="rounded-panel border border-[color:var(--color-overlay-2)] bg-[color:var(--color-panel)] px-4 py-4">
         <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
-          <p className="font-mono text-[10px] uppercase tracking-[0.12em] text-[color:var(--color-text-quaternary)]">
+          <p className="font-mono text-caption uppercase tracking-[0.12em] text-[color:var(--color-text-quaternary)]">
             {t("sections.navLabel")}
           </p>
           <nav className="flex flex-wrap gap-2">
@@ -1497,7 +1497,7 @@ export function ProjectForm({
             className="mb-4 flex w-full items-center justify-between rounded-panel border border-[color:var(--color-overlay-2)] bg-[color:var(--color-panel)] px-4 py-4 text-left lg:hidden"
           >
             <div>
-              <p className="font-mono text-[10px] uppercase tracking-[0.12em] text-[color:var(--color-text-quaternary)]">
+              <p className="font-mono text-caption uppercase tracking-[0.12em] text-[color:var(--color-text-quaternary)]">
                 {t("preview.toggleEyebrow")}
               </p>
               <p className="mt-2 text-body-lg text-[color:var(--color-text-secondary)]">
@@ -1519,7 +1519,7 @@ export function ProjectForm({
                 화면 밖에 있을 때 쓰던 변명이었다. 지금은 마주 보므로 뺀다. */}
             {(mode === "edit" || saveNotice) && (
               <div className="mb-4 rounded-panel border border-[color:var(--color-overlay-2)] bg-[color:var(--color-panel)] p-4">
-                <p className="font-mono text-[10px] uppercase tracking-[0.12em] text-[color:var(--color-text-quaternary)]">
+                <p className="font-mono text-caption uppercase tracking-[0.12em] text-[color:var(--color-text-quaternary)]">
                   {t("preview.previewEyebrow")}
                 </p>
                 {saveNotice ? (
@@ -1544,7 +1544,7 @@ export function ProjectForm({
                 ) : null}
               </div>
             )}
-            <p className="mb-3 font-mono text-[10px] uppercase tracking-[0.12em] text-[color:var(--color-text-quaternary)]">
+            <p className="mb-3 font-mono text-caption uppercase tracking-[0.12em] text-[color:var(--color-text-quaternary)]">
               {t("preview.cardEyebrow")}
             </p>
             <div className="flex items-start justify-center rounded-panel border border-[color:var(--color-overlay-2)] bg-[color:var(--color-canvas)] p-6">
@@ -1581,15 +1581,15 @@ export function ProjectForm({
             <div className="mt-4 rounded-panel border border-[color:var(--color-overlay-2)] bg-[color:var(--color-panel)] p-4">
               <div className="flex items-start justify-between gap-3">
                 <div>
-                  <p className="font-mono text-[10px] uppercase tracking-[0.12em] text-[color:var(--color-text-quaternary)]">
+                  <p className="font-mono text-caption uppercase tracking-[0.12em] text-[color:var(--color-text-quaternary)]">
                     {t("preview.completenessLabel")}
                   </p>
-                  <p className="mt-2 text-[28px] font-[var(--font-weight-signature)] text-[color:var(--color-text-primary)]">
+                  <p className="mt-2 text-hero font-[var(--font-weight-signature)] text-[color:var(--color-text-primary)]">
                     {completenessInsight.score}%
                   </p>
                 </div>
                 <div className="text-right">
-                  <p className="font-mono text-[10px] uppercase tracking-[0.12em] text-[color:var(--color-text-quaternary)]">
+                  <p className="font-mono text-caption uppercase tracking-[0.12em] text-[color:var(--color-text-quaternary)]">
                     {t("preview.publicStatusLabel")}
                   </p>
                   <p className="mt-2 text-body-lg text-[color:var(--color-text-secondary)]">
@@ -1681,7 +1681,7 @@ function ExtrasGroup({
   return (
     <div className="flex flex-col gap-5">
       <div className="flex items-center gap-2.5">
-        <p className="shrink-0 font-mono text-[10px] uppercase tracking-[0.16em] text-[color:var(--color-text-tertiary)]">
+        <p className="shrink-0 font-mono text-caption uppercase tracking-[0.16em] text-[color:var(--color-text-tertiary)]">
           {label}
         </p>
         <span aria-hidden className="h-px flex-1 bg-[color:var(--color-divider)]" />
@@ -1708,7 +1708,7 @@ function FieldRow({
     <div className="flex flex-col gap-1.5">
       <label
         htmlFor={fieldId}
-        className="font-mono text-[10px] uppercase tracking-[0.12em] text-[color:var(--color-text-quaternary)]"
+        className="font-mono text-caption uppercase tracking-[0.12em] text-[color:var(--color-text-quaternary)]"
       >
         {label}
       </label>
@@ -1762,7 +1762,7 @@ function FormSection({
         <div className="mb-3 flex items-center gap-2.5">
           <p
             id={headingId}
-            className="shrink-0 font-mono text-[10px] uppercase tracking-[0.16em] text-[color:var(--color-text-tertiary)]"
+            className="shrink-0 font-mono text-caption uppercase tracking-[0.16em] text-[color:var(--color-text-tertiary)]"
           >
             {label}
           </p>
@@ -1776,7 +1776,7 @@ function FormSection({
           </div>
           <div className="flex items-center gap-2">
             {helperBadge ? (
-              <span className="rounded-full border border-[color:var(--color-divider)] px-2.5 py-1 font-mono text-[10px] uppercase tracking-[0.08em] text-[color:var(--color-text-quaternary)]">
+              <span className="rounded-full border border-[color:var(--color-divider)] px-2.5 py-1 font-mono text-caption uppercase tracking-[0.08em] text-[color:var(--color-text-quaternary)]">
                 {helperBadge}
               </span>
             ) : null}
@@ -1821,7 +1821,7 @@ function FormSection({
 
 function Hint({ children }: { children: React.ReactNode }) {
   return (
-    <p className="text-[11px] text-[color:var(--color-text-quaternary)]">
+    <p className="text-label text-[color:var(--color-text-quaternary)]">
       {children}
     </p>
   );
