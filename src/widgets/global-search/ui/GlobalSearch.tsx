@@ -281,8 +281,8 @@ export function GlobalSearch({
             aria-label={t('closeAriaLabel')}
             data-testid="global-search-close"
             data-global-search-close-contract="touch-visible"
-            data-global-search-close-size-token="--topology-search-sheet-close-size"
-            className="flex h-[var(--topology-search-sheet-close-size)] w-[var(--topology-search-sheet-close-size)] shrink-0 items-center justify-center rounded-chip text-[color:var(--color-text-tertiary)] transition-colors hover:bg-[color:var(--color-overlay-2)] hover:text-[color:var(--color-text-primary)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--color-indigo-a46)] focus-visible:ring-inset"
+            data-global-search-close-size-token="--overlay-close-size"
+            className="flex h-[var(--overlay-close-size)] w-[var(--overlay-close-size)] shrink-0 items-center justify-center rounded-chip text-[color:var(--color-text-tertiary)] transition-colors hover:bg-[color:var(--color-overlay-2)] hover:text-[color:var(--color-text-primary)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--color-indigo-a46)] focus-visible:ring-inset"
           >
             <X size={15} aria-hidden />
           </button>

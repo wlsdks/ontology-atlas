@@ -2232,7 +2232,11 @@
       0 0 0 6px rgba(94, 106, 210, 0.10);
     --topology-search-lane-compact-width: clamp(84px, 6vw, 96px);
     --topology-search-sheet-floating-width: 36rem;
-    --topology-search-sheet-close-size: 32px;
+    /* 구 --topology-search-sheet-close-size(32px)는 2026-08-04 폐지 — 같은 일
+       (오버레이 닫기 32px + coarse 44px 승격)을 하는 --overlay-close-size 와
+       달리 이 토큰은 coarse 승격 블록에 **없어서**, 아래 승격 주석이 «이미
+       커버됨»이라 주장하는 동안 GlobalSearch 닫기만 32px 로 남아 있었다
+       (등재 검증 라운드 실측). 닫기 치수는 --overlay-close-size 하나다. */
     --topology-shortcut-sheet-floating-width: 45rem;
     --topology-shortcut-sheet-close-size: 32px;
     /* 구 --topology-search-sheet-radius(16) · --topology-shortcut-sheet-radius(22)
@@ -3188,9 +3192,12 @@
        */
       --chrome-tile-size: max(36px, var(--touch-target-min));
       --topology-shortcut-sheet-close-size: var(--touch-target-min);
-      /* rank2/18 — DOM 오버레이 3종 close 버튼(SearchPalette 등)도 같은
-         44px 승격. GlobalSearch 는 이미 --topology-search-sheet-close-size
-         를 쓰고 있어 해당 토큰이 같은 media 블록에서 이미 커버됨. */
+      /* rank2/18 — DOM 오버레이 3종 close 버튼(SearchPalette ·
+         GlobalSearch 등)의 같은 44px 승격. ⚠️ 이 주석은 한때 «GlobalSearch 는
+         --topology-search-sheet-close-size 로 이미 커버됨»이라 적었지만 그
+         토큰은 이 블록에 **없었다** — 주석이 승격을 주장하는 동안 실제로는
+         32px 로 남아 있던 결함을 2026-08-04 등재 검증이 잡았고, 그 토큰을
+         폐지해 GlobalSearch 도 --overlay-close-size 를 읽는다. */
       --overlay-close-size: var(--touch-target-min);
       /*
        * (2026-07-29 에 여기 있던 `--docs-header-tile-size` 승격은 2026-08-03
