@@ -239,37 +239,41 @@ particle·rarity(gold)·shimmer 를 `--studio-*` 토큰 + `.studio-stage` 안에
 **아래를 고치는 변경은 `design-system` 자리를 소집한다.** 회의를 열지 말지를
 고르는 게 아니라, **이 목록에 걸리면 부른다**:
 
-- `src/shared/ui/control-class.ts` — 값 층의 축·선택지·기본값
-- `src/shared/ui/controls.tsx` — 행동 층 프리미티브
-- `src/shared/ui/surface.tsx` — 등장/퇴장 프리미티브
-- `app/globals.css` — 램프(타입 · 행간 · 반경 · 그림자 · 컨트롤 높이 · 팔레트 뿌리)
+- `src/shared/ui/control-class.ts` — 값 층(컨트롤이 어떻게 보일지를 정하는 값들이 모인 곳)의 축·선택지·기본값. 「축」은 고를 수 있는 항목 하나(모양·크기·톤 같은 것)이고, 「선택지」는 그 항목이 가질 수 있는 값들이다
+- `src/shared/ui/controls.tsx` — 버튼·칩처럼 **눌러서 동작하는** 부품(프리미티브 = 다른 화면들이 가져다 쓰는 기본 부품)
+- `src/shared/ui/surface.tsx` — 화면이 **나타나고 사라지는 방식**을 담은 기본 부품
+- `app/globals.css` — 램프(ramp — 쓸 수 있는 값을 미리 정해 둔 사다리. 그 밖의 값은 lint 가 막는다): 글자 크기 · 행간 · 모서리 반경 · 그림자 · 컨트롤 높이 · 팔레트의 기준색
 - `.claude/rules/design.md` — 이 파일의 「스케일 고정 계약」 절
 
-> 위 목록은 **정본이자 게이트의 입력**이다. `pnpm decisions:check` 가 이 절의
-> 백틱 경로를 **읽어서** 트리거를 만든다(`scripts/lib/design-spec-census.mjs`) —
-> 코드에 복제본이 없으므로 여기 한 줄을 더하면 게이트가 그날부터 그 파일을
-> 본다. 어긋남 방지 계약: `tests/contract/design-spec-ledger.contract.test.ts`.
+> 위 목록은 **이 규칙의 정본이면서, 동시에 검사 스크립트가 읽어 가는 입력**이다.
+> `pnpm decisions:check` 가 이 절에 백틱으로 적힌 경로를 그대로 **읽어서** 감시
+> 대상을 만든다(`scripts/lib/design-spec-census.mjs`). 코드 쪽에 같은 목록의
+> 사본이 없으므로, 여기 한 줄을 더하면 그날부터 검사가 그 파일도 본다. 목록과
+> 검사가 어긋나지 않게 지키는 계약 테스트:
+> `tests/contract/design-spec-ledger.contract.test.ts`.
 
-**왜**: 컨트롤 244개를 정규화하는 동안 이 자리가 한 번도 소집되지 않았고, 값 층
-설계(톤 8단 · 모양 7종 · 축 3개 · 램프 값)를 **짓는 쪽이 단독으로** 정했다.
-결과 — 칩 크기 50종을 3종으로 줄였는데 **한 화면에 컨트롤 높이가 8~9종**이다.
-규칙이 벽에 부딪힐 때마다 규칙을 고치는 대신 **예외 축을 더한** 탓이다.
+**왜 이 규칙이 생겼나**: 컨트롤 244개를 하나의 규격으로 맞추는 동안 이 자리를 한
+번도 부르지 않았고, 값 층 설계(톤 8단 · 모양 7종 · 고를 항목 3개 · 램프 값)를
+**만드는 쪽이 혼자서** 정했다. 결과 — 칩 크기를 50종에서 3종으로 줄였는데도
+**한 화면에 컨트롤 높이가 8~9종** 있다. 규칙이 안 맞는 자리가 나올 때마다 규칙을
+고치는 대신 **고를 항목을 하나씩 더 붙였기** 때문이다.
 
 > **혼자 정한 규격은 규격이 아니라 취향이다.**
 
-⚠️ 「소집했는가」는 여전히 기계가 못 본다. 기계가 보는 것은 **규격이 실제로
-움직였는데 원장이 비었는가**다 — `pnpm decisions:check` 가 위 목록의 파일에서
-**어휘와 램프 값**(축 · 선택지 · 기본값 · 램프 토큰 · export 되는 프리미티브 ·
-스케일 계약 수치)의 증감을 세고, 하나라도 움직였는데 `docs/DECISIONS.md` 가
-그대로면 빨개진다. **파일이 diff 에 있는지로 보지 않는다** — 이 파일들은 이
-저장소에서 가장 자주 만져져서(최근 300 커밋 중 79개) 그렇게 걸면 오탐 63건이
-나오고, 그건 강제가 아니라 소음이다. 좁힌 이유의 전문은
-`scripts/lib/design-spec-census.mjs` 머리 주석.
+⚠️ 「불렀는가」는 여전히 기계가 확인하지 못한다. 기계가 확인하는 것은 **규격이
+실제로 바뀌었는데 결정 기록이 비었는가**다 — `pnpm decisions:check` 가 위 목록의
+파일에서 이름과 값(축 · 선택지 · 기본값 · 램프 토큰 · 밖으로 내보내는 부품 ·
+스케일 계약의 수치)이 늘거나 줄었는지 세고, 하나라도 달라졌는데
+`docs/DECISIONS.md` 에 새 기록이 없으면 검사가 실패한다. **그 파일이 이번 변경에
+들어 있는지로 판정하지 않는다** — 이 파일들은 이 저장소에서 가장 자주 고쳐서
+(최근 300 커밋 중 79개) 그렇게 걸면 엉뚱하게 걸리는 것이 63건 나오고, 그건
+강제가 아니라 소음이다. 왜 이렇게 좁혔는지는
+`scripts/lib/design-spec-census.mjs` 맨 위 주석에 다 적혀 있다.
 
-게이트 둘: `tests/contract/design-council.contract.test.ts`(자리가 이름으로
-존재하는가) + `tests/contract/design-spec-ledger.contract.test.ts`(위 목록이
-실재하고 탐지기가 공회전하지 않는가). 「누구를 불렀는가」는 사람이 지킨다 —
-그래서 이 문단이 있다.
+검사 둘: `tests/contract/design-council.contract.test.ts`(그 자리가 이름으로
+실재하는가) + `tests/contract/design-spec-ledger.contract.test.ts`(위 목록의
+파일들이 실재하는가, 그리고 검사가 아무것도 안 잡은 채 헛돌고 있지는 않은가).
+「누구를 불렀는가」는 사람이 지킬 수밖에 없다 — 그래서 이 문단이 있다.
 
 ## 규격은 lint 로 강제된다 (md 만으로는 안 지켜진다)
 
@@ -292,22 +296,29 @@ particle·rarity(gold)·shimmer 를 `--studio-*` 토큰 + `.studio-stage` 안에
 | 금지 그라디언트 | `scaleGradientSelectors` | 동일 |
 | **accent×틴트 페어링** | `accentTintPairingSelectors` — `tone accent` 와 인디고/앰버 틴트 `bg-` 가 같은 호출/원소에 공존 금지 (상수 우회는 `accent-ink-contrast` 계약이 맡는다) | 전역 error (켤 때 위반 0 — 26곳 선치환) |
 
+> **표에 나온 말 넷** — 「램프(ramp)」는 쓸 수 있는 값을 미리 정해 둔 사다리이고,
+> 그 밖의 값은 lint 가 막는다. 「셀렉터」는 ESLint 가 코드에서 무엇을 찾아낼지
+> 적어 둔 검색 패턴이다. 「레벨」은 걸렸을 때 오류로 볼지 경고로 볼지다.
+> 「래칫(ratchet)」은 한 번 좋아진 수치가 다시 나빠지지 못하게 오늘 값을 상한으로
+> 박아 두는 검사다 — 줄이는 것은 되고 늘리는 것은 안 된다.
+
 ### lint 가 못 보는 층은 계약 테스트가 맡는다
 
-`no-restricted-syntax` 는 **한 파일의 AST 셀렉터 매칭**이라, 판정에 다른 파일의
-값 목록이 필요한 규격은 표현할 수 없다. 그런 규격은 계약 테스트로 건다 — 문서에
-쓰고 아무 게이트도 안 거는 것만 금지다.
+`no-restricted-syntax` 는 **한 파일의 구문 트리(AST)에서 패턴을 찾아내는 것**이라,
+맞는지 보려면 다른 파일에 있는 값 목록까지 봐야 하는 규격은 아예 표현할 수 없다.
+그런 규격은 계약 테스트로 건다 — 문서에만 써 놓고 아무 검사도 안 거는 것만
+금지다.
 
 | 규격 | 게이트 | lint 가 못 하는 이유 |
 |---|---|---|
-| **`text-*`/`leading-*` 가 정의된 스텝을 가리킨다** | `tests/contract/type-ramp-step-defined.contract.test.ts` | 판정에 `app/globals.css` 의 토큰 목록이 필요. 스텝 이름을 룰에 복제하면 복제본이 램프와 드리프트해 게이트가 사각지대를 만든다 |
-| **셸 본문 슬롯이 자식을 압축하지 않는다** | `AppShell.test.tsx`(처방 위치) + `tests/e2e/scroll-end-gap.spec.ts`(실제 여백 px) | 결함이 **레이아웃 계산의 결과**. 클래스 문자열은 정상인 채로 픽셀만 틀린다 |
-| **조건부 크기가 행간 짝을 어긋내지 않는다** | `tests/contract/type-ramp-leading-pair.contract.test.ts` | 판정에 **한 원소의 클래스 전체**가 필요한데 `cn()` 인자로 쪼개지면 AST 셀렉터 하나에 안 담긴다. 램프 토큰을 arbitrary length 로 우회하는 **부분집합**만 lint 가 잡는다 |
-| **컨트롤 값 층이 램프 밖으로 못 샌다** | `tests/contract/control-class.contract.test.ts` | 판정 대상이 **cva 조합의 결과 문자열**이다. 소스에는 `chip`·`md` 같은 키만 있고 값은 런타임에 합쳐지므로 AST 셀렉터가 볼 것이 없다. 여덟 모양 × 3 크기 × 9 톤 × … 전수를 실제로 만들어 본다 |
-| **두 무채 잉크 램프가 실제로 다르다** | 같은 파일(`scope` 축 절) | 판정에 `app/globals.css` 의 **두 램프 8개 값**이 필요하다. 값이 수렴하면 `scope` 축은 아무것도 안 하면서 고를 것만 늘리므로, 그날 게이트가 축을 지우라고 말해야 한다 |
-| **손으로 쓴 컨트롤이 늘지 않는다** | `tests/contract/control-adoption-ratchet.contract.test.ts` | 래칫이라 **전수의 수**가 판정 기준이고, 그건 한 파일의 AST 로 셀 수 없다 |
-| **산문 링크는 컨트롤이 아니라 산문이다** — `.prose-link` 가 밑줄 기하만 소유하고 display·행간·크기·포커스는 산문 부모의 것 | `tests/contract/prose-link.contract.test.ts` + `tests/e2e/touch-target-contract.spec.ts` fine-pointer 감사(WCAG 2.5.8 인라인 면제 판정) | 판정에 「이 앵커가 산문 흐름 속인가」(렌더 트리)와 computed display 가 필요하다 — 「문장 속」을 정하는 셋(형제 글자 출처 · 부모가 정하는 used display · reflow)이 전부 여는 태그 밖이라, 정적 `inline` 축은 오설정 4건을 못 본 채 죽었다(2026-08-04) |
-| **무채 잉크의 표면 라이선스** — quaternary 는 정지한 무채 바탕(맨 3단 + canvas/panel 위 overlay-1)까지, 올라선 바탕(overlay-2+ · elevated+overlay · 틴트 합성) 위 글자는 tertiary 부터 | `tests/contract/quaternary-ink-surface.contract.test.ts`(값·자리) + `tests/e2e/a11y-open-surfaces.spec.ts`(화면) | 판정이 잉크가 아니라 **호스트 바탕의 합성**에 달렸다 — 같은 클래스가 panel 위에선 5.00, overlay-2 위에선 4.36 이다. 게다가 이 층의 지배 관용구가 `active ? 틴트+밝은 잉크 : quaternary` 분기라 같은-태그 페어링 휴리스틱도 오탐을 낸다(2026-08-04 전수 18쌍 중 다수가 분기) — 그래서 정적 래칫 대신 값 계약 + 열린 표면 런타임 계기다 |
+| **`text-*`/`leading-*` 가 램프에 실제로 있는 칸을 가리킨다** | `tests/contract/type-ramp-step-defined.contract.test.ts` | 맞는지 보려면 `app/globals.css` 에 어떤 토큰이 있는지를 알아야 한다. 칸 이름을 lint 룰에 베껴 두면 그 사본이 램프와 어긋나면서 검사가 못 보는 구멍이 생긴다 |
+| **셸 본문 칸이 그 안의 내용을 찌그러뜨리지 않는다** | `AppShell.test.tsx`(고치는 자리) + `tests/e2e/scroll-end-gap.spec.ts`(실제 여백 px) | 결함이 **레이아웃을 계산한 결과**로 생긴다. 클래스 이름은 멀쩡한데 실제 픽셀만 틀린다 |
+| **화면 폭에 따라 크기를 바꿀 때 행간 짝이 어긋나지 않는다** | `tests/contract/type-ramp-leading-pair.contract.test.ts` | 맞는지 보려면 **한 원소에 붙은 클래스 전부**를 봐야 하는데, `cn()` 의 인자로 쪼개져 있으면 패턴 하나에 안 담긴다. 램프 값을 `text-[var(…)]` 로 돌려 쓰는 **일부 경우**만 lint 가 잡는다 |
+| **컨트롤 값 층이 램프 밖으로 못 샌다** | `tests/contract/control-class.contract.test.ts` | 판정할 대상이 **cva 가 조합해서 만들어 내는 결과 문자열**이다. 코드에는 `chip`·`md` 같은 키만 적혀 있고 실제 값은 실행할 때 합쳐지므로 lint 가 볼 것이 없다. 그래서 여덟 모양 × 3 크기 × 9 톤 × … 을 전부 실제로 만들어 본다 |
+| **두 무채색 글자색 램프가 실제로 서로 다르다** | 같은 파일(`scope` 축 절) | 판정하려면 `app/globals.css` 의 **두 램프 8개 값**을 봐야 한다. 두 램프 값이 같아져 버리면 `scope` 는 아무 차이도 안 내면서 고를 것만 늘리는 셈이라, 그날 검사가 그걸 지우라고 말해 줘야 한다 |
+| **손으로 쓴 컨트롤이 늘지 않는다** | `tests/contract/control-adoption-ratchet.contract.test.ts` | 래칫이라 **저장소 전체의 개수**가 판정 기준인데, 그건 파일 하나만 봐서는 셀 수 없다 |
+| **글 속의 링크는 컨트롤이 아니라 글이다** — `.prose-link` 는 밑줄 모양만 정하고 display·행간·크기·포커스는 그 링크를 감싼 글의 것을 따른다 | `tests/contract/prose-link.contract.test.ts` + `tests/e2e/touch-target-contract.spec.ts` 의 fine-pointer 감사(WCAG 2.5.8 인라인 면제 판정) | 판정하려면 「이 링크가 문장 흐름 속에 있는가」(실제로 그려진 결과)와 브라우저가 계산한 display 값을 봐야 한다 — 「문장 속인가」를 정하는 세 가지(옆에 오는 글자가 어디서 왔는지 · 부모가 정하는 실제 display · 줄바꿈)가 전부 여는 태그 바깥에 있어서, 코드만 보고 판정하던 `inline` 축은 잘못 설정된 4건을 못 본 채 무용지물이었다(2026-08-04) |
+| **어느 바탕 위에 어느 글자색까지 쓸 수 있나** — quaternary 는 겹치지 않은 무채색 바탕(맨 아래 3단 + canvas/panel 위 overlay-1)까지, 그보다 올라선 바탕(overlay-2 이상 · elevated+overlay · 색이 섞인 바탕) 위의 글자는 tertiary 부터 | `tests/contract/quaternary-ink-surface.contract.test.ts`(값·자리) + `tests/e2e/a11y-open-surfaces.spec.ts`(화면) | 판정이 글자색이 아니라 **그 글자가 얹힌 바탕이 어떻게 겹쳐졌는지**에 달렸다 — 같은 클래스가 panel 위에서는 대비 5.00, overlay-2 위에서는 4.36 이다. 게다가 이 층에서 가장 흔한 코드 모양이 `active ? 틴트+밝은 글자색 : quaternary` 같은 분기라, 같은 태그에 붙은 클래스만 보고 짝을 맞추면 엉뚱하게 걸린다(2026-08-04 전수 18쌍 중 다수가 분기였다) — 그래서 코드만 보는 래칫 대신 값 자체를 고정하는 계약 + 실제로 화면을 열어서 재는 검사를 쓴다 |
 
 **미정의 스텝은 침묵한다 (2026-07-27 실측).** `text-large` 는 램프에 없는데
 tsc·eslint·전체 테스트를 전부 통과했다 — Tailwind 가 클래스를 아예 만들지 않아

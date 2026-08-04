@@ -14,75 +14,86 @@ words:
 > *"They are lenses, not separate agents **unless a tool explicitly provides
 > them**."*
 
-No tool ever provided them. So the bench was prose, the same way the PO Council
-was prose — and this repo's recurring lesson is that **문서에만 있는 규격은
-지켜지지 않는다.** This skill provides them.
+그런데 어떤 도구도 그것을 제공한 적이 없다. 그래서 이 벤치는 PO 카운슬이 그랬듯
+**문서 속 글로만 있었고 한 번도 돌아간 적이 없다** — 이 저장소가 반복해 배운 교훈
+그대로 **문서에만 있는 규격은 지켜지지 않는다.** 이 스킬이 그것을 실제로 부를 수
+있게 만든다.
 
-The eight seats are the documented bench, one agent each. Nothing invented,
-nothing dropped.
+여덟 자리는 문서에 이미 적혀 있던 그 자리들이고, 자리마다 에이전트 하나씩이다.
+새로 지어낸 것도, 빠뜨린 것도 없다.
 
-## The bench
+## The bench — 여덟 자리
 
-| Agent | 이름 | Bench seat | Rejects |
+**「자리」(seat)는 한 가지 관점만 맡는 심사 역할**이고, 자리 하나에 에이전트
+파일이 하나씩 있다. 한글 이름(위계 · 체계 · …)은 계약 테스트와 이 스킬이 그
+이름으로 부르는 **식별자라서 바꾸지 않는다** — 대신 그 자리가 실제로 무엇을 보는지
+아래에 풀어 적는다.
+
+| Agent | 이름 — 이 자리가 실제로 보는 것 | Bench seat | 반려하는 것 |
 |---|---|---|---|
-| `design-lead` | 위계 | Lead Product Designer | 막연한 폴리시, 과업이 더 명확해지지 않는 새 크롬 |
-| `design-system` | 체계 | Design Systems Engineer | 취향에만 기댄 간격, 일회성 사이즈, 룰 없는 규격 |
-| `design-interaction` | 상호작용 | Interaction Designer | 드래그로만 발견되는 기능, 사라지는 클릭 상태, 모달 모호성 |
-| `design-motion` | 모션 | Motion / Action Designer | 튀는 카메라, 장식적 애니메이션, 패널 잰크 |
-| `design-infoviz` | 도해 | Information Visualization Designer | 장식적 색, 타입 의미 없는 관계선 |
-| `design-workbench` | 작업대 | macOS Workbench Designer | 브라우저 전용 증명, 비좁은 풀스크린 |
-| `design-responsive` | 반응형 | Responsive & Touch Designer | 폭으로 터치 추정, rect 없는 반응형 판정 |
-| `design-handoff` | 핸드오프 | Agent Handoff Designer | 숨은 명령, MCP 전용 핸드오프, 사실과 분리된 복사 |
+| `design-lead` | 위계 — 화면에서 **무엇이 가장 먼저 눈에 들어와야 하는가**, 그리고 무엇을 덜 눈에 띄게 내릴 것인가 | Lead Product Designer | "더 깔끔하게" 같은 막연한 지시, 할 일이 더 분명해지지도 않는데 늘어나는 패널·탭·토글 |
+| `design-system` | 체계 — 이번에 정한 값이 **CSS 변수와 자동 검사로 남는가**(다음 사람이 눈대중으로 다시 고르지 않게) | Design Systems Engineer | 눈대중으로만 정한 간격, 딱 한 번 쓰려고 만든 크기, 자동 검사가 없는 규격 |
+| `design-interaction` | 상호작용 — 누름 · 마우스 올림 · 포커스 · 드래그 · 키보드 · 모달 상태가 **서로 다르게 보이는가** | Interaction Designer | 드래그해 봐야만 알 수 있는 기능, 눌렀는데 표시가 사라지는 버튼, 모달인지 아닌지 모호한 창 |
+| `design-motion` | 모션 — 움직임이 **무엇이 어디서 어디로 갔는지 설명하는가**(장식이 아니라) | Motion / Action Designer | 튀는 카메라, 설명하는 것이 없는 애니메이션, 끊겨 보이는 패널 |
+| `design-infoviz` | 도해 — 화면의 **색 · 모양 · 선이 각각 어떤 데이터를 나타내는가** | Information Visualization Designer | 아무 데이터도 나타내지 않는 색, 관계 종류를 구분해 주지 않는 연결선 |
+| `design-workbench` | 작업대 — **설치된 macOS 앱**의 14인치 화면에서 정말 쓸 만한가 | macOS Workbench Designer | 브라우저에서만 확인한 증거, 화면이 좁아 답답한 풀스크린 |
+| `design-responsive` | 반응형 — 창 폭이 바뀌고 손가락으로 만질 때 **실제로 재서 확인했는가** | Responsive & Touch Designer | 창 폭만 보고 터치일 거라고 추정하기, 실제 위치·크기를 안 재고 내린 반응형 판정 |
+| `design-handoff` | 핸드오프 — 이 화면이 **AI 에이전트에게 다음에 할 일을 남기는가** | Agent Handoff Designer | 화면에 안 보이는 명령, MCP 로만 되고 CLI 로는 안 되는 인계, 지금 보고 있는 것과 무관한 복사 버튼 |
 
-**`design-guardian` is not a seat — it is the accountable decider.** The bench
-critiques and prescribes; the guardian produces the single verdict and is the
-only one that may edit code. This mirrors the PO Council, where
-Accountable Value Owner is deliberately not an agent.
+각 자리는 **「판정」**(승인 / 조건부 승인 / 반려 중 하나 + 그 이유)을 내고,
+`design-guardian` 이 그 판정들을 모아 **「평결」**(하나로 정리된 최종 결론)을 쓴다.
+
+**`design-guardian` is not a seat — it is the accountable decider.** 여덟 자리는
+비평하고 고칠 방법을 처방할 뿐이고, 평결을 쓰고 **코드를 고칠 수 있는 것은
+`design-guardian` 하나뿐**이다. 만드는 사람이 자기가 만든 것을 통과시키지 못하게
+하려는 것이고, PO 카운슬에서 Accountable Value Owner 를 일부러 에이전트로 두지
+않은 것과 같은 이유다.
 
 ### 자리 브리프는 어디 있고, 어떻게 부르나
 
-**자리 브리프는 이 파일 기준 `../../agents/design-*.md` 여덟 개 + `design-guardian.md`
-하나다.**
+**「자리 브리프」는 자리 하나가 무엇을 어떻게 판정하는지 적어 둔 지시문 파일**이고,
+이 파일 기준 `../../agents/design-*.md` 여덟 개 + `design-guardian.md` 하나다.
 
-이 스킬은 두 벌로 존재하고 바이트 동일한데, 그 상대 경로는 **양쪽에서 각자의
-트리로 풀린다** — 그래서 도구 이름을 적을 필요가 없고, 적으면 안 된다.
-`pnpm agents:check` 의 `agent-copy` 가 두 벌을 바이트로 묶고 한쪽에만 있는 파일도
-실패로 잡는다. **자리를 새로 만들면 양쪽 트리에 같이 넣는다. 셋째 사본은 만들지
-않는다** — 사본이 셋이면 어긋나는 쪽이 기본값이 된다.
+이 스킬 파일은 두 벌 있고 내용이 한 글자도 다르면 안 되는데, 위 상대 경로는
+**두 벌 각각에서 자기 쪽 폴더로 풀린다** — 그래서 도구 이름을 적을 필요가 없고,
+적으면 안 된다. `pnpm agents:check` 의 `agent-copy` 가 두 벌이 같은지 검사하고
+한쪽에만 있는 파일도 실패로 잡는다. **자리를 새로 만들면 양쪽에 같이 넣는다.
+셋째 사본은 만들지 않는다** — 사본이 셋이면 어긋난 사본이 기본값이 된다.
 
-**부르는 법은 네 능력이 정한다:**
+**어떻게 부를지는 네가 무엇을 할 수 있느냐가 정한다:**
 
-- **서브에이전트를 병렬로 띄울 수 있으면** 1라운드를 **한 메시지에서 동시에** 띄운다.
-  이 프로토콜이 병렬을 요구하는 이유는 자리들이 서로를 못 봐야 하기 때문이다.
-- **못 띄우면** 소집할 자리의 파일을 **직접 열어** 그 브리프를 그대로 따르고
-  **순차로** 수행한다. 순차는 **1라운드 독립성을 잃는다** — 그 손실을 **숨기지 말고
-  평결 블록에 적는다**.
-- **브라우저 계측을 못 하면**(모션의 `/motion-verify`, 반응형의 `/responsive-sweep`)
-  그 자리는 **판정을 보류한다.** 눈으로 때우지 않는다 — 실물을 열지 못한 자리는
-  그렇게 말하고 물러나는 것이 이 벤치의 규칙이다.
+- **서브에이전트를 여러 개 동시에 띄울 수 있으면** 1라운드를 **한 메시지에서 한꺼번에**
+  띄운다. 동시에 띄우라고 하는 이유는 자리들이 서로의 의견을 보면 안 되기 때문이다.
+- **못 띄우면** 소집할 자리의 파일을 **직접 열어** 거기 적힌 대로 따르고 **한 자리씩
+  차례로** 수행한다. 차례로 하면 **1라운드 독립성을 잃는다**(뒤에 오는 자리가 앞
+  자리의 의견을 이미 봐 버린다) — 그 손실을 **숨기지 말고 평결 블록에 적는다**.
+- **브라우저를 열어 재지 못하면**(모션의 `/motion-verify`, 반응형의 `/responsive-sweep`)
+  그 자리는 **판정을 보류한다.** 눈대중으로 때우지 않는다 — 실물을 못 연 자리는
+  못 봤다고 말하고 물러나는 것이 이 벤치의 규칙이다.
 
-## 이 카운슬 **앞에** 오는 단계 — 발산
+## 이 카운슬 **앞에** 오는 단계 — 후보를 여러 개 그려 보기
 
-**이 카운슬은 serial 이다.** R1 비평 → R2 교차비평 → R3 평결이 전부 **이미
-만들어진 하나**를 평가한다. Dow et al.(ACM TOCHI 2010)이 실험으로 보인 것은 그
-반대다 — 여러 개를 만든 뒤 피드백을 받는 쪽이 결과 품질 · 발산 · 자기효능감
-**셋 다**에서 우월했다.
+**이 카운슬은 serial 이다** — 즉 **이미 만들어 놓은 하나**를 놓고 1라운드 비평 →
+2라운드 서로 반박 → 3라운드 평결로 이어질 뿐, 다른 안을 만들지는 않는다.
+Dow et al.(ACM TOCHI 2010)의 실험 결과는 그 반대를 가리킨다 — 여러 개를 만들어
+놓고 피드백을 받은 쪽이 결과 품질 · 안의 다양성 · 만든 사람의 자신감 **셋 다**에서
+더 나았다.
 
-그래서 비자명한 시각/레이아웃/상호작용/모션 변경은 **`/design-directions` 를
-먼저 돌린다**: `chief` 가 3~4개 갈래를 글과 ASCII 로 그리고(코드 0), 소유자가
-하나를 고르고, 그다음에 짓는다. **카운슬은 고른 갈래를 심사하지 갈래를 고르지
-않는다.**
+그래서 뻔하지 않은 시각/레이아웃/상호작용/모션 변경은 **`/design-directions` 를
+먼저 돌린다**: `chief` 가 서로 다른 안 3~4개를 글과 ASCII 그림으로만 그려 보이고
+(코드는 한 줄도 안 쓴다), 소유자가 하나를 고르고, 그다음에 만든다. **카운슬은
+고른 안을 심사하는 자리지 안을 고르는 자리가 아니다.**
 
-순서가 뒤집히면 카운슬이 갈래 탐색을 대신하게 된다 — 2026-08-03 에 실제로
-그랬고, 다섯 자리가 두 라운드를 돌아 나온 결론이 처음에 세 줄로 그릴 수 있는
-갈래였다.
+순서가 뒤집히면 카운슬이 그 "안 고르기"를 대신하게 된다 — 2026-08-03 에 실제로
+그랬고, 다섯 자리가 두 라운드를 돌아 내놓은 결론이 애초에 세 줄로 그려 보일 수
+있는 안이었다.
 
 ## Which seats to convene
 
-Convening all eight for a label change is the process theater the design OS
-warns about. **위계 and 체계 always attend** — one names the attention winner,
-the other turns whatever is decided into tokens and tests. Add the rest by what
-the change actually touches:
+라벨 한 줄 고치는 데 여덟을 다 부르는 것은 디자인 OS 가 경고하는 "일하는 척"이다.
+**위계 and 체계 always attend** — 위계는 **주목 승자**(그 화면에서 가장 먼저 눈에
+들어와야 하는 요소 하나)를 정하고, 체계는 정해진 것을 CSS 변수와 자동 검사로
+바꿔 놓는다. 나머지는 이번 변경이 실제로 건드리는 것에 따라 더한다:
 
 | Change touches | Add these seats |
 |---|---|
@@ -94,61 +105,66 @@ the change actually touches:
 | what the screen leaves behind for an agent | 핸드오프 |
 | a new or removed surface | all eight |
 
-If you are unsure whether a seat applies, convene it. The failure mode this
-protocol exists to prevent is a blind spot, not an extra opinion.
+어떤 자리가 해당되는지 애매하면 부른다. 이 절차가 막으려는 실패는 **아무도 못 본
+구멍**이지 의견이 하나 더 붙는 것이 아니다.
 
 ## Protocol
 
 ### Round 1 — independent critique (parallel, no cross-talk)
 
-Launch the selected seats **in one message** so they cannot anchor on each
-other. Every seat gets:
+고른 자리들을 **한 메시지에서 한꺼번에** 띄운다. 먼저 나온 의견에 나머지가 끌려가지
+않게 하려는 것이다. 자리마다 다음을 준다:
 
-- the change, and the user moment it claims to serve
-- the repo paths, and **a built, running surface to open** — not a diff.
-  `design-lead`, `design-interaction`, `design-workbench` must screenshot;
-  `design-motion` must record frames; `design-infoviz` must measure contrast;
-  `design-handoff` must run the command it claims exists.
-- explicit permission to research the web
+- 이번 변경 내용과, 그것이 사용자의 어떤 순간을 위한 것이라고 주장하는지
+- 저장소 경로, 그리고 **실제로 빌드해서 띄워 놓은 화면 주소** — 코드 diff 가 아니다.
+  `design-lead` · `design-interaction` · `design-workbench` 는 스크린샷을 찍어야 하고,
+  `design-motion` 은 화면을 녹화해야 하고, `design-infoviz` 는 색 대비를 재야 하고,
+  `design-handoff` 는 있다고 주장하는 명령을 직접 실행해 봐야 한다.
+- 웹을 찾아봐도 된다는 명시적인 허락
 
-**측정 자리는 자기 계기를 반드시 실행한다** — 호출자가 요청하지 않아도. 「모션」은
-`/motion-verify`(macOS 녹화 → 프레임 → 곡선), 「반응형」은 `/responsive-sweep`
-(밴드 매트릭스 rect 실측), **「도해」는 지도가 걸리면
-`node scripts/measure-graph-readability.mjs`**(엣지 교차 · 노드 겹침 — 아래),
-그리고 구현이 끝난 화면이면 `/design-audit`(겹침 · 치수 편차 · 토큰 이탈을 재는
-마지막 관문). 계기 없는 판정은 무효다.
+**재는 자리는 자기 「계기」를 반드시 실행한다** — 계기란 눈이 아니라 숫자로 재는
+도구를 말하고, 호출자가 시키지 않아도 돌린다. 「모션」은 `/motion-verify`
+(macOS 화면 녹화 → 프레임 추출 → 움직임 곡선), 「반응형」은 `/responsive-sweep`
+(여러 창 폭에서 요소의 실제 위치·크기를 잰다), **「도해」는 지도가 걸리면
+`node scripts/measure-graph-readability.mjs`**(선끼리 교차한 횟수 · 노드끼리 겹친
+횟수 — 아래), 그리고 이미 구현이 끝난 화면이면 `/design-audit`(요소 겹침 · 같은
+카드끼리 크기가 들쭉날쭉한지 · 정해진 값을 벗어난 색·크기를 재는 마지막 관문).
+숫자로 재지 않은 판정은 무효다.
 
-**지도는 2026-08-03 까지 계기가 없던 표면이다.** 노드 규격에는 계약 테스트가,
-타입 램프에는 lint 가, 모션에는 프레임 실측이 있었는데 **화면 대부분을 차지하는
-배치**만 "복잡해 보인다" 로 판정되고 있었다. 이제 셋을 읽는다 — **교차 수**(원시.
-화면의 실제 부담) · **품질**(정규화. 규모가 다른 케이스 비교용) · **겹침**.
+**지도는 2026-08-03 까지 재는 도구가 하나도 없던 화면이다.** 노드 규격에는 계약
+테스트가, 글자 크기에는 lint 가, 모션에는 프레임 실측이 있었는데 **화면 대부분을
+차지하는 배치**만 "복잡해 보인다" 로 판정되고 있었다. 이제 셋을 읽는다 —
+**교차 수**(선이 실제로 몇 번 겹쳐 지나가는가. 화면이 주는 실제 부담) ·
+**품질**(그 교차 수를 0~1 로 환산한 값. 크기가 다른 볼트끼리 비교하려고 쓴다) ·
+**겹침**(노드끼리 겹친 쌍의 수).
 
-⚠️ 「**교차 잴 수 없음**」이 나오면 그건 만점이 아니다. 밀도 게이트가 서브트리를
-접어 화면에 별 모양만 남아 교차가 원천적으로 불가능해진 상태다 — 이걸 만점으로
-읽으면 「가장 큰 볼트에서 가장 좋다」는 정반대 결론이 나온다.
-근거는 Purchase 1997(교차 최소화가 이해도에 압도적으로 가장 중요, 각도 해상도 ·
-격자 스냅은 유의하지 않음)이고, 그래서 이 계기는 **일부러 둘만 잰다.**
+⚠️ 「**교차 잴 수 없음**」이 나오면 그건 만점이 아니다. 노드가 너무 많아 화면이
+가지를 접어 버려서, 남은 선들이 애초에 교차할 수 없는 모양이 된 상태다 — 이걸
+만점으로 읽으면 「볼트가 클수록 지도가 좋다」는 정반대 결론이 나온다.
+근거는 Purchase 1997(선 교차를 줄이는 것이 이해도에 압도적으로 가장 중요하고,
+선 사이 각도나 격자 정렬은 유의한 차이가 없었다)이고, 그래서 이 도구는 **일부러
+둘만 잰다.**
 
-A seat that could not open the real thing must say so and withhold its verdict.
-Reading a patch and judging craft from it is the failure this protocol replaces.
+실물을 열지 못한 자리는 못 열었다고 말하고 판정을 내지 않는다. 코드 변경분만 읽고
+디자인의 완성도를 판단하는 것 — 그게 이 절차가 대신하려는 실패다.
 
 ### Round 2 — cross-critique (one round)
 
-Send every seat the others' positions. Each restates the **strongest** opposing
-point in its own words, then concedes or refutes. Conceding must change the
-verdict. One round only.
+각 자리에 다른 자리들의 의견을 보낸다. 각자 자기에게 **가장 불리한** 반대 논점을
+골라 자기 말로 다시 진술한 뒤, 받아들이거나 반박한다. 받아들였으면 판정이 실제로
+바뀌어야 한다. 이 왕복은 한 번뿐이다.
 
 ### 라운드 1 — 리터럴 실행 템플릿
 
-**선택한 자리 전부를 한 메시지에서 동시에 launch 한다** (병렬 · 상호 참조 없음).
-아래 다섯 칸만 채운다. 문장을 새로 짓지 않는다 — 즉흥 브리프가 같은 소집을 두 번
-다르게 만드는 원인이다.
+**고른 자리 전부를 한 메시지에서 한꺼번에 launch 한다**(동시에 · 서로의 의견을 보지
+못하게). 아래 다섯 칸만 채운다. 문장을 새로 짓지 않는다 — 그때그때 다르게 쓴
+지시문이 같은 소집을 두 번 다르게 만드는 원인이다.
 
 ```
-[결정] <요청자의 표현 그대로. 문제로 미리 번역하지 않는다 — 그 번역은 PO 카운슬의 일이다>
+[결정] <요청자의 표현 그대로. 문제로 미리 바꿔 적지 않는다 — 그 일은 PO 카운슬이 한다>
 [근거 경로] <이 결정이 닿는 파일·문서·라우트>
-[기존 패스] <심사 대상 PO 패스를 원문 그대로. 없으면 "없음">
-[열어야 할 실물] <URL · 명령 · vault 경로. 전 자리가 실물을 연다 — diff 판정 금지.
+[기존 패스] <이번에 심사할 PO 패스(제품 담당자가 미리 써 둔 검토 글)를 원문 그대로. 없으면 "없음">
+[열어야 할 실물] <URL · 명령 · vault 경로. 전 자리가 실물을 연다 — 코드 diff 만 보고 판정 금지.
                   「모션」은 `/motion-verify`, 「반응형」은 `/responsive-sweep`,
                   「도해」는 지도가 걸리면 `measure-graph-readability.mjs`,
                   구현 완료 화면이면 `/design-audit` 을 **요청 없이** 실행한다>
@@ -157,99 +173,107 @@ verdict. One round only.
 
 ### 라운드 2 — 리터럴 재개 템플릿
 
-**새로 launch 하지 않는다.** 라운드 1 에이전트에게 `SendMessage` 로 재개한다 —
-컨텍스트가 남아 있어 다시 브리핑할 필요가 없고, 그게 이 프로토콜에서 가장 큰
-비용 절감이다. 본문은 **평결 블록만** 싣는다(전사 금지):
+**새로 launch 하지 않는다.** 라운드 1 에서 띄운 에이전트에게 `SendMessage` 로 이어
+말한다 — 그 에이전트에게는 1라운드 내용이 아직 남아 있어 처음부터 다시 설명할
+필요가 없고, 그게 이 절차에서 가장 크게 아끼는 부분이다. 본문에는 **각 자리가 낸
+판정 블록만** 넣는다(주고받은 대화 전체를 그대로 옮기지 않는다):
 
 ```
-[다른 자리들의 평결 블록]
+[다른 자리들의 판정 블록]
 [너에게 온 질의 — 있으면]
-규칙: 가장 강한 반대 논점을 네 말로 재진술하라. 약하게 요약한 뒤 이기는 것은
-반칙이다. 수용하거나 반박하라. 수용했으면 판정을 바꿔라 — 안 바뀌는 판정은
-심사가 아니라 알리바이다. 1회로 끝난다.
+규칙: 너에게 가장 불리한 반대 논점을 골라 네 말로 다시 진술하라. 상대 주장을
+약하게 요약해 놓고 이기는 것은 반칙이다. 받아들이거나 반박하라. 받아들였으면
+판정을 바꿔라 — 아무것도 안 바뀌는 판정은 심사한 척한 것이다. 1회로 끝난다.
 다른 자리 중 **네가 옳다고 보는 지점 하나**를 이름으로 대라 — 1라운드에서는
 서로를 못 봤으므로 이 칸은 여기서만 채울 수 있다.
-출력: 갱신된 판정 1줄 + 재진술 + 수용/반박 + (있으면) 질의 응답. 15줄 이하.
+출력: 갱신된 판정 1줄 + 다시 진술 + 수용/반박 + (있으면) 질의 응답. 15줄 이하.
 ```
 
 ### Round 3 — the guardian's verdict
 
-`design-guardian` receives all positions and produces the single verdict, then
-applies it in code. Rules:
+`design-guardian` 이 모든 자리의 의견을 받아 **하나의 평결**을 쓰고, 그것을 코드에
+적용한다. 규칙:
 
-- **Do not average the seats into a bigger feature.** The design OS already
-  says this. A good pass usually *removes* something.
+- **여덟 자리의 요구를 다 합쳐 더 큰 기능으로 만들지 않는다.** 디자인 OS 가 이미
+  그렇게 정해 두었다. 잘 된 검토는 대개 무언가를 *덜어낸다*.
 - **If the council cannot name a surface to remove, dim, collapse, or align,
-  the pass failed.** This is the OS's own rejection rule and it is the sharpest
-  one — addition-only critique is not critique.
-- When seats disagree, choose **the smallest change that clarifies the
-  ontology-reading moment in the installed app.**
+  the pass failed.** 즉 **지울 것 · 흐리게 할 것 · 접을 것 · 줄 맞출 것을 하나도
+  못 대면 그 검토는 실패**다. 디자인 OS 자신의 반려 규칙이고 그중 가장 날카롭다 —
+  더하기만 하는 비평은 비평이 아니다.
+- 자리끼리 의견이 갈리면, **설치된 앱에서 온톨로지를 읽는 그 순간을 가장 분명하게
+  만드는 가장 작은 변경**을 고른다.
 
 ## 결정 원장 — 소집 전에 읽고, 끝나면 남긴다
 
-`docs/DECISIONS.md` 가 결정과 **그때 진 반대 의견**을 담는다. 이 스킬은 원장을
-양쪽으로 쓴다:
+「결정 원장」은 지금까지 무엇을 정했는지 시간순으로 쌓아 둔 파일
+(`docs/DECISIONS.md`)이고, 결정뿐 아니라 **그때 받아들여지지 않은 반대 의견**까지
+같이 담는다. 이 스킬은 그 파일을 읽기도 하고 쓰기도 한다:
 
-**소집 전 (읽기)** — 같은 표면 · 같은 질문에 대한 **선행 결정이 있는지 먼저
-본다.** 있으면 1라운드 브리프에 그 기록을 원문으로 싣고, 각 자리는 판정에서
-그것을 ① 여전히 유효하다고 인용하거나 ② 명시적으로 뒤집는다(이유와 함께).
-**조용히 다시 결정하는 것**이 원장이 막으려는 일이다.
+**소집 전 (읽기)** — 같은 화면 · 같은 질문에 대해 **전에 내린 결정이 있는지 먼저
+본다.** 있으면 1라운드 지시문에 그 기록을 원문 그대로 싣고, 각 자리는 판정에서
+그것을 ① 아직 유효하다고 인용하거나 ② 이유를 대고 명시적으로 뒤집는다.
+**아무 말 없이 다시 결정해 버리는 것**이 이 파일이 막으려는 일이다.
 
-**반증 조건 점검** — 선행 기록의 `반증 조건` 이 **이미 관측됐는지** 확인한다.
-관측됐으면 그때 진 쪽이 이긴 것이고, 이번 소집은 그 사실에서 시작한다.
+**반증 조건 점검** — 「반증 조건」이란 *이런 일이 관찰되면 그 결정이 틀린 것으로
+친다* 고 미리 적어 둔 조건이다. 전 기록의 반증 조건이 **그동안 실제로 관찰됐는지**
+확인한다. 관찰됐으면 그때 진 쪽이 옳았던 것이고, 이번 소집은 그 사실에서 시작한다.
 
-**소집 후 (쓰기)** — 평결 블록을 `docs/DECISIONS.md` 최상단에 **덧붙인다**.
-지난 기록은 고치지 않는다 — 판단이 바뀌었으면 새 기록을 쓰고 옛 기록을
-`뒤집힘 (→ 링크)` 으로 표시한다. 기록 없는 소집은 **끝나지 않은 소집**이다.
+**소집 후 (쓰기)** — 평결 블록을 `docs/DECISIONS.md` 맨 위에 **덧붙인다**.
+지난 기록은 고치지 않는다 — 판단이 바뀌었으면 새 기록을 쓰고 옛 기록에
+`뒤집힘 (→ 링크)` 을 표시한다. 기록을 안 남긴 소집은 **아직 안 끝난 소집**이다.
 
 ## 카운슬 간 질의 (PO ↔ 디자인)
 
-두 카운슬은 침묵하는 사일로가 아니다. 단 소통은 **경계 있는 질의** 하나뿐이다 —
-회의가 아니라 질문이다.
+PO 카운슬과 디자인 카운슬은 서로 아예 말을 안 하는 사이가 아니다. 다만 오갈 수
+있는 것은 **한 번짜리 질문 하나**뿐이다 — 회의를 여는 게 아니다.
 
-각 자리는 1라운드 의견 끝에 **질의 최대 1건**을 붙일 수 있다. 형식 고정:
+각 자리는 1라운드 의견 끝에 **질문 최대 1건**을 붙일 수 있다. 형식은 고정이다:
 
 > **질의 → [상대 자리]**
-> **질문**: [한 문장, 답할 수 있는 형태]
-> **걸린 판정**: [답에 따라 내 의견의 어느 부분이 뒤집히는지]
-> **무응답 시 가정**: [답이 없으면 무엇을 전제하고 진행하는지]
+> **질문**: [한 문장. 답이 나올 수 있는 형태로]
+> **걸린 판정**: [답에 따라 내 의견의 어느 부분이 바뀌는지]
+> **무응답 시 가정**: [답이 없으면 무엇을 전제하고 그냥 진행하는지]
 
-걸린 판정이 없는 질의는 잡담이다 — 버려진다.
+답이 뭐가 되든 내 의견이 안 바뀌는 질문은 잡담이다 — 버린다.
 
-**라우팅** (chief 또는 소집자가 한다):
-- 상대 카운슬이 같은 패스에 소집돼 있으면 → 2라운드 메시지에 질의를 동봉하고
-  답(≤10줄)을 질의자의 2라운드 메시지에 붙인다. **왕복 0회 추가.**
-- 소집돼 있지 않으면 → **지목된 자리 하나만** 최소 브리프로 호출한다. 카운슬
-  전체를 부르지 않는다.
+**누구에게 보낼지는** chief 또는 소집자가 정한다:
+- 상대 카운슬도 같은 건으로 이미 소집돼 있으면 → 2라운드 메시지에 질문을 같이
+  넣고, 답(10줄 이하)을 질문한 자리의 2라운드 메시지에 붙인다. **오가는 횟수는
+  늘지 않는다.**
+- 소집돼 있지 않으면 → **지목된 자리 하나만** 최소한의 설명과 함께 부른다.
+  카운슬 전체를 부르지 않는다.
 
-**종료**: 답은 1회, 재질문 없음. 수용해 판정을 갱신하거나, 수용하지 않으면
-**기록된 반대 + 반증 조건**으로 남는다. 어느 쪽이든 거기서 끝난다.
+**끝내는 법**: 답은 1회, 재질문 없음. 받아들여 판정을 고치거나, 받아들이지
+않으면 **기록에 남는 반대 의견 + 반증 조건**으로 남는다. 어느 쪽이든 거기서
+끝난다.
 
-**승격 — 양쪽이 다 필수인 결정**(새 표면 신설/제거): 질의로 때우지 않는다.
-**PO 카운슬을 먼저** 돌리고 그 평결 블록을 디자인 카운슬 1라운드 브리프에 원문
-그대로 넣는다. 순차이지 병합이 아니다 — 한 세션에 합치면 관점들이 서로의
-컨텍스트를 오염시켜 병렬 독립성이 죽는다.
+**양쪽 카운슬이 다 있어야 하는 결정**(화면을 새로 만들거나 없애는 일)은 질문
+하나로 때우지 않는다. **PO 카운슬을 먼저** 돌리고 그 평결 블록을 디자인 카운슬
+1라운드 지시문에 원문 그대로 넣는다. 차례로 하는 것이지 한 번에 섞는 게 아니다 —
+한 세션에 합치면 두 관점이 서로의 대화 내용을 보게 돼서, 따로 판단하게 만든
+의미가 사라진다.
 
 ## 사람에게 — 소유자에게 가는 답은 **처음부터 끝까지** 평문이다
 
-카운슬 어휘는 **다음 에이전트와 결정 원장**을 위한 것이지 소유자를 위한 것이
-아니다. 그런데 지금까지 평결 블록을 그대로 소유자에게 전달해 왔다.
+이 카운슬에서만 쓰는 말들은 **다음 에이전트와 결정 원장 파일**을 위한 것이지
+소유자를 위한 것이 아니다. 그런데 지금까지 평결 블록을 그대로 소유자에게 보내 왔다.
 
-실측(2026-07-29): 발자국 커스터마이즈 평결을 그대로 옮겼더니 소유자가 되물었다 —
-*"뭔 서명?"*. 그 순간 요약은 요약이 아니라 **번역이 필요한 또 하나의 문서**였다.
-읽는 쪽이 사전을 먼저 배워야 하는 보고는 보고가 아니다.
+실제로 있었던 일(2026-07-29): 발자국 커스터마이즈 평결을 그대로 옮겼더니 소유자가
+되물었다 — *"뭔 서명?"*. 그 순간 요약은 요약이 아니라 **또 한 번 풀어 써 줘야 하는
+문서**였다. 읽는 사람이 용어부터 배워야 하는 보고는 보고가 아니다.
 
-**실측(2026-08-03) — 이 규칙은 이미 있었는데 지켜지지 않았다.** 소집자는 세 줄
-요약을 맨 앞에 정확히 썼고, **그 바로 아래 평결 블록을 통째로 붙였다.** 소유자의
-답은 *"뭔말이야? 이해 가능하게 대답해줘야지"* 였고, 더 쉽게 다시 쓴 뒤에도
-*"더 쉽게 설명해줘"* 가 한 번 더 왔다. 세 줄은 요약이 아니라 **회의록 앞에 얹은
-표지**였던 것이다. 구멍은 종전 제목 「평결 블록보다 **먼저**」다 — *먼저 쓰라*는
-말은 **뒤에 붙여도 된다**는 말로 읽힌다. (PO 카운슬에서 난 사고지만 이 절의
-문장은 두 카운슬이 공유하므로 구멍도 공유였다.) 그래서 셋으로 나눠 못 박는다.
+**2026-08-03 — 이 규칙은 이미 있었는데 지켜지지 않았다.** 소집자는 세 줄 요약을
+맨 앞에 정확히 썼고, **그 바로 아래에 평결 블록을 통째로 붙였다.** 소유자의 답은
+*"뭔말이야? 이해 가능하게 대답해줘야지"* 였고, 더 쉽게 다시 쓴 뒤에도 *"더 쉽게
+설명해줘"* 가 한 번 더 왔다. 세 줄이 요약이 아니라 **회의록 앞에 붙인 표지**였던
+것이다. 문제는 예전 제목 「평결 블록보다 **먼저**」였다 — *먼저 쓰라*는 말은
+**뒤에 붙여도 된다**는 말로 읽힌다. (PO 카운슬에서 난 사고지만 이 절의 문장은 두
+카운슬이 같이 쓰므로 문제도 같이 있었다.) 그래서 셋으로 나눠 못 박는다.
 
-**① 평결 블록의 목적지는 대화창이 아니다.** 그것은 `docs/DECISIONS.md` · PR 본문 ·
-플랜 파일로 간다. **소유자에게 보내는 답에는 붙이지 않는다.** 원하면 소유자가
-요청한다 — 요청 없이 붙은 평결 블록은 보고가 아니라 전사(轉寫)다.
+**① 평결 블록이 갈 곳은 대화창이 아니다.** 그것은 `docs/DECISIONS.md` · PR 본문 ·
+플랜 파일로 간다. **소유자에게 보내는 답에는 붙이지 않는다.** 필요하면 소유자가
+달라고 한다 — 요청 없이 붙은 평결 블록은 보고가 아니라 회의록을 그대로 옮겨
+놓은 것이다.
 
 **② 금지어는 답 전체에 적용된다.** 맨 앞 세 줄에만이 아니다. 아래 목록의 단어가
 소유자에게 가는 답 **어디에든** 나오면 그 답은 아직 번역되지 않은 것이다.
@@ -270,17 +294,17 @@ applies it in code. Rules:
 ```
 
 **세 줄로 부족하면 더 써도 된다 — 단 같은 말투로.** 길이가 문제였던 적은 없고
-어휘가 문제였다. 근거를 대야 하면 **숫자와 실물로** 댄다("한 화면에 컨트롤 높이가
-9종이다"), 자리 이름과 점수로 대지 않는다. 비유가 정확하면 비유가 낫다.
+쓰는 단어가 문제였다. 근거를 대야 하면 **숫자와 실물로** 댄다("한 화면에 버튼
+높이가 9종이다"), 자리 이름과 점수로 대지 않는다. 비유가 정확하면 비유가 낫다.
 
-**소유자에게 가는 답 어디에도 쓰지 않는 말** — 자리 이름(위계 · 체계 · 상호작용 ·
-모션 · 도해 · 작업대 · 반응형 · 핸드오프 · 근거 · 결 · 지킴이 · 해자 · 지렛대) ·
-루브릭 · 점수 · `N/24` · 판정 · 평결 · 소집 · 반증 조건 · 서명 · 슬라이스 ·
-appetite · 트리거 · attention winner · 라운드.
+**소유자에게 가는 답 어디에도 쓰지 않는 말** — 두 카운슬의 자리 이름(위계 · 체계 ·
+상호작용 · 모션 · 도해 · 작업대 · 반응형 · 핸드오프 · 근거 · 결 · 지킴이 · 해자 ·
+지렛대) · 루브릭 · 점수 · `N/24` · 판정 · 평결 · 소집 · 반증 조건 · 서명 ·
+슬라이스 · appetite · 트리거 · attention winner · 라운드.
 
-그 말들이 **틀린 것은 아니다** — 원장과 PR 본문에서는 정확히 그 단어들이어야 한다.
-다만 그 독자는 프로토콜을 실행하는 쪽이고, 소유자에게 필요한 정보는 셋뿐이다:
-뭐가 바뀌나, 내가 말한 것과 뭐가 다른가, 내가 뭘 해야 하나.
+그 말들이 **틀린 것은 아니다** — 결정 원장과 PR 본문에서는 정확히 그 단어들이어야
+한다. 다만 그것을 읽는 쪽은 이 절차를 실행하는 사람이고, 소유자에게 필요한 정보는
+셋뿐이다: 뭐가 바뀌나, 내가 말한 것과 뭐가 다른가, 내가 뭘 해야 하나.
 
 **"네 말과 다르게 한 것" 은 생략할 수 없다.** 요청보다 좁히거나 넓혔으면 그 줄이
 반드시 있다. 그 줄이 없는 축소는 축소가 아니라 **조용한 무시**이고, 소유자가
@@ -288,10 +312,13 @@ appetite · 트리거 · attention winner · 라운드.
 
 ## Output — Council Verdict block
 
-**이것은 파일로 가는 산출물이다 — 소유자에게 보내는 답이 아니다** (위 절 ①).
+**이것은 파일에 남기는 기록이다 — 소유자에게 보내는 답이 아니다** (위 절 ①).
+여기서는 카운슬 용어를 그대로 쓴다. 읽는 쪽이 이 절차를 실행하는 사람이라서다.
 
-The design OS's Council Output Contract requires five lines before
-implementation. Keep them, and add the bench's own verdict format:
+디자인 OS 는 구현 전에 다섯 줄을 적으라고 정해 두었다. 그 다섯 줄을 그대로 두고,
+아래에 이 벤치의 평결 형식을 덧붙인다. `Attention stack` 은 화면 요소를 눈에
+띄는 순서대로 다섯 층으로 늘어놓은 것이다(base=배경 · support=보조 · focus=지금
+주인공 · blocking=앞을 막는 것 · utility=구석의 도구).
 
 ```md
 ## Design Council Verdict — <change>
@@ -323,32 +350,37 @@ observe if it was right>
 
 ## Non-negotiables every seat inherits
 
-- **공개 발행 원칙만 인용한다.** Apple HIG · Rams · Mackinlay · Tufte · Bertin ·
-  Cleveland & McGill · Purchase · Shneiderman · Munzner · Norman · Nielsen ·
-  Disney 12 · Material motion · Carbon · Fluent · W3C · WCAG · Toss 공개 발표.
-  **단 data-ink 는 반려 근거가 아니다** — Inbar 2007 · Bateman 2010 이 반박했다.
-  마크를 반려할 때 대는 것은 Mackinlay expressiveness 다(`docs/FOUNDATIONS.md`).
-- **타사 자산 모방 절대 금지.** Reference products are things to *observe a
-  principle in*, never to copy — no assets, no wording, no styling, no palettes.
+- **누구나 볼 수 있게 공개된 원칙만 인용한다.** Apple HIG · Rams · Mackinlay ·
+  Tufte · Bertin · Cleveland & McGill · Purchase · Shneiderman · Munzner ·
+  Norman · Nielsen · Disney 12 · Material motion · Carbon · Fluent · W3C ·
+  WCAG · Toss 공개 발표. **단 data-ink 는 반려 근거가 아니다** —
+  Inbar 2007 · Bateman 2010 이 반박했다. 화면의 마크를 반려할 때 대는 근거는
+  Mackinlay expressiveness 다(`docs/FOUNDATIONS.md`).
+- **타사 자산 모방 절대 금지.** 참고할 다른 제품은 *거기서 원칙을 확인하는* 대상이지
+  베끼는 대상이 아니다 — 이미지·문구·스타일·색 조합 어느 것도 가져오지 않는다.
   `docs/PRODUCT-DESIGN-OPERATING-SYSTEM.md` 의 Reference Permission Test 를
   통과한 것만 인용한다.
-- **실존 디자이너의 대사를 지어내지 않는다.** "잡스라면 이렇게 말했을 것"은 근거가
-  아니라 창작이다.
-- **디자인 시스템이 먼저다.** 어떤 결정이든 결국 값이 되어 코드에 남는다. 그 값이
-  램프에 없으면 `design-system` 이 램프 등록 + lint 룰 + 계약 테스트를 같은 PR 로
-  요구한다. **룰 없는 규격은 지켜지지 않는다.**
-- **헌장이 외부 원칙보다 우선한다.** `.claude/rules/design.md` ·
-  `.claude/rules/forbidden.md` · `docs/DESIGN-SYSTEM.md` 와 충돌하면 헌장이 이긴다.
-  굽혀야 하면 **명시적 요청**으로 올린다 — 일방적으로 굽히지 않는다.
-- **막을 때는 대안을 댄다.** 어느 자리든 "반려"로 끝내면 자리 값을 못 한 것이다.
+- **실존 디자이너가 하지 않은 말을 지어내지 않는다.** "잡스라면 이렇게 말했을 것"은
+  근거가 아니라 창작이다.
+- **디자인 시스템이 먼저다.** 어떤 결정이든 결국 코드 안의 값 하나로 남는다.
+  그 값이 **「램프」**(예: 글자 크기 · 간격 · 애니메이션 길이를 미리 몇 단계로 정해
+  둔 사다리)에 없으면, `design-system` 이 램프에 등록 + lint 규칙 추가 + 계약
+  테스트 추가를 같은 PR 안에서 요구한다. **자동 검사가 없는 규격은 안 지켜진다.**
+- **「헌장」(이 저장소가 이미 정해 둔 디자인 규칙 문서)이 바깥 원칙보다 우선한다.**
+  `.claude/rules/design.md` · `.claude/rules/forbidden.md` · `docs/DESIGN-SYSTEM.md`
+  와 충돌하면 이쪽이 이긴다. 그래도 굽혀야 한다면 **사람에게 물어서 허락을 받는다** —
+  혼자 판단해 굽히지 않는다.
+- **막을 때는 대신 할 일을 댄다.** 어느 자리든 "반려" 한마디로 끝내면 그 자리는
+  제 몫을 못 한 것이다.
 
 ## Notes for the caller
 
-- **Isolate the run if edits are in flight.** These agents have `Bash`, so "read-only" is a
-  instruction and not a constraint — and concurrent agents share the working directory — a `git checkout`
-  from one moves everyone. Prefer worktree isolation.
-- **Eight agents with browser and web access is not a routine gesture.** Convene
-  by the table above, not by reflex.
-- `tests/contract/design-council.contract.test.ts` fails the build if a bench
-  seat loses its agent, if `design-guardian` is mistakenly listed as a seat, or
-  if this skill and its mirror drift apart.
+- **누가 파일을 고치고 있는 중이면 따로 떼어 놓고 돌려라.** 이 에이전트들은 `Bash`
+  를 쓸 수 있으므로 "읽기만 해라"는 부탁이지 막아 주는 장치가 아니다. 그리고 동시에
+  도는 에이전트들은 같은 작업 폴더를 함께 쓰기 때문에, 한 에이전트가 `git checkout`
+  을 하면 나머지 전부의 파일이 같이 바뀐다. worktree 로 분리해 돌리는 편이 낫다.
+- **여덟 에이전트에게 브라우저와 웹 검색을 주는 것은 가볍게 할 일이 아니다.**
+  위 표를 보고 필요한 자리만 부른다. 습관적으로 전부 부르지 않는다.
+- `tests/contract/design-council.contract.test.ts` 는 자리 하나가 자기 에이전트
+  파일을 잃거나, `design-guardian` 이 실수로 자리 목록에 들어가거나, 이 스킬과
+  그 사본이 서로 달라지면 빌드를 실패시킨다.

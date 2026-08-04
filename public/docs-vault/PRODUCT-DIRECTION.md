@@ -1,19 +1,32 @@
 # PRODUCT DIRECTION — Ontology workbench (humans + AI agents co-author)
 
-> **[v10 정체성 공식, 2026-07-18] — agent-native, human-sovereign.**
-> "에이전트를 *위한* 시스템"이 아니라 "**에이전트가 1급 사용자인, 사람과
-> 에이전트의 공유 의미 계층**"이다. 에이전트는 신선도를 유지하는 엔진이자
-> 최대 소비자(MCP/CLI), 사람은 의미의 최종 결정권자(평문 마크다운 · git diff ·
-> 내 디스크가 진실원). agent-memory 카테고리(기계 전용 벡터/자동추출 —
-> 자동화 규모전에서 패배)와 위키 카테고리(사람 전용 — 즉시 부패) 둘 다와
-> 구분되는 위치. **마케팅 훅은 에이전트 통증으로 열고, 본질은 공유 계층으로
-> 지킨다.** 모든 표면은 이중 기준을 통과해야 한다: 에이전트가 소비 가능한가
-> (typed fact · 핸드오프) + 사람이 읽고 판단 가능한가(평문 · 시각 위계).
-> 진입 표면도 2원화: 공개 웹 = 랜딩(획득), 설치형 앱 = 옵시디언식 first-run
-> (볼트 열기, 마케팅 0).
+> **[v10 정체성, 2026-07-18] — agent-native, human-sovereign(에이전트가 직접
+> 쓰고, 최종 판단은 사람이 한다).**
+> 이 제품은 "에이전트를 *위한* 시스템"이 아니다. **사람과 AI 에이전트가 같이
+> 읽고 같이 고치는 의미 계층 하나**이고, 에이전트도 사람과 똑같은 정식
+> 사용자다. 여기서 *의미 계층*이란 제품의 각 부분이 무엇인지 · 누가 맡는지 ·
+> 무엇이 그것을 증명하는지를 적어 둔 마크다운 폴더를 말한다.
+> 에이전트는 이 폴더를 최신 상태로 유지하는 쪽이자 가장 많이 읽는 쪽이고
+> (MCP/CLI), 사람은 무엇이 맞는 뜻인지 최종적으로 정하는 쪽이다 — 사람이
+> 보는 것은 평범한 마크다운과 git diff 이고, 원본 파일은 사람 자기 디스크에
+> 있다. 비슷해 보이는 두 부류와 위치가 다르다. 하나는 기계만 읽는 저장소
+> (벡터 DB · 자동 추출)인데 자동화 규모 경쟁에서 밀린다. 다른 하나는 사람만
+> 쓰는 위키인데 금방 낡는다.
+> **마케팅 문구는 에이전트를 쓰면서 겪는 불편에서 시작하되, 제품의 본체는
+> "둘이 같이 쓰는 한 벌"로 지킨다.** 모든 화면은 두 가지를 함께 만족해야 한다:
+> 에이전트가 그대로 쓸 수 있는가(타입이 붙은 사실 · 넘겨주기용 텍스트), 그리고
+> 사람이 읽고 판단할 수 있는가(쉬운 말 · 눈에 보이는 우선순위).
+> 첫 화면도 둘로 나뉜다. 공개 웹은 소개 페이지(사람을 데려오는 자리), 설치한
+> 앱은 옵시디언처럼 바로 폴더를 여는 첫 실행 화면(마케팅 문구 없음)이다.
 
-> **[v9, 2026-07-17] 현행 방향은 `docs/plans/PRODUCT-PLAN-2026-07.md` 가 canonical 이다.**
-> v9 요지: 2층 정체성 (Layer 1 로컬 코어 불변 + Layer 2 Atlas Network — Spec 표준 · Hub · 수요 게이트 뒤 Team Sync) · 1차 타겟을 "2~10인 팀 테크리드" 단일로 정밀화 · v8 의 다중 이해관계자 문구는 "질문자 (게이트 뒤)" 모델로 정정 · 신선도 증명 (drift 감지 + 승인 3계층 + 인젝션 방어) 이 핵심 차별화. 이 파일의 v2~v8 본문은 역사 기록으로 보존한다.
+> **[v9, 2026-07-17] 지금의 방향을 정하는 정본은 `docs/plans/PRODUCT-PLAN-2026-07.md` 다.**
+> v9 가 정한 것은 넷이다. ① 제품을 두 층으로 나눈다 — Layer 1 은 내 컴퓨터에서
+> 도는 핵심 기능이고 절대 바뀌지 않으며, Layer 2 는 Atlas Network(Spec 표준 ·
+> Hub · 수요가 확인된 뒤에만 만드는 유료 Team Sync)다. ② 1차 대상을 "2~10인
+> 팀의 테크리드" 한 부류로 좁힌다. ③ v8 이 적어 둔 여러 이해관계자는 "게이트를
+> 통과한 뒤에 질문을 던지는 쪽"으로 정정한다. ④ 핵심 차별점은 적힌 내용이 아직
+> 유효하다는 것을 증명하는 기능이다 — 코드와 문서가 어긋난 것을 잡아내고, 승인을
+> 3단계로 두고, 프롬프트 주입을 막는다. 이 파일의 v2~v8 본문은 기록으로 남겨 둔다.
 
 > Written (v2): 2026-05-01
 > Decisions captured: the user confirmed **Direction A** (ontology-first) and added **dogfooding + AI-agent partnership** as a new direction.
@@ -39,8 +52,8 @@ Launch framing (v4, 2026-05-18):
   `dev.jinan.ontology-atlas`, and DMG filenames use `ontology-atlas_*`.
   The Tauri bundle product name remains the installed app identity users see in
   Finder, Dock, and Launch Services.
-- Primary audience (v8, 2026-06-06): **the whole decision loop around a product/system** — planners, marketers, C-level decision-makers, developers, and AI agents. The developer + AI-agent loop remains the strongest wedge because it can update the git-backed source of truth, but the visible Atlas must let non-developers understand the business/product core quickly without reading source.
-- Spine = `.md` documents → a growing ontology. Topology / tree / builder are *views* of that spine.
+- Primary audience (v8, 2026-06-06): **everyone involved in deciding things about a product or system** — planners, marketers, C-level decision-makers, developers, and AI agents. The developer + AI-agent loop is still the strongest **wedge** — the narrow first entry point that gets a product adopted — because that pair is the one that can actually keep the git-backed source of truth up to date. But the Atlas people look at must let non-developers understand the core of the business or product quickly, without reading source code.
+- Everything rests on the `.md` documents, which grow into an ontology. Topology / tree / builder are *ways of looking at* those same documents.
 - Non-developer stakeholders are **target readers and decision participants**, not an afterthought. The app should show the core domains, capabilities, dependencies, and impact paths clearly enough for planning, marketing, leadership, and engineering discussions.
 - Quality bar (v7, 2026-06-05): **Ontology Atlas must feel like a top-tier
   designer-built macOS workbench, not a merely functional graph UI.** Every
@@ -56,7 +69,7 @@ codebase that realizes it: `project`, `domain`, `capability`, and `element`
 nodes plus typed relations that explain business intent, ownership, dependency,
 evidence, and impact for decision-makers, operators, developers, and AI agents.
 
-### Representation priority — what Atlas should ontology-ize
+### What Atlas should turn into ontology nodes, and what it should not
 
 Atlas is **not only a developer plugin** and **not only a raw source-code
 structure index**. It should make the product/business legible from the graph,
@@ -146,20 +159,20 @@ The practical bar:
    through MCP for Claude Code, Codex, and Cursor, with post-change validation
    gates that an agent can run before committing.
 
-### Why the developer + agent loop is the wedge
+### Why the developer + agent loop is the first entry point
 
-- The developer already lives next to the source of truth. They can keep
-  implementation evidence fresh because git diffs and ontology diffs sit side by
-  side.
-- The developer's AI agent is the daily maintainer of graph hygiene: it can
-  query, validate, propose, and sync the same `.md` graph after code changes.
-- That loop is the wedge, not the whole audience. Atlas becomes valuable when
+- The developer already works right next to the source of truth. They can keep
+  the implementation evidence current because the code diff and the ontology
+  diff sit side by side in the same commit.
+- The developer's AI agent does the daily tidying: after a code change it can
+  query, validate, propose, and write back into the same `.md` graph.
+- That pair is the way in, not the whole audience. Atlas becomes valuable when
   planners, marketers, C-level decision-makers, developers, and AI agents can
-  all read the same business/product domains, capabilities, ownership,
-  dependencies, evidence, and impact without translating between separate tools.
-- The differentiator vs Protégé / Notion / OWL editors is not "developer-only
-  ontology"; it is a git-backed decision atlas where business meaning and code
-  evidence are one graph.
+  all read the same domains, capabilities, ownership, dependencies, evidence,
+  and impact without translating between separate tools.
+- What sets this apart from Protégé / Notion / OWL editors is not that the
+  ontology is "for developers only". It is that business meaning and code
+  evidence sit in one git-backed graph that people actually make decisions from.
 
 ### Market framing guardrail (v4)
 
@@ -171,8 +184,8 @@ Lead with the daily AI-coding pain:
 > Your AI coding agent forgets your codebase. Give it a local, git-backed memory
 > it can read and maintain.
 
-The ontology graph is the substrate. The product promise is cheaper, durable
-agent memory.
+The ontology graph is what the product is built on. What we promise the user is
+agent memory that costs less and does not go stale.
 
 Canonical internal note:
 [`docs/AGENT-MEMORY-POSITIONING.md`](AGENT-MEMORY-POSITIONING.md).
@@ -292,9 +305,10 @@ Options:
 3. **Workshop** — a person fills one typed compass socket and reviews the
    resulting frontmatter write
 
-Agents can propose and land accepted concepts through MCP; humans judge the
-same meaning through plain Markdown, git diffs, Topology, and Workshop. There
-is no separate programmatic graph store.
+An agent can propose concepts and, once they are accepted, write them through
+MCP. People judge that same meaning by reading plain Markdown, git diffs,
+Topology, and Workshop. There is no second, program-only copy of the graph
+anywhere.
 
 ### 3-C. Two-way sync
 
@@ -312,21 +326,23 @@ Same graph. Same vault. Different input paths.
 
 ### 3-D. Project meaning finalization
 
-After accepted graph writes, the agent validates the vault and calls
-`finalize_project_meaning` for one explicit `kind: project` node. The tool
-stores a versioned receipt for the five competency answers, bound to the
-current project graph and sanitized source provenance. It does not store raw
-answers or private source coordinates, and `ok: true` means only that the
-receipt was written.
+Once the accepted writes are saved, the agent validates the vault and calls
+`finalize_project_meaning` on one named `kind: project` node. The tool saves a
+versioned record — a *receipt* — of the five competency answers, tied to that
+project's current graph and to a cleaned-up note of where the source code came
+from. It does not save the raw answers or the private path to your code, and
+`ok: true` means one thing only: the receipt was written.
 
-A fresh `query_ontology({ operation: "agent_brief", project: SLUG })` — or
-`ontology-atlas agent-brief --project SLUG` — derives the categorical
-`meaningAssessment` again. Structural readiness, competency witness coverage,
-and source currentness stay separate. An unresolved witness, changed graph, or
-source that cannot be checked closes as `needs_evidence`, `review_required`, or
-`invalid`; Atlas does not turn those dimensions into one confidence score or
-percentage. Explicit project selection is required to make the same contract
-honest in a vault containing more than one project.
+Asking again with `query_ontology({ operation: "agent_brief", project: SLUG })`
+— or `ontology-atlas agent-brief --project SLUG` — works the
+`meaningAssessment` out from scratch. Three things stay separate: whether the
+structure is complete, whether each competency answer has evidence behind it,
+and whether the source has been rechecked. If a piece of evidence is still
+unresolved, if the graph has changed, or if the source cannot be checked, the
+answer comes back as `needs_evidence`, `review_required`, or `invalid`. Atlas
+never blends those three into a single confidence score or percentage. You have
+to name the project explicitly, because in a vault holding more than one
+project an unnamed answer would be misleading.
 
 ---
 
@@ -339,12 +355,13 @@ exploration. The user opens a vault folder from disk and keeps the same
 markdown + MCP + CLI graph loop without a backend. The hosted root remains a
 read-only dogfood map and download/source entry.
 
-Quality bar: this must be desktop-grade, not a webview-shaped shortcut.
-Compare against Obsidian, Claude Desktop, and Codex Desktop for the basics:
-stable `.app` launch, trustworthy folder permission UX, recent-vault recall,
-clear local data location, command/agent setup visibility, offline operation,
-and a polished native-feeling window lifecycle. A weaker shell should remain an
-internal prototype, not a user-facing distribution promise.
+Quality bar: it has to feel like a real Mac app, not a web page in a window.
+Compare against Obsidian, Claude Desktop, and Codex Desktop on the basics: the
+`.app` launches reliably, asking for folder permission feels trustworthy, it
+remembers recently opened vaults, it says clearly where the local data is, the
+command and agent setup are easy to find, it works offline, and opening,
+resizing, and closing the window behave the way Mac users expect. Anything
+weaker than that stays an internal prototype; we do not hand it out.
 
 Current distribution contract:
 
@@ -366,9 +383,10 @@ Next.js guide. Electron remains a fallback if the desktop shell needs bundled
 Node.js behavior, but it is heavier and macOS distribution still needs signing
 and notarization.
 
-Non-goal for the first slice: do not add backend/login/cloud or change the
-source-of-truth model. The desktop app is another local shell over the same
-vault, not a new data store.
+What this first piece of work deliberately does not do: it does not add a
+backend, a login, or any cloud service, and it does not change where the truth
+lives. The desktop app is one more local window onto the same vault, not a new
+place to store data.
 
 Current readiness gates: `pnpm desktop:check` verifies the static export,
 Tauri scaffold, and agent-handoff prerequisites before app smoke, while
@@ -476,14 +494,15 @@ fallback until public signed releases are uploaded.
 
 ### Option A — npm package + CLI
 
-> **결과 (2026-07-27, `docs/DECISIONS.md`)**: 이 옵션의 npm 절반은 **폐기**됐다.
-> 아래는 당시 검토안의 산문 기록이고 실행 가능한 명령이 아니다 — 그래서 복사할
-> 수 있는 코드 블록으로 두지 않았다. CLI 자체는 소스 체크아웃 경로로 살아 있다.
+> **결과 (2026-07-27, `docs/DECISIONS.md`)**: 이 안에서 npm 으로 배포하는
+> 부분은 **폐기**됐다. 아래 문단은 그때 검토했던 내용의 기록일 뿐, 실제로
+> 실행되는 명령이 아니다 — 그래서 복사해 붙일 수 있는 코드 블록으로 적어 두지
+> 않았다. CLI 자체는 소스 체크아웃 경로로 계속 살아 있다.
 
-검토안: 프로젝트 루트에서 레지스트리 러너 한 줄(`npx`)로 최신 CLI 를 받아 실행.
-현재 디렉터리를 vault 로 취급하고, 소스 개발용 워크벤치를 localhost:3210 에
-띄우고, 브라우저를 소스 체크아웃 fallback 으로 열고, 프로덕션 시각 작업은 서명된
-macOS 앱으로 넘긴다.
+검토했던 안: 프로젝트 폴더에서 `npx` 한 줄로 최신 CLI 를 내려받아 실행한다.
+지금 폴더를 볼트로 보고, 소스 개발용 작업 화면을 localhost:3210 에 띄우고,
+브라우저는 소스 체크아웃일 때의 대체 경로로 열고, 실제 시각 작업은 서명된
+macOS 앱에서 한다.
 
 Pros:
 
@@ -516,16 +535,23 @@ Cons: blocks distribution (clone overhead).
 
 ### Recommendation: installed desktop app (carrying the MCP server) + CLI as the daily workbench
 
-> **2026-07-27 갱신**: 배포는 **B 하나**로 좁혀졌다 — 서명·공증된 DMG. 앱이
-> 컴파일된 MCP 서버를 자기 번들에 싣고 「에이전트 연결」 버튼이 클라이언트
-> 설정을 대신 쓰므로, **다운로드 1회가 사람 표면과 에이전트 표면을 동시에**
-> 설치한다. A 의 CLI 는 소스 체크아웃으로 남고, npm 은 채널이 아니다.
+> **2026-07-27 갱신**: 배포 경로는 **B 하나**로 좁혀졌다 — 애플 서명과 공증을
+> 마친 DMG. 여기서 *서명*은 애플이 발급한 개발자 인증서로 "이 앱을 만든 사람이
+> 누구인지" 앱에 도장을 찍는 일이고, *공증*은 그 앱을 애플 서버에 보내 악성
+> 코드가 없는지 검사받는 일이다. 둘 중 하나라도 없으면 macOS 가 실행을 막는다.
+> 앱은 컴파일된 MCP 서버를 자기 번들 안에 같이 싣고 있고, 「에이전트 연결」
+> 버튼이 에이전트 쪽 설정 파일을 대신 써 준다. 그래서 **한 번 내려받으면 사람이
+> 쓰는 화면과 에이전트가 쓰는 통로가 함께** 설치된다. A 안의 CLI 는 소스
+> 체크아웃 경로로 남고, npm 은 배포 통로가 아니다.
 >
-> **2026-08-01 갱신**: 같은 Tauri 번들을 Windows x64 공개 베타로 확장했다.
-> Windows installer는 아직 코드 서명되지 않았고, SmartScreen/관리 PC 차단 위험을
-> CTA 전에 밝힌다. 이는 macOS 서명 기준을 낮춘 것이 아니라, 베타 수요를 관측하기
-> 위한 소유자 override다. 네이티브 CI가 Defender 검사·설치·앱/MCP 실행을 막지만
-> Windows 11 SmartScreen UI를 검증했다고 주장하지는 않는다.
+> **2026-08-01 갱신**: 같은 Tauri 번들을 Windows x64 공개 베타로 넓혔다.
+> Windows 설치 파일은 아직 코드 서명이 안 돼 있어서, 내려받기 버튼 앞에 두
+> 가지 위험을 먼저 적어 둔다 — SmartScreen 이 "게시자를 알 수 없음" 경고를
+> 띄우는 것, 그리고 회사가 관리하는 PC 에서는 설치 자체가 막힐 수 있는 것.
+> 이것은 macOS 의 서명 기준을 낮춘 것이 아니라, 베타 수요를 재 보려고 소유자가
+> 예외를 승인한 것이다. Windows CI 는 의존성 검사 · Microsoft Defender 검사 ·
+> 무인 설치 · 앱 실행 · 설치된 MCP 동작이 모두 통과해야 릴리스를 내보내지만,
+> Windows 11 의 SmartScreen 화면까지 확인했다고 주장하지는 않는다.
 
 The desktop proof has graduated from exploration into the primary visual
 distribution track. Ontology Atlas should be the daily local workbench for users
@@ -637,19 +663,21 @@ readiness, onboarding brief, conflict guard, and SessionStart context injection.
 
 ### 🔁 Phase 4 — Shared decision atlas (v8 correction)
 
-R11 의 developer-primary 결정은 agent-maintained source-of-truth wedge 로는
-유효하지만, 제품 전체 audience 를 제한하는 결정으로는 폐기한다. Atlas 는
-기획자, 마케터, C-level, 의사결정자, 개발자, AI agent 가 같은 ontology 를 보며
-business core, capability, implementation evidence, impact 를 빠르게 공유하는
-workbench 여야 한다.
+R11 은 "개발자가 1차 사용자" 라고 정했다. 그 결정은 **처음 파고드는 좁은
+진입점**(이 문서에서 wedge 라고 부르는 것)으로는 여전히 맞다 — 진실원인 볼트를
+실제로 최신 상태로 유지할 수 있는 쪽이 개발자와 그의 에이전트이기 때문이다.
+하지만 그것을 "제품 전체의 사용자층은 개발자뿐" 이라는 뜻으로 쓰는 것은
+폐기한다. Atlas 는 기획자, 마케터, C-level, 의사결정자, 개발자, AI 에이전트가
+**같은 온톨로지 하나**를 보면서 사업의 핵심, 역량, 구현 근거, 영향 범위를 빠르게
+공유하는 작업대여야 한다.
 
 ### ⏳ Phase 4 execution — Wedge + shared surface
 
 1. ✅ CLI 명령 확장 — 52 commands across vault scaffold, MCP verify, import, repo bootstrap, deterministic compile, relationship explanation, transitive reachability, relation preflight + write, agent handoff, live agent activity heartbeat, growth/maintenance queue, graph CRUD, and graph deep dive
 2. ✅ AI agent dogfood 사이클 — Claude Code 가 mcp 로 codebase 분석 + add_concept 워크플로 검증 (R12 + R14 메타 검증)
-3. ⏳ 10-minute shared understanding loop proof — fresh repo 에서 `init → bootstrap → topology/ontology core 파악 → MCP 기반 답변 개선 → agent sync 제안 → git diff 리뷰 → 다음 planning/development task 개선` 이 10분 안에 보이는지 검증. 이게 안 되면 아직 제품이 아니라 좋은 엔진.
-4. ⏳ Stakeholder-readable topology proof — `/topology` 와 `/ontology` 만 봐도 "무엇이 핵심 domain/capability 인가, 무엇이 구현 evidence 인가, 어떤 변화가 어디에 영향 주는가" 를 비개발자도 설명할 수 있는지 검증.
-4. ~~VSCode plugin~~ — R15 에서 제거. 이유: daily driver 가 Claude Code / Codex 같은 AI-agent 터미널로 전환되며 VSCode 자체 점유율 감소. 코드↔ontology 점프 / backlinks / write 는 mcp + cli 로 같은 가치 cover.
+3. ⏳ 10-minute shared understanding loop proof — 처음 보는 저장소에서 `init → bootstrap → topology/ontology 로 핵심 파악 → MCP 로 답변 품질 개선 → 에이전트가 sync 제안 → git diff 리뷰 → 다음 기획/개발 작업이 나아짐` 이 10분 안에 눈에 보이는지 확인한다. 이게 안 되면 아직 제품이 아니라 잘 만든 부품일 뿐이다.
+4. ⏳ Stakeholder-readable topology proof — `/topology` 와 `/ontology` 만 보고도 비개발자가 "무엇이 핵심 도메인·역량인가, 무엇이 그것을 구현으로 증명하는가, 어떤 변화가 어디에 영향을 주는가" 를 설명할 수 있는지 확인한다.
+4. ~~VSCode plugin~~ — R15 에서 제거. 이유: 사람들이 매일 쓰는 도구가 Claude Code / Codex 같은 AI 에이전트 터미널로 옮겨 가면서 VSCode 자체 점유율이 줄었다. 코드↔온톨로지 이동 / 역링크 / 쓰기는 mcp + cli 가 같은 값어치를 이미 한다.
 
 ---
 
