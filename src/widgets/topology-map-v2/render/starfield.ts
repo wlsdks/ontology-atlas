@@ -1,4 +1,11 @@
 /**
+ * ⚠️ 색 게이트 예외 (`scripts/check-no-raw-color.mjs` 의 `ALLOWLIST`, 2026-08-04).
+ * 이 파일의 `rgba(236,236,240,…)` 는 `ctx.fillStyle` 이 직접 먹는 문자열이다 —
+ * 캔버스 2D 컨텍스트에는 캐스케이드가 없어서 `var(--…)` 를 해석하지 못하고,
+ * 알파는 별마다 프레임마다 계산되므로 토큰 하나로 접히지도 않는다. 값이 눈에는
+ * 흰색이지만 정확히 r=g=b 가 아니라 자동 무채색 면제에도 안 걸린다. 새 색을
+ * 여기 더하지 말 것 — 더해야 하면 그 이유를 여기에 같이 적는다.
+ *
  * Far-field star-dust texture + diffraction spikes — ported from the B2+
  * prototype's `buildStarDust()`/`drawSpike()`
  * (`docs/prototypes/topology-b2plus.html` §8, §12).

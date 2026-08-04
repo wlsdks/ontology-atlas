@@ -405,7 +405,7 @@ export function ProjectDrawer({
                     {t("containerBadge")}
                   </span>
                 ) : project.isHub ? (
-                  <span className="rounded-full border border-[color:rgba(113,112,255,0.5)] bg-[color:var(--color-indigo-a16)] px-2 py-0.5 font-mono text-caption uppercase tracking-[0.12em] text-[color:var(--color-indigo-text-soft)]">
+                  <span className="rounded-full border border-[color:var(--color-indigo-accent-a50)] bg-[color:var(--color-indigo-a16)] px-2 py-0.5 font-mono text-caption uppercase tracking-[0.12em] text-[color:var(--color-indigo-text-soft)]">
                     {t("hubBadge")}
                   </span>
                 ) : (

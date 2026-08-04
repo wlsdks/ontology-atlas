@@ -128,6 +128,18 @@
   /* pale indigo text — 위 목록의 정확한 rgb 3종과 다른 tuple. */
   --color-indigo-text-soft: rgba(188, 195, 255, 0.92);
 
+  /* 악센트(#7170ff) 알파 스텝 — 새 색이 아니라 헌장 색의 투명도 단계다.
+     2026-08-04 감사: 이 두 값이 `rgba(113,112,255,·)` 리터럴로 3곳에 손으로
+     적혀 있었고, 색 게이트가 **등록된 튜플만** 대조하는 구조라 통과했다.
+     등재해서 리터럴을 없앤다(값은 그대로 — 픽셀 변화 0). */
+  --color-indigo-accent-a32: rgba(113, 112, 255, 0.32);
+  --color-indigo-accent-a50: rgba(113, 112, 255, 0.5);
+
+  /* 검색 일치 `<mark>` 의 글자색. `--color-indigo-line-a22` 면 위에서 읽히는
+     유일한 값이라 목적으로 이름 붙인다 — 소비처 3곳이 같은 리터럴을 복사하고
+     있었다(highlighted-text · 문서함 팔레트 · 문서함 뷰어). */
+  --color-search-mark-text: rgba(210, 218, 255, 0.98);
+
   --color-danger-a08: rgba(229, 72, 77, 0.08);
   --color-danger-a10: rgba(229, 72, 77, 0.1);
   --color-danger-a32: rgba(229, 72, 77, 0.32);
@@ -3040,6 +3052,11 @@
        transform/scale 없음 — pointer down 동안만 표면이 눌린 듯 짙어졌다 뗄 때
        hover 로 복귀. transition-colors(150ms)로 하드 토글 방지. */
     --topology-v2-panel-row-active: rgba(255, 255, 255, 0.08);
+    /* 패널 안에서 한 단 **파인** 블록(미지원 고지 · CLI 다리). 위의
+       metric/action 서피스는 밝게 얹는 쪽이고 이건 어둡게 파는 쪽이라 별도다.
+       2026-08-04 감사: `rgba(6,6,9,·)` 리터럴로 2곳에 적혀 있었다 — 값 그대로 등재. */
+    --topology-v2-panel-recess-a35: rgba(6, 6, 9, 0.35);
+    --topology-v2-panel-recess-a45: rgba(6, 6, 9, 0.45);
     --topology-v2-panel-metric-surface: rgba(255, 255, 255, 0.028);
     --topology-v2-panel-metric-text: #b6b6c0;
     --topology-v2-panel-action-surface: rgba(255, 255, 255, 0.03);

@@ -686,6 +686,28 @@ Defined via Tailwind 4's CSS-based `@theme`. See `app/globals.css` for the actua
 - `--color-indigo-accent`: `#7170ff`
 - `--color-indigo-hover`: `#828fff`
 
+**악센트 알파 스텝** (2026-08-04 등재). 새 색이 아니라 위 `#7170ff` 의 투명도
+단계다 — 브랜드 인디고(`--color-indigo-a*`)와 라인 인디고(`--color-indigo-line-a*`)
+에는 알파 사다리가 있는데 악센트에만 없어서, 필요한 자리 3곳이 전부
+`rgba(113,112,255,·)` 를 **손으로 적고** 있었다.
+
+- `--color-indigo-accent-a32`: `rgba(113, 112, 255, 0.32)`
+- `--color-indigo-accent-a50`: `rgba(113, 112, 255, 0.5)`
+
+**검색 일치 잉크** (2026-08-04 등재).
+
+- `--color-search-mark-text`: `rgba(210, 218, 255, 0.98)` — `<mark>` 의 글자색.
+  배경은 `--color-indigo-line-a22` 고정. 소비처 셋(`highlighted-text` ·
+  문서함 팔레트 · 문서함 뷰어)이 같은 리터럴을 복사하고 있었고 **대응 토큰이
+  아예 없었다**. 목적으로 이름 붙여 셋이 한 곳을 보게 했다.
+
+> ⚠️ **이 세 줄이 등재된 이유는 색이 부족해서가 아니라 게이트가 못 봐서다.**
+> `check-no-raw-color.mjs` 가 «등록된 rgb 튜플과 일치하는 리터럴» 만 잡는
+> 구조였고, 그래서 **이미 있는 토큰을 손으로 베낀 값**조차 통과했다. 판정을
+> 「무채색(r=g=b)만 통과」로 뒤집으면서 이 값들이 처음 드러났다. 자세한 경위와
+> 그때의 전수: `scripts/check-no-raw-color.mjs` 상단 주석 · `docs/DECISIONS.md`
+> 2026-08-04.
+
 ### Signal tones (3, symmetric ladders)
 
 Design Guardian verdict, `.qa-scratch/audit-2026-07/guardian-color-verdict.md`

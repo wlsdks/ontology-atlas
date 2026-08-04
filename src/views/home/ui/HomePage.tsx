@@ -4902,7 +4902,7 @@ export function HomePage() {
           open={Boolean(projectsError)}
           origin="top center"
           role="alert"
-          className="pointer-events-auto absolute left-1/2 top-[52px] z-40 flex -translate-x-1/2 items-center gap-3 rounded-full border border-[color:var(--color-danger-a32)] bg-[color:rgba(18,20,26,0.98)] px-4 py-2 text-body text-[color:var(--color-text-primary)] shadow-[var(--shadow-elevation-1)]"
+          className="pointer-events-auto absolute left-1/2 top-[52px] z-40 flex -translate-x-1/2 items-center gap-3 rounded-full border border-[color:var(--color-danger-a32)] bg-[color:var(--color-surface-deep-a98)] px-4 py-2 text-body text-[color:var(--color-text-primary)] shadow-[var(--shadow-elevation-1)]"
         >
             <span className="font-mono text-label uppercase tracking-[0.16em] text-[color:var(--color-danger-text)]">
               Error

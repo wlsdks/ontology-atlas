@@ -1,4 +1,10 @@
 /**
+ * ⚠️ 색 게이트 예외 (`scripts/check-no-raw-color.mjs` 의 `ALLOWLIST`, 2026-08-04).
+ * 비네트의 `rgba(3,3,4,…)` 는 `CanvasGradient.addColorStop()` 이 먹는 문자열이라
+ * `var(--…)` 를 해석하지 못하고, 알파는 카메라 깊이(`farT`)로 프레임마다
+ * 계산된다. 값이 눈에는 검정이지만 정확히 r=g=b 가 아니라 자동 무채색 면제에도
+ * 안 걸린다. 새 색을 여기 더하지 말 것 — 더해야 하면 그 이유를 여기에 같이 적는다.
+ *
  * Background + blueprint grid + vignette — ported from the B2+ prototype's
  * `buildGrid()`/`render()` background section
  * (`docs/prototypes/topology-b2plus.html` §8, §13).

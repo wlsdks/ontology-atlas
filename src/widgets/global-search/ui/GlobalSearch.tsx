@@ -493,7 +493,7 @@ export function GlobalSearch({
                   }}
                   className="flex cursor-pointer items-center gap-2 rounded-chip px-3 py-2 text-body-lg text-[color:var(--color-text-secondary)] aria-selected:bg-[color:var(--color-indigo-a14)] aria-selected:text-[color:var(--color-text-primary)]"
                 >
-                  <span className="inline-flex shrink-0 items-center rounded-full border border-[color:var(--color-indigo-a20)] bg-[color:var(--color-indigo-a06)] px-1.5 py-[1px] font-mono text-caption uppercase tracking-[0.10em] text-[color:rgba(159,170,235,0.95)]">
+                  <span className="inline-flex shrink-0 items-center rounded-full border border-[color:var(--color-indigo-a20)] bg-[color:var(--color-indigo-a06)] px-1.5 py-[1px] font-mono text-caption uppercase tracking-[0.10em] text-[color:var(--color-indigo-text-strong)]">
                     {project.isHub ? t('hub') : t('project')}
                   </span>
                   <span className="min-w-0 flex-1 truncate text-[color:var(--color-text-primary)]">
