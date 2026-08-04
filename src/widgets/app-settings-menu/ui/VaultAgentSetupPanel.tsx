@@ -30,7 +30,7 @@ import type { AgentClientId } from '@/features/docs-vault-local';
 import { copyText } from '@/shared/lib/copy-text';
 import { controlClass } from '@/shared/ui/control-class';
 import { Chip } from '@/shared/ui/controls';
-import { Surface } from '@/shared/ui/surface';
+import { useRowDisclosure } from '@/shared/lib/use-row-disclosure';
 import { getTauriVaultRootPath } from '@/shared/lib/tauri-vault-fs';
 import type { LocalFsHandleRecord } from '@/entities/local-fs-handle';
 import type { AgentServerAvailability } from '@/shared/config';
@@ -317,6 +317,18 @@ export function VaultAgentSetupPanel({
   // 두 표면이 어긋나지 않게 한다.
   const tc = useTranslations('agentConnect');
   const [advancedOpen, setAdvancedOpen] = useState(false);
+  /**
+   * 「잘 안 되나요?」 서랍 — 흐름 안 접기라 목록 행 펼침 문법을 쓴다.
+   * 첫 판의 `Surface`(chrome 문법)는 떠 있는 표면의 것이라 아래 형제가 두 번
+   * 튀었다(설치 앱 프레임 실측 — `AgentSetupStep.tsx` 머리말에 수치).
+   * `publicPackagesReady`(= launch 가능) 선언보다 앞이라 prop 에서 직접 센다.
+   */
+  const advancedRevealOpen = serverAvailability.launch !== null && advancedOpen;
+  const {
+    mounted: advancedMounted,
+    boxRef: advancedBoxRef,
+    contentRef: advancedContentRef,
+  } = useRowDisclosure(advancedRevealOpen);
   /**
    * 펼친 단계 — `null` 이면 **지금 할 일을 따라간다.**
    *
@@ -948,14 +960,23 @@ export function VaultAgentSetupPanel({
           {t('agentSetup.troubleshootToggle')}
         </button>
       ) : null}
-      <Surface
-        open={publicPackagesReady && advancedOpen}
-        as="section"
+      {/* 상자는 늘 그려 둔다(전이의 출발 높이) — 내용만 접힘에서 빠진다.
+          `id` 가 상자에 있어 위 토글의 `aria-controls` 대상이 접힘 중에도
+          실재하고, testid 는 내용에 있어 「접히면 없다」 계약이 유지된다. */}
+      <section
+        ref={advancedBoxRef}
         id="agent-setup-advanced"
         aria-label={t('agentSetup.troubleshootAriaLabel')}
-        data-testid="agent-setup-advanced"
-        className="mt-2 flex flex-col gap-4"
+        data-state={advancedRevealOpen ? 'open' : 'closed'}
+        className="ai-row-disclosure"
+        inert={!advancedRevealOpen}
       >
+        {advancedMounted ? (
+          <div
+            ref={advancedContentRef}
+            data-testid="agent-setup-advanced"
+            className="ai-row-disclosure-body flex flex-col gap-4 pt-2"
+          >
         {/*
           ── 검사 묶음 ──────────────────────────────────────────────────
           ⚠️ **이 한 덩어리는 곧 「손볼 곳」 탭으로 옮겨간다** (소유자 확정
@@ -1427,7 +1448,9 @@ export function VaultAgentSetupPanel({
             </Chip>
           </div>
         </div>
-      </Surface>
+          </div>
+        ) : null}
+      </section>
       {agentSetupError ? (
         <p role="alert" className="mt-2 text-label text-[color:var(--color-status-danger)]">
           {agentSetupError}
