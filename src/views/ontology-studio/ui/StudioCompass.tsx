@@ -1456,7 +1456,7 @@ export function StudioCompass(props: StudioCompassProps) {
               shape: "card",
               size: "sm",
               tone: "onAccent",
-              className: "hover:bg-[color:var(--color-indigo-hover)]",
+              className: "hover:bg-[color:var(--color-indigo-brand-hover)]",
             })}
           >
             {mode === "create" ? <Check size={15} aria-hidden /> : null}
@@ -3224,7 +3224,7 @@ function DeltaPreviewModal({
               shape: "card",
               size: "md",
               tone: "onAccent",
-              className: "hover:bg-[color:var(--color-indigo-hover)]",
+              className: "hover:bg-[color:var(--color-indigo-brand-hover)]",
             })}
           >
             {labels.save}

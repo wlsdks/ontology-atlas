@@ -151,7 +151,7 @@ export function VaultOpenGuideSheet({
                     size: "lg",
                     tone: "onAccent",
                     className:
-                      "w-full justify-center hover:bg-[color:var(--color-indigo-accent)]",
+                      "w-full justify-center hover:bg-[color:var(--color-indigo-brand-hover)]",
                   })}
                 >
                   <HardDrive size={13} aria-hidden />
@@ -171,7 +171,7 @@ export function VaultOpenGuideSheet({
                   size: "lg",
                   tone: "onAccent",
                   className:
-                    "w-full justify-center hover:bg-[color:var(--color-indigo-accent)]",
+                    "w-full justify-center hover:bg-[color:var(--color-indigo-brand-hover)]",
                 })}
               >
                 <FolderOpen size={13} aria-hidden />

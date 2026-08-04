@@ -188,7 +188,7 @@ const INIT_CLI_COMMAND = "git init";
  * 강등에서 유일한 진짜 다음 걸음이 복사 버튼보다 작았다).
  */
 const PRIMARY_ACTION_CLASS =
-  "inline-flex h-[var(--git-setup-action-height)] shrink-0 items-center justify-center gap-1.5 rounded-[var(--chrome-radius-inner)] bg-[color:var(--color-indigo-brand)] px-4 text-body font-semibold text-[color:var(--color-text-on-accent)] transition-colors hover:bg-[color:var(--color-indigo-hover)] disabled:opacity-60";
+  "inline-flex h-[var(--git-setup-action-height)] shrink-0 items-center justify-center gap-1.5 rounded-[var(--chrome-radius-inner)] bg-[color:var(--color-indigo-brand)] px-4 text-body font-semibold text-[color:var(--color-text-on-accent)] transition-colors hover:bg-[color:var(--color-indigo-brand-hover)] disabled:opacity-60";
 
 /** 보조 탈출구 — 있지만 주 동작과 경쟁하지 않는 무게. */
 const SECONDARY_ACTION_CLASS =
@@ -1648,7 +1648,7 @@ function RemoteSetup({
           onClick={onSubmit}
           className={controlClass({
             tone: "onAccent",
-            className: "hover:bg-[color:var(--color-indigo-hover)]",
+            className: "hover:bg-[color:var(--color-indigo-brand-hover)]",
           })}
         >
           {remoteRunning ? t("remoteRunning") : t("remoteSubmit")}

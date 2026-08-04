@@ -195,7 +195,7 @@ export function GuidedTourCard({
                 shape: "chip",
                 size: "lg",
                 tone: "onAccent",
-                className: "justify-center hover:bg-[color:var(--color-indigo-accent)]",
+                className: "justify-center hover:bg-[color:var(--color-indigo-brand-hover)]",
               })}
             >
               {t("devBranchAction")}
@@ -229,7 +229,7 @@ export function GuidedTourCard({
               shape: "segment",
               size: "lg",
               tone: "onAccent",
-              className: "hover:bg-[color:var(--color-indigo-accent)]",
+              className: "hover:bg-[color:var(--color-indigo-brand-hover)]",
             })}
           >
             {isFinalStep ? t("finishLabel") : t("nextLabel")}

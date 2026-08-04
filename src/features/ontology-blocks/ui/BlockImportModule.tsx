@@ -407,7 +407,7 @@ export function BlockImportModule() {
                     shape: "segment",
                     size: "lg",
                     tone: "onAccent",
-                    className: "enabled:hover:bg-[color:var(--color-indigo-accent)]",
+                    className: "enabled:hover:bg-[color:var(--color-indigo-brand-hover)]",
                   })}
                 >
                   {busy ? t("confirmBusy") : t("confirm", { count: plan.writes.length })}

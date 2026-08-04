@@ -800,7 +800,7 @@ export function VaultAgentPanel({
                     size: 'lg',
                     tone: 'onAccent',
                     className:
-                      'shrink-0 justify-center tracking-body hover:bg-[color:var(--color-indigo-hover)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--color-indigo-accent)]',
+                      'shrink-0 justify-center tracking-body hover:bg-[color:var(--color-indigo-brand-hover)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--color-indigo-accent)]',
                   })}
                 >
                   {t('send')}
