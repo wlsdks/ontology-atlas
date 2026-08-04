@@ -3132,7 +3132,7 @@ function DeltaPreviewModal({
                 }}
               >
                 {center.isNew ? (
-                  <span className="mb-0.5 inline-flex w-fit items-center rounded-[4px] bg-[color:var(--color-indigo-a16)] px-1 py-px text-label font-semibold tracking-[0.02em] text-[color:var(--color-indigo-text-soft)]">
+                  <span className="mb-0.5 inline-flex w-fit items-center rounded-micro bg-[color:var(--color-indigo-a16)] px-1 py-px text-label font-semibold tracking-[0.02em] text-[color:var(--color-indigo-text-soft)]">
                     {labels.previewCenterNew}
                   </span>
                 ) : null}
@@ -3277,11 +3277,11 @@ function DeltaSatChip({ placed, labels }: { placed: PlacedDeltaSat; labels: Stud
         {sat.node.title}
       </span>
       {state === "moved" ? (
-        <span className="flex-none rounded-[4px] bg-[color:var(--color-indigo-a16)] px-1 text-label font-medium text-[color:var(--color-indigo-text-soft)]">
+        <span className="flex-none rounded-micro bg-[color:var(--color-indigo-a16)] px-1 text-label font-medium text-[color:var(--color-indigo-text-soft)]">
           {labels.previewMovedChip}
         </span>
       ) : removed ? (
-        <span className="flex-none rounded-[4px] border border-[color:var(--color-border-soft)] px-1 text-label text-[color:var(--color-text-quaternary)]">
+        <span className="flex-none rounded-micro border border-[color:var(--color-border-soft)] px-1 text-label text-[color:var(--color-text-quaternary)]">
           {labels.previewRemovedChip}
         </span>
       ) : null}

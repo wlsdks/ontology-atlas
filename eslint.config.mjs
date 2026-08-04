@@ -518,7 +518,12 @@ export const rampDebtExemptions = [
   'src/entities/project/ui/ProjectMetaGrid.tsx', // 2
   'src/features/vault-ontology/ui/LiveActivityIndicator.tsx', // 23
   'src/views/first-run/ui/FirstRunPage.tsx', // 14
-  'src/views/ontology-studio/ui/StudioCompass.tsx', // 24
+  // 2026-08-04: 24 → 21. `rounded-[4px]` 3건은 `--radius-micro`(4px)와 **바이트
+  // 동일**이라 픽셀 0으로 옮겼다. 남은 21건은 8종(3·5·8·10·13·14·16px)이 5단
+  // 램프(4·6·9·12·18)로 접히면서 자리마다 ±1~2px 움직이므로 **디자인 판정**이
+  // 필요하다 — 이 파일 위 「커버리지는 거부목록이다」 절이 못박은 그대로,
+  // 그건 lint PR 이 아니라 디자인 작업의 몫이고 「체계」 자리가 정한다.
+  'src/views/ontology-studio/ui/StudioCompass.tsx', // 21
   'src/views/project-editor/ui/ProjectEditorPage.tsx', // 2
   'src/views/root-entry/ui/RootEntryPage.tsx', // 5
 ];
