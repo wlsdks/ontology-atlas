@@ -203,8 +203,8 @@
         },
         {
           "depth": 3,
-          "text": "id grammar single source of truth",
-          "slug": "id-grammar-single-source-of-truth"
+          "text": "One place builds node ids, one place reads them",
+          "slug": "one-place-builds-node-ids-one-place-reads-them"
         },
         {
           "depth": 2,
@@ -227,9 +227,9 @@
           "slug": "source-of-truth-files"
         }
       ],
-      "excerpt": "2026-07-27 update — the current architecture is a local-first, git-backed meaning layer shared by people and AI coding agents. Round 10 permanently removed all auth + cloud data surfaces; the current route model converges browsing on Topology, writing on Workshop, maintenance on five-question Insights, and keeps old on",
-      "wordCount": 2914,
-      "updatedAt": "2026-08-02",
+      "excerpt": "2026-07-27 update — the current architecture is a local-first, git-backed meaning layer: a folder of markdown files that records what each part of the product is, who owns it, what it depends on, and what proves it. People and AI coding agents read and write that same folder. Round 10 permanently removed every login an",
+      "wordCount": 3380,
+      "updatedAt": "2026-08-04",
       "linksOut": [
         "../AGENTS",
         "PRODUCT-DIRECTION",
@@ -6187,6 +6187,21 @@
         },
         {
           "depth": 2,
+          "text": "2026-08-04 — 컨트롤 부채에서 「근거 없음」을 갈라낸다: 0 에 닿을 수 없는 수는 진도 눈금이 아니다",
+          "slug": "2026-08-04-컨트롤-부채에서-근거-없음을-갈라낸다-0-에-닿을-수-없는-수는-진도-눈금이-아니다"
+        },
+        {
+          "depth": 2,
+          "text": "2026-08-04 — 콘텐츠 아이콘 크기 램프 3단(12/14/16) 등재: 실사용 시험이 실측한 첫 구멍 — 값은 prop 채널에 살아서 어떤 게이트도 못 봤다",
+          "slug": "2026-08-04-콘텐츠-아이콘-크기-램프-3단121416-등재-실사용-시험이-실측한-첫-구멍-값은-prop-채널에-살아서-어떤-게이트도-못-봤다"
+        },
+        {
+          "depth": 2,
+          "text": "2026-08-04 — 폭에는 램프를 두지 않는다: 표면 폭은 유도값이고, 「가산 확장의 경량 경로」는 신설이 아니라 이미 있던 것의 문서화다",
+          "slug": "2026-08-04-폭에는-램프를-두지-않는다-표면-폭은-유도값이고-가산-확장의-경량-경로는-신설이-아니라-이미-있던-것의-문서화다"
+        },
+        {
+          "depth": 2,
           "text": "2026-08-04 — link 바닥 24: 값 층이 잘못 인용한 44 를 걷어내고, inline 축을 런타임 계기로 대체한다",
           "slug": "2026-08-04-link-바닥-24-값-층이-잘못-인용한-44-를-걷어내고-inline-축을-런타임-계기로-대체한다"
         },
@@ -6922,7 +6937,7 @@
         }
       ],
       "excerpt": "이 파일은 결정과 그때 진 반대 의견을 남긴다. docs/CHANGELOG.md 는 무엇이 언제 바뀌었나를 답하고, 이 파일은 왜 그렇게 정했고, 무엇을 걸었나를 답한다. 최신이 위. 기록은 덧붙이기만 한다 — 지난 기록을 고치지 않는다. 판단이 바뀌었으면 새 기록을 쓰고 옛 기록을 뒤집힘 으로 표시한다. 틀린 기록도 자산이다. 1. 소집 전에 읽는다. 카운슬을 열기 전(그리고 단독 PO 패스를 쓰기 전) 같은 표면 · 같은 질문에 대한 선행 결정이 있는지 먼저 본다. 있으면 새 패스는 그것을 ① 여전히 유효하다고 인용하거나 ② 명시적으로 뒤집는다. 조용히 다시 결정",
-      "wordCount": 64472,
+      "wordCount": 66370,
       "updatedAt": "2026-08-04",
       "linksOut": [
         "slug"
@@ -7636,6 +7651,11 @@
         },
         {
           "depth": 3,
+          "text": "콘텐츠 아이콘 램프 — 3단 (2026-08-04 체계석)",
+          "slug": "콘텐츠-아이콘-램프-3단-2026-08-04-체계석"
+        },
+        {
+          "depth": 3,
           "text": "Radius ramp — 5단 (일반 표면)",
           "slug": "radius-ramp-5단-일반-표면"
         },
@@ -7653,6 +7673,11 @@
           "depth": 3,
           "text": "Padding — 램프를 두지 않는다 (2026-07-26 정리)",
           "slug": "padding-램프를-두지-않는다-2026-07-26-정리"
+        },
+        {
+          "depth": 3,
+          "text": "패널 폭·측정폭 — 램프를 두지 않는다 (2026-08-04 체계석)",
+          "slug": "패널-폭측정폭-램프를-두지-않는다-2026-08-04-체계석"
         },
         {
           "depth": 3,
@@ -7856,7 +7881,7 @@
         }
       ],
       "excerpt": "This document is maintained based on Section 3 of the design spec. For the original Linear specification, see design-references/DESIGN-linear.md. v2 (2026-07): topology-map-v2 에서 출하된 B2+ \"Circuit × Constellation\" 시각 언어가 페이지 롤아웃(랜딩 → docs/ontology 허브 → projects/insights → download)의 규범이 되었다 — 아래 v2 — \"Circuit × Constell",
-      "wordCount": 27830,
+      "wordCount": 28639,
       "updatedAt": "2026-08-04",
       "linksOut": [
         "design-references/DESIGN-linear",
@@ -8135,8 +8160,8 @@
         },
         {
           "depth": 4,
-          "text": "에이전트 패널 — 첫 마디와 이어지는 루프 (2026-07-27, desktop-only)",
-          "slug": "에이전트-패널-첫-마디와-이어지는-루프-2026-07-27-desktop-only"
+          "text": "에이전트 패널 — 처음 무슨 말을 걸지부터 다음 할 일까지 (2026-07-27, 데스크톱 앱 전용)",
+          "slug": "에이전트-패널-처음-무슨-말을-걸지부터-다음-할-일까지-2026-07-27-데스크톱-앱-전용"
         },
         {
           "depth": 4,
@@ -8440,28 +8465,28 @@
         },
         {
           "depth": 4,
-          "text": "셋업 (`web` · `no-vault` · `not-initialized` · `loading` · `error`)",
-          "slug": "셋업-web-no-vault-not-initialized-loading-error"
+          "text": "아직 일을 시작할 수 없는 상태 (`web` · `no-vault` · `not-initialized` · `loading` · `error`)",
+          "slug": "아직-일을-시작할-수-없는-상태-web-no-vault-not-initialized-loading-error"
         },
         {
           "depth": 4,
-          "text": "작업대 · `decide` (남기지 않은 변경 있음)",
-          "slug": "작업대-decide-남기지-않은-변경-있음"
+          "text": "아직 안 남긴 변경이 있을 때 (`decide`)",
+          "slug": "아직-안-남긴-변경이-있을-때-decide"
         },
         {
           "depth": 4,
-          "text": "작업대 · `recall` (모두 남겼음)",
-          "slug": "작업대-recall-모두-남겼음"
+          "text": "남길 것이 없을 때 (`recall`)",
+          "slug": "남길-것이-없을-때-recall"
         },
         {
           "depth": 4,
-          "text": "평문 계약",
-          "slug": "평문-계약"
+          "text": "화면에는 쉬운 말만 쓴다",
+          "slug": "화면에는-쉬운-말만-쓴다"
         },
         {
           "depth": 4,
-          "text": "신뢰 헌장",
-          "slug": "신뢰-헌장"
+          "text": "사용자가 누르기 전에는 아무것도 쓰지 않는다",
+          "slug": "사용자가-누르기-전에는-아무것도-쓰지-않는다"
         },
         {
           "depth": 2,
@@ -8550,7 +8575,7 @@
         }
       ],
       "excerpt": "Complete inventory of features users can actually use right now. Last updated: 2026-08-02 (현재 route와 installed-app 계약 및 project meaning receipt 계약 재검증 — /ontology은 /topology?index=expanded, /ontology/edit은 /ontology/studio 호환 redirect이며, Insights는 할 일·구성·연결·경계·신선도 5개 질문 탭의 maintenance board다. desktop static smoke와 inst",
-      "wordCount": 17443,
+      "wordCount": 17956,
       "updatedAt": "2026-08-04",
       "linksOut": [
         "slug",
@@ -12762,9 +12787,9 @@
           "slug": "design-post-check"
         }
       ],
-      "excerpt": "Design gate for Ontology Atlas product work. Use this with PRODUCT-OWNER-OPERATING-SYSTEM.md: PO decides whether the slice matters; this document decides whether the slice is designed well enough to ship. Ontology Atlas is a local-first ontology workbench, not a decorative graph demo. The Relief/Topology screen must he",
-      "wordCount": 10517,
-      "updatedAt": "2026-07-27",
+      "excerpt": "Design gate for Ontology Atlas product work. Use this with PRODUCT-OWNER-OPERATING-SYSTEM.md: PO decides whether the slice matters; this document decides whether the slice is designed well enough to ship. A slice here is one shippable piece of work — small enough to build, and small enough to prove, in one pass. Ontolo",
+      "wordCount": 11090,
+      "updatedAt": "2026-08-04",
       "linksOut": [
         "PRODUCT-OWNER-OPERATING-SYSTEM"
       ]
@@ -12788,8 +12813,8 @@
         },
         {
           "depth": 3,
-          "text": "Representation priority — what Atlas should ontology-ize",
-          "slug": "representation-priority-what-atlas-should-ontology-ize"
+          "text": "What Atlas should turn into ontology nodes, and what it should not",
+          "slug": "what-atlas-should-turn-into-ontology-nodes-and-what-it-should-not"
         },
         {
           "depth": 3,
@@ -12798,8 +12823,8 @@
         },
         {
           "depth": 3,
-          "text": "Why the developer + agent loop is the wedge",
-          "slug": "why-the-developer-agent-loop-is-the-wedge"
+          "text": "Why the developer + agent loop is the first entry point",
+          "slug": "why-the-developer-agent-loop-is-the-first-entry-point"
         },
         {
           "depth": 3,
@@ -12957,9 +12982,9 @@
           "slug": "8-current-completion-bar"
         }
       ],
-      "excerpt": "[v10 정체성 공식, 2026-07-18] — agent-native, human-sovereign. \"에이전트를 위한 시스템\"이 아니라 \"에이전트가 1급 사용자인, 사람과 에이전트의 공유 의미 계층\"이다. 에이전트는 신선도를 유지하는 엔진이자 최대 소비자(MCP/CLI), 사람은 의미의 최종 결정권자(평문 마크다운 · git diff · 내 디스크가 진실원). agent-memory 카테고리(기계 전용 벡터/자동추출 — 자동화 규모전에서 패배)와 위키 카테고리(사람 전용 — 즉시 부패) 둘 다와 구분되는 위치. 마케팅 훅은 에이전트 통증으로 열고, 본질은 공유 계",
-      "wordCount": 5322,
-      "updatedAt": "2026-08-02",
+      "excerpt": "[v10 정체성, 2026-07-18] — agent-native, human-sovereign(에이전트가 직접 쓰고, 최종 판단은 사람이 한다). 이 제품은 \"에이전트를 위한 시스템\"이 아니다. 사람과 AI 에이전트가 같이 읽고 같이 고치는 의미 계층 하나이고, 에이전트도 사람과 똑같은 정식 사용자다. 여기서 의미 계층이란 제품의 각 부분이 무엇인지 · 누가 맡는지 · 무엇이 그것을 증명하는지를 적어 둔 마크다운 폴더를 말한다. 에이전트는 이 폴더를 최신 상태로 유지하는 쪽이자 가장 많이 읽는 쪽이고 (MCP/CLI), 사람은 무엇이 맞는 뜻인지 최종적으로 정하는 ",
+      "wordCount": 5770,
+      "updatedAt": "2026-08-04",
       "linksOut": [
         "AGENT-MEMORY-POSITIONING"
       ]
@@ -13102,9 +13127,9 @@
           "slug": "definition-of-done-for-product-work"
         }
       ],
-      "excerpt": "Purpose: keep Ontology Atlas from becoming a feature factory. Every feature, design change, graph interaction, MCP tool, CLI command, and macOS workflow must pass this product-owner lens before implementation is treated as valuable. Ontology Atlas does not need a backlog clerk. It needs a product owner that protects th",
-      "wordCount": 5412,
-      "updatedAt": "2026-07-27",
+      "excerpt": "Purpose: keep Ontology Atlas from becoming a feature factory — a project that counts what it shipped instead of asking whether anything got better. Every feature, design change, graph interaction, MCP tool, CLI command, and macOS workflow must pass this product-owner lens (렌즈 — 결정을 통과시키기 전에 반드시 물어야 하는 고정 질문 하나) before ",
+      "wordCount": 6050,
+      "updatedAt": "2026-08-04",
       "linksOut": []
     },
     {
@@ -13913,7 +13938,7 @@
     "PRODUCT-OWNER-OPERATING-SYSTEM": [
       {
         "fromSlug": "PRODUCT-DESIGN-OPERATING-SYSTEM",
-        "context": "# Product Design Operating System > Design gate for Ontology Atlas product work. Use this with > **[`PRODUCT-OWNER-OPERATING-SYSTEM.md`]**: > PO decides whether the slice matters; this document decides whether the slice > is designed well enough to ship. ##",
+        "context": "# Product Design Operating System > Design gate for Ontology Atlas product work. Use this with > **[`PRODUCT-OWNER-OPERATING-SYSTEM.md`]**: > PO decides whether the slice matters; this document decides whether the slice > is designed well enough to ship. A *",
         "linkText": "`PRODUCT-OWNER-OPERATING-SYSTEM.md`"
       },
       {
@@ -13925,7 +13950,7 @@
     "AGENT-MEMORY-POSITIONING": [
       {
         "fromSlug": "PRODUCT-DIRECTION",
-        "context": ". The ontology graph is the substrate. The product promise is cheaper, durable agent memory. Canonical internal note: **[`docs/AGENT-MEMORY-POSITIONING.md`]**. ### Required product loop This loop must work before the project is treated as launch-ready: ```text init -> bootst",
+        "context": "is built on. What we promise the user is agent memory that costs less and does not go stale. Canonical internal note: **[`docs/AGENT-MEMORY-POSITIONING.md`]**. ### Required product loop This loop must work before the project is treated as launch-ready: ```text init -> bootst",
         "linkText": "`docs/AGENT-MEMORY-POSITIONING.md`"
       },
       {

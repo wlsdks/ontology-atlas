@@ -224,7 +224,7 @@ describe('Design council wiring', () => {
     const frontmatter = chief.split('---')[1] ?? '';
     expect(frontmatter).toContain('name: chief');
     expect(frontmatter, 'the head runs on the strongest model').toContain('model: fable');
-    // Its single defining property: it is not the party that wants to build.
+    // Its single defining property: it is not the one who builds it.
     expect(frontmatter, 'chief must not be able to edit code').not.toMatch(/\bEdit\b/);
     expect(frontmatter, 'chief must not be able to write files').not.toMatch(/\bWrite\b/);
     // The seat count drifted here for a day while 27 assertions stayed green.
@@ -455,7 +455,7 @@ describe('발산 단계 — /design-directions', () => {
   });
 
   /*
-   * 이 단언이 이 파일에서 가장 중요하다. 짓고 싶어 하는 쪽이 선택지를 만들면
+   * 이 단언이 이 파일에서 가장 중요하다. 만들 사람이 선택지를 만들면
    * 나머지 갈래가 허수아비가 되고, 그 순간 발산은 변경을 정당화하는 의식이 된다
    * — 카운슬을 만든 이유와 같은 실패다.
    */

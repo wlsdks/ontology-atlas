@@ -1,16 +1,21 @@
 # PRODUCT OWNER OPERATING SYSTEM
 
-> Purpose: keep Ontology Atlas from becoming a feature factory. Every feature,
-> design change, graph interaction, MCP tool, CLI command, and macOS workflow
-> must pass this product-owner lens before implementation is treated as valuable.
+> Purpose: keep Ontology Atlas from becoming a feature factory — a project that
+> counts what it shipped instead of asking whether anything got better. Every
+> feature, design change, graph interaction, MCP tool, CLI command, and macOS
+> workflow must pass this product-owner lens (렌즈 — 결정을 통과시키기 전에
+> 반드시 물어야 하는 고정 질문 하나) before anyone treats the implementation as
+> valuable.
 
-Ontology Atlas does not need a backlog clerk. It needs a product owner that
-protects the product's monopoly-grade wedge:
+Ontology Atlas does not need a backlog clerk. It needs a product owner who
+protects the one thing no other tool can copy — this document calls it the
+**wedge** (쐐기 — 다른 도구로는 대신할 수 없는, 이 제품만의 한 가지):
 
 > A local-first ontology workbench where people and AI agents share one
 > git-backed meaning model of a product/system.
 
-The PO's job is to maximize that value, not to approve more surface area.
+The PO's job is to make that one thing more valuable, not to approve more
+screens, panels, and buttons.
 
 ## The PO We Are Creating
 
@@ -27,34 +32,44 @@ It combines seven jobs that famous product traditions usually split apart:
    the customer, their current pain, and the future experience in plain
    language before naming implementation.
 4. **Discovery mapper** from continuous discovery: every solution should map to
-   an outcome, opportunity, and assumption that can be tested by dogfood,
-   user-report, screenshot, or runtime evidence.
-5. **Shaper** from Shape Up: set appetite, no-gos, rabbit holes, and the
-   smallest integrated slice before implementation starts.
+   an outcome, opportunity, and assumption that can be tested by dogfood
+   (도그푸드 — 우리가 만든 것을 우리가 직접 써 보는 것), user-report, screenshot,
+   or runtime evidence.
+5. **Shaper** from Shape Up: before implementation starts, this person fixes the
+   **appetite** (이 문제에 쓸 시간의 상한 — "얼마나 걸릴까"가 아니라 "얼마를 쓸
+   가치가 있나"), the **no-gos** (이번에는 건드리지 않기로 못박은 것), the
+   **rabbit holes** (파고들면 시간을 다 잡아먹는 지점), and the smallest
+   **integrated slice** (슬라이스 — 그것 하나만으로도 처음부터 끝까지 동작하는
+   가장 작은 한 덩어리. 따로 노는 조각이 아니다).
 6. **Craft bar-raiser** from Rams, Tufte, and Linear: the product should become
-   more useful, understandable, quieter, denser with truthful information, and
-   faster to operate. Visual finish is part of usefulness, not decoration.
-7. **Ontology steward** unique to Atlas: the PO protects typed meaning:
-   concepts, relations, provenance, evidence, strength, confidence, impact,
-   ownership, and handoff. If a change does not improve the shared
-   human-and-agent meaning model, it is not important product work.
+   more useful, easier to understand, less noisy, richer in true information per
+   screen, and faster to operate. Visual finish is part of usefulness, not
+   decoration.
+7. **Ontology steward** unique to Atlas: the PO protects typed meaning —
+   concepts, relations, provenance (출처 — 이 사실이 어디서 왔는지), evidence,
+   strength, confidence, impact, ownership, and handoff (핸드오프 — 다음 사람이나
+   AI 에이전트가 되묻지 않고 곧바로 이어서 할 수 있는 다음 행동). If a change
+   does not improve the shared human-and-agent meaning model, it is not
+   important product work.
 
 The result should feel stricter than a backlog process and more practical than
-strategy prose: a contributor can run the gate in under two minutes, but weak
-work should fail immediately.
+strategy prose: a contributor can run the gate (게이트 — 통과해야만 다음 단계로
+갈 수 있는 검사 지점) in under two minutes, but weak work should fail
+immediately.
 
 ## Chief PO Standard
 
 The Atlas PO should behave less like a ticket writer and more like a founder's
-chief product officer for a narrow, high-conviction product. The bar is not
-"is this reasonable?" The bar is:
+chief product officer for one narrow product the company believes in deeply.
+The question a change has to pass is not "is this reasonable?" It is:
 
 > Does this make Atlas more necessary for the exact moment where a person and an
 > AI agent need to understand, trust, or change a product/system ontology?
 
-The PO must be willing to disappoint feature requests in order to protect the
-core workflow. A request can be true, urgent, and still not worth building if it
-does not deepen the wedge. The best PO decision often looks like one of these:
+The PO must be willing to say no to a feature request, and to disappoint the
+person who asked, in order to protect the core workflow. A request can be true,
+urgent, and still not worth building if it does not deepen the wedge. The best
+PO decision often looks like one of these:
 
 - **clarify the problem** before accepting the requested solution;
 - **remove or hide** a control that makes the ontology harder to read;
@@ -63,25 +78,26 @@ does not deepen the wedge. The best PO decision often looks like one of these:
 - **decline the work** because it is only a nicer version of a generic note app,
   graph viewer, dashboard, or AI wrapper.
 
-For Atlas, product excellence is the union of four things:
+For Atlas, product excellence needs all four of these at once:
 
-1. **Problem insight**: the PO can name the phenomenon and why it matters before
-   naming the implementation.
+1. **Problem insight**: the PO can name the phenomenon (현상 — 화면이나 볼트에서
+   실제로 일어나는 일. 의견이 아니라 남이 다시 확인할 수 있는 관찰) and why it
+   matters before naming the implementation.
 2. **Ontology leverage**: the change makes concepts, relations, evidence,
    provenance, impact, ownership, or update paths clearer.
 3. **Agent leverage**: the change leaves Claude Code, Codex, Cursor, or another
    MCP/CLI agent with a better next action than it had before.
-4. **Runtime proof**: the improvement is verified in the actual shipped surface,
-   especially the installed macOS app when desktop UX changes.
+4. **Runtime proof**: someone verified the improvement in the surface that
+   actually ships, and in the installed macOS app whenever desktop UX changes.
 
 ## Phenomenon-First Command Style
 
 The PO should translate every directive into a problem statement before it
-becomes engineering work. This matters most when the request is emotionally
-accurate but solution-shaped: "this looks wrong," "make Sigma dynamic," "the
-panel is too small," "add relationship scoring," "Obsidian with AI is strong,"
-or "use graph DB ideas." Those sentences are valid signals, not yet product
-specs.
+becomes engineering work. This matters most when a request gets the feeling
+right but is already written as a solution: "this looks wrong," "make Sigma
+dynamic," "the panel is too small," "add relationship scoring," "Obsidian with
+AI is strong," or "use graph DB ideas." Those sentences are valid signals, not
+yet product specs.
 
 The command style should therefore be:
 
@@ -107,26 +123,31 @@ For Ontology Atlas, the highest-value phenomena usually look like one of these:
   actionable ontology fact;
 - a developer or AI agent can inspect the graph but cannot turn the result into
   a next MCP/CLI command, vault update, or validation gate;
-- a local-first trust promise is weakened by hidden state, stale app builds, or
-  verification against the wrong runtime;
+- a local-first trust promise is weakened by state the user cannot see, by an
+  app build nobody rebuilt, or by checking the change somewhere other than where
+  it actually ships — the browser instead of the installed app;
 - a workflow duplicates Obsidian, Notion, a graph database, or chat context
-  instead of exploiting Atlas's unique business-to-code ontology.
+  instead of using the one thing only Atlas has — an ontology that runs from
+  business meaning down to the code that implements it.
 
 ## Non-Negotiable Operating Rule
 
 Before product, UX, graph, MCP, CLI, workflow, or macOS-shell work starts, the
-agent or contributor must pass the PO gate in this document. If the PO pass is
-weak, the correct move is to clarify the user moment, simplify the existing
-surface, or cut scope. Shipping a feature without this pass is treated as
-unshaped output, not product progress.
+agent or contributor must pass the PO gate in this document. The written answer
+is called a **PO pass** (패스 — 이 문서의 질문들에 짧게 답해 적어 둔 글. 그 틀은
+아래 *Fast PO Pass* 에 있다). If the pass is weak, the contributor clarifies the
+user moment, simplifies the existing surface (표면 — 사용자가 보고 만지는 화면 ·
+패널 · 명령 하나하나), or cuts scope. Shipping a feature without this pass counts
+as work nobody shaped — output, not product progress.
 
 The PO must reason in this order: **observed phenomenon -> user problem ->
 success condition -> solution options -> implementation**. A phenomenon is an
 observable state such as "dragging one card leaves connected cards behind,"
 "the popover covers the control rail," "an agent cannot tell which relation is
 source-backed," or "a 14-inch full-screen app makes the panel unreadable."
-Until that phenomenon and the resulting user problem are named, feature names,
-component names, libraries, mockups, and implementation ideas are premature.
+Until someone has written down that phenomenon and the user problem it causes,
+feature names, component names, libraries, mockups, and implementation ideas
+are premature.
 
 The PO is allowed to stop implementation. If the current work starts from
 "add X," "use Y library," "make it prettier," "ship this panel," or "copy this
@@ -145,9 +166,9 @@ before implementation. Use this protocol for requests such as "make it prettier,
 1. **Quote the request as a symptom**, not as the solution.
 2. **Name the observed phenomenon** in the shipped product, screenshot, dogfood
    run, vault state, MCP output, or test failure.
-3. **Name the target user moment**: planner, marketer, leadership reviewer,
-   developer, or AI agent; first contact, graph reading, relation proof,
-   handoff, edit, or verification.
+3. **Name the target user moment** (모먼트 — 그 사람이 그 일을 하고 있는 구체적인
+   시점): planner, marketer, leadership reviewer, developer, or AI agent; first
+   contact, graph reading, relation proof, handoff, edit, or verification.
 4. **State the current substitute** and why it is insufficient: Obsidian,
    Notion, raw markdown, graph DB tools, source search, Claude/Codex context, or
    manual reasoning.
@@ -167,16 +188,16 @@ graph brief, hides secondary commands, and proves no panel overflow in the
 installed app.
 ```
 
-The PO can be represented by several lenses, but the final decision is singular:
-what maximizes Ontology Atlas's value as the local-first ontology workbench that
-people and AI agents cannot replace with Obsidian, a generic graph database, raw
-docs, or a chat context dump?
+Several lenses can argue, but only one decision comes out of the PO, and it
+answers one question: what makes Ontology Atlas more valuable as the local-first
+ontology workbench that people and AI agents cannot replace with Obsidian, a
+generic graph database, raw docs, or a chat context dump?
 
 ## Reference Lineage
 
 This operating system combines well-tested product ideas and adapts them to
 Atlas's local-first ontology context. These references were web-checked on
-2026-06-14; keep the ideas, not the brand theater:
+2026-06-14; borrow the ideas, not the famous names as decoration:
 
 - [Scrum Guide 2020](https://scrumguides.org/scrum-guide.html): the Product
   Owner is accountable for maximizing product value, making the Product Goal and
@@ -231,16 +252,18 @@ Atlas's local-first ontology context. These references were web-checked on
 
 ## The Atlas PO Council
 
-One accountable PO decision is required, but the decision must be tested through
-these lenses:
+One accountable PO decision is required, but the decision must first be tested
+through these lenses. Each lens is one fixed question the decision has to
+survive, and nobody skips a lens because it is inconvenient:
 
-- Accountable Value Owner: maximizes product value and owns the final ordering
-  decision. No committee compromise, no "we can add it because it is easy."
+- Accountable Value Owner: one person makes the product more valuable and
+  decides what gets done first. No committee compromise, no "we can add it
+  because it is easy."
 - Customer-Problem Editor: writes the target user, moment, current alternative,
   and pain before allowing feature names.
-- Ontology Steward: protects concepts, relations, evidence, ownership,
-  dependency, impact, provenance, and agent handoff as first-class product
-  objects.
+- Ontology Steward: treats concepts, relations, evidence, ownership, dependency,
+  impact, provenance, and agent handoff as parts of the product itself, not as
+  metadata around it, and protects them.
 - Discovery Lead: requires a user report, screenshot, dogfood failure, agent
   failure, metric, or repeated support pain before treating the problem as real.
 - Outcome Guard: defines the behavior that should change after release, for a
@@ -253,29 +276,31 @@ these lenses:
   turns it into a nicer version of a note app, graph viewer, or AI wrapper.
 - Experience Mapper: traces the user journey from trigger to decision to
   handoff, and rejects isolated controls that do not improve that path.
-- DHM Strategist: asks whether the slice delights the target user, becomes
-  harder to copy because it compounds in the local ontology, and strengthens the
-  project enough to justify continued investment.
+- DHM Strategist: asks whether the slice delights the target user, gets harder
+  to copy because it keeps piling up inside the user's own local ontology, and
+  strengthens the project enough to justify continued investment.
 - First-Principles Skeptic: reduces the request to the underlying problem,
   constraints, and necessary objects before copying familiar product patterns.
 - Craft Steward: requires the shipped experience to feel like a serious macOS
   workbench, including hierarchy, density, motion, accessibility, and responsive
   stability.
-- Local-First Guardian: preserves git-backed markdown as the source of truth,
-  with no backend, login, opaque sync, or hidden cloud dependency unless a
-  written exception proves local-first is insufficient.
+- Local-First Guardian: keeps git-backed markdown as the source of truth, with
+  no backend, no login, no sync the user cannot inspect, and no hidden cloud
+  dependency, unless a written exception proves local-first is insufficient.
 
 If these lenses disagree, choose the smallest slice that best improves the
 ontology-to-agent workflow. Do not average the opinions into a bigger feature.
 
 ### The council is five callable agents, not thirteen bullet points
 
-Until 2026-07-27 this section was prose, and prose does not run. A PO pass in
-this repo wrote "없음" into the two rubric rows this document declares fatal
-(Ontology value, Agent value), returned `Build and verify`, and shipped —
-because **no lens had an owner who had to sign.** The thirteen lenses are
-therefore distributed across five standing agents in `.claude/agents/`, and
-every rubric row now has exactly one signer:
+Until 2026-07-27 this section was prose, and prose does not run — nothing in the
+build ever checked that anyone had used these lenses. A PO pass in this repo
+wrote "없음" into the two rubric rows this document declares fatal (Ontology
+value, Agent value), gave itself `Build and verify`, and shipped — because
+**no lens had one named owner who had to sign it** (서명 — 그 행의 점수에 자기
+이름을 걸고, 틀리면 자기 책임이 되는 것). The thirteen lenses are therefore split
+across five standing agents in `.claude/agents/`, and every rubric row now has
+exactly one signer:
 
 | Agent | 이름 | Lenses carried | Rubric row signed |
 |---|---|---|---|
@@ -285,9 +310,15 @@ every rubric row now has exactly one signer:
 | `po-wedge` | 해자 | Monopoly Strategist · DHM Strategist · First-Principles Skeptic | Differentiation |
 | `po-leverage` | 지렛대 | Prioritization Analyst · Shaper | appetite + slice boundary |
 
+자리 이름은 그 자리가 무엇을 보는지를 줄인 말이다 — **근거**(증거가 실제로
+있는가) · **결**(만들어진 물건을 열어 봤을 때 어떤가) · **지킴이**(온톨로지와
+로컬-퍼스트 약속이 지켜지는가) · **해자**(다른 도구가 따라 하기 어려워지는가) ·
+**지렛대**(지금 이걸 할 때인가, 얼마를 쓸 것인가).
+
 **Accountable Value Owner is deliberately not an agent.** It is the human owner,
-or the agent acting on their behalf. The council stress-tests; it does not vote
-and does not own the decision. One person decides and signs.
+or the agent acting on their behalf. The council only tries to break the
+proposal; it does not vote and it does not own the decision. One person decides
+and signs.
 
 Every agent may research the web and run read-only commands, and every agent is
 forbidden from stopping at "no" — a blocking opinion must name what to do
@@ -302,24 +333,34 @@ breaks the build until an agent claims it.
 
 **Required** — a new or removed user-facing surface/route; a public contract
 change (MCP tool signature, CLI command, vault schema); product direction,
-positioning, or the words a stranger reads first; a first public release or
-anything spending a one-shot reputational resource; a solo pass scoring under
-**18/24** or carrying a fatal zero; or the owner asking.
+positioning, or the words a stranger reads first; a first public release, or
+anything that spends a one-shot reputational resource (한 번밖에 못 쓰는 평판 —
+첫인상은 두 번 만들 수 없다); a solo pass scoring under **18/24** or carrying a
+fatal zero (치명적 0 — 아래 *PO Quality Rubric* 에서 0이 나오면 안 된다고 못박은
+행에 0을 준 것); or the owner asking.
 
 **Not required** — ordinary product work that clears 18+ with no fatal zero on a
 solo pass.
 
 **Never** — mechanical work (typos, dependency bumps, CI plumbing, test
 fixtures). These are already exempt from the PO gate, and convening a council on
-them is the process theater this document warns against.
+them is the process theater this document warns against (일을 실제로 낫게 하지는
+않으면서 절차를 밟았다는 모양만 내는 것).
 
 Protocol, output template, and failure-mode guards live in
 `.claude/skills/po-council/SKILL.md` (mirrored at
-`.agents/skills/po-council/SKILL.md`). The short form: five independent
-positions in parallel with no cross-talk, exactly one rebuttal round in which
-conceding must change the verdict, then one accountable decision that is one of
-the proposals **or smaller — never their union** — with the strongest losing
-argument recorded together with the observation that would prove it right.
+`.agents/skills/po-council/SKILL.md`). The short form is four steps:
+
+1. The five agents write their positions at the same time, and none of them
+   reads another's position first.
+2. They rebut each other exactly once. If an agent concedes a point, that
+   concession has to change its verdict (평결 — 아래 *PO Verdicts* 의 네 결론 중
+   하나); otherwise the concession was not real.
+3. One accountable person picks one of the five proposals, or something smaller
+   — **never their union**, meaning never all five glued together.
+4. That person writes down the strongest losing argument together with the
+   observation that would prove it right later (반증 조건 / falsifier — 이 판단이
+   틀렸다면 나중에 무엇이 관찰될지 미리 적어 두는 문장).
 
 ## Default PO Stance
 
@@ -340,8 +381,8 @@ clarity:
 - Prefer **source-backed trust** over AI magic. AI can rank, summarize, and
   propose, but markdown frontmatter and relation evidence remain inspectable.
 - Prefer **problem insight over implementation momentum**. A fast change that
-  does not sharpen the user's real ontology task is churn, even if the code is
-  correct.
+  does not sharpen the user's real ontology task is busywork, even if the code
+  is correct.
 
 ## Problem Insight Bar
 
@@ -420,8 +461,10 @@ design, graph, CLI, MCP, and workflow changes cannot.
    X without reading source" over "add a panel."
 7. Evidence: What user report, screenshot, dogfood run, metric, or repeated
    failure supports this?
-8. Riskiest assumption: Is the main risk value, usability, feasibility,
-   viability, performance, or trust?
+8. Riskiest assumption: if this fails, where does it fail first — nobody wants
+   it (value), nobody can operate it (usability), we cannot build it
+   (feasibility), it does not work for the project itself (viability),
+   performance, or trust?
 9. Appetite and slice: How much time is worth spending, and what is the smallest
    integrated slice that proves the value?
 10. Simplification: What can be removed, merged, hidden, or made quieter instead
@@ -434,8 +477,9 @@ highest-friction workflow before adding new product surface.
 
 ## PO Verdicts
 
-Every non-trivial product pass should end in one of four verdicts. This prevents
-"sounds good" from becoming accidental scope.
+Every non-trivial product pass should end in one of four verdicts (평결 — 그
+패스의 결론 한 줄. 아래 넷 중 하나만 쓴다). This stops "sounds good" from quietly
+turning into work nobody decided to do.
 
 - **Do not build**: the problem is not real enough, not important enough, or not
   Atlas-specific enough. Capture the learning and stop.
@@ -473,9 +517,10 @@ from an existing workflow instead.
 
 ## PO Quality Rubric
 
-Use this rubric to judge whether a PO pass is strong enough. Score each row
-0-4. A buildable pass usually needs **18+ out of 24** and no zero in problem,
-ontology value, agent value, or verification.
+Use this rubric (루브릭 — 여섯 항목을 각각 0 · 2 · 4 기준에 대고 점수 매기는
+채점표) to judge whether a PO pass is strong enough. Score each row 0-4. A
+buildable pass usually needs **18+ out of 24** and no zero in problem, ontology
+value, agent value, or verification.
 
 | Dimension | 0 | 2 | 4 |
 |---|---|---|---|
@@ -518,9 +563,10 @@ decision:
   product dependency;
 - plain Claude Code or Codex can still use the slice when Atlas MCP/CLI is the
   only connected tool surface;
-- the slice removes or quiets something when addition is not necessary;
-- verification matches the shipped surface and can catch stale builds,
-  responsive breakage, graph overlap, or handoff drift.
+- when adding is not necessary, the slice removes something or makes it quieter;
+- verification matches the shipped surface and can actually catch a build nobody
+  rebuilt, a layout that breaks at another window size, nodes drawn on top of
+  each other, or a handoff that quietly stopped matching the product.
 
 ## Required Agent Behavior
 
@@ -576,8 +622,8 @@ the override down.
 ## Atlas-Specific Decision Rules
 
 - Relief/Topology is not decoration. Every node, edge, cluster, label, legend,
-  HUD, motion, and selection affordance must help a user understand the ontology
-  or prepare an agent handoff.
+  HUD, motion, and cue that shows what is selected must help a user understand
+  the ontology or prepare an agent handoff.
 - A relation is a product object, not a line. Its type, direction, provenance,
   strength, confidence, review state, evidence, and impact should be
   understandable when the user needs them and quiet when they do not.
@@ -587,18 +633,22 @@ the override down.
   over vague "AI relevance" scores. Scores can rank attention; they must not
   replace typed meaning.
 - When evaluating relation quality, ask four graph-database style questions:
-  "what are the endpoints?", "what is the typed predicate?", "what properties
-  qualify this edge?", and "which traversal or handoff depends on it?" If one
-  answer is missing, the UI should reveal the gap or route the agent to a repair
-  action.
+  "what are the endpoints?" (선이 어느 노드와 어느 노드를 잇는가), "what is the
+  typed predicate?" (그 선이 무슨 관계라고 적혀 있는가), "what properties qualify
+  this edge?" (그 관계에 붙은 속성은 무엇인가 — 출처 · 강도 · 확신도 등), and
+  "which traversal or handoff depends on it?" (이 선을 따라가는 탐색이나 핸드오프
+  중 무엇이 이 선에 기대고 있는가). If one answer is missing, the UI should
+  reveal the gap or route the agent to a repair action.
 - Graph-database inspiration is useful, but Atlas's differentiator is source
   backed meaning. Nodes and edges may behave like property-graph objects, yet the
   authoritative representation remains human-reviewable markdown frontmatter.
-- Agent handoff is a first-class outcome. A feature that looks good but cannot
-  produce clearer MCP/CLI/Codex next steps is incomplete for Atlas.
-- Local-first trust beats collaboration theater. Do not introduce accounts,
-  sync, opaque AI storage, or network assumptions without a written product
-  decision explaining why local git-backed markdown is insufficient.
+- Agent handoff is an outcome in its own right, not a side effect. A feature
+  that looks good but cannot produce clearer MCP/CLI/Codex next steps is
+  incomplete for Atlas.
+- Local-first trust beats anything that only looks like collaboration. Do not
+  introduce accounts, sync, AI storage the user cannot inspect, or network
+  assumptions without a written product decision explaining why local git-backed
+  markdown is insufficient.
 - Source-backed beats magical. AI can suggest, summarize, and route attention,
   but the ontology source of truth remains inspectable markdown plus graph
   relations.
@@ -648,8 +698,8 @@ These are treated as product defects, even when the code works:
 - A relation visualization looks prettier but still hides type, direction,
   evidence, or action.
 - The UI explains itself with extra text instead of making state visually clear.
-- The agent handoff is copy-only theater and does not help Codex/Claude Code
-  decide a next command, MCP query, or vault update.
+- The agent handoff is nothing but a copy button, so it does not help
+  Codex/Claude Code decide a next command, MCP query, or vault update.
 - The shipped app was not rebuilt after a UI change, so verification used stale
   source or browser state.
 - The change increases configurability while weakening Atlas's default product
