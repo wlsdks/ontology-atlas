@@ -172,8 +172,9 @@ The detailed rules live in `.claude/rules/*.md` and Claude Code auto-loads them.
   Claude Code session with only Atlas MCP, timed to the north star) is not a simulation —
   that population *is* the user.
 - **PO Council** — `@.claude/skills/po-council/SKILL.md` runs five standing product owners
-  (`po-evidence` 근거 · `po-craft` 결 · `po-steward` 지킴이 · `po-wedge` 해자 ·
-  `po-leverage` 지렛대) that carry the PO OS's thirteen lenses between them, with
+  (`po-evidence` 근거=관찰된 증거 · `po-craft` 결=만들어진 물건의 완성도 ·
+  `po-steward` 지킴이=온톨로지·로컬 우선 약속 · `po-wedge` 해자=대체 불가능성 ·
+  `po-leverage` 지렛대=기회비용) that carry the PO OS's thirteen lenses between them, with
   **every rubric row signed by exactly one of them**. Convene it before expensive or
   hard-to-reverse work — a new or removed surface, a public MCP/CLI/schema contract
   change, direction or positioning, a first public release — or whenever a solo pass
@@ -186,14 +187,16 @@ The detailed rules live in `.claude/rules/*.md` and Claude Code auto-loads them.
 - **Council head** — `@.claude/agents/chief.md` (`model: fable`) chairs both councils: it
   decides whether to convene at all, which seats, the order (PO first, design second),
   resolves conflict by a *named* rule, and writes the decision record. **It cannot edit
-  code** — the failure this repo had was that the party who wanted to build also signed
-  the gate. The record is a recommendation; the human owner signs it.
+  code** — this repo's past failure was that whoever built a change also approved it.
+  The record is only a recommendation; the human owner makes the final call.
 - **Design Council** — `@.claude/skills/design-council/SKILL.md` convenes the eight-seat
-  Atlas Designer Bench as callable agents (`design-lead` 위계 · `design-system` 체계 ·
-  `design-interaction` 상호작용 · `design-motion` 모션 · `design-infoviz` 도해 ·
-  `design-workbench` 작업대 · `design-responsive` 반응형 · `design-handoff` 핸드오프). Convene only the seats a change
-  touches; **위계 and 체계 always attend** — one names the attention winner, the other
-  turns the decision into tokens, lint rules, and contract tests, because a decision that
+  Atlas Designer Bench as callable agents (`design-lead` 위계=무엇이 먼저 눈에 들어오나 ·
+  `design-system` 체계=결정을 토큰·lint·테스트로 굳힘 · `design-interaction` 상호작용 ·
+  `design-motion` 모션 · `design-infoviz` 도해=그래프가 읽히나 ·
+  `design-workbench` 작업대=macOS 앱 창 · `design-responsive` 반응형 ·
+  `design-handoff` 핸드오프=에이전트가 다음에 할 일). Convene only the seats a change
+  touches; **위계 and 체계 always attend** — one names what the eye must land on first,
+  the other turns the decision into tokens, lint rules, and contract tests, because a decision that
   never lands in the design system is one the next person re-makes. Every seat must open
   the built surface rather than judge a diff, cites published principles only, never
   imitates a reference product's assets or wording, and may not block without prescribing
@@ -235,11 +238,11 @@ The detailed rules live in `.claude/rules/*.md` and Claude Code auto-loads them.
   and prove each with a probe.
 - **Design Guardian** — `@.claude/agents/design-guardian.md` is the standing senior design reviewer for UI work. Use it, or an equivalent sub-agent when available, before and after meaningful Relief/Topology design changes. It rejects token drift, attention-layer collisions, hidden typed facts, decorative motion, browser-only desktop proof, and reference copying. It approves only token-backed changes with screenshot/WebView evidence and installed-app proof when desktop behavior is affected.
 - **Design system** — neutrals + a single indigo, forbidden patterns — `@.claude/rules/design.md` · `@docs/DESIGN-SYSTEM.md`.
-  **규격은 문서가 아니라 lint 가 강제한다** (`eslint.config.mjs` 의
-  `no-restricted-syntax`) — 새 규격을 문서에 쓰면 같은 PR 에서 룰도 넣는다.
-  단 **룰을 켜기 전에 위반을 전수 측정한다**: 한 PR 로 못 치우는 규모의 룰은
-  강제가 아니라 소음이고 기존 신호까지 덮는다. 절차와 실측 사례는 `design.md`
-  "규격은 lint 로 강제된다" 절.
+  **규격은 문서가 아니라 lint 가 지킨다** (`eslint.config.mjs` 의
+  `no-restricted-syntax`) — 새 규격을 문서에 적으면 같은 PR 에 lint 룰도 넣는다.
+  단 **룰을 켜기 전에 지금 어기고 있는 곳이 몇 군데인지 전부 세어 본다**: 한 PR 로
+  다 못 고칠 만큼 많으면 그 룰은 규칙이 아니라 경고 소음이 되고 원래 잡던 문제까지
+  묻힌다. 절차와 실제 측정값은 `design.md` "규격은 lint 로 강제된다" 절.
 - **Git workflow** — conventional prefix + Korean (or English) body — `@.claude/rules/git.md`
 - **Testing & verification** — TDD-first, unit → e2e — `@.claude/rules/testing.md`
 - **Local-first** — vault folder only, no backend — `@.claude/rules/local-first.md`
@@ -284,6 +287,14 @@ mechanism this budget assumes.)
   is not that. The councils are the deliberate exception, and their point is
   **independence** (whoever builds it must not be the one who passes it), not extra
   verification passes.
+- **When you do delegate, six lines go in every brief** — leaving one out has cost a
+  real accident each (2026-08-03~04): ① its own e2e port (`reuseExistingServer` will
+  otherwise measure another agent's server) ② which files are read-only right now
+  ③ no `git stash`, remove the worktree, never `git add -A` (it commits worktrees as
+  empty gitlinks) ④ scratch files outside the repo (eslint reads what git ignores)
+  ⑤ which baselines must not break, and run them ⑥ read the primary sources, not my
+  summary — eight relayed premises were rejected in one day. Full rationale and the
+  per-seat file ownership table: `/parallel-brief`.
 - Use memory as an index, not a transcript: search the registry, open only the one or two relevant notes, and verify drift-prone facts live.
 - Do not run or add hooks that inject long dynamic context. SessionStart hooks must stay concise; PreToolUse hooks should block risky actions only, not record routine activity.
 - Mention residual uncertainty instead of loading more context reflexively.
@@ -403,8 +414,8 @@ A capability's `path:` is one canonical repo-relative implementation entrypoint;
 `elements:` contains only real element-node slugs, never raw file paths. Create an
 element only when its implementation role has ontology meaning beyond its location.
 
-지역화 이름은 `display_<locale>`/MCP `labels`로 vault의 모든 언어를 채운다;
-`title`은 검색 진실원이다. 세부 규칙: `mcp/README.md`.
+다른 언어 이름은 `display_<locale>` 키(MCP 에서는 `labels`)로 넣는다.
+`title` 은 검색이 기준으로 삼는 단 하나의 이름이다. 세부 규칙: `mcp/README.md`.
 
 Bulk ingestion is `ontology-atlas import <path...>`; it uses the same schema as
 `add_concept`/`add`. Options and precedence: `cli/README.md`.

@@ -11,6 +11,7 @@ import {
   Terminal,
 } from 'lucide-react';
 import { useTranslations } from 'next-intl';
+import { Link } from '@/i18n/navigation';
 import {
   AgentClientButtons,
   buildCodexConfigTomlTemplate,
@@ -589,6 +590,7 @@ export function VaultAgentSetupPanel({
         count: localVault.manifest?.docs.length ?? 0,
       }),
       state: localVault.status === 'loaded' ? 'ready' : 'warning',
+      href: null,
     },
     {
       key: 'health',
@@ -611,6 +613,14 @@ export function VaultAgentSetupPanel({
           : validationState === 'error'
             ? 'blocked'
             : 'warning',
+      // **「5개가 막음」이 갈 곳을 갖는다** (2026-08-04). 종전 이 블록의
+      // 인터랙티브 요소는 **0개**였고, 어느 파일이 잘못됐는지 한 글자도 없었다 —
+      // 사람이 수치를 읽고 나서 할 수 있는 일이 창을 닫는 것뿐이었다. 「할 일」
+      // 화면의 준비도 미터가 같은 검사 결과를 세므로 그리로 보낸다.
+      href:
+        validationState === 'error' || validationState === 'warning'
+          ? '/ontology/insights/?tab=do-next'
+          : null,
     },
     {
       /*
@@ -627,12 +637,14 @@ export function VaultAgentSetupPanel({
         ? t('agentSetup.proofAgentRootReady')
         : t('agentSetup.proofAgentRootNeedsTemplate'),
       state: agentSetupReady ? 'manual' : 'warning',
+      href: null,
     },
     {
       key: 'jsonGate',
       label: t('agentSetup.proofJsonGate'),
       value: t('agentSetup.proofJsonGateManual'),
       state: 'manual',
+      href: null,
     },
   ] as const;
   const agentFirstContactProofRows = [
@@ -1098,6 +1110,7 @@ export function VaultAgentSetupPanel({
             {agentSetupProofRows.map((row) => (
               <div
                 key={row.key}
+                data-testid={`agent-setup-proof-${row.key}`}
                 className="grid grid-cols-[14px_72px_1fr] items-start gap-1.5 rounded-micro border border-[color:var(--color-overlay-2)] bg-[color:var(--color-overlay-recessed-a12)] px-1.5 py-1"
               >
                 {row.state === 'ready' ? (
@@ -1130,6 +1143,21 @@ export function VaultAgentSetupPanel({
                 </dt>
                 <dd className="break-keep text-label text-[color:var(--color-text-secondary)]">
                   {row.value}
+                  {row.href ? (
+                    <>
+                      {' '}
+                      <Link
+                        href={row.href}
+                        data-testid={`agent-setup-proof-${row.key}-link`}
+                        className={controlClass({
+                          shape: 'link',
+                          className: 'hover:text-[color:var(--color-text-primary)]',
+                        })}
+                      >
+                        {t('proofHealthOpenQueue')}
+                      </Link>
+                    </>
+                  ) : null}
                 </dd>
               </div>
             ))}

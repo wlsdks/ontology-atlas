@@ -10,17 +10,25 @@ import { describe, expect, it } from 'vitest';
  * ## 오늘의 목록 (2026-08-04) — 이 파일에서 먼저 읽을 것
  * ════════════════════════════════════════════════════════════════════
  *
- * 세는 수는 **넷**이다. 종전엔 113 이 한 덩어리였고, 그래서 무엇이 진전인지
- * 알 수 없었다 — 옮길 수 없는 자리와 아직 안 옮긴 자리가 같은 칸에 있었다.
- * 앵커도 같은 이유로 등재/부채로 갈랐다(2026-08-04 두 번째 라운드).
+ * 세는 수는 **여섯**이다 — 태그 두 갈래(버튼·앵커) × 부류 셋. 종전엔 113 이 한
+ * 덩어리였고, 그래서 무엇이 진전인지 알 수 없었다. 갈라온 순서가 그대로 이 표다:
+ * 등재/부채(2026-08-04 첫 라운드) → 앵커 분리(두 번째) → **근거 없음(세 번째)**.
  *
- * | 수 | 뜻 | 어느 방향으로 움직이나 |
+ * | 수 | 뜻 — 한 줄 | 어느 방향으로 움직이나 |
  * |---:|---|---|
- * | **버튼 등재 30** | 값 층 밖이라고 **검증되어 등재된** `<button>` 자리(`OUTSIDE_VALUE_LAYER`) | 늘리려면 `BASELINE_REGISTERED` 를 **손으로** 올린다. 그 diff 가 「왜」를 적을 자리다 |
- * | **버튼 부채 78** | 아직 안 옮긴 `<button>` | **줄어야 한다.** 버튼 진도는 여기서 읽는다 |
- * | **앵커 등재 19** | 값 층 밖이라고 검증되어 등재된 앵커(`OUTSIDE_VALUE_LAYER_ANCHORS`) | 같은 규율. `BASELINE_ANCHOR_REGISTERED` 를 손으로 올린다 |
- * | **앵커 부채 83** | 아직 안 옮긴 `<Link>` 78 · `<a>` 24 중 미등재분 | **줄어야 한다.** 아래 「앵커 전수 분류」 절 |
- * | 버튼 전수 108 · 앵커 전수 102 | 등재 + 부채 | 파생값이다. 이 수를 보고 판단하지 않는다 |
+ * | **버튼 등재 30** | 값 층이 **원리적으로 못 내는** 자리(`OUTSIDE_VALUE_LAYER`) | 늘리려면 `BASELINE_REGISTERED` 를 **손으로** 올린다. 그 diff 가 「왜」를 적을 자리다 |
+ * | **버튼 근거 없음 4** | 값 층이 낼 수는 있으나 **낼 것이 없는** 자리 — 컨트롤이 아니다(`NO_BASIS`) | 움직이지 않는 것이 정상이다. **갚을 대상이 아니다** |
+ * | **버튼 부채 74** | 옮길 수 있는데 **아직 안 옮긴** 자리 | **0 을 향한다.** 버튼 진도는 오직 여기서 읽는다 |
+ * | **앵커 등재 25** | 같은 뜻, 앵커(`OUTSIDE_VALUE_LAYER_ANCHORS`) | `BASELINE_ANCHOR_REGISTERED` 를 손으로 올린다 |
+ * | **앵커 근거 없음 0** | 실측이다 — 102 를 다 보고 0(`<a>` 는 가는 것이 목적이라 「할 말 없는 클릭면」이 되기 어렵다) | 자격자가 생기면 손으로 올린다 |
+ * | **앵커 부채 77** | 아직 안 옮긴 `<Link>` 78 · `<a>` 24 중 미등재분 | **0 을 향한다** |
+ * | 버튼 전수 108 · 앵커 전수 102 | 셋의 합 | 파생값이다. 이 수를 보고 판단하지 않는다 |
+ *
+ * **왜 셋인가 — 부채가 0 이 될 수 있어야 하기 때문이다.** 「원리적으로 못 냄」과
+ * 「낼 것이 없음」을 부채에 섞어 두면 그 수는 0 에 닿을 수 없고, 0 에 닿을 수 없는
+ * 수는 진도 눈금이 아니라 장식이다. 소유자 지적이 정확히 이것이었다 — *"할 필요가
+ * 없다는 건 디자인 시스템으로 만들 필요가 없거나 관련 없는 부분이라는 거 아냐?
+ * 그러면 아예 제외하는 게 맞고, 수에 포함시키면 헷갈리니."*
  *
  * ⚠️ **2026-08-04 이전 이 게이트는 `<button>` 만 셌다.** 그래서 「부채 85」는
  * 한 번도 *컨트롤 전체*의 수였던 적이 없다 — 앵커 109 는 게이트의 시야 밖에서
@@ -62,6 +70,16 @@ import { describe, expect, it } from 'vitest';
  *
  * 반대로 **「값 층에 그 모양이 아직 없다」는 등재 사유가 아니다.** 그건 「체계」가
  * 부품을 더하면 열리는 자리이므로 **부채**다. 이 구분이 이 라운드의 전부다.
+ *
+ * ### 세 갈래로 읽는 법 — 자리 하나를 앞에 두고 던지는 두 질문
+ *
+ * 1. **값 층이 이걸 낼 수 있나?** 못 내면 → **등재**(위 표의 청구 유형 중 하나).
+ * 2. 낼 수 있다면, **낼 것이 있나?** 있으면 → **부채**(옮겨라). 없으면 →
+ *    **근거 없음**(`NO_BASIS` — 아래 「2026-08-04 부류 라운드」 절).
+ *
+ * 2번에서 「없다」가 참인 경우는 오늘 하나뿐이다: **화면을 덮는 클릭면**(스크림 ·
+ * 차단 백드롭). 모양·크기·타입·잉크를 하나도 선언하지 않아 값 층이 씌울 것이 없다.
+ * ⚠️ 「옮기기 번거롭다」·「픽셀이 움직인다」는 2번의 답이 아니다 — 그건 부채다.
  *
  * `conditional` 이 붙은 줄은 「X 가 생기면 옮긴다」는 뜻이다 — 값 층이 그 축을
  * 얻는 날 등재를 지우고 부채로 내린 뒤 갚는다.
@@ -323,6 +341,66 @@ import { describe, expect, it } from 'vitest';
  *   검사, INLINE_EXEMPT + spacingClear)로 이관했다.
  * - **산문 재단 6** (위 `prose` 등재) — 앵커 부채 83 → 77. 판정문의 «→76» 은
  *   산문 7 가정이었고 재전수가 6 으로 정정했다(등재 주석 참조).
+ *
+ * ════════════════════════════════════════════════════════════════════
+ * ## 2026-08-04 부류 라운드 — 「근거 없음」을 부채에서 갈라낸다 (버튼 78 → 74)
+ * ════════════════════════════════════════════════════════════════════
+ *
+ * 소유자 지적으로 열린 라운드다: 부채 수에 **「값 층에 넣을 이유가 없다고 판정된
+ * 자리」**가 섞여 있어 그 수가 무엇을 뜻하는지 흐려졌다. 이 라운드는 코드를 한 줄도
+ * 안 고쳤다 — **분류와 계측만** 했다.
+ *
+ * ### 이 라운드의 산출물은 갈라낸 4 가 아니라 **기각한 20** 이다
+ *
+ * 머리말이 「단발 14 · 다행·그리드 10」을 그 부류로 세어 뒀다. 자리마다 열어
+ * **저장소 전체를 분모로** 다시 재니 대부분이 거짓이었다. 「단발」은 그 라운드의
+ * *대상군 안에서* 하나였던 것이지 **저장소에서 하나**가 아니었다 — 분모가 다른 수를
+ * 같은 이름으로 부르고 있었다.
+ *
+ * | 주장 | 그때 셈 | 전수 재측정 | 참? | 어디로 |
+ * |---|---:|---:|---|---|
+ * | 누름 방언(`active:translate`)이 단발 | 1 | **5** | 거짓 | 부채 |
+ * | 점선 어포던스가 단발 | 2 | **3** | 거짓 | 부채 |
+ * | 깊은 인셋(`px-5`)이 단발 | 1 | **2** | 거짓 | 부채 |
+ * | 밑줄 탭(`border-b-*`)이 단발 | 2 | **2** — `tab-bar.tsx` 프리미티브가 이미 그 표기법을 소유한다 | 거짓 | 부채(목적지는 `<TabBar>`) |
+ * | 세로 밑줄·보더색·무게 등 나머지 「단발」 | ~8 | 램프 밖 **속성 종류**로 묶으면 최소 6 소비처(무게 39 · 밑줄 24 · 모노 46 …) | 거짓 | 부채 |
+ * | 다행·그리드 행 | 10 | 여는 태그에 실제 그리드는 **1**(`DesktopVaultWelcome`). 나머지는 「다행 카드」 판정이지 그리드가 아니다 | 거짓 | 부채 |
+ * | 그 **1** 마저 | — | 아이콘 열이 `h-7 w-7` 고정이라 `row`(flex+gap)로 **같은 픽셀**이 나온다. 그리드는 필수가 아니라 취향이다 | 거짓 | 부채 |
+ * | **전면 클릭면(스크림·차단 백드롭)** | 5 | **4** — 다섯 번째(`DemoStage` 재생 오버레이)는 `text-body`·`leading-body` 를 실어 판정 함수가 기각 | **참** | **근거 없음 4** |
+ *
+ * 즉 **부류로 인정된 것은 하나뿐**이고, 그 안에서도 게이트가 한 자리를 기각했다.
+ * 어제 등재 라운드가 13건을 걷어낸 것과 같은 결과다 — 그때 배운 것을 그대로 썼다.
+ *
+ * ### 왜 클릭면만 참인가 — 이 판정이 요구하는 둘
+ *
+ * `isClickSurface()` 는 **동시에** 요구한다: ① `inset-0`(화면을 덮는다) ② 램프가
+ * 소유한 속성 **0개**(높이·인셋·반경·보더·타입·무게 중 아무것도 선언하지 않는다).
+ * 스크림은 자리잡기(`absolute inset-0 z-*`)와 바탕 한 겹뿐이고, 값 층의 모양 여덟 중
+ * 무엇을 씌워도 **보이는 것이 달라지지 않는다**. 씌울 규격이 없어서다.
+ *
+ * 지도의 셋은 규격 대신 **계약**을 진다 — `data-backdrop-contract="blocks-map-and-closes-composer"`
+ * · `data-backdrop-surface-token` · `data-interactive-overlay`(투어 자동시작 차단
+ * 판정이 읽는 마커). 디자인 시스템이 아니라 오버레이 기계 장치의 부품이다.
+ *
+ * ### 복귀 규칙 — 이 부류가 도피처가 되지 않게 하는 셋
+ *
+ * | 무엇이 참이 아니게 되면 | 어떤 검사가 빨개지나 |
+ * |---|---|
+ * | 스크림에 규격을 하나라도 단다(`px-3` 한 개면 충분) | 「등재한 수만큼 자격 있는 클릭면이 실재한다」 — 값 층이 낼 것이 생겼으므로 부채로 내려간다 |
+ * | 다섯 번째 클릭면이 어딘가에 생긴다 | 「이 사유의 **전수**가 못박은 수와 같다」(`CLICK_SURFACE_CENSUS`) — 새 자리는 부채로도 잡히고 전수 핀으로도 잡힌다 |
+ * | 자격 없는 자리를 이 부류로 청구한다 | 위 둘 + 「근거 없음이 늘지 않는다」 — 실측 프로브로 확인했다(`DemoStage` 허위 청구 → 4검사 빨강) |
+ *
+ * 세 규칙 다 **기계가 재는 것**이고 사람의 의견에 기대지 않는다. 프로브 7종을 전부
+ * 빨강으로 확인했다(전수 초과 · 등재 파일 내 추가 · 규격 부착 · `inset-0` 제거 ·
+ * 허위 청구 · 등록부 비우기 · 기준선만 낮추기).
+ *
+ * ### 다음 라운드가 이어받을 것
+ *
+ * - **`RecentNodeRow` 의 `className={className}` 순수 패스스루 1** — 앵커 등재의
+ *   `no-spec` 과 **같은 성격**인데 아직 등재 안 됐다. 이 라운드는 새 부류를 만드는
+ *   일이었으므로 손대지 않고 부채에 뒀다(안전한 방향). 다음 등재 라운드의 1순위.
+ * - 스크림 유형이 생겼으므로 머리말이 「등재 청구 유형 신설 대기」로 적어 둔
+ *   **스크림/전면 오버레이 5** 항목은 해소됐다 — 4는 근거 없음, 1은 부채(`DemoStage`).
  *
  * ════════════════════════════════════════════════════════════════════
  * ## 역사 — 라운드별 기록 (417 → 108). **지우지 않는다**
@@ -632,12 +710,102 @@ const OUTSIDE_VALUE_LAYER: readonly OutsideEntry[] = [
 const BASELINE_REGISTERED = 30;
 
 /**
- * **이 수만 줄어야 한다.** 전수(113)에서 등재(23)를 뺀 나머지.
+ * **이 수만 줄어야 한다.** 전수(108)에서 등재(30)와 근거 없음(4)을 뺀 나머지.
  *
  * 등재된 파일에 손 컨트롤을 하나 더 써도 등재 수는 안 오르므로 이 수가 오른다 —
- * 등재는 면제가 아니다.
+ * 등재는 면제가 아니다. 근거 없음도 마찬가지다.
  */
-const BASELINE_HAND_WRITTEN_DEBT = 78;
+const BASELINE_HAND_WRITTEN_DEBT = 74;
+
+/**
+ * **세 번째 부류 — 「근거 없음」.**
+ *
+ * 등재(`OutsideEntry`)와 **다른 것**을 주장한다:
+ *
+ * | 부류 | 주장 | 값 층이 이걸 낼 수 있나 |
+ * |---|---|---|
+ * | 등재 | 「원리적으로 밖」 | **못 낸다** (뷰포트 함수 · JS 좌표 · 층 자신의 집 · 다른 층의 계약) |
+ * | **근거 없음** | 「낼 수는 있는데 **낼 것이 없다**」 | 낼 수 있다. 그런데 이 원소에 규격이 **없다** — 컨트롤이 아니다 |
+ * | 부채 | 「아직 안 옮김」 | 낼 수 있고 낼 것도 있다. 그냥 안 옮겼다 |
+ *
+ * ⚠️ **`no-spec`(등재) 과 헷갈리면 안 된다.** 그쪽은 규격을 **호출자에게 위임**한
+ * 자리다(`className={className}`) — 값 층이 남의 결정을 대신 낼 수 없으니 원리적으로
+ * 밖이다. 이쪽은 **아무도** 규격을 안 정한다. 정할 것이 없어서다.
+ */
+type NoBasisClaim = 'click-surface';
+
+interface NoBasisEntry {
+  readonly file: string;
+  readonly count: number;
+  readonly family: 'button' | 'anchor';
+  readonly claim: NoBasisClaim;
+  /** 파일에 남아 있어야 하는 근거 문자열. 등재와 같은 규율이다. */
+  readonly proof: string;
+  readonly why: string;
+}
+
+/**
+ * **「값 층이 낼 것이 없다」 등록부.**
+ *
+ * 오늘 유일한 청구 유형은 `click-surface` 다: **화면을 덮는 클릭면**(스크림 ·
+ * 차단 백드롭). 눌리기는 하지만 컨트롤이 아니다 — 모양·크기·타입·잉크를 **하나도**
+ * 선언하지 않고, 선언하는 것은 자리잡기(`absolute inset-0 z-*`)와 바탕 한 겹뿐이다.
+ * 값 층은 그 둘 다 자기 몫이 아니라고 이미 선언했다(자리잡기는 `className` 의 몫).
+ *
+ * ⚠️ **이 줄들은 「갚을 것」이 아니다.** 부채 74 는 0 을 향하지만 이 4 는 향하지
+ * 않는다 — 그래서 수를 갈랐다. 섞어 두면 부채가 **원리적으로 0 이 될 수 없는 수**가
+ * 되고, 그 순간 진도 눈금이 아니라 장식이 된다.
+ */
+const NO_BASIS: readonly NoBasisEntry[] = [
+  {
+    file: 'src/features/project-quick-edit/ui/ProjectQuickEditPanel.tsx',
+    count: 1,
+    family: 'button',
+    claim: 'click-surface',
+    proof: '--color-scrim-a58',
+    why:
+      '빠른 편집 시트의 스크림. `absolute inset-0 bg-[var(--color-scrim-a58)]` 가 전부이고 역할은 ' +
+      '「바깥을 눌러 닫기」다. 값 층의 모양 여덟 중 어느 것을 씌워도 **보이는 것이 달라지지 ' +
+      '않는다** — 씌울 규격이 없어서다.',
+  },
+  {
+    file: 'src/views/home/ui/HomePage.tsx',
+    count: 3,
+    family: 'button',
+    claim: 'click-surface',
+    proof: 'data-backdrop-contract',
+    why:
+      '지도의 차단 백드롭 셋(부트스트랩 취소 · 노드 생성 취소 2). 규격이 아니라 **계약**을 지고 ' +
+      '있고 그 계약을 스스로 선언한다 — `data-backdrop-contract="blocks-map-and-closes-composer"` · ' +
+      '`data-backdrop-surface-token` · `data-interactive-overlay`(투어 자동시작 차단 판정이 읽는 ' +
+      '마커). 컨트롤 규격은 0이다.',
+  },
+];
+
+const NO_BASIS_BUTTONS = NO_BASIS.filter((e) => e.family === 'button');
+
+/**
+ * **앵커 쪽은 오늘 0 이다 — 빈 줄이 아니라 실측이다.**
+ *
+ * 전수 102 를 판정 함수에 돌린 결과가 0 이다. 그럴 만하다: `<a>` 는 **가는 것**이
+ * 목적이라 「할 말 없는 클릭면」이 되기 어렵다(스크림에 `href` 를 달 이유가 없다).
+ * 자격 있는 앵커가 생기면 그때 줄이 서고 `BASELINE_ANCHOR_NO_BASIS` 를 손으로 올린다 —
+ * 지금 0 은 게이트가 공회전한다는 뜻이 아니라 **판정 함수가 실물 102 를 다 보고 낸
+ * 0** 이다(프로브 ⑮가 그 사실을 단언한다).
+ */
+const NO_BASIS_ANCHORS = NO_BASIS.filter((e) => e.family === 'anchor');
+
+/** 리터럴이다 — 등재 기준선들과 같은 이유(파생이면 멈춤쇠가 양방향으로 헐거워진다). */
+const BASELINE_NO_BASIS = 4;
+const BASELINE_ANCHOR_NO_BASIS = 0;
+
+/**
+ * **이 사유의 전수를 못박는다.** 오늘 저장소 전체에서 판정 함수가 자격을 주는 손
+ * 컨트롤이 정확히 이만큼이다. 다섯 번째가 생기면 이 수가 어긋나 **빨개진다** — 그때
+ * 사람은 ① 그 자리가 정말 클릭면이면 등록부와 이 수를 손으로 올리고(그 diff 가
+ * 「왜」를 적을 자리다) ② 아니면 부채로 갚는다. 조용히 면제되는 경로는 없다.
+ */
+const CLICK_SURFACE_CENSUS = 4;
 
 const ROOTS = ['src', 'app'];
 const GLOBALS_CSS = 'app/globals.css';
@@ -689,13 +857,13 @@ function openingTag(source: string, from: number): string {
 const BUTTON_TAGS = ['button'] as const;
 const ANCHOR_TAGS = ['Link', 'a'] as const;
 
-function countInFile(file: string, tags: readonly string[] = BUTTON_TAGS): number {
+function handWrittenTags(file: string, tags: readonly string[] = BUTTON_TAGS): string[] {
   const source = readFileSync(file, 'utf8');
   // `const X = controlClass({…})` / `const X = cn(controlClass({…}), …)` 의 이름들.
   const systemConstants = [...source.matchAll(/const\s+([A-Za-z_$][\w$]*)\s*=[^;\n]*controlClass\s*\(/g)].map(
     (m) => m[1],
   );
-  let n = 0;
+  const found: string[] = [];
   for (const m of source.matchAll(new RegExp(`<(?:${tags.join('|')})\\b`, 'g'))) {
     const tag = openingTag(source, m.index + m[0].length);
     if (!/className/.test(tag)) continue; // 클래스가 없으면 손으로 쓴 규격이 아니다
@@ -710,16 +878,75 @@ function countInFile(file: string, tags: readonly string[] = BUTTON_TAGS): numbe
      */
     if (/controlClass\s*\(/.test(tag)) continue;
     if (systemConstants.length > 0 && systemConstants.some((name) => new RegExp(`\\b${name}\\b`).test(tag))) continue;
-    n += 1;
+    found.push(tag);
   }
-  return n;
+  return found;
+}
+
+function countInFile(file: string, tags: readonly string[] = BUTTON_TAGS): number {
+  return handWrittenTags(file, tags).length;
+}
+
+/**
+ * 여는 태그 안 **문자열 리터럴의 낱말들**. 클래스가 상수·템플릿으로 조립돼 있어도
+ * 리터럴 조각은 여기 잡힌다. 변형 접두(`hover:` · `focus:` …)는 떼고 본다 —
+ * 「규격을 선언했나」는 상태와 무관한 질문이다.
+ */
+function literalClassTokens(tag: string): string[] {
+  const out: string[] = [];
+  for (const m of tag.matchAll(/["'`]([^"'`]*)["'`]/g)) {
+    for (const word of m[1].split(/\s+/)) {
+      if (word) out.push(word.replace(/^[a-z-]+:/, ''));
+    }
+  }
+  return out;
+}
+
+/** 값 층이 **소유한** 속성 종류. 이 중 하나라도 선언했으면 그것은 컨트롤 규격이다. */
+const RAMP_OWNED_TOKEN =
+  /^-?(min-h|h|w|size|p|px|py|pt|pb|pl|pr|gap|rounded|border|text|font|leading|tracking)(-|$)/;
+
+/**
+ * **「이건 컨트롤이 아니라 화면을 덮는 클릭면이다」의 판정 함수.**
+ *
+ * 둘을 **동시에** 요구한다:
+ *
+ * 1. `inset-0` — 화면(또는 부모)을 통째로 덮는다. 덮지 않으면 그냥 작은 컨트롤이고,
+ *    그건 「할 말이 없다」가 아니라 「아직 안 옮겼다」다.
+ * 2. 램프가 소유한 속성 **0개** — 높이·인셋·반경·보더·타입·무게를 하나도 선언하지
+ *    않는다. 하나라도 선언하는 순간 값 층이 낼 것이 생기므로 자격이 사라지고 부채로
+ *    돌아온다.
+ *
+ * 2번이 이 부류의 멈춤쇠다. 실물에서 이미 한 자리를 기각했다 — `DemoStage` 의 재생
+ * 오버레이는 `absolute inset-0` 이지만 `text-body` 와 `leading-body` 를 싣는다.
+ * **전면이라고 다 클릭면인 게 아니다.**
+ */
+function isClickSurface(tag: string): boolean {
+  if (!/inset-0/.test(tag)) return false;
+  return !literalClassTokens(tag).some((token) => RAMP_OWNED_TOKEN.test(token));
+}
+
+/** 저장소 전체에서 자격 있는 클릭면의 **전수**. 등록부와 무관하게 실측한다. */
+function clickSurfaceCensus(scanned: string[], tags: readonly string[] = BUTTON_TAGS): string[] {
+  const hits: string[] = [];
+  for (const file of scanned) {
+    for (const tag of handWrittenTags(file, tags)) {
+      if (isClickSurface(tag)) hits.push(file);
+    }
+  }
+  return hits;
 }
 
 /**
  * 등록부를 **인자로 받는다** — 프로브가 줄을 빼거나 파일을 얹어 탐지기 자체를
  * 겨눌 수 있어야 한다(하드컷 래칫의 `stillHardCut(registry)` 와 같은 이유).
  */
-function census(scanned: string[], registry: readonly OutsideEntry[] = OUTSIDE_VALUE_LAYER, tags: readonly string[] = BUTTON_TAGS) {
+function census(
+  scanned: string[],
+  registry: readonly OutsideEntry[] = OUTSIDE_VALUE_LAYER,
+  tags: readonly string[] = BUTTON_TAGS,
+  noBasisRegistry: readonly NoBasisEntry[] = NO_BASIS_BUTTONS,
+) {
   const byFile = new Map<string, number>();
   let total = 0;
   for (const file of scanned) {
@@ -735,7 +962,21 @@ function census(scanned: string[], registry: readonly OutsideEntry[] = OUTSIDE_V
   }
   let registered = 0;
   for (const n of registeredByFile.values()) registered += n;
-  return { total, registered, debt: total - registered, byFile, registeredByFile };
+  const noBasisByFile = new Map<string, number>();
+  for (const entry of noBasisRegistry) {
+    noBasisByFile.set(entry.file, (noBasisByFile.get(entry.file) ?? 0) + entry.count);
+  }
+  let noBasis = 0;
+  for (const n of noBasisByFile.values()) noBasis += n;
+  return {
+    total,
+    registered,
+    noBasis,
+    debt: total - registered - noBasis,
+    byFile,
+    registeredByFile,
+    noBasisByFile,
+  };
 }
 
 /**
@@ -753,7 +994,7 @@ function tokenIsBeyondFixedSteps(css: string, token: string): boolean {
 }
 
 const scannedFiles = ROOTS.flatMap((root) => walk(root));
-const { total, registered, debt, byFile, registeredByFile } = census(scannedFiles);
+const { total, registered, noBasis, debt, byFile, registeredByFile, noBasisByFile } = census(scannedFiles);
 const globalsCss = readFileSync(GLOBALS_CSS, 'utf8');
 
 /**
@@ -779,7 +1020,7 @@ const globalsCss = readFileSync(GLOBALS_CSS, 'utf8');
  * 반대로 이 둘은 **가르지 않는다**. `<Link>` 가 렌더하는 것이 `<a>` 이고, 값 층에서
  * 둘의 목적지가 같은 `shape: 'link'` 다. 처방이 같은 것을 두 칸에 두면 그건 진도를
  * 읽는 눈금이 아니라 장부질이다. 대신 태그별 내역을 여기 적어 둔다 —
- * **`<Link>` 78 · `<a>` 24**(2026-08-04 앵커 라운드 후 실측).
+ * **`<Link>` 71 · `<a>` 21**(2026-08-04 타입-분리 반려 라운드의 배당 회수 10 후 실측).
  *
  * ⚠️ 감사 보고서의 수는 **77** 이었다. 그 차이는 드리프트이거나 다른 필터이고,
  * 게이트가 쓰는 수는 **이 파일의 파서가 실제로 센 것**이어야 한다 — 남이 센 수를
@@ -793,7 +1034,7 @@ const globalsCss = readFileSync(GLOBALS_CSS, 'utf8');
  * 선언 하나라 `tokenIsBeyondFixedSteps` 가 거절한다. 등재가 도피처가 되지
  * 않는다는 것을 이 라운드가 실측으로 증명한 자리다.
  */
-const ANCHOR_TAG_SPLIT: Readonly<Record<string, number>> = { Link: 78, a: 24 };
+const ANCHOR_TAG_SPLIT: Readonly<Record<string, number>> = { Link: 71, a: 21 };
 
 /**
  * **검증된 「값 층 밖」 앵커 등록부.**
@@ -936,10 +1177,10 @@ const OUTSIDE_VALUE_LAYER_ANCHORS: readonly OutsideEntry[] = [
  */
 const BASELINE_ANCHOR_REGISTERED = 25;
 
-/** **이 수만 줄어야 한다.** 앵커 전수(102)에서 등재(25)를 뺀 나머지. */
-const BASELINE_ANCHOR_DEBT = 77;
+/** **이 수만 줄어야 한다.** 앵커 전수(92)에서 등재(25)를 뺀 나머지. */
+const BASELINE_ANCHOR_DEBT = 67;
 
-const anchorCensus = census(scannedFiles, OUTSIDE_VALUE_LAYER_ANCHORS, ANCHOR_TAGS);
+const anchorCensus = census(scannedFiles, OUTSIDE_VALUE_LAYER_ANCHORS, ANCHOR_TAGS, NO_BASIS_ANCHORS);
 
 describe('컨트롤 채택 래칫 — 등재된 「값 층 밖」', () => {
   it('등재된 파일이 전부 실재한다 — 없는 파일을 세면 수가 거짓이 된다', () => {
@@ -1078,13 +1319,13 @@ describe('컨트롤 채택 래칫 — 앵커(`<Link>` · `<a>`)', () => {
     ).toBeGreaterThanOrEqual(BASELINE_ANCHOR_DEBT);
   });
 
-  it('두 수의 합이 앵커 전수와 맞는다', () => {
-    expect(anchorCensus.registered + anchorCensus.debt).toBe(anchorCensus.total);
+  it('세 수의 합이 앵커 전수와 맞는다', () => {
+    expect(anchorCensus.registered + anchorCensus.noBasis + anchorCensus.debt).toBe(anchorCensus.total);
   });
 
   it('태그 내역이 전수와 맞는다 — 두 태그가 서로를 잃지 않는다', () => {
     const perTag = Object.fromEntries(
-      ANCHOR_TAGS.map((tag) => [tag, census(scannedFiles, [], [tag]).total]),
+      ANCHOR_TAGS.map((tag) => [tag, census(scannedFiles, [], [tag], []).total]),
     );
     expect(
       perTag,
@@ -1119,8 +1360,76 @@ describe('컨트롤 채택 래칫 — 아직 안 옮긴 부채', () => {
     ).toBeGreaterThanOrEqual(BASELINE_HAND_WRITTEN_DEBT);
   });
 
-  it('두 수의 합이 전수와 맞는다 — 갈라진 수가 서로를 잃지 않는다', () => {
-    expect(registered + debt).toBe(total);
+  it('세 수의 합이 전수와 맞는다 — 갈라진 수가 서로를 잃지 않는다', () => {
+    expect(
+      registered + noBasis + debt,
+      `등재 ${registered} + 근거 없음 ${noBasis} + 부채 ${debt} 가 전수 ${total} 과 다르다. ` +
+        '한 자리를 두 부류에 동시에 넣었거나, 어느 부류가 실측을 넘어 등재됐다.',
+    ).toBe(total);
+  });
+});
+
+describe('컨트롤 채택 래칫 — 근거 없음(값 층이 낼 것이 없다)', () => {
+  it('등재된 파일이 전부 실재하고 근거가 아직 파일에 있다', () => {
+    expect(NO_BASIS.length, '이 등록부가 비면 아래 검사 전부가 공집합 위에서 논다').toBeGreaterThan(0);
+    for (const entry of NO_BASIS) {
+      expect(existsSync(entry.file), `${entry.file} 이 없다 — 옮겼거나 지웠으면 등록부도 고친다`).toBe(true);
+      expect(
+        readFileSync(entry.file, 'utf8').includes(entry.proof),
+        `${entry.file} 에서 «${entry.proof}» 가 사라졌다 — 이 줄의 주장이 그 근거 위에 서 있다.`,
+      ).toBe(true);
+    }
+  });
+
+  it('등재한 수만큼 **자격 있는** 클릭면이 그 파일에 실재한다 — 규격을 하나라도 달면 부채로 돌아온다', () => {
+    for (const entry of NO_BASIS) {
+      const tags = entry.family === 'button' ? BUTTON_TAGS : ANCHOR_TAGS;
+      const qualified = handWrittenTags(entry.file, tags).filter(isClickSurface).length;
+      expect(
+        qualified,
+        `${entry.file}: 「${entry.claim}」 ${entry.count} 을 주장하는데 판정을 통과하는 자리는 ${qualified} 뿐이다. ` +
+          '판정은 ① 전면(inset-0) ② 램프 소유 속성 0개 를 동시에 요구한다 — 스크림에 높이·인셋·반경·타입을 ' +
+          '하나라도 달면 값 층이 낼 것이 생긴 것이므로 「낼 것이 없다」가 거짓이 된다. 그 자리는 부채로 갚아라.',
+      ).toBeGreaterThanOrEqual(entry.count);
+    }
+  });
+
+  it('이 사유의 **전수**가 못박은 수와 같다 — 다섯 번째 클릭면은 조용히 면제되지 않는다', () => {
+    const hits = clickSurfaceCensus(scannedFiles);
+    expect(
+      hits.length,
+      `클릭면 전수가 ${CLICK_SURFACE_CENSUS} → ${hits.length} 로 바뀌었다 (${[...new Set(hits)].join(' · ')}).\n` +
+        '늘었으면: 새 전면 클릭 캐처가 생긴 것이다. 정말 규격이 0인 자리면 등록부와 CLICK_SURFACE_CENSUS 를 ' +
+        '**손으로** 올려라 — 그 diff 가 「왜」를 적을 자리다. 아니면 부채로 갚아라.\n' +
+        '줄었으면: 그 자리가 컨트롤이 됐거나 사라진 것이므로 두 수를 함께 내려라.',
+    ).toBe(CLICK_SURFACE_CENSUS);
+    expect(noBasis, '등재한 근거 없음이 실측 전수를 넘었다').toBeLessThanOrEqual(hits.length);
+  });
+
+  it('근거 없음이 늘지 않는다 — 늘리려면 리터럴을 손으로 올린다', () => {
+    expect(
+      noBasis,
+      `근거 없음이 ${BASELINE_NO_BASIS} → ${noBasis} 로 늘었다. **이 부류가 도피처가 되면 이 라운드는 ` +
+        `실패다** — 「옮기기 번거롭다」는 근거 없음이 아니라 부채다.`,
+    ).toBeLessThanOrEqual(BASELINE_NO_BASIS);
+    expect(anchorCensus.noBasis).toBeLessThanOrEqual(BASELINE_ANCHOR_NO_BASIS);
+  });
+
+  it('근거 없음이 줄었으면 기준선도 내린다 — 여유를 무료로 두지 않는다', () => {
+    expect(
+      noBasis,
+      `근거 없음이 ${BASELINE_NO_BASIS} → ${noBasis} 로 줄었다. BASELINE_NO_BASIS 도 ${noBasis} 로 내려라.`,
+    ).toBeGreaterThanOrEqual(BASELINE_NO_BASIS);
+    expect(anchorCensus.noBasis).toBeGreaterThanOrEqual(BASELINE_ANCHOR_NO_BASIS);
+  });
+
+  it('근거 없음 수가 그 파일의 실측을 넘지 않는다 — 파일 면제가 아니다', () => {
+    for (const [file, claimed] of noBasisByFile) {
+      const actual = byFile.get(file) ?? 0;
+      expect(claimed, `${file}: 근거 없음 ${claimed} 인데 실측 손 컨트롤은 ${actual} 뿐이다.`).toBeLessThanOrEqual(
+        actual,
+      );
+    }
   });
 });
 
@@ -1213,7 +1522,7 @@ describe('탐지기 프로브 — 이 게이트가 실제로 무엇을 잡는가
   });
 
   it('⑧ 앵커를 하나 더 쓰면 **앵커 부채로** 잡힌다 — 버튼 수는 안 움직인다', () => {
-    const withFixture = census([...scannedFiles, FIXTURE], OUTSIDE_VALUE_LAYER_ANCHORS, ANCHOR_TAGS);
+    const withFixture = census([...scannedFiles, FIXTURE], OUTSIDE_VALUE_LAYER_ANCHORS, ANCHOR_TAGS, NO_BASIS_ANCHORS);
     // 픽스처는 등록부에 없으므로 2건이 전부 **부채**로 간다.
     expect(withFixture.registered).toBe(anchorCensus.registered);
     expect(withFixture.debt).toBe(anchorCensus.debt + 2);
@@ -1241,6 +1550,7 @@ describe('탐지기 프로브 — 이 게이트가 실제로 무엇을 잡는가
         scannedFiles,
         OUTSIDE_VALUE_LAYER_ANCHORS.filter((e) => e !== entry),
         ANCHOR_TAGS,
+        NO_BASIS_ANCHORS,
       );
       expect(without.registered).toBe(anchorCensus.registered - entry.count);
       expect(
@@ -1285,6 +1595,85 @@ describe('탐지기 프로브 — 이 게이트가 실제로 무엇을 잡는가
       return /<(Link|a)\b[^>]*controlClass\s*\(/.test(src.replace(/\n/g, ' '));
     });
     expect(adopted.length, '값 층을 지난 앵커 소비처가 0이면 이 면제는 검증된 적이 없다').toBeGreaterThan(0);
+  });
+
+  /*
+   * ── 근거 없음 부류의 프로브 (2026-08-04). 이 부류는 **도피처가 되면 실패**이므로
+   * 판정 함수를 양방향으로 겨눈다: 실물에서 무엇을 잡고(⑭), 실물에서 무엇을
+   * **거절하고**(⑮), 합성으로 어떻게 죽고(⑯), 줄을 지우면 부채로 돌아오는가(⑰).
+   */
+
+  it('⑭ 판정 함수가 실물에서 센다 — 빈 집합 위에서 놀지 않는다', () => {
+    const hits = clickSurfaceCensus(scannedFiles);
+    expect(hits.length, '실물에서 한 자리도 못 잡으면 이 부류는 검증된 적이 없다').toBeGreaterThan(0);
+    for (const file of new Set(hits)) {
+      expect(
+        NO_BASIS.some((e) => e.file === file),
+        `${file} 이 클릭면 판정을 통과하는데 등록부에 없다 — 등재하거나 부채로 갚아라.`,
+      ).toBe(true);
+    }
+  });
+
+  it('⑮ 실물 음성 대조군 — 전면이라고 다 클릭면이 아니다(`DemoStage` 는 거절되고 부채로 살아 있다)', () => {
+    const file = 'src/views/download/ui/DemoStage.tsx';
+    const tags = handWrittenTags(file);
+    expect(tags.length, '이 프로브는 그 자리가 실제로 세어질 때만 뜻이 있다').toBeGreaterThan(0);
+    const fullBleed = tags.filter((t) => /inset-0/.test(t));
+    expect(fullBleed.length, 'DemoStage 의 전면 오버레이가 사라졌으면 대조군을 다시 골라라').toBeGreaterThan(0);
+    expect(
+      fullBleed.some(isClickSurface),
+      'DemoStage 의 재생 오버레이는 `text-body`·`leading-body` 를 싣는다 — 값 층이 낼 것이 있으므로 부채다. ' +
+        '이게 통과하면 「전면이면 면제」가 되어 이 부류가 도피처가 된다.',
+    ).toBe(false);
+    expect(NO_BASIS.some((e) => e.file === file)).toBe(false);
+    // 앵커 0 은 「안 셌다」가 아니라 「102 를 다 보고 0」이다.
+    expect(anchorCensus.total, '앵커를 한 건도 안 세고 있으면 아래 0 은 무의미하다').toBeGreaterThan(50);
+    expect(clickSurfaceCensus(scannedFiles, ANCHOR_TAGS).length).toBe(BASELINE_ANCHOR_NO_BASIS);
+  });
+
+  it('⑯ 합성 프로브 — 규격을 하나만 달아도, 전면을 벗어나도 자격이 죽는다', () => {
+    const scrim = ' type="button" className="absolute inset-0 z-[25] bg-[color:var(--x)]" onClick={close}';
+    expect(isClickSurface(scrim), '순수 스크림을 못 잡으면 판정 함수가 죽은 것이다').toBe(true);
+    for (const spec of ['px-3', 'min-h-9', 'rounded-chip', 'text-label', 'border', 'font-medium', 'gap-2']) {
+      expect(
+        isClickSurface(scrim.replace('inset-0', `inset-0 ${spec}`)),
+        `«${spec}» 를 달았는데도 통과한다 — 값 층이 낼 것이 생겼는데 「낼 것이 없다」가 남으면 도피처다.`,
+      ).toBe(false);
+    }
+    // 변형 접두 뒤에 숨겨도 마찬가지다.
+    expect(isClickSurface(scrim.replace('inset-0', 'inset-0 hover:rounded-chip'))).toBe(false);
+    // 전면이 아니면 그냥 컨트롤이다.
+    expect(isClickSurface(scrim.replace('inset-0 ', ''))).toBe(false);
+  });
+
+  it('⑰ 근거 없음 줄을 지우면 그 자리가 **부채로 돌아온다** — 분류가 사실을 지우지 않는다', () => {
+    for (const entry of NO_BASIS_BUTTONS) {
+      const without = census(
+        scannedFiles,
+        OUTSIDE_VALUE_LAYER,
+        BUTTON_TAGS,
+        NO_BASIS_BUTTONS.filter((e) => e !== entry),
+      );
+      expect(without.noBasis).toBe(noBasis - entry.count);
+      expect(
+        without.debt,
+        `${entry.file} 줄을 지웠는데 부채가 안 늘었다 — 그 줄은 아무것도 분류하고 있지 않다`,
+      ).toBe(debt + entry.count);
+    }
+    // 픽스처를 얹어도 근거 없음으로 새지 않는다 — 등록부에 없는 자리는 전부 부채다.
+    const withFixture = census([...scannedFiles, FIXTURE]);
+    expect(withFixture.noBasis).toBe(noBasis);
+    expect(withFixture.debt).toBe(debt + 2);
+  });
+
+  it('⑱ 근거 없음 기준선도 **리터럴**이다 — 파생되면 「늘지 않는다」가 실패 불가가 된다', () => {
+    const source = readFileSync(SELF, 'utf8');
+    expect(/const BASELINE_NO_BASIS = \d+;/.test(source)).toBe(true);
+    expect(/const BASELINE_ANCHOR_NO_BASIS = \d+;/.test(source)).toBe(true);
+    expect(
+      /const CLICK_SURFACE_CENSUS = \d+;/.test(source),
+      '사유의 전수까지 리터럴이어야 한다 — 실측에서 파생하면 「늘면 빨개진다」가 실패 불가가 된다.',
+    ).toBe(true);
   });
 
   it('⑥ 등재는 **파일 면제가 아니다** — 같은 위젯의 미등재 파일이 부채로 살아 있다', () => {

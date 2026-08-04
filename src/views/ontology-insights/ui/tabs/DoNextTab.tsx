@@ -48,6 +48,24 @@ const QUIET_REST_TOGGLE = controlClass({
 });
 
 /**
+ * 준비도 미터에서 **0 이 아닌 세그먼트가 가질 수 있는 최소 폭**(px).
+ *
+ * 왜 필요한가: 세그먼트는 `flexGrow` 로만 나뉘는데, 그러면 「오류 1 · 준비
+ * 200」 같은 비율에서 위험 세그먼트가 1px 미만이 되어 **0 과 구별되지 않는다**.
+ * 계기가 «위험 없음»과 «위험이 아주 작음»을 같은 그림으로 그리면, 그건 계기가
+ * 아니라 장식이다. 4px 은 2px 높이 막대에서 눈에 잡히는 가장 작은 조각이고,
+ * 값이 0 일 때는 적용하지 않는다 — 0 은 정말로 없어야 한다.
+ */
+const READINESS_MIN_SEGMENT_PX = 4;
+
+function meterSegmentStyle(value: number, hasData: boolean) {
+  return {
+    flexGrow: value,
+    minWidth: hasData && value > 0 ? READINESS_MIN_SEGMENT_PX : 0,
+  };
+}
+
+/**
  * 탭1 "할 일" (S5, 전략 verdict B 채택) — 인사이트의 기본 탭. "무엇이
  * 있나"(재고)가 아니라 "그래서 뭘 해야 하나"에 답한다:
  *
@@ -67,6 +85,10 @@ export interface DoNextTabLabels extends QueueRowActionLabels {
   agentReadinessReady: string;
   agentReadinessPreflight: string;
   agentReadinessReview: string;
+  /** 셋째 수치의 이름 — 「검토 필요」가 아니라 「막힘」. 관계와 문서를 함께 센다. */
+  agentReadinessBlocked: string;
+  /** 막힌 것의 내역 한 줄. 두 단위(관계·문서)를 합쳤으므로 반드시 함께 말한다. */
+  agentReadinessBlockedBreakdown: (documents: number, relations: number) => string;
   repairQueueTitle: string;
   repairQueueStale: string;
   repairQueueOrphan: string;
@@ -164,6 +186,14 @@ export interface DoNextTabAgentReadiness {
   ready: number;
   preflight: number;
   review: number;
+  /**
+   * 지금 에이전트가 **못 쓰는 것**의 합 — 근거 없는 관계(`review`) + 검사
+   * 오류가 난 문서. 미터의 위험 세그먼트와 셋째 수치가 읽는 값이다.
+   * `review` 만 읽던 시절엔 오류 5건짜리 폴더가 「0 검토 필요」였다.
+   */
+  blocked: number;
+  /** `blocked` 중 검사 오류 몫. 합계 옆에 내역을 말하기 위한 값. */
+  blockedDocuments: number;
 }
 
 export interface DoNextTabHealthQueue {
@@ -836,7 +866,8 @@ export function DoNextTab({
           ? labels.reviewCleared(reviewState.title)
           : labels.reviewUnverified(reviewState.title)
     : null;
-  const readinessTotal = agentReadiness.ready + agentReadiness.preflight + agentReadiness.review;
+  const readinessTotal =
+    agentReadiness.ready + agentReadiness.preflight + agentReadiness.blocked;
   const REPAIR_ACTION_KIND_LABELS: Record<OntologyHealthActionTarget["kind"], string> = {
     island: labels.repairQueueActionKindIsland,
     containment: labels.repairQueueActionKindContainment,
@@ -1090,7 +1121,14 @@ export function DoNextTab({
       >
         <div className="grid min-w-0 grid-cols-1 gap-x-8 gap-y-5 sm:grid-cols-2">
           <div
-            aria-label={`${labels.agentReadinessTitle}: ${agentReadiness.ready} ${labels.agentReadinessReady} · ${agentReadiness.preflight} ${labels.agentReadinessPreflight} · ${agentReadiness.review} ${labels.agentReadinessReview}`}
+            aria-label={`${labels.agentReadinessTitle}: ${agentReadiness.ready} ${labels.agentReadinessReady} · ${agentReadiness.preflight} ${labels.agentReadinessPreflight} · ${agentReadiness.blocked} ${labels.agentReadinessBlocked}${
+              agentReadiness.blocked > 0
+                ? ` (${labels.agentReadinessBlockedBreakdown(
+                    agentReadiness.blockedDocuments,
+                    agentReadiness.review,
+                  )})`
+                : ""
+            }`}
             data-testid="insights-agent-readiness"
             className="min-w-0"
           >
@@ -1119,23 +1157,47 @@ export function DoNextTab({
                     {labels.agentReadinessPreflight}
                   </span>
                 </span>
+                {/* 셋째 수치가 「검토 필요」에서 「막힘」이 된 이유는
+                    `DoNextTabAgentReadiness.blocked` 주석에. 0 이 아니면
+                    무채색으로 낮추지 않는다 — 막힌 것이 있는데 흐리게 쓰면
+                    미터가 말하는 위험과 숫자의 무게가 어긋난다. */}
                 <span
                   className={
-                    agentReadiness.review === 0 ? "text-[color:var(--color-text-quaternary)]" : undefined
+                    agentReadiness.blocked === 0
+                      ? "text-[color:var(--color-text-quaternary)]"
+                      : "text-[color:var(--color-status-danger)]"
                   }
                 >
-                  {agentReadiness.review}{" "}
+                  {agentReadiness.blocked}{" "}
                   <span className="text-caption tracking-normal text-[color:var(--color-text-quaternary)]">
-                    {labels.agentReadinessReview}
+                    {labels.agentReadinessBlocked}
                   </span>
                 </span>
               </span>
             </div>
-            {labels.agentReadinessHint ? (
+            {agentReadiness.blocked > 0 ? (
+              <p
+                data-testid="insights-agent-readiness-breakdown"
+                // `leading-*` 을 안 쓴다 — `text-label` 이 자기 행간을 싣는다
+                // (램프 companion 결합). 옆 줄을 복사하면 off-ramp 래칫이 오른다.
+                className="mt-1 text-label text-[color:var(--color-text-tertiary)]"
+              >
+                {labels.agentReadinessBlockedBreakdown(
+                  agentReadiness.blockedDocuments,
+                  agentReadiness.review,
+                )}
+              </p>
+            ) : labels.agentReadinessHint ? (
               <p className="mt-1 text-label leading-snug text-[color:var(--color-text-quaternary)]">
                 {labels.agentReadinessHint}
               </p>
             ) : null}
+            {/* **0 이 아닌 값이 0px 로 렌더되면 안 된다.** flexGrow 만으로는
+                390px 폭에서 「오류 1 / 준비 200」이 3px 가 되어 소멸한다 —
+                즉 미터가 «위험 없음»과 «위험이 있지만 작음»을 같은 그림으로
+                그린다. 그래서 0 이 아닌 세그먼트에는 최소 폭을 준다. 값은
+                spacing 이라 램프 강제 대상이 아니고(디자인 규칙 "spacing 은
+                강제하지 않는다"), 상수 하나가 단일 출처다. */}
             <div
               data-testid="insights-agent-readiness-meter"
               className="mt-2 flex h-2 w-full overflow-hidden rounded-full border border-[color:var(--color-divider)] bg-[color:var(--color-overlay-2)]"
@@ -1143,17 +1205,26 @@ export function DoNextTab({
               <span
                 aria-hidden
                 className="bg-[color:var(--color-indigo-a58)]"
-                style={{ flexGrow: readinessTotal > 0 ? agentReadiness.ready : 1 }}
+                style={meterSegmentStyle(
+                  readinessTotal > 0 ? agentReadiness.ready : 1,
+                  readinessTotal > 0,
+                )}
               />
               <span
                 aria-hidden
                 className="bg-[color:var(--color-status-warning)]"
-                style={{ flexGrow: readinessTotal > 0 ? agentReadiness.preflight : 0 }}
+                style={meterSegmentStyle(
+                  readinessTotal > 0 ? agentReadiness.preflight : 0,
+                  readinessTotal > 0,
+                )}
               />
               <span
                 aria-hidden
                 className="bg-[color:var(--color-status-danger)]"
-                style={{ flexGrow: readinessTotal > 0 ? agentReadiness.review : 0 }}
+                style={meterSegmentStyle(
+                  readinessTotal > 0 ? agentReadiness.blocked : 0,
+                  readinessTotal > 0,
+                )}
               />
             </div>
           </div>

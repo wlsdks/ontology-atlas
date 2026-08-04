@@ -34,20 +34,41 @@ export function DocMetaBar({ doc }: { doc: VaultDoc }) {
   // 토폴로지가 전체 ontology 그래프를 렌더하므로 project·domain·capability·element
   // 모두 1:1 노드를 가져 토폴로지로 점프 가능 (buildTopologyDeeplinkForDoc 이 kind 별 처리).
   const topologyHref = buildTopologyDeeplinkForDoc(doc);
-  const proofBody =
-    ontologyHref && kindValue
+  /**
+   * **이 문서가 지도에 실재하는가** — 칩·본문·CTA 가 모두 이 하나로 갈린다.
+   *
+   * 판정을 딥링크 빌더에서 그대로 가져오는 이유(2026-08-04): 종전엔 칩과
+   * 본문이 **무조건** 「지도 근거」라고 말했다. 그래서 `kind` 가 없거나 비었거나
+   * 알 수 없는 값인 문서 — 즉 그래프에 노드가 **없는** 문서 — 도 자기가 지도를
+   * 뒷받침한다고 주장했다. 빌더가 주소를 못 만드는 문서는 지도에 자리가 없는
+   * 문서다. 그러니 두 판정이 갈릴 수 없게 **같은 값**을 쓴다 — 칩이 «있다» 고
+   * 말하는데 CTA 가 못 가는 상태가 구조적으로 불가능해진다.
+   */
+  const inGraph = topologyHref != null;
+  const proofBody = !inGraph
+    ? t("notOnMapBody")
+    : ontologyHref && kindValue
       ? t("recordProofOntologyBody", { kind: kindValue })
       : t("recordProofBody");
 
   return (
     <section
-      aria-label={t("recordProofAria")}
+      aria-label={inGraph ? t("recordProofAria") : t("notOnMapAria")}
       className="mx-auto flex max-w-[760px] flex-col gap-2 border-b border-[color:var(--color-overlay-2)] px-6 py-3 text-label text-[color:var(--color-text-quaternary)] md:px-10"
     >
       <div className="flex min-w-0 flex-wrap items-start gap-x-2 gap-y-1.5">
-        <span className="inline-flex min-h-7 shrink-0 items-center gap-1.5 rounded-chip border border-[color:var(--color-overlay-2)] bg-[color:var(--color-overlay-1)] px-2.5 font-mono text-label text-[color:var(--color-text-secondary)]">
+        <span
+          data-testid="doc-map-evidence"
+          data-in-graph={inGraph ? "true" : "false"}
+          className={
+            inGraph
+              ? "inline-flex min-h-7 shrink-0 items-center gap-1.5 rounded-chip border border-[color:var(--color-overlay-2)] bg-[color:var(--color-overlay-1)] px-2.5 font-mono text-label text-[color:var(--color-text-secondary)]"
+              : // 지도에 없다는 말은 경보가 아니라 사실이다 — 무채색으로 낮춘다.
+                "inline-flex min-h-7 shrink-0 items-center gap-1.5 rounded-chip border border-[color:var(--color-divider)] bg-[color:var(--color-overlay-recessed-a12)] px-2.5 font-mono text-label text-[color:var(--color-text-quaternary)]"
+          }
+        >
           <FileText className="h-3.5 w-3.5" aria-hidden="true" />
-          {t("recordProofLabel")}
+          {inGraph ? t("recordProofLabel") : t("notOnMapLabel")}
         </span>
         <span className="min-h-7 min-w-0 flex-1 py-1 text-[color:var(--color-text-tertiary)]">
           {proofBody}
@@ -76,10 +97,15 @@ export function DocMetaBar({ doc }: { doc: VaultDoc }) {
             직접 가는 쪽(`/topology` 포커스)만 남긴다 — 리다이렉트 한 홉이
             줄고, 화면이 사용자에게 묻는 것이 하나 줄어든다.
           */}
+          {/* **주소를 못 만들면 CTA 를 안 그린다.** 죽은 CTA 0 은 이 저장소의
+              계약이다(`.claude/rules/surfaces.md`) — 누를 수 있게 생겼는데 아무
+              것도 안 잡히는 링크는 강등이 아니라 함정이다. 위 `inGraph` 와 같은
+              값에서 갈리므로 칩과 CTA 가 서로 다른 말을 할 수 없다. */}
           {topologyHref ? (
             <Link
               href={topologyHref}
               title={t("topologyLinkTitle")}
+              data-testid="doc-map-open"
               className={actionLinkClass}
             >
               <Network className="h-3.5 w-3.5 shrink-0" aria-hidden="true" />

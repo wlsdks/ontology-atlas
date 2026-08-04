@@ -163,6 +163,33 @@ const BASELINE: Readonly<Record<string, number>> = {
  */
 const MIN_RULES_PASSED_PER_ROUTE = 15;
 
+/**
+ * `<main>` 안에 실제로 그려진 요소의 바닥 — **위 두 가드가 못 보는 상태**를 본다.
+ *
+ * ## 왜 또 하나가 필요한가 (2026-08-04 실측)
+ *
+ * `MIN_RULES_PASSED_PER_ROUTE` 는 스스로 «셸은 멀쩡한데 본문만 조용히 비었을
+ * 때는 못 잡는다» 고 적어 뒀다. 그 문장이 가정이 아니라 **이 목록 안에서 이미
+ * 벌어진 일**이었다:
+ *
+ *   `/ko/project/ontology-atlas/edit/` → `<main>` 이 아예 없고 main 안 요소 **0**.
+ *   그런데 axe 통과 룰 **25**(바닥 15), 대비 조합 **6**(바닥 4). 두 게이트 다 초록.
+ *
+ * 레일·탭바·건너뛰기 링크 같은 셸 크롬만으로 두 바닥을 훌쩍 넘기기 때문이다.
+ * 그래서 세는 자리를 **문서 전체가 아니라 `<main>` 안**으로 좁힌다 — 셸은
+ * `<main>` 밖에 있어서 이 수에 한 개도 기여하지 않는다.
+ *
+ * ## 바닥 15는 어디서 왔나
+ *
+ * 17 라우트 실측(1512×900, 정적 export): 가장 마른 자리가 404 두 벌의 **19**,
+ * 그다음이 공방 **24**, 나머지는 40~227. 빈 화면은 **0** 이다. 15는 「가장 마른
+ * 진짜 화면 19」와 「빈 화면 0」 사이에 선다.
+ *
+ * 어떤 라우트가 이 바닥 아래로 내려가면 **그 화면이 왜 비었는지를 먼저 묻는다** —
+ * 바닥을 내리는 것은 그 답이 「원래 그런 화면이다」일 때뿐이다.
+ */
+const MIN_MAIN_ELEMENTS_PER_ROUTE = 15;
+
 test("접근성 래칫 — 새 룰 위반 0, 기존 개수는 늘지 않는다", async ({ page }) => {
   // 라우트가 8 → 17 로 늘었다. 라우트당 2.5초 수렴 대기 + axe 실행이라 기본 60초를 넘는다.
   test.setTimeout(240_000);
@@ -170,6 +197,7 @@ test("접근성 래칫 — 새 룰 위반 0, 기존 개수는 늘지 않는다",
   const counts = new Map<string, number>();
   const samples = new Map<string, string>();
   const thinRuns: string[] = [];
+  const emptyBodies: string[] = [];
 
   for (const route of ROUTES) {
     await page.goto(`${route}?guides=off`, { waitUntil: "domcontentloaded" });
@@ -199,6 +227,14 @@ test("접근성 래칫 — 새 룰 위반 0, 기존 개수는 늘지 않는다",
       };
     }, WCAG_TAGS);
 
+    // ★ 셸 크롬은 `<main>` 밖이다 — 여기서 세면 «본문이 안 떴다» 만 남는다.
+    const mainElements = await page.evaluate(
+      () => document.querySelectorAll("main *").length,
+    );
+    if (mainElements < MIN_MAIN_ELEMENTS_PER_ROUTE) {
+      emptyBodies.push(`  ${route}: <main> 안 요소 ${mainElements}`);
+    }
+
     if (result.rulesPassed < MIN_RULES_PASSED_PER_ROUTE) {
       thinRuns.push(`  ${route}: 내용에 적용돼 통과한 룰 ${result.rulesPassed}`);
     }
@@ -214,6 +250,15 @@ test("접근성 래칫 — 새 룰 위반 0, 기존 개수는 늘지 않는다",
     thinRuns,
     `axe 가 라우트당 ${MIN_RULES_PASSED_PER_ROUTE}개 룰도 내용에 적용하지 못했다 — ` +
       `위반이 없는 게 아니라 화면이 안 떴거나 채집이 깨진 것이다.\n${thinRuns.join("\n")}`,
+  ).toEqual([]);
+
+  // ★ 「셸은 떴는데 본문이 없다」 — 위 가드가 원리적으로 못 보는 상태다.
+  //   실제로 이 목록 안에 그런 라우트가 있었고 두 래칫이 다 초록이었다.
+  expect(
+    emptyBodies,
+    `\`<main>\` 안에 요소가 ${MIN_MAIN_ELEMENTS_PER_ROUTE}개도 안 그려졌다 — ` +
+      `이 라우트에서 «위반 0» 은 통과가 아니라 미측정이다. 주소가 실재하지 않는 ` +
+      `값(슬러그 등)을 가리키고 있지 않은지 먼저 확인해라.\n${emptyBodies.join("\n")}`,
   ).toEqual([]);
 
   const unknown = [...counts.keys()].filter((id) => !(id in BASELINE)).sort();

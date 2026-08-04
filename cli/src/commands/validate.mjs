@@ -212,6 +212,20 @@ export function runValidate(args) {
     else warningFiles += 1;
   }
 
+  // **문제 수와 파일 수는 다른 것이다** (2026-08-04 실측 정정).
+  //
+  // 마지막 요약 줄이 `reports.length`(문제가 있는 **파일** 수)를 「문제」라고
+  // 찍고, `errorFiles`/`warningFiles`(파일 수)를 「error/warning」이라고 찍었다.
+  // 그래서 오류 5 · 경고 4 짜리 볼트를 `9 파일 / 8 문제 (error 5 · warning 3)`
+  // 라고 불렀다 — 경고 하나는 **오류가 있는 파일 안에 있어서 통째로 사라졌다**
+  // (파일은 errorFiles 로만 세지므로). 같은 명령의 `--json` 은 issue 단위로 세어
+  // 5/4 라고 답했다. 한 폴더를 두 출력이 다른 수로 부르면 둘 다 못 믿는다.
+  //
+  // exit code 는 파일 수 기준 그대로 둔다 — 0 이냐 아니냐만 보므로 값이 같다.
+  const allIssues = reports.flatMap(({ report }) => report.issues);
+  const errorIssues = allIssues.filter((i) => i.severity === 'error').length;
+  const warningIssues = allIssues.length - errorIssues;
+
   // R+ — JSON 출력은 항상 같은 shape (clean vault 도 problems: [] 로). caller
   // 가 .summary.errorFiles 만 보고 분기 가능 — text 모드의 분기 없는 단일
   // structure.
@@ -330,9 +344,10 @@ export function runValidate(args) {
     modeTag = ` ${COLORS.dim}[--strict: warning 도 exit 1]${COLORS.reset}`;
   }
   console.log(
-    `\n[validate] ${files.length} 파일 / ${reports.length} 문제 ` +
-      `(${COLORS.red}error ${errorFiles}${COLORS.reset} · ` +
-      `${COLORS.yellow}warning ${warningFiles}${COLORS.reset})${modeTag}`,
+    `\n[validate] ${files.length - unreadable.length} 파일 스캔 / ` +
+      `${reports.length} 파일에 ${allIssues.length} 문제 ` +
+      `(${COLORS.red}error ${errorIssues}${COLORS.reset} · ` +
+      `${COLORS.yellow}warning ${warningIssues}${COLORS.reset})${modeTag}`,
   );
   return decideExit(errorFiles, warningFiles, strict, failOn, groups);
 }

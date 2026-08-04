@@ -25,6 +25,7 @@ import {
   useVaultConceptFacts,
   useVaultDocFreshnessIndex,
   useVaultHealth,
+  useVaultValidationSummary,
 } from "@/features/vault-ontology";
 import { isLlmChatBridgeAvailable } from "@/shared/lib/tauri-llm";
 import { useDataSourceMode } from "@/features/data-source-mode";
@@ -261,13 +262,18 @@ export function OntologyInsightsPage() {
 
   const edgeTypeDist = useMemo(() => computeEdgeTypeDistribution(edges), [edges]);
   const edgeTypeRows = useMemo(() => buildEdgeTypeRows(edgeTypeDist), [edgeTypeDist]);
+  // 준비도는 관계 품질 **과 검사 오류**를 함께 본다. 종전엔 엣지만 세서, 오류
+  // 5건짜리 폴더에서도 미터가 100% 인디고였다(위험 세그먼트 실측 0px) — 화면에서
+  // 색으로 말하는 유일한 요소가 정확히 반대로 말하고 있었다. 오류 난 문서는
+  // 노드가 되지 못하거나 정체성이 겹쳐 에이전트가 못 쓴다.
+  const vaultValidation = useVaultValidationSummary();
   const agentReadiness = useMemo(() => {
     const counts = { strong: 0, supported: 0, weak: 0, review: 0 };
     for (const edge of edges) {
       counts[classifyRelationQuality(edge)] += 1;
     }
-    return summarizeAgentReadiness(counts);
-  }, [edges]);
+    return summarizeAgentReadiness(counts, vaultValidation.errorCount);
+  }, [edges, vaultValidation.errorCount]);
   const edgeTypeSummary = useMemo(
     () => edgeTypeRows.slice(0, 4).map((r) => ({ key: r.type, label: edgeTypeLabel(r.type), count: r.count })),
     [edgeTypeRows, edgeTypeLabel],
@@ -704,6 +710,9 @@ export function OntologyInsightsPage() {
     agentReadinessReady: t("agentReadinessReady"),
     agentReadinessPreflight: t("agentReadinessPreflight"),
     agentReadinessReview: t("agentReadinessReview"),
+    agentReadinessBlocked: t("agentReadinessBlocked"),
+    agentReadinessBlockedBreakdown: (documents: number, relations: number) =>
+      t("agentReadinessBlockedBreakdown", { documents, relations }),
     repairQueueTitle: t("repairQueueTitle"),
     repairQueueStale: t("repairQueueStale"),
     repairQueueOrphan: t("repairQueueOrphan"),

@@ -1237,7 +1237,10 @@
         "ontologyKindTitle": "Open {kind} node in the map",
         "ontologyKindLabel": "Concept · kind:{kind}",
         "topologyLinkLabel": "Relation map",
-        "topologyLinkTitle": "Open this concept in the relation map"
+        "topologyLinkTitle": "Open this concept in the relation map",
+        "notOnMapAria": "Not on the map",
+        "notOnMapLabel": "Not on the map",
+        "notOnMapBody": "This document is not a node on the map yet — the diagnostic above says what is missing."
       },
       "sidebar": {
         "treeHeader": "Document list",
@@ -1418,10 +1421,12 @@
       "domainCouplingCrossLabel": "cross",
       "domainCouplingBoundaryCaption": "Self = connections within the same domain, cross = connections leaving or entering another domain. Bar length is the cross share; longer means a leakier domain boundary. Highest share first.",
       "agentReadinessTitle": "Agent readiness",
-      "agentReadinessHint": "How much evidence backs each relation — split into ones an agent can trust right away, ones that need a quick check, and ones a person should review.",
+      "agentReadinessHint": "How much of this folder an agent can rely on — relations it can trust right away, ones that need a quick check, and what it cannot use yet (relations without evidence and documents with check errors).",
       "agentReadinessReady": "ready",
       "agentReadinessPreflight": "preflight",
       "agentReadinessReview": "review",
+      "agentReadinessBlocked": "blocked",
+      "agentReadinessBlockedBreakdown": "Blocked: {documents} document(s) with check errors · {relations} relation(s) without evidence",
       "repairQueueTitle": "Repair queue",
       "repairQueueStale": "stale evidence",
       "repairQueueOrphan": "open question",
@@ -1752,7 +1757,12 @@
         "unknownKind": "This kind isn't one of the recognized values — it may not show up in the graph.",
         "missingExpectedField": "A field this kind expects (e.g. domain) is empty — the tree can't find its parent.",
         "nonCanonicalGraphArray": "A relation list isn't sorted/deduplicated — it can be cleaned up automatically.",
-        "parseZeroKeys": "There's a frontmatter block but no values could be read from it — check the formatting."
+        "parseZeroKeys": "There's a frontmatter block but no values could be read from it — check the formatting.",
+        "missingUid": "No uid — this node needs a permanent identifier that never changes.",
+        "invalidUid": "uid is not a UUIDv4 — don't derive it from the slug or title.",
+        "duplicateUid": "Another document claims the same uid as its identity.",
+        "invalidMergedUids": "merged_uids is malformed — it must list absorbed nodes' UUIDv4s.",
+        "nonCanonicalMergedUids": "merged_uids is not a sorted, duplicate-free set."
       },
       "exampleToggle": "View spec example",
       "exampleTitleFor": "Example {kind}",
@@ -1762,7 +1772,14 @@
       "codeLocationsHeading": "Code location",
       "codeLocationsCopy": "Copy",
       "codeLocationsCopied": "Copied",
-      "codeLocationsCopyAriaLabel": "Copy the path {path}"
+      "codeLocationsCopyAriaLabel": "Copy the path {path}",
+      "issueSeverityError": "error",
+      "issueSeverityWarning": "warning",
+      "setKindAction": "Set a kind",
+      "editKindUnset": "Not set yet",
+      "diagnosticAriaLabel": "Why this document is not on the map",
+      "notOnMapTitle": "This document is not on the map — its kind is not set",
+      "notOnMapBody": "Set a kind and this document becomes a node on the map that agents can cite."
     },
     "readingAids": {
       "backToTop": "Back to top",
@@ -2075,7 +2092,8 @@
       "similarNodeCreateAnyway": "Create new anyway"
     },
     "linkCopied": "Copied the document link",
-    "linkCopyFailed": "Could not copy the document link"
+    "linkCopyFailed": "Could not copy the document link",
+    "proofHealthOpenQueue": "Open in Do next"
   },
   "topology": {
     "documentTitle": "Relief",

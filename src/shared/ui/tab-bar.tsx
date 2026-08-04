@@ -31,11 +31,30 @@ export function TabBar({
   activeKey,
   onSelect,
   ariaLabel,
+  idPrefix = 'insights',
 }: {
   items: readonly TabBarItem[];
   activeKey: string;
   onSelect: (key: string) => void;
   ariaLabel: string;
+  /**
+   * `id` / `aria-controls` 의 접두사. **두 번째 소비처가 생긴 순간 필수가 된
+   * 값이다** — 종전엔 `insights` 가 박혀 있어서, 프로젝트 상세가 이 탭바를
+   * 재사용하자 선택된 탭의 `aria-controls` 가 존재하지 않는
+   * `#insights-tabpanel-overview` 를 가리켰다(axe `aria-valid-attr-value`,
+   * WCAG 4.1.2 — 2026-08-04 볼트 물린 감사에서 실측).
+   *
+   * 인사이트에서 안 걸린 이유는 그쪽이 **활성 탭의 패널만** 렌더하고 axe 는
+   * 선택된 탭의 `aria-controls` 만 해석을 요구하기 때문이다. 즉 이 결함은
+   * «두 소비처 중 한쪽에서만» 뜨는 종류였고, 래칫이 그 한쪽 라우트를
+   * 실재하지 않는 슬러그로 열고 있어 한 번도 렌더된 적이 없었다.
+   *
+   * ⚠️ **소비처는 같은 접두사로 패널을 그려야 한다** —
+   * `id={`${idPrefix}-tabpanel-${key}`}` + `role="tabpanel"` +
+   * `aria-labelledby={`${idPrefix}-tab-${key}`}`. 안 그리면 같은 위반이
+   * 그대로 돌아온다.
+   */
+  idPrefix?: string;
 }) {
   const tabRefs = useRef(new Map<string, HTMLButtonElement>());
   const pendingFocusKey = useRef<string | null>(null);
@@ -104,8 +123,8 @@ export function TabBar({
             type="button"
             role="tab"
             aria-selected={active}
-            aria-controls={`insights-tabpanel-${item.key}`}
-            id={`insights-tab-${item.key}`}
+            aria-controls={`${idPrefix}-tabpanel-${item.key}`}
+            id={`${idPrefix}-tab-${item.key}`}
             tabIndex={active ? 0 : -1}
             title={item.count !== undefined ? item.countTitle : undefined}
             onClick={() => activateTab(item.key)}

@@ -1,5 +1,6 @@
 import { getTranslations } from 'next-intl/server';
 import { withBasePath } from '@/shared/lib/base-path';
+import { controlClass } from '@/shared/ui/control-class';
 
 /**
  * 루트 `/` 의 서버 렌더 표면 — **관문 버전**.
@@ -51,14 +52,15 @@ export async function GatewayEntryFallback({ locale }: { locale: string }) {
       </div>
 
       <p className="flex flex-wrap items-center gap-x-5 gap-y-2 text-body leading-body">
+        {/* link/lg = text-body(부모 p 와 동일) + min-h-6(2.5.8 바닥 — 종전 18px 글줄 상자). */}
         <a
-          className="text-[color:var(--color-indigo-accent)]"
+          className={controlClass({ shape: 'link', size: 'lg', tone: 'accent', className: 'touch-hit-expand' })}
           href={withBasePath(`/${locale}/download/`)}
         >
           {t('downloadSectionLabel')}
         </a>
         <a
-          className="text-[color:var(--color-text-tertiary)]"
+          className={controlClass({ shape: 'link', size: 'lg', className: 'touch-hit-expand' })}
           href={withBasePath(`/${locale}/topology/`)}
         >
           {t('webCta')}

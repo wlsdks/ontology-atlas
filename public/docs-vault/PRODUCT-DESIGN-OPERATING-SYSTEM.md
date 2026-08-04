@@ -3,7 +3,8 @@
 > Design gate for Ontology Atlas product work. Use this with
 > [`PRODUCT-OWNER-OPERATING-SYSTEM.md`](./PRODUCT-OWNER-OPERATING-SYSTEM.md):
 > PO decides whether the slice matters; this document decides whether the slice
-> is designed well enough to ship.
+> is designed well enough to ship. A **slice** here is one shippable piece of
+> work — small enough to build, and small enough to prove, in one pass.
 
 ## Default Design Stance
 
@@ -11,42 +12,52 @@ Ontology Atlas is a local-first ontology workbench, not a decorative graph demo.
 The Relief/Topology screen must help a human and an AI agent understand:
 
 - where they are in the ontology,
-- which typed facts are currently selected,
-- what evidence and handoff action is trustworthy,
+- which typed facts are currently selected — a **typed fact** is information the
+  schema gives a named kind to (node kind, relation type, evidence, quality,
+  gate), never free-form text,
+- what evidence and handoff action is trustworthy — **handoff** is an AI agent
+  taking over from the exact state a human is looking at and acting on it
+  through MCP or the CLI,
 - what action is available next.
 
-If a surface does not improve one of those jobs, remove it, collapse it, dim it,
+A **surface** is one visible block of UI — one panel, one card, one toolbar. If a
+surface does not improve one of those four jobs, remove it, collapse it, dim it,
 or demote it before adding more UI.
 
 ## Design Council
 
-Use these roles in design reviews. They were lenses, not separate agents unless
-a tool explicitly provided them — **and as of 2026-07-27 a tool does.** The
+Use these roles in design reviews. They used to be review perspectives that one
+person wrote out by hand, not agents anyone could call, unless a tool explicitly
+provided them — **and as of 2026-07-27 a tool does.** A **seat** is one named
+critic on the bench, and each seat is carried by exactly one agent file. The
 Atlas Designer Bench below is now eight callable agents in
 `.claude/agents/`, convened by `.claude/skills/design-council/SKILL.md`
 (mirrored at `.agents/skills/design-council/SKILL.md`):
 
-| Bench seat | Agent | 이름 |
-| --- | --- | --- |
-| Lead Product Designer | `design-lead` | 위계 |
-| Design Systems Engineer | `design-system` | 체계 |
-| Interaction Designer | `design-interaction` | 상호작용 |
-| Motion / Action Designer | `design-motion` | 모션 |
-| Information Visualization Designer | `design-infoviz` | 도해 |
-| macOS Workbench Designer | `design-workbench` | 작업대 |
-| Responsive & Touch Designer | `design-responsive` | 반응형 |
-| Agent Handoff Designer | `design-handoff` | 핸드오프 |
+| Bench seat | Agent | 이름 | 이 자리가 하는 일 |
+| --- | --- | --- | --- |
+| Lead Product Designer | `design-lead` | 위계 | 이 화면에서 무엇이 먼저 눈에 들어와야 하는지 하나를 고른다 |
+| Design Systems Engineer | `design-system` | 체계 | 그 결정을 토큰·lint 룰·계약 테스트로 굳혀 다음 사람이 다시 정하지 못하게 한다 |
+| Interaction Designer | `design-interaction` | 상호작용 | 클릭·호버·드래그·포커스·키보드 상태가 서로 구별되는지 본다 |
+| Motion / Action Designer | `design-motion` | 모션 | 움직임이 부드럽고 이유가 있고 도중에 끊을 수 있는지 재서 본다 |
+| Information Visualization Designer | `design-infoviz` | 도해 | 화면의 모든 표시가 장식이 아니라 온톨로지 사실에 묶여 있는지 본다 |
+| macOS Workbench Designer | `design-workbench` | 작업대 | 설치된 macOS 앱의 14인치 첫 화면과 창 동작을 지킨다 |
+| Responsive & Touch Designer | `design-responsive` | 반응형 | 창 크기를 바꿔 가며 실제 좌표를 재고 터치 영역을 본다 |
+| Agent Handoff Designer | `design-handoff` | 핸드오프 | 사람이 보고 있는 그 상태에서 AI 에이전트가 이어받을 수 있는지 본다 |
 
 `design-guardian` is **not** a seat — it is the accountable decider and the only
 one of the eight permitted to edit code, mirroring how Accountable Value Owner
 is deliberately not an agent in the PO Council. The Product Owner row below
 belongs to the PO Council (`/po-council`), not to this bench.
 
-Convene only the seats a change touches; 위계 and 체계 always attend. Every seat
-must open the built surface rather than judge a diff, may research the web, and
-may not block without prescribing an alternative. Published principles only —
-never copy a reference product's assets, wording, styling, or palette, and never
-invent quotes from real designers.
+Convene only the seats a change touches; 위계 and 체계 always attend — 위계 is the
+seat that picks what the eye must read first, 체계 is the seat that turns that
+decision into tokens, lint rules, and contract tests, and a decision that never
+becomes one of those is a decision the next person re-makes. Every seat must open
+the built surface rather than judge a diff, may research the web, and may not
+block without prescribing an alternative. Published principles only — never copy
+a reference product's assets, wording, styling, or palette, and never invent
+quotes from real designers.
 
 `tests/contract/design-council.contract.test.ts` fails the build if a bench seat
 loses its agent, if `design-guardian` is listed as a seat, or if the skill and
@@ -64,6 +75,14 @@ build until an agent claims it.
 | Design Systems Engineer | Tokens, spacing, elevation, responsive contracts | Can this be enforced by reusable tokens/tests instead of taste? |
 | Agent Handoff Designer | MCP/CLI copy, command markers, handoff readiness | Can both MCP-connected and CLI-only agents act from this state? |
 
+Three words in that table are used the same way everywhere below. An **attention
+layer** is the rank a surface holds in what the eye should read first; the five
+layers are listed under *Relief/Topology Attention Layer Model*. A **token** is a
+named value (colour, spacing, size, duration) defined in one place, so lint can
+reject every value that is not on the list. A **marker** is a value a test reads
+straight out of the rendered page — machine-checkable proof, as opposed to a
+screenshot somebody has to look at.
+
 ### PO And Designer Role Split
 
 The PO and designer are not interchangeable. The PO decides whether the work is
@@ -73,9 +92,9 @@ enough to ship.
 - **PO authority**: observed phenomenon, user problem, current alternative,
   ontology value, agent handoff value, scope cut, verification plan, and final
   PO verdict.
-- **Designer authority**: attention winner, layer assignment, state contract,
-  responsive behavior, graph fact density, reference translation, and design
-  verdict.
+- **Designer authority**: attention winner (the one surface that must be read
+  first), layer assignment, state contract, responsive behavior, graph fact
+  density, reference translation, and design verdict.
 - **Shared stop rule**: if the PO cannot name the ontology workflow damage, do
   not design; if the designer cannot name the surface to remove, dim, collapse,
   align, or make testable, do not build.
@@ -95,11 +114,14 @@ decision, but the roles must remain separate:
 3. **Specialists name the rejected weak state**: interaction ambiguity,
    sluggish or purposeless motion, graph-semantic ambiguity, 14-inch collision,
    token drift, missing handoff, or insufficient installed-app proof.
-4. **Shaper chooses the narrowest slice**: collapse, dim, align, move,
-   relabel, disclose, or add a verifier before adding a new panel or mode.
-5. **Verifier names the shipped proof**: unit marker, deterministic WebView
-   marker, actual installed app evidence, and Computer Use screenshot or
-   accessibility proof when available.
+4. **The shaper — whoever is cutting the work down — chooses the narrowest
+   slice**: collapse, dim, align, move, relabel, disclose, or add a verifier
+   before adding a new panel or mode.
+5. **The verifier — whoever has to prove it later — names the shipped proof**:
+   unit marker, deterministic WebView marker (one that reads the same on every
+   run, so a change in the reading means the UI changed and nothing else),
+   actual installed app evidence, and Computer Use screenshot or accessibility
+   proof when available.
 
 This standard exists because the graph is the product surface. A visually
 pleasant Relief screen still fails if a relation line cannot be read as a typed
@@ -183,7 +205,12 @@ If this template cannot be filled in under two minutes, the next step is
 ### Standing Relief/Topology Critique Queue
 
 Use this queue to choose the next valuable slice from current 14-inch macOS
-evidence. It is intentionally problem-shaped, not component-shaped.
+evidence. It is intentionally problem-shaped, not component-shaped. Three names
+recur in it. **Chrome** is the fixed frame around the map — top bar, status
+strip, controls that are not the graph itself. The **HUD** is the small
+always-on overlay of status and controls sitting on top of the map. A
+**composer** is any surface that takes input in order to write to the vault:
+Add Concept, a relation editor, a destructive confirmation.
 
 | Problem Signal | User Moment | Design Question | Preferred Slice Type | Proof |
 | --- | --- | --- | --- | --- |
@@ -220,9 +247,13 @@ otherwise:
 - Selected relation cards and relation labels must stay dense enough for graph
   reading. They may expose type, evidence, quality, gate, and handoff, but proof
   detail belongs in a disclosure or copy packet when it would hide the relation.
-- Selected node focus hulls must not become a second panel. The hull may encode
-  "these cards are linked focus" through a quiet outline, but title/count chips
-  belong to drag movement affordance, not click focus.
+  A **copy packet** is one block of text the user can copy in a single action,
+  carrying the fact, its evidence, and the next MCP or CLI command together.
+- Selected node focus hulls must not become a second panel. A **focus hull** is
+  the outline drawn around the selected card and the cards directly linked to
+  it. The hull may encode "these cards are linked focus" through a quiet
+  outline, but title/count chips belong to drag movement affordance, not click
+  focus.
 - Selected node inspector rails must keep ontology fact, evidence, quality,
   gate, MCP action, and CLI fallback readable without letting relation rows
   collide with the footer. Use one scroll region for rows and a fixed footer for
@@ -282,16 +313,19 @@ The bench must produce a single design verdict. If the seats disagree, choose
 the smallest change that clarifies the ontology-reading moment in the installed
 app. Do not average the disagreement into a larger feature.
 
-평결 형식은 `/design-council` 의 Council Verdict 블록이 단일 출처다 — 여기
-다시 적지 않는다.
+평결(verdict — `Do not design` · `Investigate first` · `Shape a design slice` ·
+`Build and verify` 네 결론 중 하나를 고르는 최종 판정) 형식은 `/design-council`
+의 Council Verdict 블록이 단일 출처다. 그 형식이 적힌 곳은 거기 하나뿐이라는
+뜻이고, 그래서 여기 다시 적지 않는다.
 
 ### No-Human-Designer Working Mode
 
 **Superseded 2026-07-27.** This section described a written-only council to run
 when no designer was present. The bench is now callable — run
 `/design-council` (or a single seat for a narrow question). A prose-only mode
-with its own third verdict format is exactly the documented-but-unenacted spec
-this operating system exists to prevent.
+with its own third verdict format is exactly the kind of rule that lives in a
+document and never actually runs — the thing this operating system exists to
+prevent.
 
 ### Critique Severity Ladder
 
@@ -346,7 +380,7 @@ proposing layout or styling changes:
 | Map layer | Ontology geography and graph marks | nodes, edges, relation labels, selected path, minimap frame | It stays readable but loses dominance when focus or blocking edit is active. |
 | Support panel layer | Persistent interpretation and controls | left analysis panel, legend, lower panels, query/readiness summaries | It supports the current map question; it must align, collapse, or minimize when it competes with active focus. |
 | Focus/path state layer | Durable current fact and next step | selected node/relation card, path prompt, focus chips, relation evidence chips | It wins over overview chrome and must explain current location plus next action. |
-| Blocking composer/modal layer | Graph mutation and required input | Add Concept composer, relation composer, destructive confirmation | It must visibly dim or scrim the map and suppress competing map interactions. |
+| Blocking composer/modal layer | Graph mutation and required input | Add Concept composer, relation composer, destructive confirmation | It must visibly dim or scrim the map — a scrim is a translucent sheet drawn over the map so it reads as inactive — and suppress competing map interactions. |
 | Utility chrome layer | Navigation and low-priority status | top chrome, HUD, minimap controls, locale/status text | It must not occlude graph facts, prompts, selected cards, or composer input. |
 
 If two surfaces claim the same layer, choose one winner. The loser must move
@@ -428,9 +462,10 @@ ontology workflow is clearer, not because another visual layer was added.
 
 The council is a working critique loop, not a committee vote. The PO names the
 observable problem and final product verdict. The design council then challenges
-the proposed slice through craft, interaction, information, macOS, system, and
-agent-handoff lenses. If the lenses disagree, choose the smallest change that
-reduces the observed workflow problem while preserving ontology meaning.
+the proposed slice from six angles: craft, interaction, information,
+macOS behaviour, design system, and agent handoff. If those angles disagree,
+choose the smallest change that reduces the observed workflow problem while
+preserving ontology meaning.
 
 Use this compact dialogue before meaningful Relief/Topology design work:
 
@@ -765,7 +800,8 @@ Verdicts:
 ### Relief/Topology Graph Engine Fit Gate
 
 Relief is not allowed to switch graph libraries because another demo looks
-smoother, and it is not allowed to defend the current stack by inertia. Graph
+smoother, and it is not allowed to keep the current stack merely because
+changing it would be work. Graph
 engine choice is a design decision because it changes what a non-developer can
 read and what an AI agent can act on.
 
