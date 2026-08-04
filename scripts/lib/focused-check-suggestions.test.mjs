@@ -91,6 +91,7 @@ describe('focused check suggestions', () => {
     ]);
 
     assert.deepEqual(result.commands.map((row) => row.command), [
+      'pnpm exec eslint src/shared/lib/validate-vault-document.ts',
       'pnpm exec vitest run src/shared/lib/validate-vault-document.test.ts',
       'pnpm test:contracts',
       'pnpm exec tsc --noEmit',
@@ -498,6 +499,10 @@ describe('focused check suggestions', () => {
       'pnpm exec node --test scripts/desktop-smoke.test.mjs',
       'pnpm exec node --test scripts/lib/macos-dmg-layout.test.mjs',
       'pnpm exec node --test scripts/lib/redact-command.test.mjs',
+      'pnpm exec eslint src/shared/lib/tauri-vault-fs.ts src/shared/lib/tauri-vault-fs.test.ts ' +
+        'src/views/root-entry/ui/RootEntryPage.tsx src/views/root-entry/ui/RootEntryPage.test.tsx ' +
+        'src/views/docs-vault/lib/persistence.ts src/views/docs-vault/ui/DocsVaultPage.tsx ' +
+        'src/widgets/app-settings-menu/ui/AppSettingsMenu.tsx',
       'pnpm exec vitest run src/shared/lib/tauri-vault-fs.test.ts',
       'pnpm exec vitest run src/views/root-entry/ui/RootEntryPage.test.tsx',
       'pnpm exec vitest run src/views/docs-vault/lib/persistence.test.ts',
@@ -508,6 +513,7 @@ describe('focused check suggestions', () => {
       'pnpm test:desktop:runtime',
       'pnpm test:desktop:bridge',
       'pnpm desktop:check',
+      'pnpm test:contracts',
       // 표면 분리(2026-07-27) 이후 데스크톱 변경은 웹을 대신 확인해 주지
       // 않는다 — 웹은 무인 표면이라 같은 세트에서 스모크를 함께 권한다.
       'pnpm exec playwright test tests/e2e/web-surface-smoke.spec.ts',
@@ -552,7 +558,7 @@ describe('focused check suggestions', () => {
     ]);
   });
 
-  it('suggests typecheck for Next app route and metadata entries', () => {
+  it('suggests lint, contracts, and the a11y ratchets for Next app route entries', () => {
     const result = suggestFocusedChecks([
       'app/layout.tsx',
       'app/page.tsx',
@@ -561,7 +567,33 @@ describe('focused check suggestions', () => {
       'next-env.d.ts',
     ]);
 
-    assert.deepEqual(result.commands.map((row) => row.command), ['pnpm exec tsc --noEmit']);
+    assert.deepEqual(result.commands.map((row) => row.command), [
+      'pnpm exec eslint app/layout.tsx app/page.tsx app/sitemap.ts app/[locale]/docs/page.tsx',
+      'pnpm test:contracts',
+      'pnpm exec tsc --noEmit',
+      'pnpm exec playwright test tests/e2e/a11y-ratchet.spec.ts tests/e2e/contrast-ratchet.spec.ts',
+      'pnpm decisions:check',
+    ]);
+  });
+
+  // 2026-08-04 실사용 시험이 잰 그 상황 — 새 뷰 파일 하나 + 새 라우트 하나에
+  // 이 advisor 는 `pnpm exec tsc --noEmit` **하나만** 권했다. 디자인 규격을
+  // 지고 있는 lint 도, 라우트를 분류하는 contracts 도, 실제로 재는 두 래칫도
+  // 목록에 없었다. `AGENTS.md` 가 "검사를 열거하지 말고 이 명령을 가리켜라"
+  // 라고 못박고 있으므로 이 누락은 하중을 진다.
+  it('suggests the design and a11y gates for a brand-new view and route', () => {
+    const result = suggestFocusedChecks([
+      'src/views/brand-new-surface/ui/BrandNewPage.tsx',
+      'app/[locale]/brand-new/page.tsx',
+    ]);
+
+    assert.deepEqual(result.commands.map((row) => row.command), [
+      'pnpm exec eslint src/views/brand-new-surface/ui/BrandNewPage.tsx app/[locale]/brand-new/page.tsx',
+      'pnpm test:contracts',
+      'pnpm exec tsc --noEmit',
+      'pnpm exec playwright test tests/e2e/a11y-ratchet.spec.ts tests/e2e/contrast-ratchet.spec.ts',
+      'pnpm decisions:check',
+    ]);
   });
 
   it('suggests i18n message parity and typecheck for locale routing changes', () => {
@@ -576,6 +608,7 @@ describe('focused check suggestions', () => {
 
     assert.deepEqual(result.commands.map((row) => row.command), [
       'pnpm exec node --test scripts/validate-messages.test.mjs',
+      'pnpm exec eslint src/i18n/routing.ts src/i18n/request.ts src/i18n/navigation.ts',
       'pnpm exec tsc --noEmit',
       'pnpm test:i18n:messages',
     ]);
@@ -635,23 +668,29 @@ describe('focused check suggestions', () => {
     ]);
 
     assert.deepEqual(result.commands.map((row) => row.command), [
+      'pnpm exec eslint src/shared/lib/cn.ts src/shared/lib/cn.test.ts ' +
+        'src/widgets/docs-vault/ui/DocsVaultEditor.tsx',
       'pnpm exec vitest run src/shared/lib/cn.test.ts',
       'pnpm exec vitest run src/widgets/docs-vault/ui/DocsVaultEditor.test.tsx',
+      'pnpm test:contracts',
       'pnpm exec tsc --noEmit',
     ]);
-    assert.deepEqual(result.commands[0].paths, [
+    assert.deepEqual(result.commands[1].paths, [
       'src/shared/lib/cn.ts',
       'src/shared/lib/cn.test.ts',
     ]);
   });
 
-  it('suggests typecheck for app/source TypeScript files without sibling tests', () => {
+  it('suggests lint and typecheck for app/source TypeScript files without sibling tests', () => {
     const result = suggestFocusedChecks([
       'src/shared/config/site.ts',
       'src/shared/lib/theme.ts',
     ]);
 
-    assert.deepEqual(result.commands.map((row) => row.command), ['pnpm exec tsc --noEmit']);
+    assert.deepEqual(result.commands.map((row) => row.command), [
+      'pnpm exec eslint src/shared/config/site.ts src/shared/lib/theme.ts',
+      'pnpm exec tsc --noEmit',
+    ]);
   });
 
   it('suggests direct Playwright specs for changed e2e tests', () => {

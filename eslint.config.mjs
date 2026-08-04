@@ -74,7 +74,7 @@ const accentTintPairingSelectors = [
 // 로만 표현한다. 램프 밖의 의도적 예외는 `// eslint-disable-next-line
 // no-restricted-syntax -- <사유>` 로 명시. 마이그레이션 완료 디렉토리 = error,
 // 미완(topology-map-v2 · views/home) = warn.
-const arbitrarySizeSelectors = [
+export const arbitrarySizeSelectors = [
   /*
    * ── 이름 있는 Tailwind 기본 스텝도 램프 밖이다 (2026-08-03 전수조사) ──────
    *
@@ -417,69 +417,65 @@ const arbitrarySizeSelectors = [
   },
 ];
 
-// 마이그레이션 완료(치환 끝 · error 봉쇄) 디렉토리.
-// 계약 테스트(`tests/contract/type-ramp-coverage.contract.test.ts`)가 이 목록을
-// 그대로 읽는다 — 목록 밖 디렉토리의 램프 이탈은 lint 가 **0건으로 보고**하므로
-// (2026-07-26 실측: `project-detail` 의 text-[12px] 가 그렇게 통과했다) 그 사각을
-// 테스트가 래칫으로 붙든다. 여기에 디렉토리를 추가하려면 그 안의 이탈을 먼저 0으로.
-export const codexMigratedGlobs = [
-  // 진입 검수 E-11 (2026-07-26) — 첫 화면 카드가 `text-[Npx]` 20건을 들고도
-  // `pnpm exec eslint <file>` 에서 **error 0 / warning 0** 을 보고했다. 룰이
-  // 틀린 게 아니라 이 디렉토리들을 안 보고 있었다(침묵하는 통과). 진입 경로
-  // 4곳의 이탈을 0으로 만들고 여기 승격한다 — 이제 error 로 막힌다.
-  /*
-   * 2026-08-03 — 경계 페이지 넷(`error` · `global-error` · `not-found` ×2)이
-   * 거의 같은 JSX 를 복제하면서 램프 이탈 22줄까지 그대로 복제하고 있었다.
-   * `app/**` 이 이 목록 밖이라 `pnpm exec eslint` 가 **error 0 / warning 0**
-   * 을 보고했다 — 룰이 틀린 게 아니라 이 경로를 안 보고 있었다. 이탈을 0으로
-   * 만들고 승격한다.
-   */
-  'app/**/*.{ts,tsx}',
-  // 2026-08-03 — 중심 표면 둘을 warn 에서 승격(위 `codexR6Globs` 주석 참조).
-  'src/widgets/topology-map-v2/**/*.{ts,tsx}',
-  'src/views/home/**/*.{ts,tsx}',
-  'src/features/first-run-starter/**/*.{ts,tsx}',
-  'src/features/docs-vault-local/**/*.{ts,tsx}',
-  'src/features/locale-switch/**/*.{ts,tsx}',
-  'src/features/project-quick-edit/**/*.{ts,tsx}',
-  // 2026-07-27 `/download` 리메이크 — 첫 공개에서 낯선 사람이 처음 만나는
-  // 표면이 램프 이탈 59건(장부 최대 항목)을 들고 있었다. 재구성으로 0이 됐고,
-  // 승격했으니 이제 error 로 막힌다.
-  'src/views/download/**/*.{ts,tsx}',
-  // 2026-07-29 — 공방의 **신규** 파일만 파일 단위로 등재한다. 디렉토리 승격은
-  // 아직 못 한다: `src/views/ontology-studio` 에는 `StudioCompass` 유산인
-  // arbitrary radius 45건(11종 값)이 남아 있어 켜면 warning 총계가 150 →
-  // ~195 로 baseline 을 넘긴다 — 그건 강제가 아니라 소음이고 기존 신호까지
-  // 덮는다(`design.md` "룰을 켜기 전 반드시 측정한다").
-  //
-  // 이 네 파일은 위반 0이라 등재 비용이 0이고, **미래 유입만** 차단한다.
-  // 유산 치환 후 디렉토리 전체를 승격하는 것이 순서다.
-  'src/views/ontology-studio/ui/StudioPracticeRail.tsx',
-  'src/views/ontology-studio/ui/StudioPracticeCleanup.tsx',
-  'src/views/ontology-studio/ui/StudioMaterializeDialog.tsx',
-  'src/views/ontology-studio/ui/StudioEntryChoice.tsx',
-  'src/views/ontology-insights/**/*.{ts,tsx}',
-  'src/views/project-selector/**/*.{ts,tsx}',
-  'src/views/ontology-edit/**/*.{ts,tsx}',
-  'src/views/docs-vault/**/*.{ts,tsx}',
-  'src/shared/ui/**/*.{ts,tsx}',
-  'src/widgets/**/*.{ts,tsx}',
-];
-// R6(다른 에이전트) 동시 작업 중 — 아직 미치환, warn 으로만 신규 유입 경고.
 /*
- * ── 2026-08-03: warn 강등 블록을 없앴다 ────────────────────────────────────
+ * ── 램프 커버리지는 **거부목록**이다 (2026-08-04) ───────────────────────────
  *
- * 여기 `codexR6Globs` 라는 목록이 있었다 — 램프 룰을 **warn 으로 내리는** 목록
- * 이고, 거기 있던 둘이 하필 제품의 중심 표면(`topology-map-v2` · `views/home`)
- * 이었다. `pnpm lint` 에 `--max-warnings` 가 없어서 그 둘의 램프 이탈 66건은
- * **아무것도 실패시키지 않았다** — 게이트가 항상 통과하기만 하면 게이트가 없는
- * 것과 구별되지 않는다.
+ * 여기 있던 것은 허용목록(`codexMigratedGlobs`)이었다 — 「치환이 끝난 디렉터리
+ * 만 error 로 막는다」. 부채를 한 번에 못 치우던 시절에는 정직한 설계였지만,
+ * 부작용이 목적을 뒤집었다: **새로 생긴 디렉터리는 어느 목록에도 없어서
+ * 아무 규격도 안 받는다.**
  *
- * 66건을 램프로 흡수하고 두 경로를 `codexMigratedGlobs`(error)로 승격했다.
- * 블록 자체를 지운 이유: 빈 배열은 flat config 가 거부하고, 무엇보다 **강등할
- * 자리를 비워 두면 다음 사람이 거기에 넣는다.** 다시 필요해지면 그때 이 주석을
- * 지우고 만들되, 같은 PR 에 「언제 error 로 올릴지」를 함께 적어야 한다.
+ * 2026-08-04 실사용 시험 실측 — 새 `src/views/<name>/ui/*.tsx` 한 줄에
+ *
+ *     text-[13px]  rounded-[5px]  leading-[1.9]  duration-300
+ *
+ * 네 위반을 심고 `pnpm exec eslint` 를 돌리니 **0 errors, 0 warnings.**
+ * `calculateConfigForFile` 로 재보니 그 경로가 받는 `no-restricted-syntax`
+ * 셀렉터는 **7개**(scale/gradient 5 + accent 틴트 2)뿐이고 램프 셀렉터는
+ * **0개**였다. 소유자 목표가 "명령만 하면 디자인 시스템 기반으로 화면이
+ * 나온다" 인데, **새 화면이야말로 규격이 하나도 강제되지 않는 자리**였다.
+ *
+ * 그래서 뒤집는다. 기본값은 「덮인다」이고, 예외는 **파일 단위로 등재**한다.
+ *
+ * ⚠️ 켜기 전 전수 측정(`design.md` "룰을 켜기 전 반드시 측정한다"):
+ * `src/**` + `app/**` 전체에 램프 셀렉터를 강제로 걸어 재니 위반 **125건**
+ * 이었고, 그 125건은 **파일 12개**에 몰려 있었다. 디렉터리 8곳이 사각지대
+ * 였는데 실제 부채는 12개 파일이다 — 그래서 뒤집는 비용이 「12줄의 예외」다.
+ * 125건을 이 PR 에서 치우지 않는 이유는 규모가 아니라 **성격**이다: 대부분이
+ * 램프에 없는 값(13 · 27 · 11.5px …)이라 치환이 곧 렌더 픽셀 변경이고 자리
+ * 마다 디자인 판정이 필요하다. 그 판정은 lint PR 이 아니라 디자인 패스의
+ * 일이다. 그동안 부채는 래칫이 붙든다.
  */
+export const rampCoveredGlobs = ['src/**/*.{ts,tsx}', 'app/**/*.{ts,tsx}'];
+
+/**
+ * 램프 봉쇄에서 **한시적으로 빠지는 파일**. 디렉터리가 아니라 **파일**인 것이
+ * 핵심이다 — 유산 파일 옆에 새로 생기는 파일은 첫날부터 덮인다.
+ *
+ * 옆 숫자는 2026-08-04 실측 위반 수이고, 정본 장부는
+ * `tests/contract/type-ramp-coverage.contract.test.ts` 다. 그 계약이 (1) 여기
+ * 적힌 경로가 실재하는지 (2) 부채가 장부를 넘지 않는지 (3) 0이 된 파일이
+ * 남아 있지 않은지 (4) **커버 글롭이 다시 허용목록으로 좁혀지지 않았는지**
+ * 를 잰다.
+ *
+ * ⚠️ 이 목록에 **디렉터리 글롭을 넣지 마라.** 계약이 거부한다 — 디렉터리로
+ * 빼면 그 안의 새 파일까지 같이 빠지고, 그게 이 블록이 뒤집힌 원인이다.
+ */
+export const rampDebtExemptions = [
+  'src/entities/project/ui/ProjectCard.tsx', // 16
+  'src/entities/project/ui/ProjectMetaGrid.tsx', // 2
+  'src/features/project-edit/ui/DependencyPicker.tsx', // 6
+  'src/features/project-edit/ui/MarkdownField.tsx', // 3
+  'src/features/project-edit/ui/ProjectForm.tsx', // 15
+  'src/features/vault-ontology/ui/LiveActivityIndicator.tsx', // 23
+  'src/views/first-run/ui/FirstRunPage.tsx', // 14
+  'src/views/ontology-studio/ui/StudioCompass.tsx', // 24
+  'src/views/project-detail/ui/DomainCompositionGrid.tsx', // 4
+  'src/views/project-detail/ui/ProjectDetailPage.tsx', // 11
+  'src/views/project-editor/ui/ProjectEditorPage.tsx', // 2
+  'src/views/root-entry/ui/RootEntryPage.tsx', // 5
+];
+
 // 테스트는 렌더된 className 문자열을 assert 하므로 램프 룰에서 제외.
 const codexTestIgnores = ['**/*.test.{ts,tsx}', '**/*.spec.{ts,tsx}'];
 
@@ -730,11 +726,17 @@ const eslintConfig = defineConfig([
       'no-restricted-syntax': ['error', ...scaleGradientSelectors, ...accentTintPairingSelectors],
     },
   },
-  // Codex 램프 봉쇄 — 마이그레이션 완료 디렉토리 = error. scale/gradient
-  // 셀렉터도 함께 실어 flat config 덮어쓰기로 그 가드가 유실되지 않게 한다.
+  // 램프 봉쇄 — `src/**` + `app/**` **전부** error, 유산 부채 파일만 제외.
+  // scale/gradient 셀렉터도 함께 실어 flat config 덮어쓰기로 그 가드가
+  // 유실되지 않게 한다.
+  //
+  // 제외된 파일이 무방비가 되는 것은 아니다 — 바로 위 블록(`src/**`+`app/**`
+  // 전역)의 scale/gradient · accent 틴트 가드는 그대로 받는다. 빠지는 것은
+  // 램프(타입·반경·행간·모션·그림자) 셀렉터뿐이고, 그 부채는
+  // `tests/contract/type-ramp-coverage.contract.test.ts` 래칫이 붙든다.
   {
-    files: codexMigratedGlobs,
-    ignores: codexTestIgnores,
+    files: rampCoveredGlobs,
+    ignores: [...codexTestIgnores, ...rampDebtExemptions],
     rules: {
       'no-restricted-syntax': [
         'error',
@@ -747,8 +749,8 @@ const eslintConfig = defineConfig([
   // 헌장 예외 1건 — 발자국 트레일 번짐(정적 · opt-in · 기본 0 · 상한 6px).
   //
   // ⚠️ **이 블록은 위 두 램프 블록보다 반드시 뒤에 온다.** flat config 는 rule
-  // option 배열을 병합하지 않고 교체하므로, 앞에 두면 `codexR6Globs`(이 파일을
-  // 포함한다)가 shadowBlur 셀렉터를 되살려 예외가 무력화된다 — 실측으로
+  // option 배열을 병합하지 않고 교체하므로, 앞에 두면 `rampCoveredGlobs`(이
+  // 파일을 포함한다)가 shadowBlur 셀렉터를 되살려 예외가 무력화된다 — 실측으로
   // 경고 1건이 늘어 발견했다.
   //
   // 예외를 **파일 하나로 좁혀** 두면 두 번째 소비처가 생기는 순간 lint 가 먼저
@@ -795,7 +797,7 @@ const eslintConfig = defineConfig([
   //
   // ⚠️ **flat config 는 rule option 배열을 병합하지 않고 교체한다.** 그래서
   // 이 블록은 램프 셀렉터를 **다시 실어야** 한다 — 안 실으면
-  // `codexMigratedGlobs`(`src/widgets/**` 포함)가 이 디렉터리에 걸어 둔 램프
+  // `rampCoveredGlobs`(`src/**` 전부)가 이 디렉터리에 걸어 둔 램프
   // 가드가 조용히 사라진다. 뒤에 오는 블록 중 이 글롭을 다시 덮는 것은 없다.
   {
     files: ['src/widgets/app-settings-menu/**/*.{ts,tsx}'],
