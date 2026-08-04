@@ -94,15 +94,14 @@ export function UpdateToast({ phase, onInstall, onRestart, onDismiss }: UpdateTo
           type="button"
           onClick={onDismiss}
           data-testid="app-update-dismiss"
-          /* 제목과 한 줄을 이루는 토스트 헤더 행 — `inline` 을 켜야 `min-h-11`
-             이 토스트를 세로로 밀지 않는다. 히트 영역은 `-m-1 p-1` 이 낸다
-             (`link` 은 램프에 인셋이 없어 이 패딩이 램프 값을 덮지 않는다). */
+          /* 제목과 한 줄을 이루는 토스트 헤더 행 — 바닥 24(`min-h-6`)는 램프가
+             내고, `-m-1 p-1` 이 시각 발자국을 글자 크기로 되돌린다. coarse 의
+             44 는 `.touch-hit-expand` 가 낸다(아래 CTA 와 세로 여유 ≥12px). */
           className={controlClass({
             shape: 'link',
             tone: 'muted',
-            inline: true,
             className:
-              '-m-1 shrink-0 p-1 leading-label hover:text-[color:var(--color-text-secondary)]',
+              'touch-hit-expand -m-1 shrink-0 p-1 leading-label hover:text-[color:var(--color-text-secondary)]',
           })}
         >
           {t('dismiss')}

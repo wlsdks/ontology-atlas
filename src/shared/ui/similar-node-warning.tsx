@@ -58,15 +58,13 @@ export function SimilarNodeWarning({
         type="button"
         onClick={onOpen}
         /*
-         * 문장 속 컨트롤이다 — `inline: true` 가 `min-h-11`(WCAG 2.5.8 이
-         * 인라인을 면제한다)을 빼서 이 경고 줄(`text-label`/16px)이 44px 로
-         * 밀려 올라가지 않게 한다. 크기 기본값 `md` 가 부모와 같은 `text-label`
-         * 이라 상자 치수는 바뀌지 않는다.
+         * 문장(경고 행) 속 컨트롤 — 램프 바닥 24(`min-h-6`)가 줄을 16→24 로
+         * 세운다. WCAG 2.5.8 은 문장 속을 면제하지만 이 행은 산문이 아니라
+         * 액션 행이라 24 타깃이 맞고, 44 였다면 경고가 배너가 된다.
          */
         className={controlClass({
           shape: "link",
           tone: "strong",
-          inline: true,
           className:
             "shrink-0 font-[var(--font-weight-signature)] underline decoration-[color:var(--color-border-strong)] underline-offset-2 hover:text-[color:var(--color-indigo-accent)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--color-indigo-a46)] focus-visible:ring-inset",
         })}
@@ -81,7 +79,6 @@ export function SimilarNodeWarning({
         onClick={onCreateAnyway}
         className={controlClass({
           shape: "link",
-          inline: true,
           className:
             "shrink-0 underline decoration-[color:var(--color-border-soft)] underline-offset-2 hover:text-[color:var(--color-text-secondary)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--color-indigo-a46)] focus-visible:ring-inset",
         })}

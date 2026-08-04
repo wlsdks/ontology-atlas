@@ -258,8 +258,8 @@ export function TopologyTrailChip({
           className={controlClass({
             shape: "link",
             tone: "strong",
-            inline: true,
             truncate: true,
+            // 옆의 지우기 버튼과 여유 <12px — touch-hit-expand 는 탭을 훔친다.
             className: "min-w-0 font-medium",
           })}
         >

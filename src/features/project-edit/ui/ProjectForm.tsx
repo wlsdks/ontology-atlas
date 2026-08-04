@@ -1216,12 +1216,12 @@ export function ProjectForm({
                 type="button"
                 data-testid="project-slug-disclosure"
                 onClick={() => setSlugFieldOpen(true)}
-                /* 문장(캡션 행) 속 컨트롤 — `inline` 을 켜야 `min-h-11` 이
-                   줄 상자를 밀지 않는다(WCAG 2.5.8 인라인 면제). */
+                /* 캡션 행 속 컨트롤 — 바닥 24(`min-h-6`)까지만 싣는다. 행이
+                   16→24 로 서지만 44 를 실으면 캡션 행이 카드가 된다. 아래
+                   폼 필드와의 여유가 12px 미만이라 touch-hit-expand 미부착. */
                 className={controlClass({
                   shape: "link",
                   tone: "accent",
-                  inline: true,
                   className:
                     "shrink-0 underline underline-offset-2 hover:text-[color:var(--color-text-primary)]",
                 })}

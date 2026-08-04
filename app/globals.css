@@ -3157,6 +3157,30 @@
   }
 
   /*
+   * 산문 링크 계약 — 마크다운 본문 흐름 속의 링크 (2026-08-04 산문 재단).
+   *
+   * 산문 링크는 **컨트롤이 아니다**: 형제가 글이고, 줄 상자는 부모의
+   * `--leading-prose` 가 소유하며, WCAG 2.5.8 이 문장 속 타깃을 명시적으로
+   * 면제한다("The target is in a sentence"). 그래서 값 층(`controlClass`)의
+   * 목적지가 아니라 이 한 벌이 목적지다 — 밑줄 기하(offset 2px) + 기본
+   * 장식색 하나. 글자색·호버 장식색은 자리(인디고 본문/앰버 프로젝트 링크)가
+   * utilities 로 얹는다(utilities 가 base 를 이기므로 여기 값은 기본값이다).
+   *
+   * 규율 셋 — 게이트: tests/contract/prose-link.contract.test.ts
+   * ① display 는 선언하지 않는다(앵커 기본 inline). flex 계열을 얹으면 산문
+   *    자리에서 줄바꿈이 죽는다 — 실측: 320px 에서 inline-flex 링크는 rect
+   *    1개로 넘치고, inline 대조군은 rect 2개로 접힌다.
+   * ② 자기 행간·글자 크기를 선언하지 않는다 — 줄 상자는 산문 부모의 것이다.
+   * ③ 포커스는 UA 기본을 존치한다 — 문장 속 낱말에 2px 인디고 상자를 씌우면
+   *    포커스가 아니라 하이라이트로 읽힌다.
+   */
+  .prose-link {
+    text-decoration-line: underline;
+    text-decoration-color: var(--color-indigo-line-a32);
+    text-underline-offset: 2px;
+  }
+
+  /*
    * Coarse-pointer (touch) contract — 반응형 감사 rank2 (2026-07-23).
    * The missing axis: width breakpoints alone can't tell a 1024–1366px display
    * apart as fine-pointer laptop vs coarse-pointer 12.9" iPad. This block is the

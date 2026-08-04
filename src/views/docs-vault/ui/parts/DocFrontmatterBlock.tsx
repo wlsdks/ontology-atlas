@@ -437,11 +437,13 @@ export function DocFrontmatterBlock({
                               type="button"
                               onClick={() => onNavigate!(target)}
                               data-testid={`doc-frontmatter-ref-${tok}`}
-                              // 인라인 참조/문장 속 컨트롤이다 — `link` 은 이제 `min-h-11`(44px, WCAG 2.5.8)을 싣는데,
-                              // 글줄 안에서는 그 높이가 줄 상자를 통째로 밀어 올린다(실측 21.3 → 44px).
-                              // 시각 크기와 히트 영역이 다른 축이라는 상류 판단은 옳지만, 그 해법이
-                              // 문장 속 컨트롤에는 안 맞는다 — 값 층에 «인라인» 축이 하나 더 필요하다.
-                              className="rounded-chip text-[color:var(--color-indigo-pale-a90)] underline decoration-[color:var(--color-indigo-line-a35)] underline-offset-2 transition-colors hover:text-[color:var(--color-text-primary)] hover:decoration-[color:var(--color-indigo-line-a45)] focus-visible:outline focus-visible:outline-1 focus-visible:outline-[color:var(--color-indigo-line-a45)]"
+                              // 글줄 속 참조 컨트롤 — 종전 주석은 44 를 «WCAG 2.5.8» 이라 불렀지만
+                              // 그건 2.5.5(AAA)/HIG 의 값이다(2026-08-04 바닥 재설정, 원장 「link 바닥 24」).
+                              // 2.5.8(AA)의 바닥 24 를 min-h-6 으로 세운다 — 줄바꿈된 참조 행의 피치가
+                              // 21 → 24 가 되어 24원 겹침(런타임 계기 실측)이 함께 풀린다. 값 층으로 못
+                              // 옮기는 이유는 타입 상속이다: link 램프는 text-label 을 강제하는데 이 참조는
+                              // 부모 글자 크기를 상속해야 한다(래칫 「타입 스텝을 안 내는 자리」 부채).
+                              className="min-h-6 rounded-chip text-[color:var(--color-indigo-pale-a90)] underline decoration-[color:var(--color-indigo-line-a35)] underline-offset-2 transition-colors hover:text-[color:var(--color-text-primary)] hover:decoration-[color:var(--color-indigo-line-a45)] focus-visible:outline focus-visible:outline-1 focus-visible:outline-[color:var(--color-indigo-line-a45)]"
                             >
                               {tok}
                             </button>
@@ -575,7 +577,7 @@ export function DocFrontmatterBlock({
               className={controlClass({
                 shape: "link",
                 className:
-                  "mt-2 font-sans hover:text-[color:var(--color-text-primary)]",
+                  "touch-hit-expand mt-2 font-sans hover:text-[color:var(--color-text-primary)]",
               })}
             >
               <Pencil size={11} aria-hidden />
@@ -640,7 +642,7 @@ export function DocFrontmatterBlock({
             className={controlClass({
               shape: "link",
               tone: "muted",
-              className: "hover:text-[color:var(--color-text-secondary)]",
+              className: "touch-hit-expand hover:text-[color:var(--color-text-secondary)]",
             })}
           >
             <ChevronRight

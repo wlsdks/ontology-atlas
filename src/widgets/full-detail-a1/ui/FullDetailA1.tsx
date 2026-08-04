@@ -255,8 +255,8 @@ export function FullDetailA1({
               shape: "link",
               scope: "panel",
               tone: "secondary",
-              inline: true,
-              className: "hover:text-[color:var(--topology-v2-panel-text-primary)]",
+              className:
+                "touch-hit-expand hover:text-[color:var(--topology-v2-panel-text-primary)]",
             })}
           >
             {t("backToMap")}
@@ -529,7 +529,7 @@ export function FullDetailA1({
               size: "lg",
               scope: "panel",
               className:
-                "shrink-0 hover:text-[color:var(--topology-v2-panel-text-secondary)]",
+                "touch-hit-expand shrink-0 hover:text-[color:var(--topology-v2-panel-text-secondary)]",
             })}
           >
             {t("handoff.openDocument")}
@@ -544,7 +544,7 @@ export function FullDetailA1({
               size: "lg",
               scope: "panel",
               className:
-                "shrink-0 hover:text-[color:var(--topology-v2-panel-text-secondary)]",
+                "touch-hit-expand shrink-0 hover:text-[color:var(--topology-v2-panel-text-secondary)]",
             })}
           >
             {t("handoff.openMentionDocument")}
@@ -558,7 +558,7 @@ export function FullDetailA1({
             size: "lg",
             scope: "panel",
             className:
-              "shrink-0 hover:text-[color:var(--topology-v2-panel-text-secondary)]",
+              "touch-hit-expand shrink-0 hover:text-[color:var(--topology-v2-panel-text-secondary)]",
           })}
         >
           {t("handoff.openStudio")}

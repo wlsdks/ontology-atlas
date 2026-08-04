@@ -186,7 +186,7 @@ export function DocsVaultViewer({
             return (
               <a
                 href={getProjectHref(projectSlug)}
-                className="text-[color:var(--color-amber-docs-a95)] underline underline-offset-2 decoration-[color:var(--color-amber-docs-a35)] hover:decoration-[color:var(--color-amber-docs-a100)]"
+                className="prose-link text-[color:var(--color-amber-docs-a95)] decoration-[color:var(--color-amber-docs-a35)] hover:decoration-[color:var(--color-amber-docs-a100)]"
                 title={t('projectLinkTitle', { slug: projectSlug })}
               >
                 {children}
@@ -208,7 +208,7 @@ export function DocsVaultViewer({
                     });
                   }
                 }}
-                className="text-[color:var(--color-indigo-line-a90)] underline underline-offset-2 decoration-[color:var(--color-indigo-line-a32)] hover:decoration-[color:var(--color-indigo-accent)]"
+                className="prose-link text-[color:var(--color-indigo-line-a90)] hover:decoration-[color:var(--color-indigo-accent)]"
               >
                 {children}
               </Link>
@@ -238,11 +238,14 @@ export function DocsVaultViewer({
               href={href}
               target="_blank"
               rel="noreferrer noopener"
-              className="inline-flex items-center gap-1 underline underline-offset-2 decoration-[color:var(--color-indigo-line-a40)] hover:decoration-[color:var(--color-indigo-accent)]"
+              /* 가짜 산문 정정(2026-08-04): inline-flex 는 산문 자리에서 줄바꿈을
+                 죽인다 — 320px 에서 rect 1개(대조군 inline 은 2개). 산문 링크는
+                 display:inline 이 계약이다(prose-link.contract.test.ts). */
+              className="prose-link decoration-[color:var(--color-indigo-line-a40)] hover:decoration-[color:var(--color-indigo-accent)]"
               {...rest}
             >
               {children}
-              <ExternalLink size={10} className="opacity-60" aria-hidden />
+              <ExternalLink size={10} className="ml-1 inline align-baseline opacity-60" aria-hidden />
             </a>
           );
         }
@@ -269,7 +272,7 @@ export function DocsVaultViewer({
                   });
                 }
               }}
-              className="text-[color:var(--color-indigo-line-a90)] underline underline-offset-2 decoration-[color:var(--color-indigo-line-a32)] hover:decoration-[color:var(--color-indigo-accent)]"
+              className="prose-link text-[color:var(--color-indigo-line-a90)] hover:decoration-[color:var(--color-indigo-accent)]"
             >
               {children}
             </Link>
@@ -283,11 +286,14 @@ export function DocsVaultViewer({
               href={resolved.url}
               target="_blank"
               rel="noreferrer noopener"
-              className="inline-flex items-center gap-1 underline underline-offset-2 decoration-[color:var(--color-indigo-line-a40)] hover:decoration-[color:var(--color-indigo-accent)]"
+              /* 가짜 산문 정정(2026-08-04): inline-flex 는 산문 자리에서 줄바꿈을
+                 죽인다 — 320px 에서 rect 1개(대조군 inline 은 2개). 산문 링크는
+                 display:inline 이 계약이다(prose-link.contract.test.ts). */
+              className="prose-link decoration-[color:var(--color-indigo-line-a40)] hover:decoration-[color:var(--color-indigo-accent)]"
               {...rest}
             >
               {children}
-              <ExternalLink size={10} className="opacity-60" aria-hidden />
+              <ExternalLink size={10} className="ml-1 inline align-baseline opacity-60" aria-hidden />
             </a>
           );
         }

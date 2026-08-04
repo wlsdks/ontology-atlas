@@ -1126,18 +1126,16 @@ function AuditTail({
             data-testid="ai-audit-open"
             onClick={() => void openTauriVaultInFinder(vaultRootPath)}
             /*
-             * 글자만으로 눌리는 것 = `link`(실측 85). 값 층이 이 모양에
-             * `min-h-11` 을 갖게 되면서(2026-08-03) 히트 영역이 24 → 44px 로
-             * 올라간다 — 이 시트가 자기 계약에서 인용한 WCAG 2.5.8 을 이제
-             * 실제로 만족한다. 글자 크기는 그대로다(시각 크기와 히트 영역은
-             * 다른 축). `px-1`/`-mr-1` 은 그 24px 상자를 만들던 값이라 함께
-             * 사라진다 — 이제 글자가 섹션 오른쪽 끝에 맞는다.
+             * 글자만으로 눌리는 것 = `link`. 램프 바닥이 WCAG 2.5.8(AA)의
+             * 24×24 다 — 종전 주석은 44 를 «2.5.8 만족»이라 불렀지만 44 는
+             * 2.5.5(AAA)/HIG 의 터치 값이고, 그건 coarse 에서
+             * `.touch-hit-expand` 가 낸다(2026-08-04 바닥 재설정).
              */
             className={controlClass({
               shape: 'link',
               size: 'sm',
               className:
-                'hover:text-[color:var(--color-text-secondary)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--color-indigo-a46)] focus-visible:ring-inset',
+                'touch-hit-expand hover:text-[color:var(--color-text-secondary)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--color-indigo-a46)] focus-visible:ring-inset',
             })}
           >
             {t('auditOpen')}

@@ -412,7 +412,7 @@ export function AgentConnectSheet({
                     size: "sm",
                     tone: "muted",
                     className:
-                      "gap-1.5 self-start font-mono uppercase tracking-[0.12em] hover:text-[color:var(--color-text-secondary)]",
+                      "touch-hit-expand gap-1.5 self-start font-mono uppercase tracking-[0.12em] hover:text-[color:var(--color-text-secondary)]",
                   })}
                 >
                   <ChevronDown

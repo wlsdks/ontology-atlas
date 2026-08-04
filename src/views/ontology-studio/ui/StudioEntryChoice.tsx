@@ -109,7 +109,7 @@ export function StudioEntryChoice({
           shape: "link",
           size: "sm",
           className:
-            "studio-stage-in mt-5 underline underline-offset-4 hover:text-[color:var(--color-text-primary)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--color-indigo-a46)]",
+            "touch-hit-expand studio-stage-in mt-5 underline underline-offset-4 hover:text-[color:var(--color-text-primary)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--color-indigo-a46)]",
         })}
         style={{ ["--studio-stagger" as string]: "120ms" }}
       >

@@ -119,8 +119,12 @@ const control = cva(DISABLED, {
       pill: 'inline-flex items-center rounded-full border transition-colors',
       /** 카드 하나가 통째로 눌리는 큰 표면(18). */
       card: 'flex items-center rounded-card border transition-colors',
-      /** 글자만으로 눌리는 것. 보더도 배경도 없다(85). */
-      link: 'inline-flex items-center gap-1 rounded-chip transition-colors',
+      /**
+       * 글자만으로 눌리는 것. 보더도 배경도 없다(85). 바닥은 WCAG 2.5.8(AA)의
+       * 24(`min-h-6`) — coarse 포인터의 44 는 높이가 아니라 `.touch-hit-expand`
+       * (레이아웃 이동 0)가 낸다. 아래 「삭제된 축: inline」 참조.
+       */
+      link: 'inline-flex min-h-6 items-center gap-1 rounded-chip transition-colors',
       /**
        * 아이콘 위, 글자 아래의 **세로** 타일.
        *
@@ -209,11 +213,13 @@ const control = cva(DISABLED, {
      * 별칭이다). 24 아래 단을 만들지 않는 이유는 사다리 표의 첫 줄이다:
      * WCAG 2.5.8 바닥 아래는 «작은 단»이 아니라 규격 미달이다.
      *
-     * `link` 는 비인라인 44(`min-h-11`) / 인라인은 면제. ⚠️ 2026-08-04 체계석
-     * 판정: 이 44 는 WCAG 2.5.5(AAA)/HIG 터치 값이지 이 저장소가 지키는
-     * 2.5.8(AA)의 값(24)이 아니고, 터치 계약(design.md)은 44 를 «coarse 단일
-     * 출처»로 못박았다 — 바닥 24 재설정은 채택 소비처 43호출/28파일의 픽셀을
-     * 움직여 자리별 전수 표와 함께 자체 라운드로 간다(래칫 머리말 「다음」 1순위).
+     * `link` 는 바닥 24(`min-h-6`, 모양 base) — 2026-08-04 재설정 집행.
+     * 종전 44(`min-h-11`)는 WCAG 2.5.8(AA, 24×24)을 인용하면서 2.5.5(AAA)/HIG
+     * 터치 값을 실은 **사실 오류**였고, 44 는 터치 계약(design.md)이 «coarse
+     * 단일 출처»로 못박은 `--touch-target-min` 이다. coarse 의 44 는 높이가
+     * 아니라 `.touch-hit-expand` 가 내고, 부착 자격(이웃 타깃 여유 ≥12px)은
+     * 소비처가 진다 — 밀집 행에 무조건 붙이면 DOM 순서상 뒤 원소가 앞 원소의
+     * 탭을 훔친다. 자리별 전수 표: docs/DECISIONS.md 2026-08-04 「link 바닥 24」.
      * `tile` 은 세로 2축 표면이라 내용이 높이를 정한다 — 사다리 이탈이 아니라 축이 다르다.
      *
      * 하드 `h-8` 이 아니라 **`min-h-8`** 인 이유: 하드 높이는 줄바꿈한 칩을
@@ -423,33 +429,23 @@ const control = cva(DISABLED, {
      * 이 자리에 다시 높이 축을 세우고 싶어지면 그 전에 물어라: **사다리에
      * 이미 있는 값인가?** 있으면 그건 축이 아니라 `size` 다.
      */
-    /**
-     * **문장 속에 있는가.** `link` 에만 뜻이 있다.
+    /*
+     * ── **삭제된 축: `inline`** (2026-08-04 체계석 판정 — docs/DECISIONS.md)
      *
-     * ## 왜 이 축이 필요한가 (2026-08-03 실측)
+     * 「문장 속인가」로 `min-h-11` 을 면제하던 불리언이 있었다. 두 겹으로
+     * 틀렸다: ① 면제하던 값(44)이 애초에 2.5.8 의 값이 아니었다(위 정정).
+     * ② 「문장 속」을 정하는 셋 — 형제 글자의 출처(마크다운·i18n) · used
+     * display(다른 파일의 부모가 정한다) · reflow — 이 전부 여는 태그 밖이라
+     * **정적으로 판정 불가**다. 실측: 15개 소비처 중 진짜 문장 속은 3곳뿐,
+     * 나머지 12곳은 「내 상자를 키우지 마라」는 일반 탈출구로 눌렀고 그중
+     * 16~17px 자리들을 어떤 검사도 못 봤다. 바닥이 24 로 서자 탈출구가 할
+     * 일이 없어졌다 — `fixedHeight` 와 같은 죽음이다.
      *
-     * `link` 에 터치 타깃(`min-h-11`)을 실었더니 **문장 속 컨트롤의 줄 상자가
-     * 21.3 → 44px 로 밀려 올라갔다.** 접근성을 지키려던 것이 인라인 자리에서는
-     * 레이아웃을 깨는 것이다 — 하나를 고치다 다른 하나를 깼다.
-     *
-     * **WCAG 2.5.8 은 인라인을 명시적으로 면제한다** — *"The target is in a
-     * sentence or its size is otherwise constrained by the line-height of
-     * non-target text."* 문장 속 링크는 24×24 를 요구받지 않는다.
-     *
-     * ⚠️ **단 이 축은 삭제 예정이다 (2026-08-04 상호작용석 실측 + 체계석 판정).**
-     * 「문장 속인가」를 정하는 셋(형제 글자의 출처 · 부모가 정하는 used display ·
-     * reflow)이 전부 여는 태그 밖에 있어 **정적으로 판정 불가**고, 실제로
-     * `inline: true` 오설정 4건을 어떤 검사도 못 봤다. 게다가 위 문단이 «접근성»
-     * 이라 부른 44 는 2.5.8 의 값이 아니다(바로 위 판정 참조) — 바닥이 24 로
-     * 서면 이 탈출구는 산문 재단(산문 링크는 컨트롤이 아니다)과 함께 없어진다.
-     * 판정은 런타임 계기(`touch-target-contract` + Inline 예외)가 맡는다.
-     *
-     * **기본값이 `false`(= 타깃을 실음)인 이유**: 반대로 두면 홀로 선 글자
-     * 컨트롤이 조용히 16px 히트 영역을 갖는다. 인라인에서 잘못 쓰면 줄이
-     * 벌어져 **눈에 보이지만**, 타깃이 작은 것은 **안 보인다.** 안 보이는
-     * 결함을 기본값으로 두지 않는다.
+     * 인라인 면제(WCAG 2.5.8 «in a sentence»)의 판정은 런타임 계기가 맡는다:
+     * `tests/e2e/touch-target-contract.spec.ts` 의 fine-pointer 검사가
+     * computed display 와 형제 글자로 판정한다. 산문 링크는 애초에 컨트롤이
+     * 아니다 — `.prose-link` 계약(`prose-link.contract.test.ts`) 소관.
      */
-    inline: { true: '', false: '' },
   },
   compoundVariants: [
     // ── 크기: 모양마다 «크다» 의 뜻이 다르다. 정사각에 px 를 주면 정사각이 아니게 된다.
@@ -545,10 +541,6 @@ const control = cva(DISABLED, {
     // 보더 없는 인셋의 눌림 — 상자 안에서 「지금 이것」을 인디고 틴트로만 말한다.
     // 실측 소비처 12개 중 12개가 `--color-indigo-a16`/`a26` 틴트였다(보더 0).
     { shape: 'segment', active: true, class: 'bg-[color:var(--color-indigo-a16)] text-[color:var(--color-text-primary)]' },
-    // 홀로 선 글자 컨트롤만 타깃을 싣는다 — 문장 속은 WCAG 2.5.8 이 면제한다.
-    // ⚠️ 44 는 2.5.8(24)이 아니라 2.5.5/HIG 의 값이다 — 바닥 24 재설정은
-    // 자리별 전수 표와 함께 자체 라운드(래칫 머리말 「다음」 1순위)로 간다.
-    { shape: 'link', inline: false, class: 'min-h-11' },
 
     /*
      * ── 두 번째 무채 램프. 패널 바탕(#17171c) 위에서 대비를 재서 넛지된 값이라
@@ -583,7 +575,6 @@ const control = cva(DISABLED, {
     tone: 'default',
     scope: 'app',
     active: false,
-    inline: false,
     truncate: false,
   },
 });

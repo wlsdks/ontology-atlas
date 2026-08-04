@@ -176,7 +176,7 @@ export function ExpandSettings() {
           shape: 'link',
           size: 'md',
           tone: 'muted',
-          className: RESET_LINK_INK,
+          className: `touch-hit-expand ${RESET_LINK_INK}`,
         })}
       >
         {t('reset')}

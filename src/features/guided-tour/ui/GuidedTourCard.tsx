@@ -95,13 +95,12 @@ export function GuidedTourCard({
           type="button"
           onClick={skip}
           data-testid="guided-tour-skip"
-          /* 진행 캡션과 한 줄을 이루는 헤더 행 — `inline` 을 켜야 `min-h-11` 이
-             그 줄을 44px 로 밀지 않는다(WCAG 2.5.8 인라인 면제). */
+          /* 진행 캡션과 한 줄을 이루는 헤더 행 — 바닥 24 는 램프가 내고,
+             coarse 의 44 는 `.touch-hit-expand` 가 낸다(이웃 타깃 원거리). */
           className={controlClass({
             shape: "link",
-            inline: true,
             className:
-              "tracking-label hover:text-[color:var(--color-text-secondary)]",
+              "touch-hit-expand tracking-label hover:text-[color:var(--color-text-secondary)]",
           })}
         >
           {t("skipLabel")}

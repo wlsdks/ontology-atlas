@@ -65,11 +65,10 @@ const allScoped = (fn: (cls: string, label: string) => void) => {
         for (const a of [true, false])
           for (const sc of SCOPES)
             for (const tr of [true, false])
-              for (const inl of [true, false])
-                fn(
-                  controlClass({ shape: s, size: z, tone: t, active: a, scope: sc, truncate: tr, inline: inl }),
-                  `${s}/${z}/${t}/${a}/${sc}/trunc=${tr}/inline=${inl}`,
-                );
+              fn(
+                controlClass({ shape: s, size: z, tone: t, active: a, scope: sc, truncate: tr }),
+                `${s}/${z}/${t}/${a}/${sc}/trunc=${tr}`,
+              );
 };
 
 describe('controlClass — 램프 밖 값을 낼 수 없다', () => {
@@ -220,29 +219,20 @@ describe('controlClass — 모양이 실제로 서로 다르다', () => {
     expect(cls).toContain('text-center');
   });
 
-  it('문장 속 글자 컨트롤은 줄 상자를 밀지 않는다 — WCAG 2.5.8 인라인 면제', () => {
+  it('link 의 바닥은 24(2.5.8 AA)다 — 44(2.5.5/HIG)를 fine 포인터 전면에 싣지 않는다', () => {
     /*
-     * `link` 에 터치 타깃을 실었더니 **문장 속 컨트롤의 줄 상자가 21.3 → 44px 로
-     * 밀려 올라갔다**(2026-08-03 실측). 하나를 고치다 다른 하나를 깬 것이다.
-     *
-     * WCAG 2.5.8 은 인라인을 명시적으로 면제한다 — *"The target is in a sentence
-     * or its size is otherwise constrained by the line-height of non-target text."*
+     * 2026-08-04 바닥 재설정(원장 「link 바닥 24」). 종전 값 층은 WCAG
+     * 2.5.8(AA, 24×24)을 인용하면서 2.5.5(AAA)/HIG 의 44(`min-h-11`)를
+     * 실었다 — 44 는 `--touch-target-min` 이고 터치 계약(design.md)이
+     * «coarse 단일 출처»로 못박은 값이라, fine 전면 44 는 저장소 자신의 계약
+     * 위반이었다. 그 바닥이 만든 탈출구(`inline` 축)는 오설정 4건을 어떤
+     * 정적 검사도 못 본 채 지나가게 했다. coarse 의 44 는 높이가 아니라
+     * `.touch-hit-expand`(레이아웃 이동 0)가 낸다.
      */
     for (const size of SIZES) {
-      expect(
-        controlClass({ shape: 'link', size, inline: true }),
-        `link/${size}/inline 이 최소 높이를 실어 줄 상자를 민다`,
-      ).not.toMatch(/min-h-/);
-    }
-  });
-
-  it('인라인 면제는 `link` 에만 뜻이 있다 — 상자를 가진 모양은 타깃을 유지한다', () => {
-    // `inline` 을 아무 모양에나 넘겨 타깃을 벗기는 우회를 막는다.
-    for (const shape of SHAPES.filter((s) => s !== 'link')) {
-      expect(
-        controlClass({ shape, inline: true }),
-        `${shape} 가 inline 으로 규격을 잃는다`,
-      ).toBe(controlClass({ shape, inline: false }));
+      const cls = controlClass({ shape: 'link', size });
+      expect(cls, `link/${size} 바닥이 24(min-h-6)가 아니다`).toMatch(/(^| )min-h-6( |$)/);
+      expect(cls, `link/${size} 가 coarse 값 44 를 fine 전면에 싣는다`).not.toMatch(/min-h-11/);
     }
   });
 
@@ -535,8 +525,8 @@ describe('controlClass — 여덟째 모양과 세 축', () => {
      * `--chrome-tile-size`(36)에 섰다 — 34 는 이제 어느 토큰의 값도 아니라
      * 그냥 어휘 밖이다. 원장: 2026-08-03 「타일 치수는 하나다」.)
      *
-     * `link`(비인라인 min-h-11 / 인라인 면제)와 `tile`(세로 2축 — 내용이
-     * 높이를 정한다)은 이 게이트의 대상이 아니다 — 각자 위의 시험이 잠근다.
+     * `link`(바닥 24 — 위 「link 의 바닥은 24」 시험)와 `tile`(세로 2축 —
+     * 내용이 높이를 정한다)은 이 게이트의 대상이 아니다 — 각자 위의 시험이 잠근다.
      */
     const WCAG_TARGET_FLOOR_PX = 24;
     const tokenPx = (name: string): number => {

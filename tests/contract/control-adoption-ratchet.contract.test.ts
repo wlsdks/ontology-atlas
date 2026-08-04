@@ -58,6 +58,7 @@ import { describe, expect, it } from 'vitest';
  * | `standard-button` *(앵커, 2026-08-04)* | **값 층이 명시적으로 양보한 유일한 모양.** `control-class.ts` 가 자기 머리말에 *"표준 버튼(`<Button>`)을 대체하지 않는다 … 겹치는 자리를 만들면 «어느 쪽이 규격인가»가 흐려진다"* 고 적어 뒀다. 그러니 `buttonVariants()` 를 지나는 앵커는 **다른 값 층을 이미 지난 것**이고, `controlClass` 로 옮기는 것은 준수가 아니라 그 규칙 위반이다 |
  * | `no-spec` *(앵커, 2026-08-04)* | 이 태그가 **모양·크기·색을 하나도 선언하지 않는다** — `className={className}` 순수 패스스루이거나 `"inline-flex"` 자리잡기 한 개다. 값 층이 낼 것이 0인 자리이고, 자리잡기는 값 층 자신이 `className` 의 몫이라고 정의한 층이다 |
  * | `state-scoped` *(앵커, 2026-08-04)* | 규격 전체가 **변형 접두 아래에만** 존재한다(`focus:` 건너뛰기 링크 — 평상시에는 `sr-only`). `controlClass()` 는 무변형 클래스 문자열을 내므로 접두를 붙일 수 없다 |
+ * | `prose` *(앵커, 2026-08-04 link 바닥 라운드)* | **컨트롤이 아니라 산문이다.** 마크다운 본문 흐름 속 링크 — 형제가 글이고 줄 상자를 부모 `--leading-prose` 가 소유하며 WCAG 2.5.8 이 문장 속을 면제한다. 값 층의 모양 여덟은 전부 flex 계열이라 **display:inline 을 원리적으로 낼 수 없다**(inline-flex 는 320px 에서 줄바꿈을 죽인다 — 실측 rect 1 vs 2). 목적지는 `.prose-link` 계약(`prose-link.contract.test.ts`)이다 |
  *
  * 반대로 **「값 층에 그 모양이 아직 없다」는 등재 사유가 아니다.** 그건 「체계」가
  * 부품을 더하면 열리는 자리이므로 **부채**다. 이 구분이 이 라운드의 전부다.
@@ -299,6 +300,26 @@ import { describe, expect, it } from 'vitest';
  * | 6 | 스크림 등재 청구 유형 · 설정 시트 계약 4 | 9 | 등재 기준 표 확장 |
  *
  * ════════════════════════════════════════════════════════════════════
+ * ## 2026-08-04 link 바닥 24 라운드 — 「다음」 1순위 집행 (자체 라운드)
+ * ════════════════════════════════════════════════════════════════════
+ *
+ * 통합 라운드 판정 ①의 집행이다. 원장: docs/DECISIONS.md 2026-08-04
+ * 「link 바닥 24」. 이 파일에 남기는 것은 수와 정정 둘이다:
+ *
+ * - **채택 소비처 실측 40호출/24파일** — 판정문의 «43호출/28파일» 은 과다
+ *   계상이었다(이 파일의 중괄호-깊이 파서와 같은 로직으로 재전수). 자리별
+ *   before→after 전수 표는 PR 본문과 원장에 있다.
+ * - `link` 바닥 `min-h-11`(44) → **`min-h-6`(24, WCAG 2.5.8 AA)**. coarse 의
+ *   44 는 `.touch-hit-expand` 가 낸다 — 부착 22곳, **미부착 9곳은 이웃 타깃
+ *   여유 <12px** (탭 훔침: DOM 순서상 뒤 원소의 ::after 가 앞 원소를 덮는다).
+ * - `inline` 축 **삭제** — 14곳 전수 중 진짜 문장 속은 3곳뿐이었고, 판정
+ *   재료(형제 글자 출처 · used display · reflow)가 전부 정적 시야 밖이다.
+ *   인라인 면제 판정은 런타임 계기(touch-target-contract 의 fine-pointer
+ *   검사, INLINE_EXEMPT + spacingClear)로 이관했다.
+ * - **산문 재단 6** (위 `prose` 등재) — 앵커 부채 83 → 77. 판정문의 «→76» 은
+ *   산문 7 가정이었고 재전수가 6 으로 정정했다(등재 주석 참조).
+ *
+ * ════════════════════════════════════════════════════════════════════
  * ## 역사 — 라운드별 기록 (417 → 108). **지우지 않는다**
  * ════════════════════════════════════════════════════════════════════
  *
@@ -403,7 +424,8 @@ type OutsideClaim =
   | 'value-layer-peer'
   | 'standard-button'
   | 'no-spec'
-  | 'state-scoped';
+  | 'state-scoped'
+  | 'prose';
 
 interface OutsideEntry {
   /** 저장소 상대 경로. 실재해야 한다. */
@@ -866,6 +888,32 @@ const OUTSIDE_VALUE_LAYER_ANCHORS: readonly OutsideEntry[] = [
       '`<Button>` 을 감싸 shrink-wrap 시키는 자리잡기 래퍼 둘. `inline-flex` 하나뿐이고 그건 값 ' +
       '층 자신이 `className` 의 몫이라고 정의한 층이다(자리잡기·폭·순서).',
   },
+  /*
+   * ── 2026-08-04 link 바닥 24 라운드의 산문 재단 — 「상시 밑줄 12」 부류 중
+   * 마크다운 본문 흐름 속 6 을 컨트롤 원장에서 뺀다. ⚠️ 선행 판정은 «산문 5 +
+   * 가짜 산문 2 = 7» 이라 셌지만, 이 파일의 파서 기준 재전수는 **6** 이다
+   * (관문 마크다운 a-override 는 1개 — 판정문의 «관문 2» 는 잘린-본문 안내
+   * CTA 를 산문으로 오산한 것. 그 CTA 는 홀로 선 컨트롤이라 부채에 남는다).
+   * 가짜 산문 2(외부/repo 링크의 inline-flex)는 등재와 같은 PR 에서
+   * display:inline 으로 정정됐다 — 320px 줄바꿈 결함이 함께 닫혔다.
+   */
+  {
+    file: 'src/widgets/docs-vault/ui/DocsVaultViewer.tsx',
+    count: 5,
+    claim: 'prose',
+    proof: 'prose-link',
+    why:
+      '마크다운 a-override 의 다섯 갈래(프로젝트 위키링크 · 볼트 위키링크 · 외부 http · ' +
+      '내부 해석 · repo blob). 전부 본문 문장 속에 렌더되고 줄 상자는 산문 부모의 것이다. ' +
+      '외부 2는 inline-flex 로 줄바꿈이 죽어 있던 「가짜 산문」이었고 이 라운드가 inline 으로 정정했다.',
+  },
+  {
+    file: 'src/views/gateway-doc/ui/GatewayDocPage.tsx',
+    count: 1,
+    claim: 'prose',
+    proof: 'prose-link',
+    why: '관문 읽을거리(PROSE_COMPONENTS)의 마크다운 a-override — 같은 산문 계약.',
+  },
   {
     file: 'app/[locale]/layout.tsx',
     count: 1,
@@ -881,10 +929,10 @@ const OUTSIDE_VALUE_LAYER_ANCHORS: readonly OutsideEntry[] = [
  * **리터럴이다.** 버튼 쪽 기준선들과 같은 이유 — 파생값으로 두면 멈춤쇠가
  * 양방향으로 헐거워진다(하드컷 래칫이 실제로 그렇게 죽었다).
  */
-const BASELINE_ANCHOR_REGISTERED = 19;
+const BASELINE_ANCHOR_REGISTERED = 25;
 
-/** **이 수만 줄어야 한다.** 앵커 전수(102)에서 등재(19)를 뺀 나머지. */
-const BASELINE_ANCHOR_DEBT = 83;
+/** **이 수만 줄어야 한다.** 앵커 전수(102)에서 등재(25)를 뺀 나머지. */
+const BASELINE_ANCHOR_DEBT = 77;
 
 const anchorCensus = census(scannedFiles, OUTSIDE_VALUE_LAYER_ANCHORS, ANCHOR_TAGS);
 

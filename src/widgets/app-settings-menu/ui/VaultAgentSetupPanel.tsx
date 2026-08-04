@@ -884,7 +884,7 @@ export function VaultAgentSetupPanel({
               size: 'sm',
               tone: 'muted',
               className:
-                'mt-3 self-start font-mono uppercase tracking-[0.12em] hover:text-[color:var(--color-text-secondary)]',
+                'touch-hit-expand mt-3 self-start font-mono uppercase tracking-[0.12em] hover:text-[color:var(--color-text-secondary)]',
             })}
           >
             <ChevronDown
