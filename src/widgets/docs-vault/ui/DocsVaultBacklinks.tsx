@@ -43,7 +43,7 @@ export function DocsVaultBacklinks({
     return (
       <div className="flex min-w-0 flex-1 items-center gap-2 overflow-x-auto">
         {hideHeading ? null : (
-          <span className="flex-none font-mono text-caption uppercase tracking-[0.14em] text-[color:var(--color-text-quaternary)]">
+          <span className="flex-none font-mono text-caption uppercase tracking-[var(--tracking-caps-14)] text-[color:var(--color-text-quaternary)]">
             {t('heading', { count: entries.length })}
           </span>
         )}
@@ -77,7 +77,7 @@ export function DocsVaultBacklinks({
   return (
     <section>
       {hideHeading ? null : (
-        <h3 className="mb-2 font-mono text-caption uppercase tracking-[0.14em] text-[color:var(--color-text-quaternary)]">
+        <h3 className="mb-2 font-mono text-caption uppercase tracking-[var(--tracking-caps-14)] text-[color:var(--color-text-quaternary)]">
           {t('heading', { count: entries.length })}
         </h3>
       )}

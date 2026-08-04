@@ -4087,7 +4087,7 @@ export function HomePage() {
                       <div className="min-w-0">
                         <p
                           id="topology-create-node-unavailable-title"
-                          className="font-mono text-label uppercase tracking-[0.14em] text-[color:var(--color-indigo-text-soft)]"
+                          className="font-mono text-label uppercase tracking-[var(--tracking-caps-14)] text-[color:var(--color-indigo-text-soft)]"
                         >
                           {t('createNode.unavailableHeading')}
                         </p>
@@ -4735,7 +4735,7 @@ export function HomePage() {
                 open={localGraphStack.length > 0}
                 origin="top center"
                 className="pointer-events-auto absolute left-1/2 top-[96px] z-30 flex max-w-[70vw] -translate-x-1/2 items-center gap-2 rounded-full border border-[color:var(--color-indigo-line-a32)] bg-[color:var(--color-panel)] px-3 py-1.5 shadow-[var(--shadow-elevation-1)]">
-                  <span className="font-mono text-label uppercase tracking-[0.16em] text-[color:var(--color-text-quaternary)]">
+                  <span className="font-mono text-label uppercase tracking-[var(--tracking-caps-16)] text-[color:var(--color-text-quaternary)]">
                     Local
                   </span>
                   <button
@@ -4745,7 +4745,7 @@ export function HomePage() {
                       shape: "link",
                       size: "md",
                       className:
-                        "touch-hit-expand font-mono uppercase tracking-[0.12em] hover:text-[color:var(--color-text-primary)]",
+                        "touch-hit-expand font-mono uppercase tracking-[var(--tracking-caps-12)] hover:text-[color:var(--color-text-primary)]",
                     })}
                   >
                     Root
@@ -4778,7 +4778,7 @@ export function HomePage() {
                       shape: "pill",
                       size: "sm",
                       className:
-                        "ml-2 font-mono uppercase tracking-[0.14em] hover:bg-[color:var(--color-overlay-2)]",
+                        "ml-2 font-mono uppercase tracking-[var(--tracking-caps-14)] hover:bg-[color:var(--color-overlay-2)]",
                     })}
                   >
                     Esc
@@ -4788,7 +4788,7 @@ export function HomePage() {
               {/* 필터 컨텍스트 — 현재 visible 노드 수가 전체보다 적으면 표시.
                   로컬 그래프/카테고리 필터가 노드를 줄였을 때 컨텍스트를 주는 칩. */}
               {topologyVisibleCount !== null && topologyVisibleCount < localGraphProjects.length ? (
-                <div className="pointer-events-none absolute bottom-6 left-[220px] z-10 rounded-chip border border-[color:var(--color-indigo-line-a32)] bg-[color:var(--color-panel)] px-3 py-1.5 font-mono text-label uppercase tracking-[0.14em] text-[color:var(--color-indigo-line-a90)] md:left-[228px] xl:left-[236px]">
+                <div className="pointer-events-none absolute bottom-6 left-[220px] z-10 rounded-chip border border-[color:var(--color-indigo-line-a32)] bg-[color:var(--color-panel)] px-3 py-1.5 font-mono text-label uppercase tracking-[var(--tracking-caps-14)] text-[color:var(--color-indigo-line-a90)] md:left-[228px] xl:left-[236px]">
                   filter · {topologyVisibleCount} / {localGraphProjects.length}
                 </div>
               ) : null}
@@ -4904,7 +4904,7 @@ export function HomePage() {
           role="alert"
           className="pointer-events-auto absolute left-1/2 top-[52px] z-40 flex -translate-x-1/2 items-center gap-3 rounded-full border border-[color:var(--color-danger-a32)] bg-[color:var(--color-surface-deep-a98)] px-4 py-2 text-body text-[color:var(--color-text-primary)] shadow-[var(--shadow-elevation-1)]"
         >
-            <span className="font-mono text-label uppercase tracking-[0.16em] text-[color:var(--color-danger-text)]">
+            <span className="font-mono text-label uppercase tracking-[var(--tracking-caps-16)] text-[color:var(--color-danger-text)]">
               Error
             </span>
             <span>{heldProjectsError}</span>
@@ -4917,7 +4917,7 @@ export function HomePage() {
                 shape: "pill",
                 size: "sm",
                 className:
-                  "ml-2 font-mono uppercase tracking-[0.14em] hover:bg-[color:var(--color-overlay-2)] hover:text-[color:var(--color-text-primary)]",
+                  "ml-2 font-mono uppercase tracking-[var(--tracking-caps-14)] hover:bg-[color:var(--color-overlay-2)] hover:text-[color:var(--color-text-primary)]",
               })}
             >
               {t('errorBanner.retry')}

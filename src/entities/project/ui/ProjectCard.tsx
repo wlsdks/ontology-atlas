@@ -209,19 +209,19 @@ export function ProjectCard({
       }}
     >
       {borderStyle === 'sideLabel' && !isHub && sideLabelText && (
-        <span className="absolute -left-2 top-3 font-mono text-caption uppercase tracking-[0.08em] text-[color:var(--color-text-quaternary)] [writing-mode:vertical-rl]">
+        <span className="absolute -left-2 top-3 font-mono text-caption uppercase tracking-[var(--tracking-caps-08)] text-[color:var(--color-text-quaternary)] [writing-mode:vertical-rl]">
           {sideLabelText}
         </span>
       )}
 
       {isHub && (
-        <span className="absolute -top-2 left-3 rounded-full bg-[color:var(--color-indigo-brand)] px-2 py-0.5 font-mono text-caption uppercase tracking-[0.1em] text-[color:var(--color-text-primary)] md:left-4 md:text-caption">
+        <span className="absolute -top-2 left-3 rounded-full bg-[color:var(--color-indigo-brand)] px-2 py-0.5 font-mono text-caption uppercase tracking-[var(--tracking-caps-10)] text-[color:var(--color-text-primary)] md:left-4 md:text-caption">
           허브
         </span>
       )}
 
       {!isHub && shared && (
-        <span className="absolute -top-2 left-3 rounded-full border border-[color:var(--color-indigo-accent-a50)] bg-[color:var(--color-indigo-a26)] px-2 py-0.5 font-mono text-caption uppercase tracking-[0.1em] text-[color:var(--color-indigo-text-soft)] md:left-4 md:text-caption">
+        <span className="absolute -top-2 left-3 rounded-full border border-[color:var(--color-indigo-accent-a50)] bg-[color:var(--color-indigo-a26)] px-2 py-0.5 font-mono text-caption uppercase tracking-[var(--tracking-caps-10)] text-[color:var(--color-indigo-text-soft)] md:left-4 md:text-caption">
           공유
         </span>
       )}
@@ -245,7 +245,7 @@ export function ProjectCard({
         )}
         <div className="min-w-0">
           {!dense && eyebrow && (
-            <div className="mb-1 font-mono text-caption uppercase tracking-[0.12em] text-[color:var(--color-text-quaternary)] md:text-caption">
+            <div className="mb-1 font-mono text-caption uppercase tracking-[var(--tracking-caps-12)] text-[color:var(--color-text-quaternary)] md:text-caption">
               {eyebrow}
             </div>
           )}
@@ -284,7 +284,7 @@ export function ProjectCard({
               // 카드 높이를 유지하되 placeholder 문장이 실제 설명으로 읽히지 않도록
               // 형식·톤을 약하게 해 "설명이 비었다" 는 상태임을 명시한다.
               // 문구는 호출자가 화면 언어로 넘긴다 (hubEyebrow 와 같은 계약).
-              <span className="font-mono text-caption uppercase tracking-[0.1em] text-[color:var(--color-text-quaternary)]">
+              <span className="font-mono text-caption uppercase tracking-[var(--tracking-caps-10)] text-[color:var(--color-text-quaternary)]">
                 {descriptionEmptyLabel}
               </span>
             )}
@@ -304,7 +304,7 @@ export function ProjectCard({
             <span
               key={tag}
               className={cn(
-                "font-mono text-caption uppercase tracking-[0.08em] text-[color:var(--color-text-quaternary)] md:text-caption",
+                "font-mono text-caption uppercase tracking-[var(--tracking-caps-08)] text-[color:var(--color-text-quaternary)] md:text-caption",
                 index > 0 && "hidden md:inline",
               )}
             >
@@ -312,7 +312,7 @@ export function ProjectCard({
             </span>
           ))
         ) : (
-          <span className="font-mono text-caption uppercase tracking-[0.08em] text-[color:var(--color-text-quaternary)] md:text-caption">
+          <span className="font-mono text-caption uppercase tracking-[var(--tracking-caps-08)] text-[color:var(--color-text-quaternary)] md:text-caption">
             {dense ? project.slug : fallbackMeta}
           </span>
         )}

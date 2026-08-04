@@ -455,7 +455,7 @@ function SelectedPairDetail({
 function CardHead({ label, unit, count }: { label: string; unit: string; count: number }) {
   return (
     <div className="flex items-baseline gap-2.5">
-      <InsightsSectionTitle level={2} className="text-body-lg font-medium tracking-[-0.01em] text-[color:var(--color-text-primary)]">{label}</InsightsSectionTitle>
+      <InsightsSectionTitle level={2} className="text-body-lg font-medium tracking-[var(--tracking-title)] text-[color:var(--color-text-primary)]">{label}</InsightsSectionTitle>
       <span className="ml-auto flex items-baseline gap-1.5">
         <span className="text-label text-[color:var(--color-text-quaternary)]">{unit}</span>
         <span className="font-mono text-body tabular-nums text-[color:var(--topology-v2-numeral-face)]">

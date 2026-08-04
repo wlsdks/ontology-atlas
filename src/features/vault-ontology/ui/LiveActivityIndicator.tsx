@@ -339,9 +339,9 @@ export function LiveActivityBadge({
         })}
       >
         <span aria-hidden className="inline-block h-1.5 w-1.5 rounded-full bg-[color:var(--color-status-success)]" />
-        <span className="font-mono uppercase tracking-[0.10em]">{labels.live}</span>
+        <span className="font-mono uppercase tracking-[var(--tracking-caps-10)]">{labels.live}</span>
         <span
-          className="rounded-micro border border-[color:var(--color-indigo-line-a22)] px-1.5 py-0.5 font-mono text-caption uppercase tracking-[0.08em] text-[color:var(--color-text-secondary)]"
+          className="rounded-micro border border-[color:var(--color-indigo-line-a22)] px-1.5 py-0.5 font-mono text-caption uppercase tracking-[var(--tracking-caps-08)] text-[color:var(--color-text-secondary)]"
           data-testid="live-agent-state-chip"
         >
           {agentStateChip}
@@ -370,7 +370,7 @@ export function LiveActivityBadge({
         className="absolute right-0 top-9 z-50 w-64 rounded-card border border-[color:var(--color-border-soft)] bg-[color:var(--color-panel)] p-3 text-left shadow-[var(--shadow-elevation-1)]"
       >
         <div className="flex items-start justify-between gap-3">
-          <p className="font-mono text-caption uppercase tracking-[0.12em] text-[color:var(--color-indigo-accent)]">
+          <p className="font-mono text-caption uppercase tracking-[var(--tracking-caps-12)] text-[color:var(--color-indigo-accent)]">
             {labels.summaryTitle}
           </p>
           <IconButton
@@ -399,7 +399,7 @@ export function LiveActivityBadge({
           className="mt-3 border-t border-[color:var(--color-divider)] pt-3"
           data-testid="live-agent-activity"
         >
-          <p className="font-mono text-caption uppercase tracking-[0.12em] text-[color:var(--color-text-quaternary)]">
+          <p className="font-mono text-caption uppercase tracking-[var(--tracking-caps-12)] text-[color:var(--color-text-quaternary)]">
             {labels.agentTitle}
           </p>
           {!agentActivityStatus?.exists ? (
@@ -415,7 +415,7 @@ export function LiveActivityBadge({
             <div className="mt-2 grid gap-2 text-label leading-4">
               <p className={agentActivityStatus.stale ? "text-[color:var(--color-amber-docs-a95)]" : "text-[color:var(--color-text-primary)]"}>
                 {agentActivityStatus.stale ? labels.agentStale : labels.agentCurrent}
-                <span className="ml-1 font-mono uppercase tracking-[0.08em] text-[color:var(--color-indigo-accent)]">
+                <span className="ml-1 font-mono uppercase tracking-[var(--tracking-caps-08)] text-[color:var(--color-indigo-accent)]">
                   {heartbeat.agent} · {stateLabel}
                 </span>
               </p>
@@ -428,7 +428,7 @@ export function LiveActivityBadge({
                     <button
                       type="button"
                       onClick={() => void copyFocusCheck(staleRefreshPacket)}
-                      className="inline-flex w-fit items-center gap-1 rounded-micro border border-[color:var(--color-amber-docs-a34)] px-1.5 py-0.5 font-mono text-caption uppercase tracking-[0.08em] text-[color:var(--color-amber-docs-a95)] transition-colors hover:border-[color:var(--color-amber-docs-a54)] hover:bg-[color:var(--color-amber-docs-a10)]"
+                      className="inline-flex w-fit items-center gap-1 rounded-micro border border-[color:var(--color-amber-docs-a34)] px-1.5 py-0.5 font-mono text-caption uppercase tracking-[var(--tracking-caps-08)] text-[color:var(--color-amber-docs-a95)] transition-colors hover:border-[color:var(--color-amber-docs-a54)] hover:bg-[color:var(--color-amber-docs-a10)]"
                     >
                       <Clipboard size={10} aria-hidden />
                       {staleRefreshCopyLabel}
@@ -468,7 +468,7 @@ export function LiveActivityBadge({
                     <div className="flex flex-wrap gap-1.5">
                       <a
                         href={focusHref}
-                        className="inline-flex w-fit items-center rounded-micro border border-[color:var(--color-indigo-line-a22)] px-1.5 py-0.5 font-mono text-caption uppercase tracking-[0.08em] text-[color:var(--color-indigo-text-soft)] transition-colors hover:border-[color:var(--color-indigo-line-a45)] hover:bg-[color:var(--color-indigo-a10)]"
+                        className="inline-flex w-fit items-center rounded-micro border border-[color:var(--color-indigo-line-a22)] px-1.5 py-0.5 font-mono text-caption uppercase tracking-[var(--tracking-caps-08)] text-[color:var(--color-indigo-text-soft)] transition-colors hover:border-[color:var(--color-indigo-line-a45)] hover:bg-[color:var(--color-indigo-a10)]"
                       >
                         {labels.agentFocusAction}
                       </a>
@@ -481,7 +481,7 @@ export function LiveActivityBadge({
                             size: "xs",
                             tone: "secondary",
                             className:
-                              "w-fit font-mono uppercase tracking-[0.08em] hover:border-[color:var(--color-indigo-line-a40)] hover:text-[color:var(--color-text-primary)]",
+                              "w-fit font-mono uppercase tracking-[var(--tracking-caps-08)] hover:border-[color:var(--color-indigo-line-a40)] hover:text-[color:var(--color-text-primary)]",
                           })}
                         >
                           <Clipboard size={10} aria-hidden />
@@ -507,7 +507,7 @@ export function LiveActivityBadge({
                             size: "xs",
                             tone: "secondary",
                             className:
-                              "w-fit font-mono uppercase tracking-[0.08em] hover:border-[color:var(--color-indigo-line-a40)] hover:text-[color:var(--color-text-primary)]",
+                              "w-fit font-mono uppercase tracking-[var(--tracking-caps-08)] hover:border-[color:var(--color-indigo-line-a40)] hover:text-[color:var(--color-text-primary)]",
                           })}
                     >
                       <Clipboard size={10} aria-hidden />
@@ -531,7 +531,7 @@ export function LiveActivityBadge({
                       count > 0 ? (
                         <span
                           key={label}
-                          className="rounded-micro border border-[color:var(--color-border-soft)] px-1.5 py-0.5 font-mono text-caption uppercase tracking-[0.08em] text-[color:var(--color-text-quaternary)]"
+                          className="rounded-micro border border-[color:var(--color-border-soft)] px-1.5 py-0.5 font-mono text-caption uppercase tracking-[var(--tracking-caps-08)] text-[color:var(--color-text-quaternary)]"
                         >
                           {label} · {count}
                         </span>
@@ -542,7 +542,7 @@ export function LiveActivityBadge({
                     aria-label={labels.agentProofTrail}
                     className="grid gap-1 rounded-chip border border-[color:var(--color-border-soft)] bg-[color:var(--color-overlay-1)] px-2 py-1.5"
                   >
-                    <p className="font-mono text-caption uppercase tracking-[0.10em] text-[color:var(--color-text-quaternary)]">
+                    <p className="font-mono text-caption uppercase tracking-[var(--tracking-caps-10)] text-[color:var(--color-text-quaternary)]">
                       {labels.agentProofTrail}
                     </p>
                     {evidenceTrail.map((item) => (
@@ -550,7 +550,7 @@ export function LiveActivityBadge({
                         key={item.label}
                         className="break-all text-caption leading-4 text-[color:var(--color-text-tertiary)]"
                       >
-                        <span className="font-mono uppercase tracking-[0.08em] text-[color:var(--color-text-secondary)]">
+                        <span className="font-mono uppercase tracking-[var(--tracking-caps-08)] text-[color:var(--color-text-secondary)]">
                           {item.label}
                         </span>{" "}
                         {item.first}
@@ -577,7 +577,7 @@ export function LiveActivityBadge({
                             size: "xs",
                             tone: "secondary",
                             className:
-                              "w-fit font-mono uppercase tracking-[0.08em] hover:border-[color:var(--color-indigo-line-a40)] hover:text-[color:var(--color-text-primary)]",
+                              "w-fit font-mono uppercase tracking-[var(--tracking-caps-08)] hover:border-[color:var(--color-indigo-line-a40)] hover:text-[color:var(--color-text-primary)]",
                           })}
                 >
                   <Clipboard size={10} aria-hidden />

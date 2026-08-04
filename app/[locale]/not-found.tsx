@@ -58,7 +58,7 @@ export default function LocaleNotFound() {
           <span className="flex h-8 w-8 items-center justify-center rounded-[var(--radius-chip)] border border-[color:var(--color-divider)] text-[color:var(--color-text-tertiary)]">
             <Compass size={16} />
           </span>
-          <p className="font-mono text-caption uppercase tracking-[0.14em] text-[color:var(--color-text-quaternary)]">
+          <p className="font-mono text-caption uppercase tracking-[var(--tracking-caps-14)] text-[color:var(--color-text-quaternary)]">
             {t("label")}
           </p>
         </div>

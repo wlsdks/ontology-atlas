@@ -61,7 +61,7 @@ export function GestureHint({ disabled = false }: { disabled?: boolean }) {
             <Hand size={14} />
           </span>
           <div className="flex-1">
-            <p className="font-mono text-caption uppercase tracking-[0.14em] text-[color:var(--color-text-quaternary)]">
+            <p className="font-mono text-caption uppercase tracking-[var(--tracking-caps-14)] text-[color:var(--color-text-quaternary)]">
               {t("eyebrow")}
             </p>
             <p className="mt-1 text-body leading-body text-[color:var(--color-text-secondary)]">
@@ -69,7 +69,7 @@ export function GestureHint({ disabled = false }: { disabled?: boolean }) {
             </p>
             <div className="mt-2 flex items-center gap-1.5">
               <Pointer size={10} className="text-[color:var(--color-text-quaternary)]" />
-              <span className="font-mono text-caption uppercase tracking-[0.12em] text-[color:var(--color-text-quaternary)]">
+              <span className="font-mono text-caption uppercase tracking-[var(--tracking-caps-12)] text-[color:var(--color-text-quaternary)]">
                 {t("tapDetail")}
               </span>
             </div>

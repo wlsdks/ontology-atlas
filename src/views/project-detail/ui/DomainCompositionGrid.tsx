@@ -73,7 +73,7 @@ export function DomainCompositionGrid({
           >
             <div className="flex items-center gap-2">
               <TopologyV2KindGlyph kind="domain" size={16} />
-              <span className="min-w-0 flex-1 truncate text-body-lg font-[560] tracking-[-0.01em] text-[color:var(--color-text-primary)]">
+              <span className="min-w-0 flex-1 truncate text-body-lg font-[var(--font-weight-emphasis)] tracking-[var(--tracking-title)] text-[color:var(--color-text-primary)]">
                 {domain.title}
               </span>
               <span

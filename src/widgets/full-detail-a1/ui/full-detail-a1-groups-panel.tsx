@@ -91,10 +91,10 @@ function GroupCard({
       className="rounded-card border border-[color:var(--topology-v2-panel-border)] bg-[color:var(--topology-v2-panel-surface)] p-3"
     >
       <div className="mb-2 flex items-center gap-2">
-        <span className="text-body font-medium tracking-[-0.01em] text-[color:var(--topology-v2-panel-text-primary)]">
+        <span className="text-body font-medium tracking-[var(--tracking-title)] text-[color:var(--topology-v2-panel-text-primary)]">
           {title}
         </span>
-        <span className="font-mono text-caption uppercase tracking-[0.12em] text-[color:var(--topology-v2-panel-text-quaternary)]">
+        <span className="font-mono text-caption uppercase tracking-[var(--tracking-caps-12)] text-[color:var(--topology-v2-panel-text-quaternary)]">
           {caption}
         </span>
         <span

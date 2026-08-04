@@ -421,7 +421,7 @@ export function DocFrontmatterBlock({
                 : "border-[color:var(--color-amber-docs-a18)] bg-[color:var(--color-amber-source-a08)] text-[color:var(--color-amber-docs-a92)]"
             }`}
           >
-            <span className="mr-1.5 font-mono text-caption uppercase tracking-[0.08em]">
+            <span className="mr-1.5 font-mono text-caption uppercase tracking-[var(--tracking-caps-08)]">
               {issue.severity === "error" ? t("issueSeverityError") : t("issueSeverityWarning")}
             </span>
             {mapVaultIssueCodeToPlainMessage(issue.code, issueMessageDict)}

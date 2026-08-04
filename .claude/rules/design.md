@@ -336,6 +336,9 @@ particle·rarity(gold)·shimmer 를 `--studio-*` 토큰과 `.studio-stage` 안�
 | **행간 램프** | `leading-[N]` 처럼 값을 직접 적는 것 금지 + 이름 붙은 유틸리티(`leading-relaxed` 등 208건)는 `named-offramp-utility-ratchet` 의 기준선이 붙든다 (2026-08-04) | 동일 |
 | **램프 우회** | 램프 토큰을 대괄호 안에서 길이로 돌려 참조하는 것만 금지 (램프 밖 크기 토큰은 정당) | 동일 (켤 때 위반 0) |
 | **인라인 그림자** | JSX `style={{ boxShadow }}` 의 값이 사다리·도킹·눌림·표면 토큰 중 하나를 참조하지 않으면 금지 (2026-08-04) | `src/**`+`app/**` 전역 error — **램프 부채 예외 파일도 받는다** |
+| **자간 램프** | `tracking-[Nem]` 금지 — 대문자 마이크로 라벨은 `--tracking-caps-08/10/12/14/16`, 본문 짝은 `--tracking-caption/label/body/body-lg/title` (2026-08-05) | 동일 (켤 때 위반 0 — 243곳 선치환) |
+| **무게 램프** | `font-[NNN]` 금지 — `--font-weight-signature`(510)·`-emphasis`(560)·`-strong`(650) 셋뿐 (2026-08-05) | 동일 (켤 때 위반 0 — 13곳 선치환) |
+| **Tailwind 팔레트** | `text-white`·`bg-slate-*` 등 기본 팔레트 유틸리티 금지 — `--color-*` 토큰만 (2026-08-05) | 동일 (켤 때 위반 0 — 4곳 선치환) |
 | **중복 커서** | `<button>`·`<summary>` 의 className 에 `cursor-pointer` 를 다시 적는 것 금지 — 정책은 `globals.css` base 한 곳 (2026-08-05) | 동일 (켤 때 위반 0 — 13곳 선정리) |
 | 금지 그라디언트 | `scaleGradientSelectors` | 동일 |
 | **accent×틴트 페어링** | `accentTintPairingSelectors` — `tone accent` 와 인디고/앰버 틴트 `bg-` 가 같은 호출/원소에 공존 금지 (상수 우회는 `accent-ink-contrast` 계약이 맡는다) | 전역 error (켤 때 위반 0 — 26곳 선치환) |
@@ -402,6 +405,41 @@ particle·rarity(gold)·shimmer 를 `--studio-*` 토큰과 `.studio-stage` 안�
 "어느 토큰을 썼는가"** 로 바꿨다 — 허용하는 것은 사다리(elevation-*/dock-*) ·
 눌림(control-press) · 표면 전용 토큰 · inset 머리카락선(빛이 아니라 재질을
 나타낸다)뿐이다.
+
+
+### 값이 아니라 «자리» 가 토큰을 정한다 (2026-08-05)
+
+`text-white` 3곳을 «토큰이 아니니까» 라는 이유로 `--color-text-primary` 로
+바꿀 뻔했다. **재 보니 그게 AA 를 깨는 방향이었다** — 인디고 면(`#5e6ad2`) 위에서
+
+| 잉크 | 대비 | AA(4.5) |
+|---|---|---|
+| `#ffffff` (그때의 `text-white`) | **4.70** | 통과 |
+| `--color-text-primary` `#f7f8f8` | **4.42** | 미달 |
+| `--color-indigo-text-soft` | 2.58 | 미달 |
+
+올바른 목적지는 이미 있던 `--color-text-on-accent`(#ffffff)였다. 토큰화는
+«아무 토큰이나 넣기» 가 아니다 — **그 자리가 무엇 위에 얹혀 있는지**가 어느
+토큰인지를 정하고, 그건 재야 안다.
+
+### ⚠️ 대비 계측은 아직 «쉬는 상태» 만 잰다 (2026-08-05 발견, 미해결)
+
+위 표를 재다가 나온 것: 인디고 CTA 는 쉴 때 4.70:1 로 통과하는데 **호버하면
+미달한다.**
+
+| 상태 | 배경 | 흰 글자 대비 |
+|---|---|---|
+| 기본 | `--color-indigo-brand` `#5e6ad2` | 4.70 통과 |
+| 호버 | `--color-indigo-accent` `#7170ff` | **3.84 미달** |
+| 호버 | `--color-indigo-hover` `#828fff` | **2.87 미달** |
+
+WCAG 는 상태를 가리지 않는다. 이 짝(`hover:bg-` 로 **밝아지는** 인디고 면 +
+밝은 잉크)은 **15곳**에 있다. `scripts/measure-contrast.mjs` 도 `contrast-ratchet`
+도 정지 상태의 DOM 만 훑으므로 이 층은 **한 번도 측정된 적이 없다.**
+
+고치는 방향은 색 결정이라 「체계」가 정한다 — 호버를 어둡게 가든, 호버에서
+잉크를 바꾸든, 둘 다 앱의 상호작용 언어를 건드린다. 감사가 단독으로 고르지
+않는다.
 
 ### 클래스가 아니라 문법으로 빠져나간 경우 (2026-08-04)
 

@@ -157,7 +157,7 @@ export function DependencyPicker({
               className="text-[color:var(--color-indigo-accent)]"
               aria-hidden="true"
             />
-            <p className="font-mono text-caption uppercase tracking-[0.12em] text-[color:var(--color-indigo-accent)]">
+            <p className="font-mono text-caption uppercase tracking-[var(--tracking-caps-12)] text-[color:var(--color-indigo-accent)]">
               {t('suggestionsHeading')}
             </p>
           </div>
@@ -230,7 +230,7 @@ export function DependencyPicker({
           data-testid="dependency-missing-group"
           className="flex flex-col gap-2 rounded-card border border-[color:var(--color-amber-source-a25)] bg-[color:var(--color-amber-source-a08)] p-3"
         >
-          <p className="font-mono text-caption uppercase tracking-[0.1em] text-[color:var(--color-status-warning)]">
+          <p className="font-mono text-caption uppercase tracking-[var(--tracking-caps-10)] text-[color:var(--color-status-warning)]">
             {t('missingHeading')}
           </p>
           <div className="flex flex-wrap gap-1.5">
@@ -300,16 +300,16 @@ export function DependencyPicker({
             >
               <span>{p.name}</span>
               {invalidSlugSet.has(p.slug) && (
-                <span className="rounded-micro border border-[color:var(--color-divider)] px-1 font-mono text-caption uppercase tracking-[0.08em] text-[color:var(--color-text-quaternary)]">
+                <span className="rounded-micro border border-[color:var(--color-divider)] px-1 font-mono text-caption uppercase tracking-[var(--tracking-caps-08)] text-[color:var(--color-text-quaternary)]">
                   cycle
                 </span>
               )}
               {p.isHub && (
-                <span className="rounded-micro bg-[color:var(--color-indigo-brand)] px-1 font-mono text-caption uppercase tracking-[0.08em] text-[color:var(--color-text-primary)]">
+                <span className="rounded-micro bg-[color:var(--color-indigo-brand)] px-1 font-mono text-caption uppercase tracking-[var(--tracking-caps-08)] text-[color:var(--color-text-primary)]">
                   HUB
                 </span>
               )}
-              <span className="font-mono text-caption uppercase tracking-[0.08em] text-[color:var(--color-text-quaternary)]">
+              <span className="font-mono text-caption uppercase tracking-[var(--tracking-caps-08)] text-[color:var(--color-text-quaternary)]">
                 {categoryLabel(p.category)}
               </span>
             </button>

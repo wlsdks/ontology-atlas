@@ -79,7 +79,7 @@ export function DocsVaultVaultChip({
             {t("header.vaultPillFolders", { count: folderCount })}
           </p>
           {isLocalSourceLoaded ? (
-            <p className="inline-flex items-center gap-1 px-1.5 py-1 font-mono text-caption uppercase tracking-[0.14em] text-[color:var(--color-indigo-pale-a86)]">
+            <p className="inline-flex items-center gap-1 px-1.5 py-1 font-mono text-caption uppercase tracking-[var(--tracking-caps-14)] text-[color:var(--color-indigo-pale-a86)]">
               <HardDrive size={10} aria-hidden />
               {t("header.localBadge")}
             </p>

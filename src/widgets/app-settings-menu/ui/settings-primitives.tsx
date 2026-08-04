@@ -75,7 +75,7 @@ export function SettingsGroup({ label, children }: { label?: string; children: R
   return (
     <section aria-label={label}>
       {label ? (
-        <h3 className="px-1 font-mono text-label uppercase tracking-[0.14em] text-[color:var(--color-text-quaternary)]">
+        <h3 className="px-1 font-mono text-label uppercase tracking-[var(--tracking-caps-14)] text-[color:var(--color-text-quaternary)]">
           {label}
         </h3>
       ) : null}

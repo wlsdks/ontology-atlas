@@ -21,7 +21,7 @@ export function TopologyNoMatchesState({
       role="status"
       aria-live="polite"
     >
-      <p className="font-mono text-label uppercase tracking-[0.16em] text-[color:var(--color-text-quaternary)]">
+      <p className="font-mono text-label uppercase tracking-[var(--tracking-caps-16)] text-[color:var(--color-text-quaternary)]">
         {title}
       </p>
       <p className="text-body leading-relaxed text-[color:var(--color-text-secondary)]">
@@ -35,7 +35,7 @@ export function TopologyNoMatchesState({
           size: "md",
           active: true,
           className:
-            "font-mono uppercase tracking-[0.14em] hover:bg-[color:var(--color-indigo-a24)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--color-indigo-a46)] focus-visible:ring-offset-2 focus-visible:ring-offset-[color:var(--color-panel)]",
+            "font-mono uppercase tracking-[var(--tracking-caps-14)] hover:bg-[color:var(--color-indigo-a24)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--color-indigo-a46)] focus-visible:ring-offset-2 focus-visible:ring-offset-[color:var(--color-panel)]",
         })}
       >
         {t("clearFilters")}

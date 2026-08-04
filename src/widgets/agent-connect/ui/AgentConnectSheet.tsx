@@ -84,7 +84,7 @@ function CopyBlock({ label, value, testId }: { label: string; value: string; tes
   return (
     <div className="flex flex-col gap-1.5">
       <div className="flex items-center justify-between gap-2">
-        <span className="font-mono text-caption uppercase tracking-[0.12em] text-[color:var(--color-text-quaternary)]">
+        <span className="font-mono text-caption uppercase tracking-[var(--tracking-caps-12)] text-[color:var(--color-text-quaternary)]">
           {label}
         </span>
         <button
@@ -242,7 +242,7 @@ export function AgentConnectSheet({
           >
             <header className="flex shrink-0 items-center justify-between border-b border-[color:var(--color-border-soft)] px-5 py-4">
               <div>
-                <p className="flex items-center gap-1.5 font-mono text-caption uppercase tracking-[0.14em] text-[color:var(--color-indigo-accent)]">
+                <p className="flex items-center gap-1.5 font-mono text-caption uppercase tracking-[var(--tracking-caps-14)] text-[color:var(--color-indigo-accent)]">
                   <Cable size={11} aria-hidden />
                   {t("title")}
                 </p>
@@ -363,7 +363,7 @@ export function AgentConnectSheet({
               {/* 이해받음의 순간 — 에이전트가 내 지도를 되말한다 (첫 화면 유지) */}
               {previewDomains.length > 0 ? (
                 <section aria-label={t("previewLabel")} className="flex flex-col gap-2">
-                  <p className="font-mono text-caption uppercase tracking-[0.12em] text-[color:var(--color-text-quaternary)]">
+                  <p className="font-mono text-caption uppercase tracking-[var(--tracking-caps-12)] text-[color:var(--color-text-quaternary)]">
                     {t("previewLabel")}
                   </p>
                   <p
@@ -412,7 +412,7 @@ export function AgentConnectSheet({
                     size: "sm",
                     tone: "muted",
                     className:
-                      "touch-hit-expand gap-1.5 self-start font-mono uppercase tracking-[0.12em] hover:text-[color:var(--color-text-secondary)]",
+                      "touch-hit-expand gap-1.5 self-start font-mono uppercase tracking-[var(--tracking-caps-12)] hover:text-[color:var(--color-text-secondary)]",
                   })}
                 >
                   <ChevronDown

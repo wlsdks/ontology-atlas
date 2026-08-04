@@ -217,7 +217,7 @@ export function DownloadPage() {
             <footer className="mt-4 border-t border-[color:var(--color-divider)] pt-4 text-label leading-label text-[color:var(--color-text-quaternary)] [@media(min-width:64rem)_and_(max-height:56.25rem)]:mt-3 [@media(min-width:64rem)_and_(max-height:56.25rem)]:pt-3">
               <VerifyDetails published={published} primaryAsset={primaryAsset} />
               <div className="mt-3 flex flex-wrap items-center gap-x-4 gap-y-2">
-                <span className="font-mono uppercase tracking-[0.14em]">
+                <span className="font-mono uppercase tracking-[var(--tracking-caps-14)]">
                   {tFooter('license')}
                 </span>
                 <span aria-hidden>·</span>
@@ -368,7 +368,7 @@ function PortraitStage({
             'flex flex-wrap items-baseline gap-x-3 gap-y-1 font-mono text-caption leading-caption text-[color:var(--color-text-quaternary)]',
           )}
         >
-          <span className="uppercase tracking-[0.18em]">docs/ontology</span>
+          <span className="uppercase tracking-[var(--tracking-caps-16)]">docs/ontology</span>
           <span aria-hidden>·</span>
           <span
             data-token="engraved-numeral"
@@ -458,7 +458,7 @@ function StageWordmark() {
 
   return (
     <div className="min-w-0">
-      <p className="font-mono text-caption uppercase leading-caption tracking-[0.18em] text-[color:var(--color-text-quaternary)]">
+      <p className="font-mono text-caption uppercase leading-caption tracking-[var(--tracking-caps-16)] text-[color:var(--color-text-quaternary)]">
         {t('eyebrow')}
       </p>
       {/* 헤드라인이 **배경을 가리킨다** — 이 문장이 성립하려면 뒤에 실제 지도가

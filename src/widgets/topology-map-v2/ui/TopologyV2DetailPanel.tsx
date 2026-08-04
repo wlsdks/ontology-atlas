@@ -795,7 +795,7 @@ function RelationGroupShell({
         </span>
         <span
           title={help}
-          className="text-body font-semibold tracking-[0.005em] text-[color:var(--topology-v2-panel-text-secondary)]"
+          className="text-body font-semibold tracking-[var(--tracking-body)] text-[color:var(--topology-v2-panel-text-secondary)]"
         >
           {label}
         </span>
@@ -1182,11 +1182,11 @@ export function TopologyV2DetailPanel({
             생기지 않고 긴 이름에서도 성립한다. */}
         <div className="px-[var(--topology-v2-panel-pad)] pt-[15px] pb-4">
           <div className="mb-[11px] flex items-center gap-2.5">
-            <h2 className="min-w-0 flex-1 truncate text-title font-[650] leading-title tracking-title text-[color:var(--topology-v2-panel-text-primary)]">
+            <h2 className="min-w-0 flex-1 truncate text-title font-[var(--font-weight-strong)] leading-title tracking-title text-[color:var(--topology-v2-panel-text-primary)]">
               {title}
             </h2>
             {/* kind = 읽히는 텍스트 배지(글리프 + 단어), 우측 counterweight */}
-            <span className="flex shrink-0 items-center gap-1.5 rounded-chip border border-[color:var(--topology-v2-panel-kind-badge-border)] bg-[color:var(--topology-v2-panel-kind-badge-surface)] py-[3px] pl-[7px] pr-[9px] text-label font-semibold tracking-[0.01em] text-[color:var(--topology-v2-panel-text-secondary)]">
+            <span className="flex shrink-0 items-center gap-1.5 rounded-chip border border-[color:var(--topology-v2-panel-kind-badge-border)] bg-[color:var(--topology-v2-panel-kind-badge-surface)] py-[3px] pl-[7px] pr-[9px] text-label font-semibold tracking-[var(--tracking-label)] text-[color:var(--topology-v2-panel-text-secondary)]">
               <TopologyV2KindGlyph kind={kind} size={12} />
               {labels.kindLabel}
             </span>
@@ -1368,12 +1368,12 @@ export function TopologyV2DetailPanel({
               className="flex items-center gap-1.5 text-body text-[color:var(--topology-v2-panel-text-tertiary)]"
             >
               <span>{labels.statsConnected}</span>
-              <b className="font-[650] tabular-nums text-[color:var(--topology-v2-panel-text-secondary)]">
+              <b className="font-[var(--font-weight-strong)] tabular-nums text-[color:var(--topology-v2-panel-text-secondary)]">
                 {connectedTotal}
               </b>
               <span className="text-[color:var(--topology-v2-panel-text-quaternary)]">·</span>
               <span>{labels.statsEvidenceDocs}</span>
-              <b className="font-[650] tabular-nums text-[color:var(--topology-v2-panel-text-secondary)]">
+              <b className="font-[var(--font-weight-strong)] tabular-nums text-[color:var(--topology-v2-panel-text-secondary)]">
                 {evidence.total}
               </b>
             </div>

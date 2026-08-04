@@ -405,7 +405,7 @@ export function TopologyIndexPanel({
         data-testid="topology-index-fold"
         className="group mb-3 flex w-full items-center gap-1.5 rounded-[var(--chrome-radius-inner)] px-0.5 text-left transition-colors hover:bg-[color:var(--topology-v2-panel-row-hover)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--color-indigo-a46)] focus-visible:ring-inset"
       >
-        <span className="font-mono text-caption uppercase tracking-[0.16em] text-[color:var(--topology-v2-panel-text-tertiary)]">
+        <span className="font-mono text-caption uppercase tracking-[var(--tracking-caps-16)] text-[color:var(--topology-v2-panel-text-tertiary)]">
           {labels.label}
         </span>
         {/* 수렴 판정 ①: 시각 카운트 "· N" 삭제 — 지형도 HUD 가 이미 라벨과
@@ -831,7 +831,7 @@ export function TopologyIndexPanel({
           ) : null}
           <span
             aria-hidden="true"
-            className="shrink-0 rounded-micro border border-[color:var(--topology-v2-panel-border)] px-1 py-0.5 font-mono text-caption uppercase tracking-[0.08em] text-[color:var(--topology-v2-panel-text-quaternary)]"
+            className="shrink-0 rounded-micro border border-[color:var(--topology-v2-panel-border)] px-1 py-0.5 font-mono text-caption uppercase tracking-[var(--tracking-caps-08)] text-[color:var(--topology-v2-panel-text-quaternary)]"
           >
             ⇧⌘K
           </span>

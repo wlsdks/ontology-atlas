@@ -188,7 +188,7 @@ const INIT_CLI_COMMAND = "git init";
  * 강등에서 유일한 진짜 다음 걸음이 복사 버튼보다 작았다).
  */
 const PRIMARY_ACTION_CLASS =
-  "inline-flex h-[var(--git-setup-action-height)] shrink-0 items-center justify-center gap-1.5 rounded-[var(--chrome-radius-inner)] bg-[color:var(--color-indigo-brand)] px-4 text-body font-semibold text-white transition-colors hover:bg-[color:var(--color-indigo-hover)] disabled:opacity-60";
+  "inline-flex h-[var(--git-setup-action-height)] shrink-0 items-center justify-center gap-1.5 rounded-[var(--chrome-radius-inner)] bg-[color:var(--color-indigo-brand)] px-4 text-body font-semibold text-[color:var(--color-text-on-accent)] transition-colors hover:bg-[color:var(--color-indigo-hover)] disabled:opacity-60";
 
 /** 보조 탈출구 — 있지만 주 동작과 경쟁하지 않는 무게. */
 const SECONDARY_ACTION_CLASS =
@@ -820,7 +820,7 @@ function PageHeader({
             arbitrary length 로 우회 참조하면 글자 크기만 올라가고 그 단이 싣는
             행간은 아래 단 것이 그대로 남아, 아무도 고른 적 없는 비율이 만들어진다
             — 여기가 그랬다(23px 글자에 title 짝인 24px 행간, 1.04). */}
-        <h1 className="flex items-center gap-2 text-title font-semibold tracking-[-0.005em] text-[color:var(--color-text-primary)] sm:text-display">
+        <h1 className="flex items-center gap-2 text-title font-semibold tracking-[var(--tracking-title)] text-[color:var(--color-text-primary)] sm:text-display">
           <HistoryIcon size={18} aria-hidden className="text-[color:var(--color-indigo-text-soft)]" />
           {t("title")}
         </h1>
@@ -1150,7 +1150,7 @@ function SetupFrame({
           {t("title")}
         </p>
         <div className="flex flex-col gap-2">
-          <h1 className="text-display font-semibold tracking-[-0.012em] text-[color:var(--color-text-primary)]">
+          <h1 className="text-display font-semibold tracking-[var(--tracking-card)] text-[color:var(--color-text-primary)]">
             {title}
           </h1>
           {body ? (

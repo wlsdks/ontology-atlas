@@ -79,7 +79,7 @@ function DesktopVaultRedirect() {
       className="flex min-h-full items-center justify-center bg-[color:var(--color-canvas)] px-6 py-10"
     >
       <section className="grid w-full max-w-2xl justify-items-center gap-5 text-center">
-        <p className="font-mono text-caption uppercase tracking-[0.16em] text-[color:var(--color-text-quaternary)]">
+        <p className="font-mono text-caption uppercase tracking-[var(--tracking-caps-16)] text-[color:var(--color-text-quaternary)]">
           {t('redirectEyebrow')}
         </p>
         <div className="grid gap-2">
@@ -112,7 +112,7 @@ function DesktopVaultRedirect() {
             );
           })}
         </div>
-        <p className="font-mono text-caption uppercase tracking-[0.18em] text-[color:var(--color-text-quaternary)]">
+        <p className="font-mono text-caption uppercase tracking-[var(--tracking-caps-16)] text-[color:var(--color-text-quaternary)]">
           {t('openingLocalVaultPicker')}
         </p>
       </section>

@@ -355,7 +355,7 @@ export function ShortcutSheet({ open, onClose }: Props) {
           >
             <header className="flex shrink-0 items-center justify-between border-b border-[color:var(--color-border-soft)] px-5 py-4">
               <div>
-                <p className="font-mono text-caption uppercase tracking-[0.14em] text-[color:var(--color-indigo-accent)]">
+                <p className="font-mono text-caption uppercase tracking-[var(--tracking-caps-14)] text-[color:var(--color-indigo-accent)]">
                   {t("title")}
                 </p>
                 <p className="mt-1 text-body text-[color:var(--color-text-secondary)]">
@@ -448,7 +448,7 @@ export function ShortcutSheet({ open, onClose }: Props) {
                         : "px-5 py-4"
                     }
                   >
-                    <p className="font-mono text-caption uppercase tracking-[0.14em] text-[color:var(--color-text-quaternary)]">
+                    <p className="font-mono text-caption uppercase tracking-[var(--tracking-caps-14)] text-[color:var(--color-text-quaternary)]">
                       {t(`sections.${section.titleKey}`)}
                     </p>
                     <dl className="mt-3 space-y-2.5">
@@ -500,7 +500,7 @@ export function ShortcutSheet({ open, onClose }: Props) {
             </div>
 
             <footer className="shrink-0 border-t border-[color:var(--color-overlay-2)] bg-[color:var(--color-overlay-1)] px-5 py-3">
-              <p className="font-mono text-caption uppercase tracking-[0.14em] text-[color:var(--color-text-quaternary)]">
+              <p className="font-mono text-caption uppercase tracking-[var(--tracking-caps-14)] text-[color:var(--color-text-quaternary)]">
                 {t("glossary.title")}
               </p>
               <dl className="mt-1.5 flex flex-wrap gap-x-4 gap-y-1">
@@ -515,7 +515,7 @@ export function ShortcutSheet({ open, onClose }: Props) {
                   </div>
                 ))}
               </dl>
-              <p className="mt-2.5 font-mono text-caption uppercase tracking-[0.14em] text-[color:var(--color-text-quaternary)]">
+              <p className="mt-2.5 font-mono text-caption uppercase tracking-[var(--tracking-caps-14)] text-[color:var(--color-text-quaternary)]">
                 <kbd className="rounded-micro border border-[color:var(--color-overlay-3)] px-1 py-0.5 tabular-nums">
                   ?
                 </kbd>{" "}

@@ -188,7 +188,7 @@ export function TopologyRealmLedger({
       {/* ── 1. 헤더 ── caps eyebrow + 제목 + census 한 줄 + 조용한 해제. */}
       <header className="mb-3 shrink-0 px-0.5">
         <div className="mb-1 flex items-center justify-between gap-2">
-          <span className="min-w-0 flex-1 truncate font-mono text-caption uppercase tracking-[0.16em] text-[color:var(--topology-v2-panel-text-tertiary)]">
+          <span className="min-w-0 flex-1 truncate font-mono text-caption uppercase tracking-[var(--tracking-caps-16)] text-[color:var(--topology-v2-panel-text-tertiary)]">
             {labels.label}
           </span>
           {/* 온톨로지 블록 Slice A — "이 영역을 블록으로 내보내기". 자립

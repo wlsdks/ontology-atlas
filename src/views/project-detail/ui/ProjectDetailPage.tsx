@@ -142,14 +142,14 @@ function ProjectDetailTopBar({
       </span>
       <Link
         href={projectsListHref}
-        className="font-mono text-label uppercase tracking-[0.12em] text-[color:var(--color-text-tertiary)] transition-colors hover:text-[color:var(--color-text-primary)]"
+        className="font-mono text-label uppercase tracking-[var(--tracking-caps-12)] text-[color:var(--color-text-tertiary)] transition-colors hover:text-[color:var(--color-text-primary)]"
       >
         {t("topBarProjectsLabel")}
       </Link>
       <span aria-hidden className="text-label text-[color:var(--color-text-quaternary)]">
         ▸
       </span>
-      <span className="max-w-[240px] truncate font-mono text-label uppercase tracking-[0.12em] text-[color:var(--color-text-primary)]">
+      <span className="max-w-[240px] truncate font-mono text-label uppercase tracking-[var(--tracking-caps-12)] text-[color:var(--color-text-primary)]">
         {projectName ?? slug ?? t("topBarProjectFallback")}
       </span>
 
@@ -166,7 +166,7 @@ function ProjectDetailTopBar({
         {census ? (
           <span
             data-testid="project-detail-global-census"
-            className="hidden font-mono text-label tracking-[0.08em] text-[color:var(--engraved-numeral-face)] [text-shadow:var(--engraved-numeral-text-shadow)] md:inline"
+            className="hidden font-mono text-label tracking-[var(--tracking-caps-08)] text-[color:var(--engraved-numeral-face)] [text-shadow:var(--engraved-numeral-text-shadow)] md:inline"
           >
             {t("globalCensus", { concepts: census.concepts, relations: census.relations })}
           </span>
@@ -459,7 +459,7 @@ export function ProjectDetailPage({
     measure(70ch)는 한 행이 눈으로 좇을 수 있는 길이의 상한이다.
   */
   const storyMarkdownClassName =
-    "text-body-lg leading-prose text-[color:var(--color-text-secondary)] [&>*:first-child]:mt-0 [&_a]:text-[color:var(--color-indigo-accent)] [&_a]:underline-offset-2 [&_a:hover]:text-[color:var(--color-indigo-hover)] [&_blockquote]:my-4 [&_blockquote]:border-l-2 [&_blockquote]:border-[color:var(--color-border-strong)] [&_blockquote]:pl-3.5 [&_blockquote]:text-[color:var(--color-text-tertiary)] [&_code]:rounded-micro [&_code]:border [&_code]:border-[color:var(--color-border-soft)] [&_code]:px-1.5 [&_code]:py-0.5 [&_code]:font-mono [&_code]:text-body [&_code]:text-[color:var(--color-text-tertiary)] [&_h1]:mt-9 [&_h1]:mb-3 [&_h1]:text-title [&_h1]:font-[650] [&_h1]:tracking-title [&_h1]:text-[color:var(--color-text-primary)] [&_h2]:mt-9 [&_h2]:mb-3 [&_h2]:text-title [&_h2]:font-[650] [&_h2]:tracking-title [&_h2]:text-[color:var(--color-text-primary)] [&_h3]:mt-7 [&_h3]:mb-2 [&_h3]:text-body-lg [&_h3]:font-[650] [&_h3]:text-[color:var(--color-text-primary)] [&_hr]:my-7 [&_hr]:border-[color:var(--color-border-soft)] [&_li]:mb-1.5 [&_li]:list-disc [&_li]:pl-1 [&_li::marker]:text-[color:var(--color-text-quaternary)] [&_ol]:my-3 [&_ol]:pl-[22px] [&_p]:mb-3.5 [&_pre]:my-4 [&_pre]:overflow-x-auto [&_pre]:rounded-[var(--radius-card)] [&_pre]:border [&_pre]:border-[color:var(--color-border-soft)] [&_pre]:bg-[color:var(--color-overlay-1)] [&_pre]:p-3.5 [&_pre_code]:border-0 [&_pre_code]:bg-transparent [&_pre_code]:p-0 [&_pre_code]:text-body [&_strong]:font-semibold [&_strong]:text-[color:var(--color-text-primary)] [&_table]:my-4 [&_table]:w-full [&_table]:border-collapse [&_td]:border-t [&_td]:border-[color:var(--color-divider)] [&_td]:py-2 [&_td]:pr-4 [&_th]:pb-2 [&_th]:pr-4 [&_th]:text-left [&_th]:font-mono [&_th]:text-caption [&_th]:uppercase [&_th]:tracking-caption [&_th]:text-[color:var(--color-text-quaternary)] [&_ul]:my-3 [&_ul]:pl-[22px]";
+    "text-body-lg leading-prose text-[color:var(--color-text-secondary)] [&>*:first-child]:mt-0 [&_a]:text-[color:var(--color-indigo-accent)] [&_a]:underline-offset-2 [&_a:hover]:text-[color:var(--color-indigo-hover)] [&_blockquote]:my-4 [&_blockquote]:border-l-2 [&_blockquote]:border-[color:var(--color-border-strong)] [&_blockquote]:pl-3.5 [&_blockquote]:text-[color:var(--color-text-tertiary)] [&_code]:rounded-micro [&_code]:border [&_code]:border-[color:var(--color-border-soft)] [&_code]:px-1.5 [&_code]:py-0.5 [&_code]:font-mono [&_code]:text-body [&_code]:text-[color:var(--color-text-tertiary)] [&_h1]:mt-9 [&_h1]:mb-3 [&_h1]:text-title [&_h1]:font-[var(--font-weight-strong)] [&_h1]:tracking-title [&_h1]:text-[color:var(--color-text-primary)] [&_h2]:mt-9 [&_h2]:mb-3 [&_h2]:text-title [&_h2]:font-[var(--font-weight-strong)] [&_h2]:tracking-title [&_h2]:text-[color:var(--color-text-primary)] [&_h3]:mt-7 [&_h3]:mb-2 [&_h3]:text-body-lg [&_h3]:font-[var(--font-weight-strong)] [&_h3]:text-[color:var(--color-text-primary)] [&_hr]:my-7 [&_hr]:border-[color:var(--color-border-soft)] [&_li]:mb-1.5 [&_li]:list-disc [&_li]:pl-1 [&_li::marker]:text-[color:var(--color-text-quaternary)] [&_ol]:my-3 [&_ol]:pl-[22px] [&_p]:mb-3.5 [&_pre]:my-4 [&_pre]:overflow-x-auto [&_pre]:rounded-[var(--radius-card)] [&_pre]:border [&_pre]:border-[color:var(--color-border-soft)] [&_pre]:bg-[color:var(--color-overlay-1)] [&_pre]:p-3.5 [&_pre_code]:border-0 [&_pre_code]:bg-transparent [&_pre_code]:p-0 [&_pre_code]:text-body [&_strong]:font-semibold [&_strong]:text-[color:var(--color-text-primary)] [&_table]:my-4 [&_table]:w-full [&_table]:border-collapse [&_td]:border-t [&_td]:border-[color:var(--color-divider)] [&_td]:py-2 [&_td]:pr-4 [&_th]:pb-2 [&_th]:pr-4 [&_th]:text-left [&_th]:font-mono [&_th]:text-caption [&_th]:uppercase [&_th]:tracking-caption [&_th]:text-[color:var(--color-text-quaternary)] [&_ul]:my-3 [&_ul]:pl-[22px]";
   const projectFullEditHref = getProjectEditHref(project.slug, {
     returnTo: getProjectRuntimeDetailHref(project.slug),
   });
@@ -507,7 +507,7 @@ export function ProjectDetailPage({
                 editable={canManageProject}
                 onSave={(next) => saveProjectField("name", next)}
                 ariaLabel={t("inlineNameAria")}
-                className="text-display leading-display-tight font-[650] tracking-[-0.015em] text-pretty text-[color:var(--color-text-primary)]"
+                className="text-display leading-display-tight font-[var(--font-weight-strong)] tracking-[var(--tracking-card)] text-pretty text-[color:var(--color-text-primary)]"
               />
               {/*
                 메타 행은 여기서 끝난다. 예전엔 설명이 이 점-행 **안으로**
@@ -584,7 +584,7 @@ export function ProjectDetailPage({
                   key={item.label}
                   className="inline-flex items-baseline gap-1.5 rounded-chip border border-[color:var(--color-border-soft)] bg-[color:var(--color-overlay-1)] px-2 py-1"
                 >
-                  <span className="text-caption uppercase tracking-[0.1em] text-[color:var(--color-text-quaternary)]">
+                  <span className="text-caption uppercase tracking-[var(--tracking-caps-10)] text-[color:var(--color-text-quaternary)]">
                     {item.label}
                   </span>
                   <span className="font-mono text-label tabular-nums text-[color:var(--color-text-secondary)]">
@@ -603,12 +603,12 @@ export function ProjectDetailPage({
 
         {domainComposition.domains.length > 0 ? (
           <div className="flex flex-none flex-col border-t border-[color:var(--color-divider)] pt-4 lg:w-[380px] lg:border-t-0 lg:border-l lg:pt-0 lg:pl-6">
-            <div className="flex items-baseline gap-2 font-mono text-caption uppercase tracking-[0.14em] text-[color:var(--color-text-quaternary)]">
+            <div className="flex items-baseline gap-2 font-mono text-caption uppercase tracking-[var(--tracking-caps-14)] text-[color:var(--color-text-quaternary)]">
               <span>{t("minimapLabel")}</span>
-              <span className="normal-case tracking-[0.04em]">{t("minimapSublabel")}</span>
+              <span className="normal-case tracking-[var(--tracking-caption)]">{t("minimapSublabel")}</span>
               <Link
                 href={getTopologyProjectHref(project.slug)}
-                className="ml-auto shrink-0 normal-case tracking-[0.04em] text-[color:var(--color-text-tertiary)] transition-colors hover:text-[color:var(--color-text-secondary)]"
+                className="ml-auto shrink-0 normal-case tracking-[var(--tracking-caption)] text-[color:var(--color-text-tertiary)] transition-colors hover:text-[color:var(--color-text-secondary)]"
               >
                 {t("minimapOpenInTopology")}
               </Link>
@@ -725,10 +725,10 @@ export function ProjectDetailPage({
           className="rounded-card border border-[color:var(--color-border-soft)] bg-[color:var(--color-panel)] p-[var(--card-pad)] shadow-[inset_0_1px_0_var(--color-overlay-1)] md:p-[16px_18px]"
         >
           <div className="mb-2.5 flex items-baseline gap-2">
-            <span className="text-body-lg font-[560] text-[color:var(--color-text-primary)]">
+            <span className="text-body-lg font-[var(--font-weight-emphasis)] text-[color:var(--color-text-primary)]">
               {t("bodyCardTitle")}
             </span>
-            <span className="font-mono text-caption uppercase tracking-[0.12em] text-[color:var(--color-text-quaternary)]">
+            <span className="font-mono text-caption uppercase tracking-[var(--tracking-caps-12)] text-[color:var(--color-text-quaternary)]">
               {t("bodyCardGcap")}
             </span>
           </div>
@@ -759,10 +759,10 @@ export function ProjectDetailPage({
           <section className="rounded-card border border-[color:var(--color-border-soft)] bg-[color:var(--color-panel)] p-[var(--card-pad)] shadow-[inset_0_1px_0_var(--color-overlay-1)] md:p-[16px_18px]">
             <div className="mb-2.5 flex items-baseline gap-2">
               <TopologyV2TraceMark containment={false} />
-              <span className="text-body-lg font-[560] text-[color:var(--color-text-primary)]">
+              <span className="text-body-lg font-[var(--font-weight-emphasis)] text-[color:var(--color-text-primary)]">
                 {t("connectedTitle")}
               </span>
-              <span className="font-mono text-caption uppercase tracking-[0.12em] text-[color:var(--color-text-quaternary)]">
+              <span className="font-mono text-caption uppercase tracking-[var(--tracking-caps-12)] text-[color:var(--color-text-quaternary)]">
                 {t("connectedRelation")}
               </span>
             </div>
@@ -820,7 +820,7 @@ export function ProjectDetailPage({
               말하고, 코드는 보고 싶은 사람만 편다.
             */}
             <div className="mb-2">
-              <span className="text-body-lg font-[560] text-[color:var(--color-text-primary)]">
+              <span className="text-body-lg font-[var(--font-weight-emphasis)] text-[color:var(--color-text-primary)]">
                 {t("handoffTitle")}
               </span>
             </div>
@@ -843,7 +843,7 @@ export function ProjectDetailPage({
       </section>
 
       <footer className="mt-[var(--section-gap)] border-t border-[color:var(--color-overlay-2)] pt-6 pb-[var(--page-bottom-breath)]">
-        <p className="font-mono text-caption uppercase tracking-[0.1em] text-[color:var(--color-text-quaternary)]">
+        <p className="font-mono text-caption uppercase tracking-[var(--tracking-caps-10)] text-[color:var(--color-text-quaternary)]">
           {t("footerSummary", { slug: project.slug, date: formatDate(project.updatedAt) })}
         </p>
       </footer>

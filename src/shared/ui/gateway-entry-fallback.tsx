@@ -40,7 +40,7 @@ export async function GatewayEntryFallback({ locale }: { locale: string }) {
       className="flex h-full min-h-full flex-1 flex-col justify-center gap-6 bg-[color:var(--color-canvas)] px-6 py-10 md:px-12"
     >
       <div className="max-w-2xl">
-        <p className="font-mono text-label uppercase tracking-[0.16em] text-[color:var(--color-text-quaternary)]">
+        <p className="font-mono text-label uppercase tracking-[var(--tracking-caps-16)] text-[color:var(--color-text-quaternary)]">
           {t('eyebrow')}
         </p>
         <h1 className="mt-3 whitespace-pre-line text-display leading-display font-[var(--font-weight-signature)] tracking-[var(--tracking-display)] break-keep text-[color:var(--color-text-primary)]">

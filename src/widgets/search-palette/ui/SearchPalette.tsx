@@ -393,19 +393,19 @@ function SearchPaletteDialog({
           <div className="flex items-center gap-2">
             <p
               id="search-palette-title"
-              className="font-mono text-caption uppercase tracking-[0.12em] text-[color:var(--color-text-quaternary)]"
+              className="font-mono text-caption uppercase tracking-[var(--tracking-caps-12)] text-[color:var(--color-text-quaternary)]"
             >
               {query.trim() ? t('headingResults') : t('headingRecent')}
             </p>
             {containerLabel ? (
-              <span className="rounded-full border border-[color:var(--color-indigo-line-a32)] bg-[color:var(--color-indigo-a12)] px-2 py-0.5 font-mono text-caption uppercase tracking-[0.12em] text-[color:var(--color-indigo-line-a90)]">
+              <span className="rounded-full border border-[color:var(--color-indigo-line-a32)] bg-[color:var(--color-indigo-a12)] px-2 py-0.5 font-mono text-caption uppercase tracking-[var(--tracking-caps-12)] text-[color:var(--color-indigo-line-a90)]">
                 {t('containerBadge', { name: containerLabel })}
               </span>
             ) : null}
           </div>
           <span
             aria-live="polite"
-            className="font-mono text-caption uppercase tracking-[0.12em] tabular-nums text-[color:var(--color-text-quaternary)]"
+            className="font-mono text-caption uppercase tracking-[var(--tracking-caps-12)] tabular-nums text-[color:var(--color-text-quaternary)]"
           >
             {t('rowsCount', { count: rows.length })}
           </span>
@@ -434,7 +434,7 @@ function SearchPaletteDialog({
                   size: 'sm',
                   active,
                   className: cn(
-                    'font-mono uppercase tracking-[0.14em] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--color-indigo-a50)]',
+                    'font-mono uppercase tracking-[var(--tracking-caps-14)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--color-indigo-a50)]',
                     !active &&
                       'bg-[color:var(--color-overlay-1)] hover:border-[color:var(--color-border-strong)] hover:text-[color:var(--color-text-primary)]',
                   ),
@@ -447,7 +447,7 @@ function SearchPaletteDialog({
         </div>
         {!query.trim() && recentProjects.length > 0 ? (
           <div className="border-b border-[color:var(--color-overlay-2)] px-4 py-2.5">
-            <p className="mb-2 font-mono text-caption uppercase tracking-[0.12em] text-[color:var(--color-text-quaternary)]">
+            <p className="mb-2 font-mono text-caption uppercase tracking-[var(--tracking-caps-12)] text-[color:var(--color-text-quaternary)]">
               {t('recentSection')}
             </p>
             <div className="flex flex-wrap gap-1.5">
@@ -498,7 +498,7 @@ function SearchPaletteDialog({
         >
           {docResults.length > 0 ? (
             <div className="border-b border-[color:var(--color-overlay-2)] px-3 py-2">
-              <div className="mb-1 flex items-center gap-1.5 font-mono text-caption uppercase tracking-[0.14em] text-[color:var(--color-text-quaternary)]">
+              <div className="mb-1 flex items-center gap-1.5 font-mono text-caption uppercase tracking-[var(--tracking-caps-14)] text-[color:var(--color-text-quaternary)]">
                 <BookOpen size={10} aria-hidden />
                 {t('docsSection', { count: docResults.length })}
               </div>
@@ -528,7 +528,7 @@ function SearchPaletteDialog({
                           className="shrink-0 text-[color:var(--color-indigo-accent)]"
                         />
                         <span className="min-w-0 flex-1 truncate">{d.title}</span>
-                        <span className="min-w-0 truncate font-mono text-caption uppercase tracking-[0.1em] text-[color:var(--color-text-quaternary)]">
+                        <span className="min-w-0 truncate font-mono text-caption uppercase tracking-[var(--tracking-caps-10)] text-[color:var(--color-text-quaternary)]">
                           {d.slug}
                         </span>
                       </Link>
@@ -550,7 +550,7 @@ function SearchPaletteDialog({
                 <button
                   type="button"
                   onClick={onClose}
-                  className="mt-4 rounded-full border border-[color:var(--color-overlay-3)] px-3 py-1.5 font-mono text-caption uppercase tracking-[0.14em] text-[color:var(--color-text-tertiary)] transition-colors hover:text-[color:var(--color-text-primary)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--color-indigo-a50)] focus-visible:ring-offset-2 focus-visible:ring-offset-[color:var(--color-panel)]"
+                  className="mt-4 rounded-full border border-[color:var(--color-overlay-3)] px-3 py-1.5 font-mono text-caption uppercase tracking-[var(--tracking-caps-14)] text-[color:var(--color-text-tertiary)] transition-colors hover:text-[color:var(--color-text-primary)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--color-indigo-a50)] focus-visible:ring-offset-2 focus-visible:ring-offset-[color:var(--color-panel)]"
                 >
                   {t('emptyClose')}
                 </button>
@@ -574,7 +574,7 @@ function SearchPaletteDialog({
                     setLayerFilter('all');
                     setActiveIndex(0);
                   }}
-                  className="mt-4 rounded-full border border-[color:var(--color-indigo-a30)] bg-[color:var(--color-indigo-a08)] px-3 py-1.5 font-mono text-caption uppercase tracking-[0.14em] text-[color:var(--color-indigo-line-a90)] transition-colors hover:bg-[color:var(--color-indigo-a18)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--color-indigo-a50)] focus-visible:ring-offset-2 focus-visible:ring-offset-[color:var(--color-panel)]"
+                  className="mt-4 rounded-full border border-[color:var(--color-indigo-a30)] bg-[color:var(--color-indigo-a08)] px-3 py-1.5 font-mono text-caption uppercase tracking-[var(--tracking-caps-14)] text-[color:var(--color-indigo-line-a90)] transition-colors hover:bg-[color:var(--color-indigo-a18)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--color-indigo-a50)] focus-visible:ring-offset-2 focus-visible:ring-offset-[color:var(--color-panel)]"
                 >
                   {t('emptyLayerReset')}
                 </button>
@@ -588,7 +588,7 @@ function SearchPaletteDialog({
                 <button
                   type="button"
                   onClick={() => setQuery('')}
-                  className="mt-4 rounded-full border border-[color:var(--color-indigo-a30)] bg-[color:var(--color-indigo-a08)] px-3 py-1.5 font-mono text-caption uppercase tracking-[0.14em] text-[color:var(--color-indigo-line-a90)] transition-colors hover:bg-[color:var(--color-indigo-a18)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--color-indigo-a50)] focus-visible:ring-offset-2 focus-visible:ring-offset-[color:var(--color-panel)]"
+                  className="mt-4 rounded-full border border-[color:var(--color-indigo-a30)] bg-[color:var(--color-indigo-a08)] px-3 py-1.5 font-mono text-caption uppercase tracking-[var(--tracking-caps-14)] text-[color:var(--color-indigo-line-a90)] transition-colors hover:bg-[color:var(--color-indigo-a18)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--color-indigo-a50)] focus-visible:ring-offset-2 focus-visible:ring-offset-[color:var(--color-panel)]"
                 >
                   {t('emptyNoMatchClear')}
                 </button>
@@ -640,7 +640,7 @@ function SearchPaletteDialog({
                             {highlightMatch(r.project.name, query)}
                           </span>
                           {r.project.isHub ? (
-                            <span className="rounded-full bg-[color:var(--color-indigo-brand)] px-1.5 py-0.5 font-mono text-caption uppercase tracking-[0.1em] text-[color:var(--color-text-primary)]">
+                            <span className="rounded-full bg-[color:var(--color-indigo-brand)] px-1.5 py-0.5 font-mono text-caption uppercase tracking-[var(--tracking-caps-10)] text-[color:var(--color-text-primary)]">
                               {t('hub')}
                             </span>
                           ) : null}
@@ -649,24 +649,24 @@ function SearchPaletteDialog({
                           {r.project.description}
                         </p>
                         <div className="mt-2 flex flex-wrap items-center gap-1.5">
-                          <span className="rounded-full border border-[color:var(--color-divider)] px-2 py-0.5 font-mono text-caption uppercase tracking-[0.08em] text-[color:var(--color-text-quaternary)]">
+                          <span className="rounded-full border border-[color:var(--color-divider)] px-2 py-0.5 font-mono text-caption uppercase tracking-[var(--tracking-caps-08)] text-[color:var(--color-text-quaternary)]">
                             {categoryLabel(r.project.category)}
                           </span>
-                          <span className="rounded-full border border-[color:var(--color-divider)] px-2 py-0.5 font-mono text-caption uppercase tracking-[0.08em] text-[color:var(--color-text-quaternary)]">
+                          <span className="rounded-full border border-[color:var(--color-divider)] px-2 py-0.5 font-mono text-caption uppercase tracking-[var(--tracking-caps-08)] text-[color:var(--color-text-quaternary)]">
                             {statusLabel(r.project.status)}
                           </span>
                           {query.trim() && (
-                            <span className="rounded-full border border-[color:var(--color-indigo-a30)] bg-[color:var(--color-indigo-a08)] px-2 py-0.5 font-mono text-caption uppercase tracking-[0.08em] text-[color:var(--color-indigo-text-soft)]">
+                            <span className="rounded-full border border-[color:var(--color-indigo-a30)] bg-[color:var(--color-indigo-a08)] px-2 py-0.5 font-mono text-caption uppercase tracking-[var(--tracking-caps-08)] text-[color:var(--color-indigo-text-soft)]">
                               {t(MATCH_FIELD_KEYS[r.matchedField])}
                             </span>
                           )}
                         </div>
                       </div>
                       <div className="hidden shrink-0 self-center text-right sm:block">
-                        <div className="font-mono text-caption uppercase tracking-[0.1em] text-[color:var(--color-text-quaternary)]">
+                        <div className="font-mono text-caption uppercase tracking-[var(--tracking-caps-10)] text-[color:var(--color-text-quaternary)]">
                           {String(rowIndex + 1).padStart(2, '0')}
                         </div>
-                        <div className="mt-1 font-mono text-caption uppercase tracking-[0.08em] text-[color:var(--color-text-quaternary)]">
+                        <div className="mt-1 font-mono text-caption uppercase tracking-[var(--tracking-caps-08)] text-[color:var(--color-text-quaternary)]">
                           {r.project.slug}
                         </div>
                       </div>
@@ -678,7 +678,7 @@ function SearchPaletteDialog({
           )}
         </div>
 
-        <div className="flex flex-wrap items-center justify-between gap-2 border-t border-[color:var(--color-overlay-2)] bg-[color:var(--color-elevated)] px-4 py-2 font-mono text-caption uppercase tracking-[0.1em] text-[color:var(--color-text-quaternary)]">
+        <div className="flex flex-wrap items-center justify-between gap-2 border-t border-[color:var(--color-overlay-2)] bg-[color:var(--color-elevated)] px-4 py-2 font-mono text-caption uppercase tracking-[var(--tracking-caps-10)] text-[color:var(--color-text-quaternary)]">
           <div className="flex flex-wrap items-center gap-3">
             <span>
               <kbd>↑↓</kbd> {t('shortcutMove')}

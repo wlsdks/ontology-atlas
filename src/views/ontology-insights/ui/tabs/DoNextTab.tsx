@@ -301,7 +301,7 @@ function WorkGroupHeading({
   return (
     <div data-testid={testId} className="flex flex-col gap-1">
       <div className="flex items-baseline gap-2">
-        <InsightsSectionTitle level={2} className="text-body-lg font-medium tracking-[-0.01em] text-[color:var(--color-text-primary)]">
+        <InsightsSectionTitle level={2} className="text-body-lg font-medium tracking-[var(--tracking-title)] text-[color:var(--color-text-primary)]">
           {title}
         </InsightsSectionTitle>
         <span
@@ -350,7 +350,7 @@ function TouchUpBand({
       className="flex flex-col gap-2 rounded-panel border border-[color:var(--color-border-soft)] bg-[color:var(--color-elevated)] p-[var(--card-pad)]"
     >
       <div className="flex items-baseline gap-2">
-        <InsightsSectionTitle level={2} className="text-body-lg font-medium tracking-[-0.01em] text-[color:var(--color-text-primary)]">
+        <InsightsSectionTitle level={2} className="text-body-lg font-medium tracking-[var(--tracking-title)] text-[color:var(--color-text-primary)]">
           {labels.touchUpBandTitle}
         </InsightsSectionTitle>
         <span
@@ -1133,7 +1133,7 @@ export function DoNextTab({
             className="min-w-0"
           >
             <div className="flex flex-col gap-1 sm:flex-row sm:items-baseline sm:gap-2">
-              <InsightsSectionTitle level={2} className="text-body-lg font-medium tracking-[-0.01em] text-[color:var(--color-text-primary)]">
+              <InsightsSectionTitle level={2} className="text-body-lg font-medium tracking-[var(--tracking-title)] text-[color:var(--color-text-primary)]">
                 {labels.agentReadinessTitle}
               </InsightsSectionTitle>
               <span className="flex min-w-0 flex-wrap items-baseline gap-x-3 gap-y-0.5 font-mono text-label tabular-nums text-[color:var(--topology-v2-numeral-face)] sm:ml-auto">
@@ -1233,7 +1233,7 @@ export function DoNextTab({
             className="sm:border-l sm:border-[color:var(--color-divider)] sm:pl-8"
           >
             <div className="flex items-baseline gap-2">
-              <InsightsSectionTitle level={2} className="text-body-lg font-medium tracking-[-0.01em] text-[color:var(--color-text-primary)]">
+              <InsightsSectionTitle level={2} className="text-body-lg font-medium tracking-[var(--tracking-title)] text-[color:var(--color-text-primary)]">
                 {labels.repairQueueTitle}
               </InsightsSectionTitle>
               {/* `min-w-0` — 옆의 「에이전트 준비도」 카드가 이미 쓰던 규칙을
@@ -1352,7 +1352,7 @@ export function DoNextTab({
             className="mt-5 border-t border-[color:var(--color-divider)] pt-4"
           >
             <div className="flex items-baseline gap-2">
-              <InsightsSectionTitle level={2} className="text-body-lg font-medium tracking-[-0.01em] text-[color:var(--color-text-primary)]">
+              <InsightsSectionTitle level={2} className="text-body-lg font-medium tracking-[var(--tracking-title)] text-[color:var(--color-text-primary)]">
                 {labels.digestTitle}
               </InsightsSectionTitle>
               <span className="ml-auto font-mono text-label tabular-nums text-[color:var(--topology-v2-numeral-face)]">
@@ -1398,7 +1398,7 @@ export function DoNextTab({
             스스로 이름을 말한다(랜드마크 이름은 aria-label 이 계속 지킨다). */}
         {queueEmpty ? (
           <>
-            <InsightsSectionTitle level={2} className="text-body-lg font-medium tracking-[-0.01em] text-[color:var(--color-text-primary)]">
+            <InsightsSectionTitle level={2} className="text-body-lg font-medium tracking-[var(--tracking-title)] text-[color:var(--color-text-primary)]">
               {labels.queueTitle}
             </InsightsSectionTitle>
             <p className="text-body text-[color:var(--color-text-quaternary)]">{labels.emptyQueue}</p>
