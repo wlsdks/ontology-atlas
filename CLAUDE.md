@@ -79,7 +79,7 @@
 `/design-system-audit` · `/design-build` ·
 `/user-walkthrough` · `/motion-verify` · `/responsive-sweep` · `/gate-probe` ·
 `/ontology-sync` · `/ontology-bootstrap` · `/ontology-extract` ·
-`/ontology-absorb-confluence` · `/ontology-field-trial`)은 **양쪽 다 읽으므로** 전용이 아니다 — 위 3번
+`/ontology-absorb-confluence` · `/ontology-field-trial` · `/parallel-brief`)은 **양쪽 다 읽으므로** 전용이 아니다 — 위 3번
 규율의 대상이다. 소집 트리거와 프로토콜의 정본은 `AGENTS.md`, 결정과 진
 반대 의견은 `docs/DECISIONS.md` 에 남는다.
 
