@@ -32,8 +32,8 @@ diff review -> better next agent task`.
 | Surface | Entry | Audience |
 |---|---|---|
 | **Desktop app** (macOS · Windows x64 beta) | signed/notarized macOS DMG or unsigned Windows beta NSIS → installed local workbench; first run opens `/docs/?intent=local` vault setup welcome; visual routes `/docs`, `/ontology`, `/topology`, `/projects`, `/ontology/studio`, `/ontology/insights` | daily visual ontology work — pick a local vault folder, edit markdown-backed nodes/relations, reopen recent vaults without visiting the hosted site |
-| **CLI** (R12 / R14 / R15+ · 52 commands) | `init / agent-setup / agent-files / agent-activity / add / import / list / find / validate / mcp-verify / query / compile / export` (vault basics + existing-vault Claude/Codex config repair + read-only agent-file map/drift readout + explicit live activity heartbeat + installed MCP health/graph-query smoke + deterministic graph compile + standard-format interop export) · `index / analyze / infer-imports / bootstrap / preflight / snapshot` (autonomous ingest, project ontology indexing, commit preflight, and vault-scoped git snapshot commits) · `backlinks / orphans / path / explain / all-paths / reachability / relation-check / relate / rename / merge / delete` (graph CRUD + direct/path/common-neighbor explanation + bounded traversal + transitive closure + write preflight + write) · `match-nodes / match-edges / domain-matrix / facets / schema / pattern-walk / project-map / overview / hubs / blast-radius / cycles / components / topological-order / health / agent-brief / workspace-brief / growth / maintenance / node / similar` (graph deep dive — `query_ontology` ops, including graph DB-style node/edge scans, relation dashboard facets, relation schema patterns, explicit traversal and project maps, connected island checks, prerequisite ordering, relationship explanation, domain coupling matrix, agent handoff, and growth/maintenance queues) | developer terminal — vault scaffold, daily exploration, bulk import, MCP sanity check, live agent activity handoff, commit-time vault impact preview, graph deep dive (same authority as AI agent via MCP) |
-| **MCP** (R5 / R7 / R11 / R14 / R16 / R17) | 33 tools (19 read · 14 write) over JSON-RPC | AI agent (Claude Code, Codex, Cursor) — explicit vault/repo root proof · read for context · write back findings · vault-scoped Git status/local snapshots · safe relation removal/replacement and concept reclassification · bootstrap/index projects · finalize project competency receipts · compile/query/validator-backed health and fresh categorical meaning assessment |
+| **CLI** (R12 / R14 / R15+ · 54 commands) | `init / agent-setup / agent-files / agent-activity / add / import / list / find / validate / mcp-verify / query / compile / export` (vault basics + existing-vault Claude/Codex config repair + read-only agent-file map/drift readout + explicit live activity heartbeat + installed MCP health/graph-query smoke + deterministic graph compile + standard-format interop export) · `index / analyze / infer-imports / bootstrap / preflight / snapshot` (autonomous ingest, project ontology indexing, commit preflight, and vault-scoped git snapshot commits) · `backlinks / orphans / path / explain / all-paths / reachability / relation-check / relate / rename / merge / delete` (graph CRUD + direct/path/common-neighbor explanation + bounded traversal + transitive closure + write preflight + write) · `match-nodes / match-edges / domain-matrix / facets / schema / pattern-walk / project-map / overview / hubs / blast-radius / cycles / components / topological-order / health / agent-brief / workspace-brief / growth / maintenance / node / similar` (graph deep dive — `query_ontology` ops, including graph DB-style node/edge scans, relation dashboard facets, relation schema patterns, explicit traversal and project maps, connected island checks, prerequisite ordering, relationship explanation, domain coupling matrix, agent handoff, and growth/maintenance queues) | developer terminal — vault scaffold, daily exploration, bulk import, MCP sanity check, live agent activity handoff, commit-time vault impact preview, graph deep dive (same authority as AI agent via MCP) |
+| **MCP** (R5 / R7 / R11 / R14 / R16 / R17) | 35 tools (19 read · 16 write) over JSON-RPC | AI agent (Claude Code, Codex, Cursor) — explicit vault/repo root proof · read for context · write back findings · vault-scoped Git status/local snapshots · safe relation removal/replacement and concept reclassification · bootstrap/index projects · finalize project competency receipts · compile/query/validator-backed health and fresh categorical meaning assessment |
 | **Website** | GitHub Pages static export / `/` + `/download` | `/` renders the topology map directly and lets you open your own local vault folder from the browser (File System Access API, no install); `/download` is the product intro + release download path. Only `/docs`'s own separate local-source *browsing* tab stays desktop-only. |
 
 Multi-project vaults use explicit selection at the agent boundary:
@@ -783,7 +783,7 @@ git 커밋 하나로 남길지 정한다. 그래서 화면에서 가장 눈에 �
 
 ---
 
-## 3. MCP server (33 tools)
+## 3. MCP server (35 tools)
 
 AI agents read/write the same vault as humans. Two ways to get the server running, and only two:
 
@@ -793,6 +793,18 @@ AI agents read/write the same vault as humans. Two ways to get the server runnin
 | **Source checkout** (fallback) | `node <checkout>/mcp/src/index.js` with `OATLAS_VAULT` set. | Clone the repo, then either paste the config or let `node <checkout>/cli/src/index.mjs init` / `agent-setup --write` write it. |
 
 npm publishing is retired (`docs/DECISIONS.md`, 2026-07-27) — there is no `npx` channel.
+
+**Connecting a project to its code (2026-08-04).** `connect_project_source`
+(CLI `connect-source`) binds one project node to the local folder holding the
+code it describes, measures it, and writes the source receipt that
+`agent_brief` reports. Omit the folder and it infers one — the git repository
+enclosing the vault, otherwise the nearest ancestor carrying a project
+manifest — then tells you how many of the ontology's declared `path:` claims
+actually exist inside it before anything is written. `confirm: true` binds;
+`disconnect_project_source` (CLI `disconnect-source`) undoes it. Until this
+landed, the app could say "no code folder is connected" and name
+`connect_source` as the next action while nothing outside the macOS folder
+picker could perform it.
 
 **R14 — workflow automation** (Claude Code + Codex):
 
@@ -851,7 +863,7 @@ merge preserves the survivor URN and absorbs source identities, and
 external/dangling refs are omitted
 (never phantom nodes). Full loading recipes live in `mcp/README.md` → *Interop*.
 Read-only MCP registration for external read consumers: set `OATLAS_READ_ONLY=1`
-(tools/list drops the 14 write tools; write calls are rejected).
+(tools/list drops the 16 write tools; write calls are rejected).
 
 Staying file-only here is deliberate and matches the Obsidian precedent
 (files + offline core, servers behind an opt-in localhost plugin). A live HTTP

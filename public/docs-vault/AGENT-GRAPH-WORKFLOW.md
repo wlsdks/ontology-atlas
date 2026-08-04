@@ -114,7 +114,7 @@ session can trust the local CLI graph path before scanning or writing.
 You can use the product without connecting Claude Code, Codex, Cursor, or any
 MCP client.
 
-The CLI currently exposes 52 commands over the same local vault, including
+The CLI currently exposes 54 commands over the same local vault, including
 graph-database-style queries:
 
 ```bash
@@ -168,12 +168,12 @@ parsing Markdown.
 ## What MCP Adds
 
 MCP is the agent interface. When Claude Code, Codex, or Cursor has the
-`ontology-atlas` MCP server registered, the agent can call 33 local tools:
+`ontology-atlas` MCP server registered, the agent can call 35 local tools:
 
 - 19 read tools: connection and git state, node listing, evidence search,
   backlinks, neighbors, paths, validation, compile, repo analysis, import
   inference, project indexing, and graph queries.
-- 14 write tools: document absorption, single/batch node and relation writes,
+- 16 write tools: document absorption, single/batch node and relation writes,
   patch/reclassify, relation removal/replacement, rename, merge, delete, and git
   snapshot with dry-run, idempotency, or conflict safety where needed, plus the
   project-meaning receipt finalizer.

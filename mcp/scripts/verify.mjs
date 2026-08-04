@@ -192,11 +192,14 @@ export const EXPECTED_WRITE_TOOLS = [
   'absorb_document',
   'git_snapshot',
   'finalize_project_meaning',
+  'connect_project_source',
+  'disconnect_project_source',
 ];
 
 export const EXPECTED_TOOLS = [...EXPECTED_READ_TOOLS, ...EXPECTED_WRITE_TOOLS];
 export const EXPECTED_DESTRUCTIVE_TOOLS = [
   'git_snapshot',
+  'disconnect_project_source',
   'delete_concept',
   'merge_concepts',
   'rename_concept',

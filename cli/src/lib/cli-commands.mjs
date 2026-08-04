@@ -58,6 +58,8 @@ export const CLI_COMMAND_RUNNERS = Object.freeze({
   'infer-imports': runner('infer-imports.mjs', 'runInferImports'),
   preflight: runner('preflight.mjs', 'runPreflight'),
   snapshot: runner('snapshot.mjs', 'runSnapshot'),
+  'connect-source': runner('connect-source.mjs', 'runConnectSource'),
+  'disconnect-source': runner('disconnect-source.mjs', 'runDisconnectSource'),
 });
 
 export const CLI_COMMAND_MODULES = Object.freeze(
