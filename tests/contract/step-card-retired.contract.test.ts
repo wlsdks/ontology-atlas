@@ -79,9 +79,16 @@ describe("StepCard 는 은퇴했다 — 3단계 문법은 두 벌이고 그 이�
   it("the settings panel uses the collapsible variant, and the variant is the only third file", () => {
     expect(read(PANEL)).toMatch(/<AgentSetupStep\b/);
     // 접히는 변형은 항상 펼쳐진 것을 **다시 선언하지 않는다** — 둘의 차이는
-    // 행동(접힘)이지 문법이 아니다. 그래서 등장/퇴장 프리미티브를 반드시 쓴다.
+    // 행동(접힘)이지 문법이 아니다.
     expect(read(COLLAPSIBLE)).not.toMatch(/function\s+StepRow\b/);
-    expect(read(COLLAPSIBLE)).toMatch(/<Surface\b/);
+    // 접힘의 모션은 **목록 행 펼침 문법**이다 (2026-08-04 저녁 개정 — 같은 날
+    // 아침 판은 Surface 를 요구했는데, 소유자가 설치 앱에서 결함을 잡았다:
+    // 흐름 안 원소에 떠 있는 표면의 문법을 입히면 아래 형제가 두 번 튄다
+    // (+254px/1프레임 → 140ms 뒤 −352px/1프레임, 프레임 실측). 행동 계약과
+    // 프로브는 AgentSetupStep.test.tsx 가 진다 — 여기는 문법 소속만 잠근다.
+    expect(read(COLLAPSIBLE)).toMatch(/useRowDisclosure/);
+    expect(read(COLLAPSIBLE)).toMatch(/ai-row-disclosure/);
+    expect(read(COLLAPSIBLE)).not.toMatch(/<Surface\b/);
   });
 
   it("the promoted component carries no card chrome of its own", () => {
