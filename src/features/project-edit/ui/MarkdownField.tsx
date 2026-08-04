@@ -33,7 +33,7 @@ export function MarkdownField({ id, value, onChange, placeholder, rows = 8 }: Pr
         <TabButton active={mode === 'preview'} onClick={() => setMode('preview')}>
           {t('tabPreview')}
         </TabButton>
-        <span className="ml-auto font-mono text-[9px] uppercase tracking-[0.1em] text-[color:var(--color-text-quaternary)]">
+        <span className="ml-auto font-mono text-caption uppercase tracking-[0.1em] text-[color:var(--color-text-quaternary)]">
           {t('footer')}
         </span>
       </div>
@@ -62,8 +62,8 @@ export function MarkdownField({ id, value, onChange, placeholder, rows = 8 }: Pr
             '[&>p]:my-1.5',
             '[&>ul]:my-1.5 [&>ul]:list-disc [&>ul]:pl-5',
             '[&>ol]:my-1.5 [&>ol]:list-decimal [&>ol]:pl-5',
-            '[&_code]:rounded-micro [&_code]:bg-[color:var(--color-elevated)] [&_code]:px-1 [&_code]:py-0.5 [&_code]:font-mono [&_code]:text-[13px]',
-            '[&>pre]:rounded-chip [&>pre]:bg-[color:var(--color-elevated)] [&>pre]:p-3 [&>pre]:my-2 [&>pre]:font-mono [&>pre]:text-[12px] [&>pre>code]:bg-transparent [&>pre>code]:px-0',
+            '[&_code]:rounded-micro [&_code]:bg-[color:var(--color-elevated)] [&_code]:px-1 [&_code]:py-0.5 [&_code]:font-mono [&_code]:text-body',
+            '[&>pre]:rounded-chip [&>pre]:bg-[color:var(--color-elevated)] [&>pre]:p-3 [&>pre]:my-2 [&>pre]:font-mono [&>pre]:text-body [&>pre>code]:bg-transparent [&>pre>code]:px-0',
             '[&_a]:text-[color:var(--color-indigo-accent)] [&_a]:underline',
             '[&>blockquote]:border-l-2 [&>blockquote]:border-[color:var(--color-border-strong)] [&>blockquote]:pl-3 [&>blockquote]:text-[color:var(--color-text-tertiary)]',
           )}
