@@ -1,5 +1,6 @@
 import { expect, test, type Page } from "@playwright/test";
 import { seedFirstRunSeen } from "./first-run-seed";
+import { stubDirectoryPicker } from "./vault-picker-stub";
 
 /**
  * 웹 표면 스모크 — 무인 표면의 유일한 눈.
@@ -32,56 +33,6 @@ async function gotoSettled(page: Page, url: string) {
   await seedFirstRunSeen(page);
   await page.goto(url);
   await page.waitForLoadState("networkidle");
-}
-
-/**
- * `showDirectoryPicker` 를 OPFS 핸들로 스텁한다.
- *
- * File System Access API 는 OS 창을 열기 때문에 자동화가 클릭할 수 없다.
- * OPFS(`navigator.storage.getDirectory()`) 핸들은 **진짜**
- * `FileSystemDirectoryHandle` 이라 `createWritable` 을 포함한 앱의 볼트
- * 읽기/쓰기 경로가 그대로 돈다 — 즉 이 스텁은 픽커 창만 대신하고 그
- * 이후 여정은 전부 실제 코드로 검증된다.
- *
- * @param seed 폴더 안에 미리 넣어 둘 마크다운 (경로 → 내용)
- */
-async function stubDirectoryPicker(page: Page, seed: Record<string, string>) {
-  await page.addInitScript((files: Record<string, string>) => {
-    const grant = async () => "granted" as const;
-    // 픽커가 돌려주는 핸들과 그 하위 핸들 전부가 권한 질의에 답해야 한다 —
-    // 앱은 IndexedDB 복원 경로에서 `queryPermission` 을 부른다.
-    const patch = (handle: FileSystemDirectoryHandle): FileSystemDirectoryHandle => {
-      const target = handle as FileSystemDirectoryHandle & {
-        queryPermission?: () => Promise<"granted">;
-        requestPermission?: () => Promise<"granted">;
-      };
-      target.queryPermission ??= grant;
-      target.requestPermission ??= grant;
-      const inner = target.getDirectoryHandle.bind(target);
-      target.getDirectoryHandle = async (name: string, options?: FileSystemGetDirectoryOptions) =>
-        patch(await inner(name, options));
-      return target;
-    };
-
-    (window as unknown as { showDirectoryPicker: () => Promise<FileSystemDirectoryHandle> })
-      .showDirectoryPicker = async () => {
-      const root = await navigator.storage.getDirectory();
-      const dir = await root.getDirectoryHandle(`smoke-vault-${Date.now()}`, { create: true });
-      for (const [path, body] of Object.entries(files)) {
-        const segments = path.split("/");
-        const name = segments.pop() as string;
-        let cursor = dir;
-        for (const segment of segments) {
-          cursor = await cursor.getDirectoryHandle(segment, { create: true });
-        }
-        const file = await cursor.getFileHandle(name, { create: true });
-        const writable = await file.createWritable();
-        await writable.write(body);
-        await writable.close();
-      }
-      return patch(dir);
-    };
-  }, seed);
 }
 
 /** 사람이 고를 법한 최소 볼트 — 프로젝트 하나 + 도메인 하나 + 역량 하나. */

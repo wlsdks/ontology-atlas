@@ -403,7 +403,23 @@ function SelectedPairDetail({
           </span>
         ))}
       </div>
-      <div className="flex flex-col gap-1">
+      {/* 세로 간격 10px(`gap-2.5`) — WCAG 2.5.8(AA) 의 spacing 예외를 위한 값이다.
+          이 줄의 링크는 `text-label`(11px/16px) 이라 자연 높이가 16px 이고,
+          24px 본칙에 미달한다. 예외를 타려면 **지름 24 원이 이웃 타깃과 안 만나야**
+          하므로 중심 간 거리가 24px 이상이어야 하는데, `gap-1`(4px) 에서는
+          16+4 = **20.0px** 였다(실측 2026-08-04, 1512×900 정적 export).
+          10px 이면 26.0px 이 되어 예외를 넘긴다.
+
+          높이를 24px 로 올리는 갈래(본칙 충족)를 쓰지 않은 이유 둘: ① 행 높이가
+          바뀌면 이 카드가 예약해 둔 상세 슬롯이 클릭마다 24px 씩 더 뛴다(간격만
+          늘리면 12px). ② 링크의 높이 바닥은 값 층(`control-class`)에서 따로
+          재설계 중이라, 여기서 한 자리만 먼저 정하면 두 규격이 갈린다.
+
+          ⚠️ `.touch-hit-expand` 로 히트만 넓히는 우회는 **금지**다. 행 피치
+          26px 에 44px 확장은 이웃과 18px 겹치고, DOM 순서상 뒤 행이 앞 행의
+          탭을 훔친다 — 「작아서 못 누름」이 「눌렀는데 다른 게 열림」이 된다.
+          게이트: `tests/e2e/dense-row-target-size.spec.ts`. */}
+      <div className="flex flex-col gap-2.5">
         {pair.examples.map((example) => (
           <div
             key={example.id}
