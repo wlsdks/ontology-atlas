@@ -72,6 +72,7 @@ const labels = {
   sourceGap: "Connect a code folder",
   sourceGapLabel: "Next check",
   sourceAction: "Use current evidence",
+  sourceWhy: "Connecting a code folder shows where each concept lives.",
   sourceRelationsShow: "Show project relations",
   sourceRelationsHide: "Hide project relations",
   sourceOntologyDocument: "Concept document",
@@ -103,6 +104,7 @@ function renderPanel(
     onEnterRealm?: () => void;
     projectSourceBusy?: boolean;
     projectSourceError?: string | null;
+    projectSourceDegraded?: TopologyV2DetailPanelProps["projectSourceDegraded"];
     updatedAtLabel?: string | null;
     groups?: TopologyV2DetailPanelProps["groups"];
   } = {},
@@ -147,6 +149,7 @@ function renderPanel(
       onProjectSourceAction={overrides.onProjectSourceAction}
       projectSourceBusy={overrides.projectSourceBusy}
       projectSourceError={overrides.projectSourceError}
+      projectSourceDegraded={overrides.projectSourceDegraded}
       showHandoff={overrides.showHandoff}
       showSourcePath={overrides.showSourcePath}
     />,
@@ -347,7 +350,7 @@ describe("TopologyV2DetailPanel — project source receipt", () => {
     expect(screen.getByText("Catalog")).toBeInTheDocument();
   });
 
-  it("makes the receipt next action the sole footer primary and demotes full detail", () => {
+  it("puts the next action inside the remedy block next to the gap, not in the footer", () => {
     const onProjectSourceAction = vi.fn();
     const projectSource: ProjectSourceView = {
       contractVersion: 1,
@@ -371,10 +374,116 @@ describe("TopologyV2DetailPanel — project source receipt", () => {
     fireEvent.click(action);
     expect(onProjectSourceAction).toHaveBeenCalledTimes(1);
     expect(action.className).toContain("--topology-v2-panel-primary-surface");
+    /*
+     * **처방은 진단 옆에 있어야 한다.** 실측(2026-08-04)으로 이 둘은 393px
+     * 떨어져 있었고, 사이에 액션 타일 넷과 근거 목록이 끼어 있었다. 픽셀 거리는
+     * 단위 테스트가 잴 수 없으니 **같은 조상 안에 있는가**로 잠근다 — 누가 다시
+     * 푸터로 내리면 이 단언이 먼저 터진다.
+     */
+    const remedy = screen.getByTestId("topology-v2-project-source-remedy");
+    expect(remedy).toContainElement(action);
+    expect(screen.getByTestId("topology-v2-project-source-receipt")).toContainElement(remedy);
+    // 같은 컨트롤이 두 곳에 그려지지 않는다.
+    expect(screen.getAllByTestId("topology-v2-project-source-action")).toHaveLength(1);
 
     const fullDetail = screen.getByTestId("topology-v2-detail-panel-open-full-detail");
     expect(fullDetail.className).not.toContain("--topology-v2-panel-primary-surface");
     expect(fullDetail.className).toContain("--topology-v2-panel-text-tertiary");
+  });
+
+  it("explains why the action matters right where the gap is stated", () => {
+    const projectSource: ProjectSourceView = {
+      contractVersion: 1,
+      projectSlug: "views",
+      status: "not_measured",
+      currentness: "unavailable",
+      measuredAt: null,
+      topGap: { id: "source_unbound" },
+      nextAction: { id: "connect_source" },
+      bindingCardinality: 0,
+      receipt: null,
+    };
+
+    renderPanel(vi.fn(), undefined, {
+      kind: "project",
+      projectSource,
+      onProjectSourceAction: vi.fn(),
+    });
+
+    // 진단 · 설명 · 처방이 한 덩어리다 — 셋 중 하나라도 빠지면 「진단만 하고
+    // 처방을 못 주는 화면」으로 되돌아간다.
+    expect(screen.getByTestId("topology-v2-project-source-gap")).toBeInTheDocument();
+    expect(screen.getByTestId("topology-v2-project-source-why")).toHaveTextContent(
+      "Connecting a code folder shows where each concept lives.",
+    );
+    expect(screen.getByTestId("topology-v2-project-source-remedy")).toHaveAttribute(
+      "data-remedy-mode",
+      "actionable",
+    );
+  });
+
+  it("degrades honestly where the action cannot run: why, where, and what still works", () => {
+    const projectSource: ProjectSourceView = {
+      contractVersion: 1,
+      projectSlug: "views",
+      status: "not_measured",
+      currentness: "unavailable",
+      measuredAt: null,
+      topGap: { id: "source_unbound" },
+      nextAction: { id: "connect_source" },
+      bindingCardinality: 0,
+      receipt: null,
+    };
+
+    renderPanel(vi.fn(), undefined, {
+      kind: "project",
+      projectSource,
+      // 웹: 실행 콜백이 없다. 종전에는 이 자리가 회색 문장 하나로 끝났다.
+      projectSourceDegraded: {
+        why: "A browser cannot tell where the folder sits on your disk.",
+        ctaLabel: "Get the macOS app",
+        href: "/download/",
+        stillWorks: "Reading the map still works here.",
+      },
+    });
+
+    const remedy = screen.getByTestId("topology-v2-project-source-remedy");
+    expect(remedy).toHaveAttribute("data-remedy-mode", "degraded");
+    // 실행할 수 없는 것을 버튼으로 그리지 않는다.
+    expect(screen.queryByTestId("topology-v2-project-source-action")).not.toBeInTheDocument();
+    // ① 왜 ② 어디로 — 문장이 아니라 실제로 열리는 목적지 ③ 여기서도 되는 것.
+    expect(screen.getByTestId("topology-v2-project-source-degraded-why")).toBeInTheDocument();
+    expect(screen.getByTestId("topology-v2-project-source-degraded-cta")).toHaveAttribute(
+      "href",
+      expect.stringContaining("/download/") as unknown as string,
+    );
+    expect(
+      screen.getByTestId("topology-v2-project-source-degraded-still-works"),
+    ).toHaveTextContent("Reading the map still works here.");
+  });
+
+  it("keeps the remedy block out of a healthy receipt so the box always means work", () => {
+    const projectSource: ProjectSourceView = {
+      contractVersion: 1,
+      projectSlug: "views",
+      status: "verified_current",
+      currentness: "current",
+      measuredAt: "2026-08-02T10:00:00.000Z",
+      topGap: null,
+      nextAction: { id: "use_current_evidence" },
+      bindingCardinality: 1,
+      receipt: null,
+    };
+
+    renderPanel(vi.fn(), undefined, {
+      kind: "project",
+      projectSource,
+      onProjectSourceAction: vi.fn(),
+    });
+
+    expect(screen.queryByTestId("topology-v2-project-source-remedy")).not.toBeInTheDocument();
+    // 행동은 사라지지 않는다 — 자리만 푸터에 그대로다.
+    expect(screen.getAllByTestId("topology-v2-project-source-action")).toHaveLength(1);
   });
 
   it("ignores a source receipt for non-project kinds and preserves the old panel contract", () => {

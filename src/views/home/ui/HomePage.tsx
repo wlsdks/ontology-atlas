@@ -159,6 +159,7 @@ import {
   projectSlugForSource,
   useProjectSourceModel,
 } from "../model/use-project-source-model";
+import { useUnboundProjectSource } from "../model/use-unbound-project-source";
 import {
   selectTopologyNodeRouteState,
   selectTopologyPathRouteState,
@@ -1952,6 +1953,16 @@ export function HomePage() {
     selfEditTimestamps: vault.selfEditTimestamps,
     formatEditAgeLabel,
   });
+  /*
+   * 진단을 **선택 밖으로** 꺼낸다. 아래 `useProjectSourceModel` 은 선택된
+   * 프로젝트 하나만 보므로, 아무도 그 노드를 클릭하지 않으면 「연결된 코드
+   * 폴더가 없습니다」는 화면에 존재하지 않는다(실측 2026-08-04: 첫 화면 0회).
+   * 이 훅은 사이드카 한 번 읽기로 그 사실만 꺼내 INDEX 의 조용한 행에 싣는다.
+   */
+  const unboundProjectSource = useUnboundProjectSource({
+    vaultHandle: vault.status === "loaded" ? vault.handle : null,
+    nodes: ontologyInsight?.nodes ?? [],
+  });
   const sourceProjectSlug = projectSlugForSource(selectedOntologyNode);
   const projectSource = useProjectSourceModel({
     projectSlug: sourceProjectSlug,
@@ -2165,18 +2176,41 @@ export function HomePage() {
       measuredAt: projectSourceMeasuredAtLabel,
       currentness: t(`nodeDatasheet.sourceCurrent_${view.currentness}`),
       gap: t(`nodeDatasheet.sourceGap_${view.topGap?.id ?? "none"}`),
-      action: !projectSource.runtimeAvailable && projectSourceNeedsNativeRuntime
-        ? t("nodeDatasheet.sourceAppRequired")
-        : t(`nodeDatasheet.sourceAction_${view.nextAction.id}`),
+      /*
+       * 종전에는 이 자리가 웹에서 「설치 앱에서 코드 폴더를 연결할 수 있어요」로
+       * **바뀌었다** — 행동 라벨 자리에 안내 문장을 끼워 넣은 것이라, 웹 사용자는
+       * 누를 수 없는 회색 문장 하나를 받고 끝났다(왜인지도, 어디로 가면 되는지도,
+       * 이 화면에서 무엇이 되는지도 없이). 이제 라벨은 언제나 행동 라벨이고,
+       * 못 하는 표면의 안내는 `projectSourceDegraded` 가 통째로 맡는다.
+       */
+      action: t(`nodeDatasheet.sourceAction_${view.nextAction.id}`),
+      why: t(`nodeDatasheet.sourceWhy_${view.nextAction.id}`),
       busy: t("nodeDatasheet.sourceBusy"),
     };
   }, [
     projectSource.view,
-    projectSource.runtimeAvailable,
-    projectSourceNeedsNativeRuntime,
     projectSourceMeasuredAtLabel,
     t,
   ]);
+  /**
+   * 이 표면에서 그 행동을 실행할 수 없을 때만 만들어진다 — 웹에서 폴더를 고르는
+   * 네 행동(연결·재설정·확인·재확인)은 절대 경로를 요구하고, 브라우저는 그것을
+   * 알 수 없다(`surfaces.md` 「볼트 절대 경로」 브리지).
+   *
+   * 셋을 전부 담는다: 왜 · 어디서 · **여기서도 되는 것**. 셋째가 없으면 되는
+   * 일까지 안 된다고 말하게 된다(2026-08-01 「웹의 「연결 불가」는 거짓이었다」).
+   */
+  const projectSourceDegraded = useMemo(
+    () => !projectSource.runtimeAvailable && projectSourceNeedsNativeRuntime
+      ? {
+          why: t("nodeDatasheet.sourceDegradedWhy"),
+          ctaLabel: t("nodeDatasheet.sourceDegradedCta"),
+          href: "/download/",
+          stillWorks: t("nodeDatasheet.sourceDegradedStillWorks"),
+        }
+      : null,
+    [projectSource.runtimeAvailable, projectSourceNeedsNativeRuntime, t],
+  );
   const projectSourceErrorLabel = projectSource.error
     ? t(`nodeDatasheet.sourceError_${projectSource.error}`)
     : null;
@@ -4228,6 +4262,7 @@ export function HomePage() {
                     uncatalogedDocCount={bootstrapPlan?.elements.length ?? 0}
                     // ④ 살아있는 지도 드리프트 — dusty 카운트. 0 이면 행 숨김.
                     dustyNodeCount={dustySlugs.size}
+                    unboundProjectNodeId={unboundProjectSource?.nodeId ?? null}
                     onPromoteUncatalogedDocs={
                       bootstrapPlan && bootstrapPlan.elements.length > 0
                         ? () => setBootstrapOpen(true)
@@ -4308,6 +4343,10 @@ export function HomePage() {
                       uncatalogedDocsAction: t("index.uncatalogedDocsAction"),
                       dustyNodesLabel: t("index.dustyNodesLabel", { count: dustySlugs.size }),
                       dustyNodesAction: t("index.dustyNodesAction"),
+                      sourceUnboundLabel: t("index.sourceUnboundLabel", {
+                        count: unboundProjectSource?.count ?? 0,
+                      }),
+                      sourceUnboundAction: t("index.sourceUnboundAction"),
                       // P1 결함①a — plainMode 일 때만 실제 렌더(패널 게이트).
                       plainHint: t("index.plainHint"),
                     }}
@@ -4975,6 +5014,7 @@ export function HomePage() {
                   sourceMeasuredAt: projectSourceLabels?.measuredAt,
                   sourceCurrentness: projectSourceLabels?.currentness,
                   sourceGap: projectSourceLabels?.gap,
+                  sourceWhy: projectSourceLabels?.why,
                   sourceGapLabel: t("nodeDatasheet.sourceGapLabel"),
                   sourceAction: projectSourceLabels?.action,
                   sourceRelationsShow: t("nodeDatasheet.sourceRelationsShow"),
@@ -5026,6 +5066,7 @@ export function HomePage() {
                 projectSource={projectSource.view}
                 projectSourceBusy={projectSource.busy}
                 projectSourceError={projectSourceErrorLabel}
+                projectSourceDegraded={projectSourceDegraded}
                 onProjectSourceAction={projectSourceNextActionAvailable
                   ? handleProjectSourceAction
                   : undefined}
