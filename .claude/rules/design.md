@@ -335,6 +335,7 @@ particle·rarity(gold)·shimmer 를 `--studio-*` 토큰과 `.studio-stage` 안�
 | **모션 duration** | `duration-<숫자>` 금지 (토큰을 참조하는 형태는 문법상 안 걸린다) | 동일 |
 | **행간 램프** | `leading-[N]` 처럼 값을 직접 적는 것 금지 + 이름 붙은 유틸리티(`leading-relaxed` 등 208건)는 `named-offramp-utility-ratchet` 의 기준선이 붙든다 (2026-08-04) | 동일 |
 | **램프 우회** | 램프 토큰을 대괄호 안에서 길이로 돌려 참조하는 것만 금지 (램프 밖 크기 토큰은 정당) | 동일 (켤 때 위반 0) |
+| **인라인 그림자** | JSX `style={{ boxShadow }}` 의 값이 사다리·도킹·눌림·표면 토큰 중 하나를 참조하지 않으면 금지 (2026-08-04) | `src/**`+`app/**` 전역 error — **램프 부채 예외 파일도 받는다** |
 | 금지 그라디언트 | `scaleGradientSelectors` | 동일 |
 | **accent×틴트 페어링** | `accentTintPairingSelectors` — `tone accent` 와 인디고/앰버 틴트 `bg-` 가 같은 호출/원소에 공존 금지 (상수 우회는 `accent-ink-contrast` 계약이 맡는다) | 전역 error (켤 때 위반 0 — 26곳 선치환) |
 
@@ -399,6 +400,28 @@ particle·rarity(gold)·shimmer 를 `--studio-*` 토큰과 `.studio-stage` 안�
 "어느 토큰을 썼는가"** 로 바꿨다 — 허용하는 것은 사다리(elevation-*/dock-*) ·
 눌림(control-press) · 표면 전용 토큰 · inset 머리카락선(빛이 아니라 재질을
 나타낸다)뿐이다.
+
+### 클래스가 아니라 문법으로 빠져나간 경우 (2026-08-04)
+
+위의 기하 허용목록은 `shadow-[…]` 라는 **클래스 문자열**을 본다. 그림자를 JSX
+인라인 스타일(`style={{ boxShadow: "…" }}`)로 쓰면 클래스가 아예 안 생기므로
+셀렉터에 걸릴 것이 없다. 그 틈에서 공방(`StudioCompass.tsx`)이 **평행 사다리**를
+돌리고 있었다 — 손으로 쓴 그림자 8건, 모양 3종, 그리고 셋 다 **이미 이름이 있는
+층**이었다(하단 도킹 → `-dock-bottom` · 앵커된 팝오버 6곳 → `elevation-2` ·
+스크림 동반 중앙 모달 → `elevation-3`).
+
+두 가지가 이 사건의 교훈이다:
+
+1. **값이 아니라 문법이 게이트를 피할 수 있다.** 같은 규격을 표현하는 두 번째
+   문법이 있으면 룰도 두 벌이어야 한다.
+2. **면제 목록의 사정거리를 확인한다.** 이 셀렉터를 램프 배열에만 넣었으면
+   `rampDebtExemptions` 에 있는 `StudioCompass.tsx` — **정작 위반이 사는
+   파일** — 만 면제됐을 것이다. 그래서 전역 블록과 램프 블록 **양쪽**에 싣는다.
+
+허용 판정은 클래스 쪽과 같은 목록이다. 프로브로 확인한 것: 손으로 쓴 rgba 는
+잡히고, **색만 토큰이고 기하는 손으로 쓴 것**(`0 3px 7px var(--color-shadow-a35)`)
+도 잡히며, `var(--shadow-elevation-2)` 와 거대 spread 스크림
+(`0 0 0 9999px var(--topology-tour-scrim-surface)`)은 통과한다.
 
 교훈: **면제에는 방향이 있다.** "정상 사용을 살린다" 는 면제가 "비정상 사용까지
 살린다" 가 되는지, 룰을 켤 때 같이 물어야 한다.

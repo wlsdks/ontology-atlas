@@ -1349,7 +1349,7 @@ export function StudioCompass(props: StudioCompassProps) {
         <div
           data-testid="studio-summary-panel"
           className="pointer-events-auto absolute bottom-16 left-0 right-0 z-[9] border-t border-[color:var(--color-divider)] bg-[color:var(--color-elevated)] px-5 py-3"
-          style={{ boxShadow: "0 -12px 30px rgba(0,0,0,.35)" }}
+          style={{ boxShadow: "var(--shadow-elevation-dock-bottom)" }}
         >
           <p className="text-caption font-medium text-[color:var(--color-text-secondary)] [word-break:keep-all]">
             {effectiveSummary.headline}
@@ -1476,7 +1476,7 @@ export function StudioCompass(props: StudioCompassProps) {
           role="dialog"
           aria-label={labels.draftsTitle}
           className="studio-fade-in absolute right-3 top-[52px] z-[11] flex w-[288px] flex-col rounded-panel border border-[color:var(--color-border-strong)] bg-[color:var(--color-elevated)]"
-          style={{ boxShadow: "0 12px 34px rgba(0,0,0,.5)", maxHeight: "min(420px, calc(100% - 96px))" }}
+          style={{ boxShadow: "var(--shadow-elevation-2)", maxHeight: "min(420px, calc(100% - 96px))" }}
         >
           <div className="flex items-start gap-2 px-3.5 pt-3">
             <div className="min-w-0 flex-1">
@@ -1769,7 +1769,7 @@ function CenterCard(
           {defExpanded ? (
             <div
               className="absolute left-0 top-full z-[5] mt-1 max-h-[220px] w-[calc(100%+8px)] overflow-y-auto rounded-[10px] border border-[color:var(--color-border-strong)] bg-[color:var(--color-elevated)] p-3 text-caption leading-caption text-[color:var(--color-text-secondary)] [word-break:keep-all]"
-              style={{ boxShadow: "0 12px 34px rgba(0,0,0,.5)" }}
+              style={{ boxShadow: "var(--shadow-elevation-2)" }}
             >
               {definition}
             </div>
@@ -2202,7 +2202,7 @@ function LaneOverflowList({
     <div
       data-testid={`studio-lane-list-${view.bearing}`}
       className="absolute z-[8] rounded-[13px] border border-[color:var(--color-border-strong)] bg-[color:var(--color-elevated)]"
-      style={{ left, top, width: W, boxShadow: "0 12px 34px rgba(0,0,0,.5)" }}
+      style={{ left, top, width: W, boxShadow: "var(--shadow-elevation-2)" }}
     >
       <div className="flex items-center gap-2 border-b border-[color:var(--color-divider)] px-3.5 py-2.5">
         <span className="min-w-0 truncate text-caption font-semibold text-[color:var(--color-text-secondary)] [word-break:keep-all]">
@@ -2313,7 +2313,7 @@ function InlineEditCard({
       data-testid="studio-edit-card"
       data-relation={relation}
       className="absolute z-[9] flex flex-col rounded-[13px] border border-[color:var(--color-border-strong)] bg-[color:var(--color-elevated)]"
-      style={{ left, top, width: W, boxShadow: "0 12px 34px rgba(0,0,0,.5)" }}
+      style={{ left, top, width: W, boxShadow: "var(--shadow-elevation-2)" }}
     >
       <div className="flex items-center gap-2 border-b border-[color:var(--color-divider)] px-3.5 py-2.5">
         <span className="min-w-0 flex-1 truncate text-caption font-semibold text-[color:var(--color-text-secondary)] [word-break:keep-all]">
@@ -2585,7 +2585,7 @@ function InlinePicker({
           top,
           width: W,
           maxHeight,
-          boxShadow: "0 12px 34px rgba(0,0,0,.5)",
+          boxShadow: "var(--shadow-elevation-2)",
           "--studio-picker-origin": `${originX}px ${originY}px`,
         } as React.CSSProperties
       }
@@ -2853,7 +2853,7 @@ function NodeSearch({
         <div
           data-testid="studio-node-search-results"
           className="absolute left-0 top-[calc(100%+6px)] z-[9] w-[340px] overflow-hidden rounded-panel border border-[color:var(--color-border-strong)] bg-[color:var(--color-elevated)]"
-          style={{ boxShadow: "0 12px 34px rgba(0,0,0,.5)" }}
+          style={{ boxShadow: "var(--shadow-elevation-2)" }}
         >
           <div className="max-h-[320px] overflow-y-auto p-1.5">
             {rows.length === 0 ? (
@@ -3068,7 +3068,7 @@ function DeltaPreviewModal({
     >
       <div
         className="flex max-h-[92dvh] w-[560px] max-w-full flex-col overflow-hidden rounded-[16px] border border-[color:var(--color-border-strong)] bg-[color:var(--color-elevated)]"
-        style={{ boxShadow: "0 18px 48px rgba(0,0,0,.55)" }}
+        style={{ boxShadow: "var(--shadow-elevation-3)" }}
         onClick={(e) => e.stopPropagation()}
       >
         {/* header */}

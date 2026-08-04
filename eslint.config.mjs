@@ -53,6 +53,58 @@ const scaleGradientSelectors = [
 // 잉크는 `accentOnTint`(--color-indigo-text-soft, 전 표면 6.46+)다.
 // 이 셀렉터는 **같은 호출/원소 안의 리터럴 페어링**만 본다 — 파일 상수로
 // 우회된 className 은 위 계약 테스트의 소스 스캔이 맡는다.
+/*
+ * 인라인 `style={{ boxShadow }}` — className 셀렉터가 **원리적으로 못 보는** 층.
+ *
+ * ## 왜 필요했나 (2026-08-04 디자인 감사)
+ *
+ * 위의 고도 사다리 가드는 `shadow-[…]` 라는 **클래스 문자열**을 본다. 그런데
+ * 그림자를 JSX 인라인 스타일로 쓰면 클래스가 아예 안 생기므로 셀렉터에 걸릴
+ * 것이 없다. 그 틈에서 공방(`StudioCompass.tsx`)이 **평행 사다리**를 돌리고
+ * 있었다 — 손으로 쓴 그림자 8건, 모양 3종:
+ *
+ *   0 -12px 30px  ×1  하단 도킹 패널      → 이미 `-dock-bottom` 이 있다 (0 -12px 32px)
+ *   0 12px 34px   ×6  앵커된 팝오버들      → 이미 `elevation-2`(popover) 가 있다
+ *   0 18px 48px   ×1  스크림 동반 중앙 모달 → 이미 `elevation-3`(dialog) 가 있다
+ *
+ * 셋 다 **없던 층이 아니라 이름이 이미 있는 층**이었다. 사다리 정의부 주석이
+ * 기록한 "등재되지 않은 6번째 층" 사건과 같은 모양이고, 다른 점은 이번엔
+ * 값이 아니라 **문법**이 게이트를 피했다는 것뿐이다.
+ *
+ * ## 왜 램프 블록이 아니라 전역 블록에 싣나
+ *
+ * `StudioCompass.tsx` 는 `rampDebtExemptions` 에 있어서 램프 블록에서 빠진다.
+ * 이 셀렉터를 램프 배열에 넣으면 **정작 위반이 사는 파일만 면제된다.** 그래서
+ * 전역 블록(`src/**`+`app/**`)과 램프 블록 **양쪽**에 싣는다 — flat config 는
+ * 룰 옵션을 병합하지 않고 교체하므로 한쪽만 넣으면 다른 쪽에서 유실된다.
+ *
+ * ## 허용 판정은 className 쪽과 **같은 목록**이다
+ *
+ * 색만 토큰이고 기하는 손으로 쓰는 것이 사다리를 무너뜨린 방식이었으므로,
+ * 여기서도 «var( 가 있으면 통과» 로 하지 않는다. 사다리·도킹·눌림·표면 전용
+ * 토큰·inset 중 하나를 참조해야 한다.
+ *
+ * ⚠️ 켜기 전 전수: 인라인 boxShadow 9건 중 위반 8건(전부 한 파일) · 정상 1건
+ * (`GuidedTourOverlay` 의 `0 0 0 9999px var(--topology-tour-scrim-surface)` —
+ * 거대 spread 로 만든 스크림이라 고도 그림자가 아니고, 표면 전용 토큰을 쓴다).
+ * 8건을 먼저 수렴시키고 켰다.
+ */
+const ALLOWED_SHADOW_TOKEN =
+  'var\\(--shadow-elevation-|var\\(--shadow-control-press|var\\(--topology|var\\(--chrome|var\\(--git|inset';
+
+const inlineShadowSelectors = [
+  {
+    selector: `Property[key.name="boxShadow"] > Literal[value=/^(?!.*(?:${ALLOWED_SHADOW_TOKEN})).+/]`,
+    message:
+      '고도 사다리 이탈 (인라인 style) — 그림자의 **기하**도 토큰이 정한다. --shadow-elevation-1/2/3 (coach-mark < popover < dialog), 가장자리 도킹은 -dock-bottom/-dock-side, 눌린 컨트롤은 --shadow-control-press. 인라인 스타일은 클래스 셀렉터에 안 걸리므로 여기서 막는다.',
+  },
+  {
+    selector: `Property[key.name="boxShadow"] TemplateElement[value.raw=/^(?!.*(?:${ALLOWED_SHADOW_TOKEN})).+/]`,
+    message:
+      '고도 사다리 이탈 (인라인 style, template literal) — --shadow-elevation-* / -dock-* / --shadow-control-press 를 참조한다.',
+  },
+];
+
 const accentTintPairingSelectors = [
   {
     selector:
@@ -718,7 +770,14 @@ const eslintConfig = defineConfig([
   {
     files: ['src/**/*.{ts,tsx,jsx,js}', 'app/**/*.{ts,tsx,jsx,js}'],
     rules: {
-      'no-restricted-syntax': ['error', ...scaleGradientSelectors, ...accentTintPairingSelectors],
+      'no-restricted-syntax': [
+        'error',
+        ...scaleGradientSelectors,
+        ...accentTintPairingSelectors,
+        // 램프 부채 파일도 이 블록은 받는다 — 인라인 그림자는 램프가 아니라
+        // 사다리 문제라 부채 면제와 함께 빠지면 안 된다.
+        ...inlineShadowSelectors,
+      ],
     },
   },
   // 램프 봉쇄 — `src/**` + `app/**` **전부** error, 유산 부채 파일만 제외.
@@ -738,6 +797,7 @@ const eslintConfig = defineConfig([
         ...scaleGradientSelectors,
         ...arbitrarySizeSelectors,
         ...accentTintPairingSelectors,
+        ...inlineShadowSelectors,
       ],
     },
   },
