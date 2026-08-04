@@ -3890,6 +3890,11 @@
         },
         {
           "depth": 2,
+          "text": "2026-08-04 — 검사 결과에 대해 화면이 거짓을 말하는 것을 멈춘다",
+          "slug": "2026-08-04-검사-결과에-대해-화면이-거짓을-말하는-것을-멈춘다"
+        },
+        {
+          "depth": 2,
           "text": "2026-08-04 — 현재 source를 다시 측정하라는 잘못된 의미 수리 루프를 끊는다",
           "slug": "2026-08-04-현재-source를-다시-측정하라는-잘못된-의미-수리-루프를-끊는다"
         },
@@ -6149,8 +6154,8 @@
           "slug": "2026-07-26-첫-만남은-쇼핑몰부터"
         }
       ],
-      "excerpt": "Major change history. Code commit messages answer why; this file answers when / which surface changed. Focused on user-visible changes, not PR-level granularity. Newest at the top. Entries stay date-based; the app version reached v1.0.0 on 2026-07-27, so a release tag now carries the semver promise instead. MCP/CLI age",
-      "wordCount": 65718,
+      "excerpt": "Major change history. Code commit messages answer why; this file answers when / which surface changed. Focused on user-visible changes, not PR-level granularity. Newest at the top. Entries stay date-based; the app version reached v1.0.0 on 2026-07-27, so a release tag now carries the semver promise instead. 오류 5 · 경고 4",
+      "wordCount": 65995,
       "updatedAt": "2026-08-04",
       "linksOut": [
         "audits/CASE-STUDY-AGENTS-MD-DRIFT",

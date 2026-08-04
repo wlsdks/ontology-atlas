@@ -69,7 +69,10 @@ describe("DocMetaBar", () => {
     expect(screen.queryByText(/frontmatter/)).not.toBeInTheDocument();
   });
 
-  it("keeps non-ontology docs framed as source-record evidence", () => {
+  // 이름이 바뀐 이유 (2026-08-04): 종전 이 테스트는 그래프에 **없는** 문서가
+  // 「지도 근거」라고 말하는 것을 «계약»으로 못박고 있었다. 그건 계약이 아니라
+  // 결함이었다 — 근거가 아닌 것을 근거라고 부르면 근거라는 말이 아무 뜻도 없어진다.
+  it("tells a non-graph doc that it is not on the map (and offers no map CTA)", () => {
     renderMetaBar({
       ...doc,
       slug: "README",
@@ -79,11 +82,15 @@ describe("DocMetaBar", () => {
 
     // 경로 mono 칩 제거(qw6) — ehead 가 파일 정체성을 소유.
     expect(screen.queryByText("docs/README.md")).not.toBeInTheDocument();
+    expect(screen.getByTestId("doc-map-evidence")).toHaveAttribute("data-in-graph", "false");
+    expect(screen.getByText("지도에 없음")).toBeInTheDocument();
     expect(
       screen.getByText(
-        "그래프를 뒷받침하는 로컬 마크다운 근거로, 에이전트가 지도 갱신 전 인용할 수 있습니다.",
+        "이 문서는 아직 지도의 노드가 아니에요 — 위쪽 진단에서 무엇이 빠졌는지 볼 수 있어요.",
       ),
     ).toBeInTheDocument();
+    // 죽은 CTA 0 — 주소를 못 만들면 링크 자체가 없다.
+    expect(screen.queryByTestId("doc-map-open")).toBeNull();
     expect(
       screen.queryByRole("link", { name: /의미 지도/ }),
     ).not.toBeInTheDocument();

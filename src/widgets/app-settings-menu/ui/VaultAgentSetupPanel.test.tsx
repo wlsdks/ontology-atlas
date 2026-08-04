@@ -346,6 +346,33 @@ describe('VaultAgentSetupPanel', () => {
     expect(screen.getByText('validation 오류 1개가 에이전트 수정을 막음')).toBeInTheDocument();
   });
 
+  // ⑤ — 「5개가 막음」이 갈 곳을 갖는다. 종전 이 블록의 인터랙티브 요소는 0개였고
+  // 어느 파일이 잘못됐는지 한 글자도 없었다: 사람이 수치를 읽고 나서 할 수 있는
+  // 일이 창을 닫는 것뿐이었다. 게이트가 «링크가 있다» 만 보지 않고 «깨끗할 때는
+  // 없다» 까지 보는 이유는, 항상 뜨는 링크는 상태를 안 나르기 때문이다.
+  it('검사 결과 행이 「할 일」 큐로 가는 길을 준다 (깨끗하면 주지 않는다)', () => {
+    renderPanel(
+      { agentConfigStatus: { mcpJson: true, codexConfig: true, mcpExample: true } },
+      { validationSummary: { errorCount: 5, warningCount: 4 } },
+    );
+
+    const link = screen.getByTestId('agent-setup-proof-health-link');
+    // 후행 슬래시는 라우터 설정(`trailingSlash`)이 붙이는 것이라 jsdom 렌더에는
+    // 없다. 게이트가 재야 하는 것은 «목적지와 탭» 이지 슬래시가 아니다.
+    const href = link.getAttribute('href') ?? '';
+    expect(href).toContain('/ontology/insights');
+    expect(href).toContain('tab=do-next');
+    expect(link).toHaveTextContent('할 일에서 보기');
+  });
+
+  it('검사 결과가 깨끗하면 「할 일에서 보기」 링크가 없다', () => {
+    renderPanel(
+      { agentConfigStatus: { mcpJson: true, codexConfig: true, mcpExample: true } },
+      { validationSummary: null },
+    );
+    expect(screen.queryByTestId('agent-setup-proof-health-link')).toBeNull();
+  });
+
   it('AI agent handoff 전에 vault validation gate를 별도 상태로 보여준다', () => {
     renderPanel(
       {

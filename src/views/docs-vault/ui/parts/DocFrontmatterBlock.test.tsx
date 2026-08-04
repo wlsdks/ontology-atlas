@@ -17,6 +17,10 @@ const doc: VaultDoc = {
     slug: "capabilities/cli-developer-entry",
     title: "CLI Developer Entry",
     domain: "developer-experience",
+    // uid 가 여기 있어야 이 픽스처가 정말로 «깨끗»하다 (2026-08-04). 종전엔
+    // uid 가 없었는데도 「깨끗한 frontmatter」 라고 불렸다 — 화면이 오류를
+    // 걸러 내고 있었으니 테스트도 그 거짓을 그대로 물려받았던 것이다.
+    uid: "0f0e5f1a-6c53-4a1b-9c2f-2f0f7b6a1d34",
     status: "active",
     depends_on: ["mcp-server"],
   },
@@ -168,6 +172,51 @@ describe("DocFrontmatterBlock", () => {
   it("renders no validator-warnings row when the frontmatter is clean", () => {
     renderBlock();
     expect(screen.queryByTestId("doc-frontmatter-validator-warnings")).not.toBeInTheDocument();
+  });
+
+  // ② 결함의 단위 게이트 — 오류를 감추고 경고만 보여 주던 필터가 돌아오면
+  // 여기서 터진다.
+  it("surfaces validator ERRORS beside the file, not only warnings", () => {
+    const noUidDoc: VaultDoc = {
+      ...doc,
+      frontmatter: { kind: "capability", slug: doc.slug, title: doc.title, domain: "x" },
+    };
+    render(
+      <NextIntlClientProvider locale="ko" messages={koMessages}>
+        <DocFrontmatterBlock doc={noUidDoc} />
+      </NextIntlClientProvider>,
+    );
+    const rows = screen.getAllByTestId("doc-frontmatter-issue");
+    expect(rows.map((row) => row.getAttribute("data-severity"))).toContain("error");
+    expect(within(rows[0]).getByText(/uid/)).toBeInTheDocument();
+  });
+
+  // ③ 결함의 단위 게이트 — kind 가 없으면 축약 진단이 뜨고, ontology 의도가
+  // 없는 안내 문서에는 여전히 아무것도 안 뜬다(소음 0).
+  it("renders a compact diagnostic for a kind-less node candidate, and nothing for a plain doc", () => {
+    const kindless: VaultDoc = {
+      ...doc,
+      frontmatter: { slug: doc.slug, title: doc.title, domain: "developer-experience" },
+    };
+    const { unmount } = render(
+      <NextIntlClientProvider locale="ko" messages={koMessages}>
+        <DocFrontmatterBlock doc={kindless} />
+      </NextIntlClientProvider>,
+    );
+    expect(screen.getByTestId("doc-frontmatter-block")).toHaveAttribute(
+      "data-variant",
+      "diagnostic",
+    );
+    expect(screen.getAllByTestId("doc-frontmatter-issue").length).toBeGreaterThan(0);
+    unmount();
+
+    const plainDoc: VaultDoc = { ...doc, frontmatter: { title: doc.title } };
+    render(
+      <NextIntlClientProvider locale="ko" messages={koMessages}>
+        <DocFrontmatterBlock doc={plainDoc} />
+      </NextIntlClientProvider>,
+    );
+    expect(screen.queryByTestId("doc-frontmatter-block")).toBeNull();
   });
 
   it("surfaces a plain-language validator warning for a capability missing domain — no raw code exposed", () => {
