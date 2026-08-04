@@ -1,13 +1,15 @@
 # FEATURES — ontology-atlas
 
 > Complete inventory of features users can **actually use right now**.
-> Last updated: 2026-08-02 (현재 route와 installed-app 계약 및 project meaning
-> receipt 계약 재검증 —
-> `/ontology`은 `/topology?index=expanded`, `/ontology/edit`은
-> `/ontology/studio` 호환 redirect이며, Insights는 할 일·구성·연결·경계·신선도
-> 5개 질문 탭의 maintenance board다. desktop static smoke와 installed-app
-> verifier/Computer Use가 같은 계약을 확인함 — 세부는 §2 각 라우트 절 참고).
-> Earlier (2026-07-18): 전 페이지 시안-우선 재구성 웨이브, PR #355~#366.
+> Last updated: 2026-08-02 (지금 있는 라우트, 설치한 앱이 지키기로 한 약속,
+> 프로젝트가 무엇을 뜻하는지 확정한 기록(project meaning receipt)을 다시
+> 확인했다 — `/ontology` 는 `/topology?index=expanded` 로, `/ontology/edit` 은
+> `/ontology/studio` 로 보내는 옛 주소 호환 redirect 이고, Insights 는
+> 할 일 · 구성 · 연결 · 경계 · 신선도 다섯 개 질문 탭으로 된 정비 화면이다.
+> 데스크톱 정적 스모크 테스트와 설치한 앱 검증기/Computer Use 가 같은 것을
+> 확인했다 — 자세한 것은 §2 의 각 라우트 절에).
+> Earlier (2026-07-18): 승인된 시안을 기준으로 모든 페이지를 다시 만든 라운드,
+> PR #355~#366.
 > Earlier
 > (2026-05-31): real-time **adaptive** vault polling, `/docs` editor save-conflict data-loss guard, fresh-init starter ambiguous-alias fix, `find_evidence` relevance ranking, `validate_vault` vault→code `pathDrift`, `infer_imports` edge reconciliation. Earlier still (2026-05-28): graph DB health gate and the now-retired Browse / Builder / Query loop; those historical surfaces are not current route guidance.
 > Routes section UI detail remains a maintained product snapshot. When route
@@ -171,22 +173,24 @@ marketing landing page at all — with no vault selected it renders `HomePage`
 sample, read-only, plus a **first-run starter module** integrated into the
 INDEX panel itself (no floating card/dock — `FirstRunStarterModule`,
 `src/features/first-run-starter/`): census meters (concepts/relations/
-domains, real data — ko 라벨 개념/관계/도메인) + "open my markdown folder" +
-"create a new vault" + "just looking around" dismiss (sessionStorage —
-reappears next session, not on reload). 2026-07-24 온보딩 라운드: 두 폴더
-CTA 는 OS 선택창 직행 대신 **사전 안내 시트**(`VaultOpenGuideSheet`,
-`src/features/docs-vault-local/`)를 먼저 연다 — 안심 3줄(아무 마크다운
-폴더나 OK / 파일은 로컬 유지 / 빈 폴더면 시작 문서 자동 생성) + 기존
-폴더 선택·빈 폴더로 새로 시작 분기. 카드에는 "2분 구경하기" 투어 CTA 와
-"쉬운 말로 보기 켜기" 1클릭 토글(톱니 속 '일반' 모드 승격)도 추가.
-빈 vault 를 연 직후에는 dead-end 문구 대신 **시작 체크리스트**
-(`VaultStartChecklist`, `src/widgets/topology-controls/`)가 선다 —
-소유자 지시(2026-07-24 2차)로 **에이전트-우선 3단계**: AI 에이전트
-연결(heartbeat 실판정) → 첫 분석 맡기기(에이전트 붙여넣기용 지시
-복사) → 직접 만들기(선택, project kind 프리셋 컴포저). 웹에서 macOS
-설치를 권하던 오안내 브랜치 제거. 첫 방문에는 폴더 안내 시트가
-자동으로 먼저 열리고(1회, 건너뛰기 제공), 이 세션에서 직접 폴더를
-열면 AI 에이전트 연결 시트가 1회 자동으로 이어진다. A brand-pill
+domains, real data — 화면 언어가 한국어면 라벨도 개념/관계/도메인) +
+"open my markdown folder" + "create a new vault" + "just looking around"
+dismiss (sessionStorage — reappears next session, not on reload).
+2026-07-24 첫 사용 흐름 손질: 폴더를 여는 두 버튼은 OS 파일 선택창을 곧바로
+띄우지 않고 **미리 알려 주는 시트**(`VaultOpenGuideSheet`,
+`src/features/docs-vault-local/`)를 먼저 연다 — 걱정을 덜어 주는 세 줄(아무
+마크다운 폴더나 괜찮다 / 파일은 이 컴퓨터에만 남는다 / 빈 폴더면 시작 문서를
+자동으로 만들어 준다)과, 기존 폴더를 고를지 빈 폴더로 새로 시작할지 고르는
+갈래가 들어 있다. 카드에는 "2분 구경하기" 투어 버튼과 "쉬운 말로 보기 켜기"
+토글(톱니 메뉴 안에 있던 '일반' 모드를 카드로 끌어올린 것)도 넣었다.
+빈 vault 를 연 직후에는 더 할 일이 없어 보이는 문구 대신 **시작 체크리스트**
+(`VaultStartChecklist`, `src/widgets/topology-controls/`)가 선다 — 소유자
+지시(2026-07-24 2차)에 따라 **AI 에이전트를 먼저 붙이는 3단계**다: AI 에이전트
+연결(heartbeat 파일로 실제 연결됐는지 판정) → 첫 분석 맡기기(에이전트에
+붙여넣을 지시문 복사) → 직접 만들기(선택 사항, project 종류 프리셋 작성기).
+웹에서 macOS 설치를 권하던 잘못된 안내 갈래는 없앴다. 첫 방문에는 폴더 안내
+시트가 자동으로 먼저 열리고(한 번만, 건너뛰기 있음), 이 세션에서 사용자가
+직접 폴더를 열면 AI 에이전트 연결 시트가 한 번 자동으로 이어진다. A brand-pill
 `SAMPLE` badge and a bottom-right map readout ("N project · N domains ·
 Spine view · zoom in to reveal elements") stay visible for the whole static
 session regardless of whether the starter module was dismissed. The former
@@ -204,10 +208,10 @@ IndexedDB goes straight to their own workspace, no starter surfaces at all.
 
 ### `/` — Smart entry
 
-- **Hosted web, no vault** → the **gateway face** — headline, download, and "open it in the browser" — the same view `/download` renders (2026-07-30, root-first-open 뒤집기). Judged by `isGatewaySurface()`. A web user who *has* a vault still gets `HomePage` with the dogfood sample and the INDEX-panel first-run starter
+- **Hosted web, no vault** → the **gateway face** — headline, download, and "open it in the browser" — the same view `/download` renders (2026-07-30 — 루트에서 곧바로 지도를 열어 주던 이전 결정을 뒤집었다). Judged by `isGatewaySurface()`. A web user who *has* a vault still gets `HomePage` with the dogfood sample and the INDEX-panel first-run starter
 - **Desktop app, no restored vault** → `FirstRunPage` (just start / open / create / browse demo), not the hosted intro
 - **Recent desktop vaults** → the picker stores recently opened Tauri vault paths, can reopen them without another Finder selection, and can remove stale paths from the list
-- **Vault loaded (web or desktop)** → `HomePage` — the topology hub (map + INDEX concept panel + node datasheet), same component `/topology` renders (B3 허브가 곧 지도 — the old tree/ego hub, `OntologyViewPage`, is retired; `/ontology` now redirects here with INDEX expanded). Restoring a previously-opened vault handle from IndexedDB goes straight here — no starter surfaces, no re-clicking through first-run every visit
+- **Vault loaded (web or desktop)** → `HomePage` — the topology hub (map + INDEX concept panel + node datasheet), same component `/topology` renders (B3 결정 「허브를 따로 두지 않고 지도가 그 자리를 한다」 — the old tree/ego hub, `OntologyViewPage`, is retired; `/ontology` now redirects here with INDEX expanded). Restoring a previously-opened vault handle from IndexedDB goes straight here — no starter surfaces, no re-clicking through first-run every visit
 - **Switch vault mid-session**: the topology settings gear (⚙, top-right utility rail) has a "switch vault" row → `/docs/?intent=local`, alongside the `/docs` vault pill's own "swap" control
 
 ### `/download` — the install decision (remade 2026-07-27)
@@ -255,14 +259,17 @@ Both routes render the same `HomePage` (R3 keep-both decision: `/` = home/back-l
 - **Dense-group cluster chips** → a parent with more than 12 direct children (e.g. a domain with 108 capabilities) folds its whole subtree into a single `+N` chip instead of spilling hundreds of overlapping nodes/labels. Click the chip to expand just that parent (nodes fan out as a bounded phyllotaxis disk); click the `−` chip to collapse again. Expanded parents live in the URL (`?open=slug1,slug2`) so a shared link or an AI agent reproduces the same expansion. Nested dense children get their own chips once their parent is expanded.
 - **How the chip looks and where children land is a setting** (설정 › 확장, 2026-08-01 — ported from the `.qa-scratch/proto-expand.html` measurement prototype). Five values: the open control (`뜬 알약` · **`머리 위 막대`, default** · `어깨 배지`), the child layout (`나선 원반`, default · `부챗살` · `고리` · `기둥`), and three numbers — how many open at once (4–24, default 24), how many names are attempted per parent (3–40, default 8), and how many parents stay open at once (1–6, default 3). The default control is the bar docked directly above the **selected** node: nothing shows until you select a node, and the folded count keeps living on the node body. Rationale and the observation that would reverse it: `docs/DECISIONS.md`.
 - **Expand realm (영역 전개)** → focus a node (click) and an orbital **Expand realm** button appears just outside its ring (also offered as an action in the node datasheet, for container nodes). Activating it transforms the map into *that node's world*: only its containment subtree remains, re-laid-out with the node as a temporary root at the origin (children map to rings by **depth**, not kind), and everything outside unmounts behind a 1px indigo warding circle. Relations crossing the boundary fade to a stub at the ring. The transition is a 600ms choreography — outside nodes fling out along curved "gravity" trajectories, inside nodes FLIP to their new spots, the camera dollies in to fit the realm (`prefers-reduced-motion` snaps instantly). The active realm lives in the URL (`?realm=slug`) so a shared link or an AI agent reproduces the same world; a top-center **영역: {title} ✕** chip and **Esc** (highest ladder priority) return to the full map. Click, `?open` density gating, selective ego, and top-K labels all still work inside a realm.
-- **Ontology block exchange** → INDEX의 **블록 가져오기**는 `.md` 폴더와 선택적
-  `block-manifest.json`을 읽어 신규/충돌 dry-run을 먼저 보여주고, 사람이
-  승인한 파일만 현재 vault의 기존 `createDoc` 경로로 쓴다. 영역 전개 화면의
-  **이 영역의 원본 .md 를 블록 폴더로 내보내기**는 containment 서브트리의
-  원본만 복사한다. 웹은 `showDirectoryPicker()`, 설치 앱은 같은
-  `FileSystemDirectoryHandle` 계약의 native Tauri picker를 사용한다.
-  picker 취소는 오류나 쓰기가 아니며, CLI-only 대체 경로는
-  `ontology-atlas import <path...>`이다.
+- **Ontology block exchange** — 개념 묶음을 폴더째 주고받는 기능이다. INDEX 의
+  **블록 가져오기**는 `.md` 폴더와, 있으면 `block-manifest.json` 을 읽어 무엇이
+  새로 들어오고 무엇이 기존 파일과 부딪히는지 **먼저 보여 주기만 한다**
+  (dry-run — 시험 삼아 돌려 보되 아무것도 쓰지 않는 것). 그다음 사람이 승인한
+  파일만 지금 vault 가 이미 쓰고 있는 `createDoc` 경로로 쓴다. 영역 전개 화면의
+  **이 영역의 원본 .md 를 블록 폴더로 내보내기**는 그 영역이 담고 있는 하위
+  노드들의 원본 파일만 복사한다. 폴더를 고르는 창은 웹에서는
+  `showDirectoryPicker()`, 설치한 앱에서는 같은 `FileSystemDirectoryHandle`
+  규약을 따르는 Tauri 자체 선택창이다. 사용자가 그 창을 취소한 것은 오류도
+  아니고 쓰기도 아니다. 터미널에서만 하려면 `ontology-atlas import <path...>`
+  를 쓴다.
 - **Tab** → keyboard cycle to neighbor hub
 - **Empty state** (0–1 nodes) → `TopologyEmptyState` explains whether the
   vault lacks projects or relations, then offers the applicable next actions:
@@ -303,14 +310,14 @@ Both routes render the same `HomePage` (R3 keep-both decision: `/` = home/back-l
 - **실패했을 때 돌아갈 길 (2026-07-28)** — 실패 알림을 본문과 같은 무게로 그린다(예전에는 화면에서 가장 눈에 안 띄는 줄이었다). 그리고 방금 보낸 말을 입력칸에 다시 넣어 주는 버튼이 함께 붙는다 — 넣어 주기만 하고 보내지는 않는다
 
 #### 어권별 노드 이름 (`display_<locale>`, 2026-07-24)
-- frontmatter `display_ko` / `display_en` → 화면 언어에 맞는 이름을 지도 라벨·INDEX·팝오버가 그린다. 폴백 사다리: `display_<screen locale>` → `display` → `title`. 검색/매칭은 항상 `title` 전체(라벨이 검색 범위를 좁히지 않는다)
-- 쓰기 3경로: MCP `add_concept`/`add_concepts` 의 `labels: { ko, en }` · `patch_concept` 의 직접 키 · 지도 컴포저의 어권별 이름 칸
-- 한쪽만 채우는 사고 방지 — MCP 는 단일 로케일 입력에 advisory warning, 사람 폼은 **현재 화면 언어 칸이 필수**이며 다른 언어만 채우면 저장을 막고 이유를 인라인으로 설명한다(모달 없음)
+- 한 노드에 언어마다 다른 이름을 달아 두는 기능이다. frontmatter 의 `display_ko` / `display_en` 에 적은 이름을 지도 라벨 · INDEX · 팝오버가 화면 언어에 맞춰 그린다. 그 언어의 이름이 없으면 다음 순서로 찾아 내려간다: `display_<화면 언어>` → `display` → `title`. 검색과 이름 대조는 언제나 `title` 전체를 쓴다 — 라벨을 붙였다고 검색되는 범위가 좁아지지는 않는다
+- 이름을 적어 넣는 길은 셋이다: MCP `add_concept`/`add_concepts` 의 `labels: { ko, en }` · `patch_concept` 로 키를 직접 쓰기 · 지도의 노드 작성기에 있는 언어별 이름 칸
+- 한쪽 언어만 채우는 사고를 막는다 — MCP 는 한 언어만 들어오면 경고를 함께 돌려주고(저장 자체를 막지는 않는다), 사람이 쓰는 폼은 **지금 화면 언어의 칸을 필수**로 두어 다른 언어만 채우면 저장을 막고 그 이유를 그 자리에 적는다(모달을 띄우지 않는다)
 
 #### Guided tour (`topology-tour-button`, 2026-07-23, `src/features/guided-tour`)
-- **Compass** tile, "?" 타일 바로 위 — 지도 화면 전담 의미 문해 투어. md+ 전용(`hidden md:flex`, 폰은 제외)
-- **첫 방문 자동 시작 (2026-07-24 온보딩 라운드)** — 샘플 모드 정착 + `guided-tour:v1` 미기록이면 900ms 뒤 1회 자동 시작. skip 이 `skipped` 를 기록해 재방문엔 다시 안 뜨고, 로컬 vault 사용자에게는 발화하지 않는다. 발화 순간 모달(`aria-modal`)이 열려 있거나 문서 포커스가 나가 있거나 투어가 이미 열려 있으면 조용히 건너뛴다(`canAutoStartGuidedTour` — stacked-transient 가드). 수동 진입은 컴퍼스 타일 + 첫 실행 카드의 "2분 구경하기" CTA 두 경로
-- 8 declarative steps, plain-language copy, no jargon even for "ontology" itself: 지도=문서(1) · 점의 크기/모양(2, 캔버스 노드 앵커) · 관계 범례(3) · 직접 눌러보기(4, 인터랙티브 — 실제 클릭을 기다렸다가 자동 진행) · 데이터시트(5, 4단계 선택 성공 시에만 노출) · INDEX(6) · 최근 변경 렌즈(7, 여기서 "구경 끝" 또는 "저는 개발자예요" 로 분기) · 에이전트 다리(8, dev 분기 — `FirstRunStarterModule` 하이라이트)
+- **Compass** 타일, "?" 타일 바로 위 — 지도 화면만 다루는 안내 투어로, 이 화면의 그림이 무엇을 뜻하는지 읽는 법을 알려 준다. `md` 폭 이상에서만 뜬다(`hidden md:flex`, 폰에서는 안 뜬다)
+- **첫 방문에 저절로 시작한다 (2026-07-24 첫 사용 흐름 손질)** — 샘플 데이터 화면이 자리를 잡았고 `guided-tour:v1` 기록이 아직 없으면 900ms 뒤에 한 번 저절로 시작한다. 건너뛰기를 누르면 `skipped` 로 기록해 다시 와도 안 뜨고, 자기 vault 를 연 사용자에게는 아예 시작하지 않는다. 시작하려는 그 순간에 모달(`aria-modal`)이 떠 있거나, 브라우저 창이 포커스를 잃었거나, 투어가 이미 열려 있으면 조용히 건너뛴다(`canAutoStartGuidedTour` — 임시 화면이 겹쳐 뜨는 것을 막는 가드). 사용자가 직접 여는 길은 둘이다: 컴퍼스 타일, 그리고 첫 실행 카드의 "2분 구경하기" 버튼
+- 8 declarative steps, plain-language copy, no jargon even for "ontology" itself: 지도=문서(1) · 점의 크기/모양(2, 캔버스의 노드에 붙는다) · 관계 범례(3) · 직접 눌러보기(4 — 사용자가 실제로 클릭할 때까지 기다렸다가 다음으로 넘어간다) · 데이터시트(5, 4단계에서 실제로 노드를 골랐을 때만 보여 준다) · INDEX(6) · 최근 바뀐 것만 보는 필터(7, 여기서 "구경 끝" 또는 "저는 개발자예요" 로 갈린다) · 에이전트로 건너가기(8, 개발자 쪽으로 갔을 때 — `FirstRunStarterModule` 을 강조한다)
 - Each step's anchor auto-skips (and the `N/M` progress-dot denominator shrinks) when its target isn't resolvable — missing element, `display:none`, or off-viewport
 - Highlight technique: a `box-shadow: 0 0 0 9999px` scrim-and-cutout paint (not a glow ring — `blur 0`), CSS-transitioned (180ms) between DOM-anchored steps, and a per-frame `worldToScreen` canvas projection (same technique as the realm "전개" button) for the two canvas-node steps — both painted on the same z-70 overlay layer so every step dims the surrounding chrome identically
 - The interactive step 4 is a click **funnel**, not a free-for-all: a 4-strip transparent blocker leaves only the spotlit domain dot's cutout clickable (chrome — the tour tile itself, search, "?" — stays blocked), and the anchored dot is a spine-visible domain whose click deterministically opens the datasheet
@@ -322,33 +329,40 @@ Both routes render the same `HomePage` (R3 keep-both decision: `/` = home/back-l
 소유자 요청: *"각 LNB탭 들어갔을때 가이드는 다 각각 있으면 좋겠네? 지금은
 지도쪽만 있어서!"* — 지도에만 있던 안내를 나머지 다섯 목적지로 넓혔다.
 
-- **두 번째 가이드 체계를 만들지 않았다.** 지도가 쓰던 투어 기제(`useGuidedTour`
-  상태기계 · 스크림/컷아웃 오버레이 · 카드 · 진행 점 · 건너뛰기)를 그대로 쓰고,
-  `useGuidedTour({ steps })` 로 목적지별 스텝 배열만 갈아 끼운다. 지도의
-  8단계 여정(캔버스 노드 앵커 · 인터랙티브 클릭 · 개발자 분기)은 그대로 HomePage 소유
-- **문서함 · 공방 · 인사이트 · 프로젝트 · 기록** 각각 2장 — ① 이 화면이 무엇을
-  하는 곳인지(앵커 없는 중앙 카드) ② 여기서 처음 볼 것 하나(실제 요소 스포트라이트:
-  `docs-vault-doc-list` · `studio-entry-choice` · `do-next-touchups` ·
-  `project-selector-card` · `atlas-git-panel`). 기능 나열이 아니라 "여기서 무엇을
-  할 수 있는가" 한 질문에만 답한다. 둘째 장의 앵커가 그 순간 화면에 없으면
-  (예: 문서 목록 접힘) 자동으로 한 장짜리로 접힌다
-- 셸(`AppShell`)이 소유하고 목적지마다 `key` 로 remount — 페이지가 각자 마운트하면
-  하나가 빠져도 아무도 모른다(#65 계열 drift). 지도에서는 렌더하지 않는다
-- **방해 금지** — "봤음"은 목적지마다 따로 기록한다(`guided-tour:<id>:v1`). 한 화면을
-  봤다고 나머지 다섯이 삼켜지지 않고, 본 화면은 다시 자동으로 뜨지 않는다. 자동
-  시작은 지도와 같은 가드(`canAutoStartGuidedTour`)를 통과할 때만
-- **먼저 움직인 사람에게는 아예 안 뜬다 (2026-07-28)** — 자동 발화는 700ms 뒤에
-  열리되 화면이 가려져 있으면 최대 30초까지 기다리는데, 그 대기 중 사용자가 먼저
-  실질 상호작용(클릭·키 입력)을 하면 **발화 자체를 취소**한다(지도가 쓰던
-  `watchGuidedTourAutoStartCancel` 이식). 스스로 탐색을 시작한 사람 위로 뒤늦게
-  뜨는 카드는 안내가 아니라 방해다. 취소는 "봤음"으로 기록되지 않으므로 다음
-  방문에 다시 기회가 온다. 정직 강등 카드가 선 화면(예: `<lg` 의 공방)에도
-  뜨지 않는다 — 없는 표면을 소개하는 안내는 거짓말이다
-- **다시 보기** — 설정 메뉴 › 화면 › "화면 안내". 여섯 목적지 전부에서 같은 자리다
-  (지도는 우상단 컴퍼스 타일이 계속 주 진입점, 이 행은 보조). 화면마다 도움말 버튼을
-  새로 만들면 화면별 크롬 수가 갈리므로 상시 표면 한 곳으로 모았다
-- 마지막 장의 버튼은 `[다음]` 이 아니라 `[완료]` — 없는 다음 장을 약속하지 않는다
-  (지도 투어에도 같은 규칙 적용)
+- **안내 장치를 두 벌 만들지 않았다.** 지도가 쓰던 투어 장치(`useGuidedTour`
+  상태 관리 · 화면을 어둡게 덮고 한 곳만 뚫어 보여 주는 오버레이 · 설명 카드 ·
+  진행 점 · 건너뛰기)를 그대로 쓰고, `useGuidedTour({ steps })` 에 화면별 단계
+  목록만 갈아 끼운다. 지도의 8단계 여정(캔버스 노드에 붙는 안내 · 실제 클릭을
+  기다리는 단계 · 개발자용 갈래)은 예전처럼 HomePage 가 가진다
+- **문서함 · 공방 · 인사이트 · 프로젝트 · 기록** 각각 카드 2장 — ① 이 화면이
+  무엇을 하는 곳인지(무엇에도 붙지 않는 화면 중앙 카드) ② 여기서 가장 먼저 볼
+  것 하나(화면에 실제로 있는 요소 하나를 밝혀 준다: `docs-vault-doc-list` ·
+  `studio-entry-choice` · `do-next-touchups` · `project-selector-card` ·
+  `atlas-git-panel`). 기능을 나열하지 않고 "여기서 무엇을 할 수 있는가" 한
+  질문에만 답한다. 둘째 카드가 가리킬 요소가 그 순간 화면에 없으면(예: 문서
+  목록이 접혀 있을 때) 자동으로 한 장짜리가 된다
+- 이 안내는 앱 껍데기(`AppShell`)가 가지고 있고, 화면이 바뀔 때마다 `key` 로 다시
+  띄운다 — 페이지마다 각자 띄우게 하면 어느 한 페이지가 빠뜨려도 아무도 모른다
+  (#65 계열의 어긋남). 지도에서는 이 안내를 그리지 않는다
+- **방해하지 않는다** — "봤음" 기록은 화면마다 따로 남긴다(`guided-tour:<id>:v1`).
+  한 화면에서 봤다고 나머지 다섯 화면의 안내까지 사라지지 않고, 이미 본 화면은
+  다시 저절로 뜨지 않는다. 저절로 시작하는 것은 지도와 같은 조건
+  (`canAutoStartGuidedTour`)을 통과할 때뿐이다
+- **먼저 움직인 사람에게는 아예 안 뜬다 (2026-07-28)** — 저절로 뜨는 안내는
+  700ms 뒤에 열리고, 그때 화면이 가려져 있으면 최대 30초까지 기다린다. 그
+  기다리는 동안 사용자가 먼저 클릭하거나 키를 누르면 **뜨는 것 자체를 취소**한다
+  (지도가 쓰던 `watchGuidedTourAutoStartCancel` 을 그대로 가져왔다). 스스로
+  둘러보기 시작한 사람 위로 뒤늦게 뜨는 카드는 안내가 아니라 방해다. 이렇게
+  취소한 것은 "봤음" 으로 기록하지 않으므로 다음 방문에 다시 기회가 온다.
+  "이 화면은 여기서 열 수 없다" 고 사정을 밝히는 카드가 대신 서 있는 화면
+  (예: 폭이 `lg` 미만일 때의 공방)에서도 뜨지 않는다 — 없는 화면을 소개하는
+  안내는 거짓말이기 때문이다
+- **다시 보기** — 설정 메뉴 › 화면 › "화면 안내". 여섯 화면 모두에서 같은 자리에
+  있다(지도에서는 오른쪽 위 컴퍼스 타일이 여전히 주된 입구이고, 이 메뉴 행은 보조
+  수단이다). 화면마다 도움말 버튼을 따로 만들면 화면마다 버튼 개수가 달라지므로,
+  언제나 같은 자리에 있는 설정 메뉴 한 곳으로 모았다
+- 마지막 카드의 버튼은 `[다음]` 이 아니라 `[완료]` 다 — 있지도 않은 다음 장을
+  약속하지 않는다(지도 투어에도 같은 규칙을 적용했다)
 
 #### Top-left brand pill (`HeroCollapsed`, compact-only since 2026-06-11)
 - One pill, no expanded hero state (removed — it competed with the map for attention): selected project name, or workspace subtitle (concept/relation counts + weekly growth signal when > 0)
@@ -850,7 +864,7 @@ file export + the local stdio MCP genuinely can't serve them.
 - **Graph diff pulse** — newly appearing slugs amber-pulse for 5s on `/topology`
 - **Toasts** — `Added: <slug>` (info) / `Edited: <slug>` (success, mtime change) on every page
 - **Save-conflict guard** — if a file changed on disk between read and write, `/docs` editor save surfaces a localized conflict notice and keeps the buffer dirty instead of silently overwriting unsaved edits
-- Effect: IDE / AI agent / CLI 변경이 웹 탭 *focus 안 해도* ~1.5–5s 안에 그래프 + toast.
+- Effect: IDE · AI 에이전트 · CLI 로 파일을 고치면, 사용자가 웹 탭을 다시 누르지 않아도 ~1.5–5s 안에 그래프가 갱신되고 toast 가 뜬다.
 
 #### Read tools (19)
 1. **connection_info** — active vault/repo roots plus the actually advertised `readOnly`, `toolCount`, `toolNames`, and `toolsetHash`; explicit `OATLAS_REPO_ROOT` wins, otherwise repo root is auto-discovered from the active vault's Git top-level before falling back to process cwd
@@ -868,10 +882,13 @@ file export + the local stdio MCP genuinely can't serve them.
 13. **query_concepts** `{ filter, limit? }` — typed filter DSL with AND/OR/NOT on `kind` / `domain` / `slug` / `title` / `has(arrayKey)`; match rows carry `{uid, slug}`
 14. **compile_ontology** `{ includeIndexes?, summary?, nodesLimit?, nodesOffset?, edgesLimit?, edgesOffset? }` — deterministic graph artifact with UID-required `nodes[]`, slug-based `edges[]`, identity indexes (`uidToSlug`, `slugToUid`, `mergedUidToSlug`), graph-array canonicalization actions, semantic `graphHash`, and pagination; invalid identity fails closed
 15. **query_ontology** `{ operation, ... }` — graph-engine query over the compiled artifact (`neighbors`, `path` with aligned `nodes[]`, `all_paths` with per-path `nodes[]` plus `limit` / `searchBudget` / `exhaustive` / `truncatedByBudget` / `totalPathsExact` metadata and `evidence` guidance, `query_plan` with executable run/narrow advice, filter-preserving `suggestedQuery`, and filter-aware `estimate.totalMatches` for `match_nodes` / `match_edges`, `centrality`, `communities`, `similar_nodes`, `explain_relation`, `reachability`, `pattern_walk`, `impact`, `blast_radius`, `subgraph`, `builder_context`, `overview`, `schema`, `facets`, `match_nodes`, `match_edges`, `node_profile`, `domain_profile`, `domain_matrix`, `project_scope`, `project_map`, `relation_check`, `components`, `lineage`, `containment_tree`, `cycles`, `topological_order`, `recommend_relations`, `growth_plan`, `maintenance_plan`, `agent_brief`, `workspace_brief`, `health`) for graph-database-like answers without pulling the full compile payload. `builder_context` keeps its compatibility operation/response name but emits the current Workshop focus URL, persisted bounded neighborhood, `canvasPosition`, `expected_mtime`, and safe low-level write handoff while declaring that unsaved UI drafts are not included. Repeated read calls inside one MCP server session reuse the compiled artifact while the vault document signature is unchanged, so first-contact agent run orders do not pay the full compile cost for every graph query. `match_nodes` returns a `followUp` packet for the first returned row with ready-to-run `node_profile`, incoming/outgoing `match_edges`, and `blast_radius` MCP calls plus CLI fallback commands, so a graph scan can become focused evidence without another round of tool-selection guesswork. `match_edges` returns a `followUp` packet for the first returned real edge with ready-to-run `explain_relation`, `path`, and `relation_check` MCP calls plus CLI fallback commands, so edge scans move directly into evidence and write-preflight instead of being treated as raw proof. `match_edges.filters`, `match_edges.edges[].relationType`, `followUp.focusEdge.relationType`, and `query_plan(match_edges).normalized` expose public names such as `depends_on` next to canonical frontmatter `types` or `via` values such as `dependencies`, so terminal and MCP clients can show the relation name users typed while keeping executable graph keys. `node_profile.edges.incoming/outgoing.byRelationType` and edge `relationType` expose public names such as `depends_on` for node detail views; `domain_matrix.filters.relationTypes`, `connections.rows[].byRelationType`, and connection examples do the same for coupling views, while canonical `types`, `via`, and `byRelation` stay available for graph-key callers. The UI semantic coupling matrix and CLI node deep dive can be rerun from Claude Code, Codex, or terminal fallbacks with the same user-facing names. `agent_brief` returns Claude Code/Codex handoff readiness, a copyable `handoffPrompt` (also printable via `ontology-atlas agent-brief --prompt`), graph entrypoints, first MCP calls, structured `graphDbQueryPack` (`facets` / `schema` / `query_plan(match_nodes)` / `match_nodes` / `query_plan(match_edges)` / `match_edges` / `domain_matrix` / `query_plan(centrality)` / `centrality` / `query_plan(all_paths)` / `all_paths` / `explain_relation` / `business_questions` outcome, domain-boundary, capability-claim, and implementation-evidence scans), investigation playbooks including `graph_traversal` (`schema` → `query_plan(all_paths)` → `all_paths` → `pattern_walk` / `project_map`), `traversalStrategy` (`plan_before_enumeration` → `bounded_path_evidence` → `containment_cross_check`) for plan-first bounded traversal, per-playbook `evidence[]` and `stopWhen[]` checklists, write guardrails for `add_relation` / rename-merge / post-change sync, relation preflight before `add_relation`, a `relationDecisionGuide` for the `skip_existing` / `review_inverse` / `safe_to_add` / `review_new_schema` outcomes, `resultContracts` requiring `all_paths` callers to report completeness fields and requiring `match_nodes` / `match_edges` callers to report `totalMatches`, `limited`, and `followUp` details before treating scan rows as evidence, and read-first write policy. The CLI companion `ontology-atlas agent-brief [vault] --graph-db-pack` turns that pack into a shell-pasteable graph scan script for sessions without MCP. `relation_check` validates relation `type` before endpoint slug resolution, so relation typos such as `depend_on` still return nearest-value hints even in empty or project-less vaults, and returns `matchingEdges`, reverse-direction `inverseEdges`, and a recommendation decision (`skip_existing`, `review_inverse`, `safe_to_add`, or `review_new_schema`). Non-dependency relations may expose an `add_relation` `proposedAction`; a new `depends_on` returns no executable args and instead exposes `approvalGate.writeAllowed:false` until observable ability, rationale, explicit human approval, and nonblank `why` are present. `maintenance_plan` actions include stable `id`, cursor resume via `afterActionId`, explicit `cursor.reason` metadata, executable graph-array canonicalization, count-safe summary fields, `byPhase` / `bySeverity` / `byKind` remaining-queue buckets, `executable`, current-page `nextExecutableAction`, current-page `nextReviewAction`, plus `executableOnly` / `phases` / `severities` / `kinds` filters; ready pages report `cursor.found=true` with `cursor.reason=null`, while unknown cursors return an empty page with `cursor.found=false`, zero remaining actions, and no next actions. `phases`, `severities`, and `kinds` are enum-validated so typoed work-queue filters fail instead of returning an empty plan.
-`impact`/`blast_radius`는 선언된 `depends_on`만 따라가며 구조 관계는 영향·위험에서
-제외한다. 구조 질문은 `reachability`/`subgraph`가 답한다. 각 의존 edge는 이유
-유무에 따라 `review_required` 또는 `declared_with_rationale`이고, 관계 단위
-current-source receipt가 생기기 전까지 completeness와 `risk`는 `unknown`이다.
+`impact` 와 `blast_radius` 는 사람이 직접 적어 둔 `depends_on` 만 따라간다. 무엇이
+무엇을 담고 있는지 같은 구조 관계는 영향 범위와 위험 계산에서 뺀다 — 그런 구조
+질문에는 `reachability` 와 `subgraph` 가 답한다. 의존 edge 하나하나는 그 이유가
+적혀 있는지에 따라 `review_required`(사람이 봐야 함) 또는
+`declared_with_rationale`(이유가 적혀 있음)로 표시된다. 그리고 관계 하나하나가
+지금도 사실인지 확인한 기록(current-source receipt)이 생기기 전까지 이 답의
+completeness 와 `risk` 는 `unknown` 으로 남는다.
 
 16. **validate_vault** — whole-vault health check with per-file issues and grouped summary, including required/valid/unique UID claims, merge identity history, graph-array canonicality, and dangling graph references
 17. **analyze_repo_structure** `{ rootPath?, maxDepth?, ignore?, proposal? }` — side-effect-free bootstrap candidates from package / README / source layout. A second call can preflight a complete project/domain/capability/element/relation proposal. Its five typed competency answers carry `answered` / `partial` / `visible-gap` status plus concept, relation, evidence, and path witnesses: unsupported `answered` claims fail closed, while honest gaps remain visible in findings, quality gates, the deterministic write plan, and the project document body. `canWrite:true` therefore means the submitted graph is writable, not that every competency is settled. Root package contracts are bounded evidence, not meaning nodes: Rust reads allowlisted `Cargo.toml` package/features fields and returns a separate bounded `configurationEvidence` receipt for literal direct workspace members plus exact `cfg`/`cfg_attr` feature predicate locations, polarity, and source role. It does not evaluate predicates, run build scripts/macros, infer `use`/`mod`, claim runtime impact, or allow a relation write. Python reads `README.rst`, static allowlisted `setup.py` literals without execution, top-level `__init__.py` packages, and at most 12 import-participating implementation boundaries as elements. Direct module/package boundaries are the base and up to two exact nested security/policy/risk endpoints may reserve slots so risk ownership is not buried in a large import payload. A frontier model may additionally select at most four other exact file endpoints from the observed import graph when they answer distinct change-navigation roles such as execution, transport, or shared representation; those files never enter the automatic candidate list. Unused files are not mirrored, ambiguous module slugs fail closed, omitted lower-ranked boundaries are reported, and an import-backed Python `depends_on` must match the observed module or exact-file direction. Unsafe, oversized, malformed, dynamic, or repository-escaping inputs are skipped or ignored rather than guessed.
@@ -981,27 +998,32 @@ just unmounted).
     consumes it. Gemini authenticates through the `x-goog-api-key` header —
     never the documented `?key=` query form, because a URL is a place that
     gets logged.
-  - **주소로 연결 — 로컬/오픈소스 러너 (2026-08-01).** 명명 벤더 아래 네
-    번째 행은 벤더가 아니라 **문**이다: 러너 주소(기본 `http://localhost:11434`)
-    를 적고 [연결 확인] 을 누르면 그 한 번의 요청이 「살아 있나 · OpenAI 호환
-    인가 · 어떤 모델을 고를 수 있나」 셋을 함께 답하고, 설치된 모델이 목록으로
-    와서 **고르는 것만** 하면 된다(이름을 타이핑하지 않으므로 오타로 실패할
-    자리가 없다). 키는 필요 없다 — 이 갈래는 키체인을 지나가지 않는다.
-    Ollama · LM Studio · llama.cpp server · vLLM 이 같은 문으로 들어온다
-    (엔드포인트는 OpenAI 호환 `/v1/*`; 네이티브 API 를 골랐다면 러너마다
-    어댑터가 하나씩 늘었을 것이다).
-    - **실패는 이유별로 다른 문장을 받는다** — 러너가 꺼져 있음(연결 자체
-      실패) · 그 포트에 다른 프로그램(404) · 설치된 모델 0개가 서로 구별되고,
-      각각 다음에 할 일을 함께 적는다.
-    - **평문 `http` 는 이 컴퓨터(loopback)에서만.** 밖으로 나가려면 `https`
-      이고, 주소에 아이디·비밀번호를 담으면 거절한다(URL 은 기록에 남는
-      자리다).
-    - **전송 범위 문구가 참인 자리에서만 강한 말을 한다.** 루프백이면
-      "이 컴퓨터 밖으로 나가지 않고, 기록에도 목적지가 `localhost:11434` 로
-      남아요 — 그게 나가지 않았다는 증거예요"; 사용자가 https 로 다른 기계를
-      가리키면 그 문장 대신 "이 주소는 이 컴퓨터 밖" 이라고 쓴다.
-    - 웹에서는 이 갈래도 안 된다(브라우저 페이지가 localhost 로 못 간다) —
-      강등 카드가 키 보관과 **따로** 그 이유를 적고 `/download` 로 보낸다.
+  - **주소를 적어서 연결하기 — 내 컴퓨터에서 돌리는 모델 (2026-08-01).** 위의
+    이름 붙은 세 벤더 아래 네 번째 행은 특정 벤더가 아니라, 아무 러너나 받아
+    주는 **입구 하나**다(러너 = 모델을 실제로 돌려 주는 프로그램). 러너 주소
+    (기본 `http://localhost:11434`)를 적고 [연결 확인] 을 누르면 그 요청 한 번이
+    「살아 있나 · OpenAI 와 같은 형식으로 말하나 · 어떤 모델을 고를 수 있나」
+    세 가지를 함께 답한다. 설치된 모델이 목록으로 와서 사용자는 **고르기만**
+    하면 된다(이름을 직접 타이핑하지 않으니 오타로 실패할 자리가 없다). API 키는
+    필요 없다 — 이 갈래는 키 보관소를 아예 거치지 않는다. Ollama · LM Studio ·
+    llama.cpp server · vLLM 이 모두 이 입구 하나로 들어온다(주소는 OpenAI 호환
+    `/v1/*` 를 쓴다. 러너마다 다른 고유 API 를 골랐다면 러너 수만큼 변환 코드를
+    따로 만들어야 했을 것이다).
+    - **실패한 이유마다 다른 문장을 보여 준다** — 러너가 꺼져 있는 경우(연결
+      자체가 안 됨) · 그 포트에 다른 프로그램이 떠 있는 경우(404) · 설치된
+      모델이 하나도 없는 경우를 서로 구별하고, 각각 다음에 무엇을 하면 되는지
+      함께 적는다.
+    - **암호화하지 않는 `http` 는 이 컴퓨터 안(loopback)에서만 허용한다.**
+      바깥 기계를 가리키려면 `https` 여야 하고, 주소 안에 아이디·비밀번호를
+      적어 넣으면 거절한다 — 주소는 기록에 그대로 남는 자리이기 때문이다.
+    - **"밖으로 안 나간다" 는 말은 그게 사실일 때만 한다.** 주소가 이 컴퓨터를
+      가리키면 "이 컴퓨터 밖으로 나가지 않고, 기록에도 목적지가
+      `localhost:11434` 로 남아요 — 그게 나가지 않았다는 증거예요" 라고 쓰고,
+      사용자가 `https` 로 다른 기계를 가리키면 그 문장 대신 "이 주소는 이
+      컴퓨터 밖" 이라고 쓴다.
+    - 웹 브라우저에서는 이 갈래도 쓸 수 없다(브라우저 페이지가 사용자 컴퓨터의
+      localhost 로 요청을 보낼 수 없다). 그래서 "여기서는 안 된다" 고 밝히는
+      카드가 API 키 보관 이야기와 **따로** 그 이유를 적고 `/download` 로 보낸다.
   - **Every recorded call names its destination host.** The audit line carries
     `host` (e.g. `generativelanguage.googleapis.com`), and the screen states
     that host before you press check — the strongest claim we can prove for a
@@ -1074,24 +1096,24 @@ just unmounted).
 For full reasoning see `docs/CHANGELOG.md`. High-level:
 
 - **Round 1-9** (2026-04~05 surface diet + robustness) — presentation mode · Relationship Radar · audience toggle · `/ontology/relations` route · landing CTA swap · `LocalVaultProvider` SSoT · vault error banner · permission state sync. Earlier auth (R10) and cloud (R10b) surface permanently removed.
-- **Round 10 / 10b** — `/login` / `/signup` / `/account` / `/reset-password` / `/settings/*` / `/admin/*` / `/review/*` / `/diagnostics/*` / `/knowledge/*` 모두 제거. Firebase / Firestore / Auth / Storage SDKs, screenshot uploader, manual node/edge cloud modal — pure local-first 회귀.
-- **Round 11** — `pnpm vault:validate` / `vault:migrate` 신규. MCP v0.7.0 — 14 tools (8 read + 6 write, `rename_concept` / `merge_concepts` 추가). 3-way frontmatter parser contract. mtime 기반 conflict guard.
-- **Round 12** — primary audience = developer + AI agent (PM-primary 결정 reverted). CLI 4 명령 추가 (`list / validate / add / find` — `init` 외). Cross-package contract 4-way. dogfood orphan 8 → 1.
-- **Round 13** — AI agent quality 첫 측정 (Claude Code + Codex, n=2). MCP `instructions` field (v0.7.1). VSCode plugin v0.1.0 → v0.9.0 (R15 에서 제거).
-- **Round 14** — *AI agent ↔ vault 자동 sync*. Web 즉시 반영 4 단계 (5s polling / graph pulse / added toast / modified toast). Frontmatter schema 양식 (3 진입점 동기화). CLI `import` 명령 (외부 .md 정규화). `/ontology-sync` skill + AGENTS read-while-coding 룰. SessionStart hook (vault census 자동 inject).
-- **Round 15** — VSCode plugin 제거 (4 surface → 3). CLI `init` 의 mcp 등록 마찰 1 step 제거 (`.mcp.json` 자체 생성, cwd + vault 양쪽). Later follow-up extends this to Codex by writing repo-local `.codex/config.toml` in cwd + vault and by making the app starter write vault-local `.mcp.json` / `.codex/config.toml`. `add` / `import` 의 `--auto-prefix` default on (starter layout 일관). `--raw-slug` opt-out.
+- **Round 10 / 10b** — `/login` / `/signup` / `/account` / `/reset-password` / `/settings/*` / `/admin/*` / `/review/*` / `/diagnostics/*` / `/knowledge/*` 를 모두 없앴다. Firebase / Firestore / Auth / Storage SDK, 스크린샷 업로더, 노드/엣지를 손으로 클라우드에 넣던 모달도 함께 걷어내고 완전한 local-first 로 되돌렸다.
+- **Round 11** — `pnpm vault:validate` / `vault:migrate` 를 새로 만들었다. MCP v0.7.0 — 도구 14개(읽기 8 + 쓰기 6, `rename_concept` / `merge_concepts` 추가). frontmatter 파서 세 벌을 한 계약으로 묶었다. 파일 수정 시각(mtime)으로 동시 편집 충돌을 막는 장치를 넣었다.
+- **Round 12** — 주 사용자를 개발자 + AI 에이전트로 정했다(기획자를 주 사용자로 삼았던 이전 결정을 되돌렸다). CLI 명령 4개 추가(`init` 외에 `list / validate / add / find`). 패키지 사이 계약 검사를 네 벌로 늘렸다. 우리 자신의 볼트에서 아무 데도 안 이어진 노드가 8개 → 1개.
+- **Round 13** — AI 에이전트가 이 볼트를 얼마나 잘 쓰는지 처음으로 측정했다(Claude Code + Codex, 표본 2). MCP 에 `instructions` 필드 추가(v0.7.1). VSCode 플러그인 v0.1.0 → v0.9.0(R15 에서 없앴다).
+- **Round 14** — *AI 에이전트가 고친 것이 볼트에 저절로 반영되게 했다.* 웹에 바로 보이게 하는 장치 4단(5초 주기 확인 / 새 노드 강조 / 추가 toast / 수정 toast). kind 별 frontmatter 서식을 정하고 세 진입점(MCP · CLI · 웹)이 같은 것을 쓰게 맞췄다. CLI `import` 명령(밖에서 온 `.md` 를 이 서식으로 정리). `/ontology-sync` 스킬과, 코딩하는 동안 볼트를 읽으라는 AGENTS 규칙. 세션이 시작될 때 볼트의 개수 요약을 자동으로 넣어 주는 SessionStart hook.
+- **Round 15** — VSCode 플러그인 제거(표면 4개 → 3개). CLI `init` 이 `.mcp.json` 을 직접 만들게 해서(작업 폴더와 볼트 양쪽) MCP 등록에 필요한 손질을 한 단계 없앴다. Later follow-up extends this to Codex by writing repo-local `.codex/config.toml` in cwd + vault and by making the app starter write vault-local `.mcp.json` / `.codex/config.toml`. `add` / `import` 의 `--auto-prefix` 를 기본 켜짐으로 바꿨다(시작 폴더 구조와 어긋나지 않게). 끄고 싶으면 `--raw-slug`.
 - **Round 16** — fresh repo bootstrap path. `analyze_repo_structure` / CLI `analyze` propose project/domain/capability/element candidates from package metadata, README headings, and source layout with side effect 0.
 - **Round 17** — import-derived dependency evidence. `infer_imports` / CLI `infer-imports` parse TS/JS and bounded static Python imports, resolve supported internal paths, and propose review-only `depends_on` edges without mutating the vault.
 - **Round 18+** — workbench loop consolidation. `/ontology` now frames Tree as Browse and immediately hands selected slugs to Builder (Write), Topology (visual focus), and Insights (Query). `/ontology/edit` is kept as a constrained relation write-review surface with source-file patch preview, preflight, post-save proof packets, and focused Insights handoff. `/ontology/insights` exposes the graph DB query pack as an executable local markdown graph cockpit, and `pnpm dogfood:graph-db` now fail-closes on setup self-check, `health --json`, graph scan follow-ups, public relation-name parity, structural `pattern-walk` / `project-map` traversal, bounded path completeness, relation preflight, and relation explanation contracts.
-- **전 페이지 시안-우선 재구성 웨이브 (2026-07-18, PR #355~#366)** — `docs/prototypes/` 승인 시안 기반 전면 현행화. Removed: `/ontology/insights`의 구 4탭 reader-persona 시스템(proof/collaboration/agent/census 프리셋, 세션 증빙 스트립, collaborator brief, query-recipe cockpit, ~6,200줄) — 개요/관계/신선도 3탭으로 대체; `/projects`의 검색·필터·페이지네이션 카드 리스트 — engraved census 헤더 + 최근 활동 스트립 + 풀폭 카드 + dashed 다음 프로젝트 슬롯으로 대체(`ProjectQuickCreatePanel`은 컴포넌트로는 남지만 이 페이지에서 더 이상 노출 안 됨); `/project/[slug]`의 "More info" 접이식 섹션과 태그/스택/링크 인라인 노출 — quick-edit/전체 편집으로 이동. Added: topology 데이터시트 288→352px 스케일업 + 근거(evidence) 그룹 승격, `TopologyV2SettingsGear`(우측 유틸리티 레일), `/ontology/edit` 3-pane(240·캔버스·340, xl+ 상주) + `BuilderWriteConfirmBar`, `/docs`의 상시 Pinned/Vault/Recent 사이드바(280px, lg+) + `DocFrontmatterBlock` + 하단 backlinks 스트립, `/download`의 정직한 fact strip(size/checksum "게시 시 기록" placeholder) + spctl 신뢰 패널 + changelog 프리뷰.
-- **Agent-loop vault freshness (R+)** — CLI `preflight` 신규: git staged 파일을 vault `path:`/`elements:` frontmatter로 역매칭해 이 커밋이 닿는 노드의 blast-radius 요약을 커밋 *전에* 보여준다(정보 제공 전용, 항상 exit 0, 매치 0건이면 조용히 skip). `agent-setup --install-pre-commit-hook`로 pre-commit hook 설치(기존 hook 있으면 append, idempotent, `--no-verify` 우회 그대로 존중). `.github/workflows/vault-freshness.yml`(재사용 가능한 workflow, 이 repo 자체 PR에도 적용): PR 변경 파일 중 vault 노드가 참조하는 소스가 바뀌었는데 그 노드의 `.md`는 이번 PR에서 안 바뀐 경우를 `scripts/vault-freshness-drift.mjs`(순수 node 스크립트)로 감지, 감지 0건이면 코멘트 없이 종료하고 1건 이상이면 PR에 코멘트 하나(스팸 방지 — 기존 코멘트 업데이트/제거 방식)를 남긴다.
+- **승인된 시안을 기준으로 모든 페이지를 다시 만든 라운드 (2026-07-18, PR #355~#366)** — `docs/prototypes/` 에서 승인된 시안대로 전 화면을 현행화했다. Removed: `/ontology/insights` 의 옛 4탭 독자 유형 시스템(proof/collaboration/agent/census 프리셋, 세션 증빙 줄, collaborator brief, query-recipe cockpit, 약 6,200줄) — 개요/관계/신선도 3탭으로 대체했다; `/projects` 의 검색·필터·페이지 넘김이 있던 카드 목록 — 각인한 개수 헤더 + 최근 활동 줄 + 폭을 꽉 채운 카드 + 파선으로 그린 "다음 프로젝트" 자리로 대체했다(`ProjectQuickCreatePanel` 은 컴포넌트로는 남아 있지만 이 페이지에는 더 이상 나오지 않는다); `/project/[slug]` 의 "More info" 접이식 구역과, 태그/스택/링크를 그 자리에 늘어놓던 표시 — 빠른 편집과 전체 편집으로 옮겼다. Added: 토폴로지 데이터시트를 288 → 352px 로 키우고 근거(evidence) 그룹을 위로 올렸다, `TopologyV2SettingsGear`(오른쪽 도구 레일), `/ontology/edit` 3분할(240 · 캔버스 · 340, `xl` 이상에서 상시) + `BuilderWriteConfirmBar`, `/docs` 의 상시 Pinned/Vault/Recent 사이드바(280px, `lg` 이상) + `DocFrontmatterBlock` + 아래쪽 backlinks 줄, `/download` 의 정직한 사실 줄(크기와 체크섬은 아직 없을 때 "게시 시 기록" 이라고 적는다) + spctl 신뢰 패널 + changelog 미리보기.
+- **Agent-loop vault freshness (R+)** — CLI `preflight` 를 새로 만들었다: git 에 올린(staged) 파일을 볼트의 `path:` / `elements:` frontmatter 와 거꾸로 맞춰 보고, 이 커밋이 건드리는 노드가 어디까지 영향을 미치는지를 커밋하기 *전에* 보여 준다(알려 주기만 하고 아무것도 막지 않는다 — 언제나 exit 0 이고, 맞는 노드가 하나도 없으면 조용히 넘어간다). `agent-setup --install-pre-commit-hook` 으로 pre-commit hook 을 설치한다(이미 hook 이 있으면 뒤에 덧붙이고, 여러 번 돌려도 결과가 같으며, `--no-verify` 로 건너뛰는 것은 그대로 존중한다). `.github/workflows/vault-freshness.yml` 은 다른 저장소에서도 불러다 쓸 수 있는 workflow 이고 이 저장소 자신의 PR 에도 건다: PR 에서 바뀐 파일 중 볼트 노드가 가리키고 있는 소스가 바뀌었는데 정작 그 노드의 `.md` 는 이번 PR 에서 안 바뀐 경우를 `scripts/vault-freshness-drift.mjs`(의존성 없는 node 스크립트)가 찾아낸다. 하나도 없으면 코멘트 없이 끝내고, 하나라도 있으면 PR 에 코멘트를 하나만 남긴다(도배를 막으려고 기존 코멘트를 고치거나 지우는 방식이다).
 
 ---
 
 ## 7. Deferred (future rounds — wait-for-signal)
 
 - `/ontology/edit` builder reconsideration — **SUPERSEDED 2026-07-24: the ERD builder was retired.** It had been kept as a constrained workbench surface (focus a saved slug, preview source-file frontmatter writes, run relation preflight, hand off to Insights/Topology). Once the 공방(`/ontology/studio`) covered assemble/connect/preview/write, the xyflow builder was removed and `/ontology/edit` became a redirect to the workshop. Users who prefer direct markdown still edit frontmatter in `/docs` or CLI/MCP; the workshop is the visual relation-repair / write-review surface.
-- ~~Phase 4 PM polish~~ — **dropped** (R11 #25, PRODUCT-DIRECTION v3). PM-primary 결정 reverted.
+- ~~Phase 4 PM polish~~ — **dropped** (R11 #25, PRODUCT-DIRECTION v3). 기획자를 주 사용자로 삼았던 결정을 되돌렸다.
 - Search palette unification (`⌘K` + `⇧⌘K`) — R5 skip: not duplicates, would require ranking/section redesign.
 - LocalVaultPicker hoist out of dropdown — R5 skip: dead-end already closed by R4 J.
 - WebGL context-loss `ErrorBoundary` (Scenario 10) — R9 defer: theoretical, no reports.
