@@ -282,7 +282,7 @@ mechanism this budget assumes.)
   subagent to double-check your own work.** A subagent earns its cost by *isolating
   context* — it burns tokens privately and hands back a short answer. Re-verification
   is not that. The councils are the deliberate exception, and their point is
-  **independence** (the party that wants to build must not sign the gate), not extra
+  **independence** (whoever builds it must not be the one who passes it), not extra
   verification passes.
 - Use memory as an index, not a transcript: search the registry, open only the one or two relevant notes, and verify drift-prone facts live.
 - Do not run or add hooks that inject long dynamic context. SessionStart hooks must stay concise; PreToolUse hooks should block risky actions only, not record routine activity.
