@@ -18,7 +18,7 @@
  *
  * | 출처 | 세는 것 | 안 세는 것 |
  * |---|---|---|
- * | `app/globals.css` | 램프 토큰(타입 · 행간 · 반경 · 그림자 · 컨트롤 높이 · 스케일 고정 계약)의 **이름과 값** | 표면 전용 토큰, 주석, 순서, 공백 |
+ * | `app/globals.css` | 램프 토큰(타입 · 행간 · 반경 · 그림자 · 컨트롤 높이 · 콘텐츠 아이콘 · 스케일 고정 계약)의 **이름과 값** | 표면 전용 토큰, 주석, 순서, 공백 |
  * | `src/shared/ui/control-class.ts` | cva **축 이름 · 축의 선택지 · 기본값** (모양/크기/톤/scope…) | 각 선택지가 내는 클래스 문자열 |
  * | `src/shared/ui/controls.tsx` · `surface.tsx` | **export 되는 프리미티브 이름** | 내부 구현 |
  * | `.claude/rules/design.md` | 「스케일 고정 계약」 절의 **수치와 토큰 이름** | 그 절의 문장 |
@@ -60,12 +60,12 @@ export const SCALE_CONTRACT_SECTION = '스케일 고정 계약';
 /**
  * globals.css 에서 램프로 세는 토큰.
  *
- * 이름 있는 사다리(타입 · 행간 · 반경 · 그림자 · 컨트롤 높이)와 design.md 가
+ * 이름 있는 사다리(타입 · 행간 · 반경 · 그림자 · 컨트롤 높이 · 콘텐츠 아이콘)와 design.md 가
  * 「스케일 고정 계약」으로 못박은 두 치수다. 앞의 넷은 `--<ramp>-<step>` 이라는
  * 규칙적 이름을 갖고 전부 합쳐 40개 남짓이라, 여기 걸리면 거의 확실히 규격이다.
  */
 const RAMP_TOKEN_PATTERN =
-  /^--(?:text|leading|radius|shadow|control-h)-|^--(?:chrome-tile-size|app-nav-rail-icon-size)$/;
+  /^--(?:text|leading|radius|shadow|control-h|icon)-|^--(?:chrome-tile-size|app-nav-rail-icon-size)$/;
 
 /**
  * 팔레트의 뿌리 — hue 를 정의하는 solid 색.
