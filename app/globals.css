@@ -104,7 +104,6 @@
   --color-indigo-a50: rgba(94, 106, 210, 0.5);
   --color-indigo-a55: rgba(94, 106, 210, 0.55);
   --color-indigo-a58: rgba(94, 106, 210, 0.58);
-  --color-indigo-a62: rgba(94, 106, 210, 0.62);
   --color-indigo-a66: rgba(94, 106, 210, 0.66);
   /* pale indigo text. */
   --color-indigo-text-strong: rgba(159, 170, 235, 0.95);
@@ -137,7 +136,6 @@
    * 위 A2 스케일에 없는 opacity/hue 만 추가한다 — 시각 결과 무변, 참조만
    * CSS 변수로 치환.
    */
-  --color-indigo-a13: rgba(94, 106, 210, 0.13);
   --color-indigo-a20: rgba(94, 106, 210, 0.2);
   --color-indigo-a24: rgba(94, 106, 210, 0.24);
   --color-indigo-a30: rgba(94, 106, 210, 0.3);
@@ -151,7 +149,6 @@
    */
   --color-indigo-line-a06: rgba(139, 151, 255, 0.06);
   --color-indigo-line-a13: rgba(139, 151, 255, 0.13);
-  --color-indigo-line-a14: rgba(139, 151, 255, 0.14);
   --color-indigo-line-a15: rgba(139, 151, 255, 0.15);
   --color-indigo-line-a20: rgba(139, 151, 255, 0.2);
   --color-indigo-line-a22: rgba(139, 151, 255, 0.22);
@@ -179,7 +176,6 @@
   /* overlay-recessed(0.16) 형제 — 같은 "밝히는 대신 어둡히는" recessed
      surface, 다른 opacity. */
   --color-overlay-recessed-a12: rgba(0, 0, 0, 0.12);
-  --color-overlay-recessed-a14: rgba(0, 0, 0, 0.14);
 
   /* 팝오버/다이얼로그 드롭 섀도 알파 — box-shadow 값 안에 삽입. */
   --color-shadow-a22: rgba(0, 0, 0, 0.22);
@@ -611,12 +607,10 @@
      73,190,146 / 130,230,180 드리프트를 이 hue 로 수렴(SHIFT-RISK, 승인됨). */
   --color-success-a06: rgba(50, 185, 125, 0.06);
   --color-success-a07: rgba(50, 185, 125, 0.07);
-  --color-success-a035: rgba(50, 185, 125, 0.035);
   --color-success-a055: rgba(50, 185, 125, 0.055);
   --color-success-a10: rgba(50, 185, 125, 0.1);
   --color-success-a11: rgba(50, 185, 125, 0.11);
   --color-success-a12: rgba(50, 185, 125, 0.12);
-  --color-success-a18: rgba(50, 185, 125, 0.18);
   --color-success-a20: rgba(50, 185, 125, 0.2);
   --color-success-a28: rgba(50, 185, 125, 0.28);
   --color-success-a35: rgba(50, 185, 125, 0.35);
@@ -625,7 +619,6 @@
   --color-success-a45: rgba(50, 185, 125, 0.45);
   /* success text — danger-text 와 대칭인 밝은 emerald 텍스트 형제.
      151,230,198 / 180,235,205 / 130,230,180(text 용례) 를 이 hue 로 수렴. */
-  --color-success-text-a78: rgba(165, 232, 200, 0.78);
   --color-success-text-a90: rgba(165, 232, 200, 0.9);
   --color-success-text-a92: rgba(165, 232, 200, 0.92);
   --color-success-text-a94: rgba(165, 232, 200, 0.94);
@@ -636,8 +629,6 @@
      의미 유지) 도 이 사다리로 흡수한다. */
   --color-amber-source-a06: rgba(244, 183, 49, 0.06);
   --color-amber-source-a08: rgba(244, 183, 49, 0.08);
-  --color-amber-source-a10: rgba(244, 183, 49, 0.1);
-  --color-amber-source-a11: rgba(244, 183, 49, 0.11);
   --color-amber-source-a12: rgba(244, 183, 49, 0.12);
   --color-amber-source-a14: rgba(244, 183, 49, 0.14);
   --color-amber-source-a25: rgba(244, 183, 49, 0.25);
@@ -1767,7 +1758,6 @@
     --color-indigo-a50: rgba(94, 106, 210, 0.5);
     --color-indigo-a55: rgba(94, 106, 210, 0.55);
     --color-indigo-a58: rgba(94, 106, 210, 0.58);
-    --color-indigo-a62: rgba(94, 106, 210, 0.62);
     --color-indigo-a66: rgba(94, 106, 210, 0.66);
     --color-indigo-text-strong: rgba(159, 170, 235, 0.95);
     --color-indigo-text-soft: rgba(188, 195, 255, 0.92);
@@ -1785,7 +1775,6 @@
 
     /* 빌더 A4 알파 스케일 — 위 @theme 블록과 동일한 Tailwind v4 emit
        회귀를 겪으므로 여기서도 다크 디폴트를 명시. */
-    --color-indigo-a13: rgba(94, 106, 210, 0.13);
     --color-indigo-a20: rgba(94, 106, 210, 0.2);
     --color-indigo-a24: rgba(94, 106, 210, 0.24);
     --color-indigo-a30: rgba(94, 106, 210, 0.3);
@@ -1793,7 +1782,6 @@
     --color-indigo-a60: rgba(94, 106, 210, 0.6);
     --color-indigo-line-a06: rgba(139, 151, 255, 0.06);
     --color-indigo-line-a13: rgba(139, 151, 255, 0.13);
-    --color-indigo-line-a14: rgba(139, 151, 255, 0.14);
     --color-indigo-line-a15: rgba(139, 151, 255, 0.15);
     --color-indigo-line-a20: rgba(139, 151, 255, 0.2);
     --color-indigo-line-a22: rgba(139, 151, 255, 0.22);
@@ -1809,7 +1797,6 @@
     --color-amber-source-a07: rgba(244, 183, 49, 0.07);
     --color-amber-source-a30: rgba(244, 183, 49, 0.3);
     --color-overlay-recessed-a12: rgba(0, 0, 0, 0.12);
-    --color-overlay-recessed-a14: rgba(0, 0, 0, 0.14);
     --color-shadow-a22: rgba(0, 0, 0, 0.22);
     --color-shadow-a42: rgba(0, 0, 0, 0.42);
     --color-shadow-a46: rgba(0, 0, 0, 0.46);
@@ -1824,27 +1811,22 @@
        명시. 값/주석은 위 @theme 정의를 참고. */
     --color-success-a06: rgba(50, 185, 125, 0.06);
     --color-success-a07: rgba(50, 185, 125, 0.07);
-    --color-success-a035: rgba(50, 185, 125, 0.035);
     --color-success-a055: rgba(50, 185, 125, 0.055);
     --color-success-a10: rgba(50, 185, 125, 0.1);
     --color-success-a11: rgba(50, 185, 125, 0.11);
     --color-success-a12: rgba(50, 185, 125, 0.12);
-    --color-success-a18: rgba(50, 185, 125, 0.18);
     --color-success-a20: rgba(50, 185, 125, 0.2);
     --color-success-a28: rgba(50, 185, 125, 0.28);
     --color-success-a35: rgba(50, 185, 125, 0.35);
     --color-success-a40: rgba(50, 185, 125, 0.4);
     --color-success-a42: rgba(50, 185, 125, 0.42);
     --color-success-a45: rgba(50, 185, 125, 0.45);
-    --color-success-text-a78: rgba(165, 232, 200, 0.78);
     --color-success-text-a90: rgba(165, 232, 200, 0.9);
     --color-success-text-a92: rgba(165, 232, 200, 0.92);
     --color-success-text-a94: rgba(165, 232, 200, 0.94);
     --color-success-text-a95: rgba(165, 232, 200, 0.95);
     --color-amber-source-a06: rgba(244, 183, 49, 0.06);
     --color-amber-source-a08: rgba(244, 183, 49, 0.08);
-    --color-amber-source-a10: rgba(244, 183, 49, 0.1);
-    --color-amber-source-a11: rgba(244, 183, 49, 0.11);
     --color-amber-source-a12: rgba(244, 183, 49, 0.12);
     --color-amber-source-a14: rgba(244, 183, 49, 0.14);
     --color-amber-source-a25: rgba(244, 183, 49, 0.25);

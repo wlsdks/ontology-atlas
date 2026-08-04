@@ -81,7 +81,18 @@ const WCAG_TAGS = ["wcag2a", "wcag2aa", "wcag21a", "wcag21aa", "wcag22aa"];
 /** `a11y-ratchet.spec.ts` 와 같은 바닥. 빈 문서는 2, 실제 화면은 25~30. */
 const MIN_RULES_PASSED = 15;
 
-/** 소스 전수 — `censusAppearingSurfaces()` 가 낸 수. 위 「분모」 절. */
+/**
+ * 소스 전수 — `censusAppearingSurfaces()` 가 낸 수. 위 「분모」 절.
+ *
+ * 20 → 22 (2026-08-04): 「내 에이전트 연결」이 단계 진행형이 되면서 접힘 두
+ * 갈래(단계 본문 · 「잘 안 되나요?」 서랍)가 생겼다. 둘 다 볼트가 있어야 열리는
+ * 부류라 이 파일이 여는 5개에는 아직 안 들어간다 — 그 사실을 분모가 말한다.
+ *
+ * 22 → 20 (2026-08-04 저녁): 그 두 갈래가 목록 행 펼침 문법(`.ai-row-disclosure`,
+ * 상자 상시 렌더 + 내용만 접힘)으로 옮겨 가면서 조건부 «등장 표면» 이 아니게
+ * 됐다 — 접힌 내용의 접근성(탭 순서·AT 노출 없음)은 상자의 `inert` 가 지고,
+ * 그 계약은 `AgentSetupStep.test.tsx` 가 잰다.
+ */
 const APPEARING_SURFACES_IN_SOURCE = 20;
 
 interface Opener {

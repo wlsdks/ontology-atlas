@@ -87,6 +87,20 @@ export interface AgentClientButtonsProps {
   codexConfigSnippet?: string;
   /** 웹 세션(절대 경로 미상) — 딥링크 대신 복사 안내. */
   needsManualPath: boolean;
+  /**
+   * 네 도구를 어떻게 놓는가.
+   *
+   * 기본 `stack` 은 지도 시트의 것이다 — 거기서는 이 열이 시트의 주 내용이라
+   * 세로 전폭이 맞다. `grid` 는 설정의 **접히는 단계 안**에서 쓴다: 넷은
+   * 「정답 하나 + 탈락 셋」이 아니라 **하나 고르는 것**인데, 세로 전폭 넷은
+   * 각각이 큰 결정처럼 읽혔다(소유자 지적 2026-08-04). 2열이면 한 벌로 읽히고
+   * 세로도 절반이다.
+   *
+   * ⚠️ 축을 «감으로» 늘린 것이 아니다. 넷은 서로 다른 파일에 쓰므로 한 사람이
+   * 둘 이상 붙이는 것이 정상이고, 그 사실은 이미 2026-08-02 라운드가 채움을
+   * 빼면서 확인했다. 여기서는 그 사실을 **배치**로도 말한다.
+   */
+  layout?: "stack" | "grid";
 }
 
 export function AgentClientButtons({
@@ -101,6 +115,7 @@ export function AgentClientButtons({
   codexConfigState = "missing",
   codexConfigSnippet,
   needsManualPath,
+  layout = "stack",
 }: AgentClientButtonsProps) {
   const t = useTranslations("agentConnect");
   const toast = useToast();
@@ -367,10 +382,16 @@ export function AgentClientButtons({
   };
 
   return (
-    <div className="flex flex-col gap-2" data-testid="agent-client-buttons">
-      {AGENT_CLIENTS.map((client) => (
-        <Fragment key={client.id}>{clientRenderers[ID_TO_CLIENT[client.id]]()}</Fragment>
-      ))}
+    <div className="flex flex-col gap-2" data-testid="agent-client-buttons" data-layout={layout}>
+      <div
+        className={
+          layout === "grid" ? "grid grid-cols-2 gap-2" : "flex flex-col gap-2"
+        }
+      >
+        {AGENT_CLIENTS.map((client) => (
+          <Fragment key={client.id}>{clientRenderers[ID_TO_CLIENT[client.id]]()}</Fragment>
+        ))}
+      </div>
 
       {needsManualPath ? (
         <p className="text-caption leading-relaxed text-[color:var(--color-text-quaternary)]">

@@ -1191,6 +1191,13 @@ function DocsVaultContent() {
   const selectedDocDisplayTitle = selectedDoc
     ? resolveLocaleDisplayName(selectedDoc.frontmatter, locale, selectedDoc.title)
     : "";
+  // 이 문서를 지도에서 열 **주소가 있는가**. null 이면 그래프에 자리가 없는
+  // 문서이고, 그때는 「지도에서 열기」를 렌더하지 않는다(죽은 CTA 0).
+  // 같은 판정을 `DocMetaBar` 도 쓴다 — 두 자리가 서로 다른 말을 하지 않게
+  // 판정 함수를 공유한다.
+  const mapDeeplinkForSelectedDoc = selectedDoc
+    ? buildTopologyDeeplinkForDoc(selectedDoc) ?? buildOntologyDeeplinkForDoc(selectedDoc)
+    : null;
   // P5b — frontmatter 판정 액션의 domain select 후보. vault 의 `kind: domain`
   // 문서만 — capability/element 를 잘못된 domain 에 지정했을 때 raw YAML
   // 손편집 없이 그 자리에서 고치는 게 목적(verdict 더하기①).
@@ -2281,13 +2288,22 @@ function DocsVaultContent() {
                     </Chip>
                   </div>
                 ) : null}
-                <span className="flex-none font-mono text-label text-[color:var(--color-text-quaternary)]">
-                  <span
-                    className={`power inline-block h-[5px] w-[5px] rounded-full bg-[color:var(--color-indigo-accent)] align-middle ${isLocalSourceLoaded ? 'mr-1.5' : ''}`}
-                    aria-hidden
-                  />
-                  {isLocalSourceLoaded ? t('editorHeader.localSynced') : null}
-                </span>
+                {/* 점은 **라벨의 불릿**이지 그 자체로 상태가 아니다
+                    (2026-08-04). 종전엔 점만 항상 그려지고 문구는 로컬
+                    볼트일 때만 붙어서, 샘플/서버 모드에서는 아무 뜻도 없는
+                    인디고 점 하나가 떠 있었다 — 정보를 안 나르는 채색이다.
+                    ⚠️ 이 줄은 **볼트 원본**이 로컬인지만 말한다. 이 문서가
+                    지도에 있는지와는 무관하고, 그 판정은 `DocMetaBar` 가
+                    한다. */}
+                {isLocalSourceLoaded ? (
+                  <span className="flex-none font-mono text-label text-[color:var(--color-text-quaternary)]">
+                    <span
+                      className="mr-1.5 inline-block h-[5px] w-[5px] rounded-full bg-[color:var(--color-indigo-accent)] align-middle"
+                      aria-hidden
+                    />
+                    {t('editorHeader.localSynced')}
+                  </span>
+                ) : null}
               </div>
 
               {/* #4 샘플 안내 — 읽기 전용인 이유 + 켜는 법을 평문으로. 기존
@@ -2347,9 +2363,16 @@ function DocsVaultContent() {
                       />
                     ) : (
                       <>
-                        {typeof selectedDoc.frontmatter?.kind === 'string' &&
-                        selectedDoc.frontmatter.kind ? (
-                          <DocFrontmatterBlock
+                        {/* 게이트가 여기서 사라진 이유 (2026-08-04): 종전엔
+                            `kind` 가 비어 있으면 블록 자체를 안 그렸는데,
+                            kind 없음/빔이 **노드가 지도에서 사라지는 가장 흔한
+                            두 경로**라 설명이 가장 필요한 두 경우에만 화면이
+                            침묵했다. 판정은 이제 컴포넌트가 갖는다 — 안내
+                            문서에는 여전히 아무것도 안 그리고(validator 가
+                            ontology 의도 없는 문서에는 이슈를 내지 않는다),
+                            노드가 되려다 실패한 문서에는 축약 진단을 그린다.
+                            판정이 한 곳에 있어야 둘이 어긋나지 않는다. */}
+                        <DocFrontmatterBlock
                             key={selectedDoc.slug}
                             doc={selectedDoc}
                             canEdit={canEditCurrent}
@@ -2366,7 +2389,6 @@ function DocsVaultContent() {
                             agentActivityStatus={localVault.agentActivityStatus}
                             selfEditTimestamps={localVault.selfEditTimestamps}
                           />
-                        ) : null}
                         <DocMetaBar doc={selectedDoc} />
                         <DocsVaultViewer
                           key={`${source}:${selectedDoc.slug}`}
@@ -2441,17 +2463,25 @@ function DocsVaultContent() {
                   )}
                   {/* 직접 간다 — `/ontology/?node=` 는 지도로 가는 **얇은
                       리다이렉트**(구 허브는 은퇴했다)라 한 홉이 낭비된다.
-                      `?p=` 포커스 링크가 같은 곳에 바로 도착한다. */}
-                  <Link
-                    href={
-                      buildTopologyDeeplinkForDoc(selectedDoc) ??
-                      buildOntologyDeeplinkForDoc(selectedDoc) ??
-                      '/topology/'
-                    }
-                    className="flex-none text-body text-[color:var(--color-text-tertiary)] transition-colors hover:text-[color:var(--color-text-primary)]"
-                  >
-                    {t('backlinksStrip.openInOntology')}
-                  </Link>
+                      `?p=` 포커스 링크가 같은 곳에 바로 도착한다.
+
+                      **`?? '/topology/'` 폴백은 죽은 CTA 였다** (2026-08-04 실측).
+                      그래프에 노드가 없는 문서에서 두 빌더가 모두 null 이면 이
+                      링크가 `/ko/topology/` 로 렌더됐다 — 누르면 지도가 열리되
+                      **아무것도 안 잡힌다**. 「지도에서 열기」라고 써 있는데 열
+                      대상이 없는 것은 강등이 아니라 함정이고, 죽은 CTA 0 은 이
+                      저장소의 계약이다(`.claude/rules/surfaces.md`). 주소를 못
+                      만들면 렌더하지 않는다 — 그 문서가 왜 지도에 없는지는 위
+                      진단 블록이 이미 말한다. */}
+                  {mapDeeplinkForSelectedDoc ? (
+                    <Link
+                      href={mapDeeplinkForSelectedDoc}
+                      data-testid="docs-backlinks-open-in-map"
+                      className="flex-none text-body text-[color:var(--color-text-tertiary)] transition-colors hover:text-[color:var(--color-text-primary)]"
+                    >
+                      {t('backlinksStrip.openInOntology')}
+                    </Link>
+                  ) : null}
                 </div>
               ) : null}
             </div>

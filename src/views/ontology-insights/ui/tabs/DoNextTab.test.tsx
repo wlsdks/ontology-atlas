@@ -23,6 +23,9 @@ const labels: DoNextTabLabels = {
   agentReadinessReady: "ready",
   agentReadinessPreflight: "preflight",
   agentReadinessReview: "review",
+  agentReadinessBlocked: "blocked",
+  agentReadinessBlockedBreakdown: (documents: number, relations: number) =>
+    `blocked: ${documents} docs · ${relations} relations`,
   repairQueueTitle: "Repair queue",
   repairQueueStale: "stale",
   repairQueueOrphan: "orphan",
@@ -152,7 +155,7 @@ describe("DoNextTab", () => {
       <DoNextTab
         queue={queue}
         cycles={noCycles}
-        agentReadiness={{ ready: 82, preflight: 4, review: 2 }}
+        agentReadiness={{ ready: 82, preflight: 4, review: 2, blocked: 2, blockedDocuments: 0 }}
         healthQueue={emptyHealthQueue}
         mapHref={(id) => `/ontology/?node=${encodeURIComponent(id)}`}
         builderHref={(id) => `/ontology/edit/?node=${encodeURIComponent(id)}`}
@@ -190,7 +193,7 @@ describe("DoNextTab", () => {
     const props = {
       queue,
       cycles: noCycles,
-      agentReadiness: { ready: 1, preflight: 0, review: 0 },
+      agentReadiness: { ready: 1, preflight: 0, review: 0, blocked: 0, blockedDocuments: 0 },
       healthQueue: emptyHealthQueue,
       mapHref: (id: string) => `/ontology/?node=${encodeURIComponent(id)}`,
       builderHref: (id: string) => `/ontology/studio/?node=${encodeURIComponent(id)}`,
@@ -248,7 +251,7 @@ describe("DoNextTab", () => {
       <DoNextTab
         queue={queue}
         cycles={noCycles}
-        agentReadiness={{ ready: 1, preflight: 0, review: 0 }}
+        agentReadiness={{ ready: 1, preflight: 0, review: 0, blocked: 0, blockedDocuments: 0 }}
         healthQueue={emptyHealthQueue}
         mapHref={(id) => `/ontology/?node=${encodeURIComponent(id)}`}
         builderHref={(id) => `/ontology/studio/?node=${encodeURIComponent(id)}`}
@@ -267,7 +270,7 @@ describe("DoNextTab", () => {
       <DoNextTab
         queue={{ rows: [], activeRowIds: [], counts: { neglectedHub: 0, orphan: 0, promotion: 0 } }}
         cycles={noCycles}
-        agentReadiness={{ ready: 82, preflight: 4, review: 2 }}
+        agentReadiness={{ ready: 82, preflight: 4, review: 2, blocked: 2, blockedDocuments: 0 }}
         healthQueue={emptyHealthQueue}
         mapHref={(id) => id}
         builderHref={(id) => id}
@@ -278,16 +281,56 @@ describe("DoNextTab", () => {
 
     const gauge = screen.getByTestId("insights-agent-readiness");
     expect(gauge).toHaveTextContent("Agent readiness");
-    expect(gauge).toHaveAttribute("aria-label", "Agent readiness: 82 ready · 4 preflight · 2 review");
+    expect(gauge).toHaveAttribute("aria-label", "Agent readiness: 82 ready · 4 preflight · 2 blocked (blocked: 0 docs · 2 relations)");
     expect(screen.getByTestId("insights-repair-queue")).toHaveTextContent("Nothing to repair right now.");
     expect(screen.getByText("Nothing needs attention.")).toBeInTheDocument();
+  });
+
+  /**
+   * 「0 이 아닌데 0px」 — 미터가 «위험 없음»과 «위험이 아주 작음»을 같은 그림으로
+   * 그리면 계기가 아니라 장식이다. 실측 비율(오류 1 / 준비 200)에서 flexGrow 만
+   * 쓰면 390px 폭에서 그 조각이 2px 아래로 내려가 사라진다. e2e 는 5/11 비율을
+   * 재므로 이 규칙을 **구조적으로 못 잡는다** — 그래서 여기서 기제를 직접 잰다.
+   */
+  it("아주 작은 위험 몫도 최소 폭을 갖고, 0 은 0 으로 남는다", () => {
+    const { rerender } = render(
+      <DoNextTab
+        queue={{ rows: [], activeRowIds: [], counts: { neglectedHub: 0, orphan: 0, promotion: 0 } }}
+        cycles={noCycles}
+        agentReadiness={{ ready: 200, preflight: 0, review: 0, blocked: 1, blockedDocuments: 1 }}
+        healthQueue={emptyHealthQueue}
+        mapHref={(id) => id}
+        builderHref={(id) => id}
+        {...cycleProps}
+        labels={labels}
+      />,
+    );
+    const segments = () =>
+      Array.from(screen.getByTestId("insights-agent-readiness-meter").children) as HTMLElement[];
+    expect(segments()[2].style.minWidth).toBe("4px");
+    // 0 인 세그먼트는 정말로 0 이어야 한다 — 안 그러면 항상-빨강이 된다.
+    expect(segments()[1].style.minWidth).toBe("0px");
+
+    rerender(
+      <DoNextTab
+        queue={{ rows: [], activeRowIds: [], counts: { neglectedHub: 0, orphan: 0, promotion: 0 } }}
+        cycles={noCycles}
+        agentReadiness={{ ready: 200, preflight: 0, review: 0, blocked: 0, blockedDocuments: 0 }}
+        healthQueue={emptyHealthQueue}
+        mapHref={(id) => id}
+        builderHref={(id) => id}
+        {...cycleProps}
+        labels={labels}
+      />,
+    );
+    expect(segments()[2].style.minWidth).toBe("0px");
   });
 
   it("수리 대상이 있으면 빌더 딥링크를 노출한다", () => {
     render(
       <DoNextTab
         queue={{ rows: [], activeRowIds: [], counts: { neglectedHub: 0, orphan: 0, promotion: 0 } }}
-        agentReadiness={{ ready: 1, preflight: 0, review: 0 }}
+        agentReadiness={{ ready: 1, preflight: 0, review: 0, blocked: 0, blockedDocuments: 0 }}
         healthQueue={{
           ...emptyHealthQueue,
           staleCount: 1,
@@ -313,7 +356,7 @@ describe("DoNextTab", () => {
     render(
       <DoNextTab
         queue={{ rows: [], activeRowIds: [], counts: { neglectedHub: 0, orphan: 0, promotion: 0 } }}
-        agentReadiness={{ ready: 1, preflight: 0, review: 0 }}
+        agentReadiness={{ ready: 1, preflight: 0, review: 0, blocked: 0, blockedDocuments: 0 }}
         healthQueue={{
           ...emptyHealthQueue,
           islandCount: 2,
@@ -360,7 +403,7 @@ describe("DoNextTab", () => {
       <DoNextTab
         queue={{ rows: [], activeRowIds: [], counts: { neglectedHub: 0, orphan: 0, promotion: 0 } }}
         cycles={cycles}
-        agentReadiness={{ ready: 1, preflight: 0, review: 0 }}
+        agentReadiness={{ ready: 1, preflight: 0, review: 0, blocked: 0, blockedDocuments: 0 }}
         healthQueue={emptyHealthQueue}
         mapHref={(id) => `/ontology/?node=${encodeURIComponent(id)}`}
         builderHref={(id) => id}
@@ -397,7 +440,7 @@ describe("DoNextTab", () => {
       <DoNextTab
         queue={{ rows: [], activeRowIds: [], counts: { neglectedHub: 0, orphan: 0, promotion: 0 } }}
         cycles={cycles}
-        agentReadiness={{ ready: 1, preflight: 0, review: 0 }}
+        agentReadiness={{ ready: 1, preflight: 0, review: 0, blocked: 0, blockedDocuments: 0 }}
         healthQueue={emptyHealthQueue}
         mapHref={(id) => id}
         builderHref={(id) => id}
@@ -426,7 +469,7 @@ describe("DoNextTab — 근거 계층", () => {
           rows: [{ ...queue.rows[1], evidenceOnly: true, title: "Integration Test" }],
         }}
         cycles={noCycles}
-        agentReadiness={{ ready: 1, preflight: 0, review: 0 }}
+        agentReadiness={{ ready: 1, preflight: 0, review: 0, blocked: 0, blockedDocuments: 0 }}
         healthQueue={emptyHealthQueue}
         mapHref={(id) => `/ontology/?node=${encodeURIComponent(id)}`}
         builderHref={(id) => `/ontology/edit/?node=${encodeURIComponent(id)}`}
@@ -448,7 +491,7 @@ describe("DoNextTab — 근거 계층", () => {
       <DoNextTab
         queue={queue}
         cycles={noCycles}
-        agentReadiness={{ ready: 1, preflight: 0, review: 0 }}
+        agentReadiness={{ ready: 1, preflight: 0, review: 0, blocked: 0, blockedDocuments: 0 }}
         healthQueue={emptyHealthQueue}
         mapHref={(id) => `/ontology/?node=${encodeURIComponent(id)}`}
         builderHref={(id) => `/ontology/edit/?node=${encodeURIComponent(id)}`}
@@ -467,7 +510,7 @@ describe("DoNextTab — 활동 다이제스트 (B3)", () => {
       <DoNextTab
         queue={{ rows: [], activeRowIds: [], counts: { neglectedHub: 0, orphan: 0, promotion: 0 } }}
         cycles={{ cycles: [], totalCycles: 0, hiddenCycles: 0, activeCycleIds: [], limited: false }}
-        agentReadiness={{ ready: 1, preflight: 0, review: 0 }}
+        agentReadiness={{ ready: 1, preflight: 0, review: 0, blocked: 0, blockedDocuments: 0 }}
         healthQueue={{
           staleCount: 0, orphanCount: 0, promotionCount: 0, islandCount: 0, missingContainmentCount: 0, actionTarget: null, actionTargets: [],
           builderHref: (s) => s, ontologyHref: (s) => s,
@@ -503,7 +546,7 @@ describe("DoNextTab — 활동 다이제스트 (B3)", () => {
       <DoNextTab
         queue={{ rows: [], activeRowIds: [], counts: { neglectedHub: 0, orphan: 0, promotion: 0 } }}
         cycles={{ cycles: [], totalCycles: 0, hiddenCycles: 0, activeCycleIds: [], limited: false }}
-        agentReadiness={{ ready: 1, preflight: 0, review: 0 }}
+        agentReadiness={{ ready: 1, preflight: 0, review: 0, blocked: 0, blockedDocuments: 0 }}
         healthQueue={{
           staleCount: 0, orphanCount: 0, promotionCount: 0, islandCount: 0, missingContainmentCount: 0, actionTarget: null, actionTargets: [],
           builderHref: (s) => s, ontologyHref: (s) => s,
@@ -542,7 +585,7 @@ describe("DoNextTab — 활동 다이제스트 (B3)", () => {
       <DoNextTab
         queue={{ rows: [], activeRowIds: [], counts: { neglectedHub: 0, orphan: 0, promotion: 0 } }}
         cycles={{ cycles: [], totalCycles: 0, hiddenCycles: 0, activeCycleIds: [], limited: false }}
-        agentReadiness={{ ready: 1, preflight: 0, review: 0 }}
+        agentReadiness={{ ready: 1, preflight: 0, review: 0, blocked: 0, blockedDocuments: 0 }}
         healthQueue={{
           staleCount: 0, orphanCount: 0, promotionCount: 0, islandCount: 0, missingContainmentCount: 0, actionTarget: null, actionTargets: [],
           builderHref: (s) => s, ontologyHref: (s) => s,
@@ -597,7 +640,7 @@ describe("DoNextTab — 오늘의 손질 밴드 (③)", () => {
         queue={{ rows: [], activeRowIds: [], counts: { neglectedHub: 0, orphan: 0, promotion: 0 } }}
         touchUps={items}
         cycles={noCycles}
-        agentReadiness={{ ready: 1, preflight: 0, review: 0 }}
+        agentReadiness={{ ready: 1, preflight: 0, review: 0, blocked: 0, blockedDocuments: 0 }}
         healthQueue={emptyHealthQueue}
         mapHref={(id) => `/ontology/?node=${encodeURIComponent(id)}`}
         builderHref={(id) => `/ontology/edit/?node=${encodeURIComponent(id)}`}
@@ -647,7 +690,7 @@ describe("DoNextTab — 오늘의 손질 밴드 (③)", () => {
           activeCycleIds: ["c1"],
           limited: false,
         }}
-        agentReadiness={{ ready: 1, preflight: 0, review: 0 }}
+        agentReadiness={{ ready: 1, preflight: 0, review: 0, blocked: 0, blockedDocuments: 0 }}
         healthQueue={emptyHealthQueue}
         mapHref={(id) => id}
         builderHref={(id) => id}
@@ -677,7 +720,7 @@ describe("DoNextTab — 오늘의 손질 밴드 (③)", () => {
       <DoNextTab
         queue={queue}
         cycles={noCycles}
-        agentReadiness={{ ready: 1, preflight: 0, review: 0 }}
+        agentReadiness={{ ready: 1, preflight: 0, review: 0, blocked: 0, blockedDocuments: 0 }}
         healthQueue={emptyHealthQueue}
         mapHref={mapHref}
         builderHref={(id, reviewId) => `/studio/${id}?review=${reviewId}`}
@@ -720,7 +763,7 @@ describe("DoNextTab — 오늘의 손질 밴드 (③)", () => {
       <DoNextTab
         queue={{ rows: [], activeRowIds: [], counts: { neglectedHub: 0, orphan: 0, promotion: 0 } }}
         cycles={noCycles}
-        agentReadiness={{ ready: 1, preflight: 0, review: 0 }}
+        agentReadiness={{ ready: 1, preflight: 0, review: 0, blocked: 0, blockedDocuments: 0 }}
         healthQueue={emptyHealthQueue}
         mapHref={(id) => id}
         builderHref={(id) => id}
@@ -786,7 +829,7 @@ describe("DoNextTab — 건강 주장은 CLI-parity 신호까지 0일 때만 (#6
       <DoNextTab
         queue={emptyQueue}
         cycles={noCycles}
-        agentReadiness={{ ready: 0, preflight: 0, review: 0 }}
+        agentReadiness={{ ready: 0, preflight: 0, review: 0, blocked: 0, blockedDocuments: 0 }}
         healthQueue={healthQueue}
         mapHref={(id) => `/ontology/?node=${encodeURIComponent(id)}`}
         builderHref={(id) => `/ontology/edit/?node=${encodeURIComponent(id)}`}
@@ -833,7 +876,7 @@ describe("DoNextTab — 중복 의심 쌍", () => {
       <DoNextTab
         queue={{ rows: [], activeRowIds: [], counts: { neglectedHub: 0, orphan: 0, promotion: 0 } }}
         cycles={noCycles}
-        agentReadiness={{ ready: 0, preflight: 0, review: 0 }}
+        agentReadiness={{ ready: 0, preflight: 0, review: 0, blocked: 0, blockedDocuments: 0 }}
         healthQueue={emptyHealthQueue}
         mapHref={(id) => `/ontology/?node=${encodeURIComponent(id)}`}
         builderHref={(id) => `/ontology/edit/?node=${encodeURIComponent(id)}`}
