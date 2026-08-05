@@ -59,7 +59,7 @@ export function AgentGlobalScopePanel({ vaultPath, launch }: AgentGlobalScopePan
 
   return (
     <div className="flex flex-col gap-2" data-testid="agent-global-scope">
-      <p className="text-label leading-relaxed text-[color:var(--color-text-tertiary)]">
+      <p className="text-label leading-prose text-[color:var(--color-text-tertiary)]">
         {t('scopeGlobalIntro')}
       </p>
 
@@ -96,7 +96,7 @@ export function AgentGlobalScopePanel({ vaultPath, launch }: AgentGlobalScopePan
         <p className="font-mono text-caption text-[color:var(--color-text-quaternary)]">
           {instruction.path}
         </p>
-        <p className="mt-1 text-caption leading-relaxed text-[color:var(--color-text-tertiary)]">
+        <p className="mt-1 text-caption leading-label text-[color:var(--color-text-tertiary)]">
           {instruction.kind === 'command'
             ? t('scopeGlobalRunHint')
             : t('scopeGlobalPasteHint', { path: instruction.path })}
@@ -109,7 +109,7 @@ export function AgentGlobalScopePanel({ vaultPath, launch }: AgentGlobalScopePan
           */}
         <pre
           data-testid={`agent-global-scope-body-${client.id}`}
-          className="mt-1.5 whitespace-pre-wrap break-all rounded-micro border border-[color:var(--color-divider)] bg-[color:var(--color-canvas)] px-2 py-1.5 font-mono text-caption leading-relaxed text-[color:var(--color-text-secondary)]"
+          className="mt-1.5 whitespace-pre-wrap break-all rounded-micro border border-[color:var(--color-divider)] bg-[color:var(--color-canvas)] px-2 py-1.5 font-mono text-caption leading-label text-[color:var(--color-text-secondary)]"
         >
           {instruction.text.trimEnd()}
         </pre>
@@ -144,7 +144,7 @@ export function AgentGlobalScopePanel({ vaultPath, launch }: AgentGlobalScopePan
         */}
       <p
         data-testid="agent-global-scope-loss"
-        className="text-caption leading-relaxed text-[color:var(--color-text-quaternary)]"
+        className="text-caption leading-label text-[color:var(--color-text-quaternary)]"
       >
         {t('scopeGlobalLossNote')}
       </p>

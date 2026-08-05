@@ -146,7 +146,7 @@ export function StudioMaterializeDialog({
             onClick={onCancel}
             className={`-my-1 -mr-2 flex h-[var(--overlay-close-size)] w-[var(--overlay-close-size)] flex-none items-center justify-center rounded-chip text-[color:var(--color-text-quaternary)] transition-colors hover:bg-[color:var(--color-overlay-2)] hover:text-[color:var(--color-text-secondary)] ${FOCUS_RING}`}
           >
-            <X size={15} aria-hidden />
+            <X size={ICON_SIZE.md} aria-hidden />
           </button>
         </div>
 

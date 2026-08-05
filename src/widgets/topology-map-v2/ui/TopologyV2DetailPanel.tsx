@@ -1198,7 +1198,7 @@ export function TopologyV2DetailPanel({
               data-testid="topology-v2-detail-panel-close"
               className="-mr-1 text-[color:var(--topology-v2-panel-text-tertiary)] hover:bg-[color:var(--topology-v2-panel-row-hover)] hover:text-[color:var(--topology-v2-panel-text-secondary)] active:bg-[color:var(--topology-v2-panel-row-active)]"
             >
-              <X size={15} />
+              <X size={ICON_SIZE.lg} />
             </IconButton>
           </div>
           {showSourcePath && sourceTitle && sourceTitle !== title ? (
@@ -1254,7 +1254,7 @@ export function TopologyV2DetailPanel({
                     {domain.title}
                   </span>
                   <ChevronRight
-                    size={13}
+                    size={ICON_SIZE.sm}
                     aria-hidden="true"
                     className="shrink-0 text-[color:var(--topology-v2-panel-domain-text)] opacity-65"
                   />

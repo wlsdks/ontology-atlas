@@ -961,7 +961,7 @@ export function StudioCompass(props: StudioCompassProps) {
                 "max-w-[180px] hover:border-[color:var(--color-indigo-a46)] hover:text-[color:var(--color-text-secondary)]",
             })}
           >
-            <ArrowLeft size={13} aria-hidden className="flex-none text-[color:var(--color-text-quaternary)]" />
+            <ArrowLeft size={ICON_SIZE.md} aria-hidden className="flex-none text-[color:var(--color-text-quaternary)]" />
             <span className="min-w-0 truncate [word-break:keep-all]">{props.backTo.label}</span>
           </button>
         ) : null}
@@ -1005,7 +1005,7 @@ export function StudioCompass(props: StudioCompassProps) {
                   "hover:border-[color:var(--color-border-strong)] hover:text-[color:var(--color-text-secondary)]",
               })}
             >
-              <Eye size={13} aria-hidden className="text-[color:var(--color-text-quaternary)]" />
+              <Eye size={ICON_SIZE.md} aria-hidden className="text-[color:var(--color-text-quaternary)]" />
               {labels.previewOpen}
             </button>
           ) : null}
@@ -1031,7 +1031,7 @@ export function StudioCompass(props: StudioCompassProps) {
                   : "hover:border-[color:var(--color-border-strong)] hover:text-[color:var(--color-text-secondary)]",
               })}
             >
-              <FilePen size={13} aria-hidden className="text-[color:var(--color-text-quaternary)]" />
+              <FilePen size={ICON_SIZE.md} aria-hidden className="text-[color:var(--color-text-quaternary)]" />
               {labels.draftsOpen(drafts.length)}
             </button>
           ) : null}
@@ -1056,7 +1056,7 @@ export function StudioCompass(props: StudioCompassProps) {
                   : "hover:border-[color:var(--color-border-strong)] hover:text-[color:var(--color-text-secondary)]",
               })}
             >
-              <MessageCircle size={13} aria-hidden />
+              <MessageCircle size={ICON_SIZE.md} aria-hidden />
               {labels.agentDock}
             </button>
           ) : null}
@@ -1460,7 +1460,7 @@ export function StudioCompass(props: StudioCompassProps) {
               className: "hover:bg-[color:var(--color-indigo-brand-hover)]",
             })}
           >
-            {mode === "create" ? <Check size={15} aria-hidden /> : null}
+            {mode === "create" ? <Check size={ICON_SIZE.md} aria-hidden /> : null}
             {labels.save}
           </button>
         </div>
@@ -1495,7 +1495,7 @@ export function StudioCompass(props: StudioCompassProps) {
               label={labels.draftsCloseAria}
               className="-mr-1 flex-none hover:text-[color:var(--color-text-secondary)]"
             >
-              <X size={13} aria-hidden />
+              <X size={ICON_SIZE.md} aria-hidden />
             </IconButton>
           </div>
           <ul className="mt-2.5 min-h-0 flex-1 overflow-y-auto px-2 pb-2">
@@ -2036,7 +2036,7 @@ function LaneRender({
           <span className="font-[var(--font-weight-emphasis)] text-[color:var(--color-text-secondary)]">+{layout.fold.count}</span>
           {labels.foldMore(layout.fold.count)}
           <ChevronDown
-            size={13}
+            size={ICON_SIZE.md}
             aria-hidden
             className={cn("ml-auto text-[color:var(--color-text-quaternary)] transition-transform", foldOpen && "rotate-180")}
           />
@@ -2216,7 +2216,7 @@ function LaneOverflowList({
           onClick={onClose}
           className="ml-auto flex-none hover:text-[color:var(--color-text-secondary)]"
         >
-          <X size={13} aria-hidden />
+          <X size={ICON_SIZE.md} aria-hidden />
         </IconButton>
       </div>
       <div className="max-h-[260px] overflow-y-auto p-1.5">
@@ -2327,7 +2327,7 @@ function InlineEditCard({
           onClick={onClose}
           className="flex-none hover:text-[color:var(--color-text-secondary)]"
         >
-          <X size={13} aria-hidden />
+          <X size={ICON_SIZE.md} aria-hidden />
         </IconButton>
       </div>
       <div className="flex items-center gap-2 px-3.5 pt-2.5">
@@ -2391,7 +2391,7 @@ function InlineEditCard({
                 onClick={() => setConfirmDelete(true)}
                 className="hover:bg-[color:var(--color-overlay-1)] hover:text-[color:var(--color-text-secondary)]"
               >
-                <X size={13} aria-hidden className="text-[color:var(--color-text-quaternary)]" />
+                <X size={ICON_SIZE.md} aria-hidden className="text-[color:var(--color-text-quaternary)]" />
                 {labels.editDelete}
               </RowButton>
             )}
@@ -2601,11 +2601,11 @@ function InlinePicker({
           onClick={onClose}
           className="ml-auto hover:text-[color:var(--color-text-secondary)]"
         >
-          <X size={13} aria-hidden />
+          <X size={ICON_SIZE.md} aria-hidden />
         </IconButton>
       </div>
       <div className="flex items-center gap-2 border-b border-[color:var(--color-divider)] px-3 py-2">
-        <Search size={13} aria-hidden className="flex-none text-[color:var(--color-text-quaternary)]" />
+        <Search size={ICON_SIZE.md} aria-hidden className="flex-none text-[color:var(--color-text-quaternary)]" />
         <input
           autoFocus
           data-testid="studio-picker-input"
@@ -2678,7 +2678,7 @@ function InlinePicker({
                       <span className="ml-auto flex-none rounded-chip border border-[color:var(--color-border-soft)] px-1.5 py-px text-label text-[color:var(--color-text-quaternary)]">
                         {d.count}
                       </span>
-                      <ChevronDown size={13} aria-hidden className="-rotate-90 flex-none text-[color:var(--color-text-quaternary)]" />
+                      <ChevronDown size={ICON_SIZE.md} aria-hidden className="-rotate-90 flex-none text-[color:var(--color-text-quaternary)]" />
                     </button>
                   ))
                 ) : (
@@ -2768,7 +2768,7 @@ function InlinePicker({
           onClick={() => onCreateNew?.({ relation, query })}
           className="flex w-full items-center justify-center gap-1.5 rounded-card border border-dashed border-[color:var(--color-border-strong)] py-2 text-caption text-[color:var(--color-text-secondary)] transition-colors hover:text-[color:var(--color-text-primary)]"
         >
-          <Plus size={13} aria-hidden className="text-[color:var(--color-text-tertiary)]" />
+          <Plus size={ICON_SIZE.md} aria-hidden className="text-[color:var(--color-text-tertiary)]" />
           {labels.pickerCreateNew}
         </button>
       </div>
@@ -3085,7 +3085,7 @@ function DeltaPreviewModal({
             onClick={onClose}
             className="flex-none hover:text-[color:var(--color-text-secondary)]"
           >
-            <X size={15} aria-hidden />
+            <X size={ICON_SIZE.md} aria-hidden />
           </IconButton>
         </div>
 

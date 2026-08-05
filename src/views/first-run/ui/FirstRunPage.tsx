@@ -101,7 +101,7 @@ export function FirstRunPage() {
         <header className="grid justify-items-center gap-3 text-center">
           <div className="inline-flex items-center gap-3">
             <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-chip border border-[color:var(--color-border-soft)] bg-[color:var(--color-elevated)] text-[color:var(--color-indigo-accent)]">
-              <Orbit size={13} aria-hidden />
+              <Orbit size={ICON_SIZE.md} aria-hidden />
             </span>
             <span className="text-body font-[var(--font-weight-signature)] text-[color:var(--color-text-secondary)]">
               Ontology Atlas
@@ -111,7 +111,7 @@ export function FirstRunPage() {
             <p className="font-mono text-caption uppercase tracking-[var(--tracking-caps-16)] text-[color:var(--color-text-quaternary)]">
               {t("eyebrow")}
             </p>
-            <h1 className="break-keep text-display font-[var(--font-weight-signature)] leading-tight text-[color:var(--color-text-primary)]">
+            <h1 className="break-keep text-display font-[var(--font-weight-signature)] leading-display text-[color:var(--color-text-primary)]">
               {t("title")}
             </h1>
             <p className="mx-auto max-w-[360px] break-keep text-body leading-body text-[color:var(--color-text-tertiary)]">

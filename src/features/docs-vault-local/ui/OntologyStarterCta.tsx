@@ -307,7 +307,7 @@ export function OntologyStarterCta({ onScaffold, docCount, vaultPath = null }: P
             className: `mt-4 ${INDIGO_SOLID_SKIN}`,
           })}
         >
-          <Sparkles size={13} aria-hidden />
+          <Sparkles size={ICON_SIZE.sm} aria-hidden />
           {busy ? t('emptyBusy') : t('emptyCta')}
         </button>
         {error ? (

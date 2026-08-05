@@ -2,6 +2,7 @@
 
 import { useMemo, useState } from 'react';
 import { FileText } from 'lucide-react';
+import { ICON_SIZE } from '@/shared/ui/icon-size';
 
 import type { AgentProposal, ProposalChange } from '@/features/vault-agent';
 import { summarizeChangeVolume } from '@/features/vault-agent/model/proposal-applier';
@@ -257,7 +258,7 @@ function ChangeRow({
         />
         <FileText
           aria-hidden="true"
-          size={13}
+          size={ICON_SIZE.sm}
           className="shrink-0 text-[color:var(--color-text-quaternary)]"
         />
         <span

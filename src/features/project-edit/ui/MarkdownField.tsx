@@ -54,7 +54,7 @@ export function MarkdownField({ id, value, onChange, placeholder, rows = 8 }: Pr
       ) : (
         <div
           className={cn(
-            'min-h-[160px] rounded-chip px-2 py-1.5 text-body-lg leading-relaxed text-[color:var(--color-text-secondary)]',
+            'min-h-[160px] rounded-chip px-2 py-1.5 text-body-lg leading-body-lg text-[color:var(--color-text-secondary)]',
             // 간단한 마크다운 스타일
             '[&>h1]:mt-3 [&>h1]:mb-2 [&>h1]:text-display [&>h1]:font-[var(--font-weight-signature)] [&>h1]:text-[color:var(--color-text-primary)]',
             '[&>h2]:mt-3 [&>h2]:mb-1.5 [&>h2]:text-title [&>h2]:font-[var(--font-weight-signature)] [&>h2]:text-[color:var(--color-text-primary)]',

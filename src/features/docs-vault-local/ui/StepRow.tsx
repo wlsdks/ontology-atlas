@@ -88,7 +88,7 @@ export function StepRow({ n, title, desc, testId, children }: StepRowProps) {
       </p>
       <div className="min-w-0 flex-1">
         {desc ? (
-          <p className="mt-1.5 text-body leading-relaxed text-[color:var(--color-text-tertiary)]">
+          <p className="mt-1.5 text-body leading-body text-[color:var(--color-text-tertiary)]">
             {desc}
           </p>
         ) : null}

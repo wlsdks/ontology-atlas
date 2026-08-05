@@ -31,7 +31,7 @@ export function TopologyV2ClusterHoverCard({ sentence, x, y }: TopologyV2Cluster
       className="pointer-events-none fixed z-40 max-w-[260px] rounded-[var(--topology-v2-panel-radius)] border border-[color:var(--topology-v2-panel-border)] bg-[color:var(--topology-v2-panel-surface)] px-3 py-2 shadow-[var(--topology-v2-panel-shadow)]"
       style={{ left, top }}
     >
-      <p className="text-body font-[var(--font-weight-signature)] leading-snug text-[color:var(--topology-v2-panel-text-primary)]">
+      <p className="text-body font-[var(--font-weight-signature)] leading-label text-[color:var(--topology-v2-panel-text-primary)]">
         {sentence}
       </p>
     </div>

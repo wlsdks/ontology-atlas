@@ -265,7 +265,7 @@ export function DependencyPicker({
 
       {/* 검색 입력 */}
       <div className="flex items-center gap-2 border-t border-[color:var(--color-overlay-2)] pt-3">
-        <Search size={13} className="shrink-0 text-[color:var(--color-text-quaternary)]" />
+        <Search size={ICON_SIZE.sm} className="shrink-0 text-[color:var(--color-text-quaternary)]" />
         <input
           type="text"
           name="dependency-search"

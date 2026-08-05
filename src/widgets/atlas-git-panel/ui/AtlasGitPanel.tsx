@@ -830,7 +830,7 @@ function PageHeader({
             고지가 대신한다 — 사용자가 두 번째로 확인해야 하는 건 제품 설명이
             아니라 "내 폴더 밖은 안 건드린다" 다. */}
         {showScope ? (
-          <p className="flex items-center gap-1.5 text-label leading-relaxed text-[color:var(--color-text-quaternary)]">
+          <p className="flex items-center gap-1.5 text-label leading-prose text-[color:var(--color-text-quaternary)]">
             <ShieldCheck size={ICON_SIZE.sm} aria-hidden className="shrink-0" />
             {t("scopeNotice")}
           </p>
@@ -1147,7 +1147,7 @@ function SetupFrame({
         {/* 「기록」은 이 화면의 제목이 아니라 **어디에 있는지**다 — 목적지
             이름은 눈썹으로 내리고, h1 은 지금 해야 할 일이 가진다. */}
         <p className="flex items-center gap-2 text-label text-[color:var(--color-text-quaternary)]">
-          <HistoryIcon size={13} aria-hidden className="text-[color:var(--color-indigo-text-soft)]" />
+          <HistoryIcon size={ICON_SIZE.sm} aria-hidden className="text-[color:var(--color-indigo-text-soft)]" />
           {t("title")}
         </p>
         <div className="flex flex-col gap-2">
@@ -1155,7 +1155,7 @@ function SetupFrame({
             {title}
           </h1>
           {body ? (
-            <p className="max-w-[34em] text-body-lg leading-relaxed text-[color:var(--color-text-secondary)]">
+            <p className="max-w-[34em] text-body-lg leading-body-lg text-[color:var(--color-text-secondary)]">
               {body}
             </p>
           ) : null}
@@ -1163,7 +1163,7 @@ function SetupFrame({
         {step ? <ConnectLadder t={t} current={step} /> : null}
         {children}
         {note ? (
-          <p className="flex items-start gap-2 text-label leading-relaxed text-[color:var(--color-text-quaternary)]">
+          <p className="flex items-start gap-2 text-label leading-prose text-[color:var(--color-text-quaternary)]">
             <ShieldCheck size={ICON_SIZE.sm} aria-hidden className="mt-0.5 shrink-0" />
             <span>{note}</span>
           </p>
@@ -1262,7 +1262,7 @@ function WebSetup({
         data-testid="atlas-git-web-get-app"
         className={cn(PRIMARY_ACTION_CLASS, "self-start")}
       >
-        <Download size={13} aria-hidden />
+        <Download size={ICON_SIZE.sm} aria-hidden />
         {t("webGetApp")}
       </Link>
 
@@ -1273,7 +1273,7 @@ function WebSetup({
           무게로 경쟁하지 않는다. `webCommandHint`("누르면 …복사돼요")는 버튼
           툴팁 문구다 — 라벨 자리에 쓰면 버튼이 아닌 것을 누르라는 말이 된다. */}
       <div className="flex flex-col gap-1.5 border-t border-[color:var(--color-divider)] pt-4">
-        <p className="text-label leading-relaxed text-[color:var(--color-text-quaternary)]">
+        <p className="text-label leading-prose text-[color:var(--color-text-quaternary)]">
           {t("webCommandLabel")}
         </p>
         {/*
@@ -1328,7 +1328,7 @@ function WebSetup({
          */}
         <p
           data-testid="atlas-git-cli-placeholder-hint"
-          className="text-label leading-relaxed text-[color:var(--color-text-quaternary)]"
+          className="text-label leading-prose text-[color:var(--color-text-quaternary)]"
         >
           {t("cliPlaceholderHint")}
         </p>
@@ -1360,7 +1360,7 @@ function NoVaultSetup({ t }: { t: Translator }) {
         data-testid="atlas-git-pick-vault"
         className={cn(PRIMARY_ACTION_CLASS, "self-start")}
       >
-        <FolderOpen size={13} aria-hidden />
+        <FolderOpen size={ICON_SIZE.sm} aria-hidden />
         {t("noVaultAction")}
       </Link>
     </SetupFrame>
@@ -1583,7 +1583,7 @@ function RemoteResultLine({
     <p
       data-testid={error ? "atlas-git-remote-error" : "atlas-git-remote-notice"}
       className={cn(
-        "git-fade-in flex-none border-b border-[color:var(--color-divider)] px-4 py-2 text-label leading-relaxed",
+        "git-fade-in flex-none border-b border-[color:var(--color-divider)] px-4 py-2 text-label leading-prose",
         error
           ? "text-[color:var(--color-danger-text)]"
           : "text-[color:var(--color-text-tertiary)]",
@@ -1629,7 +1629,7 @@ function RemoteSetup({
       data-testid="atlas-git-remote-setup"
       className="git-fade-in flex shrink-0 flex-col gap-2 rounded-[var(--radius-card)] border border-[color:var(--color-border-soft)] bg-[color:var(--color-overlay-1)] p-3"
     >
-      <p className="text-label leading-relaxed text-[color:var(--color-text-tertiary)]">
+      <p className="text-label leading-prose text-[color:var(--color-text-tertiary)]">
         {t("remoteSetupBody")}
       </p>
       <div className="flex flex-wrap items-center gap-2">
@@ -1930,7 +1930,7 @@ function ChangeList({
             </button>
             {othersOpen ? (
               <div className="git-fade-in flex flex-col gap-1 pb-1">
-                <p className="pl-4 text-caption leading-relaxed text-[color:var(--color-text-quaternary)]">
+                <p className="pl-4 text-caption leading-label text-[color:var(--color-text-quaternary)]">
                   {t("othersHint")}
                 </p>
                 <ul className="flex flex-col">
@@ -2030,7 +2030,7 @@ function DiffView({
                   <li
                     key={`${line.kind}-${String(index)}`}
                     className={cn(
-                      "flex items-start gap-1.5 border-l-2 pr-1.5 pl-1 font-mono text-label leading-relaxed",
+                      "flex items-start gap-1.5 border-l-2 pr-1.5 pl-1 font-mono text-label leading-prose",
                       line.kind === "added"
                         ? "border-l-[color:var(--color-border-strong)] bg-[color:var(--color-overlay-2)] text-[color:var(--color-text-primary)]"
                         : line.kind === "removed"
@@ -2144,7 +2144,7 @@ function StepList({
     return (
       <div className="flex flex-col gap-1 px-4 py-3">
         <p className="text-label text-[color:var(--color-text-tertiary)]">{t("historyEmpty")}</p>
-        <p className="text-caption leading-relaxed text-[color:var(--color-text-quaternary)]">
+        <p className="text-caption leading-label text-[color:var(--color-text-quaternary)]">
           {t("historyEmptyHint")}
         </p>
       </div>
@@ -2466,7 +2466,7 @@ function ActionDock({
           onClick={() => setConfirming(true)}
           className={cn(hasChanges ? PRIMARY_ACTION_CLASS : DOCK_INERT_CLASS, "self-start")}
         >
-          {hasChanges ? null : <Check size={13} aria-hidden />}
+          {hasChanges ? null : <Check size={ICON_SIZE.sm} aria-hidden />}
           {hasChanges ? t("snapshotButton", { count: changeCount }) : t("noChanges")}
         </button>
       )}
@@ -2492,14 +2492,14 @@ function ActionDock({
         (소유자 지적) 정작 "그래서 이제 뭘 하나" 는 아무 데도 없었다.
       */}
       {upstream ? (
-        <p className="flex items-center gap-1.5 text-caption leading-relaxed text-[color:var(--color-text-quaternary)]">
+        <p className="flex items-center gap-1.5 text-caption leading-label text-[color:var(--color-text-quaternary)]">
           <ShieldCheck size={ICON_SIZE.sm} aria-hidden className="shrink-0" />
           {t("scopeNotice")}
         </p>
       ) : (
         <p
           data-testid="atlas-git-dock-no-remote"
-          className="flex flex-wrap items-center gap-x-2 gap-y-1 text-caption leading-relaxed text-[color:var(--color-text-quaternary)]"
+          className="flex flex-wrap items-center gap-x-2 gap-y-1 text-caption leading-label text-[color:var(--color-text-quaternary)]"
         >
           <ShieldCheck size={ICON_SIZE.sm} aria-hidden className="shrink-0" />
           <span>{t("dockNoRemote")}</span>
@@ -2716,7 +2716,7 @@ function DesktopBody({
             }}
             className={cn(SECONDARY_ACTION_CLASS, "self-start")}
           >
-            <RefreshCw size={13} aria-hidden />
+            <RefreshCw size={ICON_SIZE.sm} aria-hidden />
             {t("install.recheck")}
           </button>
         </div>
@@ -2743,7 +2743,7 @@ function DesktopBody({
             onClick={onRetry}
             className={cn(SECONDARY_ACTION_CLASS, "self-start")}
           >
-            <RefreshCw size={13} aria-hidden />
+            <RefreshCw size={ICON_SIZE.sm} aria-hidden />
             {t("retryButton")}
           </button>
         </div>
@@ -2773,7 +2773,7 @@ function DesktopBody({
       >
         <div className="flex flex-col gap-4" data-testid="atlas-git-not-initialized">
           {/* 무엇이 만들어지는지 **누르기 전에** 말한다. */}
-          <p className="text-body leading-relaxed text-[color:var(--color-text-tertiary)]">
+          <p className="text-body leading-body text-[color:var(--color-text-tertiary)]">
             {t("initWhatHappens")}
           </p>
 
@@ -2955,7 +2955,7 @@ function DesktopBody({
               (도크)와 같은 말을 반복하지 않고 **그래서 지금 무슨 상태냐**를
               말한다. */}
           {!hasChanges ? (
-            <p className="flex-none border-b border-[color:var(--color-divider)] px-4 py-3 text-label leading-relaxed text-[color:var(--color-text-tertiary)]">
+            <p className="flex-none border-b border-[color:var(--color-divider)] px-4 py-3 text-label leading-prose text-[color:var(--color-text-tertiary)]">
               {t("noChangesHint")}
             </p>
           ) : null}
@@ -3026,7 +3026,7 @@ function DesktopBody({
                     showFileHeads={!selectedPath && shownDiffFiles.length > 1}
                   />
                 ) : (
-                  <p className="git-fade-in text-label leading-relaxed text-[color:var(--color-text-quaternary)]">
+                  <p className="git-fade-in text-label leading-prose text-[color:var(--color-text-quaternary)]">
                     {t("diffEmpty")}
                   </p>
                 )}

@@ -87,7 +87,7 @@ export default function NotFound() {
         <h1 className="mt-4 text-display tracking-[var(--tracking-section)] font-[var(--font-weight-signature)] text-[color:var(--color-text-primary)]">
           {t.title}
         </h1>
-        <p className="mt-3 text-body leading-relaxed text-[color:var(--color-text-secondary)]">
+        <p className="mt-3 text-body leading-body text-[color:var(--color-text-secondary)]">
           {t.body}
         </p>
         <div className="mt-5 flex flex-col gap-2">
@@ -102,7 +102,7 @@ export default function NotFound() {
             {t.home}
           </Link>
           <Button type="button" variant="ghost" onClick={goBack}>
-            <ArrowLeft size={13} />
+            <ArrowLeft size={ICON_SIZE.md} />
             {t.previous}
           </Button>
         </div>

@@ -2,6 +2,7 @@
 
 import { useEffect, useRef, type RefObject } from "react";
 import { Orbit } from "lucide-react";
+import { ICON_SIZE } from "@/shared/ui/icon-size";
 import { useTopologyLoop } from "./use-topology-loop";
 import type { TierRevealConfig } from "../model/tier-visibility";
 import type { ClusterBarLabels } from "../render/cluster-chips";
@@ -473,7 +474,7 @@ export function TopologyMapV2(props: TopologyMapV2Props) {
           className="group absolute left-0 top-0 z-40 flex h-7 w-7 items-center justify-center rounded-full border border-[color:var(--topology-v2-panel-border)] bg-[color:var(--topology-v2-panel-surface)] text-[color:var(--topology-v2-indigo-bright)] shadow-[var(--topology-v2-panel-shadow)] transition-[opacity,background-color] duration-[var(--motion-fast)] ease-[var(--topology-motion-ease-out)] hover:bg-[color:var(--topology-v2-panel-row-hover)]"
           style={{ opacity: 0, pointerEvents: "none" }}
         >
-          <Orbit size={15} aria-hidden />
+          <Orbit size={ICON_SIZE.md} aria-hidden />
           {realmEnterTooltip ? (
             <span
               role="tooltip"

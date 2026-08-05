@@ -278,7 +278,7 @@ export function TopologyTrailChip({
             className: "-mr-1 hover:text-[color:var(--color-text-primary)]",
           })}
         >
-          <X size={13} aria-hidden />
+          <X size={ICON_SIZE.md} aria-hidden />
         </button>
       </div>
       {/* 칩의 오른쪽 아래에 매달린다 — 등장도 그 모서리에서 자란다. */}
@@ -334,7 +334,7 @@ export function TopologyTrailChip({
               {pastNotice !== null ? (
                 <p
                   data-testid="topology-trail-past-notice"
-                  className="border-b border-[color:var(--topology-floating-panel-divider)] px-3 py-2 text-caption leading-relaxed text-[color:var(--color-text-tertiary)]"
+                  className="border-b border-[color:var(--topology-floating-panel-divider)] px-3 py-2 text-caption leading-label text-[color:var(--color-text-tertiary)]"
                 >
                   {pastNotice}
                 </p>
@@ -410,7 +410,7 @@ export function TopologyTrailChip({
                           className: "hover:text-[color:var(--color-text-primary)]",
                         })}
                       >
-                        <X size={13} aria-hidden />
+                        <X size={ICON_SIZE.md} aria-hidden />
                       </button>
                     </li>
                   ))}
@@ -418,7 +418,7 @@ export function TopologyTrailChip({
               ) : (
                 <p
                   data-testid="topology-trail-past-empty"
-                  className="px-3 py-4 text-caption leading-relaxed text-[color:var(--color-text-quaternary)]"
+                  className="px-3 py-4 text-caption leading-label text-[color:var(--color-text-quaternary)]"
                 >
                   {labels.pastEmptyBody}
                 </p>

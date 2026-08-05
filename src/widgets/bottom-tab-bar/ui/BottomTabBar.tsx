@@ -122,7 +122,7 @@ export function BottomTabBar() {
             >
               <Icon size={ICON_SIZE.lg} aria-hidden />
             </span>
-            <span className="text-caption font-[var(--font-weight-signature)] leading-none">{tRail(tab.labelKey)}</span>
+            <span className="text-caption font-[var(--font-weight-signature)] leading-display-tight">{tRail(tab.labelKey)}</span>
           </Link>
         );
       })}
@@ -146,7 +146,7 @@ export function BottomTabBar() {
           <span className="inline-flex h-6 w-6 items-center justify-center rounded-card border border-transparent transition-colors">
             <Download size={ICON_SIZE.lg} aria-hidden />
           </span>
-          <span className="text-caption font-[var(--font-weight-signature)] leading-none">
+          <span className="text-caption font-[var(--font-weight-signature)] leading-display-tight">
             {tRail('getApp')}
           </span>
         </Link>

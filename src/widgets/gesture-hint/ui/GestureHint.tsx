@@ -81,7 +81,7 @@ export function GestureHint({ disabled = false }: { disabled?: boolean }) {
             size="md"
             className="hover:bg-[color:var(--color-overlay-2)] hover:text-[color:var(--color-text-primary)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--color-border-strong)]"
           >
-            <X size={13} />
+            <X size={ICON_SIZE.sm} />
           </IconButton>
         </motion.div>
       )}

@@ -200,12 +200,12 @@ export function CreateNodeForm({
               <p
                 role="alert"
                 data-testid="create-node-primary-required"
-                className="text-label leading-relaxed text-[color:var(--color-status-warning)]"
+                className="text-label leading-prose text-[color:var(--color-status-warning)]"
               >
                 {labels.primaryLocaleRequired}
               </p>
             ) : (
-              <p className="text-label leading-relaxed text-[color:var(--color-text-quaternary)]">
+              <p className="text-label leading-prose text-[color:var(--color-text-quaternary)]">
                 {labels.localeNamesHint}
               </p>
             )}
@@ -245,7 +245,7 @@ export function CreateNodeForm({
               ...domainOptions.map((o) => ({ value: o.value, label: o.label })),
             ]}
           />
-          <p className="text-label leading-relaxed text-[color:var(--color-text-quaternary)]">
+          <p className="text-label leading-prose text-[color:var(--color-text-quaternary)]">
             {labels.domainHelper}
           </p>
         </div>
@@ -256,7 +256,7 @@ export function CreateNodeForm({
           data-testid="create-node-submit"
           className="inline-flex h-[var(--control-h-lg)] items-center justify-center gap-1.5 rounded-full border border-[color:var(--color-indigo-a46)] bg-[color:var(--color-indigo-a16)] px-3 text-body font-[var(--font-weight-signature)] text-[color:var(--color-indigo-text-soft)] transition-colors hover:bg-[color:var(--color-indigo-a24)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--color-indigo-a46)] focus-visible:ring-inset disabled:opacity-50"
         >
-          <Plus size={13} aria-hidden />
+          <Plus size={ICON_SIZE.sm} aria-hidden />
           {labels.create}
         </button>
       </div>

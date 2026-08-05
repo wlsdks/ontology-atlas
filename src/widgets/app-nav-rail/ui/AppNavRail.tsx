@@ -388,7 +388,7 @@ export function AppNavRail({
                       // 깨뜨리므로 `9+` 로 막는다.
                       <span
                         data-testid={`app-nav-rail-badge-${id}`}
-                        className="absolute -right-1 -top-0.5 grid h-[15px] min-w-[15px] place-items-center rounded-full border border-[color:var(--color-amber-source-a30)] bg-[color:var(--color-amber-source-a14)] px-[3px] text-caption font-[var(--font-weight-strong)] leading-none tabular-nums text-[color:var(--color-status-warning)]"
+                        className="absolute -right-1 -top-0.5 grid h-[15px] min-w-[15px] place-items-center rounded-full border border-[color:var(--color-amber-source-a30)] bg-[color:var(--color-amber-source-a14)] px-[3px] text-caption font-[var(--font-weight-strong)] leading-display-tight tabular-nums text-[color:var(--color-status-warning)]"
                       >
                         {badgeCount > 9 ? "9+" : badgeCount}
                       </span>

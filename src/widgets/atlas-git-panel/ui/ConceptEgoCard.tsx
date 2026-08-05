@@ -77,7 +77,7 @@ export function ConceptEgoCard({
         </div>
         {/* 사람이 쓴 한 줄. 이 카드에서 사람이 가장 먼저 읽는 사실이다. */}
         {ego.summary ? (
-          <p className="line-clamp-2 text-label leading-relaxed text-[color:var(--color-text-secondary)]">
+          <p className="line-clamp-2 text-label leading-prose text-[color:var(--color-text-secondary)]">
             {ego.summary}
           </p>
         ) : null}

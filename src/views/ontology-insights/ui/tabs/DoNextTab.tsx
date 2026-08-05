@@ -312,7 +312,7 @@ function WorkGroupHeading({
           {count}
         </span>
       </div>
-      <p className="text-label leading-snug text-[color:var(--color-text-quaternary)]">{hint}</p>
+      <p className="text-label leading-label text-[color:var(--color-text-quaternary)]">{hint}</p>
     </div>
   );
 }
@@ -363,7 +363,7 @@ function TouchUpBand({
       </div>
       <p
         data-testid="do-next-touchups-flow"
-        className="text-label leading-snug text-[color:var(--color-text-quaternary)]"
+        className="text-label leading-label text-[color:var(--color-text-quaternary)]"
       >
         {labels.touchUpFlowHint}
       </p>
@@ -386,7 +386,7 @@ function TouchUpBand({
               }`}
             >
               {item.source === "cycle" ? (
-                <AlertTriangle size={13} aria-hidden className="text-[color:var(--color-status-warning)]" />
+                <AlertTriangle size={ICON_SIZE.sm} aria-hidden className="text-[color:var(--color-status-warning)]" />
               ) : (
                 <TopologyV2KindGlyph kind={item.nodeKind} size={13} />
               )}
@@ -472,7 +472,7 @@ function QueueSection({
           </span>
         </div>
         {hint ? (
-          <p className="text-label leading-snug text-[color:var(--color-text-quaternary)]">{hint}</p>
+          <p className="text-label leading-label text-[color:var(--color-text-quaternary)]">{hint}</p>
         ) : null}
       </div>
       {rows.map((row) => {
@@ -605,7 +605,7 @@ function DuplicateSection({
             {totalCount}
           </span>
         </div>
-        <p className="text-label leading-snug text-[color:var(--color-text-quaternary)]">
+        <p className="text-label leading-label text-[color:var(--color-text-quaternary)]">
           {labels.hintDuplicate}
         </p>
       </div>
@@ -622,9 +622,9 @@ function DuplicateSection({
           className={QUIET_REST_TOGGLE}
         >
           {restOpen ? (
-            <ChevronDown aria-hidden size={13} className="flex-none" />
+            <ChevronDown aria-hidden size={ICON_SIZE.sm} className="flex-none" />
           ) : (
-            <ChevronRight aria-hidden size={13} className="flex-none" />
+            <ChevronRight aria-hidden size={ICON_SIZE.sm} className="flex-none" />
           )}
           <span className="min-w-0 truncate">
             {restOpen ? labels.duplicateRestHide : labels.duplicateRestShow(restRows.length)}
@@ -1189,7 +1189,7 @@ export function DoNextTab({
                 )}
               </p>
             ) : labels.agentReadinessHint ? (
-              <p className="mt-1 text-label leading-snug text-[color:var(--color-text-quaternary)]">
+              <p className="mt-1 text-label leading-label text-[color:var(--color-text-quaternary)]">
                 {labels.agentReadinessHint}
               </p>
             ) : null}
@@ -1313,9 +1313,9 @@ export function DoNextTab({
                     className={QUIET_REST_TOGGLE}
                   >
                     {repairTargetsOpen ? (
-                      <ChevronDown aria-hidden size={13} className="flex-none" />
+                      <ChevronDown aria-hidden size={ICON_SIZE.sm} className="flex-none" />
                     ) : (
-                      <ChevronRight aria-hidden size={13} className="flex-none" />
+                      <ChevronRight aria-hidden size={ICON_SIZE.sm} className="flex-none" />
                     )}
                     <span className="min-w-0 truncate">
                       {repairTargetsOpen
@@ -1441,7 +1441,7 @@ function RepairQueueTargetRow({
       className="flex min-w-0 items-center justify-between gap-2 py-1 first:pt-0"
     >
       <span className="flex min-w-0 items-center gap-1.5 text-body text-[color:var(--color-text-secondary)]">
-        <span className="shrink-0 rounded-micro border border-[color:var(--color-border-soft)] bg-[color:var(--color-overlay-1)] px-1.5 py-0.5 text-caption leading-none text-[color:var(--color-text-tertiary)]">
+        <span className="shrink-0 rounded-micro border border-[color:var(--color-border-soft)] bg-[color:var(--color-overlay-1)] px-1.5 py-0.5 text-caption leading-display-tight text-[color:var(--color-text-tertiary)]">
           {kindLabel}
         </span>
         <span className="min-w-0 truncate">{target.title}</span>

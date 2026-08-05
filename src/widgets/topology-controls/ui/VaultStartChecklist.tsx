@@ -103,7 +103,7 @@ export function VaultStartChecklist({
                 data-testid="checklist-cta-docs"
                 className="shrink-0 border-[color:var(--color-indigo-a46)] bg-[color:var(--color-indigo-a16)] font-[var(--font-weight-signature)] hover:bg-[color:var(--color-indigo-a24)]"
               >
-                <MapIcon size={13} aria-hidden />
+                <MapIcon size={ICON_SIZE.sm} aria-hidden />
                 {tEmpty("ctaStartFromDocs")}
               </Chip>
             ),
@@ -220,7 +220,7 @@ export function VaultStartChecklist({
         <h2 className="mt-2 text-title font-[var(--font-weight-signature)] text-[color:var(--color-text-primary)]">
           {t("title")}
         </h2>
-        <p className="mt-1 text-body leading-relaxed text-[color:var(--color-text-tertiary)]">
+        <p className="mt-1 text-body leading-body text-[color:var(--color-text-tertiary)]">
           {t("subtitle")}
         </p>
         <ol className="mt-4 flex flex-col gap-2.5">
@@ -268,7 +268,7 @@ export function VaultStartChecklist({
          * 이미 준비됐다는 사실(`agentHintReady`)은 버튼과 무관하니 남는다.
          */}
         {mcpConfigReady || onScaffoldStarter ? (
-          <p className="mt-3 text-label leading-relaxed text-[color:var(--color-text-quaternary)]">
+          <p className="mt-3 text-label leading-prose text-[color:var(--color-text-quaternary)]">
             {t(mcpConfigReady ? "agentHintReady" : "agentHintPending")}
           </p>
         ) : null}
@@ -277,7 +277,7 @@ export function VaultStartChecklist({
          * 영어 한 벌이라(에이전트가 독자다) 사람이 읽는 창구는 이 한 줄뿐이고,
          * 그 약속(승인 전에는 아무것도 안 쓴다)이 이 제품의 서명이다.
          */}
-        <p className="mt-1 text-label leading-relaxed text-[color:var(--color-text-quaternary)]">
+        <p className="mt-1 text-label leading-prose text-[color:var(--color-text-quaternary)]">
           {t("analyzePromise")}
         </p>
         {/*
@@ -287,7 +287,7 @@ export function VaultStartChecklist({
         {agentConnected ? null : (
           <p
             data-testid="checklist-analyze-needs-agent"
-            className="mt-1 text-label leading-relaxed text-[color:var(--color-text-quaternary)]"
+            className="mt-1 text-label leading-prose text-[color:var(--color-text-quaternary)]"
           >
             {t("analyzeNeedsAgent")}
           </p>

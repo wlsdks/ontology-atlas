@@ -417,7 +417,7 @@ export function TopologyIndexPanel({
           aria-hidden="true"
           className="ml-auto inline-flex size-[26px] shrink-0 items-center justify-center text-[color:var(--topology-v2-panel-text-quaternary)] transition-colors group-hover:text-[color:var(--topology-v2-panel-text-secondary)]"
         >
-          <ChevronLeft size={13} aria-hidden="true" />
+          <ChevronLeft size={ICON_SIZE.sm} aria-hidden="true" />
         </span>
       </button>
       <p data-testid="topology-index-census" className="sr-only">

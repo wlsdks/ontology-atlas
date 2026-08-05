@@ -684,7 +684,7 @@ export function FirstRunStarterModule({
             className="mt-2 rounded-chip border border-[color:var(--topology-v2-panel-divider)] bg-[color:var(--topology-v2-panel-recess-a35)] px-2.5 py-2"
           >
             <div className="flex items-center justify-between gap-2">
-              <p className="min-w-0 break-keep text-caption leading-tight text-[color:var(--topology-v2-panel-text-quaternary)]">
+              <p className="min-w-0 break-keep text-caption leading-display-tight text-[color:var(--topology-v2-panel-text-quaternary)]">
                 {t("cliBridgeLabel")}
               </p>
               <CompactCopyButton
@@ -698,7 +698,7 @@ export function FirstRunStarterModule({
             </div>
             <p
               data-testid="first-run-starter-cli-source-only"
-              className="mt-1.5 text-caption leading-relaxed text-[color:var(--color-text-tertiary)]"
+              className="mt-1.5 text-caption leading-label text-[color:var(--color-text-tertiary)]"
             >
               {t("cliBridgeSourceOnly")}
             </p>

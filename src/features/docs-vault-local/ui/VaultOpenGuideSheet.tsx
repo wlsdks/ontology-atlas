@@ -105,7 +105,7 @@ export function VaultOpenGuideSheet({
                 <h2 className="text-body-lg font-[var(--font-weight-strong)] text-[color:var(--color-text-primary)]">
                   {t("title")}
                 </h2>
-                <p className="mt-1 text-label leading-relaxed text-[color:var(--color-text-tertiary)]">
+                <p className="mt-1 text-label leading-prose text-[color:var(--color-text-tertiary)]">
                   {/* 미지원 브라우저에서 "OS 폴더 선택창이 뜨기 전에" 는 오지
                       않을 창을 약속하는 문장이다 — 그 자리에 왜 안 되는지를
                       넣는다. */}
@@ -135,7 +135,7 @@ export function VaultOpenGuideSheet({
                     aria-hidden
                     className="mt-0.5 shrink-0 text-[color:var(--color-indigo-accent)]"
                   />
-                  <span className="text-body leading-relaxed text-[color:var(--color-text-secondary)]">
+                  <span className="text-body leading-body text-[color:var(--color-text-secondary)]">
                     {t(key)}
                   </span>
                 </li>
@@ -155,7 +155,7 @@ export function VaultOpenGuideSheet({
                       "w-full justify-center hover:bg-[color:var(--color-indigo-brand-hover)]",
                   })}
                 >
-                  <HardDrive size={13} aria-hidden />
+                  <HardDrive size={ICON_SIZE.md} aria-hidden />
                   {tUnsupported("unsupportedCta")}
                 </Link>
               ) : null}
@@ -175,7 +175,7 @@ export function VaultOpenGuideSheet({
                     "w-full justify-center hover:bg-[color:var(--color-indigo-brand-hover)]",
                 })}
               >
-                <FolderOpen size={13} aria-hidden />
+                <FolderOpen size={ICON_SIZE.md} aria-hidden />
                 {t("actionPickExisting")}
               </button>
               <button
@@ -191,7 +191,7 @@ export function VaultOpenGuideSheet({
                     "w-full justify-center hover:border-[color:var(--color-indigo-line-a35)] hover:text-[color:var(--color-text-primary)]",
                 })}
               >
-                <Sparkles size={13} aria-hidden />
+                <Sparkles size={ICON_SIZE.md} aria-hidden />
                 {t("actionCreateNew")}
               </button>
               <button

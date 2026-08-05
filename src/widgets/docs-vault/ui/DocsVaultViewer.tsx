@@ -322,7 +322,7 @@ export function DocsVaultViewer({
         return (
           <h2
             id={slug}
-            className="group relative mt-0 mb-6 text-display font-[var(--font-weight-strong)] leading-tight text-[color:var(--color-text-primary)]"
+            className="group relative mt-0 mb-6 text-display font-[var(--font-weight-strong)] leading-display text-[color:var(--color-text-primary)]"
             {...rest}
           >
             {highlightChildren(children, 'h1')}
@@ -335,7 +335,7 @@ export function DocsVaultViewer({
         return (
           <h2
             id={slug}
-            className="group relative mt-10 mb-3 text-title font-[var(--font-weight-strong)] leading-tight text-[color:var(--color-text-primary)]"
+            className="group relative mt-10 mb-3 text-title font-[var(--font-weight-strong)] leading-body text-[color:var(--color-text-primary)]"
             {...rest}
           >
             {highlightChildren(children, 'h2')}
@@ -348,7 +348,7 @@ export function DocsVaultViewer({
         return (
           <h3
             id={slug}
-            className="group relative mt-6 mb-2 text-title font-[var(--font-weight-strong)] leading-tight text-[color:var(--color-text-primary)]"
+            className="group relative mt-6 mb-2 text-title font-[var(--font-weight-strong)] leading-body text-[color:var(--color-text-primary)]"
             {...rest}
           >
             {highlightChildren(children, 'h3')}

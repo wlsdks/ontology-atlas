@@ -105,7 +105,7 @@ function CopyBlock({ label, value, testId }: { label: string; value: string; tes
           {copyState === "copied" ? t("copied") : copyState === "failed" ? t("copyFailed") : t("copy")}
         </button>
       </div>
-      <pre className="max-h-36 overflow-auto rounded-chip border border-[color:var(--color-border-soft)] bg-[color:var(--color-overlay-1)] px-3 py-2 font-mono text-label leading-relaxed text-[color:var(--color-text-secondary)]">
+      <pre className="max-h-36 overflow-auto rounded-chip border border-[color:var(--color-border-soft)] bg-[color:var(--color-overlay-1)] px-3 py-2 font-mono text-label leading-prose text-[color:var(--color-text-secondary)]">
         {value}
       </pre>
     </div>
@@ -257,7 +257,7 @@ export function AgentConnectSheet({
                 data-testid="agent-connect-close"
                 className="hover:text-[color:var(--color-text-primary)]"
               >
-                <X size={15} aria-hidden />
+                <X size={ICON_SIZE.md} aria-hidden />
               </IconButton>
             </header>
 
@@ -353,7 +353,7 @@ export function AgentConnectSheet({
                         className="h-2 w-2 shrink-0 rounded-full"
                         style={{ backgroundColor: statusDotColor }}
                       />
-                      <p className="min-w-0 flex-1 text-body leading-relaxed text-[color:var(--color-text-secondary)]">
+                      <p className="min-w-0 flex-1 text-body leading-body text-[color:var(--color-text-secondary)]">
                         {statusText}
                       </p>
                     </div>
@@ -369,7 +369,7 @@ export function AgentConnectSheet({
                   </p>
                   <p
                     data-testid="agent-connect-preview"
-                    className="rounded-chip border border-[color:var(--color-border-soft)] bg-[color:var(--color-overlay-1)] px-3 py-2.5 text-body leading-relaxed text-[color:var(--color-text-secondary)]"
+                    className="rounded-chip border border-[color:var(--color-border-soft)] bg-[color:var(--color-overlay-1)] px-3 py-2.5 text-body leading-body text-[color:var(--color-text-secondary)]"
                   >
                     {t("previewSentence", { domains: domainsLabel })}
                   </p>
@@ -437,7 +437,7 @@ export function AgentConnectSheet({
                     >
                       <div className="flex flex-col gap-3 pt-0.5">
                         {snippets.needsManualPath ? (
-                          <p className="text-label leading-relaxed text-[color:var(--color-text-tertiary)]">
+                          <p className="text-label leading-prose text-[color:var(--color-text-tertiary)]">
                             {t("manualPathHint")}
                           </p>
                         ) : null}
@@ -451,7 +451,7 @@ export function AgentConnectSheet({
                           value={snippets.codexCommand}
                           testId="agent-connect-copy-codex"
                         />
-                        <p className="text-label leading-relaxed text-[color:var(--color-text-quaternary)]">
+                        <p className="text-label leading-prose text-[color:var(--color-text-quaternary)]">
                           {t("genericHint")}
                         </p>
                         <div className="overflow-x-auto">

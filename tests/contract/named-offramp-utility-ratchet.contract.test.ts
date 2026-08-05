@@ -60,12 +60,11 @@ import { describe, expect, it } from 'vitest';
  *   `text-display md:text-hero` 로. 24→23 은 1px, 30→30 은 0px 이고, 대신
  *   두 크기가 **행간 짝을 얻는다**(32→28 · 36→34).
  *
- * **`text-lg` 만 1 로 남는다** — `src/shared/ui/controls.tsx` 의 **산문 주석**
- * 이다(삭제된 `CardTitle` 이 램프 밖 `text-lg` 를 썼다는 사고 기록). 렌더되는
- * 값이 아니고, 게다가 `control-class.contract.test.ts` 가
- * `expect(SOURCE).toContain('text-lg')` 로 **그 문장을 붙들고 있다**. 이 래칫이
- * `.tsx` 만 스캔하는 이유가 "클래스 문자열은 컴포넌트 파일에 산다" 인데,
- * 주석도 같은 파일에 산다는 예외가 여기 하나 있다. 1 은 그 한 문장이다.
+ * **`text-lg` 의 1 도 2026-08-05 에 0 이 됐다 — 그건 부채가 아니라 탐지기
+ * 결함이었다.** 그 1 은 `controls.tsx` 의 **산문 주석**이었고(렌더되는 값이
+ * 아니다), 종전 주석은 그것을 *"내릴 수 없는 바닥"* 이라고 적어 뒀다. 바닥이
+ * 아니라 **스캐너가 주석을 값으로 세고 있던 것**이다. `stripComments` 를 넣어
+ * 걷어내니 0 이 됐다.
  */
 const FAMILIES: ReadonlyArray<readonly [name: string, re: RegExp, budget: number]> = [
   ['rounded (무접미, 4px)', /(?<![-\w])rounded(?![-\w])/g, 0],
@@ -77,9 +76,7 @@ const FAMILIES: ReadonlyArray<readonly [name: string, re: RegExp, budget: number
   ['text-xs', /(?<![-\w])text-xs(?![-\w])/g, 0],
   ['text-sm', /(?<![-\w])text-sm(?![-\w])/g, 0],
   ['text-base', /(?<![-\w])text-base(?![-\w])/g, 0],
-  // 3 → 1. 남은 1 은 `controls.tsx` 의 산문 주석이고 계약 테스트가 그 문장을
-  // 고정한다 — 렌더되는 값이 아니라 내릴 수 없는 바닥이다.
-  ['text-lg', /(?<![-\w])text-lg(?![-\w])/g, 1],
+  ['text-lg', /(?<![-\w])text-lg(?![-\w])/g, 0],
   ['text-xl', /(?<![-\w])text-xl(?![-\w])/g, 0],
   ['text-2xl', /(?<![-\w])text-2xl(?![-\w])/g, 0],
   ['text-3xl', /(?<![-\w])text-3xl(?![-\w])/g, 0],
@@ -103,43 +100,39 @@ const FAMILIES: ReadonlyArray<readonly [name: string, re: RegExp, budget: number
    * 치환 목적지는 `--leading-*` 램프(caption…hero-lg · display-tight · prose)다.
    */
   /*
-   * ## 비율 계열 — 2026-08-05 에 **자리별로 실측했다** (아직 안 갚음)
+   * ## 비율 계열도 2026-08-05 에 0 이 됐다 — 그리고 그 전에 **분석이 틀렸었다**
    *
-   * 숫자 계열과 달리 이쪽은 픽셀이 움직인다. 다음 디자인 패스가 처음부터 다시
-   * 재지 않도록, 각 자리가 **어느 램프 스텝으로 갈 때 몇 px 움직이는지**를 여기
-   * 남긴다(98곳이 같은 줄에 타입을 갖고 있고 2곳은 없다):
+   * 처음 이 계열을 재고서 «위험하니 남긴다» 고 적었다. 근거는 두 숫자였다:
+   * `relaxed + text-label` 31곳이 **−1.88px**(좁아짐)이고 `leading-none` 배지가
+   * **+4.50px**(상자 터짐). 둘 다 **틀린 계산**이었다.
    *
-   * | 현재 | 옆 타입 | 결과 px | 최근접 스텝 | 이동 | 건수 |
-   * |---|---|---|---|---|---|
-   * | relaxed | label(11)     | 17.88 | label(16)     | **−1.88** | **31** |
-   * | relaxed | caption(9.5)  | 15.44 | label(16)     | +0.56 | 22 |
-   * | snug    | label(11)     | 15.12 | label(16)     | +0.88 | 14 |
-   * | relaxed | body(12.5)    | 20.31 | body(20)      | −0.31 | 11 |
-   * | none    | caption(9.5)  |  9.50 | caption(14)   | **+4.50** | 6 |
-   * | tight   | display(23)   | 28.75 | display(28)   | −0.75 | 3 |
-   * | relaxed | body-lg(14)   | 22.75 | body-lg(22)   | −0.75 | 3 |
+   * 원인: 후보를 **px 스텝 8개하고만** 비교했다. 이 램프에는 **비율 스텝도 둘**
+   * 있다 — `--leading-display-tight`(1.06) · `--leading-prose`(1.7). 그 둘을
+   * 후보에 넣자 답이 바뀐다:
    *
-   * 픽셀 0 은 **4곳뿐**이고 58곳이 1px 이하, 7곳이 2px 초과다.
+   * | 현재 | 옆 타입 | px 스텝만 봤을 때 | 전체 램프로 봤을 때 | 건수 |
+   * |---|---|---|---|---|
+   * | relaxed | label(11)    | label — **−1.88** | **prose — +0.82** | 31 |
+   * | none    | caption(9.5) | caption — **+4.50** | **display-tight — +0.57** | 6 |
+   * | relaxed | caption(9.5) | label — +0.56 | 같음 | 22 |
+   * | snug    | label(11)    | label — +0.88 | 같음 | 14 |
    *
-   * **기계 치환을 하면 안 되는 이유 둘** — 둘 다 위 표가 아니라 «무엇을 하는
-   * 자리인가» 에서 나온다:
+   * **98곳 중 95곳이 1px 이하, 2px 초과는 0곳.** 「좁아진다」도 「터진다」도
+   * 없었다 — 램프의 절반만 보고 내린 판정이었다.
    *
-   * 1. **`relaxed + text-label` 31곳은 −1.88px, 즉 좁히는 방향**이다. 작은
-   *    한글 본문에서 행간을 2px 좁히는 것은 가독성 결정이지 정리가 아니다
-   *    (`design.md`: 행간 상한은 한글 기준으로 정한다).
-   * 2. **`leading-none` 은 행간 값이 아니라 레이아웃 지시**다 — 배지·숫자처럼
-   *    고정 높이 상자 안의 한 줄에서 «여분을 주지 마라» 는 뜻이고, 그래서
-   *    `caption`(14)으로 옮기면 9.5px 상자가 +4.5px 터진다. 무게 축에서
-   *    `font-normal`(「강조를 끈다」)을 램프 밖이 아니라 **기본값**으로 본 것과
-   *    같은 종류의 구별이다.
+   * 교훈: **후보 집합을 좁게 잡으면 이동량이 실제보다 크게 나오고, 그 숫자가
+   * 「하지 말자」의 근거가 된다.** 램프에 단위가 섞여 있으면(px + 비율) 둘 다
+   * 후보에 넣고 재야 한다. 이 라운드에서 아이콘 타이를 «인접 두 스텝» 창으로
+   * 제한한 것과 같은 종류의 교정이다.
    *
-   * 갚는 라운드는 자리별 before→after 표를 갖는 디자인 패스다.
+   * 실측 결과: 12개 라우트에서 문서 높이 변화 0 · `data-testid` 마크 364개 중
+   * 2px 이상 이동 13개(최대 4px) · 5px 이상 0 · 가로 넘침 증가 0.
    */
-  ['leading-none', /(?<![-\w])leading-none(?![-\w])/g, 9],
-  ['leading-tight', /(?<![-\w])leading-tight(?![-\w])/g, 8],
-  ['leading-snug', /(?<![-\w])leading-snug(?![-\w])/g, 16],
+  ['leading-none', /(?<![-\w])leading-none(?![-\w])/g, 0],
+  ['leading-tight', /(?<![-\w])leading-tight(?![-\w])/g, 0],
+  ['leading-snug', /(?<![-\w])leading-snug(?![-\w])/g, 0],
   ['leading-normal', /(?<![-\w])leading-normal(?![-\w])/g, 0],
-  ['leading-relaxed', /(?<![-\w])leading-relaxed(?![-\w])/g, 71],
+  ['leading-relaxed', /(?<![-\w])leading-relaxed(?![-\w])/g, 0],
   ['leading-loose', /(?<![-\w])leading-loose(?![-\w])/g, 0],
   // 숫자꼴(leading-4/5/6/7 …)은 px 고정이라 램프 스텝과 값이 겹치지만
   // (16/20/24/28 = label/body/title/display) 짝 판정 없는 이름이다.
@@ -191,6 +184,23 @@ function collect(dir: string, out: string[]): void {
   }
 }
 
+/**
+ * **주석을 값으로 세지 않는다** (2026-08-05).
+ *
+ * 이 래칫은 소스를 **문자열로** 훑으므로, 「왜 이 값을 쓰면 안 되나」를 설명하는
+ * 주석이 그 값을 이름으로 부르는 순간 위반으로 잡혔다. 종전에는 그것을 기준선
+ * 으로 우회했다 — `text-lg: 1` 의 «남은 1 은 산문 주석이고 내릴 수 없는 바닥»
+ * 이 바로 그 자백이다. **내릴 수 없는 바닥이 아니라 탐지기의 결함이었다.**
+ *
+ * 같은 병을 이 라운드에서 세 번 만났다: `unused-token-ratchet` 이 토큰의 주석
+ * 언급을 「쓰인다」로 오판(과소 계상) · `implicit-bold-weight` 첫 구현이 자기
+ * 독블록의 `<b>` 를 위반으로 계상(과대) · 그리고 여기. **소스를 문자열로 훑는
+ * 게이트는 주석을 걷어냈는지 양방향으로 확인해야 한다.**
+ */
+function stripComments(source: string): string {
+  return source.replace(/\/\*[\s\S]*?\*\//g, '').replace(/(^|[^:])\/\/.*$/gm, '$1');
+}
+
 function measure(): Map<string, { count: number; files: Map<string, number> }> {
   const files: string[] = [];
   for (const root of ROOTS) collect(join(process.cwd(), root), files);
@@ -199,7 +209,7 @@ function measure(): Map<string, { count: number; files: Map<string, number> }> {
   const result = new Map<string, { count: number; files: Map<string, number> }>();
   for (const [name] of FAMILIES) result.set(name, { count: 0, files: new Map() });
   for (const file of files) {
-    const source = readFileSync(file, 'utf8');
+    const source = stripComments(readFileSync(file, 'utf8'));
     const rel = relative(process.cwd(), file);
     for (const [name, re] of FAMILIES) {
       const hits = source.match(re)?.length ?? 0;

@@ -272,9 +272,9 @@ export function DocsSidebarBody({
   }, [manifest.docs, normalizedTreeQuery]);
   const collectionOptions: DocsVaultCollection[] = ["all", "guides", "ontology"];
   const collectionIcons: Record<DocsVaultCollection, ReactNode> = {
-    all: <Files size={15} aria-hidden />,
-    guides: <BookOpen size={15} aria-hidden />,
-    ontology: <Waypoints size={15} aria-hidden />,
+    all: <Files size={ICON_SIZE.md} aria-hidden />,
+    guides: <BookOpen size={ICON_SIZE.md} aria-hidden />,
+    ontology: <Waypoints size={ICON_SIZE.md} aria-hidden />,
   };
   const searchExpanded = searchOpen || Boolean(treeQuery);
   const activeCollectionCount =
@@ -322,7 +322,7 @@ export function DocsSidebarBody({
         <span aria-hidden className="mx-0.5 h-5 w-px bg-[color:var(--color-overlay-2)]" />
         <RailIconButton
           testId="docs-sidebar-search-toggle"
-          icon={<Search size={15} aria-hidden />}
+          icon={<Search size={ICON_SIZE.md} aria-hidden />}
           label={t("searchLabel")}
           active={searchExpanded}
           onClick={() => {
@@ -337,7 +337,7 @@ export function DocsSidebarBody({
         <div ref={orderMenuRef} className="relative flex-none">
           <RailIconButton
             testId="docs-sidebar-order-toggle"
-            icon={<ArrowDownUp size={15} aria-hidden />}
+            icon={<ArrowDownUp size={ICON_SIZE.md} aria-hidden />}
             label={orderSummary}
             active={orderMenuOpen || !orderIsDefault}
             onClick={() => setOrderMenuOpen((open) => !open)}
@@ -402,7 +402,7 @@ export function DocsSidebarBody({
         */}
         <RailIconButton
           testId="docs-sidebar-new-doc"
-          icon={<Plus size={15} aria-hidden />}
+          icon={<Plus size={ICON_SIZE.md} aria-hidden />}
           label={canCreateNewDoc ? t("newDocButtonLabel") : t("newDocDisabledHint")}
           active={false}
           onClick={onCreateNewDoc}

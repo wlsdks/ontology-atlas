@@ -31,7 +31,7 @@ export default function GlobalError({ error, reset }: Props) {
             <h1 className="mt-3 text-display tracking-[var(--tracking-section)] font-[var(--font-weight-signature)]">
               Something went wrong while booting the app.
             </h1>
-            <p className="mt-3 text-body leading-relaxed text-[color:var(--color-text-secondary)]">
+            <p className="mt-3 text-body leading-body text-[color:var(--color-text-secondary)]">
               Browser cache, extensions, or network issues may be at play.
               Please refresh the page or return to the home screen.
             </p>

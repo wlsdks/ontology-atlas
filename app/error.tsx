@@ -34,7 +34,7 @@ export default function RouteError({ error, reset }: Props) {
         <h1 className="mt-4 text-display tracking-[var(--tracking-section)] font-[var(--font-weight-signature)] text-[color:var(--color-text-primary)]">
           Something went wrong while rendering this screen.
         </h1>
-        <p className="mt-3 text-body leading-relaxed text-[color:var(--color-text-secondary)]">
+        <p className="mt-3 text-body leading-body text-[color:var(--color-text-secondary)]">
           It might be a temporary issue. Try again or return to the topology
           home. If it persists, please report it with the error ID below.
         </p>

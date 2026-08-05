@@ -250,7 +250,7 @@ export function CommitDetail({
                 <div
                   key={activeFile}
                   data-testid="atlas-git-commit-diff"
-                  className="git-fade-in min-h-0 flex-1 overflow-auto rounded-[var(--radius-panel)] border border-[color:var(--color-border-soft)] bg-[color:var(--color-canvas)] py-1.5 font-mono text-caption leading-relaxed"
+                  className="git-fade-in min-h-0 flex-1 overflow-auto rounded-[var(--radius-panel)] border border-[color:var(--color-border-soft)] bg-[color:var(--color-canvas)] py-1.5 font-mono text-caption leading-label"
                 >
                   {activePatch.map((row, index) => (
                     <p key={index} className={diffRowClass(row.kind)}>

@@ -1047,7 +1047,7 @@ export function AppSettingsMenu({
                   </span>
                   <span className="flex shrink-0 items-center gap-1 text-body text-[color:var(--color-indigo-accent)]">
                     {vaultCta}
-                    <ChevronRight size={13} aria-hidden className="text-[color:var(--color-text-quaternary)]" />
+                    <ChevronRight size={ICON_SIZE.sm} aria-hidden className="text-[color:var(--color-text-quaternary)]" />
                   </span>
                 </Link>
                   </SettingsGroup>

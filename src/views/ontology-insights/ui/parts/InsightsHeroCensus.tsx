@@ -94,7 +94,7 @@ function BigNum({ value, unit, suffix }: { value: number | string; unit?: string
   return (
     <div
       // eslint-disable-next-line no-restricted-syntax -- 센서스 시그니처 대형 숫자(40px)는 type 램프 상단(hero 30px)을 넘는 의도적 display 예외.
-      className="font-mono text-[40px] font-[var(--font-weight-strong)] leading-none tabular-nums tracking-[var(--tracking-label)] text-[color:var(--topology-v2-numeral-face)]"
+      className="font-mono text-[40px] font-[var(--font-weight-strong)] leading-display-tight tabular-nums tracking-[var(--tracking-label)] text-[color:var(--topology-v2-numeral-face)]"
       style={{ textShadow: "0 2px 0 var(--topology-v2-numeral-shadow)" }}
       data-testid="insights-bignum"
     >

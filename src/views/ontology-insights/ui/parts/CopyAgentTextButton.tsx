@@ -1,4 +1,5 @@
 import { Check, Clipboard } from "lucide-react";
+import { ICON_SIZE } from "@/shared/ui/icon-size";
 import { useTranslations } from "next-intl";
 import { useCopyFeedback } from "@/shared/lib/use-copy-feedback";
 
@@ -55,7 +56,7 @@ export function CopyAgentTextButton({
         ].join(" ")}
         aria-label={ariaLabel}
       >
-        {copyState === "copied" ? <Check size={13} aria-hidden /> : <Clipboard size={13} aria-hidden />}
+        {copyState === "copied" ? <Check size={ICON_SIZE.sm} aria-hidden /> : <Clipboard size={ICON_SIZE.sm} aria-hidden />}
         {label}
       </button>
       {/* 복사 성공/실패를 스크린리더에 announce — 포커스된 버튼의 aria-label
