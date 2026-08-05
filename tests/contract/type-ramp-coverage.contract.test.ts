@@ -112,6 +112,21 @@ const rampSelectors = (arbitrarySizeSelectors as { selector: string }[]).map(
   (rule) => rule.selector,
 );
 
+/**
+ * **ESLint 를 실제로 돌리는 케이스의 명시 타임아웃** (2026-08-05).
+ *
+ * 이 파일은 저장소 전체에서 **유일하게 진짜 ESLint 를 파일에 돌리는 계약**이라
+ * 본질적으로 느리고 실행 시간의 분산이 크다. vitest 기본 5,000ms 에 딱 걸쳐
+ * 있었고 — 로컬 **902ms**, CI 러너 **5,503ms** (약 6배) — 문서만 바꾼 PR 이
+ * 타임아웃으로 빨개졌다.
+ *
+ * **시간으로 실패하는 게이트는 소음이다.** 규격을 어겨서 빨개진 것과 러너가
+ * 느려서 빨개진 것을 구별할 수 없으면, 다음 사람은 빨간불을 무시하는 법을
+ * 배운다 — 이 저장소가 「룰을 켜기 전 반드시 측정한다」에서 경계한 바로 그
+ * 부패다. 30초는 실측(902ms)의 33배이고, 진짜 무한 루프는 여전히 잡힌다.
+ */
+const ESLINT_CASE_TIMEOUT_MS = 30_000;
+
 /** 저장소의 진짜 `eslint.config.mjs` 를 그대로 쓴다. */
 const eslint = new ESLint({ cwd: REPO_ROOT });
 
@@ -178,7 +193,7 @@ describe("램프 lint 커버리지 — 새 표면이 첫날부터 덮이는가",
         `eslint.config.mjs 의 rampCoveredGlobs 를 좁히지 마라.\n` +
         uncovered.join("\n"),
     ).toEqual([]);
-  });
+  }, ESLINT_CASE_TIMEOUT_MS);
 
   it("프로브 — 새 디렉터리에 위반 넷을 심으면 빨개진다", async () => {
     const [result] = await eslint.lintText(FIELD_TRIAL_VIOLATION, { filePath: PROBE_PATH });
@@ -190,7 +205,7 @@ describe("램프 lint 커버리지 — 새 표면이 첫날부터 덮이는가",
         `게이트가 없는 것과 구별되지 않는다.`,
     ).toBe(4);
     expect(result.errorCount).toBeGreaterThanOrEqual(4);
-  });
+  }, ESLINT_CASE_TIMEOUT_MS);
 
   it("프로브 — 같은 자리의 정상 램프 값은 통과한다", async () => {
     const [result] = await eslint.lintText(RAMP_CLEAN, { filePath: PROBE_PATH });
@@ -199,7 +214,7 @@ describe("램프 lint 커버리지 — 새 표면이 첫날부터 덮이는가",
       ramp.map((message) => message.message),
       "정상 램프 유틸리티가 위반으로 잡힌다 — 오탐은 소음이고 소음은 신호를 덮는다.",
     ).toEqual([]);
-  });
+  }, ESLINT_CASE_TIMEOUT_MS);
 });
 
 describe("램프 부채 예외 장부", () => {
@@ -239,7 +254,7 @@ describe("램프 부채 예외 장부", () => {
       const missing = rampSelectors.filter((selector) => !applied.has(selector));
       expect(missing, `${file} 가 램프 셀렉터를 못 받는다: ${missing.length}종`).toEqual([]);
     }
-  });
+  }, ESLINT_CASE_TIMEOUT_MS);
 
   it("예외 파일의 부채가 장부를 넘지 않고, 0이 된 파일은 예외에서 뺀다", async () => {
     // 목록이 비었으면 래칫할 것이 없다. 대신 **정말로 0인지**를 실측한다 —
@@ -276,5 +291,5 @@ describe("램프 부채 예외 장부", () => {
         `  에서 빼라 — 예외는 한시적인 것이고 진짜 게이트는 lint 다.\n` +
         `${[...grown, ...cleared].join("\n")}`,
     ).toEqual([]);
-  });
+  }, ESLINT_CASE_TIMEOUT_MS);
 });
