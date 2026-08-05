@@ -2407,7 +2407,9 @@
     --topology-blocking-composer-shadow:
       0 28px 72px rgba(0, 0, 0, 0.58),
       0 0 0 1px rgba(255, 255, 255, 0.08),
-      0 0 0 6px rgba(94, 106, 210, 0.10);
+      /* 2026-08-05: `rgba(94,106,210,0.10)` 는 `--color-indigo-a10` 과 동일했다 —
+         토큰이 토큰을 손으로 베낀 자리. 색 게이트를 `.css` 로 넓히면서 발견. */
+      0 0 0 6px var(--color-indigo-a10);
     --topology-search-lane-compact-width: clamp(84px, 6vw, 96px);
     --topology-search-sheet-floating-width: 36rem;
     /* 구 --topology-search-sheet-close-size(32px)는 2026-08-04 폐지 — 같은 일
@@ -3814,8 +3816,18 @@
   }
 
   /* 선택 색 */
+  /*
+    ⚠️ 토큰을 손으로 베끼지 않는다 (2026-08-05 정정). 여기 있던
+    `rgba(94, 106, 210, 0.4)` 는 `--color-indigo-a40` 과 **바이트 동일**했다 —
+    3,600줄 위에 이름이 이미 있었는데 값을 다시 적어 둔 것이다. 토큰이 움직이면
+    선택 하이라이트만 따라오지 않았을 것이다.
+
+    이것이 `check:tokens` 를 통과한 이유가 둘이다: 그 게이트는 `.ts`/`.tsx` 만
+    훑어 `.css` 를 아예 안 보고, 게다가 **어느 워크플로에도 물려 있지 않아
+    CI 에서 한 번도 돌지 않았다**. 둘 다 같은 PR 에서 고쳤다.
+  */
   ::selection {
-    background-color: rgba(94, 106, 210, 0.4);
+    background-color: var(--color-indigo-a40);
     color: var(--color-text-primary);
   }
 

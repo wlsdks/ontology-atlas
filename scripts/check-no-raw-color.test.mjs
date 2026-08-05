@@ -28,7 +28,11 @@ test("flags a raw indigo rgba() literal in a className string", () => {
     (dir) => {
       const violations = findRawColorLiterals(dir);
       assert.equal(violations.length, 1);
-      assert.equal(violations[0].file, "src/Widget.tsx");
+      // 2026-08-05: 보고 경로가 **저장소 기준**이 됐다 — `src/` 하나만 훑던
+      // 시절엔 접두사를 손으로 붙여도 맞았지만, 이제 `app/` 도 훑으므로 어느
+      // 뿌리인지 보여야 한다. 이 픽스처는 저장소 밖 임시 디렉터리라 뿌리 기준
+      // 상대 경로를 그대로 쓴다.
+      assert.equal(violations[0].file, "Widget.tsx");
       assert.equal(violations[0].line, 2);
       assert.equal(violations[0].family, "indigo");
     },

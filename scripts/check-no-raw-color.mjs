@@ -167,9 +167,19 @@ function shouldSkipDir(name) {
   return name === "node_modules";
 }
 
+/**
+ * **`.css` 도 본다** (2026-08-05).
+ *
+ * 종전엔 `.ts`/`.tsx` 만 봤고, 그 틈에서 `app/globals.css` 의 `::selection` 이
+ * `--color-indigo-a40` 과 **바이트 동일한** rgba 를 손으로 적고 있었다 — 이름이
+ * 3,600줄 위에 이미 있는데. 토큰이 움직여도 그 한 줄만 안 따라온다.
+ *
+ * 스타일시트에서 리터럴이 **정당한 자리는 토큰 선언부 하나뿐**이라, 아래
+ * `findRawColorLiterals` 가 `--token:` 로 시작하는 줄을 건너뛴다.
+ */
 function isTargetFile(name) {
   const ext = extname(name);
-  if (ext !== ".ts" && ext !== ".tsx") return false;
+  if (ext !== ".ts" && ext !== ".tsx" && ext !== ".css") return false;
   return !name.includes(".test.");
 }
 
@@ -187,22 +197,75 @@ function walk(dir, out = []) {
   return out;
 }
 
-export function findRawColorLiterals(srcDir = SRC_DIR) {
+/**
+ * **`app/` 도 본다** (2026-08-05).
+ *
+ * 종전엔 `src/` 하나만 훑었다. `app/` 에는 `layout.tsx` · `global-error.tsx`
+ * (루트 레이아웃을 **대체**하는 파일) · `opengraph-image.tsx` · 라우트 10개가
+ * 산다 — 구조상 색을 손으로 박기 가장 쉬운 자리들이 통째로 밖에 있었다.
+ * 자매 게이트인 `design-forbidden-class-guard` 는 이미 `['src','app']` 을
+ * 훑고 있었으므로, 이 비대칭은 결정이 아니라 누락이었다.
+ */
+export const SCAN_ROOTS = [SRC_DIR, join(ROOT, "app")];
+
+export function findRawColorLiterals(roots = SCAN_ROOTS) {
   const violations = [];
-  for (const file of walk(srcDir)) {
-    const rel = relative(srcDir, file);
+  const dirs = Array.isArray(roots) ? roots : [roots];
+  const files = dirs.flatMap((d) => walk(d).map((f) => ({ file: f, root: d })));
+  for (const { file, root } of files) {
+    const rel = relative(root, file);
     if (ALLOWLIST.has(rel)) continue;
     const content = readFileSync(file, "utf8");
-    const lines = content.split("\n");
+    /*
+     * **블록 주석을 통째로 지운다** (2026-08-05 정정).
+     *
+     * 종전엔 줄이 `//`·`*`·`/*` 로 **시작하는지**만 봤다. 그래서 여러 줄짜리
+     * 주석의 **가운데 줄**(들여쓰기가 없거나 한글로 시작하는 줄)은 코드로
+     * 취급됐다. 이 파일 자신이 「왜 이 값을 쓰면 안 되나」를 적으며 그 값을
+     * 인용하므로, 사정거리를 `.css` 로 넓히는 순간 **자기 설명문 3건이
+     * 위반으로** 잡혔다.
+     *
+     * 같은 병을 이 라운드에서만 네 번 만났다(`unused-token-ratchet` 과소 ·
+     * `implicit-bold-weight` 과대 · `named-offramp` 과대 · 여기). 줄 단위
+     * 접두사 판정으로는 블록 주석을 못 이긴다 — 지운 다음 세야 한다. 줄
+     * 번호를 보존해야 하므로 개행은 남긴다.
+     */
+    const scanned = content
+      .replace(/\/\*[\s\S]*?\*\//g, (m) => m.replace(/[^\n]/g, " "))
+      .replace(/(^|[^:])\/\/.*$/gm, "$1")
+      /*
+       * **커스텀 프로퍼티 «선언의 값» 은 리터럴이 사는 정당한 자리다** — 거기까지
+       * 막으면 값을 어디에도 못 적는다. 다만 선언은 **여러 줄에 걸친다**
+       * (`--x: linear-gradient(\n  rgba(...),\n  ...\n);`), 그래서 줄 접두사
+       * 판정으로는 둘째 줄부터 놓친다. 선언 시작(`--name:`)부터 `;` 까지를
+       * 통째로 비운다. 줄 번호는 보존한다.
+       */
+      .replace(/--[a-zA-Z0-9-]+\s*:[^;]*;/g, (m) => m.replace(/[^\n]/g, " "));
+    const lines = scanned.split("\n");
+    /*
+     * 보고 경로는 **저장소 기준**이다 — `src/` 하나만 훑던 시절엔 `src/` 를
+     * 손으로 붙여도 맞았지만, 이제 `app/` 도 훑으므로 어느 뿌리인지 보여야
+     * 한다. 저장소 밖(단위 테스트의 임시 디렉터리)이면 뿌리 기준 상대 경로를
+     * 그대로 쓴다 — `../../..` 로 시작하는 쓰레기를 찍지 않는다.
+     */
+    const repoRel = relative(ROOT, file);
+    const label = repoRel.startsWith("..") ? rel : repoRel;
     lines.forEach((line, i) => {
-      // 주석 줄은 값이 아니라 설명이다 — 이 파일 자신이 위반 예시를 인용하듯,
-      // 「왜 이 값을 쓰면 안 되나」를 적으려면 그 값을 이름으로 불러야 한다.
+      /*
+       * 블록 제거에 **더해** 줄 접두사도 그대로 본다 — 없앤 게 아니라 얹은
+       * 것이다. 여는 `/*` 없이 ` * ` 로만 이어지는 JSDoc 연속 줄은 블록
+       * 정규식이 못 잡는데, 이 저장소의 주석이 실제로 그렇게 쓰인다.
+       */
       if (/^\s*(\/\/|\*|\/\*)/.test(line)) return;
+      // 스타일시트에서 리터럴이 **정당한 자리는 토큰 선언부 하나뿐**이다.
+      // `--color-indigo-a40: rgba(94,106,210,0.4);` 가 값이 사는 곳이고,
+      // 그 밖의 모든 자리는 그 이름을 `var()` 로 불러야 한다.
+      if (/^\s*--[a-zA-Z0-9-]+\s*:/.test(line)) return;
       for (const m of line.matchAll(RGBA_LITERAL)) {
         const [r, g, b] = [Number(m[1]), Number(m[2]), Number(m[3])];
         if (isAchromatic(r, g, b)) continue;
         violations.push({
-          file: `src/${rel}`,
+          file: label,
           line: i + 1,
           family: FAMILY_BY_TUPLE.get(`${r},${g},${b}`) ?? "unregistered",
           text: line.trim(),

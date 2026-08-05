@@ -94,6 +94,22 @@ jobs:
       # 아무 데서도 안 돈다. 실제로 2026-07-26 까지 둘 다 main 에서 깨진 채
       # 있었고, 사람이 우연히 발견할 때까지 아무도 몰랐다 — 안 물린 게이트는
       # 게이트가 아니라 주석이다.
+      #
+      # ⚠️ 2026-08-05: **바로 그 일이 색 게이트에 일어나 있었다.** 위 문장을
+      # 적어 둔 이 파일 안에서 `check:tokens` 와 그 단위 테스트가 둘 다 안
+      # 물려 있었다 — `package.json` 에 정의만 있고 다른 스크립트도, 이
+      # 워크플로도, `.githooks/pre-commit` 도 부르지 않았다. `test:check:tokens`
+      # 는 `node --test scripts/*.test.mjs` 라 vitest include(`app/**` · `src/**`
+      # · `tests/contract/**`) 밖이기도 했다. 통과하고 있었지만, 멈춰도 아무도
+      # 몰랐을 것이다.
+      - name: Color tokens
+        if: always()
+        run: pnpm check:tokens
+
+      - name: Color token checker tests
+        if: always()
+        run: pnpm test:check:tokens
+
       - name: i18n message catalog
         if: always()
         run: pnpm test:i18n:messages

@@ -90,7 +90,36 @@ import { cn } from '@/shared/lib/cn';
 const DISABLED =
   'disabled:cursor-not-allowed disabled:opacity-55 disabled:shadow-none disabled:hover:border-inherit disabled:hover:bg-inherit disabled:hover:text-inherit';
 
-const control = cva(DISABLED, {
+/**
+ * 키보드 초점 — **`DISABLED` 와 같은 이유로 값 층에 둔다.**
+ *
+ * ## 왜 여기 없었나, 그리고 왜 그 판단이 틀렸나 (2026-08-05 실측)
+ *
+ * 이 파일은 아래 「축이 아닌 것」 절에서 *"호버·포커스는 여기서 안 낸다"* 고
+ * 적어 두고 그 근거로 `design.md` 의 모션 예산(호버/포커스는 `--motion-fast`
+ * 안에서 끝낸다)을 인용했다. **그 인용이 범주 오류였다** — 그 규칙은 초점
+ * 전환이 얼마나 **오래** 걸리는지를 정하지, 초점을 **낼지 말지**를 정하지
+ * 않는다.
+ *
+ * 결과 실측: `controlClass` 와 `controls.tsx` 에 `focus` 라는 글자가 **0회**
+ * 나온다. 그래서 `Chip`(52곳) · `IconButton`(35곳) · `RowButton`(19곳)이 전부
+ * 브라우저 기본 초점 링, 즉 **OS 강조색(보통 하늘색)** 을 그린다. 이는
+ * `forbidden.md` 의 「둘 이상의 채색 시스템 금지」 밖이고, 같은 결함이 첫 실행
+ * 시트에서 한 번 잡혀 `tests/e2e/dialog-focus-ring.spec.ts` 가 생겼는데 그
+ * 검사는 **컨테이너 하나**만 보고 그 안의 버튼들은 안 봤다.
+ *
+ * 더 오래된 프리미티브(`Button` · `ChromeChip` · `ChromeTile` · `TabBar` ·
+ * `Select` · `InfoHint`)는 전부 링을 갖고 있었다 — **새 정본이 그것을 잃은
+ * 쪽**이다. `DISABLED` 가 2026-08-03 에 같은 방식으로 발견된 것과 판박이다.
+ *
+ * `ring-inset` 인 이유: 컨트롤이 촘촘한 행·칩 묶음에서 바깥 링은 이웃과
+ * 겹친다. 안쪽 링은 상자 치수를 한 픽셀도 안 바꾼다 — 그래서 이 상수를
+ * 더해도 레이아웃 이동이 0 이다.
+ */
+const FOCUS =
+  'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-[color:var(--color-indigo-a46)]';
+
+const control = cva(`${DISABLED} ${FOCUS}`, {
   variants: {
     /**
      * 무엇처럼 눌리는가. 위 표의 여섯이 전부이고, **일곱째를 추가하려면 전수를
