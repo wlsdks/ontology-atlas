@@ -246,7 +246,7 @@ export function ProjectQuickEditPanel({
               <p className="font-mono text-caption uppercase tracking-[var(--tracking-caps-12)] text-[color:var(--color-indigo-accent)]">
                 {t("headerEyebrow")}
               </p>
-              <p className="mt-2 text-body-lg leading-6 text-[color:var(--color-text-secondary)]">
+              <p className="mt-2 text-body-lg leading-title text-[color:var(--color-text-secondary)]">
                 {t("headerSubtitle")}
               </p>
             </div>

@@ -1041,7 +1041,7 @@ export function AppSettingsMenu({
                     <span className="block text-body text-[color:var(--color-text-secondary)]">
                       {t('vaultTitle')}
                     </span>
-                    <span className="mt-0.5 block break-keep text-label leading-4 text-[color:var(--color-text-quaternary)]">
+                    <span className="mt-0.5 block break-keep text-label leading-label text-[color:var(--color-text-quaternary)]">
                       {vaultBody}
                     </span>
                   </span>
@@ -1083,7 +1083,7 @@ export function AppSettingsMenu({
                         <p className="text-body font-[var(--font-weight-signature)] text-[color:var(--color-text-secondary)]">
                           {t('agentStatusNoVault')}
                         </p>
-                        <p className="mt-1 break-keep text-label leading-4 text-[color:var(--color-text-tertiary)]">
+                        <p className="mt-1 break-keep text-label leading-label text-[color:var(--color-text-tertiary)]">
                           {t('agentNoVaultHint')}
                         </p>
                       </div>
@@ -1091,7 +1091,7 @@ export function AppSettingsMenu({
                         <p className="text-body font-[var(--font-weight-signature)] text-[color:var(--color-text-secondary)]">
                           {t('mcpProofTitle')}
                         </p>
-                        <p className="mt-1 break-keep text-label leading-4 text-[color:var(--color-text-tertiary)]">
+                        <p className="mt-1 break-keep text-label leading-label text-[color:var(--color-text-tertiary)]">
                           {t('mcpProofBody')}
                         </p>
                         <Chip

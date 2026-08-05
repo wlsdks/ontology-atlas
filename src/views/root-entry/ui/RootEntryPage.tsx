@@ -86,7 +86,7 @@ function DesktopVaultRedirect() {
           <h1 className="text-display font-[var(--font-weight-strong)] leading-tight text-[color:var(--color-text-primary)] md:text-hero">
             {t('redirectTitle')}
           </h1>
-          <p className="mx-auto max-w-xl text-body leading-6 text-[color:var(--color-text-tertiary)]">
+          <p className="mx-auto max-w-xl text-body leading-title text-[color:var(--color-text-tertiary)]">
             {t('redirectBody')}
           </p>
         </div>
@@ -105,7 +105,7 @@ function DesktopVaultRedirect() {
                 <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-chip border border-[color:var(--color-divider)] text-[color:var(--color-text-tertiary)]">
                   <Icon size={14} aria-hidden />
                 </span>
-                <span className="text-label font-[var(--font-weight-signature)] leading-5 text-[color:var(--color-text-secondary)]">
+                <span className="text-label font-[var(--font-weight-signature)] leading-body text-[color:var(--color-text-secondary)]">
                   {item.label}
                 </span>
               </div>

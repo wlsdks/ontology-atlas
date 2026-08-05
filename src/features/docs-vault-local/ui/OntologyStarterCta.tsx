@@ -194,7 +194,7 @@ export function OntologyStarterCta({ onScaffold, docCount, vaultPath = null }: P
         <h2 className="mt-2 break-keep text-title font-[var(--font-weight-signature)] text-[color:var(--color-text-primary)]">
           {t('emptyTitle')}
         </h2>
-        <p className="mt-2 break-keep text-body leading-6 text-[color:var(--color-text-secondary)]">
+        <p className="mt-2 break-keep text-body leading-title text-[color:var(--color-text-secondary)]">
           {t.rich('emptyBodyLine1', {
             code: (chunks) => (
               <code className="rounded-micro bg-[color:var(--color-overlay-2)] px-1 font-mono text-label">
@@ -209,7 +209,7 @@ export function OntologyStarterCta({ onScaffold, docCount, vaultPath = null }: P
           <p className="font-mono text-caption uppercase tracking-[var(--tracking-caps-12)] text-[color:var(--color-indigo-accent)]">
             {t('definitionLabel')}
           </p>
-          <p className="mt-1 break-keep text-label leading-5 text-[color:var(--color-text-secondary)]">
+          <p className="mt-1 break-keep text-label leading-body text-[color:var(--color-text-secondary)]">
             {t('definitionBody')}
           </p>
         </div>
@@ -222,7 +222,7 @@ export function OntologyStarterCta({ onScaffold, docCount, vaultPath = null }: P
               <p className="font-mono text-caption uppercase tracking-[var(--tracking-caps-12)] text-[color:var(--color-text-tertiary)]">
                 {card.label}
               </p>
-              <p className="mt-1 break-keep text-label leading-5 text-[color:var(--color-text-secondary)]">
+              <p className="mt-1 break-keep text-label leading-body text-[color:var(--color-text-secondary)]">
                 {card.body}
               </p>
             </div>
@@ -235,7 +235,7 @@ export function OntologyStarterCta({ onScaffold, docCount, vaultPath = null }: P
           {verificationSteps.map((step, index) => (
             <div
               key={step}
-              className="grid grid-cols-[18px_1fr] items-start gap-2 rounded-chip border border-[color:var(--color-indigo-a18)] bg-[color:var(--color-overlay-1)] px-3 py-2 text-label leading-5 text-[color:var(--color-text-secondary)]"
+              className="grid grid-cols-[18px_1fr] items-start gap-2 rounded-chip border border-[color:var(--color-indigo-a18)] bg-[color:var(--color-overlay-1)] px-3 py-2 text-label leading-body text-[color:var(--color-text-secondary)]"
             >
               <CheckCircle2
                 size={ICON_SIZE.md}

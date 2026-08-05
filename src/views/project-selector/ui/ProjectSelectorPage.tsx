@@ -181,7 +181,7 @@ export function ProjectSelectorPage() {
             {t("ctaNewProject")}
           </Link>
         </header>
-        <p className="mt-2 max-w-[720px] text-body leading-6 text-[color:var(--color-text-tertiary)]">
+        <p className="mt-2 max-w-[720px] text-body leading-title text-[color:var(--color-text-tertiary)]">
           {t("lede")}
         </p>
 
@@ -266,7 +266,7 @@ export function ProjectSelectorPage() {
           {/* 사람-우선: 첫 줄은 평문 인간 경로(위 「새 프로젝트」 버튼). 아래
               두 코드 칩은 개발자·에이전트용 선택 경로로 명시 강등한다 — 삭제
               아님(코드 문자열 자체는 보존). */}
-          <p className="mt-3 max-w-[640px] text-body leading-6 text-[color:var(--color-text-secondary)]">
+          <p className="mt-3 max-w-[640px] text-body leading-title text-[color:var(--color-text-secondary)]">
             {t("nextSlotHumanLead")}
           </p>
           <div className="mt-3 border-t border-[color:var(--color-divider)] pt-3">
@@ -344,7 +344,7 @@ function ProjectFullCard({ project, facts, domainRows, description, docPath, kin
             <span aria-hidden className="h-1.5 w-1.5 shrink-0 rounded-full bg-[color:var(--color-indigo-brand)]" />
             <span>{t("cardUpdatedPrefix")} {ago}</span>
           </div>
-          <p className="mt-1.5 text-body leading-6 text-[color:var(--color-text-tertiary)] line-clamp-2">
+          <p className="mt-1.5 text-body leading-title text-[color:var(--color-text-tertiary)] line-clamp-2">
             {description ?? t("cardDescriptionFallback")}
           </p>
         </div>

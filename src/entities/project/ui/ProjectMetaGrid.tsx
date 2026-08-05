@@ -38,11 +38,11 @@ export function ProjectMetaGrid({
           <dt className="font-mono text-caption uppercase tracking-[var(--tracking-caps-12)] text-[color:var(--color-text-quaternary)]">
             {item.label}
           </dt>
-          <dd className="mt-1.5 text-body-lg leading-6 tabular-nums font-[var(--font-weight-signature)] text-[color:var(--color-text-primary)]">
+          <dd className="mt-1.5 text-body-lg leading-title tabular-nums font-[var(--font-weight-signature)] text-[color:var(--color-text-primary)]">
             {item.value}
           </dd>
           {item.description && (
-            <p className="mt-1 text-label leading-5 tabular-nums text-[color:var(--color-text-quaternary)]">
+            <p className="mt-1 text-label leading-body tabular-nums text-[color:var(--color-text-quaternary)]">
               {item.description}
             </p>
           )}

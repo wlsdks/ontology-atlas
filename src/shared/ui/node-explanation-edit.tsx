@@ -79,8 +79,8 @@ export function NodeExplanationEdit({
         <p
           className={
             value
-              ? "mt-2 [overflow-wrap:anywhere] whitespace-pre-wrap text-body leading-5 text-[color:var(--color-text-secondary)]"
-              : "mt-2 text-body italic leading-5 text-[color:var(--color-text-quaternary)]"
+              ? "mt-2 [overflow-wrap:anywhere] whitespace-pre-wrap text-body leading-body text-[color:var(--color-text-secondary)]"
+              : "mt-2 text-body italic leading-body text-[color:var(--color-text-quaternary)]"
           }
         >
           {value || labels.empty}
@@ -131,7 +131,7 @@ export function NodeExplanationEdit({
         }}
         aria-label={labels.heading}
         data-testid="node-explanation-input"
-        className="mt-2 w-full resize-y rounded-chip border border-[color:var(--color-border-soft)] bg-[color:var(--color-overlay-1)] px-2 py-1.5 text-body leading-5 text-[color:var(--color-text-primary)] transition-colors focus-visible:border-[color:var(--color-indigo-a46)] focus-visible:outline-none"
+        className="mt-2 w-full resize-y rounded-chip border border-[color:var(--color-border-soft)] bg-[color:var(--color-overlay-1)] px-2 py-1.5 text-body leading-body text-[color:var(--color-text-primary)] transition-colors focus-visible:border-[color:var(--color-indigo-a46)] focus-visible:outline-none"
       />
     </div>
   );

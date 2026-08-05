@@ -288,7 +288,7 @@ export function DocsVaultAuditModal({
                     <p className="mt-0.5 truncate text-body font-[var(--font-weight-emphasis)] text-[color:var(--color-text-primary)]">
                       {cell.value}
                     </p>
-                    <p className="mt-0.5 text-label leading-4 text-[color:var(--color-text-tertiary)]">
+                    <p className="mt-0.5 text-label leading-label text-[color:var(--color-text-tertiary)]">
                       {cell.body}
                     </p>
                     {"proofMarkers" in cell ? (
@@ -362,7 +362,7 @@ export function DocsVaultAuditModal({
                         })
                       : tSkillParity("valueAgreed", { total: skillParityRows.length })}
                   </p>
-                  <p className="mt-0.5 text-label leading-4 text-[color:var(--color-text-tertiary)]">
+                  <p className="mt-0.5 text-label leading-label text-[color:var(--color-text-tertiary)]">
                     {tSkillParity("body")}
                   </p>
                   {/* **모든 객체가 받는 마크는 0비트다** — 일치한 것은 이름을

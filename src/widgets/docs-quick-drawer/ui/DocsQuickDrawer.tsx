@@ -271,7 +271,7 @@ function DocRow({
       {hasExcerpt && (
         // hover 시에만 렌더되는 본문 첫 단락 프리뷰. 터치 기기 (hover: none)
         // 에선 안 뜨게 hover: hover 미디어 쿼리로 게이팅.
-        <p className="hidden line-clamp-2 px-2 pb-1.5 text-label leading-4 text-[color:var(--color-text-quaternary)] [@media(hover:hover)]:group-hover:block">
+        <p className="hidden line-clamp-2 px-2 pb-1.5 text-label leading-label text-[color:var(--color-text-quaternary)] [@media(hover:hover)]:group-hover:block">
           {doc.excerpt}
         </p>
       )}

@@ -416,7 +416,7 @@ export function DocFrontmatterBlock({
             data-severity={issue.severity}
             // 공통 기하는 한 줄로 — 심각도로 갈리는 것은 **톤뿐**이다.
             // (분기마다 클래스를 통째로 복사하면 off-ramp 유틸리티 래칫이 오른다.)
-            className={`rounded-micro border px-2 py-1.5 text-label leading-4 ${
+            className={`rounded-micro border px-2 py-1.5 text-label leading-label ${
               issue.severity === "error"
                 ? "border-[color:var(--color-danger-a32)] bg-[color:var(--color-danger-a08)] text-[color:var(--color-status-danger)]"
                 : "border-[color:var(--color-amber-docs-a18)] bg-[color:var(--color-amber-source-a08)] text-[color:var(--color-amber-docs-a92)]"

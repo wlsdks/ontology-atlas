@@ -104,7 +104,7 @@ export function DesktopVaultWelcome({
                 ? t("desktopWelcome.dogfoodTitle")
                 : t("desktopWelcome.title")}
             </h2>
-            <p className="max-w-2xl text-body-lg leading-6 text-[color:var(--color-text-tertiary)]">
+            <p className="max-w-2xl text-body-lg leading-title text-[color:var(--color-text-tertiary)]">
               {showDogfoodHint
                 ? t("desktopWelcome.dogfoodBody")
                 : t("desktopWelcome.body")}
@@ -163,7 +163,7 @@ export function DesktopVaultWelcome({
                       <p className="mt-0.5 text-body font-[var(--font-weight-emphasis)] text-[color:var(--color-text-primary)]">
                         {item.value}
                       </p>
-                      <p className="mt-1.5 break-keep text-label leading-5 text-[color:var(--color-text-tertiary)]">
+                      <p className="mt-1.5 break-keep text-label leading-body text-[color:var(--color-text-tertiary)]">
                         {item.body}
                       </p>
                     </div>
@@ -198,7 +198,7 @@ export function DesktopVaultWelcome({
                       ? t("desktopWelcome.dogfoodOpenTitle")
                       : t("desktopWelcome.openTitle")}
                 </span>
-                <span className="mt-1 block text-body leading-5 text-[color:var(--color-text-tertiary)]">
+                <span className="mt-1 block text-body leading-body text-[color:var(--color-text-tertiary)]">
                   {showDogfoodHint
                     ? t("desktopWelcome.dogfoodOpenBody")
                     : t("desktopWelcome.openBody")}
@@ -220,7 +220,7 @@ export function DesktopVaultWelcome({
                   <span className="block text-body font-[var(--font-weight-emphasis)] text-[color:var(--color-text-primary)]">
                     {t("desktopWelcome.dogfoodDirectTitle")}
                   </span>
-                  <span className="mt-0.5 block text-label leading-5 text-[color:var(--color-text-tertiary)]">
+                  <span className="mt-0.5 block text-label leading-body text-[color:var(--color-text-tertiary)]">
                     {t("desktopWelcome.dogfoodDirectBody")}
                   </span>
                 </span>
@@ -240,7 +240,7 @@ export function DesktopVaultWelcome({
                 <span className="block text-body font-[var(--font-weight-emphasis)] text-[color:var(--color-text-primary)]">
                   {t("desktopWelcome.createTitle")}
                 </span>
-                <span className="mt-0.5 block text-label leading-5 text-[color:var(--color-text-tertiary)]">
+                <span className="mt-0.5 block text-label leading-body text-[color:var(--color-text-tertiary)]">
                   {t("desktopWelcome.createBody")}
                 </span>
               </span>
@@ -258,7 +258,7 @@ export function DesktopVaultWelcome({
                 <span className="block text-body font-[var(--font-weight-emphasis)] text-[color:var(--color-text-primary)]">
                   {t("desktopWelcome.sampleTitle")}
                 </span>
-                <span className="mt-0.5 block text-label leading-5 text-[color:var(--color-text-tertiary)]">
+                <span className="mt-0.5 block text-label leading-body text-[color:var(--color-text-tertiary)]">
                   {t("desktopWelcome.sampleBody")}
                 </span>
               </span>
@@ -298,7 +298,7 @@ export function DesktopVaultWelcome({
                 ))}
               </div>
             ) : (
-              <p className="border-t border-[color:var(--color-border-soft)] pt-2 text-body leading-5 text-[color:var(--color-text-tertiary)]">
+              <p className="border-t border-[color:var(--color-border-soft)] pt-2 text-body leading-body text-[color:var(--color-text-tertiary)]">
                 {t("desktopWelcome.recentEmpty")}
               </p>
             )}

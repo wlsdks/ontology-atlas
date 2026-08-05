@@ -3459,7 +3459,7 @@ export function HomePage() {
                   >
                     ontology-atlas
                   </span>
-                  <p className="mt-0.5 truncate text-label leading-4 text-[color:var(--color-text-tertiary)]">
+                  <p className="mt-0.5 truncate text-label leading-label text-[color:var(--color-text-tertiary)]">
                     {t('mobileTagline')}
                   </p>
                 </div>
@@ -4092,7 +4092,7 @@ export function HomePage() {
                         >
                           {t('createNode.unavailableHeading')}
                         </p>
-                        <p className="mt-2 text-body leading-5 text-[color:var(--color-text-secondary)]">
+                        <p className="mt-2 text-body leading-body text-[color:var(--color-text-secondary)]">
                           {t('createNode.unavailableBody')}
                         </p>
                       </div>

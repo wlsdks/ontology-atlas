@@ -383,17 +383,17 @@ export function LiveActivityBadge({
             <X size={ICON_SIZE.sm} aria-hidden />
           </IconButton>
         </div>
-        <p className="mt-2 break-keep text-label leading-4 text-[color:var(--color-text-secondary)]">
+        <p className="mt-2 break-keep text-label leading-label text-[color:var(--color-text-secondary)]">
           {labels.summaryBody}
         </p>
-        <p className="mt-2 break-keep text-label leading-4 text-[color:var(--color-text-primary)]">
+        <p className="mt-2 break-keep text-label leading-label text-[color:var(--color-text-primary)]">
           {trackingChanges
             ? active
               ? labels.summaryCount
               : labels.summaryZero
             : labels.summaryNotTracking}
         </p>
-        <p className="mt-2 break-keep text-caption leading-4 text-[color:var(--color-text-tertiary)]">
+        <p className="mt-2 break-keep text-caption leading-label text-[color:var(--color-text-tertiary)]">
           {labels.summaryAction}
         </p>
         <div
@@ -404,16 +404,16 @@ export function LiveActivityBadge({
             {labels.agentTitle}
           </p>
           {!agentActivityStatus?.exists ? (
-            <p className="mt-2 break-keep text-label leading-4 text-[color:var(--color-text-tertiary)]">
+            <p className="mt-2 break-keep text-label leading-label text-[color:var(--color-text-tertiary)]">
               {labels.agentMissing}
             </p>
           ) : !agentActivityStatus.valid ? (
-            <p className="mt-2 break-keep text-label leading-4 text-[color:var(--color-status-danger)]">
+            <p className="mt-2 break-keep text-label leading-label text-[color:var(--color-status-danger)]">
               {labels.agentInvalid}
               {agentActivityStatus.errorMessage ? ` · ${agentActivityStatus.errorMessage}` : ""}
             </p>
           ) : heartbeat ? (
-            <div className="mt-2 grid gap-2 text-label leading-4">
+            <div className="mt-2 grid gap-2 text-label leading-label">
               <p className={agentActivityStatus.stale ? "text-[color:var(--color-amber-docs-a95)]" : "text-[color:var(--color-text-primary)]"}>
                 {agentActivityStatus.stale ? labels.agentStale : labels.agentCurrent}
                 <span className="ml-1 font-mono uppercase tracking-[var(--tracking-caps-08)] text-[color:var(--color-indigo-accent)]">
@@ -422,7 +422,7 @@ export function LiveActivityBadge({
               </p>
               {agentActivityStatus.stale ? (
                 <div className="grid gap-1.5 rounded-chip border border-[color:var(--color-amber-docs-a28)] bg-[color:var(--color-amber-docs-a08)] px-2 py-1.5">
-                  <p className="break-keep text-caption leading-4 text-[color:var(--color-amber-docs-a95)]">
+                  <p className="break-keep text-caption leading-label text-[color:var(--color-amber-docs-a95)]">
                     {labels.agentStaleAudit}
                   </p>
                   {staleRefreshPacket ? (
@@ -456,7 +456,7 @@ export function LiveActivityBadge({
                 </p>
               ) : null}
               {updatedLabel ? (
-                <p className="break-keep text-caption leading-4 text-[color:var(--color-text-tertiary)]">
+                <p className="break-keep text-caption leading-label text-[color:var(--color-text-tertiary)]">
                   {updatedLabel}
                 </p>
               ) : null}
@@ -518,7 +518,7 @@ export function LiveActivityBadge({
                 </div>
               ) : null}
               {heartbeat.plan[0] ? (
-                <p className="break-keep text-caption leading-4 text-[color:var(--color-text-tertiary)]">
+                <p className="break-keep text-caption leading-label text-[color:var(--color-text-tertiary)]">
                   {labels.agentPlan} {heartbeat.plan[0]}
                 </p>
               ) : null}
@@ -549,7 +549,7 @@ export function LiveActivityBadge({
                     {evidenceTrail.map((item) => (
                       <p
                         key={item.label}
-                        className="break-all text-caption leading-4 text-[color:var(--color-text-tertiary)]"
+                        className="break-all text-caption leading-label text-[color:var(--color-text-tertiary)]"
                       >
                         <span className="font-mono uppercase tracking-[var(--tracking-caps-08)] text-[color:var(--color-text-secondary)]">
                           {item.label}
@@ -566,7 +566,7 @@ export function LiveActivityBadge({
                   — 얕게(안내 카피만)도 허용되는 조건이라 실제 파일 삭제는 하지
                   않는다(로컬 쓰기는 CLI/에이전트의 역할). */}
               <div className="grid gap-1 rounded-chip border border-[color:var(--color-border-soft)] bg-[color:var(--color-overlay-1)] px-2 py-1.5">
-                <p className="break-keep text-caption leading-4 text-[color:var(--color-text-tertiary)]">
+                <p className="break-keep text-caption leading-label text-[color:var(--color-text-tertiary)]">
                   {labels.clearSignalHint}
                 </p>
                 <button
