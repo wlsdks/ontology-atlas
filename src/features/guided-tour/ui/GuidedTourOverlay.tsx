@@ -172,17 +172,17 @@ export function GuidedTourOverlay({
         <>
           <div
             data-testid="guided-tour-blocker-strip"
-            className="pointer-events-auto fixed inset-x-0 top-0 z-[70]"
+            className="pointer-events-auto fixed inset-x-0 top-0 z-[var(--z-tour)]"
             style={{ height: Math.max(0, interactiveHole.top) }}
           />
           <div
             data-testid="guided-tour-blocker-strip"
-            className="pointer-events-auto fixed left-0 z-[70]"
+            className="pointer-events-auto fixed left-0 z-[var(--z-tour)]"
             style={{ top: interactiveHole.top, height: interactiveHole.height, width: Math.max(0, interactiveHole.left) }}
           />
           <div
             data-testid="guided-tour-blocker-strip"
-            className="pointer-events-auto fixed right-0 z-[70]"
+            className="pointer-events-auto fixed right-0 z-[var(--z-tour)]"
             style={{
               top: interactiveHole.top,
               height: interactiveHole.height,
@@ -191,7 +191,7 @@ export function GuidedTourOverlay({
           />
           <div
             data-testid="guided-tour-blocker-strip"
-            className="pointer-events-auto fixed inset-x-0 bottom-0 z-[70]"
+            className="pointer-events-auto fixed inset-x-0 bottom-0 z-[var(--z-tour)]"
             style={{ height: Math.max(0, viewport.height - (interactiveHole.top + interactiveHole.height)) }}
           />
         </>
@@ -201,14 +201,14 @@ export function GuidedTourOverlay({
           data-blocking="true"
           data-dismissable={onBlockedInteraction ? "true" : undefined}
           onClick={onBlockedInteraction}
-          className="pointer-events-auto fixed inset-0 z-[70]"
+          className="pointer-events-auto fixed inset-0 z-[var(--z-tour)]"
         />
       )}
 
       {step.anchor === null ? (
         <div
           data-testid="guided-tour-scrim"
-          className="fixed inset-0 z-[70] transition-opacity duration-[var(--topology-tour-transition-ms)] ease-out motion-reduce:transition-none"
+          className="fixed inset-0 z-[var(--z-tour)] transition-opacity duration-[var(--topology-tour-transition-ms)] ease-out motion-reduce:transition-none"
           style={{ background: "var(--topology-tour-scrim-surface)" }}
         />
       ) : anchorRect ? (
@@ -216,7 +216,7 @@ export function GuidedTourOverlay({
           data-testid="guided-tour-cutout"
           data-cutout-shape={step.anchor.type === "canvas-node" ? "circle" : "rect"}
           className={cn(
-            "pointer-events-none fixed z-[70] border",
+            "pointer-events-none fixed z-[var(--z-tour)] border",
             step.anchor.type === "canvas-node"
               ? // 캔버스 노드 원 — 매 프레임 worldToScreen 추종이 곧 모션이라
                 // CSS 전환 없음(카메라 스프링과 싸우지 않는다, spec §5).
@@ -250,7 +250,7 @@ export function GuidedTourOverlay({
         // 레이아웃 안정화 전 — 깜빡이는 반쪽 컷아웃 대신 전체 스크림.
         <div
           data-testid="guided-tour-scrim"
-          className="fixed inset-0 z-[70]"
+          className="fixed inset-0 z-[var(--z-tour)]"
           style={{ background: "var(--topology-tour-scrim-surface)" }}
         />
       )}

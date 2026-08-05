@@ -1713,7 +1713,7 @@ export function OntologyStudioPage() {
           onDelete={() => void runPracticeCleanup()}
           onKeep={keepPractice}
           // **먼저 닫고 나서 연다.** 설정 시트는 z-40 인데 이 마무리 백드롭은
-          // z-[60] 이고 Tab 트랩이 capture 단계라, 그냥 열면 시트가 이 모달
+          // z-[var(--z-dialog)] 이고 Tab 트랩이 capture 단계라, 그냥 열면 시트가 이 모달
           // **뒤에서** 열리고 포커스도 계속 회수된다 — 이 버튼이 그려지는
           // 유일한 자리에서 문이 잠긴 셈이었다(카운슬 「핸드오프」 실측).
           // 모달 위 모달은 modality 계약 위반이니 순차가 답이다.
