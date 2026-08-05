@@ -1496,16 +1496,50 @@ describe('탐지기 프로브 — 이 게이트가 실제로 무엇을 잡는가
     expect(/const BASELINE_HAND_WRITTEN_DEBT = \d+;/.test(source), '부채 기준선도 리터럴이어야 한다').toBe(true);
   });
 
+  /**
+   * ⚠️ **음성 예시를 토큰 이름으로 못박지 않는다** (2026-08-05 에 그것 때문에
+   * 한 번 빨개졌다).
+   *
+   * 종전 이 검사는 음성 예시로 `--control-h-md` 를 이름째 적어 뒀다 — *"32px
+   * 하나뿐이라 값 층이 그대로 낼 수 있다"*. 그런데 그날 `@media (pointer:
+   * coarse)` 에서 컨트롤 높이를 44px 로 올리는 정당한 변경이 들어오자 그 토큰이
+   * **양성으로 옮겨 갔고**, 검사는 헬퍼가 멀쩡한데도 실패했다.
+   *
+   * 그건 `documentation.md` 가 금지하는 모양이다 — 기댓값을 사람이 손으로 적으면
+   * 규격이 좋아지는 방향의 변경에서 검사가 터지고, 그러면 다음 사람은 검사 대신
+   * **규격 쪽을 되돌린다**. 그래서 음성 예시를 CSS 에서 **뽑아낸다**: 지금
+   * 실제로 「선언 하나 + 평범한 px」인 토큰을 골라 헬퍼가 그것을 거절하는지 본다.
+   */
   it('⑤ 토큰 검사가 아무거나 통과시키지 않는다 — 고정 단 토큰은 반드시 거절한다', () => {
     // 양성: 조건마다 재정의되거나 뷰포트 함수를 쓴다.
     expect(tokenIsBeyondFixedSteps(globalsCss, '--git-row-h')).toBe(true);
     expect(tokenIsBeyondFixedSteps(globalsCss, '--overlay-close-size')).toBe(true);
-    // 음성: `--control-h-md` 는 32px 하나뿐이라 값 층이 그대로 낼 수 있다.
+    // `--control-h-md` 는 2026-08-05 부터 coarse 에서 44 로 재선언된다 → 양성.
     expect(
       tokenIsBeyondFixedSteps(globalsCss, '--control-h-md'),
-      '고정 단 하나인 토큰까지 통과시키면 「크롬 토큰이라 못 옮긴다」가 무제한 면제가 된다',
-    ).toBe(false);
-    expect(tokenIsBeyondFixedSteps(globalsCss, '--radius-chip')).toBe(false);
+      'coarse 승격이 사라졌다면 그건 손가락 바닥이 무너진 것이다',
+    ).toBe(true);
+
+    // 음성: 「선언 하나 + 평범한 px」인 토큰을 CSS 에서 직접 골라 온다.
+    const counts = new Map<string, string[]>();
+    for (const m of globalsCss.matchAll(/(--[a-z0-9-]+)\s*:\s*([^;{}]+);/g)) {
+      const list = counts.get(m[1]) ?? [];
+      list.push(m[2].trim());
+      counts.set(m[1], list);
+    }
+    const plainPx = [...counts.entries()]
+      .filter(([, values]) => values.length === 1 && /^\d+(\.\d+)?px$/.test(values[0]))
+      .map(([token]) => token);
+    expect(
+      plainPx.length,
+      '평범한 px 토큰이 하나도 없다 — 이 프로브가 빈 집합 위에서 돌고 있다',
+    ).toBeGreaterThan(10);
+    for (const token of plainPx) {
+      expect(
+        tokenIsBeyondFixedSteps(globalsCss, token),
+        `${token} 은 px 하나뿐인데 통과했다 — 「크롬 토큰이라 못 옮긴다」가 무제한 면제가 된다`,
+      ).toBe(false);
+    }
     // 없는 토큰은 근거가 아니다.
     expect(tokenIsBeyondFixedSteps(globalsCss, '--not-a-real-token-xyz')).toBe(false);
   });

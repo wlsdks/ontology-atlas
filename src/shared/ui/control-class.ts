@@ -119,6 +119,36 @@ const DISABLED =
 const FOCUS =
   'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-[color:var(--color-indigo-a46)]';
 
+/**
+ * 손가락 바닥 표식 — `pointer: coarse` 에서만 컨트롤을 44px 로 밀어 올린다.
+ *
+ * ## 왜 값 층이 이걸 내나
+ *
+ * 이 파일은 높이를 **Tailwind 리터럴**(`min-h-6`=24 · `min-h-8`=32 ·
+ * `min-h-9`=36)로 낸다. `--control-h-*` 를 읽지 않는다. 그래서
+ * `@media (pointer: coarse)` 안에서 그 토큰들을 44 로 올려도 칩·행·pill 에는
+ * **한 곳도 안 닿았다** — 실측 44px 미만 38곳.
+ *
+ * 리터럴을 토큰 참조로 바꾸는 길은 막혀 있다: 리터럴 5종이 토큰 3단과 1:1 이
+ * 아니라 데스크톱 픽셀까지 움직인다. 그래서 표식 클래스로 **손가락에서만**
+ * 바닥을 깐다. 규칙은 `app/globals.css` 파일 끝, **캐스케이드 레이어 밖**에
+ * 있다 — 레이어 안에 있으면 `@layer utilities` 의 `min-h-8` 이 명시도와
+ * 무관하게 이긴다(실제로 밟았다).
+ *
+ * ## 왜 `touch-hit-expand` 가 아니라 실제 높이인가
+ *
+ * 두 처방을 다 재 보고 골랐다. 히트 영역만 넓히면 컨트롤이 서로 **겹칠 수
+ * 있다** — 44px 미만 38곳 중 **21곳이 이웃과 12px 미만**이었고(EN/KO 토글은
+ * 1px), 보이지 않는 영역이 겹치면 그건 오터치다. `min-height` 는 컨트롤이
+ * 실제로 커지면서 이웃을 **밀어내므로** 겹칠 수가 없다. 대가는 밀도(모바일
+ * `/docs` 헤더 세로 ~50px)이고, 그 대가를 치르기로 했다.
+ *
+ * 정사각 표면 계약이라 `min-h` 로는 모양이 안 서는 `icon` 과, 글줄을 찢게 되는
+ * `link`(WCAG 2.5.8 인라인 면제)는 이 표식을 받지 않는다.
+ * 게이트: `tests/contract/touch-floor-layer.contract.test.ts`.
+ */
+const TOUCH_FLOOR = 'atlas-touch-floor';
+
 const control = cva(`${DISABLED} ${FOCUS}`, {
   variants: {
     /**
@@ -134,7 +164,7 @@ const control = cva(`${DISABLED} ${FOCUS}`, {
        * 두 반경이 한 출력에 공존하지 않도록 base 에서 뺐다 — cn 의 radius
        * 그룹 병합(`RADIUS_RAMP_STEPS`)이 있어도 출력은 한 클래스가 정직하다.
        */
-      chip: 'inline-flex items-center gap-1.5 border transition-colors',
+      chip: `${TOUCH_FLOOR} inline-flex items-center gap-1.5 border transition-colors`,
       /**
        * 정사각 아이콘 컨트롤. 라벨이 없으므로 접근 이름이 **필수**다(36).
        *
@@ -164,9 +194,9 @@ const control = cva(`${DISABLED} ${FOCUS}`, {
        * 호버 배경이 각지게 나왔다(반경 6 → 0). 모양을 정의하면서 반경을 안 준 것이
        * 원인이고, 실측이 잡았다.
        */
-      row: 'flex w-full items-center rounded-chip text-left transition-colors',
+      row: `${TOUCH_FLOOR} flex w-full items-center rounded-chip text-left transition-colors`,
       /** 상태·수치를 나르는 완전 둥근 컨트롤(32). */
-      pill: 'inline-flex items-center rounded-full border transition-colors',
+      pill: `${TOUCH_FLOOR} inline-flex items-center rounded-full border transition-colors`,
       /** 카드 하나가 통째로 눌리는 큰 표면(18). */
       card: 'flex items-center rounded-card border transition-colors',
       /**

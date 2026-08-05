@@ -3118,10 +3118,26 @@ JSX 안에 44px 정사각 버튼이나 라벨 버튼을 인라인 클래스로 �
   `tests/contract/control-class.contract.test.ts` 「link 의 바닥은 24」 +
   `tests/e2e/touch-target-contract.spec.ts` fine-pointer 감사(24×24 ∨ 인라인
   면제 ∨ 24원 간격 예외 — WCAG 2.5.8 판정식 그대로).
-- **coarse 포인터 = 44.** 높이가 아니라 `.touch-hit-expand`(coarse 전용
-  의사요소, 레이아웃 이동 0)가 낸다. **부착 자격은 이웃 타깃 여유 ≥12px** —
-  밀집 행에 무조건 붙이면 DOM 순서상 뒤 원소의 ::after 가 앞 원소의 탭을
-  훔친다. 44 는 `--touch-target-min` 하나에서만 나온다(coarse 단일 출처).
+- **coarse 포인터 = 44 — 처방이 둘이고, 이웃 간격이 어느 쪽인지 정한다**
+  (2026-08-05 개정). 44 는 `--touch-target-min` 하나에서만 나온다(coarse 단일
+  출처).
+
+  | 처방 | 어디에 | 왜 그쪽인가 |
+  |---|---|---|
+  | **실제 높이** — `.atlas-touch-floor`(`min-height`) | 값 층의 `chip` · `row` · `pill` | 컨트롤이 커지며 이웃을 **밀어내므로** 겹칠 수가 없다 |
+  | **히트 확장** — `.touch-hit-expand`(coarse 전용 의사요소, 레이아웃 이동 0) | 값 층의 `icon`, 손으로 쓴 컨트롤 | 정사각 표면 계약이라 `min-h` 로는 모양이 안 서는 자리 |
+
+  **히트 확장의 부착 자격은 이웃 타깃 여유 ≥12px** — 밀집 행에 무조건 붙이면
+  DOM 순서상 뒤 원소의 ::after 가 앞 원소의 탭을 훔친다. 값 층을 실제 높이로
+  간 이유가 정확히 그것이다: 44px 미만 38곳 중 **21곳이 이웃과 12px 미만**
+  이었다(EN/KO 토글 1px · 탭 짝 2px). 대가는 밀도(모바일 `/docs` 헤더 세로
+  ~50px)이고 원장에 기록돼 있다(2026-08-05).
+
+  ⚠️ **바닥 규칙은 캐스케이드 레이어 밖에 산다.** `@layer base` 안에 두면
+  `@layer utilities` 의 `min-h-8` 이 이긴다 — **레이어 순서는 명시도를
+  이기므로** 클래스를 겹쳐 써도 못 이긴다. 실제로 밟았고, 규칙이 빌드에
+  들어갔는데 화면은 32px 그대로였다. 게이트:
+  `tests/contract/touch-floor-layer.contract.test.ts`.
 - **`inline` 축은 삭제됐다.** 「문장 속인가」는 정적으로 판정 불가라(형제
   글자의 출처 · used display · reflow 전부 여는 태그 밖) 런타임 계기가 맡는다.
 
