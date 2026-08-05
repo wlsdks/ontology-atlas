@@ -8,6 +8,7 @@ import {
   type KeyboardEvent as ReactKeyboardEvent,
 } from "react";
 import { ChevronDown, CornerUpRight, Search } from "lucide-react";
+import { ICON_SIZE } from "@/shared/ui/icon-size";
 import {
   filterTreeByQuery,
   type DomainCensusRow,
@@ -236,7 +237,7 @@ export function TopologyRealmLedger({
       {/* 영역 스코프 검색 — 트리 섹션에 속한 필터(별도 카드 아님). */}
       <div className="relative mb-2 shrink-0">
         <Search
-          size={11}
+          size={ICON_SIZE.sm}
           aria-hidden
           className="pointer-events-none absolute left-2.5 top-1/2 -translate-y-1/2 text-[color:var(--topology-v2-panel-text-quaternary)]"
         />
@@ -321,7 +322,7 @@ export function TopologyRealmLedger({
                 {labels.boundaryHeading}
               </span>
               <ChevronDown
-                size={12}
+                size={ICON_SIZE.sm}
                 aria-hidden="true"
                 className={`shrink-0 text-[color:var(--topology-v2-panel-text-quaternary)] transition-transform ${boundaryOpen ? "rotate-180" : ""}`}
               />
@@ -360,7 +361,7 @@ export function TopologyRealmLedger({
                           "shrink-0 text-[color:var(--color-indigo-accent)] opacity-0 transition-opacity focus-visible:opacity-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--color-indigo-a46)] focus-visible:ring-inset group-hover:opacity-100 motion-reduce:transition-none",
                       })}
                     >
-                      <CornerUpRight size={11} aria-hidden="true" />
+                      <CornerUpRight size={ICON_SIZE.sm} aria-hidden="true" />
                       {labels.boundaryJump}
                     </button>
                   </li>

@@ -7,6 +7,7 @@ import ReactMarkdown, { type Components } from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 import { useTranslations } from 'next-intl';
 import { ExternalLink, Hash } from 'lucide-react';
+import { ICON_SIZE } from '@/shared/ui/icon-size';
 import {
   buildDocsVaultHref,
   type VaultDoc,
@@ -245,7 +246,7 @@ export function DocsVaultViewer({
               {...rest}
             >
               {children}
-              <ExternalLink size={10} className="ml-1 inline align-baseline opacity-60" aria-hidden />
+              <ExternalLink size={ICON_SIZE.sm} className="ml-1 inline align-baseline opacity-60" aria-hidden />
             </a>
           );
         }
@@ -293,7 +294,7 @@ export function DocsVaultViewer({
               {...rest}
             >
               {children}
-              <ExternalLink size={10} className="ml-1 inline align-baseline opacity-60" aria-hidden />
+              <ExternalLink size={ICON_SIZE.sm} className="ml-1 inline align-baseline opacity-60" aria-hidden />
             </a>
           );
         }
@@ -799,7 +800,7 @@ function HeadingAnchor({
       }`}
       contentEditable={false}
     >
-      <Hash size={11} aria-hidden />
+      <Hash size={ICON_SIZE.sm} aria-hidden />
     </IconButton>
   );
 }

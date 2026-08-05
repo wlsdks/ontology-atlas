@@ -32,6 +32,7 @@ import {
   Trash2,
   X,
 } from 'lucide-react';
+import { ICON_SIZE } from '@/shared/ui/icon-size';
 import {
   OntologyStarterCta,
   VaultConflictError,
@@ -1541,7 +1542,7 @@ function DocsVaultContent() {
       {
         id: 'palette',
         label: t('commands.openPalette'),
-        icon: <Search size={12} aria-hidden />,
+        icon: <Search size={ICON_SIZE.sm} aria-hidden />,
         shortcut: '⌘K',
         onRun: () => setPaletteQuery(''),
       },
@@ -1555,49 +1556,49 @@ function DocsVaultContent() {
       {
         id: 'view-doc',
         label: t('commands.viewDoc'),
-        icon: <FileText size={12} aria-hidden />,
+        icon: <FileText size={ICON_SIZE.sm} aria-hidden />,
         visible: view !== 'doc',
         onRun: () => handleViewChange('doc'),
       },
       {
         id: 'source-server',
         label: t('commands.sourceServer'),
-        icon: <Package size={12} aria-hidden />,
+        icon: <Package size={ICON_SIZE.sm} aria-hidden />,
         visible: source !== 'server',
         onRun: () => handleSourceChange('server'),
       },
       {
         id: 'source-local',
         label: t('commands.sourceLocal'),
-        icon: <Save size={12} aria-hidden />,
+        icon: <Save size={ICON_SIZE.sm} aria-hidden />,
         visible: source !== 'local' && localVault.isSupported,
         onRun: () => handleSourceChange('local'),
       },
       {
         id: 'pin-toggle',
         label: pinnedSet.has(selectedSlug ?? '') ? t('commands.unpinDoc') : t('commands.pinDoc'),
-        icon: <Star size={12} aria-hidden />,
+        icon: <Star size={ICON_SIZE.sm} aria-hidden />,
         visible: selectedDocExists,
         onRun: () => selectedSlug && handleTogglePin(selectedSlug),
       },
       {
         id: 'copy-url',
         label: t('commands.copyUrl'),
-        icon: <Link2 size={12} aria-hidden />,
+        icon: <Link2 size={ICON_SIZE.sm} aria-hidden />,
         visible: selectedDocExists,
         onRun: () => selectedSlug && void handleCopyUrl(selectedSlug),
       },
       {
         id: 'copy-agent-verify-prompt',
         label: t('commands.copyAgentVerifyPrompt'),
-        icon: <Bot size={12} aria-hidden />,
+        icon: <Bot size={ICON_SIZE.sm} aria-hidden />,
         visible: source === 'local' && localVault.status === 'loaded',
         onRun: () => void handleCopyAgentVerifyPrompt(),
       },
       {
         id: 'print',
         label: t('commands.print'),
-        icon: <Printer size={12} aria-hidden />,
+        icon: <Printer size={ICON_SIZE.sm} aria-hidden />,
         visible: selectedDocExists && view === 'doc',
         onRun: () => {
           if (typeof window !== 'undefined') window.print();
@@ -1606,14 +1607,14 @@ function DocsVaultContent() {
       {
         id: 'edit',
         label: t('commands.edit'),
-        icon: <Pencil size={12} aria-hidden />,
+        icon: <Pencil size={ICON_SIZE.sm} aria-hidden />,
         visible: canEditCurrent && selectedDocExists && !editing,
         onRun: () => setEditing(true),
       },
       {
         id: 'new-doc',
         label: t('commands.newDoc'),
-        icon: <Plus size={12} aria-hidden />,
+        icon: <Plus size={ICON_SIZE.sm} aria-hidden />,
         visible: canEditCurrent,
         onRun: () => handleOpenNewDocDialog(),
       },
@@ -1634,14 +1635,14 @@ function DocsVaultContent() {
       {
         id: 'delete',
         label: t('commands.deleteDoc'),
-        icon: <Trash2 size={12} aria-hidden />,
+        icon: <Trash2 size={ICON_SIZE.sm} aria-hidden />,
         visible: canEditCurrent && selectedDocExists,
         onRun: () => void handleDeleteCurrent(),
       },
       {
         id: 'export-doc-html',
         label: t('commands.exportDocHtml'),
-        icon: <FileText size={12} aria-hidden />,
+        icon: <FileText size={ICON_SIZE.sm} aria-hidden />,
         visible: selectedDocExists && view === 'doc',
         onRun: () => handleExportDocHtml(),
       },
@@ -1873,7 +1874,7 @@ function DocsVaultContent() {
                   'flex-none justify-center hover:border-[color:var(--color-indigo-line-a35)] hover:text-[color:var(--color-text-primary)]',
               })}
             >
-              <ArrowLeft size={14} aria-hidden />
+              <ArrowLeft size={ICON_SIZE.md} aria-hidden />
               <span className="hidden sm:inline">{t('header.reviewBack')}</span>
             </Link>
           ) : null}
@@ -1884,11 +1885,11 @@ function DocsVaultContent() {
             aria-label={t('header.openTreeAriaLabel')}
             title={t('header.openTreeTitle')}
           >
-            <Menu size={14} aria-hidden />
+            <Menu size={ICON_SIZE.md} aria-hidden />
             <span className="hidden sm:inline">{t('header.openTreeTitle')}</span>
           </Chip>
           <DocsHeaderTile
-            icon={<PanelLeft size={16} aria-hidden />}
+            icon={<PanelLeft size={ICON_SIZE.lg} aria-hidden />}
             title={docListCollapsed ? t('header.docListExpand') : t('header.docListCollapse')}
             active={docListCollapsed}
             aria-expanded={!docListCollapsed}
@@ -1969,7 +1970,7 @@ function DocsVaultContent() {
               onClick={() => handleSourceChange('server')}
               className="hover:text-[color:var(--color-text-primary)]"
             >
-              <Package size={11} aria-hidden />
+              <Package size={ICON_SIZE.sm} aria-hidden />
               {t('advanced.sourceServer')}
             </Chip>
             <Tooltip
@@ -1993,7 +1994,7 @@ function DocsVaultContent() {
                 onClick={() => handleSourceChange('local')}
                 className="hover:text-[color:var(--color-text-primary)]"
               >
-                <HardDrive size={11} aria-hidden />
+                <HardDrive size={ICON_SIZE.sm} aria-hidden />
                 {t('advanced.sourceLocal')}
               </Chip>
             </Tooltip>
@@ -2010,7 +2011,7 @@ function DocsVaultContent() {
             ) : null}
           </div>
           <DocsHeaderTile
-            icon={<Search size={16} aria-hidden />}
+            icon={<Search size={ICON_SIZE.lg} aria-hidden />}
             title={t('header.paletteTooltip')}
             aria-label={t('header.paletteAriaLabel')}
             onClick={() => {
@@ -2020,7 +2021,7 @@ function DocsVaultContent() {
             }}
           />
           <DocsHeaderTile
-            icon={<ClipboardCheck size={16} aria-hidden />}
+            icon={<ClipboardCheck size={ICON_SIZE.lg} aria-hidden />}
             title={contractOpen ? t('header.contractToggleHide') : t('header.contractToggleShow')}
             active={contractOpen}
             aria-expanded={contractOpen}
@@ -2176,7 +2177,7 @@ function DocsVaultContent() {
                   onClick={() => setSourceTreeOpen(false)}
                   className="hover:bg-[color:var(--color-overlay-2)] hover:text-[color:var(--color-text-primary)]"
                 >
-                  <X size={14} aria-hidden />
+                  <X size={ICON_SIZE.md} aria-hidden />
                 </IconButton>
               </div>
               <div className="flex flex-1 flex-col overflow-auto">

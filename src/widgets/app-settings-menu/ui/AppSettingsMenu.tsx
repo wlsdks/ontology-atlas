@@ -19,6 +19,7 @@ import {
   Settings,
   X,
 } from 'lucide-react';
+import { ICON_SIZE } from '@/shared/ui/icon-size';
 import { useLocale, useTranslations } from 'next-intl';
 import { Link, useRouter } from '@/i18n/navigation';
 import { LocaleSwitch } from '@/features/locale-switch';
@@ -628,7 +629,7 @@ export function AppSettingsMenu({
               {/* 뒤로가기 버튼이 없다 — 갈 뒤가 없다. 모든 목적지가 LNB 에
                   상시 있으므로 제목은 언제나 이 시트의 이름 하나다. */}
               <Settings
-                size={15}
+                size={ICON_SIZE.md}
                 aria-hidden
                 className="shrink-0 text-[color:var(--color-indigo-accent)]"
               />
@@ -649,7 +650,7 @@ export function AppSettingsMenu({
               onClick={() => closePanel()}
               className="hover:text-[color:var(--color-text-primary)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--color-indigo-a46)] focus-visible:ring-inset"
             >
-              <X size={13} aria-hidden />
+              <X size={ICON_SIZE.md} aria-hidden />
             </IconButton>
           </div>
 
@@ -1004,7 +1005,7 @@ export function AppSettingsMenu({
                           className="min-w-0 flex-1 hover:bg-[color:var(--color-overlay-2)]"
                         >
                           <HardDrive
-                            size={12}
+                            size={ICON_SIZE.sm}
                             aria-hidden
                             className="shrink-0 text-[color:var(--color-indigo-accent)]"
                           />
@@ -1026,7 +1027,7 @@ export function AppSettingsMenu({
                           label={t('workspaceRecentForgetAria', { name: record.name })}
                           className="hover:bg-[color:var(--color-danger-a10)] hover:text-[color:var(--color-status-danger)]"
                         >
-                          <X size={12} aria-hidden />
+                          <X size={ICON_SIZE.sm} aria-hidden />
                         </IconButton>
                       </div>
                     ))
@@ -1099,9 +1100,9 @@ export function AppSettingsMenu({
                           className={`mt-2 w-full justify-center font-mono ${INDIGO_ACTION_CHIP} focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--color-indigo-a46)] focus-visible:ring-inset`}
                         >
                           {copyState === 'copied' ? (
-                            <Check size={12} aria-hidden />
+                            <Check size={ICON_SIZE.sm} aria-hidden />
                           ) : (
-                            <Copy size={12} aria-hidden />
+                            <Copy size={ICON_SIZE.sm} aria-hidden />
                           )}
                           {copyState === 'copied' ? t('mcpProofCopied') : t('mcpProofCopy')}
                         </Chip>

@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { PackagePlus } from "lucide-react";
+import { ICON_SIZE } from "@/shared/ui/icon-size";
 import { useTranslations } from "next-intl";
 import { useLocalVault } from "@/features/docs-vault-local";
 import type { OntologyTreeNode } from "@/shared/lib/ontology-tree";
@@ -153,7 +154,7 @@ export function RealmBlockExportAction({
             "shrink-0 enabled:hover:text-[color:var(--topology-v2-panel-text-primary)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--color-indigo-a46)] focus-visible:ring-inset",
         })}
       >
-        <PackagePlus size={11} aria-hidden="true" />
+        <PackagePlus size={ICON_SIZE.sm} aria-hidden="true" />
         {phase === "exporting" ? t("exportBusy") : t("exportAction")}
       </button>
     </span>

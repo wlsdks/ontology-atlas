@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { Plus, X } from "lucide-react";
+import { ICON_SIZE } from "@/shared/ui/icon-size";
 import { Select, controlClass } from "@/shared/ui";
 
 /**
@@ -158,7 +159,7 @@ export function CreateNodeForm({
                 "hover:text-[color:var(--color-text-primary)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--color-indigo-a46)] focus-visible:ring-inset",
             })}
           >
-            <X size={12} aria-hidden />
+            <X size={ICON_SIZE.sm} aria-hidden />
           </button>
         ) : null}
       </div>

@@ -3,6 +3,7 @@
 import { useCallback, useState } from 'react';
 import { useTranslations } from 'next-intl';
 import { Check, CircleAlert, ClipboardCopy, FileText, Loader2 } from 'lucide-react';
+import { ICON_SIZE } from '@/shared/ui/icon-size';
 
 import type { McpServerLaunch } from '@/shared/config';
 import { buildAgentAnalyzePrompt } from '@/shared/config/agent-prompts';
@@ -215,7 +216,7 @@ export function AgentConnectAction({ vaultPath, launch, onWritten, clientId }: A
           data-testid="agent-connect-verifying"
           className="inline-flex items-center gap-1.5 text-label text-[color:var(--color-text-tertiary)]"
         >
-          <Loader2 size={12} aria-hidden className="animate-spin" />
+          <Loader2 size={ICON_SIZE.sm} aria-hidden className="animate-spin" />
           {t('connectVerifying')}
         </p>
       ) : null}
@@ -262,9 +263,9 @@ export function AgentConnectAction({ vaultPath, launch, onWritten, clientId }: A
             })}
           >
             {analyzeCopy === 'failed' ? (
-              <CircleAlert size={11} aria-hidden />
+              <CircleAlert size={ICON_SIZE.sm} aria-hidden />
             ) : (
-              <ClipboardCopy size={11} aria-hidden />
+              <ClipboardCopy size={ICON_SIZE.sm} aria-hidden />
             )}
             {analyzeCopy === 'copied'
               ? t('connectVerifiedCopied')

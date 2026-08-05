@@ -16,6 +16,7 @@ import {
   Waypoints,
   X,
 } from "lucide-react";
+import { ICON_SIZE } from "@/shared/ui/icon-size";
 import { useLocale, useTranslations } from "next-intl";
 import type { VaultDoc, VaultManifest } from "@/entities/docs-vault";
 import { selectRecentVaultDocs } from "@/shared/lib/ontology-tree";
@@ -167,7 +168,7 @@ function OrderOption({
       className="hover:bg-[color:var(--color-overlay-2)] hover:text-[color:var(--color-text-primary)]"
     >
       <Check
-        size={11}
+        size={ICON_SIZE.sm}
         aria-hidden
         className={`flex-none ${checked ? "opacity-100" : "opacity-0"}`}
       />
@@ -425,7 +426,7 @@ export function DocsSidebarBody({
       </p>
       {searchExpanded ? (
         <label className="mx-3 mt-1.5 flex h-8 flex-none items-center gap-2 rounded-chip border border-[color:var(--color-overlay-2)] bg-[color:var(--color-overlay-1)] px-2 text-[color:var(--color-text-quaternary)] focus-within:border-[color:var(--color-indigo-line-a45)] focus-within:text-[color:var(--color-text-secondary)]">
-          <Search size={12} aria-hidden />
+          <Search size={ICON_SIZE.sm} aria-hidden />
           <span className="sr-only">{t("searchLabel")}</span>
           <input
             value={treeQuery}
@@ -444,7 +445,7 @@ export function DocsSidebarBody({
               onClick={() => setTreeQuery("")}
               className="hover:text-[color:var(--color-text-primary)]"
             >
-              <X size={11} aria-hidden />
+              <X size={ICON_SIZE.sm} aria-hidden />
             </IconButton>
           ) : null}
         </label>
@@ -485,12 +486,12 @@ export function DocsSidebarBody({
               data-testid="docs-sidebar-recently-changed-toggle"
               className="flex w-full items-center gap-1.5 px-3 pb-1.5 pt-3 text-left transition-colors hover:text-[color:var(--color-text-secondary)]"
             >
-              <Clock size={10} className="flex-none text-[color:var(--color-text-quaternary)]" aria-hidden />
+              <Clock size={ICON_SIZE.sm} className="flex-none text-[color:var(--color-text-quaternary)]" aria-hidden />
               <span className="flex-1 font-mono text-caption uppercase tracking-[var(--tracking-caps-16)] text-[color:var(--color-text-quaternary)]">
                 {t("recentlyChangedHeader", { count: recentlyChangedDocs.length })}
               </span>
               <ChevronDown
-                size={11}
+                size={ICON_SIZE.sm}
                 aria-hidden
                 className={`flex-none text-[color:var(--color-text-quaternary)] transition-transform ${recentlyChangedOpen ? "rotate-180" : ""}`}
               />
@@ -512,7 +513,7 @@ export function DocsSidebarBody({
                             onClick={() => onSelect(doc.slug)}
                             className="group relative hover:bg-[color:var(--color-overlay-1)] hover:text-[color:var(--color-text-primary)]"
                           >
-                            <FileText size={11} className="flex-none opacity-60" aria-hidden />
+                            <FileText size={ICON_SIZE.sm} className="flex-none opacity-60" aria-hidden />
                             {/* 트리·검색·지도와 같은 이름 규칙. */}
                             <span className="min-w-0 flex-1 truncate">
                               {resolveLocaleDisplayName(doc.frontmatter, locale, doc.title)}
@@ -545,7 +546,7 @@ export function DocsSidebarBody({
             className="flex-none border-b border-[color:var(--color-overlay-2)] pb-1"
           >
             <div className="flex items-center gap-1.5 px-3 pb-1.5 pt-3" title={tAgentFiles("headerHint")}>
-              <Bot size={10} className="flex-none text-[color:var(--color-text-quaternary)]" aria-hidden />
+              <Bot size={ICON_SIZE.sm} className="flex-none text-[color:var(--color-text-quaternary)]" aria-hidden />
               <span className="flex-1 font-mono text-caption uppercase tracking-[var(--tracking-caps-16)] text-[color:var(--color-text-quaternary)]">
                 {tAgentFiles("header")}
               </span>
@@ -573,7 +574,7 @@ export function DocsSidebarBody({
                       aria-current={active ? "true" : undefined}
                       className="group relative hover:bg-[color:var(--color-overlay-1)] hover:text-[color:var(--color-text-primary)]"
                     >
-                      <FileText size={11} className="flex-none opacity-60" aria-hidden />
+                      <FileText size={ICON_SIZE.sm} className="flex-none opacity-60" aria-hidden />
                       <span className="min-w-0 flex-1 truncate">{record.path}</span>
                       <span className="flex-none font-mono text-caption text-[color:var(--color-text-quaternary)]">
                         {record.tools.map((tool) => AGENT_TOOL_LABELS[tool] ?? tool).join(" · ")}
@@ -611,7 +612,7 @@ export function DocsSidebarBody({
                         className="min-w-0 flex-1 pr-7 hover:bg-[color:var(--color-overlay-1)] hover:text-[color:var(--color-text-primary)]"
                       >
                         <Star
-                          size={11}
+                          size={ICON_SIZE.sm}
                           className="flex-none text-[color:var(--color-amber-docs-a82)]"
                           aria-hidden
                           fill="currentColor"
@@ -631,7 +632,7 @@ export function DocsSidebarBody({
                           }}
                           className="absolute right-1 top-1/2 -translate-y-1/2 opacity-0 transition-opacity hover:text-[color:var(--color-text-primary)] group-hover:opacity-100"
                         >
-                          <PinOff size={10} aria-hidden />
+                          <PinOff size={ICON_SIZE.sm} aria-hidden />
                         </IconButton>
                       </Tooltip>
                     </div>
@@ -673,7 +674,7 @@ export function DocsSidebarBody({
                       className="group relative hover:bg-[color:var(--color-overlay-1)] hover:text-[color:var(--color-text-primary)]"
                     >
                       <FileText
-                        size={11}
+                        size={ICON_SIZE.sm}
                         className="flex-none opacity-60"
                         aria-hidden
                       />
@@ -696,10 +697,10 @@ export function DocsSidebarBody({
             open={activeTag !== null ? true : undefined}
           >
             <summary className="flex list-none items-center gap-2 px-3 py-2 text-label text-[color:var(--color-text-quaternary)] transition-colors hover:bg-[color:var(--color-overlay-1)] hover:text-[color:var(--color-text-secondary)]">
-              <Hash size={11} aria-hidden />
+              <Hash size={ICON_SIZE.sm} aria-hidden />
               <span className="font-[var(--font-weight-signature)]">{t("tagsHeader", { count: tagEntries.length })}</span>
               <ChevronDown
-                size={11}
+                size={ICON_SIZE.sm}
                 aria-hidden
                 className="ml-auto transition-transform group-open:rotate-180"
               />
@@ -721,7 +722,7 @@ export function DocsSidebarBody({
                     })}
                     title={t("tagTitle", { tag, count: slugs.length })}
                   >
-                    {active ? <X size={9} aria-hidden /> : null}
+                    {active ? <X size={ICON_SIZE.sm} aria-hidden /> : null}
                     {tag}
                     <span className="opacity-60">{slugs.length}</span>
                   </button>

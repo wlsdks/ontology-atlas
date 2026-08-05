@@ -10,6 +10,7 @@ import {
   ClipboardCopy,
   Terminal,
 } from 'lucide-react';
+import { ICON_SIZE } from '@/shared/ui/icon-size';
 import { useTranslations } from 'next-intl';
 import { Link } from '@/i18n/navigation';
 import {
@@ -952,7 +953,7 @@ export function VaultAgentSetupPanel({
           })}
         >
           <ChevronDown
-            size={12}
+            size={ICON_SIZE.sm}
             aria-hidden
             className="transition-transform"
             style={{ transform: advancedOpen ? 'rotate(0deg)' : 'rotate(-90deg)' }}
@@ -1005,13 +1006,13 @@ export function VaultAgentSetupPanel({
                 >
                   {ready ? (
                     <CheckCircle2
-                      size={12}
+                      size={ICON_SIZE.sm}
                       aria-hidden
                       className="mt-0.5 text-[color:var(--color-success-text-a90)]"
                     />
                   ) : (
                     <CircleAlert
-                      size={12}
+                      size={ICON_SIZE.sm}
                       aria-hidden
                       className="mt-0.5 text-[color:var(--color-amber-source-text-a95)]"
                     />
@@ -1050,7 +1051,7 @@ export function VaultAgentSetupPanel({
               tone="accentOnTint"
               className={`self-start ${ACCENT_ACTION_CHIP}`}
             >
-              <Bot size={12} aria-hidden />
+              <Bot size={ICON_SIZE.sm} aria-hidden />
               {agentSetupBusy ? t('agentSetup.repairing') : t('agentSetup.repair')}
             </Chip>
           ) : null}
@@ -1087,13 +1088,13 @@ export function VaultAgentSetupPanel({
           >
             {validationGateTone === 'ready' ? (
               <CheckCircle2
-                size={12}
+                size={ICON_SIZE.sm}
                 aria-hidden
                 className="mt-0.5 text-[color:var(--color-success-text-a90)]"
               />
             ) : (
               <CircleAlert
-                size={12}
+                size={ICON_SIZE.sm}
                 aria-hidden
                 className={`mt-0.5 ${
                   validationGateTone === 'blocked'
@@ -1136,25 +1137,25 @@ export function VaultAgentSetupPanel({
               >
                 {row.state === 'ready' ? (
                   <CheckCircle2
-                    size={12}
+                    size={ICON_SIZE.sm}
                     aria-hidden
                     className="mt-0.5 text-[color:var(--color-success-text-a90)]"
                   />
                 ) : row.state === 'blocked' ? (
                   <CircleAlert
-                    size={12}
+                    size={ICON_SIZE.sm}
                     aria-hidden
                     className="mt-0.5 text-[color:var(--color-status-danger)]"
                   />
                 ) : row.state === 'manual' ? (
                   <Terminal
-                    size={12}
+                    size={ICON_SIZE.sm}
                     aria-hidden
                     className="mt-0.5 text-[color:var(--color-success-text-a90)]"
                   />
                 ) : (
                   <CircleAlert
-                    size={12}
+                    size={ICON_SIZE.sm}
                     aria-hidden
                     className="mt-0.5 text-[color:var(--color-amber-source-text-a95)]"
                   />
@@ -1249,7 +1250,7 @@ export function VaultAgentSetupPanel({
               tone="accentOnTint"
               className={ACCENT_ACTION_CHIP}
             >
-              <BookOpen size={12} aria-hidden />
+              <BookOpen size={ICON_SIZE.sm} aria-hidden />
               {t('agentSetup.openWorkflowGuide')}
             </Chip>
             <Chip
@@ -1259,7 +1260,7 @@ export function VaultAgentSetupPanel({
               tone="secondary"
               className={NEUTRAL_COPY_CHIP}
             >
-              <ClipboardCopy size={12} aria-hidden />
+              <ClipboardCopy size={ICON_SIZE.sm} aria-hidden />
               {copyPacketLabel}
             </Chip>
             <Chip
@@ -1269,7 +1270,7 @@ export function VaultAgentSetupPanel({
               tone="secondary"
               className={NEUTRAL_COPY_CHIP}
             >
-              <ClipboardCopy size={12} aria-hidden />
+              <ClipboardCopy size={ICON_SIZE.sm} aria-hidden />
               {copyPromptLabel}
             </Chip>
           </div>
@@ -1333,7 +1334,7 @@ export function VaultAgentSetupPanel({
               tone="secondary"
               className={NEUTRAL_COPY_CHIP}
             >
-              <Terminal size={12} aria-hidden />
+              <Terminal size={ICON_SIZE.sm} aria-hidden />
               {copyJsonGateLabel}
             </Chip>
             <Chip
@@ -1343,7 +1344,7 @@ export function VaultAgentSetupPanel({
               tone="secondary"
               className={NEUTRAL_COPY_CHIP}
             >
-              <Terminal size={12} aria-hidden />
+              <Terminal size={ICON_SIZE.sm} aria-hidden />
               {copyCliLabel}
             </Chip>
             <Chip
@@ -1353,7 +1354,7 @@ export function VaultAgentSetupPanel({
               tone="secondary"
               className={NEUTRAL_COPY_CHIP}
             >
-              <Terminal size={12} aria-hidden />
+              <Terminal size={ICON_SIZE.sm} aria-hidden />
               {copyFirstContactProofLabel}
             </Chip>
           </div>
@@ -1371,7 +1372,7 @@ export function VaultAgentSetupPanel({
               tone="secondary"
               className={`mt-2 ${NEUTRAL_COPY_CHIP}`}
             >
-              <ClipboardCopy size={12} aria-hidden />
+              <ClipboardCopy size={ICON_SIZE.sm} aria-hidden />
               {copyPostChangeSyncLabel}
             </Chip>
           </div>
@@ -1403,7 +1404,7 @@ export function VaultAgentSetupPanel({
               tone="secondary"
               className={NEUTRAL_COPY_CHIP}
             >
-              <Terminal size={12} aria-hidden />
+              <Terminal size={ICON_SIZE.sm} aria-hidden />
               {copySetupCheckCliLabel}
             </Chip>
             <Chip
@@ -1413,7 +1414,7 @@ export function VaultAgentSetupPanel({
               tone="secondary"
               className={NEUTRAL_COPY_CHIP}
             >
-              <Terminal size={12} aria-hidden />
+              <Terminal size={ICON_SIZE.sm} aria-hidden />
               {copySetupCliLabel}
             </Chip>
             <Chip
@@ -1423,7 +1424,7 @@ export function VaultAgentSetupPanel({
               tone="secondary"
               className={NEUTRAL_COPY_CHIP}
             >
-              <ClipboardCopy size={12} aria-hidden />
+              <ClipboardCopy size={ICON_SIZE.sm} aria-hidden />
               {copyTemplateLabel}
             </Chip>
             <Chip
@@ -1433,7 +1434,7 @@ export function VaultAgentSetupPanel({
               tone="secondary"
               className={NEUTRAL_COPY_CHIP}
             >
-              <ClipboardCopy size={12} aria-hidden />
+              <ClipboardCopy size={ICON_SIZE.sm} aria-hidden />
               {copyCodexTemplateLabel}
             </Chip>
             <Chip
@@ -1443,7 +1444,7 @@ export function VaultAgentSetupPanel({
               tone="secondary"
               className={NEUTRAL_COPY_CHIP}
             >
-              <Terminal size={12} aria-hidden />
+              <Terminal size={ICON_SIZE.sm} aria-hidden />
               {copyCodexCliLabel}
             </Chip>
           </div>

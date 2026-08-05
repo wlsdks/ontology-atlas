@@ -3,6 +3,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { AnimatePresence, motion } from "framer-motion";
 import { PackageOpen, X } from "lucide-react";
+import { ICON_SIZE } from "@/shared/ui/icon-size";
 import { useTranslations } from "next-intl";
 import { MOTION } from "@/shared/motion";
 import { useBodyScrollLock } from "@/shared/lib/use-body-scroll-lock";
@@ -206,7 +207,7 @@ export function BlockImportModule() {
         })}
       >
         <PackageOpen
-          size={11}
+          size={ICON_SIZE.sm}
           aria-hidden="true"
           className="shrink-0 text-[color:var(--topology-v2-panel-text-quaternary)]"
         />
@@ -271,7 +272,7 @@ export function BlockImportModule() {
                   data-testid="block-import-close"
                   className="hover:bg-[color:var(--color-overlay-2)] hover:text-[color:var(--color-text-primary)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--color-border-strong)]"
                 >
-                  <X size={14} />
+                  <X size={ICON_SIZE.md} />
                 </IconButton>
               </header>
 

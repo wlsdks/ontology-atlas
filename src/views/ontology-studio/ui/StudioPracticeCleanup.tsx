@@ -3,6 +3,7 @@
 import { useEffect, useRef } from "react";
 import { motion, useReducedMotion } from "framer-motion";
 import { FileText, Sparkles } from "lucide-react";
+import { ICON_SIZE } from "@/shared/ui/icon-size";
 import { OVERLAY_SPRING, OVERLAY_SPRING_REDUCED, SCRIM_FADE, SCRIM_FADE_REDUCED } from "@/shared/motion";
 import type { PracticeCleanupPlan } from "../lib/studio-practice-guide";
 import { controlClass } from "@/shared/ui";
@@ -167,7 +168,7 @@ export function StudioPracticeCleanup({
                 data-testid="studio-practice-delete-row"
                 className="flex items-center gap-2 rounded-card border border-[color:var(--color-divider)] bg-[color:var(--color-panel)] px-3 py-2"
               >
-                <FileText size={14} aria-hidden className="flex-none text-[color:var(--color-text-tertiary)]" />
+                <FileText size={ICON_SIZE.md} aria-hidden className="flex-none text-[color:var(--color-text-tertiary)]" />
                 <span
                   className="min-w-0 flex-1 truncate text-body tracking-body text-[color:var(--color-text-primary)]"
                   title={`${slug}.md`}
@@ -181,7 +182,7 @@ export function StudioPracticeCleanup({
                 data-testid="studio-practice-detach-row"
                 className="flex items-center gap-2 rounded-card border border-[color:var(--color-divider)] bg-[color:var(--color-panel)] px-3 py-2"
               >
-                <FileText size={14} aria-hidden className="flex-none text-[color:var(--color-text-tertiary)]" />
+                <FileText size={ICON_SIZE.md} aria-hidden className="flex-none text-[color:var(--color-text-tertiary)]" />
                 <span
                   className="min-w-0 flex-1 truncate text-body tracking-body text-[color:var(--color-text-primary)]"
                   title={`${plan.detach.slug}.md`}
@@ -227,7 +228,7 @@ export function StudioPracticeCleanup({
 
         {/* 해 본 직후에만 성립하는 문장. 첫 화면에 있으면 광고문이다. */}
         <div className="flex items-start gap-2 border-t border-[color:var(--color-divider)] bg-[color:var(--color-panel)] px-5 py-3">
-          <Sparkles size={14} aria-hidden className="mt-0.5 flex-none text-[color:var(--color-text-tertiary)]" />
+          <Sparkles size={ICON_SIZE.md} aria-hidden className="mt-0.5 flex-none text-[color:var(--color-text-tertiary)]" />
           <p className="min-w-0 flex-1 text-body leading-body text-[color:var(--color-text-tertiary)] [word-break:keep-all]">
             {labels.agentHint}
             {onAgentAction && labels.agentAction ? (

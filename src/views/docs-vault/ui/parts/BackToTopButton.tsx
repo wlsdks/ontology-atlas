@@ -1,4 +1,5 @@
 import { ArrowUp } from "lucide-react";
+import { ICON_SIZE } from "@/shared/ui/icon-size";
 import { useTranslations } from "next-intl";
 
 /**
@@ -37,7 +38,7 @@ export function BackToTopButton({
       }`}
     >
       <ArrowUp
-        size={14}
+        size={ICON_SIZE.md}
         className="text-[color:var(--color-indigo-accent)]"
         aria-hidden
       />

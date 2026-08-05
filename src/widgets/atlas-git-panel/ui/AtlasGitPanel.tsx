@@ -18,6 +18,7 @@ import {
   RefreshCw,
   ShieldCheck,
 } from "lucide-react";
+import { ICON_SIZE } from "@/shared/ui/icon-size";
 import { Link } from "@/i18n/navigation";
 import { copyText } from "@/shared/lib/copy-text";
 import {
@@ -821,7 +822,7 @@ function PageHeader({
             행간은 아래 단 것이 그대로 남아, 아무도 고른 적 없는 비율이 만들어진다
             — 여기가 그랬다(23px 글자에 title 짝인 24px 행간, 1.04). */}
         <h1 className="flex items-center gap-2 text-title font-[var(--font-weight-strong)] tracking-[var(--tracking-title)] text-[color:var(--color-text-primary)] sm:text-display">
-          <HistoryIcon size={18} aria-hidden className="text-[color:var(--color-indigo-text-soft)]" />
+          <HistoryIcon size={ICON_SIZE.lg} aria-hidden className="text-[color:var(--color-indigo-text-soft)]" />
           {t("title")}
         </h1>
         {/* 구 `subtitle`("vault 의 변경을 git 스냅샷으로 남깁니다")은 12글자에
@@ -830,7 +831,7 @@ function PageHeader({
             아니라 "내 폴더 밖은 안 건드린다" 다. */}
         {showScope ? (
           <p className="flex items-center gap-1.5 text-label leading-relaxed text-[color:var(--color-text-quaternary)]">
-            <ShieldCheck size={11} aria-hidden className="shrink-0" />
+            <ShieldCheck size={ICON_SIZE.sm} aria-hidden className="shrink-0" />
             {t("scopeNotice")}
           </p>
         ) : null}
@@ -903,7 +904,7 @@ function ConnectLadder({ t, current }: { t: Translator; current: SetupStep }) {
                     : "border-[color:var(--color-border-soft)] text-[color:var(--color-text-quaternary)]",
               )}
             >
-              {done ? <Check size={11} /> : step}
+              {done ? <Check size={ICON_SIZE.sm} /> : step}
             </span>
             <span className="flex min-w-0 flex-col">
               <span
@@ -1163,7 +1164,7 @@ function SetupFrame({
         {children}
         {note ? (
           <p className="flex items-start gap-2 text-label leading-relaxed text-[color:var(--color-text-quaternary)]">
-            <ShieldCheck size={12} aria-hidden className="mt-0.5 shrink-0" />
+            <ShieldCheck size={ICON_SIZE.sm} aria-hidden className="mt-0.5 shrink-0" />
             <span>{note}</span>
           </p>
         ) : null}
@@ -1300,9 +1301,9 @@ function WebSetup({
             })}
           >
             {commandCopyState === "copied" ? (
-              <Check size={11} aria-hidden />
+              <Check size={ICON_SIZE.sm} aria-hidden />
             ) : (
-              <Copy size={11} aria-hidden />
+              <Copy size={ICON_SIZE.sm} aria-hidden />
             )}
             {commandCopyState === "copied"
               ? t("webCopied")
@@ -1921,7 +1922,7 @@ function ChangeList({
               className="flex h-[var(--git-row-h)] shrink-0 items-center gap-1 rounded-[var(--radius-chip)] pr-2 pl-0.5 text-label text-[color:var(--color-text-tertiary)] transition-colors hover:text-[color:var(--color-text-secondary)]"
             >
               <ChevronRight
-                size={11}
+                size={ICON_SIZE.sm}
                 aria-hidden
                 className={cn("shrink-0 transition-transform", othersOpen && "rotate-90")}
               />
@@ -2492,7 +2493,7 @@ function ActionDock({
       */}
       {upstream ? (
         <p className="flex items-center gap-1.5 text-caption leading-relaxed text-[color:var(--color-text-quaternary)]">
-          <ShieldCheck size={11} aria-hidden className="shrink-0" />
+          <ShieldCheck size={ICON_SIZE.sm} aria-hidden className="shrink-0" />
           {t("scopeNotice")}
         </p>
       ) : (
@@ -2500,7 +2501,7 @@ function ActionDock({
           data-testid="atlas-git-dock-no-remote"
           className="flex flex-wrap items-center gap-x-2 gap-y-1 text-caption leading-relaxed text-[color:var(--color-text-quaternary)]"
         >
-          <ShieldCheck size={11} aria-hidden className="shrink-0" />
+          <ShieldCheck size={ICON_SIZE.sm} aria-hidden className="shrink-0" />
           <span>{t("dockNoRemote")}</span>
           <button
             type="button"

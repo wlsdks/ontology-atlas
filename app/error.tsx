@@ -3,6 +3,7 @@
 import { useEffect } from "react";
 import Link from "next/link";
 import { AlertTriangle, RefreshCw } from "lucide-react";
+import { ICON_SIZE } from "@/shared/ui/icon-size";
 
 interface Props {
   error: Error & { digest?: string };
@@ -24,7 +25,7 @@ export default function RouteError({ error, reset }: Props) {
       <div className="w-full max-w-[440px] rounded-[var(--radius-panel)] border border-[color:var(--color-divider)] bg-[color:var(--color-panel)] p-6">
         <div className="flex items-center gap-2">
           <span className="flex h-8 w-8 items-center justify-center rounded-[var(--radius-chip)] border border-[color:var(--color-amber-source-a35)] bg-[color:var(--color-amber-source-a08)] text-[color:var(--color-status-warning)]">
-            <AlertTriangle size={16} />
+            <AlertTriangle size={ICON_SIZE.lg} />
           </span>
           <p className="font-mono text-caption uppercase tracking-[var(--tracking-caps-14)] text-[color:var(--color-text-quaternary)]">
             Unexpected error
@@ -48,7 +49,7 @@ export default function RouteError({ error, reset }: Props) {
             onClick={reset}
             className="inline-flex h-10 items-center gap-2 rounded-full border border-[color:var(--color-indigo-a38)] bg-[color:var(--color-indigo-a14)] px-4 text-body font-[var(--font-weight-signature)] text-[color:var(--color-text-primary)] transition-colors hover:border-[color:var(--color-indigo-brand)] hover:bg-[color:var(--color-indigo-a20)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--color-indigo-a50)]"
           >
-            <RefreshCw size={14} />
+            <RefreshCw size={ICON_SIZE.md} />
             Try again
           </button>
           <Link

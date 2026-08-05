@@ -2,6 +2,7 @@
 
 import { useMemo, useState } from "react";
 import { Map as MapIcon, X } from "lucide-react";
+import { ICON_SIZE } from "@/shared/ui/icon-size";
 
 import {
   selectedElements,
@@ -115,7 +116,7 @@ export function OntologyBootstrapForm({
               "hover:text-[color:var(--color-text-primary)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--color-indigo-a46)] focus-visible:ring-inset",
           })}
         >
-          <X size={12} aria-hidden />
+          <X size={ICON_SIZE.sm} aria-hidden />
         </button>
       </div>
 
@@ -205,7 +206,7 @@ export function OntologyBootstrapForm({
               "justify-center gap-1.5 border-[color:var(--color-indigo-a46)] bg-[color:var(--color-indigo-a16)] font-[var(--font-weight-signature)] hover:bg-[color:var(--color-indigo-a24)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--color-indigo-a46)] focus-visible:ring-inset",
           })}
         >
-          <MapIcon size={12} aria-hidden />
+          <MapIcon size={ICON_SIZE.sm} aria-hidden />
           {busy ? "…" : labels.confirm}
         </button>
       </div>

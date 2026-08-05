@@ -14,6 +14,7 @@ import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useTranslations } from "next-intl";
 import { ChevronDown } from "lucide-react";
+import { ICON_SIZE } from "@/shared/ui/icon-size";
 import { cn } from "@/shared/lib/cn";
 import { slugify } from "@/shared/lib/slugify";
 import { Button, controlClass } from "@/shared/ui";
@@ -1505,7 +1506,7 @@ export function ProjectForm({
               </p>
             </div>
             <ChevronDown
-              size={16}
+              size={ICON_SIZE.lg}
               className={cn(
                 "shrink-0 text-[color:var(--color-text-quaternary)] transition-transform",
                 mobilePreviewOpen && "rotate-180",
@@ -1652,7 +1653,7 @@ function CreateExtras({
         <span className="inline-flex h-8 shrink-0 items-center gap-2 rounded-full border border-[color:var(--color-divider)] px-3 text-body text-[color:var(--color-text-secondary)]">
           {open ? closeLabel : openLabel}
           <ChevronDown
-            size={14}
+            size={ICON_SIZE.md}
             aria-hidden="true"
             className={cn("transition-transform", open && "rotate-180")}
           />
@@ -1796,7 +1797,7 @@ function FormSection({
               >
                 {isOpen ? (collapseLabel ?? "Collapse") : (expandLabel ?? "Expand")}
                 <ChevronDown
-                  size={14}
+                  size={ICON_SIZE.md}
                   aria-hidden="true"
                   className={cn("transition-transform", isOpen && "rotate-180")}
                 />

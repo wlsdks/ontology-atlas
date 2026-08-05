@@ -1,6 +1,7 @@
 'use client';
 
 import { Orbit } from 'lucide-react';
+import { ICON_SIZE } from '@/shared/ui/icon-size';
 import { useTranslations } from 'next-intl';
 import { Link, usePathname } from '@/i18n/navigation';
 import { LocaleSwitch } from '@/features/locale-switch';
@@ -65,7 +66,7 @@ export function GatewayNav() {
           className="touch-hit-expand inline-flex items-center gap-2 transition-colors hover:text-[color:var(--color-text-primary)]"
         >
           <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-chip border border-[color:var(--color-border-soft)] bg-[color:var(--color-elevated)] text-[color:var(--color-indigo-accent)]">
-            <Orbit size={12} />
+            <Orbit size={ICON_SIZE.sm} />
           </span>
           <span className="text-body leading-body font-[var(--font-weight-signature)] text-[color:var(--color-text-secondary)]">
             Ontology Atlas

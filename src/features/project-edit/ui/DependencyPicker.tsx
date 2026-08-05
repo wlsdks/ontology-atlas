@@ -3,6 +3,7 @@
 import { useMemo, useState } from 'react';
 import { useTranslations } from 'next-intl';
 import { Check, Search, Sparkles, X } from 'lucide-react';
+import { ICON_SIZE } from '@/shared/ui/icon-size';
 import { cn } from '@/shared/lib/cn';
 import { controlClass } from '@/shared/ui/control-class';
 import {
@@ -134,7 +135,7 @@ export function DependencyPicker({
             >
               <span>{p.name}</span>
               <X
-                size={11}
+                size={ICON_SIZE.sm}
                 className="text-[color:var(--color-text-tertiary)] group-hover:text-[color:var(--color-text-primary)]"
               />
             </button>
@@ -153,7 +154,7 @@ export function DependencyPicker({
         >
           <div className="flex items-center gap-1.5">
             <Sparkles
-              size={12}
+              size={ICON_SIZE.sm}
               className="text-[color:var(--color-indigo-accent)]"
               aria-hidden="true"
             />
@@ -194,7 +195,7 @@ export function DependencyPicker({
                     })}
                     aria-label={t('suggestionAcceptLabel', { name: suggestion.name })}
                   >
-                    <Check size={10} />
+                    <Check size={ICON_SIZE.sm} />
                     {t('suggestionAccept')}
                   </button>
                   <button
@@ -216,7 +217,7 @@ export function DependencyPicker({
                     })}
                     aria-label={t('suggestionRejectLabel', { name: suggestion.name })}
                   >
-                    <X size={10} />
+                    <X size={ICON_SIZE.sm} />
                   </button>
                 </div>
               </div>
@@ -250,7 +251,7 @@ export function DependencyPicker({
               >
                 <span>{slug}</span>
                 <X
-                  size={11}
+                  size={ICON_SIZE.sm}
                   className="text-[color:var(--color-status-warning)] group-hover:text-[color:var(--color-text-primary)]"
                 />
               </button>

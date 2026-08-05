@@ -3,6 +3,7 @@
 import { AnimatePresence, motion } from "framer-motion";
 import { useTranslations } from "next-intl";
 import { FolderOpen, HardDrive, ShieldCheck, Sparkles, X } from "lucide-react";
+import { ICON_SIZE } from "@/shared/ui/icon-size";
 import { Link } from "@/i18n/navigation";
 import { MOTION } from "@/shared/motion";
 import { useBodyScrollLock } from "@/shared/lib/use-body-scroll-lock";
@@ -119,7 +120,7 @@ export function VaultOpenGuideSheet({
                 tone="muted"
                 className="hover:text-[color:var(--color-text-primary)]"
               >
-                <X size={14} aria-hidden />
+                <X size={ICON_SIZE.md} aria-hidden />
               </IconButton>
             </header>
 

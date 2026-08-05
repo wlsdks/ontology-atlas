@@ -1,5 +1,6 @@
 import { Link } from "@/i18n/navigation";
 import { Bot, Network, PanelLeftOpen } from "lucide-react";
+import { ICON_SIZE } from "@/shared/ui/icon-size";
 import { useTranslations } from "next-intl";
 import { controlClass } from "@/shared/ui";
 
@@ -42,7 +43,7 @@ export function EmptyState({
                 "justify-center gap-2 font-[var(--font-weight-signature)] hover:border-[color:var(--color-indigo-line-a54)] hover:bg-[color:var(--color-indigo-a16)]",
             })}
           >
-            <PanelLeftOpen size={14} aria-hidden />
+            <PanelLeftOpen size={ICON_SIZE.md} aria-hidden />
             {t("openTree")}
           </button>
           <button
@@ -56,7 +57,7 @@ export function EmptyState({
                 "justify-center gap-2 hover:border-[color:var(--color-indigo-line-a32)] hover:text-[color:var(--color-text-primary)]",
             })}
           >
-            <Bot size={14} aria-hidden />
+            <Bot size={ICON_SIZE.md} aria-hidden />
             {t("openAgent")}
           </button>
           <Link
@@ -69,7 +70,7 @@ export function EmptyState({
                 "justify-center gap-2 hover:border-[color:var(--color-indigo-line-a32)] hover:text-[color:var(--color-text-primary)]",
             })}
           >
-            <Network size={14} aria-hidden />
+            <Network size={ICON_SIZE.md} aria-hidden />
             {t("openTopology")}
           </Link>
         </div>

@@ -6,6 +6,7 @@ import { cn } from "@/shared/lib/cn";
 import { useRouter } from "next/navigation";
 import { useEffect, useSyncExternalStore } from "react";
 import { ArrowLeft, Compass, Search } from "lucide-react";
+import { ICON_SIZE } from "@/shared/ui/icon-size";
 import koMessages from "@/messages/ko.json";
 import enMessages from "@/messages/en.json";
 
@@ -77,7 +78,7 @@ export default function NotFound() {
       <div className="w-full max-w-[440px] rounded-[var(--radius-panel)] border border-[color:var(--color-divider)] bg-[color:var(--color-panel)] p-7 shadow-[var(--shadow-elevation-2)]">
         <div className="flex items-center gap-2">
           <span className="flex h-8 w-8 items-center justify-center rounded-[var(--radius-chip)] border border-[color:var(--color-divider)] text-[color:var(--color-text-tertiary)]">
-            <Compass size={16} />
+            <Compass size={ICON_SIZE.lg} />
           </span>
           <p className="font-mono text-caption uppercase tracking-[var(--tracking-caps-14)] text-[color:var(--color-text-quaternary)]">
             {t.label}
@@ -94,7 +95,7 @@ export default function NotFound() {
               구 rounded-full 방언은 채운 인디고 위 AA 미달(4.42:1) 잉크였다.
               raw buttonVariants 는 base border-transparent 와 충돌이 남아 cn 병합. */}
           <Button type="button" variant="primary" onClick={openSearchOnHome}>
-            <Search size={14} />
+            <Search size={ICON_SIZE.md} />
             {t.findByProject}
           </Button>
           <Link href={`/${locale}/`} className={cn(buttonVariants({ variant: "outline" }))}>

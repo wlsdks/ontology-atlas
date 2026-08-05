@@ -1,5 +1,6 @@
 import type { RefObject } from "react";
 import { ChevronDown, HardDrive } from "lucide-react";
+import { ICON_SIZE } from "@/shared/ui/icon-size";
 import type { useTranslations } from "next-intl";
 import { Chip, RowButton, Surface } from "@/shared/ui";
 
@@ -51,7 +52,7 @@ export function DocsVaultVaultChip({
         aria-label={t("vaultChip.menuAriaLabel")}
         className="min-w-0 max-w-[200px] flex-none font-mono hover:border-[color:var(--color-indigo-line-a32)] hover:text-[color:var(--color-text-primary)]"
       >
-        <HardDrive size={12} aria-hidden className="flex-none" />
+        <HardDrive size={ICON_SIZE.sm} aria-hidden className="flex-none" />
         <span className="hidden min-w-0 truncate text-[color:var(--color-text-secondary)] sm:inline">
           {label}
         </span>
@@ -59,7 +60,7 @@ export function DocsVaultVaultChip({
           {docCount === null ? null : t("header.docCount", { count: docCount })}
         </span>
         <ChevronDown
-          size={12}
+          size={ICON_SIZE.sm}
           aria-hidden
           className={`flex-none transition-transform ${open ? "rotate-180" : ""}`}
         />
@@ -80,7 +81,7 @@ export function DocsVaultVaultChip({
           </p>
           {isLocalSourceLoaded ? (
             <p className="inline-flex items-center gap-1 px-1.5 py-1 font-mono text-caption uppercase tracking-[var(--tracking-caps-14)] text-[color:var(--color-indigo-pale-a86)]">
-              <HardDrive size={10} aria-hidden />
+              <HardDrive size={ICON_SIZE.sm} aria-hidden />
               {t("header.localBadge")}
             </p>
           ) : null}

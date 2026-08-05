@@ -4,6 +4,7 @@ import { useCallback, useEffect, useState, type MouseEvent } from "react";
 import { Link } from "@/i18n/navigation";
 import { useRouter } from "@/i18n/navigation";
 import { ArrowLeft, ArrowUpRight, CopyPlus } from "lucide-react";
+import { ICON_SIZE } from "@/shared/ui/icon-size";
 import { useTranslations } from "next-intl";
 import { ProjectForm } from "@/features/project-edit";
 import {
@@ -267,7 +268,7 @@ function EditorContent({
               "touch-hit-expand gap-1.5 break-keep hover:text-[color:var(--color-text-primary)]",
           })}
         >
-          <ArrowLeft size={14} />
+          <ArrowLeft size={ICON_SIZE.md} />
           {safeReturnLabel}
         </Link>
 
@@ -318,7 +319,7 @@ function EditorContent({
                   aria-label={t("openPublicAria")}
                   className="inline-flex h-9 items-center gap-2 rounded-chip border border-[color:var(--color-indigo-a24)] bg-[color:var(--color-indigo-a08)] px-3 text-body-lg text-[color:var(--color-text-primary)] transition-colors hover:border-[color:var(--color-indigo-brand)] hover:bg-[color:var(--color-indigo-a12)]"
                 >
-                  <ArrowUpRight size={14} />
+                  <ArrowUpRight size={ICON_SIZE.md} />
                   {t("openPublicLabel")}
                 </Link>
               )}
@@ -338,7 +339,7 @@ function EditorContent({
                   }
                   className="inline-flex h-9 items-center gap-2 rounded-chip border border-[color:var(--color-divider)] px-3 text-body-lg text-[color:var(--color-text-primary)] transition-colors hover:border-[color:var(--color-indigo-brand)] hover:bg-[color:var(--color-overlay-1)]"
                 >
-                  <CopyPlus size={14} />
+                  <CopyPlus size={ICON_SIZE.md} />
                   {t("duplicateLabel")}
                 </Link>
               )}

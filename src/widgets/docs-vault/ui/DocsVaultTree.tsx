@@ -3,6 +3,7 @@
 import { useMemo, useState } from 'react';
 import { useLocale, useTranslations } from 'next-intl';
 import { ChevronDown, ChevronRight, FileText, Folder } from 'lucide-react';
+import { ICON_SIZE } from '@/shared/ui/icon-size';
 import type { VaultDoc, VaultTreeNode } from '@/entities/docs-vault';
 import {
   TopologyV2KindGlyph,
@@ -63,7 +64,7 @@ function DocKindGlyph({
   }
   return (
     <FileText
-      size={12}
+      size={ICON_SIZE.sm}
       className="text-[color:var(--color-text-quaternary)]"
       aria-hidden
     />
@@ -188,11 +189,11 @@ function TreeNode({
         style={{ paddingLeft: `${16 + depth * 12}px` }}
       >
         {open ? (
-          <ChevronDown size={12} aria-hidden />
+          <ChevronDown size={ICON_SIZE.sm} aria-hidden />
         ) : (
-          <ChevronRight size={12} aria-hidden />
+          <ChevronRight size={ICON_SIZE.sm} aria-hidden />
         )}
-        <Folder size={12} aria-hidden />
+        <Folder size={ICON_SIZE.sm} aria-hidden />
         <span className="min-w-0 flex-1 truncate">{node.name}</span>
         {docCount > 0 ? (
           <span

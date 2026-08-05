@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { Check, PencilLine, X } from "lucide-react";
+import { ICON_SIZE } from "@/shared/ui/icon-size";
 
 import { controlClass } from "@/shared/ui/control-class";
 
@@ -88,7 +89,7 @@ export function InlineFieldEdit({
               "hover:bg-[color:var(--color-overlay-2)] hover:text-[color:var(--color-text-primary)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--color-indigo-a46)] focus-visible:ring-inset",
           })}
         >
-          <PencilLine size={12} aria-hidden />
+          <PencilLine size={ICON_SIZE.sm} aria-hidden />
         </button>
       </div>
     );
@@ -128,7 +129,7 @@ export function InlineFieldEdit({
             "border border-[color:var(--color-indigo-a46)] bg-[color:var(--color-indigo-a16)] hover:bg-[color:var(--color-indigo-a24)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--color-indigo-a46)] focus-visible:ring-inset",
         })}
       >
-        <Check size={12} aria-hidden />
+        <Check size={ICON_SIZE.sm} aria-hidden />
       </button>
       <button
         type="button"
@@ -144,7 +145,7 @@ export function InlineFieldEdit({
             "hover:text-[color:var(--color-text-primary)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--color-indigo-a46)] focus-visible:ring-inset",
         })}
       >
-        <X size={12} aria-hidden />
+        <X size={ICON_SIZE.sm} aria-hidden />
       </button>
     </div>
   );

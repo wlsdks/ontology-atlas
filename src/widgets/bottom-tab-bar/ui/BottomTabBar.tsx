@@ -4,6 +4,7 @@ import { Link, usePathname } from '@/i18n/navigation';
 import { useSyncExternalStore } from 'react';
 import { useTranslations } from 'next-intl';
 import { BarChart3, BookOpen, Download, FolderKanban, Map as MapIcon } from 'lucide-react';
+import { ICON_SIZE } from '@/shared/ui/icon-size';
 import { useLocalVault } from '@/features/docs-vault-local';
 import { resolveActiveNavDestination, type AppNavDestinationId } from '@/shared/lib/nav-destination';
 import { shouldHideBottomTabBar } from '../lib/is-tab-active';
@@ -119,7 +120,7 @@ export function BottomTabBar() {
               }
               data-tab-icon-shell={active ? 'active' : 'idle'}
             >
-              <Icon size={17} aria-hidden />
+              <Icon size={ICON_SIZE.lg} aria-hidden />
             </span>
             <span className="text-caption font-[var(--font-weight-signature)] leading-none">{tRail(tab.labelKey)}</span>
           </Link>
@@ -143,7 +144,7 @@ export function BottomTabBar() {
           className="relative flex min-h-[var(--topology-bottom-tab-min-height)] flex-1 flex-col items-center justify-center gap-0.5 text-[color:var(--color-text-quaternary)] transition-colors active:bg-[color:var(--color-overlay-1)] active:text-[color:var(--color-text-secondary)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--color-indigo-a50)] focus-visible:ring-inset"
         >
           <span className="inline-flex h-6 w-6 items-center justify-center rounded-card border border-transparent transition-colors">
-            <Download size={17} aria-hidden />
+            <Download size={ICON_SIZE.lg} aria-hidden />
           </span>
           <span className="text-caption font-[var(--font-weight-signature)] leading-none">
             {tRail('getApp')}

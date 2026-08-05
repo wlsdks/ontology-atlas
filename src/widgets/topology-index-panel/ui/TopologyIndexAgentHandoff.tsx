@@ -2,6 +2,7 @@
 
 import { useCallback, useState } from "react";
 import { ChevronUp } from "lucide-react";
+import { ICON_SIZE } from "@/shared/ui/icon-size";
 import { CompactCopyButton } from "@/shared/ui";
 import { copyText } from "@/shared/lib/copy-text";
 
@@ -79,7 +80,7 @@ export function TopologyIndexAgentHandoff({
       >
         {labels.menuLabel}
         <ChevronUp
-          size={10}
+          size={ICON_SIZE.sm}
           aria-hidden
           className="shrink-0 rotate-180 transition-transform duration-[var(--motion-base)] group-open:rotate-0 motion-reduce:transition-none"
         />

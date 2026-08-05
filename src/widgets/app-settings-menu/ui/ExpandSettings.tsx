@@ -2,6 +2,7 @@
 
 import { useState } from 'react';
 import { ChevronDown } from 'lucide-react';
+import { ICON_SIZE } from '@/shared/ui/icon-size';
 import { useTranslations } from 'next-intl';
 
 import {
@@ -123,7 +124,7 @@ export function ExpandSettings() {
         className={DETAIL_TOGGLE_CHIP}
       >
         <ChevronDown
-          size={14}
+          size={ICON_SIZE.md}
           aria-hidden
           className={detailOpen ? 'rotate-180 transition-transform' : 'transition-transform'}
         />

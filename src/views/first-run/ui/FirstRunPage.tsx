@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect } from "react";
 import { Compass, FolderOpen, Orbit, Sparkles, Zap } from "lucide-react";
+import { ICON_SIZE } from "@/shared/ui/icon-size";
 import { useLocale, useTranslations } from "next-intl";
 import { useJustStartVault, useLocalVault, useVaultCreateFlow } from "@/features/docs-vault-local";
 import { Link } from "@/i18n/navigation";
@@ -129,7 +130,7 @@ export function FirstRunPage() {
               className={`${cardBase} border-[color:var(--color-indigo-brand)] hover:bg-[color:var(--color-indigo-a08)]`}
             >
               <span className={`${iconChip} text-[color:var(--color-indigo-accent)]`}>
-                <Zap size={14} aria-hidden />
+                <Zap size={ICON_SIZE.md} aria-hidden />
               </span>
               <span className="min-w-0">
                 <span className="block text-body font-[var(--font-weight-signature)] text-[color:var(--color-text-primary)]">
@@ -164,7 +165,7 @@ export function FirstRunPage() {
                   : "text-[color:var(--color-indigo-accent)]"
               }`}
             >
-              <FolderOpen size={14} aria-hidden />
+              <FolderOpen size={ICON_SIZE.md} aria-hidden />
             </span>
             <span className="min-w-0">
               <span className="block text-body font-[var(--font-weight-signature)] text-[color:var(--color-text-primary)]">
@@ -186,7 +187,7 @@ export function FirstRunPage() {
             className={`${cardBase} border-[color:var(--color-border-soft)] hover:border-[color:var(--color-border-strong)]`}
           >
             <span className={`${iconChip} text-[color:var(--color-text-tertiary)]`}>
-              <Sparkles size={14} aria-hidden />
+              <Sparkles size={ICON_SIZE.md} aria-hidden />
             </span>
             <span className="min-w-0">
               <span className="block text-body font-[var(--font-weight-signature)] text-[color:var(--color-text-primary)]">
@@ -204,7 +205,7 @@ export function FirstRunPage() {
             className={`${cardBase} border-[color:var(--color-border-soft)] hover:border-[color:var(--color-border-strong)]`}
           >
             <span className={`${iconChip} text-[color:var(--color-text-tertiary)]`}>
-              <Compass size={14} aria-hidden />
+              <Compass size={ICON_SIZE.md} aria-hidden />
             </span>
             <span className="min-w-0">
               <span className="block text-body font-[var(--font-weight-signature)] text-[color:var(--color-text-primary)]">

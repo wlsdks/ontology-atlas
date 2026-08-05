@@ -3,6 +3,7 @@
 import { useCallback, useState } from 'react';
 import { useTranslations } from 'next-intl';
 import { Check, Copy } from 'lucide-react';
+import { ICON_SIZE } from '@/shared/ui/icon-size';
 
 import type { McpServerLaunch } from '@/shared/config';
 import { copyText } from '@/shared/lib/copy-text';
@@ -124,9 +125,9 @@ export function AgentGlobalScopePanel({ vaultPath, launch }: AgentGlobalScopePan
           })}
         >
           {isCopied ? (
-            <Check size={12} aria-hidden className="text-[color:var(--color-status-success)]" />
+            <Check size={ICON_SIZE.sm} aria-hidden className="text-[color:var(--color-status-success)]" />
           ) : (
-            <Copy size={12} aria-hidden />
+            <Copy size={ICON_SIZE.sm} aria-hidden />
           )}
           {isCopied
             ? t('scopeGlobalCopied')

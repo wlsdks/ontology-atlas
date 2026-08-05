@@ -1,4 +1,5 @@
 import { Download, FolderOpen } from "lucide-react";
+import { ICON_SIZE } from "@/shared/ui/icon-size";
 import { useTranslations } from "next-intl";
 import { Link } from "@/i18n/navigation";
 import { controlClass } from "@/shared/ui";
@@ -47,7 +48,7 @@ export function SampleNotice({ canOpenLocalVault, onOpenFolder }: SampleNoticePr
               "flex-none font-[var(--font-weight-signature)] hover:border-[color:var(--color-indigo-line-a54)] hover:bg-[color:var(--color-indigo-a24)]",
           })}
         >
-          <FolderOpen size={12} aria-hidden />
+          <FolderOpen size={ICON_SIZE.sm} aria-hidden />
           {t("sampleNotice.openFolderCta")}
         </button>
       ) : (
@@ -55,7 +56,7 @@ export function SampleNotice({ canOpenLocalVault, onOpenFolder }: SampleNoticePr
           href="/download/"
           className="inline-flex flex-none items-center gap-1.5 rounded-chip border border-[color:var(--color-indigo-line-a42)] bg-[color:var(--color-indigo-a12)] px-2.5 py-1.5 font-mono text-label text-[color:var(--color-text-primary)] transition-colors hover:border-[color:var(--color-indigo-line-a54)] hover:bg-[color:var(--color-indigo-a18)]"
         >
-          <Download size={12} aria-hidden />
+          <Download size={ICON_SIZE.sm} aria-hidden />
           {t("vaultStatus.downloadAppCta")}
         </Link>
       )}

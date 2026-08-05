@@ -3,6 +3,7 @@
 import { useCallback, useMemo, useState } from "react";
 import { useTranslations } from "next-intl";
 import { Check, Clipboard, Link2, X } from "lucide-react";
+import { ICON_SIZE } from "@/shared/ui/icon-size";
 import { Link } from "@/i18n/navigation";
 import ReactMarkdown from "react-markdown";
 import {
@@ -358,7 +359,7 @@ export function FullDetailA1({
                 "hover:bg-[color:var(--topology-v2-panel-row-hover)] hover:text-[color:var(--topology-v2-panel-text-secondary)]",
             })}
           >
-            <Link2 size={14} />
+            <Link2 size={ICON_SIZE.md} />
           </button>
           <button
             type="button"
@@ -373,7 +374,7 @@ export function FullDetailA1({
                 "hover:bg-[color:var(--topology-v2-panel-row-hover)] hover:text-[color:var(--topology-v2-panel-text-secondary)]",
             })}
           >
-            <X size={16} />
+            <X size={ICON_SIZE.lg} />
           </button>
         </div>
       </header>
@@ -641,7 +642,7 @@ function FullDetailCodeLocationRow({
             "shrink-0 hover:bg-[color:var(--topology-v2-panel-row-hover)] hover:text-[color:var(--topology-v2-panel-text-secondary)]",
         })}
       >
-        {state === "copied" ? <Check size={12} aria-hidden /> : <Clipboard size={12} aria-hidden />}
+        {state === "copied" ? <Check size={ICON_SIZE.sm} aria-hidden /> : <Clipboard size={ICON_SIZE.sm} aria-hidden />}
       </button>
     </li>
   );

@@ -35,9 +35,20 @@ import { ICON_SIZE } from '../../src/shared/ui/icon-size';
  *
  * lucide import 가 있는 프로덕션 `.tsx` 의 lucide 여는 태그만 본다. 크롬·레일
  * 아이콘 토큰(`--*-icon-size` · `--chrome-icon`)은 표면 계약 소유라 대상 밖.
- * 알려진 한계: `size={cond ? 14 : undefined}` 같은 **조건식은 리터럴이 아니라
- * 안 보인다**(현재 1곳, AppSettingsMenu — else 가지는 무지정 24 로 렌더된다).
- * 과소 계상 방향의 오차이고, 그 자리는 아래 무지정 래칫의 주석에 적어 둔다.
+ * 알려진 한계 둘 — **둘 다 과소 계상 방향**이다:
+ *
+ * 1. `size={cond ? 14 : undefined}` 같은 **조건식은 리터럴이 아니라 안 보인다**
+ *    (현재 1곳, AppSettingsMenu — else 가지는 무지정 24 로 렌더된다).
+ * 2. **런타임 변수로 렌더되는 아이콘**(`const Icon = item.icon; <Icon size={17} />`)
+ *    은 여는 태그 이름이 lucide import 집합에 없어 안 보인다. 2026-08-05 실측
+ *    8곳이고, 그중 **하나가 실제로 램프 밖이었다** — `BottomTabBar` 의 내비
+ *    아이콘 17px 이 바로 옆 「앱 받기」 아이콘 16px 과 **한 바 안에서 어긋나
+ *    있었다**(브라우저 실측으로 발견: 소스 스캔은 17 을 한 건도 못 봤는데
+ *    화면에는 17 이 4개 그려지고 있었다). 고쳤고, 나머지 7곳은 램프 위다.
+ *    `Map as MapIcon` 같은 **별칭은 시야 안**이다(import 파싱이 별칭을 딴다).
+ *
+ * → **소스 스캔만으로 「0」이라고 말하지 않는다.** 이 두 한계가 사는 층은
+ *    렌더된 화면이고, 그래서 라운드마다 브라우저에서 `svg` 실측을 함께 한다.
  */
 
 const ROOT = process.cwd();
@@ -78,7 +89,20 @@ function scanSource(rel: string, source: string, ramp: Set<number>, acc: IconSca
   // [^}] 는 개행도 포함하므로 /s 플래그가 필요 없다. [\s\S]*? 로 쓰면 안 된다 —
   // 게으른 수량자가 앞선 다른 모듈의 import 를 건너 삼켜 아이콘 이름 집합이 오염된다
   // (전수 스캔에서 실제로 그랬다: 파일 9개의 분류가 조용히 틀어졌다).
-  const importMatch = /import\s*\{([^}]*)\}\s*from\s*'lucide-react'/.exec(source);
+  /*
+   * ⚠️ **따옴표 둘 다 본다** (2026-08-05). 종전엔 `'lucide-react'` 작은따옴표만
+   * 매칭했는데, 이 저장소의 lucide import 99개 중 **72개가 큰따옴표**였다 —
+   * 즉 이 래칫은 아이콘의 **73% 를 한 번도 본 적이 없다.** 그래서 장부에 63건
+   * 이라 적혀 있던 부채의 실측은 **230건**이었다.
+   *
+   * 분모 단언(`total >= 120`)이 이 구멍을 못 막았다: 작은따옴표 파일 27개만
+   * 세어도 120을 넘었기 때문이다. **공집합이 아니라는 것과 전집합을 본다는
+   * 것은 다르다** — 분모 단언은 앞의 것만 증명한다.
+   *
+   * 값이 아니라 **문법**이 게이트를 피한 사례이고, 이 라운드에서만 세 번째다
+   * (무게 이름 스텝 · 스코프 블록 override · 여기).
+   */
+  const importMatch = /import\s*\{([^}]*)\}\s*from\s*['"]lucide-react['"]/.exec(source);
   if (!importMatch) return;
   const lucide = new Set(
     importMatch[1]
@@ -127,22 +151,67 @@ function scanProduction(ramp: Set<number>): IconScan {
  * 늘면 빨개지고, 0 이 되면 줄을 지워야 한다. 갚는 라운드는 자리마다
  * before→after 표를 갖는 디자인 패스다(±1~2px 픽셀 이동).
  */
+/*
+ * ## 2026-08-05: 장부가 통째로 틀려 있었다 — 스캐너가 73% 를 못 봤다
+ *
+ * 위 따옴표 주석 참조. 종전 장부는 16파일 63건이었는데, 큰따옴표 import 를
+ * 보게 하자 **41파일 230건**이 나왔다. 장부가 후한 게 아니라 **눈이 멀어
+ * 있었다.**
+ *
+ * 그중 **127건은 이 라운드에서 갚았다** — 램프 스텝이 판정 없이 정해지는
+ * 것들이다(9·10·11 → sm, 17·18 → lg). 함께 이미 램프 위에 있던 207건도
+ * 리터럴에서 `ICON_SIZE` 참조로 바꿨다: 그 전까지 `ICON_SIZE` 와 `--icon-*`
+ * 의 **소비처는 0** 이었고, 값이 우연히 맞았을 뿐 램프가 아니었다
+ * (「아무도 안 쓰는 토큰은 규격이 아니라 틀린 정보다」 — design.md).
+ *
+ * **남은 103건은 전부 13px 과 15px 이다.** 이 둘은 두 램프 스텝의 **정확히
+ * 가운데**라(13 → 12|14, 15 → 14|16) 「최근접」이 답을 주지 못한다. 램프의
+ * 타이브레이커는 «옆에 앉는 타입 단»인데, 실측해 보니 그 판정에 쓸 타입이
+ * **59곳에는 아예 없다**(아이콘만 있는 컨트롤·아이콘 전용 버튼). 코드모드가
+ * 지어낼 수 있는 값이 아니므로 자리마다 before→after 를 갖는 디자인 패스로
+ * 넘긴다 — 이 파일의 창립 판단과 같은 이유다.
+ */
 const OFF_RAMP_DEBT: ReadonlyArray<readonly [string, number]> = [
+  ['app/[locale]/not-found.tsx', 1],
+  ['app/not-found.tsx', 1],
   ['src/features/agent-activity/ui/AgentActivityChip.tsx', 1],
-  ['src/features/docs-vault-local/ui/AgentConnectAction.tsx', 7],
+  ['src/features/docs-vault-local/ui/AgentClientButtons.tsx', 10],
+  ['src/features/docs-vault-local/ui/AgentConnectAction.tsx', 5],
   ['src/features/docs-vault-local/ui/OntologyStarterCta.tsx', 1],
-  ['src/features/docs-vault-local/ui/WebManualConnectPanel.tsx', 2],
-  ['src/features/project-edit/ui/DependencyPicker.tsx', 5],
-  ['src/features/vault-ontology/ui/RecentChangesNeedsVaultDialog.tsx', 2],
-  ['src/views/docs-vault/ui/DocsVaultPage.tsx', 2],
-  ['src/views/download/ui/DownloadPage.tsx', 6],
-  ['src/widgets/app-settings-menu/ui/AppSettingsMenu.tsx', 3],
-  ['src/widgets/bottom-tab-bar/ui/BottomTabBar.tsx', 1],
-  ['src/widgets/docs-vault/ui/DocsVaultBacklinks.tsx', 4],
-  ['src/widgets/docs-vault/ui/DocsVaultEditor.tsx', 10],
-  ['src/widgets/docs-vault/ui/DocsVaultUnifiedPalette.tsx', 13],
-  ['src/widgets/docs-vault/ui/DocsVaultViewer.tsx', 3],
-  ['src/widgets/search-palette/ui/SearchPalette.tsx', 2],
+  ['src/features/docs-vault-local/ui/VaultOpenGuideSheet.tsx', 3],
+  ['src/features/project-edit/ui/DependencyPicker.tsx', 1],
+  ['src/shared/ui/compact-copy-button.tsx', 2],
+  ['src/views/docs-vault/ui/parts/DesktopVaultWelcome.tsx', 4],
+  ['src/views/docs-vault/ui/parts/DocsSidebarBody.tsx', 6],
+  ['src/views/docs-vault/ui/parts/SampleWelcomeNote.tsx', 1],
+  ['src/views/download/ui/DownloadPage.tsx', 3],
+  ['src/views/first-run/ui/FirstRunPage.tsx', 1],
+  ['src/views/home/ui/CreateNodeForm.tsx', 1],
+  ['src/views/home/ui/TopologyInsightsReturnChip.tsx', 1],
+  ['src/views/home/ui/TopologyPathChip.tsx', 1],
+  ['src/views/home/ui/TopologyRealmChip.tsx', 1],
+  ['src/views/home/ui/TopologyTrailChip.tsx', 2],
+  ['src/views/ontology-insights/ui/parts/CopyAgentTextButton.tsx', 2],
+  ['src/views/ontology-insights/ui/parts/QueueRowActions.tsx', 5],
+  ['src/views/ontology-insights/ui/tabs/DoNextTab.tsx', 5],
+  ['src/views/ontology-insights/ui/tabs/FreshnessTab.tsx', 2],
+  ['src/views/ontology-insights/ui/tabs/ImpactRankingCard.tsx', 2],
+  ['src/views/ontology-studio/ui/StudioCompass.tsx', 15],
+  ['src/views/ontology-studio/ui/StudioMaterializeDialog.tsx', 1],
+  ['src/widgets/agent-connect/ui/AgentConnectSheet.tsx', 1],
+  ['src/widgets/app-settings-menu/ui/AppSettingsMenu.tsx', 1],
+  ['src/widgets/atlas-git-panel/ui/AtlasGitPanel.tsx', 6],
+  ['src/widgets/docs-quick-drawer/ui/DocsQuickDrawer.tsx', 5],
+  ['src/widgets/gesture-hint/ui/GestureHint.tsx', 1],
+  ['src/widgets/global-search/ui/GlobalSearch.tsx', 1],
+  ['src/widgets/project-drawer/ui/ProjectDrawer.tsx', 1],
+  ['src/widgets/shortcut-sheet/ui/ShortcutSheet.tsx', 1],
+  ['src/widgets/topology-controls/ui/VaultStartChecklist.tsx', 1],
+  ['src/widgets/topology-index-panel/ui/TopologyIndexPanel.tsx', 1],
+  ['src/widgets/topology-index-panel/ui/TopologyIndexTab.tsx', 1],
+  ['src/widgets/topology-map-v2/ui/TopologyMapV2.tsx', 1],
+  ['src/widgets/topology-map-v2/ui/TopologyV2DetailPanel.tsx', 2],
+  ['src/widgets/topology-map-v2/ui/TopologyV2EdgePanel.tsx', 1],
   ['src/widgets/vault-agent-panel/ui/AgentProposalCard.tsx', 1],
 ];
 
@@ -153,6 +222,9 @@ const OFF_RAMP_DEBT: ReadonlyArray<readonly [string, number]> = [
  * 주석 참조.)
  */
 const UNSIZED_DEBT: ReadonlyArray<readonly [string, number]> = [
+  ['src/views/home/ui/HomePage.tsx', 3],
+  ['src/views/ontology-insights/ui/tabs/ConnectionsTab.tsx', 2],
+  ['src/views/ontology-insights/ui/tabs/ImpactRankingCard.tsx', 1],
   ['src/widgets/search-hint/ui/SearchHint.tsx', 2],
   ['src/widgets/topology-controls/ui/TopologyFitControl.tsx', 1],
 ];
@@ -255,6 +327,59 @@ describe('콘텐츠 아이콘 크기 램프', () => {
     const varRef = probe('<Check className="size-[var(--icon-sm)]" />');
     expect(varRef.offRamp.size).toBe(0);
     expect(varRef.unsized.size).toBe(0);
+  });
+
+  /**
+   * **따옴표 프로브 — 2026-08-05 에 실제로 일어난 실명(失明)을 재현한다.**
+   *
+   * 종전 스캐너는 작은따옴표 import 만 봤고, 이 저장소 파일의 **73% 가
+   * 큰따옴표**였다. 위 합성 프로브가 그것을 못 잡은 이유는 프로브 자신이
+   * 작은따옴표로만 쓰여 있었기 때문이다 — **프로브가 결함과 같은 가정을
+   * 공유하면 그 결함을 증명할 수 없다.**
+   */
+  it('프로브: 큰따옴표 lucide import 도 본다 (73% 를 못 보던 실명의 재현)', () => {
+    const acc: IconScan = { total: 0, offRamp: new Map(), unsized: new Map() };
+    scanSource(
+      'double.tsx',
+      `import { Check } from "lucide-react";\n<Check size={13} />`,
+      ramp,
+      acc,
+    );
+    expect(acc.total, '큰따옴표 import 를 못 보면 이 래칫은 저장소의 73% 에 대해 존재하지 않는다').toBe(1);
+    expect(acc.offRamp.get('double.tsx')).toBe(1);
+  });
+
+  /**
+   * **실물 커버리지 — 합성 프로브가 증명하지 못하는 층.**
+   *
+   * 「공집합이 아니다」와 「전집합을 본다」는 다르다. 종전 분모 단언(≥120)은
+   * 앞의 것만 증명했고, 그래서 스캐너가 파일의 73% 를 건너뛰는 동안에도
+   * 초록이었다. 이 단언은 **저장소에 실재하는 두 표기 모두**에서 아이콘을
+   * 실제로 세고 있는지 확인한다.
+   */
+  it('실물 커버리지: 두 따옴표 표기 파일 모두에서 아이콘을 센다', () => {
+    const seen = { single: 0, double: 0 };
+    const walkAll = (dir: string): void => {
+      for (const name of readdirSync(dir)) {
+        const p = path.join(dir, name);
+        if (statSync(p).isDirectory()) {
+          if (name === 'node_modules' || name === '.next') continue;
+          walkAll(p);
+          continue;
+        }
+        if (!name.endsWith('.tsx') || name.endsWith('.test.tsx')) continue;
+        const src = readFileSync(p, 'utf8');
+        const acc: IconScan = { total: 0, offRamp: new Map(), unsized: new Map() };
+        scanSource(path.relative(ROOT, p), src, ramp, acc);
+        if (acc.total === 0) continue;
+        if (/from\s*'lucide-react'/.test(src)) seen.single += acc.total;
+        else if (/from\s*"lucide-react"/.test(src)) seen.double += acc.total;
+      }
+    };
+    for (const root of ['src', 'app']) walkAll(path.join(ROOT, root));
+
+    expect(seen.single, "작은따옴표 파일에서 센 아이콘이 0 — 스캐너가 한쪽 표기를 잃었다").toBeGreaterThan(50);
+    expect(seen.double, "큰따옴표 파일에서 센 아이콘이 0 — 2026-08-05 의 실명이 되돌아왔다").toBeGreaterThan(50);
   });
 
   it('프로브: 스캔 루트가 공집합이면 실패한다', () => {

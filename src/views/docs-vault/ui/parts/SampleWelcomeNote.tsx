@@ -1,4 +1,5 @@
 import { FolderOpen, X } from "lucide-react";
+import { ICON_SIZE } from "@/shared/ui/icon-size";
 import { useLocale } from "next-intl";
 import { IconButton, controlClass } from "@/shared/ui";
 
@@ -79,7 +80,7 @@ export function SampleWelcomeNote({
             "w-fit flex-none font-[var(--font-weight-signature)] hover:border-[color:var(--color-indigo-line-a54)] hover:bg-[color:var(--color-indigo-a24)]",
         })}
         >
-          <FolderOpen size={12} aria-hidden />
+          <FolderOpen size={ICON_SIZE.sm} aria-hidden />
           {copy.openFolderCta}
         </button>
       ) : null}

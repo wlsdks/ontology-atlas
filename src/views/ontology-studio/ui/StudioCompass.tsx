@@ -16,6 +16,7 @@ import {
   TriangleAlert,
   X,
 } from "lucide-react";
+import { ICON_SIZE } from "@/shared/ui/icon-size";
 import { cn } from "@/shared/lib/cn";
 import { candidateMatches } from "../lib/match-candidate";
 import { studioBoardScale } from "../lib/board-scale";
@@ -1373,7 +1374,7 @@ export function StudioCompass(props: StudioCompassProps) {
                       onClick={() => props.onUndoChange?.(i)}
                       className="flex-none hover:text-[color:var(--color-text-secondary)]"
                     >
-                      <X size={12} aria-hidden />
+                      <X size={ICON_SIZE.sm} aria-hidden />
                     </IconButton>
                   ) : null}
                 </li>
@@ -1419,7 +1420,7 @@ export function StudioCompass(props: StudioCompassProps) {
             })}
           >
             {effectiveSummary.collapsed}
-            <ChevronDown size={12} aria-hidden className={cn("text-[color:var(--color-text-quaternary)] transition-transform", summaryOpen && "rotate-180")} />
+            <ChevronDown size={ICON_SIZE.sm} aria-hidden className={cn("text-[color:var(--color-text-quaternary)] transition-transform", summaryOpen && "rotate-180")} />
           </button>
         ) : null}
         <div className="ml-auto flex items-center gap-3">
@@ -1539,7 +1540,7 @@ export function StudioCompass(props: StudioCompassProps) {
                         title={labels.draftsDiscard}
                         className="flex-none hover:bg-[color:var(--color-danger-a12)] hover:text-[color:var(--color-danger-text)]"
                       >
-                        <X size={12} aria-hidden />
+                        <X size={ICON_SIZE.sm} aria-hidden />
                       </IconButton>
                     ) : null}
                   </div>
@@ -1787,7 +1788,7 @@ function CenterCard(
           style={{ borderColor: "var(--color-amber-muted-a34)", background: "var(--color-amber-muted-a18)" }}
         >
           <TriangleAlert
-            size={14}
+            size={ICON_SIZE.md}
             aria-hidden
             className="mt-0.5 flex-none text-[color:var(--color-amber-muted-a62)]"
           />
@@ -2000,7 +2001,7 @@ function LaneRender({
                 onClick={() => onEditNeighbor(sat)}
                 className="absolute right-1.5 top-1.5 opacity-70 transition-opacity hover:bg-[color:var(--color-overlay-1)] hover:text-[color:var(--color-text-secondary)] group-hover:opacity-100 motion-reduce:transition-none"
               >
-                <MoreHorizontal size={14} aria-hidden />
+                <MoreHorizontal size={ICON_SIZE.md} aria-hidden />
               </IconButton>
             ) : null}
             {/* arrival orientation (#3) — where you walked from. Indigo border
@@ -2246,7 +2247,7 @@ function LaneOverflowList({
                   onClick={() => onEditNeighbor(sat)}
                   className="mr-1.5 flex-none opacity-70 hover:bg-[color:var(--color-overlay-1)] hover:text-[color:var(--color-text-secondary)] group-hover:opacity-100"
                 >
-                  <MoreHorizontal size={14} aria-hidden />
+                  <MoreHorizontal size={ICON_SIZE.md} aria-hidden />
                 </IconButton>
               ) : null}
             </div>
@@ -2801,7 +2802,7 @@ function NodeSearch({
   if (!nodes || !onOpenNode) {
     return (
       <div className="flex h-8 w-[300px] items-center gap-2 rounded-card border border-[color:var(--color-border-soft)] bg-[color:var(--color-canvas)] px-3 text-body text-[color:var(--color-text-quaternary)]">
-        <Search size={14} aria-hidden className="flex-none" />
+        <Search size={ICON_SIZE.md} aria-hidden className="flex-none" />
         <span className="truncate">{placeholder}</span>
       </div>
     );
@@ -2829,7 +2830,7 @@ function NodeSearch({
       }}
     >
       <div className="flex h-8 items-center gap-2 rounded-card border border-[color:var(--color-border-soft)] bg-[color:var(--color-canvas)] px-3 text-body focus-within:border-[color:var(--color-indigo-a46)]">
-        <Search size={14} aria-hidden className="flex-none text-[color:var(--color-text-quaternary)]" />
+        <Search size={ICON_SIZE.md} aria-hidden className="flex-none text-[color:var(--color-text-quaternary)]" />
         <input
           data-testid="studio-node-search"
           value={query}

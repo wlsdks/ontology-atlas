@@ -3,6 +3,7 @@
 import { useState } from 'react';
 import { useLocale, useTranslations } from 'next-intl';
 import { ChevronDown, ChevronRight, FileText } from 'lucide-react';
+import { ICON_SIZE } from '@/shared/ui/icon-size';
 import type {
   VaultBacklinkEntry,
   VaultDoc,
@@ -63,7 +64,7 @@ export function DocsVaultBacklinks({
               {kindStr && isTopologyV2RenderableKind(kindStr) ? (
                 <TopologyV2KindGlyph kind={kindStr} size={11} />
               ) : (
-                <FileText size={11} className="opacity-60" aria-hidden />
+                <FileText size={ICON_SIZE.sm} className="opacity-60" aria-hidden />
               )}
               <span className="max-w-[160px] truncate">
                 {resolveLocaleDisplayName(doc.frontmatter, locale, doc.title)}
@@ -119,7 +120,7 @@ function BacklinkItem({
           aria-expanded={open}
           className="hover:text-[color:var(--color-text-secondary)]"
         >
-          {open ? <ChevronDown size={11} /> : <ChevronRight size={11} />}
+          {open ? <ChevronDown size={ICON_SIZE.sm} /> : <ChevronRight size={ICON_SIZE.sm} />}
         </IconButton>
         <button
           type="button"
@@ -127,7 +128,7 @@ function BacklinkItem({
           className="group flex min-w-0 flex-1 items-center gap-1.5 rounded-micro py-0.5 text-left transition-colors hover:text-[color:var(--color-text-primary)]"
         >
           <FileText
-            size={10}
+            size={ICON_SIZE.sm}
             className="flex-none opacity-60"
             aria-hidden
           />

@@ -2,6 +2,7 @@
 
 import { useEffect, useRef, useState, type ReactNode } from "react";
 import { AlertTriangle, ChevronDown, ChevronRight } from "lucide-react";
+import { ICON_SIZE } from "@/shared/ui/icon-size";
 import { Link } from "@/i18n/navigation";
 import { EvidenceOnlyBadge } from "@/shared/ui/evidence-only-badge";
 import { TopologyV2KindGlyph } from "@/shared/ui/topology-v2-kind-glyph";
@@ -726,7 +727,7 @@ function CycleSection({
     <section aria-label={labels.sectionCycle} data-testid="do-next-cycles" className="flex flex-col">
       <div className="flex items-baseline gap-2 border-b border-[color:var(--color-divider)] pb-2">
         <InsightsSectionTitle level={3} className="flex items-center gap-1.5 text-body font-[var(--font-weight-signature)] text-[color:var(--color-text-primary)]">
-          <AlertTriangle size={12} aria-hidden className="text-[color:var(--color-status-warning)]" />
+          <AlertTriangle size={ICON_SIZE.sm} aria-hidden className="text-[color:var(--color-status-warning)]" />
           {labels.sectionCycle}
         </InsightsSectionTitle>
         <span className="font-mono text-label tabular-nums text-[color:var(--topology-v2-numeral-face)]">

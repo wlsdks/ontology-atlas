@@ -1,6 +1,7 @@
 "use client";
 
 import { ArrowLeft, X } from "lucide-react";
+import { ICON_SIZE } from "@/shared/ui/icon-size";
 import { Link } from "@/i18n/navigation";
 import { CHROME_STATUS_CHIP_CLASS } from "@/shared/ui/chrome-chip";
 import { controlClass } from "@/shared/ui/control-class";
@@ -46,7 +47,7 @@ export function TopologyInsightsReturnChip({
         className="flex min-w-0 items-center gap-1.5 transition-colors hover:text-[color:var(--color-text-primary)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--color-indigo-accent)] focus-visible:ring-offset-2 focus-visible:ring-offset-[color:var(--color-canvas)]"
       >
         <ArrowLeft
-          size={14}
+          size={ICON_SIZE.md}
           aria-hidden
           className="shrink-0 text-[color:var(--color-text-tertiary)]"
         />

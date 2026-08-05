@@ -2,6 +2,7 @@
 
 import { AnimatePresence, motion } from 'framer-motion';
 import { FolderOpen, History, X } from 'lucide-react';
+import { ICON_SIZE } from '@/shared/ui/icon-size';
 import { useEffect, useRef } from 'react';
 import { useTranslations } from 'next-intl';
 
@@ -100,7 +101,7 @@ export function RecentChangesNeedsVaultDialog({
             <header className="flex items-start justify-between gap-3 border-b border-[color:var(--color-border-soft)] px-5 py-4">
               <div>
                 <p className="flex items-center gap-1.5 font-mono text-caption uppercase tracking-[var(--tracking-caps-14)] text-[color:var(--color-indigo-accent)]">
-                  <History size={11} aria-hidden />
+                  <History size={ICON_SIZE.sm} aria-hidden />
                   {t('eyebrow')}
                 </p>
                 <p className="mt-1.5 text-body-lg text-[color:var(--color-text-primary)]">{t('title')}</p>
@@ -117,7 +118,7 @@ export function RecentChangesNeedsVaultDialog({
                   className: 'hover:text-[color:var(--color-text-primary)]',
                 })}
               >
-                <X size={15} aria-hidden />
+                <X size={ICON_SIZE.lg} aria-hidden />
               </button>
             </header>
 
@@ -138,7 +139,7 @@ export function RecentChangesNeedsVaultDialog({
                 data-testid="recent-changes-needs-vault-open"
                 className="mt-4 w-full"
               >
-                <FolderOpen size={14} aria-hidden />
+                <FolderOpen size={ICON_SIZE.md} aria-hidden />
                 {t('action')}
               </Button>
               {/*

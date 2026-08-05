@@ -7,6 +7,7 @@ import {
   Download,
   ExternalLink,
 } from 'lucide-react';
+import { ICON_SIZE } from '@/shared/ui/icon-size';
 import { useFormatter, useTranslations } from 'next-intl';
 import { resolveDisplayReleaseTag } from '../lib/pending-release-tag';
 import { Link } from '@/i18n/navigation';
@@ -530,7 +531,7 @@ function PublishedActions({
           data-testid="download-primary-cta"
           className={cn(buttonVariants({ size: 'lg' }), 'rounded-chip px-4 sm:px-6')}
         >
-          <Download size={16} aria-hidden />
+          <Download size={ICON_SIZE.lg} aria-hidden />
           {t('primaryCtaPublished')}
           <AssetSize bytes={primaryAsset.sizeBytes} onFill />
         </a>
@@ -561,7 +562,7 @@ function PublishedActions({
               'touch-hit-expand rounded-chip px-4 sm:px-6',
             )}
           >
-            <Download size={15} aria-hidden />
+            <Download size={ICON_SIZE.md} aria-hidden />
             {t('archIntelCta')}
             <AssetSize bytes={intel.sizeBytes} />
           </a>
@@ -746,7 +747,7 @@ function PendingActions() {
           data-testid="download-primary-cta"
           className={cn(buttonVariants({ variant: 'ghost', size: 'lg' }), 'rounded-chip px-4 sm:px-6')}
         >
-          <ExternalLink size={16} aria-hidden />
+          <ExternalLink size={ICON_SIZE.lg} aria-hidden />
           {t('primaryCtaPending')}
         </MacosDownloadLink>
       </div>
@@ -827,7 +828,7 @@ function ReleaseFactLine() {
         data-testid="download-release-notes-link"
         className="touch-hit-expand inline-flex items-baseline gap-1.5 transition-colors hover:text-[color:var(--color-text-secondary)]"
       >
-        <ExternalLink size={11} aria-hidden className="shrink-0 self-center" />
+        <ExternalLink size={ICON_SIZE.sm} aria-hidden className="shrink-0 self-center" />
         {/*
          * ⚠️ mono 는 **이 스팬 하나뿐**이다. 예전에는 줄 전체가 `font-mono` 라
          * 한글("이상" · "릴리스 노트 보기")이 JetBrains Mono 에 없어 시스템
@@ -880,7 +881,7 @@ function TrustChips() {
       className="mt-2 flex min-w-0 items-baseline gap-2 break-keep text-label leading-label text-[color:var(--color-text-tertiary)]"
     >
       <Check
-        size={12}
+        size={ICON_SIZE.sm}
         aria-hidden
         className="mt-1 shrink-0 text-[color:var(--color-indigo-accent)]"
       />
@@ -1125,9 +1126,9 @@ function ChecksumRow({ arch }: { arch: DesktopArch }) {
         className="touch-hit-expand inline-flex h-7 shrink-0 items-center gap-1.5 rounded-chip border border-[color:var(--color-border-soft)] px-2 font-mono text-caption leading-caption text-[color:var(--color-text-tertiary)] transition-colors hover:border-[color:var(--color-border-strong)] hover:text-[color:var(--color-text-primary)]"
       >
         {copyState === 'copied' ? (
-          <Check size={12} aria-hidden />
+          <Check size={ICON_SIZE.sm} aria-hidden />
         ) : (
-          <Clipboard size={12} aria-hidden />
+          <Clipboard size={ICON_SIZE.sm} aria-hidden />
         )}
         {t('checksumCopy')}
       </button>
@@ -1187,7 +1188,7 @@ function PlatformStatus() {
               'min-h-11 w-full rounded-chip px-4 sm:w-auto sm:px-6',
             )}
           >
-            <Download size={15} aria-hidden />
+            <Download size={ICON_SIZE.md} aria-hidden />
             {t('windowsDownloadCta')}
             <AssetSize bytes={installer.sizeBytes} />
           </a>
@@ -1232,7 +1233,7 @@ function PlatformStatus() {
             'touch-hit-expand rounded-chip cursor-not-allowed opacity-55',
           )}
         >
-          <Download size={14} aria-hidden />
+          <Download size={ICON_SIZE.md} aria-hidden />
         {/*
           * **문구는 「아직 없습니다」로 남는다.** 소유자 지시는 *"준비중이라고"* 였고
           * 「준비 중」으로 바꿨더니 게이트가 잡았다 — `DownloadPage.test.tsx` 가 영문

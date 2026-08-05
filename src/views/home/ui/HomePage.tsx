@@ -19,6 +19,7 @@ import { useLocale, useTranslations } from "next-intl";
 // `History as HistoryIcon` — 전역 DOM History 생성자와의 충돌 원천 차단
 // (사용성 검수 P0, AtlasGitPanel 과 동일 처방).
 import { Compass, FolderOpen, HelpCircle, History as HistoryIcon, MessageCircle, Plus, X } from "lucide-react";
+import { ICON_SIZE } from "@/shared/ui/icon-size";
 import { useTypingShortcuts } from "@/shared/lib/use-typing-shortcut";
 import { useProjects } from "@/features/project-data-source";
 import { RecentChangesNeedsVaultDialog, useAdaptiveRecentChanges, useOntologyInsight, useVaultConceptFacts, useVaultDocFreshnessIndex } from "@/features/vault-ontology";
@@ -4107,7 +4108,7 @@ export function HomePage() {
                             "hover:text-[color:var(--color-text-primary)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--color-indigo-a46)] focus-visible:ring-inset",
                         })}
                       >
-                        <X size={12} aria-hidden />
+                        <X size={ICON_SIZE.sm} aria-hidden />
                       </button>
                     </div>
                     <button

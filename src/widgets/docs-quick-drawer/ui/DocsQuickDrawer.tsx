@@ -18,6 +18,7 @@ import {
   Star,
   X,
 } from "lucide-react";
+import { ICON_SIZE } from "@/shared/ui/icon-size";
 import {
   findRelatedDocs,
   pinnedDocsStorageKey,
@@ -178,11 +179,11 @@ function TreeBranch({
           aria-expanded={effectiveOpen}
         >
           {effectiveOpen ? (
-            <ChevronDown size={11} />
+            <ChevronDown size={ICON_SIZE.sm} />
           ) : (
-            <ChevronRight size={11} />
+            <ChevronRight size={ICON_SIZE.sm} />
           )}
-          <Folder size={11} />
+          <Folder size={ICON_SIZE.sm} />
           <span className="truncate">{node.name}</span>
           <span className="ml-auto font-mono text-caption text-[color:var(--color-text-quaternary)]">
             {node.children.filter((c) => c.type === "doc" || (c.children?.length ?? 0) > 0).length}
@@ -264,7 +265,7 @@ function DocRow({
               : "opacity-0 hover:text-[color:var(--color-indigo-accent)] group-hover:opacity-100 focus-visible:opacity-100",
           )}
         >
-          <Star size={12} fill={pinned ? "currentColor" : "none"} />
+          <Star size={ICON_SIZE.sm} fill={pinned ? "currentColor" : "none"} />
         </IconButton>
       </div>
       {hasExcerpt && (
@@ -544,7 +545,7 @@ export function DocsQuickDrawer({
                     className="inline-flex items-center gap-1 rounded-full border border-[color:var(--color-overlay-3)] bg-[color:var(--color-overlay-1)] px-3 py-1 text-label text-[color:var(--color-text-secondary)] transition-colors hover:border-[color:var(--color-indigo-a40)] hover:text-[color:var(--color-text-primary)]"
                     aria-label={t("openAllAriaLabel")}
                   >
-                    <BookOpen size={11} />
+                    <BookOpen size={ICON_SIZE.sm} />
                     {t("openAllLabel")}
                   </Link>
                   <IconButton
@@ -553,7 +554,7 @@ export function DocsQuickDrawer({
                     onClick={onClose}
                     className="hover:bg-[color:var(--color-overlay-2)] hover:text-[color:var(--color-text-primary)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--color-border-strong)]"
                   >
-                    <X size={14} />
+                    <X size={ICON_SIZE.md} />
                   </IconButton>
                 </div>
               </div>
@@ -626,7 +627,7 @@ export function DocsQuickDrawer({
                       })}
                       aria-label={t("tagClearAriaLabel")}
                     >
-                      <X size={10} />
+                      <X size={ICON_SIZE.sm} />
                       {t("tagClearLabel")}
                     </button>
                   )}
@@ -648,7 +649,7 @@ export function DocsQuickDrawer({
                             "shrink-0 gap-1 hover:border-[color:var(--color-indigo-a34)] hover:text-[color:var(--color-text-primary)]",
                         })}
                       >
-                        <Hash size={9} />
+                        <Hash size={ICON_SIZE.sm} />
                         <span className="max-w-[96px] truncate">{tag}</span>
                         <span className="font-mono text-caption text-[color:var(--color-text-quaternary)]">
                           {count}
@@ -666,7 +667,7 @@ export function DocsQuickDrawer({
                   {contextProject && relatedDocs.length > 0 && (
                     <section className="mb-4 rounded-panel border border-[color:var(--color-indigo-a24)] bg-[color:var(--color-indigo-a06)] p-2">
                       <p className={`mb-1.5 flex items-center gap-1 px-1 text-caption text-[color:var(--color-indigo-accent)] ${eyebrow14}`}>
-                        <Link2 size={10} />
+                        <Link2 size={ICON_SIZE.sm} />
                         {t("relatedSection", { name: contextProject.name, count: relatedDocs.length })}
                       </p>
                       <div className="space-y-0.5">
@@ -694,7 +695,7 @@ export function DocsQuickDrawer({
                   {pinnedDocs.length > 0 && (
                     <section className="mb-4">
                       <p className={`mb-1.5 flex items-center gap-1 px-2 text-caption text-[color:var(--color-indigo-accent)] ${eyebrow14}`}>
-                        <Star size={10} />
+                        <Star size={ICON_SIZE.sm} />
                         {t("pinnedSection", { count: pinnedDocs.length })}
                       </p>
                       <div className="space-y-0.5">
@@ -715,7 +716,7 @@ export function DocsQuickDrawer({
                   {recentViewed.length > 0 && (
                     <section className="mb-4">
                       <p className={`mb-1.5 flex items-center gap-1 px-2 text-caption text-[color:var(--color-text-quaternary)] ${eyebrow14}`}>
-                        <Clock size={10} />
+                        <Clock size={ICON_SIZE.sm} />
                         {t("recentSection", { count: recentViewed.length })}
                       </p>
                       <div className="space-y-0.5">
@@ -735,7 +736,7 @@ export function DocsQuickDrawer({
 
                   <section className="mb-4">
                     <p className={`mb-1.5 flex items-center gap-1 px-2 text-caption text-[color:var(--color-text-quaternary)] ${eyebrow14}`}>
-                      <Clock size={10} />
+                      <Clock size={ICON_SIZE.sm} />
                       {t("modifiedSection", { count: modifiedDocs.length })}
                     </p>
                     <div className="space-y-0.5">
@@ -805,7 +806,7 @@ export function DocsQuickDrawer({
                         onClick={onClose}
                         className="inline-flex items-center gap-1 rounded-full border border-[color:var(--color-indigo-a32)] bg-[color:var(--color-indigo-a10)] px-2.5 py-1 text-label text-[color:var(--color-text-primary)] transition-colors hover:border-[color:var(--color-indigo-a50)]"
                       >
-                        <BookOpen size={11} />
+                        <BookOpen size={ICON_SIZE.sm} />
                         {t("openVault")}
                       </Link>
                     </div>

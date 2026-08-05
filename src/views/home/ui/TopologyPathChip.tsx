@@ -1,6 +1,7 @@
 "use client";
 
 import { Route, X } from "lucide-react";
+import { ICON_SIZE } from "@/shared/ui/icon-size";
 import { CHROME_STATUS_CHIP_CLASS, CompactCopyButton, controlClass } from "@/shared/ui";
 
 export interface TopologyPathChipProps {
@@ -47,7 +48,7 @@ export function TopologyPathChip({
       role="status"
       className={CHROME_STATUS_CHIP_CLASS}
     >
-      <Route size={14} aria-hidden className="shrink-0 text-[color:var(--color-text-tertiary)]" />
+      <Route size={ICON_SIZE.md} aria-hidden className="shrink-0 text-[color:var(--color-text-tertiary)]" />
       <span data-testid="topology-path-chip-label" className="min-w-0 truncate">
         {label}
       </span>
