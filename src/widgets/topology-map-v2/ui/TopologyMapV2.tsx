@@ -424,7 +424,7 @@ export function TopologyMapV2(props: TopologyMapV2Props) {
         // `style.cursor = ""` 로 되돌릴 때 인라인 기본값은 그 자체가 지워져
         // `auto` 로 떨어진다(실측). 클래스로 두면 인라인이 걷힌 자리에서
         // 캐스케이드가 `grab` 을 되돌려 준다 — 되돌림이 저절로 옳아진다.
-        className="cursor-grab outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--color-indigo-accent)] focus-visible:ring-offset-2 focus-visible:ring-offset-[color:var(--color-canvas)]"
+        className="cursor-grab outline-none focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--color-indigo-accent)] focus-visible:ring-offset-2 focus-visible:ring-offset-[color:var(--color-canvas)]"
         style={{
           display: "block",
           width: "100%",
