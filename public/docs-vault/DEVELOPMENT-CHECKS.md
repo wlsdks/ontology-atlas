@@ -62,6 +62,8 @@ pnpm docs-vault:build && git add src/entities/docs-vault/data public/docs-vault
 | Design-system TOC drift | `pnpm design:toc:check` (in `pnpm docs:check`) | `pnpm design:toc` regenerates |
 | Implicit `<b>` weight (browser default 700) | `pnpm exec vitest run tests/contract/implicit-bold-weight.contract.test.ts` | `pnpm test:contracts` |
 | Drawing-surface type (canvas `ctx.font`, inline SVG attrs) | `pnpm exec vitest run tests/contract/drawing-surface-type.contract.test.ts` | `pnpm test:contracts` |
+| Focus ring presence (value layer emits it) | `pnpm exec vitest run tests/contract/focus-ring-presence.contract.test.ts` | `pnpm test:contracts` |
+| Raw colour literals (now `src/` + `app/` + `.css`) | `pnpm check:tokens` | `pnpm test:check:tokens` |
 
 ### Decision-ledger gate (`pnpm decisions:check`)
 

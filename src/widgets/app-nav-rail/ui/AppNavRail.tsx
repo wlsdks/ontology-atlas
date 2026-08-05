@@ -362,7 +362,13 @@ export function AppNavRail({
                   aria-current={isActive ? "page" : undefined}
                   data-testid={`app-nav-rail-item-${id}`}
                   data-active={isActive ? "true" : "false"}
-                  className="group relative flex w-full flex-col items-center gap-1 px-0 py-1.5"
+                  /* 2026-08-05: 초점 링이 없어 키보드로 오면 **OS 강조색**이
+                     그려졌다 — 헌장의 「무채색 + 인디고 하나」 밖이다. 같은
+                     파일의 하단 유틸 타일은 이미 이 링을 갖고 있었으니 형제가
+                     어긋나 있던 것이다. `rounded-card` 는 링이 라벨까지 감싸는
+                     상자를 아이콘 타일 모양과 맞추기 위한 것이고, 상자 치수는
+                     `ring-inset` 이라 한 픽셀도 안 바뀐다. */
+                  className="group relative flex w-full flex-col items-center gap-1 rounded-card px-0 py-1.5 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-[color:var(--color-indigo-a46)]"
                 >
                   <span
                     className={cn(
