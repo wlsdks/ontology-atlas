@@ -1274,7 +1274,7 @@ function PlatformHeading({
 }) {
   return (
     <div className="flex min-w-0 flex-wrap items-baseline gap-x-2 gap-y-1">
-      <h2 id={id} className="text-title font-semibold leading-title text-[color:var(--color-text-primary)]">
+      <h2 id={id} className="text-title font-[var(--font-weight-strong)] leading-title text-[color:var(--color-text-primary)]">
         {title}
       </h2>
       <span className="text-label leading-label text-[color:var(--color-text-tertiary)]">

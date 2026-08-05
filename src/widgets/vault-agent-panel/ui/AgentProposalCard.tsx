@@ -99,7 +99,7 @@ export function AgentProposalCard({
       className="mb-3 flex flex-col gap-2.5 rounded-card border border-[color:var(--color-border-strong)] bg-[color:var(--color-elevated)] p-3"
     >
       <header className="flex flex-col gap-1">
-        <p className="text-body font-semibold text-[color:var(--color-text-primary)] [word-break:keep-all]">
+        <p className="text-body font-[var(--font-weight-emphasis)] text-[color:var(--color-text-primary)] [word-break:keep-all]">
           {canWrite ? labels.title(proposal.changes.length) : labels.readOnlyTitle}
         </p>
         <p
@@ -218,7 +218,7 @@ export function AgentProposalCard({
                 size: 'md',
                 tone: 'strong',
                 className:
-                  'font-semibold tracking-label border-[color:var(--color-indigo-accent)] hover:bg-[color:var(--color-indigo-a16)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--color-indigo-accent)]',
+                  'font-[var(--font-weight-emphasis)] tracking-label border-[color:var(--color-indigo-accent)] hover:bg-[color:var(--color-indigo-a16)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--color-indigo-accent)]',
               })}
             >
               {copied ? labels.copied : labels.copy}

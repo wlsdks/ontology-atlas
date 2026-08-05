@@ -94,7 +94,7 @@ export function FullDetailA1ReachPanel({
           ))}
         </span>{" "}
         {labels.stepUnit} {labels.afterSteps}{" "}
-        <span className="font-mono text-body-lg font-semibold text-[color:var(--engraved-numeral-face)] [text-shadow:var(--engraved-numeral-text-shadow)]">
+        <span className="font-mono text-body-lg font-[var(--font-weight-emphasis)] text-[color:var(--engraved-numeral-face)] [text-shadow:var(--engraved-numeral-text-shadow)]">
           {labels.ofTotal(atDepth.reachableCount, reach.totalNodes)}
         </span>
         {" — "}

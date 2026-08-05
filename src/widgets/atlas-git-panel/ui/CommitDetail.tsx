@@ -120,7 +120,7 @@ export function CommitDetail({
     >
       {/* 정체 — 어느 렌즈에서도 안 사라진다. */}
       <header className="flex flex-none flex-col gap-1 px-5 pt-4 pb-3">
-        <p className="text-body-lg font-semibold text-[color:var(--color-text-primary)]">
+        <p className="text-body-lg font-[var(--font-weight-emphasis)] text-[color:var(--color-text-primary)]">
           {subject}
         </p>
         <p className="font-mono text-caption break-all text-[color:var(--color-text-quaternary)]">
@@ -143,7 +143,7 @@ export function CommitDetail({
             data-testid={`atlas-git-lens-${id}`}
             aria-selected={lens === id}
             onClick={() => setLens(id)}
-            className="-mb-px inline-flex min-h-9 items-center gap-1.5 border-b-2 border-transparent px-2.5 text-label text-[color:var(--color-text-tertiary)] transition-colors hover:text-[color:var(--color-text-primary)] aria-selected:border-[color:var(--color-indigo-brand)] aria-selected:font-medium aria-selected:text-[color:var(--color-text-primary)]"
+            className="-mb-px inline-flex min-h-9 items-center gap-1.5 border-b-2 border-transparent px-2.5 text-label text-[color:var(--color-text-tertiary)] transition-colors hover:text-[color:var(--color-text-primary)] aria-selected:border-[color:var(--color-indigo-brand)] aria-selected:font-[var(--font-weight-signature)] aria-selected:text-[color:var(--color-text-primary)]"
           >
             {id === "concepts" ? t("changedConcepts") : t("changedFiles")}
             <b className="font-normal tabular-nums text-[color:var(--color-text-quaternary)]">

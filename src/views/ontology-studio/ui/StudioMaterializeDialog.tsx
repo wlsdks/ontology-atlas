@@ -135,7 +135,7 @@ export function StudioMaterializeDialog({
         onClick={(e) => e.stopPropagation()}
       >
         <div className="flex items-center gap-2 border-b border-[color:var(--color-divider)] px-5 py-3">
-          <span className="min-w-0 flex-1 text-body-lg tracking-body-lg font-semibold text-[color:var(--color-text-primary)] [word-break:keep-all]">
+          <span className="min-w-0 flex-1 text-body-lg tracking-body-lg font-[var(--font-weight-emphasis)] text-[color:var(--color-text-primary)] [word-break:keep-all]">
             {labels.title}
           </span>
           <button

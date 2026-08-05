@@ -40,7 +40,7 @@ export function TopologyV2EdgeHoverCard({ sentence, typeLabel, why, clickHint, x
       <p className="font-mono text-caption uppercase tracking-[var(--tracking-caps-12)] text-[color:var(--topology-v2-panel-text-tertiary)]">
         {typeLabel}
       </p>
-      <p className="text-body font-medium leading-snug text-[color:var(--topology-v2-panel-text-primary)]">
+      <p className="text-body font-[var(--font-weight-signature)] leading-snug text-[color:var(--topology-v2-panel-text-primary)]">
         {sentence}
       </p>
       {why ? (

@@ -123,7 +123,7 @@ export function GuidedTourCard({
         ))}
       </div>
 
-      <h2 className="mb-1.5 text-body-lg tracking-body-lg font-semibold text-[color:var(--color-text-primary)]">
+      <h2 className="mb-1.5 text-body-lg tracking-body-lg font-[var(--font-weight-strong)] text-[color:var(--color-text-primary)]">
         {t(`steps.${step.copyKey}.title`)}
       </h2>
       <p className="mb-3 text-body tracking-body leading-body text-[color:var(--color-text-secondary)]">
@@ -175,10 +175,10 @@ export function GuidedTourCard({
               shape: "chip",
               size: "lg",
               tone: "strong",
-              /* 무게는 값 층이 `onAccent` 에서만 낸다 — 중립 칩의 `font-medium`
+              /* 무게는 값 층이 `onAccent` 에서만 낸다 — 중립 칩의 `font-[var(--font-weight-signature)]`
                  은 원래 값 그대로 유지한다(무게를 바꾸는 것은 이 라운드의 일이
                  아니다). */
-              className: "justify-center font-medium hover:bg-[color:var(--color-overlay-2)]",
+              className: "justify-center font-[var(--font-weight-signature)] hover:bg-[color:var(--color-overlay-2)]",
             })}
           >
             {t("finishTourAction")}

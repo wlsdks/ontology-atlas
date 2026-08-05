@@ -51,7 +51,7 @@ export function TopologyRealmChip({
       <span className="flex min-w-0 items-baseline" title={`${beforeLabel}${title}${afterLabel}`.trim()}>
         <span
           data-testid="topology-realm-chip-title"
-          className="max-w-[7rem] truncate font-medium text-[color:var(--color-text-primary)]"
+          className="max-w-[7rem] truncate font-[var(--font-weight-signature)] text-[color:var(--color-text-primary)]"
         >
           {title}
         </span>

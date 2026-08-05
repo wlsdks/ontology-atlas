@@ -92,7 +92,7 @@ export function AgentLockedState({
           같은 사실을 아래 띠가 다시 말하지 않는다 — 잠긴 이유의 주인은 여기
           하나뿐이고, 띠는 자기 일(입력칸의 자리 + 문)만 한다. */}
       <div data-testid="vault-agent-notice" className="flex flex-col gap-1.5">
-        <p className="text-body font-semibold text-[color:var(--color-text-primary)] [word-break:keep-all]">
+        <p className="text-body font-[var(--font-weight-emphasis)] text-[color:var(--color-text-primary)] [word-break:keep-all]">
           {title}
         </p>
         <p className="text-body leading-body text-[color:var(--color-text-secondary)] [word-break:keep-all]">
@@ -151,7 +151,7 @@ export function AgentLockedComposer({
       <span className="min-w-0 flex-1 text-body leading-body text-[color:var(--color-text-quaternary)] [word-break:keep-all]">
         {hint}
       </span>
-      <span className="shrink-0 rounded-chip bg-[color:var(--color-indigo-brand)] px-3 py-1.5 text-label font-semibold tracking-label text-[color:var(--color-text-on-accent)]">
+      <span className="shrink-0 rounded-chip bg-[color:var(--color-indigo-brand)] px-3 py-1.5 text-label font-[var(--font-weight-emphasis)] tracking-label text-[color:var(--color-text-on-accent)]">
         {actionLabel}
       </span>
     </>

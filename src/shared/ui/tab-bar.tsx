@@ -130,7 +130,7 @@ export function TabBar({
             onClick={() => activateTab(item.key)}
             onKeyDown={(event) => handleKeyDown(event, index)}
             className={
-              "-mb-px inline-flex items-baseline gap-2 border-b-[length:var(--tabbar-underline)] px-0.5 pb-[11px] font-mono text-label font-semibold uppercase tracking-[var(--tracking-caps-14)] transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-[color:var(--color-indigo-ring-a46)] " +
+              "-mb-px inline-flex items-baseline gap-2 border-b-[length:var(--tabbar-underline)] px-0.5 pb-[11px] font-mono text-label font-[var(--font-weight-emphasis)] uppercase tracking-[var(--tracking-caps-14)] transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-[color:var(--color-indigo-ring-a46)] " +
               (active
                 ? "border-[color:var(--color-indigo-accent)] text-[color:var(--color-text-primary)]"
                 : "border-transparent text-[color:var(--color-text-quaternary)] hover:text-[color:var(--color-text-secondary)]")
@@ -138,7 +138,7 @@ export function TabBar({
           >
             {item.label}
             {item.count !== undefined ? (
-              <span className="font-mono text-label font-semibold tracking-[var(--tracking-label)] tabular-nums text-[color:var(--color-text-tertiary)]">
+              <span className="font-mono text-label font-[var(--font-weight-emphasis)] tracking-[var(--tracking-label)] tabular-nums text-[color:var(--color-text-tertiary)]">
                 {item.count}
               </span>
             ) : null}

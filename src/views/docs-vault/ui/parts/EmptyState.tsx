@@ -24,7 +24,7 @@ export function EmptyState({
         <p className="font-mono text-caption uppercase tracking-[var(--tracking-caps-14)] text-[color:var(--color-text-quaternary)]">
           {t("eyebrow", { count: docCount })}
         </p>
-        <h2 className="mt-3 text-display font-semibold tracking-[var(--tracking-title)] text-[color:var(--color-text-primary)]">
+        <h2 className="mt-3 text-display font-[var(--font-weight-strong)] tracking-[var(--tracking-title)] text-[color:var(--color-text-primary)]">
           {t("title")}
         </h2>
         <p className="mx-auto mt-2 max-w-[440px] text-body leading-prose text-[color:var(--color-text-tertiary)]">
@@ -39,7 +39,7 @@ export function EmptyState({
               size: "lg",
               active: true,
               className:
-                "justify-center gap-2 font-medium hover:border-[color:var(--color-indigo-line-a54)] hover:bg-[color:var(--color-indigo-a16)]",
+                "justify-center gap-2 font-[var(--font-weight-signature)] hover:border-[color:var(--color-indigo-line-a54)] hover:bg-[color:var(--color-indigo-a16)]",
             })}
           >
             <PanelLeftOpen size={14} aria-hidden />

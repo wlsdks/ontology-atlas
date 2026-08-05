@@ -68,14 +68,14 @@ export function StudioTooNarrow() {
             <Link
               href="/topology/"
               data-testid="studio-too-narrow-map"
-              className="inline-flex min-h-8 items-center rounded-card border border-[color:var(--color-border-strong)] px-3 text-label font-semibold text-[color:var(--color-text-secondary)] transition-colors hover:text-[color:var(--color-text-primary)]"
+              className="inline-flex min-h-8 items-center rounded-card border border-[color:var(--color-border-strong)] px-3 text-label font-[var(--font-weight-emphasis)] text-[color:var(--color-text-secondary)] transition-colors hover:text-[color:var(--color-text-primary)]"
             >
               {t("openMap")}
             </Link>
             <Link
               href="/download/"
               data-testid="studio-too-narrow-get-app"
-              className="inline-flex min-h-8 items-center rounded-card border border-[color:var(--color-border-strong)] px-3 text-label font-semibold text-[color:var(--color-text-secondary)] transition-colors hover:text-[color:var(--color-text-primary)]"
+              className="inline-flex min-h-8 items-center rounded-card border border-[color:var(--color-border-strong)] px-3 text-label font-[var(--font-weight-emphasis)] text-[color:var(--color-text-secondary)] transition-colors hover:text-[color:var(--color-text-primary)]"
             >
               {t("getApp")}
             </Link>

@@ -127,7 +127,7 @@ export function VaultStartChecklist({
           className={
             hasDocs
               ? "shrink-0 border-[color:var(--color-overlay-3)] hover:border-[color:var(--color-indigo-line-a35)] hover:text-[color:var(--color-text-primary)]"
-              : "shrink-0 border-[color:var(--color-indigo-a46)] bg-[color:var(--color-indigo-a16)] font-medium hover:bg-[color:var(--color-indigo-a24)]"
+              : "shrink-0 border-[color:var(--color-indigo-a46)] bg-[color:var(--color-indigo-a16)] font-[var(--font-weight-signature)] hover:bg-[color:var(--color-indigo-a24)]"
           }
         >
           <Cable size={11} aria-hidden />

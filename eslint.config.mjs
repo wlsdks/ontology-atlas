@@ -195,6 +195,35 @@ const typographyAxisSelectors = [
     selector: 'TemplateElement[value.raw=/font-\\[[0-9]+\\]/]',
     message: '글자 무게도 램프다 (template literal). --font-weight-* 를 쓴다.',
   },
+  /*
+   * ## 이름 있는 무게 스텝 — 대괄호만 막던 것의 나머지 절반 (2026-08-05)
+   *
+   * 위 두 셀렉터는 `font-[560]` 처럼 **대괄호에 숫자를 적은 것**만 봤다. 그런데
+   * 실제 다수파는 `font-medium`/`font-semibold` 였다 — 어느 룰도, 어느 래칫도
+   * 안 보는 채로 **216곳**. `globals.css` 의 무게 블록이 스스로 *"Tailwind
+   * 기본(500/600/700)이 아니라 이 셋만 쓴다"* 고 적어 둔 바로 그 값들이다.
+   * `text-sm`/`rounded-md` 268건이 램프를 통째로 우회하던 것과 같은 모양이고,
+   * 같은 병이 축 하나에서 재발했다: **값이 아니라 문법이 게이트를 피한다.**
+   *
+   * `font-normal`(400)은 **막지 않는다.** 400 은 램프의 스텝이 아니라 문서의
+   * 기본 무게이고, `font-normal` 은 「강조를 끈다」는 뜻이다 — 실측 6곳 전부가
+   * 그 용법이었다(그중 둘은 브라우저가 700 으로 그리는 `<b>` 를 되돌린다).
+   * 램프는 그 기본 위에 얹는 강조 3단이다.
+   *
+   * ⚠️ 켜기 전 전수: 216곳을 전부 램프로 옮긴 뒤 켰다 — 위반 0.
+   */
+  {
+    selector:
+      'Literal[value=/(^|[^-\\w])font-(thin|extralight|light|medium|semibold|bold|extrabold|black)([^-\\w]|$)/]',
+    message:
+      '이름 있는 Tailwind 무게 스텝 금지 — 램프는 --font-weight-signature(510) · -emphasis(560) · -strong(650) 셋뿐이다. 제목 역할(h1~h6 · <b>/<strong> · 다이얼로그 제목 · display 이상 크기)은 strong, 그 밖의 인라인 강조는 emphasis 를 쓴다. 강조를 끄는 자리는 font-normal 이 맞다.',
+  },
+  {
+    selector:
+      'TemplateElement[value.raw=/(^|[^-\\w])font-(thin|extralight|light|medium|semibold|bold|extrabold|black)([^-\\w]|$)/]',
+    message:
+      '이름 있는 Tailwind 무게 스텝 금지 (template literal). --font-weight-signature/-emphasis/-strong 을 쓴다.',
+  },
   {
     selector:
       'Literal[value=/(^|[^-\\w])(?:text|bg|border|ring|fill|stroke|from|to|via)-(?:white|black|slate|gray|zinc|neutral|stone|red|orange|amber|yellow|lime|green|emerald|teal|cyan|sky|blue|indigo|violet|purple|fuchsia|pink|rose)(?:-\\d{2,3})?(?:\\/\\d+)?([^-\\w]|$)/]',
@@ -968,6 +997,14 @@ const eslintConfig = defineConfig([
         ...scaleGradientSelectors.filter((rule) => !rule.selector.includes('shadowBlur')),
         ...arbitrarySizeSelectors,
         ...accentTintPairingSelectors,
+        // 2026-08-05: 아래 넷이 빠져 있었다 — 위 주석이 경고한 그 함정을 이
+        // 블록 자신이 밟고 있었다. 예외는 `shadowBlur` 한 줄이어야 하는데
+        // 타입 축·층위·인라인 그림자·커서까지 같이 꺼져 있었다. 전수 0 이라
+        // 켜는 비용은 0.
+        ...inlineShadowSelectors,
+        ...cursorAffordanceSelectors,
+        ...typographyAxisSelectors,
+        ...layerSelectors,
       ],
     },
   },
@@ -999,6 +1036,16 @@ const eslintConfig = defineConfig([
         ...scaleGradientSelectors,
         ...arbitrarySizeSelectors,
         ...accentTintPairingSelectors,
+        // 2026-08-05: 이 블록도 같은 함정을 밟고 있었다. 위 주석이 램프
+        // 셀렉터를 «다시 실어야 한다» 고 정확히 경고해 놓고 `arbitrarySize`
+        // 까지만 실었고, 그래서 이 디렉터리에서는 무게·자간·팔레트·층위가
+        // **한 번도 강제된 적이 없다**(#940 이 켠 세 축 포함). 프로브로 확인:
+        // 이 경로의 `font-semibold`·`tracking-[…]`·`text-white` 는 0 error 로
+        // 통과했다. 전수 0 이라 켜는 비용은 0.
+        ...inlineShadowSelectors,
+        ...cursorAffordanceSelectors,
+        ...typographyAxisSelectors,
+        ...layerSelectors,
         {
           selector: 'Literal[value=/color-amber-docs-/]',
           message:

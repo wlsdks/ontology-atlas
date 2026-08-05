@@ -62,7 +62,7 @@ export function SampleWelcomeNote({
         <X size={13} aria-hidden />
       </IconButton>
       <p className="max-w-[560px] pr-6 text-body leading-body text-[color:var(--color-text-secondary)]">
-        <span className="block font-semibold text-[color:var(--color-text-primary)]">
+        <span className="block font-[var(--font-weight-emphasis)] text-[color:var(--color-text-primary)]">
           {copy.title}
         </span>
         {copy.body}
@@ -76,7 +76,7 @@ export function SampleWelcomeNote({
           size: "lg",
           active: true,
           className:
-            "w-fit flex-none font-medium hover:border-[color:var(--color-indigo-line-a54)] hover:bg-[color:var(--color-indigo-a24)]",
+            "w-fit flex-none font-[var(--font-weight-signature)] hover:border-[color:var(--color-indigo-line-a54)] hover:bg-[color:var(--color-indigo-a24)]",
         })}
         >
           <FolderOpen size={12} aria-hidden />

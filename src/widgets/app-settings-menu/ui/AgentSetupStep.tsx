@@ -132,11 +132,11 @@ export function AgentSetupStep({
       >
         <span
           aria-hidden
-          className={`inline-flex size-5 shrink-0 items-center justify-center rounded-full font-mono text-label font-medium ${BADGE[state]}`}
+          className={`inline-flex size-5 shrink-0 items-center justify-center rounded-full font-mono text-label font-[var(--font-weight-signature)] ${BADGE[state]}`}
         >
           {n}
         </span>
-        <span className="min-w-0 flex-1 truncate text-left font-medium">{title}</span>
+        <span className="min-w-0 flex-1 truncate text-left font-[var(--font-weight-signature)]">{title}</span>
         {trailing ? (
           <span className={`shrink-0 text-label ${TRAILING_INK[state]}`}>{trailing}</span>
         ) : null}

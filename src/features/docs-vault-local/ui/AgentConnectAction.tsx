@@ -63,7 +63,7 @@ export interface AgentConnectActionProps {
  * 같은 문자열이라 한 벌로 묶는다.
  */
 const INDIGO_SOLID_SKIN =
-  'w-full justify-center border-[color:var(--color-indigo-a46)] bg-[color:var(--color-indigo-a16)] font-medium hover:bg-[color:var(--color-indigo-a26)]';
+  'w-full justify-center border-[color:var(--color-indigo-a46)] bg-[color:var(--color-indigo-a16)] font-[var(--font-weight-signature)] hover:bg-[color:var(--color-indigo-a26)]';
 
 export function AgentConnectAction({ vaultPath, launch, onWritten, clientId }: AgentConnectActionProps) {
   const t = useTranslations('agentConnect');
@@ -163,7 +163,7 @@ export function AgentConnectAction({ vaultPath, launch, onWritten, clientId }: A
           data-testid="agent-connect-plan"
           className="rounded-chip border border-[color:var(--color-border-soft)] bg-[color:var(--color-overlay-1)] px-3 py-2.5"
         >
-          <p className="text-label font-medium text-[color:var(--color-text-secondary)]">
+          <p className="text-label font-[var(--font-weight-signature)] text-[color:var(--color-text-secondary)]">
             {plan.rootKind === 'repo-root'
               ? t('connectPlanRepoRoot', { path: plan.configRoot })
               : t('connectPlanVaultFolder', { path: plan.configRoot })}
@@ -226,7 +226,7 @@ export function AgentConnectAction({ vaultPath, launch, onWritten, clientId }: A
           data-testid="agent-connect-verified"
           className="rounded-chip border border-[color:var(--color-success-a35)] bg-[color:var(--color-success-a10)] px-3 py-2.5"
         >
-          <p className="inline-flex items-center gap-1.5 text-body font-medium text-[color:var(--color-text-primary)]">
+          <p className="inline-flex items-center gap-1.5 text-body font-[var(--font-weight-signature)] text-[color:var(--color-text-primary)]">
             <Check size={13} aria-hidden className="text-[color:var(--color-status-success)]" />
             {t('connectVerifiedTitle')}
           </p>
@@ -281,7 +281,7 @@ export function AgentConnectAction({ vaultPath, launch, onWritten, clientId }: A
           data-testid="agent-connect-failed"
           className="rounded-chip border border-[color:var(--color-danger-a32)] bg-[color:var(--color-danger-a10)] px-3 py-2.5"
         >
-          <p className="inline-flex items-center gap-1.5 text-body font-medium text-[color:var(--color-text-primary)]">
+          <p className="inline-flex items-center gap-1.5 text-body font-[var(--font-weight-signature)] text-[color:var(--color-text-primary)]">
             <CircleAlert size={13} aria-hidden className="text-[color:var(--color-status-danger)]" />
             {t('connectFailedTitle')}
           </p>
@@ -301,7 +301,7 @@ export function AgentConnectAction({ vaultPath, launch, onWritten, clientId }: A
               shape: 'link',
               tone: 'accentOnTint',
               className:
-                'touch-hit-expand mt-2 font-medium hover:text-[color:var(--color-text-primary)]',
+                'touch-hit-expand mt-2 font-[var(--font-weight-signature)] hover:text-[color:var(--color-text-primary)]',
             })}
           >
             {t('connectRetry')}

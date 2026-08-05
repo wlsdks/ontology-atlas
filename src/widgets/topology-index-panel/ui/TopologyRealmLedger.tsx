@@ -219,7 +219,7 @@ export function TopologyRealmLedger({
           </span>
           <p
             data-testid="topology-realm-title"
-            className="min-w-0 flex-1 truncate text-body-lg font-medium text-[color:var(--topology-v2-panel-text-primary)]"
+            className="min-w-0 flex-1 truncate text-body-lg font-[var(--font-weight-signature)] text-[color:var(--topology-v2-panel-text-primary)]"
           >
             {rootTitle}
           </p>

@@ -52,7 +52,7 @@ export function AgentScopeSheet({
       aria-label={labels.title}
       className="flex flex-col gap-3 rounded-card border border-[color:var(--color-border-strong)] bg-[color:var(--color-elevated)] p-3"
     >
-      <p className="text-body font-semibold text-[color:var(--color-text-primary)] [word-break:keep-all]">
+      <p className="text-body font-[var(--font-weight-emphasis)] text-[color:var(--color-text-primary)] [word-break:keep-all]">
         {labels.title}
       </p>
       <p className="text-body leading-body text-[color:var(--color-text-secondary)] [word-break:keep-all]">

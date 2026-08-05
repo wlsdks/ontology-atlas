@@ -297,7 +297,7 @@ export function AgentConnectSheet({
                         className={controlClass({
                           shape: "segment",
                           active: scope === option,
-                          className: "font-medium hover:text-[color:var(--color-text-primary)]",
+                          className: "font-[var(--font-weight-signature)] hover:text-[color:var(--color-text-primary)]",
                         })}
                       >
                         {option === "project" ? t("scopeProject") : t("scopeGlobal")}
@@ -457,8 +457,8 @@ export function AgentConnectSheet({
                           <table className="w-full border-collapse text-label">
                             <thead>
                               <tr className="border-b border-[color:var(--color-border-soft)] text-left text-[color:var(--color-text-quaternary)]">
-                                <th className="py-1.5 pr-3 font-medium">{t("otherToolsColTool")}</th>
-                                <th className="py-1.5 font-medium">{t("otherToolsColLocation")}</th>
+                                <th className="py-1.5 pr-3 font-[var(--font-weight-signature)]">{t("otherToolsColTool")}</th>
+                                <th className="py-1.5 font-[var(--font-weight-signature)]">{t("otherToolsColLocation")}</th>
                               </tr>
                             </thead>
                             <tbody>

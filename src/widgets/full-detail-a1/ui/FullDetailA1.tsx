@@ -289,7 +289,7 @@ export function FullDetailA1({
           <TopologyV2KindGlyph kind={node.kind} size={22} />
         </span>
         <div className="min-w-0 flex-1">
-          <h1 className="text-display font-semibold tracking-[var(--tracking-card)] text-[color:var(--topology-v2-panel-text-primary)]">
+          <h1 className="text-display font-[var(--font-weight-strong)] tracking-[var(--tracking-card)] text-[color:var(--topology-v2-panel-text-primary)]">
             {node.title}
           </h1>
           {/* 과제 ⑩ — 표시명이 원본 title 을 축약한 경우, 전체 title 을
@@ -399,7 +399,7 @@ export function FullDetailA1({
           className="mt-5.5 grid gap-2 border-y border-[color:var(--topology-v2-panel-border)] py-3.5 sm:grid-cols-[minmax(0,1fr)_auto] sm:items-end"
         >
           <div className="min-w-0">
-            <p className="text-label font-medium uppercase tracking-[var(--tracking-caps-08)] text-[color:var(--topology-v2-panel-text-quaternary)]">
+            <p className="text-label font-[var(--font-weight-signature)] uppercase tracking-[var(--tracking-caps-08)] text-[color:var(--topology-v2-panel-text-quaternary)]">
               {projectSourceLabels.heading}
               {projectSourceLabels.sourceKind ? (
                 <span className="ml-2 font-mono normal-case tracking-normal">
@@ -407,7 +407,7 @@ export function FullDetailA1({
                 </span>
               ) : null}
             </p>
-            <p className="mt-1 text-body-lg font-medium text-[color:var(--topology-v2-panel-text-primary)]">
+            <p className="mt-1 text-body-lg font-[var(--font-weight-signature)] text-[color:var(--topology-v2-panel-text-primary)]">
               {projectSourceLabels.status}
             </p>
             <p className="mt-0.5 text-body text-[color:var(--topology-v2-panel-text-tertiary)]">
@@ -433,12 +433,12 @@ export function FullDetailA1({
               onClick={() => void projectSourceAction()}
               disabled={projectSourceBusy}
               aria-busy={projectSourceBusy}
-              className="justify-self-start rounded-chip border border-[color:var(--topology-v2-indigo-border)] bg-[color:var(--topology-v2-panel-action-surface)] px-3 py-1.5 text-body font-medium text-[color:var(--topology-v2-indigo-bright)] transition-colors hover:border-[color:var(--topology-v2-indigo)] hover:bg-[color:var(--topology-v2-panel-row-hover)] disabled:cursor-wait disabled:opacity-60 sm:justify-self-end"
+              className="justify-self-start rounded-chip border border-[color:var(--topology-v2-indigo-border)] bg-[color:var(--topology-v2-panel-action-surface)] px-3 py-1.5 text-body font-[var(--font-weight-signature)] text-[color:var(--topology-v2-indigo-bright)] transition-colors hover:border-[color:var(--topology-v2-indigo)] hover:bg-[color:var(--topology-v2-panel-row-hover)] disabled:cursor-wait disabled:opacity-60 sm:justify-self-end"
             >
               {projectSourceBusy ? projectSourceLabels.busy : projectSourceLabels.action}
             </button>
           ) : (
-            <span className="justify-self-start text-body font-medium text-[color:var(--topology-v2-indigo-bright)] sm:justify-self-end">
+            <span className="justify-self-start text-body font-[var(--font-weight-signature)] text-[color:var(--topology-v2-indigo-bright)] sm:justify-self-end">
               {projectSourceLabels.action}
             </span>
           )}
@@ -468,7 +468,7 @@ export function FullDetailA1({
           data-fulldetail-code-locations
           className="mt-5.5 flex flex-col gap-1.5 rounded-card border border-[color:var(--topology-v2-panel-border)] bg-[color:var(--topology-v2-panel-surface)] px-3.5 py-3"
         >
-          <span className="text-body font-medium text-[color:var(--topology-v2-panel-text-primary)]">
+          <span className="text-body font-[var(--font-weight-signature)] text-[color:var(--topology-v2-panel-text-primary)]">
             {t("codeLocations.heading")}
           </span>
           <ul className="flex flex-col gap-1">
@@ -507,7 +507,7 @@ export function FullDetailA1({
         data-fulldetail-handoff
         className="mt-6.5 flex items-center gap-3.5 rounded-card border border-[color:var(--topology-v2-panel-border)] bg-[color:var(--topology-v2-panel-surface)] px-3.5 py-3"
       >
-        <span className="shrink-0 text-body font-medium text-[color:var(--topology-v2-panel-text-primary)]">
+        <span className="shrink-0 text-body font-[var(--font-weight-signature)] text-[color:var(--topology-v2-panel-text-primary)]">
           {t("handoff.label")}
         </span>
         <span className="min-w-0 flex-1 truncate font-mono text-label text-[color:var(--topology-v2-panel-text-tertiary)]">
@@ -517,7 +517,7 @@ export function FullDetailA1({
           type="button"
           onClick={handleCopyHandoff}
           data-testid="full-detail-a1-handoff-copy"
-          className="shrink-0 rounded-chip border border-[color:var(--topology-v2-indigo-border)] bg-[color:var(--topology-v2-panel-action-surface)] px-3 py-1.5 text-body font-medium text-[color:var(--topology-v2-indigo-bright)] transition-colors hover:bg-[color:var(--topology-v2-panel-row-hover)] hover:border-[color:var(--topology-v2-indigo)]"
+          className="shrink-0 rounded-chip border border-[color:var(--topology-v2-indigo-border)] bg-[color:var(--topology-v2-panel-action-surface)] px-3 py-1.5 text-body font-[var(--font-weight-signature)] text-[color:var(--topology-v2-indigo-bright)] transition-colors hover:bg-[color:var(--topology-v2-panel-row-hover)] hover:border-[color:var(--topology-v2-indigo)]"
         >
           {t("handoff.copy")}
         </button>
@@ -574,7 +574,7 @@ export function FullDetailA1({
           />
         ) : (
           <>
-            <h2 className="mb-2 text-body font-medium text-[color:var(--topology-v2-panel-text-primary)]">
+            <h2 className="mb-2 text-body font-[var(--font-weight-signature)] text-[color:var(--topology-v2-panel-text-primary)]">
               {t("body.title")}
             </h2>
             {bodyMarkdown && bodyMarkdown.trim().length > 0 ? (

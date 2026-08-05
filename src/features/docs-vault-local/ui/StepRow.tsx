@@ -78,11 +78,11 @@ export function StepRow({ n, title, desc, testId, children }: StepRowProps) {
          */}
         <span
           aria-hidden
-          className="inline-flex size-6 shrink-0 items-center justify-center rounded-full bg-[color:var(--color-indigo-a16)] font-mono text-label font-medium text-[color:var(--color-indigo-text-soft)]"
+          className="inline-flex size-6 shrink-0 items-center justify-center rounded-full bg-[color:var(--color-indigo-a16)] font-mono text-label font-[var(--font-weight-signature)] text-[color:var(--color-indigo-text-soft)]"
         >
           {n}
         </span>
-        <b className="min-w-0 text-body-lg font-semibold text-[color:var(--color-text-primary)]">
+        <b className="min-w-0 text-body-lg font-[var(--font-weight-strong)] text-[color:var(--color-text-primary)]">
           {title}
         </b>
       </p>

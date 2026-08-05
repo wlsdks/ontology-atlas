@@ -301,7 +301,7 @@ function WorkGroupHeading({
   return (
     <div data-testid={testId} className="flex flex-col gap-1">
       <div className="flex items-baseline gap-2">
-        <InsightsSectionTitle level={2} className="text-body-lg font-medium tracking-[var(--tracking-title)] text-[color:var(--color-text-primary)]">
+        <InsightsSectionTitle level={2} className="text-body-lg font-[var(--font-weight-signature)] tracking-[var(--tracking-title)] text-[color:var(--color-text-primary)]">
           {title}
         </InsightsSectionTitle>
         <span
@@ -350,7 +350,7 @@ function TouchUpBand({
       className="flex flex-col gap-2 rounded-panel border border-[color:var(--color-border-soft)] bg-[color:var(--color-elevated)] p-[var(--card-pad)]"
     >
       <div className="flex items-baseline gap-2">
-        <InsightsSectionTitle level={2} className="text-body-lg font-medium tracking-[var(--tracking-title)] text-[color:var(--color-text-primary)]">
+        <InsightsSectionTitle level={2} className="text-body-lg font-[var(--font-weight-signature)] tracking-[var(--tracking-title)] text-[color:var(--color-text-primary)]">
           {labels.touchUpBandTitle}
         </InsightsSectionTitle>
         <span
@@ -465,7 +465,7 @@ function QueueSection({
     <section aria-label={title} className="flex flex-col">
       <div className="flex flex-col gap-1 border-b border-[color:var(--color-divider)] pb-2">
         <div className="flex items-baseline gap-2">
-          <InsightsSectionTitle level={3} className="text-body font-medium text-[color:var(--color-text-primary)]">{title}</InsightsSectionTitle>
+          <InsightsSectionTitle level={3} className="text-body font-[var(--font-weight-signature)] text-[color:var(--color-text-primary)]">{title}</InsightsSectionTitle>
           <span className="font-mono text-label tabular-nums text-[color:var(--topology-v2-numeral-face)]">
             {totalCount}
           </span>
@@ -597,7 +597,7 @@ function DuplicateSection({
     >
       <div className="flex flex-col gap-1 border-b border-[color:var(--color-divider)] pb-2">
         <div className="flex items-baseline gap-2">
-          <InsightsSectionTitle level={3} className="text-body font-medium text-[color:var(--color-text-primary)]">
+          <InsightsSectionTitle level={3} className="text-body font-[var(--font-weight-signature)] text-[color:var(--color-text-primary)]">
             {labels.sectionDuplicate}
           </InsightsSectionTitle>
           <span className="font-mono text-label tabular-nums text-[color:var(--topology-v2-numeral-face)]">
@@ -725,7 +725,7 @@ function CycleSection({
   return (
     <section aria-label={labels.sectionCycle} data-testid="do-next-cycles" className="flex flex-col">
       <div className="flex items-baseline gap-2 border-b border-[color:var(--color-divider)] pb-2">
-        <InsightsSectionTitle level={3} className="flex items-center gap-1.5 text-body font-medium text-[color:var(--color-text-primary)]">
+        <InsightsSectionTitle level={3} className="flex items-center gap-1.5 text-body font-[var(--font-weight-signature)] text-[color:var(--color-text-primary)]">
           <AlertTriangle size={12} aria-hidden className="text-[color:var(--color-status-warning)]" />
           {labels.sectionCycle}
         </InsightsSectionTitle>
@@ -1133,7 +1133,7 @@ export function DoNextTab({
             className="min-w-0"
           >
             <div className="flex flex-col gap-1 sm:flex-row sm:items-baseline sm:gap-2">
-              <InsightsSectionTitle level={2} className="text-body-lg font-medium tracking-[var(--tracking-title)] text-[color:var(--color-text-primary)]">
+              <InsightsSectionTitle level={2} className="text-body-lg font-[var(--font-weight-signature)] tracking-[var(--tracking-title)] text-[color:var(--color-text-primary)]">
                 {labels.agentReadinessTitle}
               </InsightsSectionTitle>
               <span className="flex min-w-0 flex-wrap items-baseline gap-x-3 gap-y-0.5 font-mono text-label tabular-nums text-[color:var(--topology-v2-numeral-face)] sm:ml-auto">
@@ -1233,7 +1233,7 @@ export function DoNextTab({
             className="sm:border-l sm:border-[color:var(--color-divider)] sm:pl-8"
           >
             <div className="flex items-baseline gap-2">
-              <InsightsSectionTitle level={2} className="text-body-lg font-medium tracking-[var(--tracking-title)] text-[color:var(--color-text-primary)]">
+              <InsightsSectionTitle level={2} className="text-body-lg font-[var(--font-weight-signature)] tracking-[var(--tracking-title)] text-[color:var(--color-text-primary)]">
                 {labels.repairQueueTitle}
               </InsightsSectionTitle>
               {/* `min-w-0` — 옆의 「에이전트 준비도」 카드가 이미 쓰던 규칙을
@@ -1352,7 +1352,7 @@ export function DoNextTab({
             className="mt-5 border-t border-[color:var(--color-divider)] pt-4"
           >
             <div className="flex items-baseline gap-2">
-              <InsightsSectionTitle level={2} className="text-body-lg font-medium tracking-[var(--tracking-title)] text-[color:var(--color-text-primary)]">
+              <InsightsSectionTitle level={2} className="text-body-lg font-[var(--font-weight-signature)] tracking-[var(--tracking-title)] text-[color:var(--color-text-primary)]">
                 {labels.digestTitle}
               </InsightsSectionTitle>
               <span className="ml-auto font-mono text-label tabular-nums text-[color:var(--topology-v2-numeral-face)]">
@@ -1398,7 +1398,7 @@ export function DoNextTab({
             스스로 이름을 말한다(랜드마크 이름은 aria-label 이 계속 지킨다). */}
         {queueEmpty ? (
           <>
-            <InsightsSectionTitle level={2} className="text-body-lg font-medium tracking-[var(--tracking-title)] text-[color:var(--color-text-primary)]">
+            <InsightsSectionTitle level={2} className="text-body-lg font-[var(--font-weight-signature)] tracking-[var(--tracking-title)] text-[color:var(--color-text-primary)]">
               {labels.queueTitle}
             </InsightsSectionTitle>
             <p className="text-body text-[color:var(--color-text-quaternary)]">{labels.emptyQueue}</p>
@@ -1449,7 +1449,7 @@ function RepairQueueTargetRow({
         <Link
           href={builderHref(target.slug)}
           data-testid="insights-repair-queue-builder-link"
-          className="inline-flex min-h-8 items-center justify-center rounded-chip border border-[color:var(--color-border-soft)] bg-[color:var(--color-overlay-1)] px-2.5 text-label font-medium text-[color:var(--color-text-primary)] transition-colors hover:bg-[color:var(--color-overlay-2)]"
+          className="inline-flex min-h-8 items-center justify-center rounded-chip border border-[color:var(--color-border-soft)] bg-[color:var(--color-overlay-1)] px-2.5 text-label font-[var(--font-weight-signature)] text-[color:var(--color-text-primary)] transition-colors hover:bg-[color:var(--color-overlay-2)]"
         >
           {labels.repairQueueOpenBuilder}
         </Link>

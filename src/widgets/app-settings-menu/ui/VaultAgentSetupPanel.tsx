@@ -1104,7 +1104,7 @@ export function VaultAgentSetupPanel({
             )}
             <span className="min-w-0">
               <span className="flex items-baseline justify-between gap-2">
-                <span className="text-label font-medium text-[color:var(--color-text-secondary)]">
+                <span className="text-label font-[var(--font-weight-signature)] text-[color:var(--color-text-secondary)]">
                   {t('agentSetup.validationGateTitle')}
                 </span>
                 <span
@@ -1189,7 +1189,7 @@ export function VaultAgentSetupPanel({
         <div className="flex flex-col gap-2">
           <SectionLabel>{t('agentSetup.groupHowAgentsUse')}</SectionLabel>
           <p className="break-keep rounded-micro border border-[color:var(--color-border-soft)] bg-[color:var(--color-overlay-recessed-a12)] px-2 py-1.5 text-label text-[color:var(--color-text-tertiary)]">
-            <span className="font-medium text-[color:var(--color-text-secondary)]">
+            <span className="font-[var(--font-weight-signature)] text-[color:var(--color-text-secondary)]">
               {t('agentSetup.boundaryTitle')}
             </span>{' '}
             {t('agentSetup.boundaryDesc')}
@@ -1202,7 +1202,7 @@ export function VaultAgentSetupPanel({
               { term: t('agentSetup.modeGateTerm'), desc: t('agentSetup.modeGateDesc') },
             ].map((mode) => (
               <div key={mode.term} className="grid grid-cols-[84px_1fr] gap-2">
-                <dt className="text-label font-medium text-[color:var(--color-text-secondary)]">
+                <dt className="text-label font-[var(--font-weight-signature)] text-[color:var(--color-text-secondary)]">
                   {mode.term}
                 </dt>
                 <dd className="break-keep text-label text-[color:var(--color-text-tertiary)]">
@@ -1212,7 +1212,7 @@ export function VaultAgentSetupPanel({
             ))}
           </dl>
           <details className="rounded-micro border border-[color:var(--color-overlay-2)] bg-[color:var(--color-overlay-recessed-a12)] px-2 py-1.5">
-            <summary className=" select-none text-label font-medium text-[color:var(--color-text-secondary)] marker:text-[color:var(--color-text-quaternary)]">
+            <summary className=" select-none text-label font-[var(--font-weight-signature)] text-[color:var(--color-text-secondary)] marker:text-[color:var(--color-text-quaternary)]">
               {t('agentSetup.nextStepsSummary')}
             </summary>
             <ul aria-label={t('agentSetup.nextStepsAriaLabel')} className="mt-1.5 grid gap-1">
@@ -1358,7 +1358,7 @@ export function VaultAgentSetupPanel({
             </Chip>
           </div>
           <div className="rounded-micro border border-[color:var(--color-border-soft)] bg-[color:var(--color-overlay-recessed-a12)] px-2 py-1.5">
-            <p className="text-label font-medium text-[color:var(--color-text-secondary)]">
+            <p className="text-label font-[var(--font-weight-signature)] text-[color:var(--color-text-secondary)]">
               {t('agentSetup.syncAfterChangeTitle')}
             </p>
             <p className="mt-1 break-keep text-label text-[color:var(--color-text-tertiary)]">
@@ -1386,7 +1386,7 @@ export function VaultAgentSetupPanel({
               { term: t('agentSetup.rootCodebaseTerm'), desc: t('agentSetup.rootCodebaseDesc') },
             ].map((rootMode) => (
               <div key={rootMode.term} className="grid grid-cols-[92px_1fr] gap-2">
-                <dt className="text-label font-medium text-[color:var(--color-text-secondary)]">
+                <dt className="text-label font-[var(--font-weight-signature)] text-[color:var(--color-text-secondary)]">
                   {rootMode.term}
                 </dt>
                 <dd className="break-keep text-label text-[color:var(--color-text-tertiary)]">
@@ -1469,7 +1469,7 @@ export function VaultAgentSetupPanel({
  */
 function SectionLabel({ children }: { children: ReactNode }) {
   return (
-    <h4 className="text-caption font-medium uppercase tracking-[var(--tracking-caps-12)] text-[color:var(--color-text-quaternary)]">
+    <h4 className="text-caption font-[var(--font-weight-signature)] uppercase tracking-[var(--tracking-caps-12)] text-[color:var(--color-text-quaternary)]">
       {children}
     </h4>
   );

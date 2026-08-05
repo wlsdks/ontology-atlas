@@ -1143,7 +1143,7 @@ function StudioStage({
                 className={controlClass({
                   shape: "card",
                   className:
-                    "font-semibold hover:text-[color:var(--color-text-primary)]",
+                    "font-[var(--font-weight-emphasis)] hover:text-[color:var(--color-text-primary)]",
                 })}
               >
                 {t("notFound.openMap")}
@@ -1154,7 +1154,7 @@ function StudioStage({
                 className={controlClass({
                   shape: "card",
                   className:
-                    "font-semibold hover:text-[color:var(--color-text-primary)]",
+                    "font-[var(--font-weight-emphasis)] hover:text-[color:var(--color-text-primary)]",
                 })}
               >
                 {t("notFound.create")}
@@ -1185,7 +1185,7 @@ function StudioStage({
               className={controlClass({
                   shape: "card",
                   className:
-                    "font-semibold hover:text-[color:var(--color-text-primary)]",
+                    "font-[var(--font-weight-emphasis)] hover:text-[color:var(--color-text-primary)]",
                 })}
             >
               {t("empty.create")}

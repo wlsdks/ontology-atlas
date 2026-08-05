@@ -9,7 +9,7 @@ import { InsightsSectionTitle } from "./parts/InsightsSectionTitle";
  * ## 왜 이 게이트가 생겼나 (2026-07-29 도그푸딩)
  *
  * 인사이트 보드 전체의 heading 요소가 **`<h1>` 하나**였다. 「에이전트 준비도」·
- * 「수리 큐」·「여러 곳에서 참조돼요」는 전부 `text-body-lg font-medium` 을 입힌
+ * 「수리 큐」·「여러 곳에서 참조돼요」는 전부 `text-body-lg` + 서명 무게를 입힌
  * `<span>` 이라, 눈에는 세 단 위계가 보이는데 문서에는 한 단도 없었다.
  *
  * 이 화면의 일은 **훑어서 다음 할 일을 고르는 것**이다. 제목으로 훑을 수 없으면
@@ -45,14 +45,14 @@ describe("InsightsSectionTitle", () => {
     render(
       <InsightsSectionTitle
         level={2}
-        className="text-body-lg font-medium tracking-[-0.01em] text-[color:var(--color-text-primary)]"
+        className="text-body-lg font-[var(--font-weight-signature)] tracking-[-0.01em] text-[color:var(--color-text-primary)]"
       >
         에이전트 준비도
       </InsightsSectionTitle>,
     );
     const el = screen.getByRole("heading", { level: 2 });
     expect(el.className).toContain("text-body-lg");
-    expect(el.className).toContain("font-medium");
+    expect(el.className).toContain("font-[var(--font-weight-signature)]");
   });
 
   /**
@@ -73,7 +73,7 @@ describe("InsightsSectionTitle", () => {
 
   it("호출부 클래스와 함께 실려도 shrink-0 이 살아남는다", () => {
     render(
-      <InsightsSectionTitle level={3} className="text-body font-medium">
+      <InsightsSectionTitle level={3} className="text-body font-[var(--font-weight-signature)]">
         여러 곳에서 참조돼요
       </InsightsSectionTitle>,
     );
@@ -96,7 +96,8 @@ describe("InsightsSectionTitle", () => {
  * **구획 제목이 `<span>` 으로 되돌아가는 것을 막는 탐지기.**
  *
  * 위 단위 테스트는 컴포넌트만 본다 — 다음 사람이 컴포넌트를 안 쓰고 예전
- * `<span className="text-body-lg font-medium …">` 을 다시 쓰면 통과한다.
+ * `<span className="text-body-lg font-[var(--font-weight-signature)] …">` 을 다시
+ * 쓰면 통과한다.
  * 그래서 소스를 직접 센다. 클래스 문자열이 곧 역할 선언이기 때문에 이 검사가
  * 성립한다.
  */
@@ -105,9 +106,16 @@ describe("인사이트 소스 — 구획 제목 클래스가 span 으로 남아 
   const { join } = await import("node:path");
 
   const ROOT = "src/views/ontology-insights/ui";
+  /*
+   * ⚠️ **이 문자열은 규격이 아니라 «그때의 글자 모양»이다.** 무게 축이 램프로
+   * 올라가면서(2026-08-05) `font-medium` → `font-[var(--font-weight-signature)]`
+   * 로 바뀌었고, 그때 이 목록을 같이 안 고쳤으면 이 게이트는 **존재하지 않는
+   * 문자열을 찾느라 영원히 통과**했을 것이다 — 빨개질 수 없는 게이트는 게이트가
+   * 아니다(`/gate-probe`). 램프를 또 옮기면 여기도 같이 옮긴다.
+   */
   const TITLE_CLASSES = [
-    'text-body-lg font-medium tracking-[-0.01em] text-[color:var(--color-text-primary)]',
-    'text-body font-medium text-[color:var(--color-text-primary)]',
+    'text-body-lg font-[var(--font-weight-signature)] tracking-[-0.01em] text-[color:var(--color-text-primary)]',
+    'text-body font-[var(--font-weight-signature)] text-[color:var(--color-text-primary)]',
   ];
 
   function walk(dir: string): string[] {

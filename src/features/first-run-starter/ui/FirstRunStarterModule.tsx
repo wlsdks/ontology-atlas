@@ -296,7 +296,7 @@ export function FirstRunStarterModule({
           판단해 넣지 않는다. */}
       <p
         data-testid="first-run-starter-brand"
-        className="mb-1 text-caption font-medium tracking-[var(--tracking-label)] text-[color:var(--topology-v2-panel-text-quaternary)]"
+        className="mb-1 text-caption font-[var(--font-weight-signature)] tracking-[var(--tracking-label)] text-[color:var(--topology-v2-panel-text-quaternary)]"
       >
         {t("brand")}
       </p>
@@ -334,7 +334,7 @@ export function FirstRunStarterModule({
             그 뒤에 작은 활자가 곧바로 붙었다("…보는 지도예 / 요. 내 마크다운
             폴더를…"). 한 줄 안에서 두 크기와 두 행간이 겹치는 자리다. 크기
             전환은 줄 경계에서만 일어나게 한다. */}
-        <b className="mb-1.5 block text-body-lg font-semibold leading-body-lg text-[color:var(--topology-v2-panel-text-primary)]">
+        <b className="mb-1.5 block text-body-lg font-[var(--font-weight-strong)] leading-body-lg text-[color:var(--topology-v2-panel-text-primary)]">
           {t(sampleSource === "storefront" ? "contextStorefrontBold" : "contextBold")}
         </b>
         {t(sampleSource === "storefront" ? "contextStorefrontRest" : "contextRest")}{" "}
@@ -440,7 +440,7 @@ export function FirstRunStarterModule({
           <Link
             href="/download/"
             data-testid="first-run-starter-unsupported-cta"
-            className="mt-2 inline-flex items-center gap-1.5 text-body font-medium text-[color:var(--color-indigo-accent)] transition-colors hover:text-[color:var(--topology-v2-panel-text-primary)]"
+            className="mt-2 inline-flex items-center gap-1.5 text-body font-[var(--font-weight-signature)] text-[color:var(--color-indigo-accent)] transition-colors hover:text-[color:var(--topology-v2-panel-text-primary)]"
           >
             {t("unsupportedCta")}
           </Link>
@@ -451,12 +451,12 @@ export function FirstRunStarterModule({
           onClick={() => setGuideOpen(true)}
           disabled={busy}
           data-testid="first-run-starter-open"
-          className="touch-hit-expand relative flex h-10 w-full items-center justify-center gap-2 rounded-card border border-[color:var(--color-indigo-line-a45)] bg-[color:var(--color-indigo-brand)] text-body font-semibold text-[color:var(--color-text-on-accent)] shadow-[inset_0_1px_0_var(--color-overlay-3)] transition-colors hover:bg-[color:var(--color-indigo-brand-hover)] disabled:opacity-60"
+          className="touch-hit-expand relative flex h-10 w-full items-center justify-center gap-2 rounded-card border border-[color:var(--color-indigo-line-a45)] bg-[color:var(--color-indigo-brand)] text-body font-[var(--font-weight-emphasis)] text-[color:var(--color-text-on-accent)] shadow-[inset_0_1px_0_var(--color-overlay-3)] transition-colors hover:bg-[color:var(--color-indigo-brand-hover)] disabled:opacity-60"
         >
           <FolderOpen size={14} aria-hidden />
           {busy && !scaffolding ? t("openBusy") : t("openLabel")}
           {applePlatform ? (
-            <span className="rounded-micro border border-b-2 border-[color:var(--color-keycap-edge-on-accent)] px-1.5 py-px font-mono text-caption font-medium opacity-80">
+            <span className="rounded-micro border border-b-2 border-[color:var(--color-keycap-edge-on-accent)] px-1.5 py-px font-mono text-caption font-[var(--font-weight-signature)] opacity-80">
               ⌘O
             </span>
           ) : null}
@@ -619,7 +619,7 @@ export function FirstRunStarterModule({
         >
           {GLOSSARY_TERMS.map((term) => (
             <Fragment key={term}>
-              <dt className="font-medium text-[color:var(--topology-v2-panel-text-secondary)]">
+              <dt className="font-[var(--font-weight-signature)] text-[color:var(--topology-v2-panel-text-secondary)]">
                 {glossary(`${term}Term`)}
               </dt>
               <span

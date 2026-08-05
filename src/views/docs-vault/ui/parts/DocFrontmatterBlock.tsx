@@ -539,7 +539,7 @@ export function DocFrontmatterBlock({
         className="mx-auto mt-4 max-w-[760px] px-6 md:px-10"
       >
         <div className="rounded-chip border border-[color:var(--color-border-soft)] bg-[color:var(--color-canvas)] px-4 py-3">
-          <p className="text-body font-medium text-[color:var(--color-text-primary)]">
+          <p className="text-body font-[var(--font-weight-signature)] text-[color:var(--color-text-primary)]">
             {t("notOnMapTitle")}
           </p>
           {/* `leading-*` 없음 — `text-label` 이 자기 행간을 싣는다. */}
@@ -592,7 +592,7 @@ export function DocFrontmatterBlock({
           {kindValue ? (
             <>
               <span className="text-[color:var(--color-text-quaternary)]">kind:</span>
-              <span className="font-semibold text-[color:var(--engraved-numeral-face)] [text-shadow:var(--engraved-numeral-text-shadow)]">
+              <span className="font-[var(--font-weight-emphasis)] text-[color:var(--engraved-numeral-face)] [text-shadow:var(--engraved-numeral-text-shadow)]">
                 {kindValue}
               </span>
             </>
@@ -650,7 +650,7 @@ export function DocFrontmatterBlock({
                   <span
                     className={
                       key === "kind"
-                        ? "font-semibold text-[color:var(--engraved-numeral-face)] [text-shadow:var(--engraved-numeral-text-shadow)]"
+                        ? "font-[var(--font-weight-emphasis)] text-[color:var(--engraved-numeral-face)] [text-shadow:var(--engraved-numeral-text-shadow)]"
                         : "min-w-0 truncate text-[color:var(--color-text-secondary)]"
                     }
                   >

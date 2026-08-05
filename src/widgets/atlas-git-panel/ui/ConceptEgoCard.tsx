@@ -65,7 +65,7 @@ export function ConceptEgoCard({
       <div className="flex flex-col gap-1.5 border-b border-[color:var(--color-divider)] bg-[color:var(--color-overlay-1)] px-4 py-3">
         <div className="flex min-w-0 items-center gap-2.5">
           <TopologyV2KindGlyph kind={ego.kind} size={15} />
-          <b className="truncate text-body-lg font-semibold text-[color:var(--color-text-primary)]">
+          <b className="truncate text-body-lg font-[var(--font-weight-strong)] text-[color:var(--color-text-primary)]">
             {ego.label}
           </b>
           <span className="shrink-0 text-label text-[color:var(--color-text-quaternary)]">

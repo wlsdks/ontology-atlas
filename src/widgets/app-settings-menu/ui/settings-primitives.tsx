@@ -261,7 +261,7 @@ export function SegmentSwitch({
             onClick={() => onChange(option.value)}
             aria-pressed={active}
             className={cn(
-              'flex h-8 items-center justify-center rounded-chip px-2 font-medium transition-colors',
+              'flex h-8 items-center justify-center rounded-chip px-2 font-[var(--font-weight-signature)] transition-colors',
               active
                 ? 'bg-[color:var(--color-panel)] text-[color:var(--color-text-primary)]'
                 : 'text-[color:var(--color-text-tertiary)] hover:text-[color:var(--color-text-secondary)]',

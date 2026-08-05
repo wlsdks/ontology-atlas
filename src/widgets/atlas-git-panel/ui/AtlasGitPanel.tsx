@@ -188,7 +188,7 @@ const INIT_CLI_COMMAND = "git init";
  * 강등에서 유일한 진짜 다음 걸음이 복사 버튼보다 작았다).
  */
 const PRIMARY_ACTION_CLASS =
-  "inline-flex h-[var(--git-setup-action-height)] shrink-0 items-center justify-center gap-1.5 rounded-[var(--chrome-radius-inner)] bg-[color:var(--color-indigo-brand)] px-4 text-body font-semibold text-[color:var(--color-text-on-accent)] transition-colors hover:bg-[color:var(--color-indigo-brand-hover)] disabled:opacity-60";
+  "inline-flex h-[var(--git-setup-action-height)] shrink-0 items-center justify-center gap-1.5 rounded-[var(--chrome-radius-inner)] bg-[color:var(--color-indigo-brand)] px-4 text-body font-[var(--font-weight-emphasis)] text-[color:var(--color-text-on-accent)] transition-colors hover:bg-[color:var(--color-indigo-brand-hover)] disabled:opacity-60";
 
 /** 보조 탈출구 — 있지만 주 동작과 경쟁하지 않는 무게. */
 const SECONDARY_ACTION_CLASS =
@@ -222,7 +222,7 @@ const noopSubscribe = () => () => {};
  */
 function SectionLabel({ children }: { children: React.ReactNode }) {
   return (
-    <span className="text-label font-medium text-[color:var(--color-text-quaternary)]">
+    <span className="text-label font-[var(--font-weight-signature)] text-[color:var(--color-text-quaternary)]">
       {children}
     </span>
   );
@@ -820,7 +820,7 @@ function PageHeader({
             arbitrary length 로 우회 참조하면 글자 크기만 올라가고 그 단이 싣는
             행간은 아래 단 것이 그대로 남아, 아무도 고른 적 없는 비율이 만들어진다
             — 여기가 그랬다(23px 글자에 title 짝인 24px 행간, 1.04). */}
-        <h1 className="flex items-center gap-2 text-title font-semibold tracking-[var(--tracking-title)] text-[color:var(--color-text-primary)] sm:text-display">
+        <h1 className="flex items-center gap-2 text-title font-[var(--font-weight-strong)] tracking-[var(--tracking-title)] text-[color:var(--color-text-primary)] sm:text-display">
           <HistoryIcon size={18} aria-hidden className="text-[color:var(--color-indigo-text-soft)]" />
           {t("title")}
         </h1>
@@ -908,7 +908,7 @@ function ConnectLadder({ t, current }: { t: Translator; current: SetupStep }) {
             <span className="flex min-w-0 flex-col">
               <span
                 className={cn(
-                  "truncate text-body font-semibold",
+                  "truncate text-body font-[var(--font-weight-emphasis)]",
                   active
                     ? "text-[color:var(--color-text-primary)]"
                     : "text-[color:var(--color-text-tertiary)]",
@@ -1150,7 +1150,7 @@ function SetupFrame({
           {t("title")}
         </p>
         <div className="flex flex-col gap-2">
-          <h1 className="text-display font-semibold tracking-[var(--tracking-card)] text-[color:var(--color-text-primary)]">
+          <h1 className="text-display font-[var(--font-weight-strong)] tracking-[var(--tracking-card)] text-[color:var(--color-text-primary)]">
             {title}
           </h1>
           {body ? (
@@ -1420,7 +1420,7 @@ function RemoteActionButton({
         size: "md",
         tone: "secondary",
         className:
-          "font-medium border-[color:var(--color-border-strong)] bg-[color:var(--color-elevated)] hover:border-[color:var(--color-indigo-a46)] hover:bg-[color:var(--color-overlay-2)] hover:text-[color:var(--color-text-primary)] disabled:border-[color:var(--color-border-soft)] disabled:bg-transparent disabled:text-[color:var(--color-text-quaternary)]",
+          "font-[var(--font-weight-signature)] border-[color:var(--color-border-strong)] bg-[color:var(--color-elevated)] hover:border-[color:var(--color-indigo-a46)] hover:bg-[color:var(--color-overlay-2)] hover:text-[color:var(--color-text-primary)] disabled:border-[color:var(--color-border-soft)] disabled:bg-transparent disabled:text-[color:var(--color-text-quaternary)]",
       })}
     >
       {busy ? "…" : label}
@@ -1883,7 +1883,7 @@ function ChangeList({
             {kindGroups.map((group) => (
               <li key={group.kind ?? "__other"} className="flex flex-col">
                 <p className="flex h-[var(--git-row-h)] shrink-0 items-center gap-1.5 pl-1.5 text-label text-[color:var(--color-text-quaternary)]">
-                  <span className="font-medium text-[color:var(--color-text-tertiary)]">
+                  <span className="font-[var(--font-weight-signature)] text-[color:var(--color-text-tertiary)]">
                     {group.kind ?? t("kindOther")}
                   </span>
                   <span aria-hidden>{group.counts.total}</span>
@@ -2179,7 +2179,7 @@ function StepList({
             <span className="truncate text-label text-[color:var(--color-text-tertiary)]">
               {t("remoteOnlyWhen")}
             </span>
-            <span className="truncate text-body-lg font-semibold text-[color:var(--color-text-primary)]">
+            <span className="truncate text-body-lg font-[var(--font-weight-emphasis)] text-[color:var(--color-text-primary)]">
               {t("remoteOnlyTitle", { count: behind })}
             </span>
             <span className="truncate text-label text-[color:var(--color-text-tertiary)]">
@@ -2205,7 +2205,7 @@ function StepList({
             <span className="truncate text-label tabular-nums text-[color:var(--color-text-tertiary)]">
               {t("pendingNow")}
             </span>
-            <span className="truncate text-body-lg font-semibold text-[color:var(--color-text-primary)]">
+            <span className="truncate text-body-lg font-[var(--font-weight-emphasis)] text-[color:var(--color-text-primary)]">
               {t("changesTitle")}
             </span>
             {/* 누를 수 있는 행 = tertiary (위 `ChangeRow` 주석의 알파 합성
@@ -2271,7 +2271,7 @@ function StepList({
               </span>
               {/* 주어는 **개념**이다. 개념을 안 건드린 걸음만 요약/원문이
                   그 자리를 대신한다 — 빈 줄로 두면 무슨 걸음인지 알 수 없다. */}
-              <span className="flex min-w-0 items-center gap-2.5 truncate text-body-lg font-semibold text-[color:var(--color-text-primary)]">
+              <span className="flex min-w-0 items-center gap-2.5 truncate text-body-lg font-[var(--font-weight-emphasis)] text-[color:var(--color-text-primary)]">
                 {stepConcepts.length > 0 ? (
                   <>
                     {stepConcepts.slice(0, STEP_CONCEPT_SLOTS).map((concept) => (

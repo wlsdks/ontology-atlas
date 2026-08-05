@@ -799,7 +799,7 @@ export function AppSettingsMenu({
                           closePanel(false);
                           replayGuide();
                         }}
-                        className="border-[color:var(--color-border-soft)] bg-[color:var(--color-elevated)] font-medium hover:bg-[color:var(--color-overlay-2)] hover:text-[color:var(--color-text-primary)]"
+                        className="border-[color:var(--color-border-soft)] bg-[color:var(--color-elevated)] font-[var(--font-weight-signature)] hover:bg-[color:var(--color-overlay-2)] hover:text-[color:var(--color-text-primary)]"
                       >
                         {t('replayGuideAction')}
                       </Chip>
@@ -1079,7 +1079,7 @@ export function AppSettingsMenu({
                   ) : (
                     <>
                       <div className="rounded-card border border-[color:var(--color-border-soft)] bg-[color:var(--color-overlay-1)] px-3 py-2.5">
-                        <p className="text-body font-medium text-[color:var(--color-text-secondary)]">
+                        <p className="text-body font-[var(--font-weight-signature)] text-[color:var(--color-text-secondary)]">
                           {t('agentStatusNoVault')}
                         </p>
                         <p className="mt-1 break-keep text-label leading-4 text-[color:var(--color-text-tertiary)]">
@@ -1087,7 +1087,7 @@ export function AppSettingsMenu({
                         </p>
                       </div>
                       <div className="rounded-card border border-[color:var(--color-border-soft)] bg-[color:var(--color-overlay-1)] px-3 py-2.5">
-                        <p className="text-body font-medium text-[color:var(--color-text-secondary)]">
+                        <p className="text-body font-[var(--font-weight-signature)] text-[color:var(--color-text-secondary)]">
                           {t('mcpProofTitle')}
                         </p>
                         <p className="mt-1 break-keep text-label leading-4 text-[color:var(--color-text-tertiary)]">

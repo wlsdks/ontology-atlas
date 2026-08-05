@@ -483,7 +483,7 @@ function ProjectSourceRemedy({
           data-proposal-confidence={proposal.confidence}
           className="flex flex-col gap-1"
         >
-          <p className="text-body font-semibold text-[color:var(--topology-v2-panel-text-secondary)]">
+          <p className="text-body font-[var(--font-weight-emphasis)] text-[color:var(--topology-v2-panel-text-secondary)]">
             {proposal.question}
           </p>
           {/* 경로는 **긴 문자열이 아니라 답**이다 — 앞의 폴더 맥락과 마지막
@@ -517,7 +517,7 @@ function ProjectSourceRemedy({
                 shape: "chip",
                 size: "lg",
                 className:
-                  "shrink-0 font-semibold border-[color:var(--topology-v2-panel-primary-border)] bg-[color:var(--topology-v2-panel-primary-surface)] text-[color:var(--topology-v2-panel-primary-text)] hover:border-[color:var(--topology-v2-panel-primary-border-hover)] hover:bg-[color:var(--topology-v2-panel-primary-surface-hover)] disabled:cursor-wait",
+                  "shrink-0 font-[var(--font-weight-emphasis)] border-[color:var(--topology-v2-panel-primary-border)] bg-[color:var(--topology-v2-panel-primary-surface)] text-[color:var(--topology-v2-panel-primary-text)] hover:border-[color:var(--topology-v2-panel-primary-border-hover)] hover:bg-[color:var(--topology-v2-panel-primary-surface-hover)] disabled:cursor-wait",
               })}
             >
               {busy ? busyLabel ?? proposal.confirmLabel : proposal.confirmLabel}
@@ -534,7 +534,7 @@ function ProjectSourceRemedy({
               size: "lg",
               className: showProposal
                 ? "shrink-0 border-[color:var(--topology-v2-panel-action-border)] bg-[color:var(--topology-v2-panel-action-surface)] text-[color:var(--topology-v2-panel-text-tertiary)] hover:border-[color:var(--topology-v2-panel-domain-border-hover)] hover:bg-[color:var(--topology-v2-panel-row-hover)] hover:text-[color:var(--topology-v2-panel-text-secondary)] disabled:cursor-wait"
-                : "shrink-0 font-semibold border-[color:var(--topology-v2-panel-primary-border)] bg-[color:var(--topology-v2-panel-primary-surface)] text-[color:var(--topology-v2-panel-primary-text)] hover:border-[color:var(--topology-v2-panel-primary-border-hover)] hover:bg-[color:var(--topology-v2-panel-primary-surface-hover)] disabled:cursor-wait",
+                : "shrink-0 font-[var(--font-weight-emphasis)] border-[color:var(--topology-v2-panel-primary-border)] bg-[color:var(--topology-v2-panel-primary-surface)] text-[color:var(--topology-v2-panel-primary-text)] hover:border-[color:var(--topology-v2-panel-primary-border-hover)] hover:bg-[color:var(--topology-v2-panel-primary-surface-hover)] disabled:cursor-wait",
             })}
           >
             {showProposal && proposal
@@ -559,7 +559,7 @@ function ProjectSourceRemedy({
               shape: "chip",
               size: "lg",
               className:
-                "w-fit shrink-0 font-semibold border-[color:var(--topology-v2-panel-primary-border)] bg-[color:var(--topology-v2-panel-primary-surface)] text-[color:var(--topology-v2-panel-primary-text)] hover:border-[color:var(--topology-v2-panel-primary-border-hover)] hover:bg-[color:var(--topology-v2-panel-primary-surface-hover)]",
+                "w-fit shrink-0 font-[var(--font-weight-emphasis)] border-[color:var(--topology-v2-panel-primary-border)] bg-[color:var(--topology-v2-panel-primary-surface)] text-[color:var(--topology-v2-panel-primary-text)] hover:border-[color:var(--topology-v2-panel-primary-border-hover)] hover:bg-[color:var(--topology-v2-panel-primary-surface-hover)]",
             })}
           >
             {degraded.ctaLabel}
@@ -688,7 +688,7 @@ const ACTION_TILE_LEADING = "leading-[1.1]";
  * 여는 태그 안의 **리터럴** `controlClass(` 만 본다).
  */
 const ACTION_TILE_INK =
-  `flex-1 border-[color:var(--topology-v2-panel-action-border)] bg-[color:var(--topology-v2-panel-action-surface)] font-medium ${ACTION_TILE_LEADING} [word-break:keep-all] text-[color:var(--topology-v2-panel-text-tertiary)] hover:border-[color:var(--topology-v2-panel-domain-border-hover)] hover:bg-[color:var(--topology-v2-panel-row-hover)] hover:text-[color:var(--topology-v2-panel-text-secondary)] active:bg-[color:var(--topology-v2-panel-row-active)]`;
+  `flex-1 border-[color:var(--topology-v2-panel-action-border)] bg-[color:var(--topology-v2-panel-action-surface)] font-[var(--font-weight-signature)] ${ACTION_TILE_LEADING} [word-break:keep-all] text-[color:var(--topology-v2-panel-text-tertiary)] hover:border-[color:var(--topology-v2-panel-domain-border-hover)] hover:bg-[color:var(--topology-v2-panel-row-hover)] hover:text-[color:var(--topology-v2-panel-text-secondary)] active:bg-[color:var(--topology-v2-panel-row-active)]`;
 
 /**
  * 관계 그룹 헤더의 방향 글리프 — 승인된 시안(mockup-panel-detail)의 SVG 를
@@ -795,7 +795,7 @@ function RelationGroupShell({
         </span>
         <span
           title={help}
-          className="text-body font-semibold tracking-[var(--tracking-body)] text-[color:var(--topology-v2-panel-text-secondary)]"
+          className="text-body font-[var(--font-weight-emphasis)] tracking-[var(--tracking-body)] text-[color:var(--topology-v2-panel-text-secondary)]"
         >
           {label}
         </span>
@@ -1186,7 +1186,7 @@ export function TopologyV2DetailPanel({
               {title}
             </h2>
             {/* kind = 읽히는 텍스트 배지(글리프 + 단어), 우측 counterweight */}
-            <span className="flex shrink-0 items-center gap-1.5 rounded-chip border border-[color:var(--topology-v2-panel-kind-badge-border)] bg-[color:var(--topology-v2-panel-kind-badge-surface)] py-[3px] pl-[7px] pr-[9px] text-label font-semibold tracking-[var(--tracking-label)] text-[color:var(--topology-v2-panel-text-secondary)]">
+            <span className="flex shrink-0 items-center gap-1.5 rounded-chip border border-[color:var(--topology-v2-panel-kind-badge-border)] bg-[color:var(--topology-v2-panel-kind-badge-surface)] py-[3px] pl-[7px] pr-[9px] text-label font-[var(--font-weight-emphasis)] tracking-[var(--tracking-label)] text-[color:var(--topology-v2-panel-text-secondary)]">
               <TopologyV2KindGlyph kind={kind} size={12} />
               {labels.kindLabel}
             </span>
@@ -1249,7 +1249,7 @@ export function TopologyV2DetailPanel({
                   <span className="shrink-0 text-label text-[color:var(--topology-v2-panel-text-tertiary)]">
                     {labels.domainLabel}
                   </span>
-                  <span className="truncate text-body font-semibold text-[color:var(--topology-v2-panel-domain-text)]">
+                  <span className="truncate text-body font-[var(--font-weight-emphasis)] text-[color:var(--topology-v2-panel-domain-text)]">
                     {domain.title}
                   </span>
                   <ChevronRight
@@ -1300,14 +1300,14 @@ export function TopologyV2DetailPanel({
               {labels.sourceHeading ? (
                 <span
                   data-testid="topology-v2-project-source-heading"
-                  className="text-label font-semibold text-[color:var(--topology-v2-panel-text-secondary)]"
+                  className="text-label font-[var(--font-weight-emphasis)] text-[color:var(--topology-v2-panel-text-secondary)]"
                 >
                   {labels.sourceHeading}
                 </span>
               ) : null}
               <div className="flex min-w-0 items-center gap-1.5 text-[color:var(--topology-v2-panel-text-secondary)]">
                 <ProjectSourceStatusIcon status={projectSource.status} />
-                <span className="truncate font-medium">{labels.sourceStatus}</span>
+                <span className="truncate font-[var(--font-weight-signature)]">{labels.sourceStatus}</span>
                 {labels.sourceKind ? (
                   <span className="ml-auto shrink-0 font-mono text-label text-[color:var(--topology-v2-panel-text-quaternary)]">
                     {labels.sourceKind}
@@ -1324,7 +1324,7 @@ export function TopologyV2DetailPanel({
                   className="text-[color:var(--topology-v2-panel-text-secondary)]"
                 >
                   {labels.sourceGapLabel ? (
-                    <span className="font-medium">{labels.sourceGapLabel}: </span>
+                    <span className="font-[var(--font-weight-signature)]">{labels.sourceGapLabel}: </span>
                   ) : null}
                   {labels.sourceGap}
                 </span>
@@ -1653,7 +1653,7 @@ export function TopologyV2DetailPanel({
                     shape: "card",
                     size: "sm",
                     className:
-                      "shrink-0 font-semibold border-[color:var(--topology-v2-panel-primary-border)] bg-[color:var(--topology-v2-panel-primary-surface)] text-[color:var(--topology-v2-panel-primary-text)] hover:border-[color:var(--topology-v2-panel-primary-border-hover)] hover:bg-[color:var(--topology-v2-panel-primary-surface-hover)]",
+                      "shrink-0 font-[var(--font-weight-emphasis)] border-[color:var(--topology-v2-panel-primary-border)] bg-[color:var(--topology-v2-panel-primary-surface)] text-[color:var(--topology-v2-panel-primary-text)] hover:border-[color:var(--topology-v2-panel-primary-border-hover)] hover:bg-[color:var(--topology-v2-panel-primary-surface-hover)]",
                   })}
             >
               {labels.openFullDetail}
@@ -1673,7 +1673,7 @@ export function TopologyV2DetailPanel({
                   shape: "chip",
                   size: "lg",
                   className:
-                    "shrink-0 font-semibold border-[color:var(--topology-v2-panel-primary-border)] bg-[color:var(--topology-v2-panel-primary-surface)] text-[color:var(--topology-v2-panel-primary-text)] hover:border-[color:var(--topology-v2-panel-primary-border-hover)] hover:bg-[color:var(--topology-v2-panel-primary-surface-hover)] disabled:cursor-wait",
+                    "shrink-0 font-[var(--font-weight-emphasis)] border-[color:var(--topology-v2-panel-primary-border)] bg-[color:var(--topology-v2-panel-primary-surface)] text-[color:var(--topology-v2-panel-primary-text)] hover:border-[color:var(--topology-v2-panel-primary-border-hover)] hover:bg-[color:var(--topology-v2-panel-primary-surface-hover)] disabled:cursor-wait",
                 })}
               >
                 {projectSourceBusy ? labels.sourceBusy ?? labels.sourceAction : labels.sourceAction}

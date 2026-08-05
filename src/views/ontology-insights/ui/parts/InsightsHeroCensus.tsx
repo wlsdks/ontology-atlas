@@ -79,7 +79,7 @@ export function InsightsHeroCensus({
 function HeroSegment({ label, children }: { label: string; children: ReactNode }) {
   return (
     <div className="flex min-w-0 flex-1 flex-col gap-2.5 border-t border-[color:var(--color-divider)] px-6 py-0.5 pt-3 first:border-t-0 first:pt-0.5 sm:border-t-0 sm:border-l sm:pt-0.5 sm:first:border-l-0">
-      <div className="text-body font-medium text-[color:var(--color-text-secondary)]">{label}</div>
+      <div className="text-body font-[var(--font-weight-signature)] text-[color:var(--color-text-secondary)]">{label}</div>
       {children}
     </div>
   );
@@ -94,7 +94,7 @@ function BigNum({ value, unit, suffix }: { value: number | string; unit?: string
   return (
     <div
       // eslint-disable-next-line no-restricted-syntax -- 센서스 시그니처 대형 숫자(40px)는 type 램프 상단(hero 30px)을 넘는 의도적 display 예외.
-      className="font-mono text-[40px] font-semibold leading-none tabular-nums tracking-[var(--tracking-label)] text-[color:var(--topology-v2-numeral-face)]"
+      className="font-mono text-[40px] font-[var(--font-weight-strong)] leading-none tabular-nums tracking-[var(--tracking-label)] text-[color:var(--topology-v2-numeral-face)]"
       style={{ textShadow: "0 2px 0 var(--topology-v2-numeral-shadow)" }}
       data-testid="insights-bignum"
     >
