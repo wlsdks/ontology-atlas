@@ -1,3 +1,5 @@
+import { FONT_WEIGHT } from "@/shared/ui/font-weight";
+
 /**
  * 발자국 글리프 — 「걸어온 길」의 시각 표기.
  *
@@ -276,7 +278,7 @@ export function drawFootprintSteps(
   ctx.globalAlpha = alpha * (paint.appear ?? 1);
   ctx.fillStyle = color;
   // 숫자는 배율을 그대로 따르지 않는다 — 11px 아래로 내려가면 못 읽는다.
-  ctx.font = `650 ${Math.max(10, Math.round(11 * Math.max(k, 0.85)))}px ui-monospace, SFMono-Regular, monospace`;
+  ctx.font = `${FONT_WEIGHT.strong} ${Math.max(10, Math.round(11 * Math.max(k, 0.85)))}px ui-monospace, SFMono-Regular, monospace`;
   ctx.textAlign = "left";
   ctx.textBaseline = "middle";
   ctx.fillText(label, at.x + footprintPairRadius(size) * 0.75, at.y - footprintPairRadius(size) * 0.75);

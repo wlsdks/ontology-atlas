@@ -50,14 +50,18 @@ export function MiniDomainMap({ projectTitle, domains, ariaLabel }: Props) {
         stroke="var(--kind-glyph-stroke-project)"
         strokeWidth={1.5}
       />
+      {/*
+        ⚠️ **타입은 속성이 아니라 클래스로 준다** (2026-08-05). `fontSize={9.5}`
+        처럼 SVG 속성으로 주면 lint 셀렉터도 램프 래칫도 **한 글자도 못 본다** —
+        캔버스 렌더러와 같은 사각지대다. 클래스로 주면 SVG `<text>` 에도 CSS
+        font-size/weight 가 그대로 적용되면서 게이트 사정거리 안으로 들어온다.
+      */}
       <text
         x={layout.center.x}
         y={layout.center.y + 30}
         textAnchor="middle"
-        fontSize={9.5}
-        fontWeight={600}
+        className="font-mono text-caption font-[var(--font-weight-strong)]"
         fill="var(--color-text-tertiary)"
-        fontFamily="var(--font-mono, ui-monospace, monospace)"
       >
         {projectTitle}
       </text>
@@ -80,9 +84,7 @@ export function MiniDomainMap({ projectTitle, domains, ariaLabel }: Props) {
               x={node.x}
               y={node.y + 3.5}
               textAnchor="middle"
-              fontSize={10}
-              fontWeight={600}
-              fontFamily="var(--font-mono, ui-monospace, monospace)"
+              className="font-mono text-caption font-[var(--font-weight-strong)]"
               fill="var(--engraved-numeral-face)"
             >
               {node.total}
@@ -91,9 +93,8 @@ export function MiniDomainMap({ projectTitle, domains, ariaLabel }: Props) {
               x={node.x}
               y={labelY}
               textAnchor="middle"
-              fontSize={9}
+              className="font-mono text-caption"
               fill="var(--color-text-quaternary)"
-              fontFamily="var(--font-mono, ui-monospace, monospace)"
             >
               {node.title}
             </text>

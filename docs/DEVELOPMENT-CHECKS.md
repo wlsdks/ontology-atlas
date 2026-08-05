@@ -61,6 +61,7 @@ pnpm docs-vault:build && git add src/entities/docs-vault/data public/docs-vault
 | Design don't-list drift | `pnpm exec vitest run tests/contract/design-donts-parity.contract.test.ts` | `pnpm test:contracts` |
 | Design-system TOC drift | `pnpm design:toc:check` (in `pnpm docs:check`) | `pnpm design:toc` regenerates |
 | Implicit `<b>` weight (browser default 700) | `pnpm exec vitest run tests/contract/implicit-bold-weight.contract.test.ts` | `pnpm test:contracts` |
+| Drawing-surface type (canvas `ctx.font`, inline SVG attrs) | `pnpm exec vitest run tests/contract/drawing-surface-type.contract.test.ts` | `pnpm test:contracts` |
 
 ### Decision-ledger gate (`pnpm decisions:check`)
 
