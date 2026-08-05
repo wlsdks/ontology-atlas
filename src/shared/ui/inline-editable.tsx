@@ -165,7 +165,7 @@ export function InlineEditable({
           ref={textareaRef}
           rows={3}
           {...sharedProps}
-          className={cn(sharedProps.className, "resize-y leading-7")}
+          className={cn(sharedProps.className, "resize-y leading-display")}
         />
       );
     }

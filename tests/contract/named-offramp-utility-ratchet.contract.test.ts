@@ -102,6 +102,39 @@ const FAMILIES: ReadonlyArray<readonly [name: string, re: RegExp, budget: number
    * 붙들고 단계를 나눈다 — 재유입은 오늘부터 0, 상환은 per-site 판정 라운드로.
    * 치환 목적지는 `--leading-*` 램프(caption…hero-lg · display-tight · prose)다.
    */
+  /*
+   * ## 비율 계열 — 2026-08-05 에 **자리별로 실측했다** (아직 안 갚음)
+   *
+   * 숫자 계열과 달리 이쪽은 픽셀이 움직인다. 다음 디자인 패스가 처음부터 다시
+   * 재지 않도록, 각 자리가 **어느 램프 스텝으로 갈 때 몇 px 움직이는지**를 여기
+   * 남긴다(98곳이 같은 줄에 타입을 갖고 있고 2곳은 없다):
+   *
+   * | 현재 | 옆 타입 | 결과 px | 최근접 스텝 | 이동 | 건수 |
+   * |---|---|---|---|---|---|
+   * | relaxed | label(11)     | 17.88 | label(16)     | **−1.88** | **31** |
+   * | relaxed | caption(9.5)  | 15.44 | label(16)     | +0.56 | 22 |
+   * | snug    | label(11)     | 15.12 | label(16)     | +0.88 | 14 |
+   * | relaxed | body(12.5)    | 20.31 | body(20)      | −0.31 | 11 |
+   * | none    | caption(9.5)  |  9.50 | caption(14)   | **+4.50** | 6 |
+   * | tight   | display(23)   | 28.75 | display(28)   | −0.75 | 3 |
+   * | relaxed | body-lg(14)   | 22.75 | body-lg(22)   | −0.75 | 3 |
+   *
+   * 픽셀 0 은 **4곳뿐**이고 58곳이 1px 이하, 7곳이 2px 초과다.
+   *
+   * **기계 치환을 하면 안 되는 이유 둘** — 둘 다 위 표가 아니라 «무엇을 하는
+   * 자리인가» 에서 나온다:
+   *
+   * 1. **`relaxed + text-label` 31곳은 −1.88px, 즉 좁히는 방향**이다. 작은
+   *    한글 본문에서 행간을 2px 좁히는 것은 가독성 결정이지 정리가 아니다
+   *    (`design.md`: 행간 상한은 한글 기준으로 정한다).
+   * 2. **`leading-none` 은 행간 값이 아니라 레이아웃 지시**다 — 배지·숫자처럼
+   *    고정 높이 상자 안의 한 줄에서 «여분을 주지 마라» 는 뜻이고, 그래서
+   *    `caption`(14)으로 옮기면 9.5px 상자가 +4.5px 터진다. 무게 축에서
+   *    `font-normal`(「강조를 끈다」)을 램프 밖이 아니라 **기본값**으로 본 것과
+   *    같은 종류의 구별이다.
+   *
+   * 갚는 라운드는 자리별 before→after 표를 갖는 디자인 패스다.
+   */
   ['leading-none', /(?<![-\w])leading-none(?![-\w])/g, 9],
   ['leading-tight', /(?<![-\w])leading-tight(?![-\w])/g, 8],
   ['leading-snug', /(?<![-\w])leading-snug(?![-\w])/g, 16],
@@ -114,7 +147,26 @@ const FAMILIES: ReadonlyArray<readonly [name: string, re: RegExp, budget: number
   // 갚았다. 갚는 법은 치환이 아니라 **삭제**였다 — 크기 스텝이 자기 행간을
   // 이미 싣고 있어서(companion 결합) `text-label leading-4` 의 뒤 절반은
   // 램프가 내는 값을 손으로 다시 적은 것이었다.
-  ['leading-<number>', /(?<![-\w])leading-\d+(?![-\w])/g, 86],
+  /*
+   * ## 2026-08-05: 숫자 계열 86 → 0 (픽셀 이동 0)
+   *
+   * Tailwind 의 `leading-<n>` 은 `n × 4px` 이고, 이 저장소의 행간 램프에 **같은
+   * px 이 이미 이름으로 있었다**:
+   *
+   *   leading-4 (16px) → leading-label · leading-5 (20px) → leading-body
+   *   leading-6 (24px) → leading-title · leading-7 (28px) → leading-display
+   *
+   * 그래서 86곳 전부가 **바이트가 아니라 픽셀이 동일한** 치환이었다. 위 절이
+   * 「치환이 기계적이지 않다」고 적어 둔 것은 **비율 계열**(relaxed 1.625 ·
+   * snug 1.375 …)에 대한 판단이고, 숫자 계열에는 해당하지 않았다 — 두 부류를
+   * 한 문장으로 묶은 것이 그때의 과잉 일반화다.
+   *
+   * 짝 실측: 30곳은 `text-X + leading-X` 로 램프의 기본 짝과 일치했고, 52곳은
+   * 의도된 오버라이드였다(예: `text-caption`(9.5) 옆의 16px — 한글 본문에서
+   * 기본 14px 보다 느슨하게 준 자리). 오버라이드도 픽셀은 그대로이고, 달라진
+   * 것은 **익명의 20px 이 「body 행간」이라는 이름을 얻은 것**뿐이다.
+   */
+  ['leading-<number>', /(?<![-\w])leading-\d+(?![-\w])/g, 0],
 ];
 
 const ROOTS = ['src', 'app'] as const;

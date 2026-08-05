@@ -306,7 +306,7 @@ function EditorContent({
               </span>
             )}
           </div>
-          <p className="mt-2 max-w-xl text-body-lg leading-6 text-[color:var(--color-text-tertiary)]">
+          <p className="mt-2 max-w-xl text-body-lg leading-title text-[color:var(--color-text-tertiary)]">
             {mode === "create" ? t("headerSubtitleCreate") : t("headerSubtitle")}
           </p>
           <div className={mode === "edit" ? "mt-4 flex justify-start" : "hidden"}>
@@ -369,7 +369,7 @@ function EditorContent({
               <p className="font-mono text-caption uppercase tracking-[var(--tracking-caps-12)] text-[color:var(--color-indigo-accent)]">
                 {t("publicCompanionEyebrow")}
               </p>
-              <p className="mt-2 text-body-lg leading-6 text-[color:var(--color-text-secondary)]">
+              <p className="mt-2 text-body-lg leading-title text-[color:var(--color-text-secondary)]">
                 {t("publicCompanionDesc")}
               </p>
             </div>

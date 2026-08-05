@@ -94,7 +94,7 @@ export function DocsVaultVaultChip({
             {t("header.vaultPillSwap")}
           </RowButton>
           {toolsMovedHint ? (
-            <p className="mt-1 border-t border-[color:var(--color-border-soft)] px-1.5 pt-1.5 text-caption leading-4 text-[color:var(--color-text-tertiary)]">
+            <p className="mt-1 border-t border-[color:var(--color-border-soft)] px-1.5 pt-1.5 text-caption leading-label text-[color:var(--color-text-tertiary)]">
               {toolsMovedHint}
             </p>
           ) : null}

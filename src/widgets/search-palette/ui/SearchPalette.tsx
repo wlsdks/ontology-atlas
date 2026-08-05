@@ -479,7 +479,7 @@ function SearchPaletteDialog({
           <div className="border-b border-[color:var(--color-overlay-2)] px-4 py-2.5">
             <p
               id="search-palette-help"
-              className="text-body leading-6 text-[color:var(--color-text-tertiary)]"
+              className="text-body leading-title text-[color:var(--color-text-tertiary)]"
             >
               {t('helpRecent')}
             </p>
@@ -545,7 +545,7 @@ function SearchPaletteDialog({
                 <p className="text-body-lg text-[color:var(--color-text-secondary)]">
                   {t('emptyNoProjectsTitle')}
                 </p>
-                <p className="mt-2 text-body leading-6 text-[color:var(--color-text-tertiary)]">
+                <p className="mt-2 text-body leading-title text-[color:var(--color-text-tertiary)]">
                   {t('emptyNoProjectsBody')}
                 </p>
                 <button
@@ -562,7 +562,7 @@ function SearchPaletteDialog({
                 <p className="text-body-lg text-[color:var(--color-text-secondary)]">
                   {t('emptyLayerTitle')}
                 </p>
-                <p className="mt-2 text-body leading-6 text-[color:var(--color-text-tertiary)]">
+                <p className="mt-2 text-body leading-title text-[color:var(--color-text-tertiary)]">
                   {t('emptyLayerBody', {
                     layer: t(
                       LAYER_FILTERS.find((f) => f.value === layerFilter)?.labelKey ?? 'layerAll',
@@ -583,7 +583,7 @@ function SearchPaletteDialog({
             ) : (
               <div className="flex flex-col items-center px-4 py-8 text-center">
                 <p className="text-body-lg text-[color:var(--color-text-secondary)]">{t('emptyNoMatchTitle')}</p>
-                <p className="mt-2 text-body leading-6 text-[color:var(--color-text-tertiary)]">
+                <p className="mt-2 text-body leading-title text-[color:var(--color-text-tertiary)]">
                   {t('emptyNoMatchBody', { query: query.trim() })}
                 </p>
                 <button

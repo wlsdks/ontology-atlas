@@ -162,7 +162,7 @@ export function AiConnectionPanel({
           <p className="text-label font-[var(--font-weight-signature)] text-[color:var(--color-text-secondary)]">
             {t('webDegradedTitle')}
           </p>
-          <p className="mt-1 break-keep text-caption leading-4 text-[color:var(--color-text-tertiary)]">
+          <p className="mt-1 break-keep text-caption leading-label text-[color:var(--color-text-tertiary)]">
             {t('webDegradedBody')}
           </p>
           {/* 키 없는 갈래(주소로 연결)가 생긴 뒤로, 위 문단만 두면 강등이
@@ -170,7 +170,7 @@ export function AiConnectionPanel({
               되겠지" 로 읽히기 때문이다. 왜 그것도 안 되는지와 어디로 가면
               되는지를 같은 카드 안에서 말한다. */}
           <p
-            className="mt-1.5 break-keep text-caption leading-4 text-[color:var(--color-text-tertiary)]"
+            className="mt-1.5 break-keep text-caption leading-label text-[color:var(--color-text-tertiary)]"
             data-testid="ai-connection-web-degraded-local"
           >
             {t('webDegradedLocalBody')}
@@ -271,10 +271,10 @@ export function AiConnectionPanel({
             { label: t('scopeLogLabel'), value: t('scopeLogValue') },
           ].map((row) => (
             <div key={row.label} className="flex gap-3">
-              <dt className="w-12 shrink-0 text-caption leading-4 text-[color:var(--color-text-tertiary)]">
+              <dt className="w-12 shrink-0 text-caption leading-label text-[color:var(--color-text-tertiary)]">
                 {row.label}
               </dt>
-              <dd className="min-w-0 break-keep text-caption leading-4 text-[color:var(--color-text-quaternary)]">
+              <dd className="min-w-0 break-keep text-caption leading-label text-[color:var(--color-text-quaternary)]">
                 {row.value}
               </dd>
             </div>
@@ -300,7 +300,7 @@ export function AiConnectionPanel({
  */
 function TrustHeadline({ children }: { children: ReactNode }) {
   return (
-    <p className="max-w-[var(--git-setup-measure)] break-keep px-1 text-body leading-5 text-[color:var(--color-text-secondary)]">
+    <p className="max-w-[var(--git-setup-measure)] break-keep px-1 text-body leading-body text-[color:var(--color-text-secondary)]">
       {children}
     </p>
   );
@@ -837,7 +837,7 @@ function LocalCaption({
 
   if (!vaultKnown) {
     return (
-      <p className="break-keep text-caption leading-4 text-[color:var(--color-text-quaternary)]">
+      <p className="break-keep text-caption leading-label text-[color:var(--color-text-quaternary)]">
         {t('verifyNeedsVault')}
       </p>
     );
@@ -854,7 +854,7 @@ function LocalCaption({
     return (
       <p
         data-testid="ai-local-failure"
-        className="flex items-start gap-1.5 break-keep text-caption leading-4 text-[color:var(--color-status-danger)]"
+        className="flex items-start gap-1.5 break-keep text-caption leading-label text-[color:var(--color-status-danger)]"
       >
         <StatusDot tone="danger" />
         {message}
@@ -869,7 +869,7 @@ function LocalCaption({
     return (
       <p
         data-testid="ai-local-verified"
-        className="flex items-center gap-1.5 break-keep text-caption leading-4 text-[color:var(--color-status-success)]"
+        className="flex items-center gap-1.5 break-keep text-caption leading-label text-[color:var(--color-status-success)]"
       >
         <StatusDot tone="success" />
         {chatCount === verify.models.length
@@ -882,7 +882,7 @@ function LocalCaption({
     );
   }
   return (
-    <p className="break-keep text-caption leading-4 text-[color:var(--color-text-quaternary)]">
+    <p className="break-keep text-caption leading-label text-[color:var(--color-text-quaternary)]">
       {connected
         ? isLoopbackHost(host)
           ? t('localScopeLoopback', { host })
@@ -1039,7 +1039,7 @@ function ProviderCaption({
 
   if (error) {
     return (
-      <p className="break-keep text-caption leading-4 text-[color:var(--color-status-danger)]">
+      <p className="break-keep text-caption leading-label text-[color:var(--color-status-danger)]">
         {error}
       </p>
     );
@@ -1048,14 +1048,14 @@ function ProviderCaption({
     // 붙여넣는 순간이 신뢰를 판단하는 순간이다 — 포커스 시에만 뜨는 툴팁이
     // 아니라 필드 아래 상시 노출.
     return (
-      <p className="break-keep text-caption leading-4 text-[color:var(--color-text-quaternary)]">
+      <p className="break-keep text-caption leading-label text-[color:var(--color-text-quaternary)]">
         {t('pasteSafety', { provider })}
       </p>
     );
   }
   if (!vaultKnown) {
     return (
-      <p className="break-keep text-caption leading-4 text-[color:var(--color-text-quaternary)]">
+      <p className="break-keep text-caption leading-label text-[color:var(--color-text-quaternary)]">
         {t('verifyNeedsVault')}
       </p>
     );
@@ -1078,14 +1078,14 @@ function ProviderCaption({
   }
   if (verify.kind === 'failed') {
     return (
-      <p className="flex items-center gap-1.5 break-keep text-caption leading-4 text-[color:var(--color-status-danger)]">
+      <p className="flex items-center gap-1.5 break-keep text-caption leading-label text-[color:var(--color-status-danger)]">
         <StatusDot tone="danger" />
         {t('verifyFailed', { message: verify.message })}
       </p>
     );
   }
   return (
-    <p className="break-keep text-caption leading-4 text-[color:var(--color-text-quaternary)]">
+    <p className="break-keep text-caption leading-label text-[color:var(--color-text-quaternary)]">
       {t('verifyScope', { host })}
     </p>
   );
@@ -1145,7 +1145,7 @@ function AuditTail({
     >
       <div className="grid gap-1">
         {entries.length === 0 ? (
-          <p className="break-keep text-caption leading-4 text-[color:var(--color-text-tertiary)]">
+          <p className="break-keep text-caption leading-label text-[color:var(--color-text-tertiary)]">
             {t('auditEmpty')}
           </p>
         ) : (
@@ -1189,7 +1189,7 @@ function AuditTail({
           한글 낱말 사이가 벌어져 "커밋할지는  당신의  선택이에요" 처럼 읽힌다
           (등폭 글리프 폭이 한글 자간에 그대로 들어오기 때문). 파일 경로는
           기계 문자열이라 mono 가 정보지만, 그 옆 문장은 아니다. */}
-      <p className="mt-2 break-keep text-caption leading-4 text-[color:var(--color-text-quaternary)]">
+      <p className="mt-2 break-keep text-caption leading-label text-[color:var(--color-text-quaternary)]">
         <span className="font-mono">{LLM_AUDIT_RELATIVE_PATH}</span>
         {' · '}
         {t('auditPathNote')}

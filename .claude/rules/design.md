@@ -358,7 +358,7 @@ particle·rarity(gold)·shimmer 를 `--studio-*` 토큰과 `.studio-stage` 안�
 | **그림자 사다리** | `shadow-[…]` 는 **모양이 허용목록에 있는 것만** 통과 — elevation-1/2/3 · dock-bottom/side · control-press · 표면 전용 토큰 · inset | 동일 |
 | **hex 색상** | 대괄호에 값을 직접 적는 자리(arbitrary value) 안의 hex 만 금지 | 동일 (지금 위반 0 — 미리 막는 검사) |
 | **모션 duration** | `duration-<숫자>` 금지 (토큰을 참조하는 형태는 문법상 안 걸린다) | 동일 |
-| **행간 램프** | `leading-[N]` 처럼 값을 직접 적는 것 금지 + 이름 붙은 유틸리티(`leading-relaxed` 등 208건)는 `named-offramp-utility-ratchet` 의 기준선이 붙든다 (2026-08-04) | 동일 |
+| **행간 램프** | `leading-[N]` 값 직접 적기 금지. 이름 유틸리티는 래칫이 붙든다 — **숫자 계열(`leading-4~7`) 86건은 2026-08-05 에 0이 됐고**(Tailwind `n×4px` 이 램프 px 과 같아 **픽셀 이동 0**), 비율 계열(`relaxed`·`snug`·`none`·`tight` 104건)은 자리별 판정이 필요해 장부에 실측과 함께 남아 있다 | 동일 |
 | **램프 우회** | 램프 토큰을 대괄호 안에서 길이로 돌려 참조하는 것만 금지 (램프 밖 크기 토큰은 정당) | 동일 (켤 때 위반 0) |
 | **인라인 그림자** | JSX `style={{ boxShadow }}` 의 값이 사다리·도킹·눌림·표면 토큰 중 하나를 참조하지 않으면 금지 (2026-08-04) | `src/**`+`app/**` 전역 error — **램프 부채 예외 파일도 받는다** |
 | **자간 램프** | `tracking-[Nem]` 금지 — 대문자 마이크로 라벨은 `--tracking-caps-08/10/12/14/16`, 본문 짝은 `--tracking-caption/label/body/body-lg/title` (2026-08-05) | 동일 (켤 때 위반 0 — 243곳 선치환) |

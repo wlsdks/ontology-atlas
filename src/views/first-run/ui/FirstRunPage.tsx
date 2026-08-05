@@ -114,7 +114,7 @@ export function FirstRunPage() {
             <h1 className="break-keep text-display font-[var(--font-weight-signature)] leading-tight text-[color:var(--color-text-primary)]">
               {t("title")}
             </h1>
-            <p className="mx-auto max-w-[360px] break-keep text-body leading-5 text-[color:var(--color-text-tertiary)]">
+            <p className="mx-auto max-w-[360px] break-keep text-body leading-body text-[color:var(--color-text-tertiary)]">
               {t("subtitle")}
             </p>
           </div>
@@ -140,7 +140,7 @@ export function FirstRunPage() {
                       ? t("justStartBusy")
                       : t("justStartTitle")}
                 </span>
-                <span className="mt-0.5 block break-keep text-label leading-5 text-[color:var(--color-text-tertiary)]">
+                <span className="mt-0.5 block break-keep text-label leading-body text-[color:var(--color-text-tertiary)]">
                   {t("justStartBody")}
                 </span>
               </span>
@@ -173,7 +173,7 @@ export function FirstRunPage() {
                   ? t("busy")
                   : t("openTitle")}
               </span>
-              <span className="mt-0.5 block break-keep text-label leading-5 text-[color:var(--color-text-tertiary)]">
+              <span className="mt-0.5 block break-keep text-label leading-body text-[color:var(--color-text-tertiary)]">
                 {t("openBody")}
               </span>
             </span>
@@ -193,7 +193,7 @@ export function FirstRunPage() {
               <span className="block text-body font-[var(--font-weight-signature)] text-[color:var(--color-text-primary)]">
                 {scaffolding ? t("scaffolding") : t("createTitle")}
               </span>
-              <span className="mt-0.5 block break-keep text-label leading-5 text-[color:var(--color-text-tertiary)]">
+              <span className="mt-0.5 block break-keep text-label leading-body text-[color:var(--color-text-tertiary)]">
                 {t("createBody")}
               </span>
             </span>
@@ -211,7 +211,7 @@ export function FirstRunPage() {
               <span className="block text-body font-[var(--font-weight-signature)] text-[color:var(--color-text-primary)]">
                 {t("demoTitle")}
               </span>
-              <span className="mt-0.5 block break-keep text-label leading-5 text-[color:var(--color-text-tertiary)]">
+              <span className="mt-0.5 block break-keep text-label leading-body text-[color:var(--color-text-tertiary)]">
                 {t("demoBody")}
               </span>
             </span>

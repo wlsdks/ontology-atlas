@@ -122,7 +122,7 @@ export function NewDocKindDialog({
         >
           {t("title")}
         </p>
-        <p className="mt-1 text-label leading-4 text-[color:var(--color-text-tertiary)]">
+        <p className="mt-1 text-label leading-label text-[color:var(--color-text-tertiary)]">
           {t("subtitle")}
         </p>
         <ul className="mt-3 grid grid-cols-2 gap-2">

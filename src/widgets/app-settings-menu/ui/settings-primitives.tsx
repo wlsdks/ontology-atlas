@@ -110,7 +110,7 @@ export function SettingsRow({
         {caption ? (
           <p
             className={cn(
-              'mt-0.5 break-keep text-label leading-4',
+              'mt-0.5 break-keep text-label leading-label',
               captionTone === 'danger'
                 ? 'text-[color:var(--color-status-danger)]'
                 : captionTone === 'warning'

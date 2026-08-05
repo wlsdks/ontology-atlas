@@ -16,7 +16,7 @@ export interface EvidenceOnlyBadgeProps {
  * 덮는다 — 헌장의 "앰버가 셋 이상 보이면 결함" 위반이다. 계층은 색이 아니라
  * 위치(아래 계층)와 이 조용한 라벨로 말한다.
  *
- * **행 높이를 흔들지 않는다.** `text-label`(11px) + `leading-4`(16px) 로
+ * **행 높이를 흔들지 않는다.** `text-label`(11px) + `leading-label`(16px) 로
  * 같은 행의 본문(`text-body` 12.5px, 줄높이 ~19px)보다 낮게 유지한다 —
  * 배지가 붙은 행만 키가 커지면 반복 세트의 격자 리듬이 아무도 고르지 않은
  * 채 무너진다(치수 규칙성).
@@ -27,7 +27,7 @@ export function EvidenceOnlyBadge({ label, hint, className }: EvidenceOnlyBadgeP
       data-testid="evidence-only-badge"
       title={hint}
       className={cn(
-        "inline-flex flex-none items-center rounded-micro border border-[color:var(--color-border-soft)] px-1 text-label leading-4 text-[color:var(--color-text-quaternary)]",
+        "inline-flex flex-none items-center rounded-micro border border-[color:var(--color-border-soft)] px-1 text-label leading-label text-[color:var(--color-text-quaternary)]",
         className,
       )}
     >

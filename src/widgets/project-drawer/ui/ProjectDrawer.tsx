@@ -508,7 +508,7 @@ export function ProjectDrawer({
                 <p
                   data-testid="project-drawer-meta"
                   id={`project-drawer-summary-${project.slug}`}
-                  className="mt-5 line-clamp-4 text-title leading-7 text-[color:var(--color-text-secondary)]"
+                  className="mt-5 line-clamp-4 text-title leading-display text-[color:var(--color-text-secondary)]"
                 >
                   {project.description}
                 </p>
@@ -626,7 +626,7 @@ export function ProjectDrawer({
                     </h3>
                   </div>
                   <div className="mt-3 rounded-panel border border-[color:var(--color-border-soft)] bg-[color:var(--color-overlay-1)] px-4 py-4">
-                    <p className="text-body-lg leading-6 text-[color:var(--color-text-secondary)]">
+                    <p className="text-body-lg leading-title text-[color:var(--color-text-secondary)]">
                       {relationshipSummary}
                     </p>
                     {relatedProjects.length > 0 && (
@@ -684,7 +684,7 @@ export function ProjectDrawer({
                       <h3 className="font-mono text-caption uppercase tracking-[var(--tracking-caps-12)] text-[color:var(--color-status-warning)]">
                         {t("integrityTitle")}
                       </h3>
-                      <ul className="mt-2 space-y-1.5 text-body leading-5 text-[color:var(--color-text-secondary)]">
+                      <ul className="mt-2 space-y-1.5 text-body leading-body text-[color:var(--color-text-secondary)]">
                         {integrityIssueLabels.map((label) => (
                           <li key={label}>{label}</li>
                         ))}
@@ -945,7 +945,7 @@ export function ProjectDrawer({
                                         </span>
                                       </span>
                                       {hasExcerpt && (
-                                        <p className="hidden line-clamp-2 text-label leading-4 text-[color:var(--color-text-quaternary)] [@media(hover:hover)]:group-hover:block">
+                                        <p className="hidden line-clamp-2 text-label leading-label text-[color:var(--color-text-quaternary)] [@media(hover:hover)]:group-hover:block">
                                           {m.doc.excerpt}
                                         </p>
                                       )}

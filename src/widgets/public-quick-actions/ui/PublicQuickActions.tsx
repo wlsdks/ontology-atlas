@@ -65,7 +65,7 @@ export function PublicQuickActions({
         </p>
         <InfoHint label={t("infoHintLabel")}>
           <div className="space-y-3">
-            <p className="text-body-lg leading-6 text-[color:var(--color-text-secondary)]">
+            <p className="text-body-lg leading-title text-[color:var(--color-text-secondary)]">
               {t("infoHintBody")}
             </p>
             <dl className="space-y-2 text-body-lg">
@@ -74,7 +74,7 @@ export function PublicQuickActions({
                   <dt className="font-[var(--font-weight-signature)] text-[color:var(--color-text-primary)]">
                     {t("infoNewTitle")}
                   </dt>
-                  <dd className="mt-1 leading-6 text-[color:var(--color-text-tertiary)]">
+                  <dd className="mt-1 leading-title text-[color:var(--color-text-tertiary)]">
                     {t("infoNewBody")}
                   </dd>
                 </div>
@@ -84,7 +84,7 @@ export function PublicQuickActions({
                   <dt className="font-[var(--font-weight-signature)] text-[color:var(--color-text-primary)]">
                     {t("infoEditTitle")}
                   </dt>
-                  <dd className="mt-1 leading-6 text-[color:var(--color-text-tertiary)]">
+                  <dd className="mt-1 leading-title text-[color:var(--color-text-tertiary)]">
                     {t("infoEditBody")}
                   </dd>
                 </div>

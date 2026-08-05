@@ -117,7 +117,7 @@ export function EmptyState({
   const descriptionEl = description ? (
     <p
       className={cn(
-        'leading-6 text-[color:var(--color-text-tertiary)]',
+        'leading-title text-[color:var(--color-text-tertiary)]',
         size === 'compact' ? 'mt-1 text-body' : 'mt-2 text-body-lg',
       )}
     >

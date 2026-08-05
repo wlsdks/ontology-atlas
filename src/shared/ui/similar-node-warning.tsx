@@ -49,7 +49,7 @@ export function SimilarNodeWarning({
       // 0.15 는 램프에 없는 값이었다 — 등장은 "이동" 이라 base (2026-07-28).
       transition={MOTION.base}
       className={cn(
-        "flex flex-wrap items-center gap-x-2 gap-y-1 rounded-chip border border-[color:var(--color-amber-signal-a28)] bg-[color:var(--color-amber-signal-a07)] px-2.5 py-2 text-label leading-4 text-[color:var(--color-text-secondary)]",
+        "flex flex-wrap items-center gap-x-2 gap-y-1 rounded-chip border border-[color:var(--color-amber-signal-a28)] bg-[color:var(--color-amber-signal-a07)] px-2.5 py-2 text-label leading-label text-[color:var(--color-text-secondary)]",
         className,
       )}
     >
