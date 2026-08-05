@@ -22,7 +22,8 @@ import { describe, expect, it } from 'vitest';
  * | **앵커 등재 25** | 같은 뜻, 앵커(`OUTSIDE_VALUE_LAYER_ANCHORS`) | `BASELINE_ANCHOR_REGISTERED` 를 손으로 올린다 |
  * | **앵커 근거 없음 0** | 실측이다 — 102 를 다 보고 0(`<a>` 는 가는 것이 목적이라 「할 말 없는 클릭면」이 되기 어렵다) | 자격자가 생기면 손으로 올린다 |
  * | **앵커 부채 77** | 아직 안 옮긴 `<Link>` 78 · `<a>` 24 중 미등재분 | **0 을 향한다** |
- * | 버튼 전수 108 · 앵커 전수 102 | 셋의 합 | 파생값이다. 이 수를 보고 판단하지 않는다 |
+ * | **폼 부채 63** | 손으로 규격을 쓴 `<input>`·`<textarea>`·`<select>`·`<label>`(2026-08-05 신설) | **오늘은 0 을 향하지 못한다** — 값 층에 `field` 모양이 없어서다. 지금 이 수가 하는 일은 **더 늘지 못하게 막는 것** 하나뿐이다 |
+ * | 버튼 전수 108 · 앵커 전수 102 · 폼 전수 63 | 각 부류의 합 | 파생값이다. 이 수를 보고 판단하지 않는다 |
  *
  * **왜 셋인가 — 부채가 0 이 될 수 있어야 하기 때문이다.** 「원리적으로 못 냄」과
  * 「낼 것이 없음」을 부채에 섞어 두면 그 수는 0 에 닿을 수 없고, 0 에 닿을 수 없는
@@ -1181,6 +1182,106 @@ const BASELINE_ANCHOR_REGISTERED = 25;
 const BASELINE_ANCHOR_DEBT = 67;
 
 const anchorCensus = census(scannedFiles, OUTSIDE_VALUE_LAYER_ANCHORS, ANCHOR_TAGS, NO_BASIS_ANCHORS);
+
+/**
+ * ════════════════════════════════════════════════════════════════════
+ * ## 폼 — **다섯 번째 수** (2026-08-05)
+ * ════════════════════════════════════════════════════════════════════
+ *
+ * ### 이 게이트가 폼을 못 보고 있었다
+ *
+ * 위 두 부류는 `button` 과 `Link`/`a` 만 센다. 그래서 **`<input>` ·
+ * `<textarea>` · `<select>` · `<label>` 은 이 래칫의 시야 밖**이었고, 「손으로
+ * 쓴 컨트롤이 늘지 않는다」는 약속이 폼에 대해서는 한 번도 참인 적이 없다.
+ *
+ * 2026-08-05 전수가 그 대가를 쟀다:
+ *
+ * | 항목 | 실측 |
+ * |---|---:|
+ * | `<input>` · `<textarea>` · 네이티브 `<select>` · `<label>` | **62** |
+ * | `--control-h-*` 를 실제로 읽는 `<input>` | **6 / 33 (18%)** |
+ * | (높이·반경·글자·테두리) 고유 조합 | **44건에서 34종 (77%)** |
+ * | 네이티브 체크박스 중 WCAG 2.5.8 AA(24px) 미달 | **5 / 5** |
+ *
+ * 칩이 「143개에서 50종(35%)」이었던 것보다 **흩어짐이 더 심하다**. 모수가 작아
+ * 절대 수는 작지만, 자리마다 손으로 값을 새로 만든 비율은 더 높다.
+ *
+ * ### 왜 세 번째 수를 만드나 — 부채 74에 더하지 않는 이유
+ *
+ * 앵커를 따로 센 것과 같은 이유다(위 「세 번째·네 번째 수」 절). 폼을 버튼
+ * 부채에 더하면 그 수가 내려갈 때 **버튼이 옮겨진 것인지 폼이 옮겨진 것인지 알
+ * 수 없다.** 작업 단위도 다르다 — 버튼은 `controlClass({ shape })` 한 줄이면
+ * 대개 끝나지만, 폼은 **값 층에 아직 없는 모양**(`field`)을 만들어야 해서
+ * 「체계」 소집이 먼저다.
+ *
+ * ### 이 수는 오늘 «옮길 수 있다»고 말하지 않는다
+ *
+ * 등재(`OUTSIDE_VALUE_LAYER_FIELDS`)가 **비어 있다.** 값 층에 필드 모양이 아직
+ * 없으니 「값 층이 원리적으로 못 낸다」를 주장할 근거도 아직 없기 때문이다.
+ * 그래서 오늘 이 수가 하는 일은 하나다: **더 늘지 못하게 막는 것.** 모양이
+ * 생기면 그때 등재가 서고 부채가 내려간다.
+ */
+const FIELD_TAGS = ['input', 'textarea', 'select', 'label'] as const;
+
+/**
+ * **비어 있다** — 위 주석의 이유. 값 층에 `field` 모양이 생기기 전에는 「값 층이
+ * 못 낸다」가 주장이 아니라 동어반복이다.
+ */
+const OUTSIDE_VALUE_LAYER_FIELDS: readonly OutsideEntry[] = [];
+
+/** **리터럴이다.** 다른 기준선들과 같은 이유 — 파생값은 멈춤쇠를 양방향으로 헐겁게 만든다. */
+const BASELINE_FIELD_DEBT = 63;
+
+const fieldCensus = census(scannedFiles, OUTSIDE_VALUE_LAYER_FIELDS, FIELD_TAGS, []);
+
+describe('컨트롤 채택 래칫 — 폼(`<input>` · `<textarea>` · `<select>` · `<label>`)', () => {
+  it('탐지기가 실제로 폼을 세고 있다 — 0이면 이 부류가 헛도는 것이다', () => {
+    expect(
+      fieldCensus.total,
+      '폼 태그를 한 건도 못 셌다. 종전 이 게이트가 폼에 대해 정확히 이 상태(=존재하지 않음)였다.',
+    ).toBeGreaterThan(20);
+  });
+
+  it('손으로 규격을 쓴 폼이 늘지 않는다', () => {
+    const worst = [...fieldCensus.byFile.entries()].sort((a, b) => b[1] - a[1]).slice(0, 5);
+    expect(
+      fieldCensus.debt,
+      `손으로 규격을 쓴 폼이 ${BASELINE_FIELD_DEBT} → ${fieldCensus.debt} 로 늘었다 ` +
+        `(전수 ${fieldCensus.total}).\n` +
+        `가장 많은 파일: ${worst.map(([f, n]) => `${f}(${n})`).join(' · ')}\n` +
+        '값 층에 `field` 모양이 아직 없으므로, 새 폼 컨트롤은 기존 파일의 상수를 재사용하거나 ' +
+        '「체계」를 소집해 모양을 먼저 만들어라.',
+    ).toBeLessThanOrEqual(BASELINE_FIELD_DEBT);
+  });
+
+  it('기준선이 실측보다 위로 뜨지 않는다 — 헐거운 멈춤쇠는 멈춤쇠가 아니다', () => {
+    expect(
+      fieldCensus.debt,
+      `폼 부채가 ${BASELINE_FIELD_DEBT} → ${fieldCensus.debt} 로 줄었다. ` +
+        `BASELINE_FIELD_DEBT 도 ${fieldCensus.debt} 로 내려라.`,
+    ).toBeGreaterThanOrEqual(BASELINE_FIELD_DEBT);
+  });
+
+  it('세 부류의 합이 전수와 같다 — 어느 칸에도 안 들어간 건이 없다', () => {
+    expect(fieldCensus.registered + fieldCensus.noBasis + fieldCensus.debt).toBe(fieldCensus.total);
+  });
+
+  /**
+   * **태그별로 0이 아닌지 각각 본다.** 「공집합이 아니라는 것과 전집합을 본다는
+   * 것은 다르다」 — 아이콘 래칫이 작은따옴표만 보면서 분모 단언은 통과했던
+   * 그 결함(2026-08-05)의 재발을 막는다. `label` 하나만 세어도 총계는 20을
+   * 넘으므로, 총계 단언만으로는 `input` 이 안 세어지는 것을 못 잡는다.
+   */
+  it('네 태그를 각각 세고 있다 — 한 태그만 세면서 총계로 위장하지 못한다', () => {
+    const perTag = Object.fromEntries(
+      FIELD_TAGS.map((tag) => [tag, census(scannedFiles, [], [tag], []).total]),
+    );
+    for (const tag of FIELD_TAGS) {
+      expect(perTag[tag], `<${tag}> 를 한 건도 못 셌다 — 그 태그는 이 게이트에 존재하지 않는다`).toBeGreaterThan(0);
+    }
+    expect(Object.values(perTag).reduce((a, b) => a + b, 0)).toBe(fieldCensus.total);
+  });
+});
 
 describe('컨트롤 채택 래칫 — 등재된 「값 층 밖」', () => {
   it('등재된 파일이 전부 실재한다 — 없는 파일을 세면 수가 거짓이 된다', () => {
