@@ -7379,10 +7379,30 @@
           "depth": 3,
           "text": "진 대안 — 배지가 펼친 행을 따라간다 (`stepState` 를 `openStep` 으로)",
           "slug": "진-대안-배지가-펼친-행을-따라간다-stepstate-를-openstep-으로"
+        },
+        {
+          "depth": 2,
+          "text": "2026-08-05 — 손가락 바닥은 **히트 확장이 아니라 실제 높이**로 깐다 (값 층 칩·행·pill)",
+          "slug": "2026-08-05-손가락-바닥은-히트-확장이-아니라-실제-높이로-깐다-값-층-칩행pill"
+        },
+        {
+          "depth": 3,
+          "text": "문제 — 승격이 또 빈 방에 떨어지고 있었다",
+          "slug": "문제-승격이-또-빈-방에-떨어지고-있었다"
+        },
+        {
+          "depth": 3,
+          "text": "진 대안 (B) — `touch-hit-expand` 로 히트 영역만 넓힌다",
+          "slug": "진-대안-b-touch-hit-expand-로-히트-영역만-넓힌다"
+        },
+        {
+          "depth": 3,
+          "text": "한 번 틀렸다 — 레이어 순서는 명시도를 이긴다",
+          "slug": "한-번-틀렸다-레이어-순서는-명시도를-이긴다"
         }
       ],
       "excerpt": "이 파일은 결정과 그때 진 반대 의견을 남긴다. docs/CHANGELOG.md 는 무엇이 언제 바뀌었나를 답하고, 이 파일은 왜 그렇게 정했고, 무엇을 걸었나를 답한다. 최신이 위. 기록은 덧붙이기만 한다 — 지난 기록을 고치지 않는다. 판단이 바뀌었으면 새 기록을 쓰고 옛 기록을 뒤집힘 으로 표시한다. 틀린 기록도 자산이다. 1. 소집 전에 읽는다. 카운슬을 열기 전(그리고 단독 PO 패스를 쓰기 전) 같은 표면 · 같은 질문에 대한 선행 결정이 있는지 먼저 본다. 있으면 새 패스는 그것을 ① 여전히 유효하다고 인용하거나 ② 명시적으로 뒤집는다. 조용히 다시 결정",
-      "wordCount": 79024,
+      "wordCount": 79462,
       "updatedAt": "2026-08-05",
       "linksOut": [
         "slug"
@@ -8341,7 +8361,7 @@
         }
       ],
       "excerpt": "This document is maintained based on Section 3 of the design spec. For the original Linear specification, see design-references/DESIGN-linear.md. v2 (2026-07): topology-map-v2 에서 출하된 B2+ \"Circuit × Constellation\" 시각 언어가 페이지 롤아웃(랜딩 → docs/ontology 허브 → projects/insights → download)의 규범이 되었다 — 아래 v2 — \"Circuit × Constell",
-      "wordCount": 29670,
+      "wordCount": 29801,
       "updatedAt": "2026-08-05",
       "linksOut": [
         "design-references/DESIGN-linear",
