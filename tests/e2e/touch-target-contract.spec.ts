@@ -165,11 +165,35 @@ interface Audit258Result {
 /** fine-pointer 2.5.8 감사 — 브라우저 안에서 실행되는 판정기. */
 const AUDIT_258 = `(() => {
   const MIN = 24;
-  const targets = Array.from(document.querySelectorAll('button:not([disabled]), a[href]')).filter((el) => {
-    const r = el.getBoundingClientRect();
-    const cs = getComputedStyle(el);
-    return r.width > 0 && r.height > 0 && cs.visibility !== 'hidden' && !el.closest('.sr-only') && !el.closest('[aria-hidden="true"]');
-  });
+  /*
+   * 셀렉터에 **폼이 들어 있어야 한다** — 2026-08-05 까지 네 자리가 전부
+   * \`button, a[href]\` 라서 \`<input>\`·\`<select>\`·\`<textarea>\` 는
+   * 이 감사에 **원리적으로 존재하지 않았다**. 그 사각에서 네이티브 체크박스
+   * 5곳이 전부 24px 미만이었고 게이트는 내내 초록이었다.
+   */
+  const RAW = 'button:not([disabled]), a[href], input:not([type="hidden"]):not([disabled]), select:not([disabled]), textarea:not([disabled])';
+  /*
+   * **체크박스는 자기 상자가 아니라 라벨이 타깃이다.** WCAG 는 타깃을
+   * 「무엇이 클릭을 받나」로 정의하고(SC 2.5.5 Understanding), \`<label>\` 이
+   * 감싸면 라벨 클릭이 곧 토글이라는 네이티브 동작 때문에 라벨 전체가 하나의
+   * 타깃이 된다. 그러니 감싸는 라벨이 있으면 **라벨로 치환**한다 —
+   * 안 그러면 16px 체크박스와 24px 라벨을 **두 개의 타깃으로 이중 계산**해서,
+   * 고쳐 놓은 자리를 위반으로 부른다.
+   */
+  const seen = new Set();
+  const targets = [];
+  for (const el of Array.from(document.querySelectorAll(RAW))) {
+    const type = (el.getAttribute('type') || '').toLowerCase();
+    const merged = (type === 'checkbox' || type === 'radio') ? (el.closest('label') || el) : el;
+    if (seen.has(merged)) continue;
+    const r = merged.getBoundingClientRect();
+    const cs = getComputedStyle(merged);
+    if (!(r.width > 0 && r.height > 0)) continue;
+    if (cs.visibility === 'hidden' || cs.opacity === '0') continue;
+    if (merged.closest('.sr-only') || merged.closest('[aria-hidden="true"]')) continue;
+    seen.add(merged);
+    targets.push(merged);
+  }
   const hit = (el) => {
     const r = el.getBoundingClientRect();
     const a = getComputedStyle(el, '::after');
@@ -184,7 +208,7 @@ const AUDIT_258 = `(() => {
     while (p && getComputedStyle(p).display === 'inline') p = p.parentElement;
     if (!p) return false;
     let targetChars = 0;
-    p.querySelectorAll('button, a[href]').forEach((t) => { targetChars += (t.textContent || '').length; });
+    p.querySelectorAll(RAW).forEach((t) => { targetChars += (t.textContent || '').length; });
     return (p.textContent || '').length - targetChars > 0;
   };
   const box24 = (el) => {
@@ -219,7 +243,9 @@ const AUDIT_258 = `(() => {
 /**
  * WCAG 2.5.8(AA) — fine 포인터의 24×24 바닥.
  *
- * 사정거리는 아래 라우트 전수의 **모든** \`button\`/\`a[href]\` 다. 라우트를
+ * 사정거리는 아래 라우트 전수의 **모든** \`button\`/\`a[href]\` **와 폼
+ * 컨트롤**(\`input\`·\`select\`·\`textarea\`)이다. 체크박스·라디오는 감싸는
+ * \`<label>\` 로 치환해서 **하나의 타깃**으로 잰다. 라우트를
  * 더할 때는 먼저 위반을 전수 측정하고(게이트가 켜진 날부터 빨간 게이트는
  * 소음이다), 남는 위반은 고치거나 여기 주석에 측정치와 함께 남긴다.
  */
@@ -257,5 +283,55 @@ test.describe("최소 타깃 계약 (pointer: fine — WCAG 2.5.8 AA)", () => {
       expect.arrayContaining(["probe-dense-a", "probe-dense-b"]),
     );
     expect(ids, "간격 확보 프로브를 오탐했다 — spacing 예외가 죽어 있다").not.toContain("probe-spaced");
+  });
+
+  /**
+   * **폼 커버리지 프로브** — 이 감사가 2026-08-05 까지 폼을 못 보던 사각을 못박는다.
+   *
+   * 셀렉터가 `button, a[href]` 로 되돌아가면 아래 셋이 전부 통과해 버리고,
+   * 그러면 「위반 0」은 깨끗해서가 아니라 **안 봐서** 0이 된다. 이 저장소가
+   * 반복해서 밟은 그 결함이다.
+   *
+   * 세 프로브가 각기 다른 것을 증명한다:
+   * - `probe-input-small` — 폼 컨트롤이 **셀렉터에 잡히는가**
+   * - `probe-check-bare` — 라벨 없는 체크박스가 **자기 크기로 판정되는가**
+   * - `probe-check-labelled` — 라벨이 감싸면 **라벨로 치환돼 통과하는가**
+   *   (이게 없으면 고쳐 놓은 자리를 이중 계산해서 오탐한다)
+   */
+  test("폼 커버리지 프로브 — 인풋·체크박스를 실제로 재고, 라벨로 감싼 것은 라벨로 친다", async ({ page }) => {
+    await page.goto("/ko/download/?guides=off");
+    await page.evaluate(() => {
+      document.body.insertAdjacentHTML(
+        "beforeend",
+        // 좌표는 **간격 예외가 성립하지 않도록** 밀집시킨다. 처음엔 넉넉히
+        // 띄워 놨다가 셋 다 통과했는데, 그건 탐지기가 죽어서가 아니라 24px 원이
+        // 안 겹쳐서 2.5.8 의 간격 예외가 **정당하게** 성립한 것이었다.
+        `<div style="position:fixed;left:0;top:300px;z-index:9999;background:#000;width:400px;height:260px">
+           <input data-testid="probe-input-small" style="position:absolute;left:20px;top:10px;width:60px;height:16px" />
+           <input type="checkbox" data-testid="probe-check-bare" style="position:absolute;left:20px;top:30px;width:16px;height:16px" />
+           <label style="position:absolute;left:20px;top:120px;width:200px;height:32px;display:flex;align-items:center">
+             <input type="checkbox" data-testid="probe-check-labelled" style="width:16px;height:16px" />
+             <span>라벨이 타깃이다</span>
+           </label>
+           <button type="button" data-testid="probe-label-neighbour" style="position:absolute;left:20px;top:140px;width:60px;height:16px">n</button>
+         </div>`,
+      );
+    });
+    const { failures } = (await page.evaluate(AUDIT_258)) as Audit258Result;
+    const ids = failures.map((f: { id: string }) => f.id);
+    expect(ids, "16px 인풋을 못 잡았다 — 셀렉터가 폼을 안 보고 있다").toContain("probe-input-small");
+    expect(ids, "라벨 없는 16px 체크박스를 못 잡았다").toContain("probe-check-bare");
+    /*
+     * 이웃 버튼이 라벨 안 체크박스와 24px 원이 겹치도록 놓여 있다. 그래서
+     * **라벨 치환이 죽으면** 안쪽 16px 체크박스가 간격 예외를 못 받고 걸린다 —
+     * 이 단언이 헛돌지 않는 이유다.
+     */
+    expect(ids, "이웃 프로브가 안 걸렸다 — 이 자리의 밀집 기하가 성립하지 않는다").toContain(
+      "probe-label-neighbour",
+    );
+    expect(
+      ids,
+      "라벨로 감싼 체크박스를 오탐했다 — 라벨 치환이 죽었다(고쳐 놓은 자리를 위반으로 부르게 된다)",
+    ).not.toContain("probe-check-labelled");
   });
 });
