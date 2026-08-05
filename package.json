@@ -79,7 +79,7 @@
     "docs:links": "node scripts/check-doc-links.mjs",
     "test:guide-examples": "node --test scripts/check-guide-frontmatter-examples.test.mjs",
     "docs:links:external": "node scripts/check-doc-links.mjs --external",
-    "docs:check": "pnpm docs:surface:check && pnpm docs:links",
+    "docs:check": "pnpm docs:surface:check && pnpm design:toc:check && pnpm docs:links",
     "test:docs:checks": "node --test scripts/build-docs-surface.test.mjs scripts/check-doc-links.test.mjs",
     "vault:validate": "node scripts/validate-vault.mjs",
     "decisions:check": "node scripts/check-decision-record.mjs",
@@ -169,7 +169,9 @@
     "test:check:tokens": "node --test scripts/check-no-raw-color.test.mjs",
     "test": "vitest",
     "test:run": "vitest run",
-    "e2e": "playwright test"
+    "e2e": "playwright test",
+    "design:toc": "node scripts/build-design-system-toc.mjs",
+    "design:toc:check": "node scripts/build-design-system-toc.mjs --check"
   },
   "dependencies": {
     "@hookform/resolvers": "^5.5.7",

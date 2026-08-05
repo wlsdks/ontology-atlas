@@ -59,6 +59,7 @@ pnpm docs-vault:build && git add src/entities/docs-vault/data public/docs-vault
 | Packed CLI release | `pnpm smoke:packed-cli` | `pnpm test:mcp:package` |
 | Decision ledger triggers | `pnpm decisions:check` | `pnpm exec vitest run tests/contract/design-spec-ledger.contract.test.ts` |
 | Design don't-list drift | `pnpm exec vitest run tests/contract/design-donts-parity.contract.test.ts` | `pnpm test:contracts` |
+| Design-system TOC drift | `pnpm design:toc:check` (in `pnpm docs:check`) | `pnpm design:toc` regenerates |
 
 ### Decision-ledger gate (`pnpm decisions:check`)
 

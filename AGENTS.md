@@ -242,7 +242,10 @@ The detailed rules live in `.claude/rules/*.md` and Claude Code auto-loads them.
   `no-restricted-syntax`) — 새 규격을 문서에 적으면 같은 PR 에 lint 룰도 넣는다.
   단 **룰을 켜기 전에 지금 어기고 있는 곳이 몇 군데인지 전부 세어 본다**: 한 PR 로
   다 못 고칠 만큼 많으면 그 룰은 규칙이 아니라 경고 소음이 되고 원래 잡던 문제까지
-  묻힌다. 절차와 실제 측정값은 `design.md` "규격은 lint 로 강제된다" 절.
+  묻힌다. 절차와 실제 측정값, 그리고 **각 게이트가 왜 그 모양인지**(면제 범위 ·
+  룰이 조용히 죽은 사례)는 `@.claude/rules/design-gates.md` — 게이트를 고칠 때만
+  읽는다. **값의 정본은 `DESIGN-SYSTEM.md` 하나**이고 나머지는 가리키기만 한다;
+  통째로 읽지 말고 그 문서 맨 위 목차에서 절을 골라 grep 해서 그 줄부터 읽는다.
 - **Git workflow** — conventional prefix + Korean (or English) body — `@.claude/rules/git.md`
 - **Testing & verification** — TDD-first, unit → e2e — `@.claude/rules/testing.md`
 - **Local-first** — vault folder only, no backend — `@.claude/rules/local-first.md`
