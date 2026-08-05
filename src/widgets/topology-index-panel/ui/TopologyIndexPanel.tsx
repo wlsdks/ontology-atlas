@@ -8,6 +8,7 @@ import {
   type KeyboardEvent as ReactKeyboardEvent,
 } from "react";
 import { ChevronLeft, Search } from "lucide-react";
+import { ICON_SIZE } from "@/shared/ui/icon-size";
 import { Link } from "@/i18n/navigation";
 import { controlClass } from "@/shared/ui";
 import {
@@ -426,7 +427,7 @@ export function TopologyIndexPanel({
 
       <div className="relative mb-3 shrink-0">
         <Search
-          size={11}
+          size={ICON_SIZE.sm}
           aria-hidden
           className="pointer-events-none absolute left-2.5 top-1/2 -translate-y-1/2 text-[color:var(--topology-v2-panel-text-quaternary)]"
         />

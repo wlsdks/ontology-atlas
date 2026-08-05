@@ -28,6 +28,7 @@ import {
   History as HistoryIcon,
   Map as MapIcon,
 } from "lucide-react";
+import { ICON_SIZE } from "@/shared/ui/icon-size";
 import { useLocalVault } from "@/features/docs-vault-local";
 import { formatActivityAge } from "@/features/vault-ontology";
 import { cn } from "@/shared/lib/cn";
@@ -448,7 +449,7 @@ export function AppNavRail({
               그대로 써 설정 기어보다 커 보였다. 유틸 3타일(활동·발자취·설정)은
               `--app-nav-rail-utility-icon-size` 하나로 앉는다. */}
           <Activity
-            size={18}
+            size={ICON_SIZE.lg}
             aria-hidden
             className="h-[var(--app-nav-rail-utility-icon-size)] w-[var(--app-nav-rail-utility-icon-size)]"
           />

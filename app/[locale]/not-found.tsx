@@ -3,6 +3,7 @@
 import { useEffect } from "react";
 import { useTranslations } from "next-intl";
 import { ArrowLeft, Compass, Search } from "lucide-react";
+import { ICON_SIZE } from "@/shared/ui/icon-size";
 import { Link, useRouter } from "@/i18n/navigation";
 import { Button, buttonVariants } from "@/shared/ui/button";
 import { cn } from "@/shared/lib/cn";
@@ -56,7 +57,7 @@ export default function LocaleNotFound() {
       <div className="w-full max-w-[440px] rounded-[var(--radius-panel)] border border-[color:var(--color-divider)] bg-[color:var(--color-panel)] p-7 shadow-[var(--shadow-elevation-2)]">
         <div className="flex items-center gap-2">
           <span className="flex h-8 w-8 items-center justify-center rounded-[var(--radius-chip)] border border-[color:var(--color-divider)] text-[color:var(--color-text-tertiary)]">
-            <Compass size={16} />
+            <Compass size={ICON_SIZE.lg} />
           </span>
           <p className="font-mono text-caption uppercase tracking-[var(--tracking-caps-14)] text-[color:var(--color-text-quaternary)]">
             {t("label")}
@@ -74,7 +75,7 @@ export default function LocaleNotFound() {
               (합성 4.42:1, AA 미달)였고 호버가 opacity 방언이었다 — 관문이 이미
               쓰는 `<Button>` 문법으로 정규화 (2026-08-04 체계석). */}
           <Button type="button" variant="primary" onClick={openSearchOnHome}>
-            <Search size={14} />
+            <Search size={ICON_SIZE.md} />
             {t("findByProject")}
           </Button>
           {/* raw buttonVariants 는 base 의 border-transparent 와 변형 보더가 둘 다 남아

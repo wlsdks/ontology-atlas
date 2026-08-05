@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
 import { useLocale, useTranslations } from 'next-intl';
 import { X } from 'lucide-react';
+import { ICON_SIZE } from '@/shared/ui/icon-size';
 
 import type { VaultManifest } from '@/entities/docs-vault';
 import type { KnowledgeProjectInsight } from '@/entities/knowledge-graph';
@@ -518,7 +519,7 @@ export function VaultAgentPanel({
             aria-label={t('close')}
             className="flex size-[var(--overlay-close-size)] shrink-0 items-center justify-center rounded-chip text-[color:var(--color-text-tertiary)] transition-colors hover:bg-[color:var(--color-overlay-2)] hover:text-[color:var(--color-text-primary)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--color-indigo-accent)]"
           >
-            <X aria-hidden="true" size={16} />
+            <X aria-hidden="true" size={ICON_SIZE.lg} />
           </button>
         </header>
 

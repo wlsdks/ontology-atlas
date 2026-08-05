@@ -1,4 +1,5 @@
 import { Bot, Check, Clipboard, FilePlus, FolderOpen, HardDrive, Network, Package, Terminal } from "lucide-react";
+import { ICON_SIZE } from "@/shared/ui/icon-size";
 import { useTranslations } from "next-intl";
 import type { LocalFsHandleRecord } from "@/entities/local-fs-handle";
 import { AGENT_GRAPH_DB_RUNTIME_GATE_CHECK_COUNT } from "@/shared/lib/ontology-tree";
@@ -119,7 +120,7 @@ export function DesktopVaultWelcome({
                   aria-label={dogfoodPathCopyAriaLabel}
                   className="shrink-0 justify-center font-mono hover:border-[color:var(--color-indigo-line-a42)] hover:bg-[color:var(--color-indigo-line-a13)]"
                 >
-                  {dogfoodPathCopied ? <Check size={12} aria-hidden /> : <Clipboard size={12} aria-hidden />}
+                  {dogfoodPathCopied ? <Check size={ICON_SIZE.sm} aria-hidden /> : <Clipboard size={ICON_SIZE.sm} aria-hidden />}
                   {t("desktopWelcome.copyDogfoodPath")}
                 </Chip>
                 <Chip
@@ -128,7 +129,7 @@ export function DesktopVaultWelcome({
                   aria-label={dogfoodLoopCopyAriaLabel}
                   className="shrink-0 justify-center font-mono hover:border-[color:var(--color-indigo-a32)] hover:text-[color:var(--color-text-primary)]"
                 >
-                  {dogfoodLoopCopied ? <Check size={12} aria-hidden /> : <Terminal size={12} aria-hidden />}
+                  {dogfoodLoopCopied ? <Check size={ICON_SIZE.sm} aria-hidden /> : <Terminal size={ICON_SIZE.sm} aria-hidden />}
                   {t("desktopWelcome.copyDogfoodLoop")}
                 </Chip>
               </div>
@@ -185,7 +186,7 @@ export function DesktopVaultWelcome({
               className="flex w-full items-start gap-3 bg-[color:var(--color-indigo-a08)] px-4 py-4 text-left transition-colors hover:bg-[color:var(--color-indigo-a14)] disabled:opacity-60"
             >
               <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-chip border border-[color:var(--color-indigo-line-a32)] text-[color:var(--color-indigo-pale-a94)]">
-                <FolderOpen size={17} aria-hidden />
+                <FolderOpen size={ICON_SIZE.lg} aria-hidden />
               </span>
               <span className="min-w-0">
                 <span className="block text-body-lg font-[var(--font-weight-emphasis)] text-[color:var(--color-text-primary)]">

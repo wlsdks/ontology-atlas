@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { ChevronLeft, Footprints, X } from "lucide-react";
+import { ICON_SIZE } from "@/shared/ui/icon-size";
 
 import {
   CHROME_STATUS_CHIP_CLASS,
@@ -243,7 +244,7 @@ export function TopologyTrailChip({
   return (
     <div ref={rootRef} className="relative" data-testid="topology-trail-chip">
       <div className={CHROME_STATUS_CHIP_CLASS}>
-        <Footprints size={14} aria-hidden className="shrink-0 text-[color:var(--color-text-tertiary)]" />
+        <Footprints size={ICON_SIZE.md} aria-hidden className="shrink-0 text-[color:var(--color-text-tertiary)]" />
         <button
           ref={triggerRef}
           type="button"
@@ -303,7 +304,7 @@ export function TopologyTrailChip({
                   data-testid="topology-trail-past-back"
                   className="-ml-1 flex h-5 w-5 shrink-0 items-center justify-center rounded-full text-[color:var(--color-text-quaternary)] transition-colors hover:text-[color:var(--color-text-primary)]"
                 >
-                  <ChevronLeft size={14} aria-hidden />
+                  <ChevronLeft size={ICON_SIZE.md} aria-hidden />
                 </button>
                 <span className="min-w-0 flex-1 truncate">{labels.pastHeading}</span>
               </>

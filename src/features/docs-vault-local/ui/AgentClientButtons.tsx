@@ -3,6 +3,7 @@
 import { Fragment, useState } from "react";
 import { useTranslations } from "next-intl";
 import { ArrowUpRight, Check, Copy, Info, Loader2 } from "lucide-react";
+import { ICON_SIZE } from "@/shared/ui/icon-size";
 import { Link } from "@/i18n/navigation";
 import { AGENT_GRAPH_WORKFLOW_HREF, type AgentServerAvailability } from "@/shared/config";
 import { copyText } from "@/shared/lib/copy-text";
@@ -181,7 +182,7 @@ export function AgentClientButtons({
         >
           <div className="flex items-start gap-2">
             <Info
-              size={14}
+              size={ICON_SIZE.md}
               aria-hidden
               className="mt-0.5 shrink-0 text-[color:var(--color-text-quaternary)]"
             />

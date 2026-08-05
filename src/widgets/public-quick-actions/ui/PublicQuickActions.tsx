@@ -5,6 +5,7 @@ import { useMemo } from "react";
 import { useSearchParams } from "next/navigation";
 import { useTranslations } from "next-intl";
 import { CopyPlus, PencilLine } from "lucide-react";
+import { ICON_SIZE } from "@/shared/ui/icon-size";
 import { Button, InfoHint } from "@/shared/ui";
 import { cn } from "@/shared/lib/cn";
 
@@ -96,7 +97,7 @@ export function PublicQuickActions({
         {shouldShowCreateAction ? (
           <Link href={newProjectHref} className="inline-flex">
             <Button type="button" size="sm">
-              <CopyPlus size={14} aria-hidden="true" />
+              <CopyPlus size={ICON_SIZE.md} aria-hidden="true" />
               {t("buttonNew")}
             </Button>
           </Link>
@@ -104,7 +105,7 @@ export function PublicQuickActions({
         {editProjectHref ? (
           <Link href={editProjectHref} className="inline-flex">
             <Button type="button" variant="ghost" size="sm">
-              <PencilLine size={14} aria-hidden="true" />
+              <PencilLine size={ICON_SIZE.md} aria-hidden="true" />
               {t("buttonEdit")}
             </Button>
           </Link>

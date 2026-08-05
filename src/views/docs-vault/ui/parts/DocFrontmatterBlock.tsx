@@ -1,5 +1,6 @@
 import { Fragment, useEffect, useMemo, useRef, useState } from "react";
 import { Check, ChevronRight, Clipboard, Pencil } from "lucide-react";
+import { ICON_SIZE } from "@/shared/ui/icon-size";
 import { useTranslations } from "next-intl";
 import { buildNewNodeDoc, type VaultDoc } from "@/entities/docs-vault";
 import { useOntologyKindLabel } from "@/entities/ontology-class";
@@ -521,7 +522,7 @@ export function DocFrontmatterBlock({
           className: "touch-hit-expand mt-2 font-sans hover:text-[color:var(--color-text-primary)]",
         })}
       >
-        <Pencil size={11} aria-hidden />
+        <Pencil size={ICON_SIZE.sm} aria-hidden />
         {diagnosticOnly ? t("setKindAction") : t("editAction")}
       </button>
     )
@@ -584,7 +585,7 @@ export function DocFrontmatterBlock({
           className="flex list-none items-center gap-1.5 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--color-indigo-line-a45)]"
         >
           <ChevronRight
-            size={11}
+            size={ICON_SIZE.sm}
             aria-hidden
             className="flex-none text-[color:var(--color-text-quaternary)] transition-transform group-open:rotate-90"
           />
@@ -733,7 +734,7 @@ export function DocFrontmatterBlock({
             })}
           >
             <ChevronRight
-              size={11}
+              size={ICON_SIZE.sm}
               aria-hidden
               className={`transition-transform motion-reduce:transition-none ${
                 exampleOpen ? "rotate-90" : ""
@@ -800,7 +801,7 @@ function CodeLocationRow({
         data-testid="doc-frontmatter-code-location-copy"
         className="hover:bg-[color:var(--color-overlay-1)] hover:text-[color:var(--color-text-secondary)]"
       >
-        {state === "copied" ? <Check size={11} aria-hidden /> : <Clipboard size={11} aria-hidden />}
+        {state === "copied" ? <Check size={ICON_SIZE.sm} aria-hidden /> : <Clipboard size={ICON_SIZE.sm} aria-hidden />}
       </IconButton>
     </li>
   );

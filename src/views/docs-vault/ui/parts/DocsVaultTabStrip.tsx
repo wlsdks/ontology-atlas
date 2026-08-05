@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useLayoutEffect, useRef, useState } from "react";
 import type { useTranslations } from "next-intl";
 import { FileText, X } from "lucide-react";
+import { ICON_SIZE } from "@/shared/ui/icon-size";
 import { cn } from "@/shared/lib/cn";
 import { IconButton } from "@/shared/ui";
 import type { DocTab } from "../../lib/doc-tabs";
@@ -193,7 +194,7 @@ export function DocsVaultTabStrip({
                   : "text-[color:var(--color-text-tertiary)] group-hover:text-[color:var(--color-text-secondary)]",
               )}
             >
-              <FileText size={14} aria-hidden className="flex-none" />
+              <FileText size={ICON_SIZE.md} aria-hidden className="flex-none" />
               <span className="min-w-0 flex-1 truncate text-left">{tab.title}</span>
             </button>
             <IconButton
@@ -217,7 +218,7 @@ export function DocsVaultTabStrip({
                   : "opacity-0 group-hover:opacity-100 focus-visible:opacity-100",
               )}
             >
-              <X size={14} aria-hidden />
+              <X size={ICON_SIZE.md} aria-hidden />
             </IconButton>
             {active ? (
               <span

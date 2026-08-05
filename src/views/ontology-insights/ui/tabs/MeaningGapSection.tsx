@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useRef, useState } from "react";
 import { Check, Pencil } from "lucide-react";
+import { ICON_SIZE } from "@/shared/ui/icon-size";
 import { Link } from "@/i18n/navigation";
 import { useRowDisclosure } from "@/shared/lib/use-row-disclosure";
 import { MtimeConflictBadge } from "@/shared/ui/mtime-conflict-badge";
@@ -380,7 +381,7 @@ function MeaningGapRowView({
                 className: open ? ACCENT_CHIP_OPEN : ACCENT_CHIP_IDLE,
               })}
             >
-              <Pencil size={11} aria-hidden />
+              <Pencil size={ICON_SIZE.sm} aria-hidden />
               {open ? labels.writeHereClose : labels.writeHere}
             </button>
           ) : abilities.canWriteVault ? null : (
@@ -429,7 +430,7 @@ function MeaningGapRowView({
                   role="status"
                   className="flex items-start gap-1.5 text-label leading-snug text-[color:var(--color-indigo-accent)]"
                 >
-                  <Check size={12} aria-hidden className="mt-0.5 shrink-0" />
+                  <Check size={ICON_SIZE.sm} aria-hidden className="mt-0.5 shrink-0" />
                   <span>
                     {labels.saved}
                     <span className="text-[color:var(--color-text-tertiary)]">

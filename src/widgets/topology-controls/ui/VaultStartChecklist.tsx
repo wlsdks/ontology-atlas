@@ -2,6 +2,7 @@
 
 import { useTranslations } from "next-intl";
 import { Cable, Check, CircleAlert, ClipboardCopy, Map as MapIcon, Plus, Sparkles } from "lucide-react";
+import { ICON_SIZE } from "@/shared/ui/icon-size";
 import { useCopyFeedback } from "@/shared/lib/use-copy-feedback";
 import { Chip } from "@/shared/ui";
 
@@ -130,7 +131,7 @@ export function VaultStartChecklist({
               : "shrink-0 border-[color:var(--color-indigo-a46)] bg-[color:var(--color-indigo-a16)] font-[var(--font-weight-signature)] hover:bg-[color:var(--color-indigo-a24)]"
           }
         >
-          <Cable size={11} aria-hidden />
+          <Cable size={ICON_SIZE.sm} aria-hidden />
           {t("ctaAgent")}
         </Chip>
       ) : null,
@@ -157,9 +158,9 @@ export function VaultStartChecklist({
           className="shrink-0 border-[color:var(--color-overlay-3)] hover:border-[color:var(--color-indigo-line-a35)] hover:text-[color:var(--color-text-primary)]"
         >
           {copyState === "failed" ? (
-            <CircleAlert size={11} aria-hidden />
+            <CircleAlert size={ICON_SIZE.sm} aria-hidden />
           ) : (
-            <ClipboardCopy size={11} aria-hidden />
+            <ClipboardCopy size={ICON_SIZE.sm} aria-hidden />
           )}
           {copyState === "failed"
             ? t("ctaAnalyzeFailed")
@@ -184,7 +185,7 @@ export function VaultStartChecklist({
           data-testid="checklist-cta-scaffold"
           className="border-[color:var(--color-overlay-3)] hover:border-[color:var(--color-indigo-line-a35)] hover:text-[color:var(--color-text-primary)]"
         >
-          <Sparkles size={11} aria-hidden />
+          <Sparkles size={ICON_SIZE.sm} aria-hidden />
           {scaffolding ? t("ctaScaffoldBusy") : t("ctaScaffold")}
         </Chip>
       ) : (
@@ -195,7 +196,7 @@ export function VaultStartChecklist({
           data-testid="checklist-cta-project"
           className="border-[color:var(--color-overlay-3)] hover:border-[color:var(--color-indigo-line-a35)] hover:text-[color:var(--color-text-primary)]"
         >
-          <Plus size={11} aria-hidden />
+          <Plus size={ICON_SIZE.sm} aria-hidden />
           {t("ctaCreate")}
         </Chip>
       ),
@@ -239,7 +240,7 @@ export function VaultStartChecklist({
                       : "border-[color:var(--color-border-strong)] text-transparent"
                   }`}
                 >
-                  <Check size={10} strokeWidth={3} />
+                  <Check size={ICON_SIZE.sm} strokeWidth={3} />
                 </span>
                 <span
                   className={`truncate text-body ${

@@ -3,6 +3,7 @@
 import { useMemo, useState } from 'react';
 import { useTranslations } from 'next-intl';
 import { Check, Copy } from 'lucide-react';
+import { ICON_SIZE } from '@/shared/ui/icon-size';
 
 import { copyText } from '@/shared/lib/copy-text';
 import { useCopyFeedback } from '@/shared/lib/use-copy-feedback';
@@ -141,9 +142,9 @@ function CommandRow({
         })}
       >
         {state === 'copied' ? (
-          <Check size={12} aria-hidden className="text-[color:var(--color-status-success)]" />
+          <Check size={ICON_SIZE.sm} aria-hidden className="text-[color:var(--color-status-success)]" />
         ) : (
-          <Copy size={12} aria-hidden />
+          <Copy size={ICON_SIZE.sm} aria-hidden />
         )}
         {state === 'copied' ? t('copied') : state === 'failed' ? t('copyFailed') : t('copy')}
       </button>
@@ -224,9 +225,9 @@ export function WebManualConnectPanel({
           })}
         >
           {cloneCopied ? (
-            <Check size={11} aria-hidden className="text-[color:var(--color-status-success)]" />
+            <Check size={ICON_SIZE.sm} aria-hidden className="text-[color:var(--color-status-success)]" />
           ) : (
-            <Copy size={11} aria-hidden />
+            <Copy size={ICON_SIZE.sm} aria-hidden />
           )}
           {cloneCopied ? t('manualCloneCopied') : t('manualCloneCta')}
         </button>
@@ -295,9 +296,9 @@ export function WebManualConnectPanel({
             })}
           >
             {configCopyState === 'copied' ? (
-              <Check size={12} aria-hidden className="text-[color:var(--color-status-success)]" />
+              <Check size={ICON_SIZE.sm} aria-hidden className="text-[color:var(--color-status-success)]" />
             ) : (
-              <Copy size={12} aria-hidden />
+              <Copy size={ICON_SIZE.sm} aria-hidden />
             )}
             {configCopyState === 'copied'
               ? t('copied')

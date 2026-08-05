@@ -5,6 +5,7 @@ import { Link, useRouter } from '@/i18n/navigation';
 import { useTranslations } from 'next-intl';
 import { AnimatePresence, motion, useReducedMotion } from 'framer-motion';
 import { BookOpen, Search, X } from 'lucide-react';
+import { ICON_SIZE } from '@/shared/ui/icon-size';
 import { cn } from '@/shared/lib/cn';
 import { controlClass } from '@/shared/ui';
 import { OVERLAY_SPRING, OVERLAY_SPRING_REDUCED, SCRIM_FADE, SCRIM_FADE_REDUCED } from "@/shared/motion";
@@ -351,7 +352,7 @@ function SearchPaletteDialog({
         className="relative flex h-full w-full flex-col overflow-hidden border border-[color:var(--color-divider)] bg-[color:var(--color-panel)] shadow-[var(--shadow-elevation-3)] md:h-auto md:max-w-xl md:rounded-sheet"
       >
         <div className="flex items-center gap-3 border-b border-[color:var(--color-overlay-2)] px-4 py-3">
-          <Search size={16} className="shrink-0 text-[color:var(--color-text-tertiary)]" />
+          <Search size={ICON_SIZE.lg} className="shrink-0 text-[color:var(--color-text-tertiary)]" />
           <label htmlFor="project-search-input" className="sr-only">
             {t('inputLabel')}
           </label>
@@ -385,7 +386,7 @@ function SearchPaletteDialog({
             aria-label={t('closeAriaLabel')}
             className="flex h-[var(--overlay-close-size)] w-[var(--overlay-close-size)] items-center justify-center rounded-chip text-[color:var(--color-text-tertiary)] transition-colors hover:bg-[color:var(--color-overlay-2)] hover:text-[color:var(--color-text-primary)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--color-indigo-a46)] focus-visible:ring-inset"
           >
-            <X size={15} />
+            <X size={ICON_SIZE.lg} />
           </button>
         </div>
 
@@ -499,7 +500,7 @@ function SearchPaletteDialog({
           {docResults.length > 0 ? (
             <div className="border-b border-[color:var(--color-overlay-2)] px-3 py-2">
               <div className="mb-1 flex items-center gap-1.5 font-mono text-caption uppercase tracking-[var(--tracking-caps-14)] text-[color:var(--color-text-quaternary)]">
-                <BookOpen size={10} aria-hidden />
+                <BookOpen size={ICON_SIZE.sm} aria-hidden />
                 {t('docsSection', { count: docResults.length })}
               </div>
               <ul className="flex flex-col gap-0.5">
@@ -523,7 +524,7 @@ function SearchPaletteDialog({
                         )}
                       >
                         <BookOpen
-                          size={12}
+                          size={ICON_SIZE.sm}
                           aria-hidden
                           className="shrink-0 text-[color:var(--color-indigo-accent)]"
                         />

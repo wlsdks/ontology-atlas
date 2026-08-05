@@ -3,6 +3,7 @@
 import { Link } from '@/i18n/navigation';
 import { useTranslations } from 'next-intl';
 import { FolderOpen, GitBranch, Map as MapIcon, Network, Plus } from 'lucide-react';
+import { ICON_SIZE } from '@/shared/ui/icon-size';
 import { isTauriVaultRuntime } from '@/shared/lib/tauri-vault-fs';
 import { controlClass } from '@/shared/ui';
 
@@ -125,7 +126,7 @@ export function TopologyEmptyState({
               data-testid="empty-start-from-docs"
               className={PRIMARY}
             >
-              <MapIcon size={14} aria-hidden="true" />
+              <MapIcon size={ICON_SIZE.md} aria-hidden="true" />
               {t('ctaStartFromDocs')}
             </button>
           ) : null}
@@ -136,16 +137,16 @@ export function TopologyEmptyState({
               data-testid="empty-create-node"
               className={hasDocsToBootstrap ? SECONDARY : PRIMARY}
             >
-              <Plus size={14} aria-hidden="true" />
+              <Plus size={ICON_SIZE.md} aria-hidden="true" />
               {t('ctaCreateNode')}
             </button>
           ) : null}
           <Link href="/ontology/" className={SECONDARY}>
-            <Network size={14} aria-hidden="true" />
+            <Network size={ICON_SIZE.md} aria-hidden="true" />
             {t('ctaTree')}
           </Link>
           <Link href="/ontology/studio/" className={SECONDARY}>
-            <GitBranch size={14} aria-hidden="true" />
+            <GitBranch size={ICON_SIZE.md} aria-hidden="true" />
             {t(isNoProjects ? 'ctaBuilder' : 'ctaBuilderNoDeps')}
           </Link>
           {hasDocsToBootstrap ? null : (
@@ -153,7 +154,7 @@ export function TopologyEmptyState({
               href={showPickerPath ? '/docs/?intent=local' : '/download/'}
               className={SECONDARY}
             >
-              <FolderOpen size={14} aria-hidden="true" />
+              <FolderOpen size={ICON_SIZE.md} aria-hidden="true" />
               {t(showPickerPath ? 'ctaOpenVaultPicker' : 'ctaOpenVaultDownload')}
             </Link>
           )}

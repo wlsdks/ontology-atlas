@@ -7,6 +7,7 @@ import { VisuallyHidden } from "@radix-ui/react-visually-hidden";
 import { useVirtualizer } from "@tanstack/react-virtual";
 import { useReducedMotion } from "framer-motion";
 import { Search, X } from "lucide-react";
+import { ICON_SIZE } from "@/shared/ui/icon-size";
 import { useTranslations } from "next-intl";
 import type { KnowledgeGraphNode } from "@/entities/knowledge-graph";
 import { useOntologyKindLabel } from "@/entities/ontology-class";
@@ -260,7 +261,7 @@ export function GlobalSearch({
             onClick={(event) => event.stopPropagation()}
           >
         <div className="flex items-center gap-2 border-b border-[color:var(--color-divider)] px-4 py-3">
-          <Search size={14} className="shrink-0 text-[color:var(--color-text-quaternary)]" />
+          <Search size={ICON_SIZE.md} className="shrink-0 text-[color:var(--color-text-quaternary)]" />
           <Command.Input
             ref={inputRef}
             value={query}

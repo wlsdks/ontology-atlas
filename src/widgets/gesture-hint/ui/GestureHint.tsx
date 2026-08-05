@@ -5,6 +5,7 @@ import { useMediaQuery } from "usehooks-ts";
 import { AnimatePresence, motion } from "framer-motion";
 import { useTranslations } from "next-intl";
 import { Hand, Pointer, X } from "lucide-react";
+import { ICON_SIZE } from "@/shared/ui/icon-size";
 import { MOTION } from "@/shared/motion";
 import { IconButton } from "@/shared/ui";
 
@@ -58,7 +59,7 @@ export function GestureHint({ disabled = false }: { disabled?: boolean }) {
           aria-live="polite"
         >
           <span className="mt-0.5 flex h-7 w-7 shrink-0 items-center justify-center rounded-chip border border-[color:var(--color-indigo-accent-a32)] bg-[color:var(--color-indigo-a14)] text-[color:var(--color-indigo-text-soft)]">
-            <Hand size={14} />
+            <Hand size={ICON_SIZE.md} />
           </span>
           <div className="flex-1">
             <p className="font-mono text-caption uppercase tracking-[var(--tracking-caps-14)] text-[color:var(--color-text-quaternary)]">
@@ -68,7 +69,7 @@ export function GestureHint({ disabled = false }: { disabled?: boolean }) {
               {t("body")}
             </p>
             <div className="mt-2 flex items-center gap-1.5">
-              <Pointer size={10} className="text-[color:var(--color-text-quaternary)]" />
+              <Pointer size={ICON_SIZE.sm} className="text-[color:var(--color-text-quaternary)]" />
               <span className="font-mono text-caption uppercase tracking-[var(--tracking-caps-12)] text-[color:var(--color-text-quaternary)]">
                 {t("tapDetail")}
               </span>

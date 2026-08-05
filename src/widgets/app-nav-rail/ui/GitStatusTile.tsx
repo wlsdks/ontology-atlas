@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import { useTranslations } from "next-intl";
 import { History } from "lucide-react";
+import { ICON_SIZE } from "@/shared/ui/icon-size";
 import { gitStatus, isGitBridgeAvailable } from "@/shared/lib/tauri-git";
 import { cn } from "@/shared/lib/cn";
 
@@ -92,7 +93,7 @@ export function GitStatusTile({
       {/* 유틸리티 티어 아이콘 사다리 — `AppNavRail.tsx` 활동 타일과 동일 토큰
           (`--app-nav-rail-utility-icon-size`, 소유자 실보고 2026-07-23). */}
       <History
-        size={18}
+        size={ICON_SIZE.lg}
         aria-hidden
         className="h-[var(--app-nav-rail-utility-icon-size)] w-[var(--app-nav-rail-utility-icon-size)]"
       />

@@ -3,6 +3,7 @@
 import { useEffect, useRef, useState } from "react";
 import { motion, useReducedMotion } from "framer-motion";
 import { FileText, X } from "lucide-react";
+import { ICON_SIZE } from "@/shared/ui/icon-size";
 import { OVERLAY_SPRING, OVERLAY_SPRING_REDUCED, SCRIM_FADE, SCRIM_FADE_REDUCED } from "@/shared/motion";
 import type { CreateNodeKind } from "../lib/build-create-node";
 import type { StudioWriteTarget } from "../lib/resolve-write-target";
@@ -161,7 +162,7 @@ export function StudioMaterializeDialog({
               그룹 안 간격(8px)을 그룹 사이 간격(12px)보다 좁게 둔다. */}
           <div className="flex flex-col gap-2">
           <div className="flex items-center gap-2 rounded-card border border-[color:var(--color-divider)] bg-[color:var(--color-panel)] px-3 py-2.5">
-            <FileText size={14} aria-hidden className="flex-none text-[color:var(--color-text-tertiary)]" />
+            <FileText size={ICON_SIZE.md} aria-hidden className="flex-none text-[color:var(--color-text-tertiary)]" />
             <span className="flex-none text-label tracking-label text-[color:var(--color-text-tertiary)]">
               {labels.fileLabel}
             </span>

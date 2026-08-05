@@ -1,6 +1,7 @@
 "use client";
 
 import { Orbit, X } from "lucide-react";
+import { ICON_SIZE } from "@/shared/ui/icon-size";
 
 import { CHROME_STATUS_CHIP_CLASS } from "@/shared/ui/chrome-chip";
 import { controlClass } from "@/shared/ui/control-class";
@@ -39,7 +40,7 @@ export function TopologyRealmChip({
       role="status"
       className={CHROME_STATUS_CHIP_CLASS}
     >
-      <Orbit size={14} aria-hidden className="shrink-0 text-[color:var(--color-text-tertiary)]" />
+      <Orbit size={ICON_SIZE.md} aria-hidden className="shrink-0 text-[color:var(--color-text-tertiary)]" />
       {beforeLabel.trim().length > 0 ? (
         <span className="shrink-0 text-[color:var(--color-text-tertiary)]">{beforeLabel.trim()}</span>
       ) : null}

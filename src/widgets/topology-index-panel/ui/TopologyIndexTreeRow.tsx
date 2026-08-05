@@ -4,6 +4,7 @@ import type { KeyboardEvent as ReactKeyboardEvent } from "react";
 import { useLatinEyebrow } from "@/shared/lib/latin-eyebrow";
 import { useRowDisclosure } from "@/shared/lib/use-row-disclosure";
 import { ChevronRight } from "lucide-react";
+import { ICON_SIZE } from "@/shared/ui/icon-size";
 import type { DomainCensusRow, OntologyTreeNode } from "@/shared/lib/ontology-tree";
 import { TopologyV2KindGlyph } from "@/shared/ui/topology-v2-kind-glyph";
 import {
@@ -182,7 +183,7 @@ export function TopologyIndexTreeRow({
             hasChildren ? "" : "invisible"
           } ${open ? "rotate-90" : ""}`}
         >
-          <ChevronRight size={11} aria-hidden="true" />
+          <ChevronRight size={ICON_SIZE.sm} aria-hidden="true" />
         </button>
         <TopologyV2KindGlyph kind={node.kind} size={13} className="justify-self-center" />
         <div className="min-w-0">

@@ -2,6 +2,7 @@
 
 import { useLocale, useTranslations } from "next-intl";
 import { Check, Link2 } from "lucide-react";
+import { ICON_SIZE } from "@/shared/ui/icon-size";
 import { getProjectRuntimeDetailUrl } from "@/entities/project";
 import { BASE_PATH } from "@/shared/lib/base-path";
 import { useCopyFeedback } from "@/shared/lib/use-copy-feedback";
@@ -41,7 +42,7 @@ export function CopyProjectLinkButton({
     toast.show(copied ? t("toastSuccess") : t("toastError"), copied ? "success" : "error");
   };
 
-  const icon = state === "copied" ? <Check size={14} /> : <Link2 size={14} />;
+  const icon = state === "copied" ? <Check size={ICON_SIZE.md} /> : <Link2 size={ICON_SIZE.md} />;
   const label =
     state === "copied"
       ? t("labelCopied")

@@ -2,6 +2,7 @@
 
 import { useState } from 'react';
 import { CheckCircle2, ClipboardCopy, Sparkles } from 'lucide-react';
+import { ICON_SIZE } from '@/shared/ui/icon-size';
 import { useTranslations } from 'next-intl';
 import { copyText } from '@/shared/lib/copy-text';
 import { ATLAS_CLI } from '@/shared/config/cli-invocation';
@@ -237,7 +238,7 @@ export function OntologyStarterCta({ onScaffold, docCount, vaultPath = null }: P
               className="grid grid-cols-[18px_1fr] items-start gap-2 rounded-chip border border-[color:var(--color-indigo-a18)] bg-[color:var(--color-overlay-1)] px-3 py-2 text-label leading-5 text-[color:var(--color-text-secondary)]"
             >
               <CheckCircle2
-                size={14}
+                size={ICON_SIZE.md}
                 aria-hidden
                 className="mt-0.5 text-[color:var(--color-indigo-accent)]"
               />
@@ -260,7 +261,7 @@ export function OntologyStarterCta({ onScaffold, docCount, vaultPath = null }: P
               className: NEUTRAL_CHIP_SKIN,
             })}
           >
-            <ClipboardCopy size={12} aria-hidden />
+            <ClipboardCopy size={ICON_SIZE.sm} aria-hidden />
             {copyPromptLabel}
           </button>
           <button
@@ -272,7 +273,7 @@ export function OntologyStarterCta({ onScaffold, docCount, vaultPath = null }: P
               className: NEUTRAL_CHIP_SKIN,
             })}
           >
-            <ClipboardCopy size={12} aria-hidden />
+            <ClipboardCopy size={ICON_SIZE.sm} aria-hidden />
             {copyCliLabel}
           </button>
           {/*
@@ -291,7 +292,7 @@ export function OntologyStarterCta({ onScaffold, docCount, vaultPath = null }: P
                 'gap-2 border-[color:var(--color-success-a28)] bg-[color:var(--color-success-a07)] hover:border-[color:var(--color-success-a42)] hover:bg-[color:var(--color-success-a11)]',
             })}
           >
-            <ClipboardCopy size={12} aria-hidden />
+            <ClipboardCopy size={ICON_SIZE.sm} aria-hidden />
             {copyJsonGateLabel}
           </button>
         </div>
@@ -335,7 +336,7 @@ export function OntologyStarterCta({ onScaffold, docCount, vaultPath = null }: P
           className: `w-full justify-center ${NEUTRAL_CHIP_SKIN}`,
         })}
       >
-        <Sparkles size={12} aria-hidden />
+        <Sparkles size={ICON_SIZE.sm} aria-hidden />
         {busy ? t('secondaryBusy') : t('secondaryLabel')}
       </button>
       <button
@@ -348,7 +349,7 @@ export function OntologyStarterCta({ onScaffold, docCount, vaultPath = null }: P
           className: `w-full justify-center ${INDIGO_CHIP_SKIN}`,
         })}
       >
-        <ClipboardCopy size={12} aria-hidden />
+        <ClipboardCopy size={ICON_SIZE.sm} aria-hidden />
         {copyPromptLabel}
       </button>
       <button
@@ -361,7 +362,7 @@ export function OntologyStarterCta({ onScaffold, docCount, vaultPath = null }: P
           className: `w-full justify-center ${NEUTRAL_CHIP_SKIN}`,
         })}
       >
-        <ClipboardCopy size={12} aria-hidden />
+        <ClipboardCopy size={ICON_SIZE.sm} aria-hidden />
         {copyCliLabel}
       </button>
       <button
@@ -370,7 +371,7 @@ export function OntologyStarterCta({ onScaffold, docCount, vaultPath = null }: P
         title={t('secondaryJsonGateTitle')}
         className="inline-flex w-full items-center justify-center gap-1.5 rounded-chip border border-[color:var(--color-success-a28)] bg-[color:var(--color-success-a07)] px-3 py-1.5 text-label text-[color:var(--color-success-text-a94)] transition-colors hover:border-[color:var(--color-success-a42)] hover:bg-[color:var(--color-success-a11)]"
       >
-        <ClipboardCopy size={12} aria-hidden />
+        <ClipboardCopy size={ICON_SIZE.sm} aria-hidden />
         {copyJsonGateLabel}
       </button>
     </div>

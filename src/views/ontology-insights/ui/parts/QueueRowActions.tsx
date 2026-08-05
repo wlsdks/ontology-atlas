@@ -3,6 +3,7 @@
 import { useEffect, useRef, useState } from "react";
 import { useCopyFeedback } from "@/shared/lib/use-copy-feedback";
 import { Check, Copy, FileText, GitBranch, MessageCircle, MoreHorizontal } from "lucide-react";
+import { ICON_SIZE } from "@/shared/ui/icon-size";
 import { Link } from "@/i18n/navigation";
 import { copyText } from "@/shared/lib/copy-text";
 import { controlClass } from "@/shared/ui/control-class";
@@ -108,7 +109,7 @@ export function HandoffCopyButton({
             "hover:border-[color:var(--color-indigo-a46)] hover:text-[color:var(--color-text-primary)]",
         })}
       >
-        {copied ? <Check size={11} aria-hidden /> : <Copy size={11} aria-hidden />}
+        {copied ? <Check size={ICON_SIZE.sm} aria-hidden /> : <Copy size={ICON_SIZE.sm} aria-hidden />}
         {copyState === "failed"
           ? labels.handoffCopyFailed
           : copied
@@ -207,7 +208,7 @@ export function RowActionMenu({
         onClick={() => setOpen((value) => !value)}
         className="inline-flex h-8 w-8 items-center justify-center rounded-chip border border-[color:var(--color-border-soft)] text-[color:var(--color-text-tertiary)] transition-colors hover:border-[color:var(--color-indigo-a46)] hover:text-[color:var(--color-text-primary)]"
       >
-        <MoreHorizontal size={14} aria-hidden />
+        <MoreHorizontal size={ICON_SIZE.md} aria-hidden />
       </button>
       {/* 행 끝의 «⋯» 아래 오른쪽 정렬 — 등장 원점도 그 모서리다. */}
       <Surface

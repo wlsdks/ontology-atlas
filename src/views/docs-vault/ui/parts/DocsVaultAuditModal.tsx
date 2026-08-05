@@ -4,6 +4,7 @@ import { useEffect, useRef } from "react";
 import type { useTranslations } from "next-intl";
 import { AnimatePresence, motion, useReducedMotion } from "framer-motion";
 import { Bot, Check, Clipboard, GitCompareArrows, HardDrive, Network, X } from "lucide-react";
+import { ICON_SIZE } from "@/shared/ui/icon-size";
 import { MOTION } from "@/shared/motion";
 import { Link } from "@/i18n/navigation";
 import { useCopyFeedback } from "@/shared/lib/use-copy-feedback";
@@ -239,7 +240,7 @@ export function DocsVaultAuditModal({
           >
             <div className="flex items-start gap-3 px-4 py-3.5">
               <span className="flex h-7 w-7 flex-none items-center justify-center rounded-[var(--chrome-radius-inner)] bg-[color:var(--chrome-active-surface)] text-[color:var(--color-indigo-pale-a90)]">
-                <HardDrive size={14} aria-hidden />
+                <HardDrive size={ICON_SIZE.md} aria-hidden />
               </span>
               <div className="min-w-0 flex-1">
                 <p
@@ -261,7 +262,7 @@ export function DocsVaultAuditModal({
                 title={t("sourceContract.closeTitle")}
                 className="flex-none hover:text-[color:var(--color-text-primary)]"
               >
-                <X size={14} aria-hidden />
+                <X size={ICON_SIZE.md} aria-hidden />
               </IconButton>
             </div>
 
@@ -322,7 +323,7 @@ export function DocsVaultAuditModal({
                             "min-w-0 gap-1 font-mono uppercase tracking-[var(--tracking-caps-08)] hover:border-[color:var(--color-indigo-line-a40)] hover:text-[color:var(--color-text-primary)]",
                         })}
                       >
-                        {copiedGate ? <Check size={10} aria-hidden /> : <Clipboard size={10} aria-hidden />}
+                        {copiedGate ? <Check size={ICON_SIZE.sm} aria-hidden /> : <Clipboard size={ICON_SIZE.sm} aria-hidden />}
                         <span className="truncate">{cell.copyCta}</span>
                       </button>
                     ) : null}
@@ -337,7 +338,7 @@ export function DocsVaultAuditModal({
                 className="grid grid-cols-[36px_1fr] items-start gap-3 border-t border-[color:var(--color-divider)] px-4 py-3.5 sm:grid-cols-[36px_1fr_auto]"
               >
                 <span className="flex h-8 w-8 items-center justify-center rounded-[var(--chrome-radius-inner)] border border-[color:var(--color-indigo-line-a20)] bg-[color:var(--color-indigo-a06)] text-[color:var(--color-indigo-pale-a90)]">
-                  <GitCompareArrows size={14} aria-hidden />
+                  <GitCompareArrows size={ICON_SIZE.md} aria-hidden />
                 </span>
                 <div className="min-w-0">
                   <div className="flex min-w-0 flex-wrap items-center gap-x-2 gap-y-1">
@@ -400,7 +401,7 @@ export function DocsVaultAuditModal({
                             "min-w-0 gap-1 font-mono uppercase tracking-[var(--tracking-caps-08)] hover:border-[color:var(--color-indigo-line-a40)] hover:text-[color:var(--color-text-primary)]",
                         })}
                     >
-                      <Clipboard size={10} aria-hidden />
+                      <Clipboard size={ICON_SIZE.sm} aria-hidden />
                       <span className="truncate">{tSkillParity("copyHandoff")}</span>
                     </button>
                   ) : null}

@@ -12,6 +12,7 @@ import {
 } from "framer-motion";
 import { MOTION, OVERLAY_SPRING } from "@/shared/motion";
 import { ArrowUpRight, BookOpen, ChevronDown, X } from "lucide-react";
+import { ICON_SIZE } from "@/shared/ui/icon-size";
 import { cn } from "@/shared/lib/cn";
 import { Chip, controlClass, IconButton } from "@/shared/ui";
 import { buildDocsVaultHref, findRelatedDocs } from "@/entities/docs-vault";
@@ -420,7 +421,7 @@ export function ProjectDrawer({
                 className="hover:bg-[color:var(--color-overlay-2)] hover:text-[color:var(--color-text-primary)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--color-indigo-a46)] focus-visible:ring-offset-2 focus-visible:ring-offset-[color:var(--color-panel)]"
                 label={t("closeAriaLabel")}
               >
-                <X size={16} />
+                <X size={ICON_SIZE.lg} />
               </IconButton>
             </div>
           </header>
@@ -669,7 +670,7 @@ export function ProjectDrawer({
                     </p>
                   </div>
                   <ChevronDown
-                    size={16}
+                    size={ICON_SIZE.lg}
                     aria-hidden="true"
                     className="shrink-0 text-[color:var(--color-text-tertiary)] transition-transform group-open:rotate-180"
                   />
@@ -920,7 +921,7 @@ export function ProjectDrawer({
                         {relatedDocs.length > 0 && (
                           <div className="rounded-panel border border-[color:var(--color-border-soft)] bg-[color:var(--color-overlay-1)] px-4 py-4">
                             <p className="flex items-center gap-1.5 font-mono text-caption uppercase tracking-[var(--tracking-caps-12)] text-[color:var(--color-text-quaternary)]">
-                              <BookOpen size={11} aria-hidden />
+                              <BookOpen size={ICON_SIZE.sm} aria-hidden />
                               {t("relatedDocs", { count: relatedDocs.length })}
                             </p>
                             <ul className="mt-3 flex flex-col gap-1">
@@ -1032,7 +1033,7 @@ export function ProjectDrawer({
                                     className="inline-flex items-center gap-1.5 text-body-lg text-[color:var(--color-indigo-accent)] transition-colors hover:text-[color:var(--color-indigo-hover)]"
                                   >
                                     {link.label}
-                                    <ArrowUpRight size={14} />
+                                    <ArrowUpRight size={ICON_SIZE.md} />
                                   </a>
                                 </li>
                               ))}

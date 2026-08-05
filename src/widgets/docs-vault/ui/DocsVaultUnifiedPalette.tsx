@@ -15,6 +15,7 @@ import {
   Terminal,
   X,
 } from 'lucide-react';
+import { ICON_SIZE } from '@/shared/ui/icon-size';
 import { buildDocsVaultHref, type VaultDoc } from '@/entities/docs-vault';
 import { IconButton, LiveAnnouncer, controlClass } from '@/shared/ui';
 import { searchDocs, type DocsSearchMatch } from '../lib/search';
@@ -186,7 +187,7 @@ export function DocsVaultUnifiedPalette({
           label: d.title,
           icon: (
             <Pin
-              size={11}
+              size={ICON_SIZE.sm}
               className="text-[color:var(--color-amber-docs-a85)]"
               aria-hidden
               fill="currentColor"
@@ -197,7 +198,7 @@ export function DocsVaultUnifiedPalette({
         });
       }
       if (pinnedRows.length > 0) {
-        sections.push({ title: t('secPinned'), icon: <Pin size={10} aria-hidden />, size: pinnedRows.length });
+        sections.push({ title: t('secPinned'), icon: <Pin size={ICON_SIZE.sm} aria-hidden />, size: pinnedRows.length });
         out.push(...pinnedRows);
       }
       // 최근
@@ -212,7 +213,7 @@ export function DocsVaultUnifiedPalette({
           label: d.title,
           icon: (
             <Clock
-              size={11}
+              size={ICON_SIZE.sm}
               className="text-[color:var(--color-text-quaternary)]"
               aria-hidden
             />
@@ -222,7 +223,7 @@ export function DocsVaultUnifiedPalette({
         });
       }
       if (recentRows.length > 0) {
-        sections.push({ title: t('secRecent'), icon: <Clock size={10} aria-hidden />, size: recentRows.length });
+        sections.push({ title: t('secRecent'), icon: <Clock size={ICON_SIZE.sm} aria-hidden />, size: recentRows.length });
         out.push(...recentRows);
       }
       // 추천 명령 (top 5 visible)
@@ -247,7 +248,7 @@ export function DocsVaultUnifiedPalette({
       if (cmdRows.length > 0) {
         sections.push({
           title: t('secCommonCommands'),
-          icon: <Terminal size={10} aria-hidden />,
+          icon: <Terminal size={ICON_SIZE.sm} aria-hidden />,
           size: cmdRows.length,
         });
         out.push(...cmdRows);
@@ -283,7 +284,7 @@ export function DocsVaultUnifiedPalette({
       if (cmdRows.length > 0) {
         sections.push({
           title: t('secCommands'),
-          icon: <Terminal size={10} aria-hidden />,
+          icon: <Terminal size={ICON_SIZE.sm} aria-hidden />,
           size: cmdRows.length,
         });
         out.push(...cmdRows);
@@ -305,7 +306,7 @@ export function DocsVaultUnifiedPalette({
             label: <Highlight text={`#${tagItem.tag}`} hit={hit ? { start: hit.start + 1, end: hit.end + 1 } : null} />,
             icon: (
               <Hash
-                size={11}
+                size={ICON_SIZE.sm}
                 className="text-[color:var(--color-text-quaternary)]"
                 aria-hidden
               />
@@ -317,7 +318,7 @@ export function DocsVaultUnifiedPalette({
       if (tagRows.length > 0) {
         sections.push({
           title: t('secTags'),
-          icon: <Hash size={10} aria-hidden />,
+          icon: <Hash size={ICON_SIZE.sm} aria-hidden />,
           size: tagRows.length,
         });
         out.push(...tagRows);
@@ -345,7 +346,7 @@ export function DocsVaultUnifiedPalette({
         ) : undefined,
       icon: (
         <FileText
-          size={11}
+          size={ICON_SIZE.sm}
           className="text-[color:var(--color-text-quaternary)]"
           aria-hidden
         />
@@ -357,7 +358,7 @@ export function DocsVaultUnifiedPalette({
     if (docRows.length > 0) {
       sections.push({
         title: t('secDocs'),
-        icon: <FileText size={10} aria-hidden />,
+        icon: <FileText size={ICON_SIZE.sm} aria-hidden />,
         size: docRows.length,
       });
       out.push(...docRows);
@@ -371,7 +372,7 @@ export function DocsVaultUnifiedPalette({
     if (cmdMatches.length > 0) {
       sections.push({
         title: t('secCommands'),
-        icon: <Terminal size={10} aria-hidden />,
+        icon: <Terminal size={ICON_SIZE.sm} aria-hidden />,
         size: cmdMatches.length,
       });
       out.push(
@@ -510,7 +511,7 @@ export function DocsVaultUnifiedPalette({
       >
         <div className="flex items-center gap-2 border-b border-[color:var(--color-overlay-2)] px-3 py-2">
           <Search
-            size={14}
+            size={ICON_SIZE.md}
             className="text-[color:var(--color-text-quaternary)]"
             aria-hidden
           />
@@ -538,7 +539,7 @@ export function DocsVaultUnifiedPalette({
             onClick={onClose}
             className="hover:bg-[color:var(--color-overlay-2)] hover:text-[color:var(--color-text-primary)]"
           >
-            <X size={12} />
+            <X size={ICON_SIZE.sm} />
           </IconButton>
         </div>
         <ul
@@ -573,9 +574,9 @@ export function DocsVaultUnifiedPalette({
                         rel="noreferrer noopener"
                         className="inline-flex items-center gap-1.5 rounded-micro py-1 text-body text-[color:var(--color-indigo-line-a90)] underline underline-offset-2 decoration-[color:var(--color-indigo-line-a32)] hover:decoration-[color:var(--color-indigo-accent)]"
                       >
-                        <FileText size={11} aria-hidden />
+                        <FileText size={ICON_SIZE.sm} aria-hidden />
                         {t(link.labelKey)}
-                        <ExternalLink size={10} className="opacity-60" aria-hidden />
+                        <ExternalLink size={ICON_SIZE.sm} className="opacity-60" aria-hidden />
                       </a>
                     </li>
                   ))}

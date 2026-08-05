@@ -9,6 +9,7 @@ import { useRouter } from "@/i18n/navigation";
 import { useSearchParams } from "next/navigation";
 import { motion } from "framer-motion";
 import { ArrowLeft, BookOpen, FileText, FolderSearch, Layers, Waypoints } from "lucide-react";
+import { ICON_SIZE } from "@/shared/ui/icon-size";
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
 import { useTranslations } from "next-intl";
@@ -134,7 +135,7 @@ function ProjectDetailTopBar({
         })}
         aria-label={t("topBarBackToWorkspaceAria")}
       >
-        <ArrowLeft size={14} />
+        <ArrowLeft size={ICON_SIZE.md} />
         {t("topBarWorkspaceFallback")}
       </Link>
       <span aria-hidden className="text-label text-[color:var(--color-text-quaternary)]">
@@ -156,7 +157,7 @@ function ProjectDetailTopBar({
       <div className="ml-auto hidden items-center gap-2 sm:flex">
         <Link href={docsVaultHref} data-testid="project-detail-docs-vault-link">
           <Button type="button" variant="ghost" size="sm">
-            <BookOpen size={14} aria-hidden="true" />
+            <BookOpen size={ICON_SIZE.md} aria-hidden="true" />
             {t("topBarDocsVault")}
           </Button>
         </Link>
@@ -203,7 +204,7 @@ function ProjectDetailState({
           titleAs="h1"
           tone="solid"
           align="center"
-          icon={<FolderSearch size={16} aria-hidden />}
+          icon={<FolderSearch size={ICON_SIZE.lg} aria-hidden />}
           title={<span data-testid={testId}>{title}</span>}
           description={description}
           action={
@@ -708,7 +709,7 @@ export function ProjectDetailPage({
               <div data-testid="project-detail-composition-empty">
                 <EmptyState
                   size="compact"
-                  icon={<Layers size={16} aria-hidden />}
+                  icon={<Layers size={ICON_SIZE.lg} aria-hidden />}
                   title={t("domainEmptyTitle")}
                   description={t("domainEmptyHint")}
                 />
@@ -744,7 +745,7 @@ export function ProjectDetailPage({
             <div data-testid="project-detail-body-empty">
               <EmptyState
                 size="compact"
-                icon={<FileText size={16} aria-hidden />}
+                icon={<FileText size={ICON_SIZE.lg} aria-hidden />}
                 title={t("bodyEmptyHint")}
               />
             </div>
@@ -799,7 +800,7 @@ export function ProjectDetailPage({
               <div data-testid="project-detail-connected-empty">
                 <EmptyState
                   size="compact"
-                  icon={<Waypoints size={16} aria-hidden />}
+                  icon={<Waypoints size={ICON_SIZE.lg} aria-hidden />}
                   title={t("connectedEmpty")}
                   description={t("connectedEmptyHint")}
                 />

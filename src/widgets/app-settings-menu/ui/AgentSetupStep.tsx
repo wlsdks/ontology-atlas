@@ -3,6 +3,7 @@
 import type { ReactNode } from 'react';
 
 import { ChevronDown } from 'lucide-react';
+import { ICON_SIZE } from '@/shared/ui/icon-size';
 
 import { RowButton } from '@/shared/ui/controls';
 import { useRowDisclosure } from '@/shared/lib/use-row-disclosure';
@@ -142,7 +143,7 @@ export function AgentSetupStep({
         ) : null}
         {/* 펼침 채널 — 색은 행 톤을 상속한다(새 잉크 결정 0). */}
         <ChevronDown
-          size={12}
+          size={ICON_SIZE.sm}
           aria-hidden
           className="shrink-0 transition-transform"
           style={{ transform: open ? 'rotate(0deg)' : 'rotate(-90deg)' }}

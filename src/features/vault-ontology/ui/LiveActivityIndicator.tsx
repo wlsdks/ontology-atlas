@@ -3,6 +3,7 @@
 import { useEffect, useId, useMemo, useRef, useState } from "react";
 import { useTranslations } from "next-intl";
 import { ChevronDown, Clipboard, X } from "lucide-react";
+import { ICON_SIZE } from "@/shared/ui/icon-size";
 import { buildOntologyNodeHref } from "@/entities/knowledge-graph";
 import { DEFAULT_BUSINESS_ONTOLOGY_LENS } from "@/shared/lib/business-ontology-lens";
 import {
@@ -352,7 +353,7 @@ export function LiveActivityBadge({
           </span>
         ) : null}
         <ChevronDown
-          size={11}
+          size={ICON_SIZE.sm}
           aria-hidden
           className={open
             ? "rotate-180 text-[color:var(--color-text-tertiary)] transition-transform"
@@ -379,7 +380,7 @@ export function LiveActivityBadge({
             size="sm"
             className="-mr-1 -mt-1 border border-transparent hover:border-[color:var(--color-border-soft)] hover:text-[color:var(--color-text-primary)]"
           >
-            <X size={12} aria-hidden />
+            <X size={ICON_SIZE.sm} aria-hidden />
           </IconButton>
         </div>
         <p className="mt-2 break-keep text-label leading-4 text-[color:var(--color-text-secondary)]">
@@ -430,7 +431,7 @@ export function LiveActivityBadge({
                       onClick={() => void copyFocusCheck(staleRefreshPacket)}
                       className="inline-flex w-fit items-center gap-1 rounded-micro border border-[color:var(--color-amber-docs-a34)] px-1.5 py-0.5 font-mono text-caption uppercase tracking-[var(--tracking-caps-08)] text-[color:var(--color-amber-docs-a95)] transition-colors hover:border-[color:var(--color-amber-docs-a54)] hover:bg-[color:var(--color-amber-docs-a10)]"
                     >
-                      <Clipboard size={10} aria-hidden />
+                      <Clipboard size={ICON_SIZE.sm} aria-hidden />
                       {staleRefreshCopyLabel}
                     </button>
                   ) : null}
@@ -484,7 +485,7 @@ export function LiveActivityBadge({
                               "w-fit font-mono uppercase tracking-[var(--tracking-caps-08)] hover:border-[color:var(--color-indigo-line-a40)] hover:text-[color:var(--color-text-primary)]",
                           })}
                         >
-                          <Clipboard size={10} aria-hidden />
+                          <Clipboard size={ICON_SIZE.sm} aria-hidden />
                           {focusCopyLabel}
                         </button>
                       ) : null}
@@ -510,7 +511,7 @@ export function LiveActivityBadge({
                               "w-fit font-mono uppercase tracking-[var(--tracking-caps-08)] hover:border-[color:var(--color-indigo-line-a40)] hover:text-[color:var(--color-text-primary)]",
                           })}
                     >
-                      <Clipboard size={10} aria-hidden />
+                      <Clipboard size={ICON_SIZE.sm} aria-hidden />
                       {businessExtractionCopyLabel}
                     </button>
                   ) : null}
@@ -580,7 +581,7 @@ export function LiveActivityBadge({
                               "w-fit font-mono uppercase tracking-[var(--tracking-caps-08)] hover:border-[color:var(--color-indigo-line-a40)] hover:text-[color:var(--color-text-primary)]",
                           })}
                 >
-                  <Clipboard size={10} aria-hidden />
+                  <Clipboard size={ICON_SIZE.sm} aria-hidden />
                   {clearSignalCopyLabel}
                 </button>
               </div>

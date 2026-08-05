@@ -9,6 +9,7 @@ import {
   type ReactNode,
 } from "react";
 import { ChevronRight, FolderOpen } from "lucide-react";
+import { ICON_SIZE } from "@/shared/ui/icon-size";
 import { useTranslations } from "next-intl";
 import { Link } from "@/i18n/navigation";
 import { useCopyFeedback } from "@/shared/lib/use-copy-feedback";
@@ -241,7 +242,7 @@ export function FirstRunStarterModule({
             "touch-hit-expand min-w-0 hover:text-[color:var(--topology-v2-panel-text-primary)]",
         })}
       >
-        <ChevronRight size={11} aria-hidden className="shrink-0 -rotate-180" />
+        <ChevronRight size={ICON_SIZE.sm} aria-hidden className="shrink-0 -rotate-180" />
         {t("reopenLabel")}
       </button>
       <span
@@ -453,7 +454,7 @@ export function FirstRunStarterModule({
           data-testid="first-run-starter-open"
           className="touch-hit-expand relative flex h-10 w-full items-center justify-center gap-2 rounded-card border border-[color:var(--color-indigo-line-a45)] bg-[color:var(--color-indigo-brand)] text-body font-[var(--font-weight-emphasis)] text-[color:var(--color-text-on-accent)] shadow-[inset_0_1px_0_var(--color-overlay-3)] transition-colors hover:bg-[color:var(--color-indigo-brand-hover)] disabled:opacity-60"
         >
-          <FolderOpen size={14} aria-hidden />
+          <FolderOpen size={ICON_SIZE.md} aria-hidden />
           {busy && !scaffolding ? t("openBusy") : t("openLabel")}
           {applePlatform ? (
             <span className="rounded-micro border border-b-2 border-[color:var(--color-keycap-edge-on-accent)] px-1.5 py-px font-mono text-caption font-[var(--font-weight-signature)] opacity-80">
@@ -664,7 +665,7 @@ export function FirstRunStarterModule({
           })}
         >
           <ChevronRight
-            size={11}
+            size={ICON_SIZE.sm}
             aria-hidden
             className={`transition-transform motion-reduce:transition-none ${
               cliOpen ? "rotate-90" : ""

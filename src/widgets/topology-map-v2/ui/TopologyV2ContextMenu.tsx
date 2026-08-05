@@ -2,6 +2,7 @@
 
 import { useEffect, useRef } from "react";
 import { Copy, FileText, GitBranch, Maximize2, Route } from "lucide-react";
+import { ICON_SIZE } from "@/shared/ui/icon-size";
 import { Link } from "@/i18n/navigation";
 import { controlClass, RowButton, Surface } from "@/shared/ui";
 
@@ -160,7 +161,7 @@ export function TopologyV2ContextMenu({
           data-testid="topology-v2-context-menu-document"
           className={MENU_ITEM_CLASS}
         >
-          <FileText size={14} aria-hidden="true" />
+          <FileText size={ICON_SIZE.md} aria-hidden="true" />
           {labels.actionDocument}
         </Link>
       ) : mentionDocumentHref ? (
@@ -173,7 +174,7 @@ export function TopologyV2ContextMenu({
           data-testid="topology-v2-context-menu-mention-document"
           className={MENU_ITEM_CLASS}
         >
-          <FileText size={14} aria-hidden="true" />
+          <FileText size={ICON_SIZE.md} aria-hidden="true" />
           {labels.actionMentionDocument}
         </Link>
       ) : (
@@ -183,7 +184,7 @@ export function TopologyV2ContextMenu({
           data-testid="topology-v2-context-menu-document"
           className={[MENU_ITEM_CLASS, MENU_ITEM_DISABLED_CLASS].join(" ")}
         >
-          <FileText size={14} aria-hidden="true" />
+          <FileText size={ICON_SIZE.md} aria-hidden="true" />
           {labels.actionDocument}
         </span>
       )}
@@ -193,7 +194,7 @@ export function TopologyV2ContextMenu({
         data-testid="topology-v2-context-menu-edit"
         className={MENU_ITEM_CLASS}
       >
-        <GitBranch size={14} aria-hidden="true" />
+        <GitBranch size={ICON_SIZE.md} aria-hidden="true" />
         {labels.actionEditRelations}
       </Link>
       <RowButton
@@ -203,7 +204,7 @@ export function TopologyV2ContextMenu({
         data-testid="topology-v2-context-menu-handoff"
         className={MENU_ITEM_LOCAL}
       >
-        <Copy size={14} aria-hidden="true" />
+        <Copy size={ICON_SIZE.md} aria-hidden="true" />
         {labels.actionCopyHandoff}
       </RowButton>
       <RowButton
@@ -213,7 +214,7 @@ export function TopologyV2ContextMenu({
         data-testid="topology-v2-context-menu-path"
         className={MENU_ITEM_LOCAL}
       >
-        <Route size={14} aria-hidden="true" />
+        <Route size={ICON_SIZE.md} aria-hidden="true" />
         {labels.actionPath}
       </RowButton>
       <div className="my-0.5 border-t border-[color:var(--topology-v2-panel-divider)]" />
@@ -224,7 +225,7 @@ export function TopologyV2ContextMenu({
         data-testid="topology-v2-context-menu-full-detail"
         className={MENU_ITEM_LOCAL}
       >
-        <Maximize2 size={14} aria-hidden="true" />
+        <Maximize2 size={ICON_SIZE.md} aria-hidden="true" />
         {labels.openFullDetail}
       </RowButton>
     </Surface>

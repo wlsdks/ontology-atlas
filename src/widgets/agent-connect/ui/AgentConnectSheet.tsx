@@ -5,6 +5,7 @@ import { useCopyFeedback } from "@/shared/lib/use-copy-feedback";
 import { AnimatePresence, motion } from "framer-motion";
 import { useTranslations } from "next-intl";
 import { Cable, Check, ChevronDown, Copy, X } from "lucide-react";
+import { ICON_SIZE } from "@/shared/ui/icon-size";
 import { MOTION } from "@/shared/motion";
 import { useBodyScrollLock } from "@/shared/lib/use-body-scroll-lock";
 import { copyText } from "@/shared/lib/copy-text";
@@ -100,7 +101,7 @@ function CopyBlock({ label, value, testId }: { label: string; value: string; tes
               "border-[color:var(--color-border-soft)] hover:border-[color:var(--color-indigo-a46)] hover:text-[color:var(--color-text-primary)]",
           })}
         >
-          {copyState === "copied" ? <Check size={10} aria-hidden /> : <Copy size={10} aria-hidden />}
+          {copyState === "copied" ? <Check size={ICON_SIZE.sm} aria-hidden /> : <Copy size={ICON_SIZE.sm} aria-hidden />}
           {copyState === "copied" ? t("copied") : copyState === "failed" ? t("copyFailed") : t("copy")}
         </button>
       </div>
@@ -243,7 +244,7 @@ export function AgentConnectSheet({
             <header className="flex shrink-0 items-center justify-between border-b border-[color:var(--color-border-soft)] px-5 py-4">
               <div>
                 <p className="flex items-center gap-1.5 font-mono text-caption uppercase tracking-[var(--tracking-caps-14)] text-[color:var(--color-indigo-accent)]">
-                  <Cable size={11} aria-hidden />
+                  <Cable size={ICON_SIZE.sm} aria-hidden />
                   {t("title")}
                 </p>
                 <p className="mt-1 text-body text-[color:var(--color-text-secondary)]">{t("subtitle")}</p>
@@ -386,9 +387,9 @@ export function AgentConnectSheet({
                     })}
                   >
                     {handoffCopyState === "copied" ? (
-                      <Check size={11} aria-hidden />
+                      <Check size={ICON_SIZE.sm} aria-hidden />
                     ) : (
-                      <Copy size={11} aria-hidden />
+                      <Copy size={ICON_SIZE.sm} aria-hidden />
                     )}
                     {handoffCopyState === "copied"
                       ? t("handoffCopied")
@@ -416,7 +417,7 @@ export function AgentConnectSheet({
                   })}
                 >
                   <ChevronDown
-                    size={11}
+                    size={ICON_SIZE.sm}
                     aria-hidden
                     className="transition-transform"
                     style={{ transform: advancedOpen ? "rotate(0deg)" : "rotate(-90deg)" }}

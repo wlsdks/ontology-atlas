@@ -23,6 +23,7 @@ import {
   Route,
   X,
 } from "lucide-react";
+import { ICON_SIZE } from "@/shared/ui/icon-size";
 import { Link } from "@/i18n/navigation";
 import { buildDocsVaultHref } from "@/entities/docs-vault";
 import type { ProjectSourceStatus, ProjectSourceView } from "@/shared/lib/project-source-receipt";
@@ -1084,7 +1085,7 @@ export function TopologyV2DetailPanel({
                 })}
               >
                 <FileText
-                  size={14}
+                  size={ICON_SIZE.md}
                   aria-hidden="true"
                   className="shrink-0 text-[color:var(--topology-v2-panel-text-tertiary)]"
                 />
@@ -1420,7 +1421,7 @@ export function TopologyV2DetailPanel({
                     data-testid="topology-v2-detail-panel-action-document"
                     className={controlClass({ shape: "tile", size: "md", className: ACTION_TILE_INK })}
                   >
-                    <FileText size={16} aria-hidden="true" />
+                    <FileText size={ICON_SIZE.lg} aria-hidden="true" />
                     <span>{labels.actionDocument}</span>
                   </Link>,
                 )
@@ -1444,7 +1445,7 @@ export function TopologyV2DetailPanel({
                     data-testid="topology-v2-detail-panel-action-create-linked"
                     className={controlClass({ shape: "tile", size: "md", className: ACTION_TILE_INK })}
                   >
-                    <Plus size={16} aria-hidden="true" />
+                    <Plus size={ICON_SIZE.lg} aria-hidden="true" />
                     <span>{labels.actionCreateLinked}</span>
                   </button>,
                 )
@@ -1456,7 +1457,7 @@ export function TopologyV2DetailPanel({
                 data-testid="topology-v2-detail-panel-action-edit"
                 className={controlClass({ shape: "tile", size: "md", className: ACTION_TILE_INK })}
               >
-                <GitBranch size={16} aria-hidden="true" />
+                <GitBranch size={ICON_SIZE.lg} aria-hidden="true" />
                 <span>{labels.actionEditRelations}</span>
               </Link>,
             )}
@@ -1473,7 +1474,7 @@ export function TopologyV2DetailPanel({
                     data-testid="topology-v2-detail-panel-action-path"
                     className={controlClass({ shape: "tile", size: "md", className: ACTION_TILE_INK })}
                   >
-                    <Route size={16} aria-hidden="true" />
+                    <Route size={ICON_SIZE.lg} aria-hidden="true" />
                     <span>{labels.actionPath}</span>
                   </button>,
                 )
@@ -1488,7 +1489,7 @@ export function TopologyV2DetailPanel({
                     data-testid="topology-v2-detail-panel-action-realm"
                     className={controlClass({ shape: "tile", size: "md", className: ACTION_TILE_INK })}
                   >
-                    <Orbit size={16} aria-hidden="true" />
+                    <Orbit size={ICON_SIZE.lg} aria-hidden="true" />
                     <span>{labels.actionRealm}</span>
                   </button>,
                 )
@@ -1509,7 +1510,7 @@ export function TopologyV2DetailPanel({
                     data-testid="topology-v2-detail-panel-action-handoff"
                     className={controlClass({ shape: "tile", size: "md", className: ACTION_TILE_INK })}
                   >
-                    <Copy size={16} aria-hidden="true" />
+                    <Copy size={ICON_SIZE.lg} aria-hidden="true" />
                     <span>{labels.actionCopyHandoff}</span>
                   </button>,
                 )
@@ -1524,7 +1525,7 @@ export function TopologyV2DetailPanel({
                     data-testid="topology-v2-detail-panel-action-ask-agent"
                     className={controlClass({ shape: "tile", size: "md", className: ACTION_TILE_INK })}
                   >
-                    <MessageCircle size={16} aria-hidden="true" />
+                    <MessageCircle size={ICON_SIZE.lg} aria-hidden="true" />
                     <span>{labels.actionAskAgent}</span>
                   </button>,
                 )
@@ -1724,7 +1725,7 @@ function CodeLocationRow({
         data-testid="topology-v2-detail-panel-code-location-copy"
         className="text-[color:var(--topology-v2-panel-text-quaternary)] hover:bg-[color:var(--topology-v2-panel-row-hover)] hover:text-[color:var(--topology-v2-panel-text-secondary)]"
       >
-        {state === "copied" ? <Check size={11} aria-hidden /> : <Clipboard size={11} aria-hidden />}
+        {state === "copied" ? <Check size={ICON_SIZE.sm} aria-hidden /> : <Clipboard size={ICON_SIZE.sm} aria-hidden />}
       </IconButton>
     </li>
   );

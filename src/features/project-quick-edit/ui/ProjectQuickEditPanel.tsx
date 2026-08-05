@@ -4,6 +4,7 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { Link } from "@/i18n/navigation";
 import { useTranslations } from "next-intl";
 import { PencilLine, X } from "lucide-react";
+import { ICON_SIZE } from "@/shared/ui/icon-size";
 import { type Project } from "@/entities/project";
 import { isStarterProjectDescription } from "@/entities/docs-vault";
 import {
@@ -204,7 +205,7 @@ export function ProjectQuickEditPanel({
         data-testid="public-quick-edit-toggle"
         onClick={() => setOpen((current) => !current)}
       >
-        <PencilLine size={14} aria-hidden="true" />
+        <PencilLine size={ICON_SIZE.md} aria-hidden="true" />
         {open ? t("closeLabel") : t("openLabel")}
       </Button>
 
@@ -256,7 +257,7 @@ export function ProjectQuickEditPanel({
               className="h-9 w-9 px-0"
               onClick={() => setOpen(false)}
             >
-              <X size={16} aria-hidden="true" />
+              <X size={ICON_SIZE.lg} aria-hidden="true" />
             </Button>
           </div>
 
