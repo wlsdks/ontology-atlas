@@ -134,14 +134,14 @@ export function AgentProposalCard({
       </ul>
 
       {canWrite && !settled ? (
-        <label className="flex items-center gap-2 text-label tracking-label text-[color:var(--color-text-tertiary)]">
+        <label className="atlas-touch-floor flex min-h-6 cursor-pointer items-center gap-2 text-label tracking-label text-[color:var(--color-text-tertiary)]">
           <input
             type="checkbox"
             data-testid="agent-proposal-snapshot"
             checked={proposal.snapshotRequested}
             disabled={!vaultIsGit}
             onChange={(event) => onToggleSnapshot(event.target.checked)}
-            className="size-3.5 accent-[color:var(--color-indigo-brand)]"
+            className="size-4 shrink-0 accent-[color:var(--color-indigo-brand)]"
           />
           <span>{vaultIsGit ? labels.snapshot : labels.snapshotUnavailable}</span>
         </label>
@@ -248,25 +248,37 @@ function ChangeRow({
   return (
     <li className="rounded-chip border border-[color:var(--color-divider)] bg-[color:var(--color-panel)]">
       <div className="flex items-center gap-2 px-2 py-1.5">
-        <input
-          type="checkbox"
-          data-testid={`agent-proposal-change-${change.id}`}
-          checked={change.selected}
-          disabled={disabled}
-          onChange={(event) => onToggle(event.target.checked)}
-          className="size-3.5 shrink-0 accent-[color:var(--color-indigo-brand)]"
-        />
-        <FileText
-          aria-hidden="true"
-          size={ICON_SIZE.sm}
-          className="shrink-0 text-[color:var(--color-text-quaternary)]"
-        />
-        <span
-          className="min-w-0 flex-1 truncate text-label tracking-label text-[color:var(--color-text-secondary)]"
-          title={change.summary}
-        >
-          {change.summary}
-        </span>
+        {/*
+         * 이 체크박스는 **라벨이 없었다.** 그래서 결함이 둘이었다 — 접근 이름이
+         * 없어(스크린 리더가 "체크박스"라고만 읽는다) 무엇을 고르는지 알 수 없고,
+         * 타깃이 14px 뿐이라 WCAG 2.5.8(AA, 24px)에 미달이었다. 파일 이름을 라벨로
+         * 감싸면 **둘이 한 번에 풀린다** — 라벨이 접근 이름이 되고, 라벨 전체가
+         * 하나의 타깃이 된다(라벨 클릭이 곧 토글이라는 네이티브 동작).
+         *
+         * 펼침 버튼은 라벨 **밖**에 남는다 — 안에 넣으면 「자세히」를 누를 때마다
+         * 선택이 뒤집힌다.
+         */}
+        <label className="atlas-touch-floor flex min-h-6 min-w-0 flex-1 cursor-pointer items-center gap-2">
+          <input
+            type="checkbox"
+            data-testid={`agent-proposal-change-${change.id}`}
+            checked={change.selected}
+            disabled={disabled}
+            onChange={(event) => onToggle(event.target.checked)}
+            className="size-4 shrink-0 accent-[color:var(--color-indigo-brand)]"
+          />
+          <FileText
+            aria-hidden="true"
+            size={ICON_SIZE.sm}
+            className="shrink-0 text-[color:var(--color-text-quaternary)]"
+          />
+          <span
+            className="min-w-0 flex-1 truncate text-label tracking-label text-[color:var(--color-text-secondary)]"
+            title={change.summary}
+          >
+            {change.summary}
+          </span>
+        </label>
         <button
           type="button"
           data-testid="agent-proposal-change-toggle"

@@ -149,7 +149,7 @@ export function OntologyBootstrapForm({
               {plan.domains.map((d) => (
                 <label
                   key={d.name}
-                  className="flex cursor-pointer items-center gap-2 rounded-[var(--radius-chip)] px-1.5 py-1 text-body text-[color:var(--color-text-primary)] transition-colors hover:bg-[color:var(--color-overlay-1)]"
+                  className="atlas-touch-floor flex min-h-6 cursor-pointer items-center gap-2 rounded-[var(--radius-chip)] px-1.5 py-1 text-body text-[color:var(--color-text-primary)] transition-colors hover:bg-[color:var(--color-overlay-1)]"
                 >
                   <input
                     type="checkbox"
@@ -157,7 +157,7 @@ export function OntologyBootstrapForm({
                     disabled={busy}
                     onChange={() => toggleDomain(d.name)}
                     data-testid={`ontology-bootstrap-domain-${d.name}`}
-                    className="h-3.5 w-3.5 accent-[color:var(--color-indigo-brand)]"
+                    className="size-4 shrink-0 accent-[color:var(--color-indigo-brand)]"
                   />
                   <span className="min-w-0 flex-1 truncate">{d.name}</span>
                   <span className="font-mono text-caption text-[color:var(--color-text-quaternary)]">

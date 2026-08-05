@@ -2423,14 +2423,14 @@ function ActionDock({
             aria-label={t("messageLabel")}
             className="min-h-8 w-full rounded-[var(--radius-chip)] border border-[color:var(--color-border-soft)] bg-[color:var(--color-overlay-1)] px-2.5 py-1.5 font-mono text-label break-all text-[color:var(--color-text-primary)] transition-colors placeholder:text-[color:var(--color-text-quaternary)] focus:border-[color:var(--color-indigo-a46)] focus:outline-none"
           />
-          <label className="flex items-center gap-2 text-label text-[color:var(--color-text-secondary)]">
+          <label className="atlas-touch-floor flex min-h-6 cursor-pointer items-center gap-2 text-label text-[color:var(--color-text-secondary)]">
             <input
               type="checkbox"
               data-testid="atlas-git-push-optin"
               checked={pushOptIn}
               disabled={!upstream}
               onChange={(event) => setPushOptIn(event.target.checked)}
-              className="accent-[var(--color-indigo-accent)]"
+              className="size-4 shrink-0 accent-[var(--color-indigo-accent)]"
             />
             {t("pushOptIn")}
           </label>
