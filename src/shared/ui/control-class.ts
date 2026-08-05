@@ -135,8 +135,29 @@ const control = cva(`${DISABLED} ${FOCUS}`, {
        * 그룹 병합(`RADIUS_RAMP_STEPS`)이 있어도 출력은 한 클래스가 정직하다.
        */
       chip: 'inline-flex items-center gap-1.5 border transition-colors',
-      /** 정사각 아이콘 컨트롤. 라벨이 없으므로 접근 이름이 **필수**다(36). */
-      icon: 'inline-flex shrink-0 items-center justify-center rounded-chip transition-colors',
+      /**
+       * 정사각 아이콘 컨트롤. 라벨이 없으므로 접근 이름이 **필수**다(36).
+       *
+       * ## `touch-hit-expand` 가 여기 붙는 이유 (2026-08-05)
+       *
+       * 이 모양은 **하드 치수**를 낸다 — `h-6`(24) · `h-7`(28) · `h-8`(32).
+       * 정사각이라 `min-h` 로는 모양이 안 서기 때문이고, 그 판단 자체는 맞다.
+       * 문제는 그 결과다: `@media (pointer: coarse)` 의 44px 승격은 **CSS
+       * 토큰 9개**(`--chrome-tile-size` · `--overlay-close-size` · …)에만
+       * 걸리는데, 이 모양은 그중 아무것도 안 읽는다. 실측 **51곳**(`shape:
+       * 'icon'` 17 + `IconButton` 34)이 손가락 아래에서 24~32px 였고
+       * `touch-hit-expand` 를 단 곳은 **0** 이었다.
+       *
+       * 「승격이 빈 방에 떨어지고 있었다」 — `touch-target-contract.spec.ts` 가
+       * 자기 헤더에 적어 둔 그 문장이 다시 참이 된 것이고, 이번엔 값 층이
+       * 리터럴을 내기 때문이다.
+       *
+       * **왜 값 층인가**: `DISABLED` · `FOCUS` 와 같은 이유다 — 컴포넌트마다
+       * 챙기면 하나는 빠진다. 그리고 이 클래스는 **`pointer: coarse` 안에만
+       * 존재**하므로 마우스에서는 규칙이 아예 안 만들어진다. 보이는 상자는
+       * 그대로 두고 **히트 영역만** 의사요소로 넓히는 것이라 레이아웃 이동도 0.
+       */
+      icon: 'touch-hit-expand inline-flex shrink-0 items-center justify-center rounded-chip transition-colors',
       /** 목록의 한 줄 전체가 눌리는 것. 좌정렬이 정체성이다(39). */
       /**
        * ⚠️ `rounded-chip` 이 **처음엔 빠져 있었다.** 그래서 정규화된 목록 행의
