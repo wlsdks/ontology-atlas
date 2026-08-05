@@ -75,7 +75,45 @@ const OUTLINE_OFF = 'focus-visible:outline-none';
 const SHAPES = ['chip', 'icon', 'row', 'link', 'pill', 'card'] as const;
 const SIZES = ['sm', 'md', 'lg'] as const;
 
-describe('키보드 초점 링 — 값 층이 낸다', () => {
+describe('키보드 초점 — base 레이어가 바닥을 깔고, 값 층이 그 위에 얹는다', () => {
+  /**
+   * **바닥은 `globals.css` 의 base 규칙이다** (2026-08-05, 2차).
+   *
+   * 값 층에 `FOCUS` 를 넣어 106곳을 덮은 뒤에도, 값 층을 **안 거치는** 상호작용
+   * 요소가 **104곳 / 53파일** 남아 있었다(레일 · 크롬 · 손으로 쓴 버튼 · 인라인
+   * 링크). 104번의 편집은 다음에 생길 105번째를 못 막는다.
+   *
+   * 그래서 바로 위 커서 정책과 **같은 모양**으로 풀었다 — base 가 소유하고
+   * 컴포넌트는 필요할 때만 덮는다. `:where()` 라 명시도 0 이고,
+   * `outline-offset: -2px` 라 상자 치수 변화가 0 이다.
+   *
+   * 이 단언이 지키는 것: **그 바닥이 사라지지 않는 것.** 값 층 단언(아래)과
+   * 둘 다 있어야 한다 — 바닥만 있으면 값 층이 자기 링을 잃어도 안 보이고,
+   * 값 층만 있으면 그것을 안 거치는 104곳이 다시 맨몸이 된다.
+   */
+  it('base 레이어가 모든 상호작용 요소에 초점 바닥을 깐다', () => {
+    const css = readFileSync(path.join(ROOT, 'app/globals.css'), 'utf8');
+    const rule = /:where\(([\s\S]{0,400}?)\):focus-visible\s*\{([\s\S]{0,200}?)\}/.exec(css);
+    expect(rule, 'globals.css 의 `:where(...):focus-visible` 바닥 규칙이 사라졌다').not.toBeNull();
+
+    const selector = rule![1];
+    for (const needed of ['button', 'summary', 'a[href]', 'role="button"', 'tabindex']) {
+      expect(selector, `초점 바닥이 ${needed} 를 안 덮는다`).toContain(needed);
+    }
+    // 프로그램으로 옮기는 초점(모달 컨테이너)은 빠져야 한다 — 링이 결함인 자리다.
+    // `toContain('-1')` 로는 부족하다: 선택자 어딘가에 `-1` 이 있기만 하면
+    // 통과해서, 정작 면제가 사라져도 초록이었다(프로브로 확인).
+    expect(
+      selector.replace(/\s+/g, ''),
+      'tabindex="-1" 를 면제하지 않으면 프로그램으로 옮긴 초점(모달 컨테이너)에도 링이 그려진다',
+    ).toContain('[tabindex]:not([tabindex="-1"])');
+
+    const body = rule![2];
+    expect(body, '바닥이 아웃라인을 안 그린다').toMatch(/outline:\s*2px/);
+    expect(body, '안쪽으로 안 그리면 상자 치수가 바뀌고 이웃과 겹친다').toMatch(/outline-offset:\s*-/);
+    expect(body, '초점 색이 인디고 계보가 아니다').toMatch(/--color-indigo/);
+  });
+
   it('모든 모양 × 크기 조합이 초점 링을 싣는다', () => {
     const missing: string[] = [];
     for (const shape of SHAPES) {

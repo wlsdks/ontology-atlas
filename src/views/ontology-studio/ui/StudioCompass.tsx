@@ -1745,7 +1745,7 @@ function CenterCard(
           value={focal.definition}
           onChange={(e) => props.onCreateDefinition?.(e.target.value)}
           placeholder={props.labels.createDefinitionPlaceholder}
-          className="mt-3 min-h-[60px] w-full flex-1 resize-none rounded-card border border-[color:var(--color-border-soft)] bg-[color:var(--color-overlay-1)] px-3 py-2 text-caption leading-caption text-[color:var(--color-text-secondary)] outline-none transition-colors [word-break:keep-all] placeholder:text-[color:var(--color-text-quaternary)] hover:border-[color:var(--color-border-strong)] focus-visible:border-[color:var(--color-indigo-a46)] focus-visible:ring-2 focus-visible:ring-[color:var(--color-indigo-a24)]"
+          className="mt-3 min-h-[60px] w-full flex-1 resize-none rounded-card border border-[color:var(--color-border-soft)] bg-[color:var(--color-overlay-1)] px-3 py-2 text-caption leading-caption text-[color:var(--color-text-secondary)] outline-none transition-colors [word-break:keep-all] placeholder:text-[color:var(--color-text-quaternary)] hover:border-[color:var(--color-border-strong)] focus-visible:outline-none focus-visible:border-[color:var(--color-indigo-a46)] focus-visible:ring-2 focus-visible:ring-[color:var(--color-indigo-a24)]"
         />
       ) : definition ? (
         <div className="relative mt-3">
