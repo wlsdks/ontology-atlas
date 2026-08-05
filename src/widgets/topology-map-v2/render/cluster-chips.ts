@@ -26,6 +26,7 @@
  */
 
 import type { ExpandAffordance } from "@/shared/lib/appearance-preferences";
+import { FONT_WEIGHT } from "@/shared/ui/font-weight";
 import { lerpColorHex } from "./grid";
 
 /** 칩 기준 높이(px, 스크린 스페이스 — `clusterChipScale` 로 줌 스케일을 곱한다). */
@@ -277,7 +278,7 @@ export function drawClusterBar(
 
   // 글자는 **재지 않고** 판 한가운데에 놓는다 — 폭의 자는 `clusterBarRect`
   // 하나뿐이고, 여기서 다시 재면 그 순간 자가 둘이 된다.
-  ctx.font = `600 ${BAR_FONT_SIZE * scale}px ${BAR_FONT_FAMILY}`;
+  ctx.font = `${FONT_WEIGHT.strong} ${BAR_FONT_SIZE * scale}px ${BAR_FONT_FAMILY}`;
   ctx.textAlign = "center";
   ctx.textBaseline = "middle";
   ctx.fillStyle = input.hovered ? colors.hoverInk : colors.barInk ?? colors.numeralInk;
@@ -527,7 +528,7 @@ export function drawClusterBadge(
   // 배지 숫자도 중립 numeralFace — 포커스 중에도 포커스 노드가 attention
   // winner 를 유지하도록 indigoBright 를 쓰지 않는다.
   ctx.fillStyle = colors.numeralInk;
-  ctx.font = `600 ${BADGE_FONT_SIZE * scale}px ui-monospace, SFMono-Regular, Menlo, monospace`;
+  ctx.font = `${FONT_WEIGHT.strong} ${BADGE_FONT_SIZE * scale}px ui-monospace, SFMono-Regular, Menlo, monospace`;
   ctx.textAlign = "center";
   ctx.textBaseline = "middle";
   ctx.fillText(label, rect.x + rect.w / 2, rect.y + rect.h / 2 + 0.5 * scale);
@@ -871,7 +872,7 @@ export function drawClusterChip(
   // composite `＋N` + 디스클로저 caret — pill 중앙에 한 덩어리로. `＋`는 인디고,
   // 숫자는 중립 numeralFace(mono tabular), caret 은 border 잉크로 "열기 N"
   // 어포던스만. 히트박스는 위 rect 가 진실원이므로 텍스트는 자유롭게 중앙정렬.
-  ctx.font = `600 ${CHIP_FONT_SIZE * scale}px ui-monospace, SFMono-Regular, Menlo, monospace`;
+  ctx.font = `${FONT_WEIGHT.strong} ${CHIP_FONT_SIZE * scale}px ui-monospace, SFMono-Regular, Menlo, monospace`;
   ctx.textAlign = "left";
   ctx.textBaseline = "middle";
   const plus = "+";

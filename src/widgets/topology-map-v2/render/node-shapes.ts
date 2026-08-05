@@ -20,6 +20,7 @@
  */
 
 import { smoothstep } from "../model/altitude";
+import { FONT_WEIGHT } from "@/shared/ui/font-weight";
 import { computeHoverShimmer } from "../model/hover-shimmer";
 
 export interface Point {
@@ -350,7 +351,7 @@ function drawEngraved(
 ): void {
   ctx.textAlign = "center";
   ctx.textBaseline = "middle";
-  ctx.font = `600 ${size}px ui-monospace, SFMono-Regular, Menlo, monospace`;
+  ctx.font = `${FONT_WEIGHT.strong} ${size}px ui-monospace, SFMono-Regular, Menlo, monospace`;
   ctx.globalAlpha = alpha;
   ctx.fillStyle = tokens.numeralShadow;
   ctx.fillText(text, x, y + 1);
