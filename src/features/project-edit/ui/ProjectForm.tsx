@@ -1083,13 +1083,13 @@ export function ProjectForm({
         </FieldRow>
       </div>
 
-      <label className="flex items-center gap-2 text-body-lg text-[color:var(--color-text-secondary)]">
+      <label className="atlas-touch-floor flex min-h-6 cursor-pointer items-center gap-2 text-body-lg text-[color:var(--color-text-secondary)]">
         <input
           type="checkbox"
           name="isHub"
           checked={values.isHub}
           onChange={(e) => setValue("isHub", e.target.checked)}
-          className="h-4 w-4 accent-[color:var(--color-indigo-brand)]"
+          className="size-4 shrink-0 accent-[color:var(--color-indigo-brand)]"
         />
         <span>
           {t("fields.isHubLabel")}{" "}
