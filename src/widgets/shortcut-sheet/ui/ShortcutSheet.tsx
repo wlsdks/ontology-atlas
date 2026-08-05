@@ -506,7 +506,7 @@ export function ShortcutSheet({ open, onClose }: Props) {
               <dl className="mt-1.5 flex flex-wrap gap-x-4 gap-y-1">
                 {GLOSSARY_TERMS.map((term) => (
                   <div key={term} className="flex items-baseline gap-1.5 text-body">
-                    <dt className="shrink-0 font-medium text-[color:var(--color-text-secondary)]">
+                    <dt className="shrink-0 font-[var(--font-weight-signature)] text-[color:var(--color-text-secondary)]">
                       {t(`glossary.${term}Term`)}
                     </dt>
                     <dd className="text-[color:var(--color-text-tertiary)]">

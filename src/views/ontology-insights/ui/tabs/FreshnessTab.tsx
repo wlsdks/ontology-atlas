@@ -93,7 +93,7 @@ export function FreshnessTab({
         className="flex min-h-0 min-w-0 flex-col rounded-panel border border-[color:var(--color-border-soft)] bg-[color:var(--color-panel)] p-[var(--card-pad)]"
       >
         <div className="flex items-baseline gap-2">
-          <InsightsSectionTitle level={2} className="text-body-lg font-medium tracking-[var(--tracking-title)] text-[color:var(--color-text-primary)]">
+          <InsightsSectionTitle level={2} className="text-body-lg font-[var(--font-weight-signature)] tracking-[var(--tracking-title)] text-[color:var(--color-text-primary)]">
             {labels.domainFreshnessTitle}
           </InsightsSectionTitle>
           <span className="ml-auto font-mono text-label text-[color:var(--color-text-quaternary)]">{labels.windowCaption}</span>
@@ -173,7 +173,7 @@ export function FreshnessTab({
         </div>
         <div className="mt-3 border-t border-[color:var(--color-divider)] pt-3">
           <div className="flex items-baseline gap-2">
-            <span className="text-body font-medium text-[color:var(--color-text-secondary)]">{labels.trendTitle}</span>
+            <span className="text-body font-[var(--font-weight-signature)] text-[color:var(--color-text-secondary)]">{labels.trendTitle}</span>
           </div>
           <FreshnessTrendSparkline weeklyTotals={weeklyTotals} />
           <p className="mt-1.5 text-caption text-[color:var(--color-text-quaternary)]">{labels.trendCaption}</p>
@@ -185,7 +185,7 @@ export function FreshnessTab({
         className="flex min-h-0 min-w-0 flex-col rounded-panel border border-[color:var(--color-border-soft)] bg-[color:var(--color-panel)] p-[var(--card-pad)]"
       >
         <div className="flex items-baseline gap-2">
-          <InsightsSectionTitle level={2} className="text-body-lg font-medium tracking-[var(--tracking-title)] text-[color:var(--color-text-primary)]">
+          <InsightsSectionTitle level={2} className="text-body-lg font-[var(--font-weight-signature)] tracking-[var(--tracking-title)] text-[color:var(--color-text-primary)]">
             {labels.recentUpdatesTitle}
           </InsightsSectionTitle>
         </div>

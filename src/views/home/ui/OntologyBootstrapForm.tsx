@@ -98,7 +98,7 @@ export function OntologyBootstrapForm({
       <div className="flex items-center justify-between gap-2">
         <p
           id={labels.headingId}
-          className="text-body-lg font-semibold text-[color:var(--color-text-primary)]"
+          className="text-body-lg font-[var(--font-weight-emphasis)] text-[color:var(--color-text-primary)]"
         >
           {labels.heading}
         </p>

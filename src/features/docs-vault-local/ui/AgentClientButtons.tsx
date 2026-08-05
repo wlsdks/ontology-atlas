@@ -186,7 +186,7 @@ export function AgentClientButtons({
               className="mt-0.5 shrink-0 text-[color:var(--color-text-quaternary)]"
             />
             <div className="min-w-0">
-              <p className="text-body font-medium text-[color:var(--color-text-primary)]">
+              <p className="text-body font-[var(--font-weight-signature)] text-[color:var(--color-text-primary)]">
                 {t("serverUnavailableTitle")}
               </p>
               <p className="mt-1 text-label leading-relaxed text-[color:var(--color-text-tertiary)]">
@@ -196,7 +196,7 @@ export function AgentClientButtons({
                 <Link
                   href="/download/"
                   data-testid="agent-connect-web-get-app"
-                  className="inline-flex text-label font-medium text-[color:var(--color-indigo-accent)] transition-colors hover:text-[color:var(--color-text-primary)]"
+                  className="inline-flex text-label font-[var(--font-weight-signature)] text-[color:var(--color-indigo-accent)] transition-colors hover:text-[color:var(--color-text-primary)]"
                 >
                   {t("serverUnavailableGetApp")}
                 </Link>
@@ -399,7 +399,7 @@ export function AgentClientButtons({
           <Link
             href="/download/"
             data-testid="agent-client-app-cta"
-            className="font-medium text-[color:var(--color-indigo-accent)] transition-colors hover:text-[color:var(--color-text-primary)]"
+            className="font-[var(--font-weight-signature)] text-[color:var(--color-indigo-accent)] transition-colors hover:text-[color:var(--color-text-primary)]"
           >
             {t("deeplinkWebNoteCta")}
           </Link>

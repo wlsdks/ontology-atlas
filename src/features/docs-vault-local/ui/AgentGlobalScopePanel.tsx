@@ -80,7 +80,7 @@ export function AgentGlobalScopePanel({ vaultPath, launch }: AgentGlobalScopePan
             className={controlClass({
               shape: 'chip',
               active: entry.id === client.id,
-              className: 'font-medium hover:text-[color:var(--color-text-primary)]',
+              className: 'font-[var(--font-weight-signature)] hover:text-[color:var(--color-text-primary)]',
             })}
           >
             {entry.name}
@@ -120,7 +120,7 @@ export function AgentGlobalScopePanel({ vaultPath, launch }: AgentGlobalScopePan
             shape: 'chip',
             tone: 'secondary',
             className:
-              'mt-1.5 font-medium hover:border-[color:var(--color-border-strong)] hover:text-[color:var(--color-text-primary)]',
+              'mt-1.5 font-[var(--font-weight-signature)] hover:border-[color:var(--color-border-strong)] hover:text-[color:var(--color-text-primary)]',
           })}
         >
           {isCopied ? (

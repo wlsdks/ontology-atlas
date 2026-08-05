@@ -260,7 +260,7 @@ export function TopologyTrailChip({
             tone: "strong",
             truncate: true,
             // 옆의 지우기 버튼과 여유 <12px — touch-hit-expand 는 탭을 훔친다.
-            className: "min-w-0 font-medium",
+            className: "min-w-0 font-[var(--font-weight-signature)]",
           })}
         >
           {label}

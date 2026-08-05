@@ -169,7 +169,7 @@ export function ProjectSelectorPage() {
           <Link
             href={newProjectHref}
             data-testid="project-selector-new-cta"
-            className="ml-auto inline-flex h-9 items-center rounded-chip border border-[color:var(--color-indigo-a50)] bg-[color:var(--topology-v2-panel-action-surface,var(--color-indigo-a06))] px-4 text-body font-medium text-[color:var(--color-indigo-accent)] transition-colors hover:border-[color:var(--color-indigo-brand)] hover:bg-[color:var(--color-overlay-2)]"
+            className="ml-auto inline-flex h-9 items-center rounded-chip border border-[color:var(--color-indigo-a50)] bg-[color:var(--topology-v2-panel-action-surface,var(--color-indigo-a06))] px-4 text-body font-[var(--font-weight-signature)] text-[color:var(--color-indigo-accent)] transition-colors hover:border-[color:var(--color-indigo-brand)] hover:bg-[color:var(--color-overlay-2)]"
           >
             {t("ctaNewProject")}
           </Link>
@@ -217,7 +217,7 @@ export function ProjectSelectorPage() {
         {recentActivityRows.length > 0 ? (
           <section className="mt-7">
             <div className="mb-3 flex items-center gap-2.5">
-              <span className="text-body-lg font-medium tracking-[var(--tracking-title)] text-[color:var(--color-text-primary)]">
+              <span className="text-body-lg font-[var(--font-weight-signature)] tracking-[var(--tracking-title)] text-[color:var(--color-text-primary)]">
                 {t("activityHeading")}
               </span>
               <span className="font-mono text-caption uppercase tracking-[var(--tracking-caps-12)] text-[color:var(--color-text-quaternary)]">
@@ -249,7 +249,7 @@ export function ProjectSelectorPage() {
         <section className="mt-7 rounded-panel border border-dashed border-[color:var(--color-border-strong)] bg-[color:var(--color-overlay-1)] px-5 py-4">
           <div className="flex items-center gap-3">
             <TopologyV2KindGlyph kind="project" size={18} />
-            <h3 className="text-body-lg font-semibold tracking-[var(--tracking-title)] text-[color:var(--color-text-primary)]">
+            <h3 className="text-body-lg font-[var(--font-weight-strong)] tracking-[var(--tracking-title)] text-[color:var(--color-text-primary)]">
               {t("nextSlotTitle")}
             </h3>
             <span className="text-body text-[color:var(--color-text-tertiary)]">
@@ -330,7 +330,7 @@ function ProjectFullCard({ project, facts, domainRows, description, docPath, kin
       <div className="flex items-start gap-3.5">
         <TopologyV2KindGlyph kind="project" size={26} className="mt-1 shrink-0" />
         <div className="min-w-0 flex-1">
-          <h2 className="truncate text-title font-semibold tracking-[var(--tracking-card)] text-[color:var(--color-text-primary)]">
+          <h2 className="truncate text-title font-[var(--font-weight-strong)] tracking-[var(--tracking-card)] text-[color:var(--color-text-primary)]">
             {project.name}
           </h2>
           <div className="mt-1 flex flex-wrap items-center gap-2 text-body text-[color:var(--color-text-tertiary)]">

@@ -323,7 +323,7 @@ export function ConceptEgoGraph({
             x={cx}
             y={cy + selfRadius + 18}
             textAnchor="middle"
-            className="fill-[color:var(--color-text-primary)] text-body-lg font-semibold"
+            className="fill-[color:var(--color-text-primary)] text-body-lg font-[var(--font-weight-emphasis)]"
           >
             {ego.label.length > 22 ? `${ego.label.slice(0, 21)}…` : ego.label}
           </text>

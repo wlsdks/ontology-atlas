@@ -108,7 +108,7 @@ export function ImpactRankingCard({
       )}
     >
       <div className="flex flex-wrap items-baseline gap-x-3 gap-y-1">
-        <InsightsSectionTitle level={2} className="text-body-lg font-medium tracking-[var(--tracking-title)] text-[color:var(--color-text-primary)]">
+        <InsightsSectionTitle level={2} className="text-body-lg font-[var(--font-weight-signature)] tracking-[var(--tracking-title)] text-[color:var(--color-text-primary)]">
           {labels.title}
         </InsightsSectionTitle>
         {/* 두 세그먼트가 무슨 뜻인지 머리에서 한 번만 말한다 — 행마다
@@ -123,7 +123,7 @@ export function ImpactRankingCard({
         data-testid="insights-impact-qualification"
         className="mt-2 flex flex-wrap items-center gap-x-3 gap-y-1 rounded-card border border-dashed border-[color:var(--color-border-soft)] bg-[color:var(--color-overlay-1)] px-3 py-2"
       >
-        <span className="font-medium text-body text-[color:var(--color-text-primary)]">
+        <span className="font-[var(--font-weight-signature)] text-body text-[color:var(--color-text-primary)]">
           {labels.unknownTitle}
         </span>
         <span className="text-label text-[color:var(--color-text-quaternary)]">

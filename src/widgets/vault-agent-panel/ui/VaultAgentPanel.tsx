@@ -493,7 +493,7 @@ export function VaultAgentPanel({
       >
         <header className="flex shrink-0 items-center gap-2 border-b border-[color:var(--color-border-soft)] px-3 py-2">
           <div className="min-w-0 flex-1">
-            <p className="truncate text-body font-semibold text-[color:var(--color-text-primary)]">
+            <p className="truncate text-body font-[var(--font-weight-emphasis)] text-[color:var(--color-text-primary)]">
               {t('title')}
             </p>
             {/* 부제 자리는 하나다 — 진전이 생기면 같은 줄의 **글자만** 바뀐다.
@@ -784,7 +784,7 @@ export function VaultAgentPanel({
                     size: 'lg',
                     tone: 'strong',
                     className:
-                      'shrink-0 justify-center font-semibold tracking-body hover:bg-[color:var(--color-overlay-2)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--color-indigo-accent)]',
+                      'shrink-0 justify-center font-[var(--font-weight-emphasis)] tracking-body hover:bg-[color:var(--color-overlay-2)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--color-indigo-accent)]',
                   })}
                 >
                   {t('stop')}

@@ -185,7 +185,7 @@ export function GatewayDocPage({
                * `leading-display-tight`(1.06)는 이름·수치용이라 23px 에 24.4px 를
                * 물려 페이지 제목으로는 답답했다.
                */
-              className="text-hero-lg leading-hero-lg font-semibold text-[color:var(--color-text-primary)]"
+              className="text-hero-lg leading-hero-lg font-[var(--font-weight-strong)] text-[color:var(--color-text-primary)]"
             >
               {title}
             </h1>
@@ -265,7 +265,7 @@ export function GatewayDocPage({
 const PROSE_COMPONENTS: Components = {
   h2: ({ children, ...rest }) => (
     <h2
-      className="mt-12 mb-3 text-title leading-title font-semibold text-[color:var(--color-text-primary)]"
+      className="mt-12 mb-3 text-title leading-title font-[var(--font-weight-strong)] text-[color:var(--color-text-primary)]"
       {...rest}
     >
       {children}
@@ -273,7 +273,7 @@ const PROSE_COMPONENTS: Components = {
   ),
   h3: ({ children, ...rest }) => (
     <h3
-      className="mt-8 mb-2 text-body-lg leading-body-lg font-semibold text-[color:var(--color-text-primary)]"
+      className="mt-8 mb-2 text-body-lg leading-body-lg font-[var(--font-weight-strong)] text-[color:var(--color-text-primary)]"
       {...rest}
     >
       {children}
@@ -309,7 +309,7 @@ const PROSE_COMPONENTS: Components = {
     </li>
   ),
   strong: ({ children, ...rest }) => (
-    <strong className="font-semibold text-[color:var(--color-text-primary)]" {...rest}>
+    <strong className="font-[var(--font-weight-strong)] text-[color:var(--color-text-primary)]" {...rest}>
       {children}
     </strong>
   ),
@@ -362,7 +362,7 @@ const PROSE_COMPONENTS: Components = {
   ),
   th: ({ children, ...rest }) => (
     <th
-      className="border-b border-[color:var(--color-divider)] px-2 py-2 text-left font-medium text-[color:var(--color-text-primary)]"
+      className="border-b border-[color:var(--color-divider)] px-2 py-2 text-left font-[var(--font-weight-signature)] text-[color:var(--color-text-primary)]"
       {...rest}
     >
       {children}
@@ -411,7 +411,7 @@ function GuideSidebar({ activeSegment }: { activeSegment?: string }) {
       className="hidden lg:block"
     >
       <div className="sticky top-24">
-        <p className="mb-3 px-2.5 text-label leading-label font-medium tracking-wide text-[color:var(--color-text-quaternary)] uppercase">
+        <p className="mb-3 px-2.5 text-label leading-label font-[var(--font-weight-signature)] tracking-wide text-[color:var(--color-text-quaternary)] uppercase">
           {t('onThisGuide')}
         </p>
         <ul className="flex flex-col gap-0.5">
@@ -463,7 +463,7 @@ function EntrySidebar({ entries }: { entries: DocEntry[] }) {
   return (
     <nav aria-label={t('entryNavLabel')} data-testid="entry-sidebar" className="hidden lg:block">
       <div className="sticky top-24 max-h-[calc(100svh-9rem)] overflow-y-auto pr-1">
-        <p className="mb-3 px-2.5 text-label leading-label font-medium tracking-wide text-[color:var(--color-text-quaternary)] uppercase">
+        <p className="mb-3 px-2.5 text-label leading-label font-[var(--font-weight-signature)] tracking-wide text-[color:var(--color-text-quaternary)] uppercase">
           {t('entryNavLabel')}
         </p>
         <ul className="flex flex-col gap-0.5">
@@ -511,7 +511,7 @@ function proseComponentsWithAnchors(headingIds: Map<string, string>): Components
     h2: ({ children, ...rest }) => (
       <h2
         id={headingIds.get(normalizeHeadingKey(flattenText(children)))}
-        className="mt-12 mb-3 scroll-mt-24 text-title leading-title font-semibold text-[color:var(--color-text-primary)]"
+        className="mt-12 mb-3 scroll-mt-24 text-title leading-title font-[var(--font-weight-strong)] text-[color:var(--color-text-primary)]"
         {...rest}
       >
         {children}

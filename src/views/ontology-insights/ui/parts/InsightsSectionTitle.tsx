@@ -11,7 +11,7 @@ import { cn } from "@/shared/lib/cn";
  *
  * 이 화면 전체의 heading 요소가 **`<h1>` 하나뿐**이었다. 「에이전트 준비도」·
  * 「수리 큐」·「여러 곳에서 참조돼요」 같은 구획 제목은 전부 `<span>` 에
- * `text-body-lg font-medium` 을 입힌 것이라, 화면에는 위계가 보이는데
+ * `text-body-lg font-[var(--font-weight-signature)]` 을 입힌 것이라, 화면에는 위계가 보이는데
  * **문서에는 위계가 없었다.**
  *
  * 그 차이가 실제로 무엇을 막았나: 스크린리더 사용자는 이 보드를 제목으로

@@ -338,17 +338,23 @@ const control = cva(DISABLED, {
        *
        * 두 라운드가 독립으로 같은 구멍을 보고했다(features 5 · 위젯 6):
        * *"인디고를 배경으로 깔면 글자는 `text-white` 인데 tone 여덟에 그 자리가
-       * 없다."* 잉크만 내면 소비처가 `bg-…`/`font-semibold` 를 `className` 으로
+       * 없다."* 잉크만 내면 소비처가 `bg-…`/무게를 `className` 으로
        * 계속 써야 하고, 그건 **모양을 className 으로 넘기는 것**이라 층이 있으나
        * 마나다. 그래서 잉크와 바탕을 **한 쌍으로** 낸다 — `active: true` 가 이미
        * 같은 문법(배경+보더+잉크를 함께)을 쓰고 있고, 채움은 「눌림」과 마찬가지로
        * 잉크 혼자로는 성립하지 않는 상태라서다.
        *
-       * `font-semibold` 를 포함한 이유도 실측이다: `--color-indigo-brand` 를
-       * 바탕으로 깐 컨트롤 중 무게를 명시한 **15개가 semibold 13 · medium 2**
-       * 였다(2026-08-03 전수). 무게가 이 톤의 정체성의 일부이고, 예외 2건은
-       * 규격이 아니라 편차다 — 옮기면서 semibold 로 정규화했다(500 → 600,
-       * 상자 치수는 패딩·행간이 정하므로 높이 변화 0).
+       * 무게를 포함한 이유도 실측이다: `--color-indigo-brand` 를 바탕으로 깐
+       * 컨트롤 중 무게를 명시한 **15개가 semibold 13 · medium 2** 였다
+       * (2026-08-03 전수). 무게가 이 톤의 정체성의 일부이고, 예외 2건은 규격이
+       * 아니라 편차다 — 옮기면서 semibold 로 정규화했다(상자 치수는 패딩·행간이
+       * 정하므로 높이 변화 0).
+       *
+       * **2026-08-05: 그 semibold 가 램프로 올라갔다.** `font-semibold`(600)는
+       * Tailwind 기본 스텝이라 `--font-weight-*` 사다리 밖이었다. 이 자리는
+       * 제목이 아니라 버튼 라벨이므로 `emphasis`(560) — 600 에서 가장 가까운
+       * 스텝이기도 하다(560 은 −40, 650 은 +50). 「인디고 면 위에서 기본
+       * 무게보다 무겁다」는 이 톤의 정체성은 그대로다.
        *
        * 호버(`hover:bg-[color:var(--color-indigo-hover)]`)는 여전히 소비처의
        * 몫이다 — 이 파일이 호버를 안 내는 규율은 그대로다.
@@ -357,7 +363,7 @@ const control = cva(DISABLED, {
        * 4.71:1 로 WCAG AA(4.5) 위다.
        */
       onAccent:
-        'bg-[color:var(--color-indigo-brand)] font-semibold text-[color:var(--color-text-on-accent)]',
+        'bg-[color:var(--color-indigo-brand)] font-[var(--font-weight-emphasis)] text-[color:var(--color-text-on-accent)]',
     },
     /**
      * **어느 잉크 램프 위에 서 있는가.**

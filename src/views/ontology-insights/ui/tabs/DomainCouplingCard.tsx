@@ -105,7 +105,7 @@ export function DomainCouplingCard({
         data-testid="domain-coupling-empty"
         className="rounded-panel border border-dashed border-[color:var(--color-divider)] bg-[color:var(--color-overlay-1)] p-[var(--card-pad)] text-center"
       >
-        <p className="text-body-lg font-medium text-[color:var(--color-text-primary)]">{labels.emptyTitle}</p>
+        <p className="text-body-lg font-[var(--font-weight-signature)] text-[color:var(--color-text-primary)]">{labels.emptyTitle}</p>
         <p className="mt-1.5 text-body text-[color:var(--color-text-tertiary)]">{labels.emptyDescription}</p>
         <Link
           href={labels.emptyActionHref}
@@ -455,7 +455,7 @@ function SelectedPairDetail({
 function CardHead({ label, unit, count }: { label: string; unit: string; count: number }) {
   return (
     <div className="flex items-baseline gap-2.5">
-      <InsightsSectionTitle level={2} className="text-body-lg font-medium tracking-[var(--tracking-title)] text-[color:var(--color-text-primary)]">{label}</InsightsSectionTitle>
+      <InsightsSectionTitle level={2} className="text-body-lg font-[var(--font-weight-signature)] tracking-[var(--tracking-title)] text-[color:var(--color-text-primary)]">{label}</InsightsSectionTitle>
       <span className="ml-auto flex items-baseline gap-1.5">
         <span className="text-label text-[color:var(--color-text-quaternary)]">{unit}</span>
         <span className="font-mono text-body tabular-nums text-[color:var(--topology-v2-numeral-face)]">

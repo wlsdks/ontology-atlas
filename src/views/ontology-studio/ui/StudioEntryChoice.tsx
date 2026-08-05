@@ -168,7 +168,7 @@ const EntryCard = ({
       {illustration}
     </span>
     <span className="flex flex-col gap-1">
-      <span className="text-body-lg font-medium text-[color:var(--color-text-primary)] [word-break:keep-all]">
+      <span className="text-body-lg font-[var(--font-weight-signature)] text-[color:var(--color-text-primary)] [word-break:keep-all]">
         {title}
       </span>
       <span className="text-caption leading-caption text-[color:var(--color-text-tertiary)] [word-break:keep-all]">

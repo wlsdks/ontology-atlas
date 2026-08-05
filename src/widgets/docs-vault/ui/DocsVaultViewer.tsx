@@ -321,7 +321,7 @@ export function DocsVaultViewer({
         return (
           <h2
             id={slug}
-            className="group relative mt-0 mb-6 text-display font-semibold leading-tight text-[color:var(--color-text-primary)]"
+            className="group relative mt-0 mb-6 text-display font-[var(--font-weight-strong)] leading-tight text-[color:var(--color-text-primary)]"
             {...rest}
           >
             {highlightChildren(children, 'h1')}
@@ -334,7 +334,7 @@ export function DocsVaultViewer({
         return (
           <h2
             id={slug}
-            className="group relative mt-10 mb-3 text-title font-semibold leading-tight text-[color:var(--color-text-primary)]"
+            className="group relative mt-10 mb-3 text-title font-[var(--font-weight-strong)] leading-tight text-[color:var(--color-text-primary)]"
             {...rest}
           >
             {highlightChildren(children, 'h2')}
@@ -347,7 +347,7 @@ export function DocsVaultViewer({
         return (
           <h3
             id={slug}
-            className="group relative mt-6 mb-2 text-title font-semibold leading-tight text-[color:var(--color-text-primary)]"
+            className="group relative mt-6 mb-2 text-title font-[var(--font-weight-strong)] leading-tight text-[color:var(--color-text-primary)]"
             {...rest}
           >
             {highlightChildren(children, 'h3')}
@@ -449,7 +449,7 @@ export function DocsVaultViewer({
       th(props) {
         return (
           <th
-            className="border-b border-[color:var(--color-divider)] px-2 py-1.5 text-left font-medium text-[color:var(--color-text-primary)]"
+            className="border-b border-[color:var(--color-divider)] px-2 py-1.5 text-left font-[var(--font-weight-signature)] text-[color:var(--color-text-primary)]"
             {...props}
           />
         );
@@ -653,7 +653,7 @@ function CalloutBlock({
       style={{ borderLeftColor: s.border, backgroundColor: s.bg }}
     >
       <div
-        className="mb-1 flex items-center gap-1.5 text-body font-semibold"
+        className="mb-1 flex items-center gap-1.5 text-body font-[var(--font-weight-emphasis)]"
         style={{ color: s.title }}
       >
         <span aria-hidden>{s.icon}</span>

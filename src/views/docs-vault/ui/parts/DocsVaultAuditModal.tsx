@@ -284,7 +284,7 @@ export function DocsVaultAuditModal({
                         {cell.chip}
                       </span>
                     </div>
-                    <p className="mt-0.5 truncate text-body font-semibold text-[color:var(--color-text-primary)]">
+                    <p className="mt-0.5 truncate text-body font-[var(--font-weight-emphasis)] text-[color:var(--color-text-primary)]">
                       {cell.value}
                     </p>
                     <p className="mt-0.5 text-label leading-4 text-[color:var(--color-text-tertiary)]">
@@ -352,7 +352,7 @@ export function DocsVaultAuditModal({
                       **0 상태는 소리치지 않는다**: 전부 일치하면 중립색이다. */}
                   <p
                     data-testid="docs-audit-skill-parity-value"
-                    className="mt-0.5 truncate text-body font-semibold text-[color:var(--color-text-primary)]"
+                    className="mt-0.5 truncate text-body font-[var(--font-weight-emphasis)] text-[color:var(--color-text-primary)]"
                   >
                     {disagreeing.length > 0
                       ? tSkillParity("valueDisagreeing", {

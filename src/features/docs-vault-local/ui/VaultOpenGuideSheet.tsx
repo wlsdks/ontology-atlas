@@ -101,7 +101,7 @@ export function VaultOpenGuideSheet({
           >
             <header className="flex shrink-0 items-start justify-between gap-3 border-b border-[color:var(--color-border-soft)] px-5 py-4">
               <div>
-                <h2 className="text-body-lg font-semibold text-[color:var(--color-text-primary)]">
+                <h2 className="text-body-lg font-[var(--font-weight-strong)] text-[color:var(--color-text-primary)]">
                   {t("title")}
                 </h2>
                 <p className="mt-1 text-label leading-relaxed text-[color:var(--color-text-tertiary)]">

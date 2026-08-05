@@ -2252,7 +2252,7 @@ function DocsVaultContent() {
                   `title ?? name` 우선순위와 같은 계약을 여기도 일관 적용. */}
               <div className="flex flex-none items-center gap-3 border-b border-[color:var(--color-border-soft)] px-4 py-2">
                 <div className="flex min-w-0 flex-1 flex-col">
-                  <span className="truncate text-body font-medium text-[color:var(--color-text-primary)]">
+                  <span className="truncate text-body font-[var(--font-weight-signature)] text-[color:var(--color-text-primary)]">
                     {selectedDocDisplayTitle}
                   </span>
                   <span className="truncate font-mono text-caption text-[color:var(--color-text-quaternary)]">

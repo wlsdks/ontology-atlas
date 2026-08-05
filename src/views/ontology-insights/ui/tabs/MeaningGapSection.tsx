@@ -51,7 +51,7 @@ const ACCENT_CHIP_IDLE =
 const ACCENT_CHIP_OPEN =
   "border-[color:var(--color-indigo-line-a32)] bg-[color:var(--color-indigo-line-a13)]";
 const ACCENT_CHIP_FILLED =
-  "font-medium border-[color:var(--color-indigo-line-a32)] bg-[color:var(--color-indigo-line-a13)] hover:border-[color:var(--color-indigo-line-a45)]";
+  "font-[var(--font-weight-signature)] border-[color:var(--color-indigo-line-a32)] bg-[color:var(--color-indigo-line-a13)] hover:border-[color:var(--color-indigo-line-a45)]";
 
 export interface MeaningGapLabels extends QueueRowActionLabels {
   sectionTitle: string;
@@ -218,7 +218,7 @@ export function MeaningGapSection({
     >
       <div className="flex flex-col gap-1 border-b border-[color:var(--color-divider)] pb-2">
         <div className="flex items-baseline gap-2">
-          <InsightsSectionTitle level={3} className="text-body font-medium text-[color:var(--color-text-primary)]">
+          <InsightsSectionTitle level={3} className="text-body font-[var(--font-weight-signature)] text-[color:var(--color-text-primary)]">
             {labels.sectionTitle}
           </InsightsSectionTitle>
           <span className="font-mono text-label tabular-nums text-[color:var(--topology-v2-numeral-face)]">

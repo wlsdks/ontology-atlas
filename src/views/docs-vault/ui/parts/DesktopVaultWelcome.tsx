@@ -98,7 +98,7 @@ export function DesktopVaultWelcome({
             {/* 34px 은 이제 램프 스텝이다 (`--text-hero-lg`, 2026-07-29 승격) —
                 구 `md:text-[34px]` + eslint-disable 예외는 소비처가 둘이 되면서
                 이름을 얻었다. `leading-tight` 는 명시 짝이라 두 크기 모두를 덮는다. */}
-            <h2 className="max-w-2xl text-hero font-semibold leading-tight text-[color:var(--color-text-primary)] md:text-hero-lg">
+            <h2 className="max-w-2xl text-hero font-[var(--font-weight-strong)] leading-tight text-[color:var(--color-text-primary)] md:text-hero-lg">
               {showDogfoodHint
                 ? t("desktopWelcome.dogfoodTitle")
                 : t("desktopWelcome.title")}
@@ -159,7 +159,7 @@ export function DesktopVaultWelcome({
                       <p className="font-mono text-caption uppercase tracking-[var(--tracking-caps-14)] text-[color:var(--color-text-quaternary)]">
                         {item.label}
                       </p>
-                      <p className="mt-0.5 text-body font-semibold text-[color:var(--color-text-primary)]">
+                      <p className="mt-0.5 text-body font-[var(--font-weight-emphasis)] text-[color:var(--color-text-primary)]">
                         {item.value}
                       </p>
                       <p className="mt-1.5 break-keep text-label leading-5 text-[color:var(--color-text-tertiary)]">
@@ -188,7 +188,7 @@ export function DesktopVaultWelcome({
                 <FolderOpen size={17} aria-hidden />
               </span>
               <span className="min-w-0">
-                <span className="block text-body-lg font-semibold text-[color:var(--color-text-primary)]">
+                <span className="block text-body-lg font-[var(--font-weight-emphasis)] text-[color:var(--color-text-primary)]">
                   {busy
                     ? status === "opening"
                       ? t("desktopWelcome.openingTitle")
@@ -216,7 +216,7 @@ export function DesktopVaultWelcome({
                   <Bot size={15} aria-hidden />
                 </span>
                 <span className="min-w-0">
-                  <span className="block text-body font-semibold text-[color:var(--color-text-primary)]">
+                  <span className="block text-body font-[var(--font-weight-emphasis)] text-[color:var(--color-text-primary)]">
                     {t("desktopWelcome.dogfoodDirectTitle")}
                   </span>
                   <span className="mt-0.5 block text-label leading-5 text-[color:var(--color-text-tertiary)]">
@@ -236,7 +236,7 @@ export function DesktopVaultWelcome({
                 <FilePlus size={15} aria-hidden />
               </span>
               <span className="min-w-0">
-                <span className="block text-body font-semibold text-[color:var(--color-text-primary)]">
+                <span className="block text-body font-[var(--font-weight-emphasis)] text-[color:var(--color-text-primary)]">
                   {t("desktopWelcome.createTitle")}
                 </span>
                 <span className="mt-0.5 block text-label leading-5 text-[color:var(--color-text-tertiary)]">
@@ -254,7 +254,7 @@ export function DesktopVaultWelcome({
                 <Package size={15} aria-hidden />
               </span>
               <span className="min-w-0">
-                <span className="block text-body font-semibold text-[color:var(--color-text-primary)]">
+                <span className="block text-body font-[var(--font-weight-emphasis)] text-[color:var(--color-text-primary)]">
                   {t("desktopWelcome.sampleTitle")}
                 </span>
                 <span className="mt-0.5 block text-label leading-5 text-[color:var(--color-text-tertiary)]">
@@ -284,7 +284,7 @@ export function DesktopVaultWelcome({
                       <HardDrive size={13} aria-hidden />
                     </span>
                     <span className="min-w-0">
-                      <span className="block truncate text-body font-medium text-[color:var(--color-text-primary)]">
+                      <span className="block truncate text-body font-[var(--font-weight-signature)] text-[color:var(--color-text-primary)]">
                         {record.name}
                       </span>
                       {record.desktopRootPath ? (

@@ -159,7 +159,7 @@ export function AiConnectionPanel({
           className="rounded-card border border-[color:var(--color-border-soft)] bg-[color:var(--color-overlay-1)] px-3 py-2.5"
           data-testid="ai-connection-web-degraded"
         >
-          <p className="text-label font-medium text-[color:var(--color-text-secondary)]">
+          <p className="text-label font-[var(--font-weight-signature)] text-[color:var(--color-text-secondary)]">
             {t('webDegradedTitle')}
           </p>
           <p className="mt-1 break-keep text-caption leading-4 text-[color:var(--color-text-tertiary)]">

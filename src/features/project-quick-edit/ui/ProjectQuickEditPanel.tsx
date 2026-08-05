@@ -50,7 +50,7 @@ function FieldLabel({
 }) {
   return (
     <span className="flex items-baseline gap-1.5">
-      <span className="text-label font-medium text-[color:var(--color-text-secondary)]">
+      <span className="text-label font-[var(--font-weight-signature)] text-[color:var(--color-text-secondary)]">
         {children}
       </span>
       {optional ? (

@@ -99,7 +99,7 @@ export function DomainCompositionGrid({
                 {capabilityLabel}{" "}
                 <b
                   data-token="engraved-numeral"
-                  className="font-semibold text-[color:var(--engraved-numeral-face)]"
+                  className="font-[var(--font-weight-strong)] text-[color:var(--engraved-numeral-face)]"
                 >
                   {domain.capabilityCount}
                 </b>
@@ -107,7 +107,7 @@ export function DomainCompositionGrid({
                 {elementLabel}{" "}
                 <b
                   data-token="engraved-numeral"
-                  className="font-semibold text-[color:var(--engraved-numeral-face)]"
+                  className="font-[var(--font-weight-strong)] text-[color:var(--engraved-numeral-face)]"
                 >
                   {domain.elementCount}
                 </b>

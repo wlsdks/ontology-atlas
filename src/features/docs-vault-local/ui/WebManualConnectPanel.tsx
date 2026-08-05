@@ -68,7 +68,7 @@ function PathField({
 }) {
   return (
     <div className="flex flex-col gap-1">
-      <label htmlFor={id} className="text-label font-medium text-[color:var(--color-text-secondary)]">
+      <label htmlFor={id} className="text-label font-[var(--font-weight-signature)] text-[color:var(--color-text-secondary)]">
         {label}
       </label>
       {hint ? (
@@ -105,7 +105,7 @@ function PathField({
  * 깎으므로 소비처가 정한다). 이 파일의 세 자리가 같은 문자열이라 한 벌로 둔다.
  */
 const COPY_CHIP_SKIN =
-  'font-medium hover:border-[color:var(--color-border-strong)] hover:text-[color:var(--color-text-primary)]';
+  'font-[var(--font-weight-signature)] hover:border-[color:var(--color-border-strong)] hover:text-[color:var(--color-text-primary)]';
 
 function CommandRow({
   label,
@@ -259,7 +259,7 @@ export function WebManualConnectPanel({
               className={controlClass({
                 shape: 'chip',
                 active: entry.id === active.id,
-                className: 'font-medium hover:text-[color:var(--color-text-primary)]',
+                className: 'font-[var(--font-weight-signature)] hover:text-[color:var(--color-text-primary)]',
               })}
             >
               {entry.name}

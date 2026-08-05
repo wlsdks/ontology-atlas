@@ -109,7 +109,7 @@ export function TopologyV2EdgePanel({
       {/* 문장이 주인공 — 의미의 평문화 */}
       <p
         data-testid="topology-v2-edge-sentence"
-        className="text-body-lg font-medium leading-relaxed text-[color:var(--topology-v2-panel-text-primary)]"
+        className="text-body-lg font-[var(--font-weight-signature)] leading-relaxed text-[color:var(--topology-v2-panel-text-primary)]"
       >
         {sentence}
       </p>

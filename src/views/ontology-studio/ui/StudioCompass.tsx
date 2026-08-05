@@ -543,7 +543,7 @@ const KIND_LETTER: Record<string, string> = {
 
 function KindGlyph({ kind }: { kind: string }) {
   return (
-    <span className="grid h-[18px] w-[18px] flex-none place-items-center rounded-chip border border-[color:var(--color-border-soft)] bg-[color:var(--color-overlay-1)] text-label font-semibold text-[color:var(--color-text-tertiary)]">
+    <span className="grid h-[18px] w-[18px] flex-none place-items-center rounded-chip border border-[color:var(--color-border-soft)] bg-[color:var(--color-overlay-1)] text-label font-[var(--font-weight-emphasis)] text-[color:var(--color-text-tertiary)]">
       {KIND_LETTER[kind] ?? "•"}
     </span>
   );
@@ -969,7 +969,7 @@ export function StudioCompass(props: StudioCompassProps) {
             ref={headingRef}
             tabIndex={-1}
             data-testid="studio-stage-heading"
-            className="text-body font-semibold text-[color:var(--color-text-secondary)] outline-none"
+            className="text-body font-[var(--font-weight-strong)] text-[color:var(--color-text-secondary)] outline-none"
           >
             {focal.name || "—"}
           </h1>
@@ -1351,7 +1351,7 @@ export function StudioCompass(props: StudioCompassProps) {
           className="pointer-events-auto absolute bottom-16 left-0 right-0 z-[9] border-t border-[color:var(--color-divider)] bg-[color:var(--color-elevated)] px-5 py-3"
           style={{ boxShadow: "var(--shadow-elevation-dock-bottom)" }}
         >
-          <p className="text-caption font-medium text-[color:var(--color-text-secondary)] [word-break:keep-all]">
+          <p className="text-caption font-[var(--font-weight-signature)] text-[color:var(--color-text-secondary)] [word-break:keep-all]">
             {effectiveSummary.headline}
           </p>
           {effectiveSummary.lines.length > 0 ? (
@@ -1436,7 +1436,7 @@ export function StudioCompass(props: StudioCompassProps) {
             <span
               aria-hidden
               data-testid="studio-commit-converge"
-              className="studio-summary-converge pointer-events-none absolute right-[128px] top-1/2 z-[7] -translate-y-1/2 whitespace-nowrap rounded-chip border border-[color:var(--color-indigo-line-a32)] bg-[color:var(--color-indigo-a12)] px-2 py-1 text-label font-medium text-[color:var(--color-indigo-text-soft)]"
+              className="studio-summary-converge pointer-events-none absolute right-[128px] top-1/2 z-[7] -translate-y-1/2 whitespace-nowrap rounded-chip border border-[color:var(--color-indigo-line-a32)] bg-[color:var(--color-indigo-a12)] px-2 py-1 text-label font-[var(--font-weight-signature)] text-[color:var(--color-indigo-text-soft)]"
               style={
                 {
                   "--studio-converge-x": "104px",
@@ -1480,7 +1480,7 @@ export function StudioCompass(props: StudioCompassProps) {
         >
           <div className="flex items-start gap-2 px-3.5 pt-3">
             <div className="min-w-0 flex-1">
-              <p className="text-caption font-semibold text-[color:var(--color-text-secondary)]">
+              <p className="text-caption font-[var(--font-weight-emphasis)] text-[color:var(--color-text-secondary)]">
                 {labels.draftsTitle}
               </p>
               <p className="mt-1 text-label leading-label text-[color:var(--color-text-quaternary)] [word-break:keep-all]">
@@ -1689,10 +1689,10 @@ function CenterCard(
           value={focal.name}
           onChange={(e) => props.onCreateName?.(e.target.value)}
           placeholder={props.labels.createNamePlaceholder}
-          className="w-full bg-transparent text-display font-semibold leading-display-tight tracking-[var(--tracking-display)] text-[color:var(--color-text-primary)] outline-none [word-break:keep-all] placeholder:font-normal placeholder:text-[color:var(--color-text-quaternary)]"
+          className="w-full bg-transparent text-display font-[var(--font-weight-strong)] leading-display-tight tracking-[var(--tracking-display)] text-[color:var(--color-text-primary)] outline-none [word-break:keep-all] placeholder:font-normal placeholder:text-[color:var(--color-text-quaternary)]"
         />
       ) : (
-        <div className="text-display font-semibold leading-display-tight tracking-[var(--tracking-display)] text-[color:var(--color-text-primary)] [word-break:keep-all]">
+        <div className="text-display font-[var(--font-weight-strong)] leading-display-tight tracking-[var(--tracking-display)] text-[color:var(--color-text-primary)] [word-break:keep-all]">
           {focal.name}
         </div>
       )}
@@ -1760,7 +1760,7 @@ function CenterCard(
                 shape: "link",
                 tone: "muted",
                 className:
-                  "touch-hit-expand mt-1 font-medium hover:text-[color:var(--color-text-secondary)]",
+                  "touch-hit-expand mt-1 font-[var(--font-weight-signature)] hover:text-[color:var(--color-text-secondary)]",
               })}
             >
               {defExpanded ? props.labels.defLess : props.labels.defMore}
@@ -1805,7 +1805,7 @@ function CenterCard(
               type="button"
               onClick={() => props.onOpenSimilar?.(props.createSimilarHit!.slug)}
               // 문장 속 컨트롤 — `link` 의 `min-h-11` 이 힌트 줄을 44px 로 밀어 올린다.
-              className="rounded-chip font-semibold text-[color:var(--color-indigo-text-soft)]"
+              className="rounded-chip font-[var(--font-weight-emphasis)] text-[color:var(--color-indigo-text-soft)]"
             >
               {props.labels.createSimilarOpen}
             </button>
@@ -1984,7 +1984,7 @@ function LaneRender({
             >
               <KindGlyph kind={sat.kind} />
               <span className="flex min-w-0 flex-col">
-                <span className="truncate text-body font-medium text-[color:var(--color-text-primary)]">{sat.title}</span>
+                <span className="truncate text-body font-[var(--font-weight-signature)] text-[color:var(--color-text-primary)]">{sat.title}</span>
                 <span className="truncate text-label text-[color:var(--color-text-quaternary)]">
                   {pending ? labels.pendingBadge : kindLabelFor(sat.kind)}
                 </span>
@@ -2032,7 +2032,7 @@ function LaneRender({
           )}
           style={{ left: layout.fold.x, top: layout.fold.y, width: SAT.w, height: 30 }}
         >
-          <span className="font-semibold text-[color:var(--color-text-secondary)]">+{layout.fold.count}</span>
+          <span className="font-[var(--font-weight-emphasis)] text-[color:var(--color-text-secondary)]">+{layout.fold.count}</span>
           {labels.foldMore(layout.fold.count)}
           <ChevronDown
             size={13}
@@ -2133,7 +2133,7 @@ function LaneRender({
           }}
         >
           {view.recommended ? (
-            <span className="inline-flex items-center gap-1 rounded-chip bg-[color:var(--color-indigo-a16)] px-1.5 py-0.5 text-label font-semibold tracking-[var(--tracking-label)] text-[color:var(--color-indigo-text-soft)]">
+            <span className="inline-flex items-center gap-1 rounded-chip bg-[color:var(--color-indigo-a16)] px-1.5 py-0.5 text-label font-[var(--font-weight-emphasis)] tracking-[var(--tracking-label)] text-[color:var(--color-indigo-text-soft)]">
               ◈ {labels.guideBadge}
             </span>
           ) : view.expected ? (
@@ -2151,7 +2151,7 @@ function LaneRender({
               spilling past the dashed border, and widen the measure to the box
               so English wraps to fewer lines. The box height grows (minHeight)
               to hold the wrap. */}
-          <span className="flex max-w-full items-start gap-1.5 text-body font-medium text-[color:var(--color-text-secondary)] [word-break:keep-all] [overflow-wrap:anywhere]">
+          <span className="flex max-w-full items-start gap-1.5 text-body font-[var(--font-weight-signature)] text-[color:var(--color-text-secondary)] [word-break:keep-all] [overflow-wrap:anywhere]">
             <span className={`mt-px flex-none ${socketInk}`}>＋</span>
             <span className="min-w-0">{view.question}</span>
           </span>
@@ -2205,7 +2205,7 @@ function LaneOverflowList({
       style={{ left, top, width: W, boxShadow: "var(--shadow-elevation-2)" }}
     >
       <div className="flex items-center gap-2 border-b border-[color:var(--color-divider)] px-3.5 py-2.5">
-        <span className="min-w-0 truncate text-caption font-semibold text-[color:var(--color-text-secondary)] [word-break:keep-all]">
+        <span className="min-w-0 truncate text-caption font-[var(--font-weight-emphasis)] text-[color:var(--color-text-secondary)] [word-break:keep-all]">
           {labels.foldTitle(view.laneLabel, view.neighbors.length)}
         </span>
         <IconButton
@@ -2316,7 +2316,7 @@ function InlineEditCard({
       style={{ left, top, width: W, boxShadow: "var(--shadow-elevation-2)" }}
     >
       <div className="flex items-center gap-2 border-b border-[color:var(--color-divider)] px-3.5 py-2.5">
-        <span className="min-w-0 flex-1 truncate text-caption font-semibold text-[color:var(--color-text-secondary)] [word-break:keep-all]">
+        <span className="min-w-0 flex-1 truncate text-caption font-[var(--font-weight-emphasis)] text-[color:var(--color-text-secondary)] [word-break:keep-all]">
           {labels.editTitle}
         </span>
         <IconButton
@@ -2331,7 +2331,7 @@ function InlineEditCard({
       </div>
       <div className="flex items-center gap-2 px-3.5 pt-2.5">
         <KindGlyph kind={neighbor.kind} />
-        <span className="min-w-0 truncate text-body font-medium text-[color:var(--color-text-primary)] [word-break:keep-all]">
+        <span className="min-w-0 truncate text-body font-[var(--font-weight-signature)] text-[color:var(--color-text-primary)] [word-break:keep-all]">
           {neighbor.title}
         </span>
       </div>
@@ -2378,7 +2378,7 @@ function InlineEditCard({
                     shape: "chip",
                     tone: "danger",
                     className:
-                      "flex-none font-semibold hover:bg-[color:var(--color-danger-a32)]",
+                      "flex-none font-[var(--font-weight-emphasis)] hover:bg-[color:var(--color-danger-a32)]",
                   })}
                 >
                   {labels.editDeleteYes}
@@ -2409,7 +2409,7 @@ function InlineEditCard({
               shape: "card",
               size: "sm",
               className:
-                "mt-2.5 font-medium hover:border-[color:var(--color-indigo-a46)] hover:text-[color:var(--color-text-primary)]",
+                "mt-2.5 font-[var(--font-weight-signature)] hover:border-[color:var(--color-indigo-a46)] hover:text-[color:var(--color-text-primary)]",
             })}
           >
             {labels.editElsewhereGo}
@@ -2591,7 +2591,7 @@ function InlinePicker({
       }
     >
       <div className="flex items-baseline gap-2 border-b border-[color:var(--color-divider)] px-3.5 py-2.5">
-        <span className="text-caption font-semibold text-[color:var(--color-text-secondary)]">{labels.pickerTitle(question)}</span>
+        <span className="text-caption font-[var(--font-weight-emphasis)] text-[color:var(--color-text-secondary)]">{labels.pickerTitle(question)}</span>
         <span className="text-label text-[color:var(--color-text-quaternary)]">{labels.pickerSub}</span>
         <IconButton
           size="sm"
@@ -2753,7 +2753,7 @@ function InlinePicker({
               data-testid="studio-picker-similar-accept"
               onClick={() => onPick(similarHit)}
               // 문장 속 컨트롤 — `link` 의 `min-h-11` 이 힌트 줄을 44px 로 밀어 올린다.
-              className="rounded-chip font-semibold text-[color:var(--color-indigo-text-soft)]"
+              className="rounded-chip font-[var(--font-weight-emphasis)] text-[color:var(--color-indigo-text-soft)]"
             >
               {labels.similarAccept}
             </button>
@@ -3073,7 +3073,7 @@ function DeltaPreviewModal({
       >
         {/* header */}
         <div className="flex items-center gap-2 border-b border-[color:var(--color-divider)] px-5 py-3.5">
-          <span className="min-w-0 flex-1 truncate text-body-lg font-semibold text-[color:var(--color-text-primary)] [word-break:keep-all]">
+          <span className="min-w-0 flex-1 truncate text-body-lg font-[var(--font-weight-emphasis)] text-[color:var(--color-text-primary)] [word-break:keep-all]">
             {labels.previewTitle}
           </span>
           <IconButton
@@ -3132,11 +3132,11 @@ function DeltaPreviewModal({
                 }}
               >
                 {center.isNew ? (
-                  <span className="mb-0.5 inline-flex w-fit items-center rounded-micro bg-[color:var(--color-indigo-a16)] px-1 py-px text-label font-semibold tracking-[var(--tracking-label)] text-[color:var(--color-indigo-text-soft)]">
+                  <span className="mb-0.5 inline-flex w-fit items-center rounded-micro bg-[color:var(--color-indigo-a16)] px-1 py-px text-label font-[var(--font-weight-emphasis)] tracking-[var(--tracking-label)] text-[color:var(--color-indigo-text-soft)]">
                     {labels.previewCenterNew}
                   </span>
                 ) : null}
-                <span className="truncate text-body font-semibold text-[color:var(--color-text-primary)] [word-break:keep-all]">
+                <span className="truncate text-body font-[var(--font-weight-emphasis)] text-[color:var(--color-text-primary)] [word-break:keep-all]">
                   {center.title}
                 </span>
                 <span className="truncate text-label text-[color:var(--color-text-quaternary)]">
@@ -3178,7 +3178,7 @@ function DeltaPreviewModal({
           {/* the SAME plain sentence list */}
           {summary ? (
             <div className="mt-4 border-t border-[color:var(--color-divider)] px-5 py-3.5" data-testid="studio-preview-summary">
-              <p className="text-caption font-medium text-[color:var(--color-text-secondary)] [word-break:keep-all]">
+              <p className="text-caption font-[var(--font-weight-signature)] text-[color:var(--color-text-secondary)] [word-break:keep-all]">
                 {summary.headline}
               </p>
               {summary.lines.length > 0 ? (
@@ -3277,7 +3277,7 @@ function DeltaSatChip({ placed, labels }: { placed: PlacedDeltaSat; labels: Stud
         {sat.node.title}
       </span>
       {state === "moved" ? (
-        <span className="flex-none rounded-micro bg-[color:var(--color-indigo-a16)] px-1 text-label font-medium text-[color:var(--color-indigo-text-soft)]">
+        <span className="flex-none rounded-micro bg-[color:var(--color-indigo-a16)] px-1 text-label font-[var(--font-weight-signature)] text-[color:var(--color-indigo-text-soft)]">
           {labels.previewMovedChip}
         </span>
       ) : removed ? (

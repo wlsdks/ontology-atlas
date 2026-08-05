@@ -184,7 +184,7 @@ function TreeNode({
         tone="muted"
         onClick={() => setOpen((v) => !v)}
         aria-expanded={open}
-        className="font-medium transition-[background-color,color,transform] motion-safe:hover:-translate-y-px motion-safe:active:translate-y-0 motion-safe:active:scale-[0.99] hover:bg-[color:var(--color-overlay-1)] hover:text-[color:var(--color-text-secondary)]"
+        className="font-[var(--font-weight-signature)] transition-[background-color,color,transform] motion-safe:hover:-translate-y-px motion-safe:active:translate-y-0 motion-safe:active:scale-[0.99] hover:bg-[color:var(--color-overlay-1)] hover:text-[color:var(--color-text-secondary)]"
         style={{ paddingLeft: `${16 + depth * 12}px` }}
       >
         {open ? (

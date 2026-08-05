@@ -147,7 +147,7 @@ export function StudioPracticeCleanup({
         className="flex w-[440px] max-w-full flex-col overflow-hidden rounded-panel border border-[color:var(--color-border-strong)] bg-[color:var(--color-elevated)] shadow-[var(--shadow-elevation-3)]"
       >
         <div className="border-b border-[color:var(--color-divider)] px-5 py-3">
-          <h2 className="text-body-lg tracking-body-lg font-semibold text-[color:var(--color-text-primary)] [word-break:keep-all]">
+          <h2 className="text-body-lg tracking-body-lg font-[var(--font-weight-strong)] text-[color:var(--color-text-primary)] [word-break:keep-all]">
             {labels.title}
           </h2>
         </div>
@@ -219,7 +219,7 @@ export function StudioPracticeCleanup({
             data-testid="studio-practice-keep"
             disabled={busy}
             onClick={onKeep}
-            className="flex h-8 min-h-[var(--overlay-close-size)] flex-1 items-center justify-center rounded-chip border border-[color:var(--color-indigo-line-a45)] bg-[color:var(--color-indigo-a16)] text-body tracking-body font-semibold text-[color:var(--color-indigo-text-soft)] transition-colors hover:bg-[color:var(--color-indigo-a24)] disabled:opacity-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--color-indigo-a46)] focus-visible:ring-inset"
+            className="flex h-8 min-h-[var(--overlay-close-size)] flex-1 items-center justify-center rounded-chip border border-[color:var(--color-indigo-line-a45)] bg-[color:var(--color-indigo-a16)] text-body tracking-body font-[var(--font-weight-emphasis)] text-[color:var(--color-indigo-text-soft)] transition-colors hover:bg-[color:var(--color-indigo-a24)] disabled:opacity-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--color-indigo-a46)] focus-visible:ring-inset"
           >
             {labels.keepLabel}
           </button>
@@ -241,7 +241,7 @@ export function StudioPracticeCleanup({
             shape: "link",
             tone: "accent",
             className:
-              "font-medium underline underline-offset-2 hover:text-[color:var(--color-text-primary)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--color-indigo-a46)]",
+              "font-[var(--font-weight-signature)] underline underline-offset-2 hover:text-[color:var(--color-text-primary)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--color-indigo-a46)]",
           })}
                 >
                   {labels.agentAction}
