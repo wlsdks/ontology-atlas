@@ -62,7 +62,20 @@ vi.mock("@/shared/lib/use-document-title", () => ({
   useDocumentTitle: vi.fn(),
 }));
 
-vi.mock("@/shared/ui", () => ({
+/*
+ * **부분 모킹이다 — 배럴을 통째로 갈아치우지 않는다.**
+ *
+ * 여기서 스텁이 필요한 것은 `useToast` 하나뿐이다(프로바이더 없이 렌더하므로).
+ * 그런데 종전엔 배럴 전체를 `{ useToast }` 로 대체해서, 컴포넌트가 같은
+ * 배럴에서 **다른 것을 하나라도 더 쓰기 시작하는 순간** 테스트가 깨졌다 —
+ * 실제로 `controlClass` 가 추가되면서 *"No controlClass export is defined on
+ * the @/shared/ui mock"* 으로 죽었고, 그 상태로 `main` 에 남아 있었다.
+ *
+ * `controlClass` 는 프로바이더가 필요 없는 순수 함수라 애초에 모킹할 이유가
+ * 없다. 원본을 펼친 뒤 필요한 것만 덮으면 이 부류의 실패가 재발하지 않는다.
+ */
+vi.mock("@/shared/ui", async (importOriginal) => ({
+  ...(await importOriginal<typeof import("@/shared/ui")>()),
   useToast: () => ({ show: vi.fn() }),
 }));
 
