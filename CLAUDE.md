@@ -49,14 +49,22 @@
 
 ## Claude Code 전용
 
-- `.claude/rules/*.md` — 세부 규율 9종. **셋만 상주하고 여섯은 조건부다**
+- `.claude/rules/*.md` — 세부 규율 10종. **셋만 상주하고 일곱은 조건부다**
   (frontmatter `paths:`). 규칙을 지운 게 아니라 필요할 때만 싣는다 — 매 턴
   73KB 였던 것이 13.6KB 가 됐다.
+
+  ⚠️ **조건부라고 공짜가 아니다** (2026-08-05 실측). `design.md` 는 `.tsx` 를
+  열기만 해도 실리는데 **63.4KB** 였고 — AGENTS.md(31.7KB)보다 크다 — 그중
+  **43%가 게이트 고고학**이었다. 버튼 하나 고치는 턴마다 「그림자는 왜 `var(`
+  면제가 아닌가」를 통째로 싣고 있었다는 뜻이다. 갈라서 `design-gates.md` 로
+  옮겼고 `design.md` 는 48.8KB 가 됐다. **조건부 규칙이 커지면 그 조건에 걸리는
+  모든 턴이 값을 치른다** — 규칙(무엇)과 사연(왜)을 같은 파일에 쌓지 마라.
 
   | | 규칙 | 언제 실리나 |
   |---|---|---|
   | 상주 | `forbidden` · `git` · `local-first` | 항상. **파일을 열기 전에** 내려야 하는 판단이라서다 — `npm publish` 를 실행할지, 백엔드를 도입할지, 어떻게 커밋할지는 아무 파일도 안 읽고 결정된다 |
   | 조건부 | `design` | `src/**/*.tsx` · `app/**/*.css` 등 UI 파일을 읽을 때 |
+  | 조건부 | `design-gates` | `eslint.config.mjs` · `tests/contract/**` · `scripts/check-*.mjs` — **게이트를 고칠 때만** |
   | 조건부 | `architecture` | `src/**` · `app/**` · `next.config.ts` |
   | 조건부 | `testing` | `**/*.test.*` · `tests/**` · 테스트 설정 |
   | 조건부 | `surfaces` | `src/shared/lib/tauri-*.ts` · `src-tauri/**` · `tests/e2e/**` |

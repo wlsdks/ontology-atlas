@@ -6212,6 +6212,31 @@
         },
         {
           "depth": 2,
+          "text": "2026-08-05 — 디자인 문서를 쪼갠다: 다만 254KB 가 아니라 **매 턴 실리는 63KB** 를",
+          "slug": "2026-08-05-디자인-문서를-쪼갠다-다만-254kb-가-아니라-매-턴-실리는-63kb-를"
+        },
+        {
+          "depth": 3,
+          "text": "먼저 잰 것 — 직관과 답이 갈렸다",
+          "slug": "먼저-잰-것-직관과-답이-갈렸다"
+        },
+        {
+          "depth": 3,
+          "text": "결정 ①: `DESIGN-SYSTEM.md` 는 파일로 쪼개지 않는다 — 목차를 **생성**한다",
+          "slug": "결정-design-systemmd-는-파일로-쪼개지-않는다-목차를-생성한다"
+        },
+        {
+          "depth": 3,
+          "text": "결정 ②: 쪼갤 것은 `design.md` — **규칙(무엇)과 사연(왜)** 으로 가른다",
+          "slug": "결정-쪼갤-것은-designmd-규칙무엇과-사연왜-으로-가른다"
+        },
+        {
+          "depth": 3,
+          "text": "결정 ③: 「왜 둘이 따로 있지」에 문서 자신이 답하게 한다",
+          "slug": "결정-왜-둘이-따로-있지에-문서-자신이-답하게-한다"
+        },
+        {
+          "depth": 2,
           "text": "2026-08-05 — 아이콘 램프는 소비처가 0이었고, 게이트는 73% 를 못 보고 있었다",
           "slug": "2026-08-05-아이콘-램프는-소비처가-0이었고-게이트는-73-를-못-보고-있었다"
         },
@@ -7157,7 +7182,7 @@
         }
       ],
       "excerpt": "이 파일은 결정과 그때 진 반대 의견을 남긴다. docs/CHANGELOG.md 는 무엇이 언제 바뀌었나를 답하고, 이 파일은 왜 그렇게 정했고, 무엇을 걸었나를 답한다. 최신이 위. 기록은 덧붙이기만 한다 — 지난 기록을 고치지 않는다. 판단이 바뀌었으면 새 기록을 쓰고 옛 기록을 뒤집힘 으로 표시한다. 틀린 기록도 자산이다. 1. 소집 전에 읽는다. 카운슬을 열기 전(그리고 단독 PO 패스를 쓰기 전) 같은 표면 · 같은 질문에 대한 선행 결정이 있는지 먼저 본다. 있으면 새 패스는 그것을 ① 여전히 유효하다고 인용하거나 ② 명시적으로 뒤집는다. 조용히 다시 결정",
-      "wordCount": 74219,
+      "wordCount": 74875,
       "updatedAt": "2026-08-05",
       "linksOut": [
         "slug"
@@ -7533,6 +7558,16 @@
           "depth": 1,
           "text": "Design System",
           "slug": "design-system"
+        },
+        {
+          "depth": 2,
+          "text": "이 문서를 읽는 법 (사람 · 에이전트 공통)",
+          "slug": "이-문서를-읽는-법-사람-에이전트-공통"
+        },
+        {
+          "depth": 3,
+          "text": "형제 문서 — 무엇을 어디서 찾나",
+          "slug": "형제-문서-무엇을-어디서-찾나"
         },
         {
           "depth": 2,
@@ -8106,7 +8141,7 @@
         }
       ],
       "excerpt": "This document is maintained based on Section 3 of the design spec. For the original Linear specification, see design-references/DESIGN-linear.md. v2 (2026-07): topology-map-v2 에서 출하된 B2+ \"Circuit × Constellation\" 시각 언어가 페이지 롤아웃(랜딩 → docs/ontology 허브 → projects/insights → download)의 규범이 되었다 — 아래 v2 — \"Circuit × Constell",
-      "wordCount": 29267,
+      "wordCount": 29670,
       "updatedAt": "2026-08-05",
       "linksOut": [
         "design-references/DESIGN-linear",
@@ -8307,7 +8342,7 @@
         }
       ],
       "excerpt": "Maintainer-only checks live here so the public README stays readable. Use this page when you touch mcp/, cli/, package manifests, release scripts, or the dogfood ontology. Run this before pushing broad docs, package, MCP, or web changes: For user-facing UI changes, add the relevant Playwright route check. pnpm install ",
-      "wordCount": 8702,
+      "wordCount": 8717,
       "updatedAt": "2026-08-05",
       "linksOut": []
     },
