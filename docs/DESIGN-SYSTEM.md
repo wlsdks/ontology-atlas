@@ -2018,28 +2018,56 @@ Reference anchors:
 
 ## Absolute rules (Don'ts)
 
-- ❌ Purple → pink gradients
-- ❌ Glassmorphism (`backdrop-blur`)
-- ❌ Glow pulse / neon effects
+> **이 목록이 금지의 정본이다** (2026-08-05). 같은 목록이 세 곳에 있었고 **어느
+> 둘도 일치하지 않았다** — 합집합 15개 중 `.claude/rules/forbidden.md` 는 9개,
+> `.claude/rules/design.md` 는 8개만 갖고 있었고, 각자 남이 없는 항목을 하나씩
+> 갖고 있었다. 세 사본을 맞춰 주는 게이트도 없었다.
+>
+> 이제 **여기가 유일한 정본**이고 다른 파일은 베끼지 않는다:
+>
+> - `.claude/rules/forbidden.md` — **상주**(매 턴 실린다)라 «파일을 열기 전에
+>   내려야 하는 판단»만 골라 싣는 **의도된 부분집합**이다. 여기 없는 항목을
+>   거기 쓰면 게이트가 막는다.
+> - `.claude/rules/design.md` — 목록을 갖지 않고 **가리킨다**(`노드 규격` 절이
+>   이미 쓰는 방식).
+>
+> 각 항목 끝에 달린 `dont:` HTML 주석은 **사람이 읽는 문장이 아니라 기계가 짝을
+> 맞추는 열쇠**다. 문장은 자유롭게 고쳐도 되고 번역해도 되지만 그 열쇠는 그대로
+> 둔다 — 그래야 «문서를 더 나은 표현으로 고쳤더니 테스트가 깨지는» 함정
+> (`documentation.md`)에 빠지지 않는다. 게이트:
+> `tests/contract/design-donts-parity.contract.test.ts`.
+
+- ❌ Clicking a topology node opening a fullscreen/full-bleed detail modal — the
+  default is ego focus + a compact popover anchored to the node; full detail is
+  opt-in from inside that popover (see "Topology node focus & scale" above)
+  <!--dont:node-click-fullscreen-modal-->
+- ❌ Purple → pink gradients <!--dont:purple-pink-gradient-->
+- ❌ Glassmorphism (`backdrop-blur`) <!--dont:glassmorphism-->
+- ❌ Glow pulse / neon effects <!--dont:glow-pulse-neon-->
 - ❌ Glow-like `boxShadow: \`0 0 ...\`` rings on ontology operation surfaces
-- ❌ Animated gradient backgrounds / aurora
-- ❌ Scale-based hover effects
-- ❌ More than one color system
+  <!--dont:glow-boxshadow-ring-->
+- ❌ Animated gradient backgrounds / aurora <!--dont:animated-gradient-bg-->
+- ❌ Scale-based hover effects <!--dont:scale-hover-->
+- ❌ More than one color system <!--dont:multi-color-system-->
 - ❌ Floating-box soup: unrelated panels/popovers/HUD/minimap/cards at equal
-  visual weight
+  visual weight <!--dont:floating-box-soup-->
 - ❌ Stacked popovers or popover-over-modal without closing/dimming the previous
-  surface
+  surface <!--dont:stacked-popover-->
 - ❌ Blocking composer/modal without dim, scrim, or suppressed parent
-  interaction
+  interaction <!--dont:modal-without-dim-->
 - ❌ One-off topology `clamp(...)`, shadow, radius, z-order, easing, or duration
   without a `--topology-*` token and verifier marker
+  <!--dont:oneoff-topology-value-->
 - ❌ Overlap tolerated because the surface "mostly still works"; overlap count
   must be `0` for fixed/card surfaces in the tested state
+  <!--dont:overlap-tolerated-->
 - ❌ Decorative arrows trailing a label — `열기 →`, `상세 →`, or a trailing
   `ArrowRight`/`ArrowUpRight` glyph after link/button text (see
   "Arrows carry information or they don't ship" below)
+  <!--dont:decorative-trailing-arrow-->
 - ❌ Cards in one grid whose height is decided by how much text each happens to
   contain (see "Dimensional regularity" below)
+  <!--dont:content-decided-card-height-->
 
 ## Arrows carry information or they don't ship
 

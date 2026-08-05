@@ -4,14 +4,27 @@
 
 ## 디자인
 
+> **정본은 `docs/DESIGN-SYSTEM.md` "Absolute rules (Don'ts)" 다.** 아래는 그
+> 목록의 **의도된 부분집합** — 이 파일은 매 턴 실리므로 «파일을 열기 전에
+> 내려야 하는 판단»만 고른다. 각 줄 끝에 달린 `dont:` HTML 주석으로 정본과 짝이
+> 맞춰지고, 정본에 없는 열쇠를 여기 쓰면
+> `tests/contract/design-donts-parity.contract.test.ts` 가 막는다.
+>
+> **여기 없다고 허용된 것이 아니다** — 정본에는 여섯이 더 있다(겹친 팝오버 ·
+> 막지 않는 모달 · 떠 있는 상자 수프 · 일회성 토폴로지 값 · 겹침 허용 ·
+> glow 링). UI 파일을 열면 `design.md` 가 실리고 거기서 정본을 가리킨다.
+
 - **토폴로지 노드 클릭 → 풀스크린/풀블리드 상세 모달.** 클릭의 기본값은 ego
   포커스 + 노드 옆 컴팩트 팝오버이고, 전체 상세는 팝오버 안의 opt-in 이다.
   (이 한 줄이 여기 있는 이유: 나머지 금지는 값 규칙이라 lint 가 잡는데 이건
   **상호작용 설계**라 못 잡고, `design.md` 는 UI 파일을 읽을 때만 실려서 —
   새 표면을 처음부터 쓰는 경로에서는 안 실릴 수 있다. 상주가 필요하다.)
-- 보라 → 핑크 그라디언트
-- glassmorphism (`backdrop-blur-*`)
-- glow pulse · neon · halo animation
+  <!--dont:node-click-fullscreen-modal-->
+- 보라 → 핑크 그라디언트 <!--dont:purple-pink-gradient-->
+- glassmorphism (`backdrop-blur-*`) <!--dont:glassmorphism-->
+- glow pulse · neon · halo animation <!--dont:glow-pulse-neon-->
+  - 사방으로 번지는 색 테두리(`boxShadow: 0 0 …` glow 링)도 같은 금지다.
+    <!--dont:glow-boxshadow-ring-->
   - **명문 예외 1건 (2026-07-29): 발자국 트레일 번짐** — 지도 위에 찍히는 발자국
     자국 둘레를 흐릿하게 밝히는 것. canvas 2D 의 `ctx.shadowBlur` 로만 존재하고
     `src/shared/lib/footprint-glyph.ts` **한 파일 안에서만** 산다.
@@ -27,7 +40,7 @@
     `eslint.config.mjs` 의 `shadowBlur` 셀렉터(위 한
     파일만 통과시킨다) + `tests/contract/footprint-bloom-exception.contract.test.ts`
     (기본값이 0인가 · 상한이 6인가 · 쓰는 곳이 하나뿐인가 · 이 문서에 적혀 있는가).
-- 움직이는 그라디언트 배경 · 오로라
+- 움직이는 그라디언트 배경 · 오로라 <!--dont:animated-gradient-bg-->
   - **어디까지 적용되나 (2026-07-29)**: 이 금지는 **앱 화면에 그려지는 것**에만
     적용된다. 브랜드 자산(OS 아이콘 · 파비콘 · og/마케팅 이미지)은 앱 화면 밖이라
     그라디언트를 써도 된다 — 단 **인디고 한 색만 밝기별로 늘어놓은 램프
@@ -35,13 +48,16 @@
     그라디언트는 브랜드 자산에서도 금지다. 앱 **안**에 그려지는 마크(`BrandMark`)
     는 `currentColor` 단색이라 이 예외가 필요 없다.
     좌표·색을 정하는 단 하나의 파일은 `src/shared/ui/brand-mark.tsx`.
-- scale 기반 hover (`hover:scale-*`)
+- scale 기반 hover (`hover:scale-*`) <!--dont:scale-hover-->
 - 둘 이상의 채색 시스템 (인디고 외 새 brand color 추가)
+  <!--dont:multi-color-system-->
 - 라벨 끝의 장식 화살표 (`열기 →`, 라벨 뒤 `ArrowRight`/`ArrowUpRight` 아이콘)
   — 뜻이 있는 화살표(경로·순서·인과, 외부 링크 앞에 붙는 `↗`)는 예외.
   게이트: `tests/contract/label-decoration.contract.test.ts`
+  <!--dont:decorative-trailing-arrow-->
 - 같은 모양 카드를 여러 장 늘어놓을 때 카드 높이가 글자 수에 따라 제각각이 되게
   두기 (같은 줄의 카드는 높이가 같아야 한다)
+  <!--dont:content-decided-card-height-->
 
 **[폐기됨 2026-07-24] 예전의 "온톨로지 스튜디오 게임 예외"는 없어졌다.** 한때
 `/ontology/studio` 의 `.studio-stage` 안에서는 `--studio-*` 토큰으로 glow/gradient/

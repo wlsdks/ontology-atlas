@@ -6212,6 +6212,31 @@
         },
         {
           "depth": 2,
+          "text": "2026-08-05 — 금지 목록은 정본 하나 + 부분집합: 「파일 하나로 합치기」는 반려",
+          "slug": "2026-08-05-금지-목록은-정본-하나-부분집합-파일-하나로-합치기는-반려"
+        },
+        {
+          "depth": 3,
+          "text": "실측 — 2개가 아니라 3곳이었고, 어느 둘도 일치하지 않았다",
+          "slug": "실측-2개가-아니라-3곳이었고-어느-둘도-일치하지-않았다"
+        },
+        {
+          "depth": 3,
+          "text": "결정 — 정본 하나, 사본은 선언된 부분집합, 짝은 슬러그로",
+          "slug": "결정-정본-하나-사본은-선언된-부분집합-짝은-슬러그로"
+        },
+        {
+          "depth": 3,
+          "text": "「파일 하나로 합치기」를 반려한 이유",
+          "slug": "파일-하나로-합치기를-반려한-이유"
+        },
+        {
+          "depth": 3,
+          "text": "왜 문장이 아니라 슬러그를 비교하나",
+          "slug": "왜-문장이-아니라-슬러그를-비교하나"
+        },
+        {
+          "depth": 2,
           "text": "2026-08-05 — 무게 축은 닫힌 적이 없었다: 주석이 규격인 척한 216곳",
           "slug": "2026-08-05-무게-축은-닫힌-적이-없었다-주석이-규격인-척한-216곳"
         },
@@ -7112,7 +7137,7 @@
         }
       ],
       "excerpt": "이 파일은 결정과 그때 진 반대 의견을 남긴다. docs/CHANGELOG.md 는 무엇이 언제 바뀌었나를 답하고, 이 파일은 왜 그렇게 정했고, 무엇을 걸었나를 답한다. 최신이 위. 기록은 덧붙이기만 한다 — 지난 기록을 고치지 않는다. 판단이 바뀌었으면 새 기록을 쓰고 옛 기록을 뒤집힘 으로 표시한다. 틀린 기록도 자산이다. 1. 소집 전에 읽는다. 카운슬을 열기 전(그리고 단독 PO 패스를 쓰기 전) 같은 표면 · 같은 질문에 대한 선행 결정이 있는지 먼저 본다. 있으면 새 패스는 그것을 ① 여전히 유효하다고 인용하거나 ② 명시적으로 뒤집는다. 조용히 다시 결정",
-      "wordCount": 73090,
+      "wordCount": 73621,
       "updatedAt": "2026-08-05",
       "linksOut": [
         "slug"
@@ -8056,7 +8081,7 @@
         }
       ],
       "excerpt": "This document is maintained based on Section 3 of the design spec. For the original Linear specification, see design-references/DESIGN-linear.md. v2 (2026-07): topology-map-v2 에서 출하된 B2+ \"Circuit × Constellation\" 시각 언어가 페이지 롤아웃(랜딩 → docs/ontology 허브 → projects/insights → download)의 규범이 되었다 — 아래 v2 — \"Circuit × Constell",
-      "wordCount": 28780,
+      "wordCount": 28975,
       "updatedAt": "2026-08-05",
       "linksOut": [
         "design-references/DESIGN-linear",
@@ -8257,8 +8282,8 @@
         }
       ],
       "excerpt": "Maintainer-only checks live here so the public README stays readable. Use this page when you touch mcp/, cli/, package manifests, release scripts, or the dogfood ontology. Run this before pushing broad docs, package, MCP, or web changes: For user-facing UI changes, add the relevant Playwright route check. pnpm install ",
-      "wordCount": 8688,
-      "updatedAt": "2026-08-04",
+      "wordCount": 8702,
+      "updatedAt": "2026-08-05",
       "linksOut": []
     },
     {
