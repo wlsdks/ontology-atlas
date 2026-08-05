@@ -1550,7 +1550,7 @@ export function TopologyV2DetailPanel({
               {groups.contains.total > 0 ? (
                 <span>
                   {labels.metricContains}
-                  <b className="ml-1 tabular-nums text-[color:var(--topology-v2-panel-text-secondary)]">
+                  <b className="ml-1 font-[var(--font-weight-strong)] tabular-nums text-[color:var(--topology-v2-panel-text-secondary)]">
                     {groups.contains.total}
                   </b>
                 </span>
@@ -1558,7 +1558,7 @@ export function TopologyV2DetailPanel({
               {groups.usedBy.total > 0 ? (
                 <span>
                   {labels.metricUsedBy}
-                  <b className="ml-1 tabular-nums text-[color:var(--topology-v2-panel-text-secondary)]">
+                  <b className="ml-1 font-[var(--font-weight-strong)] tabular-nums text-[color:var(--topology-v2-panel-text-secondary)]">
                     {groups.usedBy.total}
                   </b>
                 </span>
@@ -1566,7 +1566,7 @@ export function TopologyV2DetailPanel({
               {groups.dependsOn.total > 0 ? (
                 <span>
                   {labels.metricDependsOn}
-                  <b className="ml-1 tabular-nums text-[color:var(--topology-v2-panel-text-secondary)]">
+                  <b className="ml-1 font-[var(--font-weight-strong)] tabular-nums text-[color:var(--topology-v2-panel-text-secondary)]">
                     {groups.dependsOn.total}
                   </b>
                 </span>
@@ -1574,7 +1574,7 @@ export function TopologyV2DetailPanel({
               {groups.belongsTo.total > 0 ? (
                 <span>
                   {labels.metricBelongsTo}
-                  <b className="ml-1 tabular-nums text-[color:var(--topology-v2-panel-text-secondary)]">
+                  <b className="ml-1 font-[var(--font-weight-strong)] tabular-nums text-[color:var(--topology-v2-panel-text-secondary)]">
                     {groups.belongsTo.total}
                   </b>
                 </span>
