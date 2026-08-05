@@ -83,7 +83,7 @@ function DesktopVaultRedirect() {
           {t('redirectEyebrow')}
         </p>
         <div className="grid gap-2">
-          <h1 className="text-display font-[var(--font-weight-strong)] leading-tight text-[color:var(--color-text-primary)] md:text-hero">
+          <h1 className="text-display font-[var(--font-weight-strong)] leading-display text-[color:var(--color-text-primary)] md:text-hero">
             {t('redirectTitle')}
           </h1>
           <p className="mx-auto max-w-xl text-body leading-title text-[color:var(--color-text-tertiary)]">

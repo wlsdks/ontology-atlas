@@ -157,7 +157,7 @@ function TreeBranch({
         )}
         style={{ paddingLeft: `${depth * 12 + 8}px` }}
       >
-        <FileText size={13} className="shrink-0 text-[color:var(--color-text-quaternary)] group-hover:text-[color:var(--color-indigo-accent)]" />
+        <FileText size={ICON_SIZE.sm} className="shrink-0 text-[color:var(--color-text-quaternary)] group-hover:text-[color:var(--color-indigo-accent)]" />
         <span className="truncate">
           {highlightMatch(node.title ?? node.name, needle)}
         </span>
@@ -234,7 +234,7 @@ function DocRow({
           className="flex min-w-0 flex-1 items-center gap-2 rounded-card px-2 py-1.5 text-body text-[color:var(--color-text-secondary)] transition-colors group-hover:text-[color:var(--color-text-primary)]"
         >
           <FileText
-            size={13}
+            size={ICON_SIZE.sm}
             className="shrink-0 text-[color:var(--color-text-quaternary)] group-hover:text-[color:var(--color-indigo-accent)]"
           />
           <span className="truncate">{doc.title}</span>
@@ -584,7 +584,7 @@ export function DocsQuickDrawer({
                 }}
                 className="mt-3 flex items-center gap-2 rounded-card border border-[color:var(--color-divider)] bg-[color:var(--color-overlay-1)] px-3 py-2 transition-[border-color,box-shadow] focus-within:border-[color:var(--color-indigo-a50)] focus-within:ring-2 focus-within:ring-[color:var(--color-indigo-a24)]"
               >
-                <Search size={13} className="text-[color:var(--color-text-quaternary)]" />
+                <Search size={ICON_SIZE.sm} className="text-[color:var(--color-text-quaternary)]" />
                 <input
                   ref={searchRef}
                   type="search"
@@ -604,7 +604,7 @@ export function DocsQuickDrawer({
                     onClick={() => setQuery("")}
                     className="hover:text-[color:var(--color-text-primary)]"
                   >
-                    <X size={13} aria-hidden />
+                    <X size={ICON_SIZE.sm} aria-hidden />
                   </IconButton>
                 ) : null}
               </form>
@@ -678,7 +678,7 @@ export function DocsQuickDrawer({
                             onClick={onClose}
                             className="group flex items-center gap-2 rounded-card px-2 py-1.5 text-body text-[color:var(--color-text-secondary)] transition-colors hover:bg-[color:var(--color-indigo-a14)] hover:text-[color:var(--color-text-primary)]"
                           >
-                            <FileText size={13} className="shrink-0 text-[color:var(--color-text-quaternary)] group-hover:text-[color:var(--color-indigo-accent)]" />
+                            <FileText size={ICON_SIZE.sm} className="shrink-0 text-[color:var(--color-text-quaternary)] group-hover:text-[color:var(--color-indigo-accent)]" />
                             <span className="truncate">{m.doc.title}</span>
                             <span
                               className={`ml-auto shrink-0 text-caption text-[color:var(--color-text-quaternary)] ${eyebrow08}`}

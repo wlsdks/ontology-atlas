@@ -226,7 +226,7 @@ export function MeaningGapSection({
             {totalCount}
           </span>
         </div>
-        <p className="text-label leading-snug text-[color:var(--color-text-quaternary)]">
+        <p className="text-label leading-label text-[color:var(--color-text-quaternary)]">
           {labels.hint}
         </p>
       </div>
@@ -263,7 +263,7 @@ export function MeaningGapSection({
       {!abilities.canWriteVault ? (
         <p
           data-testid="meaning-gap-readonly-hint"
-          className="pt-2 text-label leading-snug text-[color:var(--color-text-quaternary)]"
+          className="pt-2 text-label leading-label text-[color:var(--color-text-quaternary)]"
         >
           {labels.readOnlyHint}
         </p>
@@ -428,7 +428,7 @@ function MeaningGapRowView({
                 <p
                   data-testid="meaning-gap-saved"
                   role="status"
-                  className="flex items-start gap-1.5 text-label leading-snug text-[color:var(--color-indigo-accent)]"
+                  className="flex items-start gap-1.5 text-label leading-label text-[color:var(--color-indigo-accent)]"
                 >
                   <Check size={ICON_SIZE.sm} aria-hidden className="mt-0.5 shrink-0" />
                   <span>
@@ -505,7 +505,7 @@ function MeaningGapRowView({
                   {/* 바꿀 파일을 먼저 밝힌다 — 누르기 전에 무엇이 어디에 적히는지. */}
                   <p
                     data-testid="meaning-gap-confirm"
-                    className="text-label leading-snug text-[color:var(--color-text-quaternary)]"
+                    className="text-label leading-label text-[color:var(--color-text-quaternary)]"
                   >
                     {dirty ? confirmLine : gapKind === "missing-definition" ? labels.needsText : labels.needsDomain}
                   </p>
@@ -544,7 +544,7 @@ function MeaningGapRowView({
                       <span
                         data-testid="meaning-gap-cancel-armed"
                         role="status"
-                        className="text-label leading-snug text-[color:var(--color-status-warning)]"
+                        className="text-label leading-label text-[color:var(--color-status-warning)]"
                       >
                         {labels.cancelArmed}
                       </span>
@@ -558,7 +558,7 @@ function MeaningGapRowView({
                     <p
                       data-testid="meaning-gap-failed"
                       role="alert"
-                      className="text-label leading-snug text-[color:var(--color-status-danger)]"
+                      className="text-label leading-label text-[color:var(--color-status-danger)]"
                     >
                       {labels.failed(ui.phase.message)}
                     </p>

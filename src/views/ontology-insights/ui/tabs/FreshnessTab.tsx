@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { ChevronDown, ChevronRight } from "lucide-react";
+import { ICON_SIZE } from "@/shared/ui/icon-size";
 import { formatDate } from "@/shared/lib/format-date";
 import { EvidenceOnlyBadge, TopologyV2KindGlyph } from "@/shared/ui";
 import { controlClass } from "@/shared/ui/control-class";
@@ -232,9 +233,9 @@ export function FreshnessTab({
               })}
             >
               {evidenceOpen ? (
-                <ChevronDown aria-hidden size={13} className="flex-none" />
+                <ChevronDown aria-hidden size={ICON_SIZE.sm} className="flex-none" />
               ) : (
-                <ChevronRight aria-hidden size={13} className="flex-none" />
+                <ChevronRight aria-hidden size={ICON_SIZE.sm} className="flex-none" />
               )}
               <span className="min-w-0 truncate">
                 {evidenceOpen ? labels.evidenceHide : labels.evidenceShow(recentEvidenceTotal)}
@@ -266,7 +267,7 @@ export function FreshnessTab({
                     testId="insights-freshness-evidence-row-link"
                   />
                 ))}
-                <p className="pt-1.5 text-label leading-snug text-[color:var(--color-text-quaternary)]">
+                <p className="pt-1.5 text-label leading-label text-[color:var(--color-text-quaternary)]">
                   {recentEvidenceTotal > recentEvidence.length
                     ? `${labels.evidenceTruncated(recentEvidence.length, recentEvidenceTotal)} · `
                     : ""}

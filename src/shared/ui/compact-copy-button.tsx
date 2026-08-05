@@ -1,6 +1,7 @@
 "use client";
 
 import { Check, Clipboard } from "lucide-react";
+import { ICON_SIZE } from "@/shared/ui/icon-size";
 import type { HTMLAttributes } from "react";
 
 export interface CompactCopyButtonProps {
@@ -34,7 +35,7 @@ export function CompactCopyButton({
       aria-label={ariaLabel}
       title={label}
     >
-      {copied ? <Check size={13} aria-hidden /> : <Clipboard size={13} aria-hidden />}
+      {copied ? <Check size={ICON_SIZE.sm} aria-hidden /> : <Clipboard size={ICON_SIZE.sm} aria-hidden />}
       <span className="min-w-0 truncate">{label}</span>
     </button>
   );

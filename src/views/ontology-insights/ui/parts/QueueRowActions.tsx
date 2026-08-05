@@ -229,7 +229,7 @@ export function RowActionMenu({
               }}
               className={menuItemClass}
             >
-              <FileText size={13} aria-hidden />
+              <FileText size={ICON_SIZE.sm} aria-hidden />
               {labels.openSource}
             </Link>
           ) : null}
@@ -243,7 +243,7 @@ export function RowActionMenu({
             }}
             className={menuItemClass}
           >
-            <GitBranch size={13} aria-hidden />
+            <GitBranch size={ICON_SIZE.sm} aria-hidden />
             {resolveBuilderLabel(labels, abilities)}
           </Link>
           {askAgentHref && labels.askAgent ? (
@@ -257,7 +257,7 @@ export function RowActionMenu({
               }}
               className={menuItemClass}
             >
-              <MessageCircle size={13} aria-hidden />
+              <MessageCircle size={ICON_SIZE.sm} aria-hidden />
               {labels.askAgent}
             </Link>
           ) : null}
@@ -274,9 +274,9 @@ export function RowActionMenu({
             className={menuItemClass}
           >
             {menuCopyState === "copied" ? (
-              <Check size={13} aria-hidden />
+              <Check size={ICON_SIZE.sm} aria-hidden />
             ) : (
-              <Copy size={13} aria-hidden />
+              <Copy size={ICON_SIZE.sm} aria-hidden />
             )}
             {menuCopyState === "copied"
               ? labels.handoffCopied

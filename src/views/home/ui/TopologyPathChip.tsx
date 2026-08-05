@@ -74,7 +74,7 @@ export function TopologyPathChip({
           className: "-mr-1 hover:text-[color:var(--color-text-primary)]",
         })}
       >
-        <X size={13} aria-hidden />
+        <X size={ICON_SIZE.md} aria-hidden />
       </button>
     </div>
   );

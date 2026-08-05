@@ -170,14 +170,14 @@ export function OntologyBootstrapForm({
         ) : null}
 
         <div className="rounded-[var(--radius-chip)] border border-[color:var(--color-border-soft)] bg-[color:var(--color-overlay-1)] px-2.5 py-2">
-          <p className="text-label leading-relaxed text-[color:var(--color-text-secondary)]" data-testid="ontology-bootstrap-summary">
+          <p className="text-label leading-prose text-[color:var(--color-text-secondary)]" data-testid="ontology-bootstrap-summary">
             {labels.summary(pickedCount, projectFileName)}
           </p>
-          <p className="mt-1 text-label leading-relaxed text-[color:var(--color-text-tertiary)]">
+          <p className="mt-1 text-label leading-prose text-[color:var(--color-text-tertiary)]">
             {labels.bodyUntouched}
           </p>
           {plan.alreadyTypedCount > 0 ? (
-            <p className="mt-1 text-label leading-relaxed text-[color:var(--color-text-tertiary)]">
+            <p className="mt-1 text-label leading-prose text-[color:var(--color-text-tertiary)]">
               {labels.alreadyTyped(plan.alreadyTypedCount)}
             </p>
           ) : null}

@@ -299,7 +299,7 @@ export function ProjectSelectorPage() {
                 말한다(`cli-invocation.ts` 의 계약). */}
             <p
               data-testid="project-selector-cli-placeholder-hint"
-              className="mt-2 text-label leading-relaxed text-[color:var(--color-text-quaternary)]"
+              className="mt-2 text-label leading-prose text-[color:var(--color-text-quaternary)]"
             >
               {t("cliPlaceholderHint")}
             </p>
@@ -448,7 +448,7 @@ function FactItem({
   if (emphasis) {
     return (
       <span className="inline-flex items-baseline gap-1.5">
-        <b className={`${numeralClass} text-title leading-none`}>{value}</b>
+        <b className={`${numeralClass} text-title leading-label`}>{value}</b>
         <span className="text-body text-[color:var(--color-text-tertiary)]">{label}</span>
       </span>
     );

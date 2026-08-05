@@ -73,7 +73,7 @@ function PathField({
         {label}
       </label>
       {hint ? (
-        <p className="text-caption leading-relaxed text-[color:var(--color-text-quaternary)]">{hint}</p>
+        <p className="text-caption leading-label text-[color:var(--color-text-quaternary)]">{hint}</p>
       ) : null}
       <input
         id={id}
@@ -92,7 +92,7 @@ function PathField({
         <p
           role="status"
           data-testid={`${testId}-issue`}
-          className="text-caption leading-relaxed text-[color:var(--color-status-warning)]"
+          className="text-caption leading-label text-[color:var(--color-status-warning)]"
         >
           {issueMessage}
         </p>
@@ -126,7 +126,7 @@ function CommandRow({
       <p className="text-caption text-[color:var(--color-text-quaternary)]">{label}</p>
       <pre
         data-testid={`${testId}-body`}
-        className="whitespace-pre-wrap break-all rounded-micro border border-[color:var(--color-divider)] bg-[color:var(--color-canvas)] px-2 py-1.5 font-mono text-caption leading-relaxed text-[color:var(--color-text-secondary)]"
+        className="whitespace-pre-wrap break-all rounded-micro border border-[color:var(--color-divider)] bg-[color:var(--color-canvas)] px-2 py-1.5 font-mono text-caption leading-label text-[color:var(--color-text-secondary)]"
       >
         {value.trimEnd()}
       </pre>
@@ -236,7 +236,7 @@ export function WebManualConnectPanel({
       {/* 브라우저가 확인한 것과 확인하지 못한 것을 가르는 한 줄. */}
       <p
         data-testid={`${testIdPrefix}-shape-only`}
-        className="text-caption leading-relaxed text-[color:var(--color-text-quaternary)]"
+        className="text-caption leading-label text-[color:var(--color-text-quaternary)]"
       >
         {t('manualShapeOnlyNote')}
       </p>
@@ -275,12 +275,12 @@ export function WebManualConnectPanel({
           <p className="font-mono text-caption text-[color:var(--color-text-quaternary)]">
             {config.file}
           </p>
-          <p className="mt-1 text-caption leading-relaxed text-[color:var(--color-text-tertiary)]">
+          <p className="mt-1 text-caption leading-label text-[color:var(--color-text-tertiary)]">
             {t('manualFileHint', { file: config.file })}
           </p>
           <pre
             data-testid={`${testIdPrefix}-config-body`}
-            className="mt-1.5 whitespace-pre-wrap break-all rounded-micro border border-[color:var(--color-divider)] bg-[color:var(--color-canvas)] px-2 py-1.5 font-mono text-caption leading-relaxed text-[color:var(--color-text-secondary)]"
+            className="mt-1.5 whitespace-pre-wrap break-all rounded-micro border border-[color:var(--color-divider)] bg-[color:var(--color-canvas)] px-2 py-1.5 font-mono text-caption leading-label text-[color:var(--color-text-secondary)]"
           >
             {config.body.trimEnd()}
           </pre>
@@ -310,7 +310,7 @@ export function WebManualConnectPanel({
               설치 앱의 단계 ②(재시작)가 웹에서는 그려지지 않으므로 여기서 말한다. */}
           <p
             data-testid={ready ? `${testIdPrefix}-restart` : `${testIdPrefix}-not-ready`}
-            className="mt-1.5 text-caption leading-relaxed text-[color:var(--color-text-quaternary)]"
+            className="mt-1.5 text-caption leading-label text-[color:var(--color-text-quaternary)]"
           >
             {ready ? t('manualRestartNote') : t('manualNotReadyNote')}
           </p>

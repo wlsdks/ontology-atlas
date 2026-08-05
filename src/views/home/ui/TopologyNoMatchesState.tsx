@@ -24,7 +24,7 @@ export function TopologyNoMatchesState({
       <p className="font-mono text-label uppercase tracking-[var(--tracking-caps-16)] text-[color:var(--color-text-quaternary)]">
         {title}
       </p>
-      <p className="text-body leading-relaxed text-[color:var(--color-text-secondary)]">
+      <p className="text-body leading-body text-[color:var(--color-text-secondary)]">
         {body}
       </p>
       <button

@@ -4,6 +4,7 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { AnimatePresence, motion, useReducedMotion } from "framer-motion";
 import { useTranslations } from "next-intl";
 import { X } from "lucide-react";
+import { ICON_SIZE } from "@/shared/ui/icon-size";
 import { MOTION, OVERLAY_SPRING_REDUCED } from "@/shared/motion";
 import { useBodyScrollLock } from "@/shared/lib/use-body-scroll-lock";
 import { usePathname } from "@/i18n/navigation";
@@ -374,7 +375,7 @@ export function ShortcutSheet({ open, onClose }: Props) {
                 data-shortcut-sheet-close-size-token="--topology-shortcut-sheet-close-size"
                 className="flex h-[var(--topology-shortcut-sheet-close-size)] w-[var(--topology-shortcut-sheet-close-size)] items-center justify-center rounded-chip text-[color:var(--color-text-tertiary)] transition-colors hover:bg-[color:var(--color-overlay-2)] hover:text-[color:var(--color-text-primary)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--color-border-strong)]"
               >
-                <X size={15} />
+                <X size={ICON_SIZE.md} />
               </button>
             </header>
 

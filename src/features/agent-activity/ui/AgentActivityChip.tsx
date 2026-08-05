@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useFormatter, useTranslations } from 'next-intl';
 import { Bell } from 'lucide-react';
+import { ICON_SIZE } from '@/shared/ui/icon-size';
 
 import { Link } from '@/i18n/navigation';
 import { buildOntologyNodeHref } from '@/entities/knowledge-graph';
@@ -176,7 +177,7 @@ export function AgentActivityChip({ suppressed = false }: { suppressed?: boolean
                   "-mr-1 shrink-0 hover:text-[color:var(--color-text-primary)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--color-indigo-accent)]",
               })}
             >
-              <Bell size={13} aria-hidden />
+              <Bell size={ICON_SIZE.sm} aria-hidden />
               {feed.unreadCount > 0 ? (
                 <span
                   data-testid="agent-activity-unread"
@@ -208,7 +209,7 @@ export function AgentActivityChip({ suppressed = false }: { suppressed?: boolean
           {feed.notifications.length === 0 ? (
             <p
               data-testid="agent-activity-inbox-empty"
-              className="px-3 py-4 text-caption leading-relaxed text-[color:var(--color-text-tertiary)]"
+              className="px-3 py-4 text-caption leading-label text-[color:var(--color-text-tertiary)]"
             >
               {t('inboxEmpty')}
             </p>
@@ -224,7 +225,7 @@ export function AgentActivityChip({ suppressed = false }: { suppressed?: boolean
           )}
           {/* 알림함은 감사 로그의 대체물이 아니다 — 전체 흐름은 볼트 안
               `activity.jsonl` 과 `/git` 이 들고 있다. 그 사실을 숨기지 않는다. */}
-          <p className="border-t border-[color:var(--topology-floating-panel-divider)] px-3 py-2 text-caption leading-relaxed text-[color:var(--color-text-quaternary)]">
+          <p className="border-t border-[color:var(--topology-floating-panel-divider)] px-3 py-2 text-caption leading-label text-[color:var(--color-text-quaternary)]">
             {t('inboxFooter')}
           </p>
       </Surface>

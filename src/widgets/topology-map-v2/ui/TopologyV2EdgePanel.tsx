@@ -2,6 +2,7 @@
 
 import { useEffect, useRef } from "react";
 import { X } from "lucide-react";
+import { ICON_SIZE } from "@/shared/ui/icon-size";
 import { Link } from "@/i18n/navigation";
 import { IconButton, RowButton } from "@/shared/ui";
 
@@ -102,21 +103,21 @@ export function TopologyV2EdgePanel({
           data-testid="topology-v2-edge-panel-close"
           className="-mr-1 -mt-1 text-[color:var(--topology-v2-panel-text-tertiary)] hover:text-[color:var(--topology-v2-panel-text-primary)]"
         >
-          <X size={13} aria-hidden />
+          <X size={ICON_SIZE.sm} aria-hidden />
         </IconButton>
       </div>
 
       {/* 문장이 주인공 — 의미의 평문화 */}
       <p
         data-testid="topology-v2-edge-sentence"
-        className="text-body-lg font-[var(--font-weight-signature)] leading-relaxed text-[color:var(--topology-v2-panel-text-primary)]"
+        className="text-body-lg font-[var(--font-weight-signature)] leading-body-lg text-[color:var(--topology-v2-panel-text-primary)]"
       >
         {sentence}
       </p>
       {why ? (
         <p
           data-testid="topology-v2-edge-why"
-          className="text-body leading-relaxed text-[color:var(--topology-v2-panel-text-secondary)]"
+          className="text-body leading-body text-[color:var(--topology-v2-panel-text-secondary)]"
         >
           {why}
         </p>

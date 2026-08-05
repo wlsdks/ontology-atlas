@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { ChevronDown, ChevronRight, Radar } from "lucide-react";
+import { ICON_SIZE } from "@/shared/ui/icon-size";
 import { Link } from "@/i18n/navigation";
 import { cn } from "@/shared/lib/cn";
 import { EmptyState, EvidenceOnlyBadge, TopologyV2KindGlyph } from "@/shared/ui";
@@ -188,9 +189,9 @@ export function ImpactRankingCard({
             })}
           >
             {evidenceOpen ? (
-              <ChevronDown aria-hidden size={13} className="flex-none" />
+              <ChevronDown aria-hidden size={ICON_SIZE.sm} className="flex-none" />
             ) : (
-              <ChevronRight aria-hidden size={13} className="flex-none" />
+              <ChevronRight aria-hidden size={ICON_SIZE.sm} className="flex-none" />
             )}
             <span className="min-w-0 truncate">
               {evidenceOpen ? labels.evidenceHide : labels.evidenceShow(evidenceRankedCount)}
@@ -217,7 +218,7 @@ export function ImpactRankingCard({
                   />
                 ))}
               </div>
-              <p className="pt-1.5 text-label leading-snug text-[color:var(--color-text-quaternary)]">
+              <p className="pt-1.5 text-label leading-label text-[color:var(--color-text-quaternary)]">
                 {evidenceRankedCount > evidenceRows.length
                   ? `${labels.evidenceTruncated(evidenceRows.length, evidenceRankedCount)} · `
                   : ""}

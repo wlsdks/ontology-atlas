@@ -586,7 +586,7 @@ export function ProjectDrawer({
                         }
                         className="inline-flex h-10 items-center justify-center gap-1.5 rounded-chip border border-[color:var(--color-indigo-a28)] bg-[color:var(--color-indigo-a06)] px-3 text-body-lg text-[color:var(--color-indigo-text-soft)] transition-colors hover:border-[color:var(--color-indigo-a55)] hover:text-[color:var(--color-text-primary)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--color-indigo-a46)] focus-visible:ring-offset-2 focus-visible:ring-offset-[color:var(--color-panel)]"
                       >
-                        <BookOpen size={13} />
+                        <BookOpen size={ICON_SIZE.sm} />
                         {t("openDocsVault")}
                       </Link>
                       {/* drawer 는 topology view 안에서만 마운트되어
@@ -817,7 +817,7 @@ export function ProjectDrawer({
                               {project.tags.map((tag) => (
                                 <span
                                   key={`tag-${tag}`}
-                                  className="rounded-full border border-[color:var(--color-divider)] px-2.5 py-1 text-caption leading-none text-[color:var(--color-text-tertiary)]"
+                                  className="rounded-full border border-[color:var(--color-divider)] px-2.5 py-1 text-caption leading-display-tight text-[color:var(--color-text-tertiary)]"
                                 >
                                   {tag}
                                 </span>
@@ -835,7 +835,7 @@ export function ProjectDrawer({
                               {project.stack.map((item) => (
                                 <span
                                   key={`stack-${item}`}
-                                  className="rounded-full bg-[color:var(--color-elevated)] px-2.5 py-1 font-mono text-caption leading-none text-[color:var(--color-text-secondary)]"
+                                  className="rounded-full bg-[color:var(--color-elevated)] px-2.5 py-1 font-mono text-caption leading-display-tight text-[color:var(--color-text-secondary)]"
                                 >
                                   {item}
                                 </span>

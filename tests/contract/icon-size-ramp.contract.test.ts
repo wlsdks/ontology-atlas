@@ -172,47 +172,11 @@ function scanProduction(ramp: Set<number>): IconScan {
  * 넘긴다 — 이 파일의 창립 판단과 같은 이유다.
  */
 const OFF_RAMP_DEBT: ReadonlyArray<readonly [string, number]> = [
-  ['app/[locale]/not-found.tsx', 1],
-  ['app/not-found.tsx', 1],
-  ['src/features/agent-activity/ui/AgentActivityChip.tsx', 1],
-  ['src/features/docs-vault-local/ui/AgentClientButtons.tsx', 10],
-  ['src/features/docs-vault-local/ui/AgentConnectAction.tsx', 5],
-  ['src/features/docs-vault-local/ui/OntologyStarterCta.tsx', 1],
-  ['src/features/docs-vault-local/ui/VaultOpenGuideSheet.tsx', 3],
-  ['src/features/project-edit/ui/DependencyPicker.tsx', 1],
-  ['src/shared/ui/compact-copy-button.tsx', 2],
-  ['src/views/docs-vault/ui/parts/DesktopVaultWelcome.tsx', 4],
-  ['src/views/docs-vault/ui/parts/DocsSidebarBody.tsx', 6],
-  ['src/views/docs-vault/ui/parts/SampleWelcomeNote.tsx', 1],
-  ['src/views/download/ui/DownloadPage.tsx', 3],
-  ['src/views/first-run/ui/FirstRunPage.tsx', 1],
-  ['src/views/home/ui/CreateNodeForm.tsx', 1],
-  ['src/views/home/ui/TopologyInsightsReturnChip.tsx', 1],
-  ['src/views/home/ui/TopologyPathChip.tsx', 1],
-  ['src/views/home/ui/TopologyRealmChip.tsx', 1],
-  ['src/views/home/ui/TopologyTrailChip.tsx', 2],
-  ['src/views/ontology-insights/ui/parts/CopyAgentTextButton.tsx', 2],
-  ['src/views/ontology-insights/ui/parts/QueueRowActions.tsx', 5],
-  ['src/views/ontology-insights/ui/tabs/DoNextTab.tsx', 5],
-  ['src/views/ontology-insights/ui/tabs/FreshnessTab.tsx', 2],
-  ['src/views/ontology-insights/ui/tabs/ImpactRankingCard.tsx', 2],
-  ['src/views/ontology-studio/ui/StudioCompass.tsx', 15],
-  ['src/views/ontology-studio/ui/StudioMaterializeDialog.tsx', 1],
-  ['src/widgets/agent-connect/ui/AgentConnectSheet.tsx', 1],
-  ['src/widgets/app-settings-menu/ui/AppSettingsMenu.tsx', 1],
-  ['src/widgets/atlas-git-panel/ui/AtlasGitPanel.tsx', 6],
-  ['src/widgets/docs-quick-drawer/ui/DocsQuickDrawer.tsx', 5],
-  ['src/widgets/gesture-hint/ui/GestureHint.tsx', 1],
-  ['src/widgets/global-search/ui/GlobalSearch.tsx', 1],
-  ['src/widgets/project-drawer/ui/ProjectDrawer.tsx', 1],
-  ['src/widgets/shortcut-sheet/ui/ShortcutSheet.tsx', 1],
-  ['src/widgets/topology-controls/ui/VaultStartChecklist.tsx', 1],
-  ['src/widgets/topology-index-panel/ui/TopologyIndexPanel.tsx', 1],
-  ['src/widgets/topology-index-panel/ui/TopologyIndexTab.tsx', 1],
-  ['src/widgets/topology-map-v2/ui/TopologyMapV2.tsx', 1],
-  ['src/widgets/topology-map-v2/ui/TopologyV2DetailPanel.tsx', 2],
-  ['src/widgets/topology-map-v2/ui/TopologyV2EdgePanel.tsx', 1],
-  ['src/widgets/vault-agent-panel/ui/AgentProposalCard.tsx', 1],
+  // **2026-08-05: 비었다.** 13/15 타이 103곳을 전부 램프로 옮겼다.
+  //
+  // 이 배열이 비었다고 아래 검사가 공짜 초록이 되면 안 된다 — 스캐너가 여전히
+  // 저장소 전체를 훑고 분모(`total`)를 세므로, 램프 밖 값이 하나라도 새로
+  // 들어오면 «장부 0 을 넘었다» 로 빨개진다.
 ];
 
 /**

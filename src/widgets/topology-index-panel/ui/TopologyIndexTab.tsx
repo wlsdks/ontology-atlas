@@ -1,6 +1,7 @@
 "use client";
 
 import { ChevronRight } from "lucide-react";
+import { ICON_SIZE } from "@/shared/ui/icon-size";
 
 export interface TopologyIndexTabLabels {
   expandAria: string;
@@ -41,7 +42,7 @@ export function TopologyIndexTab({ onExpand, labels, className }: TopologyIndexT
       </span>
       {/* 수렴 판정 ④: 9px 텍스트 › → ChevronRight 13 — 펼침 ‹ 와 대칭쌍. */}
       <span aria-hidden="true" className="inline-flex text-[color:var(--topology-v2-panel-text-quaternary)]">
-        <ChevronRight size={13} aria-hidden="true" />
+        <ChevronRight size={ICON_SIZE.sm} aria-hidden="true" />
       </span>
     </button>
   );

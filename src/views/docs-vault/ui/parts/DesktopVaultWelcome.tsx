@@ -98,8 +98,10 @@ export function DesktopVaultWelcome({
             </p>
             {/* 34px 은 이제 램프 스텝이다 (`--text-hero-lg`, 2026-07-29 승격) —
                 구 `md:text-[34px]` + eslint-disable 예외는 소비처가 둘이 되면서
-                이름을 얻었다. `leading-tight` 는 명시 짝이라 두 크기 모두를 덮는다. */}
-            <h2 className="max-w-2xl text-hero font-[var(--font-weight-strong)] leading-tight text-[color:var(--color-text-primary)] md:text-hero-lg">
+                이름을 얻었다. 행간은 `leading-hero-lg`(38px) 명시 짝이라 두 크기
+                모두를 덮는다 — 2026-08-05 에 `leading-tight`(비율 1.25)에서
+                램프 스텝으로 옮겼고 hero(30px)에서 +0.5px 다. */}
+            <h2 className="max-w-2xl text-hero font-[var(--font-weight-strong)] leading-hero-lg text-[color:var(--color-text-primary)] md:text-hero-lg">
               {showDogfoodHint
                 ? t("desktopWelcome.dogfoodTitle")
                 : t("desktopWelcome.title")}
@@ -214,7 +216,7 @@ export function DesktopVaultWelcome({
                 className="flex w-full items-start gap-3 border-t border-[color:var(--color-indigo-line-a20)] bg-[color:var(--color-indigo-line-a06)] px-4 py-3.5 text-left transition-colors hover:bg-[color:var(--color-indigo-line-a06)] disabled:opacity-60"
               >
                 <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-chip border border-[color:var(--color-indigo-line-a22)] text-[color:var(--color-indigo-accent)]">
-                  <Bot size={15} aria-hidden />
+                  <Bot size={ICON_SIZE.md} aria-hidden />
                 </span>
                 <span className="min-w-0">
                   <span className="block text-body font-[var(--font-weight-emphasis)] text-[color:var(--color-text-primary)]">
@@ -234,7 +236,7 @@ export function DesktopVaultWelcome({
               className="flex w-full items-start gap-3 border-t border-[color:var(--color-border-soft)] px-4 py-3.5 text-left transition-colors hover:bg-[color:var(--color-overlay-1)] disabled:opacity-60"
             >
               <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-chip border border-[color:var(--color-divider)] text-[color:var(--color-text-secondary)]">
-                <FilePlus size={15} aria-hidden />
+                <FilePlus size={ICON_SIZE.md} aria-hidden />
               </span>
               <span className="min-w-0">
                 <span className="block text-body font-[var(--font-weight-emphasis)] text-[color:var(--color-text-primary)]">
@@ -252,7 +254,7 @@ export function DesktopVaultWelcome({
               className="flex w-full items-start gap-3 border-t border-[color:var(--color-border-soft)] px-4 py-3.5 text-left transition-colors hover:bg-[color:var(--color-overlay-1)]"
             >
               <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-chip border border-[color:var(--color-divider)] text-[color:var(--color-text-secondary)]">
-                <Package size={15} aria-hidden />
+                <Package size={ICON_SIZE.md} aria-hidden />
               </span>
               <span className="min-w-0">
                 <span className="block text-body font-[var(--font-weight-emphasis)] text-[color:var(--color-text-primary)]">
@@ -282,7 +284,7 @@ export function DesktopVaultWelcome({
                     }`}
                   >
                     <span className="flex h-7 w-7 items-center justify-center rounded-chip border border-[color:var(--color-divider)] text-[color:var(--color-text-tertiary)]">
-                      <HardDrive size={13} aria-hidden />
+                      <HardDrive size={ICON_SIZE.sm} aria-hidden />
                     </span>
                     <span className="min-w-0">
                       <span className="block truncate text-body font-[var(--font-weight-signature)] text-[color:var(--color-text-primary)]">

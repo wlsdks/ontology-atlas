@@ -190,7 +190,7 @@ export function AgentClientButtons({
               <p className="text-body font-[var(--font-weight-signature)] text-[color:var(--color-text-primary)]">
                 {t("serverUnavailableTitle")}
               </p>
-              <p className="mt-1 text-label leading-relaxed text-[color:var(--color-text-tertiary)]">
+              <p className="mt-1 text-label leading-prose text-[color:var(--color-text-tertiary)]">
                 {t("serverUnavailableDesc")}
               </p>
               <div className="mt-2 flex flex-wrap items-center gap-x-3 gap-y-1">
@@ -250,7 +250,7 @@ export function AgentClientButtons({
       ) : resolvedMcpJsonState === "invalid" ? (
         <ClientAction
           testId="agent-client-claude-code"
-          icon={<Copy size={13} aria-hidden />}
+          icon={<Copy size={ICON_SIZE.md} aria-hidden />}
           label={t("replaceClaudeCodeConfig")}
           feedback={feedback.claudeCode}
           copiedLabel={t("replaceClaudeCodeConfigDone")}
@@ -273,7 +273,7 @@ export function AgentClientButtons({
       ) : (
         <ClientAction
           testId="agent-client-claude-code"
-          icon={<Copy size={13} aria-hidden />}
+          icon={<Copy size={ICON_SIZE.md} aria-hidden />}
           label={t("copyClaudeCodeConfig")}
           feedback={feedback.claudeCode}
           copiedLabel={t("copyClaudeCodeConfigDone")}
@@ -298,14 +298,14 @@ export function AgentClientButtons({
       ) : cursorDeeplink ? (
         <ClientLink
           testId="agent-client-cursor"
-          icon={<ArrowUpRight size={13} aria-hidden />}
+          icon={<ArrowUpRight size={ICON_SIZE.md} aria-hidden />}
           label={t("connectCursor")}
           href={cursorDeeplink}
         />
       ) : (
         <ClientAction
           testId="agent-client-cursor"
-          icon={<Copy size={13} aria-hidden />}
+          icon={<Copy size={ICON_SIZE.md} aria-hidden />}
           label={t("copyCursorConfig")}
           feedback={feedback.cursor}
           copiedLabel={t("copyConfigDone")}
@@ -332,7 +332,7 @@ export function AgentClientButtons({
       ) : (
         <ClientAction
           testId="agent-client-antigravity"
-          icon={<Copy size={13} aria-hidden />}
+          icon={<Copy size={ICON_SIZE.md} aria-hidden />}
           label={t("copyAntigravityConfig")}
           feedback={feedback.antigravity}
           copiedLabel={t("copyConfigDone")}
@@ -350,7 +350,7 @@ export function AgentClientButtons({
       ) : codexConfigState === "invalid" ? (
         <ClientAction
           testId="agent-client-codex"
-          icon={<Copy size={13} aria-hidden />}
+          icon={<Copy size={ICON_SIZE.md} aria-hidden />}
           label={t("replaceCodexConfig")}
           feedback={feedback.codex}
           copiedLabel={t("replaceCodexConfigDone")}
@@ -373,7 +373,7 @@ export function AgentClientButtons({
       ) : (
         <ClientAction
           testId="agent-client-codex"
-          icon={<Copy size={13} aria-hidden />}
+          icon={<Copy size={ICON_SIZE.md} aria-hidden />}
           label={t("copyCodexCommand")}
           feedback={feedback.codex}
           copiedLabel={t("copyCodexCommandDone")}
@@ -395,7 +395,7 @@ export function AgentClientButtons({
       </div>
 
       {needsManualPath ? (
-        <p className="text-caption leading-relaxed text-[color:var(--color-text-quaternary)]">
+        <p className="text-caption leading-label text-[color:var(--color-text-quaternary)]">
           {t("deeplinkWebNote")}{" "}
           <Link
             href="/download/"
@@ -410,7 +410,7 @@ export function AgentClientButtons({
       {/* 핵심 평문 — stdio 를 로컬-퍼스트 장점으로 */}
       <p
         data-testid="agent-connect-server-line"
-        className="mt-1 rounded-chip border border-[color:var(--color-border-soft)] bg-[color:var(--color-overlay-1)] px-3 py-2.5 text-label leading-relaxed text-[color:var(--color-text-tertiary)]"
+        className="mt-1 rounded-chip border border-[color:var(--color-border-soft)] bg-[color:var(--color-overlay-1)] px-3 py-2.5 text-label leading-prose text-[color:var(--color-text-tertiary)]"
       >
         {t("serverLine")}
       </p>
@@ -458,7 +458,7 @@ function ClientStatus({
       className={clientControlClass("active:translate-y-0")}
     >
       <Check
-        size={13}
+        size={ICON_SIZE.md}
         aria-hidden
         className="text-[color:var(--color-status-success)]"
       />
@@ -491,9 +491,9 @@ function ClientAction({
   const isCopied = feedback === "copied";
   const isBusy = feedback === "busy";
   const shownIcon = isBusy ? (
-    <Loader2 size={13} aria-hidden className="animate-spin" />
+    <Loader2 size={ICON_SIZE.md} aria-hidden className="animate-spin" />
   ) : isDone || isCopied ? (
-    <Check size={13} aria-hidden />
+    <Check size={ICON_SIZE.md} aria-hidden />
   ) : (
     icon
   );

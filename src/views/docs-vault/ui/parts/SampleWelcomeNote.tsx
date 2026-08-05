@@ -60,7 +60,7 @@ export function SampleWelcomeNote({
         onClick={onDismiss}
         className="absolute right-3 top-3 hover:text-[color:var(--color-text-primary)]"
       >
-        <X size={13} aria-hidden />
+        <X size={ICON_SIZE.sm} aria-hidden />
       </IconButton>
       <p className="max-w-[560px] pr-6 text-body leading-body text-[color:var(--color-text-secondary)]">
         <span className="block font-[var(--font-weight-emphasis)] text-[color:var(--color-text-primary)]">

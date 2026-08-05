@@ -285,7 +285,7 @@ export function GlobalSearch({
             data-global-search-close-size-token="--overlay-close-size"
             className="flex h-[var(--overlay-close-size)] w-[var(--overlay-close-size)] shrink-0 items-center justify-center rounded-chip text-[color:var(--color-text-tertiary)] transition-colors hover:bg-[color:var(--color-overlay-2)] hover:text-[color:var(--color-text-primary)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--color-indigo-a46)] focus-visible:ring-inset"
           >
-            <X size={15} aria-hidden />
+            <X size={ICON_SIZE.md} aria-hidden />
           </button>
         </div>
 

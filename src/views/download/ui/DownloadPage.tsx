@@ -968,7 +968,7 @@ function VerifyDetails({
     <details data-testid="download-trust" className="group min-w-0">
       <summary className="touch-hit-expand inline-flex list-none items-center gap-1.5 text-label leading-label text-[color:var(--color-text-tertiary)] transition-colors hover:text-[color:var(--color-text-primary)] [&::-webkit-details-marker]:hidden">
         <ChevronRight
-          size={13}
+          size={ICON_SIZE.sm}
           aria-hidden
           className="shrink-0 transition-transform group-open:rotate-90"
         />
@@ -1069,7 +1069,7 @@ function TrustFact({
     >
       <div className="flex min-w-0 flex-wrap items-baseline gap-x-3 gap-y-1">
         <Check
-          size={13}
+          size={ICON_SIZE.sm}
           aria-hidden
           className="shrink-0 translate-y-0.5 text-[color:var(--color-indigo-accent)]"
         />
@@ -1256,7 +1256,7 @@ function PlatformStatus() {
             'touch-hit-expand rounded-chip',
           )}
         >
-          <ExternalLink size={13} aria-hidden />
+          <ExternalLink size={ICON_SIZE.sm} aria-hidden />
           {t('windowsTrackCta')}
         </a>
       </div>

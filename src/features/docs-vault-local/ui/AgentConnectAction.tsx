@@ -151,9 +151,9 @@ export function AgentConnectAction({ vaultPath, launch, onWritten, clientId }: A
           })}
         >
           {phase === 'planning' ? (
-            <Loader2 size={13} aria-hidden className="animate-spin" />
+            <Loader2 size={ICON_SIZE.sm} aria-hidden className="animate-spin" />
           ) : (
-            <FileText size={13} aria-hidden />
+            <FileText size={ICON_SIZE.sm} aria-hidden />
           )}
           {t('connectPreviewCta')}
         </button>
@@ -190,7 +190,7 @@ export function AgentConnectAction({ vaultPath, launch, onWritten, clientId }: A
               </li>
             ))}
           </ul>
-          <p className="mt-2 text-caption leading-relaxed text-[color:var(--color-text-quaternary)]">
+          <p className="mt-2 text-caption leading-label text-[color:var(--color-text-quaternary)]">
             {t('connectPlanAuditNote')}
           </p>
           <button
@@ -205,7 +205,7 @@ export function AgentConnectAction({ vaultPath, launch, onWritten, clientId }: A
               className: `mt-2.5 ${INDIGO_SOLID_SKIN}`,
             })}
           >
-            {phase === 'writing' ? <Loader2 size={13} aria-hidden className="animate-spin" /> : null}
+            {phase === 'writing' ? <Loader2 size={ICON_SIZE.sm} aria-hidden className="animate-spin" /> : null}
             {t('connectConfirmCta')}
           </button>
         </div>
@@ -228,10 +228,10 @@ export function AgentConnectAction({ vaultPath, launch, onWritten, clientId }: A
           className="rounded-chip border border-[color:var(--color-success-a35)] bg-[color:var(--color-success-a10)] px-3 py-2.5"
         >
           <p className="inline-flex items-center gap-1.5 text-body font-[var(--font-weight-signature)] text-[color:var(--color-text-primary)]">
-            <Check size={13} aria-hidden className="text-[color:var(--color-status-success)]" />
+            <Check size={ICON_SIZE.sm} aria-hidden className="text-[color:var(--color-status-success)]" />
             {t('connectVerifiedTitle')}
           </p>
-          <p className="mt-1 text-label leading-relaxed text-[color:var(--color-text-tertiary)]">
+          <p className="mt-1 text-label leading-prose text-[color:var(--color-text-tertiary)]">
             {t('connectVerifiedDesc', {
               tools: verification.toolCount ?? 0,
               node: verification.sampleTitle ?? verification.sampleSlug ?? '',
@@ -241,7 +241,7 @@ export function AgentConnectAction({ vaultPath, launch, onWritten, clientId }: A
            * 재시작은 **조건이지 다음 걸음이 아니다** — 한 단 낮춰 CTA 가
            * 행동 승자로 남게 한다(위계 평결: 선행 조건은 행동보다 먼저 읽힌다).
            */}
-          <p className="mt-1 text-label leading-relaxed text-[color:var(--color-text-quaternary)]">
+          <p className="mt-1 text-label leading-prose text-[color:var(--color-text-quaternary)]">
             {t('connectVerifiedRestart')}
           </p>
           {/*
@@ -283,10 +283,10 @@ export function AgentConnectAction({ vaultPath, launch, onWritten, clientId }: A
           className="rounded-chip border border-[color:var(--color-danger-a32)] bg-[color:var(--color-danger-a10)] px-3 py-2.5"
         >
           <p className="inline-flex items-center gap-1.5 text-body font-[var(--font-weight-signature)] text-[color:var(--color-text-primary)]">
-            <CircleAlert size={13} aria-hidden className="text-[color:var(--color-status-danger)]" />
+            <CircleAlert size={ICON_SIZE.sm} aria-hidden className="text-[color:var(--color-status-danger)]" />
             {t('connectFailedTitle')}
           </p>
-          <p className="mt-1 break-words text-label leading-relaxed text-[color:var(--color-text-tertiary)]">
+          <p className="mt-1 break-words text-label leading-prose text-[color:var(--color-text-tertiary)]">
             {error ?? t('connectFailedUnknown')}
           </p>
           <button

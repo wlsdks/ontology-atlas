@@ -569,7 +569,7 @@ export function DocFrontmatterBlock({
           <div className="text-label text-[color:var(--color-text-quaternary)]">
             {t("definitionLabel")}
           </div>
-          <p className="mt-0.5 text-body leading-relaxed text-[color:var(--color-text-secondary)]">
+          <p className="mt-0.5 text-body leading-body text-[color:var(--color-text-secondary)]">
             {definitionValue}
           </p>
         </div>

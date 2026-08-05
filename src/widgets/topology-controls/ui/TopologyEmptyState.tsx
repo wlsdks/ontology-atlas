@@ -104,7 +104,7 @@ export function TopologyEmptyState({
               ? t('titleNoProjects')
               : t('titleNoDeps')}
         </h2>
-        <p className="mt-2 text-body leading-relaxed text-[color:var(--color-text-tertiary)]">
+        <p className="mt-2 text-body leading-body text-[color:var(--color-text-tertiary)]">
           {hasDocsToBootstrap
             ? t('bodyDocsFound', { count: docsFoundCount })
             : isNoProjects
@@ -115,7 +115,7 @@ export function TopologyEmptyState({
                 )
               : t('bodyNoDeps')}
         </p>
-        <p className="mt-2 text-label leading-relaxed text-[color:var(--color-text-quaternary)]">
+        <p className="mt-2 text-label leading-prose text-[color:var(--color-text-quaternary)]">
           {t('crossViewHint')}
         </p>
         <div className="mt-4 flex flex-col gap-1.5 border-t border-[color:var(--color-divider)] pt-4">
