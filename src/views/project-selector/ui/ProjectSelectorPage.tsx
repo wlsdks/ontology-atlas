@@ -44,8 +44,15 @@ import { findProjectDocInList } from "@/entities/docs-vault";
 // token set.
 const PAGE_MAX_WIDTH = 1600;
 
+/*
+ * ⚠️ **무게를 명시한다 — `<b>` 는 안 적으면 브라우저 기본 700 이다** (2026-08-05).
+ * 700 은 이 저장소의 무게 램프(510/560/650) 밖이고, 형제인
+ * `DomainCompositionGrid` 의 음각 숫자 `<b>` 는 이미 `strong`(650)이었다.
+ * 값이 코드에 하나도 안 남는 결함이라 lint 도 소스 스캔도 못 본다 — 빌드된
+ * 화면을 재서야 잡혔다.
+ */
 const numeralClass =
-  "font-mono text-[color:var(--engraved-numeral-face)] [text-shadow:var(--engraved-numeral-text-shadow)]";
+  "font-mono font-[var(--font-weight-strong)] text-[color:var(--engraved-numeral-face)] [text-shadow:var(--engraved-numeral-text-shadow)]";
 
 type SelectorTranslator = ReturnType<typeof useTranslations<"projectPages.selector">>;
 
