@@ -163,7 +163,7 @@
     "test:mcp:verify": "node --test mcp/src/verify-script.test.mjs",
     "test:mcp:verify:first-contact": "node scripts/run-focused-node-test.mjs --test-name-pattern \"initialize instructions|strict unknown-tool|node-dependent first-contact|first-contact response labels|bootstrap and import-analysis|first-contact verify|destructive writer dry-run|patch_concept conflict guard|list_concepts reports vault warnings|validate_vault reports problem files|malformed validate_vault|first-contact diagnosis|health summary|health check advisories|failing health checks|workspace_brief growth count drift|workspace_brief next action sample drift|fail next actions\" mcp/src/verify-script.test.mjs",
     "test:mcp:verify:timeout": "node scripts/run-focused-node-test.mjs --test-name-pattern \"verify timeout|timeout failures|startup failures|direct verify usage|direct verify timeout|direct verify CLI args|empty verify vault\" mcp/src/verify-script.test.mjs",
-    "lint": "eslint",
+    "lint": "eslint --max-warnings 91",
     "knip": "knip",
     "check:tokens": "node scripts/check-no-raw-color.mjs",
     "test:check:tokens": "node --test scripts/check-no-raw-color.test.mjs",
