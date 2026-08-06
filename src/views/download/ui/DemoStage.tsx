@@ -4,6 +4,7 @@ import { useCallback, useId, useRef, useState, useSyncExternalStore } from 'reac
 import { useTranslations } from 'next-intl';
 import { withBasePath } from '@/shared/lib/base-path';
 import { type DemoClip, availableDemoClips, demoPoster, demoSources } from '../model/demo-clips';
+import { controlClass } from '@/shared/ui/control-class';
 
 /**
  * 첫 페이지 시연 절 — **한 클립 · 무컷 · 루프 없음 · 무음.**
@@ -111,7 +112,7 @@ function DemoPlayer({ clip }: { clip: DemoClip }) {
             type="button"
             onClick={play}
             data-testid={`demo-play-${clip.id}`}
-            className="absolute inset-0 flex items-center justify-center bg-[color:var(--color-backdrop-medium)] text-body leading-body text-[color:var(--color-text-primary)] transition-colors"
+            className={controlClass({ shape: "row", stacked: true, className: "absolute inset-0 justify-center bg-[color:var(--color-backdrop-medium)] text-body leading-body" })}
           >
             <span className="rounded-chip border border-[color:var(--color-border-strong)] bg-[color:var(--color-elevated)] px-4 py-2">
               {t('demoPlay')}
