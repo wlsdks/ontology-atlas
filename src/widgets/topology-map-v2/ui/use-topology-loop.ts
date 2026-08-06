@@ -41,7 +41,7 @@ import { drawTopologyFrame } from "./topology-frame-draw";
 import { relaxNewlyVisible } from "../model/layout";
 import { computeTopologyClusterState } from "./topology-cluster-state";
 import type { ClusterChip } from "../model/density-gate";
-import { clusterMoreChipId, EGO_NEIGHBOR_CHIP_ID, EGO_NEIGHBOR_LIMIT, parseClusterMoreChipId, rankEgoNeighborsByDOI, scheduleRipple, selectiveEgoNeighbors, stepEmphasis, stepFocusRamp, type EgoNeighborRankEntry } from "../model/focus-state";
+import { clusterMoreChipId, EGO_NEIGHBOR_CHIP_ID, parseClusterMoreChipId, rankEgoNeighborsByDOI, scheduleRipple, selectiveEgoNeighbors, stepEmphasis, stepFocusRamp, type EgoNeighborRankEntry } from "../model/focus-state";
 import { buildFootprintSteps, buildWalkedEdgeKeys } from "../model/footprint-steps";
 import type { FootprintInk } from "@/shared/lib/footprint-glyph";
 import {
@@ -3210,7 +3210,6 @@ export function useTopologyLoop(args: UseTopologyLoopArgs): UseTopologyLoopResul
     focusedSlugRef,
     hoveredNodeIdRef,
     rippleStartRef,
-    pulsesRef,
     reducedMotionRef,
     userDrivenCameraRef,
     simRef,

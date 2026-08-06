@@ -68,12 +68,12 @@ export function LocaleRedirect() {
         }}
       >
         Opening Ontology Atlas…
-        {/* eslint-disable-next-line @next/next/no-html-link-for-pages -- root redirect fallback must survive failed hydration */}
+        {/* raw <a>, not next/link — this root redirect fallback must survive failed hydration */}
         <a style={{ color: 'var(--color-indigo-accent)' }} href={withBasePath('/en/')}>
           English
         </a>
         <span aria-hidden="true">·</span>
-        {/* eslint-disable-next-line @next/next/no-html-link-for-pages -- root redirect fallback must survive failed hydration */}
+        {/* raw <a>, not next/link — this root redirect fallback must survive failed hydration */}
         <a style={{ color: 'var(--color-indigo-accent)' }} href={withBasePath('/ko/')}>
           한국어
         </a>

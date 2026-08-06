@@ -609,7 +609,6 @@ async function main() {
   }
 
   let repoSecretNames = null;
-  let repoSecretListError = null;
   const secrets = runGh([
     "secret",
     "list",
@@ -619,10 +618,8 @@ async function main() {
     "name",
   ], { parseJson: true });
   if (!secrets.ok) {
-    repoSecretListError = secrets.message;
     checks.push(blocked("apple_release_secrets", DIRECT_DOWNLOAD_SECRET_LABEL, secrets.message, `Run gh secret list --repo ${options.repo}.`, [`gh secret list --repo ${options.repo}`]));
   } else if (!Array.isArray(secrets.value)) {
-    repoSecretListError = "gh secret list did not return an array.";
     checks.push(blocked("apple_release_secrets", DIRECT_DOWNLOAD_SECRET_LABEL, "gh secret list did not return an array.", `Run gh secret list --repo ${options.repo}.`, [`gh secret list --repo ${options.repo}`]));
   } else {
     repoSecretNames = new Set(secrets.value.map((secret) => secret?.name).filter(Boolean));

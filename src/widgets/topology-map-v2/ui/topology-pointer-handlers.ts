@@ -27,7 +27,6 @@ import { clampPointToPanBounds, type CameraAxes, type CameraTarget } from "../en
 import type { CameraTween } from "../model/camera-easing";
 import { projectFlickLanding, sampleReleaseVelocity } from "../engine/momentum";
 import { EGO_NEIGHBOR_CHIP_ID, parseClusterMoreChipId, scheduleRipple } from "../model/focus-state";
-import { type Pulse } from "../render/edge-fireflies";
 import type { ForceSimulation } from "../model/force-layout";
 import { computeZoomRatio, DEFAULT_TIER_REVEAL, isNodeHittable, isSpineOnlyZoom, type TierRevealConfig } from "../model/tier-visibility";
 import { computeDragTugSets, type DragTugSets } from "../interaction/drag-tug";
@@ -129,12 +128,6 @@ export interface PointerHandlerRefs {
   focusedSlugRef: Ref<string | null>;
   hoveredNodeIdRef: Ref<string | null>;
   rippleStartRef: Ref<Map<string, number>>;
-  /**
-   * R6 호버 펄스 — 호버가 발사한 일회성 신호 리스트(프레임 루프가 수명 관리).
-   * 호버 노드 변경 시 닿는 엣지들로 바깥 방향 펄스를 append 한다. 생략 시 발사
-   * 없음(하위호환).
-   */
-  pulsesRef?: Ref<Pulse[]>;
   reducedMotionRef: Ref<boolean>;
   /**
    * WCAG 2.2 §2.3.3 — "the camera's last mover was the user's hand."
@@ -340,7 +333,6 @@ export function createTopologyPointerHandlers(refs: PointerHandlerRefs): Topolog
     focusedSlugRef,
     hoveredNodeIdRef,
     rippleStartRef,
-    pulsesRef,
     reducedMotionRef,
     userDrivenCameraRef,
     simRef,

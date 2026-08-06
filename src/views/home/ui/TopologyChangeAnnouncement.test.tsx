@@ -1,5 +1,5 @@
 import { describe, expect, it, vi, afterEach, beforeEach } from "vitest";
-import { act, cleanup, render, screen } from "@testing-library/react";
+import { act, render, screen } from "@testing-library/react";
 import { TopologyChangeAnnouncement } from "./TopologyChangeAnnouncement";
 
 const message = (count: number) => `개념 ${count}개 갱신됨 — 반영됨`;

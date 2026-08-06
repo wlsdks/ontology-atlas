@@ -1102,6 +1102,45 @@ const eslintConfig = defineConfig([
       ],
     },
   },
+  /*
+   * `_` 접두는 「일부러 안 쓴다」는 **저자가 남긴 표식**이다 (2026-08-06).
+   *
+   * ## 왜 이 블록이 생겼나
+   *
+   * 이 저장소는 이미 그 관례를 쓰고 있었는데 설정이 그것을 안 읽어 줬다 —
+   * 서로 다른 저자 셋이 각각 `_hasLoadedVault`(시그니처 유지를 위해 남긴
+   * 파라미터, 바로 위 주석이 그렇게 적혀 있다) · `_path`(세 경로를 이름으로
+   * 세는 루프 변수) · `_omit`(`...rest` 를 만들려고 한 키만 빼내는 구조분해)
+   * 을 썼고, 셋 다 경고로 남아 있었다. **관례가 거짓말을 하고 있으면 다음
+   * 사람은 관례를 안 믿는다.**
+   *
+   * ## 면제의 방향 (`design-gates.md` 「면제에는 방향이 있다」)
+   *
+   * 이 면제가 살리는 것은 «저자가 명시적으로 표시한 미사용»뿐이다. 표시를
+   * 하려면 이름을 바꿔야 하므로 **실수로 새는 길이 없다** — 죽은 변수를
+   * 숨기려면 일부러 `_` 를 붙여야 하고, 그건 diff 에 그대로 남는다.
+   * 그래서 `ignoreRestSiblings` 는 **켜지 않는다**: 그건 표시가 없는 이름까지
+   * 통째로 면제해서 방향이 반대다.
+   *
+   * 켜기 전 실측(2026-08-06): 이 면제로 사라지는 경고는 **3건**이고 셋 다
+   * 위에 적은 자리다. 표시 없는 미사용 변수는 그대로 잡힌다 —
+   * `tests/contract/lint-warning-ratchet.contract.test.ts` 의 프로브
+   * (`const unusedByProbe = 1;`)가 그것을 매번 증명한다.
+   */
+  {
+    rules: {
+      '@typescript-eslint/no-unused-vars': [
+        'warn',
+        {
+          args: 'after-used',
+          argsIgnorePattern: '^_',
+          varsIgnorePattern: '^_',
+          caughtErrorsIgnorePattern: '^_',
+          destructuredArrayIgnorePattern: '^_',
+        },
+      ],
+    },
+  },
   globalIgnores([
     '.next/**',
     // 에이전트 병렬 작업용 임시 git worktree — 자기 lint는 각 워크트리에서

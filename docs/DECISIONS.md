@@ -8739,3 +8739,122 @@ size 축이 헛돌지 않는다(계약이 못박음). 덮어쓰기를 지워 두
 
 **서명 (accountable)**: design-system (체계석, 적용), 소유자 서명 대기
 **상태**: 유효
+
+## 2026-08-06 (10) — lint 경고 91 → 62 · **줄인 것과 안 줄인 것의 경계는 「동작이 바뀌나」**
+
+**결정**: 어제 박은 상한(`--max-warnings 91`)에서 **29건을 실제로 없애고 상한을
+62 로 내렸다**. 없앤 것은 전부 «지워도 실행 경로가 한 줄도 안 바뀌는 것»이고,
+남긴 61건(`react-hooks/*`)은 손대는 순간 렌더 타이밍이 바뀌는 것이라 **이번
+범위 밖**이다. 어제 래칫 기록이 *"손대면 동작이 바뀔 수 있고 — 그건 lint PR 이
+아니라 렌더링 작업의 몫"* 이라고 적어 둔 그 선을 그대로 지켰다.
+
+### 없앤 29건 — 성분
+
+| 룰 | 건수 | 무엇이었나 |
+|---|---:|---|
+| `@typescript-eslint/no-unused-vars` | 25 | 죽은 import 8 · 죽은 지역 상태/변수 3 · **받기만 하고 안 그리는 prop 6** · `_` 로 표시했는데 설정이 안 읽어 주던 것 3 · 기타 5 |
+| 안 쓰이는 `eslint-disable` 지시문 | 3 | 룰이 애초에 안 걸리는 자리에 남은 주석 (`no-html-link-for-pages` ×2 · `no-empty-function` ×1). **이유가 적힌 주석은 평범한 주석으로 살렸다** — 없앤 것은 지시문이지 근거가 아니다 |
+| `@typescript-eslint/no-unused-expressions` | 1 | `err ? reject(err) : resolve(value)` → `if/else` |
+
+**«받기만 하고 안 그리는 prop» 6건이 이 중 유일하게 결함에 가깝다.**
+`LocationLine` 은 `notice`/`error` 를 받아 «방금 한 일의 결과를 **같은 자리**
+에서 말한다»는 JSDoc 까지 달고 있었는데 본문에서 한 번도 안 그렸다 — 실제로
+그리는 것은 형제인 `RemoteResultLine` 이다. `StepList` 도 `egoFor`·`kindLabel`·
+`focusedConceptId`·`setFocusedConceptId` 넷을 받기만 했다. 셋(구조분해 · 타입 ·
+호출부) 을 함께 지웠고, 그래서 **다음 사람이 «이 컴포넌트가 저걸 그리나» 를
+다시 안 물어도 된다**.
+
+### `_` 접두를 설정이 읽게 했다 — 게이트 변경 1건
+
+**관례가 거짓말을 하고 있었다.** 저자 셋이 각각 `_hasLoadedVault`(«시그니처
+유지용으로 남긴다»고 바로 위 주석이 적혀 있다) · `_path`(세 경로를 이름으로
+세는 루프 변수) · `_omit`(`...rest` 를 만들려고 한 키만 빼내는 구조분해)을
+썼는데, `@typescript-eslint/no-unused-vars` 가 **옵션 없이 `warn` 만** 걸려
+있어 셋 다 경고로 남았다. 관례가 안 먹히면 다음 사람은 관례를 안 믿는다.
+
+`argsIgnorePattern`·`varsIgnorePattern`·`caughtErrorsIgnorePattern`·
+`destructuredArrayIgnorePattern` 을 전부 `^_` 로 등재했다.
+`ignoreRestSiblings` 는 **켜지 않았다** — 그건 표시 없는 이름까지 면제해서
+`design-gates.md` 「면제에는 방향이 있다」의 반대쪽이다. 이 면제가 살리는 것은
+**저자가 이름을 바꿔 가며 명시한 미사용**뿐이고, 그 표시는 diff 에 남는다.
+
+프로브 6종(`/gate-probe`): 표시 없는 미사용 변수 · 미사용 import ·
+표시 없는 rest sibling → **전부 여전히 잡힌다**. `_` 표시된 변수·파라미터 →
+통과. 이 면제로 사라진 경고는 정확히 위 3건이고, 다른 파일에서 사라진 경고는
+0건이다(전후 census 비교).
+
+### 안 고친 61건 — 전수 분류가 이 결정의 본체다
+
+**`react-hooks/refs` 41건 — 의도된 패턴 41 / 결함 후보 0.**
+
+| 자리 | 건수 | 무엇 |
+|---|---:|---|
+| `HomePage.tsx` 2402–2403 | **25** | `retainedDatasheetRef` — 패널이 퇴장하는 동안 마지막 non-null 모델을 붙든다. 바로 위 주석이 «effect 로 올리면 등장이 한 프레임 늦는다»고 이유를 적어 뒀다 |
+| `use-node-datasheet-model.ts` 162–236 | 12 | `editBaselineRef` — 선택 노드가 바뀔 때 mtime 충돌 기준선을 렌더 중 캡처하고 `useMemo` 안에서 읽는다 |
+| `use-topology-loop.ts` 513·516·1408 | 3 | prop 미러(`realmCaptionRef.current = realmCaption`) — rAF 프레임 클로저가 최신 값을 읽게 하는 패턴 |
+| `DocFrontmatterBlock.tsx` 209 | 2 | `openedMtimeRef.current` 를 렌더 중 읽어 mtime 충돌 신호를 만든다 |
+
+⚠️ **41은 결함 41개가 아니다.** 최다인 25건이 **한 줄**에 대한 참조 25개다 —
+「41건」이라는 수를 부채 크기로 읽으면 안 된다. 실제 판단 지점은 **네 자리**다.
+셋(`use-topology-loop` 3194행)은 이미 같은 판단으로 `eslint-disable` 을 붙여
+둔 선례가 있다.
+
+**`react-hooks/set-state-in-effect` 12건 — 결함 후보 0, 셋으로 갈린다.**
+
+- **A. 파생 상태를 effect 로 돌린 것 7건** — «prop 이 바뀌면 로컬 상태를 리셋»
+  (`HomePage` 651·2073 · `CommitDetail` 108 · `ShortcutSheet` 196 ·
+  `use-guided-tour` 168 · `OntologyStudioPage` 606 · `BlockImportModule` 113).
+  렌더 중 조정으로 옮길 여지가 있지만 **초기 프레임 값이 바뀐다** — 성능
+  작업(캐스케이딩 렌더 1회 절감)이지 lint 정리가 아니다.
+- **B. DOM 계측이라 effect 가 맞는 것 2건** — `GuidedTourOverlay` 79·101 은
+  `resolveAnchorRect` 로 실제 rect 를 잰다. 계측은 effect 밖으로 못 나간다.
+- **C. 비동기 IO 의 완료 처리 3건** — `AtlasGitPanel` 352·434·474.
+  룰이 잡는 것은 그 앞의 **동기 리셋**(`setCommitDiff(null)`)이다.
+
+**`react-hooks/exhaustive-deps` 8건 — 여기에만 진짜 결함 후보가 있다(6).**
+
+- **`DocsVaultEditor` ×4 — `vaultScope` 누락.** 이 값은 `clearEditorDraft(
+  vaultScope, doc.slug)`(316행) 처럼 **초안 저장 키**를 만든다. 편집기를 연 채
+  다른 볼트로 갈아타면 콜백이 **이전 볼트의 scope** 로 초안을 지우거나 읽는다.
+  데이터에 닿는 자리라 다음 라운드의 1순위다.
+- **`DocsVaultPage` 535 — `localVault.handle` 누락**(같은 성격).
+- **`OntologyInsightsPage` 205 — `captureInsightsHeight` 누락**, `[]` 로 한 번만
+  건 popstate 핸들러가 첫 렌더의 함수를 붙든다.
+- **`HomePage` 2816 — `bootstrapOpen`·`setBootstrapOpen` 누락.** Esc 사다리
+  핸들러가 옛 값을 본다.
+- 나머지 1건은 반대 방향 — **`HomePage` 861 은 안 쓰는 의존이 둘 더 있다**
+  (`gitVaultPath`·`ontologyChangeset`). 위험이 아니라 낭비다.
+
+**`react-hooks/immutability` 1건** — `use-topology-loop` 1501 이 effect 의존값
+(`worldRef`) 안의 노드를 직접 고친다. 지도 엔진이 프레임마다 하는 mutation 이라
+지도 렌더링 작업의 몫.
+
+> **다음 라운드의 입력은 「61건」이 아니라 「exhaustive-deps 의 stale closure
+> 후보 6곳」이다.** 나머지 55건은 수가 커 보일 뿐 판단 지점이 열 자리도 안 되고,
+> 전부 «고치려면 렌더 타이밍을 바꿔야 하는» 같은 성격이다.
+
+### 화면 변경 0
+
+이 PR 에는 **화면이 달라지는 변경이 하나도 없다.** 지운 것은 죽은 import ·
+안 읽히는 지역 변수 · 안 그려지는 prop · 지시문 주석뿐이고, JSX 출력에 닿는
+줄은 없다. 그래서 스크린샷을 붙이지 않는다.
+기준선: `tsc --noEmit` 0 · `pnpm test:run` 636 파일 / 6340 통과 ·
+`pnpm test:contracts` 123 파일 / 1497 통과 — 전부 **변경 전과 같은 수**다.
+
+**진 대안 A — 61건도 이번에 같이 고친다.** 진 이유: `refs` 41건의 실제 판단
+지점은 네 자리인데 그 넷이 전부 «렌더 중에 값을 붙드는 이유»를 주석으로 적어 둔
+자리다. 근거를 읽지 않고 룰에 맞추면 패널 등장이 한 프레임 늦는 회귀를 되산다.
+**반증**: `exhaustive-deps` 6건 중 하나라도 실제 사용자 보고(볼트 전환 후 초안이
+사라진다 등)로 확인되면, 「렌더링 작업으로 미룬다」가 아니라 그 자리부터
+버그픽스로 즉시 다뤘어야 했던 것이다.
+
+**진 대안 B — `_` 면제 대신 세 자리를 코드로 고친다.** 루프를 `forEach` 로,
+구조분해를 `delete` 로 바꾸고 `_hasLoadedVault` 는 경고로 남기는 안. 진 이유:
+셋 다 **저자가 이미 의도를 표시해 둔** 자리이고, 표시를 못 읽는 쪽은 설정이다.
+코드를 비틀어 설정에 맞추면 다음에 같은 의도를 가진 사람이 또 같은 경고를
+만든다. **반증**: `_` 접두 미사용 변수가 **의도 없이** 늘기 시작하면(새 `_xxx`
+가 리뷰에서 «그냥 붙인 것»으로 판명되는 일이 2건 이상) 이 면제가 방향을 잃은
+것이므로 되돌리고 세 자리를 코드로 고친다.
+
+**서명 (accountable)**: 소유자 서명 대기
+**상태**: 유효

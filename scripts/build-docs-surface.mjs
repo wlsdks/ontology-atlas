@@ -84,7 +84,8 @@ export function listMcpTools({ entry = MCP_ENTRY, cwd = ROOT, timeoutMs = DEFAUL
       settled = true;
       clearTimeout(timer);
       child.kill();
-      err ? reject(err) : resolve(value);
+      if (err) reject(err);
+      else resolve(value);
     };
     const timer = setTimeout(
       () => finish(new Error(`MCP tools/list timed out after ${timeoutMs}ms. stderr: ${stderr.trim()}`)),
