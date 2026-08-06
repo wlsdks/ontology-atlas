@@ -1296,7 +1296,12 @@ export function ProjectForm({
     <form onSubmit={handleSubmit} className="flex flex-col gap-6">
       {writeDisabledBanner}
 
-      <div className="sticky top-4 z-10 rounded-panel border border-[color:var(--color-border-soft)] bg-[color:var(--color-panel)] px-4 py-4 shadow-[inset_0_1px_0_var(--color-overlay-2),0_18px_36px_var(--color-shadow-a22)]">
+      {/* 드롭을 사다리로 올렸다 (2026-08-06). 이 띠는 **진짜 떠 있다**(sticky +
+          z-10, 스크롤하는 폼 위를 지난다) — 그래서 드롭을 걷는 게 아니라
+          손으로 쓴 `0 18px 36px var(--color-shadow-a22)` 를 사다리의 최하 부유
+          단으로 바꾼다. y 는 18 로 같고 번짐 36→40, 진하기 a22→a35 로 짙어진다:
+          떠 있는 것일수록 더 짙고 넓게 — 광원 가정이 사다리와 하나가 된다. */}
+      <div className="sticky top-4 z-10 rounded-panel border border-[color:var(--color-border-soft)] bg-[color:var(--color-panel)] px-4 py-4 shadow-[inset_0_1px_0_var(--color-overlay-2),var(--shadow-elevation-1)]">
         <div className="flex flex-col gap-3">
           <div className="flex items-start justify-between gap-3">
             <div className="min-w-0">
