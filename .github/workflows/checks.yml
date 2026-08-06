@@ -172,16 +172,24 @@ jobs:
         if: always()
         run: pnpm test:docs-vault
 
-      # 2026-08-07: `docs:check`(생성 표면 diff · DESIGN-SYSTEM 목차 · 링크 참조
-      # 무결성)는 **어느 워크플로에서도 불린 적이 없었다.** 훅도 이걸 보지 않는다 —
-      # 위의 `pre-commit` 은 볼트 생성물만 잰다. 그 사각에서 실제로 main 이 빨간
-      # 채 방치됐다: #960 이 `###` 절을 더하면서 목차 줄을 손으로 넣었고, 생성기는
-      # `## ` 만 담으므로 `design:toc:check` 가 그때부터 계속 실패하고 있었는데
-      # 아무 신호도 없었다. **검사가 있어도 부르지 않으면 없는 것이다**
-      # (`.claude/skills/gate-probe` §4).
-      - name: Docs surface, TOC, links
+      # 2026-08-07: `docs:check` 의 세 하위 검사(생성 표면 diff · DESIGN-SYSTEM
+      # 목차 · 링크 참조 무결성)는 **어느 워크플로에서도 불린 적이 없었다.** 훅도
+      # 이걸 보지 않는다 — 위의 `pre-commit` 은 볼트 생성물만 잰다. 그 사각에서
+      # 실제로 main 이 빨간 채 방치됐다: #960 이 `###` 절을 더하면서 목차 줄을
+      # 손으로 넣었고, 생성기는 `## ` 만 담으므로 `design:toc:check` 가 그때부터
+      # 계속 실패하고 있었는데 아무 신호도 없었다. **검사가 있어도 부르지 않으면
+      # 없는 것이다** (`.claude/skills/gate-probe` §4).
+      #
+      # ⚠️ **`docs:check` 를 통째로 여기서 돌리지 않는다.** 그 안의
+      # `docs:surface:check` 는 **실제 MCP 서버를 띄워** `tools/list` 를 묻는데,
+      # 이 잡은 `mcp/node_modules` 를 설치하지 않아서(MCP 는 워크스페이스 멤버가
+      # 아니다) `ERR_MODULE_NOT_FOUND` 로 죽는다 — 처음 물렸을 때 정확히 그렇게
+      # 실패했고, 아래 `mcp` 잡의 설치 스텝 주석이 같은 함정을 이미 적어 뒀다.
+      # 그 검사는 의존성이 사는 `mcp` 잡으로 갔다. 여기는 파일만 읽는 둘을
+      # 갖는다 — 가장 빠른 잡에 mcp 설치를 더해 느리게 만들지 않는 쪽을 골랐다.
+      - name: Docs TOC & links
         if: always()
-        run: pnpm docs:check
+        run: pnpm design:toc:check && pnpm docs:links
 
   # ── 잡 2: 단위 + 계약 스위트 (실측 291초 — 임계 경로) ────────────────
   unit:
@@ -288,3 +296,14 @@ jobs:
       - name: MCP integration tests
         if: always()
         run: node --test mcp/src/integration.test.mjs
+
+      # 생성 표면 diff — **여기 있는 이유는 의존성이다.** 이 검사는 실제 MCP
+      # 서버를 띄워 `tools/list` 를 묻고 `docs/.generated/mcp-surface.json` 과
+      # 대조한 뒤, 등록된 도구·커맨드 이름이 README 에 다 나오는지도 본다. 즉
+      # 위의 「Install MCP dependencies」 없이는 돌 수 없다 — `gates` 잡에 뒀다가
+      # `ERR_MODULE_NOT_FOUND` 로 실패했고, 그 잡은 임계 경로라 mcp 설치를
+      # 더하지 않았다. 나머지 두 하위 검사(목차 · 링크)는 파일만 읽으므로
+      # `gates` 에 남아 있다.
+      - name: Docs surface (MCP tools/list)
+        if: always()
+        run: pnpm docs:surface:check
