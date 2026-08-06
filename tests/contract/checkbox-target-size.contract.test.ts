@@ -130,6 +130,27 @@ function inputTagAt(source: string, start: number): string {
   return source.slice(start);
 }
 
+/** 파일이 아니라 **소스 문자열**에서 뽑는다 — 합성 프로브가 실물 개수에 안 기대게. */
+function collectFromSource(label: string, raw: string): Site[] {
+  const sites: Site[] = [];
+  const source = stripComments(raw);
+  for (const m of source.matchAll(/<input\b/g)) {
+    const tag = inputTagAt(source, m.index ?? 0);
+    const typeMatch = tag.match(/type=["'](checkbox|radio)["']/);
+    if (!typeMatch) continue;
+    const className = tag.match(/className=["']([^"']*)["']/)?.[1] ?? '';
+    sites.push({
+      file: label,
+      type: typeMatch[1],
+      className,
+      ownPx: declaredPx(className),
+      labelFloorPx: null,
+      hasCoarseFloor: false,
+    });
+  }
+  return sites;
+}
+
 function collect(files: string[]): Site[] {
   const sites: Site[] = [];
   for (const file of files) {
@@ -180,11 +201,29 @@ describe('네이티브 체크박스·라디오의 타깃 크기 (WCAG 2.5.8 AA)'
    * 공회전 방지. 이 저장소는 「깨끗해서 0」과 「안 봐서 0」을 구별 못 하는 게이트를
    * 반복해서 만들었다 — 스캐너가 조용해지면 이 단언이 먼저 빨개진다.
    */
-  it('탐지기가 실제로 체크박스를 찾고 있다 — 0건이면 스캐너가 죽은 것이다', () => {
+  /**
+   * ⚠️ **결함(또는 대상) 개수에 하한을 걸면 안 된다** (2026-08-06 재검수에서 잡았다).
+   *
+   * 종전 이 단언은 «체크박스가 **5개 이상**» 을 요구했다. 실측이 **6개**라
+   * 여유가 **1** 이었다 — 체크박스 하나만 지워도 이유 없이 빨개진다. 이 저장소가
+   * 오늘 여섯 번 밟은 「게이트가 진전을 벌한다」와 같은 병이다.
+   *
+   * 물어야 하는 것은 «대상이 충분히 많은가» 가 아니라 **«스캐너가 살아 있는가»** 다.
+   * 그래서 ① 훑은 파일이 충분한가(스캐너의 시야)와 ② **합성 태그**에서 체크박스를
+   * 실제로 뽑아내는가(판정 함수의 생존)를 본다. 둘 다 실물 개수와 무관하다.
+   */
+  it('탐지기가 살아 있다 — 시야가 넓고, 합성 체크박스를 실제로 뽑는다', () => {
     expect(
-      sites.length,
-      '네이티브 체크박스를 한 건도 못 찾았다. 스캐너가 죽었거나 표기가 바뀌었다.',
-    ).toBeGreaterThanOrEqual(5);
+      ROOTS.flatMap(walk).length,
+      '훑은 파일이 너무 적다 — 스캐너의 시야가 죽었다',
+    ).toBeGreaterThan(300);
+
+    const probe = collectFromSource(
+      'probe.tsx',
+      '<input type="checkbox" className="size-4" onChange={(e) => go(e)} />',
+    );
+    expect(probe.length, '합성 체크박스를 못 뽑았다 — 태그 파서가 죽었다').toBe(1);
+    expect(probe[0].ownPx, '합성 체크박스의 크기를 못 읽었다').toBe(16);
   });
 
   it.each(sites.map((s) => [`${s.file} (${s.type})`, s] as const))(
