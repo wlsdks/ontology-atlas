@@ -1,5 +1,6 @@
 import { forwardRef, type ButtonHTMLAttributes, type ReactNode } from "react";
 import { cn } from "@/shared/lib/cn";
+import { CONTROL_DISABLED_CLASS } from "@/shared/ui/control-class";
 
 export interface DocsHeaderTileProps
   extends Omit<ButtonHTMLAttributes<HTMLButtonElement>, "title" | "className"> {
@@ -43,7 +44,9 @@ export const DocsHeaderTile = forwardRef<HTMLButtonElement, DocsHeaderTileProps>
         title={title}
         aria-label={ariaLabelProp ?? title}
         className={cn(
-          "inline-flex size-[var(--chrome-tile-size)] flex-none items-center justify-center rounded-[var(--chrome-radius-inner)] border text-[color:var(--color-text-tertiary)] transition-colors disabled:cursor-not-allowed disabled:opacity-45",
+          "inline-flex size-[var(--chrome-tile-size)] flex-none items-center justify-center rounded-[var(--chrome-radius-inner)] border text-[color:var(--color-text-tertiary)] transition-colors",
+          // 비활성 값은 손으로 적지 않는다 — 45 로 적혀 있던 자리다(값 층은 55).
+          CONTROL_DISABLED_CLASS,
           active
             ? "border-[color:var(--chrome-active-border)] bg-[color:var(--chrome-active-surface)] text-[color:var(--color-text-primary)]"
             : "border-[color:var(--color-border-soft)] hover:border-[color:var(--color-indigo-line-a32)] hover:text-[color:var(--color-text-primary)]",

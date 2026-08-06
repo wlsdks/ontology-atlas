@@ -752,7 +752,7 @@ export function VaultAgentPanel({
                     submit();
                   }
                 }}
-                className={`${COMPOSER_BOX_CLASS} block w-full text-[color:var(--color-text-primary)] placeholder:text-[color:var(--color-text-quaternary)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--color-indigo-accent)] disabled:opacity-60`}
+                className={`${COMPOSER_BOX_CLASS} block w-full text-[color:var(--color-text-primary)] placeholder:text-[color:var(--color-text-quaternary)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--color-indigo-accent)]`}
               />
               {/* 자람을 재는 미러. **같은 클래스 = 같은 타이포·같은 폭**이라
                   같은 줄 나눔이 나온다. 화면 밖으로 치우지 않고 같은 자리에

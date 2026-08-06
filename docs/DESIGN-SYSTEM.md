@@ -3507,6 +3507,27 @@ system in consuming apps."*
 넣으면 나머지 70%가 전환되는 순간 키가 바뀐다. 정사각(`icon`)만 예외 —
 거기서는 높이가 곧 모양이다.
 
+### 비활성 상태 (Disabled) — 값은 하나다 (2026-08-06)
+
+누를 수 없는 컨트롤의 시각 처리는 **`control-class.ts` 의
+`CONTROL_DISABLED_CLASS` 한 세트**가 정본이다: 흐림 `disabled:opacity-55` ·
+커서 `not-allowed` · 그림자 제거 · 호버 무력화. 넷은 한 세트다 — 흐림만
+가져가면 비활성인데 호버가 살아 있는 반쪽 상태가 된다. `controlClass()`/
+`fieldClass()` 는 base 로 이미 싣고, 손 컨트롤은 이 상수를 조합한다(값을
+베껴 적지 않는다).
+
+- **왜 55 인가**: 2026-08-03 값 층 결정(소유자 실보고 «최근 변경 눌러도 반응이
+  없다»)의 값이고, `/project/new` 실측에서 채운 인디고·외곽선 버튼 모두
+  «있다»와 «눌리지 않는다»가 함께 읽힌다. 60·50·45 로 갈려 있던 9곳은
+  2026-08-06 에 55 로 모았다 — WCAG 1.4.3 은 비활성 컴포넌트를 대비 요구에서
+  면제하지만, 면제가 «아무 값이나»의 허가는 아니다.
+- **`disabled:` 변형을 못 받는 원소**(`<Link>`/`<span>` 의 비활성 표현)는 같은
+  단의 `opacity-55` 를 직접 쓴다 — 지금 1곳(`TopologyV2ContextMenu`), lint 밖.
+- **게이트**: `eslint.config.mjs` `disabledAffordanceSelectors`(55 밖 값 전역
+  금지, 면제 파일 0) + `tests/contract/disabled-affordance.contract.test.ts`
+  (상수가 네 처리를 싣는가 · 경로마다 값이 갈리지 않는가 · lint 허용값과 값
+  층의 값이 같은가).
+
 ### Select / Listbox (#4)
 
 - **트리거** — 40px(`--control-h-lg`, `size="md"` 는 32px `--control-h-md`),

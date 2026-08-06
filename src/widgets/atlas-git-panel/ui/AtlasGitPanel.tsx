@@ -19,6 +19,7 @@ import {
   ShieldCheck,
 } from "lucide-react";
 import { ICON_SIZE } from "@/shared/ui/icon-size";
+import { CONTROL_DISABLED_CLASS } from "@/shared/ui/control-class";
 import { Link } from "@/i18n/navigation";
 import { copyText } from "@/shared/lib/copy-text";
 import {
@@ -190,7 +191,10 @@ const INIT_CLI_COMMAND = "git init";
  * 강등에서 유일한 진짜 다음 걸음이 복사 버튼보다 작았다).
  */
 const PRIMARY_ACTION_CLASS =
-  "inline-flex h-[var(--git-setup-action-height)] shrink-0 items-center justify-center gap-1.5 rounded-[var(--chrome-radius-inner)] bg-[color:var(--color-indigo-brand)] px-4 text-body font-[var(--font-weight-emphasis)] text-[color:var(--color-text-on-accent)] transition-colors hover:bg-[color:var(--color-indigo-brand-hover)] disabled:opacity-60";
+  // 비활성 처리는 값 층 한 세트로 받는다(흐림 55 · 커서 · 호버 무력화). 채운
+  // 컨트롤이라 호버 무력화의 `bg-inherit` 가 채움을 지우므로 기본 채움으로
+  // 다시 고정한다 — 소비처가 cn(twMerge)을 거치므로 뒤의 것이 이긴다.
+  `inline-flex h-[var(--git-setup-action-height)] shrink-0 items-center justify-center gap-1.5 rounded-[var(--chrome-radius-inner)] bg-[color:var(--color-indigo-brand)] px-4 text-body font-[var(--font-weight-emphasis)] text-[color:var(--color-text-on-accent)] transition-colors hover:bg-[color:var(--color-indigo-brand-hover)] ${CONTROL_DISABLED_CLASS} disabled:hover:bg-[color:var(--color-indigo-brand)]`;
 
 /** 보조 탈출구 — 있지만 주 동작과 경쟁하지 않는 무게. */
 const SECONDARY_ACTION_CLASS =
