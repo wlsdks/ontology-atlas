@@ -52,6 +52,7 @@ import { BlockImportModule } from '@/features/ontology-blocks';
 import { AiConnectionPanel } from './AiConnectionPanel';
 import { useAiConnection } from '../model/use-ai-connection';
 import { AGENT_GRAPH_WORKFLOW_HREF } from '@/shared/config';
+import { controlClass } from '@/shared/ui/control-class';
 
 /**
  * 단일 설정 표면 (설정 통합 2026-07-24, 소유자 지시) — 이전엔 설정이 두 곳에
@@ -1035,7 +1036,7 @@ export function AppSettingsMenu({
                 <Link
                   href={vaultNavigationHref}
                   onClick={handleVaultNavigate}
-                  className="flex min-h-12 items-center justify-between gap-3 px-3 py-2 transition-colors hover:bg-[color:var(--color-overlay-2)]"
+                  className={controlClass({ shape: "row", stacked: true, className: "min-h-12 justify-between gap-3 px-3 py-2 hover:bg-[color:var(--color-overlay-2)]" })}
                 >
                   <span className="min-w-0">
                     <span className="block text-body text-[color:var(--color-text-secondary)]">

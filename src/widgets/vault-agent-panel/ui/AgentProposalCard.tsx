@@ -169,7 +169,7 @@ export function AgentProposalCard({
                 onClick={() =>
                   onFocusNode(proposal.changes[0]?.files[0]?.path.replace(/\.md$/, '') ?? '')
                 }
-                className="underline decoration-dotted underline-offset-2 transition-colors hover:text-[color:var(--color-text-primary)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--color-indigo-accent)]"
+                className={controlClass({ shape: "link", className: "underline decoration-dotted underline-offset-2 hover:text-[color:var(--color-text-primary)]" })}
               >
                 {labels.showOnMap}
               </button>
@@ -285,7 +285,7 @@ function ChangeRow({
           data-testid="agent-proposal-change-toggle"
           aria-expanded={open}
           onClick={() => setOpen((current) => !current)}
-          className="shrink-0 text-label tracking-label text-[color:var(--color-text-quaternary)] transition-colors hover:text-[color:var(--color-text-primary)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--color-indigo-accent)]"
+          className={controlClass({ shape: "link", tone: "muted", className: "shrink-0 tracking-label hover:text-[color:var(--color-text-primary)]" })}
         >
           {expandHint}
         </button>

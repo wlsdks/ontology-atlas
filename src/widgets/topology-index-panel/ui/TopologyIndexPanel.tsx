@@ -697,7 +697,7 @@ export function TopologyIndexPanel({
         <Link
           href="/ontology/insights?tab=do-next"
           data-testid="topology-index-dusty-nodes"
-          className="mt-2 flex shrink-0 items-center gap-2 rounded-[var(--chrome-radius-inner)] border border-[color:var(--topology-v2-panel-border)] px-2 py-1.5 text-left text-label transition-colors hover:bg-[color:var(--topology-v2-panel-row-hover)]"
+          className={controlClass({ shape: "chip", size: "md", className: "mt-2 shrink-0 gap-2 rounded-[var(--chrome-radius-inner)] border-[color:var(--topology-v2-panel-border)] text-left hover:bg-[color:var(--topology-v2-panel-row-hover)]" })}
         >
           <span className="min-w-0 flex-1 truncate text-[color:var(--topology-v2-panel-text-tertiary)]">
             {labels.dustyNodesLabel}
@@ -774,7 +774,7 @@ export function TopologyIndexPanel({
             <Link
               href={agentActivityHref}
               data-testid="topology-index-agent-connect"
-              className="inline-flex shrink-0 items-center gap-1.5 rounded-[var(--chrome-radius-inner)] px-0.5 text-left transition-colors hover:bg-[color:var(--topology-v2-panel-row-hover)] hover:text-[color:var(--topology-v2-panel-text-primary)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--color-indigo-a46)] focus-visible:ring-inset"
+              className={controlClass({ shape: "link", className: "shrink-0 gap-1.5 rounded-[var(--chrome-radius-inner)] px-0.5 hover:bg-[color:var(--topology-v2-panel-row-hover)] hover:text-[color:var(--topology-v2-panel-text-primary)]" })}
             >
               <span
                 aria-hidden="true"
