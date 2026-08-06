@@ -67,7 +67,6 @@ tags: [design, ux, linear, circuit-constellation, overview]
 - [Geometry & Type Codex (R5, 2026-07)](#geometry-type-codex-r5-2026-07)
 - [크롬 문법 (feat/chrome-system)](#크롬-문법-featchrome-system)
 - [컨트롤 인벤토리 (캐노니컬 컴포넌트) — 디자인 전면 정비 Phase 1 (2026-07-25)](#컨트롤-인벤토리-캐노니컬-컴포넌트-디자인-전면-정비-phase-1-2026-07-25)
-- [폼 필드 — `fieldClass()` · `fieldLabel()` (2026-08-06 디자인 카운슬)](#폼-필드--fieldclass--fieldlabel-2026-08-06-디자인-카운슬)
 - [개인화 — 캔버스 배경 세트 & 노드 아이콘 세트 (Phase 5, 2026-07-25)](#개인화-캔버스-배경-세트-노드-아이콘-세트-phase-5-2026-07-25)
 - [Changelog](#changelog)
 
