@@ -376,7 +376,10 @@ function SearchPaletteDialog({
                   ? `search-result-project-${activeRow.result.project.slug}`
                   : undefined
             }
-            className={fieldClass({ frame: "bare", className: "flex-1 text-title" })}
+            // 타입은 값 층(bare=text-body)이 정한다 — 종전 `text-title`(16px)
+            // 덮어쓰기는 조회 규격 위반이었다(조회는 입력이 결과를 이기면 안
+            // 된다, 2026-08-06 필드 규격). 문서함 팔레트와 같은 칸이 된다.
+            className={fieldClass({ frame: "bare", className: "flex-1" })}
           />
           <kbd className="hidden rounded-micro border border-[color:var(--color-divider)] px-1.5 py-0.5 font-mono text-caption uppercase tracking-wider text-[color:var(--color-text-quaternary)] sm:inline-block">
             ESC
