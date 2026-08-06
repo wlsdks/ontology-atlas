@@ -3,6 +3,7 @@
 import { Check, Clipboard } from "lucide-react";
 import { ICON_SIZE } from "@/shared/ui/icon-size";
 import type { HTMLAttributes } from "react";
+import { controlClass } from '@/shared/ui/control-class';
 
 export interface CompactCopyButtonProps {
   copied: boolean;
@@ -31,7 +32,12 @@ export function CompactCopyButton({
       {...attrs}
       type="button"
       onClick={onClick}
-      className={`inline-flex min-h-9 min-w-0 items-center justify-center gap-1.5 rounded-chip px-2 py-1 text-label text-[color:var(--color-text-quaternary)] transition-[background-color,color,transform] duration-[var(--motion-fast)] ease-[var(--motion-ease)] hover:bg-[color:var(--color-overlay-1)] hover:text-[color:var(--color-text-primary)] active:translate-y-[1px] motion-reduce:transition-none motion-reduce:transform-none ${className}`}
+      className={controlClass({
+        shape: 'chip',
+        size: 'md',
+        tone: 'muted',
+        className: `min-h-9 min-w-0 justify-center px-2 py-1 transition-[background-color,color,transform] duration-[var(--motion-fast)] ease-[var(--motion-ease)] hover:bg-[color:var(--color-overlay-1)] hover:text-[color:var(--color-text-primary)] active:translate-y-[1px] motion-reduce:transition-none motion-reduce:transform-none ${className}`,
+      })}
       aria-label={ariaLabel}
       title={label}
     >

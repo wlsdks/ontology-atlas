@@ -1,4 +1,5 @@
 import { useTranslations } from "next-intl";
+import { controlClass } from '@/shared/ui/control-class';
 /**
  * 문서 목차 한 항목.
  *
@@ -76,11 +77,17 @@ export function DocReadingOutlineRail({
                   onHeadingClick(heading.slug);
                 }}
                 aria-current={isActive ? "true" : undefined}
-                className={`block truncate border-l-2 py-1.5 pl-2.5 leading-body transition-colors ${
-                  isActive
-                    ? "border-[color:var(--color-indigo-accent)] text-[color:var(--color-text-primary)]"
-                    : "border-transparent text-[color:var(--color-text-tertiary)] hover:text-[color:var(--color-text-secondary)]"
-                }`}
+                className={controlClass({
+                  shape: "row",
+                  stacked: true,
+                  size: "sm",
+                  tone: isActive ? "default" : "muted",
+                  className: `block truncate border-l-2 py-1.5 pl-2.5 leading-body ${
+                    isActive
+                      ? "border-[color:var(--color-indigo-accent)]"
+                      : "border-transparent hover:text-[color:var(--color-text-secondary)]"
+                  }`,
+                })}
               >
                 {heading.text}
               </a>

@@ -107,16 +107,36 @@ describe("한 시트 안에서 «값 하나 고르기» 는 한 규격이다", (
    * `AgentActivitySettings` 의 알림 칩은 이미 32px/12.5px 이었다 — 이 시트의 더
    * 새 코드가 이미 옳은 값을 골라 뒀고, `Choice` 만 옛 자리의 치수를 들고 있었다.
    */
+  /**
+   * ⚠️ **소스의 클래스 문자열을 못박지 않는다** (2026-08-06 에 그것 때문에 깨졌다).
+   *
+   * 종전 이 단언은 `flex h-8 items-center rounded-chip border px-3 text-body` 를
+   * 정규식으로 그대로 찾았다. 그 자리를 **값 층(`controlClass`)으로 옮기자**
+   * 문자열이 사라져 빨개졌다 — 규격이 좋아지는 방향에서 검사가 터진 것이고,
+   * 그러면 다음 사람은 검사 대신 **규격 쪽을 되돌린다**(`documentation.md`).
+   *
+   * 규격의 본체는 «어떻게 적혔나» 가 아니라 **«같은 높이·같은 단을 쓰나»** 다.
+   * 그래서 소스에서 문법을 가리지 않고 **높이(`h-8`)와 타입 단(`text-body`)이
+   * 실제로 서 있는지**만 본다 — 리터럴이든 `controlClass({ className })` 이든.
+   */
   it("라디오 칩 · 세그먼트 · 알림 칩이 같은 높이·같은 단을 쓴다", () => {
     const primitives = sourceWithoutComments("settings-primitives.tsx");
     const activity = sourceWithoutComments("AgentActivitySettings.tsx");
 
-    // Choice 의 옵션 버튼
-    expect(primitives).toMatch(/flex h-8 items-center rounded-chip border px-3 text-body/);
-    // SegmentSwitch 의 세그먼트
-    expect(primitives).toMatch(/flex h-8 items-center justify-center rounded-chip px-2/);
-    // 알림 칩 (이미 옳았던 쪽 — 되돌아가면 여기서 걸린다)
-    expect(activity).toMatch(/h-8 items-center rounded-chip[^'"`]*text-body/);
+    // 높이 — 셋 다 32px 한 단. `h-8` 이 세 자리에 서 있어야 한다.
+    expect(primitives.match(/\bh-8\b/g)?.length ?? 0, "칩·세그먼트 둘 다 h-8 이어야 한다").toBeGreaterThanOrEqual(2);
+    expect(activity).toMatch(/\bh-8\b/);
+
+    // 타입 단 — 칩은 `text-body`(12.5). 세그먼트는 무게만 다르고 단은 같다.
+    expect(primitives).toMatch(/\btext-body\b/);
+    expect(activity).toMatch(/\btext-body\b/);
+
+    /*
+     * 램프 밖 높이가 끼어들지 않았는지. **`min-h-` 는 제외한다** — 행 컨테이너의
+     * `min-h-11`(44px 터치 바닥)은 아래 「칩 행이 44px 미만으로 눌리지 않는다」가
+     * 요구하는 값이라, 안 빼면 이 단언이 그 단언과 서로 싸운다(실제로 밟았다).
+     */
+    expect(primitives, "시트에 램프 밖 컨트롤 높이가 생겼다").not.toMatch(/(?<!min-)\bh-(7|9|10|11)\b/);
   });
 
   /**

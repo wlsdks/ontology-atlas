@@ -8420,3 +8420,46 @@ elevated 「파낸 우물」 방언 7 · 사다리 밖 36px 4 · panel scope 2 �
 
 **서명 (accountable)**: design-guardian (적용), 소유자 서명 대기
 **상태**: 유효
+
+---
+
+## 2026-08-06 (7) — 손 컨트롤 39 → 30 · **계약이 소스 문자열을 못박고 있었다**
+
+| 부채 | before → after |
+|---|---|
+| 버튼 | **24 → 18** |
+| 앵커 | **15 → 12** |
+
+옮긴 자리: 설정 시트의 라디오 칩·세그먼트 · `LocaleSwitch` · `compact-copy-button`
+· `DocMetaBar` 의 `actionLinkClass`(상수) · `DocReadingOutlineRail` ·
+`GatewayDocPage` 목차 · `VaultAgentPanel` 닫기 · `TopologyTrailChip`.
+
+**상수로 모여 있는 자리는 전환 비용이 1/N 이다** — `FirstRunPage` 의 `cardBase`
+가 4곳, `DocMetaBar` 의 `actionLinkClass` 가 그 파일 전체를 덮었다.
+
+### ⚠️ `settings-sheet-type-dialect` 이 소스 문자열을 못박고 있었다
+
+그 계약은 `flex h-8 items-center rounded-chip border px-3 text-body` 를 **정규식
+으로 그대로** 찾고 있었다. 그 자리를 값 층으로 옮기자 문자열이 사라져 **빨개졌다**
+— 규격이 좋아지는 방향에서 검사가 터진 것이고, 그러면 다음 사람은 검사 대신
+**규격 쪽을 되돌린다**(`documentation.md` 가 금지하는 그 모양).
+
+규격의 본체는 «어떻게 적혔나» 가 아니라 **«같은 높이·같은 단을 쓰나»** 다. 그래서
+문법을 가리지 않고 **높이(`h-8`)와 타입 단(`text-body`)이 실제로 서 있는지**만
+보게 다시 썼다 — 리터럴이든 `controlClass({ className })` 이든.
+
+⚠️ **다시 쓰면서 한 번 더 틀렸다.** 「램프 밖 높이가 없다」를 `\bh-(7|9|10|11)\b`
+로 썼더니 **`min-h-11` 을 잡았다** — 행 컨테이너의 44px 터치 바닥이고, **같은
+파일의 다른 단언이 그것을 요구한다.** 두 단언이 서로 싸운 것이다.
+`(?<!min-)` 를 붙여 갈랐고, `h-9` 를 심어 프로브했다.
+
+> **정규식 하나가 자기 형제 단언과 싸우면, 둘 중 하나는 규격이 아니라 실수다.**
+
+### 실측
+
+- 설정 시트를 **열어서** 쟀다 — 세그먼트·칩 **32px** ×9 · LNB 행 38px ×8 로
+  규격대로이고 화면도 정상이다
+- 11 라우트 × 3 폭 스윕 **0건** · `touch-target-contract` 9건 통과
+
+**서명 (accountable)**: design-guardian (적용), 소유자 서명 대기
+**상태**: 유효

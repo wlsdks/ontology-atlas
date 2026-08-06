@@ -1,5 +1,6 @@
 import { type ReactNode } from 'react';
 import { cn } from '@/shared/lib/cn';
+import { controlClass } from '@/shared/ui/control-class';
 
 /**
  * 설정 시트의 원시 요소 셋 — 그룹 · 행 · 값 슬라이더 · 라디오 칩 · 2세그먼트 토글.
@@ -215,12 +216,17 @@ export function Choice<T extends string | boolean>({
               aria-checked={active}
               data-testid={optionTestId?.(option.value)}
               onClick={() => onChange(option.value)}
-              className={cn(
-                'flex h-8 items-center rounded-chip border px-3 text-body transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--color-indigo-a46)]',
-                active
-                  ? 'border-[color:var(--color-indigo-accent)] bg-[color:var(--color-indigo-line-a13)] text-[color:var(--color-indigo-text-soft)]'
-                  : 'border-[color:var(--color-border-soft)] text-[color:var(--color-text-tertiary)] hover:border-[color:var(--color-border-strong)]',
-              )}
+              className={controlClass({
+                shape: 'chip',
+                size: 'md',
+                tone: active ? 'accentOnTint' : 'muted',
+                className: cn(
+                  'h-8 px-3 text-body',
+                  active
+                    ? 'border-[color:var(--color-indigo-accent)] bg-[color:var(--color-indigo-line-a13)]'
+                    : 'border-[color:var(--color-border-soft)] hover:border-[color:var(--color-border-strong)]',
+                ),
+              })}
             >
               {option.label}
             </button>
@@ -260,12 +266,17 @@ export function SegmentSwitch({
             type="button"
             onClick={() => onChange(option.value)}
             aria-pressed={active}
-            className={cn(
-              'flex h-8 items-center justify-center rounded-chip px-2 font-[var(--font-weight-signature)] transition-colors',
-              active
-                ? 'bg-[color:var(--color-panel)] text-[color:var(--color-text-primary)]'
-                : 'text-[color:var(--color-text-tertiary)] hover:text-[color:var(--color-text-secondary)]',
-            )}
+            className={controlClass({
+              shape: 'segment',
+              size: 'md',
+              tone: active ? 'default' : 'muted',
+              className: cn(
+                'h-8 px-2 font-[var(--font-weight-signature)]',
+                active
+                  ? 'bg-[color:var(--color-panel)]'
+                  : 'hover:text-[color:var(--color-text-secondary)]',
+              ),
+            })}
           >
             {option.label}
           </button>

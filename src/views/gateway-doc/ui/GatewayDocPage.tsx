@@ -424,12 +424,17 @@ function GuideSidebar({ activeSegment }: { activeSegment?: string }) {
                   href={`/guide/${page.segment}`}
                   aria-current={active ? 'page' : undefined}
                   data-testid={`guide-nav-${page.segment}`}
-                  className={cn(
-                    'block rounded-chip px-2.5 py-1.5 text-body leading-body transition-colors',
-                    active
-                      ? 'bg-[color:var(--color-elevated)] text-[color:var(--color-text-primary)]'
-                      : 'text-[color:var(--color-text-tertiary)] hover:bg-[color:var(--color-elevated)] hover:text-[color:var(--color-text-primary)]',
-                  )}
+                  className={controlClass({
+                    shape: 'row',
+                    size: 'sm',
+                    tone: active ? 'default' : 'muted',
+                    className: cn(
+                      'block leading-body',
+                      active
+                        ? 'bg-[color:var(--color-elevated)]'
+                        : 'hover:bg-[color:var(--color-elevated)] hover:text-[color:var(--color-text-primary)]',
+                    ),
+                  })}
                 >
                   {t(`guidePages.${page.titleKey}`)}
                 </Link>
