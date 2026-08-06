@@ -29,7 +29,7 @@ import {
 } from '@/shared/lib/local-endpoint';
 import type { LlmAuditEntry } from '@/shared/lib/llm-audit-log';
 import { openTauriVaultInFinder } from '@/shared/lib/tauri-vault-fs';
-import { controlClass } from '@/shared/ui/control-class';
+import { controlClass, fieldClass } from '@/shared/ui/control-class';
 import { Chip } from '@/shared/ui/controls';
 import { Select } from '@/shared/ui/select';
 import { useToast } from '@/shared/ui/toast';
@@ -729,7 +729,7 @@ function LocalEndpointCard({
                 onKeyDown={(event) => {
                   if (event.key === 'Enter') void handleVerify();
                 }}
-                className="h-8 min-w-0 flex-1 rounded-chip border border-[color:var(--color-border-soft)] bg-[color:var(--color-elevated)] px-2 font-mono text-caption text-[color:var(--color-text-primary)] transition-colors placeholder:font-sans placeholder:text-[color:var(--color-text-quaternary)] focus-visible:border-[color:var(--color-indigo-line-a45)] focus-visible:outline-none"
+                className={fieldClass({ size: "md", className: "min-w-0 flex-1 font-mono text-caption placeholder:font-sans" })}
               />
               {!connected ? (
                 <Chip
@@ -993,7 +993,7 @@ function KeyDraftForm({
         }}
         // 값은 mono(기계 문자열), 안내 문구는 본문 서체 — 한국어 placeholder 까지
         // 등폭으로 그리면 "API  키  붙여넣기" 처럼 낱말 사이가 벌어진다.
-        className="h-8 min-w-0 flex-1 rounded-chip border border-[color:var(--color-border-soft)] bg-[color:var(--color-elevated)] px-2 font-mono text-caption text-[color:var(--color-text-primary)] transition-colors placeholder:font-sans placeholder:text-[color:var(--color-text-quaternary)] focus-visible:border-[color:var(--color-indigo-line-a45)] focus-visible:outline-none"
+        className={fieldClass({ size: "md", className: "min-w-0 flex-1 font-mono text-caption placeholder:font-sans" })}
       />
       {/* 저장 왼쪽의 중립 컨트롤 — 눌러 보고 마음이 바뀐 사람의 출구다.
           Esc 로도 같은 일이 일어나지만 그건 보이지 않는다. 되돌릴 길이 화면에

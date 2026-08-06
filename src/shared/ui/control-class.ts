@@ -750,8 +750,20 @@ export function controlClass({ className, ...variants }: ControlClassOptions = {
  * 쓰면 안 된다. 실제로 프로브에서 「한 줄 md 를 `h-9`(36)로」가 어휘 검사를
  * **초록으로 통과**했다(36도 높이 어휘 안이라서).
  */
+/**
+ * ⚠️ **타입은 base 가 아니라 «크기와 짝»이다** — 화면을 보고 고쳤다.
+ *
+ * 처음엔 `text-body`(12.5px) 하나로 냈다. `/project/new` 전후를 나란히 놓고
+ * 보니 **주 폼에서 후퇴**였다 — 그 화면의 입력값이 종전 14px 였는데 12.5px 로
+ * 내려가면서, **사용자가 입력한 값이 앱이 쓴 라벨(11px)과 거의 같은 급**이
+ * 됐다. 폼에서 가장 잘 읽혀야 하는 것은 사용자가 넣은 값이다.
+ *
+ * 그래서 램프의 「크기 칸이 자기 행간을 같이 싣는다」와 같은 규율을 쓴다:
+ * **넓은 칸(md·lg)은 `text-body-lg`(14) · 촘촘한 칸(xs·sm)은 `text-body`(12.5).**
+ * 촘촘한 칸은 28px 상자라 14px 을 넣으면 위아래 여유가 사라진다.
+ */
 const fieldBase =
-  'text-body text-[color:var(--color-text-primary)] placeholder:text-[color:var(--color-text-quaternary)] transition-colors';
+  'text-[color:var(--color-text-primary)] placeholder:text-[color:var(--color-text-quaternary)] transition-colors';
 
 const field = cva(`${fieldBase} ${DISABLED}`, {
   variants: {
@@ -770,7 +782,7 @@ const field = cva(`${fieldBase} ${DISABLED}`, {
        */
       boxed:
         'atlas-touch-floor border border-[color:var(--color-border-soft)] bg-[color:var(--color-overlay-1)] focus-visible:border-[color:var(--color-indigo-a46)] focus-visible:outline-none',
-      bare: 'bg-transparent focus:outline-none',
+      bare: 'bg-transparent text-body focus:outline-none',
     },
     /** 한 줄인가 자라는가. **별개 모양이 아니다** — 보더·바탕·반경·초점·플레이스홀더가 같고 치수 문법만 다르다. */
     multiline: { false: '', true: 'resize-none' },
@@ -782,14 +794,14 @@ const field = cva(`${fieldBase} ${DISABLED}`, {
      * `xs` 는 높이 단이 아니라 **반경만 한 층 내리는** 티어다 — 위 `chip` 의
      * `xs` 가 쓰는 문법 그대로이고, 소비처는 `DocFrontmatterBlock` 3곳이다.
      */
-    { frame: 'boxed', multiline: false, size: 'xs', class: 'h-7 rounded-micro px-2' },
-    { frame: 'boxed', multiline: false, size: 'sm', class: 'h-7 rounded-chip px-2' },
-    { frame: 'boxed', multiline: false, size: 'md', class: 'h-8 rounded-chip px-2.5' },
-    { frame: 'boxed', multiline: false, size: 'lg', class: 'h-10 rounded-chip px-3' },
-    { frame: 'boxed', multiline: true, size: 'xs', class: 'min-h-7 rounded-micro px-2 py-1.5' },
-    { frame: 'boxed', multiline: true, size: 'sm', class: 'min-h-7 rounded-chip px-2 py-1.5' },
-    { frame: 'boxed', multiline: true, size: 'md', class: 'min-h-8 rounded-chip px-2.5 py-1.5' },
-    { frame: 'boxed', multiline: true, size: 'lg', class: 'min-h-10 rounded-chip px-3 py-2' },
+    { frame: 'boxed', multiline: false, size: 'xs', class: 'h-7 rounded-micro px-2 text-body' },
+    { frame: 'boxed', multiline: false, size: 'sm', class: 'h-7 rounded-chip px-2 text-body' },
+    { frame: 'boxed', multiline: false, size: 'md', class: 'h-8 rounded-chip px-2.5 text-body-lg' },
+    { frame: 'boxed', multiline: false, size: 'lg', class: 'h-10 rounded-chip px-3 text-body-lg' },
+    { frame: 'boxed', multiline: true, size: 'xs', class: 'min-h-7 rounded-micro px-2 py-1.5 text-body' },
+    { frame: 'boxed', multiline: true, size: 'sm', class: 'min-h-7 rounded-chip px-2 py-1.5 text-body' },
+    { frame: 'boxed', multiline: true, size: 'md', class: 'min-h-8 rounded-chip px-2.5 py-1.5 text-body-lg' },
+    { frame: 'boxed', multiline: true, size: 'lg', class: 'min-h-10 rounded-chip px-3 py-2 text-body-lg' },
   ],
   defaultVariants: { frame: 'boxed', multiline: false, size: 'md' },
 });
@@ -817,4 +829,58 @@ export interface FieldClassOptions extends VariantProps<typeof field> {
  */
 export function fieldClass({ className, ...variants }: FieldClassOptions = {}): string {
   return cn(field(variants), className);
+}
+
+/**
+ * 필드 이름(라벨)의 규격 — **폼 전수를 옮기면서 갈래가 셋으로 드러났다** (2026-08-06).
+ *
+ * | 갈래 | 무엇 | 규격이 있나 |
+ * |---|---|---|
+ * | **이름 텍스트** | 「이름」·「카테고리」처럼 필드를 부르는 말 | ✅ 이 함수 |
+ * | **행 전체가 눌리는 것** | 체크박스를 감싸 라벨 클릭이 곧 토글이 되는 행 | ✅ 이 함수(`row`) |
+ * | **배치 전용 래퍼** | `block` · `flex flex-col gap-1` 처럼 자리만 잡는 것 | ❌ 규격이 아니다 |
+ *
+ * 셋째 갈래를 여기 끌어들이지 않는다 — 자리만 잡는 `<label>` 에 타입·색을 얹으면
+ * 그 안의 실제 이름 텍스트와 **둘이 규격을 다투게** 된다.
+ *
+ * ## 왜 잉크가 `secondary` 인가 — 「위계」석 실측이 뒤집은 값
+ *
+ * `/project/new` 의 필드 라벨이 `text-caption`(9.5px) · `quaternary` 였는데
+ * **바로 아래 각주가 11px** 이었다. **필드의 이름이 자기 각주보다 한 단 작았다.**
+ * 그래서 사용자는 라벨보다 14px 플레이스홀더를 먼저 읽고, 타이핑을 시작하는
+ * 순간 그 안내가 사라진다(NN/g 플레이스홀더 연구가 말하는 실패 그대로).
+ *
+ * 2026-08-02 설정 시트에서 잡은 것과 **같은 과**다 — 종속 자리의 치수를 주
+ * 역할에 그대로 들고 올라온 것. 규격: **이름은 `text-label`(11) 이상 · 잉크는
+ * 각주(quaternary)보다 밝다.**
+ */
+const fieldLabelVariants = cva('text-label text-[color:var(--color-text-secondary)]', {
+  variants: {
+    /**
+     * 행 전체가 눌리는가. 체크박스를 감싸면 **라벨이 곧 타깃**이라(WCAG 2.5.8)
+     * 24px 바닥과 손가락 바닥을 함께 진다.
+     */
+    row: {
+      false: '',
+      true: `${TOUCH_FLOOR} flex min-h-6 cursor-pointer items-center gap-2`,
+    },
+  },
+  defaultVariants: { row: false },
+});
+
+export interface FieldLabelOptions extends VariantProps<typeof fieldLabelVariants> {
+  /** 이 라벨 한 자리에만 참인 것 — 자리잡기·폭. 타입·색은 여기 넣지 않는다. */
+  className?: string;
+}
+
+/**
+ * 필드 이름의 className 을 낸다.
+ *
+ * ```tsx
+ * <label htmlFor={id} className={fieldLabel()}>이름</label>
+ * <label className={fieldLabel({ row: true })}><input type="checkbox" />허브로 표시</label>
+ * ```
+ */
+export function fieldLabel({ className, ...variants }: FieldLabelOptions = {}): string {
+  return cn(fieldLabelVariants(variants), className);
 }

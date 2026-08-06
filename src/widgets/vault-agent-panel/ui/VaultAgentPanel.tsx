@@ -25,7 +25,7 @@ import {
 } from '@/shared/lib/local-endpoint';
 import { useHeldValue } from '@/shared/lib/use-presence';
 import { Surface } from '@/shared/ui';
-import { controlClass } from '@/shared/ui/control-class';
+import { controlClass, fieldClass } from '@/shared/ui/control-class';
 import { LLM_AUDIT_LOG_RELATIVE_PATH } from '@/shared/lib/llm-audit-log';
 import { requestSettingsView } from '@/shared/lib/settings-view-intent';
 import { gitHistory, isGitBridgeAvailable } from '@/shared/lib/tauri-git';
@@ -881,8 +881,7 @@ export function VaultAgentPanel({
  * 갈라질 자리가 없다 — 갈라지면 미러가 다른 줄 수를 재고 상자가 틀린 높이로
  * 선다(값이 두 곳에 적히면 이미 드리프트가 시작된 것).
  */
-const COMPOSER_BOX_CLASS =
-  'resize-none rounded-card border border-[color:var(--color-border-soft)] bg-[color:var(--color-panel)] px-2.5 py-2 text-body leading-body';
+const COMPOSER_BOX_CLASS = fieldClass({ multiline: true, size: 'md' });
 
 /**
  * 곁가지를 여는 한 줄짜리 컨트롤. 테두리도 배경도 없다 — 이 줄이 입력칸과

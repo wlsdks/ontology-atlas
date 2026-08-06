@@ -34,6 +34,7 @@ import {
 } from "@/widgets/docs-vault/lib/tree-order";
 import { resolveLocaleDisplayName } from "@/shared/lib/locale-display-name";
 import { IconButton, RowButton, Surface, Tooltip, controlClass } from "@/shared/ui";
+import { fieldClass } from '@/shared/ui/control-class';
 
 /**
  * DocsVaultPage 의 사이드바 본문 — machined 파일 트리 (docs-vault-final spec).
@@ -433,7 +434,7 @@ export function DocsSidebarBody({
             onChange={(event) => setTreeQuery(event.target.value)}
             placeholder={t("searchPlaceholder")}
             autoFocus
-            className="min-w-0 flex-1 bg-transparent text-body text-[color:var(--color-text-secondary)] placeholder:text-[color:var(--color-text-quaternary)] focus:outline-none"
+            className={fieldClass({ frame: "bare", className: "min-w-0 flex-1" })}
             type="text"
             autoComplete="off"
           />

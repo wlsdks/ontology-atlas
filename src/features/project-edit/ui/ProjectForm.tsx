@@ -15,6 +15,7 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { useTranslations } from "next-intl";
 import { ChevronDown } from "lucide-react";
 import { ICON_SIZE } from "@/shared/ui/icon-size";
+import { fieldClass, fieldLabel } from "@/shared/ui/control-class";
 import { cn } from "@/shared/lib/cn";
 import { slugify } from "@/shared/lib/slugify";
 import { Button, controlClass } from "@/shared/ui";
@@ -1083,7 +1084,7 @@ export function ProjectForm({
         </FieldRow>
       </div>
 
-      <label className="atlas-touch-floor flex min-h-6 cursor-pointer items-center gap-2 text-body-lg text-[color:var(--color-text-secondary)]">
+      <label className={fieldLabel({ row: true, className: "text-body-lg" })}>
         <input
           type="checkbox"
           name="isHub"
@@ -1270,7 +1271,7 @@ export function ProjectForm({
         <div className="flex flex-col gap-3">
           <div className="flex items-start justify-between gap-3">
             <div className="min-w-0">
-              <p className="font-mono text-caption uppercase tracking-[var(--tracking-caps-12)] text-[color:var(--color-text-quaternary)]">
+              <p className={fieldLabel({ className: "font-mono uppercase tracking-[var(--tracking-caps-12)]" })}>
                 {editorModeLabel}
               </p>
               <p className="mt-2 hidden text-body-lg text-[color:var(--color-text-secondary)] md:block">
@@ -1854,15 +1855,10 @@ function Input({
       onChange={(e) => onChange(e.target.value)}
       placeholder={placeholder}
       disabled={disabled}
-      className={cn(
-        "h-9 rounded-chip border border-[color:var(--color-border-soft)] bg-[color:var(--color-canvas)] px-3 text-body-lg text-[color:var(--color-text-primary)]",
-        "shadow-[inset_0_1px_2px_var(--color-shadow-a35)]",
-        "placeholder:text-[color:var(--color-text-quaternary)]",
-        "hover:border-[color:var(--color-border-strong)]",
-        "focus:border-[color:var(--color-indigo-accent)] focus:outline-none",
-        "disabled:opacity-50",
-        mono && "font-mono",
-      )}
+      className={fieldClass({
+        size: "lg",
+        className: cn("hover:border-[color:var(--color-border-strong)]", mono && "font-mono"),
+      })}
       {...props}
     />
   );
@@ -1891,15 +1887,11 @@ function Textarea({
       onChange={(e) => onChange(e.target.value)}
       placeholder={placeholder}
       rows={rows}
-      className={cn(
-        "rounded-chip border border-[color:var(--color-border-soft)] bg-[color:var(--color-canvas)] px-3 py-2 text-body-lg text-[color:var(--color-text-primary)]",
-        "shadow-[inset_0_1px_2px_var(--color-shadow-a35)]",
-        "placeholder:text-[color:var(--color-text-quaternary)]",
-        "hover:border-[color:var(--color-border-strong)]",
-        "focus:border-[color:var(--color-indigo-accent)] focus:outline-none",
-        "resize-none",
-        mono && "font-mono",
-      )}
+      className={fieldClass({
+        multiline: true,
+        size: "lg",
+        className: cn("hover:border-[color:var(--color-border-strong)]", mono && "font-mono"),
+      })}
       {...props}
     />
   );
@@ -1919,12 +1911,10 @@ function Select<T extends string>({
     <select
       value={value}
       onChange={(e) => onChange(e.target.value as T)}
-      className={cn(
-        "h-9 rounded-chip border border-[color:var(--color-border-soft)] bg-[color:var(--color-canvas)] px-3 text-body-lg text-[color:var(--color-text-primary)]",
-        "shadow-[inset_0_1px_2px_var(--color-shadow-a35)]",
-        "hover:border-[color:var(--color-border-strong)]",
-        "focus:border-[color:var(--color-indigo-accent)] focus:outline-none",
-      )}
+      className={fieldClass({
+        size: "lg",
+        className: "hover:border-[color:var(--color-border-strong)]",
+      })}
       {...props}
     >
       {options.map((o) => (

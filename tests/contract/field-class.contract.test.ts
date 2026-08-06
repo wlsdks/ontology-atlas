@@ -179,8 +179,30 @@ describe('frame — 누가 상자를 내는가', () => {
 });
 
 describe('base — 모든 필드가 공유하는 것', () => {
-  it('타입은 body 하나다 — 필드는 사용자 텍스트를 받는 자리라 읽기 크기가 하나다', () => {
-    for (const c of all) expect(c.cls).toContain('text-body');
+  /**
+   * ⚠️ **`toContain('text-body')` 로 쓰면 안 된다** — `text-body-lg` 가 그것을
+   * 부분 문자열로 포함해서, 규칙이 바뀌었는데도 **헛통과한다**. 실제로 타입을
+   * 크기와 짝지은 직후 이 단언이 그대로 초록이었다.
+   *
+   * 규칙: **넓은 칸(md·lg)은 `text-body-lg`(14) · 촘촘한 칸(xs·sm)과 `bare` 는
+   * `text-body`(12.5).** 근거는 화면이다 — `/project/new` 를 12.5px 로 내려
+   * 보니 **사용자가 입력한 값이 앱이 쓴 라벨(11px)과 거의 같은 급**이 됐다.
+   * 폼에서 가장 잘 읽혀야 하는 것은 사용자가 넣은 값이다.
+   */
+  it.each(all.map((c) => [`${c.frame}/${c.size}`, c] as const))(
+    '%s — 타입이 크기와 짝이다 (md·lg=body-lg · xs·sm·bare=body)',
+    (_name, c) => {
+      const step = c.cls.match(/(?:^|\s)(text-body(?:-lg)?)(?:\s|$)/)?.[1];
+      const expected = c.frame === 'boxed' && (c.size === 'md' || c.size === 'lg') ? 'text-body-lg' : 'text-body';
+      expect(step, `실제 클래스: ${c.cls}`).toBe(expected);
+    },
+  );
+
+  it('타입 스텝이 정확히 하나다 — 둘이면 CSS 순서가 이기는 쪽을 정하게 된다', () => {
+    for (const c of all) {
+      const hits = [...c.cls.matchAll(/(?:^|\s)text-body(?:-lg)?(?:\s|$)/g)];
+      expect(hits.length, `${c.frame}/${c.size}: ${c.cls}`).toBe(1);
+    }
   });
 
   it('플레이스홀더 잉크가 본문 잉크와 다르다 — 같으면 입력값과 안내문이 구별되지 않는다', () => {

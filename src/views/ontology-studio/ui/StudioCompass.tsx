@@ -30,6 +30,7 @@ import type {
 import type { CreateCandidate, CreateNodeKind } from "../lib/build-create-node";
 import type { PickerDiscovery, PickerSuggestionReason } from "../lib/build-picker-discovery";
 import type { DeltaPreviewLayout, DeltaSatellite, DeltaSatelliteState } from "../lib/build-delta-preview";
+import { fieldClass } from '@/shared/ui/control-class';
 
 /** 무대 등장의 두 번째 박자 — 잎(레인)이 카드보다 반 박자 늦게 정착한다. */
 const STAGE_LANE_DELAY_MS = 40;
@@ -1745,7 +1746,7 @@ function CenterCard(
           value={focal.definition}
           onChange={(e) => props.onCreateDefinition?.(e.target.value)}
           placeholder={props.labels.createDefinitionPlaceholder}
-          className="mt-3 min-h-[60px] w-full flex-1 resize-none rounded-card border border-[color:var(--color-border-soft)] bg-[color:var(--color-overlay-1)] px-3 py-2 text-caption leading-caption text-[color:var(--color-text-secondary)] outline-none transition-colors [word-break:keep-all] placeholder:text-[color:var(--color-text-quaternary)] hover:border-[color:var(--color-border-strong)] focus-visible:outline-none focus-visible:border-[color:var(--color-indigo-a46)] focus-visible:ring-2 focus-visible:ring-[color:var(--color-indigo-a24)]"
+          className={fieldClass({ multiline: true, size: "lg", className: "mt-3 w-full flex-1 [word-break:keep-all] hover:border-[color:var(--color-border-strong)]" })}
         />
       ) : definition ? (
         <div className="relative mt-3">
@@ -2612,7 +2613,7 @@ function InlinePicker({
           value={query}
           onChange={(e) => onQuery(e.target.value)}
           placeholder={labels.pickerPlaceholder}
-          className="w-full bg-transparent text-body text-[color:var(--color-text-secondary)] outline-none placeholder:text-[color:var(--color-text-quaternary)]"
+          className={fieldClass({ frame: "bare", className: "w-full" })}
         />
       </div>
       <div className="overflow-y-auto p-1.5" style={{ maxHeight: listMax }} data-testid="studio-picker-body">
@@ -2847,7 +2848,7 @@ function NodeSearch({
             if (e.key === "Enter" && rows[0]) pick(rows[0].id);
           }}
           placeholder={placeholder}
-          className="w-full bg-transparent text-[color:var(--color-text-secondary)] outline-none placeholder:text-[color:var(--color-text-quaternary)]"
+          className={fieldClass({ frame: "bare", className: "w-full" })}
         />
       </div>
       {open ? (

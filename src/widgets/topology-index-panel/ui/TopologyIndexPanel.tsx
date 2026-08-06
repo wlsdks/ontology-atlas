@@ -26,6 +26,7 @@ import {
   type RovingNavKey,
 } from "../lib/roving-tabindex";
 import { TopologyIndexTreeRow } from "./TopologyIndexTreeRow";
+import { fieldClass } from '@/shared/ui/control-class';
 import {
   TopologyIndexAgentHandoff,
   type TopologyIndexAgentHandoffLabels,
@@ -452,7 +453,7 @@ export function TopologyIndexPanel({
           placeholder={labels.searchPlaceholder}
           autoComplete="off"
           data-testid="topology-index-search"
-          className="w-full rounded-[var(--chrome-radius-inner)] border border-[color:var(--topology-v2-panel-border)] bg-[color:var(--color-canvas)] py-1.5 pl-7 pr-2.5 text-body text-[color:var(--topology-v2-panel-text-primary)] outline-none transition-colors placeholder:text-[color:var(--topology-v2-panel-text-quaternary)] focus:border-[color:var(--topology-v2-indigo)]"
+          className={fieldClass({ size: "md", className: "w-full pl-7" })}
         />
       </div>
 

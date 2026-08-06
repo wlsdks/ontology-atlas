@@ -61,6 +61,7 @@ import { buildConceptEgo, matchNodeId, type ConceptEgo } from "../model/build-co
 import { CommitDetail } from "./CommitDetail";
 import { cn } from "@/shared/lib/cn";
 import { ATLAS_CLI } from "@/shared/config/cli-invocation";
+import { fieldClass, fieldLabel } from '@/shared/ui/control-class';
 
 /**
  * Atlas Git — 기록 목적지 본체.
@@ -1640,7 +1641,7 @@ function RemoteSetup({
           placeholder={t("remoteFieldPlaceholder")}
           data-testid="atlas-git-remote-input"
           onChange={(event) => setRemoteUrl(event.target.value)}
-          className="min-w-[220px] flex-1 rounded-[var(--radius-chip)] border border-[color:var(--color-border-strong)] bg-[color:var(--color-canvas)] px-2.5 py-1.5 font-mono text-label text-[color:var(--color-text-primary)] placeholder:text-[color:var(--color-text-quaternary)]"
+          className={fieldClass({ size: "md", className: "min-w-[220px] flex-1 font-mono text-label" })}
         />
         <button
           type="button"
@@ -2421,9 +2422,9 @@ function ActionDock({
             onChange={(event) => setSnapshotMessage(event.target.value)}
             placeholder={predictedSubject}
             aria-label={t("messageLabel")}
-            className="min-h-8 w-full rounded-[var(--radius-chip)] border border-[color:var(--color-border-soft)] bg-[color:var(--color-overlay-1)] px-2.5 py-1.5 font-mono text-label break-all text-[color:var(--color-text-primary)] transition-colors placeholder:text-[color:var(--color-text-quaternary)] focus:border-[color:var(--color-indigo-a46)] focus:outline-none"
+            className={fieldClass({ multiline: true, size: "md", className: "w-full font-mono text-label break-all" })}
           />
-          <label className="atlas-touch-floor flex min-h-6 cursor-pointer items-center gap-2 text-label text-[color:var(--color-text-secondary)]">
+          <label className={fieldLabel({ row: true })}>
             <input
               type="checkbox"
               data-testid="atlas-git-push-optin"

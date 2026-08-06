@@ -22,7 +22,7 @@ import { describe, expect, it } from 'vitest';
  * | **앵커 등재 25** | 같은 뜻, 앵커(`OUTSIDE_VALUE_LAYER_ANCHORS`) | `BASELINE_ANCHOR_REGISTERED` 를 손으로 올린다 |
  * | **앵커 근거 없음 0** | 실측이다 — 102 를 다 보고 0(`<a>` 는 가는 것이 목적이라 「할 말 없는 클릭면」이 되기 어렵다) | 자격자가 생기면 손으로 올린다 |
  * | **앵커 부채 77** | 아직 안 옮긴 `<Link>` 78 · `<a>` 24 중 미등재분 | **0 을 향한다** |
- * | **폼 부채 57** | 손으로 규격을 쓴 `<input>`·`<textarea>`·`<select>`·`<label>`(2026-08-05 신설, 06 에 63→57) | **이제 0 을 향한다.** 2026-08-06 에 `fieldClass` 가 생기면서 목적지가 실재하게 됐다 — 6곳(픽셀 이동 0)을 먼저 옮겼다 |
+ * | **폼 부채 20** | 손으로 규격을 쓴 `<input>`·`<textarea>`·`<select>`·`<label>`(2026-08-05 신설 · 06 에 63→57→29→20) | **0 을 향한다.** 텍스트 필드는 전부 옮겼고 네이티브 `<select>` 부채는 **0** 이 됐다. 남은 20 은 배치 전용 라벨(규격이 아니다) + 체크박스 5(자기 계약이 고정) + 슬라이더·전면 에디터·무대 입력 |
  * | 버튼 전수 108 · 앵커 전수 102 · 폼 전수 63 | 각 부류의 합 | 파생값이다. 이 수를 보고 판단하지 않는다 |
  *
  * **왜 셋인가 — 부채가 0 이 될 수 있어야 하기 때문이다.** 「원리적으로 못 냄」과
@@ -862,7 +862,7 @@ function handWrittenTags(file: string, tags: readonly string[] = BUTTON_TAGS): s
   const source = readFileSync(file, 'utf8');
   // `const X = controlClass({…})` / `const X = cn(controlClass({…}), …)` 의 이름들.
   const systemConstants = [
-    ...source.matchAll(/const\s+([A-Za-z_$][\w$]*)\s*=[^;\n]*(?:controlClass|fieldClass)\s*\(/g),
+    ...source.matchAll(/const\s+([A-Za-z_$][\w$]*)\s*=[^;\n]*(?:controlClass|fieldClass|fieldLabel)\s*\(/g),
   ].map((m) => m[1]);
   const found: string[] = [];
   for (const m of source.matchAll(new RegExp(`<(?:${tags.join('|')})\\b`, 'g'))) {
@@ -882,7 +882,7 @@ function handWrittenTags(file: string, tags: readonly string[] = BUTTON_TAGS): s
      * 여전히 부채로 세어져 기준선이 안 내려간다** — 「체계」석이 이 PR 의
      * 공회전 1순위 후보로 지목한 자리다.
      */
-    if (/(?:controlClass|fieldClass)\s*\(/.test(tag)) continue;
+    if (/(?:controlClass|fieldClass|fieldLabel)\s*\(/.test(tag)) continue;
     if (systemConstants.length > 0 && systemConstants.some((name) => new RegExp(`\\b${name}\\b`).test(tag))) continue;
     found.push(tag);
   }
@@ -1235,16 +1235,23 @@ const FIELD_TAGS = ['input', 'textarea', 'select', 'label'] as const;
 const OUTSIDE_VALUE_LAYER_FIELDS: readonly OutsideEntry[] = [];
 
 /** **리터럴이다.** 다른 기준선들과 같은 이유 — 파생값은 멈춤쇠를 양방향으로 헐겁게 만든다. */
-const BASELINE_FIELD_DEBT = 57;
+const BASELINE_FIELD_DEBT = 20;
 
 const fieldCensus = census(scannedFiles, OUTSIDE_VALUE_LAYER_FIELDS, FIELD_TAGS, []);
 
 describe('컨트롤 채택 래칫 — 폼(`<input>` · `<textarea>` · `<select>` · `<label>`)', () => {
-  it('탐지기가 실제로 폼을 세고 있다 — 0이면 이 부류가 헛도는 것이다', () => {
-    expect(
-      fieldCensus.total,
-      '폼 태그를 한 건도 못 셌다. 종전 이 게이트가 폼에 대해 정확히 이 상태(=존재하지 않음)였다.',
-    ).toBeGreaterThan(20);
+  /**
+   * ⚠️ **부채 수에 하한을 걸면 진전을 벌한다.** 종전 이 단언은 «20 초과» 였고,
+   * 부채가 29 → 20 으로 내려가자 그대로 빨개졌다 — 오늘 세 번째로 같은 실패를
+   * 밟았다. 부채가 줄어드는 것은 목적지이지 결함이 아니다.
+   *
+   * 그래서 이 자리에서 물어야 하는 것은 «부채가 충분히 많은가» 가 아니라
+   * **«탐지기가 아직 살아 있는가»** — 아래 태그별 시야 단언이 그것을 본다.
+   * 여기서는 부채가 **0 이 아닌 동안** 세 부류의 합이 전수와 맞는지만 본다.
+   */
+  it('부채가 남아 있는 동안 탐지기가 그것을 실제로 센다', () => {
+    if (fieldCensus.total === 0) return; // 0 은 목적지다
+    expect(fieldCensus.total).toBe(BASELINE_FIELD_DEBT);
   });
 
   it('손으로 규격을 쓴 폼이 늘지 않는다', () => {
@@ -1277,14 +1284,29 @@ describe('컨트롤 채택 래칫 — 폼(`<input>` · `<textarea>` · `<select>
    * 그 결함(2026-08-05)의 재발을 막는다. `label` 하나만 세어도 총계는 20을
    * 넘으므로, 총계 단언만으로는 `input` 이 안 세어지는 것을 못 잡는다.
    */
-  it('네 태그를 각각 세고 있다 — 한 태그만 세면서 총계로 위장하지 못한다', () => {
-    const perTag = Object.fromEntries(
-      FIELD_TAGS.map((tag) => [tag, census(scannedFiles, [], [tag], []).total]),
-    );
-    for (const tag of FIELD_TAGS) {
-      expect(perTag[tag], `<${tag}> 를 한 건도 못 셌다 — 그 태그는 이 게이트에 존재하지 않는다`).toBeGreaterThan(0);
+  /**
+   * ⚠️ **부채로 재면 안 된다 — 진전을 벌하게 된다** (2026-08-06 에 실제로 터졌다).
+   *
+   * 종전 이 단언은 태그마다 **부채가 1건 이상**인지 물었다. 그런데 그날 네이티브
+   * `<select>` 를 **전부** `fieldClass` 로 옮기자 그 수가 0이 되면서 검사가
+   * 빨개졌다 — 규격이 좋아지는 방향에서 게이트가 터진 것이고, 그러면 다음
+   * 사람은 게이트 대신 **규격 쪽을 되돌린다**(`documentation.md` 가 금지하는
+   * 바로 그 모양). 오늘만 같은 실패를 두 번째로 밟았다.
+   *
+   * 그래서 **스캐너의 시야**를 잰다 — 저장소에 그 태그가 실재하는지(부채든
+   * 아니든). 부채가 0이 되는 것은 목적지이지 결함이 아니다.
+   */
+  it('네 태그를 각각 보고 있다 — 한 태그만 보면서 총계로 위장하지 못한다', () => {
+    const seen = Object.fromEntries(FIELD_TAGS.map((tag) => [tag, 0])) as Record<string, number>;
+    for (const file of scannedFiles) {
+      const source = readFileSync(file, 'utf8');
+      for (const tag of FIELD_TAGS) {
+        seen[tag] += [...source.matchAll(new RegExp(`<${tag}\\b`, 'g'))].length;
+      }
     }
-    expect(Object.values(perTag).reduce((a, b) => a + b, 0)).toBe(fieldCensus.total);
+    for (const tag of FIELD_TAGS) {
+      expect(seen[tag], `<${tag}> 가 저장소에 하나도 없다 — 스캐너의 시야 밖이거나 태그가 사라졌다`).toBeGreaterThan(0);
+    }
   });
 });
 

@@ -7,7 +7,7 @@ import { ICON_SIZE } from '@/shared/ui/icon-size';
 
 import { copyText } from '@/shared/lib/copy-text';
 import { useCopyFeedback } from '@/shared/lib/use-copy-feedback';
-import { controlClass } from '@/shared/ui/control-class';
+import { controlClass, fieldClass, fieldLabel } from '@/shared/ui/control-class';
 
 import { AGENT_CLIENTS, type AgentClientId } from '../lib/agent-clients';
 import {
@@ -69,7 +69,7 @@ function PathField({
 }) {
   return (
     <div className="flex flex-col gap-1">
-      <label htmlFor={id} className="text-label font-[var(--font-weight-signature)] text-[color:var(--color-text-secondary)]">
+      <label htmlFor={id} className={fieldLabel({ className: "font-[var(--font-weight-signature)]" })}>
         {label}
       </label>
       {hint ? (
@@ -86,7 +86,7 @@ function PathField({
         onChange={(event) => onChange(event.target.value)}
         data-testid={testId}
         aria-invalid={issueMessage ? true : undefined}
-        className="h-[var(--control-h-md)] w-full rounded-chip border border-[color:var(--color-border-soft)] bg-[color:var(--color-overlay-1)] px-2.5 font-mono text-label text-[color:var(--color-text-primary)] transition-colors placeholder:text-[color:var(--color-text-quaternary)] focus-visible:border-[color:var(--color-indigo-a46)] focus-visible:outline-none"
+        className={fieldClass({ size: "md", className: "w-full font-mono text-label" })}
       />
       {issueMessage ? (
         <p

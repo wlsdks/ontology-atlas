@@ -8,7 +8,7 @@ import {
   selectedElements,
   type BootstrapPlan,
 } from "@/features/docs-vault-local";
-import { controlClass } from "@/shared/ui/control-class";
+import { controlClass, fieldClass, fieldLabel } from "@/shared/ui/control-class";
 
 /**
  * "내 문서로 지도 만들기" — 기존 .md 폴더(frontmatter 없음)를 연 사용자의
@@ -136,7 +136,7 @@ export function OntologyBootstrapForm({
             }}
             aria-label={labels.projectName}
             data-testid="ontology-bootstrap-title"
-            className="h-8 rounded-[var(--radius-chip)] border border-[color:var(--color-border-soft)] bg-[color:var(--color-overlay-1)] px-2 text-body text-[color:var(--color-text-primary)] transition-colors focus-visible:border-[color:var(--color-indigo-a46)] focus-visible:outline-none"
+            className={fieldClass({ size: "md", className: "w-full" })}
           />
         </label>
 
@@ -149,7 +149,7 @@ export function OntologyBootstrapForm({
               {plan.domains.map((d) => (
                 <label
                   key={d.name}
-                  className="atlas-touch-floor flex min-h-6 cursor-pointer items-center gap-2 rounded-[var(--radius-chip)] px-1.5 py-1 text-body text-[color:var(--color-text-primary)] transition-colors hover:bg-[color:var(--color-overlay-1)]"
+                  className={fieldLabel({ row: true, className: "rounded-[var(--radius-chip)] px-1.5 py-1 text-body text-[color:var(--color-text-primary)] transition-colors hover:bg-[color:var(--color-overlay-1)]" })}
                 >
                   <input
                     type="checkbox"

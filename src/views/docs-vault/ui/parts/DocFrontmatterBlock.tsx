@@ -23,6 +23,7 @@ import {
   controlClass,
 } from "@/shared/ui";
 import { hasDocMtimeConflict, resolveDocLastEditSubject } from "../../lib/resolve-doc-edit-subject";
+import { fieldClass, fieldLabel } from '@/shared/ui/control-class';
 
 /**
  * Engraved frontmatter visualization — "frontmatter 가 곧 그래프" made literal
@@ -434,14 +435,14 @@ export function DocFrontmatterBlock({
   const quickPatchSection = canQuickPatch ? (
     editing ? (
       <div className="mt-3 flex flex-col gap-2 border-t border-[color:var(--color-divider)] pt-3 font-sans">
-        <label className="flex flex-col gap-1 text-label text-[color:var(--color-text-tertiary)]">
+        <label className={fieldLabel({ className: "flex flex-col gap-1" })}>
           {t("editKindLabel")}
           <select
             value={draftKind}
             onChange={(event) => setDraftKind(event.target.value)}
             disabled={saving}
             data-testid="doc-frontmatter-kind-select"
-            className="rounded-micro border border-[color:var(--color-border-soft)] bg-[color:var(--color-overlay-1)] px-2 py-1 text-body text-[color:var(--color-text-primary)]"
+            className={fieldClass({ size: "xs" })}
           >
             {/* kind 가 아직 없는 문서는 draft 도 "" 다 — 자리표시자가 없으면
                 브라우저가 첫 항목을 고른 것처럼 보여 «이미 정해졌다» 고
@@ -454,13 +455,13 @@ export function DocFrontmatterBlock({
             ))}
           </select>
         </label>
-        <label className="flex flex-col gap-1 text-label text-[color:var(--color-text-tertiary)]">
+        <label className={fieldLabel({ className: "flex flex-col gap-1" })}>
           {t("editDomainLabel")}
           <select
             value={draftDomain}
             onChange={(event) => setDraftDomain(event.target.value)}
             disabled={saving}
-            className="rounded-micro border border-[color:var(--color-border-soft)] bg-[color:var(--color-overlay-1)] px-2 py-1 text-body text-[color:var(--color-text-primary)]"
+            className={fieldClass({ size: "xs" })}
           >
             <option value="">{t("editDomainNone")}</option>
             {domainOptions.map((option) => (
@@ -470,14 +471,14 @@ export function DocFrontmatterBlock({
             ))}
           </select>
         </label>
-        <label className="flex flex-col gap-1 text-label text-[color:var(--color-text-tertiary)]">
+        <label className={fieldLabel({ className: "flex flex-col gap-1" })}>
           {t("editTitleLabel")}
           <input
             type="text"
             value={draftTitle}
             onChange={(event) => setDraftTitle(event.target.value)}
             disabled={saving}
-            className="rounded-micro border border-[color:var(--color-border-soft)] bg-[color:var(--color-overlay-1)] px-2 py-1 text-body text-[color:var(--color-text-primary)]"
+            className={fieldClass({ size: "xs" })}
           />
         </label>
         {error ? (

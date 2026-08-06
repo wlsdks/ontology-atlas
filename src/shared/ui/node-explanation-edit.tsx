@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { Check, PencilLine, X } from "lucide-react";
 import { ICON_SIZE } from "@/shared/ui/icon-size";
+import { fieldClass } from '@/shared/ui/control-class';
 
 /**
  * S4.1a — 노드 "설명"(prose 본문) 읽기↔편집↔저장 primitive (multiline).
@@ -131,7 +132,7 @@ export function NodeExplanationEdit({
         }}
         aria-label={labels.heading}
         data-testid="node-explanation-input"
-        className="mt-2 w-full resize-y rounded-chip border border-[color:var(--color-border-soft)] bg-[color:var(--color-overlay-1)] px-2 py-1.5 text-body leading-body text-[color:var(--color-text-primary)] transition-colors focus-visible:border-[color:var(--color-indigo-a46)] focus-visible:outline-none"
+        className={fieldClass({ multiline: true, size: "md", className: "mt-2 w-full resize-y" })}
       />
     </div>
   );

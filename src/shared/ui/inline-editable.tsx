@@ -8,6 +8,7 @@ import {
   useState,
 } from "react";
 import { cn } from "@/shared/lib/cn";
+import { fieldClass } from '@/shared/ui/control-class';
 
 interface Props {
   /** 현재 값 (display + edit 모드 초기값). */
@@ -154,10 +155,7 @@ export function InlineEditable({
       onKeyDown: handleKeyDownEdit,
       "aria-label": ariaLabel,
       "data-testid": dataTestId,
-      className: cn(
-        "w-full rounded-chip border border-[color:var(--color-indigo-a32)] bg-[color:var(--color-elevated)] px-2 py-1 outline-none transition-colors focus:border-[color:var(--color-indigo-brand)]",
-        className,
-      ),
+      className: fieldClass({ multiline: true, size: "sm", className: cn("w-full", className) }),
     };
     if (multiline) {
       return (

@@ -15,6 +15,7 @@ import { useTaxonomy } from '@/features/taxonomy';
 import { buildDocsVaultHref, type VaultDoc } from '@/entities/docs-vault';
 import { useStaticVaultSource } from '@/features/vault-sample-source';
 import { searchProjects } from '../model/fuzzy-search';
+import { fieldClass } from '@/shared/ui/control-class';
 
 // Source Vault 매칭 — 가볍게 title/excerpt/slug includes. ⌘K 팔레트는
 // 프로젝트 검색이 메인이고 문서는 보조 섹션이므로 score 정렬 없이 단순
@@ -375,7 +376,7 @@ function SearchPaletteDialog({
                   ? `search-result-project-${activeRow.result.project.slug}`
                   : undefined
             }
-            className="flex-1 bg-transparent text-title text-[color:var(--color-text-primary)] placeholder:text-[color:var(--color-text-quaternary)] focus:outline-none"
+            className={fieldClass({ frame: "bare", className: "flex-1 text-title" })}
           />
           <kbd className="hidden rounded-micro border border-[color:var(--color-divider)] px-1.5 py-0.5 font-mono text-caption uppercase tracking-wider text-[color:var(--color-text-quaternary)] sm:inline-block">
             ESC

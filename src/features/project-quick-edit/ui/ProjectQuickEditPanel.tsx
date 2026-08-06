@@ -12,6 +12,7 @@ import {
   useProjectMutations,
 } from "@/features/project-data-source";
 import { Button, Surface, controlClass } from "@/shared/ui";
+import { fieldClass } from '@/shared/ui/control-class';
 
 interface Props {
   project: Project;
@@ -27,8 +28,7 @@ interface QuickEditValues {
 }
 
 // #9 — 캐노니컬 컨트롤: --control-h-lg(40px) 높이 · rounded-chip · 5단계 서피스.
-const FIELD_INPUT_CLASS =
-  "mt-1.5 h-[var(--control-h-lg)] w-full rounded-chip border border-[color:var(--color-divider)] bg-[color:var(--color-overlay-1)] px-3 text-body text-[color:var(--color-text-primary)] outline-none transition-[border-color,box-shadow] placeholder:text-[color:var(--color-text-quaternary)] focus:border-[color:var(--color-indigo-accent)] focus:ring-2 focus:ring-[color:var(--color-indigo-a24)]";
+const FIELD_INPUT_CLASS = fieldClass({ size: "lg", className: "mt-1.5 w-full" });
 
 /*
  * rest 규격이 link/md 와 바이트 동일(text-label · 3차 잉크)이라 값 층으로 옮겼다.
@@ -284,7 +284,7 @@ export function ProjectQuickEditPanel({
                 value={values.description}
                 onChange={(event) => handleChange("description", event.target.value)}
                 rows={3}
-                className="mt-1.5 w-full rounded-chip border border-[color:var(--color-divider)] bg-[color:var(--color-overlay-1)] px-3 py-2 text-body leading-body text-[color:var(--color-text-primary)] outline-none transition-[border-color,box-shadow] placeholder:text-[color:var(--color-text-quaternary)] focus:border-[color:var(--color-indigo-accent)] focus:ring-2 focus:ring-[color:var(--color-indigo-a24)]"
+                className={fieldClass({ multiline: true, size: "lg", className: "mt-1.5 w-full" })}
                 placeholder={t("fieldDescriptionPlaceholder")}
               />
             </label>

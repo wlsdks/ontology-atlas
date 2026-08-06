@@ -148,9 +148,17 @@ function collect(files: string[]): Site[] {
       let hasCoarseFloor = false;
       if (wrapped) {
         const labelTag = source.slice(labelOpen, source.indexOf('>', labelOpen) + 1);
+        /*
+         * 바닥은 두 갈래로 온다 — 리터럴(`min-h-6 atlas-touch-floor`)이거나,
+         * **값 층**(`fieldLabel({ row: true })`)이거나. 후자를 모르면 규격을
+         * 값 층으로 옮긴 순간 이 게이트가 **진전을 벌한다** — 오늘 두 번 밟은
+         * 그 실패다. `fieldLabel` 의 `row` 가 무엇을 내는지는 그 자신의 계약이
+         * 지킨다(`field-class.contract.test.ts`).
+         */
+        const viaValueLayer = /fieldLabel\s*\(\s*\{[^}]*\brow:\s*true/.test(labelTag);
         const floor = labelTag.match(AA_FLOOR_CLASS);
-        labelFloorPx = floor ? Number(floor[1]) * TAILWIND_STEP_PX : null;
-        hasCoarseFloor = labelTag.includes('atlas-touch-floor');
+        labelFloorPx = viaValueLayer ? AA_MIN_PX : floor ? Number(floor[1]) * TAILWIND_STEP_PX : null;
+        hasCoarseFloor = viaValueLayer || labelTag.includes('atlas-touch-floor');
       }
       sites.push({
         file: file.slice(ROOT.length + 1),

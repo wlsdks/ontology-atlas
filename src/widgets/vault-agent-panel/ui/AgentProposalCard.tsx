@@ -7,6 +7,7 @@ import { ICON_SIZE } from '@/shared/ui/icon-size';
 import type { AgentProposal, ProposalChange } from '@/features/vault-agent';
 import { summarizeChangeVolume } from '@/features/vault-agent/model/proposal-applier';
 import { controlClass } from '@/shared/ui';
+import { fieldLabel } from '@/shared/ui/control-class';
 
 /**
  * 제안 카드 — #688 동의 문법의 일반화.
@@ -134,7 +135,7 @@ export function AgentProposalCard({
       </ul>
 
       {canWrite && !settled ? (
-        <label className="atlas-touch-floor flex min-h-6 cursor-pointer items-center gap-2 text-label tracking-label text-[color:var(--color-text-tertiary)]">
+        <label className={fieldLabel({ row: true, className: "tracking-label" })}>
           <input
             type="checkbox"
             data-testid="agent-proposal-snapshot"
@@ -258,7 +259,7 @@ function ChangeRow({
          * 펼침 버튼은 라벨 **밖**에 남는다 — 안에 넣으면 「자세히」를 누를 때마다
          * 선택이 뒤집힌다.
          */}
-        <label className="atlas-touch-floor flex min-h-6 min-w-0 flex-1 cursor-pointer items-center gap-2">
+        <label className={fieldLabel({ row: true, className: "min-w-0 flex-1" })}>
           <input
             type="checkbox"
             data-testid={`agent-proposal-change-${change.id}`}

@@ -7,7 +7,7 @@ import { Link } from "@/i18n/navigation";
 import { useRowDisclosure } from "@/shared/lib/use-row-disclosure";
 import { MtimeConflictBadge } from "@/shared/ui/mtime-conflict-badge";
 import { TopologyV2KindGlyph } from "@/shared/ui/topology-v2-kind-glyph";
-import { controlClass } from "@/shared/ui/control-class";
+import { controlClass, fieldClass } from "@/shared/ui/control-class";
 import type { MeaningGapKind } from "@/entities/knowledge-graph";
 import type { DomainChoice, MeaningGapRow } from "../../lib/meaning-gap-rows";
 import {
@@ -462,7 +462,7 @@ function MeaningGapRowView({
                       }}
                       // 한 문장에 1,300px 짜리 줄을 주면 읽는 눈이 화면을
                       // 가로지른다 — 측정선(measure)을 문장 길이에 맞춘다.
-                      className="min-h-9 w-full max-w-2xl rounded-chip border border-[color:var(--color-border-soft)] bg-[color:var(--color-canvas)] px-2.5 text-body text-[color:var(--color-text-primary)] placeholder:text-[color:var(--color-text-quaternary)] focus-visible:border-[color:var(--color-indigo-a46)] focus-visible:outline-none disabled:opacity-60"
+                      className={fieldClass({ size: "md", className: "w-full max-w-2xl" })}
                     />
                   ) : (
                     <fieldset className="min-w-0" disabled={saving}>

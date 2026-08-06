@@ -5,7 +5,7 @@ import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 import { useTranslations } from 'next-intl';
 import { cn } from '@/shared/lib/cn';
-import { controlClass } from '@/shared/ui/control-class';
+import { controlClass, fieldClass } from '@/shared/ui/control-class';
 
 interface Props {
   id?: string;
@@ -44,12 +44,11 @@ export function MarkdownField({ id, value, onChange, placeholder, rows = 8 }: Pr
           onChange={(e) => onChange(e.target.value)}
           placeholder={placeholder}
           rows={rows}
-          className={cn(
-            'rounded-chip bg-transparent px-2 py-1.5 font-mono text-body-lg text-[color:var(--color-text-primary)]',
-            'placeholder:text-[color:var(--color-text-quaternary)]',
-            'focus:outline-none',
-            'resize-y',
-          )}
+          className={fieldClass({
+            frame: 'bare',
+            multiline: true,
+            className: 'rounded-chip px-2 py-1.5 font-mono text-body-lg resize-y',
+          })}
         />
       ) : (
         <div

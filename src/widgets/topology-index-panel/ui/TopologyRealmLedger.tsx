@@ -24,6 +24,7 @@ import {
   type RovingNavKey,
 } from "../lib/roving-tabindex";
 import { TopologyIndexTreeRow } from "./TopologyIndexTreeRow";
+import { fieldClass } from '@/shared/ui/control-class';
 
 /** 결계 관계 한 줄 — 이미 i18n 라벨까지 조립된 표시용 행(HomePage 가 만든다). */
 export interface RealmBoundaryRow {
@@ -256,7 +257,7 @@ export function TopologyRealmLedger({
           placeholder={labels.searchPlaceholder}
           autoComplete="off"
           data-testid="topology-realm-search"
-          className="w-full rounded-[var(--chrome-radius-inner)] border border-[color:var(--topology-v2-panel-border)] bg-[color:var(--color-canvas)] py-1.5 pl-7 pr-2.5 text-body text-[color:var(--topology-v2-panel-text-primary)] outline-none transition-colors placeholder:text-[color:var(--topology-v2-panel-text-quaternary)] focus:border-[color:var(--topology-v2-indigo)]"
+          className={fieldClass({ size: "md", className: "w-full pl-7" })}
         />
       </div>
 
