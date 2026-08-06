@@ -779,12 +779,17 @@ export function ProjectDrawer({
                               aria-describedby="project-drawer-impact-help"
                               title={help}
                               aria-label={`${label} — ${help}`}
-                              className={cn(
-                                "rounded-full border px-3 py-2 font-mono text-caption uppercase tracking-[var(--tracking-caps-08)] transition-colors",
-                                active
-                                  ? "border-[color:var(--color-indigo-brand)] bg-[color:var(--color-indigo-a12)] text-[color:var(--color-text-primary)]"
-                                  : "border-[color:var(--color-divider)] text-[color:var(--color-text-tertiary)] hover:border-[color:var(--color-border-strong)] hover:text-[color:var(--color-text-secondary)]",
-                              )}
+                              className={controlClass({
+                                shape: "pill",
+                                size: "md",
+                                tone: active ? "default" : "muted",
+                                className: cn(
+                                  "px-3 py-2 font-mono text-caption uppercase tracking-[var(--tracking-caps-08)]",
+                                  active
+                                    ? "border-[color:var(--color-indigo-brand)] bg-[color:var(--color-indigo-a12)]"
+                                    : "border-[color:var(--color-divider)] hover:border-[color:var(--color-border-strong)] hover:text-[color:var(--color-text-secondary)]",
+                                ),
+                              })}
                             >
                               {label}
                             </button>

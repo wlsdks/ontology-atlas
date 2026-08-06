@@ -151,11 +151,15 @@ function TreeBranch({
         ref={linkRef}
         href={getDocHref(node.slug)}
         onClick={onPick}
-        className={cn(
-          "group flex items-center gap-2 rounded-card px-2 py-1.5 text-body text-[color:var(--color-text-secondary)] transition-colors hover:bg-[color:var(--color-indigo-a10)] hover:text-[color:var(--color-text-primary)]",
-          isFocused &&
-            "bg-[color:var(--color-indigo-a18)] text-[color:var(--color-text-primary)] ring-1 ring-[color:var(--color-indigo-a40)]",
-        )}
+        className={controlClass({
+          shape: "row",
+          size: "sm",
+          tone: isFocused ? "default" : "secondary",
+          className: cn(
+            "group gap-2 rounded-card hover:bg-[color:var(--color-indigo-a10)] hover:text-[color:var(--color-text-primary)]",
+            isFocused && "bg-[color:var(--color-indigo-a18)] ring-1 ring-[color:var(--color-indigo-a40)]",
+          ),
+        })}
         style={{ paddingLeft: `${depth * 12 + 8}px` }}
       >
         <FileText size={ICON_SIZE.sm} className="shrink-0 text-[color:var(--color-text-quaternary)] group-hover:text-[color:var(--color-indigo-accent)]" />

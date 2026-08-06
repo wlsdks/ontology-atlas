@@ -358,9 +358,12 @@ function CouplingGrid({
                 aria-selected={isSelected}
                 data-testid="domain-coupling-cell"
                 onClick={() => onSelect(isSelected ? null : key)}
-                className={`${shared} text-[color:var(--color-text-primary)] transition-colors hover:border-[color:var(--color-indigo-a46)] ${
-                  isSelected ? "ring-1 ring-inset ring-[color:var(--color-indigo-accent)]" : ""
-                }`}
+                className={controlClass({
+                  shape: "icon",
+                  className: `${shared} hover:border-[color:var(--color-indigo-a46)] ${
+                    isSelected ? "ring-1 ring-inset ring-[color:var(--color-indigo-accent)]" : ""
+                  }`,
+                })}
                 style={{ backgroundColor: tone }}
               >
                 {count}
