@@ -16,12 +16,12 @@ import { describe, expect, it } from 'vitest';
  *
  * | 수 | 뜻 — 한 줄 | 어느 방향으로 움직이나 |
  * |---:|---|---|
- * | **버튼 등재 26** | 값 층이 **원리적으로 못 내는** 자리(`OUTSIDE_VALUE_LAYER`) | 늘리려면 `BASELINE_REGISTERED` 를 **손으로** 올린다. 그 diff 가 「왜」를 적을 자리다 |
+ * | **버튼 등재 32** | 값 층이 **원리적으로 못 내는** 자리(`OUTSIDE_VALUE_LAYER`) | 늘리려면 `BASELINE_REGISTERED` 를 **손으로** 올린다. 그 diff 가 「왜」를 적을 자리다 |
  * | **버튼 근거 없음 4** | 값 층이 낼 수는 있으나 **낼 것이 없는** 자리 — 컨트롤이 아니다(`NO_BASIS`) | 움직이지 않는 것이 정상이다. **갚을 대상이 아니다** |
- * | **버튼 부채 15** | 옮길 수 있는데 **아직 안 옮긴** 자리 | **0 을 향한다.** 버튼 진도는 오직 여기서 읽는다 |
- * | **앵커 등재 25** | 같은 뜻, 앵커(`OUTSIDE_VALUE_LAYER_ANCHORS`) | `BASELINE_ANCHOR_REGISTERED` 를 손으로 올린다 |
+ * | **버튼 부채 9** | 옮길 수 있는데 **아직 안 옮긴** 자리 | **0 을 향한다.** 버튼 진도는 오직 여기서 읽는다 |
+ * | **앵커 등재 27** | 같은 뜻, 앵커(`OUTSIDE_VALUE_LAYER_ANCHORS`) | `BASELINE_ANCHOR_REGISTERED` 를 손으로 올린다 |
  * | **앵커 근거 없음 0** | 실측이다 — 102 를 다 보고 0(`<a>` 는 가는 것이 목적이라 「할 말 없는 클릭면」이 되기 어렵다) | 자격자가 생기면 손으로 올린다 |
- * | **앵커 부채 12** | 아직 안 옮긴 `<Link>` 23 · `<a>` 14 중 미등재분 | **0 을 향한다** |
+ * | **앵커 부채 10** | 아직 안 옮긴 `<Link>` 23 · `<a>` 14 중 미등재분 | **0 을 향한다** |
  * | **폼 부채 20** | 손으로 규격을 쓴 `<input>`·`<textarea>`·`<select>`·`<label>`(2026-08-05 신설 · 06 에 63→57→29→20) | **0 을 향한다.** 텍스트 필드는 전부 옮겼고 네이티브 `<select>` 부채는 **0** 이 됐다. 남은 20 은 배치 전용 라벨(규격이 아니다) + 체크박스 5(자기 계약이 고정) + 슬라이더·전면 에디터·무대 입력 |
  * | 버튼 전수 108 · 앵커 전수 102 · 폼 전수 63 | 각 부류의 합 | 파생값이다. 이 수를 보고 판단하지 않는다 |
  *
@@ -509,7 +509,18 @@ type OutsideClaim =
   | 'standard-button'
   | 'no-spec'
   | 'state-scoped'
-  | 'prose';
+  | 'prose'
+  /**
+   * **값 층의 모양 여덟이 그 배치를 원리적으로 못 낸다** (2026-08-06 신설).
+   *
+   * `chrome-token` 과 다르다 — 그건 «토큰이 조건마다 달라져서» 못 내는 것이고,
+   * 이건 «배치 자체가 어휘에 없어서» 못 내는 것이다.
+   *
+   * ⚠️ **이 주장은 반드시 `conditional` 을 함께 쓴다.** 모양·축이 생기면 등재를
+   * 지우고 부채로 내려야 하기 때문이다. 조건 없이 쓰면 영구 면제가 되고, 그건
+   * 이 등록부가 「허가 목록이 아니라 부채의 다른 이름」이라는 정의를 깬다.
+   */
+  | 'shape-gap';
 
 interface OutsideEntry {
   /** 저장소 상대 경로. 실재해야 한다. */
@@ -535,6 +546,64 @@ interface OutsideEntry {
  * 위 규율 1. 확인 못 하면 부채로 둔다.
  */
 const OUTSIDE_VALUE_LAYER: readonly OutsideEntry[] = [
+  /*
+   * ════════════════════════════════════════════════════════════════════
+   * 2026-08-06 — **판정이 끝난 자리는 부채에서 뺀다**
+   * ════════════════════════════════════════════════════════════════════
+   *
+   * 소유자 지적: *"디자인 시스템화 안 시키기로 한 거는 왜 그런지 분석하고
+   * 문제없으면 아예 이슈에서 없애 버려 개수 안 나오게 — 계속 나한테 몇 개
+   * 남았다고 말하니까 나는 계속 고치라고 명령하게 되잖아."*
+   *
+   * 맞는 지적이다. 이 파일 머리말이 이미 그 이유를 적어 뒀다 — **부채는 0 에
+   * 닿을 수 있어야 진도 눈금이고**, 「원리적으로 못 냄」을 섞어 두면 0 에 닿을
+   * 수 없다. 판정이 끝났는데 부채에 남겨 두면 **그 수가 사람을 재촉한다.**
+   *
+   * 아래 여덟은 각각 근거를 열어서 확인했고, 전부 `conditional` 을 진다 —
+   * 값 층이 그 축을 얻으면 등재를 지우고 부채로 내린다.
+   */
+  {
+    file: 'src/views/home/ui/HomePage.tsx',
+    count: 3,
+    claim: 'chrome-token',
+    proof: '--chrome-tile-size',
+    why:
+      '지도 우상단 크롬 타일 셋(투어 · 단축키 도움말 · 좁은 폭 레일 대체). ' +
+      '36px 이고 coarse 포인터에서 `max(36px, --touch-target-min)` 으로 승격한다 ' +
+      '— globals.css 에 선언이 둘이라 토큰 검사를 통과한다. 값 층은 포인터 ' +
+      '조건부 높이를 못 낸다.',
+    conditional: '값 층이 포인터 승격 축을 얻으면 다시 연다.',
+  },
+  {
+    file: 'src/widgets/topology-index-panel/ui/TopologyIndexTab.tsx',
+    count: 1,
+    claim: 'shape-gap',
+    proof: 'flex-col',
+    why: '지도 INDEX 패널을 여는 세로 손잡이. 위와 같은 세로 스택 배치다.',
+    conditional: '세로 스택 컨트롤이 6곳을 넘으면 위와 함께 지운다.',
+  },
+  {
+    file: 'src/widgets/topology-index-panel/ui/TopologyIndexTreeRow.tsx',
+    count: 1,
+    claim: 'no-spec',
+    proof: 'aria-hidden="true"',
+    why:
+      '트리 행의 펼침 셰브론. `aria-hidden` + `tabIndex={-1}` 이라 **접근성 트리에 ' +
+      '없고 포커스 순서에도 없다** — 조작은 바깥 `role="treeitem"` 행이 진다. ' +
+      '컨트롤이 아니라 마우스 어포던스라 씌울 규격이 없다.',
+    conditional: '이 셰브론이 접근성 트리에 다시 노출되면(=진짜 컨트롤이 되면) 부채로 내린다.',
+  },
+  {
+    file: 'src/widgets/topology-controls/ui/HubRail.tsx',
+    count: 1,
+    claim: 'shape-gap',
+    proof: 'h-16 w-5',
+    why:
+      '지도 왼쪽 가장자리의 허브 레일 손잡이. **16:5 세로 막대**(64×20)라 모양 여덟의 ' +
+      '어느 치수 사다리에도 없다 — 칩·pill 은 가로가 길고 `icon` 은 정사각이다. ' +
+      '가장자리에 붙는 잡이(edge grab)는 이 앱에 하나뿐이다.',
+    conditional: '가장자리 잡이가 둘이 되면 그때 값에 이름을 붙인다(이 저장소의 「두 번째로 쓸 곳이 생기는 순간」 규율).',
+  },
   {
     file: 'src/widgets/atlas-git-panel/ui/AtlasGitPanel.tsx',
     count: 5,
@@ -691,7 +760,7 @@ const OUTSIDE_VALUE_LAYER: readonly OutsideEntry[] = [
  * 올라가 멈춤쇠가 양방향으로 헐거워진다. 등재를 늘리려면 이 수를 **손으로**
  * 올려야 하고, 그 diff 가 곧 「왜」를 적을 자리다.
  */
-const BASELINE_REGISTERED = 26;
+const BASELINE_REGISTERED = 32;
 
 /**
  * **이 수만 줄어야 한다.** 전수(108)에서 등재(30)와 근거 없음(4)을 뺀 나머지.
@@ -699,7 +768,7 @@ const BASELINE_REGISTERED = 26;
  * 등재된 파일에 손 컨트롤을 하나 더 써도 등재 수는 안 오르므로 이 수가 오른다 —
  * 등재는 면제가 아니다. 근거 없음도 마찬가지다.
  */
-const BASELINE_HAND_WRITTEN_DEBT = 15;
+const BASELINE_HAND_WRITTEN_DEBT = 9;
 
 /**
  * **세 번째 부류 — 「근거 없음」.**
@@ -1033,6 +1102,18 @@ const ANCHOR_TAG_SPLIT: Readonly<Record<string, number>> = { Link: 23, a: 14 };
  */
 const OUTSIDE_VALUE_LAYER_ANCHORS: readonly OutsideEntry[] = [
   {
+    file: 'src/widgets/bottom-tab-bar/ui/BottomTabBar.tsx',
+    count: 2,
+    claim: 'shape-gap',
+    proof: 'flex-col',
+    why:
+      '하단 탭 둘(현재 탭 · 앱 받기). **아이콘 위 · 라벨 아래**로 세로로 쌓이는데 ' +
+      '`row` 는 **가로 정렬이 정체성**이라(`items-center` + `text-left`) 이 배치를 ' +
+      '못 낸다. 2026-08-06 에 전수를 세어 **4곳**(그중 1곳은 이미 등재)이라 새 축을 ' +
+      '만들지 않기로 판정했다 — `stacked` 축을 만들 때의 근거가 9곳이었다.',
+    conditional: '세로 스택 컨트롤이 6곳(지금의 두 배)을 넘으면 `row` 에 orientation 축을 만들고 이 줄을 지운다.',
+  },
+  {
     file: 'src/views/download/ui/DownloadPage.tsx',
     count: 7,
     claim: 'standard-button',
@@ -1164,10 +1245,10 @@ const OUTSIDE_VALUE_LAYER_ANCHORS: readonly OutsideEntry[] = [
  * **리터럴이다.** 버튼 쪽 기준선들과 같은 이유 — 파생값으로 두면 멈춤쇠가
  * 양방향으로 헐거워진다(하드컷 래칫이 실제로 그렇게 죽었다).
  */
-const BASELINE_ANCHOR_REGISTERED = 25;
+const BASELINE_ANCHOR_REGISTERED = 27;
 
 /** **이 수만 줄어야 한다.** 앵커 전수(92)에서 등재(25)를 뺀 나머지. */
-const BASELINE_ANCHOR_DEBT = 12;
+const BASELINE_ANCHOR_DEBT = 10;
 
 const anchorCensus = census(scannedFiles, OUTSIDE_VALUE_LAYER_ANCHORS, ANCHOR_TAGS, NO_BASIS_ANCHORS);
 
@@ -1732,6 +1813,34 @@ describe('탐지기 프로브 — 이 게이트가 실제로 무엇을 잡는가
     ).toBeGreaterThan(0);
   });
 
+  /**
+   * **`shape-gap` 은 조건 없이 쓸 수 없다** (2026-08-06 신설).
+   *
+   * 이 주장은 «값 층의 모양 여덟이 그 배치를 원리적으로 못 낸다» 인데, 모양·축은
+   * 만들 수 있는 것이다 — 그러니 **언제 다시 여는지**를 함께 적지 않으면 영구
+   * 면제가 되고, 그건 이 등록부가 「허가 목록이 아니라 부채의 다른 이름」이라는
+   * 정의를 깬다.
+   *
+   * 소유자 지적에서 나온 규율이다: 판정이 끝난 자리는 부채 수에서 빼되,
+   * **왜 뺐고 언제 돌아오는지**가 같이 남아야 한다.
+   */
+  it('⑭ `shape-gap` 등재는 전부 «언제 다시 여는가» 를 진다', () => {
+    const gaps = OUTSIDE_VALUE_LAYER.concat(OUTSIDE_VALUE_LAYER_ANCHORS).filter(
+      (e) => e.claim === 'shape-gap',
+    );
+    expect(gaps.length, '이 단언은 shape-gap 등재가 있을 때만 뜻이 있다').toBeGreaterThan(0);
+    for (const e of gaps) {
+      expect(
+        e.conditional,
+        `${e.file} 의 shape-gap 등재에 조건이 없다 — 조건 없는 「못 낸다」는 영구 면제다`,
+      ).toBeTruthy();
+      expect(
+        (e.conditional ?? '').length,
+        `${e.file} 의 조건이 너무 짧다 — 무엇이 관측되면 다시 여는지 적어야 한다`,
+      ).toBeGreaterThan(15);
+    }
+  });
+
   it('⑬ 기각된 주장이 실제로 기각된다 — 하단 탭바의 56px 은 크롬 토큰 면제가 아니다', () => {
     /*
      * 이 라운드가 `--topology-bottom-tab-min-height` 로 `chrome-token` 을 주장했다가
@@ -1742,10 +1851,23 @@ describe('탐지기 프로브 — 이 게이트가 실제로 무엇을 잡는가
       tokenIsBeyondFixedSteps(globalsCss, '--topology-bottom-tab-min-height'),
       '이 토큰이 조건부가 됐다 — BottomTabBar 2건의 `chrome-token` 등재를 다시 심사하라',
     ).toBe(false);
+    /*
+     * ⚠️ **기각된 것은 `chrome-token` 주장 하나이지 「모든 등재」가 아니다.**
+     *
+     * 종전 이 단언은 *"BottomTabBar 는 **등재되지 않았다**"* 를 요구했다. 그래서
+     * 2026-08-06 에 **다른 주장**(`shape-gap` — 모양 여덟이 세로 스택 배치를
+     * 원리적으로 못 낸다, 전수 4곳)으로 정직하게 등재하자 빨개졌다.
+     *
+     * 프로브는 자기가 지키는 성질만 지켜야 한다. 여기서 지키는 성질은 **「56px
+     * 고정 단 토큰으로 크롬 면제를 받을 수 없다」** 이므로, 그 주장으로 등재됐는지
+     * 만 본다.
+     */
+    const bottomTabClaims = OUTSIDE_VALUE_LAYER_ANCHORS.concat(OUTSIDE_VALUE_LAYER)
+      .filter((e) => e.file === 'src/widgets/bottom-tab-bar/ui/BottomTabBar.tsx')
+      .map((e) => e.claim);
     expect(
-      (anchorCensus.byFile.get('src/widgets/bottom-tab-bar/ui/BottomTabBar.tsx') ?? 0) > 0 &&
-        !anchorCensus.registeredByFile.has('src/widgets/bottom-tab-bar/ui/BottomTabBar.tsx'),
-      'BottomTabBar 는 등재되지 않았다 — 보더 없는 세로 타일이라 부채다',
+      !bottomTabClaims.includes('chrome-token'),
+      'BottomTabBar 가 `chrome-token` 으로 등재됐다 — 그 주장은 56px 고정 단이라 기각된 것이다',
     ).toBe(true);
   });
 
