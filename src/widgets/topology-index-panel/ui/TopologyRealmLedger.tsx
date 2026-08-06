@@ -317,7 +317,7 @@ export function TopologyRealmLedger({
               aria-expanded={boundaryOpen}
               aria-label={labels.boundaryToggleAria}
               data-testid="topology-realm-boundary-toggle"
-              className="flex w-full items-center gap-1.5 rounded-[var(--chrome-radius-inner)] px-1 py-0.5 text-left transition-colors hover:bg-[color:var(--topology-v2-panel-row-hover)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--color-indigo-a46)] focus-visible:ring-inset"
+              className={controlClass({ shape: "row", className: "gap-1.5 rounded-[var(--chrome-radius-inner)] px-1 py-0.5 hover:bg-[color:var(--topology-v2-panel-row-hover)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--color-indigo-a46)] focus-visible:ring-inset" })}
             >
               <span className="min-w-0 flex-1 truncate text-label text-[color:var(--topology-v2-panel-text-tertiary)]">
                 {labels.boundaryHeading}

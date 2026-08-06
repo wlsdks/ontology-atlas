@@ -4,6 +4,7 @@ import { useState } from "react";
 import { Check, PencilLine, X } from "lucide-react";
 import { ICON_SIZE } from "@/shared/ui/icon-size";
 import { fieldClass } from '@/shared/ui/control-class';
+import { controlClass } from '@/shared/ui/control-class';
 
 /**
  * S4.1a — 노드 "설명"(prose 본문) 읽기↔편집↔저장 primitive (multiline).
@@ -72,7 +73,7 @@ export function NodeExplanationEdit({
             onClick={beginEdit}
             aria-label={labels.edit}
             data-testid="node-explanation-edit-button"
-            className="inline-flex h-6 w-6 items-center justify-center rounded-full text-[color:var(--color-text-quaternary)] transition-colors hover:bg-[color:var(--color-overlay-2)] hover:text-[color:var(--color-text-primary)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--color-indigo-a46)] focus-visible:ring-inset"
+            className={controlClass({ shape: "icon", size: "xs", tone: "muted", className: "h-6 w-6 rounded-full hover:bg-[color:var(--color-overlay-2)] hover:text-[color:var(--color-text-primary)]" })}
           >
             <PencilLine size={ICON_SIZE.sm} aria-hidden />
           </button>
@@ -103,7 +104,7 @@ export function NodeExplanationEdit({
             disabled={saving}
             aria-label={labels.save}
             data-testid="node-explanation-save"
-            className="inline-flex h-6 w-6 items-center justify-center rounded-full border border-[color:var(--color-indigo-a46)] bg-[color:var(--color-indigo-a16)] text-[color:var(--color-indigo-text-soft)] transition-colors hover:bg-[color:var(--color-indigo-a24)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--color-indigo-a46)] focus-visible:ring-inset disabled:opacity-60"
+            className={controlClass({ shape: "icon", size: "xs", tone: "accentOnTint", className: "h-6 w-6 rounded-full border border-[color:var(--color-indigo-a46)] bg-[color:var(--color-indigo-a16)] hover:bg-[color:var(--color-indigo-a24)]" })}
           >
             <Check size={ICON_SIZE.sm} aria-hidden />
           </button>
@@ -113,7 +114,7 @@ export function NodeExplanationEdit({
             disabled={saving}
             aria-label={labels.cancel}
             data-testid="node-explanation-cancel"
-            className="inline-flex h-6 w-6 items-center justify-center rounded-full text-[color:var(--color-text-quaternary)] transition-colors hover:text-[color:var(--color-text-primary)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--color-indigo-a46)] focus-visible:ring-inset disabled:opacity-60"
+            className={controlClass({ shape: "icon", tone: "muted", className: "h-6 w-6 rounded-full hover:text-[color:var(--color-text-primary)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--color-indigo-a46)] focus-visible:ring-inset disabled:opacity-60" })}
           >
             <X size={ICON_SIZE.sm} aria-hidden />
           </button>

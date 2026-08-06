@@ -552,7 +552,7 @@ function SearchPaletteDialog({
                 <button
                   type="button"
                   onClick={onClose}
-                  className="mt-4 rounded-full border border-[color:var(--color-overlay-3)] px-3 py-1.5 font-mono text-caption uppercase tracking-[var(--tracking-caps-14)] text-[color:var(--color-text-tertiary)] transition-colors hover:text-[color:var(--color-text-primary)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--color-indigo-a50)] focus-visible:ring-offset-2 focus-visible:ring-offset-[color:var(--color-panel)]"
+                  className={controlClass({ shape: "pill", tone: "muted", className: "mt-4 border-[color:var(--color-overlay-3)] px-3 py-1.5 font-mono text-caption uppercase tracking-[var(--tracking-caps-14)] hover:text-[color:var(--color-text-primary)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--color-indigo-a50)] focus-visible:ring-offset-2 focus-visible:ring-offset-[color:var(--color-panel)]" })}
                 >
                   {t('emptyClose')}
                 </button>
@@ -576,7 +576,7 @@ function SearchPaletteDialog({
                     setLayerFilter('all');
                     setActiveIndex(0);
                   }}
-                  className="mt-4 rounded-full border border-[color:var(--color-indigo-a30)] bg-[color:var(--color-indigo-a08)] px-3 py-1.5 font-mono text-caption uppercase tracking-[var(--tracking-caps-14)] text-[color:var(--color-indigo-line-a90)] transition-colors hover:bg-[color:var(--color-indigo-a18)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--color-indigo-a50)] focus-visible:ring-offset-2 focus-visible:ring-offset-[color:var(--color-panel)]"
+                  className={controlClass({ shape: "pill", className: "mt-4 border-[color:var(--color-indigo-a30)] bg-[color:var(--color-indigo-a08)] px-3 py-1.5 font-mono text-caption uppercase tracking-[var(--tracking-caps-14)] text-[color:var(--color-indigo-line-a90)] hover:bg-[color:var(--color-indigo-a18)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--color-indigo-a50)] focus-visible:ring-offset-2 focus-visible:ring-offset-[color:var(--color-panel)]" })}
                 >
                   {t('emptyLayerReset')}
                 </button>
@@ -590,7 +590,7 @@ function SearchPaletteDialog({
                 <button
                   type="button"
                   onClick={() => setQuery('')}
-                  className="mt-4 rounded-full border border-[color:var(--color-indigo-a30)] bg-[color:var(--color-indigo-a08)] px-3 py-1.5 font-mono text-caption uppercase tracking-[var(--tracking-caps-14)] text-[color:var(--color-indigo-line-a90)] transition-colors hover:bg-[color:var(--color-indigo-a18)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--color-indigo-a50)] focus-visible:ring-offset-2 focus-visible:ring-offset-[color:var(--color-panel)]"
+                  className={controlClass({ shape: "pill", className: "mt-4 border-[color:var(--color-indigo-a30)] bg-[color:var(--color-indigo-a08)] px-3 py-1.5 font-mono text-caption uppercase tracking-[var(--tracking-caps-14)] text-[color:var(--color-indigo-line-a90)] hover:bg-[color:var(--color-indigo-a18)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--color-indigo-a50)] focus-visible:ring-offset-2 focus-visible:ring-offset-[color:var(--color-panel)]" })}
                 >
                   {t('emptyNoMatchClear')}
                 </button>

@@ -441,7 +441,7 @@ export function FirstRunStarterModule({
           <Link
             href="/download/"
             data-testid="first-run-starter-unsupported-cta"
-            className="mt-2 inline-flex items-center gap-1.5 text-body font-[var(--font-weight-signature)] text-[color:var(--color-indigo-accent)] transition-colors hover:text-[color:var(--topology-v2-panel-text-primary)]"
+            className={controlClass({ shape: "link", tone: "accentOnTint", className: "mt-2 gap-1.5 text-body font-[var(--font-weight-signature)] hover:text-[color:var(--topology-v2-panel-text-primary)]" })}
           >
             {t("unsupportedCta")}
           </Link>
@@ -452,7 +452,7 @@ export function FirstRunStarterModule({
           onClick={() => setGuideOpen(true)}
           disabled={busy}
           data-testid="first-run-starter-open"
-          className="touch-hit-expand relative flex h-10 w-full items-center justify-center gap-2 rounded-card border border-[color:var(--color-indigo-line-a45)] bg-[color:var(--color-indigo-brand)] text-body font-[var(--font-weight-emphasis)] text-[color:var(--color-text-on-accent)] shadow-[inset_0_1px_0_var(--color-overlay-3)] transition-colors hover:bg-[color:var(--color-indigo-brand-hover)] disabled:opacity-60"
+          className={controlClass({ shape: "card", className: "touch-hit-expand relative h-10 w-full justify-center gap-2 border-[color:var(--color-indigo-line-a45)] bg-[color:var(--color-indigo-brand)] text-body font-[var(--font-weight-emphasis)] text-[color:var(--color-text-on-accent)] shadow-[inset_0_1px_0_var(--color-overlay-3)] hover:bg-[color:var(--color-indigo-brand-hover)] disabled:opacity-60" })}
         >
           <FolderOpen size={ICON_SIZE.md} aria-hidden />
           {busy && !scaffolding ? t("openBusy") : t("openLabel")}
@@ -472,7 +472,7 @@ export function FirstRunStarterModule({
           type="button"
           data-testid="first-run-tour-cta"
           onClick={onStartTour}
-          className="touch-hit-expand mt-2 inline-flex h-8 w-full items-center justify-center gap-1.5 rounded-card border border-[color:var(--topology-v2-panel-divider)] text-body text-[color:var(--topology-v2-panel-text-secondary)] transition-colors hover:border-[color:var(--color-indigo-line-a35)] hover:text-[color:var(--topology-v2-panel-text-primary)]"
+          className={controlClass({ shape: "card", className: "touch-hit-expand mt-2 inline-flex h-8 w-full justify-center gap-1.5 border-[color:var(--topology-v2-panel-divider)] text-body text-[color:var(--topology-v2-panel-text-secondary)] hover:border-[color:var(--color-indigo-line-a35)] hover:text-[color:var(--topology-v2-panel-text-primary)]" })}
         >
           {t("tourCta")}
         </button>

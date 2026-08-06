@@ -302,7 +302,7 @@ export function TopologyTrailChip({
                   }}
                   aria-label={labels.pastBackAriaLabel}
                   data-testid="topology-trail-past-back"
-                  className="-ml-1 flex h-5 w-5 shrink-0 items-center justify-center rounded-full text-[color:var(--color-text-quaternary)] transition-colors hover:text-[color:var(--color-text-primary)]"
+                  className={controlClass({ shape: "icon", size: "xs", tone: "muted", className: "-ml-1 h-5 w-5 rounded-full hover:text-[color:var(--color-text-primary)]" })}
                 >
                   <ChevronLeft size={ICON_SIZE.md} aria-hidden />
                 </button>
@@ -319,7 +319,7 @@ export function TopologyTrailChip({
                     type="button"
                     onClick={() => setShowPast(true)}
                     data-testid="topology-trail-past-link"
-                    className="shrink-0 rounded-chip px-1 py-0.5 text-[color:var(--color-text-quaternary)] transition-colors hover:text-[color:var(--color-text-primary)]"
+                    className={controlClass({ shape: "link", tone: "muted", className: "shrink-0 rounded-chip px-1 py-0.5 hover:text-[color:var(--color-text-primary)]" })}
                   >
                     {labels.pastLinkLabel}
                   </button>
@@ -511,7 +511,7 @@ export function TopologyTrailChip({
                     aria-label={labels.rowAriaLabel(entry.title)}
                     aria-current={isCurrent ? "true" : undefined}
                     data-testid="topology-trail-row"
-                    className="min-w-0 flex-1 truncate rounded-chip px-1.5 py-1.5 text-left text-body text-[color:var(--color-text-secondary)] transition-colors hover:bg-[color:var(--color-overlay-1)] hover:text-[color:var(--color-text-primary)]"
+                    className={controlClass({ shape: "row", size: "sm", tone: "secondary", className: "min-w-0 flex-1 truncate hover:bg-[color:var(--color-overlay-1)] hover:text-[color:var(--color-text-primary)]" })}
                   >
                     {entry.title}
                   </button>

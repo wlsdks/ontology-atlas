@@ -1807,7 +1807,7 @@ function CenterCard(
               type="button"
               onClick={() => props.onOpenSimilar?.(props.createSimilarHit!.slug)}
               // 문장 속 컨트롤 — `link` 의 `min-h-11` 이 힌트 줄을 44px 로 밀어 올린다.
-              className="rounded-chip font-[var(--font-weight-emphasis)] text-[color:var(--color-indigo-text-soft)]"
+              className={controlClass({ shape: "link", tone: "accentOnTint", className: "rounded-chip font-[var(--font-weight-emphasis)]" })}
             >
               {props.labels.createSimilarOpen}
             </button>
@@ -1818,7 +1818,7 @@ function CenterCard(
                   type="button"
                   onClick={() => props.onDismissSimilar?.()}
                   // 같은 줄의 형제라 위와 같은 이유로 남긴다.
-                  className="text-[color:var(--color-text-quaternary)]"
+                  className={controlClass({ shape: "link", tone: "muted" })}
                 >
                   {props.labels.createSimilarAnyway}
                 </button>
@@ -2070,7 +2070,7 @@ function LaneRender({
           title={labels.addMore(view.laneLabel)}
           onClick={onOpen}
           {...hoverProps}
-          className="studio-stage-in group/add absolute z-[2] flex items-center justify-center gap-1.5 rounded-card border border-dashed border-[color:var(--color-border-strong)] text-label text-[color:var(--color-text-quaternary)] transition-colors hover:border-[color:var(--color-indigo-a46)] hover:text-[color:var(--color-text-secondary)]"
+          className={controlClass({ shape: "card", tone: "secondary", className: "studio-stage-in group/add absolute z-[2] justify-center gap-1.5 border-dashed border-[color:var(--color-border-strong)] text-label hover:border-[color:var(--color-indigo-a46)] hover:text-[color:var(--color-text-secondary)]" })}
           style={{
             left: layout.addChip.x,
             top: layout.addChip.y,
@@ -2755,7 +2755,7 @@ function InlinePicker({
               data-testid="studio-picker-similar-accept"
               onClick={() => onPick(similarHit)}
               // 문장 속 컨트롤 — `link` 의 `min-h-11` 이 힌트 줄을 44px 로 밀어 올린다.
-              className="rounded-chip font-[var(--font-weight-emphasis)] text-[color:var(--color-indigo-text-soft)]"
+              className={controlClass({ shape: "link", tone: "accentOnTint", className: "rounded-chip font-[var(--font-weight-emphasis)]" })}
             >
               {labels.similarAccept}
             </button>
@@ -2767,7 +2767,7 @@ function InlinePicker({
           type="button"
           data-testid="studio-picker-create-new"
           onClick={() => onCreateNew?.({ relation, query })}
-          className="flex w-full items-center justify-center gap-1.5 rounded-card border border-dashed border-[color:var(--color-border-strong)] py-2 text-caption text-[color:var(--color-text-secondary)] transition-colors hover:text-[color:var(--color-text-primary)]"
+          className={controlClass({ shape: "card", tone: "secondary", className: "w-full justify-center gap-1.5 border-dashed border-[color:var(--color-border-strong)] py-2 text-caption hover:text-[color:var(--color-text-primary)]" })}
         >
           <Plus size={ICON_SIZE.md} aria-hidden className="text-[color:var(--color-text-tertiary)]" />
           {labels.pickerCreateNew}

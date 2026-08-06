@@ -1496,7 +1496,7 @@ export function ProjectForm({
             type="button"
             data-testid="project-mobile-preview-toggle"
             onClick={() => setMobilePreviewOpen((open) => !open)}
-            className="mb-4 flex w-full items-center justify-between rounded-panel border border-[color:var(--color-overlay-2)] bg-[color:var(--color-panel)] px-4 py-4 text-left lg:hidden"
+            className={controlClass({ shape: "row", className: "mb-4 justify-between rounded-panel border border-[color:var(--color-overlay-2)] bg-[color:var(--color-panel)] px-4 py-4 lg:hidden" })}
           >
             <div>
               <p className="font-mono text-caption uppercase tracking-[var(--tracking-caps-12)] text-[color:var(--color-text-quaternary)]">

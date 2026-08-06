@@ -373,7 +373,7 @@ export function ShortcutSheet({ open, onClose }: Props) {
                 data-testid="shortcut-sheet-close"
                 data-shortcut-sheet-close-contract="touch-visible"
                 data-shortcut-sheet-close-size-token="--topology-shortcut-sheet-close-size"
-                className="flex h-[var(--topology-shortcut-sheet-close-size)] w-[var(--topology-shortcut-sheet-close-size)] items-center justify-center rounded-chip text-[color:var(--color-text-tertiary)] transition-colors hover:bg-[color:var(--color-overlay-2)] hover:text-[color:var(--color-text-primary)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--color-border-strong)]"
+                className={controlClass({ shape: "chip", tone: "muted", className: "flex h-[var(--topology-shortcut-sheet-close-size)] w-[var(--topology-shortcut-sheet-close-size)] justify-center hover:bg-[color:var(--color-overlay-2)] hover:text-[color:var(--color-text-primary)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--color-border-strong)]" })}
               >
                 <X size={ICON_SIZE.md} />
               </button>

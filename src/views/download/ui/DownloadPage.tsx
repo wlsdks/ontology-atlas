@@ -31,6 +31,7 @@ import {
   type DesktopArch,
 } from '../lib/release-state';
 import { StageMap, useStageGraph } from './StageMap';
+import { controlClass } from '@/shared/ui/control-class';
 
 const GITHUB_REPOSITORY_URL = 'https://github.com/wlsdks/ontology-atlas';
 
@@ -826,7 +827,7 @@ function ReleaseFactLine() {
         target="_blank"
         rel="noopener noreferrer"
         data-testid="download-release-notes-link"
-        className="touch-hit-expand inline-flex items-baseline gap-1.5 transition-colors hover:text-[color:var(--color-text-secondary)]"
+        className={controlClass({ shape: "link", tone: "secondary", className: "touch-hit-expand items-baseline gap-1.5 hover:text-[color:var(--color-text-secondary)]" })}
       >
         <ExternalLink size={ICON_SIZE.sm} aria-hidden className="shrink-0 self-center" />
         {/*
@@ -1123,7 +1124,7 @@ function ChecksumRow({ arch }: { arch: DesktopArch }) {
         onClick={() => void copy(asset.sha256)}
         aria-label={copyLabel}
         // coarse 포인터에서 히트만 44px 로 — 시각 높이(28px)는 그대로.
-        className="touch-hit-expand inline-flex h-7 shrink-0 items-center gap-1.5 rounded-chip border border-[color:var(--color-border-soft)] px-2 font-mono text-caption leading-caption text-[color:var(--color-text-tertiary)] transition-colors hover:border-[color:var(--color-border-strong)] hover:text-[color:var(--color-text-primary)]"
+        className={controlClass({ shape: "chip", tone: "muted", className: "touch-hit-expand h-7 shrink-0 border-[color:var(--color-border-soft)] px-2 font-mono text-caption leading-caption hover:border-[color:var(--color-border-strong)] hover:text-[color:var(--color-text-primary)]" })}
       >
         {copyState === 'copied' ? (
           <Check size={ICON_SIZE.sm} aria-hidden />

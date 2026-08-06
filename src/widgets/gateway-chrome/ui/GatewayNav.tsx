@@ -10,6 +10,7 @@ import { PAGE_COLUMN, PAGE_GUTTER } from '@/shared/lib/gateway-frame';
 import { stripLocalePrefix } from '@/shared/lib/nav-destination';
 import { xProfileUrl } from '@/shared/config/social-links';
 import { XMark } from '@/shared/ui';
+import { controlClass } from '@/shared/ui/control-class';
 
 /**
  * 관문 표면들이 공유하는 상단 크롬.
@@ -63,7 +64,7 @@ export function GatewayNav() {
       >
         <Link
           href="/"
-          className="touch-hit-expand inline-flex items-center gap-2 transition-colors hover:text-[color:var(--color-text-primary)]"
+          className={controlClass({ shape: "link", className: "touch-hit-expand gap-2 hover:text-[color:var(--color-text-primary)]" })}
         >
           <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-chip border border-[color:var(--color-border-soft)] bg-[color:var(--color-elevated)] text-[color:var(--color-indigo-accent)]">
             <Orbit size={ICON_SIZE.sm} />
@@ -120,7 +121,7 @@ export function GatewayNav() {
               rel="noreferrer noopener"
               data-testid="gateway-x-link"
               aria-label={tNav('xLabel')}
-              className="touch-hit-expand inline-flex items-center text-[color:var(--color-text-tertiary)] transition-colors hover:text-[color:var(--color-text-primary)]"
+              className={controlClass({ shape: "link", tone: "muted", className: "touch-hit-expand hover:text-[color:var(--color-text-primary)]" })}
             >
               <XMark size={14} aria-hidden />
             </a>

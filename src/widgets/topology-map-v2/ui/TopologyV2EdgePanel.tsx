@@ -5,6 +5,7 @@ import { X } from "lucide-react";
 import { ICON_SIZE } from "@/shared/ui/icon-size";
 import { Link } from "@/i18n/navigation";
 import { IconButton, RowButton } from "@/shared/ui";
+import { controlClass } from '@/shared/ui/control-class';
 
 /**
  * P3b — 엣지 팝오버. 노드 데이터시트와 같은 재질(panel 토큰)로, 관계
@@ -160,7 +161,7 @@ export function TopologyV2EdgePanel({
         <Link
           href={studioEditHref}
           data-testid="topology-v2-edge-edit"
-          className="inline-flex h-8 items-center justify-center rounded-chip border border-[color:var(--topology-v2-panel-action-border)] bg-[color:var(--topology-v2-panel-action-surface)] text-label text-[color:var(--topology-v2-panel-text-secondary)] transition-colors hover:bg-[color:var(--topology-v2-panel-row-hover)] hover:text-[color:var(--topology-v2-panel-text-primary)]"
+          className={controlClass({ shape: "chip", className: "h-8 justify-center border-[color:var(--topology-v2-panel-action-border)] bg-[color:var(--topology-v2-panel-action-surface)] text-label text-[color:var(--topology-v2-panel-text-secondary)] hover:bg-[color:var(--topology-v2-panel-row-hover)] hover:text-[color:var(--topology-v2-panel-text-primary)]" })}
         >
           {labels.editRelation}
         </Link>

@@ -8,6 +8,7 @@ import type {
   DomainCouplingPairRow,
 } from "../../lib/domain-coupling-rows";
 import { InsightsSectionTitle } from "../parts/InsightsSectionTitle";
+import { controlClass } from '@/shared/ui/control-class';
 
 export interface DomainCouplingCardLabels {
   title: string;
@@ -110,7 +111,7 @@ export function DomainCouplingCard({
         <Link
           href={labels.emptyActionHref}
           data-testid="domain-coupling-empty-action"
-          className="mt-3 inline-flex rounded-chip text-body text-[color:var(--color-indigo-accent)] transition-colors hover:text-[color:var(--color-text-primary)] hover:underline"
+          className={controlClass({ shape: "link", tone: "accent", className: "mt-3 rounded-chip hover:text-[color:var(--color-text-primary)] hover:underline" })}
         >
           {labels.emptyAction}
         </Link>
@@ -429,7 +430,7 @@ function SelectedPairDetail({
               href={nodeLink.href(example.fromId)}
               aria-label={nodeLink.ariaLabel(example.fromTitle)}
               data-testid="domain-coupling-example-link"
-              className="min-w-0 truncate rounded-micro text-[color:var(--color-text-tertiary)] transition-colors hover:text-[color:var(--color-text-primary)] hover:underline"
+              className={controlClass({ shape: "link", tone: "muted", className: "min-w-0 truncate rounded-micro hover:text-[color:var(--color-text-primary)] hover:underline" })}
             >
               {example.fromTitle}
             </Link>
@@ -438,7 +439,7 @@ function SelectedPairDetail({
               href={nodeLink.href(example.toId)}
               aria-label={nodeLink.ariaLabel(example.toTitle)}
               data-testid="domain-coupling-example-link"
-              className="min-w-0 truncate rounded-micro text-[color:var(--color-text-tertiary)] transition-colors hover:text-[color:var(--color-text-primary)] hover:underline"
+              className={controlClass({ shape: "link", tone: "muted", className: "min-w-0 truncate rounded-micro hover:text-[color:var(--color-text-primary)] hover:underline" })}
             >
               {example.toTitle}
             </Link>

@@ -179,7 +179,7 @@ export function AiConnectionPanel({
             href={downloadHref}
             onClick={onDownloadNavigate}
             data-testid="ai-connection-download-link"
-            className="mt-2 inline-flex h-8 items-center rounded-chip border border-[color:var(--color-indigo-line-a32)] px-2.5 text-label text-[color:var(--color-indigo-text-soft)] transition-colors hover:border-[color:var(--color-indigo-line-a45)] hover:bg-[color:var(--color-indigo-line-a13)]"
+            className={controlClass({ shape: "chip", tone: "accentOnTint", className: "mt-2 h-8 border-[color:var(--color-indigo-line-a32)] px-2.5 text-label hover:border-[color:var(--color-indigo-line-a45)] hover:bg-[color:var(--color-indigo-line-a13)]" })}
           >
             {t('webDegradedCta')}
           </Link>

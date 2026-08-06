@@ -16,6 +16,7 @@ import {
   type ImpactRankingLink,
 } from "./ImpactRankingCard";
 import { InsightsSectionTitle } from "../parts/InsightsSectionTitle";
+import { controlClass } from '@/shared/ui/control-class';
 
 export interface ConnectionHubRow {
   id: string;
@@ -199,7 +200,7 @@ export function ConnectionsTab({
                   href={hubLink.href(hub.id)}
                   aria-label={hubLink.ariaLabel(hub.title)}
                   data-testid="insights-hub-row-link"
-                  className="-mx-1.5 flex items-center gap-3 rounded-chip border-t border-[color:var(--color-divider)] px-1.5 py-2.5 transition-colors first:border-t-0 hover:bg-[color:var(--color-overlay-1)]"
+                  className={controlClass({ shape: "chip", className: "-mx-1.5 flex gap-3 border-t border-[color:var(--color-divider)] px-1.5 py-2.5 first:border-t-0 hover:bg-[color:var(--color-overlay-1)]" })}
                 >
                   <TopologyV2KindGlyph kind={hub.kind} size={16} className="flex-none" />
                   <span className="min-w-0 flex-1 truncate text-body text-[color:var(--color-text-primary)]">

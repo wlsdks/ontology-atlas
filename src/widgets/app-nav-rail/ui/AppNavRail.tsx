@@ -46,6 +46,7 @@ const subscribeToRuntime = () => () => {};
 /** 서버(프리렌더)에서는 창이 없어 **모른다**. `false`(=웹)로 단정하지 않는다. */
 const getServerRuntimeSnapshot = (): boolean | null => null;
 import type { NavRailContextHrefs } from "../model/shell-slot-context";
+import { controlClass } from '@/shared/ui/control-class';
 
 export interface AppNavRailProps {
   /** 설정 트리거(`AppSettingsMenu` rail-tile 등) — 레일 하단에 꽂는 슬롯.
@@ -368,7 +369,7 @@ export function AppNavRail({
                      어긋나 있던 것이다. `rounded-card` 는 링이 라벨까지 감싸는
                      상자를 아이콘 타일 모양과 맞추기 위한 것이고, 상자 치수는
                      `ring-inset` 이라 한 픽셀도 안 바뀐다. */
-                  className="group relative flex w-full flex-col items-center gap-1 rounded-card px-0 py-1.5 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-[color:var(--color-indigo-a46)]"
+                  className={controlClass({ shape: "card", className: "group relative w-full flex-col gap-1 px-0 py-1.5 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-[color:var(--color-indigo-a46)]" })}
                 >
                   <span
                     className={cn(
@@ -483,7 +484,7 @@ export function AppNavRail({
             title={t("getAppTitle")}
             aria-label={t("getApp")}
             data-testid="app-nav-rail-get-app"
-            className="group relative flex h-[var(--app-nav-rail-tile-height)] w-[var(--app-nav-rail-tile-width)] items-center justify-center rounded-card text-[color:var(--color-text-tertiary)] transition-[color,background-color,transform] hover:bg-[color:var(--color-overlay-2)] hover:text-[color:var(--color-text-primary)] active:translate-y-px active:bg-[color:var(--color-overlay-3)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--color-indigo-a46)] focus-visible:ring-inset"
+            className={controlClass({ shape: "card", tone: "muted", className: "group relative h-[var(--app-nav-rail-tile-height)] w-[var(--app-nav-rail-tile-width)] justify-center transition-[color,background-color,transform] hover:bg-[color:var(--color-overlay-2)] hover:text-[color:var(--color-text-primary)] active:translate-y-px active:bg-[color:var(--color-overlay-3)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--color-indigo-a46)] focus-visible:ring-inset" })}
           >
             <Download
               aria-hidden

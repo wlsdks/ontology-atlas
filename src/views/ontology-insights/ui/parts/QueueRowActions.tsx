@@ -206,7 +206,7 @@ export function RowActionMenu({
         aria-expanded={open}
         aria-label={labels.rowMenuTrigger}
         onClick={() => setOpen((value) => !value)}
-        className="inline-flex h-8 w-8 items-center justify-center rounded-chip border border-[color:var(--color-border-soft)] text-[color:var(--color-text-tertiary)] transition-colors hover:border-[color:var(--color-indigo-a46)] hover:text-[color:var(--color-text-primary)]"
+        className={controlClass({ shape: "chip", tone: "muted", className: "h-8 w-8 justify-center border-[color:var(--color-border-soft)] hover:border-[color:var(--color-indigo-a46)] hover:text-[color:var(--color-text-primary)]" })}
       >
         <MoreHorizontal size={ICON_SIZE.md} aria-hidden />
       </button>

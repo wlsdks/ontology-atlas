@@ -176,7 +176,7 @@ export function ProjectSelectorPage() {
           <Link
             href={newProjectHref}
             data-testid="project-selector-new-cta"
-            className="ml-auto inline-flex h-9 items-center rounded-chip border border-[color:var(--color-indigo-a50)] bg-[color:var(--topology-v2-panel-action-surface,var(--color-indigo-a06))] px-4 text-body font-[var(--font-weight-signature)] text-[color:var(--color-indigo-accent)] transition-colors hover:border-[color:var(--color-indigo-brand)] hover:bg-[color:var(--color-overlay-2)]"
+            className={controlClass({ shape: "chip", size: "lg", tone: "accent", className: "ml-auto h-9 border-[color:var(--color-indigo-a50)] bg-[color:var(--topology-v2-panel-action-surface,var(--color-indigo-a06))] px-4 font-[var(--font-weight-signature)] hover:border-[color:var(--color-indigo-brand)] hover:bg-[color:var(--color-overlay-2)]" })}
           >
             {t("ctaNewProject")}
           </Link>
@@ -410,14 +410,14 @@ function ProjectFullCard({ project, facts, domainRows, description, docPath, kin
           href={getProjectRuntimeDetailHref(project.slug)}
           prefetch={false}
           aria-label={t("cardDetailAriaLabel", { name: project.name })}
-          className="inline-flex h-8 items-center text-[color:var(--color-text-secondary)] transition-colors hover:text-[color:var(--color-text-primary)]"
+          className={controlClass({ shape: "link", tone: "secondary", className: "h-8 hover:text-[color:var(--color-text-primary)]" })}
         >
           {t("footDetail")}
         </Link>
         <Link
           href={getTopologyProjectHref(project.slug)}
           prefetch={false}
-          className="inline-flex h-8 items-center text-[color:var(--color-text-secondary)] transition-colors hover:text-[color:var(--color-text-primary)]"
+          className={controlClass({ shape: "link", tone: "secondary", className: "h-8 hover:text-[color:var(--color-text-primary)]" })}
         >
           {t("footTopologyView")}
         </Link>
