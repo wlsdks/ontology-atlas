@@ -517,7 +517,7 @@ export function VaultAgentPanel({
             data-testid="vault-agent-panel-close"
             onClick={onClose}
             aria-label={t('close')}
-            className="flex size-[var(--overlay-close-size)] shrink-0 items-center justify-center rounded-chip text-[color:var(--color-text-tertiary)] transition-colors hover:bg-[color:var(--color-overlay-2)] hover:text-[color:var(--color-text-primary)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--color-indigo-accent)]"
+            className={controlClass({ shape: "icon", tone: "muted", className: "size-[var(--overlay-close-size)] hover:bg-[color:var(--color-overlay-2)] hover:text-[color:var(--color-text-primary)]" })}
           >
             <X aria-hidden="true" size={ICON_SIZE.lg} />
           </button>

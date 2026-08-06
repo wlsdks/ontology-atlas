@@ -7,14 +7,20 @@ import {
 } from "@/entities/docs-vault";
 import { Link } from "@/i18n/navigation";
 import { estimateReadingMinutes } from "./reading-minutes";
+import { controlClass } from '@/shared/ui/control-class';
 
 // 후방 호환 — 기존 호출자가 DocMetaBar 모듈에서 직접 import 하던 것을
 // 깨지 않도록 re-export. 실제 정의는 ./reading-minutes.ts (test 측이
 // `@/i18n/navigation` 같은 React 의존을 끌어오지 않게 분리).
 export { estimateReadingMinutes };
 
-const actionLinkClass =
-  "inline-flex min-h-8 items-center gap-1.5 rounded-chip border border-[color:var(--color-overlay-2)] bg-[color:var(--color-overlay-1)] px-2.5 font-mono text-label text-[color:var(--color-text-tertiary)] underline-offset-2 transition-[background-color,border-color,color,transform] hover:-translate-y-0.5 hover:border-[color:var(--color-indigo-line-a42)] hover:bg-[color:var(--color-indigo-line-a06)] hover:text-[color:var(--color-text-primary)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--color-indigo-a42)] active:translate-y-px active:border-[color:var(--color-indigo-line-a54)] active:bg-[color:var(--color-indigo-line-a13)] motion-reduce:transform-none";
+const actionLinkClass = controlClass({
+  shape: "chip",
+  size: "md",
+  tone: "muted",
+  className:
+    "min-h-8 border-[color:var(--color-overlay-2)] bg-[color:var(--color-overlay-1)] font-mono underline-offset-2 transition-[background-color,border-color,color,transform] hover:-translate-y-0.5 hover:border-[color:var(--color-indigo-line-a42)] hover:bg-[color:var(--color-indigo-line-a06)] hover:text-[color:var(--color-text-primary)] active:translate-y-px active:border-[color:var(--color-indigo-line-a54)] active:bg-[color:var(--color-indigo-line-a13)] motion-reduce:transform-none",
+});
 
 /**
  * 문서 본문 위 메타 바 — 단어 수 / 읽기 시간 / kind 점프 / 태그 / 갱신일.

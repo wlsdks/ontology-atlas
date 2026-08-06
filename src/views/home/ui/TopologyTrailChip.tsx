@@ -372,7 +372,7 @@ export function TopologyTrailChip({
                           // 보인다. 1층 행이 이미 secondary→primary 리프트로
                           // "눌린다"를 말하고 있어 같은 문법을 그대로 쓴다.
                           // 텍스트가 자식 span 이라 캐스케이드가 막히므로 group 경유.
-                          className="group flex min-w-0 flex-1 flex-col justify-center gap-0.5 self-stretch rounded-chip px-1.5 text-left transition-colors hover:bg-[color:var(--color-overlay-1)]"
+                          className={controlClass({ shape: "row", size: "sm", className: "group min-w-0 flex-1 flex-col justify-center gap-0.5 self-stretch px-1.5 hover:bg-[color:var(--color-overlay-1)]" })}
                         >
                           {/* 리프트는 1줄만 — 2줄까지 올리면 2줄 위계가 무너지고
                               "승자 없음"이던 2층에 승자가 생긴다. */}
