@@ -2,6 +2,7 @@ import { Check, Clipboard } from "lucide-react";
 import { ICON_SIZE } from "@/shared/ui/icon-size";
 import { useTranslations } from "next-intl";
 import { useCopyFeedback } from "@/shared/lib/use-copy-feedback";
+import { controlClass } from '@/shared/ui/control-class';
 
 /**
  * 인사이트 페이지 전반에서 쓰이는 "복사" 버튼. 클립보드 복사 + 성공/실패
@@ -49,11 +50,15 @@ export function CopyAgentTextButton({
       <button
         type="button"
         onClick={handleCopy}
-        className={[
-          "inline-flex shrink-0 items-center justify-center gap-1.5 rounded-chip border font-mono text-caption transition-[background-color,border-color,color,transform] duration-[var(--motion-base)] ease-[var(--motion-ease)] active:translate-y-[1px] motion-reduce:transition-none motion-reduce:transform-none",
-          toneClass,
-          compact ? "min-h-8 px-2.5 py-1.5" : "min-h-9 px-3 py-2",
-        ].join(" ")}
+        className={controlClass({
+          shape: "chip",
+          size: "md",
+          className: [
+            "shrink-0 justify-center font-mono text-caption transition-[background-color,border-color,color,transform] duration-[var(--motion-base)] ease-[var(--motion-ease)] active:translate-y-[1px] motion-reduce:transition-none motion-reduce:transform-none",
+            toneClass,
+            compact ? "min-h-8 px-2.5 py-1.5" : "min-h-9 px-3 py-2",
+          ].join(" "),
+        })}
         aria-label={ariaLabel}
       >
         {copyState === "copied" ? <Check size={ICON_SIZE.sm} aria-hidden /> : <Clipboard size={ICON_SIZE.sm} aria-hidden />}
