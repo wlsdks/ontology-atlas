@@ -79,6 +79,7 @@ import { ConnectionsTab, type ConnectionHubRow } from "./tabs/ConnectionsTab";
 import { DomainCouplingCard } from "./tabs/DomainCouplingCard";
 import { FreshnessTab } from "./tabs/FreshnessTab";
 import { InsightsHandoffRow } from "./parts/InsightsHandoffRow";
+import { controlClass } from '@/shared/ui/control-class';
 
 const EMPTY_NODES: KnowledgeGraphNode[] = [];
 const EMPTY_EDGES: KnowledgeGraphEdge[] = [];
@@ -975,7 +976,7 @@ export function OntologyInsightsPage() {
               title={
                 <>
                   {t("emptyTitleBefore")}
-                  <Link href={"/docs/"} className="text-[color:var(--color-indigo-text-strong)] underline">
+                  <Link href={"/docs/"} className={controlClass({ shape: "link", className: "text-[color:var(--color-indigo-text-strong)] underline" })}>
                     {t("emptyTitleLink")}
                   </Link>
                   {t("emptyTitleAfter")}

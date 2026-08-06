@@ -44,7 +44,7 @@ export function TopologyInsightsReturnChip({
         href={href}
         aria-label={ariaLabel}
         data-testid="topology-insights-return-chip-link"
-        className="flex min-w-0 items-center gap-1.5 transition-colors hover:text-[color:var(--color-text-primary)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--color-indigo-accent)] focus-visible:ring-offset-2 focus-visible:ring-offset-[color:var(--color-canvas)]"
+        className={controlClass({ shape: "link", className: "min-w-0 gap-1.5 hover:text-[color:var(--color-text-primary)]" })}
       >
         <ArrowLeft
           size={ICON_SIZE.md}

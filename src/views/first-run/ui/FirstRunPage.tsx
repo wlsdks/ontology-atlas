@@ -8,6 +8,7 @@ import { useJustStartVault, useLocalVault, useVaultCreateFlow } from "@/features
 import { Link } from "@/i18n/navigation";
 import { isTauriVaultRuntime } from "@/shared/lib/tauri-vault-fs";
 import { useToast } from "@/shared/ui/toast";
+import { controlClass } from '@/shared/ui/control-class';
 
 /**
  * 설치 앱 (데스크톱 셸) 첫 실행 — vault 미선택 상태의 `/`.
@@ -86,8 +87,11 @@ export function FirstRunPage() {
           ? vault.errorMessage ?? t("errorFallback")
           : null;
 
-  const cardBase =
-    "grid w-full grid-cols-[32px_1fr] items-start gap-3 rounded-chip border bg-[color:var(--color-panel)] px-4 py-3.5 text-left transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--color-indigo-a46)] focus-visible:ring-inset disabled:opacity-60";
+  const cardBase = controlClass({
+    shape: "row",
+    className:
+      "grid grid-cols-[32px_1fr] items-start gap-3 border bg-[color:var(--color-panel)] px-4 py-3.5",
+  });
   const iconChip =
     "flex h-8 w-8 items-center justify-center rounded-chip border border-[color:var(--color-divider)] bg-[color:var(--color-elevated)]";
 
