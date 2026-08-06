@@ -615,12 +615,16 @@ function SearchPaletteDialog({
                         onClose();
                       }}
                       onMouseEnter={() => setActiveIndex(rowIndex)}
-                      className={cn(
-                        'relative flex w-full items-start gap-3 px-4 py-3 text-left transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--color-indigo-a46)] focus-visible:ring-inset sm:py-3',
-                        isActive
-                          ? 'bg-[color:var(--color-indigo-a14)]'
-                          : 'hover:bg-[color:var(--color-overlay-1)]',
-                      )}
+                      className={controlClass({
+                        shape: 'row',
+                        stacked: true,
+                        className: cn(
+                          'relative items-start gap-3 px-4 py-3 sm:py-3',
+                          isActive
+                            ? 'bg-[color:var(--color-indigo-a14)]'
+                            : 'hover:bg-[color:var(--color-overlay-1)]',
+                        ),
+                      })}
                     >
                       <span
                         aria-hidden="true"

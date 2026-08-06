@@ -1643,7 +1643,7 @@ function CreateExtras({
         onClick={onToggle}
         aria-expanded={open}
         aria-controls="project-create-extras"
-        className="flex w-full items-center justify-between gap-3 text-left"
+        className={controlClass({ shape: "row", stacked: true, className: "justify-between gap-3" })}
       >
         <span className="min-w-0">
           <span className="block text-body-lg text-[color:var(--color-text-primary)]">{label}</span>

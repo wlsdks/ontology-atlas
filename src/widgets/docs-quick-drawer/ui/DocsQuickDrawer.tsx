@@ -232,7 +232,7 @@ function DocRow({
         <Link
           href={getDocHref(doc.slug)}
           onClick={onClose}
-          className="flex min-w-0 flex-1 items-center gap-2 rounded-card px-2 py-1.5 text-body text-[color:var(--color-text-secondary)] transition-colors group-hover:text-[color:var(--color-text-primary)]"
+          className={controlClass({ shape: "row", size: "sm", tone: "secondary", className: "min-w-0 flex-1 gap-2 group-hover:text-[color:var(--color-text-primary)]" })}
         >
           <FileText
             size={ICON_SIZE.sm}
@@ -543,7 +543,7 @@ export function DocsQuickDrawer({
                   <Link
                     href={getDocHref()}
                     onClick={onClose}
-                    className="inline-flex items-center gap-1 rounded-full border border-[color:var(--color-overlay-3)] bg-[color:var(--color-overlay-1)] px-3 py-1 text-label text-[color:var(--color-text-secondary)] transition-colors hover:border-[color:var(--color-indigo-a40)] hover:text-[color:var(--color-text-primary)]"
+                    className={controlClass({ shape: "pill", size: "sm", tone: "secondary", className: "gap-1 border-[color:var(--color-overlay-3)] bg-[color:var(--color-overlay-1)] hover:border-[color:var(--color-indigo-a40)] hover:text-[color:var(--color-text-primary)]" })}
                     aria-label={t("openAllAriaLabel")}
                   >
                     <BookOpen size={ICON_SIZE.sm} />
@@ -677,7 +677,7 @@ export function DocsQuickDrawer({
                             key={`rel-${m.doc.slug}`}
                             href={getDocHref(m.doc.slug)}
                             onClick={onClose}
-                            className="group flex items-center gap-2 rounded-card px-2 py-1.5 text-body text-[color:var(--color-text-secondary)] transition-colors hover:bg-[color:var(--color-indigo-a14)] hover:text-[color:var(--color-text-primary)]"
+                            className={controlClass({ shape: "row", size: "sm", tone: "secondary", className: "group gap-2 hover:bg-[color:var(--color-indigo-a14)] hover:text-[color:var(--color-text-primary)]" })}
                           >
                             <FileText size={ICON_SIZE.sm} className="shrink-0 text-[color:var(--color-text-quaternary)] group-hover:text-[color:var(--color-indigo-accent)]" />
                             <span className="truncate">{m.doc.title}</span>
@@ -805,7 +805,7 @@ export function DocsQuickDrawer({
                       <Link
                         href={getDocHref()}
                         onClick={onClose}
-                        className="inline-flex items-center gap-1 rounded-full border border-[color:var(--color-indigo-a32)] bg-[color:var(--color-indigo-a10)] px-2.5 py-1 text-label text-[color:var(--color-text-primary)] transition-colors hover:border-[color:var(--color-indigo-a50)]"
+                        className={controlClass({ shape: "pill", size: "sm", className: "gap-1 border-[color:var(--color-indigo-a32)] bg-[color:var(--color-indigo-a10)] hover:border-[color:var(--color-indigo-a50)]" })}
                       >
                         <BookOpen size={ICON_SIZE.sm} />
                         {t("openVault")}

@@ -218,7 +218,7 @@ export function CommitDetail({
                     data-testid="atlas-git-commit-file"
                     aria-pressed={activeFile === file.path}
                     onClick={() => setOpenFile(file.path)}
-                    className="flex min-h-8 w-full min-w-0 items-center gap-2.5 border-l-2 border-l-transparent px-5 text-left transition-colors hover:bg-[color:var(--color-overlay-1)] aria-pressed:border-l-[color:var(--color-indigo-brand)] aria-pressed:bg-[color:var(--color-overlay-2)]"
+                    className={controlClass({ shape: "row", stacked: true, className: "min-h-8 min-w-0 gap-2.5 border-l-2 border-l-transparent px-5 hover:bg-[color:var(--color-overlay-1)] aria-pressed:border-l-[color:var(--color-indigo-brand)] aria-pressed:bg-[color:var(--color-overlay-2)]" })}
                   >
                     <span
                       aria-hidden

@@ -584,7 +584,7 @@ export function ProjectDrawer({
                             ? t("openDocsVaultTitleWithDoc", { name: project.name })
                             : t("openDocsVaultTitleEmpty")
                         }
-                        className="inline-flex h-10 items-center justify-center gap-1.5 rounded-chip border border-[color:var(--color-indigo-a28)] bg-[color:var(--color-indigo-a06)] px-3 text-body-lg text-[color:var(--color-indigo-text-soft)] transition-colors hover:border-[color:var(--color-indigo-a55)] hover:text-[color:var(--color-text-primary)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--color-indigo-a46)] focus-visible:ring-offset-2 focus-visible:ring-offset-[color:var(--color-panel)]"
+                        className={controlClass({ shape: "chip", size: "lg", tone: "accentOnTint", className: "h-10 justify-center gap-1.5 border-[color:var(--color-indigo-a28)] bg-[color:var(--color-indigo-a06)] hover:border-[color:var(--color-indigo-a55)] hover:text-[color:var(--color-text-primary)]" })}
                       >
                         <BookOpen size={ICON_SIZE.sm} />
                         {t("openDocsVault")}
@@ -598,7 +598,7 @@ export function ProjectDrawer({
                           매칭 실패해도 페이지는 graceful 로드). */}
                       <Link
                         href={buildOntologyNodeHref(`project:${project.slug}`)}
-                        className="inline-flex h-10 items-center justify-center rounded-chip border border-[color:var(--color-divider)] px-3 text-body-lg text-[color:var(--color-text-secondary)] transition-colors hover:border-[color:var(--color-border-strong)] hover:text-[color:var(--color-text-primary)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--color-indigo-a46)] focus-visible:ring-offset-2 focus-visible:ring-offset-[color:var(--color-panel)]"
+                        className={controlClass({ shape: "chip", size: "lg", tone: "secondary", className: "h-10 justify-center border-[color:var(--color-divider)] hover:border-[color:var(--color-border-strong)] hover:text-[color:var(--color-text-primary)]" })}
                       >
                         {t("openOntology")}
                       </Link>
@@ -931,7 +931,7 @@ export function ProjectDrawer({
                                   <li key={m.doc.slug}>
                                     <Link
                                       href={buildDocsVaultHref({ slug: m.doc.slug })}
-                                      className="group flex flex-col gap-1 rounded-chip border border-transparent px-2 py-1 text-left text-body text-[color:var(--color-text-secondary)] transition-colors hover:border-[color:var(--color-indigo-line-a32)] hover:text-[color:var(--color-text-primary)]"
+                                      className={controlClass({ shape: "row", size: "sm", tone: "secondary", className: "group flex-col items-start gap-1 border border-transparent hover:border-[color:var(--color-indigo-line-a32)] hover:text-[color:var(--color-text-primary)]" })}
                                     >
                                       <span className="flex items-center gap-2">
                                         <span className="flex-1 truncate">
@@ -1030,7 +1030,7 @@ export function ProjectDrawer({
                                     href={link.url}
                                     target="_blank"
                                     rel="noopener noreferrer"
-                                    className="inline-flex items-center gap-1.5 text-body-lg text-[color:var(--color-indigo-accent)] transition-colors hover:text-[color:var(--color-indigo-hover)]"
+                                    className={controlClass({ shape: "link", tone: "accent", className: "gap-1.5 text-body-lg hover:text-[color:var(--color-indigo-hover)]" })}
                                   >
                                     {link.label}
                                     <ArrowUpRight size={ICON_SIZE.md} />
