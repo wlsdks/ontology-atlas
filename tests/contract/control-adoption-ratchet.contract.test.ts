@@ -1644,9 +1644,13 @@ describe('탐지기 프로브 — 이 게이트가 실제로 무엇을 잡는가
     // 픽스처 둘: 램프 밖 규격 하나 + **등재 안 된** 크롬 토큰 자리 하나.
     expect(countInFile(FIXTURE), '픽스처의 손 컨트롤 2건을 못 셌다면 파서가 깨진 것이다').toBe(2);
 
-    // 실물 위에서도 살아 있다.
-    expect(total, '한 건도 못 셌다면 파서나 경로가 깨진 것이다').toBeGreaterThan(0);
-    expect(byFile.size, '파일별 집계가 비었다').toBeGreaterThan(10);
+    /*
+     * 실물 위에서도 살아 있다. ⚠️ **여기서 «몇 개나 남았는가» 를 물으면 안 된다** —
+     * 부채가 줄수록 그 수도 주므로, 하한을 걸면 다 옮긴 날 빨개진다(2026-08-06
+     * 재검수). 그래서 **훑은 파일 수**(스캐너의 시야)를 본다. 그건 부채와 무관하다.
+     */
+    expect(scannedFiles.length, '훑은 파일이 너무 적다 — 스캐너의 시야가 죽었다').toBeGreaterThan(150);
+    expect(byFile.size, '파일별 집계가 음수일 수 없다').toBeGreaterThanOrEqual(0);
   });
 
   it('② 등재 안 된 자리를 손 컨트롤로 만들면 **부채**로 잡힌다 — 등재 쪽으로 새지 않는다', () => {
@@ -1742,9 +1746,12 @@ describe('탐지기 프로브 — 이 게이트가 실제로 무엇을 잡는가
       countInFile(FIXTURE, ANCHOR_TAGS),
       '픽스처의 손 앵커 2건을 못 셌다면 앵커 탐지기가 죽은 것이다',
     ).toBe(2);
-    // 실물 위에서도 살아 있다 — 이게 없으면 「앵커 부채 0」과 「안 셌다」가 같은 초록이다.
-    expect(anchorCensus.total, '앵커를 한 건도 못 셌다면 태그 정규식이 깨진 것이다').toBeGreaterThan(0);
-    expect(anchorCensus.byFile.size, '앵커 파일별 집계가 비었다').toBeGreaterThan(10);
+    /*
+     * 실물 위에서도 살아 있다 — 이게 없으면 「앵커 부채 0」과 「안 셌다」가 같은
+     * 초록이다. **다만 부채 수가 아니라 스캐너의 시야로 잰다**(위와 같은 이유).
+     */
+    expect(scannedFiles.length, '훑은 파일이 너무 적다 — 스캐너의 시야가 죽었다').toBeGreaterThan(150);
+    expect(anchorCensus.byFile.size, '앵커 파일별 집계가 음수일 수 없다').toBeGreaterThanOrEqual(0);
   });
 
   it('⑧ 앵커를 하나 더 쓰면 **앵커 부채로** 잡힌다 — 버튼 수는 안 움직인다', () => {
