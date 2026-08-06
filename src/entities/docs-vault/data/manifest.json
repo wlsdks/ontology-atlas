@@ -7619,10 +7619,30 @@
           "depth": 3,
           "text": "실측",
           "slug": "실측-2"
+        },
+        {
+          "depth": 2,
+          "text": "2026-08-06 (8) — 비활성 흐림은 한 값이다 · 조회 팔레트 입력은 결과를 이기지 않는다",
+          "slug": "2026-08-06-8-비활성-흐림은-한-값이다-조회-팔레트-입력은-결과를-이기지-않는다"
+        },
+        {
+          "depth": 3,
+          "text": "결정 1 — `disabled:opacity-*` 를 55 하나로",
+          "slug": "결정-1-disabledopacity--를-55-하나로"
+        },
+        {
+          "depth": 3,
+          "text": "결정 2 — `SearchPalette` 입력의 `text-title`(16px) 덮어쓰기 삭제",
+          "slug": "결정-2-searchpalette-입력의-text-title16px-덮어쓰기-삭제"
+        },
+        {
+          "depth": 3,
+          "text": "남긴 관찰 (후속)",
+          "slug": "남긴-관찰-후속"
         }
       ],
       "excerpt": "이 파일은 결정과 그때 진 반대 의견을 남긴다. docs/CHANGELOG.md 는 무엇이 언제 바뀌었나를 답하고, 이 파일은 왜 그렇게 정했고, 무엇을 걸었나를 답한다. 최신이 위. 기록은 덧붙이기만 한다 — 지난 기록을 고치지 않는다. 판단이 바뀌었으면 새 기록을 쓰고 옛 기록을 뒤집힘 으로 표시한다. 틀린 기록도 자산이다. 1. 소집 전에 읽는다. 카운슬을 열기 전(그리고 단독 PO 패스를 쓰기 전) 같은 표면 · 같은 질문에 대한 선행 결정이 있는지 먼저 본다. 있으면 새 패스는 그것을 ① 여전히 유효하다고 인용하거나 ② 명시적으로 뒤집는다. 조용히 다시 결정",
-      "wordCount": 83501,
+      "wordCount": 84060,
       "updatedAt": "2026-08-06",
       "linksOut": [
         "slug"
@@ -8546,6 +8566,11 @@
         },
         {
           "depth": 3,
+          "text": "비활성 상태 (Disabled) — 값은 하나다 (2026-08-06)",
+          "slug": "비활성-상태-disabled-값은-하나다-2026-08-06"
+        },
+        {
+          "depth": 3,
           "text": "Select / Listbox (#4)",
           "slug": "select-listbox-4"
         },
@@ -8606,7 +8631,7 @@
         }
       ],
       "excerpt": "This document is maintained based on Section 3 of the design spec. For the original Linear specification, see design-references/DESIGN-linear.md. v2 (2026-07): topology-map-v2 에서 출하된 B2+ \"Circuit × Constellation\" 시각 언어가 페이지 롤아웃(랜딩 → docs/ontology 허브 → projects/insights → download)의 규범이 되었다 — 아래 v2 — \"Circuit × Constell",
-      "wordCount": 30440,
+      "wordCount": 30598,
       "updatedAt": "2026-08-06",
       "linksOut": [
         "design-references/DESIGN-linear",
