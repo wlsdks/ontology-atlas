@@ -148,6 +148,45 @@ const cursorAffordanceSelectors = [
 ];
 
 /*
+ * 비활성 흐림 — 값 층 단일 (2026-08-06 「체계」석).
+ *
+ * ## 왜
+ *
+ * `disabled:opacity-*` 가 저장소에 60·55·50·45 네 값으로 갈려 있었다.
+ * 값 층(`control-class.ts` 의 `CONTROL_DISABLED_CLASS`)이 2026-08-03 에 55 를
+ * 정했는데 — 그 이후에도 `controlClass()` 호출부 6곳이 base 가 이미 싣는 값을
+ * `className` 으로 덮어썼고, 손 컨트롤 3곳이 값을 베껴 적다 어긋났다.
+ * 같은 상태(누를 수 없음)를 네 밝기로 그리면 그건 시스템이 아니라 우연이다.
+ *
+ * ## 룰의 모양 — 값을 묻고, 파일 면제를 만들지 않는다
+ *
+ * «값 층 파일 밖에서는 `disabled:opacity-` 자체를 금지» 로 짜면 면제 파일
+ * 블록이 하나 더 생기고, 이 config 는 그런 블록이 셀렉터 배열을 다시 싣는 걸
+ * 잊는 사고를 세 번 겪었다(footprint · app-settings 블록의 2026-08-05 주석).
+ * 그래서 면제 0 으로 짠다: **55 가 아닌 값만** 막는다. 55 라는 숫자가 lint 와
+ * 값 층 두 곳에 적히는 대가는 `disabled-affordance.contract.test.ts` 가
+ * 두 값을 대조하는 것으로 갚는다 — 값 층이 이사하면 이 룰도 같이 이사해야
+ * 빨간불이 꺼진다.
+ *
+ * ⚠️ 켜기 전 전수: 위반 9곳(60×5 · 50×3 · 45×1)을 먼저 0 으로 만들고 켰다
+ * (lint 총계 불변). 주석 속 60·50 두 건은 AST 밖이라 애초에 안 걸린다.
+ */
+const disabledAffordanceSelectors = [
+  {
+    selector:
+      'Literal[value=/(^|[^-\\w])((aria-|group-|peer-)?disabled):opacity-(?!55([^0-9]|$))/]',
+    message:
+      '비활성 흐림 값은 값 층이 정한다 — disabled:opacity-55 (control-class.ts CONTROL_DISABLED_CLASS). controlClass/fieldClass 기반이면 base 가 이미 실으니 이 클래스를 지우고, 손 컨트롤이면 CONTROL_DISABLED_CLASS 를 조합하라. 근거: tests/contract/disabled-affordance.contract.test.ts',
+  },
+  {
+    selector:
+      'TemplateElement[value.raw=/(^|[^-\\w])((aria-|group-|peer-)?disabled):opacity-(?!55([^0-9]|$))/]',
+    message:
+      '비활성 흐림 값은 값 층이 정한다 (template literal) — disabled:opacity-55 하나. 손 컨트롤은 CONTROL_DISABLED_CLASS 를 조합하라.',
+  },
+];
+
+/*
  * 자간 · 무게 · Tailwind 팔레트 — 2026-08-05 에 닫은 세 축.
  *
  * ## 자간 (`tracking-[…em]`)
@@ -939,6 +978,7 @@ const eslintConfig = defineConfig([
         // 사다리 문제라 부채 면제와 함께 빠지면 안 된다.
         ...inlineShadowSelectors,
         ...cursorAffordanceSelectors,
+        ...disabledAffordanceSelectors,
       ],
     },
   },
@@ -961,6 +1001,7 @@ const eslintConfig = defineConfig([
         ...accentTintPairingSelectors,
         ...inlineShadowSelectors,
         ...cursorAffordanceSelectors,
+        ...disabledAffordanceSelectors,
         ...typographyAxisSelectors,
         ...layerSelectors,
       ],
@@ -1003,6 +1044,7 @@ const eslintConfig = defineConfig([
         // 켜는 비용은 0.
         ...inlineShadowSelectors,
         ...cursorAffordanceSelectors,
+        ...disabledAffordanceSelectors,
         ...typographyAxisSelectors,
         ...layerSelectors,
       ],
@@ -1044,6 +1086,7 @@ const eslintConfig = defineConfig([
         // 통과했다. 전수 0 이라 켜는 비용은 0.
         ...inlineShadowSelectors,
         ...cursorAffordanceSelectors,
+        ...disabledAffordanceSelectors,
         ...typographyAxisSelectors,
         ...layerSelectors,
         {

@@ -366,6 +366,7 @@ particle·rarity(gold)·shimmer 를 `--studio-*` 토큰과 `.studio-stage` 안�
 | **Tailwind 팔레트** | `text-white`·`bg-slate-*` 등 기본 팔레트 유틸리티 금지 — `--color-*` 토큰만 (2026-08-05) | 동일 (켤 때 위반 0 — 4곳 선치환) |
 | **층위 20 이상** | `z-[N]` 하드코딩 금지 — `--z-*` 사다리를 쓴다. 20 미만(한 표면 안의 지역 쌓임)은 자유 (2026-08-05) | 동일 (켤 때 위반 0 — 17곳 선치환) |
 | **중복 커서** | `<button>`·`<summary>` 의 className 에 `cursor-pointer` 를 다시 적는 것 금지 — 정책은 `globals.css` base 한 곳 (2026-08-05) | 동일 (켤 때 위반 0 — 13곳 선정리) |
+| **비활성 흐림** | `disabled:opacity-*` 는 55 외 값 금지 — 정본은 값 층 `CONTROL_DISABLED_CLASS`(한 세트: 흐림·커서·그림자·호버 무력화), 손 컨트롤은 상수 조합 (2026-08-06) | 동일 (켤 때 위반 0 — 9곳 선치환) |
 | 금지 그라디언트 | `scaleGradientSelectors` | 동일 |
 | **accent×틴트 페어링** | `accentTintPairingSelectors` — `tone accent` 와 인디고/앰버 틴트 `bg-` 가 같은 호출/원소에 공존 금지 (상수 우회는 `accent-ink-contrast` 계약이 맡는다) | 전역 error (켤 때 위반 0 — 26곳 선치환) |
 

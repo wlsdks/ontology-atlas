@@ -95,7 +95,10 @@ const MENU_ITEM_LOCAL =
   "rounded-chip text-[color:var(--topology-v2-panel-text-secondary)] hover:bg-[color:var(--topology-v2-panel-row-hover)]";
 /** `<Link>`/`<span>` 형제용 — `<RowButton>` 이 내는 것과 바이트 동일해야 한다. */
 const MENU_ITEM_CLASS = controlClass({ shape: "row", size: "md", className: MENU_ITEM_LOCAL });
-const MENU_ITEM_DISABLED_CLASS = "pointer-events-none opacity-40";
+// `<Link>`/`<span>` 은 `disabled:` 변형을 못 받아 흐림을 직접 적는다 —
+// 값은 값 층의 비활성 흐림(`CONTROL_DISABLED_CLASS` 의 55)과 같은 단이어야
+// 한다. 40 으로 갈려 있던 자리다.
+const MENU_ITEM_DISABLED_CLASS = "pointer-events-none opacity-55";
 
 export function TopologyV2ContextMenu({
   open,

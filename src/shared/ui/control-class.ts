@@ -86,9 +86,23 @@ import { cn } from '@/shared/lib/cn';
  * 누르니까 아무런 반응이 없는데?"* 로 발견했다. 값은 `Button` 이 이미 쓰는
  * 문법 그대로다(`tests/contract/disabled-affordance.contract.test.ts` 가
  * 프리미티브 간 값이 갈리는 것을 막는다).
+ *
+ * ## 왜 export 인가 (2026-08-06 「체계」석)
+ *
+ * 값 층이 55 를 정한 뒤에도 화면 코드 9곳이 각자 60·50·45 를 쓰고 있었다 —
+ * 6곳은 `controlClass()`/`fieldClass()` 의 base 가 이미 싣는 값을 `className`
+ * 으로 **덮어쓴** 것이고, 3곳은 손 컨트롤이 값을 **베껴 적다** 어긋난 것이다.
+ * 손 컨트롤이 값을 베끼지 않고 조합할 이름이 없으면 다음 손 컨트롤도 베낀다.
+ * 그래서 역할 이름으로 내보낸다 — 넷은 한 세트다(흐림 · 커서 · 그림자 제거 ·
+ * 호버 무력화). 흐림만 가져가면 비활성인데 호버가 살아 있는 반쪽 상태가 된다.
+ *
+ * 게이트: `eslint.config.mjs` `disabledAffordanceSelectors` 가 55 밖의
+ * `disabled:opacity-*` 리터럴을 전역에서 막고, 위 계약 테스트가 이 상수와
+ * lint 가 허용하는 값이 같은지 대조한다.
  */
-const DISABLED =
+export const CONTROL_DISABLED_CLASS =
   'disabled:cursor-not-allowed disabled:opacity-55 disabled:shadow-none disabled:hover:border-inherit disabled:hover:bg-inherit disabled:hover:text-inherit';
+const DISABLED = CONTROL_DISABLED_CLASS;
 
 /**
  * 키보드 초점 — **`DISABLED` 와 같은 이유로 값 층에 둔다.**

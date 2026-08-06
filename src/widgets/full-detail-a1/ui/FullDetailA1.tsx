@@ -434,7 +434,7 @@ export function FullDetailA1({
               onClick={() => void projectSourceAction()}
               disabled={projectSourceBusy}
               aria-busy={projectSourceBusy}
-              className={controlClass({ shape: "chip", className: "justify-self-start border-[color:var(--topology-v2-indigo-border)] bg-[color:var(--topology-v2-panel-action-surface)] px-3 py-1.5 text-body font-[var(--font-weight-signature)] text-[color:var(--topology-v2-indigo-bright)] hover:border-[color:var(--topology-v2-indigo)] hover:bg-[color:var(--topology-v2-panel-row-hover)] disabled:cursor-wait disabled:opacity-60 sm:justify-self-end" })}
+              className={controlClass({ shape: "chip", className: "justify-self-start border-[color:var(--topology-v2-indigo-border)] bg-[color:var(--topology-v2-panel-action-surface)] px-3 py-1.5 text-body font-[var(--font-weight-signature)] text-[color:var(--topology-v2-indigo-bright)] hover:border-[color:var(--topology-v2-indigo)] hover:bg-[color:var(--topology-v2-panel-row-hover)] disabled:cursor-wait sm:justify-self-end" })}
             >
               {projectSourceBusy ? projectSourceLabels.busy : projectSourceLabels.action}
             </button>

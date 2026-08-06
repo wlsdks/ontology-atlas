@@ -13,6 +13,7 @@ import {
 import { createPortal } from "react-dom";
 import { Check, ChevronDown } from "lucide-react";
 import { cn } from "@/shared/lib/cn";
+import { CONTROL_DISABLED_CLASS } from "@/shared/ui/control-class";
 import { usePanelPresence } from "@/shared/lib/use-presence";
 import {
   listboxBottomIsHidden,
@@ -491,7 +492,10 @@ export function Select({
         onClick={() => (open ? setOpen(false) : openList())}
         onKeyDown={onKeyDown}
         className={cn(
-          "flex w-full items-center gap-2 rounded-card border border-[color:var(--color-border-soft)] bg-[color:var(--color-overlay-1)] px-3 text-left text-caption text-[color:var(--color-text-secondary)] outline-none transition-colors hover:border-[color:var(--color-border-strong)] focus-visible:outline-none focus-visible:border-[color:var(--color-indigo-a46)] focus-visible:ring-2 focus-visible:ring-[color:var(--color-indigo-a24)] disabled:cursor-not-allowed disabled:opacity-55 data-[state=open]:border-[color:var(--color-indigo-a46)]",
+          "flex w-full items-center gap-2 rounded-card border border-[color:var(--color-border-soft)] bg-[color:var(--color-overlay-1)] px-3 text-left text-caption text-[color:var(--color-text-secondary)] outline-none transition-colors hover:border-[color:var(--color-border-strong)] focus-visible:outline-none focus-visible:border-[color:var(--color-indigo-a46)] focus-visible:ring-2 focus-visible:ring-[color:var(--color-indigo-a24)] data-[state=open]:border-[color:var(--color-indigo-a46)]",
+          // 비활성 한 세트는 값 층에서 — 손으로 적으면 커서·흐림만 남고
+          // 호버 무력화가 빠진다(실제로 빠져 있던 자리다).
+          CONTROL_DISABLED_CLASS,
           size === "md" ? "h-[var(--control-h-md)]" : "h-[var(--control-h-lg)]",
         )}
       >

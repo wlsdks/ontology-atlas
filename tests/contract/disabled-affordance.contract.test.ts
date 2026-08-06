@@ -3,6 +3,8 @@ import { join } from 'node:path';
 
 import { describe, expect, it } from 'vitest';
 
+import { CONTROL_DISABLED_CLASS } from '@/shared/ui/control-class';
+
 /**
  * **누를 수 없으면 누를 수 없어 보여야 한다.**
  *
@@ -31,44 +33,73 @@ import { describe, expect, it } from 'vitest';
 const read = (p: string) => readFileSync(join(process.cwd(), p), 'utf8');
 
 /**
+ * 값의 정본 — `control-class.ts` 의 `CONTROL_DISABLED_CLASS`. 이 테스트는
+ * **소스의 클래스 문자열이 아니라 값을 묻는다** (2026-08-06 재작성): 종전에는
+ * 파일마다 `disabled:opacity-` 리터럴이 있기를 요구해서, 값 층 상수로 옮기는
+ * 정확히 올바른 리팩터링이 이 게이트를 깨뜨렸다. 지금은 「그 파일이 비활성
+ * 처리를 어디서 받는가」(상수 조합 또는 자기 리터럴)와 「모든 경로의 값이
+ * 하나인가」만 묻는다.
+ */
+const DISABLED_STEP = (() => {
+  const m = CONTROL_DISABLED_CLASS.match(/disabled:opacity-(\d+)/);
+  if (!m) throw new Error('CONTROL_DISABLED_CLASS 에 비활성 흐림 값이 없다');
+  return m[1];
+})();
+
+/**
  * 눌리는 공유 프리미티브. **여기 하나를 더할 때 이 목록도 늘린다** — 목록이 곧
  * 이 게이트의 사정거리이고, 빠진 프리미티브는 게이트가 없는 것과 같다.
+ * `Chip`/`IconButton`/`RowButton` 은 값 층(`control-class.ts`)에서 받으므로
+ * 등재 대상은 그 값을 내는 파일이다.
  */
 const PRESSABLE_PRIMITIVES = [
   'src/shared/ui/button.tsx',
   'src/shared/ui/chrome-chip.tsx',
   'src/shared/ui/chrome-tile.tsx',
-  /*
-   * `Chip`/`IconButton`/`RowButton` 은 자기 파일에 `disabled:` 를 안 쓴다 —
-   * **값 층(`control-class.ts`)에서 받는다.** 컴포넌트마다 챙기면 하나는 빠지고,
-   * 실제로 위 둘이 동시에 빠져 있었다. 그래서 등재 대상은 컴포넌트가 아니라
-   * 그 값을 내는 파일이다.
-   */
+  'src/shared/ui/select.tsx',
   'src/shared/ui/control-class.ts',
 ] as const;
 
-describe('비활성 어포던스', () => {
-  it.each(PRESSABLE_PRIMITIVES)('%s — 비활성 상태에 시각 처리가 있다', (path) => {
-    const source = read(path);
-    // 최소한 «흐려짐» 과 «커서» 둘 다. 하나만으로는 약하다 — 커서만이면 터치에서
-    // 신호가 0이고, 흐려짐만이면 마우스 사용자가 누르기 전까지 모른다.
-    expect(source, `${path}: 비활성 흐림 처리가 없다`).toMatch(/disabled:opacity-/);
-    expect(source, `${path}: 비활성 커서 처리가 없다`).toContain('disabled:cursor-not-allowed');
+/** 상수를 조합하면 그 자체로 네 처리(흐림·커서·그림자·호버 무력화)를 다 받는다. */
+const composesConstant = (source: string) => source.includes('CONTROL_DISABLED_CLASS');
+
+describe('비활성 어포던스 — 값 층', () => {
+  it('CONTROL_DISABLED_CLASS 가 네 처리를 한 세트로 싣는다', () => {
+    // 흐림만 있으면 마우스 사용자가 누르기 전까지 모르고, 커서만 있으면 터치에서
+    // 신호가 0이고, 호버가 살아 있으면 «눌러도 되는 것» 이라고 손이 먼저 판단한다.
+    expect(CONTROL_DISABLED_CLASS).toMatch(/disabled:opacity-\d+/);
+    expect(CONTROL_DISABLED_CLASS).toContain('disabled:cursor-not-allowed');
+    expect(CONTROL_DISABLED_CLASS).toContain('disabled:shadow-none');
+    expect(CONTROL_DISABLED_CLASS).toMatch(/disabled:hover:/);
   });
 
-  it('비활성 흐림 값이 프리미티브마다 갈리지 않는다', () => {
+  it.each(PRESSABLE_PRIMITIVES)('%s — 비활성 처리를 값 층 또는 자기 리터럴로 받는다', (path) => {
+    const source = read(path);
+    if (composesConstant(source)) return; // 값 층 한 세트를 통째로 받는다
+    expect(source, `${path}: 비활성 흐림 처리가 없다`).toMatch(/disabled:opacity-/);
+    expect(source, `${path}: 비활성 커서 처리가 없다`).toContain('disabled:cursor-not-allowed');
+    expect(source, `${path}: 비활성 호버 무력화가 없다`).toMatch(/disabled:hover:/);
+  });
+
+  it('비활성 흐림 값이 경로마다 갈리지 않는다', () => {
     // 같은 상태를 두 값으로 그리면 그건 시스템이 아니라 우연이다.
     const values = new Set(
       PRESSABLE_PRIMITIVES.flatMap((p) => [...read(p).matchAll(/disabled:opacity-(\d+)/g)].map((m) => m[1])),
     );
-    expect([...values], `비활성 불투명도가 여러 값이다: ${[...values].join(', ')}`).toHaveLength(1);
+    values.add(DISABLED_STEP);
+    expect([...values], `비활성 불투명도가 여러 값이다: ${[...values].join(', ')}`).toEqual([DISABLED_STEP]);
   });
 
-  it('비활성일 때 호버 스타일이 되살아나지 않는다', () => {
-    // 호버가 살아 있으면 «눌러도 되는 것» 이라고 손이 먼저 판단한다.
-    for (const path of PRESSABLE_PRIMITIVES) {
-      expect(read(path), `${path}: 비활성 호버 무력화가 없다`).toMatch(/disabled:hover:/);
-    }
+  it('lint 게이트가 허용하는 값과 값 층의 값이 같다', () => {
+    // eslint 의 disabledAffordanceSelectors 는 «55 가 아닌 값만 금지» 형태라
+    // 55 라는 숫자가 lint 에도 적힌다 — 값 층이 이사하면 여기가 빨개져서
+    // 둘이 같이 이사하게 만든다. (파일 면제 블록 대신 이 대조를 골랐다:
+    // 이 config 는 면제 블록이 셀렉터 배열을 다시 싣는 걸 잊는 사고를 세 번
+    // 겪었다.)
+    const eslintConfig = read('eslint.config.mjs');
+    const gates = [...eslintConfig.matchAll(/disabled\):opacity-\(\?!(\d+)/g)].map((m) => m[1]);
+    expect(gates.length, 'disabledAffordanceSelectors 가 eslint.config.mjs 에 없다').toBeGreaterThanOrEqual(2);
+    expect(new Set(gates), 'lint 가 허용하는 비활성 흐림 값이 값 층과 다르다').toEqual(new Set([DISABLED_STEP]));
   });
 });
 

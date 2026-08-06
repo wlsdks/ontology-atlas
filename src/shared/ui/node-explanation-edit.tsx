@@ -114,7 +114,7 @@ export function NodeExplanationEdit({
             disabled={saving}
             aria-label={labels.cancel}
             data-testid="node-explanation-cancel"
-            className={controlClass({ shape: "icon", tone: "muted", className: "h-6 w-6 rounded-full hover:text-[color:var(--color-text-primary)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--color-indigo-a46)] focus-visible:ring-inset disabled:opacity-60" })}
+            className={controlClass({ shape: "icon", tone: "muted", className: "h-6 w-6 rounded-full hover:text-[color:var(--color-text-primary)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--color-indigo-a46)] focus-visible:ring-inset" })}
           >
             <X size={ICON_SIZE.sm} aria-hidden />
           </button>
