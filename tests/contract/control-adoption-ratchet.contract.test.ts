@@ -18,10 +18,10 @@ import { describe, expect, it } from 'vitest';
  * |---:|---|---|
  * | **버튼 등재 30** | 값 층이 **원리적으로 못 내는** 자리(`OUTSIDE_VALUE_LAYER`) | 늘리려면 `BASELINE_REGISTERED` 를 **손으로** 올린다. 그 diff 가 「왜」를 적을 자리다 |
  * | **버튼 근거 없음 4** | 값 층이 낼 수는 있으나 **낼 것이 없는** 자리 — 컨트롤이 아니다(`NO_BASIS`) | 움직이지 않는 것이 정상이다. **갚을 대상이 아니다** |
- * | **버튼 부채 74** | 옮길 수 있는데 **아직 안 옮긴** 자리 | **0 을 향한다.** 버튼 진도는 오직 여기서 읽는다 |
+ * | **버튼 부채 65** | 옮길 수 있는데 **아직 안 옮긴** 자리 | **0 을 향한다.** 버튼 진도는 오직 여기서 읽는다 |
  * | **앵커 등재 25** | 같은 뜻, 앵커(`OUTSIDE_VALUE_LAYER_ANCHORS`) | `BASELINE_ANCHOR_REGISTERED` 를 손으로 올린다 |
  * | **앵커 근거 없음 0** | 실측이다 — 102 를 다 보고 0(`<a>` 는 가는 것이 목적이라 「할 말 없는 클릭면」이 되기 어렵다) | 자격자가 생기면 손으로 올린다 |
- * | **앵커 부채 77** | 아직 안 옮긴 `<Link>` 78 · `<a>` 24 중 미등재분 | **0 을 향한다** |
+ * | **앵커 부채 59** | 아직 안 옮긴 `<Link>` 64 · `<a>` 20 중 미등재분 | **0 을 향한다** |
  * | **폼 부채 20** | 손으로 규격을 쓴 `<input>`·`<textarea>`·`<select>`·`<label>`(2026-08-05 신설 · 06 에 63→57→29→20) | **0 을 향한다.** 텍스트 필드는 전부 옮겼고 네이티브 `<select>` 부채는 **0** 이 됐다. 남은 20 은 배치 전용 라벨(규격이 아니다) + 체크박스 5(자기 계약이 고정) + 슬라이더·전면 에디터·무대 입력 |
  * | 버튼 전수 108 · 앵커 전수 102 · 폼 전수 63 | 각 부류의 합 | 파생값이다. 이 수를 보고 판단하지 않는다 |
  *
@@ -716,7 +716,7 @@ const BASELINE_REGISTERED = 30;
  * 등재된 파일에 손 컨트롤을 하나 더 써도 등재 수는 안 오르므로 이 수가 오른다 —
  * 등재는 면제가 아니다. 근거 없음도 마찬가지다.
  */
-const BASELINE_HAND_WRITTEN_DEBT = 74;
+const BASELINE_HAND_WRITTEN_DEBT = 65;
 
 /**
  * **세 번째 부류 — 「근거 없음」.**
@@ -1040,7 +1040,7 @@ const globalsCss = readFileSync(GLOBALS_CSS, 'utf8');
  * 선언 하나라 `tokenIsBeyondFixedSteps` 가 거절한다. 등재가 도피처가 되지
  * 않는다는 것을 이 라운드가 실측으로 증명한 자리다.
  */
-const ANCHOR_TAG_SPLIT: Readonly<Record<string, number>> = { Link: 71, a: 21 };
+const ANCHOR_TAG_SPLIT: Readonly<Record<string, number>> = { Link: 64, a: 20 };
 
 /**
  * **검증된 「값 층 밖」 앵커 등록부.**
@@ -1184,7 +1184,7 @@ const OUTSIDE_VALUE_LAYER_ANCHORS: readonly OutsideEntry[] = [
 const BASELINE_ANCHOR_REGISTERED = 25;
 
 /** **이 수만 줄어야 한다.** 앵커 전수(92)에서 등재(25)를 뺀 나머지. */
-const BASELINE_ANCHOR_DEBT = 67;
+const BASELINE_ANCHOR_DEBT = 59;
 
 const anchorCensus = census(scannedFiles, OUTSIDE_VALUE_LAYER_ANCHORS, ANCHOR_TAGS, NO_BASIS_ANCHORS);
 

@@ -194,7 +194,7 @@ const control = cva(`${DISABLED} ${FOCUS}`, {
        * 호버 배경이 각지게 나왔다(반경 6 → 0). 모양을 정의하면서 반경을 안 준 것이
        * 원인이고, 실측이 잡았다.
        */
-      row: `${TOUCH_FLOOR} flex w-full items-center rounded-chip text-left transition-colors`,
+      row: `${TOUCH_FLOOR} flex w-full items-center text-left transition-colors`,
       /** 상태·수치를 나르는 완전 둥근 컨트롤(32). */
       pill: `${TOUCH_FLOOR} inline-flex items-center rounded-full border transition-colors`,
       /** 카드 하나가 통째로 눌리는 큰 표면(18). */
@@ -516,6 +516,22 @@ const control = cva(`${DISABLED} ${FOCUS}`, {
      */
     truncate: { true: 'block truncate', false: '' },
     /** 눌려 있는 상태(`aria-pressed` / `aria-selected` 와 **짝**이어야 한다). */
+    /**
+     * **쌓인 칸인가.** 이미 둥근 컨테이너(`overflow-hidden rounded-*`) 안에
+     * 세로로 쌓여 경계선으로 갈리는 칸이면 `true` — 자기 반경을 내면 안 된다.
+     *
+     * ## 왜 아홉째 모양이 아니라 축인가 (2026-08-06)
+     *
+     * `row` 를 그대로 쓰면 `rounded-chip` 이 따라와서 **호버 배경이 조각조각
+     * 둥글어지고 칸 사이에 틈이 보인다** — 컨테이너가 이미 모서리를 맡고 있는데
+     * 안쪽이 또 맡는 것이다. 그렇다고 아홉째 모양을 만들면 `row` 와 **인셋·
+     * 정렬·터치 바닥이 전부 같은** 쌍둥이가 생긴다(모양 여덟의 근거는 실측
+     * 모집단인데, 이건 같은 모집단의 **배치 조건**이다).
+     *
+     * 전수 **9곳**: `DesktopVaultWelcome` 4 · `ProjectForm` · `DocsSidebarBody` ·
+     * `CommitDetail` · `SearchPalette` · `TopologyIndexTreeRow`.
+     */
+    stacked: { false: '', true: '' },
     active: { true: '', false: '' },
     /*
      * ── **삭제된 축: `fixedHeight`** (2026-08-03 소유자 결정)
@@ -548,6 +564,14 @@ const control = cva(`${DISABLED} ${FOCUS}`, {
      */
   },
   compoundVariants: [
+    /*
+     * ── 행의 반경은 **배치가 정한다** (2026-08-06).
+     *
+     * 홀로 서는 행은 자기 모서리를 갖고(`rounded-chip`), 이미 둥근 컨테이너 안에
+     * 쌓인 칸은 **갖지 않는다** — 안쪽이 또 둥글면 호버 배경이 조각조각 둥글어져
+     * 칸 사이에 틈이 보인다.
+     */
+    { shape: 'row', stacked: false, class: 'rounded-chip' },
     // ── 크기: 모양마다 «크다» 의 뜻이 다르다. 정사각에 px 를 주면 정사각이 아니게 된다.
     /*
      * 칩 — 24 / 32 / 32. `md` 는 자연 높이 30 을 `min-h-8` 이 32 로 올리고,
@@ -674,6 +698,7 @@ const control = cva(`${DISABLED} ${FOCUS}`, {
     size: 'md',
     tone: 'default',
     scope: 'app',
+    stacked: false,
     active: false,
     truncate: false,
   },

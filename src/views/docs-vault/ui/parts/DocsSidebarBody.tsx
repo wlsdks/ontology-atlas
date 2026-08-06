@@ -485,7 +485,7 @@ export function DocsSidebarBody({
               onClick={() => setRecentlyChangedOpen((open) => !open)}
               aria-expanded={recentlyChangedOpen}
               data-testid="docs-sidebar-recently-changed-toggle"
-              className="flex w-full items-center gap-1.5 px-3 pb-1.5 pt-3 text-left transition-colors hover:text-[color:var(--color-text-secondary)]"
+              className={controlClass({ shape: "row", stacked: true, className: "gap-1.5 px-3 pb-1.5 pt-3 hover:text-[color:var(--color-text-secondary)]" })}
             >
               <Clock size={ICON_SIZE.sm} className="flex-none text-[color:var(--color-text-quaternary)]" aria-hidden />
               <span className="flex-1 font-mono text-caption uppercase tracking-[var(--tracking-caps-16)] text-[color:var(--color-text-quaternary)]">

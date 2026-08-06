@@ -6,6 +6,8 @@ import { AGENT_GRAPH_DB_RUNTIME_GATE_CHECK_COUNT } from "@/shared/lib/ontology-t
 import { useCopyFeedback } from "@/shared/lib/use-copy-feedback";
 import { Chip, StaggeredFadeIn } from "@/shared/ui";
 import { DOGFOOD_VAULT_PATH } from "../../lib/dogfood-vault-path";
+import { controlClass } from '@/shared/ui/control-class';
+import { cn } from '@/shared/lib/cn';
 
 const DOGFOOD_VERIFICATION_LOOP = [
   "# Ontology Atlas dogfood verification loop",
@@ -185,7 +187,7 @@ export function DesktopVaultWelcome({
               type="button"
               onClick={showDogfoodHint && onOpenDogfoodPath ? onOpenDogfoodPath : onOpen}
               disabled={busy}
-              className="flex w-full items-start gap-3 bg-[color:var(--color-indigo-a08)] px-4 py-4 text-left transition-colors hover:bg-[color:var(--color-indigo-a14)] disabled:opacity-60"
+              className={controlClass({ shape: "row", stacked: true, className: "items-start gap-3 bg-[color:var(--color-indigo-a08)] px-4 py-4 hover:bg-[color:var(--color-indigo-a14)]" })}
             >
               <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-chip border border-[color:var(--color-indigo-line-a32)] text-[color:var(--color-indigo-pale-a94)]">
                 <FolderOpen size={ICON_SIZE.lg} aria-hidden />
@@ -213,7 +215,7 @@ export function DesktopVaultWelcome({
                 type="button"
                 onClick={onOpenDogfoodPath}
                 disabled={busy}
-                className="flex w-full items-start gap-3 border-t border-[color:var(--color-indigo-line-a20)] bg-[color:var(--color-indigo-line-a06)] px-4 py-3.5 text-left transition-colors hover:bg-[color:var(--color-indigo-line-a06)] disabled:opacity-60"
+                className={controlClass({ shape: "row", stacked: true, className: "items-start gap-3 border-t border-[color:var(--color-indigo-line-a20)] bg-[color:var(--color-indigo-line-a06)] px-4 py-3.5 hover:bg-[color:var(--color-indigo-line-a06)]" })}
               >
                 <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-chip border border-[color:var(--color-indigo-line-a22)] text-[color:var(--color-indigo-accent)]">
                   <Bot size={ICON_SIZE.md} aria-hidden />
@@ -233,7 +235,7 @@ export function DesktopVaultWelcome({
               type="button"
               onClick={onOpen}
               disabled={busy}
-              className="flex w-full items-start gap-3 border-t border-[color:var(--color-border-soft)] px-4 py-3.5 text-left transition-colors hover:bg-[color:var(--color-overlay-1)] disabled:opacity-60"
+              className={controlClass({ shape: "row", stacked: true, className: "items-start gap-3 border-t border-[color:var(--color-border-soft)] px-4 py-3.5 hover:bg-[color:var(--color-overlay-1)]" })}
             >
               <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-chip border border-[color:var(--color-divider)] text-[color:var(--color-text-secondary)]">
                 <FilePlus size={ICON_SIZE.md} aria-hidden />
@@ -251,7 +253,7 @@ export function DesktopVaultWelcome({
             <button
               type="button"
               onClick={onOpenSample}
-              className="flex w-full items-start gap-3 border-t border-[color:var(--color-border-soft)] px-4 py-3.5 text-left transition-colors hover:bg-[color:var(--color-overlay-1)]"
+              className={controlClass({ shape: "row", stacked: true, className: "items-start gap-3 border-t border-[color:var(--color-border-soft)] px-4 py-3.5 hover:bg-[color:var(--color-overlay-1)]" })}
             >
               <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-chip border border-[color:var(--color-divider)] text-[color:var(--color-text-secondary)]">
                 <Package size={ICON_SIZE.md} aria-hidden />
@@ -279,9 +281,14 @@ export function DesktopVaultWelcome({
                     type="button"
                     onClick={() => onOpenRecent(record)}
                     disabled={busy}
-                    className={`grid min-w-0 grid-cols-[28px_1fr] items-center gap-3 px-3 py-2.5 text-left transition-colors hover:bg-[color:var(--color-overlay-1)] disabled:opacity-60 ${
-                      index > 0 ? "border-t border-[color:var(--color-border-soft)]" : ""
-                    }`}
+                    className={controlClass({
+                      shape: "row",
+                      stacked: true,
+                      className: cn(
+                        "grid min-w-0 grid-cols-[28px_1fr] gap-3 px-3 py-2.5 hover:bg-[color:var(--color-overlay-1)]",
+                        index > 0 && "border-t border-[color:var(--color-border-soft)]",
+                      ),
+                    })}
                   >
                     <span className="flex h-7 w-7 items-center justify-center rounded-chip border border-[color:var(--color-divider)] text-[color:var(--color-text-tertiary)]">
                       <HardDrive size={ICON_SIZE.sm} aria-hidden />
