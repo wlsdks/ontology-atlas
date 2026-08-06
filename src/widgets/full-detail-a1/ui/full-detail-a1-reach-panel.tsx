@@ -5,6 +5,7 @@ import type {
   FullDetailReachDomainRow,
   FullDetailReachModel,
 } from "../lib/full-detail-reach";
+import { controlClass } from "@/shared/ui/control-class";
 
 /**
  * Full-detail A1 "reach = sentence instrument" — replaces the rejected
@@ -80,14 +81,17 @@ export function FullDetailA1ReachPanel({
               data-fulldetail-reach-step={candidate}
               data-active={candidate === step ? "true" : "false"}
               onClick={() => onChangeStep(candidate)}
-              className={[
-                // 4px 는 더 이상 램프 밖 예외가 아니다 — `--radius-micro` 등재(2026-08-03)로
-                // 이 자리의 eslint-disable 사유가 소멸했다. 바이트만 바뀌고 픽셀은 같다.
-                "rounded-micro border px-1 py-0.5 transition-colors",
-                candidate === step
-                  ? "border-[color:var(--topology-v2-indigo-border)] text-[color:var(--topology-v2-indigo-bright)]"
-                  : "border-transparent hover:border-[color:var(--topology-v2-panel-text-quaternary)]",
-              ].join(" ")}
+              className={controlClass({
+                shape: "chip",
+                size: "xs",
+                className: [
+                  // 4px 는 더 이상 램프 밖 예외가 아니다 — `--radius-micro` 등재(2026-08-03).
+                  "px-1 py-0.5",
+                  candidate === step
+                    ? "border-[color:var(--topology-v2-indigo-border)] text-[color:var(--topology-v2-indigo-bright)]"
+                    : "border-transparent hover:border-[color:var(--topology-v2-panel-text-quaternary)]",
+                ].join(" "),
+              })}
             >
               {candidate}
             </button>

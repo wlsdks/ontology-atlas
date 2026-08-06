@@ -520,12 +520,17 @@ function SearchPaletteDialog({
                         href={buildDocsVaultHref({ slug: d.slug })}
                         onClick={onClose}
                         onMouseEnter={() => setActiveIndex(idx)}
-                        className={cn(
-                          "flex items-center gap-2 rounded-micro px-2 py-1 text-left text-body transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--color-indigo-a46)] focus-visible:ring-inset",
-                          isActive
-                            ? "bg-[color:var(--color-indigo-a14)] text-[color:var(--color-text-primary)]"
-                            : "text-[color:var(--color-text-tertiary)] hover:bg-[color:var(--color-overlay-1)] hover:text-[color:var(--color-text-primary)]",
-                        )}
+                        className={controlClass({
+                          shape: "row",
+                          size: "sm",
+                          tone: isActive ? "default" : "muted",
+                          className: cn(
+                            "gap-2 rounded-micro",
+                            isActive
+                              ? "bg-[color:var(--color-indigo-a14)]"
+                              : "hover:bg-[color:var(--color-overlay-1)] hover:text-[color:var(--color-text-primary)]",
+                          ),
+                        })}
                       >
                         <BookOpen
                           size={ICON_SIZE.sm}

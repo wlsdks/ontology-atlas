@@ -143,7 +143,7 @@ export function CommitDetail({
             data-testid={`atlas-git-lens-${id}`}
             aria-selected={lens === id}
             onClick={() => setLens(id)}
-            className="-mb-px inline-flex min-h-9 items-center gap-1.5 border-b-2 border-transparent px-2.5 text-label text-[color:var(--color-text-tertiary)] transition-colors hover:text-[color:var(--color-text-primary)] aria-selected:border-[color:var(--color-indigo-brand)] aria-selected:font-[var(--font-weight-signature)] aria-selected:text-[color:var(--color-text-primary)]"
+            className={controlClass({ shape: "segment", size: "md", tone: "muted", className: "-mb-px min-h-9 gap-1.5 rounded-none border-b-2 border-transparent px-2.5 hover:text-[color:var(--color-text-primary)] aria-selected:border-[color:var(--color-indigo-brand)] aria-selected:font-[var(--font-weight-signature)] aria-selected:text-[color:var(--color-text-primary)]" })}
           >
             {id === "concepts" ? t("changedConcepts") : t("changedFiles")}
             <b className="font-normal tabular-nums text-[color:var(--color-text-quaternary)]">

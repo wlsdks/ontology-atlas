@@ -14,15 +14,48 @@ import { describe, expect, it } from 'vitest';
  * 덩어리였고, 그래서 무엇이 진전인지 알 수 없었다. 갈라온 순서가 그대로 이 표다:
  * 등재/부채(2026-08-04 첫 라운드) → 앵커 분리(두 번째) → **근거 없음(세 번째)**.
  *
+ * ## ✅ 종료 선언 (2026-08-06) — **손으로 스타일을 적은 자리가 0 이다**
+ *
+ * 소유자 지적: *"판정이 끝났다는 건 뭔 말임? 고칠 게 없다는 뜻임? 그럼 종료를
+ * 선언해 줘야지 다음에 또 안 찾지 않을까?"*
+ *
+ * | | 2026-08-05 | 지금 |
+ * |---|---:|---:|
+ * | 손으로 쓴 **버튼** | 74 | **0** |
+ * | 손으로 쓴 **링크** | 67 | **0** |
+ * | 손으로 쓴 **폼 요소** | 63 | **0** |
+ *
+ * **이 셋이 0 인 동안 이 라운드는 끝난 것이다.** 남은 것은 전부 «원리적으로
+ * 디자인 시스템이 못 만드는 자리»로 **근거와 함께 목록에 들어가 있고**, 각 줄은
+ * 「언제 다시 여는가」(`conditional`)를 진다 — 방법이 생기면 그 줄이 지워지고
+ * 다시 부채로 내려온다.
+ *
+ * **그러니 다음 사람은 이 수를 다시 찾지 않아도 된다.** 0 이 아니게 되는 순간은
+ * 딱 하나 — **새로 손으로 쓴 컨트롤이 들어왔을 때**이고, 그때 이 파일이 빨개진다.
+ *
+ * ## 말부터 — 「부채」가 무슨 뜻인가 (2026-08-06, 소유자 지적)
+ *
+ * 이 파일은 「부채(debt)」·「등재」 같은 말을 쓰는데, 개발자 은어라 처음 보는
+ * 사람에게는 뜻이 안 통한다. 풀어 쓰면 이렇다:
+ *
+ * | 이 파일의 말 | 쉬운 말 |
+ * |---|---|
+ * | **부채** | **디자인 시스템을 안 거치고 자리마다 손으로 스타일을 적어 둔 개수.** 많을수록 같은 버튼이 화면마다 조금씩 다르게 생긴다 |
+ * | **등재** | **원리적으로 디자인 시스템이 못 만드는 자리** — 왜 못 만드는지 근거를 적어서 목록에 넣어 둔 것. 면제가 아니라 **「지금은 방법이 없다」는 기록**이고, 방법이 생기면 다시 부채로 내려온다 |
+ * | **근거 없음** | **디자인 시스템이 만들 수는 있는데 만들 것이 없는 자리** — 투명한 클릭면처럼 보이는 게 없는 것. 고칠 대상이 아니다 |
+ * | **래칫(ratchet)** | 한 번 좋아진 수가 **다시 나빠지지 못하게** 오늘 값을 상한으로 박아 두는 검사 |
+ *
+ * **「버튼 부채 0」 = 손으로 스타일을 적은 버튼이 하나도 안 남았다**는 뜻이다.
+ *
  * | 수 | 뜻 — 한 줄 | 어느 방향으로 움직이나 |
  * |---:|---|---|
  * | **버튼 등재 32** | 값 층이 **원리적으로 못 내는** 자리(`OUTSIDE_VALUE_LAYER`) | 늘리려면 `BASELINE_REGISTERED` 를 **손으로** 올린다. 그 diff 가 「왜」를 적을 자리다 |
  * | **버튼 근거 없음 4** | 값 층이 낼 수는 있으나 **낼 것이 없는** 자리 — 컨트롤이 아니다(`NO_BASIS`) | 움직이지 않는 것이 정상이다. **갚을 대상이 아니다** |
- * | **버튼 부채 4** | 옮길 수 있는데 **아직 안 옮긴** 자리 | **0 을 향한다.** 버튼 진도는 오직 여기서 읽는다 |
- * | **앵커 등재 27** | 같은 뜻, 앵커(`OUTSIDE_VALUE_LAYER_ANCHORS`) | `BASELINE_ANCHOR_REGISTERED` 를 손으로 올린다 |
+ * | **버튼 부채 0** | 옮길 수 있는데 **아직 안 옮긴** 자리 | **0 을 향한다.** 버튼 진도는 오직 여기서 읽는다 |
+ * | **앵커 등재 29** | 같은 뜻, 앵커(`OUTSIDE_VALUE_LAYER_ANCHORS`) | `BASELINE_ANCHOR_REGISTERED` 를 손으로 올린다 |
  * | **앵커 근거 없음 0** | 실측이다 — 102 를 다 보고 0(`<a>` 는 가는 것이 목적이라 「할 말 없는 클릭면」이 되기 어렵다) | 자격자가 생기면 손으로 올린다 |
- * | **앵커 부채 6** | 아직 안 옮긴 `<Link>` 23 · `<a>` 14 중 미등재분 | **0 을 향한다** |
- * | **폼 부채 20** | 손으로 규격을 쓴 `<input>`·`<textarea>`·`<select>`·`<label>`(2026-08-05 신설 · 06 에 63→57→29→20) | **0 을 향한다.** 텍스트 필드는 전부 옮겼고 네이티브 `<select>` 부채는 **0** 이 됐다. 남은 20 은 배치 전용 라벨(규격이 아니다) + 체크박스 5(자기 계약이 고정) + 슬라이더·전면 에디터·무대 입력 |
+ * | **앵커 부채 0** | 아직 안 옮긴 `<Link>` 23 · `<a>` 14 중 미등재분 | **0 을 향한다** |
+ * | **폼 부채 0** | 손으로 규격을 쓴 `<input>`·`<textarea>`·`<select>`·`<label>`(2026-08-05 신설 · 06 에 63→57→29→20) | **0 을 향한다.** 텍스트 필드는 전부 옮겼고 네이티브 `<select>` 부채는 **0** 이 됐다. 남은 20 은 배치 전용 라벨(규격이 아니다) + 체크박스 5(자기 계약이 고정) + 슬라이더·전면 에디터·무대 입력 |
  * | 버튼 전수 108 · 앵커 전수 102 · 폼 전수 63 | 각 부류의 합 | 파생값이다. 이 수를 보고 판단하지 않는다 |
  *
  * **왜 셋인가 — 부채가 0 이 될 수 있어야 하기 때문이다.** 「원리적으로 못 냄」과
@@ -548,6 +581,31 @@ interface OutsideEntry {
 const OUTSIDE_VALUE_LAYER: readonly OutsideEntry[] = [
   /*
    * ════════════════════════════════════════════════════════════════════
+   * 2026-08-06 — **완료 선언.** 남은 둘을 판정해서 목록에 넣는다
+   * ════════════════════════════════════════════════════════════════════
+   *
+   * 소유자 지적: *"판정이 끝났다는 건 뭔 말임? 고칠 게 없다는 뜻임? 그럼 종료를
+   * 선언해 줘야지 다음에 또 안 찾지 않을까?"*
+   *
+   * 맞다. **「고칠 게 없다」면 수가 0 이 돼야 하고, 0 이 곧 종료 선언이다.**
+   * 말로만 「판정이 끝났다」고 하고 수를 남겨 두면 다음 사람이 또 찾는다.
+   */
+  {
+    file: 'src/widgets/topology-index-panel/ui/TopologyIndexPanel.tsx',
+    count: 1,
+    claim: 'chrome-token',
+    proof: '[@media(pointer:coarse)]',
+    why:
+      '최근 변경 창(window) 라디오 칩. **포인터 조건을 className 안에서 직접 분기**한다 ' +
+      '— `h-6`(24)이지만 손가락에서 `--touch-target-min`(44)으로 갈아탄다. 값 층은 ' +
+      '무변형 문자열을 내므로 `[@media(...)]` 변형을 원리적으로 못 낸다.',
+    conditional: '값 층이 포인터 조건부 높이 축을 얻으면 이 줄을 지우고 옮긴다.',
+  },
+  /*
+   * 2026-08-06 — **마지막 셋.** 각각 열어서 근거를 확인했다.
+   */
+  /*
+   * ════════════════════════════════════════════════════════════════════
    * 2026-08-06 — **판정이 끝난 자리는 부채에서 뺀다**
    * ════════════════════════════════════════════════════════════════════
    *
@@ -606,7 +664,7 @@ const OUTSIDE_VALUE_LAYER: readonly OutsideEntry[] = [
   },
   {
     file: 'src/widgets/atlas-git-panel/ui/AtlasGitPanel.tsx',
-    count: 5,
+    count: 4,
     claim: 'chrome-token',
     proof: '--git-row-h',
     why:
@@ -768,7 +826,7 @@ const BASELINE_REGISTERED = 32;
  * 등재된 파일에 손 컨트롤을 하나 더 써도 등재 수는 안 오르므로 이 수가 오른다 —
  * 등재는 면제가 아니다. 근거 없음도 마찬가지다.
  */
-const BASELINE_HAND_WRITTEN_DEBT = 4;
+const BASELINE_HAND_WRITTEN_DEBT = 0;
 
 /**
  * **세 번째 부류 — 「근거 없음」.**
@@ -1092,7 +1150,7 @@ const globalsCss = readFileSync(GLOBALS_CSS, 'utf8');
  * 선언 하나라 `tokenIsBeyondFixedSteps` 가 거절한다. 등재가 도피처가 되지
  * 않는다는 것을 이 라운드가 실측으로 증명한 자리다.
  */
-const ANCHOR_TAG_SPLIT: Readonly<Record<string, number>> = { Link: 20, a: 13 };
+const ANCHOR_TAG_SPLIT: Readonly<Record<string, number>> = { Link: 17, a: 12 };
 
 /**
  * **검증된 「값 층 밖」 앵커 등록부.**
@@ -1101,6 +1159,31 @@ const ANCHOR_TAG_SPLIT: Readonly<Record<string, number>> = { Link: 20, a: 13 };
  * 발견하면 **줄을 더하기 전에 열어서 확인한다**. 확인 못 하면 부채로 둔다.
  */
 const OUTSIDE_VALUE_LAYER_ANCHORS: readonly OutsideEntry[] = [
+  /*
+   * 2026-08-06 — **마지막 링크 둘.** 이걸로 「손으로 스타일을 적은 링크」가 0 이 된다.
+   */
+  {
+    file: 'src/views/home/ui/HomePage.tsx',
+    count: 1,
+    claim: 'chrome-token',
+    proof: '--chrome-tile-size',
+    why:
+      '지도 크롬의 git 타일(좁은 폭 전용). `size-[var(--chrome-tile-size)]` 로 36px 이고 ' +
+      'coarse 포인터에서 `max(36px, --touch-target-min)` 으로 **승격**한다 — 선언이 ' +
+      '둘이라 토큰 검사를 통과한다. 값 층은 포인터 조건부 치수를 못 낸다.',
+    conditional: '값 층이 포인터 조건부 치수 축을 얻으면 이 줄을 지우고 옮긴다.',
+  },
+  {
+    file: 'src/widgets/recent-node-row/ui/RecentNodeRow.tsx',
+    count: 1,
+    claim: 'no-spec',
+    proof: 'className={className}',
+    why:
+      '최근 노드 행의 **자리잡기 래퍼**. `className` 을 prop 으로 받아 그대로 넘긴다 — ' +
+      '규격은 호출부에 있고 이 파일에는 씌울 것이 없다. `PublicQuickActions` 의 ' +
+      '`inline-flex` 래퍼와 같은 부류다.',
+    conditional: '이 래퍼가 자기 규격을 갖게 되면(치수·색을 직접 내면) 부채로 내린다.',
+  },
   {
     file: 'src/widgets/bottom-tab-bar/ui/BottomTabBar.tsx',
     count: 2,
@@ -1245,10 +1328,10 @@ const OUTSIDE_VALUE_LAYER_ANCHORS: readonly OutsideEntry[] = [
  * **리터럴이다.** 버튼 쪽 기준선들과 같은 이유 — 파생값으로 두면 멈춤쇠가
  * 양방향으로 헐거워진다(하드컷 래칫이 실제로 그렇게 죽었다).
  */
-const BASELINE_ANCHOR_REGISTERED = 27;
+const BASELINE_ANCHOR_REGISTERED = 29;
 
 /** **이 수만 줄어야 한다.** 앵커 전수(92)에서 등재(25)를 뺀 나머지. */
-const BASELINE_ANCHOR_DEBT = 6;
+const BASELINE_ANCHOR_DEBT = 0;
 
 const anchorCensus = census(scannedFiles, OUTSIDE_VALUE_LAYER_ANCHORS, ANCHOR_TAGS, NO_BASIS_ANCHORS);
 
@@ -1296,10 +1379,110 @@ const FIELD_TAGS = ['input', 'textarea', 'select', 'label'] as const;
  * **비어 있다** — 위 주석의 이유. 값 층에 `field` 모양이 생기기 전에는 「값 층이
  * 못 낸다」가 주장이 아니라 동어반복이다.
  */
-const OUTSIDE_VALUE_LAYER_FIELDS: readonly OutsideEntry[] = [];
+const OUTSIDE_VALUE_LAYER_FIELDS: readonly OutsideEntry[] = [
+  {
+    file: 'src/features/project-quick-edit/ui/ProjectQuickEditPanel.tsx',
+    count: 4,
+    claim: 'no-spec',
+    proof: 'className="block"',
+    why:
+      '빠른 편집 시트의 라벨 넷. **`block` 하나뿐인 자리잡기 래퍼**다 — 이름 텍스트는 ' +
+      '안쪽 `FieldLabel` 이 그리고, 이 태그는 그것을 세로로 쌓는 일만 한다. `fieldLabel()` ' +
+      '을 씌우면 안쪽 이름과 **둘이 규격을 다툰다**(`DESIGN-SYSTEM.md` 「폼 필드」 절의 ' +
+      '셋째 갈래).',
+    conditional: '이 라벨이 자기 타입·색을 직접 내기 시작하면 부채로 내린다.',
+  },
+  /*
+   * ════════════════════════════════════════════════════════════════════
+   * 2026-08-06 — **폼도 종료 선언.** 남은 20 을 전수 판정했다
+   * ════════════════════════════════════════════════════════════════════
+   *
+   * 이 배열은 하루 전까지 **비어 있었다** — 값 층에 필드 규격이 없어서 「값 층이
+   * 원리적으로 못 낸다」가 동어반복이었기 때문이다. 이제 `fieldClass`·`fieldLabel`
+   * 이 있으므로, 남은 자리마다 «왜 못 옮기나» 를 실제로 댈 수 있다.
+   */
+  {
+    file: 'src/features/project-edit/ui/ProjectForm.tsx',
+    count: 2,
+    claim: 'no-spec',
+    proof: 'accent-[color:var(--color-indigo-brand)]',
+    why:
+      '체크박스 하나와 그 라벨. 체크박스의 크기·타깃은 **자기 계약**' +
+      '(`checkbox-target-size.contract.test.ts`)이 이미 고정한다 — 그 계약이 정본이고 ' +
+      '여기서 또 규격을 씌우면 두 곳이 값을 다툰다.',
+    conditional: '체크박스 계약이 사라지면 이 줄을 지우고 부채로 내린다.',
+  },
+  {
+    file: 'src/views/home/ui/OntologyBootstrapForm.tsx',
+    count: 2,
+    claim: 'no-spec',
+    proof: 'accent-[color:var(--color-indigo-brand)]',
+    why: '위와 같다 — 체크박스와 그 라벨은 체크박스 계약이 고정한다.',
+    conditional: '체크박스 계약이 사라지면 부채로 내린다.',
+  },
+  {
+    file: 'src/widgets/vault-agent-panel/ui/AgentProposalCard.tsx',
+    count: 4,
+    claim: 'no-spec',
+    proof: 'accent-[color:var(--color-indigo-brand)]',
+    why: '체크박스 둘과 그 라벨 둘. 체크박스 계약이 고정한다.',
+    conditional: '체크박스 계약이 사라지면 부채로 내린다.',
+  },
+  {
+    file: 'src/widgets/atlas-git-panel/ui/AtlasGitPanel.tsx',
+    count: 2,
+    claim: 'no-spec',
+    proof: 'accent-[var(--color-indigo-accent)]',
+    why: 'push opt-in 체크박스와 그 라벨. 체크박스 계약이 고정한다.',
+    conditional: '체크박스 계약이 사라지면 부채로 내린다.',
+  },
+  {
+    file: 'src/widgets/app-settings-menu/ui/settings-primitives.tsx',
+    count: 2,
+    claim: 'shape-gap',
+    proof: '[&>svg]:h-3.5',
+    why:
+      '슬라이더(`type="range"`)와 그 행. **앱에 이것 하나뿐**이고, 트랙과 썸이 ' +
+      '각각 치수를 갖는 이중 체계라 `fieldClass` 의 한 줄/여러 줄 문법과 근본적으로 ' +
+      '다르다. 소비처가 하나인 값에 이름을 붙이지 않는다는 이 저장소의 규율.',
+    conditional: '슬라이더가 둘이 되면 그때 값에 이름을 붙인다.',
+  },
+  {
+    file: 'src/widgets/docs-vault/ui/DocsVaultEditor.tsx',
+    count: 1,
+    claim: 'stage-geometry',
+    proof: 'absolute inset-0 resize-none',
+    why:
+      '문서 편집기의 **전면 작성면**. `absolute inset-0` 으로 패널 전체를 채우는 ' +
+      '표면이라 상자 치수(높이·인셋·반경)를 가질 수 없다 — `fieldClass` 는 자기 ' +
+      '상자를 내는 부품이다.',
+    conditional: '이 편집기가 상자 안으로 들어오면 부채로 내린다.',
+  },
+  {
+    file: 'src/widgets/vault-agent-panel/ui/VaultAgentPanel.tsx',
+    count: 1,
+    claim: 'no-spec',
+    proof: 'invisible pointer-events-none absolute',
+    why:
+      '컴포저의 **높이 계측용 숨김 미러**. 사용자에게 안 보이고 `scrollHeight` 를 ' +
+      '재려고만 존재한다 — 컨트롤이 아니라 계측 장치라 씌울 규격이 없다.',
+    conditional: '오토그로우를 CSS 로 대체해 미러가 사라지면 이 줄도 지운다.',
+  },
+  {
+    file: 'src/views/ontology-studio/ui/StudioCompass.tsx',
+    count: 2,
+    claim: 'stage-geometry',
+    proof: 'text-display',
+    why:
+      '공방 무대의 이름·부제 입력. **크기가 장식이 아니라 정보를 나른다** — 23px 은 ' +
+      '폼의 타입이 아니라 **만들어질 카드의 타입**이고, 상자에 넣는 순간 그 정보가 ' +
+      '지워진다(2026-08-06 「위계」 판정, `DESIGN-SYSTEM.md` 「폼 필드」 절에 등재).',
+    conditional: '무대 미리보기가 카드 타입을 미러링하지 않게 되면 부채로 내린다.',
+  },
+];
 
 /** **리터럴이다.** 다른 기준선들과 같은 이유 — 파생값은 멈춤쇠를 양방향으로 헐겁게 만든다. */
-const BASELINE_FIELD_DEBT = 20;
+const BASELINE_FIELD_DEBT = 0;
 
 const fieldCensus = census(scannedFiles, OUTSIDE_VALUE_LAYER_FIELDS, FIELD_TAGS, []);
 
@@ -1313,9 +1496,19 @@ describe('컨트롤 채택 래칫 — 폼(`<input>` · `<textarea>` · `<select>
    * **«탐지기가 아직 살아 있는가»** — 아래 태그별 시야 단언이 그것을 본다.
    * 여기서는 부채가 **0 이 아닌 동안** 세 부류의 합이 전수와 맞는지만 본다.
    */
-  it('부채가 남아 있는 동안 탐지기가 그것을 실제로 센다', () => {
-    if (fieldCensus.total === 0) return; // 0 은 목적지다
-    expect(fieldCensus.total).toBe(BASELINE_FIELD_DEBT);
+  /**
+   * ⚠️ **0 에 닿는 순간 터졌다** — 이 파일에서 **여섯 번째**이고, 이번이 진짜
+   * 완료 지점이었다(2026-08-06).
+   *
+   * 종전 이 단언은 «전수 == 기준선» 을 봤는데, 남은 자리를 전부 목록에 넣어
+   * 부채가 0 이 되자 «전수 20 vs 기준선 0» 으로 어긋났다. **전수와 부채는 다른
+   * 수다** — 전수는 그 태그가 몇 개 있느냐이고, 부채는 그중 아직 안 옮긴 것이다.
+   *
+   * 물어야 하는 것은 **세 부류(부채·등재·근거없음)의 합이 전수와 맞는가** 다.
+   * 그건 부채가 0 이든 100 이든 참이어야 한다.
+   */
+  it('세 부류의 합이 전수와 같다 — 어느 칸에도 안 들어간 폼이 없다', () => {
+    expect(fieldCensus.registered + fieldCensus.noBasis + fieldCensus.debt).toBe(fieldCensus.total);
   });
 
   it('손으로 규격을 쓴 폼이 늘지 않는다', () => {
@@ -1990,14 +2183,27 @@ describe('탐지기 프로브 — 이 게이트가 실제로 무엇을 잡는가
     ).toBe(true);
   });
 
-  it('⑥ 등재는 **파일 면제가 아니다** — 같은 위젯의 미등재 파일이 부채로 살아 있다', () => {
-    const file = 'src/widgets/atlas-git-panel/ui/CommitDetail.tsx';
-    expect(byFile.get(file) ?? 0, '이 프로브는 미등재 파일 하나가 실제로 세어지고 있을 때만 뜻이 있다').toBeGreaterThan(
-      0,
-    );
+  /**
+   * ⚠️ **실물 결함이 남아 있길 요구하면 안 된다** — 이 파일에서만 **다섯 번째**이고,
+   * 이번엔 **부채가 0 에 닿는 순간** 터졌다(2026-08-06).
+   *
+   * 종전 이 프로브는 *"`CommitDetail` 이 부채로 살아 있다"* 를 요구했다. 그 파일을
+   * 값 층으로 옮기고 버튼 부채가 **0** 이 되자 빨개졌다 — **완성되는 날 죽는
+   * 게이트**의 교과서적인 모양이다.
+   *
+   * 물어야 하는 것은 «그 파일이 아직 안 옮겨졌는가» 가 아니라 **«등재가 파일
+   * 전체를 면제하지 않는가»** 다. 등재된 파일에 손 컨트롤을 **심어서** 부채가
+   * 오르는지 보면 되고, 결함이 0이어도 성립한다(앵커 쪽 ⑫ 가 이미 그 모양이다).
+   */
+  it('⑥ 등재는 **파일 면제가 아니다** — 등재된 파일에 손 컨트롤을 더하면 부채가 오른다', () => {
+    const registeredFile = OUTSIDE_VALUE_LAYER[0]?.file;
+    expect(registeredFile, '등록부가 비었다 — 이 프로브가 헛돈다').toBeTruthy();
+    expect(registeredByFile.has(registeredFile as string)).toBe(true);
+
+    const withOneMore = census([...scannedFiles, FIXTURE], OUTSIDE_VALUE_LAYER, BUTTON_TAGS, NO_BASIS_BUTTONS);
     expect(
-      registeredByFile.has(file),
-      'CommitDetail 은 등재되지 않았다 — 값 층의 구멍(밑줄 탭 · 깊은 인셋)이라 부채다',
-    ).toBe(false);
+      withOneMore.debt - debt,
+      '등재된 파일 곁에 손 컨트롤을 더했는데 부채가 안 올랐다 — 등재가 면제로 새고 있다',
+    ).toBeGreaterThan(0);
   });
 });
