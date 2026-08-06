@@ -172,6 +172,17 @@ jobs:
         if: always()
         run: pnpm test:docs-vault
 
+      # 2026-08-07: `docs:check`(생성 표면 diff · DESIGN-SYSTEM 목차 · 링크 참조
+      # 무결성)는 **어느 워크플로에서도 불린 적이 없었다.** 훅도 이걸 보지 않는다 —
+      # 위의 `pre-commit` 은 볼트 생성물만 잰다. 그 사각에서 실제로 main 이 빨간
+      # 채 방치됐다: #960 이 `###` 절을 더하면서 목차 줄을 손으로 넣었고, 생성기는
+      # `## ` 만 담으므로 `design:toc:check` 가 그때부터 계속 실패하고 있었는데
+      # 아무 신호도 없었다. **검사가 있어도 부르지 않으면 없는 것이다**
+      # (`.claude/skills/gate-probe` §4).
+      - name: Docs surface, TOC, links
+        if: always()
+        run: pnpm docs:check
+
   # ── 잡 2: 단위 + 계약 스위트 (실측 291초 — 임계 경로) ────────────────
   unit:
     name: Unit · Contract
