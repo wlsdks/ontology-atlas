@@ -11,6 +11,7 @@ import type {
 import { TopologyV2KindGlyph, isTopologyV2RenderableKind } from '@/shared/ui/topology-v2-kind-glyph';
 import { resolveLocaleDisplayName } from '@/shared/lib/locale-display-name';
 import { Chip, IconButton } from '@/shared/ui';
+import { controlClass } from '@/shared/ui/control-class';
 
 interface Props {
   entries: VaultBacklinkEntry[];
@@ -125,7 +126,7 @@ function BacklinkItem({
         <button
           type="button"
           onClick={() => onNavigate(doc.slug)}
-          className="group flex min-w-0 flex-1 items-center gap-1.5 rounded-micro py-0.5 text-left transition-colors hover:text-[color:var(--color-text-primary)]"
+          className={controlClass({ shape: "row", size: "sm", className: "group min-w-0 flex-1 gap-1.5 rounded-micro py-0.5 hover:text-[color:var(--color-text-primary)]" })}
         >
           <FileText
             size={ICON_SIZE.sm}

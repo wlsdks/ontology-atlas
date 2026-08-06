@@ -904,12 +904,14 @@ function MetaToggle({
       data-testid={testId}
       aria-expanded={open}
       onClick={onToggle}
-      className={[
-        'rounded-chip text-label tracking-label transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--color-indigo-accent)]',
-        open
-          ? 'text-[color:var(--color-text-primary)]'
-          : 'text-[color:var(--color-text-quaternary)] hover:text-[color:var(--color-text-secondary)]',
-      ].join(' ')}
+      className={controlClass({
+        shape: 'link',
+        tone: open ? 'default' : 'muted',
+        className: [
+          'rounded-chip tracking-label',
+          open ? '' : 'hover:text-[color:var(--color-text-secondary)]',
+        ].join(' '),
+      })}
     >
       {label}
     </button>

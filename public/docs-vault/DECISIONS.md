@@ -8787,3 +8787,43 @@ size 축이 헛돌지 않는다(계약이 못박음). 덮어쓰기를 지워 두
 
 **서명 (accountable)**: design-guardian (적용), 소유자 서명 대기
 **상태**: 유효
+
+---
+
+## 2026-08-06 (11) — 손 컨트롤 19 → 10 · **계약 둘이 또 소스 문자열을 못박고 있었다**
+
+| 부채 | before → after |
+|---|---|
+| 버튼 | **9 → 4** |
+| 앵커 | **10 → 6** |
+
+옮긴 자리: `ImpactRankingCard` · `StudioEntryChoice` · `DomainCompositionGrid` ·
+`AgentActivitySettings` · `DocsVaultBacklinks` · `DocsVaultUnifiedPalette` ·
+`TopologyV2EdgePanel` · `VaultAgentPanel` · `AppSettingsMenu` LNB.
+
+### `settings-sheet-type-dialect` 의 LNB 단언이 한 덩어리 정규식이었다
+
+`flex w-full items-center gap-2.5 rounded-card px-3 py-2 text-left text-body-lg`
+를 **통째로** 찾고 있었다. 값 층으로 옮기면 `flex w-full items-center text-left`
+는 **모양이 내고** 나머지만 `className` 에 남으므로 문자열이 쪼개지며 빨개졌다.
+같은 파일에서 **오늘 두 번째**다(앞은 라디오 칩·세그먼트).
+
+규격의 본체는 «한 덩어리로 적혔나» 가 아니라 **«오른쪽 칸 행과 같은 인셋을 쓰고
+한 단 위 글자를 쓰나»** 다 — 값 단위로 다시 썼다.
+
+### 그 재작성에서 두 번 틀렸고 프로브가 둘 다 잡았다
+
+1. **파일 전체에서 값을 찾았다** → 프로브가 **아무것도 못 잡았다.** `px-3 py-2`
+   가 이 파일의 **다른 자리**(`SettingsRow`)에도 있어서, LNB 를 크롬 치수로
+   되돌려도 통과했다. **LNB 항목의 여는 태그로 범위를 좁혔다.**
+2. **태그 끝을 `>` 로 잘랐다** → 정상 상태가 **빨개졌다.** `=>` 와 템플릿 안의
+   `>` 에서 끊겨 `className` 앞에서 멈춘 것이다. 중괄호 깊이를 세어 **깊이 0 의
+   `>`** 만 끝으로 치게 고쳤다(이 저장소의 다른 스캐너와 같은 방식).
+
+> **범위를 안 좁힌 검사는 못 잡고, 범위를 잘못 좁힌 검사는 오탐한다.** 둘 다
+> 프로브를 양방향(정상=초록 · 결함=빨강)으로 돌려야 드러난다.
+
+**실측**: 11 라우트 × 3 폭 스윕 **0건** · `screen-hierarchy` 2건 통과.
+
+**서명 (accountable)**: design-guardian (적용), 소유자 서명 대기
+**상태**: 유효
