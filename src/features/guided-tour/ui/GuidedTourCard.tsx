@@ -141,7 +141,7 @@ export function GuidedTourCard({
              중앙 정렬 선언이 **한 번도 적용된 적이 없었다** — 왼쪽에 붙은 채로
              "가운데" 라고 적혀 있던 것이다(2026-07-29 실측). 같은 줄에 선
              「이전」과 왼쪽 끝을 맞추려면 폭을 채우는 쪽이 맞다. */
-          className="flex h-8 w-full items-center justify-center rounded-[var(--chrome-radius-inner)] border border-dashed border-[color:var(--chrome-border)] text-center text-body text-[color:var(--color-text-tertiary)]"
+          className={controlClass({ shape: "chip", size: "md", tone: "muted", className: "h-8 w-full justify-center rounded-[var(--chrome-radius-inner)] border-dashed border-[color:var(--chrome-border)] text-center text-body" })}
         >
           <span data-testid={hasSelection ? "guided-tour-success" : "guided-tour-waiting"}>
             {hasSelection ? t("clickSuccessLabel") : t("waitingForClickLabel")}

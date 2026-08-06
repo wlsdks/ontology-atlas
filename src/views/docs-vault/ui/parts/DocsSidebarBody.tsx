@@ -464,7 +464,7 @@ export function DocsSidebarBody({
             }}
             // 이 필터 바는 `py-1`(28px)이다 — `link` 의 44px 최소 높이가 바를
             // 그만큼 부풀린다. 문장/바 속 컨트롤에는 이 모양이 아직 안 맞는다.
-            className="flex-none rounded-chip px-1.5 py-0.5 transition-colors hover:text-[color:var(--color-text-primary)]"
+            className={controlClass({ shape: "link", className: "flex-none rounded-chip px-1.5 py-0.5 hover:text-[color:var(--color-text-primary)]" })}
           >
             {t("clearFilter")}
           </button>

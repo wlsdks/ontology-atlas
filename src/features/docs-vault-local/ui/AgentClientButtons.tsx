@@ -401,7 +401,7 @@ export function AgentClientButtons({
           <Link
             href="/download/"
             data-testid="agent-client-app-cta"
-            className="font-[var(--font-weight-signature)] text-[color:var(--color-indigo-accent)] transition-colors hover:text-[color:var(--color-text-primary)]"
+            className={controlClass({ shape: "link", tone: "accent", className: "font-[var(--font-weight-signature)] hover:text-[color:var(--color-text-primary)]" })}
           >
             {t("deeplinkWebNoteCta")}
           </Link>
