@@ -4,7 +4,7 @@ import { useState } from "react";
 import { Check, PencilLine, X } from "lucide-react";
 import { ICON_SIZE } from "@/shared/ui/icon-size";
 
-import { controlClass } from "@/shared/ui/control-class";
+import { controlClass, fieldClass } from "@/shared/ui/control-class";
 
 /**
  * S1.1.1a — 단일 frontmatter 필드(예: domain)의 인라인 편집 primitive.
@@ -113,7 +113,7 @@ export function InlineFieldEdit({
         }}
         aria-label={labels.field}
         data-testid="inline-field-input"
-        className="h-7 min-w-0 flex-1 rounded-chip border border-[color:var(--color-border-soft)] bg-[color:var(--color-overlay-1)] px-2 text-body text-[color:var(--color-text-primary)] transition-colors focus-visible:border-[color:var(--color-indigo-a46)] focus-visible:outline-none"
+        className={fieldClass({ size: "sm", className: "min-w-0 flex-1" })}
       />
       <button
         type="button"

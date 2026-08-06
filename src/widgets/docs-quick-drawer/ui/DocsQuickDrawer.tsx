@@ -1,6 +1,7 @@
 "use client";
 
 import { Link, useRouter } from "@/i18n/navigation";
+import { fieldClass } from '@/shared/ui/control-class';
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useLocale, useTranslations } from "next-intl";
 import { useLatinEyebrow } from "@/shared/lib/latin-eyebrow";
@@ -593,7 +594,7 @@ export function DocsQuickDrawer({
                   placeholder={t("filterPlaceholder")}
                   name="docsQuickFilter"
                   autoComplete="off"
-                  className="flex-1 bg-transparent text-body text-[color:var(--color-text-primary)] placeholder-[color:var(--color-text-quaternary)] outline-none"
+                  className={fieldClass({ frame: "bare", className: "flex-1" })}
                   aria-label={t("filterAriaLabel")}
                 />
                 {query ? (

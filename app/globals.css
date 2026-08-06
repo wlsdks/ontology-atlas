@@ -980,7 +980,7 @@
      충돌 병합), `tests/contract/control-class.contract.test.ts` RADIUS_STEPS. */
   --radius-micro: 4px; /* 마이크로 배지·명령 태그·kbd — 칩 아래 한 층 */
   --radius-chip: 6px; /* 칩·배지·작은 버튼 */
-  --radius-card: 9px; /* 카드·인풋·중형 서피스 */
+  --radius-card: 9px; /* 카드·중형 서피스 — **인풋은 여기가 아니다**: 실측 다수가 chip(6px) 이고 `fieldClass` 의 규격도 chip 이다 (2026-08-06) */
   --radius-panel: 12px; /* 패널·모달·큰 서피스 */
   /* `sheet`(18px)는 2026-08-04 체계석 등재다. 화면 위에 떠서 아래를 가리는
      **플로팅 시트·팔레트**(단축키/검색/에이전트 연결 시트, 모바일 바텀시트,

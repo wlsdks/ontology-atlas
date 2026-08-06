@@ -3,7 +3,7 @@ import { join } from 'node:path';
 
 import { describe, expect, it } from 'vitest';
 
-import { controlClass, type ControlShape } from '@/shared/ui/control-class';
+import { controlClass, fieldClass, type ControlShape, type FieldSize } from '@/shared/ui/control-class';
 
 /**
  * 손가락 바닥(`.atlas-touch-floor`) 계약 — **레이어 밖에 있는가**.
@@ -148,5 +148,25 @@ describe('값 층이 바닥을 실제로 내보낸다', () => {
     const literal = CONTROL_CLASS_SRC.match(new RegExp(`'${FLOOR_CLASS}'`, 'g')) ?? [];
     expect(literal.length, '문자열이 여러 번 적혔다 — 상수로 모아라').toBe(1);
     expect(CONTROL_CLASS_SRC).toMatch(/const TOUCH_FLOOR =/);
+  });
+});
+
+/**
+ * 폼 필드도 같은 바닥을 쓴다 — 다만 **`boxed` 만**이다 (2026-08-06).
+ *
+ * `bare` 는 부모가 이미 상자를 낸 자리에 얹혀 산다. 거기에 44px 바닥을 깔면
+ * 컨트롤이 **부모 상자를 안쪽에서 밀어낸다** — 검색 팔레트의 입력이 자기 상자를
+ * 찢고 나오는 모양이 된다. 「위계」석 판정으로 조회 10곳은 전부 **결과가 주목
+ * 승자**인 자리라, 입력이 커지면 위계까지 뒤집힌다.
+ */
+describe('폼 필드의 손가락 바닥', () => {
+  const SIZES: FieldSize[] = ['xs', 'sm', 'md', 'lg'];
+
+  it.each(SIZES)('boxed/%s 는 바닥 표식을 낸다', (size) => {
+    expect(fieldClass({ frame: 'boxed', size })).toContain(FLOOR_CLASS);
+  });
+
+  it.each(SIZES)('bare/%s 는 바닥 표식을 내지 않는다 — 부모 상자를 밀어낸다', (size) => {
+    expect(fieldClass({ frame: 'bare', size })).not.toContain(FLOOR_CLASS);
   });
 });
