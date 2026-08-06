@@ -2689,7 +2689,7 @@ function DesktopBody({
                     target="_blank"
                     rel="noreferrer noopener"
                     data-testid="atlas-git-install-download"
-                    className="rounded-[var(--radius-chip)] px-1 text-label text-[color:var(--color-indigo-accent)] underline-offset-2 hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--color-indigo-a46)]"
+                    className={controlClass({ shape: "link", tone: "accent", className: "rounded-[var(--radius-chip)] px-1 underline-offset-2 hover:underline" })}
                   >
                     ↗ {option.href}
                   </a>
