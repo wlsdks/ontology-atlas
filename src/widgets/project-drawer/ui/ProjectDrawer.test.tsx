@@ -9,7 +9,6 @@ import { ProjectDrawer } from "./ProjectDrawer";
 // jsdom 은 Element.scrollTo 를 구현하지 않는다 — 모드 전환/details 열기 경로가
 // aside ref 에서 호출하므로 no-op 으로 stub(환경 갭, 구현 결함 아님).
 if (!Element.prototype.scrollTo) {
-  // eslint-disable-next-line @typescript-eslint/no-empty-function
   Element.prototype.scrollTo = function scrollTo() {};
 }
 

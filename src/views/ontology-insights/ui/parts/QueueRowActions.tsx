@@ -5,7 +5,6 @@ import { useCopyFeedback } from "@/shared/lib/use-copy-feedback";
 import { Check, Copy, FileText, GitBranch, MessageCircle, MoreHorizontal } from "lucide-react";
 import { ICON_SIZE } from "@/shared/ui/icon-size";
 import { Link } from "@/i18n/navigation";
-import { copyText } from "@/shared/lib/copy-text";
 import { controlClass } from "@/shared/ui/control-class";
 import { Surface } from "@/shared/ui/surface";
 
@@ -154,7 +153,6 @@ export function RowActionMenu({
   // 이 메뉴도 같은 계약을 탄다 — 실패는 말해야 한다.
   const { state: menuCopyState, copy: copyHandoff } = useCopyFeedback(1600);
   const [open, setOpen] = useState(false);
-  const [copied, setCopied] = useState(false);
   const containerRef = useRef<HTMLDivElement | null>(null);
   const triggerRef = useRef<HTMLButtonElement | null>(null);
 

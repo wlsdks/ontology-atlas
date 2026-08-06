@@ -8,7 +8,6 @@ import { Cable, Check, ChevronDown, Copy, X } from "lucide-react";
 import { ICON_SIZE } from "@/shared/ui/icon-size";
 import { MOTION } from "@/shared/motion";
 import { useBodyScrollLock } from "@/shared/lib/use-body-scroll-lock";
-import { copyText } from "@/shared/lib/copy-text";
 import { controlClass, IconButton } from "@/shared/ui";
 import type { AgentServerAvailability } from "@/shared/config";
 import {

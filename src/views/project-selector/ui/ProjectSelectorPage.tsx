@@ -70,7 +70,11 @@ export function ProjectSelectorPage() {
   const { projects } = useProjects();
   const { insight } = useOntologyInsight();
   const docs = useVaultDocs();
-  const vault = useLocalVault();
+  // 값을 읽는 곳이 없어서 바인딩만 지웠다. 호출은 남긴다 — `useLocalVault()` 는
+  // Provider 밖에서 throw 하므로, 이 한 줄이 「이 화면은 LocalVaultProvider 아래
+  // 있다」는 마운트 시점 단언이자 vault 구독이다. 호출까지 지우는 것은 렌더
+  // 횟수를 바꾸는 일이라 lint 정리의 몫이 아니다.
+  useLocalVault();
   const dataSourceMode = useDataSourceMode();
 
   // #15 설정 위치 통일 — 지도(HomePage)·인사이트와 동일하게 lg+ 는 나브레일

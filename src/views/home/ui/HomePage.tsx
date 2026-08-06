@@ -18,7 +18,7 @@ import { Link, useRouter } from "@/i18n/navigation";
 import { useLocale, useTranslations } from "next-intl";
 // `History as HistoryIcon` — 전역 DOM History 생성자와의 충돌 원천 차단
 // (사용성 검수 P0, AtlasGitPanel 과 동일 처방).
-import { Compass, FolderOpen, HelpCircle, History as HistoryIcon, MessageCircle, Plus, X } from "lucide-react";
+import { Compass, FolderOpen, HelpCircle, History as HistoryIcon, MessageCircle, X } from "lucide-react";
 import { ICON_SIZE } from "@/shared/ui/icon-size";
 import { useTypingShortcuts } from "@/shared/lib/use-typing-shortcut";
 import { useProjects } from "@/features/project-data-source";
@@ -290,7 +290,6 @@ import { TopologyInsightsReturnChip } from "./TopologyInsightsReturnChip";
 import { TopologyRelationLegend } from "./TopologyRelationLegend";
 import { AgentActivityChip } from "@/features/agent-activity";
 import { FrameMeter } from "@/shared/ui/frame-meter";
-import { TopologyReviewLink } from "./TopologyReviewLink";
 import { TopologyChangeAnnouncement } from "./TopologyChangeAnnouncement";
 import { TopologyNoMatchesState } from "./TopologyNoMatchesState";
 import { resolveTopologyEscLadderAction } from "../lib/topology-esc-ladder";

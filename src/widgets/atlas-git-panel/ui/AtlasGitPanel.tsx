@@ -21,7 +21,6 @@ import {
 import { ICON_SIZE } from "@/shared/ui/icon-size";
 import { CONTROL_DISABLED_CLASS } from "@/shared/ui/control-class";
 import { Link } from "@/i18n/navigation";
-import { copyText } from "@/shared/lib/copy-text";
 import {
   countChangesByStatus,
   formatSnapshotSummary,
@@ -1444,8 +1443,6 @@ function LocationLine({
   setRemoteOpen,
   remoteBusy,
   onRemoteAction,
-  notice,
-  error,
 }: {
   t: Translator;
   branch: string | null;
@@ -1457,9 +1454,6 @@ function LocationLine({
   setRemoteOpen: (v: boolean) => void;
   remoteBusy: null | "fetch" | "pull" | "push";
   onRemoteAction: (kind: "fetch" | "pull" | "push") => void;
-  /** 방금 한 일의 결과. 성공도 실패도 **같은 자리**에서 말한다. */
-  notice: string | null;
-  error: string | null;
 }) {
   if (!branch) return null;
   const known = ahead !== null && behind !== null;
@@ -2103,10 +2097,6 @@ function StepList({
   t,
   history,
   concepts,
-  egoFor,
-  kindLabel,
-  focusedConceptId,
-  setFocusedConceptId,
   settledHash,
   pendingCount,
   selection,
@@ -2123,12 +2113,6 @@ function StepList({
    * 아니라 #842 가 실어 보낸 kind/slug 를 그래프에 맞춘 결과다.
    */
   concepts: ReadonlyMap<string, readonly { id: string; label: string; kind: string }[]>;
-  /** 노드 id → ego. 그래프가 없으면 항상 `null` 이고 카드는 안 그려진다. */
-  egoFor: (nodeId: string) => ConceptEgo | null;
-  /** 종류 이름 — `kinds` 네임스페이스가 진실원. */
-  kindLabel: (kind: string) => string;
-  focusedConceptId: string | null;
-  setFocusedConceptId: (id: string) => void;
   /** 방금 남긴 커밋의 해시 — 그 한 줄만 확정 램프로 정착시킨다. */
   settledHash?: string | null;
   /**
@@ -2857,8 +2841,6 @@ function DesktopBody({
       setRemoteOpen={setRemoteOpen}
       remoteBusy={remoteBusy}
       onRemoteAction={onRemoteAction}
-      notice={remoteActionNotice}
-      error={remoteActionError}
     />
   );
 
@@ -2969,10 +2951,6 @@ function DesktopBody({
               t={t}
               history={history}
               concepts={concepts}
-              egoFor={egoFor}
-              kindLabel={kindLabel}
-              focusedConceptId={focusedConceptId}
-              setFocusedConceptId={setFocusedConceptId}
               settledHash={settledHash}
               pendingCount={statusCounts.total}
               selection={selection}

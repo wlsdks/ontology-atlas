@@ -27,7 +27,6 @@ import { josa } from "@/shared/lib/ko-josa";
 import { EmptyState, controlClass, useToast } from "@/shared/ui";
 import {
   buildStudioItem,
-  selectDefaultStudioNodeId,
   BEARING_FRONTMATTER_KEY,
   type StudioBearing,
   type StudioRelation,

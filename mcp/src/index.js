@@ -134,9 +134,7 @@ import {
   ELEMENT_NAMING_RULE_EN,
 } from './construction-rules.mjs';
 import { appendActivityEntry, buildActivityEntry, readHeartbeatAgent } from './activity-log.mjs';
-import { writeFileSync, unlinkSync } from 'node:fs';
-import { dirname } from 'node:path';
-import { mkdirSync } from 'node:fs';
+import { writeFileSync } from 'node:fs';
 import { buildMarkdown, parseFrontmatter } from './parser.mjs';
 import { analyzeRepoStructure } from './analyze.mjs';
 import { buildAbsorptionPlan, buildSlimPointer } from './absorb.mjs';
