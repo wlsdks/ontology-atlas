@@ -687,11 +687,16 @@ export function AppSettingsMenu({
                           data-testid={`app-settings-nav-${item}`}
                           aria-current={active ? 'page' : undefined}
                           onClick={() => setSection(item)}
-                          className={`flex w-full items-center gap-2.5 rounded-card px-3 py-2 text-left text-body-lg transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--color-indigo-a46)] ${
-                            active
-                              ? 'bg-[color:var(--color-indigo-line-a13)] text-[color:var(--color-indigo-text-soft)]'
-                              : 'text-[color:var(--color-text-tertiary)] hover:bg-[color:var(--color-overlay-2)] hover:text-[color:var(--color-text-primary)]'
-                          }`}
+                          className={controlClass({
+                            shape: 'row',
+                            size: 'md',
+                            tone: active ? 'accentOnTint' : 'muted',
+                            className: `gap-2.5 rounded-card px-3 py-2 text-body-lg ${
+                              active
+                                ? 'bg-[color:var(--color-indigo-line-a13)]'
+                                : 'hover:bg-[color:var(--color-overlay-2)] hover:text-[color:var(--color-text-primary)]'
+                            }`,
+                          })}
                         >
                           <Icon size={16} aria-hidden className="shrink-0" />
                           {t(`section.${item}`)}

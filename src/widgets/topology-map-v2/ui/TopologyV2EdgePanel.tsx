@@ -150,7 +150,7 @@ export function TopologyV2EdgePanel({
           <Link
             href={declaredBy.href}
             data-testid="topology-v2-edge-declared-by"
-            className="truncate font-mono text-label text-[color:var(--topology-v2-panel-text-secondary)] transition-colors hover:text-[color:var(--topology-v2-panel-text-primary)]"
+            className={controlClass({ shape: "link", className: "truncate font-mono text-label text-[color:var(--topology-v2-panel-text-secondary)] hover:text-[color:var(--topology-v2-panel-text-primary)]" })}
           >
             {declaredBy.slug}.md → {labels.openDoc}
           </Link>

@@ -12,6 +12,7 @@ import {
   writeMutedAgentNotificationKinds,
 } from '@/shared/lib/appearance-preferences';
 import { SegmentSwitch, SettingsGroup, SettingsRow } from './settings-primitives';
+import { controlClass } from '@/shared/ui/control-class';
 
 /**
  * 「작업 중 표시」·「알림」 설정.
@@ -88,11 +89,14 @@ export function AgentActivitySettings() {
                       else next.delete(kind);
                       writeMutedAgentNotificationKinds(next);
                     }}
-                    className={
-                      on
-                        ? 'flex h-8 items-center rounded-chip border border-[color:var(--color-indigo-line-a45)] bg-[color:var(--color-indigo-a14)] px-2.5 text-body text-[color:var(--color-indigo-text-soft)] transition-colors'
-                        : 'flex h-8 items-center rounded-chip border border-[color:var(--color-border-soft)] bg-[color:var(--color-elevated)] px-2.5 text-body text-[color:var(--color-text-quaternary)] transition-colors hover:text-[color:var(--color-text-secondary)]'
-                    }
+                    className={controlClass({
+                      shape: 'chip',
+                      size: 'md',
+                      tone: on ? 'accentOnTint' : 'muted',
+                      className: on
+                        ? 'h-8 border-[color:var(--color-indigo-line-a45)] bg-[color:var(--color-indigo-a14)] px-2.5 text-body'
+                        : 'h-8 border-[color:var(--color-border-soft)] bg-[color:var(--color-elevated)] px-2.5 text-body hover:text-[color:var(--color-text-secondary)]',
+                    })}
                   >
                     {tEvent(EVENT_LABEL_KEY[kind])}
                   </button>

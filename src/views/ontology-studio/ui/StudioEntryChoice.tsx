@@ -162,7 +162,7 @@ const EntryCard = ({
     /* 2026-08-04 체계석 판정 — 「등재 대기」의 답: 이 카드는 인플로우 콘텐츠라
      * 새 스텝(16)이 아니라 panel(12)이다. 시트 단(18)은 떠 있는 표면의 것이고,
      * 드로어 라운드가 같은 판정(16 전부 → panel)을 먼저 확정했다. */
-    className="studio-stage-in group flex flex-col items-start gap-3 rounded-panel border border-[color:var(--color-border-soft)] bg-[color:var(--color-elevated)] px-5 py-6 text-left transition-colors hover:border-[color:var(--color-indigo-a46)] hover:bg-[color:var(--color-indigo-a06)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--color-indigo-a46)] focus-visible:ring-inset"
+    className={controlClass({ shape: "card", size: "lg", className: "studio-stage-in group flex-col items-start gap-3 rounded-panel bg-[color:var(--color-elevated)] px-5 py-6 text-left hover:border-[color:var(--color-indigo-a46)] hover:bg-[color:var(--color-indigo-a06)]" })}
   >
     <span className="grid h-12 w-12 place-items-center rounded-panel border border-[color:var(--color-border-soft)] bg-[color:var(--color-overlay-1)] text-[color:var(--color-text-tertiary)] transition-colors group-hover:border-[color:var(--color-indigo-a46)] group-hover:text-[color:var(--color-indigo-text-soft)]">
       {illustration}

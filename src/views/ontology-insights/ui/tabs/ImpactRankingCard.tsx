@@ -274,13 +274,17 @@ function ImpactRow({
       href={href}
       aria-label={ariaLabel}
       data-testid={testId}
-      className={cn(
-        "-mx-1.5 flex items-center gap-3 rounded-chip border-t border-[color:var(--color-divider)] px-1.5 py-2.5 transition-colors hover:bg-[color:var(--color-overlay-1)]",
+      className={controlClass({
+        shape: "row",
+        size: "sm",
+        className: cn(
+          "-mx-1.5 gap-3 border-t border-[color:var(--color-divider)] px-1.5 py-2.5 hover:bg-[color:var(--color-overlay-1)]",
         // 각 칸의 첫 행은 구분선을 지운다 — 두 칸일 때 둘째 칸의
         // 첫 행(i=1)도 칸의 머리라 위에 선이 있으면 잘린 표로 읽힌다.
-        index === 0 && "border-t-0",
-        index === 1 && "lg:border-t-0",
-      )}
+          index === 0 && "border-t-0",
+          index === 1 && "lg:border-t-0",
+        ),
+      })}
     >
       <TopologyV2KindGlyph kind={row.kind} size={16} className="flex-none" />
       <span className="min-w-0 flex-1 truncate text-body text-[color:var(--color-text-primary)]">
