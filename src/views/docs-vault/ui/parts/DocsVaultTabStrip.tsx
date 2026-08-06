@@ -7,6 +7,7 @@ import { ICON_SIZE } from "@/shared/ui/icon-size";
 import { cn } from "@/shared/lib/cn";
 import { IconButton } from "@/shared/ui";
 import type { DocTab } from "../../lib/doc-tabs";
+import { controlClass } from '@/shared/ui/control-class';
 
 export interface DocsVaultTabStripProps {
   tabs: DocTab[];
@@ -187,12 +188,16 @@ export function DocsVaultTabStrip({
                 event.preventDefault();
                 onClose(tab.slug);
               }}
-              className={cn(
-                "flex min-w-0 flex-1 items-center gap-1.5 pl-3 pr-1 text-body transition-colors",
-                active
-                  ? "text-[color:var(--color-text-primary)]"
-                  : "text-[color:var(--color-text-tertiary)] group-hover:text-[color:var(--color-text-secondary)]",
-              )}
+              className={controlClass({
+                shape: "row",
+                stacked: true,
+                size: "sm",
+                tone: active ? "default" : "muted",
+                className: cn(
+                  "min-w-0 flex-1 gap-1.5 pl-3 pr-1",
+                  !active && "group-hover:text-[color:var(--color-text-secondary)]",
+                ),
+              })}
             >
               <FileText size={ICON_SIZE.md} aria-hidden className="flex-none" />
               <span className="min-w-0 flex-1 truncate text-left">{tab.title}</span>

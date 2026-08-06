@@ -18,7 +18,7 @@ import { describe, expect, it } from 'vitest';
  * |---:|---|---|
  * | **버튼 등재 26** | 값 층이 **원리적으로 못 내는** 자리(`OUTSIDE_VALUE_LAYER`) | 늘리려면 `BASELINE_REGISTERED` 를 **손으로** 올린다. 그 diff 가 「왜」를 적을 자리다 |
  * | **버튼 근거 없음 4** | 값 층이 낼 수는 있으나 **낼 것이 없는** 자리 — 컨트롤이 아니다(`NO_BASIS`) | 움직이지 않는 것이 정상이다. **갚을 대상이 아니다** |
- * | **버튼 부채 18** | 옮길 수 있는데 **아직 안 옮긴** 자리 | **0 을 향한다.** 버튼 진도는 오직 여기서 읽는다 |
+ * | **버튼 부채 15** | 옮길 수 있는데 **아직 안 옮긴** 자리 | **0 을 향한다.** 버튼 진도는 오직 여기서 읽는다 |
  * | **앵커 등재 25** | 같은 뜻, 앵커(`OUTSIDE_VALUE_LAYER_ANCHORS`) | `BASELINE_ANCHOR_REGISTERED` 를 손으로 올린다 |
  * | **앵커 근거 없음 0** | 실측이다 — 102 를 다 보고 0(`<a>` 는 가는 것이 목적이라 「할 말 없는 클릭면」이 되기 어렵다) | 자격자가 생기면 손으로 올린다 |
  * | **앵커 부채 12** | 아직 안 옮긴 `<Link>` 23 · `<a>` 14 중 미등재분 | **0 을 향한다** |
@@ -699,7 +699,7 @@ const BASELINE_REGISTERED = 26;
  * 등재된 파일에 손 컨트롤을 하나 더 써도 등재 수는 안 오르므로 이 수가 오른다 —
  * 등재는 면제가 아니다. 근거 없음도 마찬가지다.
  */
-const BASELINE_HAND_WRITTEN_DEBT = 18;
+const BASELINE_HAND_WRITTEN_DEBT = 15;
 
 /**
  * **세 번째 부류 — 「근거 없음」.**
@@ -1775,18 +1775,36 @@ describe('탐지기 프로브 — 이 게이트가 실제로 무엇을 잡는가
     }
   });
 
-  it('⑮ 실물 음성 대조군 — 전면이라고 다 클릭면이 아니다(`DemoStage` 는 거절되고 부채로 살아 있다)', () => {
-    const file = 'src/views/download/ui/DemoStage.tsx';
-    const tags = handWrittenTags(file);
-    expect(tags.length, '이 프로브는 그 자리가 실제로 세어질 때만 뜻이 있다').toBeGreaterThan(0);
-    const fullBleed = tags.filter((t) => /inset-0/.test(t));
-    expect(fullBleed.length, 'DemoStage 의 전면 오버레이가 사라졌으면 대조군을 다시 골라라').toBeGreaterThan(0);
+  /**
+   * ⚠️ **실물 결함이 남아 있길 요구하면 안 된다** — 이 파일에서만 **네 번째**다.
+   *
+   * 종전 이 프로브는 `DemoStage` 의 전면 오버레이가 **부채로 살아 있길** 요구했다.
+   * 2026-08-06 에 그 오버레이를 값 층으로 옮기자 `handWrittenTags` 가 0을 돌려
+   * 빨개졌다 — 고쳤다고 벌한 것이다.
+   *
+   * 물어야 하는 것은 «그 파일이 아직 안 옮겨졌는가» 가 아니라 **«전면이라는
+   * 이유만으로 면제되지 않는가»** 다. 그건 **판정 함수**(`isClickSurface`)의
+   * 성질이므로 합성 태그로 물으면 되고, 결함이 0이어도 성립한다.
+   *
+   * `DemoStage` 가 어떤 모양이었는지는 남겨 둔다 — 다음 사람이 「전면이니까
+   * 스크림」이라고 잘못 읽지 않게 하는 것이 이 대조군의 뜻이다.
+   */
+  it('⑮ 음성 대조군 — 전면이어도 규격을 지면 클릭면이 아니다', () => {
+    /*
+     * `DemoStage` 의 재생 오버레이가 실제로 이 모양이었다 — 전면(`inset-0`)이고
+     * 스크림 배경까지 있지만 **`text-body`·`leading-body` 를 싣는다.** 값 층이
+     * 낼 것이 있으므로 클릭면이 아니라 부채다. 이게 통과하면 「전면이면 면제」가
+     * 되어 이 부류가 도피처가 된다.
+     */
+    const fullBleedWithSpec =
+      ' type="button" className="absolute inset-0 flex items-center justify-center' +
+      ' bg-[color:var(--color-backdrop-medium)] text-body leading-body' +
+      ' text-[color:var(--color-text-primary)] transition-colors"';
     expect(
-      fullBleed.some(isClickSurface),
-      'DemoStage 의 재생 오버레이는 `text-body`·`leading-body` 를 싣는다 — 값 층이 낼 것이 있으므로 부채다. ' +
-        '이게 통과하면 「전면이면 면제」가 되어 이 부류가 도피처가 된다.',
+      isClickSurface(fullBleedWithSpec),
+      '전면 + 스크림이지만 타입을 싣는 오버레이가 클릭면으로 통과했다 — 「전면이면 면제」가 열렸다',
     ).toBe(false);
-    expect(NO_BASIS.some((e) => e.file === file)).toBe(false);
+    expect(NO_BASIS.some((e) => e.file === 'src/views/download/ui/DemoStage.tsx')).toBe(false);
     // 앵커 0 은 「안 셌다」가 아니라 「102 를 다 보고 0」이다.
     /*
      * **하한을 실측 근처에 걸면 옮길 때마다 빨개진다.** 물어야 하는 것은
