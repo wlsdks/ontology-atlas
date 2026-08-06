@@ -360,7 +360,14 @@ function CouplingGrid({
                 onClick={() => onSelect(isSelected ? null : key)}
                 className={controlClass({
                   shape: "icon",
-                  className: `${shared} hover:border-[color:var(--color-indigo-a46)] ${
+                  /*
+                   * ⚠️ **잉크를 반드시 명시한다.** 이 셀은 `style` 로 색 있는
+                   * 배경(`tone`)을 지므로 값 층의 기본 잉크(3차)로 떨어지면
+                   * 대비가 **2.43:1** 까지 내려간다 — 옮기면서 한 번 떨어뜨렸고
+                   * `a11y-vault-backed` 래칫이 잡았다(2026-08-06). 이 자리는
+                   * 「어느 바탕 위인가」가 잉크를 정하는 자리다.
+                   */
+                  className: `${shared} text-[color:var(--color-text-primary)] hover:border-[color:var(--color-indigo-a46)] ${
                     isSelected ? "ring-1 ring-inset ring-[color:var(--color-indigo-accent)]" : ""
                   }`,
                 })}
