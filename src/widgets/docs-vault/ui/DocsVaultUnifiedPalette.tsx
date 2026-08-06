@@ -573,7 +573,7 @@ export function DocsVaultUnifiedPalette({
                         href={githubBlobUrl(link.repoPath)}
                         target="_blank"
                         rel="noreferrer noopener"
-                        className="inline-flex items-center gap-1.5 rounded-micro py-1 text-body text-[color:var(--color-indigo-line-a90)] underline underline-offset-2 decoration-[color:var(--color-indigo-line-a32)] hover:decoration-[color:var(--color-indigo-accent)]"
+                        className={controlClass({ shape: "link", className: "gap-1.5 rounded-micro py-1 text-[color:var(--color-indigo-line-a90)] underline underline-offset-2 decoration-[color:var(--color-indigo-line-a32)] hover:decoration-[color:var(--color-indigo-accent)]" })}
                       >
                         <FileText size={ICON_SIZE.sm} aria-hidden />
                         {t(link.labelKey)}

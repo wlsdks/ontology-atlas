@@ -169,11 +169,49 @@ describe("LNB 는 크롬 치수를 빌려오지 않는다", () => {
    * 새 토큰은 만들지 않는다 — 소비처가 하나뿐인데 변수를 만들면 참조 대상이
    * 둘로 늘어 어디가 규격인지 흐려진다(같은 문단이 남긴 규율).
    */
+  /**
+   * ⚠️ **소스의 클래스 문자열을 통째로 못박지 않는다** (2026-08-06 에 두 번째로 깨졌다).
+   *
+   * 종전 이 단언은 `flex w-full items-center gap-2.5 rounded-card px-3 py-2
+   * text-left text-body-lg` 를 **한 덩어리 정규식**으로 찾았다. 그래서 그 자리를
+   * 값 층(`controlClass({ shape: 'row' })`)으로 옮기자 — `flex w-full
+   * items-center text-left` 는 모양이 내고 나머지만 `className` 에 남으므로 —
+   * 문자열이 쪼개지며 빨개졌다.
+   *
+   * 규격의 본체는 «한 덩어리로 적혔나» 가 아니라 **«오른쪽 칸 행과 같은 인셋을
+   * 쓰고 한 단 위 글자를 쓰나»** 다. 그래서 **값 단위로** 본다.
+   */
   it("LNB 항목이 오른쪽 칸 행과 같은 인셋을 쓰고 한 단 위 글자를 쓴다", () => {
     const menu = sourceWithoutComments("AppSettingsMenu.tsx");
-    expect(menu, "LNB 항목이 크롬 치수(px-2.5 py-1.5 / text-body)로 되돌아갔다").toMatch(
-      /flex w-full items-center gap-2\.5 rounded-(?:lg|card) px-3 py-2 text-left text-body-lg/,
-    );
+    /*
+     * ⚠️ **파일 전체에서 값을 찾으면 안 된다** — 처음 그렇게 썼다가 프로브가
+     * 아무것도 못 잡았다. `px-3 py-2` 는 이 파일의 **다른 자리**에도 있어서,
+     * LNB 를 크롬 치수로 되돌려도 통과해 버렸다. **LNB 항목의 여는 태그로
+     * 범위를 좁힌다.**
+     */
+    const from = menu.indexOf('data-testid={`app-settings-nav-${item}`}');
+    /*
+     * 여는 태그의 끝을 `>` 로 자르면 **`=>` 나 템플릿 안의 `>` 에서 끊긴다** —
+     * 처음 그렇게 썼다가 정상 상태가 빨개졌다. 중괄호 깊이를 세어 **깊이 0 의
+     * `>`** 만 끝으로 친다(이 저장소의 다른 스캐너와 같은 방식).
+     */
+    let depth = 0;
+    let to = from;
+    for (; to < menu.length; to += 1) {
+      const ch = menu[to];
+      if (ch === '{') depth += 1;
+      else if (ch === '}') depth -= 1;
+      else if (ch === '>' && depth === 0) break;
+    }
+    const lnb = menu.slice(from, to);
+    expect(lnb.length, "LNB 항목의 여는 태그를 못 찾았다 — 이 검사가 헛돈다").toBeGreaterThan(40);
+
+    // 인셋 — 오른쪽 칸 행(`SettingsRow`)이 쓰는 `px-3 py-2` 와 같아야 한다.
+    expect(lnb, "LNB 인셋이 크롬 치수(px-2.5 py-1.5)로 되돌아갔다").toMatch(/\bpx-3 py-2\b/);
+    // 타입 — 오른쪽 칸의 `text-body` 보다 한 단 위.
+    expect(lnb, "LNB 글자가 한 단 내려갔다").toMatch(/\btext-body-lg\b/);
+    // 반경 — 크롬의 chip 이 아니라 card 계열.
+    expect(lnb, "LNB 반경이 칩으로 되돌아갔다").toMatch(/\brounded-(?:lg|card)\b/);
   });
 
   it("LNB 아이콘이 글자보다 크다 — 훑기 채널로 선다", () => {

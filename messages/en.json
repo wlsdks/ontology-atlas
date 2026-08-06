@@ -2799,7 +2799,9 @@
           "invalidUrl": "Link line {index}: enter a valid URL."
         },
         "demoModeBanner": "You'll need to open a markdown folder before you can save.",
-        "demoModeSaveFailed": "Can't save in demo mode. Open a markdown folder first."
+        "demoModeSaveFailed": "Can't save in demo mode. Open a markdown folder first.",
+        "demoModeBannerAction": "Open my folder",
+        "demoModeBannerHint": "Pick a folder on the map screen to enable saving"
       },
       "actions": {
         "modeCreate": "New project",

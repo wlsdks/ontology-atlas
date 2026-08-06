@@ -13,8 +13,9 @@ import {
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useTranslations } from "next-intl";
-import { ChevronDown } from "lucide-react";
+import { ChevronDown, FolderOpen } from "lucide-react";
 import { ICON_SIZE } from "@/shared/ui/icon-size";
+import { Link } from "@/i18n/navigation";
 import { fieldClass, fieldLabel } from "@/shared/ui/control-class";
 import { cn } from "@/shared/lib/cn";
 import { slugify } from "@/shared/lib/slugify";
@@ -1102,13 +1103,41 @@ export function ProjectForm({
     </>
   );
 
+  /*
+   * ⚠️ **막다른 CTA 였다** (2026-08-06 「위계」석 지적, 실측으로 확인).
+   *
+   * 이 배너는 화면에서 **가장 눈에 띄는 것**(유일한 난색)인데 *"폴더를 열어야
+   * 한다"* 고만 말했고, **이 화면 어디에도 폴더를 여는 버튼이 없었다** — 전수
+   * 측정에서 「폴더/열기」를 여는 컨트롤 **0개**.
+   *
+   * 헌장의 강등 문법은 «왜 안 되는지 **+ 어디로 가면 되는지**» 다
+   * (`.claude/rules/surfaces.md`). 문서함이 같은 문제를 이미 그렇게 풀었다 —
+   * *"누르면 그것을 가능하게 하는 곳(내 폴더 열기)으로 간다."*
+   */
   const writeDisabledBanner = writeDisabled ? (
     <div
       role="status"
       data-testid="project-write-disabled-banner"
-      className="rounded-panel border border-[color:var(--color-amber-source-a34)] bg-[color:var(--color-amber-source-a08)] px-4 py-3 text-body-lg text-[color:var(--color-text-secondary)]"
+      className="flex flex-wrap items-center justify-between gap-3 rounded-panel border border-[color:var(--color-amber-source-a34)] bg-[color:var(--color-amber-source-a08)] px-4 py-3 text-body-lg text-[color:var(--color-text-secondary)]"
     >
-      {t("validation.demoModeBanner")}
+      <span className="min-w-0">
+        {t("validation.demoModeBanner")}{" "}
+        <span className="text-[color:var(--color-text-quaternary)]">
+          {t("validation.demoModeBannerHint")}
+        </span>
+      </span>
+      <Link
+        href="/"
+        data-testid="project-write-disabled-open-folder"
+        className={controlClass({
+          shape: "chip",
+          size: "md",
+          className: "shrink-0 border-[color:var(--color-amber-source-a34)]",
+        })}
+      >
+        <FolderOpen size={ICON_SIZE.sm} aria-hidden />
+        {t("validation.demoModeBannerAction")}
+      </Link>
     </div>
   ) : null;
 
@@ -1586,7 +1615,7 @@ export function ProjectForm({
                   <p className="font-mono text-caption uppercase tracking-[var(--tracking-caps-12)] text-[color:var(--color-text-quaternary)]">
                     {t("preview.completenessLabel")}
                   </p>
-                  <p className="mt-2 text-hero font-[var(--font-weight-signature)] text-[color:var(--color-text-primary)]">
+                  <p className="mt-2 text-display font-[var(--font-weight-signature)] text-[color:var(--color-text-primary)]">
                     {completenessInsight.score}%
                   </p>
                 </div>

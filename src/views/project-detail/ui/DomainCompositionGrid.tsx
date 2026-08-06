@@ -2,6 +2,7 @@ import { Link } from "@/i18n/navigation";
 import { getTopologyFocusHref } from "@/entities/project";
 import { TopologyV2KindGlyph } from "@/shared/ui";
 import type { DomainCompositionCard } from "../model/domain-composition";
+import { controlClass } from '@/shared/ui/control-class';
 
 /**
  * 카드 하나가 보여줄 상위 역량 개수. **상수다 — 데이터에 따라 흔들리지 않는다.**
@@ -69,7 +70,7 @@ export function DomainCompositionGrid({
             key={domain.id}
             href={getTopologyFocusHref(domain.id)}
             data-testid="project-detail-domain-card"
-            className="group flex flex-col rounded-[var(--radius-card)] border border-[color:var(--color-border-soft)] bg-[color:var(--color-panel)] p-[var(--card-pad)] shadow-[inset_0_1px_0_var(--color-overlay-1)] transition-colors hover:border-[color:var(--color-border-strong)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--color-indigo-a46)]"
+            className={controlClass({ shape: "card", size: "lg", className: "group flex-col bg-[color:var(--color-panel)] p-[var(--card-pad)] shadow-[inset_0_1px_0_var(--color-overlay-1)] hover:border-[color:var(--color-border-strong)]" })}
           >
             <div className="flex items-center gap-2">
               <TopologyV2KindGlyph kind="domain" size={16} />
