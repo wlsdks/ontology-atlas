@@ -399,7 +399,7 @@ function ConceptChip({
       data-testid="agent-citation-chip"
       data-citation-slug={slug}
       onClick={() => onFocusNode(slug)}
-      className="mx-0.5 inline-flex max-w-full items-center rounded-chip border border-[color:var(--color-border-soft)] bg-[color:var(--color-overlay-1)] px-1.5 py-px align-baseline text-label tracking-label text-[color:var(--color-text-secondary)] transition-colors hover:border-[color:var(--color-indigo-accent)] hover:text-[color:var(--color-text-primary)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--color-indigo-accent)]"
+      className={controlClass({ shape: "chip", tone: "secondary", className: "mx-0.5 max-w-full border-[color:var(--color-border-soft)] bg-[color:var(--color-overlay-1)] px-1.5 py-px align-baseline text-label tracking-label hover:border-[color:var(--color-indigo-accent)] hover:text-[color:var(--color-text-primary)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--color-indigo-accent)]" })}
     >
       <span className="truncate">{label ?? tailOfSlug(slug)}</span>
     </button>

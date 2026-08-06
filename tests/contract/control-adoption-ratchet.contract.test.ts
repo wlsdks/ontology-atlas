@@ -16,12 +16,12 @@ import { describe, expect, it } from 'vitest';
  *
  * | 수 | 뜻 — 한 줄 | 어느 방향으로 움직이나 |
  * |---:|---|---|
- * | **버튼 등재 30** | 값 층이 **원리적으로 못 내는** 자리(`OUTSIDE_VALUE_LAYER`) | 늘리려면 `BASELINE_REGISTERED` 를 **손으로** 올린다. 그 diff 가 「왜」를 적을 자리다 |
+ * | **버튼 등재 26** | 값 층이 **원리적으로 못 내는** 자리(`OUTSIDE_VALUE_LAYER`) | 늘리려면 `BASELINE_REGISTERED` 를 **손으로** 올린다. 그 diff 가 「왜」를 적을 자리다 |
  * | **버튼 근거 없음 4** | 값 층이 낼 수는 있으나 **낼 것이 없는** 자리 — 컨트롤이 아니다(`NO_BASIS`) | 움직이지 않는 것이 정상이다. **갚을 대상이 아니다** |
- * | **버튼 부채 65** | 옮길 수 있는데 **아직 안 옮긴** 자리 | **0 을 향한다.** 버튼 진도는 오직 여기서 읽는다 |
+ * | **버튼 부채 32** | 옮길 수 있는데 **아직 안 옮긴** 자리 | **0 을 향한다.** 버튼 진도는 오직 여기서 읽는다 |
  * | **앵커 등재 25** | 같은 뜻, 앵커(`OUTSIDE_VALUE_LAYER_ANCHORS`) | `BASELINE_ANCHOR_REGISTERED` 를 손으로 올린다 |
  * | **앵커 근거 없음 0** | 실측이다 — 102 를 다 보고 0(`<a>` 는 가는 것이 목적이라 「할 말 없는 클릭면」이 되기 어렵다) | 자격자가 생기면 손으로 올린다 |
- * | **앵커 부채 59** | 아직 안 옮긴 `<Link>` 64 · `<a>` 20 중 미등재분 | **0 을 향한다** |
+ * | **앵커 부채 25** | 아직 안 옮긴 `<Link>` 34 · `<a>` 16 중 미등재분 | **0 을 향한다** |
  * | **폼 부채 20** | 손으로 규격을 쓴 `<input>`·`<textarea>`·`<select>`·`<label>`(2026-08-05 신설 · 06 에 63→57→29→20) | **0 을 향한다.** 텍스트 필드는 전부 옮겼고 네이티브 `<select>` 부채는 **0** 이 됐다. 남은 20 은 배치 전용 라벨(규격이 아니다) + 체크박스 5(자기 계약이 고정) + 슬라이더·전면 에디터·무대 입력 |
  * | 버튼 전수 108 · 앵커 전수 102 · 폼 전수 63 | 각 부류의 합 | 파생값이다. 이 수를 보고 판단하지 않는다 |
  *
@@ -558,7 +558,7 @@ const OUTSIDE_VALUE_LAYER: readonly OutsideEntry[] = [
   },
   {
     file: 'src/views/ontology-studio/ui/StudioCompass.tsx',
-    count: 3,
+    count: 2,
     claim: 'stage-geometry',
     proof: 'layout.socket',
     why:
@@ -574,17 +574,7 @@ const OUTSIDE_VALUE_LAYER: readonly OutsideEntry[] = [
     why: '오버레이 닫기 — 32px 이고 coarse 포인터에서 44px 로 승격한다.',
     conditional: '값 층이 포인터 승격 축을 얻으면 다시 연다.',
   },
-  {
-    file: 'src/views/ontology-studio/ui/StudioPracticeCleanup.tsx',
-    count: 2,
-    claim: 'chrome-token',
-    proof: '--overlay-close-size',
-    why:
-      '연습 정리의 삭제·보관. min-h-[var(--overlay-close-size)] 로 coarse 에서 44px ' +
-      '로 승격한다. 같은 자리가 「전폭 중앙정렬」 구멍에도 걸리지만, **영원히 밖인 ' +
-      '쪽은 포인터 승격**이다.',
-    conditional: '값 층이 포인터 승격 축을 얻으면 다시 연다 — 그때 전폭 중앙 모양도 함께 필요하다.',
-  },
+
   {
     file: 'src/shared/ui/button.tsx',
     count: 1,
@@ -639,14 +629,7 @@ const OUTSIDE_VALUE_LAYER: readonly OutsideEntry[] = [
     why: '팔레트 닫기 — 32px 이고 coarse 포인터에서 --touch-target-min(44)으로 승격한다.',
     conditional: '값 층이 포인터 승격 축을 얻으면 다시 연다.',
   },
-  {
-    file: 'src/widgets/shortcut-sheet/ui/ShortcutSheet.tsx',
-    count: 1,
-    claim: 'chrome-token',
-    proof: '--topology-shortcut-sheet-close-size',
-    why: '단축키 시트 닫기 — 같은 32 → coarse 44 승격 계약.',
-    conditional: '값 층이 포인터 승격 축을 얻으면 다시 연다.',
-  },
+
   {
     file: 'src/widgets/global-search/ui/GlobalSearch.tsx',
     count: 1,
@@ -708,7 +691,7 @@ const OUTSIDE_VALUE_LAYER: readonly OutsideEntry[] = [
  * 올라가 멈춤쇠가 양방향으로 헐거워진다. 등재를 늘리려면 이 수를 **손으로**
  * 올려야 하고, 그 diff 가 곧 「왜」를 적을 자리다.
  */
-const BASELINE_REGISTERED = 30;
+const BASELINE_REGISTERED = 26;
 
 /**
  * **이 수만 줄어야 한다.** 전수(108)에서 등재(30)와 근거 없음(4)을 뺀 나머지.
@@ -716,7 +699,7 @@ const BASELINE_REGISTERED = 30;
  * 등재된 파일에 손 컨트롤을 하나 더 써도 등재 수는 안 오르므로 이 수가 오른다 —
  * 등재는 면제가 아니다. 근거 없음도 마찬가지다.
  */
-const BASELINE_HAND_WRITTEN_DEBT = 65;
+const BASELINE_HAND_WRITTEN_DEBT = 32;
 
 /**
  * **세 번째 부류 — 「근거 없음」.**
@@ -1040,7 +1023,7 @@ const globalsCss = readFileSync(GLOBALS_CSS, 'utf8');
  * 선언 하나라 `tokenIsBeyondFixedSteps` 가 거절한다. 등재가 도피처가 되지
  * 않는다는 것을 이 라운드가 실측으로 증명한 자리다.
  */
-const ANCHOR_TAG_SPLIT: Readonly<Record<string, number>> = { Link: 64, a: 20 };
+const ANCHOR_TAG_SPLIT: Readonly<Record<string, number>> = { Link: 34, a: 16 };
 
 /**
  * **검증된 「값 층 밖」 앵커 등록부.**
@@ -1184,7 +1167,7 @@ const OUTSIDE_VALUE_LAYER_ANCHORS: readonly OutsideEntry[] = [
 const BASELINE_ANCHOR_REGISTERED = 25;
 
 /** **이 수만 줄어야 한다.** 앵커 전수(92)에서 등재(25)를 뺀 나머지. */
-const BASELINE_ANCHOR_DEBT = 59;
+const BASELINE_ANCHOR_DEBT = 25;
 
 const anchorCensus = census(scannedFiles, OUTSIDE_VALUE_LAYER_ANCHORS, ANCHOR_TAGS, NO_BASIS_ANCHORS);
 
@@ -1722,14 +1705,30 @@ describe('탐지기 프로브 — 이 게이트가 실제로 무엇을 잡는가
     }
   });
 
-  it('⑫ 앵커 등재도 **파일 면제가 아니다** — DownloadPage 의 미등재 앵커가 부채로 살아 있다', () => {
+  /**
+   * ⚠️ **실물 결함이 남아 있길 요구하면 안 된다** (2026-08-06 에 실제로 터졌다).
+   *
+   * 종전 이 프로브는 *"DownloadPage 의 릴리스노트 링크가 부채로 살아 있다"* 를
+   * 단언했다. 그 링크를 값 층으로 옮기자 **빨개졌다** — 고쳤다고 벌한 것이다.
+   * 이 파일에서만 오늘 세 번째로 같은 실패를 밟았다.
+   *
+   * 물어야 하는 것은 «그 결함이 아직 있는가» 가 아니라 **«등재가 파일 면제로
+   * 새지 않는가»** 다. 등재된 파일에 손 앵커를 하나 **심어서** 부채가 오르는지
+   * 본다 — 결함이 0이어도 성립하는 형태다.
+   */
+  it('⑫ 앵커 등재는 **파일 면제가 아니다** — 등재된 파일에 손 앵커를 더하면 부채가 오른다', () => {
     const file = 'src/views/download/ui/DownloadPage.tsx';
-    const actual = anchorCensus.byFile.get(file) ?? 0;
     const claimed = anchorCensus.registeredByFile.get(file) ?? 0;
     expect(claimed, '이 프로브는 그 파일이 실제로 등재돼 있을 때만 뜻이 있다').toBeGreaterThan(0);
+    const withOneMore = census(
+      [...scannedFiles, FIXTURE],
+      OUTSIDE_VALUE_LAYER_ANCHORS,
+      ANCHOR_TAGS,
+      NO_BASIS_ANCHORS,
+    );
     expect(
-      actual - claimed,
-      'DownloadPage 의 릴리스노트 링크는 표준 버튼을 안 지난다 — 등재 7 은 그 자리를 면제하지 않는다',
+      withOneMore.debt - anchorCensus.debt,
+      '등재된 파일 곁에 손 앵커를 더했는데 부채가 안 올랐다 — 등재가 면제로 새고 있다',
     ).toBeGreaterThan(0);
   });
 
@@ -1789,7 +1788,13 @@ describe('탐지기 프로브 — 이 게이트가 실제로 무엇을 잡는가
     ).toBe(false);
     expect(NO_BASIS.some((e) => e.file === file)).toBe(false);
     // 앵커 0 은 「안 셌다」가 아니라 「102 를 다 보고 0」이다.
-    expect(anchorCensus.total, '앵커를 한 건도 안 세고 있으면 아래 0 은 무의미하다').toBeGreaterThan(50);
+    /*
+     * **하한을 실측 근처에 걸면 옮길 때마다 빨개진다.** 물어야 하는 것은
+     * 「충분히 많은가」가 아니라 **「세고 있는가」**다 — 앵커가 전부 값 층으로
+     * 가면 이 수는 0이 되는 것이 정상이고, 그때는 위의 `fullBleed` 단언들이
+     * 이미 이 프로브를 무의미하게 만들어 먼저 빨개진다.
+     */
+    expect(anchorCensus.total, '앵커를 한 건도 안 세고 있으면 아래 0 은 무의미하다').toBeGreaterThan(0);
     expect(clickSurfaceCensus(scannedFiles, ANCHOR_TAGS).length).toBe(BASELINE_ANCHOR_NO_BASIS);
   });
 

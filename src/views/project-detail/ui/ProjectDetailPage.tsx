@@ -143,7 +143,7 @@ function ProjectDetailTopBar({
       </span>
       <Link
         href={projectsListHref}
-        className="font-mono text-label uppercase tracking-[var(--tracking-caps-12)] text-[color:var(--color-text-tertiary)] transition-colors hover:text-[color:var(--color-text-primary)]"
+        className={controlClass({ shape: "link", tone: "muted", className: "font-mono uppercase tracking-[var(--tracking-caps-12)] hover:text-[color:var(--color-text-primary)]" })}
       >
         {t("topBarProjectsLabel")}
       </Link>
@@ -609,7 +609,7 @@ export function ProjectDetailPage({
               <span className="normal-case tracking-[var(--tracking-caption)]">{t("minimapSublabel")}</span>
               <Link
                 href={getTopologyProjectHref(project.slug)}
-                className="ml-auto shrink-0 normal-case tracking-[var(--tracking-caption)] text-[color:var(--color-text-tertiary)] transition-colors hover:text-[color:var(--color-text-secondary)]"
+                className={controlClass({ shape: "link", tone: "muted", className: "ml-auto shrink-0 normal-case tracking-[var(--tracking-caption)] hover:text-[color:var(--color-text-secondary)]" })}
               >
                 {t("minimapOpenInTopology")}
               </Link>
@@ -773,7 +773,7 @@ export function ProjectDetailPage({
                   <Link
                     key={candidate.slug}
                     href={getProjectRuntimeDetailHref(candidate.slug)}
-                    className="flex items-center gap-3 rounded-card border border-[color:var(--color-border-soft)] px-3 py-3 text-body-lg text-[color:var(--color-text-secondary)] transition-colors hover:border-[color:var(--color-indigo-a28)] hover:text-[color:var(--color-text-primary)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--color-indigo-a46)] focus-visible:ring-offset-2 focus-visible:ring-offset-[color:var(--color-panel)]"
+                    className={controlClass({ shape: "card", size: "lg", tone: "secondary", className: "gap-3 px-3 py-3 text-body-lg hover:border-[color:var(--color-indigo-a28)] hover:text-[color:var(--color-text-primary)]" })}
                   >
                     {/* 라벨 뒤 장식 화살표 금지 — 이 링크는 앱 안에서 이동한다
                         (`target="_blank"` 아님). `↗` 는 앱을 **떠나는** 링크의

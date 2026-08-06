@@ -5,6 +5,7 @@ import {
   TopologyV2TraceMark,
 } from "@/shared/ui/topology-v2-kind-glyph";
 import type { FullDetailConnectionRow, FullDetailGroups } from "../lib/full-detail-groups";
+import { controlClass } from '@/shared/ui/control-class';
 
 /**
  * Full-detail A1 direction groups — FOUR full (uncapped) lists replacing the
@@ -42,7 +43,7 @@ function Row({
       type="button"
       onClick={() => onSelectNode(row.id)}
       data-fulldetail-row={row.id}
-      className="flex min-w-0 items-center gap-2 rounded-chip border border-transparent px-1.5 py-1 text-left text-body text-[color:var(--topology-v2-panel-text-secondary)] transition-colors hover:border-[color:var(--topology-v2-panel-text-quaternary)] hover:text-[color:var(--topology-v2-panel-text-primary)]"
+      className={controlClass({ shape: "chip", className: "flex min-w-0 gap-2 border-transparent px-1.5 py-1 text-left text-body text-[color:var(--topology-v2-panel-text-secondary)] hover:border-[color:var(--topology-v2-panel-text-quaternary)] hover:text-[color:var(--topology-v2-panel-text-primary)]" })}
     >
       <TopologyV2TraceMark containment={row.containment} />
       <TopologyV2KindGlyph kind={row.kind} size={14} />

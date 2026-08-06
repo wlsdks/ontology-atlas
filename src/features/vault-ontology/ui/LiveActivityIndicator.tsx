@@ -429,7 +429,7 @@ export function LiveActivityBadge({
                     <button
                       type="button"
                       onClick={() => void copyFocusCheck(staleRefreshPacket)}
-                      className="inline-flex w-fit items-center gap-1 rounded-micro border border-[color:var(--color-amber-docs-a34)] px-1.5 py-0.5 font-mono text-caption uppercase tracking-[var(--tracking-caps-08)] text-[color:var(--color-amber-docs-a95)] transition-colors hover:border-[color:var(--color-amber-docs-a54)] hover:bg-[color:var(--color-amber-docs-a10)]"
+                      className={controlClass({ shape: "chip", className: "w-fit gap-1 border-[color:var(--color-amber-docs-a34)] px-1.5 py-0.5 font-mono text-caption uppercase tracking-[var(--tracking-caps-08)] text-[color:var(--color-amber-docs-a95)] hover:border-[color:var(--color-amber-docs-a54)] hover:bg-[color:var(--color-amber-docs-a10)]" })}
                     >
                       <Clipboard size={ICON_SIZE.sm} aria-hidden />
                       {staleRefreshCopyLabel}
@@ -469,7 +469,7 @@ export function LiveActivityBadge({
                     <div className="flex flex-wrap gap-1.5">
                       <a
                         href={focusHref}
-                        className="inline-flex w-fit items-center rounded-micro border border-[color:var(--color-indigo-line-a22)] px-1.5 py-0.5 font-mono text-caption uppercase tracking-[var(--tracking-caps-08)] text-[color:var(--color-indigo-text-soft)] transition-colors hover:border-[color:var(--color-indigo-line-a45)] hover:bg-[color:var(--color-indigo-a10)]"
+                        className={controlClass({ shape: "chip", tone: "accentOnTint", className: "w-fit border-[color:var(--color-indigo-line-a22)] px-1.5 py-0.5 font-mono text-caption uppercase tracking-[var(--tracking-caps-08)] hover:border-[color:var(--color-indigo-line-a45)] hover:bg-[color:var(--color-indigo-a10)]" })}
                       >
                         {labels.agentFocusAction}
                       </a>

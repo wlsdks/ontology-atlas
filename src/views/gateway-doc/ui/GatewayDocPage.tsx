@@ -18,6 +18,7 @@ import {
 } from '../lib/vault-doc';
 import { GUIDE_PAGES } from '../model/guide-pages';
 import { Link } from '@/i18n/navigation';
+import { controlClass } from '@/shared/ui/control-class';
 
 /**
  * 관문의 **읽을거리 한 장** — `/guide` 와 `/changelog` 가 같은 이 뷰를 쓴다.
@@ -221,7 +222,7 @@ export function GatewayDocPage({
                 href={`${GITHUB_REPO_URL}/blob/main/${sourcePath}`}
                 target="_blank"
                 rel="noreferrer noopener"
-                className="mt-3 inline-flex items-center gap-2 text-body leading-body text-[color:var(--color-text-secondary)] underline underline-offset-2 decoration-[color:var(--color-indigo-line-a32)] transition-colors hover:decoration-[color:var(--color-indigo-accent)]"
+                className={controlClass({ shape: "link", tone: "secondary", className: "mt-3 gap-2 text-body leading-body underline underline-offset-2 decoration-[color:var(--color-indigo-line-a32)] hover:decoration-[color:var(--color-indigo-accent)]" })}
               >
                 <GithubMark size={13} aria-hidden />
                 {t('readFullSource')}

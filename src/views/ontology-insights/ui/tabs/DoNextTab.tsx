@@ -685,7 +685,7 @@ function DuplicateRow({
       <span className="flex w-full items-center justify-end gap-1.5 sm:w-auto sm:shrink-0">
         <Link
           href={mapHref(pair.keepId)}
-          className="inline-flex min-h-7 items-center rounded-chip border border-[color:var(--color-border-soft)] px-2 text-label text-[color:var(--color-text-tertiary)] transition-colors hover:text-[color:var(--color-text-primary)]"
+          className={controlClass({ shape: "chip", tone: "muted", className: "min-h-7 border-[color:var(--color-border-soft)] px-2 text-label hover:text-[color:var(--color-text-primary)]" })}
         >
           {labels.openMap}
         </Link>
@@ -1450,7 +1450,7 @@ function RepairQueueTargetRow({
         <Link
           href={builderHref(target.slug)}
           data-testid="insights-repair-queue-builder-link"
-          className="inline-flex min-h-8 items-center justify-center rounded-chip border border-[color:var(--color-border-soft)] bg-[color:var(--color-overlay-1)] px-2.5 text-label font-[var(--font-weight-signature)] text-[color:var(--color-text-primary)] transition-colors hover:bg-[color:var(--color-overlay-2)]"
+          className={controlClass({ shape: "chip", className: "min-h-8 justify-center border-[color:var(--color-border-soft)] bg-[color:var(--color-overlay-1)] px-2.5 text-label font-[var(--font-weight-signature)] text-[color:var(--color-text-primary)] hover:bg-[color:var(--color-overlay-2)]" })}
         >
           {labels.repairQueueOpenBuilder}
         </Link>

@@ -3,6 +3,7 @@
 import { useEffect } from "react";
 import Link from "next/link";
 import "./globals.css";
+import { controlClass } from '@/shared/ui/control-class';
 
 interface Props {
   error: Error & { digest?: string };
@@ -44,13 +45,13 @@ export default function GlobalError({ error, reset }: Props) {
               <button
                 type="button"
                 onClick={reset}
-                className="inline-flex h-10 items-center gap-2 rounded-full border border-[color:var(--color-indigo-a38)] bg-[color:var(--color-indigo-a14)] px-4 text-body font-[var(--font-weight-signature)] transition-colors hover:border-[color:var(--color-indigo-brand)] hover:bg-[color:var(--color-indigo-a20)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--color-indigo-a50)]"
+                className={controlClass({ shape: "icon", className: "h-10 gap-2 rounded-full border border-[color:var(--color-indigo-a38)] bg-[color:var(--color-indigo-a14)] px-4 text-body font-[var(--font-weight-signature)] hover:border-[color:var(--color-indigo-brand)] hover:bg-[color:var(--color-indigo-a20)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--color-indigo-a50)]" })}
               >
                 Try again
               </button>
               <Link
                 href="/"
-                className="inline-flex h-10 items-center rounded-full border border-[color:var(--color-divider)] px-4 text-body text-[color:var(--color-text-secondary)] transition-colors hover:border-[color:var(--color-border-strong)] hover:text-[color:var(--color-text-primary)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--color-indigo-a50)]"
+                className={controlClass({ shape: "icon", tone: "secondary", className: "h-10 rounded-full border border-[color:var(--color-divider)] px-4 text-body hover:border-[color:var(--color-border-strong)] hover:text-[color:var(--color-text-primary)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--color-indigo-a50)]" })}
               >
                 Home
               </Link>

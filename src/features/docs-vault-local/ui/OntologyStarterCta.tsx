@@ -369,7 +369,7 @@ export function OntologyStarterCta({ onScaffold, docCount, vaultPath = null }: P
         type="button"
         onClick={handleCopyJsonGate}
         title={t('secondaryJsonGateTitle')}
-        className="inline-flex w-full items-center justify-center gap-1.5 rounded-chip border border-[color:var(--color-success-a28)] bg-[color:var(--color-success-a07)] px-3 py-1.5 text-label text-[color:var(--color-success-text-a94)] transition-colors hover:border-[color:var(--color-success-a42)] hover:bg-[color:var(--color-success-a11)]"
+        className={controlClass({ shape: "chip", className: "w-full justify-center border-[color:var(--color-success-a28)] bg-[color:var(--color-success-a07)] px-3 py-1.5 text-label text-[color:var(--color-success-text-a94)] hover:border-[color:var(--color-success-a42)] hover:bg-[color:var(--color-success-a11)]" })}
       >
         <ClipboardCopy size={ICON_SIZE.sm} aria-hidden />
         {copyJsonGateLabel}

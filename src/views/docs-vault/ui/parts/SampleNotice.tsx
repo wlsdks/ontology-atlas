@@ -54,7 +54,7 @@ export function SampleNotice({ canOpenLocalVault, onOpenFolder }: SampleNoticePr
       ) : (
         <Link
           href="/download/"
-          className="inline-flex flex-none items-center gap-1.5 rounded-chip border border-[color:var(--color-indigo-line-a42)] bg-[color:var(--color-indigo-a12)] px-2.5 py-1.5 font-mono text-label text-[color:var(--color-text-primary)] transition-colors hover:border-[color:var(--color-indigo-line-a54)] hover:bg-[color:var(--color-indigo-a18)]"
+          className={controlClass({ shape: "chip", className: "flex-none border-[color:var(--color-indigo-line-a42)] bg-[color:var(--color-indigo-a12)] px-2.5 py-1.5 font-mono text-label text-[color:var(--color-text-primary)] hover:border-[color:var(--color-indigo-line-a54)] hover:bg-[color:var(--color-indigo-a18)]" })}
         >
           <Download size={ICON_SIZE.sm} aria-hidden />
           {t("vaultStatus.downloadAppCta")}

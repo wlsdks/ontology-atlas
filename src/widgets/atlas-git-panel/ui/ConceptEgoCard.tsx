@@ -3,6 +3,7 @@
 import { TopologyV2KindGlyph } from "@/shared/ui/topology-v2-kind-glyph";
 import { EGO_BEARINGS, type ConceptEgo, type EgoBearing } from "../model/build-concept-ego";
 import { ConceptEgoGraph } from "./ConceptEgoGraph";
+import { controlClass } from '@/shared/ui/control-class';
 
 /**
  * 고른 개념의 **성질 + 바로 옆 이웃**. 지도로 나가지 않고 여기서 끝난다.
@@ -149,7 +150,7 @@ export function ConceptEgoCard({
                     data-testid="atlas-git-ego-neighbor"
                     onClick={onSelect ? () => onSelect(neighbor.id) : undefined}
                     disabled={!onSelect}
-                    className="inline-flex min-w-0 items-center gap-1.5 text-label text-[color:var(--color-text-secondary)] transition-colors enabled:hover:text-[color:var(--color-text-primary)] disabled:cursor-default"
+                    className={controlClass({ shape: "link", tone: "secondary", className: "min-w-0 gap-1.5 text-label enabled:hover:text-[color:var(--color-text-primary)] disabled:cursor-default" })}
                   >
                     <TopologyV2KindGlyph kind={neighbor.kind} size={11} />
                     <span className="truncate">{neighbor.label}</span>

@@ -4,6 +4,7 @@ import { useEffect } from "react";
 import Link from "next/link";
 import { AlertTriangle, RefreshCw } from "lucide-react";
 import { ICON_SIZE } from "@/shared/ui/icon-size";
+import { controlClass } from '@/shared/ui/control-class';
 
 interface Props {
   error: Error & { digest?: string };
@@ -47,14 +48,14 @@ export default function RouteError({ error, reset }: Props) {
           <button
             type="button"
             onClick={reset}
-            className="inline-flex h-10 items-center gap-2 rounded-full border border-[color:var(--color-indigo-a38)] bg-[color:var(--color-indigo-a14)] px-4 text-body font-[var(--font-weight-signature)] text-[color:var(--color-text-primary)] transition-colors hover:border-[color:var(--color-indigo-brand)] hover:bg-[color:var(--color-indigo-a20)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--color-indigo-a50)]"
+            className={controlClass({ shape: "icon", className: "h-10 gap-2 rounded-full border border-[color:var(--color-indigo-a38)] bg-[color:var(--color-indigo-a14)] px-4 text-body font-[var(--font-weight-signature)] text-[color:var(--color-text-primary)] hover:border-[color:var(--color-indigo-brand)] hover:bg-[color:var(--color-indigo-a20)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--color-indigo-a50)]" })}
           >
             <RefreshCw size={ICON_SIZE.md} />
             Try again
           </button>
           <Link
             href="/"
-            className="inline-flex h-10 items-center rounded-full border border-[color:var(--color-divider)] px-4 text-body text-[color:var(--color-text-secondary)] transition-colors hover:border-[color:var(--color-border-strong)] hover:text-[color:var(--color-text-primary)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--color-indigo-a50)]"
+            className={controlClass({ shape: "icon", tone: "secondary", className: "h-10 rounded-full border border-[color:var(--color-divider)] px-4 text-body hover:border-[color:var(--color-border-strong)] hover:text-[color:var(--color-text-primary)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--color-indigo-a50)]" })}
           >
             Topology home
           </Link>

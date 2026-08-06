@@ -26,6 +26,7 @@ import { useToast } from "@/shared/ui";
 
 import { AGENT_CLIENTS, type AgentClientId } from "../lib/agent-clients";
 import { WebManualConnectPanel } from "./WebManualConnectPanel";
+import { controlClass } from '@/shared/ui/control-class';
 
 type ClientId = "claudeCode" | "cursor" | "antigravity" | "codex";
 
@@ -197,7 +198,7 @@ export function AgentClientButtons({
                 <Link
                   href="/download/"
                   data-testid="agent-connect-web-get-app"
-                  className="inline-flex text-label font-[var(--font-weight-signature)] text-[color:var(--color-indigo-accent)] transition-colors hover:text-[color:var(--color-text-primary)]"
+                  className={controlClass({ shape: "link", tone: "accent", className: "text-label font-[var(--font-weight-signature)] hover:text-[color:var(--color-text-primary)]" })}
                 >
                   {t("serverUnavailableGetApp")}
                 </Link>
@@ -206,7 +207,7 @@ export function AgentClientButtons({
                     한가운데에 놓였다. */}
                 <Link
                   href={AGENT_GRAPH_WORKFLOW_HREF}
-                  className="inline-flex text-label text-[color:var(--color-text-quaternary)] transition-colors hover:text-[color:var(--color-text-secondary)]"
+                  className={controlClass({ shape: "link", tone: "secondary", className: "text-label hover:text-[color:var(--color-text-secondary)]" })}
                 >
                   {t("serverUnavailableSource")}
                 </Link>
