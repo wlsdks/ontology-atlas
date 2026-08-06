@@ -637,7 +637,7 @@ export function DocFrontmatterBlock({
                               // 21 → 24 가 되어 24원 겹침(런타임 계기 실측)이 함께 풀린다. 값 층으로 못
                               // 옮기는 이유는 타입 상속이다: link 램프는 text-label 을 강제하는데 이 참조는
                               // 부모 글자 크기를 상속해야 한다(래칫 「타입 스텝을 안 내는 자리」 부채).
-                              className="min-h-6 rounded-chip text-[color:var(--color-indigo-pale-a90)] underline decoration-[color:var(--color-indigo-line-a35)] underline-offset-2 transition-colors hover:text-[color:var(--color-text-primary)] hover:decoration-[color:var(--color-indigo-line-a45)] focus-visible:outline focus-visible:outline-1 focus-visible:outline-[color:var(--color-indigo-line-a45)]"
+                              className={controlClass({ shape: "link", className: "min-h-6 rounded-chip text-[color:var(--color-indigo-pale-a90)] underline decoration-[color:var(--color-indigo-line-a35)] underline-offset-2 hover:text-[color:var(--color-text-primary)] hover:decoration-[color:var(--color-indigo-line-a45)]" })}
                             >
                               {tok}
                             </button>

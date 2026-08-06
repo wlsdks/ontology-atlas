@@ -132,7 +132,7 @@ export function ImpactRankingCard({
         </span>
         <Link
           href="/topology/"
-          className="ml-auto text-label text-[color:var(--color-text-secondary)] underline decoration-[color:var(--color-border-soft)] underline-offset-4 hover:text-[color:var(--color-text-primary)]"
+          className={controlClass({ shape: "link", tone: "secondary", className: "ml-auto underline decoration-[color:var(--color-border-soft)] underline-offset-4 hover:text-[color:var(--color-text-primary)]" })}
         >
           {labels.structureLink}
         </Link>

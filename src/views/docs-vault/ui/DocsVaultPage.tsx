@@ -2478,7 +2478,7 @@ function DocsVaultContent() {
                     <Link
                       href={mapDeeplinkForSelectedDoc}
                       data-testid="docs-backlinks-open-in-map"
-                      className="flex-none text-body text-[color:var(--color-text-tertiary)] transition-colors hover:text-[color:var(--color-text-primary)]"
+                      className={controlClass({ shape: "link", tone: "muted", className: "flex-none text-body hover:text-[color:var(--color-text-primary)]" })}
                     >
                       {t('backlinksStrip.openInOntology')}
                     </Link>

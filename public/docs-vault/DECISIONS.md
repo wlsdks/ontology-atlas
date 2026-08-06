@@ -8334,3 +8334,42 @@ elevated 「파낸 우물」 방언 7 · 사다리 밖 36px 4 · panel scope 2 �
 
 **서명 (accountable)**: design-guardian (적용), 소유자 서명 대기
 **상태**: 유효
+
+---
+
+## 2026-08-06 (5) — 손 컨트롤 57 → 50 · **남은 것의 성격이 바뀌었다**
+
+**이동**: 버튼 32 → **29** · 앵커 25 → **21**.
+
+옮긴 자리: `AgentClientButtons` · `DocsVaultPage` · `DocFrontmatterBlock` ·
+`DocsSidebarBody` · `GatewayDocPage` · `ImpactRankingCard` · `GuidedTourCard`.
+
+### 여기서부터는 「아직 안 옮긴 것」이 아니다
+
+남은 50을 형태로 갈라 보니 성격이 바뀌었다:
+
+| 갈래 | 수 | 무엇인가 |
+|---|---:|---|
+| **캐노니컬 프리미티브 자신** | — | `button.tsx` · `chrome-chip.tsx` · `select.tsx` — 값 층의 **형제**이지 소비처가 아니다 |
+| **크롬 토큰 컨트롤** | — | `DocsHeaderTile`(`--chrome-tile-size`) · `BottomTabBar`(`--topology-bottom-tab-min-height`) — coarse 에서 재선언되는 토큰이라 값 층이 원리적으로 못 낸다 |
+| **전면 클릭면(스크림)** | — | `absolute inset-0 bg-scrim` — 씌울 규격이 없다(`no-spec`/`click-surface`) |
+| **산문 링크** | — | `prose-link` — 컨트롤이 아니라 글이다(`prose-link.contract` 가 따로 맡는다) |
+| **모양이 못 덮는 배치** | — | `BottomTabBar` 의 세로 스택 탭(아이콘 위, 라벨 아래) — `row` 는 가로 정렬이 정체성이다 |
+
+**즉 남은 수는 「게으름」이 아니라 판정 대기다.** 각각 ㉠ 등재(값 층이 원리적으로
+못 냄) ㉡ 근거 없음(씌울 규격이 없음) ㉢ 새 축·모양 중 하나로 가야 하고, 그
+판정은 자리마다 근거를 대야 해서 **일괄로 못 한다.**
+
+⚠️ **등재를 도피처로 쓰지 않는다.** 이 파일이 이미 그 경계를 못박아 뒀다 —
+등재는 「허가 목록이 아니라 부채의 다른 이름」이고, 각 줄은 근거(`proof`)가
+파일에 실재해야 하며 그것이 사라지면 계약이 빨개진다. 오늘 실제로 두 줄
+(`StudioPracticeCleanup` · `ShortcutSheet`)이 그렇게 **반증돼 지워졌다.**
+
+**실측**: 11 라우트 × 3 폭 스윕 **0건**.
+
+**반증 조건**: 남은 50을 판정했을 때 ㉢(새 축·모양)이 절반을 넘으면, 모양 여덟이
+실제 모집단을 못 덮는다는 뜻이고 그때는 **전수를 다시 세야 한다**(이 파일 머리말의
+규율 그대로).
+
+**서명 (accountable)**: design-guardian (적용), 소유자 서명 대기
+**상태**: 유효

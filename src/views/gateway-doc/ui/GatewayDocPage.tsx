@@ -473,7 +473,7 @@ function EntrySidebar({ entries }: { entries: DocEntry[] }) {
               <a
                 href={`#${entry.id}`}
                 data-testid={`entry-nav-${entry.id}`}
-                className="block rounded-chip px-2.5 py-1.5 transition-colors hover:bg-[color:var(--color-elevated)]"
+                className={controlClass({ shape: "row", size: "sm", className: "block hover:bg-[color:var(--color-elevated)]" })}
               >
                 {entry.date ? (
                   <span className="block font-mono text-label leading-label text-[color:var(--color-text-quaternary)]">
