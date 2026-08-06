@@ -532,7 +532,13 @@ function DocsVaultContent() {
       copied ? t('dialog.agentVerifyPromptCopied') : t('dialog.agentVerifyPromptCopyFailed'),
       copied ? 'success' : 'error',
     );
-  }, [t, toast]);
+    /*
+     * ⚠️ `localVault.handle` 이 의존성에 있어야 한다 (2026-08-06 `exhaustive-deps`
+     * 감사). 이 콜백은 **볼트의 절대 경로**를 프롬프트에 박아 복사한다 — 빠지면
+     * 폴더를 갈아탄 뒤에도 **옛 볼트 경로**를 복사한다. `DocsVaultEditor` 의
+     * `vaultScope` 누락과 같은 부류(닫힌 값이 사용자에게 나가는 자리)다.
+     */
+  }, [localVault.handle, t, toast]);
 
   // 스크롤 스파이 — 본문 스크롤 따라 outline 의 active heading 추적.
   const { articleScrollRef, activeHeadingSlug, setActiveHeadingSlug } =

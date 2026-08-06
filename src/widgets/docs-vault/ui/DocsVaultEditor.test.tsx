@@ -379,4 +379,76 @@ describe('DocsVaultEditor', () => {
     expect((area as HTMLTextAreaElement).value).not.toContain('남의 볼트');
   });
 
+  /**
+   * **편집기를 연 채 볼트를 갈아탄다** — 2026-08-06 `exhaustive-deps` 감사가 낸
+   * 결함 후보 중 유일하게 **데이터에 닿는** 것.
+   *
+   * `vaultScope` 는 초안 localStorage 키를 만드는 값인데, 초안을 쓰고 지우는
+   * 네 훅이 그것을 **의존성에 안 담고 있었다**. 그러면 스코프가 바뀌어도 훅이
+   * 다시 만들어지지 않아, 닫힌 값(옛 스코프)으로 **남의 볼트 키에** 쓰거나
+   * 지운다.
+   *
+   * 이 검사는 그 결함을 **동작으로** 재현한다 — 의존성을 빼면 초안이 새 스코프
+   * 키에 안 생긴다.
+   */
+  it('디바운스 중에 볼트를 갈아타면 초안이 **새 스코프**로 간다 — 옛 볼트로 새지 않는다', async () => {
+    const OTHER = 'other-vault';
+    const otherKey = `ontology-atlas:docs-vault-editor-draft:${OTHER}:${doc.slug}`;
+
+    const view = render(
+      <DocsVaultEditor
+        vaultScope={VAULT_SCOPE}
+        doc={doc}
+        getDocContent={() => Promise.resolve('# 원본')}
+        onSave={vi.fn()}
+        onClose={vi.fn()}
+      />,
+    );
+
+    const area = (await screen.findByRole('textbox')) as HTMLTextAreaElement;
+    await waitFor(() => expect(area.value).toContain('원본'));
+    window.localStorage.clear();
+
+    /*
+     * ⚠️ **순서가 이 검사의 전부다.** 타이핑이 초안 쓰기 effect 를 돌려 250ms
+     * 디바운스 타이머를 건다. 그 **다음에** 볼트만 갈아타면 —
+     * `content`·`dirty`·`doc.slug` 는 그대로라 — `vaultScope` 가 의존성에 없는
+     * 한 effect 가 **다시 안 돌고**, 걸려 있던 타이머가 **옛 스코프 키**로 쓴다.
+     *
+     * 처음엔 순서를 반대로 썼다가 결함을 못 재현했다: 갈아탄 **뒤에** 타이핑하면
+     * `content` 가 바뀌어 effect 가 새 클로저로 다시 돌아 버려서, 빠진 의존성이
+     * 가려진다.
+     */
+    fireEvent.change(area, { target: { value: '# 고친 것' } });
+
+    view.rerender(
+      <NextIntlClientProvider locale="ko" messages={koMessages}>
+        <DocsVaultEditor
+          vaultScope={OTHER}
+          doc={doc}
+          getDocContent={() => Promise.resolve('# 원본')}
+          onSave={vi.fn()}
+          onClose={vi.fn()}
+        />
+      </NextIntlClientProvider>,
+    );
+
+    await waitFor(
+      () => {
+        const written = window.localStorage.getItem(otherKey);
+        expect(
+          written,
+          '초안이 새 스코프 키에 안 생겼다 — vaultScope 가 의존성에서 빠져 옛 스코프로 샜다',
+        ).toBeTruthy();
+        expect(JSON.parse(written as string).content).toContain('고친 것');
+      },
+      { timeout: 2000 },
+    );
+
+    expect(
+      window.localStorage.getItem(draftKey),
+      '옛 스코프 키에 초안이 남았다 — 남의 볼트를 오염시킨다',
+    ).toBeNull();
+  });
+
 });
