@@ -5,7 +5,7 @@ import { useTranslations } from 'next-intl';
 import { Check, Search, Sparkles, X } from 'lucide-react';
 import { ICON_SIZE } from '@/shared/ui/icon-size';
 import { cn } from '@/shared/lib/cn';
-import { controlClass } from '@/shared/ui/control-class';
+import { controlClass, fieldClass } from '@/shared/ui/control-class';
 import {
   findMissingDependencySlugs,
   type Project,
@@ -273,7 +273,7 @@ export function DependencyPicker({
           onChange={(e) => setQuery(e.target.value)}
           placeholder={t('searchPlaceholder')}
           aria-label={t('searchPlaceholder')}
-          className="flex-1 bg-transparent text-body text-[color:var(--color-text-primary)] placeholder:text-[color:var(--color-text-quaternary)] focus:outline-none"
+          className={fieldClass({ frame: "bare", className: "flex-1" })}
         />
       </div>
 

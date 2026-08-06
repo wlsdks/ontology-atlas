@@ -22,7 +22,7 @@ import { describe, expect, it } from 'vitest';
  * | **앵커 등재 25** | 같은 뜻, 앵커(`OUTSIDE_VALUE_LAYER_ANCHORS`) | `BASELINE_ANCHOR_REGISTERED` 를 손으로 올린다 |
  * | **앵커 근거 없음 0** | 실측이다 — 102 를 다 보고 0(`<a>` 는 가는 것이 목적이라 「할 말 없는 클릭면」이 되기 어렵다) | 자격자가 생기면 손으로 올린다 |
  * | **앵커 부채 77** | 아직 안 옮긴 `<Link>` 78 · `<a>` 24 중 미등재분 | **0 을 향한다** |
- * | **폼 부채 63** | 손으로 규격을 쓴 `<input>`·`<textarea>`·`<select>`·`<label>`(2026-08-05 신설) | **오늘은 0 을 향하지 못한다** — 값 층에 `field` 모양이 없어서다. 지금 이 수가 하는 일은 **더 늘지 못하게 막는 것** 하나뿐이다 |
+ * | **폼 부채 57** | 손으로 규격을 쓴 `<input>`·`<textarea>`·`<select>`·`<label>`(2026-08-05 신설, 06 에 63→57) | **이제 0 을 향한다.** 2026-08-06 에 `fieldClass` 가 생기면서 목적지가 실재하게 됐다 — 6곳(픽셀 이동 0)을 먼저 옮겼다 |
  * | 버튼 전수 108 · 앵커 전수 102 · 폼 전수 63 | 각 부류의 합 | 파생값이다. 이 수를 보고 판단하지 않는다 |
  *
  * **왜 셋인가 — 부채가 0 이 될 수 있어야 하기 때문이다.** 「원리적으로 못 냄」과
@@ -861,9 +861,9 @@ const ANCHOR_TAGS = ['Link', 'a'] as const;
 function handWrittenTags(file: string, tags: readonly string[] = BUTTON_TAGS): string[] {
   const source = readFileSync(file, 'utf8');
   // `const X = controlClass({…})` / `const X = cn(controlClass({…}), …)` 의 이름들.
-  const systemConstants = [...source.matchAll(/const\s+([A-Za-z_$][\w$]*)\s*=[^;\n]*controlClass\s*\(/g)].map(
-    (m) => m[1],
-  );
+  const systemConstants = [
+    ...source.matchAll(/const\s+([A-Za-z_$][\w$]*)\s*=[^;\n]*(?:controlClass|fieldClass)\s*\(/g),
+  ].map((m) => m[1]);
   const found: string[] = [];
   for (const m of source.matchAll(new RegExp(`<(?:${tags.join('|')})\\b`, 'g'))) {
     const tag = openingTag(source, m.index + m[0].length);
@@ -877,7 +877,12 @@ function handWrittenTags(file: string, tags: readonly string[] = BUTTON_TAGS): s
      * 테두리·호버까지 있어야 완성이라 상수 4벌로 묶어야 했는데, 그러면 래칫이
      * 나빠졌다고 말한다. **옳은 리팩터를 말리는 게이트는 게이트가 아니다.**
      */
-    if (/controlClass\s*\(/.test(tag)) continue;
+    /*
+     * `fieldClass` 가 2026-08-06 에 합류했다. **이 한 줄을 빠뜨리면 옮긴 자리가
+     * 여전히 부채로 세어져 기준선이 안 내려간다** — 「체계」석이 이 PR 의
+     * 공회전 1순위 후보로 지목한 자리다.
+     */
+    if (/(?:controlClass|fieldClass)\s*\(/.test(tag)) continue;
     if (systemConstants.length > 0 && systemConstants.some((name) => new RegExp(`\\b${name}\\b`).test(tag))) continue;
     found.push(tag);
   }
@@ -1230,7 +1235,7 @@ const FIELD_TAGS = ['input', 'textarea', 'select', 'label'] as const;
 const OUTSIDE_VALUE_LAYER_FIELDS: readonly OutsideEntry[] = [];
 
 /** **리터럴이다.** 다른 기준선들과 같은 이유 — 파생값은 멈춤쇠를 양방향으로 헐겁게 만든다. */
-const BASELINE_FIELD_DEBT = 63;
+const BASELINE_FIELD_DEBT = 57;
 
 const fieldCensus = census(scannedFiles, OUTSIDE_VALUE_LAYER_FIELDS, FIELD_TAGS, []);
 

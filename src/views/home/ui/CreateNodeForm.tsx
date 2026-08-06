@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { fieldClass } from '@/shared/ui/control-class';
 import { Plus, X } from "lucide-react";
 import { ICON_SIZE } from "@/shared/ui/icon-size";
 import { Select, controlClass } from "@/shared/ui";
@@ -176,7 +177,7 @@ export function CreateNodeForm({
           }}
           aria-label={localeNames ? labels.primaryNamePlaceholder : labels.titlePlaceholder}
           data-testid="create-node-title"
-          className="h-[var(--control-h-lg)] rounded-chip border border-[color:var(--color-border-soft)] bg-[color:var(--color-overlay-1)] px-3 text-body text-[color:var(--color-text-primary)] transition-colors focus-visible:border-[color:var(--color-indigo-a46)] focus-visible:outline-none"
+          className={fieldClass({ size: "lg" })}
         />
         {localeNames ? (
           <>
@@ -194,7 +195,7 @@ export function CreateNodeForm({
               }}
               aria-label={labels.secondaryNamePlaceholder}
               data-testid="create-node-title-secondary"
-              className="h-[var(--control-h-lg)] rounded-chip border border-[color:var(--color-border-soft)] bg-[color:var(--color-overlay-1)] px-3 text-body text-[color:var(--color-text-primary)] transition-colors focus-visible:border-[color:var(--color-indigo-a46)] focus-visible:outline-none"
+              className={fieldClass({ size: "lg" })}
             />
             {secondaryOnly ? (
               <p

@@ -1,6 +1,7 @@
 'use client';
 
 import { Fragment, useEffect, useMemo, useRef, useState } from 'react';
+import { fieldClass } from '@/shared/ui/control-class';
 import { MOTION } from "@/shared/motion";
 import { Link } from '@/i18n/navigation';
 import { useLocale, useTranslations } from 'next-intl';
@@ -530,7 +531,7 @@ export function DocsVaultUnifiedPalette({
             aria-activedescendant={
               rows.length > 0 ? paletteOptionId(activeIdx) : undefined
             }
-            className="min-w-0 flex-1 bg-transparent text-body text-[color:var(--color-text-primary)] placeholder:text-[color:var(--color-text-quaternary)] focus:outline-none"
+            className={fieldClass({ frame: "bare", className: "min-w-0 flex-1" })}
           />
           <IconButton
             label={t('closeAriaLabel')}

@@ -707,3 +707,114 @@ export interface ControlClassOptions extends VariantProps<typeof control> {
 export function controlClass({ className, ...variants }: ControlClassOptions = {}): string {
   return cn(control(variants), className);
 }
+
+/* ════════════════════════════════════════════════════════════════════
+ * ## 폼 필드 — **둘째 cva** (2026-08-06, 디자인 카운슬 「체계」 + 「위계」)
+ * ════════════════════════════════════════════════════════════════════
+ *
+ * ### 왜 아홉째 `shape` 가 아닌가
+ *
+ * 세 가지가 전부 이 파일 자신의 규율이다:
+ *
+ * 1. **모양 여덟의 근거는 `<button>` 419 전수다.** 위 머리말이 「일곱째를
+ *    추가하려면 전수를 다시 세야 한다」고 못박았는데, 필드는 **다른 모집단**
+ *    (폼 63)이고 축도 다르다.
+ * 2. **죽은 조합이 두 번째 시스템이다.** `tone` 10단 중 필드에 뜻이 있는 것은
+ *    사실상 0이다 — 필드 잉크는 primary 고정이고 플레이스홀더 quaternary 가
+ *    정체성이라, `accent`·`onAccent`·`success` 필드는 소비처가 없다. 공유
+ *    base 의 `FOCUS`(ring-inset)도 **눌리는 것의 관용구**이지 필드의 관용구
+ *    (보더 스왑)가 아니다.
+ * 3. **조합 산수.** `control-class.contract.test.ts` 의 전수는 지금 2,560
+ *    케이스다. 아홉째 모양은 **+320** 을 만들고 그 대부분이 죽은 조합이다.
+ *    별도 cva 는 **16**(frame 2 × size 4 × multiline 2)으로 끝난다.
+ *
+ * ### 축이 셋인 근거 — 「위계」석이 같은 선을 독립적으로 그었다
+ *
+ * 「위계」석이 실물을 열고 폼을 셋으로 갈랐다: **기록**(값이 디스크에 남는다 —
+ * 눈은 입력에) · **조회**(있는 것에 도착한다 — 눈은 결과에) · **무대**(카드에
+ * 쓰일 글자를 그 자리에서 쓴다).
+ *
+ * 앞의 둘이 `frame` 축이다. **합치면 안 되는 이유**가 그 자리에서 나왔다 —
+ * 기록을 투명하게 만들면 폼이 사라지고, 조회를 무겁게 만들면 **입력이 결과를
+ * 이긴다**(조회 10곳은 전부 트리·지도·목록이 주목 승자인 자리다).
+ *
+ * **무대는 이 규격 밖이다** — 공방의 이름 입력(23px)은 폼의 타입이 아니라
+ * **만들어질 카드의 타입**이라, 크기가 장식이 아니라 정보를 나른다(Mackinlay
+ * expressiveness). 상자에 넣는 순간 그 정보가 지워진다. 여기 등재해 두는 이유는
+ * **다음 사람이 접지 않게** 하기 위해서다.
+ *
+ * ### 새 토큰 0
+ *
+ * 전부 기존 램프의 재사용이다. 높이는 `--control-h-{sm,md,lg}`(28/32/40)와
+ * **1:1** 이고 그 1:1 을 계약이 CSS 에서 읽어 대조한다 — 「어휘 안에 있는가」로
+ * 쓰면 안 된다. 실제로 프로브에서 「한 줄 md 를 `h-9`(36)로」가 어휘 검사를
+ * **초록으로 통과**했다(36도 높이 어휘 안이라서).
+ */
+const fieldBase =
+  'text-body text-[color:var(--color-text-primary)] placeholder:text-[color:var(--color-text-quaternary)] transition-colors';
+
+const field = cva(`${fieldBase} ${DISABLED}`, {
+  variants: {
+    /**
+     * **누가 상자를 내는가.**
+     *
+     * `bare` 는 치수·보더·반경·터치 바닥을 **내면 안 된다** — 부모가 이미 상자를
+     * 냈고, 여기서 또 내면 그 상자를 안쪽에서 밀어낸다.
+     */
+    frame: {
+      /*
+       * **폭을 내지 않는다.** 처음엔 `w-full` 을 넣었다가 뺐다 — 소비처가
+       * 갈린다(`ProjectQuickEditPanel`·`WebManualConnectPanel` 은 `w-full`,
+       * `CreateNodeForm` 은 부모 grid 가 폭을 준다). base 가 폭을 내면 후자에서
+       * **0px 전환이 아니게 된다.**
+       */
+      boxed:
+        'atlas-touch-floor border border-[color:var(--color-border-soft)] bg-[color:var(--color-overlay-1)] focus-visible:border-[color:var(--color-indigo-a46)] focus-visible:outline-none',
+      bare: 'bg-transparent focus:outline-none',
+    },
+    /** 한 줄인가 자라는가. **별개 모양이 아니다** — 보더·바탕·반경·초점·플레이스홀더가 같고 치수 문법만 다르다. */
+    multiline: { false: '', true: 'resize-none' },
+    size: { xs: '', sm: '', md: '', lg: '' },
+  },
+  compoundVariants: [
+    /*
+     * 높이는 `--control-h-*` 와 1:1 이다: sm=28 · md=32 · lg=40.
+     * `xs` 는 높이 단이 아니라 **반경만 한 층 내리는** 티어다 — 위 `chip` 의
+     * `xs` 가 쓰는 문법 그대로이고, 소비처는 `DocFrontmatterBlock` 3곳이다.
+     */
+    { frame: 'boxed', multiline: false, size: 'xs', class: 'h-7 rounded-micro px-2' },
+    { frame: 'boxed', multiline: false, size: 'sm', class: 'h-7 rounded-chip px-2' },
+    { frame: 'boxed', multiline: false, size: 'md', class: 'h-8 rounded-chip px-2.5' },
+    { frame: 'boxed', multiline: false, size: 'lg', class: 'h-10 rounded-chip px-3' },
+    { frame: 'boxed', multiline: true, size: 'xs', class: 'min-h-7 rounded-micro px-2 py-1.5' },
+    { frame: 'boxed', multiline: true, size: 'sm', class: 'min-h-7 rounded-chip px-2 py-1.5' },
+    { frame: 'boxed', multiline: true, size: 'md', class: 'min-h-8 rounded-chip px-2.5 py-1.5' },
+    { frame: 'boxed', multiline: true, size: 'lg', class: 'min-h-10 rounded-chip px-3 py-2' },
+  ],
+  defaultVariants: { frame: 'boxed', multiline: false, size: 'md' },
+});
+
+export type FieldFrame = NonNullable<VariantProps<typeof field>['frame']>;
+export type FieldSize = NonNullable<VariantProps<typeof field>['size']>;
+
+export interface FieldClassOptions extends VariantProps<typeof field> {
+  /** 이 필드 **한 자리에만** 참인 것 — 폭(`w-full`·`flex-1`)과 자리잡기. 규격은 여기 넣지 않는다. */
+  className?: string;
+}
+
+/**
+ * 폼 필드의 className 을 낸다.
+ *
+ * ```tsx
+ * <input className={fieldClass({ size: 'lg' })} />                       // 기록
+ * <input className={fieldClass({ frame: 'bare', className: 'flex-1' })} /> // 조회
+ * <textarea className={fieldClass({ multiline: true, size: 'lg' })} />
+ * ```
+ *
+ * **폭을 안 낸다** — `boxed` 만 `w-full` 을 내고 `bare` 는 부모의 flex 배치에
+ * 얹히므로 `flex-1`/`min-w-0` 은 자리의 몫이다. 위 `controlClass` 가 「자리잡기·
+ * 폭은 className」이라고 정한 것과 같은 경계다.
+ */
+export function fieldClass({ className, ...variants }: FieldClassOptions = {}): string {
+  return cn(field(variants), className);
+}
