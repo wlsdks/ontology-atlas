@@ -615,5 +615,49 @@ describe('DownloadPage', () => {
       renderDownloadPage();
       expect(screen.getByTestId('download-web-cta')).toHaveAttribute('href', '/topology');
     });
+
+    /**
+     * 하단 탭바 예약고 — **처방이 제자리에 있는지**만 본다.
+     *
+     * 실제로 픽셀을 되찾는지는 `tests/e2e/scroll-end-gap.spec.ts` 가 잰다
+     * (`design.md`: 클래스 문자열 단언과 실측을 두 층으로 같이 둔다). 이 층이
+     * 따로 필요한 이유는 **왜 갈리는지**가 이 컴포넌트의 판정에 있기 때문이다:
+     * 같은 뷰가 두 주소에 사는데 탭바는 `/` 에만 선다.
+     *
+     * 결함 실측(2026-08-06): 예약이 없어서 `/` 스크롤 끝의 마지막 줄이 탭바 뒤로
+     * **17px** 들어갔다 — 390·768 양쪽, 프로덕션 정적 export 에서도 동일.
+     */
+    it('/ 에서는 하단 탭바 높이를 예약한다 — 탭바가 서는 주소다', () => {
+      mocks.pathname = '/';
+      renderDownloadPage();
+      const band = screen.getByTestId('download-bottom-band');
+      expect(band).toHaveAttribute(
+        'data-gateway-bottom-reserve-token',
+        '--topology-mobile-bottom-tab-reserve',
+      );
+      expect(band.className).toContain(
+        'max-lg:pb-[calc(var(--topology-mobile-bottom-tab-reserve)+var(--page-bottom-breath))]',
+      );
+    });
+
+    it('/download 에서는 예약하지 않는다 — 그 주소엔 탭바가 없다', () => {
+      mocks.pathname = '/download';
+      renderDownloadPage();
+      const band = screen.getByTestId('download-bottom-band');
+      expect(band).not.toHaveAttribute('data-gateway-bottom-reserve-token');
+      expect(band.className).not.toContain('--topology-mobile-bottom-tab-reserve');
+    });
+
+    /**
+     * 예약 여부를 **탭바 자신과 같은 함수로** 판정한다는 계약.
+     *
+     * 두 곳에서 각자 라우트를 나열하면 한쪽이 드리프트하고, 그때 어긋나는 쪽이
+     * 「예약고」라 아무 에러 없이 다시 가려진다. 그래서 이 시험은 위 두 단언의
+     * 전제를 `shouldHideBottomTabBar` 로 직접 확인한다.
+     */
+    it('예약 판정의 전제는 탭바의 판정과 같다', () => {
+      expect(shouldHideBottomTabBar('/download', false)).toBe(true);
+      expect(shouldHideBottomTabBar('/', false)).toBe(false);
+    });
   });
 });
