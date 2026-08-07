@@ -92,14 +92,57 @@ const scaleGradientSelectors = [
 const ALLOWED_SHADOW_TOKEN =
   'var\\(--shadow-elevation-|var\\(--shadow-control-press|var\\(--topology|var\\(--chrome|var\\(--git|inset';
 
+/**
+ * 허용 판정을 **레이어 단위로** 한다 (2026-08-06).
+ *
+ * ## 무엇이 새어 나갔나
+ *
+ * 종전 두 룰(클래스·인라인)은 값 **전체**에 부정 룩어헤드를 걸었다:
+ * `^(?!.*(?:허용목록)).+` 꼴이다. 그래서 대괄호 안 **어딘가에** 허용 표식이
+ * 하나라도 있으면 값 전체가 면제됐다 — `inset` 은 「빛이 아니라 재질」이라
+ * 허용목록에 있으므로, **정상적인 inset 헤어라인 한 겹이 그 옆에 손으로 쓴
+ * 고도 그림자를 세탁해 줬다.**
+ *
+ * 프로브로 증명한 실측(2026-08-06):
+ *
+ * | 값 | 종전 | 지금 |
+ * |---|---|---|
+ * | 손으로 쓴 기하 한 겹 | 잡힘 | 잡힘 |
+ * | 같은 값 앞에 inset 한 겹을 더함 | **안 잡힘** | 잡힘 |
+ * | 사다리 토큰 참조 | 통과 | 통과 |
+ * | inset 헤어라인 + 사다리 토큰(정상 2겹) | 통과 | 통과 |
+ *
+ * 새어 나온 것은 4곳이었고 그중 하나가 **공유 버튼 프리미티브**라 앱 전체 주
+ * 버튼에 퍼져 있었다(렌더 census 16건 / 10라우트). 넷 다 먼저 수렴시키고 켰다 —
+ * 켜는 순간 위반 0.
+ *
+ * ## 왜 정규식으로 되나
+ *
+ * 레이어는 콤마로 갈린다. 「허용 표식이 없는 레이어가 **하나라도** 있으면」을
+ * 백트래킹으로 표현한다: 앞선 레이어들을 `(?:[^\\]]*,)?` 로 건너뛰고, 그 자리의
+ * 레이어(`[^,\\]]*`)에만 부정 룩어헤드를 건다.
+ *
+ * ⚠️ `[a-zA-Z(]` 를 요구하는 이유: `rgba(0,0,0,.2)` 처럼 레이어 안에 콤마가 있는
+ * 값을 쓰면 `0` 같은 숫자 조각이 «표식 없는 레이어» 로 잡힌다. 대괄호 안 raw
+ * rgba 는 지금 **0건**이고(hex 는 이미 별도 룰이 막는다) 앞으로 들어와도 잡히는
+ * 편이 맞지만, 숫자 조각까지 세면 메시지가 엉뚱한 자리를 가리킨다.
+ */
+/** 클래스 문자열 — 대괄호가 레이어 목록의 끝을 표시한다. */
+const SHADOW_CLASS_LAYER_VIOLATION =
+  `shadow-\\[(?:[^\\]]*,)?(?![^,\\]]*(?:${ALLOWED_SHADOW_TOKEN}))[^,\\]]*[a-zA-Z(][^,\\]]*[,\\]]`;
+
+/** 인라인 style 값 — 문자열의 끝이 레이어 목록의 끝이다. */
+const SHADOW_INLINE_LAYER_VIOLATION =
+  `(?:^|,)(?![^,]*(?:${ALLOWED_SHADOW_TOKEN}))[^,]*[a-zA-Z(][^,]*(?:,|$)`;
+
 const inlineShadowSelectors = [
   {
-    selector: `Property[key.name="boxShadow"] > Literal[value=/^(?!.*(?:${ALLOWED_SHADOW_TOKEN})).+/]`,
+    selector: `Property[key.name="boxShadow"] > Literal[value=/${SHADOW_INLINE_LAYER_VIOLATION}/]`,
     message:
       '고도 사다리 이탈 (인라인 style) — 그림자의 **기하**도 토큰이 정한다. --shadow-elevation-1/2/3 (coach-mark < popover < dialog), 가장자리 도킹은 -dock-bottom/-dock-side, 눌린 컨트롤은 --shadow-control-press. 인라인 스타일은 클래스 셀렉터에 안 걸리므로 여기서 막는다.',
   },
   {
-    selector: `Property[key.name="boxShadow"] TemplateElement[value.raw=/^(?!.*(?:${ALLOWED_SHADOW_TOKEN})).+/]`,
+    selector: `Property[key.name="boxShadow"] TemplateElement[value.raw=/${SHADOW_INLINE_LAYER_VIOLATION}/]`,
     message:
       '고도 사다리 이탈 (인라인 style, template literal) — --shadow-elevation-* / -dock-* / --shadow-control-press 를 참조한다.',
   },
@@ -446,16 +489,14 @@ export const arbitrarySizeSelectors = [
   // 수렴시키고 켰으므로 켜는 순간 위반 0 · lint 총계 불변.
   // ⚠️ 메시지에 리터럴 유틸리티 문법 금지 — Tailwind v4 스캐너가 이 파일을 훑는다.
   {
-    selector:
-      'Literal[value=/shadow-\\[(?![^\\]]*(?:var\\(--shadow-elevation-|var\\(--shadow-control-press|var\\(--topology|var\\(--chrome|var\\(--git|inset))[^\\]]+\\]/]',
+    selector: `Literal[value=/${SHADOW_CLASS_LAYER_VIOLATION}/]`,
     message:
-      '고도 사다리 이탈 — 그림자의 **기하**도 토큰이 정한다. --shadow-elevation-1/2/3 (coach-mark < popover < dialog), 가장자리 도킹은 -dock-bottom/-dock-side, 눌린 컨트롤은 --shadow-control-press 를 쓴다. 색만 토큰이고 기하는 손으로 쓰는 것이 사다리를 무너뜨린 방식이다.',
+      '고도 사다리 이탈 — 그림자의 **기하**도 토큰이 정하고, 판정은 **레이어 하나하나**에 대해 한다. --shadow-elevation-1/2/3 (coach-mark < popover < dialog), 가장자리 도킹은 -dock-bottom/-dock-side, 눌린 컨트롤은 --shadow-control-press. inset 헤어라인은 재질이라 허용되지만, 그 옆 레이어까지 면제해 주지는 않는다 — 정상 레이어 한 겹이 손으로 쓴 고도 그림자를 세탁하던 것이 2026-08-06 에 막힌 구멍이다.',
   },
   {
-    selector:
-      'TemplateElement[value.raw=/shadow-\\[(?![^\\]]*(?:var\\(--shadow-elevation-|var\\(--shadow-control-press|var\\(--topology|var\\(--chrome|var\\(--git|inset))[^\\]]+\\]/]',
+    selector: `TemplateElement[value.raw=/${SHADOW_CLASS_LAYER_VIOLATION}/]`,
     message:
-      '고도 사다리 이탈 (template literal) — --shadow-elevation-* / -dock-* / --shadow-control-press 를 쓴다.',
+      '고도 사다리 이탈 (template literal) — 레이어마다 판정한다. --shadow-elevation-* / -dock-* / --shadow-control-press 를 쓴다.',
   },
   // 2026-07-26 hex — **현재 위반 0건인 예방 게이트다.** 전수 측정 결과 Tailwind
   // arbitrary value 안에 hex 를 박은 곳은 src/app 전체에 하나도 없었고, 남은

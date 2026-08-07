@@ -1,6 +1,6 @@
 {
   "version": "2026-04-23",
-  "generatedAt": "2026-08-06",
+  "generatedAt": "2026-08-07",
   "docs": [
     {
       "slug": "AGENT-GRAPH-WORKFLOW",
@@ -3890,6 +3890,11 @@
         },
         {
           "depth": 2,
+          "text": "2026-08-07 — 디자인 시스템 전면 감사 2회차: 관문 하단 17px 가림 · 손으로 쓴 그림자 0 · 게이트 구멍 다섯",
+          "slug": "2026-08-07-디자인-시스템-전면-감사-2회차-관문-하단-17px-가림-손으로-쓴-그림자-0-게이트-구멍-다섯"
+        },
+        {
+          "depth": 2,
           "text": "2026-08-04 — 디자인 감사: 게이트가 못 보던 색 28건 · 공방의 평행 그림자 사다리 · 첫 화면 모달의 OS 포커스 링",
           "slug": "2026-08-04-디자인-감사-게이트가-못-보던-색-28건-공방의-평행-그림자-사다리-첫-화면-모달의-os-포커스-링"
         },
@@ -6179,9 +6184,9 @@
           "slug": "2026-07-26-첫-만남은-쇼핑몰부터"
         }
       ],
-      "excerpt": "Major change history. Code commit messages answer why; this file answers when / which surface changed. Focused on user-visible changes, not PR-level granularity. Newest at the top. Entries stay date-based; the app version reached v1.0.0 on 2026-07-27, so a release tag now carries the semver promise instead. 디자인 시스템을 세운",
-      "wordCount": 67154,
-      "updatedAt": "2026-08-05",
+      "excerpt": "Major change history. Code commit messages answer why; this file answers when / which surface changed. Focused on user-visible changes, not PR-level granularity. Newest at the top. Entries stay date-based; the app version reached v1.0.0 on 2026-07-27, so a release tag now carries the semver promise instead. 17개 라우트 × 2",
+      "wordCount": 67423,
+      "updatedAt": "2026-08-07",
       "linksOut": [
         "audits/CASE-STUDY-AGENTS-MD-DRIFT",
         "domains/catalog",
@@ -6209,6 +6214,16 @@
           "depth": 2,
           "text": "기록 형식",
           "slug": "기록-형식"
+        },
+        {
+          "depth": 2,
+          "text": "2026-08-07 — 하단 탭바 예약고는 **페이지가 소유한다** (전날의 「셸로 올린다」 권고를 뒤집음)",
+          "slug": "2026-08-07-하단-탭바-예약고는-페이지가-소유한다-전날의-셸로-올린다-권고를-뒤집음"
+        },
+        {
+          "depth": 2,
+          "text": "2026-08-06 — 그림자 사다리를 손으로 쓴 기하 0으로 수렴, 지도 패널의 **둘째 잉크 램프는 남긴다**",
+          "slug": "2026-08-06-그림자-사다리를-손으로-쓴-기하-0으로-수렴-지도-패널의-둘째-잉크-램프는-남긴다"
         },
         {
           "depth": 2,
@@ -7862,8 +7877,8 @@
         }
       ],
       "excerpt": "이 파일은 결정과 그때 진 반대 의견을 남긴다. docs/CHANGELOG.md 는 무엇이 언제 바뀌었나를 답하고, 이 파일은 왜 그렇게 정했고, 무엇을 걸었나를 답한다. 최신이 위. 기록은 덧붙이기만 한다 — 지난 기록을 고치지 않는다. 판단이 바뀌었으면 새 기록을 쓰고 옛 기록을 뒤집힘 으로 표시한다. 틀린 기록도 자산이다. 1. 소집 전에 읽는다. 카운슬을 열기 전(그리고 단독 PO 패스를 쓰기 전) 같은 표면 · 같은 질문에 대한 선행 결정이 있는지 먼저 본다. 있으면 새 패스는 그것을 ① 여전히 유효하다고 인용하거나 ② 명시적으로 뒤집는다. 조용히 다시 결정",
-      "wordCount": 88292,
-      "updatedAt": "2026-08-06",
+      "wordCount": 89228,
+      "updatedAt": "2026-08-07",
       "linksOut": [
         "slug"
       ]
@@ -8851,8 +8866,8 @@
         }
       ],
       "excerpt": "This document is maintained based on Section 3 of the design spec. For the original Linear specification, see design-references/DESIGN-linear.md. v2 (2026-07): topology-map-v2 에서 출하된 B2+ \"Circuit × Constellation\" 시각 언어가 페이지 롤아웃(랜딩 → docs/ontology 허브 → projects/insights → download)의 규범이 되었다 — 아래 v2 — \"Circuit × Constell",
-      "wordCount": 30598,
-      "updatedAt": "2026-08-06",
+      "wordCount": 30588,
+      "updatedAt": "2026-08-07",
       "linksOut": [
         "design-references/DESIGN-linear",
         "TOPOLOGY-V2-DESIGN",
@@ -9052,8 +9067,8 @@
         }
       ],
       "excerpt": "Maintainer-only checks live here so the public README stays readable. Use this page when you touch mcp/, cli/, package manifests, release scripts, or the dogfood ontology. Run this before pushing broad docs, package, MCP, or web changes: For user-facing UI changes, add the relevant Playwright route check. pnpm install ",
-      "wordCount": 8787,
-      "updatedAt": "2026-08-05",
+      "wordCount": 9009,
+      "updatedAt": "2026-08-07",
       "linksOut": []
     },
     {

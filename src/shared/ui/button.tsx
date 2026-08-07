@@ -22,11 +22,21 @@ const buttonVariants = cva(
   {
     variants: {
       variant: {
-        // ⚠️ primary 의 키 그림자는 **인디고 착색**이다(`--color-indigo-a22/a20`).
-        // 2026-07-28 재수렴에서 기하는 맞췄지만 색은 그대로 뒀다 — 앱에서 가장
-        // 눈에 띄는 컨트롤의 색을 무채색으로 바꾸는 것은 취향 판단이라 소유자
-        // 몫이다. 착색 그림자는 광원이 둘이라는 뜻이므로, 정리하기로 하면
-        // `--shadow-control-press` 로 흡수하면 된다.
+        // ✅ **착색 키 그림자를 걷었다 (2026-08-06 소유자 판정).**
+        //
+        // 종전 primary 는 쉴 때 `0 10px 24px var(--color-indigo-a22)`, 눌릴 때
+        // `0 6px 14px var(--color-indigo-a20)` 이라는 **인디고 착색 드롭**을
+        // 갖고 있었다. 위 두 줄이 예고한 그대로 «착색 그림자는 광원이 둘이라는
+        // 뜻» 이고, 소유자가 색을 바꿔도 된다고 판정하면 답은 이미 적혀 있었다 —
+        // `--shadow-control-press` 로 흡수.
+        //
+        // 왜 쉴 때는 드롭을 아예 안 주나: 전수 실측(2026-08-06) 결과 이 저장소의
+        // 비토큰 `shadow-[…]` 21건 중 **18건이 inset(재질)뿐**이고, 드롭을 손으로
+        // 쓴 4건이 이탈이었다. 같은 cva 의 `outline` 도 쉴 때 inset 만 쓴다. 즉
+        // 관례는 「쉬는 컨트롤은 재질, 드롭은 떠 있는 것의 몫」이다. primary 가
+        // 주목을 이기는 근거는 그림자가 아니라 **채운 인디고 면**이다.
+        //
+        // 결과: 램프 밖 기하 2건 제거 · 새 토큰 0개 · 광원 하나.
         //
         // 잉크는 `--color-text-on-accent`(#ffffff) 다 — **`--color-text-primary`
         // 가 아니다.** 채운 인디고(`#5e6ad2`) 위에서 `#f7f8f8` 은 합성 대비
@@ -36,7 +46,7 @@ const buttonVariants = cva(
         // 있었는데, 이 프리미티브만 이관에서 빠져 있었다 — 관문의 주 CTA 가
         // 앱에서 가장 눈에 띄는 컨트롤인데 유일하게 AA 미달이던 이유다.
         primary:
-          'bg-[color:var(--color-indigo-brand)] text-[color:var(--color-text-on-accent)] shadow-[inset_0_1px_0_var(--color-border-strong),0_10px_24px_var(--color-indigo-a22)] hover:border-[color:var(--color-indigo-pale-a28)] hover:bg-[color:var(--color-indigo-brand-hover)] active:shadow-[inset_0_1px_0_var(--color-divider),0_6px_14px_var(--color-indigo-a20)]',
+          'bg-[color:var(--color-indigo-brand)] text-[color:var(--color-text-on-accent)] shadow-[inset_0_1px_0_var(--color-border-strong)] hover:border-[color:var(--color-indigo-pale-a28)] hover:bg-[color:var(--color-indigo-brand-hover)] active:shadow-[inset_0_1px_0_var(--color-divider),var(--shadow-control-press)]',
         ghost:
           'bg-transparent text-[color:var(--color-text-primary)] hover:border-[color:var(--color-border-soft)] hover:bg-[color:var(--color-overlay-2)] active:bg-[color:var(--color-border-soft)] active:shadow-[var(--shadow-control-press)]',
         outline:

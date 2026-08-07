@@ -2,7 +2,9 @@ import { expect, test } from '@playwright/test';
 import { AUDITED_ROUTES } from './audited-routes';
 
 // eslint-disable-next-line @typescript-eslint/no-require-imports -- Playwright 스펙은 CJS 로 로드된다(`import.meta` 를 쓰면 파일이 아예 안 실린다).
-const { judgeText } = require('../../scripts/lib/contrast.mjs');
+const { judgeText, judgeAdjacentMarks } = require('../../scripts/lib/contrast.mjs');
+// eslint-disable-next-line @typescript-eslint/no-require-imports -- 같은 이유.
+const { collectAdjacentMarks } = require('../../scripts/lib/contrast-collect.mjs');
 
 /**
  * 대비 래칫 — **토큰이 대비를 떨어뜨리면 그 빌드에서 빨개진다.**
@@ -62,6 +64,23 @@ const BASELINE_FAILING_COMBINATIONS = 0;
  */
 const MIN_COMBINATIONS_PER_ROUTE = 4;
 
+/**
+ * 맞닿은 데이터 마크 쌍의 WCAG 1.4.11(3:1) 미달 수 — **내려가기만 한다.**
+ *
+ * ## 왜 이 게이트가 2026-08-06 에 생겼나
+ *
+ * `judgeAdjacentMarks` 와 화면 채집기는 2026-08-04 에 이미 있었는데 **둘 다
+ * `scripts/measure-contrast.mjs`(사람이 부르는 계기) 안에만 있었다.** 이 CI
+ * 래칫은 `judgeText` 만 불렀다 — 즉 인접 마크 검사는 **사람이 기억할 때만 도는
+ * 검사**였고, 이 저장소가 1.14:1 짜리 인접 쌍을 놓친 방식이 정확히 그것이다.
+ * 계기 쪽 docstring 이 "계산기는 있는데 계기가 없었다" 고 적어 둔 그 실패가,
+ * 한 층 위에서 그대로 반복되고 있었다.
+ *
+ * 켤 때 실측(17 라우트, 1512×900): 맞닿은 쌍 **1** · 미달 **0** · 틈으로 이미
+ * 갈린 쌍 8. 그래서 기준선 0 으로 켠다.
+ */
+const BASELINE_FAILING_ADJACENT_PAIRS = 0;
+
 /** 페이지에서 색·폰트만 꺼내 온다. 판정은 순수 함수가 한다. */
 const COLLECT = `(() => {
   const resolveBackground = (el) => {
@@ -108,10 +127,38 @@ test('대비 래칫 — WCAG 1.4.3 미달 조합이 늘지 않는다', async ({ 
   const failures: string[] = [];
   const thinRuns: string[] = [];
   let measured = 0;
+  /** 인접 마크 — 맞닿은 쌍의 미달 목록, 그리고 «구조 자체를 찾았나» 의 증거. */
+  const adjacentFailures: string[] = [];
+  let adjacentTouching = 0;
+  let adjacentSeparated = 0;
 
   for (const route of ROUTES) {
     await page.goto(`${route}?guides=off`, { waitUntil: 'domcontentloaded' });
     await page.waitForTimeout(2500);
+
+    const marks = (await page.evaluate(collectAdjacentMarks)) as Array<{
+      separated?: boolean;
+      a?: string;
+      b?: string;
+      over?: string;
+      selector?: string;
+    }>;
+    for (const m of marks) {
+      if (m.separated) {
+        // 1px 틈은 헌장이 요구하는 **색-무관 구분자**다 — 판정 대상이 아니지만
+        // 세어 둔다. 조용히 빠지면 «잰 것» 과 «안 잰 것» 이 같은 초록이 된다.
+        adjacentSeparated += 1;
+        continue;
+      }
+      const judged = judgeAdjacentMarks(m);
+      if (!judged) continue; // 못 읽은 색은 통과가 아니라 미측정
+      adjacentTouching += 1;
+      if (!judged.passes) {
+        adjacentFailures.push(
+          `${route} ${judged.ratio}:1 < 3 · ${m.a} ↔ ${m.b} over ${m.over} — ${m.selector}`,
+        );
+      }
+    }
     const samples = (await page.evaluate(COLLECT)) as Array<{
       fg: string;
       bg: string;
@@ -157,4 +204,25 @@ test('대비 래칫 — WCAG 1.4.3 미달 조합이 늘지 않는다', async ({ 
     `미달이 ${BASELINE_FAILING_COMBINATIONS} → ${failures.length} 로 줄었다. ` +
       `BASELINE_FAILING_COMBINATIONS 도 ${failures.length} 로 내려라 — 여유를 무료로 두지 않는다.`,
   ).toBeGreaterThanOrEqual(BASELINE_FAILING_COMBINATIONS);
+
+  /**
+   * 인접 마크 채집기가 **살아 있는지**.
+   *
+   * ⚠️ 여기서 «맞닿은 쌍이 하나는 있어야 한다» 로 걸지 않는다. 맞닿은 쌍을 전부
+   * 1px 틈으로 갈라 놓는 것이 바로 이 헌장이 **원하는 결과**인데, 그걸 요구하면
+   * 화면이 좋아지는 순간 게이트가 빨개진다 — 규격이 아니라 지금의 모양을 못박는
+   * 게이트가 되는 것이다. 그래서 «인접 마크 **구조**를 하나라도 찾았나» 로 건다:
+   * 맞닿았든 틈이 있든, 채집기가 아무것도 못 찾으면 그건 깨진 것이다.
+   */
+  expect(
+    adjacentTouching + adjacentSeparated,
+    '인접 데이터 마크 구조를 하나도 못 찾았다 — 미달이 없는 게 아니라 채집기가 깨졌다',
+  ).toBeGreaterThan(0);
+
+  expect(
+    adjacentFailures.length,
+    `WCAG 1.4.11 미달 인접 쌍이 ${BASELINE_FAILING_ADJACENT_PAIRS} → ${adjacentFailures.length} 로 늘었다.\n` +
+      `맞닿은 두 마크의 대비가 3:1 미만이면 색-무관 구분자(1px 틈 · 라벨 · 패턴)가 있어야 한다.\n` +
+      `${adjacentFailures.join('\n')}`,
+  ).toBeLessThanOrEqual(BASELINE_FAILING_ADJACENT_PAIRS);
 });

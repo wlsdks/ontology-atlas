@@ -10,7 +10,8 @@ import {
 import { ICON_SIZE } from '@/shared/ui/icon-size';
 import { useFormatter, useTranslations } from 'next-intl';
 import { resolveDisplayReleaseTag } from '../lib/pending-release-tag';
-import { Link } from '@/i18n/navigation';
+import { Link, usePathname } from '@/i18n/navigation';
+import { shouldHideBottomTabBar } from '@/widgets/bottom-tab-bar';
 import { cn } from '@/shared/lib/cn';
 import { PAGE_COLUMN, PAGE_GUTTER } from '@/shared/lib/gateway-frame';
 import { GatewayNav } from '@/widgets/gateway-chrome';
@@ -145,6 +146,7 @@ const STAGE_COLUMN = 'w-full max-w-[calc(var(--gateway-plate-width)*1px)]';
  * 실제 구현(신뢰 칩·체크섬 행·검증 코드박스)과 어긋났다(체계석 지적).
  */
 export function DownloadPage() {
+  const pathname = usePathname() ?? '/';
   const tFooter = useTranslations('footer');
   /**
    * **시연 절은 두 주소 모두에 있다** (2026-08-01 소유자 확정, 원장 「시연은
@@ -171,6 +173,22 @@ export function DownloadPage() {
   // Apple Silicon 이 기본 제안 — 2020년 말 이후 팔린 맥은 거의 전부 그쪽이다.
   const primaryAsset = published ? macosAssetFor('aarch64') : null;
 
+  /**
+   * 하단 탭바가 서는 화면인가 — **이 뷰는 두 주소에 살고 둘이 다르다.**
+   *
+   * `/download` 는 탭바를 숨기지만 `/` 는 세운다(`shouldHideBottomTabBar` —
+   * 숨기면 `<lg` 첫 방문자가 전역 내비 없이 갇히기 때문에 의도된 것이다). 그래서
+   * 같은 바닥 띠가 `/` 에서는 탭바 **뒤로** 깔렸다: 스크롤 끝에서 마지막 줄이
+   * 탭바에 **17px 물렸다**(실측 2026-08-06, 390·768 양쪽 + 프로덕션 export).
+   * `design.md` 터치 계약대로 "탭바 뒤로 가려짐" 은 결함이다.
+   *
+   * 판정을 탭바 **자신과 같은 함수**로 한다 — 두 곳에서 각자 라우트를 나열하면
+   * 한쪽이 드리프트하고, 그때 어긋나는 쪽이 «예약고» 라 아무 에러 없이 다시
+   * 가려진다. 둘째 인자는 이 판정에 쓰이지 않는다(그 함수가 시그니처 안정성만
+   * 위해 남겨 둔 자리라고 자기 주석에 적어 뒀다).
+   */
+  const bottomTabBarPresent = !shouldHideBottomTabBar(pathname, false);
+
   return (
     <div className="flex min-h-full w-full flex-col">
       <GatewayNav />
@@ -194,9 +212,21 @@ export function DownloadPage() {
          * 남는 괘선은 푸터의 것 하나다.
          */}
         <div
+          data-testid="download-bottom-band"
+          // 예약고를 **어느 토큰이** 내는지 화면에 적어 둔다 — `BottomTabBar` ·
+          // `GlobalSearch` 가 쓰는 같은 관용구다. 토큰 이름이 바뀌면 이 표식이
+          // 같이 바뀌어야 하므로, 예약이 조용히 사라지지 않는다.
+          data-gateway-bottom-reserve-token={
+            bottomTabBarPresent ? '--topology-mobile-bottom-tab-reserve' : undefined
+          }
           className={cn(
             PAGE_GUTTER,
             'shrink-0 pt-5 pb-[max(var(--page-bottom-breath),env(safe-area-inset-bottom))] [@media(min-width:64rem)_and_(max-height:56.25rem)]:pt-3 [@media(min-width:64rem)_and_(max-height:56.25rem)]:pb-6',
+            // 탭바가 서는 화면(`<lg`)에서는 그 높이를 **예약고로** 얹는다. 예약고
+            // 토큰이 safe-area 를 이미 품고 있으므로 여기서는 숨(breath)만 더한다 —
+            // 그래야 탭바 위에 남는 여백이 다른 화면과 같은 40px 이 된다.
+            bottomTabBarPresent &&
+              'max-lg:pb-[calc(var(--topology-mobile-bottom-tab-reserve)+var(--page-bottom-breath))]',
           )}
         >
           <div className={PAGE_COLUMN}>

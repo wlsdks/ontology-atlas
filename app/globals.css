@@ -807,8 +807,11 @@
 
   /* 드롭 섀도 알파 — 기존 a22/a42/a46 형제. 8스텝 캐논 스케일로 신규
      리터럴을 스냅(지각 불가) — Guardian verdict §⑥. */
+  /* a16 은 2026-08-06 에 지웠다 — 유일한 소비처가 프로젝트 선택 카드의 손으로 쓴
+     드롭 그림자였고, 그 카드가 정적이라 드롭을 걷으면서 소비가 0이 됐다.
+     `unused-token-ratchet` 이 그 자리에서 잡았다: 정의만 있고 아무도 안 쓰는
+     토큰은 규격이 아니라 오정보다. 다시 필요해지면 그때 소비처와 함께 등재한다. */
   --color-shadow-a12: rgba(0, 0, 0, 0.12);
-  --color-shadow-a16: rgba(0, 0, 0, 0.16);
   --color-shadow-a35: rgba(0, 0, 0, 0.35);
   --color-shadow-a50: rgba(0, 0, 0, 0.5);
 
@@ -2089,7 +2092,6 @@
     --color-surface-deep-a80: rgba(12, 14, 20, 0.8);
     --color-surface-deep-a98: rgba(12, 14, 20, 0.98);
     --color-shadow-a12: rgba(0, 0, 0, 0.12);
-    --color-shadow-a16: rgba(0, 0, 0, 0.16);
     --color-shadow-a35: rgba(0, 0, 0, 0.35);
     --color-shadow-a50: rgba(0, 0, 0, 0.5);
     --color-overlay-recessed-a45: rgba(0, 0, 0, 0.45);
@@ -2473,7 +2475,11 @@
     --topology-shortcut-sheet-scroll-fade: 28px;
     --topology-bottom-tab-min-height: 56px;
     --topology-bottom-tab-surface: #08090a;
-    --topology-bottom-tab-border: rgba(255, 255, 255, 0.09);
+    /* 2026-08-06 감사: 값이 `rgba(255,255,255,0.09)` 였다 — 전역 `--color-divider`
+       (0.08)와 `--color-overlay-3`(0.1) **사이에 끼어 있던** 세 번째 값이다. 이
+       선이 하는 일은 바를 내용과 가르는 것이고 그게 divider 의 정의라, 전역
+       토큰을 참조하게 했다. 알파 0.01 차이라 화면은 사실상 그대로다. */
+    --topology-bottom-tab-border: var(--color-divider);
     --topology-mobile-bottom-tab-reserve: calc(
       var(--topology-bottom-tab-min-height) + env(safe-area-inset-bottom)
     );
@@ -3243,7 +3249,11 @@
        2026-08-04 감사: `rgba(6,6,9,·)` 리터럴로 2곳에 적혀 있었다 — 값 그대로 등재. */
     --topology-v2-panel-recess-a35: rgba(6, 6, 9, 0.35);
     --topology-v2-panel-recess-a45: rgba(6, 6, 9, 0.45);
-    --topology-v2-panel-metric-surface: rgba(255, 255, 255, 0.028);
+    /* 2026-08-06 감사: 값이 `0.028` 이었고 바로 아래 action-surface 는 `0.03`
+       이다 — 알파 0.002 차이는 지각할 수 없고, 위 주석이 이미 둘을 «metric/action
+       서피스» 한 짝으로 부르고 있었다. 이름은 둘로 두되(자리가 다르다) 값은
+       하나에서 나온다. */
+    --topology-v2-panel-metric-surface: var(--topology-v2-panel-action-surface);
     --topology-v2-panel-metric-text: #b6b6c0;
     --topology-v2-panel-action-surface: rgba(255, 255, 255, 0.03);
     --topology-v2-panel-action-border: #2f2f37;

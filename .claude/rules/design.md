@@ -355,7 +355,7 @@ particle·rarity(gold)·shimmer 를 `--studio-*` 토큰과 `.studio-stage` 안�
 |---|---|---|
 | 글자 크기 램프 | `text-[Npx]` 금지 | `src/**`+`app/**` 전역 error · **예외 0** (2026-08-05 마지막 7파일 93건 전환 완료) |
 | 모서리 반경 램프 | `rounded-[Npx]` 금지 — 방향이 붙은 것(`rounded-t-[Npx]`·`rounded-r-md`) 포함 (2026-08-04 확장) | 동일 |
-| **그림자 사다리** | `shadow-[…]` 는 **모양이 허용목록에 있는 것만** 통과 — elevation-1/2/3 · dock-bottom/side · control-press · 표면 전용 토큰 · inset | 동일 |
+| **그림자 사다리** | `shadow-[…]` 는 **모양이 허용목록에 있는 것만** 통과 — elevation-1/2/3 · dock-bottom/side · control-press · 표면 전용 토큰 · inset. **판정은 콤마로 갈린 레이어마다** 한다(2026-08-06): 정상 레이어 한 겹이 그 옆의 손으로 쓴 고도 그림자를 면제해 주지 않는다 | 동일 |
 | **hex 색상** | 대괄호에 값을 직접 적는 자리(arbitrary value) 안의 hex 만 금지 | 동일 (지금 위반 0 — 미리 막는 검사) |
 | **모션 duration** | `duration-<숫자>` 금지 (토큰을 참조하는 형태는 문법상 안 걸린다) | 동일 |
 | **행간 램프** | `leading-[N]` 값 직접 적기 금지 + 이름 유틸리티(숫자꼴 `leading-4~7` · 비율꼴 `relaxed`·`snug`·`none`·`tight`) 전부 금지 — **2026-08-05 에 190건을 전량 램프로 옮겨 래칫 전 패밀리 0**. 목적지는 `--leading-*` 8단 + 비율 2단(`display-tight`·`prose`) | 동일 |
@@ -394,6 +394,7 @@ particle·rarity(gold)·shimmer 를 `--studio-*` 토큰과 `.studio-stage` 안�
 | **콘텐츠 아이콘이 램프(12/14/16) 밖으로 안 샌다** | `tests/contract/icon-size-ramp.contract.test.ts` | 소비 채널이 className 이 아니라 **JSX 숫자 prop**(`size={N}`)이라 값 lint 의 사정거리 밖이다. 게다가 «이 태그가 lucide 인가»를 알려면 **같은 파일의 import 문**을 봐야 하는데 `no-restricted-syntax` 는 한 노드만 본다 |
 | **글 속의 링크는 컨트롤이 아니라 글이다** — `.prose-link` 는 밑줄 모양만 정하고 display·행간·크기·포커스는 그 링크를 감싼 글의 것을 따른다 | `tests/contract/prose-link.contract.test.ts` + `tests/e2e/touch-target-contract.spec.ts` 의 fine-pointer 감사(WCAG 2.5.8 인라인 면제 판정) | 판정하려면 「이 링크가 문장 흐름 속에 있는가」(실제로 그려진 결과)와 브라우저가 계산한 display 값을 봐야 한다 — 「문장 속인가」를 정하는 세 가지(옆에 오는 글자가 어디서 왔는지 · 부모가 정하는 실제 display · 줄바꿈)가 전부 여는 태그 바깥에 있어서, 코드만 보고 판정하던 `inline` 축은 잘못 설정된 4건을 못 본 채 무용지물이었다(2026-08-04) |
 | **누를 수 있는 것은 전부 pointer** — 활성 `button`·`summary`·`a[href]` 는 렌더된 커서가 pointer 여야 한다 | `tests/e2e/cursor-affordance.spec.ts`(감사 대상 17개 라우트 전부 + 자기검증 프로브) | 위반이 **코드에 아무 값도 안 남긴다** — 새 컴포넌트가 그냥 `<button>` 을 쓰면 클래스도 인라인 스타일도 없이 브라우저 기본값으로 떨어져서 볼 문자열이 없다. lint 셀렉터는 «중복해서 적은 것» 만 볼 수 있고, «중앙 규칙이 사라졌거나 안 닿는 것» 은 렌더 결과를 재야 안다 |
+| **지도 패널의 둘째 잉크 램프가 성질을 지킨다** — 패널 표면 위 본문 AA · 위계 단조 감소 · 잉크가 몰래 늘지 않음 | `tests/contract/topology-panel-ink-ladder.contract.test.ts` | 판정하려면 **그 잉크가 얹힌 표면 토큰의 값**과 대비 계산이 필요하다 — 다른 파일의 값을 봐야 하므로 한 파일 AST 셀렉터로는 표현할 수 없다. 값은 자유롭게 바꿀 수 있고 대신 장부(`INK_LEDGER`)를 같이 고쳐야 해서 **그 판단이 diff 에 남는다**. 왜 전역으로 수렴시키지 않았는지는 `docs/DECISIONS.md` 2026-08-06 |
 | **어느 바탕 위에 어느 글자색까지 쓸 수 있나** — quaternary 는 겹치지 않은 무채색 바탕(맨 아래 3단 + canvas/panel 위 overlay-1)까지, 그보다 올라선 바탕(overlay-2 이상 · elevated+overlay · 색이 섞인 바탕) 위의 글자는 tertiary 부터 | `tests/contract/quaternary-ink-surface.contract.test.ts`(값·자리) + `tests/e2e/a11y-open-surfaces.spec.ts`(화면) | 판정이 글자색이 아니라 **그 글자가 얹힌 바탕이 어떻게 겹쳐졌는지**에 달렸다 — 같은 클래스가 panel 위에서는 대비 5.00, overlay-2 위에서는 4.36 이다. 게다가 이 층에서 가장 흔한 코드 모양이 `active ? 틴트+밝은 글자색 : quaternary` 같은 분기라, 같은 태그에 붙은 클래스만 보고 짝을 맞추면 엉뚱하게 걸린다(2026-08-04 전수 18쌍 중 다수가 분기였다) — 그래서 코드만 보는 래칫 대신 값 자체를 고정하는 계약 + 실제로 화면을 열어서 재는 검사를 쓴다 |
 
 **램프에 없는 칸은 아무 소리도 안 낸다 (2026-07-27 실측).** `text-large` 는
@@ -449,6 +450,19 @@ particle·rarity(gold)·shimmer 를 `--studio-*` 토큰과 `.studio-stage` 안�
   `--topology-mobile-bottom-tab-reserve` 만큼 자리를 비워 둔다 — "탭바 뒤로
   가려짐"은 결함이다. 상세: `docs/DESIGN-SYSTEM.md` "Touch & tablet responsive
   contract".
+  - ⚠️ **이 예약은 페이지가 소유한다. 셸로 올리지 마라** (2026-08-07 실측으로
+    기각). 「페이지마다 기억해야 하는 구조는 다음 사람이 또 빠뜨린다」는 이유로
+    셸(`AppShell` 본문 슬롯)이 대신 예약하게 만드는 안을 검토했는데, 재 보니
+    **표면마다 답이 다르다**: 지도(`/topology`)와 문서함(`/docs`)은 슬롯이
+    스크롤되지 않고 캔버스·본문이 뷰포트 바닥(844)까지 **바 밑으로 흐르는** 것이
+    맞는 화면이다(바 위쪽 787). 셸이 예약을 지면 그 둘이 56px 줄고 바 위에 죽은
+    띠가 생긴다. 스크롤되는 문서 표면만 바를 피해야 하므로, 판단은 페이지에
+    남는다.
+  - 그럼 빠뜨리는 것은 무엇이 막나 — **게이트다.**
+    `tests/e2e/scroll-end-gap.spec.ts` 가 감사 대상 17개 라우트 × 3폭
+    (1280·768·**390**)에서 스크롤되는 표면마다 예약을 재고, 스크롤되지 않는
+    풀블리드 표면은 건너뛴다. 실제로 그 게이트가 관문(`/`)의 누락을 잡았다
+    (−17px). 예약을 페이지에 두는 대가는 「게이트가 전 라우트를 본다」로 낸다.
 - Relief/Topology 에서 다음은 내보내지 않는다 — stacked floating panels(떠 있는
   패널을 겹겹이 쌓기) · popup soup(팝업이 뒤엉킨 상태) · tokenless
   positioning(토큰 없이 좌표를 손으로 박기) · modal without modality(뒤를 막지
