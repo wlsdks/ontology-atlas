@@ -119,18 +119,40 @@ describe("문턱 판정", () => {
 });
 
 describe("인접 마크 — hue 로만 갈리는 설계를 잡는다", () => {
+  /** 읽을 수 있는 색은 **미측정으로 떨어지지 않는다** — 그 자체가 계약이다. */
+  const measured = (input: { a: string; b: string; over: string }) => {
+    const r = judgeAdjacentMarks(input);
+    if (!r) throw new Error(`읽을 수 있는 색인데 미측정으로 돌아왔다: ${JSON.stringify(input)}`);
+    return r;
+  };
+
   it("2026-07-26 의 그 쌍을 다시 재면 3:1 에 한참 못 미친다", () => {
     // 앰버와 유칼립투스는 hue 로는 뚜렷이 다른데 휘도로는 거의 같았다. 그 hue 축이
     // 적록 색약이 가장 못 가르는 축이라, 「색이 정체를 나른다」는 전제가 틀렸었다.
-    const r = judgeAdjacentMarks({ a: "#d4b478", b: "#7fa88c", over: "rgb(8,9,10)" });
+    const r = measured({ a: "#d4b478", b: "#7fa88c", over: "rgb(8,9,10)" });
     expect(r.passes).toBe(false);
     expect(r.needsNonColorChannel).toBe(true);
     expect(r.ratio).toBeLessThan(2); // 눈으로는 «완전히 다른 색» 인데
   });
 
   it("휘도로 갈린 쌍은 통과한다 — 아무거나 반려하지 않는다", () => {
-    const r = judgeAdjacentMarks({ a: "#ffffff", b: "#3a3a3a", over: "rgb(8,9,10)" });
-    expect(r.passes).toBe(true);
+    expect(measured({ a: "#ffffff", b: "#3a3a3a", over: "rgb(8,9,10)" }).passes).toBe(true);
+  });
+
+  /**
+   * 못 읽은 색은 **통과가 아니라 미측정**이다 — 형제 `judgeText` 와 같은 계약
+   * (2026-08-07 코드 리뷰).
+   *
+   * 종전에는 가드가 없어 `composite(null, …)` 이 `TypeError` 를 던졌다. 수동
+   * 계기 안에서는 사람이 봤지만 2026-08-06 에 CI 래칫으로 들어가면서 **게이트가
+   * 크래시하는 경로**가 됐다. `parseColor` 가 못 읽는 실제 입력은 크로미움이
+   * 넓은 색 공간·`color-mix()` 를 직렬화한 `color(srgb …)` · `oklch(…)` 다.
+   */
+  it("못 읽는 색은 던지지 않고 null 로 돌아온다", () => {
+    for (const bad of ["oklch(0.7 0.1 250)", "color(srgb 0.2 0.3 0.4)", "wat"]) {
+      expect(judgeAdjacentMarks({ a: bad, b: "#ffffff", over: "rgb(8,9,10)" })).toBeNull();
+      expect(judgeAdjacentMarks({ a: "#ffffff", b: bad, over: "rgb(8,9,10)" })).toBeNull();
+    }
   });
 });
 
