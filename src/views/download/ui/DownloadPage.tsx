@@ -14,7 +14,7 @@ import { Link, usePathname } from '@/i18n/navigation';
 import { shouldHideBottomTabBar } from '@/widgets/bottom-tab-bar';
 import { cn } from '@/shared/lib/cn';
 import { PAGE_COLUMN, PAGE_GUTTER } from '@/shared/lib/gateway-frame';
-import { GatewayNav } from '@/widgets/gateway-chrome';
+import { GatewayNav, GatewayReadingLinks } from '@/widgets/gateway-chrome';
 import { DemoStage } from './DemoStage';
 import { useCopyFeedback } from '@/shared/lib/use-copy-feedback';
 import { GithubMark, buttonVariants } from '@/shared/ui';
@@ -248,6 +248,7 @@ export function DownloadPage() {
              */}
             <footer className="mt-4 border-t border-[color:var(--color-divider)] pt-4 text-label leading-label text-[color:var(--color-text-quaternary)] [@media(min-width:64rem)_and_(max-height:56.25rem)]:mt-3 [@media(min-width:64rem)_and_(max-height:56.25rem)]:pt-3">
               <VerifyDetails published={published} primaryAsset={primaryAsset} />
+              <GatewayReadingLinks className="mt-3" />
               <div className="mt-3 flex flex-wrap items-center gap-x-4 gap-y-2">
                 <span className="font-mono uppercase tracking-[var(--tracking-caps-14)]">
                   {tFooter('license')}
