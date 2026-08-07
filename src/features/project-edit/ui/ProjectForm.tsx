@@ -8,14 +8,14 @@ import {
   type FormEvent,
   type InputHTMLAttributes,
   type SelectHTMLAttributes,
+  type ReactNode,
   type TextareaHTMLAttributes,
 } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useTranslations } from "next-intl";
-import { ChevronDown, FolderOpen } from "lucide-react";
+import { ChevronDown } from "lucide-react";
 import { ICON_SIZE } from "@/shared/ui/icon-size";
-import { Link } from "@/i18n/navigation";
 import { fieldClass, fieldLabel } from "@/shared/ui/control-class";
 import { cn } from "@/shared/lib/cn";
 import { slugify } from "@/shared/lib/slugify";
@@ -67,6 +67,11 @@ interface Props {
    * "Cannot mutate projects…") 대신, 진입 시점에 바로 알려준다.
    */
   writeDisabled?: boolean;
+  /**
+   * 쓰기 잠금 배너의 «어디로 가면 되는지». 뷰가 넣어 준다 — 폴더를 여는
+   * 부품은 다른 feature 에 살고, feature→feature import 는 FSD 가 막는다.
+   */
+  openVaultAction?: ReactNode;
 }
 
 // emptyValues는 ProjectForm 내부에서 첫 카테고리/상태 ID로 동적 생성.
@@ -199,6 +204,7 @@ export function ProjectForm({
   onDelete,
   onDirtyChange,
   writeDisabled = false,
+  openVaultAction,
 }: Props) {
   const t = useTranslations("settings.projectForm");
   // 신선도 등급 → 사람 말. 모델은 등급만 돌려주고 문구는 화면이 고른다.
@@ -1113,6 +1119,17 @@ export function ProjectForm({
    * 헌장의 강등 문법은 «왜 안 되는지 **+ 어디로 가면 되는지**» 다
    * (`.claude/rules/surfaces.md`). 문서함이 같은 문제를 이미 그렇게 풀었다 —
    * *"누르면 그것을 가능하게 하는 곳(내 폴더 열기)으로 간다."*
+   *
+   * ⚠️ **그때의 갈 곳 `/` 는 웹에서 자기도 막다른 길이었다** (2026-08-07 실측).
+   * 눌러서 따라가 보니 `/ko/` 에 착지하고 그 화면의 폴더 여는 컨트롤은
+   * **0개** — 볼트를 안 고른 웹 방문자에게 `/` 는 **관문**(내려받기 화면)이기
+   * 때문이다(`isGatewaySurface()`, 2026-07-30). 설치된 앱에서는 `/` 가 지도라
+   * 맞았고, 그래서 앱에서만 확인하면 안 보인다. 종전 게이트도 «URL 이
+   * 바뀌었나»까지만 봤지 «거기서 폴더를 열 수 있나»는 안 봤다.
+   *
+   * 그래서 갈 곳을 고치는 대신 **그 자리에서 열게** 한다. 컨트롤은 뷰가
+   * 넣어 준다(`openVaultAction`) — 폴더를 여는 부품은 `docs-vault-local`
+   * feature 에 있고 feature→feature import 는 FSD 가 막는다.
    */
   const writeDisabledBanner = writeDisabled ? (
     <div
@@ -1126,18 +1143,7 @@ export function ProjectForm({
           {t("validation.demoModeBannerHint")}
         </span>
       </span>
-      <Link
-        href="/"
-        data-testid="project-write-disabled-open-folder"
-        className={controlClass({
-          shape: "chip",
-          size: "md",
-          className: "shrink-0 border-[color:var(--color-amber-source-a34)]",
-        })}
-      >
-        <FolderOpen size={ICON_SIZE.sm} aria-hidden />
-        {t("validation.demoModeBannerAction")}
-      </Link>
+      {openVaultAction ? <span className="shrink-0">{openVaultAction}</span> : null}
     </div>
   ) : null;
 

@@ -1,6 +1,8 @@
 import { fireEvent, render, screen, waitFor } from "@testing-library/react";
 import type { ReactNode } from "react";
 import { NextIntlClientProvider } from "next-intl";
+
+import { LocalVaultProvider } from "@/features/docs-vault-local";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import enMessages from "../../../../messages/en.json";
 import { ProjectDetailPage } from "./ProjectDetailPage";
@@ -141,14 +143,28 @@ function baseProject() {
   };
 }
 
-function renderPage(overrides: { related?: ReturnType<typeof baseProject>[] } = {}) {
+/**
+ * 렌더 하네스는 **하나**다. 예전에는 이 함수 말고도 같은 트리를 손으로 두 번
+ * 더 적어 뒀는데, provider 를 하나 더할 일이 생기자 그 둘만 빠졌다 —
+ * 사본이 있는 곳이 어긋나는 곳이다.
+ */
+function renderPage(
+  overrides: {
+    related?: ReturnType<typeof baseProject>[];
+    project?: Partial<React.ComponentProps<typeof ProjectDetailPage>["initialProject"]>;
+  } = {},
+) {
   return render(
+    // 이 화면은 「보기 전용」 배지 옆에 폴더 여는 길을 놓는다 — 그 부품이
+    // 볼트 컨텍스트를 읽으므로 provider 가 필요하다(2026-08-07 막다른 CTA).
     <NextIntlClientProvider locale="en" messages={enMessages}>
+      <LocalVaultProvider>
       <ProjectDetailPage
         slug={SLUG}
-        initialProject={baseProject()}
+        initialProject={{ ...baseProject(), ...overrides.project }}
         initialRelated={overrides.related ?? []}
       />
+      </LocalVaultProvider>
     </NextIntlClientProvider>,
   );
 }
@@ -303,15 +319,7 @@ describe("ProjectDetailPage", () => {
     mocks.insightEdges = BASE_EDGES;
     mocks.canEdit = false;
     const related = [{ ...baseProject(), slug: "sibling", name: "Sibling Project" }];
-    render(
-      <NextIntlClientProvider locale="en" messages={enMessages}>
-        <ProjectDetailPage
-          slug={SLUG}
-          initialProject={{ ...baseProject(), dependencies: ["sibling"] }}
-          initialRelated={related}
-        />
-      </NextIntlClientProvider>,
-    );
+    renderPage({ project: { dependencies: ["sibling"] }, related });
 
     expect(screen.getByText("Sibling Project")).toBeInTheDocument();
     expect(screen.queryByTestId("project-detail-connected-empty")).not.toBeInTheDocument();
@@ -395,15 +403,7 @@ describe("ProjectDetailPage", () => {
     mocks.insightEdges = BASE_EDGES;
     mocks.canEdit = false;
     mocks.vaultBody = "Vault body text that should be shadowed.";
-    render(
-      <NextIntlClientProvider locale="en" messages={enMessages}>
-        <ProjectDetailPage
-          slug={SLUG}
-          initialProject={{ ...baseProject(), detail: "Explicit detail field wins." }}
-          initialRelated={[]}
-        />
-      </NextIntlClientProvider>,
-    );
+    renderPage({ project: { detail: "Explicit detail field wins." } });
 
     const content = screen.getByTestId("project-detail-body-content");
     expect(content).toHaveTextContent("Explicit detail field wins.");

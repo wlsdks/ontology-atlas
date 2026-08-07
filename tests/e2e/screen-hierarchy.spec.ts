@@ -62,27 +62,36 @@ test.describe("화면 위계 — /project/new", () => {
   });
 
   /**
-   * **막다른 CTA 금지.** 헌장의 강등 문법은 «왜 안 되는지 **+ 어디로 가면
-   * 되는지**» 다(`.claude/rules/surfaces.md`). 문서함이 같은 문제를 이미 그렇게
-   * 풀었다 — *"누르면 그것을 가능하게 하는 곳으로 간다."*
+   * 쓰기 잠금 배너가 **이유만 말하고 끝나지 않는다.** 여기서는 「갈 길이 그
+   * 상자 안에 있는가」까지만 본다.
+   *
+   * ## 무엇을 이 파일에서 뺐나 (2026-08-07)
+   *
+   * 종전에는 이 자리에서 CTA 를 눌러 **URL 이 `/ko/` 로 바뀌는지**를 쟀다.
+   * 그 단언이 두 가지로 틀렸다:
+   *
+   * ① **범위** — `/project/new` 한 라우트 · testid 하나에 손으로 박혀 있었고,
+   *    같은 병이 두 곳 더 살아 있었다(인사이트 · 프로젝트 상세). 허용목록
+   *    게이트의 고전적 실패다(`design-gates.md`).
+   * ② **깊이** — URL 이 바뀌는 것과 거기서 폴더를 열 수 있는 것은 다른 사실인데
+   *    앞의 것만 쟀다. 실제로 그 갈 곳(`/`)은 볼트 없는 웹 방문자에게
+   *    **관문**(내려받기 화면, 폴더 컨트롤 0개)이라 한 홉 뒤의 막다른 길이었고,
+   *    이 검사는 그동안 초록이었다.
+   *
+   * 그래서 그 층은 `tests/e2e/open-vault-cta.spec.ts` 로 옮겼다 — 감사 대상
+   * 라우트를 전부 훑고, 그 길이 **실제로 폴더 선택기를 부르는지**까지 잰다.
+   * 이 파일은 이름 그대로 **위계**만 맡는다.
    */
-  test("쓰기 잠금 배너가 갈 곳을 함께 준다 — 막다른 경고가 아니다", async ({ page }) => {
+  test("쓰기 잠금 배너가 갈 길을 함께 준다 — 막다른 경고가 아니다", async ({ page }) => {
     await page.goto("/ko/project/new/?guides=off");
     await page.waitForLoadState("networkidle");
 
     const banner = page.getByTestId("project-write-disabled-banner");
     await expect(banner, "쓰기 잠금 배너가 안 뜬다 — 이 검사가 헛돈다").toBeVisible();
 
-    const cta = page.getByTestId("project-write-disabled-open-folder");
-    await expect(cta, "배너가 이유만 말하고 갈 곳을 안 준다 — 막다른 CTA 다").toBeVisible();
-
-    const href = await cta.getAttribute("href");
-    expect(href, "갈 곳이 비었다").toBeTruthy();
-
-    // 그 갈 곳이 **실제로 열려야** 한다 — 눌러도 아무 데도 안 가는 버튼 0개.
-    await cta.click();
-    await page.waitForLoadState("networkidle");
-    expect(page.url(), `배너의 갈 곳(${href})이 열리지 않았다`).toContain("/ko/");
-    await expect(page.getByTestId("project-write-disabled-banner")).toHaveCount(0);
+    await expect(
+      banner.getByTestId("project-write-disabled-open-folder"),
+      "배너가 이유만 말하고 갈 길을 안 준다 — 막다른 CTA 다",
+    ).toBeVisible();
   });
 });
