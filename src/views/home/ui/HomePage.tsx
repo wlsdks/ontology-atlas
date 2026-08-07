@@ -4517,7 +4517,11 @@ export function HomePage() {
                     reason={topologyOverlayState.emptyReason}
                     canCreateNode={canCreateNode}
                     onCreateNode={openCreateNode}
-                    hasOpenVault={vault.manifest !== null}
+                    // 능력으로 가른다 — `OpenVaultCta` 와 같은 단일 출처다.
+                    // 종전엔 위젯이 `isTauriVaultRuntime() || 볼트 열림` 을 스스로
+                    // 물었고, 둘 다 아닌 **FSA 지원 웹 방문자**에게 「앱을
+                    // 설치하세요」로 답했다(2026-08-08 카운슬 실측).
+                    canPickFolder={vault.status !== 'unsupported'}
                     docsFoundCount={bootstrapPlan?.elements.length ?? 0}
                     onStartFromDocs={
                       bootstrapPlan && bootstrapPlan.elements.length > 0

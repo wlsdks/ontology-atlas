@@ -107,12 +107,28 @@ const NO_SCROLL_VIEWPORTS = [
 
 async function measure(page: import("@playwright/test").Page) {
   return page.evaluate(() => {
+    /**
+     * ⚠️ **그려진 것만 잰다** (2026-08-08 카운슬 실측에서 걸림).
+     *
+     * 종전엔 `querySelector` 로 **첫 일치**를 재서, 그 자리가 `display:none`
+     * 이면 `x=0 · w=0` 을 정답인 양 돌려줬다. 실제로 그 일이 났다 —
+     * 2026-08-07 에 푸터 맨 앞으로 들어온 `GatewayReadingLinks` 는
+     * `sm:hidden` 이라 `≥sm` 에서 안 그려지는데, 그것이 `main footer > div`
+     * 의 첫 일치가 되면서 **여덟 폭 전부**가 *"footer 이 원점(200) 밖에
+     * 있다 — 0"* 으로 빨개졌다. 레이아웃은 멀쩡했고 계기가 틀렸다.
+     *
+     * 「보이나」가 아니라 **「배치됐나」**로 가른다(`getClientRects()`):
+     * 투명도나 화면 밖으로 밀린 것은 여전히 그리드의 일원이지만,
+     * `display:none` 은 그 폭의 그리드에 참여하지 않는다.
+     */
+    const laidOut = (sel: string) =>
+      [...document.querySelectorAll(sel)].find((el) => el.getClientRects().length > 0) ?? null;
     const bx = (sel: string) => {
-      const el = document.querySelector(sel);
+      const el = laidOut(sel);
       return el ? Math.round(el.getBoundingClientRect().x) : null;
     };
     const right = (sel: string) => {
-      const el = document.querySelector(sel);
+      const el = laidOut(sel);
       return el ? Math.round(el.getBoundingClientRect().right) : null;
     };
     const plate = document.querySelector('[data-testid="download-plate"]');

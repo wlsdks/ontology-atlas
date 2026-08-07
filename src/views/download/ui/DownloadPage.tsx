@@ -14,7 +14,7 @@ import { Link, usePathname } from '@/i18n/navigation';
 import { shouldHideBottomTabBar } from '@/widgets/bottom-tab-bar';
 import { cn } from '@/shared/lib/cn';
 import { PAGE_COLUMN, PAGE_GUTTER } from '@/shared/lib/gateway-frame';
-import { GatewayNav } from '@/widgets/gateway-chrome';
+import { GatewayNav, GatewayReadingLinks } from '@/widgets/gateway-chrome';
 import { DemoStage } from './DemoStage';
 import { useCopyFeedback } from '@/shared/lib/use-copy-feedback';
 import { GithubMark, buttonVariants } from '@/shared/ui';
@@ -248,6 +248,7 @@ export function DownloadPage() {
              */}
             <footer className="mt-4 border-t border-[color:var(--color-divider)] pt-4 text-label leading-label text-[color:var(--color-text-quaternary)] [@media(min-width:64rem)_and_(max-height:56.25rem)]:mt-3 [@media(min-width:64rem)_and_(max-height:56.25rem)]:pt-3">
               <VerifyDetails published={published} primaryAsset={primaryAsset} />
+              <GatewayReadingLinks className="mt-3" />
               <div className="mt-3 flex flex-wrap items-center gap-x-4 gap-y-2">
                 <span className="font-mono uppercase tracking-[var(--tracking-caps-14)]">
                   {tFooter('license')}
@@ -385,8 +386,16 @@ function PortraitStage({
           적었는데, 지도가 그리는 것은 그 파일들에서 **파생된** 그래프(287 노드)라
           한 화면에 정의가 둘이었다. 허브 각인이 `379` 를 말하고 그 옆 캡션이
           `96` 을 말하던 4배 모순의 뿌리가 이것이다 — 재귀 버그는 그 위에 얹힌
-          두 번째 층이었을 뿐이다. 앱에서 자기 폴더를 열면 자기 그래프의 숫자가
-          같은 규칙으로 나온다(그래서 뒷절이 "내 숫자가 보여요" 다). */}
+          두 번째 층이었을 뿐이다. 자기 폴더를 열면 자기 그래프의 숫자가
+          같은 규칙으로 나온다(그래서 뒷절이 "내 숫자가 보여요" 다).
+
+          ⚠️ **그 뒷절의 범위는 「앱」이 아니다** (2026-08-08 카운슬). 오래
+          *"앱에서"* 라고만 적혀 있었는데 FSA 를 지원하는 브라우저는 이 웹에서도
+          폴더를 연다 — `surfaces.md` 의 「되는 것을 안 된다고 쓰는 것」이다.
+          이 화면에 폴더 여는 컨트롤을 **놓지 않기로** 한 판정과 짝이 되는
+          문장이라(길은 판 안 「웹버전으로 보기」 → 지도 첫 실행이 낸다), 범위를
+          좁게 쓰면 그 판정까지 거짓말이 된다. 명사는 바로 아래 버튼의 것을
+          그대로 재사용한다 — 새 크롬 없이 길을 가리키는 직접 라벨링이다. */}
       <p
         data-testid="download-portrait-caption"
         className={cn(

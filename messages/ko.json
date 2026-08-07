@@ -740,7 +740,7 @@
     "stageTitle": "코드는 남고,\n맥락은 사라집니다",
     "stageLead": "왜 이렇게 만들었는지, 여길 건드리면 어디가 흔들리는지 — 그 맥락을 마크다운 폴더 하나에 붙잡아 둡니다. 내가 읽는 글이자, 에이전트가 읽는 구조로.",
     "portraitCensus": "{concepts} 개념 · {relations} 관계",
-    "portraitScope": "앱에서 내 폴더를 열면 내 숫자가 보여요.",
+    "portraitScope": "앱이나 웹버전에서 내 폴더를 열면 내 숫자가 보여요.",
     "stageMapLabel": "이 저장소의 마크다운 폴더로 그린 지도입니다. 끌어서 움직여 볼 수 있어요. 목록으로 읽으려면 지도 화면의 INDEX 패널을 쓰세요.",
     "stageClusterHint": "숫자 칩을 누르면 그 안에 접혀 있는 개념들이 펼쳐집니다.",
     "portraitHint": "끌어서 움직여 보세요",
@@ -931,7 +931,7 @@
         "toggleFullNeighbor": "전체 그래프 ↔ 선택 2-hop 토글",
         "togglePillView": "상단 pill 로 뷰 전환",
         "serverBundle": "git 번들 docs/ 열람 (기본)",
-        "localVault": "설치된 앱에서 로컬 온톨로지 폴더 열기",
+        "localVault": "내 마크다운 폴더 열람",
         "manualRefresh": "내 폴더 수동 새로고침",
         "focusRefresh": "탭으로 돌아올 때 내 폴더 자동 새로고침",
         "pinDoc": "고정 / 고정 해제 (고정 섹션 상단 고정)",
@@ -1796,7 +1796,6 @@
     },
     "vaultStatus": {
       "localTooltip": "내 컴퓨터의 폴더를 문서 폴더로 선택",
-      "desktopOnlyTooltip": "내 폴더로 작업하려면 데스크톱 앱이 필요해요. 다운로드 페이지에서 앱을 설치하세요.",
       "downloadAppCta": "데스크톱 앱 다운로드",
       "unsupportedTooltip": "로컬 온톨로지 폴더 편집은 설치된 데스크톱 앱에서 사용할 수 있습니다.",
       "permissionNeededBanner": "Vault 잠시 멈춤 — 폴더 권한 재승인이 필요합니다. 그동안 샘플 문서를 보여주고 있어요.",
@@ -3553,5 +3552,10 @@
       "bridgeInserted": "브릿지 끼어듦",
       "vaultProblem": "폴더 문제"
     }
+  },
+  "openVaultCta": {
+    "label": "내 폴더 열기",
+    "busyLabel": "여는 중…",
+    "unsupportedLabel": "앱에서 열기"
   }
 }

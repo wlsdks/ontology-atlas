@@ -610,6 +610,9 @@ describe('focused check suggestions', () => {
       'pnpm exec node --test scripts/validate-messages.test.mjs',
       'pnpm exec eslint src/i18n/routing.ts src/i18n/request.ts src/i18n/navigation.ts',
       'pnpm exec tsc --noEmit',
+      // 2026-08-08 추가 — 문구 카탈로그는 정합 검사만의 입력이 아니다.
+      // 「이 화면이 무엇을 할 수 있다고 말하나」를 읽는 게이트의 입력이기도 하다.
+      'pnpm test:desktop:check',
       'pnpm test:i18n:messages',
     ]);
   });
@@ -956,5 +959,47 @@ describe('focused check suggestions', () => {
     assert.match(output, /pnpm test:dogfood:status/);
     assert.match(output, /pnpm test:mcp:maintenance/);
     assert.match(output, /pnpm dogfood:status/);
+  });
+
+  it('관문의 판·크롬·원점을 고치면 그 격자 검사를 권한다', () => {
+    // 2026-08-08 회귀: 푸터에 줄 하나를 넣자 여덟 폭 전부에서
+    // `download-gateway-grid` 가 빨개졌는데, advisor 가 그 스펙을 한 번도
+    // 안 권해서 CI 에서야 나왔다. 「도구를 가리켜라」가 규율이면 도구가
+    // 못 가리키는 검사는 존재하지 않는 검사다.
+    const grid = 'pnpm exec playwright test tests/e2e/download-gateway-grid.spec.ts';
+    for (const path of [
+      'src/views/download/ui/DownloadPage.tsx',
+      'src/widgets/gateway-chrome/ui/GatewayNav.tsx',
+      'src/widgets/gateway-chrome/ui/GatewayReadingLinks.tsx',
+      'src/shared/lib/gateway-frame.ts',
+    ]) {
+      assert.ok(
+        suggestFocusedChecks([path]).commands.some((s) => s.command === grid),
+        `${path} 를 고쳤는데 관문 격자 검사를 안 권한다`,
+      );
+    }
+    // 공회전 차단 — 아무 경로에나 붙으면 규칙이 아니라 소음이다.
+    assert.ok(
+      !suggestFocusedChecks(['src/views/home/ui/HomePage.tsx']).commands.some((s) => s.command === grid),
+      '관문과 무관한 화면에도 격자 검사를 권한다 — 규칙이 너무 넓다',
+    );
+  });
+
+  it('문구 카탈로그를 고치면 능력 주장을 읽는 게이트도 권한다', () => {
+    // 2026-08-08: 「앱 전용」 거짓 주장을 고쳤는데 advisor 가 카탈로그 정합만
+    // 권해서, 그 문구를 못박고 있던 데스크톱 게이트가 CI 에서야 빨개졌다.
+    const commands = suggestFocusedChecks(['messages/ko.json']).commands.map((s) => s.command);
+    assert.ok(commands.includes('pnpm test:i18n:messages'), '카탈로그 정합 검사를 안 권한다');
+    assert.ok(
+      commands.includes('pnpm test:desktop:check'),
+      '문구를 고쳤는데 능력 주장을 읽는 게이트를 안 권한다',
+    );
+    // 공회전 차단 — 아무 경로에나 붙으면 규칙이 아니라 소음이다.
+    assert.ok(
+      !suggestFocusedChecks(['src/views/home/ui/HomePage.tsx']).commands.some(
+        (s) => s.command === 'pnpm test:desktop:check',
+      ),
+      '문구와 무관한 화면에도 데스크톱 게이트를 권한다 — 규칙이 너무 넓다',
+    );
   });
 });

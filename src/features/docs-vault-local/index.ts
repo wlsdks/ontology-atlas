@@ -101,3 +101,4 @@ export {
   type VaultOpenGuideSheetProps,
 } from './ui/VaultOpenGuideSheet';
 export { type AgentClientId, AGENT_CLIENTS, filesForClient } from './lib/agent-clients';
+export { OpenVaultCta, type OpenVaultCtaProps } from './ui/OpenVaultCta';

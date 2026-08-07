@@ -2,14 +2,32 @@ import { describe, expect, it } from "vitest";
 
 import { buildInsightsVerdict, type InsightsSignalCounts } from "./insights-verdict";
 
+/**
+ * 섹션 총계는 **전부** 적는다 — `Record<QueueSectionKey, number>` 라 하나라도
+ * 빠지면 타입 검사가 막는다. 그게 이 모양을 고른 이유다(2026-08-07: 중복 쌍이
+ * 판정에서 빠져 탭 배지 7 · 묶음 배지 8 이 한 화면에 같이 떠 있었다).
+ */
+const NO_SECTIONS: InsightsSignalCounts["sections"] = {
+  "missing-definition": 0,
+  "missing-domain": 0,
+  duplicate: 0,
+  promotion: 0,
+  "neglected-hub": 0,
+  orphan: 0,
+  cycle: 0,
+};
+
 const NONE: InsightsSignalCounts = {
   islands: 0,
   missingContainment: 0,
-  cycles: 0,
-  neglectedHubs: 0,
-  orphans: 0,
-  promotions: 0,
+  sections: NO_SECTIONS,
 };
+
+/** 섹션 몇 개만 채운 입력. */
+const withSections = (
+  partial: Partial<InsightsSignalCounts["sections"]>,
+  rest: Partial<Omit<InsightsSignalCounts, "sections">> = {},
+): InsightsSignalCounts => ({ ...NONE, ...rest, sections: { ...NO_SECTIONS, ...partial } });
 
 describe("buildInsightsVerdict", () => {
   it("신호가 하나도 없을 때만 '건강함' — CLI 판정도 healthy", () => {
@@ -41,11 +59,11 @@ describe("buildInsightsVerdict", () => {
   });
 
   it("의존 순환도 차단 신호다 — 구조적 결함", () => {
-    expect(buildInsightsVerdict({ ...NONE, cycles: 2 }).status).toBe("needs_attention");
+    expect(buildInsightsVerdict(withSections({ cycle: 2 })).status).toBe("needs_attention");
   });
 
   it("권장 사항만 있으면 CLI 판정은 healthy 지만 화면은 '건강합니다' 라고 말하지 않는다", () => {
-    const verdict = buildInsightsVerdict({ ...NONE, neglectedHubs: 2, orphans: 1, promotions: 4 });
+    const verdict = buildInsightsVerdict(withSections({ "neglected-hub": 2, orphan: 1, promotion: 4 }));
 
     expect(verdict.blocking).toBe(0);
     expect(verdict.advisory).toBe(7);
@@ -55,14 +73,9 @@ describe("buildInsightsVerdict", () => {
   });
 
   it("배지 총합은 차단 + 권장 — 숫자를 숨겨 모순을 피하지 않는다", () => {
-    const verdict = buildInsightsVerdict({
-      islands: 1,
-      missingContainment: 2,
-      cycles: 1,
-      neglectedHubs: 3,
-      orphans: 0,
-      promotions: 5,
-    });
+    const verdict = buildInsightsVerdict(
+      withSections({ cycle: 1, "neglected-hub": 3, promotion: 5 }, { islands: 1, missingContainment: 2 }),
+    );
 
     expect(verdict.blocking).toBe(4);
     expect(verdict.advisory).toBe(8);
@@ -70,15 +83,9 @@ describe("buildInsightsVerdict", () => {
   });
 
   it("의미 공백은 권장으로 세어 배지가 큐 행보다 적게 말하지 않게 한다", () => {
-    const verdict = buildInsightsVerdict({
-      islands: 0,
-      missingContainment: 0,
-      cycles: 0,
-      neglectedHubs: 0,
-      orphans: 0,
-      promotions: 0,
-      meaningGaps: 3,
-    });
+    const verdict = buildInsightsVerdict(
+      withSections({ "missing-definition": 2, "missing-domain": 1 }),
+    );
     expect(verdict.total).toBe(3);
     expect(verdict.advisory).toBe(3);
     expect(verdict.blocking).toBe(0);

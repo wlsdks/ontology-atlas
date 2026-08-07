@@ -8,14 +8,14 @@ import {
   type FormEvent,
   type InputHTMLAttributes,
   type SelectHTMLAttributes,
+  type ReactNode,
   type TextareaHTMLAttributes,
 } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useTranslations } from "next-intl";
-import { ChevronDown, FolderOpen } from "lucide-react";
+import { ChevronDown } from "lucide-react";
 import { ICON_SIZE } from "@/shared/ui/icon-size";
-import { Link } from "@/i18n/navigation";
 import { fieldClass, fieldLabel } from "@/shared/ui/control-class";
 import { cn } from "@/shared/lib/cn";
 import { slugify } from "@/shared/lib/slugify";
@@ -67,6 +67,11 @@ interface Props {
    * "Cannot mutate projects…") 대신, 진입 시점에 바로 알려준다.
    */
   writeDisabled?: boolean;
+  /**
+   * 쓰기 잠금 배너의 «어디로 가면 되는지». 뷰가 넣어 준다 — 폴더를 여는
+   * 부품은 다른 feature 에 살고, feature→feature import 는 FSD 가 막는다.
+   */
+  openVaultAction?: ReactNode;
 }
 
 // emptyValues는 ProjectForm 내부에서 첫 카테고리/상태 ID로 동적 생성.
@@ -199,6 +204,7 @@ export function ProjectForm({
   onDelete,
   onDirtyChange,
   writeDisabled = false,
+  openVaultAction,
 }: Props) {
   const t = useTranslations("settings.projectForm");
   // 신선도 등급 → 사람 말. 모델은 등급만 돌려주고 문구는 화면이 고른다.
@@ -1113,6 +1119,17 @@ export function ProjectForm({
    * 헌장의 강등 문법은 «왜 안 되는지 **+ 어디로 가면 되는지**» 다
    * (`.claude/rules/surfaces.md`). 문서함이 같은 문제를 이미 그렇게 풀었다 —
    * *"누르면 그것을 가능하게 하는 곳(내 폴더 열기)으로 간다."*
+   *
+   * ⚠️ **그때의 갈 곳 `/` 는 웹에서 자기도 막다른 길이었다** (2026-08-07 실측).
+   * 눌러서 따라가 보니 `/ko/` 에 착지하고 그 화면의 폴더 여는 컨트롤은
+   * **0개** — 볼트를 안 고른 웹 방문자에게 `/` 는 **관문**(내려받기 화면)이기
+   * 때문이다(`isGatewaySurface()`, 2026-07-30). 설치된 앱에서는 `/` 가 지도라
+   * 맞았고, 그래서 앱에서만 확인하면 안 보인다. 종전 게이트도 «URL 이
+   * 바뀌었나»까지만 봤지 «거기서 폴더를 열 수 있나»는 안 봤다.
+   *
+   * 그래서 갈 곳을 고치는 대신 **그 자리에서 열게** 한다. 컨트롤은 뷰가
+   * 넣어 준다(`openVaultAction`) — 폴더를 여는 부품은 `docs-vault-local`
+   * feature 에 있고 feature→feature import 는 FSD 가 막는다.
    */
   const writeDisabledBanner = writeDisabled ? (
     <div
@@ -1126,25 +1143,39 @@ export function ProjectForm({
           {t("validation.demoModeBannerHint")}
         </span>
       </span>
-      <Link
-        href="/"
-        data-testid="project-write-disabled-open-folder"
-        className={controlClass({
-          shape: "chip",
-          size: "md",
-          className: "shrink-0 border-[color:var(--color-amber-source-a34)]",
-        })}
-      >
-        <FolderOpen size={ICON_SIZE.sm} aria-hidden />
-        {t("validation.demoModeBannerAction")}
-      </Link>
+      {openVaultAction ? <span className="shrink-0">{openVaultAction}</span> : null}
     </div>
   ) : null;
+
+  /**
+   * 저장이 거절됐을 때 **그 이유가 눌린 사람 눈에 들어오는가.**
+   *
+   * 2026-08-07 실측(390×844): 편집 화면에서 저장을 누르니 거절 알림이
+   * top 802 · bottom 872 에 떴다 — 뷰포트가 844 라 **위아래로 잘린 채** 하단
+   * 탭바 뒤에 걸렸다. 누른 사람 화면에서는 아무 일도 안 일어난 것과 같다.
+   * 1512 에서는 멀쩡히 보였다(628–676). 폼이 길수록, 화면이 짧을수록 어긋난다.
+   *
+   * 검증 오류는 `focusField` 가 이미 그 칸으로 데려가지만, 저장 실패처럼
+   * **칸이 없는 오류**는 데려갈 곳이 이 배너뿐이다.
+   */
+  const errorBannerRef = useRef<HTMLDivElement | null>(null);
+  useEffect(() => {
+    if (!globalError) return;
+    const node = errorBannerRef.current;
+    if (!node) return;
+    // jsdom 은 scrollIntoView 를 구현하지 않는다 — 포커스가 본론이고 스크롤은
+    // 보조라 없으면 조용히 건너뛴다(`focusField` 와 같은 규율).
+    node.scrollIntoView?.({ behavior: "smooth", block: "center" });
+    node.focus();
+  }, [globalError]);
 
   const errorBanner =
     globalError || Object.keys(errors).length > 0 ? (
       <div
+        ref={errorBannerRef}
         role="alert"
+        tabIndex={-1}
+        data-testid="project-error-banner"
         className="rounded-card border border-[color:var(--color-danger-a32)] bg-[color:var(--color-danger-a08)] px-3 py-3 text-body-lg text-[color:var(--color-status-danger)]"
       >
         <p className="font-[var(--font-weight-signature)]">

@@ -12,7 +12,7 @@ import {
   useProjects,
   useProjectMutations,
 } from "@/features/project-data-source";
-import { VaultConflictError } from "@/features/docs-vault-local";
+import { OpenVaultCta, VaultConflictError } from "@/features/docs-vault-local";
 import {
   getProjectEditHref,
   getProjectRuntimeDetailHref,
@@ -388,7 +388,24 @@ function EditorContent({
             onCancel={handleCancel}
             onDelete={mode === "edit" ? handleDelete : undefined}
             onDirtyChange={setIsDirty}
-            writeDisabled={mode === "create" && !projectMutations.canCreate}
+            /*
+             * 편집도 만들기와 같은 사실을 **미리** 말한다.
+             *
+             * 종전에는 `mode === "create"` 일 때만 잠갔다. 그래서 편집 화면은
+             * 볼트가 없어도 저장 버튼이 활성이었고, 눌러야 비로소
+             * *"데모 모드에서는 저장할 수 없습니다"* 가 떴다 — 같은 사실을 한
+             * 화면은 미리 말하고 다른 화면은 누른 뒤에 말한 것이다.
+             *
+             * `canEdit` 은 처음부터 있었고 주석에 «UI 사전 게이트용» 이라고
+             * 적혀 있었는데 이 폼만 안 쓰고 있었다.
+             */
+            writeDisabled={
+              mode === "create" ? !projectMutations.canCreate : !projectMutations.canEdit
+            }
+            // 배너의 «어디로» — 주소로 보내지 않고 그 자리에서 연다.
+            // 종전의 `/` 링크는 웹에서 관문(내려받기)으로 착지해 자기도
+            // 막다른 길이었다(2026-08-07 실측).
+            openVaultAction={<OpenVaultCta testId="project-write-disabled-open-folder" />}
           />
         </section>
       </div>

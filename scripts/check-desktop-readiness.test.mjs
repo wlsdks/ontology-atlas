@@ -196,7 +196,11 @@ test("desktop readiness check proves Tauri macOS shell prerequisites", () => {
   );
   assert.match(
     result.stdout,
-    /✓ local vault picker and shortcut copy describe the installed app path, not browser File System Access/,
+    // 문장이 아니라 **표식**을 본다. 2026-08-08 에 이 줄이 문구를 통째로 못박고
+  // 있어서, 강등 고지와 단축키 설명을 성격에 맞게 가르는 정당한 개선에서
+  // 빨개졌다 — `documentation.md` 가 금지한 방향(문구가 나아졌는데 게이트가
+  // 막는 것)이다. 검사기 자신이 그 실패를 자기 머리말에 적어 두고 있었다.
+  /✓ .*(?:강등 고지|degrad).*(?:FSA|File System Access)/,
   );
   assert.match(
     result.stdout,

@@ -71,13 +71,17 @@ describe("TopologyEmptyState", () => {
     );
   });
 
-  // 2026-07-24 온보딩 라운드 — 웹에서 방금 로컬 vault 를 연 사용자에게
-  // "macOS 앱을 설치하고…" 다운로드 카피는 오안내다. vault 가 열려 있으면
-  // picker 경로 카피/링크를 쓴다.
-  it("hasOpenVault 면 다운로드 오안내 대신 picker 카피를 쓴다", () => {
+  // 2026-07-24 온보딩 라운드 — 방금 로컬 vault 를 연 사용자에게 "macOS 앱을
+  // 설치하고…" 다운로드 카피는 오안내다.
+  //
+  // 2026-08-08 카운슬 — 판정을 **능력**으로 넓혔다. 종전 조건
+  // (`isTauriVaultRuntime() || hasOpenVault`)은 둘 다 아닌 사람, 즉 FSA 를
+  // 지원하는 브라우저로 **처음 온 웹 방문자**에게 「앱을 설치하세요」로
+  // 답했다 — 그 브라우저는 지금 폴더를 열 수 있다.
+  it("폴더를 열 수 있으면 다운로드 오안내 대신 picker 카피를 쓴다", () => {
     render(
       <NextIntlClientProvider locale="ko" messages={koMessages}>
-        <TopologyEmptyState projectCount={0} reason="no-projects" hasOpenVault />
+        <TopologyEmptyState projectCount={0} reason="no-projects" canPickFolder />
       </NextIntlClientProvider>,
     );
     const panel = screen.getByRole("status");
@@ -85,6 +89,14 @@ describe("TopologyEmptyState", () => {
     expect(panel).toHaveTextContent("폴더를 열고 첫 프로젝트를 만들면 지도가 시작돼요.");
     const links = screen.getAllByRole("link").map((a) => a.getAttribute("href"));
     expect(links).not.toContain("/download/");
+  });
+
+  // 음성 대조군 — 능력이 없으면(Firefox 등) **여전히** 내려받기로 강등된다.
+  // 이게 없으면 위 시험은 「언제나 picker 카피」여도 초록이다.
+  it("폴더를 열 수 없으면 내려받기로 강등된다", () => {
+    renderEmpty(0, "no-projects");
+    const links = screen.getAllByRole("link").map((a) => a.getAttribute("href"));
+    expect(links).toContain("/download/");
   });
 
   it("reason 이 no-projects 면 projectCount 가 있어도 빈 프로젝트 안내를 우선한다", () => {
