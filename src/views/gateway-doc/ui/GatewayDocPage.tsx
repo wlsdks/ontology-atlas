@@ -3,7 +3,7 @@
 import ReactMarkdown, { type Components } from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 import { useMemo } from 'react';
-import { useTranslations } from 'next-intl';
+import { useLocale, useTranslations } from 'next-intl';
 import { GatewayNav } from '@/widgets/gateway-chrome';
 import { cn } from '@/shared/lib/cn';
 import { PAGE_COLUMN, PAGE_GUTTER } from '@/shared/lib/gateway-frame';
@@ -263,6 +263,85 @@ export function GatewayDocPage({
  * 있고, 그 장치들이 이 표면에서는 전부 죽은 무게다. 같은 램프 토큰을 쓰므로
  * 시각적 결은 이미 한 벌이다.
  */
+/** 가이드 장으로 실재하는 세그먼트 — 슬러그와 라우트를 가르는 기준. */
+const GUIDE_SEGMENTS = new Set(GUIDE_PAGES.map((page) => page.segment));
+
+/**
+ * 산문 속 링크의 `href` 를 **이 로케일의 실제 주소**로 푼다.
+ *
+ * 마크다운 원본은 로케일을 모른다 — 한 벌이 `/ko` 와 `/en` 을 함께 서빙하므로
+ * 원본에 `/ko/…` 를 박으면 영어 독자가 한국어로 끌려간다. 그래서 로케일을
+ * 붙이는 일은 **화면의 몫**이다.
+ *
+ * ⚠️ **가이드 본문의 내부 링크는 가이드 장만 가리킨다.** 볼트 문서로 보내는
+ * 링크를 여기서 `?slug=` 로 풀어 봤다가 되돌렸다: 볼트를 안 고른 웹 방문자가
+ * 보는 것은 **샘플 볼트(112개)** 이고, 가이드가 가리키던 문서는 도그푸드
+ * 볼트(153개)에만 있다. 그 주소는 **200 을 주면서 아무것도 안 여는** 조용한
+ * 막다른 길이 된다 — 404 보다 알아채기 어렵다. 볼트 문서는 GitHub 로 보낸다.
+ * 그 규율은 `tests/contract/guide-inbody-links.contract.test.ts` 가 지킨다.
+ */
+function resolveProseHref(href: string, locale: string): string {
+  if (!href.startsWith('/')) return href;
+  const path = href.split('?')[0];
+  const segment = /^\/guide\/([^/]+)\/?$/.exec(path)?.[1];
+  if (segment && GUIDE_SEGMENTS.has(segment)) return `/${locale}/guide/${segment}`;
+  // 가이드 장이 아닌 루트 절대 링크는 위 계약이 막는다. 그래도 새어 들어오면
+  // 로케일만 붙여 «그 로케일 안에서» 404 가 나게 둔다 — 로케일을 잃은 404 는
+  // 영어 화면으로 떨어져서 어느 쪽 여정이 깨졌는지조차 안 보였다.
+  return `/${locale}${path}`;
+}
+
+/**
+ * 본문 링크 — **루트 절대 링크는 볼트 슬러그이고, 여기서 라우트로 푼다.**
+ *
+ * ## 왜 (2026-08-07 사용성 감사)
+ *
+ * 종전에는 `href` 를 그대로 `<a>` 에 실었다. 가이드 본문은 마크다운이고 거기
+ * 적힌 내부 링크는 `[지도 읽는 법](/guide/reading-the-map)` 처럼 **로케일
+ * 접두사가 없다** — 마크다운 한 벌이 `/ko` 와 `/en` 을 함께 서빙하므로 원본에
+ * 로케일을 박을 수도 없다. 그래서 눌리는 주소가 `/guide/…` 가 되고, 그런
+ * 라우트는 없다.
+ *
+ * 실측: 가이드 14장의 본문 내부 링크 **34개 전부가 404** 였다(대상 11종,
+ * `/ko`·`/en` 양쪽, dev·정적 export 양쪽). 착지 화면은 한국어 여정인데 영어
+ * 404 이고 주 버튼이 「Find by project search」라 볼트 없는 첫 방문자에게는
+ * 쓸 수 없는 탈출구였다.
+ *
+ * **왜 눈에 안 띄었나**: 같은 화면의 왼쪽 차례(`GuideSidebar`)는 처음부터
+ * `Link` 를 썼다. 로케일이 붙는 링크와 안 붙는 링크가 한 화면에 공존했고,
+ * 사람이 주로 누르는 쪽이 멀쩡한 쪽이었다.
+ *
+ * ## 왜 `Link` 가 아니라 `<a>` + `useLocale()` 인가
+ *
+ * 처음엔 여기서 `Link` 를 쓰려 했는데 게이트 셋이 한꺼번에 막았다 — 앵커 채택
+ * 래칫(값 층을 안 지난 손 앵커 0 → 1) · 태그 내역(`Link 17 → 18`) ·
+ * `prose-link` 사용처(6 → 5). 이 저장소의 규율은 **「글 속의 링크는 컨트롤이
+ * 아니라 글이다」**(`design.md` · `prose-link.contract`)이고, 그 계약들은 산문
+ * 링크가 `.prose-link` 를 단 `<a>` 이기를 요구한다. 그래서 태그는 그대로 두고
+ * **주소만** 로케일로 푼다.
+ *
+ * `docs:links` 는 이 부류를 원리적으로 못 본다 — 그 검사는 문서가 가리키는
+ * **대상이 실재하는가**를 보되 그 대상을 **볼트 슬러그**로 푼다(그래서
+ * `/ONTOLOGY-QUALITY` 도 통과했다). 라우트를 열어 보지는 않는다. 그 층은
+ * `tests/contract/guide-inbody-links.contract.test.ts`(원본의 목적지)와
+ * `tests/e2e/guide-inbody-links.spec.ts`(실제로 200 인가)가 나눠 맡는다.
+ */
+function ProseLink({ href, children, ...rest }: React.ComponentPropsWithoutRef<'a'>) {
+  const locale = useLocale();
+  const target = href ?? '';
+  const external = /^https?:\/\//.test(target);
+  return (
+    <a
+      href={external ? href : resolveProseHref(target, locale)}
+      {...(external ? { target: '_blank', rel: 'noreferrer noopener' } : {})}
+      className="prose-link text-[color:var(--color-indigo-line-a90)] transition-colors hover:decoration-[color:var(--color-indigo-accent)]"
+      {...rest}
+    >
+      {children}
+    </a>
+  );
+}
+
 const PROSE_COMPONENTS: Components = {
   h2: ({ children, ...rest }) => (
     <h2
@@ -374,19 +453,8 @@ const PROSE_COMPONENTS: Components = {
       {children}
     </td>
   ),
-  a: ({ href, children, ...rest }) => {
-    const external = /^https?:\/\//.test(href ?? '');
-    return (
-      <a
-        href={href}
-        {...(external ? { target: '_blank', rel: 'noreferrer noopener' } : {})}
-        className="prose-link text-[color:var(--color-indigo-line-a90)] transition-colors hover:decoration-[color:var(--color-indigo-accent)]"
-        {...rest}
-      >
-        {children}
-      </a>
-    );
-  },
+  /** 본문 링크 — 정의와 사연은 `ProseLink`. */
+  a: ProseLink,
 };
 
 /**

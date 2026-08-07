@@ -9067,7 +9067,7 @@
         }
       ],
       "excerpt": "Maintainer-only checks live here so the public README stays readable. Use this page when you touch mcp/, cli/, package manifests, release scripts, or the dogfood ontology. Run this before pushing broad docs, package, MCP, or web changes: For user-facing UI changes, add the relevant Playwright route check. pnpm install ",
-      "wordCount": 9009,
+      "wordCount": 9131,
       "updatedAt": "2026-08-07",
       "linksOut": []
     },
@@ -10414,7 +10414,7 @@
       ],
       "excerpt": "볼트를 만들다 보면 반드시 이 질문에서 멈춥니다. 이건 도메인인가 역량인가? 파일마다 노드를 하나씩 만들어야 하나? 한 노드 아래에 자식이 서른 개면 잘못된 건가? 여기 답이 있습니다. 그리고 답의 대부분은 \"세지 말라\" 입니다. \"얼마나 큰가\" 로 층을 고르면 계속 헷갈립니다. 무엇에 답하는가로 고르십시오. · kind · 답하는 질문 · 예 · project · 우리가 무엇을 내놓는가 · auth-platform · domain · 그 안에서 관심사가 어디서 갈리는가 · auth · billing · capability · 이 시스템이 무엇을 할 수 있는가 · t",
       "wordCount": 1051,
-      "updatedAt": "2026-08-03",
+      "updatedAt": "2026-08-07",
       "linksOut": []
     },
     {
