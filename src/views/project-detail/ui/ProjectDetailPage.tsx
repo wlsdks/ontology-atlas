@@ -13,6 +13,7 @@ import { ICON_SIZE } from "@/shared/ui/icon-size";
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
 import { useTranslations } from "next-intl";
+import { OpenVaultCta } from "@/features/docs-vault-local";
 import { useTypingShortcuts } from "@/shared/lib/use-typing-shortcut";
 import { useCopyFeedback } from "@/shared/lib/use-copy-feedback";
 import { formatDate } from "@/shared/lib/format-date";
@@ -549,14 +550,23 @@ export function ProjectDetailPage({
                 // [P-7] vault 미선택(static/dogfood) 상태엔 편집 진입점이
                 // 전무해 "왜 안 되는지" 안내가 없었다 — 왜 + 다음 행동을
                 // 한 줄로 밝히는 배지. 액션은 아니고 상태 typed fact.
-                <span
-                  data-testid="project-detail-readonly-badge"
-                  // flex-none 은 390px 에서 페이지 가로 overflow 를 만들었다
-                  // (overflow-sweep 회귀) — 좁으면 배지 텍스트가 줄바꿈된다.
-                  className="inline-flex min-w-0 items-center gap-1.5 rounded-chip border border-[color:var(--color-border-soft)] bg-[color:var(--color-overlay-1)] px-2.5 py-1.5 font-mono text-label text-[color:var(--color-text-tertiary)]"
-                >
-                  {t("readOnlyBadge")}
-                </span>
+                //
+                // 2026-08-07: 그 「다음 행동」이 **말로만** 있었다. 배지는
+                // *"폴더를 열면 편집"* 이라 말하는데 이 화면에서 폴더를 여는
+                // 컨트롤이 0개였다(전수 측정) — 막다른 CTA 다. 배지는 상태
+                // 그대로 두고, 그 일을 하는 길을 옆에 놓는다. 상태와 행동을
+                // 한 원소에 겹치지 않는 것은 종전 주석의 판단을 지킨 것이다.
+                <div className="flex min-w-0 flex-wrap items-center gap-2">
+                  <span
+                    data-testid="project-detail-readonly-badge"
+                    // flex-none 은 390px 에서 페이지 가로 overflow 를 만들었다
+                    // (overflow-sweep 회귀) — 좁으면 배지 텍스트가 줄바꿈된다.
+                    className="inline-flex min-w-0 items-center gap-1.5 rounded-chip border border-[color:var(--color-border-soft)] bg-[color:var(--color-overlay-1)] px-2.5 py-1.5 font-mono text-label text-[color:var(--color-text-tertiary)]"
+                  >
+                    {t("readOnlyBadge")}
+                  </span>
+                  <OpenVaultCta testId="project-detail-open-vault" />
+                </div>
               )}
             </div>
           </div>

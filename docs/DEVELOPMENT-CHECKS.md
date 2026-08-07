@@ -65,6 +65,7 @@ pnpm docs-vault:build && git add src/entities/docs-vault/data public/docs-vault
 | Focus ring presence (value layer emits it) | `pnpm exec vitest run tests/contract/focus-ring-presence.contract.test.ts` | `pnpm test:contracts` |
 | Raw colour literals (now `src/` + `app/` + `.css`) | `pnpm check:tokens` | `pnpm test:check:tokens` |
 | Guide in-body link targets (markdown source) | `pnpm exec vitest run tests/contract/guide-inbody-links.contract.test.ts` | `pnpm exec playwright test tests/e2e/guide-inbody-links.spec.ts` |
+| `pnpm exec playwright test tests/e2e/open-vault-cta.spec.ts` | Dead-end CTA gate, folder edition: every painted sentence that says "open your folder" across the audited routes must have a folder-opening path inside its own box, that path must **actually call the picker** (stubbed and counted, because a button that renders and does nothing passes a visibility check), and it must degrade to the app download when FSA is unavailable. Replaces the single-route check that used to live in `screen-hierarchy.spec.ts`, which only asserted the URL changed — the destination it asserted (`/`) was itself a dead end for a web visitor with no vault. Exemptions are per-route with a written reason; two liveness guards, since a green run needs both "sentences were found" and "at least one pairing was detected" |
 
 ### Decision-ledger gate (`pnpm decisions:check`)
 

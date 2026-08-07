@@ -56,6 +56,10 @@ vi.mock("@/features/project-data-source", () => ({
 
 vi.mock("@/features/docs-vault-local", () => ({
   VaultConflictError: class VaultConflictError extends Error {},
+  // 쓰기 잠금 배너의 «폴더 여는 길» — 이 시험은 로딩 계약만 보므로 표식만
+  // 남긴다. 그 길이 실제로 선택기를 부르는지는 `tests/e2e/open-vault-cta.spec.ts`
+  // 가 브라우저에서 잰다(소스 문자열로는 판정할 수 없는 층이다).
+  OpenVaultCta: ({ testId }: { testId: string }) => <button type="button" data-testid={testId} />,
 }));
 
 vi.mock("@/shared/lib/use-document-title", () => ({

@@ -3553,5 +3553,10 @@
       "bridgeInserted": "브릿지 끼어듦",
       "vaultProblem": "폴더 문제"
     }
+  },
+  "openVaultCta": {
+    "label": "내 폴더 열기",
+    "busyLabel": "여는 중…",
+    "unsupportedLabel": "앱에서 열기"
   }
 }

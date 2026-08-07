@@ -213,6 +213,15 @@ export interface DoNextTabHealthQueue {
 }
 
 export interface DoNextTabProps {
+  /**
+   * 읽기 전용(예시 폴더)일 때 묶음 머리에 놓는 «폴더 여는 길».
+   *
+   * **왜 부품을 직접 안 부르나** — 이 컴포넌트는 문구를 전부 `labels` 로 받는
+   * 순수 표시다(그래서 단위 시험이 provider 없이 렌더한다). 컨텍스트를 읽는
+   * 부품을 안에서 부르면 그 설계가 깨지고, 실제로 시험 5개가 «provider 를
+   * 못 찾았다»로 터졌다. 길은 페이지가 넣어 준다.
+   */
+  openVaultAction?: ReactNode;
   queue: DoNextQueue;
   /**
    * ③ 오늘의 손질 — 기존 큐/사이클에서 절단한 상위 3건. 빈 배열이면 밴드를
@@ -288,20 +297,33 @@ export interface DoNextTabProps {
  * 제목은 이제 이 머리들이 대신하므로 따로 그리지 않는다(같은 자리에 "지금"
  * 이 두 번 나오지 않게).
  */
+/**
+ * 묶음 머리 — 제목 · 개수 · 한 줄 힌트, 그리고 **그 힌트가 시킨 일을 하는 길**.
+ *
+ * `action` 은 읽기 전용(예시 폴더) 상태에서만 들어온다. 그때 이 머리가 하는
+ * 말이 *"내 폴더를 열면 이 일들은 여기서 바로 끝낼 수 있어요"* 인데, 2026-08-07
+ * 실측에서 이 화면 컨트롤 25개 중 폴더를 여는 것이 **0개**였다 — 화면이 시킨
+ * 일을 그 화면에서 못 하는 **막다른 CTA** 다.
+ *
+ * 길은 **묶음마다가 아니라 화면에 하나**다. 행마다 붙이면 같은 처방이 일곱 번
+ * 반복되고, 이 저장소의 규율은 *"처방은 한 곳에만 산다"* 이다.
+ */
 function WorkGroupHeading({
   title,
   count,
   hint,
   testId,
+  action,
 }: {
   title: string;
   count: number;
   hint: string;
   testId: string;
+  action?: ReactNode;
 }) {
   return (
     <div data-testid={testId} className="flex flex-col gap-1">
-      <div className="flex items-baseline gap-2">
+      <div className="flex flex-wrap items-baseline gap-2">
         <InsightsSectionTitle level={2} className="text-body-lg font-[var(--font-weight-signature)] tracking-[var(--tracking-title)] text-[color:var(--color-text-primary)]">
           {title}
         </InsightsSectionTitle>
@@ -311,6 +333,7 @@ function WorkGroupHeading({
         >
           {count}
         </span>
+        {action ? <span className="ms-auto self-center">{action}</span> : null}
       </div>
       <p className="text-label leading-label text-[color:var(--color-text-quaternary)]">{hint}</p>
     </div>
@@ -826,6 +849,7 @@ export function DoNextTab({
   abilities = { canWriteVault: false, agentObserved: false },
   meaningGaps = null,
   labels,
+  openVaultAction,
 }: DoNextTabProps) {
   const [repairTargetsOpen, setRepairTargetsOpen] = useState(false);
   const reviewStatusRef = useRef<HTMLParagraphElement | null>(null);
@@ -1066,6 +1090,7 @@ export function DoNextTab({
           title={abilities.canWriteVault ? labels.groupMeaningTitle : labels.groupMeaningTitleReadOnly}
           count={groupCounts.meaning}
           hint={abilities.canWriteVault ? labels.groupMeaningHint : labels.groupMeaningHintReadOnly}
+          action={abilities.canWriteVault ? undefined : openVaultAction}
         />
         {meaningSections}
       </div>

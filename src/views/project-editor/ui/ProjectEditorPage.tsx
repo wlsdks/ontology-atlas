@@ -12,7 +12,7 @@ import {
   useProjects,
   useProjectMutations,
 } from "@/features/project-data-source";
-import { VaultConflictError } from "@/features/docs-vault-local";
+import { OpenVaultCta, VaultConflictError } from "@/features/docs-vault-local";
 import {
   getProjectEditHref,
   getProjectRuntimeDetailHref,
@@ -389,6 +389,10 @@ function EditorContent({
             onDelete={mode === "edit" ? handleDelete : undefined}
             onDirtyChange={setIsDirty}
             writeDisabled={mode === "create" && !projectMutations.canCreate}
+            // 배너의 «어디로» — 주소로 보내지 않고 그 자리에서 연다.
+            // 종전의 `/` 링크는 웹에서 관문(내려받기)으로 착지해 자기도
+            // 막다른 길이었다(2026-08-07 실측).
+            openVaultAction={<OpenVaultCta testId="project-write-disabled-open-folder" />}
           />
         </section>
       </div>

@@ -29,7 +29,7 @@ import {
 } from "@/features/vault-ontology";
 import { isLlmChatBridgeAvailable } from "@/shared/lib/tauri-llm";
 import { useDataSourceMode } from "@/features/data-source-mode";
-import { useLocalVault } from "@/features/docs-vault-local";
+import { OpenVaultCta, useLocalVault } from "@/features/docs-vault-local";
 import { buildDocsVaultHref } from "@/entities/docs-vault";
 import { useOntologyKindLabel } from "@/entities/ontology-class";
 import {
@@ -1027,6 +1027,9 @@ export function OntologyInsightsPage() {
                   domainLabels: meaningGapDomainLabels,
                 }}
                 labels={doNextLabels}
+                // 읽기 전용 묶음 머리가 *"내 폴더를 열면 …"* 이라 말한다 —
+                // 그 일을 하는 길을 같은 상자에 놓는다(2026-08-07 막다른 CTA).
+                openVaultAction={<OpenVaultCta testId="do-next-open-vault" />}
               />
             ) : null}
             {tab === "composition" ? (
