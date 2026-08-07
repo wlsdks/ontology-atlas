@@ -368,6 +368,18 @@ const RULES = [
     ],
   },
   {
+    // 2026-08-08 — 카운슬이 「앱 전용」이라 거짓 주장하던 문구를 고쳤는데,
+    // advisor 는 `test:i18n:messages`(카탈로그 정합)만 권했다. 실제로 그
+    // 문구를 못박고 있던 게이트는 **`check-desktop-readiness`** 였고, 그것은
+    // CI 에서야 빨개졌다 — 로컬 검증을 도구가 시키는 대로 다 돌렸는데도.
+    //
+    // 문구 카탈로그는 정합 검사만의 입력이 아니다. 「이 화면이 무엇을 할 수
+    // 있다고 말하나」를 읽는 게이트들의 입력이기도 하다.
+    command: 'pnpm test:desktop:check',
+    reason: 'message copy changed — the desktop routing gate reads these strings for capability claims',
+    matches: [/^messages\/[^/]+\.json$/],
+  },
+  {
     command: 'pnpm test:i18n:messages',
     reason: 'locale routing or message catalog changed',
     matches: [

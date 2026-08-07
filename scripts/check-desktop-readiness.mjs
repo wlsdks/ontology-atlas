@@ -841,9 +841,33 @@ const namesInstalledApp = (text, locale) =>
 const advertisesBrowserFsa = desktopRoutingCopy.some(
   (text) => text.includes("File System Access") && !/desktop|설치/i.test(text),
 );
+/**
+ * ⚠️ **셋을 한 규칙으로 묶고 있었다** (2026-08-08 카운슬).
+ *
+ * 위 여섯 문자열은 성격이 둘이다:
+ *
+ * - **강등 고지 둘** (`unsupportedTooltip` · `localVaultPicker.unsupported`) —
+ *   FSA 를 못 쓰는 브라우저에게 「여기서는 안 되고 앱에서 된다」고 말하는
+ *   자리다. 설치된 앱을 가리키는 것이 맞고, 그대로 둔다.
+ * - **단축키 설명 하나** (`shortcuts.rows.localVault`) — 팔레트의 단축키가
+ *   무엇을 여는지 말하는 자리다. **그 단축키는 웹에서도 된다** — 그것이 켜는
+ *   `/docs` 로컬 소스는 FSA 를 지원하면 브라우저에서 동작하고, 미지원일 때만
+ *   칩이 비활성이 된다(`isDocsVaultLocalSourceDisabled`).
+ *
+ * 그런데 이 게이트는 셋 다에게 「설치된 앱을 대라」고 요구했고, 그 요구가
+ * 단축키 설명을 **거짓말로 만들고 있었다** — `surfaces.md` 가 이름 붙인
+ * 「되는 것을 안 된다고 쓰는 것」이다. 이 파일 머리말이 스스로 경고한 실패
+ * 방향과 같다: *"문구를 더 나은 말로 고치면 빨개진다."*
+ *
+ * 그래서 요구를 **자리의 성격에 맞춘다**. 단축키 설명은 커버리지를 잃지 않고
+ * 요구가 바뀔 뿐이다 — 런타임이 아니라 **여는 대상**(폴더)을 말해야 한다.
+ * FSA 를 능력으로 광고하지 않는지는 여섯 문자열 **전부**가 여전히 검사받는다.
+ */
+const namesTheFolder = (text) => /folder/i.test(text) || /폴더/.test(text);
+
 if (
-  namesInstalledApp(enMessages.searchWidgets.shortcuts.rows.localVault, "en") &&
-  namesInstalledApp(koMessages.searchWidgets.shortcuts.rows.localVault, "ko") &&
+  namesTheFolder(enMessages.searchWidgets.shortcuts.rows.localVault) &&
+  namesTheFolder(koMessages.searchWidgets.shortcuts.rows.localVault) &&
   namesInstalledApp(enMessages.docsVault.vaultStatus.unsupportedTooltip, "en") &&
   namesInstalledApp(koMessages.docsVault.vaultStatus.unsupportedTooltip, "ko") &&
   namesInstalledApp(enMessages.featuresMisc.localVaultPicker.unsupported, "en") &&
@@ -853,10 +877,10 @@ if (
   /folder/i.test(enMessages.featuresMisc.localVaultPicker.openLabel) &&
   /폴더/.test(koMessages.featuresMisc.localVaultPicker.openLabel)
 ) {
-  pass("local vault picker and shortcut copy describe the installed app path, not browser File System Access");
+  pass("강등 고지는 설치된 앱을, 단축키 설명은 여는 폴더를 말한다 — FSA 를 능력으로 광고하지 않는다");
 } else {
   fail(
-    "Local vault picker and shortcut copy must route users toward the installed desktop app instead of preserving browser/File System Access wording",
+    "강등 고지는 설치된 앱을 가리켜야 하고, 단축키 설명은 여는 대상(폴더)을 말해야 하며, 어느 쪽도 브라우저 File System Access 를 능력으로 광고하면 안 된다",
   );
 }
 
