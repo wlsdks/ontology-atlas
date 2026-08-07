@@ -172,7 +172,7 @@ elements: []                     # 실제 구현 역할 노드 slug만 들어간
 저장소 분석기가 한 번에 보여 주는 후보 수에도 별도 처리 상한이 있습니다. 그것은
 LLM과 사람이 읽을 **evidence packet을 bounded하게 유지하는 장치**이지, 이 절의
 노드 수·직접 연결 수 규칙이 아닙니다. 언어별 현재 값과 검증 소유 위치는
-[Ontology Quality Authority Map](/ONTOLOGY-QUALITY)에서 확인하십시오.
+[Ontology Quality Authority Map](https://github.com/wlsdks/ontology-atlas/blob/main/docs/ONTOLOGY-QUALITY.md)에서 확인하십시오.
 
 다음은 [관계는 어떻게 생기나](/guide/relations) 입니다. 노드를 정했으면 그들을
 잇는 차례입니다.
