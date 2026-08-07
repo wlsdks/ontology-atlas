@@ -187,9 +187,20 @@ jobs:
       # 실패했고, 아래 `mcp` 잡의 설치 스텝 주석이 같은 함정을 이미 적어 뒀다.
       # 그 검사는 의존성이 사는 `mcp` 잡으로 갔다. 여기는 파일만 읽는 둘을
       # 갖는다 — 가장 빠른 잡에 mcp 설치를 더해 느리게 만들지 않는 쪽을 골랐다.
-      - name: Docs TOC & links
+      #
+      # ⚠️ 스텝을 둘로 나눈 이유: `&&` 로 이으면 **앞이 깨졌을 때 뒤가 안 돈다.**
+      # 목차와 링크가 동시에 깨진 PR 이 목차 실패만 보고 고쳤다가 다시 빨개진다.
+      # 나눠 두면 한 번에 둘 다 보인다 (2026-08-07 리뷰).
+      #
+      # 이 분할이 `docs:check` 정의와 어긋나지 않게 잡는 계약:
+      # `tests/contract/docs-check-ci-coverage.contract.test.ts`
+      - name: Docs TOC
         if: always()
-        run: pnpm design:toc:check && pnpm docs:links
+        run: pnpm design:toc:check
+
+      - name: Docs links
+        if: always()
+        run: pnpm docs:links
 
   # ── 잡 2: 단위 + 계약 스위트 (실측 291초 — 임계 경로) ────────────────
   unit:
