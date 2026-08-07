@@ -2,8 +2,10 @@ import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { describe, expect, it } from 'vitest';
 
-// eslint-disable-next-line @typescript-eslint/no-require-imports -- contrast.mjs 는 스크립트 쪽 ESM 순수 함수 모듈이다.
-const { contrastRatio, parseColor, composite } = require('../../scripts/lib/contrast.mjs');
+// 형제 계약(`contrast.contract.test.ts`)과 같은 ESM import 를 쓴다. `require` 는
+// Vitest 모듈 그래프를 우회해서, `contrast.mjs` 를 고쳤을 때
+// `pnpm checks:changed` 가 이 계약을 **추천하지 않는다** (2026-08-07 리뷰).
+import { composite, contrastRatio, parseColor } from '../../scripts/lib/contrast.mjs';
 
 /**
  * 지도 패널의 **두 번째 잉크 램프**를 규격으로 붙든다.
@@ -109,9 +111,34 @@ describe('지도 패널 잉크 램프 (표면 전용 두 번째 램프)', () => 
      * (`.claude/rules/design-gates.md`: 아이콘 래칫이 표기 하나만 봐서 3/4 을
      * 놓친 사례). 패널에 새 잉크가 생기면 여기서 먼저 터진다.
      */
-    const defined = [
-      ...CSS.matchAll(/^\s*(--topology-v2-panel-(?:text-[a-z]+|metric-text))\s*:/gm),
+    /**
+     * ⚠️ 두 번 고쳤다 (2026-08-07 리뷰).
+     *
+     * ① 처음 쓴 `text-[a-z]+` 는 이름 안의 **하이픈**을 못 넘어서
+     * `--topology-v2-panel-text-on-accent` 같은 잉크를 놓쳤다 — 「새 잉크가
+     * 생기면 여기서 먼저 터진다」던 단언이 조용히 통과하는 상태였다
+     * (`design-gates.md` 의 «스캐너가 표기 하나만 보면 그만큼 못 본다» 를 그대로
+     * 반복했다).
+     *
+     * ② 그래서 이름에 `text` 가 들어가면 전부 걸리게 넓혔더니 이번엔 **강조
+     * 잉크 셋**(`domain-text` · `count-text` · `primary-text`)까지 딸려 왔다.
+     * 그것들은 인디고이고 **틴트 표면 위**에 얹히므로, 패널 표면 위 중성 사다리와
+     * 같은 자로 재면 안 된다(대비도 위계도 다른 계약의 것이다).
+     *
+     * 손으로 빼면 다시 드리프트하므로 **분류로** 가른다: 인디고를 참조하면 강조
+     * 잉크(→ `accent-ink-contrast` 계약 소관), 아니면 중성 사다리라 장부에 있어야
+     * 한다. 새 중성 잉크는 여전히 여기서 터진다.
+     */
+    const allInks = [
+      ...CSS.matchAll(/^\s*(--topology-v2-panel-[a-z0-9-]*text[a-z0-9-]*)\s*:/gm),
     ].map((m) => m[1]);
+    const isAccentInk = (token: string): boolean =>
+      /--color-indigo/.test(declaredValue(token) ?? '');
+    const defined = allInks.filter((t) => !isAccentInk(t));
+    expect(
+      allInks.length - defined.length,
+      '강조 잉크를 하나도 못 갈랐다 — 분류가 깨졌다',
+    ).toBeGreaterThan(0);
     expect(defined.length, '패널 잉크 토큰을 하나도 못 찾았다 — 스캔이 깨졌다').toBeGreaterThan(3);
     const declared = new Set(INK_LEDGER.map(([t]) => t));
     const missing = [...new Set(defined)].filter((t) => !declared.has(t));

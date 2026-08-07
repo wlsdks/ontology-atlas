@@ -123,8 +123,25 @@ export function judgeText({ fg, bg, fontSizePx, fontWeight }) {
 export function judgeAdjacentMarks({ a, b, over }) {
   const base = parseColor(over) ?? [0, 0, 0, 1];
   const solidBase = base[3] >= 1 ? base : composite(base, [0, 0, 0, 1]);
-  const ca = composite(parseColor(a), solidBase);
-  const cb = composite(parseColor(b), solidBase);
+  const ma = parseColor(a);
+  const mb = parseColor(b);
+  /**
+   * **못 읽은 색은 «통과» 가 아니라 «미측정» 이다** — `judgeText` 와 같은 계약
+   * (2026-08-07 코드 리뷰).
+   *
+   * 종전에는 이 가드가 없어서 `parseColor` 가 `null` 을 내면 바로 아래
+   * `composite` 가 `fg[3]` 을 읽다 **TypeError 를 던졌다.** 형제 함수는 같은
+   * 자리에서 `null` 을 돌려주는데 이쪽만 죽는다. `parseColor` 는 `#hex` 와
+   * `rgb()/rgba()` 만 읽으므로, 크로미움이 `color(srgb …)` 나 `oklch(…)` 로
+   * 직렬화하는 값(색 공간이 넓은 화면·`color-mix()`)이 그 입력이 된다.
+   *
+   * 이 함수가 수동 계기 안에만 있을 때는 사람이 보고 있었지만, 2026-08-06 에
+   * CI 래칫으로 들어가면서 **게이트가 크래시하는 경로**가 됐다. 부르는 쪽은
+   * 이미 `if (!judged) continue` 로 미측정을 세고 있었는데 그 줄이 죽어 있었다.
+   */
+  if (!ma || !mb) return null;
+  const ca = composite(ma, solidBase);
+  const cb = composite(mb, solidBase);
   const ratio = contrastRatio(ca, cb);
   return {
     ratio: +ratio.toFixed(2),

@@ -134,13 +134,24 @@ async function measure(page: import("@playwright/test").Page): Promise<Measured>
      * 슬롯 자신은 검사하지 않는다 — 슬롯은 우리가 끝까지 스크롤한 컨테이너이고,
      * 그 안에서 아래에 있는 것이야말로 재려는 대상이다.
      */
-    const clippedAway = (el: Element, r: DOMRect): boolean => {
+    /**
+     * 조상의 클리핑을 반영한 **보이는 아랫변**을 돌려준다. 완전히 밖이면 `null`.
+     *
+     * ⚠️ 「완전히 밖인가」만 보면 부족하다 (2026-08-07 코드 리뷰). 클리핑 상자의
+     * 아래 모서리에 **걸친** 자식은 전부 밖이 아니라서 통과하고, 그때 잘려서
+     * 안 보이는 부분까지 포함한 `bottom` 이 그대로 쓰인다. 그러면 이 함수가
+     * 막으려던 `/ko/changelog/` 사이드바 거짓 위반이 스크롤 위치나 뷰포트만
+     * 바뀌면 그대로 재현된다. 교집합으로 **깎아서** 돌려준다.
+     */
+    const visibleBottom = (el: Element, r: DOMRect): number | null => {
+      let bottom = r.bottom;
       for (let n = el.parentElement; n && n !== slot; n = n.parentElement) {
         if (getComputedStyle(n).overflow === "visible") continue;
         const nr = n.getBoundingClientRect();
-        if (r.top > nr.bottom || r.bottom < nr.top) return true;
+        if (r.top > nr.bottom || r.bottom < nr.top) return null;
+        bottom = Math.min(bottom, nr.bottom);
       }
-      return false;
+      return bottom;
     };
 
     // 마지막 잉크 — 컨테이너의 하단 패딩은 여백이지 내용이 아니므로 잎만 본다.
@@ -161,14 +172,9 @@ async function measure(page: import("@playwright/test").Page): Promise<Measured>
          */
         if (typeof child.checkVisibility === "function" && !child.checkVisibility()) continue;
         const r = child.getBoundingClientRect();
-        if (
-          child.children.length === 0 &&
-          r.height > 2 &&
-          r.width > 2 &&
-          r.bottom > inkBottom &&
-          !clippedAway(child, r)
-        ) {
-          inkBottom = r.bottom;
+        if (child.children.length === 0 && r.height > 2 && r.width > 2 && r.bottom > inkBottom) {
+          const shown = visibleBottom(child, r);
+          if (shown !== null && shown > inkBottom) inkBottom = shown;
         }
         walk(child);
       }
