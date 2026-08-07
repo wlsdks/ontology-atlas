@@ -4,11 +4,13 @@ import ReactMarkdown, { type Components } from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 import { useMemo } from 'react';
 import { useLocale, useTranslations } from 'next-intl';
-import { GatewayNav } from '@/widgets/gateway-chrome';
+import { GatewayNav, GatewayReadingLinks } from '@/widgets/gateway-chrome';
 import { cn } from '@/shared/lib/cn';
 import { PAGE_COLUMN, PAGE_GUTTER } from '@/shared/lib/gateway-frame';
 import { GITHUB_REPO_URL } from '@/shared/config/social-links';
+import { ChevronRight } from 'lucide-react';
 import { GithubMark } from '@/shared/ui';
+import { ICON_SIZE } from '@/shared/ui/icon-size';
 import {
   extractEntries,
   normalizeHeadingKey,
@@ -153,7 +155,23 @@ export function GatewayDocPage({
        * 크롬(상단 바)은 그대로 원점을 쓴다 — 그건 모든 관문 표면이 공유하는
        * 프레임이고, 로고가 페이지마다 다른 x 에 서면 그게 더 나쁘다.
        */}
-      <main className={cn(PAGE_GUTTER, 'w-full flex-1 pt-10 pb-20 md:pt-16')}>
+      <main
+        className={cn(
+          PAGE_GUTTER,
+          'w-full flex-1 pt-10 md:pt-16',
+          /*
+           * 하단 예약고 — `<lg` 에는 탭바가 있고 이 페이지는 스크롤되는 문서다.
+           * 종전 `pb-20`(80px)로도 넘치지 않았던 것은 마지막 잉크가 본문 끝이라
+           * 우연히 들어맞았기 때문이고, 읽을거리 줄을 아래에 놓자 **여유 23px**
+           * 로 탭바에 가렸다(`scroll-end-gap` 390×844 가 잡았다).
+           *
+           * 조건 없는 기본값 + `lg:` 덮어쓰기로 쓴다 — `max-lg:` 변형은 다른
+           * 변형보다 스타일시트에 먼저 나올 수 있어 조용히 진다(`design.md`
+           * 「CSS 순서 함정」).
+           */
+          'pb-[calc(var(--topology-mobile-bottom-tab-reserve)+var(--page-bottom-breath))] lg:pb-20',
+        )}
+      >
         <div className={cn(PAGE_COLUMN, 'mx-auto')}>
           {/*
            * 차례가 있을 때만 두 열이 된다. 없으면 한 열을 가운데 세운다.
@@ -197,6 +215,8 @@ export function GatewayDocPage({
             ) : null}
           </header>
 
+          {sidebar ? <GuideChapterPicker activeSegment={activeSegment} /> : null}
+
           <article
             data-testid="gateway-doc-body"
             className="mt-10 w-full max-w-[var(--measure-prose)]"
@@ -205,6 +225,13 @@ export function GatewayDocPage({
               {body}
             </ReactMarkdown>
           </article>
+
+          {/*
+           * 좁은 폭에서 크롬이 접은 읽을거리 둘 — 여기가 그 자리다. 이 두
+           * 라우트에는 푸터가 없어서, 종전에는 가이드 안에서 변경 내역으로
+           * (그 반대로도) 갈 길이 390 에서 0개였다.
+           */}
+          <GatewayReadingLinks className="mt-12 w-full max-w-[var(--measure-prose)]" />
 
           {/*
            * 잘렸으면 **몇 개를 감췄는지와 어디서 읽는지**를 함께 말한다.
@@ -302,7 +329,7 @@ function resolveProseHref(href: string, locale: string): string {
  * 로케일을 박을 수도 없다. 그래서 눌리는 주소가 `/guide/…` 가 되고, 그런
  * 라우트는 없다.
  *
- * 실측: 가이드 14장의 본문 내부 링크 **34개 전부가 404** 였다(대상 11종,
+ * 실측: 가이드 13장의 본문 내부 링크 **34개 전부가 404** 였다(대상 11종,
  * `/ko`·`/en` 양쪽, dev·정적 export 양쪽). 착지 화면은 한국어 여정인데 영어
  * 404 이고 주 버튼이 「Find by project search」라 볼트 없는 첫 방문자에게는
  * 쓸 수 없는 탈출구였다.
@@ -471,6 +498,46 @@ const PROSE_COMPONENTS: Components = {
  * 크롬의 읽을거리 칩과 같은 문법이다 — 채워진 면 + 강한 텍스트. 무채색 안에서
  * 「지금 여기」를 말하는 방법이라 새 색을 열지 않는다.
  */
+/**
+ * 가이드 장 목록 — **한 벌만 있고 두 폭이 나눠 쓴다.**
+ *
+ * `lg` 이상은 왼쪽 차례(`GuideSidebar`)가, 그 아래는 제목 밑의 펼침
+ * (`GuideChapterPicker`)이 이 함수를 부른다. 목록을 두 번 적으면 장을 더할 때
+ * 한쪽만 늘어난다.
+ */
+function GuideChapterList({ activeSegment }: { activeSegment?: string }) {
+  const t = useTranslations('gatewayNav');
+  return (
+    <ul className="flex flex-col gap-0.5">
+      {GUIDE_PAGES.map((page) => {
+        const active = page.segment === activeSegment;
+        return (
+          <li key={page.segment}>
+            <Link
+              href={`/guide/${page.segment}`}
+              aria-current={active ? 'page' : undefined}
+              data-testid={`guide-nav-${page.segment}`}
+              className={controlClass({
+                shape: 'row',
+                size: 'sm',
+                tone: active ? 'default' : 'muted',
+                className: cn(
+                  'block leading-body',
+                  active
+                    ? 'bg-[color:var(--color-elevated)]'
+                    : 'hover:bg-[color:var(--color-elevated)] hover:text-[color:var(--color-text-primary)]',
+                ),
+              })}
+            >
+              {t(`guidePages.${page.titleKey}`)}
+            </Link>
+          </li>
+        );
+      })}
+    </ul>
+  );
+}
+
 function GuideSidebar({ activeSegment }: { activeSegment?: string }) {
   const t = useTranslations('gatewayNav');
   return (
@@ -483,35 +550,70 @@ function GuideSidebar({ activeSegment }: { activeSegment?: string }) {
         <p className="mb-3 px-2.5 text-label leading-label font-[var(--font-weight-signature)] tracking-wide text-[color:var(--color-text-quaternary)] uppercase">
           {t('onThisGuide')}
         </p>
-        <ul className="flex flex-col gap-0.5">
-          {GUIDE_PAGES.map((page) => {
-            const active = page.segment === activeSegment;
-            return (
-              <li key={page.segment}>
-                <Link
-                  href={`/guide/${page.segment}`}
-                  aria-current={active ? 'page' : undefined}
-                  data-testid={`guide-nav-${page.segment}`}
-                  className={controlClass({
-                    shape: 'row',
-                    size: 'sm',
-                    tone: active ? 'default' : 'muted',
-                    className: cn(
-                      'block leading-body',
-                      active
-                        ? 'bg-[color:var(--color-elevated)]'
-                        : 'hover:bg-[color:var(--color-elevated)] hover:text-[color:var(--color-text-primary)]',
-                    ),
-                  })}
-                >
-                  {t(`guidePages.${page.titleKey}`)}
-                </Link>
-              </li>
-            );
-          })}
-        </ul>
+        <GuideChapterList activeSegment={activeSegment} />
       </div>
     </nav>
+  );
+}
+
+/**
+ * `lg` 미만의 차례 — 제목 바로 밑의 펼침.
+ *
+ * ## 왜 필요한가 (2026-08-07 실측)
+ *
+ * 종전에는 이 폭에서 차례가 **어디에도 없었다.** 코드 주석 둘이 대체를
+ * 약속했는데 **둘 다 사실이 아니었다**:
+ *
+ * | 적혀 있던 말 | 실제 |
+ * |---|---|
+ * | *"접힌 자리는 크롬의 「가이드」 칩이 대신한다"* | 그 칩도 `<sm` 에서 접힌다 — 390 에서 0개 |
+ * | *"이 둘은 스크롤하면 푸터에서 다시 만난다"* | 관문 푸터는 어느 폭에서도 링크 0개 |
+ *
+ * 게다가 `/guide` 는 색인이 아니라 **1장을 그린다** — 칩을 눌러 돌아가도 거기
+ * 목록이 없다. 결과: 768·390 에서 보이는 가이드 장 링크가 **1개 · 0개**였고,
+ * 폰으로 링크를 받아 한 장을 연 사람에게 13장은 **서로 못 가는 13개의 막다른
+ * 길**이었다. 그 안에 「에이전트 연결」과 「CLI」가 있으므로 막힌 것은 읽을거리가
+ * 아니라 **에이전트를 붙이는 경로**다.
+ *
+ * ## 왜 펼침(`<details>`)인가
+ *
+ * 좁은 폭에서 목록을 펼쳐 두면 산문 기둥이 목록에게 폭이 아니라 **첫 화면**을
+ * 빼앗긴다 — 읽으러 온 사람이 목차부터 스크롤해야 한다. 닫힌 펼침은 한 줄이고,
+ * 그 한 줄이 **지금 몇 장 중 어디인지**까지 말한다. 여는 표시(chevron)는 장식
+ * 화살표 금지의 예외다(`design.md`: 펼쳐진 상태를 나타내는 것은 정보다).
+ */
+function GuideChapterPicker({ activeSegment }: { activeSegment?: string }) {
+  const t = useTranslations('gatewayNav');
+  const index = GUIDE_PAGES.findIndex((page) => page.segment === activeSegment);
+  const current = index >= 0 ? GUIDE_PAGES[index] : GUIDE_PAGES[0];
+  return (
+    <details
+      data-testid="guide-chapter-picker"
+      className="group mt-6 w-full max-w-[var(--measure-prose)] rounded-panel border border-[color:var(--color-border-soft)] bg-[color:var(--color-panel)] lg:hidden"
+    >
+      <summary
+        data-testid="guide-chapter-picker-summary"
+        className="flex min-h-11 list-none items-center gap-2 px-3 py-2 text-body leading-body text-[color:var(--color-text-secondary)] [&::-webkit-details-marker]:hidden"
+      >
+        <ChevronRight
+          size={ICON_SIZE.sm}
+          aria-hidden
+          className="shrink-0 transition-transform group-open:rotate-90"
+        />
+        <span className="font-mono text-label uppercase tracking-[var(--tracking-caps-12)] text-[color:var(--color-text-quaternary)]">
+          {t('onThisGuide')}
+        </span>
+        <span className="min-w-0 truncate text-[color:var(--color-text-primary)]">
+          {t(`guidePages.${current.titleKey}`)}
+        </span>
+        <span className="ms-auto shrink-0 font-mono text-label tabular-nums text-[color:var(--color-text-quaternary)]">
+          {`${Math.max(index, 0) + 1}/${GUIDE_PAGES.length}`}
+        </span>
+      </summary>
+      <nav aria-label={t('guideNavLabel')} className="border-t border-[color:var(--color-divider)] p-2">
+        <GuideChapterList activeSegment={activeSegment} />
+      </nav>
+    </details>
   );
 }
 
