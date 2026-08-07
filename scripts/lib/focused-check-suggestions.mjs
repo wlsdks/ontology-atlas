@@ -394,6 +394,27 @@ const RULES = [
     matches: [/^app\/(?:.+\/)?(?:page|not-found|error|global-error)\.tsx$/],
   },
   {
+    // 2026-08-08 — 관문의 판을 고친 사람에게 이 advisor 는 **그 판의 격자
+    // 검사를 권하지 않았다.** 실제로 그 사이로 회귀가 지나갔다: 푸터에 줄
+    // 하나를 넣자 여덟 폭 전부에서 `download-gateway-grid` 가 빨개졌는데,
+    // 로컬에서는 아무도 그 스펙을 안 돌렸고 CI 에서야 나왔다.
+    //
+    // 이 저장소의 규율은 «손으로 쓴 목록 대신 도구를 가리켜라» 인데, 그러면
+    // **도구가 못 가리키는 검사는 존재하지 않는 검사**가 된다. 스펙 이름에
+    // `download-gateway` 가 그대로 들어 있어도 경로↔검사 연결이 없으면
+    // 소용없다.
+    //
+    // 원점(`PAGE_COLUMN`/`PAGE_GUTTER`)까지 넣는 이유: 그 값이 곧 격자가
+    // 재는 기준선이라, 그것을 고치면 판을 안 건드려도 여덟 폭이 함께 움직인다.
+    command: 'pnpm exec playwright test tests/e2e/download-gateway-grid.spec.ts',
+    reason: 'the gateway plate or its frame changed — six elements must still share one origin',
+    matches: [
+      /^src\/views\/download\/.*\.tsx?$/,
+      /^src\/widgets\/gateway-chrome\/.*\.tsx?$/,
+      /^src\/shared\/lib\/gateway-frame\.ts$/,
+    ],
+  },
+  {
     command: 'pnpm decisions:check',
     reason: 'a route or design-spec surface moved — the decision ledger must move with it',
     matches: [/^app\/(?:.+\/)?(?:page|not-found)\.tsx$/],
