@@ -36,19 +36,33 @@ const PATH = /폴더|볼트|문서함|앱 받기|앱에서 열기|내 데이터/
 /**
  * 예외 — **자리 하나 단위로, 사유와 함께.** 디렉터리나 정규식으로 빼지 않는다.
  *
- * 관문(`/` · `/download` 는 같은 뷰다)은 *"앱에서 내 폴더를 열면 내 숫자가
- * 보여요"* 라고 말하면서 폴더를 여는 길이 없다. 이 슬라이스에서 **의도적으로
- * 뺐다** — 관문은 「낯선 사람이 처음 읽는 화면」이라 PO OS 의 필수 소집
- * 트리거에 걸리고, 거기에 두 번째 주 행동을 넣을지는 「위계」 자리의 판단이다.
- * 문구 자체도 별개 결함이다: 웹도 FSA 로 폴더를 여는데 「앱에서」라고만 말해
- * `surfaces.md` 가 이름 붙인 **「되는 것을 안 된다고 쓰는 것」**에 해당한다.
+ * ## 관문의 예외는 「대기」가 아니라 **다른 계약으로 갈아탔다** (2026-08-08 카운슬)
+ *
+ * 2026-08-07 에는 여기 `/ko/` 와 `/ko/download/` 두 줄이 *"「위계」 판정 대기"*
+ * 라는 사유로 앉아 있었다. 그 판정이 났다 — **관문에 폴더 여는 길을 놓지
+ * 않는다.** `/topology` 의 첫 실행 패널이 이미 진짜 첫 실행 표면이라 복제하면
+ * 유지할 첫 실행 표면이 둘이 되고, 같은 일을 하는 길이 둘이면 하나는 반드시
+ * 거짓말이 된다(2026-07-30 「같은 일 링크 둘」).
+ *
+ * 그래서 이 스윕은 관문에서 돌 수 없다 — 이 스윕이 요구하는 것(문장 옆에
+ * 컨트롤)이 바로 그 결정이 **하지 않기로 한 것**이다. 하지만 **「대기」라는
+ * 사유로 남겨 두면 그 화면에서는 이 파일의 어떤 층도 안 돈다**: 판 안의 웹
+ * CTA 가 사라져도, 착지점이 막다른 길이 되어도 영원히 초록이다(체계석 지적).
+ *
+ * 그래서 예외의 값을 **갚았다** — 아래 `관문은 폴더를 여는 화면이 아니다`
+ * describe 가 폭마다 ①폴드 안에 지도로 가는 홉이 그려져 있고 ②눌러서 도착하며
+ * ③착지점이 시트를 거쳐 **실제로 선택기를 부르는지**를 잰다. 그리고 같은 검사가
+ * 「관문에 폴더 컨트롤 0개」를 못박아, 결정을 뒤집으려면 원장으로 돌아오게 한다.
  *
  * ⚠️ 이 목록에 줄을 더하는 것은 그 화면에서 규칙을 끄는 것이다. 늘리려면
- * 사유를 여기 적고 결정 원장에도 남긴다.
+ * 사유를 여기 적고, 무엇이 대신 그 자리를 재는지도 같이 적는다.
  */
 const EXEMPT: ReadonlyArray<{ route: string; why: string }> = [
-  { route: "/ko/", why: "관문 — 「위계」 판정 대기 (2026-08-07 PO 패스에서 슬라이스 밖)" },
-  { route: "/ko/download/", why: "관문과 같은 뷰" },
+  {
+    route: "/ko/",
+    why: "관문 — 「놓지 않는다」 판정 확정(2026-08-08 원장). 대신 아래 도달 계약이 잰다",
+  },
+  { route: "/ko/download/", why: "관문과 같은 뷰 — 같은 도달 계약이 잰다" },
   { route: "/ko/changelog/", why: "지난 결정을 인용하는 산문 — 지시가 아니다" },
 ];
 const EXEMPT_ROUTES = new Set(EXEMPT.map((e) => e.route));
@@ -240,4 +254,143 @@ test.describe("막다른 CTA 금지 — 폴더를 열라고 말한 자리", () =
     await page.waitForURL(/\/download/, { timeout: 15_000 });
     await expect(page.getByTestId("download-bottom-band")).toBeVisible();
   });
+});
+
+/**
+ * **관문은 폴더를 여는 화면이 아니다 — 그러니 「닿는가」를 잰다** (2026-08-08 카운슬).
+ *
+ * 위 스윕의 규칙(문장 옆에 컨트롤)을 관문에는 적용할 수 없다. 그것이 바로 이
+ * 판정이 **하지 않기로 한 것**이기 때문이다: `/topology` 첫 실행 패널이 이미
+ * 진짜 첫 실행 표면이고, 같은 일을 하는 길을 둘 두면 하나는 반드시 거짓말이
+ * 된다(2026-07-30). 그래서 관문에는 다른 계약을 건다.
+ *
+ * ## 「길이 있다」의 기준 셋 — 클릭 수는 기준이 아니다
+ *
+ * ① 첫 홉이 **그 폭의 접힘 안에** 그려져 있다 ② 눌러서 도착한다 ③ 착지점이
+ * 그 일을 실제로 한다. 첫 실행 시트는 착지 표면의 정당한 안내이지 장벽이
+ * 아니므로 홉 수를 세지 않는다.
+ *
+ * ## 왜 **폭마다** 재나
+ *
+ * 실측(2026-08-08, 정적 export): 판 안 웹 CTA 는 1512×900 에서 `y 638` 로
+ * 접힘 안이지만 **390×844 에서는 `y 1136`** — 접힘 아래다. 390 에서 기준 ①을
+ * 만족시키는 것은 하단 탭바의 「지도」(`y 788`, 바닥 844)다. 폭 하나만 재면
+ * 그 사실이 안 보이고, 언젠가 탭바가 사라져도 초록이다.
+ *
+ * ## ⚠️ 「한 홉」으로 재면 상시 빨강 게이트가 된다
+ *
+ * 첫 프로브가 그랬다. `first-run-starter-open` 은 선택기를 **직접 안 부른다** —
+ * `VaultOpenGuideSheet` 를 열고, 거기 `vault-guide-pick-existing` 에서야 부른다.
+ * 그걸 모르고 재서 «호출 0» 이라는 거짓 빨강이 났다. 지키려는 사실을 그것을
+ * 구현한 방식과 헷갈리면 게이트가 양쪽으로 틀린다(`/gate-probe` §0).
+ */
+test.describe("관문은 폴더를 여는 화면이 아니다 — 대신 그 화면에 닿는다", () => {
+  const REACH_WIDTHS = [
+    { width: 1512, height: 900 },
+    { width: 390, height: 844 },
+  ] as const;
+
+  for (const viewport of REACH_WIDTHS) {
+    test(`${viewport.width}: 접힘 안 홉 → 지도 → 시트 → 선택기 호출`, async ({ page, context }) => {
+      await context.addInitScript(() => {
+        const w = window as unknown as {
+          __picked?: number;
+          showDirectoryPicker?: () => Promise<never>;
+        };
+        w.__picked = 0;
+        w.showDirectoryPicker = async () => {
+          w.__picked = (w.__picked ?? 0) + 1;
+          throw new DOMException("stub", "AbortError");
+        };
+      });
+      await page.setViewportSize({ width: viewport.width, height: viewport.height });
+      await page.goto("/ko/?guides=off", { waitUntil: "domcontentloaded" });
+      await page.evaluate(() => document.fonts.ready);
+      await page.waitForTimeout(1200);
+
+      /**
+       * **결정 자신을 검사가 진다.** 관문에 폴더 컨트롤이 생기면 여기서 빨개지고,
+       * 그때 사람은 원장으로 돌아온다 — 조용히 두 번째 첫 실행 표면이 자라는 것을
+       * 막는 유일한 자리다.
+       */
+      const folderControls = await page.evaluate(
+        () =>
+          [...document.querySelectorAll("[data-open-vault-cta]")].filter((el) => {
+            const b = el.getBoundingClientRect();
+            return b.width > 2 && b.height > 2;
+          }).length,
+      );
+      expect(
+        folderControls,
+        "관문에 폴더 여는 컨트롤이 생겼다 — 첫 실행 표면이 둘이 된다. 되돌리려면 원장부터",
+      ).toBe(0);
+
+      // ① 그 폭의 접힘 안에 지도로 가는 홉이 **그려져** 있다.
+      const hops = await page.evaluate(() => {
+        const painted = (el: Element) => {
+          const c = getComputedStyle(el);
+          const b = el.getBoundingClientRect();
+          return (
+            b.width > 2 &&
+            b.height > 2 &&
+            c.visibility !== "hidden" &&
+            c.display !== "none" &&
+            Number(c.opacity) >= 0.05
+          );
+        };
+        return [...document.querySelectorAll("a[href]")]
+          .filter(painted)
+          .filter((a) =>
+            /\/topology\/?$/.test(new URL((a as HTMLAnchorElement).href, location.href).pathname),
+          )
+          .map((a, i) => {
+            const b = a.getBoundingClientRect();
+            a.setAttribute("data-reach-hop", String(i));
+            return {
+              index: i,
+              label: (a.textContent ?? "").trim().slice(0, 24),
+              top: Math.round(b.top),
+              bottom: Math.round(b.bottom),
+              // 하단 고정 탭바는 바닥이 뷰포트와 정확히 같으므로 1px 여유를 준다.
+              inFold: b.top >= 0 && b.bottom <= innerHeight + 1,
+            };
+          });
+      });
+
+      const inFold = hops.filter((h) => h.inFold);
+      expect(
+        inFold.map((h) => h.label),
+        `${viewport.width}: 관문 접힘 안에 지도로 가는 길이 없다 — 폴더를 열 수 있는 화면에 닿지 못한다 (전체 홉: ${JSON.stringify(hops)})`,
+      ).not.toEqual([]);
+
+      // ② 눌러서 도착한다.
+      await page.locator(`[data-reach-hop="${inFold[0].index}"]`).click();
+      await page.waitForURL(/\/topology/, { timeout: 15_000 });
+      await page.waitForTimeout(2200);
+
+      // ③ 착지점의 주 행동이 그 일이다 — 시트를 거쳐 선택기를 **실제로** 부른다.
+      const starter = page.getByTestId("first-run-starter-open");
+      await expect(
+        starter,
+        `${viewport.width}: 착지점에 폴더 여는 주 행동이 안 보인다`,
+      ).toBeVisible();
+      await starter.click();
+      await page.waitForTimeout(500);
+
+      await expect(
+        page.getByTestId("vault-guide-sheet"),
+        `${viewport.width}: 안내 시트가 안 열렸다 — 착지점의 경로가 바뀌었다`,
+      ).toBeVisible();
+      await page.getByTestId("vault-guide-pick-existing").click();
+      await page.waitForTimeout(500);
+
+      const picked = await page.evaluate(
+        () => (window as unknown as { __picked?: number }).__picked ?? 0,
+      );
+      expect(
+        picked,
+        `${viewport.width}: 착지점까지 갔는데 폴더 선택기가 안 열렸다 — 한 홉 뒤 막다른 길`,
+      ).toBeGreaterThan(0);
+    });
+  }
 });

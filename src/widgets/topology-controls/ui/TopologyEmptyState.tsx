@@ -4,7 +4,6 @@ import { Link } from '@/i18n/navigation';
 import { useTranslations } from 'next-intl';
 import { FolderOpen, GitBranch, Map as MapIcon, Network, Plus } from 'lucide-react';
 import { ICON_SIZE } from '@/shared/ui/icon-size';
-import { isTauriVaultRuntime } from '@/shared/lib/tauri-vault-fs';
 import { controlClass } from '@/shared/ui';
 
 /**
@@ -21,7 +20,7 @@ export function TopologyEmptyState({
   onCreateNode,
   docsFoundCount = 0,
   onStartFromDocs,
-  hasOpenVault = false,
+  canPickFolder = false,
 }: {
   projectCount: number;
   reason?: 'no-projects' | 'no-relations';
@@ -38,17 +37,25 @@ export function TopologyEmptyState({
   docsFoundCount?: number;
   onStartFromDocs?: () => void;
   /**
-   * 2026-07-24 온보딩 라운드 — 웹(non-Tauri)에서도 로컬 vault 를 이미 연
-   * 사용자에게는 "macOS 앱을 설치하고…" 다운로드 카피가 오안내다(방금
-   * 폴더를 열었는데 설치를 권함). vault 가 열려 있으면 picker 카피/CTA 를
-   * 쓴다.
+   * **능력이 가른다 — 런타임도, 「이미 열었나」도 아니다** (2026-08-08 카운슬).
+   *
+   * 종전 판정은 `isTauriVaultRuntime() || hasOpenVault` 였다. 그 둘 다 아닌
+   * 사람 — **FSA 를 지원하는 브라우저로 처음 온 웹 방문자** — 에게 이 패널이
+   * 「macOS 앱을 설치하세요」로 답했다. 그 사람의 브라우저는 지금 이 자리에서
+   * 폴더를 열 수 있다. 되는 것을 안 된다고 쓰는 것이고(`surfaces.md`),
+   * 2026-08-07 슬라이스가 세 자리에서 고친 것과 같은 병이 여기 남아 있었다.
+   *
+   * 판정의 단일 출처는 `OpenVaultCta` 와 같다: `vault.status !== 'unsupported'`.
+   * 그 `status` 는 `isSupported()` 안에서 이미 Tauri 런타임을 포함하므로,
+   * 이 한 값이 옛 두 조건을 **덮으면서** 웹 방문자까지 맞게 가른다. 값을 넘기는
+   * 쪽은 `useLocalVault()` 를 이미 들고 있는 `HomePage` 다 — 이 위젯이 provider
+   * 에 묶이면 단위 시험이 provider 없이는 못 도는 것도 함께 막는다.
    */
-  hasOpenVault?: boolean;
+  canPickFolder?: boolean;
 }) {
   const t = useTranslations('topology.empty');
   const isNoProjects = reason ? reason === 'no-projects' : projectCount === 0;
-  // picker 경로: 데스크톱 런타임이거나 이미 로컬 vault 를 연 웹 세션.
-  const showPickerPath = isTauriVaultRuntime() || hasOpenVault;
+  const showPickerPath = canPickFolder;
   const hasDocsToBootstrap = docsFoundCount > 0 && onStartFromDocs !== undefined;
   const kicker = hasDocsToBootstrap
     ? t('kickerDocsFound', { count: docsFoundCount })
