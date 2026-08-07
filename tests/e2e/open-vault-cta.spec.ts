@@ -177,6 +177,48 @@ test.describe("막다른 CTA 금지 — 폴더를 열라고 말한 자리", () =
   });
 
   /**
+   * **쓸 수 없으면 누르기 전에 말한다 — 만들기와 편집이 같아야 한다.**
+   *
+   * 2026-08-07 실측: `/project/new` 는 저장 버튼을 잠그고 배너로 미리 말하는데
+   * `/project/[slug]/edit` 은 볼트가 없어도 버튼이 활성이었다. 눌러야 비로소
+   * *"데모 모드에서는 저장할 수 없습니다"* 가 떴고, 390×844 에서 그 알림은
+   * **top 802 · bottom 872** — 뷰포트 844 라 위아래로 잘린 채 하단 탭바 뒤에
+   * 걸렸다. 누른 사람 화면에서는 아무 일도 안 일어난 것과 같다.
+   *
+   * 같은 사실을 두 화면이 다른 시점에 말하고 있었다. 능력 플래그(`canEdit`)는
+   * 처음부터 있었고 주석에 «UI 사전 게이트용» 이라 적혀 있었는데 이 폼만 안
+   * 쓰고 있었다.
+   */
+  test("쓸 수 없으면 누르기 전에 말한다 — 만들기와 편집이 같다", async ({ page }) => {
+    for (const route of ["/ko/project/new/", "/ko/project/storefront/edit/"]) {
+      await page.goto(`${route}?guides=off`, { waitUntil: "domcontentloaded" });
+      await page.evaluate(() => document.fonts.ready);
+      await page.waitForTimeout(900);
+
+      await expect(
+        page.getByTestId("project-write-disabled-banner").first(),
+        `${route}: 쓰기 잠금을 미리 말하지 않는다`,
+      ).toBeVisible();
+
+      const submits = await page.evaluate(() =>
+        [...document.querySelectorAll("button[type=submit]")]
+          .filter((b) => b.getBoundingClientRect().width > 2)
+          .map((b) => ({
+            label: (b.textContent ?? "").trim().slice(0, 20),
+            disabled: (b as HTMLButtonElement).disabled,
+          })),
+      );
+
+      // 공회전 차단 — 버튼을 못 찾으면 «전부 잠김» 이 참이 되어 버린다.
+      expect(submits.length, `${route}: 저장 버튼을 하나도 못 찾았다`).toBeGreaterThan(0);
+      expect(
+        submits.filter((b) => !b.disabled),
+        `${route}: 저장할 수 없는데 저장 버튼이 열려 있다 — 눌러야 거절을 알게 된다`,
+      ).toEqual([]);
+    }
+  });
+
+  /**
    * FSA 를 못 쓰는 브라우저(Firefox 등)에서는 **왜 + 어디로**로 강등된다.
    * 「곧 됩니다」는 쓰지 않는다(`surfaces.md`).
    */

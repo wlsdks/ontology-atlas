@@ -1147,10 +1147,35 @@ export function ProjectForm({
     </div>
   ) : null;
 
+  /**
+   * 저장이 거절됐을 때 **그 이유가 눌린 사람 눈에 들어오는가.**
+   *
+   * 2026-08-07 실측(390×844): 편집 화면에서 저장을 누르니 거절 알림이
+   * top 802 · bottom 872 에 떴다 — 뷰포트가 844 라 **위아래로 잘린 채** 하단
+   * 탭바 뒤에 걸렸다. 누른 사람 화면에서는 아무 일도 안 일어난 것과 같다.
+   * 1512 에서는 멀쩡히 보였다(628–676). 폼이 길수록, 화면이 짧을수록 어긋난다.
+   *
+   * 검증 오류는 `focusField` 가 이미 그 칸으로 데려가지만, 저장 실패처럼
+   * **칸이 없는 오류**는 데려갈 곳이 이 배너뿐이다.
+   */
+  const errorBannerRef = useRef<HTMLDivElement | null>(null);
+  useEffect(() => {
+    if (!globalError) return;
+    const node = errorBannerRef.current;
+    if (!node) return;
+    // jsdom 은 scrollIntoView 를 구현하지 않는다 — 포커스가 본론이고 스크롤은
+    // 보조라 없으면 조용히 건너뛴다(`focusField` 와 같은 규율).
+    node.scrollIntoView?.({ behavior: "smooth", block: "center" });
+    node.focus();
+  }, [globalError]);
+
   const errorBanner =
     globalError || Object.keys(errors).length > 0 ? (
       <div
+        ref={errorBannerRef}
         role="alert"
+        tabIndex={-1}
+        data-testid="project-error-banner"
         className="rounded-card border border-[color:var(--color-danger-a32)] bg-[color:var(--color-danger-a08)] px-3 py-3 text-body-lg text-[color:var(--color-status-danger)]"
       >
         <p className="font-[var(--font-weight-signature)]">

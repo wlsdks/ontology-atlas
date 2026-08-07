@@ -59,6 +59,7 @@ import {
   type MeaningGapRow,
 } from "../lib/meaning-gap-rows";
 import { resolveSessionAbilities } from "../lib/session-abilities";
+import type { QueueSectionKey } from "../lib/queue-work-groups";
 import { buildInsightsVerdict } from "../lib/insights-verdict";
 import { pickTodaysTouchUps, type TouchUpItem } from "../lib/todays-touch-ups";
 import { countRecentEntries } from "@/shared/lib/agent-activity-log";
@@ -594,26 +595,42 @@ export function OntologyInsightsPage() {
   };
   // #63 — 이 화면의 단일 판정. 탭 배지 · 빈 상태 문구 · 건강 주장이 모두
   // 여기서 나와야 같은 데이터에 서로 다른 말을 하지 않는다.
+  /**
+   * 「할 일」 큐 섹션별 총계 — **이 화면의 단일 출처.**
+   *
+   * 판정(탭 배지)과 묶음 배지가 여기서 갈라져 나간다. 종전에는 둘이 각자
+   * 목록을 갖고 있었고, 중복 쌍이 판정 쪽에만 빠져서 같은 화면에 탭 「할 일 7」
+   * 과 묶음 「8」이 함께 떴다(2026-08-07 실측, 샘플 볼트).
+   */
+  const queueSectionTotals = useMemo<Record<QueueSectionKey, number>>(
+    () => ({
+      "missing-definition": meaningGapResult.counts.missingDefinition,
+      "missing-domain": meaningGapResult.counts.missingDomain,
+      duplicate: duplicates.suspectCount,
+      promotion: doNextQueue.counts.promotion,
+      "neglected-hub": doNextQueue.counts.neglectedHub,
+      orphan: doNextQueue.counts.orphan,
+      cycle: dependencyCycles.totalCycles,
+    }),
+    [
+      meaningGapResult.counts,
+      duplicates.suspectCount,
+      doNextQueue.counts,
+      dependencyCycles.totalCycles,
+    ],
+  );
+
+  // #63 — 이 화면의 단일 판정. 탭 배지 · 빈 상태 문구 · 건강 주장이 모두
+  // 여기서 나와야 같은 데이터에 서로 다른 말을 하지 않는다.
   const insightsVerdict = useMemo(
     () =>
       buildInsightsVerdict({
         islands: healthRepair.islandCount,
         missingContainment: healthRepair.missingContainmentCount,
-        cycles: dependencyCycles.totalCycles,
-        neglectedHubs: doNextQueue.counts.neglectedHub,
-        orphans: doNextQueue.counts.orphan,
-        promotions: doNextQueue.counts.promotion,
-        meaningGaps:
-          meaningGapResult.counts.missingDefinition + meaningGapResult.counts.missingDomain,
+        sections: queueSectionTotals,
       }),
-    [
-      healthRepair,
-      dependencyCycles.totalCycles,
-      doNextQueue.counts,
-      meaningGapResult.counts,
-    ],
+    [healthRepair, queueSectionTotals],
   );
-
   const doNextTouchUps: DoNextTouchUp[] = pickTodaysTouchUps(doNextQueue, dependencyCycles, {
     totalNodes,
     cycleTitle: cycleNodeTitle,
