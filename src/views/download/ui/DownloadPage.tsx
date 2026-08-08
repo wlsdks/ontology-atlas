@@ -834,7 +834,7 @@ function PendingActions() {
           동시에 그려지지 않으므로 중복 매치는 없다. */}
       <p
         data-testid="download-platform-macos"
-        className="mt-2.5 flex flex-wrap items-baseline gap-x-2 gap-y-1 text-label leading-label text-[color:var(--color-text-quaternary)]"
+        className="mt-2 flex flex-wrap items-baseline gap-x-2 gap-y-1 text-label leading-label text-[color:var(--color-text-quaternary)]"
       >
         <span>
           {RELEASE_MIN_MACOS}
@@ -852,6 +852,21 @@ function PendingActions() {
  * Tailscale 은 최소 OS 를 버튼에 붙인다). 날짜가 버전과 짝인 이유: `v1.0.0`
  * 만으로는 이게 지난주 빌드인지 재작년 빌드인지 알 수 없다.
  */
+/*
+ * ⚠️ **이 블록의 세로 리듬은 세 값이다** (2026-08-08 실측).
+ *
+ * 히어로 액션 블록의 형제 간 간격을 재 보니 **네 종류**였다 —
+ * 0 · 10 · 8 · 12(1440) / 0 · 10 · 8 · 20(768). 0 과 큰 값은 뜻이 분명하다:
+ * 앞은 「제목과 버튼은 한 덩어리」, 뒤는 「구분선을 낀 다른 절」. 문제는
+ * 가운데 둘이다 — **8 과 10 은 2px 차이라 위계 신호가 되지 못하고**, 자리마다
+ * 골랐다는 인상만 남긴다.
+ *
+ * 그래서 캡션 두 줄(출시 사실 · 신뢰 칩)을 같은 8 로 묶었다. 남는 값은
+ * 0(한 덩어리) · 8(보통 쌓임) · 12~20(절 전환) 셋이고, 셋은 서로 충분히 멀어
+ * 실제로 읽힌다. 8 인 것은 4px 배수이기 때문이다 — 10 은 반스텝이다.
+ * 게시/미게시 두 분기가 같은 값을 쓴다(동시에 그려지지 않지만, 릴리스 당일에
+ * 리듬이 바뀌면 그건 디자인이 아니라 사고다).
+ */
 function ReleaseFactLine() {
   const t = useTranslations('download');
   const format = useFormatter();
@@ -863,7 +878,7 @@ function ReleaseFactLine() {
   return (
     <p
       data-testid="download-platform-macos"
-      className="mt-2.5 flex flex-wrap items-baseline gap-x-2 gap-y-1 text-label leading-label text-[color:var(--color-text-quaternary)]"
+      className="mt-2 flex flex-wrap items-baseline gap-x-2 gap-y-1 text-label leading-label text-[color:var(--color-text-quaternary)]"
     >
       <span>
         {RELEASE_MIN_MACOS}

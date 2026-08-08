@@ -708,7 +708,26 @@ function DuplicateRow({
       <span className="flex w-full items-center justify-end gap-1.5 sm:w-auto sm:shrink-0">
         <Link
           href={mapHref(pair.keepId)}
-          className={controlClass({ shape: "chip", tone: "muted", className: "min-h-7 border-[color:var(--color-border-soft)] px-2 text-label hover:text-[color:var(--color-text-primary)]" })}
+          /*
+           * ⚠️ **같은 행의 같은 무게 액션은 같은 높이다** (2026-08-08 실측).
+           *
+           * 여기만 `min-h-7 px-2 text-label` 을 손으로 덧대고 있어서 **30px**
+           * 로 렌더됐다 — 바로 옆 `HandoffCopyButton`(32)과 2px 어긋난다.
+           * 30 은 칩 사다리(24/32/32)에 없는 값이고, `min-h-7`(28)은 자연
+           * 높이가 이미 30이라 한 번도 적용된 적이 없다.
+           *
+           * 사연은 형제 쪽 주석이 이미 적어 뒀다: 2026-08-03 에 칩 램프가
+           * 32 로 수렴하며 30/32 를 고르던 `compact` 프롭을 지웠는데, **이
+           * 링크만 그 수렴을 안 따라왔다.** 손으로 덧댄 값은 램프가 움직일 때
+           * 같이 안 움직인다 — 그래서 값 층의 단을 쓴다.
+           */
+          className={controlClass({
+            shape: "chip",
+            size: "md",
+            tone: "muted",
+            className:
+              "border-[color:var(--color-border-soft)] hover:text-[color:var(--color-text-primary)]",
+          })}
         >
           {labels.openMap}
         </Link>
