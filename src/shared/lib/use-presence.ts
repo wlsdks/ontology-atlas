@@ -18,6 +18,56 @@ import { useCallback, useEffect, useLayoutEffect, useRef, useState } from "react
 export const EXIT_WINDOW_MS = 140;
 
 /**
+ * **0ms 짜리 일에 로딩 표시를 그리지 않는다.**
+ *
+ * 실측(2026-08-08, 소유자 제보 — *"회색선이 3개 생겼다가 사라지거든? 거의
+ * 1초도 안걸려서 깜빡이다 사라져서"*): 문서함에서 문서를 바꿀 때 뷰어의 3줄
+ * 스켈레톤이 **8.2~15.9ms**(중앙값 9.7ms) 동안 그려졌다 — 60Hz 한 프레임
+ * (16.7ms) 안쪽이다. 8회 전환 전부에서 났다.
+ *
+ * 원인은 느린 로딩이 아니다. 부모가 `key={doc.slug}` 로 뷰어를 **리마운트**
+ * 하므로 본문 상태가 매번 `null` 로 시작하고, 본문이 이미 메모리에 있어도
+ * 프로미스는 다음 틱에 풀리므로 **최소 한 프레임은 스켈레톤이 이긴다.**
+ * 즉 기다릴 것이 없는데 기다리라고 말하는 표시였다.
+ *
+ * 그래서 이 창이 지나기 전에 끝나는 일은 **아무것도 그리지 않는다.**
+ *
+ * 값의 근거: Nielsen(1993)의 0.1초 — 그 안에 끝나면 사람은 지연을 아예
+ * 느끼지 않으므로 알릴 것이 없다. 여유 50ms 는 느린 프레임 두어 장에
+ * 스켈레톤이 걸려 도로 깜빡이지 않게 하는 몫이고, 진짜 느린 읽기는 여전히
+ * 「생각의 흐름이 끊긴다」는 1초 경계보다 훨씬 앞서 표시를 받는다.
+ *
+ * `EXIT_WINDOW_MS` 와 같은 부류다 — **모션 값이 아니라 마운트 타이머**라서
+ * `--motion-*` 램프를 읽지 않는다.
+ */
+export const SKELETON_DELAY_MS = 150;
+
+/**
+ * `active` 가 이 창보다 오래 유지될 때만 `true` 가 된다. 먼저 끝나면 한 번도
+ * `true` 가 되지 않으므로 화면에 아무것도 안 나타난다.
+ */
+export function useDelayedVisible(
+  active: boolean,
+  delayMs: number = SKELETON_DELAY_MS,
+): boolean {
+  const [elapsed, setElapsed] = useState(false);
+  useEffect(() => {
+    if (!active) return;
+    const timer = setTimeout(() => setElapsed(true), delayMs);
+    /*
+     * 정리 단계에서 되돌린다 — effect 본문에서 동기로 state 를 바꾸면 렌더가
+     * 연쇄된다(lint 가 경고한다). 그리고 `active` 를 곱해서 돌려주므로,
+     * 되돌리기가 한 틱 늦어도 그 사이에 표시가 새지 않는다.
+     */
+    return () => {
+      clearTimeout(timer);
+      setElapsed(false);
+    };
+  }, [active, delayMs]);
+  return active && elapsed;
+}
+
+/**
  * 하나의 표면이 열리고 닫히는 경우. `open` 이 꺼져도 퇴장 애니가 끝날 때까지
  * `mounted` 를 유지하고, 그 동안 `exiting` 으로 퇴장 클래스를 입힌다.
  */

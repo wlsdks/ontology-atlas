@@ -323,9 +323,18 @@ describe('DocsVaultEditor', () => {
     ).toBeInTheDocument();
   });
 
-  it('로딩 스켈레톤이 role=status 로 announce 된다 (a11y)', async () => {
-    // content 가 resolve 되기 전 초기 로딩 상태 — 스켈레톤이 스크린리더에
-    // "불러오는 중" 으로 announce 돼야 한다.
+  /*
+   * **오래 걸리는 로딩은 여전히 알린다.**
+   *
+   * 2026-08-08 에 스켈레톤을 `SKELETON_DELAY_MS`(150ms) 뒤로 미뤘다 — 문서를
+   * 바꿀 때 3줄 바가 한 프레임만 깜빡이던 결함 때문이다(실측 8.2~15.9ms).
+   * 그래서 이 시험도 **창을 넘긴 뒤** 재야 한다.
+   *
+   * ⚠️ 이 시험을 지우지 않는 이유: 지연은 「빠르면 안 보인다」를 위한 것이고,
+   * 「느리면 알린다」는 성질은 그대로 살아 있어야 한다. 지우면 다음 사람이
+   * 스켈레톤을 통째로 없애도 아무것도 안 터진다.
+   */
+  it('오래 걸리는 로딩은 role=status 로 announce 된다 (a11y)', async () => {
     let resolve!: (v: string) => void;
     render(
       <DocsVaultEditor vaultScope={VAULT_SCOPE}
@@ -335,7 +344,9 @@ describe('DocsVaultEditor', () => {
         onClose={vi.fn()}
       />,
     );
-    const status = screen.getByRole('status');
+    // 창이 지나기 전에는 아무것도 알리지 않는다 — 기다릴 것이 없을 수 있다.
+    expect(screen.queryByRole('status')).toBeNull();
+    const status = await screen.findByRole('status', {}, { timeout: 2_000 });
     expect(status).toHaveAttribute('aria-label', '파일 불러오는 중…');
     // 마무리: resolve 해서 dangling promise 정리.
     resolve('done');
