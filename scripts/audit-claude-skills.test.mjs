@@ -12,9 +12,20 @@ import {
  * 스킬 무결성 계기가 **정말 무언가를 보고 있는지** 잠근다.
  *
  * 이 도구는 발견용이라 게이트가 아니다. 그러나 발견 도구도 틀리면 엉뚱한 것을
- * 고치게 만든다 — 이번 라운드에 실제로 그랬다: 죽은 참조를 700건이라고 셌는데
- * 갈라 보니 666건은 「프로젝트에 있으면 읽어라」식 조건부라 결함이 아니었고,
- * 진짜는 **37건**이었다. 그 분류가 이 시험의 핵심이다.
+ * 고치게 만든다 — 이번 라운드에 **두 번** 그랬다.
+ *
+ * **① 참조를 한 덩어리로 셌다.** 죽은 참조 700건 중 666건은 「프로젝트에 있으면
+ * 읽어라」식 조건부라 결함이 아니었다.
+ *
+ * **② 로드되지 않는 파일을 셌다(더 컸다).** `~/.claude/plugins` 를 통째로 훑어
+ * **207개**를 보고했는데, 정본은 `installed_plugins.json`(플러그인당 installPath
+ * 하나)이고 실제 로드는 **60개**였다. 나머지는 버전별 다운로드 캐시와 설치도
+ * 안 한 카탈로그 클론이었다. 좁히니 이름 충돌 38→**2**, 강한 겹침 41→**1쌍**,
+ * 깨진 자기참조 37→**0**(7건 전부 저장소 루트에 실재하는 오탐)이 됐다.
+ *
+ * 그 잘못된 숫자로 카운슬 브리프를 썼고, 다섯 자리 중 셋이 그것을 근거로 판정한
+ * 뒤 한 자리가 잡아냈다. **분모를 틀리면 결론이 틀린다** — 이 시험이 잠그는 것이
+ * 그 분모다.
  */
 
 const SKILL = (name, description, body = '') =>
@@ -134,4 +145,58 @@ test('계기가 살아 있다 — 완전히 깨끗한 뭉치에서는 아무것�
   assert.equal(report.duplicates.length, 0);
   assert.equal(report.overlaps.length, 0);
   assert.equal(report.references.bundledMissing.length, 0);
+});
+
+test('installedPluginRoots — 정본이 지목한 installPath 만 돌려준다', async () => {
+  const { installedPluginRoots } = await import('./audit-claude-skills.mjs');
+  const roots = installedPluginRoots('/home', () => ({
+    version: 2,
+    plugins: {
+      'a@m': [{ installPath: '/home/.claude/plugins/cache/a/1.0.0' }],
+      'b@m': [{ installPath: '/home/.claude/plugins/cache/b/2.0.0' }, { installPath: '/home/.claude/plugins/cache/b/2.0.0' }],
+      'c@m': [{ notAPath: true }],
+    },
+  }));
+  assert.deepEqual(roots, [
+    '/home/.claude/plugins/cache/a/1.0.0',
+    '/home/.claude/plugins/cache/b/2.0.0',
+  ]);
+});
+
+test('installedPluginRoots — 정본을 못 읽으면 빈 목록 (부풀린 숫자보다 「못 셌다」가 낫다)', async () => {
+  const { installedPluginRoots } = await import('./audit-claude-skills.mjs');
+  assert.deepEqual(
+    installedPluginRoots('/home', () => {
+      throw new Error('no manifest');
+    }),
+    [],
+  );
+});
+
+/**
+ * 저장소 루트에서 찾은 참조는 결함이 아니다 — 이 확인이 없을 때 우리 스킬 7건이
+ * 전부 「깨진 참조」로 보고됐고 일곱 다 실재했다.
+ */
+test('auditSkills — 저장소 루트에 있는 참조는 깨진 것으로 세지 않는다', async () => {
+  const { auditSkills } = await import('./audit-claude-skills.mjs');
+  const skills = [
+    {
+      name: 'x',
+      description: '',
+      body: 'Run scripts/at-repo.mjs and scripts/nowhere.mjs.',
+      file: '/skills/x/SKILL.md',
+      terms: [],
+    },
+  ];
+  const report = auditSkills(skills, {
+    repoRoot: '/repo',
+    exists: (p) => p === '/repo/scripts/at-repo.mjs',
+  });
+  assert.equal(report.references.bundledTotal, 2);
+  assert.equal(report.references.repoRelative, 1, '저장소 루트에서 찾은 것은 따로 센다');
+  assert.deepEqual(
+    report.references.bundledMissing.map((m) => m.ref),
+    ['scripts/nowhere.mjs'],
+    '어디에도 없는 것만 결함이다',
+  );
 });

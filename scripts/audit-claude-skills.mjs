@@ -29,11 +29,34 @@
  * ③ **자기 폴더 참조의 무결성** — 스킬이 «내 폴더의 이 파일을 읽어라» 라고
  *    가리킨 것이 실재하는가.
  *
- * ⚠️ **③ 은 두 종류를 반드시 갈라야 한다.** 실측(2026-08-09, 이 컴퓨터 207개):
- * 없는 파일을 가리키는 참조가 **700건**이었는데, 그중 666건은 «프로젝트에
- * 이런 파일이 있으면 읽어라» 식 **조건부**라 결함이 아니다. 갈라 보니 스킬이
- * 자기 폴더에 싣고 있다고 주장한 것 **276건 중 37건(13%)**만 진짜 결함이었다.
- * 갈라지 않으면 700이라는 숫자가 «전부 고쳐야 할 것»으로 읽히고, 그건 소음이다.
+ * ## ⚠️ 무엇을 세는지가 이 도구의 전부다 — 두 번 틀렸다
+ *
+ * **첫 번째 오분류: 참조를 한 덩어리로 셌다.** 없는 파일을 가리키는 참조가
+ * 700건이었는데 666건은 «프로젝트에 이런 파일이 있으면 읽어라» 식 **조건부**라
+ * 결함이 아니었다. 갈라야 숫자가 행동 가능해진다.
+ *
+ * **두 번째 오분류(더 컸다): 로드되지 않는 파일을 셌다.** 첫 판은
+ * `~/.claude/plugins` 를 통째로 훑어 **207개**를 보고했다. 그 안에는
+ * ⓐ `cache/` — 버전 고정 다운로드 스냅샷(같은 플러그인의 5.1.0 **과** 6.2.0,
+ * 커밋 해시별 사본) ⓑ `marketplaces/` — **설치하지 않은 것까지** 담은 카탈로그
+ * 클론이 섞여 있다. 정본은 `~/.claude/plugins/installed_plugins.json` 이고
+ * 플러그인당 `installPath` 를 **하나만** 지목한다.
+ *
+ * 좁혀서 다시 세니 숫자가 이렇게 바뀌었다(2026-08-09 실측):
+ *
+ * | | 디스크 전체 | **실제 로드** |
+ * |---|---|---|
+ * | 스킬 | 209 | **60** |
+ * | 이름 충돌 | 38개 이름 | **2개** (`frontend-design` · `skill-creator`) |
+ * | 강한 트리거 겹침 | 41쌍 | **1쌍** |
+ * | 자기 폴더 참조 없음 | 37 | **0** (7건 전부 저장소 루트에 실재하는 오탐이었다) |
+ *
+ * 즉 «`frontend-design` 8벌이 경쟁한다» 는 첫 보고는 **틀렸다** — 여덟 중
+ * 여섯은 안 쓰이는 스냅샷과 카탈로그였고, 설명 차이는 한 플러그인의 **버전 간
+ * 드리프트**였다. 다운로드 캐시의 정상 모습이다.
+ *
+ * **그래서 기본은 로드되는 것만 센다.** 디스크 전체를 보려면 `--all` 을 준다 —
+ * 그때는 출력이 스스로 «로드되지 않는 것을 포함한다» 고 말한다.
  */
 
 import fs from 'node:fs';
@@ -92,6 +115,9 @@ export function parseSkill(raw) {
 export function classifyReferences(body) {
   const bundled = new Set();
   const conditional = new Set();
+  // 세 번째 갈래는 `classifyReferences` 가 아니라 실재 확인 단계에서 갈린다 —
+  // 같은 `scripts/x.mjs` 가 스킬 폴더 기준일 수도, 저장소 루트 기준일 수도
+  // 있어서 문자열만으로는 못 가른다(아래 `auditSkills` 의 repoRoot 확인).
   for (const hit of body.matchAll(
     /(?:^|[\s(`'"])([A-Za-z0-9_./-]+\.(?:md|py|js|mjs|ts|sh|json|csv|txt))/g,
   )) {
@@ -122,7 +148,7 @@ export function findSkillFiles(root) {
   return out.filter((file) => !/\/template\//.test(file));
 }
 
-export function auditSkills(skills, { exists = fs.existsSync } = {}) {
+export function auditSkills(skills, { exists = fs.existsSync, repoRoot = process.cwd() } = {}) {
   const byName = new Map();
   for (const skill of skills) {
     if (!byName.has(skill.name)) byName.set(skill.name, []);
@@ -156,6 +182,7 @@ export function auditSkills(skills, { exists = fs.existsSync } = {}) {
   overlaps.sort((x, y) => y.score - x.score);
 
   let bundledTotal = 0;
+  let repoRelative = 0;
   const bundledMissing = [];
   let conditionalTotal = 0;
   let conditionalMissing = 0;
@@ -164,7 +191,20 @@ export function auditSkills(skills, { exists = fs.existsSync } = {}) {
     const refs = classifyReferences(skill.body);
     for (const ref of refs.bundled) {
       bundledTotal += 1;
-      if (!exists(path.resolve(dir, ref))) bundledMissing.push({ name: skill.name, ref, file: skill.file });
+      if (exists(path.resolve(dir, ref))) continue;
+      /*
+       * ⚠️ **저장소 루트에서 한 번 더 찾아본다** (2026-08-09 정정).
+       * `scripts/…` 로 시작하는 참조는 스킬이 자기 폴더에 싣는 것일 수도 있고
+       * **그 스킬을 쓰는 저장소의 스크립트**일 수도 있다 — 문자열만으로는 못
+       * 가른다. 이 확인을 안 넣었을 때 우리 스킬 7건이 전부 「깨진 참조」로
+       * 보고됐는데, 일곱 다 저장소 루트에 실재했다(`scripts/measure-contrast.mjs`
+       * 등). 계기가 멀쩡한 것을 결함이라 부른 것이다.
+       */
+      if (exists(path.resolve(repoRoot, ref))) {
+        repoRelative += 1;
+        continue;
+      }
+      bundledMissing.push({ name: skill.name, ref, file: skill.file });
     }
     for (const ref of refs.conditional) {
       conditionalTotal += 1;
@@ -177,11 +217,33 @@ export function auditSkills(skills, { exists = fs.existsSync } = {}) {
     uniqueNames: byName.size,
     duplicates,
     overlaps,
-    references: { bundledTotal, bundledMissing, conditionalTotal, conditionalMissing },
+    references: { bundledTotal, bundledMissing, repoRelative, conditionalTotal, conditionalMissing },
     withBoundary: skills.filter((s) =>
       /do not use|don't use|not for|instead of|rather than|대신|쓰지 않/i.test(s.description),
     ).length,
   };
+}
+
+/**
+ * **실제로 로드되는 플러그인 뿌리** — `installed_plugins.json` 이 정본이다.
+ * 플러그인당 `installPath` 를 하나만 지목하므로, 그것만 훑으면 다운로드
+ * 스냅샷과 카탈로그 클론이 자동으로 빠진다.
+ */
+export function installedPluginRoots(home, readJson = (p) => JSON.parse(fs.readFileSync(p, 'utf8'))) {
+  try {
+    const manifest = readJson(path.join(home, '.claude', 'plugins', 'installed_plugins.json'));
+    const out = [];
+    for (const entries of Object.values(manifest?.plugins ?? {})) {
+      for (const entry of entries ?? []) {
+        if (typeof entry?.installPath === 'string' && entry.installPath) out.push(entry.installPath);
+      }
+    }
+    return [...new Set(out)];
+  } catch {
+    // 정본이 없으면 플러그인 스킬은 세지 않는다 — 부풀린 숫자를 내는 것보다
+    // 「못 셌다」가 낫다. `--all` 을 주면 디스크 전체를 본다.
+    return [];
+  }
 }
 
 function loadSkills(roots) {
@@ -200,13 +262,20 @@ function main() {
   const args = process.argv.slice(2);
   const extra = args.filter((a) => !a.startsWith('--'));
   const home = os.homedir();
+  const scanAll = args.includes('--all');
   const roots = extra.length
     ? extra.map((r) => ['arg', path.resolve(r)])
-    : [
-        ['personal', path.join(home, '.claude', 'skills')],
-        ['plugins', path.join(home, '.claude', 'plugins')],
-        ['project', path.join(process.cwd(), '.claude', 'skills')],
-      ];
+    : scanAll
+      ? [
+          ['personal', path.join(home, '.claude', 'skills')],
+          ['disk', path.join(home, '.claude', 'plugins')],
+          ['project', path.join(process.cwd(), '.claude', 'skills')],
+        ]
+      : [
+          ['personal', path.join(home, '.claude', 'skills')],
+          ...installedPluginRoots(home).map((r) => ['plugin', r]),
+          ['project', path.join(process.cwd(), '.claude', 'skills')],
+        ];
 
   const skills = loadSkills(roots);
   if (skills.length === 0) {
@@ -217,10 +286,14 @@ function main() {
   const scopes = skills.reduce((acc, s) => ((acc[s.scope] = (acc[s.scope] ?? 0) + 1), acc), {});
 
   console.log(
-    `[skill-audit] 스킬 ${report.total}개 · 고유 이름 ${report.uniqueNames}개 (${Object.entries(scopes)
-      .map(([k, v]) => `${k}=${v}`)
-      .join(' ')})`,
+    `[skill-audit] ${scanAll ? '⚠️ 디스크 전체(로드되지 않는 스냅샷·카탈로그 포함)' : '실제 로드되는 스킬'} ` +
+      `${report.total}개 · 고유 이름 ${report.uniqueNames}개 (${Object.entries(scopes)
+        .map(([k, v]) => `${k}=${v}`)
+        .join(' ')})`,
   );
+  if (!scanAll && !skills.some((s) => s.scope === 'plugin')) {
+    console.log('   ⚠️ installed_plugins.json 을 못 읽어 플러그인 스킬은 세지 않았다 (--all 로 디스크 전체)');
+  }
 
   console.log(`\n① 이름 충돌 — 같은 이름 ${report.duplicates.length}개, 사본 ${report.total - report.uniqueNames}개 초과`);
   const risky = report.duplicates.filter((d) => d.descriptionsDiffer);
@@ -237,6 +310,9 @@ function main() {
   const { bundledTotal, bundledMissing, conditionalTotal, conditionalMissing } = report.references;
   console.log(`\n③ 자기 폴더 참조 — ${bundledTotal}건 중 ${bundledMissing.length}건 없음`);
   for (const miss of bundledMissing.slice(0, 6)) console.log(`   ✗ ${miss.name}: ${miss.ref}`);
+  console.log(
+    `   (저장소 루트에서 찾은 것 ${report.references.repoRelative}건은 결함이 아니다 — 스킬이 아니라 그 저장소의 스크립트다)`,
+  );
   console.log(
     `   (프로젝트 쪽 조건부 참조 ${conditionalTotal}건 중 ${conditionalMissing}건은 없어도 정상 — 「있으면 읽어라」이므로 결함이 아니다)`,
   );
