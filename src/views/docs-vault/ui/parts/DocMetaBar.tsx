@@ -1,7 +1,6 @@
 import { useLocale, useTranslations } from "next-intl";
 import { FileText, Network } from "lucide-react";
 import {
-  buildOntologyDeeplinkForDoc,
   buildTopologyDeeplinkForDoc,
   type VaultDoc,
 } from "@/entities/docs-vault";
@@ -33,10 +32,6 @@ export function DocMetaBar({ doc }: { doc: VaultDoc }) {
   const numberLocale = locale === "ko" ? "ko-KR" : "en-US";
   const readingMinutes = estimateReadingMinutes(doc.wordCount);
   const updated = new Date(doc.updatedAt);
-  const ontologyHref = buildOntologyDeeplinkForDoc(doc);
-  const kindValue = ontologyHref
-    ? String(doc.frontmatter?.kind ?? "").trim()
-    : "";
   // 토폴로지가 전체 ontology 그래프를 렌더하므로 project·domain·capability·element
   // 모두 1:1 노드를 가져 토폴로지로 점프 가능 (buildTopologyDeeplinkForDoc 이 kind 별 처리).
   const topologyHref = buildTopologyDeeplinkForDoc(doc);
@@ -51,37 +46,69 @@ export function DocMetaBar({ doc }: { doc: VaultDoc }) {
    * 말하는데 CTA 가 못 가는 상태가 구조적으로 불가능해진다.
    */
   const inGraph = topologyHref != null;
-  const proofBody = !inGraph
-    ? t("notOnMapBody")
-    : ontologyHref && kindValue
-      ? t("recordProofOntologyBody", { kind: kindValue })
-      : t("recordProofBody");
+  /*
+   * **설명은 그것이 무언가를 바꿀 때만 자리를 얻는다** (2026-08-08, 소유자 지적
+   * — *"문서 볼 때 상단이 조금 이상한데.. 보기좋게 구성할순없나?"*).
+   *
+   * 종전엔 어느 문서에서나 이 줄이 나왔다. 그런데 지도에 **있는** 문서에서
+   * 그 문장은 아무것도 새로 말하지 않는다 — 바로 왼쪽 칩이 「지도 근거」라고
+   * 적혀 있고 오른쪽에 「지형도」로 가는 링크가 있다. 그러면서 본문 위에 한 줄을
+   * 통째로 먹는다. 실측: 배포 샘플 볼트는 **112개 문서 전부가 노드**라, 같은
+   * 문장이 112번 반복되며 매번 본문을 아래로 밀었다.
+   *
+   * 지도에 **없는** 문서에서는 반대다 — 왜 없는지와 무엇을 할지가 그 문장에만
+   * 있다(도그푸드 볼트의 82개가 그 경우다). 그래서 그때만 남긴다. 이 저장소의
+   * 강등 카드 규율과 같은 모양이다: 못 하는 경우에 이유와 갈 곳을 말한다.
+   *
+   * 툴팁으로 옮기지 않은 이유: 손가락으로 만지는 기기에서 호버가 없어 사실상
+   * 사라지고, 그러면 「타입 있는 사실을 숨긴다」가 된다.
+   */
+  const proofBody = inGraph ? null : t("notOnMapBody");
 
   return (
     <section
       aria-label={inGraph ? t("recordProofAria") : t("notOnMapAria")}
-      className="mx-auto flex max-w-[760px] flex-col gap-2 border-b border-[color:var(--color-overlay-2)] px-6 py-3 text-label text-[color:var(--color-text-quaternary)] md:px-10"
+      className="mx-auto flex max-w-[760px] flex-col gap-2 border-b border-[color:var(--color-overlay-2)] px-6 py-2 text-label text-[color:var(--color-text-quaternary)] md:px-10"
     >
-      <div className="flex min-w-0 flex-wrap items-start gap-x-2 gap-y-1.5">
+      {/* 지도에 없는 문서만 자기 줄을 갖는다 — 그때는 왜 없는지가 사실이다. */}
+      {proofBody ? (
+        <div className="flex min-w-0 flex-wrap items-start gap-x-2 gap-y-1.5">
         <span
-          data-testid="doc-map-evidence"
-          data-in-graph={inGraph ? "true" : "false"}
-          className={
-            inGraph
-              ? "inline-flex min-h-7 shrink-0 items-center gap-1.5 rounded-chip border border-[color:var(--color-overlay-2)] bg-[color:var(--color-overlay-1)] px-2.5 font-mono text-label text-[color:var(--color-text-secondary)]"
-              : // 지도에 없다는 말은 경보가 아니라 사실이다 — 무채색으로 낮춘다.
-                "inline-flex min-h-7 shrink-0 items-center gap-1.5 rounded-chip border border-[color:var(--color-divider)] bg-[color:var(--color-overlay-recessed-a12)] px-2.5 font-mono text-label text-[color:var(--color-text-quaternary)]"
-          }
-        >
-          <FileText className="h-3.5 w-3.5" aria-hidden="true" />
-          {inGraph ? t("recordProofLabel") : t("notOnMapLabel")}
-        </span>
-        <span className="min-h-7 min-w-0 flex-1 py-1 text-[color:var(--color-text-tertiary)]">
-          {proofBody}
-        </span>
-      </div>
+            data-testid="doc-map-evidence"
+            data-in-graph={inGraph ? "true" : "false"}
+            className={
+              inGraph
+                ? "inline-flex min-h-7 shrink-0 items-center gap-1.5 rounded-chip border border-[color:var(--color-overlay-2)] bg-[color:var(--color-overlay-1)] px-2.5 font-mono text-label text-[color:var(--color-text-secondary)]"
+                : // 지도에 없다는 말은 경보가 아니라 사실이다 — 무채색으로 낮춘다.
+                  "inline-flex min-h-7 shrink-0 items-center gap-1.5 rounded-chip border border-[color:var(--color-divider)] bg-[color:var(--color-overlay-recessed-a12)] px-2.5 font-mono text-label text-[color:var(--color-text-quaternary)]"
+            }
+          >
+            <FileText className="h-3.5 w-3.5" aria-hidden="true" />
+            {inGraph ? t("recordProofLabel") : t("notOnMapLabel")}
+          </span>
+          <span className="min-h-7 min-w-0 flex-1 py-1 text-[color:var(--color-text-tertiary)]">
+            {proofBody}
+          </span>
+        </div>
+      ) : null}
 
       <div className="flex min-w-0 flex-wrap items-center gap-x-2 gap-y-2">
+        {/* 지도에 있으면 칩이 이 줄에 합류한다 — 두 줄이 한 줄이 된다. */}
+        {proofBody ? null : (
+        <span
+            data-testid="doc-map-evidence"
+            data-in-graph={inGraph ? "true" : "false"}
+            className={
+              inGraph
+                ? "inline-flex min-h-7 shrink-0 items-center gap-1.5 rounded-chip border border-[color:var(--color-overlay-2)] bg-[color:var(--color-overlay-1)] px-2.5 font-mono text-label text-[color:var(--color-text-secondary)]"
+                : // 지도에 없다는 말은 경보가 아니라 사실이다 — 무채색으로 낮춘다.
+                  "inline-flex min-h-7 shrink-0 items-center gap-1.5 rounded-chip border border-[color:var(--color-divider)] bg-[color:var(--color-overlay-recessed-a12)] px-2.5 font-mono text-label text-[color:var(--color-text-quaternary)]"
+            }
+          >
+            <FileText className="h-3.5 w-3.5" aria-hidden="true" />
+            {inGraph ? t("recordProofLabel") : t("notOnMapLabel")}
+          </span>
+        )}
         <div className="flex min-w-0 flex-wrap items-center gap-x-2 gap-y-1">
           <span className="font-mono tabular-nums">
             {t("wordsUnit", { count: doc.wordCount.toLocaleString(numberLocale) })}

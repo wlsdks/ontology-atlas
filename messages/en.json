@@ -1238,8 +1238,6 @@
         "recordProofAria": "Map evidence",
         "recordProofLabel": "Map evidence",
         "pathLabel": "Path",
-        "recordProofBody": "Local markdown evidence agents can cite before updating the map.",
-        "recordProofOntologyBody": "This document's fields connect it to a {kind} concept. Agents can query, cite, and update this evidence.",
         "wordsUnit": "{count} words",
         "readingMinutes": "≈ {minutes} min read",
         "ontologyKindTitle": "Open {kind} node in the map",
