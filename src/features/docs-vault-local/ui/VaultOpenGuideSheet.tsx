@@ -2,6 +2,8 @@
 
 import { AnimatePresence, motion } from "framer-motion";
 import { useTranslations } from "next-intl";
+import { isDesktopShell } from "@/shared/lib/desktop-shell";
+import { useHydrated } from "@/shared/lib/use-hydrated";
 import { FolderOpen, HardDrive, ShieldCheck, Sparkles, X } from "lucide-react";
 import { ICON_SIZE } from "@/shared/ui/icon-size";
 import { Link } from "@/i18n/navigation";
@@ -39,13 +41,20 @@ export interface VaultOpenGuideSheetProps {
 }
 
 const BULLETS = [
-  { icon: FolderOpen, key: "bulletAnyFolder" },
-  { icon: HardDrive, key: "bulletLocal" },
-  { icon: Sparkles, key: "bulletStarter" },
+  { icon: FolderOpen, key: "bulletAnyFolder", browserOnly: false },
+  { icon: HardDrive, key: "bulletLocal", browserOnly: false },
+  { icon: Sparkles, key: "bulletStarter", browserOnly: false },
   // 소유자 실사용 지적 (2026-07-24) — 폴더 선택 직후 브라우저의 표준
   // 허용 확인창("이 사이트에서 파일을 보고…")을 예고하지 않아 처음 보면
   // 우리 팝업/이상 동작으로 오인했다. 미리 한 줄로 안심시킨다.
-  { icon: ShieldCheck, key: "bulletPermission" },
+  //
+  // ⚠️ **브라우저에서만 참이다** (2026-08-08, 설치된 앱 실측). 이 줄은 조건 없이
+  // 그려져서, 설치된 앱의 첫 실행 카드가 「고르고 나면 **브라우저가** '허용'을
+  // 물어요」라고 말했다 — 앱은 OS 폴더창을 열고 그런 확인창이 없다. 같은 카드의
+  // 머리글이 이미 「OS 폴더 선택창」이라고 맞게 적어 둬서, 한 카드가 스스로와
+  // 어긋났다. 「되는 것을 안 된다고 쓰는 것」과 같은 종류의 거짓말이다
+  // (`.claude/rules/surfaces.md`).
+  { icon: ShieldCheck, key: "bulletPermission", browserOnly: true },
 ] as const;
 
 export function VaultOpenGuideSheet({
@@ -56,6 +65,15 @@ export function VaultOpenGuideSheet({
   unsupported = false,
 }: VaultOpenGuideSheetProps) {
   const t = useTranslations("vaultOpenGuide");
+  /*
+   * `isDesktopShell()` 은 **브라우저만 아는 사실**이라 정적 프리렌더에서 항상
+   * false 다. `useHydrated()` 로 하이드레이션 뒤 한 번 다시 렌더해야 설치된
+   * 앱에서 값이 옳아진다 — 이 저장소가 좌측 레일을 영구히 잃었던 그 함정이다
+   * (`use-hydrated.ts` 머리말).
+   */
+  const hydrated = useHydrated();
+  const desktop = hydrated && isDesktopShell();
+  const bullets = BULLETS.filter((bullet) => !bullet.browserOnly || !desktop);
   // 미지원 고지 문구는 첫 실행 카드가 이미 갖고 있다 — 같은 사실을 두 벌로
   // 쓰면 한쪽만 고쳐지는 drift 가 난다. 카드와 이 시트가 같은 키를 읽는다
   // (`FirstRunStarterModule` 이 용어사전을 `searchWidgets` 에서 읽는 것과
@@ -109,7 +127,14 @@ export function VaultOpenGuideSheet({
                   {/* 미지원 브라우저에서 "OS 폴더 선택창이 뜨기 전에" 는 오지
                       않을 창을 약속하는 문장이다 — 그 자리에 왜 안 되는지를
                       넣는다. */}
-                  {unsupported ? tUnsupported("unsupportedNotice") : t("subtitle")}
+                  {/* 숫자를 문구에 박아 두지 않는다. 2026-07-24 에 넷째 불릿을
+                      더하면서 이 줄의 「딱 세 가지만」을 안 고쳐, 카드가 **셋이라
+                      말하고 넷을 보여 주는** 상태로 남아 있었다(2026-08-08 실측).
+                      이제 개수는 실제로 그리는 목록에서 온다 — 항목이 늘거나
+                      런타임에 따라 줄어도 저절로 맞는다. */}
+                  {unsupported
+                    ? tUnsupported("unsupportedNotice")
+                    : t("subtitle", { count: bullets.length })}
                 </p>
               </div>
               <IconButton
@@ -124,11 +149,11 @@ export function VaultOpenGuideSheet({
               </IconButton>
             </header>
 
-            {/* 미지원일 때 4개 불릿은 전부 브라우저 픽커 흐름의 설명이라
+            {/* 미지원일 때 이 불릿들은 전부 브라우저 픽커 흐름의 설명이라
                 (허용 프롬프트·빈 폴더 스캐폴드) 그대로 두면 오지 않을 절차를
                 가르친다. 고지 한 줄 + 갈 곳 하나로 줄인다. */}
             <ul hidden={unsupported} className="flex flex-col gap-2.5 px-5 py-4">
-              {BULLETS.map(({ icon: Icon, key }) => (
+              {bullets.map(({ icon: Icon, key }) => (
                 <li key={key} className="flex items-start gap-2.5">
                   <Icon
                     size={14}
