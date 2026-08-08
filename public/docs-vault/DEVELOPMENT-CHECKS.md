@@ -716,6 +716,31 @@ see the exact scoped-test count without subtracting skipped tests by hand. File
 setup/import failures are reported separately as `setupFailures=N` instead of
 inflating the matched-test count.
 
+## Skill Integrity (discovery instrument, not a gate)
+
+```bash
+pnpm skills:audit          # 설치된 Claude Agent Skills 뭉치를 훑어 무결성을 잰다
+pnpm test:skills:audit     # 그 판정 로직(순수 함수)의 시험
+```
+
+**게이트가 아니다** — 실패해도 CI 를 막지 않는다. 소유자 질문(*"스킬 그 자체를
+graph 화 시킬 수는 없나?"*, 2026-08-09)에 답이 있는지 **재 보려고** 만든 발견
+도구다. 제품 기능도, 공개 CLI 명령도 아니다(둘은 PO 카운슬 필수 소집 사안이다).
+
+재는 셋과 그 이유:
+
+| | 무엇을 | 왜 |
+|---|---|---|
+| ① 이름 충돌 | 같은 이름이 여러 벌 설치됐나, **설명까지 다른가** | 이름이 겹치면 무엇이 이기는지 비결정적이다. 설명까지 다르면 발동 조건이 다른 것들이 같은 이름으로 경쟁한다 |
+| ② 트리거 겹침 | 이름이 달라도 설명이 같은 낱말을 공유하나 | 스킬 발동은 `description` 한 줄이 정한다. 겹치면 하나가 다른 하나를 가린다 |
+| ③ 자기 폴더 참조 | 「내 폴더의 이 파일을 읽어라」가 실재하나 | 점진적 공개의 3단이 조용히 비는 것을 막는다 |
+
+⚠️ **③ 은 두 종류를 반드시 가른다.** 이 컴퓨터 207개 실측: 없는 파일을 가리키는
+참조가 **700건**이었는데 666건은 「프로젝트에 있으면 읽어라」식 **조건부**라
+결함이 아니었다. 갈라 보니 진짜는 **273건 중 37건**이었다. 가르지 않으면 700이
+「전부 고쳐야 할 것」으로 읽히고 그건 소음이다. `audit-claude-skills.test.mjs` 가
+그 분류를 잠근다(조건부가 결함 목록에 섞이면 실패한다).
+
 ## Dogfood Shortcuts
 
 These target this repo's own `docs/ontology` vault:
