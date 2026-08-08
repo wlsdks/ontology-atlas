@@ -277,6 +277,18 @@ const RULES = [
     ],
   },
   {
+    /*
+     * **CI 가 무엇을 돌릴지 정하는 스크립트인데 추천 매핑이 없었다** (2026-08-08).
+     * `pnpm checks:changed -- scripts/classify-change.mjs` 가 «no focused
+     * mapping» 을 돌려줬다 — 이 저장소에서 결과가 가장 큰 스크립트가 정작
+     * 자기 시험을 가리키는 줄을 못 갖고 있었다. 실제로 이 파일의 판정 결함
+     * 하나가 main 에서 전체 Playwright 를 통째로 생략시켰다.
+     */
+    command: 'pnpm exec node --test scripts/classify-change.test.mjs',
+    reason: 'the CI change classifier decides what CI runs at all',
+    matches: [/^scripts\/classify-change\.(?:mjs|test\.mjs)$/],
+  },
+  {
     command: 'pnpm exec vitest run src/shared/lib/cn.test.ts tests/contract/vault-schema.contract.test.ts',
     reason: 'Vitest config, setup, or test discovery changed',
     matches: [/^vitest\.config\.ts$/, /^vitest\.setup\.ts$/],
