@@ -182,6 +182,14 @@ export const FIXTURE_VAULT: Readonly<Record<string, string>> = {
     dependencies: ["invoice"],
   }),
   "capabilities/tax-report.md": capability("tax-report", "세금 신고 자료", "settlement"),
+  // ⚠️ **배포 샘플 볼트에 절대 없는 슬러그** — 딥링크 시험의 표적. `checkout`
+  // 같은 쇼핑몰 어휘는 배포 샘플(sample-storefront, 112 노드)에도 있어서,
+  // 「어느 볼트가 이 문서를 열었나」를 시험이 가를 수 없었다(2026-08-08 —
+  // 부팅 경주 결함이 샘플 겹침 뒤에 숨어 초록이었다). 이 이름이 샘플에
+  // 생기면 그 시험들이 다시 눈이 먼다 — 샘플에 넣지 말 것.
+  "capabilities/deeplink-probe.md": capability("deeplink-probe", "딥링크 표적 문서", "settlement", {
+    desc: "픽스처 볼트에만 존재해, 열린 문서가 어느 볼트에서 왔는지를 시험이 가른다.",
+  }),
   "capabilities/product-detail.md": capability("product-detail", "상품 상세", "catalog", {
     relates: ["invoice"],
     elements: ["product-page"],

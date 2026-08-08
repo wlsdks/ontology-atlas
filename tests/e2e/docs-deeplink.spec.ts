@@ -35,8 +35,17 @@ import { stubDirectoryPicker } from "./vault-picker-stub";
  * 낡은 슬러그 소음이 되돌아온다.
  */
 
-/** 픽스처에 실재하는 중첩 슬러그 — 폴더 접두사가 있어야 결함이 재현된다. */
-const DEEP_SLUG = "capabilities/checkout";
+/**
+ * 픽스처에 실재하는 중첩 슬러그 — 폴더 접두사가 있어야 결함이 재현된다.
+ *
+ * ⚠️ **픽스처에만 있는 슬러그여야 한다** (2026-08-08). 처음엔
+ * `capabilities/checkout` 이었는데, 그 이름은 **배포 샘플 볼트에도 있다** —
+ * 그래서 부팅이 샘플 창을 지나는 동안 딥링크가 걷히고 샘플의 같은 문서가
+ * 열려도 시험이 초록이었다. 표적이 두 볼트에 다 있으면 「어느 볼트가
+ * 열었나」를 재지 못한다.
+ */
+const DEEP_SLUG = "capabilities/deeplink-probe";
+const DEEP_TITLE = /딥링크 표적 문서/;
 
 test.describe("문서함 딥링크 — URL 이 이긴다", () => {
   test("로컬 볼트 복원 뒤의 콜드 로드에서 ?slug= 가 살아남는다", async ({ page }) => {
@@ -73,7 +82,7 @@ test.describe("문서함 딥링크 — URL 이 이긴다", () => {
       .toBe(DEEP_SLUG);
     await expect(
       page.getByTestId("gateway-doc-title").or(page.locator("main")).first(),
-    ).toContainText(/결제|checkout/i, { timeout: 20_000 });
+    ).toContainText(DEEP_TITLE, { timeout: 20_000 });
   });
 
   test("정착 뒤 샘플로 바꾸면 볼트 전용 슬러그를 걷어낸다 — 2026-08-01 보장 유지", async ({
@@ -102,5 +111,123 @@ test.describe("문서함 딥링크 — URL 이 이긴다", () => {
     await expect
       .poll(async () => new URL(page.url()).searchParams.get("slug"), { timeout: 20_000 })
       .not.toBe(DEEP_SLUG);
+  });
+
+  /**
+   * 2026-08-08 2차 실사용 검수가 잡은 사각. 위 첫 시험은 통과하는데 실기기가
+   * 실패했다 — 차이는 **프로필이 샘플 스코프를 먼저 썼는가**였다. 저장된 소스
+   * 취향이 `server` 인 부팅은 「서버는 즉시 정착」 술어에 걸려 샘플 창이
+   * 정착으로 관측되고, 로컬 볼트 복원이 끝나 랜딩 자동 전환(C5)이 뒤집는 순간
+   * 그 전환이 「사용자 볼트 전환」으로 오인되어 딥링크가 걷혔다.
+   */
+  test("샘플을 먼저 쓰던 프로필의 콜드 로드에서도 로컬 전용 딥링크가 살아남는다", async ({
+    page,
+  }) => {
+    test.setTimeout(120_000);
+    await stubDirectoryPicker(page, FIXTURE_VAULT);
+    await seedFirstRunSeen(page);
+
+    // ① 샘플 스코프의 흔적을 만든다 — 실기기 사고 프로필 그대로:
+    //    문서함을 샘플로 먼저 쓰고(취향 저장 + 샘플 탭·최근), 그 뒤 볼트를 연다.
+    await page.goto("/ko/docs/?guides=off", { waitUntil: "domcontentloaded" });
+    await expect
+      .poll(async () => new URL(page.url()).searchParams.get("slug"), { timeout: 20_000 })
+      .not.toBeNull();
+    await page.evaluate(() => {
+      window.localStorage.setItem("demo:docs-vault:source", "server");
+    });
+
+    // ② 지도에서 볼트를 열고, 문서함을 로컬로 한 번 써서 **로컬 스코프의
+    //    「마지막 문서」**를 만든다 — 걷힌 딥링크의 빈자리를 차지할 후보다.
+    //    (실기기 사고에서 최종 URL 을 쓴 것이 바로 이 탭 복원이었다.)
+    await page.goto("/ko/topology/?guides=off");
+    await page.waitForLoadState("networkidle");
+    await page.getByTestId("first-run-starter-open").click();
+    await expect(page.getByTestId("vault-guide-sheet")).toBeVisible();
+    await page.getByTestId("vault-guide-pick-existing").click();
+    await expect(page.getByTestId("first-run-starter")).toHaveCount(0, { timeout: 30_000 });
+    await page.goto("/ko/docs/?guides=off", { waitUntil: "domcontentloaded" });
+    await expect
+      .poll(async () => new URL(page.url()).searchParams.get("slug"), { timeout: 20_000 })
+      .not.toBeNull();
+    const localRestedSlug = new URL(page.url()).searchParams.get("slug");
+    expect(localRestedSlug).not.toBe(DEEP_SLUG);
+
+    // ③ 저장 취향은 여전히 샘플인 채로 콜드 로드 딥링크 — 부팅이
+    //    「샘플 정착 → 랜딩 자동 전환」을 지나는 동안 딥링크가 살아남아야 한다.
+    // 주소가 딥링크를 **한 순간이라도** 부정하면 결함이다 — 걷힌 찰나를 어느
+    //    경주가 굳히는지는 기기마다 다르고(실기기에서는 탭 복원이 굳혀 README 로
+    //    남았다), 최종값 폴링만 재면 자가 치유된 쪽만 초록이 된다. 그래서
+    //    replaceState 전수를 기록해 「슬러그를 잃은 호출 0건」을 단언한다.
+    await page.addInitScript(() => {
+      const w = window as unknown as { __urlTrace?: string[] };
+      w.__urlTrace = [];
+      const orig = history.replaceState.bind(history);
+      history.replaceState = (s, ti, url) => {
+        w.__urlTrace?.push(String(url));
+        return orig(s, ti, url);
+      };
+    });
+    await page.evaluate(() => {
+      window.localStorage.setItem("demo:docs-vault:source", "server");
+    });
+    await page.goto(`/ko/docs/?guides=off&slug=${encodeURIComponent(DEEP_SLUG)}`, {
+      waitUntil: "domcontentloaded",
+    });
+    await expect
+      .poll(async () => new URL(page.url()).searchParams.get("slug"), { timeout: 20_000 })
+      .toBe(DEEP_SLUG);
+    await expect(
+      page.getByTestId("gateway-doc-title").or(page.locator("main")).first(),
+    ).toContainText(DEEP_TITLE, { timeout: 20_000 });
+    // 부팅이 끝난 지금까지의 전체 기록에서 슬러그를 떨군 호출을 찾는다.
+    const trace = await page.evaluate(
+      () => (window as unknown as { __urlTrace?: string[] }).__urlTrace ?? [],
+    );
+    expect(trace.length, "replaceState 가 한 번도 안 불렸다 — 계측이 헛돈다").toBeGreaterThan(0);
+    const dropped = trace.filter(
+      (url) => !url.includes(`slug=${encodeURIComponent(DEEP_SLUG)}`),
+    );
+    expect(
+      dropped,
+      "부팅 중 주소가 딥링크를 잃었다 — 이 찰나를 탭 복원이 굳히면 실기기 사고가 된다",
+    ).toEqual([]);
+  });
+
+  /**
+   * 같은 뿌리의 둘째 결함 — 저장 취향이 `local` 인 부팅에서는 랜딩 자동 전환이
+   * 쏘일 일이 없어 원샷 ref 가 소진되지 않았고, 그 장전된 한 발이 **사용자의
+   * 첫 「샘플」 전환을 그 자리에서 로컬로 되튕겼다**(2026-08-08 실기기:
+   * 클릭 후 300ms·1800ms 모두 로컬). 랜딩 판정은 복원 시도가 끝나는 순간
+   * 단 한 번으로 종결되어야 하고, 그 뒤의 수동 전환에 관여하면 안 된다.
+   */
+  test("저장 취향이 로컬인 부팅에서 첫 샘플 전환이 즉시 먹는다", async ({ page }) => {
+    test.setTimeout(120_000);
+    await stubDirectoryPicker(page, FIXTURE_VAULT);
+    await seedFirstRunSeen(page);
+    await page.goto("/ko/topology/?guides=off");
+    await page.waitForLoadState("networkidle");
+    await page.getByTestId("first-run-starter-open").click();
+    await expect(page.getByTestId("vault-guide-sheet")).toBeVisible();
+    await page.getByTestId("vault-guide-pick-existing").click();
+    await expect(page.getByTestId("first-run-starter")).toHaveCount(0, { timeout: 30_000 });
+
+    await page.evaluate(() => {
+      window.localStorage.setItem("demo:docs-vault:source", "local");
+    });
+    await page.goto("/ko/docs/?guides=off", { waitUntil: "domcontentloaded" });
+    await expect(page.getByRole("radio", { name: "로컬" })).toHaveAttribute(
+      "aria-checked",
+      "true",
+      { timeout: 20_000 },
+    );
+
+    await page.getByRole("radio", { name: "샘플" }).click();
+    // 되튕김은 즉시 일어난다 — 전환이 붙었으면 그대로 유지되어야 한다.
+    await page.waitForTimeout(1_500);
+    await expect(page.getByRole("radio", { name: "샘플" })).toHaveAttribute(
+      "aria-checked",
+      "true",
+    );
   });
 });
