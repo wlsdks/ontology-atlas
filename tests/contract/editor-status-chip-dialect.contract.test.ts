@@ -122,6 +122,51 @@ describe("편집기 상단 줄 — 상태 칩의 타입 방언은 하나다", ()
  * 라벨**이었다. 둘 다 정당한 기능이지만 이름이 같으면 사용자는 같은 것의
  * 중복으로 읽는다. 뒤의 것을 「나란히 보기」로 바꿨다.
  */
+/**
+ * **이 파일 전체에서 `text-caption` 은 아이브로우 한 곳뿐이다** (2026-08-08 확장).
+ *
+ * 위 시험은 «칩» 만 봤다(`rounded-micro` + `tracking-caps` 서명). 그 좁은
+ * 사정거리가 같은 날 두 번 뚫렸다 — `@` 멘션 메뉴를 만들며 헤더 힌트 줄에
+ * `text-caption` 을 넣었고, 칩이 아니므로 게이트가 침묵했다. **같은 결함을
+ * 같은 파일에서 하루에 세 번 만든 것**이고, 그 반복이 「범위를 넓혀라」는
+ * 신호다.
+ *
+ * 넓힐 수 있게 된 근거: 종전에 이 규칙을 파일 전체로 걸지 못한 이유는 위키링크
+ * 팝오버가 슬러그·바닥 힌트를 caption 으로 쓰고 있었기 때문인데, 그 팝오버가
+ * `@` 멘션으로 바뀌며 전부 `text-label` 로 올라갔다. 지금 남은 정당한 caption
+ * 은 **아이브로우 하나**다 — 램프 정의가 말하는 «마이크로 라벨» 그 자체.
+ *
+ * 그래서 판정을 뒤집는다: 칩만 금지가 아니라 **아이브로우만 허용**. 새 자리에
+ * caption 이 필요하다고 판단되면 그때 이 목록을 늘리며 이유를 적는다 —
+ * 조용히 늘어나는 것을 막는 것이 이 게이트의 일이다.
+ */
+describe("편집기의 9.5px 은 아이브로우 한 곳뿐이다", () => {
+  it("`text-caption` 을 쓰는 자리가 아이브로우 외에 없다", () => {
+    const source = sourceWithoutComments();
+    const lines = source.split("\n");
+    const captionLines = lines
+      .map((line, index) => ({ line: line.trim(), no: index + 1 }))
+      .filter(({ line }) => line.includes("text-caption"));
+
+    // 공회전 차단 — 아이브로우 자체가 사라지면 이 시험은 «위반 0» 을 영원히
+    // 보고한다. 최소 한 곳은 있어야 한다.
+    expect(
+      captionLines.length,
+      "text-caption 이 한 곳도 없다 — 아이브로우가 사라졌거나 게이트가 낡았다",
+    ).toBeGreaterThanOrEqual(1);
+
+    // 아이브로우는 자기 i18n 키를 바로 다음 줄에서 렌더한다 — 그 신호로 가른다.
+    const offenders = captionLines.filter(
+      ({ no }) => !lines.slice(no - 1, no + 2).join(" ").includes("editorEyebrow"),
+    );
+    expect(
+      offenders.map(({ no, line }) => `${no}: ${line.slice(0, 100)}`),
+      "9.5px 은 램프 정의상 «마이크로 라벨·범례·타임스탬프» 의 단이다. 편집기에서 " +
+        "그 자격이 있는 것은 아이브로우 하나뿐 — 설명·힌트·바닥글은 text-label(11px) 이다.",
+    ).toEqual([]);
+  });
+});
+
 describe("「미리보기」 라벨은 한 화면에 하나다", () => {
   it("편집기 split view 토글이 문서 헤더 탭과 같은 이름을 쓰지 않는다", () => {
     for (const locale of ["ko", "en"] as const) {

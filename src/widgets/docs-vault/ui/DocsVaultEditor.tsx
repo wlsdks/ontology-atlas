@@ -965,7 +965,7 @@ export function DocsVaultEditor({
                 {/* 「고르면 무슨 일이 일어나나」를 미리 말한다 — 이 메뉴의
                     결과가 frontmatter 안이라, 말하지 않으면 링크만 넣는
                     기능으로 읽힌다(소유자: *"무슨 의미인지를 모르겠음"*). */}
-                <span className="block truncate text-caption text-[color:var(--color-text-quaternary)]">
+                <span className="block truncate text-label text-[color:var(--color-text-quaternary)]">
                   {t('mentionHint')}
                 </span>
               </div>
