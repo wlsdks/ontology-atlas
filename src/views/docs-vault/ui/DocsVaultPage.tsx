@@ -328,6 +328,9 @@ function DocsVaultContent() {
   }, []);
   const localVault = useLocalVault();
   const localVaultStatus = localVault.status;
+  // IDB 핸들 복원 **시도가 종결됐는가** — status 와 달리 「아직 모른다」와
+  // 「없는 게 확정이다」를 가른다. 랜딩 소스 판정(C5)의 유일한 출발 신호.
+  const localVaultRestoreAttempted = localVault.restoreAttempted;
   const openLocalVault = localVault.open;
   const openRecentLocalVault = localVault.openRecent;
   const localVaultRootPath = localVault.handle
@@ -456,19 +459,52 @@ function DocsVaultContent() {
   // the Sample (`server`) source just because that was the last stored
   // preference. Users read that flip as "내 데이터가 사라졌다". The local vault
   // restores asynchronously from IndexedDB, so we watch for it and, ONCE per
-  // mount (before any manual source switch), prefer `local`. The one-shot ref
-  // means a later deliberate switch to Sample is respected — we only guard the
-  // initial landing, never the user's own choice. Not persisted, so we don't
-  // overwrite an intentional stored preference on disk.
-  const autoLocalOnLandingRef = useRef(false);
+  // mount (before any manual source switch), prefer `local`. Not persisted, so
+  // we don't overwrite an intentional stored preference on disk.
+  //
+  // ⚠️ **랜딩 판정은 복원 시도가 끝나는 순간 단 한 번으로 종결된다** (2026-08-08).
+  // 종전엔 「한 번 쏘면 소진」인 원샷 ref 였는데, 그 설계에는 두 구멍이 있었다:
+  //
+  // ① 저장 취향이 로컬인 부팅에서는 쏠 일이 없어 ref 가 장전된 채 남았고, 그
+  //    장전된 한 발이 **사용자의 첫 「샘플」 전환을 그 자리에서 로컬로
+  //    되튕겼다**(실기기: 클릭 후 300ms·1800ms 모두 로컬 — 첫 전환이 조용히
+  //    무시됨). 랜딩 가드가 사용자의 선택을 잡아먹은 것이다.
+  // ② 판정 시점이 열려 있어서, 아래 스코프 정리·「없는 문서」 판정·기본 선택이
+  //    「랜딩 전환이 아직 올 수 있는가」를 알 방법이 없었다 — 그래서 부팅의
+  //    샘플 창이 「정착」으로 관측됐다(그 결과는 스코프 정리 effect 주석 참조).
+  //
+  // `restoreAttempted` 는 IDB 복원 시도가 **종결된 뒤에만** 참이 되므로
+  // (use-local-vault: load 완료 후 set), 이 시점의 status 는 최종값이고 판정은
+  // 한 번으로 충분하다. ref 가 아니라 **상태**인 이유: ref 는 판정이 「전환
+  // 없음」으로 끝났을 때 재렌더를 만들지 않아, 이 값에 기대는 아래 소비자들이
+  // 영영 깨어나지 못한다.
+  const [landingSourceResolved, setLandingSourceResolved] = useState(false);
   useEffect(() => {
-    if (autoLocalOnLandingRef.current) return;
-    if (!sourcePreferenceHydrated) return;
+    if (landingSourceResolved) return;
+    if (!sourcePreferenceHydrated || !localVaultRestoreAttempted) return;
+    setLandingSourceResolved(true);
     if (shouldPreferLocalOnLanding(localVaultStatus, source, querySource)) {
-      autoLocalOnLandingRef.current = true;
       setSource('local');
     }
-  }, [sourcePreferenceHydrated, localVaultStatus, querySource, source]);
+  }, [
+    landingSourceResolved,
+    sourcePreferenceHydrated,
+    localVaultRestoreAttempted,
+    localVaultStatus,
+    querySource,
+    source,
+  ]);
+  /**
+   * **볼트 스코프가 정착했는가** — 부팅이 끝나 「지금 보이는 볼트」가 사용자의
+   * 의도와 일치한다고 말할 수 있는 최초 시점 이후인가. 세 소비자가 같은 술어를
+   * 쓴다: 스코프 전환 정리 · 「없는 문서」 배너 · 기본 문서 선택. 셋 중 하나라도
+   * 이보다 이른 시점에 판정하면 부팅의 샘플 창을 실재로 오인한다(2026-08-08 —
+   * 세 소비자가 각자 다른 술어를 쓰다 딥링크가 걷혔다).
+   */
+  const vaultScopeSettled =
+    sourcePreferenceHydrated &&
+    landingSourceResolved &&
+    (source === 'server' || localVaultStatus === 'loaded');
 
   // 문서함 점검 중앙 모달 — design-prescription.md ③-5: 로드마다 모달이 뜨면
   // modality 위반이므로 open 상태는 persist 하지 않고 항상 닫힌 채 시작한다.
@@ -1149,11 +1185,20 @@ function DocsVaultContent() {
   const [missingQuerySlug, setMissingQuerySlug] = useState<string | null>(null);
   useEffect(() => {
     if (!normalizedQuerySlug || docsBySlug.size === 0) return;
-    // 볼트가 아직 안 실린 동안(`docsBySlug` 가 빈 동안)은 "없다" 가 아니라
-    // "아직 모른다" 다 — 그 구간에서 말하면 깜빡임이 된다.
-    if (docsBySlug.has(normalizedQuerySlug)) return;
+    if (docsBySlug.has(normalizedQuerySlug)) {
+      // 문서가 나타났으면 잡아 둔 판정을 걷는다 — 부팅 중 샘플 창에서 내렸던
+      // 「없다」가 로컬 볼트 도착으로 거짓이 된 경우다(2026-08-08).
+      setMissingQuerySlug((prev) => (prev === normalizedQuerySlug ? null : prev));
+      return;
+    }
+    // 볼트가 아직 안 실린 동안(`docsBySlug` 가 빈 동안)과 부팅이 아직 어느
+    // 볼트를 보여줄지 못 정한 동안(`vaultScopeSettled` 전)은 "없다" 가 아니라
+    // "아직 모른다" 다 — 그 구간에서 말하면 깜빡임이거나, 더 나쁘게는 로컬
+    // 볼트에 실재하는 문서를 샘플 매니페스트 기준으로 "없다" 고 선고하는
+    // 오판이 된다(2026-08-08 실기기 — 그 선고가 딥링크를 걷어냈다).
+    if (!vaultScopeSettled) return;
     setMissingQuerySlug((prev) => prev ?? normalizedQuerySlug);
-  }, [normalizedQuerySlug, docsBySlug]);
+  }, [normalizedQuerySlug, docsBySlug, vaultScopeSettled]);
 
   /**
    * **볼트가 바뀌면 볼트 전용 주소 상태를 걷어낸다** — 이게 근본 수리다.
@@ -1199,13 +1244,20 @@ function DocsVaultContent() {
    * 바로 위 주석이 스스로 *"첫 마운트의 `?slug=` 는 잔재가 아니라 누군가 준
    * 것"* 이라 적어 뒀는데, 그 보호가 첫 실행(run)에만 걸리고 **부팅 중
    * hydration 전환**에는 안 닿았던 것이다. 그래서 기준선을 「첫 실행」이 아니라
-   * **「정착된 첫 스코프」**로 옮긴다 — 술어는 기본 선택 effect 가 이미 쓰는
-   * `selectionReady` 그대로다(취향 hydration 완료 + 로컬이면 로드 완료).
-   * 정착 후의 스코프 변화만이 진짜 볼트 전환이다.
+   * **「정착된 첫 스코프」**로 옮긴다 — 정착 후의 스코프 변화만이 진짜 볼트
+   * 전환이다.
+   *
+   * **2026-08-08 2차 검수 — 그 「정착」의 정의가 틀려서 같은 사고가 남아
+   * 있었다.** 첫 수리의 술어는 `source === 'server'` 를 즉시 정착으로 쳤는데,
+   * 저장 취향이 샘플인 부팅에서는 로컬 볼트 복원이 끝나는 순간 랜딩 자동
+   * 전환(C5)이 소스를 뒤집는다 — 즉 그 「서버 정착」은 몇백 ms 짜리 가짜였고,
+   * 뒤집히는 순간이 다시 「볼트 전환」으로 읽혀 딥링크가 걷혔다. 지금의
+   * `vaultScopeSettled`(위에서 정의)는 **랜딩 판정 종결**(`landingSourceResolved`)
+   * 을 포함하므로 그 창이 정착으로 관측되지 않는다. e2e:
+   * `docs-deeplink.spec.ts` 「샘플을 먼저 쓰던 프로필…」이 replaceState 전수
+   * 기록으로 「딥링크를 잃은 호출 0건」까지 잰다.
    */
   const vaultScopeRef = useRef<string | null>(null);
-  const vaultScopeSettled =
-    sourcePreferenceHydrated && (source === 'server' || localVaultStatus === 'loaded');
   useEffect(() => {
     if (!vaultScopeSettled) return;
     const previous = vaultScopeRef.current;
@@ -1408,9 +1460,10 @@ function DocsVaultContent() {
       shouldDeferDocsVaultDefaultSelection({
         normalizedQuerySlug,
         selectedSlug,
-        selectionReady:
-          sourcePreferenceHydrated &&
-          (source === 'server' || localVaultStatus === 'loaded'),
+        // 부팅이 어느 볼트를 보여줄지 정하기 전(랜딩 판정 미종결)에는 기본
+        // 선택도 미룬다 — 샘플 창에서 고른 기본값이 곧 도착할 로컬 볼트의
+        // 딥링크를 덮는다(2026-08-08). 세 소비자가 같은 술어를 쓴다.
+        selectionReady: vaultScopeSettled,
       })
     ) {
       return;
@@ -1447,7 +1500,7 @@ function DocsVaultContent() {
        */
       replaceUrlState({ slug: nextSlug });
     });
-  }, [collectionDocSlugs, collectionDocs, collectionPinnedSlugs, collectionRecentSlugs, docsBySlug, localVaultStatus, normalizedQuerySlug, openDocTabsHydrated, pendingRestoredActiveSlug, replaceUrlState, selectedSlug, source, sourcePreferenceHydrated]);
+  }, [collectionDocSlugs, collectionDocs, collectionPinnedSlugs, collectionRecentSlugs, docsBySlug, normalizedQuerySlug, openDocTabsHydrated, pendingRestoredActiveSlug, replaceUrlState, selectedSlug, vaultScopeSettled]);
 
   const handleSelect = useCallback(
     (slug: string, query?: string) => {
