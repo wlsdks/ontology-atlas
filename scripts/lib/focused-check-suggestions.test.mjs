@@ -514,6 +514,9 @@ describe('focused check suggestions', () => {
       'pnpm test:desktop:bridge',
       'pnpm desktop:check',
       'pnpm test:contracts',
+      // 이 세트에 `src/views/docs-vault/**` 가 들어 있으므로 문서함 e2e 도 온다.
+      'pnpm exec playwright test tests/e2e/docs-deeplink.spec.ts ' +
+        'tests/e2e/document-scroll-lock.spec.ts tests/e2e/vault-truth-telling.spec.ts',
       // 표면 분리(2026-07-27) 이후 데스크톱 변경은 웹을 대신 확인해 주지
       // 않는다 — 웹은 무인 표면이라 같은 세트에서 스모크를 함께 권한다.
       'pnpm exec playwright test tests/e2e/web-surface-smoke.spec.ts',
@@ -676,6 +679,11 @@ describe('focused check suggestions', () => {
       'pnpm exec vitest run src/shared/lib/cn.test.ts',
       'pnpm exec vitest run src/widgets/docs-vault/ui/DocsVaultEditor.test.tsx',
       'pnpm test:contracts',
+      // 문서함 위젯을 만졌으므로 그 화면을 운전하는 e2e 도 함께 추천된다
+      // (2026-08-08 매핑 추가 — #987 이 헤더 컨트롤을 옮겼는데 이 추천이 없어
+      // `docs-deeplink` 가 CI 에서 여섯 PR 동안 빨간 채로 있었다).
+      'pnpm exec playwright test tests/e2e/docs-deeplink.spec.ts ' +
+        'tests/e2e/document-scroll-lock.spec.ts tests/e2e/vault-truth-telling.spec.ts',
       'pnpm exec tsc --noEmit',
     ]);
     assert.deepEqual(result.commands[1].paths, [
