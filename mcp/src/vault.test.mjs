@@ -2,7 +2,8 @@ import { afterEach, beforeEach, describe, it } from 'node:test';
 import { strict as assert } from 'node:assert';
 import { mkdtempSync, mkdirSync, rmSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
-import { join } from 'node:path';
+import { dirname, join } from 'node:path';
+import { nodeUidIssue } from './schema.mjs';
 
 import {
   FULL_BODY_MAX_CHARS,
@@ -317,6 +318,22 @@ describe('UID identity write gate', () => {
   const uidA = '01890f3e-7b5d-4c0a-8f14-123456789abc';
   const uidB = '11890f3e-7b5d-4c0a-8f14-123456789abc';
 
+  /**
+   * 사람이 에디터에서 직접 적은 노드를 흉내낸다 — `uid:` 가 없다.
+   * `writeDoc` 을 쓰지 않는 것이 요점이다: 그 문은 신원을 요구하므로,
+   * 그것을 통과해서는 이 상태가 애초에 만들어지지 않는다. 실제 사용자는
+   * 옵시디언·vim·GitHub 웹 에디터에서 파일을 그냥 만든다.
+   */
+  const handWrite = (slug, title) => {
+    const filePath = join(root, `${slug}.md`);
+    mkdirSync(dirname(filePath), { recursive: true });
+    writeFileSync(
+      filePath,
+      `---\nkind: capability\nslug: ${slug}\ntitle: ${title}\n---\n\n# ${title}\n`,
+      'utf-8',
+    );
+  };
+
   it('known-kind create requires one valid unique UID', () => {
     assert.throws(
       () => writeDoc(root, 'capabilities/missing-uid', {
@@ -344,6 +361,64 @@ describe('UID identity write gate', () => {
     assert.throws(
       () => updateDoc(root, 'capabilities/identity', { frontmatter: { merged_uids: [uidB] } }),
       /merge_concepts|merged_uids/i,
+    );
+  });
+
+  /**
+   * **없던 신원을 처음 채우는 것은 신원을 바꾸는 것이 아니다** (2026-08-08).
+   *
+   * 사람이 옵시디언이나 에디터에서 노드를 손으로 적으면 `uid:` 가 없다. 그
+   * 상태에서 **볼트 전체의 그래프 명령이 죽는다**(`overview`·`health`·
+   * `agent-brief`·`query_ontology` 전부 — 컴파일이 노드 신원 오류에서 멈춘다).
+   * 그런데 Atlas MCP 만 붙은 에이전트에게는 **고칠 문이 하나도 없었다**:
+   *
+   * | 시도 | 종전 응답 |
+   * |---|---|
+   * | `patch_concept(uid 없이 다른 필드)` | "`uid:` 는 UUIDv4 여야 한다" |
+   * | `patch_concept({uid: 새 값})` | "`uid:` 는 불변이다" |
+   * | `add_concept(같은 슬러그)` | "이미 있다. patch 를 써라" |
+   *
+   * 셋이 서로를 가리키며 닫혀 있었다. 원인은 불변성 검사가 **「있던 값을
+   * 바꾸는 것」과 「없던 값을 처음 채우는 것」을 구분하지 않은 것**이다.
+   * 바꿀 값이 없으면 바꾸는 것이 아니다 — 훔칠 위험(다른 노드의 신원)은
+   * `assertNodeIdentity` 의 충돌 검사가 이미 따로 막는다.
+   *
+   * 이것은 로컬-퍼스트 약속의 문제이기도 하다: 「마크다운을 그냥 손으로 쓰면
+   * 된다」고 말해 놓고, 손으로 쓴 노드가 볼트를 죽이고 복구도 막혀 있었다.
+   */
+  it('uid 가 없던 노드는 첫 쓰기가 신원을 채워 준다 — 손으로 쓴 노드의 복구로', () => {
+    // 사람이 에디터에서 손으로 적은 파일 — `writeDoc` 를 안 거친다.
+    // (거치면 그 문이 uid 를 요구하므로 이 상태 자체가 만들어지지 않는다.)
+    handWrite('capabilities/hand-written', 'Hand written');
+    // ① 값을 안 줘도 채워진다 — 다른 필드를 고치는 평범한 patch 로 살아난다.
+    const patched = patchFrontmatter(root, 'capabilities/hand-written', {
+      description: 'now repaired',
+    });
+    assert.ok(patched.frontmatter.uid, 'uid 가 채워지지 않았다');
+    assert.equal(nodeUidIssue(patched.frontmatter.uid), null);
+    assert.equal(patched.mintedUid, patched.frontmatter.uid, '채운 사실을 응답이 말해야 한다');
+
+    // ② 한 번 채워진 뒤에는 다시 불변이다 — 이 수리가 불변성을 뚫으면 안 된다.
+    const settled = patched.frontmatter.uid;
+    assert.throws(
+      () => patchFrontmatter(root, 'capabilities/hand-written', { uid: uidB }),
+      /immutable|uid/i,
+    );
+    assert.throws(
+      () => patchFrontmatter(root, 'capabilities/hand-written', { uid: null }),
+      /immutable|uid/i,
+    );
+
+    // ③ 호출자가 값을 직접 주는 것도 된다(에이전트가 UUID 를 만들어 오는 경우).
+    handWrite('capabilities/hand-written-2', 'HW2');
+    const filled = patchFrontmatter(root, 'capabilities/hand-written-2', { uid: uidB });
+    assert.equal(filled.frontmatter.uid, uidB);
+
+    // ④ 남의 신원을 채워 넣는 것은 여전히 막힌다 — 충돌 검사가 살아 있다.
+    handWrite('capabilities/hand-written-3', 'HW3');
+    assert.throws(
+      () => patchFrontmatter(root, 'capabilities/hand-written-3', { uid: settled }),
+      /already belongs|collision/i,
     );
   });
 });

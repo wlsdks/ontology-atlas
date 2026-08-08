@@ -3654,6 +3654,169 @@ await test("find_evidence — 각 match 에 prose excerpt 동봉 (R+)", async ()
   }
 });
 
+/**
+ * **잡문이 근거 1등을 차지하면 안 된다** (2026-08-08 실측).
+ *
+ * 볼트는 평범한 마크다운 폴더라 회의록·메모·초안이 노드와 같이 산다 — 그건
+ * 설계다(`kind:` 가 회원 자격이고, 없으면 그래프 밖이다). 문제는 근거 검색이
+ * 그 둘을 **구분하지 않은 채** 섞어서, 본문 매치가 전부 같은 점수(0.3)로
+ * 묶이는 순간 정렬이 사실상 **슬러그 알파벳순**이 된다는 것이다.
+ *
+ * 실측(잡문 3,000장 볼트): "토큰 발급" 을 물으면 상위 5개가 전부 메모였고
+ * 진짜 노드는 하나도 안 나왔다. 작은 볼트에서는 *"근거는 없었음"* 이라고
+ * 적힌 커피챗 메모가 근거로 돌아왔다. 그런데 이 도구의 설명문은 에이전트에게
+ * *"가장 관련된 **노드**는 matches[0]"* 라고 말한다 — 노드가 아닌 것을
+ * 노드라고 부르며 1등으로 건네고 있었다.
+ *
+ * 고치는 방향은 «잡문을 감추기» 가 아니다. 사람의 메모가 진짜 근거일 때가
+ * 있고, 그걸 숨기면 로컬-퍼스트 약속을 깬다. 대신 셋을 준다:
+ * ① 같은 점수면 **노드가 먼저**  ② 행마다 `isNode` 로 정직하게 말하기
+ * ③ 에이전트가 좁힐 수 있게 `nodesOnly`.
+ */
+/**
+ * **그래프 밖 문서를 개념처럼 돌려주면 안 된다** (2026-08-08 실측).
+ *
+ * `get_concept('notes/coffee-chat')` — frontmatter 가 아예 없는 메모인데
+ * 정상 응답이 나왔다: excerpt, 빈 neighbors, 빈 outgoingEdges, 그리고
+ * **경고 0건**. frontmatter 가 있고 `kind:` 만 없는 문서에는 `missing-kind`
+ * 경고라도 붙는데, frontmatter 가 통째로 없는 진짜 잡문에는 아무 표시가
+ * 없었다 — 제일 흔한 경우에 신호가 제일 없다.
+ *
+ * 도구 이름이 `get_concept` 이므로 응답은 «이건 개념이다» 라고 말하는 셈이다.
+ * 거절하지는 않는다(사람의 메모를 읽는 것은 정당하다). 대신 **무엇을 주고
+ * 있는지 말한다.**
+ */
+/**
+ * **관계의 양 끝은 노드여야 한다** (2026-08-08 실측).
+ *
+ * `add_relation({from: 노드, to: "notes/daily/day-1"})` 가 `ok: true` 로
+ * 성공했다. 원인은 존재 검사가 «그게 노드인가» 가 아니라 **«그 이름의 .md
+ * 파일이 있나»** 를 물은 것이다 — 존재하지 않는 슬러그는 제대로 거절하는데
+ * 일기 메모는 통과했다.
+ *
+ * 사후에 잡히긴 한다(같은 응답의 `danglingReferences`, compile 의
+ * `dangling-graph-reference`, maintenance 큐). 하지만 그건 **쓰고 나서**의
+ * 이야기이고, 그 사이 그래프에는 컴파일러가 버릴 관계가 적혀 있다. 쓰기 문이
+ * 먼저 말하는 편이 싸다.
+ */
+await test("add_relation — 그래프 밖 문서는 관계 끝이 될 수 없다", async () => {
+  const root = makeVault([
+    {
+      slug: "capabilities/checkout",
+      content:
+        "---\nkind: capability\ntitle: 결제\ndomain: domains/orders\n---\n\n# 결제\n\n본문.\n",
+    },
+    { slug: "notes/daily/day-1", content: "오늘 한 일 메모.\n" },
+  ]);
+  try {
+    const { responses } = await rpc(root, [
+      ...INIT_REQUESTS,
+      callTool(2, "add_relation", {
+        from: "capabilities/checkout",
+        to: "notes/daily/day-1",
+        type: "relates",
+      }),
+    ]);
+    const text = getCallText(responses, 2);
+    assert.match(text, /Error/i, `잡문을 관계 끝으로 받아 줬다: ${text}`);
+    // 왜 안 되는지 + 어디로 가면 되는지 — 이 저장소의 강등 문법.
+    assert.match(text, /not a graph node|kind/i, `이유를 안 말한다: ${text}`);
+    assert.match(text, /absorb_document|add_concept|kind:/i, `길을 안 알려준다: ${text}`);
+  } finally {
+    rmSync(root, { recursive: true, force: true });
+  }
+});
+
+await test("get_concept — 그래프 밖 문서는 그렇다고 말한다", async () => {
+  const root = makeVault([
+    { slug: "notes/coffee-chat", content: "민수랑 결제 얘기함. 근거는 없었음.\n" },
+    {
+      slug: "capabilities/real-node",
+      content:
+        "---\nkind: capability\ntitle: 진짜 노드\ndomain: domains/example\n---\n\n# 진짜 노드\n\n본문.\n",
+    },
+  ]);
+  try {
+    const { responses } = await rpc(root, [
+      ...INIT_REQUESTS,
+      callTool(2, "get_concept", { slug: "notes/coffee-chat" }),
+      callTool(3, "get_concept", { slug: "capabilities/real-node" }),
+    ]);
+    const junk = getCallParsed(responses, 2);
+    assert.equal(junk.isNode, false, "그래프 밖 문서인데 isNode 가 false 가 아니다");
+    assert.ok(Array.isArray(junk.warnings) && junk.warnings.length > 0, "경고가 하나도 없다");
+    assert.ok(
+      junk.warnings.some((w) => /not a graph node|그래프 밖/i.test(String(w.message ?? w))),
+      `그래프 밖이라는 말이 없다: ${JSON.stringify(junk.warnings)}`,
+    );
+
+    // 진짜 노드는 그대로다 — 이 수리가 정상 경로에 소음을 더하면 안 된다.
+    // (다른 정당한 경고까지 금지하지는 않는다. 「그래프 밖」 이라는 말이
+    //  붙지 않는 것이 이 시험이 지키는 것이다.)
+    const node = getCallParsed(responses, 3);
+    assert.equal(node.isNode, true);
+    assert.ok(
+      !(node.warnings ?? []).some((w) => w.code === "not-a-graph-node"),
+      `정상 노드에 「그래프 밖」 경고가 붙었다: ${JSON.stringify(node.warnings)}`,
+    );
+  } finally {
+    rmSync(root, { recursive: true, force: true });
+  }
+});
+
+await test("find_evidence — 같은 점수면 노드가 잡문보다 먼저, 행마다 isNode", async () => {
+  const root = makeVault([
+    // 슬러그 알파벳순으로는 잡문이 이긴다(aaa… < capabilities/…).
+    {
+      slug: "aaa-meeting-note",
+      content: "민수랑 얘기함. 토큰 발급이 느리다는 말이 나왔는데 근거는 없었음.\n",
+    },
+    {
+      slug: "aab-scratch",
+      content: "---\ntitle: 낙서\n---\n\n토큰 발급 관련 아이디어 메모.\n",
+    },
+    {
+      slug: "capabilities/token-issue",
+      content:
+        "---\nkind: capability\ntitle: 접근 토큰\n---\n\n# 접근 토큰\n\n토큰 발급 절차를 소유한다.\n",
+    },
+  ]);
+  try {
+    const { responses } = await rpc(root, [
+      ...INIT_REQUESTS,
+      callTool(2, "find_evidence", { title: "토큰 발급" }),
+      callTool(3, "find_evidence", { title: "토큰 발급", nodesOnly: true }),
+    ]);
+    const all = getCallParsed(responses, 2);
+    assert.ok(all.matches.length >= 3, "세 문서가 다 매치되어야 이 시험이 성립한다");
+    // ① 노드가 먼저 — 점수가 같아도(본문 매치 0.3) 슬러그 알파벳에 지지 않는다.
+    assert.equal(
+      all.matches[0].slug,
+      "capabilities/token-issue",
+      `노드가 1등이 아니다: ${all.matches.map((m) => m.slug).join(", ")}`,
+    );
+    // ② 행마다 정직하게 — 없는 kind 를 «안 적힘» 으로 두면 읽는 쪽이 추측한다.
+    for (const m of all.matches) {
+      assert.equal(typeof m.isNode, "boolean", `${m.slug}.isNode`);
+    }
+    assert.equal(all.matches.find((m) => m.slug === "aaa-meeting-note").isNode, false);
+    assert.equal(all.matches.find((m) => m.slug === "capabilities/token-issue").isNode, true);
+    // 잡문이 섞였으면 그 사실을 말한다 — 에이전트가 좁힐 길까지 같이.
+    assert.match(String(all.nonNodeHint ?? ""), /nodesOnly/);
+
+    // ③ 좁힐 수 있다.
+    const onlyNodes = getCallParsed(responses, 3);
+    assert.ok(onlyNodes.matches.length >= 1);
+    assert.ok(
+      onlyNodes.matches.every((m) => m.isNode === true),
+      "nodesOnly 인데 잡문이 남았다",
+    );
+    assert.equal(onlyNodes.nonNodeHint, undefined, "좁힌 결과에 안내가 또 붙었다");
+  } finally {
+    rmSync(root, { recursive: true, force: true });
+  }
+});
+
 await test("find_evidence — 0 hits 면 growthHint (near-title 후보 또는 add_concept 스캐폴드) (과제 ⑧)", async () => {
   const root = makeVault([
     {

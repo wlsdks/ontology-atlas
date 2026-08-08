@@ -19,6 +19,7 @@ import { parseFrontmatter, buildMarkdown } from './parser.mjs';
 import {
   NODE_ELIGIBILITY_GATE,
   flatSlugIssue,
+  generateNodeUid,
   inspectMergedUids,
   nodeUidIssue,
 } from './schema.mjs';
@@ -1063,14 +1064,69 @@ function assertNodeIdentity(rootPath, slug, frontmatter) {
   }
 }
 
+/**
+ * 손으로 쓴 노드에 **신원이 아직 없는가**. 있으면 불변, 없으면 채울 자리다.
+ *
+ * 사람이 옵시디언·vim·GitHub 웹에서 노드를 직접 적으면 `uid:` 가 없다.
+ * 이 저장소는 「마크다운을 그냥 손으로 쓰면 된다」고 약속하므로 그 상태는
+ * 정상적인 입력이다 — 다만 그대로 두면 컴파일이 신원 오류에서 멈춰
+ * **볼트 전체의 그래프 명령이 죽는다**(overview·health·agent-brief·
+ * query_ontology).
+ */
+function hasSettledUid(frontmatter) {
+  return typeof frontmatter?.uid === 'string' && frontmatter.uid.trim() !== '';
+}
+
+/**
+ * ⚠️ **불변성은 「있던 값을 바꾸는 것」에만 적용된다** (2026-08-08).
+ *
+ * 종전엔 «없던 값을 처음 채우는 것»도 같은 문장으로 막았고, 그 결과 Atlas MCP
+ * 만 붙은 에이전트에게 **손으로 쓴 노드를 고칠 문이 하나도 없었다**:
+ *
+ * | 시도 | 종전 응답 |
+ * |---|---|
+ * | `patch_concept(uid 없이 다른 필드)` | "`uid:` 는 UUIDv4 여야 한다" |
+ * | `patch_concept({uid: 새 값})` | "`uid:` 는 불변이다" |
+ * | `add_concept(같은 슬러그)` | "이미 있다. patch 를 써라" |
+ *
+ * 셋이 서로를 가리키며 닫혀 있었다(2026-08-08 실측 재현). 바꿀 값이 없으면
+ * 바꾸는 것이 아니다. 남의 신원을 가져오는 위험은 이 함수가 아니라
+ * `assertNodeIdentity` 의 충돌 검사가 이미 따로 막는다 — 그래서 여기를 열어도
+ * 신원 도용은 여전히 불가능하다.
+ */
 function assertIdentityPatch(previousFrontmatter, patch) {
   if (!patch) return;
   if ('uid' in patch && patch.uid !== undefined && patch.uid !== previousFrontmatter.uid) {
+    if (hasSettledUid(previousFrontmatter)) {
+      throw new Error('`uid:` is immutable. Rename or reclassify the node without changing its UID.');
+    }
+  }
+  if ('uid' in patch && patch.uid === null && hasSettledUid(previousFrontmatter)) {
     throw new Error('`uid:` is immutable. Rename or reclassify the node without changing its UID.');
   }
   if ('merged_uids' in patch) {
     throw new Error('`merged_uids:` is merge_concepts-owned identity history and cannot be edited by a generic patch.');
   }
+}
+
+/**
+ * 신원이 없는 노드를 고치려 할 때 **그 쓰기가 신원을 채워 준다**.
+ *
+ * 채우는 주체가 쓰기라는 것이 이 저장소의 규약 그대로다(「writer-minted
+ * immutable UUIDv4」). 손으로 쓴 노드에는 아직 minter 가 없었을 뿐이고, 처음
+ * 손대는 쓰기가 그 자리를 맡는다.
+ *
+ * **조용히 하지 않는다** — 채운 값을 반환에 실어 호출자가 사람에게 말할 수
+ * 있게 한다. 신원이 생기는 것은 사람이 알아야 하는 사건이다.
+ */
+function fillMissingUid(previousFrontmatter, nextFrontmatter) {
+  const kind = nextFrontmatter?.kind;
+  if (typeof kind !== 'string' || !kind.trim()) return null;
+  if (hasSettledUid(previousFrontmatter)) return null;
+  if (hasSettledUid(nextFrontmatter)) return nextFrontmatter.uid;
+  const minted = generateNodeUid();
+  nextFrontmatter.uid = minted;
+  return minted;
 }
 
 /**
@@ -1147,6 +1203,10 @@ export function deleteDoc(rootPath, slug, options = {}) {
 /**
  * 기존 doc 의 frontmatter 만 patch. body 보존. patch 객체의 null 은 키
  * 삭제, undefined 는 skip. options.expectedMtime 으로 외부 변경 감지.
+ *
+ * 반환: `{ filePath, frontmatter, mintedUid }`. `mintedUid` 는 **이 쓰기가
+ * 신원을 처음 채웠을 때만** 값이 있다(손으로 쓴 노드의 복구) — 호출자는 그
+ * 사실을 사람에게 말해야 한다. 신원이 생기는 것은 조용히 지나갈 사건이 아니다.
  */
 export function patchFrontmatter(rootPath, slug, patch, options = {}) {
   const filePath = slugToPath(rootPath, slug);
@@ -1166,14 +1226,18 @@ export function patchFrontmatter(rootPath, slug, patch, options = {}) {
       next[key] = normalizeFrontmatterValue(key, value);
     }
   }
+  const mintedUid = fillMissingUid(frontmatter, next);
   assertNodeIdentity(rootPath, slug, next);
-  return commitDoc(rootPath, slug, filePath, next, body, { previousFrontmatter: frontmatter });
+  commitDoc(rootPath, slug, filePath, next, body, { previousFrontmatter: frontmatter });
+  return { filePath, frontmatter: next, mintedUid };
 }
 
 /**
  * 기존 doc 의 frontmatter + body 를 동시에 갱신. frontmatter 는 patchFrontmatter
  * 와 동일한 patch 의미 (null = 삭제, undefined = skip). body 가 string 이면
  * 교체, undefined 면 보존. expectedMtime 옵션으로 외부 변경 감지.
+ *
+ * 반환 계약은 `patchFrontmatter` 와 같다 — `{ filePath, frontmatter, mintedUid }`.
  */
 export function updateDoc(rootPath, slug, { frontmatter: patch, body, expectedMtime }) {
   const filePath = slugToPath(rootPath, slug);
@@ -1199,8 +1263,10 @@ export function updateDoc(rootPath, slug, { frontmatter: patch, body, expectedMt
     throw new Error('body must be a string.');
   }
   const nextBody = body === undefined ? oldBody : body;
+  const mintedUid = fillMissingUid(frontmatter, nextFm);
   assertNodeIdentity(rootPath, slug, nextFm);
-  return commitDoc(rootPath, slug, filePath, nextFm, nextBody, { previousFrontmatter: frontmatter });
+  commitDoc(rootPath, slug, filePath, nextFm, nextBody, { previousFrontmatter: frontmatter });
+  return { filePath, frontmatter: nextFm, mintedUid };
 }
 
 /**

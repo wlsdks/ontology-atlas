@@ -244,7 +244,7 @@ export const AGENT_READ_TOOLS: readonly AgentToolDefinition[] = [
   {
     name: 'find_evidence',
     description:
-      'Search nodes by title (case-insensitive substring), ranked. Use this before adding a concept to avoid creating a near-duplicate.',
+      'Search the vault by title (case-insensitive substring), ranked. Use this before adding a concept to avoid creating a near-duplicate. The vault also holds ordinary markdown (notes, memos) that is not a graph node — every row says which it is via `isNode`, and non-nodes rank below nodes of equal relevance.',
     effect: 'read',
     parameters: {
       type: 'object',
@@ -255,6 +255,10 @@ export const AGENT_READ_TOOLS: readonly AgentToolDefinition[] = [
           minimum: 1,
           maximum: 500,
           description: 'Return only the top-N matches.',
+        },
+        nodesOnly: {
+          type: 'boolean',
+          description: 'Return only graph nodes (docs with a `kind:`). Default false.',
         },
       },
       required: ['title'],

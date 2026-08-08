@@ -506,10 +506,29 @@ function validateGraphIdentity(graphDocs) {
   return { uidToSlug, slugToUid, mergedUidToSlug };
 }
 
+/**
+ * 신원 오류 하나가 **볼트 전체의 그래프 명령을 멈춘다** — 컴파일이 여기서
+ * 끝나므로 `overview` · `health` · `agent-brief` · `query_ontology` 가 전부
+ * 같은 에러를 낸다. 그 판정 자체는 옳다(신원이 흔들리는 그래프를 반쯤 그려
+ * 주는 것이 더 나쁘다). 다만 **막다른 곳이면 나가는 길을 함께 말해야 한다.**
+ *
+ * 2026-08-08 실측: 사람이 에디터에서 `uid:` 없이 노드를 적으면 이 에러가
+ * 나는데, 그때 화면이 알려 주는 것은 «무엇이 잘못됐나» 뿐이었다. 「어떻게
+ * 고치나」가 없어서, 손으로 쓴 노드 하나가 볼트를 죽인 채로 남는다.
+ */
+const IDENTITY_REPAIR_HINT = Object.freeze({
+  'missing-uid':
+    'Hand-written nodes have no `uid:` yet. Any write repairs it: patch_concept(slug, {...}) mints one, ' +
+    'or add the line yourself — `uid:` must be a lowercase UUIDv4.',
+  'invalid-uid': '`uid:` must be a lowercase UUIDv4. Fix the value in the file, or let patch_concept rewrite it.',
+});
+
 function throwIdentityIssues(issues) {
+  const hints = [...new Set(issues.map((issue) => IDENTITY_REPAIR_HINT[issue.code]).filter(Boolean))];
   const error = new Error(
     `Ontology compilation failed with ${issues.length} node identity error${issues.length === 1 ? '' : 's'}: ` +
-      issues.map((issue) => `${issue.code} (${issue.slug})`).join(', '),
+      issues.map((issue) => `${issue.code} (${issue.slug})`).join(', ') +
+      (hints.length ? `\n  → ${hints.join('\n  → ')}` : ''),
   );
   error.name = 'OntologyIdentityError';
   error.code = 'invalid-ontology-identity';

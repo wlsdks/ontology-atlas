@@ -2197,7 +2197,7 @@ const TOOLS = [
   {
     name: 'find_evidence',
     description:
-      "Find vault docs that mention a given concept by title. Useful when an AI agent asks where a capability is realized in code or docs. Each match includes a prose `excerpt` (max 200 chars, heading/표/코드 skip) so agents see *what the matching doc says* without an extra get_concept call. Matches are RANKED by a deterministic relevance `score` (title match > frontmatter ref > body, plus a title token-overlap tiebreaker) and returned best-first — so the most relevant node is `matches[0]`, not buried in walk order. Pass `limit` for the top-N. When zero docs mention the title, the response includes a `growthHint` — near-titled vault nodes to check first, or an add_concept scaffold if the concept looks genuinely new.",
+      "Find vault docs that mention a given concept by title. Useful when an AI agent asks where a capability is realized in code or docs. Each match includes a prose `excerpt` (max 200 chars, heading/표/코드 skip) so agents see *what the matching doc says* without an extra get_concept call. Matches are RANKED by a deterministic relevance `score` (title match > frontmatter ref > body, plus a title token-overlap tiebreaker), then by whether the doc is a graph node, then slug — best-first. **A vault holds ordinary markdown too** (meeting notes, memos, drafts have no `kind:` and are not graph nodes); every row says which it is via `isNode`, non-nodes rank below nodes of equal relevance, and `nodesOnly: true` filters them out. Do not cite a non-node as graph evidence without saying so. Pass `limit` for the top-N. When zero docs mention the title, the response includes a `growthHint` — near-titled vault nodes to check first, or an add_concept scaffold if the concept looks genuinely new.",
     inputSchema: {
       type: 'object',
       properties: {
@@ -2208,6 +2208,11 @@ const TOOLS = [
           maximum: 500,
           description: 'Return only the top-N highest-scoring matches. Omit for all matches (still ranked).',
         },
+        nodesOnly: {
+          type: 'boolean',
+          description:
+            'Return only graph nodes (docs with a `kind:`). Default false — ordinary markdown in the same folder is included and marked `isNode: false`.',
+        },
       },
       required: ['title'],
     },
@@ -2215,6 +2220,7 @@ const TOOLS = [
       type: 'object',
       properties: {
         query: NON_BLANK_STRING_SCHEMA,
+        nonNodeHint: { type: 'string' },
         matches: {
           type: 'array',
           items: {
@@ -2226,6 +2232,11 @@ const TOOLS = [
               },
               slug: NON_BLANK_STRING_SCHEMA,
               kind: NON_BLANK_STRING_SCHEMA,
+              isNode: {
+                type: 'boolean',
+                description:
+                  'True when this doc is a graph node (has `kind:`). False for ordinary markdown that lives in the same folder — still searchable, but not part of the graph.',
+              },
               title: NON_BLANK_STRING_SCHEMA,
               domain: { type: 'string' },
               mtime: { type: 'number', minimum: 0 },
@@ -5854,6 +5865,30 @@ function getConcept({ slug, uid, body }, context = {}) {
   // warnings 보고 사용자에게 안내 / vault:validate 권장 가능.
   const validation = doc.raw ? validateVaultDocument(doc.raw) : null;
   const warnings = validation ? [...validation.issues] : [];
+  /*
+   * ⚠️ **그래프 밖 문서라면 그렇다고 말한다** (2026-08-08 실측).
+   *
+   * 볼트는 평범한 마크다운 폴더라 회의록·메모·초안이 노드와 같이 산다 —
+   * 설계다. 그런데 이 도구는 이름이 `get_concept` 이라, 응답 자체가 «이건
+   * 개념이다» 라고 말하는 셈이다. 종전엔 frontmatter 가 통째로 없는 메모에
+   * **경고가 하나도 안 붙었다**(`kind:` 만 없는 문서에는 `missing-kind` 가
+   * 붙는데). 제일 흔한 경우에 신호가 제일 없었던 것이다.
+   *
+   * 거절하지 않는다 — 사람의 메모를 읽는 것은 정당하고, 막으면 로컬-퍼스트
+   * 약속을 깬다. 대신 **무엇을 주고 있는지** 말한다.
+   */
+  const isNode =
+    typeof doc.frontmatter?.kind === 'string' && doc.frontmatter.kind.trim() !== '';
+  if (!isNode) {
+    warnings.push({
+      code: 'not-a-graph-node',
+      severity: 'warning',
+      message:
+        'This doc is not a graph node — it has no `kind:`, so it has no relations, no UID, and never appears on the map. ' +
+        'Ordinary markdown (meeting notes, memos, drafts) lives in the same folder by design. ' +
+        'Cite it as a note, not as graph evidence. To promote it, add a `kind:` or use absorb_document.',
+    });
+  }
   const danglingIssuesBySlug =
     context.danglingIssuesBySlug ??
     groupDanglingIssuesBySlug(context.docs ?? loadVaultDocs(VAULT_ROOT));
@@ -5876,6 +5911,7 @@ function getConcept({ slug, uid, body }, context = {}) {
   return {
     uid: doc.frontmatter.uid,
     slug: doc.slug,
+    isNode,
     frontmatter: doc.frontmatter,
     // `full` 에서는 `excerpt` 를 빼고 `body` 만 싣는다 — 같은 글을 두 번
     // 보내면 "전부 달라" 고 명시한 호출자에게 최대 800자를 중복 과금하는 셈이다.
@@ -5964,9 +6000,10 @@ function getConceptsBatch({ slugs, uids, body }) {
   return { concepts };
 }
 
-function findEvidence({ title, limit } = {}) {
+function findEvidence({ title, limit, nodesOnly = false } = {}) {
   requireNonBlankString(title, 'title');
   requireOptionalPositiveInteger(limit, 'limit', { max: 500 });
+  requireOptionalBoolean(nodesOnly, 'nodesOnly');
   const docs = loadVaultDocs(VAULT_ROOT);
   const matches = [];
   for (const doc of docs) {
@@ -5986,10 +6023,18 @@ function findEvidence({ title, limit } = {}) {
     // 있으므로, 잘렸다는 사실을 말하지 않으면 "찾았다는 그 문장"이 응답에
     // 없는 채로 끝난다. 잘렸을 때만 두 필드를 붙인다 (깨끗한 행은 그대로).
     const evidenceDelivery = describeBodyDelivery(doc.body, { maxLen: 200 });
+    // ⚠️ **노드인지 아닌지를 행이 직접 말한다** (2026-08-08).
+    // 볼트에는 노드가 아닌 마크다운(회의록·메모·초안)이 정상적으로 섞여
+    // 산다. 종전엔 그 사실이 «`kind` 키가 없음» 으로만 표현됐는데, 없는
+    // 키는 JSON 에서 사라지므로 읽는 쪽에는 **아무 신호도 아니다**. 그래서
+    // 에이전트가 메모를 노드로 읽고 인용했다.
+    const isNode = typeof doc.frontmatter.kind === 'string' && doc.frontmatter.kind.trim() !== '';
+    if (nodesOnly && !isNode) continue;
     matches.push({
       uid: doc.frontmatter.uid,
       slug: doc.slug,
       kind: doc.frontmatter.kind,
+      isNode,
       title: doc.frontmatter.title || doc.frontmatter.name || doc.slug,
       // R+ — list_concepts / find_backlinks / find_orphans / query_concepts
       // 와 동일 shape. read tool 5종 응답 일관성 — agent 가 어느 read tool
@@ -6010,10 +6055,34 @@ function findEvidence({ title, limit } = {}) {
         : {}),
     });
   }
-  // Best match first: score desc, then slug asc for deterministic ties.
-  matches.sort((a, b) => b.score - a.score || a.slug.localeCompare(b.slug));
+  /*
+   * Best match first: score desc → **노드 먼저** → slug asc.
+   *
+   * 가운데 칸이 2026-08-08 에 들어갔다. 본문 매치는 전부 같은 점수(0.3)라,
+   * 그것만으로 정렬하면 남는 기준이 슬러그 알파벳뿐이었다 — 잡문 3,000장
+   * 볼트에서 상위 5개가 전부 메모였고 진짜 노드는 하나도 안 나왔다(실측).
+   *
+   * 점수를 이기지는 않는다. 제목이 정확히 맞는 메모(0.75+)는 여전히 본문만
+   * 스친 노드(0.3)보다 위다 — 사람의 메모가 진짜 근거일 때가 있고, 그걸
+   * 감추는 것은 이 제품의 약속을 깨는 일이다. 바꾼 것은 **동점의 처리**뿐이다.
+   */
+  matches.sort(
+    (a, b) =>
+      b.score - a.score ||
+      Number(b.isNode) - Number(a.isNode) ||
+      a.slug.localeCompare(b.slug),
+  );
   const limited = typeof limit === 'number' ? matches.slice(0, limit) : matches;
   const result = { query: title, matches: limited };
+  // 잡문이 섞여 나갔으면 그 사실과 좁히는 길을 같이 말한다 — 결과를 조용히
+  // 거르지 않는 대신, 읽는 쪽이 스스로 판단할 재료를 준다.
+  const nonNodeCount = limited.filter((m) => !m.isNode).length;
+  if (nonNodeCount > 0) {
+    result.nonNodeHint =
+      `${nonNodeCount} of ${limited.length} match(es) are not graph nodes (no \`kind:\` — meeting notes, memos, drafts ` +
+      `live in the same folder by design). They are ranked below nodes of equal relevance. ` +
+      `Pass nodesOnly: true to see only graph nodes.`;
+  }
   const truncatedSlugs = limited.filter((m) => m.excerptTruncated).map((m) => m.slug);
   if (truncatedSlugs.length > 0) {
     result.bodyHint = `${truncatedSlugs.length} of ${limited.length} match(es) returned a partial excerpt — the matched text may sit past it. Read the whole body with get_concepts({ slugs: [${truncatedSlugs
@@ -6497,6 +6566,19 @@ function addRelation({ from, to, type, why, expected_mtime }, options = {}) {
       createHint: true,
     }));
   }
+  /*
+   * ⚠️ **관계의 양 끝은 노드여야 한다** (2026-08-08 실측).
+   *
+   * 위의 존재 검사는 «그 이름의 .md 파일이 있나» 를 묻는다. 그래서 존재하지
+   * 않는 슬러그는 제대로 거절하면서 **일기 메모는 통과**했다 — 볼트에는
+   * 노드가 아닌 마크다운이 정상적으로 섞여 살기 때문이다(그건 설계다).
+   *
+   * 그 결과가 그래프에 적히는 dangling reference 다. 사후에 잡히긴 하지만
+   * (compile · maintenance 큐) 그건 쓰고 나서의 이야기이고, 그 사이 그래프는
+   * 컴파일러가 버릴 관계를 이고 있다. 쓰기 문이 먼저 말하는 편이 싸다.
+   */
+  assertGraphNodeEndpoint(canonicalFrom, 'Source');
+  assertGraphNodeEndpoint(canonicalTo, 'Target');
   const doc = readDoc(VAULT_ROOT, slugToPath(VAULT_ROOT, canonicalFrom));
   if (key === 'domain') {
     const existingDomain = doc.frontmatter.domain;
@@ -6689,6 +6771,26 @@ function replaceRelation({ from, oldTo, oldType, newTo, newType, why, confirm = 
   return { ...base, ok: true, dryRun: false, changed: true, postWriteMaintenance: compactPostWriteMaintenance() };
 }
 
+/**
+ * 관계 **쓰기**의 끝점이 그래프 노드인지 본다.
+ *
+ * 읽기 도구(`get_concept` · `find_neighbors`)는 노드가 아닌 문서도 정당하게
+ * 다루므로 `resolveExistingVaultSlug` 자체는 넓게 둔다 — 좁히는 것은 쓰기
+ * 경로뿐이다. 거절할 때는 이 저장소의 강등 문법을 따른다: **왜 안 되는지 +
+ * 어디로 가면 되는지.**
+ */
+function assertGraphNodeEndpoint(canonicalSlug, role) {
+  const doc = loadVaultDocs(VAULT_ROOT).find((d) => d.slug === canonicalSlug);
+  const kind = doc?.frontmatter?.kind;
+  if (typeof kind === 'string' && kind.trim() !== '') return;
+  throw new Error(
+    `${role} "${canonicalSlug}" is not a graph node — it has no \`kind:\`, so a relation to it would be a ` +
+      'dangling reference the compiler drops. Ordinary markdown (meeting notes, memos, drafts) lives in the ' +
+      'same folder by design. To make it a node, add a `kind:` with patch_concept, or use absorb_document to ' +
+      'turn its content into typed nodes.',
+  );
+}
+
 function resolveExistingVaultSlug(slug, docs = null) {
   if (typeof slug !== 'string' || slug.trim() === '') return null;
   if (vaultSlugExists(VAULT_ROOT, slug)) return slug;
@@ -6821,7 +6923,7 @@ function patchConcept({ slug, frontmatter, body, expected_mtime }) {
       throw new Error('title must be a non-empty string.');
     }
   }
-  const filePath = updateDoc(VAULT_ROOT, slug, {
+  const { filePath, mintedUid } = updateDoc(VAULT_ROOT, slug, {
     frontmatter,
     body,
     expectedMtime: typeof expected_mtime === 'number' ? expected_mtime : undefined,
@@ -6831,6 +6933,17 @@ function patchConcept({ slug, frontmatter, body, expected_mtime }) {
     slug,
     filePath,
     changed: true,
+    // 손으로 쓴 노드(=`uid:` 없이 에디터에서 만든 것)를 이 쓰기가 살렸다면
+    // 그 사실을 말한다. 신원이 생기는 것은 사람이 알아야 하는 사건이고,
+    // 조용히 지나가면 다음에 같은 일이 왜 필요했는지 아무도 모른다.
+    ...(mintedUid
+      ? {
+          mintedUid,
+          notice:
+            `This node had no \`uid:\` (hand-written in an editor), which stops the whole vault from compiling. ` +
+            `This write minted ${mintedUid} for it. Tell the human — the node now has a permanent identity.`,
+        }
+      : {}),
     postWriteMaintenance: compactPostWriteMaintenance(),
   };
 }
