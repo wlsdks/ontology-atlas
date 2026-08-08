@@ -1,5 +1,5 @@
 import type { RefObject } from "react";
-import { ChevronDown, HardDrive } from "lucide-react";
+import { ChevronDown, ClipboardCheck, HardDrive, Package } from "lucide-react";
 import { ICON_SIZE } from "@/shared/ui/icon-size";
 import type { useTranslations } from "next-intl";
 import { Chip, RowButton, Surface } from "@/shared/ui";
@@ -17,6 +17,19 @@ export interface DocsVaultVaultChipProps {
   open: boolean;
   onToggle: () => void;
   onSwap: () => void;
+  /**
+   * **소스는 이 칩 하나가 말한다** (2026-08-08, 2안). 종전엔 화면 오른쪽 끝의
+   * 라디오 한 벌이 같은 사실(샘플이냐 내 폴더냐)을 한 번 더 말하고 바꾸는
+   * 길도 따로 갖고 있었다 — 같은 사실을 두 곳이 말하면 어느 쪽이 진짜인지부터
+   * 헷갈린다. 표시는 칩 라벨이, 전환은 이 메뉴가 맡는다.
+   */
+  isSample: boolean;
+  onUseSample: () => void;
+  /** FSA 미지원 브라우저 — 「내 폴더」를 고를 수 없는 이유와 함께 잠근다. */
+  localDisabled?: boolean;
+  localDisabledReason?: string;
+  /** 문서함 점검 — 오른쪽 끝 클립보드 타일에서 이 메뉴로 접었다. */
+  onOpenAudit: () => void;
   menuRef: RefObject<HTMLDivElement | null>;
   /** B2 병합 — vault 도구가 설정으로 이동했음을 알리는 한 줄 브리지(이번
    *  릴리스 한정). 팝오버 하단에 조용히 노출. */
@@ -39,6 +52,11 @@ export function DocsVaultVaultChip({
   open,
   onToggle,
   onSwap,
+  isSample,
+  onUseSample,
+  localDisabled = false,
+  localDisabledReason,
+  onOpenAudit,
   menuRef,
   toolsMovedHint,
   t,
@@ -52,7 +70,13 @@ export function DocsVaultVaultChip({
         aria-label={t("vaultChip.menuAriaLabel")}
         className="min-w-0 max-w-[200px] flex-none font-mono hover:border-[color:var(--color-indigo-line-a32)] hover:text-[color:var(--color-text-primary)]"
       >
-        <HardDrive size={ICON_SIZE.sm} aria-hidden className="flex-none" />
+        {/* 칩의 아이콘이 소스를 말한다 — 오른쪽 라디오를 걷어낸 자리를
+            이 한 글리프가 대신한다(2026-08-08). */}
+        {isSample ? (
+          <Package size={ICON_SIZE.sm} aria-hidden className="flex-none" />
+        ) : (
+          <HardDrive size={ICON_SIZE.sm} aria-hidden className="flex-none" />
+        )}
         <span className="hidden min-w-0 truncate text-[color:var(--color-text-secondary)] sm:inline">
           {label}
         </span>
@@ -85,13 +109,76 @@ export function DocsVaultVaultChip({
               {t("header.localBadge")}
             </p>
           ) : null}
+          {/* 소스 두 줄 — 한 축에서 하나만 고르므로 `menuitemradio` 다.
+              체크 자리는 안 고른 줄에서도 비워 둬 글자가 흔들리지 않는다. */}
+          <div
+            role="group"
+            aria-label={t("header.sourceAriaLabel")}
+            className="mt-1 border-t border-[color:var(--color-border-soft)] pt-1"
+          >
+            <RowButton
+              size="sm"
+              role="menuitemradio"
+              aria-checked={isSample}
+              active={isSample}
+              data-testid="vault-chip-use-sample"
+              onClick={onUseSample}
+              className="hover:bg-[color:var(--color-overlay-2)] hover:text-[color:var(--color-text-primary)]"
+            >
+              <Package
+                size={ICON_SIZE.sm}
+                aria-hidden
+                className={`flex-none ${isSample ? "opacity-100" : "opacity-40"}`}
+              />
+              <span className="min-w-0 flex-1 truncate">{t("header.sourcePickSample")}</span>
+            </RowButton>
+            <RowButton
+              size="sm"
+              role="menuitemradio"
+              aria-checked={!isSample}
+              active={!isSample}
+              disabled={localDisabled}
+              aria-describedby={localDisabled ? "vault-chip-local-blocked" : undefined}
+              
+              data-testid="vault-chip-use-local"
+              onClick={onSwap}
+              className="hover:bg-[color:var(--color-overlay-2)] hover:text-[color:var(--color-text-primary)]"
+            >
+              <HardDrive
+                size={ICON_SIZE.sm}
+                aria-hidden
+                className={`flex-none ${!isSample ? "opacity-100" : "opacity-40"}`}
+              />
+              <span className="min-w-0 flex-1 truncate">
+                {/* 라디오 두 줄은 둘 다 **무엇을 보는지**를 말해야 한다.
+                    한쪽만 동작 이름(「폴더 바꾸기」)이면 같은 축의 선택지로
+                    안 읽힌다. 이미 내 폴더를 보고 있으면 바꾸는 일이 되므로
+                    그때만 「폴더 바꾸기」다. */}
+                {isSample
+                  ? t("header.sourcePickLocal")
+                  : t("header.vaultPillSwap")}
+              </span>
+            </RowButton>
+            {localDisabled && localDisabledReason ? (
+              /* 왜 못 고르는지를 **화면에도** 적는다 — 흐린 줄만 보고는
+                 «고장» 과 «이 브라우저에서는 안 됨» 이 같은 그림이다. */
+              <p
+                id="vault-chip-local-blocked"
+                className="px-1.5 pb-1 pt-0.5 text-caption leading-label text-[color:var(--color-text-quaternary)]"
+              >
+                {localDisabledReason}
+              </p>
+            ) : null}
+          </div>
           <RowButton
             size="sm"
             role="menuitem"
-            onClick={onSwap}
-            className="mt-1 hover:bg-[color:var(--color-overlay-2)] hover:text-[color:var(--color-text-primary)]"
+            data-testid="vault-chip-open-audit"
+            onClick={onOpenAudit}
+            className="mt-1 border-t border-[color:var(--color-border-soft)] pt-1 hover:bg-[color:var(--color-overlay-2)] hover:text-[color:var(--color-text-primary)]"
           >
-            {t("header.vaultPillSwap")}
+            <ClipboardCheck size={ICON_SIZE.sm} aria-hidden className="flex-none" />
+            <span className="min-w-0 flex-1 truncate">{t("header.contractToggleShow")}</span>
           </RowButton>
           {toolsMovedHint ? (
             <p className="mt-1 border-t border-[color:var(--color-border-soft)] px-1.5 pt-1.5 text-caption leading-label text-[color:var(--color-text-tertiary)]">

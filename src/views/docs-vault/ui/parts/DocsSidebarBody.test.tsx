@@ -185,9 +185,19 @@ describe("DocsSidebarBody — #22 아이콘 행: 검색 토글 + 카운트", () 
     expect(onCollectionChange).toHaveBeenCalledWith("ontology");
   });
 
-  // 종전 라벨은 `{count}` 를 받아 놓고 버리는 상수 "전체 문서" 였다 — 「지도
-  // 문서」를 골라도 아래는 "전체 문서" 라고 적혀 있었다(설치 앱에서도 재현).
-  it("카운트 줄은 지금 고른 보기의 이름과 개수를 말한다", () => {
+  /**
+   * **지키는 성질은 그대로, 말하는 자리만 옮겼다** (2026-08-08, 2안).
+   *
+   * 종전엔 아이콘 셋이 라벨을 툴팁에만 갖고 있어서 «지금 무엇으로 걸러진
+   * 목록인가» 를 아래 회색 캡션 한 줄이 대신 말했다. 그 줄이 상수 "전체
+   * 문서" 이던 시절의 회귀(설치 앱 재현)를 막으려고 이 시험들이 생겼다.
+   *
+   * 이제 **켜진 칩이 자기 이름을 직접 말한다** — 정보가 컨트롤 안으로
+   * 들어왔으니 캡션 줄은 검색·태그처럼 컨트롤이 담을 수 없는 값에만 남는다.
+   * 그래서 시험도 이름을 **칩에서** 찾는다. 원래 막으려던 회귀(「지도 문서」를
+   * 골랐는데 화면이 "전체 문서" 라고 말함)는 그대로 잡힌다.
+   */
+  it("켜진 보기가 자기 이름을 화면에 말한다", () => {
     const docs = [
       makeDoc("a", "A", new Date().toISOString()),
       makeDoc("b", "B", new Date().toISOString()),
@@ -197,11 +207,15 @@ describe("DocsSidebarBody — #22 아이콘 행: 검색 토글 + 카운트", () 
       collection: "ontology",
       collectionCounts: { all: 3, guides: 1, ontology: 2 },
     });
-    expect(screen.getByText("지도 문서 2개")).toBeInTheDocument();
+    const active = screen.getByTestId("docs-sidebar-collection-ontology");
+    expect(active).toHaveTextContent("지도 문서");
+    expect(active).toHaveAttribute("aria-pressed", "true");
+    // 안 고른 보기는 이름을 안 말한다 — 켜진 것 하나만 말해야 «지금» 이 읽힌다.
+    expect(screen.getByTestId("docs-sidebar-collection-all")).toHaveTextContent("");
     expect(screen.queryByText("전체 문서")).not.toBeInTheDocument();
   });
 
-  it("전체 보기에서는 볼트 전체 개수를 말한다", () => {
+  it("전체 보기를 고르면 그 이름이 켜진 칩에 있다", () => {
     const docs = [
       makeDoc("a", "A", new Date().toISOString()),
       makeDoc("b", "B", new Date().toISOString()),
@@ -211,7 +225,23 @@ describe("DocsSidebarBody — #22 아이콘 행: 검색 토글 + 카운트", () 
       collection: "all",
       collectionCounts: { all: 3, guides: 1, ontology: 2 },
     });
-    expect(screen.getByText("전체 문서 3개")).toBeInTheDocument();
+    const active = screen.getByTestId("docs-sidebar-collection-all");
+    expect(active).toHaveTextContent("전체 문서");
+    expect(active).toHaveAttribute("aria-pressed", "true");
+    // 개수는 툴팁(접근성 이름)이 계속 갖는다 — 칩 라벨이 폭을 먹지 않게.
+    expect(active.getAttribute("aria-label")).toContain("3");
+  });
+
+  /**
+   * 캡션 줄은 **컨트롤이 담을 수 없는 값**일 때만 나온다. 아무 상태도 아닐
+   * 때 빈 줄이 남아 있으면 그건 사라진 정보의 자리표시일 뿐이다.
+   */
+  it("검색어도 태그도 없으면 캡션 줄 자체가 없다", () => {
+    renderSidebar([makeDoc("a", "A", new Date().toISOString())], {
+      collection: "all",
+      collectionCounts: { all: 1, guides: 0, ontology: 1 },
+    });
+    expect(screen.queryByText(/개$/)).not.toBeInTheDocument();
   });
 });
 
