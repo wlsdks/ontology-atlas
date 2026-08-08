@@ -68,6 +68,10 @@ export function DocsVaultVaultChip({
         aria-haspopup="menu"
         aria-expanded={open}
         aria-label={t("vaultChip.menuAriaLabel")}
+        /* 메뉴 항목들은 testid 가 있는데 이 트리거만 없어서, 두 e2e 스펙이
+           로케일 라벨("문서함 정보 메뉴" / "Workspace info menu")로 찾고 있었다.
+           번역을 고치면 스펙이 조용히 죽는 이음새다 — 로케일 무관 좌표를 준다. */
+        data-testid="vault-chip-menu-trigger"
         className="min-w-0 max-w-[200px] flex-none font-mono hover:border-[color:var(--color-indigo-line-a32)] hover:text-[color:var(--color-text-primary)]"
       >
         {/* 칩의 아이콘이 소스를 말한다 — 오른쪽 라디오를 걷어낸 자리를
