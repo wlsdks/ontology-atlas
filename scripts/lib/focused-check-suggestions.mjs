@@ -289,6 +289,15 @@ const RULES = [
     matches: [/^scripts\/classify-change\.(?:mjs|test\.mjs)$/],
   },
   {
+    /*
+     * 스킬 무결성 계기 — 제품 기능이 아니라 발견 도구지만, 판정 로직이 순수
+     * 함수라 시험이 붙어 있다. 도구가 못 가리키는 검사는 존재하지 않는 검사다.
+     */
+    command: 'pnpm test:skills:audit',
+    reason: 'Claude skill integrity instrument changed',
+    matches: [/^scripts\/audit-claude-skills\.(?:mjs|test\.mjs)$/],
+  },
+  {
     command: 'pnpm exec vitest run src/shared/lib/cn.test.ts tests/contract/vault-schema.contract.test.ts',
     reason: 'Vitest config, setup, or test discovery changed',
     matches: [/^vitest\.config\.ts$/, /^vitest\.setup\.ts$/],
