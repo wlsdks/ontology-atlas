@@ -3373,7 +3373,7 @@
   },
   "vaultOpenGuide": {
     "title": "내 폴더를 지도로 켜기",
-    "subtitle": "OS 폴더 선택창이 뜨기 전에, 딱 세 가지만 알아두세요.",
+    "subtitle": "OS 폴더 선택창이 뜨기 전에, 딱 {count}가지만 알아두세요.",
     "bulletAnyFolder": "아무 마크다운 폴더나 괜찮아요 — 특별한 형식이 없어도 돼요.",
     "bulletLocal": "파일은 이 컴퓨터를 떠나지 않아요. 서버 전송이 없어요.",
     "bulletStarter": "빈 폴더를 고르면 시작 문서를 자동으로 만들어 드려요.",

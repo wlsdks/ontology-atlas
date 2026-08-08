@@ -3373,7 +3373,7 @@
   },
   "vaultOpenGuide": {
     "title": "Turn your folder into the map",
-    "subtitle": "Before the OS folder picker opens, three things to know.",
+    "subtitle": "Before the OS folder picker opens, just {count} things to know.",
     "bulletAnyFolder": "Any markdown folder works — no special format required.",
     "bulletLocal": "Files never leave this computer. Nothing is uploaded.",
     "bulletStarter": "Pick an empty folder and we scaffold starter docs for you.",
