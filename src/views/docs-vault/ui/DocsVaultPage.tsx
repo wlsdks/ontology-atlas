@@ -1185,14 +1185,35 @@ function DocsVaultContent() {
    * 정리 판정에만 정확한 범위를 쓴다.
    */
   const vaultScope = source === 'local' ? recentKey : `sample:${staticVault.source}`;
+  /**
+   * ⚠️ **정착(settle) 전의 스코프 변화는 볼트 전환이 아니라 부팅이다** (2026-08-08).
+   *
+   * 이 정리는 「사용자가 볼트를 바꾼 순간」에만 돌아야 하는데, 콜드 로드에서
+   * 저장된 소스 취향이 hydration 되며 `sample:… → local:…` 로 넘어가는 것도
+   * 스코프 변화로 잡혔다. 그래서 **방금 누군가 준 `?slug=` 딥링크가 부팅
+   * 도중에 잔재로 오인되어 지워졌고**, 그 뒤 탭 복원이 「URL 없음」을 보고
+   * 마지막에 본 문서를 앉히며 주소까지 덮었다 — 요청한 문서 대신 남의 마지막
+   * 화면이 열리는, 에이전트 핸드오프 링크의 급소다(2026-08-08 실사용 검수:
+   * `?slug=domains/typed-api` 요청 → `capabilities/temporal-graph` 로 덮임).
+   *
+   * 바로 위 주석이 스스로 *"첫 마운트의 `?slug=` 는 잔재가 아니라 누군가 준
+   * 것"* 이라 적어 뒀는데, 그 보호가 첫 실행(run)에만 걸리고 **부팅 중
+   * hydration 전환**에는 안 닿았던 것이다. 그래서 기준선을 「첫 실행」이 아니라
+   * **「정착된 첫 스코프」**로 옮긴다 — 술어는 기본 선택 effect 가 이미 쓰는
+   * `selectionReady` 그대로다(취향 hydration 완료 + 로컬이면 로드 완료).
+   * 정착 후의 스코프 변화만이 진짜 볼트 전환이다.
+   */
   const vaultScopeRef = useRef<string | null>(null);
+  const vaultScopeSettled =
+    sourcePreferenceHydrated && (source === 'server' || localVaultStatus === 'loaded');
   useEffect(() => {
+    if (!vaultScopeSettled) return;
     const previous = vaultScopeRef.current;
     vaultScopeRef.current = vaultScope;
     if (previous === null || previous === vaultScope) return;
     setMissingQuerySlug(null);
     replaceUrlState({ slug: null });
-  }, [vaultScope, replaceUrlState]);
+  }, [vaultScope, vaultScopeSettled, replaceUrlState]);
   // 트리·탭·검색·지도가 한 문서를 같은 이름으로 부른다. 파일 경로는 바로
   // 아랫줄 caption 이 계속 보여주므로 파일 정체성은 잃지 않는다.
   const selectedDocDisplayTitle = selectedDoc
