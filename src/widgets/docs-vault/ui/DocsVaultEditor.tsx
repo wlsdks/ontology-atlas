@@ -194,15 +194,16 @@ export function DocsVaultEditor({
   const acMatches = useMemo<VaultDoc[]>(() => {
     if (!autocomplete || !allDocs) return [];
     const q = autocomplete.query.toLowerCase();
-    if (!q) return allDocs.slice(0, 8);
+    // 현재 문서는 후보가 아니다 — 자기 자신과 이을 수는 없다.
+    if (!q) return allDocs.filter((d) => d.slug !== doc.slug).slice(0, 8);
     return allDocs
       .filter(
         (d) =>
-          d.title.toLowerCase().includes(q) ||
-          d.slug.toLowerCase().includes(q),
+          d.slug !== doc.slug &&
+          (d.title.toLowerCase().includes(q) || d.slug.toLowerCase().includes(q)),
       )
       .slice(0, 8);
-  }, [autocomplete, allDocs]);
+  }, [autocomplete, allDocs, doc.slug]);
 
   /**
    * 자동완성의 **열림**과 **내용**을 가른다 — 그래야 퇴장이 성립한다.
@@ -348,13 +349,19 @@ export function DocsVaultEditor({
     (relationId: MentionRelationId) => {
       const ta = taRef.current;
       if (!ta || content === null || !pendingMention) return;
-      const { doc, trigger } = pendingMention;
+      /*
+       * ⚠️ `doc` 으로 받지 않는다 — 이 컴포넌트의 prop 이름이 이미 `doc`
+       * (편집 중 문서)이라 섀도잉된다. 실제로 그 실수를 했고, 링크의 기준점이
+       * 목적지와 같아져 `./같은폴더.md` 가 나왔다(2026-08-08 실측).
+       */
+      const { doc: targetDoc, trigger } = pendingMention;
       const result = insertMentionRelation({
         content,
+        editingSlug: doc.slug,
         trigger,
         target: {
-          slug: doc.slug,
-          title: resolveLocaleDisplayName(doc.frontmatter, locale, doc.title),
+          slug: targetDoc.slug,
+          title: resolveLocaleDisplayName(targetDoc.frontmatter, locale, targetDoc.title),
         },
         relationId,
       });
@@ -366,7 +373,7 @@ export function DocsVaultEditor({
         ta.setSelectionRange(result.caret, result.caret);
       });
     },
-    [content, locale, pendingMention],
+    [content, doc.slug, locale, pendingMention],
   );
 
 

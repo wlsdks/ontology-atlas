@@ -58,6 +58,23 @@ function collapsePath(pathStr: string): string {
   return out.join('/');
 }
 
+/**
+ * 볼트 경로 조각을 비교 가능한 형태로 — **퍼센트 디코드 + NFC**.
+ *
+ * 디코드가 먼저여야 정규화가 실제 글자에 걸린다. 잘린 퍼센트 시퀀스(`%`)는
+ * `decodeURIComponent` 가 던지므로 원문을 그대로 돌려준다 — 던지면 그 문서가
+ * 통째로 안 그려진다.
+ */
+function decodeVaultPath(value: string): string {
+  let decoded = value;
+  try {
+    decoded = decodeURIComponent(value);
+  } catch {
+    /* 잘린 퍼센트 시퀀스 — 원문으로 둔다 */
+  }
+  return decoded.normalize('NFC');
+}
+
 export function resolveDocLink({
   href,
   fromSlug,
@@ -69,8 +86,26 @@ export function resolveDocLink({
   if (!href || href.startsWith('#') || /^[a-z][a-z0-9+.-]*:/i.test(href)) {
     return { kind: 'passthrough' };
   }
-  const [target, anchorRaw] = href.split('#');
-  const anchor = anchorRaw || undefined;
+  const [rawTarget, rawAnchor] = href.split('#');
+  /*
+   * ⚠️ **퍼센트 디코드하고 NFC 로 맞춘다** (2026-08-08 실측 수리).
+   *
+   * 마크다운 파서는 링크 URL 을 퍼센트 인코딩해서 넘긴다 —
+   * `../capabilities/스윕-검증-절차.md` 가 `%EC%8A%A4%EC%9C%95…` 로 도착한다.
+   * 그 문자열은 볼트 슬러그 집합에 없으므로 **한글 슬러그로 가는 링크가 전부
+   * 「알 수 없는 문서」로 떨어졌다.** 영문 슬러그는 인코딩할 것이 없어 멀쩡해서
+   * 이 결함은 한글(또는 공백·비ASCII) 슬러그 볼트에서만 보인다 — 우리 샘플이
+   * 영문이라 아무도 못 봤다.
+   *
+   * 위키링크 쪽에서 같은 결함을 먼저 잡았고(`DocsVaultViewer`), 여기는 **손으로
+   * 쓴 표준 링크**도 같이 살린다.
+   *
+   * NFC 도 맞춘다: 한글은 출처에 따라 NFC/NFD 로 갈리고(macOS 파일시스템은
+   * NFD) 글자는 같은데 문자열이 안 맞는다. 한쪽만 정규화하면 그 상태가 그대로
+   * 남는다(`cli/src/commands/validate.mjs` 가 같은 판단을 적어 뒀다).
+   */
+  const target = decodeVaultPath(rawTarget);
+  const anchor = rawAnchor ? decodeVaultPath(rawAnchor) : undefined;
   if (!target || !target.endsWith('.md')) {
     return { kind: 'passthrough' };
   }

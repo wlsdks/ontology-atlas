@@ -1,5 +1,6 @@
 import { applyFrontmatterUpdates } from '@/entities/docs-vault/lib/frontmatter-updates';
 import { parseFrontmatter } from '@/shared/lib/parse-frontmatter';
+import { buildDocLinkMarkdown } from './relative-doc-path';
 
 /**
  * 에디터의 `@` 멘션 — **고르면 관계가 된다.**
@@ -25,27 +26,32 @@ import { parseFrontmatter } from '@/shared/lib/parse-frontmatter';
  *
  * 1. **frontmatter 에 관계를 쓴다** — 이것이 사실이다. 지도의 선이 되고,
  *    경로·영향·에이전트 핸드오프가 본다.
- * 2. **본문에는 위키링크를 남긴다** — `[[슬러그|보일 이름]]`. 이건 사실이
- *    아니라 **읽는 사람을 위한 길**이다.
+ * 2. **본문에는 표준 마크다운 링크를 남긴다** — `[이름](../경로.md)`. 이건
+ *    사실이 아니라 **읽는 사람을 위한 길**이다.
  *
  * 「같은 사실을 두 곳이 말하는」 것이 아니다. 한쪽은 타입 있는 사실, 한쪽은
  * 눌러서 갈 수 있는 글.
  *
- * ## 본문 표기를 왜 위키링크로 하나 (2026-08-08, 소유자 지적)
+ * ## 본문 표기를 왜 표준 링크로 하나 (2026-08-08, 소유자 지적 두 번)
  *
- * 첫 판에서는 본문에 **평문 이름만** 넣었다. 소유자가 바로 물었다 —
- * *"@ 해서 뭔가 등록하면 글에도 다른 형식으로 나와야하지 않을까?"*. 맞다:
- * 평문은 아무 일도 안 일어난 것처럼 보이고, 그러면 방금 한 동작의 결과가
- * 화면에 없다.
+ * **첫 판**: 평문 이름만 넣었다. 소유자 — *"@ 해서 뭔가 등록하면 글에도 다른
+ * 형식으로 나와야하지 않을까?"*. 맞다. 평문은 아무 일도 안 일어난 것처럼
+ * 보이고, 그러면 방금 한 동작의 결과가 화면에 없다.
  *
- * 그때 **우리만의 규격을 만들지 않은** 이유는 셋이다:
+ * **둘째 판**: 위키링크(`[[슬러그|이름]]`)로 바꿨다. 소유자 — *"`[[` 이거는
+ * 옵시디언 특유라서 우리가 쓰면 안되는거 아닌가?"*. 이것도 짚은 것이 맞다.
+ * 위키링크는 MediaWiki(2001)에서 온 PKM 공통 관습이지 옵시디언 발명은 아니지만,
+ * **인상은 옵시디언**이다.
  *
- * 1. 뷰어가 `[[슬러그|이름]]` 을 **이미** 내부 문서 링크로 렌더한다(전처리가
- *    표준 마크다운 링크로 바꿔 준다). 새 코드가 필요 없다.
- * 2. **옵시디언·GitHub 에서도 링크로 보인다.** 우리 표기를 발명하면 그
- *    파일을 다른 도구로 열었을 때 정체불명의 글자가 된다 — 「평범한
- *    마크다운으로 들고 나갈 수 있다」는 약속을 우리가 깨는 셈이다.
- * 3. 사용자가 새로 배울 것이 0개다.
+ * **그럼 우리만의 문법?** 아니다 — 그건 더 나쁘다. 우리 표기는 옵시디언·
+ * GitHub·VS Code·모든 마크다운 뷰어에서 **정체불명의 글자**가 되고, 그건
+ * 「평범한 마크다운으로 들고 나갈 수 있다」는 이 제품의 약속을 우리가 깨는
+ * 것이다. 남의 문법도 우리 문법도 아닌 **마크다운 표준**을 쓴다.
+ *
+ * 재 보니 표준 링크가 모든 축에서 낫다 — 특히 **GitHub 에서 읽힌다**(위키링크는
+ * 깨진 글자다). 「위키링크는 슬러그라서 파일 이동에 견딘다」는 것도 틀렸다:
+ * `redirectBacklinks` 는 frontmatter 만 고치고 본문은 손대지 않아서(실측)
+ * 두 표기가 그 축에서 같다. 비교표: `lib/relative-doc-path.ts`.
  *
  * 종전에 `[[` **입력 문법**을 없앤 것과 모순이 아니다. 없앤 것은 「본문 링크
  * 하나로 연결을 끝낸 척하는 것」이고, 지금 쓰는 것은 **관계를 적은 뒤 그
@@ -157,22 +163,50 @@ export interface MentionInsertResult {
  */
 export function insertMentionRelation({
   content,
+  editingSlug,
   trigger,
   target,
   relationId,
 }: {
   content: string;
+  /**
+   * **지금 편집 중인 문서**의 슬러그 — 상대 경로의 기준점.
+   *
+   * 이름이 `currentSlug` 였을 때 호출부에서 실제로 틀렸다(2026-08-08):
+   * `const { doc, trigger } = pendingMention` 이 컴포넌트의 `doc`(편집 중
+   * 문서)를 가렸고, `currentSlug: doc.slug` 가 **고른 대상**을 넘겼다. 그러면
+   * 기준점과 목적지가 같아져 링크가 `./같은폴더.md` 로 나온다 — 실측으로
+   * 잡았다. 이름을 `editingSlug` 로 바꾼 것은 그 자리에서 «편집 중인 것» 과
+   * «고른 것» 이 눈으로 갈리게 하려는 것이다.
+   */
+  editingSlug: string;
   trigger: MentionTrigger;
   target: { slug: string; title: string };
   relationId: MentionRelationId;
 }): MentionInsertResult {
   const key = RELATION_KEY_BY_ID.get(relationId);
   if (!key) throw new Error(`Unknown relation: ${relationId}`);
+  /*
+   * **자기 자신과는 이을 수 없다.** `broader: [자기]` 는 뜻이 없는 관계이고,
+   * 컴파일러에게는 자기 참조 엣지다. 화면에서도 목록에서 현재 문서를 빼지만
+   * (그게 진짜 수리다) 여기서도 막는다 — 기준점과 목적지가 같아지는 위 버그가
+   * **이 단언에 먼저 걸렸을 것**이기 때문이다. 잘못 쓰기 어려운 API 가
+   * 주석보다 강하다.
+   */
+  if (editingSlug === target.slug) {
+    throw new Error(
+      'insertMentionRelation: editingSlug and target.slug are the same document — ' +
+        'a node cannot relate to itself. Exclude the editing doc from the candidate list.',
+    );
+  }
 
-  // ① 본문 — `@질의어` 를 **위키링크**로 갈아 끼운다. 뷰어가 내부 문서
-  //    링크로 렌더하고, 옵시디언·GitHub 도 링크로 읽는다.
-  const label = target.title.trim() || target.slug;
-  const inserted = label === target.slug ? `[[${target.slug}]]` : `[[${target.slug}|${label}]]`;
+  // ① 본문 — `@질의어` 를 **표준 마크다운 링크**로 갈아 끼운다. 우리 뷰어·
+  //    옵시디언·GitHub·VS Code 가 전부 링크로 읽는다(위 「왜 표준 링크인가」).
+  const inserted = buildDocLinkMarkdown({
+    fromSlug: editingSlug,
+    toSlug: target.slug,
+    label: target.title,
+  });
   const withLabel =
     content.slice(0, trigger.start) +
     inserted +
