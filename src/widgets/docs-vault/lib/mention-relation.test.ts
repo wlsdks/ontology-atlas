@@ -81,6 +81,7 @@ describe('insertMentionRelation — 본문은 문장, frontmatter 는 사실', (
     const content = `${DOC}@베`;
     const result = insertMentionRelation({
       content,
+      editingSlug: 'capabilities/alpha',
       trigger: trigger(content),
       target: { slug: 'capabilities/beta', title: '베타' },
       relationId: 'dependencies',
@@ -92,7 +93,7 @@ describe('insertMentionRelation — 본문은 문장, frontmatter 는 사실', (
     // ② 글 — 본문에는 **눌러서 갈 수 있는 표기**. 평문이면 아무 일도 안
     //    일어난 것처럼 보인다(소유자 지적 2026-08-08). 뷰어·옵시디언·GitHub
     //    셋 다 링크로 읽는 표기라 우리만의 규격을 발명하지 않는다.
-    expect(result.content).toContain('이 기능은 [[capabilities/beta|베타]]');
+    expect(result.content).toContain('이 기능은 [베타](./beta.md)');
     expect(result.content).not.toContain('@베');
   });
 
@@ -100,12 +101,13 @@ describe('insertMentionRelation — 본문은 문장, frontmatter 는 사실', (
     const content = `${DOC}@베`;
     const result = insertMentionRelation({
       content,
+      editingSlug: 'capabilities/alpha',
       trigger: trigger(content),
       target: { slug: 'capabilities/beta', title: '베타' },
       relationId: 'relates',
     });
     // 커서는 방금 넣은 표기의 **뒤**에 선다 — 이어서 글을 쓸 수 있어야 한다.
-    expect(result.content.slice(result.caret - 2, result.caret)).toBe(']]');
+    expect(result.content.slice(result.caret - 1, result.caret)).toBe(')');
   });
 
   it('이미 있는 관계는 파일을 건드리지 않는다 (본문만 바뀐다)', () => {
@@ -116,6 +118,7 @@ describe('insertMentionRelation — 본문은 문장, frontmatter 는 사실', (
     const content = `${withRelation}@베`;
     const result = insertMentionRelation({
       content,
+      editingSlug: 'capabilities/alpha',
       trigger: trigger(content),
       target: { slug: 'capabilities/beta', title: '베타' },
       relationId: 'relates',
@@ -126,7 +129,7 @@ describe('insertMentionRelation — 본문은 문장, frontmatter 는 사실', (
     const fm = result.content.slice(0, result.content.indexOf('---', 3));
     expect(fm.match(/capabilities\/beta/g)).toHaveLength(1);
     // 본문에는 눌러 갈 수 있는 표기가 들어간다(이미 이어져 있어도 글은 쓴다).
-    expect(result.content).toContain('[[capabilities/beta|베타]]');
+    expect(result.content).toContain('[베타](./beta.md)');
   });
 
   /**
@@ -143,6 +146,7 @@ describe('insertMentionRelation — 본문은 문장, frontmatter 는 사실', (
     const content = `${withRelation}@베`;
     const result = insertMentionRelation({
       content,
+      editingSlug: 'capabilities/alpha',
       trigger: trigger(content),
       target: { slug: 'capabilities/beta', title: '베타' },
       relationId: 'relates',
@@ -156,12 +160,49 @@ describe('insertMentionRelation — 본문은 문장, frontmatter 는 사실', (
     const content = `${DOC}@x`;
     const result = insertMentionRelation({
       content,
+      editingSlug: 'capabilities/alpha',
       trigger: trigger(content),
       target: { slug: 'capabilities/beta', title: '   ' },
       relationId: 'contains',
     });
-    // 제목이 없으면 별칭 없는 위키링크 — 빈 파이프(`|`)를 남기지 않는다.
-    expect(result.content).toContain('이 기능은 [[capabilities/beta]]');
+    // 제목이 없으면 슬러그를 라벨로 — 빈 대괄호를 남기지 않는다.
+    expect(result.content).toContain('이 기능은 [capabilities/beta](./beta.md)');
+  });
+
+  /**
+   * **자기 자신과는 이을 수 없다** — 그리고 이 단언이 실제 버그를 잡았다.
+   *
+   * 2026-08-08: 호출부에서 `const { doc, trigger } = pendingMention` 이
+   * 컴포넌트 prop `doc`(편집 중 문서)를 가려, 기준점으로 **고른 대상**이
+   * 넘어갔다. 그러면 기준점과 목적지가 같아져 링크가 `./같은폴더.md` 로 나온다.
+   * 화면에서 실측으로 잡았지만, 이 단언이 있었으면 **호출하는 순간** 터졌다.
+   * 잘못 쓰기 어려운 API 가 주석보다 강하다.
+   */
+  it('편집 중 문서와 고른 문서가 같으면 거절한다', () => {
+    const content = `${DOC}@알`;
+    expect(() =>
+      insertMentionRelation({
+        content,
+        editingSlug: 'capabilities/alpha',
+        trigger: trigger(content),
+        target: { slug: 'capabilities/alpha', title: '알파' },
+        relationId: 'relates',
+      }),
+    ).toThrow(/itself|same document/i);
+  });
+
+  it('링크의 기준점은 **편집 중 문서**다 — 고른 문서가 아니다', () => {
+    const content = `${DOC}@베`;
+    const result = insertMentionRelation({
+      content,
+      // 편집 중 문서는 domains/ 아래, 고른 것은 capabilities/ 아래.
+      editingSlug: 'domains/orders',
+      trigger: trigger(content),
+      target: { slug: 'capabilities/beta', title: '베타' },
+      relationId: 'relates',
+    });
+    // 기준점을 잘못 넘기면 `./beta.md`(같은 폴더)가 되어 해소되지 않는다.
+    expect(result.content).toContain('[베타](../capabilities/beta.md)');
   });
 
   it('네 방위 전부가 실재하는 frontmatter 키로 쓴다', () => {
@@ -169,6 +210,7 @@ describe('insertMentionRelation — 본문은 문장, frontmatter 는 사실', (
       const content = `${DOC}@베`;
       const result = insertMentionRelation({
         content,
+        editingSlug: 'capabilities/alpha',
         trigger: trigger(content),
         target: { slug: 'capabilities/beta', title: '베타' },
         relationId: relation.id,

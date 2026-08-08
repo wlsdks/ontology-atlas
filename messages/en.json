@@ -1181,14 +1181,14 @@
       "tbLink": "Link ⌘K",
       "wikilinkLabel": "wikilink · \"{query}\"",
       "wikilinkFooter": "↑↓ move · ↵/Tab insert · Esc close",
-      "mentionLabel": "Connect this doc to{query}",
+      "mentionLabel": "Pick a document{query}",
       "mentionFooter": "↑↓ move · ↵ pick · Esc close",
-      "mentionRelationLabel": "How does \"{title}\" relate to this doc?",
-      "mentionRelationFooter": "Written as a relation in properties; the text gets a link you can follow",
+      "mentionRelationLabel": "Pick how this relates to \"{title}\"",
+      "mentionRelationFooter": "Saved as a relation in this doc's properties; the text gets a link",
       "mentionEmpty": "Nothing by that name in this folder",
       "mentionRelationAdded": "Connected — it shows on the map",
       "mentionRelationExists": "Already connected",
-      "mentionHint": "You'll pick the kind of connection next"
+      "mentionHint": "You choose the relation next"
     },
     "palette": {
       "dialogAriaLabel": "Ontology workspace palette",
