@@ -12,9 +12,37 @@ import { useDogfoodSample } from "./sample-source";
  * read-only + macOS 다운로드 안내")을 단언하던 이전 스펙은 #435 에서
  * 함께 스윕됐어야 할 썩은 스펙이었다.
  *
+ * ⚠️ **[2026-08-08] 소스 표시는 헤더 라디오가 아니라 볼트 칩 메뉴 안에 있다.**
+ * PR #987 이 헤더 우측의 「샘플|로컬」 라디오 쌍을 걷어내고 그 판정을 볼트 칩
+ * 메뉴로 옮겼다. 이 스펙은 그 라디오를 클릭하고 있어서 두 시험이 2분 타임아웃으로
+ * 죽었고 — `docs-deeplink.spec.ts` 와 **같은 원인의 두 번째 피해자**였다.
+ * 소스 상태를 읽을 때는 아래 `expectSourceIs*` 를 쓴다.
+ *
  * 실행: 별도 dev server (`next dev -p 3100`) 가 떠 있어야 함.
  *   pnpm exec playwright test tests/e2e/local-vault-picker.spec.ts
  */
+
+/**
+ * 볼트 칩 메뉴를 열어 어느 소스가 선택돼 있는지 읽고 닫는다.
+ *
+ * 메뉴 항목은 `menuitemradio` 라서 선택 상태가 `aria-checked` 로 나온다 —
+ * 라벨 텍스트가 아니라 그 속성을 본다(로케일이 바뀌어도 계약은 그대로다).
+ */
+async function expectSourceIs(page: import("@playwright/test").Page, which: "sample" | "local") {
+  await page.getByTestId("vault-chip-menu-trigger").click();
+  const picked = page.getByTestId(`vault-chip-use-${which}`);
+  await expect(picked).toBeVisible({ timeout: 10_000 });
+  await expect(picked).toHaveAttribute("aria-checked", "true");
+  await page.keyboard.press("Escape");
+  /*
+   * 퇴장을 **기다린다**. Surface 는 나가는 동안 `inert` 로 DOM 에 남아 있고
+   * (`use-presence.ts` 의 EXIT_WINDOW_MS), Playwright 의 텍스트 셀렉터는 inert
+   * 요소도 여전히 찾아낸다 — 실제로 그 때문에 바로 다음 단언이 strict mode 충돌로
+   * 죽었다(메뉴 안 「Built-in sample (this tool's own documents)」이 두 번째로
+   * 잡혔다). 닫힘을 기다리지 않으면 이 헬퍼가 뒤따르는 단언을 오염시킨다.
+   */
+  await expect(picked).toBeHidden();
+}
 
 const PRESET_LOCAL_SOURCE = `
   try { window.localStorage.setItem('demo:docs-vault:source', 'local'); }
@@ -33,9 +61,8 @@ test.describe("local workspace capability gate (N1)", () => {
 
     await page.goto("/en/docs/?intent=local");
 
-    // FSA 지원 브라우저: Local 소스가 활성 + 선택되고 피커 표면이 뜬다.
-    await expect(page.getByRole("radio", { name: "Local" })).toBeEnabled();
-    await expect(page.getByRole("radio", { name: "Local" })).toBeChecked();
+    // FSA 지원 브라우저: Local 소스가 선택되고 피커 표면이 뜬다.
+    await expectSourceIs(page, "local");
     await expect(
       page.getByRole("heading", { name: /Open or create a local workspace/ }),
     ).toBeVisible();
@@ -50,8 +77,12 @@ test.describe("local workspace capability gate (N1)", () => {
     await useDogfoodSample(page);
     await page.goto("/en/docs/");
 
-    await expect(page.getByRole("radio", { name: "Sample" })).toBeChecked();
-    await expect(page.getByRole("banner").getByText(/documents/)).toBeVisible();
+    await expectSourceIs(page, "sample");
+    // 문서 수는 #987 이후 볼트 칩이 갖는다 — 배너 전체를 훑으면 메뉴 문구까지
+    // 걸리므로, 그 사실이 실제로 사는 자리에서 잰다.
+    await expect(page.getByTestId("vault-chip-menu-trigger")).toHaveText(
+      /\d+ documents/,
+    );
     // docs-chrome-round 슬라이스 A 계약: 데스크톱(lg+)에서 문서 목록은 기본
     // 펼침, 헤더 PanelLeft 타일로 0px 접기/펼치기 왕복 (localStorage persist).
     await expect(page.getByRole("navigation", { name: "Document list" })).toBeVisible();

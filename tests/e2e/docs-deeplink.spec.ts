@@ -47,6 +47,55 @@ import { stubDirectoryPicker } from "./vault-picker-stub";
 const DEEP_SLUG = "capabilities/deeplink-probe";
 const DEEP_TITLE = /딥링크 표적 문서/;
 
+
+/**
+ * 소스를 **샘플로 바꾼다** — 누르는 자리가 2026-08-08 에 옮겨졌다.
+ *
+ * 종전엔 화면 오른쪽 끝의 「샘플 | 로컬」 라디오였다. #987(문서함 크롬 통합)이
+ * 그 라디오를 지우고 표시·전환·점검을 **볼트 칩 메뉴** 하나로 모았다 — 같은
+ * 사실을 화면 두 곳이 말하고 있었기 때문이다.
+ *
+ * ⚠️ **그때 이 스펙을 같이 고치지 않아 CI 가 깨진 채 여섯 PR 이 머지됐다.**
+ * `.claude/rules/testing.md` 가 정확히 그것을 경고한다 — *"화면을 삭제하면 같은
+ * PR 에서 e2e spec 도 같이 훑어 지운다"*. 지키는 성질(정착 후 볼트 전환이
+ * 슬러그를 걷어낸다)은 그대로이고 **누르는 자리만** 바뀌었으므로, 시험을 지우지
+ * 않고 여기 한 곳으로 모아 다음에 또 옮겨도 한 군데만 고치면 되게 한다.
+ */
+async function switchToSample(page: import("@playwright/test").Page): Promise<void> {
+  await page.getByTestId("vault-chip-menu-trigger").click();
+  const pick = page.getByTestId("vault-chip-use-sample");
+  await expect(pick).toBeVisible({ timeout: 10_000 });
+  await pick.click();
+}
+
+/** 지금 보고 있는 소스가 로컬인가 — 칩 메뉴의 라디오 상태로 읽는다. */
+async function expectSourceIsLocal(page: import("@playwright/test").Page): Promise<void> {
+  await page.getByTestId("vault-chip-menu-trigger").click();
+  await expect(page.getByTestId("vault-chip-use-local")).toHaveAttribute(
+    "aria-checked",
+    "true",
+    { timeout: 10_000 },
+  );
+  await page.keyboard.press("Escape");
+  // 퇴장 대기 — Surface 는 나가는 동안 inert 로 DOM 에 남고, 텍스트 셀렉터는
+  // 그것도 찾아낸다(local-vault-picker 에서 실제로 strict mode 충돌을 냈다).
+  await expect(page.getByTestId("vault-chip-use-sample")).toBeHidden();
+}
+
+/** 지금 보고 있는 소스가 샘플인가. */
+async function expectSourceIsSample(page: import("@playwright/test").Page): Promise<void> {
+  await page.getByTestId("vault-chip-menu-trigger").click();
+  await expect(page.getByTestId("vault-chip-use-sample")).toHaveAttribute(
+    "aria-checked",
+    "true",
+    { timeout: 10_000 },
+  );
+  await page.keyboard.press("Escape");
+  // 퇴장 대기 — Surface 는 나가는 동안 inert 로 DOM 에 남고, 텍스트 셀렉터는
+  // 그것도 찾아낸다(local-vault-picker 에서 실제로 strict mode 충돌을 냈다).
+  await expect(page.getByTestId("vault-chip-use-sample")).toBeHidden();
+}
+
 test.describe("문서함 딥링크 — URL 이 이긴다", () => {
   test("로컬 볼트 복원 뒤의 콜드 로드에서 ?slug= 가 살아남는다", async ({ page }) => {
     test.setTimeout(120_000);
@@ -107,7 +156,7 @@ test.describe("문서함 딥링크 — URL 이 이긴다", () => {
       .toBe(DEEP_SLUG);
 
     // 정착된 상태에서 소스를 샘플로 전환 — 진짜 볼트 전환이다.
-    await page.getByRole("radio", { name: "샘플" }).click();
+    await switchToSample(page);
     await expect
       .poll(async () => new URL(page.url()).searchParams.get("slug"), { timeout: 20_000 })
       .not.toBe(DEEP_SLUG);
@@ -216,18 +265,11 @@ test.describe("문서함 딥링크 — URL 이 이긴다", () => {
       window.localStorage.setItem("demo:docs-vault:source", "local");
     });
     await page.goto("/ko/docs/?guides=off", { waitUntil: "domcontentloaded" });
-    await expect(page.getByRole("radio", { name: "로컬" })).toHaveAttribute(
-      "aria-checked",
-      "true",
-      { timeout: 20_000 },
-    );
+    await expectSourceIsLocal(page);
 
-    await page.getByRole("radio", { name: "샘플" }).click();
+    await switchToSample(page);
     // 되튕김은 즉시 일어난다 — 전환이 붙었으면 그대로 유지되어야 한다.
     await page.waitForTimeout(1_500);
-    await expect(page.getByRole("radio", { name: "샘플" })).toHaveAttribute(
-      "aria-checked",
-      "true",
-    );
+    await expectSourceIsSample(page);
   });
 });

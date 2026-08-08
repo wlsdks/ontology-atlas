@@ -292,6 +292,28 @@ const RULES = [
     matches: [/^app\/globals\.css$/, /^postcss\.config\.mjs$/],
   },
   {
+    /*
+     * ⚠️ **문서함을 고치면 문서함을 운전하는 e2e 를 같이 돌린다** (2026-08-08).
+     *
+     * 이 매핑이 없어서 실제 사고가 났다. #987 이 문서함 헤더의 「샘플|로컬」
+     * 라디오를 볼트 칩 메뉴로 옮겼는데, `docs-deeplink.spec.ts` 가 그 라디오를
+     * 클릭한다. 추천 도구가 그 스펙을 **한 번도 가리키지 않아** 로컬에서
+     * 안 돌렸고, CI 는 빨간 채로 **여섯 PR 이 더 머지됐다**(2분 타임아웃 ×
+     * 재시도 3회 × 두 시험).
+     *
+     * `.claude/rules/testing.md` 가 정확히 이것을 경고한다 — *"화면을 삭제하면
+     * 같은 PR 에서 e2e spec 도 같이 훑어 지운다"*. 사람의 기억에 맡긴 그 훑기를
+     * 도구가 대신하게 한다: **도구가 못 가리키는 검사는 존재하지 않는 검사다.**
+     */
+    command:
+      'pnpm exec playwright test tests/e2e/docs-deeplink.spec.ts tests/e2e/document-scroll-lock.spec.ts tests/e2e/vault-truth-telling.spec.ts',
+    reason: 'the docs surface changed — its e2e specs drive that screen by role and testid',
+    matches: [
+      /^src\/views\/docs-vault\/.+\.tsx?$/,
+      /^src\/widgets\/docs-vault\/.+\.tsx?$/,
+    ],
+  },
+  {
     // 표면 분리(2026-07-27) 이후 웹은 앱을 따라가지 않으므로, 능력 브리지를
     // 건드린 사람은 앱만 확인하고 지나가기 쉽다. 웹이 무인 표면이라 그 통과가
     // 그대로 부패가 된다 — 브리지를 만지면 웹 스모크를 같이 권한다.

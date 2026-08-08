@@ -79,9 +79,12 @@ describe('멘션이 쓴 본문 링크를 에이전트가 역참조로 찾는다'
     it(`${layout.name} — 관계와 본문 링크가 모두 잡힌다`, () => {
       const link = writeMentionPair(layout.from, layout.to);
       const matches = findBacklinks(root, layout.to);
-      const hit = matches.find((m: { slug: string }) => m.slug === layout.from);
+      const hit = matches.find(
+        (m: { slug: string }) => m.slug === layout.from,
+      ) as { matchedKeys?: string[]; matchedInBody?: boolean } | undefined;
 
       expect(hit, `${layout.from} 이 역참조에 없다 (링크: ${link})`).toBeTruthy();
+      if (!hit) return;
       // ① 사실 — frontmatter 관계로 잡힌다
       expect(hit.matchedKeys, `관계가 안 잡혔다 (링크: ${link})`).toContain('relates');
       // ② 길 — 본문 링크로도 잡힌다. 이게 false 면 에이전트는 「글에서
@@ -107,7 +110,9 @@ describe('멘션이 쓴 본문 링크를 에이전트가 역참조로 찾는다'
     );
     const hit = findBacklinks(root, 'capabilities/tgt').find(
       (m: { slug: string }) => m.slug === 'domains/src',
-    );
+    ) as { matchedKeys?: string[]; matchedInBody?: boolean } | undefined;
+    expect(hit).toBeTruthy();
+    if (!hit) return;
     expect(hit.matchedKeys).toContain('relates');
     expect(hit.matchedInBody, '본문에 링크가 없는데 본문 히트가 났다 — 탐지가 헛돈다').toBeUndefined();
   });
