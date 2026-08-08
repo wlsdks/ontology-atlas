@@ -1,7 +1,7 @@
 'use client';
 
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { useTranslations } from 'next-intl';
+import { useLocale, useTranslations } from 'next-intl';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 import {
@@ -25,7 +25,16 @@ import {
 } from 'lucide-react';
 import { ICON_SIZE } from '@/shared/ui/icon-size';
 import type { VaultDoc } from '@/entities/docs-vault';
+import { resolveLocaleDisplayName } from '@/shared/lib/locale-display-name';
 import { useHeldValue } from '@/shared/lib/use-presence';
+import { caretPoint, clampMenuToBox } from '../lib/caret-position';
+import {
+  detectMentionTrigger,
+  insertMentionRelation,
+  MENTION_RELATIONS,
+  RELATION_LABEL_KEY,
+  type MentionRelationId,
+} from '../lib/mention-relation';
 import { Chip, IconButton, RowButton, Surface } from '@/shared/ui';
 
 interface Props {
@@ -56,6 +65,10 @@ interface EditorDraft {
   diskMtime?: number;
   updatedAt: number;
 }
+
+/** 멘션 메뉴의 폭과 최대 높이 — 자리 계산과 실제 그리기가 같은 값을 쓴다. */
+const MENTION_MENU_WIDTH = 320;
+const MENTION_MENU_MAX_HEIGHT = 280;
 
 const DRAFT_STORAGE_PREFIX = 'ontology-atlas:docs-vault-editor-draft:';
 
@@ -134,6 +147,10 @@ export function DocsVaultEditor({
   vaultScope,
 }: Props) {
   const t = useTranslations('vaultWidgets.editor');
+  const locale = useLocale();
+  // 관계 어휘는 공방이 소유한다 — 두 화면이 같은 일에 다른 말을 쓰지 않게
+  // 여기서 새 문구를 만들지 않고 그 네임스페이스를 그대로 읽는다.
+  const tStudio = useTranslations('ontologyStudio');
   const [content, setContent] = useState<string | null>(null);
   const [savedContent, setSavedContent] = useState<string | null>(null);
   const [loadedSlug, setLoadedSlug] = useState<string | null>(null);
@@ -158,22 +175,18 @@ export function DocsVaultEditor({
     active: number;
   } | null>(null);
 
-  // 현재 캐럿 기준으로 `[[ ` 트리거 검사. 매치되면 query, start index 반환.
-  const detectWikilinkTrigger = (
-    src: string,
-    caret: number,
-  ): { query: string; start: number } | null => {
-    // 직전 200자 내에서 `[[` 찾기 + 그 사이에 `]]` 이 없어야 함.
-    const back = src.slice(Math.max(0, caret - 200), caret);
-    const idx = back.lastIndexOf('[[');
-    if (idx === -1) return null;
-    const between = back.slice(idx);
-    if (between.includes(']]')) return null;
-    // query 에 줄바꿈 있으면 off
-    if (/\n/.test(between.slice(2))) return null;
-    const start = caret - (back.length - idx);
-    return { query: between.slice(2), start };
-  };
+  /*
+   * 트리거는 `@` 다 — 종전 `[[` 를 2026-08-08 에 갈아치웠다.
+   *
+   * 두 가지가 바뀌었다. 표기(`[[` → `@`)는 겉이고, **고른 뒤에 무엇이 쓰이나**가
+   * 속이다. 종전엔 본문에 `[[slug]]` 를 넣었는데 **그건 그래프를 1비트도 바꾸지
+   * 않았다**(같은 볼트에서 넣었다 뺀 컴파일 결과가 엣지 9 · 해시 동일). 지금은
+   * 관계 종류를 묻고 **frontmatter 에 적는다** — 판정 로직은 `lib/mention-relation`
+   * 의 순수 함수가 갖고, 여기는 화면만 맡는다.
+   *
+   * `[[` 를 남겨 두지 않는다. 두 문법이 공존하면 사용자는 「어느 쪽이 진짜
+   * 연결인가」를 매번 판단해야 하고, 그 판단은 화면에 단서가 없다.
+   */
 
   const acMatches = useMemo<VaultDoc[]>(() => {
     if (!autocomplete || !allDocs) return [];
@@ -267,24 +280,92 @@ export function DocsVaultEditor({
   // Wikilink autocomplete 선택 — content 의 [[<query> 부분을 [[slug]] 로
   // 치환. caret 대신 autocomplete.start + 2 + query.length 를 명시적으로
   // 써서 사용자가 화살표로 caret 을 옮겼어도 트리거 범위를 정확히 덮는다.
-  const applyWikilink = useCallback((slug: string) => {
+  /**
+   * 고른 개념 — 아직 **관계를 안 정했다.** 이 단계가 존재하는 것이 이 기능의
+   * 전부다: 이름만 넣고 끝내면 종전 위키링크와 같아지고, 그건 그래프에 안 잡힌다.
+   */
+  const [pendingMention, setPendingMention] = useState<{
+    doc: VaultDoc;
+    trigger: { query: string; start: number };
+  } | null>(null);
+  /** 2단계에서 지금 고른 방위 — 키보드 이동의 커서. */
+  const [pendingRelation, setPendingRelation] = useState<MentionRelationId>(
+    MENTION_RELATIONS[0].id,
+  );
+
+  /**
+   * 관계가 적혔다는 것을 **말한다.** 이 동작의 결과는 frontmatter 안이라
+   * 아무 말도 안 하면 본문에 이름만 들어간 것처럼 보인다 — 그러면 사용자는
+   * 종전 위키링크와 같은 일이 일어났다고 읽는다.
+   */
+  const [mentionNotice, setMentionNotice] = useState<'added' | 'exists' | null>(null);
+  useEffect(() => {
+    if (!mentionNotice) return;
+    const timer = setTimeout(() => setMentionNotice(null), 2600);
+    return () => clearTimeout(timer);
+  }, [mentionNotice]);
+
+  /**
+   * 메뉴가 설 자리 — **적던 그 자리**. 종전엔 편집기 왼쪽 아래 구석에
+   * 고정이었다(위키링크 팝오버에서 물려받은 자리). 멘션 메뉴는 지금 치고
+   * 있는 글자의 연장이라, 눈에서 멀면 「방금 내가 한 행동의 결과」로 안
+   * 읽힌다 — 소유자 지적 2026-08-08.
+   */
+  const [menuAt, setMenuAt] = useState<{ top: number; left: number } | null>(null);
+  const placeMenuAtCaret = useCallback((caretIndex: number) => {
     const ta = taRef.current;
-    if (!ta || content === null || !autocomplete) return;
-    const replacement = `[[${slug}]]`;
-    const triggerEnd =
-      autocomplete.start + 2 + autocomplete.query.length;
-    const next =
-      content.slice(0, autocomplete.start) +
-      replacement +
-      content.slice(triggerEnd);
-    setContent(next);
-    setAutocomplete(null);
-    requestAnimationFrame(() => {
-      ta.focus();
-      const p = autocomplete.start + replacement.length;
-      ta.setSelectionRange(p, p);
-    });
-  }, [autocomplete, content]);
+    const host = ta?.parentElement;
+    if (!ta || !host) return;
+    const caret = caretPoint(ta, caretIndex);
+    setMenuAt(
+      clampMenuToBox({
+        caret,
+        box: { width: ta.clientWidth, height: ta.clientHeight },
+        // 메뉴 실제 크기는 그린 뒤에야 알지만, 자리를 정하는 데는 상한이면
+        // 충분하다 — 실제가 더 작으면 여유가 남을 뿐 잘리지 않는다.
+        menu: { width: MENTION_MENU_WIDTH, height: MENTION_MENU_MAX_HEIGHT },
+      }),
+    );
+  }, []);
+
+  const pickMentionTarget = useCallback(
+    (doc: VaultDoc) => {
+      if (!autocomplete) return;
+      setPendingMention({
+        doc,
+        trigger: { query: autocomplete.query, start: autocomplete.start },
+      });
+      setPendingRelation(MENTION_RELATIONS[0].id);
+      setAutocomplete(null);
+    },
+    [autocomplete],
+  );
+
+  const applyMentionRelation = useCallback(
+    (relationId: MentionRelationId) => {
+      const ta = taRef.current;
+      if (!ta || content === null || !pendingMention) return;
+      const { doc, trigger } = pendingMention;
+      const result = insertMentionRelation({
+        content,
+        trigger,
+        target: {
+          slug: doc.slug,
+          title: resolveLocaleDisplayName(doc.frontmatter, locale, doc.title),
+        },
+        relationId,
+      });
+      setContent(result.content);
+      setMentionNotice(result.relationAdded ? 'added' : 'exists');
+      setPendingMention(null);
+      requestAnimationFrame(() => {
+        ta.focus();
+        ta.setSelectionRange(result.caret, result.caret);
+      });
+    },
+    [content, locale, pendingMention],
+  );
+
 
   // 링크 형식 [text](url) 삽입. 선택이 있으면 그걸 text 로.
   const insertLink = useCallback(() => {
@@ -769,13 +850,42 @@ export function DocsVaultEditor({
               setContent(next);
               if (allDocs && taRef.current) {
                 const caret = taRef.current.selectionStart;
-                const match = detectWikilinkTrigger(next, caret);
+                const match = detectMentionTrigger(next, caret);
+                if (match) placeMenuAtCaret(caret);
                 setAutocomplete(
                   match ? { ...match, active: 0 } : null,
                 );
               }
             }}
             onKeyDown={(e) => {
+              /*
+               * 2단계(관계 고르기)도 **키보드로 끝까지 간다.** 1단계를 Enter 로
+               * 고른 사람은 손이 이미 키보드에 있는데, 거기서 마우스를 요구하면
+               * 그 흐름이 끊긴다 — 그리고 키보드만 쓰는 사람에게는 아예 막힌
+               * 문이 된다. 포커스는 textarea 에 남아 있으므로 여기서 받는다.
+               */
+              if (pendingMention) {
+                if (e.key === 'Escape') {
+                  e.preventDefault();
+                  setPendingMention(null);
+                  return;
+                }
+                const index = MENTION_RELATIONS.findIndex((r) => r.id === pendingRelation);
+                if (e.key === 'ArrowDown' || e.key === 'ArrowUp') {
+                  e.preventDefault();
+                  const step = e.key === 'ArrowDown' ? 1 : -1;
+                  const next =
+                    (index + step + MENTION_RELATIONS.length) % MENTION_RELATIONS.length;
+                  setPendingRelation(MENTION_RELATIONS[next].id);
+                  return;
+                }
+                if (e.key === 'Enter' || e.key === 'Tab') {
+                  e.preventDefault();
+                  applyMentionRelation(pendingRelation);
+                  return;
+                }
+                return;
+              }
               if (!autocomplete || acMatches.length === 0) return;
               if (e.key === 'ArrowDown') {
                 e.preventDefault();
@@ -800,7 +910,7 @@ export function DocsVaultEditor({
                 e.preventDefault();
                 const pick = acMatches[autocomplete.active];
                 if (!pick) return;
-                applyWikilink(pick.slug);
+                pickMentionTarget(pick);
               } else if (e.key === 'Escape') {
                 e.preventDefault();
                 setAutocomplete(null);
@@ -811,7 +921,8 @@ export function DocsVaultEditor({
               if (!allDocs || !taRef.current) return;
               const caret = taRef.current.selectionStart;
               const src = (e.target as HTMLTextAreaElement).value;
-              const match = detectWikilinkTrigger(src, caret);
+              const match = detectMentionTrigger(src, caret);
+              if (match) placeMenuAtCaret(caret);
               setAutocomplete((cur) => {
                 if (!match) return null;
                 if (cur && cur.start === match.start && cur.query === match.query)
@@ -827,12 +938,27 @@ export function DocsVaultEditor({
               open={acOpen}
               // 편집기 왼쪽 아래에 매달려 위로 자란다 — 등장 원점도 그 모서리.
               origin="bottom left"
-              className="pointer-events-auto absolute bottom-3 left-3 z-10 w-[320px] overflow-hidden rounded-chip border border-[color:var(--color-indigo-line-a32)] bg-[color:var(--color-surface-deep-a98)] shadow-[var(--shadow-elevation-2)]"
+              /*
+                이 저장소의 메뉴 방언을 쓴다 — 볼트 칩·정렬 메뉴와 같은
+                `--chrome-radius-inner` · `border-soft` · `elevated` ·
+                `--chrome-shadow`. 종전엔 인디고 테두리 + `surface-deep` +
+                `elevation-2` 라 이 화면에서 **이 메뉴만 다른 물건**처럼
+                보였다(소유자 지적 2026-08-08).
+              */
+              className="pointer-events-auto absolute z-10 overflow-hidden rounded-[var(--chrome-radius-inner)] border border-[color:var(--color-border-soft)] bg-[color:var(--color-elevated)] shadow-[var(--chrome-shadow)]"
+              style={{
+                width: MENTION_MENU_WIDTH,
+                top: menuAt?.top ?? 0,
+                left: menuAt?.left ?? 0,
+              }}
             >
-              <div className="border-b border-[color:var(--color-overlay-2)] px-2 py-1 font-mono text-caption uppercase tracking-[var(--tracking-caps-14)] text-[color:var(--color-text-quaternary)]">
-                {t('wikilinkLabel', { query: heldAutocomplete.query })}
+              <div className="border-b border-[color:var(--color-border-soft)] px-2 py-1.5 text-label text-[color:var(--color-text-tertiary)]">
+                {/* 질의어가 비면 `· ""` 라는 빈 따옴표가 화면에 남았다(실기기 확인). */}
+                {t('mentionLabel', {
+                  query: heldAutocomplete.query ? ` · “${heldAutocomplete.query}”` : '',
+                })}
               </div>
-              <ul className="max-h-[220px] overflow-auto py-0.5">
+              <ul className="overflow-auto py-0.5" style={{ maxHeight: MENTION_MENU_MAX_HEIGHT - 64 }}>
                 {heldAutocomplete.matches.map((d, idx) => (
                   <li key={d.slug}>
                     <RowButton
@@ -842,7 +968,7 @@ export function DocsVaultEditor({
                           ac ? { ...ac, active: idx } : ac,
                         )
                       }
-                      onClick={() => applyWikilink(d.slug)}
+                      onClick={() => pickMentionTarget(d)}
                       className="hover:bg-[color:var(--color-overlay-1)]"
                     >
                       <span className="truncate text-body text-[color:var(--color-text-primary)]">
@@ -855,8 +981,90 @@ export function DocsVaultEditor({
                   </li>
                 ))}
               </ul>
-              <div className="border-t border-[color:var(--color-overlay-2)] px-2 py-1 font-mono text-caption uppercase tracking-[var(--tracking-caps-12)] text-[color:var(--color-text-quaternary)]">
-                {t('wikilinkFooter')}
+              <div className="border-t border-[color:var(--color-border-soft)] px-2 py-1.5 text-label text-[color:var(--color-text-quaternary)]">
+                {t('mentionFooter')}
+              </div>
+            </Surface>
+          ) : null}
+          {/*
+            2단계 — **관계를 고르는 자리.** 이 단계가 이 기능의 전부다.
+            여기서 이름만 넣고 끝내면 종전 위키링크와 같아지고, 그건 지도에도
+            경로 찾기에도 안 잡힌다(실측: 넣었다 뺀 컴파일 결과가 동일).
+            어휘는 공방의 나침반과 같은 것을 쓴다 — 같은 일에 다른 말을 쓰면
+            사용자가 두 기능으로 배운다.
+          */}
+          {/*
+            관계는 frontmatter 안에 적히므로 **말하지 않으면 안 보인다.**
+            침묵하면 사용자는 본문에 이름만 들어간 것으로 읽고, 그건 정확히
+            우리가 없앤 종전 위키링크의 인상이다. 보조기술에도 같이 간다.
+          */}
+          {mentionNotice ? (
+            <p
+              role="status"
+              aria-live="polite"
+              data-testid="editor-mention-notice"
+              className="pointer-events-none absolute bottom-3 left-3 z-10 rounded-chip border border-[color:var(--color-indigo-line-a32)] bg-[color:var(--color-surface-deep-a98)] px-2 py-1 text-label text-[color:var(--color-text-secondary)]"
+            >
+              {mentionNotice === 'added'
+                ? t('mentionRelationAdded')
+                : t('mentionRelationExists')}
+            </p>
+          ) : null}
+          {pendingMention ? (
+            <Surface
+              open
+              origin="bottom left"
+              role="menu"
+              aria-label={t('mentionRelationLabel', {
+                title: resolveLocaleDisplayName(
+                  pendingMention.doc.frontmatter,
+                  locale,
+                  pendingMention.doc.title,
+                ),
+              })}
+              /*
+                이 저장소의 메뉴 방언을 쓴다 — 볼트 칩·정렬 메뉴와 같은
+                `--chrome-radius-inner` · `border-soft` · `elevated` ·
+                `--chrome-shadow`. 종전엔 인디고 테두리 + `surface-deep` +
+                `elevation-2` 라 이 화면에서 **이 메뉴만 다른 물건**처럼
+                보였다(소유자 지적 2026-08-08).
+              */
+              className="pointer-events-auto absolute z-10 overflow-hidden rounded-[var(--chrome-radius-inner)] border border-[color:var(--color-border-soft)] bg-[color:var(--color-elevated)] shadow-[var(--chrome-shadow)]"
+              style={{
+                width: MENTION_MENU_WIDTH,
+                top: menuAt?.top ?? 0,
+                left: menuAt?.left ?? 0,
+              }}
+            >
+              <div className="border-b border-[color:var(--color-border-soft)] px-2 py-1.5 text-label text-[color:var(--color-text-tertiary)]">
+                {t('mentionRelationLabel', {
+                  title: resolveLocaleDisplayName(
+                    pendingMention.doc.frontmatter,
+                    locale,
+                    pendingMention.doc.title,
+                  ),
+                })}
+              </div>
+              <ul className="py-0.5">
+                {MENTION_RELATIONS.map((relation) => (
+                  <li key={relation.id}>
+                    <RowButton
+                      role="menuitem"
+                      active={relation.id === pendingRelation}
+                      onMouseEnter={() => setPendingRelation(relation.id)}
+                      data-testid={`editor-mention-relation-${relation.id}`}
+                      onClick={() => applyMentionRelation(relation.id)}
+                      className="hover:bg-[color:var(--color-overlay-1)] hover:text-[color:var(--color-text-primary)]"
+                    >
+                      <span className="truncate text-body">
+                        {tStudio(`relationShort.${RELATION_LABEL_KEY[relation.id]}`)}
+                      </span>
+                    </RowButton>
+                  </li>
+                ))}
+              </ul>
+              <div className="border-t border-[color:var(--color-border-soft)] px-2 py-1.5 text-label leading-label text-[color:var(--color-text-quaternary)]">
+                {t('mentionRelationFooter')}
               </div>
             </Surface>
           ) : null}
