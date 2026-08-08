@@ -224,7 +224,7 @@
       "half": "· 반쯤 왔어요",
       "almost": "· 거의 다 됐어요",
       "done": "· 다 채웠어요",
-      "first": "· 하나 채웠어요"
+      "first": "· 시작했어요"
     },
     "domainMembership": "이미 ‘{domain}’ 소속이에요",
     "framePrompt": "‘{name}’의 의미를 주변 노드와 이어 완성해요",
