@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import test from "node:test";
-import { classify } from "./classify-change.mjs";
+import { classify, decide } from "./classify-change.mjs";
 
 test("runs everything when shipped code changes", () => {
   assert.deepEqual(
@@ -48,11 +48,66 @@ test("a real runtime change still wins even when bundled with prose", () => {
   );
 });
 
-test("fails open — an empty or unknown diff never silently disables CI", () => {
+/*
+ * ⚠️ 이 시험의 예전 이름은 「fails open — an empty or unknown diff never
+ * silently disables CI」였는데, 단언은 **정확히 그 반대**를 못박고 있었다:
+ * 빈 diff → 전부 생략. 이름이 주장하는 성질을 단언이 부정한 것이다.
+ *
+ * `classify` 는 경로를 맞춰 보는 층이라 빈 목록에 대해 «맞는 것 없음» 을
+ * 돌려주는 것이 맞다. 「비교할 수 없으면 전부 돌린다」는 판정은 `decide` 의
+ * 몫이고, 그 판정이 없던 동안 main 에서 전체 Playwright 가 통째로 생략됐다.
+ * 그래서 이름을 사실대로 바꾸고, 성질은 아래 `decide` 시험이 지킨다.
+ */
+test("classify — 경로가 하나도 안 맞으면 빠른 게이트만 (판정층이 아니다)", () => {
   assert.deepEqual({ runtime: false, browser: false }, pick(classify([])));
   // Anything unrecognised outside the runtime list is prose-shaped by
   // definition; the fast gates still run and catch governance drift.
   assert.deepEqual({ runtime: false, browser: false }, pick(classify(["README.md"])));
+});
+
+/*
+ * **여기가 그 사고를 막는 자리다.**
+ *
+ * 실측(2026-08-08): main 런 넷이 전부 `no files changed` 로 전체 Playwright 를
+ * 생략했고 47초에 초록으로 끝났다. `merge-base HEAD origin/main` 이 main 푸시
+ * 에서는 HEAD 자신이라 `HEAD...HEAD` diff 가 비었기 때문이다. 그 초록이 실제
+ * 파손(#987 이 깬 e2e 스펙 둘)을 태우고 갔다.
+ */
+test("decide — base 가 HEAD 자신이면 전부 돌린다 (main 푸시)", () => {
+  const sha = "b85e4eaa9c0ffee0000000000000000000000000";
+  assert.deepEqual(
+    { runtime: true, browser: true },
+    pick(decide({ base: sha, head: sha, files: [] })),
+  );
+});
+
+test("decide — 비교할 base 가 없으면 전부 돌린다", () => {
+  assert.deepEqual(
+    { runtime: true, browser: true },
+    pick(decide({ base: null, head: "abc", files: [] })),
+  );
+});
+
+/*
+ * 공회전 차단 — 위 둘이 「전부 돌린다」를 말할 때, `decide` 가 **무엇이든**
+ * 전부 돌리는 상태가 아닌지 확인한다. base 가 HEAD 와 다르고 걸릴 경로가
+ * 없으면 여전히 빠른 게이트만이어야 한다. 이 단언이 없으면 위의 두 초록은
+ * 「고쳤다」가 아니라 「전부 켜 놓고 잊었다」와 구별되지 않는다.
+ */
+test("decide — 계기가 살아 있다: 진짜 산문 변경은 여전히 빠른 게이트만", () => {
+  assert.deepEqual(
+    { runtime: false, browser: false },
+    pick(decide({ base: "aaa", head: "bbb", files: ["README.md"] })),
+  );
+  assert.deepEqual(
+    { runtime: false, browser: false },
+    pick(decide({ base: "aaa", head: "bbb", files: [] })),
+  );
+  // 그리고 브라우저 경로는 base 가 달라도 제대로 잡힌다.
+  assert.deepEqual(
+    { runtime: true, browser: true },
+    pick(decide({ base: "aaa", head: "bbb", files: ["src/app/providers.tsx"] })),
+  );
 });
 
 function pick({ runtime, browser }) {
