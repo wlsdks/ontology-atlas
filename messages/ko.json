@@ -1181,13 +1181,14 @@
       "tbLink": "링크 ⌘K",
       "wikilinkLabel": "wikilink · \"{query}\"",
       "wikilinkFooter": "↑↓ 이동 · ↵/Tab 삽입 · Esc 닫기",
-      "mentionLabel": "연결할 개념{query}",
+      "mentionLabel": "이 문서와 이어 붙일 것{query}",
       "mentionFooter": "↑↓ 이동 · ↵ 고르기 · Esc 닫기",
-      "mentionRelationLabel": "‘{title}’ 와 어떻게 이어지나요?",
-      "mentionRelationFooter": "고르면 이 문서의 속성에 관계로 적히고, 글에는 이름만 남아요",
-      "mentionEmpty": "그런 이름의 개념이 없어요",
-      "mentionRelationAdded": "관계를 적었어요 — 지도에 선으로 나와요",
-      "mentionRelationExists": "이미 이어져 있어요"
+      "mentionRelationLabel": "‘{title}’ 는 이 문서와 어떤 관계인가요?",
+      "mentionRelationFooter": "속성에 관계로 적히고, 글에는 눌러 갈 수 있는 링크가 들어가요",
+      "mentionEmpty": "그런 이름이 폴더에 없어요",
+      "mentionRelationAdded": "이어졌어요 — 지도에 선으로 나와요",
+      "mentionRelationExists": "이미 이어져 있어요",
+      "mentionHint": "고르면 어떤 관계인지 물어봐요"
     },
     "palette": {
       "dialogAriaLabel": "문서함 팔레트",

@@ -89,10 +89,11 @@ describe('insertMentionRelation — 본문은 문장, frontmatter 는 사실', (
     expect(result.relationAdded).toBe(true);
     // ① 사실 — frontmatter
     expect(result.content).toContain('dependencies: [capabilities/beta]');
-    // ② 문장 — 본문에는 사람이 읽는 이름만. 슬러그도 대괄호도 남지 않는다.
-    expect(result.content).toContain('이 기능은 베타');
+    // ② 글 — 본문에는 **눌러서 갈 수 있는 표기**. 평문이면 아무 일도 안
+    //    일어난 것처럼 보인다(소유자 지적 2026-08-08). 뷰어·옵시디언·GitHub
+    //    셋 다 링크로 읽는 표기라 우리만의 규격을 발명하지 않는다.
+    expect(result.content).toContain('이 기능은 [[capabilities/beta|베타]]');
     expect(result.content).not.toContain('@베');
-    expect(result.content).not.toContain('[[');
   });
 
   it('커서가 삽입한 이름 뒤에 선다 — frontmatter 가 길어진 만큼 밀려도', () => {
@@ -103,8 +104,8 @@ describe('insertMentionRelation — 본문은 문장, frontmatter 는 사실', (
       target: { slug: 'capabilities/beta', title: '베타' },
       relationId: 'relates',
     });
-    // 커서 위치의 바로 앞 글자가 방금 넣은 이름의 끝이어야 한다.
-    expect(result.content.slice(result.caret - 2, result.caret)).toBe('베타');
+    // 커서는 방금 넣은 표기의 **뒤**에 선다 — 이어서 글을 쓸 수 있어야 한다.
+    expect(result.content.slice(result.caret - 2, result.caret)).toBe(']]');
   });
 
   it('이미 있는 관계는 파일을 건드리지 않는다 (본문만 바뀐다)', () => {
@@ -121,8 +122,11 @@ describe('insertMentionRelation — 본문은 문장, frontmatter 는 사실', (
     });
     expect(result.relationAdded).toBe(false);
     expect(result.content).toContain('relates: [capabilities/beta]');
-    // 중복이 생기지 않는다.
-    expect(result.content.match(/capabilities\/beta/g)).toHaveLength(1);
+    // frontmatter 의 관계는 **한 번만** 적힌다 — 본문 표기가 몇 개든.
+    const fm = result.content.slice(0, result.content.indexOf('---', 3));
+    expect(fm.match(/capabilities\/beta/g)).toHaveLength(1);
+    // 본문에는 눌러 갈 수 있는 표기가 들어간다(이미 이어져 있어도 글은 쓴다).
+    expect(result.content).toContain('[[capabilities/beta|베타]]');
   });
 
   /**
@@ -156,7 +160,8 @@ describe('insertMentionRelation — 본문은 문장, frontmatter 는 사실', (
       target: { slug: 'capabilities/beta', title: '   ' },
       relationId: 'contains',
     });
-    expect(result.content).toContain('이 기능은 capabilities/beta');
+    // 제목이 없으면 별칭 없는 위키링크 — 빈 파이프(`|`)를 남기지 않는다.
+    expect(result.content).toContain('이 기능은 [[capabilities/beta]]');
   });
 
   it('네 방위 전부가 실재하는 frontmatter 키로 쓴다', () => {

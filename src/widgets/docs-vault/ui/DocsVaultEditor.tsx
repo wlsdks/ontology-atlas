@@ -25,6 +25,7 @@ import {
 } from 'lucide-react';
 import { ICON_SIZE } from '@/shared/ui/icon-size';
 import type { VaultDoc } from '@/entities/docs-vault';
+import { useOntologyKindLabel } from '@/entities/ontology-class';
 import { resolveLocaleDisplayName } from '@/shared/lib/locale-display-name';
 import { useHeldValue } from '@/shared/lib/use-presence';
 import { caretPoint, clampMenuToBox } from '../lib/caret-position';
@@ -35,7 +36,7 @@ import {
   RELATION_LABEL_KEY,
   type MentionRelationId,
 } from '../lib/mention-relation';
-import { Chip, IconButton, RowButton, Surface } from '@/shared/ui';
+import { Chip, IconButton, RowButton, Surface, TopologyV2KindGlyph } from '@/shared/ui';
 
 interface Props {
   doc: VaultDoc;
@@ -151,6 +152,8 @@ export function DocsVaultEditor({
   // 관계 어휘는 공방이 소유한다 — 두 화면이 같은 일에 다른 말을 쓰지 않게
   // 여기서 새 문구를 만들지 않고 그 네임스페이스를 그대로 읽는다.
   const tStudio = useTranslations('ontologyStudio');
+  // 종류 이름은 지도·공방·새 문서 대화상자가 쓰는 것 하나를 그대로 쓴다.
+  const kindLabel = useOntologyKindLabel();
   const [content, setContent] = useState<string | null>(null);
   const [savedContent, setSavedContent] = useState<string | null>(null);
   const [loadedSlug, setLoadedSlug] = useState<string | null>(null);
@@ -954,9 +957,17 @@ export function DocsVaultEditor({
             >
               <div className="border-b border-[color:var(--color-border-soft)] px-2 py-1.5 text-label text-[color:var(--color-text-tertiary)]">
                 {/* 질의어가 비면 `· ""` 라는 빈 따옴표가 화면에 남았다(실기기 확인). */}
-                {t('mentionLabel', {
-                  query: heldAutocomplete.query ? ` · “${heldAutocomplete.query}”` : '',
-                })}
+                <span className="block truncate">
+                  {t('mentionLabel', {
+                    query: heldAutocomplete.query ? ` · “${heldAutocomplete.query}”` : '',
+                  })}
+                </span>
+                {/* 「고르면 무슨 일이 일어나나」를 미리 말한다 — 이 메뉴의
+                    결과가 frontmatter 안이라, 말하지 않으면 링크만 넣는
+                    기능으로 읽힌다(소유자: *"무슨 의미인지를 모르겠음"*). */}
+                <span className="block truncate text-caption text-[color:var(--color-text-quaternary)]">
+                  {t('mentionHint')}
+                </span>
               </div>
               <ul className="overflow-auto py-0.5" style={{ maxHeight: MENTION_MENU_MAX_HEIGHT - 64 }}>
                 {heldAutocomplete.matches.map((d, idx) => (
@@ -971,11 +982,19 @@ export function DocsVaultEditor({
                       onClick={() => pickMentionTarget(d)}
                       className="hover:bg-[color:var(--color-overlay-1)]"
                     >
+                      {/* 종류 표식 — 소유자: *"무슨 개념을 말하는건지도
+                          모르겠고"*. 제목만 늘어놓으면 도메인인지 역량인지
+                          요소인지 알 수 없고, 그걸 모르면 어떤 관계로 이을지
+                          정할 수가 없다. 지도·공방과 같은 글리프를 쓴다. */}
+                      <TopologyV2KindGlyph
+                        kind={String(d.frontmatter?.kind ?? 'unknown')}
+                        size={12}
+                      />
                       <span className="truncate text-body text-[color:var(--color-text-primary)]">
-                        {d.title}
+                        {resolveLocaleDisplayName(d.frontmatter, locale, d.title)}
                       </span>
-                      <span className="ml-auto truncate font-mono text-caption text-[color:var(--color-text-quaternary)]">
-                        {d.slug}
+                      <span className="ml-auto shrink-0 truncate text-label text-[color:var(--color-text-quaternary)]">
+                        {kindLabel(String(d.frontmatter?.kind ?? ''))}
                       </span>
                     </RowButton>
                   </li>
