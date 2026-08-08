@@ -16,9 +16,7 @@ import { AnimatePresence } from 'framer-motion';
 import {
   ArrowLeft,
   Bot,
-  ClipboardCheck,
   FileText,
-  HardDrive,
   Link2,
   Menu,
   Package,
@@ -57,7 +55,6 @@ import {
   RouteLoadingFallback,
   SimilarNodeWarning,
   Surface,
-  Tooltip,
   controlClass,
   useToast,
 } from '@/shared/ui';
@@ -2002,6 +1999,19 @@ function DocsVaultContent() {
               setVaultChipOpen(false);
               handleVaultPillSwap();
             }}
+            isSample={source === 'server'}
+            onUseSample={() => {
+              setVaultChipOpen(false);
+              handleSourceChange('server');
+            }}
+            localDisabled={localSourceDisabled}
+            localDisabledReason={
+              localSourceDisabled ? t('vaultStatus.unsupportedTooltip') : undefined
+            }
+            onOpenAudit={() => {
+              setVaultChipOpen(false);
+              openContract();
+            }}
             menuRef={vaultChipMenuRef}
             toolsMovedHint={t('header.vaultToolsMovedHint')}
             t={t}
@@ -2036,60 +2046,14 @@ function DocsVaultContent() {
             (zone-c 탭 스트립은 lg+ 전용 flex-1 이라 md 구간엔 자연 공백이
             없다). lg 에선 zone-c 가 여백을 소유하므로 ml-auto 는 no-op. */}
         <div className="flex w-full flex-none flex-wrap items-center justify-end gap-2 md:ml-auto md:w-auto md:flex-nowrap">
-          {/* Source 토글 — 이전엔 advanced dropdown 안 깊숙이 묻혀 있던 가장
-              중요한 결정 (샘플 vs 내 vault) 를 헤더에 직접 노출. */}
-          <div
-            className="flex min-h-9 items-center gap-0.5 rounded-card border border-[color:var(--color-border-soft)] p-0.5 text-label"
-            role="radiogroup"
-            aria-label={t('header.sourceAriaLabel')}
-          >
-            <Chip
-              role="radio"
-              aria-checked={source === 'server'}
-              active={source === 'server'}
-              onClick={() => handleSourceChange('server')}
-              className="hover:text-[color:var(--color-text-primary)]"
-            >
-              <Package size={ICON_SIZE.sm} aria-hidden />
-              {t('advanced.sourceServer')}
-            </Chip>
-            <Tooltip
-              content={
-                localVault.status === 'unsupported'
-                  ? t('vaultStatus.unsupportedTooltip')
-                  : t('vaultStatus.localTooltip')
-              }
-              withProvider={false}
-            >
-              <Chip
-                role="radio"
-                aria-checked={source === 'local'}
-                active={source === 'local'}
-                disabled={localSourceDisabled}
-                aria-describedby={
-                  localSourceDisabled
-                    ? 'docs-vault-local-unsupported-hint'
-                    : undefined
-                }
-                onClick={() => handleSourceChange('local')}
-                className="hover:text-[color:var(--color-text-primary)]"
-              >
-                <HardDrive size={ICON_SIZE.sm} aria-hidden />
-                {t('advanced.sourceLocal')}
-              </Chip>
-            </Tooltip>
-            {/* unsupported 상태일 때 sr-only hint 노출 — 시각적으론 disabled
-                opacity 와 tooltip 만으로 신호. 스크린리더 사용자는 disabled
-                button 만 듣고는 *왜* disabled 인지 모르므로 별도 description. */}
-            {localSourceDisabled ? (
-              <span
-                id="docs-vault-local-unsupported-hint"
-                className="sr-only"
-              >
-                {t('vaultStatus.unsupportedTooltip')}
-              </span>
-            ) : null}
-          </div>
+          {/* ⚠️ **소스 라디오와 점검 타일이 여기 있었다** (2026-08-08 제거, 2안).
+              오른쪽 끝의 「샘플 | 로컬」은 왼쪽 볼트 칩이 이미 말하고 있는 것을
+              한 번 더 말했고(같은 사실, 두 곳), 바꾸는 길도 둘이었다 — 칩 메뉴와
+              이 라디오. 소유자가 이 무리를 「헷갈린다」로 지목했다: 화면 전체의
+              데이터 출처를 바꾸는 스위치 옆에 검색과 클립보드가 성격 구분 없이
+              붙어 있었다.
+              표시·전환·점검은 전부 볼트 칩 하나로 모았다(새 표면 0). 여기 남는
+              것은 ⌘K 하나 — 그리고 레일이 숨는 `<lg` 에서만 설정 타일. */}
           <DocsHeaderTile
             icon={<Search size={ICON_SIZE.lg} aria-hidden />}
             title={t('header.paletteTooltip')}
@@ -2099,14 +2063,6 @@ function DocsVaultContent() {
               setVaultChipOpen(false);
               setPaletteQuery('');
             }}
-          />
-          <DocsHeaderTile
-            icon={<ClipboardCheck size={ICON_SIZE.lg} aria-hidden />}
-            title={contractOpen ? t('header.contractToggleHide') : t('header.contractToggleShow')}
-            active={contractOpen}
-            aria-expanded={contractOpen}
-            aria-controls="docs-source-contract"
-            onClick={() => (contractOpen ? closeContract() : openContract())}
           />
           {/* B2 병합 — 문서함 헤더의 vault 도구 드롭다운(VaultToolsMenu)은 설정
               메뉴로 흡수됐다. AI agent 설정·수리·복사 패킷·검증 게이트는 이제

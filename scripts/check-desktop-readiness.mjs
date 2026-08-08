@@ -173,6 +173,8 @@ const requiredAppleSecretNames = [
 const forbiddenFirebasePackages = ["firebase", "firebase-admin", "firebase-tools"];
 const rootEntryPage = readText("src/views/root-entry/ui/RootEntryPage.tsx");
 const docsVaultPage = readText("src/views/docs-vault/ui/DocsVaultPage.tsx");
+// 문서함의 로컬 소스 컨트롤은 볼트 칩 메뉴가 이고 있다(2026-08-08 통합).
+const vaultChipSurface = readText("src/views/docs-vault/ui/parts/DocsVaultVaultChip.tsx");
 const topologyEmptyState = readText("src/widgets/topology-controls/ui/TopologyEmptyState.tsx");
 // 구 `src/widgets/docs-vault/ui/VaultToolsMenu.tsx` 는 5164f68d7 (B2 — 문서함
 // vault 도구를 설정 메뉴로 합병) 에서 삭제됐다. 에이전트 셋업 표면은 설정 시트의
@@ -795,10 +797,23 @@ if (
   docsVaultPage.includes("shouldHonorLocalIntent(intent, isDesktopRuntime)") &&
   docsVaultPage.includes("isDocsVaultLocalSourceDisabled") &&
   // 구 `desktopOnlyTooltip` 키는 #435 (문서함 웹 세션 로컬 vault 개방) 에서
-  // `vaultStatus.unsupportedTooltip` 로 통합됐다. 시각 신호는 disabled + 툴팁,
+  // `vaultStatus.unsupportedTooltip` 로 통합됐다. 시각 신호는 disabled,
   // 스크린리더는 aria-describedby 로 *왜* 잠겼는지 듣는다 — 둘 다 요구한다.
+  //
+  // ⚠️ **지키는 것은 「그 자리에 있다」가 아니라 「왜 잠겼는지 말한다」이다**
+  // (2026-08-08). 종전엔 이 줄이 `docs-vault-local-unsupported-hint` 라는
+  // **id 문자열 하나**를 못박고 있었다. 그 컨트롤이 화면 오른쪽 라디오에서
+  // 볼트 칩 메뉴로 옮겨 가자(같은 사실을 두 곳이 말하던 것을 한 곳으로) 게이트가
+  // 빨개졌는데, 정작 그때 이유 설명은 **보이는 문장 + aria-describedby** 로
+  // 더 좋아져 있었다. 그릇을 못박으면 정당한 개선에 빨개지고, 다음 사람은
+  // 게이트 대신 개선 쪽을 되돌린다(`design-gates.md` 「그릇과 내용물」).
+  // 그래서 문자열이 아니라 **짝**을 요구한다: 잠그는 근거(`localSourceDisabled`)
+  // 와 그 이유를 읽어 주는 배선(`aria-describedby` + 이유 문자열)이 둘 다
+  // 있는가. 어느 화면 조각이 그것을 이고 있는지는 묻지 않는다.
   docsVaultPage.includes("vaultStatus.unsupportedTooltip") &&
-  docsVaultPage.includes("docs-vault-local-unsupported-hint")
+  docsVaultPage.includes("localSourceDisabled") &&
+  vaultChipSurface.includes("aria-describedby") &&
+  vaultChipSurface.includes("localDisabledReason")
 ) {
   pass("the hosted download page does not route into the browser workbench, and /docs's own local-source tab stays desktop-only");
 } else {

@@ -9,6 +9,7 @@ import {
   FileText,
   Files,
   Hash,
+  ListFilter,
   PinOff,
   Plus,
   Search,
@@ -33,7 +34,7 @@ import {
   type DocsTreeSort,
 } from "@/widgets/docs-vault/lib/tree-order";
 import { resolveLocaleDisplayName } from "@/shared/lib/locale-display-name";
-import { IconButton, RowButton, Surface, Tooltip, controlClass } from "@/shared/ui";
+import { Chip, IconButton, RowButton, Surface, Tooltip, controlClass } from "@/shared/ui";
 import { fieldClass } from '@/shared/ui/control-class';
 
 /**
@@ -278,15 +279,12 @@ export function DocsSidebarBody({
     ontology: <Waypoints size={ICON_SIZE.md} aria-hidden />,
   };
   const searchExpanded = searchOpen || Boolean(treeQuery);
-  const activeCollectionCount =
-    collection === "all"
-      ? manifest.docs.length
-      : collectionCounts[collection];
   return (
     <div className="flex h-full min-h-0 flex-col">
-      {/* #22 — 옵시디언식 단일 아이콘 행: 전체/가이드/지도 문서 뷰 전환 +
-          검색 토글 + 새 문서. 큰 헤더·세그먼트·상시 검색창을 걷어내 밀도를
-          낮춘다. active 는 인디고, hover 툴팁이 평문으로 뜻을 설명한다. */}
+      {/* 한 줄 안에 **필터 한 벌 + 액션 셋**이 있다. 밀도를 낮추려고 큰
+          헤더·상시 검색창을 걷어낸 것은 그대로 두되, 셋을 테두리로 묶고
+          켜진 것에 이름을 붙여 «상태» 와 «액션» 을 눈으로 가른다
+          (2026-08-08 — 소유자가 이 줄을 「복잡도」로 지목했다). */}
       {/*
         a11y: 이 줄은 `role="tablist"` 가 **아니다**. 2026-08-03 axe 전수에서
         `aria-required-children`(WCAG 4.1.2) 위반 1건이 여기였다 — 줄 안에
@@ -302,28 +300,56 @@ export function DocsSidebarBody({
         `toolbar` 도 안 쓴다: 그건 다시 화살표키 이동 약속이다.
       */}
       <div className="flex flex-none items-center gap-1 border-b border-[color:var(--color-overlay-2)] px-2 py-2">
+        {/*
+          ⚠️ **켜진 것은 이름을 갖는다** (2026-08-08, 소유자 지적 "복잡도").
+          종전엔 셋 다 라벨 없는 32px 아이콘이라 «지금 무엇으로 걸러진
+          목록인가» 를 아이콘만으로 읽을 수 없었고, 그 답은 아래 회색 캡션
+          한 줄에만 있었다 — 정보가 컨트롤 밖에 있으면 사람은 두 곳을 봐야
+          한다. 이제 **켜진 칩이 자기 이름과 개수를 말하고**, 캡션 줄은
+          검색·태그처럼 컨트롤이 말할 수 없는 상태에만 남는다.
+
+          그리고 이 셋은 **서로 배타적인 필터**인데 옆의 검색·정렬·새 문서와
+          똑같이 생겼었다. 테두리 하나로 묶어 «여기까지가 한 벌» 이라고
+          말한다 — 상태와 액션이 한 줄에 섞여 있던 것이 복잡도의 절반이다.
+        */}
         <div
           role="group"
           aria-label={t("collectionAriaLabel")}
-          className="flex flex-none items-center gap-1"
+          className="flex min-w-0 flex-none items-center gap-0.5 rounded-chip border border-[color:var(--color-border-soft)] bg-[color:var(--color-canvas)] p-0.5"
         >
-          {collectionOptions.map((option) => (
-            <RailIconButton
-              key={option}
-              testId={`docs-sidebar-collection-${option}`}
-              icon={collectionIcons[option]}
-              label={t(`collection.${option}.tooltip`, {
-                count: collectionCounts[option],
-              })}
-              active={collection === option}
-              onClick={() => onCollectionChange(option)}
-            />
-          ))}
+          {collectionOptions.map((option) => {
+            const isActive = collection === option;
+            const tooltip = t(`collection.${option}.tooltip`, {
+              count: collectionCounts[option],
+            });
+            return (
+              <Tooltip key={option} content={tooltip}>
+                <Chip
+                  data-testid={`docs-sidebar-collection-${option}`}
+                  aria-label={tooltip}
+                  aria-pressed={isActive}
+                  active={isActive}
+                  tone={isActive ? "strong" : "muted"}
+                  onClick={() => onCollectionChange(option)}
+                  className="min-w-0 flex-none hover:text-[color:var(--color-text-primary)]"
+                >
+                  {collectionIcons[option]}
+                  {isActive ? (
+                    <span className="min-w-0 truncate">
+                      {t(`collection.${option}.label`)}
+                    </span>
+                  ) : null}
+                </Chip>
+              </Tooltip>
+            );
+          })}
         </div>
-        <span aria-hidden className="mx-0.5 h-5 w-px bg-[color:var(--color-overlay-2)]" />
         <RailIconButton
           testId="docs-sidebar-search-toggle"
-          icon={<Search size={ICON_SIZE.md} aria-hidden />}
+          // 돋보기가 화면에 둘이었다 — 이 버튼(목록 좁히기)과 헤더의 ⌘K
+          // 전체 검색. 같은 기호가 다른 일을 하면 둘 다 못 믿는다. 이쪽은
+          // 하는 일이 «거르기» 라 깔때기가 정직하다(2026-08-08).
+          icon={<ListFilter size={ICON_SIZE.md} aria-hidden />}
           label={t("searchLabel")}
           active={searchExpanded}
           onClick={() => {
@@ -409,22 +435,23 @@ export function DocsSidebarBody({
           onClick={onCreateNewDoc}
         />
       </div>
-      {/* 이 줄은 **지금 보고 있는 것**을 말한다. 종전에는 `{count}` 를 받아
-          놓고 버리는 상수 "전체 문서" 라서, 「지도 문서」 탭을 골라도 여전히
-          "전체 문서" 라고 적혀 있었다(설치 앱에서도 재현). 위 아이콘 행은
-          이름과 개수를 툴팁에만 갖고 있으므로 — 이 줄을 지우면 화면에서 그
-          둘이 통째로 사라진다 — 지우는 대신 활성 컬렉션의 이름 + 개수로
-          고친다. */}
-      <p className="flex-none px-3 pt-1.5 text-caption text-[color:var(--color-text-quaternary)]">
-        {normalizedTreeQuery
-          ? t("treeSearchCount", { count: queryMatchCount })
-          : activeTag
-            ? t("treeFiltered", { tag: activeTag })
-            : t("treeCount", {
-                collection: t(`collection.${collection}.label`),
-                count: activeCollectionCount,
-              })}
-      </p>
+      {/* 이 줄은 **컨트롤이 말할 수 없는 상태**만 말한다 (2026-08-08).
+          종전엔 여기가 활성 컬렉션의 이름과 개수까지 이고 있었다 — 위 줄의
+          아이콘들이 라벨을 툴팁에만 갖고 있어서, 이 줄을 지우면 그 둘이
+          화면에서 통째로 사라졌기 때문이다. 이제 **켜진 칩이 자기 이름과
+          개수를 직접 말하므로** 그 몫은 여기 남을 이유가 없다: 같은 사실을
+          두 곳이 말하면 눈이 두 번 일한다.
+
+          검색어와 태그는 다르다 — 그건 컨트롤의 «상태» 가 아니라 사용자가
+          방금 입력한 «값» 이라 칩에 담기지 않는다. 그래서 이 줄은 그 둘일
+          때만 그려진다. 아무것도 아닐 때는 줄 자체가 없다. */}
+      {normalizedTreeQuery || activeTag ? (
+        <p className="flex-none px-3 pt-1.5 text-caption text-[color:var(--color-text-quaternary)]">
+          {normalizedTreeQuery
+            ? t("treeSearchCount", { count: queryMatchCount })
+            : t("treeFiltered", { tag: activeTag as string })}
+        </p>
+      ) : null}
       {searchExpanded ? (
         <label className="mx-3 mt-1.5 flex h-8 flex-none items-center gap-2 rounded-chip border border-[color:var(--color-overlay-2)] bg-[color:var(--color-overlay-1)] px-2 text-[color:var(--color-text-quaternary)] focus-within:border-[color:var(--color-indigo-line-a45)] focus-within:text-[color:var(--color-text-secondary)]">
           <Search size={ICON_SIZE.sm} aria-hidden />

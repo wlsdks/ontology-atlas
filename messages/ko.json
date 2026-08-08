@@ -1719,7 +1719,10 @@
       "vaultPillSampleLabel": "내장 샘플 (이 도구 자신의 문서)",
       "docListCollapse": "문서 목록 접기",
       "docListExpand": "문서 목록 펼치기",
-      "vaultChipLocalPending": "폴더 미선택"
+      "vaultChipLocalPending": "폴더 미선택",
+      "sourcePickSample": "샘플 보기",
+      "sourcePickLocal": "내 폴더 열기",
+      "sourcePickLocalActive": "내 폴더"
     },
     "tabs": {
       "stripAriaLabel": "열린 문서",

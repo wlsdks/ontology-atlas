@@ -1719,7 +1719,10 @@
       "vaultPillSampleLabel": "Built-in sample (this tool's own documents)",
       "docListCollapse": "Collapse document list",
       "docListExpand": "Expand document list",
-      "vaultChipLocalPending": "No folder yet"
+      "vaultChipLocalPending": "No folder yet",
+      "sourcePickSample": "View the sample",
+      "sourcePickLocal": "Open my folder",
+      "sourcePickLocalActive": "My folder"
     },
     "tabs": {
       "stripAriaLabel": "Open documents",
