@@ -29,9 +29,25 @@ import { useDogfoodSample } from "./sample-source";
  * 라벨 텍스트가 아니라 그 속성을 본다(로케일이 바뀌어도 계약은 그대로다).
  */
 async function expectSourceIs(page: import("@playwright/test").Page, which: "sample" | "local") {
-  await page.getByTestId("vault-chip-menu-trigger").click();
-  const picked = page.getByTestId(`vault-chip-use-${which}`);
-  await expect(picked).toBeVisible({ timeout: 10_000 });
+  /*
+   * ⚠️ 한 번의 클릭에 기대지 않는다. dev 서버에서는 하이드레이션 전에 떨어진
+   * 클릭이 유실되고, 그다음 기다림은 잃어버린 클릭을 되살리지 못한다 — 정적
+   * export 에서는 통과하고 dev 에서만 죽는다(2026-08-09 실측).
+   */
+  // 보이는 것만 집는다 — 전환 중에는 같은 testid 가 둘로 잡힌다(위 주석과 같은 이유).
+  const trigger = page.locator('[data-testid="vault-chip-menu-trigger"]:visible');
+  const picked = page.locator(`[data-testid="vault-chip-use-${which}"]:visible`);
+  await expect(trigger).toBeVisible({ timeout: 15_000 });
+  await expect
+    .poll(
+      async () => {
+        if (await picked.isVisible().catch(() => false)) return true;
+        await trigger.click({ timeout: 5_000 }).catch(() => undefined);
+        return picked.isVisible().catch(() => false);
+      },
+      { timeout: 20_000, message: "볼트 칩 메뉴가 열리지 않았다 — 다시 눌러야 한다" },
+    )
+    .toBe(true);
   await expect(picked).toHaveAttribute("aria-checked", "true");
   await page.keyboard.press("Escape");
   /*
