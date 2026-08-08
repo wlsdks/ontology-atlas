@@ -121,10 +121,18 @@ describe('X 링크 자리', () => {
     'utf8',
   );
 
-  it('핸들이 비면 URL 이 null 이다', async () => {
+  it('핸들이 비면 URL 이 null · 채워지면 그 핸들의 주소다', async () => {
     const { X_HANDLE, xProfileUrl } = await import('@/shared/config/social-links');
-    if (X_HANDLE === '') expect(xProfileUrl()).toBeNull();
-    else expect(xProfileUrl()).toBe(`https://x.com/${X_HANDLE}`);
+    /**
+     * `X_HANDLE` 을 `string` 으로 받아 두는 이유: 리터럴 타입이면 값이 채워진
+     * 순간 `=== ''` 비교가 **타입 오류**가 되어, 이 계약이 「빈 상태」쪽 절을
+     * 잃는다. 이 자리는 두 상태 **모두**에서 참이어야 한다 — 핸들은 소유자가
+     * 넣고 빼는 값이고, 빼는 순간 크롬이 다시 비활성으로 돌아가는 것이
+     * 이 파일이 지키는 계약이다(2026-08-08 에 핸들이 채워졌다).
+     */
+    const handle: string = X_HANDLE;
+    if (handle === '') expect(xProfileUrl()).toBeNull();
+    else expect(xProfileUrl()).toBe(`https://x.com/${handle}`);
   });
 
   it('핸들만 저장한다 — URL 전체를 박지 않는다', () => {
