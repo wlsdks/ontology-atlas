@@ -25,10 +25,31 @@ import { parseFrontmatter } from '@/shared/lib/parse-frontmatter';
  *
  * 1. **frontmatter 에 관계를 쓴다** — 이것이 사실이다. 지도의 선이 되고,
  *    경로·영향·에이전트 핸드오프가 본다.
- * 2. **본문에는 사람이 읽는 이름만** 평문으로 남긴다. 이건 사실이 아니라
- *    문장이다 — 나중에 관계를 지워도 문장은 남고, 그게 맞다(사람이 쓴 글이다).
+ * 2. **본문에는 위키링크를 남긴다** — `[[슬러그|보일 이름]]`. 이건 사실이
+ *    아니라 **읽는 사람을 위한 길**이다.
  *
- * 「같은 사실을 두 곳이 말하는」 것이 아니다. 한쪽은 사실, 한쪽은 읽기 좋은 글.
+ * 「같은 사실을 두 곳이 말하는」 것이 아니다. 한쪽은 타입 있는 사실, 한쪽은
+ * 눌러서 갈 수 있는 글.
+ *
+ * ## 본문 표기를 왜 위키링크로 하나 (2026-08-08, 소유자 지적)
+ *
+ * 첫 판에서는 본문에 **평문 이름만** 넣었다. 소유자가 바로 물었다 —
+ * *"@ 해서 뭔가 등록하면 글에도 다른 형식으로 나와야하지 않을까?"*. 맞다:
+ * 평문은 아무 일도 안 일어난 것처럼 보이고, 그러면 방금 한 동작의 결과가
+ * 화면에 없다.
+ *
+ * 그때 **우리만의 규격을 만들지 않은** 이유는 셋이다:
+ *
+ * 1. 뷰어가 `[[슬러그|이름]]` 을 **이미** 내부 문서 링크로 렌더한다(전처리가
+ *    표준 마크다운 링크로 바꿔 준다). 새 코드가 필요 없다.
+ * 2. **옵시디언·GitHub 에서도 링크로 보인다.** 우리 표기를 발명하면 그
+ *    파일을 다른 도구로 열었을 때 정체불명의 글자가 된다 — 「평범한
+ *    마크다운으로 들고 나갈 수 있다」는 약속을 우리가 깨는 셈이다.
+ * 3. 사용자가 새로 배울 것이 0개다.
+ *
+ * 종전에 `[[` **입력 문법**을 없앤 것과 모순이 아니다. 없앤 것은 「본문 링크
+ * 하나로 연결을 끝낸 척하는 것」이고, 지금 쓰는 것은 **관계를 적은 뒤 그
+ * 관계를 사람이 눌러 갈 수 있게 하는 표기**다. 사실은 frontmatter 에 있다.
  *
  * ## 왜 순수 함수인가
  *
@@ -148,13 +169,15 @@ export function insertMentionRelation({
   const key = RELATION_KEY_BY_ID.get(relationId);
   if (!key) throw new Error(`Unknown relation: ${relationId}`);
 
-  // ① 본문 — `@질의어` 를 사람이 읽는 이름으로 갈아 끼운다.
+  // ① 본문 — `@질의어` 를 **위키링크**로 갈아 끼운다. 뷰어가 내부 문서
+  //    링크로 렌더하고, 옵시디언·GitHub 도 링크로 읽는다.
   const label = target.title.trim() || target.slug;
+  const inserted = label === target.slug ? `[[${target.slug}]]` : `[[${target.slug}|${label}]]`;
   const withLabel =
     content.slice(0, trigger.start) +
-    label +
+    inserted +
     content.slice(trigger.start + 1 + trigger.query.length);
-  const caretAfterLabel = trigger.start + label.length;
+  const caretAfterLabel = trigger.start + inserted.length;
 
   // ② frontmatter — 관계를 더한다. 이미 있으면 파일을 건드리지 않는다.
   const { frontmatter } = parseFrontmatter(withLabel);

@@ -108,15 +108,30 @@ export function DocsVaultViewer({
         let cleaned = text.startsWith('---')
           ? text.replace(/^---[\s\S]*?\n---\n?/, '')
           : text;
-        // Wikilinks 전처리 — [[slug]] / [[slug|text]] / [[slug#anchor]]
-        // 를 표준 markdown [text](WIKILINK:slug#anchor) 센티넬로 변환.
-        // Viewer a 컴포넌트가 WIKILINK: 를 내부 라우팅으로 잡음.
+        /*
+         * Wikilinks 전처리 — `[[slug]]` / `[[slug|text]]` / `[[slug#anchor]]` 를
+         * 표준 마크다운 링크 + 센티넬로 바꾼다. 아래 `a` 컴포넌트가 그 센티넬을
+         * 내부 라우팅으로 잡는다.
+         *
+         * ⚠️ **센티넬이 URL 스킴이면 안 된다** (2026-08-08 실측 수리).
+         * 종전엔 `WIKILINK:slug` 였는데, `react-markdown` 은 URL 을 살균하고
+         * (`defaultUrlTransform`) **모르는 스킴을 빈 문자열로 만든다** —
+         * 실측: `defaultUrlTransform('WIKILINK:capabilities/x') === ''`.
+         * 그래서 `href` 가 비고, `a` 컴포넌트의 첫 줄이 링크도 「못 찾음」
+         * 표시도 아닌 **아무 표시 없는 평문**을 돌려줬다. 즉 이 기능은
+         * 코드가 있고 문서에도 적혀 있었지만 **한 번도 동작한 적이 없다**
+         * (도그푸드 볼트의 본문 위키링크가 0개라 아무도 안 밟았다).
+         *
+         * 쿼리 모양은 살균을 통과한다. 게이트:
+         * `tests/contract/wikilink-url-scheme.contract.test.ts`.
+         */
         cleaned = cleaned.replace(
           /\[\[([^\]|]+?)(?:\|([^\]]+?))?\]\]/g,
           (_, target: string, label?: string) => {
             const text = (label ?? target).trim();
             const clean = target.trim();
-            return `[${text}](WIKILINK:${clean})`;
+            const [slug, anchor] = clean.split('#');
+            return `[${text}](${WIKILINK_SENTINEL}${slug}${anchor ? `#${anchor}` : ''})`;
           },
         );
         setRaw(cleaned);
@@ -173,14 +188,43 @@ export function DocsVaultViewer({
   // 트레이드오프가 전 heading 의 내비게이션이 죽는 것보다 낫다.
   const headingSlugOf = (children: React.ReactNode) => slugFromChildren(children);
 
+  /**
+   * 볼트 슬러그의 NFC 사본 — 위키링크 해소가 쓰는 조회 집합.
+   *
+   * 원본 `vaultSlugs` 를 그대로 쓰면 한글 슬러그가 안 맞는다(NFC 21자 대
+   * NFD 31자). 매 링크마다 정규화하지 않고 집합을 한 번 만든다 — 본문에
+   * 링크가 수십 개면 그만큼 반복되는 일이다.
+   */
+  const normalizedVaultSlugs = useMemo(
+    () => new Set([...vaultSlugs].map((slug) => slug.normalize('NFC'))),
+    [vaultSlugs],
+  );
+
   const components: Components = {
       a({ href, children, ...rest }) {
         if (!href) return <span {...rest}>{children}</span>;
         // 전처리 단계 센티넬 — [[slug#anchor]] 가 WIKILINK:slug#anchor 로
         // 변환돼 있음. vault slug 로 바로 매칭.
-        if (href.startsWith('WIKILINK:')) {
-          const spec = href.slice('WIKILINK:'.length);
-          const [wikiSlug, anchor] = spec.split('#');
+        if (href.startsWith(WIKILINK_SENTINEL)) {
+          const spec = href.slice(WIKILINK_SENTINEL.length);
+          const [rawWikiSlug, anchor] = spec.split('#');
+          /*
+           * ⚠️ **퍼센트 디코드하고 NFC 로 맞춘다** (2026-08-08 실측 수리).
+           *
+           * 마크다운 파서는 링크 URL 을 **퍼센트 인코딩해서** 넘긴다 — 실측:
+           * `capabilities/스윕-검증-절차` 가
+           * `capabilities/%EC%8A%A4%EC%9C%95-…`(69자)로 도착했다. 그 문자열은
+           * 볼트 슬러그 집합에 없으므로 한글 슬러그 위키링크가 **전부**
+           * 「폴더에 없는 링크」 점선으로 떨어졌다. 영문 슬러그는 인코딩할 것이
+           * 없어서 멀쩡했다 — 그래서 이 결함은 한글 볼트에서만 보인다.
+           *
+           * NFC 도 같이 맞춘다. 한글 슬러그는 출처에 따라 NFC(21자)와
+           * NFD(31자)로 갈리고(macOS 파일시스템은 NFD), 글자는 같은데 문자열이
+           * 안 맞는다. CLI 검증기가 이미 같은 판단을 적어 뒀다(`validate.mjs`:
+           * *"참조도 NFC 로 맞춘다 — 한쪽만 정규화하면 글자가 같은데 안 맞는
+           * 상태가 그대로 남는다"*). 그 규칙을 다시 정하지 않고 따른다.
+           */
+          const wikiSlug = rawWikiSlug ? decodeWikilinkSlug(rawWikiSlug) : rawWikiSlug;
           // project: prefix → 공개 토폴로지 라우트로 이동. 예: [[project:reactor]]
           if (wikiSlug && wikiSlug.startsWith('project:')) {
             const projectSlug = wikiSlug.slice('project:'.length);
@@ -194,7 +238,7 @@ export function DocsVaultViewer({
               </a>
             );
           }
-          if (wikiSlug && vaultSlugs.has(wikiSlug)) {
+          if (wikiSlug && normalizedVaultSlugs.has(wikiSlug)) {
             return (
               <Link
                 href={getDocHref(wikiSlug, anchor)}
@@ -542,6 +586,30 @@ export function DocsVaultViewer({
       </ReactMarkdown>
     </article>
   );
+}
+
+/**
+ * 위키링크 센티넬 — **쿼리 모양이어야 한다.** 스킴 모양(`X:`)은
+ * `react-markdown` 의 URL 살균이 통째로 지운다(2026-08-08 실측 수리).
+ * 게이트가 이 값을 소스에서 읽어 살균을 통과하는지 잰다.
+ */
+const WIKILINK_SENTINEL = '?wikilink=';
+
+/**
+ * 위키링크 URL 에서 볼트 슬러그를 꺼낸다 — **퍼센트 디코드 + NFC**.
+ *
+ * 둘 다 필요하고 순서도 그렇다: 디코드가 먼저여야 NFC 정규화가 실제 글자에
+ * 걸린다. 디코드가 실패하는 입력(잘린 `%` 등)은 원문을 그대로 돌려준다 —
+ * 던지면 문서 하나가 통째로 안 그려진다.
+ */
+function decodeWikilinkSlug(raw: string): string {
+  let decoded = raw;
+  try {
+    decoded = decodeURIComponent(raw);
+  } catch {
+    /* 잘린 퍼센트 시퀀스 — 원문으로 둔다 */
+  }
+  return decoded.normalize('NFC');
 }
 
 type CalloutKind = 'note' | 'tip' | 'info' | 'warning' | 'danger' | 'success';
