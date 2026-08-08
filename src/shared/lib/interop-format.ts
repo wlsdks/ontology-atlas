@@ -137,13 +137,24 @@ function normalizeGraph(graph: InteropGraph): {
     const via = typeof e?.via === 'string' && e.via.trim() ? e.via.trim() : '';
     if (!from || !to || !via) continue;
     if (!nodeBySlug.has(from) || !nodeBySlug.has(to)) continue;
-    const key = `${from} ${via} ${to}`;
+    // ⚠️ **구분자를 쓰지 않는다** (2026-08-08). 종전엔 이 짝(`cli/src/lib/
+    // interop-format.mjs`)과 여기가 **서로 다른 구분자**를 쓰고 있었다 — 저쪽은
+    // NUL(U+0000), 여기는 공백. 두 파일은 같은 입력에 같은 출력을 내야 한다고
+    // 문서와 계약 테스트가 말하는데, 정렬 키가 다르면 그 약속이 특정 입력에서만
+    // 조용히 깨진다. 게다가 공백 구분자는 **애매하다**: ["a b","c"] 와
+    // ["a","b c"] 가 같은 키가 된다. `JSON.stringify` 는 양쪽 다 해결한다.
+    const key = JSON.stringify([from, via, to]);
     if (seenEdge.has(key)) continue;
     seenEdge.add(key);
     edges.push({ from, to, via });
   }
-  edges.sort((a, b) =>
-    `${a.from} ${a.via} ${a.to}`.localeCompare(`${b.from} ${b.via} ${b.to}`),
+  // 필드 순서대로 비교한다 — 이어 붙인 문자열에 localeCompare 를 걸면 구분자가
+  // 무시되는 콜레이션이 있어서, 이쪽이 의도한 「필드 우선순위」를 정확히 말한다.
+  edges.sort(
+    (a, b) =>
+      a.from.localeCompare(b.from) ||
+      a.via.localeCompare(b.via) ||
+      a.to.localeCompare(b.to),
   );
 
   return { nodes, nodeBySlug, edges };

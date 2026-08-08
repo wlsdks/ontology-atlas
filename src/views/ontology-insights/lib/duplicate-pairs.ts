@@ -281,7 +281,13 @@ export function buildDuplicatePairs(
   const scored: DuplicatePairRow[] = [];
 
   const consider = (leftId: string, rightId: string) => {
-    const pairKey = leftId < rightId ? `${leftId} ${rightId}` : `${rightId} ${leftId}`;
+    // 합성 키에 NUL 을 쓰면 그 파일이 git 에게 **바이너리**가 되어 PR 에서
+    // diff 가 안 보이고 grep 이 파일을 건너뛴다 (2026-08-08 검수에서 실제로
+    // 사고가 났다). JSON 배열은 인쇄 가능하면서 애매함이 없다.
+    const pairKey =
+      leftId < rightId
+        ? JSON.stringify([leftId, rightId])
+        : JSON.stringify([rightId, leftId]);
     if (seen.has(pairKey)) return;
     seen.add(pairKey);
     const left = candidates.get(leftId);
@@ -311,7 +317,7 @@ export function buildDuplicatePairs(
       .sort((a, b) => b.length - a.length || a.localeCompare(b));
 
     scored.push({
-      id: `${keep.slug} ${dissolve.slug}`,
+      id: JSON.stringify([keep.slug, dissolve.slug]),
       keepId: keep.node.id,
       keepSlug: keep.slug,
       keepTitle: keep.node.display ?? keep.node.title,
