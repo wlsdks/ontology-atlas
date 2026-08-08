@@ -91,4 +91,40 @@ test.describe("데스크톱 셸의 좌측 레일", () => {
     await page.waitForTimeout(1500);
     expect((await railState(page)).width).toBeGreaterThan(0);
   });
+
+  /**
+   * **레일 타일은 테두리 없이 면과 잉크로만 말한다.**
+   *
+   * #961(손 컨트롤 → 값 층 일괄 이관)이 목적지 타일의 바깥 `<a>` 에
+   * `shape:"card"` 를 입히면서, 그 모양이 싣고 다니는 1px 헤어라인이 여섯
+   * 타일 전부에 얹혔다 — 이관 전 손 클래스에는 테두리가 없었고, 그 커밋의
+   * 전제가 「픽셀을 안 바꾸는 정확한 변환」이었다. 소유자가 실물에서 잡았다
+   * (2026-08-08). 값 층 이관은 코드에 정당한 토큰 값만 남기므로 어떤 값
+   * lint 도 이 부류를 못 본다 — 그려진 테두리 폭을 재는 수밖에 없다.
+   */
+  test("레일 목적지 타일에 그려진 테두리가 없다", async ({ page }) => {
+    await page.goto("/ko/topology/?guides=off");
+    await expect(page.getByTestId("app-nav-rail-item-map")).toBeVisible();
+
+    const tiles = await page.evaluate(() => {
+      return [...document.querySelectorAll('[data-testid^="app-nav-rail-item-"]')].map((el) => {
+        const c = getComputedStyle(el);
+        return {
+          id: el.getAttribute("data-testid"),
+          borderWidth: c.borderTopWidth,
+          borderStyle: c.borderTopStyle,
+        };
+      });
+    });
+
+    // 공회전 차단 — 타일을 못 찾으면 아래 0 위반은 「깨끗해서」가 아니다.
+    expect(tiles.length, "레일 타일을 못 찾았다 — 셀렉터가 낡았다").toBeGreaterThan(4);
+
+    const bordered = tiles.filter((t) => t.borderWidth !== "0px" && t.borderStyle !== "none");
+    expect(
+      bordered,
+      "레일 타일에 테두리가 그려졌다 — 값 층 모양이 싣고 온 헤어라인이다. " +
+        "이 타일은 초점 링 기하만 card 에서 빌린다(border-0)",
+    ).toEqual([]);
+  });
 });
