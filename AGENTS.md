@@ -105,8 +105,9 @@ What the tree doesn't tell you:
 - **`mcp/` and `cli/` are not published to npm** and never will be — the app bundle
   carries the MCP server (`pnpm mcp:build-binary`), and the CLI runs from a source
   checkout. `npx ontology-atlas …` is a 404, not a future feature.
-- **`docs/ontology/` is this project's own vault** (we dogfood). `.ontology-atlasignore`
-  suppresses external element-ref noise in growth/maintenance plans.
+- **`docs/ontology/` is this project's own vault** (we dogfood). A vault-root
+  `.ontology-atlasignore` filters external-ref *suggestions* in growth/maintenance
+  plans only — it never hides a file from the graph, and this vault has none.
 - **`tests/contract/` holds cross-package contracts** — the same fixture run through
   `src/`, `mcp/`, and `scripts/` parsers so they can't drift apart.
 - **`.claude/rules/` is mostly *not* auto-loaded** — three rules are resident and five

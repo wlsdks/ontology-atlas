@@ -559,8 +559,29 @@ function findDuplicateUidIssues(entries) {
   return issues;
 }
 
+/**
+ * ⚠️ **그래프 참조는 «노드» 로 resolve 되어야 한다** (2026-08-08 실측).
+ *
+ * 종전엔 해소 대상이 «볼트의 모든 .md 파일» 이었다. 볼트에는 노드가 아닌
+ * 마크다운(회의록·메모·초안)이 정상적으로 섞여 사는데 — 그건 설계다 —
+ * 그것들까지 «있는 슬러그» 로 쳐 줘서, 노드 → 잡문 관계가 통과했다.
+ *
+ * 침묵보다 나빴다: 그 상태에서 이 명령은 초록 글씨로 *"frontmatter · 그래프
+ * 참조 issue 0 ✓"* 라고 적었는데, 같은 볼트에서 `compile` 은 `unresolved 1`
+ * 을 냈다. **한 볼트를 두고 두 도구가 반대로 말했고, 사람이 먼저 보는 쪽이
+ * 틀린 쪽이었다.** 없는 검사를 했다고 말하는 것이 가장 나쁜 종류다.
+ */
 function findDanglingGraphReferenceIssues(entries) {
-  const slugs = new Set(entries.map((entry) => entry.slug));
+  const isNodeEntry = (entry) =>
+    typeof entry.frontmatter?.kind === 'string' && entry.frontmatter.kind.trim() !== '';
+  const nodeEntries = entries.filter(isNodeEntry);
+  // 노드가 아닌 문서의 슬러그 — 「없다」와 「노드가 아니다」를 갈라 말하려고
+  // 따로 들고 있는다. 사람에게는 그 둘이 전혀 다른 할 일이다.
+  const nonNodeSlugs = new Set(entries.filter((e) => !isNodeEntry(e)).map((e) => e.slug));
+  const nonNodeTails = new Set(
+    [...nonNodeSlugs].map((slug) => slug.split('/').pop()).filter(Boolean),
+  );
+  const slugs = new Set(nodeEntries.map((entry) => entry.slug));
   const tailToFull = new Map();
   const frontmatterSlugToFull = new Map();
   for (const slug of slugs) {
@@ -569,7 +590,7 @@ function findDanglingGraphReferenceIssues(entries) {
       tailToFull.set(tail, slug);
     }
   }
-  for (const entry of entries) {
+  for (const entry of nodeEntries) {
     const fmSlug = entry.frontmatter.slug;
     if (typeof fmSlug === 'string' && fmSlug.trim() && !frontmatterSlugToFull.has(fmSlug)) {
       frontmatterSlugToFull.set(fmSlug, entry.slug);
@@ -594,12 +615,22 @@ function findDanglingGraphReferenceIssues(entries) {
       if (typeof ref !== 'string' || ref.trim() === '') continue;
       if (key === 'elements' && isPathLikeGraphRef(ref)) continue;
       if (resolveRef(ref)) continue;
+      // 「파일이 없다」와 「파일은 있는데 노드가 아니다」는 다른 할 일이다.
+      // 앞의 것은 만들거나 오타를 고치는 일이고, 뒤의 것은 그 문서에 `kind:`
+      // 를 주거나(승격) 관계를 지우는 일이다. 같은 문장으로 말하면 사람이
+      // 파일을 찾아 헤맨다 — 그 파일은 눈앞에 있다.
+      const normalized = ref.normalize('NFC');
+      const isNonNodeDoc = nonNodeSlugs.has(normalized) || nonNodeTails.has(normalized);
       issues.push({
         file: entry.file,
         issue: {
           code: 'dangling-graph-reference',
           severity: 'warning',
-          message: `\`${key}:\` graph reference "${ref}" 가 vault 의 어떤 node 로도 resolve 되지 않습니다.`,
+          message: isNonNodeDoc
+            ? `\`${key}:\` graph reference "${ref}" 는 vault 에 파일로 있지만 **node 가 아닙니다** ` +
+              '(`kind:` 없음 — 메모·회의록은 그래프 밖입니다). 노드로 올리려면 `kind:` 를 주고, ' +
+              '아니면 이 관계를 지우세요.'
+            : `\`${key}:\` graph reference "${ref}" 가 vault 의 어떤 node 로도 resolve 되지 않습니다.`,
         },
       });
     }

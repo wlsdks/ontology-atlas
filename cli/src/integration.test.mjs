@@ -2464,6 +2464,44 @@ await test('validate --json — dangling graph reference warning', async () => {
   }
 });
 
+/**
+ * **그래프 참조는 노드로 resolve 되어야 한다** (2026-08-08 실측).
+ *
+ * 종전엔 해소 대상이 «볼트의 모든 .md 파일» 이었다. 볼트에는 노드가 아닌
+ * 마크다운(회의록·메모·초안)이 정상적으로 섞여 사는데, 그것들도 «있는
+ * 슬러그» 로 쳐 준 것이다. 그래서 노드 → 잡문 관계가 **통과**했다.
+ *
+ * 침묵보다 나빴다: 그 상태에서 CLI 는 초록 글씨로
+ * *"frontmatter · 그래프 참조 issue 0 ✓"* 라고 적었는데, 같은 볼트에서
+ * `compile` 은 `unresolved 1 · issues 1` 을 냈다. **한 볼트를 두고 두 도구가
+ * 반대로 말했고, 사람이 먼저 보는 쪽이 틀린 쪽이었다.**
+ */
+await test('validate — 그래프 참조가 잡문으로 resolve 되면 dangling 이다', async () => {
+  const root = withVault([
+    {
+      slug: 'capabilities/checkout',
+      content: '---\nkind: capability\ntitle: 결제\nrelates: [notes-day-1]\n---\n',
+    },
+    // 노드가 아닌 평범한 메모 — frontmatter 자체가 없다.
+    { slug: 'notes-day-1', content: '오늘 한 일 메모.\n' },
+  ]);
+  try {
+    const r = await run(['validate', root, '--json']);
+    const data = JSON.parse(r.stdout);
+    const p = data.problems.find((x) => /checkout\.md$/.test(x.file));
+    assert.ok(p, `잡문 참조를 못 잡았다: ${r.stdout.slice(0, 400)}`);
+    assert.ok(
+      p.issues.some((i) => i.code === 'dangling-graph-reference'),
+      `dangling 으로 안 잡혔다: ${JSON.stringify(p.issues)}`,
+    );
+    // 왜 안 되는지 말해야 한다 — 파일이 없는 것과 노드가 아닌 것은 다른 문제다.
+    const issue = p.issues.find((i) => i.code === 'dangling-graph-reference');
+    assert.match(String(issue.message), /kind|node|노드/i, `이유를 안 말한다: ${issue.message}`);
+  } finally {
+    rmSync(root, { recursive: true, force: true });
+  }
+});
+
 await test('validate --json — duplicate primary/merged UID claims are hard errors', async () => {
   const sharedUid = '01890f3e-7b5d-4c0a-8f14-123456789abc';
   const root = withVault([
