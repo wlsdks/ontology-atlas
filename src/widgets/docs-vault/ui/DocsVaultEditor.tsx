@@ -27,7 +27,7 @@ import { ICON_SIZE } from '@/shared/ui/icon-size';
 import type { VaultDoc } from '@/entities/docs-vault';
 import { useOntologyKindLabel } from '@/entities/ontology-class';
 import { resolveLocaleDisplayName } from '@/shared/lib/locale-display-name';
-import { useHeldValue } from '@/shared/lib/use-presence';
+import { useDelayedVisible, useHeldValue } from '@/shared/lib/use-presence';
 import { caretPoint, clampMenuToBox } from '../lib/caret-position';
 import {
   detectMentionTrigger,
@@ -589,6 +589,12 @@ export function DocsVaultEditor({
   }, [doSave, insertLink, requestClose, wrapSelection]);
 
   const loading = loadedSlug !== doc.slug;
+  /*
+   * 뷰어와 같은 이유로 지연시킨다 — 문서를 바꿀 때 이 3줄 바가 한 프레임만
+   * 깜빡였다(`SKELETON_DELAY_MS` 주석의 실측). 같은 화면에서 두 표면이 같은
+   * 규율을 따라야 편집/읽기를 왕복할 때 한쪽만 깜빡이지 않는다.
+   */
+  const showSkeleton = useDelayedVisible(loading || content === null);
   const saveState = saving
     ? { label: t('saving'), body: t('savingDetail'), tone: 'saving' }
     : dirty
@@ -620,6 +626,7 @@ export function DocsVaultEditor({
     );
   }
   if (loading || content === null) {
+    if (!showSkeleton) return <div className="p-8" aria-hidden />;
     return (
       <div className="flex flex-col gap-3 p-8" role="status" aria-label={t('loadingLabel')}>
         <div className="h-3 w-2/3 animate-pulse rounded-micro bg-[color:var(--color-border-soft)]" aria-hidden />

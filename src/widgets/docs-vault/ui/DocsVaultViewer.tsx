@@ -16,6 +16,7 @@ import { useStaticVaultSource } from '@/features/vault-sample-source';
 import { IconButton } from '@/shared/ui';
 import { splitHighlightSegments } from '@/shared/lib/highlight-match';
 import { useCopyFeedback } from '@/shared/lib/use-copy-feedback';
+import { useDelayedVisible } from '@/shared/lib/use-presence';
 import { fetchServerDocContent } from '../lib/server-doc-content';
 import { resolveDocLink } from '../lib/resolve-doc-link';
 
@@ -71,6 +72,13 @@ export function DocsVaultViewer({
   const t = useTranslations('vaultWidgets.viewer');
   const [raw, setRaw] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
+  /*
+   * 스켈레톤은 **기다릴 것이 있을 때만** 나온다. 이 컴포넌트는 문서를 바꿀
+   * 때마다 리마운트되므로 `raw` 가 매번 null 로 시작하는데, 본문이 이미
+   * 손에 있는 경우가 대부분이라 종전에는 3줄 바가 한 프레임만 깜빡였다
+   * (실측 8.2~15.9ms · `SKELETON_DELAY_MS` 주석).
+   */
+  const showSkeleton = useDelayedVisible(raw === null && error === null);
   // static 볼트의 번들 본문 — 매니페스트를 고른 것과 **같은 볼트**에서 와야
   // 한다. 예전 결함이 정확히 이 어긋남이었다(매니페스트는 예시 쇼핑몰,
   // 본문은 도그푸드라 제목과 내용이 다른 문서를 가리켰다).
@@ -568,6 +576,12 @@ export function DocsVaultViewer({
     );
   }
   if (raw === null) {
+    /*
+     * 창이 지나기 전에 본문이 오면 아무것도 그리지 않는다 — 빈 자리가
+     * 한 프레임 깜빡이는 로딩 바보다 조용하다. 읽어 줄 것도 없으므로
+     * `role="status"` 도 그때는 만들지 않는다.
+     */
+    if (!showSkeleton) return <div className="p-8" aria-hidden />;
     return (
       <div className="flex flex-col gap-3 p-8" role="status" aria-label={t('loadingLabel')}>
         <div className="h-3 w-2/3 animate-pulse rounded-micro bg-[color:var(--color-border-soft)]" aria-hidden />
