@@ -120,7 +120,14 @@ function ShellColumn({ children }: { children: ReactNode }) {
     // 구조" 라 #65(레일 유틸 티어가 화면마다 1/2/3 개였던 결함)와 같은 drift 를
     // 부른다. 셸이 `h-dvh` 를 잡고 본문을 스크롤 영역으로 가두면 어떤 페이지도
     // 아무것도 몰라도 된다.
-    <div className="flex h-dvh w-full flex-col overflow-hidden">
+    //
+    // `relative` 는 그 소유권의 나머지 절반이다 (2026-08-08): 셸이 `static` 이면
+    // positioned 조상이 없는 `absolute` 원소(대표적으로 `sr-only`)의 위치 기준이
+    // **뷰포트**가 되고, `overflow-hidden` 은 자기 containing block 이 아닌
+    // 원소를 자르지 못하므로 그 원소가 **문서 스크롤 범위를 늘린다** — 관문에서
+    // 펼침 콘텐츠 속 sr-only 둘이 문서를 1108px 늘려, 끝까지 스크롤하면 빈
+    // 화면이 나왔다(600×900 실측). 게이트: document-scroll-lock.spec.ts.
+    <div className="relative flex h-dvh w-full flex-col overflow-hidden">
       <div className="flex min-h-0 flex-1">
         <AppNavRailSlot />
         {/* 본문 슬롯은 **스크롤 컨테이너**다 — 그러니 자기 자식을 압축하면 안 된다.

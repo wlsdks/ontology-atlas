@@ -101,7 +101,13 @@ export default function RootLayout({
       lang="en"
       className={`${pretendard.variable} ${jetbrainsMono.variable} h-full overflow-x-hidden`}
     >
-      <body className="flex min-h-full flex-col overflow-x-hidden pb-[calc(56px+env(safe-area-inset-bottom))] md:pb-0">
+      {/* 탭바 예약 패딩(pb-56px)을 지웠다 (2026-08-08) — 셸이 `h-dvh` 로
+          뷰포트를 소유하기 전(2026-04-30 최초 임포트) 문서 스크롤 시대의
+          유산이다. 지금 그 패딩은 아무것도 보호하지 않으면서 `<md` 전 페이지에
+          56px 의 죽은 문서 스크롤을 만들었다. 탭바 예약은 각 페이지의 스크롤
+          표면이 소유한다(.claude/rules/design.md) — body 가 아니다.
+          게이트: document-scroll-lock.spec.ts + scroll-end-gap.spec.ts. */}
+      <body className="flex min-h-full flex-col overflow-x-hidden">
         <script
           type="application/ld+json"
           dangerouslySetInnerHTML={{
