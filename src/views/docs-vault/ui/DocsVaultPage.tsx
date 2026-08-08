@@ -2287,7 +2287,7 @@ function DocsVaultContent() {
                   레이블이었다. title 을 1행 주 레이블로 올리고, 파일 경로는
                   2행 caption(secondary)으로 낮춘다 — 트리(`DocsVaultTree`)의
                   `title ?? name` 우선순위와 같은 계약을 여기도 일관 적용. */}
-              <div className="flex flex-none items-center gap-3 border-b border-[color:var(--color-border-soft)] px-4 py-2">
+              <div className="flex flex-none flex-wrap items-center gap-x-3 gap-y-1.5 border-b border-[color:var(--color-border-soft)] px-4 py-2">
                 <div className="flex min-w-0 flex-1 flex-col">
                   <span className="truncate text-body font-[var(--font-weight-signature)] text-[color:var(--color-text-primary)]">
                     {selectedDocDisplayTitle}
@@ -2297,6 +2297,17 @@ function DocsVaultContent() {
                     {splitVaultSlugPath(selectedDoc.slug).name}.md
                   </span>
                 </div>
+                {/* #4 샘플 안내 — 읽기 전용인 이유 + 켜는 법. 종전엔 제목 위의
+                    자기 띠(53px)였다. 말하는 사실이 **볼트** 의 것이라 문서마다
+                    반복될 이유가 없고, 샘플 볼트에서는 이 줄의 오른쪽이 비어
+                    있으므로 세로 픽셀 0으로 같은 말을 한다 (po-pass.md §1-3 의
+                    판단은 그대로 — 지우지 않고 자리만 옮겼다). */}
+                {!editing && !isLocalSourceLoaded ? (
+                  <SampleNotice
+                    canOpenLocalVault={!localSourceDisabled}
+                    onOpenFolder={() => handleSourceChange('local')}
+                  />
+                ) : null}
                 {canEditCurrent ? (
                   <div
                     role="tablist"
@@ -2342,16 +2353,6 @@ function DocsVaultContent() {
                   </span>
                 ) : null}
               </div>
-
-              {/* #4 샘플 안내 — 읽기 전용인 이유 + 켜는 법을 평문으로. 기존
-                  우상단 점 칩(위)은 상태 인디케이터로 유지하고, 이 스트립이
-                  설명 + 액션을 맡는다 (po-pass.md §1-3). */}
-              {!editing && !isLocalSourceLoaded ? (
-                <SampleNotice
-                  canOpenLocalVault={!localSourceDisabled}
-                  onOpenFolder={() => handleSourceChange('local')}
-                />
-              ) : null}
 
               <div className="flex min-h-0 flex-1">
                 {/* relative 래퍼 — #1 목차 레일(빈 띠 절대 위치)과 #2 맨
