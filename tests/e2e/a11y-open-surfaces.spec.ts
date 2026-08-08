@@ -92,8 +92,15 @@ const MIN_RULES_PASSED = 15;
  * 상자 상시 렌더 + 내용만 접힘)으로 옮겨 가면서 조건부 «등장 표면» 이 아니게
  * 됐다 — 접힌 내용의 접근성(탭 순서·AT 노출 없음)은 상자의 `inert` 가 지고,
  * 그 계약은 `AgentSetupStep.test.tsx` 가 잰다.
+ *
+ * 20 → 21 (2026-08-08): 에디터의 `@` 멘션이 **관계 고르기 2단계**를 얻었다.
+ * 1단계(개념 고르기)는 종전 위키링크 팝오버 자리를 물려받은 것이라 수가 그대로였고,
+ * 새로 는 것은 그 2단계 하나다. 이 표면은 **로컬 볼트 + 문서 열기 + 편집 진입 +
+ * `@` 입력 + 개념 고르기**를 지나야 나오므로 아래 한 번 클릭짜리 `OPENERS` 문법에
+ * 안 들어간다 — 그 사실을 분모가 말한다. 대신 키보드 계약(↑↓·Enter·Esc)은
+ * 이 파일이 아니라 위젯 단위 시험이 진다.
  */
-const APPEARING_SURFACES_IN_SOURCE = 20;
+const APPEARING_SURFACES_IN_SOURCE = 21;
 
 interface Opener {
   readonly name: string;

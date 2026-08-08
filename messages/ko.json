@@ -1180,7 +1180,14 @@
       "tbQuote": "인용",
       "tbLink": "링크 ⌘K",
       "wikilinkLabel": "wikilink · \"{query}\"",
-      "wikilinkFooter": "↑↓ 이동 · ↵/Tab 삽입 · Esc 닫기"
+      "wikilinkFooter": "↑↓ 이동 · ↵/Tab 삽입 · Esc 닫기",
+      "mentionLabel": "연결할 개념{query}",
+      "mentionFooter": "↑↓ 이동 · ↵ 고르기 · Esc 닫기",
+      "mentionRelationLabel": "‘{title}’ 와 어떻게 이어지나요?",
+      "mentionRelationFooter": "고르면 이 문서의 속성에 관계로 적히고, 글에는 이름만 남아요",
+      "mentionEmpty": "그런 이름의 개념이 없어요",
+      "mentionRelationAdded": "관계를 적었어요 — 지도에 선으로 나와요",
+      "mentionRelationExists": "이미 이어져 있어요"
     },
     "palette": {
       "dialogAriaLabel": "문서함 팔레트",
