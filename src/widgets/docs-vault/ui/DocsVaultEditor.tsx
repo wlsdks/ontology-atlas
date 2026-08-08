@@ -213,7 +213,19 @@ export function DocsVaultEditor({
    * (엣지 패널이 실제로 그렇게 지도를 죽였다). 질의어와 커서 위치가 바뀔
    * 때만 새 값으로 친다.
    */
-  const acOpen = autocomplete !== null && acMatches.length > 0;
+  /**
+   * 메뉴를 여는 조건 — **질의어를 쳤으면 결과가 0이어도 연다.**
+   *
+   * 종전엔 `matches.length > 0` 이라 못 찾으면 메뉴가 조용히 사라졌다. 그러면
+   * 사용자는 「기능이 고장났나」와 「그런 개념이 없나」를 구별할 수 없다 —
+   * 이 저장소가 반복해 배운 그것(침묵은 성공처럼, 또는 고장처럼 읽힌다).
+   *
+   * 단 `@` 만 친 상태에서는 여전히 목록을 보여 준다(첫 8개). 빈 질의어까지
+   * 「없어요」로 답하면 그건 틀린 말이다.
+   */
+  const acHasQuery = (autocomplete?.query ?? '') !== '';
+  const acEmpty = autocomplete !== null && acHasQuery && acMatches.length === 0;
+  const acOpen = autocomplete !== null && (acMatches.length > 0 || acEmpty);
   const heldAutocomplete = useHeldValue(
     acOpen && autocomplete
       ? { query: autocomplete.query, active: autocomplete.active, matches: acMatches }
@@ -896,7 +908,16 @@ export function DocsVaultEditor({
                 }
                 return;
               }
-              if (!autocomplete || acMatches.length === 0) return;
+              if (!autocomplete) return;
+              if (acMatches.length === 0) {
+                // 결과가 없는 상태에서도 **닫을 수는 있어야** 한다. 못 닫는
+                // 상자는 사용자가 글을 계속 쓰는 것을 막는다.
+                if (e.key === 'Escape') {
+                  e.preventDefault();
+                  setAutocomplete(null);
+                }
+                return;
+              }
               if (e.key === 'ArrowDown') {
                 e.preventDefault();
                 setAutocomplete((ac) =>
@@ -976,6 +997,11 @@ export function DocsVaultEditor({
                   {t('mentionHint')}
                 </span>
               </div>
+              {heldAutocomplete.matches.length === 0 ? (
+                <p className="px-2 py-2 text-label text-[color:var(--color-text-tertiary)]">
+                  {t('mentionEmpty')}
+                </p>
+              ) : null}
               <ul className="overflow-auto py-0.5" style={{ maxHeight: MENTION_MENU_MAX_HEIGHT - 64 }}>
                 {heldAutocomplete.matches.map((d, idx) => (
                   <li key={d.slug}>
