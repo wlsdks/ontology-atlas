@@ -4552,6 +4552,17 @@ export function HomePage() {
                     nodes={topologyV2Graph.nodes}
                     edges={topologyV2Graph.edges}
                     focus={{ selectedSlug: canvasSelectedSlug }}
+                    /* 볼트를 세션 중에 갈아 끼우면(샘플 → 로컬) 지도가 직전
+                       그래프의 카메라로 새 그래프를 그리던 결함을 닫는다. 값의
+                       단일 출처는 위 `useVaultIdentityScope()` 하나이고, 딥링크
+                       정리가 쓰는 것과 **같은 신호**다 — 「지금 보고 있는 볼트가
+                       무엇인가」의 답이 화면마다 갈리면 안 된다.
+                       `deeplinkSourceReady` 로 감싸는 이유도 그 옆의 것과 똑같다
+                       (위 「정착하기 전의 범위는 범위가 아니다」): 라이브 갱신은
+                       status 를 `'loading'` 으로 되돌리고 그때의 정체성은
+                       `sample:…` 로 계산된다. 그 값을 그대로 내려보내면 볼트에
+                       파일 하나가 저장될 때마다 카메라가 튄다(실측 dy −10.66). */
+                    dataSourceKey={deeplinkSourceReady ? vaultIdentity : null}
                     fitViewToken={combinedFitToken}
                     spotlightFitToken={spotlightFitToken}
                     relayoutToken={topologyRelayoutToken}

@@ -169,6 +169,8 @@ export interface UseTopologyLoopArgs {
    * lead spec §4). Null until the panel-hover wiring feeds it in.
    */
   emphasizedNeighborSlug?: string | null;
+  /** 이 그래프의 출처 정체성 — 바뀌면 오버뷰를 다시 맞춘다. `TopologyMapV2Props` 의 같은 이름 참고. */
+  dataSourceKey?: string | null;
   fitViewToken: number;
   /** 렌즈/기간이 바뀐 순간 강조 노드로 카메라를 맞추는 토큰(0 = 안 씀). */
   spotlightFitToken?: number;
@@ -340,7 +342,7 @@ export type UseTopologyLoopResult = TopologyPointerHandlers & {
 };
 
 export function useTopologyLoop(args: UseTopologyLoopArgs): UseTopologyLoopResult {
-  const { nodes, edges, focusedSlug, emphasizedNeighborSlug = null, fitViewToken, spotlightFitToken = 0, relayoutToken, revealToken = 0, onSelectEdge, onHoverEdge, onSelect, onPaneClick, onVisibleCountChange, onGraphStatsChange, onZoomTierChange, onContextMenuNode, onContextMenuPane, agentFocusNodeId = null, spotlightIds = null, selectedEdge = null, expandedParents = EMPTY_EXPANDED_SET, onToggleCluster, onHoverCluster, realmRootId = null, onEnterRealm, realmEnterButtonRef, realmCaption = null, visitedTrail = EMPTY_TRAIL, trailLensActiveRef, clusterBarLabels = null, trailHoverNodeIdRef, tierReveal = DEFAULT_TIER_REVEAL, tourAnchorNodeId = null, tourAnchorRef, glyphSet = "geometric", canvasBackground = "dot", footprint = null, expand = DEFAULT_EXPAND, wheelIntent = "zoom", ambientSleepDelayMs } = args;
+  const { nodes, edges, focusedSlug, emphasizedNeighborSlug = null, dataSourceKey = null, fitViewToken, spotlightFitToken = 0, relayoutToken, revealToken = 0, onSelectEdge, onHoverEdge, onSelect, onPaneClick, onVisibleCountChange, onGraphStatsChange, onZoomTierChange, onContextMenuNode, onContextMenuPane, agentFocusNodeId = null, spotlightIds = null, selectedEdge = null, expandedParents = EMPTY_EXPANDED_SET, onToggleCluster, onHoverCluster, realmRootId = null, onEnterRealm, realmEnterButtonRef, realmCaption = null, visitedTrail = EMPTY_TRAIL, trailLensActiveRef, clusterBarLabels = null, trailHoverNodeIdRef, tierReveal = DEFAULT_TIER_REVEAL, tourAnchorNodeId = null, tourAnchorRef, glyphSet = "geometric", canvasBackground = "dot", footprint = null, expand = DEFAULT_EXPAND, wheelIntent = "zoom", ambientSleepDelayMs } = args;
 
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
   const containerRef = useRef<HTMLDivElement | null>(null);
@@ -553,6 +555,11 @@ export function useTopologyLoop(args: UseTopologyLoopArgs): UseTopologyLoopResul
   const cameraAngularFreqRef = useRef<number | null>(null);
   const overviewScaleRef = useRef(1);
   const hasInitializedRef = useRef(false);
+  /**
+   * 마지막으로 오버뷰를 맞춰 준 **출처**. 월드가 다시 지어질 때 이 값과 다르면
+   * 초기 맞춤을 한 번 더 돌린다 (`dataSourceKey` prop 의 주석 참고).
+   */
+  const fittedDataSourceKeyRef = useRef<string | null>(null);
   const lastFrameTimeRef = useRef(0);
   // FIX (QA first-light pass, blocker 2 continued): `useEffect(fn, [relayoutToken,
   // fitViewToken])` also fires once on mount (standard React behavior, not just
@@ -1152,6 +1159,37 @@ export function useTopologyLoop(args: UseTopologyLoopArgs): UseTopologyLoopResul
     prevPinnedNodeIdRef.current = null;
     onVisibleCountChange?.(nodes.length);
     onGraphStatsChange?.({ nodes: nodes.length, relations: edges.length });
+    /*
+     * **데이터 소스가 바뀌면 오버뷰를 다시 맞춘다** (원장 2026-08-08 (3) ②).
+     *
+     * `trySnapInitialCamera` 는 `hasInitializedRef` 로 최초 1회만 돌았다. 그래서
+     * 세션 중에 볼트를 열면(샘플 → 로컬) **직전 그래프의 카메라로 새 그래프를
+     * 그렸다** — 새 월드의 최외곽 노드가 크롬 안전영역 밖에 서고, 위 라벨 컬이
+     * 그 이름을 지우는 경로의 절반이 이것이다.
+     *
+     * 트리거는 「출처 정체성」 하나다. 노드 수 변화로 걸면 사용자가 공방에서
+     * 노드 하나를 더할 때마다 카메라를 낚아채게 되고, 그건 고치려던 결함보다
+     * 나쁘다. 새 카메라 로직은 만들지 않는다 — 초기화 플래그를 내려 **같은
+     * 오버뷰 핏 경로**를 한 번 더 통과시킬 뿐이라, 안전영역 핏 · 오버뷰 배율
+     * 기준(`overviewScaleRef` → 하단 안내의 zoomRatio) · reduced-motion 처리가
+     * 전부 그대로 재사용된다. 새 월드의 노드는 등장 램프(위 `appearRef`)를 타고
+     * 부풀어 오르므로 주목 승자(새 그래프)가 전환을 갖는다.
+     *
+     * ⚠️ **`null` 은 「바뀜」이 아니라 「아직 모름」이다.** 볼트 정체성 문자열은
+     * 로딩 중에 **거짓말을 한다** — 라이브 갱신마다 `load()` 가 status 를
+     * `'loading'` 으로 되돌리므로(`use-local-vault.ts`) 그 순간의 정체성은
+     * `local:<폴더>` 가 아니라 `sample:<샘플>` 로 계산된다. 그 값을 변화로 세면
+     * **볼트에 파일 하나가 저장될 때마다 카메라를 낚아채게 된다** — 실측
+     * (2026-08-08): 노드 하나를 더하니 카메라가 dx −3.93 · dy −10.66 ·
+     * scale −0.0327 만큼 튀었다. 고치려던 결함보다 나쁜 쪽이다. 그래서 호출부가
+     * 정착 전에는 `null` 을 주고(HomePage 의 `deeplinkSourceReady`, 같은 신호가
+     * 딥링크 정리에서 이미 같은 값을 치렀다) 여기서는 **마지막으로 알던 값과만**
+     * 비교한다. 같은 규율의 한 줄 요약: 「정착하기 전의 범위는 범위가 아니다」.
+     */
+    if (dataSourceKey !== null && dataSourceKey !== fittedDataSourceKeyRef.current) {
+      fittedDataSourceKeyRef.current = dataSourceKey;
+      hasInitializedRef.current = false;
+    }
     trySnapInitialCamera(tokens);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [nodes, edges, expand.structure]);

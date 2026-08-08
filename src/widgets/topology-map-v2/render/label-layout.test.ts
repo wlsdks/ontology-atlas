@@ -8,6 +8,7 @@ import {
   overlapsForeignReserved,
   ellipsizeToWidth,
   greedyPlaceLabels,
+  isSafeRectProtectedLabel,
   isWithinSafeRect,
   resolveLabelPriority,
   type LabelCandidate,
@@ -147,6 +148,42 @@ describe("resolveLabelPriority", () => {
     expect(project).toBeLessThan(domain);
     expect(domain).toBeLessThan(capability);
     expect(capability).toBeLessThan(element);
+  });
+});
+
+describe("isSafeRectProtectedLabel — 인셋 밖으로 나간 이름을 버리나 당기나", () => {
+  const plain = {
+    egoState: "normal" as const,
+    isHovered: false,
+    trailKept: false,
+    kind: "capability" as const,
+    isHub: false,
+  };
+
+  it("허브와 프로젝트는 아무 상호작용 없이도 살아남는다 (원장 2026-08-08 (3) ②)", () => {
+    // 실측 재현: 세션 중 볼트를 열면 최외곽 허브(반경 395)가 상단 인셋(148) 위로
+    // 밀려 **그려지는데 이름만 없는** 앰버 링이 됐다. 노드 패스는 뷰포트 전체로
+    // 컬하고 이 패스만 안전영역으로 컬해서 생긴 비대칭이다.
+    expect(isSafeRectProtectedLabel({ ...plain, isHub: true })).toBe(true);
+    expect(isSafeRectProtectedLabel({ ...plain, kind: "project" })).toBe(true);
+    // 허브 판정은 kind 와 무관하다 — 허브는 `resolveLabelPriority` 에서도 이미
+    // project 와 같은 등급이다(위 「project/hub」 케이스).
+    expect(isSafeRectProtectedLabel({ ...plain, kind: "domain", isHub: true })).toBe(true);
+  });
+
+  it("사용자가 지금 보고 있는 것은 종전대로 살아남는다", () => {
+    for (const state of ["center", "neighbor"] as const) {
+      expect(isSafeRectProtectedLabel({ ...plain, egoState: state })).toBe(true);
+    }
+    expect(isSafeRectProtectedLabel({ ...plain, isHovered: true })).toBe(true);
+    expect(isSafeRectProtectedLabel({ ...plain, trailKept: true })).toBe(true);
+  });
+
+  it("평범한 구경꾼은 여전히 떨어진다 — 안 그러면 인셋 가장자리에 전부 쌓인다", () => {
+    expect(isSafeRectProtectedLabel(plain)).toBe(false);
+    expect(isSafeRectProtectedLabel({ ...plain, kind: "domain" })).toBe(false);
+    expect(isSafeRectProtectedLabel({ ...plain, kind: "element" })).toBe(false);
+    expect(isSafeRectProtectedLabel({ ...plain, egoState: "dim" })).toBe(false);
   });
 });
 

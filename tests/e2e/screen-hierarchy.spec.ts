@@ -45,11 +45,11 @@ import { AUDITED_ROUTES } from "./audited-routes";
  * | `/ko/` | 34px | 0 | 1 (`download-primary-cta`) | |
  * | `/ko/topology/` | **없음**(h1 = `sr-only` 1×1) | — | 1 (`first-run-starter-open`) | ①예외 |
  * | `/ko/docs/` | **없음**(h1 = `sr-only` 1×1) | — | 0 | ①예외 |
- * | `/ko/ontology/studio/` | **14px** | **2** | 0 | ①예외(실측 등재) |
+ * | `/ko/ontology/studio/` | 16px | 0 | 0 | 2026-08-08 에 14px·2건에서 고쳐짐 |
  * | `/ko/ontology/insights/` | 23px | 0 | 0 | |
  * | `/ko/projects/` | 23px | 0 | 0 | 용량 막대 10개는 data-mark(h≤8) |
  * | `/ko/project/storefront/` | 23px | 0 | 0 | h1 이 둘(23·16) — a11y 소관 |
- * | `/ko/project/storefront/edit/` | 30px | 0 | **2** | ②예외(실측 등재) |
+ * | `/ko/project/storefront/edit/` | 30px | 0 | 1 (`project-save-top`) | 2026-08-08 에 2개에서 고쳐짐 |
  * | `/ko/project/new/` | 30px | 0 | 1 (`project-save`) | 이 파일의 출생지 |
  * | `/ko/project/fallback/` | 23px | 0 | 0 | `/projects` 와 같은 화면 |
  * | `/ko/git/` | 23px | 0 | 1 (`atlas-git-web-get-app`) | |
@@ -60,7 +60,21 @@ import { AUDITED_ROUTES } from "./audited-routes";
  * | `/ko/this-route-does-not-exist/` | 23px | 0 | 1 | |
  * | `/this-route-does-not-exist/` | 23px | 0 | 1 | 같은 루트 파일 |
  *
- * 합계: 훑은 글자 원소 **964** · 채워진 악센트 컨트롤 **9**.
+ * 합계: 훑은 글자 원소 **964** · 채워진 악센트 컨트롤 **8**(2026-08-08 위계 판정
+ * 적용 전 9 — 편집 화면의 쌍둥이 저장 중 하나가 보조 톤으로 내려갔다).
+ *
+ * ## 예외가 셋에서 둘로 줄었다 (2026-08-08, 같은 날 오후)
+ *
+ * 위 표의 「①예외(실측 등재)」 둘은 **판정을 기다리던 위반**이었고, 소유자 위임
+ * 판정으로 고쳐졌다 — 그래서 예외가 아니라 규칙으로 들어왔다:
+ *
+ * | 고친 것 | 전 | 후 |
+ * |---|---|---|
+ * | 공방 h1 「무엇을 할까요?」 | `text-body-lg` 14px + secondary (입구 카드 라벨과 동률·색 열세) | `text-title` 16px + primary (동률 0건) |
+ * | 편집 폼 끝 저장 | 채워진 인디고 142×40 (상단 sticky 와 쌍둥이) | `outline` — 채워진 악센트는 상단 sticky 하나 |
+ *
+ * 남은 예외는 「그려진 제목이 없는 화면」 둘(지도·문서함)뿐이고, 그 둘은 아래
+ * 「제목 없는 화면은 정말 제목이 없다」가 계속 지킨다.
  */
 
 /** 상호작용 컨트롤 — 「채워진 악센트 면」의 주인이 될 수 있는 것. */
@@ -99,10 +113,9 @@ const ACCENT_MIN_WIDTH = 44;
  *
  * | 프로브 | 빨개진 것 |
  * |---|---|
- * | `title` | ①이 **비예외 14/14** 라우트에서 빨강(예외 3개는 그대로 초록 — 설계대로) |
- * | `accent` | ②가 이미 악센트 1개였던 **7 라우트**에서 빨강 |
- * | `accent` | 편집 예외 가드가 **3개**를 보고 빨강 |
- * | `title` | 공방 예외 가드가 **동률 3건**을 보고 빨강 |
+ * | `title` | ①이 **비예외 15/15** 라우트에서 빨강(예외 2개는 그대로 초록 — 설계대로) |
+ * | `accent` | ②가 이미 악센트 1개였던 **8 라우트**에서 빨강 |
+ * | `accent` | 「편집의 주 CTA 는 상단 sticky」 가드가 둘째 악센트를 보고 빨강 |
  * | `h1` | 제목 없음 예외 가드가 지도·문서함 둘에서 빨강 |
  * | `blind-accent` | ②가 «악센트 0개(전 라우트)» 를 **통과가 아니라 측정 실패**로 빨강 |
  * | `blind-title` | ①이 «기준 없음» 을 첫 비예외 라우트(`/ko/`)에서 빨강 |
@@ -345,18 +358,14 @@ const TITLE_EXEMPT: ReadonlyArray<{ route: string; why: string }> = [
     route: "/ko/docs/",
     why: "지도와 같다 — h1 「문서함」이 `sr-only` 1×1. 같은 검사가 못박는다",
   },
-  {
-    route: "/ko/ontology/studio/",
-    why:
-      "**실측 위반 2건 · 고치지 않고 등재**(2026-08-08). h1 「무엇을 할까요?」가 " +
-      "`text-body-lg` **14px** 이고, 입구 카드 라벨 둘(`studio-entry-enhance` · " +
-      "`studio-entry-create`)이 같은 14px 로 **동률**이다. 결함은 라벨이 큰 것이 " +
-      "아니라 제목이 본문 급인 것이며, 어느 쪽을 움직일지는 「위계」 판정 사안이다 " +
-      "(원장 2026-08-06 (10) 반증 조건: 제목보다 큰 글자가 의도적으로 필요한 화면이 " +
-      "나오면 예외가 아니라 주목 승자를 다시 묻는다). " +
-      "대신 아래 「공방의 동률은 아직 그대로다」가 14px·2건을 못박아, 고쳐지거나 " +
-      "더 나빠지면 둘 다 빨개진다",
-  },
+  /*
+   * 공방(`/ko/ontology/studio/`) 예외는 **지웠다** (2026-08-08 위계 판정 적용).
+   * h1 「무엇을 할까요?」가 `text-body-lg`(14px) + `text-secondary` 라 입구 카드
+   * 라벨(같은 14px + `text-primary`)에 크기는 동률·색은 열세였다. 대화상자 제목
+   * 관례(`text-title` 16px + `text-primary`)로 올려서 규칙을 **켰다** — 예외가
+   * 아니라 통과다. 자기 감시 장치였던 「공방의 동률 2건이 그대로다」도 같이
+   * 지웠다(고쳐졌으므로 그 검사는 이제 빨강이 정상이 아니라 존재 이유가 없다).
+   */
 ];
 const TITLE_EXEMPT_ROUTES = new Set(TITLE_EXEMPT.map((e) => e.route));
 
@@ -364,16 +373,15 @@ const TITLE_EXEMPT_ROUTES = new Set(TITLE_EXEMPT.map((e) => e.route));
  * **②의 예외 — 같은 규율.**
  */
 const ACCENT_EXEMPT: ReadonlyArray<{ route: string; why: string }> = [
-  {
-    route: "/ko/project/storefront/edit/",
-    why:
-      "**실측 위반 1건(악센트 2개) · 고치지 않고 등재**(2026-08-08). " +
-      "`project-save-top`(고정 머리)과 `project-save`(폼 끝)가 **같은 행동 · 같은 " +
-      "라벨 「저장하고 계속 보기」 · 같은 142×40** 이다. 긴 폼에서 위아래 양쪽에 " +
-      "저장을 두는 것이 정당한지는 「위계」 판정 사안이고, 이 게이트가 혼자 정할 " +
-      "것이 아니다. 대신 아래 「편집 화면의 악센트 둘은 같은 행동이다」가 " +
-      "**정확히 그 둘**임을 못박는다 — 셋째가 생기거나 다른 행동이 끼면 빨개진다",
-  },
+  /*
+   * 편집(`/ko/project/storefront/edit/`) 예외는 **지웠다** (2026-08-08 위계 판정
+   * 적용). `project-save-top`(고정 머리)과 `project-save`(폼 끝)가 같은 행동·같은
+   * 라벨·같은 142×40 의 **채워진 인디고 둘**이었다. sticky 는 스크롤 어디서나
+   * 보이므로 주 CTA 를 상단이 지고, 폼 끝의 되풀이는 `Button` 의 기존 `outline`
+   * 으로 내려왔다 — 편집 모드에서만. 만들기 화면(`/ko/project/new/`)에는 sticky
+   * 띠가 없어 그 자리가 유일한 주 CTA 이므로 채워진 채로 남는다(그래서 이 규칙은
+   * 두 라우트 모두에서 「정확히 1개」로 참이다).
+   */
 ];
 const ACCENT_EXEMPT_ROUTES = new Set(ACCENT_EXEMPT.map((e) => e.route));
 
@@ -475,23 +483,24 @@ test.describe("화면 위계 — 감사 대상 전 라우트", () => {
     }
   });
 
-  test("예외가 낡지 않았다 — 공방의 동률 2건이 그대로다", async ({ page }) => {
-    const m = await measureRoute(page, "/ko/ontology/studio/");
-    expect(m.titlePx, "공방 h1 크기가 바뀌었다 — 예외의 실측치가 낡았다").toBe(14);
-    expect(
-      m.offenders.map((o) => o.testid).sort(),
-      "공방의 제목 동률이 바뀌었다. 고쳐졌으면 TITLE_EXEMPT 에서 지우고, 늘었으면 「위계」에 다시 물어라",
-    ).toEqual(["studio-entry-create", "studio-entry-enhance"]);
-  });
-
-  test("예외가 낡지 않았다 — 편집 화면의 악센트 둘은 같은 행동이다", async ({ page }) => {
+  /**
+   * **고쳐진 둘은 이제 ①·② 본체가 잰다** — 예외가 없으므로 감시 장치도 없다.
+   *
+   * 다만 하나는 규칙 ② 로 표현되지 않는다: 편집 화면의 주 CTA 가 **위쪽 sticky
+   * 여야 한다**는 것. 「최대 하나」는 그 하나가 어느 쪽이어도 참이라, 반대로 고쳐
+   * (상단을 내리고 하단을 채워) 놓아도 초록이다. 그래서 그 방향만 여기서 못박는다.
+   */
+  test("편집 화면의 채워진 주 CTA 는 위쪽 sticky 저장이다", async ({ page }) => {
     const m = await measureRoute(page, "/ko/project/storefront/edit/");
     expect(
-      m.filled.map((f) => f.testid).sort(),
-      "편집 화면의 채워진 악센트가 바뀌었다 — 둘로 줄었으면 예외를 지우고, 셋이 됐으면 판정으로 돌아가라",
-    ).toEqual(["project-save", "project-save-top"]);
-    // 「같은 행동」이 예외의 근거다 — 라벨이 갈리면 근거가 사라진다.
-    expect(new Set(m.filled.map((f) => f.text)).size, "둘의 라벨이 갈렸다 — 「같은 행동」이라는 예외 사유가 무너졌다").toBe(1);
+      m.filled.map((f) => f.testid),
+      "편집 화면의 채워진 악센트가 상단 sticky 저장 하나가 아니다 — 방향이 뒤집혔거나 둘로 늘었다",
+    ).toEqual(["project-save-top"]);
+    // 하단 저장은 살아 있어야 한다 — 강등이지 삭제가 아니다.
+    await expect(
+      page.getByTestId("project-save"),
+      "폼 끝의 저장이 사라졌다 — 이건 강등이 아니라 기능 제거다",
+    ).toBeVisible();
   });
 
   /**

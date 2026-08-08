@@ -62,6 +62,40 @@ export function clampAnchorIntoSafeRect(
   return { x: Math.min(hi, Math.max(lo, x)), y: Math.min(bottom, Math.max(top, y)) };
 }
 
+export interface SafeRectProtectionInput {
+  egoState: "center" | "neighbor" | "dim" | "normal";
+  isHovered: boolean;
+  /** 발자국 렌즈가 켜져 있고 이 노드가 방문 노드인가. */
+  trailKept: boolean;
+  kind: "project" | "domain" | "capability" | "element";
+  isHub: boolean;
+}
+
+/**
+ * **크롬 인셋 밖으로 나간 라벨을 버리는 대신 인셋 가장자리로 당겨 살릴 것인가.**
+ *
+ * 컬 자체는 있어야 한다 — 그것이 없으면 화면 밖 이름들이 인셋 가장자리에 쌓인다.
+ * 그래서 판정은 「이 이름이 없으면 화면이 거짓말을 하는가」다:
+ *
+ * - 사용자가 지금 보고 있는 것 — 포커스 중심 · ego 이웃 · 호버 · 발자국 방문
+ *   (Guardian follow-up A: 컬이 «선택 → 알파 1» 보장보다 먼저 돌아서 왼쪽 패널
+ *   밑의 ego 자식이 이름을 잃었다).
+ * - **오버뷰 스파인의 두 등급 — project 와 hub** (원장 2026-08-08 (3) ②).
+ *   노드 패스는 뷰포트 전체로 컬하는데 이 패스는 안전영역으로 컬하므로, 최외곽
+ *   스파인 노드가 «그려지지만 이름만 없는» 상태가 됐다. 이름 없는 앰버 허브 링은
+ *   `render/labels.ts` 의 계약(*"잡을 수 있으면 읽을 수 있다"* · *nameless
+ *   circle 금지*)과 `resolveLabelPriority`(허브는 이미 project 와 **같은 등급**)를
+ *   동시에 어기고, 개요 고도에서 독자가 묻는 질문이 바로 *"무엇이 허브인가"*
+ *   (`model/label-lod.ts`)다.
+ *
+ * 그 밖(`dim`/`normal` 의 평범한 도메인·역량·요소)은 종전대로 떨어진다.
+ */
+export function isSafeRectProtectedLabel(input: SafeRectProtectionInput): boolean {
+  if (input.egoState === "center" || input.egoState === "neighbor") return true;
+  if (input.isHovered || input.trailKept) return true;
+  return input.kind === "project" || input.isHub;
+}
+
 /** Standard AABB overlap (touching edges do NOT count as overlap). */
 export function bboxesOverlap(a: LabelBBox, b: LabelBBox): boolean {
   return a.minX < b.maxX && a.maxX > b.minX && a.minY < b.maxY && a.maxY > b.minY;

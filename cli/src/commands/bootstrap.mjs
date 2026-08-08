@@ -49,7 +49,7 @@ import {
 
 const MAX_DEPTH_CAP = 10;
 const MAX_FILES_CAP = 50000;
-const ALLOWED_FLAGS = ['--vault', '--json', '--skip-imports', '--reapply', '--max-depth', '--max-files', '--threshold'];
+const ALLOWED_FLAGS = ['--vault', '--json', '--skip-imports', '--reapply', '--apply-readme-domains', '--max-depth', '--max-files', '--threshold'];
 
 const FRESH_VAULT_SLUGS = new Set([
   'README',
@@ -92,7 +92,13 @@ export async function runBootstrap(args) {
     return 2;
   }
 
-  const concepts = collectConcepts(analyzeResult);
+  const domainSplit = partitionReadmeOnlyDomains(analyzeResult);
+  const heldReadmeDomains = parsed.applyReadmeDomains ? [] : domainSplit.readmeOnly;
+  const domainsToLand = parsed.applyReadmeDomains
+    ? [...domainSplit.corroborated, ...domainSplit.readmeOnly]
+    : domainSplit.corroborated;
+  const heldSlugs = new Set(heldReadmeDomains.map((d) => d.slug));
+  const concepts = collectConcepts(analyzeResult, domainsToLand);
   const vaultState = await inspectBootstrapVault(vaultRoot);
   if (vaultState?.grown && !parsed.reapply) {
     return printGrownVaultPlan({
@@ -119,7 +125,9 @@ export async function runBootstrap(args) {
     }
   }
 
-  const suggested = analyzeResult.suggestedRelations ?? [];
+  const suggested = (analyzeResult.suggestedRelations ?? []).filter(
+    (r) => !heldSlugs.has(r.from) && !heldSlugs.has(r.to),
+  );
   const analyzeRelationsRows = await applyRelations(vaultRoot, suggested);
   if (analyzeRelationsRows === null) return 2;
 
@@ -195,6 +203,11 @@ export async function runBootstrap(args) {
                 writeBlocked: 'rationale_review_required',
               },
           prunedStarters: summarizePrunedStarterNodes(prunedStarters),
+          readmeDomainReview: heldReadmeDomains.map((d) => ({
+            slug: d.slug,
+            title: d.title,
+            evidence: d.evidence ?? null,
+          })),
           summary,
           vaultCensus,
         },
@@ -215,6 +228,23 @@ export async function runBootstrap(args) {
       `${COLORS.dim}${summary.conceptsExisting}${COLORS.reset} already existed · ` +
       `${summary.conceptsErrors > 0 ? COLORS.red : COLORS.dim}${summary.conceptsErrors}${COLORS.reset} errors\n`,
   );
+  if (heldReadmeDomains.length > 0) {
+    const onlyReadme = domainSplit.corroborated.length === 0;
+    process.stdout.write(
+      `                ${COLORS.yellow}README 제목 ${heldReadmeDomains.length}개는 심지 않고 검토 후보로 남김${COLORS.reset}` +
+        `${COLORS.dim} — 문서 절이지 도메인이 아닐 수 있어요. 그대로 심으려면 --apply-readme-domains${COLORS.reset}\n`,
+    );
+    if (onlyReadme) {
+      process.stdout.write(
+        `                ${COLORS.dim}코드에서 구조를 못 찾았어요(하위 폴더 없는 src 등) — 도메인 확정은 에이전트/공방에서 하는 편이 맞아요.${COLORS.reset}\n`,
+      );
+    }
+    for (const d of heldReadmeDomains.slice(0, 12)) {
+      process.stdout.write(
+        `                  ${COLORS.dim}· ${d.slug}${COLORS.reset} ${COLORS.dim}← ${d.evidence?.source ?? 'README'}${COLORS.reset}\n`,
+      );
+    }
+  }
   process.stdout.write(
       `                relations (suggested): ` +
       `${COLORS.green}${summary.analyzeRelationsLanded}${COLORS.reset} landed · ` +
@@ -345,7 +375,45 @@ function printPrunedStarters(prunedStarters) {
   );
 }
 
-function collectConcepts(analyzeResult) {
+/**
+ * README 제목에서만 나온 도메인과, 코드 구조가 뒷받침하는 도메인을 가른다.
+ *
+ * ## 왜 (2026-08-08 실사용 검수 — attunegraph, TS 113파일 · src 평평)
+ *
+ * analyze 의 README H2 휴리스틱에는 손으로 기운 금지어 체가 있는데, 체는
+ * 구조적으로 진다 — 새 README 마다 목록이 모르는 제목을 만든다. 실측:
+ * 「Quick start **from source**」(정확 일치 회피) · 「Current measured
+ * baseline」 · 「Benchmarks and verification」이 전부 통과해 **11개 문서 절이
+ * 도메인으로 착지**했고, 결과는 관계 1종짜리 별 그래프였다. 그 별에서 허브
+ * 앰버가 테스트 픽스처에 갔고 공방 첫 추천까지 오염됐다 — 쓰레기가 확신을
+ * 갖고 하류 전체로 흐른다.
+ *
+ * 그래서 체를 더 기우지 않고 **확증(corroboration)으로 가른다**: 코드에서
+ * 나온 후보(디렉터리 evidence)거나, 코드에서 나온 다른 후보가 그 도메인을
+ * 부모로 지목하면 확증이다. README 로만 존재하는 도메인은 — bootstrap 이
+ * 임포트 단계에 이미 쓰는 원칙 그대로 — **자동으로 심지 않고 검토 후보로
+ * 남긴다**. 옛 동작은 `--apply-readme-domains` 로 남겨 되돌릴 수 있다.
+ */
+export function partitionReadmeOnlyDomains(analyzeResult) {
+  const domains = analyzeResult.domains ?? [];
+  const isReadmeSource = (src) => typeof src === 'string' && /^readme(\.(md|rst))?$/i.test(src);
+  // 코드에서 나온 후보가 부모로 지목한 도메인 = 확증
+  const referenced = new Set();
+  for (const list of [analyzeResult.capabilities ?? [], analyzeResult.elements ?? []]) {
+    for (const c of list) {
+      if (c.domain && !isReadmeSource(c.evidence?.source)) referenced.add(c.domain);
+    }
+  }
+  const corroborated = [];
+  const readmeOnly = [];
+  for (const d of domains) {
+    if (isReadmeSource(d.evidence?.source) && !referenced.has(d.slug)) readmeOnly.push(d);
+    else corroborated.push(d);
+  }
+  return { corroborated, readmeOnly };
+}
+
+function collectConcepts(analyzeResult, domainsToLand) {
   const out = [];
   if (analyzeResult.project) {
     out.push({
@@ -354,7 +422,7 @@ function collectConcepts(analyzeResult) {
       title: analyzeResult.project.title,
     });
   }
-  for (const d of analyzeResult.domains ?? []) {
+  for (const d of domainsToLand) {
     out.push({ slug: d.slug, kind: 'domain', title: d.title });
   }
   for (const c of analyzeResult.capabilities ?? []) {
@@ -458,6 +526,7 @@ function parseArgs(args) {
     json: false,
     skipImports: false,
     reapply: false,
+    applyReadmeDomains: false,
   };
   const positional = [];
   for (let i = 0; i < args.length; i += 1) {
@@ -467,6 +536,7 @@ function parseArgs(args) {
     else if (a === '--json') flags.json = true;
     else if (a === '--skip-imports') flags.skipImports = true;
     else if (a === '--reapply') flags.reapply = true;
+    else if (a === '--apply-readme-domains') flags.applyReadmeDomains = true;
     else if (a === '--max-depth')
       flags.maxDepth = parseBoundedNonNegativeIntegerFlag('--max-depth', args[++i], { max: MAX_DEPTH_CAP });
     else if (a.startsWith('--max-depth='))
@@ -498,6 +568,7 @@ function parseArgs(args) {
     json: flags.json,
     skipImports: flags.skipImports,
     reapply: flags.reapply,
+    applyReadmeDomains: flags.applyReadmeDomains,
     maxDepth: flags.maxDepth,
     maxFiles: flags.maxFiles,
     threshold: flags.threshold,
@@ -509,12 +580,15 @@ function printUsage(stream = process.stderr) {
     `\n${COLORS.bold}Usage:${COLORS.reset}\n` +
       `  ontology-atlas bootstrap [rootPath] [--vault path] [--threshold N]\n` +
       `                           [--skip-imports] [--reapply] [--json]\n` +
+      `                           [--apply-readme-domains]\n` +
       `                           [--max-depth N] [--max-files N]\n\n` +
       `${COLORS.bold}What it does:${COLORS.reset}\n` +
       `  1줄 full bootstrap. analyzer 노드 + suggested relations를 적용하고\n` +
       `  import는 exact evidence가 붙은 검토 후보로만 반환합니다 (write 0).\n` +
       `  agent-less 환경 (CI · plain shell) 또는 새 repo 진입 직후 흐름.\n\n` +
       `  이미 성장한 vault는 기본적으로 plan-only. 다시 쓰려면 --reapply.\n` +
+      `  README 제목에서만 나온 도메인은 심지 않고 검토 후보로 남깁니다 —\n` +
+      `  코드 구조가 뒷받침하거나 --apply-readme-domains 일 때만 적용.\n` +
       `  --max-depth N: analyze folder walk default 2, range 0-${MAX_DEPTH_CAP}.\n` +
       `  --max-files N: import walk default 5000, max ${MAX_FILES_CAP} hard stop.\n\n` +
       `${COLORS.bold}Examples:${COLORS.reset}\n` +
