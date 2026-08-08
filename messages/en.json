@@ -224,7 +224,7 @@
       "half": "· halfway there",
       "almost": "· almost done",
       "done": "· all filled",
-      "first": "· one filled in"
+      "first": "· started"
     },
     "domainMembership": "Already in ‘{domain}’",
     "framePrompt": "Complete what {name} is by linking it to nearby nodes",
