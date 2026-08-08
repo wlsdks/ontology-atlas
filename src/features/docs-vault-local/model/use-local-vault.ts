@@ -6,6 +6,7 @@ import { parseAgentActivityLog, type AgentActivityEntry } from '@/shared/lib/age
 import {
   buildLocalManifestWithEntries,
   rebuildLocalManifestIncremental,
+  computeLocalVaultFingerprintWithStamps,
   computeLocalVaultFingerprint,
   type BuiltVaultEntry,
   type LocalVaultBuild,
@@ -560,6 +561,8 @@ export function useLocalVaultInternal() {
 
   /** 마지막 성공 빌드의 fingerprint — auto-refresh 시 변경 없으면 skip 의 비교 기준. */
   const lastFingerprintRef = useRef<string | null>(null);
+  /** `refresh()` 가 방금 얻은 네이티브 스탬프를 `load()` 로 넘기는 한 칸. */
+  const pendingStampsRef = useRef<Map<string, number> | null>(null);
 
   /**
    * 마지막 성공 빌드의 재사용 가능한 entries + 그 때의 handle. 같은 vault 의
@@ -609,7 +612,9 @@ export function useLocalVaultInternal() {
       let result: { build: LocalVaultBuild; entries: BuiltVaultEntry[] };
       if (reuse) {
         try {
-          result = await rebuildLocalManifestIncremental(handle, reuse);
+          // `refresh()` 가 방금 걸어서 얻은 스탬프가 있으면 그것을 쓴다 —
+          // 없으면 증분 쪽이 스스로 한 번 받는다(첫 로드·다른 경로).
+          result = await rebuildLocalManifestIncremental(handle, reuse, pendingStampsRef.current);
         } catch {
           result = await buildLocalManifestWithEntries(handle);
         }
@@ -794,16 +799,29 @@ export function useLocalVaultInternal() {
     if (!state.handle) return;
     const handle = state.handle;
     try {
-      const fp = await computeLocalVaultFingerprint(handle);
+      /*
+       * 지문과 **그 근거인 스탬프**를 함께 받는다. 종전엔 지문만 받고 버려서,
+       * 곧바로 이어지는 증분 재빌드가 같은 볼트를 한 번 더 걸었다 — 변경
+       * 하나에 네이티브 순회가 둘이었다. 이제 하나다.
+       */
+      const { fingerprint: fp, nativeStamps } =
+        await computeLocalVaultFingerprintWithStamps(handle);
       if (fp === lastFingerprintRef.current) {
         const sidecars = await readVaultSidecarStatuses(handle);
         setState((s) => ({ ...s, ...sidecars, lastLoadedAt: Date.now() }));
         return;
       }
+      pendingStampsRef.current = nativeStamps;
     } catch {
       /* fingerprint 실패 → 안전하게 전체 재빌드로 폴백 */
+      pendingStampsRef.current = null;
     }
-    await load(handle);
+    try {
+      await load(handle);
+    } finally {
+      // 다음 호출이 남은 스탬프를 재사용하면 낡은 mtime 으로 판정한다.
+      pendingStampsRef.current = null;
+    }
   }, [state.handle, load]);
 
   // 탭 포커스 복귀 시 자동 refresh — IDE 에서 편집 후 브라우저로 돌아오면

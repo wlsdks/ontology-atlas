@@ -255,6 +255,31 @@ function fingerprintFromEntries(
  * 만든다. 같은 fingerprint = 마지막 빌드 후 .md / 이미지 변경 없음. 호출자
  * (예: focus auto-refresh) 가 이를 비교해 불필요한 전체 재빌드를 회피.
  */
+/**
+ * 지문과 **그 지문을 만든 스탬프**를 함께 준다.
+ *
+ * `computeLocalVaultFingerprint` 만 있던 동안, 호출자는 「바뀌었나」를 알고
+ * 나면 그 근거를 버렸다. 그래서 증분 재빌드가 같은 볼트를 **한 번 더** 걸었다.
+ * 여기서 둘을 같이 돌려주면 걷기는 변경당 한 번이면 된다.
+ */
+export async function computeLocalVaultFingerprintWithStamps(
+  root: FileSystemDirectoryHandle,
+): Promise<{ fingerprint: string; nativeStamps: Map<string, number> | null }> {
+  const nativeRoot = (root as { rootPath?: unknown }).rootPath;
+  if (typeof nativeRoot === 'string' && nativeRoot) {
+    const native = await nativeVaultFingerprint(nativeRoot);
+    if (native) {
+      return {
+        fingerprint: fingerprintFromEntries(native.entries),
+        nativeStamps: new Map(
+          native.entries.map((e) => [e.relativePath, e.lastModified] as const),
+        ),
+      };
+    }
+  }
+  return { fingerprint: await computeLocalVaultFingerprint(root), nativeStamps: null };
+}
+
 export async function computeLocalVaultFingerprint(
   root: FileSystemDirectoryHandle,
 ): Promise<string> {
@@ -546,11 +571,69 @@ export async function buildLocalManifest(
 export async function rebuildLocalManifestIncremental(
   root: FileSystemDirectoryHandle,
   previous: BuiltVaultEntry[],
+  /**
+   * 이미 받아 둔 네이티브 스탬프(경로→mtime). `refresh()` 는 「바뀌었나」를
+   * 판정하려고 방금 같은 걸 걷었으므로, 그걸 넘겨받아 **두 번 걷지 않는다.**
+   * 안 넘기면 여기서 직접 한 번 받는다.
+   */
+  providedStamps?: Map<string, number> | null,
 ): Promise<{ build: LocalVaultBuild; entries: BuiltVaultEntry[] }> {
   const files = await walk(root);
   const prevByPath = new Map(previous.map((e) => [e.relativePath, e] as const));
+  /*
+   * **mtime 을 알아내려고 본문을 다리 너머로 끌어오지 않는다** (2026-08-09 실측).
+   *
+   * 이 함수는 「바뀐 파일만 다시 읽는다」가 존재 이유인데, 정작 *무엇이
+   * 바뀌었는지* 알아내려고 **파일마다 `getFile()`** 을 불렀다. Tauri 에서 그건
+   * `read_vault_text_file` IPC 왕복이고 그 명령은 본문 전체를 함께 돌려준다 —
+   * 위 `computeLocalVaultFingerprint` 주석이 이미 같은 낭비를 지적하며
+   * *"쓰이는 것은 숫자 하나인데 볼트 전체가 다리를 건넜다"* 고 적어 둔 그것이다.
+   * 그래서 본문 재파싱은 아꼈지만 **전송과 왕복은 하나도 아끼지 못했다.**
+   *
+   * 설치된 앱 실측: 파일을 하나 고쳤을 때 지도가 따라오기까지
+   * **71파일 볼트 2.0초 / 5파일 볼트 0.7초** — 파일 수에 비례했다(건당 ≈20ms,
+   * IPC 왕복과 일치). 정작 같은 71파일을 디스크에서 읽는 비용은 **1.8ms** 다.
+   *
+   * 고치는 방법은 새 네이티브 명령이 아니다 — 경로와 mtime 만 한 번에 주는
+   * `vault_fingerprint` 가 **이미 있고 300줄 위에서 쓰고 있다.** 그것으로 먼저
+   * 판정하고, mtime 이 다른 파일에만 `getFile()` 을 부른다.
+   *
+   * 웹에는 그 일괄 API 가 없어 `null` 이 오고 지금까지의 경로로 떨어진다 —
+   * `surfaces.md` 의 브리지 관례(없으면 `null`, 조용히 강등) 그대로다.
+   */
+  let nativeStamps: Map<string, number> | null = providedStamps ?? null;
+  if (!nativeStamps) {
+    const nativeRoot = (root as { rootPath?: unknown }).rootPath;
+    if (typeof nativeRoot === 'string' && nativeRoot) {
+      try {
+        const native = await nativeVaultFingerprint(nativeRoot);
+        if (native) {
+          nativeStamps = new Map(
+            native.entries.map((e) => [e.relativePath, e.lastModified] as const),
+          );
+        }
+      } catch {
+        /* 네이티브 실패 → 아래 파일별 경로로 폴백(동작은 종전과 동일) */
+      }
+    }
+  }
   const entries: BuiltVaultEntry[] = [];
   for (const entry of files) {
+    // 네이티브가 이 경로의 mtime 을 알고 그것이 직전과 같으면 **파일을 아예
+    // 열지 않는다.** 모르는 경로(방금 생겼거나 목록이 어긋남)는 아래로 흘려
+    // 보내 종전과 같이 처리한다 — 「모르면 읽는다」가 안전한 쪽이다.
+    const nativeMtime = nativeStamps?.get(entry.relativePath);
+    if (nativeMtime !== undefined) {
+      const prevNative = prevByPath.get(entry.relativePath);
+      if (
+        prevNative &&
+        prevNative.kind === entry.kind &&
+        prevNative.lastModified === nativeMtime
+      ) {
+        entries.push({ ...prevNative, handle: entry.handle });
+        continue;
+      }
+    }
     const file = await entry.handle.getFile();
     const prev = prevByPath.get(entry.relativePath);
     if (

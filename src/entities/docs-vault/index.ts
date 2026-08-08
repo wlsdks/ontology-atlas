@@ -29,6 +29,7 @@ export {
   buildLocalManifestWithEntries,
   rebuildLocalManifestIncremental,
   computeLocalVaultFingerprint,
+  computeLocalVaultFingerprintWithStamps,
 } from './lib/build-local-manifest';
 export type {
   LocalVaultBuild,

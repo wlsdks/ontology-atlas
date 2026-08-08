@@ -29,6 +29,18 @@ vi.mock('@/entities/docs-vault', () => ({
   buildLocalManifestWithEntries: entitiesMocks.buildLocalManifestWithEntries,
   rebuildLocalManifestIncremental: entitiesMocks.rebuildLocalManifestIncremental,
   computeLocalVaultFingerprint: entitiesMocks.computeLocalVaultFingerprint,
+  /*
+   * `refresh()` 는 지문과 **스탬프**를 함께 받는 쪽을 부른다(변경당 네이티브
+   * 순회를 한 번으로 줄이기 위해, 2026-08-09). 아래 시험들은 전부
+   * `computeLocalVaultFingerprint` 의 반환값으로 시나리오를 구동하므로,
+   * 새 함수는 **그것에 위임**한다 — 그러면 기존 시나리오 넷(같음 · 바뀜 ·
+   * 실패 · 폴링)이 한 곳에서 그대로 조종된다. 여기서 값을 따로 두면 두 목킹이
+   * 어긋나 「시험은 통과하는데 훅은 다른 값을 본다」가 된다.
+   */
+  computeLocalVaultFingerprintWithStamps: async (root: unknown) => ({
+    fingerprint: await entitiesMocks.computeLocalVaultFingerprint(root),
+    nativeStamps: null,
+  }),
 }));
 
 const fsHandleMocks = vi.hoisted(() => ({
