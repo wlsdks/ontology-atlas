@@ -449,3 +449,98 @@ test.describe("관문 다운로드의 그리드", () => {
     });
   }
 });
+
+/**
+ * **설계 여백은 눌러 담기의 완충재가 아니다** (2026-08-08 실측).
+ *
+ * 판의 출구 두 개(GitHub · 웹버전)를 640px 부터 두 칸으로 갈랐는데,
+ * 640~830 구간에서는 그 칸이 내용보다 좁다. 실측(768 · ko): 행 폭 310px 인데
+ * 두 버튼이 설계 여백(`px-6` = 24)을 지키려면 325px 이 필요했고, **부족분
+ * 15px 이 여백에서 조용히 깎였다** — GitHub 버튼의 실효 좌우 여백 15.5,
+ * 그 옆 형제 22. 나란히 선 두 출구의 여백이 서로 달라진 것이다.
+ *
+ * ## 왜 기존 게이트가 못 봤나 — 셋 다 각자 이유가 있다
+ *
+ * | 게이트 | 왜 침묵했나 |
+ * |---|---|
+ * | 이 파일의 x·넘침 시험 | 폭 목록이 **1440 이상**뿐이었다. 768 은 한 번도 측정된 적이 없다 |
+ * | 글자 넘침 계측 | 글자가 **버튼 테두리 안에** 있다 — 잘리지도 삐져나오지도 않는다 |
+ * | 단위 시험 | 담김·순서·문구만 본다. 렌더된 px 은 jsdom 에 없다 |
+ *
+ * 셋 다 자기 일은 했다. 아무도 «여백이 설계값대로인가» 를 묻지 않았을 뿐이다.
+ *
+ * ## 이 시험이 지키는 property
+ *
+ * *판 안의 컨트롤은 자기 내용을 담을 만큼 넓다* — 선언한 좌우 여백이 실제로
+ * 그만큼 남는다. 이 성질이 깨지는 방식은 잘림이 아니라 **압축**이라, 재는
+ * 방법도 rect 비교가 아니라 «content box 대 잉크 폭» 이다.
+ */
+test.describe("판의 컨트롤은 선언한 여백을 지킨다", () => {
+  /** 좁은 쪽 임계 주변 — 여기가 한 번도 측정된 적 없는 구간이다. */
+  const NARROW_WIDTHS = [
+    { width: 640, height: 900 },
+    { width: 768, height: 1024 },
+    { width: 820, height: 1180 },
+    { width: 1024, height: 768 },
+  ];
+
+  for (const locale of ["ko", "en"] as const) {
+    for (const { width, height } of NARROW_WIDTHS) {
+      test(`${locale} @ ${width}×${height} — 눌린 여백 0`, async ({ page }) => {
+        await page.setViewportSize({ width, height });
+        await seedFirstRunSeen(page);
+        await page.goto(`/${locale}/download/`, { waitUntil: "networkidle" });
+        await expect(page.getByTestId("download-plate")).toBeVisible({ timeout: 15_000 });
+
+        const squeezed = await page.evaluate(() => {
+          const plate = document.querySelector('[data-testid="download-plate"]')!;
+          const rows: { id: string; declared: number; effective: number }[] = [];
+          for (const el of plate.querySelectorAll("a, button")) {
+            const box = el.getBoundingClientRect();
+            if (box.width < 40 || box.height < 20) continue;
+            const cs = getComputedStyle(el);
+            const declared = parseFloat(cs.paddingLeft);
+            if (declared < 1) continue; // 여백을 선언하지 않은 텍스트 링크는 대상 밖
+            // 실제 잉크 폭 — 자식 rect 의 합집합(텍스트 노드 포함)
+            const marks: DOMRect[] = [];
+            for (const node of el.childNodes) {
+              if (node.nodeType === Node.TEXT_NODE) {
+                if (!node.textContent?.trim()) continue;
+                const range = document.createRange();
+                range.selectNodeContents(node);
+                marks.push(range.getBoundingClientRect());
+              } else if (node instanceof Element) {
+                marks.push(node.getBoundingClientRect());
+              }
+            }
+            const painted = marks.filter((m) => m.width > 0);
+            if (!painted.length) continue;
+            const inkLeft = Math.min(...painted.map((m) => m.left));
+            const inkRight = Math.max(...painted.map((m) => m.right));
+            const effective = Math.min(inkLeft - box.left, box.right - inkRight);
+            rows.push({
+              id: el.getAttribute("data-testid") ?? el.textContent?.trim().slice(0, 24) ?? "?",
+              declared: Math.round(declared),
+              effective: Math.round(effective),
+            });
+          }
+          return rows;
+        });
+
+        // 공회전 차단 — 여백을 선언한 컨트롤을 하나도 못 찾으면 아래 0 은 무의미하다.
+        expect(
+          squeezed.length,
+          "판에서 여백을 선언한 컨트롤을 못 찾았다 — 계기가 헛돈다",
+        ).toBeGreaterThanOrEqual(2);
+
+        // 1px 은 서브픽셀 반올림 몫이다. 그보다 크게 깎였으면 압축이다.
+        const offenders = squeezed.filter((r) => r.effective < r.declared - 1);
+        expect(
+          offenders,
+          "선언한 여백보다 좁게 렌더된 컨트롤 — 칸이 내용보다 좁아 여백에서 깎인다. " +
+            "칸을 넓히거나, 그 폭에서는 한 줄로 쌓아라.",
+        ).toEqual([]);
+      });
+    }
+  }
+});

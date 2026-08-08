@@ -717,7 +717,21 @@ function PlateExitRow({ published }: { published: boolean }) {
   return (
     <div
       data-testid="download-exit-row"
-      className="mt-5 grid min-w-0 grid-cols-1 gap-2.5 border-t border-[color:var(--color-divider)] pt-3.5 sm:grid-cols-[1.08fr_0.92fr] [@media(min-width:64rem)_and_(max-height:56.25rem)]:mt-3 [@media(min-width:64rem)_and_(max-height:56.25rem)]:pt-2.5"
+      /*
+       * ⚠️ **2열은 두 버튼이 설계 여백으로 들어갈 때만 선다** (2026-08-08 실측).
+       *
+       * 종전엔 `sm:`(640px)부터 두 칸을 `1.08fr 0.92fr` 로 갈랐는데, 640~830
+       * 구간에서는 그 칸이 내용보다 좁다. 실측(768·ko): 행 폭 310px 인데 두
+       * 버튼이 설계 여백(px-6=24)을 지키려면 325px 이 필요하다. 부족분 15px 은
+       * **여백에서 조용히 깎였다** — GitHub 버튼의 실효 좌우 여백이 24 → 15.5 로
+       * 눌리고, 그 옆 형제는 22 라서 나란히 선 두 출구의 여백이 서로 달라졌다.
+       * 글자가 잘리거나 삐져나오지는 않아서 넘침 계측에는 안 잡히는 종류다.
+       *
+       * 그래서 문턱을 «칸이 있다» 가 아니라 «내용이 들어간다» 로 옮긴다.
+       * 52rem(832px)은 실측 임계(≈825px)에 여유를 둔 값이고, 그 아래에서는
+       * `<sm` 과 같은 한 줄 쌓기가 된다 — 눌러 담기보다 낫다.
+       */
+      className="mt-5 grid min-w-0 grid-cols-1 gap-2.5 border-t border-[color:var(--color-divider)] pt-3.5 [@media(min-width:52rem)]:grid-cols-[1.08fr_0.92fr] [@media(min-width:64rem)_and_(max-height:56.25rem)]:mt-3 [@media(min-width:64rem)_and_(max-height:56.25rem)]:pt-2.5"
     >
       <a
         href={GITHUB_REPOSITORY_URL}
