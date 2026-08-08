@@ -53,6 +53,34 @@ describe("DocFrontmatterBlock", () => {
     expect(summary.getByText("속성 6개")).toBeInTheDocument();
   });
 
+  /**
+   * **문서마다 반복되는 「가르치는 줄」은 상주하지 않는다** (2026-08-08, 소유자
+   * 지적 — *"문서 볼 때 상단이 조금 이상한데.. 보기좋게 구성할순없나?"*).
+   *
+   * 「규격 예시 보기」는 문서마다 달라지지 않는 설명이다. 그런데 접힌 상태에서도
+   * 자기 줄을 갖고 있어서, 읽으러 온 사람의 화면에서 본문을 25px 씩 아래로
+   * 밀었다 — 배포 샘플 볼트의 **112개 문서 전부**에서.
+   *
+   * 필요한 순간은 「이 속성이 무엇을 받나」를 알고 싶을 때이고, 그건 이 속성
+   * 블록을 여는 순간이다. 그래서 그 안으로 옮겼다.
+   *
+   * ⚠️ 이 시험이 없으면 되돌아간다 — 앞선 단위 시험들은 `getByTestId` 로 DOM
+   * 존재만 보므로 토글이 details **밖**에 있어도 전부 초록이었다(실측).
+   */
+  it("규격 예시 토글은 접힌 속성 블록 안에 있다 — 읽는 화면에 상주하지 않는다", () => {
+    renderBlock();
+    const details = screen.getByTestId("doc-frontmatter-block").querySelector("details");
+    expect(details).not.toHaveAttribute("open");
+
+    const toggle = screen.queryByTestId("doc-frontmatter-example-toggle");
+    // 예시가 없는 kind 면 이 시험은 공회전한다 — 그 경우를 먼저 배제한다.
+    expect(toggle, "이 fixture 에 규격 예시가 없다 — 시험이 헛돈다").not.toBeNull();
+    expect(
+      toggle?.closest("details:not([open])"),
+      "「규격 예시 보기」가 접힌 속성 블록 밖에 있다 — 읽으러 온 사람의 본문을 밀어낸다",
+    ).toBe(details);
+  });
+
   it("reveals the full mono frontmatter block when expanded", () => {
     renderBlock();
     const summary = screen.getByTestId("doc-frontmatter-summary");

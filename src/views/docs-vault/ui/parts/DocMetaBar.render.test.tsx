@@ -49,7 +49,18 @@ function renderMetaBar(targetDoc: VaultDoc = doc) {
 }
 
 describe("DocMetaBar", () => {
-  it("frames ontology records as readable evidence instead of frontmatter jargon", () => {
+  /*
+   * **이름이 바뀐 이유 (2026-08-08)**: 종전 이 시험은 지도에 **있는** 문서에서도
+   * 설명 문장이 렌더되는 것을 계약으로 못박고 있었다. 그건 계약이 아니라 낭비였다 —
+   * 그 문장은 바로 왼쪽 칩(「지도 근거」)과 오른쪽 링크(「지형도」)가 이미 말한 것을
+   * 다시 말하면서 본문 위에 한 줄을 통째로 먹는다. 실측: 배포 샘플 볼트는 112개
+   * 문서 **전부가 노드**라 같은 문장이 112번 반복됐다.
+   *
+   * 지키는 성질은 그대로다 — 「지도에 있다」가 **사람이 읽는 말**로 나오고,
+   * frontmatter 전문용어가 화면에 안 나온다. 설명이 필요한 경우(지도에 없는 문서)는
+   * 아래 시험이 따로 지킨다.
+   */
+  it("in-graph 문서는 칩으로만 말한다 — 같은 말을 문장으로 되풀이하지 않는다", () => {
     renderMetaBar();
 
     expect(
@@ -61,12 +72,13 @@ describe("DocMetaBar", () => {
     expect(
       screen.queryByText("docs/ontology/capabilities/agent-graph-readiness.md"),
     ).not.toBeInTheDocument();
+    // 칩이 말한 것을 문장으로 한 번 더 말하지 않는다.
     expect(
-      screen.getByText(
-        "이 문서 속성이 capability 개념으로 연결됩니다. 에이전트는 이 근거를 쿼리, 인용, 갱신할 수 있습니다.",
-      ),
-    ).toBeInTheDocument();
+      screen.queryByText(/개념으로 연결됩니다/),
+    ).not.toBeInTheDocument();
     expect(screen.queryByText(/frontmatter/)).not.toBeInTheDocument();
+    // 그러나 지도로 가는 길은 그대로 있다 — 줄인 것은 설명이고 사실이 아니다.
+    expect(screen.getByTestId("doc-map-open")).toBeInTheDocument();
   });
 
   // 이름이 바뀐 이유 (2026-08-04): 종전 이 테스트는 그래프에 **없는** 문서가

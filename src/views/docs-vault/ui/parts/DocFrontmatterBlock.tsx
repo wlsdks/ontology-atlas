@@ -703,6 +703,54 @@ export function DocFrontmatterBlock({
           </svg>
           {t("note")}
         </p>
+        {/* 규격 예시는 **속성을 열었을 때** 자리를 얻는다 (2026-08-08).
+            문서마다 달라지지 않는 가르치는 줄이 112개 문서 위에 상주하고
+            있었다 — 읽으러 온 사람에게는 한 줄을 먹는 노이즈이고, 정작
+            필요한 순간(속성이 뭘 받는지 알고 싶을 때)은 이 속성 블록을
+            여는 순간이다. 그 순간으로 옮긴다. */}
+        {exampleDoc ? (
+          <div className="mt-2 font-sans">
+            <button
+              type="button"
+              onClick={() => setExampleOpen((v) => !v)}
+              aria-expanded={exampleOpen}
+              aria-controls="doc-frontmatter-example"
+              data-testid="doc-frontmatter-example-toggle"
+              className={controlClass({
+                shape: "link",
+                tone: "muted",
+                className: "touch-hit-expand hover:text-[color:var(--color-text-secondary)]",
+              })}
+            >
+              <ChevronRight
+                size={ICON_SIZE.sm}
+                aria-hidden
+                className={`transition-transform motion-reduce:transition-none ${
+                  exampleOpen ? "rotate-90" : ""
+                }`}
+              />
+              {t("exampleToggle")}
+            </button>
+            {exampleOpen ? (
+              <div
+                id="doc-frontmatter-example"
+                data-testid="doc-frontmatter-example"
+                className="mt-2 flex items-start gap-2 rounded-chip border border-[color:var(--color-border-soft)] bg-[color:var(--color-overlay-1)] px-2.5 py-2"
+              >
+                <pre className="min-w-0 flex-1 overflow-x-auto whitespace-pre-wrap break-words font-mono text-label leading-label text-[color:var(--color-text-secondary)]">
+                  {exampleDoc}
+                </pre>
+                <CompactCopyButton
+                  copied={exampleCopyState === "copied"}
+                  label={exampleCopyState === "copied" ? t("exampleCopied") : t("exampleCopy")}
+                  ariaLabel={t("exampleCopyAriaLabel")}
+                  onClick={() => void copyExample(exampleDoc)}
+                  data-testid="doc-frontmatter-example-copy"
+                />
+              </div>
+            ) : null}
+          </div>
+        ) : null}
       </details>
       {lastEditSubjectRow ? (
         <div className="mt-2 font-sans">
@@ -720,49 +768,6 @@ export function DocFrontmatterBlock({
         </div>
       ) : null}
       {issueRows}
-      {exampleDoc ? (
-        <div className="mt-2 font-sans">
-          <button
-            type="button"
-            onClick={() => setExampleOpen((v) => !v)}
-            aria-expanded={exampleOpen}
-            aria-controls="doc-frontmatter-example"
-            data-testid="doc-frontmatter-example-toggle"
-            className={controlClass({
-              shape: "link",
-              tone: "muted",
-              className: "touch-hit-expand hover:text-[color:var(--color-text-secondary)]",
-            })}
-          >
-            <ChevronRight
-              size={ICON_SIZE.sm}
-              aria-hidden
-              className={`transition-transform motion-reduce:transition-none ${
-                exampleOpen ? "rotate-90" : ""
-              }`}
-            />
-            {t("exampleToggle")}
-          </button>
-          {exampleOpen ? (
-            <div
-              id="doc-frontmatter-example"
-              data-testid="doc-frontmatter-example"
-              className="mt-2 flex items-start gap-2 rounded-chip border border-[color:var(--color-border-soft)] bg-[color:var(--color-overlay-1)] px-2.5 py-2"
-            >
-              <pre className="min-w-0 flex-1 overflow-x-auto whitespace-pre-wrap break-words font-mono text-label leading-label text-[color:var(--color-text-secondary)]">
-                {exampleDoc}
-              </pre>
-              <CompactCopyButton
-                copied={exampleCopyState === "copied"}
-                label={exampleCopyState === "copied" ? t("exampleCopied") : t("exampleCopy")}
-                ariaLabel={t("exampleCopyAriaLabel")}
-                onClick={() => void copyExample(exampleDoc)}
-                data-testid="doc-frontmatter-example-copy"
-              />
-            </div>
-          ) : null}
-        </div>
-      ) : null}
     </section>
   );
 }
