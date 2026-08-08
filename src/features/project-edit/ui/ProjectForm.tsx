@@ -1232,10 +1232,20 @@ export function ProjectForm({
       >
         {returnSubmitLabel}
       </Button>
+      {/* 채워진 주 CTA 는 **화면당 하나**다 (2026-08-08 위계 판정).
+          편집 화면에는 위쪽 sticky 띠에 같은 행동·같은 라벨·같은 142×40 의 저장이
+          이미 있었고, 실측으로 채워진 인디고 면이 둘이었다(원장 2026-08-08 (3) ①).
+          sticky 는 스크롤 어디서나 보이므로 주 CTA 를 상단이 지고, 읽기 흐름 끝의
+          이 저장은 같은 행동의 되풀이라 보조 톤으로 내려온다 — 기능도 라벨도
+          그대로다. 만들기 화면에는 sticky 띠가 없어(위 주석) 여기가 유일한 주
+          CTA 이므로 `primary` 를 유지한다: 조건이 없으면 만들기 화면이 채워진
+          CTA 0개가 되어 반대 방향의 위계 결함이 된다. 새 variant 는 만들지 않고
+          `Button` 의 기존 `outline` 을 쓴다. */}
       <Button
         data-testid="project-save"
         type="submit"
         data-submit-behavior="stay"
+        variant={mode === "edit" ? "outline" : "primary"}
         onClick={() => {
           submitBehaviorRef.current = "stay";
         }}

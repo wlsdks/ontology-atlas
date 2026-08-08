@@ -52,6 +52,7 @@ import {
   overlapsForeignReserved,
   NODE_DISC_LABEL_PRIORITY,
   clampAnchorIntoSafeRect,
+  isSafeRectProtectedLabel,
   isWithinSafeRect,
   resolveLabelPriority,
   type LabelCandidate,
@@ -1719,11 +1720,15 @@ export function drawTopologyFrame(params: FrameDrawParams): void {
     let anchorX = screen.x;
     let clampedAnchorY = anchorY;
     if (!isWithinSafeRect(anchorX, anchorY, safeRect)) {
-      // Protected = the focused node, its ego neighbors, or the hovered node —
-      // NOT "dim"/"normal" bystanders, or every off-rect label would clamp to
-      // the inset edge and pile up there.
-      const isProtected = egoState === "center" || egoState === "neighbor" || isHovered || trailKept;
-      if (!isProtected) return;
+      // 보호 대상이면 버리는 대신 인셋 가장자리로 당긴다. 판정식은
+      // `render/label-layout.ts#isSafeRectProtectedLabel` 하나이고 — 이 파일에
+      // 인라인으로 두면 캔버스 밖에서 잴 수 없어 회귀를 막는 단위 테스트를 붙일
+      // 자리가 없다 — project/hub 가 왜 그 목록에 들어갔는지도 거기 적혀 있다.
+      // 클램프 대상이 적은 두 등급뿐이라 「전부 인셋에 쌓인다」는 원래 우려는
+      // 되살아나지 않고, 부딪히는 것은 여전히 greedy 억제가 가른다.
+      if (!isSafeRectProtectedLabel({ egoState, isHovered, trailKept, kind: node.kind, isHub: node.isHub })) {
+        return;
+      }
       const clamped = clampAnchorIntoSafeRect(anchorX, anchorY, safeRect, width / 2 + 4, fontSize + 4);
       anchorX = clamped.x;
       clampedAnchorY = clamped.y;

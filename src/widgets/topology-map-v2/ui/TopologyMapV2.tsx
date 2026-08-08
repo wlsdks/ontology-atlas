@@ -75,6 +75,16 @@ export interface TopologyMapV2Props {
   nodes: readonly TopologyV2Node[];
   edges: readonly TopologyV2Edge[];
   focus: TopologyV2Focus;
+  /**
+   * **이 그래프가 어느 볼트에서 왔나** — 값이 바뀌면 오버뷰를 다시 맞춘다.
+   *
+   * 정체성 문자열의 단일 출처는 `useVaultIdentityScope()`(`features/vault-scope`)
+   * 다. 여기서 트리거로 쓰는 것은 **노드 수가 아니라 출처**다: 사용자가 작업
+   * 중에 노드 하나를 더할 때 카메라를 낚아채는 것이 원래 결함보다 나쁘므로,
+   * 샘플↔로컬 · 샘플↔샘플 전환에서만 다시 선다. 생략하면 종전대로 최초 1회만
+   * 맞춘다.
+   */
+  dataSourceKey?: string | null;
   /** Increment to re-run fit-to-bounds (HomePage "지도 맞추기"). */
   fitViewToken: number;
   /** 렌즈/기간 변경 시 강조 노드로 카메라를 맞추는 토큰. */
@@ -286,7 +296,7 @@ export interface TopologyMapV2Props {
 }
 
 export function TopologyMapV2(props: TopologyMapV2Props) {
-  const { nodes, edges, focus, minimal, emphasizedNeighborSlug, fitViewToken, spotlightFitToken = 0, relayoutToken, revealToken, onSelectEdge, onSelect, onPaneClick, onVisibleCountChange, onGraphStatsChange, onZoomTierChange, onContextMenuNode, onContextMenuPane, agentFocusNodeId, spotlightIds = null, onHoverEdge, selectedEdge = null, expandedParents, onToggleCluster, onHoverCluster, clusterHint, realmRootId = null, onEnterRealm, realmEnterLabel, realmEnterTooltip, realmCaption = null, clusterBarLabels = null, canvasLabel, visitedTrail, trailLensActiveRef, trailHoverNodeIdRef, tierReveal, tourAnchorNodeId = null, tourAnchorRef, overlayOpen = false, glyphSet = "geometric", canvasBackground = "dot", footprint = null, expand = DEFAULT_EXPAND, wheelIntent = "zoom", ambientSleepDelayMs } = props;
+  const { nodes, edges, focus, minimal, emphasizedNeighborSlug, dataSourceKey = null, fitViewToken, spotlightFitToken = 0, relayoutToken, revealToken, onSelectEdge, onSelect, onPaneClick, onVisibleCountChange, onGraphStatsChange, onZoomTierChange, onContextMenuNode, onContextMenuPane, agentFocusNodeId, spotlightIds = null, onHoverEdge, selectedEdge = null, expandedParents, onToggleCluster, onHoverCluster, clusterHint, realmRootId = null, onEnterRealm, realmEnterLabel, realmEnterTooltip, realmCaption = null, clusterBarLabels = null, canvasLabel, visitedTrail, trailLensActiveRef, trailHoverNodeIdRef, tierReveal, tourAnchorNodeId = null, tourAnchorRef, overlayOpen = false, glyphSet = "geometric", canvasBackground = "dot", footprint = null, expand = DEFAULT_EXPAND, wheelIntent = "zoom", ambientSleepDelayMs } = props;
 
   const realmEnterButtonRef = useRef<HTMLButtonElement | null>(null);
 
@@ -347,6 +357,7 @@ export function TopologyMapV2(props: TopologyMapV2Props) {
       ambientSleepDelayMs,
       focusedSlug: focus.selectedSlug,
       emphasizedNeighborSlug,
+      dataSourceKey,
       fitViewToken,
       spotlightFitToken,
       relayoutToken,

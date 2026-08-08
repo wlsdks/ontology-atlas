@@ -74,7 +74,24 @@ export function StudioEntryChoice({
         className="studio-stage-in flex flex-col items-center"
         style={{ ["--studio-stagger" as string]: "0ms" }}
       >
-        <h1 className="text-body-lg font-[var(--font-weight-signature)] text-[color:var(--color-text-secondary)] [word-break:keep-all]">
+        {/*
+         * 제목은 **대화상자 제목 관례**를 따른다 (2026-08-08 위계 판정).
+         *
+         * 종전엔 14px 칸(`--text-body-lg`) + `--color-text-secondary` 라, 아래
+         * 입구 카드 라벨(같은 14px + `--color-text-primary`)에게 크기는 **동률**
+         * 이고 색은 **졌다** — 제목이 본문 급인 것이 결함이다(원장 2026-08-08 (3) ①).
+         *
+         * 새 값은 발명하지 않았다: 이 앱에서 대화상자·패널 제목이 쓰는 칸을
+         * 실측해 그대로 쓴다 — 16px 칸(`--text-title`; `DocsVaultAuditModal` 모달
+         * 제목 · `TopologyEmptyState` · `VaultStartChecklist` · `EmptyState`
+         * 프리미티브 기본값이 쓰는 칸)에 잉크는 `--color-text-primary`(설정 시트 ·
+         * `VaultOpenGuideSheet` · `NewDocKindDialog` · `GuidedTourCard` 가 전부
+         * 이것). 관례의 요점은 절대 크기가 아니라 **그 표면의 본문보다 한 단
+         * 위**라는 것이다: 설정 시트는 12.5px 행 위의 14px 제목이고, 여기 본문은
+         * 카드 라벨 14px 이므로 16px 이 된다. 행간은 램프가 짝
+         * (`--leading-title` 24px)을 같이 싣는다.
+         */}
+        <h1 className="text-title font-[var(--font-weight-signature)] text-[color:var(--color-text-primary)] [word-break:keep-all]">
           {labels.title}
         </h1>
       </div>
