@@ -27,6 +27,7 @@ import {
   // (AtlasGitPanel 이 같은 사고를 겪었다). 전역과 충돌 없는 별칭으로 고정.
   History as HistoryIcon,
   Map as MapIcon,
+  Wand2,
 } from "lucide-react";
 import { ICON_SIZE } from "@/shared/ui/icon-size";
 import { useLocalVault } from "@/features/docs-vault-local";
@@ -260,6 +261,10 @@ export function AppNavRail({
     // 은 흡수됐다(입구가 둘이면 #65 계열 결함 재발). 아이콘은 History 유지 —
     // git 3-노드 그래프 글리프는 이 레일에서 "온톨로지 그래프" 로 읽혀 지도
     // 아이콘·브랜드 육각과 충돌한다(Design Guardian 반려).
+    // 스킬 — 2026-08-09 소유자 확정으로 목적지 신설. 문서함과 나란히 두지 않고
+    // 따로 세운 이유는 답하는 질문이 다르기 때문이다: 문서함은 「이 문서가 지도
+    // 어디에 붙나」, 여기는 「이게 언제 뜨고 뜨면 뭐가 열리나」.
+    { id: "skills", href: "/skills/", label: t("skills"), Icon: Wand2 },
     { id: "git", href: "/git/", label: t("git"), Icon: HistoryIcon, badgeCount: gitDirtyCount },
   ];
 

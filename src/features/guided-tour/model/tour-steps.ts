@@ -98,7 +98,13 @@ export const TOUR_STEPS: readonly TourStep[] = [
  * 지도(`map`)는 여기 없다 — 캔버스 노드 앵커·인터랙티브 클릭·개발자 분기를
  * 쓰는 8단계 여정이라 `TOUR_STEPS` 가 계속 소유한다.
  */
-export type DestinationTourId = "docs" | "studio" | "insights" | "projects" | "git";
+export type DestinationTourId =
+  | "docs"
+  | "studio"
+  | "insights"
+  | "projects"
+  | "skills"
+  | "git";
 
 export const DESTINATION_TOURS: Record<DestinationTourId, readonly TourStep[]> = {
   docs: [
@@ -121,6 +127,17 @@ export const DESTINATION_TOURS: Record<DestinationTourId, readonly TourStep[]> =
       anchor: { type: "testid", value: "studio-center-card" },
       persona: "all",
       copyKey: "studioCard",
+    },
+  ],
+  skills: [
+    { id: "skills-what", anchor: null, persona: "all", copyKey: "skillsWhat" },
+    {
+      // 「폴더 열기」를 가리킨다 — 이 화면은 폴더를 고르기 전에는 아무것도 없어서,
+      // 안내가 가리킬 것이 그 버튼 하나뿐이다.
+      id: "skills-open",
+      anchor: { type: "testid", value: "skills-open-folder" },
+      persona: "all",
+      copyKey: "skillsOpen",
     },
   ],
   insights: [

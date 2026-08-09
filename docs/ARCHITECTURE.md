@@ -30,6 +30,7 @@ tags: [architecture, infra, overview]
 │ ├─ /ontology/studio        Compass write workbench     │
 │ ├─ /ontology/insights      five-question maintenance   │
 │ ├─ /git                    vault Git workbench         │
+│ ├─ /skills                 agent skill inventory       │
 │ ├─ /projects               project list                │
 │ ├─ /project/[slug]         project detail              │
 │ ├─ /download               gateway as an explicit link │
@@ -288,6 +289,12 @@ project's own — before they have picked any folder of their own.
 /ontology/studio           Compass Stage write surface (ENHANCE / CREATE)
 /ontology/insights         five-question maintenance board
 /git                       local vault git history / snapshot workbench (desktop-only destination)
+/skills                    agent skill inventory — read-only. The user picks a folder that
+                           holds SKILL.md files; the page shows when each skill fires and, on
+                           expand, the three-stage load chain (description always / body on
+                           trigger / bundled files on demand) with executables marked. Writes
+                           nothing: not to the vault, not to the skill files. Remembers no
+                           folder handle. 2026-08-09 ledger
 /projects                  project list (cards)
 /project/[slug]            project detail (inline edit when vault loaded)
 /project/[slug]/edit       full project editor

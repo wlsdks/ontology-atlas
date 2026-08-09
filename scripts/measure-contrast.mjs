@@ -61,6 +61,7 @@ export const DEFAULT_ROUTES = [
   "/ko/guide/",
   "/ko/guide/what-is-atlas/",
   "/ko/git/",
+  "/ko/skills/",
   // 404 는 **두 페이지**다 — 로케일이 붙은 것과 안 붙은 것. 2026-08-03 에
   // AA 미달 4.42:1 이 숨어 있던 자리가 정확히 여기고, 그때 두 래칫 모두 이
   // 자리를 한 번도 안 봤다. 하나만 넣으면 그 사고의 절반만 막는다.
