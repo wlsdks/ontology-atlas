@@ -15,6 +15,7 @@ import {
   useMemo,
   useRef,
   type PointerEvent as ReactPointerEvent,
+  type KeyboardEvent as ReactKeyboardEvent,
   type RefObject,
 } from "react";
 
@@ -78,6 +79,11 @@ import { initWardingFit, stepWardingFit, type WardingFitState } from "../model/r
 import { createTopologyPointerHandlers, type TopologyPointerHandlers } from "./topology-pointer-handlers";
 import { stepTopologyPhysics } from "./topology-physics-step";
 import { updatePulses, type Pulse } from "../render/edge-fireflies";
+import {
+  pickInitialFocus,
+  pickNeighborInDirection,
+  walkDirectionForKey,
+} from "../interaction/keyboard-walk";
 import { readTopologyV2TokensOrNull } from "./topology-read-tokens";
 import type { TopologyMapV2Props } from "./TopologyMapV2";
 import { applyForcePositions, buildTopologyWorld, recomputeWorldGeometry, type TopologyWorld, radiusForKind } from "./topology-world";
@@ -339,6 +345,8 @@ const EMPTY_TRAIL: readonly string[] = [];
 export type UseTopologyLoopResult = TopologyPointerHandlers & {
   canvasRef: RefObject<HTMLCanvasElement | null>;
   containerRef: RefObject<HTMLDivElement | null>;
+  /** 방향키로 이웃을 걷는다 (2026-08-09, 갈래 B) — 캔버스의 `onKeyDown`. */
+  handleKeyDown: (event: ReactKeyboardEvent<HTMLCanvasElement>) => void;
 };
 
 export function useTopologyLoop(args: UseTopologyLoopArgs): UseTopologyLoopResult {
@@ -3348,8 +3356,100 @@ export function useTopologyLoop(args: UseTopologyLoopArgs): UseTopologyLoopResul
     lastActiveMsRef.current = lastInputMsRef.current;
   }, []);
 
+  /**
+   * 방향키로 **그래프 위를 걷는다** — 갈래 B (2026-08-09 소유자 확정).
+   *
+   * 방향키가 카메라를 미는 게 아니라 **이웃으로 옮겨 간다.** 어느 이웃인지
+   * 정하는 규칙은 `../interaction/keyboard-walk` 의 순수 함수에 있고(부채꼴
+   * ±60° · 투영 + 직교 벌점), 여기서는 그 결과를 이 캔버스의 상태에 잇는다.
+   *
+   * ## 왜 초점 링을 새로 만들지 않았나
+   *
+   * B 는 「초점이 움직이고 Enter 로 선택」이라고 그렸지만, **초점과 선택을
+   * 시각적으로 가르려면 인디고 마크가 하나 더 필요하다** — 그리고 이 앱에서
+   * 인디고는 이미 「선택됨」을 뜻한다. 같은 색이 두 뜻을 갖는 순간 도해가
+   * 깨지고, 그건 혼자 정할 규격이 아니다(`design.md` 「규격을 바꾸려면 「체계」를
+   * 부른다」). 그래서 방향키는 **선택을 옮긴다** — 클릭과 똑같은 뜻이고, 새 시각
+   * 언어가 0개다. 초점과 선택을 가르는 안은 규격 결정으로 남겨 둔다.
+   *
+   * ## 접힌 노드는 걷지 않는다
+   *
+   * 밀도 게이트가 접어 둔 서브트리는 화면에 없다(칩으로 대체된다). 거기로
+   * 옮기면 「눌렀는데 아무것도 안 보임」이 되므로 건너뛴다.
+   */
+  const handleKeyDown = useCallback((e: ReactKeyboardEvent<HTMLCanvasElement>) => {
+    const direction = walkDirectionForKey(e.key);
+    if (!direction) return;
+    if (e.metaKey || e.ctrlKey || e.altKey || e.shiftKey) return;
+
+    const world = worldRef.current;
+    const camera = cameraRef.current;
+    if (!world || !camera) return;
+
+    const clustered = clusteredIdsRef.current;
+    const visible = (id: string) => !clustered.has(id);
+
+    const currentId = focusedSlugRef.current;
+    let nextId: string | null = null;
+
+    if (currentId === null || !world.nodeById.has(currentId)) {
+      // 초점이 없으면 **지금 보고 있는 것**에서 시작한다. 카메라 x/y 가 곧 화면
+      // 중심의 월드 좌표다(`nodes()` 창구가 쓰는 것과 같은 식).
+      nextId = pickInitialFocus(
+        world.nodes.filter((n) => visible(n.id)).map((n) => ({ id: n.id, x: n.x, y: n.y })),
+        { x: camera.x.value, y: camera.y.value },
+      );
+    } else {
+      const from = world.nodeById.get(currentId);
+      if (!from) return;
+      const neighborIds = world.neighborMap.get(currentId);
+      if (!neighborIds || neighborIds.size === 0) {
+        // 이웃이 없는 노드에서 방향키를 누르면 아무 일도 없다. 그것이 사실이다.
+        e.preventDefault();
+        return;
+      }
+      const neighbors: { id: string; x: number; y: number }[] = [];
+      for (const id of neighborIds) {
+        if (!visible(id)) continue;
+        const node = world.nodeById.get(id);
+        if (node) neighbors.push({ id: node.id, x: node.x, y: node.y });
+      }
+      nextId = pickNeighborInDirection({ id: from.id, x: from.x, y: from.y }, neighbors, direction);
+    }
+
+    // 방향키는 우리 것이다 — 그 방향에 이웃이 없어도 페이지가 스크롤되면 안 된다.
+    e.preventDefault();
+    if (nextId === null) return;
+
+    const target = world.nodeById.get(nextId);
+    if (!target) return;
+    onSelect?.(nextId);
+
+    /*
+     * 카메라는 **따라만 온다** — 초점이 화면 밖으로 나가려 할 때만. 매번 가운데로
+     * 데려오면 걷는 동안 지도가 계속 미끄러져, 사용자가 자기가 어디 있는지 잃는다
+     * (Shneiderman 의 overview-first 를 스스로 깨는 셈이다).
+     */
+    const { width, height } = viewportRef.current;
+    if (width > 0 && height > 0) {
+      const scale = camera.scale.value;
+      const sx = (target.x - camera.x.value) * scale + width / 2;
+      const sy = (target.y - camera.y.value) * scale + height / 2;
+      const margin = Math.min(width, height) * 0.18;
+      const outside =
+        sx < margin || sx > width - margin || sy < margin || sy > height - margin;
+      if (outside) {
+        beginCameraTween({ tx: target.x, ty: target.y, tscale: scale });
+      }
+    }
+  }, [onSelect, beginCameraTween]);
+
   const wrappedHandlers = useMemo(
     () => ({
+      handleKeyDown: (e: ReactKeyboardEvent<HTMLCanvasElement>) => {
+        noteInput();
+        handleKeyDown(e);
+      },
       handlePointerDown: (e: ReactPointerEvent<HTMLCanvasElement>) => {
         noteInput();
         handlers.handlePointerDown(e);
@@ -3367,7 +3467,7 @@ export function useTopologyLoop(args: UseTopologyLoopArgs): UseTopologyLoopResul
         handlers.handleWheel(e);
       },
     }),
-    [handlers, noteInput],
+    [handlers, noteInput, handleKeyDown],
   );
 
   /**

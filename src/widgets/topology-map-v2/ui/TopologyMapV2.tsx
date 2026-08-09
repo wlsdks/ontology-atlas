@@ -349,7 +349,7 @@ export function TopologyMapV2(props: TopologyMapV2Props) {
 
   // `handleWheel` is wired natively (non-passive) inside `useTopologyLoop` —
   // see its own FIX comment — not bound here as a JSX prop.
-  const { canvasRef, containerRef, handlePointerDown, handlePointerMove, handlePointerUp, handlePointerCancel, handleContextMenu } =
+  const { canvasRef, containerRef, handlePointerDown, handlePointerMove, handlePointerUp, handlePointerCancel, handleContextMenu, handleKeyDown } =
     useTopologyLoop({
       nodes,
       edges,
@@ -418,10 +418,15 @@ export function TopologyMapV2(props: TopologyMapV2Props) {
          * 신호가 **0개**였다.
          *
          * `role="application"` 이 아니라 `group` 인 이유: `application` 은 AT 의
-         * 기본 키 처리를 통째로 뺏는데 이 캔버스는 자체 키보드 순회를 제공하지
-         * 않는다(대체 경로는 INDEX 패널·데이터시트). 뺏고 안 주는 것이 가장
-         * 나쁘다. `group` + 라벨 + 포커스 가능은 "여기 뭔가 있고 만질 수 있다"
-         * 까지만 정직하게 말한다.
+         * 기본 키 처리를 통째로 뺏는다. 예전 근거는 *"이 캔버스는 자체 키보드
+         * 순회를 제공하지 않으므로 뺏고 안 주는 것이 가장 나쁘다"* 였다.
+         *
+         * ⚠️ **그 전제는 2026-08-09 에 사실이 아니게 됐다** — 방향키로 이웃을 걷는
+         * 순회가 붙었다(`onKeyDown`). 그런데도 `group` 을 유지한다: 우리가 삼키는
+         * 키는 **네 방향키뿐**이고 나머지는 AT 에 그대로 남기는 것이, 키 처리
+         * 전부를 뺏는 것보다 잃는 게 적다. 스크린리더 읽기 모드가 방향키를 먼저
+         * 가져가는 환경이 관측되면 그때 `application` 을 다시 본다 — 실제 보조기술
+         * 로 재 보지 않고 미리 뺏지 않는다.
          *
          * 포커스 링은 **정지 프레임의 어포던스이기도 하다** — 모션 예산 0이다.
          */
@@ -451,6 +456,13 @@ export function TopologyMapV2(props: TopologyMapV2Props) {
         onPointerUp={handlePointerUp}
         onPointerCancel={handlePointerCancel}
         onContextMenu={handleContextMenu}
+        /**
+         * 방향키로 이웃을 걷는다 (2026-08-09, 갈래 B). 규칙은
+         * `../interaction/keyboard-walk`, 배선은 `use-topology-loop` 의
+         * `handleKeyDown`. 이것이 붙기 전까지 이 캔버스는 초점을 받을 수는 있어도
+         * **키로 할 수 있는 일이 0개**였다.
+         */
+        onKeyDown={handleKeyDown}
       />
       {/* S4 궤도 "전개" 버튼 — 캔버스 좌표 앵커(loop 가 매 프레임 transform 갱신).
           기본 숨김; 포커스 노드에 자식이 있고 영역 밖일 때만 노출. 방사형 메뉴
