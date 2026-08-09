@@ -18,6 +18,7 @@ import { formatDate } from "@/shared/lib/format-date";
 import { buildContainmentParents } from "@/shared/lib/ontology-tree";
 import { TopologyV2KindGlyph } from "@/shared/ui/topology-v2-kind-glyph";
 import { controlClass } from "@/shared/ui/control-class";
+import { PAGE_FRAME, PAGE_HEADER_ROW, PAGE_TITLE_ROW } from "@/shared/ui/page-frame";
 import { HexMark } from "@/shared/ui/hex-mark";
 import { AppSettingsMenu } from "@/widgets/app-settings-menu";
 import { useNavRailSettingsSlot } from "@/widgets/app-nav-rail";
@@ -42,7 +43,6 @@ import { findProjectDocInList } from "@/entities/docs-vault";
 // land from another slice; these stay local constants until that lands so
 // this page doesn't block on it or silently diverge from a half-migrated
 // token set.
-const PAGE_MAX_WIDTH = 1600;
 
 /*
  * ⚠️ **무게를 명시한다 — `<b>` 는 안 적으면 브라우저 기본 700 이다** (2026-08-05).
@@ -133,7 +133,7 @@ export function ProjectSelectorPage() {
         <div className="flex items-center justify-end gap-2 px-4 pt-3 md:px-6 lg:hidden">
           <AppSettingsMenu mode={dataSourceMode} triggerVariant="chrome-tile" />
         </div>
-        <div className="mx-auto px-5 py-6 md:px-10 md:py-10" style={{ maxWidth: PAGE_MAX_WIDTH }}>
+        <div className={`${PAGE_FRAME} pb-6 md:pb-10`}>
         {/*
          * ⚠️ **빵부스러기 줄을 통째로 뺐다** (2026-08-09, 소유자 지적 2건).
          *
@@ -148,22 +148,24 @@ export function ProjectSelectorPage() {
          *    만드는 대신 **한 곳에서만 센다**: 프로젝트 카드 안.
          */}
 
-        <header className="flex flex-wrap items-end gap-4">
-          <h1 className="inline-flex items-center gap-2 text-display font-[var(--font-weight-signature)] tracking-[var(--tracking-card)] text-[color:var(--color-text-primary)]">
-            <HexMark size={13} className="shrink-0 text-[color:var(--color-text-tertiary)]" />
-            {t("headerTitle")}
-          </h1>
-          <span className="flex items-baseline gap-1.5 pb-[3px] text-label tracking-[var(--tracking-caps-08)] text-[color:var(--color-text-tertiary)]">
-            <b className={numeralClass}>{census.projectCount}</b>{" "}
-            {t("censusLineProjectLabel", { count: census.projectCount })}
-            <span aria-hidden className="text-[color:var(--color-text-quaternary)]">·</span>
-            <b className={numeralClass}>{census.domainCount}</b>{" "}
-            {t("censusLineDomainsLabel", { count: census.domainCount })}
-          </span>
+        <header className={PAGE_HEADER_ROW}>
+          <div className={PAGE_TITLE_ROW}>
+            <h1 className="inline-flex items-center gap-2 text-display font-[var(--font-weight-signature)] tracking-[var(--tracking-card)] text-[color:var(--color-text-primary)]">
+              <HexMark size={13} className="shrink-0 text-[color:var(--color-text-tertiary)]" />
+              {t("headerTitle")}
+            </h1>
+            <span className="flex items-baseline gap-1.5 pb-[3px] text-label tracking-[var(--tracking-caps-08)] text-[color:var(--color-text-tertiary)]">
+              <b className={numeralClass}>{census.projectCount}</b>{" "}
+              {t("censusLineProjectLabel", { count: census.projectCount })}
+              <span aria-hidden className="text-[color:var(--color-text-quaternary)]">·</span>
+              <b className={numeralClass}>{census.domainCount}</b>{" "}
+              {t("censusLineDomainsLabel", { count: census.domainCount })}
+            </span>
+          </div>
           <Link
             href={newProjectHref}
             data-testid="project-selector-new-cta"
-            className={controlClass({ shape: "chip", size: "lg", tone: "accent", className: "ml-auto h-9 border-[color:var(--color-indigo-a50)] bg-[color:var(--topology-v2-panel-action-surface,var(--color-indigo-a06))] px-4 font-[var(--font-weight-signature)] hover:border-[color:var(--color-indigo-brand)] hover:bg-[color:var(--color-overlay-2)]" })}
+            className={controlClass({ shape: "chip", size: "lg", tone: "accent", className: "h-9 border-[color:var(--color-indigo-a50)] bg-[color:var(--topology-v2-panel-action-surface,var(--color-indigo-a06))] px-4 font-[var(--font-weight-signature)] hover:border-[color:var(--color-indigo-brand)] hover:bg-[color:var(--color-overlay-2)]" })}
           >
             {t("ctaNewProject")}
           </Link>

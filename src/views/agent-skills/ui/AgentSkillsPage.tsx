@@ -7,6 +7,7 @@ import { useSkillFolder } from "@/features/agent-skills-local";
 import { Button } from "@/shared/ui";
 import { fieldClass } from "@/shared/ui/control-class";
 import { HexMark } from "@/shared/ui/hex-mark";
+import { PAGE_FRAME, PAGE_HEADER_ROW, PAGE_TITLE_ROW } from "@/shared/ui/page-frame";
 
 import { FindingsPanel } from "./FindingsPanel";
 import { SkillDetail } from "./SkillDetail";
@@ -64,34 +65,33 @@ export function AgentSkillsPage() {
       // 안에서 처리한다 — 지도·문서함·기록과 같은 문법이다.
       className="flex h-full flex-col overflow-hidden bg-[color:var(--color-canvas)]"
     >
-      <div className="mx-auto flex min-h-0 w-full max-w-[1400px] flex-1 flex-col gap-3 px-4 pt-5 pb-4 sm:px-8">
+      <div className={`${PAGE_FRAME} flex min-h-0 flex-1 flex-col gap-3 pb-4 md:pb-6`}>
         {/* 머리는 **다른 목적지와 같은 문법**이다 (2026-08-09 소유자 지적:
             *"스킬 탭은 왜 혼자 … 다른 탭과 느낌이 다르고"*). 프로젝트·인사이트가
             쓰는 「육각 마크 + 제목 + 그 옆 인라인 수 + 아래 한 줄 설명」 그대로.
             수를 머리로 올렸으므로 **아래 요약 띠는 없앴다** — 같은 수를 두 곳에서
             세면 방금 프로젝트 화면에서 지운 그 혼란이 여기서 다시 난다. */}
-        <header className="flex flex-wrap items-end justify-between gap-3">
-          <div className="min-w-0">
-            <div className="flex flex-wrap items-end gap-x-3 gap-y-1">
-              <h1 className="inline-flex items-center gap-2 text-display font-[var(--font-weight-signature)] tracking-[var(--tracking-card)] text-[color:var(--color-text-primary)]">
-                <HexMark size={13} className="shrink-0 text-[color:var(--color-text-tertiary)]" />
-                {t("title")}
-              </h1>
-              {inventory ? (
-                <span
-                  data-testid="skills-census"
-                  className="flex items-baseline gap-1.5 pb-[3px] text-label tracking-[var(--tracking-caps-08)] text-[color:var(--color-text-tertiary)]"
-                >
-                  <b className={numeralClass}>{inventory.totals.skills}</b> {t("stat.skills")}
-                  <span aria-hidden className="text-[color:var(--color-text-quaternary)]">·</span>
-                  <b className={numeralClass}>{inventory.totals.executables}</b>{" "}
-                  {t("stat.executables")}
-                </span>
-              ) : null}
-            </div>
-            <p className="mt-1 text-body leading-prose text-[color:var(--color-text-secondary)]">
-              {t("subtitle")}
-            </p>
+        {/* 머리 구조도 **다른 목적지와 같게** 맞춘다 (2026-08-09).
+            제목과 인라인 수는 헤더 행의 **직계 자식**이어야 `items-end` 가 먹는다 —
+            여기만 제목+설명을 한 덩어리로 감싸고 있어서, 같은 `PAGE_HEADER_ROW` 를
+            입혔는데도 제목이 40px 에 섰다(나머지 둘은 48). 설명은 헤더 밖 아래로. */}
+        <header className={PAGE_HEADER_ROW}>
+          <div className={PAGE_TITLE_ROW}>
+            <h1 className="inline-flex items-center gap-2 text-display font-[var(--font-weight-signature)] tracking-[var(--tracking-card)] text-[color:var(--color-text-primary)]">
+              <HexMark size={13} className="shrink-0 text-[color:var(--color-text-tertiary)]" />
+              {t("title")}
+            </h1>
+            {inventory ? (
+              <span
+                data-testid="skills-census"
+                className="flex items-baseline gap-1.5 pb-[3px] text-label tracking-[var(--tracking-caps-08)] text-[color:var(--color-text-tertiary)]"
+              >
+                <b className={numeralClass}>{inventory.totals.skills}</b> {t("stat.skills")}
+                <span aria-hidden className="text-[color:var(--color-text-quaternary)]">·</span>
+                <b className={numeralClass}>{inventory.totals.executables}</b>{" "}
+                {t("stat.executables")}
+              </span>
+            ) : null}
           </div>
           <Button
             size="sm"
@@ -102,6 +102,9 @@ export function AgentSkillsPage() {
             {inventory ? t("openAnother") : t("openFolder")}
           </Button>
         </header>
+        <p className="text-body leading-prose text-[color:var(--color-text-secondary)]">
+          {t("subtitle")}
+        </p>
 
         {status === "unsupported" ? <Notice tone="muted">{t("unsupported")}</Notice> : null}
         {status === "error" ? (

@@ -84,6 +84,17 @@ const PRIMITIVE_EXPORT_FILES = new Set([
 ]);
 
 /**
+ * **값 자체가 규격인 파일** — 내보내는 이름이 아니라 그 문자열이 규격이다.
+ *
+ * `PRIMITIVE_EXPORT_FILES` 의 census 는 **이름만** 센다. 부품 파일에서는 그게
+ * 맞다(무엇을 내보내느냐가 계약이고 내부 구현은 자유다). 그런데 `page-frame.ts`
+ * 는 내용이 전부 값이라 이름 census 로는 `md:pt-12` → `md:pt-6` 같은 규격 변경이
+ * **하나도 안 잡힌다** — 실측으로 확인했고(빈 Map), 그 상태로 감시 목록에 넣으면
+ * 「지켜지는 척」만 하게 된다.
+ */
+const VALUE_EXPORT_FILES = new Set(['src/shared/ui/page-frame.ts']);
+
+/**
  * 정본 문서에서 트리거 파일 목록을 **유도한다**.
  *
  * 복제하면 두 벌이 되고, 두 벌이 있는데 게이트가 없으면 어긋나는 쪽이
@@ -135,6 +146,7 @@ export function censusFor(path, text) {
   if (path === 'app/globals.css') return cssRampCensus(text);
   if (path === 'src/shared/ui/control-class.ts') return variantVocabularyCensus(path, text);
   if (PRIMITIVE_EXPORT_FILES.has(path)) return exportedPrimitiveCensus(path, text);
+  if (VALUE_EXPORT_FILES.has(path)) return exportedValueCensus(path, text);
   if (path === SPEC_RULE_DOC) return scaleContractCensus(text);
   return new Map();
 }
@@ -203,6 +215,33 @@ function propertyName(node) {
 }
 
 /** export 되는 프리미티브 이름 집합 — 시스템이 제공하는 부품 목록. */
+/** 내보낸 문자열 상수의 **값**을 센다 — 이름이 같아도 값이 바뀌면 규격 변경이다. */
+function exportedValueCensus(path, source) {
+  const sourceFile = ts.createSourceFile(path, source, ts.ScriptTarget.Latest, true);
+  const census = new Map();
+
+  const visit = (node) => {
+    if (
+      ts.isVariableStatement(node) &&
+      (ts.getCombinedModifierFlags(node) & ts.ModifierFlags.Export) !== 0
+    ) {
+      for (const declaration of node.declarationList.declarations) {
+        if (!ts.isIdentifier(declaration.name)) continue;
+        const initializer = declaration.initializer;
+        // `as const` 를 벗긴다 — 규격은 안쪽 리터럴이다.
+        const literal =
+          initializer && ts.isAsExpression(initializer) ? initializer.expression : initializer;
+        if (literal && ts.isStringLiteral(literal)) {
+          census.set(`value ${declaration.name.text}`, literal.text);
+        }
+      }
+    }
+    ts.forEachChild(node, visit);
+  };
+  visit(sourceFile);
+  return census;
+}
+
 function exportedPrimitiveCensus(path, source) {
   const sourceFile = ts.createSourceFile(path, source, ts.ScriptTarget.Latest, true);
   const names = new Set();
