@@ -1344,7 +1344,7 @@
   "ontologyPages": {
     "insights": {
       "title": "Graph insights",
-      "subtitle": "Your whole folder at a glance — every number is computed automatically from the documents",
+      "subtitle": "Your whole folder at a glance. Every number is computed from the documents.",
       "audienceBanner": "This board is for the people and AI agents who tend the map.",
       "censusConcepts": "Concepts",
       "censusRelations": "Relations",
@@ -1355,7 +1355,7 @@
         "composition": "Inventory",
         "connections": "Connections",
         "boundaries": "Boundaries",
-        "freshness": "Freshness",
+        "freshness": "Recent changes",
         "structure": "Structure"
       },
       "tabCountTitle": {
@@ -1459,7 +1459,7 @@
       "repairQueueOpenOntology": "Concept doc",
       "repairQueueRestShow": "Show {count} more repair targets",
       "repairQueueRestHide": "Hide repair targets",
-      "domainFreshnessTitle": "Domain freshness",
+      "domainFreshnessTitle": "Recent changes by domain",
       "windowCaption": "Last {weeks}w · document updated date",
       "stale": "stale",
       "currentWeek": "This week",

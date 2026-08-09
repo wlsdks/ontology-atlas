@@ -1344,7 +1344,7 @@
   "ontologyPages": {
     "insights": {
       "title": "그래프 인사이트",
-      "subtitle": "내 폴더 전체를 한눈에 — 모든 숫자는 문서에서 자동 계산됩니다",
+      "subtitle": "내 폴더 전체를 한눈에 봐요. 모든 숫자는 문서에서 자동으로 계산돼요.",
       "audienceBanner": "이 화면은 지도를 가꾸는 사람과 AI 에이전트를 위한 정비 보드예요.",
       "censusConcepts": "개념",
       "censusRelations": "관계",
@@ -1355,7 +1355,7 @@
         "composition": "구성",
         "connections": "연결",
         "boundaries": "경계",
-        "freshness": "신선도",
+        "freshness": "최근 변화",
         "structure": "구조"
       },
       "tabCountTitle": {
@@ -1459,7 +1459,7 @@
       "repairQueueOpenOntology": "개념 문서",
       "repairQueueRestShow": "나머지 수리 대상 {count}개 보기",
       "repairQueueRestHide": "수리 대상 접기",
-      "domainFreshnessTitle": "도메인 신선도",
+      "domainFreshnessTitle": "도메인별 최근 변화",
       "windowCaption": "최근 {weeks}주 · 문서 갱신일",
       "stale": "한동안 그대로",
       "currentWeek": "이번 주",
