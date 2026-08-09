@@ -2,6 +2,7 @@
 
 import { useCallback, useState, type ReactNode } from "react";
 import { useRouter, usePathname } from "@/i18n/navigation";
+import { useDestinationShortcuts } from "@/shared/lib/use-destination-shortcuts";
 import {
   AppNavRail,
   NavRailShellProvider,
@@ -237,6 +238,20 @@ function AppNavRailSlot() {
   // 동작한다 — 데스크톱 정밀 카운트(`git_status.changedCount`)는 후속.
   const { changeset: gitChangeset } = useAtlasGitContext();
   const gitDirtyCount = gitChangeset.touchedNodeIds.size;
+
+  /**
+   * 목적지 이동 단축키(`G` 다음 한 글자) — **레일과 같은 자리**에서 배선한다.
+   *
+   * 레일이 그리는 목적지와 키보드가 데려가는 목적지가 어긋나면 안 되고, 그
+   * 어긋남을 막는 가장 싼 방법은 둘이 같은 `contextHrefs` 와 같은 `gateway`
+   * 판정을 보는 것이다. 관문 화면에서는 레일이 없으므로 키도 없다 — 화면에
+   * 입구가 없는데 키보드에만 있으면, 그건 발견할 수 없는 기능이다.
+   */
+  useDestinationShortcuts({
+    navigate: (href) => router.push(href),
+    disabled: gateway,
+    hrefOverrides: contextHrefs?.docs ? { docs: contextHrefs.docs } : undefined,
+  });
 
   // 2026-07-25 — 기록은 **목적지로 승격**됐고 이 유틸 타일은 흡수됐다. 입구가
   // 둘이면(타일 + 목적지) #65 와 같은 계열의 혼란이 재발한다. 미커밋 변경 수는
