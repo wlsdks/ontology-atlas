@@ -4,10 +4,10 @@
 > "온톨로지가 뭔지도 모르면서 만드는" 것을 막기 위한 근거 모음 — 무엇이 이미 있고, 우리가 그 위에서
 > *우리만의 것*을 어디서 어떻게 다르게 만드는지.
 >
-> **인용 규율:** 여기 실린 레퍼런스는 전부 공개 논문 / W3C 표준 / 공개 서적 / 공개 블로그이며,
-> 2026-06-01 자동 리서치 워크플로(6 facet × research→adversarial fact-check)에서 **각 출처의
-> 제목·저자·URL 을 독립 웹 확인(25/25 verified)** 한 것만 실었다. 링크/인용은 하되 본문을 베끼지 않는다.
-> 새 레퍼런스를 추가할 땐 같은 규율(공개·인용가능·웹확인)을 지킨다.
+> **인용 규율:** 여기 실린 레퍼런스는 전부 공개 논문 / W3C 표준 / 공개 서적 / 공개 블로그다.
+> 최초 세트는 2026-06-01, ontology-construction 보강 세트는 2026-08-09에 원문·공식 메타데이터를
+> 다시 열어 확인했다. 링크/인용은 하되 본문을 베끼지 않는다. 새 레퍼런스를 추가할 때도
+> 공개·인용 가능·직접 확인을 지키며, 검색 결과만 보고 읽지 않은 자료를 인용하지 않는다.
 
 This is a living document. When we make a design or feature decision, we should be able to point
 at *which* of these it descends from — or argue explicitly why we diverge.
@@ -23,16 +23,17 @@ The word is older than software (Aristotle's *categories of being*), but our usa
   conceptualization"* — a representational vocabulary (classes, relations, functions, objects) for a
   shared domain, designed so knowledge can be **shared and reused** across AI systems.
   → Our vault's markdown frontmatter *is* "an explicit specification of a conceptualization" of a
-  codebase; `project / domain / capability / element` + typed relations (`contains` / `depends_on` /
-  `evidence`) are exactly Gruber's classes-and-relations vocabulary. The name is earned, not marketing.
+  codebase; `project / domain / capability / element / document` + the relation vocabulary implemented
+  by the schema are our explicit concept-and-relation model. The name is earned by that meaning model,
+  not by pretending the files implement a standard they do not.
 - **Studer, Benjamins & Fensel (1998)** sharpened it to the canonical four-part definition:
   *"a **formal, explicit specification** of a **shared conceptualization**."* Word by word:
   *conceptualization* = an abstract model of phenomena; *explicit* = concept types and constraints
-  are defined, not implied; *formal* = machine-readable (excludes free prose); *shared* = consensual,
-  not private.
-  → This is the single most precise sentence for our framing. *Formal/explicit* = machine-parseable
-  frontmatter the MCP server reads; *shared* = the vault is the **shared memory between the developer
-  and their AI coding agent**. Each word maps to a property we actually have.
+  are defined, not implied; *formal* requires a representation with defined semantics, not merely text
+  that a parser can read; *shared* = held in common rather than private.
+  → Atlas is explicit, shared, and machine-parseable. Its current Markdown schema does **not** claim
+  model-theoretic semantics, logical completeness, or a DL reasoner, so “machine-readable = formal” is
+  not our claim. This distinction is a trust boundary, not a downgrade.
 - **Noy & McGuinness, "Ontology Development 101" (Stanford, 2001)** is the practical methodology:
   define classes + a hierarchy, define properties (slots) + constraints (facets), then instances —
   and crucially, *"ontology development is iterative, there is no single correct ontology, and the
@@ -43,18 +44,85 @@ The word is older than software (Aristotle's *categories of being*), but our usa
 
 The W3C Semantic Web stack is the standard reference frame:
 
-- **RDF (2014)** — knowledge as **subject-predicate-object triples** over a graph. Our every typed
-  relation (`A contains B`, `A depends_on B`) *is* a triple. We are a lightweight, git-native instance
-  of this well-established graph-data model, not an ad-hoc format.
+- **RDF (2014)** — RDF graphs are sets of subject-predicate-object triples whose terms are IRIs,
+  blank nodes, or datatyped literals. An Atlas edge can be *mapped* to a triple-like statement, but the
+  vault itself is not an RDF serialization and does not inherit RDF identity or entailment semantics.
 - **OWL 2 (2012)** — the **heavyweight** end: classes/properties/individuals with **description-logic
-  reasoning** (consistency checking, classification, inference). We adopt its vocabulary and graph
-  semantics but **deliberately do not** require a DL reasoner.
+  reasoning** (consistency checking, classification, inference) under an open-world assumption. Atlas
+  does not adopt OWL vocabulary, class/individual semantics, or inference. Missing Atlas evidence is
+  `unknown`/a visible gap according to our application contract, not an OWL entailment result.
 - **SKOS (2009)** — the **lightweight** end: `skos:Concept` + `broader`/`narrower`/`related`, a
-  "concept scheme over strict logic." This is the closest precedent to our posture.
+  “concept scheme over strict logic.” This is conceptual precedent, not a conformance claim.
+- **SHACL (2017)** — validates an RDF data graph against a separate shapes graph and returns a
+  validation report; it does not make OWL a closed-world schema language. Atlas's validator plays an
+  analogous product role over Markdown, but it is an Atlas schema validator, not a SHACL processor.
 
-> **Our position on the spectrum:** a pragmatic middle ground — *more structured than a flat tag list,
-> lighter than OWL.* Human-and-agent-readable markdown, no reasoner, no backend. SKOS-like in spirit,
-> RDF-shaped in data, Gruber/Studer in definition.
+> **Our position on the spectrum:** a lightweight, application-specific ontology and executable
+> meaning model — more structured than tags, deliberately less expressive than RDF/OWL. Human-and-agent
+> readable Markdown, typed application relations, deterministic validation/query, no reasoner, no
+> backend. “Graph-shaped” describes the implementation; it does not assert standards conformance.
+
+### Construction is a requirements-and-tests lifecycle, not noun extraction
+
+The literature converges on one discipline Atlas adopts: **start from the decisions the ontology must
+support, not from a directory tree or a list of nouns.** Grüninger & Fox make competency questions
+requirements and benchmarks; NeOn and LOT put requirements, reuse, implementation, publication, and
+maintenance in one lifecycle; SAMOD turns a motivating scenario, CQs, a glossary, exemplar data, and
+queries into a regression-carrying test case.
+
+Atlas translates that lineage into an eight-stage, local-first construction contract:
+
+1. **Purpose and authority** — name the product outcome, intended users/decisions, scope, non-goals,
+   domain-language owners, and sources before proposing concepts.
+2. **Requirements as competency questions** — derive CQs from motivating scenarios; give each an
+   audience, expected answer shape, required witness kinds, explicit unknown/refusal behavior, and
+   owner approval. An LLM may draft a CQ, but may not approve its own requirement.
+3. **Evidence inventory and reuse** — separate direct, triangulated, structural, conflicting, and
+   absent evidence; search the existing vault before minting a term. A folder name is not a domain and
+   an import edge is not automatically a business dependency.
+4. **Small conceptual slice** — propose the smallest project→domain→capability→element slice that
+   answers a coherent CQ set. Give every concept an intensional definition, includes/excludes, examples,
+   counterexamples, and uncertainty. Do not expand the schema to fill a template.
+5. **Semantic and structural tests** — reject circular definitions, duplicate siblings, category
+   mistakes, dangling references, predicate-direction mistakes, and unsupported `is_a`. Same domain,
+   naming similarity, or folder nesting alone never proves subsumption.
+6. **Functional and pragmatic tests** — replay CQs against exemplar facts and expected answers, then
+   test whether a source-hidden person/agent can make the intended decision with bounded calls and
+   supported claims. A valid file is not necessarily a useful ontology.
+7. **Human acceptance and provenance** — persist only the accepted write plan; keep source spans,
+   graph/source digests, rejected/partial CQs, and the responsible human decision visible. Receipts are
+   provenance, not truth certificates.
+8. **Regression and evolution** — after each accepted change, rerun prior CQs, graph/schema validation,
+   source currentness, impact, and handoff checks. Git records change; the ontology still has to explain
+   why the meaning changed and which requirement authorized it.
+
+Recent LLM evidence makes the human-sovereign boundary stronger, not weaker. LLM-generated ontology
+drafts can outperform novices in bounded studies, but quality remains variable; one 2025 CQ pipeline
+reported only about a quarter of outputs passing scope/relevance and fewer than half as unproblematic.
+The 2026 IDEA2 workflow therefore separates LLM elicitation from domain-expert validation and records
+the full CQ revision provenance. Atlas follows that separation: **agents accelerate elicitation,
+construction, and repair; people own meaning and accepted requirements; an independent evaluator owns
+qualification.**
+
+### Quality is a vector; no green total may hide a red dimension
+
+OQuaRE treats an ontology both as a software artifact and as a tool that must be useful. Atlas keeps
+that separation and does not reduce construction quality to node count, fan-out, compiler health, or a
+single confidence score.
+
+| Dimension | Atlas question | Required evidence | Fail-closed result |
+|---|---|---|---|
+| Semantic correctness | Are kind, boundary, and predicate meanings defensible? | definitions, includes/excludes, examples/counterexamples, relation rationale | reject or `review_required` |
+| Structural conformance | Does the Markdown graph satisfy its declared schema? | parser/compiler/validator results, resolved references | block invalid writes/finalization |
+| Functional adequacy | Can it answer the approved CQs? | expected answer + quantified witness coverage | `partial` / `visible-gap` |
+| Evidence and provenance | Can each business claim be traced to current sources and an authority? | citations, source spans/digests, approval and receipt lineage | unsupported / stale |
+| Pragmatic usefulness | Can each audience make the intended decision without hidden source access? | source-hidden task result, claim ledger, time/calls | unknown / not-qualified |
+| Maintainability | Can a change be reviewed and prior meaning retested? | git diff, impact path, CQ regression, source-currentness check | maintenance action required |
+| Interoperability honesty | Are exports and standards claims limited to what is implemented? | declared format/profile and round-trip contract | no RDF/OWL/SHACL conformance claim |
+
+Structural metrics and automated judges are diagnostic signals, not acceptance authorities. OOPS! and
+OntoClean can expose modeling pitfalls; LLM graph judges can help triage noisy extraction; none replaces
+domain requirements, exact witnesses, counterexamples, or independent task-level evaluation.
 
 ---
 
@@ -137,7 +205,8 @@ edges is well-established academic and industrial prior art.
   representation (markdown frontmatter; slug-keyed nodes) over an opaque binary index.
 - **CodeQL (GitHub/Semmle)** — "**treat code as data**": extract a relational DB of facts, query it to
   find patterns/variants. → The mainstream embodiment of "**query your codebase like a database**" —
-  precisely what we offer an agent via 23 MCP query tools (`find_path`, `find_backlinks`, …) instead of
+  precisely what we offer an agent via focused MCP graph queries (`find_path`, `find_backlinks`, …)
+  instead of
   re-reading files.
 - **tree-sitter (Brunsfeld et al.)** — incremental parsing → concrete syntax trees with an
   S-expression query system; the substrate beneath most code indexers (and our own CodeGraph index).
@@ -231,13 +300,14 @@ holds all of at once:
    stale source or an unresolved witness.
 
 **The honest framing:** *agent memory = a maintained knowledge graph* (Zep, Pan et al., the memory
-survey all agree). We take the most **inspectable, lowest-infrastructure** position in that space — a
-SKOS-light, RDF-shaped, Gruber-defined ontology that lives as markdown in the repo, maintained by the
-agent, read by the human as a live map. That is the thing to make excellent.
+survey all agree). We take the most **inspectable, lowest-infrastructure** position in that space — an
+application-specific, graph-shaped meaning model that lives as Markdown in the repo, maintained by the
+agent and judged by the human. It is informed by ontology engineering and Semantic Web standards
+without claiming RDF/OWL/SKOS conformance. That is the thing to make excellent.
 
 ---
 
-## References (all web-verified 2026-06-01 · 25/25)
+## References (public sources; initial set 2026-06-01, construction set 2026-08-09)
 
 **Ontology theory & standards**
 - Gruber, T. R. (1993). *A Translation Approach to Portable Ontology Specifications.* Knowledge Acquisition 5(2). DOI 10.1006/knac.1993.1008 · https://tomgruber.org/writing/ontolingua-kaj-1993.pdf — *peer-reviewed*
@@ -246,6 +316,16 @@ agent, read by the human as a live map. That is the thing to make excellent.
 - W3C (2014). *RDF 1.1 Concepts and Abstract Syntax.* https://www.w3.org/TR/rdf11-concepts/ — *W3C Recommendation*
 - W3C (2012). *OWL 2 Document Overview (2nd ed.).* https://www.w3.org/TR/owl2-overview/ — *W3C Recommendation*
 - W3C (2009). *SKOS Reference.* https://www.w3.org/TR/skos-reference/ — *W3C Recommendation*
+- Grüninger, M., & Fox, M. S. (1995). *Methodology for the Design and Evaluation of Ontologies.* IJCAI-95 Workshop on Basic Ontological Issues in Knowledge Sharing · https://eil.utoronto.ca/wp-content/uploads/enterprise-modelling/papers/gruninger-ijcai95.pdf — *peer-reviewed workshop paper*
+- Grüninger, M., & Fox, M. S. (1995). *The Role of Competency Questions in Enterprise Engineering.* DOI 10.1007/978-0-387-34847-6_3 — *peer-reviewed book chapter*
+- Guarino, N., & Welty, C. A. (2002). *Evaluating Ontological Decisions with OntoClean.* Communications of the ACM 45(2). DOI 10.1145/503124.503150 — *peer-reviewed*
+- Duque-Ramos, A., Fernández-Breis, J. T., Stevens, R., & Aussenac-Gilles, N. (2011). *OQuaRE: A SQuaRE-based Approach for Evaluating the Quality of Ontologies.* JRPIT 43(2) · https://www.cs.man.ac.uk/~stevensr/papers/OQuareProof.pdf — *peer-reviewed*
+- Poveda-Villalón, M., Gómez-Pérez, A., & Suárez-Figueroa, M. C. (2014). *OOPS! (OntOlogy Pitfall Scanner!): An On-line Tool for Ontology Evaluation.* IJSWIS 10(2). DOI 10.4018/IJSWIS.2014040102 — *peer-reviewed*
+- Peroni, S. (2016). *A Simplified Agile Methodology for Ontology Development.* OWLED-ORE 2016 · https://www.w3.org/community/owled/files/2016/11/OWLED-ORE-2016_paper_6.pdf — *peer-reviewed workshop paper*
+- Suárez-Figueroa, M. C., Gómez-Pérez, A., Motta, E., & Gangemi, A. (eds., 2012). *Ontology Engineering in a Networked World.* Springer · https://link.springer.com/book/10.1007/978-3-642-24794-1 — *peer-reviewed edited volume; NeOn methodology*
+- Poveda-Villalón, M., Fernández-Izquierdo, A., Fernández-López, M., & García-Castro, R. (2022). *LOT: An industrial oriented ontology engineering framework.* Engineering Applications of Artificial Intelligence 111. DOI 10.1016/j.engappai.2022.104755 — *peer-reviewed, open access*
+- W3C (2017). *Shapes Constraint Language (SHACL).* https://www.w3.org/TR/shacl/ — *W3C Recommendation*
+- W3C (2013). *PROV-O: The PROV Ontology.* https://www.w3.org/TR/prov-o/ — *W3C Recommendation*
 
 **Agent memory & LLM × KG**
 - Packer, C., et al. (2023). *MemGPT: Towards LLMs as Operating Systems.* arXiv:2310.08560 — *preprint*
@@ -257,6 +337,10 @@ agent, read by the human as a live map. That is the thing to make excellent.
 - Jin, B., et al. (2023/2024). *Large Language Models on Graphs: A Comprehensive Survey.* IEEE TKDE · arXiv:2312.02783 — *peer-reviewed*
 - Bian, H. (2025). *LLM-empowered Knowledge Graph Construction: A Survey.* arXiv:2510.20345 — *preprint*
 - (2025). *Towards Agentic RAG with Deep Reasoning: A Survey of RAG-Reasoning Systems.* arXiv:2507.09477 — *preprint*
+- Lippolis, A. S., et al. (2025). *Ontology Generation using Large Language Models.* arXiv:2503.05388 — *preprint; expert and structural evaluation*
+- Mahlaza, Z., Keet, C. M., Chahinian, N., & Haydar, B. (2025). *On the Feasibility of LLM-based Automated Generation and Filtering of Competency Questions for Ontologies.* LDK 2025 · https://aclanthology.org/2025.ldk-1.15/ — *peer-reviewed*
+- Huang, H., Chen, C., Sheng, Z., Li, Y., & Zhang, W. (2025). *Can LLMs be Good Graph Judge for Knowledge Graph Construction?* EMNLP 2025 · https://aclanthology.org/2025.emnlp-main.554/ — *peer-reviewed*
+- Watkiss-Leek, E., et al. (2026). *IDEA2: Expert-in-the-loop competency question elicitation for collaborative ontology engineering.* arXiv:2604.01344 — *preprint; two real-world scenarios*
 
 **Code knowledge graphs**
 - Yamaguchi, F., Golde, N., Arp, D., & Rieck, K. (2014). *Modeling and Discovering Vulnerabilities with Code Property Graphs.* IEEE S&P. https://ieeexplore.ieee.org/document/6956589/ — *peer-reviewed*

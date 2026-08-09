@@ -67,6 +67,22 @@ no-go를 고정한 뒤 한 항목씩 `Build and verify`한다. MCP/CLI 외부 �
 schema, Projects taxonomy를 바꾸는 항목은 진입 시 `/po-council`과
 `docs/DECISIONS.md` append가 필수다. UI/motion 항목은 PO 뒤 design gate를 통과한다.
 
+### 2026-08-09 ontology-construction 재조사 checkpoint
+
+`docs/FOUNDATIONS.md`의 최초 조사와 현재 구축 규칙을 공개 1차 문헌으로 다시
+대조했다. Grüninger–Fox(CQ), OntoClean(`is_a`/subsumption), OQuaRE(다차원 품질),
+SAMOD(시나리오+예시+질의 회귀), LOT/NeOn(요구→구현→유지보수), W3C
+RDF/OWL/SHACL/PROV 경계, 2025~2026 LLM ontology/CQ 연구를 직접 확인했다.
+
+**유지할 것**: observed/proposed/shared 분리, evidence tier, includes/excludes,
+typed CQ witness, 사람 승인, deterministic write plan, post-write validation,
+source-hidden handoff. **보강할 것**: 목적·authority부터 시작하는 전체 생명주기,
+CQ owner/revision provenance, examples+counterexamples, semantic/structural/functional/
+evidence/pragmatic/maintenance/interop를 분리한 판정, maker-independent qualification.
+**정정할 것**: machine-readable만으로 formal semantics라 부르지 않으며 Atlas를
+RDF/OWL/SKOS/SHACL 구현으로 소개하지 않는다. **적용 원칙**: LLM은 요구·모델의
+초안과 repair를 가속하지만 자기 산출물의 승인자나 단독 evaluator가 아니다.
+
 ### 상태와 순서
 
 상태는 `ready` · `in_progress` · `blocked(<ID>)` · `hold(<관측 조건>)` ·
@@ -75,19 +91,23 @@ schema, Projects taxonomy를 바꾸는 항목은 진입 시 `/po-council`과
 | 순서 | ID | 상태 | 한 문장 결과 |
 |---:|---|---|---|
 | 0 | D0 | done(D0 documentation commit) | 이 활성 트랙·결정·정본 포인터를 만들고 문서 gate를 통과했다. |
+| 0.5 | D1 | done(D1 research commit) | ontology construction 문헌·표준을 재검증하고 품질 계약과 우선순위를 보강했다. |
 | 1 | M1.1 | ready | proposal과 finalizer가 같은 evidence witness 의미를 쓴다. |
 | 2 | M1.2 | blocked(M1.1) | 앱이 실제 실행 가능한 agent config만 ready로 판정한다. |
-| 3 | O1.1 | blocked(M1.2) | Workshop은 근거 없는 `is_a`를 추천하지 않는다. |
-| 4 | M1.3 | blocked(O1.1) | quick-start 실패가 성공처럼 보이지 않는다. |
-| 5 | M1.4 | blocked(M1.3) | 현재 MCP inventory가 runtime registry 한 곳에서 파생된다. |
-| 6 | O1.2 | blocked(M1.4) | Atlas의 5-kind·관계·formal/RDF/OWL 경계를 정직하게 고정한다. |
-| 7 | O1.3 | blocked(O1.2) | C-level·직원·FDE·agent CQ 평가팩을 source-hidden으로 검증한다. |
-| 8 | K1.1 | blocked(O1.3) | Skill 번호 절차를 손실 없이 source-bound rail로 읽는다. |
-| 9 | K1.2 | blocked(K1.1) | 명시 문법만 branch/retry/stop/verify로 타입화한다. |
-| 10 | K1.3 | blocked(K1.1) | 승인된 process packet을 digest와 함께 handoff한다. |
-| 11 | U1.1 | blocked(O1.3) | Projects가 lifecycle 질문을 category/status로 두 번 묻지 않는다. |
-| 12 | U1.2 | blocked(O1.1) | spotlight가 bounded motion 뒤 idle로 돌아간다. |
-| gate | O1.4 | hold(3 products × independent trials) | missing primitive가 반복 입증될 때만 schema 확장을 상정한다. |
+| 3 | M1.3 | blocked(M1.2) | quick-start 실패가 성공처럼 보이지 않는다. |
+| 4 | M1.4 | blocked(M1.3) | 현재 MCP inventory가 runtime registry 한 곳에서 파생된다. |
+| 5 | O1.2 | blocked(M1.4) | Atlas의 5-kind·관계·formal/RDF/OWL 경계를 정직하게 고정한다. |
+| 6 | O1.1 | blocked(O1.2) | Workshop은 근거 없는 `is_a`를 추천하지 않는다. |
+| 7 | O1.3 | blocked(O1.1) | 요구·CQ·예시·반례·다차원 품질 평가 계약을 고정한다. |
+| 8 | M1.5 | blocked(O1.3) | MCP/skill/prompt가 같은 ontology-construction lifecycle을 강제한다. |
+| 9 | O1.5 | blocked(M1.5) | 세 낯선 제품에서 독립 construction qualification을 통과한다. |
+| 10 | U1.3 | blocked(O1.5) | 같은 ontology-construction을 기본/전문가 깊이로 쉽게 사용한다. |
+| 11 | K1.1 | blocked(U1.3) | Skill 번호 절차를 손실 없이 source-bound rail로 읽는다. |
+| 12 | K1.2 | blocked(K1.1) | 명시 문법만 branch/retry/stop/verify로 타입화한다. |
+| 13 | K1.3 | blocked(K1.1) | 승인된 process packet을 digest와 함께 handoff한다. |
+| 14 | U1.1 | blocked(O1.5) | Projects가 lifecycle 질문을 category/status로 두 번 묻지 않는다. |
+| 15 | U1.2 | blocked(O1.1) | spotlight가 bounded motion 뒤 idle로 돌아간다. |
+| gate | O1.4 | hold(O1.5 + repeated missing primitive) | missing primitive가 반복 입증될 때만 schema 확장을 상정한다. |
 
 ### 작업 카드와 완료 조건
 
@@ -98,6 +118,15 @@ schema, Projects taxonomy를 바꾸는 항목은 진입 시 `/po-council`과
 - **OUT**: 제품 코드, schema, MCP prompt, UI, 생성된 수를 사람이 직접 맞추는 gate.
 - **완료**: `pnpm docs:check`, `pnpm agents:check`, `pnpm checks:changed`가 green이고
   아래 증거 표에 HEAD·명령·결과를 기록한다.
+
+#### D1 — ontology-construction foundation 재검증
+
+- **IN**: 공개 1차 문헌 재검증, `FOUNDATIONS`의 formal/RDF/OWL/SHACL 경계 정정,
+  construction lifecycle·품질 벡터·human-sovereign evaluator 계약, 실행 순서 재정렬.
+- **OUT**: MCP/schema/skill/prompt/UI 구현, 새 kind, 표준 conformance 구현.
+- **완료**: 모든 새 출처를 실제로 열었거나 공식 원문 메타데이터로 확인하고,
+  실패한 fetch는 대체 원문으로 복구하거나 미사용으로 남긴다. 생성 docs와 문서 gate가
+  green이며 이 원장에 결과를 남긴다.
 
 #### M1.1 — proposal ↔ finalizer witness parity
 
@@ -127,17 +156,6 @@ schema, Projects taxonomy를 바꾸는 항목은 진입 시 `/po-council`과
 - **검증**: validator negative/positive corpus, fresh CLI init roundtrip, 새로 빌드한
   설치 앱에서 Settings 상태와 실제 MCP first contact 대조.
 
-#### O1.1 — relation-specific Studio recommendation
-
-- **사용자 변화**: 빈 UP socket은 관계 affordance로 남지만, sibling을 상위
-  개념으로 권하지 않는다. 추천은 근거와 preflight가 있을 때만 붙는다.
-- **범위**: Studio picker scoring/labels/create+enhance states와 relation-specific tests.
-- **금지**: `is_a` 자체 제거, compass bearing 변경, same-domain을 subsumption 근거로
-  사용, 추천을 다른 장식으로 숨기기.
-- **완료**: same-domain sibling negative fixture가 green이고, neutral/recommended의
-  접근성 이름과 시각 위계가 설치 앱에서 구분된다.
-- **검증**: TDD+gate-probe, focused Vitest, user walkthrough, design audit, rebuilt app.
-
 #### M1.3 — quick-start terminal truth
 
 - **사용자 변화**: scaffold 성공과 bootstrap/MCP 검증 실패를 구분해 읽고 바로
@@ -164,23 +182,83 @@ schema, Projects taxonomy를 바꾸는 항목은 진입 시 `/po-council`과
 
 - **사용자 변화**: 사람과 agent가 domain/capability/element/document를 같은
   판별법으로 만들고, Atlas가 하지 않는 RDF/OWL/process 추론을 기대하지 않는다.
-- **범위**: `FOUNDATIONS`·`PRODUCT-DIRECTION`의 단일 정의, 5-kind includes/excludes,
-  relation direction/domain/range/inverse/world-assumption table, bootstrap/field-trial/
-  MCP prompt의 progressive-disclosure pointer.
+- **범위**: `FOUNDATIONS`·`PRODUCT-DIRECTION`의 단일 정의, 5-kind includes/excludes와
+  examples/counterexamples, relation direction/domain/range/inverse/world-assumption table,
+  `is_a` subsumption 판별, bootstrap/field-trial/MCP prompt의 progressive-disclosure pointer.
 - **금지**: “machine-readable = formal semantics”, RDF/OWL conformance 암시,
   `evidence`처럼 실제 relation enum에 없는 관계 주장, 같은 규칙의 다중 사본.
 - **완료**: docs·schema templates·skill·prompt가 한 정본을 가리키며 adversarial
-  concept fixtures가 folder/team/workflow를 domain/capability로 자동 승격하지 않는다.
+  concept fixtures가 folder/team/workflow를 domain/capability로 자동 승격하지 않고,
+  same-domain·이름 유사성·폴더 중첩만으로 `is_a`를 만들지 않는다.
 
-#### O1.3 — audience CQ evaluation pack
+#### O1.1 — relation-specific Studio recommendation
+
+- **사용자 변화**: 빈 UP socket은 관계 affordance로 남지만, sibling을 상위
+  개념으로 권하지 않는다. 추천은 근거와 preflight가 있을 때만 붙는다.
+- **범위**: Studio picker scoring/labels/create+enhance states와 relation-specific tests.
+- **금지**: `is_a` 자체 제거, compass bearing 변경, same-domain을 subsumption 근거로
+  사용, 추천을 다른 장식으로 숨기기.
+- **완료**: same-domain sibling negative fixture가 green이고, neutral/recommended의
+  접근성 이름과 시각 위계가 설치 앱에서 구분된다.
+- **검증**: TDD+gate-probe, focused Vitest, user walkthrough, design audit, rebuilt app.
+
+#### O1.3 — requirements, CQ, quality evaluation contract
 
 - **사용자 변화**: C-level은 outcome/risk, 직원은 purpose/role/process gap, FDE는
   change/impact/verification, agent는 evidence/currentness/next safe action을 질문한다.
-- **범위**: 원자 CQ, quantifier, witness, refusal/unknown, source-hidden evaluator,
+- **범위**: motivating scenario, CQ owner/revision provenance, 원자 CQ, expected answer,
+  quantifier, witness, refusal/unknown, exemplar/counterexample, source-hidden evaluator,
+  semantic·structural·functional·evidence/provenance·pragmatic·maintenance·interop 분리 판정,
   시간·비용·citation/claim accuracy 분리 지표.
 - **금지**: 하나의 종합 점수, maker self-approval, node count를 품질로 사용.
-- **완료**: 세 낯선 제품에서 사용자군별 반복 trial 결과와 exact claim ledger를
-  남기고 실패 원인을 evidence·prompt·UI·missing primitive로 분류한다.
+- **완료**: 각 CQ에 사람 owner와 승인 이력이 있고, 한 판정축의 green이 다른 축의
+  red를 가리지 않는다. 세 낯선 제품 qualification의 fixture·expected answer·claim
+  ledger·판정 rubric이 재실행 가능하며 실패 원인을 evidence·prompt·UI·missing
+  primitive로 분류한다.
+
+#### M1.5 — ontology-construction lifecycle enforcement
+
+- **사용자 변화**: fresh agent가 디렉터리 명사 수집이 아니라 목적→CQ→evidence→작은
+  모델→semantic/structural test→source-hidden task→사람 승인→회귀 순서로 구축한다.
+- **범위**: 기존 `construction-spec.mjs`·node eligibility·write gate·bootstrap skill·
+  MCP instructions를 한 lifecycle로 파생하고, 단계별 artifact/diagnostic을 정의한다.
+- **진입 조건**: 공개 MCP/prompt 계약 변경이므로 `/po-council`과 decision append.
+- **금지**: 기존 3-layer 규칙 복제, LLM self-approval, UI로 실패 은폐, 새 kind 선행,
+  source path를 개념으로 승격, 모든 단계를 한 opaque confidence로 접기.
+- **완료**: Node 24 fresh fixture에서 단계 누락·authority 부재·unsupported `is_a`·
+  maker-only evaluation이 fail-closed이고, accepted write plan만 vault에 쓰이며 이전 CQ가
+  regression으로 재실행된다.
+
+#### O1.5 — three-product independent construction qualification
+
+- **사용자 변화**: FDE·직원·C-level·새 agent가 원본 소스 유무에 맞는 답과 다음 안전한
+  행동을 얻고, 모르는 것은 모른다고 말하는 ontology를 받는다.
+- **범위**: 서로 다른 세 낯선 제품, maker와 분리된 evaluator, source-visible construction
+  + source-hidden handoff, 사용자군별 CQ, exact claim ledger, 시간/호출/지원된 주장 측정.
+- **금지**: 같은 agent가 만들고 승인, node/edge 수로 합격, source-hidden evaluator에게
+  source를 몰래 제공, unsupported claim을 partial과 합쳐 평균내기.
+- **완료**: 세 제품 모두 structural valid에 더해 semantic·functional·evidence·pragmatic
+  판정을 각각 통과한다. 실패한 축은 그대로 red이며 K1/U1로 넘어가지 않는다.
+
+#### U1.3 — progressive-disclosure construction UX
+
+- **사용자 변화**: 기본 사용자는 목적 확인·애매한 의미 선택·최종 승인만 하면 되고,
+  evidence 탐색·CQ replay·validation·regression은 agent가 뒤에서 수행한다. 전문가 사용자는
+  같은 결과에서 CQ·witness·source span/digest·examples/counterexamples·relation rationale·
+  quality-axis 진단·write plan을 펼쳐 직접 검토하고 수정할 수 있다.
+- **제품 계약**: 기본/전문가는 서로 다른 ontology나 validator가 아니라 **같은 artifact의
+  두 disclosure depth**다. depth를 바꿔도 Markdown·receipt·판정 결과는 같으며, 기본 화면이
+  red/unknown/conflict나 사람 승인을 숨기지 않는다. 자동화는 조사·제안·검증까지이고 accepted
+  write plan 승인권은 사람에게 남는다.
+- **열린 설계 질문**: 전역 Settings의 지속 모드, 화면별 `세부 보기`, 역할별 remembered
+  preference 중 어느 것이 실제 전환 비용이 가장 낮은지는 구현 전에 `/design-directions`와
+  기본 사용자/전문가 walkthrough로 비교한다. `일반인`처럼 숙련도를 낙인찍는 UI label은
+  검증 없이 채택하지 않는다.
+- **금지**: 두 schema/두 truth, expert-only correctness, 기본 모드의 silent auto-accept,
+  중요한 failure를 초록 요약으로 접기, 디자인 시스템 밖 별도 component/token/ramp.
+- **완료**: 처음 온 사용자가 내부 용어를 배우지 않고 construction을 끝내고, 전문가는
+  raw Markdown으로 탈출하지 않아도 각 판정 근거를 추적·수정한다. 두 모드가 같은 receipt와
+  diff를 만들며, design audit·responsive sweep·재빌드한 설치 앱 Codex Computer Use가 green이다.
 
 #### K1.1 — Skills lossless happy-path rail
 
@@ -230,8 +308,8 @@ schema, Projects taxonomy를 바꾸는 항목은 진입 시 `/po-council`과
 
 #### O1.4 — schema expansion decision gate
 
-지금 실행하는 구현 항목이 아니다. 최소 세 낯선 제품/조직과 사용자군별 독립
-trial에서 현재 evidence와 개선된 prompt를 제공해도 동일 CQ가 반복 실패하고,
+지금 실행하는 구현 항목이 아니다. O1.5를 마친 뒤 최소 세 낯선 제품/조직과
+사용자군별 독립 trial에서 현재 evidence와 개선된 prompt를 제공해도 동일 CQ가 반복 실패하고,
 평가자가 원인을 outcome identity·actor-role participation·process ordering 같은
 **missing primitive**로 합의할 때만 `/po-council`에 상정한다. 첫 후보는 새 root
 kind 묶음이 아니라 qualified statement/provenance envelope다.
@@ -245,7 +323,7 @@ kind 묶음이 아니라 qualified statement/provenance envelope다.
 - OWL reasoner·일반 process ontology·outcome/role/process root kind 선행 추가.
 - spotlight always-on repaint, 전면 UI redesign, Orca 제거.
 - C-level Insights hierarchy: declared-knowledge walkthrough에서 같은 stall이 두 번
-  재현될 때 discovery로만 재등록한다.
+  재현될 때 discovery로만 재등록한다. U1.3의 기본/전문가 depth와 자동으로 합치지 않는다.
 
 ### 완료 증거 원장
 
@@ -255,6 +333,7 @@ kind 묶음이 아니라 qualified statement/provenance envelope다.
 | ID | commit/HEAD | RED | focused checks | runtime/handoff proof | residual risk |
 |---|---|---|---|---|---|
 | D0 | D0 documentation commit (this row) | stale plan authority + stale 33/14 current claim | `docs:check`; `agents:check`; `decisions:check`; `checks:changed` | docs-vault regenerated; generated surface confirmed 35 MCP (19 read + 16 write), 54 CLI | product code untouched; `AGENTS.md` has 606-byte cap headroom |
+| D1 | D1 research commit (this row) | `formal=machine-readable`, RDF/OWL conformance 암시, lifecycle·quality-vector 부재 | `docs-vault:check`; `docs:check`; `agents:check`; `decisions:check`; `checks:changed` | 고전 방법론·W3C 표준·2025~2026 LLM/CQ 1차 출처를 교차 검증하고 정본/순서를 보강 | 구현은 M1.1부터; lifecycle의 공개 계약 반영은 M1.5 PO Council 뒤 |
 
 ### 트랙 공통 종료 규칙
 
@@ -262,8 +341,11 @@ kind 묶음이 아니라 qualified statement/provenance envelope다.
 2. 구현자는 자기 변경을 승인하지 않는다. source-hidden 또는 built-surface 평가는
    maker와 분리한다.
 3. gate를 추가/수정하면 `/gate-probe`로 violation census→RED→GREEN을 증명한다.
-4. 시각 변경은 PO→design gate 순서를 지키고, desktop 영향은 설치 앱을 다시
-   빌드·실행해 Codex Computer Use와 필요한 motion/design instrument로 검증한다.
+4. UI는 관찰된 ontology workflow 문제를 해결할 때만 만든다. 시각 변경은 PO 뒤
+   구조 선택이 있으면 `/design-directions`, 구현 전 `/design-build`, 구현 후
+   `/design-audit` 순서를 지킨다. 값은 `DESIGN-SYSTEM.md`의 token/ramp와 기존 primitive가
+   소유하며 raw 병렬 규격을 만들지 않는다. 영향에 따라 responsive/motion/map instrument를
+   실행하고, desktop 영향은 설치 앱을 다시 빌드·실행해 Codex Computer Use로 검증한다.
 5. 마지막 명령은 항상 변경 경로를 넘긴 `pnpm checks:changed -- <paths...>`다.
 6. 완료 때 `docs/CHANGELOG.md`와 필요 시 dogfood ontology를 동기화하고, 이 표만
    상태 정본으로 갱신한다.

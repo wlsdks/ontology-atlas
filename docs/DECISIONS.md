@@ -42,6 +42,52 @@
 
 ---
 
+## 2026-08-09 — ontology construction quality를 Skills와 UI 확장보다 먼저 닫는다
+
+**소집**: 소유자 우선순위 확정 + 공개 1차 문헌 재검증을 포함한 단독 PO 패스
+(정식 PO Council 아님) · **트리거**: 소유자가 조사 결과가 부족하면 다시 조사해서라도
+“온톨로지를 제대로 구축하는 것”을 최우선으로 하고, 필요한 UI는 디자인 시스템에서만
+만들라고 명시했다. 기존 field trial은 구조적으로 valid한 vault도 source-hidden 답에서
+과장·미지원 주장을 남길 수 있음을 관측했다.
+**선행 결정 관계**: 2026-07-31 「팬아웃 상한이 아니라 노드 자격 게이트」의
+값·로직·텍스트 3-layer 방어, 2026-08-01 bridge 자격 조건, observed/proposed/shared와
+accepted-write-plan 경계는 **모두 유효**하다. 이번 결정은 그것을 폐기하거나 다시 정하지
+않고, 노드 자격 검사 앞뒤에 요구→검증→승인→회귀 생명주기를 붙인다.
+**루브릭**: 24/24 (치명적 0: 없음)
+**결정**: `docs/FOUNDATIONS.md`의 ontology-construction 계약을 다음 여덟 단계로 고정한다.
+① purpose·authority ② owner와 expected answer가 있는 competency question ③ evidence inventory와
+기존 개념 재사용 ④ examples/counterexamples가 있는 작은 conceptual slice ⑤ semantic·structural
+test ⑥ source-hidden functional·pragmatic task ⑦ 사람 acceptance와 provenance ⑧ prior-CQ regression과
+evolution. 품질은 semantic·structural·functional·evidence/provenance·pragmatic·maintenance·interop
+축을 따로 판정하며 하나의 합계나 node count가 red 축을 가리지 못한다. LLM은 요구와 모델의
+초안·repair를 가속하지만 자기 산출물의 승인자나 단독 evaluator가 아니다.
+**적용 규칙**: Atlas는 application-specific Markdown meaning model이며 RDF/OWL/SKOS/SHACL
+conformance나 OWL inference를 주장하지 않는다. 활성 순서는 MCP 신뢰 결함 M1.1~M1.4 →
+meta-model/is_a/evaluation O1.2·O1.1·O1.3 → lifecycle enforcement M1.5 → 세 제품 독립
+qualification O1.5다. M1.5는 공개 MCP/prompt 계약이므로 진입 때 정식 `/po-council`을 연다.
+O1.5에서 repeated missing primitive가 입증되기 전 새 kind·일반 process ontology를 만들지
+않는다. O1.5 뒤에는 같은 artifact를 기본/전문가 disclosure depth로 보여 주는 U1.3을 먼저
+검증한다. 기본은 목적 확인·애매한 의미 선택·최종 승인을 남기고 조사·CQ replay·validation을
+뒤에서 자동화하며, 전문가는 CQ·witness·반례·관계 이유·진단·write plan을 펼친다. 이는 두
+ontology나 두 validator가 아니며 어느 depth도 red/unknown/conflict와 사람 승인 단계를 숨기지
+않는다. 전역 Settings 모드와 화면별 `세부 보기` 중 무엇을 채택할지는 walkthrough 전에는
+정하지 않는다. Skills와 나머지 Projects/UI는 그 뒤에 두며, UI가 실제로 필요하면 PO→design direction(구조
+선택 시)→design build→design audit→affected instrument→재빌드한 설치 앱 Codex Computer Use
+증거 순서를 지키고 `DESIGN-SYSTEM.md` token/ramp·기존 primitive 밖 병렬 규격을 만들지 않는다.
+**서명**: owner — ontology-construction 우선순위와 디자인 시스템 경계 확정;
+Codex — 조사·실행 원장 반영
+
+**기록된 반대**: “기존 node eligibility·fan-out·validator가 이미 강하므로 lifecycle artifact와
+독립 qualification을 추가하면 first-five-minutes만 느려지고 구축량이 줄어든다.”
+**반증 조건**: 세 제품 trial에서 새 단계가 지원된 claim·CQ answer·source-hidden handoff를
+개선하지 않은 채 시간/호출만 늘리거나, 같은 정보를 여러 정본에 복제해 drift를 만든다.
+그 경우 성능이 없는 단계와 artifact를 합치거나 제거하되 human approval·분리 quality axis는
+유지한다.
+**재검토**: O1.5 세 제품 qualification이 끝나거나, 그 전에 위 반증 조건이 두 독립 trial에서
+같이 관측될 때.
+
+**상태**: 유효
+
 ## 2026-08-09 — 신뢰 계약을 먼저 닫고, 5-kind를 검증한 뒤 Skills process를 연다
 
 **소집**: 단독 PO 패스 + 서로 격리된 `gpt-5.6-sol` MCP/ontology/Skills 감사
