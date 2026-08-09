@@ -326,6 +326,7 @@ export function HomePage() {
   // 어권별 이름 입력(create composer) 계약의 '지금 화면 언어'.
   const activeLocale = useLocale();
   const tKinds = useTranslations('kinds');
+  const tTopologyKeyboardWalk = useTranslations('topologyWidgets.keyboardWalk');
   const tAgentConnect = useTranslations('agentConnect');
   // P2 결함⑤ — <lg 기록 chrome-tile 진입점의 aria-label/title (`atlasGit`
   // 네임스페이스는 이미 `GitStatusTile` 이 쓰는 것과 같은 키를 재사용한다).
@@ -463,6 +464,18 @@ export function HomePage() {
   // 상태. 사용자 vault 디스크 read 실패 / 권한 만료 등의 경우 배너 노출
   // + "다시 시도" 버튼으로 복구.
   const toast = useToast();
+
+  /**
+   * 방향키로 갈 곳이 없을 때 — 스스로 사라지는 안내 한 줄.
+   *
+   * 소유자: *"이동할 연관 노드가 없습니다 … 조금 보여지다 자동으로 사라지게"*.
+   * 새 표면을 만들지 않고 이미 있는 토스트를 쓴다 — 지도 위에 안내 상자를 새로
+   * 세우면 위치·토큰·모션을 다 정해야 하고 그건 혼자 정할 규격이 아니다.
+   * 연타 걸러 내기는 위젯이 한다(`shouldAnnounceDeadEnd`).
+   */
+  const handleWalkDeadEnd = useCallback(() => {
+    toast.show(tTopologyKeyboardWalk("deadEnd"), "info");
+  }, [toast, tTopologyKeyboardWalk]);
   const prefetchedProjectHrefsRef = useRef(new Set<string>());
   const preloadedImageUrlsRef = useRef(new Set<string>());
   const {
@@ -4552,6 +4565,11 @@ export function HomePage() {
                   <TopologyMapV2
                     nodes={topologyV2Graph.nodes}
                     edges={topologyV2Graph.edges}
+                    /* 방향키로 걸을 곳이 없을 때 **말해 준다** (2026-08-10, 소유자).
+                       눌렀는데 아무 반응이 없으면 사용자는 「고장」과 「그 방향에는
+                       없음」을 구별할 수 없다. 문구와 표면은 페이지가 소유한다 —
+                       위젯은 사건만 내보낸다(그 위젯은 프로바이더 없이 시험된다). */
+                    onWalkDeadEnd={handleWalkDeadEnd}
                     focus={{ selectedSlug: canvasSelectedSlug }}
                     /* 볼트를 세션 중에 갈아 끼우면(샘플 → 로컬) 지도가 직전
                        그래프의 카메라로 새 그래프를 그리던 결함을 닫는다. 값의

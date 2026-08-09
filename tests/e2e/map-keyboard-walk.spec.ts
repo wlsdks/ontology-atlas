@@ -224,6 +224,59 @@ test.describe("지도 키보드 걷기", () => {
   });
 
   /**
+   * **형제끼리 옆걸음이 된다** (2026-08-10, 소유자 실측 지적).
+   *
+   * 처음에는 후보가 「이어진 이웃」(엣지)뿐이었다. 그런데 지도 중앙의 프로젝트를
+   * 둘러싼 도메인들은 **서로 엣지가 없다** — 각자 프로젝트에만 붙어 있다. 그래서
+   * 상품에서 회원으로 옆걸음이 안 됐고, 링처럼 둘러선 화면에서 그건 고장으로
+   * 읽힌다(소유자: *"중앙에서 자유롭게 이동이 안 되던데?"*).
+   *
+   * 형제는 「같은 부모」라는 관계이므로 임의 공간 점프가 아니다.
+   */
+  test("한 부모 아래 형제끼리 방향키로 오갈 수 있다", async ({ page }) => {
+    await focusCanvas(page);
+    await page.keyboard.press("ArrowRight");
+    await expect.poll(() => selectedId(page), { timeout: 5_000 }).not.toBeNull();
+
+    const seen = new Set<string>();
+    for (const key of [...DIRECTIONS, ...DIRECTIONS]) {
+      const id = await selectedId(page);
+      if (id) seen.add(id);
+      await page.keyboard.press(key);
+      await page.waitForTimeout(200);
+    }
+    const last = await selectedId(page);
+    if (last) seen.add(last);
+    /*
+     * 볼트가 작으면 갈 곳이 적다 — 그래서 특정 노드 이름으로 못박지 않는다.
+     * 잠그는 성질은 **세 곳 이상을 돌아다녔다** 다.
+     */
+    expect(seen.size, `방향키로 돌아다닌 노드가 ${seen.size}곳뿐이다`).toBeGreaterThanOrEqual(3);
+  });
+
+  /**
+   * **갈 곳이 없으면 말해 준다** — 침묵이 아니라.
+   *
+   * 소유자가 실물에서 *"방향키가 되긴 하는데 노드를 자유롭게 이동하진 못하네?"*
+   * 라고 한 것이 이 시험이 존재하는 이유다. 아무 반응이 없으면 「고장」과
+   * 「그 방향에는 없음」을 구별할 수 없다.
+   */
+  test("그 방향에 갈 곳이 없으면 안내가 뜬다", async ({ page }) => {
+    await focusCanvas(page);
+    await page.keyboard.press("ArrowRight");
+    await expect.poll(() => selectedId(page), { timeout: 5_000 }).not.toBeNull();
+
+    for (let i = 0; i < 8; i += 1) {
+      await page.keyboard.press("ArrowLeft");
+      await page.waitForTimeout(150);
+    }
+    await expect(
+      page.getByText(/이어진 노드가 없어요/).first(),
+      "막다른 길인데 아무 말도 없다",
+    ).toBeVisible({ timeout: 4_000 });
+  });
+
+  /**
    * **방향키를 우리가 가져간다** — `preventDefault` 가 실제로 걸리나.
    *
    * ⚠️ 처음에는 `window.scrollY` 가 안 변하는지로 재려 했고, 그 시험은

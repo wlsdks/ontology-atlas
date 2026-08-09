@@ -82,8 +82,10 @@ import { updatePulses, type Pulse } from "../render/edge-fireflies";
 import {
   pickInitialFocus,
   pickNeighborInDirection,
+  shouldAnnounceDeadEnd,
   walkDirectionForKey,
 } from "../interaction/keyboard-walk";
+
 import { readTopologyV2TokensOrNull } from "./topology-read-tokens";
 import type { TopologyMapV2Props } from "./TopologyMapV2";
 import { applyForcePositions, buildTopologyWorld, recomputeWorldGeometry, type TopologyWorld, radiusForKind } from "./topology-world";
@@ -195,6 +197,8 @@ export interface UseTopologyLoopArgs {
     position: { x: number; y: number } | null,
   ) => void;
   onSelect?: (slug: string) => void;
+  /** 방향키를 눌렀는데 그 방향에 이어진 노드가 없을 때. 연타는 훅이 걸러 낸다. */
+  onWalkDeadEnd?: (() => void) | null;
   onPaneClick?: () => void;
   onVisibleCountChange?: (visible: number) => void;
   onGraphStatsChange?: (stats: { nodes: number; relations: number }) => void;
@@ -350,7 +354,7 @@ export type UseTopologyLoopResult = TopologyPointerHandlers & {
 };
 
 export function useTopologyLoop(args: UseTopologyLoopArgs): UseTopologyLoopResult {
-  const { nodes, edges, focusedSlug, emphasizedNeighborSlug = null, dataSourceKey = null, fitViewToken, spotlightFitToken = 0, relayoutToken, revealToken = 0, onSelectEdge, onHoverEdge, onSelect, onPaneClick, onVisibleCountChange, onGraphStatsChange, onZoomTierChange, onContextMenuNode, onContextMenuPane, agentFocusNodeId = null, spotlightIds = null, selectedEdge = null, expandedParents = EMPTY_EXPANDED_SET, onToggleCluster, onHoverCluster, realmRootId = null, onEnterRealm, realmEnterButtonRef, realmCaption = null, visitedTrail = EMPTY_TRAIL, trailLensActiveRef, clusterBarLabels = null, trailHoverNodeIdRef, tierReveal = DEFAULT_TIER_REVEAL, tourAnchorNodeId = null, tourAnchorRef, glyphSet = "geometric", canvasBackground = "dot", footprint = null, expand = DEFAULT_EXPAND, wheelIntent = "zoom", ambientSleepDelayMs } = args;
+  const { nodes, edges, focusedSlug, emphasizedNeighborSlug = null, dataSourceKey = null, fitViewToken, spotlightFitToken = 0, relayoutToken, revealToken = 0, onSelectEdge, onHoverEdge, onSelect, onPaneClick, onVisibleCountChange, onGraphStatsChange, onZoomTierChange, onContextMenuNode, onContextMenuPane, agentFocusNodeId = null, spotlightIds = null, selectedEdge = null, expandedParents = EMPTY_EXPANDED_SET, onToggleCluster, onHoverCluster, realmRootId = null, onEnterRealm, realmEnterButtonRef, realmCaption = null, visitedTrail = EMPTY_TRAIL, trailLensActiveRef, clusterBarLabels = null, trailHoverNodeIdRef, tierReveal = DEFAULT_TIER_REVEAL, tourAnchorNodeId = null, tourAnchorRef, glyphSet = "geometric", canvasBackground = "dot", footprint = null, expand = DEFAULT_EXPAND, wheelIntent = "zoom", ambientSleepDelayMs, onWalkDeadEnd = null } = args;
 
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
   const containerRef = useRef<HTMLDivElement | null>(null);
@@ -3357,6 +3361,40 @@ export function useTopologyLoop(args: UseTopologyLoopArgs): UseTopologyLoopResul
   }, []);
 
   /**
+   * 막다른 길을 말해 주는 자리 — **침묵이 문제였다.**
+   *
+   * 소유자가 실제로 써 보고 *"방향키가 되긴 하는데 노드를 자유롭게 이동하진 못하네?"*
+   * 라고 했다. 그 방향에 이어진 노드가 없을 때 **아무 일도 안 하도록** 만들어 둔
+   * 것이 원인이다 — 「감싸 돌지 않는다」는 판단은 그대로 두고(반대편으로 뛰면
+   * 사용자가 자기 위치를 잃는다), 대신 **왜 안 움직이는지 말한다.** 눌렀는데 반응이
+   * 없으면 사용자는 「고장」과 「그 방향에는 없음」을 구별할 수 없다.
+   *
+   * **새 표면을 만들지 않는다** — 이 앱에는 이미 토스트가 있고 레이아웃 전체에
+   * 마운트돼 있다. 지도 위에 안내 상자를 새로 세우면 위치·토큰·모션을 다 정해야
+   * 하고, 그건 혼자 정할 규격이 아니다. 토스트는 스스로 사라지고
+   * (소유자: *"조금 보여지다 자동으로 사라지게"*) 보조기술에도 읽힌다.
+   *
+   * ⚠️ **문구와 토스트는 이 위젯의 것이 아니다.** 여기서 `useTranslations` 를
+   * 불렀다가 지도 컴포넌트 시험 5개가 깨졌다 — 그 시험은 프로바이더 없이 렌더한다.
+   * 그게 옳다: 이 위젯은 이미 `canvasLabel` 처럼 **문구를 prop 으로 받는다**.
+   * 그래서 사건만 밖으로 내보내고(`onWalkDeadEnd`), 무엇을 어떻게 보여 줄지는
+   * 페이지가 정한다.
+   */
+  const onWalkDeadEndRef = useRef(onWalkDeadEnd);
+  useEffect(() => {
+    onWalkDeadEndRef.current = onWalkDeadEnd;
+  });
+  /** 마지막으로 알린 시각 — 방향키를 누르고 있을 때 같은 말을 쏟지 않게. */
+  const deadEndAtRef = useRef<number | null>(null);
+
+  const announceDeadEnd = useCallback(() => {
+    const now = performance.now();
+    if (!shouldAnnounceDeadEnd(deadEndAtRef.current, now)) return;
+    deadEndAtRef.current = now;
+    onWalkDeadEndRef.current?.();
+  }, []);
+
+  /**
    * 방향키로 **그래프 위를 걷는다** — 갈래 B (2026-08-09 소유자 확정).
    *
    * 방향키가 카메라를 미는 게 아니라 **이웃으로 옮겨 간다.** 어느 이웃인지
@@ -3402,24 +3440,45 @@ export function useTopologyLoop(args: UseTopologyLoopArgs): UseTopologyLoopResul
     } else {
       const from = world.nodeById.get(currentId);
       if (!from) return;
-      const neighborIds = world.neighborMap.get(currentId);
-      if (!neighborIds || neighborIds.size === 0) {
-        // 이웃이 없는 노드에서 방향키를 누르면 아무 일도 없다. 그것이 사실이다.
-        e.preventDefault();
-        return;
+      /*
+       * 갈 수 있는 곳 = **이어진 이웃 + 형제**.
+       *
+       * ⚠️ 처음에는 이웃(엣지)만 후보였고, 소유자가 실물에서 막혔다 —
+       * *"1depth 에서는 자기들끼리 자유롭게 이동 가능하게는 해야할듯? 중앙에서
+       * 자유롭게 이동이 안 되던데?"*. 지도 중앙의 프로젝트를 둘러싼 도메인 아홉은
+       * **서로 엣지가 없다**(각자 프로젝트에만 붙어 있다). 그래서 상품에서 회원으로
+       * 옆걸음이 안 됐고, 링처럼 둘러선 화면에서 그건 고장으로 읽힌다.
+       *
+       * **임의 공간 점프를 허용한 것이 아니다.** 형제는 「같은 부모」라는 타입 있는
+       * 관계이고, 그것이 화면에서 링을 이루는 이유 자체다. 부모가 없는 뿌리끼리도
+       * 형제로 본다(프로젝트가 둘 이상인 볼트).
+       */
+      const candidateIds = new Set<string>(world.neighborMap.get(currentId) ?? []);
+      for (const node of world.nodes) {
+        if (node.id === currentId) continue;
+        if (node.parentId === from.parentId) candidateIds.add(node.id);
       }
-      const neighbors: { id: string; x: number; y: number }[] = [];
-      for (const id of neighborIds) {
+      const candidates: { id: string; x: number; y: number }[] = [];
+      for (const id of candidateIds) {
         if (!visible(id)) continue;
         const node = world.nodeById.get(id);
-        if (node) neighbors.push({ id: node.id, x: node.x, y: node.y });
+        if (node) candidates.push({ id: node.id, x: node.x, y: node.y });
       }
-      nextId = pickNeighborInDirection({ id: from.id, x: from.x, y: from.y }, neighbors, direction);
+      if (candidates.length === 0) {
+        // 갈 곳이 아예 없는 노드. 아무 일도 안 하는 대신 왜 그런지 말한다.
+        e.preventDefault();
+        announceDeadEnd();
+        return;
+      }
+      nextId = pickNeighborInDirection({ id: from.id, x: from.x, y: from.y }, candidates, direction);
     }
 
     // 방향키는 우리 것이다 — 그 방향에 이웃이 없어도 페이지가 스크롤되면 안 된다.
     e.preventDefault();
-    if (nextId === null) return;
+    if (nextId === null) {
+      announceDeadEnd();
+      return;
+    }
 
     const target = world.nodeById.get(nextId);
     if (!target) return;
@@ -3442,7 +3501,7 @@ export function useTopologyLoop(args: UseTopologyLoopArgs): UseTopologyLoopResul
         beginCameraTween({ tx: target.x, ty: target.y, tscale: scale });
       }
     }
-  }, [onSelect, beginCameraTween]);
+  }, [onSelect, beginCameraTween, announceDeadEnd]);
 
   const wrappedHandlers = useMemo(
     () => ({
