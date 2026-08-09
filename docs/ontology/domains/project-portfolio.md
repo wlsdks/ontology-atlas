@@ -14,7 +14,7 @@ created_by: human
 하나의 볼트 안에서 여러 project 노드를 목록화·조회·편집·공유하는 관리 영역.
 
 ## 근거
-- AGENTS.md — Project overview (project/domain/capability/element kind 위계, 다중 프로젝트 컨테인먼트)
+- AGENTS.md: Project overview (project/domain/capability/element kind 위계, 다중 프로젝트 컨테인먼트)
 - src/features/project-edit, project-quick-edit, project-share (구현 증거)
 
 ## 포함 / 제외
@@ -22,4 +22,4 @@ created_by: human
 - 제외: 프로젝트가 담는 도메인/능력 자체의 의미(그건 각자 도메인)
 
 ## 확신도
-medium (0.7) — AGENTS.md 근거는 간접적, 주로 폴더 증거에 의존. 재검토 권장
+medium (0.7): AGENTS.md 근거는 간접적, 주로 폴더 증거에 의존. 재검토 권장

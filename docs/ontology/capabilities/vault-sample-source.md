@@ -14,7 +14,7 @@ created_by: "agent:unknown"
 
 ## 근거
 - src/features/vault-sample-source (구현 증거)
-- README.md — "The installed macOS app reading the example vault in files in a folder"
+- README.md: "The installed macOS app reading the example vault in files in a folder"
 
 ## 확신도
 medium-high (0.8)

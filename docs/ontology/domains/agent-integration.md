@@ -11,12 +11,12 @@ created_by: human
 ---
 
 ## 정의
-AI 코딩 에이전트(Claude Code, Codex, Cursor)와 개발자가 사람과 같은 온톨로지 볼트를 읽고 쓸 수 있게 하는 표면들 — MCP 서버, 터미널 CLI, 앱 내 connect 플로우.
+AI 코딩 에이전트(Claude Code, Codex, Cursor)와 개발자가 사람과 같은 온톨로지 볼트를 읽고 쓸 수 있게 하는 표면들: MCP 서버, 터미널 CLI, 앱 내 connect 플로우.
 
 ## 근거
-- README.md — "Your agent reads and maintains it over MCP... one button writes your agent's config and proves the connection."
-- mcp/src/index.js — 33개 MCP 도구 registry와 `finalize_project_meaning`, `agent_brief.meaningAssessment` 결합 경계
-- cli/src/commands/agent-brief.mjs — 52개 CLI 명령 안에서 `--project`를 MCP `agent_brief.project`로 전달
+- README.md: "Your agent reads and maintains it over MCP... one button writes your agent's config and proves the connection."
+- mcp/src/index.js: 33개 MCP 도구 registry와 `finalize_project_meaning`, `agent_brief.meaningAssessment` 결합 경계
+- cli/src/commands/agent-brief.mjs: 52개 CLI 명령 안에서 `--project`를 MCP `agent_brief.project`로 전달
 
 ## 포함 / 제외
 - 포함: MCP 도구 33종(읽기 19 · 쓰기 14, `mcp/`), CLI 명령 52종(`cli/`), 앱 내 connect 버튼, 클라이언트 config 작성
@@ -35,4 +35,4 @@ CLI `agent-brief --project <slug>`는 여러 project의 결과를 합치는 옵�
 하나의 project containment tree를 명시해 같은 MCP `agent_brief`를 읽는 선택자다.
 
 ## 확신도
-high (0.9) — MCP registry와 CLI integration test가 현재 계약을 직접 검증
+high (0.9): MCP registry와 CLI integration test가 현재 계약을 직접 검증

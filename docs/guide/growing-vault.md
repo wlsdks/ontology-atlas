@@ -21,15 +21,15 @@ node cli/src/index.mjs similar "지도 렌더링" my-vault
 ```
 
 ```
-similar to: 지도 렌더링 — 3 matches
+similar to: 지도 렌더링: 3 matches
 
-  1  0.158  element     elements/topology-map-v2      — Topology Map V2
+  1  0.158  element     elements/topology-map-v2: Topology Map V2
        signals: title 0.09 · slug 0.07
-  2  0.087  domain      domains/topology-navigation   — Topology Map Navigation
+  2  0.087  domain      domains/topology-navigation: Topology Map Navigation
 ```
 
 이미 있으면 새로 만들지 말고 **있는 것을 고칩니다.** MCP 로 붙은 에이전트는 이걸
-따로 부를 필요도 없습니다 — 제목이 비슷한 노드가 이미 있으면 `add_concept` 응답에
+따로 부를 필요도 없습니다. 제목이 비슷한 노드가 이미 있으면 `add_concept` 응답에
 경고가 같이 옵니다.
 
 이미 둘로 갈라진 뒤라면 접습니다.
@@ -42,7 +42,7 @@ node cli/src/index.mjs merge capabilities/guided-tour capabilities/topology-brow
 dry-run  capabilities/guided-tour → capabilities/topology-browsing
          (1 file(s) would change, capabilities/guided-tour.md will be deleted)
 
-  domains/onboarding-and-shell — Onboarding, Distribution & App Shell
+  domains/onboarding-and-shell: Onboarding, Distribution & App Shell
     capabilities changed
 
 re-run with --confirm to apply.
@@ -56,7 +56,7 @@ re-run with --confirm to apply.
 `merged_uids`로 흡수됩니다. 예전 UID를 저장한 에이전트 핸드오프도 같은
 노드를 찾습니다.
 
-## 2. 이름 바꾸기 — 백링크는 알아서 따라온다
+## 2. 이름 바꾸기: 백링크는 알아서 따라온다
 
 이름을 바꿀 때 무서운 건 그 이름을 부르던 곳들입니다. 손으로 고치면 반드시
 하나를 빠뜨립니다.
@@ -68,7 +68,7 @@ node cli/src/index.mjs rename capabilities/guided-tour capabilities/tour --vault
 ```
 dry-run  capabilities/guided-tour → capabilities/tour (1 file(s) would change)
 
-  domains/onboarding-and-shell — Onboarding, Distribution & App Shell
+  domains/onboarding-and-shell: Onboarding, Distribution & App Shell
     capabilities changed
 
 re-run with --confirm to apply.
@@ -89,7 +89,7 @@ node cli/src/index.mjs blast-radius capabilities/mcp-server my-vault
 `blast-radius` 는 이렇게 답합니다.
 
 ```
-capabilities/mcp-server — blast radius (depth 2, incoming)
+capabilities/mcp-server: blast radius (depth 2, incoming)
   risk medium · 6 노드 · 9 관계 · 0 cross-domain
 
 affected by kind
@@ -105,7 +105,7 @@ node cli/src/index.mjs maintenance my-vault
 ```
 
 ```
-maintenance plan — 8 remaining / 8 filtered / 8 total
+maintenance plan: 8 remaining / 8 filtered / 8 total
 summary: compileIssues:0, cycles:0, canonicalize:0, dangling:0, relations:0
 buckets: phase review:8 · severity info:8 · kind capability_without_evidence:8
 
@@ -121,7 +121,7 @@ buckets: phase review:8 · severity info:8 · kind capability_without_evidence:8
 node cli/src/index.mjs maintenance my-vault --kinds capability_without_evidence --limit 5
 ```
 
-자라날 자리를 보고 싶으면 `growth` 가 짝입니다 — 이쪽은 고장이 아니라 **비어
+자라날 자리를 보고 싶으면 `growth` 가 짝입니다. 이쪽은 고장이 아니라 **비어
 있는 연결**을 냅니다.
 
 ## 4. 전체 검진
@@ -131,7 +131,7 @@ node cli/src/index.mjs health my-vault
 ```
 
 ```
-vault health healthy — 70 노드 · 152 관계
+vault health healthy: 70 노드 · 152 관계
 
   ✓ compile_issues            Compiled ontology artifact has no compiler issues.
   ✓ unresolved_edges          Every internal edge resolves to a known node.
@@ -152,13 +152,13 @@ vault health healthy — 70 노드 · 152 관계
 | `components` | 그래프가 섬으로 쪼개졌는가 |
 | `overview` | 지금 볼트가 어떤 모양인가 |
 
-`health` 는 **코드 경로까지 대조**합니다 — `validate` 는 frontmatter 만 봅니다.
+`health` 는 **코드 경로까지 대조**합니다. `validate` 는 frontmatter 만 봅니다.
 근거로 적어 둔 파일이 리팩터링으로 사라졌으면 `health` 가 잡습니다.
 
 ## 5. 여럿이 같이 쓰기
 
 **볼트는 저장소 안에 있고, 진실원은 파일입니다.** 그래서 협업 기제가 따로 필요
-없습니다 — 이미 쓰고 있는 그것입니다.
+없습니다. 이미 쓰고 있는 그것입니다.
 
 - 개념 변경은 `.md` 한 줄 diff 로 보입니다. 코드 리뷰에서 같이 봅니다.
 - 충돌 해소는 텍스트 충돌 해소입니다. 특별한 도구가 없습니다.
@@ -182,7 +182,7 @@ node cli/src/index.mjs snapshot my-vault --dry-run
 볼트 폴더 범위의 커밋을 의미 요약과 함께 만듭니다. 바뀐 게 없으면 「스냅샷할 변경
 없음」 이라고 말하고 끝냅니다.
 
-## 6. 동시에 고칠 때 — 조용한 덮어쓰기 막기
+## 6. 동시에 고칠 때: 조용한 덮어쓰기 막기
 
 사람이 편집기에서 파일을 고치는 동안 에이전트가 같은 파일을 쓰면, 한쪽이 소리
 없이 사라질 수 있습니다. 쓰기 도구들이 이걸 막는 장치를 갖고 있습니다.
@@ -191,7 +191,7 @@ node cli/src/index.mjs snapshot my-vault --dry-run
 2. 쓸 때 그 값을 `expected_mtime` 으로 넘깁니다.
 3. 그 사이 파일이 바뀌었으면 **덮어쓰지 않고 충돌 오류를 냅니다.**
 
-에이전트에게 볼트를 맡길 생각이라면 이 한 가지는 알고 계시는 편이 좋습니다 —
+에이전트에게 볼트를 맡길 생각이라면 이 한 가지는 알고 계시는 편이 좋습니다:
 "에이전트가 내 편집을 날렸다" 는 사고가 이 값 하나로 막힙니다.
 
 ## 7. 지우기
@@ -211,7 +211,7 @@ node cli/src/index.mjs delete elements/old-thing --vault my-vault
 
 ## 정리
 
-- 중복이 1번 고장입니다 — 만들기 전에 `similar`, 이미 갈라졌으면 `merge`.
+- 중복이 1번 고장입니다. 만들기 전에 `similar`, 이미 갈라졌으면 `merge`.
 - `rename` 은 **백링크를 전부 다시 씁니다.** 손으로 고치지 마십시오.
 - `uid`는 영구 정체성, `slug`는 바꿀 수 있는 현재 주소입니다.
 - `rename` · `merge` · `delete` · `snapshot` 은 **dry-run 이 기본**입니다.

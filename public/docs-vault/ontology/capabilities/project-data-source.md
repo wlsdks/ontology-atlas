@@ -15,4 +15,4 @@ created_by: "agent:unknown"
 - src/features/project-data-source (구현 증거만)
 
 ## 확신도
-low-medium (0.6) — 폴더 증거만
+low-medium (0.6): 폴더 증거만

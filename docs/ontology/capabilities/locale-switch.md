@@ -14,7 +14,7 @@ next-intl 기반 [locale] 프리픽스 라우팅으로 UI 로케일을 전환하
 
 ## 근거
 - src/features/locale-switch (구현 증거)
-- AGENTS.md — Routes ("Seventeen routes, all [locale] prefixed by next-intl")
+- AGENTS.md: Routes ("Seventeen routes, all [locale] prefixed by next-intl")
 
 ## 확신도
 medium-high (0.8)

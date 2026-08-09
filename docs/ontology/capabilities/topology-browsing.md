@@ -13,7 +13,7 @@ created_by: "agent:unknown"
 
 ## 근거
 - src/widgets/topology-map-v2, topology-controls, global-search (구현 증거)
-- AGENTS.md — Tech stack ("The graph renderer is ours — a custom canvas-2D engine (topology-map-v2)")
+- AGENTS.md: Tech stack ("The graph renderer is ours: a custom canvas-2D engine (topology-map-v2)")
 
 ## 확신도
-medium-high (0.85) — capability 후보가 features/ 폴더가 아닌 widgets/ 증거로만 뒷받침됨을 명시
+medium-high (0.85): capability 후보가 features/ 폴더가 아닌 widgets/ 증거로만 뒷받침됨을 명시
