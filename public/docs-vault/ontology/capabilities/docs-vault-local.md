@@ -15,4 +15,4 @@ File System Access API로 로컬 마크다운 폴더를 선택·마운트해 실
 - src/features/docs-vault-local (구현 증거)
 
 ## 확신도
-high (0.9) — local-first 원칙 문서와 정합
+high (0.9): local-first 원칙 문서와 정합

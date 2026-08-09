@@ -55,13 +55,13 @@ display_en: Terminal Commands
 
 ## 구현 근거
 
-- `cli/src/index.mjs` · `cli/src/lib/cli-commands.mjs` — 명령 dispatcher와 registry
-- `cli/src/commands/` — 각 명령 구현
-- `cli/src/lib/mcp-call.mjs` — MCP와 같은 구조화 결과를 쓰는 graph 명령 경계
-- `scripts/smoke-packed-cli.mjs` — 패킹된 설치 환경의 end-to-end smoke
-- `cli/README.md` — 현재 명령·옵션의 상세 단일 진실원
+- `cli/src/index.mjs` · `cli/src/lib/cli-commands.mjs`: 명령 dispatcher와 registry
+- `cli/src/commands/`: 각 명령 구현
+- `cli/src/lib/mcp-call.mjs`: MCP와 같은 구조화 결과를 쓰는 graph 명령 경계
+- `scripts/smoke-packed-cli.mjs`: 패킹된 설치 환경의 end-to-end smoke
+- `cli/README.md`: 현재 명령·옵션의 상세 단일 진실원
 
 ## 확신도
 
-high (0.95) — local/integration/packed CLI suite와 MCP parity contract가 같은 vault
+high (0.95): local/integration/packed CLI suite와 MCP parity contract가 같은 vault
 규격과 결과 shape를 검증한다.

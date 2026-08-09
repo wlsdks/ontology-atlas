@@ -16,9 +16,9 @@ node cli/src/index.mjs --help
 
 | 진입로 | 쓰는 사람 |
 |---|---|
-| CLI | 사람 — 터미널에서 |
-| MCP | AI 에이전트 — Claude Code · Codex · Cursor |
-| 화면 | 사람 — [공방](/guide/studio) · [인사이트](/guide/insights) |
+| CLI | 사람: 터미널에서 |
+| MCP | AI 에이전트: Claude Code · Codex · Cursor |
+| 화면 | 사람: [공방](/guide/studio) · [인사이트](/guide/insights) |
 
 셋이 **같은 `.md` 폴더**를 봅니다. 그래프를 다루는 명령들은 실제로 MCP 서버를
 감싸고 있어서, `blast-radius` 를 터미널에서 부르든 에이전트가 부르든 **같은
@@ -32,8 +32,8 @@ node cli/src/index.mjs --help
 | 상황 | 명령 |
 |---|---|
 | 빈 저장소에 볼트를 만든다 | `init` (`--quick-start` 로 부트스트랩까지 한 줄) |
-| 이미 있는 코드에서 노드를 뽑는다 | `bootstrap` — `analyze` + `infer-imports` 를 한 번에 |
-| 무엇이 뽑힐지 먼저 본다 | `analyze` · `infer-imports` — **부작용 0**, 제안만 |
+| 이미 있는 코드에서 노드를 뽑는다 | `bootstrap`: `analyze` + `infer-imports` 를 한 번에 |
+| 무엇이 뽑힐지 먼저 본다 | `analyze` · `infer-imports`: **부작용 0**, 제안만 |
 | 내가 쓰던 `.md` 를 들인다 | `import <path...>` |
 | `CLAUDE.md` · `AGENTS.md` 를 노드로 접는다 | `absorb <file...>` |
 
@@ -44,7 +44,7 @@ node cli/src/index.mjs --help
 
 | 알고 싶은 것 | 명령 |
 |---|---|
-| 이 개념이 뭐였더라 | `node <slug>` — 머리말 · 계보 · 드나드는 관계 한 화면 |
+| 이 개념이 뭐였더라 | `node <slug>`: 머리말 · 계보 · 드나드는 관계 한 화면 |
 | 이 이름 쓰는 데가 어디지 | `backlinks <slug>` |
 | 여길 고치면 어디가 흔들리나 | `blast-radius <slug>` |
 | 이 둘이 어떻게 이어지나 | `path <from> <to>` · `explain <from> <to>` |
@@ -74,7 +74,7 @@ node cli/src/index.mjs preflight --staged
 ```
 
 스테이지된 파일을 볼트 노드로 해석해 이번 커밋이 무엇을 건드리는지 요약합니다.
-아무것도 안 걸리면 조용히 넘어갑니다 — **막지 않습니다.**
+아무것도 안 걸리면 조용히 넘어갑니다. **막지 않습니다.**
 
 볼트만 따로 커밋하려면 `snapshot` 입니다 (`--dry-run` 으로 먼저 보고).
 
@@ -85,7 +85,7 @@ node cli/src/index.mjs preflight --staged
 | 이 볼트가 대체 어떻게 생겼나 | `overview` |
 | 오늘 뭘 손봐야 하나 | `maintenance` |
 | 어디가 더 자랄 수 있나 | `growth` |
-| 어디가 중심인가 | `hubs` — PageRank · 다리 · 권위 · 허브 네 랭킹 |
+| 어디가 중심인가 | `hubs`: PageRank · 다리 · 권위 · 허브 네 랭킹 |
 | 지금 상황 + 다음 행동 한 화면 | `workspace-brief` |
 
 같은 큐를 화면으로 보고 싶으면 [그래프 인사이트](/guide/insights) 가 같은
@@ -95,8 +95,8 @@ node cli/src/index.mjs preflight --staged
 
 | 의심 | 명령 |
 |---|---|
-| frontmatter 가 깨졌나 | `validate` — **코드 경로는 안 봅니다** |
-| 근거로 적은 파일이 사라졌나 | `health` — 여섯 검사, 코드 경로까지 대조 |
+| frontmatter 가 깨졌나 | `validate`: **코드 경로는 안 봅니다** |
+| 근거로 적은 파일이 사라졌나 | `health`: 여섯 검사, 코드 경로까지 대조 |
 | 아무도 안 가리키는 노드가 있나 | `orphans` |
 | 「필요한 항목」 관계가 원을 그리나 | `cycles` |
 | 그래프가 섬으로 쪼개졌나 | `components` |

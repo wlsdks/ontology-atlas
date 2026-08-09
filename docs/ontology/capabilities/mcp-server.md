@@ -39,7 +39,7 @@ stdio JSON-RPC 인터페이스다. 사람과 에이전트가 같은 파일을 �
 
 `connect_project_source` / `disconnect_project_source`는 project 노드를 그것이
 설명하는 로컬 코드 폴더에 묶고 푼다. 이전에는 `agent_brief`가 `connect_source`를
-다음 행동으로 내놓으면서 그것을 실행할 도구가 없었다 — 설치된 macOS 앱의 폴더
+다음 행동으로 내놓으면서 그것을 실행할 도구가 없었다. 설치된 macOS 앱의 폴더
 선택기가 유일한 경로였다. 두 도구 모두 `confirm: true` 전에는 아무것도 쓰지 않고,
 절대 루트는 gitignore된 `.ontology-atlas/project-sources.json`에만 남는다.
 
@@ -133,22 +133,22 @@ element 관계는 `reachability`/`subgraph`의 구조 근거이며 영향이나 
 
 ## 구현 근거
 
-- `mcp/src/index.js` — 도구 registry, schema, handler, 첫 연결 지침
+- `mcp/src/index.js`: 도구 registry, schema, handler, 첫 연결 지침
 - `mcp/src/analyze.mjs` · `mcp/src/rust-feature-evidence.mjs` ·
-  `mcp/src/infer-imports.mjs` — bounded repository 의미 ingress, Rust 구성 provenance,
+  `mcp/src/infer-imports.mjs`: bounded repository 의미 ingress, Rust 구성 provenance,
   실행 없는 TS/JS/Python import 근거와 명시적 미지원 범위
-- `mcp/src/vault.mjs` · `mcp/src/schema.mjs` — 파일 읽기/쓰기와 UID/slug 규격
-- `mcp/src/ontology-compiler.mjs` · `mcp/src/ontology-engine.mjs` — compile/query
-- `mcp/src/competency-coverage.mjs` · `mcp/src/meaning-evaluation.mjs` — quantified
+- `mcp/src/vault.mjs` · `mcp/src/schema.mjs`: 파일 읽기/쓰기와 UID/slug 규격
+- `mcp/src/ontology-compiler.mjs` · `mcp/src/ontology-engine.mjs`: compile/query
+- `mcp/src/competency-coverage.mjs` · `mcp/src/meaning-evaluation.mjs`: quantified
   competency coverage와 source-backed proposal write gate
-- `mcp/src/project-source-inspection.mjs` · `mcp/src/project-source-receipt.mjs` —
+- `mcp/src/project-source-inspection.mjs` · `mcp/src/project-source-receipt.mjs`:
   설치 앱과 같은 bounded source currentness 재검증과 public receipt 경계
-- `mcp/src/meaning-repair.mjs` · `mcp/src/project-meaning-inventory.mjs` — 현재 선언,
+- `mcp/src/meaning-repair.mjs` · `mcp/src/project-meaning-inventory.mjs`: 현재 선언,
   구조/source 후보, 미해결 대상을 분리하는 action-first 사람 승인 패킷
-- `mcp/scripts/verify.mjs` · `scripts/dogfood-mcp-walk.mjs` — 설치·실사용 검증
-- `mcp/README.md` — 현재 공개 도구 계약의 상세 단일 진실원
+- `mcp/scripts/verify.mjs` · `scripts/dogfood-mcp-walk.mjs`: 설치·실사용 검증
+- `mcp/README.md`: 현재 공개 도구 계약의 상세 단일 진실원
 
 ## 확신도
 
-high (0.95) — registry, parser/compiler contract, source/packed binary dogfood가 같은
+high (0.95): registry, parser/compiler contract, source/packed binary dogfood가 같은
 볼트를 대상으로 검증된다.

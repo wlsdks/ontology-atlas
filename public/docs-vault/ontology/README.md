@@ -2,33 +2,33 @@
 uid: c467d5e2-50ac-45f2-bbf0-996a1b6e1dd7
 slug: README
 kind: vault-readme
-title: Ontology Atlas — its own ontology vault
+title: Ontology Atlas: its own ontology vault
 display_ko: 아틀라스 자기 볼트
 display_en: Atlas self-ontology vault
 created_by: "agent:unknown"
 ---
 
-# Ontology Atlas — its own ontology vault
+# Ontology Atlas: its own ontology vault
 
 This folder is **Ontology Atlas described in its own data format** (dogfooding).
-Every `.md` file here is one node of the product's meaning model — the same
+Every `.md` file here is one node of the product's meaning model: the same
 `project / domain / capability / element` graph the app draws and the MCP
 server serves to AI agents. If you are an agent reading this: this vault *is*
 the shared mental model between the humans building Atlas and you.
 
 ## Where to start
 
-- `ontology-atlas.md` — the `kind: project` root. Everything hangs off it.
-- `domains/` — the six functional areas (agent integration, graph modeling,
+- `ontology-atlas.md`: the `kind: project` root. Everything hangs off it.
+- `domains/`: the six functional areas (agent integration, graph modeling,
   local vault management, onboarding & shell, project portfolio, topology
-  navigation). Domain boundaries are human judgment — see `created_by:`.
-- `capabilities/` — user-visible features inside those domains, including the
+  navigation). Domain boundaries are human judgment: see `created_by:`.
+- `capabilities/`: user-visible features inside those domains, including the
   two agent surfaces: `capabilities/mcp-server` (35 MCP tools in `mcp/`) and
   `capabilities/cli-developer-entry` (54 CLI commands in `cli/`).
-- `elements/` — implementation evidence. Each element names a *role* (flat
+- `elements/`: implementation evidence. Each element names a *role* (flat
   slug); the file location lives in its `path:` frontmatter, never in the slug.
 
-**No document writes the census number** — it rots the moment anyone adds a
+**No document writes the census number**: it rots the moment anyone adds a
 node. Ask the vault itself:
 
 ```bash
@@ -43,9 +43,9 @@ node cli/src/index.mjs overview        # from the repo root
   `urn:uuid:<uid>` export identity use UID. Never hand-patch UID or
   merge-owned `merged_uids`.
 - Slugs are flat identifiers under their kind folder (`elements/topology-map-v2`,
-  never `elements/src/widgets/topology-map-v2`) — path-style slugs collide on
+  never `elements/src/widgets/topology-map-v2`): path-style slugs collide on
   tail aliases and are rejected at every write door.
-- Every node carries `created_by:` — `human` for nodes that exist only because
+- Every node carries `created_by:`: `human` for nodes that exist only because
   a person judged them (project definition, domain boundaries, the charter
   capabilities), `agent:*` for everything derivable from code.
 - Agents write through the MCP server (`add_concept`, `patch_concept`,
@@ -99,10 +99,10 @@ becoming `verified_current`.
 
 ## Kinds
 
-- `project` — top-level (`ontology-atlas.md`).
-- `domain` — a large functional area.
-- `capability` — a user-visible feature inside a domain.
-- `element` — a smaller unit a capability uses; evidence lives in `path:`.
-- `document` — narrative doc tied to the graph.
+- `project`: top-level (`ontology-atlas.md`).
+- `domain`: a large functional area.
+- `capability`: a user-visible feature inside a domain.
+- `element`: a smaller unit a capability uses; evidence lives in `path:`.
+- `document`: narrative doc tied to the graph.
 
 Full MCP tool reference: https://github.com/wlsdks/ontology-atlas/tree/main/mcp

@@ -15,9 +15,9 @@ kind별 frontmatter 형태와 관계 타입을 정규화하고, hard schema·adv
 
 ## 근거
 - src/features/vault-ontology (구현 증거)
-- AGENTS.md — Frontmatter shape per kind (R14)
-- docs/ONTOLOGY-QUALITY.md — 품질 규칙 권위 지도
-- mcp/src/construction-rules.mjs — fan-out·hub·bridge·element 자격의 실행 지침
+- AGENTS.md: Frontmatter shape per kind (R14)
+- docs/ONTOLOGY-QUALITY.md: 품질 규칙 권위 지도
+- mcp/src/construction-rules.mjs: fan-out·hub·bridge·element 자격의 실행 지침
 
 ## 확신도
 medium-high (0.85)

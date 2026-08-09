@@ -52,24 +52,24 @@ source receipt 자체가 stale이면 `source_changed → remeasure_source`지만
 
 ## 근거
 
-- `src/shared/lib/project-source-receipt.ts` — 영수증·현재성·빈틈·인계 계약
-- `src/views/home/model/use-project-source-model.ts` — 선택·측정·원자적 저장·재측정
-- `src-tauri/src/lib.rs` — Git tracked/unignored inventory와 bounded fingerprint
-- `mcp/src/project-source-inspection.mjs` — 앱 fingerprint를 재현하는 비공개 로컬 probe
-- `mcp/src/project-source-receipt.mjs` — private path를 제거한 `agent_brief` read model + sidecar 쓰기/제거
-- `mcp/src/project-source-mint.mjs` — 앱·CLI·MCP가 공유하는 순수 영수증 발행
-- `mcp/src/project-source-discovery.mjs` — 볼트 위치에서 소스 루트를 지명하는 bounded walk
-- `mcp/src/project-source-inference.mjs` — 후보 순위·신뢰도·이유의 순수 정본
-- `mcp/src/project-source-remedy.mjs` — 진단 action id → 실행 가능한 도구/명령/되돌리기
-- `mcp/src/meaning-assessment.mjs` — 수치 없이 false-green을 닫는 순수 의미 판정 정본
-- `mcp/src/competency-coverage.mjs` — proposal과 새 프로세스 receipt가 공유하는
+- `src/shared/lib/project-source-receipt.ts`: 영수증·현재성·빈틈·인계 계약
+- `src/views/home/model/use-project-source-model.ts`: 선택·측정·원자적 저장·재측정
+- `src-tauri/src/lib.rs`: Git tracked/unignored inventory와 bounded fingerprint
+- `mcp/src/project-source-inspection.mjs`: 앱 fingerprint를 재현하는 비공개 로컬 probe
+- `mcp/src/project-source-receipt.mjs`: private path를 제거한 `agent_brief` read model + sidecar 쓰기/제거
+- `mcp/src/project-source-mint.mjs`: 앱·CLI·MCP가 공유하는 순수 영수증 발행
+- `mcp/src/project-source-discovery.mjs`: 볼트 위치에서 소스 루트를 지명하는 bounded walk
+- `mcp/src/project-source-inference.mjs`: 후보 순위·신뢰도·이유의 순수 정본
+- `mcp/src/project-source-remedy.mjs`: 진단 action id → 실행 가능한 도구/명령/되돌리기
+- `mcp/src/meaning-assessment.mjs`: 수치 없이 false-green을 닫는 순수 의미 판정 정본
+- `mcp/src/competency-coverage.mjs`: proposal과 새 프로세스 receipt가 공유하는
   quantified target/covered/uncovered 판정
 
 ## 경계
 
 - 저장소 전체 정답률이나 숫자형 confidence를 주장하지 않는다.
 - 한 project에 활성 소스는 최대 하나이며 중복 binding은 명시적 교체로만 복구한다.
-- 추정은 제안까지다 — 자동으로 확정하지 않는다. 틀린 루트가 `verified_current`를
+- 추정은 제안까지다. 자동으로 확정하지 않는다. 틀린 루트가 `verified_current`를
   주장하는 영수증을 찍으면 `finalize_project_meaning`이 그것을 믿기 때문이다.
 - 프로젝트 스코프가 불완전해 project graph hash를 못 찍으면 연결을 fail-closed 한다.
 - 폴더 선택 취소·측정 실패·저장 실패는 기존 binding과 receipt를 보존한다.
