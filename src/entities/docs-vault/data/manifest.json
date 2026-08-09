@@ -4025,6 +4025,11 @@
         },
         {
           "depth": 2,
+          "text": "2026-08-09 · 구조가 초록이어도 의미가 빨강이면 온톨로지는 합격하지 않는다",
+          "slug": "2026-08-09-구조가-초록이어도-의미가-빨강이면-온톨로지는-합격하지-않는다"
+        },
+        {
+          "depth": 2,
           "text": "2026-08-09 · 공방이 근거 없는 상위개념을 추천하지 않는다",
           "slug": "2026-08-09-공방이-근거-없는-상위개념을-추천하지-않는다"
         },
@@ -6349,8 +6354,8 @@
           "slug": "2026-07-26-첫-만남은-쇼핑몰부터"
         }
       ],
-      "excerpt": "Major change history. Code commit messages answer why; this file answers when / which surface changed. Focused on user-visible changes, not PR-level granularity. Newest at the top. Entries stay date-based; the app version reached v1.0.0 on 2026-07-27, so a release tag now carries the semver promise instead. 공방은 첫 빈 UP ",
-      "wordCount": 66824,
+      "excerpt": "Major change history. Code commit messages answer why; this file answers when / which surface changed. Focused on user-visible changes, not PR-level granularity. Newest at the top. Entries stay date-based; the app version reached v1.0.0 on 2026-07-27, so a release tag now carries the semver promise instead. 문법상 올바른 vau",
+      "wordCount": 66989,
       "updatedAt": "2026-08-09",
       "linksOut": [
         "audits/CASE-STUDY-AGENTS-MD-DRIFT",
@@ -6379,6 +6384,11 @@
           "depth": 2,
           "text": "기록 형식",
           "slug": "기록-형식"
+        },
+        {
+          "depth": 2,
+          "text": "2026-08-09 — Construction Qualification은 독립 축의 범주형 판정이다",
+          "slug": "2026-08-09-construction-qualification은-독립-축의-범주형-판정이다"
         },
         {
           "depth": 2,
@@ -8422,7 +8432,7 @@
         }
       ],
       "excerpt": "이 파일은 결정과 그때 진 반대 의견을 남긴다. docs/CHANGELOG.md 는 무엇이 언제 바뀌었나를 답하고, 이 파일은 왜 그렇게 정했고, 무엇을 걸었나를 답한다. 최신이 위. 기록은 덧붙이기만 한다 — 지난 기록을 고치지 않는다. 판단이 바뀌었으면 새 기록을 쓰고 옛 기록을 뒤집힘 으로 표시한다. 틀린 기록도 자산이다. 1. 소집 전에 읽는다. 카운슬을 열기 전(그리고 단독 PO 패스를 쓰기 전) 같은 표면 · 같은 질문에 대한 선행 결정이 있는지 먼저 본다. 있으면 새 패스는 그것을 ① 여전히 유효하다고 인용하거나 ② 명시적으로 뒤집는다. 조용히 다시 결정",
-      "wordCount": 100937,
+      "wordCount": 101301,
       "updatedAt": "2026-08-09",
       "linksOut": [
         "slug"
@@ -10187,10 +10197,11 @@
         }
       ],
       "excerpt": "이 문서는 제품을 느낌이 아니라 공개·인용 가능한 학술/표준/craft 레퍼런스에 묶어 둔다. \"온톨로지가 뭔지도 모르면서 만드는\" 것을 막기 위한 근거 모음 — 무엇이 이미 있고, 우리가 그 위에서 우리만의 것을 어디서 어떻게 다르게 만드는지. 인용 규율: 여기 실린 레퍼런스는 전부 공개 논문 / W3C 표준 / 공개 서적 / 공개 블로그다. 최초 세트는 2026-06-01, ontology-construction 보강 세트는 2026-08-09에 원문·공식 메타데이터를 다시 열어 확인했다. 링크/인용은 하되 본문을 베끼지 않는다. 새 레퍼런스를 추가할 때도 공개·",
-      "wordCount": 4413,
+      "wordCount": 4431,
       "updatedAt": "2026-08-09",
       "linksOut": [
-        "ONTOLOGY-ATLAS-SPEC"
+        "ONTOLOGY-ATLAS-SPEC",
+        "ONTOLOGY-CONSTRUCTION-QUALIFICATION"
       ]
     },
     {
@@ -11551,6 +11562,58 @@
       "linksOut": []
     },
     {
+      "slug": "ONTOLOGY-CONSTRUCTION-QUALIFICATION",
+      "path": "docs/ONTOLOGY-CONSTRUCTION-QUALIFICATION.md",
+      "title": "Ontology Construction Qualification v1",
+      "tags": [],
+      "frontmatter": {},
+      "headings": [
+        {
+          "depth": 1,
+          "text": "Ontology Construction Qualification v1",
+          "slug": "ontology-construction-qualification-v1"
+        },
+        {
+          "depth": 2,
+          "text": "Why this exists",
+          "slug": "why-this-exists"
+        },
+        {
+          "depth": 2,
+          "text": "Qualification packet",
+          "slug": "qualification-packet"
+        },
+        {
+          "depth": 2,
+          "text": "Independent quality axes",
+          "slug": "independent-quality-axes"
+        },
+        {
+          "depth": 2,
+          "text": "Fail-closed verdict",
+          "slug": "fail-closed-verdict"
+        },
+        {
+          "depth": 2,
+          "text": "Metrics and rerun",
+          "slug": "metrics-and-rerun"
+        },
+        {
+          "depth": 2,
+          "text": "Product disclosure boundary",
+          "slug": "product-disclosure-boundary"
+        }
+      ],
+      "excerpt": "Status: internal executable contract. This document explains the evaluator implemented by mcp/src/construction-qualification.mjs. It does not add a vault kind, frontmatter field, MCP tool, or UI surface. A vault can compile cleanly and still fail its users. It may answer only one item in an “each” question, cite stale ",
+      "wordCount": 675,
+      "updatedAt": "2026-08-09",
+      "linksOut": [
+        "FOUNDATIONS",
+        "ONTOLOGY-ATLAS-SPEC",
+        "BACKLOG"
+      ]
+    },
+    {
       "slug": "ONTOLOGY-QUALITY",
       "path": "docs/ONTOLOGY-QUALITY.md",
       "title": "Ontology Quality Authority Map",
@@ -12215,7 +12278,7 @@
         }
       ],
       "excerpt": "project 노드 하나에 Git 저장소 또는 로컬 폴더 하나를 연결하고, 온톨로지가 선언한 capability/element 구현 경로를 실제 소스 목록과 대조해 버전이 붙은 범주형 영수증으로 남기는 능력. 지도 데이터시트·전체 상세·CLI·MCP agentbrief가 같은 상태·현재성·첫 빈틈·다음 행동을 읽는다. 연결 자체는 설치 앱·MCP·CLI 세 표면 모두에서 가능하다. connectprojectsource (CLI connect-source)는 rootPath를 생략하면 볼트를 감싸는 git 저장소를, 없으면 가장 가까운 조상 매니페스트 폴더를 후보로 지",
-      "wordCount": 525,
+      "wordCount": 629,
       "updatedAt": "2026-08-09",
       "linksOut": []
     },
@@ -15504,6 +15567,11 @@
         "fromSlug": "DESIGN-SYSTEM",
         "context": "ules are an applied reading of public, citable design thinking, not arbitrary taste. Full grounding + verified links in **[`FOUNDATIONS.md` §4]**. | Our rule | Descends from | |---|---| | Neutral greys + single indigo; ban glow/neon/gradients/glassmorphism | **Die",
         "linkText": "`FOUNDATIONS.md` §4"
+      },
+      {
+        "fromSlug": "ONTOLOGY-CONSTRUCTION-QUALIFICATION",
+        "context": "nce, not whether it has many nodes or a high aggregate score. The research rationale and eight-stage lifecycle live in **[`FOUNDATIONS.md`]**. This file owns the re-executable packet and verdict contract. The vault format itself remains owned by [`ONTOLOGY-ATLA",
+        "linkText": "`FOUNDATIONS.md`"
       }
     ],
     "TOPOLOGY-FOCUS-AND-SCALE": [
@@ -15544,6 +15612,11 @@
         "linkText": "Atlas 메타모델 명세"
       },
       {
+        "fromSlug": "ONTOLOGY-CONSTRUCTION-QUALIFICATION",
+        "context": "oun-extraction). This file owns the re-executable packet and verdict contract. The vault format itself remains owned by **[`ONTOLOGY-ATLAS-SPEC.md`]**. ## Qualification packet Every `constructionQualification:v1` packet is bound to one project plus exact graph and sou",
+        "linkText": "`ONTOLOGY-ATLAS-SPEC.md`"
+      },
+      {
         "fromSlug": "PRODUCT-DIRECTION",
         "context": "implements. The exact discriminator, `broader`/`is_a` support boundary, and non-inference contract have one authority: **[`ONTOLOGY-ATLAS-SPEC.md` §2]**. This direction document decides why the product exists; it does not maintain a second schema glossary. ### What Atlas",
         "linkText": "`ONTOLOGY-ATLAS-SPEC.md` §2"
@@ -15552,6 +15625,25 @@
         "fromSlug": "README",
         "context": "udgment, analyzer bounds, and field-trial isolation | Canonical ownership map; does not duplicate code-owned values | | **[`ONTOLOGY-ATLAS-SPEC.md`]** | Public v2 Markdown/frontmatter conformance format | Public RFC; code wins on drift | | [`guide/what-becomes-a-node.md",
         "linkText": "`ONTOLOGY-ATLAS-SPEC.md`"
+      }
+    ],
+    "ONTOLOGY-CONSTRUCTION-QUALIFICATION": [
+      {
+        "fromSlug": "FOUNDATIONS",
+        "context": "The re-executable evaluator packet, categorical verdict, privacy boundary, and representative fixture are specified in **[Ontology Construction Qualification v1]**. For Atlas, the conservative direct-subsumption test is executable prose, not a reasoner claim: both endpoints have th",
+        "linkText": "Ontology Construction Qualification v1"
+      }
+    ],
+    "BACKLOG": [
+      {
+        "fromSlug": "ONTOLOGY-CONSTRUCTION-QUALIFICATION",
+        "context": ".test.mjs ``` The fixture is a contract specimen, not evidence that Atlas has qualified three real products. `O1.5` in **[`BACKLOG.md`]** owns that independent field qualification after the lifecycle is wired into the MCP and bootstrap surfaces by `M1.5`.",
+        "linkText": "`BACKLOG.md`"
+      },
+      {
+        "fromSlug": "README",
+        "context": "oyment | Current, small | | [`CHANGELOG.md`](CHANGELOG.md) | Chronological user-visible changes | Historical ledger | | **[`BACKLOG.md`]** | Working queue and deferred questions | Operational, may be noisy | ## What Is Normative The normative product model",
+        "linkText": "`BACKLOG.md`"
       }
     ],
     "PRODUCT-OWNER-OPERATING-SYSTEM": [
@@ -15658,13 +15750,6 @@
         "fromSlug": "README",
         "context": "| | [`DESIGN-SYSTEM.md`](DESIGN-SYSTEM.md) | Visual language, tokens, forbidden patterns | Canonical UI style guide | | **[`MAP-TESTABILITY.md`]** | Observing the canvas map from outside (`?e2e=1` → `window.__atlasMap`), and the measurement discipline that a 2026-07",
         "linkText": "`MAP-TESTABILITY.md`"
-      }
-    ],
-    "BACKLOG": [
-      {
-        "fromSlug": "README",
-        "context": "oyment | Current, small | | [`CHANGELOG.md`](CHANGELOG.md) | Chronological user-visible changes | Historical ledger | | **[`BACKLOG.md`]** | Working queue and deferred questions | Operational, may be noisy | ## What Is Normative The normative product model",
-        "linkText": "`BACKLOG.md`"
       }
     ],
     "owner-topology-taste": [
@@ -17796,6 +17881,13 @@
         "type": "doc",
         "slug": "ONTOLOGY-ATLAS-SPEC",
         "title": "Ontology Atlas Vault Specification v2.0-rc (RFC)"
+      },
+      {
+        "name": "ONTOLOGY-CONSTRUCTION-QUALIFICATION",
+        "path": "ONTOLOGY-CONSTRUCTION-QUALIFICATION",
+        "type": "doc",
+        "slug": "ONTOLOGY-CONSTRUCTION-QUALIFICATION",
+        "title": "Ontology Construction Qualification v1"
       },
       {
         "name": "ONTOLOGY-QUALITY",

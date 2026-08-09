@@ -42,6 +42,54 @@
 
 ---
 
+## 2026-08-09 — Construction Qualification은 독립 축의 범주형 판정이다
+
+**소집**: O1.3 단독 PO 패스 24/24 · **트리거**: 기존 구조 검증과
+`meaningAssessment:v1`이 초록이어도 source-hidden 답이 과장될 수 있고, 구축 요구부터
+사람 승인까지를 같은 fixture로 재실행할 계약이 없었다. 새 route·vault schema·kind·
+공개 MCP/CLI tool·시각 축을 바꾸지 않으므로 정식 PO/Design Council 조건은 아니다.
+**루브릭**: 24/24 (Problem 4 · User moment 4 · Differentiation 4 · Ontology 4 ·
+Agent 4 · Verification 4, 치명적 0 없음)
+
+**선행 결정 관계**: 2026-08-09 「ontology construction quality를 Skills와 UI 확장보다
+먼저 닫는다」의 여덟 단계와 일곱 품질 축, 2026-08-02 「CQ quantifier integrity」의
+`targetSet`/`covered`/`uncovered`, human-sovereign·maker-independent 경계는 모두 유효하다.
+이번 결정은 그 원칙을 대체하지 않고 재실행 가능한 qualification packet으로 묶는다.
+
+**결정**: 내부 계약 `constructionQualification:v1`은 project의 graph/source digest,
+분리된 builder/evaluator, 네 사용자군의 motivating scenario, 사람 owner와 승인 revision이
+있는 CQ, expected answer/quantifier/target, unknown/refusal, exemplar/counterexample,
+digest-bound portable witness, exact-text claim ledger와 citation check, target별 witness/claim,
+source-hidden task, 일곱 축, 분류 diagnostic, resource use, 사람 acceptance를 입력으로 받는다.
+합격은 모든 축·CQ·claim·citation·source-hidden task와 사람 acceptance가 동시에 통과할
+때뿐이다. 입력한 `coveredTargets` 문자열은 권위가 없으며 target별 current witness와
+supported claim에서 coverage를 다시 파생한다.
+
+**판정 규칙**: 출력은 `qualified`·`not_qualified`·`invalid`뿐이고 overall score는 없다.
+`partial`·`unknown`·`refused`는 보존한다. claim accuracy, citation accuracy, duration,
+tool calls, token, optional cost는 서로 다른 진단값이며 판정을 평균내지 않는다. stale
+witness, claim citation 누락, maker self-evaluation/approval, agent-owned CQ, 출처 없는
+pass, 분류되지 않은 red는 fail-closed다. 실패 원인은 `evidence`·`prompt`·`ui`·
+`missing_primitive` 중 하나로 귀속한다. 평가기는 vault를 쓰지 않는다.
+
+**범위 경계**: 대표 fixture는 계약이 재실행됨을 증명할 뿐 실제 세 제품의 품질을
+증명하지 않는다. 공개 MCP/bootstrap lifecycle 연결은 PO Council이 필요한 M1.5,
+독립 세 제품 trial은 O1.5, 기본/전문가 disclosure는 U1.3이 소유한다. 따라서 이번에는
+UI·설치 앱·MCP tool inventory를 바꾸지 않는다.
+
+**기록된 반대**: “일곱 축이 모두 pass여야 하면 초기 작은 ontology가 영원히 합격하지
+못하고, 팀은 축을 의례적으로 초록으로 칠할 것이다.”
+**반증 조건**: O1.5의 세 독립 trial 중 둘 이상에서 정직한 `unknown`/`partial`이 다음
+안전 행동을 충분히 지원하는데도 binary qualification만 실사용을 막거나, 같은 근거를
+일곱 축에 복사해 축 분리가 새로운 정보를 전혀 주지 않으면 반대가 옳다. 그때 축을
+평균내지 말고 사용 시나리오별 readiness profile과 mandatory-axis 집합을 사람 owner가
+명시하도록 계약을 좁힌다.
+**재검토**: M1.5 lifecycle 연결 후 O1.5 세 제품 claim ledger와 resource use가 모였을 때.
+**서명**: owner — 다음 작업 진행 승인; Codex — O1.3 구현·게이트·문서화
+**상태**: 유효
+
+---
+
 ## 2026-08-09 — 공방은 증거 없는 빈 관계를 추천으로 꾸미지 않는다
 
 **소집**: 단독 PO 패스 24/24 + 디자인 게이트(기존 Compass 구조 안의 상태 교정) ·

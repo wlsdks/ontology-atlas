@@ -1,0 +1,253 @@
+{
+  "contract": "constructionQualification:v1",
+  "qualificationId": "qualification:northstar-commerce:v1",
+  "subject": {
+    "projectSlug": "northstar-commerce",
+    "graphDigest": "sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+    "sourceDigest": "sha256:bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb"
+  },
+  "actors": {
+    "builder": { "id": "agent:builder", "authority": "agent" },
+    "evaluator": { "id": "agent:evaluator", "authority": "agent" }
+  },
+  "scenarios": [
+    {
+      "id": "scenario:executive-risk",
+      "audience": "executive",
+      "trigger": "A release changes checkout behavior.",
+      "decision": "Decide whether customer trust or revenue risk requires escalation.",
+      "expectedOutcome": "Name the affected outcome and the evidence-backed risk boundary."
+    },
+    {
+      "id": "scenario:employee-process",
+      "audience": "employee",
+      "trigger": "An operator hands the checkout incident to another team.",
+      "decision": "Find the responsible role and the next process boundary.",
+      "expectedOutcome": "Explain the operator role and the handoff process without reading code."
+    },
+    {
+      "id": "scenario:fde-impact",
+      "audience": "fde",
+      "trigger": "Inventory availability semantics change.",
+      "decision": "Choose the implementation and verification boundary.",
+      "expectedOutcome": "Trace affected capabilities, paths, and verification evidence."
+    },
+    {
+      "id": "scenario:agent-next-action",
+      "audience": "agent",
+      "trigger": "A fresh source-hidden agent receives the ontology handoff.",
+      "decision": "Choose the next safe read or write action.",
+      "expectedOutcome": "Use current evidence, refuse unsupported claims, and name the next action."
+    }
+  ],
+  "competencyQuestions": [
+    {
+      "id": "cq:executive-risk",
+      "scenarioId": "scenario:executive-risk",
+      "audience": "executive",
+      "question": "Which product outcome is at risk and what boundary contains that risk?",
+      "owner": { "id": "human:product-owner", "authority": "human" },
+      "revision": {
+        "version": 1,
+        "approvedBy": "human:product-owner",
+        "approvedAt": "2026-08-09T00:00:00.000Z"
+      },
+      "expectedAnswer": {
+        "shape": "decision",
+        "quantifier": "one",
+        "targets": ["outcome:preserve-trust"]
+      },
+      "requiredWitnessKinds": ["source_span", "relation"],
+      "unknownPolicy": {
+        "allowed": true,
+        "response": "State that outcome risk is unknown and request current product evidence."
+      },
+      "examples": [
+        { "id": "example:executive-supported", "expectedStatus": "answered" }
+      ],
+      "counterexamples": [
+        { "id": "counterexample:revenue-assumed", "mustReject": "Revenue risk inferred from a code path alone." }
+      ]
+    },
+    {
+      "id": "cq:employee-process",
+      "scenarioId": "scenario:employee-process",
+      "audience": "employee",
+      "question": "For each handoff target, which role acts and which process boundary follows?",
+      "owner": { "id": "human:operations-owner", "authority": "human" },
+      "revision": {
+        "version": 1,
+        "approvedBy": "human:operations-owner",
+        "approvedAt": "2026-08-09T00:00:00.000Z"
+      },
+      "expectedAnswer": {
+        "shape": "mapping",
+        "quantifier": "each",
+        "targets": ["role:operator", "process:handoff"]
+      },
+      "requiredWitnessKinds": ["concept", "source_span"],
+      "unknownPolicy": {
+        "allowed": true,
+        "response": "Expose the missing role or process owner instead of inventing one."
+      },
+      "examples": [
+        { "id": "example:employee-complete", "expectedStatus": "answered" }
+      ],
+      "counterexamples": [
+        { "id": "counterexample:team-folder", "mustReject": "A folder name is treated as a responsible role." }
+      ]
+    },
+    {
+      "id": "cq:fde-impact",
+      "scenarioId": "scenario:fde-impact",
+      "audience": "fde",
+      "question": "For each affected capability, where is the implementation and how is the change verified?",
+      "owner": { "id": "human:fde-owner", "authority": "human" },
+      "revision": {
+        "version": 1,
+        "approvedBy": "human:fde-owner",
+        "approvedAt": "2026-08-09T00:00:00.000Z"
+      },
+      "expectedAnswer": {
+        "shape": "mapping",
+        "quantifier": "each",
+        "targets": ["capability:checkout", "capability:inventory"]
+      },
+      "requiredWitnessKinds": ["relation", "path", "validation"],
+      "unknownPolicy": {
+        "allowed": true,
+        "response": "Keep impact partial until implementation and verification paths are current."
+      },
+      "examples": [
+        { "id": "example:fde-bounded-impact", "expectedStatus": "answered" }
+      ],
+      "counterexamples": [
+        { "id": "counterexample:transitive-assumption", "mustReject": "An undeclared transitive dependency is asserted as impact." }
+      ]
+    },
+    {
+      "id": "cq:agent-next-action",
+      "scenarioId": "scenario:agent-next-action",
+      "audience": "agent",
+      "question": "For each required safety step, what current evidence authorizes the next action?",
+      "owner": { "id": "human:agent-workflow-owner", "authority": "human" },
+      "revision": {
+        "version": 1,
+        "approvedBy": "human:agent-workflow-owner",
+        "approvedAt": "2026-08-09T00:00:00.000Z"
+      },
+      "expectedAnswer": {
+        "shape": "next_action",
+        "quantifier": "each",
+        "targets": ["action:validate", "action:preflight"]
+      },
+      "requiredWitnessKinds": ["source_span", "task_result"],
+      "unknownPolicy": {
+        "allowed": true,
+        "response": "Refuse the write and name the missing receipt or currentness check."
+      },
+      "examples": [
+        { "id": "example:agent-safe-action", "expectedStatus": "answered" }
+      ],
+      "counterexamples": [
+        { "id": "counterexample:green-structure-write", "mustReject": "A write is authorized from structural health alone." }
+      ]
+    }
+  ],
+  "witnesses": [
+    { "id": "w:outcome", "kind": "source_span", "current": true, "provenance": { "sourceRef": "docs/product-outcomes.md#preserve-trust", "digest": "sha256:bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb" } },
+    { "id": "w:risk-relation", "kind": "relation", "current": true, "provenance": { "sourceRef": "ontology:checkout-relations", "digest": "sha256:cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc" } },
+    { "id": "w:employee-role", "kind": "concept", "current": true, "provenance": { "sourceRef": "ontology:operator-role", "digest": "sha256:cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc" } },
+    { "id": "w:employee-process", "kind": "source_span", "current": true, "provenance": { "sourceRef": "docs/operations.md#incident-handoff", "digest": "sha256:bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb" } },
+    { "id": "w:fde-relation", "kind": "relation", "current": true, "provenance": { "sourceRef": "ontology:checkout-inventory-impact", "digest": "sha256:cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc" } },
+    { "id": "w:fde-path", "kind": "path", "current": true, "provenance": { "sourceRef": "src/checkout/inventory.ts", "digest": "sha256:bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb" } },
+    { "id": "w:validation", "kind": "validation", "current": true, "provenance": { "sourceRef": "receipt:validation-2026-08-09", "digest": "sha256:dddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddd" } },
+    { "id": "w:agent-source", "kind": "source_span", "current": true, "provenance": { "sourceRef": "handoff:agent-safe-action", "digest": "sha256:eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee" } },
+    { "id": "w:source-hidden-task", "kind": "task_result", "current": true, "provenance": { "sourceRef": "evaluation:source-hidden-run-1", "digest": "sha256:ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff" } },
+    { "id": "w:definition", "kind": "definition", "current": true, "provenance": { "sourceRef": "ontology:checkout-definition", "digest": "sha256:cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc" } },
+    { "id": "w:boundary", "kind": "counterexample", "current": true, "provenance": { "sourceRef": "evaluation:checkout-boundary", "digest": "sha256:ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff" } },
+    { "id": "w:regression", "kind": "regression", "current": true, "provenance": { "sourceRef": "evaluation:cq-regression-1", "digest": "sha256:ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff" } },
+    { "id": "w:round-trip", "kind": "round_trip", "current": true, "provenance": { "sourceRef": "evaluation:interop-round-trip-1", "digest": "sha256:ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff" } }
+  ],
+  "cqResults": [
+    {
+      "cqId": "cq:executive-risk",
+      "status": "answered",
+      "witnessRefs": ["w:outcome", "w:risk-relation"],
+      "claimIds": ["claim:outcome"],
+      "targetResults": [
+        { "target": "outcome:preserve-trust", "witnessRefs": ["w:outcome", "w:risk-relation"], "claimIds": ["claim:outcome"] }
+      ]
+    },
+    {
+      "cqId": "cq:employee-process",
+      "status": "answered",
+      "witnessRefs": ["w:employee-role", "w:employee-process"],
+      "claimIds": ["claim:employee"],
+      "targetResults": [
+        { "target": "role:operator", "witnessRefs": ["w:employee-role"], "claimIds": ["claim:employee"] },
+        { "target": "process:handoff", "witnessRefs": ["w:employee-process"], "claimIds": ["claim:employee"] }
+      ]
+    },
+    {
+      "cqId": "cq:fde-impact",
+      "status": "answered",
+      "witnessRefs": ["w:fde-relation", "w:fde-path", "w:validation"],
+      "claimIds": ["claim:fde"],
+      "targetResults": [
+        { "target": "capability:checkout", "witnessRefs": ["w:fde-relation", "w:fde-path", "w:validation"], "claimIds": ["claim:fde"] },
+        { "target": "capability:inventory", "witnessRefs": ["w:fde-relation", "w:fde-path", "w:validation"], "claimIds": ["claim:fde"] }
+      ]
+    },
+    {
+      "cqId": "cq:agent-next-action",
+      "status": "answered",
+      "witnessRefs": ["w:agent-source", "w:source-hidden-task"],
+      "claimIds": ["claim:agent"],
+      "targetResults": [
+        { "target": "action:validate", "witnessRefs": ["w:agent-source", "w:source-hidden-task"], "claimIds": ["claim:agent"] },
+        { "target": "action:preflight", "witnessRefs": ["w:agent-source", "w:source-hidden-task"], "claimIds": ["claim:agent"] }
+      ]
+    }
+  ],
+  "claims": [
+    { "id": "claim:outcome", "statement": "Checkout trust is the bounded product outcome at risk.", "status": "supported", "witnessRefs": ["w:outcome", "w:risk-relation"] },
+    { "id": "claim:employee", "statement": "The operator role owns the incident handoff process boundary.", "status": "supported", "witnessRefs": ["w:employee-role", "w:employee-process"] },
+    { "id": "claim:fde", "statement": "Checkout and inventory are the affected capabilities with a current implementation and validation boundary.", "status": "supported", "witnessRefs": ["w:fde-relation", "w:fde-path", "w:validation"] },
+    { "id": "claim:agent", "statement": "Validation and preflight are the next evidence-authorized actions.", "status": "supported", "witnessRefs": ["w:agent-source", "w:source-hidden-task"] }
+  ],
+  "citationChecks": [
+    { "claimId": "claim:outcome", "witnessRef": "w:outcome", "status": "verified" },
+    { "claimId": "claim:employee", "witnessRef": "w:employee-process", "status": "verified" },
+    { "claimId": "claim:fde", "witnessRef": "w:fde-path", "status": "verified" },
+    { "claimId": "claim:agent", "witnessRef": "w:agent-source", "status": "verified" }
+  ],
+  "sourceHiddenTask": {
+    "status": "passed",
+    "evaluatorId": "agent:evaluator",
+    "claimIds": ["claim:outcome", "claim:employee", "claim:fde", "claim:agent"]
+  },
+  "axisResults": [
+    { "axis": "semantic", "status": "passed", "evidenceRefs": ["w:definition", "w:boundary"], "findingIds": [] },
+    { "axis": "structural", "status": "passed", "evidenceRefs": ["w:validation"], "findingIds": [] },
+    { "axis": "functional", "status": "passed", "evidenceRefs": ["w:outcome", "w:employee-process", "w:fde-path", "w:agent-source"], "findingIds": [] },
+    { "axis": "evidence_provenance", "status": "passed", "evidenceRefs": ["w:outcome", "w:employee-process", "w:fde-path", "w:agent-source"], "findingIds": [] },
+    { "axis": "pragmatic", "status": "passed", "evidenceRefs": ["w:source-hidden-task"], "findingIds": [] },
+    { "axis": "maintainability", "status": "passed", "evidenceRefs": ["w:regression"], "findingIds": [] },
+    { "axis": "interoperability", "status": "passed", "evidenceRefs": ["w:round-trip"], "findingIds": [] }
+  ],
+  "diagnostics": [],
+  "resourceUse": {
+    "durationMs": 42000,
+    "toolCalls": 12,
+    "inputTokens": 18000,
+    "outputTokens": 2400,
+    "estimatedCostUsd": null
+  },
+  "acceptance": {
+    "decision": "accepted",
+    "decidedBy": "human:product-owner",
+    "authority": "human",
+    "decidedAt": "2026-08-09T00:00:00.000Z"
+  }
+}

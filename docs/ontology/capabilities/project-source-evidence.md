@@ -50,6 +50,15 @@ source receipt 자체가 stale이면 `source_changed → remeasure_source`지만
 `evidence`는 모든 capability의 concept/path 근거를 덮어야 `answered`다. 빠진 slug는
 미해소 대상으로 남고 `partial`/`visible-gap`은 계속 유효한 중간 상태다.
 
+내부 `constructionQualification:v1`은 이 질문별 판정을 구축 전체의 재실행 계약으로
+확장한다. executive·직원·FDE·agent 시나리오와 사람이 승인한 CQ revision을
+graph/source digest에 묶고, target별 current witness와 supported claim에서 coverage를
+다시 파생한다. semantic·structural·functional·evidence/provenance·pragmatic·
+maintainability·interop 축은 서로 독립이며 하나의 합계로 접지 않는다. source-hidden
+evaluator와 builder는 달라야 하고 마지막 acceptance도 사람이 소유한다. 이 계약은
+vault나 공개 MCP 응답을 쓰지 않는 순수 qualification 경계이며, 실제 lifecycle 연결은
+후속 M1.5가 담당한다.
+
 proposal writer와 finalizer는 source witness의 의미도 공유한다. project Markdown의
 정확한 `## Competency answers` 절에서 renderer가 만든 backtick `Evidence`/`Paths`만
 canonical `path:`와 함께 source claim으로 파생하고, 앱과 MCP가 같은 집합을 만든다.
@@ -75,6 +84,10 @@ canonical `path:`와 함께 source claim으로 파생하고, 앱과 MCP가 같�
 - `mcp/src/meaning-assessment.mjs`: 수치 없이 false-green을 닫는 순수 의미 판정 정본
 - `mcp/src/competency-coverage.mjs`: proposal과 새 프로세스 receipt가 공유하는
   quantified target/covered/uncovered 판정
+- `mcp/src/construction-qualification.mjs`: 사람 소유 CQ·target별 근거·exact claim/citation
+  ledger·일곱 품질 축·source-hidden task를 합계 없이 판정하는 순수 계약
+- `tests/fixtures/construction-qualification/qualified.json`: 네 사용자군과 일곱 축을
+  모두 실행하는 portable digest-bound 대표 packet
 
 ## 경계
 
@@ -86,3 +99,4 @@ canonical `path:`와 함께 source claim으로 파생하고, 앱과 MCP가 같�
 - 폴더 선택 취소·측정 실패·저장 실패는 기존 binding과 receipt를 보존한다.
 - 현재 source와 오래된 competency provenance를 같은 source 결함으로 합치지 않는다.
 - 재평가는 기존 typed witness를 자동 승인하거나 write/finalize하지 않으며 사람 승인을 유지한다.
+- 대표 qualification fixture는 계약 실행 증거일 뿐 세 실제 제품의 품질 증거가 아니다.

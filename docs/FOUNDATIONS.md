@@ -130,6 +130,9 @@ Structural metrics and automated judges are diagnostic signals, not acceptance a
 OntoClean can expose modeling pitfalls; LLM graph judges can help triage noisy extraction; none replaces
 domain requirements, exact witnesses, counterexamples, or independent task-level evaluation.
 
+The re-executable evaluator packet, categorical verdict, privacy boundary, and representative fixture
+are specified in [Ontology Construction Qualification v1](ONTOLOGY-CONSTRUCTION-QUALIFICATION.md).
+
 For Atlas, the conservative direct-subsumption test is executable prose, not a reasoner claim: both
 endpoints have the same `domain`/`capability`/`element` kind, every valid narrower example satisfies the
 broader definition, the distinction is not synonymy or membership/part/dependency/sequence, and no known

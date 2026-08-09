@@ -7,6 +7,29 @@
 
 ---
 
+## 2026-08-09 · 구조가 초록이어도 의미가 빨강이면 온톨로지는 합격하지 않는다
+
+문법상 올바른 vault가 모든 사용자 질문에 유용하고 정확한 것은 아니다. 기존의 다섯
+competency question 평가는 일부 `each` 누락을 막았지만, 구축 전체를 한 번에 다시
+실행할 수 있는 요구·주장·출처·독립 판정 계약은 없었다.
+
+- executive·직원·FDE·agent의 결정 시나리오와 사람이 승인한 버전별 CQ를 한 packet에
+  묶었다. expected answer, quantifier, target, unknown/refusal, 예시와 반례가 빠지면
+  유효한 qualification이 아니다.
+- `each`는 target 문자열을 나열해서 통과하지 않는다. target마다 current witness와
+  supported claim이 연결돼야 하며, 미지원 target은 그대로 uncovered로 남는다.
+- semantic·structural·functional·evidence/provenance·pragmatic·maintainability·interop
+  일곱 축을 별도로 판정한다. 한 축의 실패나 unknown을 다른 green이나 node count,
+  속도, 비용으로 평균내지 않는다.
+- 오래된 witness, claim의 citation 누락, maker self-evaluation, agent의 CQ 승인,
+  출처 없는 pass, 분류되지 않은 red를 fail-closed로 고정했다. `partial`·`unknown`·
+  `refused`는 숨기지 않는다.
+- claim/citation accuracy와 시간·호출·token·비용은 서로 다른 측정값으로 반환한다.
+  fixture는 재실행 계약의 표본이며 세 실제 제품을 합격시켰다는 증거는 아니다.
+
+이 단계는 vault schema·kind·공개 MCP tool·UI를 바꾸지 않는다. 다음 `M1.5`가 이 계약을
+실제 bootstrap/MCP lifecycle에 연결하고, 그 뒤 `O1.5`가 세 낯선 제품에서 독립 검증한다.
+
 ## 2026-08-09 · 공방이 근거 없는 상위개념을 추천하지 않는다
 
 공방은 첫 빈 UP 소켓과 같은 domain의 이름 비슷한 노드를 상위개념처럼 밀었다.

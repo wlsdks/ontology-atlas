@@ -98,7 +98,7 @@ RDF/OWL/SKOS/SHACL 구현으로 소개하지 않는다. **적용 원칙**: LLM�
 | 4 | M1.4 | done(dbc063364) | 현재 MCP inventory가 runtime registry 한 곳에서 파생된다. |
 | 5 | O1.2 | done(9ca7bf65c) | Atlas의 5-kind·관계·formal/RDF/OWL 경계를 정직하게 고정한다. |
 | 6 | O1.1 | done(67cfd4394) | Workshop은 근거 없는 `is_a`를 추천하지 않는다. |
-| 7 | O1.3 | ready | 요구·CQ·예시·반례·다차원 품질 평가 계약을 고정한다. |
+| 7 | O1.3 | in_progress | 요구·CQ·예시·반례·다차원 품질 평가 계약을 고정한다. |
 | 8 | M1.5 | blocked(O1.3) | MCP/skill/prompt가 같은 ontology-construction lifecycle을 강제한다. |
 | 9 | O1.5 | blocked(M1.5) | 세 낯선 제품에서 독립 construction qualification을 통과한다. |
 | 10 | U1.3 | blocked(O1.5) | 같은 ontology-construction을 기본/전문가 깊이로 쉽게 사용한다. |
