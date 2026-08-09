@@ -12,8 +12,15 @@ const DESTINATIONS = Object.keys(DESTINATION_TOURS) as DestinationTourId[];
 
 /** 레일 목적지 6개 중 지도를 뺀 다섯 — 하나라도 빠지면 그 화면만 안내가 없다. */
 describe("목적지 안내", () => {
-  it("지도를 뺀 다섯 목적지가 모두 자기 안내를 갖는다", () => {
-    expect(DESTINATIONS.sort()).toEqual(["docs", "git", "insights", "projects", "studio"]);
+  it("지도를 뺀 여섯 목적지가 모두 자기 안내를 갖는다", () => {
+    expect(DESTINATIONS.sort()).toEqual([
+      "docs",
+      "git",
+      "insights",
+      "projects",
+      "skills",
+      "studio",
+    ]);
   });
 
   it("각 안내는 '무엇을 하는 곳' 한 장 + 실제 요소 한 장이다", () => {
