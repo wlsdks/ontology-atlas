@@ -127,6 +127,15 @@ export function AgentSkillsPage() {
               </p>
             </section>
 
+            {/* **로드되지 않는 사본을 뺐다는 사실을 말한다.** 안 말하면 사용자가
+                Finder 에서 세어 본 수와 안 맞아 우리를 의심한다 — 그리고 그 의심이
+                맞다(실측: 통째로 훑으면 195, 실제 로드는 60). */}
+            {scan?.skippedNotInstalled ? (
+              <Notice tone="muted">
+                {t("notInstalled", { count: scan.skippedNotInstalled })}
+              </Notice>
+            ) : null}
+
             {/* 상한에 걸렸으면 말한다 — 조용히 자르면 「0건」이 「다 괜찮다」로 읽힌다. */}
             {scan?.truncated ? (
               <Notice tone="muted">{t("truncated", { count: scan.scannedFiles })}</Notice>
@@ -147,7 +156,11 @@ export function AgentSkillsPage() {
                     {collision.skills.map((s) => (
                       <p
                         key={s.origin.relativePath}
-                        className="text-caption leading-prose text-[color:var(--color-text-tertiary)]"
+                        // **두 줄로 자른다.** 실측에서 스킬 설명 하나가 문단 여럿짜리
+                        // TRIGGER 지시문이었고, 충돌 여섯이 겹치자 이 카드 하나가
+                        // 화면 두 배 높이가 됐다 — 정작 봐야 할 「어느 것이 겹쳤나」가
+                        // 그 안에 묻혔다. 전문은 아래 목록에서 그 스킬을 펼치면 나온다.
+                        className="line-clamp-2 text-caption leading-prose text-[color:var(--color-text-tertiary)]"
                       >
                         {s.origin.source} — {s.description}
                       </p>
@@ -244,7 +257,12 @@ function SkillRow({
             </span>
           ) : null}
         </span>
-        <span className="line-clamp-2 text-label leading-prose text-[color:var(--color-text-secondary)]">
+        {/* **설명 칸은 항상 두 줄 자리를 차지한다.**
+            `line-clamp-2` 만으로는 상한만 정해져서, 폭이 좁아지면 어떤 행은 한 줄
+            어떤 행은 두 줄이 된다 — 실측 768px 에서 64.69 / 83.38 로 갈렸다.
+            그건 헌장이 금지한 「내용이 카드 높이를 정하는 것」이다.
+            `2lh` 는 이 요소 자신의 행간 두 줄 — 램프 값을 베끼지 않고 따라간다. */}
+        <span className="line-clamp-2 min-h-[2lh] text-label leading-prose text-[color:var(--color-text-secondary)]">
           {skill.description}
         </span>
       </button>

@@ -108,4 +108,41 @@ test.describe("스킬 인벤토리", () => {
     await expect(page.getByTestId("skills-summary")).toBeVisible({ timeout: 15_000 });
     await expect(page.getByTestId("skill-row-toggle")).toHaveCount(0);
   });
+
+  /**
+   * **반복 세트의 높이를 내용이 정하지 못한다** — 헌장의 「치수 규칙성」.
+   *
+   * `line-clamp-2` 만으로는 **상한**만 정해진다. 폭이 좁아지면 어떤 행은 한 줄,
+   * 어떤 행은 두 줄이 되어 격자가 흐트러진다 — 실측 768px 에서 64.69 / 83.38 로
+   * 갈렸다. 설명 칸이 항상 두 줄 자리를 차지하게 해서 고쳤고, 이 시험이 그 성질을
+   * 잠근다. **밀리초가 아니라 픽셀 동일성**이라 어느 기계에서나 같다.
+   */
+  test("설명 길이가 달라도 행 높이는 폭마다 한 값이다", async ({ page }) => {
+    await stubSkillFolder(page, {
+      "skills/a/SKILL.md": SKILL("aaa", "Short one."),
+      "skills/b/SKILL.md": SKILL(
+        "bbb",
+        "A much longer description that will certainly wrap onto two full lines even on a wide viewport because it keeps going and going with many clauses.",
+      ),
+      "skills/c/SKILL.md": SKILL("ccc", "Medium length description that may wrap once."),
+    });
+    await seedFirstRunSeen(page);
+
+    for (const width of [1440, 1024, 768]) {
+      await page.setViewportSize({ width, height: 900 });
+      await page.goto("/ko/skills/?guides=off");
+      await page.getByTestId("skills-open-folder").click();
+      await expect(page.getByTestId("skills-summary")).toBeVisible({ timeout: 15_000 });
+
+      const heights = await page.evaluate(() =>
+        [...document.querySelectorAll('[data-testid="skill-row-toggle"]')].map((el) =>
+          Number(el.getBoundingClientRect().height.toFixed(2)),
+        ),
+      );
+      expect(heights.length, `${width}px 에서 행을 하나도 못 재면 이 시험은 헛돈다`).toBe(3);
+      expect(new Set(heights).size, `${width}px 에서 행 높이가 갈렸다: ${heights.join(" / ")}`).toBe(
+        1,
+      );
+    }
+  });
 });

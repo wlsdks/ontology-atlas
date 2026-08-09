@@ -3596,6 +3596,7 @@
     "emptyHint2": "Installed skills — .claude in your home folder",
     "emptyHint3": "Read-only. Nothing is written to your vault or to the skill files.",
     "truncated": "The folder is large, so we read up to {count} files — the results below cover that much.",
+    "notInstalled": "Skipped {count} folders that are not installed — older versions and catalogs you have not installed. Those never fire.",
     "stat": {
       "skills": "skills",
       "bundled": "bundled files",

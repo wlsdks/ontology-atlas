@@ -25,7 +25,7 @@ export interface SkillFolderState {
   readonly status: SkillFolderStatus;
   readonly inventory: SkillInventory | null;
   readonly folderName: string | null;
-  readonly scan: Pick<SkillFolderScan, "truncated" | "scannedFiles"> | null;
+  readonly scan: Pick<SkillFolderScan, "truncated" | "scannedFiles" | "skippedNotInstalled"> | null;
   readonly error: string | null;
 }
 
@@ -77,7 +77,11 @@ export function useSkillFolder() {
           existingPaths: scan.existingPaths,
         }),
         folderName: handle.name,
-        scan: { truncated: scan.truncated, scannedFiles: scan.scannedFiles },
+        scan: {
+          truncated: scan.truncated,
+          scannedFiles: scan.scannedFiles,
+          skippedNotInstalled: scan.skippedNotInstalled,
+        },
         error: null,
       });
     } catch (error) {
