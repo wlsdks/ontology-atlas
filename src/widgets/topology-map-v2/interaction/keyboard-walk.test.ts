@@ -1,6 +1,8 @@
 import { describe, expect, it } from "vitest";
 import {
   CONE_HALF_TANGENT,
+  DEAD_END_NOTICE_COOLDOWN_MS,
+  shouldAnnounceDeadEnd,
   ORTHOGONAL_PENALTY,
   pickInitialFocus,
   pickNeighborInDirection,
@@ -110,6 +112,25 @@ describe("pickInitialFocus", () => {
 
   it("노드가 없으면 null", () => {
     expect(pickInitialFocus([], { x: 0, y: 0 })).toBeNull();
+  });
+});
+
+describe("shouldAnnounceDeadEnd", () => {
+  it("처음에는 말한다", () => {
+    expect(shouldAnnounceDeadEnd(null, 0)).toBe(true);
+  });
+
+  it("말한 직후에는 다시 말하지 않는다", () => {
+    expect(shouldAnnounceDeadEnd(1_000, 1_000 + DEAD_END_NOTICE_COOLDOWN_MS - 1)).toBe(false);
+  });
+
+  it("식은 뒤에는 다시 말한다", () => {
+    expect(shouldAnnounceDeadEnd(1_000, 1_000 + DEAD_END_NOTICE_COOLDOWN_MS)).toBe(true);
+  });
+
+  it("쉬는 시간이 사람이 읽을 만한 길이다", () => {
+    expect(DEAD_END_NOTICE_COOLDOWN_MS).toBeGreaterThanOrEqual(600);
+    expect(DEAD_END_NOTICE_COOLDOWN_MS).toBeLessThanOrEqual(4_000);
   });
 });
 

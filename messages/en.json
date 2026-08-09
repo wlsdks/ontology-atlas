@@ -807,6 +807,9 @@
       "collapseTooltip": "Collapse hub bar",
       "collapseAriaLabel": "Collapse hub bar",
       "itemTitle": "{name} · {degree} connections"
+    },
+    "keyboardWalk": {
+      "deadEnd": "No connected node this way. Try another direction"
     }
   },
   "searchWidgets": {

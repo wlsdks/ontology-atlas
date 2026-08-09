@@ -124,6 +124,29 @@ export function pickInitialFocus(
   return bestId;
 }
 
+/**
+ * 막다른 길을 **몇 번이나 말할 것인가** — 같은 안내를 연달아 쏟지 않게.
+ *
+ * ⚠️ 처음에는 그 방향에 이웃이 없으면 **아무 일도 안 했다**. 「감싸 돌지 않는다」는
+ * 판단은 맞았지만(반대편으로 뛰면 사용자가 자기 위치를 잃는다), **침묵이 문제였다**:
+ * 소유자가 실제로 써 보고 *"방향키가 되긴 하는데 노드를 자유롭게 이동하진 못하네?"*
+ * 라고 말했다. 눌렀는데 아무 반응이 없으면 사용자는 「고장」과 「그 방향에는 없음」을
+ * 구별할 수 없다 — 이 저장소가 이름 붙여 둔 **「조용한 기다림」** 과 같은 실패다.
+ *
+ * 그래서 제약은 그대로 두고 **말해 준다.** 다만 방향키를 누르고 있으면 같은 안내가
+ * 수십 번 쌓이므로, 한 번 말한 뒤 잠시는 다시 말하지 않는다.
+ *
+ * 시간으로 재는 이유: 「같은 방향 연타」로만 막으면 좌우를 번갈아 누를 때 두 배로
+ * 쏟아진다. 「무엇을 눌렀나」가 아니라 **「방금 말했나」** 가 기준이다.
+ */
+export const DEAD_END_NOTICE_COOLDOWN_MS = 1200;
+
+/** 지금 막다른 길을 말해도 되나. `lastAtMs` 가 `null` 이면 아직 한 번도 안 말했다. */
+export function shouldAnnounceDeadEnd(lastAtMs: number | null, nowMs: number): boolean {
+  if (lastAtMs === null) return true;
+  return nowMs - lastAtMs >= DEAD_END_NOTICE_COOLDOWN_MS;
+}
+
 /** 방향키 이름 → 우리 방향. 그 밖의 키는 `null`(우리 것이 아니다). */
 export function walkDirectionForKey(key: string): WalkDirection | null {
   switch (key) {
