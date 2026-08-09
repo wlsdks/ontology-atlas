@@ -315,7 +315,6 @@ interface ProjectFullCardProps {
 }
 
 function ProjectFullCard({ project, facts, domainRows, description, docPath, kindLabel, t }: ProjectFullCardProps) {
-  const maxTotal = Math.max(1, ...domainRows.map((row) => row.total));
   const ago = formatAgo(resolveRecentActivityAgo(project.updatedAt, new Date()), t);
 
   return (
@@ -381,7 +380,6 @@ function ProjectFullCard({ project, facts, domainRows, description, docPath, kin
                 elementCount: row.elementCount,
                 total: row.total,
               }}
-              maxTotal={maxTotal}
               labels={{ capabilityUnit: kindLabel("capability"), elementUnit: kindLabel("element") }}
               titleWidthClassName="sm:w-[200px] md:w-[280px]"
             />

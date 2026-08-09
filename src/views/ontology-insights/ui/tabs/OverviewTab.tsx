@@ -56,7 +56,6 @@ export function OverviewTab({
   labels,
 }: OverviewTabProps) {
   const kindMax = kindRows[0]?.count ?? 0;
-  const domainMax = domainRows[0]?.total ?? 0;
 
   return (
     <div className="flex min-h-0 flex-1 flex-col gap-[var(--section-gap)]">
@@ -133,7 +132,6 @@ export function OverviewTab({
                   <DomainCapacityBar
                     key={row.id}
                     row={row}
-                    maxTotal={domainMax}
                     labels={{ capabilityUnit: labels.capabilityUnit, elementUnit: labels.elementUnit }}
                   />
                 ))}

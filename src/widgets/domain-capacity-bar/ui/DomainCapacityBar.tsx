@@ -15,10 +15,6 @@ export interface DomainCapacityBarLabels {
 
 export interface DomainCapacityBarProps {
   row: DomainCapacityBarRow;
-  /** Denominator for the bar fill — typically the largest row's `total` in
-   * the current list, so the widest domain reads as a full track and the
-   * rest read proportionally shorter. */
-  maxTotal: number;
   labels: DomainCapacityBarLabels;
   /** Responsive width utility classes for the title column — callers place
    * this row in containers of different widths (a dense insights list vs. a
@@ -28,9 +24,34 @@ export interface DomainCapacityBarProps {
 }
 
 /**
- * One domain's capability/element composition — a single shared grammar for
- * "how big is this domain, and what's it made of" wherever domain capacity
- * data is shown (`/ontology/insights` 구성 탭, `/projects` cards).
+ * 한 도메인의 **구성** — 말(역량)과 증거(요소)가 어떤 비율인가.
+ *
+ * ## 이 막대는 크기를 말하지 않는다 (2026-08-09, 소유자 선택)
+ *
+ * 예전에는 길이가 **크기**였다(가장 큰 도메인이 트랙 전체). 그런데 그 답은 바로
+ * 오른쪽 숫자가 이미 하고 있었고, 실측에서 길이가 새로 말하는 것이 거의 없었다:
+ *
+ * - 채움 비율이 **100 / 94 / 88 / 82 / 76 / 65 / 53 / 47%** — 가장 작은 도메인도
+ *   트랙의 절반 가까이 찼다. 값들이 8~17 사이에 몰려 있으니 분모가 최댓값인 한
+ *   이 압축은 데이터에서 그대로 따라 나온다.
+ * - 그러면서 막대 묶음이 **카드 높이 685px 중 414px(60%)** 을 썼다.
+ *
+ * 그래서 트랙을 **끝까지 채우고 경계 위치만 읽게** 바꿨다. 이제 막대가 답하는
+ * 것은 「말은 많은데 증거가 얇은가, 그 반대인가」이고, 그건 두 숫자를 암산해야
+ * 보이던 사실이다. 크기는 오른쪽 숫자 열이 전담한다.
+ *
+ * **새 데이터는 0개다** — 행이 이미 들고 있던 두 수로만 그린다. 실측: 이 저장소
+ * 볼트에서 경계가 **8%~60%** 사이로 벌어진다(역량 1 : 요소 11 인 도메인부터
+ * 3 : 2 인 도메인까지).
+ *
+ * ⚠️ **이 판단이 틀렸다면 무엇이 보이나** — 실제 볼트들의 구성비가 다 비슷해서
+ * 경계가 한 자리에 서면, 이 잉크도 예전 길이처럼 아무 말 안 하는 잉크가 된다.
+ * 실제로 예시 볼트(storefront)는 38~57% 라 거의 평평하다 — 데모가 제품이
+ * 드러내려는 다양성을 안 보여 주는 것이고, 그건 이 막대가 아니라 예시 데이터
+ * 쪽의 숙제다.
+ *
+ * 두 화면이 이 부품을 나눠 쓴다(`/ontology/insights` 구성 탭, `/projects` 카드) —
+ * **뜻이 갈리면 안 되므로 부품에서 고친다.**
  *
  * 채색은 앱 공통 막대 문법을 따른다 — **무채색 + 인디고 하나**. 역량이 主
  * 계열이라 인디고(`--color-indigo-brand`), 요소는 무채
@@ -60,12 +81,14 @@ export interface DomainCapacityBarProps {
  */
 export function DomainCapacityBar({
   row,
-  maxTotal,
   labels,
   titleWidthClassName = "sm:w-[220px]",
 }: DomainCapacityBarProps) {
-  const capWidth = maxTotal > 0 ? (row.capabilityCount / maxTotal) * 100 : 0;
-  const elWidth = maxTotal > 0 ? (row.elementCount / maxTotal) * 100 : 0;
+  // 분모는 **이 행의 합**이다 — 목록의 최댓값이 아니라. 그래서 트랙이 늘 꽉 차고,
+  // 행끼리 비교되는 것은 길이가 아니라 **경계의 자리**다.
+  const filled = row.capabilityCount + row.elementCount;
+  const capWidth = filled > 0 ? (row.capabilityCount / filled) * 100 : 0;
+  const elWidth = filled > 0 ? (row.elementCount / filled) * 100 : 0;
 
   return (
     <div className="flex flex-wrap items-center gap-x-3 gap-y-1 py-0.5" data-testid="domain-capacity-bar-row">
@@ -78,7 +101,9 @@ export function DomainCapacityBar({
       {/* 트랙은 `aria-hidden` — 같은 사실(역량 N · 요소 M)이 바로 오른쪽에
           텍스트로 있어서, 읽어 주면 스크린리더 사용자만 같은 수를 두 번 듣는다.
           두 세그먼트 사이의 1px 심은 flex 갭이다. 세그먼트는 값이 0보다 클 때만
-          렌더되므로 심도 두 값이 다 있을 때만 생긴다. */}
+          렌더되므로 심도 두 값이 다 있을 때만 생긴다 — 한쪽이 0인 도메인(예:
+          「말만 있고 증거가 0」)은 **통짜 한 색**이 되고, 그것이 이 막대가 가장
+          크게 말하는 상태다. */}
       <span
         aria-hidden
         data-testid="domain-capacity-bar-track"
