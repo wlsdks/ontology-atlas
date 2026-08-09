@@ -14,4 +14,4 @@ elements: [elements/email-sender, elements/kakao-alimtalk, elements/push-sender,
 
 Actually delivers a message to a person, across whichever channels can reach them.
 
-메시지를 사람에게 실제로 도달시킵니다 — 그 사람에게 닿을 수 있는 통로를 골라서.
+메시지를 사람에게 실제로 도달시킵니다. 그 사람에게 닿을 수 있는 통로를 골라서.

@@ -16,4 +16,4 @@ elements: [elements/review-record]
 
 Lets people who actually received the item say what it was like, which is the evidence future shoppers trust most.
 
-실제로 물건을 받은 사람만 후기를 남기게 합니다 — 다음 고객이 가장 신뢰하는 근거입니다.
+실제로 물건을 받은 사람만 후기를 남기게 합니다. 다음 고객이 가장 신뢰하는 근거입니다.

@@ -15,4 +15,4 @@ elements: [elements/restock-subscription]
 
 Remembers who wanted a sold-out item and tells them the moment it is back, turning a lost sale into a later one.
 
-품절 상품을 원했던 사람을 기억해 두었다가 다시 들어온 순간 알립니다 — 놓친 판매를 나중의 판매로 바꿉니다.
+품절 상품을 원했던 사람을 기억해 두었다가 다시 들어온 순간 알립니다. 놓친 판매를 나중의 판매로 바꿉니다.

@@ -15,4 +15,4 @@ elements: []
 
 Releases an authorisation that was never settled, which is cheaper and faster than refunding settled money.
 
-아직 정산되지 않은 승인을 풀어 줍니다 — 이미 정산된 돈을 환불하는 것보다 싸고 빠릅니다.
+아직 정산되지 않은 승인을 풀어 줍니다. 이미 정산된 돈을 환불하는 것보다 싸고 빠릅니다.

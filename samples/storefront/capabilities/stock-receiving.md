@@ -15,4 +15,4 @@ elements: [elements/purchase-order]
 
 Books what physically arrived from a supplier against what was ordered, so stock reflects the shelf and not the plan.
 
-공급처에서 실제로 도착한 수량을 발주 수량과 맞춰 기록합니다 — 재고가 계획이 아니라 선반을 가리키게 합니다.
+공급처에서 실제로 도착한 수량을 발주 수량과 맞춰 기록합니다. 재고가 계획이 아니라 선반을 가리키게 합니다.

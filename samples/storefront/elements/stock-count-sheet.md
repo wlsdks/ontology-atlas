@@ -13,4 +13,4 @@ domain: domains/inventory
 
 What a person actually counted on the shelf, kept separately from what the system believed.
 
-사람이 선반에서 직접 센 값입니다. 시스템이 믿고 있던 값과 **따로** 보관합니다 — 둘이 다를 때 무엇이 틀렸는지 알아야 하기 때문입니다.
+사람이 선반에서 직접 센 값입니다. 시스템이 믿고 있던 값과 **따로** 보관합니다. 둘이 다를 때 무엇이 틀렸는지 알아야 하기 때문입니다.

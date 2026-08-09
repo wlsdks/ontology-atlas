@@ -13,4 +13,4 @@ domain: domains/fulfillment
 
 The delivery-company integration for Korea Post: its own booking call, its own status codes.
 
-우체국택배 연동 — 자기 접수 규격과 상태 코드를 가집니다.
+우체국택배 연동: 자기 접수 규격과 상태 코드를 가집니다.

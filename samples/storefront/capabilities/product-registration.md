@@ -15,4 +15,4 @@ elements: [elements/product-image-store, elements/product-record]
 
 Creates a sellable product: its name, description, photos and which category it belongs to.
 
-팔 물건을 가게에 올립니다 — 이름·설명·사진·소속 카테고리를 정합니다.
+팔 물건을 가게에 올립니다. 이름·설명·사진·소속 카테고리를 정합니다.

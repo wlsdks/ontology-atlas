@@ -29,9 +29,9 @@
           "slug": "account-closure-회원-탈퇴"
         }
       ],
-      "excerpt": "Ends the relationship on the shopper's terms while keeping the order records the store is legally required to hold. 고객이 원할 때 관계를 끝냅니다 — 다만 법적으로 보관해야 하는 주문 기록은 남습니다.",
-      "wordCount": 38,
-      "updatedAt": "2026-08-02",
+      "excerpt": "Ends the relationship on the shopper's terms while keeping the order records the store is legally required to hold. 고객이 원할 때 관계를 끝냅니다. 다만 법적으로 보관해야 하는 주문 기록은 남습니다.",
+      "wordCount": 37,
+      "updatedAt": "2026-08-09",
       "linksOut": []
     },
     {
@@ -60,9 +60,9 @@
           "slug": "address-book-배송지-주소록"
         }
       ],
-      "excerpt": "Remembers the places a shopper ships to, so the slowest part of checkout becomes one tap. 고객이 물건을 받는 장소들을 기억합니다 — 주문서에서 가장 느린 단계가 한 번의 선택이 됩니다.",
-      "wordCount": 36,
-      "updatedAt": "2026-08-02",
+      "excerpt": "Remembers the places a shopper ships to, so the slowest part of checkout becomes one tap. 고객이 물건을 받는 장소들을 기억합니다. 주문서에서 가장 느린 단계가 한 번의 선택이 됩니다.",
+      "wordCount": 35,
+      "updatedAt": "2026-08-09",
       "linksOut": []
     },
     {
@@ -199,9 +199,9 @@
           "slug": "checkout-주문서-작성"
         }
       ],
-      "excerpt": "Turns a cart into a concrete proposal: these items, to this address, with this coupon, paid this way. 장바구니를 구체적인 제안으로 바꿉니다 — 이 상품들을, 이 주소로, 이 쿠폰을 써서, 이 수단으로.",
-      "wordCount": 37,
-      "updatedAt": "2026-08-02",
+      "excerpt": "Turns a cart into a concrete proposal: these items, to this address, with this coupon, paid this way. 장바구니를 구체적인 제안으로 바꿉니다. 이 상품들을, 이 주소로, 이 쿠폰을 써서, 이 수단으로. 결제 화면은 이 가게에서 사람이 가장 많이 떠나는 자리입니다. 그래서 여기서 새로 묻는 것은 하나하나가 비용입니다. 회원가입을 요구할 것인가, 주소를 다시 입력하게 할 것인가, 결제 수단을 몇 개나 보여줄 것인가. 지금 정해 둔 것: 비회원도 끝까지 갈 수 있다. 대신 주문 조회에 필요한 것",
+      "wordCount": 112,
+      "updatedAt": "2026-08-09",
       "linksOut": []
     },
     {
@@ -264,9 +264,9 @@
           "slug": "coupon-redemption-쿠폰-사용"
         }
       ],
-      "excerpt": "Checks a coupon against the cart it is being used on and consumes it once, which is where most of the rules actually bite. 쿠폰이 지금 이 장바구니에 쓸 수 있는지 따져 보고 한 번만 소진시킵니다 — 규칙이 실제로 작동하는 곳입니다.",
-      "wordCount": 47,
-      "updatedAt": "2026-08-02",
+      "excerpt": "Checks a coupon against the cart it is being used on and consumes it once, which is where most of the rules actually bite. 쿠폰이 지금 이 장바구니에 쓸 수 있는지 따져 보고 한 번만 소진시킵니다. 규칙이 실제로 작동하는 곳입니다. 쿠폰은 쓰는 순간이 아니라 주문이 확정되는 순간에 소진됩니다. 그 사이에 결제가 실패하면 쿠폰은 돌아와야 하고, 돌아오지 않으면 고객은 아무것도 못 사고 쿠폰만 잃습니다. 겹치는 규칙도 여기서 걸립니다. 이 가게는 한 주문에 쿠폰 하나이고 등급",
+      "wordCount": 96,
+      "updatedAt": "2026-08-09",
       "linksOut": []
     },
     {
@@ -298,9 +298,9 @@
           "slug": "customer-messaging-고객-메시지-발송"
         }
       ],
-      "excerpt": "Actually delivers a message to a person, across whichever channels can reach them. 메시지를 사람에게 실제로 도달시킵니다 — 그 사람에게 닿을 수 있는 통로를 골라서.",
-      "wordCount": 32,
-      "updatedAt": "2026-08-02",
+      "excerpt": "Actually delivers a message to a person, across whichever channels can reach them. 메시지를 사람에게 실제로 도달시킵니다. 그 사람에게 닿을 수 있는 통로를 골라서.",
+      "wordCount": 31,
+      "updatedAt": "2026-08-09",
       "linksOut": []
     },
     {
@@ -333,9 +333,9 @@
           "slug": "exchange-request-교환-접수"
         }
       ],
-      "excerpt": "Ties a collection and a re-shipment into one case, so no money moves and the shopper ends up with a different item. 회수와 재발송을 한 건으로 묶습니다 — 돈은 움직이지 않고, 고객은 다른 물건을 받게 됩니다.",
-      "wordCount": 42,
-      "updatedAt": "2026-08-02",
+      "excerpt": "Ties a collection and a re-shipment into one case, so no money moves and the shopper ends up with a different item. 회수와 재발송을 한 건으로 묶습니다. 돈은 움직이지 않고, 고객은 다른 물건을 받게 됩니다.",
+      "wordCount": 41,
+      "updatedAt": "2026-08-09",
       "linksOut": []
     },
     {
@@ -393,9 +393,9 @@
           "slug": "faq-자주-묻는-질문"
         }
       ],
-      "excerpt": "Answers the questions that would otherwise arrive one by one, which is the cheapest support there is. 가만두면 한 건씩 도착할 질문에 미리 답해 둡니다 — 가장 값싼 고객 지원입니다.",
-      "wordCount": 36,
-      "updatedAt": "2026-08-02",
+      "excerpt": "Answers the questions that would otherwise arrive one by one, which is the cheapest support there is. 가만두면 한 건씩 도착할 질문에 미리 답해 둡니다. 가장 값싼 고객 지원입니다.",
+      "wordCount": 35,
+      "updatedAt": "2026-08-09",
       "linksOut": []
     },
     {
@@ -500,9 +500,9 @@
           "slug": "instalment-payment-할부-결제"
         }
       ],
-      "excerpt": "Splits one card payment across months, which changes what the shopper owes each month but not what the store receives. 카드 결제 한 건을 여러 달로 나눕니다 — 고객이 매달 낼 돈은 달라지지만 가게가 받는 금액은 같습니다.",
-      "wordCount": 43,
-      "updatedAt": "2026-08-02",
+      "excerpt": "Splits one card payment across months, which changes what the shopper owes each month but not what the store receives. 카드 결제 한 건을 여러 달로 나눕니다. 고객이 매달 낼 돈은 달라지지만 가게가 받는 금액은 같습니다.",
+      "wordCount": 42,
+      "updatedAt": "2026-08-09",
       "linksOut": []
     },
     {
@@ -568,9 +568,9 @@
           "slug": "loyalty-points-적립금"
         }
       ],
-      "excerpt": "Gives back a fraction of what was spent as store credit, which is a discount the store keeps on its own books. 쓴 금액의 일부를 가게 안에서만 쓸 수 있는 돈으로 돌려줍니다 — 가게 장부 안에 남는 할인입니다.",
-      "wordCount": 43,
-      "updatedAt": "2026-08-02",
+      "excerpt": "Gives back a fraction of what was spent as store credit, which is a discount the store keeps on its own books. 쓴 금액의 일부를 가게 안에서만 쓸 수 있는 돈으로 돌려줍니다. 가게 장부 안에 남는 할인입니다.",
+      "wordCount": 42,
+      "updatedAt": "2026-08-09",
       "linksOut": []
     },
     {
@@ -640,9 +640,9 @@
           "slug": "delivery-address-change-배송지-변경"
         }
       ],
-      "excerpt": "Changes where a live order is going without touching what was bought or what was paid. 이미 접수된 주문의 도착지만 바꿉니다 — 산 물건과 낸 돈은 건드리지 않습니다.",
-      "wordCount": 35,
-      "updatedAt": "2026-08-02",
+      "excerpt": "Changes where a live order is going without touching what was bought or what was paid. 이미 접수된 주문의 도착지만 바꿉니다. 산 물건과 낸 돈은 건드리지 않습니다.",
+      "wordCount": 34,
+      "updatedAt": "2026-08-09",
       "linksOut": []
     },
     {
@@ -676,9 +676,9 @@
           "slug": "order-cancellation-주문-취소"
         }
       ],
-      "excerpt": "Voids a whole order before it ships: the order stops existing as a commitment and the full amount goes back. 출고 전에 주문 전체를 무효로 합니다 — 약속 자체가 사라지고 결제 금액은 전액 되돌아갑니다.",
-      "wordCount": 40,
-      "updatedAt": "2026-08-02",
+      "excerpt": "Voids a whole order before it ships: the order stops existing as a commitment and the full amount goes back. 출고 전에 주문 전체를 무효로 합니다. 약속 자체가 사라지고 결제 금액은 전액 되돌아갑니다.",
+      "wordCount": 39,
+      "updatedAt": "2026-08-09",
       "linksOut": []
     },
     {
@@ -742,9 +742,9 @@
           "slug": "order-status-notification-주문-상태-알림"
         }
       ],
-      "excerpt": "Tells the shopper each time their order changes state, so they do not have to keep checking. 주문 상태가 바뀔 때마다 알려 줍니다 — 고객이 계속 들여다보지 않아도 되게 합니다.",
-      "wordCount": 38,
-      "updatedAt": "2026-08-02",
+      "excerpt": "Tells the shopper each time their order changes state, so they do not have to keep checking. 주문 상태가 바뀔 때마다 알려 줍니다. 고객이 계속 들여다보지 않아도 되게 합니다.",
+      "wordCount": 37,
+      "updatedAt": "2026-08-09",
       "linksOut": []
     },
     {
@@ -775,9 +775,9 @@
           "slug": "partial-cancellation-부분-취소"
         }
       ],
-      "excerpt": "Drops some items and keeps the rest alive, so only the difference is refunded and the remaining parcel still ships. 일부 품목만 빼고 나머지 주문은 살려 둡니다 — 차액만 환불되고 남은 상품은 그대로 출고됩니다.",
-      "wordCount": 40,
-      "updatedAt": "2026-08-02",
+      "excerpt": "Drops some items and keeps the rest alive, so only the difference is refunded and the remaining parcel still ships. 일부 품목만 빼고 나머지 주문은 살려 둡니다. 차액만 환불되고 남은 상품은 그대로 출고됩니다. 전체 취소는 쉽고 부분 취소가 어렵습니다. 세 개 중 하나만 무르면 네 가지가 한꺼번에 걸립니다: 배송비: 무료 배송 기준을 넘겨서 무료였는데, 하나 빼면 기준 아래로 내려갑니다 쿠폰: 「5만원 이상 1만원 할인」이 걸렸는데 남은 금액이 5만원 미만이 됩니다 적립: 이미",
+      "wordCount": 124,
+      "updatedAt": "2026-08-09",
       "linksOut": []
     },
     {
@@ -848,9 +848,9 @@
           "slug": "payment-authorization-결제-승인"
         }
       ],
-      "excerpt": "Asks the payment provider to guarantee the amount before the store promises anything to the shopper. 가게가 고객에게 약속하기 전에, 결제사에 그 금액을 보증받습니다.",
-      "wordCount": 30,
-      "updatedAt": "2026-08-02",
+      "excerpt": "Asks the payment provider to guarantee the amount before the store promises anything to the shopper. 가게가 고객에게 약속하기 전에, 결제사에 그 금액을 보증받습니다. 승인은 돈을 받은 것이 아니라 붙들어 둔 것입니다. 이 구별이 이 영역 문제의 절반을 만듭니다. 붙들어 둘 수 있는 기간은 카드사마다 다르고 보통 며칠입니다. 그 안에 확정하지 못하면 자동으로 풀리는데, 그때 주문은 살아 있고 돈만 없는 상태가 됩니다. 그래서 확정하지 못할 것 같으면 먼저 풀고 주문을 세웁니다: 조용히 만료",
+      "wordCount": 96,
+      "updatedAt": "2026-08-09",
       "linksOut": []
     },
     {
@@ -880,9 +880,9 @@
           "slug": "payment-void-결제-취소"
         }
       ],
-      "excerpt": "Releases an authorisation that was never settled, which is cheaper and faster than refunding settled money. 아직 정산되지 않은 승인을 풀어 줍니다 — 이미 정산된 돈을 환불하는 것보다 싸고 빠릅니다.",
-      "wordCount": 36,
-      "updatedAt": "2026-08-02",
+      "excerpt": "Releases an authorisation that was never settled, which is cheaper and faster than refunding settled money. 아직 정산되지 않은 승인을 풀어 줍니다. 이미 정산된 돈을 환불하는 것보다 싸고 빠릅니다.",
+      "wordCount": 35,
+      "updatedAt": "2026-08-09",
       "linksOut": []
     },
     {
@@ -953,7 +953,7 @@
       "slug": "capabilities/product-category",
       "path": "samples/storefront/capabilities/product-category.md",
       "title": "Category Management",
-      "description": "Maintains the tree a shopper browses down — clothing → outerwear → coats — and decides where each product hangs.",
+      "description": "Maintains the tree a shopper browses down (clothing → outerwear → coats) and decides where each product hangs.",
       "tags": [],
       "frontmatter": {
         "uid": "0a8baeac-6e84-46cc-9c00-e9f53c720c7a",
@@ -962,7 +962,7 @@
         "title": "Category Management",
         "display_ko": "카테고리 관리",
         "display_en": "Category Management",
-        "description": "Maintains the tree a shopper browses down — clothing → outerwear → coats — and decides where each product hangs.",
+        "description": "Maintains the tree a shopper browses down (clothing → outerwear → coats) and decides where each product hangs.",
         "domain": "domains/catalog",
         "elements": [
           "elements/category-tree"
@@ -975,9 +975,9 @@
           "slug": "category-management-카테고리-관리"
         }
       ],
-      "excerpt": "Maintains the tree a shopper browses down — clothing → outerwear → coats — and decides where each product hangs. 고객이 타고 내려가는 분류 트리(의류 → 아우터 → 코트)를 관리하고, 각 상품이 어디에 걸릴지 정합니다.",
-      "wordCount": 41,
-      "updatedAt": "2026-08-02",
+      "excerpt": "Maintains the tree a shopper browses down (clothing → outerwear → coats) and decides where each product hangs. 고객이 타고 내려가는 분류 트리(의류 → 아우터 → 코트)를 관리하고, 각 상품이 어디에 걸릴지 정합니다.",
+      "wordCount": 39,
+      "updatedAt": "2026-08-09",
       "linksOut": []
     },
     {
@@ -1018,7 +1018,7 @@
       "slug": "capabilities/product-option",
       "path": "samples/storefront/capabilities/product-option.md",
       "title": "Product Options & SKUs",
-      "description": "Splits one product into the variants that are actually stocked and sold separately — size, colour, set quantity.",
+      "description": "Splits one product into the variants that are actually stocked and sold separately: size, colour, set quantity.",
       "tags": [],
       "frontmatter": {
         "uid": "6a94f2b8-3e78-44c0-af14-c04f9d008244",
@@ -1027,7 +1027,7 @@
         "title": "Product Options & SKUs",
         "display_ko": "상품 옵션",
         "display_en": "Product Options & SKUs",
-        "description": "Splits one product into the variants that are actually stocked and sold separately — size, colour, set quantity.",
+        "description": "Splits one product into the variants that are actually stocked and sold separately: size, colour, set quantity.",
         "domain": "domains/catalog",
         "dependencies": [
           "capabilities/product-registration"
@@ -1043,9 +1043,9 @@
           "slug": "product-options-skus-상품-옵션"
         }
       ],
-      "excerpt": "Splits one product into the variants that are actually stocked and sold separately — size, colour, set quantity. 한 상품을 실제로 따로 재고를 잡고 따로 파는 단위(사이즈·색상·수량)로 쪼갭니다.",
-      "wordCount": 36,
-      "updatedAt": "2026-08-02",
+      "excerpt": "Splits one product into the variants that are actually stocked and sold separately: size, colour, set quantity. 한 상품을 실제로 따로 재고를 잡고 따로 파는 단위(사이즈·색상·수량)로 쪼갭니다.",
+      "wordCount": 35,
+      "updatedAt": "2026-08-09",
       "linksOut": []
     },
     {
@@ -1077,9 +1077,9 @@
           "slug": "price-management-판매가-관리"
         }
       ],
-      "excerpt": "Sets the list price and the discounted price, and keeps a record of every change so a past order can still be explained. 정가와 할인가를 정하고, 지난 주문의 금액을 나중에도 설명할 수 있도록 모든 변경을 기록합니다.",
-      "wordCount": 42,
-      "updatedAt": "2026-08-02",
+      "excerpt": "Sets the list price and the discounted price, and keeps a record of every change so a past order can still be explained. 정가와 할인가를 정하고, 지난 주문의 금액을 나중에도 설명할 수 있도록 모든 변경을 기록합니다. 가격은 상품의 속성이 아니라 상품과 시점의 짝입니다. 어제 산 사람과 오늘 산 사람이 다른 값을 냈다는 사실이 남아야 환불을 계산할 수 있습니다. 그래서 주문에는 그때의 가격을 복사해 둡니다. 상품 문서를 참조만 하면 나중에 가격이 바뀔 때 과거 주문의 금액이",
+      "wordCount": 87,
+      "updatedAt": "2026-08-09",
       "linksOut": []
     },
     {
@@ -1149,9 +1149,9 @@
           "slug": "product-registration-상품-등록"
         }
       ],
-      "excerpt": "Creates a sellable product: its name, description, photos and which category it belongs to. 팔 물건을 가게에 올립니다 — 이름·설명·사진·소속 카테고리를 정합니다.",
-      "wordCount": 28,
-      "updatedAt": "2026-08-02",
+      "excerpt": "Creates a sellable product: its name, description, photos and which category it belongs to. 팔 물건을 가게에 올립니다. 이름·설명·사진·소속 카테고리를 정합니다.",
+      "wordCount": 27,
+      "updatedAt": "2026-08-09",
       "linksOut": []
     },
     {
@@ -1186,9 +1186,9 @@
           "slug": "product-reviews-상품-리뷰"
         }
       ],
-      "excerpt": "Lets people who actually received the item say what it was like, which is the evidence future shoppers trust most. 실제로 물건을 받은 사람만 후기를 남기게 합니다 — 다음 고객이 가장 신뢰하는 근거입니다.",
-      "wordCount": 39,
-      "updatedAt": "2026-08-02",
+      "excerpt": "Lets people who actually received the item say what it was like, which is the evidence future shoppers trust most. 실제로 물건을 받은 사람만 후기를 남기게 합니다. 다음 고객이 가장 신뢰하는 근거입니다.",
+      "wordCount": 38,
+      "updatedAt": "2026-08-09",
       "linksOut": []
     },
     {
@@ -1254,9 +1254,9 @@
           "slug": "referral-programme-친구-추천"
         }
       ],
-      "excerpt": "Pays an existing customer for bringing a new one, which makes acquisition cost visible per person. 기존 고객이 새 고객을 데려오면 보상합니다 — 사람 한 명당 획득 비용이 눈에 보이게 됩니다.",
-      "wordCount": 37,
-      "updatedAt": "2026-08-02",
+      "excerpt": "Pays an existing customer for bringing a new one, which makes acquisition cost visible per person. 기존 고객이 새 고객을 데려오면 보상합니다. 사람 한 명당 획득 비용이 눈에 보이게 됩니다.",
+      "wordCount": 36,
+      "updatedAt": "2026-08-09",
       "linksOut": []
     },
     {
@@ -1288,9 +1288,9 @@
           "slug": "refund-processing-환불-처리"
         }
       ],
-      "excerpt": "Sends settled money back after the fact, in the amount and to the method the original payment used. 이미 정산된 돈을 사후에 돌려보냅니다 — 원 결제와 같은 수단으로, 정해진 금액만큼.",
-      "wordCount": 36,
-      "updatedAt": "2026-08-02",
+      "excerpt": "Sends settled money back after the fact, in the amount and to the method the original payment used. 이미 정산된 돈을 사후에 돌려보냅니다. 원 결제와 같은 수단으로, 정해진 금액만큼. 되돌려 주는 길이 받은 길과 같지 않을 때가 있습니다. 원칙은 원래 수단이지만, 카드가 해지됐거나 상품권으로 냈거나 포인트와 섞여 있으면 그 원칙이 성립하지 않습니다. 이 가게가 정한 순서: 포인트 먼저, 그다음 원래 수단. 포인트는 되돌리기가 확실하고 즉시이기 때문입니다. 남은 금액만 카드로 갑니다. 되돌려",
+      "wordCount": 93,
+      "updatedAt": "2026-08-09",
       "linksOut": []
     },
     {
@@ -1355,9 +1355,9 @@
           "slug": "restock-alert-재입고-알림"
         }
       ],
-      "excerpt": "Remembers who wanted a sold-out item and tells them the moment it is back, turning a lost sale into a later one. 품절 상품을 원했던 사람을 기억해 두었다가 다시 들어온 순간 알립니다 — 놓친 판매를 나중의 판매로 바꿉니다.",
-      "wordCount": 44,
-      "updatedAt": "2026-08-02",
+      "excerpt": "Remembers who wanted a sold-out item and tells them the moment it is back, turning a lost sale into a later one. 품절 상품을 원했던 사람을 기억해 두었다가 다시 들어온 순간 알립니다. 놓친 판매를 나중의 판매로 바꿉니다.",
+      "wordCount": 43,
+      "updatedAt": "2026-08-09",
       "linksOut": []
     },
     {
@@ -1389,9 +1389,9 @@
           "slug": "return-pickup-반품-회수"
         }
       ],
-      "excerpt": "Sends a courier to collect something already delivered, which is a delivery run in the opposite direction. 이미 배송된 물건을 가지러 기사를 보냅니다 — 방향만 반대인 배송입니다.",
-      "wordCount": 33,
-      "updatedAt": "2026-08-02",
+      "excerpt": "Sends a courier to collect something already delivered, which is a delivery run in the opposite direction. 이미 배송된 물건을 가지러 기사를 보냅니다. 방향만 반대인 배송입니다.",
+      "wordCount": 32,
+      "updatedAt": "2026-08-09",
       "linksOut": []
     },
     {
@@ -1428,9 +1428,9 @@
           "slug": "return-request-반품-접수"
         }
       ],
-      "excerpt": "Records that a shopper wants to send something back after it arrived, and starts the collection and refund it implies. 이미 받은 물건을 돌려보내고 싶다는 요청을 접수하고, 그에 따르는 회수와 환불을 시작시킵니다.",
-      "wordCount": 38,
-      "updatedAt": "2026-08-02",
+      "excerpt": "Records that a shopper wants to send something back after it arrived, and starts the collection and refund it implies. 이미 받은 물건을 돌려보내고 싶다는 요청을 접수하고, 그에 따르는 회수와 환불을 시작시킵니다. 되돌리는 이유가 처리를 정합니다. 마음이 바뀐 것과 물건이 잘못 온 것은 배송비를 누가 무는지가 다르고, 그 판단을 고객이 고른 사유에만 맡기면 전부 「불량」이 됩니다. 그래서 사유는 고객이 고르되 확인은 물건이 도착한 뒤에 합니다. 확인 전에 환불하면 빠르지만 되",
+      "wordCount": 112,
+      "updatedAt": "2026-08-09",
       "linksOut": []
     },
     {
@@ -1534,7 +1534,7 @@
       "slug": "capabilities/signup",
       "path": "samples/storefront/capabilities/signup.md",
       "title": "Sign-up",
-      "description": "Creates the identity everything else in the store attaches to — orders, addresses, points, coupons.",
+      "description": "Creates the identity everything else in the store attaches to: orders, addresses, points, coupons.",
       "tags": [],
       "frontmatter": {
         "uid": "c43a5015-ac5c-46e5-8c8d-9a9c11c5385d",
@@ -1543,7 +1543,7 @@
         "title": "Sign-up",
         "display_ko": "회원 가입",
         "display_en": "Sign-up",
-        "description": "Creates the identity everything else in the store attaches to — orders, addresses, points, coupons.",
+        "description": "Creates the identity everything else in the store attaches to: orders, addresses, points, coupons.",
         "domain": "domains/customer",
         "relates": [
           "capabilities/coupon-issue"
@@ -1559,9 +1559,9 @@
           "slug": "sign-up-회원-가입"
         }
       ],
-      "excerpt": "Creates the identity everything else in the store attaches to — orders, addresses, points, coupons. 가게의 나머지 전부가 매달릴 정체성을 만듭니다 — 주문·주소·적립금·쿠폰이 모두 여기 붙습니다.",
-      "wordCount": 31,
-      "updatedAt": "2026-08-02",
+      "excerpt": "Creates the identity everything else in the store attaches to: orders, addresses, points, coupons. 가게의 나머지 전부가 매달릴 정체성을 만듭니다. 주문·주소·적립금·쿠폰이 모두 여기 붙습니다.",
+      "wordCount": 29,
+      "updatedAt": "2026-08-09",
       "linksOut": []
     },
     {
@@ -1593,9 +1593,9 @@
           "slug": "goods-receiving-입고-처리"
         }
       ],
-      "excerpt": "Books what physically arrived from a supplier against what was ordered, so stock reflects the shelf and not the plan. 공급처에서 실제로 도착한 수량을 발주 수량과 맞춰 기록합니다 — 재고가 계획이 아니라 선반을 가리키게 합니다.",
-      "wordCount": 41,
-      "updatedAt": "2026-08-02",
+      "excerpt": "Books what physically arrived from a supplier against what was ordered, so stock reflects the shelf and not the plan. 공급처에서 실제로 도착한 수량을 발주 수량과 맞춰 기록합니다. 재고가 계획이 아니라 선반을 가리키게 합니다.",
+      "wordCount": 40,
+      "updatedAt": "2026-08-09",
       "linksOut": []
     },
     {
@@ -1627,9 +1627,9 @@
           "slug": "stock-reservation-재고-선점"
         }
       ],
-      "excerpt": "Holds units for an order that is being paid for, so two shoppers cannot buy the same last item. 결제가 진행 중인 주문 몫을 잠시 붙들어 둡니다 — 마지막 한 개를 두 사람이 동시에 사는 일을 막습니다.",
-      "wordCount": 43,
-      "updatedAt": "2026-08-02",
+      "excerpt": "Holds units for an order that is being paid for, so two shoppers cannot buy the same last item. 결제가 진행 중인 주문 몫을 잠시 붙들어 둡니다. 마지막 한 개를 두 사람이 동시에 사는 일을 막습니다. 언제 잡을 것인가가 이 기능의 전부입니다. 장바구니에 넣을 때 잡으면 안 사는 사람이 재고를 묶습니다. 결제가 끝난 뒤 잡으면 두 사람이 마지막 하나를 동시에 삽니다. 이 가게는 결제를 시작할 때 잡고, 정해진 시간이 지나면 자동으로 풉니다. 그 시간이 짧으면 결제하다 재고를 잃고, 길면 재고가",
+      "wordCount": 101,
+      "updatedAt": "2026-08-09",
       "linksOut": []
     },
     {
@@ -1658,9 +1658,9 @@
           "slug": "stock-level-tracking-재고-수량-관리"
         }
       ],
-      "excerpt": "Answers one question everything else depends on: how many of this can still be sold right now. 나머지 전부가 기대고 있는 한 가지 질문에 답합니다 — 지금 이걸 몇 개까지 더 팔 수 있는가.",
-      "wordCount": 42,
-      "updatedAt": "2026-08-02",
+      "excerpt": "Answers one question everything else depends on: how many of this can still be sold right now. 나머지 전부가 기대고 있는 한 가지 질문에 답합니다. 지금 이걸 몇 개까지 더 팔 수 있는가.",
+      "wordCount": 41,
+      "updatedAt": "2026-08-09",
       "linksOut": []
     },
     {
@@ -1690,9 +1690,9 @@
           "slug": "tax-receipt-issuing-현금영수증-발행"
         }
       ],
-      "excerpt": "Issues the document a shopper needs for their own tax records, which is a legal obligation rather than a feature. 고객이 자기 세무 기록에 쓸 증빙을 발행합니다 — 기능이라기보다 법적 의무입니다.",
-      "wordCount": 38,
-      "updatedAt": "2026-08-02",
+      "excerpt": "Issues the document a shopper needs for their own tax records, which is a legal obligation rather than a feature. 고객이 자기 세무 기록에 쓸 증빙을 발행합니다. 기능이라기보다 법적 의무입니다.",
+      "wordCount": 37,
+      "updatedAt": "2026-08-09",
       "linksOut": []
     },
     {
@@ -1719,8 +1719,8 @@
           "slug": "tier-evaluation-등급-산정"
         }
       ],
-      "excerpt": "Works out which tier a shopper belongs to from what they have bought over a window. 일정 기간 동안 산 것을 보고 이 고객이 어느 등급인지 정합니다. 아직 정하지 못한 것이 있습니다: 등급을 내릴 때 미리 알릴 것인가, 아니면 조용히 바꿀 것인가. 올리는 쪽은 쉽습니다. 내리는 쪽이 어렵습니다 — 고객은 자기가 무엇을 잃는지 알기 전에 잃고 싶어 하지 않기 때문입니다. 그래서 이 기능은 아직 만들지 않았고, 여기 적힌 것은 결정이 아니라 결정해야 할 목록입니다. 강등 예고를 며칠 전에 보낼 것인가 등급",
-      "wordCount": 109,
+      "excerpt": "Works out which tier a shopper belongs to from what they have bought over a window. 일정 기간 동안 산 것을 보고 이 고객이 어느 등급인지 정합니다. 아직 정하지 못한 것이 있습니다: 등급을 내릴 때 미리 알릴 것인가, 아니면 조용히 바꿀 것인가. 올리는 쪽은 쉽습니다. 내리는 쪽이 어렵습니다. 고객은 자기가 무엇을 잃는지 알기 전에 잃고 싶어 하지 않기 때문입니다. 그래서 이 기능은 아직 만들지 않았고, 여기 적힌 것은 결정이 아니라 결정해야 할 목록입니다. 강등 예고를 며칠 전에 보낼 것인가 등급 ",
+      "wordCount": 108,
       "updatedAt": "2026-08-09",
       "linksOut": []
     },
@@ -1755,9 +1755,9 @@
           "slug": "one-tap-wallet-payment-간편결제"
         }
       ],
-      "excerpt": "Authorises a payment through a wallet the shopper already trusts, so no card number is typed at checkout. 고객이 이미 쓰고 있는 지갑 앱을 통해 승인을 받습니다 — 결제창에서 카드번호를 다시 입력하지 않습니다.",
-      "wordCount": 39,
-      "updatedAt": "2026-08-02",
+      "excerpt": "Authorises a payment through a wallet the shopper already trusts, so no card number is typed at checkout. 고객이 이미 쓰고 있는 지갑 앱을 통해 승인을 받습니다. 결제창에서 카드번호를 다시 입력하지 않습니다.",
+      "wordCount": 38,
+      "updatedAt": "2026-08-09",
       "linksOut": []
     },
     {
@@ -1789,9 +1789,9 @@
           "slug": "warehouse-picking-출고-지시"
         }
       ],
-      "excerpt": "Turns a confirmed order into instructions a person in the warehouse can walk: this shelf, this many, this box. 확정된 주문을 창고에서 사람이 실제로 걸어다니며 수행할 지시로 바꿉니다 — 이 선반, 이만큼, 이 상자.",
-      "wordCount": 40,
-      "updatedAt": "2026-08-02",
+      "excerpt": "Turns a confirmed order into instructions a person in the warehouse can walk: this shelf, this many, this box. 확정된 주문을 창고에서 사람이 실제로 걸어다니며 수행할 지시로 바꿉니다. 이 선반, 이만큼, 이 상자.",
+      "wordCount": 39,
+      "updatedAt": "2026-08-09",
       "linksOut": []
     },
     {
@@ -1823,9 +1823,9 @@
           "slug": "wishlist-찜-목록"
         }
       ],
-      "excerpt": "Keeps a product in reach without buying it, which is a signal about demand as much as a convenience. 사지 않은 채 상품을 가까이 둡니다 — 편의이자, 수요에 대한 신호이기도 합니다.",
-      "wordCount": 36,
-      "updatedAt": "2026-08-02",
+      "excerpt": "Keeps a product in reach without buying it, which is a signal about demand as much as a convenience. 사지 않은 채 상품을 가까이 둡니다. 편의이자, 수요에 대한 신호이기도 합니다.",
+      "wordCount": 35,
+      "updatedAt": "2026-08-09",
       "linksOut": []
     },
     {
@@ -1874,9 +1874,9 @@
           "slug": "product-catalog-상품"
         }
       ],
-      "excerpt": "Everything a shopper sees before deciding to buy: the product itself, its category, its options, its price, and what other buyers said about it. 고객이 사기로 마음먹기 전에 보는 모든 것 — 상품 자체와 분류, 옵션, 가격, 그리고 먼저 산 사람들이 남긴 말입니다.",
-      "wordCount": 48,
-      "updatedAt": "2026-08-02",
+      "excerpt": "Everything a shopper sees before deciding to buy: the product itself, its category, its options, its price, and what other buyers said about it. 고객이 사기로 마음먹기 전에 보는 모든 것: 상품 자체와 분류, 옵션, 가격, 그리고 먼저 산 사람들이 남긴 말입니다. 여기서 가장 자주 부딪히는 것은 「같은 상품인가」입니다. 색만 다른 티셔츠는 한 상품의 옵션인지 별개 상품인지, 그 답에 따라 재고도 리뷰도 검색 결과도 달라집니다. 이 가게는 판매 단위가 다르",
+      "wordCount": 114,
+      "updatedAt": "2026-08-09",
       "linksOut": []
     },
     {
@@ -1920,16 +1920,16 @@
           "slug": "customers-회원"
         }
       ],
-      "excerpt": "Who the shopper is, how they prove it, and what the store is allowed to remember about them between visits. 고객이 누구인지, 그걸 어떻게 증명하는지, 그리고 다음 방문까지 가게가 무엇을 기억해도 되는지를 다룹니다.",
-      "wordCount": 37,
-      "updatedAt": "2026-08-02",
+      "excerpt": "Who the shopper is, how they prove it, and what the store is allowed to remember about them between visits. 고객이 누구인지, 그걸 어떻게 증명하는지, 그리고 다음 방문까지 가게가 무엇을 기억해도 되는지를 다룹니다. 이 영역의 규칙은 대부분 「기억해도 되는가」입니다. 기술이 아니라 약속의 문제라서, 무엇을 얼마나 들고 있을지가 먼저 정해져야 나머지가 따라옵니다. 탈퇴가 그 경계를 가장 잘 보여 줍니다. 고객은 지우기를 원하고 법은 주문 기록을 남기라고 합니다. 그래서 여기서는 사람과 ",
+      "wordCount": 91,
+      "updatedAt": "2026-08-09",
       "linksOut": []
     },
     {
       "slug": "domains/fulfillment",
       "path": "samples/storefront/domains/fulfillment.md",
       "title": "Fulfillment & Delivery",
-      "description": "Getting the parcel out of the warehouse, onto a carrier, into the shopper's hands — and, when it has to, back again.",
+      "description": "Getting the parcel out of the warehouse, onto a carrier, into the shopper's hands, and back again when it has to.",
       "tags": [],
       "frontmatter": {
         "uid": "3dfe4ceb-036c-4756-830c-d3fe2029c2ad",
@@ -1938,7 +1938,7 @@
         "title": "Fulfillment & Delivery",
         "display_ko": "배송",
         "display_en": "Fulfillment & Delivery",
-        "description": "Getting the parcel out of the warehouse, onto a carrier, into the shopper's hands — and, when it has to, back again.",
+        "description": "Getting the parcel out of the warehouse, onto a carrier, into the shopper's hands, and back again when it has to.",
         "capabilities": [
           "capabilities/carrier-integration",
           "capabilities/return-pickup",
@@ -1967,9 +1967,9 @@
           "slug": "fulfillment-delivery-배송"
         }
       ],
-      "excerpt": "Getting the parcel out of the warehouse, onto a carrier, into the shopper's hands — and, when it has to, back again. 창고에서 물건을 꺼내 택배사에 넘기고 고객의 손에 닿기까지, 그리고 되돌려 받아야 할 때 회수하기까지를 다룹니다.",
-      "wordCount": 43,
-      "updatedAt": "2026-08-02",
+      "excerpt": "Getting the parcel out of the warehouse, onto a carrier, into the shopper's hands, and back again when it has to. 창고에서 물건을 꺼내 택배사에 넘기고 고객의 손에 닿기까지, 그리고 되돌려 받아야 할 때 회수하기까지를 다룹니다. 배송은 우리가 통제하지 못하는 유일한 영역입니다. 택배사가 언제 가져가는지, 어디서 멈추는지를 우리가 정하지 못하므로, 이 영역의 일은 대부분 「모르는 것을 정직하게 말하기」가 됩니다. 그래서 상태를 우리 말로 다시 씁니다. 택배사가 주는 코드는 회사마다",
+      "wordCount": 114,
+      "updatedAt": "2026-08-09",
       "linksOut": []
     },
     {
@@ -2015,8 +2015,8 @@
           "slug": "inventory-재고"
         }
       ],
-      "excerpt": "How many of each item the store actually has, what arrives from suppliers, and what happens the moment something sells out. 지금 몇 개가 남아 있는지, 공급처에서 무엇이 들어오는지, 그리고 품절된 순간 무슨 일이 벌어지는지를 다룹니다. 이 영역은 반대입니다 — 하려는 일은 넷인데 실제로 다루는 대상이 열입니다. 재고는 「수량 하나」처럼 보이지만 실제로는 원장·실사·조정·스냅숏이 따로 있고, 그 넷이 어긋나는 순간이 곧 재고 사고입니다. 그래서 이 영역에서 늘어나는 것은 ",
-      "wordCount": 78,
+      "excerpt": "How many of each item the store actually has, what arrives from suppliers, and what happens the moment something sells out. 지금 몇 개가 남아 있는지, 공급처에서 무엇이 들어오는지, 그리고 품절된 순간 무슨 일이 벌어지는지를 다룹니다. 이 영역은 반대입니다: 하려는 일은 넷인데 실제로 다루는 대상이 열입니다. 재고는 「수량 하나」처럼 보이지만 실제로는 원장·실사·조정·스냅숏이 따로 있고, 그 넷이 어긋나는 순간이 곧 재고 사고입니다. 그래서 이 영역에서 늘어나는 것은 기",
+      "wordCount": 77,
       "updatedAt": "2026-08-09",
       "linksOut": []
     },
@@ -2056,8 +2056,8 @@
           "slug": "loyalty-적립멤버십"
         }
       ],
-      "excerpt": "Why a shopper comes back: points they have earned, a tier they do not want to lose, and rewards they are saving toward. 고객이 다시 오는 이유를 다룹니다 — 쌓아 둔 포인트, 잃고 싶지 않은 등급, 모아서 바꾸려는 것. 이 영역은 아직 대부분 계획입니다. 하려는 일은 다섯 가지로 적어 뒀는데 실제로 만들어 둔 것은 포인트 잔액 하나뿐입니다. 지도에서 이 영역의 막대가 한쪽으로 쏠려 보이는 것이 그 사실입니다 — 말은 다섯인데 증거가 하나. 먼저 답해야 하는 것은 등급을 내릴",
-      "wordCount": 91,
+      "excerpt": "Why a shopper comes back: points they have earned, a tier they do not want to lose, and rewards they are saving toward. 고객이 다시 오는 이유를 다룹니다. 쌓아 둔 포인트, 잃고 싶지 않은 등급, 모아서 바꾸려는 것. 이 영역은 아직 대부분 계획입니다. 하려는 일은 다섯 가지로 적어 뒀는데 실제로 만들어 둔 것은 포인트 잔액 하나뿐입니다. 지도에서 이 영역의 막대가 한쪽으로 쏠려 보이는 것이 그 사실입니다. 말은 다섯인데 증거가 하나. 먼저 답해야 하는 것은 등급을 내릴 때",
+      "wordCount": 89,
       "updatedAt": "2026-08-09",
       "linksOut": []
     },
@@ -2065,7 +2065,7 @@
       "slug": "domains/marketing",
       "path": "samples/storefront/domains/marketing.md",
       "title": "Marketing & Promotions",
-      "description": "Reasons to come back — coupons, points, time-limited sales, curated campaigns — and the channels that carry them to a person.",
+      "description": "Reasons to come back (coupons, points, time-limited sales, curated campaigns) and the channels that carry them to a person.",
       "tags": [],
       "frontmatter": {
         "uid": "2a3941ac-bc36-48ee-9cce-f9bfcf155d2b",
@@ -2074,7 +2074,7 @@
         "title": "Marketing & Promotions",
         "display_ko": "마케팅",
         "display_en": "Marketing & Promotions",
-        "description": "Reasons to come back — coupons, points, time-limited sales, curated campaigns — and the channels that carry them to a person.",
+        "description": "Reasons to come back (coupons, points, time-limited sales, curated campaigns) and the channels that carry them to a person.",
         "capabilities": [
           "capabilities/campaign-planning",
           "capabilities/coupon-issue",
@@ -2104,16 +2104,16 @@
           "slug": "marketing-promotions-마케팅"
         }
       ],
-      "excerpt": "Reasons to come back — coupons, points, time-limited sales, curated campaigns — and the channels that carry them to a person. 다시 오게 만드는 이유 — 쿠폰·적립금·타임세일·기획전 — 과 그것을 사람에게 실어 나르는 통로를 다룹니다.",
-      "wordCount": 41,
-      "updatedAt": "2026-08-02",
+      "excerpt": "Reasons to come back (coupons, points, time-limited sales, curated campaigns) and the channels that carry them to a person. 다시 오게 만드는 이유(쿠폰·적립금·타임세일·기획전)와, 그것을 사람에게 실어 나르는 통로를 다룹니다. 할인은 겹칩니다. 쿠폰과 타임세일과 등급 할인이 한 주문에 동시에 걸릴 수 있고, 그때 어느 것을 먼저 적용하느냐로 최종 금액이 달라집니다. 이 가게는 비율 할인을 먼저, 정액 할인을 나중에 적용합니다. 반대로 하면 같은 쿠폰이 비싼 주문에서 더 ",
+      "wordCount": 100,
+      "updatedAt": "2026-08-09",
       "linksOut": []
     },
     {
       "slug": "domains/order",
       "path": "samples/storefront/domains/order.md",
       "title": "Orders",
-      "description": "The line between browsing and buying, and every change a shopper makes after crossing it — cancelling, cancelling part of it, moving the delivery address.",
+      "description": "The line between browsing and buying, and every change a shopper makes after crossing it: cancelling, cancelling part of it, moving the delivery address.",
       "tags": [],
       "frontmatter": {
         "uid": "44cf0da0-4f09-4a02-a9ab-f79e6162ecac",
@@ -2122,7 +2122,7 @@
         "title": "Orders",
         "display_ko": "주문",
         "display_en": "Orders",
-        "description": "The line between browsing and buying, and every change a shopper makes after crossing it — cancelling, cancelling part of it, moving the delivery address.",
+        "description": "The line between browsing and buying, and every change a shopper makes after crossing it: cancelling, cancelling part of it, moving the delivery address.",
         "capabilities": [
           "capabilities/cart",
           "capabilities/checkout",
@@ -2154,9 +2154,9 @@
           "slug": "orders-주문"
         }
       ],
-      "excerpt": "The line between browsing and buying, and every change a shopper makes after crossing it — cancelling, cancelling part of it, moving the delivery address. 구경과 구매를 가르는 선, 그리고 그 선을 넘은 뒤 고객이 하는 모든 변경 — 취소·부분 취소·배송지 변경까지를 다룹니다.",
-      "wordCount": 47,
-      "updatedAt": "2026-08-02",
+      "excerpt": "The line between browsing and buying, and every change a shopper makes after crossing it: cancelling, cancelling part of it, moving the delivery address. 구경과 구매를 가르는 선, 그리고 그 선을 넘은 뒤 고객이 하는 모든 변경: 취소·부분 취소·배송지 변경까지를 다룹니다. 주문은 이 지도에서 가장 많은 영역과 맞닿습니다: 재고를 잡고, 결제를 부르고, 배송을 만들고, 적립을 발생시킵니다. 그래서 주문 하나의 상태가 바뀌면 네 영역이 같이 움직입니",
+      "wordCount": 105,
+      "updatedAt": "2026-08-09",
       "linksOut": []
     },
     {
@@ -2203,9 +2203,9 @@
           "slug": "payments-결제"
         }
       ],
-      "excerpt": "Taking the money, holding it while the order settles, and giving it back when the order does not. 돈을 받고, 주문이 확정될 때까지 붙들고 있다가, 주문이 깨지면 돌려주는 일을 다룹니다.",
-      "wordCount": 34,
-      "updatedAt": "2026-08-02",
+      "excerpt": "Taking the money, holding it while the order settles, and giving it back when the order does not. 돈을 받고, 주문이 확정될 때까지 붙들고 있다가, 주문이 깨지면 돌려주는 일을 다룹니다. 돈을 받는 순간과 확정하는 순간이 다릅니다. 카드를 승인해 금액을 붙들어 두고, 물건이 나갈 때 비로소 확정합니다. 그 사이에 주문이 깨지면 붙들어 둔 것을 풀어 줍니다. 이 시차 때문에 생기는 질문이 이 영역의 대부분입니다. 승인은 됐는데 재고가 없으면? 확정 전에 부분 취소가 들어오면? 승인 유효기간이 ",
+      "wordCount": 103,
+      "updatedAt": "2026-08-09",
       "linksOut": []
     },
     {
@@ -2243,9 +2243,9 @@
           "slug": "customer-support-고객지원"
         }
       ],
-      "excerpt": "What happens when something goes wrong: the question, the return, the exchange, and the judgement call about whether money goes back. 무언가 잘못됐을 때 벌어지는 일 — 문의, 반품, 교환, 그리고 돈을 돌려줄지 말지의 판단을 다룹니다.",
-      "wordCount": 41,
-      "updatedAt": "2026-08-02",
+      "excerpt": "What happens when something goes wrong: the question, the return, the exchange, and the judgement call about whether money goes back. 무언가 잘못됐을 때 벌어지는 일: 문의, 반품, 교환, 그리고 돈을 돌려줄지 말지의 판단을 다룹니다. 여기 오는 사람은 이미 한 번 실패한 사람입니다. 그래서 이 영역의 성공 기준은 「빨리 답했다」가 아니라 「같은 문의가 다시 안 온다」입니다. 문의는 대부분 다른 영역에서 생긴 일의 뒷수습이라, 이 영역의 문서는 주문·배송·결제를 ",
+      "wordCount": 92,
+      "updatedAt": "2026-08-09",
       "linksOut": []
     },
     {
@@ -2467,9 +2467,9 @@
           "slug": "checkout-draft-주문서-초안"
         }
       ],
-      "excerpt": "The not-yet-committed order: chosen address, chosen coupon, chosen payment method, calculated total. 아직 확정되지 않은 주문 — 고른 주소·쿠폰·결제 수단과 계산된 총액입니다.",
-      "wordCount": 28,
-      "updatedAt": "2026-08-02",
+      "excerpt": "The not-yet-committed order: chosen address, chosen coupon, chosen payment method, calculated total. 아직 확정되지 않은 주문: 고른 주소·쿠폰·결제 수단과 계산된 총액입니다.",
+      "wordCount": 27,
+      "updatedAt": "2026-08-09",
       "linksOut": []
     },
     {
@@ -2495,16 +2495,16 @@
           "slug": "cj-logistics-integration-cj대한통운-연동"
         }
       ],
-      "excerpt": "The delivery-company integration for CJ Logistics: its own booking call, its own status codes. CJ대한통운 연동 — 자기 접수 규격과 상태 코드를 가집니다.",
-      "wordCount": 30,
-      "updatedAt": "2026-08-02",
+      "excerpt": "The delivery-company integration for CJ Logistics: its own booking call, its own status codes. CJ대한통운 연동: 자기 접수 규격과 상태 코드를 가집니다.",
+      "wordCount": 29,
+      "updatedAt": "2026-08-09",
       "linksOut": []
     },
     {
       "slug": "elements/coupon-policy",
       "path": "samples/storefront/elements/coupon-policy.md",
       "title": "Coupon Policy",
-      "description": "What a coupon is worth and when it may be used — minimum spend, valid products, expiry, stacking.",
+      "description": "What a coupon is worth and when it may be used: minimum spend, valid products, expiry, stacking.",
       "tags": [],
       "frontmatter": {
         "uid": "136fa82c-5d79-42b7-bd26-1c32b76b6dc1",
@@ -2513,7 +2513,7 @@
         "title": "Coupon Policy",
         "display_ko": "쿠폰 정책",
         "display_en": "Coupon Policy",
-        "description": "What a coupon is worth and when it may be used — minimum spend, valid products, expiry, stacking.",
+        "description": "What a coupon is worth and when it may be used: minimum spend, valid products, expiry, stacking.",
         "domain": "domains/marketing"
       },
       "headings": [
@@ -2523,9 +2523,9 @@
           "slug": "coupon-policy-쿠폰-정책"
         }
       ],
-      "excerpt": "What a coupon is worth and when it may be used — minimum spend, valid products, expiry, stacking. 쿠폰의 값어치와 쓸 수 있는 조건 — 최소 구매액, 대상 상품, 유효기간, 중복 사용 여부입니다.",
-      "wordCount": 39,
-      "updatedAt": "2026-08-02",
+      "excerpt": "What a coupon is worth and when it may be used: minimum spend, valid products, expiry, stacking. 쿠폰의 값어치와 쓸 수 있는 조건: 최소 구매액, 대상 상품, 유효기간, 중복 사용 여부입니다.",
+      "wordCount": 37,
+      "updatedAt": "2026-08-09",
       "linksOut": []
     },
     {
@@ -2582,9 +2582,9 @@
           "slug": "customer-account-회원-계정"
         }
       ],
-      "excerpt": "The identity record itself: who this person is to the store, and the consents they have given. 정체성 기록 그 자체 — 이 사람이 가게에 대해 누구인지와, 무엇에 동의했는지입니다.",
-      "wordCount": 35,
-      "updatedAt": "2026-08-02",
+      "excerpt": "The identity record itself: who this person is to the store, and the consents they have given. 정체성 기록 그 자체: 이 사람이 가게에 대해 누구인지와, 무엇에 동의했는지입니다.",
+      "wordCount": 34,
+      "updatedAt": "2026-08-09",
       "linksOut": []
     },
     {
@@ -2666,9 +2666,9 @@
           "slug": "exchange-record-교환-접수-기록"
         }
       ],
-      "excerpt": "One case holding both directions at once: what comes back and what goes out to replace it. 두 방향을 한 건에 담습니다 — 무엇이 돌아오고, 대신 무엇이 나가는지입니다.",
-      "wordCount": 35,
-      "updatedAt": "2026-08-02",
+      "excerpt": "One case holding both directions at once: what comes back and what goes out to replace it. 두 방향을 한 건에 담습니다. 무엇이 돌아오고, 대신 무엇이 나가는지입니다.",
+      "wordCount": 34,
+      "updatedAt": "2026-08-09",
       "linksOut": []
     },
     {
@@ -2722,9 +2722,9 @@
           "slug": "hanjin-express-integration-한진택배-연동"
         }
       ],
-      "excerpt": "The delivery-company integration for Hanjin Express: its own booking call, its own status codes. 한진택배 연동 — 자기 접수 규격과 상태 코드를 가집니다.",
-      "wordCount": 30,
-      "updatedAt": "2026-08-02",
+      "excerpt": "The delivery-company integration for Hanjin Express: its own booking call, its own status codes. 한진택배 연동: 자기 접수 규격과 상태 코드를 가집니다.",
+      "wordCount": 29,
+      "updatedAt": "2026-08-09",
       "linksOut": []
     },
     {
@@ -2806,9 +2806,9 @@
           "slug": "kakaopay-integration-카카오페이-연동"
         }
       ],
-      "excerpt": "The wallet integration for KakaoPay: its own approval screen, its own contract, its own settlement cycle. 카카오페이 지갑 연동 — 자기 승인 화면과 계약, 정산 주기를 가집니다.",
-      "wordCount": 33,
-      "updatedAt": "2026-08-02",
+      "excerpt": "The wallet integration for KakaoPay: its own approval screen, its own contract, its own settlement cycle. 카카오페이 지갑 연동: 자기 승인 화면과 계약, 정산 주기를 가집니다.",
+      "wordCount": 32,
+      "updatedAt": "2026-08-09",
       "linksOut": []
     },
     {
@@ -2834,9 +2834,9 @@
           "slug": "korea-post-integration-우체국택배-연동"
         }
       ],
-      "excerpt": "The delivery-company integration for Korea Post: its own booking call, its own status codes. 우체국택배 연동 — 자기 접수 규격과 상태 코드를 가집니다.",
-      "wordCount": 30,
-      "updatedAt": "2026-08-02",
+      "excerpt": "The delivery-company integration for Korea Post: its own booking call, its own status codes. 우체국택배 연동: 자기 접수 규격과 상태 코드를 가집니다.",
+      "wordCount": 29,
+      "updatedAt": "2026-08-09",
       "linksOut": []
     },
     {
@@ -2890,9 +2890,9 @@
           "slug": "naverpay-integration-네이버페이-연동"
         }
       ],
-      "excerpt": "The wallet integration for NaverPay: its own approval screen, its own contract, its own settlement cycle. 네이버페이 지갑 연동 — 자기 승인 화면과 계약, 정산 주기를 가집니다.",
-      "wordCount": 33,
-      "updatedAt": "2026-08-02",
+      "excerpt": "The wallet integration for NaverPay: its own approval screen, its own contract, its own settlement cycle. 네이버페이 지갑 연동: 자기 승인 화면과 계약, 정산 주기를 가집니다.",
+      "wordCount": 32,
+      "updatedAt": "2026-08-09",
       "linksOut": []
     },
     {
@@ -2958,7 +2958,7 @@
       "slug": "elements/order-record",
       "path": "samples/storefront/elements/order-record.md",
       "title": "Order Record",
-      "description": "The confirmed agreement itself. Every later step — shipping, refunding, reviewing — points back at it.",
+      "description": "The confirmed agreement itself. Every later step (shipping, refunding, reviewing) points back at it.",
       "tags": [],
       "frontmatter": {
         "uid": "87d114a4-1e3b-42fa-8ad0-729c522cfb5e",
@@ -2967,7 +2967,7 @@
         "title": "Order Record",
         "display_ko": "주문 기록",
         "display_en": "Order Record",
-        "description": "The confirmed agreement itself. Every later step — shipping, refunding, reviewing — points back at it.",
+        "description": "The confirmed agreement itself. Every later step (shipping, refunding, reviewing) points back at it.",
         "domain": "domains/order"
       },
       "headings": [
@@ -2977,9 +2977,9 @@
           "slug": "order-record-주문-기록"
         }
       ],
-      "excerpt": "The confirmed agreement itself. Every later step — shipping, refunding, reviewing — points back at it. 확정된 약속 그 자체입니다. 배송·환불·리뷰 등 이후의 모든 단계가 이것을 가리킵니다.",
-      "wordCount": 33,
-      "updatedAt": "2026-08-02",
+      "excerpt": "The confirmed agreement itself. Every later step (shipping, refunding, reviewing) points back at it. 확정된 약속 그 자체입니다. 배송·환불·리뷰 등 이후의 모든 단계가 이것을 가리킵니다.",
+      "wordCount": 31,
+      "updatedAt": "2026-08-09",
       "linksOut": []
     },
     {
@@ -3042,7 +3042,7 @@
       "slug": "elements/payment-transaction",
       "path": "samples/storefront/elements/payment-transaction.md",
       "title": "Payment Transaction Record",
-      "description": "What the provider said and when — the store's own copy of the authorisation, capture and reversal.",
+      "description": "What the provider said and when: the store's own copy of the authorisation, capture and reversal.",
       "tags": [],
       "frontmatter": {
         "uid": "5fca125c-fcb9-4970-aab2-0d966aead07b",
@@ -3051,7 +3051,7 @@
         "title": "Payment Transaction Record",
         "display_ko": "결제 거래 기록",
         "display_en": "Payment Transaction Record",
-        "description": "What the provider said and when — the store's own copy of the authorisation, capture and reversal.",
+        "description": "What the provider said and when: the store's own copy of the authorisation, capture and reversal.",
         "domain": "domains/payment"
       },
       "headings": [
@@ -3061,9 +3061,9 @@
           "slug": "payment-transaction-record-결제-거래-기록"
         }
       ],
-      "excerpt": "What the provider said and when — the store's own copy of the authorisation, capture and reversal. 결제사가 무엇을 언제 말했는지에 대한 가게 자신의 사본 — 승인·매입·취소 기록입니다.",
-      "wordCount": 36,
-      "updatedAt": "2026-08-02",
+      "excerpt": "What the provider said and when: the store's own copy of the authorisation, capture and reversal. 결제사가 무엇을 언제 말했는지에 대한 가게 자신의 사본: 승인·매입·취소 기록입니다.",
+      "wordCount": 34,
+      "updatedAt": "2026-08-09",
       "linksOut": []
     },
     {
@@ -3089,16 +3089,16 @@
           "slug": "picking-list-피킹-리스트"
         }
       ],
-      "excerpt": "The walking order for one warehouse round: which shelf, how many, into which box. 창고 한 바퀴를 도는 순서표 — 어느 선반에서 몇 개를 꺼내 어느 상자에 담을지입니다.",
-      "wordCount": 34,
-      "updatedAt": "2026-08-02",
+      "excerpt": "The walking order for one warehouse round: which shelf, how many, into which box. 창고 한 바퀴를 도는 순서표: 어느 선반에서 몇 개를 꺼내 어느 상자에 담을지입니다.",
+      "wordCount": 33,
+      "updatedAt": "2026-08-09",
       "linksOut": []
     },
     {
       "slug": "elements/pickup-request",
       "path": "samples/storefront/elements/pickup-request.md",
       "title": "Pickup Request",
-      "description": "A booking for a courier to collect from the shopper — a delivery whose start and end are swapped.",
+      "description": "A booking for a courier to collect from the shopper. A delivery whose start and end are swapped.",
       "tags": [],
       "frontmatter": {
         "uid": "bf0f27d5-bb99-48e0-a1e1-f7adf3f01668",
@@ -3107,7 +3107,7 @@
         "title": "Pickup Request",
         "display_ko": "회수 요청",
         "display_en": "Pickup Request",
-        "description": "A booking for a courier to collect from the shopper — a delivery whose start and end are swapped.",
+        "description": "A booking for a courier to collect from the shopper. A delivery whose start and end are swapped.",
         "domain": "domains/fulfillment"
       },
       "headings": [
@@ -3117,9 +3117,9 @@
           "slug": "pickup-request-회수-요청"
         }
       ],
-      "excerpt": "A booking for a courier to collect from the shopper — a delivery whose start and end are swapped. 기사가 고객에게서 물건을 가져오도록 접수한 건 — 출발지와 도착지가 뒤바뀐 배송입니다.",
-      "wordCount": 36,
-      "updatedAt": "2026-08-02",
+      "excerpt": "A booking for a courier to collect from the shopper. A delivery whose start and end are swapped. 기사가 고객에게서 물건을 가져오도록 접수한 건: 출발지와 도착지가 뒤바뀐 배송입니다.",
+      "wordCount": 34,
+      "updatedAt": "2026-08-09",
       "linksOut": []
     },
     {
@@ -3154,7 +3154,7 @@
       "slug": "elements/point-ledger",
       "path": "samples/storefront/elements/point-ledger.md",
       "title": "Point Ledger",
-      "description": "Every point earned and spent, from which a balance is derived — and which expires on its own schedule.",
+      "description": "Every point earned and spent. The balance is derived from it, and points expire on their own schedule.",
       "tags": [],
       "frontmatter": {
         "uid": "b7bd6fec-7f97-456b-8819-fd58feb8aa32",
@@ -3163,7 +3163,7 @@
         "title": "Point Ledger",
         "display_ko": "적립금 원장",
         "display_en": "Point Ledger",
-        "description": "Every point earned and spent, from which a balance is derived — and which expires on its own schedule.",
+        "description": "Every point earned and spent. The balance is derived from it, and points expire on their own schedule.",
         "domain": "domains/marketing"
       },
       "headings": [
@@ -3173,9 +3173,9 @@
           "slug": "point-ledger-적립금-원장"
         }
       ],
-      "excerpt": "Every point earned and spent, from which a balance is derived — and which expires on its own schedule. 적립과 사용을 모두 남긴 기록이며, 잔액은 여기서 계산되고 각 적립은 자기 일정에 따라 소멸합니다.",
-      "wordCount": 39,
-      "updatedAt": "2026-08-02",
+      "excerpt": "Every point earned and spent. The balance is derived from it, and points expire on their own schedule. 적립과 사용을 모두 남긴 기록이며, 잔액은 여기서 계산되고 각 적립은 자기 일정에 따라 소멸합니다.",
+      "wordCount": 38,
+      "updatedAt": "2026-08-09",
       "linksOut": []
     },
     {
@@ -3201,9 +3201,9 @@
           "slug": "price-history-가격-변경-이력"
         }
       ],
-      "excerpt": "Every price this product has had, with when it changed, so a past order still adds up. 이 상품이 가졌던 모든 가격과 그 시점 — 지난 주문의 금액이 지금도 맞아떨어지게 합니다.",
-      "wordCount": 38,
-      "updatedAt": "2026-08-02",
+      "excerpt": "Every price this product has had, with when it changed, so a past order still adds up. 이 상품이 가졌던 모든 가격과 그 시점: 지난 주문의 금액이 지금도 맞아떨어지게 합니다.",
+      "wordCount": 37,
+      "updatedAt": "2026-08-09",
       "linksOut": []
     },
     {
@@ -3238,7 +3238,7 @@
       "slug": "elements/product-record",
       "path": "samples/storefront/elements/product-record.md",
       "title": "Product Record",
-      "description": "The stored description of one sellable thing — name, copy, photos, category.",
+      "description": "The stored description of one sellable thing: name, copy, photos, category.",
       "tags": [],
       "frontmatter": {
         "uid": "69eb74e4-abbc-43ff-8056-e116078fd361",
@@ -3247,7 +3247,7 @@
         "title": "Product Record",
         "display_ko": "상품 정보",
         "display_en": "Product Record",
-        "description": "The stored description of one sellable thing — name, copy, photos, category.",
+        "description": "The stored description of one sellable thing: name, copy, photos, category.",
         "domain": "domains/catalog"
       },
       "headings": [
@@ -3257,9 +3257,9 @@
           "slug": "product-record-상품-정보"
         }
       ],
-      "excerpt": "The stored description of one sellable thing — name, copy, photos, category. 팔 수 있는 물건 하나에 대해 저장된 설명 — 이름·본문·사진·카테고리입니다.",
-      "wordCount": 28,
-      "updatedAt": "2026-08-02",
+      "excerpt": "The stored description of one sellable thing: name, copy, photos, category. 팔 수 있는 물건 하나에 대해 저장된 설명: 이름·본문·사진·카테고리입니다.",
+      "wordCount": 26,
+      "updatedAt": "2026-08-09",
       "linksOut": []
     },
     {
@@ -3322,7 +3322,7 @@
       "slug": "elements/recommendation-rule",
       "path": "samples/storefront/elements/recommendation-rule.md",
       "title": "Recommendation Rule",
-      "description": "The stated reason a product is shown next to another one — bought together, same category, viewed after.",
+      "description": "The stated reason a product is shown next to another one: bought together, same category, viewed after.",
       "tags": [],
       "frontmatter": {
         "uid": "9365ea36-4c5e-4e8f-87b4-f1561478b5fc",
@@ -3331,7 +3331,7 @@
         "title": "Recommendation Rule",
         "display_ko": "추천 규칙",
         "display_en": "Recommendation Rule",
-        "description": "The stated reason a product is shown next to another one — bought together, same category, viewed after.",
+        "description": "The stated reason a product is shown next to another one: bought together, same category, viewed after.",
         "domain": "domains/catalog"
       },
       "headings": [
@@ -3341,9 +3341,9 @@
           "slug": "recommendation-rule-추천-규칙"
         }
       ],
-      "excerpt": "The stated reason a product is shown next to another one — bought together, same category, viewed after. 어떤 상품을 다른 상품 옆에 보여 주는 이유를 적어 둔 것 — 함께 구매, 같은 분류, 다음에 본 상품 등입니다.",
-      "wordCount": 44,
-      "updatedAt": "2026-08-02",
+      "excerpt": "The stated reason a product is shown next to another one: bought together, same category, viewed after. 어떤 상품을 다른 상품 옆에 보여 주는 이유를 적어 둔 것: 함께 구매, 같은 분류, 다음에 본 상품 등입니다.",
+      "wordCount": 42,
+      "updatedAt": "2026-08-09",
       "linksOut": []
     },
     {
@@ -3574,7 +3574,7 @@
       "slug": "elements/shipping-fee-rule",
       "path": "samples/storefront/elements/shipping-fee-rule.md",
       "title": "Shipping Fee Rule",
-      "description": "The stated conditions that produce a delivery charge — free over an amount, extra for remote areas.",
+      "description": "The stated conditions that produce a delivery charge: free over an amount, extra for remote areas.",
       "tags": [],
       "frontmatter": {
         "uid": "e04498bd-4cc0-4258-818e-d40c6db94bb0",
@@ -3583,7 +3583,7 @@
         "title": "Shipping Fee Rule",
         "display_ko": "배송비 규칙",
         "display_en": "Shipping Fee Rule",
-        "description": "The stated conditions that produce a delivery charge — free over an amount, extra for remote areas.",
+        "description": "The stated conditions that produce a delivery charge: free over an amount, extra for remote areas.",
         "domain": "domains/fulfillment"
       },
       "headings": [
@@ -3593,16 +3593,16 @@
           "slug": "shipping-fee-rule-배송비-규칙"
         }
       ],
-      "excerpt": "The stated conditions that produce a delivery charge — free over an amount, extra for remote areas. 배송비를 만들어 내는 조건들 — 얼마 이상 무료, 도서·산간 추가 등입니다.",
-      "wordCount": 35,
-      "updatedAt": "2026-08-02",
+      "excerpt": "The stated conditions that produce a delivery charge: free over an amount, extra for remote areas. 배송비를 만들어 내는 조건들: 얼마 이상 무료, 도서·산간 추가 등입니다.",
+      "wordCount": 33,
+      "updatedAt": "2026-08-09",
       "linksOut": []
     },
     {
       "slug": "elements/sku",
       "path": "samples/storefront/elements/sku.md",
       "title": "SKU",
-      "description": "The smallest unit that is separately stocked, priced and sold — one size in one colour.",
+      "description": "The smallest unit that is separately stocked, priced and sold: one size in one colour.",
       "tags": [],
       "frontmatter": {
         "uid": "0e8b6980-e0db-4b2d-98ad-29dc6727e18c",
@@ -3611,7 +3611,7 @@
         "title": "SKU",
         "display_ko": "옵션 SKU",
         "display_en": "SKU",
-        "description": "The smallest unit that is separately stocked, priced and sold — one size in one colour.",
+        "description": "The smallest unit that is separately stocked, priced and sold: one size in one colour.",
         "domain": "domains/catalog"
       },
       "headings": [
@@ -3621,9 +3621,9 @@
           "slug": "sku-옵션-sku"
         }
       ],
-      "excerpt": "The smallest unit that is separately stocked, priced and sold — one size in one colour. 따로 재고를 잡고 따로 값을 매겨 따로 파는 가장 작은 단위 — 한 색상의 한 사이즈입니다.",
-      "wordCount": 37,
-      "updatedAt": "2026-08-02",
+      "excerpt": "The smallest unit that is separately stocked, priced and sold: one size in one colour. 따로 재고를 잡고 따로 값을 매겨 따로 파는 가장 작은 단위: 한 색상의 한 사이즈입니다.",
+      "wordCount": 35,
+      "updatedAt": "2026-08-09",
       "linksOut": []
     },
     {
@@ -3705,8 +3705,8 @@
           "slug": "stock-count-sheet-실사-대장"
         }
       ],
-      "excerpt": "What a person actually counted on the shelf, kept separately from what the system believed. 사람이 선반에서 직접 센 값입니다. 시스템이 믿고 있던 값과 따로 보관합니다 — 둘이 다를 때 무엇이 틀렸는지 알아야 하기 때문입니다.",
-      "wordCount": 42,
+      "excerpt": "What a person actually counted on the shelf, kept separately from what the system believed. 사람이 선반에서 직접 센 값입니다. 시스템이 믿고 있던 값과 따로 보관합니다. 둘이 다를 때 무엇이 틀렸는지 알아야 하기 때문입니다.",
+      "wordCount": 41,
       "updatedAt": "2026-08-09",
       "linksOut": []
     },
@@ -3817,8 +3817,8 @@
           "slug": "supplier-lead-time-입고-소요일"
         }
       ],
-      "excerpt": "How many days this supplier has actually taken, not how many they promised. 이 공급처가 실제로 걸린 날수입니다. 약속한 날수가 아닙니다. 약속과 실제가 벌어지는 폭이 곧 안전재고의 근거가 됩니다. 그래서 이 값은 평균 하나가 아니라 최근 것들의 분포로 들고 있습니다 — 평균만 보면 늦는 날을 못 봅니다.",
-      "wordCount": 54,
+      "excerpt": "How many days this supplier has actually taken, not how many they promised. 이 공급처가 실제로 걸린 날수입니다. 약속한 날수가 아닙니다. 약속과 실제가 벌어지는 폭이 곧 안전재고의 근거가 됩니다. 그래서 이 값은 평균 하나가 아니라 최근 것들의 분포로 들고 있습니다. 평균만 보면 늦는 날을 못 봅니다.",
+      "wordCount": 53,
       "updatedAt": "2026-08-09",
       "linksOut": []
     },
@@ -3873,9 +3873,9 @@
           "slug": "tosspay-integration-토스페이-연동"
         }
       ],
-      "excerpt": "The wallet integration for TossPay: its own approval screen, its own contract, its own settlement cycle. 토스페이 지갑 연동 — 자기 승인 화면과 계약, 정산 주기를 가집니다.",
-      "wordCount": 33,
-      "updatedAt": "2026-08-02",
+      "excerpt": "The wallet integration for TossPay: its own approval screen, its own contract, its own settlement cycle. 토스페이 지갑 연동: 자기 승인 화면과 계약, 정산 주기를 가집니다.",
+      "wordCount": 32,
+      "updatedAt": "2026-08-09",
       "linksOut": []
     },
     {
@@ -3969,7 +3969,7 @@
       "slug": "storefront",
       "path": "samples/storefront/storefront.md",
       "title": "Online Store",
-      "description": "An example online store: what a shopper browses, buys, pays for, receives, returns — and how a store keeps them coming back.",
+      "description": "An example online store: what a shopper browses, buys, pays for, receives and returns, and how a store keeps them coming back.",
       "tags": [],
       "frontmatter": {
         "uid": "1beed293-711b-4b51-b8c0-65f51bc4d606",
@@ -3978,7 +3978,7 @@
         "title": "Online Store",
         "display_ko": "온라인 쇼핑몰",
         "display_en": "Online Store",
-        "description": "An example online store: what a shopper browses, buys, pays for, receives, returns — and how a store keeps them coming back.",
+        "description": "An example online store: what a shopper browses, buys, pays for, receives and returns, and how a store keeps them coming back.",
         "domains": [
           "domains/catalog",
           "domains/customer",
@@ -4000,8 +4000,8 @@
           "slug": "online-store-온라인-쇼핑몰"
         }
       ],
-      "excerpt": "An example online store: what a shopper browses, buys, pays for, receives, returns — and how a store keeps them coming back. 고객이 상품을 둘러보고, 사고, 결제하고, 받고, 되돌리기까지 — 온라인 쇼핑몰이 하는 일을 그대로 옮긴 예시 지도입니다. Nothing here is a real company. It exists so that a planner, a marketer, a decision maker and a developer can look at the same",
-      "wordCount": 147,
+      "excerpt": "An example online store: what a shopper browses, buys, pays for, receives and returns, and how a store keeps them coming back. 고객이 상품을 둘러보고, 사고, 결제하고, 받고, 되돌리기까지: 온라인 쇼핑몰이 하는 일을 그대로 옮긴 예시 지도입니다. Nothing here is a real company. It exists so that a planner, a marketer, a decision maker and a developer can look at the sam",
+      "wordCount": 146,
       "updatedAt": "2026-08-09",
       "linksOut": []
     }

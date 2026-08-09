@@ -13,4 +13,4 @@ domain: domains/fulfillment
 
 The walking order for one warehouse round: which shelf, how many, into which box.
 
-창고 한 바퀴를 도는 순서표 — 어느 선반에서 몇 개를 꺼내 어느 상자에 담을지입니다.
+창고 한 바퀴를 도는 순서표: 어느 선반에서 몇 개를 꺼내 어느 상자에 담을지입니다.

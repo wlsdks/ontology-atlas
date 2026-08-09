@@ -16,4 +16,4 @@ elements: []
 
 Voids a whole order before it ships: the order stops existing as a commitment and the full amount goes back.
 
-출고 전에 주문 전체를 무효로 합니다 — 약속 자체가 사라지고 결제 금액은 전액 되돌아갑니다.
+출고 전에 주문 전체를 무효로 합니다. 약속 자체가 사라지고 결제 금액은 전액 되돌아갑니다.

@@ -13,4 +13,4 @@ domain: domains/support
 
 One case holding both directions at once: what comes back and what goes out to replace it.
 
-두 방향을 한 건에 담습니다 — 무엇이 돌아오고, 대신 무엇이 나가는지입니다.
+두 방향을 한 건에 담습니다. 무엇이 돌아오고, 대신 무엇이 나가는지입니다.
