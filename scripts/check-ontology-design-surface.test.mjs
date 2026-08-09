@@ -5,6 +5,7 @@ import path from "node:path";
 import test from "node:test";
 import {
   evaluateOntologyDesignSurface,
+  gradientIsFunctional,
   renderOntologyDesignSurfaceReport,
 } from "./check-ontology-design-surface.mjs";
 
@@ -216,6 +217,20 @@ function writeCleanWorkbenchFixtures(root) {
     "export function DocsVaultTree() { return null; }",
   );
 }
+
+test("design gate distinguishes token-driven control fills from decorative gradients", () => {
+  assert.equal(
+    gradientIsFunctional(
+      "background: `linear-gradient(to right, var(--color-indigo-accent) ${filled}%, var(--color-overlay-3) ${filled}%)`",
+    ),
+    true,
+  );
+  assert.equal(
+    gradientIsFunctional("background: linear-gradient(to right, rgb(99 102 241), #ec4899)"),
+    false,
+  );
+  assert.equal(gradientIsFunctional("className=\"bg-gradient-to-r from-purple-500 to-pink-500\""), false);
+});
 
 test("ontology design surface passes when visual and workbench contracts are present", () => {
   const root = makeFixture();
