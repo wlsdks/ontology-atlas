@@ -4,6 +4,7 @@ export type AppNavDestinationId =
   | "studio"
   | "insights"
   | "projects"
+  | "skills"
   | "git";
 
 /**
@@ -29,6 +30,7 @@ export function resolveActiveNavDestination(pathname: string): AppNavDestination
     return "studio";
   if (path.startsWith("/ontology/insights")) return "insights";
   if (path.startsWith("/git")) return "git";
+  if (path.startsWith("/skills")) return "skills";
   if (path.startsWith("/docs")) return "docs";
   if (path.startsWith("/projects") || path.startsWith("/project/")) return "projects";
   if (path === "/" || path.startsWith("/topology")) return "map";

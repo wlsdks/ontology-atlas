@@ -67,6 +67,11 @@ export const AUDITED_ROUTES = [
   "/ko/project/new/",
   "/ko/project/fallback/",
   "/ko/git/",
+  // 스킬 (2026-08-09 신설). 폴더를 고르기 전 상태를 잰다 — 그 상태가 이 화면의
+  // 첫 화면이고, 래칫이 볼 수 있는 유일한 상태이기도 하다(피커는 OS 대화상자라
+  // 자동화가 안 되고, 스텁은 e2e 스펙 쪽에서만 건다). 폴더를 연 뒤의 화면은
+  // `skills-inventory.spec.ts` 가 따로 본다.
+  "/ko/skills/",
   "/ko/download/",
   "/ko/guide/",
   "/ko/guide/what-is-atlas/",

@@ -198,6 +198,7 @@
     "studio": "Workshop",
     "insights": "Insights",
     "projects": "Projects",
+    "skills": "Skills",
     "git": "Git",
     "getApp": "Get the app",
     "getAppTitle": "The Mac app remembers your folder, opens offline, and handles history and AI connections — Windows is in progress"
@@ -620,6 +621,14 @@
       "docsList": {
         "title": "Your folder, listed on the left",
         "body": "Everything in the folder shows up here. Click to open, and keep several open as tabs. Pick your own folder up top and your own writing shows up instead."
+      },
+      "skillsWhat": {
+        "title": "See the skills your agent has",
+        "body": "A skill is markdown that says \"in this situation, do this.\" Once you have a few, it gets hard to tell what is what or when each one fires. Here you see which skills exist, when each fires, and what opens or runs when it does."
+      },
+      "skillsOpen": {
+        "title": "Pick a folder to start",
+        "body": "Choose a folder that holds skills and we find every SKILL.md inside. We only read — nothing is changed, not the skill files and not your map."
       },
       "studioWhat": {
         "title": "A bench for joining pieces together",
@@ -3567,5 +3576,55 @@
     "label": "Open my folder",
     "busyLabel": "Opening…",
     "unsupportedLabel": "Open in the app"
+  },
+  "agentSkills": {
+    "title": "Skills",
+    "subtitle": "See when each agent skill fires, and what opens or runs when it does.",
+    "openFolder": "Open skill folder",
+    "openAnother": "Open another folder",
+    "pickerTitle": "Choose a folder that contains skills",
+    "reading": "Reading the folder…",
+    "unsupported": "This browser cannot open folders. The desktop app can.",
+    "readError": "Could not read the folder — {error}",
+    "emptyBody": "Pick a folder and we find every SKILL.md inside it, then show when each one fires and what opens when it does. We only read files in that folder and change nothing.",
+    "answersTitle": "What only this screen answers",
+    "answer1": "When a skill fires — its trigger, shown as written.",
+    "answer2": "Why the wrong one fires — names that collide and triggers that overlap.",
+    "answer3": "What happens when it does — what opens, and which of those actually run.",
+    "whereTitle": "Skills usually live here",
+    "emptyHint1": "Your own skills — a project's .claude folder",
+    "emptyHint2": "Installed skills — .claude in your home folder",
+    "emptyHint3": "Read-only. Nothing is written to your vault or to the skill files.",
+    "truncated": "The folder is large, so we read up to {count} files — the results below cover that much.",
+    "notInstalled": "Skipped {count} folders that are not installed — older versions and catalogs you have not installed. Those never fire.",
+    "stat": {
+      "skills": "skills",
+      "bundled": "bundled files",
+      "executables": "that run",
+      "folder": "Folder: {folder}"
+    },
+    "collisions": {
+      "title": "Names collide",
+      "hint": "When two skills share a name, which one fires is undefined.",
+      "competing": "descriptions differ — the triggers compete"
+    },
+    "overlaps": {
+      "title": "Triggers overlap",
+      "hint": "Different names but similar descriptions — the wrong one can fire."
+    },
+    "list": {
+      "title": "All skills",
+      "runsCount": "{count} run"
+    },
+    "chain": {
+      "always": "Always loaded",
+      "onTrigger": "Loaded when it fires",
+      "onDemand": "Opened on demand",
+      "chars": "{count} chars",
+      "fileCount": "{count} files",
+      "noFiles": "No bundled files",
+      "runs": "runs",
+      "missing": "file is missing"
+    }
   }
 }
