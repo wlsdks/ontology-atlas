@@ -96,8 +96,8 @@ RDF/OWL/SKOS/SHACL 구현으로 소개하지 않는다. **적용 원칙**: LLM�
 | 2 | M1.2 | done(d375bada9) | 앱이 실제 실행 가능한 agent config만 ready로 판정한다. |
 | 3 | M1.3 | done(761d555a4) | quick-start 실패가 성공처럼 보이지 않는다. |
 | 4 | M1.4 | done(dbc063364) | 현재 MCP inventory가 runtime registry 한 곳에서 파생된다. |
-| 5 | O1.2 | ready | Atlas의 5-kind·관계·formal/RDF/OWL 경계를 정직하게 고정한다. |
-| 6 | O1.1 | blocked(O1.2) | Workshop은 근거 없는 `is_a`를 추천하지 않는다. |
+| 5 | O1.2 | done(9ca7bf65c) | Atlas의 5-kind·관계·formal/RDF/OWL 경계를 정직하게 고정한다. |
+| 6 | O1.1 | ready | Workshop은 근거 없는 `is_a`를 추천하지 않는다. |
 | 7 | O1.3 | blocked(O1.1) | 요구·CQ·예시·반례·다차원 품질 평가 계약을 고정한다. |
 | 8 | M1.5 | blocked(O1.3) | MCP/skill/prompt가 같은 ontology-construction lifecycle을 강제한다. |
 | 9 | O1.5 | blocked(M1.5) | 세 낯선 제품에서 독립 construction qualification을 통과한다. |
@@ -338,6 +338,7 @@ kind 묶음이 아니라 qualified statement/provenance envelope다.
 | M1.2 | `d375bada9` | source/bundle 설정은 false, 죽은 `npx`는 true, Settings는 template까지 `3`으로 세고 CLI도 `npx`를 ready로 판정 | app/config/Settings 161; CLI integration 289; contract 1,559; desktop bridge 135; desktop check 274; i18n 16; TypeScript·ESLint; gate-probe RED→GREEN | Node 24 fresh init의 활성 config 4/4 + stdio MCP 35/35; 재빌드한 `/Applications/Ontology Atlas.app`에서 Codex Computer Use로 Settings 2/2와 두 행만 확인; bundled binary 35/35 | ready는 실행 shape·대상 파일·vault 좌표 계약이며 live session 자체는 별도 `mcp-verify`가 증명; 다음은 M1.3 terminal truth |
 | M1.3 | `761d555a4` | bootstrap exit 2 뒤에도 green `quick start done`, `bootstrapped`, `MCP already wired`가 출력; 실제 tarball은 runtime import 누락으로 정상 quick-start도 exit 2 | quick-start source 7; CLI integration 290; package contract MCP 41/CLI 90 reachable; packed CLI success+failure; ESLint; gate-probe RED→GREEN | source와 새 tarball 설치본 모두 성공은 기존 3-step, 실패는 nonzero + `quick start incomplete` + written-but-unverified + 실행 가능한 diagnose/retry 명령; packed MCP 누락 runtime 파일 복구 | scaffold/config write는 보존하되 bootstrap·live MCP 준비로 승격하지 않음; 다음은 M1.4 runtime-derived inventory |
 | M1.4 | `dbc063364` | full initialize가 `33/19/14`, 같은 세션 tools/list가 `35/19/16`; read-only initialize도 write 16개를 노출하지만 실제 목록은 read 19개 | formatter 3; verify 129; MCP surface 4; starter/Settings/launch 79; CLI mcp-verify integration 11; package 30; docs·agents·decision gates; count 오염·read-only write 누출·current prose count를 각각 주입해 RED→GREEN | Node 24 dogfood `mcp-verify`가 live 35/35와 initialize exact count/name split을 확인; read-only integration은 19/19·write 0; packed CLI smoke가 새 runtime module 포함을 증명; generated surface는 live 35/19/16; fresh `/Applications/Ontology Atlas.app`의 번들 MCP도 35 tools로 spawn됐고 Codex Computer Use가 EN·KO Settings에서 숫자 없는 `현재 도구` 안내, `mcp-verify` 경로, 패널 내부 scroll·무잘림을 확인 | `mcp/package.json` count는 CLI/package 검증이 소비하고 generated registry에 묶인 기계 메타데이터라 유지; 사람 산문·starter·Settings는 `tools/list`/`mcp-verify`를 가리킴; 새 token·layout·motion은 없고 기존 Settings recipe를 재사용; 다음은 O1.2 meta-model truth boundary |
+| O1.2 | `9ca7bf65c` | 새 consumer 계약 16/16이 정본 export/pointer/prompt 부재를 잡아 RED; MCP initialize의 boundary 주입 한 줄을 제거하면 정확히 1건 RED, 복구 뒤 GREEN | contract 1,575; MCP unit 600; MCP integration 115 + guarded `broader` focused 1; starter/schema 170; CLI starter prune 3; TypeScript·ESLint; docs·agents·decision gates; Sol 독립 감사 3/3 승인 | Node 24 live stdio MCP 35/35; `get_concept` mtime→full `broader` patch→validate 성공과 `add_relation(type:is_a)` 거절; dogfood 71 nodes/154 edges, validator·compile·maintenance issue 0 | dogfood의 authored `document`/`broader` 0은 완료 근거로 세지 않음; 공개 링크는 GitHub `main`이므로 compact offline fallback 유지; fresh source-hidden 이해도는 O1.3/O1.5에서 반복 측정; UI/design/app 변경 없음; 다음은 O1.1 Studio recommendation |
 
 ### 트랙 공통 종료 규칙
 
