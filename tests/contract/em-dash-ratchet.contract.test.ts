@@ -35,8 +35,21 @@ import { describe, expect, it } from "vitest";
 
 const REPO_ROOT = join(import.meta.dirname, "..", "..");
 
-/** 2026-08-09 실측. 줄이는 것은 자유, 늘리려면 문장을 다시 써라. */
-const BASELINE = { ko: 230, en: 264 } as const;
+/**
+ * **0 이다 — 상한이 아니라 금지다** (2026-08-09 전수 정리 완료).
+ *
+ * 시작은 상한이었다(ko 232 · en 265). 화면 단위로 나눠 고치자던 계획을 소유자가
+ * *"1번부터 전부다 완벽하게"* 로 바꿨고, 그래서 **494개를 전부 치웠다**:
+ * 문장이 끝난 자리는 마침표, 이어지는 자리는 콜론, 삽입구는 괄호.
+ *
+ * 기계 치환이 망가뜨린 자리 **19건은 손으로** 고쳤다(삽입구 11 + 콜론이 두 번
+ * 겹친 8). 그 19건이 이 일이 왜 일괄 치환으로 안 되는지의 증거다 —
+ * `downloads: with their real sizes and checksums: appear here` 처럼 문법은
+ * 멀쩡한데 뜻이 깨진다.
+ *
+ * **빈 값 표시용 `—` 하나는 센 데서 빠진다** — 그건 글이 아니라 기호다.
+ */
+const BASELINE = { ko: 0, en: 0 } as const;
 
 /**
  * **글이 아니라 기호인 자리** — 값이 없다는 뜻의 대시 하나. 여기 있는 것은
@@ -80,15 +93,12 @@ describe("작대기 래칫 — 사용자 문구", () => {
       );
       expect(
         withDash,
-        `${locale} 작대기 문구가 ${BASELINE[locale]} → ${withDash} 로 늘었다.\n` +
-          "「짧은 앞말 — 긴 설명」은 모델의 기본 문장 모양이다. 마침표로 끊거나 두 줄로 나눠라.\n" +
+        `${locale} 문구에 작대기가 ${withDash}개 들어왔다.\n` +
+          "「짧은 앞말 — 긴 설명」은 모델의 기본 문장 모양이다. 문장이 끝났으면 마침표, " +
+          "이어지면 콜론, 삽입구는 괄호를 쓴다.\n" +
           "값이 없다는 뜻의 «—» 하나만 있는 문자열은 기호라서 안 센다.",
       ).toBeLessThanOrEqual(BASELINE[locale]);
-      expect(
-        withDash,
-        `${locale} 작대기 문구가 ${BASELINE[locale]} → ${withDash} 로 줄었다. ` +
-          `BASELINE.${locale} 도 ${withDash} 로 내려라 — 안 내리면 고친 만큼이 다시 여유가 된다.`,
-      ).toBe(BASELINE[locale]);
+      // 0 이므로 「줄었으면 내려라」 절이 필요 없다 — 더 내려갈 곳이 없다.
     });
   }
 });

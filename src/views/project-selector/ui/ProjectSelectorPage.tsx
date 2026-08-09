@@ -346,9 +346,13 @@ function ProjectFullCard({ project, facts, domainRows, description, docPath, kin
         </span>
       </div>
 
-      {/* 규모를 잘 말하는 역량·요소를 앞·크게, 도메인·문서·관계는 부수치로
-          작게 — 색/토큰 변경 없이 크기·순서·캡션만 조정한다. */}
-      <div className="mt-4 rounded-chip border border-[color:var(--color-border-soft)] bg-[color:var(--topology-v2-panel-metric-surface,var(--color-overlay-1))] px-4 py-2.5">
+      {/* 규모를 잘 말하는 역량·요소를 앞·크게, 도메인·문서·관계는 부수치로 작게.
+          ⚠️ 배경은 **앱 램프의 `--color-overlay-1`** 이다. 예전에는 지도 패널 전용
+          토큰(`--topology-v2-panel-metric-surface`, 알파 0.03)을 쓰고 있었는데,
+          이 카드는 지도 패널이 아니다. 그 결과 앱 램프에 없는 알파가 화면에 하나
+          생겼다(램프는 0.02 · 0.06 · 0.10). 대체값으로 이미 `overlay-1` 이 적혀
+          있었으니 원래 목적지를 알고 있었던 셈이다. 실제 차이는 알파 0.01. */}
+      <div className="mt-4 rounded-chip border border-[color:var(--color-border-soft)] bg-[color:var(--color-overlay-1)] px-4 py-2.5">
         <p className="mb-1.5 text-caption text-[color:var(--color-text-quaternary)]">
           {t("factStripGloss")}
         </p>

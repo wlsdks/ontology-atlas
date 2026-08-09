@@ -325,7 +325,7 @@ describe('VaultAgentSetupPanel', () => {
       { validationSummary: { errorCount: 0, warningCount: 2 } },
     );
 
-    expect(screen.getByText('경고 2개 — 훑어보면 좋아요')).toBeInTheDocument();
+    expect(screen.getByText(/경고 2개: 훑어보면/)).toBeInTheDocument();
     expect(
       screen.getByText('이 폴더에서 다시 켜거나, 다른 코드 폴더에서는 본보기를 복사해 쓰세요'),
     ).toBeInTheDocument();
@@ -349,7 +349,7 @@ describe('VaultAgentSetupPanel', () => {
       { validationSummary: { errorCount: 1, warningCount: 0 } },
     );
 
-    expect(screen.getByText('오류 1개 — 커밋을 남길 수 없어요')).toBeInTheDocument();
+    expect(screen.getByText(/오류 1개: 커밋을/)).toBeInTheDocument();
   });
 
   // ⑤ — 「5개가 막음」이 갈 곳을 갖는다. 종전 이 블록의 인터랙티브 요소는 0개였고

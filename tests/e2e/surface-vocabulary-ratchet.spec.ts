@@ -36,8 +36,21 @@ import { seedFirstRunSeen } from "./first-run-seed";
  * 만큼의 여유가 다음 사람에게 그대로 반납된다.
  */
 
-/** 오늘 실측(1440×900, 10개 화면). 줄이는 것은 자유, 늘리려면 규격을 세워라. */
-const BASELINE_SURFACE_COMBOS = 30;
+/**
+ * **표면과 컨트롤을 갈라 센다** (2026-08-09 정정).
+ *
+ * 처음에는 「반경이 있고 보더/배경이 있는 상자」를 전부 세어 **30종**이라고 했다.
+ * 그런데 그중 **17종이 버튼·칩**이었다 — 그건 `controlClass` 가 이미 주인인 층이고,
+ * 톤 8단 × 모양 8종을 곱하면 조합이 여러 개 나오는 것이 **정상**이다.
+ *
+ * 30이라는 수는 두 층을 섞은 값이라 무엇이 문제인지 말해 주지 못했다. 주인이 없는
+ * 것은 **표면 15종**이고, 이 래칫이 잠글 것은 그 15다.
+ *
+ * ⚠️ **컨트롤 수도 같이 센다** — 갈라 놓기만 하고 한쪽을 안 보면, 새 조합이 컨트롤
+ * 쪽으로 숨는다. 컨트롤은 값 층이 소유하므로 상한이 더 느슨하지만, 무한은 아니다.
+ */
+const BASELINE_SURFACE_COMBOS = 14;
+const BASELINE_CONTROL_COMBOS = 17;
 
 const ROUTES = [
   "/ko/topology/",
@@ -56,7 +69,8 @@ test("표면 조합이 늘지 않는다", async ({ page }) => {
   await seedFirstRunSeen(page);
   await page.setViewportSize({ width: 1440, height: 900 });
 
-  const combos = new Set<string>();
+  const surfaces = new Set<string>();
+  const controls = new Set<string>();
   let painted = 0;
 
   for (const route of ROUTES) {
@@ -72,7 +86,7 @@ test("표면 조합이 늘지 않는다", async ({ page }) => {
     }
 
     const found = await page.evaluate(() => {
-      const out: string[] = [];
+      const out: { key: string; interactive: boolean }[] = [];
       for (const el of document.querySelectorAll("main *")) {
         const style = getComputedStyle(el);
         const box = el.getBoundingClientRect();
@@ -87,33 +101,49 @@ test("표면 조합이 늘지 않는다", async ({ page }) => {
         const radius = style.borderTopLeftRadius;
         if (radius === "0px" || (!hasBorder && !hasBackground)) continue;
 
-        out.push(
-          `${radius} | ${hasBorder ? style.borderTopColor : "none"} | ${
+        // 누르는 것인가 — 그렇다면 `controlClass` 가 주인인 층이다.
+        const tag = el.tagName.toLowerCase();
+        const interactive =
+          ["button", "a", "input", "textarea", "select", "summary", "label"].includes(tag) ||
+          el.getAttribute("role") === "button" ||
+          el.closest("button,a[href]") !== null;
+
+        out.push({
+          key: `${radius} | ${hasBorder ? style.borderTopColor : "none"} | ${
             hasBackground ? style.backgroundColor : "none"
           }`,
-        );
+          interactive,
+        });
       }
       return out;
     });
 
     painted += found.length;
-    for (const combo of found) combos.add(combo);
+    for (const item of found) (item.interactive ? controls : surfaces).add(item.key);
   }
 
   // 공회전 차단 — 아무것도 못 재고 「0종」으로 통과하는 것이 이 래칫의 가장 나쁜 실패다.
   expect(painted, "표면을 하나도 못 쟀다 — 이 래칫이 헛돈다").toBeGreaterThan(40);
 
   expect(
-    combos.size,
-    `표면 조합이 ${BASELINE_SURFACE_COMBOS} → ${combos.size} 로 늘었다.\n` +
+    surfaces.size,
+    `표면 조합이 ${BASELINE_SURFACE_COMBOS} → ${surfaces.size} 로 늘었다.\n` +
       `상자의 생김새(반경×보더×배경)를 새로 조립하지 말고 이미 있는 조합을 쓴다.\n` +
-      `정말 새 역할이면 「체계」를 소집해 규격을 먼저 세워라 — 상한을 올리는 것은 래칫을 푸는 것이다.\n` +
-      [...combos].sort().join("\n"),
+      `정말 새 역할이면 「체계」를 소집해 규격을 먼저 세워라. 상한을 올리는 것은 래칫을 푸는 것이다.\n` +
+      [...surfaces].sort().join("\n"),
   ).toBeLessThanOrEqual(BASELINE_SURFACE_COMBOS);
 
   expect(
-    combos.size,
-    `표면 조합이 ${BASELINE_SURFACE_COMBOS} → ${combos.size} 로 줄었다. ` +
-      `BASELINE_SURFACE_COMBOS 도 ${combos.size} 로 내려라 — 안 내리면 줄인 만큼이 다시 여유가 된다.`,
+    surfaces.size,
+    `표면 조합이 ${BASELINE_SURFACE_COMBOS} → ${surfaces.size} 로 줄었다. ` +
+      `BASELINE_SURFACE_COMBOS 도 ${surfaces.size} 로 내려라. 안 내리면 줄인 만큼이 다시 여유가 된다.`,
   ).toBe(BASELINE_SURFACE_COMBOS);
+
+  // 컨트롤 쪽으로 새 조합이 숨지 않게 같이 잠근다.
+  expect(
+    controls.size,
+    `컨트롤 조합이 ${BASELINE_CONTROL_COMBOS} → ${controls.size} 로 늘었다.\n` +
+      `값 층(controlClass · fieldClass)의 톤·모양으로 표현해라.\n` +
+      [...controls].sort().join("\n"),
+  ).toBeLessThanOrEqual(BASELINE_CONTROL_COMBOS);
 });

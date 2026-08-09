@@ -43,7 +43,7 @@ describe("ShortcutSheet — topology section (W2-C)", () => {
     expect(screen.getByText("Zoom in or out")).toBeInTheDocument();
     expect(
       screen.getByText(
-        "Context menu — document, edit relations, copy handoff, path, full detail",
+        /Context menu.*edit relations.*copy handoff/,
       ),
     ).toBeInTheDocument();
   });
@@ -64,7 +64,7 @@ describe("ShortcutSheet — kind glossary (P1a-2)", () => {
     expect(screen.getByText("Ontology")).toBeInTheDocument();
     expect(
       screen.getByText(
-        "The documents recording what exists and how it connects — the source of this map",
+        /documents recording what exists and how it connects/,
       ),
     ).toBeInTheDocument();
 
