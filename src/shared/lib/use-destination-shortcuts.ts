@@ -80,12 +80,24 @@ export function useDestinationShortcuts({
   disabled = false,
   hrefOverrides,
 }: DestinationShortcutOptions) {
-  /** 리더를 누른 시각. 0 이면 안 누른 것. */
-  const leaderAt = useRef(0);
+  /**
+   * 리더를 누른 시각. `null` 이면 안 누른 것.
+   *
+   * ⚠️ **`event.timeStamp` 를 쓰면 안 된다** (2026-08-10, 설치 앱 실측). 처음에는
+   * 시각을 `event.timeStamp` 로 읽고 «0 이면 안 누른 것» 으로 판정했다. 브라우저
+   * (Chromium)에서는 잘 돌았고 e2e 도 통과했는데, **설치 앱(WKWebView)에서는
+   * 리더 조합이 하나도 안 먹었다** — `G P` 도 `G M` 도. 같은 화면에서 `?` 는
+   * 정상이었으니 키가 WebView 에 닿기는 했다.
+   *
+   * 그래서 시계를 사건에서 떼어 낸다: 시각은 `performance.now()` 로, 「눌렀나」는
+   * **`null` 이 아닌가**로 판정한다. 0 을 «안 누름» 의 뜻으로 겸용하면, 어떤
+   * 런타임이 0 을 주는 순간 기능이 통째로 사라지고 화면에는 아무 단서도 없다.
+   */
+  const leaderAt = useRef<number | null>(null);
 
   useEffect(() => {
     if (disabled) {
-      leaderAt.current = 0;
+      leaderAt.current = null;
       return;
     }
     const handler = (event: KeyboardEvent) => {
@@ -97,16 +109,16 @@ export function useDestinationShortcuts({
 
       // 막는 표면이 떠 있으면 이동하지 않는다 (위 3번).
       if (blockingSurfaceOpen()) {
-        leaderAt.current = 0;
+        leaderAt.current = null;
         return;
       }
 
       const key = event.key.toLowerCase();
-      const now = event.timeStamp;
+      const now = performance.now();
 
-      if (leaderAt.current > 0 && now - leaderAt.current <= NAV_LEADER_WINDOW_MS) {
+      if (leaderAt.current !== null && now - leaderAt.current <= NAV_LEADER_WINDOW_MS) {
         const id = DESTINATION_BY_KEY[key];
-        leaderAt.current = 0;
+        leaderAt.current = null;
         if (!id) return;
         event.preventDefault();
         navigate(hrefOverrides?.[id] ?? DESTINATION_HREF[id], id);
@@ -115,7 +127,7 @@ export function useDestinationShortcuts({
 
       // 리더를 새로 누른다. `G G`(git)가 성립하려면 리더 자신도 두 번째 글자가
       // 될 수 있어야 하는데, 그 판정은 위 블록이 먼저 하므로 순서가 중요하다.
-      leaderAt.current = key === NAV_LEADER_KEY ? now : 0;
+      leaderAt.current = key === NAV_LEADER_KEY ? now : null;
     };
     window.addEventListener('keydown', handler);
     return () => window.removeEventListener('keydown', handler);
