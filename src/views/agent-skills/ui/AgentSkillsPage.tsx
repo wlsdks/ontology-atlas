@@ -227,14 +227,13 @@ function EmptyState({ onOpenFolder, onOpenSample }: { onOpenFolder: () => void; 
       data-testid="skills-empty"
       className="flex min-h-0 flex-1 flex-col gap-8 pt-6 pb-6"
     >
-      <div className="flex max-w-[46em] flex-col gap-2">
-        <h2 className="text-hero leading-display-tight text-[color:var(--color-text-primary)]">
-          {t("emptyHeadline")}
-        </h2>
-        <p className="text-body-lg leading-prose text-[color:var(--color-text-secondary)]">
-          {t("emptyBody")}
-        </p>
-      </div>
+      {/* ⚠️ 여기 별도 헤드라인을 두지 않는다. 한 번 넣었다가 `screen-hierarchy`
+          게이트가 잡았다 — 「페이지 제목보다 크거나 같은 글자가 제목 밖에 없다」.
+          그리고 게이트가 옳았다: 그 문장("내 에이전트가 어떤 스킬을…")은 페이지
+          제목과 그 아래 한 줄이 이미 하는 말이었다. 제목은 하나다. */}
+      <p className="max-w-[46em] text-body-lg leading-prose text-[color:var(--color-text-secondary)]">
+        {t("emptyBody")}
+      </p>
 
       {/* 세 질문 — 이 화면이 다른 어디서도 답하지 않는 것. 번호가 순서를 말한다. */}
       <ol className="grid gap-x-8 gap-y-5 md:grid-cols-3">
