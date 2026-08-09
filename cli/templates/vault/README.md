@@ -118,16 +118,12 @@ For an agent opened at your codebase root instead of this vault folder, replace
 
 ## What an AI agent can do for you
 
-Once you register the `ontology-atlas-mcp` server, the agent gets 35
-tools to read/write this vault:
+Once you register the `ontology-atlas-mcp` server, the running server gives the
+agent its current read/write inventory. Use `tools/list` for the exact names and
+`mcp-verify` to prove that the server can read this vault.
 
-- **read 19**: connection_info / git_status / git_history / list_concepts / get_concept / get_concepts / find_evidence /
-  find_backlinks / find_neighbors / find_path / list_kinds / find_orphans /
-  query_concepts / compile_ontology / query_ontology / validate_vault /
-  analyze_repo_structure / infer_imports / index_project
-- **write 16**: absorb_document / add_concept / add_concepts / add_relation / add_relations /
-  remove_relation / replace_relation / patch_concept / reclassify_concept /
-  delete_concept / rename_concept / merge_concepts / git_snapshot / finalize_project_meaning /
-  connect_project_source / disconnect_project_source
+Start with `connection_info`, `list_kinds`, `validate_vault`, and
+`query_ontology({ operation: "agent_brief" })`. Write only after the read-first
+checks are clean and the person accepts the proposed meaning.
 
 Details: https://github.com/wlsdks/ontology-atlas/tree/main/mcp

@@ -56,8 +56,8 @@
 
 <p align="center">
   <a href="LICENSE"><img alt="MIT license" src="https://img.shields.io/badge/license-MIT-5e6ad2.svg" /></a>
-  <a href="mcp/README.md"><img alt="35 MCP tools" src="https://img.shields.io/badge/MCP-33_tools-5e6ad2.svg" /></a>
-  <a href="cli/README.md"><img alt="52 CLI commands" src="https://img.shields.io/badge/CLI-52_commands-5e6ad2.svg" /></a>
+  <a href="mcp/README.md"><img alt="MCP runtime inventory" src="https://img.shields.io/badge/MCP-runtime_inventory-5e6ad2.svg" /></a>
+  <a href="cli/README.md"><img alt="Local CLI" src="https://img.shields.io/badge/CLI-local_tools-5e6ad2.svg" /></a>
   <img alt="Local-first" src="https://img.shields.io/badge/storage-local--first-17181f.svg" />
 </p>
 
@@ -129,8 +129,9 @@ This is normally a paragraph of setup instructions. Here it is a button.
 
 Claude Code, Cursor, VS Code and Codex each get a button. Any other MCP client
 can copy the snippet from **Advanced · detailed checks**.
-The bundled server exposes **35 tools — 19 read + 16 write**; the
-[agent guide](mcp/README.md) documents every tool and its contract.
+The bundled server advertises its current read/write surface through
+`tools/list`; the [agent guide](mcp/README.md) documents every tool and its
+contract, and `mcp-verify` proves the live inventory.
 
 ### 3. Read the map
 
@@ -254,9 +255,10 @@ coverage from how the documents link to each other.
 
 ## What your agent gets
 
-**35 MCP tools — 19 read, 16 write** — over stdio JSON-RPC, for Claude Code,
-Cursor, Codex, and any MCP client. The point is not the tool count; it is that
-the answers are *typed*, so an agent can act on them.
+**Typed MCP tools** over stdio JSON-RPC serve Claude Code, Cursor, Codex, and
+any MCP client. The running server advertises the exact current read/write
+inventory through `tools/list`; the value is that the answers are typed, so an
+agent can act on them.
 
 Ask *what breaks if I change this?* and Atlas follows only approved dependency
 declarations. It does not turn folder structure into causal confidence:

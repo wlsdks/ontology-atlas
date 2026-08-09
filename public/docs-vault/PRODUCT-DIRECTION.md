@@ -248,7 +248,7 @@ This is the differentiator. **Generic ontology workbench (Protégé etc.) → "w
 | **Planner / PM / marketer** | Understand the product/business core, narratives, ownership, and change impact without reading source | installed desktop app (`/ontology`, `/topology`, `/docs`; macOS, Windows x64 beta), static/shared vault exports |
 | **C-level / decision-maker** | See what the organization/system is made of, which capabilities matter, and what changes affect strategic bets | overview, topology, graph proof/impact summaries |
 | **Developer** | Maintain the graph as implementation changes; connect code artifacts to domains/capabilities | CLI (`ontology-atlas init/list/validate/add/find/import/index`), installed desktop app (`/ontology`, `/docs`) |
-| **AI agent** (Claude Code, Codex, Cursor, …) | Read for context · write back findings · keep the graph current through verified MCP/CLI loops | MCP server (35 tools — read 19 + write 16), vault-scoped Git evidence/checkpoint, Workshop handoff, agent heartbeat, explicit-project agent brief |
+| **AI agent** (Claude Code, Codex, Cursor, …) | Read for context · write back findings · keep the graph current through verified MCP/CLI loops | MCP server (runtime-advertised read/write inventory), vault-scoped Git evidence/checkpoint, Workshop handoff, agent heartbeat, explicit-project agent brief |
 
 The single artifact serves all audiences: a local, git-backed ontology that
 links business language, product capabilities, implementation evidence, and
@@ -596,10 +596,9 @@ Code-compatible:
 From a source checkout the same entry is `"command": "node"`,
 `"args": ["/absolute/path/to/ontology-atlas/mcp/src/index.js"]`.
 
-Tools (35 — read 19 + write 16):
-
-- read: `connection_info`, `git_status`, `git_history`, `list_concepts`, `get_concept`, `get_concepts`, `find_evidence`, `find_backlinks`, `find_neighbors`, `find_path`, `list_kinds`, `find_orphans`, `query_concepts`, `compile_ontology`, `query_ontology`, `validate_vault`, `analyze_repo_structure`, `infer_imports`, `index_project`
-- write: `absorb_document`, `add_concept`, `add_concepts`, `add_relation`, `add_relations`, `remove_relation`, `replace_relation`, `patch_concept`, `reclassify_concept`, `delete_concept`, `rename_concept`, `merge_concepts`, `git_snapshot`, `finalize_project_meaning`, `connect_project_source`, `disconnect_project_source`
+The running server advertises the current read/write inventory through
+`tools/list`. Run `mcp-verify` for exact set parity and live vault proof; use
+`mcp/README.md` for the per-tool contracts.
 
 With this in place, the agent can answer **"which concept is this file an element of?"** directly during code exploration. No re-inferring every conversation.
 
@@ -639,7 +638,7 @@ When an agent enters the codebase, it sees this on the first page and picks up t
 ### ✅ Phase 3 — AI agent partner — merged
 
 1. ✅ `mcp/` package — MCP server (`ontology-atlas-mcp`)
-2. ✅ 35 tools (read 19 + write 16): connection/root/toolset proof, vault-scoped Git status/history and local snapshots, persisted Workshop context (`builder_context` compatibility operation), list/get/find/query/compile/validate/analyze/index reads, batch concept/relation writes, narrow relation removal/replacement, concept patch/reclassification, dry-run-first rename/merge/delete/absorb writes, project-source connect/disconnect, and project-meaning finalization.
+2. ✅ Runtime-advertised MCP inventory: connection/root/toolset proof, vault-scoped Git status/history and local snapshots, persisted Workshop context (`builder_context` compatibility operation), list/get/find/query/compile/validate/analyze/index reads, batch concept/relation writes, narrow relation removal/replacement, concept patch/reclassification, dry-run-first rename/merge/delete/absorb writes, project-source connect/disconnect, and project-meaning finalization. `tools/list` is the exact current set; `mcp-verify` checks it.
 3. ✅ CLI command (`ontology-atlas`) — `node <checkout>/cli/src/index.mjs init <folder>` scaffolds the vault from a source checkout. The installed app `/docs` "Create starter seed" button is the no-terminal alternative. (npm publishing retired 2026-07-27; there is no `npx` channel.)
 4. ⏸ Auto-generated AGENTS.md — DEFERRED (manual updates + dogfood vault cover this)
 5. ✅ `docs/ontology/` dogfood vault — describes our own mental model, including agent-practice notes as document nodes (census: `node cli/src/index.mjs overview`)

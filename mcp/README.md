@@ -374,7 +374,9 @@ the explicit CLI wrapper arguments without changing into `mcp/`; use
 
 ### 2. Restart the agent
 
-The server connects over stdio. You should now see 35 tools under the `ontology-atlas` namespace.
+The server connects over stdio. The agent should now show the server's current
+tool inventory under the `ontology-atlas` namespace. Use `tools/list` for the
+exact names and `mcp-verify` for live parity proof.
 
 ### 3. Call the tools
 
@@ -386,7 +388,7 @@ The server connects over stdio. You should now see 35 tools under the `ontology-
 → mcp__ontology-atlas__get_concept({ slug: 'capabilities/mcp-server' })
 ```
 
-## The 35 tools
+## Current tool contracts
 
 ### Node identity contract
 
@@ -1029,7 +1031,8 @@ verifier itself and change only when the tool contract changes.
 ✓ read census consistency — <N> nodes across list_kinds/list_concepts/compile_ontology/overview, <N> kinds
 ✓ structuredContent — direct 16/16, write 5/5 (batch row-isolation 2/2, batch no-write metadata 2/2, destructive dry-run 3/3), maintenance 2/2 (resume skipped: no actions), graph 13/13
 
-All passed — register .mcp.json with your MCP client and restart to use the 35 tools.
+All passed. Register `.mcp.json` with your MCP client and restart to use the
+verified runtime inventory.
 
 ```
 
@@ -1247,7 +1250,10 @@ After you add `.mcp.json` / `.codex/config.toml` and restart the agent, try the 
 > 7. Call `query_ontology({ operation: "overview", limit: 5 })` to confirm graph-query summaries work without fetching the full compile artifact.
 > 8. Call `query_ontology({ operation: "query_plan", targetOperation: "overview" })` and `query_ontology({ operation: "query_plan", targetOperation: "project_map" })` before heavier graph exploration so the agent sees the cost/index contract across more than one operation.
 
-If those read-only calls respond cleanly, the agent can see the vault and its graph health. Once an agent starts *committing* its analysis of your codebase to the ontology through these 35 tools (19 read + 16 write), the human + AI co-authoring loop is officially open.
+If those read-only calls respond cleanly, the agent can see the vault and its
+graph health. Once an agent starts *committing* its analysis of your codebase
+through the server's verified runtime inventory, the human + AI co-authoring
+loop is officially open.
 
 ## Design principles
 

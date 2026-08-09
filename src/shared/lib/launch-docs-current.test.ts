@@ -1,13 +1,9 @@
-import { readFileSync } from 'node:fs';
 import { readFile } from 'node:fs/promises';
 import path from 'node:path';
 import { describe, expect, it } from 'vitest';
 import { CLI_COMMAND_COUNT } from '../../../cli/src/lib/cli-commands.mjs';
-import { parseMcpToolMetadataFromDescription } from '../../../cli/src/lib/mcp-metadata.mjs';
 
 const ROOT = path.resolve(__dirname, '../../..');
-const MCP_PKG = JSON.parse(readFileSync(path.join(ROOT, 'mcp/package.json'), 'utf8'));
-const MCP_TOOL_METADATA = parseMcpToolMetadataFromDescription(MCP_PKG.description);
 
 // `docs/PUBLISH-NPM.md` 는 npm 발행 계획 폐기 (docs/DECISIONS.md 2026-07-27) 로
 // `docs/archive/` 로 옮겨졌다. 아카이브는 당시 사실을 그대로 보존하는 기록이라
@@ -34,37 +30,10 @@ const DEMO_LINK_DOCS = [
   'docs/launch/DEMO-GIF-STORYBOARD.md',
 ] as const;
 
-const MCP_TOOL_COUNT_DOCS = [
-  'README.md',
-  'docs/launch/README.md',
-  'docs/launch/HN-POST.md',
-  'docs/launch/REDDIT-POSTS.md',
-  'docs/launch/X-THREAD.md',
-] as const;
-
-const MCP_TOOL_SPLIT_DOCS = [
-  'README.md',
-  'docs/FEATURES.md',
-  'docs/launch/README.md',
-  'docs/launch/REDDIT-POSTS.md',
-] as const;
-
 /**
- * [정리됨 2026-08-01] 낡은 수를 **하나씩 손으로 등재하던** 항목 7개
- * (`12 tools` · `20 tools` · `read 8 + write 4` · `read 12 + write 8` ·
- * `8 read + 4 write` · `12 read + 8 write` · `10 others`).
- *
- * 이건 검사가 아니라 **금지어 사전**이었다 — 도구 수가 33이 되는 순간 「32」가
- * 낡은 수가 되는데, 그때 누가 이 목록에 항목을 더해 주지 않으면 게이트는
- * 조용히 무력해진다. 그리고 애초에 필요가 없다: 아래 두 검사가 문서마다
- * **현재 수를 담고 있으라**고 양성으로 요구하고, 그 현재 수는
- * `mcp/package.json` description → (2026-08-01 추가) MCP 레지스트리로
- * 묶여 있다(`scripts/check-package-contracts.test.mjs`).
- *
- * 잃은 것: 문서가 현재 수와 낡은 수를 **동시에** 적으면 통과한다.
- *
- * 남은 한 항목은 성격이 다르다 — 특정 수가 아니라 **수를 동결하지 말라는
- * 규칙**이라 어제의 참값이 오늘의 금지어가 되지 않는다.
+ * MCP inventory의 정본은 live `tools/list`다. 특정 옛 숫자를 금지어로 모으거나
+ * 현재 숫자를 모든 launch 문서에 복사하면 다음 registry 변경 때 둘 다 썩는다.
+ * 아래 게이트는 수 자체를 동결하지 말라는 구조적 규칙만 지킨다.
  */
 const STALE_PATTERNS: Array<{ pattern: RegExp; message: string }> = [
   {
@@ -110,33 +79,15 @@ describe('current-surface launch docs', () => {
   // 「캡션 == 그래프」 단언이 그 자리를 지킨다(그 단언은 손으로 맞출 숫자가
   // 없어 썩지 않는다).
 
-  it('keeps MCP tool-count claims aligned with the package metadata', async () => {
-    expect(MCP_TOOL_METADATA).toBeTruthy();
+  it('does not freeze MCP tool counts or read/write splits in current launch prose', async () => {
     const findings: string[] = [];
-    const toolCountPattern = new RegExp(`\\b${MCP_TOOL_METADATA?.toolCount} tools\\b|\\b${MCP_TOOL_METADATA?.toolCount}-tool\\b`);
+    const toolCountPattern = /\b\d+\s+(?:MCP\s+)?tools?\b|\b\d+-tool\b/i;
+    const splitPattern = /\b\d+\s+read\s*(?:\+|·)\s*\d+\s+write\b|\bread\s+\d+\s*\+\s*write\s+\d+\b/i;
 
-    for (const relPath of MCP_TOOL_COUNT_DOCS) {
+    for (const relPath of CURRENT_SURFACE_DOCS) {
       const text = await readFile(path.join(ROOT, relPath), 'utf8');
-      if (!toolCountPattern.test(text)) {
-        findings.push(`${relPath}: expected ${MCP_TOOL_METADATA?.toolCount} MCP tools`);
-      }
-    }
-
-    expect(findings).toEqual([]);
-  });
-
-  it('keeps MCP read/write split claims aligned with the package metadata', async () => {
-    expect(MCP_TOOL_METADATA).toBeTruthy();
-    const findings: string[] = [];
-    const splitPattern = new RegExp(
-      `${MCP_TOOL_METADATA?.readCount} read\\s*(?:\\+|·)\\s*${MCP_TOOL_METADATA?.writeCount} write|read ${MCP_TOOL_METADATA?.readCount}\\s*\\+\\s*write ${MCP_TOOL_METADATA?.writeCount}`,
-      'i',
-    );
-
-    for (const relPath of MCP_TOOL_SPLIT_DOCS) {
-      const text = await readFile(path.join(ROOT, relPath), 'utf8');
-      if (!splitPattern.test(text)) {
-        findings.push(`${relPath}: expected ${MCP_TOOL_METADATA?.splitText}`);
+      if (toolCountPattern.test(text) || splitPattern.test(text)) {
+        findings.push(`${relPath}: use runtime tools/list instead of a copied MCP inventory count`);
       }
     }
 
@@ -149,15 +100,13 @@ describe('current-surface launch docs', () => {
   // README 는 이제 `node cli/src/index.mjs overview` 를 부른다.
 
   it('keeps the packaged agent workflow aligned with current CLI, MCP, and dogfood facts', async () => {
-    expect(MCP_TOOL_METADATA).toBeTruthy();
     const workflow = await readFile(path.join(ROOT, 'docs/AGENT-GRAPH-WORKFLOW.md'), 'utf8');
 
-    // 이 넷은 **공개 계약의 수**다 — 명령을 더하거나 도구를 등록해야만 바뀌고,
-    // 그 변경은 의도적이라 문서가 따라오는 것이 맞다.
+    // CLI 명령 수는 help와 같은 registry에서 검증한다. MCP inventory는 runtime
+    // tools/list가 정본이므로 산문 count 대신 discovery와 live proof를 요구한다.
     expect(workflow).toContain(`${CLI_COMMAND_COUNT} commands`);
-    expect(workflow).toContain(`${MCP_TOOL_METADATA?.toolCount} local tools`);
-    expect(workflow).toContain(`${MCP_TOOL_METADATA?.readCount} read tools`);
-    expect(workflow).toContain(`${MCP_TOOL_METADATA?.writeCount} write tools`);
+    expect(workflow).toContain('tools/list');
+    expect(workflow).toContain('mcp-verify');
     // **볼트 노드 수는 여기서 요구하지 않는다.** 노드는 아무나 추가하는데 이
     // 문서는 아무도 안 고친다 — 요구하면 문서가 그 말을 듣고, 그 다음 노드
     // 하나에 낡는다. 실제로 그렇게 됐다: 이 게이트가 강제한 「98 nodes」 옆에

@@ -154,7 +154,7 @@ describe('VaultAgentSetupPanel', () => {
       screen.getByText('고치기 전에 확인 명령을 돌려 「되나」와 「빠른가」를 따로 봅니다.'),
     ).toBeInTheDocument();
     expect(
-      screen.getByText('에이전트를 연 폴더에서 mcp-verify 를 돌려 도구 33개가 잡히는지 봅니다.'),
+      screen.getByText('에이전트를 연 폴더에서 mcp-verify 를 돌려 현재 도구 목록이 맞는지 확인합니다.'),
     ).toBeInTheDocument();
     expect(
       screen.getByText('처음 고치기 전에 폴더 요약(workspace-brief · agent-brief)을 먼저 읽습니다.'),
@@ -189,7 +189,7 @@ describe('VaultAgentSetupPanel', () => {
     ).toBeInTheDocument();
     expect(screen.getByText('서버 연결')).toBeInTheDocument();
     expect(
-      screen.getByText('mcp-verify 가 로컬 서버를 띄우고 도구 33개를 세고, 이 폴더를 실제로 읽어 봅니다.'),
+      screen.getByText('mcp-verify 가 로컬 서버를 띄우고 현재 도구 목록을 확인한 뒤, 이 폴더를 실제로 읽어 봅니다.'),
     ).toBeInTheDocument();
     expect(screen.getByText('확인 명령')).toBeInTheDocument();
     expect(
@@ -207,7 +207,7 @@ describe('VaultAgentSetupPanel', () => {
     expect(screen.getByText('그래프 묶음')).toBeInTheDocument();
     expect(screen.getByText('먼저 확인')).toBeInTheDocument();
     expect(
-      screen.getByText('Claude Code·Codex·Cursor 가 도구 33개를 직접 부르고, 고칠 때 안전장치를 받아요.'),
+      screen.getByText('Claude Code·Codex·Cursor 가 서버의 현재 도구를 직접 부르고, 고칠 때 안전장치를 받아요.'),
     ).toBeInTheDocument();
     expect(
       screen.getByLabelText('서버 연결 확인 명령 미리보기'),

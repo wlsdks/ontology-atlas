@@ -4,47 +4,17 @@
  *
  * AI agent (Claude Code 등) 가 vault 의 ontology 를 읽고 쓸 수 있게.
  *
- * read 19:
- *   - connection_info        — active vault/repo roots + server version
- *   - git_status             — vault-scoped local git state + risk summary
- *   - git_history            — vault-scoped commit history (read-only)
- *   - list_concepts          — vault 의 노드 목록 (kind / domain / since / summary)
- *   - get_concept            — 단일 노드 + graph 이웃 + mtime
- *   - get_concepts           — 배치 read (slugs[] → concepts[], partial 허용)
- *   - find_evidence          — title / capabilities / elements / body 부분매칭
- *   - find_backlinks         — 특정 slug 를 가리키는 다른 노드들
- *   - find_neighbors         — 특정 slug 주변의 incoming/outgoing graph edge
- *   - find_path              — 두 slug 사이 BFS 최단 경로 + nodes[] + edges[via] (R+)
- *   - list_kinds             — vault kind 분포 census
- *   - find_orphans           — 어느 다른 노드도 frontmatter 에서 가리키지 않는 doc
- *   - query_concepts         — typed filter DSL (kind=X AND has(Y) AND NOT ...)
- *   - compile_ontology       — vault 를 deterministic graph artifact 로 compile
- *   - query_ontology         — compiled graph engine query (neighbors / path / all_paths / query_plan / centrality / communities / similar_nodes / explain_relation / reachability / pattern_walk / impact / blast_radius / subgraph / builder_context / overview / schema / facets / match_nodes / match_edges / node_profile / domain_profile / domain_matrix / project_scope / project_map / relation_check / components / lineage / containment_tree / cycles / topological_order / recommend_relations / growth_plan / maintenance_plan / agent_brief / workspace_brief / health)
- *   - validate_vault         — vault 전체 health 한 호출 (per-doc + byCode aggregate)
- *   - analyze_repo_structure — R16, code repo 분석 → ontology 후보 (side effect 0)
- *   - infer_imports          — R17, TS/JS/Python import graph → depends_on 후보 (side effect 0)
- *   - index_project          — repo 분석 + import graph + vault validation plan (side effect 0)
- *
- * write 14:
- *   - finalize_project_meaning — current project competency receipt (post-write, expected mtime)
- *   - add_concept       — 새 노드 (.md 파일 작성, 기존 slug 면 throw)
- *   - add_concepts      — 배치 write (concepts[] → results[], partial 허용)
- *   - add_relation      — 두 노드 사이 edge (frontmatter 배열 키 append)
- *   - add_relations     — 배치 edge write (relations[] → results[], partial 허용)
- *   - patch_concept     — 기존 노드 frontmatter (key 단위, null = 삭제) + body
- *   - delete_concept    — 노드 영구 삭제 (dry-run + backlinks 가드 + force)
- *   - rename_concept    — slug 변경 + 모든 backlink 의 array/body 자동 redirect
- *   - merge_concepts    — 두 노드 합치기 (from 의 모든 backlink 를 into 로 redirect 후 from 삭제)
- *   - absorb_document   — Slice 0, CLAUDE.md/AGENTS.md 흡수 → document/policy 노드 + slim pointer (dry-run + 인젝션 Tier 1)
- *   - git_snapshot      — validated, vault-scoped local commit (dry-run + expected HEAD; never pushes)
+ * 현재 도구 표면의 정본은 아래 TOOLS registry를 annotation으로 보강하고
+ * read-only mode로 거른 TOOLS_FOR_LIST다. initialize 안내와 tools/list가 모두
+ * 같은 배열에서 파생되므로 이 머리말에 count나 이름 목록을 다시 복사하지 않는다.
  *
  * 환경 변수:
  *   OATLAS_VAULT=/abs/path/to/vault       — vault root 디렉토리. 미지정 시 cwd.
  *   OATLAS_REPO_ROOT=/abs/path/to/repo    — repository root. 미지정 시 vault의 Git top-level, 없으면 cwd.
  *
  * 사용:
- *   $ npx ontology-atlas-mcp
- *   또는 .mcp.json 에 등록 (README 참고).
+ *   $ node /absolute/path/to/ontology-atlas/mcp/src/index.js
+ *   또는 앱에 번들된 서버를 .mcp.json 에 등록 (README 참고).
  */
 
 /**
@@ -71,6 +41,7 @@ import { basename, isAbsolute, relative, resolve, sep } from 'node:path';
 import { createHash } from 'node:crypto';
 
 import { SERVER_VERSION } from './server-version.mjs';
+import { buildToolInventorySection } from './tool-inventory.mjs';
 import {
   PROJECT_SOURCE_STATE_RELATIVE_PATH,
   buildProjectSourceReceipt,
@@ -1724,16 +1695,14 @@ try {
 // dry-run/confirm 패턴, (4) mtime 충돌 가드, (5) R16/R17 bootstrap workflow,
 // (6) error message 가 다음 tool 을 직접 가리킨다는 사실 — agent UX 가
 // 매번 시행착오로 학습되는 문제를 단번에 해소.
-const SERVER_INSTRUCTIONS = `ontology-atlas — vault of markdown files where each \`.md\` with a frontmatter \`kind:\` is an ontology node. The graph encodes the codebase's mental model and is shared with the human via plain markdown.
+const TOOL_INVENTORY_PLACEHOLDER = '__ONTOLOGY_ATLAS_ACTIVE_TOOL_INVENTORY__';
+const SERVER_INSTRUCTIONS_TEMPLATE = `ontology-atlas — vault of markdown files where each \`.md\` with a frontmatter \`kind:\` is an ontology node. The graph encodes the codebase's mental model and is shared with the human via plain markdown.
 
 ## Node identity
 
 Every valid node has both identities: immutable \`uid\` is the permanent machine identity, while \`slug\` is the current human-readable address. \`list_concepts\`, \`get_concept\`, \`get_concepts\`, compiled/query node rows, and agent handoffs return both. Use \`get_concept({uid})\` or \`get_concepts({uids:[...]})\` for exact continuity across renames; use slug for frontmatter relations, URLs, and all graph-operation inputs. Never treat a slug change as a new UID.
 
-## Tool inventory (33 tools = read 19 + write 14)
-
-**read** — \`connection_info\` · \`git_status\` · \`git_history\` · \`list_concepts\` · \`get_concept\` · \`get_concepts\` · \`find_evidence\` · \`find_backlinks\` · \`find_neighbors\` · \`find_path\` · \`list_kinds\` · \`find_orphans\` · \`query_concepts\` · \`compile_ontology\` · \`query_ontology\` · \`validate_vault\` · \`analyze_repo_structure\` · \`infer_imports\` · \`index_project\`.
-**write** — \`add_concept\` · \`add_concepts\` · \`add_relation\` · \`add_relations\` · \`remove_relation\` · \`replace_relation\` · \`patch_concept\` · \`reclassify_concept\` · \`delete_concept\` · \`rename_concept\` · \`merge_concepts\` · \`absorb_document\` · \`git_snapshot\` · \`finalize_project_meaning\` · \`connect_project_source\` · \`disconnect_project_source\`.
+${TOOL_INVENTORY_PLACEHOLDER}
 
 ## Kind hierarchy (top → leaf)
 
@@ -1826,14 +1795,6 @@ Don't retry blindly — parse the suffix and pivot to the suggested tool.
 When code introduces a new capability / element / domain, mirror it in the vault with \`add_concept\` (and \`add_relation\` to wire it). When code is renamed / refactored, use \`rename_concept\` (one atomic call) instead of patch + manual backlink updates. The vault is the *shared* mental model — keeping it in sync is the point.
 
 ${CONSTRUCTION_RULES_EN}`;
-
-const server = new Server(
-  { name: 'ontology-atlas-mcp', version: SERVER_VERSION },
-  {
-    capabilities: { tools: {} },
-    instructions: SERVER_INSTRUCTIONS,
-  },
-);
 
 // ── 도구 정의 ─────────────────────────────────────────────────────────────
 
@@ -5201,6 +5162,18 @@ const TOOLS_FOR_LIST = READ_ONLY_MODE
 // Full registry stays complete so unknown-tool suggestions + the read-only
 // guard can reason about every tool name regardless of what tools/list shows.
 const TOOL_BY_NAME = new Map(TOOLS_FOR_LIST_ALL.map((tool) => [tool.name, tool]));
+
+const SERVER_INSTRUCTIONS = SERVER_INSTRUCTIONS_TEMPLATE.replace(
+  TOOL_INVENTORY_PLACEHOLDER,
+  buildToolInventorySection(TOOLS_FOR_LIST),
+);
+const server = new Server(
+  { name: 'ontology-atlas-mcp', version: SERVER_VERSION },
+  {
+    capabilities: { tools: {} },
+    instructions: SERVER_INSTRUCTIONS,
+  },
+);
 
 // v2 는 스키마 객체가 아니라 **메서드 문자열**을 받는다. 구 판본이
 // `ListToolsRequestSchema` 를 넘기면 v2 는 "not a spec request method" 로

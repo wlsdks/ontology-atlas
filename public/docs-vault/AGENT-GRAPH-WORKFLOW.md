@@ -168,15 +168,12 @@ parsing Markdown.
 ## What MCP Adds
 
 MCP is the agent interface. When Claude Code, Codex, or Cursor has the
-`ontology-atlas` MCP server registered, the agent can call 35 local tools:
-
-- 19 read tools: connection and git state, node listing, evidence search,
-  backlinks, neighbors, paths, validation, compile, repo analysis, import
-  inference, project indexing, and graph queries.
-- 16 write tools: document absorption, single/batch node and relation writes,
-  patch/reclassify, relation removal/replacement, rename, merge, delete, and git
-  snapshot with dry-run, idempotency, or conflict safety where needed, plus the
-  project-meaning receipt finalizer.
+`ontology-atlas` MCP server registered, `tools/list` provides the exact current
+local read/write inventory. Read tools cover connection and git state, node and
+evidence lookup, graph queries, validation, compilation, and source analysis.
+Write tools cover guarded concept/relation changes, source binding, local
+snapshots, and project-meaning finalization. Run `mcp-verify` to prove that the
+advertised set, initialize guidance, and this vault agree.
 
 MCP adds three things that terminal-only use does not provide as naturally:
 

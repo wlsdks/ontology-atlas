@@ -28,8 +28,8 @@ silo, or in nobody's.
 ontology-atlas takes the opposite path. The mental model is a folder of
 markdown files. Frontmatter is the graph: `kind: capability`, `domain:
 auth`, `depends_on: [...]`. Humans edit it in any markdown editor. AI
-agents read and write it via a local MCP server (35 tools — list,
-get, validate_vault, compile_ontology, query_ontology,
+agents read and write it via a local MCP server whose current inventory is
+advertised at runtime: list, get, validate_vault, compile_ontology, query_ontology,
 analyze_repo_structure, infer_imports, add_concept, add_concepts,
 patch_concept, rename_concept, ...).
 

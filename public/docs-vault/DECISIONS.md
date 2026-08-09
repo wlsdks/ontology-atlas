@@ -42,6 +42,44 @@
 
 ---
 
+## 2026-08-09 — 현재 MCP inventory는 활성 runtime registry에서만 파생한다
+
+**소집**: PO Council 전체 5석(`gpt-5.6-sol`) · **트리거**: 일반 모드의 raw
+`initialize.instructions`가 `33 = 19 + 14`라고 말하면서 쓰기 도구 16개를 나열하고,
+같은 프로세스의 `tools/list`는 `35 = 19 + 16`을 반환했다. read-only 모드에서는
+instructions가 쓰기 16개를 계속 광고하지만 실제 `tools/list`는 읽기 19개뿐이었다.
+기존 MCP surface·generated docs·starter/Settings 테스트는 모두 이 모순을 둔 채
+통과했다. **선행 결정 관계**: 2026-08-01 「문서 검사의 판별 기준」과 2026-08-09
+「신뢰 계약을 먼저 닫는다」의 M1.4 순서는 모두 유효하다.
+**루브릭**: 22/24 (Problem 4 · User moment 4 · Differentiation 2 · Ontology 4 ·
+Agent 4 · Verification 4, 치명적 0 없음)
+**결정**: filtered `TOOLS_FOR_LIST`가 raw initialize inventory와 `tools/list`의 유일한
+실행 정본이다. initialize의 header·read/write 이름·count는 이 활성 집합에서
+mode-aware로 생성하며 full과 read-only 모두 같은 세션의 `tools/list`와 exact set으로
+일치해야 한다. `docs/.generated/mcp-surface.json`은 계속 live `tools/list`에서 만들고,
+숫자 자체가 행동을 돕지 않는 Settings·starter·current prose에서는 고정 count와
+복제된 exhaustive list를 삭제해 `tools/list`/`mcp-verify` 정본을 가리킨다.
+**적용 규칙**: 새 MCP 도구·schema·UI layout·범용 docs codegen·registry 대분할을
+하지 않는다. 역사·archive·prototype의 당시 숫자는 고치지 않는다. current 문서의
+상세 도구 설명은 기존 generated coverage가 등록된 모든 이름을 덮는지 검사하되,
+사람이 쓴 문장을 literal로 고정하지 않는다. raw full/read-only exact parity를 먼저
+RED로 만들고, 고친 줄을 되돌려 gate가 실제로 빨개지는지 확인한다.
+**서명**: owner — M1.4 실행 승인; Codex — PO Council 소집·최종 범위 결정
+
+**기록된 반대**: 가장 작은 해법은 optional initialize의 상세 inventory를 삭제하고
+프로토콜의 권위인 `tools/list`만 보게 하는 것이다. 실제 agent가 숫자 모순 때문에
+도구를 누락했다는 행동 로그가 없으므로, 긴 이름 목록을 생성해 유지하는 것은 prompt
+비용만 늘릴 수 있다(PO-근거·PO-해자·PO-결의 공통 반대).
+**반증 조건**: Atlas MCP만 연결한 fresh Codex·Claude·Cursor가 상세 inventory 없는
+initialize에서도 `tools/list`로 현재 full/read-only 범위와 첫 안전 행동을 빠짐없이
+고르고, 소스·문서 재탐색이나 쓰기 오호출이 세 번 연속 없거나, 상세 목록이 실제
+context 압박을 만든다. 그러면 formatter를 짧은 mode 요약으로 줄이고 상세 목록을
+삭제한다.
+**재검토**: 위 fresh-agent 관측이 세 클라이언트에서 누적되거나 이 슬라이스가 1
+working day를 넘겨 범용 생성 체계를 요구할 때.
+
+**상태**: 유효
+
 ## 2026-08-09 — quick-start는 부분 성공을 완료로 승격하지 않는다
 
 **소집**: 단독 PO 패스 · **트리거**: bootstrap/MCP가 실패해 nonzero로 끝났는데도

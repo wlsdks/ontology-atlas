@@ -96,7 +96,8 @@ node cli/src/index.mjs agent-setup my-vault --write
 - `merge_concepts(...)`: 거의 같은 노드 둘을 접음
 - `finalize_project_meaning(...)`: 승인된 쓰기·검증·전체 컴파일 뒤 프로젝트 의미 영수증을 남김. 원문 답변이나 비공개 소스 루트는 저장하지 않으며, `ok: true`는 영수증 기록 성공이지 의미 검증 완료가 아닙니다
 
-읽기 19개 · 쓰기 14개, 도구 33개가 있습니다.
+정확한 현재 읽기·쓰기 도구 목록은 실행 중인 서버의 `tools/list`가 알려 줍니다.
+`mcp-verify`는 그 목록과 초기 안내가 일치하고 이 볼트를 실제로 읽는지 확인합니다.
 
 ### 에이전트가 UID와 slug를 쓰는 법
 

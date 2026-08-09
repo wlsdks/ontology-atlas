@@ -147,17 +147,13 @@ For an agent opened at your codebase root instead of this vault folder, replace
 
 ## What an AI agent can do for you
 
-Once you register the \`ontology-atlas-mcp\` server, the agent gets 35
-tools to read/write this vault:
+Once you register the \`ontology-atlas-mcp\` server, the running server gives the
+agent its current read/write inventory. Use \`tools/list\` for the exact names and
+\`mcp-verify\` to prove that the server can read this vault.
 
-- **read 19**: connection_info / git_status / git_history / list_concepts / get_concept / get_concepts / find_evidence /
-  find_backlinks / find_neighbors / find_path / list_kinds / find_orphans /
-  query_concepts / compile_ontology / query_ontology / validate_vault /
-  analyze_repo_structure / infer_imports / index_project
-- **write 16**: absorb_document / add_concept / add_concepts / add_relation / add_relations /
-  remove_relation / replace_relation / patch_concept / reclassify_concept /
-  delete_concept / rename_concept / merge_concepts / git_snapshot / finalize_project_meaning /
-  connect_project_source / disconnect_project_source
+Start with \`connection_info\`, \`list_kinds\`, \`validate_vault\`, and
+\`query_ontology({ operation: "agent_brief" })\`. Write only after the read-first
+checks are clean and the person accepts the proposed meaning.
 
 Details: https://github.com/wlsdks/ontology-atlas/tree/main/mcp
 `;
@@ -413,16 +409,13 @@ ${ATLAS_CLI} agent-brief . --verify-fallbacks --json --fallback-timeout-ms 15000
 
 ## AI 에이전트가 해줄 수 있는 일
 
-\`ontology-atlas-mcp\` 서버를 등록하면 에이전트가 이 문서함을 읽고 쓰는 도구
-33개를 갖습니다:
+\`ontology-atlas-mcp\` 서버를 등록하면 실행 중인 서버가 현재 읽기·쓰기 도구
+목록을 에이전트에게 알려 줍니다. 정확한 이름은 \`tools/list\`로 보고,
+\`mcp-verify\`로 서버가 이 문서함을 실제로 읽는지 확인하세요.
 
-- **읽기 19**: connection_info / git_status / git_history / list_concepts / get_concept / get_concepts / find_evidence /
-  find_backlinks / find_neighbors / find_path / list_kinds / find_orphans /
-  query_concepts / compile_ontology / query_ontology / validate_vault /
-  analyze_repo_structure / infer_imports / index_project
-- **쓰기 14**: absorb_document / add_concept / add_concepts / add_relation / add_relations /
-  remove_relation / replace_relation / patch_concept / reclassify_concept /
-  delete_concept / rename_concept / merge_concepts / git_snapshot / finalize_project_meaning
+처음에는 \`connection_info\`, \`list_kinds\`, \`validate_vault\`,
+\`query_ontology({ operation: "agent_brief" })\`를 사용합니다. 읽기 점검이 깨끗하고
+사람이 제안된 의미를 승인한 뒤에만 씁니다.
 
 자세히: https://github.com/wlsdks/ontology-atlas/tree/main/mcp
 `;

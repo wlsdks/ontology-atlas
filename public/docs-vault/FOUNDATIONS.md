@@ -137,7 +137,7 @@ the category; we are taking a specific, opinionated position in it.
 - **MemGPT (Packer et al., 2023)** — "virtual context management": the model pages information between
   a fixed context window (fast memory) and external stores (slow memory) via self-issued function
   calls, simulating unbounded context. → We are the **codebase-specific, structured & human-readable
-  version of MemGPT's "slow memory"**: the agent pages the repo's mental model in/out via 35 MCP tools
+  version of MemGPT's "slow memory"**: the agent pages the repo's mental model in/out through a runtime-advertised MCP surface
   instead of opaque archival storage.
 - **"A Survey on the Memory Mechanism of LLM-based Agents" (Zhang et al., ACM TOIS, 2024)** — the
   peer-reviewed taxonomy of memory *sources / forms / operations* and *evaluation*. → Lets us name our
@@ -281,7 +281,7 @@ applied reading of public, citable design thinking — not arbitrary taste.
 Everything above already exists. Our contribution is a **specific combination** none of the prior art
 holds all of at once:
 
-1. **Agent-maintained** — the AI coding agent reads *and writes* the graph directly via MCP (35 tools),
+1. **Agent-maintained** — the AI coding agent reads *and writes* the graph directly through the MCP server's runtime-advertised inventory,
    not a human-only ontology editor (Protégé) and not a machine-only fact generator (Glean/CodeQL).
 2. **Git-native, markdown-IS-the-graph** — the frontmatter is the source of truth, reviewable as a
    diff, versioned by git, no backend / no DB. (Zep/Graphiti = graph DB; GraphRAG = generated store;

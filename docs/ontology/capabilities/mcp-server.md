@@ -26,6 +26,18 @@ stdio JSON-RPC 인터페이스다. 사람과 에이전트가 같은 파일을 �
 - 쓰기 전에는 현재 문서를 읽고, 동시 편집·중복·끊어진 관계·파괴적 변경을 구조화된
   오류와 dry-run으로 차단한다.
 
+## 활성 도구 인벤토리 계약
+
+- 도구의 현재 집합은 `mcp/src/index.js`의 registry에 annotation과 read-only filter를
+  적용한 `TOOLS_FOR_LIST`다. `tools/list`와 initialize의 `Tool inventory` 절은 같은
+  배열에서 파생되며, 다른 문서가 숫자나 전체 이름 목록을 다시 소유하지 않는다.
+- read-only 서버는 write 도구를 광고하지도, 초기 안내에 노출하지도 않는다. 전체
+  모드와 read-only 모드 모두 header count와 read/write 이름 집합이 실제
+  `tools/list`와 정확히 같아야 한다.
+- `mcp-verify`는 live `tools/list`와 initialize 안내의 count·분류·이름 집합을
+  독립적으로 비교한다. 문서와 설정 화면은 `tools/list`와 `mcp-verify`를 안내하며
+  변하기 쉬운 고정 count를 사용자에게 약속하지 않는다.
+
 ## 정체성 경계
 
 - `uid`는 rename 뒤에도 유지되는 영구 기계 정체성이고, `slug`는 사람이 읽고
@@ -133,7 +145,8 @@ element 관계는 `reachability`/`subgraph`의 구조 근거이며 영향이나 
 
 ## 구현 근거
 
-- `mcp/src/index.js`: 도구 registry, schema, handler, 첫 연결 지침
+- `mcp/src/index.js` · `mcp/src/tool-inventory.mjs`: 활성 도구 registry에서
+  `tools/list`와 모드별 initialize 인벤토리를 함께 만드는 경계
 - `mcp/src/analyze.mjs` · `mcp/src/rust-feature-evidence.mjs` ·
   `mcp/src/infer-imports.mjs`: bounded repository 의미 ingress, Rust 구성 provenance,
   실행 없는 TS/JS/Python import 근거와 명시적 미지원 범위
@@ -145,7 +158,8 @@ element 관계는 `reachability`/`subgraph`의 구조 근거이며 영향이나 
   설치 앱과 같은 bounded source currentness 재검증과 public receipt 경계
 - `mcp/src/meaning-repair.mjs` · `mcp/src/project-meaning-inventory.mjs`: 현재 선언,
   구조/source 후보, 미해결 대상을 분리하는 action-first 사람 승인 패킷
-- `mcp/scripts/verify.mjs` · `scripts/dogfood-mcp-walk.mjs`: 설치·실사용 검증
+- `mcp/scripts/verify.mjs` · `mcp/src/integration.test.mjs` ·
+  `scripts/dogfood-mcp-walk.mjs`: initialize/tools-list exact parity와 설치·실사용 검증
 - `mcp/README.md`: 현재 공개 도구 계약의 상세 단일 진실원
 
 ## 확신도

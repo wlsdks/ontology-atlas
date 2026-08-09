@@ -332,6 +332,55 @@ function assertDestructivePreview(
   assert.equal(result.blockedReasons.length, blocked, `${label} blocker count`);
 }
 
+function parseInstructionToolInventory(instructions) {
+  assert.equal(typeof instructions, "string", "initialize instructions are present");
+  const section = instructions.match(
+    /## Tool inventory \((\d+) tools = read (\d+) \+ write (\d+)\)\s+([\s\S]*?)(?=\n## )/,
+  );
+  assert.ok(section, "initialize instructions expose a structured tool inventory");
+
+  const namesFrom = (label) => {
+    const line = section[4].match(new RegExp(`^\\*\\*${label}\\*\\*\\s+—\\s+(.+)$`, "m"));
+    assert.ok(line, `tool inventory exposes ${label} line`);
+    return [...line[1].matchAll(/`([a-z][a-z0-9_]*)`/g)].map((match) => match[1]);
+  };
+
+  return {
+    total: Number(section[1]),
+    readCount: Number(section[2]),
+    writeCount: Number(section[3]),
+    readNames: namesFrom("read"),
+    writeNames: namesFrom("write"),
+  };
+}
+
+function assertInstructionToolInventoryMatches(initializeResponse, tools) {
+  assert.ok(initializeResponse, "initialize response is present");
+  assert.ok(Array.isArray(tools), "tools/list returns an array");
+  assert.ok(tools.length > 0, "tools/list target is non-empty");
+
+  const names = tools.map((tool) => tool.name);
+  assert.equal(new Set(names).size, names.length, "tools/list names are unique");
+  const expectedRead = tools
+    .filter((tool) => tool.annotations?.readOnlyHint === true)
+    .map((tool) => tool.name)
+    .sort();
+  const expectedWrite = tools
+    .filter((tool) => tool.annotations?.readOnlyHint !== true)
+    .map((tool) => tool.name)
+    .sort();
+  const inventory = parseInstructionToolInventory(initializeResponse.result?.instructions);
+
+  assert.equal(inventory.total, tools.length, "inventory total matches tools/list");
+  assert.equal(inventory.readCount, expectedRead.length, "inventory read count matches tools/list");
+  assert.equal(inventory.writeCount, expectedWrite.length, "inventory write count matches tools/list");
+  assert.equal(inventory.total, inventory.readCount + inventory.writeCount, "inventory header adds up");
+  assert.equal(inventory.readCount, inventory.readNames.length, "inventory read count matches its names");
+  assert.equal(inventory.writeCount, inventory.writeNames.length, "inventory write count matches its names");
+  assert.deepEqual([...inventory.readNames].sort(), expectedRead, "inventory read names match tools/list");
+  assert.deepEqual([...inventory.writeNames].sort(), expectedWrite, "inventory write names match tools/list");
+}
+
 // R+ — cycle 39: 단일 도구 (get_concept · add_concept · add_relation) 의
 // description 이 batch 짝 (get_concepts · add_concepts · add_relations) 을
 // 명시 cross-reference. agent 가 tool list 만 보고도 K-round-trip 대안을
@@ -355,6 +404,10 @@ await test("tools/list — 단일 도구 description 이 batch 짝을 cross-refe
       tools.map((tool) => tool.name).sort(),
       [...EXPECTED_TOOLS].sort(),
       "tools/list registry must match verify inventory",
+    );
+    assertInstructionToolInventoryMatches(
+      responses.find((response) => response.id === 1),
+      tools,
     );
     for (const tool of tools) {
       assert.equal(
@@ -7463,7 +7516,7 @@ await test("connection_info — repository root auto-discovers from a nested Git
   }
 });
 
-await test("connection_info — read-only mode fingerprints the actually advertised toolset", async () => {
+await test("initialize — read-only inventory matches the actually advertised toolset", async () => {
   const root = makeVault([]);
   try {
     const { responses } = await rpc(root, [
@@ -7472,6 +7525,10 @@ await test("connection_info — read-only mode fingerprints the actually adverti
       callTool(3, "connection_info"),
     ], 1500, { OATLAS_READ_ONLY: "1" });
     const listed = responses.find((row) => row.id === 2)?.result?.tools ?? [];
+    assertInstructionToolInventoryMatches(
+      responses.find((response) => response.id === 1),
+      listed,
+    );
     const info = getCallParsed(responses, 3);
     assert.equal(info.server.readOnly, true);
     assert.equal(info.server.toolCount, EXPECTED_READ_TOOLS.length);

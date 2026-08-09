@@ -80,6 +80,7 @@ import {
   IMPORT_UNRESOLVED_REASON_VALUES,
   IMPORT_USAGE_VALUES,
   initializeInstructionsFailure,
+  initializeToolInventoryFailure,
   listConceptsFailure,
   listKindsFailure,
   limitedQueryConceptsFailure,
@@ -330,6 +331,7 @@ describe('verify.mjs first-contact gates', () => {
     assert.ok(MCP_PKG.files.includes('src/project-meaning-inventory.mjs'));
     assert.ok(MCP_PKG.files.includes('src/meaning-repair.mjs'));
     assert.ok(MCP_PKG.files.includes('src/project-meaning-receipt.mjs'));
+    assert.ok(MCP_PKG.files.includes('src/tool-inventory.mjs'));
 
     const fullTestCommand = MCP_PKG.scripts['test:all'];
     assert.match(fullTestCommand, /(?:^|\s)src\/project-meaning-inventory\.test\.mjs(?:\s|$)/);
@@ -7755,6 +7757,46 @@ describe('verify.mjs first-contact gates', () => {
     assert.equal(
       initializeInstructionsFailure({ result: { instructions: safeInstructions.replace('graphDbQueryPack for facets, schema, match_nodes, match_edges, domain_matrix, centrality, all_paths, and explain_relation', 'graph pack') } }),
       'initialize instructions missing agent brief graph DB query pack guidance',
+    );
+  });
+
+  it('compares initialize tool inventory with the live tools/list split', () => {
+    const tools = [
+      { name: 'list_things', annotations: { readOnlyHint: true } },
+      { name: 'get_thing', annotations: { readOnlyHint: true } },
+      { name: 'add_thing', annotations: { readOnlyHint: false } },
+    ];
+    const instructions = `Intro.
+
+## Tool inventory (3 tools = read 2 + write 1)
+
+**read** — \`list_things\` · \`get_thing\`.
+**write** — \`add_thing\`.
+
+## Next section
+
+Continue.`;
+
+    assert.equal(initializeToolInventoryFailure({ result: { instructions } }, tools), null);
+    assert.equal(
+      initializeToolInventoryFailure({ result: { instructions: instructions.replace('3 tools', '4 tools') } }, tools),
+      'initialize tool inventory header does not add up',
+    );
+    assert.equal(
+      initializeToolInventoryFailure({ result: { instructions: instructions.replace('add_thing', 'remove_thing') } }, tools),
+      'initialize tool inventory write names differ from tools/list',
+    );
+    assert.equal(
+      initializeToolInventoryFailure({ result: { instructions } }, tools.slice(0, 2)),
+      'initialize tool inventory count mismatch — initialize 3/2/1, tools/list 2/2/0',
+    );
+    assert.equal(
+      initializeToolInventoryFailure({ result: { instructions: 'No inventory here.' } }, tools),
+      'initialize tool inventory section missing or malformed',
+    );
+    assert.equal(
+      initializeToolInventoryFailure({ result: { instructions } }, []),
+      'initialize tool inventory cannot compare an empty tools/list',
     );
   });
 
