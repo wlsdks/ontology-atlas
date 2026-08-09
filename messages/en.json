@@ -218,23 +218,27 @@
     },
     "exit": "Stop",
     "returnToReview": "Back to insight review",
-    "flowEyebrow": "Completeness",
-    "flowCount": "{filled} of {total} directions filled",
+    "flowEyebrow": "Relation map",
+    "flowCount": "{filled} of {total} directions recorded",
     "flowHint": {
-      "start": "· start here",
-      "half": "· halfway there",
-      "almost": "· almost done",
-      "done": "· all filled",
-      "first": "· started"
+      "start": "· link only the relations you need",
+      "half": "· link only the relations you need",
+      "almost": "· link only the relations you need",
+      "done": "· all four directions have relations",
+      "first": "· link only the relations you need"
     },
     "domainMembership": "Already in ‘{domain}’",
-    "framePrompt": "Complete what {name} is by linking it to nearby nodes",
-    "guideBadge": "Start here",
-    "bottomProgress": "{filled} of {total} filled",
-    "bottomRemain": "· {remain} to go",
-    "bottomDone": "· all filled",
+    "framePrompt": "Review the relations {name} needs",
+    "guideBadge": "Recommended · evidence checked",
+    "socketAria": {
+      "neutral": "Add relation. No recommendation evidence. {question}",
+      "recommended": "Recommended relation. Evidence and relation check passed. {question}"
+    },
+    "bottomProgress": "{filled} of {total} directions recorded",
+    "bottomRemain": "· {remain} directions open",
+    "bottomDone": "· all four directions have relations",
     "save": "Confirm & save",
-    "saveHint": "You can save now even before it's all filled",
+    "saveHint": "Record only the relations you need, then save",
     "foldMore": "more",
     "foldTitle": "{label} · {total}",
     "addMore": "Add more to ‘{label}’",
@@ -254,7 +258,7 @@
       "relates": "similar or interchangeable"
     },
     "emptyHint": {
-      "isA": "Pick one broader concept to complete it",
+      "isA": "Browse the same kind; link only with evidence of a direct broader concept",
       "dependsOn": "Link a node it leans on",
       "contains": "what this node holds",
       "relates": "Link if it's an alternative or complement"

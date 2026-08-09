@@ -218,23 +218,27 @@
     },
     "exit": "그만하기",
     "returnToReview": "인사이트 검토로 돌아가기",
-    "flowEyebrow": "완성도",
-    "flowCount": "{total}방향 중 {filled} 채움",
+    "flowEyebrow": "관계 지도",
+    "flowCount": "{total}방향 중 {filled}개 기록됨",
     "flowHint": {
-      "start": "· 여기서 시작해요",
-      "half": "· 반쯤 왔어요",
-      "almost": "· 거의 다 됐어요",
-      "done": "· 다 채웠어요",
-      "first": "· 시작했어요"
+      "start": "· 필요한 관계만 이어요",
+      "half": "· 필요한 관계만 이어요",
+      "almost": "· 필요한 관계만 이어요",
+      "done": "· 네 방향에 관계가 있어요",
+      "first": "· 필요한 관계만 이어요"
     },
     "domainMembership": "이미 ‘{domain}’ 소속이에요",
-    "framePrompt": "‘{name}’의 의미를 주변 노드와 이어 완성해요",
-    "guideBadge": "여기부터 채워요",
-    "bottomProgress": "{total}개 중 {filled}개 채웠어요",
-    "bottomRemain": "· {remain}군데 남음",
-    "bottomDone": "· 다 채웠어요",
+    "framePrompt": "‘{name}’에 필요한 관계를 확인해요",
+    "guideBadge": "추천 · 근거 확인됨",
+    "socketAria": {
+      "neutral": "관계 추가. 추천 근거 없음. {question}",
+      "recommended": "추천 관계. 근거와 관계 점검을 통과했습니다. {question}"
+    },
+    "bottomProgress": "{total}방향 중 {filled}개 기록됨",
+    "bottomRemain": "· {remain}개 방향 비어 있음",
+    "bottomDone": "· 네 방향에 관계가 있어요",
     "save": "확인하고 저장",
-    "saveHint": "아직 다 안 채워도 지금 저장할 수 있어요",
+    "saveHint": "필요한 관계만 기록하고 저장할 수 있어요",
     "foldMore": "더 보기",
     "foldTitle": "{label} · {total}",
     "addMore": "‘{label}’ 에 더 잇기",
@@ -254,7 +258,7 @@
       "relates": "비슷하거나 대체할 수 있는 것"
     },
     "emptyHint": {
-      "isA": "상위 개념을 하나 고르면 완성돼요",
+      "isA": "같은 종류를 둘러보고, 직접 상위 개념이라는 근거가 있을 때만 이어요",
       "dependsOn": "기대는 노드를 이어요",
       "contains": "이 노드가 품고 있는 것",
       "relates": "대체·보완 관계면 이어요"

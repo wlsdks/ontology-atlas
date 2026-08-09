@@ -2,7 +2,7 @@
  * Turn real ontology graph data (the SAME `KnowledgeGraphNode` / edge shapes
  * `useOntologyInsight` produces) into the Studio "나침 무대(compass stage)" view
  * model: one focal node at center, its typed neighbors grouped onto FOUR fixed
- * compass bearings, and which bearing to guide the user toward next.
+ * compass bearings. It does not infer a recommendation from an empty edge.
  *
  * Pure + deterministic so it can be unit-tested with a fixed node/edge fixture
  * and never disagrees with what the compass renders.
@@ -51,6 +51,40 @@ export const STUDIO_BEARINGS: readonly StudioBearing[] = ["up", "right", "down",
 /** A relation category — one per bearing. */
 export type StudioRelation = "isA" | "dependsOn" | "contains" | "relates";
 
+/**
+ * Candidate-specific proof required before Studio may render a recommendation.
+ * Structural proximity is deliberately absent: same domain, similar title,
+ * and graph adjacency are discovery signals, not relation evidence.
+ */
+export interface StudioRecommendationCandidate {
+  targetId: string;
+  rationale: string;
+  evidenceRefs: readonly string[];
+  preflight: {
+    decision: "safe_to_add";
+    fromId: string;
+    toId: string;
+    relation: StudioRelation;
+  } | null;
+}
+
+export function isStudioRecommendationAdmissible(
+  candidate: StudioRecommendationCandidate | null | undefined,
+  relation: StudioRelation,
+): boolean {
+  if (!candidate || !candidate.rationale.trim()) return false;
+  if (!candidate.targetId.trim()) return false;
+  if (!candidate.evidenceRefs.some((ref) => ref.trim().length > 0)) return false;
+  const preflight = candidate.preflight;
+  return Boolean(
+    preflight &&
+      preflight.decision === "safe_to_add" &&
+      preflight.fromId.trim() &&
+      preflight.toId === candidate.targetId &&
+      preflight.relation === relation,
+  );
+}
+
 export const BEARING_RELATION: Record<StudioBearing, StudioRelation> = {
   up: "isA",
   right: "dependsOn",
@@ -80,10 +114,10 @@ export interface StudioBearingGroup {
   frontmatterKey: string;
   neighbors: StudioSatellite[];
   filled: boolean;
-  /** The single guided empty socket ("여기부터 채워요"). At most one bearing true. */
-  recommended: boolean;
-  /** DOWN when empty — expected-but-missing (amber). */
-  expected: boolean;
+  /** Evidence + candidate-preflight receipt. Graph projection alone yields null. */
+  recommendation: StudioRecommendationCandidate | null;
+  /** Evidence-gated expectation receipt. Graph projection alone yields null. */
+  expectation: StudioRecommendationCandidate | null;
 }
 
 export interface StudioItem {
@@ -198,12 +232,6 @@ export function buildStudioItem(
     left: dedupeById(relates.map(toSatellite)),
   };
 
-  // The single guided empty socket: first empty bearing in [up, down, right, left]
-  // priority — the is-a gap is the hero, then contains (expected), then the rest.
-  const guidePriority: StudioBearing[] = ["up", "down", "right", "left"];
-  const recommendedBearing =
-    guidePriority.find((b) => bearingNeighbors[b].length === 0) ?? null;
-
   const makeGroup = (bearing: StudioBearing): StudioBearingGroup => {
     const relation = BEARING_RELATION[bearing];
     const neighbors = bearingNeighbors[bearing];
@@ -214,8 +242,12 @@ export function buildStudioItem(
       frontmatterKey: BEARING_FRONTMATTER_KEY[relation],
       neighbors,
       filled,
-      recommended: !filled && bearing === recommendedBearing,
-      expected: !filled && bearing === "down",
+      // Empty topology, same-domain membership, and kind fit are not semantic
+      // evidence. No candidate-specific preflight enters this pure builder.
+      recommendation: null,
+      // Kind/topology alone cannot prove that a relation is expected either.
+      // This prevents recommendation from returning as an amber decoration.
+      expectation: null,
     };
   };
 

@@ -1,8 +1,8 @@
 import { describe, expect, it, vi } from "vitest";
-import { fireEvent, render, screen, waitFor, within } from "@testing-library/react";
+import { cleanup, fireEvent, render, screen, waitFor, within } from "@testing-library/react";
 import { StudioCompass, type CompassBearingView, type StudioCompassLabels } from "./StudioCompass";
 import type { CreateCandidate } from "../lib/build-create-node";
-import type { StudioRelation } from "../lib/build-studio-item";
+import type { StudioRecommendationCandidate, StudioRelation } from "../lib/build-studio-item";
 import type { PickerDiscovery } from "../lib/build-picker-discovery";
 import { buildDeltaPreview, type DeltaPreviewLayout } from "../lib/build-delta-preview";
 
@@ -15,6 +15,8 @@ const labels: StudioCompassLabels = {
   domainMembership: (d) => `already in ${d}`,
   framePrompt: (n) => `complete ${n}`,
   guideBadge: "start here",
+  socketAriaNeutral: (question) => `neutral no evidence ${question}`,
+  socketAriaRecommended: (question) => `recommended evidence checked ${question}`,
   bottomProgress: (f, t) => `${f} of ${t} filled`,
   save: "save",
   saveHint: "hint",
@@ -97,22 +99,42 @@ const REL_LABEL: Record<StudioRelation, string> = {
   relates: "related",
 };
 
+const recommendationFor = (relation: StudioRelation): StudioRecommendationCandidate => ({
+  targetId: "capability:recommended-target",
+  rationale: "Definition and counterexample review passed",
+  evidenceRefs: ["capabilities/recommended-target"],
+  preflight: {
+    decision: "safe_to_add",
+    fromId: "capability:focal",
+    toId: "capability:recommended-target",
+    relation,
+  },
+});
+
+type BearingOverride = Partial<CompassBearingView> & {
+  recommended?: boolean;
+  expected?: boolean;
+};
+
 const bearing = (
   relation: StudioRelation,
   bearingId: CompassBearingView["bearing"],
-  over: Partial<CompassBearingView> = {},
-): CompassBearingView => ({
-  bearing: bearingId,
-  relation,
-  question: `q-${relation}`,
-  laneLabel: `lane-${relation}`,
-  emptyHint: `hint-${relation}`,
-  neighbors: [],
-  filled: false,
-  recommended: false,
-  expected: false,
-  ...over,
-});
+  over: BearingOverride = {},
+): CompassBearingView => {
+  const { recommended, expected, ...rest } = over;
+  return {
+    bearing: bearingId,
+    relation,
+    question: `q-${relation}`,
+    laneLabel: `lane-${relation}`,
+    emptyHint: `hint-${relation}`,
+    neighbors: [],
+    filled: false,
+    recommendation: recommended ? recommendationFor(relation) : null,
+    expectation: expected ? recommendationFor(relation) : null,
+    ...rest,
+  };
+};
 
 const CANDIDATE: CreateCandidate = {
   id: "capability:server-interface",
@@ -183,6 +205,81 @@ describe("StudioCompass — enhance", () => {
     expect(screen.getByText("q-contains")).toBeInTheDocument();
     // the single guided socket shows the "start here" badge.
     expect(screen.getByTestId("studio-socket-up")).toHaveTextContent("start here");
+  });
+
+  it("distinguishes neutral and admissible recommendation receipt names and hierarchy", () => {
+    renderEnhance();
+    const recommended = screen.getByTestId("studio-socket-up");
+    expect(recommended).toHaveAccessibleName("recommended evidence checked q-isA");
+    expect(recommended).toHaveAttribute("data-recommendation-state", "recommended");
+    expect(recommended.getAttribute("style")).toContain(
+      "border: 2px dashed var(--color-indigo-a46)",
+    );
+    expect(recommended.getAttribute("style")).toContain(
+      "background: var(--color-indigo-a12)",
+    );
+
+    cleanup();
+    render(
+      <StudioCompass
+        mode="enhance"
+        labels={labels}
+        kindLabelFor={(k) => k}
+        focal={{ kindLabel: "capability", domainLabel: "AI", name: "MCP Server", definition: "def" }}
+        bearings={[
+          bearing("isA", "up"),
+          bearing("dependsOn", "right"),
+          bearing("contains", "down", { expected: true }),
+          bearing("relates", "left"),
+        ]}
+        filledBearings={0}
+        writable
+        candidatesFor={() => []}
+        similarFor={() => null}
+        onFill={vi.fn()}
+        onSave={vi.fn()}
+        onExit={vi.fn()}
+      />,
+    );
+    const neutral = screen.getByTestId("studio-socket-up");
+    expect(neutral).toHaveAccessibleName("neutral no evidence q-isA");
+    expect(neutral).toHaveAttribute("data-recommendation-state", "neutral");
+    expect(neutral.getAttribute("style")).toContain(
+      "border: 1.5px dashed var(--color-border-strong)",
+    );
+    expect(neutral.getAttribute("style")).toContain("background: transparent");
+  });
+
+  it("renders evidence-only and preflight-only recommendation inputs as neutral", () => {
+    const evidenceOnly = { ...recommendationFor("isA"), preflight: null };
+    const preflightOnly = { ...recommendationFor("dependsOn"), evidenceRefs: [] };
+    render(
+      <StudioCompass
+        mode="enhance"
+        labels={labels}
+        kindLabelFor={(k) => k}
+        focal={{ kindLabel: "capability", domainLabel: null, name: "MCP Server", definition: "" }}
+        bearings={[
+          bearing("isA", "up", { recommendation: evidenceOnly }),
+          bearing("dependsOn", "right", { recommendation: preflightOnly }),
+          bearing("contains", "down"),
+          bearing("relates", "left"),
+        ]}
+        filledBearings={0}
+        writable
+        candidatesFor={() => []}
+        onFill={vi.fn()}
+        onSave={vi.fn()}
+        onExit={vi.fn()}
+      />,
+    );
+
+    for (const bearingId of ["up", "right"] as const) {
+      const socket = screen.getByTestId(`studio-socket-${bearingId}`);
+      expect(socket).toHaveAttribute("data-recommendation-state", "neutral");
+      expect(socket).toHaveAccessibleName(/neutral no evidence/);
+      expect(socket).not.toHaveTextContent("start here");
+    }
   });
 
   it("opens the inline picker on the recommended socket and fills it in place", () => {
@@ -285,7 +382,7 @@ describe("StudioCompass — enhance", () => {
   it("shows the near-dup suggestion and links it on accept", () => {
     const onFill = vi.fn();
     const bearings: CompassBearingView[] = [
-      bearing("isA", "up", { recommended: true }),
+      bearing("isA", "up"),
       bearing("dependsOn", "right"),
       bearing("contains", "down", { expected: true }),
       bearing("relates", "left"),
@@ -306,9 +403,9 @@ describe("StudioCompass — enhance", () => {
         onExit={vi.fn()}
       />,
     );
-    fireEvent.click(screen.getByTestId("studio-socket-up"));
+    fireEvent.click(screen.getByTestId("studio-socket-right"));
     fireEvent.click(screen.getByTestId("studio-picker-similar-accept"));
-    expect(onFill).toHaveBeenCalledWith("isA", CANDIDATE);
+    expect(onFill).toHaveBeenCalledWith("dependsOn", CANDIDATE);
   });
 });
 
@@ -568,9 +665,9 @@ describe("StudioCompass — 발견 표면 (browse + 추천)", () => {
 
   function renderDiscovery(onFill = vi.fn()) {
     const bearings: CompassBearingView[] = [
-      bearing("isA", "up", { recommended: true }),
+      bearing("isA", "up"),
       bearing("dependsOn", "right"),
-      bearing("contains", "down", { expected: true }),
+      bearing("contains", "down"),
       bearing("relates", "left"),
     ];
     render(
@@ -594,7 +691,7 @@ describe("StudioCompass — 발견 표면 (browse + 추천)", () => {
 
   it("shows 추천 (with reasons) + 둘러보기 domains before the user types", () => {
     renderDiscovery();
-    fireEvent.click(screen.getByTestId("studio-socket-up"));
+    fireEvent.click(screen.getByTestId("studio-socket-right"));
     // discovery zones, not the flat search rows.
     expect(screen.getByTestId("studio-picker-suggest")).toBeInTheDocument();
     expect(screen.getByTestId("studio-picker-browse")).toBeInTheDocument();
@@ -610,7 +707,7 @@ describe("StudioCompass — 발견 표면 (browse + 추천)", () => {
 
   it("drills into a domain and back", () => {
     renderDiscovery();
-    fireEvent.click(screen.getByTestId("studio-socket-up"));
+    fireEvent.click(screen.getByTestId("studio-socket-right"));
     // nodes are hidden until a domain is opened.
     expect(screen.queryByTestId("studio-browse-node-capability:billing")).not.toBeInTheDocument();
     fireEvent.click(screen.getByTestId("studio-browse-domain-domain:pay"));
@@ -624,16 +721,16 @@ describe("StudioCompass — 발견 표면 (browse + 추천)", () => {
 
   it("picking from a suggestion stages the fill (reuses onFill)", () => {
     const onFill = renderDiscovery();
-    fireEvent.click(screen.getByTestId("studio-socket-up"));
+    fireEvent.click(screen.getByTestId("studio-socket-right"));
     fireEvent.click(screen.getByTestId("studio-suggest-row-capability:refund"));
-    expect(onFill).toHaveBeenCalledWith("isA", REFUND);
+    expect(onFill).toHaveBeenCalledWith("dependsOn", REFUND);
     // picker closes after a pick.
     expect(screen.queryByTestId("studio-picker")).not.toBeInTheDocument();
   });
 
   it("typing switches to search results, clearing returns to discovery", () => {
     renderDiscovery();
-    fireEvent.click(screen.getByTestId("studio-socket-up"));
+    fireEvent.click(screen.getByTestId("studio-socket-right"));
     const input = screen.getByTestId("studio-picker-input");
     fireEvent.change(input, { target: { value: "server" } });
     // discovery gone, flat search rows shown.

@@ -120,6 +120,11 @@ describe("공방 실습", () => {
     );
   });
 
+  it("keeps the empty create UP socket neutral without semantic evidence", () => {
+    render(<OntologyStudioPage />);
+    expect(screen.getByTestId("studio-socket-up")).not.toHaveTextContent("guideBadge");
+  });
+
   it("writes a real file, then offers to take it back", async () => {
     await makeOneNode();
     const cleanup = await screen.findByTestId("studio-practice-cleanup");

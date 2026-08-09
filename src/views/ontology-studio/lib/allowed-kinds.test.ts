@@ -22,9 +22,10 @@ describe("allowedKindsFor — 계층 창", () => {
     expect([...allowedKindsFor("contains", "project")]).toEqual(["domain"]);
   });
 
-  it("isA 는 같거나 한 단계 위(컨테이너) — capability→{capability,domain}, element→{element,capability}", () => {
-    expect([...allowedKindsFor("isA", "capability")].sort()).toEqual(["capability", "domain"]);
-    expect([...allowedKindsFor("isA", "element")].sort()).toEqual(["capability", "element"]);
+  it("isA 는 domain·capability·element 각각 같은 kind 만 허용한다", () => {
+    expect([...allowedKindsFor("isA", "domain")]).toEqual(["domain"]);
+    expect([...allowedKindsFor("isA", "capability")]).toEqual(["capability"]);
+    expect([...allowedKindsFor("isA", "element")]).toEqual(["element"]);
     expect(allowedKindsFor("isA", "project").size).toBe(0);
   });
 
@@ -46,6 +47,10 @@ describe("allowedKindsFor — 계층 창", () => {
     expect(union.has("domain")).toBe(true);
     expect(union.has("capability")).toBe(true);
     expect(union.has("element")).toBe(true);
+  });
+
+  it("초점 kind 를 모르는 isA 는 같은-kind를 증명할 수 없어 fail closed 한다", () => {
+    expect(allowedKindsFor("isA", null).size).toBe(0);
   });
 
   it("core 밖 kind(document/unknown)는 어떤 소켓에도 안 든다", () => {

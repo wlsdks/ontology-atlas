@@ -55,6 +55,24 @@ function dependsDiscovery(over: Partial<Parameters<typeof buildPickerDiscovery>[
 }
 
 describe("buildPickerDiscovery — suggestions", () => {
+  it("never promotes a same-domain same-kind sibling to an isA suggestion", () => {
+    const { suggestions, nodesByDomain } = buildPickerDiscovery({
+      focalId: "capability:checkout",
+      nodes: NODES,
+      edges: EDGES,
+      relation: "isA",
+      allowedKinds: new Set(["capability"]),
+    });
+
+    expect(suggestions).toEqual([]);
+    // The affordance remains useful: the sibling is still available as a
+    // neutral browse candidate, not a claimed parent concept.
+    expect(nodesByDomain["domain:pay"].map((candidate) => candidate.id)).toEqual([
+      "capability:billing",
+      "capability:refund",
+    ]);
+  });
+
   it("ranks a same-domain sibling first with the sameDomain reason", () => {
     const { suggestions } = dependsDiscovery();
     const ids = suggestions.map((s) => s.candidate.id);
