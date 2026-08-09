@@ -108,7 +108,11 @@ function buildSkill(file: SkillSourceFile, existingPaths?: ReadonlySet<string>):
     name: parsed.name,
     description: parsed.description,
     body: parsed.body,
-    origin: { relativePath: file.relativePath, source: sourceLabelOf(file.relativePath) },
+    origin: {
+      relativePath: file.relativePath,
+      source: sourceLabelOf(file.relativePath),
+      personal: !file.relativePath.startsWith('plugins/'),
+    },
     terms: distinctiveTerms(parsed.description),
     invocation,
     missingBundled,

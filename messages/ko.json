@@ -3625,6 +3625,33 @@
       "noFiles": "딸린 파일 없음",
       "runs": "실행됨",
       "missing": "파일이 없어요"
+    },
+    "searchLabel": "이름으로 찾기",
+    "searchPlaceholder": "이름으로 찾기…",
+    "noMatch": "찾는 이름이 없어요.",
+    "group": {
+      "mine": "내 폴더"
+    },
+    "row": {
+      "collides": "이름겹침",
+      "metrics": "{chars}자 · 파일 {files} · 실행 {runs}",
+      "runs": "실행 {count}"
+    },
+    "detail": {
+      "competing": "이 스킬과 경쟁하는 것",
+      "sameName": "같은 이름이 {source} 에도 있어요 — 어느 쪽이 뜰지 정해져 있지 않아요",
+      "sharedTrigger": "{name} 와 뜨는 조건이 겹쳐요 — {words}"
+    },
+    "findings": {
+      "alwaysTitle": "매 세션 실리는 것",
+      "alwaysNote": "모두 합쳐 {chars}자",
+      "competingTitle": "서로 경쟁하는 것",
+      "competingNote": "이름 {names}건 · 조건 {pairs}쌍",
+      "noneCompeting": "겹치는 게 없어요.",
+      "sameNameCount": "{count}곳",
+      "runsTitle": "내 컴퓨터에서 돌 수 있는 것",
+      "runsNote": "파일 {count}개",
+      "noneRun": "실행되는 파일이 없어요."
     }
   }
 }

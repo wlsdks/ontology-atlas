@@ -78,10 +78,10 @@ test.describe("스킬 인벤토리", () => {
 
     await page.getByTestId("skills-open-folder").click();
 
-    const summary = page.getByTestId("skills-summary");
-    await expect(summary).toBeVisible({ timeout: 15_000 });
-    // 스킬 5개 · 딸린 파일 2개 · 실행 1개.
-    await expect(summary).toContainText("5");
+    const census = page.getByTestId("skills-census");
+    await expect(census).toBeVisible({ timeout: 15_000 });
+    // 스킬 5개 · 실행 1개 — 수는 머리가 진다(2026-08-09 머리 문법 통일).
+    await expect(census).toContainText("5");
 
     const rows = page.getByTestId("skill-row-toggle");
     await expect(rows).toHaveCount(5);
@@ -105,7 +105,7 @@ test.describe("스킬 인벤토리", () => {
     await seedFirstRunSeen(page);
     await page.goto("/ko/skills/?guides=off");
     await page.getByTestId("skills-open-folder").click();
-    await expect(page.getByTestId("skills-summary")).toBeVisible({ timeout: 15_000 });
+    await expect(page.getByTestId("skills-census")).toBeVisible({ timeout: 15_000 });
     await expect(page.getByTestId("skill-row-toggle")).toHaveCount(0);
   });
 
@@ -132,7 +132,7 @@ test.describe("스킬 인벤토리", () => {
       await page.setViewportSize({ width, height: 900 });
       await page.goto("/ko/skills/?guides=off");
       await page.getByTestId("skills-open-folder").click();
-      await expect(page.getByTestId("skills-summary")).toBeVisible({ timeout: 15_000 });
+      await expect(page.getByTestId("skills-census")).toBeVisible({ timeout: 15_000 });
 
       const heights = await page.evaluate(() =>
         [...document.querySelectorAll('[data-testid="skill-row-toggle"]')].map((el) =>

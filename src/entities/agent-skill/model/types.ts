@@ -18,6 +18,14 @@ export interface SkillOrigin {
   readonly relativePath: string;
   /** 사람이 읽는 출처 이름 — 플러그인 이름이나 최상위 폴더. */
   readonly source: string;
+  /**
+   * **내가 만든 것인가** — 설치해서 받은 것이 아니라.
+   *
+   * 목록에서 내 것을 맨 위로 올리는 근거다. 실측에서 내가 만든 1개가 남의 42개
+   * 사이 알파벳순에 묻혀 있었다. 판정은 경로 하나로 한다: `plugins/` 를 지나지
+   * 않으면 내가 놓은 것이다.
+   */
+  readonly personal: boolean;
 }
 
 /** 발동 3단 중 한 층. */

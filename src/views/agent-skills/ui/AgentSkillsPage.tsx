@@ -1,39 +1,61 @@
 "use client";
 
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import { useTranslations } from "next-intl";
 
-import type { AgentSkill } from "@/entities/agent-skill";
 import { useSkillFolder } from "@/features/agent-skills-local";
 import { Button } from "@/shared/ui";
-import { controlClass } from "@/shared/ui/control-class";
+import { fieldClass } from "@/shared/ui/control-class";
+import { HexMark } from "@/shared/ui/hex-mark";
 
-import { SkillInvocationChain } from "./SkillInvocationChain";
+import { FindingsPanel } from "./FindingsPanel";
+import { SkillDetail } from "./SkillDetail";
+import { filterSkills, groupBySource, SkillList } from "./SkillList";
 
 /**
  * 스킬 — **에이전트가 가진 스킬을 사람이 읽는 자리** (2026-08-09 소유자 확정).
  *
- * ## 왜 문서함이 아니라 별도 목적지인가
+ * ## 왜 2열인가 (2026-08-09, 갈래 넷 중 소유자 선택)
  *
- * 스킬 파일도 마크다운이라 문서함에 넣고 싶어진다. 그런데 문서함이 답하는 질문은
- * 「이 문서가 지도의 어디에 붙나」이고, 스킬이 답해야 하는 질문은 **「이게 언제
- * 뜨고, 뜨면 무슨 일이 일어나나」** 다. 후자에는 노드도 관계도 없다 — 대신
- * 3단 로드 사슬과 트리거 경쟁이 있다. 같은 화면에 두면 둘 다 흐려진다.
+ * 첫 판은 43개를 한 줄기 세로 목록으로 늘어놓았고, 실측이 이렇게 나왔다:
+ * 스크롤 **4,792px(5.3화면)** · 검색·필터·묶음 **0개** · 겹쳤다고 말해 놓고 그
+ * 상대로 **가는 길 0개** · 그리고 이 화면이 다른 어디서도 못 보여 주는 단 하나인
+ * **호출 3단이 43번의 클릭 뒤에** 숨어 있었다.
+ *
+ * 그래서 왼쪽은 출처로 묶은 한 줄 목록 + 이름 찾기, 오른쪽은 **고른 스킬의 3단이
+ * 항상 떠 있는** 자리로 바꿨다. 문서함이 이미 쓰는 좌우 분할 문법이라 앱에 새
+ * 문법을 들이지 않는다.
+ *
+ * **아무것도 안 골랐을 때 오른쪽이 비지 않는다.** 이 갈래를 고를 때 예상한 유일한
+ * 실패가 그것이었고(*"화면의 반을 아무도 안 보는 것에 준 셈"*), 그 자리에 안내
+ * 문구 대신 **세 질문의 답**을 넣었다(`FindingsPanel`).
  *
  * ## 이 화면이 하지 않는 것 (전부 의도된 것이다)
  *
- * - **볼트에 쓰지 않는다.** 스킬 파일의 주인은 런타임과 마켓플레이스이고 그
- *   폴더는 대개 git 체크아웃이라 업데이트가 우리 글씨를 덮는다. 남의 `SKILL.md`
- *   에 쓰던 경로는 #1006 에서 이미 막았다.
- * - **`kind:` 를 붙여 온톨로지로 올리지 않는다.** 그러면 진실원이 둘이 된다.
+ * - **볼트에 쓰지 않고 `kind:` 로 승격하지 않는다.** 진실원이 둘이 된다.
+ * - **스킬 파일을 고치지 않는다.** 주인이 런타임과 마켓플레이스이고 그 폴더는
+ *   대개 git 체크아웃이라 업데이트가 우리 글씨를 덮는다(#1006 이 쓰기 경로를 막았다).
  * - **위험 점수·배지를 내지 않는다.** 그 축은 전용 스캐너의 것이다.
- * - **기억하지 않는다.** 다시 보려면 다시 고른다 — 남의 폴더를 몰래 들고 있지
- *   않는 편이 이 화면에서는 맞다.
+ * - **기억하지 않는다.** 다시 보려면 다시 고른다.
  */
+/** 새김 숫자 — 프로젝트·인사이트 머리가 쓰는 것과 같은 값. */
+const numeralClass =
+  "font-mono font-[var(--font-weight-strong)] text-[color:var(--engraved-numeral-face)] [text-shadow:var(--engraved-numeral-text-shadow)]";
+
 export function AgentSkillsPage() {
   const t = useTranslations("agentSkills");
   const { status, inventory, folderName, scan, error, openFolder } = useSkillFolder();
-  const [openSkill, setOpenSkill] = useState<string | null>(null);
+  const [selected, setSelected] = useState<string | null>(null);
+  const [query, setQuery] = useState("");
+
+  const groups = useMemo(
+    () => (inventory ? groupBySource(filterSkills(inventory.skills, query)) : []),
+    [inventory, query],
+  );
+  const current = useMemo(
+    () => inventory?.skills.find((s) => s.origin.relativePath === selected) ?? null,
+    [inventory, selected],
+  );
 
   return (
     <main
@@ -42,10 +64,31 @@ export function AgentSkillsPage() {
       // 안에서 처리한다 — 지도·문서함·기록과 같은 문법이다.
       className="flex h-full flex-col overflow-hidden bg-[color:var(--color-canvas)]"
     >
-      <div className="mx-auto flex min-h-0 w-full max-w-[1100px] flex-1 flex-col gap-4 overflow-y-auto px-4 pt-5 pb-8 sm:px-8">
+      <div className="mx-auto flex min-h-0 w-full max-w-[1400px] flex-1 flex-col gap-3 px-4 pt-5 pb-4 sm:px-8">
+        {/* 머리는 **다른 목적지와 같은 문법**이다 (2026-08-09 소유자 지적:
+            *"스킬 탭은 왜 혼자 … 다른 탭과 느낌이 다르고"*). 프로젝트·인사이트가
+            쓰는 「육각 마크 + 제목 + 그 옆 인라인 수 + 아래 한 줄 설명」 그대로.
+            수를 머리로 올렸으므로 **아래 요약 띠는 없앴다** — 같은 수를 두 곳에서
+            세면 방금 프로젝트 화면에서 지운 그 혼란이 여기서 다시 난다. */}
         <header className="flex flex-wrap items-end justify-between gap-3">
           <div className="min-w-0">
-            <h1 className="text-display text-[color:var(--color-text-primary)]">{t("title")}</h1>
+            <div className="flex flex-wrap items-end gap-x-3 gap-y-1">
+              <h1 className="inline-flex items-center gap-2 text-display font-[var(--font-weight-signature)] tracking-[var(--tracking-card)] text-[color:var(--color-text-primary)]">
+                <HexMark size={13} className="shrink-0 text-[color:var(--color-text-tertiary)]" />
+                {t("title")}
+              </h1>
+              {inventory ? (
+                <span
+                  data-testid="skills-census"
+                  className="flex items-baseline gap-1.5 pb-[3px] text-label tracking-[var(--tracking-caps-08)] text-[color:var(--color-text-tertiary)]"
+                >
+                  <b className={numeralClass}>{inventory.totals.skills}</b> {t("stat.skills")}
+                  <span aria-hidden className="text-[color:var(--color-text-quaternary)]">·</span>
+                  <b className={numeralClass}>{inventory.totals.executables}</b>{" "}
+                  {t("stat.executables")}
+                </span>
+              ) : null}
+            </div>
             <p className="mt-1 text-body leading-prose text-[color:var(--color-text-secondary)]">
               {t("subtitle")}
             </p>
@@ -60,157 +103,73 @@ export function AgentSkillsPage() {
           </Button>
         </header>
 
-        {status === "unsupported" ? (
-          <Notice tone="muted">{t("unsupported")}</Notice>
+        {status === "unsupported" ? <Notice tone="muted">{t("unsupported")}</Notice> : null}
+        {status === "error" ? (
+          <Notice tone="danger">{t("readError", { error: error ?? "" })}</Notice>
         ) : null}
-        {status === "error" ? <Notice tone="danger">{t("readError", { error: error ?? "" })}</Notice> : null}
         {status === "loading" ? <Notice tone="muted">{t("reading")}</Notice> : null}
 
-        {status === "idle" ? (
-          <section className="flex flex-col gap-5 rounded-[var(--radius-panel)] border border-[color:var(--color-border-soft)] bg-[color:var(--color-overlay-1)] px-5 py-6">
-            <p className="text-body leading-prose text-[color:var(--color-text-secondary)]">
-              {t("emptyBody")}
-            </p>
-
-            {/* **이 화면이 왜 필요한지를 먼저 말한다.** 처음 온 사람은 「스킬 목록」
-                이라는 말만 듣고는 Finder 로도 되는 일이라고 읽는다 — 여기서만
-                답하는 셋을 세워야 열어 볼 이유가 생긴다. */}
-            <div>
-              <h2 className="text-label font-[var(--font-weight-emphasis)] text-[color:var(--color-text-primary)]">
-                {t("answersTitle")}
-              </h2>
-              <ul className="mt-2 flex flex-col gap-1.5">
-                {["answer1", "answer2", "answer3"].map((key) => (
-                  <li
-                    key={key}
-                    className="text-label leading-prose text-[color:var(--color-text-secondary)]"
-                  >
-                    {t(key)}
-                  </li>
-                ))}
-              </ul>
-            </div>
-
-            <div>
-              <h2 className="text-label font-[var(--font-weight-emphasis)] text-[color:var(--color-text-primary)]">
-                {t("whereTitle")}
-              </h2>
-              <ul className="mt-2 flex flex-col gap-1.5">
-                {["emptyHint1", "emptyHint2"].map((key) => (
-                  <li
-                    key={key}
-                    className="text-label leading-prose text-[color:var(--color-text-tertiary)]"
-                  >
-                    {t(key)}
-                  </li>
-                ))}
-              </ul>
-            </div>
-
-            <p className="text-label leading-prose text-[color:var(--color-text-tertiary)]">
-              {t("emptyHint3")}
-            </p>
-          </section>
-        ) : null}
+        {status === "idle" ? <EmptyState /> : null}
 
         {inventory ? (
           <>
-            <section
-              data-testid="skills-summary"
-              className="flex flex-wrap items-center gap-x-5 gap-y-1.5 rounded-[var(--radius-card)] border border-[color:var(--color-border-soft)] bg-[color:var(--color-overlay-1)] px-4 py-3"
-            >
-              <Stat label={t("stat.skills")} value={inventory.totals.skills} />
-              <Stat label={t("stat.bundled")} value={inventory.totals.bundledFiles} />
-              <Stat label={t("stat.executables")} value={inventory.totals.executables} />
-              <p className="text-label text-[color:var(--color-text-tertiary)]">
-                {t("stat.folder", { folder: folderName ?? "" })}
+            {/* 스캔에 대한 사실만 남긴다 — **수는 머리가 진다.** 폴더 이름과
+                「사본 뺐어요」·「상한에 걸렸어요」는 숫자가 아니라 이 판독이 어떤
+                조건에서 나왔는지를 말하는 각주라서, 제목 옆이 아니라 여기 있는다. */}
+            {folderName || scan?.skippedNotInstalled || scan?.truncated ? (
+              <p
+                data-testid="skills-scan-note"
+                className="flex flex-wrap items-baseline gap-x-3 gap-y-1 text-label leading-prose text-[color:var(--color-text-tertiary)]"
+              >
+                <span>{t("stat.folder", { folder: folderName ?? "" })}</span>
+                {scan?.skippedNotInstalled ? (
+                  <span>{t("notInstalled", { count: scan.skippedNotInstalled })}</span>
+                ) : null}
+                {scan?.truncated ? (
+                  <span>{t("truncated", { count: scan.scannedFiles })}</span>
+                ) : null}
               </p>
-            </section>
-
-            {/* **로드되지 않는 사본을 뺐다는 사실을 말한다.** 안 말하면 사용자가
-                Finder 에서 세어 본 수와 안 맞아 우리를 의심한다 — 그리고 그 의심이
-                맞다(실측: 통째로 훑으면 195, 실제 로드는 60). */}
-            {scan?.skippedNotInstalled ? (
-              <Notice tone="muted">
-                {t("notInstalled", { count: scan.skippedNotInstalled })}
-              </Notice>
             ) : null}
 
-            {/* 상한에 걸렸으면 말한다 — 조용히 자르면 「0건」이 「다 괜찮다」로 읽힌다. */}
-            {scan?.truncated ? (
-              <Notice tone="muted">{t("truncated", { count: scan.scannedFiles })}</Notice>
-            ) : null}
-
-            {inventory.collisions.length > 0 ? (
-              <Findings title={t("collisions.title")} hint={t("collisions.hint")}>
-                {inventory.collisions.map((collision) => (
-                  <li key={collision.name} className="flex flex-col gap-0.5">
-                    <p className="text-label font-[var(--font-weight-emphasis)] text-[color:var(--color-text-primary)]">
-                      {collision.name}
-                      {collision.descriptionsDiffer ? (
-                        <span className="ml-2 text-caption font-normal text-[color:var(--color-text-tertiary)]">
-                          {t("collisions.competing")}
-                        </span>
-                      ) : null}
-                    </p>
-                    {collision.skills.map((s) => (
-                      <p
-                        key={s.origin.relativePath}
-                        // **두 줄로 자른다.** 실측에서 스킬 설명 하나가 문단 여럿짜리
-                        // TRIGGER 지시문이었고, 충돌 여섯이 겹치자 이 카드 하나가
-                        // 화면 두 배 높이가 됐다 — 정작 봐야 할 「어느 것이 겹쳤나」가
-                        // 그 안에 묻혔다. 전문은 아래 목록에서 그 스킬을 펼치면 나온다.
-                        className="line-clamp-2 text-caption leading-prose text-[color:var(--color-text-tertiary)]"
-                      >
-                        {s.origin.source} — {s.description}
-                      </p>
-                    ))}
-                  </li>
-                ))}
-              </Findings>
-            ) : null}
-
-            {inventory.overlaps.length > 0 ? (
-              <Findings title={t("overlaps.title")} hint={t("overlaps.hint")}>
-                {inventory.overlaps.slice(0, 12).map((overlap) => (
-                  <li
-                    key={`${overlap.a.origin.relativePath}|${overlap.b.origin.relativePath}`}
-                    className="text-label leading-prose text-[color:var(--color-text-secondary)]"
-                  >
-                    <span className="font-[var(--font-weight-emphasis)] text-[color:var(--color-text-primary)]">
-                      {overlap.a.name}
-                    </span>
-                    {" ↔ "}
-                    <span className="font-[var(--font-weight-emphasis)] text-[color:var(--color-text-primary)]">
-                      {overlap.b.name}
-                    </span>
-                    <span className="ml-2 text-caption text-[color:var(--color-text-tertiary)]">
-                      {overlap.shared.slice(0, 5).join(" · ")}
-                    </span>
-                  </li>
-                ))}
-              </Findings>
-            ) : null}
-
-            <section className="flex flex-col gap-2">
-              <h2 className="text-title text-[color:var(--color-text-primary)]">
-                {t("list.title")}
-              </h2>
-              <ul className="flex flex-col gap-2" data-testid="skills-list">
-                {inventory.skills.map((skill) => (
-                  <SkillRow
-                    key={skill.origin.relativePath}
-                    skill={skill}
-                    open={openSkill === skill.origin.relativePath}
-                    onToggle={() =>
-                      setOpenSkill((current) =>
-                        current === skill.origin.relativePath ? null : skill.origin.relativePath,
-                      )
-                    }
+            {/* 2열 — 왼쪽은 찾고 고르는 자리, 오른쪽은 항상 답이 떠 있는 자리. */}
+            <div className="flex min-h-0 flex-1 gap-4">
+              <div
+                data-testid="skills-left"
+                className="flex min-h-0 w-full shrink-0 flex-col gap-2 lg:w-[340px]"
+              >
+                {/* 라벨은 `sr-only <label>` 이 아니라 `aria-label` 로 단다 —
+                    화면에 안 보이는 라벨에 클래스를 얹으면 폼 래칫이 그것을
+                    「손으로 쓴 규격」으로 세고, 실제로 그렇게 세는 게 맞다. */}
+                <input
+                  data-testid="skills-search"
+                  aria-label={t("searchLabel")}
+                  value={query}
+                  onChange={(event) => setQuery(event.target.value)}
+                  placeholder={t("searchPlaceholder")}
+                  // 폼 규격은 값 층이 진다 — 손으로 쓰면 래칫이 막는다.
+                  className={fieldClass({ size: "md" })}
+                />
+                <div className="min-h-0 flex-1 overflow-y-auto pr-1">
+                  <SkillList
+                    inventory={inventory}
+                    groups={groups}
+                    selected={selected}
+                    onSelect={setSelected}
                   />
-                ))}
-              </ul>
-            </section>
+                </div>
+              </div>
+
+              <div
+                data-testid="skills-right"
+                className="hidden min-h-0 flex-1 overflow-y-auto rounded-[var(--radius-panel)] border border-[color:var(--color-border-soft)] px-4 py-3.5 lg:block"
+              >
+                {current ? (
+                  <SkillDetail skill={current} inventory={inventory} onSelect={setSelected} />
+                ) : (
+                  <FindingsPanel inventory={inventory} onSelect={setSelected} />
+                )}
+              </div>
+            </div>
           </>
         ) : null}
       </div>
@@ -218,88 +177,46 @@ export function AgentSkillsPage() {
   );
 }
 
-function SkillRow({
-  skill,
-  open,
-  onToggle,
-}: {
-  skill: AgentSkill;
-  open: boolean;
-  onToggle: () => void;
-}) {
+function EmptyState() {
   const t = useTranslations("agentSkills");
   return (
-    <li className="rounded-[var(--radius-card)] border border-[color:var(--color-border-soft)] bg-[color:var(--color-overlay-1)]">
-      <button
-        type="button"
-        onClick={onToggle}
-        aria-expanded={open}
-        data-testid="skill-row-toggle"
-        // `stacked: true` — 이 행은 카드 안쪽에 통째로 들어앉으므로 자기 모서리를
-        // 갖지 않는다(가지면 호버 배경이 카드 안에서 조각조각 둥글어진다).
-        className={controlClass({
-          shape: "row",
-          size: "lg",
-          stacked: true,
-          className: "flex-col items-start gap-0.5 py-3",
-        })}
-      >
-        <span className="flex w-full flex-wrap items-baseline gap-x-2.5 gap-y-0.5">
-          <span className="text-body font-[var(--font-weight-emphasis)] text-[color:var(--color-text-primary)]">
-            {skill.name}
-          </span>
-          <span className="text-caption text-[color:var(--color-text-tertiary)]">
-            {skill.origin.source}
-          </span>
-          {skill.invocation.executables.length > 0 ? (
-            <span className="text-caption text-[color:var(--color-text-tertiary)]">
-              {t("list.runsCount", { count: skill.invocation.executables.length })}
-            </span>
-          ) : null}
-        </span>
-        {/* **설명 칸은 항상 두 줄 자리를 차지한다.**
-            `line-clamp-2` 만으로는 상한만 정해져서, 폭이 좁아지면 어떤 행은 한 줄
-            어떤 행은 두 줄이 된다 — 실측 768px 에서 64.69 / 83.38 로 갈렸다.
-            그건 헌장이 금지한 「내용이 카드 높이를 정하는 것」이다.
-            `2lh` 는 이 요소 자신의 행간 두 줄 — 램프 값을 베끼지 않고 따라간다. */}
-        <span className="line-clamp-2 min-h-[2lh] text-label leading-prose text-[color:var(--color-text-secondary)]">
-          {skill.description}
-        </span>
-      </button>
-      {open ? (
-        <div className="border-t border-[color:var(--color-border-soft)] px-4 py-3">
-          <SkillInvocationChain skill={skill} />
-        </div>
-      ) : null}
-    </li>
-  );
-}
-
-function Stat({ label, value }: { label: string; value: number }) {
-  return (
-    <p className="flex items-baseline gap-1.5">
-      <span className="text-title text-[color:var(--color-text-primary)]">{value}</span>
-      <span className="text-label text-[color:var(--color-text-tertiary)]">{label}</span>
-    </p>
-  );
-}
-
-function Findings({
-  title,
-  hint,
-  children,
-}: {
-  title: string;
-  hint: string;
-  children: React.ReactNode;
-}) {
-  return (
-    <section className="rounded-[var(--radius-card)] border border-[color:var(--color-border-soft)] bg-[color:var(--color-overlay-1)] px-4 py-3">
-      <h2 className="text-label font-[var(--font-weight-emphasis)] text-[color:var(--color-text-primary)]">{title}</h2>
-      <p className="mt-0.5 text-caption leading-prose text-[color:var(--color-text-tertiary)]">
-        {hint}
+    <section className="flex flex-col gap-5 overflow-y-auto rounded-[var(--radius-panel)] border border-[color:var(--color-border-soft)] bg-[color:var(--color-overlay-1)] px-5 py-6">
+      <p className="text-body leading-prose text-[color:var(--color-text-secondary)]">
+        {t("emptyBody")}
       </p>
-      <ul className="mt-2.5 flex flex-col gap-2">{children}</ul>
+      <div>
+        <h2 className="text-label font-[var(--font-weight-emphasis)] text-[color:var(--color-text-primary)]">
+          {t("answersTitle")}
+        </h2>
+        <ul className="mt-2 flex flex-col gap-1.5">
+          {["answer1", "answer2", "answer3"].map((key) => (
+            <li
+              key={key}
+              className="text-label leading-prose text-[color:var(--color-text-secondary)]"
+            >
+              {t(key)}
+            </li>
+          ))}
+        </ul>
+      </div>
+      <div>
+        <h2 className="text-label font-[var(--font-weight-emphasis)] text-[color:var(--color-text-primary)]">
+          {t("whereTitle")}
+        </h2>
+        <ul className="mt-2 flex flex-col gap-1.5">
+          {["emptyHint1", "emptyHint2"].map((key) => (
+            <li
+              key={key}
+              className="text-label leading-prose text-[color:var(--color-text-tertiary)]"
+            >
+              {t(key)}
+            </li>
+          ))}
+        </ul>
+      </div>
+      <p className="text-label leading-prose text-[color:var(--color-text-tertiary)]">
+        {t("emptyHint3")}
+      </p>
     </section>
   );
 }

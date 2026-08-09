@@ -3625,6 +3625,33 @@
       "noFiles": "No bundled files",
       "runs": "runs",
       "missing": "file is missing"
+    },
+    "searchLabel": "Find by name",
+    "searchPlaceholder": "Find by name…",
+    "noMatch": "No skill by that name.",
+    "group": {
+      "mine": "My folder"
+    },
+    "row": {
+      "collides": "name clash",
+      "metrics": "{chars} chars · {files} files · {runs} run",
+      "runs": "{count} run"
+    },
+    "detail": {
+      "competing": "Competes with this skill",
+      "sameName": "The same name also lives in {source} — which one fires is undefined",
+      "sharedTrigger": "Shares a trigger with {name} — {words}"
+    },
+    "findings": {
+      "alwaysTitle": "Loaded every session",
+      "alwaysNote": "{chars} chars in total",
+      "competingTitle": "Competing with each other",
+      "competingNote": "{names} names · {pairs} trigger pairs",
+      "noneCompeting": "Nothing competes.",
+      "sameNameCount": "{count} places",
+      "runsTitle": "Can run on your machine",
+      "runsNote": "{count} files",
+      "noneRun": "Nothing runs."
     }
   }
 }
