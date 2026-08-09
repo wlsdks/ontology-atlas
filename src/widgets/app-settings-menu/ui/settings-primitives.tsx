@@ -66,6 +66,28 @@ export const DETAIL_TOGGLE_CHIP =
  */
 export const RESET_LINK_INK = 'justify-self-start hover:text-[color:var(--color-text-primary)]';
 
+/**
+ * 설정 시트의 **절 이름** 한 벌 — 루트 시트의 그룹 헤더와 드릴인의 절 헤더가 같은 것.
+ *
+ * ⚠️ **셋이 따로 자랐고, 그중 하나만 한 단 작았다** (2026-08-09, 소유자 지적 2차).
+ * 루트 시트의 `SettingsGroup` 은 `text-label`(11), `AiConnectionPanel` 의
+ * `SupportingSection` 도 `text-label`, 그런데 `VaultAgentSetupPanel` 의
+ * `SectionLabel` 만 **`text-caption`(9.5)** 이었다. 네 자리(연결 파일 상태 ·
+ * 에이전트가 이 폴더를 쓰는 방식 · 확인 · 연결)가 전부 그것이라, 그 절들만
+ * 이름이 내용보다 작았다.
+ *
+ * **「아이브로우는 9.5px 이어도 된다」는 내 면제가 틀렸다.** 근거로 든 것은 램프의
+ * 정의("마이크로 라벨")와 `uppercase` 였는데, **한글에는 `uppercase` 가 아무 일도
+ * 하지 않는다** — 대문자 마이크로 라벨이라는 타이포 장치 자체가 성립하지 않고
+ * 남는 건 그냥 9.5px 흐린 글자다. 게다가 루트 시트가 같은 역할에 이미 11px 을
+ * 쓰고 있었으니, 면제는 **아무도 쓰지 않는 규격**이었다.
+ *
+ * 그래서 값을 여기 한 곳에 두고 소비처가 가리킨다 — 사본이 셋이면 어긋나는 쪽이
+ * 기본값이다(Carbon).
+ */
+export const SETTINGS_SECTION_LABEL =
+  'font-mono text-label uppercase tracking-[var(--tracking-caps-14)] text-[color:var(--color-text-quaternary)]';
+
 /** 그룹 헤더 + 행 컨테이너 — Toss 식 "그룹 헤더 + 즉시 조작 행" 문법의 뼈대. */
 /**
  * 한 무리의 설정 행. `label` 은 **선택**이다 — LNB 가 이미 그 칸의 이름을 말하는
@@ -76,9 +98,7 @@ export function SettingsGroup({ label, children }: { label?: string; children: R
   return (
     <section aria-label={label}>
       {label ? (
-        <h3 className="px-1 font-mono text-label uppercase tracking-[var(--tracking-caps-14)] text-[color:var(--color-text-quaternary)]">
-          {label}
-        </h3>
+        <h3 className={`px-1 ${SETTINGS_SECTION_LABEL}`}>{label}</h3>
       ) : null}
       <div className={`${label ? 'mt-1.5 ' : ''}divide-y divide-[color:var(--color-divider)] overflow-hidden rounded-card border border-[color:var(--color-border-soft)] bg-[color:var(--color-overlay-1)]`}>
         {children}
