@@ -19,6 +19,21 @@ import { NAV_LEADER_WINDOW_MS } from "@/shared/config/destinations";
  * `tests/e2e/destination-shortcuts.spec.ts`.
  */
 
+/**
+ * 한글 입력기가 켜진 상태의 키 사건 — `key` 는 자모, `code` 는 물리 위치.
+ *
+ * ⚠️ **이 함수가 있는 이유가 실제 결함이다** (2026-08-10, 설치 앱 실측).
+ * 한글 입력 상태에서 물리 `G` 는 `key="ㅎ"`, `P` 는 `key="ㅔ"` 로 온다. 조합키도
+ * 없고 초점도 body 였고 막는 표면도 없었는데, **단지 글자가 달라 하나도 안 먹었다.**
+ * 이 제품의 주 언어가 한국어이므로 그건 드문 환경이 아니라 **평소 상태**였고,
+ * 브라우저 e2e 는 Latin 을 타이핑하므로 원리적으로 못 잡는다.
+ */
+function pressHangul(jamo: string, code: string) {
+  window.dispatchEvent(
+    new KeyboardEvent("keydown", { key: jamo, code, bubbles: true, cancelable: true }),
+  );
+}
+
 function press(key: string, target?: Element, extra: Partial<KeyboardEventInit> = {}) {
   const event = new KeyboardEvent("keydown", { key, bubbles: true, cancelable: true, ...extra });
   (target ?? window).dispatchEvent(event);
@@ -44,6 +59,28 @@ describe("useDestinationShortcuts", () => {
     expect(navigate).toHaveBeenCalledTimes(1);
     expect(navigate.mock.calls[0]?.[0]).toBe("/projects/");
     expect(navigate.mock.calls[0]?.[1]).toBe("projects");
+  });
+
+  it("한글 입력기가 켜져 있어도 이동한다 — 물리 키로 판정한다", () => {
+    renderHook(() => useDestinationShortcuts({ navigate }));
+    pressHangul("ㅎ", "KeyG"); // 리더
+    pressHangul("ㅔ", "KeyP"); // 프로젝트
+    expect(navigate, "한글 입력 상태에서 안 먹는다").toHaveBeenCalledWith("/projects/", "projects");
+  });
+
+  it("한글 입력기에서 G G(git)도 성립한다", () => {
+    renderHook(() => useDestinationShortcuts({ navigate }));
+    pressHangul("ㅎ", "KeyG");
+    pressHangul("ㅎ", "KeyG");
+    expect(navigate).toHaveBeenCalledWith("/git/", "git");
+  });
+
+  it("자판이 QWERTY 가 아니어도 찍힌 글자로 맞는다", () => {
+    renderHook(() => useDestinationShortcuts({ navigate }));
+    // AZERTY 에서 사용자가 `G` 라고 찍힌 키를 누르면 `code` 는 다를 수 있다.
+    window.dispatchEvent(new KeyboardEvent("keydown", { key: "g", code: "KeyZ", bubbles: true }));
+    window.dispatchEvent(new KeyboardEvent("keydown", { key: "p", code: "KeyX", bubbles: true }));
+    expect(navigate).toHaveBeenCalledWith("/projects/", "projects");
   });
 
   it("리더 없이 글자만 누르면 아무 일도 없다", () => {
@@ -144,16 +181,53 @@ describe("useDestinationShortcuts", () => {
     expect(navigate).toHaveBeenCalledTimes(1);
   });
 
-  it("리더를 누른 지 오래되면 글자만으로는 이동하지 않는다", () => {
+  /**
+   * ⚠️ **이 시험이 설치 앱의 결함을 잡는 자리다** (2026-08-10).
+   *
+   * 처음 구현은 시각을 **`event.timeStamp`** 로 읽고 «0 이면 리더를 안 누른 것»
+   * 으로 판정했다. 브라우저에서는 잘 돌았고 e2e 도 통과했는데, **설치 앱
+   * (WKWebView)에서는 리더 조합이 하나도 안 먹었다** — `G P` 도 `G M` 도. 같은
+   * 화면에서 `?` 는 정상이었으니 키가 WebView 에 닿기는 했다.
+   *
+   * 0 을 «안 누름» 의 뜻으로 겸용한 것이 원인이고, 어떤 런타임이 0 을 주면 기능이
+   * 통째로 사라지면서 **화면에는 아무 단서도 없다.** 그래서 두 사건의 `timeStamp`
+   * 를 **둘 다 0** 으로 두고도 이동해야 한다고 못박는다.
+   */
+  it("event.timeStamp 가 0 이어도 이동한다 — 시계를 사건에서 읽지 않는다", () => {
     renderHook(() => useDestinationShortcuts({ navigate }));
-    // `timeStamp` 로 재므로 시계를 건드리지 않고 사건 자신의 시각을 벌린다.
-    const leader = new KeyboardEvent("keydown", { key: "g", bubbles: true, cancelable: true });
-    Object.defineProperty(leader, "timeStamp", { value: 0 });
-    window.dispatchEvent(leader);
-    const late = new KeyboardEvent("keydown", { key: "p", bubbles: true, cancelable: true });
-    Object.defineProperty(late, "timeStamp", { value: NAV_LEADER_WINDOW_MS + 1 });
-    window.dispatchEvent(late);
-    expect(navigate, "시간 제한이 안 걸렸다").not.toHaveBeenCalled();
+    for (const key of ["g", "p"]) {
+      const event = new KeyboardEvent("keydown", { key, bubbles: true, cancelable: true });
+      Object.defineProperty(event, "timeStamp", { value: 0 });
+      window.dispatchEvent(event);
+    }
+    expect(navigate, "사건의 timeStamp 에 기대고 있다").toHaveBeenCalledWith("/projects/", "projects");
+  });
+
+  it("리더를 누른 지 오래되면 글자만으로는 이동하지 않는다", () => {
+    // 시계는 `performance.now()` 다 — 그것만 가짜로 만든다.
+    vi.useFakeTimers();
+    try {
+      renderHook(() => useDestinationShortcuts({ navigate }));
+      press("g");
+      vi.advanceTimersByTime(NAV_LEADER_WINDOW_MS + 50);
+      press("p");
+      expect(navigate, "시간 제한이 안 걸렸다").not.toHaveBeenCalled();
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+
+  it("시간 제한 안이면 이동한다 — 위 시험이 늘 통과하는 게 아니라는 증거", () => {
+    vi.useFakeTimers();
+    try {
+      renderHook(() => useDestinationShortcuts({ navigate }));
+      press("g");
+      vi.advanceTimersByTime(Math.floor(NAV_LEADER_WINDOW_MS / 2));
+      press("p");
+      expect(navigate).toHaveBeenCalledWith("/projects/", "projects");
+    } finally {
+      vi.useRealTimers();
+    }
   });
 
   it("disabled 면 아무것도 하지 않는다", () => {
