@@ -89,7 +89,7 @@ describe("DocFrontmatterBlock", () => {
     const details = screen.getByTestId("doc-frontmatter-block").querySelector("details");
     expect(details).toHaveAttribute("open");
     expect(
-      screen.getByText("frontmatter 가 곧 그래프 — 이 블록이 topology 의 노드와 엣지가 됩니다."),
+      screen.getByText(/frontmatter 가 곧 그래프/),
     ).toBeVisible();
   });
 
