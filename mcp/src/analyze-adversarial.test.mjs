@@ -142,3 +142,40 @@ test('archived and backlog documents cannot crowd current product evidence', () 
     rmSync(root, { recursive: true, force: true });
   }
 });
+
+test('folders, teams, and workflows remain proposals rather than automatic business meaning', () => {
+  const root = withAdversarialRepo(
+    [
+      '# Organization Fixture',
+      '',
+      'The repository is maintained by the Payments Team.',
+      '',
+      '## Team',
+      '',
+      '## Workflow',
+    ].join('\n'),
+    (repoRoot) => {
+      for (const path of ['src/team', 'src/workflow', 'src/workflow/team-review']) {
+        mkdirSync(join(repoRoot, path), { recursive: true });
+        writeFileSync(join(repoRoot, path, 'index.ts'), 'export const marker = true;\n');
+      }
+    },
+  );
+  try {
+    const result = analyzeRepoStructure(root);
+    assert.deepEqual(result.meaningGate.businessOntology.domains, []);
+    assert.deepEqual(result.meaningGate.businessOntology.capabilities, []);
+    assert.equal(result.extractionContract.assertionPolicy.automaticBusinessAssertions, 0);
+    assert.ok(
+      result.meaningGate.proposedBusinessOntology.domains.length > 0 ||
+        result.meaningGate.proposedBusinessOntology.capabilities.length > 0,
+      'structural rows may remain visible proposals instead of disappearing',
+    );
+    assert.ok(
+      result.suggestedRelations.every((row) => row.type !== 'is_a' && row.type !== 'broader'),
+      'same names and nested folders do not create subsumption',
+    );
+  } finally {
+    rmSync(root, { recursive: true, force: true });
+  }
+});

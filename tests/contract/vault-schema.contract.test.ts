@@ -15,6 +15,7 @@ import {
   generateNodeUid as generateUidMcp,
   nodeUidIssue as uidIssueMcp,
   mergeNodeIdentityHistory as mergeIdentityMcp,
+  VAULT_KINDS,
   VAULT_KIND_SCHEMA,
 } from "../../mcp/src/schema.mjs";
 import {
@@ -34,6 +35,7 @@ import { PRODUCT_DISCIPLINE } from "@/features/vault-agent/model/system-prompt";
 import {
   CHAT_RULES_DELTA_EN,
   CONSTRUCTION_RULES_EN,
+  META_MODEL_RULES_EN,
 } from "../../mcp/src/construction-rules.mjs";
 import { KNOWN_VAULT_KINDS } from "../../mcp/src/validate.mjs";
 
@@ -298,7 +300,8 @@ describe("구축 규격 텍스트 3-way — mcp 정본 ↔ 앱 채팅 프롬프�
     expect(PRODUCT_DISCIPLINE).toContain("say so in the conversation first");
   });
 
-  it("kind 위계가 스키마와 어긋나지 않는다 — 실제로 갈라졌던 두 지점", () => {
+  it("meta-model 경계가 바이트 그대로 실려 있고 authorable/reserved를 구분한다", () => {
+    expect(PRODUCT_DISCIPLINE).toContain(META_MODEL_RULES_EN);
     // project 의 소유 범위는 스키마가 정한다. 프롬프트가 「domains 만」이라고
     // 말하면 에이전트는 capability/element 직속을 제안하지 않는다.
     expect(VAULT_KIND_SCHEMA.project.arrayDefaults).toEqual([
@@ -306,19 +309,27 @@ describe("구축 규격 텍스트 3-way — mcp 정본 ↔ 앱 채팅 프롬프�
       "capabilities",
       "elements",
     ]);
-    expect(PRODUCT_DISCIPLINE).toContain("Owns domains, capabilities, and elements");
+    expect(VAULT_KINDS).toEqual([
+      "project",
+      "domain",
+      "capability",
+      "element",
+      "document",
+    ]);
+    expect(PRODUCT_DISCIPLINE).toContain("Atlas has five authorable kinds");
     // `vault-readme` 는 자동 생성 전용이라 어떤 에이전트도 제안하면 안 된다.
     // MCP 안내문에는 이 경고가 있었고 채팅 프롬프트에는 없었다.
     expect(KNOWN_VAULT_KINDS).toContain("vault-readme");
-    expect(PRODUCT_DISCIPLINE).toContain("`vault-readme` is reserved");
+    expect(PRODUCT_DISCIPLINE).toContain("`vault-readme` is a reserved reader kind");
   });
 
   it("element 를 파일 목록과 혼동하지 않고 구조 감사는 실제 부모를 읽는다", () => {
-    expect(PRODUCT_DISCIPLINE).toContain(
-      "element — a concrete implementation role",
+    const discipline = PRODUCT_DISCIPLINE.replace(/\s+/g, " ");
+    expect(discipline).toContain(
+      "A bare path is evidence for an element role, not a concept by itself",
     );
-    expect(PRODUCT_DISCIPLINE).toContain(
-      "A file path is evidence for that role, not a reason to create a node",
+    expect(discipline).toContain(
+      "folder, package, team, workflow, technology, or README heading is",
     );
     expect(PRODUCT_DISCIPLINE).toContain(
       "For a structure audit, census and list results only choose suspects",

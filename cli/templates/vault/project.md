@@ -15,6 +15,11 @@ elements:
 # My project
 
 Write a one- or two-line summary of your project here — *what / for whom / why*.
+This node sets the outcome and scope for the rest of the graph; it is not a
+synonym for a repository, monorepo, department, or release phase.
+
+Kind and relation contract:
+https://github.com/wlsdks/ontology-atlas/blob/main/docs/ONTOLOGY-ATLAS-SPEC.md#2-the-five-authorable-node-kinds-and-reserved-reader-kind
 
 ## One-line mission
 
@@ -25,9 +30,9 @@ The problem this project solves, or the value it creates, in a single sentence.
 - Fill in `domains: [...]` in the frontmatter and the domain nodes hang
   off your project tree automatically.
 - Each domain's capabilities and elements follow the same pattern.
-- When an AI agent adds a new node, this file's `depends_on` / `domains`
-  may auto-update — frontmatter is the source of truth, so there are no
-  conflicts.
+- When an AI agent proposes a new node, confirm its meaning before it writes.
+  Frontmatter is the source of truth once written; git keeps the change
+  inspectable.
 
 ## Next steps
 

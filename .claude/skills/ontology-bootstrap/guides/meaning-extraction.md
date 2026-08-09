@@ -3,69 +3,23 @@
 Use this standard while converting an Atlas project packet into proposed
 ontology concepts.
 
-## What counts as an ontology concept
+## Normative model boundary
 
-A concept represents a stable unit of shared meaning. It needs:
+Read the
+[Atlas meta-model specification](../../../../docs/ONTOLOGY-ATLAS-SPEC.md#2-the-five-authorable-node-kinds-and-reserved-reader-kind)
+before classifying a candidate or proposing a relation. It is the only source
+for the five kind tests, examples/counterexamples, direct `is_a` test, current
+`broader` write path, and inference/standards boundary.
 
-- a non-circular definition;
-- a boundary: what it includes and excludes;
-- one or more source citations;
-- a place in the project/domain/capability/element hierarchy;
-- relations whose predicates can be explained;
-- an explicit confidence or unresolved uncertainty.
-
-A label without those properties is a tag, not yet an ontology concept.
-
-## Kind tests
-
-### Project
-
-Test: Can the definition finish the sentence, “This system exists so that …”?
-
-Bad: “A TypeScript monorepo.”
-
-Good: “A personal AI companion that preserves continuity and acts with
-context-sensitive initiative.”
-
-### Domain
-
-Test all:
-
-- Is it a durable responsibility or problem boundary?
-- Does it group at least two coherent capabilities, or is there strong evidence
-  that it will?
-- Would the boundary still make sense if the implementation were rewritten?
-- Can its difference from neighboring domains be stated?
-
-Reject domains copied from `src/`, package names, teams, technologies, document
-sections, lifecycle phases, or generic words such as “platform” without a
-specific responsibility.
-
-### Capability
-
-Test all:
-
-- Does it describe something the product/system can do?
-- Is its outcome observable by a user, operator, or dependent system?
-- Can it be expressed without prescribing the current module or framework?
-- Does the source describe it as shipped, required, or intentionally planned?
-
-Prefer ability phrases such as “Preserve conversational continuity” over
-component nouns such as “Memory Manager.” Record shipped/planned/unknown status
-when evidence permits.
-
-### Element
-
-Use for concrete implementation evidence: application, package, service,
-module, schema, command, UI surface, integration, or file. A precise technical
-name is desirable here.
-
-An element may support multiple capabilities. Do not create one capability per
-package merely to force a one-to-one hierarchy.
+This guide adds extraction discipline only. A proposal still needs a
+non-circular definition, includes/excludes, source citations, explained
+relations, and explicit confidence or uncertainty. A label without those
+properties is observed vocabulary, not yet an accepted ontology concept.
 
 ## Definition rules
 
-Write an intensional definition:
+After the candidate passes the specification's kind test, write an intensional
+definition:
 
 ```text
 <concept> is <broader class> that <distinguishing responsibility or behavior>.
@@ -109,22 +63,16 @@ When sources disagree:
 
 ## Relation rules
 
+Use the specification's matrix for relation name, storage key, endpoint kinds,
+direction, inverse behavior, and inference. This guide adds the evidence review
+below; it does not widen the public relation enum.
+
 Accept an edge only when all four answers exist:
 
 1. What are the endpoints?
 2. What typed predicate connects them?
 3. What evidence supports that predicate?
 4. What reasoning or future impact depends on the edge?
-
-Common interpretations:
-
-- `contains`: scope/ownership, not mere physical nesting;
-- `domain`: a capability or element belongs to a responsibility boundary;
-- `depends_on` / `dependencies`: the source requires the target to function or
-  a change to the target can affect the source;
-- `relates`: meaningful association when a stronger predicate cannot be
-  justified; use sparingly;
-- `describes`: a document explains another concept.
 
 ## Counterexample checks
 

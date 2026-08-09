@@ -10,14 +10,20 @@ capabilities:
 
 # Example domain
 
-A *domain* is a large area of your project (subsystems like auth,
-billing, builder, realtime, search). Rename this file to match one of
-your real domains (`domains/auth.md`, `domains/billing.md`, …) and list
-the capabilities it owns under `capabilities:` in the frontmatter above.
+A *domain* is a durable responsibility, problem, vocabulary, or ownership
+boundary that groups coherent capabilities and would survive an implementation
+rewrite. A source/package folder, team, technology, lifecycle phase, or workflow
+name is evidence to investigate—not a domain by itself.
+
+Kind and relation contract:
+https://github.com/wlsdks/ontology-atlas/blob/main/docs/ONTOLOGY-ATLAS-SPEC.md#2-the-five-authorable-node-kinds-and-reserved-reader-kind
 
 ## How to fill it in
 
-- Use one or two paragraphs of body text to describe *what this domain is*.
+- Describe the responsibility it owns, what is inside and outside the boundary,
+  and the evidence that supports that meaning.
+- Rename this file to a real domain only after that test passes
+  (`domains/identity.md`, `domains/billing.md`, …).
 - Markdown links to other domains / capabilities in the body register as
   backlinks automatically.
 - Frontmatter keys:

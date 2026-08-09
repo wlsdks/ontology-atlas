@@ -7,6 +7,29 @@
 
 ---
 
+## 2026-08-09 · 사람과 agent가 같은 5-kind·관계 경계에서 온톨로지를 만든다
+
+Atlas의 kind 설명이 문서·스타터·MCP·앱 agent 사이에 흩어져 `document`와 예약
+`vault-readme`가 빠지거나, 폴더·팀·워크플로를 domain/capability로 오인하고,
+실제로 없는 `is_a` relation API나 RDF/OWL 추론을 기대할 여지가 있었다.
+
+- 공개 vault spec 한 곳이 5개 authorable kind의 포함·제외·예시·반례와 예약 reader
+  kind를 소유한다. 경로는 element의 근거일 수 있지만 경로 자체가 개념은 아니다.
+- `broader`는 narrower → direct broader 저장 키이고 UI가 `is_a`로 보여 준다는 것,
+  현재 공개 relation API에는 없어서 mtime을 지키는 `patch_concept` 경로가 필요하다는
+  것을 숨기지 않는다.
+- Atlas는 자동 inverse/transitive inference나 RDF/OWL/SKOS/SHACL conformance를
+  제공하지 않는다고 명시했다. machine-readable graph를 formal reasoner라고 부르지 않는다.
+- MCP server instructions, 앱 내 agent prompt, CLI/웹 첫 볼트, bootstrap/field-trial
+  스킬이 같은 정본을 가리킨다. 폴더·팀·워크플로 자동 승격 negative fixture와
+  prompt/template parity 계약이 drift를 막는다.
+- 정본 블록을 실제 MCP consumer에서 제거하면 계약이 실패하고 복구하면 통과하는
+  gate probe를 확인했다. Atlas 자체 볼트도 기존 schema-authoring 개념을 갱신했으며
+  새 kind나 중복 노드는 만들지 않았다.
+
+렌더링 UI·레이아웃·색·간격·모션은 바뀌지 않았다. 따라서 디자인 토큰이나 설치 앱
+번들을 건드리지 않고, 사람이 승인할 의미와 agent가 자동 구축할 경계만 정밀하게 했다.
+
 ## 2026-08-09 · MCP 첫 안내와 실제 도구 목록이 항상 같다
 
 MCP 연결 직후 agent가 읽는 initialize 안내는 도구가 33개라고 적으면서 실제

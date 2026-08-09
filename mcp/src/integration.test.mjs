@@ -37,6 +37,7 @@ import {
 import { GRAPH_ARRAY_KEYS, loadVaultDocs } from "./vault.mjs";
 import { buildProjectSourceGraphHash } from "./project-source-graph-hash.mjs";
 import { renderProjectCompetencyMarkdown } from "./project-meaning-receipt.mjs";
+import { defaultBody } from "./schema.mjs";
 import {
   formatNoTestMatchMessage,
   formatTestFilterSuffix,
@@ -1797,7 +1798,7 @@ await test("tools/list — 단일 도구 description 이 batch 짝을 cross-refe
 
 await test("initialize — instructions 필드 (#45) AI agent 안내 노출", async () => {
   // initialize 응답에 instructions 가 있어야 연결된 agent (Claude Code 등) 가
-  // kind 계층 / 호출 순서 / write 도구 dry-run 패턴을 즉시 인지. 누락 시
+  // authorable/reserved kind 경계 / 호출 순서 / write 도구 dry-run 패턴을 즉시 인지. 누락 시
   // agent 는 매 세션 시행착오로 학습 — 명시 가드.
   const root = makeVault([]);
   try {
@@ -1811,7 +1812,8 @@ await test("initialize — instructions 필드 (#45) AI agent 안내 노출", as
       `instructions 가 의미 있는 길이여야 (got ${instructions.length})`,
     );
     // 핵심 키워드 — drift 시 즉시 깨짐
-    assert.match(instructions, /kind hierarchy/i);
+    assert.match(instructions, /five authorable kinds/i);
+    assert.match(instructions, /vault-readme.*reserved reader kind/i);
     assert.match(instructions, /dry-run|confirm/i);
     assert.match(instructions, /expected_mtime/i);
     assert.match(instructions, /overwrite: true/);
@@ -6553,6 +6555,57 @@ await test("patch_concept — graph 배열 patch 는 canonical set 으로 저장
   }
 });
 
+await test("broader fallback — get mtime, patch full array, validate; is_a relation call stays unavailable", async () => {
+  const root = makeVault([
+    { slug: "domains/auth", content: "---\nkind: domain\ntitle: Authentication\n---\n" },
+    {
+      slug: "capabilities/session-auth",
+      content: "---\nkind: capability\ntitle: Session Authentication\ndomain: domains/auth\n---\n",
+    },
+    {
+      slug: "capabilities/token-auth",
+      content: "---\nkind: capability\ntitle: Token Authentication\ndomain: domains/auth\n---\n",
+    },
+  ]);
+  try {
+    const firstRead = await rpc(root, [
+      ...INIT_REQUESTS,
+      callTool(2, "get_concept", { slug: "capabilities/token-auth" }),
+    ]);
+    const expectedMtime = getCallParsed(firstRead.responses, 2).mtime;
+
+    const { responses } = await rpc(root, [
+      ...INIT_REQUESTS,
+      callTool(2, "patch_concept", {
+        slug: "capabilities/token-auth",
+        expected_mtime: expectedMtime,
+        frontmatter: { broader: ["capabilities/session-auth"] },
+      }),
+      callTool(3, "validate_vault", {}),
+      callTool(4, "get_concept", { slug: "capabilities/token-auth" }),
+      callTool(5, "add_relation", {
+        from: "capabilities/token-auth",
+        to: "capabilities/session-auth",
+        type: "is_a",
+        why: "Both concepts describe authentication abilities.",
+      }),
+    ]);
+
+    assert.equal(getCallParsed(responses, 2).changed, true);
+    assert.deepEqual(getCallParsed(responses, 3).problems, []);
+    const patched = getCallParsed(responses, 4);
+    assert.deepEqual(patched.frontmatter.broader, ["capabilities/session-auth"]);
+    assert.deepEqual(patched.outgoingEdges, [
+      { to: "capabilities/session-auth", via: "broader" },
+      { to: "domains/auth", via: "domain" },
+    ]);
+    assert.equal(isErrorResponse(responses, 5), true);
+    assert.match(responses.find((response) => response.id === 5).result.content[0].text, /type must be one of/i);
+  } finally {
+    rmSync(root, { recursive: true, force: true });
+  }
+});
+
 await test("patch_concept — graph 배열 patch 는 배열 string item 만 허용", async () => {
   const root = makeVault([
     { slug: "foo", content: "---\nkind: project\ntitle: Foo\ndomains: [domains/a]\n---\n" },
@@ -7966,7 +8019,10 @@ await test("reclassify_concept — kind/slug/domain/body and backlinks move toge
   const root = makeVault([
     { slug: "project", content: "---\nkind: project\ntitle: Project\ncontains: [capabilities/claim]\n---\n" },
     { slug: "domains/review", content: "---\nkind: domain\ntitle: Review\n---\n" },
-    { slug: "capabilities/claim", content: "---\nslug: capabilities/claim\nkind: capability\ntitle: Claim\n---\n\n# Claim\n\nA *capability* is one user-visible feature within a domain.\n" },
+    {
+      slug: "capabilities/claim",
+      content: `---\nslug: capabilities/claim\nkind: capability\ntitle: Claim\n---\n\n${defaultBody("capability", "Claim")}\n`,
+    },
   ]);
   try {
     const { responses } = await rpc(root, [
@@ -7991,7 +8047,7 @@ await test("reclassify_concept — kind/slug/domain/body and backlinks move toge
     const claim = getCallParsed(responses, 4);
     assert.equal(claim.frontmatter.kind, "element");
     assert.equal(claim.frontmatter.domain, "domains/review");
-    assert.match(claim.excerpt, /An \*element\*/i);
+    assert.match(claim.excerpt, /distinct implementation role/i);
     assert.deepEqual(getCallParsed(responses, 5).frontmatter.contains, ["elements/claim-entity"]);
   } finally {
     rmSync(root, { recursive: true, force: true });

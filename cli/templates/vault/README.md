@@ -10,12 +10,13 @@ display_en: My ontology vault
 
 This folder is **a codebase mental model that humans and AI agents grow
 together**. Every `.md` file is one node (project / domain / capability /
-element / concept), and the frontmatter at the top of each file is the
-graph's keys (slug / kind / depends_on / capabilities / elements / domain).
+element / document), and the frontmatter at the top of each file is the graph.
 
 In this vault, an ontology is an executable meaning model for a codebase:
-projects, domains, capabilities, elements, and typed relations that explain
-ownership, dependency, evidence, and change impact.
+five authorable kinds and typed relations that explain scope, dependency,
+association, and description. The exact includes/excludes, examples,
+counterexamples, direct `is_a` test, and inference boundary have one source:
+https://github.com/wlsdks/ontology-atlas/blob/main/docs/ONTOLOGY-ATLAS-SPEC.md#2-the-five-authorable-node-kinds-and-reserved-reader-kind
 
 ## Get started in 5 minutes
 
@@ -98,23 +99,14 @@ node $ATLAS/cli/src/index.mjs agent-brief . --verify-fallbacks --json --fallback
 For an agent opened at your codebase root instead of this vault folder, replace
 `.` with the vault path, for example `./ontology`.
 
-## Relations (frontmatter keys)
+## Kinds and relations
 
-| Key | What it expresses |
-|---|---|
-| `depends_on: [<slug>, ...]` | This node depends on other nodes |
-| `capabilities: [...]` | Capabilities this domain / project provides |
-| `elements: [...]` | Elements this capability / domain uses |
-| `domain: <slug>` | Parent domain of this capability/element |
-| `relates: [...]` | Loose related-to references |
-
-## Kinds
-
-- `project` — Top-level. Usually one per workspace.
-- `domain` — A large area (auth, billing, builder, …).
-- `capability` — A user-visible feature inside a domain (login, signup, …).
-- `element` — A smaller unit a capability uses (jwt-token, otp-store, …).
-- `document` — Evidence node (markdown doc backing other concepts).
+Use the specification linked above rather than guessing from a folder name.
+`project`, `domain`, `capability`, `element`, and `document` are authorable;
+`vault-readme` is generated and reserved. `broader:` is a validated storage key
+that the app renders as `is_a`, but the current public MCP relation API does not
+accept `broader` or `is_a`. The connected agent receives the exact guarded
+`patch_concept` fallback in its server instructions.
 
 ## What an AI agent can do for you
 

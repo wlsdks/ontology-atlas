@@ -11,16 +11,18 @@ elements:
 
 # Example capability
 
-A *capability* is one user-visible feature within a domain (login,
-signup, checkout, search, relation editing, …). Rename this file to match
-one of your real capabilities (`capabilities/login.md`,
-`capabilities/checkout.md`) and update the `domain:` and `elements:`
-keys above accordingly.
+A *capability* is an observable ability the product, operator, agent, or a
+dependent system can perform without prescribing the current module or
+framework. A component, package, UI screen, command, workflow step, or README
+heading is not a capability without an independent ability claim.
+
+Kind and relation contract:
+https://github.com/wlsdks/ontology-atlas/blob/main/docs/ONTOLOGY-ATLAS-SPEC.md#2-the-five-authorable-node-kinds-and-reserved-reader-kind
 
 ## How to fill it in
 
-- In the body, describe *what this capability does* and one or two user
-  scenarios.
+- State the observable outcome, its boundary, and one or two acceptance
+  scenarios. Then rename this file and update `domain:` / `elements:`.
 - Frontmatter keys:
   - `domain: <slug>` — the single parent domain
   - `elements: [...]` — slugs of elements this capability uses

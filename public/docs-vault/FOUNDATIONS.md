@@ -23,9 +23,11 @@ The word is older than software (Aristotle's *categories of being*), but our usa
   conceptualization"* — a representational vocabulary (classes, relations, functions, objects) for a
   shared domain, designed so knowledge can be **shared and reused** across AI systems.
   → Our vault's markdown frontmatter *is* "an explicit specification of a conceptualization" of a
-  codebase; `project / domain / capability / element / document` + the relation vocabulary implemented
-  by the schema are our explicit concept-and-relation model. The name is earned by that meaning model,
-  not by pretending the files implement a standard they do not.
+  codebase. The exact Atlas application model — five authorable kinds, one reserved reader kind,
+  relation support layers, `is_a` test, and inference boundary — lives only in
+  [`ONTOLOGY-ATLAS-SPEC.md` §2](ONTOLOGY-ATLAS-SPEC.md#2-the-five-authorable-node-kinds-and-reserved-reader-kind).
+  The name is earned by that shared meaning model, not by pretending the files implement a standard
+  they do not.
 - **Studer, Benjamins & Fensel (1998)** sharpened it to the canonical four-part definition:
   *"a **formal, explicit specification** of a **shared conceptualization**."* Word by word:
   *conceptualization* = an abstract model of phenomena; *explicit* = concept types and constraints
@@ -44,18 +46,22 @@ The word is older than software (Aristotle's *categories of being*), but our usa
 
 The W3C Semantic Web stack is the standard reference frame:
 
-- **RDF (2014)** — RDF graphs are sets of subject-predicate-object triples whose terms are IRIs,
-  blank nodes, or datatyped literals. An Atlas edge can be *mapped* to a triple-like statement, but the
-  vault itself is not an RDF serialization and does not inherit RDF identity or entailment semantics.
+- **RDF 1.1 (2014 Recommendation)** — RDF graphs are sets of subject-predicate-object triples whose
+  terms are IRIs, blank nodes, or datatyped literals. RDF 1.2 reached Candidate Recommendation Snapshot
+  on 2026-04-07; that work-in-progress status is not an endorsement or an Atlas compatibility claim.
+  An Atlas edge can be *mapped* to a triple-like statement, but the vault itself is not an RDF
+  serialization and does not inherit RDF identity or entailment semantics.
 - **OWL 2 (2012)** — the **heavyweight** end: classes/properties/individuals with **description-logic
   reasoning** (consistency checking, classification, inference) under an open-world assumption. Atlas
   does not adopt OWL vocabulary, class/individual semantics, or inference. Missing Atlas evidence is
   `unknown`/a visible gap according to our application contract, not an OWL entailment result.
-- **SKOS (2009)** — the **lightweight** end: `skos:Concept` + `broader`/`narrower`/`related`, a
-  “concept scheme over strict logic.” This is conceptual precedent, not a conformance claim.
-- **SHACL (2017)** — validates an RDF data graph against a separate shapes graph and returns a
-  validation report; it does not make OWL a closed-world schema language. Atlas's validator plays an
-  analogous product role over Markdown, but it is an Atlas schema validator, not a SHACL processor.
+- **SKOS (2009)** — the **lightweight** end: `skos:Concept` + `broader`/`narrower`/`related`.
+  `skos:broader` names a direct broader link and is not itself transitive; Atlas borrows that caution,
+  not SKOS semantics or conformance.
+- **SHACL 1.0 (2017 Recommendation)** — validates an RDF data graph against a separate shapes graph
+  and returns a validation report; it does not make OWL a closed-world schema language. SHACL 1.2 Core
+  was still a Working Draft on 2026-08-03. Atlas's validator plays an analogous product role over
+  Markdown, but it is an Atlas schema validator, not a SHACL processor.
 
 > **Our position on the spectrum:** a lightweight, application-specific ontology and executable
 > meaning model — more structured than tags, deliberately less expressive than RDF/OWL. Human-and-agent
@@ -123,6 +129,12 @@ single confidence score.
 Structural metrics and automated judges are diagnostic signals, not acceptance authorities. OOPS! and
 OntoClean can expose modeling pitfalls; LLM graph judges can help triage noisy extraction; none replaces
 domain requirements, exact witnesses, counterexamples, or independent task-level evaluation.
+
+For Atlas, the conservative direct-subsumption test is executable prose, not a reasoner claim: both
+endpoints have the same `domain`/`capability`/`element` kind, every valid narrower example satisfies the
+broader definition, the distinction is not synonymy or membership/part/dependency/sequence, and no known
+accepted concept fits between them. The normative rule and current `broader` write boundary live in the
+same [meta-model contract](ONTOLOGY-ATLAS-SPEC.md#22-direct-is_a--broader-test).
 
 ---
 
@@ -314,6 +326,7 @@ without claiming RDF/OWL/SKOS conformance. That is the thing to make excellent.
 - Studer, R., Benjamins, V. R., & Fensel, D. (1998). *Knowledge Engineering: Principles and Methods.* Data & Knowledge Engineering 25(1-2). DOI 10.1016/S0169-023X(97)00056-6 — *peer-reviewed*
 - Noy, N. F., & McGuinness, D. L. (2001). *Ontology Development 101.* Stanford KSL-01-05 / SMI-2001-0880 · https://protege.stanford.edu/publications/ontology_development/ontology101.pdf — *tech report*
 - W3C (2014). *RDF 1.1 Concepts and Abstract Syntax.* https://www.w3.org/TR/rdf11-concepts/ — *W3C Recommendation*
+- W3C (2026). *RDF 1.2 Concepts and Abstract Syntax.* https://www.w3.org/TR/rdf12-concepts/ — *Candidate Recommendation Snapshot, 2026-04-07; work in progress*
 - W3C (2012). *OWL 2 Document Overview (2nd ed.).* https://www.w3.org/TR/owl2-overview/ — *W3C Recommendation*
 - W3C (2009). *SKOS Reference.* https://www.w3.org/TR/skos-reference/ — *W3C Recommendation*
 - Grüninger, M., & Fox, M. S. (1995). *Methodology for the Design and Evaluation of Ontologies.* IJCAI-95 Workshop on Basic Ontological Issues in Knowledge Sharing · https://eil.utoronto.ca/wp-content/uploads/enterprise-modelling/papers/gruninger-ijcai95.pdf — *peer-reviewed workshop paper*
@@ -325,6 +338,7 @@ without claiming RDF/OWL/SKOS conformance. That is the thing to make excellent.
 - Suárez-Figueroa, M. C., Gómez-Pérez, A., Motta, E., & Gangemi, A. (eds., 2012). *Ontology Engineering in a Networked World.* Springer · https://link.springer.com/book/10.1007/978-3-642-24794-1 — *peer-reviewed edited volume; NeOn methodology*
 - Poveda-Villalón, M., Fernández-Izquierdo, A., Fernández-López, M., & García-Castro, R. (2022). *LOT: An industrial oriented ontology engineering framework.* Engineering Applications of Artificial Intelligence 111. DOI 10.1016/j.engappai.2022.104755 — *peer-reviewed, open access*
 - W3C (2017). *Shapes Constraint Language (SHACL).* https://www.w3.org/TR/shacl/ — *W3C Recommendation*
+- W3C (2026). *Shapes Constraint Language (SHACL) 1.2 Core.* https://www.w3.org/TR/shacl12-core/ — *Working Draft, 2026-08-03; work in progress*
 - W3C (2013). *PROV-O: The PROV Ontology.* https://www.w3.org/TR/prov-o/ — *W3C Recommendation*
 
 **Agent memory & LLM × KG**

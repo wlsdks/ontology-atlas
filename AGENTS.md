@@ -13,9 +13,11 @@ domain/capability context, implementation evidence, impact boundary, and
 verification path that explain why a code artifact matters.
 
 In this project, **ontology** means the executable meaning model of a
-business/product and the codebase that realizes it: `project`, `domain`,
-`capability`, and `element` nodes plus typed relations that explain intent,
-ownership, dependencies, evidence, and impact for humans and AI agents.
+business/product and the codebase that realizes it. The five authorable kinds,
+reserved reader kind, exact relation support layers, `is_a` test, and
+RDF/OWL/SKOS/SHACL non-conformance boundary have one authority:
+`docs/ONTOLOGY-ATLAS-SPEC.md` §2/§5. Do not maintain another kind/relation
+glossary here; this guide owns contributor workflow, not the public meta-model.
 
 **Identity (2026-07): agent-native, human-sovereign.** Not "memory for agents"
 (machine-only stores lose to automation scale) and not another wiki (human-only

@@ -69,9 +69,12 @@ Launch framing (v4, 2026-05-18):
 
 Working definition: an ontology here is not just a topology visualization or a
 generic knowledge base. It is the executable meaning model of a product and the
-codebase that realizes it: `project`, `domain`, `capability`, and `element`
-nodes plus typed relations that explain business intent, ownership, dependency,
-evidence, and impact for decision-makers, operators, developers, and AI agents.
+codebase that realizes it, written as five authorable kinds and the typed
+frontmatter relations Atlas actually implements. The exact discriminator,
+`broader`/`is_a` support boundary, and non-inference contract have one authority:
+[`ONTOLOGY-ATLAS-SPEC.md` §2](ONTOLOGY-ATLAS-SPEC.md#2-the-five-authorable-node-kinds-and-reserved-reader-kind).
+This direction document decides why the product exists; it does not maintain a
+second schema glossary.
 
 ### What Atlas should turn into ontology nodes, and what it should not
 
@@ -80,17 +83,12 @@ structure index**. It should make the product/business legible from the graph,
 then let a developer or AI agent trace that meaning down to the implementation
 that proves it.
 
-The primary artifact is the **business-to-code meaning layer**:
-
-1. **Domain** — the stable vocabulary / ownership boundary that explains why a
-   group of capabilities belongs together. A domain may be business-facing
-   ("pipeline", "billing", "risk") or system-facing ("agent handoff",
-   "local vault") as long as it anchors decisions.
-2. **Capability** — the business/product behavior or workflow the organization,
-   product, or codebase can perform.
-3. **Element** — the concrete code artifact, command, route, component, schema,
-   hook, or module that realizes or proves a capability.
-4. **Project** — the product/system scope that contains the model.
+The primary artifact is the **business-to-code meaning layer**. People normally
+read it in the order project outcome → responsibility domain → observable
+capability → implementation element, with `document` nodes preserving the ADR,
+policy, runbook, or reference material that explains those concepts. That is a
+reading path, not a second kind definition; the normative includes, excludes,
+examples, and counterexamples stay in the specification above.
 
 Business concepts are first-class when they are load-bearing: they define the
 market/category, operating model, user-visible behavior, policy, ownership,
@@ -99,10 +97,11 @@ useful ontology terms when they help a planner, marketer, C-level decision-maker
 developer, or AI agent understand what the business does and which capabilities
 and systems carry it.
 
-Source code structure enters as proof and traceability. A file path by itself
-starts as an `element`; it should be promoted to a `capability` only when the
-agent can cite behavior/workflow evidence, and to a `domain` only when multiple
-capabilities share the same vocabulary or ownership boundary.
+Source code structure enters as proof and traceability. A file path by itself is
+evidence, not a node. It earns an `element` only when its distinct implementation
+role helps answer a product, impact, or verification question. It earns a
+`capability` or `domain` only through the independent semantic tests in the
+specification; a folder, team, technology, or workflow name never promotes itself.
 
 The product should therefore optimize the loop:
 

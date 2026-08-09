@@ -9,13 +9,18 @@ domain: domains/example-domain
 
 # Example element
 
-An *element* is a smaller unit a capability uses (jwt-token, otp-store,
-indexeddb-adapter, sigma-canvas, …). Rename this file to match a real
-element (`elements/jwt-token.md`) and set `domain:` to the right parent.
+An *element* is a distinct implementation role that realizes or proves a
+capability and has evidence someone can open. A bare path, import edge, or
+dependency name is evidence—not a concept by itself. Name the role; put its
+canonical repository-relative entrypoint in `path:`.
+
+Kind and relation contract:
+https://github.com/wlsdks/ontology-atlas/blob/main/docs/ONTOLOGY-ATLAS-SPEC.md#2-the-five-authorable-node-kinds-and-reserved-reader-kind
 
 ## How to fill it in
 
-- One or two paragraphs in the body covering *what / why / which interface*.
+- Describe what role this element plays, which capability it realizes or proves,
+  and the path or interface that verifies the claim.
 - Frontmatter keys:
   - `domain: <slug>` — the single parent domain
   - `path: <src/...>` — code path this element corresponds to (optional)

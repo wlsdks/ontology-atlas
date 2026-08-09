@@ -14,7 +14,8 @@ created_by: human
 하나의 볼트 안에서 여러 project 노드를 목록화·조회·편집·공유하는 관리 영역.
 
 ## 근거
-- AGENTS.md: Project overview (project/domain/capability/element kind 위계, 다중 프로젝트 컨테인먼트)
+- AGENTS.md: Project overview (project→domain→capability→element 읽기 spine,
+  다중 프로젝트 컨테인먼트)
 - src/features/project-edit, project-quick-edit, project-share (구현 증거)
 
 ## 포함 / 제외

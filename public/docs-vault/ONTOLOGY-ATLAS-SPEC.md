@@ -24,10 +24,11 @@ frontmatter 스키마를 **공개 명세로 승격**한 것이다. v2는 모든 
 
 핵심 요지:
 
-- **포맷**: 평문 마크다운 + YAML frontmatter. 5 종 kind (`project` /
-  `domain` / `capability` / `element` / `document`) + 타입이 있는 관계
-  (`domains` / `capabilities` / `elements` / `depends_on` / `relates` /
-  `contains` / `describes`).
+- **포맷**: 평문 마크다운 + YAML frontmatter. 저자가 만드는 5종 kind
+  (`project` / `domain` / `capability` / `element` / `document`)와 도구가 만든
+  예약 reader kind `vault-readme`. 관계의 저장 키·화면 이름·MCP query/write
+  지원 범위는 §5의 한 표가 정본이며, 특히 `broader`→`is_a`는 현재 일반
+  relation API에 없는 frontmatter/UI 경로임을 숨기지 않는다.
 - **왜 명세가 필요한가**: "사람이 읽고, 에이전트가 유지하고, git 이 추적하는
   구조화된 프로젝트 메모리"의 표준 자리가 비어 있다 — MCP 는 프로토콜이지
   포맷이 아니고, 기존 에이전트 메모리 포맷들은 특정 프레임워크에 종속적이다.
@@ -109,28 +110,77 @@ renders the vault) or both levels (e.g. an MCP server or CLI that also
 writes nodes). This repository's own `mcp/` package and `cli/` package are
 both Level 2.
 
-## 2. The five node kinds
+## 2. The five authorable node kinds and reserved reader kind
 
-Every ontology node is a single `.md` file whose YAML frontmatter includes a
-`kind` key. The recognized values are defined by `VAULT_KINDS` in
-`mcp/src/schema.mjs` (mirrored in `cli/src/lib/schema.mjs`):
+This section is the **normative semantic contract** for deciding what becomes
+an Atlas concept, which kind it receives, and what the relation vocabulary does
+and does not mean. `mcp/src/schema.mjs` remains the mechanical frontmatter
+source; schema starters, agent prompts, and construction skills point here
+instead of maintaining another kind test.
+
+Every authored ontology node is a single `.md` file whose YAML frontmatter
+includes a `kind` key. A writer accepts exactly the five values defined by
+`VAULT_KINDS` in `mcp/src/schema.mjs` (mirrored in
+`cli/src/lib/schema.mjs`):
 
 ```js
 export const VAULT_KINDS = ['project', 'domain', 'capability', 'element', 'document'];
 ```
 
-| kind | meaning | typical parent | typical children |
-|---|---|---|---|
-| `project` | top-level deliverable this vault describes | — (root) | `domain`, direct `capability`/`element` |
-| `domain` | a functional grouping inside the project (auth, billing, search, …) | `project` | `capability` |
-| `capability` | one user-visible or agent-visible unit of behavior inside a domain | `domain` | `element` |
-| `element` | a distinct implementation role a capability uses — supported by a file/module path, library, or external dependency | `capability` or `domain` | — (leaf) |
-| `document` | narrative or reference material tied to the graph but not itself a domain object (an ADR, a design doc, a README) | any | — |
+Choose a kind by the concept's job in the shared decision model, not by file
+location, owner, team name, or size:
 
-A sixth value, `vault-readme`, appears in the runtime's `KNOWN_VAULT_KINDS`
-enum (`src/shared/lib/validate-vault-document.ts`) but is **reserved for the
-tool-generated vault README** — conformant writers MUST NOT set
-`kind: vault-readme` on a hand- or agent-authored node.
+| kind | positive test | includes | excludes | example | counterexample |
+|---|---|---|---|---|---|
+| `project` | Can its definition finish “this product/system exists so that …” and set the scope for the rest of the graph? | one deliverable, product, service, or system outcome represented by this vault | repository language, monorepo shape, department, release phase, or a folder named `project` | “A local workbench that keeps a product meaning model shared between people and agents.” | “A TypeScript monorepo.” |
+| `domain` | Is it a durable responsibility, problem, vocabulary, or ownership boundary that groups coherent capabilities and would survive an implementation rewrite? | billing, identity, fulfillment, agent handoff, local-vault stewardship when each names a decision boundary | source/package folder, team/org chart, technology, document section, lifecycle phase, generic “platform”, or a workflow name with no independent responsibility evidence | “Identity owns authentication and account-access policy.” | “The `src/auth` folder” or “the authentication team.” |
+| `capability` | Does it state an observable ability the product/system can perform without prescribing its current module or framework? | user-, operator-, agent-, or dependent-system-visible ability; a shipped or explicitly bounded planned ability | component/package/service noun, isolated process step, UI screen, command name, workflow diagram, or README heading without an ability claim | “Issue a revocable session token after successful authentication.” | “Token controller”, “login workflow”, or `src/token/`. |
+| `element` | Does it name a distinct implementation role that realizes or proves a capability, with evidence someone can open? | application, service, package, module, schema, command, API, UI surface, integration, or file-level role when its responsibility differs from siblings | bare path, import edge, dependency name with no role, one-node-per-file mirror, or an unresolved relation string | “JWT signer” with `path: src/auth/jwt-signer.ts`. | `src/auth/jwt-signer.ts` used as the title merely because the file exists. |
+| `document` | Is the thing itself a narrative or reference artifact whose product value is explaining, deciding, constraining, or operating another concept? | ADR, RFC, policy, runbook, design brief, or README that matters as a document | code artifact merely stored under `docs/`, process steps turned into nodes, or the generated vault README sentinel | “ADR: Local-first persistence” describing the local-vault domain. | “Authentication service” classified as a document because its README describes it. |
+
+The runtime also recognizes a sixth value, `vault-readme`, through
+`KNOWN_VAULT_KINDS` (`src/shared/lib/validate-vault-document.ts`). It is a
+**reserved reader kind** for the Atlas-generated vault README, not a sixth
+authoring choice. Conformant writers MUST NOT set it on a hand- or agent-authored
+node.
+
+### 2.1 Evidence does not promote itself
+
+A folder, package, team, technology, workflow, README heading, route, or class
+name is an observed label or implementation clue. It does not become a domain
+or capability until independent semantic evidence establishes the positive test
+above, a non-circular definition, includes/excludes, and the authority that may
+approve it. A path may support an `element`, but even there the node names the
+role, not the path. Process order remains source-bound evidence or a derived
+Skills view; it is not silently promoted into a sixth kind or inferred graph.
+
+### 2.2 Direct `is_a` / `broader` test
+
+Atlas uses `is_a` only as an application-level **direct subsumption** claim.
+The on-disk statement `narrower.broader: [broader]` is eligible only when all of
+these are true:
+
+1. Both endpoints resolve and have the same kind: `domain`→`domain`,
+   `capability`→`capability`, or `element`→`element`.
+2. Every valid example covered by the narrower definition would, by definition,
+   also satisfy the broader definition. A counterexample rejects the edge.
+3. The narrower adds a real distinguishing condition; it is not merely a synonym
+   or alternate label for the broader concept.
+4. The edge is direct: no known accepted concept fits between the two definitions.
+5. Evidence establishes the meaning, not only same-domain membership, name
+   similarity, folder nesting, team ownership, call order, or import structure.
+
+Reject `is_a` when the intended predicate is instance/member-of, part/contains,
+depends-on, precedes/follows, describes, or synonymy. OntoClean's warning that
+subsumption is often overloaded and the practical superclass test from
+[Ontology Development 101](https://protege.stanford.edu/publications/ontology_development/ontology101.pdf)
+motivate this gate. Atlas does not implement their formal class/instance model:
+the test is a conservative application authoring rule.
+
+The storage word `broader` is informed by SKOS's direct broader-link precedent,
+where `skos:broader` itself is not transitive. Atlas does **not** claim SKOS
+conformance and does not materialize `narrower`, transitive `is_a`, inherited
+properties, or inferred edges. [W3C SKOS Reference](https://www.w3.org/TR/skos-reference/)
 
 Any frontmatter with a `kind` value outside these six is flagged by the
 validator as `unknown-kind` (§6) — a warning, not a hard parse failure, so a
@@ -182,6 +232,7 @@ practice, or it contains nothing).
 | `capabilities` | array default `[]` | slugs of child `capability` nodes |
 | `depends_on` | optional | domain-level dependency edges |
 | `relates` | optional | |
+| `broader` | optional | direct same-kind broader domain; §2.2 and §5 apply |
 | `description` | optional | |
 
 No `requiredExtras`.
@@ -192,8 +243,10 @@ No `requiredExtras`.
 |---|---|---|
 | `elements` | array default `[]` | slugs of child `element` nodes |
 | `domain` | **strongly expected** (`requiredExtras: ['domain']`) | parent domain slug |
+| `path` | optional | canonical repo-relative implementation entrypoint |
 | `depends_on` | optional | |
 | `relates` | optional | |
+| `broader` | optional | direct same-kind broader capability; §2.2 and §5 apply |
 | `description` | optional | |
 
 `domain` is not a hard MUST at parse time (a capability without it still
@@ -210,6 +263,7 @@ tooling.
 | `path` | optional | repo-relative source path this element documents |
 | `depends_on` | optional | |
 | `relates` | optional | |
+| `broader` | optional | direct same-kind broader element; §2.2 and §5 apply |
 | `description` | optional | |
 
 Elements have no `arrayDefaults` — no array key is auto-emitted on creation.
@@ -299,52 +353,89 @@ it as a `warnings` array entry) and a validator SHOULD flag it (§6,
 
 ## 5. Relation types and their semantics
 
-Relations are expressed two ways in frontmatter, both resolved into the same
-canonical edge set by a Level 2 implementation's compiler:
+There are three names to keep separate:
 
-1. **Array-valued containment/reference keys** — `domains`, `capabilities`,
-   `elements`, `dependencies` (public name `depends_on`), `relates`,
-   `contains`, `describes`. Each is a list of slugs (or aliases). These keys
-   are the `GRAPH_ARRAY_KEYS` set recognized by both the schema
-   (`mcp/src/schema.mjs`) and the validator
-   (`src/shared/lib/validate-vault-document.ts`).
-2. **Inline scalar parent key** — `domain` (a single slug, not an array) on
-   `capability` and `element` nodes, expressing "this node's parent domain
-   is X."
+- **storage key** — what is written in Markdown frontmatter;
+- **compiled/query relation** — the `via`/filter vocabulary returned by the
+  MCP graph engine;
+- **display meaning** — the human-facing predicate the app draws.
 
-| key (frontmatter) | public/edge name | direction | typical use |
-|---|---|---|---|
-| `domains` | `contains` (project→domain) | outgoing | project owns these domains |
-| `capabilities` | `contains` (domain→capability, or project→capability) | outgoing | parent owns these capabilities |
-| `elements` | `contains` (capability→element) | outgoing | parent owns these elements |
-| `domain` | `contains`, inverse direction | outgoing (single) | this capability/element's parent domain |
-| `dependencies` | `depends_on` | outgoing | this node functionally depends on the target |
-| `relates` | `relates` | non-directional / associative | loose cross-reference with no ownership or dependency implication |
-| `contains` | `contains` | outgoing | generic containment when the more specific `domains`/`capabilities`/`elements` shape doesn't apply |
-| `describes` | `describes` | outgoing | a `document` node explains/documents the target |
+They overlap but are not identical. In particular, `broader` is a valid,
+validated storage key and renders as `is_a`, while the current public MCP
+relation query/write enums do not include either name. A conformant tool MUST
+not hide that support boundary or invent an API that does not exist.
 
-Notes a conformant implementation MUST honor:
+| meaning | storage key and cardinality | intended source → target | direction and inverse read | public MCP relation API | inference and absence |
+|---|---|---|---|---|---|
+| project domains | `domains: []` | `project` → `domain` | parent→child; incoming/backlink is derived for reading, never written automatically | query/write type `domains` | no general inverse or transitive fact; project-scope BFS is the bounded application derivation in §4 |
+| contained capabilities | `capabilities: []` | `project`/`domain`, or an earned same-kind bridge, → `capability` | parent→child; backlink only | query/write type `capabilities` | folder nesting does not create it |
+| contained elements | `elements: []` | `project`/`domain`/`capability`, or an earned same-kind bridge, → `element` | parent→child; backlink only | query/write type `elements` | a path or import does not create it |
+| domain membership | `domain: <slug>` scalar | `capability`/`element` → `domain` | stored child→parent; containment views may display parent→child without writing an inverse | query/write type `domain` | no `project:` field is inferred; project membership is derived by §4 BFS |
+| generic containment | `contains: []` | authorable node → authorable node when the specific keys above do not fit | parent→child; backlink only | query/write type `contains` | physical directory containment is not semantic containment |
+| semantic dependency | canonical writer key `dependencies: []`; readers also accept `depends_on: []` | any authorable concept → required authorable concept | source depends on target; reverse is `depended_on_by`/backlink, not another `depends_on` | write type `depends_on`; compiled/query inputs may expose stored `dependencies` and normalized `depends_on` | not transitive; absence is unknown, not “no impact”; rationale and approval are required for a new semantic claim |
+| loose association | `relates: []` | any authorable concept ↔ any authorable concept | symmetric meaning; one stored assertion is sufficient, but no reciprocal frontmatter is auto-written | query/write type `relates` | not transitive and implies no causality, ownership, similarity score, or interchangeability |
+| description | `describes: []` | normally `document` → authorable concept | document→described target; reverse is a backlink only | query/write type `describes` | does not make the document the source evidence for every claim in the target |
+| direct subsumption | `broader: []` | same-kind `domain`→`domain`, `capability`→`capability`, or `element`→`element` | narrower→direct broader; UI displays `is_a`; narrower-side read is a backlink only | **not accepted** by current relation query/write enums; read frontmatter with `get_concept`, then guarded full-array `patch_concept` | §2.2 test required; no inverse, transitive closure, inheritance, or reasoner |
 
-- `depends_on` is the **public name**; the canonical frontmatter storage key
-  is `dependencies`. A Level 2 writer accepting `depends_on` as an argument
-  MUST normalize it to `dependencies` before writing frontmatter, and a
-  reader exposing relation names to a human or agent SHOULD show `depends_on`
-  even though the on-disk key is `dependencies` (this repo's `query_ontology`
-  does exactly this dual-naming in `match_edges.relationType` /
-  `node_profile` / `domain_matrix` outputs).
-- All array-valued relation keys are stored as **canonical sets**: trimmed,
-  deduplicated, and sorted (`localeCompare`, `'en'` locale) — see
-  `normalizeGraphArray` in `mcp/src/schema.mjs`. A Level 2 writer MUST
-  produce this canonical form on every write so that re-running the same
-  logical edge set twice produces zero diff noise in git. A Level 1 reader
-  MUST NOT assume order carries meaning even when it encounters a
-  non-canonical (unsorted or duplicated) array — that is a documented,
-  advisory-only drift state (§6, `non-canonical-graph-array`), not a parse
-  error.
-- Relation semantics are directional in intent (`depends_on`, `contains`,
-  `describes` all express "A points at B") except `relates`, which is
-  intentionally the loose, non-committal edge for "these are connected
-  somehow" without asserting ownership or dependency.
+`dependencies` is the canonical frontmatter key written by
+`add_relation(type: "depends_on")`. Some legacy/imported documents use
+`depends_on`; readers and validators keep accepting it, but a Level 2 writer
+SHOULD emit `dependencies` so the on-disk shape converges.
+
+To change `broader` on an existing node with the current MCP surface:
+
+1. `get_concept({slug})` and capture the returned `mtime` and complete current
+   `frontmatter.broader` array;
+2. apply the intended add/remove to that complete array locally;
+3. call `patch_concept({slug, frontmatter:{broader:[...complete post-change
+   set...]}, expected_mtime:<captured>})`;
+4. call `validate_vault({})` and inspect the compiled/UI edge.
+
+Do not call `add_relation(type:"is_a")` or
+`query_ontology({operation:"relation_check", type:"broader"})`: neither value
+exists in those public enums today. This fallback is explicit debt, not an
+argument that the surfaces are already unified.
+
+All array-valued relation keys are stored as **canonical sets**: trimmed,
+deduplicated, and sorted (`localeCompare`, `'en'` locale) by
+`normalizeGraphArray` in `mcp/src/schema.mjs`. A reader MUST NOT infer meaning
+from array order.
+
+### 5.1 World and inference boundary
+
+Atlas uses an **explicit-claim, visible-gap** application contract:
+
+- a persisted relation is a declared claim, not a reasoner entailment or proof
+  that the source repository currently supports it;
+- an absent relation is `unknown` or a visible gap, not a negative fact and not
+  proof that the graph is complete;
+- validation may close over the scanned vault for local rules such as known
+  kinds, UUID shape, canonical arrays, and resolved references. That bounded
+  validation behavior is neither an OWL open-world implementation nor a claim
+  that Atlas uses a general closed-world logic;
+- backlinks, normalized containment views, project-scope BFS, and graph
+  traversal (`find_path`, `reachability`) are application read operations. They
+  do not write inverse, transitive, inherited, or newly entailed relations.
+
+### 5.2 Standards boundary
+
+Machine-readable does not mean formally equivalent to a standards stack.
+RDF defines an IRI-based triple data model and separate entailment semantics;
+OWL 2 adds formally defined class/property/individual semantics and reasoning;
+SHACL validates RDF data graphs against shapes graphs; SKOS defines an RDF
+vocabulary for concept schemes. Atlas may export or map a bounded graph shape,
+but its Markdown vault is not an RDF serialization and its validator/query
+engine is not an OWL reasoner, SKOS implementation, or SHACL processor.
+
+As of this specification update, RDF 1.1 and SHACL 1.0 remain the published W3C
+Recommendations used for those comparisons. RDF 1.2 was a Candidate
+Recommendation Snapshot on 7 April 2026 and SHACL 1.2 Core a Working Draft on
+3 August 2026; neither work-in-progress document creates Atlas conformance.
+[RDF 1.1](https://www.w3.org/TR/rdf11-concepts/) ·
+[RDF 1.2 status](https://www.w3.org/TR/rdf12-concepts/) ·
+[OWL 2 Overview](https://www.w3.org/TR/owl2-overview/) ·
+[SHACL 1.0](https://www.w3.org/TR/shacl/) ·
+[SHACL 1.2 status](https://www.w3.org/TR/shacl12-core/)
 
 ## 6. Validation semantics — errors vs. advisory warnings
 
@@ -505,6 +596,9 @@ v2.0-rc; tracked as a possible N1+ follow-up, not a v2.0-rc requirement).
   visualization, or UI. Any tool that can parse the frontmatter shape in §3
   and resolve the relations in §5 is a conformant reader regardless of what
   it does with that graph.
+- This spec does not claim RDF, OWL, SKOS, or SHACL conformance and does not
+  define a general inverse, transitive, class-inheritance, or process reasoner.
+  Section 5's bounded application derivations do not change that boundary.
 - This spec does not define authentication, multi-user collaboration, or
   conflict resolution across concurrent editors — the reference
   implementation is single-user/local-first by design (`.claude/rules/local-first.md`);

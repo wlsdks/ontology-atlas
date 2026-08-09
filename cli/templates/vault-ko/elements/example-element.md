@@ -9,13 +9,17 @@ domain: domains/example-domain
 
 # 예시 구성요소
 
-*요소*는 역량이 쓰는 더 작은 단위입니다(jwt-token, otp-store,
-indexeddb-adapter, sigma-canvas, …). 이 파일을 실제 요소 이름으로 바꾸고
-(`elements/jwt-token.md`) `domain:` 을 알맞은 상위로 지정하세요.
+*요소*는 역량을 실현하거나 증명하며 누군가 열어볼 수 있는 근거가 있는 독립된
+구현 역할입니다. 경로, import edge, 의존성 이름은 근거일 뿐 그 자체로 개념이
+아닙니다. 역할을 이름으로 쓰고 정본 저장소 상대 진입점은 `path:`에 적습니다.
+
+kind와 관계 정본:
+https://github.com/wlsdks/ontology-atlas/blob/main/docs/ONTOLOGY-ATLAS-SPEC.md#2-the-five-authorable-node-kinds-and-reserved-reader-kind
 
 ## 어떻게 채우나
 
-- 본문 한두 문단으로 *무엇을 / 왜 / 어떤 인터페이스인지* 를 적습니다.
+- 어떤 역할을 맡고 어느 역량을 실현하거나 증명하며, 어느 경로나 인터페이스로
+  그 주장을 확인할 수 있는지 적습니다.
 - frontmatter 키:
   - `domain: <slug>` — 상위 도메인 하나
   - `path: <src/...>` — 이 요소가 대응하는 코드 경로(선택)

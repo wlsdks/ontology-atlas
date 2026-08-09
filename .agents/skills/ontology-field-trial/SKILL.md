@@ -10,6 +10,12 @@ that claim is to **take the source away** and see whether the vault still
 answers. Everything else — node counts, green checks, a map that looks full —
 measures effort, not usefulness.
 
+Use the
+[Atlas meta-model specification](../../../docs/ONTOLOGY-ATLAS-SPEC.md#2-the-five-authorable-node-kinds-and-reserved-reader-kind)
+as the shared answer key for kind, relation, direct `is_a`, and unsupported
+inference claims. The trial measures whether agents can apply that contract; it
+must not invent a second rubric from the vault it is judging.
+
 Run this as four measurements, in order. Each one produces a number or a list
 that goes in the report. **Do not skip a phase because the previous one looked
 good** — phase 1 has looked good every time, and phases 2–4 are where the

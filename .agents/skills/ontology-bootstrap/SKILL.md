@@ -16,6 +16,13 @@ plain agent connected only to Atlas must still succeed.
 
 ## Meaning contract
 
+The normative five-kind discriminator, relation support matrix, direct
+`is_a` test, and inference/standards boundary live only in the
+[Atlas meta-model specification](../../../docs/ONTOLOGY-ATLAS-SPEC.md#2-the-five-authorable-node-kinds-and-reserved-reader-kind).
+This skill owns the bootstrap sequence and evidence/approval states; it does
+not redefine the model. If the linked file is unavailable, use the compact
+meta-model boundary supplied by the connected Atlas MCP instructions.
+
 Keep these epistemic states separate:
 
 - `observed`: directly present in a returned source excerpt, path, package, or
@@ -128,13 +135,12 @@ counterevidence_or_uncertainty:
 
 Rules:
 
-- Define the project by the outcome it exists to create.
-- Model a domain only when it is a stable responsibility/problem boundary that
-  groups multiple capabilities.
-- Model a capability as an observable ability the product or system provides,
-  independent of its current implementation.
-- Model a concrete package, module, service, schema, or UI surface as an
-  element, not a capability.
+- Apply the specification's positive test and counterexample for every selected
+  kind; do not substitute this workflow's ordering for the kind contract.
+- Define the project by the outcome it exists to create, then preserve the
+  specification's project→domain→capability→element reading order.
+- Treat a concrete package, module, service, schema, UI surface, or file as
+  structural evidence until its distinct element role is stated and cited.
 - Do not stop at package buckets when the read-only import packet exposes an
   exact file endpoint that materially improves change navigation. The model
   may select at most four such endpoints beyond the analyzer's bounded element
@@ -172,7 +178,9 @@ evidence:
 confidence:
 ```
 
-Use containment for ownership/scope and dependency for prerequisite or impact.
+Use the specification's relation matrix for storage name, direction, endpoint
+kinds, inverse behavior, and current MCP support. Use containment for
+ownership/scope and dependency for prerequisite or impact.
 Do not infer dependency merely because two folders import one another; import
 edges are implementation evidence and may justify element-level `depends_on`.
 For an exact file endpoint selected from the import packet, propose

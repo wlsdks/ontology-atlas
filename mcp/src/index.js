@@ -103,6 +103,7 @@ import {
   CONSTRUCTION_RULES_EN,
   ELEMENT_NAMING_RULE_BATCH_EN,
   ELEMENT_NAMING_RULE_EN,
+  META_MODEL_RULES_EN,
 } from './construction-rules.mjs';
 import { appendActivityEntry, buildActivityEntry, readHeartbeatAgent } from './activity-log.mjs';
 import { writeFileSync } from 'node:fs';
@@ -1704,14 +1705,7 @@ Every valid node has both identities: immutable \`uid\` is the permanent machine
 
 ${TOOL_INVENTORY_PLACEHOLDER}
 
-## Kind hierarchy (top → leaf)
-
-- **project** — top-level deliverable (e.g. "auth-platform"). Owns domains / capabilities / elements.
-- **domain** — functional grouping (e.g. "auth", "billing"). Parent of capabilities.
-- **capability** — a coherent unit of behavior (e.g. "token-issue"). Often realized by elements.
-- **element** — concrete piece (library, API, schema, file). Leaf-level.
-- **document** — narrative or reference doc tied to the graph but not a domain object.
-- (\`vault-readme\` is reserved for the auto-generated README.md — agents should not set this kind.)
+${META_MODEL_RULES_EN}
 
 ## Two starting workflows
 
@@ -8673,10 +8667,10 @@ function looksLikeGeneratedStarter(body, kind) {
   if (text.length > 800) return false;
   const markers = {
     project: /One- or two-line summary of this project/i,
-    domain: /A \*domain\* is a large area of the project/i,
-    capability: /A \*capability\* is one user-visible feature/i,
-    element: /implementation element/i,
-    document: /source document/i,
+    domain: /(?:Describe the stable responsibility or problem boundary|A \*domain\* is a large area of the project)/i,
+    capability: /(?:Describe the observable, implementation-independent ability|A \*capability\* is one user-visible feature)/i,
+    element: /(?:Describe the distinct implementation role|implementation element)/i,
+    document: /(?:State what this narrative or reference artifact explains|source document)/i,
   };
   return Boolean(markers[kind]?.test(text));
 }

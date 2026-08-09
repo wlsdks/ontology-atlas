@@ -78,6 +78,10 @@ disconnected, what is stale.*
 Your agent asks those questions over MCP. You read the same answers as a map,
 and every write the agent makes lands as a line in a Markdown file you can diff.
 
+The exact five-kind discriminator, relation support matrix, direct `is_a` test,
+and standards/inference boundary live in the
+[vault specification](docs/ONTOLOGY-ATLAS-SPEC.md#2-the-five-authorable-node-kinds-and-reserved-reader-kind).
+
 ## Status — read this before installing
 
 *Last updated 2026-08-03.*
@@ -333,7 +337,7 @@ That distinction is the one thing worth learning up front: **a path points at
 code, a slug points at a node.** Mixing them is the most common first mistake,
 and `node $ATLAS/cli/src/index.mjs validate` reports it as a dangling reference.
 
-The hierarchy is deliberately small:
+The usual business-to-code reading spine is deliberately small:
 
 ```text
 project
@@ -342,7 +346,10 @@ project
         └── element
 ```
 
-Typed relations add dependency, evidence, containment, and descriptive meaning.
+`document` is the fifth authorable kind and can describe concepts anywhere on
+that spine. Typed relations add dependency, association, containment, and
+descriptive meaning; implementation evidence lives in node paths and bodies,
+not in an invented `evidence` relation.
 The goal is not to index every symbol — a source artifact earns a node when it
 helps a person or an agent understand a capability, trace impact, or run the
 right proof. Curated, not exhaustive.

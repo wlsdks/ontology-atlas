@@ -42,6 +42,60 @@
 
 ---
 
+## 2026-08-09 — Atlas meta-model은 현재 구현의 경계를 숨기지 않는 한 정본이다
+
+**소집**: PO Council 전체 5석(`gpt-5.6-sol`, 동시 실행 한도 4라 서로의 결과를
+보지 않는 두 wave 뒤 전원 반론 라운드) · **트리거**: writer는 5 kind만 만들고
+reader는 예약 `vault-readme`까지 6 kind를 읽으며, `broader`는 schema·validator·
+Workshop에는 있지만 공개 MCP relation query/write enum과 공개 spec 관계 표에는
+없다. 선행 결정인 2026-08-09 「ontology construction quality를 먼저 닫는다」와
+O1.2 → O1.1 → O1.3 순서는 여전히 유효하고, 반증 조건은 아직 관측되지 않았다.
+**루브릭**: 22/24 (Problem 4 · User moment 4 · Differentiation 4 · Ontology 4 ·
+Agent 4 · Verification 2, 치명적 0 없음). 구현 전 dogfood에는 authored `document`와
+`broader`가 각각 0이라 현재 green을 완료 증거로 세지 않는다.
+**결정**: `docs/ONTOLOGY-ATLAS-SPEC.md`의 meaning-model 절을 5 authorable kinds,
+예약 reader kind, kind별 includes/excludes/examples/counterexamples, relation의 storage/
+display/write 층·방향·domain/range·inverse·추론·absence 의미, direct `is_a` 판별,
+RDF/OWL/SKOS/SHACL 비준수 경계의 유일한 공개 정본으로 삼는다. `broader`는
+narrower → direct broader 저장 키이고 UI에서는 `is_a`로 보이지만 현재 공개 MCP
+relation enum에는 없다는 사실을 그대로 밝힌다. 따라서 기존 노드의 이 관계는
+`get_concept`에서 얻은 `mtime`과 전체 post-change `broader` 배열을 넣은
+`patch_concept`로만 안전하게 갱신하고 `validate_vault`로 확인한다. 이 비대칭을
+이번 변경에서 새 enum·tool로 감추지 않는다.
+**적용 규칙**: `FOUNDATIONS`·`PRODUCT-DIRECTION`·schema starter·bootstrap/
+field-trial·MCP/app prompt는 정본 pointer와 자기 채널에 꼭 필요한 최소 fallback만
+둔다. 폴더·package·team·workflow·README heading은 구조/표현만으로 domain이나
+capability가 되지 않는다. `is_a`는 같은 kind 사이에서 narrower의 모든 정당한
+사례가 broader 정의를 만족하고 둘 사이에 더 가까운 개념이 없을 때만 후보이며,
+same-domain·이름 유사성·폴더 중첩은 증거가 아니다. Atlas는 Markdown에 대한
+application validator/query를 제공할 뿐 RDF serialization, OWL reasoning, SKOS/
+SHACL conformance, 자동 inverse/transitive closure를 제공하지 않는다. 새 kind,
+reasoner, public relation enum, UI 추천 로직(O1.1), CQ 체계(O1.3)는 범위 밖이다.
+**검증 규칙**: 첫 구현 증거는 category-error fixture와 consumer deletion probe다.
+folder/team/workflow 자동 승격과 same-domain/name/nesting `is_a`가 실패해야 하며,
+정본 pointer나 compact boundary를 지우면 schema template·MCP/app prompt·skill
+consumer gate 중 실제 소비자가 빨개져야 한다. source/bundled prompt parity와
+guarded `patch_concept(broader)` fallback도 검사한다. 두 시간 안에 소비자를
+깨뜨리는 RED를 만들지 못하면 prose-only glossary로 circuit-break하고 짧은 honesty
+note만 남긴다.
+**서명**: owner — 활성 트랙 다음 작업 진행 승인; Codex — PO Council 소집·범위 결정
+
+**기록된 반대**: 이 작업은 표준 glossary 자체로는 일반적이고 복제하기 쉽다.
+더구나 현재 dogfood가 논쟁 중인 `document`/`broader` 축을 전혀 쓰지 않아 기존
+71-node green과 현재 adversarial suite는 새 계약을 증명하지 않는다. 실제 소비자와
+삭제 시 RED가 없다면 제품 변경이 아니라 문서 정리이므로 CQ/evidence 검증에 시간을
+써야 한다(PO-결·PO-해자의 가장 강한 반대, 나머지 자리도 수용).
+**반증 조건**: 현재 spec/prompt만 받은 source-hidden 사람과 fresh agent가 별도
+정본 없이도 folder/team/workflow, same-domain sibling, `broader/is_a` 방향·쓰기,
+unsupported inference를 세 번 연속 동일하게 판별하거나, 새 정본과 fixture를 준 뒤에도
+같은 사례에서 반복적으로 갈라진다. 전자면 정본의 사용자 가치를 과장한 것이므로
+honesty note로 축소하고, 후자면 문서 pointer가 실행 계약으로 충분하지 않으므로 O1.3의
+evidence/CQ 판정으로 문제를 이관한다.
+**재검토**: 위 source-hidden 비교가 3회 누적되거나 첫 2시간 deletion probe가
+소비자를 깨뜨리지 못할 때.
+
+**상태**: 유효
+
 ## 2026-08-09 — 현재 MCP inventory는 활성 runtime registry에서만 파생한다
 
 **소집**: PO Council 전체 5석(`gpt-5.6-sol`) · **트리거**: 일반 모드의 raw

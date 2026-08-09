@@ -8,6 +8,12 @@
 
 세 질문에 차례로 답합니다.
 
+저장 키·화면 이름·MCP query/write 지원 범위·방향·endpoint kind·inverse·추론
+경계의 정본은
+[Atlas 메타모델 명세](../ONTOLOGY-ATLAS-SPEC.md#5-relation-types-and-their-semantics)입니다.
+이 장은 그 표를 복제하지 않고 사람이 지도와 Markdown에서 관계를 읽는 법만
+설명합니다.
+
 ## 1. 도메인끼리 관계, 생깁니다
 
 방사형으로 보이는 건 **구조(담김) 관계**뿐입니다. 그 위에 **의미 관계**가 따로
@@ -149,19 +155,17 @@ domain: views
 
 ### 관계 키 표
 
-frontmatter 에 쓰는 키와 그래프 관계의 대응입니다.
+정확한 대응은 위 명세 §5 표 하나만 유지합니다. 여기서 기억할 것은 세 층이
+같은 이름 집합이 아니라는 점입니다.
 
-| frontmatter 키 | 그래프 관계 | 방향 | 뜻 |
-|---|---|---|---|
-| `capabilities:` / `elements:` / `contains:` | `contains` | 있음 (부모→자식) | 담는다 |
-| `domain:` / `domains:` | `contains` (역방향 해석) | 있음 | 속한다 |
-| `dependencies:` | `depends_on` | **있음** | 기댄다 |
-| `relates:` | `related_to` | **없음 (대칭)** | 비슷하다 · 함께 읽는다 |
-| `broader:` | `is_a` | **있음** | 상위 개념 (SKOS `skos:broader`) |
-| `describes:` | `describes` | 있음 | 이 문서가 설명하는 대상 |
-
-방향의 단일 출처는 `src/shared/lib/ontology-tree/relations.ts` 의
-`isDirectionalRelation()` 입니다.
+- Markdown은 `dependencies:`를 저장하고 MCP writer는 `depends_on`을 받습니다.
+- Markdown의 `broader:`는 화면에서 `is_a`로 보이지만, 현재 공개 MCP relation
+  query/write enum에는 둘 다 없습니다. 기존 노드를 바꿀 때는 `get_concept`의
+  `mtime`과 전체 post-change `broader` 배열을 넣은 `patch_concept` 뒤
+  `validate_vault`를 사용합니다.
+- `relates`는 대칭 의미지만 reciprocal frontmatter를 자동으로 쓰지 않습니다.
+- backlink와 경로 탐색은 읽기 파생이지 inverse/transitive 관계를 새로 만드는
+  추론이 아닙니다. 빠진 관계는 `unknown`/visible gap이지 거짓이 아닙니다.
 
 ### 지도에서 선의 문법
 
@@ -170,7 +174,7 @@ frontmatter 에 쓰는 키와 그래프 관계의 대응입니다.
 | 선 | 뜻 |
 |---|---|
 | 실선 | 구조: 담김 |
-| 파선 + 굵기 테이퍼 (시작 굵고 끝 얇음) | 방향 있는 관계 (`depends_on` · `is_a`) |
+| 파선 + 굵기 테이퍼 (시작 굵고 끝 얇음) | 방향 있는 화면 관계 (`depends_on` · frontmatter `broader`에서 파생한 `is_a`) |
 | 파선 + 균일한 굵기 | 대칭 관계 (`relates`) |
 
 테이퍼가 **없다는 사실 자체가** "이 관계는 양끝이 대등하다" 는 정보입니다.
