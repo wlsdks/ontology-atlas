@@ -10,6 +10,14 @@
     "builder": { "id": "agent:builder", "authority": "agent" },
     "evaluator": { "id": "agent:evaluator", "authority": "agent" }
   },
+  "purposeAuthority": {
+    "outcome": "Preserve trustworthy commerce decisions.",
+    "decisions": ["Choose the safe release and handoff boundary."],
+    "scope": "Northstar Commerce product meaning and implementation evidence.",
+    "nonGoals": ["Claim RDF or OWL conformance."],
+    "owners": [{ "id": "human:product-owner", "authority": "human" }],
+    "sourceRefs": ["docs/product-brief.md"]
+  },
   "scenarios": [
     {
       "id": "scenario:executive-risk",
@@ -237,6 +245,13 @@
     { "axis": "interoperability", "status": "passed", "evidenceRefs": ["w:round-trip"], "findingIds": [] }
   ],
   "diagnostics": [],
+  "regression": {
+    "baselineQualificationId": "qualification:northstar-commerce:v0",
+    "status": "passed",
+    "priorCqIds": ["cq:executive-risk", "cq:employee-process", "cq:fde-impact", "cq:agent-next-action"],
+    "rerunCqIds": ["cq:executive-risk", "cq:employee-process", "cq:fde-impact", "cq:agent-next-action"],
+    "evidenceRefs": ["w:regression"]
+  },
   "resourceUse": {
     "durationMs": 42000,
     "toolCalls": 12,
@@ -248,6 +263,9 @@
     "decision": "accepted",
     "decidedBy": "human:product-owner",
     "authority": "human",
-    "decidedAt": "2026-08-09T00:00:00.000Z"
+    "decidedAt": "2026-08-09T00:00:00.000Z",
+    "planDigest": "sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+    "planRevision": 1,
+    "acceptedGapIds": []
   }
 }

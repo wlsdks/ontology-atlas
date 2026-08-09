@@ -455,7 +455,10 @@ test('root Cargo package contract is admissible evidence for a feature capabilit
       result.semanticEvidence.some((row) => row.source === 'README.md'),
       'package contract must not displace the mission evidence',
     );
-    assert.equal(result.proposalValidation.canWrite, true);
+    assert.equal(result.proposalValidation.canWrite, false);
+    assert.ok(result.proposalValidation.reviewPlan);
+    assert.equal(result.proposalValidation.writePlan, undefined);
+    assert.equal(result.proposalValidation.constructionLifecycle.writeEligibility, 'reviewable');
   } finally {
     rmSync(root, { recursive: true, force: true });
   }
@@ -1577,9 +1580,12 @@ test('Python import boundary paths can support a validated impact proposal', () 
 
     assert.equal(
       result.proposalValidation.canWrite,
-      true,
+      false,
       JSON.stringify(result.proposalValidation.findings),
     );
+    assert.ok(result.proposalValidation.reviewPlan);
+    assert.equal(result.proposalValidation.writePlan, undefined);
+    assert.equal(result.proposalValidation.constructionLifecycle.writeEligibility, 'reviewable');
     assert.equal(
       result.proposalValidation.gates.competencyQuestionsAnswered,
       true,
@@ -1622,7 +1628,8 @@ test('Python import boundary paths can support a validated impact proposal', () 
     ];
 
     const exactNestedResult = analyzeRepoStructure(root, { proposal: exactNested });
-    assert.equal(exactNestedResult.proposalValidation.canWrite, true);
+    assert.equal(exactNestedResult.proposalValidation.canWrite, false);
+    assert.ok(exactNestedResult.proposalValidation.reviewPlan);
     assert.equal(
       exactNestedResult.elements.some(
         (row) => row.path === 'diagnostic_client/services/requests.py',

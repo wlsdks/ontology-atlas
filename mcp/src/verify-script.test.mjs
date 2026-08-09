@@ -1742,7 +1742,7 @@ describe('verify.mjs first-contact gates', () => {
       {
         name: 'analyze_repo_structure',
         description:
-          'R16 (autonomous ingest base) — analyze a code repository and propose ontology node candidates. side effect 0 (vault frontmatter NOT modified). Returns deterministic candidates the agent should review and selectively pass to add_concept. Use this once when a user asks "bootstrap the ontology". Single source of truth preserved — only the user writes to the vault.',
+          'R16 (autonomous ingest base) — analyze a code repository and propose ontology node candidates. side effect 0 (vault frontmatter NOT modified). Returns deterministic candidates the agent must move through the construction lifecycle. First inspect the reviewPlan, then obtain an independent evaluator packet using constructionQualification:v1; only the exact writePlan is write-authorized. Use this once when a user asks "bootstrap the ontology". Single source of truth preserved — only the user writes to the vault.',
         inputSchema: {
           additionalProperties: false,
           properties: {
@@ -3541,6 +3541,14 @@ describe('verify.mjs first-contact gates', () => {
       toolsListSchemaFailure(withAnalyzeRepoTool({
         ...analyzeRepoTool,
         description: 'Analyze repository.',
+      })),
+      'analyze_repo_structure description missing bootstrap safety guidance',
+    );
+    assert.equal(
+      toolsListSchemaFailure(withAnalyzeRepoTool({
+        ...analyzeRepoTool,
+        description:
+          'R16 — analyze a code repository and propose ontology node candidates. side effect 0 (vault frontmatter NOT modified). Returns deterministic candidates the agent should review and selectively pass to add_concept. Use this once when a user asks "bootstrap the ontology". Single source of truth preserved — only the user writes to the vault.',
       })),
       'analyze_repo_structure description missing bootstrap safety guidance',
     );

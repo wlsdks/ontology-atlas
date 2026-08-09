@@ -183,8 +183,8 @@ const RULES = [
     command: 'pnpm test:mcp:unit',
     reason: 'MCP core unit implementation changed',
     matches: [
-      /^mcp\/src\/(?:analyze|infer-imports|ontology-atlas-ignore|ontology-compiler|ontology-engine|parser|query|validate|vault|index)\.(?:mjs|js)$/,
-      /^mcp\/src\/(?:analyze|infer-imports|ontology-atlas-ignore|ontology-compiler|ontology-engine|parser|query|validate|vault|redirect-backlinks|conflict-detection|json-rpc-lines)\.test\.mjs$/,
+      /^mcp\/src\/(?:analyze|meaning-evaluation|construction-qualification|construction-lifecycle|infer-imports|ontology-atlas-ignore|ontology-compiler|ontology-engine|parser|query|validate|vault|index)\.(?:mjs|js)$/,
+      /^mcp\/src\/(?:analyze|meaning-evaluation|construction-qualification|construction-lifecycle|infer-imports|ontology-atlas-ignore|ontology-compiler|ontology-engine|parser|query|validate|vault|redirect-backlinks|conflict-detection|json-rpc-lines)\.test\.mjs$/,
     ],
   },
   {
@@ -205,7 +205,7 @@ const RULES = [
   {
     command: 'pnpm integration:mcp:repo-analysis',
     reason: 'MCP code-to-vault analysis handler surface changed',
-    matches: [/^mcp\/src\/(?:analyze|infer-imports)\.mjs$/, /^tsconfig\.json$/],
+    matches: [/^mcp\/src\/(?:analyze|meaning-evaluation|construction-qualification|construction-lifecycle|infer-imports)\.mjs$/, /^tsconfig\.json$/],
   },
   {
     command: 'pnpm integration:mcp:vault-read',
@@ -651,6 +651,9 @@ const ESCALATIONS = [
 
 const MCP_DIRECT_UNIT_TESTS = new Map([
   ['mcp/src/analyze.mjs', 'mcp/src/analyze.test.mjs'],
+  ['mcp/src/meaning-evaluation.mjs', 'mcp/src/meaning-evaluation.test.mjs'],
+  ['mcp/src/construction-qualification.mjs', 'mcp/src/construction-qualification.test.mjs'],
+  ['mcp/src/construction-lifecycle.mjs', 'mcp/src/construction-lifecycle.test.mjs'],
   ['mcp/src/infer-imports.mjs', 'mcp/src/infer-imports.test.mjs'],
   ['mcp/src/ontology-atlas-ignore.mjs', 'mcp/src/ontology-atlas-ignore.test.mjs'],
   ['mcp/src/ontology-compiler.mjs', 'mcp/src/ontology-compiler.test.mjs'],

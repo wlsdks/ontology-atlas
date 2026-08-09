@@ -81,6 +81,7 @@
           "ignore",
           "maxDepth",
           "proposal",
+          "qualification",
           "rootPath"
         ],
         "required": []

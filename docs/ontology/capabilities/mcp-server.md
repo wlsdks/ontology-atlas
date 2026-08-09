@@ -47,6 +47,23 @@ stdio JSON-RPC 인터페이스다. 사람과 에이전트가 같은 파일을 �
 - rename/reclassify는 UID를 보존한다. merge는 대상 UID를 보존하고 흡수한 UID를
   `merged_uids`에 기록한다. 일반 patch는 `uid`와 `merged_uids`를 바꿀 수 없다.
 
+## 온톨로지 구축 lifecycle
+
+`analyze_repo_structure`의 complete proposal은 바로 쓰기 권한이 아니다. 첫 호출은
+정확한 `reviewPlan`과 plan/source digest, 여덟 단계 상태, 남은 gap id만 반환하고
+`canWrite:false`를 유지한다. maker와 분리된 evaluator가 사람 owner의 CQ, current
+claim/citation, 일곱 품질축, 전체 source-hidden task, cold-start 또는 이전 CQ regression을
+실행한 뒤 사용자가 그 exact plan과 gap을 승인해야 한다. 같은 proposal과 digest-bound
+`constructionQualification:v1` packet을 다시 제출했을 때만 처음 본 rows와 동일한
+`writePlan`이 풀린다. source/plan drift, maker-only, `not_measured`, red mandatory axis,
+regression 실패, 승인되지 않은 gap은 fail-closed다.
+
+승인은 선언된 provenance이며 신원 인증이나 truth certificate가 아니다. project Markdown은
+기존 competency answer/witness/visible gap을, finalizer receipt는 그 body와 current
+graph/source 결합을 영속한다. 상세 CQ revision·axis·exact gap acceptance·pre-write
+regression은 MCP 응답/agent transcript의 실행 증거이고 재시작 뒤 자동 복원됐다고 말하지
+않는다. 새 tool·kind·sidecar·writer token은 만들지 않는다.
+
 ## 소스 연결
 
 `connect_project_source` / `disconnect_project_source`는 project 노드를 그것이
@@ -154,6 +171,9 @@ element 관계는 `reachability`/`subgraph`의 구조 근거이며 영향이나 
 - `mcp/src/ontology-compiler.mjs` · `mcp/src/ontology-engine.mjs`: compile/query
 - `mcp/src/competency-coverage.mjs` · `mcp/src/meaning-evaluation.mjs`: quantified
   competency coverage와 source-backed proposal write gate
+- `mcp/src/construction-qualification.mjs` · `mcp/src/construction-lifecycle.mjs`:
+  maker-independent categorical qualification, exact plan/source/approval binding, 단계별
+  write eligibility
 - `mcp/src/project-source-inspection.mjs` · `mcp/src/project-source-receipt.mjs`:
   설치 앱과 같은 bounded source currentness 재검증과 public receipt 경계
 - `mcp/src/meaning-repair.mjs` · `mcp/src/project-meaning-inventory.mjs`: 현재 선언,

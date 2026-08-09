@@ -122,6 +122,24 @@ describe('focused check suggestions', () => {
     assert.deepEqual(result.escalations.map((row) => row.command), ['pnpm dogfood:verify']);
   });
 
+  it('suggests lifecycle, qualification, and meaning tests for ontology construction drift', () => {
+    const result = suggestFocusedChecks([
+      'mcp/src/construction-lifecycle.mjs',
+      'mcp/src/construction-qualification.mjs',
+      'mcp/src/meaning-evaluation.mjs',
+    ]);
+
+    assert.deepEqual(result.commands.map((row) => row.command), [
+      'pnpm exec node --test mcp/src/construction-lifecycle.test.mjs',
+      'pnpm exec node --test mcp/src/construction-qualification.test.mjs',
+      'pnpm exec node --test mcp/src/meaning-evaluation.test.mjs',
+      'pnpm test:mcp:unit',
+      'pnpm integration:mcp:repo-analysis',
+      'pnpm dogfood:status',
+    ]);
+    assert.deepEqual(result.escalations.map((row) => row.command), ['pnpm dogfood:verify']);
+  });
+
   it('suggests focused MCP surface integration for server entrypoint changes', () => {
     const result = suggestFocusedChecks(['mcp/src/index.js']);
 

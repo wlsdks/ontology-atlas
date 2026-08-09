@@ -46,6 +46,10 @@ import {
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const SERVER_ENTRY = resolve(__dirname, "index.js");
+const QUALIFIED_CONSTRUCTION_FIXTURE = JSON.parse(readFileSync(
+  resolve(__dirname, "../../tests/fixtures/construction-qualification/qualified.json"),
+  "utf8",
+));
 const EQUALITY_FILTER_KEYS = ["kind", "domain", "slug", "title", "created_by"];
 
 let passed = 0;
@@ -635,8 +639,14 @@ await test("tools/list — 단일 도구 description 이 batch 짝을 cross-refe
     const analyzeRepo = findTool("analyze_repo_structure");
     assert.match(
       analyzeRepo?.description ?? "",
-      /analyze a code repository and propose ontology node candidates[\s\S]*side effect 0 \(vault frontmatter NOT modified\)[\s\S]*Returns deterministic candidates[\s\S]*selectively pass to add_concept[\s\S]*bootstrap the ontology[\s\S]*Single source of truth preserved/i,
+      /analyze a code repository and propose ontology node candidates[\s\S]*side effect 0 \(vault frontmatter NOT modified\)[\s\S]*Returns deterministic candidates[\s\S]*construction lifecycle[\s\S]*reviewPlan[\s\S]*constructionQualification:v1[\s\S]*writePlan[\s\S]*bootstrap the ontology/i,
       "analyze_repo_structure description documents bootstrap safety workflow",
+    );
+    const initializeInstructions = responses.find((response) => response.id === 1)?.result?.instructions ?? "";
+    assert.match(
+      initializeInstructions,
+      /Ontology construction lifecycle[\s\S]*reviewPlan[\s\S]*sourceDigest[\s\S]*separately identified evaluator[\s\S]*declared human provenance[\s\S]*writeEligibility:"executable"[\s\S]*finalize_project_meaning/,
+      "initialize instructions expose the non-bypassable review, evaluation, approval, write, and post-write lifecycle",
     );
     assert.match(
       analyzeRepo?.inputSchema?.properties?.rootPath?.description ?? "",
@@ -657,11 +667,32 @@ await test("tools/list — 단일 도구 description 이 batch 짝을 cross-refe
     assert.equal(analyzeRepo?.inputSchema?.properties?.proposal?.additionalProperties, false);
     assert.deepEqual(analyzeRepo?.inputSchema?.properties?.proposal?.properties?.elements?.items?.required, ["slug", "title", "definition", "evidence", "confidence", "domain", "path"]);
     assert.deepEqual(analyzeRepo?.inputSchema?.properties?.proposal?.properties?.relations?.items?.required, ["from", "to", "type", "why", "evidence", "confidence"]);
+    assert.equal(analyzeRepo?.inputSchema?.additionalProperties, false);
+    assert.deepEqual(analyzeRepo?.inputSchema?.properties?.qualification?.required, [
+      "contract",
+      "qualificationId",
+      "subject",
+      "actors",
+      "purposeAuthority",
+      "scenarios",
+      "competencyQuestions",
+      "witnesses",
+      "cqResults",
+      "claims",
+      "citationChecks",
+      "sourceHiddenTask",
+      "axisResults",
+      "diagnostics",
+      "regression",
+      "resourceUse",
+      "acceptance",
+    ]);
+    assert.equal(analyzeRepo?.inputSchema?.properties?.qualification?.additionalProperties, false);
     const competencyAnswerSchema = analyzeRepo?.inputSchema?.properties?.proposal?.properties?.competencyAnswers?.properties?.scope;
     assert.deepEqual(competencyAnswerSchema?.required, ["answer", "status", "witnesses"]);
     assert.deepEqual(competencyAnswerSchema?.properties?.status?.enum, ["answered", "partial", "visible-gap"]);
     assert.deepEqual(competencyAnswerSchema?.properties?.witnesses?.required, ["concepts", "relations", "evidence", "paths"]);
-    assert.deepEqual(analyzeRepo?.outputSchema?.properties?.proposalValidation?.required, ["status", "canWrite", "summary", "gates", "findings", "nextStep"]);
+    assert.deepEqual(analyzeRepo?.outputSchema?.properties?.proposalValidation?.required, ["status", "canWrite", "summary", "gates", "findings", "constructionLifecycle", "nextStep"]);
     assert.equal(analyzeRepo?.outputSchema?.properties?.proposalValidation?.additionalProperties, false);
     const rustConfigurationSchema = analyzeRepo?.outputSchema?.properties?.configurationEvidence;
     assert.deepEqual(rustConfigurationSchema?.properties?.contract?.enum, ["rustFeatureConfigurationEvidence:v1"]);
@@ -673,6 +704,21 @@ await test("tools/list — 단일 도구 description 이 batch 짝을 cross-refe
     assert.equal(rustConfigurationSchema?.additionalProperties, false);
     assert.deepEqual(analyzeRepo?.outputSchema?.properties?.proposalValidation?.properties?.summary?.required, ["concepts", "relations", "findings", "errors", "warnings"]);
     assert.deepEqual(analyzeRepo?.outputSchema?.properties?.proposalValidation?.properties?.writePlan?.required, ["concepts", "relations", "competencyAnswers"]);
+    assert.deepEqual(analyzeRepo?.outputSchema?.properties?.proposalValidation?.properties?.reviewPlan?.required, ["concepts", "relations", "competencyAnswers"]);
+    assert.deepEqual(analyzeRepo?.outputSchema?.properties?.proposalValidation?.properties?.constructionLifecycle?.required, [
+      "contract",
+      "qualificationStatus",
+      "writeEligibility",
+      "planDigest",
+      "sourceDigest",
+      "planRevision",
+      "firstBlockingPhase",
+      "phases",
+      "diagnostics",
+      "requiredGapIds",
+      "nextAction",
+    ]);
+    assert.equal(analyzeRepo?.outputSchema?.properties?.proposalValidation?.properties?.constructionLifecycle?.properties?.phases?.minItems, 8);
     assert.deepEqual(analyzeRepo?.outputSchema?.properties?.proposalValidation?.properties?.writePlan?.properties?.relations?.items?.required, ["from", "to", "type", "why"]);
     assert.ok(analyzeRepo?.outputSchema?.properties?.proposalValidation?.properties?.gates?.required?.includes("competencyWitnessesResolved"));
     assert.deepEqual(analyzeRepo?.outputSchema?.properties?.extractionContract?.properties?.competencyQuestions?.items?.required, ["id", "type", "question", "priority", "requiredWitnesses"]);
@@ -2287,22 +2333,75 @@ await test("analyze_repo_structure — validates a complete meaning proposal bef
     ]);
     const result = getCallParsed(responses, 2);
     assert.equal(result.proposalValidation.status, "pass");
-    assert.equal(result.proposalValidation.canWrite, true);
+    assert.equal(result.proposalValidation.canWrite, false);
     assert.equal(result.proposalValidation.summary.errors, 0);
     assert.equal(result.proposalValidation.summary.warnings, 1);
     assert.equal(result.proposalValidation.summary.concepts, 3);
     assert.equal(result.proposalValidation.summary.relations, 2);
-    assert.equal(result.proposalValidation.writePlan.concepts.length, 3);
-    assert.equal(result.proposalValidation.writePlan.relations.length, 2);
-    assert.equal(result.proposalValidation.writePlan.competencyAnswers.impact.status, "visible-gap");
+    assert.equal(result.proposalValidation.constructionLifecycle.writeEligibility, "reviewable");
+    assert.equal(result.proposalValidation.constructionLifecycle.phases.length, 8);
+    assert.match(result.proposalValidation.constructionLifecycle.planDigest, /^sha256:[a-f0-9]{64}$/);
+    assert.match(result.proposalValidation.constructionLifecycle.sourceDigest, /^sha256:[a-f0-9]{64}$/);
+    assert.deepEqual(result.proposalValidation.constructionLifecycle.requiredGapIds, [
+      "proposal:visible-competency-gap:competencyAnswers.impact",
+    ]);
+    assert.equal(result.proposalValidation.reviewPlan.concepts.length, 3);
+    assert.equal(result.proposalValidation.writePlan, undefined);
+
+    const qualification = structuredClone(QUALIFIED_CONSTRUCTION_FIXTURE);
+    qualification.qualificationId = "qualification:claims:v1";
+    qualification.subject.projectSlug = "claims";
+    qualification.subject.graphDigest = result.proposalValidation.constructionLifecycle.planDigest;
+    qualification.subject.sourceDigest = result.proposalValidation.constructionLifecycle.sourceDigest;
+    qualification.acceptance.planDigest = result.proposalValidation.constructionLifecycle.planDigest;
+    qualification.acceptance.planRevision = result.proposalValidation.constructionLifecycle.planRevision;
+    qualification.acceptance.acceptedGapIds = result.proposalValidation.constructionLifecycle.requiredGapIds;
+
+    const qualified = await rpc(vaultRoot, [
+      ...INIT_REQUESTS,
+      callTool(2, "analyze_repo_structure", { rootPath: repoRoot, proposal, qualification }),
+    ]);
+    const qualifiedResult = getCallParsed(qualified.responses, 2);
+    assert.equal(qualifiedResult.proposalValidation.status, "pass");
+    assert.equal(qualifiedResult.proposalValidation.canWrite, true);
+    assert.equal(qualifiedResult.proposalValidation.constructionLifecycle.writeEligibility, "executable");
+    assert.deepEqual(
+      qualifiedResult.proposalValidation.writePlan,
+      result.proposalValidation.reviewPlan,
+      "the public writer rows must be byte-for-JSON equal to the reviewed plan",
+    );
+    assert.equal(qualifiedResult.proposalValidation.writePlan.concepts.length, 3);
+    assert.equal(qualifiedResult.proposalValidation.writePlan.relations.length, 2);
+    assert.equal(qualifiedResult.proposalValidation.writePlan.competencyAnswers.impact.status, "visible-gap");
+
+    const sourceHiddenMissing = structuredClone(qualification);
+    sourceHiddenMissing.sourceHiddenTask.status = "not_measured";
+    const blocked = await rpc(vaultRoot, [
+      ...INIT_REQUESTS,
+      callTool(2, "analyze_repo_structure", {
+        rootPath: repoRoot,
+        proposal,
+        qualification: sourceHiddenMissing,
+      }),
+    ]);
+    const blockedResult = getCallParsed(blocked.responses, 2);
+    assert.equal(blockedResult.proposalValidation.canWrite, false);
+    assert.equal(blockedResult.proposalValidation.writePlan, undefined);
+    assert.equal(
+      blockedResult.proposalValidation.constructionLifecycle.firstBlockingPhase,
+      "independent_source_hidden",
+    );
+    assert.ok(blockedResult.proposalValidation.constructionLifecycle.diagnostics.some(
+      ({ code }) => code === "source-hidden-not-measured",
+    ));
 
     const written = await rpc(vaultRoot, [
       ...INIT_REQUESTS,
       callTool(2, "add_concepts", {
-        concepts: result.proposalValidation.writePlan.concepts,
+        concepts: qualifiedResult.proposalValidation.writePlan.concepts,
       }),
       callTool(3, "add_relations", {
-        relations: result.proposalValidation.writePlan.relations,
+        relations: qualifiedResult.proposalValidation.writePlan.relations,
       }),
     ]);
     assert.ok(getCallParsed(written.responses, 2).concepts.every((row) => row.ok));

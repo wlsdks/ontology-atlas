@@ -109,6 +109,14 @@ import { appendActivityEntry, buildActivityEntry, readHeartbeatAgent } from './a
 import { writeFileSync } from 'node:fs';
 import { buildMarkdown, parseFrontmatter } from './parser.mjs';
 import { analyzeRepoStructure } from './analyze.mjs';
+import {
+  CONSTRUCTION_QUALIFICATION_INPUT_SCHEMA,
+} from './construction-qualification.mjs';
+import {
+  CONSTRUCTION_LIFECYCLE_EN,
+  CONSTRUCTION_LIFECYCLE_CONTRACT,
+  CONSTRUCTION_LIFECYCLE_PHASES,
+} from './construction-lifecycle.mjs';
 import { buildAbsorptionPlan, buildSlimPointer } from './absorb.mjs';
 import {
   IMPORT_EDGE_KIND_VALUES,
@@ -852,6 +860,81 @@ const MEANING_WRITE_PLAN_OUTPUT_SCHEMA = Object.freeze({
   required: ['concepts', 'relations', 'competencyAnswers'],
   additionalProperties: false,
 });
+const CONSTRUCTION_LIFECYCLE_OUTPUT_SCHEMA = Object.freeze({
+  type: 'object',
+  properties: {
+    contract: { type: 'string', enum: [CONSTRUCTION_LIFECYCLE_CONTRACT] },
+    qualificationStatus: {
+      type: 'string',
+      enum: ['qualified', 'not_qualified', 'invalid'],
+    },
+    writeEligibility: {
+      type: 'string',
+      enum: ['blocked', 'reviewable', 'executable'],
+    },
+    planDigest: { anyOf: [{ type: 'string', pattern: '^sha256:[a-f0-9]{64}$' }, { type: 'null' }] },
+    sourceDigest: { anyOf: [{ type: 'string', pattern: '^sha256:[a-f0-9]{64}$' }, { type: 'null' }] },
+    planRevision: { type: 'integer', minimum: 1 },
+    firstBlockingPhase: {
+      anyOf: [{ type: 'string', enum: CONSTRUCTION_LIFECYCLE_PHASES }, { type: 'null' }],
+    },
+    phases: {
+      type: 'array',
+      minItems: CONSTRUCTION_LIFECYCLE_PHASES.length,
+      maxItems: CONSTRUCTION_LIFECYCLE_PHASES.length,
+      items: {
+        type: 'object',
+        properties: {
+          id: { type: 'string', enum: CONSTRUCTION_LIFECYCLE_PHASES },
+          status: {
+            type: 'string',
+            enum: ['passed', 'blocked', 'awaiting_approval', 'gap_accepted', 'pending_post_write'],
+          },
+          diagnosticCodes: {
+            type: 'array',
+            uniqueItems: true,
+            items: NON_BLANK_STRING_SCHEMA,
+          },
+        },
+        required: ['id', 'status', 'diagnosticCodes'],
+        additionalProperties: false,
+      },
+    },
+    diagnostics: {
+      type: 'array',
+      items: {
+        type: 'object',
+        properties: {
+          code: NON_BLANK_STRING_SCHEMA,
+          phase: { type: 'string', enum: CONSTRUCTION_LIFECYCLE_PHASES },
+          message: NON_BLANK_STRING_SCHEMA,
+        },
+        required: ['code', 'phase', 'message'],
+        additionalProperties: false,
+      },
+    },
+    requiredGapIds: {
+      type: 'array',
+      uniqueItems: true,
+      items: NON_BLANK_STRING_SCHEMA,
+    },
+    nextAction: NON_BLANK_STRING_SCHEMA,
+  },
+  required: [
+    'contract',
+    'qualificationStatus',
+    'writeEligibility',
+    'planDigest',
+    'sourceDigest',
+    'planRevision',
+    'firstBlockingPhase',
+    'phases',
+    'diagnostics',
+    'requiredGapIds',
+    'nextAction',
+  ],
+  additionalProperties: false,
+});
 const MEANING_PROPOSAL_VALIDATION_OUTPUT_SCHEMA = Object.freeze({
   type: 'object',
   properties: {
@@ -917,10 +1000,12 @@ const MEANING_PROPOSAL_VALIDATION_OUTPUT_SCHEMA = Object.freeze({
         additionalProperties: false,
       },
     },
+    constructionLifecycle: CONSTRUCTION_LIFECYCLE_OUTPUT_SCHEMA,
+    reviewPlan: MEANING_WRITE_PLAN_OUTPUT_SCHEMA,
     writePlan: MEANING_WRITE_PLAN_OUTPUT_SCHEMA,
     nextStep: NON_BLANK_STRING_SCHEMA,
   },
-  required: ['status', 'canWrite', 'summary', 'gates', 'findings', 'nextStep'],
+  required: ['status', 'canWrite', 'summary', 'gates', 'findings', 'constructionLifecycle', 'nextStep'],
   additionalProperties: false,
 });
 const EXTRACTION_CONTRACT_OUTPUT_SCHEMA = Object.freeze({
@@ -1707,6 +1792,8 @@ ${TOOL_INVENTORY_PLACEHOLDER}
 
 ${META_MODEL_RULES_EN}
 
+${CONSTRUCTION_LIFECYCLE_EN}
+
 ## Two starting workflows
 
 ### A. Vault already has nodes (typical) — orient first
@@ -1754,9 +1841,11 @@ When the user says "이 codebase 분석해줘" or you find only starter nodes:
 3. Extract in order: project outcome → stable responsibility domains → observable implementation-independent capabilities → concrete elements → typed relations. A folder, package, team, technology, or README section is not a domain/capability without independent semantic evidence.
 4. Give every proposed domain/capability a non-circular definition, includes/excludes boundary, citation, confidence, and counterevidence/uncertainty. Keep observed facts, proposed meanings, and persisted shared concepts separate.
 5. Answer every \`extractionContract.competencyQuestions\` item with \`answer\`, \`status\` (\`answered\` / \`partial\` / \`visible-gap\`), and typed \`witnesses\` (concepts, exact proposal relations, evidence sources, attached paths). Use \`answered\` only when every \`requiredWitnesses\` kind is present; impact also requires a \`depends_on\` witness. If Atlas exposes a path but not its role, preserve that as partial/visible-gap instead of calling it canonical. Report unsupported assertions, citation gaps, implementation-name leakage, undefined/circular concepts, unresolved conflicts, and question coverage.
-6. Call \`analyze_repo_structure\` again with the complete \`proposal\`: project, domains, capabilities, elements, typed relations, citations, confidence, and every typed competency answer. Fix every error finding; inspect every partial/visible-gap warning. Do not call write tools unless \`proposalValidation.canWrite\` is true and a deterministic \`writePlan\` is present. \`canWrite:true\` with warnings means the gap is preserved, not fully answered.
-7. Show that exact validated graph and obtain explicit user approval. Unknown is a valid result; invented completeness is not. If the user selects a subset, remove rejected endpoints and revalidate the complete subset before writing.
-8. After approval, pass \`writePlan.concepts\` rows unchanged to \`add_concepts\` (chunks of 50). Only when every concept row succeeds, pass the proposal-validated \`writePlan.relations\` rows unchanged to \`add_relations\`. Raw \`infer_imports.moduleEdges\` are never this write plan and must pass the separate import evidence review above. \`canWrite\` proves evidence readiness, not approval, atomicity, or write success. Then run \`validate_vault\`, \`compile_ontology({summary:true})\`, and verify a project → domain → capability → element path.
+6. Call \`analyze_repo_structure\` with the complete \`proposal\` and no \`qualification\`. Fix every error. The first valid response is deliberately non-writing: inspect its exact \`reviewPlan\`, plan/source digests, eight lifecycle phases, warnings, and \`requiredGapIds\`; \`canWrite\` must still be false and \`writePlan\` absent.
+7. Have a separately identified evaluator build the complete \`constructionQualification:v1\` packet from approved competency questions, current portable witnesses, exact claims/citations, all seven axes, a complete source-hidden run, and the prior-CQ regression. If an independent evaluator cannot run, stop without writes and ask the user for an independent evaluation handoff.
+8. Show the exact review plan and every gap. After explicit user acceptance, bind the declared human provenance to the returned plan digest, revision, and every accepted gap id. This is not identity authentication. A selected subset is a new plan: remove rejected endpoints and restart validation before approval.
+9. Call \`analyze_repo_structure\` again with the unchanged proposal plus that qualification packet. Any digest, revision, source-currentness, maker-independence, source-hidden, mandatory-axis, regression, or unaccepted-gap failure keeps \`canWrite:false\`. Only the returned \`writePlan\` is write-authorized.
+10. Pass \`writePlan.concepts\` rows unchanged to \`add_concepts\` (chunks of 50). Only when every concept row succeeds, pass \`writePlan.relations\` unchanged to \`add_relations\`. Raw \`infer_imports.moduleEdges\` are never this plan. Then run \`validate_vault\`, \`compile_ontology({summary:true})\`, connect the project source, and run \`finalize_project_meaning\`.
 
 A non-object row, unknown row fields, missing endpoint, or duplicate slug fail independently with \`ok: false\`. Invalid-only batches return no row-level write metadata and no top-level \`postWriteMaintenance\`; treat them as dry validation evidence. For relation batches, Invalid-only batches return no row-level \`changed\` / \`alreadyExists\` write metadata and no top-level \`postWriteMaintenance\`; treat them as dry validation evidence. An unknown type row includes a closest-value hint such as \`Did you mean "depends_on"?\`. Duplicate slugs fail as \`concepts[n] duplicate slug in input batch; first seen at concepts[m]\`. Retry only corrected rows.
 
@@ -4485,7 +4574,8 @@ const TOOLS = [
     description:
       'R16 (autonomous ingest base) — analyze a code repository and propose ontology node candidates. ' +
       'side effect 0 (vault frontmatter NOT modified). Returns deterministic candidates the agent ' +
-      'should review and selectively pass to add_concept. Repository structure is implementation evidence, not automatic business meaning: extractionContract and proposedBusinessOntology make that uncertainty explicit. Detects:\n' +
+      'must turn into an evidence-backed proposal and move through the construction lifecycle before ' +
+      'any exact batch-writer rows are released. Repository structure is implementation evidence, not automatic business meaning: extractionContract and proposedBusinessOntology make that uncertainty explicit. Detects:\n' +
       '  - package.json `name` → project candidate\n' +
       '  - README.md first H1 → project title fallback\n' +
       '  - README.md H2 sections (skipping generic "Usage"/"Installation"/etc) → domain candidates\n' +
@@ -4500,10 +4590,14 @@ const TOOLS = [
       'typed relations, citations, risk controls, domain placement, implementation paths, confidence, ' +
       'and typed competency answers with resolvable concept/relation/evidence/path witnesses. Partial ' +
       'or visible-gap answers remain warnings instead of disappearing behind findings 0. A passing ' +
-      'validation includes a deterministic `writePlan` whose rows match `add_concepts` and ' +
-      '`add_relations` inputs and preserves the competency audit in the project body. ' +
-      'Do not call write tools unless proposalValidation.canWrite is true and the user approves; ' +
-      'write every concept row successfully before writing relations.\n\n' +
+      'validation first returns a deterministic non-writing `reviewPlan`, `planDigest`, ' +
+      '`sourceDigest`, and eight-phase construction lifecycle. An independent evaluator must ' +
+      'measure the approved competency questions and source-hidden task, then a human may declare ' +
+      'acceptance bound to that exact plan digest/revision and every visible gap. Pass the resulting ' +
+      '`constructionQualification:v1` packet as `qualification`; only a current, admissible packet ' +
+      'releases the exact reviewed rows as `writePlan`. Declared approval provenance is not identity ' +
+      'authentication. Do not call write tools unless proposalValidation.canWrite is true and a ' +
+      '`writePlan` is present; write every concept row successfully before writing relations.\n\n' +
       'Use this once when a user asks "이 codebase 분석해줘" / "bootstrap the ontology". ' +
       'Single source of truth preserved — only the user (via your subsequent add_concept calls) ' +
       'writes to the vault.',
@@ -4533,7 +4627,13 @@ const TOOLS = [
           description:
             'Optional business ontology proposal to validate against repository evidence before any write call. Python proposals may select at most 4 exact observed import endpoints beyond the analyzer candidates.',
         },
+        qualification: {
+          ...CONSTRUCTION_QUALIFICATION_INPUT_SCHEMA,
+          description:
+            'Optional independent evaluation and declared human acceptance bound to the exact planDigest, planRevision, and sourceDigest returned for this proposal. Omit it on the first review call.',
+        },
       },
+      additionalProperties: false,
     },
     outputSchema: {
       type: 'object',
@@ -8170,17 +8270,22 @@ function isPathLikeGraphRef(ref) {
 }
 
 // R16 (b3) — analyze_repo_structure thin wrapper. side effect 0 — vault
-// frontmatter 절대 안 건드림. 사용자 검토 후 별도 add_concept 호출이 진실
-// 진입.
-function analyzeRepoStructureTool({ rootPath, maxDepth, ignore, proposal } = {}) {
+// frontmatter 절대 안 건드림. reviewPlan + independent qualification 뒤 반환된
+// exact writePlan만 별도 batch writer의 진실 진입점이다.
+function analyzeRepoStructureTool({ rootPath, maxDepth, ignore, proposal, qualification } = {}) {
   requireOptionalNonBlankString(rootPath, 'rootPath');
   requireOptionalNonNegativeInteger(maxDepth, 'maxDepth', { max: 10 });
   requireOptionalStringArray(ignore, 'ignore', { max: IGNORE_ARRAY_MAX_ITEMS });
   const target = rootPath ? resolve(rootPath) : REPO_ROOT;
+  const sourceDigest = proposal == null
+    ? undefined
+    : inspectProjectSource(target).fingerprint;
   return analyzeRepoStructure(target, {
     maxDepth,
     ignore,
     proposal,
+    qualification,
+    sourceDigest,
   });
 }
 

@@ -1688,7 +1688,11 @@ export function toolsListSchemaFailure(tools) {
     !/analyze a code repository and propose ontology node candidates/i.test(analyzeTool.description || '') ||
     !/side effect 0 \(vault frontmatter NOT modified\)/i.test(analyzeTool.description || '') ||
     !/Returns deterministic candidates/i.test(analyzeTool.description || '') ||
-    !/should review and selectively pass to add_concept/i.test(analyzeTool.description || '') ||
+    !/construction lifecycle/i.test(analyzeTool.description || '') ||
+    !/reviewPlan/i.test(analyzeTool.description || '') ||
+    !/independent evaluator/i.test(analyzeTool.description || '') ||
+    !/constructionQualification:v1/i.test(analyzeTool.description || '') ||
+    !/writePlan/i.test(analyzeTool.description || '') ||
     !/bootstrap the ontology/i.test(analyzeTool.description || '') ||
     !/Single source of truth preserved/i.test(analyzeTool.description || '')
   ) {

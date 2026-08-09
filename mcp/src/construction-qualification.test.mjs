@@ -58,6 +58,24 @@ test('a complete independently evaluated packet qualifies without an aggregate s
   });
 });
 
+test('purpose authority, prior-CQ regression, and exact plan acceptance are required lifecycle artifacts', () => {
+  const missingPurpose = structuredClone(fixture);
+  delete missingPurpose.purposeAuthority;
+  const missingRegression = structuredClone(fixture);
+  delete missingRegression.regression;
+  const unboundAcceptance = structuredClone(fixture);
+  delete unboundAcceptance.acceptance.planDigest;
+  delete unboundAcceptance.acceptance.planRevision;
+  delete unboundAcceptance.acceptance.acceptedGapIds;
+
+  const mutations = [missingPurpose, missingRegression, unboundAcceptance];
+  assert.equal(mutations.length, 3, 'the lifecycle artifact census must remain non-empty');
+  for (const packet of mutations) {
+    const result = evaluateConstructionQualification(packet);
+    assert.equal(result.status, 'invalid');
+  }
+});
+
 test('one failed quality axis stays red even when every other axis passes', () => {
   const packet = clone();
   const semantic = packet.axisResults.find(({ axis }) => axis === 'semantic');

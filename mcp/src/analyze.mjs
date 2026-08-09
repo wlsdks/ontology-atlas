@@ -58,6 +58,7 @@ import {
   COMPETENCY_QUESTION_CONTRACTS,
   validateMeaningProposalAgainstAnalysis,
 } from './meaning-evaluation.mjs';
+import { evaluateConstructionLifecycle } from './construction-lifecycle.mjs';
 import { inferImports } from './infer-imports.mjs';
 import { collectRustFeatureConfigurationEvidence } from './rust-feature-evidence.mjs';
 
@@ -392,18 +393,31 @@ export function analyzeRepoStructure(rootPath, options = {}) {
     suggestedRelations,
     skipped,
   };
-  return {
-    ...result,
-    proposalValidation: validateMeaningProposalAgainstAnalysis(
-      result,
-      options.proposal,
-      {
-        observedImportEdges: pythonImportAnalysis?.edges ?? [],
-        observedImportRelations: pythonImportAnalysis?.moduleEdges ?? [],
-        importBoundaryElements: pythonImportBoundaryElements,
-      },
-    ),
-  };
+  const proposalValidation = validateMeaningProposalAgainstAnalysis(
+    result,
+    options.proposal,
+    {
+      observedImportEdges: pythonImportAnalysis?.edges ?? [],
+      observedImportRelations: pythonImportAnalysis?.moduleEdges ?? [],
+      importBoundaryElements: pythonImportBoundaryElements,
+    },
+  );
+  const candidateWritePlan = proposalValidation.writePlan;
+  delete proposalValidation.writePlan;
+  const lifecycleWithPlans = evaluateConstructionLifecycle({
+    reviewPlan: candidateWritePlan,
+    sourceDigest: options.sourceDigest,
+    expectedProjectSlug: options.proposal?.project?.slug,
+    qualification: options.qualification,
+    proposalFindings: proposalValidation.findings,
+  });
+  const { reviewPlan, writePlan, ...constructionLifecycle } = lifecycleWithPlans;
+  proposalValidation.canWrite = constructionLifecycle.writeEligibility === 'executable';
+  proposalValidation.constructionLifecycle = constructionLifecycle;
+  if (reviewPlan) proposalValidation.reviewPlan = reviewPlan;
+  if (writePlan) proposalValidation.writePlan = writePlan;
+  proposalValidation.nextStep = constructionLifecycle.nextAction;
+  return { ...result, proposalValidation };
 }
 
 function buildMeaningGate({ domains, capabilities, elements, existingOntologyEvidence }) {

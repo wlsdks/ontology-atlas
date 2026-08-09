@@ -42,6 +42,110 @@
 
 ---
 
+## 2026-08-09 — M1.5의 영속 ledger는 기존 competency body와 finalizer receipt까지다
+
+**소집**: M1.5 PO Council 재판정 3석(`po-craft`·`po-leverage`·`po-wedge`, 모두
+`gpt-5.6-sol`) · **트리거**: 바로 아래 lifecycle 결정의 “첫 `reviewPlan`과 최종
+`writePlan` rows는 동일” 규칙과, 승인 후에야 존재하는 CQ revision·axis·gap acceptance·
+prior-regression까지 그 rows의 project body에 넣으라는 규칙이 구현 중 충돌했다.
+**루브릭**: 기존 M1.5 23/24 유지 (치명적 0 없음). 새 기능 선호가 아니라 이미 승인한
+두 규칙 중 무엇을 정직하게 보존할지 판정했다.
+
+**결정**: 세 자리 모두 현재 계약에서는 두 요구를 동시에 만족할 수 없다고 독립 판정했다.
+`planDigest`는 첫 review plan 전체에서 계산되고 executable `writePlan`은 그 plan의 exact
+clone이다. 승인 뒤 CQ/axis/gap/regression을 body에 보태면 rows와 digest가 바뀌어 방금 한
+승인이 스스로 무효가 된다. 따라서 바로 아래 결정의 compact-ledger 범위를 다음처럼
+**명시적으로 좁힌다**: project Markdown의 기존 competency answer/witness/visible-gap body와
+기존 `finalize_project_meaning` receipt의 body digest·current graph/source provenance만 이번
+슬라이스의 persistent ledger다. lifecycle 상세 판정, CQ revision, axis, exact gap acceptance,
+pre-write regression은 해당 MCP 응답과 agent 실행 transcript의 증거이며, restart 뒤 영속
+복원된다고 주장하지 않는다. 새 sidecar·finalizer schema 확장·세 번째 approval plan은 만들지
+않고 `reviewPlan === writePlan`과 한 public tool 경계를 보존한다.
+
+**적용 규칙**: 문서와 완료 증거는 이 영속 경계를 그대로 밝힌다. O1.5는 fresh-process에서
+현재 competency body와 finalizer receipt가 같은 질문·visible gap·currentness를 충분히
+복원하는지 직접 측정한다. 승인 transcript가 없으면 “과거 exact gap 승인을 재구성했다”고
+말하지 않는다.
+**서명**: owner — 다음 작업 진행 승인; Codex — 구현 중 모순 발견·재소집·범위 결정
+
+**기록된 반대**: exact gap 승인과 prior-CQ 결과를 영속하지 않으면 lifecycle이 세션 의식에
+그치므로 M1.5를 중단하고 storage 결정을 먼저 해야 한다.
+**반증 조건**: O1.5 fresh-process audit에서 body+receipt만으로 같은 CQ/visible gap을 복원하지
+못해 잘못된 write·maintenance 판단이나 unsupported claim이 한 번이라도 발생하면 이 반대가
+옳다. 그때 (a)를 폐기하고 별도 persistence 계약을 PO Council에 다시 올리며, 승인 전까지
+lifecycle persistence 확장을 중단한다.
+**재검토**: 첫 O1.5 source-hidden fresh-process trial 직후.
+
+**상태**: 유효 — 바로 아래 2026-08-09 M1.5 결정의 compact-ledger 문단만 좁힘
+
+---
+
+## 2026-08-09 — Construction lifecycle은 `reviewPlan → exact approval → writePlan`으로 강제한다
+
+**소집**: PO Council 전체 5석(`gpt-5.6-sol`, 동시 슬롯 한도 때문에 서로 결과를
+보지 않는 두 wave의 1차 판정 뒤 전원 반론 라운드) · **트리거**: O1.3의
+`constructionQualification:v1`은 독립 evaluator로 실행되지만 runtime consumer가 없고,
+현재 `analyze_repo_structure`는 사용자 승인·source-hidden task·prior-CQ regression 전에
+`canWrite:true`와 `writePlan`을 반환한다. 선행 결정인 2026-08-09 「ontology construction
+quality를 Skills와 UI 확장보다 먼저 닫는다」와 「Construction Qualification은 독립 축의
+범주형 판정이다」는 모두 유효하고, 이번 결정은 그 둘을 bootstrap runtime에 연결한다.
+**루브릭**: 23/24 (Problem 4 · User moment 4 · Differentiation 3 · Ontology 4 ·
+Agent 4 · Verification 4, 치명적 0 없음). schema validation·prompt pipeline·승인 절차만은
+이미 대체재가 제공하므로 차별화는 아직 세 제품 O1.5에서 증명해야 한다.
+
+**결정**: M1.5는 새 tool·kind·UI를 만들지 않고 기존 `analyze_repo_structure` 한 도구의
+proposal-validation 계약만 확장한다. lifecycle의 순서는 ① purpose/authority ② human-owned
+CQ revision ③ evidence inventory/reuse ④ examples/counterexamples가 있는 small conceptual
+slice ⑤ semantic/structural tests ⑥ independent source-hidden task ⑦ human plan acceptance
+⑧ prior-CQ regression이다. 첫 호출은 exact candidate rows를 담은 **실행 불가능한**
+`reviewPlan`과 `planDigest`·revision·단계별 진단만 반환한다. 두 번째 호출이 같은 digest의
+정본 `constructionQualification:v1` packet과 사람의 개별 gap 승인을 받았을 때만 그 rows와
+동일한 `writePlan`을 반환한다. plan·CQ revision·diagnostics가 바뀌면 승인은 자동 무효다.
+
+**판정 규칙**: 단계 상태는 `passed | blocked | gap_accepted | awaiting_approval |
+pending_post_write`, 최상위는 `qualificationStatus: invalid | not_qualified | qualified`와
+`writeEligibility: blocked | reviewable | executable`을 분리한다. missing stage/authority,
+maker-only evaluation, source-hidden `not_measured`, digest 불일치, unsupported `is_a`는
+`blocked`다. semantic·structural·evidence/provenance·maintainability/prior-CQ·interoperability
+축의 red/unknown은 사람 승인을 받아도 쓸 수 없다. 독립 source-hidden 실행 뒤 남은
+functional/pragmatic의 명시적 partial/unknown만 exact gap별 사람 승인으로
+`gap_accepted`가 될 수 있고, 이 경우에도 qualification은 계속 `not_qualified`다.
+acceptance의 `decidedBy`와 `authority: human`은 **human-declared acceptance provenance**이지
+인증·신원 증명·truth certificate가 아니다.
+
+**적용 규칙**: accepted lifecycle/CQ revision/plan digest/axis/gap/prior-regression의 compact
+ledger는 exact project body write row에 포함하고, post-write current graph/source 결합은
+기존 `finalize_project_meaning` receipt를 재사용한다. 새 sidecar·frontmatter review state·
+write-tool token·`add_concepts`/`add_relations` signature는 만들지 않는다. prior-CQ는 write 전
+candidate에 dry replay하여 regression이면 block하고, write 뒤 기존 validate→compile→finalize로
+current graph/source에서 definitive replay한다. post-write 실패는 rollback이나 green 승격이
+아니라 `pending_post_write`/명시적 remediation이다. MCP initialize와 두 bootstrap skill mirror는
+이 runtime 결과를 가리키며 lifecycle 문장을 각자 재정의하지 않는다. Node 24 adversarial,
+source/bundled MCP semantic parity, 기존 source-hidden 실패 재실행을 통과해야 한다.
+
+**비용 차단선**: 최대 2 working days·한 PR·기존 public tool 한 개의 additive contract다.
+새 MCP tool, 두 번째 public tool signature, 새 storage, 전역 writer gate가 필요해지면 구현을
+중단하고 범위를 다시 정한다. O1.5 세 제품 qualification·U1.3 기본/전문가 UI·모델 router는
+이번 범위 밖이다.
+**서명**: owner — 활성 작업의 다음 구현 진행 승인; Codex — PO Council 소집·최종 범위 결정
+
+**기록된 반대**: 가장 강한 패배 논점은 “사람이 functional/pragmatic red를 승인할 수 있게
+두면 `정직한 partial`이라는 이름으로 쓸모없는 ontology를 shared 상태로 세탁하므로, 모든 축이
+qualified되기 전에는 쓰기를 전부 막아야 한다”였다. 반면 universal block은 사람이 검토할
+exact plan을 승인 전에 숨기고, persisted graph가 있어야 가능한 post-write regression을
+pre-write 조건으로 요구하는 순환을 만든다.
+**반증 조건**: O1.5 세 제품 중 둘 이상에서 `gap_accepted` plan이 unsupported claim을 저장하거나,
+같은 functional/pragmatic gap이 다음 revision에도 닫히지 않거나, 기존 source-hidden 실패를
+재실행했을 때 지원 claim·정확한 다음 행동은 늘지 않고 시간/호출만 늘면 반대가 옳다. 그때
+전체 lifecycle을 버리지 않고 반복 실패한 축을 mandatory pre-write pass로 승격한다. compact
+receipt가 승인 후 plan mutation·prior-CQ 손실을 한 건도 잡지 못하면 persistence 필드를
+합치거나 제거한다.
+**재검토**: M1.5 gate probe와 첫 O1.5 product trial 뒤.
+
+**상태**: 유효
+
+---
+
 ## 2026-08-09 — Construction Qualification은 독립 축의 범주형 판정이다
 
 **소집**: O1.3 단독 PO 패스 24/24 · **트리거**: 기존 구조 검증과

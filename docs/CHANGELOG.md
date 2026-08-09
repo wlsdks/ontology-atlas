@@ -7,6 +7,31 @@
 
 ---
 
+## 2026-08-09 · 사용자가 본 계획만 독립 검증 뒤 온톨로지에 기록된다
+
+기존 `analyze_repo_structure`는 proposal 검사가 통과하면 사용자 승인 전에도
+`canWrite:true`와 `writePlan`을 내보냈다. 문서가 승인을 요구해도 MCP 계약 자체는
+agent가 그 단계를 건너뛰는 것을 막지 못했다.
+
+- 첫 proposal 호출은 이제 `reviewPlan`, plan/source digest, 여덟 lifecycle 단계,
+  모든 `requiredGapId`만 반환한다. `canWrite`는 false이고 `writePlan`은 없다.
+- maker와 분리된 evaluator가 네 사용자군 CQ, current claim/citation, 일곱 품질축,
+  전체 source-hidden task, cold-start 또는 이전 CQ regression을 측정해야 한다.
+- 사용자는 정확히 그 plan digest/revision과 남은 gap을 본 뒤 승인한다. 승인은 선언된
+  provenance이며 Atlas가 신원을 인증하거나 의미를 진리로 보증한다는 뜻이 아니다.
+- unchanged proposal과 완전한 `constructionQualification:v1` packet을 다시 제출해야만
+  처음 본 `reviewPlan`과 동일한 `writePlan`이 풀린다. source/plan drift, maker-only,
+  `not_measured`, stale/private evidence, red mandatory axis, regression 실패, 승인되지 않은
+  gap은 모두 fail-closed다.
+- `/ontology-bootstrap`과 MCP initialize prompt도 같은 순서를 사용하며, 쓰기 뒤에는
+  validate·compile·source connect·`finalize_project_meaning`까지 완료해야 한다.
+
+새 tool·kind·frontmatter·UI·sidecar는 추가하지 않았다. 기존 read tool 하나를 두 단계로
+사용하고, 기존 project competency body와 finalizer receipt를 그대로 재사용한다. 따라서
+CQ revision·axis·exact gap acceptance·pre-write regression 상세는 현재 MCP 응답/agent
+transcript의 증거이며 재시작 뒤 자동 복원된다고 주장하지 않는다. 그 필요성은 O1.5
+fresh-process trial이 실제 손실을 재현할 때만 별도 storage 결정으로 다시 연다.
+
 ## 2026-08-09 · 구조가 초록이어도 의미가 빨강이면 온톨로지는 합격하지 않는다
 
 문법상 올바른 vault가 모든 사용자 질문에 유용하고 정확한 것은 아니다. 기존의 다섯
