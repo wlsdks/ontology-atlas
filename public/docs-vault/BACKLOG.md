@@ -1,14 +1,280 @@
 # Backlog — ontology-atlas
 
-> 작업 *순번* 만. user 가 "T?? 진행해" 하면 그것만 분해해서 실행.
-> 완료된 항목은 ✅ 표시 후 별도 batch 정리 시 일괄 삭제.
+> **현재 실행 순서의 정본.** 사용자가 작업 ID를 지목하면 그 항목만 분해해
+> 구현한다. 완료 표시는 아래 활성 트랙의 증거 표에 먼저 남기고, 기능의 현재
+> 상태는 `docs/FEATURES.md`, 결정 이유는 `docs/DECISIONS.md`, 사용자 가시 변경은
+> `docs/CHANGELOG.md`가 각각 맡는다.
 >
-> **갱신 (2026-08-02)**: macOS app distribution 및 project meaning receipt track 반영.
-> local-first 4 surface (macOS app · CLI · MCP · Website), dogfood vault (census: `node cli/src/index.mjs overview`), CLI 52 commands,
-> MCP 33 tools (read 19 + write 14), compiler/query/health/agent-brief/workspace-brief/bootstrap/import-inference
-> 루프 기준으로 재정렬.
+> 변하는 숫자를 이 문서에 고정하지 않는다. 현재 dogfood census는
+> `node cli/src/index.mjs overview`, 공개 MCP/CLI surface는
+> `pnpm docs:surface:check`로 확인한다.
 
 ---
+
+## 활성 실행 트랙 — 신뢰 계약 → 의미 계약 → Skills process (2026-08-09)
+
+이 트랙은 2026-08-09 설치 앱 Codex Computer Use 감사와 서로 격리된
+`gpt-5.6-sol` MCP/ontology/Skills 감사 결과를 현재 HEAD와 다시 대조해 만든다.
+**이 절 하나만 상태를 관리한다.** `docs/plans/`에 같은 체크리스트를 복제하지
+않는다.
+
+### PO 패스 — 구현 전에 문서를 정본으로 만든다
+
+**선행 기록**: 2026-08-09 `/skills`는 읽기 전용이며 vault write·`kind:` 승격·
+위험 점수·스킬 편집을 하지 않는다는 결정은 유효하다. project meaning receipt는
+구조·competency·source currentness를 분리한다는 결정도 유효하다. 다만 실제
+field trial에서 proposal이 승인한 witness를 finalizer가 거절했고, 이 관측은
+두 단계가 동일한 증거 의미를 공유한다는 전제를 반증했다.
+
+**관찰된 현상**:
+
+- analyzer proposal은 `canWrite:true`인데 같은 witness가 finalize에서 거절된다.
+- fresh source-checkout config는 앱에서 `0/3`이 되고, 존재하지 않는 npm launch
+  문자열은 valid가 될 수 있다.
+- quick-start는 실패 code를 반환하면서도 성공·연결 완료 문구를 출력한다.
+- Workshop은 같은 domain의 sibling을 `is_a` 추천으로 오도한다.
+- Skills 상세는 3단 load chain만 보여 주며, 번호 절차·근거 line을 보존하지 않는다.
+
+**사용자 문제**: 새 제품을 처음 연결하는 사람과 에이전트가 “설정이 실제로
+실행 가능한가, 승인한 의미가 확정 가능한가, 추천 관계가 믿을 만한가, 다음
+절차가 무엇인가”를 한 번에 판단하지 못한다. 그 결과 재시작·재작성·소스 재탐색과
+source-hidden handoff 실패가 생긴다.
+
+**현상↔문제 판별**: 차이 통과(결정·신뢰·handoff 손실이 남음) · 제2 관측 통과
+(CLI exit/stdout 불일치, app readiness false positive/negative, finalize failure,
+source-hidden answer loss) · 해법 독립 통과(컴포넌트나 parser 이름 없이도 성립).
+
+**대상과 모먼트**: 처음 vault를 만드는 개발자/FDE, 현재 의미를 승인하는 사람,
+그 vault 또는 Skill process를 넘겨받는 새 AI agent. **현재 대안**: raw Markdown,
+source search, 수동 config 검사, 세션 대화 재설명. **온톨로지 가치**: concept·typed
+relation·evidence witness·currentness의 의미를 writer와 reader가 동일하게 해석한다.
+**에이전트 가치**: first contact부터 finalize와 handoff까지 다음 MCP/CLI 행동이
+실행 가능한 상태로 남는다. **단순화**: 새 kind·새 topology mode·Skills vault
+영속화 없이 기존 spine과 읽기 전용 표면을 강화한다. **검증**: Node 24 fresh
+fixture, source-hidden evaluator, focused contract, 설치 앱, 실제 motion/perf proof.
+
+| 항목 | 4점 기준 문장 | 점수 |
+|---|---|---:|
+| Problem insight | Names an observed phenomenon and the workflow damage | 4 |
+| User moment | Specific audience, moment, trigger, and blocked decision | 4 |
+| Differentiation | Deepens local-first ontology + agent-memory wedge | 4 |
+| Ontology value | Clarifies concept, relation, evidence, provenance, impact, ownership, or update path | 4 |
+| Agent value | Agent gets a better MCP/CLI/source-intelligence handoff or validation path | 4 |
+| Verification | Runtime proof matches the affected surface, including installed macOS app when relevant | 4 |
+
+**자가 채점**: **24/24** (치명적 0 없음). **판정**: `Shape a slice` — 아래 순서와
+no-go를 고정한 뒤 한 항목씩 `Build and verify`한다. MCP/CLI 외부 약속, vault
+schema, Projects taxonomy를 바꾸는 항목은 진입 시 `/po-council`과
+`docs/DECISIONS.md` append가 필수다. UI/motion 항목은 PO 뒤 design gate를 통과한다.
+
+### 상태와 순서
+
+상태는 `ready` · `in_progress` · `blocked(<ID>)` · `hold(<관측 조건>)` ·
+`done(<commit>)`만 쓴다. 한 번에 `in_progress`는 하나다.
+
+| 순서 | ID | 상태 | 한 문장 결과 |
+|---:|---|---|---|
+| 0 | D0 | done(D0 documentation commit) | 이 활성 트랙·결정·정본 포인터를 만들고 문서 gate를 통과했다. |
+| 1 | M1.1 | ready | proposal과 finalizer가 같은 evidence witness 의미를 쓴다. |
+| 2 | M1.2 | blocked(M1.1) | 앱이 실제 실행 가능한 agent config만 ready로 판정한다. |
+| 3 | O1.1 | blocked(M1.2) | Workshop은 근거 없는 `is_a`를 추천하지 않는다. |
+| 4 | M1.3 | blocked(O1.1) | quick-start 실패가 성공처럼 보이지 않는다. |
+| 5 | M1.4 | blocked(M1.3) | 현재 MCP inventory가 runtime registry 한 곳에서 파생된다. |
+| 6 | O1.2 | blocked(M1.4) | Atlas의 5-kind·관계·formal/RDF/OWL 경계를 정직하게 고정한다. |
+| 7 | O1.3 | blocked(O1.2) | C-level·직원·FDE·agent CQ 평가팩을 source-hidden으로 검증한다. |
+| 8 | K1.1 | blocked(O1.3) | Skill 번호 절차를 손실 없이 source-bound rail로 읽는다. |
+| 9 | K1.2 | blocked(K1.1) | 명시 문법만 branch/retry/stop/verify로 타입화한다. |
+| 10 | K1.3 | blocked(K1.1) | 승인된 process packet을 digest와 함께 handoff한다. |
+| 11 | U1.1 | blocked(O1.3) | Projects가 lifecycle 질문을 category/status로 두 번 묻지 않는다. |
+| 12 | U1.2 | blocked(O1.1) | spotlight가 bounded motion 뒤 idle로 돌아간다. |
+| gate | O1.4 | hold(3 products × independent trials) | missing primitive가 반복 입증될 때만 schema 확장을 상정한다. |
+
+### 작업 카드와 완료 조건
+
+#### D0 — 문서 정본과 실행 원장
+
+- **IN**: 이 활성 트랙, decision ledger append, `PRODUCT-DIRECTION`의 현재 정본
+  포인터 교정, 현재 surface 산문의 명백한 drift 제거.
+- **OUT**: 제품 코드, schema, MCP prompt, UI, 생성된 수를 사람이 직접 맞추는 gate.
+- **완료**: `pnpm docs:check`, `pnpm agents:check`, `pnpm checks:changed`가 green이고
+  아래 증거 표에 HEAD·명령·결과를 기록한다.
+
+#### M1.1 — proposal ↔ finalizer witness parity
+
+- **사용자 변화**: 승인·작성한 ontology가 같은 근거를 잃지 않고 finalize되며,
+  새 MCP process도 같은 categorical assessment를 읽는다.
+- **범위**: proposal evidence resolver, source witness/receipt inventory,
+  finalizer, app↔MCP mirror와 contract fixture.
+- **금지**: finalizer를 무조건 완화, private absolute path 저장, `canWrite`를
+  completeness 점수로 해석, project마다 임시 예외 추가.
+- **RED**: analyzer-approved semantic document와 안전한 최상위 source path가 write
+  후 현 finalizer에서 거절되는 축소 fixture.
+- **완료**: proposal → unchanged writePlan → source connect → finalize → fresh-process
+  `agent_brief`가 성공하고 private coordinate가 public handoff에 없다.
+- **검증**: focused MCP unit/write/surface, app↔MCP source-witness contract,
+  source-hidden handoff, 마지막 `pnpm checks:changed -- <changed paths>`.
+
+#### M1.2 — executable agent-config readiness
+
+- **사용자 변화**: source checkout과 app-bundled 설정은 ready, 죽은 npm launch와
+  다른 vault 설정은 repair로 표시된다.
+- **범위**: config parser/validator, CLI init·agent-setup templates, Settings readiness
+  denominator, 실제 `mcp-verify` 연결.
+- **금지**: 문자열 `ontology-atlas-mcp` 포함 여부만 검사, npm package 부활,
+  `.mcp.json.example`을 실제 연결 파일로 가장하기.
+- **완료**: source node entrypoint와 bundled binary fixture는 valid, `npx -y
+  ontology-atlas-mcp`는 invalid, example 파일의 역할이 UI count와 일치한다.
+- **검증**: validator negative/positive corpus, fresh CLI init roundtrip, 새로 빌드한
+  설치 앱에서 Settings 상태와 실제 MCP first contact 대조.
+
+#### O1.1 — relation-specific Studio recommendation
+
+- **사용자 변화**: 빈 UP socket은 관계 affordance로 남지만, sibling을 상위
+  개념으로 권하지 않는다. 추천은 근거와 preflight가 있을 때만 붙는다.
+- **범위**: Studio picker scoring/labels/create+enhance states와 relation-specific tests.
+- **금지**: `is_a` 자체 제거, compass bearing 변경, same-domain을 subsumption 근거로
+  사용, 추천을 다른 장식으로 숨기기.
+- **완료**: same-domain sibling negative fixture가 green이고, neutral/recommended의
+  접근성 이름과 시각 위계가 설치 앱에서 구분된다.
+- **검증**: TDD+gate-probe, focused Vitest, user walkthrough, design audit, rebuilt app.
+
+#### M1.3 — quick-start terminal truth
+
+- **사용자 변화**: scaffold 성공과 bootstrap/MCP 검증 실패를 구분해 읽고 바로
+  복구할 수 있다.
+- **완료**: 실패 fixture에서 nonzero exit와 함께 green `done`, `bootstrapped`,
+  `MCP already wired`가 없고 “config written but unverified”와 복구 명령이 있다.
+  성공 fixture의 짧은 3-step 흐름은 유지한다.
+- **검증**: CLI entry integration RED/GREEN, packed/source parity.
+
+#### M1.4 — current MCP inventory single source
+
+- **사용자 변화**: 모든 first-contact 문구가 실제 사용 가능한 도구를 빠짐없이
+  설명한다.
+- **범위**: raw initialize instructions, current product docs, starter templates,
+  generated docs surface.
+- **금지**: 역사 기록의 당시 숫자 수정, 새 수를 여러 문서에 손 복사, 문장을
+  literal pinning하는 테스트.
+- **완료**: `tools/list` → generated manifest가 current claims를 만들고 initialize의
+  header/list/count가 서로 일치한다.
+- **검증**: raw stdio initialize+tools/list, MCP surface integration,
+  `docs:surface:check`, starter locale tests.
+
+#### O1.2 — Atlas meta-model truth boundary
+
+- **사용자 변화**: 사람과 agent가 domain/capability/element/document를 같은
+  판별법으로 만들고, Atlas가 하지 않는 RDF/OWL/process 추론을 기대하지 않는다.
+- **범위**: `FOUNDATIONS`·`PRODUCT-DIRECTION`의 단일 정의, 5-kind includes/excludes,
+  relation direction/domain/range/inverse/world-assumption table, bootstrap/field-trial/
+  MCP prompt의 progressive-disclosure pointer.
+- **금지**: “machine-readable = formal semantics”, RDF/OWL conformance 암시,
+  `evidence`처럼 실제 relation enum에 없는 관계 주장, 같은 규칙의 다중 사본.
+- **완료**: docs·schema templates·skill·prompt가 한 정본을 가리키며 adversarial
+  concept fixtures가 folder/team/workflow를 domain/capability로 자동 승격하지 않는다.
+
+#### O1.3 — audience CQ evaluation pack
+
+- **사용자 변화**: C-level은 outcome/risk, 직원은 purpose/role/process gap, FDE는
+  change/impact/verification, agent는 evidence/currentness/next safe action을 질문한다.
+- **범위**: 원자 CQ, quantifier, witness, refusal/unknown, source-hidden evaluator,
+  시간·비용·citation/claim accuracy 분리 지표.
+- **금지**: 하나의 종합 점수, maker self-approval, node count를 품질로 사용.
+- **완료**: 세 낯선 제품에서 사용자군별 반복 trial 결과와 exact claim ledger를
+  남기고 실패 원인을 evidence·prompt·UI·missing primitive로 분류한다.
+
+#### K1.1 — Skills lossless happy-path rail
+
+- **사용자 변화**: 기존 3단 load chain 아래에서 번호 절차를 원문 순서·line과
+  함께 읽는다.
+- **최소 IR**: `irVersion`, source path+digest, scanTruncated, diagnostics,
+  stable stepId/ordinal/exactText/sourceSpan, resource exists/kind/backlinks.
+- **금지**: 기본 transition edge, branch/retry 추측, ontology node/vault write,
+  script content security scoring.
+- **완료**: trial fixture 27/27 exact steps, unsupported/truncated Markdown fail-closed,
+  load chain과 process rail이 시각·접근성상 다른 것임이 증명된다.
+
+#### K1.2 — narrow semantic overlay
+
+- **진입 조건**: K1.1 IR과 독립 gold corpus가 고정돼 있어야 한다.
+- **허용**: exact syntactic marker와 literal guard/target이 있는 branch/retry/stop/
+  verify만. derived fact마다 exact span+digest.
+- **금지**: substring keyword, ambiguous default edge, `rollback deadline` terminal,
+  `stop mutation` whole-process stop, 명사 `checksum`만으로 verify.
+- **완료**: gold-reviewed admitted set precision 100%; 애매한 문장은 edge 대신
+  diagnostic이고 false positive 0.
+
+#### K1.3 — authorized source-hidden process packet
+
+- **사용자 변화**: 사용자가 명시적으로 복사/내보낸 packet을 새 agent가 원본
+  폴더 없이 읽고 exact steps와 diagnostics를 인용한다.
+- **금지**: 자동 vault 저장, 무단 외부 전송, packet 부재를 process 없음으로 해석.
+- **완료**: digest tamper fail-closed, authorized packet handoff의 supported claims
+  100%, 미승인 vault-only handoff는 `process unavailable`을 정직하게 반환한다.
+
+#### U1.1 — Projects taxonomy contract
+
+- **진입 조건**: PO Council + decision ledger. 공개 frontmatter 호환과 실제 사용자
+  분류 목적을 먼저 결정한다.
+- **선택지**: category를 lifecycle과 독립된 structural grouping으로 정의하거나
+  required category를 retire한다. status는 lifecycle 한 축만 소유한다.
+- **완료**: old vault roundtrip, default ID 의미 중복 negative test, create/edit UI
+  walkthrough. 자동 migration은 별도 승인 없이는 하지 않는다.
+
+#### U1.2 — bounded spotlight motion
+
+- **진입 조건**: design-motion 결정 — static 또는 token-defined one-shot.
+- **금지**: spotlight가 켜진 동안 frame loop를 영구 active로 유지.
+- **완료**: normal motion은 bounded interval 동안 phase가 변한 뒤 idle, reduced-motion
+  rotation 0, pan/drag perf 회귀 0.
+- **검증**: idle-gate contract, 실제 macOS recording/frame diff, map-perf.
+
+#### O1.4 — schema expansion decision gate
+
+지금 실행하는 구현 항목이 아니다. 최소 세 낯선 제품/조직과 사용자군별 독립
+trial에서 현재 evidence와 개선된 prompt를 제공해도 동일 CQ가 반복 실패하고,
+평가자가 원인을 outcome identity·actor-role participation·process ordering 같은
+**missing primitive**로 합의할 때만 `/po-council`에 상정한다. 첫 후보는 새 root
+kind 묶음이 아니라 qualified statement/provenance envelope다.
+
+### 명시적으로 작업하지 않는 것
+
+- relation rationale 유실: 현재 vault·handoff·focused roundtrip에서 재현되지
+  않았다. 특정 consumer의 byte-level 재현 전에는 task가 아니다.
+- workspace stale slug와 Insights evidence 문구: 현 HEAD의 구현·E2E가 이미 있다.
+- Skill step ontology node, Skills 위험 점수/배지, SKILL.md 편집, 자동 vault 저장.
+- OWL reasoner·일반 process ontology·outcome/role/process root kind 선행 추가.
+- spotlight always-on repaint, 전면 UI redesign, Orca 제거.
+- C-level Insights hierarchy: declared-knowledge walkthrough에서 같은 stall이 두 번
+  재현될 때 discovery로만 재등록한다.
+
+### 완료 증거 원장
+
+`done`으로 바꾸기 전에 이 표 한 행을 채운다. 큰 로그를 붙이지 않고 HEAD/commit,
+실패를 잡은 RED, focused checks, runtime/handoff proof, 남은 위험만 적는다.
+
+| ID | commit/HEAD | RED | focused checks | runtime/handoff proof | residual risk |
+|---|---|---|---|---|---|
+| D0 | D0 documentation commit (this row) | stale plan authority + stale 33/14 current claim | `docs:check`; `agents:check`; `decisions:check`; `checks:changed` | docs-vault regenerated; generated surface confirmed 35 MCP (19 read + 16 write), 54 CLI | product code untouched; `AGENTS.md` has 606-byte cap headroom |
+
+### 트랙 공통 종료 규칙
+
+1. 시작 전에 이 표의 선행 ID가 `done`인지 확인한다.
+2. 구현자는 자기 변경을 승인하지 않는다. source-hidden 또는 built-surface 평가는
+   maker와 분리한다.
+3. gate를 추가/수정하면 `/gate-probe`로 violation census→RED→GREEN을 증명한다.
+4. 시각 변경은 PO→design gate 순서를 지키고, desktop 영향은 설치 앱을 다시
+   빌드·실행해 Codex Computer Use와 필요한 motion/design instrument로 검증한다.
+5. 마지막 명령은 항상 변경 경로를 넘긴 `pnpm checks:changed -- <paths...>`다.
+6. 완료 때 `docs/CHANGELOG.md`와 필요 시 dogfood ontology를 동기화하고, 이 표만
+   상태 정본으로 갱신한다.
+
+---
+
+## 아래는 역사 백로그다
+
+이 아래의 완료 기록·폐기 이유·당시 추천 순서는 삭제하지 않고 보존한다. 현재
+작업 상태와 순서는 위 **활성 실행 트랙**만 따른다. 아래의 `추천 진행 순서`나
+고정된 surface 수가 활성 트랙과 다르면 역사값이지 새 지시가 아니다.
 
 ## ✅ 완료 (R12-R14, 2026-05-04 ~ 2026-05-05)
 
@@ -151,7 +417,7 @@ R10b (firebase / functions / firestore 영구 제거) 후 cloud-side 진화 컨�
 
 ### F3. .mcp.json git-tracked (✅ 이번 R14 closeout 에서 추가)
 
-- 사용자가 git clone 후 Claude Code 열면 즉시 33 tools 자동 등록.
+- 사용자가 git clone 후 Claude Code를 열면 당시 MCP surface가 자동 등록되었다.
 
 ### ~~T23. mode-aware e2e tests~~ — VOID (R10b)
 
@@ -206,7 +472,7 @@ P1 V1.x 진화가 모두 ✅/N/A 로 닫혔고, 현재 surface 는 macOS app · 
 - `docs/FEATURES.md` — 사용자가 *지금* 사용 가능한 기능 전수
 - `docs/archive/ONTOLOGY-MODEL-V2-DRAFT.md` — V1.x 진화 spec (cloud 부분 N/A archive)
 - `docs/CHANGELOG.md` — 시간순 사용자 가시 변화
-- `mcp/README.md` — MCP 서버 33 도구 (read 19 + write 14) + 등록
+- `mcp/README.md` — 현재 MCP 도구 surface와 등록 계약
 - `docs/benchmark/` — AI agent quality 측정 매트릭스
 
 

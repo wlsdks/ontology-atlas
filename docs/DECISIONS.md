@@ -42,6 +42,45 @@
 
 ---
 
+## 2026-08-09 — 신뢰 계약을 먼저 닫고, 5-kind를 검증한 뒤 Skills process를 연다
+
+**소집**: 단독 PO 패스 + 서로 격리된 `gpt-5.6-sol` MCP/ontology/Skills 감사
+(정식 PO Council 아님) · **트리거**: 설치 앱과 fresh MCP field trial에서 승인한
+evidence의 finalize 거절, 실행 불가능한 agent config의 ready 판정, 성공처럼 보이는
+quick-start 실패, 근거 없는 `is_a` 추천, Skill 절차 손실이 함께 관측됐다. 소유자는
+구현 전에 놓치지 않을 단일 작업 원장을 요구했다.
+**루브릭**: 24/24 (치명적 0: 없음)
+**결정**: `docs/BACKLOG.md`의 2026-08-09 활성 실행 트랙을 유일한 상태 정본으로
+삼고, 다음 순서를 지킨다. ① proposal↔finalizer witness parity ② executable agent
+config readiness ③ Studio의 relation-specific recommendation ④ truthful quick-start와
+runtime-derived MCP inventory ⑤ 5-kind·relation·formal/RDF/OWL 경계와 사용자군별
+competency-question 검증 ⑥ source-bound Skills happy-path rail ⑦ 좁은 의미 overlay와
+명시적 process packet. Projects taxonomy와 bounded spotlight motion은 각자의 선행
+게이트 뒤에 둔다. 새 ontology kind나 일반 process ontology는 세 낯선 제품의 독립
+trial에서 동일한 missing primitive가 반복 입증되기 전에는 만들지 않는다.
+**적용 규칙**: 같은 체크리스트를 `docs/plans/`에 복제하지 않는다. Skills process는
+derived·read-only·source-digest-bound이며 ontology node나 vault write가 아니다.
+각 항목은 RED, focused check, affected runtime 또는 source-hidden handoff, 마지막
+`pnpm checks:changed -- <paths...>` 증거 없이 `done`이 아니다. 공개 MCP/CLI/schema나
+Projects taxonomy에 들어갈 때는 정식 `/po-council`을 다시 열고 이 원장에 append한다.
+UI/motion은 PO 뒤 design gate를 거치며 desktop 영향은 재빌드한 설치 앱으로 증명한다.
+현 HEAD에서 재현되지 않은 relation rationale 유실, 이미 구현된 workspace stale-slug와
+Insights evidence 문구는 작업으로 세지 않는다.
+**서명**: owner — 구현 시작 승인; Codex — 실행 원장 작성
+
+**기록된 반대**: ① “C-level·직원까지 쓰려면 outcome/role/process를 지금 root kind로
+추가해야 한다.” ② “Skills process가 ephemeral이면 source-hidden handoff에서 사라지니
+ontology에 영속화해야 한다.”
+**반증 조건**: ① 개선된 evidence·prompt·CQ evaluator를 써도 서로 다른 세 제품에서
+같은 질문이 outcome identity·actor-role participation·process ordering의 부재 때문에
+반복 실패한다. ② 사용자가 승인한 digest-bound packet까지 넘긴 fresh source-hidden
+trial에서도 exact step·diagnostic·claim support가 계속 손실되거나, source 제거 뒤
+장기 audit 요구가 반복된다.
+**재검토**: 위 반증 조건 중 하나가 실제 trial evidence로 관측되거나, 활성 트랙의
+선행 항목이 제품 문제를 해결하지 못하고 동일 failure mode를 남길 때.
+
+**상태**: 유효
+
 ## 2026-08-09 — 표면 조합 「30종」은 **두 층을 섞은 수**였다 (표면 14 · 컨트롤 17)
 
 **트리거**: 소유자 — *"2번 진행하자"*(표면 조합 30종을 4~5개 역할로 접기).
