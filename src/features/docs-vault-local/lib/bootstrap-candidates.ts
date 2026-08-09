@@ -58,6 +58,8 @@ export interface BootstrapPlan {
   elements: BootstrapElementCandidate[];
   /** 이미 kind: 를 가진 문서 수 — "부분 구축" vault 안내용. */
   alreadyTypedCount: number;
+  /** 런타임 소유 `SKILL.md` 라서 후보에서 뺀 수 — 화면이 「왜 빠졌는지」를 말할 수 있게. */
+  runtimeOwnedSkipped: number;
 }
 
 function hasOwnKind(fm: Record<string, unknown>): boolean {
@@ -66,6 +68,42 @@ function hasOwnKind(fm: Record<string, unknown>): boolean {
 
 function isRootReadme(slug: string): boolean {
   return slug.toLowerCase() === 'readme';
+}
+
+/**
+ * **에이전트 런타임이 소유한 파일인가** — 그렇다면 우리는 쓰지 않는다.
+ *
+ * ## 무엇이 났나 (2026-08-09, PO 카운슬에서 발견)
+ *
+ * 「내 문서로 지도 만들기」는 `manifest.docs` 에 든 **어떤 슬러그든** 후보로
+ * 삼아 승인 시 `uid`·`kind`·`title` 을 그 파일 frontmatter 에 쓴다. 그런데
+ * 사용자가 스킬 폴더(`~/.claude/skills` · 플러그인 폴더)를 문서함으로 열면
+ * 그 목록에 **`SKILL.md` 들이 그대로 들어온다** — 실측: 마켓플레이스 폴더
+ * 하나를 열었을 때 후보 105개가 전부 `SKILL.md` 였다.
+ *
+ * 그 파일들은 **Claude 런타임과 마켓플레이스가 소유한다.** 규격상 `name` 과
+ * `description` 만 있고 `kind` 는 우리 것이다. 거기에 우리 키를 쓰면:
+ *
+ * - 플러그인을 다시 설치하는 순간 우리가 쓴 것이 **지워진다**(그 폴더는 git
+ *   체크아웃이고 업데이트가 덮어쓴다 — 실측 확인),
+ * - 「데이터는 언제나 평범한 마크다운이라 그대로 들고 나갈 수 있다」는 신뢰
+ *   헌장 ④를 **우리가** 깬다,
+ * - 화면은 그 행동을 「올리기」라고 부른다 — 쓰기라고 말하지 않는다.
+ *
+ * 2026-07-29 카운슬이 「스킬 편집기」를 막았는데 **이 경로는 막히지 않은 채로
+ * 배포돼 있었다.** 판정 방향이 무엇이든 이건 결함이다.
+ *
+ * 판정 기준은 규격 그대로다(공식 문서): 파일 이름이 `SKILL.md` 이고,
+ * frontmatter 에 필수 두 키(`name`·`description`)가 있고, `kind` 가 없다.
+ * 셋을 다 만족할 때만 제외한다 — 사용자가 자기 볼트에서 직접 만든
+ * `SKILL.md` 라도 이 모양이면 런타임이 읽는 스킬이므로 같은 판단이 옳다.
+ */
+export function isRuntimeOwnedSkill(slug: string, fm: Record<string, unknown>): boolean {
+  const fileName = slug.split('/').pop() ?? '';
+  if (fileName.toLowerCase() !== 'skill') return false;
+  const hasName = typeof fm.name === 'string' && fm.name.trim() !== '';
+  const hasDescription = typeof fm.description === 'string' && fm.description.trim() !== '';
+  return hasName && hasDescription && !hasOwnKind(fm);
 }
 
 /**
@@ -83,12 +121,18 @@ export function deriveBootstrapPlan(
   );
   let projectTitle = vaultName.trim() || 'my-project';
   let alreadyTypedCount = 0;
+  let runtimeOwnedSkipped = 0;
   const domainCounts = new Map<string, number>();
   const elements: BootstrapElementCandidate[] = [];
 
   for (const doc of docs) {
     if (hasOwnKind(doc.frontmatter)) {
       alreadyTypedCount += 1;
+      continue;
+    }
+    if (isRuntimeOwnedSkill(doc.slug, doc.frontmatter)) {
+      // 남의 파일이다 — 후보에 넣지 않고, 몇 개를 뺐는지 화면이 말할 수 있게 센다.
+      runtimeOwnedSkipped += 1;
       continue;
     }
     if (isRootReadme(doc.slug)) {
@@ -118,6 +162,7 @@ export function deriveBootstrapPlan(
     domains,
     elements,
     alreadyTypedCount,
+    runtimeOwnedSkipped,
   };
 }
 

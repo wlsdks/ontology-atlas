@@ -2431,6 +2431,7 @@
       "summary": "Adds a type marker to the top of {count} documents and creates one new project file ({projectFile}).",
       "bodyUntouched": "Document bodies are never changed. Everything happens inside your folder, and git can undo it anytime.",
       "alreadyTyped": "{count} documents already on the map are left as-is.",
+      "runtimeSkills": "{count} skill files owned by your agent runtime are left untouched — that program manages them.",
       "confirm": "Build the map",
       "cancel": "Close",
       "errorPrefix": "Could not save:",

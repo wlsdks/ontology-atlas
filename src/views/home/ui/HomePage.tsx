@@ -3975,6 +3975,7 @@ export function HomePage() {
                         t("bootstrap.summary", { count: docCount, projectFile }),
                       bodyUntouched: t("bootstrap.bodyUntouched"),
                       alreadyTyped: (count) => t("bootstrap.alreadyTyped", { count }),
+                      runtimeSkills: (count) => t("bootstrap.runtimeSkills", { count }),
                       confirm: t("bootstrap.confirm"),
                       cancel: t("bootstrap.cancel"),
                       errorPrefix: t("bootstrap.errorPrefix"),
