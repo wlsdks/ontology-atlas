@@ -136,11 +136,11 @@ node cli/src/index.mjs agent-brief my-vault
 추정하지 않고 fail-closed 상태를 반환합니다.
 
 ```
-agent brief healthy: readiness ready 100/100 · 70 노드 · 152 관계 · 6 health checks
+agent brief healthy — readiness ready 100/100 · 70 노드 · 152 관계 · 6 health checks
 
 ENTRYPOINTS (agent가 먼저 볼 고연결 노드)
-   1 domains/onboarding-and-shell: Onboarding, Distribution & App Shell  deg 33
-   2 domains/topology-navigation: Topology Map Navigation               deg 25
+   1 domains/onboarding-and-shell   — Onboarding, Distribution & App Shell  deg 33
+   2 domains/topology-navigation    — Topology Map Navigation               deg 25
 
 FIRST MCP CALLS
   query_ontology({"operation":"workspace_brief","limit":5})

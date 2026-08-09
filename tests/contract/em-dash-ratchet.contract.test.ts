@@ -160,12 +160,38 @@ describe("작대기 — 화면에 그려지는 문서", () => {
     for (const root of RENDERED_DOC_ROOTS) {
       expect(markdownFiles(root).length, `${root} 에서 문서를 못 읽었다`).toBeGreaterThan(5);
     }
+    /**
+     * ⚠️ **코드 블록은 면제다** (2026-08-09, 이 게이트를 켠 뒤 배운 것).
+     *
+     * 처음에는 파일 전체에서 작대기를 금지했다. 그런데 `docs/guide/**` 의 코드
+     * 블록에는 **CLI 가 실제로 찍는 출력**이 전사돼 있고, CLI 는 `— blast radius`
+     * 처럼 작대기를 찍는다(`cli/src/commands/blast-radius.mjs`). 그 전사를 콜론으로
+     * 바꾸는 것은 문장을 다듬는 게 아니라 **프로그램이 하지 않는 말을 적는 것**이다.
+     * 실제로 한 번 그렇게 바꿨고(16줄) 되돌렸다.
+     *
+     * 그래서 판정 대상은 **산문**이다. 코드 블록 안은 사실 기록이므로 손대지 않는다.
+     * CLI 출력 자체에서 작대기를 뺄지는 별개 질문이고, 그때는 CLI 를 고치고 문서가
+     * 따라오는 순서여야 한다.
+     */
+    const proseHasDash = (text: string): boolean => {
+      let inFence = false;
+      for (const line of text.split("\n")) {
+        if (line.trimStart().startsWith("```")) {
+          inFence = !inFence;
+          continue;
+        }
+        if (!inFence && line.includes("—")) return true;
+      }
+      return false;
+    };
+
     const offenders = files
-      .filter((file) => readFileSync(file, "utf8").includes("—"))
+      .filter((file) => proseHasDash(readFileSync(file, "utf8")))
       .map((file) => file.slice(REPO_ROOT.length + 1));
     expect(
       offenders,
-      "화면에 그려지는 문서에 작대기가 들어왔다. 문장이 끝났으면 마침표, 이어지면 콜론, 삽입구는 괄호:\n" +
+      "화면에 그려지는 문서의 **산문**에 작대기가 들어왔다. 문장이 끝났으면 마침표, " +
+        "이어지면 콜론, 삽입구는 괄호. (코드 블록은 프로그램 출력 전사라 면제다.)\n" +
         offenders.join("\n"),
     ).toEqual([]);
     expect(SAMPLE_ROOT.length, "SAMPLE_ROOT 가 목록에서 빠졌다").toBeGreaterThan(0);
