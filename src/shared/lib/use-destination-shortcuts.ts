@@ -66,6 +66,42 @@ function blockingSurfaceOpen(): boolean {
   return false;
 }
 
+/**
+ * 이 키가 그 글자인가 — **입력기(IME)와 자판 배열에 안 넘어가게.**
+ *
+ * ⚠️ **`event.key` 만 보면 한글 입력 상태에서 통째로 안 먹는다** (2026-08-10,
+ * 설치 앱 실측). 한글 입력기가 켜져 있으면 물리 `G` 키의 `event.key` 는 `ㅎ`,
+ * `P` 는 `ㅔ` 다. 조합키도 안 눌렸고 초점도 body 였고 막는 표면도 없었는데, 단지
+ * 글자가 달라서 `DESTINATION_BY_KEY` 에 걸리지 않았다.
+ *
+ * **이 제품의 주 언어가 한국어다.** 즉 이 버그는 «드문 환경» 이 아니라 소유자와
+ * 대상 사용자의 **평소 상태**였고, 브라우저 e2e 는 Latin 을 타이핑하므로 원리적으로
+ * 못 잡는다.
+ *
+ * 그래서 둘 중 하나라도 맞으면 통과시킨다:
+ *
+ * - `event.code === 'KeyG'` — **물리 위치**. 입력기와 무관하다(한글·일본어·중국어).
+ * - `event.key === 'g'` — **찍힌 글자**. QWERTY 가 아닌 Latin 배열(AZERTY·Dvorak)
+ *   에서 사용자가 실제로 누르는 키다.
+ *
+ * 하나만 쓰면 각각 반대쪽을 잃는다: `code` 만 보면 AZERTY 에서 `A` 를 눌러야
+ * `KeyQ` 가 되고, `key` 만 보면 한글에서 아무것도 안 된다.
+ */
+export function matchesLetter(event: Pick<KeyboardEvent, 'key' | 'code'>, letter: string): boolean {
+  if (event.key.toLowerCase() === letter) return true;
+  return event.code === `Key${letter.toUpperCase()}`;
+}
+
+/** 이 사건이 어느 목적지의 글자인가. 없으면 `null`. */
+function destinationForEvent(
+  event: Pick<KeyboardEvent, 'key' | 'code'>,
+): DestinationId | null {
+  for (const [letter, id] of Object.entries(DESTINATION_BY_KEY)) {
+    if (matchesLetter(event, letter)) return id;
+  }
+  return null;
+}
+
 export interface DestinationShortcutOptions {
   /** 목적지로 데려간다. 라우터는 호출자가 쥔다 — `shared` 가 라우터를 모르게. */
   navigate: (href: string, id: DestinationId) => void;
@@ -113,11 +149,10 @@ export function useDestinationShortcuts({
         return;
       }
 
-      const key = event.key.toLowerCase();
       const now = performance.now();
 
       if (leaderAt.current !== null && now - leaderAt.current <= NAV_LEADER_WINDOW_MS) {
-        const id = DESTINATION_BY_KEY[key];
+        const id = destinationForEvent(event);
         leaderAt.current = null;
         if (!id) return;
         event.preventDefault();
@@ -127,7 +162,7 @@ export function useDestinationShortcuts({
 
       // 리더를 새로 누른다. `G G`(git)가 성립하려면 리더 자신도 두 번째 글자가
       // 될 수 있어야 하는데, 그 판정은 위 블록이 먼저 하므로 순서가 중요하다.
-      leaderAt.current = key === NAV_LEADER_KEY ? now : null;
+      leaderAt.current = matchesLetter(event, NAV_LEADER_KEY) ? now : null;
     };
     window.addEventListener('keydown', handler);
     return () => window.removeEventListener('keydown', handler);

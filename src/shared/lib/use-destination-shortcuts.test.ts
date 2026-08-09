@@ -19,6 +19,21 @@ import { NAV_LEADER_WINDOW_MS } from "@/shared/config/destinations";
  * `tests/e2e/destination-shortcuts.spec.ts`.
  */
 
+/**
+ * 한글 입력기가 켜진 상태의 키 사건 — `key` 는 자모, `code` 는 물리 위치.
+ *
+ * ⚠️ **이 함수가 있는 이유가 실제 결함이다** (2026-08-10, 설치 앱 실측).
+ * 한글 입력 상태에서 물리 `G` 는 `key="ㅎ"`, `P` 는 `key="ㅔ"` 로 온다. 조합키도
+ * 없고 초점도 body 였고 막는 표면도 없었는데, **단지 글자가 달라 하나도 안 먹었다.**
+ * 이 제품의 주 언어가 한국어이므로 그건 드문 환경이 아니라 **평소 상태**였고,
+ * 브라우저 e2e 는 Latin 을 타이핑하므로 원리적으로 못 잡는다.
+ */
+function pressHangul(jamo: string, code: string) {
+  window.dispatchEvent(
+    new KeyboardEvent("keydown", { key: jamo, code, bubbles: true, cancelable: true }),
+  );
+}
+
 function press(key: string, target?: Element, extra: Partial<KeyboardEventInit> = {}) {
   const event = new KeyboardEvent("keydown", { key, bubbles: true, cancelable: true, ...extra });
   (target ?? window).dispatchEvent(event);
@@ -44,6 +59,28 @@ describe("useDestinationShortcuts", () => {
     expect(navigate).toHaveBeenCalledTimes(1);
     expect(navigate.mock.calls[0]?.[0]).toBe("/projects/");
     expect(navigate.mock.calls[0]?.[1]).toBe("projects");
+  });
+
+  it("한글 입력기가 켜져 있어도 이동한다 — 물리 키로 판정한다", () => {
+    renderHook(() => useDestinationShortcuts({ navigate }));
+    pressHangul("ㅎ", "KeyG"); // 리더
+    pressHangul("ㅔ", "KeyP"); // 프로젝트
+    expect(navigate, "한글 입력 상태에서 안 먹는다").toHaveBeenCalledWith("/projects/", "projects");
+  });
+
+  it("한글 입력기에서 G G(git)도 성립한다", () => {
+    renderHook(() => useDestinationShortcuts({ navigate }));
+    pressHangul("ㅎ", "KeyG");
+    pressHangul("ㅎ", "KeyG");
+    expect(navigate).toHaveBeenCalledWith("/git/", "git");
+  });
+
+  it("자판이 QWERTY 가 아니어도 찍힌 글자로 맞는다", () => {
+    renderHook(() => useDestinationShortcuts({ navigate }));
+    // AZERTY 에서 사용자가 `G` 라고 찍힌 키를 누르면 `code` 는 다를 수 있다.
+    window.dispatchEvent(new KeyboardEvent("keydown", { key: "g", code: "KeyZ", bubbles: true }));
+    window.dispatchEvent(new KeyboardEvent("keydown", { key: "p", code: "KeyX", bubbles: true }));
+    expect(navigate).toHaveBeenCalledWith("/projects/", "projects");
   });
 
   it("리더 없이 글자만 누르면 아무 일도 없다", () => {
