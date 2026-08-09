@@ -42,6 +42,39 @@
 
 ---
 
+## 2026-08-09 — quick-start는 부분 성공을 완료로 승격하지 않는다
+
+**소집**: 단독 PO 패스 · **트리거**: bootstrap/MCP가 실패해 nonzero로 끝났는데도
+green `quick start done`, `bootstrapped`, `MCP already wired`와 agent 질문 권유가
+출력되는 모순을 fresh fixture에서 재현했다. packed 설치본은 누락 runtime import로
+정상 quick-start 자체가 실패하면서도 같은 완료 문구를 냈다.
+**선행 결정 관계**: 2026-08-09 「신뢰 계약을 먼저 닫는다」의 M1.3 순서와
+2026-08-09 「agent config의 ready는 지원되는 실행 shape」의 ready/live 분리는
+**모두 유효**하다. 이번 결정은 CLI 명령·옵션·vault schema를 바꾸지 않고 같은
+상태 구분을 quick-start terminal output에 적용한다.
+**루브릭**: 24/24 (치명적 0: 없음)
+**결정**: quick-start는 scaffold/config write, ontology bootstrap, live MCP verification을
+서로 다른 상태로 취급한다. bootstrap exit가 nonzero면 그 code를 그대로 반환하고,
+성공 색·완료·연결 문구와 agent 사용 권유를 출력하지 않는다. 대신 scaffold와 config가
+이미 쓰였지만 unverified라는 부분 성공, `mcp-verify` 진단, bootstrap 재시도 명령을
+한 recovery block으로 보여 준다. bootstrap이 성공한 경우에만 기존 3-step 완료 흐름을
+유지한다.
+**적용 규칙**: 실패를 숨기기 위해 앞선 write를 rollback하지 않고, 앞선 write를
+근거로 뒤 단계를 성공 처리하지도 않는다. source checkout과 실제 tarball 설치본이
+동일한 success/failure 문구·exit 계약을 가져야 한다. packed package의 모든 reachable
+runtime import는 manifest gate와 smoke가 함께 보호한다.
+**서명**: owner — M1.3 진행 승인; Codex — 구현·packed runtime 검증
+
+**기록된 반대**: “automation은 nonzero exit를 읽으므로 사람이 보는 마지막 완료 문구를
+유지해도 되고, 실패 때도 agent 재시작 다음 단계를 보여 주는 편이 덜 막힌다.”
+**반증 조건**: 새 recovery block 때문에 사용자가 이미 작성된 config까지 사라졌다고
+오해해 반복 init/덮어쓰기를 늘리거나, diagnose→retry보다 종전 혼합 출력에서 복구 시간이
+짧았다는 독립 walkthrough 증거가 두 번 나온다. 그 경우 부분 성공 표현과 복구 순서를
+다시 다듬되 false-success 문구는 되살리지 않는다.
+**재검토**: 위 오해 또는 복구 시간 역전이 서로 다른 두 환경에서 재현될 때.
+
+**상태**: 유효
+
 ## 2026-08-09 — agent config의 `ready`는 지원되는 실행 shape를 뜻한다
 
 **소집**: 단독 PO 패스 · **트리거**: 정상 source-checkout 설정은 `0/3`으로,

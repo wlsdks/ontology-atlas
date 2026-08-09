@@ -94,8 +94,8 @@ RDF/OWL/SKOS/SHACL 구현으로 소개하지 않는다. **적용 원칙**: LLM�
 | 0.5 | D1 | done(D1 research commit) | ontology construction 문헌·표준을 재검증하고 품질 계약과 우선순위를 보강했다. |
 | 1 | M1.1 | done(844104d73) | proposal과 finalizer가 같은 evidence witness 의미를 쓴다. |
 | 2 | M1.2 | done(d375bada9) | 앱이 실제 실행 가능한 agent config만 ready로 판정한다. |
-| 3 | M1.3 | ready | quick-start 실패가 성공처럼 보이지 않는다. |
-| 4 | M1.4 | blocked(M1.3) | 현재 MCP inventory가 runtime registry 한 곳에서 파생된다. |
+| 3 | M1.3 | done(761d555a4) | quick-start 실패가 성공처럼 보이지 않는다. |
+| 4 | M1.4 | ready | 현재 MCP inventory가 runtime registry 한 곳에서 파생된다. |
 | 5 | O1.2 | blocked(M1.4) | Atlas의 5-kind·관계·formal/RDF/OWL 경계를 정직하게 고정한다. |
 | 6 | O1.1 | blocked(O1.2) | Workshop은 근거 없는 `is_a`를 추천하지 않는다. |
 | 7 | O1.3 | blocked(O1.1) | 요구·CQ·예시·반례·다차원 품질 평가 계약을 고정한다. |
@@ -336,6 +336,7 @@ kind 묶음이 아니라 qualified statement/provenance envelope다.
 | D1 | D1 research commit (this row) | `formal=machine-readable`, RDF/OWL conformance 암시, lifecycle·quality-vector 부재 | `docs-vault:check`; `docs:check`; `agents:check`; `decisions:check`; `checks:changed` | 고전 방법론·W3C 표준·2025~2026 LLM/CQ 1차 출처를 교차 검증하고 정본/순서를 보강 | 구현은 M1.1부터; lifecycle의 공개 계약 반영은 M1.5 PO Council 뒤 |
 | M1.1 | `844104d73` | analyzer가 승인한 `README.md` witness를 unchanged writePlan으로 저장한 뒤 finalizer가 `scope` unresolved로 거절 | MCP unit 32; app/MCP focused Vitest 17; contract 1,559; MCP integration 115; TypeScript·ESLint; gate-probe RED→GREEN | Node 24 실제 stdio proposal→write→connect→finalize→fresh `agent_brief`; scope resolved, 의도된 impact gap 유지, private root 노출 0; dogfood MCP 35/35 | exact `## Competency answers`의 `Evidence`/`Paths`만 파생하며 임의 본문 경로는 제외; UI 변경 없음; 다음은 M1.2 executable config truth |
 | M1.2 | `d375bada9` | source/bundle 설정은 false, 죽은 `npx`는 true, Settings는 template까지 `3`으로 세고 CLI도 `npx`를 ready로 판정 | app/config/Settings 161; CLI integration 289; contract 1,559; desktop bridge 135; desktop check 274; i18n 16; TypeScript·ESLint; gate-probe RED→GREEN | Node 24 fresh init의 활성 config 4/4 + stdio MCP 35/35; 재빌드한 `/Applications/Ontology Atlas.app`에서 Codex Computer Use로 Settings 2/2와 두 행만 확인; bundled binary 35/35 | ready는 실행 shape·대상 파일·vault 좌표 계약이며 live session 자체는 별도 `mcp-verify`가 증명; 다음은 M1.3 terminal truth |
+| M1.3 | `761d555a4` | bootstrap exit 2 뒤에도 green `quick start done`, `bootstrapped`, `MCP already wired`가 출력; 실제 tarball은 runtime import 누락으로 정상 quick-start도 exit 2 | quick-start source 7; CLI integration 290; package contract MCP 41/CLI 90 reachable; packed CLI success+failure; ESLint; gate-probe RED→GREEN | source와 새 tarball 설치본 모두 성공은 기존 3-step, 실패는 nonzero + `quick start incomplete` + written-but-unverified + 실행 가능한 diagnose/retry 명령; packed MCP 누락 runtime 파일 복구 | scaffold/config write는 보존하되 bootstrap·live MCP 준비로 승격하지 않음; 다음은 M1.4 runtime-derived inventory |
 
 ### 트랙 공통 종료 규칙
 

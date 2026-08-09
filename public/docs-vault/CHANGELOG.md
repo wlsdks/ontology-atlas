@@ -7,6 +7,24 @@
 
 ---
 
+## 2026-08-09 — quick-start가 실패를 성공이라고 말하지 않는다
+
+`init --quick-start`는 vault와 agent config를 먼저 쓴 뒤 bootstrap을 실행한다.
+종전에는 bootstrap/MCP가 실패해 exit 2가 되어도 마지막에 초록색 `quick start done`,
+`bootstrapped`, `MCP already wired`를 출력해 사람에게 서로 반대인 상태를 말했다.
+
+- 실패 경로는 이제 yellow `quick start incomplete`로 끝난다. vault scaffold와
+  agent config가 이미 작성됐다는 사실은 보존하되 **unverified**라고 명시한다.
+- agent 재시작·질문을 권하지 않고, 같은 cwd에서 그대로 실행 가능한
+  `mcp-verify … --timeout-ms 15000` 진단과 `bootstrap …` 재시도 명령을 보여 준다.
+- 성공 경로의 짧은 3-step과 exit 0은 바뀌지 않았다.
+- 실제 tarball 검증 중 MCP package에서 runtime import 한 파일이 빠져 정상
+  quick-start도 죽는 결함을 발견했다. 누락 파일을 manifest에 포함하고, packed CLI
+  smoke가 성공과 주입된 실패 양쪽의 exit·문구를 함께 검증하게 했다.
+
+화면과 디자인 시스템은 바뀌지 않았다. 생성됨·검증됨·연결됨을 같은 말로 뭉개지
+않도록 CLI onboarding의 상태 provenance만 바로잡은 변경이다.
+
 ## 2026-08-09 — `ready`가 실제로 실행 가능한 에이전트 설정을 뜻한다
 
 설치할 수 없는 `npx -y ontology-atlas-mcp` 설정이 준비 완료로 보이고, 반대로

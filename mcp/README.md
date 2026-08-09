@@ -120,6 +120,11 @@ That creates the starter markdown vault plus ready-to-use MCP config files:
 - `.mcp.json` for Claude Code / Cursor
 - `.codex/config.toml` for Codex
 
+Add `--quick-start` to bootstrap from the current repository in the same run.
+If bootstrap or MCP startup fails, the command keeps the scaffold and configs,
+returns nonzero, labels them unverified, and prints exact diagnose/retry commands;
+only a successful bootstrap prints the compact three-step completion block.
+
 Open either the codebase root or the vault folder in the agent and restart it.
 The generated root config points at `./ontology`; the vault-local config uses
 `OATLAS_VAULT=.` so the folder stays portable.
