@@ -7,6 +7,26 @@
 
 ---
 
+## 2026-08-09 · MCP 첫 안내와 실제 도구 목록이 항상 같다
+
+MCP 연결 직후 agent가 읽는 initialize 안내는 도구가 33개라고 적으면서 실제
+`tools/list`는 35개를 반환했고, read-only 모드에서도 사용할 수 없는 write 도구를
+계속 안내했다. 이제 count와 read/write 이름 집합은 실행 중인 동일한 registry에서
+파생된다.
+
+- full 모드와 read-only 모드의 initialize inventory가 각 세션의 `tools/list`와
+  정확히 일치한다. read-only 안내에는 write 도구가 하나도 나타나지 않는다.
+- `mcp-verify`가 live 목록과 initialize header·분류·이름을 독립적으로 비교한다.
+  count 오염과 read-only write 누출을 다시 넣으면 실제로 실패하는 것도 확인했다.
+- Settings와 새 볼트 starter는 변하기 쉬운 숫자와 전체 이름 목록을 보여 주지 않는다.
+  일반 사용자는 `mcp-verify`로 연결만 확인하고, 정확한 목록이 필요한 agent·전문가는
+  `tools/list`를 읽는다.
+- 현재 README·가이드·launch 문서와 self-ontology는 같은 정본을 가리킨다. 역사와
+  archive의 당시 숫자는 보존했다.
+
+새 레이아웃·색·간격·모션은 만들지 않았다. 기존 설정 화면의 정보 위계를 유지하면서
+사람에게는 더 짧게, agent에게는 더 정확하게 보이도록 first-contact 계약만 바꿨다.
+
 ## 2026-08-09 · quick-start가 실패를 성공이라고 말하지 않는다
 
 `init --quick-start`는 vault와 agent config를 먼저 쓴 뒤 bootstrap을 실행한다.
