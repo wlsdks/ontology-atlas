@@ -2,6 +2,7 @@
 
 import { useEffect, useRef, type RefObject } from "react";
 import { Orbit } from "lucide-react";
+import { MAP_CANVAS_SURFACE_ROLE } from "@/shared/lib/focus-map-canvas";
 import { ICON_SIZE } from "@/shared/ui/icon-size";
 import { useTopologyLoop } from "./use-topology-loop";
 import type { TierRevealConfig } from "../model/tier-visibility";
@@ -409,6 +410,10 @@ export function TopologyMapV2(props: TopologyMapV2Props) {
       <canvas
         ref={canvasRef}
         data-testid="topology-map-v2-canvas"
+        /* `G M` 이 이 캔버스를 찾아 초점을 주는 표식 — 자세한 이유는
+           `shared/lib/focus-map-canvas.ts`. `data-testid` 는 시험의 것이라
+           런타임 선택자로 쓰지 않는다. */
+        data-surface-role={MAP_CANVAS_SURFACE_ROLE}
         /**
          * **끌 수 있는 것은 그림이 아니다** (2026-07-28 모션석 P3).
          *

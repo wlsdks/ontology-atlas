@@ -40,6 +40,80 @@ async function focusCanvas(page: import("@playwright/test").Page) {
 const selectedId = (page: import("@playwright/test").Page) =>
   page.evaluate(() => window.__atlasMap?.selection().nodeId ?? null);
 
+test.describe("지도에 초점을 주는 길", () => {
+  test.beforeEach(async ({ page }) => {
+    await page.setViewportSize({ width: 1440, height: 900 });
+    await seedFirstRunSeen(page);
+  });
+
+  /**
+   * **`G M` 이 지도를 잡는다** — 걷는 기능의 입구다.
+   *
+   * ⚠️ 이 시험이 없던 동안 실측한 값: 키보드로 이 캔버스에 닿으려면 **Tab 30번**
+   * (1440×900). 걷는 기능이 아무리 잘 돌아도 그 앞에 30번이 있으면, 그것을 쓸
+   * 사람이 도달할 수 없다 — 기능을 만든 대상이 정확히 키보드 사용자다.
+   *
+   * `Tab` 횟수를 상한으로 잠그지 않는 이유: 레일에 목적지가 하나 늘면 그 수가
+   * 늘어나는 게 정상이고, 그때마다 이 시험이 터지면 다음 사람은 시험을 고친다.
+   * 잠글 성질은 **「한 번의 키로 닿는 길이 있다」** 다.
+   */
+  test("다른 화면에서 G M 을 누르면 지도 캔버스가 초점을 받는다", async ({ page }) => {
+    await page.goto("/ko/projects/?guides=off&e2e=1");
+    await page.locator("main").first().click({ position: { x: 5, y: 5 } });
+    await page.keyboard.press("g");
+    await page.keyboard.press("m");
+    await expect(page).toHaveURL(/\/ko\/topology\/?($|\?)/, { timeout: 10_000 });
+    await expect
+      .poll(
+        () =>
+          page.evaluate(
+            () => document.activeElement?.getAttribute("data-surface-role") ?? "",
+          ),
+        { timeout: 10_000 },
+      )
+      .toBe("map-canvas");
+  });
+
+  test("지도에 이미 있을 때 G M 을 누르면 캔버스를 잡는다", async ({ page }) => {
+    await page.goto("/ko/topology/?guides=off&e2e=1");
+    await page.locator("main").first().click({ position: { x: 5, y: 5 } });
+    await page.keyboard.press("g");
+    await page.keyboard.press("m");
+    await expect
+      .poll(
+        () =>
+          page.evaluate(
+            () => document.activeElement?.getAttribute("data-surface-role") ?? "",
+          ),
+        { timeout: 10_000 },
+      )
+      .toBe("map-canvas");
+  });
+
+  /** 잡은 다음 바로 걸을 수 있나 — 입구와 기능이 실제로 이어졌는지. */
+  test("G M 으로 잡은 다음 방향키로 걸을 수 있다", async ({ page }) => {
+    await page.goto("/ko/topology/?guides=off&e2e=1");
+    await page.locator("main").first().click({ position: { x: 5, y: 5 } });
+    await page.keyboard.press("g");
+    await page.keyboard.press("m");
+    await expect
+      .poll(
+        () =>
+          page.evaluate(
+            () => document.activeElement?.getAttribute("data-surface-role") ?? "",
+          ),
+        { timeout: 10_000 },
+      )
+      .toBe("map-canvas");
+    await page.keyboard.press("ArrowRight");
+    await expect
+      .poll(() => page.evaluate(() => window.__atlasMap?.selection().nodeId ?? null), {
+        timeout: 5_000,
+      })
+      .not.toBeNull();
+  });
+});
+
 test.describe("지도 키보드 걷기", () => {
   test.beforeEach(async ({ page }) => {
     await page.setViewportSize({ width: 1440, height: 900 });
