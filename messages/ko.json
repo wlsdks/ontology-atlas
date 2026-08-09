@@ -169,7 +169,7 @@
       },
       "sectionGroup": {
         "look": "보이는 것",
-        "connect": "이어진 것"
+        "connect": "폴더와 에이전트"
       },
       "guideAutoStartLabel": "화면 안내 자동 표시",
       "guideAutoStartCaption": "처음 여는 화면마다 안내를 저절로 띄워요. 끄면 아래 「다시 보기」나 지도의 나침반으로만 열려요",
