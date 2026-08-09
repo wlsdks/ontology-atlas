@@ -96,7 +96,7 @@ merge_concepts({fromSlug:"capabilities/order-partial-cancel", intoSlug:"capabili
 
 예시 폴더를 보고 있으면 화면이 그 사실을 먼저 말합니다.
 
-> 지금은 예시 폴더예요. 내 폴더를 열면 이 일들은 여기서 바로 끝낼 수 있어요:
+> 지금은 예시 폴더예요. 내 폴더를 열면 이 일들은 여기서 바로 끝낼 수 있어요.
 > 지금은 명령을 복사해 넘길 수 있어요.
 
 [공방](/guide/studio) 의 저장 버튼과 같은 규칙입니다. 못 쓰는 자리에서 조용히

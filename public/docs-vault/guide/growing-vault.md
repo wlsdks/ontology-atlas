@@ -21,11 +21,11 @@ node cli/src/index.mjs similar "지도 렌더링" my-vault
 ```
 
 ```
-similar to: 지도 렌더링: 3 matches
+similar to: 지도 렌더링 — 3 matches
 
-  1  0.158  element     elements/topology-map-v2: Topology Map V2
+  1  0.158  element     elements/topology-map-v2      — Topology Map V2
        signals: title 0.09 · slug 0.07
-  2  0.087  domain      domains/topology-navigation: Topology Map Navigation
+  2  0.087  domain      domains/topology-navigation   — Topology Map Navigation
 ```
 
 이미 있으면 새로 만들지 말고 **있는 것을 고칩니다.** MCP 로 붙은 에이전트는 이걸
@@ -42,7 +42,7 @@ node cli/src/index.mjs merge capabilities/guided-tour capabilities/topology-brow
 dry-run  capabilities/guided-tour → capabilities/topology-browsing
          (1 file(s) would change, capabilities/guided-tour.md will be deleted)
 
-  domains/onboarding-and-shell: Onboarding, Distribution & App Shell
+  domains/onboarding-and-shell — Onboarding, Distribution & App Shell
     capabilities changed
 
 re-run with --confirm to apply.
@@ -68,7 +68,7 @@ node cli/src/index.mjs rename capabilities/guided-tour capabilities/tour --vault
 ```
 dry-run  capabilities/guided-tour → capabilities/tour (1 file(s) would change)
 
-  domains/onboarding-and-shell: Onboarding, Distribution & App Shell
+  domains/onboarding-and-shell — Onboarding, Distribution & App Shell
     capabilities changed
 
 re-run with --confirm to apply.
@@ -89,7 +89,7 @@ node cli/src/index.mjs blast-radius capabilities/mcp-server my-vault
 `blast-radius` 는 이렇게 답합니다.
 
 ```
-capabilities/mcp-server: blast radius (depth 2, incoming)
+capabilities/mcp-server — blast radius (depth 2, incoming)
   risk medium · 6 노드 · 9 관계 · 0 cross-domain
 
 affected by kind
@@ -105,7 +105,7 @@ node cli/src/index.mjs maintenance my-vault
 ```
 
 ```
-maintenance plan: 8 remaining / 8 filtered / 8 total
+maintenance plan — 8 remaining / 8 filtered / 8 total
 summary: compileIssues:0, cycles:0, canonicalize:0, dangling:0, relations:0
 buckets: phase review:8 · severity info:8 · kind capability_without_evidence:8
 
@@ -131,7 +131,7 @@ node cli/src/index.mjs health my-vault
 ```
 
 ```
-vault health healthy: 70 노드 · 152 관계
+vault health healthy — 70 노드 · 152 관계
 
   ✓ compile_issues            Compiled ontology artifact has no compiler issues.
   ✓ unresolved_edges          Every internal edge resolves to a known node.
@@ -191,7 +191,7 @@ node cli/src/index.mjs snapshot my-vault --dry-run
 2. 쓸 때 그 값을 `expected_mtime` 으로 넘깁니다.
 3. 그 사이 파일이 바뀌었으면 **덮어쓰지 않고 충돌 오류를 냅니다.**
 
-에이전트에게 볼트를 맡길 생각이라면 이 한 가지는 알고 계시는 편이 좋습니다:
+에이전트에게 볼트를 맡길 생각이라면 이 한 가지는 알고 계시는 편이 좋습니다.
 "에이전트가 내 편집을 날렸다" 는 사고가 이 값 하나로 막힙니다.
 
 ## 7. 지우기

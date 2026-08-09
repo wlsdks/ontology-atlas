@@ -59,8 +59,8 @@ After connecting an agent (the installed app's connect button, or
 edits anything:
 
 > Use the ontology-atlas MCP server to run `validate_vault`, then
-> `query_ontology({ "operation": "workspace_brief" })`, then
-> `query_ontology({ "operation": "health" })`. Tell me whether this vault is
+> `query_ontology({ "operation""workspace_brief" })`, then
+> `query_ontology({ "operation""health" })`. Tell me whether this vault is
 > readable and graph-clean before proposing changes.
 
 The CLI equivalents, from the repo root:

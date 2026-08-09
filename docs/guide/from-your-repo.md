@@ -26,7 +26,7 @@ node cli/src/index.mjs init my-vault --quick-start
 1. 볼트 폴더를 만들고 시작 노드를 넣습니다.
 2. **저장소를 훑어 첫 그래프를 만듭니다** (아래 `bootstrap` 과 같은 것).
 3. 에이전트 설정 파일(`.mcp.json` · `.codex/config.toml`)을 씁니다.
-4. `CLAUDE.md` 나 `AGENTS.md` 가 있으면 **흡수를 권하는 줄만** 찍습니다:
+4. `CLAUDE.md` 나 `AGENTS.md` 가 있으면 **흡수를 권하는 줄만** 찍습니다.
    자동으로 흡수하지 않습니다.
 5. 다음에 할 일 세 줄을 찍습니다.
 
@@ -49,7 +49,7 @@ node cli/src/index.mjs analyze . --vault my-vault
 ```
 analyze /path/to/repo (framework=fsd)
 
-  project     ontology-atlas: Ontology Atlas
+  project     ontology-atlas — Ontology Atlas
 
   domains (5)
     domains/in-30-seconds          In 30 seconds       ← README.md
@@ -80,11 +80,11 @@ node cli/src/index.mjs infer-imports . --vault my-vault
 TS/JS 의 import 그래프를 읽어 「필요한 항목」(`depends_on`) 관계 후보를 냅니다.
 
 ```
-infer-imports /path/to/repo: 300 files / 714 edges / 273 external
+infer-imports /path/to/repo — 300 files / 714 edges / 273 external
 
-  module edges (113): depends_on candidates
-    capabilities/project-edit: depends_on→ elements/project × 11 (static=11)
-    capabilities/first-run-starter: depends_on→ capabilities/docs-vault-local × 6
+  module edges (113) — depends_on candidates
+    capabilities/project-edit —depends_on→ elements/project × 11 (static=11)
+    capabilities/first-run-starter —depends_on→ capabilities/docs-vault-local × 6
 ```
 
 `× 11` 은 그 방향으로 실제 import 가 열한 번 있었다는 뜻입니다. 약한 후보를
