@@ -25,6 +25,7 @@ import {
   ONTOLOGY_STARTER_JSON_GATE_COMMAND,
   ONTOLOGY_POST_CHANGE_SYNC_LINES,
 } from '@/features/docs-vault-local';
+import { SETTINGS_SECTION_LABEL } from './settings-primitives';
 import { formatAgentPostChangeSyncPacket } from '@/shared/lib/ontology-tree';
 import type { VaultManifest } from '@/entities/docs-vault';
 import type { AgentClientId } from '@/features/docs-vault-local';
@@ -1462,16 +1463,15 @@ export function VaultAgentSetupPanel({
 }
 
 /**
- * 접기 안의 묶음 제목 — **아이브로우 한 단**.
+ * 접기 안의 묶음 제목 — 루트 시트의 그룹 헤더와 **같은 규격**을 가리킨다.
  *
- * 이 자리의 `text-caption`(9.5px)은 설정 루트 시트에서 금지된 그 쓰임이 아니다.
- * 램프 정의가 말하는 「마이크로 라벨」이고, 누르는 글자도 설명도 아니다
- * (`settings-sheet-type-dialect` 계약이 이 파일을 사정거리 밖에 두는 이유와 같다).
+ * ⚠️ 여기 있던 주석은 *"이 자리의 `text-caption`(9.5px)은 금지된 그 쓰임이 아니다 —
+ * 램프 정의가 말하는 「마이크로 라벨」이다"* 라고 적혀 있었고, **그게 틀렸다**
+ * (2026-08-09, 소유자 지적 2차). 한글에는 `uppercase` 가 아무 일도 하지 않아서
+ * 「대문자 마이크로 라벨」이라는 타이포 장치가 성립하지 않고, 남는 건 그냥 9.5px
+ * 흐린 글자다. 게다가 루트 시트가 같은 역할에 이미 11px 을 쓰고 있었다.
+ * 값은 `SETTINGS_SECTION_LABEL` 한 곳에 있다.
  */
 function SectionLabel({ children }: { children: ReactNode }) {
-  return (
-    <h4 className="text-caption font-[var(--font-weight-signature)] uppercase tracking-[var(--tracking-caps-12)] text-[color:var(--color-text-quaternary)]">
-      {children}
-    </h4>
-  );
+  return <h4 className={SETTINGS_SECTION_LABEL}>{children}</h4>;
 }

@@ -113,16 +113,23 @@ function sourceAtPath(path: string): string {
 }
 
 /**
- * 9.5px 을 쓴 줄 중 **아이브로우가 아닌 것**. 아이브로우는 `uppercase` 가 같은
- * className 에 붙은 것이고, 그것만 램프 정의("마이크로 라벨")에 맞는 쓰임이다.
+ * 9.5px 을 쓴 줄. **면제는 없다.**
  *
- * 판정이 한 줄 안에서 끝나야 한다 — 요소의 역할(`dt` 인가 설명인가)로 가르려면
- * JSX 를 파싱해야 하고, 그러면 게이트가 자기가 못 보는 층을 갖게 된다.
+ * ⚠️ 처음에는 «`uppercase` 가 붙은 아이브로우» 를 면제했고, 그것이 소유자 지적
+ * 2차를 불렀다(2026-08-09). 근거로 든 것이 램프 정의("마이크로 라벨")와
+ * `uppercase` 였는데 **한글에는 `uppercase` 가 아무 일도 하지 않는다** — 대문자
+ * 마이크로 라벨이라는 타이포 장치가 성립하지 않고, 남는 것은 그냥 9.5px 흐린
+ * 글자다. 실제로 그 면제를 타고 절 이름 네 자리(연결 파일 상태 · 에이전트가 이
+ * 폴더를 쓰는 방식 · 확인 · 연결)가 9.5px 로 남았다.
+ *
+ * 결정적인 것은 **루트 시트가 같은 역할에 이미 11px 을 쓰고 있었다**는 사실이다
+ * (`SETTINGS_SECTION_LABEL`). 아무도 쓰지 않는 규격을 위해 열어 둔 면제였으니,
+ * 면제를 지우는 것이 규칙을 더 단순하게 만든다.
  */
-function nonEyebrowCaptionLines(source: string): string[] {
+function captionLines(source: string): string[] {
   return source
     .split("\n")
-    .filter((line) => line.includes("text-caption") && !line.includes("uppercase"))
+    .filter((line) => line.includes("text-caption"))
     .map((line) => line.trim().slice(0, 100));
 }
 
@@ -144,21 +151,39 @@ describe("설정 루트 시트 — 타입 방언은 하나다", () => {
    * 공회전 차단 — 파일 목록이 오타/이동으로 비면 위 시험은 «위반 0» 을 영원히
    * 보고한다. 실제로 무엇인가를 읽었고, 그것이 타입 램프를 쓰는 파일인지 본다.
    */
-  /**
-   * 드릴인 목적지 — 루트와 같은 방언이다. 여기서만 **아이브로우**(`uppercase`)가
-   * 9.5px 을 쓸 수 있다: 루트 시트는 그 자리를 `SettingsGroup` 이 소유하지만
-   * 드릴인은 자기 안에서 절을 나눠야 해서 자기 아이브로우를 갖는다.
-   */
-  it("드릴인 목적지에도 아이브로우 밖의 9.5px 이 없다", () => {
-    const offenders = DRILL_IN_FILES.flatMap((path) => {
-      const lines = nonEyebrowCaptionLines(sourceAtPath(path));
-      return lines.map((line) => `${path.split("/").pop()}: ${line}`);
-    });
+  /** 드릴인 목적지 — 루트와 **똑같은** 방언이다. 9.5px 면제는 없다(위 주석). */
+  it("드릴인 목적지에도 9.5px 이 없다", () => {
+    const offenders = DRILL_IN_FILES.flatMap((path) =>
+      captionLines(sourceAtPath(path)).map((line) => `${path.split("/").pop()}: ${line}`),
+    );
     expect(
       offenders,
       "드릴인 칸이 루트 시트보다 한 단 작아졌다. 이름은 text-body(12.5), " +
-        "설명·값·경로는 text-label(11), 9.5px 은 uppercase 아이브로우만.",
+        "설명·값·경로는 text-label(11). 절 이름은 SETTINGS_SECTION_LABEL 을 쓴다.",
     ).toEqual([]);
+  });
+
+  /**
+   * 절 이름은 **한 벌**이다 — 루트 시트의 그룹 헤더와 드릴인의 절 헤더가 같은 것.
+   * 사본이 생기면 그중 하나가 다시 한 단 작아진다(그게 이번에 일어난 일이다).
+   */
+  it("절 이름 규격이 한 곳에 있고 소비처가 그것을 가리킨다", () => {
+    const primitives = sourceWithoutComments("settings-primitives.tsx");
+    expect(primitives, "SETTINGS_SECTION_LABEL 이 없다").toContain("SETTINGS_SECTION_LABEL");
+    expect(primitives, "절 이름은 text-label(11) 이다").toMatch(
+      /SETTINGS_SECTION_LABEL\s*=\s*\n?\s*'[^']*\btext-label\b/,
+    );
+    /*
+     * 소비처가 값을 다시 적지 않고 가리키는가.
+     *
+     * ⚠️ **`toContain(이름)` 으로는 이것을 못 본다** — import 줄에 이름이 남아 있으면
+     * 본문에서 손으로 값을 적어도 통과한다(프로브에서 실제로 통과했다). 그래서
+     * **`className` 자리에서** 쓰이는지를 본다.
+     */
+    const setup = sourceWithoutComments("VaultAgentSetupPanel.tsx");
+    expect(setup, "드릴인 절 이름이 규격을 className 으로 쓰지 않는다").toMatch(
+      /className=\{[^}]*SETTINGS_SECTION_LABEL/,
+    );
   });
 
   it("게이트가 빈 집합 위에서 돌지 않는다", () => {
