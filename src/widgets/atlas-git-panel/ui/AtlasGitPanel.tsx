@@ -1131,7 +1131,7 @@ function SetupFrame({
     <div
       data-testid="atlas-git-setup"
       data-setup-state={state}
-      className="topology-chrome-in grid w-full flex-1 grid-cols-1 content-center items-center gap-9 py-[var(--git-setup-top)] lg:grid-cols-[minmax(0,var(--git-setup-measure))_minmax(0,1fr)] lg:gap-10 xl:gap-14"
+      className="topology-chrome-in grid w-full flex-1 grid-cols-1 content-center items-center gap-9 py-[var(--git-setup-top)] lg:grid-cols-[minmax(0,var(--git-setup-measure))_minmax(0,var(--git-setup-preview-max))] lg:justify-center lg:gap-10 xl:gap-14"
     >
       {/* 말하는 칸은 **어느 폭에서도** 산문 측정폭을 넘지 않는다. 두 칸이
           접히는 `<lg` 에서 이 상한이 없으면 구분선과 CLI 줄이 1,012px 까지
