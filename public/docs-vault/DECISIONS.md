@@ -42,6 +42,39 @@
 
 ---
 
+## 2026-08-09 — 공방은 증거 없는 빈 관계를 추천으로 꾸미지 않는다
+
+**소집**: 단독 PO 패스 24/24 + 디자인 게이트(기존 Compass 구조 안의 상태 교정) ·
+**트리거**: Workshop이 첫 빈 UP 소켓과 same-domain·이름 유사 후보를 `is_a`
+추천처럼 표시했다. 이는 2026-08-09 meta-model 결정의 “same-domain·이름 유사성·
+폴더 중첩은 direct subsumption의 증거가 아니다”를 실제 쓰기 표면이 위반한 관측이다.
+선행 결정과 O1.2 → O1.1 → O1.3 순서는 여전히 유효하다.
+**루브릭**: 24/24 (Problem 4 · User moment 4 · Differentiation 4 · Ontology 4 ·
+Agent 4 · Verification 4, 치명적 0 없음)
+**결정**: 네 고정 방위와 빈 소켓의 관계 affordance는 유지하되, 빈 상태 자체는
+항상 중립이다. `추천` 또는 amber `expected` 상태는 대상별
+`rationale + evidenceRefs + safe_to_add preflight(from/to/relation 일치)` 영수증이
+모두 있을 때만 허용한다. 현재 graph projection과 picker scorer는 이 영수증을
+생산하지 않으므로 runtime 추천은 0개가 정직한 결과다. `is_a` 후보는 같은 kind로만
+제한하고, 자동 추천 대신 중립적인 Browse에서 찾게 한다. exact-name·same-domain·
+adjacency는 발견 신호일 뿐 관계 증거가 아니다.
+**적용 규칙**: create/enhance 모두 같은 정책을 쓴다. project→`is_a`처럼 허용 kind가
+없는 relation-bound create는 모든 kind로 넓히지 않고 닫는다. Compass 배치·방위·
+토큰·모션·picker primitive는 바꾸지 않는다. 일반 사용자는 “추천 근거 없음”과 쉬운
+질문만 보고, 향후 전문가/agent surface는 영수증의 근거와 preflight를 펼칠 수 있다.
+**서명**: owner — O1.1 실행 승인; Codex — 구현·검증
+
+**기록된 반대**: 첫 빈 소켓의 인디고 guide와 amber expected를 없애면 초보자가
+무엇을 먼저 해야 할지 몰라 첫 관계 작성률이 떨어질 수 있다. 그러나 현재 guide는
+올바른 다음 행동이 아니라 증명되지 않은 ontology assertion을 시각적으로 밀었다.
+**반증 조건**: 동일한 starter/낯선 vault에서 중립 공방의 첫 유효 관계 도달 시간이
+기존 대비 반복적으로 늘거나, 사용자가 “추천이 없어서 무엇을 검토할지 모르겠다”에서
+두 번 이상 멈춘다. 그러면 topology 신호를 추천으로 되돌리지 않고, O1.3의 CQ/evidence
+수집 또는 중립적인 시작 안내를 추가한다.
+**재검토**: O1.3가 실제 evidence receipt를 생산하거나 위 stall이 두 번 관측될 때.
+
+**상태**: 유효
+
 ## 2026-08-09 — Atlas meta-model은 현재 구현의 경계를 숨기지 않는 한 정본이다
 
 **소집**: PO Council 전체 5석(`gpt-5.6-sol`, 동시 실행 한도 4라 서로의 결과를

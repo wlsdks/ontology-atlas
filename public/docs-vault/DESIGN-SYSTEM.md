@@ -2242,14 +2242,22 @@ workshop finally look like this app.
   RIGHT = 필요한 항목 (depends), LEFT = 관련 항목 (relates). Filled = solid indigo
   strut + satellite card; missing = a **dashed line-art socket** (not a jewel)
   you fill via an inline anchored picker.
-- **Completeness** reads from the center card's 4-side border (dashed = empty,
-  solid = filled) + a plain caption ("4개 중 2개 채웠어요") + a top-left flow cue
-  (mini compass). No floating % ring, no levels, no rarity.
+- **Recorded/open directions**, not completeness, read from the center card's
+  4-side border (dashed = open, solid = recorded) + a plain caption
+  ("4방향 중 2개 기록됨") + a top-left relation-map cue (mini compass). An empty
+  direction is not automatically missing meaning. No floating % ring, no levels,
+  no rarity.
 - **Color:** achromatic + single indigo, exactly like the rest of the app.
-  **amber** is used only as the "expected-but-missing" socket signal (the DOWN
-  bearing when strongly expected). **No glow / gradient / gem / particle / gold.**
-- **One guided next action** ("여기부터 채워요") + plain-language socket questions
-  ("이 노드는 무엇의 한 종류인가요?") — zero ontology jargon on the surface.
+  Indigo `recommended` and amber `expected` are allowed only with a candidate-
+  specific receipt containing rationale, evidence references, and a matching
+  safe-to-add relation preflight. The current graph projection supplies no such
+  receipt, so empty sockets are neutral. **No glow / gradient / gem / particle /
+  gold.**
+- **One calm frame prompt** + plain-language socket questions ("이 노드는 무엇의
+  한 종류인가요?") — zero ontology jargon on the surface. A neutral socket says
+  that no recommendation evidence exists; it remains clickable. `is_a` keeps
+  same-kind candidates in Browse but does not rank topology/name proximity as a
+  semantic recommendation.
 - **Motion:** one interruptible ~200ms opacity/color confirm when a socket fills
   (dashed → solid); `prefers-reduced-motion` → instant. No ambient motion.
 - **Enhance vs Create** are the same surface in different fill-states (no mode
