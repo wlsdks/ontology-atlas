@@ -3,6 +3,7 @@
 import { useCallback, useState, type ReactNode } from "react";
 import { useRouter, usePathname } from "@/i18n/navigation";
 import { useDestinationShortcuts } from "@/shared/lib/use-destination-shortcuts";
+import { focusMapCanvasWhenReady } from "@/shared/lib/focus-map-canvas";
 import {
   AppNavRail,
   NavRailShellProvider,
@@ -248,7 +249,16 @@ function AppNavRailSlot() {
    * 입구가 없는데 키보드에만 있으면, 그건 발견할 수 없는 기능이다.
    */
   useDestinationShortcuts({
-    navigate: (href) => router.push(href),
+    navigate: (href, id) => {
+      router.push(href);
+      /*
+       * 지도는 **데려가는 것으로 끝나지 않는다** — 캔버스에 초점을 줘야 방향키로
+       * 걸을 수 있다. 실측: 키보드로 그 캔버스에 닿으려면 Tab **30번**이었다
+       * (`shared/lib/focus-map-canvas.ts` 에 이유를 적어 뒀다). 새 단축키를
+       * 만들지 않고 이미 있는 `G M` 에 이 일을 준다.
+       */
+      if (id === "map") focusMapCanvasWhenReady();
+    },
     disabled: gateway,
     hrefOverrides: contextHrefs?.docs ? { docs: contextHrefs.docs } : undefined,
   });
