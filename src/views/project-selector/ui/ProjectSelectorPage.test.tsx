@@ -144,11 +144,27 @@ describe("ProjectSelectorPage", () => {
     expect(screen.queryByTestId("live-activity-indicator-stub")).toBeNull();
   });
 
-  it("renders the workspace census (concepts/relations) from the unified formula", () => {
+  /**
+   * **폴더 전체 수를 이 화면에서 세지 않는다** (2026-08-09 소유자 판정).
+   *
+   * 예전에는 빵부스러기 줄 오른쪽에 「폴더 전체 N 개념 · N 관계」가 있었다. 그런데
+   * 그건 **아래 프로젝트 카드를 다르게 쪼갠 것**이다 — 실측(storefront 샘플):
+   * 49 역량 + 54 요소 + 8 도메인 + 1 프로젝트 = **정확히 112**, 상단이 말하던 그
+   * 수다. 관계만 8 차이(프로젝트 밖 관계)였다.
+   *
+   * 같은 것을 두 스코프로 두 번 세면 읽는 사람은 **둘 중 하나가 틀렸다고 읽는다**.
+   * 코드 주석은 그걸 알면서도 「스코프 라벨을 붙이면 된다」로 넘겼고, 소유자
+   * 판정은 그 반대였다: *"이런거 좀 혼란스러워 위에줄에 정보는 필요없고"*.
+   *
+   * 이 시험은 그 줄이 조용히 돌아오는 것을 막는다.
+   */
+  it("폴더 전체 개념·관계 수를 다시 들이지 않는다 — 세는 곳은 프로젝트 카드 하나다", () => {
     renderPage();
-    // P0c 정본 census — project 포함 파생 전체 4 (표면 간 불일치 N2 교정).
-    expect(screen.getByText(/4 CONCEPTS/)).toBeInTheDocument();
-    expect(screen.getByText(/2 RELATIONS/)).toBeInTheDocument();
+    const main = screen.getByRole("main").textContent ?? "";
+    expect(main, "이 시험이 헛돌지 않는지 — 화면이 실제로 그려졌나").toContain("project");
+    expect(main).not.toContain("CONCEPTS");
+    expect(main).not.toContain("RELATIONS");
+    expect(screen.queryByTestId("projects-back-to-map"), "지도 입구는 레일 하나다").toBeNull();
   });
 
   it("renders a recent-activity row sourced from real vault doc mtime", () => {
@@ -218,8 +234,6 @@ describe("ProjectSelectorPage", () => {
     expect(header).not.toContain("1 domains");
     expect(header).not.toContain("1 CONCEPTS");
     expect(header).not.toContain("1 RELATIONS");
-    // 복수 자리도 함께 잠근다 — 단수만 고치면 반대 방향으로 되돌아온다.
-    expect(header).toContain("4 CONCEPTS");
-    expect(header).toContain("2 RELATIONS");
+    // 폴더 전체 수는 2026-08-09 에 이 화면에서 빠졌다 — 위 시험이 그 자리를 지킨다.
   });
 });

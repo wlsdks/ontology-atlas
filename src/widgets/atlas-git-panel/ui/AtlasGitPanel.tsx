@@ -11,7 +11,6 @@ import { useTranslations } from "next-intl";
 import {
   Check,
   ChevronRight,
-  Copy,
   Download,
   FolderOpen,
   History as HistoryIcon,
@@ -60,7 +59,6 @@ import type { KnowledgeGraphEdge, KnowledgeGraphNode } from "@/entities/knowledg
 import { buildConceptEgo, matchNodeId, type ConceptEgo } from "../model/build-concept-ego";
 import { CommitDetail } from "./CommitDetail";
 import { cn } from "@/shared/lib/cn";
-import { ATLAS_CLI } from "@/shared/config/cli-invocation";
 import { fieldClass, fieldLabel } from '@/shared/ui/control-class';
 
 /**
@@ -175,7 +173,6 @@ export interface AtlasGitPanelProps {
   className?: string;
 }
 
-const SNAPSHOT_CLI_COMMAND = `${ATLAS_CLI} snapshot`;
 /** S1 보조 탈출구 — 터미널에서 직접 하려는 사용자용. git 용어는 여기서만 노출. */
 const INIT_CLI_COMMAND = "git init";
 
@@ -564,12 +561,7 @@ export function AtlasGitPanel({
    * 공용 `useCopyFeedback` 이 이미 `idle | copied | failed` 3-상태를 갖고 있다.
    * 새 기제를 만들지 않고 그것을 쓴다.
    */
-  const { state: commandCopyState, copy: copySnapshotCommand } = useCopyFeedback(1600);
   const { state: initCopyState, copy: copyInitCommandText } = useCopyFeedback(1600);
-  const copyCliCommand = useCallback(
-    () => void copySnapshotCommand(SNAPSHOT_CLI_COMMAND),
-    [copySnapshotCommand],
-  );
   const copyInitCommand = useCallback(
     () => void copyInitCommandText(INIT_CLI_COMMAND),
     [copyInitCommandText],
@@ -774,8 +766,6 @@ export function AtlasGitPanel({
             key={stage}
             t={t}
             sessionChangeset={sessionChangeset}
-            commandCopyState={commandCopyState}
-            copyCliCommand={copyCliCommand}
           />
         )}
       </div>
@@ -1141,7 +1131,7 @@ function SetupFrame({
     <div
       data-testid="atlas-git-setup"
       data-setup-state={state}
-      className="topology-chrome-in grid w-full flex-1 grid-cols-1 content-center items-center gap-9 py-[var(--git-setup-top)] lg:grid-cols-[minmax(0,var(--git-setup-measure))_minmax(0,1fr)] lg:gap-10 xl:gap-14"
+      className="topology-chrome-in grid w-full flex-1 grid-cols-1 content-center items-center gap-9 py-[var(--git-setup-top)] lg:grid-cols-[minmax(0,var(--git-setup-measure))_minmax(0,var(--git-setup-preview-max))] lg:justify-center lg:gap-10 xl:gap-14"
     >
       {/* 말하는 칸은 **어느 폭에서도** 산문 측정폭을 넘지 않는다. 두 칸이
           접히는 `<lg` 에서 이 상한이 없으면 구분선과 CLI 줄이 1,012px 까지
@@ -1244,13 +1234,9 @@ function SessionChangeSummary({
 function WebSetup({
   t,
   sessionChangeset,
-  commandCopyState,
-  copyCliCommand,
 }: {
   t: Translator;
   sessionChangeset: OntologyChangeset | null;
-  commandCopyState: CopyFeedbackState;
-  copyCliCommand: () => void;
 }) {
   return (
     <SetupFrame
@@ -1273,70 +1259,25 @@ function WebSetup({
       {/* 이번에 바뀐 것 — 행동의 **근거**라 주 동작 아래에 온다. */}
       <SessionChangeSummary t={t} changeset={sessionChangeset} title={t("webSummaryTitle")} />
 
-      {/* 터미널 탈출구 — 이미 CLI 를 쓰는 사용자를 위해 남기되, 주 동작과 같은
-          무게로 경쟁하지 않는다. `webCommandHint`("누르면 …복사돼요")는 버튼
-          툴팁 문구다 — 라벨 자리에 쓰면 버튼이 아닌 것을 누르라는 말이 된다. */}
-      <div className="flex flex-col gap-1.5 border-t border-[color:var(--color-divider)] pt-4">
-        <p className="text-label leading-prose text-[color:var(--color-text-quaternary)]">
-          {t("webCommandLabel")}
-        </p>
-        {/*
-         * 상자를 걷어냈다 (2026-08-02, Tufte data-ink 역전 실측).
-         *
-         * 이 탈출구는 520×46 보더+면 상자였고 면적 23,920px² 였다. 같은 화면의
-         * **주 동작**(앱 받기)은 86×36 = 3,096px² — 보조가 주보다 **7.7배**
-         * 컸다. 담긴 것은 285px 짜리 문자열 하나다. 상자는 그 문자열이 명령임을
-         * 말하려던 것인데, 그건 mono 서체가 이미 말한다.
-         */}
-        <div className="flex items-center justify-between gap-2">
-          <code className="min-w-0 truncate font-mono text-body text-[color:var(--color-text-secondary)]">
-            {SNAPSHOT_CLI_COMMAND}
-          </code>
-          <button
-            type="button"
-            data-testid="atlas-git-web-copy"
-            title={t("webCommandHint")}
-            onClick={copyCliCommand}
-            className={controlClass({
-              shape: "chip",
-              size: "md",
-              className:
-                "shrink-0 border-[color:var(--color-border-soft)] hover:border-[color:var(--color-indigo-a46)] hover:text-[color:var(--color-text-primary)]",
-            })}
-          >
-            {commandCopyState === "copied" ? (
-              <Check size={ICON_SIZE.sm} aria-hidden />
-            ) : (
-              <Copy size={ICON_SIZE.sm} aria-hidden />
-            )}
-            {commandCopyState === "copied"
-              ? t("webCopied")
-              : commandCopyState === "failed"
-                ? t("webCopyFailed")
-                : t("webCopyCommand")}
-          </button>
-        </div>
-        {/**
-         * **자리 표시는 채우는 법과 함께 나온다** (2026-07-29 도그푸딩).
-         *
-         * 이 명령은 `$ATLAS` 로 시작한다. 그게 무엇인지 말해 주는 문장은
-         * `cli-invocation.ts` 에 이미 있었고, 그 파일 주석이 스스로 *"명령을
-         * 내보내는 표면은 이걸 함께 실어야 한다 — 자리 표시가 보이기만 하고
-         * 무엇을 채울지 모르면 정직할 뿐 쓸모가 없다"* 라고 적어 두었는데,
-         * **사람이 이 명령을 읽는 유일한 화면에는 안 실려 있었다.** 복사해
-         * 붙여넣으면 셸이 빈 변수로 풀어 `node /cli/src/index.mjs` 를 돌린다.
-         *
-         * 툴팁(`title`)으로는 안 된다 — 터치에서 도달할 수 없고 마우스
-         * 사용자도 버튼 위에 머물러야 본다. 명령을 읽는 자리에 보이는 글자로
-         * 쓴다.
-         */}
-        <p
-          data-testid="atlas-git-cli-placeholder-hint"
-          className="text-label leading-prose text-[color:var(--color-text-quaternary)]"
-        >
-          {t("cliPlaceholderHint")}
-        </p>
-      </div>
+      {/*
+       * ⚠️ **터미널 탈출구를 걷어냈다** (2026-08-09, 소유자 지적: *"이런건 필요할까?
+       * 내용이..? 별 필요없어보여서"*).
+       *
+       * 그 자리에 있던 것은 `node $ATLAS/cli/src/index.mjs snapshot` 한 줄 + 복사
+       * 버튼 + 「먼저 한 번만 `export ATLAS=…`」 각주였다. 지운 이유 둘:
+       *
+       * ① **쓸 수 있는 사람이 거의 없다.** `$ATLAS` 는 이 저장소의 **소스 폴더**를
+       *    가리켜야 한다 — 즉 clone 한 사람 전용이다. 각주가 그것을 스스로 실토하고
+       *    있었다: *"npm 패키지는 없어요."* 제품 화면이 「우리 패키지는 존재하지
+       *    않는다」를 설명하는 자리가 돼 있었다.
+       * ② **필요하지도 않다.** 볼트가 git 저장소면 그냥 `git commit` 이면 된다.
+       *    우리 CLI 래퍼를 거칠 이유가 없으므로, 이건 탈출구가 아니라 **우리 도구
+       *    홍보**였다.
+       *
+       * 강등 카드 계약(`surfaces.md`: 왜 · 어디서 되나 · 여기서도 되는 것)은 그대로
+       * 지킨다 — 「왜」는 프레임 본문이, 「어디서」는 위의 `/download` 가, 「여기서도
+       * 되는 것」은 아래 세션 요약이 진다. 터미널은 «이 화면»이 아니다.
+       */}
     </SetupFrame>
   );
 }

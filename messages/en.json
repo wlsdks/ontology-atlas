@@ -1344,7 +1344,7 @@
   "ontologyPages": {
     "insights": {
       "title": "Graph insights",
-      "subtitle": "Your whole folder at a glance — every number is computed automatically from the documents",
+      "subtitle": "Your whole folder at a glance. Every number is computed from the documents.",
       "audienceBanner": "This board is for the people and AI agents who tend the map.",
       "censusConcepts": "Concepts",
       "censusRelations": "Relations",
@@ -1355,7 +1355,7 @@
         "composition": "Inventory",
         "connections": "Connections",
         "boundaries": "Boundaries",
-        "freshness": "Freshness",
+        "freshness": "Recent changes",
         "structure": "Structure"
       },
       "tabCountTitle": {
@@ -1459,7 +1459,7 @@
       "repairQueueOpenOntology": "Concept doc",
       "repairQueueRestShow": "Show {count} more repair targets",
       "repairQueueRestHide": "Hide repair targets",
-      "domainFreshnessTitle": "Domain freshness",
+      "domainFreshnessTitle": "Recent changes by domain",
       "windowCaption": "Last {weeks}w · document updated date",
       "stale": "stale",
       "currentWeek": "This week",
@@ -3187,8 +3187,6 @@
     "webEdgesAdded": "{count} relation(s) added",
     "webEdgesRemoved": "{count} relation(s) removed",
     "webNoChanges": "Nothing yet. Edit a document and it shows up here.",
-    "webCommandHint": "Copies the command that saves your current changes",
-    "webCopyCommand": "Save in the terminal",
     "webCopied": "Copied",
     "webDesktopHint": "A browser isn't allowed to run git on this computer. What changed is still shown here.",
     "scopeNotice": "Only documents inside this folder are recorded. Files outside it are left alone.",
@@ -3257,7 +3255,6 @@
     "webTitle": "Saving happens in the app",
     "webGetApp": "Get the app",
     "retryButton": "Check again",
-    "webCommandLabel": "To save from the terminal, use this command",
     "install": {
       "title": "git isn't on this computer",
       "body": "git is the program that keeps your change history. Install it once and everything else happens on this screen.",
@@ -3586,15 +3583,13 @@
     "reading": "Reading the folder…",
     "unsupported": "This browser cannot open folders. The desktop app can.",
     "readError": "Could not read the folder — {error}",
-    "emptyBody": "Pick a folder and we find every SKILL.md inside it, then show when each one fires and what opens when it does. We only read files in that folder and change nothing.",
-    "answersTitle": "What only this screen answers",
-    "answer1": "When a skill fires — its trigger, shown as written.",
-    "answer2": "Why the wrong one fires — names that collide and triggers that overlap.",
-    "answer3": "What happens when it does — what opens, and which of those actually run.",
-    "whereTitle": "Skills usually live here",
-    "emptyHint1": "Your own skills — a project's .claude folder",
-    "emptyHint2": "Installed skills — .claude in your home folder",
-    "emptyHint3": "Read-only. Nothing is written to your vault or to the skill files.",
+    "emptyBody": "Pick a folder and we find every SKILL.md inside it. We only read files in that folder and change nothing.",
+    "answer1": "Its trigger, shown exactly as written.",
+    "answer2": "Names that collide and triggers that overlap.",
+    "answer3": "What opens, and which of those actually run.",
+    "emptyHint1": "Your skills — a project's .claude",
+    "emptyHint2": "Installed — .claude in your home folder",
+    "emptyHint3": "Read-only",
     "truncated": "The folder is large, so we read up to {count} files — the results below cover that much.",
     "notInstalled": "Skipped {count} folders that are not installed — older versions and catalogs you have not installed. Those never fire.",
     "stat": {
@@ -3625,6 +3620,38 @@
       "noFiles": "No bundled files",
       "runs": "runs",
       "missing": "file is missing"
-    }
+    },
+    "searchLabel": "Find by name",
+    "searchPlaceholder": "Find by name…",
+    "noMatch": "No skill by that name.",
+    "group": {
+      "mine": "My folder"
+    },
+    "row": {
+      "collides": "name clash",
+      "metrics": "{chars} chars · {files} files · {runs} run",
+      "runs": "{count} run"
+    },
+    "detail": {
+      "competing": "Competes with this skill",
+      "sameName": "The same name also lives in {source} — which one fires is undefined",
+      "sharedTrigger": "Shares a trigger with {name} — {words}"
+    },
+    "findings": {
+      "alwaysTitle": "Loaded every session",
+      "alwaysNote": "{chars} chars in total",
+      "competingTitle": "Competing with each other",
+      "competingNote": "{names} names · {pairs} trigger pairs",
+      "noneCompeting": "Nothing competes.",
+      "sameNameCount": "{count} places",
+      "runsTitle": "Can run on your machine",
+      "runsNote": "{count} files",
+      "noneRun": "Nothing runs."
+    },
+    "answerQ1": "When it fires",
+    "answerQ2": "Why the wrong one fires",
+    "answerQ3": "What happens then",
+    "openSample": "Browse the example",
+    "sampleNotice": "This is the example set — open your folder to see your own skills."
   }
 }

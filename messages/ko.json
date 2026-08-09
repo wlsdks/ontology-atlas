@@ -1344,7 +1344,7 @@
   "ontologyPages": {
     "insights": {
       "title": "그래프 인사이트",
-      "subtitle": "내 폴더 전체를 한눈에 — 모든 숫자는 문서에서 자동 계산됩니다",
+      "subtitle": "내 폴더 전체를 한눈에 봐요. 모든 숫자는 문서에서 자동으로 계산돼요.",
       "audienceBanner": "이 화면은 지도를 가꾸는 사람과 AI 에이전트를 위한 정비 보드예요.",
       "censusConcepts": "개념",
       "censusRelations": "관계",
@@ -1355,7 +1355,7 @@
         "composition": "구성",
         "connections": "연결",
         "boundaries": "경계",
-        "freshness": "신선도",
+        "freshness": "최근 변화",
         "structure": "구조"
       },
       "tabCountTitle": {
@@ -1459,7 +1459,7 @@
       "repairQueueOpenOntology": "개념 문서",
       "repairQueueRestShow": "나머지 수리 대상 {count}개 보기",
       "repairQueueRestHide": "수리 대상 접기",
-      "domainFreshnessTitle": "도메인 신선도",
+      "domainFreshnessTitle": "도메인별 최근 변화",
       "windowCaption": "최근 {weeks}주 · 문서 갱신일",
       "stale": "한동안 그대로",
       "currentWeek": "이번 주",
@@ -3187,8 +3187,6 @@
     "webEdgesAdded": "관계 추가 {count}",
     "webEdgesRemoved": "관계 삭제 {count}",
     "webNoChanges": "아직 없어요. 문서를 고치면 여기에 나타나요.",
-    "webCommandHint": "누르면 지금 변경을 커밋하는 명령이 복사돼요",
-    "webCopyCommand": "터미널에서 커밋",
     "webCopied": "복사했어요",
     "webDesktopHint": "브라우저는 이 컴퓨터의 git 을 실행할 권한이 없어요. 무엇이 바뀌었는지는 여기서 그대로 보여드릴게요.",
     "scopeNotice": "기록 범위는 이 폴더 안 문서뿐이에요. 폴더 밖 파일은 그대로 둡니다.",
@@ -3257,7 +3255,6 @@
     "webTitle": "기록은 앱에서 남겨요",
     "webGetApp": "앱 받기",
     "retryButton": "다시 확인하기",
-    "webCommandLabel": "터미널에서 커밋하려면 이 명령을 쓰세요",
     "install": {
       "title": "이 컴퓨터에 git 이 없어요",
       "body": "git 은 변경 이력을 쌓는 프로그램이에요. 한 번만 설치하면 그 뒤로는 이 화면에서 다 됩니다.",
@@ -3586,15 +3583,13 @@
     "reading": "폴더를 읽는 중…",
     "unsupported": "이 브라우저는 폴더 열기를 지원하지 않아요. 데스크톱 앱에서는 됩니다.",
     "readError": "폴더를 읽지 못했어요 — {error}",
-    "emptyBody": "폴더를 하나 고르면 그 안의 SKILL.md 를 전부 찾아서, 각각이 언제 발동하고 발동하면 무엇이 열리는지 보여줘요. 폴더 안의 파일만 읽고 아무것도 고치지 않아요.",
-    "answersTitle": "여기서만 답하는 것",
-    "answer1": "이 스킬이 언제 뜨나 — 발동 조건을 그대로 보여줘요.",
-    "answer2": "왜 엉뚱한 게 뜨나 — 이름이 겹치거나 조건이 비슷한 것을 짚어줘요.",
-    "answer3": "뜨면 무슨 일이 일어나나 — 무엇이 열리고 그중 무엇이 실행되는지 봐요.",
-    "whereTitle": "스킬은 보통 여기 있어요",
-    "emptyHint1": "내 스킬 — 프로젝트의 .claude 폴더",
+    "emptyBody": "폴더를 하나 고르면 그 안의 SKILL.md 를 전부 찾아요. 폴더 안의 파일만 읽고 아무것도 고치지 않아요.",
+    "answer1": "발동 조건을 쓰여 있는 그대로 보여줘요.",
+    "answer2": "이름이 겹치거나 조건이 비슷한 것을 짚어줘요.",
+    "answer3": "무엇이 열리고 그중 무엇이 실행되는지 봐요.",
+    "emptyHint1": "내 스킬 — 프로젝트의 .claude",
     "emptyHint2": "설치한 스킬 — 홈 폴더의 .claude",
-    "emptyHint3": "읽기만 해요. 볼트에도, 스킬 파일에도 쓰지 않아요.",
+    "emptyHint3": "읽기만 해요",
     "truncated": "폴더가 커서 {count}개 파일까지만 읽었어요 — 아래 결과는 그 범위 안에서예요.",
     "notInstalled": "설치돼 있지 않은 사본 {count}곳은 뺐어요 — 옛 버전과 아직 설치 안 한 카탈로그예요. 그건 실제로 뜨지 않아요.",
     "stat": {
@@ -3625,6 +3620,38 @@
       "noFiles": "딸린 파일 없음",
       "runs": "실행됨",
       "missing": "파일이 없어요"
-    }
+    },
+    "searchLabel": "이름으로 찾기",
+    "searchPlaceholder": "이름으로 찾기…",
+    "noMatch": "찾는 이름이 없어요.",
+    "group": {
+      "mine": "내 폴더"
+    },
+    "row": {
+      "collides": "이름겹침",
+      "metrics": "{chars}자 · 파일 {files} · 실행 {runs}",
+      "runs": "실행 {count}"
+    },
+    "detail": {
+      "competing": "이 스킬과 경쟁하는 것",
+      "sameName": "같은 이름이 {source} 에도 있어요 — 어느 쪽이 뜰지 정해져 있지 않아요",
+      "sharedTrigger": "{name} 와 뜨는 조건이 겹쳐요 — {words}"
+    },
+    "findings": {
+      "alwaysTitle": "매 세션 실리는 것",
+      "alwaysNote": "모두 합쳐 {chars}자",
+      "competingTitle": "서로 경쟁하는 것",
+      "competingNote": "이름 {names}건 · 조건 {pairs}쌍",
+      "noneCompeting": "겹치는 게 없어요.",
+      "sameNameCount": "{count}곳",
+      "runsTitle": "내 컴퓨터에서 돌 수 있는 것",
+      "runsNote": "파일 {count}개",
+      "noneRun": "실행되는 파일이 없어요."
+    },
+    "answerQ1": "언제 뜨나",
+    "answerQ2": "왜 엉뚱한 게 뜨나",
+    "answerQ3": "뜨면 뭐가 일어나나",
+    "openSample": "예시 둘러보기",
+    "sampleNotice": "예시 뭉치예요 — 내 폴더를 열면 내 스킬이 보여요."
   }
 }

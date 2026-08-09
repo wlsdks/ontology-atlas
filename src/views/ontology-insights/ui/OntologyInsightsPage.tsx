@@ -4,6 +4,7 @@ import { useCallback, useEffect, useMemo, useState } from "react";
 import { useSearchParams } from "next/navigation";
 import { Link } from "@/i18n/navigation";
 import { useSwapHeight } from "@/shared/lib/use-presence";
+import { PAGE_FRAME, PAGE_HEADER_ROW, PAGE_TITLE_ROW } from "@/shared/ui/page-frame";
 import { useTranslations } from "next-intl";
 import {
   buildEdgeTypeRows,
@@ -905,18 +906,22 @@ export function OntologyInsightsPage() {
       tabIndex={-1}
           data-insights-surface="maintenance-board"
           data-insights-question-model="one-tab-one-question"
-          className="mx-auto w-full max-w-[var(--page-max)] px-6 py-8 max-lg:pb-[calc(var(--topology-mobile-bottom-tab-reserve)+24px)] md:px-10"
+          className={`${PAGE_FRAME} pb-8 max-lg:pb-[calc(var(--topology-mobile-bottom-tab-reserve)+24px)]`}
         >
         <MountedGlobalSearch open={searchPaletteOpen} onOpenChange={setSearchPaletteOpen} />
 
-        <header className="flex flex-wrap items-end gap-4">
-          <h1 className="inline-flex items-center gap-2 text-display font-[var(--font-weight-signature)] tracking-[var(--tracking-card)] text-[color:var(--color-text-primary)]">
-            <HexMark size={13} className="shrink-0 text-[color:var(--color-text-tertiary)]" />
-            {t("title")}
-          </h1>
-          <p className="max-w-xl pb-0.5 text-body text-[color:var(--color-text-tertiary)]">{t("subtitle")}</p>
+        <header className={PAGE_HEADER_ROW}>
+          <div className={PAGE_TITLE_ROW}>
+            <h1 className="inline-flex items-center gap-2 text-display font-[var(--font-weight-signature)] tracking-[var(--tracking-card)] text-[color:var(--color-text-primary)]">
+              <HexMark size={13} className="shrink-0 text-[color:var(--color-text-tertiary)]" />
+              {t("title")}
+            </h1>
+            <p className="max-w-xl text-body text-[color:var(--color-text-tertiary)]">
+              {t("subtitle")}
+            </p>
+          </div>
           {insight ? (
-            <span className="ml-auto pb-0.5 font-mono text-label tracking-[var(--tracking-caps-10)] text-[color:var(--topology-v2-numeral-face)]">
+            <span className="font-mono text-label tracking-[var(--tracking-caps-10)] text-[color:var(--topology-v2-numeral-face)]">
               {totalNodes} {t("censusConcepts")}
               <span className="mx-1.5 text-[color:var(--color-text-quaternary)]">·</span>
               {totalEdges} {t("censusRelations")}

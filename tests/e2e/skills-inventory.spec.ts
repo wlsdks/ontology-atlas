@@ -76,12 +76,12 @@ test.describe("스킬 인벤토리", () => {
     await page.goto("/ko/skills/?guides=off");
     await expect(page.getByTestId("agent-skills-page")).toBeVisible();
 
-    await page.getByTestId("skills-open-folder").click();
+    await page.getByTestId("skills-empty-open").click();
 
-    const summary = page.getByTestId("skills-summary");
-    await expect(summary).toBeVisible({ timeout: 15_000 });
-    // 스킬 5개 · 딸린 파일 2개 · 실행 1개.
-    await expect(summary).toContainText("5");
+    const census = page.getByTestId("skills-census");
+    await expect(census).toBeVisible({ timeout: 15_000 });
+    // 스킬 5개 · 실행 1개 — 수는 머리가 진다(2026-08-09 머리 문법 통일).
+    await expect(census).toContainText("5");
 
     const rows = page.getByTestId("skill-row-toggle");
     await expect(rows).toHaveCount(5);
@@ -104,8 +104,8 @@ test.describe("스킬 인벤토리", () => {
     await stubSkillFolder(page, { "notes/readme.md": "# 스킬이 아니다" });
     await seedFirstRunSeen(page);
     await page.goto("/ko/skills/?guides=off");
-    await page.getByTestId("skills-open-folder").click();
-    await expect(page.getByTestId("skills-summary")).toBeVisible({ timeout: 15_000 });
+    await page.getByTestId("skills-empty-open").click();
+    await expect(page.getByTestId("skills-census")).toBeVisible({ timeout: 15_000 });
     await expect(page.getByTestId("skill-row-toggle")).toHaveCount(0);
   });
 
@@ -131,8 +131,8 @@ test.describe("스킬 인벤토리", () => {
     for (const width of [1440, 1024, 768]) {
       await page.setViewportSize({ width, height: 900 });
       await page.goto("/ko/skills/?guides=off");
-      await page.getByTestId("skills-open-folder").click();
-      await expect(page.getByTestId("skills-summary")).toBeVisible({ timeout: 15_000 });
+      await page.getByTestId("skills-empty-open").click();
+      await expect(page.getByTestId("skills-census")).toBeVisible({ timeout: 15_000 });
 
       const heights = await page.evaluate(() =>
         [...document.querySelectorAll('[data-testid="skill-row-toggle"]')].map((el) =>
@@ -144,5 +144,44 @@ test.describe("스킬 인벤토리", () => {
         1,
       );
     }
+  });
+
+  /**
+   * **예시 뭉치가 실제로 채워진 화면을 낸다.**
+   *
+   * 소유자 요청: *"스킬 탭에서는 뭔가 데이터 있을때는 어떻게 보이는지 한번
+   * 세팅해놔줄래?"* — 폴더를 고르기 전에는 설명문만 보이던 화면에, 볼트가 이미
+   * 쓰는 「예시 둘러보기」와 같은 길을 냈다. 디스크를 안 읽으므로 폴더 고르기를
+   * 지원하지 않는 브라우저에서도 된다.
+   *
+   * 예시 뭉치는 이 화면이 짚어야 하는 상황을 일부러 다 담았다 — 그래서 여기서
+   * **그 셋이 실제로 화면에 나오는지**를 잰다. 하나라도 안 나오면 예시가
+   * 「채워진 화면」이 아니라 그냥 목록이 된다.
+   */
+  test("예시 둘러보기가 채워진 화면을 낸다 — 겹침·실행·깨진 참조가 다 보인다", async ({ page }) => {
+    await seedFirstRunSeen(page);
+    await page.goto("/ko/skills/?guides=off");
+    await page.getByTestId("skills-open-sample").click();
+
+    await expect(page.getByTestId("skills-census")).toBeVisible({ timeout: 15_000 });
+    const rows = page.getByTestId("skill-row-toggle");
+    await expect(rows).toHaveCount(9);
+
+    // ① 이름 충돌이 목록에 표시된다 (`changelog` × 2).
+    await expect(page.getByTestId("skill-row-collision-mark")).toHaveCount(2);
+
+    // ② 아무것도 안 골랐을 때 오른쪽이 비지 않는다 — 세 질문의 답이 뜬다.
+    await expect(page.getByTestId("skills-findings")).toBeVisible();
+
+    // ③ 실행되는 파일이 사슬에 표시된다.
+    await rows.filter({ hasText: "csv-report" }).click();
+    await expect(page.getByTestId("skill-executable-mark")).toHaveCount(1);
+
+    // ④ 깨진 자기 폴더 참조가 보인다 — 예시가 그 상황을 일부러 담고 있다.
+    await rows.filter({ hasText: "api-docs" }).click();
+    await expect(page.getByTestId("skill-invocation-chain")).toContainText("openapi.md");
+
+    // ⑤ 예시라는 사실을 화면이 말한다 — 내 폴더로 착각하면 안 된다.
+    await expect(page.getByTestId("skills-scan-note")).toContainText("예시");
   });
 });

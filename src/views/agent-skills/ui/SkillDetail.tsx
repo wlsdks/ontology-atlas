@@ -1,0 +1,109 @@
+"use client";
+
+import { useTranslations } from "next-intl";
+
+import type { AgentSkill, SkillInventory } from "@/entities/agent-skill";
+import { controlClass } from "@/shared/ui/control-class";
+
+import { SkillInvocationChain } from "./SkillInvocationChain";
+
+/**
+ * 고른 스킬 하나 — **이 화면이 다른 어디서도 못 보여 주는 것.**
+ *
+ * 스킬 «목록»은 Finder 로도 본다. 못 보던 것은 *발동했을 때 무엇이 어떤 순서로
+ * 열리고 그중 무엇이 실행되는가* 이고, 그게 아래 3단이다. 종전에는 43개 중 하나를
+ * 눌러야만 나왔다 — 화면의 핵심이 가장 깊이 숨어 있었다.
+ *
+ * 그리고 **이 스킬과 경쟁하는 것들을 여기서 짚는다.** 종전에는 「겹쳤어요」라고
+ * 말해 놓고 그 상대로 **가는 길이 없었다**(실측 0개). 여기서는 눌러서 건너뛴다.
+ */
+export function SkillDetail({
+  skill,
+  inventory,
+  onSelect,
+}: {
+  skill: AgentSkill;
+  inventory: SkillInventory;
+  onSelect: (relativePath: string) => void;
+}) {
+  const t = useTranslations("agentSkills");
+
+  const rivals = inventory.collisions
+    .filter((c) => c.name === skill.name)
+    .flatMap((c) => c.skills.filter((s) => s.origin.relativePath !== skill.origin.relativePath));
+
+  const overlaps = inventory.overlaps
+    .filter(
+      (o) =>
+        o.a.origin.relativePath === skill.origin.relativePath ||
+        o.b.origin.relativePath === skill.origin.relativePath,
+    )
+    .map((o) => ({
+      other: o.a.origin.relativePath === skill.origin.relativePath ? o.b : o.a,
+      shared: o.shared,
+    }));
+
+  return (
+    <article className="flex flex-col gap-3" data-testid="skill-detail">
+      <header className="flex flex-wrap items-baseline gap-x-2.5 gap-y-1">
+        <h2 className="text-title text-[color:var(--color-text-primary)]">{skill.name}</h2>
+        <p className="text-label text-[color:var(--color-text-tertiary)]">
+          {skill.origin.personal ? t("group.mine") : skill.origin.source}
+        </p>
+      </header>
+
+      {rivals.length > 0 || overlaps.length > 0 ? (
+        <section
+          data-testid="skill-detail-rivals"
+          className="rounded-[var(--radius-card)] border border-[color:var(--color-amber-source-a25)] bg-[color:var(--color-amber-source-a06)] px-3 py-2.5"
+        >
+          <p className="text-label font-[var(--font-weight-emphasis)] text-[color:var(--color-amber-source-text-a80)]">
+            {t("detail.competing")}
+          </p>
+          <ul className="mt-1.5 flex flex-col gap-1">
+            {rivals.map((rival) => (
+              <li key={rival.origin.relativePath}>
+                <Jump onClick={() => onSelect(rival.origin.relativePath)}>
+                  {t("detail.sameName", { source: rival.origin.source })}
+                </Jump>
+              </li>
+            ))}
+            {overlaps.map(({ other, shared }) => (
+              <li key={other.origin.relativePath}>
+                <Jump onClick={() => onSelect(other.origin.relativePath)}>
+                  {t("detail.sharedTrigger", {
+                    name: other.name,
+                    words: shared.slice(0, 4).join(" · "),
+                  })}
+                </Jump>
+              </li>
+            ))}
+          </ul>
+        </section>
+      ) : null}
+
+      <SkillInvocationChain skill={skill} />
+
+      <p className="text-caption leading-prose text-[color:var(--color-text-quaternary)]">
+        {skill.origin.relativePath}
+      </p>
+    </article>
+  );
+}
+
+function Jump({ onClick, children }: { onClick: () => void; children: React.ReactNode }) {
+  return (
+    <button
+      type="button"
+      data-testid="skill-jump"
+      onClick={onClick}
+      className={controlClass({
+        shape: "link",
+        size: "sm",
+        className: "text-left text-label text-[color:var(--color-amber-source-text-a80)]",
+      })}
+    >
+      {children}
+    </button>
+  );
+}

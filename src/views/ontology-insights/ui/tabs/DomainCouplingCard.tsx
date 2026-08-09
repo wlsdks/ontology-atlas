@@ -324,7 +324,14 @@ function CouplingGrid({
             // 파선 테두리 = "이 칸은 다른 척도" 를 색이 아닌 채널로 말한다
             // (헌장: 카테고리 구분은 색이 아닌 보더 스타일). 값이 0인 대각선도
             // 파선이라 「교차 없음」 빈칸과 「안쪽 연결 없음」 빈칸이 구별된다.
-            const shared = `flex h-[var(--coupling-cell)] items-center justify-center rounded-micro border font-mono text-body tabular-nums ${
+            // ⚠️ **폭을 반드시 명시한다.** 클릭 가능한 칸은 `shape: 'icon'` 을 쓰는데
+            // 그 모양은 **하드 치수**(`w-7` = 28px)를 낸다 — 높이는 아래 `h-` 가
+            // 덮지만 폭은 덮는 것이 없어서 28로 남았다. 클릭 가능 여부는 데이터가
+            // 정하므로(값>0 이고 짝이 있을 때만), 같은 격자 안에서 44×44 와 28×44
+            // 가 섞였다: 실측 36칸 중 **17칸 정사각 · 19칸 직사각**(2026-08-09).
+            // 격자는 칸이 같은 크기라는 약속이고, 그게 깨지면 읽는 사람은 크기를
+            // 데이터로 읽는다.
+            const shared = `flex h-[var(--coupling-cell)] w-[var(--coupling-cell)] items-center justify-center rounded-micro border font-mono text-body tabular-nums ${
               isDiagonal
                 ? "border-dashed border-[color:var(--color-border-strong)]"
                 : "border-[color:var(--color-divider)]"

@@ -18,6 +18,7 @@ import { formatDate } from "@/shared/lib/format-date";
 import { buildContainmentParents } from "@/shared/lib/ontology-tree";
 import { TopologyV2KindGlyph } from "@/shared/ui/topology-v2-kind-glyph";
 import { controlClass } from "@/shared/ui/control-class";
+import { PAGE_FRAME, PAGE_HEADER_ROW, PAGE_TITLE_ROW } from "@/shared/ui/page-frame";
 import { HexMark } from "@/shared/ui/hex-mark";
 import { AppSettingsMenu } from "@/widgets/app-settings-menu";
 import { useNavRailSettingsSlot } from "@/widgets/app-nav-rail";
@@ -42,7 +43,6 @@ import { findProjectDocInList } from "@/entities/docs-vault";
 // land from another slice; these stay local constants until that lands so
 // this page doesn't block on it or silently diverge from a half-migrated
 // token set.
-const PAGE_MAX_WIDTH = 1600;
 
 /*
  * ⚠️ **무게를 명시한다 — `<b>` 는 안 적으면 브라우저 기본 700 이다** (2026-08-05).
@@ -133,54 +133,39 @@ export function ProjectSelectorPage() {
         <div className="flex items-center justify-end gap-2 px-4 pt-3 md:px-6 lg:hidden">
           <AppSettingsMenu mode={dataSourceMode} triggerVariant="chrome-tile" />
         </div>
-        <div className="mx-auto px-5 py-6 md:px-10 md:py-10" style={{ maxWidth: PAGE_MAX_WIDTH }}>
-        <nav className="mb-5 flex flex-wrap items-center gap-2.5 text-body text-[color:var(--color-text-tertiary)]">
-          {/* 「← 지도」는 **지도로 간다**. 2026-07-30 에 `/` 가 지도에서 관문으로
-              바뀐 뒤(원장 「root-first-open」 뒤집기) 이 링크만 안 고쳐져서,
-              지도라고 적힌 버튼이 다운로드 화면으로 보내고 있었다. */}
-          <Link
-            href="/topology"
-            data-testid="projects-back-to-map"
-            className={controlClass({
-              shape: "link",
-              size: "lg",
-              tone: "secondary",
-              className: "touch-hit-expand hover:text-[color:var(--color-text-primary)]",
-            })}
-          >
-            {t("crumbBack")}
-          </Link>
-          <span aria-hidden className="text-[color:var(--color-text-quaternary)]">/</span>
-          <span>{t("crumbCurrent")}</span>
-          {/* 같은 화면 안에 폴더 전체 수(296·455)와 프로젝트 안쪽 수(442)가
-              나란히 서 있다. 스코프를 말하지 않으면 둘 중 하나가 틀린 것처럼
-              읽힌다 — 실제로는 세는 범위가 다를 뿐이다. */}
-          <span className={`ml-auto text-label tracking-[var(--tracking-caps-08)] ${numeralClass}`}>
-            <span className="mr-1.5 text-[color:var(--color-text-quaternary)]">
-              {t("censusScopePrefix")}
-            </span>
-            {census.conceptCount} {t("censusTopConceptsLabel", { count: census.conceptCount })}
-            <span aria-hidden className="mx-1.5 text-[color:var(--color-text-quaternary)]">·</span>
-            {census.relationCount} {t("censusTopRelationsLabel", { count: census.relationCount })}
-          </span>
-        </nav>
+        <div className={`${PAGE_FRAME} pb-6 md:pb-10`}>
+        {/*
+         * ⚠️ **빵부스러기 줄을 통째로 뺐다** (2026-08-09, 소유자 지적 2건).
+         *
+         * ① 「← 지도」 — 왼쪽 레일이 이미 지도를 지고 있고, 지금 어디 있는지도
+         *    레일이 강조한다. 같은 목적지로 가는 입구가 둘이면 그게 `#65` 계열
+         *    혼란이다.
+         * ② 「폴더 전체 112 개념 · 241 관계」 — **아래 카드를 다르게 쪼갠 것이다.**
+         *    실측: 49 역량 + 54 요소 + 8 도메인 + 1 프로젝트 = **정확히 112**.
+         *    관계만 8 차이(프로젝트 밖 관계)다. 예전 주석은 이 겹침을 알고도
+         *    「스코프를 말하면 된다」로 넘겼는데, 소유자 판정은 그 반대였다 —
+         *    *"이런거 좀 혼란스러워 위에줄에 정보는 필요없고"*. 말로 구분하게
+         *    만드는 대신 **한 곳에서만 센다**: 프로젝트 카드 안.
+         */}
 
-        <header className="flex flex-wrap items-end gap-4">
-          <h1 className="inline-flex items-center gap-2 text-display font-[var(--font-weight-signature)] tracking-[var(--tracking-card)] text-[color:var(--color-text-primary)]">
-            <HexMark size={13} className="shrink-0 text-[color:var(--color-text-tertiary)]" />
-            {t("headerTitle")}
-          </h1>
-          <span className="flex items-baseline gap-1.5 pb-[3px] text-label tracking-[var(--tracking-caps-08)] text-[color:var(--color-text-tertiary)]">
-            <b className={numeralClass}>{census.projectCount}</b>{" "}
-            {t("censusLineProjectLabel", { count: census.projectCount })}
-            <span aria-hidden className="text-[color:var(--color-text-quaternary)]">·</span>
-            <b className={numeralClass}>{census.domainCount}</b>{" "}
-            {t("censusLineDomainsLabel", { count: census.domainCount })}
-          </span>
+        <header className={PAGE_HEADER_ROW}>
+          <div className={PAGE_TITLE_ROW}>
+            <h1 className="inline-flex items-center gap-2 text-display font-[var(--font-weight-signature)] tracking-[var(--tracking-card)] text-[color:var(--color-text-primary)]">
+              <HexMark size={13} className="shrink-0 text-[color:var(--color-text-tertiary)]" />
+              {t("headerTitle")}
+            </h1>
+            <span className="flex items-baseline gap-1.5 pb-[3px] text-label tracking-[var(--tracking-caps-08)] text-[color:var(--color-text-tertiary)]">
+              <b className={numeralClass}>{census.projectCount}</b>{" "}
+              {t("censusLineProjectLabel", { count: census.projectCount })}
+              <span aria-hidden className="text-[color:var(--color-text-quaternary)]">·</span>
+              <b className={numeralClass}>{census.domainCount}</b>{" "}
+              {t("censusLineDomainsLabel", { count: census.domainCount })}
+            </span>
+          </div>
           <Link
             href={newProjectHref}
             data-testid="project-selector-new-cta"
-            className={controlClass({ shape: "chip", size: "lg", tone: "accent", className: "ml-auto h-9 border-[color:var(--color-indigo-a50)] bg-[color:var(--topology-v2-panel-action-surface,var(--color-indigo-a06))] px-4 font-[var(--font-weight-signature)] hover:border-[color:var(--color-indigo-brand)] hover:bg-[color:var(--color-overlay-2)]" })}
+            className={controlClass({ shape: "chip", size: "lg", tone: "accent", className: "h-9 border-[color:var(--color-indigo-a50)] bg-[color:var(--topology-v2-panel-action-surface,var(--color-indigo-a06))] px-4 font-[var(--font-weight-signature)] hover:border-[color:var(--color-indigo-brand)] hover:bg-[color:var(--color-overlay-2)]" })}
           >
             {t("ctaNewProject")}
           </Link>

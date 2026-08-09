@@ -309,6 +309,7 @@ particle·rarity(gold)·shimmer 를 `--studio-*` 토큰과 `.studio-stage` 안�
 - `src/shared/ui/control-class.ts` — 값 층(컨트롤이 어떻게 보일지를 정하는 값들이 모인 곳)의 축·선택지·기본값. 「축」은 고를 수 있는 항목 하나(모양·크기·톤 같은 것)이고, 「선택지」는 그 항목이 가질 수 있는 값들이다. **cva 가 둘이다** — 눌리는 것(`controlClass`)과 값을 받는 것(`fieldClass`·`fieldLabel`, 2026-08-06). 값 표는 `docs/DESIGN-SYSTEM.md` 「폼 필드」 절
 - `src/shared/ui/controls.tsx` — 버튼·칩처럼 **눌러서 동작하는** 부품(프리미티브 = 다른 화면들이 가져다 쓰는 기본 부품)
 - `src/shared/ui/surface.tsx` — 화면이 **나타나고 사라지는 방식**을 담은 기본 부품
+- `src/shared/ui/page-frame.ts` — **페이지 틀**(상단 여백 · 좌우 인셋 · 최대 폭 · 헤더/제목 줄). 2026-08-09 신설 — 그 전까지 이 층에는 규격이 아예 없어서 목적지마다 제각각이었다(제목까지 32/48/20px)
 - `app/globals.css` — 램프(ramp — 쓸 수 있는 값을 미리 정해 둔 사다리. 그 밖의 값은 lint 가 막는다): 글자 크기 · 행간 · 모서리 반경 · 그림자 · 컨트롤 높이 · 팔레트의 기준색
 - `.claude/rules/design.md` — 이 파일의 「스케일 고정 계약」 절
 

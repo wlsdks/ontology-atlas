@@ -1,3 +1,6 @@
+import { readFileSync } from "node:fs";
+import { join } from "node:path";
+
 import { fireEvent, render, screen } from "@testing-library/react";
 import type React from "react";
 import { describe, expect, it, vi } from "vitest";
@@ -226,5 +229,34 @@ describe("DomainCouplingCard", () => {
       "href",
       "/ontology/studio/",
     );
+  });
+});
+
+/**
+ * **격자의 칸은 전부 같은 크기다.**
+ *
+ * 클릭 가능한 칸만 `controlClass({ shape: 'icon' })` 을 쓰는데 그 모양은 **하드
+ * 치수**(`w-7` = 28px)를 낸다. 높이는 `h-[var(--coupling-cell)]` 이 덮었지만 폭은
+ * 덮는 것이 없어서 28로 남았고, 클릭 가능 여부는 **데이터가 정하므로**(값>0 이고
+ * 짝이 있을 때만) 같은 격자에 44×44 와 28×44 가 섞였다 — 실측 36칸 중 17 대 19
+ * (2026-08-09 소유자 지적: *"어떤건 정사각형이고 어떤건 직사각형이고 그런 기준이
+ * 있는건가? 아니면 그냥 디자인 오류인가..?"* — 후자였다).
+ *
+ * 격자는 **칸이 같은 크기라는 약속**이고, 그게 깨지면 읽는 사람은 크기를 데이터로
+ * 읽는다. 이 시험은 두 갈래가 같은 폭 규칙을 쓰는지 클래스 층에서 잠근다 —
+ * 실제 픽셀은 `insights-boundary-cell.spec.ts` 가 잰다.
+ */
+describe("격자 칸 치수", () => {
+  it("클릭 가능한 칸과 아닌 칸이 같은 폭 규칙을 쓴다", () => {
+    const source = readFileSync(
+      join(import.meta.dirname, "DomainCouplingCard.tsx"),
+      "utf8",
+    );
+    const shared = source.match(/const shared = `([^`]+)`/)?.[1] ?? "";
+    expect(shared, "shared 클래스를 못 찾았다 — 이 시험이 헛돈다").toContain("h-[var(--coupling-cell)]");
+    expect(
+      shared,
+      "폭을 명시하지 않으면 `shape: 'icon'` 의 하드 치수(w-7)가 살아남아 칸이 직사각이 된다",
+    ).toContain("w-[var(--coupling-cell)]");
   });
 });

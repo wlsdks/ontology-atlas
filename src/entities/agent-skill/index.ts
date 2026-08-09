@@ -10,6 +10,11 @@ export type {
 export type { BuildInventoryInput, SkillSourceFile } from "./lib/build-inventory";
 export { buildInvocation, buildSkillInventory, sourceLabelOf } from "./lib/build-inventory";
 export {
+  SAMPLE_SKILL_FOLDER_NAME,
+  sampleExistingPaths,
+  sampleSkillFiles,
+} from "./model/sample-skills";
+export {
   classifyReferences,
   distinctiveTerms,
   isExecutableRef,
