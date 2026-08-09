@@ -4585,7 +4585,7 @@ const TOOLS = [
       '  - README.rst + bounded static setup.py → Python project/package evidence without execution\n' +
       '  - root Python packages plus at most 12 import-connected implementation boundaries → direct modules plus up to 2 exact security/policy/risk file anchors; unused files are not mirrored and no capability is inferred from imports\n' +
       '  - bounded root Cargo package or repo-contained literal direct workspace members → typed feature declaration + literal cfg/cfg_attr source provenance; predicates are not evaluated and no runtime/import/semantic dependency is inferred\n' +
-      '  - a complete proposal may select at most 4 additional exact Python file endpoints already observed by infer_imports for distinct navigation roles; exact dependency direction is validated and these files never become automatic candidates\n\n' +
+      '  - a complete proposal may select at most 4 additional exact TypeScript, JavaScript, or Python file endpoints already observed by infer_imports for distinct navigation roles; exact dependency direction is validated and these files never become automatic candidates\n\n' +
       'Optionally pass a complete `proposal` to validate project/domain/capability/element definitions, ' +
       'typed relations, citations, risk controls, domain placement, implementation paths, confidence, ' +
       'and typed competency answers with resolvable concept/relation/evidence/path witnesses. Partial ' +
@@ -8280,9 +8280,19 @@ function analyzeRepoStructureTool({ rootPath, maxDepth, ignore, proposal, qualif
   const sourceDigest = proposal == null
     ? undefined
     : inspectProjectSource(target).fingerprint;
+  // A proposal may cite up to four exact endpoints already observable through
+  // infer_imports. Recompute that bounded, read-only receipt in the proposal
+  // call so validation does not depend on hidden state from an earlier
+  // index_project/infer_imports call.
+  const proposalImportEvidence = proposal == null
+    ? undefined
+    : inferImports(target, { ignore });
   return analyzeRepoStructure(target, {
     maxDepth,
     ignore,
+    ...(proposalImportEvidence === undefined
+      ? {}
+      : { precomputedPythonImports: proposalImportEvidence }),
     proposal,
     qualification,
     sourceDigest,

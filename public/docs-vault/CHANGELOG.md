@@ -7,6 +7,30 @@
 
 ---
 
+## 2026-08-10 · 저장소에 이미 있던 의미 문서와 import 근거가 proposal까지 이어진다
+
+O1.5 첫 세 제품에서 원본의 architecture/product 문서와 TypeScript import endpoint가
+portable proposal 검증에 도달하지 않던 evidence ingress를 수리했다.
+
+- 루트 `ARCHITECTURE.md`와 `docs/`·`site/`·`website/`의 introduction/overview를 포함한
+  의미 문서를 bounded discovery로 찾는다. 전체 200개 Markdown, 최종 6개 문서, 문서당
+  1,200자라는 기존 작은 packet 경계는 유지한다.
+- 일반 의미 문서는 읽기 전 256 KiB에서 멈추고, 세 root의 전체 walk는 1,000 entry에서
+  끝난다. 이미 방문한 실제 directory를 다시 따라가지 않아 저장소 내부 symlink cycle도
+  `skipped` 진단으로 안전하게 닫힌다.
+- archive류와 repository 밖 symlink는 의미 근거가 되지 않는다.
+- Proposal이 들어온 `analyze_repo_structure`는 기존 `infer_imports` receipt를 같은 호출에서
+  재계산하므로 TS/JS/Python exact endpoint와 방향을 이전 호출의 숨은 상태 없이 검증한다.
+- import 경로는 여전히 구조 근거다. business meaning이나 `depends_on`을 자동 생성하지 않고,
+  human-approved qualification 전에는 `writePlan`과 vault write가 없다.
+
+루트 architecture·문서 사이트·과대 문서·symlink escape/broken/cycle·전체 walk budget·TypeScript
+정방향/역방향 회귀 테스트를 추가했고, 각 방어가 없으면 정확히 RED가 되는 probe를 확인했다.
+세 fresh Sol 재qualification은 TypeScript FDE와 Rust review plan을 개선했지만 Python은
+동일했고 셋 모두 정직하게 `not-qualified`·write 0으로 끝났다. 공개 MCP tool 수, 입출력
+schema, ontology kind/frontmatter, UI는 바뀌지 않았다. O1.5는 human-owned exact plan의
+post-write source-hidden 재사용을 증명할 때까지 `in_progress`다.
+
 ## 2026-08-10 · 파일 경로가 위험한 제품 의미를 증명하지 않는다
 
 세 낯선 제품의 독립 ontology-construction trial은 모두 정직하게 미통과했다. vault 쓰기는

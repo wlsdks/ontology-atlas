@@ -2503,6 +2503,165 @@ await test("analyze_repo_structure — validates a complete meaning proposal bef
   }
 });
 
+await test("analyze_repo_structure — validates exact TypeScript import endpoints inside the proposal call", async () => {
+  const vaultRoot = makeVault();
+  const repoRoot = mkdtempSync(join(tmpdir(), "ontology-atlas-ts-proposal-"));
+  try {
+    writeFileSync(join(repoRoot, "package.json"), JSON.stringify({ name: "portable-reader" }), "utf-8");
+    writeFileSync(
+      join(repoRoot, "README.md"),
+      "# Portable Reader\n\nA desktop reader that presents subscribed content.\n",
+      "utf-8",
+    );
+    mkdirSync(join(repoRoot, "src"), { recursive: true });
+    writeFileSync(
+      join(repoRoot, "src", "entry.ts"),
+      "import { loadItems } from './service';\nexport const start = () => loadItems();\n",
+      "utf-8",
+    );
+    writeFileSync(
+      join(repoRoot, "src", "service.ts"),
+      "export const loadItems = () => [];\n",
+      "utf-8",
+    );
+
+    const projectDomain = { from: "portable-reader", to: "domains/reading", type: "domains" };
+    const domainCapability = { from: "domains/reading", to: "capabilities/content-reading", type: "capabilities" };
+    const capabilityEntry = { from: "capabilities/content-reading", to: "elements/desktop-entry", type: "elements" };
+    const capabilityService = { from: "capabilities/content-reading", to: "elements/content-service", type: "elements" };
+    const dependency = { from: "elements/desktop-entry", to: "elements/content-service", type: "depends_on" };
+    const proposal = {
+      project: {
+        slug: "portable-reader",
+        title: "Portable Reader",
+        definition: "A desktop product for reading subscribed content.",
+        evidence: ["README.md"],
+        confidence: 0.9,
+      },
+      domains: [{
+        slug: "domains/reading",
+        title: "Reading",
+        definition: "The responsibility boundary for presenting subscribed content.",
+        evidence: ["README.md"],
+        confidence: 0.9,
+      }],
+      capabilities: [{
+        slug: "capabilities/content-reading",
+        title: "Content reading",
+        definition: "Load and present subscribed content in the desktop product.",
+        domain: "domains/reading",
+        path: "src",
+        evidence: ["README.md"],
+        confidence: 0.9,
+      }],
+      elements: [
+        {
+          slug: "elements/desktop-entry",
+          title: "Desktop entry",
+          definition: "The desktop source entry that starts content loading.",
+          domain: "domains/reading",
+          path: "src/entry.ts",
+          evidence: ["src/entry.ts"],
+          confidence: 0.9,
+        },
+        {
+          slug: "elements/content-service",
+          title: "Content service",
+          definition: "The source boundary that loads subscribed content.",
+          domain: "domains/reading",
+          path: "src/service.ts",
+          evidence: ["src/service.ts"],
+          confidence: 0.9,
+        },
+      ],
+      relations: [
+        { ...projectDomain, why: "The project owns the reading boundary.", evidence: ["README.md"], confidence: 0.9 },
+        { ...domainCapability, why: "Reading is realized through content loading and presentation.", evidence: ["README.md"], confidence: 0.9 },
+        { ...capabilityEntry, why: "The desktop entry implements content reading.", evidence: ["src/entry.ts"], confidence: 0.9 },
+        { ...capabilityService, why: "The content service implements content reading.", evidence: ["src/service.ts"], confidence: 0.9 },
+        { ...dependency, why: "The desktop entry statically imports the content service.", evidence: ["src/entry.ts", "src/service.ts"], confidence: 0.9 },
+      ],
+      competencyAnswers: {
+        scope: {
+          answer: "Desktop users read subscribed content.",
+          status: "answered",
+          witnesses: { concepts: ["portable-reader"], relations: [], evidence: ["README.md"], paths: [] },
+        },
+        domains: {
+          answer: "Reading owns content presentation.",
+          status: "answered",
+          witnesses: { concepts: ["domains/reading"], relations: [projectDomain], evidence: ["README.md"], paths: [] },
+        },
+        abilities: {
+          answer: "Content reading loads and presents subscriptions.",
+          status: "answered",
+          witnesses: { concepts: ["capabilities/content-reading"], relations: [domainCapability], evidence: ["README.md"], paths: [] },
+        },
+        evidence: {
+          answer: "The entry and service files are exact implementation witnesses.",
+          status: "answered",
+          witnesses: {
+            concepts: ["capabilities/content-reading", "elements/desktop-entry", "elements/content-service"],
+            relations: [capabilityEntry, capabilityService],
+            evidence: ["src/entry.ts", "src/service.ts"],
+            paths: ["src", "src/entry.ts", "src/service.ts"],
+          },
+        },
+        impact: {
+          answer: "Changing the service can affect the desktop entry that imports it.",
+          status: "answered",
+          witnesses: {
+            concepts: ["elements/desktop-entry", "elements/content-service"],
+            relations: [dependency],
+            evidence: ["src/entry.ts", "src/service.ts"],
+            paths: [],
+          },
+        },
+      },
+    };
+
+    const reversedProposal = structuredClone(proposal);
+    reversedProposal.relations[4] = {
+      ...reversedProposal.relations[4],
+      from: "elements/content-service",
+      to: "elements/desktop-entry",
+      why: "The content service statically imports the desktop entry.",
+    };
+    reversedProposal.competencyAnswers.impact.witnesses.relations = [{
+      from: "elements/content-service",
+      to: "elements/desktop-entry",
+      type: "depends_on",
+    }];
+
+    const { responses } = await rpc(vaultRoot, [
+      ...INIT_REQUESTS,
+      callTool(2, "analyze_repo_structure", { rootPath: repoRoot, proposal }),
+      callTool(3, "analyze_repo_structure", { rootPath: repoRoot, proposal: reversedProposal }),
+    ]);
+    const result = getCallParsed(responses, 2);
+    const reversedResult = getCallParsed(responses, 3);
+    assert.equal(result.proposalValidation.status, "pass", JSON.stringify(result.proposalValidation.findings));
+    assert.equal(result.proposalValidation.canWrite, false);
+    assert.ok(result.proposalValidation.reviewPlan);
+    assert.equal(
+      result.proposalValidation.findings.some(({ code }) =>
+        ["unknown-citation", "unobserved-python-import-dependency"].includes(code)),
+      false,
+      JSON.stringify(result.proposalValidation.findings),
+    );
+    assert.equal(reversedResult.proposalValidation.status, "fail");
+    assert.ok(
+      reversedResult.proposalValidation.findings.some(
+        ({ code }) => code === "unobserved-python-import-dependency",
+      ),
+      JSON.stringify(reversedResult.proposalValidation.findings),
+    );
+  } finally {
+    rmSync(vaultRoot, { recursive: true, force: true });
+    rmSync(repoRoot, { recursive: true, force: true });
+  }
+});
+
 await test("infer_imports — import graph exposes structuredContent", async () => {
   const vaultRoot = makeVault();
   const repoRoot = mkdtempSync(join(tmpdir(), "ontology-atlas-infer-"));

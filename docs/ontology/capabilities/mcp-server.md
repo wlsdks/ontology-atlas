@@ -95,6 +95,16 @@ path가 함께 인용됐는지 검사한다. 일부만 덮으면 누락 target s
 돌려주며 write plan을 만들지 않는다. 정직한 `partial`/`visible-gap` proposal은 계속
 검토·저장할 수 있다.
 
+Cold-start 의미 근거는 루트 `ARCHITECTURE.md`와 `docs/`·`site/`·`website/` 아래에서
+분류된 current Markdown도 기존 `semanticEvidence` packet으로 운반한다. 세 root 전체에서
+Markdown 200개·directory entry 1,000개까지만 탐색하고, 일반 의미 문서는 읽기 전
+256 KiB에서 멈춘다. 실제 경로가 같은 directory는 한 번만 방문하며 archive류와
+끊어졌거나 repository 밖인 symlink는 제외한다. 최종 packet의 6문서·문서당 1,200자 경계는 유지한다.
+Proposal이 들어온 같은 호출은 기존 read-only import receipt도 다시 계산해 TS/JS/Python
+exact endpoint와 방향을 검증한다. 이 문서와 경로는 evidence/provenance일 뿐 business
+meaning이나 `depends_on`을 자동 승인하지 않으며, maker-independent qualification과 사람의
+exact-plan 승인이 없으면 `writePlan`을 열지 않는다.
+
 fresh `agent_brief`가 current source와 incomplete competency를 함께 읽으면 첫
 `nextActions`를 `review_competency_repair`로 올린다. 연결된 `meaningRepair:v1`은
 현재 project Markdown의 선언, typed containment가 만든 구조 검토 후보, current

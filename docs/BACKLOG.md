@@ -100,7 +100,7 @@ RDF/OWL/SKOS/SHACL 구현으로 소개하지 않는다. **적용 원칙**: LLM�
 | 6 | O1.1 | done(67cfd4394) | Workshop은 근거 없는 `is_a`를 추천하지 않는다. |
 | 7 | O1.3 | done(c1ba92e86) | 요구·CQ·예시·반례·다차원 품질 평가 계약을 고정한다. |
 | 8 | M1.5 | done(030269632) | MCP/skill/prompt가 같은 ontology-construction lifecycle을 강제한다. |
-| 9 | O1.5 | in_progress | 첫 세 낯선 제품은 모두 정직하게 red; 의미 evidence ingress를 수리한 뒤 다시 qualification한다. |
+| 9 | O1.5 | in_progress | bounded meaning evidence ingress와 scan hardening은 검증됨; 다음은 human-owned exact plan의 post-write source-hidden 재사용이다. |
 | 10 | U1.3 | blocked(O1.5) | 같은 ontology-construction을 기본/전문가 깊이로 쉽게 사용한다. |
 | 11 | K1.1 | blocked(U1.3) | Skill 번호 절차를 손실 없이 source-bound rail로 읽는다. |
 | 12 | K1.2 | blocked(K1.1) | 명시 문법만 branch/retry/stop/verify로 타입화한다. |
@@ -274,6 +274,35 @@ ingress를 수리하고 세 제품 qualification을 반복한다. 현재 반복�
 `writePlan`·write call은 모두 0, vault는 5 starter와 동일 hash를 유지했다. 이는 detector
 수리는 증명하지만 O1.5 qualification 완료는 아니다. 다음 tracer인 evidence ingress가
 여전히 필요하다.
+
+**bounded evidence ingress 구현 — 독립 재실행 완료, qualification 미통과**: 기존 공개 tool/schema/kind/UI를
+늘리지 않고 루트 `ARCHITECTURE.md`와 `docs/`·`site/`·`website/`의 의미 문서를 최대 200개
+안에서 찾고, 최종 packet은 기존 최대 6개·excerpt 1,200자 경계를 유지한다. archive류와
+repository-escaping symlink는 제외한다. Proposal 호출은 기존 `infer_imports` receipt를 같은
+호출 안에서 다시 계산해 TS/JS/Python exact endpoint citation과 dependency 방향을 이전 호출의
+숨은 상태 없이 검증한다. 정방향 proposal은 reviewable, 뒤집은 방향은 fail-closed다.
+
+보존한 세 subject를 deterministic 재분석했을 때 Python은 semantic row가 2→3으로 늘어 root
+architecture가 들어왔고, Rust는 1→4로 늘어 CLI/library introduction과 site contract가
+current semantic evidence가 됐다. TypeScript semantic row는 1로 같지만, 이전에 proposal
+검증에서 사라지던 exact import endpoint receipt가 이제 같은 호출 안에 존재한다. 이 수치는
+qualification 합격이 아니다.
+
+Fresh maker/source-hidden 재실행에서도 세 vault는 5 starter·write 0을 지켰고 모두
+`not-qualified`였다. Python은 root architecture provenance를 얻었지만 13 supported ·
+1 partial · 1 unsupported와 FDE partial이 그대로였다. Rust는 위험한 README 우회 없이
+current site contract로 5 supported · 2 partial · 1 gap/refusal의 reviewable plan을 만들었지만
+implementation path와 impact가 비었다. TypeScript는 capability/element가 5/0→2/4,
+FDE가 unknown→partial로 개선됐지만 runtime·ownership·interop·사람 승인 주장은 여전히
+unsupported였다. 서로 다른 claim ledger의 raw count는 품질 점수로 비교하지 않는다.
+
+Council 검수에서 200개 상한이 Markdown 수만 세어 전체 directory walk와 읽기 byte를
+제한하지 않는 gap을 확인했다. 일반 semantic Markdown은 읽기 전 256 KiB에서 멈추고,
+세 root 전체 1,000 entry walk budget과 visited-realpath cycle 차단을 적용했다. 세 결함을
+각각 RED→GREEN으로 증명한 뒤에도 O1.5는 `in_progress`다. 다음 tracer는 새 root/schema/UI가
+아니라 human-owned purpose/CQ/exact plan과 implementation/impact witness를 가진 한 제품의
+write→source-hidden reuse다. 그 여정이 성공한 뒤 서로 다른 두 제품에서 복리를 반복하고,
+세 mandatory 품질축이 모두 green일 때만 O1.5를 닫는다.
 
 #### U1.3 — progressive-disclosure construction UX
 

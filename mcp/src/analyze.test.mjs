@@ -233,6 +233,210 @@ test('semantic evidence discovery ranks generic product/strategy docs without pr
   }
 });
 
+test('semantic evidence discovery admits a root architecture contract', () => {
+  const root = withRepo((r) => {
+    writeFileSync(join(r, 'package.json'), JSON.stringify({ name: 'portable-app' }));
+    writeFileSync(
+      join(r, 'ARCHITECTURE.md'),
+      [
+        '# Runtime architecture',
+        '',
+        '## Entry points',
+        '',
+        'The desktop entry delegates durable work to the service boundary.',
+        '',
+        '## Dependency direction',
+        '',
+        'The entry layer depends on services; services never import the entry layer.',
+      ].join('\n'),
+    );
+  });
+  try {
+    const result = analyzeRepoStructure(root);
+    const evidence = result.semanticEvidence.find(
+      (row) => row.source === 'ARCHITECTURE.md',
+    );
+
+    assert.equal(evidence?.role, 'architecture');
+    assert.match(evidence?.excerpt ?? '', /entry layer depends on services/i);
+  } finally {
+    rmSync(root, { recursive: true, force: true });
+  }
+});
+
+test('semantic evidence discovery admits bounded introduction docs from a documentation site', () => {
+  const root = withRepo((r) => {
+    writeFileSync(join(r, 'package.json'), JSON.stringify({ name: 'portable-toolkit' }));
+    mkdirSync(join(r, 'site', 'cli'), { recursive: true });
+    mkdirSync(join(r, 'site', 'library'), { recursive: true });
+    writeFileSync(
+      join(r, 'site', 'cli', 'introduction.md'),
+      '# Command-line workflow\n\nValidate and format configuration files from one command-line interface.\n',
+    );
+    writeFileSync(
+      join(r, 'site', 'library', 'overview.md'),
+      '# Embeddable library\n\nEmbed the same validation behavior in another application.\n',
+    );
+  });
+  try {
+    const result = analyzeRepoStructure(root);
+    const sources = new Map(
+      result.semanticEvidence.map((row) => [row.source, row.role]),
+    );
+
+    assert.equal(sources.get('site/cli/introduction.md'), 'product-contract');
+    assert.equal(sources.get('site/library/overview.md'), 'product-contract');
+  } finally {
+    rmSync(root, { recursive: true, force: true });
+  }
+});
+
+test('semantic evidence discovery skips oversized Markdown before reading it', () => {
+  const root = withRepo((r) => {
+    writeFileSync(join(r, 'package.json'), JSON.stringify({ name: 'portable-toolkit' }));
+    mkdirSync(join(r, 'docs'), { recursive: true });
+    writeFileSync(
+      join(r, 'docs', 'overview.md'),
+      `# Oversized product contract\n\n${'x'.repeat(256 * 1024)}`,
+    );
+  });
+  try {
+    const result = analyzeRepoStructure(root);
+
+    assert.equal(
+      result.semanticEvidence.some((row) => row.source === 'docs/overview.md'),
+      false,
+    );
+    assert.ok(
+      result.skipped.some(
+        (row) =>
+          row.path === join(root, 'docs', 'overview.md') &&
+          row.reason === 'semantic-evidence-skip: docs/overview.md exceeds 262144 bytes',
+      ),
+    );
+  } finally {
+    rmSync(root, { recursive: true, force: true });
+  }
+});
+
+test('semantic evidence discovery stops an in-repository directory symlink cycle', () => {
+  const root = withRepo((r) => {
+    writeFileSync(join(r, 'package.json'), JSON.stringify({ name: 'portable-toolkit' }));
+    mkdirSync(join(r, 'docs'), { recursive: true });
+    writeFileSync(
+      join(r, 'docs', 'overview.md'),
+      '# Product overview\n\nOne current product contract should be admitted once.\n',
+    );
+    symlinkSync(join(r, 'docs'), join(r, 'docs', 'loop'));
+  });
+  try {
+    const result = analyzeRepoStructure(root);
+
+    assert.equal(
+      result.semanticEvidence.filter((row) => row.source === 'docs/overview.md').length,
+      1,
+    );
+    assert.ok(
+      result.skipped.some(
+        (row) =>
+          row.path === join(root, 'docs', 'loop') &&
+          row.reason === 'semantic-evidence-skip: docs/loop repeats a visited directory',
+      ),
+    );
+  } finally {
+    rmSync(root, { recursive: true, force: true });
+  }
+});
+
+test('semantic evidence discovery reports a broken documentation symlink instead of aborting', () => {
+  const root = withRepo((r) => {
+    writeFileSync(join(r, 'package.json'), JSON.stringify({ name: 'portable-toolkit' }));
+    mkdirSync(join(r, 'docs'), { recursive: true });
+    writeFileSync(
+      join(r, 'docs', 'overview.md'),
+      '# Product overview\n\nThe readable document should still reach the packet.\n',
+    );
+    symlinkSync(join(r, 'missing.md'), join(r, 'docs', 'broken.md'));
+  });
+  try {
+    const result = analyzeRepoStructure(root);
+
+    assert.equal(
+      result.semanticEvidence.some((row) => row.source === 'docs/overview.md'),
+      true,
+    );
+    assert.ok(
+      result.skipped.some(
+        (row) =>
+          row.path === join(root, 'docs', 'broken.md') &&
+          row.reason === 'semantic-evidence-skip: docs/broken.md cannot resolve inside repository root',
+      ),
+    );
+  } finally {
+    rmSync(root, { recursive: true, force: true });
+  }
+});
+
+test('semantic evidence discovery stops at the whole-walk entry budget', () => {
+  const root = withRepo((r) => {
+    writeFileSync(join(r, 'package.json'), JSON.stringify({ name: 'portable-toolkit' }));
+    mkdirSync(join(r, 'docs'), { recursive: true });
+    for (let index = 0; index < 1001; index += 1) {
+      writeFileSync(join(r, 'docs', `noise-${String(index).padStart(4, '0')}.txt`), 'noise');
+    }
+    writeFileSync(
+      join(r, 'docs', 'overview.md'),
+      '# Product overview\n\nThis file sorts after the bounded noise entries.\n',
+    );
+  });
+  try {
+    const result = analyzeRepoStructure(root);
+
+    assert.equal(
+      result.semanticEvidence.some((row) => row.source === 'docs/overview.md'),
+      false,
+    );
+    assert.ok(
+      result.skipped.some(
+        (row) =>
+          row.path === join(root, 'docs') &&
+          row.reason === 'semantic-evidence-skip: docs reached 1000 entry walk budget',
+      ),
+    );
+  } finally {
+    rmSync(root, { recursive: true, force: true });
+  }
+});
+
+test('semantic evidence discovery rejects documentation symlinks that escape the repository', () => {
+  const outside = mkdtempSync(join(tmpdir(), 'ontology-atlas-semantic-outside-'));
+  const root = withRepo((r) => {
+    writeFileSync(join(r, 'package.json'), JSON.stringify({ name: 'portable-app' }));
+    writeFileSync(
+      join(outside, 'ARCHITECTURE.md'),
+      '# External architecture\n\nThis must not enter the repository evidence packet.\n',
+    );
+    symlinkSync(join(outside, 'ARCHITECTURE.md'), join(r, 'ARCHITECTURE.md'));
+  });
+  try {
+    const result = analyzeRepoStructure(root);
+    assert.equal(
+      result.semanticEvidence.some((row) => row.source === 'ARCHITECTURE.md'),
+      false,
+    );
+    assert.ok(
+      result.skipped.some(
+        (row) =>
+          row.path === join(root, 'ARCHITECTURE.md') &&
+          row.reason === 'semantic-evidence-skip: ARCHITECTURE.md resolves outside repository root',
+      ),
+    );
+  } finally {
+    rmSync(root, { recursive: true, force: true });
+    rmSync(outside, { recursive: true, force: true });
+  }
+});
+
 test('setup.py contributes a bounded static package contract without executing or admitting dynamic fields', () => {
   const root = withRepo((r) => {
     writeFileSync(

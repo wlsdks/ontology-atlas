@@ -42,6 +42,92 @@
 
 ---
 
+## 2026-08-10 — evidence ingress는 scan 경계까지 닫고 qualification과 분리한다
+
+**소집**: PO Council 5석(`po-evidence`·`po-craft`·`po-steward`·`po-wedge`·
+`po-leverage`, 모두 `gpt-5.6-sol`) · **트리거**: 공개 MCP 계약 변경과 세 제품
+재qualification 뒤 착륙 판정
+**루브릭**: 22/24 (Problem 4 · User moment 4 · Differentiation 2 · Ontology 4 ·
+Agent 4 · Verification 4, 치명적 0 없음)
+
+**결정**: 바로 아래의 bounded meaning evidence ingress 방향은 유지한다. 세 fresh maker와
+source-hidden evaluator에서 TypeScript FDE는 `unknown → partial`, Rust는 current product
+contract를 가진 reviewable plan으로 개선됐고, 뒤집은 exact import 방향은 fail-closed였다.
+Python 답변은 개선되지 않았으며 세 제품 모두 `not-qualified`·write 0이므로 이 결과를
+O1.5 완료나 자동 ontology 품질로 부르지 않는다.
+
+착륙 전 일반 semantic Markdown에도 읽기 전 256 KiB 상한을 적용한다. 세 discovery root를
+합친 전체 walk는 1,000 directory entry에서 멈추고, 실제 경로가 같은 directory를 다시
+방문하지 않으며, oversized·budget·broken link·cycle은 `skipped` 진단으로 남긴다. 기존 200 Markdown,
+6-document packet, 1,200-character excerpt, 4 exact endpoint, 사람 승인, no-auto-write 경계는
+그대로다. 새 tool·schema·kind·UI·Rust import 지원은 만들지 않는다.
+
+**적용 규칙**: 가장 작은 안전 슬라이스. oversized Markdown, broken documentation symlink,
+저장소 안 directory symlink cycle, 전체 walk budget을 각각 public analyzer RED→GREEN으로 증명하고 Node 24 current-hash
+integration과 dogfood를 다시 실행한다. TypeScript에도 노출되는 legacy
+`unobserved-python-import-dependency` code는 공개 소비자 호환성 확인 전 이번 변경에서
+rename하지 않고 후속 부채로 남긴다. O1.5는 `in_progress`를 유지하며 다음 tracer는
+human-owned purpose/CQ/exact plan과 implementation/impact witness를 가진 post-write
+source-hidden 재사용 여정이다.
+**서명**: owner — ontology construction 우선순위와 계속 진행 승인;
+Codex — Council 종합·TDD·gate probe·최종 검증
+
+**기록된 반대**: 이번 ingress는 Sourcegraph류의 코드 탐색과 문서 수집이 복제할 수 있는
+품질 관문일 뿐이고, 세 trial 모두 쓰기 0이라 로컬 meaning asset이라는 해자를 아직 만들지
+못했다.
+**반증 조건**: 서로 다른 두 human-approved post-write trial에서 source-hidden agent가
+persisted vault로 exact 시작점·방향·안전한 거절을 재사용하지 못하거나, baseline보다
+source read·호출·시간을 줄이지 못하면 discovery와 중복 import scan을 축소한다. 그때도
+자동 business meaning write나 새 schema로 우회하지 않는다.
+**재검토**: 두 human-approved post-write source-hidden trial 직후.
+
+**상태**: 유효
+
+---
+
+## 2026-08-10 — meaning evidence ingress는 기존 read-only 계약 안에서 넓힌다
+
+**소집**: 단독 PO 패스 · **트리거**: O1.5의 서로 다른 세 제품에서 원본에 있는 current
+architecture/product 문서와 exact import endpoint가 portable proposal 검증에 도달하지 않아
+FDE CQ와 evidence axis가 반복 실패했다. 바로 앞 「O1.5 첫 red는 UI가 아니라 meaning
+evidence 경계를 먼저 고친다」 결정과 M1.5의 human approval 수명주기는 **유효**하다.
+**루브릭**: 23/24 (Problem 4 · User moment 4 · Differentiation 3 · Ontology 4 ·
+Agent 4 · Verification 4, 치명적 0 없음)
+
+**결정**: 새 MCP tool·input/output schema·ontology kind·frontmatter·UI를 만들지 않는다.
+기존 `semanticEvidence`가 루트 `ARCHITECTURE.md`와 `docs/`·`site/`·`website/` 아래의
+의미 밀도 높은 Markdown을 bounded discovery로 읽는다. 탐색은 전체 세 루트를 합쳐 200개
+Markdown에서 멈추고, archive/assets/benchmarks/evaluations/goals/images/ontology 디렉터리는
+제외하며, packet은 기존처럼 최대 6개 문서와 문서당 1,200자 excerpt만 반환한다. repository
+밖으로 나가는 symlink는 evidence에 넣지 않고 diagnostic으로 남긴다.
+
+Proposal이 들어온 `analyze_repo_structure`는 같은 호출 안에서 기존 `infer_imports`의
+bounded read-only scan을 다시 계산한다. 그래서 이전 호출의 숨은 상태 없이 TypeScript,
+JavaScript, Python의 exact endpoint citation과 dependency 방향을 검증한다. 기존 4개 추가
+endpoint 한도, semantic rationale, 사람 승인, `reviewPlan → qualification → writePlan` 경계는
+그대로다. 경로와 import는 구현 존재·방향만 증명하며 business meaning이나 relation을 자동
+승격하지 않는다.
+
+**적용 규칙**: root architecture, documentation-site introduction/overview, repository-escaping
+symlink, TS exact import 정방향/역방향 fixture를 고정한다. 연결을 각각 제거한 mutation에서
+새 테스트가 RED가 되고 복구 뒤 GREEN이어야 한다. 세 original trial source를 deterministic
+재분석한 뒤 fresh Sol maker/evaluator qualification을 다시 실행하며, O1.5는 그 전까지
+`in_progress`다.
+**서명**: owner — ontology construction 우선순위와 다음 작업 진행 승인;
+Codex — 단독 패스·TDD·gate probe·현장 재검증
+
+**기록된 반대**: 문서 후보와 import 재계산을 더 넣으면 packet과 proposal latency만 커지고,
+source-hidden 품질은 그대로일 수 있다.
+**반증 조건**: 수정된 독립 trial 둘 이상에서 supported claim/FDE CQ가 개선되지 않거나,
+proposal 재검증 시간이 현장 사용을 막을 만큼 증가하면 discovery root·문서 선택 점수·중복
+import scan을 다시 줄인다. 그때도 unsupported claim을 green으로 바꾸거나 자동 write로
+숨기지는 않는다.
+**재검토**: 수정된 세 제품 O1.5 qualification 직후.
+
+**상태**: 유효
+
+---
+
 ## 2026-08-10 — O1.5 첫 red는 UI가 아니라 meaning evidence 경계를 먼저 고친다
 
 **소집**: 단독 PO 패스 · **트리거**: 서로 다른 세 제품에서 fresh Sol builder와

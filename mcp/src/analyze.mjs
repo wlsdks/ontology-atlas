@@ -100,6 +100,7 @@ const STARTER_ONTOLOGY_SLUGS = new Set([
 const SEMANTIC_EVIDENCE_SEEDS = [
   ['README.md', 'mission'],
   ['README.rst', 'mission'],
+  ['ARCHITECTURE.md', 'architecture'],
   ['Cargo.toml', 'package-contract'],
   ['setup.py', 'package-contract'],
   ['docs/FEATURES.md', 'product-capabilities'],
@@ -109,6 +110,7 @@ const SEMANTIC_EVIDENCE_SEEDS = [
 const SEMANTIC_EVIDENCE_MAX_EXCERPT = 1200;
 const SEMANTIC_EVIDENCE_MAX_HEADINGS = 8;
 const SEMANTIC_EVIDENCE_MAX_DOCUMENTS = 6;
+const SEMANTIC_EVIDENCE_MAX_BYTES = 256 * 1024;
 const CARGO_MANIFEST_MAX_BYTES = 256 * 1024;
 const PYTHON_SETUP_MAX_BYTES = 256 * 1024;
 const CARGO_MANIFEST_MAX_FEATURES = 48;
@@ -123,6 +125,8 @@ const CARGO_PACKAGE_EVIDENCE_FIELDS = new Set([
   'rust-version',
 ]);
 const SEMANTIC_DISCOVERY_MAX_FILES = 200;
+const SEMANTIC_DISCOVERY_MAX_ENTRIES = 1000;
+const SEMANTIC_DISCOVERY_ROOTS = ['docs', 'site', 'website'];
 const SEMANTIC_DISCOVERY_SKIP_DIRS = new Set([
   'archive',
   'assets',
@@ -572,7 +576,7 @@ function buildExtractionContract({
 }
 
 function collectSemanticEvidence(rootPath, skipped = []) {
-  const candidates = discoverSemanticEvidenceCandidates(rootPath);
+  const candidates = discoverSemanticEvidenceCandidates(rootPath, skipped);
   const rows = [];
   for (const { source, role, pathScore } of candidates) {
     const path = join(rootPath, source);
@@ -592,6 +596,21 @@ function collectSemanticEvidence(rootPath, skipped = []) {
         );
         if (issue) {
           pushSkippedOnce(skipped, { path, reason: issue });
+          continue;
+        }
+      } else {
+        if (!pathResolvesInsideRoot(rootPath, path)) {
+          pushSkippedOnce(skipped, {
+            path,
+            reason: `semantic-evidence-skip: ${source} resolves outside repository root`,
+          });
+          continue;
+        }
+        if (statSync(path).size > SEMANTIC_EVIDENCE_MAX_BYTES) {
+          pushSkippedOnce(skipped, {
+            path,
+            reason: `semantic-evidence-skip: ${source} exceeds ${SEMANTIC_EVIDENCE_MAX_BYTES} bytes`,
+          });
           continue;
         }
       }
@@ -1083,23 +1102,56 @@ function semanticEvidenceTrust(riskFlags) {
   return 'candidate-evidence';
 }
 
-function discoverSemanticEvidenceCandidates(rootPath) {
+function discoverSemanticEvidenceCandidates(rootPath, skipped = []) {
   const bySource = new Map();
   for (const [source, role] of SEMANTIC_EVIDENCE_SEEDS) {
     if (existsSync(join(rootPath, source))) {
       bySource.set(source, { source, role, pathScore: 100 });
     }
   }
-  const docsRoot = join(rootPath, 'docs');
-  if (!existsSync(docsRoot) || !statSync(docsRoot).isDirectory()) {
-    return [...bySource.values()];
-  }
   let filesSeen = 0;
+  let entriesSeen = 0;
+  const visitedDirectories = new Set();
+  function walkBudgetReached(dir) {
+    if (entriesSeen < SEMANTIC_DISCOVERY_MAX_ENTRIES) return false;
+    pushSkippedOnce(skipped, {
+      path: dir,
+      reason: `semantic-evidence-skip: ${relative(rootPath, dir)} reached ${SEMANTIC_DISCOVERY_MAX_ENTRIES} entry walk budget`,
+    });
+    return true;
+  }
   function visit(dir) {
-    if (filesSeen >= SEMANTIC_DISCOVERY_MAX_FILES) return;
+    if (filesSeen >= SEMANTIC_DISCOVERY_MAX_FILES || walkBudgetReached(dir)) return;
+    const realDirectory = realpathSync(dir);
+    if (visitedDirectories.has(realDirectory)) {
+      pushSkippedOnce(skipped, {
+        path: dir,
+        reason: `semantic-evidence-skip: ${relative(rootPath, dir)} repeats a visited directory`,
+      });
+      return;
+    }
+    visitedDirectories.add(realDirectory);
     for (const entry of readdirSync(dir).sort()) {
-      if (filesSeen >= SEMANTIC_DISCOVERY_MAX_FILES) return;
+      if (filesSeen >= SEMANTIC_DISCOVERY_MAX_FILES || walkBudgetReached(dir)) return;
+      entriesSeen += 1;
       const path = join(dir, entry);
+      let resolvesInsideRoot = false;
+      try {
+        resolvesInsideRoot = pathResolvesInsideRoot(rootPath, path);
+      } catch {
+        pushSkippedOnce(skipped, {
+          path,
+          reason: `semantic-evidence-skip: ${relative(rootPath, path)} cannot resolve inside repository root`,
+        });
+        continue;
+      }
+      if (!resolvesInsideRoot) {
+        pushSkippedOnce(skipped, {
+          path,
+          reason: `semantic-evidence-skip: ${relative(rootPath, path)} resolves outside repository root`,
+        });
+        continue;
+      }
       const stat = statSync(path);
       if (stat.isDirectory()) {
         if (!SEMANTIC_DISCOVERY_SKIP_DIRS.has(entry.toLowerCase())) visit(path);
@@ -1113,7 +1165,20 @@ function discoverSemanticEvidenceCandidates(rootPath) {
       if (classified) bySource.set(source, { source, ...classified });
     }
   }
-  visit(docsRoot);
+  for (const rootName of SEMANTIC_DISCOVERY_ROOTS) {
+    if (filesSeen >= SEMANTIC_DISCOVERY_MAX_FILES) break;
+    const discoveryRoot = join(rootPath, rootName);
+    if (!existsSync(discoveryRoot)) continue;
+    if (!pathResolvesInsideRoot(rootPath, discoveryRoot)) {
+      pushSkippedOnce(skipped, {
+        path: discoveryRoot,
+        reason: `semantic-evidence-skip: ${rootName} resolves outside repository root`,
+      });
+      continue;
+    }
+    if (!statSync(discoveryRoot).isDirectory()) continue;
+    visit(discoveryRoot);
+  }
   return [...bySource.values()];
 }
 
@@ -1130,6 +1195,9 @@ function classifySemanticEvidencePath(source) {
   }
   if (/(?:^|\/)glossary(?:[._/-]|$)/.test(normalized)) {
     return { role: 'product-contract', pathScore: 50 };
+  }
+  if (/(?:^|\/)(?:introduction|overview|about)(?:[._/-]|$)/.test(normalized)) {
+    return { role: 'product-contract', pathScore: 45 };
   }
   return null;
 }
