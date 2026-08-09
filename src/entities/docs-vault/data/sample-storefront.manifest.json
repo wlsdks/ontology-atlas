@@ -1,6 +1,6 @@
 {
   "version": "2026-04-23",
-  "generatedAt": "2026-08-02",
+  "generatedAt": "2026-08-09",
   "docs": [
     {
       "slug": "capabilities/account-closure",
@@ -336,6 +336,35 @@
       "excerpt": "Ties a collection and a re-shipment into one case, so no money moves and the shopper ends up with a different item. 회수와 재발송을 한 건으로 묶습니다 — 돈은 움직이지 않고, 고객은 다른 물건을 받게 됩니다.",
       "wordCount": 42,
       "updatedAt": "2026-08-02",
+      "linksOut": []
+    },
+    {
+      "slug": "capabilities/expiry-policy",
+      "path": "samples/storefront/capabilities/expiry-policy.md",
+      "title": "Expiry Policy",
+      "description": "Says when unused points disappear and what warning the shopper gets first.",
+      "tags": [],
+      "frontmatter": {
+        "uid": "c77043a1-5fc4-4fa6-b7ad-6f5c3550e883",
+        "slug": "capabilities/expiry-policy",
+        "kind": "capability",
+        "title": "Expiry Policy",
+        "display_ko": "소멸 정책",
+        "display_en": "Expiry Policy",
+        "description": "Says when unused points disappear and what warning the shopper gets first.",
+        "domain": "domains/loyalty",
+        "elements": []
+      },
+      "headings": [
+        {
+          "depth": 1,
+          "text": "Expiry Policy · 소멸 정책",
+          "slug": "expiry-policy-소멸-정책"
+        }
+      ],
+      "excerpt": "Says when unused points disappear and what warning the shopper gets first. 안 쓴 포인트가 언제 사라지는지, 사라지기 전에 무엇을 알려주는지를 정합니다.",
+      "wordCount": 28,
+      "updatedAt": "2026-08-09",
       "linksOut": []
     },
     {
@@ -857,6 +886,70 @@
       "linksOut": []
     },
     {
+      "slug": "capabilities/points-accrual",
+      "path": "samples/storefront/capabilities/points-accrual.md",
+      "title": "Points Accrual",
+      "description": "Decides how many points an order earns, and when they become spendable.",
+      "tags": [],
+      "frontmatter": {
+        "uid": "3493ba46-3e32-4b57-8fa5-94218aeb4217",
+        "slug": "capabilities/points-accrual",
+        "kind": "capability",
+        "title": "Points Accrual",
+        "display_ko": "적립",
+        "display_en": "Points Accrual",
+        "description": "Decides how many points an order earns, and when they become spendable.",
+        "domain": "domains/loyalty",
+        "dependencies": [
+          "capabilities/order-placement"
+        ],
+        "elements": []
+      },
+      "headings": [
+        {
+          "depth": 1,
+          "text": "Points Accrual · 적립",
+          "slug": "points-accrual-적립"
+        }
+      ],
+      "excerpt": "Decides how many points an order earns, and when they become spendable. 주문 하나가 포인트를 얼마나 쌓는지, 그리고 그 포인트를 언제부터 쓸 수 있는지를 정합니다.",
+      "wordCount": 30,
+      "updatedAt": "2026-08-09",
+      "linksOut": []
+    },
+    {
+      "slug": "capabilities/points-redemption",
+      "path": "samples/storefront/capabilities/points-redemption.md",
+      "title": "Points Redemption",
+      "description": "Lets a shopper spend points at checkout, alongside or instead of money.",
+      "tags": [],
+      "frontmatter": {
+        "uid": "1d55c6ee-c0ef-49a4-8cb7-5ac3a0636d43",
+        "slug": "capabilities/points-redemption",
+        "kind": "capability",
+        "title": "Points Redemption",
+        "display_ko": "포인트 사용",
+        "display_en": "Points Redemption",
+        "description": "Lets a shopper spend points at checkout, alongside or instead of money.",
+        "domain": "domains/loyalty",
+        "dependencies": [
+          "capabilities/payment-authorize"
+        ],
+        "elements": []
+      },
+      "headings": [
+        {
+          "depth": 1,
+          "text": "Points Redemption · 포인트 사용",
+          "slug": "points-redemption-포인트-사용"
+        }
+      ],
+      "excerpt": "Lets a shopper spend points at checkout, alongside or instead of money. 결제할 때 돈 대신, 또는 돈과 함께 포인트를 쓰게 합니다.",
+      "wordCount": 28,
+      "updatedAt": "2026-08-09",
+      "linksOut": []
+    },
+    {
       "slug": "capabilities/product-category",
       "path": "samples/storefront/capabilities/product-category.md",
       "title": "Category Management",
@@ -1341,6 +1434,35 @@
       "linksOut": []
     },
     {
+      "slug": "capabilities/reward-catalog",
+      "path": "samples/storefront/capabilities/reward-catalog.md",
+      "title": "Reward Catalog",
+      "description": "Holds what points can be traded for, and what each one costs in points.",
+      "tags": [],
+      "frontmatter": {
+        "uid": "a430985a-b01d-44e5-9ff6-3de1e02fbeb6",
+        "slug": "capabilities/reward-catalog",
+        "kind": "capability",
+        "title": "Reward Catalog",
+        "display_ko": "교환 상품",
+        "display_en": "Reward Catalog",
+        "description": "Holds what points can be traded for, and what each one costs in points.",
+        "domain": "domains/loyalty",
+        "elements": []
+      },
+      "headings": [
+        {
+          "depth": 1,
+          "text": "Reward Catalog · 교환 상품",
+          "slug": "reward-catalog-교환-상품"
+        }
+      ],
+      "excerpt": "Holds what points can be traded for, and what each one costs in points. 포인트로 무엇을 바꿀 수 있는지, 각각 몇 점인지를 담습니다.",
+      "wordCount": 29,
+      "updatedAt": "2026-08-09",
+      "linksOut": []
+    },
+    {
       "slug": "capabilities/shipment-tracking",
       "path": "samples/storefront/capabilities/shipment-tracking.md",
       "title": "Shipment Tracking",
@@ -1571,6 +1693,35 @@
       "excerpt": "Issues the document a shopper needs for their own tax records, which is a legal obligation rather than a feature. 고객이 자기 세무 기록에 쓸 증빙을 발행합니다 — 기능이라기보다 법적 의무입니다.",
       "wordCount": 38,
       "updatedAt": "2026-08-02",
+      "linksOut": []
+    },
+    {
+      "slug": "capabilities/tier-evaluation",
+      "path": "samples/storefront/capabilities/tier-evaluation.md",
+      "title": "Tier Evaluation",
+      "description": "Works out which tier a shopper belongs to from what they have bought over a window.",
+      "tags": [],
+      "frontmatter": {
+        "uid": "a57188c8-0f4c-493b-9312-09ab8de715c9",
+        "slug": "capabilities/tier-evaluation",
+        "kind": "capability",
+        "title": "Tier Evaluation",
+        "display_ko": "등급 산정",
+        "display_en": "Tier Evaluation",
+        "description": "Works out which tier a shopper belongs to from what they have bought over a window.",
+        "domain": "domains/loyalty",
+        "elements": []
+      },
+      "headings": [
+        {
+          "depth": 1,
+          "text": "Tier Evaluation · 등급 산정",
+          "slug": "tier-evaluation-등급-산정"
+        }
+      ],
+      "excerpt": "Works out which tier a shopper belongs to from what they have bought over a window. 일정 기간 동안 산 것을 보고 이 고객이 어느 등급인지 정합니다. 아직 정하지 못한 것이 있습니다: 등급을 내릴 때 미리 알릴 것인가, 아니면 조용히 바꿀 것인가. 올리는 쪽은 쉽습니다. 내리는 쪽이 어렵습니다 — 고객은 자기가 무엇을 잃는지 알기 전에 잃고 싶어 하지 않기 때문입니다. 그래서 이 기능은 아직 만들지 않았고, 여기 적힌 것은 결정이 아니라 결정해야 할 목록입니다. 강등 예고를 며칠 전에 보낼 것인가 등급",
+      "wordCount": 109,
+      "updatedAt": "2026-08-09",
       "linksOut": []
     },
     {
@@ -1842,10 +1993,16 @@
           "capabilities/stock-tracking"
         ],
         "elements": [
+          "elements/backorder-queue",
           "elements/purchase-order",
           "elements/restock-subscription",
+          "elements/shelf-location",
+          "elements/stock-adjustment",
+          "elements/stock-count-sheet",
           "elements/stock-hold",
-          "elements/stock-ledger"
+          "elements/stock-ledger",
+          "elements/stock-snapshot",
+          "elements/supplier-lead-time"
         ],
         "relates": [
           "domains/fulfillment"
@@ -1858,9 +2015,50 @@
           "slug": "inventory-재고"
         }
       ],
-      "excerpt": "How many of each item the store actually has, what arrives from suppliers, and what happens the moment something sells out. 지금 몇 개가 남아 있는지, 공급처에서 무엇이 들어오는지, 그리고 품절된 순간 무슨 일이 벌어지는지를 다룹니다.",
-      "wordCount": 40,
-      "updatedAt": "2026-08-02",
+      "excerpt": "How many of each item the store actually has, what arrives from suppliers, and what happens the moment something sells out. 지금 몇 개가 남아 있는지, 공급처에서 무엇이 들어오는지, 그리고 품절된 순간 무슨 일이 벌어지는지를 다룹니다. 이 영역은 반대입니다 — 하려는 일은 넷인데 실제로 다루는 대상이 열입니다. 재고는 「수량 하나」처럼 보이지만 실제로는 원장·실사·조정·스냅숏이 따로 있고, 그 넷이 어긋나는 순간이 곧 재고 사고입니다. 그래서 이 영역에서 늘어나는 것은 ",
+      "wordCount": 78,
+      "updatedAt": "2026-08-09",
+      "linksOut": []
+    },
+    {
+      "slug": "domains/loyalty",
+      "path": "samples/storefront/domains/loyalty.md",
+      "title": "Loyalty",
+      "description": "Why a shopper comes back: points they have earned, a tier they do not want to lose, and rewards they are saving toward.",
+      "tags": [],
+      "frontmatter": {
+        "uid": "b57e68c5-76fb-4c7f-9977-4eb2259d3729",
+        "slug": "domains/loyalty",
+        "kind": "domain",
+        "title": "Loyalty",
+        "display_ko": "적립·멤버십",
+        "display_en": "Loyalty",
+        "description": "Why a shopper comes back: points they have earned, a tier they do not want to lose, and rewards they are saving toward.",
+        "capabilities": [
+          "capabilities/expiry-policy",
+          "capabilities/points-accrual",
+          "capabilities/points-redemption",
+          "capabilities/reward-catalog",
+          "capabilities/tier-evaluation"
+        ],
+        "elements": [
+          "elements/point-balance"
+        ],
+        "relates": [
+          "domains/customer",
+          "domains/order"
+        ]
+      },
+      "headings": [
+        {
+          "depth": 1,
+          "text": "Loyalty · 적립·멤버십",
+          "slug": "loyalty-적립멤버십"
+        }
+      ],
+      "excerpt": "Why a shopper comes back: points they have earned, a tier they do not want to lose, and rewards they are saving toward. 고객이 다시 오는 이유를 다룹니다 — 쌓아 둔 포인트, 잃고 싶지 않은 등급, 모아서 바꾸려는 것. 이 영역은 아직 대부분 계획입니다. 하려는 일은 다섯 가지로 적어 뒀는데 실제로 만들어 둔 것은 포인트 잔액 하나뿐입니다. 지도에서 이 영역의 막대가 한쪽으로 쏠려 보이는 것이 그 사실입니다 — 말은 다섯인데 증거가 하나. 먼저 답해야 하는 것은 등급을 내릴",
+      "wordCount": 91,
+      "updatedAt": "2026-08-09",
       "linksOut": []
     },
     {
@@ -2076,6 +2274,34 @@
       "excerpt": "One saved place a parcel can go, with the recipient and phone number that belong to it. 물건이 갈 수 있는 저장된 장소 하나이며, 거기에 딸린 받는 사람과 연락처를 함께 가집니다.",
       "wordCount": 37,
       "updatedAt": "2026-08-02",
+      "linksOut": []
+    },
+    {
+      "slug": "elements/backorder-queue",
+      "path": "samples/storefront/elements/backorder-queue.md",
+      "title": "Backorder Queue",
+      "description": "Who is waiting for an out-of-stock item, in the order they asked.",
+      "tags": [],
+      "frontmatter": {
+        "uid": "3b09ce05-87a9-4c3d-9bbb-d044d5a6caa2",
+        "slug": "elements/backorder-queue",
+        "kind": "element",
+        "title": "Backorder Queue",
+        "display_ko": "입고 대기 줄",
+        "display_en": "Backorder Queue",
+        "description": "Who is waiting for an out-of-stock item, in the order they asked.",
+        "domain": "domains/inventory"
+      },
+      "headings": [
+        {
+          "depth": 1,
+          "text": "Backorder Queue · 입고 대기 줄",
+          "slug": "backorder-queue-입고-대기-줄"
+        }
+      ],
+      "excerpt": "Who is waiting for an out-of-stock item, in the order they asked. 품절된 상품을 기다리는 사람이 물어본 순서대로 서 있는 줄입니다.",
+      "wordCount": 28,
+      "updatedAt": "2026-08-09",
       "linksOut": []
     },
     {
@@ -2897,6 +3123,34 @@
       "linksOut": []
     },
     {
+      "slug": "elements/point-balance",
+      "path": "samples/storefront/elements/point-balance.md",
+      "title": "Point Balance",
+      "description": "What a shopper can spend right now, after accrual and expiry are applied.",
+      "tags": [],
+      "frontmatter": {
+        "uid": "78153c77-2892-4612-b3ad-e3da5fa85e40",
+        "slug": "elements/point-balance",
+        "kind": "element",
+        "title": "Point Balance",
+        "display_ko": "포인트 잔액",
+        "display_en": "Point Balance",
+        "description": "What a shopper can spend right now, after accrual and expiry are applied.",
+        "domain": "domains/loyalty"
+      },
+      "headings": [
+        {
+          "depth": 1,
+          "text": "Point Balance · 포인트 잔액",
+          "slug": "point-balance-포인트-잔액"
+        }
+      ],
+      "excerpt": "What a shopper can spend right now, after accrual and expiry are applied. 쌓인 것과 사라진 것을 반영하고 남은, 지금 쓸 수 있는 값입니다.",
+      "wordCount": 30,
+      "updatedAt": "2026-08-09",
+      "linksOut": []
+    },
+    {
       "slug": "elements/point-ledger",
       "path": "samples/storefront/elements/point-ledger.md",
       "title": "Point Ledger",
@@ -3289,6 +3543,34 @@
       "linksOut": []
     },
     {
+      "slug": "elements/shelf-location",
+      "path": "samples/storefront/elements/shelf-location.md",
+      "title": "Shelf Location",
+      "description": "Where in the warehouse this item physically sits, so picking does not become searching.",
+      "tags": [],
+      "frontmatter": {
+        "uid": "02d39c42-b9b8-4d34-8d44-7ad7744cb50c",
+        "slug": "elements/shelf-location",
+        "kind": "element",
+        "title": "Shelf Location",
+        "display_ko": "보관 위치",
+        "display_en": "Shelf Location",
+        "description": "Where in the warehouse this item physically sits, so picking does not become searching.",
+        "domain": "domains/inventory"
+      },
+      "headings": [
+        {
+          "depth": 1,
+          "text": "Shelf Location · 보관 위치",
+          "slug": "shelf-location-보관-위치"
+        }
+      ],
+      "excerpt": "Where in the warehouse this item physically sits, so picking does not become searching. 창고 안에서 이 상품이 실제로 놓인 자리입니다. 집는 일이 찾는 일이 되지 않게 합니다.",
+      "wordCount": 34,
+      "updatedAt": "2026-08-09",
+      "linksOut": []
+    },
+    {
       "slug": "elements/shipping-fee-rule",
       "path": "samples/storefront/elements/shipping-fee-rule.md",
       "title": "Shipping Fee Rule",
@@ -3373,6 +3655,62 @@
       "linksOut": []
     },
     {
+      "slug": "elements/stock-adjustment",
+      "path": "samples/storefront/elements/stock-adjustment.md",
+      "title": "Stock Adjustment",
+      "description": "A signed correction with a reason attached, so the ledger never changes silently.",
+      "tags": [],
+      "frontmatter": {
+        "uid": "44c5dd53-9ce4-4887-bed6-a075ff6e1864",
+        "slug": "elements/stock-adjustment",
+        "kind": "element",
+        "title": "Stock Adjustment",
+        "display_ko": "재고 조정",
+        "display_en": "Stock Adjustment",
+        "description": "A signed correction with a reason attached, so the ledger never changes silently.",
+        "domain": "domains/inventory"
+      },
+      "headings": [
+        {
+          "depth": 1,
+          "text": "Stock Adjustment · 재고 조정",
+          "slug": "stock-adjustment-재고-조정"
+        }
+      ],
+      "excerpt": "A signed correction with a reason attached, so the ledger never changes silently. 부호가 붙은 정정값이고 반드시 사유가 함께 붙습니다. 원장이 아무 말 없이 바뀌는 일은 없습니다.",
+      "wordCount": 33,
+      "updatedAt": "2026-08-09",
+      "linksOut": []
+    },
+    {
+      "slug": "elements/stock-count-sheet",
+      "path": "samples/storefront/elements/stock-count-sheet.md",
+      "title": "Stock Count Sheet",
+      "description": "What a person actually counted on the shelf, kept separately from what the system believed.",
+      "tags": [],
+      "frontmatter": {
+        "uid": "de7878a3-f8af-4919-9711-244dc2ff68a7",
+        "slug": "elements/stock-count-sheet",
+        "kind": "element",
+        "title": "Stock Count Sheet",
+        "display_ko": "실사 대장",
+        "display_en": "Stock Count Sheet",
+        "description": "What a person actually counted on the shelf, kept separately from what the system believed.",
+        "domain": "domains/inventory"
+      },
+      "headings": [
+        {
+          "depth": 1,
+          "text": "Stock Count Sheet · 실사 대장",
+          "slug": "stock-count-sheet-실사-대장"
+        }
+      ],
+      "excerpt": "What a person actually counted on the shelf, kept separately from what the system believed. 사람이 선반에서 직접 센 값입니다. 시스템이 믿고 있던 값과 따로 보관합니다 — 둘이 다를 때 무엇이 틀렸는지 알아야 하기 때문입니다.",
+      "wordCount": 42,
+      "updatedAt": "2026-08-09",
+      "linksOut": []
+    },
+    {
       "slug": "elements/stock-hold",
       "path": "samples/storefront/elements/stock-hold.md",
       "title": "Stock Hold",
@@ -3426,6 +3764,62 @@
       "excerpt": "The running record of every increase and decrease, from which the current count is derived rather than stored. 증감을 모두 남긴 기록이며, 현재 수량은 저장된 값이 아니라 여기서 계산됩니다.",
       "wordCount": 35,
       "updatedAt": "2026-08-02",
+      "linksOut": []
+    },
+    {
+      "slug": "elements/stock-snapshot",
+      "path": "samples/storefront/elements/stock-snapshot.md",
+      "title": "Stock Snapshot",
+      "description": "The count frozen at a moment, used to answer 'what did we have then' without replaying the ledger.",
+      "tags": [],
+      "frontmatter": {
+        "uid": "c5e70927-6fa6-4958-b177-71c01cf13094",
+        "slug": "elements/stock-snapshot",
+        "kind": "element",
+        "title": "Stock Snapshot",
+        "display_ko": "재고 스냅숏",
+        "display_en": "Stock Snapshot",
+        "description": "The count frozen at a moment, used to answer 'what did we have then' without replaying the ledger.",
+        "domain": "domains/inventory"
+      },
+      "headings": [
+        {
+          "depth": 1,
+          "text": "Stock Snapshot · 재고 스냅숏",
+          "slug": "stock-snapshot-재고-스냅숏"
+        }
+      ],
+      "excerpt": "The count frozen at a moment, used to answer 'what did we have then' without replaying the ledger. 어느 시점의 수량을 얼려 둔 것입니다. 「그때 몇 개였나」를 원장을 처음부터 다시 훑지 않고 답하려고 둡니다.",
+      "wordCount": 40,
+      "updatedAt": "2026-08-09",
+      "linksOut": []
+    },
+    {
+      "slug": "elements/supplier-lead-time",
+      "path": "samples/storefront/elements/supplier-lead-time.md",
+      "title": "Supplier Lead Time",
+      "description": "How many days this supplier has actually taken, not how many they promised.",
+      "tags": [],
+      "frontmatter": {
+        "uid": "7b7a99b3-f6fb-4215-a702-f4c3de3625ce",
+        "slug": "elements/supplier-lead-time",
+        "kind": "element",
+        "title": "Supplier Lead Time",
+        "display_ko": "입고 소요일",
+        "display_en": "Supplier Lead Time",
+        "description": "How many days this supplier has actually taken, not how many they promised.",
+        "domain": "domains/inventory"
+      },
+      "headings": [
+        {
+          "depth": 1,
+          "text": "Supplier Lead Time · 입고 소요일",
+          "slug": "supplier-lead-time-입고-소요일"
+        }
+      ],
+      "excerpt": "How many days this supplier has actually taken, not how many they promised. 이 공급처가 실제로 걸린 날수입니다. 약속한 날수가 아닙니다. 약속과 실제가 벌어지는 폭이 곧 안전재고의 근거가 됩니다. 그래서 이 값은 평균 하나가 아니라 최근 것들의 분포로 들고 있습니다 — 평균만 보면 늦는 날을 못 봅니다.",
+      "wordCount": 54,
+      "updatedAt": "2026-08-09",
       "linksOut": []
     },
     {
@@ -3590,6 +3984,7 @@
           "domains/customer",
           "domains/fulfillment",
           "domains/inventory",
+          "domains/loyalty",
           "domains/marketing",
           "domains/order",
           "domains/payment",
@@ -3607,7 +4002,7 @@
       ],
       "excerpt": "An example online store: what a shopper browses, buys, pays for, receives, returns — and how a store keeps them coming back. 고객이 상품을 둘러보고, 사고, 결제하고, 받고, 되돌리기까지 — 온라인 쇼핑몰이 하는 일을 그대로 옮긴 예시 지도입니다. Nothing here is a real company. It exists so that a planner, a marketer, a decision maker and a developer can look at the same",
       "wordCount": 147,
-      "updatedAt": "2026-08-02",
+      "updatedAt": "2026-08-09",
       "linksOut": []
     }
   ],
@@ -3657,6 +4052,11 @@
       },
       {
         "fromSlug": "capabilities/wishlist",
+        "context": "frontmatter · **[domains/customer]**",
+        "linkText": "domains/customer"
+      },
+      {
+        "fromSlug": "domains/loyalty",
         "context": "frontmatter · **[domains/customer]**",
         "linkText": "domains/customer"
       },
@@ -4077,6 +4477,11 @@
         "linkText": "domains/order"
       },
       {
+        "fromSlug": "domains/loyalty",
+        "context": "frontmatter · **[domains/order]**",
+        "linkText": "domains/order"
+      },
+      {
         "fromSlug": "elements/cart-session",
         "context": "frontmatter · **[domains/order]**",
         "linkText": "domains/order"
@@ -4382,6 +4787,43 @@
         "linkText": "domains/support"
       }
     ],
+    "domains/loyalty": [
+      {
+        "fromSlug": "capabilities/expiry-policy",
+        "context": "frontmatter · **[domains/loyalty]**",
+        "linkText": "domains/loyalty"
+      },
+      {
+        "fromSlug": "capabilities/points-accrual",
+        "context": "frontmatter · **[domains/loyalty]**",
+        "linkText": "domains/loyalty"
+      },
+      {
+        "fromSlug": "capabilities/points-redemption",
+        "context": "frontmatter · **[domains/loyalty]**",
+        "linkText": "domains/loyalty"
+      },
+      {
+        "fromSlug": "capabilities/reward-catalog",
+        "context": "frontmatter · **[domains/loyalty]**",
+        "linkText": "domains/loyalty"
+      },
+      {
+        "fromSlug": "capabilities/tier-evaluation",
+        "context": "frontmatter · **[domains/loyalty]**",
+        "linkText": "domains/loyalty"
+      },
+      {
+        "fromSlug": "elements/point-balance",
+        "context": "frontmatter · **[domains/loyalty]**",
+        "linkText": "domains/loyalty"
+      },
+      {
+        "fromSlug": "storefront",
+        "context": "frontmatter · **[domains/loyalty]**",
+        "linkText": "domains/loyalty"
+      }
+    ],
     "elements/faq-article": [
       {
         "fromSlug": "capabilities/faq",
@@ -4502,6 +4944,11 @@
       },
       {
         "fromSlug": "capabilities/payment-cancel",
+        "context": "frontmatter · **[capabilities/payment-authorize]**",
+        "linkText": "capabilities/payment-authorize"
+      },
+      {
+        "fromSlug": "capabilities/points-redemption",
         "context": "frontmatter · **[capabilities/payment-authorize]**",
         "linkText": "capabilities/payment-authorize"
       },
@@ -4652,6 +5099,11 @@
       },
       {
         "fromSlug": "capabilities/membership-tier",
+        "context": "frontmatter · **[capabilities/order-placement]**",
+        "linkText": "capabilities/order-placement"
+      },
+      {
+        "fromSlug": "capabilities/points-accrual",
         "context": "frontmatter · **[capabilities/order-placement]**",
         "linkText": "capabilities/order-placement"
       },
@@ -5182,6 +5634,11 @@
         "linkText": "domains/inventory"
       },
       {
+        "fromSlug": "elements/backorder-queue",
+        "context": "frontmatter · **[domains/inventory]**",
+        "linkText": "domains/inventory"
+      },
+      {
         "fromSlug": "elements/purchase-order",
         "context": "frontmatter · **[domains/inventory]**",
         "linkText": "domains/inventory"
@@ -5192,12 +5649,37 @@
         "linkText": "domains/inventory"
       },
       {
+        "fromSlug": "elements/shelf-location",
+        "context": "frontmatter · **[domains/inventory]**",
+        "linkText": "domains/inventory"
+      },
+      {
+        "fromSlug": "elements/stock-adjustment",
+        "context": "frontmatter · **[domains/inventory]**",
+        "linkText": "domains/inventory"
+      },
+      {
+        "fromSlug": "elements/stock-count-sheet",
+        "context": "frontmatter · **[domains/inventory]**",
+        "linkText": "domains/inventory"
+      },
+      {
         "fromSlug": "elements/stock-hold",
         "context": "frontmatter · **[domains/inventory]**",
         "linkText": "domains/inventory"
       },
       {
         "fromSlug": "elements/stock-ledger",
+        "context": "frontmatter · **[domains/inventory]**",
+        "linkText": "domains/inventory"
+      },
+      {
+        "fromSlug": "elements/stock-snapshot",
+        "context": "frontmatter · **[domains/inventory]**",
+        "linkText": "domains/inventory"
+      },
+      {
+        "fromSlug": "elements/supplier-lead-time",
         "context": "frontmatter · **[domains/inventory]**",
         "linkText": "domains/inventory"
       },
@@ -5477,6 +5959,90 @@
         "linkText": "capabilities/stock-receiving"
       }
     ],
+    "elements/backorder-queue": [
+      {
+        "fromSlug": "domains/inventory",
+        "context": "frontmatter · **[elements/backorder-queue]**",
+        "linkText": "elements/backorder-queue"
+      }
+    ],
+    "elements/shelf-location": [
+      {
+        "fromSlug": "domains/inventory",
+        "context": "frontmatter · **[elements/shelf-location]**",
+        "linkText": "elements/shelf-location"
+      }
+    ],
+    "elements/stock-adjustment": [
+      {
+        "fromSlug": "domains/inventory",
+        "context": "frontmatter · **[elements/stock-adjustment]**",
+        "linkText": "elements/stock-adjustment"
+      }
+    ],
+    "elements/stock-count-sheet": [
+      {
+        "fromSlug": "domains/inventory",
+        "context": "frontmatter · **[elements/stock-count-sheet]**",
+        "linkText": "elements/stock-count-sheet"
+      }
+    ],
+    "elements/stock-snapshot": [
+      {
+        "fromSlug": "domains/inventory",
+        "context": "frontmatter · **[elements/stock-snapshot]**",
+        "linkText": "elements/stock-snapshot"
+      }
+    ],
+    "elements/supplier-lead-time": [
+      {
+        "fromSlug": "domains/inventory",
+        "context": "frontmatter · **[elements/supplier-lead-time]**",
+        "linkText": "elements/supplier-lead-time"
+      }
+    ],
+    "capabilities/expiry-policy": [
+      {
+        "fromSlug": "domains/loyalty",
+        "context": "frontmatter · **[capabilities/expiry-policy]**",
+        "linkText": "capabilities/expiry-policy"
+      }
+    ],
+    "capabilities/points-accrual": [
+      {
+        "fromSlug": "domains/loyalty",
+        "context": "frontmatter · **[capabilities/points-accrual]**",
+        "linkText": "capabilities/points-accrual"
+      }
+    ],
+    "capabilities/points-redemption": [
+      {
+        "fromSlug": "domains/loyalty",
+        "context": "frontmatter · **[capabilities/points-redemption]**",
+        "linkText": "capabilities/points-redemption"
+      }
+    ],
+    "capabilities/reward-catalog": [
+      {
+        "fromSlug": "domains/loyalty",
+        "context": "frontmatter · **[capabilities/reward-catalog]**",
+        "linkText": "capabilities/reward-catalog"
+      }
+    ],
+    "capabilities/tier-evaluation": [
+      {
+        "fromSlug": "domains/loyalty",
+        "context": "frontmatter · **[capabilities/tier-evaluation]**",
+        "linkText": "capabilities/tier-evaluation"
+      }
+    ],
+    "elements/point-balance": [
+      {
+        "fromSlug": "domains/loyalty",
+        "context": "frontmatter · **[elements/point-balance]**",
+        "linkText": "elements/point-balance"
+      }
+    ],
     "capabilities/campaign-planning": [
       {
         "fromSlug": "domains/marketing",
@@ -5637,6 +6203,13 @@
             "title": "Exchange Request"
           },
           {
+            "name": "expiry-policy",
+            "path": "capabilities/expiry-policy",
+            "type": "doc",
+            "slug": "capabilities/expiry-policy",
+            "title": "Expiry Policy"
+          },
+          {
             "name": "faq",
             "path": "capabilities/faq",
             "type": "doc",
@@ -5742,6 +6315,20 @@
             "title": "Payment Void"
           },
           {
+            "name": "points-accrual",
+            "path": "capabilities/points-accrual",
+            "type": "doc",
+            "slug": "capabilities/points-accrual",
+            "title": "Points Accrual"
+          },
+          {
+            "name": "points-redemption",
+            "path": "capabilities/points-redemption",
+            "type": "doc",
+            "slug": "capabilities/points-redemption",
+            "title": "Points Redemption"
+          },
+          {
             "name": "product-category",
             "path": "capabilities/product-category",
             "type": "doc",
@@ -5840,6 +6427,13 @@
             "title": "Return Request"
           },
           {
+            "name": "reward-catalog",
+            "path": "capabilities/reward-catalog",
+            "type": "doc",
+            "slug": "capabilities/reward-catalog",
+            "title": "Reward Catalog"
+          },
+          {
             "name": "shipment-tracking",
             "path": "capabilities/shipment-tracking",
             "type": "doc",
@@ -5887,6 +6481,13 @@
             "type": "doc",
             "slug": "capabilities/tax-receipt",
             "title": "Tax Receipt Issuing"
+          },
+          {
+            "name": "tier-evaluation",
+            "path": "capabilities/tier-evaluation",
+            "type": "doc",
+            "slug": "capabilities/tier-evaluation",
+            "title": "Tier Evaluation"
           },
           {
             "name": "wallet-payment",
@@ -5945,6 +6546,13 @@
             "title": "Inventory"
           },
           {
+            "name": "loyalty",
+            "path": "domains/loyalty",
+            "type": "doc",
+            "slug": "domains/loyalty",
+            "title": "Loyalty"
+          },
+          {
             "name": "marketing",
             "path": "domains/marketing",
             "type": "doc",
@@ -5985,6 +6593,13 @@
             "type": "doc",
             "slug": "elements/address-record",
             "title": "Address Record"
+          },
+          {
+            "name": "backorder-queue",
+            "path": "elements/backorder-queue",
+            "type": "doc",
+            "slug": "elements/backorder-queue",
+            "title": "Backorder Queue"
           },
           {
             "name": "bank-transfer",
@@ -6190,6 +6805,13 @@
             "title": "Pickup Request"
           },
           {
+            "name": "point-balance",
+            "path": "elements/point-balance",
+            "type": "doc",
+            "slug": "elements/point-balance",
+            "title": "Point Balance"
+          },
+          {
             "name": "point-ledger",
             "path": "elements/point-ledger",
             "type": "doc",
@@ -6288,6 +6910,13 @@
             "title": "Search Index"
           },
           {
+            "name": "shelf-location",
+            "path": "elements/shelf-location",
+            "type": "doc",
+            "slug": "elements/shelf-location",
+            "title": "Shelf Location"
+          },
+          {
             "name": "shipping-fee-rule",
             "path": "elements/shipping-fee-rule",
             "type": "doc",
@@ -6309,6 +6938,20 @@
             "title": "SMS Gateway"
           },
           {
+            "name": "stock-adjustment",
+            "path": "elements/stock-adjustment",
+            "type": "doc",
+            "slug": "elements/stock-adjustment",
+            "title": "Stock Adjustment"
+          },
+          {
+            "name": "stock-count-sheet",
+            "path": "elements/stock-count-sheet",
+            "type": "doc",
+            "slug": "elements/stock-count-sheet",
+            "title": "Stock Count Sheet"
+          },
+          {
             "name": "stock-hold",
             "path": "elements/stock-hold",
             "type": "doc",
@@ -6321,6 +6964,20 @@
             "type": "doc",
             "slug": "elements/stock-ledger",
             "title": "Stock Ledger"
+          },
+          {
+            "name": "stock-snapshot",
+            "path": "elements/stock-snapshot",
+            "type": "doc",
+            "slug": "elements/stock-snapshot",
+            "title": "Stock Snapshot"
+          },
+          {
+            "name": "supplier-lead-time",
+            "path": "elements/supplier-lead-time",
+            "type": "doc",
+            "slug": "elements/supplier-lead-time",
+            "title": "Supplier Lead Time"
           },
           {
             "name": "tier-rule",
