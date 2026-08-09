@@ -42,6 +42,38 @@
 
 ---
 
+## 2026-08-09 — agent config의 `ready`는 지원되는 실행 shape를 뜻한다
+
+**소집**: 단독 PO 패스 · **트리거**: 정상 source-checkout 설정은 `0/3`으로,
+존재하지 않는 npm launch는 ready로 판정되는 양방향 신뢰 결함과 실제 연결 파일이
+아닌 `.mcp.json.example`까지 분모에 들어가는 현상이 설치 앱 감사에서 관측됐다.
+**선행 결정 관계**: 2026-07-27 「앱이 MCP를 품는다」의 두 채널, 즉 설치 앱의
+bundled stdio binary와 source-checkout fallback만 지원하고 npm 발행을 폐기한다는
+결정은 **그대로 유효**하다. 이번 결정은 새 채널이 아니라 그 경계를 실행 가능한
+검사로 만든다.
+**루브릭**: 24/24 (치명적 0: 없음)
+**결정**: ready는 정확히 두 launch shape만 인정한다. source는 `node` + 절대 경로
+`.../mcp/src/index.js` 하나, bundle은 절대 경로 `ontology-atlas-mcp` 실행 파일 + 빈
+args다. CLI는 실행 대상이 실제 파일인지까지 확인하고, Settings는 브라우저가 접근할
+수 없는 외부 파일의 실행을 가장하지 않은 채 shape와 현재 vault 좌표 일치만 확인한다.
+활성 분모는 `.mcp.json`과 `.codex/config.toml` 두 개이며 example은 template로
+명시한다. ready와 live는 합치지 않는다. 실제 stdio 기동·35-tool inventory는
+재시작 뒤 `mcp-verify`가 증명한다.
+**적용 규칙**: 문자열 포함 검사, basename만 같은 상대 경로, 추가 인자, `npx`/npm
+launch는 fail-closed다. JSON과 TOML, 앱과 CLI는 같은 launch 분류 규칙을 사용한다.
+새 스타일·토큰·모션은 만들지 않고 기존 Settings 행과 디자인 시스템을 재사용한다.
+**서명**: owner — M1.2 실행 승인; Codex — 구현·설치 앱 검증
+
+**기록된 반대**: “shape와 파일 존재만으로는 에이전트가 지금 연결됐다고 증명할 수
+없으므로 ready라는 표현 자체가 과장이다.”
+**반증 조건**: 지원 shape·존재 파일·정확한 vault 좌표가 모두 valid인 fresh 설정이
+재시작 뒤 반복적으로 MCP 기동에 실패하거나, 사용자가 Settings의 ready를 live session
+확인으로 지속 오해한다. 그 경우 표시를 configured로 좁히고 live verification 상태를
+별도 계층으로 올린다.
+**재검토**: 위 실패 또는 오해가 서로 다른 두 환경에서 재현될 때.
+
+**상태**: 유효
+
 ## 2026-08-09 — ontology construction quality를 Skills와 UI 확장보다 먼저 닫는다
 
 **소집**: 소유자 우선순위 확정 + 공개 1차 문헌 재검증을 포함한 단독 PO 패스

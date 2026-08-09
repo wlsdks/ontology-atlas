@@ -7,6 +7,26 @@
 
 ---
 
+## 2026-08-09 — `ready`가 실제로 실행 가능한 에이전트 설정을 뜻한다
+
+설치할 수 없는 `npx -y ontology-atlas-mcp` 설정이 준비 완료로 보이고, 반대로
+정상적인 source checkout 설정이 실패로 보이던 양방향 신뢰 결함을 고쳤다.
+
+- source checkout은 `node`가 절대 경로의 `mcp/src/index.js` 하나를 실행할 때,
+  설치 앱은 절대 경로의 `ontology-atlas-mcp` 번들을 직접 실행할 때만 valid다.
+  이름이 비슷한 명령, 추가 인자, npm launch는 repair 대상으로 남는다.
+- Settings의 준비 분모는 실제 클라이언트가 읽는 `.mcp.json`과
+  `.codex/config.toml` 두 개뿐이다. `.mcp.json.example`은 복사·병합용 template로
+  계속 제공하지만 연결 파일인 척 `3`에 포함하지 않는다.
+- CLI는 실행 대상 파일의 존재까지 확인한다. 브라우저 UI는 접근할 수 없는 앱
+  번들·체크아웃을 실행했다고 가장하지 않고 launch shape와 vault 좌표를 확인하며,
+  실제 연결은 재시작 뒤 `mcp-verify`가 별도로 증명한다.
+
+Node 24 fresh init에서 활성 config 4/4와 stdio MCP 35/35를 확인했고, 새로 빌드한
+`/Applications/Ontology Atlas.app`을 Codex Computer Use로 열어 Settings의 `2/2`,
+정확히 두 설정 행, template 제외 안내를 확인했다. 새 색·간격·모션은 만들지 않고
+기존 설정 행과 디자인 시스템을 그대로 사용했다.
+
 ## 2026-08-09 — 승인한 competency 근거가 finalize와 다음 agent까지 이어진다
 
 `analyze_repo_structure`가 `canWrite:true`로 승인한 proposal을 그대로 작성해도,

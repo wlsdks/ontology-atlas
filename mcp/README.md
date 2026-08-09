@@ -129,6 +129,12 @@ from the codebase root. It checks or creates only `.mcp.json` and
 `.codex/config.toml`, preserving existing configs and writing merge templates
 when manual review is needed.
 
+Settings and `agent-setup` count only those two active client configs. The
+`.mcp.json.example` file is a copy/merge template, not a third connection.
+Ready means the config has one supported executable launch shape and the
+expected vault coordinates; after restarting the client, run `mcp-verify` to
+prove the server actually boots and exposes the current tool inventory.
+
 Codex also stores MCP servers globally. Register the bundled binary:
 
 ```bash

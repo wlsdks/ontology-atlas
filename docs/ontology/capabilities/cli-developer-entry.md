@@ -37,7 +37,10 @@ display_en: Terminal Commands
 
 ## 핵심 흐름
 
-1. `init` 또는 기존 vault의 `agent-setup`으로 로컬 작업 좌표를 준비한다.
+1. `init` 또는 기존 vault의 `agent-setup`으로 로컬 작업 좌표를 준비한다. ready는
+   절대 경로의 bundled binary 또는 `node` + 절대 `mcp/src/index.js`라는 지원
+   launch shape와 실제 대상 파일·vault 좌표가 모두 맞을 때만 성립하며, 퇴역한
+   `npx` 설정은 review로 남긴다.
 2. `validate`, `overview`, `workspace-brief`, `agent-brief`로 상태와 시작점을 읽는다.
 3. `find`, `show`, graph query 명령으로 필요한 노드·경로·영향만 좁혀 본다.
 4. `add` / `import` / `bootstrap`과 명시적 apply 명령으로 승인한 변경만 쓴다.
@@ -58,6 +61,7 @@ display_en: Terminal Commands
 - `cli/src/index.mjs` · `cli/src/lib/cli-commands.mjs` — 명령 dispatcher와 registry
 - `cli/src/commands/` — 각 명령 구현
 - `cli/src/lib/mcp-call.mjs` — MCP와 같은 구조화 결과를 쓰는 graph 명령 경계
+- `src/shared/config/mcp-server-launch.ts` — 앱과 CLI가 공유하는 두 launch shape 판정
 - `scripts/smoke-packed-cli.mjs` — 패킹된 설치 환경의 end-to-end smoke
 - `cli/README.md` — 현재 명령·옵션의 상세 단일 진실원
 
