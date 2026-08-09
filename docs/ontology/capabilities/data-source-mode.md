@@ -14,7 +14,7 @@ created_by: "agent:unknown"
 
 ## 근거
 - src/features/data-source-mode (구현 증거)
-- docs/FEATURES.md — "Mode branching (data source)" 절 (주의: risky-citation 경고 — negated/deprecated-state 서술 포함 문서, 재검증 필요)
+- docs/FEATURES.md: "Mode branching (data source)" 절 (주의: risky-citation 경고: negated/deprecated-state 서술 포함 문서, 재검증 필요)
 
 ## 확신도
-medium-high (0.85) — 단, docs/FEATURES.md 인용분은 최신성 재확인 필요
+medium-high (0.85): 단, docs/FEATURES.md 인용분은 최신성 재확인 필요

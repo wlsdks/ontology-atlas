@@ -16,16 +16,16 @@ App Settings의 agent config 상태는 실제 client config 두 개만 세며 ex
 맞아야 ready이고, live stdio 연결과 tool inventory는 별도 `mcp-verify`가 증명한다.
 
 ## 근거
-- src/features/vault-agent — 제공자 중립 에이전트 루프, 도구 실행, 근거 인용
-- src-tauri/src/llm.rs — 로컬/원격 전송, 감사 로그, 분리된 timeout
-- src/widgets/vault-agent-panel — 사용자가 읽기·실패·제안을 판정하는 패널
+- src/features/vault-agent: 제공자 중립 에이전트 루프, 도구 실행, 근거 인용
+- src-tauri/src/llm.rs: 로컬/원격 전송, 감사 로그, 분리된 timeout
+- src/widgets/vault-agent-panel: 사용자가 읽기·실패·제안을 판정하는 패널
 - src/shared/config/mcp-server-launch.ts · src/features/docs-vault-local/model/use-local-vault.ts
-  — JSON/TOML launch shape와 vault readiness의 공유 판정
-- src/widgets/app-settings-menu/ui/VaultAgentSetupPanel.tsx — 활성 config 2개와
+  : JSON/TOML launch shape와 vault readiness의 공유 판정
+- src/widgets/app-settings-menu/ui/VaultAgentSetupPanel.tsx: 활성 config 2개와
   template 역할을 숨기지 않는 Settings 표면
-- src/features/vault-agent/model/competency-qualification-boundary.ts — vault-only
+- src/features/vault-agent/model/competency-qualification-boundary.ts: vault-only
   proposal/apply가 source-backed 자격을 우회하지 못하게 하는 공유 경계
-- scripts/deploy-macos-app-local.mjs — 최신 설치 앱 자산을 dogfood 하는 로컬 배포 계약
+- scripts/deploy-macos-app-local.mjs: 최신 설치 앱 자산을 dogfood 하는 로컬 배포 계약
 
 ## 확신도
 high (0.92)

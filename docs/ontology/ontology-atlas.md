@@ -18,8 +18,8 @@ path: README.md
 로컬 마크다운 볼트의 frontmatter를 타입이 있는 계산 가능 그래프(도메인·능력·구현 증거·의존·영향)로 바꾸는 로컬-퍼스트 온톨로지 워크벤치. 개발자는 CLI/웹으로, AI 코딩 에이전트는 MCP로 같은 파일을 읽고 쓴다.
 
 ## 근거
-- README.md — "Your AI coding agent forgets your codebase between sessions... turns the Markdown in your repository into a graph of your product"
-- AGENTS.md — Project overview ("a local-first ontology workbench for understanding a product/system from business core to implementation evidence")
+- README.md: "Your AI coding agent forgets your codebase between sessions... turns the Markdown in your repository into a graph of your product"
+- AGENTS.md: Project overview ("a local-first ontology workbench for understanding a product/system from business core to implementation evidence")
 
 ## 포함 / 제외
 - 포함: 그래프 스키마·컴파일·쿼리, MCP/CLI 에이전트 연동, 로컬 볼트 관리, 토폴로지 탐색, 프로젝트 포트폴리오, 온보딩·배포·앱 셸
@@ -30,7 +30,7 @@ high (README + AGENTS.md 직접 인용)
 
 ## Competency answers
 
-### scope — answered
+### scope: answered
 
 What product/system outcome and user problem define the ontology scope?
 
@@ -39,7 +39,7 @@ Ontology Atlas helps people and AI coding agents preserve and judge one shared, 
 - Concepts: `ontology-atlas`
 - Evidence: `README.md`
 
-### domains — answered
+### domains: answered
 
 Which stable business responsibilities or decision boundaries form its domains?
 
@@ -49,7 +49,7 @@ Six stable responsibility boundaries cover agent integration, graph modeling, lo
 - Relations: `ontology-atlas` --contains--> `domains/agent-integration`, `ontology-atlas` --contains--> `domains/graph-modeling`, `ontology-atlas` --contains--> `domains/local-vault-management`, `ontology-atlas` --contains--> `domains/onboarding-and-shell`, `ontology-atlas` --contains--> `domains/project-portfolio`, `ontology-atlas` --contains--> `domains/topology-navigation`
 - Evidence: `README.md`
 
-### abilities — partial
+### abilities: partial
 
 Which observable abilities realize those outcomes inside each domain?
 
@@ -60,7 +60,7 @@ The agent-integration domain exposes an MCP server and terminal workflow that le
 - Evidence: `mcp/src`, `cli/src`
 - Gap: This answer covers only the agent-integration domain; the other contained domains still need typed capability witnesses here.
 
-### evidence — partial
+### evidence: partial
 
 Which source artifacts provide implementation evidence for each ability?
 
@@ -71,7 +71,7 @@ The MCP and CLI source entrypoints are exact repository witnesses for the agent-
 - Paths: `mcp/src`, `cli/src`
 - Gap: This answer covers only the MCP and CLI abilities; the remaining contained capabilities still need canonical path witnesses here.
 
-### impact — answered
+### impact: answered
 
 Which typed dependencies explain change impact across the model?
 

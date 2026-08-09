@@ -112,8 +112,35 @@ describe("작대기 래칫 — 사용자 문구", () => {
  *
  * 치우고 나니 0이 됐다. 0에서는 상한이 아니라 **금지**가 맞다.
  */
-describe("작대기 — 예시 볼트", () => {
+/**
+ * **화면에 그려지는 문서에도 작대기가 없다** (2026-08-09 전수 정리).
+ *
+ * | 대상 | 어디에 그려지나 | 치운 수 |
+ * |---|---|---|
+ * | `samples/storefront/**` | 예시 볼트(처음 온 사람이 읽는 유일한 데이터) | 93 |
+ * | `docs/guide/**` | `/guide` | 148 |
+ * | `docs/ontology/**` | 볼트 노드 · 폴더 없는 사용자의 기본 매니페스트 | 105 |
+ * | `docs/CHANGELOG.md` | `/changelog` | 1,722 |
+ *
+ * ## 무엇을 일부러 뺐나
+ *
+ * - **`docs/DECISIONS.md`** (2,158) — **덧붙이기만 하는 원장**이다. 자기 계약이
+ *   「지난 기록을 고치지 않는다」라, 과거 기록의 문장을 다시 쓰는 것 자체가 규칙
+ *   위반이다.
+ * - **`AGENTS.md` · `DESIGN-SYSTEM.md` · `.claude/rules/**` · `FEATURES.md`** —
+ *   에이전트와 우리가 읽는 문서다. 「AI 가 쓴 티가 난다」가 비용이 되는 자리는
+ *   **사용자가 보는 화면**이고, 여기는 그 자리가 아니다.
+ *
+ * 즉 이 게이트의 경계는 「마크다운이냐」가 아니라 **「사용자가 읽나」** 다.
+ */
+describe("작대기 — 화면에 그려지는 문서", () => {
   const SAMPLE_ROOT = join(REPO_ROOT, "samples", "storefront");
+  const RENDERED_DOC_ROOTS = [
+    join(REPO_ROOT, "samples", "storefront"),
+    join(REPO_ROOT, "docs", "guide"),
+    join(REPO_ROOT, "docs", "ontology"),
+  ];
+  const RENDERED_DOC_FILES = [join(REPO_ROOT, "docs", "CHANGELOG.md")];
 
   const markdownFiles = (dir: string): string[] => {
     const out: string[] = [];
@@ -126,18 +153,47 @@ describe("작대기 — 예시 볼트", () => {
     return out;
   };
 
-  it("예시 볼트 문서에 작대기가 없다", () => {
-    const files = markdownFiles(SAMPLE_ROOT);
-    expect(files.length, "예시 볼트 문서를 하나도 못 읽었다 — 이 시험이 헛돈다").toBeGreaterThan(
-      100,
-    );
+  it("화면에 그려지는 문서에 작대기가 없다", () => {
+    const files = [...RENDERED_DOC_ROOTS.flatMap(markdownFiles), ...RENDERED_DOC_FILES];
+    expect(files.length, "문서를 하나도 못 읽었다. 이 시험이 헛돈다").toBeGreaterThan(180);
+    // 각 뿌리가 실제로 파일을 냈는지 — 하나가 0이어도 총계는 넘을 수 있다.
+    for (const root of RENDERED_DOC_ROOTS) {
+      expect(markdownFiles(root).length, `${root} 에서 문서를 못 읽었다`).toBeGreaterThan(5);
+    }
+    /**
+     * ⚠️ **코드 블록은 면제다** (2026-08-09, 이 게이트를 켠 뒤 배운 것).
+     *
+     * 처음에는 파일 전체에서 작대기를 금지했다. 그런데 `docs/guide/**` 의 코드
+     * 블록에는 **CLI 가 실제로 찍는 출력**이 전사돼 있고, CLI 는 `— blast radius`
+     * 처럼 작대기를 찍는다(`cli/src/commands/blast-radius.mjs`). 그 전사를 콜론으로
+     * 바꾸는 것은 문장을 다듬는 게 아니라 **프로그램이 하지 않는 말을 적는 것**이다.
+     * 실제로 한 번 그렇게 바꿨고(16줄) 되돌렸다.
+     *
+     * 그래서 판정 대상은 **산문**이다. 코드 블록 안은 사실 기록이므로 손대지 않는다.
+     * CLI 출력 자체에서 작대기를 뺄지는 별개 질문이고, 그때는 CLI 를 고치고 문서가
+     * 따라오는 순서여야 한다.
+     */
+    const proseHasDash = (text: string): boolean => {
+      let inFence = false;
+      for (const line of text.split("\n")) {
+        if (line.trimStart().startsWith("```")) {
+          inFence = !inFence;
+          continue;
+        }
+        if (!inFence && line.includes("—")) return true;
+      }
+      return false;
+    };
+
     const offenders = files
-      .filter((file) => readFileSync(file, "utf8").includes("—"))
+      .filter((file) => proseHasDash(readFileSync(file, "utf8")))
       .map((file) => file.slice(REPO_ROOT.length + 1));
     expect(
       offenders,
-      "예시 볼트에 작대기가 들어왔다. 문장이 끝났으면 마침표로 끊고, 이어지면 쉼표나 괄호를 쓴다:\n" +
+      "화면에 그려지는 문서의 **산문**에 작대기가 들어왔다. 문장이 끝났으면 마침표, " +
+        "이어지면 콜론, 삽입구는 괄호. (코드 블록은 프로그램 출력 전사라 면제다.)\n" +
         offenders.join("\n"),
     ).toEqual([]);
+    expect(SAMPLE_ROOT.length, "SAMPLE_ROOT 가 목록에서 빠졌다").toBeGreaterThan(0);
   });
 });
