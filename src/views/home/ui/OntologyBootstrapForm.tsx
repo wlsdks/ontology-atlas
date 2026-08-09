@@ -31,6 +31,7 @@ export interface OntologyBootstrapFormLabels {
   summary: (docCount: number, projectFile: string) => string;
   bodyUntouched: string;
   alreadyTyped: (count: number) => string;
+  runtimeSkills: (count: number) => string;
   confirm: string;
   cancel: string;
   errorPrefix: string;
@@ -179,6 +180,15 @@ export function OntologyBootstrapForm({
           {plan.alreadyTypedCount > 0 ? (
             <p className="mt-1 text-label leading-prose text-[color:var(--color-text-tertiary)]">
               {labels.alreadyTyped(plan.alreadyTypedCount)}
+            </p>
+          ) : null}
+          {/* 남의 파일이라 건드리지 않았다는 것을 말한다 — 안 말하면 「왜 비었지」가 된다. */}
+          {plan.runtimeOwnedSkipped > 0 ? (
+            <p
+              data-testid="ontology-bootstrap-runtime-skills"
+              className="mt-1 text-label leading-prose text-[color:var(--color-text-tertiary)]"
+            >
+              {labels.runtimeSkills(plan.runtimeOwnedSkipped)}
             </p>
           ) : null}
         </div>

@@ -142,3 +142,66 @@ describe('domainDocSlug · buildDomainMarkdown (재검 마찰 D — 도메인 �
     expect(first.match(uidPattern)?.[1]).not.toBe(second.match(uidPattern)?.[1]);
   });
 });
+
+/**
+ * **남의 파일에는 쓰지 않는다** — 2026-08-09 PO 카운슬에서 발견된, 이미 배포된
+ * 결함.
+ *
+ * 「내 문서로 지도 만들기」는 `manifest.docs` 의 어떤 슬러그든 후보로 삼아 승인
+ * 시 `uid`·`kind`·`title` 을 그 파일에 쓴다. 사용자가 스킬 폴더를 문서함으로
+ * 열면 그 목록에 `SKILL.md` 들이 그대로 들어오고, 실측에서 후보 105개가 전부
+ * `SKILL.md` 였다. 그 파일은 Claude 런타임과 마켓플레이스가 소유하고, 그
+ * 폴더는 git 체크아웃이라 업데이트가 우리가 쓴 것을 덮는다.
+ *
+ * 이 시험이 잠그는 성질: *규격상 런타임이 소유한 `SKILL.md` 는 후보에 들어오지
+ * 않는다.* 판정 기준은 공식 규격 그대로 — 파일명이 `SKILL.md` · 필수 두 키
+ * (`name`·`description`)가 있음 · `kind` 없음.
+ */
+describe('런타임이 소유한 SKILL.md 는 후보에 넣지 않는다', () => {
+  const skill = (slug: string) => ({
+    slug,
+    title: 'SKILL',
+    frontmatter: { name: slug.split('/')[0], description: 'Does a thing. Use when asked.' },
+  });
+
+  it('스킬 폴더를 열면 후보가 0이고, 몇 개를 뺐는지 센다', () => {
+    const plan = deriveBootstrapPlan(
+      [skill('pdf/SKILL'), skill('docx/SKILL'), skill('xlsx/SKILL')],
+      'skills',
+    );
+    expect(plan.elements, '남의 SKILL.md 에 쓸 후보가 만들어졌다').toEqual([]);
+    expect(plan.runtimeOwnedSkipped, '왜 비었는지 화면이 말할 수 있어야 한다').toBe(3);
+  });
+
+  it('평범한 문서는 그대로 후보다 — 계기가 무엇이든 걸러내면 안 된다', () => {
+    const plan = deriveBootstrapPlan(
+      [
+        skill('pdf/SKILL'),
+        { slug: 'domains/orders', title: '주문', frontmatter: {} },
+        { slug: 'notes/handover', title: '인계', frontmatter: {} },
+      ],
+      'vault',
+    );
+    expect(plan.elements.map((e) => e.slug).sort()).toEqual(['domains/orders', 'notes/handover']);
+    expect(plan.runtimeOwnedSkipped).toBe(1);
+  });
+
+  it('SKILL.md 라도 이미 kind 가 있으면 우리 노드다 — 이 규칙이 가로채지 않는다', () => {
+    const plan = deriveBootstrapPlan(
+      [{ slug: 'x/SKILL', title: 'x', frontmatter: { name: 'x', description: 'd', kind: 'element' } }],
+      'vault',
+    );
+    // 이미 kind 가 있으므로 「이미 타입 있음」으로 세지, 런타임 소유로 세지 않는다.
+    expect(plan.runtimeOwnedSkipped).toBe(0);
+    expect(plan.alreadyTypedCount).toBe(1);
+  });
+
+  it('이름이 SKILL 이어도 필수 두 키가 없으면 스킬이 아니다 — 그냥 문서다', () => {
+    const plan = deriveBootstrapPlan(
+      [{ slug: 'notes/SKILL', title: '스킬이라는 제목의 메모', frontmatter: {} }],
+      'vault',
+    );
+    expect(plan.runtimeOwnedSkipped).toBe(0);
+    expect(plan.elements.map((e) => e.slug)).toEqual(['notes/SKILL']);
+  });
+});
