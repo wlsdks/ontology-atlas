@@ -276,9 +276,13 @@ try {
   const packDir = join(temp, 'packs');
   const installDir = join(temp, 'install');
   const projectDir = join(temp, 'project');
+  const quickStartSuccessDir = join(temp, 'quick-start-success');
+  const quickStartFailureDir = join(temp, 'quick-start-failure');
   mkdirSync(packDir, { recursive: true });
   mkdirSync(installDir, { recursive: true });
   mkdirSync(projectDir, { recursive: true });
+  mkdirSync(join(quickStartSuccessDir, 'src', 'features', 'auth'), { recursive: true });
+  mkdirSync(quickStartFailureDir, { recursive: true });
 
   const mcpTgz = packPackage(MCP_DIR, packDir);
   const cliTgz = packPackage(CLI_DIR, packDir);
@@ -327,6 +331,46 @@ try {
   assert.match(codexConfig, /command = "node"/);
   assert.match(codexConfig, /node_modules\/ontology-atlas-mcp\/src\/index\.js/);
   assert.match(codexConfig, /OATLAS_VAULT = "\.\/ontology"/);
+
+  writeFileSync(
+    join(quickStartSuccessDir, 'package.json'),
+    JSON.stringify({ name: 'packed-quick-start', description: 'Packed quick start fixture' }),
+  );
+  const packedQuickStart = run(cliBin, ['init', 'ontology', '--quick-start'], {
+    cwd: quickStartSuccessDir,
+    label: 'installed CLI quick-start success',
+  });
+  const packedQuickStartClean = stripAnsi(packedQuickStart.stdout);
+  assert.match(packedQuickStartClean, /quick start done/);
+  assert.doesNotMatch(packedQuickStartClean, /quick start incomplete/);
+  assert.equal((packedQuickStartClean.match(/^\s*\d\.\s/gm) || []).length, 3);
+
+  writeFileSync(
+    join(quickStartFailureDir, 'package.json'),
+    JSON.stringify({ name: 'packed-quick-start-failure' }),
+  );
+  const failingMcp = join(quickStartFailureDir, 'failing-mcp.mjs');
+  writeFileSync(
+    failingMcp,
+    "console.error('injected packed MCP failure');\nprocess.exit(7);\n",
+  );
+  const packedQuickStartFailure = runRaw(cliBin, ['init', 'ontology', '--quick-start'], {
+    cwd: quickStartFailureDir,
+    env: { OATLAS_MCP_PATH: failingMcp },
+    label: 'installed CLI quick-start partial failure',
+  });
+  assertStatus(packedQuickStartFailure, 2);
+  const packedQuickStartFailureClean = stripAnsi(packedQuickStartFailure.stdout);
+  assert.match(packedQuickStartFailureClean, /quick start incomplete/);
+  assert.match(
+    packedQuickStartFailureClean,
+    /vault scaffolded; agent configs written but unverified/,
+  );
+  assert.match(packedQuickStartFailureClean, /mcp-verify \.\/ontology --timeout-ms 15000/);
+  assert.match(packedQuickStartFailureClean, /bootstrap \. --vault \.\/ontology/);
+  assert.doesNotMatch(packedQuickStartFailureClean, /quick start done/);
+  assert.doesNotMatch(packedQuickStartFailureClean, /MCP already wired/);
+  assert.match(stripAnsi(packedQuickStartFailure.stderr), /injected packed MCP failure/);
 
   const cliMcpVerify = run(cliBin, cliMcpVerifyArgs(['ontology', '--timeout-ms', '3000']), {
     cwd: projectDir,

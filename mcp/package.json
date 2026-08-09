@@ -54,6 +54,7 @@
     "src/project-source-discovery.mjs",
     "src/project-source-inference.mjs",
     "src/project-source-witnesses.mjs",
+    "src/project-meaning-evidence.mjs",
     "src/project-source-remedy.mjs",
     "src/project-meaning-inventory.mjs",
     "src/project-meaning-receipt.mjs",

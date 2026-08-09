@@ -418,6 +418,46 @@ await test('init --quick-start — scaffolds, bootstraps from the repo, and ends
   }
 });
 
+await test('init --quick-start — bootstrap failure reports written configs as unverified with recovery commands', async () => {
+  const repo = makeQuickStartRepoFixture();
+  const fakeMcp = join(repo, 'failing-mcp.mjs');
+  try {
+    writeFileSync(
+      fakeMcp,
+      "console.error('injected quick-start MCP failure');\nprocess.exit(7);\n",
+      'utf-8',
+    );
+
+    const r = await run(['init', 'ontology', '--quick-start'], {
+      cwd: repo,
+      env: { OATLAS_MCP_PATH: fakeMcp },
+    });
+    assert.equal(r.code, 2, `stdout: ${r.stdout}\nstderr: ${r.stderr}`);
+    const clean = stripAnsi(r.stdout);
+
+    assert.equal(existsSyncTest(join(repo, 'ontology', 'README.md')), true);
+    assert.equal(existsSyncTest(join(repo, '.mcp.json')), true);
+    assert.equal(existsSyncTest(join(repo, '.codex', 'config.toml')), true);
+    assert.match(clean, /quick start incomplete/);
+    assert.match(clean, /vault scaffolded; agent configs written but unverified/);
+    assert.match(
+      clean,
+      new RegExp(`${escapeRegExp(CLI)} mcp-verify ${escapeRegExp('./ontology')} --timeout-ms 15000`),
+    );
+    assert.match(
+      clean,
+      new RegExp(`${escapeRegExp(CLI)} bootstrap \. --vault ${escapeRegExp('./ontology')}`),
+    );
+    assert.doesNotMatch(clean, /quick start done/);
+    assert.doesNotMatch(clean, /vault scaffolded \+ bootstrapped from your repo/);
+    assert.doesNotMatch(clean, /MCP already wired/);
+    assert.doesNotMatch(clean, /Try asking your agent/);
+    assert.match(stripAnsi(r.stderr), /injected quick-start MCP failure/);
+  } finally {
+    rmSync(repo, { recursive: true, force: true });
+  }
+});
+
 await test('init --quick-start — suggests absorbing an existing AGENTS.md without auto-absorbing it', async () => {
   const repo = makeQuickStartRepoFixture();
   try {
