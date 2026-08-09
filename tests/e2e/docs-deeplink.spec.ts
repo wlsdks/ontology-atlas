@@ -61,17 +61,54 @@ const DEEP_TITLE = /딥링크 표적 문서/;
  * 슬러그를 걷어낸다)은 그대로이고 **누르는 자리만** 바뀌었으므로, 시험을 지우지
  * 않고 여기 한 곳으로 모아 다음에 또 옮겨도 한 군데만 고치면 되게 한다.
  */
+/**
+ * **칩 메뉴를 연다 — 한 번의 클릭에 기대지 않는다.**
+ *
+ * ⚠️ dev 서버(Turbopack)에서는 하이드레이션 전에 떨어진 클릭이 **유실**된다.
+ * React 가 아직 붙지 않은 버튼을 누르면 아무 일도 안 일어나고, 그다음
+ * `toBeVisible` 은 10초를 기다려도 열리지 않는다 — 기다림이 잃어버린 클릭을
+ * 되살려 주지는 않기 때문이다. `playwright.config.ts` 가 이미 경고한 그
+ * 취약성이고(온디맨드 재컴파일이 산발 실패를 낸다), 정적 export 에서는 통과하고
+ * dev 에서만 죽는다 — 2026-08-09 에 실제로 그 모양으로 CI 만 빨갰다.
+ *
+ * 그래서 **메뉴가 열릴 때까지 다시 누른다.** 열려 있으면 클릭하지 않는다
+ * (열린 메뉴를 또 누르면 닫힌다).
+ */
+async function openVaultChipMenu(page: import("@playwright/test").Page): Promise<void> {
+  /*
+   * ⚠️ **보이는 것만 집는다.** 화면 전환 중에는 이전 트리와 새 트리가 잠깐
+   * 함께 떠 있어서 같은 testid 가 **둘**로 잡히고, 그 순간 둘 다 hidden 이다
+   * (2026-08-09 dev 실측: strict mode 충돌 + `unexpected value "hidden"`).
+   * 사용자가 만질 수 있는 것은 보이는 쪽 하나이므로 그것만 대상으로 한다.
+   */
+  const trigger = page.locator('[data-testid="vault-chip-menu-trigger"]:visible');
+  const anyRow = page.locator('[data-testid="vault-chip-use-sample"]:visible');
+  await expect(trigger).toBeVisible({ timeout: 15_000 });
+  await expect
+    .poll(
+      async () => {
+        if (await anyRow.isVisible().catch(() => false)) return true;
+        await trigger.click({ timeout: 5_000 }).catch(() => undefined);
+        return anyRow.isVisible().catch(() => false);
+      },
+      {
+        timeout: 20_000,
+        message:
+          "볼트 칩 메뉴가 열리지 않았다 — dev 에서는 하이드레이션 전 클릭이 유실되므로 다시 눌러야 한다",
+      },
+    )
+    .toBe(true);
+}
+
 async function switchToSample(page: import("@playwright/test").Page): Promise<void> {
-  await page.getByTestId("vault-chip-menu-trigger").click();
-  const pick = page.getByTestId("vault-chip-use-sample");
-  await expect(pick).toBeVisible({ timeout: 10_000 });
-  await pick.click();
+  await openVaultChipMenu(page);
+  await page.locator('[data-testid="vault-chip-use-sample"]:visible').click();
 }
 
 /** 지금 보고 있는 소스가 로컬인가 — 칩 메뉴의 라디오 상태로 읽는다. */
 async function expectSourceIsLocal(page: import("@playwright/test").Page): Promise<void> {
-  await page.getByTestId("vault-chip-menu-trigger").click();
-  await expect(page.getByTestId("vault-chip-use-local")).toHaveAttribute(
+  await openVaultChipMenu(page);
+  await expect(page.locator('[data-testid="vault-chip-use-local"]:visible')).toHaveAttribute(
     "aria-checked",
     "true",
     { timeout: 10_000 },
@@ -79,13 +116,13 @@ async function expectSourceIsLocal(page: import("@playwright/test").Page): Promi
   await page.keyboard.press("Escape");
   // 퇴장 대기 — Surface 는 나가는 동안 inert 로 DOM 에 남고, 텍스트 셀렉터는
   // 그것도 찾아낸다(local-vault-picker 에서 실제로 strict mode 충돌을 냈다).
-  await expect(page.getByTestId("vault-chip-use-sample")).toBeHidden();
+  await expect(page.locator('[data-testid="vault-chip-use-sample"]:visible')).toBeHidden();
 }
 
 /** 지금 보고 있는 소스가 샘플인가. */
 async function expectSourceIsSample(page: import("@playwright/test").Page): Promise<void> {
-  await page.getByTestId("vault-chip-menu-trigger").click();
-  await expect(page.getByTestId("vault-chip-use-sample")).toHaveAttribute(
+  await openVaultChipMenu(page);
+  await expect(page.locator('[data-testid="vault-chip-use-sample"]:visible')).toHaveAttribute(
     "aria-checked",
     "true",
     { timeout: 10_000 },
@@ -93,7 +130,7 @@ async function expectSourceIsSample(page: import("@playwright/test").Page): Prom
   await page.keyboard.press("Escape");
   // 퇴장 대기 — Surface 는 나가는 동안 inert 로 DOM 에 남고, 텍스트 셀렉터는
   // 그것도 찾아낸다(local-vault-picker 에서 실제로 strict mode 충돌을 냈다).
-  await expect(page.getByTestId("vault-chip-use-sample")).toBeHidden();
+  await expect(page.locator('[data-testid="vault-chip-use-sample"]:visible')).toBeHidden();
 }
 
 test.describe("문서함 딥링크 — URL 이 이긴다", () => {
