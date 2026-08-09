@@ -3583,15 +3583,13 @@
     "reading": "Reading the folder…",
     "unsupported": "This browser cannot open folders. The desktop app can.",
     "readError": "Could not read the folder — {error}",
-    "emptyBody": "Pick a folder and we find every SKILL.md inside it, then show when each one fires and what opens when it does. We only read files in that folder and change nothing.",
-    "answersTitle": "What only this screen answers",
-    "answer1": "When a skill fires — its trigger, shown as written.",
-    "answer2": "Why the wrong one fires — names that collide and triggers that overlap.",
-    "answer3": "What happens when it does — what opens, and which of those actually run.",
-    "whereTitle": "Skills usually live here",
-    "emptyHint1": "Your own skills — a project's .claude folder",
-    "emptyHint2": "Installed skills — .claude in your home folder",
-    "emptyHint3": "Read-only. Nothing is written to your vault or to the skill files.",
+    "emptyBody": "Pick a folder and we find every SKILL.md inside it. We only read files in that folder and change nothing.",
+    "answer1": "Its trigger, shown exactly as written.",
+    "answer2": "Names that collide and triggers that overlap.",
+    "answer3": "What opens, and which of those actually run.",
+    "emptyHint1": "Your skills — a project's .claude",
+    "emptyHint2": "Installed — .claude in your home folder",
+    "emptyHint3": "Read-only",
     "truncated": "The folder is large, so we read up to {count} files — the results below cover that much.",
     "notInstalled": "Skipped {count} folders that are not installed — older versions and catalogs you have not installed. Those never fire.",
     "stat": {
@@ -3649,6 +3647,12 @@
       "runsTitle": "Can run on your machine",
       "runsNote": "{count} files",
       "noneRun": "Nothing runs."
-    }
+    },
+    "emptyHeadline": "See which skills your agent has",
+    "answerQ1": "When it fires",
+    "answerQ2": "Why the wrong one fires",
+    "answerQ3": "What happens then",
+    "openSample": "Browse the example",
+    "sampleNotice": "This is the example set — open your folder to see your own skills."
   }
 }

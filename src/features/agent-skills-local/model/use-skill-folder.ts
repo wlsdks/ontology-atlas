@@ -2,7 +2,13 @@
 
 import { useCallback, useState } from "react";
 
-import { buildSkillInventory, type SkillInventory } from "@/entities/agent-skill";
+import {
+  buildSkillInventory,
+  SAMPLE_SKILL_FOLDER_NAME,
+  sampleExistingPaths,
+  sampleSkillFiles,
+  type SkillInventory,
+} from "@/entities/agent-skill";
 import { isTauriVaultRuntime, pickTauriVaultDirectory } from "@/shared/lib/tauri-vault-fs";
 
 import { scanSkillFolder, type SkillFolderScan } from "../lib/scan-skill-folder";
@@ -27,6 +33,8 @@ export interface SkillFolderState {
   readonly folderName: string | null;
   readonly scan: Pick<SkillFolderScan, "truncated" | "scannedFiles" | "skippedNotInstalled"> | null;
   readonly error: string | null;
+  /** 예시 뭉치인가 — 화면이 「이건 예시예요」라고 말할 수 있게. */
+  readonly sample: boolean;
 }
 
 /** 폴더 고르기를 부를 수 있나 — `in` 이 아니라 **호출 가능한지**로 본다. */
@@ -42,6 +50,7 @@ const IDLE: SkillFolderState = {
   folderName: null,
   scan: null,
   error: null,
+  sample: false,
 };
 
 export function useSkillFolder() {
@@ -83,6 +92,7 @@ export function useSkillFolder() {
           skippedNotInstalled: scan.skippedNotInstalled,
         },
         error: null,
+        sample: false,
       });
     } catch (error) {
       setState({
@@ -94,7 +104,28 @@ export function useSkillFolder() {
     }
   }, []);
 
+  /**
+   * 예시 뭉치를 띄운다 — **폴더를 고르기 전에 채워진 화면을 보여 주는 길.**
+   *
+   * 볼트의 「예시 둘러보기」와 같은 생각이다. 디스크를 하나도 안 읽으므로
+   * FSA 를 지원하지 않는 브라우저에서도 되고, 그래서 **미지원 안내보다 먼저**
+   * 쓸 수 있는 길이 하나 생긴다.
+   */
+  const openSample = useCallback(() => {
+    setState({
+      status: "ready",
+      inventory: buildSkillInventory({
+        files: sampleSkillFiles(),
+        existingPaths: sampleExistingPaths(),
+      }),
+      folderName: SAMPLE_SKILL_FOLDER_NAME,
+      scan: { truncated: false, scannedFiles: 0, skippedNotInstalled: null },
+      error: null,
+      sample: true,
+    });
+  }, []);
+
   const clear = useCallback(() => setState(IDLE), []);
 
-  return { ...state, openFolder, clear };
+  return { ...state, openFolder, openSample, clear };
 }

@@ -45,7 +45,8 @@ const numeralClass =
 
 export function AgentSkillsPage() {
   const t = useTranslations("agentSkills");
-  const { status, inventory, folderName, scan, error, openFolder } = useSkillFolder();
+  const { status, inventory, folderName, scan, error, sample, openFolder, openSample } =
+    useSkillFolder();
   const [selected, setSelected] = useState<string | null>(null);
   const [query, setQuery] = useState("");
 
@@ -93,14 +94,19 @@ export function AgentSkillsPage() {
               </span>
             ) : null}
           </div>
-          <Button
-            size="sm"
-            variant={inventory ? "outline" : "primary"}
-            onClick={() => void openFolder(t("pickerTitle"))}
-            data-testid="skills-open-folder"
-          >
-            {inventory ? t("openAnother") : t("openFolder")}
-          </Button>
+          {/* 첫 화면에서는 **본문이 이 동작을 소유한다** — 머리에도 같은 버튼을
+              두면 같은 일로 가는 입구가 둘이 되고, 그건 이 저장소가 `#65` 로 겪은
+              혼란과 같은 계열이다. 폴더를 연 뒤에는 머리가 진다(본문은 목록이다). */}
+          {inventory ? (
+            <Button
+              size="sm"
+              variant="outline"
+              onClick={() => void openFolder(t("pickerTitle"))}
+              data-testid="skills-open-folder"
+            >
+              {t("openAnother")}
+            </Button>
+          ) : null}
         </header>
         <p className="text-body leading-prose text-[color:var(--color-text-secondary)]">
           {t("subtitle")}
@@ -112,7 +118,12 @@ export function AgentSkillsPage() {
         ) : null}
         {status === "loading" ? <Notice tone="muted">{t("reading")}</Notice> : null}
 
-        {status === "idle" ? <EmptyState /> : null}
+        {status === "idle" ? (
+          <EmptyState
+            onOpenFolder={() => void openFolder(t("pickerTitle"))}
+            onOpenSample={openSample}
+          />
+        ) : null}
 
         {inventory ? (
           <>
@@ -124,7 +135,9 @@ export function AgentSkillsPage() {
                 data-testid="skills-scan-note"
                 className="flex flex-wrap items-baseline gap-x-3 gap-y-1 text-label leading-prose text-[color:var(--color-text-tertiary)]"
               >
-                <span>{t("stat.folder", { folder: folderName ?? "" })}</span>
+                <span>
+                  {sample ? t("sampleNotice") : t("stat.folder", { folder: folderName ?? "" })}
+                </span>
                 {scan?.skippedNotInstalled ? (
                   <span>{t("notInstalled", { count: scan.skippedNotInstalled })}</span>
                 ) : null}
@@ -180,46 +193,82 @@ export function AgentSkillsPage() {
   );
 }
 
-function EmptyState() {
+/**
+ * 첫 화면 — **아직 아무것도 안 고른 사람이 보는 것.**
+ *
+ * ## 무엇이 문제였나 (2026-08-09 소유자 지적)
+ *
+ * > *"이런 글자들도 더 커도 되는거 아니려나? 그리고 이거 모양 더 세련되게
+ * > 안되나? 이거 그냥 대충 박스에 글자 넣은거 뿐이잖아.."*
+ *
+ * 맞다. 상자 하나 안에 문단 · 소제목 · 목록 · 각주를 전부 세로로 쌓아 놓고
+ * **크기로만** 구분하고 있었다 — 본문 12.5px · 항목 11px 이라 램프 아래쪽 두 칸에
+ * 몰려 있었고, 그래서 무엇이 먼저 눈에 들어와야 하는지 화면이 말하지 않았다.
+ *
+ * ## 다시 짠 방식
+ *
+ * **세 질문이 이 화면의 주인공이다.** 그것을 번호가 붙은 세 칸으로 세우고, 각
+ * 칸에 «질문 → 답» 두 줄을 준다. 크기는 램프의 위쪽으로 올린다(질문 14px ·
+ * 답 12.5px). 나머지(어디에 있나 · 안 고친다)는 아래로 내려 한 줄씩만.
+ *
+ * 그리고 **길이 둘이 된다** — 폴더 고르기와 **예시 둘러보기**. 두 번째가 없으면
+ * 아무것도 없는 사람은 설명문만 읽고 나가야 한다.
+ */
+function EmptyState({ onOpenFolder, onOpenSample }: { onOpenFolder: () => void; onOpenSample: () => void }) {
   const t = useTranslations("agentSkills");
+  const answers = [
+    { key: "answer1", q: "answerQ1" },
+    { key: "answer2", q: "answerQ2" },
+    { key: "answer3", q: "answerQ3" },
+  ] as const;
+
   return (
-    <section className="flex flex-col gap-5 overflow-y-auto rounded-[var(--radius-panel)] border border-[color:var(--color-border-soft)] bg-[color:var(--color-overlay-1)] px-5 py-6">
-      <p className="text-body leading-prose text-[color:var(--color-text-secondary)]">
-        {t("emptyBody")}
-      </p>
-      <div>
-        <h2 className="text-label font-[var(--font-weight-emphasis)] text-[color:var(--color-text-primary)]">
-          {t("answersTitle")}
+    <section
+      data-testid="skills-empty"
+      className="flex min-h-0 flex-1 flex-col gap-8 pt-6 pb-6"
+    >
+      <div className="flex max-w-[46em] flex-col gap-2">
+        <h2 className="text-hero leading-display-tight text-[color:var(--color-text-primary)]">
+          {t("emptyHeadline")}
         </h2>
-        <ul className="mt-2 flex flex-col gap-1.5">
-          {["answer1", "answer2", "answer3"].map((key) => (
-            <li
-              key={key}
-              className="text-label leading-prose text-[color:var(--color-text-secondary)]"
-            >
-              {t(key)}
-            </li>
-          ))}
-        </ul>
+        <p className="text-body-lg leading-prose text-[color:var(--color-text-secondary)]">
+          {t("emptyBody")}
+        </p>
       </div>
-      <div>
-        <h2 className="text-label font-[var(--font-weight-emphasis)] text-[color:var(--color-text-primary)]">
-          {t("whereTitle")}
-        </h2>
-        <ul className="mt-2 flex flex-col gap-1.5">
-          {["emptyHint1", "emptyHint2"].map((key) => (
-            <li
-              key={key}
-              className="text-label leading-prose text-[color:var(--color-text-tertiary)]"
-            >
-              {t(key)}
-            </li>
-          ))}
-        </ul>
+
+      {/* 세 질문 — 이 화면이 다른 어디서도 답하지 않는 것. 번호가 순서를 말한다. */}
+      <ol className="grid gap-x-8 gap-y-5 md:grid-cols-3">
+        {answers.map((answer, index) => (
+          <li key={answer.key} className="flex flex-col gap-1.5">
+            <span className="flex items-baseline gap-2">
+              <span className="font-mono text-label text-[color:var(--color-text-quaternary)]">
+                {index + 1}
+              </span>
+              <span className="text-body-lg font-[var(--font-weight-emphasis)] text-[color:var(--color-text-primary)]">
+                {t(answer.q)}
+              </span>
+            </span>
+            <span className="text-body leading-prose text-[color:var(--color-text-tertiary)]">
+              {t(answer.key)}
+            </span>
+          </li>
+        ))}
+      </ol>
+
+      <div className="flex flex-wrap items-center gap-x-3 gap-y-2">
+        <Button size="md" variant="primary" onClick={onOpenFolder} data-testid="skills-empty-open">
+          {t("openFolder")}
+        </Button>
+        <Button size="md" variant="outline" onClick={onOpenSample} data-testid="skills-open-sample">
+          {t("openSample")}
+        </Button>
       </div>
-      <p className="text-label leading-prose text-[color:var(--color-text-tertiary)]">
-        {t("emptyHint3")}
-      </p>
+
+      <div className="flex flex-wrap gap-x-6 gap-y-1 text-body leading-prose text-[color:var(--color-text-quaternary)]">
+        <span>{t("emptyHint1")}</span>
+        <span>{t("emptyHint2")}</span>
+        <span>{t("emptyHint3")}</span>
+      </div>
     </section>
   );
 }
