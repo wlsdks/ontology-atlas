@@ -802,7 +802,8 @@ function validateCitationsAndConfidence({
           `Temporal, negated, or deprecated ${label} evidence needs an independent current-state source: ${source}`,
           [source],
         ));
-      } else {
+      // Structural candidates prove paths, not independent current product meaning.
+      } else if (semantic) {
         safeSources.push(source);
       }
     }

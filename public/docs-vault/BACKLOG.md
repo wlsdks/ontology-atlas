@@ -100,7 +100,7 @@ RDF/OWL/SKOS/SHACL 구현으로 소개하지 않는다. **적용 원칙**: LLM�
 | 6 | O1.1 | done(67cfd4394) | Workshop은 근거 없는 `is_a`를 추천하지 않는다. |
 | 7 | O1.3 | done(c1ba92e86) | 요구·CQ·예시·반례·다차원 품질 평가 계약을 고정한다. |
 | 8 | M1.5 | done(030269632) | MCP/skill/prompt가 같은 ontology-construction lifecycle을 강제한다. |
-| 9 | O1.5 | ready | 세 낯선 제품에서 독립 construction qualification을 통과한다. |
+| 9 | O1.5 | in_progress | 첫 세 낯선 제품은 모두 정직하게 red; 의미 evidence ingress를 수리한 뒤 다시 qualification한다. |
 | 10 | U1.3 | blocked(O1.5) | 같은 ontology-construction을 기본/전문가 깊이로 쉽게 사용한다. |
 | 11 | K1.1 | blocked(U1.3) | Skill 번호 절차를 손실 없이 source-bound rail로 읽는다. |
 | 12 | K1.2 | blocked(K1.1) | 명시 문법만 branch/retry/stop/verify로 타입화한다. |
@@ -239,6 +239,41 @@ RDF/OWL/SKOS/SHACL 구현으로 소개하지 않는다. **적용 원칙**: LLM�
   source를 몰래 제공, unsupported claim을 partial과 합쳐 평균내기.
 - **완료**: 세 제품 모두 structural valid에 더해 semantic·functional·evidence·pragmatic
   판정을 각각 통과한다. 실패한 축은 그대로 red이며 K1/U1로 넘어가지 않는다.
+
+**2026-08-10 첫 독립 실행 — 미통과, write 0**
+
+세 builder와 세 source-hidden evaluator를 각각 fresh `gpt-5.6-sol` 세션으로
+분리했다. 모든 scratch vault는 5 starter 그대로였고, write tool·승인·`writePlan`은
+0건이었다. 제품 이름과 clone은 저장소 밖 trial report에만 남긴다.
+
+| trial | semantic | structural | functional | evidence | pragmatic | maintenance | interop | source-hidden CQ | claim audit | 시간 |
+|---|---|---|---|---|---|---|---|---|---|---:|
+| Python 연구 운영 도구 | fail | pass | fail | fail | pass | unknown | fail | executive/employee/agent answered, FDE partial | 13 supported · 1 partial · 1 unsupported | 11m34s |
+| Rust 설정 인프라 CLI | fail | unknown | fail | fail | fail | unknown | unknown | executive/employee partial, FDE refused, agent answered | 9 supported · 5 partial · 3 unsupported | 7m49s |
+| TypeScript 데스크톱 reader | unknown | pass | fail | fail | fail | unknown | unknown | executive/employee partial, FDE unknown, agent answered | 20 supported · 2 partial · 3 unsupported | 11m14s |
+
+공통 실패는 node 수가 아니라 **휴대 가능한 meaning packet의 근거 선택**이었다.
+Python 원본의 architecture 문서는 dependency·entrypoint를 설명했지만 packet에 들어오지
+않았고, TypeScript plan은 capability 5개에 canonical path와 element를 하나도 제안하지
+못했다. Rust에서는 더 직접적인 validator 결함도 확인했다. `claim-review-required` README에
+평범한 `js` 경로를 함께 적자 경로 존재를 독립 current-state 의미 근거처럼 세어 proposal을
+통과시켰다. source-hidden evaluator는 그 plan의 17개 claim 중 3개를 unsupported로 판정했다.
+
+따라서 lifecycle의 human approval·분리 quality axis는 유지한다. 실제로 unsupported plan의
+write를 막았기 때문이다. 먼저 구조 경로가 위험한 **의미** 주장을 corroborate하지 못하도록
+검증기를 고치고, 대표 제품 fresh trial로 detector를 다시 증명한다. 그 뒤 current
+architecture/product contract와 implementation entrypoint를 bounded packet에 넣는 evidence
+ingress를 수리하고 세 제품 qualification을 반복한다. 현재 반복된 결함은 evidence/packet
+문제이며 missing ontology primitive가 아니므로 O1.4와 U1.3/K1/U1.1은 열지 않는다.
+
+**validator 수리 후 대표 재실행**: 이전 exact Rust proposal replay는 수정 전 `pass`에서
+수정 후 `fail`로 바뀌고 project·2 concept·2 relation에
+`risky-citation-unconfirmed` 5건을 반환했다. 별도 fresh Sol builder도 198.84초·MCP 5회 동안
+처음과 마지막 proposal 모두 `fail`이었고, structural `js`/`site`를 semantic source로
+승격하지 않았다. packet 안의 추가 trusted semantic source는 0개였으며 `reviewPlan`·
+`writePlan`·write call은 모두 0, vault는 5 starter와 동일 hash를 유지했다. 이는 detector
+수리는 증명하지만 O1.5 qualification 완료는 아니다. 다음 tracer인 evidence ingress가
+여전히 필요하다.
 
 #### U1.3 — progressive-disclosure construction UX
 

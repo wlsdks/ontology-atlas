@@ -3292,7 +3292,7 @@
         }
       ],
       "excerpt": "현재 실행 순서의 정본. 사용자가 작업 ID를 지목하면 그 항목만 분해해 구현한다. 완료 표시는 아래 활성 트랙의 증거 표에 먼저 남기고, 기능의 현재 상태는 docs/FEATURES.md, 결정 이유는 docs/DECISIONS.md, 사용자 가시 변경은 docs/CHANGELOG.md가 각각 맡는다. 변하는 숫자를 이 문서에 고정하지 않는다. 현재 dogfood census는 node cli/src/index.mjs overview, 공개 MCP/CLI surface는 pnpm docs:surface:check로 확인한다. 이 트랙은 2026-08-09 설치 앱 ",
-      "wordCount": 5096,
+      "wordCount": 5470,
       "updatedAt": "2026-08-10",
       "linksOut": []
     },
@@ -4022,6 +4022,11 @@
           "depth": 1,
           "text": "CHANGELOG",
           "slug": "changelog"
+        },
+        {
+          "depth": 2,
+          "text": "2026-08-10 · 파일 경로가 위험한 제품 의미를 증명하지 않는다",
+          "slug": "2026-08-10-파일-경로가-위험한-제품-의미를-증명하지-않는다"
         },
         {
           "depth": 2,
@@ -6359,8 +6364,8 @@
           "slug": "2026-07-26-첫-만남은-쇼핑몰부터"
         }
       ],
-      "excerpt": "Major change history. Code commit messages answer why; this file answers when / which surface changed. Focused on user-visible changes, not PR-level granularity. Newest at the top. Entries stay date-based; the app version reached v1.0.0 on 2026-07-27, so a release tag now carries the semver promise instead. 기존 analyzer",
-      "wordCount": 67180,
+      "excerpt": "Major change history. Code commit messages answer why; this file answers when / which surface changed. Focused on user-visible changes, not PR-level granularity. Newest at the top. Entries stay date-based; the app version reached v1.0.0 on 2026-07-27, so a release tag now carries the semver promise instead. 세 낯선 제품의 독립",
+      "wordCount": 67344,
       "updatedAt": "2026-08-10",
       "linksOut": [
         "audits/CASE-STUDY-AGENTS-MD-DRIFT",
@@ -6389,6 +6394,11 @@
           "depth": 2,
           "text": "기록 형식",
           "slug": "기록-형식"
+        },
+        {
+          "depth": 2,
+          "text": "2026-08-10 — O1.5 첫 red는 UI가 아니라 meaning evidence 경계를 먼저 고친다",
+          "slug": "2026-08-10-o15-첫-red는-ui가-아니라-meaning-evidence-경계를-먼저-고친다"
         },
         {
           "depth": 2,
@@ -8447,7 +8457,7 @@
         }
       ],
       "excerpt": "이 파일은 결정과 그때 진 반대 의견을 남긴다. docs/CHANGELOG.md 는 무엇이 언제 바뀌었나를 답하고, 이 파일은 왜 그렇게 정했고, 무엇을 걸었나를 답한다. 최신이 위. 기록은 덧붙이기만 한다 — 지난 기록을 고치지 않는다. 판단이 바뀌었으면 새 기록을 쓰고 옛 기록을 뒤집힘 으로 표시한다. 틀린 기록도 자산이다. 1. 소집 전에 읽는다. 카운슬을 열기 전(그리고 단독 PO 패스를 쓰기 전) 같은 표면 · 같은 질문에 대한 선행 결정이 있는지 먼저 본다. 있으면 새 패스는 그것을 ① 여전히 유효하다고 인용하거나 ② 명시적으로 뒤집는다. 조용히 다시 결정",
-      "wordCount": 102143,
+      "wordCount": 102453,
       "updatedAt": "2026-08-10",
       "linksOut": [
         "slug"

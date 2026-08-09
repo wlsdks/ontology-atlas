@@ -7,6 +7,28 @@
 
 ---
 
+## 2026-08-10 · 파일 경로가 위험한 제품 의미를 증명하지 않는다
+
+세 낯선 제품의 독립 ontology-construction trial은 모두 정직하게 미통과했다. vault 쓰기는
+0건으로 막혔지만, 한 plan에서 시간성·부정·폐기 표현 때문에 검토가 필요한 README와 평범한
+소스 디렉터리를 함께 인용하자 proposal validator가 그 디렉터리를 독립 current-state 의미
+근거로 잘못 세는 결함이 드러났다.
+
+- 구조 후보와 실제 경로는 계속 element 위치와 import evidence를 증명한다.
+- 위험 표시된 project/domain/capability/relation 의미를 corroborate하려면 이제 analysis
+  packet 안의 별도 신뢰 가능한 semantic evidence가 필요하다.
+- trusted semantic source가 실제로 함께 있으면 기존처럼 proposal을 검토 단계로 진행한다.
+- 결함을 되살리면 정확히 RED가 되는 regression test와 mutation probe를 추가했다.
+
+이전 exact proposal replay는 `pass`에서 `risky-citation-unconfirmed` 5건의 `fail`로
+바뀌었다. 수정된 MCP만 받은 별도 fresh Sol도 구조 디렉터리를 의미 근거로 승격하지 않고
+첫 proposal부터 마지막까지 차단했으며, review/write plan과 vault write는 모두 0이었다.
+
+공개 MCP tool·입력 schema·vault kind·frontmatter·UI는 바꾸지 않았다. O1.5는 아직
+`in_progress`이며, 다음은 원본의 current architecture/product contract와 implementation
+entrypoint를 bounded portable packet에 포함시키는 evidence ingress 수리다. 세 제품이 독립
+semantic·functional·evidence·pragmatic 판정을 통과하기 전 기본/전문가 UI를 열지 않는다.
+
 ## 2026-08-09 · 사용자가 본 계획만 독립 검증 뒤 온톨로지에 기록된다
 
 기존 `analyze_repo_structure`는 proposal 검사가 통과하면 사용자 승인 전에도

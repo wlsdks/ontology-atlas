@@ -42,6 +42,45 @@
 
 ---
 
+## 2026-08-10 — O1.5 첫 red는 UI가 아니라 meaning evidence 경계를 먼저 고친다
+
+**소집**: 단독 PO 패스 · **트리거**: 서로 다른 세 제품에서 fresh Sol builder와
+maker-independent source-hidden evaluator를 실행했지만 세 plan이 모두 mandatory 품질축을
+통과하지 못했다. 특히 한 plan은 `claim-review-required` README와 평범한 소스 디렉터리를
+함께 인용하자 proposal validator가 통과시켰고, 독립 evaluator는 지원되지 않는 제품 의미
+주장을 확인했다. 선행 2026-08-09 「ontology construction quality를 Skills와 UI 확장보다
+먼저 닫는다」와 「reviewPlan → exact approval → writePlan」 결정은 **유효**하다.
+**루브릭**: 23/24 (Problem 4 · User moment 4 · Differentiation 3 · Ontology 4 ·
+Agent 4 · Verification 4, 치명적 0 없음)
+
+**결정**: O1.5를 완료로 만들거나 U1.3·Skills·Projects로 넘어가지 않는다. 첫 tracer는
+공개 schema·tool·kind·UI를 늘리지 않고 proposal citation validator의 의미 경계를 좁힌다.
+구조 후보와 실제 경로는 구현의 존재·위치를 증명할 수 있지만, temporal/negated/deprecated로
+표시된 제품 의미를 독립적으로 corroborate하지 못한다. 위험한 의미 인용을 풀려면 analysis
+packet 안의 별도 current semantic evidence row가 필요하다. element path와 import edge의
+구조 검증은 그대로 유지한다.
+
+**적용 규칙**: exact Rust proposal을 수정 전/후 validator에 replay하고, 결함 상태를 다시
+넣으면 새 regression test가 RED가 되는지 gate-probe한다. 그다음 fresh Sol+실제 MCP로 같은
+제품을 다시 분석해 validator가 genuine semantic source를 요구하는지 확인한다. 후속 tracer는
+원본에 이미 존재하는 current architecture/product contract와 entrypoint를 bounded portable
+packet으로 가져오는 evidence ingress다. 세 trial의 공통 실패를 새 ontology primitive로
+오인하지 않으며, repeated missing primitive가 별도로 입증되기 전 O1.4는 hold다.
+**서명**: owner — ontology construction 우선순위와 다음 작업 진행 승인;
+Codex — 세 trial 집계·단독 패스·최소 수리
+
+**기록된 반대**: 모든 write가 이미 막혔으므로 lifecycle은 제 역할을 다했고, 더 정밀한
+evidence 수리보다 사용자가 쉽게 보는 U1.3을 먼저 만들 수 있다.
+**반증 조건**: validator와 evidence ingress를 수리한 독립 재실행 둘 이상에서 supported
+claim·FDE CQ·source-hidden handoff가 전혀 개선되지 않고 시간/호출만 늘어나면 이 반대가
+이긴다. 그때 성능 없는 lifecycle 단계나 packet 필드를 합치거나 제거하되, human approval과
+분리 quality axis는 유지한다.
+**재검토**: 수정된 대표 fresh trial과 다음 세 제품 qualification이 끝났을 때.
+
+**상태**: 유효
+
+---
+
 ## 2026-08-09 — M1.5의 영속 ledger는 기존 competency body와 finalizer receipt까지다
 
 **소집**: M1.5 PO Council 재판정 3석(`po-craft`·`po-leverage`·`po-wedge`, 모두
