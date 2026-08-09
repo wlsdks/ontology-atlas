@@ -7,6 +7,25 @@
 
 ---
 
+## 2026-08-09 — 승인한 competency 근거가 finalize와 다음 agent까지 이어진다
+
+`analyze_repo_structure`가 `canWrite:true`로 승인한 proposal을 그대로 작성해도,
+project의 competency 답에만 있던 `README.md` 같은 근거가 source receipt 단계에서
+사라져 `finalize_project_meaning`이 같은 답을 거절하는 단절을 고쳤다.
+
+- project Markdown의 정확한 `## Competency answers` 절 안에 있는 `Evidence`와
+  `Paths` 행은 이제 앱과 MCP가 같은 source witness로 읽는다. 실제 연결된 코드
+  폴더에 존재하는지는 기존 bounded probe가 다시 확인한다.
+- 임의 본문에 파일명을 적는 것만으로는 근거가 되지 않는다. 절대 경로·상위 폴더
+  이동·형식이 깨진 행은 fail-closed이며 private source root는 Markdown·receipt·
+  `agent_brief`에 들어가지 않는다.
+- Node 24 실제 stdio 왕복으로 proposal → unchanged writePlan → source connect →
+  finalize → 새 MCP process의 `agent_brief`까지 확인했다. 승인한 `scope`는
+  `resolved`로 유지되고, proposal이 의도적으로 남긴 `impact` gap은 숨기지 않는다.
+
+화면이나 디자인 시스템은 바뀌지 않았다. 사용자가 이미 승인한 의미를 뒤 단계가
+다르게 해석하지 않도록 ontology construction의 신뢰 계약만 닫은 변경이다.
+
 ## 2026-08-07 — 디자인 시스템 전면 감사 2회차: 관문 하단 17px 가림 · 손으로 쓴 그림자 0 · 게이트 구멍 다섯
 
 17개 라우트 × 2폭(1512·390)을 다시 재고, 뒤이어 값과 게이트를 수렴시켰다.

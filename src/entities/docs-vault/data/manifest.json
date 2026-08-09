@@ -3292,7 +3292,7 @@
         }
       ],
       "excerpt": "현재 실행 순서의 정본. 사용자가 작업 ID를 지목하면 그 항목만 분해해 구현한다. 완료 표시는 아래 활성 트랙의 증거 표에 먼저 남기고, 기능의 현재 상태는 docs/FEATURES.md, 결정 이유는 docs/DECISIONS.md, 사용자 가시 변경은 docs/CHANGELOG.md가 각각 맡는다. 변하는 숫자를 이 문서에 고정하지 않는다. 현재 dogfood census는 node cli/src/index.mjs overview, 공개 MCP/CLI surface는 pnpm docs:surface:check로 확인한다. 이 트랙은 2026-08-09 설치 앱 ",
-      "wordCount": 4287,
+      "wordCount": 4360,
       "updatedAt": "2026-08-09",
       "linksOut": []
     },
@@ -4022,6 +4022,11 @@
           "depth": 1,
           "text": "CHANGELOG",
           "slug": "changelog"
+        },
+        {
+          "depth": 2,
+          "text": "2026-08-09 — 승인한 competency 근거가 finalize와 다음 agent까지 이어진다",
+          "slug": "2026-08-09-승인한-competency-근거가-finalize와-다음-agent까지-이어진다"
         },
         {
           "depth": 2,
@@ -6319,9 +6324,9 @@
           "slug": "2026-07-26-첫-만남은-쇼핑몰부터"
         }
       ],
-      "excerpt": "Major change history. Code commit messages answer why; this file answers when / which surface changed. Focused on user-visible changes, not PR-level granularity. Newest at the top. Entries stay date-based; the app version reached v1.0.0 on 2026-07-27, so a release tag now carries the semver promise instead. 17개 라우트 × 2",
-      "wordCount": 67423,
-      "updatedAt": "2026-08-07",
+      "excerpt": "Major change history. Code commit messages answer why; this file answers when / which surface changed. Focused on user-visible changes, not PR-level granularity. Newest at the top. Entries stay date-based; the app version reached v1.0.0 on 2026-07-27, so a release tag now carries the semver promise instead. analyzerepo",
+      "wordCount": 67561,
+      "updatedAt": "2026-08-09",
       "linksOut": [
         "audits/CASE-STUDY-AGENTS-MD-DRIFT",
         "domains/catalog",
@@ -12119,8 +12124,8 @@
         }
       ],
       "excerpt": "project 노드 하나에 Git 저장소 또는 로컬 폴더 하나를 연결하고, 온톨로지가 선언한 capability/element 구현 경로를 실제 소스 목록과 대조해 버전이 붙은 범주형 영수증으로 남기는 능력. 지도 데이터시트·전체 상세·CLI·MCP agentbrief가 같은 상태·현재성·첫 빈틈·다음 행동을 읽는다. 연결 자체는 설치 앱·MCP·CLI 세 표면 모두에서 가능하다. connectprojectsource (CLI connect-source)는 rootPath를 생략하면 볼트를 감싸는 git 저장소를, 없으면 가장 가까운 조상 매니페스트 폴더를 후보로 지",
-      "wordCount": 458,
-      "updatedAt": "2026-08-04",
+      "wordCount": 539,
+      "updatedAt": "2026-08-09",
       "linksOut": []
     },
     {

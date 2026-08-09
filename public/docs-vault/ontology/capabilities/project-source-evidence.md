@@ -50,6 +50,13 @@ source receipt 자체가 stale이면 `source_changed → remeasure_source`지만
 `evidence`는 모든 capability의 concept/path 근거를 덮어야 `answered`다. 빠진 slug는
 미해소 대상으로 남고 `partial`/`visible-gap`은 계속 유효한 중간 상태다.
 
+proposal writer와 finalizer는 source witness의 의미도 공유한다. project Markdown의
+정확한 `## Competency answers` 절에서 renderer가 만든 backtick `Evidence`/`Paths`만
+canonical `path:`와 함께 source claim으로 파생하고, 앱과 MCP가 같은 집합을 만든다.
+임의 본문 파일명은 claim이 아니며 안전하지 않거나 형식이 깨진 경로는 빈 집합으로
+실패 닫는다. 따라서 승인한 write plan의 근거는 source receipt→finalize→새
+`agent_brief`까지 유지되지만, 실제 source inventory에 없는 경로는 끝까지 미지원이다.
+
 ## 근거
 
 - `src/shared/lib/project-source-receipt.ts` — 영수증·현재성·빈틈·인계 계약
@@ -61,6 +68,10 @@ source receipt 자체가 stale이면 `source_changed → remeasure_source`지만
 - `mcp/src/project-source-discovery.mjs` — 볼트 위치에서 소스 루트를 지명하는 bounded walk
 - `mcp/src/project-source-inference.mjs` — 후보 순위·신뢰도·이유의 순수 정본
 - `mcp/src/project-source-remedy.mjs` — 진단 action id → 실행 가능한 도구/명령/되돌리기
+- `mcp/src/project-meaning-evidence.mjs` · `src/shared/lib/project-meaning-evidence.ts` —
+  persisted competency source witness의 MCP·앱 동형 파생
+- `mcp/src/project-meaning-inventory.mjs` — source receipt와 finalizer가 공유하는
+  scoped evidence admission
 - `mcp/src/meaning-assessment.mjs` — 수치 없이 false-green을 닫는 순수 의미 판정 정본
 - `mcp/src/competency-coverage.mjs` — proposal과 새 프로세스 receipt가 공유하는
   quantified target/covered/uncovered 판정
