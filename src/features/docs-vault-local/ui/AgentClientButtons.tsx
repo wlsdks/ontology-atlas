@@ -396,7 +396,7 @@ export function AgentClientButtons({
       </div>
 
       {needsManualPath ? (
-        <p className="text-caption leading-label text-[color:var(--color-text-quaternary)]">
+        <p className="text-label leading-label text-[color:var(--color-text-quaternary)]">
           {t("deeplinkWebNote")}{" "}
           <Link
             href="/download/"
