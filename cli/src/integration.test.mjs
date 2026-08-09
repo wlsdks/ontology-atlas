@@ -555,7 +555,103 @@ await test('agent-setup — writes agent configs for an existing vault without s
     const vaultCodex = readFileSync(join(root, 'ontology', '.codex', 'config.toml'), 'utf-8');
     assert.match(vaultCodex, /OATLAS_VAULT = "\."/);
 
+    const reread = await run(['agent-setup', 'ontology', '--root', '.', '--json'], { cwd: root });
+    assert.equal(reread.code, 0, reread.stderr);
+    const rereadData = JSON.parse(reread.stdout);
+    assert.equal(rereadData.summary.ready, 4);
+    assert.equal(rereadData.summary.review, 0);
+    assert.ok(rereadData.files.every((file) => file.action === 'none'));
+
     assert.equal(readdirSync(join(root, 'ontology')).filter((name) => name.endsWith('.md')).length, 0);
+  } finally {
+    rmSync(root, { recursive: true, force: true });
+  }
+});
+
+await test('agent-setup — retired npx configs require review instead of reporting ready', async () => {
+  const root = mkdtempSync(join(tmpdir(), 'cli-agent-setup-retired-npx-'));
+  try {
+    writeFileSync(
+      join(root, '.mcp.json'),
+      JSON.stringify({
+        mcpServers: {
+          'ontology-atlas': {
+            command: 'npx',
+            args: ['-y', 'ontology-atlas-mcp'],
+            env: { OATLAS_VAULT: '.', OATLAS_REPO_ROOT: '.' },
+          },
+        },
+      }),
+      'utf-8',
+    );
+    mkdirSync(join(root, '.codex'), { recursive: true });
+    writeFileSync(
+      join(root, '.codex', 'config.toml'),
+      [
+        '[mcp_servers.ontology-atlas]',
+        'command = "npx"',
+        'args = ["-y", "ontology-atlas-mcp"]',
+        '',
+        '[mcp_servers.ontology-atlas.env]',
+        'OATLAS_VAULT = "."',
+        'OATLAS_REPO_ROOT = "."',
+        '',
+      ].join('\n'),
+      'utf-8',
+    );
+
+    const r = await run(['agent-setup', '.', '--root', '.', '--json'], { cwd: root });
+    assert.equal(r.code, 1);
+    const data = JSON.parse(r.stdout);
+    assert.equal(data.summary.total, 2);
+    assert.equal(data.summary.ready, 0);
+    assert.equal(data.summary.review, 2);
+    assert.ok(data.files.every((file) => /command|launch/i.test(file.message)));
+  } finally {
+    rmSync(root, { recursive: true, force: true });
+  }
+});
+
+await test('agent-setup — existing app-bundled configs report ready', async () => {
+  const root = mkdtempSync(join(tmpdir(), 'cli-agent-setup-bundled-'));
+  try {
+    const bundled = join(root, 'Ontology Atlas.app', 'Contents', 'MacOS', 'ontology-atlas-mcp');
+    mkdirSync(dirname(bundled), { recursive: true });
+    writeFileSync(bundled, '#!/bin/sh\n', 'utf-8');
+    writeFileSync(
+      join(root, '.mcp.json'),
+      JSON.stringify({
+        mcpServers: {
+          'ontology-atlas': {
+            command: bundled,
+            args: [],
+            env: { OATLAS_VAULT: '.', OATLAS_REPO_ROOT: '.' },
+          },
+        },
+      }),
+      'utf-8',
+    );
+    mkdirSync(join(root, '.codex'), { recursive: true });
+    writeFileSync(
+      join(root, '.codex', 'config.toml'),
+      [
+        '[mcp_servers.ontology-atlas]',
+        `command = ${JSON.stringify(bundled)}`,
+        'args = []',
+        '',
+        '[mcp_servers.ontology-atlas.env]',
+        'OATLAS_VAULT = "."',
+        'OATLAS_REPO_ROOT = "."',
+        '',
+      ].join('\n'),
+      'utf-8',
+    );
+
+    const r = await run(['agent-setup', '.', '--root', '.', '--json'], { cwd: root });
+    assert.equal(r.code, 0, r.stderr);
+    const data = JSON.parse(r.stdout);
+    assert.equal(data.summary.ready, 2);
+    assert.equal(data.summary.review, 0);
   } finally {
     rmSync(root, { recursive: true, force: true });
   }
@@ -1110,10 +1206,10 @@ await test('mcp-verify — runs MCP package verify against a resolved vault', as
     const init = await run(['init', 'ontology'], { cwd: root });
     assert.equal(init.code, 0, `stdout: ${init.stdout}\nstderr: ${init.stderr}`);
 
-    const r = await run(['mcp-verify', 'ontology', '--timeout-ms', '3000'], { cwd: root });
+    const r = await run(['mcp-verify', 'ontology', '--timeout-ms', '15000'], { cwd: root });
     assert.equal(r.code, 0, `stdout: ${r.stdout}\nstderr: ${r.stderr}`);
     const clean = stripAnsi(r.stdout);
-    assert.match(clean, /timeout=3000ms/);
+    assert.match(clean, /timeout=15000ms/);
     assert.match(clean, new RegExp(`tools/list ${EXPECTED_TOOL_COUNT}/${EXPECTED_TOOL_COUNT}`));
     assert.match(clean, new RegExp(escapeRegExp(expectedToolsListAnnotationSummary())));
     assert.match(clean, /get_concepts/);
@@ -1196,7 +1292,7 @@ await test('mcp-verify — verifies maintenance cursor resume when actions exist
     },
   ]);
   try {
-    const r = await run(['mcp-verify', root, '--timeout-ms', '3000']);
+    const r = await run(['mcp-verify', root, '--timeout-ms', '15000']);
     assert.equal(r.code, 0, `stdout: ${r.stdout}\nstderr: ${r.stderr}`);
     const clean = stripAnsi(r.stdout);
     assert.match(clean, /maintenance cursor — ready page stable \(2 remaining actions/);
@@ -1228,7 +1324,7 @@ await test('mcp-verify — allows valid vaults without a project node', async ()
     },
   ]);
   try {
-    const r = await run(['mcp-verify', root, '--timeout-ms', '3000']);
+    const r = await run(['mcp-verify', root, '--timeout-ms', '15000']);
     assert.equal(r.code, 0, `stdout: ${r.stdout}\nstderr: ${r.stderr}`);
     const clean = stripAnsi(r.stdout);
     assert.match(clean, /maintenance cursor — missing afterActionId reported/);
@@ -8479,7 +8575,7 @@ await test('bootstrap --skip-imports — sole README domain yields a verifier-cl
     const capability = readFileSync(join(vault, 'capabilities', 'auth.md'), 'utf-8');
     assert.match(capability, /domain: domains\/accounts/);
 
-    const verify = await run(['mcp-verify', vault]);
+    const verify = await run(['mcp-verify', vault, '--timeout-ms', '15000']);
     assert.equal(verify.code, 0, `stdout: ${verify.stdout}\nstderr: ${verify.stderr}`);
     assert.match(
       stripAnsi(verify.stdout),

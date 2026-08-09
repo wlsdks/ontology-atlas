@@ -1918,7 +1918,7 @@
       "connectionNeedsReview": "review",
       "connectionCheckReady": "The connection files are ready. Restart the agent and it starts reading this folder.",
       "connectionCheckPending": "{ready}/{total} connection files ready. Fill in the rest in step 1.",
-      "connectionHint": "All this screen knows is whether the connection files exist. Ontology Atlas never connects to your agent directly, so restart it and confirm the live connection inside each tool.",
+      "connectionHint": ".mcp.json.example is a template for another folder, so it is not counted as a connection file. This screen checks the launch shape and folder path; restart the agent and confirm the live connection inside each tool.",
       "boundaryTitle": "This is where outside tools get wired in",
       "boundaryDesc": "Ontology Atlas does not open a Claude Code, Codex, or Cursor chat inside the app. It prepares the connection files, the restart guidance, and the ways to check, so each tool reads and writes this folder from its own app or terminal.",
       "validationGateAriaLabel": "Folder condition",

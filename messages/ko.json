@@ -1918,7 +1918,7 @@
       "connectionNeedsReview": "점검",
       "connectionCheckReady": "연결 파일이 준비됐어요. 에이전트를 다시 켜면 이 폴더를 읽기 시작해요.",
       "connectionCheckPending": "연결 파일 {ready}/{total}개 준비됨. 1단계에서 나머지를 채우세요.",
-      "connectionHint": "여기서 아는 것은 연결 파일이 있는지까지예요. Ontology Atlas 는 에이전트에 직접 접속하지 않으니, 다시 켠 뒤 각 도구에서 실제 연결을 확인하세요.",
+      "connectionHint": ".mcp.json.example은 다른 폴더에서 쓸 본보기라 연결 파일 수에 넣지 않아요. 여기는 실행 방식과 이 폴더 경로까지만 확인하므로, 다시 켠 뒤 각 도구에서 실제 연결을 확인하세요.",
       "boundaryTitle": "밖의 도구를 잇는 자리예요",
       "boundaryDesc": "Ontology Atlas 안에서 Claude Code·Codex·Cursor 대화를 여는 게 아니에요. 연결 파일과 다시 켜는 안내, 확인 방법을 준비해 두면 각 도구가 자기 앱이나 터미널에서 이 폴더를 읽고 씁니다.",
       "validationGateAriaLabel": "폴더 상태",

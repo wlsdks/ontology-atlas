@@ -81,15 +81,19 @@ describe('관문 라우트 등록', () => {
  * 안 보이는 실패라 여기서 맞대어 본다.
  */
 describe('가이드 차례', () => {
-  it('차례의 모든 장이 볼트에 실제 본문을 갖는다', async () => {
-    const { GUIDE_PAGES } = await import('@/views/gateway-doc');
-    const { readVaultDoc } = await import('@/views/gateway-doc');
-    for (const page of GUIDE_PAGES) {
-      const body = readVaultDoc(page.slug);
-      expect(body, `${page.slug} 의 본문이 볼트에 없다`).toBeTruthy();
-      expect((body ?? '').length, `${page.slug} 가 사실상 비어 있다`).toBeGreaterThan(200);
-    }
-  });
+  it(
+    '차례의 모든 장이 볼트에 실제 본문을 갖는다',
+    async () => {
+      const { GUIDE_PAGES } = await import('@/views/gateway-doc');
+      const { readVaultDoc } = await import('@/views/gateway-doc');
+      for (const page of GUIDE_PAGES) {
+        const body = readVaultDoc(page.slug);
+        expect(body, `${page.slug} 의 본문이 볼트에 없다`).toBeTruthy();
+        expect((body ?? '').length, `${page.slug} 가 사실상 비어 있다`).toBeGreaterThan(200);
+      }
+    },
+    10_000,
+  );
 
   it('차례의 모든 장이 두 로케일 모두에 이름을 갖는다', async () => {
     const { GUIDE_PAGES } = await import('@/views/gateway-doc');

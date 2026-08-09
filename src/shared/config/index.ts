@@ -6,8 +6,10 @@ export {
   agentServerFromBundle,
   agentServerUnavailable,
   bundledServerLaunch,
+  inspectMcpServerLaunch,
   sourceCheckoutLaunch,
   type AgentServerAvailability,
   type McpServerLaunch,
+  type McpServerLaunchInspection,
   type McpServerLaunchKind,
 } from './mcp-server-launch';

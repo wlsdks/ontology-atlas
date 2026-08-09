@@ -470,10 +470,8 @@ export function VaultAgentSetupPanel({
     publicPackagesReady &&
       agentStatus.mcpJson &&
       agentStatus.codexConfig &&
-      agentStatus.mcpExample &&
       agentStatus.mcpJsonValid !== false &&
-      agentStatus.codexConfigValid !== false &&
-      agentStatus.mcpExampleValid !== false,
+      agentStatus.codexConfigValid !== false,
   );
   const mcpJsonState = !agentStatus.mcpJson
     ? 'missing'
@@ -501,11 +499,6 @@ export function VaultAgentSetupPanel({
       validKey: 'codexConfigValid',
       path: '.codex/config.toml',
     },
-    {
-      key: 'mcpExample',
-      validKey: 'mcpExampleValid',
-      path: '.mcp.json.example',
-    },
   ] as const;
   const agentSetupConnections = [
     {
@@ -519,12 +512,6 @@ export function VaultAgentSetupPanel({
       file: agentSetupFiles[1],
       label: t('agentSetup.connectionCodex'),
       check: t('agentSetup.connectionCodexCheck'),
-    },
-    {
-      key: 'codebaseRoot',
-      file: agentSetupFiles[2],
-      label: t('agentSetup.connectionCodebaseRoot'),
-      check: t('agentSetup.connectionCodebaseRootCheck'),
     },
   ] as const;
   const agentSetupReadyCount = agentSetupFiles.filter(
