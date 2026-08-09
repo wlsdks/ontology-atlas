@@ -3187,8 +3187,6 @@
     "webEdgesAdded": "관계 추가 {count}",
     "webEdgesRemoved": "관계 삭제 {count}",
     "webNoChanges": "아직 없어요. 문서를 고치면 여기에 나타나요.",
-    "webCommandHint": "누르면 지금 변경을 커밋하는 명령이 복사돼요",
-    "webCopyCommand": "터미널에서 커밋",
     "webCopied": "복사했어요",
     "webDesktopHint": "브라우저는 이 컴퓨터의 git 을 실행할 권한이 없어요. 무엇이 바뀌었는지는 여기서 그대로 보여드릴게요.",
     "scopeNotice": "기록 범위는 이 폴더 안 문서뿐이에요. 폴더 밖 파일은 그대로 둡니다.",
@@ -3257,7 +3255,6 @@
     "webTitle": "기록은 앱에서 남겨요",
     "webGetApp": "앱 받기",
     "retryButton": "다시 확인하기",
-    "webCommandLabel": "터미널에서 커밋하려면 이 명령을 쓰세요",
     "install": {
       "title": "이 컴퓨터에 git 이 없어요",
       "body": "git 은 변경 이력을 쌓는 프로그램이에요. 한 번만 설치하면 그 뒤로는 이 화면에서 다 됩니다.",

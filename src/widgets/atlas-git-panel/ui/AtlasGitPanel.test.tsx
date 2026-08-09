@@ -165,8 +165,11 @@ describe("AtlasGitPanel — 웹(브라우저 vault) 강등", () => {
     expect(screen.getByText("개념 추가 1")).toBeInTheDocument();
     expect(screen.getByText("개념 수정 2")).toBeInTheDocument();
     expect(screen.getByText("관계 추가 1")).toBeInTheDocument();
-    expect(screen.getByText("node $ATLAS/cli/src/index.mjs snapshot")).toBeInTheDocument();
-    expect(screen.getByTestId("atlas-git-web-copy")).toBeInTheDocument();
+    // **터미널 탈출구는 없다** (2026-08-09 소유자 판정). `$ATLAS` 가 이 저장소의
+    // 소스 폴더를 가리켜야 도는 명령이라 clone 한 사람만 쓸 수 있었고, 볼트가 git
+    // 저장소면 그냥 `git commit` 이면 되므로 필요하지도 않았다. 돌아오는 것을 막는다.
+    expect(screen.queryByTestId("atlas-git-web-copy")).toBeNull();
+    expect(screen.queryByText(/cli\/src\/index\.mjs snapshot/)).toBeNull();
     expect(
       screen.getByText(
         "브라우저는 이 컴퓨터의 git 을 실행할 권한이 없어요. 무엇이 바뀌었는지는 여기서 그대로 보여드릴게요.",

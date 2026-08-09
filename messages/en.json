@@ -3187,8 +3187,6 @@
     "webEdgesAdded": "{count} relation(s) added",
     "webEdgesRemoved": "{count} relation(s) removed",
     "webNoChanges": "Nothing yet. Edit a document and it shows up here.",
-    "webCommandHint": "Copies the command that saves your current changes",
-    "webCopyCommand": "Save in the terminal",
     "webCopied": "Copied",
     "webDesktopHint": "A browser isn't allowed to run git on this computer. What changed is still shown here.",
     "scopeNotice": "Only documents inside this folder are recorded. Files outside it are left alone.",
@@ -3257,7 +3255,6 @@
     "webTitle": "Saving happens in the app",
     "webGetApp": "Get the app",
     "retryButton": "Check again",
-    "webCommandLabel": "To save from the terminal, use this command",
     "install": {
       "title": "git isn't on this computer",
       "body": "git is the program that keeps your change history. Install it once and everything else happens on this screen.",
