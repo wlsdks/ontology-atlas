@@ -16,4 +16,4 @@ elements: []
 
 Changes where a live order is going without touching what was bought or what was paid.
 
-이미 접수된 주문의 도착지만 바꿉니다 — 산 물건과 낸 돈은 건드리지 않습니다.
+이미 접수된 주문의 도착지만 바꿉니다. 산 물건과 낸 돈은 건드리지 않습니다.

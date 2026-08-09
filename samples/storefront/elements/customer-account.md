@@ -13,4 +13,4 @@ domain: domains/customer
 
 The identity record itself: who this person is to the store, and the consents they have given.
 
-정체성 기록 그 자체 — 이 사람이 가게에 대해 누구인지와, 무엇에 동의했는지입니다.
+정체성 기록 그 자체: 이 사람이 가게에 대해 누구인지와, 무엇에 동의했는지입니다.

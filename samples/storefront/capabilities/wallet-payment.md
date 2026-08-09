@@ -15,4 +15,4 @@ elements: [elements/kakao-pay, elements/naver-pay, elements/toss-pay]
 
 Authorises a payment through a wallet the shopper already trusts, so no card number is typed at checkout.
 
-고객이 이미 쓰고 있는 지갑 앱을 통해 승인을 받습니다 — 결제창에서 카드번호를 다시 입력하지 않습니다.
+고객이 이미 쓰고 있는 지갑 앱을 통해 승인을 받습니다. 결제창에서 카드번호를 다시 입력하지 않습니다.

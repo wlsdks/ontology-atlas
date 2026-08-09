@@ -1,4 +1,4 @@
-import { readFileSync } from "node:fs";
+import { readdirSync, readFileSync } from "node:fs";
 import { join } from "node:path";
 
 import { describe, expect, it } from "vitest";
@@ -91,4 +91,43 @@ describe("작대기 래칫 — 사용자 문구", () => {
       ).toBe(BASELINE[locale]);
     });
   }
+});
+
+/**
+ * **예시 볼트도 작대기를 안 쓴다** (2026-08-09).
+ *
+ * UI 문구 래칫을 걸어 두고 예시 볼트를 손보다가 **내가 그 자리에 작대기를 40개쯤
+ * 새로 넣었다.** 래칫이 `messages/*.json` 만 보고 있었기 때문이다 — 그런데 사용자가
+ * 읽는 글은 UI 문구만이 아니고, 예시 볼트는 **처음 온 사람이 읽는 유일한 데이터**다.
+ *
+ * 치우고 나니 0이 됐다. 0에서는 상한이 아니라 **금지**가 맞다.
+ */
+describe("작대기 — 예시 볼트", () => {
+  const SAMPLE_ROOT = join(REPO_ROOT, "samples", "storefront");
+
+  const markdownFiles = (dir: string): string[] => {
+    const out: string[] = [];
+    for (const entry of readdirSync(dir, { withFileTypes: true })) {
+      if (entry.name.startsWith(".")) continue;
+      const full = join(dir, entry.name);
+      if (entry.isDirectory()) out.push(...markdownFiles(full));
+      else if (entry.name.endsWith(".md")) out.push(full);
+    }
+    return out;
+  };
+
+  it("예시 볼트 문서에 작대기가 없다", () => {
+    const files = markdownFiles(SAMPLE_ROOT);
+    expect(files.length, "예시 볼트 문서를 하나도 못 읽었다 — 이 시험이 헛돈다").toBeGreaterThan(
+      100,
+    );
+    const offenders = files
+      .filter((file) => readFileSync(file, "utf8").includes("—"))
+      .map((file) => file.slice(REPO_ROOT.length + 1));
+    expect(
+      offenders,
+      "예시 볼트에 작대기가 들어왔다. 문장이 끝났으면 마침표로 끊고, 이어지면 쉼표나 괄호를 쓴다:\n" +
+        offenders.join("\n"),
+    ).toEqual([]);
+  });
 });

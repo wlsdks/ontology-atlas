@@ -13,4 +13,4 @@ domain: domains/order
 
 The not-yet-committed order: chosen address, chosen coupon, chosen payment method, calculated total.
 
-아직 확정되지 않은 주문 — 고른 주소·쿠폰·결제 수단과 계산된 총액입니다.
+아직 확정되지 않은 주문: 고른 주소·쿠폰·결제 수단과 계산된 총액입니다.

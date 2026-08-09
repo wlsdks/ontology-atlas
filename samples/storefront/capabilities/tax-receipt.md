@@ -15,4 +15,4 @@ elements: []
 
 Issues the document a shopper needs for their own tax records, which is a legal obligation rather than a feature.
 
-고객이 자기 세무 기록에 쓸 증빙을 발행합니다 — 기능이라기보다 법적 의무입니다.
+고객이 자기 세무 기록에 쓸 증빙을 발행합니다. 기능이라기보다 법적 의무입니다.

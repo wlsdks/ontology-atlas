@@ -14,4 +14,4 @@ elements: [elements/address-record]
 
 Remembers the places a shopper ships to, so the slowest part of checkout becomes one tap.
 
-고객이 물건을 받는 장소들을 기억합니다 — 주문서에서 가장 느린 단계가 한 번의 선택이 됩니다.
+고객이 물건을 받는 장소들을 기억합니다. 주문서에서 가장 느린 단계가 한 번의 선택이 됩니다.

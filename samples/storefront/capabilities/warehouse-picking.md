@@ -15,4 +15,4 @@ elements: [elements/picking-list]
 
 Turns a confirmed order into instructions a person in the warehouse can walk: this shelf, this many, this box.
 
-확정된 주문을 창고에서 사람이 실제로 걸어다니며 수행할 지시로 바꿉니다 — 이 선반, 이만큼, 이 상자.
+확정된 주문을 창고에서 사람이 실제로 걸어다니며 수행할 지시로 바꿉니다. 이 선반, 이만큼, 이 상자.

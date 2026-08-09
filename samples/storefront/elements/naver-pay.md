@@ -13,4 +13,4 @@ domain: domains/payment
 
 The wallet integration for NaverPay: its own approval screen, its own contract, its own settlement cycle.
 
-네이버페이 지갑 연동 — 자기 승인 화면과 계약, 정산 주기를 가집니다.
+네이버페이 지갑 연동: 자기 승인 화면과 계약, 정산 주기를 가집니다.

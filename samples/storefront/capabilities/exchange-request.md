@@ -15,4 +15,4 @@ elements: [elements/exchange-record]
 
 Ties a collection and a re-shipment into one case, so no money moves and the shopper ends up with a different item.
 
-회수와 재발송을 한 건으로 묶습니다 — 돈은 움직이지 않고, 고객은 다른 물건을 받게 됩니다.
+회수와 재발송을 한 건으로 묶습니다. 돈은 움직이지 않고, 고객은 다른 물건을 받게 됩니다.

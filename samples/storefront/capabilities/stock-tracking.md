@@ -14,4 +14,4 @@ elements: [elements/stock-ledger]
 
 Answers one question everything else depends on: how many of this can still be sold right now.
 
-나머지 전부가 기대고 있는 한 가지 질문에 답합니다 — 지금 이걸 몇 개까지 더 팔 수 있는가.
+나머지 전부가 기대고 있는 한 가지 질문에 답합니다. 지금 이걸 몇 개까지 더 팔 수 있는가.

@@ -13,4 +13,4 @@ domain: domains/catalog
 
 Every price this product has had, with when it changed, so a past order still adds up.
 
-이 상품이 가졌던 모든 가격과 그 시점 — 지난 주문의 금액이 지금도 맞아떨어지게 합니다.
+이 상품이 가졌던 모든 가격과 그 시점: 지난 주문의 금액이 지금도 맞아떨어지게 합니다.

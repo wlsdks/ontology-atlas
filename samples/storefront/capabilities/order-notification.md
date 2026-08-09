@@ -15,4 +15,4 @@ elements: []
 
 Tells the shopper each time their order changes state, so they do not have to keep checking.
 
-주문 상태가 바뀔 때마다 알려 줍니다 — 고객이 계속 들여다보지 않아도 되게 합니다.
+주문 상태가 바뀔 때마다 알려 줍니다. 고객이 계속 들여다보지 않아도 되게 합니다.

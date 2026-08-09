@@ -15,4 +15,4 @@ elements: [elements/point-ledger]
 
 Gives back a fraction of what was spent as store credit, which is a discount the store keeps on its own books.
 
-쓴 금액의 일부를 가게 안에서만 쓸 수 있는 돈으로 돌려줍니다 — 가게 장부 안에 남는 할인입니다.
+쓴 금액의 일부를 가게 안에서만 쓸 수 있는 돈으로 돌려줍니다. 가게 장부 안에 남는 할인입니다.

@@ -5,7 +5,7 @@ kind: project
 title: Online Store
 display_ko: 온라인 쇼핑몰
 display_en: Online Store
-description: "An example online store: what a shopper browses, buys, pays for, receives, returns — and how a store keeps them coming back."
+description: "An example online store: what a shopper browses, buys, pays for, receives and returns, and how a store keeps them coming back."
 domains: [domains/catalog, domains/customer, domains/fulfillment, domains/inventory, domains/loyalty, domains/marketing, domains/order, domains/payment, domains/support]
 capabilities: []
 elements: []
@@ -13,9 +13,9 @@ elements: []
 
 # Online Store · 온라인 쇼핑몰
 
-An example online store: what a shopper browses, buys, pays for, receives, returns — and how a store keeps them coming back.
+An example online store: what a shopper browses, buys, pays for, receives and returns, and how a store keeps them coming back.
 
-고객이 상품을 둘러보고, 사고, 결제하고, 받고, 되돌리기까지 — 온라인 쇼핑몰이 하는 일을 그대로 옮긴 예시 지도입니다.
+고객이 상품을 둘러보고, 사고, 결제하고, 받고, 되돌리기까지: 온라인 쇼핑몰이 하는 일을 그대로 옮긴 예시 지도입니다.
 
 Nothing here is a real company. It exists so that a planner, a marketer, a decision maker and a developer can look at the same map and each read it in their own language: nine business areas, the capabilities inside each, and the concrete things those capabilities work with. Follow a single order from cart to refund and the whole graph lights up.
 
