@@ -5,6 +5,7 @@ import { looksLikeCodePath } from "@/shared/lib/humanize-code-path-title";
 interface WitnessDoc {
   slug: string;
   frontmatter: Record<string, unknown>;
+  meaningEvidencePaths?: readonly string[];
 }
 
 function normalizedPath(value: string): string {
@@ -78,6 +79,22 @@ export function deriveProjectSourceWitnesses(input: {
           path: normalized,
         });
       }
+    }
+  }
+
+  const projectDoc = input.docs.find((doc) => (
+    relevantDocSlugs.has(doc.slug)
+    && doc.frontmatter.kind === "project"
+    && (doc.slug === input.projectSlug || doc.frontmatter.slug === input.projectSlug)
+  ));
+  if (projectDoc) {
+    for (const [index, path] of (projectDoc.meaningEvidencePaths ?? []).entries()) {
+      add({
+        id: `competency-evidence:${index + 1}`,
+        nodeSlug: projectDoc.slug,
+        role: "competency-evidence",
+        path,
+      });
     }
   }
 

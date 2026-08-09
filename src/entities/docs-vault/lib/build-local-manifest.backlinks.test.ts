@@ -165,3 +165,35 @@ describe('build-local-manifest — D-1 frontmatter relation backlinks', () => {
     expect(fromCli[0].context).not.toContain('frontmatter ·');
   });
 });
+
+describe('build-local-manifest — persisted competency evidence', () => {
+  it('derives exact project competency evidence without exposing arbitrary body paths', async () => {
+    const manifest = await buildLocalManifest(
+      makeRoot({
+        'project.md': md(
+          ['slug: project', 'title: Project', 'kind: project'],
+          [
+            'Mention src/ghost.ts in ordinary prose.',
+            '',
+            '## Competency answers',
+            '',
+            '### scope — answered',
+            '',
+            'Question',
+            '',
+            'Answer',
+            '',
+            '- Evidence: `README.md`',
+            '- Paths: `src/entry.ts`',
+          ].join('\n'),
+        ),
+      }),
+    );
+
+    expect(manifest.manifest.docs[0].meaningEvidencePaths).toEqual([
+      'README.md',
+      'src/entry.ts',
+    ]);
+    expect(manifest.manifest.docs[0].meaningEvidencePaths).not.toContain('src/ghost.ts');
+  });
+});

@@ -16,6 +16,11 @@ export interface VaultDoc {
   frontmatter: Record<string, unknown>;
   headings: VaultHeading[];
   excerpt: string;
+  /**
+   * Exact source paths parsed from the persisted project competency block.
+   * Derived at load time; never written back to vault Markdown.
+   */
+  meaningEvidencePaths?: string[];
   wordCount: number;
   updatedAt: string;
   linksOut: string[];

@@ -2241,6 +2241,65 @@ await test("analyze_repo_structure — validates a complete meaning proposal bef
     assert.equal(result.proposalValidation.writePlan.relations.length, 2);
     assert.equal(result.proposalValidation.writePlan.competencyAnswers.impact.status, "visible-gap");
 
+    const written = await rpc(vaultRoot, [
+      ...INIT_REQUESTS,
+      callTool(2, "add_concepts", {
+        concepts: result.proposalValidation.writePlan.concepts,
+      }),
+      callTool(3, "add_relations", {
+        relations: result.proposalValidation.writePlan.relations,
+      }),
+    ]);
+    assert.ok(getCallParsed(written.responses, 2).concepts.every((row) => row.ok));
+    assert.ok(getCallParsed(written.responses, 3).relations.every((row) => row.ok));
+
+    const connected = await rpc(vaultRoot, [
+      ...INIT_REQUESTS,
+      callTool(2, "connect_project_source", {
+        projectSlug: "claims",
+        rootPath: repoRoot,
+        confirm: true,
+      }),
+    ]);
+    assert.equal(getCallParsed(connected.responses, 2).projectSource.status, "verified_current");
+
+    const finalized = await rpc(vaultRoot, [
+      ...INIT_REQUESTS,
+      callTool(2, "finalize_project_meaning", {
+        projectSlug: "claims",
+        expected_mtime: statSync(join(vaultRoot, "claims.md")).mtimeMs,
+      }),
+    ]);
+    assert.equal(
+      isErrorResponse(finalized.responses, 2),
+      false,
+      getCallText(finalized.responses, 2),
+    );
+    const finalizedResult = getCallParsed(finalized.responses, 2);
+    assert.equal(finalizedResult.ok, true);
+    assert.equal(finalizedResult.meaningAssessment.dimensions.competency.questions
+      .find((row) => row.id === "scope")?.witnessStatus, "resolved");
+    assert.equal(JSON.stringify(finalizedResult).includes(repoRoot), false);
+
+    const handedOff = await rpc(vaultRoot, [
+      ...INIT_REQUESTS,
+      callTool(2, "query_ontology", {
+        operation: "agent_brief",
+        project: "claims",
+      }),
+    ]);
+    const handoffBrief = getCallParsed(handedOff.responses, 2);
+    assert.equal(
+      handoffBrief.meaningAssessment.dimensions.competency.status,
+      "needs_evidence",
+      JSON.stringify(handoffBrief.meaningAssessment),
+    );
+    assert.equal(handoffBrief.meaningAssessment.dimensions.competency.questions
+      .find((row) => row.id === "scope")?.witnessStatus, "resolved");
+    assert.equal(handoffBrief.meaningAssessment.topGap?.questionId, "impact");
+    assert.equal(handoffBrief.meaningAssessment.dimensions.source.currentness, "current");
+    assert.equal(JSON.stringify(handoffBrief).includes(repoRoot), false);
+
     const legacyProposal = {
       ...proposal,
       competencyAnswers: {

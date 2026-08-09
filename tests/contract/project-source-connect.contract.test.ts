@@ -13,7 +13,9 @@ import { describe, expect, it } from "vitest";
 
 import { deriveProjectSourceWitnesses } from "../../src/views/home/lib/project-source-witnesses";
 import { deriveProjectSourceWitnessesFromDocs } from "../../mcp/src/project-source-witnesses.mjs";
+import { extractProjectMeaningEvidencePaths as extractMcpMeaningEvidence } from "../../mcp/src/project-meaning-evidence.mjs";
 import { buildProjectSourceReceipt } from "../../src/shared/lib/project-source-receipt";
+import { extractProjectMeaningEvidencePaths as extractAppMeaningEvidence } from "../../src/shared/lib/project-meaning-evidence";
 import { buildProjectSourceReceipt as mintMcp } from "../../mcp/src/project-source-mint.mjs";
 import { projectSourceRemedy } from "../../mcp/src/project-source-remedy.mjs";
 import { proposeProjectSourceFromInspection } from "../../src/shared/lib/project-source-proposal";
@@ -40,7 +42,23 @@ const NEXT_ACTION_IDS = [
 ] as const;
 
 const DOCS = [
-  { slug: "music-streaming", frontmatter: { kind: "project", slug: "music-streaming", title: "Music", path: "src/app" } },
+  {
+    slug: "music-streaming",
+    frontmatter: { kind: "project", slug: "music-streaming", title: "Music", path: "src/app" },
+    body: [
+      "## Competency answers",
+      "",
+      "### scope — answered",
+      "",
+      "What outcome defines this project?",
+      "",
+      "People can play music.",
+      "",
+      "- Evidence: `README.md`, `docs/PRODUCT.md`",
+      "- Paths: `src/play/engine.ts`",
+    ].join("\n"),
+    meaningEvidencePaths: ["docs/PRODUCT.md", "README.md", "src/play/engine.ts"],
+  },
   {
     slug: "capabilities/play",
     frontmatter: {
@@ -79,6 +97,38 @@ describe("witness derivation parity", () => {
     // empty arrays proves nothing.
     expect(fromDocs.length).toBeGreaterThanOrEqual(4);
     expect(fromDocs).toEqual(fromGraph);
+  });
+});
+
+describe("persisted competency evidence parity", () => {
+  it("extracts only exact competency Evidence/Paths rows and fails closed on malformed paths", () => {
+    const body = [
+      "## Evidence",
+      "",
+      "Mention src/ghost.ts in ordinary prose.",
+      "",
+      "## Competency answers",
+      "",
+      "### scope — answered",
+      "",
+      "Question",
+      "",
+      "Answer",
+      "",
+      "- Evidence: `README.md`, `docs/PRODUCT.md`",
+      "- Paths: `src/review`",
+      "",
+      "## Next",
+      "",
+      "- Evidence: `src/outside.ts`",
+    ].join("\n");
+    const expected = ["docs/PRODUCT.md", "README.md", "src/review"];
+    expect(extractMcpMeaningEvidence(body)).toEqual(expected);
+    expect(extractAppMeaningEvidence(body)).toEqual(expected);
+
+    const malformed = body.replace("`src/review`", "`../secret` ");
+    expect(extractMcpMeaningEvidence(malformed)).toEqual([]);
+    expect(extractAppMeaningEvidence(malformed)).toEqual([]);
   });
 });
 

@@ -91,6 +91,41 @@ test('builds an inventory only from the complete scoped graph and supported path
   });
 });
 
+test('admits exact persisted competency evidence without requiring a frontmatter path', () => {
+  const body = [
+    '## Competency answers',
+    '',
+    '### scope — answered',
+    '',
+    'Question',
+    '',
+    'Answer',
+    '',
+    '- Evidence: `README.md`',
+  ].join('\n');
+  const result = buildProjectMeaningInventory({
+    projectSlug: 'project',
+    graphHash: GRAPH_HASH,
+    projectScope: scope([{ slug: 'project', kind: 'project' }]),
+    artifactEdges: [],
+    scopedDocs: [{ slug: 'project', frontmatter: { slug: 'project', kind: 'project' }, body }],
+    projectSource: source([
+      {
+        id: 'competency-evidence:1',
+        nodeSlug: 'project',
+        role: 'competency-evidence',
+        path: 'README.md',
+        supported: true,
+      },
+    ]),
+  });
+
+  assert.equal(result.status, 'ready');
+  assert.deepEqual(result.inventory.evidence, ['README.md']);
+  assert.deepEqual(result.inventory.paths, ['README.md']);
+  assert.deepEqual(result.evidenceClaims, [{ concept: 'project', path: 'README.md' }]);
+});
+
 test('fails closed when the saved source receipt is malformed', () => {
   const projectSource = source([
     { id: 'search', nodeSlug: 'capabilities/search', role: 'implementation', path: 'src/search.ts', supported: true },
