@@ -36,7 +36,7 @@ import { describe, expect, it } from "vitest";
 const REPO_ROOT = join(import.meta.dirname, "..", "..");
 
 /** 2026-08-09 실측. 줄이는 것은 자유, 늘리려면 문장을 다시 써라. */
-const BASELINE = { ko: 232, en: 265 } as const;
+const BASELINE = { ko: 230, en: 264 } as const;
 
 /**
  * **글이 아니라 기호인 자리** — 값이 없다는 뜻의 대시 하나. 여기 있는 것은
