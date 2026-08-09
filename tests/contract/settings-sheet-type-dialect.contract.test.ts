@@ -36,19 +36,46 @@ import { describe, expect, it } from "vitest";
  * 범례·타임스탬프" 의 단이다(`app/globals.css`). 라디오 버튼의 이름은 그 셋 중
  * 무엇도 아니다.
  *
- * ## 사정거리 — 왜 드릴인 서브뷰는 빼나
+ * ## 사정거리 — 드릴인까지다 (2026-08-09 에 넓혔다)
  *
- * `VaultAgentSetupPanel`(55건) · `AiConnectionPanel`(27건)은 이 규칙 **밖**이다.
- * 둘은 루트 시트가 아니라 드릴인 목적지이고, 그 안의 `text-caption` 대부분은
- * 램프 정의에 맞는 쓰임이다(`font-mono uppercase tracking` 아이브로우, 경로
- * 코드, 단계 번호 배지). 그것까지 한 룰로 묶으면 82건짜리 소음이 되고, 소음은
- * 강제가 아니라 기존 신호를 덮는다(`design.md` "룰을 켜기 전 반드시 측정한다").
- * 켤 때의 실측: **루트 6파일 위반 13건 → 치환 후 0건.**
+ * ⚠️ **처음에는 드릴인을 뺐고, 그 판단이 틀렸다.**
+ *
+ * 2026-08-02 에는 `VaultAgentSetupPanel` · `AiConnectionPanel` 을 사정거리 밖에
+ * 뒀다. 근거는 *"그 안의 `text-caption` 대부분은 램프 정의에 맞는 쓰임(아이브로우 ·
+ * 경로 코드 · 단계 배지)이라, 묶으면 82건짜리 소음이 된다"* 였다. **소음 걱정은
+ * 옳았고 「대부분 정당하다」는 전제가 틀렸다.**
+ *
+ * 2026-08-09 에 소유자가 「내 에이전트 연결」을 가리켰다 —
+ * *"왜이렇게 작아보이지? 우리 디자인 시스템에서 이런거 통일 안되어있나? 다른거 보면
+ * 크잖아.. 다 너무 작아서 잘 안보임"*. 실측(1512×900, 볼트 연결 상태, 여덟 칸 전수):
+ *
+ * | 칸 | 12.5 | 11 | **9.5** |
+ * |---|---|---|---|
+ * | 화면 · 지도 배경 · 확장 · 발자국 · 알림 · 작업 공간 | 2~9 | 1~14 | **0** (여섯 칸 전부) |
+ * | **내 에이전트 연결** | 2 | 12 | **10 / 24 = 42%** |
+ *
+ * 여섯 칸은 9.5px 이 하나도 없는데 이 칸만 **보이는 글자의 42%** 가 시트 바닥
+ * 아래였다. 그리고 정당하다던 쓰임을 하나씩 열어 보니 아니었다:
+ *
+ * - `dt`(이름)이 9.5px 인데 그 `dd`(값)이 11px — **이름이 자기 값보다 작다.**
+ *   2026-08-02 가 「확장」 절에서 이름 붙인 그 위계 뒤집힘과 같은 것이다
+ * - API 키·URL 을 타이핑하는 `<input>` 이 `fieldClass` 를 부르면서 그 램프의
+ *   기본값(`text-body-lg` 14px)을 **`text-caption` 으로 덮어썼다** — 자기 램프보다
+ *   4.5px 아래
+ * - 사용자가 글자 하나하나 확인해야 하는 설정 JSON `<pre>` 가 9.5px
+ *
+ * 그래서 사정거리를 드릴인과 그 하위까지 넓힌다. 체인:
+ * `VaultAgentSetupPanel` → `AgentClientButtons` → `WebManualConnectPanel`.
+ *
+ * **소음은 면제를 좁혀서 막는다, 사정거리를 좁혀서가 아니다.** 허용되는 9.5px 은
+ * **아이브로우 한 가지**뿐이다 — `uppercase` 가 같은 className 에 붙은 것. 그것이
+ * 램프가 말하는 "마이크로 라벨" 이고, 판정이 한 줄 안에서 끝나므로 다음 사람이
+ * 헷갈릴 여지도 없다. 넓힐 때의 실측: **위반 41건 → 치환 후 0건**(넘침 0 유지).
  */
 
 const UI = "src/widgets/app-settings-menu/ui";
 
-/** 루트 시트를 구성하는 파일 — LNB + 여섯 칸. 드릴인 서브뷰는 사정거리 밖. */
+/** 루트 시트를 구성하는 파일 — LNB + 여섯 칸. */
 const ROOT_SHEET_FILES = [
   "AppSettingsMenu.tsx",
   "settings-primitives.tsx",
@@ -59,14 +86,44 @@ const ROOT_SHEET_FILES = [
 ] as const;
 
 /**
+ * 드릴인 목적지와 그 하위 — 2026-08-09 에 사정거리에 들어왔다(위 머리말).
+ * 경로가 `UI` 밖으로 나가므로 저장소 루트 기준으로 적는다.
+ */
+const DRILL_IN_FILES = [
+  `${UI}/VaultAgentSetupPanel.tsx`,
+  `${UI}/AiConnectionPanel.tsx`,
+  `${UI}/AgentSetupStep.tsx`,
+  "src/features/docs-vault-local/ui/AgentClientButtons.tsx",
+  "src/features/docs-vault-local/ui/WebManualConnectPanel.tsx",
+] as const;
+
+/**
  * 주석을 뺀 소스. 이 파일이 세는 것은 **화면에 나가는 클래스**지 그것을 설명하는
  * 문장이 아니다 — 주석을 안 빼면 "이 규격을 문서화한 주석" 자체가 위반으로
  * 잡혀서, 규격을 적을수록 게이트가 빨개지는 뒤집힌 유인이 생긴다.
  */
 function sourceWithoutComments(file: string): string {
-  return readFileSync(`${UI}/${file}`, "utf8")
+  return sourceAtPath(`${UI}/${file}`);
+}
+
+function sourceAtPath(path: string): string {
+  return readFileSync(path, "utf8")
     .replace(/\/\*[\s\S]*?\*\//g, "")
     .replace(/^\s*\/\/.*$/gm, "");
+}
+
+/**
+ * 9.5px 을 쓴 줄 중 **아이브로우가 아닌 것**. 아이브로우는 `uppercase` 가 같은
+ * className 에 붙은 것이고, 그것만 램프 정의("마이크로 라벨")에 맞는 쓰임이다.
+ *
+ * 판정이 한 줄 안에서 끝나야 한다 — 요소의 역할(`dt` 인가 설명인가)로 가르려면
+ * JSX 를 파싱해야 하고, 그러면 게이트가 자기가 못 보는 층을 갖게 된다.
+ */
+function nonEyebrowCaptionLines(source: string): string[] {
+  return source
+    .split("\n")
+    .filter((line) => line.includes("text-caption") && !line.includes("uppercase"))
+    .map((line) => line.trim().slice(0, 100));
 }
 
 describe("설정 루트 시트 — 타입 방언은 하나다", () => {
@@ -87,7 +144,36 @@ describe("설정 루트 시트 — 타입 방언은 하나다", () => {
    * 공회전 차단 — 파일 목록이 오타/이동으로 비면 위 시험은 «위반 0» 을 영원히
    * 보고한다. 실제로 무엇인가를 읽었고, 그것이 타입 램프를 쓰는 파일인지 본다.
    */
+  /**
+   * 드릴인 목적지 — 루트와 같은 방언이다. 여기서만 **아이브로우**(`uppercase`)가
+   * 9.5px 을 쓸 수 있다: 루트 시트는 그 자리를 `SettingsGroup` 이 소유하지만
+   * 드릴인은 자기 안에서 절을 나눠야 해서 자기 아이브로우를 갖는다.
+   */
+  it("드릴인 목적지에도 아이브로우 밖의 9.5px 이 없다", () => {
+    const offenders = DRILL_IN_FILES.flatMap((path) => {
+      const lines = nonEyebrowCaptionLines(sourceAtPath(path));
+      return lines.map((line) => `${path.split("/").pop()}: ${line}`);
+    });
+    expect(
+      offenders,
+      "드릴인 칸이 루트 시트보다 한 단 작아졌다. 이름은 text-body(12.5), " +
+        "설명·값·경로는 text-label(11), 9.5px 은 uppercase 아이브로우만.",
+    ).toEqual([]);
+  });
+
   it("게이트가 빈 집합 위에서 돌지 않는다", () => {
+    for (const path of DRILL_IN_FILES) {
+      const source = sourceAtPath(path);
+      expect(source.length, `${path} 을 못 읽었다`).toBeGreaterThan(200);
+      expect(source, `${path} 이 타입 램프를 안 쓴다 — 목록이 낡았다`).toMatch(
+        /text-(body|label|title|body-lg)/,
+      );
+    }
+    // 체인이 살아 있는가 — 이 파일들이 정말 설정 시트에서 그려지나.
+    expect(sourceAtPath(`${UI}/VaultAgentSetupPanel.tsx`)).toContain("AgentClientButtons");
+    expect(sourceAtPath("src/features/docs-vault-local/ui/AgentClientButtons.tsx")).toContain(
+      "WebManualConnectPanel",
+    );
     for (const file of ROOT_SHEET_FILES) {
       const source = sourceWithoutComments(file);
       expect(source.length, `${file} 을 못 읽었다`).toBeGreaterThan(200);
