@@ -1484,6 +1484,32 @@ if (
   );
 }
 
+/*
+ * ⚠️ **라우트를 슬러그까지 못박지 않는다** (2026-08-10 에 풀었다).
+ *
+ * 종전에는 `--require-webview-route='/ko/topology/?p=domain%3Aviews&mode=focus'` 를
+ * 문자열째로 못박고 있었다. 그런데 그 `views` 도메인은 도그푸드 볼트를 다시 만드는
+ * 동안 **사라졌다** — 검증기 아홉이 없는 노드를 가리키며 조용히 실패하고 있었고,
+ * 고치려 하니 **이 검사가 그 수정을 막았다.** 규격이 좋아지는 방향에서 터지는
+ * 게이트는 다음 사람이 게이트 대신 규격을 되돌리게 만든다(`documentation.md`).
+ *
+ * 그래서 역할을 나눈다: 여기서는 **플래그의 모양**(딥링크가 있고 모드가 맞나)만 보고,
+ * 「그 노드가 실재하나」는 볼트를 직접 뒤지는 계약 시험이 본다
+ * (`tests/contract/script-vault-references.contract.test.ts`, CI 에서 돈다).
+ */
+const focusDeepLinkRoute = (script) =>
+  /--require-webview-route='\/ko\/topology\/\?p=(?:domain|capability|element|project)%3A[a-z0-9-]+&mode=focus'/.test(
+    script,
+  );
+const bareDeepLinkRoute = (script) =>
+  /--require-webview-route='\/ko\/topology\/\?p=(?:domain|capability|element|project)%3A[a-z0-9-]+'/.test(
+    script,
+  );
+const pathModeRoute = (script) =>
+  /--require-webview-route='\/ko\/topology\/\?mode=path&pathFrom=(?:domain|capability|element|project)%3A[a-z0-9-]+&pathTo=(?:domain|capability|element|project)%3A[a-z0-9-]+'/.test(
+    script,
+  );
+
 const localizedComposerBlockingScript =
   pkg.scripts?.["desktop:verify-topology-composer-blocking:ko"] ?? "";
 if (
@@ -1494,7 +1520,7 @@ if (
   localizedComposerBlockingScript.includes("--try-window-screenshot=.tmp/ontology-atlas-composer-blocking-ko.png") &&
   localizedComposerBlockingScript.includes("--webview-window-size=1512x917") &&
   localizedComposerBlockingScript.includes("--min-webview-size=1400x860") &&
-  localizedComposerBlockingScript.includes("--require-webview-route='/ko/topology/?p=domain%3Aviews&mode=focus'") &&
+  focusDeepLinkRoute(localizedComposerBlockingScript) &&
   localizedComposerBlockingScript.includes("--webview-evidence=.tmp/ontology-atlas-composer-blocking-ko.webview.json") &&
   localizedComposerBlockingScript.includes("--verify-topology-drag") &&
   localizedComposerBlockingScript.includes("--verify-topology-create-node")
@@ -1520,7 +1546,7 @@ if (
   !localizedComposerBlockingRequiredScript.includes("--try-window-screenshot") &&
   localizedComposerBlockingRequiredScript.includes("--webview-window-size=1512x917") &&
   localizedComposerBlockingRequiredScript.includes("--min-webview-size=1400x860") &&
-  localizedComposerBlockingRequiredScript.includes("--require-webview-route='/ko/topology/?p=domain%3Aviews&mode=focus'") &&
+  focusDeepLinkRoute(localizedComposerBlockingRequiredScript) &&
   localizedComposerBlockingRequiredScript.includes("--webview-evidence=.tmp/ontology-atlas-composer-blocking-required-ko.webview.json") &&
   localizedComposerBlockingRequiredScript.includes("--verify-topology-drag") &&
   localizedComposerBlockingRequiredScript.includes("--verify-topology-create-node")
@@ -1542,10 +1568,10 @@ if (
   localizedTopologyDesignScript.includes("--require-owner-name=\"Ontology Atlas\"") &&
   localizedTopologyDesignScript.includes("--min-window-size=1360x840") &&
   localizedTopologyDesignScript.includes("--min-webview-size=1400x860") &&
-  localizedTopologyDesignScript.includes("--require-webview-route='/ko/topology/?p=domain%3Aviews&mode=focus'") &&
+  focusDeepLinkRoute(localizedTopologyDesignScript) &&
   localizedTopologyDesignScript.includes("--webview-evidence=.tmp/ontology-atlas-design-selected-relation.webview.json") &&
   localizedTopologyDesignScript.includes("--verify-topology-drag") &&
-  localizedTopologyDesignScript.includes("--require-webview-route='/ko/topology/?mode=path&pathFrom=domain%3Aviews&pathTo=capability%3Atopology-analysis-modes'") &&
+  pathModeRoute(localizedTopologyDesignScript) &&
   localizedTopologyDesignScript.includes("--webview-evidence=.tmp/ontology-atlas-design-path-result.webview.json") &&
   localizedTopologyDesignScript.includes("--require-webview-route='/ko/topology/?create=concept'") &&
   localizedTopologyDesignScript.includes("--webview-evidence=.tmp/ontology-atlas-design-create-concept.webview.json") &&
@@ -1566,7 +1592,7 @@ if (
   localizedTopologySelectedRelationScript.includes("--require-owner-name=\"Ontology Atlas\"") &&
   localizedTopologySelectedRelationScript.includes("--min-window-size=1360x840") &&
   localizedTopologySelectedRelationScript.includes("--min-webview-size=1400x860") &&
-  localizedTopologySelectedRelationScript.includes("--require-webview-route='/ko/topology/?p=domain%3Aviews&mode=focus'") &&
+  focusDeepLinkRoute(localizedTopologySelectedRelationScript) &&
   localizedTopologySelectedRelationScript.includes("--webview-evidence=.tmp/ontology-atlas-selected-relation-density-ko.webview.json") &&
   localizedTopologySelectedRelationScript.includes("--verify-topology-selected-relation")
 ) {
@@ -1626,7 +1652,7 @@ if (
   localizedTopologyWideScript.includes("--webview-window-size=2560x1440") &&
   localizedTopologyWideScript.includes("--min-webview-size=2400x900") &&
   localizedTopologyWideScript.includes("--webview-evidence=.tmp/ontology-atlas-design-wide-2560.webview.json") &&
-  localizedTopologyWideScript.includes("--require-webview-route='/ko/topology/?p=domain%3Aviews&mode=focus'") &&
+  focusDeepLinkRoute(localizedTopologyWideScript) &&
   localizedTopologyWideScript.includes("--verify-topology-selected-relation")
 ) {
   pass("desktop localized topology wide proof script checks 1920 and 2560 selected relation density");
@@ -1644,7 +1670,7 @@ if (
   localizedTopologyFocusMotionScript.includes("--require-owner-name=\"Ontology Atlas\"") &&
   localizedTopologyFocusMotionScript.includes("--min-window-size=1360x840") &&
   localizedTopologyFocusMotionScript.includes("--min-webview-size=1400x860") &&
-  localizedTopologyFocusMotionScript.includes("--require-webview-route='/ko/topology/?p=domain%3Aviews'") &&
+  bareDeepLinkRoute(localizedTopologyFocusMotionScript) &&
   localizedTopologyFocusMotionScript.includes("--webview-evidence=.tmp/ontology-atlas-focus-motion-ko.webview.json")
 ) {
   pass("desktop localized topology focus motion proof script checks bounded selected-focus camera movement");
