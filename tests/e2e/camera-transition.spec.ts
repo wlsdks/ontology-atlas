@@ -183,6 +183,22 @@ test.describe("카메라 전환 규격", () => {
    * 않는지 재야 한다. 실측(120fps 환경): 캔버스 16.6ms · 팝오버 31ms · 카메라 43.9ms
    * — 시차 약 27ms.
    *
+   * ## 이 게이트가 실제로 걸려 있는 곳 — 프로브가 알려 줬다
+   *
+   * ⚠️ **카메라 쪽 단언은 「특정 코드 경로」에 걸려 있지 않다.** 선택 effect 의
+   * 카메라 설정을 **통째로 막아도** 이 시험은 초록이었다(프로브 3회: 300ms 지연 ·
+   * 임계값 상향 · 경로 차단). 선택할 때 **다른 경로**(이웃 전개의 클러스터 핏)가
+   * 카메라를 움직이기 때문이다.
+   *
+   * 그래서 이 단언이 잠그는 것은 **「입력 뒤 몇 프레임 안에 카메라가 반응한다」**는
+   * 관측 가능한 성질이고, 「자유 영역 재조준이 제때 돈다」는 아니다. 후자를 잠그려면
+   * 카메라를 움직이는 경로를 다 찾아 격리해야 하는데, 그건 이 게이트가 아니라 그
+   * 경로들을 정리하는 별개의 작업이다.
+   *
+   * **팝오버 쪽은 판별력이 증명됐다** — 등장 애니메이션을 지우면 빨개진다.
+   * 그리고 「이름이 아니라 대상 요소로」 묶은 것도 프로브가 시켰다(이름으로 재던
+   * 판은 칩이 대신 만족시켰다).
+   *
    * ## 계기의 경계 — 캔버스 하드컷은 여기서 재지 않는다
    *
    * 「주인공이 하드컷인가」는 캔버스 픽셀을 매 프레임 읽어야 알 수 있는데, **그 읽기가
@@ -190,7 +206,7 @@ test.describe("카메라 전환 규격", () => {
    * 바뀌므로 이 게이트에 넣지 않는다 — 한 번짜리 측정과 `/motion-verify` 의 몫이다
    * (그 측정에서 첫 프레임 지분 14.3%, 하드컷 아님).
    */
-  test("선택의 세 움직임이 한 사건으로 시작한다", async ({ page }) => {
+  test("입력 뒤 카메라와 팝오버가 한 사건으로 시작한다", async ({ page }) => {
     const canvas = page.getByTestId("topology-map-v2-canvas");
     await canvas.focus();
     const measured = await page.evaluate(async () => {
@@ -200,29 +216,68 @@ test.describe("카메라 전환 규격", () => {
       if (!el || !probe) return null;
       const cam0 = probe.camera();
       if (!cam0) return null;
-      const before = { x: cam0.x, y: cam0.y, s: cam0.scale };
+      const before = { x: cam0.x, y: cam0.y, s: cam0.scale };  // 정지 확인 뒤 갱신한다
 
-      const trace: { t: number; d: number }[] = [];
+      /*
+       * **프레임 번호로 센다 — 밀리초가 아니다.**
+       *
+       * ⚠️ 처음엔 ms 로 쟀고 **CI 에서 터졌다**(내 기계 43.9ms · CI 267ms). ease-in
+       * 곡선은 처음에 거의 안 움직이므로, 「감지되는 첫 움직임」의 시각은 **프레임
+       * 간격에 딸린다** — 느린 기계에서 자동으로 늦어진다. 이 저장소가 이미 적어 둔
+       * 규칙 그대로다: *"게이트는 밀리초가 아니라 횟수로 잠근다"*(`architecture.md`).
+       *
+       * 프레임으로 세면 두 기계가 비교 가능해진다(같은 상황에서 4~5프레임).
+       */
+      const trace: { frame: number; d: number }[] = [];
+      let frame = 0;
       let running = true;
-      const t0 = performance.now();
       const tick = () => {
         if (!running) return;
         const c = probe.camera();
         if (c) {
           trace.push({
-            t: performance.now() - t0,
+            frame,
             d: Math.hypot(c.x - before.x, c.y - before.y) + Math.abs(c.scale - before.s) * 1000,
           });
         }
+        frame += 1;
         requestAnimationFrame(tick);
       };
       requestAnimationFrame(tick);
 
-      await wait(80);
-      el.dispatchEvent(new KeyboardEvent("keydown", { key: "ArrowRight", bubbles: true, cancelable: true }));
-      const dispatchAt = performance.now() - t0;
+      /*
+       * **먼저 카메라가 멈출 때까지 기다린다.**
+       *
+       * ⚠️ 이걸 안 하면 잔여 스프링 정착이 우리 임계값을 먼저 넘겨, 「카메라가 곧
+       * 움직였다」가 항상 참이 된다 — 프로브로 확인했다: 카메라를 **300ms 늦춰도**
+       * 시험이 초록이었다. 정지를 확인해야 그 뒤의 변화가 우리 것이 된다.
+       */
+      const quiet = async () => {
+        for (let attempt = 0; attempt < 120; attempt += 1) {
+          const a = probe.camera();
+          await new Promise((r) => requestAnimationFrame(() => r(null)));
+          await new Promise((r) => requestAnimationFrame(() => r(null)));
+          await new Promise((r) => requestAnimationFrame(() => r(null)));
+          const b = probe.camera();
+          if (!a || !b) continue;
+          const moved = Math.hypot(b.x - a.x, b.y - a.y) + Math.abs(b.scale - a.scale) * 1000;
+          if (moved < 0.001) return true;
+        }
+        return false;
+      };
+      const settled = await quiet();
 
-      let popoverAt: number | null = null;
+      // 정지 시점을 기준으로 다시 잡는다.
+      const rest = probe.camera();
+      if (rest) {
+        before.x = rest.x;
+        before.y = rest.y;
+        before.s = rest.scale;
+      }
+      el.dispatchEvent(new KeyboardEvent("keydown", { key: "ArrowRight", bubbles: true, cancelable: true }));
+      const dispatchFrame = frame;
+
+      let popoverFrame: number | null = null;
       /*
        * ⚠️ **애니메이션 이름만 보면 안 된다** — `topologyChromeIn` 은 공용 표면
        * 프리미티브의 등장이라 칩·메뉴도 같은 이름을 쓴다. 이름만으로 재던 판을
@@ -230,46 +285,59 @@ test.describe("카메라 전환 규격", () => {
        * 대신 만족시켰다). 그래서 애니메이션의 **대상 요소가 팝오버 안인지**로 묶는다.
        */
       const watcher = setInterval(() => {
-        if (popoverAt !== null) return;
+        if (popoverFrame !== null) return;
         const positioner = document.querySelector('[data-testid="topology-node-popover-positioner"]');
         if (!positioner) return;
         const hit = document.getAnimations().some((a) => {
           const target = (a.effect as unknown as { target?: Element } | null)?.target;
           return target instanceof Element && positioner.contains(target);
         });
-        if (hit) popoverAt = performance.now() - t0;
+        if (hit) popoverFrame = frame;
       }, 4);
       await wait(700);
       clearInterval(watcher);
       running = false;
 
-      const after = trace.filter((s) => s.t >= dispatchAt);
-      const camFirst = after.find((s) => s.d > 0.001);
+      const after = trace.filter((s) => s.frame >= dispatchFrame);
+      /*
+       * 임계값은 **월드 1단위** 다 — 0.001 로 두면 정지 확인 뒤에도 남는 미세
+       * 드리프트가 만족시켜 버린다(프로브 셋이 전부 초록이던 이유).
+       */
+      const camFirst = after.find((s) => s.d > 1);
       return {
-        cameraMs: camFirst ? camFirst.t - dispatchAt : null,
-        popoverMs: popoverAt !== null ? popoverAt - dispatchAt : null,
+        cameraFrames: camFirst ? camFirst.frame - dispatchFrame : null,
+        popoverFrames: popoverFrame !== null ? popoverFrame - dispatchFrame : null,
+        totalFrames: frame,
+        settled,
       };
     });
 
     expect(measured, "측정 창구를 못 열었다").not.toBeNull();
-    const { cameraMs, popoverMs } = measured!;
-    expect(cameraMs, "카메라가 아예 안 움직였다 — 이 시험이 공회전한다").not.toBeNull();
-    expect(popoverMs, "팝오버 안에서 도는 애니메이션을 못 봤다 — 등장이 하드컷이다").not.toBeNull();
+    const { cameraFrames, popoverFrames, totalFrames, settled } = measured!;
+    expect(totalFrames, "프레임이 돌지 않았다 — 이 시험이 공회전한다").toBeGreaterThan(10);
+    expect(settled, "카메라가 멈추기를 기다리지 못했다 — 잔여 정착이 판정을 오염시킨다").toBe(true);
+    expect(cameraFrames, "카메라가 아예 안 움직였다").not.toBeNull();
+    expect(popoverFrames, "팝오버 안에서 도는 애니메이션을 못 봤다 — 등장이 하드컷이다").not.toBeNull();
 
-    const ONE_EVENT_MS = 120; // `--motion-fast`
+    /*
+     * 한 사건의 창을 **프레임 수**로 둔다. 6프레임은 60fps 에서 100ms 로
+     * `--motion-fast`(120ms)와 같은 뜻이고, 느린 기계에서도 같은 「몇 프레임 안에」를
+     * 뜻한다. 실측: 내 기계 카메라 5프레임 · 팝오버 4프레임.
+     */
+    const ONE_EVENT_FRAMES = 6;
     expect(
-      cameraMs!,
-      `카메라가 입력 뒤 ${cameraMs!.toFixed(0)}ms 에 움직였다 — 한 사건의 창(120ms)을 넘었다`,
-    ).toBeLessThanOrEqual(ONE_EVENT_MS);
+      cameraFrames!,
+      `카메라가 입력 뒤 ${cameraFrames}프레임에 움직였다 — 한 사건의 창(${ONE_EVENT_FRAMES}프레임)을 넘었다`,
+    ).toBeLessThanOrEqual(ONE_EVENT_FRAMES);
     expect(
-      popoverMs!,
-      `팝오버가 입력 뒤 ${popoverMs!.toFixed(0)}ms 에 시작했다 — 한 사건의 창을 넘었다`,
-    ).toBeLessThanOrEqual(ONE_EVENT_MS);
+      popoverFrames!,
+      `팝오버가 입력 뒤 ${popoverFrames}프레임에 시작했다 — 한 사건의 창을 넘었다`,
+    ).toBeLessThanOrEqual(ONE_EVENT_FRAMES);
     expect(
-      Math.abs(cameraMs! - popoverMs!),
-      `팝오버(${popoverMs!.toFixed(0)}ms)와 카메라(${cameraMs!.toFixed(0)}ms)가 ` +
-        `${Math.abs(cameraMs! - popoverMs!).toFixed(0)}ms 벌어졌다 — 두 사건으로 읽힌다`,
-    ).toBeLessThanOrEqual(ONE_EVENT_MS);
+      Math.abs(cameraFrames! - popoverFrames!),
+      `팝오버(${popoverFrames}프레임)와 카메라(${cameraFrames}프레임)가 ` +
+        `${Math.abs(cameraFrames! - popoverFrames!)}프레임 벌어졌다 — 두 사건으로 읽힌다`,
+    ).toBeLessThanOrEqual(ONE_EVENT_FRAMES);
   });
 
   test("전환이 200~420ms 안에 끝난다 — 코드가 주장하는 그 창", async ({ page }) => {
