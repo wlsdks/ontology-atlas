@@ -3797,6 +3797,41 @@
       animation-delay: 0ms !important;
     }
 
+    /*
+     * 2026-08-11 — **목록 밖에 있어서 검사받은 적 없던 다섯 중 넷.**
+     *
+     * 감속 계약을 지키던 검사가 손으로 적은 클래스 목록을 들고 있었고, 이 넷은 그
+     * 목록에 없었다. 그래서 전역 kill 규칙만 걸려 **감속 사용자에게는 통째로
+     * 하드컷**이었다 — 공방(무대 등장 · 지지대 고르기 · 요약 수렴)과 라우트 로딩.
+     * 이제 검사가 CSS 에서 애니메이션 클래스를 뽑아내므로, 새로 생기는 것도 덮거나
+     * 이유를 적지 않으면 빨개진다.
+     *
+     * 처방은 이 절이 이미 쓰는 그것과 같다 — 흔들리는 축(translate·scale)만 없애고
+     * 불투명도는 남긴다. **새 키프레임 0 · 새 duration 0.**
+     */
+
+    /* ① 이미 불투명도 전용 — 시간만 되돌린다. */
+    .practice-step-crossfade,
+    .route-loading-in {
+      animation-duration: var(--motion-fast) !important;
+    }
+
+    /* ② 이동·확대가 실린 등장 — 이름만 불투명도 전용으로 바꿔 자기 시간을 그대로 탄다. */
+    .studio-stage-in,
+    .studio-picker-pop {
+      animation-name: panelCrossfadeIn !important;
+      animation-duration: var(--motion-fast) !important;
+    }
+
+    /*
+     * ③ 요약이 모이며 **사라지는** 것 — 이건 퇴장이라 이름을 등장 크로스페이드로
+     * 바꾸면 반대로 나타나 버린다. 그래서 이동만 지우고 방향은 지킨다.
+     */
+    .studio-summary-converge {
+      animation-name: overlayFadeOut !important;
+      animation-duration: var(--motion-fast) !important;
+    }
+
     .studio-fill-arrive {
       animation-name: studioFillArriveReduced !important;
       animation-duration: var(--motion-fast) !important;
