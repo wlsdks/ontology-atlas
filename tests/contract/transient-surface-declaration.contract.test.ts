@@ -51,6 +51,20 @@ const declaredKinds = declaringFiles.flatMap((file) =>
   [...readCode(join(REPO_ROOT, file)).matchAll(/transientSurface\("([^"]+)"\)/g)].map(([, kind]) => kind),
 );
 
+/**
+ * **오늘 이 하네스로는 못 재는 종류** — 이유를 여기 적는다 (2026-08-11).
+ *
+ * ⚠️ 이 칸이 비어 있는 것이 이상적이지만, **비어 있는 척하는 것이 더 나쁘다.** 선언만
+ * 해 두고 아무도 재지 않으면 그 선언은 장식이고, 그건 이 변경의 결정 기록에 내가 직접
+ * 적어 둔 반대 의견이다. 그래서 못 재는 것은 「없는 것」이 아니라 **여기 적힌 것**이 된다.
+ *
+ * 줄이는 것은 되고 늘리는 것은 안 된다(아래 래칫).
+ */
+const UNMEASURED_KINDS: Readonly<Record<string, string>> = {
+  menu: "캔버스 오른쪽 클릭으로만 열린다. 볼트를 안 고른 브라우저에서는 지도 위 패널이 캔버스를 덮어 클릭이 120초 타임아웃이 나고, 합성 PointerEvent 는 캔버스의 포인터 파이프라인에 닿지 않는다(2026-08-11 실측 3회). 볼트를 실제로 붙이는 하네스가 생기면 이 줄을 지운다.",
+  hint: "마우스를 올려서만 열린다. 위와 같은 이유로 포인터를 못 보낸다. 그리고 어느 좌표에 대상이 있는지는 그래프가 정하므로, 억지로 열려고 좌표를 훑으면 「없는 것」을 결함으로 신고하게 된다.",
+};
+
 describe("잠깐 뜨는 표면 선언 계약", () => {
   /**
    * 2026-08-11 최초 등재 7곳 — 지도 안내 · 노드 상세 팝오버 · 컨텍스트 메뉴 ·
@@ -96,6 +110,48 @@ describe("잠깐 뜨는 표면 선언 계약", () => {
    * 찾으면(예: 「가장 큰 요소」) 이 선언은 아무 일도 하지 않는 장식이 된다 — 그 방식이
    * 실제로 위반 6건을 헛보고했고, 그래서 이 표시가 생겼다.
    */
+  /**
+   * **선언한 종류마다 그것을 실제로 여는 시험이 있나** — 없으면 이유가 적혀 있어야 한다.
+   * 이 시험이 이 파일의 값어치다: 표시를 붙이는 것만으로는 아무것도 지켜지지 않는다.
+   */
+  it("모든 종류가 재지거나, 못 재는 이유가 적혀 있다", () => {
+    const specs = readdirSync(join(REPO_ROOT, "tests/e2e"))
+      .filter((f) => f.endsWith(".spec.ts"))
+      .map((f) => readCode(join(REPO_ROOT, "tests/e2e", f)))
+      .join("\n");
+    /*
+     * 스윕은 화면에서 종류를 읽으므로 코드에 종류 문자열이 없다. 그래서 스윕이 「반드시
+     * 연다」고 선언한 목록(`SWEEP_MUST_OPEN`)도 함께 읽는다 — 그 목록은 스윕 안에서
+     * 런타임으로 단언되므로 빈말이 될 수 없다.
+     */
+    const sweepDeclared =
+      readCode(join(REPO_ROOT, "tests/e2e/transient-surface-contract.spec.ts")).match(
+        /const SWEEP_MUST_OPEN = \[([^\]]*)\]/,
+      )?.[1] ?? "";
+    const unexercised = KINDS.filter(
+      (kind) =>
+        !specs.includes(`data-transient-surface="${kind}"`) &&
+        !sweepDeclared.includes(`"${kind}"`) &&
+        !(kind in UNMEASURED_KINDS),
+    );
+    expect(
+      unexercised,
+      `선언만 되고 아무 시험도 열지 않는 종류: ${unexercised.join(", ")} — 여는 시험을 쓰거나 UNMEASURED_KINDS 에 이유를 적어라.`,
+    ).toEqual([]);
+  });
+
+  it("못 재는 종류가 늘지 않는다", () => {
+    // 2026-08-11 실측 2종(menu · hint). 늘리려면 그 종류를 재는 방법이 없다는 근거가 필요하다.
+    expect(
+      Object.keys(UNMEASURED_KINDS).length,
+      `못 재는 종류가 ${Object.keys(UNMEASURED_KINDS).length}개로 늘었다 — 재는 하네스를 만드는 쪽이 답이다.`,
+    ).toBeLessThanOrEqual(2);
+    for (const [kind, reason] of Object.entries(UNMEASURED_KINDS)) {
+      expect(KINDS, `.${kind} 는 종류 목록에 없다 — 죽은 면제다`).toContain(kind as TransientSurfaceKind);
+      expect(reason.length, `${kind} 의 이유가 너무 짧다 — 「왜 못 재는가」가 답이어야 한다`).toBeGreaterThan(40);
+    }
+  });
+
   it("스윕이 이 표시로 표면을 찾는다", () => {
     const spec = readCode(join(REPO_ROOT, "tests/e2e/transient-surface-contract.spec.ts"));
     expect(spec, "스윕이 선언 표시를 셀렉터로 쓰지 않는다").toContain(`[${TRANSIENT_SURFACE_ATTR}]`);
