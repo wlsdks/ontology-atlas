@@ -138,3 +138,30 @@ describe("페이지 틀 — 둘째 컬럼과 상단 여백 (2026-08-11)", () => 
     }
   });
 });
+
+describe("읽기 컬럼은 문서함이 소유한다 (2026-08-11 판정)", () => {
+  /**
+   * 이 시험이 잠그는 것은 **폭의 값이 아니라 그 값의 성격**이다: 문서함 본문은 읽기
+   * 폭(이름 있는 관례값)이어야 하고, 손으로 적은 px 여서는 안 된다. 값을 바꾸는 것은
+   * 디자인 판정이니 막지 않는다 — 막는 것은 **규격 밖으로 새는 것**이다.
+   */
+  const DOCS_PAGE = "src/views/docs-vault/ui/DocsVaultPage.tsx";
+
+  it("문서함 본문은 이름 있는 읽기 폭을 쓴다", () => {
+    const source = read(DOCS_PAGE).replace(/\/\*[\s\S]*?\*\//g, "").replace(/^\s*\/\/.*$/gm, "");
+    expect(source, `${DOCS_PAGE} 가 읽기 폭을 안 쓴다`).toMatch(/max-w-(?:2xl|3xl|4xl|prose)/);
+  });
+
+  it("문서함이 페이지 틀을 입지 않는다 — 세 칸 작업대라 상단 48px 이 틀리다", () => {
+    const source = read(DOCS_PAGE);
+    expect(source, `${DOCS_PAGE} 가 PAGE_FRAME 을 입었다 — 트리와 본문이 같은 높이에서 시작해야 한다`).not.toContain(
+      "PAGE_FRAME",
+    );
+  });
+
+  it("판정이 규격 파일에 적혀 있다 — 다음 감사가 다시 논쟁하지 않게", () => {
+    const spec = read("src/shared/ui/page-frame.ts");
+    expect(spec, "읽기 컬럼 판정이 규격에 없다").toContain("max-w-3xl");
+    expect(spec, "왜 문서함이 제외인지가 규격에 없다").toMatch(/문서함/);
+  });
+});
