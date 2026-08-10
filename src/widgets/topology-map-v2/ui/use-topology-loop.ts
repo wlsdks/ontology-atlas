@@ -204,7 +204,11 @@ export interface UseTopologyLoopArgs {
   ) => void;
   onSelect?: (slug: string) => void;
   /** 방향키를 눌렀는데 그 방향에 이어진 노드가 없을 때. 연타는 훅이 걸러 낸다. */
-  onWalkDeadEnd?: (() => void) | null;
+  /**
+   * 막다른 길 — **어디서** 막혔는지까지 실어 보낸다(캔버스 지역 좌표).
+   * 자리를 아는 곳은 여기뿐이고, 안내를 노드 옆에 띄우려면 그 자리가 필요하다.
+   */
+  onWalkDeadEnd?: ((point: { x: number; y: number } | null) => void) | null;
   onPaneClick?: () => void;
   onVisibleCountChange?: (visible: number) => void;
   onGraphStatsChange?: (stats: { nodes: number; relations: number }) => void;
@@ -3472,7 +3476,27 @@ export function useTopologyLoop(args: UseTopologyLoopArgs): UseTopologyLoopResul
     const now = performance.now();
     if (!shouldAnnounceDeadEnd(deadEndAtRef.current, now)) return;
     deadEndAtRef.current = now;
-    onWalkDeadEndRef.current?.();
+    /*
+     * **막힌 그 노드의 화면 자리**를 함께 보낸다 (2026-08-10 소유자 실사용 지적:
+     * *"그냥 이동하던 노드 바로 옆에 좀 잘보이게 나타났다가 사라지는게 좋을듯"*).
+     *
+     * 화면 좌표 식은 `nodes()` 창구와 그리는 쪽이 함께 쓰는 그것이다 — 여기서 따로
+     * 만들면 세 번째 사본이 된다. 좌표를 못 내면 `null` 을 보내고, 받는 쪽이
+     * 「자리를 모르니 안 띄운다」를 스스로 정한다.
+     */
+    const world = worldRef.current;
+    const camera = cameraRef.current;
+    const id = focusedSlugRef.current;
+    const node = world && id ? world.nodeById.get(id) : null;
+    const { width, height } = viewportRef.current;
+    const point =
+      node && camera && width > 0 && height > 0
+        ? {
+            x: (node.x - camera.x.value) * camera.scale.value + width / 2,
+            y: (node.y - camera.y.value) * camera.scale.value + height / 2,
+          }
+        : null;
+    onWalkDeadEndRef.current?.(point);
   }, []);
 
   /**

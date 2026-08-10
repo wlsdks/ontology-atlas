@@ -809,7 +809,7 @@
       "itemTitle": "{name} · 연결 {degree}"
     },
     "keyboardWalk": {
-      "deadEnd": "이 방향에는 이어진 노드가 없어요. 다른 방향을 눌러 보세요"
+      "deadEnd": "이 방향엔 이어진 노드가 없어요"
     }
   },
   "searchWidgets": {
