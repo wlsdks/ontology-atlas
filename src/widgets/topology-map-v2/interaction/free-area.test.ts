@@ -1,8 +1,7 @@
 import { describe, expect, it } from "vitest";
 import {
-  cameraCenteringNode,
+  measureCanvasInsets,
   computeFreeArea,
-  freeAreaOffset,
   SIDE_PANEL_HEIGHT_RATIO,
   type Rect,
 } from "./free-area";
@@ -86,55 +85,49 @@ describe("computeFreeArea", () => {
   });
 });
 
-describe("freeAreaOffset", () => {
-  it("덮는 것이 없으면 0이다 — 지금 동작을 바꾸지 않는다", () => {
-    expect(freeAreaOffset(CANVAS, [])).toEqual({ dx: 0, dy: 0 });
-  });
-
-  it("오른쪽 팝오버가 있으면 왼쪽으로 밀린다 (실측 −192)", () => {
-    const { dx, dy } = freeAreaOffset(CANVAS, [RIGHT_POPOVER]);
-    expect(Math.round(dx)).toBe(-192);
-    expect(dy).toBe(0);
-  });
-});
-
-describe("cameraCenteringNode", () => {
-  it("오프셋이 0이면 노드를 그대로 가운데 둔다", () => {
-    expect(cameraCenteringNode({ x: 500, y: 300 }, { dx: 0, dy: 0 }, 1)).toEqual({ tx: 500, ty: 300 });
-  });
-
+describe("measureCanvasInsets", () => {
   /**
-   * **배율로 나눈다** — 같은 화면 오프셋이 배율이 클수록 더 짧은 월드 거리다.
-   * 이걸 빼먹으면 확대했을 때 노드가 패널 쪽으로 다시 밀려 들어간다.
+   * DOM 을 흉내 내는 최소 대역 — `collectCanvasObstacles` 가 쓰는 것만 갖춘다.
+   * jsdom 에는 레이아웃이 없어 `getBoundingClientRect` 가 전부 0이므로, 그것을
+   * 심어 주지 않으면 이 시험이 **환경을 재게 된다**(이 파일이 이미 한 번 밟은 함정).
    */
-  it("같은 화면 오프셋이 배율에 따라 다른 월드 거리다", () => {
-    const at1 = cameraCenteringNode({ x: 0, y: 0 }, { dx: -192, dy: 0 }, 1);
-    const at2 = cameraCenteringNode({ x: 0, y: 0 }, { dx: -192, dy: 0 }, 2);
-    expect(at1.tx).toBe(192);
-    expect(at2.tx).toBe(96);
+  const fakeCanvas = (panels: (Rect & { hidden?: boolean })[]) => {
+    const make = (r: Rect, hidden?: boolean) => {
+      const el = document.createElement("div");
+      el.getBoundingClientRect = (() => ({
+        x: r.x, y: r.y, width: r.width, height: r.height,
+        left: r.x, top: r.y, right: r.x + r.width, bottom: r.y + r.height,
+        toJSON: () => ({}),
+      })) as typeof el.getBoundingClientRect;
+      if (hidden) el.style.display = "none";
+      return el;
+    };
+    document.body.innerHTML = "";
+    const canvas = make({ x: 64, y: 0, width: 1448, height: 982 });
+    document.body.append(canvas);
+    for (const p of panels) document.body.append(make(p, p.hidden));
+    return canvas;
+  };
+
+  it("오른쪽 팝오버를 오른쪽 인셋으로 잰다 — 실측 기하", () => {
+    const canvas = fakeCanvas([RIGHT_POPOVER]);
+    const insets = measureCanvasInsets(canvas, CANVAS);
+    // 캔버스 오른쪽 끝(1512) − 팝오버 왼쪽(1128) = 384 (실측값과 같다)
+    expect(insets).toEqual({ left: 0, right: 384 });
   });
 
-  it("배율이 0에 가까워도 터지지 않는다", () => {
-    const out = cameraCenteringNode({ x: 10, y: 10 }, { dx: -100, dy: 0 }, 0);
-    expect(Number.isFinite(out.tx)).toBe(true);
-    expect(Number.isFinite(out.ty)).toBe(true);
+  it("왼쪽 패널을 왼쪽 인셋으로 잰다", () => {
+    const canvas = fakeCanvas([{ x: 64, y: 0, width: 324, height: 900 }]);
+    expect(measureCanvasInsets(canvas, CANVAS)).toEqual({ left: 324, right: 0 });
   });
 
-  /**
-   * 왕복 검사 — 이 카메라를 쓰면 노드가 정말 자유 영역 가운데에 오나.
-   * 화면 좌표 식은 그리는 쪽과 `nodes()` 창구가 함께 쓰는 그것이다.
-   */
-  it("이 카메라로 그리면 노드가 자유 영역 가운데에 온다", () => {
-    const node = { x: 4321, y: -876 };
-    const scale = 1.37;
-    const offset = freeAreaOffset(CANVAS, [RIGHT_POPOVER]);
-    const cam = cameraCenteringNode(node, offset, scale);
-    // 캔버스 지역 좌표: (world - cam) * scale + size/2
-    const screenX = (node.x - cam.tx) * scale + CANVAS.width / 2;
-    const screenY = (node.y - cam.ty) * scale + CANVAS.height / 2;
-    const free = computeFreeArea(CANVAS, [RIGHT_POPOVER]);
-    // `free` 는 문서 좌표, `screenX` 는 캔버스 지역 좌표 — 캔버스 원점을 뺀다.
-    expect(screenX + CANVAS.x).toBeCloseTo(free.x + free.width / 2, 6);
-    expect(screenY + CANVAS.y).toBeCloseTo(free.y + free.height / 2, 6);
+  it("숨은 패널은 세지 않는다", () => {
+    const canvas = fakeCanvas([{ ...RIGHT_POPOVER, hidden: true }]);
+    expect(measureCanvasInsets(canvas, CANVAS)).toEqual({ left: 0, right: 0 });
+  });
+
+  it("위·아래 바는 좌·우 인셋에 섞이지 않는다", () => {
+    const canvas = fakeCanvas([{ x: 64, y: 0, width: 1448, height: 96 }]);
+    expect(measureCanvasInsets(canvas, CANVAS)).toEqual({ left: 0, right: 0 });
   });
 });

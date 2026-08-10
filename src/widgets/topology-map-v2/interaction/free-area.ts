@@ -1,6 +1,18 @@
 /**
- * 자유 영역 — **패널에 가리지 않는 자리로 데려간다** (2026-08-10 소유자 확정:
+ * 자유 영역 — **패널에 가리지 않는 자리를 잰다** (2026-08-10 소유자 확정:
  * *"가려선 안되지 패널 뺀 공간 가운데로 맞춰줘"*).
+ *
+ * ## 이 모듈이 하는 일과 하지 않는 일
+ *
+ * **잰다**: 캔버스에서 그것을 덮는 패널을 뺀 사각형(`computeFreeArea`)과, 그 패널이
+ * 좌·우에서 먹는 폭(`measureCanvasInsets`).
+ *
+ * **계산하지 않는다**: 「그래서 카메라를 어디로 둘까」. 그 식은
+ * `ui/topology-camera-math.ts` 의 `centerForInsets` 한 곳에만 있다. 처음에는 이
+ * 모듈이 그 식(`freeAreaOffset` + `cameraCenteringNode`)을 자기도 갖고 있었는데,
+ * 그러면 카메라 목표를 정하는 식이 **두 벌**이 된다 — 그리고 실제로 한쪽(초점
+ * 다이브)에는 그 식이 아예 없어서 고른 노드가 패널 뒤로 들어갔다. 재는 것과
+ * 정하는 것을 갈라 둔 이유가 이것이다.
  *
  * ## 왜 필요한가 — 실측
  *
@@ -92,37 +104,6 @@ export function computeFreeArea(canvas: Rect, obstacles: readonly Rect[]): Rect 
 }
 
 /**
- * 자유 영역의 가운데가 캔버스 가운데에서 얼마나 밀렸나 — **화면 픽셀**.
- *
- * 카메라는 「뷰포트 가운데에 무엇을 둘까」로 표현되므로, 목표를 이 값만큼 되밀면
- * 노드가 자유 영역 가운데에 온다.
- */
-export function freeAreaOffset(canvas: Rect, obstacles: readonly Rect[]): { dx: number; dy: number } {
-  const free = computeFreeArea(canvas, obstacles);
-  return {
-    dx: free.x + free.width / 2 - (canvas.x + canvas.width / 2),
-    dy: free.y + free.height / 2 - (canvas.y + canvas.height / 2),
-  };
-}
-
-/**
- * 노드를 자유 영역 가운데에 두는 카메라 좌표.
- *
- * 화면 좌표는 `(world - camera) * scale + size/2` 로 나오므로(그 식은
- * `use-topology-loop` 의 `nodes()` 창구와 그리는 쪽이 함께 쓴다), 원하는 화면 위치를
- * 그 식에 넣고 카메라를 풀면 이 형태가 된다. **배율로 나누는 것**이 요점이다 —
- * 같은 화면 오프셋이 배율이 클수록 더 작은 월드 거리에 해당한다.
- */
-export function cameraCenteringNode(
-  node: { readonly x: number; readonly y: number },
-  offset: { readonly dx: number; readonly dy: number },
-  scale: number,
-): { tx: number; ty: number } {
-  const safeScale = Math.abs(scale) < 1e-6 ? 1 : scale;
-  return { tx: node.x - offset.dx / safeScale, ty: node.y - offset.dy / safeScale };
-}
-
-/**
  * 캔버스를 덮고 있는 것들을 **DOM 에서 잰다.**
  *
  * 「보인다」 판정은 이 저장소가 이미 정리해 둔 규율을 따른다(`/design-audit`
@@ -155,4 +136,56 @@ export function collectCanvasObstacles(canvas: Element, canvasRect: Rect): Rect[
     out.push({ x: box.x, y: box.y, width: box.width, height: box.height });
   }
   return out;
+}
+
+/**
+ * 캔버스의 **좌·우 인셋을 잰다** — 카메라 수학이 이미 쓰는 그 인셋에 먹일 값.
+ *
+ * ## 왜 재나 — 토큰은 정적인데 패널 상태는 바뀐다
+ *
+ * `topology-camera-math.ts` 는 **이미** 안전 인셋을 쓴다(`safeInsetLeft/Right/...`,
+ * *"the left ReaderLens panel, right popover rail"*). 그런데 그 값이 CSS 토큰이라
+ * 고정이고, 실제 기하는 상태에 따라 달라진다. 실측(1512×982):
+ *
+ * | | 왼쪽 | 오른쪽 |
+ * |---|---|---|
+ * | 토큰이 예약한 값 | 78 | 120 |
+ * | 실제 (선택 전, INDEX 열림) | **324** | 0 |
+ * | 실제 (선택 후, 팝오버 열림) | 0 | **384** |
+ *
+ * 즉 어느 상태에서도 맞지 않는다. 그래서 **어제 나는 두 번째 보정을 만들었다** —
+ * 선택 경로에만 자유 영역 시프트를 얹었고, 그건 같은 관심사에 대한 둘째 체계였다
+ * (이 저장소가 「따로 노는 두 번째 시스템」이라고 부르는 것). 옳은 처방은 시프트를
+ * 하나 더 만드는 게 아니라 **이미 있는 인셋에 참값을 먹이는 것**이다.
+ *
+ * ## 위·아래는 재지 않는다 — 그건 패널이 아니다
+ *
+ * `safeInsetTop`(148)은 상단 도구 레인 + 도킹 칩이고 `safeInsetBottom`(96)은
+ * **라벨 자리 예약**이다(`LABEL_OFFSET` 에서 파생 — 그 예약이 없어서 최하단 노드
+ * 라벨이 조용히 사라진 사고가 있었다). 둘은 「덮는 패널」이 아니라 레이아웃 약속이라
+ * 측정으로 대체하면 그 사고가 돌아온다. 그래서 **좌·우만** 잰다.
+ *
+ * 그리고 토큰값과 **큰 쪽을 쓴다** — 토큰이 패널 말고 다른 이유로 예약한 폭이 있으면
+ * 그것을 잃지 않는다.
+ */
+export interface CanvasInsets {
+  left: number;
+  right: number;
+}
+
+export function measureCanvasInsets(canvas: Element, canvasRect: Rect): CanvasInsets {
+  let left = 0;
+  let right = 0;
+  for (const panel of collectCanvasObstacles(canvas, canvasRect)) {
+    const tall = panel.height >= canvasRect.height * SIDE_PANEL_HEIGHT_RATIO;
+    const wide = panel.width >= canvasRect.width * TOP_BAR_WIDTH_RATIO;
+    if (!tall || wide) continue;
+    const panelCenter = panel.x + panel.width / 2;
+    if (panelCenter >= canvasRect.x + canvasRect.width / 2) {
+      right = Math.max(right, canvasRect.x + canvasRect.width - panel.x);
+    } else {
+      left = Math.max(left, panel.x + panel.width - canvasRect.x);
+    }
+  }
+  return { left: Math.round(left), right: Math.round(right) };
 }

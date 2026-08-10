@@ -37,7 +37,7 @@ import { createAnimatedBackground, type AnimatedBackground } from "../render/ani
 import { buildDustPoints, buildRealmCosmosPoints, computeStarDustCount, type DustPoint } from "../render/starfield";
 import { DEFAULT_EXPAND } from "@/shared/lib/appearance-preferences";
 import type { CanvasBackground, ExpandPreference, FootprintPreference, GlyphSet } from "@/shared/lib/appearance-preferences";
-import { computeClusterFitTarget, computeFocusCameraTarget, computeOverviewCameraTarget, computeOverviewFitScale, fitWorldTarget, hasAnyNodeOnScreen, worldToScreen } from "./topology-camera-math";
+import { centerForInsets, computeClusterFitTarget, computeFocusCameraTarget, computeOverviewCameraTarget, computeOverviewFitScale, fitWorldTarget, hasAnyNodeOnScreen, worldToScreen } from "./topology-camera-math";
 import { drawTopologyFrame } from "./topology-frame-draw";
 import { relaxNewlyVisible } from "../model/layout";
 import { computeTopologyClusterState } from "./topology-cluster-state";
@@ -86,10 +86,9 @@ import {
   walkDirectionForKey,
 } from "../interaction/keyboard-walk";
 import {
-  cameraCenteringNode,
   collectCanvasObstacles,
   computeFreeArea,
-  freeAreaOffset,
+  measureCanvasInsets,
   type Rect,
 } from "../interaction/free-area";
 
@@ -823,6 +822,50 @@ export function useTopologyLoop(args: UseTopologyLoopArgs): UseTopologyLoopResul
    * Stable identity (refs only) so listing it in the programmatic-move effects'
    * deps never re-fires them.
    */
+  /**
+   * 카메라 목표 계산에 쓸 토큰 — **좌·우 안전 인셋만 실측값으로 바꾼다.**
+   *
+   * ## 왜 (2026-08-10, 프로브가 드러낸 것)
+   *
+   * `topology-camera-math` 는 **이미** 안전 인셋으로 패널을 피한다. 그런데 그 값이
+   * CSS 토큰이라 정적이고, 실제 기하는 상태에 따라 바뀐다. 실측(1512×982):
+   * 토큰은 좌 78 · 우 120 인데, 실제는 **선택 전 좌 324 · 우 0**, **선택 후 좌 0 ·
+   * 우 384** 였다(선택하면 INDEX 가 접히고 팝오버가 열린다).
+   *
+   * 어제 나는 이 사실을 모르고 **선택 경로에만 두 번째 보정**(자유 영역 시프트)을
+   * 얹었다. 그건 같은 관심사의 둘째 체계이고, 그래서 한 번은 188px 어긋나고 한 번은
+   * 64px 과보정됐다. 옳은 처방은 시프트를 더 만드는 게 아니라 **이미 있는 인셋에
+   * 참값을 먹이는 것**이다.
+   *
+   * ## 왜 좌·우만, 왜 카메라 목표에만
+   *
+   * `safeInsetTop`(148)은 상단 도구 레인과 도킹 칩, `safeInsetBottom`(96)은 **라벨
+   * 자리 예약**이다(그 예약이 없어 최하단 라벨이 조용히 사라진 사고가 있었다) —
+   * 「덮는 패널」이 아니라 레이아웃 약속이라 측정으로 대체하면 그 사고가 돌아온다.
+   *
+   * 그리고 `safeInset*` 는 **라벨 컬링**(`topology-frame-draw`)도 읽는다. 전역으로
+   * 덮으면 카메라와 무관한 관심사를 건드리므로, 목표를 계산하는 자리에서만 갈아 끼운다.
+   *
+   * 토큰값과 **큰 쪽**을 쓴다 — 토큰이 패널 말고 다른 이유로 예약한 폭을 잃지 않는다.
+   */
+  const cameraTokens = useCallback(<T extends { safeInsetLeft: number; safeInsetRight: number }>(tokens: T): T => {
+    const canvasEl = canvasRef.current;
+    if (!canvasEl) return tokens;
+    const box = canvasEl.getBoundingClientRect();
+    if (box.width <= 0 || box.height <= 0) return tokens;
+    const measured = measureCanvasInsets(canvasEl, {
+      x: box.x,
+      y: box.y,
+      width: box.width,
+      height: box.height,
+    });
+    return {
+      ...tokens,
+      safeInsetLeft: Math.max(tokens.safeInsetLeft, measured.left),
+      safeInsetRight: Math.max(tokens.safeInsetRight, measured.right),
+    };
+  }, []);
+
   const beginCameraTween = useCallback((target: CameraTarget, durationOverrideMs?: number) => {
     if (reducedMotionRef.current) {
       cameraTweenRef.current = null;
@@ -1595,6 +1638,18 @@ export function useTopologyLoop(args: UseTopologyLoopArgs): UseTopologyLoopResul
     // 재배치 좌표계(원점 0,0)와 어긋나 화면 밖으로 날아갔다. 영역 active 중
     // deselect 복귀 목표는 영역 콘텐츠 bbox(가시 멤버 기준) — entryCamera(영역
     // '해제' 전용)가 아니라 현재 영역 fit 이다.
+    /*
+     * ⚠️ **목표 계산 자체를 한 프레임 미룬다.**
+     *
+     * 피해야 할 팝오버는 **바로 이 선택 때문에** 열리므로, 이 effect 가 도는 시점에는
+     * DOM 에 없다. 그때 인셋을 재면 오른쪽이 0으로 나오고 보정이 사라진다 —
+     * 게이트가 정확히 그것을 잡았다(「자유 127px · 화면 64px」). 그래서 **재는 것과
+     * 계산하는 것을 같은 프레임**에 둔다.
+     *
+     * 200~420ms 이동 앞의 한 프레임(≈16ms)은 보이지 않고, 「한 사건」 게이트가 그
+     * 시차를 프레임 수로 지킨다.
+     */
+    const raf = requestAnimationFrame(() => {
     let target: CameraTarget | null;
     if (focusedSlug === null && realmActive && realmData) {
       const bounds = realmVisibleBounds(
@@ -1606,7 +1661,7 @@ export function useTopologyLoop(args: UseTopologyLoopArgs): UseTopologyLoopResul
       target = realmCameraTarget(bounds, tokens, width, height);
     } else {
       const realmMembers = realmActive ? realmData?.memberIds ?? null : null;
-      target = computeFocusCameraTarget(world, tokens, width, height, focusedSlug, overviewEntryScale, realmMembers);
+      target = computeFocusCameraTarget(world, cameraTokens(tokens), width, height, focusedSlug, overviewEntryScale, realmMembers);
     }
     if (!target) return;
     /*
@@ -1624,32 +1679,7 @@ export function useTopologyLoop(args: UseTopologyLoopArgs): UseTopologyLoopResul
      * 패널 폭을 상수로 박지 않고 DOM 에서 잰다: 값을 박으면 패널이 바뀌는 날 조용히
      * 어긋난다. 선택이 바뀔 때만 도는 계산이라 프레임 예산과 무관하다.
      */
-    /*
-     * ⚠️ **한 프레임 뒤에 잰다.** 피해야 할 팝오버는 **바로 이 선택 때문에** 열리므로,
-     * 이 effect 가 도는 시점에는 아직 DOM 에 없다. 그때 재면 장애물이 0개라 보정이
-     * 0이 되고, 실측에서 정확히 그 일이 났다(노드가 자유 영역 가운데에서 188px
-     * 벗어나 화면 가운데에 앉았다 — 게이트가 잡았다).
-     *
-     * 200~420ms 이동 앞의 한 프레임(≈16ms)은 보이지 않는다. 대안(패널 폭을 상수로
-     * 박기)은 패널이 바뀌는 날 조용히 어긋난다.
-     */
-    const aimed = target;
-    const raf = requestAnimationFrame(() => {
-      let finalTarget = aimed;
-      const canvasEl = canvasRef.current;
-      if (canvasEl) {
-        const box = canvasEl.getBoundingClientRect();
-        const canvasRect: Rect = { x: box.x, y: box.y, width: box.width, height: box.height };
-        const offset = freeAreaOffset(canvasRect, collectCanvasObstacles(canvasEl, canvasRect));
-        if (offset.dx !== 0 || offset.dy !== 0) {
-          const shifted = cameraCenteringNode(
-            { x: aimed.tx, y: aimed.ty },
-            offset,
-            aimed.tscale,
-          );
-          finalTarget = { tx: shifted.tx, ty: shifted.ty, tscale: aimed.tscale };
-        }
-      }
+      const finalTarget = target;
       dampingRef.current = tokens.cameraDampingDefault;
       cameraTargetRef.current = finalTarget;
       userDrivenCameraRef.current = false;
@@ -1662,7 +1692,7 @@ export function useTopologyLoop(args: UseTopologyLoopArgs): UseTopologyLoopResul
       beginCameraTween(finalTarget);
     });
     return () => cancelAnimationFrame(raf);
-  }, [focusedSlug, beginCameraTween]);
+  }, [focusedSlug, beginCameraTween, cameraTokens]);
 
   // --- S4 "영역 전개" — realmRootId 변경 시 서브트리 재배치 + 전환 안무 시작.
   // 진입: 서브트리를 그 노드 임시 루트로 재배치, 안 노드는 FLIP·밖 노드는 중력
@@ -3562,7 +3592,6 @@ export function useTopologyLoop(args: UseTopologyLoopArgs): UseTopologyLoopResul
       };
       const obstacles = collectCanvasObstacles(canvasEl, canvasRect);
       const free = computeFreeArea(canvasRect, obstacles);
-      const offset = freeAreaOffset(canvasRect, obstacles);
 
       // 초점이 지금 자유 영역 안에 넉넉히 들어와 있나 (문서 좌표로 비교).
       const sx = canvasBox.x + (target.x - camera.x.value) * scale + width / 2;
@@ -3574,7 +3603,16 @@ export function useTopologyLoop(args: UseTopologyLoopArgs): UseTopologyLoopResul
         sy < free.y + margin ||
         sy > free.y + free.height - margin;
       if (outside) {
-        const centered = cameraCenteringNode(target, offset, scale);
+        /*
+         * 목표는 **카메라 수학의 그 식**으로 낸다(`centerForInsets`) — 여기 따로
+         * 적으면 그 식의 사본이 둘이 되고, 사본이 여럿이면 빠진 사본이 생기는 쪽이
+         * 기본값이다(초점 다이브가 실제로 그 빠진 사본이었다).
+         *
+         * 자유 영역은 목표가 아니라 **「밖으로 나갔나」 판정**에만 남는다 — 인셋은
+         * 밀 거리를 주지만 담고 있는 사각형을 주지 않으므로, 그 판정은 인셋으로
+         * 표현할 수 없는 다른 질문이다.
+         */
+        const centered = centerForInsets(target.x, target.y, { ...measureCanvasInsets(canvasEl, canvasRect), top: 0, bottom: 0 }, scale);
         const cameraTarget = { tx: centered.tx, ty: centered.ty, tscale: scale };
         /*
          * ⚠️ **트윈만 세우면 안 된다** (게이트가 잡았다). 트윈이 끝나면 스프링이
