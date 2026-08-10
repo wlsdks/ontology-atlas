@@ -1,5 +1,7 @@
 import { expect, test } from "@playwright/test";
 import { seedFirstRunSeen } from "./first-run-seed";
+// `window.__atlasMap` 타입은 한 곳에만 선언한다 — 사본이 둘이면 TS2717 이 난다.
+import "./atlas-map-probe";
 
 /**
  * 지도를 **키보드로 걷는다** — 갈래 B 의 증거.
@@ -12,18 +14,6 @@ import { seedFirstRunSeen } from "./first-run-seed";
  * 좌표로 확인하면 이 spec 이 증명하려는 것(좌표 없이 지도를 쓴다)과 반대되는
  * 방식으로 자기를 증명하는 셈이다.
  */
-
-interface AtlasMapProbe {
-  selection: () => { nodeId: string | null; edge: unknown };
-  nodes: () => { id: string; x: number; y: number; hidden: boolean }[];
-  camera: () => { x: number; y: number; scale: number; width: number; height: number } | null;
-}
-
-declare global {
-  interface Window {
-    __atlasMap?: AtlasMapProbe;
-  }
-}
 
 const DIRECTIONS = ["ArrowUp", "ArrowRight", "ArrowDown", "ArrowLeft"] as const;
 
