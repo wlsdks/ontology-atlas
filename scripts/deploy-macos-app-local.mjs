@@ -70,16 +70,6 @@ function regexEscape(value) {
   return value.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
 }
 
-export function routeSupportsTopologyDragProof(route) {
-  try {
-    const url = new URL(route, "tauri://localhost");
-    const pathname = url.pathname.replace(/\/$/, "");
-    return pathname.endsWith("/topology") && url.search === "" && url.hash === "";
-  } catch {
-    return false;
-  }
-}
-
 export function parseDeployMacosAppArgs(argv, defaultRouteOptions = {}) {
   const option = (prefix) => {
     const arg = argv.find((entry) => entry.startsWith(prefix));
@@ -91,7 +81,6 @@ export function parseDeployMacosAppArgs(argv, defaultRouteOptions = {}) {
     leaveRunning: !argv.includes("--no-leave-running"),
     // 지도 재구성(map-canvas) 이후 드래그 클러스터 증명은 레거시 Relief 계약 —
     // 기본 검증은 canvas 카드 계약(validator)이 담당하고 드래그는 opt-in.
-    verifyTopologyDrag: argv.includes("--topology-drag"),
     requireScreenshot: argv.includes("--require-screenshot"),
     visualEvidence: !argv.includes("--no-visual-evidence"),
     route: option("--route=") || resolveDefaultDeployRoute(defaultRouteOptions),
@@ -109,8 +98,6 @@ export function parseDeployMacosAppArgs(argv, defaultRouteOptions = {}) {
 }
 
 export function buildDeployMacosAppPlan(options) {
-  const includeTopologyDragProof =
-    options.verifyTopologyDrag && routeSupportsTopologyDragProof(options.route);
   const baseVerifyArgs = [
     "desktop:verify-app",
     options.installPath,
@@ -142,7 +129,6 @@ export function buildDeployMacosAppPlan(options) {
     );
   }
   if (options.leaveRunning) verifyArgs.push("--leave-running");
-  if (includeTopologyDragProof) verifyArgs.push("--verify-topology-drag");
 
   const fallbackVerifyArgs = [
     ...baseVerifyArgs,
@@ -150,7 +136,6 @@ export function buildDeployMacosAppPlan(options) {
     `--webview-evidence=${options.webviewEvidencePath}`,
   ];
   if (options.leaveRunning) fallbackVerifyArgs.push("--leave-running");
-  if (includeTopologyDragProof) fallbackVerifyArgs.push("--verify-topology-drag");
 
   return {
     build: options.skipBuild ? null : ["pnpm", ["desktop:build:app:local"]],

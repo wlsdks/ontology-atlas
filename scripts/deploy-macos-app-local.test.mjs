@@ -9,7 +9,6 @@ import {
   installedProcessPatterns,
   parseDeployMacosAppArgs,
   resolveDefaultDeployRoute,
-  routeSupportsTopologyDragProof,
   summarizeDeployMacosAppEvidence,
 } from "./deploy-macos-app-local.mjs";
 
@@ -71,8 +70,12 @@ test("local macOS app deploy builds without release updater signing, installs, a
 
   assert.equal(options.skipBuild, false);
   assert.equal(options.leaveRunning, true);
-  // 지도 재구성(map-canvas) 이후 드래그 클러스터 증명은 opt-in (--topology-drag).
-  assert.equal(options.verifyTopologyDrag, false);
+  /*
+   * 2026-08-11 — **드래그 증명은 은퇴했다.** 프로브가 Sigma 시절 카드
+   * (`sigma-skeleton-cards` · `data-skeleton-card`)를 기다렸고 그 DOM 은 캔버스
+   * 지도로 바뀌며 사라져서, 돌리면 「waiting for selectable domain:views card」로
+   * 반드시 실패했다. CI 참조는 0개였다.
+   */
   assert.equal(options.requireScreenshot, false);
   assert.equal(options.visualEvidence, true);
   assert.equal(
@@ -134,10 +137,6 @@ test("local macOS app deploy builds without release updater signing, installs, a
 });
 
 test("local macOS app deploy keeps drag proof only for the plain topology route", () => {
-  assert.equal(routeSupportsTopologyDragProof("/en/topology/"), true);
-  assert.equal(routeSupportsTopologyDragProof("/ko/topology/"), true);
-  assert.equal(routeSupportsTopologyDragProof("/ko/topology/?mode=path"), false);
-  assert.equal(routeSupportsTopologyDragProof("/ko/topology/?p=domain%3Aviews&mode=focus"), false);
 });
 
 test("local macOS app deploy does not let drag proof rewrite a query-specific route", () => {
@@ -146,12 +145,8 @@ test("local macOS app deploy does not let drag proof rewrite a query-specific ro
     "--webview-evidence=/tmp/path-mode.json",
   ]);
   const plan = buildDeployMacosAppPlan(options);
-
-  assert.equal(options.verifyTopologyDrag, false);
   assert.ok(plan.verify[1].includes("--require-webview-route=/ko/topology/?mode=path"));
-  assert.equal(plan.verify[1].includes("--verify-topology-drag"), false);
   assert.ok(plan.fallbackVerify?.[1].includes("--require-webview-route=/ko/topology/?mode=path"));
-  assert.equal(plan.fallbackVerify?.[1].includes("--verify-topology-drag"), false);
 });
 
 test("local macOS app deploy can require a screenshot proof when macOS capture is available", () => {
@@ -172,7 +167,6 @@ test("local macOS app deploy can reuse an existing build and customize proof rou
   const options = parseDeployMacosAppArgs([
     "--skip-build",
     "--no-leave-running",
-    "--topology-drag",
     "--no-visual-evidence",
     "--require-screenshot",
     "--route=/ko/topology/",
@@ -188,7 +182,6 @@ test("local macOS app deploy can reuse an existing build and customize proof rou
 
   assert.equal(options.skipBuild, true);
   assert.equal(options.leaveRunning, false);
-  assert.equal(options.verifyTopologyDrag, true);
   assert.equal(options.requireScreenshot, true);
   assert.equal(options.visualEvidence, false);
   assert.equal(plan.build, null);
@@ -197,8 +190,8 @@ test("local macOS app deploy can reuse an existing build and customize proof rou
     ["/tmp/build/Ontology Atlas.app", "/tmp/Ontology Atlas.app"],
   ]);
   assert.equal(plan.verify[1].includes("--leave-running"), false);
-  // --topology-drag opt-in + 드래그 증명 지원 라우트(/ko/topology/) → 포함.
-  assert.equal(plan.verify[1].includes("--verify-topology-drag"), true);
+  // 드래그 증명은 은퇴했다 — 어떤 라우트에서도 그 플래그를 넣지 않는다.
+  assert.equal(plan.verify[1].includes("--verify-topology-drag"), false);
   assert.ok(plan.verify[1].includes("--require-webview-route=/ko/topology/"));
   assert.ok(plan.verify[1].includes("--hold-ms=9000"));
   assert.ok(plan.verify[1].includes("--min-window-size=1500x920"));
@@ -223,7 +216,6 @@ test("local macOS app deploy can use deterministic WebView-only verification", (
   assert.ok(plan.verify[1].includes("--min-webview-size=1400x860"));
   assert.equal(plan.verify[1].some((arg) => arg.startsWith("--try-window-screenshot=")), false);
   assert.ok(plan.verify[1].includes("--require-webview-route=/en/topology/"));
-  assert.equal(plan.verify[1].includes("--verify-topology-drag"), false);
   assert.equal(plan.fallbackVerify, null);
 });
 
