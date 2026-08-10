@@ -389,15 +389,33 @@ test.describe("카메라 전환 규격", () => {
           Math.abs(seg[i].s - seg[i - 1].s) * 1000,
       );
     }
-    expect(steps.length, "구간이 비었다").toBeGreaterThan(3);
+    /*
+     * ⚠️ **하한이 기계에 의존하면 안 된다** (2026-08-11, CI 가 잡았다).
+     *
+     * 처음 하한은 `> 3` 이었다. 전환은 200~420ms 라 표본 수가 **그 시간에 기계가 낸
+     * 프레임 수**로 정해지는데, CI 러너는 3개만 냈고 세 번 재시도해서 세 번 다
+     * 빨갰다(로컬은 통과). 이 저장소가 이미 정해 둔 규율 그대로다 — 게이트를 밀리초나
+     * 프레임 수로 잠그면 기계마다 들쭉날쭉 실패한다.
+     *
+     * 하한의 목적은 **공회전 차단**(빈 집합에 통과 도장을 찍지 않는 것)이지 성능
+     * 판정이 아니다. 그리고 판정 자체(「0인 프레임이 있나」)는 표본이 둘이어도 성립한다.
+     * 그래서 하한을 2로 내리고, 표본 수를 로그에 남긴다 — 표본이 적어지는 것은
+     * 「조용히 약해지는 것」이 아니라 눈에 보여야 한다.
+     */
+    console.log(`[camera] 전환 표본 ${steps.length}개 · ${span.durationMs.toFixed(0)}ms`);
+    expect(steps.length, "구간이 비었다 — 아무것도 재지 못했다").toBeGreaterThanOrEqual(2);
     /*
      * 가운데 절반에서 **완전히 멈춘 프레임**(0)이 있으면 끊긴 것이다. 양 끝은
      * ease-in-out 이라 원래 느리므로 세지 않는다 — 거기서 0에 가까운 것은 규격이다.
+     * 표본이 셋 이하로 적은 기계에서는 잘라낼 여유가 없으니 전부 본다(그때는 양 끝의
+     * 느림이 0까지 가지는 않는다 — 0은 정지이고, 정지는 어느 구간에서도 결함이다).
      */
-    const from = Math.floor(steps.length * 0.25);
-    const to = Math.ceil(steps.length * 0.75);
-    const stalled = steps.slice(from, to).filter((s) => s === 0).length;
-    expect(stalled, `전환 가운데에 멈춘 프레임이 ${stalled}개 있다`).toBe(0);
+    const interior =
+      steps.length >= 6
+        ? steps.slice(Math.floor(steps.length * 0.25), Math.ceil(steps.length * 0.75))
+        : steps;
+    const stalled = interior.filter((s) => s === 0).length;
+    expect(stalled, `전환 중에 멈춘 프레임이 ${stalled}개 있다 (표본 ${interior.length})`).toBe(0);
   });
 
   test("목표를 지나치지 않는다 — 되돌아오는 프레임이 없다", async ({ page }) => {
