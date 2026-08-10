@@ -155,7 +155,14 @@ describe("공방 실습", () => {
   it("treats Escape as keep, never as delete", async () => {
     await makeOneNode();
     const cleanup = await screen.findByTestId("studio-practice-cleanup");
-    expect(screen.getByTestId("studio-practice-keep")).toHaveFocus();
+    /*
+     * ⚠️ **기다린다.** 초점은 카드가 마운트된 뒤 효과가 옮기므로, 카드가 보이는
+     * 순간과 초점이 도착하는 순간이 같은 프레임이 아니다. 기다리지 않고 단언한
+     * 판이 CI 에서 흔들렸다(2026-08-11, 재실행에서 통과 — 제품 결함이 아니었다).
+     * 흔들리는 시험은 자기 하나만 잃는 게 아니라 **모든 게이트의 빨강을 의심하게
+     * 만든다.** 단언을 약하게 하는 것이 아니라 도착을 기다리는 것이다.
+     */
+    await waitFor(() => expect(screen.getByTestId("studio-practice-keep")).toHaveFocus());
 
     fireEvent.keyDown(window, { key: "Escape" });
     await waitFor(() => expect(cleanup).not.toBeInTheDocument());

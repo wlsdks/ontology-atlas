@@ -22,55 +22,30 @@ import path from 'node:path';
 const CSS = readFileSync(path.join(process.cwd(), 'app/globals.css'), 'utf8');
 
 /**
- * 동등물이 있어야 하는 표면. 이 목록에 클래스를 넣으면 globals.css 에
- * carve-out 도 같이 넣어야 한다 — 그게 이 가드의 전부다.
+ * **일부러 감속에서 멈추는 것** — 이유를 여기 적는다.
+ *
+ * ⚠️ 종전에는 반대였다: 「동등물이 있어야 하는 표면」을 손으로 적어 두고 그것만 봤다.
+ * 그러면 **목록에 없는 표면은 위반이 아니라 없는 것**이 되고, 실제로 다섯이 그렇게
+ * 새어 나가 감속 사용자에게 통째로 하드컷이었다(공방 무대 등장 · 지지대 고르기 ·
+ * 요약 수렴 · 연습 단계 · 라우트 로딩). 2026-07-28 에도 같은 일이 있었고 그때 주석에
+ * *"목록이 곧 사정거리다"* 라고 적어 뒀는데, 목록을 유지하는 쪽을 고쳤을 뿐 **목록에
+ * 의존하는 구조**는 그대로였다.
+ *
+ * 그래서 뒤집는다: 후보는 **CSS 에서 뽑아내고**(애니메이션을 가진 클래스 전부),
+ * 감속 블록에서 언급되지 않은 것은 여기 이유와 함께 적혀야 통과한다. 새 표면을
+ * 만들면 기본값이 **빨강**이다.
  */
-const EQUIVALENT_CLASSES = [
-  'ai-row-disclosure-body',
-  'insights-tab-crossfade',
-  'insights-disclosure-in',
-  'ai-row-swap',
-  'agent-panel-stage-swap',
-  'agent-next-step-in',
-  'overlay-fade-only',
-  'app-settings-scrim-in',
-  'app-settings-panel-in',
-  'app-settings-panel-out',
-  'app-settings-scrim-out',
-  'settings-view-push-in',
-  'settings-view-pop-in',
-  'map-overlay-in',
-  'map-overlay-out',
-  'overlay-spring-scrim',
-  'topology-chrome-in',
-  'topology-chrome-out',
-  'rail-status-dot-in',
-  // 2026-07-28 커밋 확정 안무 — 이 표면 최대의 확정에 처음 붙은 settle 램프.
-  // 감속 동등물은 이동축만 없애고 불투명도·색은 남긴다(어느 줄이 방금 것인지는
-  // 정보이고, 감속의 뜻은 정보를 뺏는 것이 아니다).
-  'git-commit-settle',
-  // 2026-07-28 공방 채움 안무 — 소유자가 이름으로 부른 순간.
-  'studio-fill-arrive',
-  // 2026-07-28 프레임 실측으로 추가 — **목록에 없어서 통과하고 있던 것들**.
-  // 계약이 잡은 8종은 전부 실측을 통과했는데, 진짜 문제는 목록 밖에 있었다.
-  // 목록이 곧 사정거리다.
-  'app-toast',
-  // 2026-07-28 UI 감사 — 가이드 투어. **첫 방문에 화면을 덮는 표면인데
-  // 등록부 밖에 있었다.** 원인은 인라인 arbitrary `animate-[panelCrossfadeIn_…]`
-  // 라 등록부가 가리킬 셀렉터 이름이 없었던 것 — 그래서 전역 kill 규칙만
-  // 걸리고 동등물은 하나도 안 와, 감속 사용자에게 단계 전환이 통째로
-  // 하드컷이었다. 이름 있는 클래스로 승격하면서 목록에 올린다.
-  //
-  // 컷아웃 링(`transition-[top,left,width,height]`)은 **일부러 안 넣는다** —
-  // 그건 진짜 이동 축이라 감속에서 잘리는 것이 맞다. 동등물이 필요한 것은
-  // 불투명도처럼 전정계를 안 건드리면서 정보를 나르는 축이다.
-  'guided-tour-card-in',
-  // 2026-08-02 프레임 실측 — 캐노니컬 Select 목록. 등장만 있고 **퇴장이 아예
-  // 없어서** 감속 여부와 무관하게 1프레임 소멸이었다(패널 휘도 델타의 98%가
-  // 한 프레임). 퇴장을 만들면서 감속 동등물도 같이 등재한다 — 목록이 어디서
-  // 나왔고 어디로 갔는지는 감속 사용자에게도 정보다.
-  'select-listbox',
-] as const;
+const INTENTIONALLY_STILL: Readonly<Record<string, string>> = {
+  "agent-pending-dot": "끝없이 도는 맥박 — 감속의 뜻이 바로 이걸 멈추는 것이다. 상태는 옆의 글자가 말한다.",
+  "studio-strut-flow": "끝없이 흐르는 장식 — 위와 같다. 멈춰도 잃는 정보가 없다.",
+  "overlay-spring-surface":
+    "소비처가 감속일 때 `.overlay-fade-only` 로 **클래스를 갈아 끼운다**(GlobalSearch 실측). CSS carve-out 이 아니라 다른 경로로 이미 덮여 있다.",
+};
+
+/**
+ * 동등물이 실제로 붙어 있어야 하는 표면 — **CSS 에서 뽑아낸다.**
+ * (아래 `animatedClasses` 로 계산한다. 손으로 적는 목록은 더 이상 없다.)
+ */
 
 /** `@media (prefers-reduced-motion: reduce) { … }` 블록 본문들 (중괄호 매칭). */
 function reducedMotionBlocks(css: string): string[] {
@@ -114,6 +89,16 @@ function rules(block: string): Array<{ selector: string; body: string }> {
  */
 const TS = (rel: string) => readFileSync(path.join(process.cwd(), rel), 'utf8');
 
+/** 주석을 걷어낸 CSS — 주석 안의 클래스 이름이 선언으로 오인되지 않게. */
+const CSS_CODE = CSS.replace(/\/\*[\s\S]*?\*\//g, '');
+
+/** 애니메이션을 가진 클래스 전부 — 이 계약의 **후보 목록**이고 손으로 적지 않는다. */
+const animatedClasses = [
+  ...new Set(
+    [...CSS_CODE.matchAll(/\.([a-z0-9-]+)(?:\[[^\]]*\])?\s*\{[^}]*animation:/g)].map(([, cls]) => cls),
+  ),
+].sort();
+
 describe('reduced-motion 동등물 계약', () => {
   const blocks = reducedMotionBlocks(CSS);
   const allRules = blocks.flatMap(rules);
@@ -128,7 +113,36 @@ describe('reduced-motion 동등물 계약', () => {
     expect(global!.body).toMatch(/animation-duration:\s*0\.01ms/);
   });
 
-  for (const cls of EQUIVALENT_CLASSES) {
+  const requiresEquivalent = animatedClasses.filter((cls) => !(cls in INTENTIONALLY_STILL));
+
+  it('후보를 CSS 에서 실제로 뽑아냈다 — 빈손으로 통과하지 않는다', () => {
+    // 2026-08-11 실측 31개(면제 3 · 덮어야 할 28). 줄어들면 스캐너가 눈이 먼 것이다.
+    expect(
+      animatedClasses.length,
+      `애니메이션 클래스를 ${animatedClasses.length}개만 찾았다 — 스캐너가 헛돈다`,
+    ).toBeGreaterThanOrEqual(28);
+    for (const cls of Object.keys(INTENTIONALLY_STILL)) {
+      expect(
+        animatedClasses,
+        `.${cls} 는 면제 목록에 있는데 CSS 에 없다 — 죽은 면제는 틀린 정보다`,
+      ).toContain(cls);
+    }
+  });
+
+  it('감속 블록에서 언급되지 않은 표면은 이유가 적혀 있다', () => {
+    const naked = animatedClasses.filter(
+      (cls) =>
+        !(cls in INTENTIONALLY_STILL) &&
+        !blocks.some((block) => new RegExp(`\\.${cls}(?![\\w-])`).test(block)),
+    );
+    expect(
+      naked,
+      `감속 동등물도 없고 이유도 없다 — 감속 사용자에게 통째로 하드컷이다:\n${naked.join('\n')}\n` +
+        `덮거나, INTENTIONALLY_STILL 에 이유를 적어라.`,
+    ).toEqual([]);
+  });
+
+  for (const cls of requiresEquivalent) {
     it(`.${cls} 는 reduced-motion 에서도 시간을 갖는다 (하드컷 아님)`, () => {
       const matching = allRules.filter((r) =>
         r.selector.split(',').some((s) => new RegExp(`\\.${cls}(?![\\w-])`).test(s)),
