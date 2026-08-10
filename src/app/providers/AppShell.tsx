@@ -4,6 +4,8 @@ import { useCallback, useState, type ReactNode } from "react";
 import { useRouter, usePathname } from "@/i18n/navigation";
 import { useDestinationShortcuts } from "@/shared/lib/use-destination-shortcuts";
 import { focusMapCanvasWhenReady } from "@/shared/lib/focus-map-canvas";
+import { useToast } from "@/shared/ui";
+import { useTranslations } from "next-intl";
 import {
   AppNavRail,
   NavRailShellProvider,
@@ -240,6 +242,9 @@ function AppNavRailSlot() {
   const { changeset: gitChangeset } = useAtlasGitContext();
   const gitDirtyCount = gitChangeset.touchedNodeIds.size;
 
+  const toast = useToast();
+  const tShortcutRows = useTranslations("searchWidgets.shortcuts.rows");
+
   /**
    * 목적지 이동 단축키(`G` 다음 한 글자) — **레일과 같은 자리**에서 배선한다.
    *
@@ -258,6 +263,14 @@ function AppNavRailSlot() {
        * 만들지 않고 이미 있는 `G M` 에 이 일을 준다.
        */
       if (id === "map") focusMapCanvasWhenReady();
+    },
+    /*
+     * 막는 창 때문에 못 갈 때 **말해 준다.** 이것이 없던 동안 공방은 키보드
+     * 함정이었다 — 도착하면 「무엇을 할까요?」 선택 창이 뜨고, 그 뒤로는 어떤
+     * 이동 단축키도 조용히 먹지 않았다(2026-08-10 전체 검수에서 잡혔다).
+     */
+    onBlockedByOverlay: () => {
+      toast.show(tShortcutRows("navBlockedByOverlay"), "info");
     },
     disabled: gateway,
     hrefOverrides: contextHrefs?.docs ? { docs: contextHrefs.docs } : undefined,

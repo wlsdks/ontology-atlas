@@ -156,6 +156,37 @@ describe("useDestinationShortcuts", () => {
    * 남아 이동 단축키 전체를 영구히 죽이는 상태를 아무도 못 잡는다(실제로 그
    * 결함을 냈다 — 훅 주석 참고).
    */
+  /**
+   * **막힐 때 말해 준다** — 침묵이 아니라.
+   *
+   * 이것이 없던 동안 공방은 키보드 함정이었다: 도착하면 선택 창이 뜨고, 그 뒤로는
+   * 어떤 이동 단축키도 **조용히** 먹지 않았다(2026-08-10 전체 검수에서 잡혔다).
+   */
+  it("막는 표면이 있으면 이동하지 않고 알린다", () => {
+    const onBlockedByOverlay = vi.fn();
+    renderHook(() => useDestinationShortcuts({ navigate, onBlockedByOverlay }));
+    const modal = document.createElement("div");
+    modal.setAttribute("aria-modal", "true");
+    modal.getClientRects = (() => [{}] as unknown as DOMRectList) as typeof modal.getClientRects;
+    document.body.append(modal);
+    press("g");
+    press("p");
+    expect(navigate, "모달이 떠 있는데 이동했다").not.toHaveBeenCalled();
+    expect(onBlockedByOverlay, "막혔는데 아무 말도 안 했다").toHaveBeenCalledTimes(1);
+  });
+
+  it("갈 곳을 지목하지 않은 키에는 아무 말도 하지 않는다", () => {
+    const onBlockedByOverlay = vi.fn();
+    renderHook(() => useDestinationShortcuts({ navigate, onBlockedByOverlay }));
+    const modal = document.createElement("div");
+    modal.setAttribute("aria-modal", "true");
+    modal.getClientRects = (() => [{}] as unknown as DOMRectList) as typeof modal.getClientRects;
+    document.body.append(modal);
+    // 모달 안에서 그냥 타이핑하는 상황 — 안내가 쏟아지면 그게 소음이다.
+    for (const key of ["a", "b", "c", "z"]) press(key);
+    expect(onBlockedByOverlay, "지목도 안 했는데 말했다").not.toHaveBeenCalled();
+  });
+
   it("숨은 막는 표면은 이동을 막지 않는다", () => {
     renderHook(() => useDestinationShortcuts({ navigate }));
     const hidden = document.createElement("div");

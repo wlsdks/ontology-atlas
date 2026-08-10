@@ -109,12 +109,26 @@ export interface DestinationShortcutOptions {
   disabled?: boolean;
   /** 문맥에 따라 기본 주소를 덮어쓸 때. 없으면 `DESTINATION_HREF`. */
   hrefOverrides?: Partial<Record<DestinationId, string>>;
+  /**
+   * 막는 표면 때문에 이동을 거절했을 때 — **사용자가 실제로 갈 곳을 지목했을 때만** 불린다.
+   *
+   * ⚠️ 이것이 없던 동안 공방은 **키보드 함정**이었다(2026-08-10 전체 검수에서 잡혔다).
+   * 공방에 도착하면 「무엇을 할까요?」 선택 창이 뜨고 그것이 `aria-modal` 이라, 이동
+   * 단축키가 규칙대로 거절된다 — 그런데 **아무 말도 안 했다.** 검수에서 `G S` 이후
+   * `G I`·`G P`·`G K`·`G G` 가 전부 먹지 않는 것으로 나타났고, 화면에는 단서가 없었다.
+   *
+   * 모달을 통과시키는 쪽으로 고치지 않는다: 모달이 안 막으면 모달이 아니고, 안에
+   * 저장 안 한 입력이 있을 수 있다. 대신 **왜 안 가는지 말한다** — 막다른 길 안내와
+   * 같은 처방이다.
+   */
+  onBlockedByOverlay?: (() => void) | null;
 }
 
 export function useDestinationShortcuts({
   navigate,
   disabled = false,
   hrefOverrides,
+  onBlockedByOverlay = null,
 }: DestinationShortcutOptions) {
   /**
    * 리더를 누른 시각. `null` 이면 안 누른 것.
@@ -130,6 +144,10 @@ export function useDestinationShortcuts({
    * 런타임이 0 을 주는 순간 기능이 통째로 사라지고 화면에는 아무 단서도 없다.
    */
   const leaderAt = useRef<number | null>(null);
+  const onBlockedByOverlayRef = useRef(onBlockedByOverlay);
+  useEffect(() => {
+    onBlockedByOverlayRef.current = onBlockedByOverlay;
+  });
 
   useEffect(() => {
     if (disabled) {
@@ -143,12 +161,6 @@ export function useDestinationShortcuts({
       const tag = target?.tagName;
       if (tag === 'INPUT' || tag === 'TEXTAREA' || target?.isContentEditable) return;
 
-      // 막는 표면이 떠 있으면 이동하지 않는다 (위 3번).
-      if (blockingSurfaceOpen()) {
-        leaderAt.current = null;
-        return;
-      }
-
       const now = performance.now();
 
       if (leaderAt.current !== null && now - leaderAt.current <= NAV_LEADER_WINDOW_MS) {
@@ -156,10 +168,25 @@ export function useDestinationShortcuts({
         leaderAt.current = null;
         if (!id) return;
         event.preventDefault();
+        /*
+         * 막는 표면이 떠 있으면 **가지 않고 말한다** (위 3번 · `onBlockedByOverlay`).
+         * 판정을 이 자리까지 미룬 이유: 사용자가 **실제로 갈 곳을 지목했을 때만**
+         * 말해야 한다. 모든 키에서 판정하면 모달 안에서 타이핑할 때마다 안내가 쏟아진다.
+         */
+        if (blockingSurfaceOpen()) {
+          onBlockedByOverlayRef.current?.();
+          return;
+        }
         navigate(hrefOverrides?.[id] ?? DESTINATION_HREF[id], id);
         return;
       }
 
+      /*
+       * 막는 표면이 떠 있어도 **리더는 그대로 기억한다.** 여기서 끊으면
+       * `G` 다음 `P` 가 「지목」으로 성립하지 않아 위 분기가 아예 안 돌고, 결국
+       * 다시 침묵으로 돌아간다(시험이 그것을 잡았다). 이동을 막는 판정은 위
+       * 분기 하나에만 있고, 그래서 「막혔다」와 「말해 준다」가 같은 자리에 있다.
+       */
       // 리더를 새로 누른다. `G G`(git)가 성립하려면 리더 자신도 두 번째 글자가
       // 될 수 있어야 하는데, 그 판정은 위 블록이 먼저 하므로 순서가 중요하다.
       leaderAt.current = matchesLetter(event, NAV_LEADER_KEY) ? now : null;

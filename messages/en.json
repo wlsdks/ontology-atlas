@@ -912,6 +912,7 @@
         "docsActions": "Ontology workspace · document actions"
       },
       "rows": {
+        "navBlockedByOverlay": "Close the open panel first. Press Esc to close it",
         "goTo_map": "Go to map",
         "goTo_docs": "Go to docs",
         "goTo_studio": "Go to studio",
