@@ -912,6 +912,7 @@
         "docsActions": "문서함 · 문서 액션"
       },
       "rows": {
+        "navBlockedByOverlay": "열려 있는 창을 먼저 닫아 주세요. Esc 를 누르면 닫혀요",
         "goTo_map": "지도로",
         "goTo_docs": "문서함으로",
         "goTo_studio": "공방으로",
