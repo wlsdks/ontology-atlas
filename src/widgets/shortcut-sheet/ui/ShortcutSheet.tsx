@@ -108,6 +108,14 @@ const SECTIONS: ShortcutSection[] = [
     titleKey: "topology",
     surface: "topology",
     rows: [
+      /*
+       * 방향키 걷기 — **이 줄이 없어서 사용성 검수에 걸렸다** (2026-08-10).
+       * 2026-08-09~10 에 방향키로 이웃을 걷는 기능을 넣었는데, 키보드를 가르치는
+       * 유일한 자리인 이 시트는 그것을 모른 채 클릭·드래그·스크롤만 안내했다.
+       * 「발견할 수 없는 기능은 기능이 아니다」 — 게이트:
+       * `tests/e2e/map-keyboard-walk.spec.ts` 의 「시트가 방향키 걷기를 안내한다」.
+       */
+      { keys: ["↑", "↓", "←", "→"], labelKey: "walkNeighbors" },
       { keys: [k("click")], labelKey: "clickSelect" },
       { keys: [k("drag")], labelKey: "dragPan" },
       { keys: [k("scroll")], labelKey: "wheelZoom" },
