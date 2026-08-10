@@ -912,6 +912,7 @@
         "docsActions": "Ontology workspace · document actions"
       },
       "rows": {
+        "walkNeighbors": "Move to a connected concept",
         "navBlockedByOverlay": "Close the open panel first. Press Esc to close it",
         "goTo_map": "Go to map",
         "goTo_docs": "Go to docs",
@@ -2476,7 +2477,7 @@
       "clickHint": "Click for details · source doc"
     },
     "canvas": {
-      "ariaLabel": "Product map: the INDEX panel lets you explore the same information by keyboard"
+      "ariaLabel": "Product map: walk connected concepts with the arrow keys. The INDEX panel shows the same information"
     },
     "cluster": {
       "hint": "Dense groups are folded into +N chips: click a chip to expand that group, click again to collapse.",

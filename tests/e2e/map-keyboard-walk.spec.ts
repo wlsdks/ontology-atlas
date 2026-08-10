@@ -409,6 +409,53 @@ test.describe("지도 키보드 걷기", () => {
   });
 
   /**
+   * **발견할 수 없는 기능은 기능이 아니다** (2026-08-10 사용성 검수에서 잡혔다).
+   *
+   * 방향키 걷기를 넣고도, 키보드를 가르치는 **유일한 자리**인 단축키 시트의 지형도
+   * 절은 그것을 몰랐다 — 실측으로 그 절에 있던 것은 `클릭 · 드래그 · 스크롤` 셋뿐이다.
+   * 그 시트는 예전에 **없는 기능을 안내**해 문제가 됐던 자리이기도 하다(그 파일 주석).
+   * 이번은 그 반대 방향의 같은 실패다.
+   */
+  test("단축키 시트가 방향키 걷기를 안내한다", async ({ page }) => {
+    await focusCanvas(page);
+    await page.locator("main").first().click({ position: { x: 5, y: 5 } });
+    await page.keyboard.press("?");
+    const sheet = page.getByTestId("shortcut-sheet-scroll");
+    await expect(sheet).toBeVisible({ timeout: 5_000 });
+    const all = page.getByTestId("shortcut-sheet-scope-all");
+    if (await all.isVisible().catch(() => false)) await all.click();
+
+    const section = await sheet.evaluate((el) => {
+      const lines = (el as HTMLElement).innerText.split("\n").map((s) => s.trim()).filter(Boolean);
+      const start = lines.findIndex((l, i) => l === "지형도" && i > 3);
+      if (start < 0) return null;
+      const rest = lines.slice(start);
+      const next = rest.findIndex((l, i) => i > 0 && /^(검색 팔레트|허브|문서함)/.test(l));
+      return rest.slice(0, next > 0 ? next : 24);
+    });
+    expect(section, "시트에서 「지형도」 절을 못 찾았다 — 이 시험이 공회전한다").not.toBeNull();
+    expect(
+      section!.some((line) => /↑|↓|←|→|방향키/.test(line)),
+      `지형도 절이 방향키를 안내하지 않는다: ${section!.join(" · ")}`,
+    ).toBe(true);
+  });
+
+  /**
+   * **캔버스 라벨이 다른 곳으로 보내지 않는다** (2026-08-10 사용성 검수).
+   *
+   * 라벨이 *"INDEX 패널에서 같은 정보를 키보드로 탐색할 수 있어요"* 였다 — 어제는
+   * 사실이었지만 지금은 **이 캔버스가 직접 그 일을 한다.** 초점을 받은 사람에게
+   * 「여기서는 안 되니 저기로 가라」고 말하는 라벨은 낡은 정보다.
+   */
+  test("캔버스 라벨이 여기서 되는 일을 먼저 말한다", async ({ page }) => {
+    const canvas = page.getByTestId("topology-map-v2-canvas");
+    await canvas.waitFor({ state: "visible", timeout: 20_000 });
+    const label = await canvas.getAttribute("aria-label");
+    expect(label, "캔버스에 접근 이름이 없다").toBeTruthy();
+    expect(label!, `라벨이 방향키를 말하지 않는다: ${label}`).toMatch(/방향키/);
+  });
+
+  /**
    * **방향키를 우리가 가져간다** — `preventDefault` 가 실제로 걸리나.
    *
    * ⚠️ 처음에는 `window.scrollY` 가 안 변하는지로 재려 했고, 그 시험은
