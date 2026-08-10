@@ -53,6 +53,7 @@ import { AiConnectionPanel } from './AiConnectionPanel';
 import { useAiConnection } from '../model/use-ai-connection';
 import { AGENT_GRAPH_WORKFLOW_HREF } from '@/shared/config';
 import { controlClass } from '@/shared/ui/control-class';
+import { transientSurface } from "@/shared/ui/transient-surface";
 
 /**
  * 단일 설정 표면 (설정 통합 2026-07-24, 소유자 지시) — 이전엔 설정이 두 곳에
@@ -586,7 +587,8 @@ export function AppSettingsMenu({
         className={`${settingsExiting ? 'app-settings-scrim-out' : 'app-settings-scrim-in'} fixed inset-0 z-40 flex items-center justify-center overflow-hidden bg-[color:var(--color-backdrop-medium)] p-3 sm:p-6`}
         aria-hidden={settingsExiting || undefined}
         inert={settingsExiting || undefined}
-        data-testid="app-settings-overlay"
+        {...transientSurface("sheet")}
+      data-testid="app-settings-overlay"
       >
         <div
           ref={panelRef}

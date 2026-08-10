@@ -42,6 +42,7 @@ import {
 import { controlClass, IconButton, LastEditSubjectRow, MtimeConflictBadge, RowButton, Surface } from "@/shared/ui";
 import { TopologyV2KindGlyph } from "@/shared/ui/topology-v2-kind-glyph";
 import { Tooltip } from "@/shared/ui/tooltip";
+import { transientSurface } from "@/shared/ui/transient-surface";
 
 /**
  * topology-map-v2 "component datasheet" node panel
@@ -1152,7 +1153,8 @@ export function TopologyV2DetailPanel({
       <div
         role="group"
         aria-label={title}
-        data-testid="topology-v2-detail-panel"
+        {...transientSurface("anchored")}
+      data-testid="topology-v2-detail-panel"
         data-selected-node-id={nodeId}
         data-selected-node-kind={kind}
         data-selected-node-title={title}

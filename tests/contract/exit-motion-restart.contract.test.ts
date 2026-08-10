@@ -36,45 +36,100 @@ describe('퇴장 모션 재시작 계약', () => {
     expect(offenders, `퇴장이 조용히 1프레임이 될 수 있다:\n${offenders.join('\n')}`).toEqual([]);
   });
 
-  it('퇴장 클래스는 퇴장 전용 키프레임을 쓴다', () => {
-    // 퇴장 전용 이름 = 앞으로 재생해도 사라지는 방향인 것.
-    const EXIT_KEYFRAMES = ['overlayFadeOut', 'settingsPanelOut', 'topologyChromeOut', 'overlaySpringOut'];
-    const EXIT_CLASSES = [
-      'map-overlay-out',
-      'app-settings-panel-out',
-      'app-settings-scrim-out',
-      'topology-chrome-out',
-    ];
-    for (const cls of EXIT_CLASSES) {
-      const at = CODE.indexOf(`.${cls} {`);
-      expect(at, `.${cls} 규칙이 없다`).toBeGreaterThan(-1);
-      const body = CODE.slice(at, CODE.indexOf('}', at));
-      expect(
-        EXIT_KEYFRAMES.some((name) => body.includes(name)),
-        `.${cls} 가 퇴장 전용 키프레임을 쓰지 않는다 — 등장 이름 재사용은 재시작하지 않는다`,
-      ).toBe(true);
+  /**
+   * ⚠️ **손으로 적은 목록을 지웠다** (2026-08-11).
+   *
+   * 종전에는 퇴장 클래스 넷과 퇴장 키프레임 넷을 이 파일에 적어 두고 그것만 봤다.
+   * 그래서 목록에 없는 표면은 **조용히 검사 밖**이었다 — 실제로 드롭다운
+   * (`.select-listbox[data-state="closed"]` · `select-unpop`)이 빠져 있었고, 그
+   * 화면의 여닫는 움직임은 어떤 검사도 보고 있지 않았다. 이 저장소가 이미 적어 둔
+   * 규율 그대로다(`/gate-probe`): *"금지어 목록을 사람이 손으로 관리하게 만들기 —
+   * 항목을 안 더하면 검사가 조용히 무력해진다."*
+   *
+   * 이제 **CSS 에서 뽑아낸다**: 「사라지는 규칙」은 `[data-state="closed"]` 이거나
+   * 클래스 이름이 `-out` 으로 끝나는 것이고, 거기 쓰인 키프레임 이름을 그대로
+   * 모은다. 새 표면이 늘면 그날부터 검사가 그것도 본다.
+   */
+  /** 정의된 키프레임 이름 전부 — `animation:` 안의 어느 토큰이 이름인지 이것으로 가른다. */
+  const definedKeyframes = new Set(
+    [...CODE.matchAll(/@keyframes\s+([A-Za-z][\w-]*)/g)].map(([, name]) => name),
+  );
+
+  /**
+   * ⚠️ 한 규칙이 애니메이션을 **둘 이상** 쓸 수 있다 — 실제로 `.topology-chrome-out` 은
+   * 이동(`topologyChromeOut`)과 밝기(`overlayFadeOut`)를 갈라 둔다. 첫 이름만 보면
+   * 그 규칙을 「사라지지 않는다」고 잘못 신고한다(이 스캐너의 첫 판이 그랬다).
+   */
+  const namesIn = (body: string) =>
+    [...body.matchAll(/[A-Za-z][\w-]*/g)].map(([w]) => w).filter((w) => definedKeyframes.has(w));
+
+  const exitRules = [...CODE.matchAll(/([^{}]*(?:\[data-state="closed"\]|-out)\s*)\{([^}]*)\}/g)]
+    .map(([, selector, body]) => ({
+      selector: selector.trim().split('\n').pop()!.trim(),
+      keyframes: /animation:/.test(body) ? namesIn(body) : [],
+    }))
+    .filter((rule) => rule.keyframes.length > 0);
+
+  /** 등장 규칙이 쓰는 이름 — 퇴장이 이 이름을 재사용하면 재시작하지 않는다. */
+  const enterKeyframes = new Set(
+    [...CODE.matchAll(/[^{}]*(?:\[data-state="open"\]|-in)\s*\{([^}]*)\}/g)]
+      .flatMap(([, body]) => (/animation:/.test(body) ? namesIn(body) : [])),
+  );
+
+  const keyframeBody = (name: string) => {
+    const at = CODE.indexOf(`@keyframes ${name}`);
+    if (at < 0) return null;
+    const open = CODE.indexOf('{', at);
+    let depth = 0;
+    let i = open;
+    for (; i < CODE.length; i += 1) {
+      if (CODE[i] === '{') depth += 1;
+      else if (CODE[i] === '}') {
+        depth -= 1;
+        if (depth === 0) break;
+      }
     }
+    return CODE.slice(open + 1, i);
+  };
+
+  it('사라지는 규칙을 CSS 에서 실제로 찾아낸다 — 빈손으로 통과하지 않는다', () => {
+    // 2026-08-11 실측 8개. 줄어들면 규칙이 사라진 것이거나 스캐너가 눈이 먼 것이다.
+    expect(exitRules.length, `사라지는 규칙을 ${exitRules.length}개만 찾았다 — 스캐너가 헛돈다`).toBeGreaterThanOrEqual(6);
+    expect(enterKeyframes.size, '등장 규칙을 하나도 못 찾았다').toBeGreaterThan(2);
   });
 
-  it('퇴장 전용 키프레임은 실제로 사라지는 방향이다', () => {
-    for (const name of ['overlayFadeOut', 'settingsPanelOut']) {
-      const at = CODE.indexOf(`@keyframes ${name}`);
-      expect(at, `@keyframes ${name} 가 없다`).toBeGreaterThan(-1);
-      const open = CODE.indexOf('{', at);
-      let depth = 0;
-      let i = open;
-      for (; i < CODE.length; i += 1) {
-        if (CODE[i] === '{') depth += 1;
-        else if (CODE[i] === '}') {
-          depth -= 1;
-          if (depth === 0) break;
+  it('사라지는 규칙은 등장 이름을 재사용하지 않는다', () => {
+    const offenders = exitRules
+      .flatMap((rule) =>
+        rule.keyframes.filter((name) => enterKeyframes.has(name)).map((name) => `${rule.selector} → ${name}`),
+      );
+    expect(
+      offenders,
+      `등장 이름을 그대로 쓰면 같은 원소에서 애니메이션이 재시작하지 않는다:\n${offenders.join('\n')}`,
+    ).toEqual([]);
+  });
+
+  it('사라지는 키프레임은 실제로 사라지는 방향이다', () => {
+    const offenders: string[] = [];
+    for (const rule of exitRules) {
+      // 규칙 단위로 판정한다 — 여러 애니메이션 중 **하나라도** 사라지면 그 규칙은 사라진다.
+      let disappears = false;
+      for (const name of rule.keyframes) {
+        const body = keyframeBody(name);
+        if (body === null) {
+          offenders.push(`${rule.selector} → @keyframes ${name} 가 없다`);
+          continue;
         }
+        const split = body.indexOf('to');
+        const to = split > -1 ? body.slice(split) : '';
+        const fades = /opacity:\s*0(?:\D|$)/.test(to);
+        const shrinks = /translate|scale/.test(to) && !/opacity:\s*1\s*;?\s*}?\s*$/.test(to);
+        if (fades || shrinks) disappears = true;
       }
-      const body = CODE.slice(open + 1, i);
-      const from = body.slice(0, body.indexOf('to'));
-      const to = body.slice(body.indexOf('to'));
-      expect(/opacity:\s*1/.test(from), `${name} 의 from 이 불투명하지 않다`).toBe(true);
-      expect(/opacity:\s*0/.test(to), `${name} 의 to 가 투명하지 않다`).toBe(true);
+      if (!disappears) {
+        offenders.push(`${rule.selector} → ${rule.keyframes.join(' + ')} 중 사라지는 것이 없다`);
+      }
     }
+    expect(offenders, `사라지는 방향이 아닌 퇴장:\n${offenders.join('\n')}`).toEqual([]);
   });
 });

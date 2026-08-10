@@ -1,4 +1,5 @@
 "use client";
+import { transientSurface } from "@/shared/ui/transient-surface";
 
 /**
  * P3c — 엣지 호버 마이크로카드. 클릭 팝오버(P3b, TopologyV2EdgePanel)의
@@ -32,6 +33,7 @@ export function TopologyV2EdgeHoverCard({ sentence, typeLabel, why, clickHint, x
   const top = Math.min(y + OFFSET, (typeof window !== "undefined" ? window.innerHeight : 1080) - 120 - EDGE_MARGIN);
   return (
     <div
+      {...transientSurface("hint")}
       data-testid="topology-v2-edge-hover-card"
       role="status"
       className="pointer-events-none fixed z-40 flex max-w-[280px] flex-col gap-1 rounded-[var(--topology-v2-panel-radius)] border border-[color:var(--topology-v2-panel-border)] bg-[color:var(--topology-v2-panel-surface)] px-3 py-2 shadow-[var(--topology-v2-panel-shadow)]"
