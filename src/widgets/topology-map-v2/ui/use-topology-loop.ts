@@ -85,6 +85,13 @@ import {
   shouldAnnounceDeadEnd,
   walkDirectionForKey,
 } from "../interaction/keyboard-walk";
+import {
+  cameraCenteringNode,
+  collectCanvasObstacles,
+  computeFreeArea,
+  freeAreaOffset,
+  type Rect,
+} from "../interaction/free-area";
 
 import { readTopologyV2TokensOrNull } from "./topology-read-tokens";
 import type { TopologyMapV2Props } from "./TopologyMapV2";
@@ -1602,15 +1609,59 @@ export function useTopologyLoop(args: UseTopologyLoopArgs): UseTopologyLoopResul
       target = computeFocusCameraTarget(world, tokens, width, height, focusedSlug, overviewEntryScale, realmMembers);
     }
     if (!target) return;
-    dampingRef.current = tokens.cameraDampingDefault;
-    cameraTargetRef.current = target;
-    userDrivenCameraRef.current = false;
-    // Dive-zoom fix — focus dive AND deselect-return are both PROGRAMMATIC
-    // camera moves (this effect fires for both directions of `focusedSlug`
-    // changing), so both ease via the cubic transition tween (reduced-motion →
-    // spring/snap).
-    cameraAngularFreqRef.current = tokens.cameraSpringAngFreqTransition;
-    beginCameraTween(target);
+    /*
+     * **패널에 가리지 않는 자리로 보정한다** (2026-08-10 소유자 확정:
+     * *"가려선 안되지 패널 뺀 공간 가운데로 맞춰줘"*).
+     *
+     * 노드를 고르면 오른쪽에 팝오버가 열린다. 그런데 이 목표는 **뷰포트 가운데**
+     * 기준이라, 고른 것이 그것을 설명하는 패널 뒤로 들어갈 수 있었다. 실측
+     * (1512×982): 캔버스 x64 w1448 · 팝오버 x1128 w352 → 자유 영역 가운데는 화면
+     * 가운데보다 **192px 왼쪽**이다.
+     *
+     * 개요 경로에는 이미 같은 개념이 있었다(그 아래 *"Panel-aware: … not behind the
+     * left ReaderLens panel"*) — 없던 것은 **선택 경로**다. 여기가 그 한 곳이다.
+     *
+     * 패널 폭을 상수로 박지 않고 DOM 에서 잰다: 값을 박으면 패널이 바뀌는 날 조용히
+     * 어긋난다. 선택이 바뀔 때만 도는 계산이라 프레임 예산과 무관하다.
+     */
+    /*
+     * ⚠️ **한 프레임 뒤에 잰다.** 피해야 할 팝오버는 **바로 이 선택 때문에** 열리므로,
+     * 이 effect 가 도는 시점에는 아직 DOM 에 없다. 그때 재면 장애물이 0개라 보정이
+     * 0이 되고, 실측에서 정확히 그 일이 났다(노드가 자유 영역 가운데에서 188px
+     * 벗어나 화면 가운데에 앉았다 — 게이트가 잡았다).
+     *
+     * 200~420ms 이동 앞의 한 프레임(≈16ms)은 보이지 않는다. 대안(패널 폭을 상수로
+     * 박기)은 패널이 바뀌는 날 조용히 어긋난다.
+     */
+    const aimed = target;
+    const raf = requestAnimationFrame(() => {
+      let finalTarget = aimed;
+      const canvasEl = canvasRef.current;
+      if (canvasEl) {
+        const box = canvasEl.getBoundingClientRect();
+        const canvasRect: Rect = { x: box.x, y: box.y, width: box.width, height: box.height };
+        const offset = freeAreaOffset(canvasRect, collectCanvasObstacles(canvasEl, canvasRect));
+        if (offset.dx !== 0 || offset.dy !== 0) {
+          const shifted = cameraCenteringNode(
+            { x: aimed.tx, y: aimed.ty },
+            offset,
+            aimed.tscale,
+          );
+          finalTarget = { tx: shifted.tx, ty: shifted.ty, tscale: aimed.tscale };
+        }
+      }
+      dampingRef.current = tokens.cameraDampingDefault;
+      cameraTargetRef.current = finalTarget;
+      userDrivenCameraRef.current = false;
+      // Dive-zoom fix — focus dive AND deselect-return are both PROGRAMMATIC
+      // camera moves (this effect fires for both directions of `focusedSlug`
+      // changing), so both ease via the cubic transition tween (reduced-motion →
+      // spring/snap).
+      cameraAngularFreqRef.current = tokens.cameraSpringAngFreqTransition;
+      lastActiveMsRef.current = performance.now();
+      beginCameraTween(finalTarget);
+    });
+    return () => cancelAnimationFrame(raf);
   }, [focusedSlug, beginCameraTween]);
 
   // --- S4 "영역 전개" — realmRootId 변경 시 서브트리 재배치 + 전환 안무 시작.
@@ -3485,20 +3536,56 @@ export function useTopologyLoop(args: UseTopologyLoopArgs): UseTopologyLoopResul
     onSelect?.(nextId);
 
     /*
-     * 카메라는 **따라만 온다** — 초점이 화면 밖으로 나가려 할 때만. 매번 가운데로
-     * 데려오면 걷는 동안 지도가 계속 미끄러져, 사용자가 자기가 어디 있는지 잃는다
+     * 카메라는 **따라만 온다** — 초점이 자유 영역 밖으로 나가려 할 때만. 매번
+     * 데려오면 걷는 동안 지도가 계속 미끄러져 사용자가 자기 위치를 잃는다
      * (Shneiderman 의 overview-first 를 스스로 깨는 셈이다).
+     *
+     * **판정과 목표를 모두 「자유 영역」으로 한다** (2026-08-10 소유자 확정:
+     * *"가려선 안되지 패널 뺀 공간 가운데로 맞춰줘"*). 종전에는 뷰포트 가운데를
+     * 목표로 삼았는데, 노드를 고르면 오른쪽에 팝오버가 열리므로 **고른 것이 그것을
+     * 설명하는 패널 뒤로 들어갈 수 있었다.** 실측(1512×982): 캔버스 x64 w1448,
+     * 팝오버 x1128 w352 → 자유 영역 가운데는 화면 가운데보다 192px 왼쪽이다.
+     *
+     * 패널 폭을 상수로 박지 않고 **DOM 에서 재는** 이유: 값을 박으면 패널이 바뀌는
+     * 날 조용히 어긋난다. 이 계산은 프레임마다가 아니라 **걸을 때 한 번** 돈다.
      */
     const { width, height } = viewportRef.current;
-    if (width > 0 && height > 0) {
+    const canvasEl = canvasRef.current;
+    if (width > 0 && height > 0 && canvasEl) {
       const scale = camera.scale.value;
-      const sx = (target.x - camera.x.value) * scale + width / 2;
-      const sy = (target.y - camera.y.value) * scale + height / 2;
-      const margin = Math.min(width, height) * 0.18;
+      const canvasBox = canvasEl.getBoundingClientRect();
+      const canvasRect: Rect = {
+        x: canvasBox.x,
+        y: canvasBox.y,
+        width: canvasBox.width,
+        height: canvasBox.height,
+      };
+      const obstacles = collectCanvasObstacles(canvasEl, canvasRect);
+      const free = computeFreeArea(canvasRect, obstacles);
+      const offset = freeAreaOffset(canvasRect, obstacles);
+
+      // 초점이 지금 자유 영역 안에 넉넉히 들어와 있나 (문서 좌표로 비교).
+      const sx = canvasBox.x + (target.x - camera.x.value) * scale + width / 2;
+      const sy = canvasBox.y + (target.y - camera.y.value) * scale + height / 2;
+      const margin = Math.min(free.width, free.height) * 0.18;
       const outside =
-        sx < margin || sx > width - margin || sy < margin || sy > height - margin;
+        sx < free.x + margin ||
+        sx > free.x + free.width - margin ||
+        sy < free.y + margin ||
+        sy > free.y + free.height - margin;
       if (outside) {
-        beginCameraTween({ tx: target.x, ty: target.y, tscale: scale });
+        const centered = cameraCenteringNode(target, offset, scale);
+        const cameraTarget = { tx: centered.tx, ty: centered.ty, tscale: scale };
+        /*
+         * ⚠️ **트윈만 세우면 안 된다** (게이트가 잡았다). 트윈이 끝나면 스프링이
+         * `cameraTargetRef` 로 이어받으므로, 그것을 갱신하지 않으면 **옛 목표로
+         * 되끌어간다** — 실측: 노드가 자유 영역 가운데에서 188px 밀려 화면 가운데에
+         * 앉았다. 다른 프로그램 경로(포커스 다이브 · 칩 전개 · 핏뷰)가 둘을 함께
+         * 세우는 이유가 이것이다.
+         */
+        cameraTargetRef.current = cameraTarget;
+        userDrivenCameraRef.current = false;
+        beginCameraTween(cameraTarget);
       }
     }
   }, [onSelect, beginCameraTween, announceDeadEnd]);

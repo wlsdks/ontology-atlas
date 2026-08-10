@@ -267,6 +267,148 @@ test.describe("지도 키보드 걷기", () => {
   });
 
   /**
+   * **고른 노드가 패널에 가리지 않는다** (2026-08-10 소유자 확정:
+   * *"가려선 안되지 패널 뺀 공간 가운데로 맞춰줘"*).
+   *
+   * 노드를 고르면 오른쪽에 팝오버가 열린다. 종전에는 카메라가 **뷰포트 가운데**를
+   * 목표로 삼아서, 고른 것이 **그것을 설명하는 패널 뒤로** 들어갈 수 있었다.
+   * 실측(1512×982): 캔버스 x64 w1448 · 팝오버 x1128 w352 → 자유 영역 가운데는
+   * 화면 가운데보다 192px 왼쪽이다.
+   *
+   * 잠그는 성질은 **「가려지지 않는다」** 다 — 「정확히 가운데」가 아니다. 걷는 동안
+   * 카메라는 필요할 때만 따라오므로(매번 데려오면 지도가 계속 미끄러진다) 노드가
+   * 자유 영역 안 어디에 있는지는 걸음마다 다르다. 가려짐은 그와 무관하게 늘 거짓이어야 한다.
+   */
+  test("고른 노드가 패널에 가리지 않는다", async ({ page }) => {
+    await focusCanvas(page);
+    await page.keyboard.press("ArrowRight");
+    await expect.poll(() => selectedId(page), { timeout: 5_000 }).not.toBeNull();
+
+    const covered: string[] = [];
+    for (const key of [...DIRECTIONS, ...DIRECTIONS]) {
+      await page.keyboard.press(key);
+      await page.waitForTimeout(500); // 카메라 전환이 끝나도록
+      const hit = await page.evaluate(() => {
+        const probe = window.__atlasMap;
+        const id = probe?.selection().nodeId;
+        const canvas = document.querySelector('[data-surface-role="map-canvas"]');
+        if (!probe || !id || !canvas) return null;
+        const node = probe.nodes().find((n) => n.id === id);
+        if (!node) return null;
+        const box = canvas.getBoundingClientRect();
+        // 문서 좌표로 옮긴다 — `nodes()` 는 캔버스 지역 좌표를 준다.
+        const px = box.x + node.x;
+        const py = box.y + node.y;
+        for (const el of document.querySelectorAll("body *")) {
+          if (el === canvas || canvas.contains(el) || el.contains(canvas)) continue;
+          const r = el.getBoundingClientRect();
+          if (r.width < 40 || r.height < 40) continue;
+          if (el.closest("details:not([open])")) continue;
+          if (el.closest('[aria-hidden="true"]')) continue;
+          const cs = getComputedStyle(el);
+          if (cs.visibility === "hidden" || cs.display === "none") continue;
+          if (Number(cs.opacity) < 0.05) continue;
+          if (px >= r.left && px <= r.right && py >= r.top && py <= r.bottom) {
+            return `${id} 가 ${(el as HTMLElement).dataset.testid || el.tagName} 뒤에 있다`;
+          }
+        }
+        return null;
+      });
+      if (hit) covered.push(hit);
+    }
+    expect(covered, "고른 노드가 패널에 가려졌다").toEqual([]);
+  });
+
+  /**
+   * **카메라가 데려갔다면 자유 영역 가운데에 놓는다.**
+   *
+   * ⚠️ 위 「가리지 않는다」만으로는 이 변경이 증명되지 않는다 — 프로브로 확인했다:
+   * 목표를 뷰포트 가운데로 되돌려도 그 시험은 **초록이었다.** 이 확대와 이 그래프에서는
+   * 가운데로 데려간 노드가 우연히 팝오버(x1128)에 안 닿기 때문이다. 통과는 증거가
+   * 아니다(`/gate-probe`).
+   *
+   * 그래서 **바뀐 것을 직접 잰다**: 전환이 실제로 일어난 직후, 노드가 자유 영역
+   * 가운데에 있나. 뷰포트 가운데로 되돌리면 실측 192px 이 어긋나 바로 빨개진다.
+   */
+  test("카메라가 데려간 뒤 노드가 자유 영역 가운데에 있다", async ({ page }) => {
+    await focusCanvas(page);
+    await page.keyboard.press("ArrowRight");
+    await expect.poll(() => selectedId(page), { timeout: 5_000 }).not.toBeNull();
+
+    const readGeometry = () =>
+      page.evaluate(() => {
+        const probe = window.__atlasMap;
+        const canvas = document.querySelector('[data-surface-role="map-canvas"]');
+        const cam = probe?.camera();
+        const id = probe?.selection().nodeId;
+        if (!probe || !canvas || !cam || !id) return null;
+        const node = probe.nodes().find((n) => n.id === id);
+        if (!node) return null;
+        const box = canvas.getBoundingClientRect();
+        // 자유 영역 = 캔버스에서 세로 패널을 뺀 것. spec 은 제품 코드를 import 하지
+        // 않고 **화면에서 다시 잰다** — 같은 함수를 쓰면 둘이 같이 틀려도 초록이다.
+        let left = box.x;
+        let rightEdge = box.right;
+        for (const el of document.querySelectorAll("body *")) {
+          if (el === canvas || canvas.contains(el) || el.contains(canvas)) continue;
+          const r = el.getBoundingClientRect();
+          if (r.width < 40 || r.height < 40) continue;
+          if (r.right <= box.x || r.left >= box.right) continue;
+          if (el.closest("details:not([open])") || el.closest('[aria-hidden="true"]')) continue;
+          const cs = getComputedStyle(el);
+          if (cs.visibility === "hidden" || cs.display === "none" || Number(cs.opacity) < 0.05) continue;
+          const tall = r.height >= box.height * 0.6;
+          const wide = r.width >= box.width * 0.6;
+          if (!tall || wide) continue;
+          if (r.x + r.width / 2 >= box.x + box.width / 2) rightEdge = Math.min(rightEdge, r.x);
+          else left = Math.max(left, r.right);
+        }
+        const freeCenterX = rightEdge > left ? (left + rightEdge) / 2 : box.x + box.width / 2;
+        return {
+          camX: cam.x,
+          camY: cam.y,
+          nodeDocX: box.x + node.x,
+          freeCenterX,
+          canvasCenterX: box.x + box.width / 2,
+          canvasWidth: box.width,
+        };
+      });
+
+    let landed: Awaited<ReturnType<typeof readGeometry>> = null;
+    for (const key of [...DIRECTIONS, ...DIRECTIONS, ...DIRECTIONS]) {
+      const before = await readGeometry();
+      await page.keyboard.press(key);
+      await page.waitForTimeout(600);
+      const after = await readGeometry();
+      if (!before || !after) continue;
+      const cameraMoved = Math.hypot(after.camX - before.camX, after.camY - before.camY) > 2;
+      if (cameraMoved) {
+        landed = after;
+        break;
+      }
+    }
+    expect(landed, "카메라 전환을 한 번도 일으키지 못했다").not.toBeNull();
+    const toFree = Math.abs(landed!.nodeDocX - landed!.freeCenterX);
+    const toCanvas = Math.abs(landed!.nodeDocX - landed!.canvasCenterX);
+    /*
+     * **「정확히 가운데」를 요구하지 않는다** — 그렇게 재려다 틀렸다(실측 64px 벗어남).
+     * 이 다이브는 노드 하나가 아니라 **이웃 묶음(ego bbox)** 을 담으므로, 가운데에
+     * 오는 것은 그 묶음이고 노드는 그 안 어딘가다. 「노드가 정확히 가운데」는 규격이
+     * 아니라 내 오해였다.
+     *
+     * 잠그는 성질은 **프레이밍이 자유 영역 쪽으로 잡혔나**다: 노드가 화면 가운데보다
+     * 자유 영역 가운데에 더 가깝다. 보정을 되돌리면 노드가 화면 가운데에 앉으므로
+     * (실측 192px 차이) 이 비교가 바로 뒤집힌다.
+     */
+    expect(
+      toFree,
+      `노드가 자유 영역 가운데(${landed!.freeCenterX.toFixed(0)})보다 ` +
+        `화면 가운데(${landed!.canvasCenterX.toFixed(0)})에 가깝다 — 보정이 안 걸렸다 ` +
+        `(자유 ${toFree.toFixed(0)}px · 화면 ${toCanvas.toFixed(0)}px)`,
+    ).toBeLessThan(toCanvas);
+  });
+
+  /**
    * **방향키를 우리가 가져간다** — `preventDefault` 가 실제로 걸리나.
    *
    * ⚠️ 처음에는 `window.scrollY` 가 안 변하는지로 재려 했고, 그 시험은
