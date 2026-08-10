@@ -412,3 +412,94 @@ describe("computeUnfocusedPanBounds — 팬 목줄", () => {
     );
   });
 });
+
+describe("computeFocusCameraTarget — 안전 인셋", () => {
+  /**
+   * ⚠️ 종전에 이 함수는 인셋을 **전혀** 쓰지 않았다(2026-08-10 에 고쳤다). 그래서
+   * 노드를 고르면 그것이 **그것을 설명하는 패널 뒤로** 들어갈 수 있었다. 개요 경로는
+   * 이미 같은 문제를 인셋으로 풀고 있었으므로, 처방은 새 보정 체계가 아니라 이 함수를
+   * 그 기구에 맞추는 것이었다 — 하루 전에는 호출부에 둘째 시프트를 얹었고 그것이
+   * 188px 어긋남과 64px 과보정을 만들었다.
+   */
+  const base = {
+    cameraScaleMax: 2.6,
+    cameraMaxZoomRatio: 3.2,
+    cameraScaleMin: 0.24,
+    overviewEntryRatio: 0.95,
+    focusFitMaxScale: 1.9,
+    focusBboxMargin: 1.15,
+    radiusProject: 25,
+    radiusDomain: 17,
+    radiusCapability: 11,
+    radiusElement: 7,
+  } as unknown as TopologyV2Tokens;
+
+  /** 초점 노드 f 와 이웃 둘 — bbox 가운데가 원점이 아니게 일부러 밀어 둔다. */
+  const XY: Record<string, { x: number; y: number; kind: "domain" | "capability" }> = {
+    f: { x: 400, y: 200, kind: "domain" },
+    n1: { x: 550, y: 200, kind: "capability" },
+    n2: { x: 250, y: 200, kind: "capability" },
+  };
+  const CENTER = { x: 400, y: 200 };
+
+  function world(): TopologyWorld {
+    const nodeById = new Map(
+      Object.entries(XY).map(([id, v]) => [
+        id,
+        { id, kind: v.kind, label: id, x: v.x, y: v.y, homeX: v.x, homeY: v.y, parentId: null, isHub: false, fresh: false, stale: false, count: 0, magnitudeScale: 1 },
+      ]),
+    );
+    return {
+      nodes: [...nodeById.values()],
+      nodeById,
+      edges: [],
+      edgeIndexByNode: new Map(),
+      neighborMap: new Map([["f", new Set(["n1", "n2"])]]),
+      childrenByParent: new Map(),
+      clusterMetaByParent: new Map(),
+      brightStarIds: new Set(),
+      bounds: { minX: 0, minY: 0, maxX: 800, maxY: 400 },
+      spineBounds: { minX: 0, minY: 0, maxX: 800, maxY: 400 },
+    } as TopologyWorld;
+  }
+
+  const focus = (tokens: TopologyV2Tokens) => computeFocusCameraTarget(world(), tokens, 1448, 982, "f", 1);
+
+  it("인셋이 없으면 ego bbox 가운데 그대로 — 종전 동작 불변", () => {
+    const t = focus(base);
+    expect(t).not.toBeNull();
+    expect(t!.tx).toBeCloseTo(CENTER.x, 6);
+    expect(t!.ty).toBeCloseTo(CENTER.y, 6);
+  });
+
+  /**
+   * 오른쪽이 가려지면 자유 영역 가운데는 화면 가운데보다 **왼쪽**이다. 화면 식
+   * `(world − tx) × scale + W/2` 에 그 자리를 넣고 풀면 **tx 는 커진다** — 카메라를
+   * 오른쪽으로 옮기면 내용이 왼쪽으로 간다. 부호를 뒤집으면 노드가 패널 **속으로**
+   * 더 들어가므로, 이 방향 단언이 이 시험의 핵심이다.
+   */
+  it("오른쪽 팝오버가 열리면 노드가 그 왼쪽 자유 영역 가운데로 온다", () => {
+    const t = focus({ ...base, safeInsetRight: 384 } as TopologyV2Tokens)!;
+    expect(t.tx).toBeCloseTo(CENTER.x + 384 / (2 * t.tscale), 6);
+    const screenX = (CENTER.x - t.tx) * t.tscale + 1448 / 2;
+    expect(screenX).toBeCloseTo((1448 - 384) / 2, 6); // 자유 영역 가운데
+    expect(screenX).toBeLessThan(1448 - 384); // 팝오버 왼쪽 경계보다 왼쪽
+  });
+
+  it("왼쪽 패널이 열리면 반대로 밀린다", () => {
+    const t = focus({ ...base, safeInsetLeft: 324 } as TopologyV2Tokens)!;
+    const screenX = (CENTER.x - t.tx) * t.tscale + 1448 / 2;
+    expect(screenX).toBeCloseTo((324 + 1448) / 2, 6);
+  });
+
+  it("좌우가 같으면 상쇄된다 — 보정이 공짜로 생기지 않는다", () => {
+    const t = focus({ ...base, safeInsetLeft: 200, safeInsetRight: 200 } as TopologyV2Tokens)!;
+    expect(t.tx).toBeCloseTo(CENTER.x, 6);
+  });
+
+  it("인셋이 크면 배율이 줄어든다 — 보이는 영역에 맞춘다", () => {
+    const plain = focus(base)!;
+    const tight = focus({ ...base, safeInsetRight: 900 } as TopologyV2Tokens)!;
+    expect(tight.tscale).toBeLessThan(plain.tscale);
+  });
+});
