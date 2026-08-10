@@ -30,6 +30,22 @@ async function focusCanvas(page: import("@playwright/test").Page) {
 const selectedId = (page: import("@playwright/test").Page) =>
   page.evaluate(() => window.__atlasMap?.selection().nodeId ?? null);
 
+/**
+ * **막다른 길이 나올 때까지 한 방향으로 걷는다.**
+ *
+ * ⚠️ 예전에는 「여덟 번 누르고 나서 확인」이었다. 안내가 스스로 사라지게 되자 그
+ * 방식이 **먼저 깨졌다** — 누르는 동안 안내가 떴다 사라져서 한 번도 못 봤다.
+ * 안내가 뜨는 순간 멈추는 것이 옳다: 사람도 막힌 직후에 그것을 본다.
+ */
+async function walkUntilDeadEnd(page: import("@playwright/test").Page, direction = "ArrowLeft") {
+  for (let i = 0; i < 12; i += 1) {
+    await page.keyboard.press(direction);
+    await page.waitForTimeout(140);
+    if ((await page.locator("[data-walk-notice]").count()) > 0) return true;
+  }
+  return false;
+}
+
 test.describe("지도에 초점을 주는 길", () => {
   test.beforeEach(async ({ page }) => {
     await page.setViewportSize({ width: 1440, height: 900 });
@@ -256,14 +272,82 @@ test.describe("지도 키보드 걷기", () => {
     await page.keyboard.press("ArrowRight");
     await expect.poll(() => selectedId(page), { timeout: 5_000 }).not.toBeNull();
 
-    for (let i = 0; i < 8; i += 1) {
-      await page.keyboard.press("ArrowLeft");
-      await page.waitForTimeout(150);
-    }
+    expect(await walkUntilDeadEnd(page), "막다른 길에 닿지 못했다 — 이 시험이 아무것도 안 재고 있다").toBe(true);
     await expect(
       page.getByText(/이어진 노드가 없어요/).first(),
       "막다른 길인데 아무 말도 없다",
     ).toBeVisible({ timeout: 4_000 });
+  });
+
+  /**
+   * **안내는 걸으려던 노드 옆에 뜨고, 스스로 사라지고, 걸음을 막지 않는다**
+   * (2026-08-10 소유자 실사용 지적 3건).
+   *
+   * 소유자가 실물에서 본 것: *"이렇게 나오면 모르겠는데? 그냥 이동하던 노드 바로
+   * 옆에 좀 잘보이게 나타났다가 사라지는게 좋을듯? 심지어 지금은 사라지지도 않고
+   * 계속떠있고.. 이거 떠있는동안 x버튼 안누르면 아예 이동도 안됨."*
+   *
+   * 셋을 한 자리에서 재는 이유: **셋 다 「어디에 무엇으로 띄웠나」 하나에서 나온
+   * 결과**다. 앱 공용 토스트로 띄우면 자리는 화면 구석이고, 닫기 버튼이 초점을
+   * 받으므로 방향키가 캔버스에 도착하지 않고, 초점이 들어온 토스트는 스스로 사라지는
+   * 시계를 멈춘다. 하나만 고치면 나머지 둘이 남는다.
+   */
+  test("막다른 길 안내가 노드 옆에 뜬다", async ({ page }) => {
+    await focusCanvas(page);
+    await page.keyboard.press("ArrowRight");
+    await expect.poll(() => selectedId(page), { timeout: 5_000 }).not.toBeNull();
+    expect(await walkUntilDeadEnd(page), "막다른 길에 닿지 못했다 — 이 시험이 아무것도 안 재고 있다").toBe(true);
+
+    const geom = await page.evaluate(() => {
+      const probe = window.__atlasMap;
+      const id = probe?.selection().nodeId;
+      const canvas = document.querySelector('[data-surface-role="map-canvas"]');
+      const notice = document.querySelector("[data-walk-notice]");
+      if (!probe || !id || !canvas || !notice) return null;
+      const node = probe.nodes().find((n) => n.id === id);
+      if (!node) return null;
+      const cbox = canvas.getBoundingClientRect();
+      const nbox = notice.getBoundingClientRect();
+      return {
+        dx: Math.abs(nbox.x + nbox.width / 2 - (cbox.x + node.x)),
+        dy: Math.abs(nbox.y + nbox.height / 2 - (cbox.y + node.y)),
+      };
+    });
+    expect(geom, "안내가 DOM 에 없다 — `data-walk-notice` 로 찾을 수 없다").not.toBeNull();
+    // 노드 옆이라는 것은 **거리로만 잴 수 있다.** 실측 토스트는 화면 우하단이라
+    // 1440×900 에서 500px 이상 떨어져 있었다.
+    expect(geom!.dx, "안내가 노드에서 가로로 너무 멀다").toBeLessThan(280);
+    expect(geom!.dy, "안내가 노드에서 세로로 너무 멀다").toBeLessThan(200);
+  });
+
+  test("막다른 길 안내는 스스로 사라진다", async ({ page }) => {
+    await focusCanvas(page);
+    await page.keyboard.press("ArrowRight");
+    await expect.poll(() => selectedId(page), { timeout: 5_000 }).not.toBeNull();
+    expect(await walkUntilDeadEnd(page), "막다른 길에 닿지 못했다 — 이 시험이 아무것도 안 재고 있다").toBe(true);
+    await expect(page.locator("[data-walk-notice]").first()).toBeVisible({ timeout: 4_000 });
+    // 누르지 않아도 사라진다 — 소유자: *"조금 보여지다 자동으로 사라지게"*.
+    await expect(page.locator("[data-walk-notice]")).toHaveCount(0, { timeout: 6_000 });
+  });
+
+  test("안내가 떠 있어도 계속 걸을 수 있다 — 초점을 빼앗지 않는다", async ({ page }) => {
+    await focusCanvas(page);
+    await page.keyboard.press("ArrowRight");
+    await expect.poll(() => selectedId(page), { timeout: 5_000 }).not.toBeNull();
+    expect(await walkUntilDeadEnd(page), "막다른 길에 닿지 못했다 — 이 시험이 아무것도 안 재고 있다").toBe(true);
+    await expect(page.locator("[data-walk-notice]").first()).toBeVisible({ timeout: 4_000 });
+
+    const stillOnCanvas = await page.evaluate(
+      () => document.activeElement?.getAttribute("data-surface-role") === "map-canvas",
+    );
+    expect(stillOnCanvas, "안내가 초점을 가져갔다 — 그러면 방향키가 지도에 도착하지 않는다").toBe(true);
+
+    // 그리고 실제로 걸을 수 있어야 한다. 왔던 방향으로 되돌아가면 이웃이 있다.
+    const before = await selectedId(page);
+    await page.keyboard.press("ArrowRight");
+    await expect
+      .poll(() => selectedId(page), { timeout: 4_000 })
+      .not.toBe(before);
   });
 
   /**
