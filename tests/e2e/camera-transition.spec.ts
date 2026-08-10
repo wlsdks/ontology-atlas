@@ -170,6 +170,108 @@ test.describe("카메라 전환 규격", () => {
     await canvas.focus();
   });
 
+  /**
+   * **한 입력 = 한 사건** — 선택 순간에 움직이는 셋이 같은 사건으로 읽히나.
+   *
+   * `design.md` 가 못박아 둔 규칙이다: *"같은 입력에서 나온 단계들은 같은 프레임에
+   * 시작한다. 시작 시점 차가 `--motion-fast`(120ms)를 넘으면 사용자가 두 사건으로
+   * 읽으므로 결함이다."* 그리고 이 저장소는 **이미 그 값을 냈다** — 노드 팝오버가 첫
+   * 프레임에 88.8% 로 끝나 버렸는데 배경 지도만 100ms 짜리 전환을 받고 있었다.
+   *
+   * 이 게이트가 생긴 계기는 **내 변경**이다(2026-08-10): 자유 영역을 재려면 팝오버가
+   * 열린 뒤여야 해서 카메라를 **한 프레임 미뤘다.** 그 미룸이 「두 사건」으로 벌어지지
+   * 않는지 재야 한다. 실측(120fps 환경): 캔버스 16.6ms · 팝오버 31ms · 카메라 43.9ms
+   * — 시차 약 27ms.
+   *
+   * ## 계기의 경계 — 캔버스 하드컷은 여기서 재지 않는다
+   *
+   * 「주인공이 하드컷인가」는 캔버스 픽셀을 매 프레임 읽어야 알 수 있는데, **그 읽기가
+   * 프레임 간격을 8ms → 75ms 로 떨어뜨린다**(실측). 그러면 재려던 타이밍 자체가
+   * 바뀌므로 이 게이트에 넣지 않는다 — 한 번짜리 측정과 `/motion-verify` 의 몫이다
+   * (그 측정에서 첫 프레임 지분 14.3%, 하드컷 아님).
+   */
+  test("선택의 세 움직임이 한 사건으로 시작한다", async ({ page }) => {
+    const canvas = page.getByTestId("topology-map-v2-canvas");
+    await canvas.focus();
+    const measured = await page.evaluate(async () => {
+      const wait = (ms: number) => new Promise((r) => setTimeout(r, ms));
+      const el = document.querySelector('[data-surface-role="map-canvas"]');
+      const probe = window.__atlasMap;
+      if (!el || !probe) return null;
+      const cam0 = probe.camera();
+      if (!cam0) return null;
+      const before = { x: cam0.x, y: cam0.y, s: cam0.scale };
+
+      const trace: { t: number; d: number }[] = [];
+      let running = true;
+      const t0 = performance.now();
+      const tick = () => {
+        if (!running) return;
+        const c = probe.camera();
+        if (c) {
+          trace.push({
+            t: performance.now() - t0,
+            d: Math.hypot(c.x - before.x, c.y - before.y) + Math.abs(c.scale - before.s) * 1000,
+          });
+        }
+        requestAnimationFrame(tick);
+      };
+      requestAnimationFrame(tick);
+
+      await wait(80);
+      el.dispatchEvent(new KeyboardEvent("keydown", { key: "ArrowRight", bubbles: true, cancelable: true }));
+      const dispatchAt = performance.now() - t0;
+
+      let popoverAt: number | null = null;
+      /*
+       * ⚠️ **애니메이션 이름만 보면 안 된다** — `topologyChromeIn` 은 공용 표면
+       * 프리미티브의 등장이라 칩·메뉴도 같은 이름을 쓴다. 이름만으로 재던 판을
+       * 프로브가 잡았다: 팝오버의 등장을 **통째로 지워도** 시험이 초록이었다(칩이
+       * 대신 만족시켰다). 그래서 애니메이션의 **대상 요소가 팝오버 안인지**로 묶는다.
+       */
+      const watcher = setInterval(() => {
+        if (popoverAt !== null) return;
+        const positioner = document.querySelector('[data-testid="topology-node-popover-positioner"]');
+        if (!positioner) return;
+        const hit = document.getAnimations().some((a) => {
+          const target = (a.effect as unknown as { target?: Element } | null)?.target;
+          return target instanceof Element && positioner.contains(target);
+        });
+        if (hit) popoverAt = performance.now() - t0;
+      }, 4);
+      await wait(700);
+      clearInterval(watcher);
+      running = false;
+
+      const after = trace.filter((s) => s.t >= dispatchAt);
+      const camFirst = after.find((s) => s.d > 0.001);
+      return {
+        cameraMs: camFirst ? camFirst.t - dispatchAt : null,
+        popoverMs: popoverAt !== null ? popoverAt - dispatchAt : null,
+      };
+    });
+
+    expect(measured, "측정 창구를 못 열었다").not.toBeNull();
+    const { cameraMs, popoverMs } = measured!;
+    expect(cameraMs, "카메라가 아예 안 움직였다 — 이 시험이 공회전한다").not.toBeNull();
+    expect(popoverMs, "팝오버 안에서 도는 애니메이션을 못 봤다 — 등장이 하드컷이다").not.toBeNull();
+
+    const ONE_EVENT_MS = 120; // `--motion-fast`
+    expect(
+      cameraMs!,
+      `카메라가 입력 뒤 ${cameraMs!.toFixed(0)}ms 에 움직였다 — 한 사건의 창(120ms)을 넘었다`,
+    ).toBeLessThanOrEqual(ONE_EVENT_MS);
+    expect(
+      popoverMs!,
+      `팝오버가 입력 뒤 ${popoverMs!.toFixed(0)}ms 에 시작했다 — 한 사건의 창을 넘었다`,
+    ).toBeLessThanOrEqual(ONE_EVENT_MS);
+    expect(
+      Math.abs(cameraMs! - popoverMs!),
+      `팝오버(${popoverMs!.toFixed(0)}ms)와 카메라(${cameraMs!.toFixed(0)}ms)가 ` +
+        `${Math.abs(cameraMs! - popoverMs!).toFixed(0)}ms 벌어졌다 — 두 사건으로 읽힌다`,
+    ).toBeLessThanOrEqual(ONE_EVENT_MS);
+  });
+
   test("전환이 200~420ms 안에 끝난다 — 코드가 주장하는 그 창", async ({ page }) => {
     const moved = await walkUntilCameraMoves(page);
     expect(moved, "방향키로 카메라 전환을 한 번도 일으키지 못했다").not.toBeNull();
