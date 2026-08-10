@@ -1,5 +1,7 @@
 import { expect, test } from "@playwright/test";
 import { seedFirstRunSeen } from "./first-run-seed";
+// `window.__atlasMap` 타입은 한 곳에만 선언한다 — 사본이 둘이면 TS2717 이 난다.
+import "./atlas-map-probe";
 
 /**
  * 카메라 전환 규격 — **재서 잠근다.**
@@ -57,15 +59,12 @@ interface CameraSample {
   s: number;
 }
 
-interface AtlasProbe {
-  camera: () => { x: number; y: number; scale: number; width: number; height: number } | null;
-  selection: () => { nodeId: string | null };
-  nodes: () => { id: string; x: number; y: number; hidden: boolean }[];
-}
-
+/**
+ * 이 spec 만 쓰는 기록용 창구. `__atlasMap` 과 달리 제품이 아니라 **이 시험이
+ * 만드는 것**이라 여기 남는다(정본 선언은 `./atlas-map-probe`).
+ */
 declare global {
   interface Window {
-    __atlasMap?: AtlasProbe;
     __camTrace?: CameraSample[];
     __camStop?: () => void;
   }
