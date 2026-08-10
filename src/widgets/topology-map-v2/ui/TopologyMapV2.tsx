@@ -27,6 +27,7 @@ const WALK_NOTICE_HOLD_MS = 1900;
 /** 노드 중심에서 안내 아래변까지 — 노드 반지름 최대(30) + 숨 8. */
 const WALK_NOTICE_NODE_GAP = 38;
 import { useReducedMotion } from "framer-motion";
+import { transientSurface } from "@/shared/ui/transient-surface";
 
 /**
  * `TopologyMapV2` — the product's single current canvas-2D topology renderer.
@@ -610,6 +611,7 @@ export function TopologyMapV2(props: TopologyMapV2Props) {
         <div
           key={notice.key}
           data-walk-notice=""
+          {...transientSurface("notice")}
           /* 보조기술에는 읽히고, 포인터·초점에는 존재하지 않는다. */
           role="status"
           aria-live="polite"

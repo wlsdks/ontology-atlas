@@ -16,6 +16,7 @@ import { buildDocsVaultHref, type VaultDoc } from '@/entities/docs-vault';
 import { useStaticVaultSource } from '@/features/vault-sample-source';
 import { searchProjects } from '../model/fuzzy-search';
 import { fieldClass } from '@/shared/ui/control-class';
+import { transientSurface } from "@/shared/ui/transient-surface";
 
 // Source Vault 매칭 — 가볍게 title/excerpt/slug includes. ⌘K 팔레트는
 // 프로젝트 검색이 메인이고 문서는 보조 섹션이므로 score 정렬 없이 단순
@@ -346,7 +347,8 @@ function SearchPaletteDialog({
         data-overlay-spring="true"
         data-search-palette-panel="true"
         onClick={(event) => event.stopPropagation()}
-        role="dialog"
+        {...transientSurface("sheet")}
+      role="dialog"
         aria-modal="true"
         aria-labelledby="search-palette-title"
         aria-describedby="search-palette-help"

@@ -3,7 +3,7 @@ import { join } from "node:path";
 
 import { describe, expect, it } from "vitest";
 
-import { PAGE_FRAME, PAGE_HEADER_ROW, PAGE_TITLE_ROW } from "@/shared/ui/page-frame";
+import { PAGE_FRAME, PAGE_HEADER_ROW, PAGE_TITLE_ROW, PAGE_FRAME_FORM, PAGE_TOP_PAD } from "@/shared/ui/page-frame";
 
 /**
  * **페이지 틀은 한 곳에서 정의된다.**
@@ -31,6 +31,14 @@ import { PAGE_FRAME, PAGE_HEADER_ROW, PAGE_TITLE_ROW } from "@/shared/ui/page-fr
 const REPO_ROOT = join(import.meta.dirname, "..", "..");
 
 /** 이 틀을 입는 화면 — 「셸 스크롤 슬롯의 `mx-auto` 문서 컬럼 + `h1` 이 첫 내용」. */
+/**
+ * 폼·편집 컬럼을 쓰는 화면 (2026-08-11) — 목록형과 **상단 여백이 같고 폭만 좁다**.
+ */
+const FORM_MEMBERS = ["src/views/project-editor/ui/ProjectEditorPage.tsx"] as const;
+
+/** 가로 인셋을 자기가 소유해야 하는(safe-area) 화면 — 상단 여백만 규격을 쓴다. */
+const TOP_PAD_MEMBERS = ["src/views/project-detail/ui/ProjectDetailPage.tsx"] as const;
+
 const MEMBERS = [
   "src/views/project-selector/ui/ProjectSelectorPage.tsx",
   "src/views/ontology-insights/ui/OntologyInsightsPage.tsx",
@@ -93,6 +101,40 @@ describe("페이지 틀 규격", () => {
         .map((hit) => hit[0])
         .filter((chunk) => chunk.includes("mx-auto") && /max-w-\[\d+px\]/.test(chunk));
       expect(columnLike, `${member} 가 페이지 컬럼을 손으로 다시 만들었다`).toEqual([]);
+    }
+  });
+});
+
+describe("페이지 틀 — 둘째 컬럼과 상단 여백 (2026-08-11)", () => {
+  /**
+   * ⚠️ **이 성질이 이 확장의 전부다.** 폼 화면에 1600 을 씌우는 것은 답이 아니었다
+   * (입력 줄이 늘어나면 읽기도 채우기도 나빠진다). 그래서 폭은 갈라 두고 **상단
+   * 여백만 같게** 묶는다 — 라우트를 오가며 제목이 세로로 뛰는 것이 애초에 이 규격을
+   * 만든 이유이고, 폭이 다르다고 제목 높이가 달라질 이유는 없다.
+   */
+  it("세 상수의 상단 여백이 같다 — 폭이 달라도 제목 y 는 같다", () => {
+    const topPad = (spec: string) => spec.match(/\bpt-\S+|\bmd:pt-\S+/g)?.sort().join(" ") ?? "";
+    expect(topPad(PAGE_FRAME)).toBe(topPad(PAGE_FRAME_FORM));
+    expect(topPad(PAGE_FRAME)).toBe(topPad(`x ${PAGE_TOP_PAD}`));
+    expect(topPad(PAGE_FRAME), "상단 여백을 못 읽었다 — 이 시험이 공회전한다").not.toBe("");
+  });
+
+  it("폼 컬럼은 좁고, 폭을 한 곳에서만 정한다", () => {
+    expect(PAGE_FRAME_FORM).toContain("max-w-[960px]");
+    expect(PAGE_FRAME_FORM).not.toContain("--page-max");
+    for (const member of FORM_MEMBERS) {
+      const source = read(member);
+      expect(source, `${member} 가 PAGE_FRAME_FORM 을 안 쓴다`).toContain("PAGE_FRAME_FORM");
+      expect(source, `${member} 가 폭을 다시 적었다`).not.toMatch(/max-w-\[9[0-9]{2}px\]/);
+    }
+  });
+
+  it("safe-area 화면도 상단은 규격을 따른다 — 여기만 8px 아래였다", () => {
+    expect(TOP_PAD_MEMBERS.length, "멤버가 비면 공회전이다").toBeGreaterThan(0);
+    for (const member of TOP_PAD_MEMBERS) {
+      const source = read(member).replace(/\/\*[\s\S]*?\*\//g, "").replace(/^\s*\/\/.*$/gm, "");
+      expect(source, `${member} 가 아직 md:pt-14 다 — 제목이 8px 아래 있다`).not.toMatch(/md:pt-14\b/);
+      expect(source, `${member} 의 md 상단이 규격(48px)이 아니다`).toMatch(/md:pt-12\b/);
     }
   });
 });
