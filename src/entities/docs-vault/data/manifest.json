@@ -1,6 +1,6 @@
 {
   "version": "2026-04-23",
-  "generatedAt": "2026-08-11",
+  "generatedAt": "2026-08-12",
   "docs": [
     {
       "slug": "AGENT-GRAPH-WORKFLOW",
@@ -9432,8 +9432,8 @@
         }
       ],
       "excerpt": "Maintainer-only checks live here so the public README stays readable. Use this page when you touch mcp/, cli/, package manifests, release scripts, or the dogfood ontology. Run this before pushing broad docs, package, MCP, or web changes: For user-facing UI changes, add the relevant Playwright route check. pnpm install ",
-      "wordCount": 9923,
-      "updatedAt": "2026-08-09",
+      "wordCount": 9874,
+      "updatedAt": "2026-08-12",
       "linksOut": []
     },
     {
