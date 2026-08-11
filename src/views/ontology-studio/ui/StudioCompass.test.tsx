@@ -169,11 +169,15 @@ function renderEnhance(
  * 없어졌는지까지 보려면 타이머를 돌려야 하고, 그건 이 시험들이 묻는 것이 아니다
  * (밀리초를 못박지 않는다 — 기계마다 다르다).
  */
+function expectAnchoredClosing(testId: string) {
+  const surface = screen.getByTestId(testId);
+  expect(surface).toHaveAttribute("data-exiting", "true");
+  expect(surface.className).toContain("studio-anchored-out");
+  expect(surface, "나가는 동안 조작을 받으면 그 아래 것을 가로막는다").toHaveAttribute("inert");
+}
+
 function expectPickerClosing() {
-  const picker = screen.getByTestId("studio-picker");
-  expect(picker).toHaveAttribute("data-exiting", "true");
-  expect(picker.className).toContain("studio-picker-dismiss");
-  expect(picker, "나가는 동안 조작을 받으면 착지하는 소켓을 가로막는다").toHaveAttribute("inert");
+  expectAnchoredClosing("studio-picker");
 }
 
 describe("StudioCompass — enhance", () => {
@@ -452,7 +456,7 @@ describe("StudioCompass — 지지대 편집 (edit existing relations)", () => {
     expect(screen.getByRole("button", { name: "close" })).toBeInTheDocument();
     fireEvent.keyDown(window, { key: "Escape" });
 
-    expect(screen.queryByTestId("studio-edit-card")).not.toBeInTheDocument();
+    expectAnchoredClosing("studio-edit-card");
     expect(trigger).toHaveFocus();
   });
 
@@ -1253,8 +1257,8 @@ describe("StudioCompass — motion catalog (#2)", () => {
     renderMotion();
     fireEvent.click(screen.getByTestId("studio-socket-up"));
     const picker = screen.getByTestId("studio-picker");
-    expect(picker.className).toContain("studio-picker-pop");
-    expect(picker.style.getPropertyValue("--studio-picker-origin")).not.toBe("");
+    expect(picker.className).toContain("studio-anchored-in");
+    expect(picker.style.getPropertyValue("--studio-anchor-origin")).not.toBe("");
   });
 
   it("satellite FLIP — filled-lane satellites register a FLIP node for lane moves", () => {
@@ -1452,7 +1456,7 @@ describe("StudioCompass — 임시 표면 상호 배타 (#62)", () => {
     // 그 상태에서 빈 소켓의 피커를 연다.
     fireEvent.click(screen.getByTestId("studio-socket-up"));
     expect(screen.getByTestId("studio-picker")).toBeInTheDocument();
-    expect(screen.queryByTestId("studio-lane-list-down")).not.toBeInTheDocument();
+    expectAnchoredClosing("studio-lane-list-down");
   });
 
   it("접힘 목록을 열면 피커가 닫힌다 (반대 방향도 대칭)", () => {

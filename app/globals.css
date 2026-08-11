@@ -1275,7 +1275,7 @@
   }
 
   /* 2) 피커 열림 원점 스케일 — 소켓(앵커)에서 자라난다. transform-origin 은
-     소비처가 --studio-picker-origin 으로 소켓의 로컬 좌표를 주입. */
+     소비처가 --studio-anchor-origin 으로 소켓의 로컬 좌표를 주입. */
   /* ── 채움 확정의 안무 (2026-07-28, 소유자 "세팅할때마다 뭔가 움직이면서") ──
      실측: 채움의 절정(제안 선택 → 위성 등장)에서 **아무것도 이동하지
      않았다**. 피커·소켓이 0프레임에 사라지고 완성된 위성이 0프레임에
@@ -1317,7 +1317,19 @@
     }
   }
 
-  @keyframes studioPickerPop {
+  /* ── 무대의 **앵커된 임시 표면** 문법 (2026-08-12) ─────────────────────────
+     소켓 피커 · 접힘 목록 · 관계 편집 카드 — 셋 다 «누른 것 옆에 붙어 열리고
+     그 자리로 되접히는» 같은 종류다. 그래서 값도 한 벌이다.
+
+     ⚠️ **이름이 한때 `studioPickerPop` 이었다.** 피커에만 있던 시절의 이름인데,
+     같은 문법을 접힘 목록·편집 카드에 붙이면서 「피커」라는 이름이 거짓이 됐다 —
+     다음 사람이 편집 카드에 `studio-picker-pop` 을 붙이게 된다. 그래서 문법의
+     이름으로 바꿨다(값·시간·이징 전부 그대로, 렌더 결과 변화 0).
+
+     원점은 **누른 그것**이다(`--studio-anchor-origin`). 소비처가 자기 트리거의
+     로컬 좌표를 주입한다 — 원점이 없으면 상자 가운데에서 자라서, 어디서 왔는지가
+     화면에서 사라진다. */
+  @keyframes studioAnchoredIn {
     from {
       opacity: 0;
       transform: scale(0.96);
@@ -1329,9 +1341,9 @@
     }
   }
 
-  .studio-picker-pop {
-    animation: studioPickerPop var(--motion-fast) var(--motion-ease) both;
-    transform-origin: var(--studio-picker-origin, center);
+  .studio-anchored-in {
+    animation: studioAnchoredIn var(--motion-fast) var(--motion-ease) both;
+    transform-origin: var(--studio-anchor-origin, center);
   }
 
   /* 피커가 **나가는 길** (2026-08-12 실측). 그 전까지는 나가는 길이 없었다:
@@ -1344,11 +1356,11 @@
      이름이 그대로면 재생이 다시 시작되지 않아 **아예 안 보인다**(이 저장소의
      `exit-motion-restart` 계약). 그래서 자기 이름으로 정방향 재생한다.
 
-     원점은 등장과 **같은 소켓**이다(`--studio-picker-origin`). 열릴 때 그 소켓에서
+     원점은 등장과 **같은 소켓**이다(`--studio-anchor-origin`). 열릴 때 그 소켓에서
      자랐으니 닫힐 때도 그 소켓으로 되접혀야 「이건 그 방위의 일이었다」가 읽힌다.
      시간도 등장과 같은 `--motion-fast` — 닫는 것이 여는 것보다 느리면 걸리적거린다.
      새 duration/이징 값 0. */
-  @keyframes studioPickerDismiss {
+  @keyframes studioAnchoredOut {
     from {
       opacity: 1;
       transform: scale(1);
@@ -1360,9 +1372,9 @@
     }
   }
 
-  .studio-picker-dismiss {
-    animation: studioPickerDismiss var(--motion-fast) var(--motion-ease) both;
-    transform-origin: var(--studio-picker-origin, center);
+  .studio-anchored-out {
+    animation: studioAnchoredOut var(--motion-fast) var(--motion-ease) both;
+    transform-origin: var(--studio-anchor-origin, center);
   }
 
   /* 라우트 로딩 자막 — 대부분의 진입은 400ms 안에 끝나므로 그 전에는 침묵한다.
@@ -3861,7 +3873,7 @@
 
     /* ② 이동·확대가 실린 등장 — 이름만 불투명도 전용으로 바꿔 자기 시간을 그대로 탄다. */
     .studio-stage-in,
-    .studio-picker-pop {
+    .studio-anchored-in {
       animation-name: panelCrossfadeIn !important;
       animation-duration: var(--motion-fast) !important;
     }
@@ -3871,7 +3883,7 @@
      * 바꾸면 반대로 나타나 버린다. 그래서 이동만 지우고 방향은 지킨다.
      */
     .studio-summary-converge,
-    .studio-picker-dismiss {
+    .studio-anchored-out {
       animation-name: overlayFadeOut !important;
       animation-duration: var(--motion-fast) !important;
     }
