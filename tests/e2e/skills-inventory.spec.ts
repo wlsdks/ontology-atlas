@@ -1,5 +1,6 @@
 import { expect, test } from "@playwright/test";
 
+import { stubSkillFolder } from "./skills-folder-stub";
 import { seedFirstRunSeen } from "./first-run-seed";
 
 /**
@@ -20,38 +21,6 @@ import { seedFirstRunSeen } from "./first-run-seed";
 const SKILL = (name: string, description: string, body = "") =>
   `---\nname: ${name}\ndescription: ${description}\n---\n\n${body}`;
 
-/** OPFS 에 스킬 폴더를 짓고 `showDirectoryPicker` 가 그것을 돌려주게 만든다. */
-async function stubSkillFolder(
-  page: import("@playwright/test").Page,
-  files: Record<string, string>,
-) {
-  await page.addInitScript((seed: Record<string, string>) => {
-    const build = async () => {
-      const root = await navigator.storage.getDirectory();
-      // 매 실행이 같은 상태에서 시작하도록 먼저 비운다.
-      for await (const name of (
-        root as unknown as { keys: () => AsyncIterableIterator<string> }
-      ).keys()) {
-        await root.removeEntry(name, { recursive: true }).catch(() => undefined);
-      }
-      const stage = await root.getDirectoryHandle("skills-fixture", { create: true });
-      for (const [path, text] of Object.entries(seed)) {
-        const parts = path.split("/");
-        let dir = stage;
-        for (const part of parts.slice(0, -1)) {
-          dir = await dir.getDirectoryHandle(part, { create: true });
-        }
-        const file = await dir.getFileHandle(parts[parts.length - 1], { create: true });
-        const writable = await file.createWritable();
-        await writable.write(text);
-        await writable.close();
-      }
-      return stage;
-    };
-    (window as unknown as { showDirectoryPicker: () => Promise<FileSystemDirectoryHandle> })
-      .showDirectoryPicker = build;
-  }, files);
-}
 
 test.describe("스킬 인벤토리", () => {
   /**
