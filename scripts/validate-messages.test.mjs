@@ -152,16 +152,47 @@ describe('i18n message catalog', () => {
     // (their top-tab, sub-tab, and vault-chip copy below) — `navRail.*` (the
     // AppNavRail rail + BottomTabBar's shared label source) is now the one
     // primary-navigation copy surface for both desktop and mobile.
-    assert.equal(ko.navRail.map, '지도');
-    assert.equal(ko.navRail.docs, '문서함');
-    // `navRail.builder` retired 2026-07-24 with the ERD builder (the workshop absorbs it).
-    // 2026-07-25: 스튜디오 → 공방 개명 (라벨만, `navRail.studio` 키는 유지).
-    assert.equal(ko.navRail.studio, '공방');
-    assert.equal(ko.navRail.insights, '인사이트');
-    assert.equal(ko.navRail.projects, '프로젝트');
+    /*
+     * ⚠️ **값이 아니라 성격을 잠근다** (2026-08-12).
+     *
+     * 종전에는 다섯 라벨을 문자열로 못박았다(`'공방'` · `'인사이트'` …). 그런데 이
+     * 시험의 이름이 말하는 의도는 「**알아들을 수 있는 말인가**」이고, 못박기는 그
+     * 의도와 반대로 작동했다 — 소유자가 *"'그래프 인사이트' 이거 뭔말인지 모르겠음"*
+     * 이라고 지적했을 때, 이름을 고치려면 **먼저 이 시험을 고쳐야** 했다. 게이트가
+     * 규격을 좋게 바꾸는 것을 막는 모양이고, 이 저장소가 문서 게이트에서 이미 내린
+     * 결론(사람이 쓴 문장을 못박지 않는다)과 같은 자리다.
+     *
+     * 그래서 잠그는 것을 성질로 바꾼다: ① 다섯 자리가 다 채워져 있다 ② 전문용어와
+     * **알아듣기 어려운 외래어**가 없다 ③ 라벨은 짧다(레일 폭에 들어간다).
+     * 무슨 단어를 고르는지는 사람의 판단이고, 이 시험이 대신하지 않는다.
+     */
+    const railLabels = [
+      ko.navRail.map,
+      ko.navRail.docs,
+      ko.navRail.studio,
+      ko.navRail.insights,
+      ko.navRail.projects,
+    ];
+    for (const label of railLabels) {
+      assert.equal(typeof label, 'string');
+      assert.ok(label.trim().length > 0, '레일 라벨이 비었다');
+      // 레일은 좁다 — 긴 라벨은 줄바꿈되거나 잘린다(36px 타일 계약).
+      assert.ok(label.length <= 5, `레일 라벨이 너무 길다: ${label}`);
+    }
     assert.doesNotMatch(
-      [ko.navRail.map, ko.navRail.docs, ko.navRail.studio, ko.navRail.insights, ko.navRail.projects].join('\n'),
+      railLabels.join('\n'),
       /지형도|토폴로지|운영|Operations/,
+      '레일에 전문용어가 들어왔다',
+    );
+    /*
+     * 알아듣기 어려운 외래어 금지. 「인사이트」가 여기 있는 이유: 소유자가 실제로 그
+     * 화면 이름을 못 알아봤다(2026-08-12). 「스튜디오」·「빌더」는 이미 은퇴한 이름이라
+     * 되돌아오는 것을 막는다.
+     */
+    assert.doesNotMatch(
+      railLabels.join('\n'),
+      /인사이트|스튜디오|빌더|온톨로지/,
+      '레일에 알아듣기 어려운 외래어가 들어왔다',
     );
     assert.equal(
       ko.nav.settingsMenu.triggerTitle,
