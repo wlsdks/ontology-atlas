@@ -1094,6 +1094,26 @@ export function AppSettingsMenu({
                         <p className="mt-1 break-keep text-label leading-label text-[color:var(--color-text-tertiary)]">
                           {t('agentNoVaultHint')}
                         </p>
+                        {/*
+                          **요구하는 행동을 그 자리에서 하게 한다** (2026-08-11, 북극성
+                          워크스루 실측). 이 카드는 「폴더를 열면 …」이라고 말하는데,
+                          이 칸에서 누를 수 있는 것은 「첫 호출 안내 복사」 하나뿐이었다 —
+                          폴더 열기는 옆 칸에 있었다. 이 저장소의 강등 카드 계약이
+                          「왜 + 어디서 되는지」인데 왜만 말하고 있었던 것이다.
+
+                          같은 동작을 부른다(`localVault.open()`) — 두 번째 경로를 만들지
+                          않는다. 작업 공간 칸의 버튼과 문구도 같은 키를 쓴다.
+                        */}
+                        <Chip
+                          size="lg"
+                          tone="accentOnTint"
+                          onClick={() => void localVault.open()}
+                          disabled={vaultBusy}
+                          data-testid="app-settings-agent-open-folder"
+                          className={`mt-2.5 ${INDIGO_ACTION_CHIP}`}
+                        >
+                          {vaultBusy ? t('workspaceFolderOpening') : t('workspaceFolderOpen')}
+                        </Chip>
                       </div>
                       <div className="rounded-card border border-[color:var(--color-border-soft)] bg-[color:var(--color-overlay-1)] px-3 py-2.5">
                         <p className="text-body font-[var(--font-weight-signature)] text-[color:var(--color-text-secondary)]">
