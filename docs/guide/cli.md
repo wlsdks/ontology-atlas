@@ -18,7 +18,7 @@ node cli/src/index.mjs --help
 |---|---|
 | CLI | 사람: 터미널에서 |
 | MCP | AI 에이전트: Claude Code · Codex · Cursor |
-| 화면 | 사람: [공방](/guide/studio) · [인사이트](/guide/insights) |
+| 화면 | 사람: [조립대](/guide/studio) · [분석](/guide/insights) |
 
 셋이 **같은 `.md` 폴더**를 봅니다. 그래프를 다루는 명령들은 실제로 MCP 서버를
 감싸고 있어서, `blast-radius` 를 터미널에서 부르든 에이전트가 부르든 **같은
@@ -88,7 +88,7 @@ node cli/src/index.mjs preflight --staged
 | 어디가 중심인가 | `hubs`: PageRank · 다리 · 권위 · 허브 네 랭킹 |
 | 지금 상황 + 다음 행동 한 화면 | `workspace-brief` |
 
-같은 큐를 화면으로 보고 싶으면 [그래프 인사이트](/guide/insights) 가 같은
+같은 큐를 화면으로 보고 싶으면 [내 폴더 분석](/guide/insights) 가 같은
 `maintenance_plan` 을 그립니다.
 
 ### 볼트를 못 믿겠을 때
