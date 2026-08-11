@@ -156,6 +156,26 @@ function renderEnhance(
   return onFill;
 }
 
+/**
+ * **「닫혔다」의 뜻이 바뀌었다** (2026-08-12) — 피커는 이제 나가는 길을 갖는다.
+ *
+ * 그 전까지 피커는 `openRelation` 이 `null` 이 되는 순간 언마운트였고, 프레임으로
+ * 재니 Escape 는 +2ms(한 프레임) · 행 선택은 +39ms 에 **opacity 1.00 그대로**
+ * 사라졌다. 결과 쪽(소켓 색 전이 · 도착 표시)은 제대로 움직이는데 **누른 그것만
+ * 0프레임**을 받은 것이다. 이제 퇴장 창(140ms) 동안 남아 되접히며 나간다.
+ *
+ * 그래서 이 시험들이 잠글 성질도 바뀐다: 「DOM 에서 없어졌나」가 아니라
+ * **「닫히는 중인가」** — 나가는 표시가 붙었고, 그 사이 조작을 받지 않는가.
+ * 없어졌는지까지 보려면 타이머를 돌려야 하고, 그건 이 시험들이 묻는 것이 아니다
+ * (밀리초를 못박지 않는다 — 기계마다 다르다).
+ */
+function expectPickerClosing() {
+  const picker = screen.getByTestId("studio-picker");
+  expect(picker).toHaveAttribute("data-exiting", "true");
+  expect(picker.className).toContain("studio-picker-dismiss");
+  expect(picker, "나가는 동안 조작을 받으면 착지하는 소켓을 가로막는다").toHaveAttribute("inert");
+}
+
 describe("StudioCompass — enhance", () => {
   it("owns a main landmark and focal-node page heading for route arrival", () => {
     renderEnhance();
@@ -187,7 +207,7 @@ describe("StudioCompass — enhance", () => {
 
   it("opens the inline picker on the recommended socket and fills it in place", () => {
     const onFill = renderEnhance();
-    // picker is closed at rest.
+    // picker is closed at rest — 아직 한 번도 열리지 않았으므로 DOM 에 없다.
     expect(screen.queryByTestId("studio-picker")).not.toBeInTheDocument();
 
     fireEvent.click(screen.getByTestId("studio-socket-up"));
@@ -198,7 +218,7 @@ describe("StudioCompass — enhance", () => {
     fireEvent.click(screen.getByTestId("studio-picker-row-capability:server-interface"));
     expect(onFill).toHaveBeenCalledWith("isA", CANDIDATE);
     // picker closes after a fill.
-    expect(screen.queryByTestId("studio-picker")).not.toBeInTheDocument();
+    expectPickerClosing();
   });
 
   it("C4 — a FILLED lane exposes a '＋ 더 잇기' add chip that opens the same picker", () => {
@@ -628,7 +648,7 @@ describe("StudioCompass — 발견 표면 (browse + 추천)", () => {
     fireEvent.click(screen.getByTestId("studio-suggest-row-capability:refund"));
     expect(onFill).toHaveBeenCalledWith("isA", REFUND);
     // picker closes after a pick.
-    expect(screen.queryByTestId("studio-picker")).not.toBeInTheDocument();
+    expectPickerClosing();
   });
 
   it("typing switches to search results, clearing returns to discovery", () => {
@@ -1443,7 +1463,7 @@ describe("StudioCompass — 임시 표면 상호 배타 (#62)", () => {
 
     fireEvent.click(screen.getByTestId("studio-lane-more-down"));
     expect(screen.getByTestId("studio-lane-list-down")).toBeInTheDocument();
-    expect(screen.queryByTestId("studio-picker")).not.toBeInTheDocument();
+    expectPickerClosing();
   });
 
   it("작업중 패널을 열면 피커·접힘 목록이 함께 닫힌다", () => {
@@ -1454,7 +1474,7 @@ describe("StudioCompass — 임시 표면 상호 배타 (#62)", () => {
 
     fireEvent.click(screen.getByTestId("studio-drafts-open"));
     expect(screen.getByTestId("studio-drafts-panel")).toBeInTheDocument();
-    expect(screen.queryByTestId("studio-picker")).not.toBeInTheDocument();
+    expectPickerClosing();
   });
 });
 
@@ -1568,7 +1588,7 @@ describe("StudioCompass — 소켓 피커 Esc 계약", () => {
     expect(screen.getByTestId("studio-picker")).toBeInTheDocument();
 
     fireEvent.keyDown(window, { key: "Escape" });
-    expect(screen.queryByTestId("studio-picker")).not.toBeInTheDocument();
+    expectPickerClosing();
   });
 
   it("Esc 로 닫아도 채우기는 일어나지 않는다 — 취소는 취소다", () => {

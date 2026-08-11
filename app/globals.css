@@ -1334,6 +1334,37 @@
     transform-origin: var(--studio-picker-origin, center);
   }
 
+  /* 피커가 **나가는 길** (2026-08-12 실측). 그 전까지는 나가는 길이 없었다:
+     Escape 는 `+2ms`(한 프레임), 행을 고르면 `+39ms` 에 **opacity 1.00 그대로**
+     소멸했다. 그동안 결과 쪽(소켓이 채워지는 색 전이 130ms · 도착 표시 240ms)은
+     제대로 움직였으니, **사용자가 누른 그것만 0프레임을 받은** 것이다 —
+     헌장이 「주인공이 하드컷인데 배경만 움직이면 결함」이라고 적어 둔 그 모양.
+
+     되감기(`reverse`)를 쓰지 않는다: 같은 원소에서 클래스만 바뀌는 자리에서는
+     이름이 그대로면 재생이 다시 시작되지 않아 **아예 안 보인다**(이 저장소의
+     `exit-motion-restart` 계약). 그래서 자기 이름으로 정방향 재생한다.
+
+     원점은 등장과 **같은 소켓**이다(`--studio-picker-origin`). 열릴 때 그 소켓에서
+     자랐으니 닫힐 때도 그 소켓으로 되접혀야 「이건 그 방위의 일이었다」가 읽힌다.
+     시간도 등장과 같은 `--motion-fast` — 닫는 것이 여는 것보다 느리면 걸리적거린다.
+     새 duration/이징 값 0. */
+  @keyframes studioPickerDismiss {
+    from {
+      opacity: 1;
+      transform: scale(1);
+    }
+
+    to {
+      opacity: 0;
+      transform: scale(0.96);
+    }
+  }
+
+  .studio-picker-dismiss {
+    animation: studioPickerDismiss var(--motion-fast) var(--motion-ease) both;
+    transform-origin: var(--studio-picker-origin, center);
+  }
+
   /* 라우트 로딩 자막 — 대부분의 진입은 400ms 안에 끝나므로 그 전에는 침묵한다.
      즉시 그리면 정상 진입마다 자막이 번쩍이고, 그건 고치려던 빈 화면보다 나쁘다.
      지연은 duration 이 아니라 delay 라서 prefers-reduced-motion 전역 규칙
@@ -3839,7 +3870,8 @@
      * ③ 요약이 모이며 **사라지는** 것 — 이건 퇴장이라 이름을 등장 크로스페이드로
      * 바꾸면 반대로 나타나 버린다. 그래서 이동만 지우고 방향은 지킨다.
      */
-    .studio-summary-converge {
+    .studio-summary-converge,
+    .studio-picker-dismiss {
       animation-name: overlayFadeOut !important;
       animation-duration: var(--motion-fast) !important;
     }
