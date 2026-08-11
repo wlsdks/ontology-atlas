@@ -105,7 +105,26 @@ export async function runAgentBrief(args) {
     return readinessExitCode(result, exitZero);
   }
   render(result);
-  return readinessExitCode(result, exitZero);
+  const exitCode = readinessExitCode(result, exitZero);
+  /*
+   * **1을 내는 그 순간에, 그게 실패가 아니라고 말한다** (2026-08-11 워크스루 실측).
+   *
+   * 이 종료코드는 「명령이 실패했다」가 아니라 「그래프가 아직 덜 여물었다」는 신호다 —
+   * 그 판단은 위 `readinessExitCode` 주석이 이미 적어 두었고 `--help` 에도 있다. 그런데
+   * **정작 1이 나는 화면에는 그 말이 없었다.** 사람은 `--help` 를 다시 읽지 않고,
+   * 에이전트는 1을 보면 대개 멈춘다(그 주석 자신이 기록한 오독이 정확히 그것이다).
+   *
+   * 그래서 계약은 손대지 않고 화면에 한 줄만 붙인다 — 왜 1인지와 어디로 가면 되는지.
+   * JSON·프롬프트·팩 출력에는 붙이지 않는다: 그쪽은 기계가 읽는 자리이고 `status` ·
+   * `readiness` 를 직접 본다.
+   */
+  if (exitCode === 1 && !exitZero) {
+    process.stdout.write(
+      `\n${COLORS.dim}이 1은 실패가 아니라 그래프가 아직 덜 여물었다는 신호예요. ` +
+        `status/readiness 를 직접 읽으려면 --exit-zero 를 주세요.${COLORS.reset}\n`,
+    );
+  }
+  return exitCode;
 }
 
 /**

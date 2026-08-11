@@ -313,7 +313,7 @@ describe('mcp-call response parsing', () => {
             structuredContent: { ok: true, source: 'structured' },
           },
         }),
-      /mcp tool structuredContent mismatch — \$\.source: parsed "text", structuredContent "structured"/,
+      /mcp tool structuredContent mismatch · \$\.source: parsed "text", structuredContent "structured"/,
     );
   });
 
@@ -326,7 +326,7 @@ describe('mcp-call response parsing', () => {
             structuredContent: { rows: [{ slug: 'a', count: 2 }] },
           },
         }),
-      /mcp tool structuredContent mismatch — \$\.rows\[0\]\.count: parsed 1, structuredContent 2/,
+      /mcp tool structuredContent mismatch · \$\.rows\[0\]\.count: parsed 1, structuredContent 2/,
     );
 
     assert.throws(
@@ -337,7 +337,7 @@ describe('mcp-call response parsing', () => {
             structuredContent: { total: 1, extra: true },
           },
         }),
-      /mcp tool structuredContent mismatch — \$\.extra: parsed undefined, structuredContent true/,
+      /mcp tool structuredContent mismatch · \$\.extra: parsed undefined, structuredContent true/,
     );
   });
 
@@ -353,7 +353,7 @@ describe('mcp-call response parsing', () => {
           },
           { toolName: 'query_ontology' },
         ),
-      /mcp tool structuredContent mismatch \(query_ontology\) — \$\.ok: parsed true, structuredContent false/,
+      /mcp tool structuredContent mismatch \(query_ontology\) · \$\.ok: parsed true, structuredContent false/,
     );
 
     assert.throws(

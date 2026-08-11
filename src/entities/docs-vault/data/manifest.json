@@ -1,6 +1,6 @@
 {
   "version": "2026-04-23",
-  "generatedAt": "2026-08-11",
+  "generatedAt": "2026-08-12",
   "docs": [
     {
       "slug": "AGENT-GRAPH-WORKFLOW",
@@ -9432,8 +9432,8 @@
         }
       ],
       "excerpt": "Maintainer-only checks live here so the public README stays readable. Use this page when you touch mcp/, cli/, package manifests, release scripts, or the dogfood ontology. Run this before pushing broad docs, package, MCP, or web changes: For user-facing UI changes, add the relevant Playwright route check. pnpm install ",
-      "wordCount": 9923,
-      "updatedAt": "2026-08-09",
+      "wordCount": 9874,
+      "updatedAt": "2026-08-12",
       "linksOut": []
     },
     {
@@ -10123,8 +10123,8 @@
         }
       ],
       "excerpt": "앱의 「에이전트 연결」 버튼 한 번이면 됩니다. 지금 쓰는 도구를 고르면 그 도구의 설정 파일에 볼트의 실제 절대 경로가 박힌 설정을 써 줍니다. · 도구 · 쓰는 파일 · Claude Code · .mcp.json · Codex · .codex/config.toml · Cursor · .cursor/mcp.json · Antigravity · .agents/mcpconfig.json · 버튼 하나가 파일 하나를 씁니다. 고르지 않은 도구의 파일은 만들지 않습니다. 여기서 한 번 헷갈리면 나머지가 다 이상해집니다. 에이전트는 Atlas 앱에 붙는 게 아니라 폴더에 붙",
-      "wordCount": 810,
-      "updatedAt": "2026-08-09",
+      "wordCount": 851,
+      "updatedAt": "2026-08-11",
       "linksOut": []
     },
     {
