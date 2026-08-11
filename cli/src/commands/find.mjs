@@ -100,7 +100,7 @@ export function runFind(args) {
   }
 
   console.log(
-    `${COLORS.bold}"${query}"${COLORS.reset} ${COLORS.dim}— ${matches.length} 매칭${kindFilter ? ` (kind=${kindFilter})` : ''}${COLORS.reset}\n`,
+    `${COLORS.bold}"${query}"${COLORS.reset} ${COLORS.dim}· ${matches.length} 매칭${kindFilter ? ` (kind=${kindFilter})` : ''}${COLORS.reset}\n`,
   );
   for (const m of matches) {
     const color = KIND_COLORS[m.kind] || '';

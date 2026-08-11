@@ -49,7 +49,7 @@ import { hasCapabilityImplementationEvidence } from './capability-evidence.mjs';
 export class VaultConflictError extends Error {
   constructor(slug, expectedMtime, currentMtime) {
     super(
-      `Vault conflict — "${slug}" was modified externally between read and write. ` +
+      `Vault conflict: "${slug}" was modified externally between read and write. ` +
         `expectedMtime=${expectedMtime} currentMtime=${currentMtime}. ` +
         // **없는 복구법을 알려주지 않는다** (2026-07-29 실측).
         //
@@ -674,7 +674,7 @@ const GATE = {
    * came from (`patch_concept` on `elements:`, never a child announcing itself).
    */
   parentGrewBy: new Map(),
-  /** Lazy slug index — { rootPath, names: Set<string> }. */
+  /** Lazy slug index: { rootPath, names: Set<string> }. */
   index: null,
 };
 
@@ -794,7 +794,7 @@ const DENSE_PARENT_RELATIONS = Object.freeze({
   capability: Object.freeze({ key: 'elements', childKind: 'element', bootstrap: 'capability_to_element' }),
 });
 
-/** Nearest-rank p90 — no interpolation, so the answer is always an observed count. */
+/** Nearest-rank p90: no interpolation, so the answer is always an observed count. */
 function percentile90(values) {
   const sorted = [...values].sort((a, b) => a - b);
   return sorted[Math.max(0, Math.ceil(0.9 * sorted.length) - 1)];
@@ -1160,7 +1160,7 @@ export function writeDoc(rootPath, slug, { frontmatter, body = '' }) {
   const filePath = slugToPath(rootPath, slug);
   if (existsSync(filePath)) {
     throw new Error(
-      `Doc already exists at "${slug}". To update fields, use patch_concept(slug, frontmatter, body, expected_mtime). To rename, use rename_concept(oldSlug, newSlug). Never delete-then-add — that loses backlinks.`,
+      `Doc already exists at "${slug}". To update fields, use patch_concept(slug, frontmatter, body, expected_mtime). To rename, use rename_concept(oldSlug, newSlug). Never delete-then-add: that loses backlinks.`,
     );
   }
   assertPlainObject(frontmatter, 'frontmatter');
@@ -1648,7 +1648,7 @@ export function applyAllOrNothing(plan) {
   }
   if (blocked.length > 0) {
     throw new Error(
-      `Refused before writing anything — ${blocked.length} file(s) are not writable, `
+      `Refused before writing anything: ${blocked.length} file(s) are not writable, `
         + `so this operation could not finish as one unit:\n  ${blocked.join('\n  ')}\n`
         + 'The vault is unchanged. Fix permissions (or close the editor/sync client '
         + 'holding them) and re-run with confirm: true.',
@@ -1684,14 +1684,14 @@ export function applyAllOrNothing(plan) {
     if (unrecovered.length > 0) {
       throw new Error(
         `Write failed (${reason}) and the rollback could not finish. `
-          + `The vault is INCONSISTENT — these files still hold rewritten content:\n  `
+          + `The vault is INCONSISTENT: these files still hold rewritten content:\n  `
           + `${unrecovered.join('\n  ')}\n`
           + 'If the vault is a git repository, `git diff` shows exactly what changed '
           + 'and `git checkout -- <path>` restores it.',
       );
     }
     throw new Error(
-      `Write failed (${reason}). Every change was rolled back — the vault is unchanged.`,
+      `Write failed (${reason}). Every change was rolled back: the vault is unchanged.`,
     );
   }
 }
@@ -1759,7 +1759,7 @@ export function redirectBacklinks(rootPath, targetSlug, nextSlug, options = {}) 
   }
 
   const updates = [];
-  /** 디스크에 낼 쓰기 계획 — 루프가 끝난 뒤 한 번에 적용한다. */
+  /** 디스크에 낼 쓰기 계획: 루프가 끝난 뒤 한 번에 적용한다. */
   const plan = [];
   for (const doc of docs) {
     if (doc.slug === targetSlug || excluded.has(doc.slug)) continue;
@@ -1913,7 +1913,7 @@ export function detectDuplicateTitle(title, slug, docs) {
     if (normalizeForDuplicateTitle(docTitle(doc)) === norm) {
       const kind = doc.frontmatter?.kind ?? 'unknown';
       return (
-        `a node titled "${title}" already exists at "${doc.slug}" (kind: ${kind}) — ` +
+        `a node titled "${title}" already exists at "${doc.slug}" (kind: ${kind}): ` +
         `if this is the same concept, patch_concept on "${doc.slug}" instead of adding a duplicate.`
       );
     }

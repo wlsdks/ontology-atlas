@@ -44,7 +44,7 @@ export async function runDisconnectSource(args) {
   const bindings = Array.isArray(result.bindings) ? result.bindings : [];
   if (bindings.length === 0) {
     process.stdout.write(
-      `${COLORS.dim}nothing to disconnect — ${result.projectSlug} has no source binding.${COLORS.reset}\n`,
+      `${COLORS.dim}nothing to disconnect: ${result.projectSlug} has no source binding.${COLORS.reset}\n`,
     );
     return 0;
   }
@@ -96,7 +96,7 @@ function printUsage(stream = process.stderr) {
   stream.write(
     `\n${COLORS.bold}Usage:${COLORS.reset}\n`
     + `  ontology-atlas disconnect-source <projectSlug> [vault] [--confirm] [--json]\n\n`
-    + `${COLORS.bold}Default${COLORS.reset} dry-run — lists the binding that would be removed.\n`
+    + `${COLORS.bold}Default${COLORS.reset} dry-run: lists the binding that would be removed.\n`
     + `${COLORS.bold}--confirm${COLORS.reset} remove it. Other projects' bindings are untouched.\n\n`
     + `${COLORS.bold}Example:${COLORS.reset}\n`
     + `  ontology-atlas disconnect-source my-product docs/ontology\n`

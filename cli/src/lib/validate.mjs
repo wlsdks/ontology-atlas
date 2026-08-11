@@ -41,7 +41,7 @@ export function validateVaultDocument(raw) {
       code: 'unclosed-frontmatter',
       severity: 'error',
       message:
-        'frontmatter 시작 `---` 만 있고 끝 `---` 가 없습니다 — 노드로 인식되지 않습니다.',
+        'frontmatter 시작 `---` 만 있고 끝 `---` 가 없습니다: 노드로 인식되지 않습니다.',
     });
     return { ok: false, issues };
   }
@@ -58,7 +58,7 @@ export function validateVaultDocument(raw) {
       code: 'parse-zero-keys',
       severity: 'warning',
       message:
-        'frontmatter 블록은 있지만 key 가 하나도 추출되지 않았습니다 — 들여쓰기 또는 콜론 누락 의심.',
+        'frontmatter 블록은 있지만 key 가 하나도 추출되지 않았습니다: 들여쓰기 또는 콜론 누락 의심.',
     });
     return { ok: true, issues };
   }
@@ -71,13 +71,13 @@ export function validateVaultDocument(raw) {
       code: 'missing-kind',
       severity: 'warning',
       message:
-        'frontmatter 에 `kind:` 가 없습니다 — graph 노드가 되려면 kind 가 필요합니다.',
+        'frontmatter 에 `kind:` 가 없습니다: graph 노드가 되려면 kind 가 필요합니다.',
     });
   } else if (typeof rawKind !== 'string' || rawKind.trim() === '') {
     issues.push({
       code: 'empty-kind',
       severity: 'error',
-      message: '`kind:` 값이 비어있습니다 — graph 노드로 인식되지 않습니다.',
+      message: '`kind:` 값이 비어있습니다: graph 노드로 인식되지 않습니다.',
     });
   } else if (!KNOWN_VAULT_KINDS.includes(rawKind.trim())) {
     issues.push({
@@ -93,7 +93,7 @@ export function validateVaultDocument(raw) {
       issues.push({
         code: 'missing-expected-field',
         severity: 'warning',
-        message: `\`${key}:\` 가 비어있습니다 — kind=${trimmedKind} 노드는 ${key} 가 있어야 트리에서 부모를 찾을 수 있습니다.`,
+        message: `\`${key}:\` 가 비어있습니다: kind=${trimmedKind} 노드는 ${key} 가 있어야 트리에서 부모를 찾을 수 있습니다.`,
       });
     }
   }
@@ -116,7 +116,7 @@ function pushUidIssues(frontmatter, issues) {
     issues.push({
       code: 'missing-uid',
       severity: 'error',
-      message: '`uid:`가 없습니다 — 모든 ontology 노드는 생성 후 바뀌지 않는 lowercase UUIDv4 영구 식별자를 가져야 합니다.',
+      message: '`uid:`가 없습니다: 모든 ontology 노드는 생성 후 바뀌지 않는 lowercase UUIDv4 영구 식별자를 가져야 합니다.',
     });
     return;
   }
@@ -154,7 +154,7 @@ function pushNonCanonicalGraphArrayIssues(frontmatter, issues) {
       issues.push({
         code: 'non-canonical-graph-array',
         severity: 'warning',
-        message: `\`${key}:\` graph 배열이 정렬/중복제거된 canonical set 이 아닙니다 — add_relation 또는 patch_concept 로 다시 저장하면 정리됩니다.`,
+        message: `\`${key}:\` graph 배열이 정렬/중복제거된 canonical set 이 아닙니다: add_relation 또는 patch_concept 로 다시 저장하면 정리됩니다.`,
       });
     }
   }

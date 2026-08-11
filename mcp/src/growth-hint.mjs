@@ -105,7 +105,7 @@ export function buildSlugNotFoundGrowthHint({ slug, candidateSlugs = [], referen
     return {
       reason: `"${slug}" has no document of its own, but ${referencedBy.length} vault doc(s) reference it: ${cited}${more}.`,
       suggestion:
-        'This is a referenced-only concept — the map counts it, the compiled graph does not, because nothing defines it yet. Create its document at exactly this slug so the existing references resolve to it.',
+        'This is a referenced-only concept: the map counts it, the compiled graph does not, because nothing defines it yet. Create its document at exactly this slug so the existing references resolve to it.',
       exampleCall: {
         tool: 'add_concept',
         args: { slug, kind: 'element', title: titleCaseFromSlug(slug) },
@@ -115,7 +115,7 @@ export function buildSlugNotFoundGrowthHint({ slug, candidateSlugs = [], referen
   if (candidateSlugs.length > 0) {
     return {
       reason: `"${slug}" does not resolve to a vault node.`,
-      suggestion: `Closest existing slug(s): ${candidateSlugs.join(', ')} — likely a typo or a missing folder segment rather than a missing node.`,
+      suggestion: `Closest existing slug(s): ${candidateSlugs.join(', ')}: likely a typo or a missing folder segment rather than a missing node.`,
       exampleCall: {
         tool: 'get_concept',
         args: { slug: candidateSlugs[0] },
@@ -125,7 +125,7 @@ export function buildSlugNotFoundGrowthHint({ slug, candidateSlugs = [], referen
   return {
     reason: `"${slug}" does not resolve to a vault node, and no similarly-named node exists.`,
     suggestion:
-      'This may be a real gap in the vault — add it if it describes an actual capability/element/domain.',
+      'This may be a real gap in the vault: add it if it describes an actual capability/element/domain.',
     exampleCall: {
       tool: 'add_concept',
       args: { slug, kind: 'element', title: titleCaseFromSlug(slug) },
@@ -157,7 +157,7 @@ export function buildQueryConceptsZeroRowsGrowthHint({ filter, byKind = {}, byDo
       ...missingDomains.map((domain) => `domain="${domain}" has 0 nodes in this vault`),
     ];
     return {
-      reason: `query_concepts matched 0 rows — ${facts.join('; ')}.`,
+      reason: `query_concepts matched 0 rows: ${facts.join('; ')}.`,
       suggestion:
         'Check list_kinds / list_concepts for the real kind/domain census before retrying, or add the missing nodes.',
       exampleCall: { tool: 'list_kinds', args: {} },
@@ -166,7 +166,7 @@ export function buildQueryConceptsZeroRowsGrowthHint({ filter, byKind = {}, byDo
 
   return {
     reason: `query_concepts matched 0 rows for filter: ${filterText}`,
-    suggestion: 'Loosen the filter — drop an AND clause or widen an equality — and retry.',
+    suggestion: 'Loosen the filter: drop an AND clause or widen an equality: and retry.',
     exampleCall: { tool: 'list_kinds', args: {} },
   };
 }
@@ -180,13 +180,13 @@ export function buildFindEvidenceZeroHitsGrowthHint({ title, nearMatches = [] })
     const names = nearMatches.map((match) => `${match.title} (${match.slug})`);
     return {
       reason: `No vault doc mentions "${title}".`,
-      suggestion: `Closest existing node(s) by title: ${names.join(', ')} — confirm this isn't the same concept under a different name before adding a new one.`,
+      suggestion: `Closest existing node(s) by title: ${names.join(', ')}: confirm this isn't the same concept under a different name before adding a new one.`,
       exampleCall: { tool: 'get_concept', args: { slug: nearMatches[0].slug } },
     };
   }
   return {
     reason: `No vault doc mentions "${title}", and no similarly-titled node exists.`,
-    suggestion: 'This concept may not be captured in the vault yet — add it if it describes a real capability/element/domain.',
+    suggestion: 'This concept may not be captured in the vault yet: add it if it describes a real capability/element/domain.',
     exampleCall: {
       tool: 'add_concept',
       args: { slug: slugify(title), kind: 'element', title: String(title ?? '') },

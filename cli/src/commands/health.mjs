@@ -54,7 +54,7 @@ export async function runHealth(args) {
   const sum = result?.summary ?? {};
   process.stdout.write(
     `${COLORS.bold}vault health${COLORS.reset} ${sc}${status}${COLORS.reset}` +
-      ` ${COLORS.dim}— ${sum.nodes ?? 0} 노드 · ${sum.edges ?? 0} 관계${COLORS.reset}\n\n`,
+      ` ${COLORS.dim}· ${sum.nodes ?? 0} 노드 · ${sum.edges ?? 0} 관계${COLORS.reset}\n\n`,
   );
   const checks = Array.isArray(result?.checks) ? result.checks : [];
   for (const c of checks) {
@@ -68,12 +68,12 @@ export async function runHealth(args) {
   }
   // dependency cycle / 분리된 그래프(islands) 강조 — 각 실패 검사에 드릴다운 명령 안내.
   if (sum.dependencyCycles) {
-    process.stdout.write(`\n${COLORS.red}cycles ${sum.dependencyCycles}${COLORS.reset} — \`cycles\` 명령으로 자세히\n`);
+    process.stdout.write(`\n${COLORS.red}cycles ${sum.dependencyCycles}${COLORS.reset}: \`cycles\` 명령으로 자세히\n`);
   }
   // actionableComponents > 1 = 의미있는 노드가 분리된 섬으로 나뉨(연결 안 됨).
   // vault-readme 등 ignored 는 제외한 수라 1 초과면 실제 단절. `components` 로 목록.
   if (sum.actionableComponents > 1) {
-    process.stdout.write(`${COLORS.yellow}components ${sum.actionableComponents}${COLORS.reset} — 그래프가 분리됨, \`components\` 명령으로 자세히\n`);
+    process.stdout.write(`${COLORS.yellow}components ${sum.actionableComponents}${COLORS.reset}: 그래프가 분리됨, \`components\` 명령으로 자세히\n`);
   }
   return healthResultExitCode(result);
 }

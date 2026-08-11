@@ -2680,7 +2680,7 @@ export function createOntologyEngine(artifact, options = {}) {
           suggestedSlug: kind ? suggestedSlugForReference(edge.ref, kind) : null,
           didYouMean: didYouMean || null,
           reason: didYouMean
-            ? `Graph reference "${edge.ref}" from "${edge.from}" via "${edge.via}" does not resolve, but "${didYouMean}" is an existing node with a matching name — likely a missing folder prefix or typo. Fix the "${edge.via}" reference on "${edge.from}" (e.g. \`ontology-atlas relate ${edge.from} ${didYouMean} ${RELATION_TYPE_FOR_KEY[edge.via] || edge.via}\`, or edit the "domain:" field directly for a scalar reference) instead of creating a duplicate node.`
+            ? `Graph reference "${edge.ref}" from "${edge.from}" via "${edge.via}" does not resolve, but "${didYouMean}" is an existing node with a matching name: likely a missing folder prefix or typo. Fix the "${edge.via}" reference on "${edge.from}" (e.g. \`ontology-atlas relate ${edge.from} ${didYouMean} ${RELATION_TYPE_FOR_KEY[edge.via] || edge.via}\`, or edit the "domain:" field directly for a scalar reference) instead of creating a duplicate node.`
             : `Graph reference "${edge.ref}" from "${edge.from}" via "${edge.via}" does not resolve to a vault node.`,
           proposedAction: didYouMean
             ? null
@@ -2836,7 +2836,7 @@ export function createOntologyEngine(artifact, options = {}) {
         score: 0.55,
         slug: node.slug,
         reason: sameKindParent
-          ? `${node.slug} sits under "${sameKindParent.slug}", a node of its own kind, but groups nothing — it has no children that resolve to real nodes. A bridge node earns its place by holding the children it was created for. Either patch_concept the children that share its behavior to point at it, or delete_concept it; an empty layer adds a hop to every path through it and answers no question.`
+          ? `${node.slug} sits under "${sameKindParent.slug}", a node of its own kind, but groups nothing: it has no children that resolve to real nodes. A bridge node earns its place by holding the children it was created for. Either patch_concept the children that share its behavior to point at it, or delete_concept it; an empty layer adds a hop to every path through it and answers no question.`
           : `${node.slug} still carries the starter body it was created with and groups nothing. It was created and never given meaning. Either write what it covers and reparent the children that belong to it, or delete_concept it.`,
         node: summarizeNode(node),
       }));
@@ -2951,7 +2951,7 @@ export function createOntologyEngine(artifact, options = {}) {
         reason: truncatedByBudget ? 'search_budget' : rows.length > limit ? 'limit' : 'complete',
         nextStep: complete ? 'use' : 'narrow',
         recommendation: complete
-          ? 'Safe to treat totalCycles as complete for the requested bounds — zero means acyclic within maxDepth.'
+          ? 'Safe to treat totalCycles as complete for the requested bounds: zero means acyclic within maxDepth.'
           : truncatedByBudget
             ? 'Search budget hit before the graph was exhausted; zero cycles here does NOT mean acyclic. Reduce maxHops, narrow types, or raise searchBudget.'
             : 'totalCycles is exact, but the list is truncated by limit; raise limit to see the rest.',
@@ -5273,7 +5273,7 @@ function findNearMatchSlug(ref, nodes) {
   const prefixTail = [];
   for (const node of nodes) {
     const slug = node.slug;
-    if (slug === raw) continue; // already resolves — wouldn't be dangling
+    if (slug === raw) continue; // already resolves: wouldn't be dangling
     const tail = (slug.split('/').pop() || slug).toLowerCase();
     if (tail === lowerRaw) {
       exactTail.push(slug);

@@ -83,7 +83,7 @@ export async function runAdd(args) {
     const missing = missingExpectedFields(kind, fm);
     for (const key of missing) {
       process.stderr.write(
-        `${COLORS.yellow}warn${COLORS.reset}  expected field "${key}" missing for kind "${kind}" — add it later with --domain or by editing the file.\n`,
+        `${COLORS.yellow}warn${COLORS.reset}  expected field "${key}" missing for kind "${kind}": add it later with --domain or by editing the file.\n`,
       );
     }
     // [폐기 2026-08-01] 구 R15 「element slug 두 패턴(flat / path-style)」
@@ -211,7 +211,7 @@ function printAddUsage(stream = process.stderr) {
       `  ontology-atlas add <kind> <slug> --title="..." [--domain X] [--path repo/path] [--body "..."] [--vault path] [--raw-slug] [--created-by human|agent:<name>]\n` +
       `\n${COLORS.bold}kind:${COLORS.reset} ${VAULT_KINDS.join(' / ')}\n` +
       `\n${COLORS.bold}slug layout:${COLORS.reset} kind→folder prefix is default (capability foo → capabilities/foo). Use --raw-slug to opt out.\n` +
-      `${COLORS.bold}slug shape:${COLORS.reset} flat under the kind folder — a slug names a role, never a file path (put the path in path:).\n` +
+      `${COLORS.bold}slug shape:${COLORS.reset} flat under the kind folder: a slug names a role, never a file path (put the path in path:).\n` +
       `${COLORS.bold}implementation path:${COLORS.reset} capability/element may carry one repo-relative canonical entrypoint via --path.\n` +
       `${COLORS.bold}created_by:${COLORS.reset} defaults to agent:<heartbeat|unknown> (same stamp as MCP add_concept). A person adding by hand passes --created-by human.\n` +
       `\nExample:\n` +

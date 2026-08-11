@@ -47,10 +47,10 @@ export async function runDelete(args) {
     process.stdout.write(
       `${COLORS.yellow}dry-run${COLORS.reset}  ` +
         `delete ${COLORS.bold}${slug}${COLORS.reset} ` +
-        `${COLORS.dim}(${backlinks.length} backlink(s)${backlinks.length > 0 ? ' — would block without --force' : ''})${COLORS.reset}\n`,
+        `${COLORS.dim}(${backlinks.length} backlink(s)${backlinks.length > 0 ? ': would block without --force' : ''})${COLORS.reset}\n`,
     );
     for (const bl of backlinks) {
-      const titleText = bl.title && bl.title !== bl.slug ? ` ${COLORS.dim}— ${bl.title}${COLORS.reset}` : '';
+      const titleText = bl.title && bl.title !== bl.slug ? ` ${COLORS.dim}· ${bl.title}${COLORS.reset}` : '';
       process.stdout.write(
         `  ${COLORS.cyan}${bl.slug}${COLORS.reset}${titleText}` +
           (Array.isArray(bl.matchedKeys)
@@ -94,7 +94,7 @@ export async function runDelete(args) {
   );
   process.stdout.write(formatCapturedSummary(result?.captured, 'deleted node', COLORS));
   for (const bl of backlinksAtDelete) {
-    const titleText = bl.title && bl.title !== bl.slug ? ` ${COLORS.dim}— ${bl.title}${COLORS.reset}` : '';
+    const titleText = bl.title && bl.title !== bl.slug ? ` ${COLORS.dim}· ${bl.title}${COLORS.reset}` : '';
     process.stdout.write(
       `  ${COLORS.cyan}${bl.slug}${COLORS.reset}${titleText}` +
         (Array.isArray(bl.matchedKeys)
@@ -138,7 +138,7 @@ function printUsage(stream = process.stderr) {
   stream.write(
     `\n${COLORS.bold}Usage:${COLORS.reset}\n` +
       `  ontology-atlas delete <slug> [vault] [--confirm] [--force] [--json]\n\n` +
-      `${COLORS.bold}Default${COLORS.reset} dry-run — preview backlinks.\n` +
+      `${COLORS.bold}Default${COLORS.reset} dry-run: preview backlinks.\n` +
       `${COLORS.bold}--confirm${COLORS.reset}  apply (refuses if backlinks exist)\n` +
       `${COLORS.bold}--force${COLORS.reset}    delete even with backlinks (use carefully)\n\n` +
       `${COLORS.bold}Example:${COLORS.reset}\n` +

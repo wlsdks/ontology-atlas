@@ -64,7 +64,7 @@ function renderGrowth(result) {
   const summary = result.summary;
   process.stdout.write(
     `${COLORS.bold}growth plan${COLORS.reset}` +
-      ` ${COLORS.dim}— ${summary.totalActions} actions${COLORS.reset}\n`,
+      ` ${COLORS.dim}· ${summary.totalActions} actions${COLORS.reset}\n`,
   );
   process.stdout.write(
     `${COLORS.dim}summary:${COLORS.reset} ` +
@@ -96,7 +96,7 @@ function renderGrowth(result) {
     const rows = group?.[rowsKey] ?? [];
     const total = key === 'relationRecommendations' ? group.totalRecommendations : group.total;
     if (!total) continue;
-    process.stdout.write(`${COLORS.bold}${label}${COLORS.reset} ${COLORS.dim}— ${rows.length}/${total}${group.limited ? ' limited' : ''}${COLORS.reset}\n`);
+    process.stdout.write(`${COLORS.bold}${label}${COLORS.reset} ${COLORS.dim}· ${rows.length}/${total}${group.limited ? ' limited' : ''}${COLORS.reset}\n`);
     for (const row of rows) renderGrowthRow(row);
     process.stdout.write('\n');
   }
@@ -133,7 +133,7 @@ function printNextGrowth(result) {
   process.stdout.write(
     `${COLORS.bold}next growth${COLORS.reset} ${COLORS.cyan}${args.from}${COLORS.reset}` +
       ` ${COLORS.dim}→${COLORS.reset} ${COLORS.cyan}${args.to}${COLORS.reset}` +
-      ` ${COLORS.dim}— growth rows are proposals, not writes; preflight the relation before changing the vault${COLORS.reset}\n` +
+      ` ${COLORS.dim}· growth rows are proposals, not writes; preflight the relation before changing the vault${COLORS.reset}\n` +
       `  ontology-atlas relation-check ${args.from} ${args.to} ${args.type} [vault]\n` +
       `  ontology-atlas path ${args.from} ${args.to} [vault] --max-hops 5\n`,
   );

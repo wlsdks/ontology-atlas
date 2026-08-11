@@ -67,7 +67,7 @@ function renderOverview(result, hubsLimit) {
   const referencedOnly = graph.referencedOnly ?? 0;
   process.stdout.write(
     `${COLORS.bold}vault overview${COLORS.reset}` +
-      ` ${COLORS.dim}— ${nodes} 노드 · ${edges} 관계 (resolved ${resolved} · external ${external}${unresolved ? ` · unresolved ${unresolved}` : ''})${COLORS.reset}\n`,
+      ` ${COLORS.dim}· ${nodes} 노드 · ${edges} 관계 (resolved ${resolved} · external ${external}${unresolved ? ` · unresolved ${unresolved}` : ''})${COLORS.reset}\n`,
   );
   // 화면(지도·인사이트)은 문서 없이 이름만 적힌 개념까지 세므로 총계가 더
   // 크다. 그 차이를 여기서 밝히지 않으면 두 입구가 같은 볼트에 다른 수를
@@ -83,7 +83,7 @@ function renderOverview(result, hubsLimit) {
   // 2로 센다. 지도·인사이트는 같은 사실을 서로 다른 관계 하나로 접어 센다.
   if (edges > 0) {
     process.stdout.write(
-      `${COLORS.dim}  관계 ${edges} 는 적힌 참조 기준 — 양쪽 문서가 같은 관계를 적으면 2로 셉니다 (지도는 접어서 1)${COLORS.reset}\n`,
+      `${COLORS.dim}  관계 ${edges} 는 적힌 참조 기준: 양쪽 문서가 같은 관계를 적으면 2로 셉니다 (지도는 접어서 1)${COLORS.reset}\n`,
     );
   }
   process.stdout.write('\n');
@@ -139,7 +139,7 @@ function renderOverview(result, hubsLimit) {
       const slug = h.slug.padEnd(50);
       const deg = `${COLORS.dim}deg ${h.degree}${COLORS.reset}` +
         ` ${COLORS.dim}(in ${h.inDegree} · out ${h.outDegree})${COLORS.reset}`;
-      const titleText = h.title && h.title !== h.slug ? ` ${COLORS.dim}— ${h.title}${COLORS.reset}` : '';
+      const titleText = h.title && h.title !== h.slug ? ` ${COLORS.dim}· ${h.title}${COLORS.reset}` : '';
       process.stdout.write(`  ${COLORS.bold}${rank}${COLORS.reset} ${kc}${slug}${COLORS.reset}${titleText} ${deg}\n`);
     }
   }

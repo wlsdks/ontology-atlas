@@ -79,7 +79,7 @@ function render(result) {
     process.stdout.write(`${COLORS.dim}DOMAINS${COLORS.reset}\n`);
     for (const domain of result.domains) {
       const title = domain.node.title && domain.node.title !== domain.slug
-        ? ` ${COLORS.dim}— ${domain.node.title}${COLORS.reset}`
+        ? ` ${COLORS.dim}· ${domain.node.title}${COLORS.reset}`
         : '';
       process.stdout.write(
         `  ${COLORS.blue}${domain.slug}${COLORS.reset}${title}` +
@@ -122,7 +122,7 @@ function render(result) {
     process.stdout.write(
       `\n${COLORS.dim}next${COLORS.reset} coupling ${COLORS.bold}${focus.from}${COLORS.reset}` +
         ` ${COLORS.dim}→${COLORS.reset} ${COLORS.bold}${focus.to}${COLORS.reset}` +
-        `${COLORS.dim} — matrix rows are hotspots, not proof; inspect matching edges before boundary decisions${COLORS.reset}\n`,
+        `${COLORS.dim} · matrix rows are hotspots, not proof; inspect matching edges before boundary decisions${COLORS.reset}\n`,
     );
     process.stdout.write(
       `  ${COLORS.cyan}ontology-atlas match-edges [vault] --from ${example.from} --to ${example.to} --types ${relationLabel} --limit 20${COLORS.reset}\n`,

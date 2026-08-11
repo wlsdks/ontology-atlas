@@ -76,12 +76,12 @@ function render(result) {
   const status = result.acyclic ? `${COLORS.green}acyclic${COLORS.reset}` : `${COLORS.red}blocked${COLORS.reset}`;
   process.stdout.write(
     `${COLORS.bold}topological order${COLORS.reset} ${status}` +
-      ` ${COLORS.dim}— ${result.orderedCount}/${result.totalNodes} ordered` +
+      ` ${COLORS.dim}· ${result.orderedCount}/${result.totalNodes} ordered` +
       ` · ${result.selectedEdges} selected edges${result.limited ? ' · limited' : ''}${COLORS.reset}\n\n`,
   );
   for (const row of result.order) {
     const node = row.node || {};
-    const title = node.title && node.title !== row.slug ? ` ${COLORS.dim}— ${node.title}${COLORS.reset}` : '';
+    const title = node.title && node.title !== row.slug ? ` ${COLORS.dim}· ${node.title}${COLORS.reset}` : '';
     process.stdout.write(
       `  ${String(row.rank).padStart(2)} ${COLORS.cyan}${row.slug}${COLORS.reset}${title}` +
         ` ${COLORS.dim}${node.kind || ''}${COLORS.reset}\n`,

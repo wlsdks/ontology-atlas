@@ -372,13 +372,13 @@ await test('init --locale=ko — Korean starter bodies, identical graph, English
     for (const dir of ['vault-ko', 'vault-en']) {
       const v = await run(['validate', dir], { cwd: repo });
       assert.equal(v.code, 0, `${dir} validate failed: ${v.stdout}${v.stderr}`);
-      assert.match(stripAnsi(v.stdout), /5 파일 스캔 — frontmatter · 그래프 참조 issue 0/);
+      assert.match(stripAnsi(v.stdout), /5 파일 스캔: frontmatter · 그래프 참조 issue 0/);
     }
 
     // 모르는 로케일은 조용히 영어로 떨어지지 않고 명확히 실패한다.
     const bad = await run(['init', 'vault-fr', '--locale=fr'], { cwd: repo });
     assert.equal(bad.code, 2);
-    assert.match(stripAnsi(bad.stderr), /unknown --locale "fr" — supported: en, ko/);
+    assert.match(stripAnsi(bad.stderr), /unknown --locale "fr": supported: en, ko/);
   } finally {
     rmSync(repo, { recursive: true, force: true });
   }
@@ -577,13 +577,13 @@ await test('agent-setup — terminal output points humans to the workflow guide'
     assert.match(clean, /Repair missing configs only if needed: ontology-atlas agent-setup .*ontology.* --root .* --write/);
     assert.match(clean, /Restart Claude Code, Cursor, or Codex from .* after repair/);
     assert.match(clean, /Mode guide:/);
-    assert.match(clean, /MCP-connected — direct read\/write tools/);
+    assert.match(clean, /MCP-connected · direct read\/write tools/);
     assert.match(clean, /graph DB differences/);
     assert.match(clean, /First-contact proof contract:/);
-    assert.match(clean, /Config state — agent-setup --json reports root-specific/);
-    assert.match(clean, /MCP verify — mcp-verify can boot the local MCP server/);
-    assert.match(clean, /JSON setup gate — agent-brief --verify-fallbacks --json returns ok\/performanceOk/);
-    assert.match(clean, /Graph briefs — workspace-brief and agent-brief --graph-db-pack/);
+    assert.match(clean, /Config state · agent-setup --json reports root-specific/);
+    assert.match(clean, /MCP verify · mcp-verify can boot the local MCP server/);
+    assert.match(clean, /JSON setup gate · agent-brief --verify-fallbacks --json returns ok\/performanceOk/);
+    assert.match(clean, /Graph briefs · workspace-brief and agent-brief --graph-db-pack/);
     assert.match(clean, /After code changes:/);
     assert.match(clean, /sync docs\/ontology before finishing/);
   } finally {
@@ -1118,7 +1118,7 @@ await test('mcp-verify — runs MCP package verify against a resolved vault', as
     assert.match(clean, new RegExp(escapeRegExp(expectedToolsListAnnotationSummary())));
     assert.match(clean, /get_concepts/);
     assert.match(clean, /2 ok rows, 1 partial row/);
-    assert.match(clean, /query_concepts limited — 1 query result \/ 4 total query results \(limited true\)/);
+    assert.match(clean, /query_concepts limited: 1 query result \/ 4 total query results \(limited true\)/);
     assert.match(clean, /analyze_repo_structure/);
     assert.match(clean, /infer_imports/);
     assert.match(clean, /find_orphans/);
@@ -1130,20 +1130,20 @@ await test('mcp-verify — runs MCP package verify against a resolved vault', as
     assert.match(clean, /relation_recommendations:warn/);
     assert.match(clean, /health/);
     assert.match(clean, /compile_ontology/);
-    assert.match(clean, /compile_ontology page — 1\/5 nodes, 1\/\d+ edges/);
-    assert.match(clean, /compile_ontology indexes — out \d+, in \d+, edgeById \d+, aliases \d+, edges \d+\/\d+\/\d+/);
+    assert.match(clean, /compile_ontology page: 1\/5 nodes, 1\/\d+ edges/);
+    assert.match(clean, /compile_ontology indexes: out \d+, in \d+, edgeById \d+, aliases \d+, edges \d+\/\d+\/\d+/);
     assert.match(clean, /overview/);
     assert.match(clean, /overview query_plan/);
     assert.match(clean, /project_map query_plan/);
-    assert.match(clean, /maintenance cursor — missing afterActionId reported/);
+    assert.match(clean, /maintenance cursor: missing afterActionId reported/);
     assert.match(clean, /phase none; severity none; kind none; executable none; review none/);
-    assert.match(clean, /maintenance cursor — ready page stable/);
-    assert.match(clean, /neighbors — elements\/example-element/);
-    assert.match(clean, /path — elements\/example-element → project \(1 hop, 1 edge\)/);
+    assert.match(clean, /maintenance cursor: ready page stable/);
+    assert.match(clean, /neighbors: elements\/example-element/);
+    assert.match(clean, /path: elements\/example-element → project \(1 hop, 1 edge\)/);
     assert.match(clean, /project_scope/);
-    assert.match(clean, /destructive dry-runs — rename_concept · merge_concepts · delete_concept previewReady\/canConfirm contract without write-maintenance/);
-    assert.match(clean, /all_paths — elements\/example-element → project/);
-    assert.match(clean, /structuredContent — direct 16\/16, write 5\/5 \(batch row-isolation 2\/2, batch no-write metadata 2\/2, destructive dry-run 3\/3\), maintenance 3\/3, graph 13\/13/);
+    assert.match(clean, /destructive dry-runs: rename_concept · merge_concepts · delete_concept previewReady\/canConfirm contract without write-maintenance/);
+    assert.match(clean, /all_paths: elements\/example-element → project/);
+    assert.match(clean, /structuredContent: direct 16\/16, write 5\/5 \(batch row-isolation 2\/2, batch no-write metadata 2\/2, destructive dry-run 3\/3\), maintenance 3\/3, graph 13\/13/);
   } finally {
     rmSync(root, { recursive: true, force: true });
   }
@@ -1199,13 +1199,13 @@ await test('mcp-verify — verifies maintenance cursor resume when actions exist
     const r = await run(['mcp-verify', root, '--timeout-ms', '3000']);
     assert.equal(r.code, 0, `stdout: ${r.stdout}\nstderr: ${r.stderr}`);
     const clean = stripAnsi(r.stdout);
-    assert.match(clean, /maintenance cursor — ready page stable \(2 remaining actions/);
+    assert.match(clean, /maintenance cursor: ready page stable \(2 remaining actions/);
     assert.match(clean, /kind add_missing_relation:1,capability_without_evidence:1/);
-    assert.match(clean, /maintenance cursor — resume afterActionId advanced \(maint_[a-f0-9]{8}; 1 remaining action/);
-    assert.match(clean, /query_concepts limited — 1 query result \/ 2 total query results \(limited true\)/);
-    assert.match(clean, /destructive dry-runs — rename_concept · merge_concepts · delete_concept previewReady\/canConfirm contract without write-maintenance/);
-    assert.match(clean, /all_paths — core → project/);
-    assert.match(clean, /structuredContent — direct 16\/16, write 5\/5 \(batch row-isolation 2\/2, batch no-write metadata 2\/2, destructive dry-run 3\/3\), maintenance 3\/3, graph 13\/13/);
+    assert.match(clean, /maintenance cursor: resume afterActionId advanced \(maint_[a-f0-9]{8}; 1 remaining action/);
+    assert.match(clean, /query_concepts limited: 1 query result \/ 2 total query results \(limited true\)/);
+    assert.match(clean, /destructive dry-runs: rename_concept · merge_concepts · delete_concept previewReady\/canConfirm contract without write-maintenance/);
+    assert.match(clean, /all_paths: core → project/);
+    assert.match(clean, /structuredContent: direct 16\/16, write 5\/5 \(batch row-isolation 2\/2, batch no-write metadata 2\/2, destructive dry-run 3\/3\), maintenance 3\/3, graph 13\/13/);
   } finally {
     rmSync(root, { recursive: true, force: true });
   }
@@ -1231,11 +1231,11 @@ await test('mcp-verify — allows valid vaults without a project node', async ()
     const r = await run(['mcp-verify', root, '--timeout-ms', '3000']);
     assert.equal(r.code, 0, `stdout: ${r.stdout}\nstderr: ${r.stderr}`);
     const clean = stripAnsi(r.stdout);
-    assert.match(clean, /maintenance cursor — missing afterActionId reported/);
-    assert.match(clean, /maintenance cursor — ready page stable/);
-    assert.match(clean, /neighbors — domains\/core/);
-    assert.match(clean, /path — domains\/core → domains\/core \(0 hops, 0 edges\)/);
-    assert.match(clean, /project_scope — skipped \(no project node in vault\)/);
+    assert.match(clean, /maintenance cursor: missing afterActionId reported/);
+    assert.match(clean, /maintenance cursor: ready page stable/);
+    assert.match(clean, /neighbors: domains\/core/);
+    assert.match(clean, /path: domains\/core → domains\/core \(0 hops, 0 edges\)/);
+    assert.match(clean, /project_scope: skipped \(no project node in vault\)/);
   } finally {
     rmSync(root, { recursive: true, force: true });
   }
@@ -2186,7 +2186,7 @@ await test('validate — 2+ 같은 code → "grouped by code" 요약 섹션 (R+)
     assert.match(clean, /cap2\.md/);
     // grouped section 등장
     assert.match(clean, /grouped by code/);
-    assert.match(clean, /missing-expected-field — 3 occurrences/);
+    assert.match(clean, /missing-expected-field · 3 occurrences/);
   } finally {
     rmSync(root, { recursive: true, force: true });
   }
@@ -3301,8 +3301,8 @@ await test('backlinks — capabilities/foo 의 backlinks (bar relates + auth cap
     assert.equal(r.code, 0, `stdout: ${r.stdout}\nstderr: ${r.stderr}`);
     const clean = stripAnsi(r.stdout);
     assert.match(clean, /backlink/);
-    assert.match(clean, /capabilities\/bar\s+— Bar/);
-    assert.match(clean, /domains\/auth\s+— Auth/);
+    assert.match(clean, /capabilities\/bar\s+· Bar/);
+    assert.match(clean, /domains\/auth\s+· Auth/);
   } finally {
     rmSync(root, { recursive: true, force: true });
   }
@@ -3357,8 +3357,8 @@ await test('path — capabilities/bar → capabilities/foo (1 hop, via relates)'
     assert.equal(r.code, 0, `stdout: ${r.stdout}\nstderr: ${r.stderr}`);
     const clean = stripAnsi(r.stdout);
     assert.match(clean, /1 hop/);
-    assert.match(clean, /capabilities\/bar — Bar/);
-    assert.match(clean, /capabilities\/foo — Foo/);
+    assert.match(clean, /capabilities\/bar · Bar/);
+    assert.match(clean, /capabilities\/foo · Foo/);
     // bar.relates 가 foo 를 가리키므로 via=relates 로 노출
     assert.match(clean, /relates/);
   } finally {
@@ -3400,7 +3400,7 @@ await test('path — same slug → 0 hops trivial', async () => {
     const r = await run(['path', 'capabilities/foo', 'capabilities/foo', root]);
     assert.equal(r.code, 0);
     const clean = stripAnsi(r.stdout);
-    assert.match(clean, /capabilities\/foo — Foo/);
+    assert.match(clean, /capabilities\/foo · Foo/);
     assert.match(clean, /same slug|0 hops/);
   } finally {
     rmSync(root, { recursive: true, force: true });
@@ -3469,14 +3469,14 @@ await test('explain — renders direct edges, shortest path, and common neighbor
     ]);
     assert.equal(r.code, 0, `stdout: ${r.stdout}\nstderr: ${r.stderr}`);
     const clean = stripAnsi(r.stdout);
-    assert.match(clean, /explain_relation capabilities\/bar — Bar → capabilities\/foo — Foo/);
+    assert.match(clean, /explain_relation capabilities\/bar · Bar → capabilities\/foo · Foo/);
     assert.match(clean, /verdict direct/);
     assert.match(clean, /domains domains\/auth → domains\/auth · same=true/);
     assert.match(clean, /DIRECT EDGES 1\/1/);
     assert.match(clean, /capabilities\/bar --relates--> capabilities\/foo/);
     assert.match(clean, /SHORTEST PATH 1 hop/);
     assert.match(clean, /COMMON NEIGHBORS 1\/1/);
-    assert.match(clean, /domains\/auth — Auth/);
+    assert.match(clean, /domains\/auth · Auth/);
     assert.match(clean, /next relation capabilities\/bar → capabilities\/foo/);
     assert.match(clean, /explanation is evidence, not write approval; run path and preflight before changing graph/);
     assert.match(clean, /ontology-atlas path capabilities\/bar capabilities\/foo \[vault\] --max-hops 5/);
@@ -3662,8 +3662,8 @@ await test('all-paths — bounded alternatives with completeness evidence', asyn
     assert.match(clean, /evidence complete/);
     assert.match(clean, /pathsComplete=true/);
     assert.match(clean, /totalPathsExact=true/);
-    assert.match(clean, /capabilities\/bar — Bar/);
-    assert.match(clean, /capabilities\/foo — Foo/);
+    assert.match(clean, /capabilities\/bar · Bar/);
+    assert.match(clean, /capabilities\/foo · Foo/);
     assert.match(clean, /via relates/);
   } finally {
     rmSync(root, { recursive: true, force: true });
@@ -4744,8 +4744,8 @@ await test('match-nodes — graph DB-style node rows with degree filters', async
     const clean = stripAnsi(r.stdout);
     assert.match(clean, /match_nodes 2\/2 node\(s\)/);
     assert.match(clean, /filters .*kind=capability.*minInDegree=1.*sort=inDegree/);
-    assert.match(clean, /capabilities\/foo\s+— Foo.*deg 4 in 2 out 2/);
-    assert.match(clean, /capabilities\/bar\s+— Bar.*deg 3 in 1 out 2/);
+    assert.match(clean, /capabilities\/foo\s+· Foo.*deg 4 in 2 out 2/);
+    assert.match(clean, /capabilities\/bar\s+· Bar.*deg 3 in 1 out 2/);
     assert.match(clean, /next focus capabilities\/foo/);
     assert.match(clean, /scan rows are candidates, not proof; cite follow-up detail before onboarding\/refactor decisions/);
     assert.match(clean, /ontology-atlas node capabilities\/foo \[vault\] --limit 12/);
@@ -4903,8 +4903,8 @@ await test('domain-matrix — renders cross-domain coupling rows with examples',
     const clean = stripAnsi(r.stdout);
     assert.match(clean, /domain_matrix 2 domain\(s\).*1 cross-domain edge\(s\)/);
     assert.match(clean, /project project/);
-    assert.match(clean, /domains\/auth\s+— Auth.*out 1/);
-    assert.match(clean, /domains\/billing\s+— Billing.*in 1/);
+    assert.match(clean, /domains\/auth\s+· Auth.*out 1/);
+    assert.match(clean, /domains\/billing\s+· Billing.*in 1/);
     assert.match(clean, /domains\/auth → domains\/billing 1 depends_on:1/);
     assert.match(clean, /capabilities\/login --depends_on--> capabilities\/invoice/);
     assert.match(clean, /next coupling domains\/auth → domains\/billing/);
@@ -5017,9 +5017,9 @@ await test('pattern-walk — prints explicit containment traversal evidence', as
     assert.match(clean, /pattern_walk project outgoing domains -> capabilities/);
     assert.match(clean, /2 step\(s\)/);
     assert.match(clean, /step 1 domains/);
-    assert.match(clean, /domains\/auth\s+— Auth/);
+    assert.match(clean, /domains\/auth\s+· Auth/);
     assert.match(clean, /step 2 capabilities/);
-    assert.match(clean, /capabilities\/login\s+— Login/);
+    assert.match(clean, /capabilities\/login\s+· Login/);
     assert.match(clean, /next containment capabilities\/login/);
     assert.match(clean, /ontology-atlas node capabilities\/login \[vault\] --limit 20/);
 
@@ -5075,7 +5075,7 @@ await test('project-map — prints domain placement and containment follow-up', 
     const clean = stripAnsi(r.stdout);
     assert.match(clean, /project_map project/);
     assert.match(clean, /1 domain\(s\)/);
-    assert.match(clean, /domains\/auth\s+— Auth/);
+    assert.match(clean, /domains\/auth\s+· Auth/);
     assert.match(clean, /capability capabilities\/login/);
     assert.match(clean, /element\s+elements\/login-api/);
     assert.match(clean, /next domain domains\/auth/);
@@ -5106,13 +5106,13 @@ await test('reachability — transitive reachable nodes are grouped by layer', a
     ]);
     assert.equal(r.code, 0, `stdout: ${r.stdout}\nstderr: ${r.stderr}`);
     const clean = stripAnsi(r.stdout);
-    assert.match(clean, /capabilities\/bar — reachability/);
+    assert.match(clean, /capabilities\/bar · reachability/);
     assert.match(clean, /2 reachable node\(s\)/);
     assert.match(clean, /by relation/);
     assert.match(clean, /relates\s+1/);
     assert.match(clean, /domain\s+1/);
-    assert.match(clean, /d1[\s\S]*capabilities\/foo\s+— Foo/);
-    assert.match(clean, /d1[\s\S]*domains\/auth\s+— Auth/);
+    assert.match(clean, /d1[\s\S]*capabilities\/foo\s+· Foo/);
+    assert.match(clean, /d1[\s\S]*domains\/auth\s+· Auth/);
     assert.match(clean, /shortest paths/);
     assert.match(clean, /next reachable capabilities\/foo/);
     assert.match(clean, /traversal rows are candidates, not proof; inspect the node and bounded paths before writing/);
@@ -5166,7 +5166,7 @@ await test('overview — graph fixture 의 counts + 허브 정확', async () => 
     assert.match(clean, /domain\s+1/);
     // 허브 — degree 가 가장 큰 domains/auth 가 top
     assert.match(clean, /domains\/auth/);
-    assert.match(clean, /domains\/auth\s+— Auth/);
+    assert.match(clean, /domains\/auth\s+· Auth/);
   } finally {
     rmSync(root, { recursive: true, force: true });
   }
@@ -5273,7 +5273,7 @@ await test('blast-radius — affected node rows include node titles for scanabil
     assert.equal(r.code, 0, `stdout: ${r.stdout}\nstderr: ${r.stderr}`);
     const clean = stripAnsi(r.stdout);
     assert.match(clean, /affected nodes/);
-    assert.match(clean, /capabilities\/bar\s+— Bar/);
+    assert.match(clean, /capabilities\/bar\s+· Bar/);
     assert.match(clean, /next impact capabilities\/bar/);
     assert.match(clean, /impact rows are candidates, not proof; inspect backlinks and node detail before refactor decisions/);
     assert.match(clean, /ontology-atlas node capabilities\/bar \[vault\] --limit 20/);
@@ -5320,8 +5320,8 @@ await test('hubs — human rankings include node titles for scanability', async 
     assert.equal(r.code, 0, `stdout: ${r.stdout}\nstderr: ${r.stderr}`);
     const clean = stripAnsi(r.stdout);
     assert.match(clean, /PageRank/);
-    assert.match(clean, /domains\/auth\s+— Auth/);
-    assert.match(clean, /capabilities\/foo\s+— Foo/);
+    assert.match(clean, /domains\/auth\s+· Auth/);
+    assert.match(clean, /capabilities\/foo\s+· Foo/);
     assert.match(clean, /next hub domains\/auth/);
     assert.match(clean, /ranking rows are hotspots, not proof; inspect the node and impact before onboarding\/refactor decisions/);
     assert.match(clean, /ontology-atlas node domains\/auth \[vault\] --limit 20/);
@@ -5357,7 +5357,7 @@ await test('components — scans connected islands without health JSON indirecti
     const clean = stripAnsi(r.stdout);
     assert.match(clean, /graph components/);
     assert.match(clean, /component 1/);
-    assert.match(clean, /domains\/auth\s+— Auth/);
+    assert.match(clean, /domains\/auth\s+· Auth/);
 
     const json = await run(['components', root, '--json', '--limit=1', '--node-limit=2']);
     assert.equal(json.code, 0, `stdout: ${json.stdout}\nstderr: ${json.stderr}`);
@@ -5463,7 +5463,7 @@ await test('workspace-brief — prints health check coverage', async () => {
     assert.equal(r.code, 0, `stdout: ${r.stdout}\nstderr: ${r.stderr}`);
     const clean = stripAnsi(r.stdout);
     assert.match(r.stdout, /\x1b\[32mhealthy\x1b\[0m/);
-    assert.match(clean, /capabilities\/foo\s+— Foo/);
+    assert.match(clean, /capabilities\/foo\s+· Foo/);
     assert.match(clean, /HEALTH CHECKS/);
     assert.match(clean, /compile_issues:pass:0/);
     assert.match(clean, /components:pass:1/);
@@ -5611,7 +5611,7 @@ await test('agent-brief — prints agent handoff entrypoints and playbooks', asy
     assert.match(clean, /MCP-connected\s+direct read\/write tools/);
     assert.match(clean, /Setup gate\s+config repair commands, JSON readiness/);
     assert.match(clean, /ENTRYPOINTS/);
-    assert.match(clean, /capabilities\/foo\s+— Foo|domains\/auth\s+— Auth/);
+    assert.match(clean, /capabilities\/foo\s+· Foo|domains\/auth\s+· Auth/);
     assert.match(clean, /FIRST MCP CALLS/);
     assert.match(clean, /query_ontology\(\{"operation":"workspace_brief"/);
     assert.match(clean, /CLI FALLBACKS/);
@@ -6496,8 +6496,8 @@ await test('cycles — human output includes node titles', async () => {
     const r = await run(['cycles', root]);
     assert.equal(r.code, 1, `stdout: ${r.stdout}\nstderr: ${r.stderr}`);
     const clean = stripAnsi(r.stdout);
-    assert.match(clean, /capabilities\/a\s+— A/);
-    assert.match(clean, /capabilities\/b\s+— B/);
+    assert.match(clean, /capabilities\/a\s+· A/);
+    assert.match(clean, /capabilities\/b\s+· B/);
     assert.match(clean, /next cycle capabilities\/a → capabilities\/b/);
     assert.match(clean, /cycle rows are failures, but fix the edge only after inspecting path evidence and maintenance guidance/);
     assert.match(clean, /ontology-atlas path capabilities\/a capabilities\/b \[vault\] --max-hops 8/);
@@ -6651,7 +6651,7 @@ await test('node --no-external/--no-unresolved — noisy refs can be hidden from
     const clean = stripAnsi(noMatches.stdout);
     assert.match(clean, /filters types=elements .* external=false/);
     assert.match(clean, /no matching edges for current filters/);
-    assert.doesNotMatch(clean, /isolated — 어떤 노드와도 연결 안 됨/);
+    assert.doesNotMatch(clean, /isolated: 어떤 노드와도 연결 안 됨/);
   } finally {
     rmSync(root, { recursive: true, force: true });
   }
@@ -6774,7 +6774,7 @@ await test('rename — dry-run preview, no disk change', async () => {
     assert.match(clean, /dry-run/);
     assert.match(clean, /capabilities\/foo-renamed/);
     assert.match(clean, /[1-9]\d* file\(s\) would change/);
-    assert.match(clean, /capabilities\/bar\s+— Bar/);
+    assert.match(clean, /capabilities\/bar\s+· Bar/);
     assert.match(clean, /relates changed/);
     // foo.md 그대로 존재 (dry-run)
     assert.equal(existsSyncTest(join(root, 'capabilities/foo.md')), true);
@@ -6800,7 +6800,7 @@ await test('rename --confirm — 파일 이동 + backlink redirect', async () =>
     assert.equal(r.code, 0, `stderr: ${r.stderr}`);
     const clean = stripAnsi(r.stdout);
     assert.match(clean, /[1-9]\d* file\(s\) updated/);
-    assert.match(clean, /capabilities\/bar\s+— Bar/);
+    assert.match(clean, /capabilities\/bar\s+· Bar/);
     assert.match(clean, /relates changed/);
     assert.equal(existsSyncTest(join(root, 'capabilities/foo.md')), false);
     assert.equal(
@@ -6859,8 +6859,8 @@ await test('delete — backlinks 있으면 dry-run 에서 경고', async () => {
     const clean = stripAnsi(r.stdout);
     assert.match(clean, /dry-run/);
     assert.match(clean, /backlink/);
-    assert.match(clean, /capabilities\/bar\s+— Bar/);
-    assert.match(clean, /domains\/auth\s+— Auth/);
+    assert.match(clean, /capabilities\/bar\s+· Bar/);
+    assert.match(clean, /domains\/auth\s+· Auth/);
     assert.match(clean, /--force/);
   } finally {
     rmSync(root, { recursive: true, force: true });
@@ -6902,8 +6902,8 @@ await test('delete --confirm --force — 적용 출력에 dangling backlink 를 
     assert.match(clean, /deleted node\s+Foo/);
     assert.match(clean, /# Foo/);
     assert.match(clean, /2 dangling backlink\(s\) left/);
-    assert.match(clean, /capabilities\/bar\s+— Bar\s+\(relates\)/);
-    assert.match(clean, /domains\/auth\s+— Auth\s+\(capabilities\)/);
+    assert.match(clean, /capabilities\/bar\s+· Bar\s+\(relates\)/);
+    assert.match(clean, /domains\/auth\s+· Auth\s+\(capabilities\)/);
     assert.equal(existsSyncTest(join(root, 'capabilities/foo.md')), false);
     assert.match(readFileSync(join(root, 'capabilities/bar.md'), 'utf-8'), /capabilities\/foo/);
   } finally {
@@ -6952,7 +6952,7 @@ await test('merge — dry-run preview', async () => {
     assert.match(clean, /capabilities\/foo/);
     assert.match(clean, /capabilities\/bar/);
     assert.match(clean, /[1-9]\d* file\(s\) would change/);
-    assert.match(clean, /domains\/auth\s+— Auth/);
+    assert.match(clean, /domains\/auth\s+· Auth/);
     assert.match(clean, /capabilities changed/);
     // foo.md 그대로 존재 (dry-run)
     assert.equal(existsSyncTest(join(root, 'capabilities/foo.md')), true);
@@ -6977,7 +6977,7 @@ await test('merge --confirm — 적용 출력에 변경 파일과 key 를 보여
     assert.match(clean, /capabilities\/foo\.md deleted/);
     assert.match(clean, /deleted source\s+Foo/);
     assert.match(clean, /# Foo/);
-    assert.match(clean, /domains\/auth\s+— Auth/);
+    assert.match(clean, /domains\/auth\s+· Auth/);
     assert.match(clean, /capabilities changed/);
     assert.equal(existsSyncTest(join(root, 'capabilities/foo.md')), false);
     const authText = readFileSync(join(root, 'domains/auth.md'), 'utf-8');
@@ -7462,8 +7462,8 @@ await test('analyze --apply — labels row-level failures without slug or relati
     });
     assert.equal(r.code, 1, `stdout: ${r.stdout}\nstderr: ${r.stderr}`);
     const clean = stripAnsi(r.stdout);
-    assert.match(clean, /✗ concepts\[0\] — concepts\[0\] missing slug/);
-    assert.match(clean, /✗ relations\[0\] — relations\[0\] missing source/);
+    assert.match(clean, /✗ concepts\[0\] · concepts\[0\] missing slug/);
+    assert.match(clean, /✗ relations\[0\] · relations\[0\] missing source/);
     assert.doesNotMatch(clean, /undefined/);
   } finally {
     rmSync(vault, { recursive: true, force: true });
@@ -8485,7 +8485,7 @@ await test('bootstrap --skip-imports — sole README domain yields a verifier-cl
       stripAnsi(verify.stdout),
       new RegExp(`tools\\/list ${EXPECTED_TOOL_COUNT}\\/${EXPECTED_TOOL_COUNT}`),
     );
-    assert.match(stripAnsi(verify.stdout), /All passed —/);
+    assert.match(stripAnsi(verify.stdout), /All passed:/);
   } finally {
     rmSync(vault, { recursive: true, force: true });
     rmSync(repo, { recursive: true, force: true });
@@ -8698,7 +8698,7 @@ await test('bootstrap --skip-imports — labels row-level failures without slug 
       "    return;",
       "  }",
       "  if (msg.params?.name === 'analyze_repo_structure') {",
-      "    const payload = { rootPath: '/repo', framework: 'generic', project: { slug: 'demo', title: 'Demo' }, domains: [{ slug: 'domains/core', title: 'Core', evidence: { source: 'src/core' } /* 2026-08-08: README 출처면 보류 규칙에 걸려 이 시험의 본래 목적(행 드리프트 라벨)이 아예 안 돈다 — 확증된 출처로 */ }], capabilities: [], elements: [], suggestedRelations: [{ from: 'demo', to: 'domains/core', type: 'contains' }], skipped: [] };",
+      "    const payload = { rootPath: '/repo', framework: 'generic', project: { slug: 'demo', title: 'Demo' }, domains: [{ slug: 'domains/core', title: 'Core', evidence: { source: 'src/core' } /* 2026-08-08: README 출처면 보류 규칙에 걸려 이 시험의 본래 목적(행 드리프트 라벨)이 아예 안 돈다: 확증된 출처로 */ }], capabilities: [], elements: [], suggestedRelations: [{ from: 'demo', to: 'domains/core', type: 'contains' }], skipped: [] };",
       "    console.log(JSON.stringify({ jsonrpc: '2.0', id: msg.id, result: { content: [{ text: JSON.stringify(payload) }], structuredContent: payload } }));",
       "    return;",
       "  }",
@@ -8721,8 +8721,8 @@ await test('bootstrap --skip-imports — labels row-level failures without slug 
     });
     assert.equal(r.code, 1, `stdout: ${r.stdout}\nstderr: ${r.stderr}`);
     const clean = stripAnsi(r.stdout);
-    assert.match(clean, /✗ concept concepts\[0\] — concepts\[0\] missing slug/);
-    assert.match(clean, /✗ suggested relations\[0\] — relations\[0\] missing source/);
+    assert.match(clean, /✗ concept concepts\[0\] · concepts\[0\] missing slug/);
+    assert.match(clean, /✗ suggested relations\[0\] · relations\[0\] missing source/);
     assert.doesNotMatch(clean, /undefined/);
   } finally {
     rmSync(vault, { recursive: true, force: true });
@@ -8787,7 +8787,7 @@ await test('bootstrap — fails closed when add_relations response rows drift', 
       "    return;",
       "  }",
       "  if (msg.params?.name === 'analyze_repo_structure') {",
-      "    const payload = { rootPath: '/repo', framework: 'generic', project: { slug: 'demo', title: 'Demo' }, domains: [{ slug: 'domains/core', title: 'Core', evidence: { source: 'src/core' } /* 2026-08-08: README 출처면 보류 규칙이 관계까지 걸러 이 시험이 안 돈다 — 확증된 출처로 */ }], capabilities: [], elements: [], suggestedRelations: [{ from: 'demo', to: 'domains/core', type: 'contains' }], skipped: [] };",
+      "    const payload = { rootPath: '/repo', framework: 'generic', project: { slug: 'demo', title: 'Demo' }, domains: [{ slug: 'domains/core', title: 'Core', evidence: { source: 'src/core' } /* 2026-08-08: README 출처면 보류 규칙이 관계까지 걸러 이 시험이 안 돈다: 확증된 출처로 */ }], capabilities: [], elements: [], suggestedRelations: [{ from: 'demo', to: 'domains/core', type: 'contains' }], skipped: [] };",
       "    console.log(JSON.stringify({ jsonrpc: '2.0', id: msg.id, result: { content: [{ text: JSON.stringify(payload) }], structuredContent: payload } }));",
       "    return;",
       "  }",

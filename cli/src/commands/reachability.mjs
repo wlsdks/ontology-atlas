@@ -122,7 +122,7 @@ export async function runReachability(args) {
 function render(result, filters = {}) {
   const summary = result.summary ?? {};
   process.stdout.write(
-    `${COLORS.bold}${result.start}${COLORS.reset} ${COLORS.dim}— reachability${COLORS.reset}` +
+    `${COLORS.bold}${result.start}${COLORS.reset} ${COLORS.dim}· reachability${COLORS.reset}` +
       ` ${COLORS.dim}(depth ${result.depth}, ${result.direction})${COLORS.reset}\n` +
       `  ${summary.reachableNodes ?? 0} reachable node(s)` +
       ` · ${summary.traversedEdges ?? 0} traversed edge(s)` +
@@ -144,7 +144,7 @@ function render(result, filters = {}) {
       process.stdout.write(`  ${COLORS.bold}d${layer.distance}${COLORS.reset} ${COLORS.dim}(${layer.total})${COLORS.reset}\n`);
       for (const node of layer.nodes) {
         const kc = KIND_COLORS[node.kind] || COLORS.dim;
-        const title = node.title && node.title !== node.slug ? ` ${COLORS.dim}— ${node.title}${COLORS.reset}` : '';
+        const title = node.title && node.title !== node.slug ? ` ${COLORS.dim}· ${node.title}${COLORS.reset}` : '';
         process.stdout.write(`    ${kc}${node.slug}${COLORS.reset}${title}\n`);
       }
     }
@@ -172,7 +172,7 @@ function render(result, filters = {}) {
       : '';
     process.stdout.write(
       `\n${COLORS.dim}next${COLORS.reset} reachable ${COLORS.bold}${focusTarget}${COLORS.reset}` +
-        `${COLORS.dim} — traversal rows are candidates, not proof; inspect the node and bounded paths before writing${COLORS.reset}\n`,
+        `${COLORS.dim} · traversal rows are candidates, not proof; inspect the node and bounded paths before writing${COLORS.reset}\n`,
     );
     process.stdout.write(`  ${COLORS.cyan}ontology-atlas node ${focusTarget} [vault] --limit 20${COLORS.reset}\n`);
     process.stdout.write(

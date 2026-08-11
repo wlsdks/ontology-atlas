@@ -106,7 +106,7 @@ function render(result) {
       const score =
         typeof h[scoreKey] === 'number' ? h[scoreKey].toFixed(scoreKey === 'pageRank' ? 4 : 0) : '-';
       const deg = `${COLORS.dim}${scoreKey} ${score}${COLORS.reset} ${COLORS.dim}(deg ${h.degree})${COLORS.reset}`;
-      const titleText = h.title && h.title !== h.slug ? ` ${COLORS.dim}— ${h.title}${COLORS.reset}` : '';
+      const titleText = h.title && h.title !== h.slug ? ` ${COLORS.dim}· ${h.title}${COLORS.reset}` : '';
       process.stdout.write(`  ${COLORS.bold}${rank}${COLORS.reset} ${kc}${slug}${COLORS.reset}${titleText} ${deg}\n`);
     }
     process.stdout.write('\n');
@@ -119,7 +119,7 @@ function render(result) {
   if (focus?.slug) {
     process.stdout.write(
       `${COLORS.dim}next${COLORS.reset} hub ${COLORS.bold}${focus.slug}${COLORS.reset}` +
-        `${COLORS.dim} — ranking rows are hotspots, not proof; inspect the node and impact before onboarding/refactor decisions${COLORS.reset}\n`,
+        `${COLORS.dim} · ranking rows are hotspots, not proof; inspect the node and impact before onboarding/refactor decisions${COLORS.reset}\n`,
     );
     process.stdout.write(`  ${COLORS.cyan}ontology-atlas node ${focus.slug} [vault] --limit 20${COLORS.reset}\n`);
     process.stdout.write(

@@ -42,7 +42,7 @@ export function cliInvocation(io = {}) {
   return `node ${shellQuoteIfNeeded(path.resolve(entry))}`;
 }
 
-/** 공백·따옴표가 든 경로만 감싼다 — 멀쩡한 경로에 따옴표를 붙이면 읽기 나쁘다. */
+/** 공백·따옴표가 든 경로만 감싼다: 멀쩡한 경로에 따옴표를 붙이면 읽기 나쁘다. */
 export function shellQuoteIfNeeded(value) {
   return /[\s"'$`\\]/.test(value) ? `'${value.replace(/'/g, `'\\''`)}'` : value;
 }

@@ -38,7 +38,7 @@ export function findGitRepoRoot(vaultRoot, { run = defaultRun } = {}) {
   }
 }
 
-/** repoRoot 기준 vault 의 pathspec — vault 가 repo root 자체면 '.'. */
+/** repoRoot 기준 vault 의 pathspec: vault 가 repo root 자체면 '.'. */
 export function vaultPathspec(repoRoot, vaultRoot) {
   const rel = relative(repoRoot, vaultRoot).replace(/\\/g, '/');
   return rel === '' ? '.' : rel;
@@ -61,7 +61,7 @@ export function getPorcelainStatus({ repoRoot, pathspec, run = defaultRun }) {
   return parsePorcelain(out);
 }
 
-/** pathspec 없는 전체 repo `git status --porcelain` — staged-outside-vault 가드용. */
+/** pathspec 없는 전체 repo `git status --porcelain` · staged-outside-vault 가드용. */
 export function getFullPorcelainStatus({ repoRoot, run = defaultRun }) {
   let out;
   try {
@@ -156,7 +156,7 @@ export function formatSnapshotSummary(changes) {
   return `${headline}${slugText}`;
 }
 
-/** vault pathspec 밖에서 이미 staged 된 경로 목록 — 보호 경고용. */
+/** vault pathspec 밖에서 이미 staged 된 경로 목록: 보호 경고용. */
 export function findStagedOutsideVault(fullStatusRows, pathspec) {
   return fullStatusRows
     .filter((row) => {
@@ -172,7 +172,7 @@ function isUnderPathspec(path, pathspec) {
   return path === pathspec || path.startsWith(`${pathspec}/`);
 }
 
-/** vault 범위의 untracked 파일만 골라 add — vault 밖 파일은 절대 건드리지 않는다. */
+/** vault 범위의 untracked 파일만 골라 add: vault 밖 파일은 절대 건드리지 않는다. */
 export function addPaths({ repoRoot, paths, run = defaultRun }) {
   if (!paths || paths.length === 0) return;
   run(['add', '--', ...paths], repoRoot);
@@ -194,7 +194,7 @@ export function getCurrentBranch({ repoRoot, run = defaultRun }) {
   return run(['rev-parse', '--abbrev-ref', 'HEAD'], repoRoot).trim();
 }
 
-/** 현재 브랜치의 upstream ref (예: `origin/main`) — 없으면 null. */
+/** 현재 브랜치의 upstream ref (예: `origin/main`): 없으면 null. */
 export function getUpstreamRef({ repoRoot, run = defaultRun }) {
   try {
     const out = run(['rev-parse', '--abbrev-ref', '--symbolic-full-name', '@{u}'], repoRoot);
@@ -205,7 +205,7 @@ export function getUpstreamRef({ repoRoot, run = defaultRun }) {
   }
 }
 
-/** upstream 이 이미 설정된 브랜치로만 push — 자동 `-u` 설정 금지 (신뢰 헌장). */
+/** upstream 이 이미 설정된 브랜치로만 push: 자동 `-u` 설정 금지 (신뢰 헌장). */
 export function pushCurrentBranch({ repoRoot, run = defaultRun }) {
   run(['push'], repoRoot);
 }
@@ -252,7 +252,7 @@ export function classifyGitError(err, { operation = 'git' } = {}) {
   ) {
     return {
       reason: 'push-non-fast-forward',
-      message: '원격이 앞섰어요 — `git pull` 후 다시 스냅샷하세요.',
+      message: '원격이 앞섰어요: `git pull` 후 다시 스냅샷하세요.',
       note: '커밋은 이미 로컬에 기록됨',
       guidance: 'git pull',
     };
@@ -266,7 +266,7 @@ export function classifyGitError(err, { operation = 'git' } = {}) {
   ) {
     return {
       reason: 'gpg-sign-failed',
-      message: '커밋 서명(gpg)에 실패했어요 — 서명 키를 확인하세요.',
+      message: '커밋 서명(gpg)에 실패했어요: 서명 키를 확인하세요.',
       note: firstLine,
       guidance: 'git config commit.gpgsign false   # 서명을 끄고 다시 스냅샷',
     };
@@ -280,7 +280,7 @@ export function classifyGitError(err, { operation = 'git' } = {}) {
   ) {
     return {
       reason: 'merge-in-progress',
-      message: '머지/리베이스가 진행 중이라 vault 범위만 커밋할 수 없어요 — 진행 중인 작업을 먼저 마치거나 중단하세요.',
+      message: '머지/리베이스가 진행 중이라 vault 범위만 커밋할 수 없어요: 진행 중인 작업을 먼저 마치거나 중단하세요.',
       note: null,
       guidance: 'git status   # 진행 중 상태 확인',
     };
@@ -290,7 +290,7 @@ export function classifyGitError(err, { operation = 'git' } = {}) {
   if (text.includes('conflict') || text.includes('automatic merge failed')) {
     return {
       reason: 'pull-conflict',
-      message: 'pull 중 충돌이 났어요 — 충돌 파일을 해결한 뒤 커밋하세요.',
+      message: 'pull 중 충돌이 났어요: 충돌 파일을 해결한 뒤 커밋하세요.',
       note: null,
       guidance: 'git status   # 충돌 파일 확인',
     };
@@ -300,7 +300,7 @@ export function classifyGitError(err, { operation = 'git' } = {}) {
   if (text.includes('would be overwritten') || text.includes('overwritten by merge')) {
     return {
       reason: 'local-changes',
-      message: '커밋 안 된 로컬 변경이 있어 막혔어요 — 먼저 snapshot 으로 커밋하거나 stash 하세요.',
+      message: '커밋 안 된 로컬 변경이 있어 막혔어요: 먼저 snapshot 으로 커밋하거나 stash 하세요.',
       note: null,
       guidance: 'ontology-atlas snapshot   # 로컬 변경을 먼저 커밋',
     };
@@ -314,7 +314,7 @@ export function classifyGitError(err, { operation = 'git' } = {}) {
   ) {
     return {
       reason: 'no-upstream',
-      message: '이 브랜치에 연결된 원격이 없어요 — 먼저 upstream 을 설정하세요.',
+      message: '이 브랜치에 연결된 원격이 없어요: 먼저 upstream 을 설정하세요.',
       note: null,
       guidance: 'git push -u origin <branch>',
     };
@@ -324,7 +324,7 @@ export function classifyGitError(err, { operation = 'git' } = {}) {
   if (text.includes('pre-commit') || text.includes('commit-msg') || text.includes('hook')) {
     return {
       reason: 'pre-commit-hook',
-      message: '커밋 훅이 스냅샷을 거부했어요 — 훅이 보고한 문제를 고친 뒤 다시 스냅샷하세요.',
+      message: '커밋 훅이 스냅샷을 거부했어요: 훅이 보고한 문제를 고친 뒤 다시 스냅샷하세요.',
       note: firstLine,
       guidance: null,
     };

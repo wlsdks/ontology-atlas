@@ -61,10 +61,10 @@ function render(result, query) {
   const total = result?.totalMatches ?? matches.length;
   process.stdout.write(
     `${COLORS.bold}similar to:${COLORS.reset} ${COLORS.bold}${query}${COLORS.reset}` +
-      ` ${COLORS.dim}— ${total} match${total === 1 ? '' : 'es'}${result?.limited ? ' (limited)' : ''}${COLORS.reset}\n\n`,
+      ` ${COLORS.dim}· ${total} match${total === 1 ? '' : 'es'}${result?.limited ? ' (limited)' : ''}${COLORS.reset}\n\n`,
   );
   if (matches.length === 0) {
-    process.stdout.write(`${COLORS.green}no similar node — safe to create new${COLORS.reset}\n`);
+    process.stdout.write(`${COLORS.green}no similar node: safe to create new${COLORS.reset}\n`);
     return;
   }
   for (let i = 0; i < matches.length; i += 1) {
@@ -74,7 +74,7 @@ function render(result, query) {
     const score = (m.score ?? 0).toFixed(3);
     const scoreColor = m.score >= 0.5 ? COLORS.red : m.score >= 0.25 ? COLORS.yellow : COLORS.dim;
     const rank = String(i + 1).padStart(2);
-    const title = n.title ? ` ${COLORS.dim}— ${n.title}${COLORS.reset}` : '';
+    const title = n.title ? ` ${COLORS.dim}· ${n.title}${COLORS.reset}` : '';
     process.stdout.write(
       `  ${COLORS.bold}${rank}${COLORS.reset} ${scoreColor}${score}${COLORS.reset}` +
         ` ${kc}${(n.kind || '?').padEnd(11)}${COLORS.reset} ${kc}${n.slug || '?'}${COLORS.reset}${title}\n`,
@@ -98,11 +98,11 @@ function render(result, query) {
   const top = matches[0];
   if (top && top.score >= 0.5) {
     process.stdout.write(
-      `\n${COLORS.red}⚠${COLORS.reset} ${COLORS.dim}top score ≥ 0.5 — \`patch_concept\` 가 \`add_concept\` 보다 안전${COLORS.reset}\n`,
+      `\n${COLORS.red}⚠${COLORS.reset} ${COLORS.dim}top score ≥ 0.5: \`patch_concept\` 가 \`add_concept\` 보다 안전${COLORS.reset}\n`,
     );
   } else if (top && top.score >= 0.25) {
     process.stdout.write(
-      `\n${COLORS.yellow}~${COLORS.reset} ${COLORS.dim}top score 0.25-0.5 — 새 노드 + \`relates\` edge 가 보통 더 깨끗${COLORS.reset}\n`,
+      `\n${COLORS.yellow}~${COLORS.reset} ${COLORS.dim}top score 0.25-0.5: 새 노드 + \`relates\` edge 가 보통 더 깨끗${COLORS.reset}\n`,
     );
   }
 }
@@ -172,8 +172,8 @@ function printUsage(stream = process.stderr) {
       `  ontology-atlas similar "auth flow" --kind capability\n` +
       `  ontology-atlas similar --slug capabilities/auth-login\n\n` +
       `${COLORS.bold}Score 가이드:${COLORS.reset}\n` +
-      `  ≥ 0.5  — 같은 노드 가능성 높음 → \`patch_concept\` 권장\n` +
-      `  0.25-0.5 — 인접 개념 → 새 노드 + \`relates\` edge 깨끗\n` +
-      `  < 0.25 — 무관 → 새 노드 안전\n`,
+      `  ≥ 0.5 : 같은 노드 가능성 높음 → \`patch_concept\` 권장\n` +
+      `  0.25-0.5: 인접 개념 → 새 노드 + \`relates\` edge 깨끗\n` +
+      `  < 0.25: 무관 → 새 노드 안전\n`,
   );
 }

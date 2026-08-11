@@ -113,7 +113,7 @@ function render(result, filters = {}) {
   if (incoming?.total > 0) {
     process.stdout.write(
       `\n${COLORS.dim}INCOMING${COLORS.reset} ${COLORS.bold}${incoming.total}${COLORS.reset}` +
-        ` ${COLORS.dim}— 어디가 이 노드를 reference 하나${COLORS.reset}\n`,
+        ` ${COLORS.dim}· 어디가 이 노드를 reference 하나${COLORS.reset}\n`,
     );
     renderEdgesByRelation(incoming.edges, 'from');
     renderLimitedHint(incoming, 'incoming');
@@ -124,7 +124,7 @@ function render(result, filters = {}) {
   if (outgoing?.total > 0) {
     process.stdout.write(
       `\n${COLORS.dim}OUTGOING${COLORS.reset} ${COLORS.bold}${outgoing.total}${COLORS.reset}` +
-        ` ${COLORS.dim}— 이 노드가 무엇을 reference 하나${COLORS.reset}\n`,
+        ` ${COLORS.dim}· 이 노드가 무엇을 reference 하나${COLORS.reset}\n`,
     );
     renderEdgesByRelation(outgoing.edges, 'to');
     renderLimitedHint(outgoing, 'outgoing');
@@ -134,7 +134,7 @@ function render(result, filters = {}) {
     if (hasActiveEdgeFilter(filters)) {
       process.stdout.write(`\n${COLORS.dim}no matching edges for current filters${COLORS.reset}\n`);
     } else {
-      process.stdout.write(`\n${COLORS.dim}isolated — 어떤 노드와도 연결 안 됨${COLORS.reset}\n`);
+      process.stdout.write(`\n${COLORS.dim}isolated: 어떤 노드와도 연결 안 됨${COLORS.reset}\n`);
     }
   }
 }
@@ -171,7 +171,7 @@ function renderEdgesByRelation(edges, peerField) {
       const other = e[peerField];
       const otherKind = e.otherKind || (e.external ? 'external' : '?');
       const kc = KIND_COLORS[otherKind] || COLORS.dim;
-      const title = e.otherNode?.title ? ` ${COLORS.dim}— ${e.otherNode.title}${COLORS.reset}` : '';
+      const title = e.otherNode?.title ? ` ${COLORS.dim}· ${e.otherNode.title}${COLORS.reset}` : '';
       const externalMark = e.external ? ` ${COLORS.dim}[external]${COLORS.reset}` : '';
       process.stdout.write(`    ${kc}${other}${COLORS.reset}${title}${externalMark}\n`);
     }
@@ -252,7 +252,7 @@ function printUsage(stream = process.stderr) {
   stream.write(
     `\n${COLORS.bold}Usage:${COLORS.reset}\n` +
       `  ontology-atlas node <slug> [vault] [--limit N] [--types A,B] [--no-external] [--no-unresolved] [--json]\n\n` +
-      `한 노드의 전체 deep dive — header · 도메인 · lineage · incoming/outgoing edges (relation 별 그룹).\n` +
+      `한 노드의 전체 deep dive: header · 도메인 · lineage · incoming/outgoing edges (relation 별 그룹).\n` +
       `--limit N 은 incoming/outgoing edge, lineage, containment rows 를 1..500 범위로 조절합니다.\n` +
       `--types A,B 는 관계 타입을 먼저 필터링합니다. 예: --types dependencies,relates\n` +
       `--no-external / --no-unresolved 는 외부 파일 ref 또는 미해결 ref 를 edge 목록에서 숨깁니다.\n`,

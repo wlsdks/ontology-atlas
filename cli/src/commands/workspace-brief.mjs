@@ -57,7 +57,7 @@ function render(result) {
   const sc = diagnosisStatusColor(status, COLORS);
   process.stdout.write(
     `${COLORS.bold}workspace brief${COLORS.reset} ${sc}${status}${COLORS.reset}` +
-      ` ${COLORS.dim}— ${sum.nodes ?? 0} 노드 · ${sum.edges ?? 0} 관계` +
+      ` ${COLORS.dim}· ${sum.nodes ?? 0} 노드 · ${sum.edges ?? 0} 관계` +
       ` · ${sum.projects ?? 0} 프로젝트 · ${sum.domains ?? 0} 도메인${COLORS.reset}\n\n`,
   );
 
@@ -69,7 +69,7 @@ function render(result) {
       const h = hotspots[i];
       const kc = KIND_COLORS[h.kind] || COLORS.dim;
       const rank = String(i + 1).padStart(2);
-      const titleText = h.title && h.title !== h.slug ? ` ${COLORS.dim}— ${h.title}${COLORS.reset}` : '';
+      const titleText = h.title && h.title !== h.slug ? ` ${COLORS.dim}· ${h.title}${COLORS.reset}` : '';
       process.stdout.write(
         `  ${COLORS.bold}${rank}${COLORS.reset} ${kc}${h.slug.padEnd(50)}${COLORS.reset}` +
           `${titleText} ${COLORS.dim}deg ${h.degree}${COLORS.reset}\n`,

@@ -174,7 +174,7 @@ function installPreCommitHook(codebaseRoot) {
         ? 'created pre-commit hook running `ontology-atlas preflight --staged`'
         : action === 'appended'
           ? 'appended the preflight block to your existing pre-commit hook (existing hook body preserved)'
-          : 'pre-commit hook already runs ontology-atlas preflight — left untouched',
+          : 'pre-commit hook already runs ontology-atlas preflight: left untouched',
   };
 }
 
@@ -402,7 +402,7 @@ function render(result) {
   const color = status === 'ready' ? COLORS.green : COLORS.yellow;
   process.stdout.write(
     `${color}${COLORS.bold}${status}${COLORS.reset} ${COLORS.dim}agent setup${COLORS.reset}` +
-      ` — ${summary.ready}/${summary.total} ready` +
+      ` · ${summary.ready}/${summary.total} ready` +
       ` · ${summary.missing} missing · ${summary.review} review` +
       (result.sideEffect ? ` · ${summary.written} written · ${summary.examples} example(s)` : '') +
       `\n`,
@@ -429,18 +429,18 @@ function render(result) {
   process.stdout.write(`  ${COLORS.cyan}${result.commands.setupGate}${COLORS.reset}\n`);
   process.stdout.write(`  ${COLORS.dim}Global Codex fallback: ${result.commands.codexGlobal}${COLORS.reset}\n`);
   process.stdout.write(`  ${COLORS.dim}Other MCP client (opencode, custom harness, ...): register ${result.commands.genericClient}${COLORS.reset}\n`);
-  process.stdout.write(`  ${COLORS.dim}Feature guide: ${result.docs.workflowGuide} — ${result.docs.workflowGuideDescription}${COLORS.reset}\n`);
+  process.stdout.write(`  ${COLORS.dim}Feature guide: ${result.docs.workflowGuide} · ${result.docs.workflowGuideDescription}${COLORS.reset}\n`);
   process.stdout.write(`\n${COLORS.bold}Read-first graph runbook:${COLORS.reset}\n`);
   for (const command of result.commands.graphRunbook) {
     process.stdout.write(`  ${COLORS.cyan}${command}${COLORS.reset}\n`);
   }
   process.stdout.write(`\n${COLORS.bold}Mode guide:${COLORS.reset}\n`);
   for (const mode of result.docs.modeComparison) {
-    process.stdout.write(`  ${COLORS.cyan}${mode.label}${COLORS.reset} — ${mode.gives}\n`);
+    process.stdout.write(`  ${COLORS.cyan}${mode.label}${COLORS.reset} · ${mode.gives}\n`);
   }
   process.stdout.write(`\n${COLORS.bold}First-contact proof contract:${COLORS.reset}\n`);
   for (const proof of result.docs.firstContactProofContract) {
-    process.stdout.write(`  ${COLORS.cyan}${proof.label}${COLORS.reset} — ${proof.proves}\n`);
+    process.stdout.write(`  ${COLORS.cyan}${proof.label}${COLORS.reset} · ${proof.proves}\n`);
   }
   process.stdout.write(`\n${COLORS.bold}After code changes:${COLORS.reset}\n`);
   for (const rule of result.docs.postChangeSync) {
@@ -586,7 +586,7 @@ function printUsage(stream = process.stderr) {
       `  \`ontology-atlas preflight --staged\` before every commit. If a pre-commit\n` +
       `  hook already exists, the block is appended (your existing hook body is\n` +
       `  preserved); if our block is already present, nothing changes. The hook\n` +
-      `  is purely informational and never fails the commit — \`git commit\n` +
+      `  is purely informational and never fails the commit: \`git commit\n` +
       `  --no-verify\` still skips it like any other hook.\n`,
   );
 }

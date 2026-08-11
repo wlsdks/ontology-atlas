@@ -232,11 +232,11 @@ export async function runBootstrap(args) {
     const onlyReadme = domainSplit.corroborated.length === 0;
     process.stdout.write(
       `                ${COLORS.yellow}README 제목 ${heldReadmeDomains.length}개는 심지 않고 검토 후보로 남김${COLORS.reset}` +
-        `${COLORS.dim} — 문서 절이지 도메인이 아닐 수 있어요. 그대로 심으려면 --apply-readme-domains${COLORS.reset}\n`,
+        `${COLORS.dim} · 문서 절이지 도메인이 아닐 수 있어요. 그대로 심으려면 --apply-readme-domains${COLORS.reset}\n`,
     );
     if (onlyReadme) {
       process.stdout.write(
-        `                ${COLORS.dim}코드에서 구조를 못 찾았어요(하위 폴더 없는 src 등) — 도메인 확정은 에이전트/공방에서 하는 편이 맞아요.${COLORS.reset}\n`,
+        `                ${COLORS.dim}코드에서 구조를 못 찾았어요(하위 폴더 없는 src 등): 도메인 확정은 에이전트/공방에서 하는 편이 맞아요.${COLORS.reset}\n`,
       );
     }
     for (const d of heldReadmeDomains.slice(0, 12)) {
@@ -260,7 +260,7 @@ export async function runBootstrap(args) {
     process.stdout.write(
       `  ${COLORS.bold}2) imports${COLORS.reset}    ` +
         `${COLORS.yellow}${importReviewCandidates.length}${COLORS.reset} review candidates · ` +
-        `${COLORS.dim}0 automatic semantic writes — rationale review required${COLORS.reset}` +
+        `${COLORS.dim}0 automatic semantic writes: rationale review required${COLORS.reset}` +
         (thr
           ? ` ${COLORS.dim}(--threshold ${thr.threshold} filtered ${thr.filteredOut})${COLORS.reset}`
           : '') +
@@ -275,7 +275,7 @@ export async function runBootstrap(args) {
     if (row.ok === false) {
       if (errCount < 12) {
         process.stdout.write(
-          `  ${COLORS.red}✗${COLORS.reset} ${formatConceptBatchFailureLabel(row, index, 'concept')} ${COLORS.dim}— ${row.error}${COLORS.reset}\n`,
+          `  ${COLORS.red}✗${COLORS.reset} ${formatConceptBatchFailureLabel(row, index, 'concept')} ${COLORS.dim}· ${row.error}${COLORS.reset}\n`,
         );
       }
       errCount += 1;
@@ -285,7 +285,7 @@ export async function runBootstrap(args) {
     if (row.ok === false) {
       if (errCount < 12) {
         process.stdout.write(
-          `  ${COLORS.red}✗${COLORS.reset} ${formatRelationBatchFailureLabel(row, index, 'suggested')} ${COLORS.dim}— ${row.error}${COLORS.reset}\n`,
+          `  ${COLORS.red}✗${COLORS.reset} ${formatRelationBatchFailureLabel(row, index, 'suggested')} ${COLORS.dim}· ${row.error}${COLORS.reset}\n`,
         );
       }
       errCount += 1;
@@ -295,7 +295,7 @@ export async function runBootstrap(args) {
     if (row.ok === false) {
       if (errCount < 12) {
         process.stdout.write(
-          `  ${COLORS.red}✗${COLORS.reset} ${formatConceptBatchFailureLabel(row, index, 'import endpoint')} ${COLORS.dim}— ${row.error}${COLORS.reset}\n`,
+          `  ${COLORS.red}✗${COLORS.reset} ${formatConceptBatchFailureLabel(row, index, 'import endpoint')} ${COLORS.dim}· ${row.error}${COLORS.reset}\n`,
         );
       }
       errCount += 1;
@@ -305,7 +305,7 @@ export async function runBootstrap(args) {
     if (row.ok === false) {
       if (errCount < 12) {
         process.stdout.write(
-          `  ${COLORS.red}✗${COLORS.reset} ${formatRelationBatchFailureLabel(row, index, 'import containment')} ${COLORS.dim}— ${row.error}${COLORS.reset}\n`,
+          `  ${COLORS.red}✗${COLORS.reset} ${formatRelationBatchFailureLabel(row, index, 'import containment')} ${COLORS.dim}· ${row.error}${COLORS.reset}\n`,
         );
       }
       errCount += 1;
@@ -315,7 +315,7 @@ export async function runBootstrap(args) {
     if (row.ok === false) {
       if (errCount < 12) {
         process.stdout.write(
-          `  ${COLORS.red}✗${COLORS.reset} ${formatRelationBatchFailureLabel(row, index, 'import')} ${COLORS.dim}— ${row.error}${COLORS.reset}\n`,
+          `  ${COLORS.red}✗${COLORS.reset} ${formatRelationBatchFailureLabel(row, index, 'import')} ${COLORS.dim}· ${row.error}${COLORS.reset}\n`,
         );
       }
       errCount += 1;
