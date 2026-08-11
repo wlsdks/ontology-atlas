@@ -31,6 +31,7 @@ import type { CreateCandidate, CreateNodeKind } from "../lib/build-create-node";
 import type { PickerDiscovery, PickerSuggestionReason } from "../lib/build-picker-discovery";
 import type { DeltaPreviewLayout, DeltaSatellite, DeltaSatelliteState } from "../lib/build-delta-preview";
 import { fieldClass } from '@/shared/ui/control-class';
+import { useHeldValue, usePanelPresence } from "@/shared/lib/use-presence";
 
 /** 무대 등장의 두 번째 박자 — 잎(레인)이 카드보다 반 박자 늦게 정착한다. */
 const STAGE_LANE_DELAY_MS = 40;
@@ -750,6 +751,41 @@ export function StudioCompass(props: StudioCompassProps) {
   const similarHit =
     openRelation && similarFor ? similarFor(openRelation, query) : null;
 
+  /**
+   * **피커가 나가는 길** (2026-08-12 실측으로 생겼다).
+   *
+   * 그 전까지 피커는 나가는 길이 없었다 — `openRelation` 이 `null` 이 되는 순간
+   * 언마운트다. 프레임으로 재니 Escape 는 **+2ms**(한 프레임), 행을 고르면
+   * **+39ms 에 `opacity: 1.00` 그대로** 사라졌다. 그동안 결과 쪽은 제대로
+   * 움직인다(소켓 색 전이 130ms · 도착 표시 240ms). 즉 **누른 그것만 0프레임**을
+   * 받았고, 이 저장소가 이름 붙여 둔 그 결함이다.
+   *
+   * 창을 열어 두는 것만으로는 부족하다 — 내용은 부모가 주므로 `openRelation` 이
+   * 사라지면 **예쁘게 사라지는 빈 상자**가 된다(`useHeldValue` 머리말의 그 함정).
+   * 그래서 피커가 필요한 것을 한 덩어리로 묶어 붙든다.
+   *
+   * 키를 `관계|검색어` 로 잡는 이유: 붙드는 값이 객체라 정체성으로 비교하면 무한
+   * 재렌더가 나고(그 훅이 실측으로 배운 것), 관계만으로 잡으면 **검색어가 바뀔 때
+   * 붙든 값이 갱신되지 않아** 닫는 순간 목록이 처음 상태로 되돌아가 보인다.
+   * 피커의 내용은 이 둘로 완전히 결정된다(`pickerRows`·`similarHit` 둘 다 그 함수).
+   */
+  const pickerAnchor = openLayout
+    ? (openLayout.layout.socket ?? openLayout.layout.addChip ?? null)
+    : null;
+  const pickerBundle =
+    openRelation && pickerAnchor && openLayout
+      ? {
+          relation: openRelation,
+          socket: pickerAnchor,
+          bearing: openLayout.view.bearing,
+          rows: pickerRows,
+          similarHit,
+          query,
+        }
+      : null;
+  const heldPicker = useHeldValue(pickerBundle, pickerBundle ? `${openRelation}|${query}` : null);
+  const pickerPresence = usePanelPresence(Boolean(pickerBundle));
+
   // #62 — 무대 위 임시 표면은 서로 배타적이다. 예전엔 '+90 더 보기' 접힘
   // 목록이 열린 채 소켓 피커가 그 위에 그대로 쌓여, 아래 목록이 반쯤 가린
   // 상태로 둘 다 살아 있었다(opus5 검수 스크린샷). 피커를 열 때 접힘 목록·
@@ -1293,21 +1329,22 @@ export function StudioCompass(props: StudioCompassProps) {
 
           {/* inline anchored picker — anchors to the empty socket OR (C4) to the
               filled lane's "＋ 더 잇기" add chip (same {x,y,w,h} shape). */}
-          {openRelation && openLayout && (openLayout.layout.socket ?? openLayout.layout.addChip) ? (
+          {pickerPresence.mounted && heldPicker ? (
             <InlinePicker
-              key={openRelation}
-              socket={(openLayout.layout.socket ?? openLayout.layout.addChip)!}
-              bearing={openLayout.view.bearing}
+              key={heldPicker.relation}
+              exiting={pickerPresence.exiting}
+              socket={heldPicker.socket}
+              bearing={heldPicker.bearing}
               cardLeft={cardLeft}
               cardRight={cardRight}
-              relation={openRelation}
-              question={bearings.find((b) => b.relation === openRelation)?.question ?? ""}
+              relation={heldPicker.relation}
+              question={bearings.find((b) => b.relation === heldPicker.relation)?.question ?? ""}
               labels={labels}
-              rows={pickerRows}
-              similarHit={similarHit}
+              rows={heldPicker.rows}
+              similarHit={heldPicker.similarHit}
               discoveryFor={props.discoveryFor}
               kindLabelFor={kindLabelFor}
-              query={query}
+              query={heldPicker.query}
               onQuery={setQuery}
               onPick={pick}
               onClose={closePicker}
@@ -2510,6 +2547,7 @@ function PickerSectionHeading({ label }: { label: string }) {
 }
 
 function InlinePicker({
+  exiting,
   socket,
   bearing,
   cardLeft,
@@ -2527,6 +2565,8 @@ function InlinePicker({
   onClose,
   onCreateNew,
 }: {
+  /** 퇴장 창(140ms) 동안 `true` — 되접히며 나가고, 그 사이 조작을 받지 않는다. */
+  exiting: boolean;
   socket: { x: number; y: number; w: number; h: number };
   bearing: StudioBearing;
   cardLeft: number;
@@ -2580,7 +2620,17 @@ function InlinePicker({
     <div
       data-testid="studio-picker"
       data-relation={relation}
-      className="studio-picker-pop absolute z-[8] flex flex-col rounded-panel border border-[color:var(--color-border-strong)] bg-[color:var(--color-elevated)]"
+      /*
+       * 나가는 동안은 **조작을 받지 않는다.** 클릭이 통과하지 않으면 뒤에서
+       * 착지하는 소켓을 140ms 동안 가로막고, 초점이 남아 있으면 화면에서 사라진
+       * 상자 안으로 Tab 이 들어간다.
+       */
+      inert={exiting || undefined}
+      data-exiting={exiting ? "true" : undefined}
+      className={cn(
+        "absolute z-[8] flex flex-col rounded-panel border border-[color:var(--color-border-strong)] bg-[color:var(--color-elevated)]",
+        exiting ? "studio-picker-dismiss pointer-events-none" : "studio-picker-pop",
+      )}
       style={
         {
           left,

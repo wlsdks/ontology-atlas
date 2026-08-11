@@ -25,7 +25,7 @@ import { seedFirstRunSeen } from "./first-run-seed";
  * ## 잠그는 성질
  *
  * ① 채울 때 **입장이 다시 재생되지 않는다** ② 그러면서 **도착은 움직인다**
- * ③ 그리고 **무대가 처음 열릴 때는 입장이 재생된다**.
+ * ③ 무대가 처음 열릴 때는 입장이 재생된다 ④ 그리고 **피커는 나가는 길을 갖는다**.
  *
  * ## ⚠️ ③ 이 없어서 이 게이트가 자기가 지킨다던 것을 놓쳤다 (2026-08-12)
  *
@@ -159,4 +159,85 @@ test("공방 · 무대가 처음 열릴 때는 입장이 재생된다", async ({
     samples[0].opacity,
     `입장이 첫 프레임에 이미 끝나 있다(opacity ${samples[0].opacity}) — 이름만 있고 움직임이 없다`,
   ).toBeLessThan(0.5);
+});
+
+test("공방 · 피커는 나가는 길을 갖는다", async ({ page }) => {
+  test.setTimeout(240_000);
+  await page.setViewportSize({ width: 1512, height: 900 });
+  await seedFirstRunSeen(page);
+  await page.goto("/ko/ontology/studio/?guides=off", { waitUntil: "domcontentloaded" });
+
+  const entry = page.getByTestId("studio-entry-create");
+  await expect(entry).toBeVisible({ timeout: 30_000 });
+  await page.waitForTimeout(1_500);
+  await entry.click();
+  await expect(page.getByTestId("studio-create-name")).toBeVisible({ timeout: 30_000 });
+  await page.getByTestId("studio-socket-down").click();
+  await expect(page.getByTestId("studio-picker")).toBeVisible({ timeout: 10_000 });
+  await page.waitForTimeout(700);
+
+  /*
+   * **닫는 순간부터 프레임을 잡는다.** 그 전까지 피커는 나가는 길이 없었다 —
+   * Escape 는 +2ms(한 프레임), 행 선택은 +39ms 에 `opacity: 1.00` 그대로
+   * 소멸했다. 그동안 결과 쪽(소켓 색 전이 130ms · 도착 표시 240ms)은 제대로
+   * 움직였으니 **사용자가 누른 그것만 0프레임**을 받은 것이다.
+   */
+  const frames = await page.evaluate(async () => {
+    const out: { name: string; opacity: number; inert: boolean }[] = [];
+    let stop = false;
+    const tick = () => {
+      if (stop) return;
+      const el = document.querySelector('[data-testid="studio-picker"]') as HTMLElement | null;
+      if (el) {
+        const style = getComputedStyle(el);
+        out.push({
+          name: style.animationName,
+          opacity: Number(style.opacity),
+          inert: el.hasAttribute("inert"),
+        });
+      }
+      requestAnimationFrame(tick);
+    };
+    requestAnimationFrame(tick);
+    document.dispatchEvent(new KeyboardEvent("keydown", { key: "Escape", bubbles: true }));
+    window.dispatchEvent(new KeyboardEvent("keydown", { key: "Escape", bubbles: true }));
+    await new Promise((resolve) => setTimeout(resolve, 600));
+    stop = true;
+    return out;
+  });
+
+  const dismissing = frames.filter((f) => f.name === "studioPickerDismiss");
+  console.log(
+    `[studio-dismiss] 살아 있던 프레임 ${frames.length} · 퇴장 프레임 ${dismissing.length} · ` +
+      `불투명도 ${dismissing.map((f) => f.opacity.toFixed(2)).join("→") || "(없음)"}`,
+  );
+
+  // 공회전 차단: 피커를 한 프레임도 못 봤으면 이 시험은 아무것도 안 쟀다.
+  expect(frames.length, "닫기 직후 피커를 한 프레임도 못 봤다").toBeGreaterThan(0);
+
+  /*
+   * ④-a **자기 이름으로 정방향 재생된다.** 되감기(`reverse`)는 같은 원소에서
+   * 클래스만 바뀌는 자리에서 아예 재생되지 않는다(`exit-motion-restart` 계약).
+   */
+  expect(
+    dismissing.length,
+    `피커가 퇴장 애니메이션 없이 사라졌다 — 하드컷이다: ${frames.map((f) => f.name).join(", ") || "(프레임 0)"}`,
+  ).toBeGreaterThan(1);
+
+  /*
+   * ④-b **실제로 배어 나간다.** 이름만 보면 「0.01ms 짜리 퇴장」도 통과한다.
+   * 프레임 수·밀리초는 못박지 않는다(기계마다 다르다) — 잠글 성질은 처음이
+   * 불투명하고 끝이 투명한가다.
+   */
+  expect(dismissing[0].opacity, "퇴장 첫 프레임이 이미 투명하다").toBeGreaterThan(0.5);
+  expect(
+    dismissing[dismissing.length - 1].opacity,
+    "퇴장이 끝났는데 아직 불투명하다 — 배어 나가지 않고 잘렸다",
+  ).toBeLessThan(0.5);
+
+  // ④-c 나가는 동안 조작을 받지 않는다 — 착지하는 소켓을 가로막지 않게.
+  expect(
+    dismissing.every((f) => f.inert),
+    "나가는 피커가 여전히 조작을 받는다",
+  ).toBe(true);
 });
