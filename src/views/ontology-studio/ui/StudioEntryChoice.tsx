@@ -2,6 +2,7 @@
 
 import { useEffect, useRef } from "react";
 import { controlClass } from "@/shared/ui";
+import { PAGE_COLUMN_STAGE } from "@/shared/ui/page-frame";
 
 /**
  * 공방 진입 선택 모먼트 (#1, 2026-07-25) — `/ontology/studio` 를 딥링크
@@ -96,7 +97,11 @@ export function StudioEntryChoice({
         </h1>
       </div>
 
-      <div className="mt-7 grid w-full max-w-[640px] gap-4 sm:grid-cols-2">
+      {/* 이 640 은 규격의 「무대 칸」이다 — 스킬 빈 상태가 같은 값을 쓰게 되면서
+          한 곳으로 모았다(`PAGE_COLUMN_STAGE`). `mx-auto` 는 이 부모가 이미
+          `items-center` 로 세우므로 중복이지만 무해하고, 값의 출처가 하나인 것이
+          더 중요하다. */}
+      <div className={`${PAGE_COLUMN_STAGE} mt-7 grid gap-4 sm:grid-cols-2`}>
         <EntryCard
           ref={enhanceRef}
           testId="studio-entry-enhance"
