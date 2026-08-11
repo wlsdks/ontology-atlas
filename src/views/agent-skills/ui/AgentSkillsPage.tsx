@@ -7,7 +7,7 @@ import { useSkillFolder } from "@/features/agent-skills-local";
 import { Button } from "@/shared/ui";
 import { fieldClass } from "@/shared/ui/control-class";
 import { HexMark } from "@/shared/ui/hex-mark";
-import { PAGE_FRAME, PAGE_HEADER_ROW, PAGE_TITLE_ROW } from "@/shared/ui/page-frame";
+import { PAGE_COLUMN_FORM, PAGE_FRAME, PAGE_HEADER_ROW, PAGE_TITLE_ROW } from "@/shared/ui/page-frame";
 
 import { FindingsPanel } from "./FindingsPanel";
 import { SkillDetail } from "./SkillDetail";
@@ -225,7 +225,26 @@ function EmptyState({ onOpenFolder, onOpenSample }: { onOpenFolder: () => void; 
   return (
     <section
       data-testid="skills-empty"
-      className="flex min-h-0 flex-1 flex-col gap-8 pt-6 pb-6"
+      /*
+       * **내용이 적으면 칸도 좁아진다** (2026-08-12 실측).
+       *
+       * 이 빈 상태는 글이 16개인데 목록형 칸(1448px)을 그대로 써서 세 질문이 벽까지
+       * 펼쳐져 있었고(가장 오른쪽 1472), 아래로 524px — 화면의 58% — 가 비어 있었다.
+       * 소유자: *"너무 횡하고 뭔가 벽에 다 딱 붙어있고"*. 같은 폭을 쓰는 인사이트·
+       * 프로젝트는 글이 48·80개라 정당했으니, 문제는 폭 값이 아니라 **적은 내용에
+       * 같은 폭을 쓴 것**이다.
+       *
+       * ⚠️ **첫 처방은 화면이 반박했다.** 남는 높이를 `justify-center` 로 위아래로
+       * 나눠 봤더니 숫자 하나(아래 공백 524 → 286)는 좋아졌는데, 스크린샷에서는 제목만
+       * 위에 떠 있고 그 아래 320px 공백이 생겼다 — **공백을 아래에서 위로 옮긴 것**
+       * 뿐이었다. 「횡하다」는 공백의 위치 문제가 아니라 **글이 아무 데도 묶여 있지
+       * 않은 것**이었다.
+       *
+       * 그래서 지금 처방은 둘이다: 폭은 규격의 좁은 칸(960)으로 모으고, 내용은 제목
+       * 바로 아래에서 **한 덩어리(카드)로 끝낸다.** 그러면 아래 공백은 「빈 구멍」이
+       * 아니라 페이지의 여백으로 읽힌다. 새 토큰·새 값 0개(기존 표면 조합).
+       */
+      className={`${PAGE_COLUMN_FORM} mt-4 flex flex-col gap-6 rounded-card border border-[color:var(--color-border-soft)] bg-[color:var(--color-overlay-1)] px-6 py-6 md:mx-0`}
     >
       {/* ⚠️ 여기 별도 헤드라인을 두지 않는다. 한 번 넣었다가 `screen-hierarchy`
           게이트가 잡았다 — 「페이지 제목보다 크거나 같은 글자가 제목 밖에 없다」.

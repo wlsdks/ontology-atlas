@@ -54,6 +54,49 @@ async function stubSkillFolder(
 }
 
 test.describe("스킬 인벤토리", () => {
+  /**
+   * **아무것도 없을 때도 화면이 완성돼 보여야 한다** (2026-08-12 소유자 지적).
+   *
+   * 소유자: *"스킬은 아무것도 없을때 너무 횡하고 뭔가 벽에 다 딱 붙어있고 그런
+   * 느낌인데.. 인사이트나 프로젝트는 좀 나은데"*.
+   *
+   * 실측이 그 말을 그대로 확인했다(1512×900): 스킬의 빈 상태는 **글이 16개**인데
+   * 목록형 칸(1448px)을 그대로 써서 세 질문이 벽까지 펼쳐지고(가장 오른쪽 1472),
+   * 아래로 **524px = 화면의 58%** 가 비어 있었다. 같은 폭을 쓰는 인사이트·프로젝트는
+   * 글이 **48·80개**라 그 폭이 정당했다 — 즉 문제는 폭 값이 아니라 **적은 내용에 같은
+   * 폭을 쓴 것**이다.
+   *
+   * ⚠️ **첫 처방은 화면이 반박했다.** 남는 높이를 위아래로 나눠 봤더니 숫자(아래
+   * 공백 524 → 286)는 좋아졌는데 제목만 위에 떠 있고 그 아래 320px 공백이 생겼다 —
+   * 공백을 옮긴 것뿐이었다. 그래서 「한 덩어리로 끝낸다」로 바꿨고, 이 시험이 잠그는
+   * 것은 그 성질이다: **좁은 칸 + 제목 바로 아래 + 눈에 보이는 면**.
+   */
+  test("빈 상태는 좁은 칸에 한 덩어리로 끝난다", async ({ page }) => {
+    await page.goto("/ko/skills/?guides=off", { waitUntil: "domcontentloaded" });
+    const empty = page.getByTestId("skills-empty");
+    await expect(empty).toBeVisible({ timeout: 20_000 });
+
+    const box = await empty.evaluate((el) => {
+      const rect = el.getBoundingClientRect();
+      const style = getComputedStyle(el);
+      return {
+        width: Math.round(rect.width),
+        top: Math.round(rect.top),
+        right: Math.round(rect.right),
+        surfaced:
+          style.borderTopWidth !== "0px" ||
+          (style.backgroundColor !== "rgba(0, 0, 0, 0)" && style.backgroundColor !== "transparent"),
+      };
+    });
+
+    // ① 좁은 칸 — 글 16개를 목록형 폭(1448)에 펼치지 않는다.
+    expect(box.width, `빈 상태가 ${box.width}px 로 펼쳐졌다 — 글 16개에 목록형 폭이다`).toBeLessThanOrEqual(1_000);
+    // ② 제목 바로 아래 — 가운데로 밀면 제목이 위에 홀로 남는다(첫 처방의 실패).
+    expect(box.top, `빈 상태가 y=${box.top} 에서 시작한다 — 제목과 떨어져 공백이 생긴다`).toBeLessThan(250);
+    // ③ 눈에 보이는 면 — 면이 없으면 글이 아무 데도 묶이지 않아 「횡하다」로 읽힌다.
+    expect(box.surfaced, "빈 상태에 면(테두리·배경)이 없다 — 글이 허공에 떠 있다").toBe(true);
+  });
+
   test("폴더를 열면 스킬과 겹침을 그리고, 호출 사슬을 펼쳐 보인다", async ({ page }) => {
     await stubSkillFolder(page, {
       // 이름이 같고 설명이 다른 둘 — 경쟁하는 발동 조건.
