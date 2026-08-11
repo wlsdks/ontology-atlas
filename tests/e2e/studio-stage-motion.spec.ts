@@ -24,9 +24,20 @@ import { seedFirstRunSeen } from "./first-run-seed";
  *
  * ## 잠그는 성질
  *
- * ① 채울 때 **입장이 다시 재생되지 않는다** ② 그러면서 **도착은 움직인다**.
- * 둘을 같이 잠근다 — ①만 잠그면 「전부 끄기」로도 통과하고, 그건 이 화면을 정적으로
- * 만드는 것이다.
+ * ① 채울 때 **입장이 다시 재생되지 않는다** ② 그러면서 **도착은 움직인다**
+ * ③ 그리고 **무대가 처음 열릴 때는 입장이 재생된다**.
+ *
+ * ## ⚠️ ③ 이 없어서 이 게이트가 자기가 지킨다던 것을 놓쳤다 (2026-08-12)
+ *
+ * 처음에는 ①②만 잠갔다. ①만으로는 「전부 끄기」가 통과한다는 것을 알고 ②를 넣었는데,
+ * ②가 보는 것은 **채우는 순간의 도착 애니메이션**이라 입장과는 다른 애니메이션이다.
+ * 그래서 **입장을 통째로 죽여도 이 게이트는 초록이었다** — 실제로 그렇게 됐다:
+ * 억제 창을 페이지 시간에 걸어 놨더니 사람이 카드를 누르기 전에 창이 지나가 버려서,
+ * 무대가 `animation-name: none` · 첫 프레임 `opacity: 1` 로 마운트됐다(하드컷).
+ *
+ * 「억제가 제때 켜지는가」와 「억제가 항상 켜져 있는가」는 화면에서 서로 다른데
+ * ①②만 보는 게이트에서는 **똑같이 초록**이다. 그래서 ③ 을 같이 잠근다 —
+ * 억제를 잠그는 게이트는 그 반대편도 같이 잠가야 한다.
  */
 
 test("공방 · 방위를 채우면 도착한 것만 움직인다", async ({ page }) => {
@@ -94,4 +105,58 @@ test("공방 · 방위를 채우면 도착한 것만 움직인다", async ({ pag
     names.some((entry) => entry.startsWith("studioFillArrive@") || entry.startsWith("studioStrutFlow@")),
     `채웠는데 아무것도 도착하지 않았다: ${names.join(", ") || "(애니메이션 0)"}`,
   ).toBe(true);
+});
+
+test("공방 · 무대가 처음 열릴 때는 입장이 재생된다", async ({ page }) => {
+  test.setTimeout(240_000);
+  await page.setViewportSize({ width: 1512, height: 900 });
+  await seedFirstRunSeen(page);
+  await page.goto("/ko/ontology/studio/?guides=off", { waitUntil: "domcontentloaded" });
+
+  const entry = page.getByTestId("studio-entry-create");
+  await expect(entry).toBeVisible({ timeout: 30_000 });
+  /*
+   * 하이드레이션 + **입장 창이 지나가기를 기다린다.** 이 기다림이 이 시험의 요점이다 —
+   * 사람은 카드를 보고 읽은 뒤에 누르므로 창은 이미 지나가 있다. 창을 페이지 시간에
+   * 걸면 여기서 죽는다.
+   */
+  await page.waitForTimeout(2_500);
+
+  const frames = await page.evaluate(async () => {
+    const button = document.querySelector('[data-testid="studio-entry-create"]') as HTMLElement | null;
+    if (!button) return null;
+    button.click();
+    const out: { name: string; opacity: number }[] = [];
+    for (let i = 0; i < 6; i += 1) {
+      await new Promise((resolve) => requestAnimationFrame(() => resolve(null)));
+      const card = document.querySelector('[data-testid="studio-center-card"]') as HTMLElement | null;
+      if (!card) continue;
+      const style = getComputedStyle(card);
+      out.push({ name: style.animationName, opacity: Number(style.opacity) });
+    }
+    return out;
+  });
+
+  expect(frames, "생성 카드를 못 찾았다 — 이 시험이 공회전한다").not.toBeNull();
+  const samples = frames!;
+  expect(samples.length, "무대가 열리지 않았다 — 중앙 카드가 없다").toBeGreaterThan(2);
+  console.log(
+    `[studio-entrance] ${samples.map((s) => `${s.name}/${s.opacity.toFixed(2)}`).join(" · ")}`,
+  );
+
+  // ③ 입장이 실제로 재생된다.
+  expect(
+    samples.every((s) => s.name === "studioStageIn"),
+    `무대가 열리는데 입장 애니메이션이 없다 — 하드컷이다: ${samples.map((s) => s.name).join(", ")}`,
+  ).toBe(true);
+
+  /*
+   * 그리고 **첫 프레임에 끝나 있지 않다.** 이름만 보면 「0.01ms 짜리 입장」도 통과한다.
+   * 잠글 성질은 기계와 무관한 쪽이다 — 첫 프레임이 아직 투명한가.
+   * (밀리초나 프레임 수를 못박지 않는다: 기계마다 다르다.)
+   */
+  expect(
+    samples[0].opacity,
+    `입장이 첫 프레임에 이미 끝나 있다(opacity ${samples[0].opacity}) — 이름만 있고 움직임이 없다`,
+  ).toBeLessThan(0.5);
 });
