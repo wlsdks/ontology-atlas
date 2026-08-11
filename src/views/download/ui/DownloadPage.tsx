@@ -1243,7 +1243,12 @@ function PlatformStatus() {
           id={warningId}
           role="note"
           data-testid="download-windows-unsigned-warning"
-          className="mt-3 break-words rounded-card border border-[color:var(--color-amber-source-a25)] bg-[color:var(--color-amber-source-a08)] px-3.5 py-3 text-body leading-body text-[color:var(--color-amber-source-text-a95)] [@media(min-width:64rem)_and_(max-height:56.25rem)]:py-2"
+          /*
+           * `break-keep` + `break-words` 는 서로 싸우지 않는다 — 앞은 「단어 안에서
+           * 끊지 마라」, 뒤는 「그래도 한 낱말이 칸을 넘치면 그때는 쪼개라」다.
+           * 이 문단은 폭 462px 에서 「실행|할」로 갈렸다(2026-08-12 실측).
+           */
+          className="mt-3 break-keep break-words rounded-card border border-[color:var(--color-amber-source-a25)] bg-[color:var(--color-amber-source-a08)] px-3.5 py-3 text-body leading-body text-[color:var(--color-amber-source-text-a95)] [@media(min-width:64rem)_and_(max-height:56.25rem)]:py-2"
         >
           {t('windowsUnsignedWarning')}
         </p>
