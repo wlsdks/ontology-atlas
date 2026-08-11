@@ -418,6 +418,55 @@ await test('init --quick-start — scaffolds, bootstraps from the repo, and ends
   }
 });
 
+/**
+ * **갓 만든 볼트는 자기 검사를 통과해야 한다** (2026-08-11, 북극성 여정 실측).
+ *
+ * 이 결함은 코드를 읽어서가 아니라 **여정을 걸어서** 나왔다. `init --quick-start` 로
+ * 만든 볼트에서 가이드가 시키는 다음 명령들을 그대로 돌렸더니 여덟 중 셋이 종료코드
+ * 1이었다 — `health` · `mcp-verify` · `agent-brief`. 걸린 것은 경고 하나
+ * (`missing-expected-field: domain`)뿐이었고, 그 문구가 *"트리에서 부모를 찾을 수
+ * 있습니다"* 인데 프로젝트 노드는 **이미 그 역량들을 `contains:` 로 담고 있었다.**
+ *
+ * 사람에게는 *"내가 뭘 잘못했나"* 이고 **에이전트에게는 연결 실패 신호**다 — 이 제품
+ * 사용자의 절반이 에이전트인데, 설정 직후 `mcp-verify` 가 1을 내면 「안 붙었다」로
+ * 읽힌다. 실제로는 서버도 도구 35개도 정상이었다.
+ *
+ * 그래서 이 시험은 **첫 명령이 만든 상태가 다음 명령에서 실패로 보고되지 않는다**를
+ * 잠근다. 도메인이 없는 것 자체는 그대로다(README 제목이 없는 저장소에서 경계를
+ * 지어내지 않는다) — 바뀐 것은 **부모가 있는데 없다고 말하던 것**이다.
+ */
+await test('init --quick-start — 갓 만든 볼트가 자기 검사를 통과한다 (health · validate)', async () => {
+  const repo = makeQuickStartRepoFixture();
+  try {
+    const init = await run(['init', 'ontology', '--quick-start'], { cwd: repo });
+    assert.equal(init.code, 0, `stdout: ${init.stdout}\nstderr: ${init.stderr}`);
+
+    /*
+     * ⚠️ **종료코드로 잠그면 안 된다** — `validate` 는 경고에 0을 낸다. 첫 판이 그래서
+     * 좁히기를 떼어도 초록이었다(통과가 증거가 아니다). 잠글 것은 **경고 0**이다.
+     */
+    const validate = await run(['validate', 'ontology'], { cwd: repo });
+    const validateOut = stripAnsi(validate.stdout) + stripAnsi(validate.stderr);
+    assert.equal(validate.code, 0, `validate 가 실패했다:\n${validateOut}`);
+    assert.doesNotMatch(
+      validateOut,
+      /missing-expected-field/,
+      `갓 만든 볼트가 자기 검사에서 경고를 받았다 — 첫 명령이 만든 상태가 다음 명령에서 실패로 보고된다:\n${validateOut}`,
+    );
+    assert.match(validateOut, /issue 0/, `경고 0이어야 한다:\n${validateOut}`);
+
+    const health = await run(['health', 'ontology'], { cwd: repo });
+    assert.equal(
+      health.code,
+      0,
+      `갓 만든 볼트가 health 에서 needs_attention 이 됐다:\n${stripAnsi(health.stdout)}`,
+    );
+    assert.match(stripAnsi(health.stdout), /vault health healthy/);
+  } finally {
+    rmSync(repo, { recursive: true, force: true });
+  }
+});
+
 await test('init --quick-start — suggests absorbing an existing AGENTS.md without auto-absorbing it', async () => {
   const repo = makeQuickStartRepoFixture();
   try {

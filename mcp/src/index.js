@@ -178,6 +178,7 @@ import {
   VAULT_ISSUE_CODE_VALUES,
   isValidVaultTitle,
   validateVaultDocument,
+  suppressParentedExpectedFieldIssues,
 } from './validate.mjs';
 import {
   buildFrontmatter,
@@ -5704,15 +5705,23 @@ function listConcepts({ kind, domain, since, summary, limit = 100 }) {
   // 가시화. AI agent 가 vault 상태를 한 번에 인지 가능 (UI banner #14 의 짝).
   let errorCount = 0;
   let warningCount = 0;
+  /*
+   * ⚠️ **집계 전에 좁힌다** (2026-08-11). 이 숫자가 `list_concepts.vaultWarnings` 이고,
+   * `mcp-verify` 는 그 값이 0이 아니면 실패한다. 갓 만든 볼트가 정확히 그것 때문에
+   * 「연결 실패」로 보고됐다 — 걸린 경고는 「부모가 없다」였는데 프로젝트가 이미 그
+   * 노드를 담고 있었다. 세기 전에 슬러그별로 모아야 포함을 볼 수 있다.
+   */
+  const issuesBySlugForCount = new Map();
   for (const doc of docs) {
     if (!doc.raw) continue;
     const report = validateVaultDocument(doc.raw);
-    for (const issue of report.issues) {
-      if (issue.severity === 'error') errorCount += 1;
-      else warningCount += 1;
-    }
+    if (report.issues.length > 0) issuesBySlugForCount.set(doc.slug, [...report.issues]);
   }
-  for (const issues of groupDanglingIssuesBySlug(docs).values()) {
+  for (const [slug, issues] of groupDanglingIssuesBySlug(docs)) {
+    issuesBySlugForCount.set(slug, [...(issuesBySlugForCount.get(slug) ?? []), ...issues]);
+  }
+  suppressParentedExpectedFieldIssues(issuesBySlugForCount, docs);
+  for (const issues of issuesBySlugForCount.values()) {
     for (const issue of issues) {
       if (issue.severity === 'error') errorCount += 1;
       else warningCount += 1;
@@ -7927,6 +7936,11 @@ function validateVaultTool({ repoRoot } = {}) {
     issues.push(...danglingIssues);
     docIssues.set(slug, issues);
   }
+  /*
+   * 부모가 이미 있는 노드에 「부모가 없다」고 말하지 않는다 (2026-08-11).
+   * 파일 하나만 보는 검사로는 알 수 없고, 여기는 볼트 전체를 갖고 있다.
+   */
+  suppressParentedExpectedFieldIssues(docIssues, docs);
   const problems = [];
   let errorFiles = 0;
   let warningFiles = 0;
