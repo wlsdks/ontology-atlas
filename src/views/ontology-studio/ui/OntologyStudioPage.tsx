@@ -1516,12 +1516,48 @@ export function OntologyStudioPage() {
    * 시간을 쓰는 이유: 입장 자체는 살려야 하므로 첫 프레임에 끄면 안 된다. 값은 입장
    * 길이(`--motion-base` 180ms)에 스태거 여유를 더한 것이고, 늦게 켜져도 잃는 것이
    * 없다(그동안 재마운트가 없으면 아무 일도 일어나지 않는다).
+   *
+   * ## ⚠️ 이 창을 **페이지 시간**에 걸었던 것이 입장을 통째로 없앴다 (2026-08-12 정정)
+   *
+   * 첫 구현은 타이머를 `[]` 로 걸었다 — 즉 **페이지가 뜬 시점**부터 520ms 였다.
+   * 그런데 공방은 카드 화면(또는 빈 볼트 화면)을 먼저 보여 주고, 사람이 「새로
+   * 만들기」를 누르는 것은 그 뒤다. 그 사이에 520ms 는 이미 지나가 있다.
+   *
+   * 그래서 무대는 **억제된 채로 마운트됐다.** 실측(클릭 직후 5프레임):
+   *
+   * ```
+   * FRAME {"f":0,"card":true,"suppressor":"true","animName":"none","opacity":"1"}
+   * ```
+   *
+   * 첫 프레임에 이미 `opacity: 1` 이고 애니메이션이 `none` — **하드컷**이다. 고치려던
+   * 것(모든 것이 같이 움직여서 아무것도 도착하지 않는 것)의 반대쪽 끝으로 넘어간
+   * 것이고, 이 저장소가 「주인공이 하드컷인데 배경만 움직이면 결함」이라고 적어 둔
+   * 그 자리에서 **주인공이 아예 안 움직이게** 됐다.
+   *
+   * 축이 틀렸다. 잠글 것은 「페이지가 뜬 뒤 얼마나 지났나」가 아니라 **「이 무대가
+   * 이미 한 번 들어왔나」** 다. 그래서 창을 무대의 정체성(`mode` + `node`)에 건다:
+   *
+   * - 카드 화면에서 「새로 만들기」 → 주소가 `?mode=create` 로 바뀐다 → 새 정체성
+   *   → 입장이 재생된다.
+   * - 다른 노드로 옮긴다 → `node` 가 바뀐다 → 새 무대이므로 입장이 재생된다.
+   * - **방위를 채운다 → 주소는 그대로다** → 정체성이 같으므로 억제가 유지된다.
+   *   여기가 원래 고치려던 그 지점이고, 그대로 지켜진다.
+   *
+   * 주소를 읽는 훅을 쓰는 이유: 공방 안의 이동은 라우터가 아니라 `history.pushState`
+   * 로 일어나서(`use-studio-search-params.ts`) `useSearchParams` 만으로는 주소가
+   * 바뀐 것을 모른다.
    */
-  const [stageEntered, setStageEntered] = useState(false);
+  const stageParams = useStudioSearchParams();
+  const stageIdentity = `${stageParams.get("mode") ?? "enhance"}:${stageParams.get("node") ?? ""}`;
+  const [enteredIdentity, setEnteredIdentity] = useState<string | null>(null);
   useEffect(() => {
-    const timer = window.setTimeout(() => setStageEntered(true), STAGE_ENTRANCE_WINDOW_MS);
+    const timer = window.setTimeout(
+      () => setEnteredIdentity(stageIdentity),
+      STAGE_ENTRANCE_WINDOW_MS,
+    );
     return () => window.clearTimeout(timer);
-  }, []);
+  }, [stageIdentity]);
+  const stageEntered = enteredIdentity === stageIdentity;
 
   const t = useTranslations("ontologyStudio");
   const toast = useToast();
